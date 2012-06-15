@@ -1,6 +1,3 @@
-include "std/c_hack";
-include "std/signal";
-
 class Win32Signal {
   requires C89_headers::signal_h;
   type signal_t = "int";

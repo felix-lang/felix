@@ -1,7 +1,3 @@
-include "std/io/faio";     // defines copipes & some driver interaction
-include "std/io/demux";
-include "std/win32/__init__";
-
 module Faio_win32 {
 requires package "demux";
 requires package "faio";
@@ -12,12 +8,20 @@ open Demux;
 
 header '#include "faio_winio.hpp"'; // this has everything (includes asyncio.h)
 
+// ------------ core file and socket definitions ----------------
+// I could just use HANDLEs everywhere, but I want to see how this goes
+type WFILE = 'HANDLE';
+typedef fd_t = WFILE;
+
+const INVALID_HANDLE_VALUE: WFILE = 'INVALID_HANDLE_VALUE';
+fun == : WFILE*WFILE -> bool = '($1 == $2)';
+
+type SOCKET = "SOCKET";
+typedef socket_t = SOCKET;
+// --------------------------------------------------------------
+
 // useful windows function
 fun GetLastError: 1 -> int = 'GetLastError()';
-
-ctypes SOCKET;
-
-typedef socket_t = SOCKET;
 
 // maybe don't use this - let the socket be passed in already associated
 // with an IOCP. do I have to make this explicitly overlapped? If we
@@ -94,14 +98,6 @@ const SD_BOTH:int = 'SD_BOTH';
 proc shutdown: SOCKET*int = 'shutdown($1, $2);';
 
 type wasync_transmit_file = "flx::faio::wasync_transmit_file";
-
-// I could just use HANDLEs everywhere, but I want to see how this goes
-type WFILE = 'HANDLE';
-typedef fd_t = WFILE;
-
-const INVALID_HANDLE_VALUE: WFILE = 'INVALID_HANDLE_VALUE';
-fun == : WFILE*WFILE -> bool = '($1 == $2)';
-
 
 // hacked for ro atm. the 0 means exclusive (not good, but I haven't deciphered
 // the flags yet. NULL for non inheritable security attributes.

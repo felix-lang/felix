@@ -1,4 +1,3 @@
-include "std/csv";
 publish """
 Simple config file reader. Splits key value pairs seperated by the equals character.
 Skips lines where first non-space character is the # character. Max configuration file size 

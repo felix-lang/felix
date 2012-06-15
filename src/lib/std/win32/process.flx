@@ -1,9 +1,3 @@
-
-// Posix process stuff
-include "std/posix/posix_headers";
-include "std/posix/errno";
-include "std/win32/signal";
-
 class Win32Process {
   open Win32Signal;
 

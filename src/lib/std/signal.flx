@@ -12,9 +12,6 @@ class Signal_class [os] {
 
 }
 
-include "std/posix/signal";
-include "std/win32/signal";
-
 class Signal {
 if PLAT_WIN32 do
   inherit Win32Signal;

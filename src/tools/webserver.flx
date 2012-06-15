@@ -1,15 +1,8 @@
 if PLAT_POSIX do
-include "std/posix/faio_posix";  // aio_ropen
-//open Faio_posix;
-include "std/posix/signal";
-include "std/posix/filesystem";
 PosixSignal::ignore_signal(PosixSignal::SIGPIPE);
 done
 
-include "std/io/socket";
 open Socket;
-
-include "std/io/stream";
 open Stream;
 
 open TerminalIByteStream[fd_t];

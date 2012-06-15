@@ -2,9 +2,6 @@ class FileSystem_class[os]
 {
 }
 
-include "std/posix/filesystem";
-include "std/win32/filesystem";
-
 class FileSystem {
 if PLAT_WIN32 do
   inherit Win32FileSystem;

@@ -1,9 +1,3 @@
-
-include "std/posix/errno";
-include "std/posix/posix_headers";
-include "std/win32/win32_headers";
-include "std/filestat";
-
 class Win32FileStat
 {
   //2 things:

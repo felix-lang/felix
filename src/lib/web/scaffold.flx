@@ -1,6 +1,3 @@
-include "std/filename";
-include "std/posix/directory";
-include "std/posix/filesystem";
 requires header '#include <sys/stat.h>';
 requires header '#include <sys/types.h>';
 

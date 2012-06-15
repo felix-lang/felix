@@ -1,9 +1,3 @@
-// contains posix async socket io & copipes, all wrapped up streams
-
-include "std/io/faio"; //mutual recursion? Really!
-include "std/io/demux";
-include "std/posix/__init__";
-
 class Faio_posix  {
 header faio_posixio_hpp = '#include "faio_posixio.hpp"';
 requires package "demux";
@@ -20,7 +14,10 @@ fun sys_job_queue_qbound() => 20;
 fun sys_job_queue_nthreads() =>  4;
 val sys_job_queue = Pthread::mk_job_queue(#sys_job_queue_qbound,#sys_job_queue_nthreads);
 
-
+// ------------ core file and socket definitions ----------------
+typedef fd_t = PosixFileSystem::posix_file;
+type socket_t = "int";
+// --------------------------------------------------------------
 
 instance Str[FileSystem::posix_file] {
   fun str: FileSystem::posix_file -> string = "::flx::rtl::strutil::str<int>($1)" requires package "flx_strutil";
@@ -46,7 +43,6 @@ gen aio_creat: string * posix_permissions-> FileSystem::posix_file = ' open($1.c
     requires fcntl_h, sys_stat_h;
 */
 
-type socket_t = "int";
 // socketio_request should be renamed to be async_fd_request
 type socketio_request = "::flx::faio::socketio_request";
 

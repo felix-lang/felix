@@ -3,19 +3,10 @@ Accepts connection and spawns fthread to handle request
 See webapp.flx for usage example 
 """
 
-//if POSIX do
-include "std/posix/faio_posix";  // aio_ropen
-include "std/posix/signal";
-include "std/posix/filesystem";
-include "std/posix/filestat";
-
 PosixSignal::ignore_signal(PosixSignal::SIGPIPE);
 //done
 
-include "std/io/socket";
 open Socket;
-
-include "std/io/stream";
 open Stream;
 
 open TerminalIByteStream[fd_t];

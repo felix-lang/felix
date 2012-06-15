@@ -71,9 +71,6 @@ class FileStat_class[OS,stat_t, mode_t]
 
 }
 
-include "std/posix/filestat";
-include "std/win32/filestat";
-
 class FileStat {
 if PLAT_WIN32 do
   inherit Win32FileStat;

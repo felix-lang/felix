@@ -1,6 +1,3 @@
-include "std/filesystem";
-include "std/directory";
-
 open Judy;
 
 fun dbg(s:string):string={ println s; return s; }

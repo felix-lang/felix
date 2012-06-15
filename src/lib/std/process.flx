@@ -4,9 +4,6 @@ class Process_class[os]
 {
 }
 
-include "std/posix/process";
-include "std/win32/process";
-
 class Process {
 if PLAT_WIN32 do
   inherit Win32Process;

@@ -1,6 +1,3 @@
-include "std/posix/__init__";
-include "std/io/faio";
-
 // get the prefix of the executables from the command line
 var exec_prefix = System::argv 1;
 

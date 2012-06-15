@@ -1,12 +1,3 @@
-include "std/io/faio";
-if PLAT_POSIX do
-  include "std/posix/faio_posix";
-elif PLAT_WIN32 do
-  include "std/win32/faio_win32";
-else
-  include "ERROR: stream requires POSIX or WIN32";
-done
-
 class Stream {
   requires package "demux";
   requires package "faio";
@@ -18,6 +9,7 @@ class Stream {
     typedef fd_t = FileSystem::posix_file;
   else
     open Faio_win32;
+    typedef fd_t = Faio_win32::fd_t;
   done
 
   // ---------------------------------------------------------------------------

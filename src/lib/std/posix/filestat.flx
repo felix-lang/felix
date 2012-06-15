@@ -1,5 +1,3 @@
-include "std/posix/__init__";
-
 class PosixFileStat
 {
   pod type stat_t = "struct stat" requires Posix_headers::sys_stat_h;

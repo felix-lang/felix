@@ -25,7 +25,6 @@ Example:
 /*
 TODO: Add date/time utility functions (date time delta calulations, etc.) 
 */
-//include "std/posix/posix_headers";
 class LowResTime
 {
   open C_hack;

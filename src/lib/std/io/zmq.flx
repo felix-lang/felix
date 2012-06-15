@@ -1,5 +1,3 @@
-include "std/posix/errno";
-
 publish """
 Lightwight 0MQ wrapper.
 """

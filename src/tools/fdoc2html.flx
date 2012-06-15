@@ -2,7 +2,6 @@ include "./charclass";
 include "./plugin_common";
 
 // felix document
-include "std/posix/process";
 var INSTALL_ROOT="";
 var FLX_PATH = Empty[string];
 var FDOC_PATH = Empty[string];

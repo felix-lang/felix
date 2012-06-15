@@ -8,9 +8,6 @@ class Directory_class[os,mode_t]
   virtual fun mk_absolute_filename: string -> string; 
 }
 
-include "std/posix/directory";
-include "std/win32/directory";
-
 class Directory {
 if PLAT_WIN32 do
   inherit Win32Directory;

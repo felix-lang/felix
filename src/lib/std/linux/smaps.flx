@@ -1,4 +1,3 @@
-include "std/posix/process";
 publish """
 Parses and totals proc/PID/smaps memory stats. 
 See smaps_total

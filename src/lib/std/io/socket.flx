@@ -1,17 +1,6 @@
-include "std/io/faio";
-include "std/io/stream";
-
-if PLAT_POSIX do
-  include "std/posix/faio_posix";
-elif PLAT_WIN32 do
-  include "std/win32/faio_win32";
-else
-  include "ERROR: socket requires POSIX or WIN32";
-done;
-
-requires package "demux";
-
 class Socket {
+  requires package "demux";
+
   if PLAT_POSIX do
     typedef socket_t = Faio_posix::socket_t;
   else

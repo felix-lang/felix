@@ -1,7 +1,3 @@
-include "std/c_hack";
-include "std/c_headers";
-include "std/signal";
-
 class PosixSignal {
   requires C89_headers::signal_h; 
   type signal_t = "int";

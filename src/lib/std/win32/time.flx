@@ -1,6 +1,3 @@
-include "std/posix/posix_headers";
-include "std/win32/win32_headers";
-
 class Win32Time
 {
   requires Posix_headers::sys_types_h;

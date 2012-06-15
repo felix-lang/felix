@@ -1167,7 +1167,7 @@ var INCLUDE_DIR=quote("-I"+Filename::join(FLX_INSTALL_DIR,"lib","rtl")) + " "+qu
 debugln$ "C++ Include directory for Felix library " + INCLUDE_DIR;
 
 var FLXLIB=quote("-I"+Filename::join(FLX_INSTALL_DIR,"lib"));
-var STDLIB=list("std","posix","web");
+var STDLIB=list("std","web");
 if NOSTDLIB == 1 do
   FLXLIB="";
   STDLIB=Empty[string];

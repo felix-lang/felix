@@ -1,6 +1,3 @@
-include "std/io/faio";
-include "std/io/stream";
-
 open Faio;
 open Flx_stream;
 open TerminalIByteStream[fd_t];

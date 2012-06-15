@@ -1,5 +1,4 @@
 // File renumbering
-include "std/posix/filesystem";
 
 if System::argc < 4 do
   println "Usage: rentut dir regexp first dst";

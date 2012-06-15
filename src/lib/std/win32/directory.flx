@@ -1,6 +1,3 @@
-include "std/win32/__init__" ;
-include "std/directory" ;
-
 class Win32Directory
 {
   //Win32 specific stuff.

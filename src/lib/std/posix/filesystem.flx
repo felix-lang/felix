@@ -1,5 +1,3 @@
-include "std/posix/__init__";
-
 class PosixFileSystem 
 {
   //------------------------------------------------------------

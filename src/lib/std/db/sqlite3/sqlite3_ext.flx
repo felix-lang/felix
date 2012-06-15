@@ -1,5 +1,3 @@
-include "std/io/faio";
-
 publish """
 Estensions to provide row iterator, simple statement  execution, statement preperation
 and access to sqlite_step statement execution.

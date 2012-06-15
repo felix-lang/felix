@@ -1,6 +1,3 @@
-include "std/directory";
-include "std/filesystem";
-
 fun dbg(s:string):string={ println s; return s; }
 //println$ System::args ();
 //println$ "argc=" + str System::argc;

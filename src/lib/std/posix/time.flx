@@ -1,6 +1,3 @@
-include "std/posix/posix_headers";
-include "std/time";
-
 class PosixTime
 {
   requires Posix_headers::sys_time_h;

@@ -52,6 +52,7 @@ include "std/fibres";
 include "std/pthread";
 include "std/pchannels";
 include "std/mutex";
+include "std/ts_counter";
 include "std/ts_bound_queue";
 
 //memory management
@@ -61,16 +62,17 @@ include "std/gc";
 include "std/rtti";
 
 // I/O
-include "std/io/textio";
-include "std/io/faio";
-include "std/io/socket";
-include "std/io/stream";
-include "std/io/zmq";
+include "std/io/__init__";
 include "std/filename";
 include "std/filestat";
 include "std/directory";
 include "std/filesystem";
 include "std/process";
+include "std/signal";
+include "std/time";
+
+// codecs
+include "std/codec/__init__";
 
 // base data types
 include "std/tuple";
@@ -111,4 +113,8 @@ include "std/db/__init__";
 
 // Version
 include "std/version";
+
+// Platform support
+include "std/posix/__init__";
+include "std/win32/__init__";
 
