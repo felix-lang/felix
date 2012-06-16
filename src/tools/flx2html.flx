@@ -165,9 +165,9 @@ private val library =
   ("intmax", "binding of C intmax_t type"),
   ("uintmax", "binding of C uintmax_t type"),
   ("wchar", "binding of C uintmax_t type"),
-  ("fcomplex", "binding of C++ complex<float> type"),
-  ("dcomplex", "binding of C++ complex<double> type"),
-  ("lcomplex", "binding of C++ complex<long double> type"),
+  ("fcomplex", "binding of C++ complex&lt;float&gt; type"),
+  ("dcomplex", "binding of C++ complex&lt;double&gt; type"),
+  ("lcomplex", "binding of C++ complex&ltlong double&gt; type"),
   ("byte", "special binding of C unsigned char type"),
   ("address", "special binding of C void* type"),
 

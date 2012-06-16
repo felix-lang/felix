@@ -1,5 +1,4 @@
 // CSV reader
-include "std/csv";
 open Csv;
 inp := '1, 2.0 , "Hel lo" , joe';
 res := get_csv_values inp;
