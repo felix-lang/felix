@@ -484,11 +484,7 @@ def build(ctx):
     buildsystem.copy_dir_to(ctx, ctx.buildroot, 'src/wiki',
         pattern='*.*')
 
-    buildsystem.copy_dir_to(ctx, ctx.buildroot/"lib"/"rtl", 'src/Eigen',
-        pattern='*.*')
-
     for module in (
-            'sqlite3',
             'flx_stdlib',
             'flx_pthread',
             'demux',
