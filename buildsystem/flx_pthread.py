@@ -78,5 +78,3 @@ def build_runtime(phase):
             external_libs=external_libs,
             lflags=flags))
 
-def build_flx(phase):
-    buildsystem.copy_flxs_to_lib(phase.ctx, Path('src/pthread/*.flx').glob())

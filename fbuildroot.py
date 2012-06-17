@@ -458,6 +458,7 @@ def build(ctx):
     call('buildsystem.tre.build_runtime', phases.target)
     call('buildsystem.re2.build_runtime', phases.target)
     call('buildsystem.flx_glob.build_runtime', phases.host, phases.target)
+    call('buildsystem.sqlite3.build_runtime', phases.host, phases.target)
 
     # --------------------------------------------------------------------------
     # Build the standard library.
@@ -487,10 +488,6 @@ def build(ctx):
 
     for module in (
             'flx_stdlib',
-            'flx_pthread',
-            'demux',
-            'faio',
-            'judy',
             'bindings'):
         call('buildsystem.' + module + '.build_flx', phases.target)
 
@@ -525,6 +522,7 @@ def build(ctx):
     if 'windows' not in phases.target.platform:
       mk_daemon = call('buildsystem.mk_daemon.build', phases.target)
       timeout = call('buildsystem.timeout.build', phases.target)
+    sqlite3_shell = call('buildsystem.sqlite3_shell.build', phases.target)
 
     # --------------------------------------------------------------------------
     # build support tools
@@ -632,6 +630,7 @@ def test(ctx):
       #('drivers' , Path.globall('test/drivers/*.flx')),
       ('glob' , Path.globall('test/glob/*.flx')),
       ('judy' , Path.globall('test/judy/*.flx')),
+      ('sqlite3' , Path.globall('test/sqlite/*.flx')),
       ('pthread' , Path.globall('test/pthread/*.flx')),
       ('stdlib' , Path.globall('test/stdlib/*.flx')),
       ('tre' , Path.globall('test/tre/*.flx')),
@@ -669,20 +668,12 @@ def test(ctx):
     if zmq_h: ctx.logger.log("zmq supported",color='green')
     else: ctx.logger.log("zmq NOT supported",color='red')
 
-    sqlite3_h = config_call(
-        'fbuild.config.c.sqlite3.sqlite3_h', 
-        phases.target.platform,phases.target.c.static).header
-    if sqlite3_h: ctx.logger.log("sqlite3 supported",color='green')
-    else: ctx.logger.log("sqlite3 NOT supported",color='red')
-
-
     osrcs = [
       # EXTERNAL LIBS
       ('windows' in phases.target.platform,'faio_win', Path.globall('test/faio/win-*.flx')),
       ('posix' in phases.target.platform, 'faio_posix', Path.globall('test/faio/posix-*.flx')),
       (gmp_h,'gmp', Path.globall('test/gmp/*.flx')),
       (mman_h,'mmap', Path.globall('test/mmap/*.flx')),
-      (sqlite3_h,'sqlite', Path.globall('test/sqlite/*.flx')),
       (libxml2_libxml_xmlexports_h,'xml2', Path.globall('test/web/xml2-*flx')),
       ]
 

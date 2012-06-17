@@ -178,8 +178,3 @@ def build_runtime(host_phase, target_phase):
 
     return Record(static=static, shared=shared)
 
-# ------------------------------------------------------------------------------
-
-def build_flx(phase):
-    return buildsystem.copy_flxs_to_lib(phase.ctx,
-        Path('src/judy/*.flx').glob())

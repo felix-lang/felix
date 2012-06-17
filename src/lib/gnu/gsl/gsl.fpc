@@ -1,2 +1,0 @@
-provides_dlib: -lgsl
-provides_slib: -lgsl
