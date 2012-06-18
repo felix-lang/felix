@@ -15,12 +15,12 @@ open class Schannel
   ctor[t] ischannel[t](x:schannel[t]) => C_hack::cast[ischannel[t]] x;
 
   // make an input and an output channel out of a bidirectional channel
-  fun mk_ioschannel_pair[t](var ch:schannel[t]) =>
+  gen mk_ioschannel_pair[t](var ch:schannel[t]) =>
     ischannel[t] ch, oschannel[t] ch
   ;
 
   // construct a connected input and output channel pair
-  fun mk_ioschannel_pair[t]() =>
+  gen mk_ioschannel_pair[t]() =>
     mk_ioschannel_pair[t]$ mk_schannel[t] ()
   ;
 

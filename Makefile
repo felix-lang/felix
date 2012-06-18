@@ -130,6 +130,7 @@ tutindex:
 	build/release/bin/mktutindex pattern Patterns tutorial.fdoc
 	build/release/bin/mktutindex literals Literals tutorial.fdoc
 	build/release/bin/mktutindex cbind "C Binding" tutorial.fdoc
+	build/release/bin/mktutindex streams Streams tutorial.fdoc
 
 .PHONY : build32 build64 build test32 test64 test 
 .PHONY : build32-debug build64-debug build-debug test32-debug test64-debug test-debug 

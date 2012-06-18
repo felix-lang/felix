@@ -58,6 +58,16 @@ open class Varray
     return a;
   }
 
+  ctor varray[char] (x:string) = {
+    var n = x.len; var p = x._unsafe_cstr;
+    var v = varray[char] (n + 1);
+    var q = v.stl_begin;
+    strncpy (q, p, n);
+    q+n <- char "";
+    set_used (v,n + 1);
+    return v;
+  } 
+
   private proc set_used[t]: varray[t] * size =
     "PTF gcp->collector->set_used($1,$2);"
     requires property "needs_gc"

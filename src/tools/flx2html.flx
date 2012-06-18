@@ -94,6 +94,7 @@ private val small_keywords =
   ("endmatch","end a match statement or expression"),
   ("with", "type-class constraint"),
   ("return","return"),
+  ("yield","return a value saving the current location for future resumption"),
   ("goto","jump to label"),
   ("jump","tail call of function"),
   ("loop","self-tail call"),

@@ -3,7 +3,7 @@
 <ul>
 <li><a href="cbind_01.fdoc">C Bindings.</a></li>
 <li><a href="cbind_02.fdoc">Fixed Insertions</a></li>
-<li><a href="cbind_03.fdoc">Floating Insertions</a></li>
+<li><a href="cbind_03.fdoc">Floating Insertions.</a></li>
 <li><a href="cbind_04.fdoc">Special Magic</a></li>
 <li><a href="cbind_05.fdoc">Output control</a></li>
 <li><a href="cbind_06.fdoc">Polymorphism</a></li>

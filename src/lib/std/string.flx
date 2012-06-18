@@ -411,7 +411,9 @@ open class String
 
   proc reserve: &string * !ints = "$1->reserve($2);";
 
-  fun cstr: string -> +char = "(char*)$1:postfix.c_str()" is cast ;
+  fun _unsafe_cstr: string -> +char = "((char*)$1.c_str())" is atom;
+
+  fun cstr (x:string) : +char => (varray[char] x).stl_begin;
 
   fun vsprintf[t]: +char  * t -> string =
     "::flx::rtl::strutil::flx_asprintf($1,$2)" requires package "flx_strutil"
