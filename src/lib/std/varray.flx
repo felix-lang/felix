@@ -58,7 +58,7 @@ open class Varray
     return a;
   }
 
-  ctor varray[char] (x:string) = {
+  ctor varray[char] (var x:string) = {
     var n = x.len; var p = x._unsafe_cstr;
     var v = varray[char] (n + 1);
     var q = v.stl_begin;
