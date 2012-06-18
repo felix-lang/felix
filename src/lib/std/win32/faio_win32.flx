@@ -18,6 +18,11 @@ fun == : WFILE*WFILE -> bool = '($1 == $2)';
 
 type SOCKET = "SOCKET";
 typedef socket_t = SOCKET;
+
+instance Str[socket_t] {
+   fun str: socket_t -> string = "::flx::rtl::strutil::str<int>($1)" requires package "flx_strutil";
+}
+
 // --------------------------------------------------------------
 
 // useful windows function

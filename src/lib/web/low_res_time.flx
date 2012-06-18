@@ -29,7 +29,14 @@ class LowResTime
 {
   open C_hack;
   
+//This is probably wrong.
+
+if PLAT_WIN32 do
+  requires C89_headers::time_h;
+else
   requires Posix_headers::sys_time_h;
+
+done
 
   type time_t = "time_t";
 
