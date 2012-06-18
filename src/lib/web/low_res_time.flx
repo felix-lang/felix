@@ -29,7 +29,8 @@ class LowResTime
 {
   open C_hack;
   
-  requires Posix_headers::sys_time_h;
+  //requires Posix_headers::sys_time_h;
+  requires C89_headers::time_h;
 
   type time_t = "time_t";
 
@@ -61,13 +62,19 @@ class LowResTime
   fun asctime:&tm -> string = "asctime($1)";
 
   header """
+    char* strftime_helper(const char *pat,    const struct tm * ti);
+  """;
+
+  body """
     char* strftime_helper(const char *pat,    const struct tm * ti) {
       int len = 64;
       char *fmted = (char*) malloc(sizeof(char)*64);
       strftime(fmted,len,pat,ti);
       return fmted;
     }
+  """;
 
+/*
     struct tm * strptime_helper(const char *s, const char *fmt) {
       struct tm *t = (struct tm *) malloc(sizeof(struct tm));
       char *ret = strptime(s,fmt,t);
@@ -79,28 +86,28 @@ class LowResTime
       }
     }
   """;
-
+*/
 
   publish """strftime returns formatted string date defined my format string and tm struct.
 See C manpage for strftime for format codes"""
 
   gen strftime: string*&tm -> string = "strftime_helper(($1.c_str()),$2)";
 
-
+/*
   publish """Parses string date in first arg with format codes in second arg and 
 returns pointer to tm structure if successful or NULL if unsucessful """
 
   gen raw_strptime: string*string -> &tm = "strptime_helper ($1.c_str(), $2.c_str())";
-  
+*/ 
   fun +: time_t*time_t -> time_t = "$1+$2";
   fun +: time_t*int -> time_t = "$1+(time_t)$2";
-
+/*
   publish """"Parses string date in first arg with format codes in second arg and 
 returns pointer to tm structure wrapped in opt."""
 
   fun strptime (s:string,fmt:string):opt[&tm]  => let ?r = raw_strptime(s,fmt) in 
       if isNULL(r) then None[&tm] else Some(r) endif;
-
+*/
  fun rfc1123_date (dt:&tm) => strftime("%a, %d %b %Y %H:%M:%S %Z",dt);
 
   fun rfc1123_date () = {
