@@ -1,4 +1,4 @@
-// get the prefix of the executables from the command line
+	// get the prefix of the executables from the command line
 var exec_prefix = System::argv 1;
 
 // the executables with any arguments
@@ -149,7 +149,7 @@ noinline proc launch_managed_process (
 
     // Parent, child running
     | ProcessId ?pid =>
-      eprintln$ "[" + name + "] "+"Process " + pid.int.str + " created for program " + pn;
+      eprintln$ "[" + name + "] "+"Process " + (str pid) + " created for program " + pn;
 
     check_pid:>
       var status = checkpid(pid);
