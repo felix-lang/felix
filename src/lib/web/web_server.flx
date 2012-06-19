@@ -3,8 +3,9 @@ Accepts connection and spawns fthread to handle request
 See webapp.flx for usage example 
 """
 
+if PLAT_POSIX do
 PosixSignal::ignore_signal(PosixSignal::SIGPIPE);
-//done
+done
 
 open Socket;
 open Stream;
