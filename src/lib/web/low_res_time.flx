@@ -1,3 +1,8 @@
+// NOTE: strptime isn't available on Windows so
+// it's been comments out of the code 
+// it's not used anywhere and probably shouldn't be:
+// parsing a text string to extract a date/time can't
+// be a reliable thing.
 publish """
 Main attractions are wrappers for strptime ( date/time parsing fn ) and
 strftime ( date/time formatting fn ) and rfc1123_date (used in construction HTTP responses
