@@ -36,8 +36,6 @@ class LowResTime
   
   requires C89_headers::time_h;
 
-done
-
   type time_t = "time_t";
 
   proc time: &time_t = "time($1);";
