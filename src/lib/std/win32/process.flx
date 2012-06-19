@@ -52,6 +52,10 @@ class Win32Process {
   const bad_process : pid_t = "intptr_t(-1)";
   fun == : pid_t * pid_t -> bool= "$1==$2";
 
+  instance Str[pid_t] {
+    fun str: pid_t -> string = "::flx::rtl::strutil::str<intptr_t>($1)" requires package "flx_strutil";
+  }
+
   union spawn_result_t = 
   // returned to parent process
   | BadFork of errno_t  
