@@ -29,8 +29,9 @@ class LowResTime
 {
   open C_hack;
   
-  //requires Posix_headers::sys_time_h;
   requires C89_headers::time_h;
+
+done
 
   type time_t = "time_t";
 
