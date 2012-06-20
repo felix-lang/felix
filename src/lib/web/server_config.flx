@@ -89,8 +89,8 @@ class ServerConfig {
     return (cfg);
   }
 
-  private fun tolower: char->char = "(char)std::tolower($1)";
-  private fun toupper: char->char = "(char)std::toupper($1)";
+  private fun tolower: char->char = "(char)::std::tolower($1)" requires Cxx_headers::cctype ;
+  private fun toupper: char->char = "(char)::std::toupper($1)" requires Cxx_headers::cctype ;
 
 
   fun enhance_with_config_file(config:server_config):opt[server_config]*string = {
