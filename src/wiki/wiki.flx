@@ -89,7 +89,7 @@ val GIT_ROOT = match apply_param_vars_to(config.params,
                 |_ => "."
                 endmatch;
 if not SERVER_ROOT.FileStat::fileexists do
-  if (SERVER_ROOT.PosixDirectory::mkdir != 0) do
+  if (SERVER_ROOT.Directory::mkdir != 0) do
     fail(q"server_root $(SERVER_ROOT) does not exist and was unable to be created");
   done
 done
@@ -113,7 +113,7 @@ val FLX_PKGCONFIG_PATH = apply_param_vars_to(config.params,
 val config_dir = Filename::join(config.server_root,"config");
 if not config_dir.FileStat::fileexists do
   println$ "Configuration directory does not exist creating:"+config_dir;
-  if (config_dir.PosixDirectory::mkdir != 0) do
+  if (config_dir.Directory::mkdir != 0) do
     fail("Unable to create config directory " + config_dir);
   done
 done
@@ -132,7 +132,7 @@ done
 
 val log_dir = Filename::join(config.server_root,"log");
 if not log_dir.FileStat::fileexists do
-  if (log_dir.PosixDirectory::mkdir != 0) do
+  if (log_dir.Directory::mkdir != 0) do
     fail("Unable to create log directory " + log_dir);
   done
  done
@@ -164,7 +164,7 @@ if not wiki_db_file_name.FileStat::fileexists do
   println$ "Wiki db doesn't exist, creating it";
   match split_path_and_fname(wiki_db_file_name) with
   | Some(?p,?f) =>{ if not p.FileStat::fileexists do
-      if (p.PosixDirectory::mkdir != 0) do
+      if (p.Directory::mkdir != 0) do
         fail("Unable to create database directory " + p);
       done
     done}
