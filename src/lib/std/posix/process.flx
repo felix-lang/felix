@@ -47,6 +47,11 @@ class PosixProcess {
   // because of threads already running. We use fork only
   // to preceed exec() calls.
   type pid_t = "pid_t" requires Posix_headers::unistd_h;
+
+  instance Str[pid_t] {
+    fun str: pid_t -> string = "::flx::rtl::strutil::str<int>($1)" requires package "flx_strutil";
+  }
+
   ctor int: pid_t = "((int)$1)";
   const child_process : pid_t = "0";
   const bad_process : pid_t = "-1";
