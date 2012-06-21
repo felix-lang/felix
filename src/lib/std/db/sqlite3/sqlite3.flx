@@ -1,5 +1,5 @@
 module Sqlite3 {
-  requires package "sqlite3";
+  requires package "flx_sqlite3";
 
   // type of a database handle
   type sqlite3_db_t = "sqlite3*";

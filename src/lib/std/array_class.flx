@@ -111,6 +111,13 @@ class ArrayValue[t,v]
 
 }
 
+class TrueArrayValue [t,x,v] 
+{
+   inherit ArrayValue[t,v];
+   virtual fun render : x -> size;
+   fun true_unsafe_get (a:t, i:x) => unsafe_get (a, render i);
+}
+
 class ArrayObject[t,v]
 {
   inherit ArrayValue[t,v];
@@ -118,6 +125,13 @@ class ArrayObject[t,v]
   proc set[I in ints] (x:t, i:I, a:v) { 
     assert i.size < x.len; unsafe_set (x,i.size,a); 
   } 
+}
+
+class TrueArrayObject[t,x, v]
+{
+  inherit TrueArrayValue[t,x,v];
+  inherit ArrayObject[t,v];
+  proc true_unsafe_set(a:t, i:x, e:v) => unsafe_set (a, render i, e);
 }
 
 class ContiguousArrayObject[t,v]
@@ -130,5 +144,12 @@ class ContiguousArrayObject[t,v]
      assert i.size < pa.len; 
      return pa.stl_begin + i.size; 
   }
+}
+
+class TrueContiguousArrayObject[t,x, v] 
+{
+  inherit TrueArrayObject [t,x,v];
+  inherit ContiguousArrayObject[t,v];
+  fun + (pa:t, i:x) : carray [v] => pa + render i;
 }
 

@@ -3580,10 +3580,11 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
     | BTYP_unitsum _ -> ()
     | BTYP_sum _ -> ()
     | BTYP_variant _ -> ()
+    | BTYP_type_var _ -> ()
     | BTYP_inst (i,_) ->
       begin match hfind "lookup" state.sym_table i with
       | { Flx_sym.symdef=SYMDEF_union _} -> ()
-      | { Flx_sym.id=id} -> clierr sr ("Argument of caseno must be sum or union type, got type " ^ id)
+      | { Flx_sym.id=id} -> clierr sr ("Argument of caseno must be sum or union type, got abstract type " ^ id)
       end
     | _ -> clierr sr ("Argument of caseno must be sum or union type, got " ^ sbt bsym_table t)
     end

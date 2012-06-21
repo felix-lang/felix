@@ -173,7 +173,9 @@ and xexpr_t sr x =
  | Lst [Id "ast_case_index";  sr; e] -> EXPR_case_index (xsr sr, ex e)
  | Lst [Id "ast_letin";  sr; Lst [p; e1; e2]] -> EXPR_letin (xsr sr,(xp p, ex e1, ex e2))
 
+(*
  | Lst [Id "ast_get_n";  sr;  Lst [Int i; e]] -> EXPR_get_n(xsr sr,(ii i, ex e))
+*)
  (* extractor for record components, can't occur in user code
  | Lst [Id "ast_get_named_variable";  Lst [Str s;e]]-> EXPR_get_named_variable (sr, (s, ex e))
  *)

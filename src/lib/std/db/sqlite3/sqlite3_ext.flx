@@ -41,7 +41,7 @@ finish:>
 class Sqlite3Ext {
   open Sqlite3;
   open Varray;	
-  requires package "sqlite3";
+  requires package "flx_sqlite3";
   type sqlite3_stmt_t = "sqlite3_stmt*";
 
   enum sqlite3_result_codes {
