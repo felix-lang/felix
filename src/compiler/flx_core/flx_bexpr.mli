@@ -17,7 +17,7 @@ type bexpr_t = private
   | BEXPR_tuple of t list
   | BEXPR_record of (string * t) list
   | BEXPR_variant of string * t
-  | BEXPR_get_n of int * t (* tuple projection *)
+  | BEXPR_get_n of t * t (* tuple projection, index first then value *)
   | BEXPR_closure of Flx_types.bid_t * Flx_btype.t list
   | BEXPR_case of int * Flx_btype.t
   | BEXPR_match_case of int * t
@@ -87,7 +87,7 @@ val bexpr_record : Flx_btype.t -> (string * t) list -> t
 val bexpr_variant : Flx_btype.t -> string * t -> t
 
 (** Construct a BEXPR_get_n expression. *)
-val bexpr_get_n : Flx_btype.t -> int * t -> t
+val bexpr_get_n : Flx_btype.t -> t * t -> t
 
 (** Construct a BEXPR_closure expression. *)
 val bexpr_closure : Flx_btype.t -> Flx_types.bid_t * Flx_btype.t list -> t
@@ -115,6 +115,12 @@ val bexpr_coerce : t * Flx_btype.t -> t
 
 (** Construct a BEXPR_compose expression *)
 val bexpr_compose : Flx_btype.t -> t * t -> t
+
+(** Construct a case of a unitsum from two integers,
+    bexpr_unitsum_case i j is case i of j.
+    This makes a composite (not primitive) term.
+*)
+val bexpr_unitsum_case : int -> int -> t
 
 (* -------------------------------------------------------------------------- *)
 

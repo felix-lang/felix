@@ -422,6 +422,7 @@ let gen_body syms uses bsym_table id
 
       let ts = map (fun (_,i) -> btyp_type_var (i, btyp_type 0)) vs in
       let n = ref 0 in
+      let k = List.length ps in
       iter
       (fun {pkind=kind; pid=vid; pindex=ix; ptyp=prjt} ->
         let prjt = varmap_subst varmap prjt in
@@ -435,7 +436,7 @@ let gen_body syms uses bsym_table id
                   "[gen_body2] Woops, prj "^si (!n) ^" tuple wrong length? " ^ si (length ts)
                 )
             end
-          | p -> bexpr_get_n prjt (!n,p)
+          | p -> bexpr_get_n prjt (bexpr_unitsum_case (!n) k,p)
         in
         (*
         let prj = Flx_bexpr.reduce bsym_table pj in

@@ -807,7 +807,7 @@ let rec special_inline syms uses bsym_table caller_vs caller hic excludes sr e =
   print_endline (" ... Special inline subexpr: " ^ sbe bsym_table e);
   *)
   match Flx_bexpr.map ~f_bexpr:aux e with
-  | BEXPR_get_n (n,(BEXPR_tuple ls,_)),_ -> nth ls n
+  | BEXPR_get_n ((BEXPR_case (n,_),_),(BEXPR_tuple ls,_)),_ -> nth ls n
 
   | BEXPR_closure (callee,_),_ as x ->
       heavily_inline_bbdcl syms uses bsym_table (callee::excludes) callee;

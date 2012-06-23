@@ -1789,7 +1789,7 @@ and string_of_bound_expression' bsym_table se e =
   let sid n = bound_name_of_bindex bsym_table n in
   match fst e with
 
-  | BEXPR_get_n (n,e') -> "(" ^ se e' ^ ").mem_" ^ si n
+  | BEXPR_get_n (n,e') -> "/*proj*/"^ se n ^ "(" ^ se e' ^ ")"
 
   | BEXPR_not e -> "not("^ se e ^ ")"
   | BEXPR_deref e -> "*("^ se e ^ ")"

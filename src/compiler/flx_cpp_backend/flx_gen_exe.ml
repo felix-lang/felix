@@ -504,6 +504,7 @@ let gen_exe filename
                 (combine xs ps)
 
               | _,tt ->
+                let k = List.length ps in
                 let tt = beta_reduce syms.Flx_mtypes2.counter bsym_table sr (tsubst vs ts tt) in
                 (* NASTY, EVALUATES EXPR MANY TIMES .. *)
                 let n = ref 0 in
@@ -514,7 +515,7 @@ let gen_exe filename
                   print_endline ("tt=" ^ sbt bsym_table tt);
                   *)
                   let t = nth_type tt i in
-                  let a' = bexpr_get_n t (i,a) in
+                  let a' = bexpr_get_n t (bexpr_unitsum_case i k,a) in
                   let x =
                     if Hashtbl.mem syms.instances (j,ts)
                     && not (t = btyp_tuple [])
@@ -526,7 +527,7 @@ let gen_exe filename
                   s ^ (if String.length s > 0 then ", " else "") ^ x
                 )
                 ""
-                (combine (nlist (length ps)) ps)
+                (combine (nlist k) ps)
               end
           in
           let s =

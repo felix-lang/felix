@@ -19,6 +19,8 @@ open Flx_overload
 open Flx_tpat
 open Flx_dot
 
+exception OverloadResolutionError
+
 module L = Flx_literal
 
 let hfind msg h k =
@@ -1779,7 +1781,7 @@ and cal_apply' state bsym_table be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) =
                   Some (List.map begin fun (name,d) ->
                     try
                       match List.assoc name rs with
-                      | j,t -> bexpr_get_n t (j,tbe2)
+                      | j,t -> bexpr_get_n t (bexpr_unitsum_case j n,tbe2)
                     with Not_found ->
                       match d with
                       | Some d ->d
@@ -2117,19 +2119,38 @@ and lookup_qn_with_sig'
   | `AST_typed_case (sr,v,t) ->
     let t = bt sr t in
     begin match unfold t with
-    | BTYP_unitsum k ->
+    | BTYP_unitsum k  ->
       if v<0 or v>= k
       then clierr sra "Case index out of range of sum"
       else
-        let ct = btyp_function (unit_t,t) in
-        bexpr_case ct (v,t)
-
+      begin match signs with 
+      | [argt] ->
+        if argt = btyp_tuple [] then
+          let ct = btyp_function (unit_t,t) in
+          bexpr_case ct (v,t)
+        else
+          clierr sr 
+            ("Unitsum case constructor requires argument of type unit, got " ^
+             sbt bsym_table argt
+            )
+      | _ -> clierr sr "Case requires exactly one argument"
+      end
     | BTYP_sum ls ->
       if v<0 or v >= List.length ls
       then clierr sra "Case index out of range of sum"
       else let vt = List.nth ls v in
-      let ct = btyp_function (vt,t) in
-      bexpr_case ct (v,t)
+      begin match signs with
+      | [argt] -> 
+        if vt = argt then
+          let ct = btyp_function (vt,t) in
+          bexpr_case ct (v,t)
+        else
+          clierr sr 
+            ("Sum case constructor requires argument of type " ^
+             sbt bsym_table vt ^ ", got " ^ sbt bsym_table argt
+            )
+      | _ -> clierr sr "Case requires exactly one argument"
+      end
 
     | _ ->
       clierr sr
@@ -3237,135 +3258,6 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
     let (x,t) as v' = be v in
     bexpr_range_check t (be mi, v', be mx)
 
-  | EXPR_apply (sr,(EXPR_name (_,"_tuple_flatten",[]),e)) ->
-    let result = ref [] in
-    let stack = ref [] in
-    let push () = stack := 0 :: !stack in
-    let pop () = stack := List.tl (!stack) in
-    let inc () =
-      match !stack with
-      | [] -> ()
-      | _ -> stack := List.hd (!stack) + 1 :: List.tl (!stack)
-    in
-    let rec term stack = match stack with
-      | [] -> e
-      | _ -> EXPR_get_n (sr, (List.hd stack, term (List.tl stack)))
-    in
-    let _,t = be e in
-    let rec aux t = match t with
-    | BTYP_tuple ls ->
-      push (); List.iter aux ls; pop(); inc ()
-
-    | BTYP_array (t,BTYP_unitsum n) when n < 20 ->
-      push(); for i = 0 to n-1 do aux t done; pop(); inc();
-
-    | _ ->
-      result := term (!stack) :: !result;
-      inc ()
-    in
-    aux t;
-    let e = EXPR_tuple (sr,List.rev (!result)) in
-    be e
-
-  | EXPR_apply (sr,(EXPR_name (_,"_tuple_trans",[]),e)) ->
-    let tr nrows ncolumns =
-      let e' = ref [] in
-      for i = nrows - 1 downto 0 do
-        let x = ref [] in
-        for j = ncolumns - 1 downto 0 do
-          let v = EXPR_get_n (sr,(i,EXPR_get_n (sr,(j,e)))) in
-          x := v :: !x;
-        done;
-        e' := EXPR_tuple (sr,!x) :: (!e');
-      done
-      ;
-      be (EXPR_tuple (sr,!e'))
-    in
-    let calnrows t =
-      let nrows =
-        match t with
-        | BTYP_tuple ls -> List.length ls
-        | BTYP_array (_,BTYP_unitsum n) -> n
-        | _ -> clierrn [sr] "Tuple transpose requires entry to be tuple"
-      in
-      if nrows < 2 then
-        clierr sr "Tuple transpose requires tuple argument with 2 or more elements"
-      ;
-      nrows
-    in
-    let colchk nrows t =
-      match t with
-      | BTYP_tuple ls ->
-        if List.length ls != nrows then
-          clierr sr ("Tuple transpose requires entry to be tuple of length " ^ si nrows)
-
-      | BTYP_array (_,BTYP_unitsum n) ->
-        if n != nrows then
-          clierr sr ("Tuple transpose requires entry to be tuple of length " ^ si nrows)
-
-      | _ -> clierr sr "Tuple transpose requires entry to be tuple"
-    in
-    let _,t = be e in
-    let ncolumns, nrows =
-      match t with
-      | BTYP_tuple ls ->
-        let ncolumns  = List.length ls in
-        let nrows = calnrows (List.hd ls) in
-        List.iter (colchk nrows) ls;
-        ncolumns, nrows
-
-      | BTYP_array (t,BTYP_unitsum ncolumns) ->
-        let nrows = calnrows t in
-        ncolumns, nrows
-
-      | _ -> clierr sr "Tuple transpose requires tuple argument"
-    in
-      if nrows > 20 then
-        clierr sr ("tuple fold: row bound " ^ si nrows ^ ">20, to large")
-      ;
-      if ncolumns> 20 then
-        clierr sr ("tuple fold: column bound " ^ si ncolumns^ ">20, to large")
-      ;
-      tr nrows ncolumns
-
-  | EXPR_apply
-    (
-      sr,
-      (
-        EXPR_apply
-        (
-          _,
-          (
-            EXPR_apply ( _, ( EXPR_name(_,"_tuple_fold",[]), f)),
-            i
-          )
-        ),
-        c
-      )
-    ) ->
-
-
-    let _,t = be c in
-    let calfold n =
-      let rec aux m result =
-        if m = 0 then result else
-        let  k = n-m in
-        let arg = EXPR_get_n (sr,(k,c)) in
-        let arg = EXPR_tuple (sr,[result; arg]) in
-        aux (m-1) (EXPR_apply(sr,(f,arg)))
-      in be (aux n i)
-    in
-    begin match t with
-    | BTYP_tuple ts  -> calfold (List.length ts)
-    | BTYP_array (_,BTYP_unitsum n) ->
-       if  n<20 then calfold n
-       else
-         clierr sr ("Tuple fold array length " ^ si n ^ " too big, limit 20")
-
-    | _ -> clierr sr "Tuple fold requires tuple argument"
-    end
-
-
   | EXPR_callback (sr,qn) ->
     let es,ts = lookup_qn_in_env2' state bsym_table env rs qn in
     begin match es with
@@ -3447,6 +3339,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
       end
 
     | BTYP_record (n',ls'),BTYP_record (n'',ls'') when n' = n''->
+      let n = List.length ls' in
       begin
       try
       bexpr_record t''
@@ -3457,7 +3350,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
           | Some j ->
             let tt = List.assoc s ls' in
             if type_eq state.counter t tt then
-              s,(bexpr_get_n t (j,x'))
+              s,(bexpr_get_n t (bexpr_unitsum_case j n,x'))
             else clierr sr (
               "Source Record field '" ^ s ^ "' has type:\n" ^
               sbt bsym_table tt ^ "\n" ^
@@ -3519,7 +3412,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
 
   | EXPR_get_n (sr,(n,e')) ->
     let expr,typ = be e' in
-    let ctyp = match unfold typ with
+    let ctyp,k = match unfold typ with
     | BTYP_array (t,BTYP_unitsum len)  ->
       if n<0 or n>len-1
       then clierr sr
@@ -3529,7 +3422,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
           " out of range 0.." ^
           string_of_int (len-1)
         )
-      else t
+      else t,len
 
     | BTYP_tuple ts
       ->
@@ -3542,7 +3435,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
           " out of range 0.." ^
           string_of_int (len-1)
         )
-      else List.nth ts n
+      else List.nth ts n,len
     | _ ->
       clierr sr
       (
@@ -3552,18 +3445,19 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
         sbt bsym_table typ
       )
     in
-      bexpr_get_n ctyp (n, (expr,typ))
+      bexpr_get_n ctyp (bexpr_unitsum_case n k, (expr,typ))
 
   | EXPR_get_named_variable (sr,(name,e')) ->
     let e'',t'' as x2 = be e' in
     begin match t'' with
     | BTYP_record ("",es)
       ->
+      let k = List.length es in
       let rcmp (s1,_) (s2,_) = compare s1 s2 in
       let es = List.sort rcmp es in
       let field_name = name in
       begin match list_index (List.map fst es) field_name with
-      | Some n -> bexpr_get_n (List.assoc field_name es) (n,x2)
+      | Some n -> bexpr_get_n (List.assoc field_name es) (bexpr_unitsum_case n k,x2)
       | None -> clierr sr
          (
            "Field " ^ field_name ^
@@ -3664,6 +3558,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
       *)
       (* should be a client error not an assertion *)
       if List.length spec_vs <> List.length ts then begin
+        (*
         print_endline ("bind_expression'; Expr_name: NonFunctionEntry: BINDING NAME " ^ name);
         begin match hfind "lookup" state.sym_table index with
           | { Flx_sym.id=id;vs=vs;symdef=SYMDEF_typevar _} ->
@@ -3679,6 +3574,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
           catmap "," (fun (s,j) -> s ^ "<" ^ string_of_bid j ^ ">") spec_vs);
         print_endline ("spec_ts=" ^ catmap "," (sbt bsym_table) sub_ts);
         print_endline ("input_ts=" ^ catmap "," (sbt bsym_table) ts);
+        *)
         clierr sr "[lookup,AST_name] ts/vs mismatch"
       end;
 
@@ -3728,6 +3624,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
     ->
       (* should be a client error not an assertion *)
       if List.length spec_vs <> List.length ts then begin
+        (*
         print_endline ("bind_expression'; Expr_name: FunctionEntry: BINDING NAME " ^ name);
         begin match hfind "lookup" state.sym_table index with
           | { Flx_sym.id=id;vs=vs;symdef=SYMDEF_typevar _} ->
@@ -3741,6 +3638,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
           catmap "," (fun (s,j) -> s ^ "<" ^ string_of_bid j ^ ">") spec_vs);
         print_endline ("spec_ts=" ^ catmap "," (sbt bsym_table) sub_ts);
         print_endline ("input_ts=" ^ catmap "," (sbt bsym_table) ts);
+        *)
         clierr sr "[lookup,AST_name] ts/vs mismatch"
       end;
 
@@ -4053,6 +3951,28 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
     (*
     print_endline ("Recursive descent into application " ^ string_of_expr e);
     *)
+    begin try
+      let (bf,tf) as f = 
+        try be f' 
+        with _ -> 
+          (*
+          print_endline "Cannot bind as value, trying as function";
+          *)
+          raise OverloadResolutionError 
+      in
+      match tf, ta with
+      (* Check for array projection *)
+      | ixt1, BTYP_array (t,ixt2) when ixt1 = ixt2 -> (* SHOULD USE UNIFICATION *) 
+        print_endline "Array projection"; 
+        print_endline ("Array type " ^ sbt bsym_table ta);
+        print_endline ("Index type " ^ sbt bsym_table tf);
+        bexpr_get_n t (f,a)
+      | _ -> 
+       (*
+       print_endline "Bound value wrong type";
+       *)
+       raise OverloadResolutionError
+    with OverloadResolutionError ->
     let (bf,tf) as f =
       match qualified_name_of_expr f' with
       | Some name ->
@@ -4060,20 +3980,27 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
         let srn = src_of_qualified_name name in
         begin try
           let r = lookup_qn_with_sig' state bsym_table sr srn env rs name (ta::sigs) in
+(*
+print_endline "Lookup qn with sig succeeded";
+*)
           r
         with Not_found -> failwith "Lookup_qn_with_sig' threw Not_found"
         end
       | None ->
           begin try 
-          bind_expression' state bsym_table env rs f' (a :: args)
+          let r = bind_expression' state bsym_table env rs f' (a :: args) in
+(*
+print_endline "bind expression' succeeded";
+*)
+          r
           with Not_found -> failwith "bind_expression' XXX threw Not_found"
           end
     in
-    (*
+(*
     print_endline ("tf=" ^ sbt bsym_table tf);
     print_endline ("ta=" ^ sbt bsym_table ta);
-    *)
-    begin match tf with
+*)
+    match tf with
     | BTYP_cfunction _ -> cal_apply state bsym_table sr rs f a
     | BTYP_function _ ->
       let r = cal_apply state bsym_table sr rs f a in
@@ -4126,7 +4053,7 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
           let ct = bind_type' state bsym_table env' rsground sr ct bvs mkenv in
           let ct = tsubst vs' ts' ct in
             if type_eq state.counter ct t then
-              bexpr_get_n t (j,a)
+              bexpr_get_n t (bexpr_unitsum_case j na,a)
             else clierr sr ("Component " ^ name ^
               " struct component type " ^ sbt bsym_table ct ^
               "\ndoesn't match record type " ^ sbt bsym_table t
@@ -4245,8 +4172,9 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
             values := !values @ flds; 
             types := !types @ ts
           | e,BTYP_tuple ts -> 
+            let k = List.length ts in
             let n = ref (-1) in
-            values := !values @ List.map (fun w -> incr n; bexpr_get_n w (!n,xpr)) ts; 
+            values := !values @ List.map (fun w -> incr n; bexpr_get_n w (bexpr_unitsum_case (!n) k,xpr)) ts; 
             types := !types @ ts
           | BEXPR_tuple flds, BTYP_array (t, BTYP_unitsum n) ->
             values := !values @ flds; 
@@ -4255,7 +4183,7 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
             if n > 20 then clierr sr "Array too big (>20) for tuple extension"
             else (
               let k = ref (-1) in
-              values := !values @ List.map (fun w -> incr k; bexpr_get_n w (!k,xpr)) (ntimes t n); 
+              values := !values @ List.map (fun w -> incr k; bexpr_get_n w (bexpr_unitsum_case (!k) n,xpr)) (ntimes t n); 
               types := !types @ ntimes t n;
             )
           | _ -> 

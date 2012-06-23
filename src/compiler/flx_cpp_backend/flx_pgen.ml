@@ -170,8 +170,9 @@ let gen_prim_call
   (* the argument isnt a tuple, but the type is *)
   | (_,BTYP_tuple typs) as x ->
     let typs = map rt typs in
+    let k = List.length typs in
     let es = Flx_list.mapi
-      (fun i t -> bexpr_get_n t (i,x))
+      (fun i t -> bexpr_get_n t (bexpr_unitsum_case i k,x))
       typs
     in
     let ess = map (ge sr) es in
@@ -193,7 +194,7 @@ let gen_prim_call
   | (_,(BTYP_array(t,BTYP_unitsum n) as ta)) as x ->
     let t = rt t in
     let typs = map (fun _ -> rt t) (nlist n) in
-    let es = Flx_list.range (fun i -> bexpr_get_n t (i,x)) n in
+    let es = Flx_list.range (fun i -> bexpr_get_n t (bexpr_unitsum_case i n,x)) n in
     let ess = map (ge sr) es in
     let ets = map tn typs in
     csubst sr sr2 ct 

@@ -125,8 +125,71 @@ let isid x =
     done;
     true
   with _ -> false
-;;
-let rec gen_expr'
+
+let rec handle_get_n bsym_table rt ge' e t n ((e',t') as e2) =
+    match rt t' with
+    | BTYP_tuple _  -> ce_dot (ge' e2) ("mem_" ^ si n)
+    | BTYP_array (_,BTYP_unitsum _) ->
+      begin match e2 with
+      | BEXPR_tuple _,_ -> print_endline "Failed to slice a tuple!"
+      | _ -> ()
+      end;
+      ce_dot (ge' e2) ("data["^si n^"]")
+    | BTYP_record (name,es) ->
+      let field_name,_ =
+        try nth es n
+        with Not_found ->
+          failwith "[flx_egen] Woops, index of non-existent struct field"
+      in
+      ce_dot (ge' e2) field_name
+
+    | BTYP_inst (i,_) ->
+      begin match Flx_bsym_table.find_bbdcl bsym_table i with
+      | BBDCL_cstruct (_,ls,_)
+      | BBDCL_struct (_,ls) ->
+        let name,_ =
+          try nth ls n
+          with _ ->
+            failwith "Woops, index of non-existent struct field"
+        in
+        ce_dot (ge' e2) name
+
+      | _ -> failwith ("[flx_egen] Expr "^sbe bsym_table (e,t)^ " type " ^ sbt bsym_table t ^
+        " object " ^ sbe bsym_table e2 ^ " type " ^ sbt bsym_table t' ^ 
+        " Instance of " ^string_of_int i^ " expected to be (c)struct")
+      end
+
+    | BTYP_pointer (BTYP_record (name,es)) ->
+      let field_name,_ =
+        try nth es n
+        with Not_found ->
+          failwith "[flx_egen] Woops, index of non-existent struct field"
+      in
+      ce_prefix "&" (ce_arrow (ge' e2) field_name)
+
+    | BTYP_pointer (BTYP_inst (i,_)) ->
+      begin match Flx_bsym_table.find_bbdcl bsym_table i with
+      | BBDCL_cstruct (_,ls,_)
+      | BBDCL_struct (_,ls) ->
+        let name,_ =
+          try nth ls n
+          with _ ->
+            failwith "Woops, index of non-existent struct field"
+        in
+        ce_prefix "&" (ce_arrow (ge' e2) name)
+
+      | _ -> failwith "[flx_egen] Instance expected to be (c)struct"
+      end
+
+    | BTYP_pointer (BTYP_array _) ->
+      ce_prefix "&" (ce_arrow (ge' e2) ("data["^si n^"]"))
+
+    | BTYP_pointer (BTYP_tuple _) ->
+      ce_prefix "&" (ce_arrow (ge' e2) ("mem_" ^ si n))
+
+    | _ -> assert false (* ce_dot (ge' e) ("mem_" ^ si n) *)
+
+and gen_expr'
   syms
   bsym_table
   this
@@ -190,6 +253,7 @@ let rec gen_expr'
       xs ps
 
     | _,tt ->
+      let k = List.length ps in
       let tt = beta_reduce syms.Flx_mtypes2.counter bsym_table sr  (tsubst vs ts tt) in
       (* NASTY, EVALUATES EXPR MANY TIMES .. *)
       let n = ref 0 in
@@ -200,14 +264,14 @@ let rec gen_expr'
         print_endline ("tt=" ^ sbt bsym_table tt);
         *)
         let t = nth_type tt i in
-        let a' = bexpr_get_n t (i,a) in
+        let a' = bexpr_get_n t (bexpr_unitsum_case i k,a) in
         let x = ge_arg a' in
         incr n;
         if String.length x = 0 then s else
         s ^ (if String.length s > 0 then ", " else "") ^ x
       )
       ""
-      (nlist (length ps))
+      (nlist k)
   in
   let our_display = get_display_list bsym_table this in
   let our_level = length our_display in
@@ -240,69 +304,16 @@ let rec gen_expr'
      in
      ce_call (ce_atom "flx::rtl::range_check") args
 
-  | BEXPR_get_n (n,(e',t' as e2)) ->
-    begin match rt t' with
-    | BTYP_tuple _  -> ce_dot (ge' e2) ("mem_" ^ si n)
-    | BTYP_array (_,BTYP_unitsum _) ->
-      begin match e2 with
-      | BEXPR_tuple _,_ -> print_endline "Failed to slice a tuple!"
-      | _ -> ()
-      end;
-      ce_dot (ge' e2) ("data["^si n^"]")
-    | BTYP_record (name,es) ->
-      let field_name,_ =
-        try nth es n
-        with Not_found ->
-          failwith "[flx_egen] Woops, index of non-existent struct field"
-      in
-      ce_dot (ge' e2) field_name
+  | BEXPR_get_n ((BEXPR_case (n,_),_),(e',t' as e2)) ->
+    handle_get_n bsym_table rt ge' e t n e2 
 
-    | BTYP_inst (i,_) ->
-      begin match Flx_bsym_table.find_bbdcl bsym_table i with
-      | BBDCL_cstruct (_,ls,_)
-      | BBDCL_struct (_,ls) ->
-        let name,_ =
-          try nth ls n
-          with _ ->
-            failwith "Woops, index of non-existent struct field"
-        in
-        ce_dot (ge' e2) name
-
-      | _ -> failwith ("[flx_egen] Expr "^sbe bsym_table (e,t)^ " type " ^ sbt bsym_table t ^
-        " object " ^ sbe bsym_table e2 ^ " type " ^ sbt bsym_table t' ^ 
-        " Instance of " ^string_of_int i^ " expected to be (c)struct")
-      end
-
-    | BTYP_pointer (BTYP_record (name,es)) ->
-      let field_name,_ =
-        try nth es n
-        with Not_found ->
-          failwith "[flx_egen] Woops, index of non-existent struct field"
-      in
-      ce_prefix "&" (ce_arrow (ge' e2) field_name)
-
-    | BTYP_pointer (BTYP_inst (i,_)) ->
-      begin match Flx_bsym_table.find_bbdcl bsym_table i with
-      | BBDCL_cstruct (_,ls,_)
-      | BBDCL_struct (_,ls) ->
-        let name,_ =
-          try nth ls n
-          with _ ->
-            failwith "Woops, index of non-existent struct field"
-        in
-        ce_prefix "&" (ce_arrow (ge' e2) name)
-
-      | _ -> failwith "[flx_egen] Instance expected to be (c)struct"
-      end
-
-    | BTYP_pointer (BTYP_array _) ->
-      ce_prefix "&" (ce_arrow (ge' e2) ("data["^si n^"]"))
-
-    | BTYP_pointer (BTYP_tuple _) ->
-      ce_prefix "&" (ce_arrow (ge' e2) ("mem_" ^ si n))
-
-    | _ -> assert false (* ce_dot (ge' e) ("mem_" ^ si n) *)
-    end
+  | BEXPR_get_n ( (_,BTYP_unitsum k1) as idx,(e',(BTYP_array (_,BTYP_unitsum k2)) as e2)) ->
+    print_endline "Detected array indexed by unitsum";
+    assert (k1 = k2);
+    let n = Flx_vgen.gen_get_case_index ge' bsym_table idx in
+    ce_array (ce_dot (ge' e2) "data") n 
+ 
+  | BEXPR_get_n (n,(e',t' as e2)) -> failwith "flx_egen: can't handle generalised get_n yet"
 
   | BEXPR_match_case (n,((e',t') as e)) ->
     let t' = beta_reduce syms.Flx_mtypes2.counter bsym_table sr t' in

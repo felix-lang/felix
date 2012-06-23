@@ -118,6 +118,17 @@ let handle_field_name state bsym_table build_env env rs be bt koenig_lookup cal_
     let vs' = List.map (fun (s,i,tp) -> s,i) vs in
     let ct = tsubst vs' ts' ct in
     let ct = if isptr then btyp_pointer ct else ct in
+    (* messy .. we generalised get_n to accept any type instead
+       of an integer selector. to replace integer n,
+       we have to use case n of m where m is the number of
+       cases: n is an int, whereas m is unitsum m' where m'
+       is the number of cases.
+
+       Note: bexpr_case is bugged! It can only be used
+       for const constructors, the type of the case of T
+       is always T. 
+    *)
+    let cidx = bexpr_unitsum_case cidx (List.length ls) in
     bexpr_get_n ct (cidx,te)
   | _ ->  raise Not_field
 
@@ -154,11 +165,17 @@ let handle_dot state bsym_table build_env env rs be bt koenig_lookup cal_apply b
 
 
     | BTYP_pointer (BTYP_record ("",es) ) ->
+      let k = List.length es in
       let rcmp (s1,_) (s2,_) = compare s1 s2 in
       let es = List.sort rcmp es in
       let field_name = name in
       begin match list_index (List.map fst es) field_name with
-      | Some n -> bexpr_get_n (btyp_pointer (List.assoc field_name es)) (n,te)
+      | Some n -> 
+        bexpr_get_n 
+        (
+          btyp_pointer (List.assoc field_name es)
+        )
+        (bexpr_unitsum_case n k, te)
       | None ->
       try be (EXPR_apply (sr,(e2,e)))
       with exn ->
@@ -193,11 +210,12 @@ let handle_dot state bsym_table build_env env rs be bt koenig_lookup cal_apply b
 
     (* LHS HAS A RECORD TYPE *)
     | BTYP_record ("",es) ->
+      let k = List.length es in
       let rcmp (s1,_) (s2,_) = compare s1 s2 in
       let es = List.sort rcmp es in
       let field_name = name in
       begin match list_index (List.map fst es) field_name with
-      | Some n -> bexpr_get_n (List.assoc field_name es) (n,te)
+      | Some n -> bexpr_get_n (List.assoc field_name es) (bexpr_unitsum_case n k,te)
       | None ->
         try be (EXPR_apply (sr,(e2,e)))
         with exn ->
@@ -279,7 +297,7 @@ let handle_dot state bsym_table build_env env rs be bt koenig_lookup cal_apply b
         " for type " ^ sbt bsym_table ttt
         )
       else
-       bexpr_get_n (List.nth ls n) (n,te)
+       bexpr_get_n (List.nth ls n) (bexpr_unitsum_case n m,te)
  
     | BTYP_array (t,BTYP_unitsum m) ->
       if n < 0 || n >= m then
@@ -288,7 +306,7 @@ let handle_dot state bsym_table build_env env rs be bt koenig_lookup cal_apply b
         " for type " ^ sbt bsym_table ttt
         )
       else
-       bexpr_get_n t (n,te)
+       bexpr_get_n t (bexpr_unitsum_case n m,te)
   
     | BTYP_pointer (BTYP_tuple ls) ->
       let m = List.length ls in
@@ -298,7 +316,7 @@ let handle_dot state bsym_table build_env env rs be bt koenig_lookup cal_apply b
         " for type " ^ sbt bsym_table ttt
         )
       else
-       bexpr_get_n (btyp_pointer (List.nth ls n)) (n,te)
+       bexpr_get_n (btyp_pointer (List.nth ls n)) (bexpr_unitsum_case n m,te)
  
     | BTYP_pointer (BTYP_array (t,BTYP_unitsum m)) -> 
       if n < 0 || n >= m then
@@ -307,7 +325,7 @@ let handle_dot state bsym_table build_env env rs be bt koenig_lookup cal_apply b
         " for type " ^ sbt bsym_table ttt
         )
       else
-       bexpr_get_n (btyp_pointer t) (n,te)
+       bexpr_get_n (btyp_pointer t) (bexpr_unitsum_case n m,te)
  
     | _ -> 
       begin try be (EXPR_apply (sr,(e2,e)))

@@ -17,7 +17,7 @@ type bexpr_t =
   | BEXPR_tuple of t list
   | BEXPR_record of (string * t) list
   | BEXPR_variant of string * t
-  | BEXPR_get_n of int * t (* tuple projection *)
+  | BEXPR_get_n of t * t (* tuple projection, index first then value *)
   | BEXPR_closure of Flx_types.bid_t * Flx_btype.t list
   | BEXPR_case of int * Flx_btype.t
   | BEXPR_match_case of int * t
@@ -87,6 +87,10 @@ let bexpr_range_check t (e1, e2, e3) = BEXPR_range_check (e1, e2, e3), t
 let bexpr_coerce (e, t) = BEXPR_coerce (e, t), t
 
 let bexpr_compose t (e1, e2) = BEXPR_compose (e1, e2), t
+
+let bexpr_unitsum_case i j =
+  let case_type = Flx_btype.btyp_unitsum j in
+  bexpr_case case_type (i, case_type)
 
 (* -------------------------------------------------------------------------- *)
 
@@ -160,10 +164,11 @@ let rec cmp ((a,_) as xa) ((b,_) as xb) =
      List.fold_left2 (fun r a b -> r && cmp a b) true ls ls'
 
   | BEXPR_case_arg (i,e),BEXPR_case_arg (i',e')
-
-  | BEXPR_match_case (i,e),BEXPR_match_case (i',e')
-  | BEXPR_get_n (i,e),BEXPR_get_n (i',e') ->
+  | BEXPR_match_case (i,e),BEXPR_match_case (i',e') ->
     i = i' && cmp e e'
+
+  | BEXPR_get_n (i,e),BEXPR_get_n (i',e') ->
+    cmp i i' && cmp e e'
 
   | BEXPR_case_index e,BEXPR_case_index e' -> cmp e e'
 
@@ -219,7 +224,7 @@ let flat_iter
   | BEXPR_tuple es -> List.iter f_bexpr es
   | BEXPR_record es -> List.iter (fun (s,e) -> f_bexpr e) es
   | BEXPR_variant (s,e) -> f_bexpr e
-  | BEXPR_get_n (i,e) -> f_bexpr e
+  | BEXPR_get_n (i,e) -> f_bexpr i; f_bexpr e
   | BEXPR_closure (i,ts) ->
       f_bid i;
       List.iter f_btype ts
@@ -283,7 +288,7 @@ let map
   | BEXPR_record es,t ->
       BEXPR_record (List.map (fun (s,e) -> s, f_bexpr e) es),f_btype t
   | BEXPR_variant (s,e),t -> BEXPR_variant (s, f_bexpr e),f_btype t
-  | BEXPR_get_n (i,e),t -> BEXPR_get_n (i, f_bexpr e),f_btype t
+  | BEXPR_get_n (i,e),t -> BEXPR_get_n (f_bexpr i, f_bexpr e),f_btype t
   | BEXPR_closure (i,ts),t ->
       BEXPR_closure (f_bid i, List.map f_btype ts),f_btype t
   | BEXPR_name (i,ts),t -> BEXPR_name (f_bid i, List.map f_btype ts), f_btype t
@@ -308,7 +313,7 @@ let rec reduce e =
         BEXPR_apply_direct (i,ts,a),t
     *)
     | BEXPR_not (BEXPR_not (e,t1),t2),t3 when t1 = t2 && t2 = t3 -> e,t1 (* had better be bool! *)
-    | BEXPR_get_n (n,((BEXPR_tuple ls),_)),_ -> List.nth ls n
+    | BEXPR_get_n ((BEXPR_case (n, _),_),((BEXPR_tuple ls),_)),_ -> List.nth ls n
     | BEXPR_deref (BEXPR_ref (i,ts),_),t -> BEXPR_name (i,ts),t
     | BEXPR_deref (BEXPR_address (e,t),_),_ -> (e,t)
     | BEXPR_address (BEXPR_deref (e,t),_),_ -> (e,t)
