@@ -312,6 +312,19 @@ and gen_expr'
     assert (k1 = k2);
     let n = Flx_vgen.gen_get_case_index ge' bsym_table idx in
     ce_array (ce_dot (ge' e2) "data") n 
+
+
+  | BEXPR_get_n ( (_,BTYP_tuple [BTYP_unitsum j1;BTYP_unitsum k1]) as idx,
+    (e',(BTYP_array (_,BTYP_tuple [BTYP_unitsum j2; BTYP_unitsum k2])) as e2)) ->
+    print_endline "Detected array indexed by unitsum * unitsum";
+    assert (j1 = j2);
+    assert (k1 = k2);
+    let n = Flx_vgen.gen_get_case_index ge' bsym_table idx in
+    let n1 = ce_dot n "mem_0" in
+    let n2 = ce_dot n  "mem_1" in
+    let lidx = ce_infix"+" (ce_infix "*" n1 (ce_atom (string_of_int k1)))  n2 in
+    ce_array (ce_dot (ge' e2) "data") lidx
+ 
  
   | BEXPR_get_n (n,(e',t' as e2)) -> failwith "flx_egen: can't handle generalised get_n yet"
 

@@ -209,6 +209,8 @@ let rec int_of_unitsum t = match t with
   | BTYP_sum [] ->  0
   | BTYP_sum ts ->
     List.fold_left (fun i t -> i + int_of_unitsum t) 0 ts
+  | BTYP_tuple ts ->
+    List.fold_left (fun i t -> i * int_of_unitsum t) 1 ts
 
   | _ -> raise (Invalid_int_of_unitsum)
 

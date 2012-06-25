@@ -341,6 +341,7 @@ nextc:>
     {
       if char "\n" != ch do cp; goto nextc;
       else
+        b = strip b;
         if b == "felix" do s = felix;
         elif prefix (b,"felix ") do 
           {

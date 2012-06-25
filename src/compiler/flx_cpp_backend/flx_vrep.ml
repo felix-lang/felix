@@ -2,7 +2,7 @@ open Flx_btype
 open Flx_bbdcl
 
 (* Count number of cases in variant *)
-let cal_variant_cases bsym_table t =
+let rec cal_variant_cases bsym_table t =
   match t with
   | BTYP_void -> 0
   | BTYP_sum ls -> List.length ls
@@ -25,6 +25,9 @@ let cal_variant_cases bsym_table t =
           Flx_print.string_of_bbdcl bsym_table x i 
         )
     end
+  | BTYP_tuple ls ->
+    List.fold_left (fun acc t -> acc * cal_variant_cases bsym_table t) 1 ls
+
   | _ -> assert false 
 
 (* size of data type in machine words, 2 means 2 or more *)
@@ -39,7 +42,7 @@ let size t = match t with
     -> 1
   | _ -> 2
 
-let cal_variant_maxarg bsym_table t =
+let rec cal_variant_maxarg bsym_table t =
   match t with
   | BTYP_void -> -1 (* special for void *)
   | BTYP_sum ls -> List.fold_left (fun r t -> max r (size t)) 0 ls
@@ -59,6 +62,10 @@ let cal_variant_maxarg bsym_table t =
       List.fold_left (fun r (_,_,t) -> max r (size t)) 0  cts
     | _ -> assert false 
     end
+  | BTYP_tuple ls ->
+    (* not really sure about this ... *)
+    List.fold_left (fun r t -> r + cal_variant_maxarg bsym_table t) 0 ls
+
   | _ -> assert false 
 
 let isnullptr bsym_table t = match t with
