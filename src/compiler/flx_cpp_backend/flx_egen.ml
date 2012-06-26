@@ -126,6 +126,59 @@ let isid x =
     true
   with _ -> false
 
+let rec size t = match t with
+  | BTYP_unitsum n -> n
+  | BTYP_tuple ls ->
+    fold_left (fun acc elt -> acc * size elt) 1 ls
+  | BTYP_sum ls ->
+    fold_left (fun acc elt -> acc + size elt) 0 ls
+  | BTYP_void -> 0
+  | _ -> assert false
+
+(* Note that this computation must be driven by the array index type not
+  the type of the index.
+*)
+let expr e = match e with
+  | BEXPR_case (i,_),_ -> `Int i
+  | _ -> `Expr e
+
+let mul a b = match a,b with
+  | `Int x, `Int y -> `Int (x * y)
+  | `Int 0, _ 
+  | _, `Int 0 -> `Int 0
+  | `Int 1, x 
+  | x, `Int 1 -> x
+  | _ -> `Mul (a,b)
+
+let add a b = match a,b with
+  | `Int x, `Int y -> `Int (x + y)
+  | `Int 0, x
+  | x, `Int 0 -> x
+  | _ -> `Add (a,b)
+
+let rec cal_symbolic_array_index idx t = 
+  let cax x t = cal_symbolic_array_index x t in
+  match idx,t with
+  | e, BTYP_unitsum _ -> expr e
+  | (BEXPR_tuple es,_), BTYP_tuple ts  -> 
+    fold_left (fun acc (elt,t) -> add (mul acc  (`Int (size t))) (cax elt t)) (`Int 0)(combine es ts)
+  | _ -> assert false
+
+let rec print_index bsym_table idx = match idx with
+  | `Int n -> string_of_int n
+  | `Mul (a,b) -> "(" ^ print_index bsym_table a ^ ")*(" ^ print_index bsym_table b ^")"
+  | `Add (a,b) -> "(" ^ print_index bsym_table a ^ ")+(" ^ print_index bsym_table b ^")"
+  | `Expr e -> "Expr (" ^ sbe bsym_table e  ^ ")"
+
+let rec render_index bsym_table ge' idx = 
+  let ri x = render_index bsym_table ge' x in
+  match idx with
+  | `Int n -> ce_atom (string_of_int n)
+  | `Mul (a,b) -> ce_infix "*" (ri a) (ri b)
+  | `Add (a,b) -> ce_infix "+" (ri a) (ri b)
+  | `Expr e -> ge' e
+
+
 let rec handle_get_n bsym_table rt ge' e t n ((e',t') as e2) =
     match rt t' with
     | BTYP_tuple _  -> ce_dot (ge' e2) ("mem_" ^ si n)
@@ -304,29 +357,53 @@ and gen_expr'
      in
      ce_call (ce_atom "flx::rtl::range_check") args
 
+  (* this handles constant tuple indexing .. including array indexing
+     by a sole constant
+  *)
   | BEXPR_get_n ((BEXPR_case (n,_),_),(e',t' as e2)) ->
     handle_get_n bsym_table rt ge' e t n e2 
 
-  | BEXPR_get_n ( (_,BTYP_unitsum k1) as idx,(e',(BTYP_array (_,BTYP_unitsum k2)) as e2)) ->
+(*
+  | BEXPR_get_n ( 
+      (_,BTYP_unitsum k1) as idx,
+      ((e',(BTYP_array (_,  ((BTYP_unitsum k2) as idxt)))) as e2)
+    ) ->
     print_endline "Detected array indexed by unitsum";
     assert (k1 = k2);
+    let sidx = cal_symbolic_array_index idx idxt in
+print_endline ("Symbolic index = " ^ print_index bsym_table sidx );
+    let cidx = render_index bsym_table ge' sidx in
+print_endline ("C index = " ^ string_of_cexpr cidx);
+
     let n = Flx_vgen.gen_get_case_index ge' bsym_table idx in
     ce_array (ce_dot (ge' e2) "data") n 
-
+*)
+(*
 
   | BEXPR_get_n ( (_,BTYP_tuple [BTYP_unitsum j1;BTYP_unitsum k1]) as idx,
-    (e',(BTYP_array (_,BTYP_tuple [BTYP_unitsum j2; BTYP_unitsum k2])) as e2)) ->
+    (e',(BTYP_array (_,(BTYP_tuple [BTYP_unitsum j2; BTYP_unitsum k2] as idxt))) as e2)) ->
     print_endline "Detected array indexed by unitsum * unitsum";
     assert (j1 = j2);
     assert (k1 = k2);
+    let sidx = cal_symbolic_array_index idx idxt in
+print_endline ("Symbolic index = " ^ print_index bsym_table sidx );
+    let cidx = render_index bsym_table ge' sidx in
+print_endline ("C index = " ^ string_of_cexpr cidx);
     let n = Flx_vgen.gen_get_case_index ge' bsym_table idx in
     let n1 = ce_dot n "mem_0" in
     let n2 = ce_dot n  "mem_1" in
     let lidx = ce_infix"+" (ce_infix "*" n1 (ce_atom (string_of_int k1)))  n2 in
     ce_array (ce_dot (ge' e2) "data") lidx
- 
- 
-  | BEXPR_get_n (n,(e',t' as e2)) -> failwith "flx_egen: can't handle generalised get_n yet"
+*)
+   | BEXPR_get_n ((_,idxt) as idx, (_,BTYP_array (_,aixt) as a)) ->
+    assert (idxt = aixt); 
+    let sidx = cal_symbolic_array_index idx idxt in
+print_endline ("Symbolic index = " ^ print_index bsym_table sidx );
+    let cidx = render_index bsym_table ge' sidx in
+print_endline ("C index = " ^ string_of_cexpr cidx);
+    ce_array (ce_dot (ge' a) "data") cidx 
+
+  | BEXPR_get_n _ -> clierr sr "Can't handle generalised get_n yet"
 
   | BEXPR_match_case (n,((e',t') as e)) ->
     let t' = beta_reduce syms.Flx_mtypes2.counter bsym_table sr t' in
