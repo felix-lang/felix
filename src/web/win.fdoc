@@ -1,0 +1,92 @@
+@h1 Building Felix on Win32
+Instructions for building Felix using a "native" Microsoft toolchain.
+
+@h2 Introduction
+These notes are concerned with how to build Felix using native Win32
+tools (Python, OCaml) and the Microsoft Visual Studio C/C++ compiler
+and linker.
+
+@h2 Pre-requisites
+In summary, what is needed for building Felix is
+@pre
+  * Python 3.1 or better
+  * Microsoft Visual Studio 10.0 or better
+  * OCaml 3.12 or better
+@
+
+@h3 Python
+
+Regarding Python, I've had best results using Python-3.1.4
+to-date. There is no need to build Python from source. Microsoft
+installer files (.msi files) providing pre-built binaries for this
+version in both x86 and x86_64 and variants are available from
+http://www.python.org. Assuming Python version 3.1 and default
+installation locations have been chosen, then after execution of the
+installer, the Python binary itself will be located in
+C:\Python31. Post installation, locate the Python executable
+(C:\Python31\python.exe) and <em>copy</em> it to python3.exe
+(C:\Python31\python3.exe).
+
+@h3 Microsoft Visual Studio
+
+In the event that you need obtain a copy of the Microsoft Visual
+Studio toolset, one can obtain a light, free installation from
+http://www.microsoft.com. Also required is the Microsoft Windows
+SDK. This can be downloaded for free from
+http://www.microsoft.com/downloads/en/default.aspx.
+
+@h3 OCaml
+
+We need an OCaml built using the Microsoft Visual Studio toolchain
+(msvc). Accordingly you'll need a source distribution for Windows from
+http://caml.inria.fr. Please take note that the binary distributions
+of OCaml available from that site have been built using the MinGW
+toolchain and they are <em>not</em> suitable for our purpose. To build
+OCaml, a basic Cygwin installation is also required (together with the
+approriate developer's Cygwin package containing GNU make). Go to
+http://www.cygwin.com to download and install Cygwin. Further, flexdll
+version 0.23 or later is needed, available from
+http://alain.frisch.fr/flexdll.html and TCL/TK version 8.5 binaries
+available as an ActiveTCL distribution at
+http://www.activestate.com/products/ActiveTcl/. With these components
+to hand, building OCaml proceeds by following the detailed
+instructions provided with the source distribution in the file
+README.win32.
+
+@h2 Obtaining Felix source
+
+To get Felix, you'll need a git client. Issue the command
+@pre
+  git clone git@github.com:felix-lang/felix.git
+@
+In my case, I issue that command from the directory C:\projects\github
+which creates and populates the descendant directory felix but of
+course that is not a requirement and you can choose any location that
+makes sense to you.
+
+@h2 Building Felix
+
+In the root Felix directory (in my case C:\projects\github\felix),
+create a file configure_fbuild.cmd with contents (assuming default
+locations for all pre-requisites)
+@pre
+  del /Q /S .\build > nul 2>&1
+  set "PFPATH=C:\Program Files"
+  set PATH=C:\Python31;"%PFPATH%\flexdll";C:\Tcl\bin;C:\ocamlms\bin;C:\WINDOWS\system32;C:\WINDOWS
+  call "%PFPATH%\Microsoft Visual Studio 10.0\VC\bin\vcvars32.bat"
+@
+(adjust the last line accordingly for a 64-bit build).
+
+Now, to build the Felix binaries simply open a command prompt, cd to
+the felix directory and issue the commands
+@pre 
+  configure_fbuild.cmd
+  python fbuild/fbuild-light 
+@
+
+@h2 Building and executing the Felix test suite
+
+One can build and execute the Felix tests with the command
+@pre 
+  python fbuild/fbuild-light test
+@
