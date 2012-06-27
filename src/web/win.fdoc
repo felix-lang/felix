@@ -20,12 +20,7 @@ Regarding Python, I've had best results using Python-3.1.4
 to-date. There is no need to build Python from source. Microsoft
 installer files (.msi files) providing pre-built binaries for this
 version in both x86 and x86_64 and variants are available from
-http://www.python.org. Assuming Python version 3.1 and default
-installation locations have been chosen, then after execution of the
-installer, the Python binary itself will be located in
-C:\Python31. Post installation, locate the Python executable
-(C:\Python31\python.exe) and <em>copy</em> it to python3.exe
-(C:\Python31\python3.exe).
+http://www.python.org.
 
 @h3 Microsoft Visual Studio
 
