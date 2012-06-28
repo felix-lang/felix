@@ -8,6 +8,10 @@ Polymorphism:
 @link polymorphism_index.fdoc | Polymorphism
 
 @p
+Categorical type system: 
+@link garrays_index.fdoc | Generalised Arrays.
+
+@p
 Literals
 @link literals_index.fdoc | Literals
 
