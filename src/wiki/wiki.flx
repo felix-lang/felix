@@ -51,6 +51,9 @@ info_log=wiki.log
 # for local repository set git = local
 #git=local
 #git=remote
+git_https_url=https://github.com/felix-lang/wiki.git
+git_ssh_url=git@github.com:felix-lang/wiki.git
+zip_url=https://github.com/felix-lang/wiki/zipball/master
 extension flx   -> flx2html::xlat_felix
 extension flxh  -> flx2html::xlat_felix
 extension c     -> cpp2html::xlat_cpp
