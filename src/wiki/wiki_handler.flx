@@ -38,6 +38,7 @@ class WikiHandler {
       Cons (http_handler(dir_route,requires_group_auth(dir)),
       Cons (http_handler(pull_route,requires_group_auth(pull)),
       Cons (http_handler(html_route,requires_group_auth(html)),
+      Cons (http_handler(get-wiki_route,requires_group_auth(get-wiki)),
       Cons (http_handler(wiki_route,requires_group_auth(wiki)),
       Cons (http_handler(web_route,requires_group_auth(web)),
       Cons (http_handler(lib_route,requires_group_auth(lib)),
@@ -202,7 +203,10 @@ mathjax := '''
     var ok=false;
     if has_doc(path) do
       content = match get_doc(path) with |Some ?e => e.content |_ => "" endmatch;
-    else 
+    elif fname ==  "wiki_main.fdoc" do
+      content = load_template("wiki-welcome.html");
+      fname = "Welcome to the Felix wiki!";
+    else
       write(conn,make_see_other("/wiki/edit/"+path));
       return;
     done
@@ -758,6 +762,21 @@ println$ path;
     endif; 
     write(conn,make_html(message));
   }
+
+
+  fun get-wiki_route(config:server_config,request:http_request) ={
+    return startswith request.path  "/wiki/get-wiki";
+  }
+
+  proc get-wiki (conn:http_connection, request:http_request ) {
+    var user= (get_fname(request)).or_else "";
+    var method = strip_ctrl_m((get_post_param(request,"get-option")).or_else "");
+
+    val message = q"<h1>Getting wiki with $(method)</h1>;
+
+    write(conn,make_html(message));
+  }
+
 
 
 
