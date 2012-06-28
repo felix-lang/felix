@@ -2,7 +2,7 @@ open Flx_btype
 open Flx_bbdcl
 
 (* Count number of cases in variant *)
-let rec cal_variant_cases bsym_table t =
+let cal_variant_cases bsym_table t =
   match t with
   | BTYP_void -> 0
   | BTYP_sum ls -> List.length ls
@@ -25,24 +25,24 @@ let rec cal_variant_cases bsym_table t =
           Flx_print.string_of_bbdcl bsym_table x i 
         )
     end
-  | BTYP_tuple ls ->
-    List.fold_left (fun acc t -> acc * cal_variant_cases bsym_table t) 1 ls
-
   | _ -> assert false 
 
-(* size of data type in machine words, 2 means 2 or more *)
+(* size of data type in machine words, 2 means 2 or more 
+  We used to put unitsum in here too, the problem is size 1
+  leads to packed representation, but that rep just bitors
+  the case number and data together .. works for aligned
+  pointers, doesn't work for integral data.
+*)
 let size t = match t with
   | BTYP_void -> -1
   | BTYP_tuple [] -> 0
-
-  | BTYP_pointer _ 
+  | BTYP_pointer _  (* this is WRONG won't work for char* at odd address *)
   | BTYP_function _
   | BTYP_cfunction _
-  | BTYP_unitsum _ 
     -> 1
   | _ -> 2
 
-let rec cal_variant_maxarg bsym_table t =
+let cal_variant_maxarg bsym_table t =
   match t with
   | BTYP_void -> -1 (* special for void *)
   | BTYP_sum ls -> List.fold_left (fun r t -> max r (size t)) 0 ls
@@ -62,10 +62,6 @@ let rec cal_variant_maxarg bsym_table t =
       List.fold_left (fun r (_,_,t) -> max r (size t)) 0  cts
     | _ -> assert false 
     end
-  | BTYP_tuple ls ->
-    (* not really sure about this ... *)
-    List.fold_left (fun r t -> r + cal_variant_maxarg bsym_table t) 0 ls
-
   | _ -> assert false 
 
 let isnullptr bsym_table t = match t with
@@ -75,47 +71,33 @@ let isnullptr bsym_table t = match t with
     in
     begin match Flx_bsym.bbdcl bsym with
     | BBDCL_union (bvs,[id1,0,BTYP_void; id2, 1, t2]) -> true
-(*
-      begin
-        match t2 with
-        | BTYP_pointer _
-        | BTYP_function _
-        | BTYP_cfunction _ -> true
-        | _ -> false
-      end 
-*)
+
     | _ -> false
     end
   | _ -> false
 
 type variant_rep = VR_self | VR_int |  VR_nullptr | VR_packed | VR_uctor
+let string_of_variant_rep = function
+  | VR_self -> "VR_self"
+  | VR_int -> "VR_int"
+  | VR_nullptr -> "VR_nullptr"
+  | VR_packed -> "VR_packed"
+  | VR_uctor -> "VR_uctor"
+
 
 let cal_variant_rep bsym_table t =
   if isnullptr bsym_table t then 
-    begin
-      (* print_endline ("type " ^ Flx_print.sbt bsym_table t ^" is a VR_nullptr"); *)
-      VR_nullptr
-    end
+    VR_nullptr
   else
   let n = cal_variant_cases bsym_table t in
   let z = cal_variant_maxarg bsym_table t in
   let rep =
     match n,z with
     | -1,_ -> assert false
-  (* Remove this case temporarily because it is a bit tricky to implement *)
     | 1,_ -> VR_self                  (* only one case do drop variant *)
     | _,0 -> VR_int                  (* no arguments, just use an int *)
     | k,_ when k <= 4 -> VR_packed   (* At most 4 cases, encode caseno in point low bits *)
     | _,_ -> VR_uctor                (* Standard Uctor *)
 
   in 
-  (*
-    (print_endline 
-    (match rep with
-    | VR_self -> "VR_self"
-    | VR_int -> "VR_int"
-    | VR_packed -> "VR_packed"
-    | VR_uctor -> "VR_uctor"
-  )) ; 
-  *)
-rep
+  rep

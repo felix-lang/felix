@@ -52,6 +52,10 @@ let gen_exe filename
   stackable
   exe
 =
+(*
+print_endline "---------------------------------------------";
+print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
+*)
   let sr = Flx_bexe.get_srcref exe in
   if length ts <> length vs then
   failwith

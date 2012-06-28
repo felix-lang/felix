@@ -156,12 +156,26 @@ let add a b = match a,b with
   | x, `Int 0 -> x
   | _ -> `Add (a,b)
 
+
 let rec cal_symbolic_array_index idx t = 
   let cax x t = cal_symbolic_array_index x t in
   match idx,t with
   | e, BTYP_unitsum _ -> expr e
   | (BEXPR_tuple es,_), BTYP_tuple ts  -> 
     fold_left (fun acc (elt,t) -> add (mul acc  (`Int (size t))) (cax elt t)) (`Int 0)(combine es ts)
+  (* A sum index over a linear array is isomorphic to a tuple of arrays,
+     so the index for component N just skips over the first N components.
+     Generally we don't know what N is until run time so we have to code
+     the equivalent of an array lookup based on the case index. Unfortunately
+     C is screwed up enough we can't just "inline" an array here and it's
+     too late to generated one at some location prior to this expression,
+     at least for this first cut, so we have to use a conditional chain
+     based on C ?: operator 
+  *)
+
+  | e, BTYP_sum ts ->
+    `Case_offset e
+
   | _ -> assert false
 
 let rec print_index bsym_table idx = match idx with
@@ -169,14 +183,56 @@ let rec print_index bsym_table idx = match idx with
   | `Mul (a,b) -> "(" ^ print_index bsym_table a ^ ")*(" ^ print_index bsym_table b ^")"
   | `Add (a,b) -> "(" ^ print_index bsym_table a ^ ")+(" ^ print_index bsym_table b ^")"
   | `Expr e -> "Expr (" ^ sbe bsym_table e  ^ ")"
+  | `Case_offset e -> "case_offset (" ^ sbe bsym_table e ^ ")"
 
-let rec render_index bsym_table ge' idx = 
-  let ri x = render_index bsym_table ge' x in
+let rec render_index bsym_table ge' array_sum_offset_table seq idx = 
+  let ri x = render_index bsym_table ge' array_sum_offset_table seq x in
   match idx with
   | `Int n -> ce_atom (string_of_int n)
   | `Mul (a,b) -> ce_infix "*" (ri a) (ri b)
   | `Add (a,b) -> ce_infix "+" (ri a) (ri b)
   | `Expr e -> ge' e
+  | `Case_offset ((_,(BTYP_sum ts as t)) as e) -> 
+     print_endline ("Render case index for type " ^ sbt bsym_table t);
+
+     (* For a sum type with components ts, we first find the
+        case index for the sum, and use that to select the
+        offset into the array corresponding to that index.
+        Then we have to add on the relative offset of the
+        argument
+     *)
+     let index = Flx_vgen.gen_get_case_index ge' bsym_table e in
+     print_endline ("Index is " ^ string_of_cexpr index);
+     let table_name = 
+       try 
+         let name,_ = Hashtbl.find array_sum_offset_table t in 
+         name
+       with Not_found ->
+         let n = !seq in 
+         incr seq;
+         let name = "_gas_"^string_of_int n in
+         let values =
+           List.iter
+             (fun t -> print_endline ("Size of " ^ sbt bsym_table t ^ " is " ^ string_of_int  (size t)))
+              ts
+           ;
+           let sizes = List.map size ts in
+           let rec aux acc tsin tsout = 
+             match tsin with
+             | [] -> List.rev tsout
+             | h :: t -> aux (acc + h) t (acc :: tsout)
+           in
+           let sizes = aux 0 sizes [] in
+           List.iter (fun x -> print_endline ("Sizes = " ^ string_of_int x)) sizes;
+           sizes
+         in 
+         Hashtbl.add array_sum_offset_table t (name,values);
+         name
+     in 
+     ce_array (ce_atom table_name) index 
+
+  | `Case_offset _ -> assert false
+
 
 
 let rec handle_get_n bsym_table rt ge' e t n ((e',t') as e2) =
@@ -252,6 +308,9 @@ and gen_expr'
   (e,t)
   : cexpr_t
 =
+(*
+  print_endline ("Gen_expr': " ^ sbe bsym_table (e,t));
+*)
   match e with
   (* replace heap allocation of a unit with NULL pointer *)
   | BEXPR_new (BEXPR_tuple [],_) -> ce_atom "0"
@@ -361,6 +420,9 @@ and gen_expr'
      by a sole constant
   *)
   | BEXPR_get_n ((BEXPR_case (n,_),_),(e',t' as e2)) ->
+(*
+print_endline "gen_expr': BEXPR_get_n (first)";
+*)
     handle_get_n bsym_table rt ge' e t n e2 
 
 (*
@@ -396,12 +458,34 @@ print_endline ("C index = " ^ string_of_cexpr cidx);
     ce_array (ce_dot (ge' e2) "data") lidx
 *)
    | BEXPR_get_n ((_,idxt) as idx, (_,BTYP_array (_,aixt) as a)) ->
-    assert (idxt = aixt); 
-    let sidx = cal_symbolic_array_index idx idxt in
+     let array_sum_offset_table = syms.array_sum_offset_table in
+     let seq = syms.counter in
+     assert (idxt = aixt); 
+print_endline ("index type = " ^ sbt bsym_table idxt );
+     let sidx = cal_symbolic_array_index idx idxt in
 print_endline ("Symbolic index = " ^ print_index bsym_table sidx );
-    let cidx = render_index bsym_table ge' sidx in
+     let cidx = render_index bsym_table ge' array_sum_offset_table seq sidx in
+print_endline ("rendered index .. C index = " ^ string_of_cexpr cidx);
+     (* Note: we use case 0 because we have to pick something! *)
+     begin match idxt with
+     | BTYP_tuple _ -> 
+       print_endline "Index type was tuple";
+       ce_array (ce_dot (ge' a) "data") cidx 
+     | _ ->
+     let rep = Flx_vrep.cal_variant_rep bsym_table idxt in
+print_endline ("Rep = " ^ Flx_vrep.string_of_variant_rep rep); 
+     begin match rep with
+     | Flx_vrep.VR_int -> 
+print_endline "Int rep";
+       print_endline ("C index = " ^ string_of_cexpr cidx);
+       ce_array (ce_dot (ge' a) "data") cidx 
+     | _ -> 
+       let carg = Flx_vgen.gen_get_case_arg ge' tn bsym_table 0 idx in
 print_endline ("C index = " ^ string_of_cexpr cidx);
-    ce_array (ce_dot (ge' a) "data") cidx 
+print_endline ("C arg = " ^ string_of_cexpr carg);
+     ce_array (ce_dot (ge' a) "data") (ce_infix "+" cidx carg) 
+    end
+    end
 
   | BEXPR_get_n _ -> clierr sr "Can't handle generalised get_n yet"
 
@@ -830,12 +914,18 @@ print_endline ("make const ctor, union type = " ^ sbt bsym_table t' ^
        (BEXPR_case (v,t),t'),
        (a,t'')
      ) -> 
+(*
+print_endline "Apply case ctor";
+*)
        Flx_vgen.gen_make_nonconst_ctor ge' tn syms bsym_table t v t' (a,t'')
        (* t is the type of the sum,
           t' is the function type of the constructor,
           t'' is the type of the argument
        *)
   | BEXPR_apply_prim (index,ts,arg) ->
+(*
+print_endline "Apply prim";
+*)
     gen_apply_prim
       syms
       bsym_table
@@ -849,6 +939,9 @@ print_endline ("make const ctor, union type = " ^ sbt bsym_table t' ^
       arg
 
   | BEXPR_apply_struct (index,ts,a) ->
+(*
+print_endline "Apply struct";
+*)
     let bsym =
       try Flx_bsym_table.find bsym_table index with _ ->
         failwith ("[gen_expr(apply instance)] Can't find index " ^
@@ -883,6 +976,9 @@ print_endline ("make const ctor, union type = " ^ sbt bsym_table t' ^
     end
 
   | BEXPR_apply_direct (index,ts,a) ->
+(*
+print_endline "Apply direct";
+*)
     let ts = map tsub ts in
     let index', ts' = Flx_typeclass.fixup_typeclass_instance syms bsym_table index ts in
     if index <> index' then
@@ -952,6 +1048,9 @@ print_endline ("make const ctor, union type = " ^ sbt bsym_table t' ^
     end
 
   | BEXPR_apply_stack (index,ts,a) ->
+(*
+print_endline "Apply stack";
+*)
     let ts = map tsub ts in
     let index', ts' = Flx_typeclass.fixup_typeclass_instance syms bsym_table index ts in
     if index <> index' then
@@ -1043,6 +1142,9 @@ print_endline ("make const ctor, union type = " ^ sbt bsym_table t' ^
   | BEXPR_apply ( (_,BTYP_lvalue(BTYP_cfunction _)) as f,a)
   *)
   | BEXPR_apply ( (_,BTYP_cfunction (d,_)) as f,a) ->
+(*
+print_endline "Apply cfunction";
+*)
     begin match d with
     | BTYP_tuple ts ->
       begin match a with
@@ -1071,6 +1173,9 @@ print_endline ("make const ctor, union type = " ^ sbt bsym_table t' ^
 
   (* General application*)
   | BEXPR_apply (f,a) ->
+(*
+print_endline "Apply general";
+*)
     ce_atom (
     "("^(ge f) ^ ")->clone()\n      ->apply(" ^ ge_arg a ^ ")"
     )
@@ -1097,18 +1202,27 @@ print_endline ("make const ctor, union type = " ^ sbt bsym_table t' ^
     )
 
   | BEXPR_tuple es ->
+(*
+print_endline "Conctruct tuple";
+*)
     (*
     print_endline ("Eval tuple " ^ sbe bsym_table (e,t));
     *)
     (* just apply the tuple type ctor to the arguments *)
     begin match t with
     | BTYP_array (t',BTYP_unitsum n) ->
+(*
+print_endline "Construct tuple, subkind array";
+*)
       let t'' = btyp_tuple (map (fun _ -> t') (nlist n)) in
       let ctyp = raw_typename t'' in
       ce_atom (
         ctyp ^ "(" ^
         List.fold_left begin fun s e ->
           let x = ge_arg e in
+(*
+print_endline ("Construct tuple, subkind array, component x=" ^ x);
+*)
           if String.length x = 0 then s else
           s ^
           (if String.length s > 0 then ", " else "") ^
@@ -1119,11 +1233,17 @@ print_endline ("make const ctor, union type = " ^ sbt bsym_table t' ^
       )
 
     | BTYP_tuple _ ->
+(*
+print_endline "Construct tuple, subkind tuple";
+*)
       let ctyp = tn t in
       ce_atom (
         ctyp ^ "(" ^
         List.fold_left begin fun s e ->
           let x = ge_arg e in
+(*
+print_endline ("Construct tuple, subkind tuple, component x=" ^ x);
+*)
           if String.length x = 0 then s else
           s ^
           (if String.length s > 0 then ", " else "") ^

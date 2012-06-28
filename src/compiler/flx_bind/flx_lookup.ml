@@ -3963,9 +3963,11 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
       match tf, ta with
       (* Check for array projection *)
       | ixt1, BTYP_array (t,ixt2) when ixt1 = ixt2 -> (* SHOULD USE UNIFICATION *) 
+(*
         print_endline "Array projection"; 
         print_endline ("Array type " ^ sbt bsym_table ta);
         print_endline ("Index type " ^ sbt bsym_table tf);
+*)
         bexpr_get_n t (f,a)
       | _ -> 
        (*

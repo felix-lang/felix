@@ -268,6 +268,7 @@ let codegen_bsyms
   ;
 
 
+
   plb "\n//-----------------------------------------";
   plb (
     "namespace flxusr { namespace " ^
@@ -278,12 +279,11 @@ let codegen_bsyms
    * which is stored in the thread frame so the library function can get
    * the shape object list *)
 
-  Flxg_file.close_out state.rtti_file;
-  if Flxg_file.was_used state.rtti_file then begin
+  (* if Flxg_file.was_used state.rtti_file then begin *)
     plb "\n//-----------------------------------------";
     plb "//DEFINE OFFSET tables for GC";
     plb ("#include \"" ^ state.module_name ^ ".rtti\"");
-  end;
+  (* end; *)
 
 
   plb "FLX_DEF_THREAD_FRAME";
@@ -451,6 +451,19 @@ let codegen_bsyms
   Flxg_file.close_out state.header_file;
   Flxg_file.close_out state.body_file;
   Flxg_file.close_out state.ctors_file;
+
+  if Hashtbl.length state.syms.array_sum_offset_table > 0 then
+  begin
+    plr "\n// Array indexing helpers for sum indexes\n";
+    Hashtbl.iter (fun _ (name,values) ->
+      plr  ("static int " ^ name ^ "[" ^ string_of_int (List.length values) ^ "] = {" ^
+      catmap "," string_of_int  values ^
+      "};")
+    )
+    state.syms.array_sum_offset_table;
+  end;
+
+  Flxg_file.close_out state.rtti_file;
   plp "flx";
   plp "flx_gc";  (* RF: flx apps now need flx_gc. is this the way to do it? *)
   Flxg_file.close_out state.package_file
