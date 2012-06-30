@@ -67,8 +67,13 @@ let rec shape_of' use_assoc_type syms bsym_table tn t =
     end
 
   | BTYP_sum cpts ->
-      if all_units cpts then "::flx::rtl::_int_ptr_map"
-      else "::flx::rtl::_uctor_ptr_map"
+      begin match Flx_vrep.cal_variant_rep bsym_table t with
+      | Flx_vrep.VR_self -> assert false
+      | Flx_vrep.VR_int -> "::flx::rtl::_int_ptr_map"
+      | Flx_vrep.VR_nullptr -> "::flx::rtl::_address_ptr_map"
+      | Flx_vrep.VR_packed -> "::flx::rtl::_address_ptr_map"
+      | Flx_vrep.VR_uctor -> "::flx::rtl::_uctor_ptr_map"
+      end
 
   (* The shape of an actual function is CLASSNAME_ptr_map,
      The shape of a function **variable** is address_ptr_map, since it's

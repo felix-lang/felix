@@ -55,3 +55,39 @@ to number cases from 0 upto {n-1} with zero origin notation,
 but we have chosen that for consistency with tuple notation
 and C.
 
+A more general sum type is shown below:
+@felix
+var s : string + int + double = 
+  (case 0 of string + int + double) "Hello"
+;
+
+proc p(x: string + int + double) {
+  match x with
+  | case 0 ?x => println$ x+" world";
+  | case 1 ?x => println$ x+1;
+  | case 2 ?x => println$ x+2.2;
+  endmatch
+}
+
+p s;
+s = (case 1 of string + int + double) 42;
+p s;
+s = (case 2 of string + int + double) 3.141;
+p s;
+@
+
+Here you see three cases which carry data of a specific type.
+You use pattern matching to discover which of the three possible
+cases is carried and then safely access that type.
+
+The case value thing is called a type constructor because
+it takes a value of one of the components of a sum type and creates a
+value of the sum type. This is the way to unify or homogenise 
+heterogenous types. Note in the pattern matching we don't need
+to specify the type, only the case tag (index value).
+
+Unlike products which are constructive types charactised by the
+projection functions that inspect them, sums are destructive types
+characterised by the injection functions that build them:
+namely the type constructors.
+

@@ -1,0 +1,30 @@
+@h1 Arrays
+Now we have some background in sums and products, we can
+move on to arrays. Consider:
+@felix
+var a : int * int * int = 1,2,3;
+@
+Here {a} is a tuple with the components which
+are all integers. Its very boring to write this
+out so we will allow a more compact notation:
+@felix
+var a = int ^ 3 = 1,2,3;
+@
+The {^} operator is being used to mean exponentiation,
+or raising to a power. It makes sense, and follows
+mathematical tradition, where real spaces is denoted {R^3}
+(only with the 3 printed as a superscript!).
+
+But wait, you say! We know that
+@felix
+  3 = 1 + 1 + 1
+@
+by definition. So it seems we have not merely allowed
+you to write {int^3} but it follows from the usual
+index laws:
+
+@felix
+T^n * T^m = T^(n+m)
+@
+
+

@@ -126,115 +126,6 @@ let isid x =
     true
   with _ -> false
 
-let rec size t = match t with
-  | BTYP_unitsum n -> n
-  | BTYP_tuple ls ->
-    fold_left (fun acc elt -> acc * size elt) 1 ls
-  | BTYP_sum ls ->
-    fold_left (fun acc elt -> acc + size elt) 0 ls
-  | BTYP_void -> 0
-  | _ -> assert false
-
-(* Note that this computation must be driven by the array index type not
-  the type of the index.
-*)
-let expr e = match e with
-  | BEXPR_case (i,_),_ -> `Int i
-  | _ -> `Expr e
-
-let mul a b = match a,b with
-  | `Int x, `Int y -> `Int (x * y)
-  | `Int 0, _ 
-  | _, `Int 0 -> `Int 0
-  | `Int 1, x 
-  | x, `Int 1 -> x
-  | _ -> `Mul (a,b)
-
-let add a b = match a,b with
-  | `Int x, `Int y -> `Int (x + y)
-  | `Int 0, x
-  | x, `Int 0 -> x
-  | _ -> `Add (a,b)
-
-
-let rec cal_symbolic_array_index idx t = 
-  let cax x t = cal_symbolic_array_index x t in
-  match idx,t with
-  | e, BTYP_unitsum _ -> expr e
-  | (BEXPR_tuple es,_), BTYP_tuple ts  -> 
-    fold_left (fun acc (elt,t) -> add (mul acc  (`Int (size t))) (cax elt t)) (`Int 0)(combine es ts)
-  (* A sum index over a linear array is isomorphic to a tuple of arrays,
-     so the index for component N just skips over the first N components.
-     Generally we don't know what N is until run time so we have to code
-     the equivalent of an array lookup based on the case index. Unfortunately
-     C is screwed up enough we can't just "inline" an array here and it's
-     too late to generated one at some location prior to this expression,
-     at least for this first cut, so we have to use a conditional chain
-     based on C ?: operator 
-  *)
-
-  | e, BTYP_sum ts ->
-    `Case_offset e
-
-  | _ -> assert false
-
-let rec print_index bsym_table idx = match idx with
-  | `Int n -> string_of_int n
-  | `Mul (a,b) -> "(" ^ print_index bsym_table a ^ ")*(" ^ print_index bsym_table b ^")"
-  | `Add (a,b) -> "(" ^ print_index bsym_table a ^ ")+(" ^ print_index bsym_table b ^")"
-  | `Expr e -> "Expr (" ^ sbe bsym_table e  ^ ")"
-  | `Case_offset e -> "case_offset (" ^ sbe bsym_table e ^ ")"
-
-let rec render_index bsym_table ge' array_sum_offset_table seq idx = 
-  let ri x = render_index bsym_table ge' array_sum_offset_table seq x in
-  match idx with
-  | `Int n -> ce_atom (string_of_int n)
-  | `Mul (a,b) -> ce_infix "*" (ri a) (ri b)
-  | `Add (a,b) -> ce_infix "+" (ri a) (ri b)
-  | `Expr e -> ge' e
-  | `Case_offset ((_,(BTYP_sum ts as t)) as e) -> 
-     print_endline ("Render case index for type " ^ sbt bsym_table t);
-
-     (* For a sum type with components ts, we first find the
-        case index for the sum, and use that to select the
-        offset into the array corresponding to that index.
-        Then we have to add on the relative offset of the
-        argument
-     *)
-     let index = Flx_vgen.gen_get_case_index ge' bsym_table e in
-     print_endline ("Index is " ^ string_of_cexpr index);
-     let table_name = 
-       try 
-         let name,_ = Hashtbl.find array_sum_offset_table t in 
-         name
-       with Not_found ->
-         let n = !seq in 
-         incr seq;
-         let name = "_gas_"^string_of_int n in
-         let values =
-           List.iter
-             (fun t -> print_endline ("Size of " ^ sbt bsym_table t ^ " is " ^ string_of_int  (size t)))
-              ts
-           ;
-           let sizes = List.map size ts in
-           let rec aux acc tsin tsout = 
-             match tsin with
-             | [] -> List.rev tsout
-             | h :: t -> aux (acc + h) t (acc :: tsout)
-           in
-           let sizes = aux 0 sizes [] in
-           List.iter (fun x -> print_endline ("Sizes = " ^ string_of_int x)) sizes;
-           sizes
-         in 
-         Hashtbl.add array_sum_offset_table t (name,values);
-         name
-     in 
-     ce_array (ce_atom table_name) index 
-
-  | `Case_offset _ -> assert false
-
-
-
 let rec handle_get_n bsym_table rt ge' e t n ((e',t') as e2) =
     match rt t' with
     | BTYP_tuple _  -> ce_dot (ge' e2) ("mem_" ^ si n)
@@ -388,6 +279,8 @@ and gen_expr'
   let our_display = get_display_list bsym_table this in
   let our_level = length our_display in
   let rt t = beta_reduce syms.Flx_mtypes2.counter bsym_table sr (tsubst this_vs this_ts t) in
+  let array_sum_offset_table = syms.array_sum_offset_table in
+  let seq = syms.counter in
   let t = rt t in
   match t with
   | BTYP_tuple [] ->
@@ -416,76 +309,28 @@ and gen_expr'
      in
      ce_call (ce_atom "flx::rtl::range_check") args
 
-  (* this handles constant tuple indexing .. including array indexing
-     by a sole constant
-  *)
+  | BEXPR_get_n ((_,idxt) as idx, (_,BTYP_array (_,aixt) as a)) ->
+    assert (idxt = aixt); 
+(*
+print_endline ("index type = " ^ sbt bsym_table idxt );
+print_endline ("index value = " ^ sbe bsym_table idx );
+*)
+    let sidx = Flx_ixgen.cal_symbolic_array_index bsym_table idx in
+(*
+print_endline ("Symbolic index = " ^ Flx_ixgen.print_index bsym_table sidx );
+*)
+    let cidx = Flx_ixgen.render_index bsym_table ge' array_sum_offset_table seq sidx in
+(*
+print_endline ("rendered lineralised index .. C index = " ^ string_of_cexpr cidx);
+*)
+    ce_array (ce_dot (ge' a) "data") cidx 
+
+
   | BEXPR_get_n ((BEXPR_case (n,_),_),(e',t' as e2)) ->
 (*
 print_endline "gen_expr': BEXPR_get_n (first)";
 *)
     handle_get_n bsym_table rt ge' e t n e2 
-
-(*
-  | BEXPR_get_n ( 
-      (_,BTYP_unitsum k1) as idx,
-      ((e',(BTYP_array (_,  ((BTYP_unitsum k2) as idxt)))) as e2)
-    ) ->
-    print_endline "Detected array indexed by unitsum";
-    assert (k1 = k2);
-    let sidx = cal_symbolic_array_index idx idxt in
-print_endline ("Symbolic index = " ^ print_index bsym_table sidx );
-    let cidx = render_index bsym_table ge' sidx in
-print_endline ("C index = " ^ string_of_cexpr cidx);
-
-    let n = Flx_vgen.gen_get_case_index ge' bsym_table idx in
-    ce_array (ce_dot (ge' e2) "data") n 
-*)
-(*
-
-  | BEXPR_get_n ( (_,BTYP_tuple [BTYP_unitsum j1;BTYP_unitsum k1]) as idx,
-    (e',(BTYP_array (_,(BTYP_tuple [BTYP_unitsum j2; BTYP_unitsum k2] as idxt))) as e2)) ->
-    print_endline "Detected array indexed by unitsum * unitsum";
-    assert (j1 = j2);
-    assert (k1 = k2);
-    let sidx = cal_symbolic_array_index idx idxt in
-print_endline ("Symbolic index = " ^ print_index bsym_table sidx );
-    let cidx = render_index bsym_table ge' sidx in
-print_endline ("C index = " ^ string_of_cexpr cidx);
-    let n = Flx_vgen.gen_get_case_index ge' bsym_table idx in
-    let n1 = ce_dot n "mem_0" in
-    let n2 = ce_dot n  "mem_1" in
-    let lidx = ce_infix"+" (ce_infix "*" n1 (ce_atom (string_of_int k1)))  n2 in
-    ce_array (ce_dot (ge' e2) "data") lidx
-*)
-   | BEXPR_get_n ((_,idxt) as idx, (_,BTYP_array (_,aixt) as a)) ->
-     let array_sum_offset_table = syms.array_sum_offset_table in
-     let seq = syms.counter in
-     assert (idxt = aixt); 
-print_endline ("index type = " ^ sbt bsym_table idxt );
-     let sidx = cal_symbolic_array_index idx idxt in
-print_endline ("Symbolic index = " ^ print_index bsym_table sidx );
-     let cidx = render_index bsym_table ge' array_sum_offset_table seq sidx in
-print_endline ("rendered index .. C index = " ^ string_of_cexpr cidx);
-     (* Note: we use case 0 because we have to pick something! *)
-     begin match idxt with
-     | BTYP_tuple _ -> 
-       print_endline "Index type was tuple";
-       ce_array (ce_dot (ge' a) "data") cidx 
-     | _ ->
-     let rep = Flx_vrep.cal_variant_rep bsym_table idxt in
-print_endline ("Rep = " ^ Flx_vrep.string_of_variant_rep rep); 
-     begin match rep with
-     | Flx_vrep.VR_int -> 
-print_endline "Int rep";
-       print_endline ("C index = " ^ string_of_cexpr cidx);
-       ce_array (ce_dot (ge' a) "data") cidx 
-     | _ -> 
-       let carg = Flx_vgen.gen_get_case_arg ge' tn bsym_table 0 idx in
-print_endline ("C index = " ^ string_of_cexpr cidx);
-print_endline ("C arg = " ^ string_of_cexpr carg);
-     ce_array (ce_dot (ge' a) "data") (ce_infix "+" cidx carg) 
-    end
-    end
 
   | BEXPR_get_n _ -> clierr sr "Can't handle generalised get_n yet"
 
@@ -590,6 +435,22 @@ print_endline ("Generating class new for t=" ^ ref_type);
    * particularly enums.
    *)
   | BEXPR_case (v,t') ->
+    if Flx_ixgen.isindex bsym_table t then begin
+(*
+print_endline ("egen:BEXPR_case: index type = " ^ sbt bsym_table t );
+print_endline ("egen:BEXPR_case: index value = " ^ sbe bsym_table (e,t));
+*)
+      let sidx = Flx_ixgen.cal_symbolic_array_index bsym_table (e,t) in
+(*
+print_endline ("egen:BEXPR_case: Symbolic index = " ^ Flx_ixgen.print_index bsym_table sidx );
+*)
+      let cidx = Flx_ixgen.render_index bsym_table ge' array_sum_offset_table seq sidx in
+(*
+print_endline ("egen:BEXPR_case: rendered lineralised index .. C index = " ^ string_of_cexpr cidx);
+*)
+      cidx
+    end
+    else
 (*
 print_endline ("make const ctor, union type = " ^ sbt bsym_table t' ^ 
 " ctor#= " ^ si v ^ " union type = " ^ sbt bsym_table t);
@@ -914,6 +775,22 @@ print_endline ("make const ctor, union type = " ^ sbt bsym_table t' ^
        (BEXPR_case (v,t),t'),
        (a,t'')
      ) -> 
+    if Flx_ixgen.isindex bsym_table t then begin
+(*
+print_endline ("egen:BEXPR_apply BEXPR_case: index type = " ^ sbt bsym_table t );
+print_endline ("egen:BEXPR_apply BEXPR_case: index value = " ^ sbe bsym_table (e,t));
+*)
+      let sidx = Flx_ixgen.cal_symbolic_array_index bsym_table (e,t) in
+(*
+print_endline ("egen:BEXPR_apply BEXPR_case: Symbolic index = " ^ Flx_ixgen.print_index bsym_table sidx );
+*)
+      let cidx = Flx_ixgen.render_index bsym_table ge' array_sum_offset_table seq sidx in
+(*
+print_endline ("egen:BEXPR_apply BEXPR_case: rendered lineralised index .. C index = " ^ string_of_cexpr cidx);
+*)
+      cidx
+    end
+    else
 (*
 print_endline "Apply case ctor";
 *)

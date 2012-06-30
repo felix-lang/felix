@@ -18,7 +18,9 @@ let gen_get_case_index ge bsym_table e: cexpr_t  =
   let _,t = e in
   match cal_variant_rep bsym_table t with
   | VR_self -> ce_atom "0"
-  | VR_int -> ge e
+  | VR_int -> 
+    let n = cal_variant_cases bsym_table t in 
+     ce_infix "%" (ge e) (ce_atom (si n))
   | VR_nullptr -> ce_call (ce_atom "FLX_VNI") [ge e]
   | VR_packed -> ce_call (ce_atom "FLX_VI") [ge e]
   | VR_uctor -> ce_dot (ge e) "variant"
@@ -58,7 +60,7 @@ let gen_get_case_arg ge tn bsym_table n (e:Flx_bexpr.t) : cexpr_t =
   let cast = tn ct in
   match cal_variant_rep bsym_table ut with
   | VR_self -> ge e
-  | VR_int -> assert false
+  | VR_int ->  assert false
   | VR_nullptr ->
     begin match size ct with
     | 0 -> assert false
@@ -107,67 +109,72 @@ let gen_make_const_ctor bsym_table e : cexpr_t =
   match cal_variant_rep bsym_table ut with
   | VR_self -> assert false (* will fail if there's one trivial case! FIX! Felix should elide completely *)
   | VR_int -> ce_atom (si v)
-  | VR_nullptr -> ce_cast "void*" (ce_atom (si v))
-  | VR_packed -> ce_cast "void*" (ce_atom (si v))
+  | VR_nullptr -> ce_cast "void* /*nullptr*/ " (ce_atom (si v))
+  | VR_packed -> ce_cast "void* /*packed*/ " (ce_atom (si v))
   | VR_uctor -> ce_atom ("::flx::rtl::_uctor_(" ^ si v ^ ",0)") 
 
+
+(*
 (* Helper function to make suitable argument for non-constant variant constructor *)
-let gen_make_ctor_arg ge tn syms bsym_table a : cexpr_t =
+let gen_make_ctor_arg rep ge tn syms bsym_table a : cexpr_t =
 (* print_endline "gen_make_ctor_arg"; *)
+  let _,ct = a in
+  match rep with
+  | VR_uctor ->
+  begin match size ct with
+  | 0 -> ce_atom "0"                (* NULL: for unit tuple *)
+  | 1 -> ce_cast "/* uctor, arg size1 */ void*" (ge a)   (* small value goes right into data slot *)
+  | _ ->                            (* make a copy on the heap and return pointer *)
+    let ctt = "/* tn= "^ tn ct ^ " */ "^ tn ct in
+    let ptrmap = Flx_pgen.direct_shape_of syms bsym_table tn ct in
+    ce_new [ce_atom "*PTF gcp /* uctor, arg size2 */ "; ce_atom ptrmap; ce_atom "true"] ctt [ge a]
+ end
+ | VR_packed ->
+   begin match size ct with
+   | 0 -> ce_atom "0"                (* NULL: for unit tuple *)
+   | 1 -> ce_cast "/* packed arg size1 */ void*" (ge a)   (* small value goes right into data slot *)
+   | _ ->
+    let ctt = "/* tn= "^ tn ct ^ " */ "^ tn ct in
+    let ptrmap = Flx_pgen.direct_shape_of syms bsym_table tn ct in
+    ce_new [ce_atom "*PTF gcp /* packed, arg size2 */ "; ce_atom ptrmap; ce_atom "true"] ctt [ge a]
+ 
+   end
+ | VR_int -> ge a
+ | VR_nullptr -> ce_cast "void*" (ge a)
+
+ | _ -> assert false
+*)
+
+let gen_make_ctor_arg rep ge tn syms bsym_table a : cexpr_t =
   let _,ct = a in
   match size ct with
   | 0 -> ce_atom "0"                (* NULL: for unit tuple *)
   | 1 -> ce_cast "void*" (ge a)   (* small value goes right into data slot *)
   | _ ->                            (* make a copy on the heap and return pointer *)
-
-(* OK, this is wrong. For a varray[T], the type we want is T: Flx_pgen.shape_of gets
-   this correct, we get the right shape. For example if T = int, we get int_ptr_map.
-   However a varray[int] is an int*. We want ctt to be "int" and NOT "int*".
-
-   HMMM .. the REAL problem here is that the whole thing is super bugged!
-   We actually just want to use the original pointer, not copy it onto
-   the heap and use a pointer to it! 
-*)
-
-(*
-print_endline ("Type of ctor arg = " ^ sbt bsym_table ct);
-*)
     let ctt = tn ct in
-(*
-print_endline ("Type name of ctor arg = " ^ ctt);
-*)
-
-(* FIX: ignore the associated shape, just use the actual shape.
-   This fixes the problem with varray[int] argument. It isn't 
-   clear it is the right answer because the "associated shape"
-   was specifically designed to be used with operator new
-   in C insertions, and this is a C insertion.
-*)
-    (* let ptrmap = Flx_pgen.shape_of syms bsym_table tn ct in *)
     let ptrmap = Flx_pgen.direct_shape_of syms bsym_table tn ct in
-
-(*
-print_endline ("Shape name is " ^ ptrmap);
-*)
     ce_new [ce_atom "*PTF gcp"; ce_atom ptrmap; ce_atom "true"] ctt [ge a]
+
 
 (* Value constructor for non-constant (argumentful) variant constructor case *)
 let gen_make_nonconst_ctor ge tn syms bsym_table ut cidx ct a : cexpr_t =
 (*
 print_endline ("gen_make_nonconst_ctor arg=" ^ Flx_print.sbe bsym_table a ^ " type=" ^ Flx_print.sbt bsym_table ut); 
 *)
-  match cal_variant_rep bsym_table ut with
+  let rep = cal_variant_rep bsym_table ut in
+  match rep with
   | VR_self -> ge a
-  | VR_int -> assert false
+  | VR_int -> ge a
+
   | VR_nullptr -> 
-    let arg = gen_make_ctor_arg ge tn syms bsym_table a in
+    let arg = gen_make_ctor_arg rep ge tn syms bsym_table a in
     ce_call (ce_atom "FLX_VNR") [ce_atom (si cidx); arg]
 
   | VR_packed -> 
-    let arg = gen_make_ctor_arg ge tn syms bsym_table a in
+    let arg = gen_make_ctor_arg rep ge tn syms bsym_table a in
     ce_call (ce_atom "FLX_VR") [ce_atom (si cidx); arg]
 
   | VR_uctor ->  
-    let arg = gen_make_ctor_arg ge tn syms bsym_table a in
+    let arg = gen_make_ctor_arg rep ge tn syms bsym_table a in
     ce_call (ce_atom "::flx::rtl::_uctor_") [ce_atom (si cidx); arg] 
 

@@ -524,7 +524,7 @@ and qualified_name_of_bindex bsym_table index =
 
 and bound_name_of_bindex bsym_table index =
   let name,parent = get_name_parent bsym_table index in
-  Printf.sprintf "%s<%s>" name (string_of_bid index)
+  name ^ "<" ^ (string_of_bid index) ^ ">"
 
 (* fixppoint labeller .. very sloppy, ignores precedence .. *)
 and get_label i =
@@ -1841,7 +1841,7 @@ and string_of_bound_expression' bsym_table se e =
   | BEXPR_variant (s,e) -> "case " ^ s ^ " of (" ^ se e ^ ")"
 
   | BEXPR_case (v,t) ->
-    "case " ^ si v ^ " of " ^ string_of_btypecode (Some bsym_table) t
+    "(case " ^ si v ^ " of " ^ string_of_btypecode (Some bsym_table) t ^ ")"
 
   | BEXPR_match_case (v,e) ->
     "(match case " ^ si v ^ ")(" ^ se e ^ ")"
