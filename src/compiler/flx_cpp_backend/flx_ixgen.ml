@@ -105,12 +105,15 @@ print_endline ("Final index is " ^ print_index bsym_table ix);
     ix
 
   | (BEXPR_case (i,t'),_), BTYP_sum ts ->
+(*
 print_endline ("Decomposing index of sum type " ^ sbe bsym_table idx ^ " Constant case tag " ^si i^ "  found");
+*)
      let e' = expr idx in
      let caseno = i in 
      let caset = List.nth ts i in
+(*
 print_endline ("Case type " ^ sbt bsym_table caset);
-
+*)
      (`Case_offset (ts, (`Int caseno))) 
 
   | (BEXPR_name _,_),_ -> expr idx 
@@ -140,10 +143,12 @@ let get_array_sum_offset_table bsym_table seq array_sum_offset_table ts =
      incr seq;
      let name = "_gas_"^si n in
      let values =
+(*
        List.iter
          (fun t -> print_endline ("Size of " ^ sbt bsym_table t ^ " is " ^ si  (size t)))
           ts
        ;
+*)
        let sizes = List.map size ts in
        let rec aux acc tsin tsout = 
          match tsin with
@@ -151,7 +156,9 @@ let get_array_sum_offset_table bsym_table seq array_sum_offset_table ts =
          | h :: t -> aux (acc + h) t (acc :: tsout)
        in
        let sizes = aux 0 sizes [] in
+(*
        List.iter (fun x -> print_endline ("Sizes = " ^ si x)) sizes;
+*)
        sizes
      in 
      Hashtbl.add array_sum_offset_table t (name,values);
@@ -169,10 +176,14 @@ let rec render_index bsym_table ge' array_sum_offset_table seq idx =
   | `Expr e -> ge' e
   | `Case_offset (ts, caseno) ->
      let index = ri caseno in
+(*
      print_endline ("Caseno is " ^ string_of_cexpr index);
+*)
      let table_name = get_array_sum_offset_table bsym_table seq array_sum_offset_table ts in
      let offset = ce_array (ce_atom table_name) index in
+(*
      print_endline ("Offset is " ^ string_of_cexpr offset);
+*)
      offset
   | `Switch (ts,e) ->
      let n = List.length ts in
