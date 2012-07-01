@@ -202,20 +202,35 @@ let is_unitsum t = match t with
   | _ -> false
 
 (** Returns the integer value of the unit sum type. *)
-let rec int_of_unitsum t = match t with
+let rec int_of_linear_type bsym_table t = match t with
   | BTYP_void -> 0
   | BTYP_tuple [] -> 1
   | BTYP_unitsum k -> k
   | BTYP_sum [] ->  0
   | BTYP_sum ts ->
-    List.fold_left (fun i t -> i + int_of_unitsum t) 0 ts
+    List.fold_left (fun i t -> i + int_of_linear_type bsym_table t) 0 ts
   | BTYP_tuple ts ->
-    List.fold_left (fun i t -> i * int_of_unitsum t) 1 ts
+    List.fold_left (fun i t -> i * int_of_linear_type bsym_table t) 1 ts
   | BTYP_array (a,BTYP_unitsum n) -> 
-    let sa = int_of_unitsum a in
+    let sa = int_of_linear_type bsym_table a in
     let rec aux n out = if n = 0 then out else aux (n-1) (out * sa)
     in aux n 1
   | _ -> raise (Invalid_int_of_unitsum)
+
+let islinear_type bsym_table t =
+  try ignore( int_of_linear_type bsym_table t ); true 
+  with Invalid_int_of_unitsum -> false
+
+let sizeof_linear_type bsym_table t = 
+  try int_of_linear_type bsym_table t 
+  with Invalid_int_of_unitsum -> assert false
+
+let ncases_of_sum bsym_table t = match t with
+  | BTYP_unitsum n -> n
+  | BTYP_sum ls -> List.length ls 
+  | BTYP_void -> 0
+  | _ -> 1
+
 
 (* -------------------------------------------------------------------------- *)
 

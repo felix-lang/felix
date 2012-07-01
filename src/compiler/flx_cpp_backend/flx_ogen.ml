@@ -87,7 +87,7 @@ let rec gen_type_shape s syms bsym_table last_ptr_map primitive_shapes btyp inde
     (* for an array, we only have offsets for the first element *)
     | BTYP_array (t,i) ->
       let k =
-        try int_of_unitsum i
+        try Flx_btype.int_of_linear_type bsym_table i
         with Invalid_int_of_unitsum -> failwith "Array index must be unitsum"
       in
       let name = cpp_typename syms bsym_table btyp in

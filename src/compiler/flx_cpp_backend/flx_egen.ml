@@ -435,7 +435,7 @@ print_endline ("Generating class new for t=" ^ ref_type);
    * particularly enums.
    *)
   | BEXPR_case (v,t') ->
-    if Flx_ixgen.isindex bsym_table t then begin
+    if Flx_btype.islinear_type bsym_table t then begin
 (*
 print_endline ("egen:BEXPR_case: index type = " ^ sbt bsym_table t );
 print_endline ("egen:BEXPR_case: index value = " ^ sbe bsym_table (e,t));
@@ -577,7 +577,7 @@ print_endline ("make const ctor, union type = " ^ sbt bsym_table t' ^
              Also we allow a list in preparation for rank K arrays.
           *)
           begin try
-            let n = fold_left (fun acc elt -> acc * int_of_unitsum elt) 1 ts in
+            let n = fold_left (fun acc elt -> acc * Flx_btype.int_of_linear_type bsym_table elt) 1 ts in
             ce_atom (si n)
           with Invalid_int_of_unitsum ->
             clierr sr (
@@ -775,7 +775,7 @@ print_endline ("make const ctor, union type = " ^ sbt bsym_table t' ^
        (BEXPR_case (v,t),t'),
        (a,t'')
      ) -> 
-    if Flx_ixgen.isindex bsym_table t then begin
+    if Flx_btype.islinear_type bsym_table t then begin
 (*
 print_endline ("egen:BEXPR_apply BEXPR_case: index type = " ^ sbt bsym_table t );
 print_endline ("egen:BEXPR_apply BEXPR_case: index value = " ^ sbe bsym_table (e,t));

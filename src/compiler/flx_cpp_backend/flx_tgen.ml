@@ -185,7 +185,7 @@ let rec gen_type_name syms bsym_table (index,typ) =
     let cdt = `Cdt_value t in
     "typedef " ^ string_of_cdecl_type name cdt ^ ";\n"
 
-  | BTYP_unitsum k ->
+  | t when Flx_btype.islinear_type bsym_table t ->
       "typedef int " ^ tn typ ^ ";\n"
 
   | BTYP_sum _ 
@@ -413,7 +413,7 @@ let rec gen_type syms bsym_table (index,typ) =
     let name = tn typ in
     let v = tn t in
     let n = 
-      try int_of_unitsum i 
+      try Flx_btype.int_of_linear_type bsym_table i 
       with Invalid_int_of_unitsum ->
         failwith ("Invalid type for int of unit sum: " ^ sbt bsym_table t)
     in

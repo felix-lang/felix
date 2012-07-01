@@ -3308,7 +3308,8 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
     if type_eq state.counter t' t'' then x'
     else
     begin match t',t'' with
-    | BTYP_inst (i,[]),BTYP_unitsum n ->
+    | BTYP_inst (i,[]),t when Flx_btype.islinear_type bsym_table t->
+      let n = Flx_btype.sizeof_linear_type bsym_table  t in
       begin match hfind "lookup" state.sym_table i with
       | { Flx_sym.id="int";
           symdef=SYMDEF_abs (_, Flx_code_spec.Str_template "int", _) }  ->

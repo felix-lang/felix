@@ -88,7 +88,7 @@ let string_of_variant_rep = function
 let cal_variant_rep bsym_table t =
   if isnullptr bsym_table t then 
     VR_nullptr
-  else if Flx_ixgen.isindex bsym_table t then
+  else if Flx_btype.islinear_type bsym_table t then
     VR_int
   else
   let n = cal_variant_cases bsym_table t in
