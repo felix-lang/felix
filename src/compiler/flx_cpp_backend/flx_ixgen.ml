@@ -8,23 +8,12 @@ let catmap sep f ls = String.concat sep (List.map f ls)
 let si i = string_of_int i
 
 let isindex bsym_table t =
-  let rec aux t = match t with
-  | BTYP_unitsum _ -> ()
-  | BTYP_sum ls -> List.iter aux ls
-  | BTYP_tuple ls -> List.iter aux ls
-  (* later we should allow nominally typed structs and sums too *)
-  | _ -> raise Not_found
-  in try aux t; true with Not_found -> false
+  try ignore( int_of_unitsum t ); true 
+  with Invalid_int_of_unitsum -> false
 
-
-let rec size t = match t with
-  | BTYP_unitsum n -> n
-  | BTYP_tuple ls ->
-    List.fold_left (fun acc elt -> acc * size elt) 1 ls
-  | BTYP_sum ls ->
-    List.fold_left (fun acc elt -> acc + size elt) 0 ls
-  | BTYP_void -> 0
-  | _ -> assert false
+let size t = 
+  try int_of_unitsum t 
+  with Invalid_int_of_unitsum -> assert false
 
 let ncases t = match t with
   | BTYP_unitsum n -> n
@@ -81,6 +70,11 @@ let rec cal_symbolic_array_index bsym_table (_,idxt as idx) =
   match idx,idxt with
   | (BEXPR_tuple es,_), BTYP_tuple ts  -> 
     List.fold_left (fun acc (elt,t) -> add (mul acc  (`Int (size t))) (cax elt)) (`Int 0)(List.combine es ts)
+
+  | (BEXPR_tuple es,_), BTYP_array (t, BTYP_unitsum n)  -> 
+    let sa = `Int (size t) in
+    List.fold_left (fun acc elt -> add (mul acc sa) (cax elt)) (`Int 0) es
+
 
   | (BEXPR_match_case (i,t'),_), BTYP_sum ts ->
 print_endline ("Decomposing index of sum type " ^ sbe bsym_table idx ^ " MATCH case tag " ^si i^ "  found");

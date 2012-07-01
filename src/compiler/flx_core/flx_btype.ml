@@ -211,7 +211,10 @@ let rec int_of_unitsum t = match t with
     List.fold_left (fun i t -> i + int_of_unitsum t) 0 ts
   | BTYP_tuple ts ->
     List.fold_left (fun i t -> i * int_of_unitsum t) 1 ts
-
+  | BTYP_array (a,BTYP_unitsum n) -> 
+    let sa = int_of_unitsum a in
+    let rec aux n out = if n = 0 then out else aux (n-1) (out * sa)
+    in aux n 1
   | _ -> raise (Invalid_int_of_unitsum)
 
 (* -------------------------------------------------------------------------- *)
