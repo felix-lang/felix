@@ -310,7 +310,7 @@ let rec adj_lambda state bsym_table all_closures sr e =
 
   | BEXPR_case (v,t'),t as x ->
       begin match unfold t' with
-      | BTYP_unitsum n -> x
+      | t when Flx_btype.islinear_type bsym_table t -> x
 
       | BTYP_sum ls ->
           let n = List.length ls in
