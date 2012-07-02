@@ -50,7 +50,8 @@ README.win32.
 
 @h2 Obtaining Felix source
 
-To get Felix, you'll need a git client. Issue the command
+To get Felix, you'll need a git client (download from
+http://git-scm.com/downloads). Issue the command
 @pre
   git clone git@github.com:felix-lang/felix.git
 @
