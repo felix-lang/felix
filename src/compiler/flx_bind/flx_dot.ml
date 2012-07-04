@@ -331,7 +331,9 @@ print_endline ("ASTdot, RHS is integer, LHS type is " ^ sbt bsym_table ttt);
        bexpr_get_n (btyp_pointer t) (bexpr_unitsum_case n m,te)
  
     | _ -> 
+(*
 print_endline "AST dot, can't find tuple type for standard projection, trying reverse application";
+*)
       begin try be (EXPR_apply (sr,(e2,e)))
       with exn -> 
         clierr sr (
