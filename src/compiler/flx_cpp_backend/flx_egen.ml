@@ -127,13 +127,17 @@ let isid x =
   with _ -> false
 
 let rec handle_get_n syms bsym_table rt ge' e t n ((e',t') as e2) =
+(*
 print_endline ("Handling a get-n in egen, n=" ^ si n ^ ", e=" ^ sbe bsym_table (e,t) ^ " e2=" ^ sbe bsym_table e2);
+*)
     let array_sum_offset_table = syms.array_sum_offset_table in
     let seq = syms.counter in
     let rtt' = rt t' in
     match rtt' with
     | BTYP_tuple ls  -> 
+(*
       print_endline "expr e2 has tuple type"; 
+*)
       if islinear_type bsym_table rtt' then begin
         let sidx = Flx_ixgen.cal_symbolic_array_index bsym_table e2 in
         let cidx = Flx_ixgen.render_index bsym_table ge' array_sum_offset_table seq sidx in

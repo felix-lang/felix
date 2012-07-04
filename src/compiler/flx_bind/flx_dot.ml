@@ -287,7 +287,9 @@ let handle_dot state bsym_table build_env env rs be bt koenig_lookup cal_apply b
 
   (* RHS is an integer literal , LHS must be tuple or array *)
   | EXPR_literal (_, {Flx_literal.felix_type="int"; internal_value=s}) ->
+(*
 print_endline ("ASTdot, RHS is integer, LHS type is " ^ sbt bsym_table ttt);
+*)
     let n = int_of_string s in
     begin match ttt with
     | BTYP_tuple ls ->
