@@ -287,6 +287,7 @@ let handle_dot state bsym_table build_env env rs be bt koenig_lookup cal_apply b
 
   (* RHS is an integer literal , LHS must be tuple or array *)
   | EXPR_literal (_, {Flx_literal.felix_type="int"; internal_value=s}) ->
+print_endline ("ASTdot, RHS is integer, LHS type is " ^ sbt bsym_table ttt);
     let n = int_of_string s in
     begin match ttt with
     | BTYP_tuple ls ->
@@ -328,11 +329,12 @@ let handle_dot state bsym_table build_env env rs be bt koenig_lookup cal_apply b
        bexpr_get_n (btyp_pointer t) (bexpr_unitsum_case n m,te)
  
     | _ -> 
+print_endline "AST dot, can't find tuple type for standard projection, trying reverse application";
       begin try be (EXPR_apply (sr,(e2,e)))
       with exn -> 
         clierr sr (
           "AST_dot, RHS " ^ string_of_expr e2 ^ 
-          " is integer literal, expected LHS t be tuple type, got " ^
+          " is integer literal, expected LHS "^sbe bsym_table te ^"to be tuple type, got " ^
           sbt bsym_table ttt ^
           "\nReverse application also failed"
          )

@@ -33,6 +33,7 @@ let modu a b = match a,b with
 
 let div a b = match a,b with
   | `Int x, `Int y -> `Int (x / y)
+  | a, `Int 1 -> a
   | _ -> `Div (a,b)
 
 let switch ts e = `Switch (ts,e)
@@ -84,16 +85,20 @@ print_endline ("Final index is " ^ print_index bsym_table ix);
     ix
 
   | (BEXPR_case (i,t'),_), BTYP_sum ts ->
-(*
-print_endline ("Decomposing index of sum type " ^ sbe bsym_table idx ^ " Constant case tag " ^si i^ "  found");
-*)
      let e' = expr idx in
      let caseno = i in 
      let caset = List.nth ts i in
-(*
-print_endline ("Case type " ^ sbt bsym_table caset);
-*)
      (`Case_offset (ts, (`Int caseno))) 
+
+  (* this doesn't make sense! This is a decode but the
+     above thing is an encode .. grrr 
+  *)
+  | (BEXPR_case (i,_),_), BTYP_tuple _ ->
+    `Int i
+
+  | (BEXPR_case (i,_),_), BTYP_array _ ->
+    `Int i
+
 
   | (BEXPR_name _,_),_ -> expr idx 
 
@@ -104,7 +109,9 @@ print_endline ("Decomposing index of sum type " ^ sbe bsym_table e);
      let caseno = modu e' (`Int (List.length ts)) in
      add (`Case_offset (ts, caseno)) (switch ts e')
 
-  | _ -> assert false
+  | _ -> 
+    print_endline ("cal_symbolic_array_index can't handle expression " ^ sbe bsym_table idx);
+    assert false
 
 (* this is an auxilliary table that represents the cumulative sizes of the
    components of a sum used at run time to find the offset of a particular

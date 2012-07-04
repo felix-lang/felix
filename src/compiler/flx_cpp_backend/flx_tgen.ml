@@ -146,10 +146,11 @@ let rec gen_type_name syms bsym_table (index,typ) =
   in
   let t = unfold typ in
   match t with
+  | t when Flx_btype.islinear_type bsym_table t -> descr 
+      (* "typedef int " ^ tn typ ^ ";\n" *)
+
   | BTYP_fix i -> ""
   | BTYP_type_var (i,mt) -> failwith "[gen_type_name] Can't gen name of type variable"
-
-  | BTYP_tuple [] -> "" (* unit *)
 
   | BTYP_pointer b -> ""
     (* NEW *)
@@ -185,9 +186,6 @@ let rec gen_type_name syms bsym_table (index,typ) =
     let cdt = `Cdt_value t in
     "typedef " ^ string_of_cdecl_type name cdt ^ ";\n"
 
-  | t when Flx_btype.islinear_type bsym_table t ->
-      "typedef int " ^ tn typ ^ ";\n"
-
   | BTYP_sum _ 
   | BTYP_variant _ -> ""
     (*
@@ -200,8 +198,6 @@ let rec gen_type_name syms bsym_table (index,typ) =
     end
     *)
 
-
-  | BTYP_void -> ""
 
   | BTYP_inst (i,ts) ->
     let bsym =
@@ -342,6 +338,7 @@ let rec gen_type syms bsym_table (index,typ) =
   in
   let t = unfold typ in
   match t with
+  | _ when islinear_type bsym_table t -> ""
   | BTYP_type_var _ -> failwith "[gen_type] can't gen type variable"
   | BTYP_fix _ -> failwith "[gen_type] can't gen type fixpoint"
 
@@ -387,11 +384,9 @@ let rec gen_type syms bsym_table (index,typ) =
     "  virtual ~"^name^"(){};\n" ^
     "};\n"
 
-  | BTYP_unitsum _ -> "" (* union typedef *)
   | BTYP_sum _ -> "" (* union typedef *)
   | BTYP_variant _ -> ""
 
-  | BTYP_tuple [] -> ""
   | BTYP_tuple ts ->
      descr ^
      gen_tuple (tn typ) tn ts
@@ -400,7 +395,6 @@ let rec gen_type syms bsym_table (index,typ) =
      descr ^
      gen_record n (cn typ) tn ts
 
-  | BTYP_void -> ""
   | BTYP_pointer t ->
     ""
     (*

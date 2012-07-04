@@ -126,9 +126,34 @@ let isid x =
     true
   with _ -> false
 
-let rec handle_get_n bsym_table rt ge' e t n ((e',t') as e2) =
-    match rt t' with
-    | BTYP_tuple _  -> ce_dot (ge' e2) ("mem_" ^ si n)
+let rec handle_get_n syms bsym_table rt ge' e t n ((e',t') as e2) =
+print_endline ("Handling a get-n in egen, n=" ^ si n ^ ", e=" ^ sbe bsym_table (e,t) ^ " e2=" ^ sbe bsym_table e2);
+    let array_sum_offset_table = syms.array_sum_offset_table in
+    let seq = syms.counter in
+    let rtt' = rt t' in
+    match rtt' with
+    | BTYP_tuple ls  -> 
+      print_endline "expr e2 has tuple type"; 
+      if islinear_type bsym_table rtt' then begin
+        let sidx = Flx_ixgen.cal_symbolic_array_index bsym_table e2 in
+        let cidx = Flx_ixgen.render_index bsym_table ge' array_sum_offset_table seq sidx in
+        (* now calculate the projection: this is given by 
+             idx / a % b
+             where a = product of sizes of first n  terms (or 1 if n=0)
+             and b = size of term n
+        *)
+        assert (0 <= n && n < List.length ls);
+        let rec aux ls i out = match ls with [] -> assert false | h :: t ->
+           if i = 0 then out else aux t (i-1) (sizeof_linear_type bsym_table h * out)
+        in 
+        let a = aux ls n 1 in
+        let b = sizeof_linear_type bsym_table (List.nth ls n) in
+        let apart = if a = 1 then cidx else ce_infix "/" cidx (ce_atom (si a)) in
+        let result = if n = List.length ls - 1 then apart else ce_infix "%" apart (ce_atom (si b)) in
+        result
+      end
+      else
+        ce_dot (ge' e2) ("mem_" ^ si n)
     | BTYP_array (_,BTYP_unitsum _) ->
       begin match e2 with
       | BEXPR_tuple _,_ -> print_endline "Failed to slice a tuple!"
@@ -330,7 +355,7 @@ print_endline ("rendered lineralised index .. C index = " ^ string_of_cexpr cidx
 (*
 print_endline "gen_expr': BEXPR_get_n (first)";
 *)
-    handle_get_n bsym_table rt ge' e t n e2 
+    handle_get_n syms bsym_table rt ge' e t n e2 
 
   | BEXPR_get_n _ -> clierr sr "Can't handle generalised get_n yet"
 
@@ -735,6 +760,7 @@ print_endline ("make const ctor, union type = " ^ sbt bsym_table t' ^
     ce_atom uval
 
   | BEXPR_coerce ((srcx,srct) as srce,dstt) -> 
+print_endline ("Handling coercion in egen " ^ sbt bsym_table srct ^ " -> " ^ sbt bsym_table dstt);
     let coerce_variant () =
       let vts =
         match dstt with
@@ -761,7 +787,7 @@ print_endline ("make const ctor, union type = " ^ sbt bsym_table t' ^
     in
     begin match dstt with
     | BTYP_variant _ -> coerce_variant ()
-    | _ -> ce_atom ("reinterpret<"^tn dstt^","^tn srct^">("^ge srce^")")
+    | _ -> ce_atom ("reinterpret<"^tn dstt^">("^ge srce^")")
     end
 
 

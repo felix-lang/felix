@@ -722,14 +722,61 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
 
     | BEXE_nop (_,s) -> "      //Nop: " ^ s ^ "\n"
 
-    | BEXE_assign (sr,e1,(( _,t) as e2)) ->
-      let t = tsub t in
+    | BEXE_assign (sr,(_,lhst as e1),(_,rhst as e2)) ->
+      let projoflinear = match e1 with
+        | BEXPR_get_n ((BEXPR_case _,_),(_,(BTYP_tuple _ as t'))),_ 
+         when islinear_type bsym_table t' -> true
+        | _ -> false
+      in
+      let t = tsub rhst in
+      let comment = (if with_comments then "      //"^src_str^"\n" else "") in
       begin match t with
       | BTYP_tuple [] -> ""
+      | _ when projoflinear ->
+print_endline "PROJ OF LINEAR";
+        begin match e1 with
+        | BEXPR_get_n ((BEXPR_case (j,_),_),(_,(BTYP_tuple ts as t') as var)),_ ->
+          let n = List.length ts in 
+          let rec aux1 ls i out = 
+             match ls with [] -> assert false 
+             | h :: t ->
+               if i = 0 then out,h
+               else aux1 t (i-1) (sizeof_linear_type bsym_table h * out)
+          in 
+          let lo,elt = aux1 ts j 1 in
+          let elt = sizeof_linear_type bsym_table elt in
+print_endline ("Type of variable is " ^ sbt bsym_table t');
+print_endline ("proj = " ^ si j^ ", Size of component = " ^ si elt ^ ", size of lower bit = " ^ si lo);
+          (* the formula is:
+             old low half is value mod lo
+             divide by lo * elt to save the top half and remove the elt and lo half
+             multiply by elt to make a space and add in the rhs
+             multiply by lo and add back the old low half
+             so:
+             
+              (value / (lo*elt) * elt + new) * lo + value % lo
+          *)
+          let ci i = ce_atom (si i) in
+          let celt = ci elt in
+          let clo = ci lo in
+          let clomelt = ci (lo * elt) in
+          let ad x y = ce_infix "+" x y in
+          let di x y = ce_infix "/" x y in
+          let mu x y = ce_infix "*" x y in
+          let mo x y = ce_infix "%" x y in
+          let lhs = ge' sr var in
+          let rhs = ge' sr e2 in
+          let nuval =  ad (mu (ad (mu (di lhs clomelt) celt) rhs) clo) (mo lhs clo) in
+          let cnuval = string_of_cexpr nuval in
+          print_endline ("Formula = " ^ cnuval);
+          comment ^ 
+          "      "^ ge sr var ^ " = " ^ cnuval ^ "; //assign to packed tuple\n"
+        | _ -> assert false
+        end
       | _ ->
-      (if with_comments then "      //"^src_str^"\n" else "") ^
-      "      "^ ge sr e1 ^ " = " ^ ge sr e2 ^
-      "; //assign\n"
+        comment ^ 
+        "      "^ ge sr e1 ^ " = " ^ ge sr e2 ^
+        "; //assign\n"
       end
 
     | BEXE_init (sr,v,((_,t) as e)) ->

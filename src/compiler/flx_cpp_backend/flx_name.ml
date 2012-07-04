@@ -180,6 +180,7 @@ let rec cpp_type_classname syms bsym_table t =
   | BTYP_none -> "none" (* hack needed for null case in pgen *)
   | BTYP_void -> "void" (* failwith "void doesn't have a classname" *)
   | BTYP_tuple [] -> "::flx::rtl::unit"
+  | t when islinear_type bsym_table t -> "int"
 
   | BTYP_pointer t' -> cpp_type_classname syms bsym_table t' ^ "*"
  
