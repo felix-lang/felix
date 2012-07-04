@@ -67,6 +67,8 @@ let scan_exes syms bsym_table allocable_types exes : unit =
   iter (scan_exe syms bsym_table allocable_types) exes
 
 let rec gen_type_shape s syms bsym_table last_ptr_map primitive_shapes btyp index =
+    let name = cpp_type_classname syms bsym_table btyp in
+    if name <> "int" then
     (*
     print_endline ("allocable type --> " ^ string_of_btypecode sym_table btyp);
     *)
@@ -74,7 +76,9 @@ let rec gen_type_shape s syms bsym_table last_ptr_map primitive_shapes btyp inde
     | BTYP_function _ -> ()
 
     | BTYP_tuple args ->
+(*
       let name = cpp_type_classname syms bsym_table btyp in
+*)
       let offsets = get_offsets syms bsym_table btyp in
       let n = length offsets in
       let classname = cpp_type_classname syms bsym_table btyp in
@@ -90,7 +94,9 @@ let rec gen_type_shape s syms bsym_table last_ptr_map primitive_shapes btyp inde
         try Flx_btype.int_of_linear_type bsym_table i
         with Invalid_int_of_unitsum -> failwith "Array index must be unitsum"
       in
+(*
       let name = cpp_typename syms bsym_table btyp in
+*)
       let tname = cpp_typename syms bsym_table t in
       let offsets = get_offsets syms bsym_table t in
       let is_pod =
@@ -138,7 +144,9 @@ let rec gen_type_shape s syms bsym_table last_ptr_map primitive_shapes btyp inde
       bcat s "};\n"
 
     | BTYP_inst (i,ts) ->
+(*
       let name = cpp_typename syms bsym_table btyp in
+*)
       let bsym =
         try Flx_bsym_table.find bsym_table i
         with Not_found ->
@@ -269,11 +277,15 @@ let rec gen_type_shape s syms bsym_table last_ptr_map primitive_shapes btyp inde
     end
 
    | BTYP_unitsum _ ->
+(*
      let name = cpp_typename syms bsym_table btyp in
+*)
      bcat s ("static ::flx::gc::generic::gc_shape_t &"^ name ^"_ptr_map = ::flx::rtl::_int_ptr_map;\n");
 
    | BTYP_sum _ ->
+(*
      let name = cpp_typename syms bsym_table btyp in
+*)
      begin match Flx_vrep.cal_variant_rep bsym_table btyp with
      | Flx_vrep.VR_self -> assert false
      | Flx_vrep.VR_int ->
@@ -409,6 +421,7 @@ let gen_offset_tables syms bsym_table module_name first_ptr_map=
   )
   syms.registry
   ;
+  bcat s ("static ::flx::gc::generic::gc_shape_t &int_ptr_map = ::flx::rtl::_int_ptr_map;\n");
   Hashtbl.iter
   (fun btyp index -> gen_type_shape s syms bsym_table last_ptr_map primitive_shapes btyp index 
   )
