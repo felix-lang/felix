@@ -764,7 +764,9 @@ print_endline ("make const ctor, union type = " ^ sbt bsym_table t' ^
     ce_atom uval
 
   | BEXPR_coerce ((srcx,srct) as srce,dstt) -> 
+(*
 print_endline ("Handling coercion in egen " ^ sbt bsym_table srct ^ " -> " ^ sbt bsym_table dstt);
+*)
     let coerce_variant () =
       let vts =
         match dstt with

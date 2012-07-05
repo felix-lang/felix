@@ -66,9 +66,8 @@ let scan_exe syms bsym_table allocable_types exe : unit =
 let scan_exes syms bsym_table allocable_types exes : unit =
   iter (scan_exe syms bsym_table allocable_types) exes
 
-let rec gen_type_shape s syms bsym_table last_ptr_map primitive_shapes btyp index =
+let rec gen_type_shape s syms bsym_table need_int last_ptr_map primitive_shapes btyp index =
     let name = cpp_type_classname syms bsym_table btyp in
-    if name <> "int" then
     (*
     print_endline ("allocable type --> " ^ string_of_btypecode sym_table btyp);
     *)
@@ -228,7 +227,7 @@ let rec gen_type_shape s syms bsym_table last_ptr_map primitive_shapes btyp inde
       | BBDCL_union (vs,[id,n,t']) -> 
         print_endline "Warning VR_self rep not handled right?";
         let t'' = tsubst vs ts t' in
-        gen_type_shape s syms bsym_table last_ptr_map primitive_shapes t'' index
+        gen_type_shape s syms bsym_table need_int last_ptr_map primitive_shapes t'' index
         
       | BBDCL_union _ -> () (* handled by universal uctor, int, etc *) 
 
@@ -421,13 +420,15 @@ let gen_offset_tables syms bsym_table module_name first_ptr_map=
   )
   syms.registry
   ;
-  bcat s ("static ::flx::gc::generic::gc_shape_t &int_ptr_map = ::flx::rtl::_int_ptr_map;\n");
+  let need_int = ref false in
   Hashtbl.iter
-  (fun btyp index -> gen_type_shape s syms bsym_table last_ptr_map primitive_shapes btyp index 
+  (fun btyp index -> gen_type_shape s syms bsym_table need_int last_ptr_map primitive_shapes btyp index 
   )
   allocable_types
   ;
   bcat s ("\n");
+  if !need_int then
+  bcat s ("static ::flx::gc::generic::gc_shape_t &int_ptr_map = ::flx::rtl::_int_ptr_map;\n");
 
   bcat s ("// Head of shape list, included so dlsym() can find it when\n");
   bcat s ("// this file is a shared lib, uses module name for uniqueness.\n");

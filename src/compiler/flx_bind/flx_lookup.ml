@@ -3305,7 +3305,9 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
   | EXPR_coercion (sr,(x,t)) ->
     let (e',t') as x' = be x in
     let t'' = bt sr t in
+(*
 print_endline ("Binding coercion " ^ sbe bsym_table x' ^ ": " ^ sbt bsym_table t' ^ " to " ^ sbt bsym_table t'');
+*)
     if type_eq state.counter t' t'' then x'
     else
     begin match t',t'' with
@@ -3316,7 +3318,9 @@ print_endline ("Binding coercion " ^ sbe bsym_table x' ^ ": " ^ sbt bsym_table t
           symdef=SYMDEF_abs (_, Flx_code_spec.Str_template "int", _) }  ->
         begin match e' with
         | BEXPR_literal {Flx_literal.felix_type="int"; internal_value=big} ->
+(*
 print_endline "Coercion from int literal";
+*)
           let m =
             try int_of_string big
             with _ -> clierr sr "Integer is too large for unitsum"
@@ -3326,7 +3330,9 @@ print_endline "Coercion from int literal";
           else
             clierr sr "Integer is out of range for unitsum"
         | _ ->
+(*
 print_endline "Coercion from int expression ";
+*)
           let inttype = t' in
           let zero =
             bexpr_literal t' {Flx_literal.felix_type="int"; internal_value="0"; c_value="0"}
@@ -3335,7 +3341,9 @@ print_endline "Coercion from int expression ";
             bexpr_literal t' {Flx_literal.felix_type="int"; internal_value=string_of_int n; c_value=string_of_int n}
           in
           let r = bexpr_coerce (bexpr_range_check t' (zero,x',xn),t'') in
+(*
 print_endline ("Coercion from int expression result is " ^ sbe bsym_table r);
+*)
           r
         end
       | _ ->
