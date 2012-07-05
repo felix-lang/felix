@@ -774,6 +774,7 @@ print_endline ("proj = " ^ si j^ ", Size of component = " ^ si elt ^ ", size of 
         | _ -> assert false
         end
       | _ ->
+        if e1 = e2 then "" else (* eliminate a self-assign .. shouldn't happen but seems to! *)
         comment ^ 
         "      "^ ge sr e1 ^ " = " ^ ge sr e2 ^
         "; //assign\n"
