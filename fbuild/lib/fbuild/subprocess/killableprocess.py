@@ -110,12 +110,19 @@ class Popen(subprocess.Popen):
             subprocess.Popen.__init__(self, *args, **kwargs)
 
     if mswindows:
+        if sys.version_info < (3,2):
+            #_execute_child() requires a different signature in this
+            #case.
+            raise Exception("Python version 3.2 or greater required")
+
         def _execute_child(self, args, executable, preexec_fn, close_fds,
-                           cwd, env, universal_newlines, startupinfo,
+                           pass_fds, cwd, env, universal_newlines, startupinfo,
                            creationflags, shell,
                            p2cread, p2cwrite,
                            c2pread, c2pwrite,
-                           errread, errwrite):
+                           errread, errwrite,
+                           unused_restore_signals, unused_start_new_session): 
+
             if not isinstance(args, str):
                 args = subprocess.list2cmdline(args)
 

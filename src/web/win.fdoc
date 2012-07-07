@@ -9,7 +9,7 @@ and linker.
 @h2 Pre-requisites
 In summary, what is needed for building Felix is
 @pre
-  * Python 3.1 or better
+  * Python 3.2 or better
   * Microsoft Visual Studio 10.0 or better
   * OCaml 3.12 or better
 @
@@ -72,7 +72,7 @@ locations for all pre-requisites)
 @pre
   del /Q /S .\build > nul 2>&1
   set "PFPATH=C:\Program Files"
-  set PATH=C:\Python31;"%PFPATH%\flexdll";C:\Tcl\bin;C:\ocamlms\bin;C:\WINDOWS\system32;C:\WINDOWS
+  set PATH=C:\Python32;"%PFPATH%\flexdll";C:\Tcl\bin;C:\ocamlms\bin;C:\WINDOWS\system32;C:\WINDOWS
   call "%PFPATH%\Microsoft Visual Studio 10.0\VC\bin\vcvars32.bat"
 @
 (adjust the last line accordingly for a 64-bit build).
