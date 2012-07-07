@@ -522,7 +522,17 @@ var FELIX=1;
 // processing options
 // --------------------------------------------------
 
-var HOME= Env::getenv "HOME";
+var HOME= 
+  let ?h = Env::getenv "HOME" in
+    if h!="" then h 
+    elif PLAT_WIN32 then Env::getenv "USERPROFILE"
+    else ""
+    endif
+;
+if HOME == "" do
+    eprintln$ "HOME environment variable is not set.  Please set HOME before building."; 
+	System::exit 1;
+done 
 
 var DEBUG=0;
 var DEBUG_COMPILER=0;
@@ -549,7 +559,7 @@ var USAGE = "production";
 var CLEAR_CACHE=0;
 
 var DEFAULT_CACHE_DIR = 
-  if HOME=="" then "" else Filename::join (list(HOME,".felix","cache","binary")) 
+  Filename::join (list(HOME,".felix","cache","binary")) 
 ;
 
 var CACHE_DIR=
@@ -558,7 +568,7 @@ var CACHE_DIR=
 ;
 
 var DEFAULT_OUTPUT_DIR = 
-    if HOME=="" then "" else Filename::join (list (HOME,".felix","cache","text"));
+    Filename::join (list (HOME,".felix","cache","text"));
 
 var OUTPUT_DIR=
   let ?x = Env::getenv "FLX_OUTPUT_DIR" in 

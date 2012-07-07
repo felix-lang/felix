@@ -26,7 +26,7 @@ proc run(db:sqlite3_db_t) {
     ""
   ;
   var usr: address =  address c"user pointer";
-  var errm: +char =  c"";
+  var errm: +char =  C_hack::cast[+char] c""; // cast const ptr to non-const
 
   var i = 0;
   var p = sql.i;

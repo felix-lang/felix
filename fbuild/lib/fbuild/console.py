@@ -35,8 +35,9 @@ if sys.platform == 'win32':
         import struct
         csbi = ctypes.create_string_buffer(22)
         res = ctypes.windll.kernel32.GetConsoleScreenBufferInfo(handle, csbi)
-        assert res
-
+        if not res:
+            #print('Error reading current console color!', ctypes.windll.kernel32.GetLastError())
+            return None
         (bufx, bufy, curx, cury, wattr, left, top, right, bottom, maxxy,
             maxy) = struct.unpack('hhhhHhhhhhh', csbi.raw)
         return wattr
@@ -54,10 +55,12 @@ if sys.platform == 'win32':
                 import ctypes
                 handle = ctypes.windll.kernel32.GetStdHandle(_STD_OUTPUT_HANDLE)
                 reset = get_csbi_attributes(handle)
-                ctypes.windll.kernel32.SetConsoleTextAttribute(handle, color)
+                if reset is not None:
+                    ctypes.windll.kernel32.SetConsoleTextAttribute(handle, color)
                 sys.stdout.write(s)
                 sys.stdout.flush()
-                ctypes.windll.kernel32.SetConsoleTextAttribute(handle, reset)
+                if reset is not None:
+                    ctypes.windll.kernel32.SetConsoleTextAttribute(handle, reset)
 else:
     _colorcodes = {
         'black'  : 30,

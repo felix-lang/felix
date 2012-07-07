@@ -806,7 +806,7 @@ proc serve_file(s: socket_t, infname: string)
     serve_xhtml(s,fname);
   elif suffix \in text_suffices do
     serve_text(s,fname);
-  elif suffix \in ("gif","png","jpg") do
+  elif suffix \in ("gif","png","jpg","svg") do
     // path lookup for images
     fname = if fname.[0] == char "/" then fname else INSTALL_ROOT+"/"+fname endif;
     serve_image(s,fname,suffix);

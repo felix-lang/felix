@@ -6,21 +6,6 @@ let sbe b e = Flx_print.string_of_bound_expression b e
 let sbt b t = Flx_print.string_of_btypecode (Some b) t
 let catmap sep f ls = String.concat sep (List.map f ls)
 let si i = string_of_int i
-
-let isindex bsym_table t =
-  try ignore( int_of_unitsum t ); true 
-  with Invalid_int_of_unitsum -> false
-
-let size t = 
-  try int_of_unitsum t 
-  with Invalid_int_of_unitsum -> assert false
-
-let ncases t = match t with
-  | BTYP_unitsum n -> n
-  | BTYP_sum ls -> List.length ls 
-  | BTYP_void -> 0
-  | _ -> 1
-
 (* Note that this computation must be driven by the array index type not
   the type of the index.
 *)
@@ -48,6 +33,7 @@ let modu a b = match a,b with
 
 let div a b = match a,b with
   | `Int x, `Int y -> `Int (x / y)
+  | a, `Int 1 -> a
   | _ -> `Div (a,b)
 
 let switch ts e = `Switch (ts,e)
@@ -69,10 +55,10 @@ let rec cal_symbolic_array_index bsym_table (_,idxt as idx) =
   let cax x = cal_symbolic_array_index bsym_table x in
   match idx,idxt with
   | (BEXPR_tuple es,_), BTYP_tuple ts  -> 
-    List.fold_left (fun acc (elt,t) -> add (mul acc  (`Int (size t))) (cax elt)) (`Int 0)(List.combine es ts)
+    List.fold_left (fun acc (elt,t) -> add (mul acc  (`Int (sizeof_linear_type bsym_table t))) (cax elt)) (`Int 0)(List.combine es ts)
 
   | (BEXPR_tuple es,_), BTYP_array (t, BTYP_unitsum n)  -> 
-    let sa = `Int (size t) in
+    let sa = `Int (sizeof_linear_type bsym_table t) in
     List.fold_left (fun acc elt -> add (mul acc sa) (cax elt)) (`Int 0) es
 
 
@@ -99,16 +85,20 @@ print_endline ("Final index is " ^ print_index bsym_table ix);
     ix
 
   | (BEXPR_case (i,t'),_), BTYP_sum ts ->
-(*
-print_endline ("Decomposing index of sum type " ^ sbe bsym_table idx ^ " Constant case tag " ^si i^ "  found");
-*)
      let e' = expr idx in
      let caseno = i in 
      let caset = List.nth ts i in
-(*
-print_endline ("Case type " ^ sbt bsym_table caset);
-*)
      (`Case_offset (ts, (`Int caseno))) 
+
+  (* this doesn't make sense! This is a decode but the
+     above thing is an encode .. grrr 
+  *)
+  | (BEXPR_case (i,_),_), BTYP_tuple _ ->
+    `Int i
+
+  | (BEXPR_case (i,_),_), BTYP_array _ ->
+    `Int i
+
 
   | (BEXPR_name _,_),_ -> expr idx 
 
@@ -119,7 +109,9 @@ print_endline ("Decomposing index of sum type " ^ sbe bsym_table e);
      let caseno = modu e' (`Int (List.length ts)) in
      add (`Case_offset (ts, caseno)) (switch ts e')
 
-  | _ -> assert false
+  | _ -> 
+    print_endline ("cal_symbolic_array_index can't handle expression " ^ sbe bsym_table idx);
+    assert false
 
 (* this is an auxilliary table that represents the cumulative sizes of the
    components of a sum used at run time to find the offset of a particular
@@ -143,7 +135,7 @@ let get_array_sum_offset_table bsym_table seq array_sum_offset_table ts =
           ts
        ;
 *)
-       let sizes = List.map size ts in
+       let sizes = List.map (sizeof_linear_type bsym_table) ts in
        let rec aux acc tsin tsout = 
          match tsin with
          | [] -> List.rev tsout
@@ -192,7 +184,7 @@ let rec render_index bsym_table ge' array_sum_offset_table seq idx =
            let arg = ri (`Case_offset (ts, (div e (`Int m)))) in
            ce_cond cond arg (aux (i+1) tl)
          | _ ->
-           let m = ncases hd in
+           let m = Flx_btype.ncases_of_sum bsym_table hd in
            let cond = ce_infix "==" (ce_atom (si i)) (ri (modu e (`Int m))) in
            let arg = ri (div e (`Int m)) in
            ce_cond cond arg (aux (i+1) tl)

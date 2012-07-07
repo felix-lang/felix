@@ -104,7 +104,11 @@ let gen_make_const_ctor bsym_table e : cexpr_t =
 
     | _ -> assert (false) 
   in
-  assert (ut = ut'); (* original code did an unfold here .. *)
+  if ut <> ut' then begin (* original code did an unfold here .. *)
+print_endline ("Mismatched types in make_const_ctor expr type is " ^ sbt bsym_table ut ^ 
+ " synthesised type = " ^ sbt bsym_table ut');
+assert false
+  end
   check_case_index bsym_table ut v;
   match cal_variant_rep bsym_table ut with
   | VR_self -> assert false (* will fail if there's one trivial case! FIX! Felix should elide completely *)
