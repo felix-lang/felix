@@ -40,7 +40,7 @@ IF "%HOME%" == "" (
 IF NOT EXIST "%HOME%" echo Warning: I do not see a HOME directory in the expected place (%HOME%)
 
 @rem Set up a clean path
-set PATH=C:\Python32;%FLEXDLL_HOME%;%TCL_HOME%\bin;%OCAML_HOME%\bin;C:\Windows\system32;C:\Windows;%FELIX_HOME%\build\release
+set PATH=C:\Python32;%FLEXDLL_HOME%;%TCL_HOME%\bin;%OCAML_HOME%\bin;C:\Windows\system32;C:\Windows;%FELIX_HOME%\build\release\bin
 echo set PATH=%PATH%
 
 @rem VS100COMNTOOLS is added by the Visual Studio 2010 installer, run it to add VS tools to the path
