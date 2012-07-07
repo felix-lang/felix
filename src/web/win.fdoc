@@ -62,6 +62,10 @@ makes sense to you.
 
 @h2 Building Felix
 
+Before proceeding, it's imperative to be sure that at least one one of
+the environment variables <code>HOME</code> or
+<code>USERPROFILE</code> are set.
+
 In the root Felix directory (in my case C:\projects\github\felix),
 create a file configure_fbuild.cmd with contents (assuming default
 locations for all pre-requisites)
