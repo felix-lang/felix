@@ -16,7 +16,7 @@ In summary, what is needed for building Felix is
 
 @h3 Python
 
-Regarding Python, I've had best results using Python-3.1.4
+Regarding Python, I've had best results using Python-3.2
 to-date. There is no need to build Python from source. Microsoft
 installer files (.msi files) providing pre-built binaries for this
 version in both x86 and x86_64 and variants are available from
@@ -50,38 +50,35 @@ README.win32.
 
 @h2 Obtaining Felix source
 
-To get Felix, you'll need a git client (download from
-http://git-scm.com/downloads). Issue the command
-@pre
-  git clone git@github.com:felix-lang/felix.git
-@
-In my case, I issue that command from the directory C:\projects\github
-which creates and populates the descendant directory felix but of
-course that is not a requirement and you can choose any location that
-makes sense to you.
+Get the source code from github here: 
+
+https://github.com/felix-lang/felix
+
+Since development is very active on felix, it's best to use a git
+client to get the source code, but you can also download everything
+as a ZIP or tar.gz file.
+
+github has some tools and tutorials on how to use git, if you are
+not already familiar with it:
+
+https://help.github.com/articles/set-up-git
 
 @h2 Building Felix
 
-Before proceeding, it's imperative to be sure that at least one one of
-the environment variables <code>HOME</code> or
-<code>USERPROFILE</code> are set.
+Open a command prompt and CD to the folder you put the source code into.
 
-In the root Felix directory (in my case C:\projects\github\felix),
-create a file configure_fbuild.cmd with contents (assuming default
-locations for all pre-requisites)
+Run winenv in this folder to set up your PATH and visual studio environment variables.
+
+Now you can use fbuild to build felix by running the fbuild\fbuild-light python script.
+
+For example:
+
 @pre
-  del /Q /S .\build > nul 2>&1
-  set "PFPATH=C:\Program Files"
-  set PATH=C:\Python32;"%PFPATH%\flexdll";C:\Tcl\bin;C:\ocamlms\bin;C:\WINDOWS\system32;C:\WINDOWS
-  call "%PFPATH%\Microsoft Visual Studio 10.0\VC\bin\vcvars32.bat"
-@
-(adjust the last line accordingly for a 64-bit build).
-
-Now, to build the Felix binaries simply open a command prompt, cd to
-the felix directory and issue the commands
-@pre 
-  configure_fbuild.cmd
-  python fbuild/fbuild-light 
+  C:\Users\you> cd felix
+  C:\Users\you\felix> winenv
+  ... some output about environment variables ... 
+  C:\Users\you\felix> python fbuild\fbuild-light
+  ... build output ...
 @
 
 @h2 Building and executing the Felix test suite
