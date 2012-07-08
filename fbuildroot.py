@@ -765,11 +765,8 @@ def speed(ctx):
 # ------------------------------------------------------------------------------
 
 @fbuild.target.register()
-def install_lib(ctx):
+def install_lib(ctx, phases):
     """Install the Felix libraries into the lib directory."""
-
-    # Make sure we're built.
-    phases, iscr, felix = build(ctx)
 
     # --------------------------------------------------------------------------
     # Install the libraries.
@@ -791,7 +788,7 @@ def install_lib(ctx):
 # ------------------------------------------------------------------------------
 
 @fbuild.target.register()
-def install_bin(ctx):
+def install_bin(ctx, phases):
     """Install the Felix binaries into the default bin directory."""
 
     ctx.logger.check(' * installing binaries into', ctx.options.bindir,
@@ -800,12 +797,31 @@ def install_bin(ctx):
     if not ctx.options.bindir.exists():
         ctx.options.bindir.makedirs()
 
-    (ctx.buildroot / 'bin/flx').copy(ctx.options.bindir)
-    (ctx.buildroot / 'bin/flx_ls').copy(ctx.options.bindir)
-    (ctx.buildroot / 'bin/flx_cp').copy(ctx.options.bindir)
-    (ctx.buildroot / 'bin/mk_daemon').copy(ctx.options.bindir)
-    (ctx.buildroot / 'bin/timeout').copy(ctx.options.bindir)
-    (ctx.buildroot / 'bin/webserver').copy(ctx.options.bindir)
+    if "windows" in phases.target.platform:
+
+      #Windows binaries (note the .exe).
+
+      (ctx.buildroot / 'bin/flx.exe').copy(ctx.options.bindir)
+      (ctx.buildroot / 'bin/flx_ls.exe').copy(ctx.options.bindir)
+      (ctx.buildroot / 'bin/flx_cp.exe').copy(ctx.options.bindir)
+      (ctx.buildroot / 'bin/webserver.exe').copy(ctx.options.bindir)
+
+      #These targets are not produced for "windows" in
+      #phases.target.platform at this time.
+
+      #(ctx.buildroot / 'bin/mk_daemon.exe').copy(ctx.options.bindir)
+      #(ctx.buildroot / 'bin/timeout.exe').copy(ctx.options.bindir)
+
+    else:
+
+      #Binaries for all platforms not Windows.
+
+      (ctx.buildroot / 'bin/flx').copy(ctx.options.bindir)
+      (ctx.buildroot / 'bin/flx_ls').copy(ctx.options.bindir)
+      (ctx.buildroot / 'bin/flx_cp').copy(ctx.options.bindir)
+      (ctx.buildroot / 'bin/mk_daemon').copy(ctx.options.bindir)
+      (ctx.buildroot / 'bin/timeout').copy(ctx.options.bindir)
+      (ctx.buildroot / 'bin/webserver').copy(ctx.options.bindir)
 
 # ------------------------------------------------------------------------------
 
@@ -813,8 +829,11 @@ def install_bin(ctx):
 def install(ctx):
     """Install Felix."""
 
-    install_lib(ctx)
-    install_bin(ctx)
+    # Make sure we're built.
+    phases, iscr, felix = build(ctx)
+
+    install_lib(ctx, phases)
+    install_bin(ctx, phases)
 
 # ------------------------------------------------------------------------------
 
