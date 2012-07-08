@@ -25,7 +25,7 @@ type bbind_state_t = {
   instances_of_typeclass: (bid_t, (bid_t * (bvs_t * Flx_btype.t * Flx_btype.t list)) list) Hashtbl.t;
   reductions: reduction_t list ref;
   axioms: axiom_t list ref;
-  lookup_state: Flx_dot.lookup_state_t;
+  lookup_state: Flx_lookup_state.lookup_state_t;
 
   (* Used to cache which symbols we've already processed. *)
   visited: (Flx_types.bid_t, unit) Hashtbl.t;

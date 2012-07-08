@@ -4,7 +4,7 @@ type bind_state_t = {
   symtab: Flx_symtab.t;
   parent: Flx_types.bid_t option;
   bexe_state: Flx_bind_bexe.bexe_state_t;
-  lookup_state: Flx_dot.lookup_state_t;
+  lookup_state: Flx_lookup_state.lookup_state_t;
   bbind_state: Flx_bbind.bbind_state_t;
 }
 
@@ -15,7 +15,7 @@ type bound_t =
 (** Constructs the bind state needed for a batch compiler. *)
 let make_bind_state syms sym_table =
   let lookup_state = 
-    Flx_lookup.make_lookup_state 
+    Flx_lookup_state.make_lookup_state 
       syms.Flx_mtypes2.compiler_options.Flx_options.print_flag
       syms.Flx_mtypes2.counter 
       syms.Flx_mtypes2.varmap
