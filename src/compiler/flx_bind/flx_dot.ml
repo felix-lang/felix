@@ -17,42 +17,7 @@ open Flx_beta
 open Flx_generic
 open Flx_overload
 open Flx_tpat
-
-type lookup_state_t = {
-  counter : bid_t ref;
-  print_flag: bool;
-  ticache : (bid_t, Flx_btype.t) Hashtbl.t;
-  varmap: Flx_mtypes2.typevarmap_t; 
-    (* used by unification to fix the return types of functions
-     * MUST be a reference to the global one because that's used
-     * in the front and back ends extensively..
-     *)
-  sym_table: Flx_sym_table.t;
-  env_cache: (Flx_types.bid_t, Flx_mtypes2.env_t) Hashtbl.t;
-}
-
-
-let hfind msg h k =
-  try Flx_sym_table.find h k
-  with Not_found ->
-    print_endline ("flx_lookup Flx_sym_table.find failed " ^ msg);
-    raise Not_found
-
-let get_data table index =
-  try Flx_sym_table.find table index
-  with Not_found ->
-    failwith ("[Flx_lookup.get_data] No definition of <" ^
-      string_of_bid index ^ ">")
-
-let rsground= {
-  constraint_overload_trail = [];
-  idx_fixlist = [];
-  type_alias_fixlist = [];
-  as_fixlist = [];
-  expr_fixlist = [];
-  depth = 0;
-  open_excludes = []
-}
+open Flx_lookup_state
 
 (*
   Order of sugars for operator dot.

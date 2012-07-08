@@ -16,11 +16,12 @@ open Flx_unify
 open Flx_exceptions
 open List
 open Flx_maps
+open Flx_lookup_state
 
 type bexe_state_t = {
   counter: Flx_types.bid_t ref;
   sym_table: Flx_sym_table.t;
-  lookup_state: Flx_dot.lookup_state_t;
+  lookup_state: Flx_lookup_state.lookup_state_t;
   env: Flx_mtypes2.env_t;
   id: string;
   parent: Flx_types.bid_t option;
@@ -32,7 +33,7 @@ type bexe_state_t = {
 }
 
 let do_unify state bsym_table a b =
-  Flx_do_unify.do_unify state.counter (Flx_lookup.get_varmap state.lookup_state)  state.sym_table bsym_table a b
+  Flx_do_unify.do_unify state.counter (Flx_lookup_state.get_varmap state.lookup_state)  state.sym_table bsym_table a b
 
 let make_bexe_state ?parent ?(env=[]) counter sym_table lookup_state parent_vs ret_type =
   let id =
@@ -413,7 +414,7 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
     if do_unify state bsym_table state.ret_type (btyp_void ())
     then
       begin
-        state.ret_type <- varmap_subst (Flx_lookup.get_varmap state.lookup_state) state.ret_type;
+        state.ret_type <- varmap_subst (Flx_lookup_state.get_varmap state.lookup_state) state.ret_type;
         handle_bexe (bexe_proc_return sr) init
       end
     else
@@ -438,7 +439,7 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
     let e',t' as e = be e in
     let t' = minimise state.counter t' in
     ignore (do_unify state bsym_table state.ret_type t');
-    state.ret_type <- varmap_subst (Flx_lookup.get_varmap state.lookup_state) state.ret_type;
+    state.ret_type <- varmap_subst (Flx_lookup_state.get_varmap state.lookup_state) state.ret_type;
     if type_match state.counter state.ret_type t' then
       handle_bexe (bexe_fun_return (sr,(e',t'))) init
     else clierr sr
@@ -455,7 +456,7 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
     let e',t' = be e in
     let t' = minimise state.counter t' in
     ignore (do_unify state bsym_table state.ret_type t');
-    state.ret_type <- varmap_subst (Flx_lookup.get_varmap state.lookup_state) state.ret_type;
+    state.ret_type <- varmap_subst (Flx_lookup_state.get_varmap state.lookup_state) state.ret_type;
     if type_match state.counter state.ret_type t' then
       handle_bexe (bexe_yield (sr,(e',t'))) init
     else
