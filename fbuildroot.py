@@ -799,7 +799,7 @@ def install_bin(ctx, phases):
 
     if "windows" in phases.target.platform:
 
-      #Windows binaries (note the .exe).
+      #Windows binaries.
 
       (ctx.buildroot / 'bin/flx.exe').copy(ctx.options.bindir)
       (ctx.buildroot / 'bin/flx_ls.exe').copy(ctx.options.bindir)
@@ -811,6 +811,16 @@ def install_bin(ctx, phases):
 
       #(ctx.buildroot / 'bin/mk_daemon.exe').copy(ctx.options.bindir)
       #(ctx.buildroot / 'bin/timeout.exe').copy(ctx.options.bindir)
+
+      #These exectuables I take to be webserver plugins. I assume this
+      #step is not necessary on Linux due to the use of rpath?
+
+      (ctx.buildroot / 'shlib/cpp2html.dll').copy(ctx.options.bindir)
+      (ctx.buildroot / 'shlib/fdoc2html.dll').copy(ctx.options.bindir)
+      (ctx.buildroot / 'shlib/flx2html.dll').copy(ctx.options.bindir)
+      (ctx.buildroot / 'shlib/fpc2html.dll').copy(ctx.options.bindir)
+      (ctx.buildroot / 'shlib/ocaml2html.dll').copy(ctx.options.bindir)
+      (ctx.buildroot / 'shlib/py2html.dll').copy(ctx.options.bindir)
 
     else:
 
