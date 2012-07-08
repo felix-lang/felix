@@ -60,7 +60,6 @@ a .zip or .tar.gz file.
 
 github has good tools and tutorials on how to use git, especially if
 you are not already familiar with it!:
-
 https://help.github.com/articles/set-up-git
 
 @h2 Building Felix
@@ -95,5 +94,5 @@ One can build and execute the Felix tests with the command
 When Felix is built, it can be installed into
 C:\usr\local\lib\felix\felix-1.1.7dev\ with the command,
 @pre 
-  python fbuild/fbuild-light install
+  python fbuild\fbuild-light install
 @
