@@ -1,12 +1,15 @@
 @h1 Building Felix on Win32
+
 Instructions for building Felix using a "native" Microsoft toolchain.
 
 @h2 Introduction
+
 These notes are concerned with how to build Felix using native Win32
 tools (Python, OCaml) and the Microsoft Visual Studio C/C++ compiler
 and linker.
 
 @h2 Pre-requisites
+
 In summary, what is needed for building Felix is
 @pre
   * Python 3.2 or better
@@ -16,11 +19,10 @@ In summary, what is needed for building Felix is
 
 @h3 Python
 
-Regarding Python, I've had best results using Python-3.2
-to-date. There is no need to build Python from source. Microsoft
-installer files (.msi files) providing pre-built binaries for this
-version in both x86 and x86_64 and variants are available from
-http://www.python.org.
+Python-3.2 is the currently supported version for Windows. There is no
+need to build Python from source. Microsoft installer files (.msi
+files) providing pre-built binaries for this version in both x86 and
+x86_64 and variants are available from http://www.python.org.
 
 @h3 Microsoft Visual Studio
 
@@ -55,24 +57,26 @@ Get the source code from github here:
 https://github.com/felix-lang/felix
 
 Since development is very active on felix, it's best to use a git
-client to get the source code, but you can also download everything
-as a ZIP or tar.gz file.
+client to get the source code, but you can also download everything as
+a ZIP or tar.gz file.
 
-github has some tools and tutorials on how to use git, if you are
-not already familiar with it:
+github has some tools and tutorials on how to use git, if you are not
+already familiar with it:
 
 https://help.github.com/articles/set-up-git
 
 @h2 Building Felix
 
-Open a command prompt and CD to the folder you put the source code into.
+Open a command prompt and change directory to the folder you put the
+source code into.
 
-Run winenv in this folder to set up your PATH and visual studio environment variables.
+Run winenv in this folder to set up your <code>PATH</code> and Visual
+Studio environment variables.
 
-Now you can use fbuild to build felix by running the fbuild\fbuild-light python script.
+Now you can use fbuild to build felix by running the
+fbuild\fbuild-light python script.
 
 For example:
-
 @pre
   C:\Users\you> cd felix
   C:\Users\you\felix> winenv
@@ -86,4 +90,12 @@ For example:
 One can build and execute the Felix tests with the command
 @pre 
   python fbuild/fbuild-light test
+@
+
+@h2 Installing Felix
+
+When Felix is built, it can be installed into
+C:\usr\local\lib\felix\felix-1.1.7dev\ with the command,
+@pre 
+  python fbuild/fbuild-light install
 @
