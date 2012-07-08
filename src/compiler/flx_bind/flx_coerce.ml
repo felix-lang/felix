@@ -11,6 +11,65 @@ let sbt = Flx_print.sbt
 let sbe = Flx_print.sbe
 let si = string_of_int
 
+let record_coercion state bsym_table sr x' n t' t'' ls' ls'' = 
+  try
+  bexpr_record t''
+  (
+    List.map
+    (fun (s,t)->
+      match Flx_list.list_assoc_index ls' s with
+      | Some j ->
+        let tt = List.assoc s ls' in
+        if type_eq state.Flx_lookup_state.counter t tt then
+          s,(bexpr_get_n t (bexpr_unitsum_case j n,x'))
+        else clierr sr (
+          "Source Record field '" ^ s ^ "' has type:\n" ^
+          sbt bsym_table tt ^ "\n" ^
+          "but coercion target has the different type:\n" ^
+          sbt bsym_table t ^"\n" ^
+          "The types must be the same!"
+        )
+      | None -> raise Not_found
+    )
+    ls''
+  )
+  with Not_found ->
+    clierr sr
+     (
+     "Record coercion dst requires subset of fields of src:\n" ^
+     sbe bsym_table x' ^ " has type " ^ sbt bsym_table t' ^
+    "\nwhereas annotation requires " ^ sbt bsym_table t''
+    )
+
+let variant_coercion state bsym_table sr x' t' t'' lhs rhs = 
+  try
+    List.iter
+    (fun (s,t)->
+      match Flx_list.list_assoc_index rhs s with
+      | Some j ->
+        let tt = List.assoc s rhs in
+        if not (type_eq state.counter t tt) then
+        clierr sr (
+          "Source Variant field '" ^ s ^ "' has type:\n" ^
+          sbt bsym_table t ^ "\n" ^
+          "but coercion target has the different type:\n" ^
+          sbt bsym_table tt ^"\n" ^
+          "The types must be the same!"
+        )
+      | None -> raise Not_found
+    )
+    lhs
+    ;
+    print_endline ("Coercion of variant to type " ^ sbt bsym_table t'');
+    bexpr_coerce (x',t'')
+  with Not_found ->
+    clierr sr
+     (
+     "Variant coercion src requires subset of fields of dst:\n" ^
+     sbe bsym_table x' ^ " has type " ^ sbt bsym_table t' ^
+    "\nwhereas annotation requires " ^ sbt bsym_table t''
+    )
+
 let coerce (state:Flx_lookup_state.lookup_state_t) bsym_table sr ((e',t') as x') t'' =
 (*
 print_endline ("Binding coercion " ^ sbe bsym_table x' ^ ": " ^ sbt bsym_table t' ^ " to " ^ sbt bsym_table t'');
@@ -73,67 +132,66 @@ print_endline ("Coercion from int expression result is " ^ sbe bsym_table r);
 
     | BTYP_record (n',ls'),BTYP_record (n'',ls'') when n' = n''->
       let n = List.length ls' in
-      begin
-      try
-      bexpr_record t''
-      (
-        List.map
-        (fun (s,t)->
-          match Flx_list.list_assoc_index ls' s with
-          | Some j ->
-            let tt = List.assoc s ls' in
-            if type_eq state.Flx_lookup_state.counter t tt then
-              s,(bexpr_get_n t (bexpr_unitsum_case j n,x'))
-            else clierr sr (
-              "Source Record field '" ^ s ^ "' has type:\n" ^
-              sbt bsym_table tt ^ "\n" ^
-              "but coercion target has the different type:\n" ^
-              sbt bsym_table t ^"\n" ^
-              "The types must be the same!"
-            )
-          | None -> raise Not_found
-        )
-        ls''
-      )
-      with Not_found ->
-        clierr sr
-         (
-         "Record coercion dst requires subset of fields of src:\n" ^
-         sbe bsym_table x' ^ " has type " ^ sbt bsym_table t' ^
-        "\nwhereas annotation requires " ^ sbt bsym_table t''
-        )
-      end
+      record_coercion state bsym_table sr x' n t' t'' ls' ls'' 
 
     | BTYP_variant lhs,BTYP_variant rhs ->
-      begin
-      try
-        List.iter
-        (fun (s,t)->
-          match Flx_list.list_assoc_index rhs s with
-          | Some j ->
-            let tt = List.assoc s rhs in
-            if not (type_eq state.counter t tt) then
-            clierr sr (
-              "Source Variant field '" ^ s ^ "' has type:\n" ^
-              sbt bsym_table t ^ "\n" ^
-              "but coercion target has the different type:\n" ^
-              sbt bsym_table tt ^"\n" ^
-              "The types must be the same!"
-            )
-          | None -> raise Not_found
-        )
-        lhs
-        ;
-        print_endline ("Coercion of variant to type " ^ sbt bsym_table t'');
-        bexpr_coerce (x',t'')
-      with Not_found ->
-        clierr sr
-         (
-         "Variant coercion src requires subset of fields of dst:\n" ^
-         sbe bsym_table x' ^ " has type " ^ sbt bsym_table t' ^
-        "\nwhereas annotation requires " ^ sbt bsym_table t''
-        )
-      end
+      variant_coercion state bsym_table sr x' t' t'' lhs rhs 
+
+    | BTYP_array (BTYP_array (v,ix1),ix2),BTYP_array(v',BTYP_tuple[ix1';ix2']) ->
+      if v <> v' then
+        clierr sr ("Coercion: source array of arrays value type " ^ sbt bsym_table v ^
+         " not equal to target value type " ^ sbt bsym_table v')
+      ;
+      if ix1 <> ix1' || ix2 <> ix2' then
+        clierr sr ("Coercion: source array of arrays value index types " ^ 
+          sbt bsym_table ix1 ^ " and " ^ sbt bsym_table ix2 ^ 
+          " not equal to target index types " ^ 
+          sbt bsym_table ix2' ^ " and " ^ sbt bsym_table ix2')
+      ; 
+      bexpr_coerce (x',t'')
+
+    | BTYP_array (BTYP_array (v,ix1),ix2),BTYP_array(v',BTYP_array(ix',BTYP_unitsum 2)) ->
+      if v <> v' then
+        clierr sr ("Coercion: source array of arrays value type " ^ sbt bsym_table v ^
+         " not equal to target value type " ^ sbt bsym_table v')
+      ;
+      if ix1 <> ix' || ix2 <> ix' then
+        clierr sr ("Coercion: source array of arrays value index types " ^ 
+          sbt bsym_table ix1 ^ " and " ^ sbt bsym_table ix2 ^ 
+          " not equal to target index types " ^ 
+          sbt bsym_table ix' ^ " and " ^ sbt bsym_table ix')
+      ; 
+      bexpr_coerce (x',t'')
+
+
+    | BTYP_array(v',BTYP_tuple[ix1';ix2']), BTYP_array (BTYP_array (v,ix1),ix2)->
+      if v <> v' then
+        clierr sr ("Coercion: source array value type " ^ sbt bsym_table v ^
+         " not equal to target value type " ^ sbt bsym_table v')
+      ;
+      if ix1 <> ix1' || ix2 <> ix2' then
+        clierr sr ("Coercion: source array value index types " ^ 
+          sbt bsym_table ix1' ^ " and " ^ sbt bsym_table ix2' ^ 
+          " not equal to target index types " ^ 
+          sbt bsym_table ix1 ^ " and " ^ sbt bsym_table ix2)
+      ;
+      bexpr_coerce (x',t'')
+
+    | BTYP_array(v',BTYP_array(ix',BTYP_unitsum 2)), BTYP_array (BTYP_array (v,ix1),ix2)->
+      if v <> v' then
+        clierr sr ("Coercion: source array value type " ^ sbt bsym_table v ^
+         " not equal to target value type " ^ sbt bsym_table v')
+      ;
+      if ix1 <> ix' || ix2 <> ix' then
+        clierr sr ("Coercion: source array value index types " ^ 
+          sbt bsym_table ix' ^ " and " ^ sbt bsym_table ix' ^ 
+          " not equal to target index types " ^ 
+          sbt bsym_table ix1 ^ " and " ^ sbt bsym_table ix2)
+      ;
+      bexpr_coerce (x',t'')
+
+
+
     | _ ->
       clierr sr
       (
