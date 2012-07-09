@@ -172,7 +172,7 @@ operation.
 Although strings are normally not considered mutable, for 
 performance reasons you may which to modify a string in-place 
 rather than create a new string.  Please be cautious with this 
-as it is a common source of errors.
+as it may cause some surprises.
 
 {store} updates a specific character of the string:
 

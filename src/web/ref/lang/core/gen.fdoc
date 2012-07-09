@@ -53,6 +53,35 @@ done // Print 0, 1, 1, 2, 3, 5
 endl;
 @
 
+@h2 Generators and match
+
+Generators can output a series of tuples or unions which
+are then unpacked by a match statement.  This is similar to a
+{for} loop but uses a different syntax:
+
+@felix
+gen enumerate[T](s:list[T], start:int)():opt[int*T] = {
+    var n = start;
+    var p = s;
+    while true do
+        match p with
+            | Cons(?val,?tail) =>
+                p = tail;
+                yield Some (n, val);
+                n++;
+            | Empty => return None[int * T];
+        endmatch;  
+    done
+    return None[int * T];
+};
+fun enumerate[T](s:list[T]) => enumerate(s, 0);
+
+val foobarbaz = list("foo", "bar", "baz");
+match ?n, ?s in enumerate(foobarbaz) do
+    println$ ""+n+": "+s;
+done
+@
+
 @h2 See also
 
 <ul>
