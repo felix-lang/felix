@@ -1,0 +1,41 @@
+@h1 fun
+
+@h2 Defining a simple function
+
+{fun} can be used to define a function.  By convention, functions defined using
+{fun} should not have side-effects.
+
+For example:
+
+@felix
+fun square (x:int):int => x * x;
+@
+
+@h2 Parameter lists
+
+A function can be defined with multiple parameter lists.  In this case invoking the
+function with the first set of parameters returns a function that takes the remaining
+parameters.
+
+@felix
+fun greeting(who:string)(kind:string):string => kind+", "+who+"!";
+val world_greeter = greeting("World");
+println(world_greeter("Hello")); // Hello, World!
+println(world_greeter("Goodbye")); // Goodbye, World!
+@
+
+Note that due to operator precedence you might see some strange looking code where arguments
+seem to be separated by whitespace; in fact, this is just two function calls:
+
+@felix
+println$ greeting "World" "Hello" ; // Same as (greeting("World"))("Hello") 
+@
+
+@h2 See also
+
+<ul>
+<li><a href="calls.fdoc">Calling a function</a></li>
+<li><a href="gen.fdoc">gen</a></li>
+<li><a href="proc.fdoc">proc</a></li>
+</ul>
+

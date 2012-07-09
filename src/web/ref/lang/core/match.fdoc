@@ -1,0 +1,9 @@
+@h1 Match
+
+{match} is used for mattern matching.
+
+@h2 See also
+
+<ul>
+<li><a href="union.fdoc">union</a></li>
+</ul>

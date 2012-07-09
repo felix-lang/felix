@@ -1,0 +1,66 @@
+@h1 Calling a function
+
+First, it's important to realize that when calling a function you are conceptually
+only able to pass a single argument.  When calling a function that accepts
+multiple parameters, you pass a tuple with the parameter values.  Understanding this
+will make things much less confusing.
+
+The basic syntax for calling a function is to put the function name and the parameter
+separated by space, like this:
+
+@felix
+println "Hello, world!";
+@
+
+To pass multiple parameters, you can specify a tuple:
+
+@felix
+val four = add(2,2);
+@
+
+To call a procedure with no parameters:
+
+@felix
+endl; // Prints a newline
+@
+
+Function calls have high operator precedence, which means the argument expression will typically
+need parentheses around it if it uses any lower precedence operators.  
+
+@felix
+println "Foo "+bar; // FAIL: parsed as (println "Foo")+bar
+@
+
+The {$} operator reduces the precedence of the call, allowing you to avoid parentheses:
+
+@felix
+println$ "Foo "+bar; // GOOD: parsed as println ("Foo"+bar)
+@
+
+"Dot notation" makes your code look more object-oriented, like so:
+
+@felix
+proc greet(who:string) = {
+  println$ "Hello, " + who + "!";
+}
+
+"World".greet; // Prints Hello, World!
+@
+
+This is also called "reverse application".  Note that the "dot notation" has higher 
+precedence than the other call methods:
+
+@felix
+fun greeting(who:string):string => "Hello, "+who+"!";
+println "World".greeting; // Treated as println("World".greeting) even without using $ 
+// Prints Hello, World!
+@
+
+@h2 See also
+
+<ul>
+<li><a href="fun.fdoc">Function definitions</a></li>
+<li><a href="proc.fdoc">Procedure definitions</a></li>
+<li><a href="gen.fdoc">Generator definitions</a></li>
+</ul>
+
