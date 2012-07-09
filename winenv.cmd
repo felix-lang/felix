@@ -32,6 +32,10 @@ IF NOT EXIST "%TCL_HOME%" echo Warning: I do not see TCL in the standard place (
 @IF "%FELIX_HOME:~-1%" == "\" SET FELIX_HOME=%FELIX_HOME:~0,-1%
 set FELIX_HOME
 
+@IF "%FLX_INSTALL_DIR%" == "" SET FLX_INSTALL_DIR=%FELIX_HOME%\build\release
+@IF "%FLX_INSTALL_DIR:~-1%" == "\" SET FLX_INSTALL_DIR=%FLX_INSTALL_DIR:~0,-1%
+set FLX_INSTALL_DIR
+
 @rem Make sure HOME is set, many of the tools assume this will be there
 IF "%HOME%" == "" (
    set HOME=%USERPROFILE%
