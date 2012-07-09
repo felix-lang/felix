@@ -70,6 +70,46 @@ let variant_coercion state bsym_table sr x' t' t'' lhs rhs =
     "\nwhereas annotation requires " ^ sbt bsym_table t''
     )
 
+(* we start with v0 ^ ix0 cf v ^ (Pi ls)
+   if length ls = 0 we require v0 = v and ix0 = unit, else
+   if length ls = 1 we require v0 = v and ix0 = hd ls else
+   we require v0 = v1 ^ ix1 and ix0 = hd ls and 
+     recursively check v1 ^ ix1 cf v ^ Pi (tl ls)
+*)
+let catmap sep fn ls = String.concat sep (List.map fn ls)
+
+let check_array bsym_table v0 ix0 v ls =
+(*
+print_endline ("Check (" ^ sbt bsym_table v0 ^ ") ^ (" ^ sbt bsym_table ix0 ^ ") == (" ^
+  sbt bsym_table v ^ ") ^ ( " ^ catmap " * " (sbt bsym_table) ls ^ ")")
+;
+*)
+let ls = List.rev ls in
+  if List.length ls = 0 then v = v0 && ix0 = Flx_btype.btyp_tuple [] else
+  let rec aux v0 ix0 ls = 
+    if List.length ls = 1 then 
+     begin 
+(*
+       print_endline "Terminal case"; 
+*)
+       v = v0 && ix0 =  List.hd ls 
+      end 
+    else
+    match v0 with
+    | BTYP_array (v1,ix1) ->
+(*
+print_endline ("  SubCheck " ^ 
+   sbt bsym_table ix0 ^ " = " ^ sbt bsym_table (List.hd ls) ^ " and recurse " ^
+   sbt bsym_table v1 ^ ", " ^ sbt bsym_table ix1 ^ ", (" ^ catmap " * " (sbt bsym_table) (List.tl ls) ^ ")"
+ );
+*)
+      ix0 = List.hd ls && aux v1 ix1 (List.tl ls)
+    | _ -> false
+  in
+  aux v0 ix0 ls
+
+
+
 let coerce (state:Flx_lookup_state.lookup_state_t) bsym_table sr ((e',t') as x') t'' =
 (*
 print_endline ("Binding coercion " ^ sbe bsym_table x' ^ ": " ^ sbt bsym_table t' ^ " to " ^ sbt bsym_table t'');
@@ -137,7 +177,47 @@ print_endline ("Coercion from int expression result is " ^ sbe bsym_table r);
     | BTYP_variant lhs,BTYP_variant rhs ->
       variant_coercion state bsym_table sr x' t' t'' lhs rhs 
 
+    | BTYP_array(v',BTYP_tuple ls),BTYP_array (v,ix)
+    | BTYP_array (v,ix),BTYP_array(v',BTYP_tuple ls) 
+    | BTYP_pointer (BTYP_array(v',BTYP_tuple ls)), BTYP_pointer (BTYP_array (v,ix))
+    | BTYP_pointer (BTYP_array (v,ix)),BTYP_pointer (BTYP_array(v',BTYP_tuple ls))
+      ->
+      let result = check_array bsym_table v ix v' ls in
+(*
+      print_endline ("Coercion: trial check " ^ (if result then "true" else "false"));
+*)
+      if not result then
+        clierr sr ("Incompatible types in array coercion: " ^
+          sbt bsym_table t' ^ " is not isomorphic to " ^ sbt bsym_table t''
+        )
+      else 
+        bexpr_coerce (x',t'')
+
+    | BTYP_array(v',BTYP_array (ix',BTYP_unitsum n)),BTYP_array (v,ix)
+    | BTYP_array (v,ix),BTYP_array(v',BTYP_array (ix',BTYP_unitsum n)) 
+    | BTYP_pointer (BTYP_array(v',BTYP_array (ix',BTYP_unitsum n))), BTYP_pointer (BTYP_array (v,ix))
+    | BTYP_pointer (BTYP_array (v,ix)),BTYP_pointer (BTYP_array(v',BTYP_array (ix',BTYP_unitsum n)))
+      ->
+      let ls = let rec aux n out = match n with 1 -> out | _ -> aux (n-1) (ix::out) in aux n [ix] in 
+      assert (List.length ls = n);
+      let result = check_array bsym_table v ix v' ls in
+(*
+      print_endline ("Coercion: trial check " ^ (if result then "true" else "false"));
+*)
+      if not result then
+        clierr sr ("Incompatible types in array coercion: " ^
+          sbt bsym_table t' ^ " is not isomorphic to " ^ sbt bsym_table t''
+        )
+      else 
+        bexpr_coerce (x',t'')
+
+
+(*
+(* Array of array <-> array value conversions *)
     | BTYP_array (BTYP_array (v,ix1),ix2),BTYP_array(v',BTYP_tuple[ix1';ix2']) ->
+      let result = check_array bsym_table (btyp_array (v,ix1)) ix2 v' [ix1';ix2'] in
+      print_endline ("Coercion: trial check " ^ (if result then "true" else "false"))
+      ;
       if v <> v' then
         clierr sr ("Coercion: source array of arrays value type " ^ sbt bsym_table v ^
          " not equal to target value type " ^ sbt bsym_table v')
@@ -151,6 +231,9 @@ print_endline ("Coercion from int expression result is " ^ sbe bsym_table r);
       bexpr_coerce (x',t'')
 
     | BTYP_array (BTYP_array (v,ix1),ix2),BTYP_array(v',BTYP_array(ix',BTYP_unitsum 2)) ->
+      let result = check_array bsym_table (btyp_array (v,ix1)) ix2 v' [ix';ix'] in
+      print_endline ("Coercion: trial check " ^ (if result then "true" else "false"))
+      ;
       if v <> v' then
         clierr sr ("Coercion: source array of arrays value type " ^ sbt bsym_table v ^
          " not equal to target value type " ^ sbt bsym_table v')
@@ -165,6 +248,9 @@ print_endline ("Coercion from int expression result is " ^ sbe bsym_table r);
 
 
     | BTYP_array(v',BTYP_tuple[ix1';ix2']), BTYP_array (BTYP_array (v,ix1),ix2)->
+      let result = check_array bsym_table (btyp_array (v,ix1)) ix2 v' [ix1';ix2'] in
+      print_endline ("Coercion: trial check " ^ (if result then "true" else "false"))
+      ;
       if v <> v' then
         clierr sr ("Coercion: source array value type " ^ sbt bsym_table v ^
          " not equal to target value type " ^ sbt bsym_table v')
@@ -178,6 +264,9 @@ print_endline ("Coercion from int expression result is " ^ sbe bsym_table r);
       bexpr_coerce (x',t'')
 
     | BTYP_array(v',BTYP_array(ix',BTYP_unitsum 2)), BTYP_array (BTYP_array (v,ix1),ix2)->
+      let result = check_array bsym_table (btyp_array (v,ix1)) ix2 v' [ix';ix'] in
+      print_endline ("Coercion: trial check " ^ (if result then "true" else "false"))
+      ;
       if v <> v' then
         clierr sr ("Coercion: source array value type " ^ sbt bsym_table v ^
          " not equal to target value type " ^ sbt bsym_table v')
@@ -190,6 +279,73 @@ print_endline ("Coercion from int expression result is " ^ sbe bsym_table r);
       ;
       bexpr_coerce (x',t'')
 
+(* Pointer variations of above 4 cases *)
+    | BTYP_pointer (BTYP_array (BTYP_array (v,ix1),ix2)),BTYP_pointer (BTYP_array(v',BTYP_tuple[ix1';ix2'])) ->
+      let result = check_array bsym_table (btyp_array (v,ix1)) ix2 v' [ix1';ix2'] in
+      print_endline ("Coercion: trial check " ^ (if result then "true" else "false"))
+      ;
+      if v <> v' then
+        clierr sr ("Coercion: source array of arrays value type " ^ sbt bsym_table v ^
+         " not equal to target value type " ^ sbt bsym_table v')
+      ;
+      if ix1 <> ix1' || ix2 <> ix2' then
+        clierr sr ("Coercion: source array of arrays value index types " ^ 
+          sbt bsym_table ix1 ^ " and " ^ sbt bsym_table ix2 ^ 
+          " not equal to target index types " ^ 
+          sbt bsym_table ix2' ^ " and " ^ sbt bsym_table ix2')
+      ; 
+      bexpr_coerce (x',t'')
+
+    | BTYP_pointer (BTYP_array (BTYP_array (v,ix1),ix2)),BTYP_pointer (BTYP_array(v',BTYP_array(ix',BTYP_unitsum 2))) ->
+      let result = check_array bsym_table (btyp_array (v,ix1)) ix2 v' [ix';ix'] in
+      print_endline ("Coercion: trial check " ^ (if result then "true" else "false"))
+      ;
+      if v <> v' then
+        clierr sr ("Coercion: source array of arrays value type " ^ sbt bsym_table v ^
+         " not equal to target value type " ^ sbt bsym_table v')
+      ;
+      if ix1 <> ix' || ix2 <> ix' then
+        clierr sr ("Coercion: source array of arrays value index types " ^ 
+          sbt bsym_table ix1 ^ " and " ^ sbt bsym_table ix2 ^ 
+          " not equal to target index types " ^ 
+          sbt bsym_table ix' ^ " and " ^ sbt bsym_table ix')
+      ; 
+      bexpr_coerce (x',t'')
+
+
+    | BTYP_pointer (BTYP_array(v',BTYP_tuple[ix1';ix2'])), BTYP_pointer (BTYP_array (BTYP_array (v,ix1),ix2))->
+      let result = check_array bsym_table (btyp_array (v,ix1)) ix2 v' [ix1';ix2'] in
+      print_endline ("Coercion: trial check " ^ (if result then "true" else "false"))
+      ;
+      if v <> v' then
+        clierr sr ("Coercion: source array value type " ^ sbt bsym_table v ^
+         " not equal to target value type " ^ sbt bsym_table v')
+      ;
+      if ix1 <> ix1' || ix2 <> ix2' then
+        clierr sr ("Coercion: source array value index types " ^ 
+          sbt bsym_table ix1' ^ " and " ^ sbt bsym_table ix2' ^ 
+          " not equal to target index types " ^ 
+          sbt bsym_table ix1 ^ " and " ^ sbt bsym_table ix2)
+      ;
+      bexpr_coerce (x',t'')
+
+    | BTYP_pointer (BTYP_array(v',BTYP_array(ix',BTYP_unitsum 2))), BTYP_pointer (BTYP_array (BTYP_array (v,ix1),ix2))->
+      let result = check_array bsym_table (btyp_array (v,ix1)) ix2 v' [ix';ix'] in
+      print_endline ("Coercion: trial check " ^ (if result then "true" else "false"))
+      ;
+      if v <> v' then
+        clierr sr ("Coercion: source array value type " ^ sbt bsym_table v ^
+         " not equal to target value type " ^ sbt bsym_table v')
+      ;
+      if ix1 <> ix' || ix2 <> ix' then
+        clierr sr ("Coercion: source array value index types " ^ 
+          sbt bsym_table ix' ^ " and " ^ sbt bsym_table ix' ^ 
+          " not equal to target index types " ^ 
+          sbt bsym_table ix1 ^ " and " ^ sbt bsym_table ix2)
+      ;
+      bexpr_coerce (x',t'')
+
+*)
 
 
     | _ ->
