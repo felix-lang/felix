@@ -52,5 +52,6 @@ print$ "BLASTOFF!";
 <ul>
 <li><a href="gen.fdoc">gen</a></li>
 <li><a href="if.fdoc">if</a></li>
+<li><a href="match.fdoc">match</a></li>
 </ul>
 

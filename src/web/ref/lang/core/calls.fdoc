@@ -1,9 +1,4 @@
-@h1 Calling a function
-
-First, it's important to realize that when calling a function you are conceptually
-only able to pass a single argument.  When calling a function that accepts
-multiple parameters, you pass a tuple with the parameter values.  Understanding this
-will make things much less confusing.
+@h1 Function Calls
 
 The basic syntax for calling a function is to put the function name and the parameter
 separated by space, like this:
@@ -12,7 +7,12 @@ separated by space, like this:
 println "Hello, world!";
 @
 
-To pass multiple parameters, you can specify a tuple:
+It's helpful to realize that when calling a function you are conceptually
+only able to pass a single argument.  When calling a function that accepts
+multiple parameters, you pass a tuple with the parameter values.  The tuple is unpacked
+into the parameter values.  Understanding this will some things much less confusing.
+
+For example, this is thought of passing a tuple {(2,2)} to the {add} function:
 
 @felix
 val four = add(2,2);

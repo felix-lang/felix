@@ -3,15 +3,20 @@
 @h2 Defining a simple function
 
 {fun} can be used to define a function.  By convention, functions defined using
-{fun} should not have side-effects.
+{fun} should not have side-effects.  Also, calling a function should always return the
+same result, given the same parameters.
 
-For example:
+{proc} and {gen} are used to define subroutines with side effects or changing return values. 
+
+Here are some simple examples:
 
 @felix
-fun square (x:int):int => x * x;
+fun square (x:double):double => x * x;
+fun hypot(a:double,b:double) => sqrt(square(a) + square(b));
+println$ "hypot 1,1 = "+ str(hypot(1.0,1.0));
 @
 
-@h2 Parameter lists
+@h2 Multiple Parameter Lists (Currying)
 
 A function can be defined with multiple parameter lists.  In this case invoking the
 function with the first set of parameters returns a function that takes the remaining
@@ -24,17 +29,67 @@ println(world_greeter("Hello")); // Hello, World!
 println(world_greeter("Goodbye")); // Goodbye, World!
 @
 
-Note that due to operator precedence you might see some strange looking code where arguments
-seem to be separated by whitespace; in fact, this is just two function calls:
+Note that due to operator precedence you might see code where arguments seem to be 
+separated by whitespace; in fact, this is just two function calls:
 
 @felix
 println$ greeting "World" "Hello" ; // Same as (greeting("World"))("Hello") 
 @
 
+You can have more than two parameter lists, and each parameter list may have multiple parameters:
+
+@felix
+fun foo(a:string)(b:string)(c:int, d:int) => (a,b,c,d);
+println(((foo "a") "b")(1, 2)); // Prints (a, b, 1, 2)
+@
+
+@h2 Shorthand for Match Functions
+
+When a function only does a match on its parameter, there is a shorthand you can use:
+
+
+
+@h2 Function Types
+
+Function types may appear in the declaration of parameters, variables, typedefs,
+unions, and slots.
+
+Here are some example functions and their type declaration:
+
+@felix
+fun strlen(s:string):int // string->int
+fun copy(s:string, len:int):string // string*int -> string 
+fun add(a:int,b:int):int // int^2 -> int
+@
+
+Multiplying two types together creates a tuple type.  Raising a type to a power 
+creates a tuple type with the same element type repeated the given number of times.
+
+@h2 Functions in Variables
+
+You can assign a declared function into a variable and call it:
+
+@felix
+val pstr = println of string;
+pstr("bla!");
+@
+
+Note that using the "of string" is required for functions with overloads, but optional
+if you are sure there is only one function with that name.
+
+When there are multiple parameters, the parameter type should be in parenthesis because
+of operator precedence:
+
+@felix
+fun adder(a:int,b:int) => a+b;
+val addop = adder of (int^2);
+println$ adder(2,2);
+@
+
 @h2 See also
 
 <ul>
-<li><a href="calls.fdoc">Calling a function</a></li>
+<li><a href="calls.fdoc">Function Calls</a></li>
 <li><a href="gen.fdoc">gen</a></li>
 <li><a href="proc.fdoc">proc</a></li>
 </ul>

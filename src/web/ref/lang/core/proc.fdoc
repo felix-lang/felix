@@ -1,0 +1,32 @@
+@h1 Procedures
+
+Procedures are a subroutine that has no return value.  Procedures are defined in a similar
+manner to functions and generators but they use the keyword {proc} and do not declare any return
+value.
+
+@felix
+proc greet(who:string) = {
+   println$ "Hello, "+who+"!";
+}
+proc hello_world = {
+    greet "World";
+}
+
+hello_world; // Prints Hello, World!
+@
+
+Procedures support currying as well; in this case the final return value is a procedure but
+the intermediate ones are actually a function:
+
+@felix
+proc greet(how:string)(who:string) = {
+   println$ how+", "+who+"!";
+}
+// These are both functions returning a procedure that takes a string as a parameter
+val hello = greet("Hello"); 
+val goodbye = greet("Bye, bye");
+goodbye "Love"; // Bye, bye, Love!
+goodbye "Happiness"; // Byte, bye, Happiness!
+hello "Loneliness"; // Hello, Loneliness!
+@
+
