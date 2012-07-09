@@ -1,8 +1,7 @@
 @h1 Procedures
 
 Procedures are a subroutine that has no return value.  Procedures are defined in a similar
-manner to functions and generators but they use the keyword {proc} and do not declare any return
-value.
+manner to functions but they use the keyword {proc} and do not declare any return value.
 
 @felix
 proc greet(who:string) = {
@@ -29,4 +28,58 @@ goodbye "Love"; // Bye, bye, Love!
 goodbye "Happiness"; // Byte, bye, Happiness!
 hello "Loneliness"; // Hello, Loneliness!
 @
+
+@h2 Anonymous Procedure Expressions
+
+When you need to pass a procedure to a function you can do so without giving it
+a name.  This is an anonymous procedure:
+
+@felix
+proc do_ba(a:unit->void, b:unit->void) = {
+    b;
+    a;
+}
+
+do_ba({print "A";}, {print "B";}); // Prints BA
+endl;
+@
+
+Using anonymous procedures can allow you to create your own control flow structures
+with relatively "native looking" syntax:
+
+@felix
+proc unless(cond:bool)(action:unit->void) = {
+    if cond==false do action; done
+}
+
+unless (2+2==5) { println$ "Math OK."; };
+@
+
+Note that the syntax in these cases is not as flexible as the built-in control flow
+stuff; you need a semicolon after the call, the operator precedence isn't quite ideal,
+and you cannot use {do}/{done} as is normally used for built-in control flow.
+
+Note that it is possible to extend the felix parser to implement new kinds of control
+flow and domain-specific languages.  However, doing so is rather complex; this approach
+is simpler and suitable for most DSLs.
+
+@h2 Procedures as Coroutines or Fibers
+
+Procedures allocate their local variables on the heap rather than the stack.  This
+allows them to operate as coroutines or fibers, releasing control of the OS thread
+when they are not actively running.
+
+The Fibres class handles the creation of fibres as a network of interacting
+procedures.
+
+... TODO ...
+
+@h2 See also
+
+<ul>
+<li><a href="subroutines.fdoc">Subroutines</a></li>
+<li><a href="fun.fdoc">Functions</a></li>
+<li><a href="proc.fdoc">Procedures</a></li>
+<li><a href="calls.fdoc">Function Calls</a></li>
+</ul>
 

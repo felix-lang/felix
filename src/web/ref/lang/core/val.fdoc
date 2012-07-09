@@ -1,0 +1,10 @@
+@h1 val
+
+Val is used to declare a variable whose value does not change.  
+
+@h2 Possible Lazy Evaluation
+
+The compiler may decide that a {val} is not used often and use
+lazy evaluation for a {val}.  In this case the value of the {val}
+is determined based on the state of the program at the time the
+{val} is accessed, not at the time the {val} is read. 

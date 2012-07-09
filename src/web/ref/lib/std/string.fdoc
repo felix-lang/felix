@@ -1,0 +1,190 @@
+@h1 String Operations
+
+@h2 String types
+
+The common type of string is {string} - a sequence of 8-bit 
+bytes of undefined encoding.  It is implemented using the
+C++ {std::basic_string&lt;char&gt;}.
+
+Use {ustring} for a unicode string; this is implemented using
+C++ {std::basic_string&lt;uint32_t&gt;}.
+
+@h2 String operations
+
+@h3 Access
+
+Get the length using {len(s)} or {s.len}.
+
+Access individual characters using {s.[n]} where n &gt;= 0 and n &gt; len(s).
+
+@h3 Comparison
+
+Strings support {==}, {&lt;}, {&gt;}, and their variations.  Strings
+can be compared to a {char} in which case the {char} is treated
+as a single-character string.
+
+{&lt;} and {&gt;} use the platform's comparison methods defined in
+C++ {std::basic_string}.
+
+@h3 Concatenation
+
+Strings can be concatenated using {+}.  That is, {"A"+"B" == "AB"}.
+
+You can also use add characters and numbers to a string.
+
+One feature of string is that you can leave off the {+} and 
+concatenate as the result of treating the function as a string.
+So {"foo" "bar" == "foobar"} and {"high" 5 == "high5"}.  Note
+that function calls have higher operator precedence than arithmetic
+operations.
+
+Multiplying a string with an integer repeats the string the 
+given number of times: {"."*3 = "..."}.
+
+@h3 Substrings
+
+Use {s.[start to end]} to extract a range of characters
+from a string.  The start is inclusive and the end is inclusive.
+If start or end is omitted, the start or end of the string are
+used as appropriate.  A negative position is added to the length
+of the string to determine the actual position used.
+
+The result of the expression is a copy of the characters from
+the given range.
+
+Examples:
+
+@felix
+println$ "abcdef".[3 to]; // "def"
+println$ "abcdef".[to 3]; // "abc"
+println$ "abcdef".[2 to 4]; // "cd"
+println$ "abcdef".[1 to -1]; // "bcde"
+@
+
+@h3 Searching a String
+
+To find the position of a string or character in another string,
+use {find(haystack,needle)}.  You can pass an optional start
+position as the third parameter.  Use {rfind} to search backwards
+from the end of the string.  Find returns {Some int} on success, 
+{None[int]} if no result was found.
+
+@h3 Search and Replace
+
+Use {search_and_replace(s,start,pattern,replacement)} to return a new
+string with occurrences of {pattern} replaced with {replacement}.  
+You can omit the start position to start at 0.
+
+A variation of this takes a list of tuples and returns a 
+function that will replace the first element from each tuple 
+with the second in any string it is passed and return the 
+resulting string.  {search_and_replace} always returns a new 
+string without modifying the original strings.
+
+@h3 Prefixes and suffixes
+
+{prefix(s,prefix)} and {suffix(s,suffix)} return true if the string
+has the given prefix or suffix.
+
+You can also use {s.startswith(prefix)} and {s.endswith(suffix)}
+to check suffix or prefix using an OO-like syntax.  This variation
+works with a {char} in addition to {string}.
+
+You can remove a prefix using {s.ltrim(prefix)} and remove a
+suffix using {s.rtrim(suffix)}.  {s.trim(prefix_suffix)} trims
+from both ends.
+
+@h3 Stripping Whitespace (or other character sets)
+
+Use {lstrip(s)} to remove leading whitespace, {rstrip(s)} to
+remove trailing whitespace, and {strip(s)} to remove both.
+
+An optional second parameter to these specifies a string which
+is the set of characters to remove. 
+
+@h3 Justification
+
+Use {ljust(s, width)} to pad the string with trailing spaces
+so that it is at least the given width.  Use {rjust(s)} to
+add leading spaces instead.
+
+@h3 Splitting Strings
+
+Calling {split(s, sep)} returns a list of strings, which are
+the result of splitting the string at each occurrence of {sep}.
+The seperator may be specified as a {char} or {string}.
+
+A variation {split_first(s, sep)} splits the string at the
+first occurrence of the seperator, if any, returning either
+{Some (left,right)} if the seperator was found or {None[string*string]}
+if the separator is not present.
+
+@h3 To Number
+
+Using the functions {atoi}, {atol}, {atoll}, and {atof} parses
+a string into a number.  These call the C functions of the same
+name and are subject to the same behaviors.
+
+@h3 Formatted Numbers
+
+You can use the {vsprintf} function to use the C library's 
+formatted string system to format numbers:
+
+@felix
+println$ vsprintf("%05.2f", 3.14); // 03.14
+@
+
+@h3 UTF-8 Encoded Characters
+
+You can add a utf8 character to a string by code using the 
+{utf8(code);}.
+
+For example:
+
+@felix
+println$ utf8(0x0394); // Latin delta character
+@
+
+UTF-8 characters may be multiple bytes in length.  If these
+multi-byte characters are added to a {string} then the length
+of the string will be reported in bytes and not characters.  If
+the {string} is displayed using a UTF-8 decoding there will be
+fewer characters on the screen than there were bytes in the 
+{string} as reported by {len}.
+
+@h3 Transforming Characters of a String
+
+You can transform a string using a function that is applied
+to every character in the string, like this:
+
+@felix
+val lo = "hoo";
+fun add1(c:char) => char(ord(c) + 1);
+val up = add1.map(lo);
+println$ lo "->" up;
+@
+
+Notice that the original string is not modified by this
+operation.
+
+@h3 Mutating a String
+
+Although strings are normally not considered mutable, for 
+performance reasons you may which to modify a string in-place 
+rather than create a new string.  Please be cautious with this 
+as it is a common source of errors.
+
+{store} updates a specific character of the string:
+
+@felix
+val f = "hoo";
+store(f, 1, char '2');
+println$ f; // h2o
+@
+
+Use {erase(s,offset,length);} to remove a portion of a string,
+{insert(s,offset,ns)} to insert a new string into the string, and
+{replace(s,offset,length,ns)} to do both in one operation.
+
+@h2 See also
+

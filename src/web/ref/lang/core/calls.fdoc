@@ -1,16 +1,16 @@
-@h1 Function Calls
+@h1 Calling Subroutines
 
-The basic syntax for calling a function is to put the function name and the parameter
+The basic syntax for calling a subroutine is to put its name and argument
 separated by space, like this:
 
 @felix
 println "Hello, world!";
 @
 
-It's helpful to realize that when calling a function you are conceptually
-only able to pass a single argument.  When calling a function that accepts
-multiple parameters, you pass a tuple with the parameter values.  The tuple is unpacked
-into the parameter values.  Understanding this will some things much less confusing.
+It's helpful to realize that when calling a subroutine you are only able to pass a 
+single argument.  When calling a function that accepts multiple arguments, you pass a 
+tuple.  The tuple is unpacked into the parameter values.  Understanding this will 
+some things much less confusing.
 
 For example, this is thought of passing a tuple {(2,2)} to the {add} function:
 
@@ -24,7 +24,7 @@ To call a procedure with no parameters:
 endl; // Prints a newline
 @
 
-Function calls have high operator precedence, which means the argument expression will typically
+Subroutine calls have high operator precedence, which means the argument expression will typically
 need parentheses around it if it uses any lower precedence operators.  
 
 @felix
@@ -59,6 +59,7 @@ println "World".greeting; // Treated as println("World".greeting) even without u
 @h2 See also
 
 <ul>
+<li><a href="subroutines.fdoc">Subroutines</a></li>
 <li><a href="fun.fdoc">Function definitions</a></li>
 <li><a href="proc.fdoc">Procedure definitions</a></li>
 <li><a href="gen.fdoc">Generator definitions</a></li>

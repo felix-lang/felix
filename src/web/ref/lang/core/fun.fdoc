@@ -1,4 +1,4 @@
-@h1 fun
+@h1 Functions
 
 @h2 Defining a simple function
 
@@ -47,12 +47,20 @@ println(((foo "a") "b")(1, 2)); // Prints (a, b, 1, 2)
 
 When a function only does a match on its parameter, there is a shorthand you can use:
 
+@felix
+fun square_maybe : opt[int] -> int =
+  | Some ?a => a * a
+  | None => 0
+;
+@
 
+This eliminates the parameter name and declaration in favor of directly matching/unpacking
+the parameter using a match pattern.
 
 @h2 Function Types
 
 Function types may appear in the declaration of parameters, variables, typedefs,
-unions, and slots.
+unions, and anywhere else you could put a type.
 
 Here are some example functions and their type declaration:
 
@@ -62,10 +70,11 @@ fun copy(s:string, len:int):string // string*int -> string
 fun add(a:int,b:int):int // int^2 -> int
 @
 
-Multiplying two types together creates a tuple type.  Raising a type to a power 
-creates a tuple type with the same element type repeated the given number of times.
+Note that multiplying two types together creates a tuple type.  Raising 
+a type to a power creates a tuple type with the same type repeated the 
+given number of times.
 
-@h2 Functions in Variables
+@h2 Assigning Functions to Variables
 
 You can assign a declared function into a variable and call it:
 
@@ -84,6 +93,17 @@ of operator precedence:
 fun adder(a:int,b:int) => a+b;
 val addop = adder of (int^2);
 println$ adder(2,2);
+@
+
+@h2 Anonymous Functions (Lambda)
+
+Functions can be created and stored in variable, returned from
+functions, or passed as parameters without assigning them a name.
+These are called anonymous functions, or "lambdas".
+
+@felix
+val sq = fun(x:int):int => x*x;
+println$ sq 4; // 16
 @
 
 @h2 See also
