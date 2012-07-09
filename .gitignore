@@ -39,4 +39,5 @@ test/*/*/*.hpp
 test/*/*/*.includes
 *.includes
 !src/flx_pkgconfig/flx_pkgconfig.includes
-
+.project
+.pydevproject
