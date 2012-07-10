@@ -725,18 +725,13 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
     | BEXE_assign (sr,(_,lhst as e1),(_,rhst as e2)) ->
       let projoflinear = match e1 with
         | BEXPR_get_n ((BEXPR_case _,_),(_,(BTYP_tuple _ as t'))),_ 
+        | BEXPR_get_n ((BEXPR_case _,_),(_,(BTYP_array (_,BTYP_unitsum _) as t'))),_ 
          when islinear_type bsym_table t' -> true
         | _ -> false
       in
       let t = tsub rhst in
       let comment = (if with_comments then "      //"^src_str^"\n" else "") in
-      begin match t with
-      | BTYP_tuple [] -> ""
-      | _ when projoflinear ->
-print_endline "PROJ OF LINEAR";
-        begin match e1 with
-        | BEXPR_get_n ((BEXPR_case (j,_),_),(_,(BTYP_tuple ts as t') as var)),_ ->
-          let n = List.length ts in 
+      let assign_to_packed_tuple n j ts t' var = 
           let rec aux1 ls i out = 
              match ls with [] -> assert false 
              | h :: t ->
@@ -745,8 +740,10 @@ print_endline "PROJ OF LINEAR";
           in 
           let lo,elt = aux1 ts j 1 in
           let elt = sizeof_linear_type bsym_table elt in
+(*
 print_endline ("Type of variable is " ^ sbt bsym_table t');
 print_endline ("proj = " ^ si j^ ", Size of component = " ^ si elt ^ ", size of lower bit = " ^ si lo);
+*)
           (* the formula is:
              old low half is value mod lo
              divide by lo * elt to save the top half and remove the elt and lo half
@@ -768,12 +765,32 @@ print_endline ("proj = " ^ si j^ ", Size of component = " ^ si elt ^ ", size of 
           let rhs = ge' sr e2 in
           let nuval =  ad (mu (ad (mu (di lhs clomelt) celt) rhs) clo) (mo lhs clo) in
           let cnuval = string_of_cexpr nuval in
+(*
           print_endline ("Formula = " ^ cnuval);
+*)
           comment ^ 
           "      "^ ge sr var ^ " = " ^ cnuval ^ "; //assign to packed tuple\n"
+      in
+      begin match t with
+      | BTYP_tuple [] -> ""
+      | _ when projoflinear ->
+(*
+print_endline "PROJ OF LINEAR";
+*)
+        begin match e1 with
+        | BEXPR_get_n ((BEXPR_case (j,_),_),(_,(BTYP_tuple ts as t') as var)),_ ->
+          let n = List.length ts in
+          assign_to_packed_tuple n j ts t' var
+        | BEXPR_get_n ((BEXPR_case (j,_),_),(_,(BTYP_array (vt,BTYP_unitsum n) as t') as var)),_ ->
+          let ts = let rec aux n out = match n with 1 -> out | _ -> aux (n-1) (vt::out) in aux n [vt] in 
+          assign_to_packed_tuple n j ts t' var
+
         | _ -> assert false
         end
       | _ ->
+(*
+print_endline ("Assign type = " ^ sbt bsym_table lhst ^ " lhs term = " ^ sbe bsym_table e1);
+*)
         if e1 = e2 then "" else (* eliminate a self-assign .. shouldn't happen but seems to! *)
         comment ^ 
         "      "^ ge sr e1 ^ " = " ^ ge sr e2 ^

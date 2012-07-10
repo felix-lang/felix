@@ -338,7 +338,29 @@ and gen_expr'
      in
      ce_call (ce_atom "flx::rtl::range_check") args
 
-  | BEXPR_get_n ((_,idxt) as idx, (_,BTYP_array (_,aixt) as a)) ->
+(* linear index of linear  type .. handle directly *)
+  | BEXPR_get_n ((_,idxt) as idx, (_,(BTYP_array (_,aixt) as at) as a)) 
+    when islinear_type bsym_table at ->
+(*
+    print_endline "Projection of linear type!";
+*)
+    assert (idxt = aixt); 
+    let sidx = Flx_ixgen.cal_symbolic_array_index bsym_table a in
+(*
+print_endline ("Symbolic index = " ^ Flx_ixgen.print_index bsym_table sidx );
+*)
+    let cidx = Flx_ixgen.render_index bsym_table ge' array_sum_offset_table seq sidx in
+(*
+print_endline ("rendered lineralised index .. C index = " ^ string_of_cexpr cidx);
+*)
+    cidx 
+
+(* Ok, the value type isn't linear, just linearise the index *)
+  | BEXPR_get_n ((_,idxt) as idx, (_,(BTYP_array (_,aixt) as at) as a)) ->
+(*
+print_endline ("Get n .. array " ^ sbe bsym_table a);
+print_endline ("array type " ^ sbt bsym_table at);
+*)
     assert (idxt = aixt); 
 (*
 print_endline ("index type = " ^ sbt bsym_table idxt );
@@ -355,6 +377,7 @@ print_endline ("rendered lineralised index .. C index = " ^ string_of_cexpr cidx
     ce_array (ce_dot (ge' a) "data") cidx 
 
 
+(* ordinary index .. *)
   | BEXPR_get_n ((BEXPR_case (n,_),_),(e',t' as e2)) ->
 (*
 print_endline "gen_expr': BEXPR_get_n (first)";
