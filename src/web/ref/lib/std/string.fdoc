@@ -108,6 +108,17 @@ Use {ljust(s, width)} to pad the string with trailing spaces
 so that it is at least the given width.  Use {rjust(s)} to
 add leading spaces instead.
 
+@h3 Upper- and Lower-Casing
+
+Use {toupper} and {tolower} to change the case of a string:
+
+@felix
+println$ tolower "LoWeR"; // lower
+println$ toupper "UpPeR"; // UPPER
+println$ "LoWeR".tolower; // lower
+println$ "UpPeR".toupper; // UPPER
+@
+
 @h3 Splitting Strings
 
 Calling {split(s, sep)} returns a list of strings, which are

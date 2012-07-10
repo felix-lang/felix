@@ -3,6 +3,12 @@ open class Char
   open Int;
   fun ord: char -> int = "(int)$1";
   ctor[t in ints] char: t = "(char)$1";
+  
+  fun toupper : char -> char = "toupper($1)" requires C89_headers::ctype_h;
+  fun tolower : char -> char = "tolower($1)" requires C89_headers::ctype_h;
+  
+  fun isupper : char -> char = "isupper($1)" requires C89_headers::ctype_h;
+  fun islower : char -> char = "islower($1)" requires C89_headers::ctype_h;
 }
 
 open class Wchar

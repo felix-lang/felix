@@ -422,6 +422,11 @@ open class String
   fun vsprintf[t]: string * t -> string =
     "::flx::rtl::strutil::flx_asprintf(const_cast<char*>($1.c_str()),$2)" requires package "flx_strutil"
   ;
+
+  // Convert all characters to upper case  
+  fun toupper(s:string):string => map (toupper of char) s;
+  // Convert all characters to lower case
+  fun tolower(s:string):string => map (tolower of char) s;
 }
 
 instance Str[string] {
