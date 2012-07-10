@@ -12,6 +12,10 @@ Categorical type system:
 @link garrays_index.fdoc | Generalised Arrays.
 
 @p
+Pattern matching and unions:
+@link pattern_index.fdoc | Pattern Matching
+
+@p
 Literals
 @link literals_index.fdoc | Literals
 
