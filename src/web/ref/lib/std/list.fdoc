@@ -1,0 +1,228 @@
+@h1 Lists
+
+@h2 Basics
+
+The {list} type is a simple singly-linked list.  This structure
+has a long history in functional programming and there are many
+algorithms that depend on it.
+
+@h2 What is Cons All About?
+
+An early important functional programming language called lisp
+has a function called {cons} that forms a 2-element tuple.  This
+was a fundamental construct for many data structures, especially
+lists.
+
+A {list} is built from a chain of {Cons} values; the first 
+element of the {Cons} is the current value.  The second is
+the remainder of the list (if any).  The {Cons} is thus a node
+in a simple singly-linked list. 
+
+Any {Cons} can stand alone as a list that starts with its own
+value and continues to the end of the list.
+
+The special value {Empty} is not a {Cons}, instead it is a
+constant representing an empty list.
+
+@h2 List operations
+
+@h3 List Construction
+
+Create a fresh list from one or more values using the {list}
+function.  It will return a list containing all parameters
+given.  If given zero parameters it returns an empty list.
+
+Use {copy(a)} or {a.copy} to make a new list by copying, or
+{rev(a)}/{a.rev} to get a reversed copy.  {rev} is more
+efficient than {copy}.
+
+To copy just the first {n} elements of a list, use {take n lst}.  
+The inverse is {drop n lst} which returns all elements after those
+first {n}. 
+
+You can also pass the {list} function a generator, as if you
+were using a for loop to iterate over values and append them
+to the list.
+
+Use the {range(low,high,step)} function to create a list
+of integers starting at {low} (inclusive), ending at 
+{high} (exclusive).
+
+Example:
+
+@felix
+println(range(0,10,1)); // list(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+println(range(0,10,2)); // list(0, 2, 4, 6, 8)
+println(range(0,10,3)); // list(0, 3, 6, 9)
+@
+
+Variations are {range(low,high)} and {range(high)} which default
+the step to 1 and (in the latter case) low to 0.
+
+@h3 Adding to a List
+
+Lists can be concatenated using {+}:
+
+@felix
+val f = list(1,2) + list(3,4);
+println(f); // list(1, 2, 3, 4)
+@
+
+You can add an element to the start/end of the list using
+{+} as well.  The original list is not modified:
+
+@felix
+val f = list(7,5,9);
+println(1 + f + 3); // list(1, 7, 5, 9, 3)
+@
+
+Note that adding elements to the end of a list makes a copy
+of the entire list, so it's best to avoid that.  Building up
+lists is generally done in reverse, then reversing the whole 
+list when you are done to put things in the right order if
+necessary.
+
+To concatenate a set of lists, which are stored in a list, 
+use {cat(a)}.  This is also called "flattening":
+
+@felix
+println(cat(list(list(1,2,3),list(4,5,6),list(7,8,9))));
+// -> list(1, 2, 3, 4, 5, 6, 7, 8, 9)
+@
+
+@h3 Reading Lists
+
+Use {len(a)} to get the number of elements in the list.  Note
+that this is not a simple algorithm; the list must be scanned
+to the end to calculate its length.
+
+Use {is_empty(a)} or {a.is_empty} to check if a list is empty.
+
+@h3 Iteration
+
+Iteration over lists can be done using a standard for loop.
+
+You can also use the {iter p a} to call the proc once for
+each list element, passing in the element to each call.
+
+@h3 Folding/Reducing Lists
+
+In functional programming terms, "folding" a list means
+combining all its values into one by repeatedly calling
+a function that combines two values.  It's also commonly
+called "reducing".
+
+The {fold_left f init a} folds to the "left".  This means
+that the head of the list is the first to be folded.  The first
+invokation of the function is with the {init} value and the head
+value of the list.  Subsequent calls are passed the result of
+the prior call and the next value in the list.  The result of
+the operation is the return value of the final call to the
+folding function.  The folding function should be a function
+that takes the init/prior value and returns a function that
+folds that value with the init/prior value and returns the result.
+
+@felix
+val vals=list(2,4,3,5);
+// Sum values to an int
+fun add(a:int)(b:int) => a+b;
+println$ fold_left add 0 vals; // 14
+// Join values with a comma, returning a string
+fun join_with_commas(a:string)(b:int):string => if a.len.int > 0 then a+", "+b else str(b);
+println$ fold_left join_with_commas "" vals; // 2, 4, 3, 5
+@
+
+The {fold_right} operator is similar to {fold_left} but works
+from the right side of the list and passes the init value as
+the second function application instead of the first:
+
+@felix
+val vals=list(2,4,3,5);
+// Sum values to an int
+fun add(a:int)(b:int) => a+b;
+println$ fold_right add vals 0; // 14
+// Join values with a comma, returning a string
+fun rjoin_with_commas(b:int)(a:string):string => if a.len.int > 0 then str(b)+", "+a else str(b);
+println$ fold_right rjoin_with_commas vals ""; // 2, 4, 3, 5
+@
+
+Using {fold_right} can be less intuitive, but sometimes it results 
+in far more efficient algorithms, especially when building a list 
+as the result of the fold operation.
+
+@h3 Zipping
+
+The term "zipping" comes from the image of a zipper where teeth
+from each half of the zipper are interleaved together while
+"zipping up".
+
+In more concrete terms, a "zip" operation on a list combines
+two or more lists, producing a list of tuples.  Each tuple
+in the new list has one value from each of the original lists.
+
+The {zip2} function zips up two lists:
+
+@felix
+val a = list(1,2,3,4);
+val b = list("a","b","c","d");
+val c = zip2 a b;
+println(c); // list((1, a), (2, b), (3, c), (4, d))
+@
+
+@h3 Transforming Lists
+
+Use {map f x} to apply a function to each element of a list and
+return a new list containing the results of each call in turn.
+{rev_map} does the same but the resulting list is in the reverse
+order from the original.  For lists, {rev_map} is more efficient 
+than {map}.
+
+@h3 Making Strings
+
+To join a list with commas you can use {strcat a} or {a.strcat}.  To
+specify your own separator, use {cat sep a} or {sep.cat(a)} for
+string lists or use {strcat sep a}/{sep.strcat(a)} for other list
+types.
+
+The {catmap sep f a} function first converts elements to a string
+using the passed function before using cat to join them with the
+given seperator. 
+
+@h3 Searching Lists
+
+The function {mem f a} passes elements in the list to the
+function {f}; if {f} ever returns {true}, it returns {true}.  If it
+passes the end of the list, it returns {false}.  The  alternate form 
+{mem f a e}, passes the extra parameter {e} to each invokation of 
+{f}.
+
+Using {find f a} is similar to {mem} above but returns {Some} value
+that was found or {None} if nothing matched.
+
+Further, use {filter f a} to return a new list containing all elements
+in {a} for which {f} returns {true}.
+
+The reverse of {filter} is {remove f a} which returns a list containing
+all elements for which {f} returns {false}.
+
+@h3 Sorting
+
+Use {sort} to sort the elements of the list.  The elements of the
+list must have a working {<} operator for this to work.  This returns
+a new sorted list, leaving the original list as-is.
+
+@h3 List Mutation
+
+Although lists are normally immutable (purely functional), for
+performance reasons you from time to time need to modify a list
+node in place.  This action should be taken with care, as doing
+so may cause some confusion.
+
+Use {splice(a,b)} to concatenate a list such that the last node
+of the first list is given the second list as its tail.
+
+{rev(a)} reverses a list in-place.  The first node is 
+updated in-place to have its tail set to Empty and all remaining
+nodes are updated in-place to have their tail set to the previous
+node.
+ 
