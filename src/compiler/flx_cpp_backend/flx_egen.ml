@@ -363,8 +363,7 @@ print_endline ("rendered lineralised index .. C index = " ^ string_of_cexpr cidx
     let carr = Flx_ixgen.render_index bsym_table ge' array_sum_offset_table seq sarr in
     let ipow = Flx_ixgen.get_power_table bsym_table power_table array_value_size in
     let cdiv = ce_array (ce_atom ipow) cidx  in
-    let cmod = ce_array (ce_atom ipow) (ce_infix "+" cidx (ce_atom "1"))  in
-    let result = ce_infix "%" (ce_infix "/" carr cdiv) cmod in
+    let result = ce_infix "%" (ce_infix "/" carr cdiv) (ce_atom (si array_value_size)) in
     result
 
 (* Ok, the value type isn't linear, just linearise the index *)
