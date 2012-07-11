@@ -1,0 +1,6 @@
+var x = true, false, false, false;
+println$ x;
+
+x . 1 = true;
+println$ x;
+

@@ -16,6 +16,7 @@ type type_array_as_tuple_registry_t = (Flx_types.bid_t, unit) Hashtbl.t
 *)
 type array_sum_offset_data_t = string * int list (* name, values *)
 type array_sum_offset_table_t = (Flx_btype.t, array_sum_offset_data_t) Hashtbl.t
+type power_table_t = (int,int list) Hashtbl.t
 
 type typevarmap_t = (Flx_types.bid_t, Flx_btype.t) Hashtbl.t
 
@@ -70,6 +71,7 @@ type sym_state_t =
   mutable instances_of_typeclass: (bid_t, (bid_t * (bvs_t * Flx_btype.t * Flx_btype.t list)) list) Hashtbl.t;
   transient_specialisation_cache: (bid_t * Flx_btype.t list, bid_t * Flx_btype.t list) Hashtbl.t;
   array_sum_offset_table: array_sum_offset_table_t;
+  power_table: power_table_t;
 } 
 
 let make_syms options =
@@ -93,6 +95,7 @@ let make_syms options =
     instances_of_typeclass = Hashtbl.create 97;
     transient_specialisation_cache = Hashtbl.create 97;
     array_sum_offset_table = Hashtbl.create 97;
+    power_table = Hashtbl.create 97;
   }
 
 let fresh_bid counter =

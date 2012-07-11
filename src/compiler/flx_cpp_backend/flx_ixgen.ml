@@ -52,6 +52,9 @@ let rec print_index bsym_table idx =
 
 
 let rec cal_symbolic_array_index bsym_table (_,idxt as idx) = 
+(*
+print_endline ("Calsym " ^ sbe bsym_table idx^ ", type="^ sbt bsym_table idxt);
+*)
   let cax x = cal_symbolic_array_index bsym_table x in
   match idx,idxt with
   | (BEXPR_tuple es,_), BTYP_tuple ts  -> 
@@ -69,6 +72,7 @@ print_endline ("Decomposing index of sum type " ^ sbe bsym_table idx ^ " MATCH c
   | (BEXPR_case_arg (i,t'),_), BTYP_sum ts ->
 print_endline ("Decomposing index of sum type " ^ sbe bsym_table idx ^ " MATCH case tag " ^si i^ "  found");
     assert false;
+
 
   | (BEXPR_apply ((BEXPR_case (i,its),t'),(_,bt as b)),_), BTYP_sum ts ->
 (*
@@ -90,6 +94,11 @@ print_endline ("Final index is " ^ print_index bsym_table ix);
      let caset = List.nth ts i in
      (`Case_offset (ts, (`Int caseno))) 
 
+(*
+  | (BEXPR_case (i,t'),_), BTYP_unitsum n ->
+    assert false
+*)
+
   (* this doesn't make sense! This is a decode but the
      above thing is an encode .. grrr 
   *)
@@ -100,9 +109,12 @@ print_endline ("Final index is " ^ print_index bsym_table ix);
     `Int i
 
 
-  | (BEXPR_name _,_),_ -> expr idx 
+  | (BEXPR_name _,_),_ -> 
+    expr idx 
 
-  | e, BTYP_unitsum _ -> expr e
+  | e, BTYP_unitsum _ -> 
+    expr e
+
   | e, BTYP_sum ts ->
 print_endline ("Decomposing index of sum type " ^ sbe bsym_table e);
      let e' = expr e in
@@ -149,6 +161,22 @@ let get_array_sum_offset_table bsym_table seq array_sum_offset_table ts =
      in 
      Hashtbl.add array_sum_offset_table t (name,values);
      name
+
+let get_power_table bsym_table power_table size =
+  if not (Hashtbl.mem power_table size) then begin
+    let name = "_ipow_"^si size in
+    let values = ref [] in
+     let pow = ref 1 in
+     while (!pow) < 60000 do
+       values := !pow :: !values;
+       pow := !pow * size;
+     done
+     ;
+     let values = List.rev (!values) in
+     Hashtbl.add power_table size values;
+  end
+  ;
+  "flx_ipow_"^si size
 
 (* Linearise a structured index *)
 let rec render_index bsym_table ge' array_sum_offset_table seq idx = 

@@ -131,6 +131,7 @@ let rec handle_get_n syms bsym_table rt ge' e t n ((e',t') as e2) =
 print_endline ("Handling a get-n in egen, n=" ^ si n ^ ", e=" ^ sbe bsym_table (e,t) ^ " e2=" ^ sbe bsym_table e2);
 *)
     let array_sum_offset_table = syms.array_sum_offset_table in
+    let power_table = syms.power_table in
     let seq = syms.counter in
     let rtt' = rt t' in
     match rtt' with
@@ -309,6 +310,7 @@ and gen_expr'
   let our_level = length our_display in
   let rt t = beta_reduce syms.Flx_mtypes2.counter bsym_table sr (tsubst this_vs this_ts t) in
   let array_sum_offset_table = syms.array_sum_offset_table in
+  let power_table = syms.power_table in
   let seq = syms.counter in
   let t = rt t in
   match t with
@@ -339,21 +341,31 @@ and gen_expr'
      ce_call (ce_atom "flx::rtl::range_check") args
 
 (* linear index of linear  type .. handle directly *)
-  | BEXPR_get_n ((_,idxt) as idx, (_,(BTYP_array (_,aixt) as at) as a)) 
+  | BEXPR_get_n ((_,idxt) as idx, (_,(BTYP_array (v,aixt) as at) as a)) 
     when islinear_type bsym_table at ->
 (*
     print_endline "Projection of linear type!";
 *)
-    assert (idxt = aixt); 
-    let sidx = Flx_ixgen.cal_symbolic_array_index bsym_table a in
+    assert (idxt = aixt);
+    assert (islinear_type bsym_table v);
+    let array_value_size = sizeof_linear_type bsym_table v in
+
+    let sidx = Flx_ixgen.cal_symbolic_array_index bsym_table idx in
+    let sarr = Flx_ixgen.cal_symbolic_array_index bsym_table a in
 (*
 print_endline ("Symbolic index = " ^ Flx_ixgen.print_index bsym_table sidx );
+print_endline ("Symbolic array = " ^ Flx_ixgen.print_index bsym_table sarr );
 *)
     let cidx = Flx_ixgen.render_index bsym_table ge' array_sum_offset_table seq sidx in
 (*
 print_endline ("rendered lineralised index .. C index = " ^ string_of_cexpr cidx);
 *)
-    cidx 
+    let carr = Flx_ixgen.render_index bsym_table ge' array_sum_offset_table seq sarr in
+    let ipow = Flx_ixgen.get_power_table bsym_table power_table array_value_size in
+    let cdiv = ce_array (ce_atom ipow) cidx  in
+    let cmod = ce_array (ce_atom ipow) (ce_infix "+" cidx (ce_atom "1"))  in
+    let result = ce_infix "%" (ce_infix "/" carr cdiv) cmod in
+    result
 
 (* Ok, the value type isn't linear, just linearise the index *)
   | BEXPR_get_n ((_,idxt) as idx, (_,(BTYP_array (_,aixt) as at) as a)) ->
@@ -831,8 +843,8 @@ print_endline ("Handling coercion in egen " ^ sbt bsym_table srct ^ " -> " ^ sbt
        (a,t'')
      ) -> 
     if Flx_btype.islinear_type bsym_table t then begin
-(*
 print_endline ("egen:BEXPR_apply BEXPR_case: index type = " ^ sbt bsym_table t );
+(*
 print_endline ("egen:BEXPR_apply BEXPR_case: index value = " ^ sbe bsym_table (e,t));
 *)
       let sidx = Flx_ixgen.cal_symbolic_array_index bsym_table (e,t) in
