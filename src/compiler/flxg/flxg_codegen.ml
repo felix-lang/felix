@@ -463,6 +463,18 @@ let codegen_bsyms
     state.syms.array_sum_offset_table;
   end;
 
+  if Hashtbl.length state.syms.power_table > 0 then
+  begin
+    plr "\n// integer powers of constants \n";
+    Hashtbl.iter (fun size values ->
+      plr  ("static int flx_ipow_"^si size^ "[" ^ string_of_int (List.length values) ^ "] = {" ^
+      catmap "," string_of_int  values ^
+      "};")
+    )
+    state.syms.power_table;
+  end;
+
+
   Flxg_file.close_out state.rtti_file;
   plp "flx";
   plp "flx_gc";  (* RF: flx apps now need flx_gc. is this the way to do it? *)
