@@ -50,7 +50,7 @@ info_log=wiki.log
 # for remote repository set git = remote
 # for local repository set git = local
 #git=local
-#git=remote
+#mode=remote
 git_https_url=https://github.com/felix-lang/wiki.git
 git_ssh_url=git@github.com:felix-lang/wiki.git
 zip_url=https://github.com/felix-lang/wiki/zipball/master
@@ -133,6 +133,7 @@ if not config_file.FileStat::fileexists do
   done
 done
 
+/* Temporarily disabling logging
 val log_dir = Filename::join(config.server_root,"log");
 if not log_dir.FileStat::fileexists do
   if (log_dir.Directory::mkdir != 0) do
@@ -156,6 +157,7 @@ config.log  = logger(debug_logger +info_logger  );
 
 config.log(INFO,"Starting wiki server");
 config.log(CUSTOM1,"Starting reop server");
+*/
 var wiki_db_file_name = 
   match (get_param_list(config.params,"DB")) with
     | Cons(?s,_) => s

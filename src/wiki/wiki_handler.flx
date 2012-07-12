@@ -12,8 +12,8 @@ class WikiHandler {
 
 
   fun app_handlers() =>
-      Cons (http_handler((fun (c:server_config,r:http_request) => true),
-            (proc (c:http_connection, r:http_request ) {c.config.log(INFO,r.path);})),
+      //Cons (http_handler((fun (c:server_config,r:http_request) => true),
+      //      (proc (c:http_connection, r:http_request ) {c.config.log(INFO,r.path);})),
       Cons (http_handler(save_edit_route,requires_auth(auth_source,"Felix Wiki",
             requires_group_auth(save_edit))),
       Cons (http_handler(edit_route,requires_auth(auth_source,"Felix Wiki",
@@ -34,7 +34,6 @@ class WikiHandler {
       Cons (http_handler(path_delete_route,requires_auth(admin_auth_source,"Felix Wiki",path_delete)),
       Cons (http_handler(path_table_route,requires_auth(admin_auth_source,"Felix Wiki",path_table)),
       Cons (http_handler(path_route,requires_auth(admin_auth_source,"Felix Wiki",path)),
-//      Cons (http_handler(search_route,search),
       Cons (http_handler(dir_route,requires_group_auth(dir)),
       Cons (http_handler(pull_route,requires_group_auth(pull)),
       Cons (http_handler(html_route,requires_group_auth(html)),
@@ -44,7 +43,7 @@ class WikiHandler {
       Cons (http_handler(lib_route,requires_group_auth(lib)),
       Cons (http_handler(inc_route,requires_group_auth(inc)),
       Empty[http_handler]))))))))))))))))))))))));
-
+//      Cons (http_handler(search_route,search),
   fun auth_source(uname:string,passwd:string):bool => 
     db_get_auth_fdoc(uname,passwd);
 
@@ -175,15 +174,26 @@ mathjax := '''
   
   fun get_title(conn:http_connection,request:http_request):string = {
       var title = (get_fname(request)).or_else "wiki_main.fdoc";
-      return match authorized_user(conn,request) with
-      |Some ?u => title+if startswith request.path "/wiki/" and 
+      return if is_authorized_for(conn,request/*,lvl*/) then
+      title+if startswith request.path "/wiki/" and 
                      not startswith request.path "/wiki/edit/" 
                   then """[<a href='/wiki/edit/"""+request.path.[6 to]+"'>Edit</a>]"
                   else ""
                   endif
-      |None => title
-    endmatch;
+      else "*"+title
+    endif;
   }
+
+   fun set_title(conn:http_connection,request:http_request,title:string):string => 
+     if is_authorized_for(conn,request/*,lvl*/) then
+       title+if startswith request.path "/wiki/" and 
+                not startswith request.path "/wiki/edit/" 
+             then """[<a href='/wiki/edit/"""+request.path.[6 to]+"'>Edit</a>]"
+             else ""
+             endif
+      else title
+    endif;
+  
  fun wiki_route(config:server_config,request:http_request) ={
     return startswith request.path  "/wiki/"or request.path =="/" or request.path == "";
   }
@@ -194,7 +204,7 @@ mathjax := '''
        write(conn,make_see_other("/wiki/wiki_main.fdoc"));
       return;
     done
-    var fname = get_title(conn,request);//(get_fname(request)).or_else "wiki_main.fdoc";
+    var fname = Filename::basename path;
     val dirname = Filename::dirname path;
     var content:string = "";
     var html:string = "";
@@ -206,6 +216,7 @@ mathjax := '''
     elif fname ==  "wiki_main.fdoc" do
       content = load_template("wiki-welcome.html");
       fname = "Welcome to the Felix wiki!";
+      
     else
       write(conn,make_see_other("/wiki/edit/"+path));
       return;
@@ -215,7 +226,7 @@ mathjax := '''
         apply_to_template("page-template.html",
          Cons(("<!--___CUSTOM_HEADER___-->",hd),
          Cons(("___CENTER_CONTENT___",html),
-         Cons(("___FNAME___",fname),
+         Cons(("___FNAME___",set_title(conn,request,fname)),
          Cons(("___CTRLS___",set-ctrls(conn,request)),
          Cons(("<!--___MENU___-->",load_template("main-menu.html") + admin-menu(conn,request)),
          Empty[string^2])))))));
@@ -252,10 +263,10 @@ mathjax := '''
   proc edit (conn:http_connection, request:http_request ) {
     var txt:string = "";
     var path = request.path.[11 to];
-    if not path_exists(path) do
+/*    if not path_exists(path) do
       handle_not_found(conn,request);
       return;
-    done
+    done */
     if has_doc(path) do
       txt = match get_doc_for_edit(conn.config,path) with |Some ?e => e.content |_ => "" endmatch;
     done
@@ -308,10 +319,10 @@ mathjax := '''
 
   proc save_edit (conn:http_connection, request:http_request ) {
     var path = request.path.[11 to];
-    if not path_exists(path) do
+/*    if not path_exists(path) do
       handle_not_found(conn,request);
       return;
-    done
+    done */
     var txt = strip_ctrl_m((get_post_param(request,"content")).or_else "");    
       var ok,msg = if has_doc(path) then
          update_doc(entry(path,txt))
@@ -331,10 +342,10 @@ mathjax := '''
     }
 
   proc preview (conn:http_connection, request:http_request ) {
-    conn.config.log(INFO,"preview");
+    //conn.config.log(INFO,"preview");
     var path = request.path.[15 to];
     var fname= let ?f = ((get_fname(request)).or_else "") in if f == "" then "main.fdoc" else f endif;
-    conn.config.log(INFO,"preview:"+fname);
+    //conn.config.log(INFO,"preview:"+fname);
     var content = strip_ctrl_m((get_post_param(request,"content")).or_else "");
     def val ok,val needs_mathjax,val hd,val html = format_doc(content,path);
     write(conn,make_html(html));
@@ -355,7 +366,6 @@ mathjax := '''
     var hd:string = "";
     var needs_mathjax=false;
     var ok=false;
-println$ path;
     if has_document(DOCUMENT_ROOT,path) do
       content = match get_document(DOCUMENT_ROOT,path) with |Some ?e => e.content |_ => "" endmatch;
     else 
@@ -770,10 +780,36 @@ println$ path;
 
   proc get-wiki (conn:http_connection, request:http_request ) {
     var user= (get_fname(request)).or_else "";
-    var method = strip_ctrl_m((get_post_param(request,"get-option")).or_else "");
-
-    val message = q"<h1>Getting wiki with $(method)</h1>;
-
+    var meth = strip_ctrl_m((get_post_param(request,"get-option")).or_else "");
+    if config.file_name.FileStat::fileexists do
+      val ihandle = fopen_input (config.file_name);
+      val config_txt = load(ihandle);
+      fclose(ihandle);
+      val url = match meth with
+      |"https" => (get_param(config.params,"git_https_url")).or_else "HTTPS"
+      |"ssh" => (get_param(config.params,"git_ssh_url")).or_else "SSH"
+      |"zip" => (get_param(config.params,"zip_url")).or_else "ZIP"
+      endmatch;
+      val mode = match meth with
+      |"https" => "remote"
+      |"ssh" => "remote"
+      |"zip" => "local"
+      endmatch;
+      val ohandle = fopen_output (config.file_name);
+      if not valid ohandle do
+        fail("Unable to create config file " + config.file_name);
+      else
+        write(ohandle,config_txt);
+        write(ohandle,"\nmode="+mode+"\n");
+        write(ohandle,"\ngit-method="+url+"\n");
+        fclose(ohandle);
+      done
+    else
+      fail("No config exists");
+    done
+    config.params = config.params + ("git-method",url) + ("mode",mode);
+    val message = q"<h1>Getting wiki with $(meth) $(url) </h1>"+
+      (let ?ok,?m = clone(url) in if ok then m else m endif);
     write(conn,make_html(message));
   }
 

@@ -34,7 +34,7 @@ class WikiFileModel {
      FileStat::fileexists (Filename::join(TEMPLATE_ROOT,fname)); 
 
   fun get_doc_for_edit (config:server_config,fname:string):opt[entry] = {
-    var git = match get_param(config.params,"git") with
+    var git = match get_param(config.params,"mode") with
       |Some ?o => o
       |_  => ""
     endmatch;
@@ -94,7 +94,7 @@ class WikiFileModel {
   val timeout = Filename::join (#Config::config.FLX_INSTALL_DIR, "bin", "timeout"+#Config::config.EXT_EXE);
 
   gen delete_doc(fname:string):bool*string = {
-    var git = match get_param(config.params,"git") with
+    var git = match get_param(config.params,"mode") with
       |Some ?o => o
       |_  => ""
     endmatch;
@@ -139,7 +139,7 @@ class WikiFileModel {
 
   gen add-commit(e:entry):bool*string = {
     open SimpleConfig;
-    var git = match get_param(config.params,"git") with
+    var git = match get_param(config.params,"mode") with
       |Some ?o => o
       |_  => ""
     endmatch;
@@ -177,13 +177,13 @@ class WikiFileModel {
     return true,"";
   } 
 
-  gen clone(fname:string):bool*string = {
-    var git = match get_param(config.params,"git") with
+  gen clone(url:string):bool*string = {
+    var git = match get_param(config.params,"mode") with
       |Some ?o => o
       |_  => ""
     endmatch;
     if git == "remote" do
-      val clone_cmd = q"$(SERVER_ROOT)/scripts/git-clone.sh $(WIKI_ROOT)/$(GIT_ROOT)";
+      val clone_cmd = q"$(SERVER_ROOT)/scripts/git-clone.sh $(WIKI_ROOT) $(url)";
       val handle = safer_popen(clone_cmd);
       var git_clone = load(handle);
       fclose(handle);
