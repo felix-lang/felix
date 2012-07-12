@@ -75,11 +75,11 @@ def build_runtime(host_phase, target_phase):
         path / 'JudyCommon/JudyMalloc.c',
         path / 'JudySL/JudySL.c',
         path / 'JudyHS/JudyHS.c'] +
-        (path / 'Judy1' / 'Judy1*.c').glob() +
-        (path / 'JudyL' / 'JudyL*.c').glob()]
+        (path / 'Judy1' / '*.c').glob() +
+        (path / 'JudyL' / '*.c').glob()]
     
     # Copy all the common judy sources we need so people can rebuild the RTL without a source distro
-    for p in (path / 'JudyCommon' / 'Judy1*.c').glob(): 
+    for p in (path / 'JudyCommon' / '*.c').glob(): 
         if p not in ('JudyMalloc.c', 'JudyPrintJP.c'):
             copy(target_phase.ctx, p, target_phase.ctx.buildroot / p)
 
