@@ -1271,7 +1271,7 @@ done
 
 var FLXFLAGS="--inline="+str(INLINE);
 if OUTPUT_DIR != "" do FLXFLAGS += ' '+quote('--output_dir=' + str(OUTPUT_DIR)); done;
-match BUNDLE_DIR with | Some ?dir => { FLXFLAGS += ' ' + quote('--bundle_dir=' + dir); } | None => {} endmatch;
+for dir in BUNDLE_DIR do FLXFLAGS += ' ' + quote('--bundle_dir=' + dir); done;
 if CACHE_DIR != "" do FLXFLAGS += " "+quote("--cache_dir=" + CACHE_DIR); done
 if COMPILER_PHASE != "" do FLXFLAGS += ' --compiler-phase=' + COMPILER_PHASE; done;
 
