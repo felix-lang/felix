@@ -176,14 +176,13 @@ def make_c_builder(ctx, *args, includes=[], libpaths=[], flags=[], **kwargs):
     flags = list(chain(ctx.options.c_flags, flags))
 
     kwargs['platform_options'] = [
-        # THIS IS FOR CLANG
-        #({'darwin'},
-        #    {'warnings': ['all', 'fatal-errors', 
+        ({'darwin'},
+            {'warnings': ['all', 'fatal-errors', 
         #        'no-constant-logical-operand',
         #        'no-array-bounds',
-        #        ],
-        #    'flags': ['-fno-common'] + flags,
-        #    'optimize_flags': ['-O3', '-fomit-frame-pointer']}),
+                ],
+            'flags': ['-fno-common'] + flags,
+            'optimize_flags': ['-O3', '-fomit-frame-pointer']}),
         ({'posix'},
             {'warnings': ['all', 'fatal-errors'],
             'flags': ['-fno-common'] + flags,
@@ -203,18 +202,17 @@ def make_cxx_builder(ctx, *args, includes=[], libpaths=[], flags=[], **kwargs):
     flags = list(chain(ctx.options.c_flags, flags))
 
     kwargs['platform_options'] = [
-        # THIS IS FOR CLANG++
-        #({'darwin'}, {
-        #    'warnings': ['all', 'fatal-errors', 
-        #        'no-invalid-offsetof', 
+        ({'darwin'}, {
+            'warnings': ['all', 'fatal-errors', 
+                'no-invalid-offsetof', 
         #        'no-bitwise-op-parentheses',
         #        'no-parentheses-equality',
         #        'no-return-stack-address',
         #        'no-tautological-compare',
         #        'no-return-type-c-linkage',
-        #        ],
-        #    'flags': ['-fno-common', '-U__STRICT_ANSI__','--std=c++11','--stdlib=libc++'] + flags,
-        #    'optimize_flags': ['-O3', '-fomit-frame-pointer']}),
+                ],
+            'flags': ['-fno-common'] + flags,
+            'optimize_flags': ['-O3', '-fomit-frame-pointer']}),
         ({'posix'}, {
             'warnings': ['all', 'fatal-errors', 'no-invalid-offsetof'],
             'flags': ['-fno-common'] + flags,
