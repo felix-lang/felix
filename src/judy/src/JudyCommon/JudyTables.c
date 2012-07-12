@@ -187,10 +187,15 @@ FUNCTION int main()
 {
     int ii;
 
-#ifdef JUDY1
-    char *fname = "Judy1Tables.c";
+#ifdef JU_64BIT
+#define BITSUF "64Bit"
 #else
-    char *fname = "JudyLTables.c";
+#define BITSUF "32Bit"
+#endif
+#ifdef JUDY1
+    char *fname = "Judy1Tables" BITSUF ".c";
+#else
+    char *fname = "JudyLTables" BITSUF ".c";
 #endif
 
     if ((fd = fopen(fname, "w")) == NULL){
@@ -202,6 +207,13 @@ FUNCTION int main()
     fprintf(fd,"// @(#) From generation tool: $Revision: 4.37 $ $Source: /judy/src/JudyCommon/JudyTables.c $\n");
     fprintf(fd,"//\n\n");
 
+#ifdef JU_64BIT
+    fprintf(fd,"// 64 bit tables\n");
+    fprintf(fd,"#ifdef JU_64BIT\n");
+#else
+    fprintf(fd,"// 32 bit tables\n");
+    fprintf(fd,"#ifndef JU_64BIT\n");
+#endif
 
 // ================================ Judy1 =================================
 #ifdef JUDY1
@@ -290,6 +302,9 @@ FUNCTION int main()
 #endif // 64 BIT
 
 #endif // JUDYL
+
+    fprintf(fd,"#endif /* JU_64BIT check */\n");
+
     fclose(fd);
 
     return(0);
