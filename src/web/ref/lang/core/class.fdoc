@@ -1,3 +1,68 @@
 @h1 Classes
 
-A class is a name
+A felix class creates a scope for global names to reduce naming conflicts.  Names
+inside a class are, by default, not visible outside the class.  This helps keep
+code organized and avoids naming conflicts.
+
+This is similar to namespaces in C++.
+
+To declare a class, use:
+
+@felix
+class Foo {
+  fun bar(s:string) => "Bar "+s;
+}
+@
+
+When something is declared inside the class it can be used directly from within that class
+with no qualifiers.
+
+To specify a member of a class from outside the class, add the class name plus 
+{::} as a prefix:
+
+@felix
+class Foo {
+  fun bar(s:string) => "Bar "+s;
+}
+
+println$ Foo::bar("none!"); // Bar none!
+@
+
+You can also put all the names in a class in your search path using the
+{open} keyword:
+
+@felix
+class Foo {
+  fun bar(s:string) => "Bar "+s;
+}
+
+open Foo;
+println$ bar("none!"); // Bar none!
+@
+
+You can also declare the class as {open} right when you declare it:
+
+@felix
+open class Foo {
+  fun bar(s:string) => "Bar "+s;
+}
+println$ bar("none!"); // Bar none!
+@
+
+Names in the class may be declared private, in which case they will not
+be visible from outside the class:
+
+@felix
+class Bla {
+  private val secret_key = "drowssap";
+}
+println$ Bla::secretkey;  // Error!
+@
+
+A class may use {open} to add other classes to its search path; this will not
+add those other classes to the search path of any other code that uses {open}
+on that class.
+
+A class can also use {inherit} to add names into its scope from another class; 
+in this case names are treated as if they were defined in that class.
+
