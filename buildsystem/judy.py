@@ -26,6 +26,29 @@ def build_judytables(ctx, tablegen, dst) -> fbuild.db.DST:
 
     return dst
 
+@fbuild.db.caches
+def hardcode_macros(ctx, src, macros, dst) -> fbuild.db.DST:
+    """Generate a new version of the input file which has the given macros added to the top as #define's"""
+    # Make sure the directory exists.
+    dst.parent.makedirs()
+    src = Path(src)
+    dst = Path(dst)
+    infile = open(src, 'rb')
+    try:
+        body = infile.read();
+        outfile = open(dst, 'wb')
+        try: 
+            for macro in macros:
+                outfile.write(bytes('#ifndef '+macro+'\n'+
+                                    '#define '+macro+' 1\n'+
+                                    '#endif\n', 'ascii'))
+            outfile.write(body)
+            ctx.logger.check(' * generate', '%s + #define %s -> %s' % (src, ','.join(macros), dst), color='yellow')
+        finally: outfile.close()
+    finally: infile.close()
+    return dst
+    
+    
 # ------------------------------------------------------------------------------
 
 def _build_objs(host_phase, target_phase, builder, dstname):
@@ -58,19 +81,39 @@ def _build_objs(host_phase, target_phase, builder, dstname):
 
     # First, copy all the common files into the Judy* directory.
     srcs = []
-    srcs.extend(copy_regex(target_phase.ctx,
-        srcdir=path / 'JudyCommon',
-        dstdir=path / dstname,
-        src_pattern=r'^Judy(.*\.c)',
-        dst_pattern=r'%s\1' % dstname,
-        exclude_pattern=
-            r'('
-            r'JudyMalloc.c|'
-            r'JudyByCount.c|'
-            r'JudyPrevNext.c|'
-            r'JudyPrevNextEmpty.c|'
-            r'JudyTables.c|'
-            r'JudyPrintJP.c)'))
+    dstdir = target_phase.ctx.buildroot / path / dstname
+    for src in (path / 'JudyCommon' / 'Judy*.c').glob():
+        name = src.name
+        if name in ('JudyMalloc.c', 'JudyTables.c', 'JudyPrintJP.c'):
+            pass
+        elif name.startswith('JudyPrevNext'):
+            for direction in ('Prev','Next'):
+                srcs.append(hardcode_macros(target_phase.ctx,src, macros + ['JUDY'+direction.upper()], dstdir / (dstname + direction + name[12:])))
+        else:
+            tmpmacros = macros
+            if name == 'JudyByCount.c':
+                tmpmacros = tmpmacros + ['NOSMARTJBB', 'NOSMARTJBU', 'NOSMARTJLB']
+            srcs.append(hardcode_macros(target_phase.ctx,src, tmpmacros, dstdir / (dstname + name[4:])))
+            
+            if name == 'JudyGet.c':
+                srcs.append(hardcode_macros(target_phase.ctx, src, tmpmacros + ['JUDYGETINLINE'], dstdir / 'j__udyGet.c'))
+                
+                
+            
+            
+#    srcs.extend(copy_regex(target_phase.ctx,
+#        srcdir=path / 'JudyCommon',
+#        dstdir=path / dstname,
+#        src_pattern=r'^Judy(.*\.c)',
+#        dst_pattern=r'%s\1' % dstname,
+#        exclude_pattern=
+#            r'('
+#            r'JudyMalloc.c|'
+#            r'JudyByCount.c|'
+#            r'JudyPrevNext.c|'
+#            r'JudyPrevNextEmpty.c|'
+#            r'JudyTables.c|'
+#            r'JudyPrintJP.c)'))
 
     # Create the tablegen.
     tablegen = host_phase.c.static.build_exe(
@@ -88,47 +131,46 @@ def _build_objs(host_phase, target_phase, builder, dstname):
     # Create the table source.
     srcs.append(build_judytables(target_phase.ctx, tablegen,
         target_phase.ctx.buildroot / path / dstname / dstname + 'Tables.c'))
+    
     # Compile the objects.
-
-    objs = []
-    objs.extend(builder.build_objects(srcs,
+    return builder.build_objects(srcs,
         includes=includes,
-        macros=macros))
+        macros=macros)
 
-    objs.extend((
-        builder.compile(
-            path / 'JudyCommon/JudyGet.c',
-            dst=path / dstname / 'j__udyGet.c',
-            includes=includes,
-            macros=macros + ['JUDYGETINLINE']),
-        builder.compile(
-            path / 'JudyCommon/JudyPrevNext.c',
-            dst=path / dstname / dstname + 'Next.c',
-            includes=includes,
-            macros=macros + ['JUDYNEXT']),
-        builder.compile(
-            path / 'JudyCommon/JudyPrevNextEmpty.c',
-            dst=path / dstname / dstname + 'NextEmpty.c',
-            includes=includes,
-            macros=macros + ['JUDYNEXT']),
-        builder.compile(
-            path / 'JudyCommon/JudyPrevNext.c',
-            dst=path / dstname / dstname + 'Prev.c',
-            includes=includes,
-            macros=macros + ['JUDYPREV']),
-        builder.compile(
-            path / 'JudyCommon/JudyPrevNextEmpty.c',
-            dst=path / dstname / dstname + 'PrevEmpty.c',
-            includes=includes,
-            macros=macros + ['JUDYPREV']),
-        builder.compile(
-            path / 'JudyCommon/JudyByCount.c',
-            path / dstname / dstname + 'ByCount.c',
-            includes=includes,
-            macros=macros + ['NOSMARTJBB', 'NOSMARTJBU', 'NOSMARTJLB']),
-    ))
-
-    return objs
+#    objs.extend((
+#        builder.compile(
+#            path / 'JudyCommon/JudyGet.c',
+#            dst=path / dstname / 'j__udyGet.c',
+#            includes=includes,
+#            macros=macros + ['JUDYGETINLINE']),
+#        builder.compile(
+#            path / 'JudyCommon/JudyPrevNext.c',
+#            dst=path / dstname / dstname + 'Next.c',
+#            includes=includes,
+#            macros=macros + ['JUDYNEXT']),
+#        builder.compile(
+#            path / 'JudyCommon/JudyPrevNextEmpty.c',
+#            dst=path / dstname / dstname + 'NextEmpty.c',
+#            includes=includes,
+#            macros=macros + ['JUDYNEXT']),
+#        builder.compile(
+#            path / 'JudyCommon/JudyPrevNext.c',
+#            dst=path / dstname / dstname + 'Prev.c',
+#            includes=includes,
+#            macros=macros + ['JUDYPREV']),
+#        builder.compile(
+#            path / 'JudyCommon/JudyPrevNextEmpty.c',
+#            dst=path / dstname / dstname + 'PrevEmpty.c',
+#            includes=includes,
+#            macros=macros + ['JUDYPREV']),
+#        builder.compile(
+#            path / 'JudyCommon/JudyByCount.c',
+#            path / dstname / dstname + 'ByCount.c',
+#            includes=includes,
+#            macros=macros + ['NOSMARTJBB', 'NOSMARTJBU', 'NOSMARTJLB']),
+#    ))
+#
+#    return objs
 
 
 def build_runtime(host_phase, target_phase):
