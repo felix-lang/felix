@@ -217,7 +217,7 @@ def make_cxx_builder(ctx, *args, includes=[], libpaths=[], flags=[], **kwargs):
         #    'optimize_flags': ['-O3', '-fomit-frame-pointer']}),
         ({'posix'}, {
             'warnings': ['all', 'fatal-errors', 'no-invalid-offsetof'],
-            'flags': ['-fno-common', '-std=c++11', '-stdlib=libc++'] + flags,
+            'flags': ['-fno-common'] + flags,
             'optimize_flags': ['-O3', '-fomit-frame-pointer']}),
         ({'windows'}, {
             'flags': ['/GR', '/MD', '/EHs', '/wd4291'] + flags,
