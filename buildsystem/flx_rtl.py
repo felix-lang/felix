@@ -13,8 +13,6 @@ def build_runtime(host_phase, target_phase):
     path = Path('src', 'rtl')
 
     buildsystem.copy_hpps_to_rtl(target_phase.ctx,
-        target_phase.ctx.buildroot / 'config/target/flx_rtl_config.hpp',
-        target_phase.ctx.buildroot / 'config/target/flx_meta.hpp',
         path / 'flx_rtl.hpp',
         path / 'flx_compiler_support_headers.hpp',
         path / 'flx_compiler_support_bodies.hpp',

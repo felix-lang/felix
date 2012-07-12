@@ -11,7 +11,6 @@ def build_runtime(host_phase, target_phase):
     path = Path('src/unixem')
 
     buildsystem.copy_hpps_to_rtl(target_phase.ctx,
-        target_phase.ctx.buildroot / 'config/target/flx_glob_config.hpp',
         path / 'flx_glob.hpp',
     )
 
