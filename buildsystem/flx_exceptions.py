@@ -1,6 +1,7 @@
 import fbuild
 from fbuild.path import Path
 from fbuild.record import Record
+from fbuild.builders.file import copy
 
 import buildsystem
 
@@ -15,8 +16,8 @@ def build_runtime(phase):
     )
 
     dst = 'lib/rtl/flx_exceptions'
-    srcs = [path / 'flx_exceptions.cpp']
-    includes = [phase.ctx.buildroot / 'config/target']
+    srcs = [copy(ctx=phase.ctx, src=f, dst=phase.ctx.buildroot / f) for f in[path / 'flx_exceptions.cpp']]
+    includes = [phase.ctx.buildroot / 'config/target', phase.ctx.buildroot / 'lib/rtl']
     macros = ['BUILD_FLX_EXCEPTIONS']
 
     return Record(

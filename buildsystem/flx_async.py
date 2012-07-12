@@ -2,6 +2,7 @@ import fbuild
 from fbuild.functools import call
 from fbuild.path import Path
 from fbuild.record import Record
+from fbuild.builders.file import copy
 
 import buildsystem
 
@@ -15,15 +16,10 @@ def build_runtime(phase):
 
     dst = 'lib/rtl/flx_async'
     suffix = '.so'
-    srcs = ['src/flx_async/flx_async.cpp']
+    srcs = [copy(ctx=phase.ctx, src=f, dst=phase.ctx.buildroot / f) for f in ['src/flx_async/flx_async.cpp']]
     includes = [
         phase.ctx.buildroot / 'config/target',
-        'src/exceptions',
-        'src/demux',
-        'src/faio',
-        'src/gc',
-        'src/pthread',
-        'src/rtl',
+        phase.ctx.buildroot / 'lib/rtl'
     ]
     macros = ['BUILD_ASYNC']
     libs = [

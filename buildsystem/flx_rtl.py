@@ -2,6 +2,7 @@ import fbuild
 from fbuild.functools import call
 from fbuild.path import Path
 from fbuild.record import Record
+from fbuild.builders.file import copy
 
 import buildsystem
 from buildsystem.config import config_call
@@ -22,18 +23,16 @@ def build_runtime(host_phase, target_phase):
         path / 'flx_ioutil.hpp',
         path / 'flx_strutil.hpp',
         path / 'flx_executil.hpp',
+        path / 'flx_sync.hpp',
+        path / 'plat_linux.hpp',
+        path / 'flx_eh.hpp',
     )
 
     dst = 'lib/rtl/flx'
-    srcs = Path.glob(path / '*.cpp')
+    srcs = [copy(ctx=target_phase.ctx, src=f, dst=target_phase.ctx.buildroot / f) for f in Path.glob(path / '*.cpp')]
     includes = [
         target_phase.ctx.buildroot / 'config/target',
-        'src/exceptions',
-        'src/demux',
-        'src/faio',
-        'src/judy/src',
-        'src/gc',
-        'src/pthread',
+        target_phase.ctx.buildroot / 'lib/rtl'
     ]
     macros = ['BUILD_RTL']
     libs = [

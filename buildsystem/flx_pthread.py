@@ -1,6 +1,7 @@
 import fbuild
 from fbuild.path import Path
 from fbuild.record import Record
+from fbuild.builders.file import copy
 
 import buildsystem
 from buildsystem.config import config_call
@@ -29,7 +30,7 @@ def build_runtime(phase):
     )
 
     dst = 'lib/rtl/flx_pthread'
-    srcs = [
+    srcs = [copy(ctx=phase.ctx, src=f, dst=phase.ctx.buildroot / f) for f in [
         path / 'pthread_win_posix_condv_emul.cpp', # portability hackery
         path / 'pthread_mutex.cpp',
         path / 'pthread_condv.cpp',
@@ -40,18 +41,14 @@ def build_runtime(phase):
         path / 'pthread_bound_queue.cpp',
         path / 'pthread_work_fifo.cpp',
         path / 'pthread_thread_control.cpp',
-    ]
-    includes = [phase.ctx.buildroot / 'config/target', 'src/rtl', 'src/gc']
+        path / 'pthread_win_thread.cpp',
+        path / 'pthread_posix_thread.cpp',
+    ]]
+    includes = [phase.ctx.buildroot / 'config/target', phase.ctx.buildroot / 'lib/rtl', 'src/rtl', 'src/gc']
     macros = ['BUILD_PTHREAD']
     flags = []
     libs = []
     external_libs = []
-
-    if 'win32' in phase.platform:
-        srcs.append(path / 'pthread_win_thread.cpp')
-
-    if 'posix' in phase.platform:
-        srcs.append(path / 'pthread_posix_thread.cpp')
 
     pthread_h = config_call('fbuild.config.c.posix.pthread_h',
         phase.platform,
