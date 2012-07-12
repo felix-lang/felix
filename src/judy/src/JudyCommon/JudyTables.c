@@ -206,6 +206,7 @@ FUNCTION int main()
 // ================================ Judy1 =================================
 #ifdef JUDY1
 
+    fprintf(fd,"#define JUDY1\n");
     fprintf(fd,"#include \"Judy1.h\"\n");
 
     fprintf(fd,"// Leave the malloc() sizes readable in the binary (via "
@@ -250,7 +251,7 @@ FUNCTION int main()
 
 // ================================ JudyL =================================
 #ifdef JUDYL
-
+    fprintf(fd,"#define JUDYL\n");
     fprintf(fd,"#include \"JudyL.h\"\n");
 
     fprintf(fd,"// Leave the malloc() sizes readable in the binary (via "
