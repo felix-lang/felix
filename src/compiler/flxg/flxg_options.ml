@@ -66,7 +66,7 @@ let get_options raw_options =
     force_recompile = check_keys raw_options ["force"];
     cache_dir = Flx_filesys.mkabs (match get_key_value raw_options "cache_dir" with Some x -> x | None -> Flx_filesys.root_dir);
     output_dir = Flx_filesys.mkabs (match get_key_value raw_options "output_dir" with Some x -> x | None -> Flx_filesys.root_dir);
-    bundle_dir = get_key_value raw_options "output_dir";
+    bundle_dir = get_key_value raw_options "bundle_dir";
     max_inline_length =
       begin
         let inline =
