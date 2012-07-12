@@ -1,4 +1,4 @@
-@h2 {var} Variables
+@h1 var Variables
 
 A {var} can have a different value at different times 
 within a program or a routine.
@@ -15,6 +15,13 @@ println k; // finish!
 Note that once the assignment to var is completed, the value
 does not change until the next assignment operation; the 
 initialiser is evaluated "eagerly".
+
+A var is also accessible before it is declared and, in fact,
+before its declaration is reached.  In this case the var has
+a default value based on the default constructor for its type.
+
+When a var overshadows a previously declared name, this overshadowing
+also extends back to before the var is actually declared.
 
 @h2 See also
 
