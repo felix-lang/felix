@@ -1,4 +1,5 @@
 #include "pthread_thread.hpp"
+#if FLX_POSIX
 #include <stdio.h>
 #include <string.h>  // strerror
 #include <cstdlib>
@@ -132,3 +133,4 @@ flx_thread_wrapper_t::flx_thread_wrapper_t(void (*start)(void*), void* udat, thr
 flx_thread_wrapper_t::~flx_thread_wrapper_t() { thread.join(); }
 }}
 
+#endif

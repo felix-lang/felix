@@ -1,4 +1,5 @@
 #include "pthread_thread.hpp"
+#if FLX_WIN32
 #include <stdio.h>
 #include <cstdlib>
 
@@ -136,3 +137,4 @@ flx_thread_wrapper_t::~flx_thread_wrapper_t() { thread.join(); }
 
 }}
 
+#endif
