@@ -58,7 +58,9 @@ def build_runtime(host_phase, target_phase):
     # Copy the header into the runtime library.
     buildsystem.copy_to(target_phase.ctx,
         target_phase.ctx.buildroot / 'lib/rtl',
-        [path / 'Judy.h'])
+        [path / 'Judy.h',
+         path / 'Judy1/Judy1.h',
+         path / 'JudyL/JudyL.h'])
 
     types = config_call('fbuild.config.c.c99.types',
         target_phase.platform, target_phase.c.static)
@@ -79,7 +81,8 @@ def build_runtime(host_phase, target_phase):
         (path / 'JudyL' / '*.c').glob()]
     
     # Copy all the common judy sources we need so people can rebuild the RTL without a source distro
-    for p in (path / 'JudyCommon' / '*.c').glob(): 
+    for p in ((path / 'JudyCommon' / '*.c').glob() + 
+              (path / 'Judy*' / '*.h').glob()): 
         if p not in ('JudyMalloc.c', 'JudyPrintJP.c'):
             copy(target_phase.ctx, p, target_phase.ctx.buildroot / p)
 
