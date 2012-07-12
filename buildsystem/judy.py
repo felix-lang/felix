@@ -27,7 +27,7 @@ def build_judytables(ctx, tablegen, dst) -> fbuild.db.DST:
     return dst
 
 @fbuild.db.caches
-def hardcode_macros(ctx, src, macros, dst) -> fbuild.db.DST:
+def hardcode_macros(ctx, src:fbuild.db.SRC, macros, dst) -> fbuild.db.DST:
     """Generate a new version of the input file which has the given macros added to the top as #define's"""
     # Make sure the directory exists.
     dst.parent.makedirs()
@@ -96,7 +96,7 @@ def _build_objs(host_phase, target_phase, builder, dstname):
             srcs.append(hardcode_macros(target_phase.ctx,src, tmpmacros, dstdir / (dstname + name[4:])))
             
             if name == 'JudyGet.c':
-                srcs.append(hardcode_macros(target_phase.ctx, src, tmpmacros + ['JUDYGETINLINE'], dstdir / 'j__udyGet.c'))
+                srcs.append(hardcode_macros(target_phase.ctx, src, tmpmacros + ['JUDYGETINLINE'], dstdir / 'j__udy'+dstname[-1]+'Get.c'))
                 
                 
             
@@ -197,10 +197,10 @@ def build_runtime(host_phase, target_phase):
     if 'windows' in target_phase.platform:
         macros.append('BUILD_JUDY') #Apply this to all source files.
 
-    srcs = [
+    srcs = [copy(target_phase.ctx, p, target_phase.ctx.buildroot / p) for p in [
         path / 'JudyCommon/JudyMalloc.c',
         path / 'JudySL/JudySL.c',
-        path / 'JudyHS/JudyHS.c']
+        path / 'JudyHS/JudyHS.c']]
 
     static = buildsystem.build_c_static_lib(target_phase, 'lib/rtl/judy',
         srcs=srcs,
