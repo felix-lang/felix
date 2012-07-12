@@ -38,7 +38,7 @@ extern "C" void *flx_pthread_start_wrapper(void *e)
   }
   catch (...) {
     fprintf(stderr,"Uncaught exception in thread\n");
-    std::exit(1);
+    exit(1);
   }
   if(tc)tc->remove_thread();
   return NULL;
@@ -94,7 +94,12 @@ void flx_thread_t::join() {
   {
      fprintf(stderr, "flx_thread_t: FATAL: pthread_join failed: %s\n",
        strerror(res));
+#ifdef exit
+     // Someone wants to replace exit with their own thing ...
+     exit(1);
+#else
      std::exit(1);
+#endif
   }
 }
 
@@ -114,7 +119,12 @@ flx_thread_wrapper_t::flx_thread_wrapper_t(void (*start)(void*), void* udat, thr
     {
        fprintf(stderr, "FATAL: flx_thread_wapper_t: flx_thread_t.init failed: %s\n",
          strerror(res));
-       exit(1);
+#ifdef exit
+     // Someone wants to replace exit with their own thing ...
+     exit(1);
+#else
+     std::exit(1);
+#endif
     }
   }
 }
