@@ -52,7 +52,10 @@ let make_state compiler_options : t =
   (*
   and iface_file_name = filebase ^ ".fix"
   *)
-  let outbase = Flx_filesys.mk_cache_name compiler_options.output_dir (Flx_filesys.mkabs filename) in
+  let outbase =
+    (match compiler_options.bundle_dir with 
+      Some x -> Flx_filesys.join compiler_options.output_dir (Filename.basename filename) 
+      | None -> Flx_filesys.mk_cache_name compiler_options.output_dir (Flx_filesys.mkabs filename)) in
 (*
 print_endline ("File outbase = " ^ outbase);
 *)

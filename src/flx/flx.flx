@@ -70,6 +70,8 @@ proc print_help() {
   println "--usage=hyperlight   : optimised code without run time safety checks";
   println "--static             : make standalone statically linked executable";
   println "--nofelix            : do not run felix translator, leave C++ outputs alone";
+  println "--nocc               : do not C/C++ compiler; implies --nolink";
+  println "--nolink             : do not link object files to an executable";
   println "--options            : show option set";
   println "--config             : show configuration";
   println "--version            : show felix version";
@@ -516,6 +518,8 @@ proc print_config() {
 
 var RECOMPILE=0;
 var RUNIT=1;
+var CCOMPILEIT=1;
+var LINKIT=1;
 var FELIX=1;
 
 // --------------------------------------------------
@@ -574,6 +578,7 @@ var OUTPUT_DIR=
   let ?x = Env::getenv "FLX_OUTPUT_DIR" in 
   if x != "" then x else DEFAULT_OUTPUT_DIR
 ;
+var BUNDLE_DIR = match Env::getenv("FLX_BUNDLE_DIR") with | "" => None[string] | ?dir => Some dir endmatch;
 
 var DRIVER_PKG = "";
 var DRIVER = "";
@@ -603,8 +608,11 @@ proc print_options() {
     println$ "cppos              = "+str cppos;
     println$ "TIME               = "+str TIME;
     println$ "OUTPUT_DIR         = "+str OUTPUT_DIR;
+    println$ "BUNDLE_DIR         = "+str BUNDLE_DIR;
     println$ "CACHE_DIR          = "+str CACHE_DIR;
     println$ "RUNIT              = "+str RUNIT;
+    println$ "CCOMPILEIT         = "+str CCOMPILEIT;
+    println$ "LINKIT             = "+str LINKIT;
     println$ "INCLUDE_DIRS       = "+str INCLUDE_DIRS;
     println$ "FELIX              = "+str FELIX;
     println$ "LINKER_SWITCHES    = "+str LINKER_SWITCHES;
@@ -765,6 +773,10 @@ grabbing_args: while grab == 1 and argno<System::argc do
   elif prefix(arg,"--output_dir=") do
     debugln "Set the directory for compiler generated C++ files";
     OUTPUT_DIR=arg.[13 to];
+    
+  elif prefix(arg,"--bundle_dir=") do
+    debugln "Output files needed for C++ compilation into this folder";
+    BUNDLE_DIR=Some arg.[13 to];
 
   elif prefix(arg,"--cache_dir=") do
     debugln "Set the directory for compiler generated *.par files";
@@ -813,6 +825,13 @@ grabbing_args: while grab == 1 and argno<System::argc do
   elif arg== "--nofelix" do
     debugln "Do not translate Felix code, just compile generated C++ (used to debug at C++ level)";
     FELIX=0;
+
+  elif arg== "--nocc" do
+    debugln "Do not run the C/C++ compiler, just generate C++ source code and exit; implies -c and --nolink";
+    CCOMPILEIT=0;
+  elif arg== "--nolink" do
+    debugln "Do not link object code to an executable, just generate and compile the C++ source code; implies -c";
+    LINKIT=0;
 
   elif prefix(arg,"-l") or prefix(arg,"-L") do
     debugln "Set extra switched for linker";
@@ -1083,7 +1102,13 @@ var rel_filebase = Filename::join(dir,base);
 debugln$ "Rel_filebase= " + rel_filebase;
 var filebase = Directory::mk_absolute_filename$ rel_filebase;
 debugln$ "User program base is " + filebase;
-var cpp_filebase = if OUTPUT_DIR=="" then filebase else cache_join(OUTPUT_DIR,filebase) endif;
+var cpp_filebase =
+  match BUNDLE_DIR with
+  | Some ?dir => Filename::join(dir,Filename::basename filebase)
+  | None =>if OUTPUT_DIR=="" then filebase 
+           else cache_join(OUTPUT_DIR,filebase) 
+           endif
+  endmatch;         
 debugln$ "C++ file base is " + cpp_filebase;
 
 // Find absolute pathname
@@ -1246,6 +1271,7 @@ done
 
 var FLXFLAGS="--inline="+str(INLINE);
 if OUTPUT_DIR != "" do FLXFLAGS += ' '+quote('--output_dir=' + str(OUTPUT_DIR)); done;
+match BUNDLE_DIR with | Some ?dir => { FLXFLAGS += ' ' + quote('--bundle_dir=' + str(BUNDLE_DIR)); } endmatch;
 if CACHE_DIR != "" do FLXFLAGS += " "+quote("--cache_dir=" + CACHE_DIR); done
 if COMPILER_PHASE != "" do FLXFLAGS += ' --compiler-phase=' + COMPILER_PHASE; done;
 
@@ -1276,7 +1302,9 @@ else
   calpackages(); // need to do this here to set linker switches
 done
 
-if STATIC == 0 do
+if CCOMPILEIT == 0 do
+  debugln "C++ compilation skipped by switch";
+elif STATIC == 0 do
   debugln "Dynamic linkage";
   CCMD=List::cat ' ' (List::list (
     CCOBJ_DLLIB, CCFLAGS, "-DTARGET_BUILD",
@@ -1290,7 +1318,9 @@ if STATIC == 0 do
     LINK_STRING));
   debugln$ "C++ command="+CCMD;
   result = system(CCMD);
-  if result == 0 do
+  if LINKIT == 0 do
+    debugln "Not linking program selected by switch";
+  elif result == 0 do
     debugln$ "Link command="+LCMD;
     result = system(LCMD);
     if result == 0 do
@@ -1330,7 +1360,9 @@ else
     quote(cpp_filebase+EXT_OBJ), DRIVER, cppos, LINK_STRING));
   debugln$ "C++ command="+CCMD;
   result=system(CCMD);
-  if result == 0 do
+  if LINKIT == 0 do
+    debugln "Not linking based on switch";
+  elif result == 0 do
     debugln$ "Link command="+LCMD;
     result=system(LCMD);
     if result == 0 do

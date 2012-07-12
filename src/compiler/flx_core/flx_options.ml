@@ -28,4 +28,5 @@ type t =
   automaton_filename: string;
   cache_dir : string;
   output_dir : string;
+  bundle_dir : string option;
 }

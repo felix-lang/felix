@@ -66,6 +66,7 @@ let get_options raw_options =
     force_recompile = check_keys raw_options ["force"];
     cache_dir = Flx_filesys.mkabs (match get_key_value raw_options "cache_dir" with Some x -> x | None -> Flx_filesys.root_dir);
     output_dir = Flx_filesys.mkabs (match get_key_value raw_options "output_dir" with Some x -> x | None -> Flx_filesys.root_dir);
+    bundle_dir = get_key_value raw_options "output_dir";
     max_inline_length =
       begin
         let inline =
@@ -141,6 +142,7 @@ let print_options () =
   print_endline "  --inline, --noinline, --optimise";
   print_endline "  --cache_dir=<none>: .par and .syncache directory";
   print_endline "  --output_dir=<none>: .cpp, .hpp, .why etc directory";
+  print_endline "  --bundle_dir=<none>: output files needed for C++ compilation to this folder";
   print_endline "  --force : force recompilation";
   print_endline "  --with-comments : generate code with comments";
   print_endline "  --mangle-names : generate code with fully mangled names"
