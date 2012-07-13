@@ -22,10 +22,13 @@ def _getcwd():
 
 class Builder(fbuild.db.PersistentObject):
     def __init__(self, ctx, flxg, cxx,
-            flx_run_exe,
-            flx_arun_exe,
             flx_run_lib,
-            flx_arun_lib):
+            flx_run_main,
+            flx_run_exe,
+            flx_arun_lib,
+            flx_arun_main,
+            flx_arun_exe,
+        ):
         super().__init__(ctx)
 
         self.flxg = flxg
@@ -34,6 +37,8 @@ class Builder(fbuild.db.PersistentObject):
         self.flx_arun_exe = flx_arun_exe
         self.flx_run_lib  = flx_run_lib
         self.flx_arun_lib = flx_arun_lib
+        self.flx_run_main = flx_run_main
+        self.flx_arun_main = flx_arun_main
 
     @fbuild.db.cachemethod
     def _run_flxg(self, src:fbuild.db.SRC, *,
@@ -137,7 +142,10 @@ class Builder(fbuild.db.PersistentObject):
 
     def link_exe(self, *args, async=True, macros=[], objects=[], **kwargs):
         macros = macros + ['FLX_STATIC_LINK']
-        objs = objects + [self.flx_arun_lib if async else self.flx_run_lib]
+        objs = objects + [
+          (self.flx_arun_lib if async else self.flx_run_lib) ] + [
+          (self.flx_arun_main if async else self.flx_run_main)
+          ]
 
         return self._link(self.cxx.link_exe, *args,
             macros=macros,
@@ -247,10 +255,12 @@ def build(ctx, flxg, cxx, drivers):
         ctx,
         flxg,
         cxx,
-        drivers.flx_run_exe,
-        drivers.flx_arun_exe,
         drivers.flx_run_lib,
+        drivers.flx_run_main,
+        drivers.flx_run_exe,
         drivers.flx_arun_lib,
+        drivers.flx_arun_main,
+        drivers.flx_arun_exe,
     )
 
 def build_flx_pkgconfig(host_phase, target_phase, flx_builder):

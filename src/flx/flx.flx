@@ -576,7 +576,8 @@ var OUTPUT_DIR=
 ;
 
 var DRIVER_PKG = "";
-var DRIVER = "";
+var DRIVER_EXE = ""; // dynamic linkage only 
+var DRIVER_OBJS = Empty[string]; // static linkage only
 var LINK_STRING = "";
 
 var pkgs="";
@@ -1126,10 +1127,13 @@ proc calpackages () {
   // find the driver entity
   if STATIC == 0 do
     // dynamic linkage: the driver executable
-    DRIVER=Filename::join$ List::list (FLX_INSTALL_DIR,"bin",DRIVER_PKG+EXT_EXE);
+    DRIVER_EXE= Filename::join$ List::list (FLX_INSTALL_DIR,"bin",DRIVER_PKG+EXT_EXE);
   else
-    // static linkage: the driver object file
-    DRIVER=Filename::join$ List::list (FLX_INSTALL_DIR,"lib","rtl",DRIVER_PKG+EXT_STATIC_OBJ);
+    // static linkage: the driver object files
+    DRIVER_OBJS =list(
+      Filename::join (List::list (FLX_INSTALL_DIR,"lib","rtl",DRIVER_PKG+"_lib"+EXT_STATIC_OBJ)),
+      Filename::join (List::list (FLX_INSTALL_DIR,"lib","rtl",DRIVER_PKG+"_main"+EXT_STATIC_OBJ))
+    );
   done
 
   if STATIC == 0 do
@@ -1146,7 +1150,11 @@ proc calpackages () {
     fprintln (cerr, "//RESOURCE FILE="+cpp_filebase+".resh");
     fprintln (cerr, "//INCLUDE_DIRS="+INCLUDE_DIRS);
     fprintln (cerr, "//INCLUDE_FILES="+INCLUDE_FILES);
-    fprintln (cerr, "//DRIVER="+DRIVER);
+  if STATIC == 0 do
+    fprintln (cerr, "//DYNAMIC DRIVER EXE ="+str DRIVER_EXE);
+  else
+    fprintln (cerr, "//STATIC DRIVER OBJS ="+str DRIVER_OBJS);
+  done
     fprintln (cerr, "//LINK_STRING="+LINK_STRING);
   done
 }
@@ -1207,7 +1215,7 @@ if RECOMPILE == 0 and RUNIT == 1 and CLEAR_CACHE == 0 do
     if xtime > cal_dep_time (filebase) and xtime > cache_time do
       debugln$ "Running dynamically linked binary";
       calpackages();
-      cmd=FLXRUN+DRIVER+DEBUGSWITCH+" "+ quote(LINKER_OUTPUT_FILENAME)+" "+args;
+      cmd=FLXRUN+DRIVER_EXE+DEBUGSWITCH+" "+ quote(LINKER_OUTPUT_FILENAME)+" "+args;
       if STDOUT != "" do cmd=cmd + " > "+STDOUT; done
       debugln$ "Uptodate shared lib: Running command " + cmd;
       pexit(system(cmd));
@@ -1298,11 +1306,11 @@ if STATIC == 0 do
         if TIME == 1 do
           cmd=List::cat ' ' (List::list (
             TIMECMD,
-            FLXRUN+DRIVER+DEBUGSWITCH,
+            FLXRUN+DRIVER_EXE+DEBUGSWITCH,
             quote(LINKER_OUTPUT_FILENAME), args));
         else
           cmd=List::cat ' ' (List::list (
-            FLXRUN+DRIVER+DEBUGSWITCH,
+            FLXRUN+DRIVER_EXE+DEBUGSWITCH,
             quote(LINKER_OUTPUT_FILENAME), args));
         done
         if STDOUT != "" do cmd=cmd+" > " +quote(STDOUT); done
@@ -1327,7 +1335,7 @@ else
     SPEC_OBJ_FILENAME+quote(cpp_filebase+EXT_OBJ)));
   LCMD=List::cat ' ' (List::list (
     CCLINK_STATIC, SPEC_EXE_FILENAME+quote(LINKER_OUTPUT_FILENAME),
-    quote(cpp_filebase+EXT_OBJ), DRIVER, cppos, LINK_STRING));
+    quote(cpp_filebase+EXT_OBJ))+ DRIVER_OBJS+ list( cppos, LINK_STRING));
   debugln$ "C++ command="+CCMD;
   result=system(CCMD);
   if result == 0 do
