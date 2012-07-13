@@ -238,9 +238,19 @@ fun str: list[string] -> string =
 //print$ "Fields   = " + str fields; endl;
 //print$ "Packages = " + str pkgs; endl;
 
-val dirs=split(path, char ':');
+fun reattach_drive_letters : list[string] -> list[string] =
+  | Cons (?a, Cons (?b, ?tail)) =>
+      if (len(a) == size 1 and isalpha(a.[0]) and b.startswith('\\')) then 
+        Cons (a+':'+b, reattach_drive_letters tail)
+      else
+        Cons (a, reattach_drive_letters (Cons (b, tail)))
+      endif
+  | ?other => other // 1 or 0 elements left
+;
+  
+val dirs=reattach_drive_letters(split(path, char ':'));
 
-//print$ "Path = " + str dirs; endl;
+// print$ "Path = " + str dirs; endl;
 
 var result = Empty[string];
 
