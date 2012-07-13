@@ -176,10 +176,11 @@ def make_c_builder(ctx, *args, includes=[], libpaths=[], flags=[], **kwargs):
     flags = list(chain(ctx.options.c_flags, flags))
 
     kwargs['platform_options'] = [
+        # GRRR .. for clang
         ({'darwin'},
             {'warnings': ['all', 'fatal-errors', 
-        #        'no-constant-logical-operand',
-        #        'no-array-bounds',
+                'no-constant-logical-operand',
+                'no-array-bounds',
                 ],
             'flags': ['-fno-common'] + flags,
             'optimize_flags': ['-O3', '-fomit-frame-pointer']}),
@@ -202,14 +203,15 @@ def make_cxx_builder(ctx, *args, includes=[], libpaths=[], flags=[], **kwargs):
     flags = list(chain(ctx.options.c_flags, flags))
 
     kwargs['platform_options'] = [
+        # GRRR .. for clang++
         ({'darwin'}, {
             'warnings': ['all', 'fatal-errors', 
                 'no-invalid-offsetof', 
-        #        'no-bitwise-op-parentheses',
-        #        'no-parentheses-equality',
-        #        'no-return-stack-address',
-        #        'no-tautological-compare',
-        #        'no-return-type-c-linkage',
+                'no-bitwise-op-parentheses',
+                'no-parentheses-equality',
+                'no-return-stack-address',
+                'no-tautological-compare',
+                'no-return-type-c-linkage',
                 ],
             'flags': ['-fno-common'] + flags,
             'optimize_flags': ['-O3', '-fomit-frame-pointer']}),

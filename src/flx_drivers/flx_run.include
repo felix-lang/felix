@@ -537,7 +537,7 @@ static double egetv(char const *name, double dflt)
   return val;
 }
 
-int main(int argc, char** argv)
+int FELIX_MAIN (int argc, char** argv)
 {
   int error_exit_code = 0;
 #ifndef FLX_STATIC_LINK
