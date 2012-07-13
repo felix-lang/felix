@@ -268,7 +268,9 @@ def build_flx_pkgconfig(host_phase, target_phase, flx_builder):
         dst=Path('bin')/'flx_pkgconfig',
         src=Path('src')/'flx_pkgconfig'/'flx_pkgconfig.flx',
         includes=[target_phase.ctx.buildroot / 'lib'],
-        cxx_includes=[Path('src')/'flx_pkgconfig', target_phase.ctx.buildroot / 'lib'/'rtl'],
+        cxx_includes=[Path('src')/'flx_pkgconfig', 
+                      target_phase.ctx.buildroot / 'lib'/'rtl', 
+                      target_phase.ctx.buildroot / 'config'/'target'],
         cxx_libs=[call('buildsystem.flx_rtl.build_runtime', host_phase, target_phase).static],
     )
 
