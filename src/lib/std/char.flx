@@ -4,11 +4,20 @@ open class Char
   fun ord: char -> int = "(int)$1";
   ctor[t in ints] char: t = "(char)$1";
   
-  fun toupper : char -> char = "toupper($1)" requires C89_headers::ctype_h;
-  fun tolower : char -> char = "tolower($1)" requires C89_headers::ctype_h;
+  fun toupper : char -> char requires C89_headers::ctype_h;
+  fun tolower : char -> char requires C89_headers::ctype_h;
   
-  fun isupper : char -> char = "isupper($1)" requires C89_headers::ctype_h;
-  fun islower : char -> char = "islower($1)" requires C89_headers::ctype_h;
+  fun isupper : char -> bool requires C89_headers::ctype_h;
+  fun islower : char -> bool requires C89_headers::ctype_h;
+  fun isalnum : char -> bool requires C89_headers::ctype_h;
+  fun isalpha : char -> bool requires C89_headers::ctype_h;
+  fun isdigit : char -> bool requires C89_headers::ctype_h;
+  fun isxdigit : char -> bool requires C89_headers::ctype_h;
+  fun iscntrl : char -> bool requires C89_headers::ctype_h;
+  fun isspace : char -> bool requires C89_headers::ctype_h;
+  fun isblank : char -> bool requires C89_headers::ctype_h;
+  fun isprint : char -> bool requires C89_headers::ctype_h;
+  fun ispunct : char -> bool requires C89_headers::ctype_h;
 }
 
 open class Wchar
@@ -16,6 +25,21 @@ open class Wchar
   open Long;
   fun ord: wchar -> long ="(long)$1";
   ctor[t in ints] wchar: t = "(wchar_t)$1";
+  
+  fun toupper : wchar -> wchar = "towupper($1)" requires C89_headers::ctype_h;
+  fun tolower : wchar -> wchar = "towupper($1)" requires C89_headers::ctype_h;
+  
+  fun isupper : wchar -> bool = "iswupper($1)" requires C89_headers::ctype_h;
+  fun islower : wchar -> bool = "iswlower($1)" requires C89_headers::ctype_h;
+  fun isalnum : wchar -> bool = "iswalnum($1)" requires C89_headers::ctype_h;
+  fun isalpha : wchar -> bool = "iswalpha($1)" requires C89_headers::ctype_h;
+  fun isdigit : wchar -> bool = "iswdigit($1)" requires C89_headers::ctype_h;
+  fun isxdigit : wchar -> bool = "iswxdigit($1)" requires C89_headers::ctype_h;
+  fun iscntrl : wchar -> bool = "iswcntrl($1)" requires C89_headers::ctype_h;
+  fun isspace : wchar -> bool = "iswspace($1)" requires C89_headers::ctype_h;
+  fun isblank : wchar -> bool = "iswblank($1)" requires C89_headers::ctype_h;
+  fun isprint : wchar -> bool = "iswprint($1)" requires C89_headers::ctype_h;
+  fun ispunct : wchar -> bool = "iswpunct($1)" requires C89_headers::ctype_h;
 }
 
 open class Uchar
