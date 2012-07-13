@@ -45,7 +45,8 @@ IF NOT EXIST "%HOME%" echo Warning: I do not see a HOME directory in the expecte
 
 @rem Set up a clean path
 set PATH=C:\Python32;%FLEXDLL_HOME%;%TCL_HOME%\bin;%OCAML_HOME%\bin;C:\Windows\system32;C:\Windows;%FELIX_HOME%\build\release\bin;%FELIX_HOME%\build\release\shlib
-echo set PATH=%PATH%
 
 @rem VS100COMNTOOLS is added by the Visual Studio 2010 installer, run it to add VS tools to the path
 call "%VS100COMNTOOLS%vsvars32.bat"
+
+echo set PATH=%PATH%
