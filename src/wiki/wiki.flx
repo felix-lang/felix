@@ -27,7 +27,7 @@ delay=0.05
 port=8080
 TEMPLATE_ROOT=$INSTALL_ROOT/web/templates
 document_root=$INSTALL_ROOT/web
-WIKI_ROOT=$server_root/content
+WIKI_ROOT=$server_root/wiki
 C_PATH += /usr/include/c++/4.2.1
 C_PATH += /usr/include/c++/4.2.1/x86_64-apple-darwin10
 C_PATH += /usr/include/c++/4.4.3
@@ -68,7 +68,7 @@ extension mli   -> ocaml2html::xlat_ocaml
 extension py    -> py2html::xlat_py
 """;
 
-var config = basic_server_config( WikiHandler::app_handlers() + default_handlers(),"wiki",default_config_txt);
+var config = basic_server_config( WikiHandler::app_handlers() ,"wiki",default_config_txt);
 
 
 val INSTALL_ROOT = #Config::config.FLX_INSTALL_DIR;
@@ -96,7 +96,7 @@ if not SERVER_ROOT.FileStat::fileexists do
     fail(q"server_root $(SERVER_ROOT) does not exist and was unable to be created");
   done
 done
-val TEMPLATE_ROOT = match apply_param_vars_to(config.params, 
+val TEMPLATE_ROOT:string = match apply_param_vars_to(config.params, 
                                     get_param_list(config.params,"TEMPLATE_ROOT")) with
                 |Cons(?p,_) => p
                 |_ => "."
@@ -185,5 +185,63 @@ val db_pool: Pool::pool[Sqlite3::sqlite3_db_t] =
   Sqlite3Pool::sqlite3_pool(wiki_db_file_name)
 ;
 
+val git-scripts:array[string^2,6] = (
+  ("git-add.sh", """#!/bin/sh
+cd $1
+/usr/bin/git add $2
+"""),
+  ("git-clone.sh", """#!/bin/sh
+cd $1
+/usr/bin/git clone $2
+"""),
+  ("git-commit.sh", """#!/bin/sh
+cd $1
+/usr/bin/git commit -m "FELIX_WIKI" $2
+"""),
+  ("git-pull.sh", """#!/bin/sh
+cd $1
+/usr/bin/git pull
+"""),
+  ("git-push.sh", """#!/bin/sh
+cd $1
+/usr/bin/git push
+"""),
+  ("git-rm_sh", """#!/bin/sh
+cd $1
+/usr/bin/git rm -f $2
+"""));
+val script_path = Filename::join(SERVER_ROOT,"scripts");
+if not (script_path.FileStat::fileexists) do
+  println$ "Creating git scripts";
+  if (script_path.Directory::mkdir != 0) do
+    fail(q"Unable to create scripts directory $(script_path)");
+  done
+  iter (proc (scr:string^2) {
+    match scr with
+      |?f,?c => {
+        var cod:string = c;
+        var file_name =  f;
+        if not file_name.FileStat::fileexists do
+          println$ q"Creating $(file_name)";
+          var h = fopen_output ((Filename::join(script_path,file_name)));
+          if not valid h do
+            fail(q"Error creating $(file_name)");
+          else
+            write(h,cod);
+            fclose(h);
+          done
+        done
+        }
+    |_ => {}
+    endmatch; }) git-scripts;
+done
+
+/*val content_path = Filename::join(SERVER_ROOT,"content");
+if not (content_path.FileStat::fileexists) do
+  println$ q"Creating content directory $(content_path)";
+  if (content_path.Directory::mkdir != 0) do
+    fail(q"Error creating content directory $(content_path)");
+  done
+done*/
 load_plugins(config.file_name);
 start_webserver(config);

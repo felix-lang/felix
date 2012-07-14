@@ -31,7 +31,14 @@ class HTTPBasicAuth {
   Handler for http_basic_auth if Authorization header supplied by browser attemps to authenticate against auth source.
   If Authorization header not supplied send WWW-Authenticate header
   """
+  
+
+  
   gen http_basic_auth (auth_source:(string*string->bool),realm:string) (conn:http_connection, request:http_request) =  {
+    http_basic_auth (auth_source,realm,"Unauthorized") (conn, request);
+}
+
+  gen http_basic_auth (auth_source:(string*string->bool),realm:string,unauth_content:string) (conn:http_connection, request:http_request) =  {
     if match (find (fun(x:string)=>x=="Authorization") request.headers) with
       |Some ?a => match split(decode(basic(a)),":") with
                       |Cons(?n,Cons(?p,Empty[string])) => auth_source(n,p)
@@ -43,7 +50,7 @@ class HTTPBasicAuth {
         return ;
     else
       val hdrs:assoc_list[string,string] = Cons (("WWW-Authenticate","Basic realm=\""+realm+"\""), Empty[string*string]);
-      var us = make_unauthorized(hdrs);
+      var us = make_unauthorized(hdrs,unauth_content);
       write(conn,us);  
     done 
     set_dirty(conn,true);
@@ -62,6 +69,19 @@ to the browser"""
     done
   }
  
+   proc requires_auth (auth_source:(string*string->bool),realm:string,
+                     handler_fn:(http_connection*http_request) -> void,
+                     unauthorized_content:string)
+                    (conn:http_connection, request:http_request ) = {
+    http_basic_auth (auth_source,realm,unauthorized_content) (conn, request);
+    if not *conn.dirty do
+      handler_fn(conn,request);
+    done
+  }
+
+  
+ 
+
   gen authorized_user (conn:http_connection, request:http_request) =>
      match (find (fun(x:string)=>x=="Authorization") request.headers) with
       |Some ?a => match split(decode(basic(a)),":") with

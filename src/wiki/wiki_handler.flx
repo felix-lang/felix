@@ -10,30 +10,41 @@ class WikiHandler {
   open WikiFileModel;
   open MIMEType;
 
+  fun access_denied_html unit:string => apply_to_template("page-template.html",
+          Cons(("<!--___CUSTOM_HEADER___-->",""),
+          Cons(("___CENTER_CONTENT___","""
+<div class='denied'><h3>Access Denied</h3><br/><a href='/'>Return to the Wiki</a>"""),
+          Cons(("___FNAME___","Access Denied&nbsp;<a href='/'>Return to the Wiki</a>"),
+          Cons(("___CTRLS___",""),
+          Cons(("<!--___MENU___-->",load_template("main-menu.html")) ,
+          Empty[string^2]))))));
 
-  fun app_handlers() =>
+
+
+  fun app_handlers():list[http_handler] =>
       //Cons (http_handler((fun (c:server_config,r:http_request) => true),
       //      (proc (c:http_connection, r:http_request ) {c.config.log(INFO,r.path);})),
       Cons (http_handler(save_edit_route,requires_auth(auth_source,"Felix Wiki",
-            requires_group_auth(save_edit))),
+            requires_group_auth(save_edit),access_denied_html())),
       Cons (http_handler(edit_route,requires_auth(auth_source,"Felix Wiki",
-            requires_group_auth(edit))),
+            requires_group_auth(edit),access_denied_html())),
       Cons (http_handler(delete_route,requires_auth(auth_source,"Felix Wiki",
-            requires_group_auth(delete))),
+            requires_group_auth(delete),access_denied_html())),
       Cons (http_handler(preview_route,requires_auth(auth_source,"Felix Wiki",
-            requires_group_auth(preview))),
-      Cons (http_handler(login_route,requires_auth(auth_source,"Felix Wiki",login)),
-      Cons (http_handler(users_edit_route,requires_auth(admin_auth_source,"Felix Wiki",users_edit)),
-      Cons (http_handler(users_reset_route,requires_auth(admin_auth_source,"Felix Wiki",users_reset)),
-      Cons (http_handler(users_delete_route,requires_auth(admin_auth_source,"Felix Wiki",users_delete)),
-      Cons (http_handler(users_table_route,requires_auth(admin_auth_source,"Felix Wiki",users_table)),
-      Cons (http_handler(users_route,requires_auth(admin_auth_source,"Felix Wiki",users)),
-      Cons (http_handler(user_profile_route,requires_auth(auth_source,"Felix Wiki",user_profile)),
-      Cons (http_handler(user_reset_route,requires_auth(auth_source,"Felix Wiki",user_reset)),
-      Cons (http_handler(path_edit_route,requires_auth(admin_auth_source,"Felix Wiki",path_edit)),
-      Cons (http_handler(path_delete_route,requires_auth(admin_auth_source,"Felix Wiki",path_delete)),
-      Cons (http_handler(path_table_route,requires_auth(admin_auth_source,"Felix Wiki",path_table)),
-      Cons (http_handler(path_route,requires_auth(admin_auth_source,"Felix Wiki",path)),
+            requires_group_auth(preview),access_denied_html())),
+      Cons (http_handler(login_route,(requires_auth(auth_source,"Felix Wiki",login,
+            access_denied_html()))),
+      Cons (http_handler(users_edit_route,requires_auth(admin_auth_source,"Felix Wiki",users_edit,access_denied_html())),
+      Cons (http_handler(users_reset_route,requires_auth(admin_auth_source,"Felix Wiki",users_reset,access_denied_html())),
+      Cons (http_handler(users_delete_route,requires_auth(admin_auth_source,"Felix Wiki",users_delete,access_denied_html())),
+      Cons (http_handler(users_table_route,requires_auth(admin_auth_source,"Felix Wiki",users_table,access_denied_html())),
+      Cons (http_handler(users_route,requires_auth(admin_auth_source,"Felix Wiki",users,access_denied_html())),
+      Cons (http_handler(user_profile_route,requires_auth(auth_source,"Felix Wiki",user_profile,access_denied_html())),
+      Cons (http_handler(user_reset_route,requires_auth(auth_source,"Felix Wiki",user_reset,access_denied_html())),
+      Cons (http_handler(path_edit_route,requires_auth(admin_auth_source,"Felix Wiki",path_edit,access_denied_html())),
+      Cons (http_handler(path_delete_route,requires_auth(admin_auth_source,"Felix Wiki",path_delete,access_denied_html())),
+      Cons (http_handler(path_table_route,requires_auth(admin_auth_source,"Felix Wiki",path_table,access_denied_html())),
+      Cons (http_handler(path_route,requires_auth(admin_auth_source,"Felix Wiki",path,access_denied_html())),
       Cons (http_handler(dir_route,requires_group_auth(dir)),
       Cons (http_handler(pull_route,requires_group_auth(pull)),
       Cons (http_handler(html_route,requires_group_auth(html)),
@@ -42,7 +53,13 @@ class WikiHandler {
       Cons (http_handler(web_route,requires_group_auth(web)),
       Cons (http_handler(lib_route,requires_group_auth(lib)),
       Cons (http_handler(inc_route,requires_group_auth(inc)),
-      Empty[http_handler]))))))))))))))))))))))));
+      Cons (http_handler(handle_html_route,handle_html),
+      Cons (http_handler(handle_image_route,handle_image),
+      Cons (http_handler(handle_css_route,handle_css),
+      Cons (http_handler(handle_js_route,handle_js),
+      Cons (http_handler(handle_not_found_route,handle_wiki_not_found),
+      Empty[http_handler])))))))))))))))))))))))))))));
+
 //      Cons (http_handler(search_route,search),
   fun auth_source(uname:string,passwd:string):bool => 
     db_get_auth_fdoc(uname,passwd);
@@ -63,6 +80,21 @@ class WikiHandler {
         false
       endif // and path.(3) == lvl
     ) (db_get_paths());
+
+  fun is_admin_authorized_for(conn:http_connection,request:http_request/*,lvl:string*/):bool =>
+    mem (fun(path:string^4):bool => if \in(request.path,RE2(path.(2))) then
+      (match authorized_user(conn,request) with
+      |Some ?user => (match db_get_user(user) with
+        |Some (?u,?name,?grp,?email) => path.(0) == grp
+        |_ =>  false
+        endmatch)
+      |_ => false
+      endmatch)
+      else
+        false
+      endif // and path.(3) == lvl
+    ) (db_get_paths());
+
  
   proc requires_group_auth (/*lvl:string,*/
                      handler_fn:(http_connection*http_request) -> void)
@@ -185,7 +217,7 @@ mathjax := '''
   }
 
    fun set_title(conn:http_connection,request:http_request,title:string):string => 
-     if is_authorized_for(conn,request/*,lvl*/) then
+     if is_admin_authorized_for(conn,request/*,lvl*/) then
        title+if startswith request.path "/wiki/" and 
                 not startswith request.path "/wiki/edit/" 
              then """[<a href='/wiki/edit/"""+request.path.[6 to]+"'>Edit</a>]"
@@ -244,13 +276,13 @@ mathjax := '''
     if  has_html_doc(request.path) do
       match get_html_doc(request.path) with
         | Some ?s => {write(conn,make_html(s.content));}
-        | _ => { handle_not_found(conn,request); }
+        | _ => { handle_wiki_not_found(conn,request); }
       endmatch;
     elif (handle_css_route(conn.config,request)) do handle_css(conn,request);  
     elif (handle_js_route(conn.config,request)) do handle_js(conn,request);
     elif (handle_image_route(conn.config,request)) do handle_image(conn,request);
     else
-        handle_not_found(conn,request);
+        handle_wiki_not_found(conn,request);
     done
     return;
   }
@@ -295,7 +327,7 @@ mathjax := '''
   proc delete (conn:http_connection, request:http_request ) {
     var path = request.path.[13 to];
     if not path_exists(path) do
-      handle_not_found(conn,request);
+      handle_wiki_not_found(conn,request);
       return;
     done
     var fname= (get_fname(request)).or_else "";
@@ -449,7 +481,7 @@ mathjax := '''
     | DIRECTORY => {
       match Directory::filesin fspath with
       | Some ?files => { iter (proc (y:string) {
-        if y != "." do
+        if y != "." and y != ".git" do
       	  if y == ".." do
             if rpath != "/dir" do 
               href,icon = double_dot(rpath),"ui-icon ui-icon-folder-collapsed";
@@ -500,7 +532,7 @@ mathjax := '''
              endmatch;
       write(conn,make_html(txt));
     else 
-        handle_not_found(conn,request);
+        handle_wiki_not_found(conn,request);
         return;
     done
   }
@@ -658,7 +690,7 @@ mathjax := '''
               Cons(("<!--___MENU___-->",load_template("main-menu.html") + admin-menu(conn,request)),
              Empty[string^2])))))));
       }
-      |_ => { handle_not_found(conn,request);
+      |_ => { handle_wiki_not_found(conn,request);
               return;}
     endmatch;
      write(conn,data);
@@ -678,7 +710,7 @@ mathjax := '''
         else "<p>"+u+" reset failed!</p>"
         endif; 
       write(conn,make_html(message));}
-    |_ => { handle_not_found(conn,request);
+    |_ => { handle_wiki_not_found(conn,request);
               return;}
     endmatch;
   }
@@ -810,10 +842,27 @@ mathjax := '''
     config.params = config.params + ("git-method",url) + ("mode",mode);
     val message = q"<h1>Getting wiki with $(meth) $(url) </h1>"+
       (let ?ok,?m = clone(url) in if ok then m else m endif);
-    write(conn,make_html(message));
+    val data = make_html(
+        apply_to_template("page-template.html",
+         Cons(("___CENTER_CONTENT___",message),
+         Cons(("___FNAME___","Getting Wiki content..."),
+         Cons(("___CTRLS___",set-ctrls(conn,request)),
+         Cons(("<!--___MENU___-->",load_template("main-menu.html") + admin-menu(conn,request)),
+         Empty[string^2]))))));
+    write(conn,data);
   }
 
-
+  proc handle_wiki_not_found (conn:http_connection, request:http_request ) {
+   val data = make_not_found(
+        apply_to_template("page-template.html",
+         Cons(("___CENTER_CONTENT___",load_template("not-found.html")),
+         Cons(("___FNAME___","Page not found..."),
+         Cons(("___CTRLS___",set-ctrls(conn,request)),
+         Cons(("<!--___MENU___-->",load_template("main-menu.html") + admin-menu(conn,request)),
+         Empty[string^2]))))));
+    write(conn,data);
+    return;
+  }
 
 
 }

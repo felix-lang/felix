@@ -39,7 +39,7 @@ class WikiFileModel {
       |_  => ""
     endmatch;
     if git == "remote" and ( startswith fname GIT_ROOT ) do
-      val pull_cmd = q"$(SERVER_ROOT)/scripts/git-pull.sh $(WIKI_ROOT)/$(GIT_ROOT)";
+      val pull_cmd = q"sh $(SERVER_ROOT)/scripts/git-pull.sh $(WIKI_ROOT)";
       var handle = safer_popen(pull_cmd);
       var results = load(handle);
       fclose(handle);
@@ -102,19 +102,19 @@ class WikiFileModel {
     if (FileStat::fileexists full_path) do
       if ( git == "local" or git == "remote" )  and  startswith fname GIT_ROOT do
         val rfname = fname.[len(GIT_ROOT) to];
-        val rm_cmd = q"$(SERVER_ROOT)/scripts/git-rm.sh $(WIKI_ROOT)/$(GIT_ROOT) $(rfname)";
+        val rm_cmd = q"sh $(SERVER_ROOT)/scripts/git-rm.sh $(WIKI_ROOT) $(rfname)";
         var rhandle = safer_popen(rm_cmd);
         var git_rm = load(rhandle);
         fclose(rhandle);
         val rm_ok =  not(startswith git_push "error" or startswith git_push "fatal");
         if rm_ok do
-          val commit_cmd = q"$(SERVER_ROOT)/scripts/git-commit.sh $(WIKI_ROOT)/$(GIT_ROOT) ./" + rfname;
+          val commit_cmd = q"sh $(SERVER_ROOT)/scripts/git-commit.sh $(WIKI_ROOT) ./" + rfname;
           var handle = safer_popen(commit_cmd);
           var git_commit = load(handle);
           fclose(handle);
           var commit_ok = not(startswith git_commit "error" or startswith git_commit "fatal");
           if git == "remote" and commit_ok do
-            val push_cmd = q"$(SERVER_ROOT)/scripts/git-push.sh $(WIKI_ROOT)/$(GIT_ROOT)";
+            val push_cmd = q"sh $(SERVER_ROOT)/scripts/git-push.sh $(WIKI_ROOT)";
             handle = safer_popen(push_cmd);
             var git_push = load(handle);
             fclose(handle);
@@ -147,20 +147,20 @@ class WikiFileModel {
     val full_path = Filename::join(WIKI_ROOT,e.name);
     if ( git == "local" or git == "remote" )  and startswith e.name GIT_ROOT do
       val rfname = e.name.[len(GIT_ROOT) to];
-      val add_cmd = q"$(SERVER_ROOT)/scripts/git-add.sh $(WIKI_ROOT)/$(GIT_ROOT) ./" + rfname;
+      val add_cmd = q"sh $(SERVER_ROOT)/scripts/git-add.sh $(WIKI_ROOT) ./" + rfname;
       var handle = safer_popen(add_cmd);
       var git_add = load(handle);
       fclose(handle);
       val add_ok =  not(startswith git_push "error" or startswith git_add "fatal");
       if add_ok do
-        val commit_cmd = q"$(SERVER_ROOT)/scripts/git-commit.sh $(WIKI_ROOT)/$(GIT_ROOT) ./" + rfname;
+        val commit_cmd = q"sh $(SERVER_ROOT)/scripts/git-commit.sh $(WIKI_ROOT) ./" + rfname;
         handle = safer_popen(commit_cmd);
         val git_commit = load(handle);
         fclose(handle);
         val commit_ok =  not(startswith git_push "error" or startswith git_commit "fatal");
         if commit_ok do
           if git == "remote" do
-            val push_cmd = q"$(SERVER_ROOT)/scripts/git-push.sh $(WIKI_ROOT)/$(GIT_ROOT)";
+            val push_cmd = q"sh $(SERVER_ROOT)/scripts/git-push.sh $(WIKI_ROOT)";
             handle = safer_popen(push_cmd);
             val git_push = load(handle);
             fclose(handle);
@@ -183,7 +183,7 @@ class WikiFileModel {
       |_  => ""
     endmatch;
     if git == "remote" do
-      val clone_cmd = q"$(SERVER_ROOT)/scripts/git-clone.sh $(WIKI_ROOT) $(url)";
+      val clone_cmd = q"sh $(SERVER_ROOT)/scripts/git-clone.sh $(SERVER_ROOT) $(url)";
       val handle = safer_popen(clone_cmd);
       var git_clone = load(handle);
       fclose(handle);
