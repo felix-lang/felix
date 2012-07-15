@@ -1,3 +1,5 @@
+// Note: some felix internals expect this to be defined here, not in a class, and
+// in this order.  Don't mess with it!
 publish "option type"
 union opt[T] =
   | None
