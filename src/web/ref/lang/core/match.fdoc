@@ -61,6 +61,22 @@ match ?a, ?b in pairs do
 done
 @
 
+@h2 Matching Against Expressions
+
+Not all parts of the pattern have to be constants / literals.  You can also 
+put an expression into the pattern match, using $()'s:
+
+@felix
+var x = 2;
+
+match 1,2 with
+| (1, $(x) ) => ....
+
+// Same as:
+
+| (1, ?w) when w == x => ....
+@
+
 @h2 See also
 
 <ul>
