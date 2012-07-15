@@ -106,6 +106,37 @@ val sq = fun(x:int):int => x*x;
 println$ sq 4; // 16
 @
 
+@h2 C/C++ Functions 
+
+You can also define your function using C++ code, which is how you can access
+C++ functions from felix.
+
+Here's a somewhat contrived example:
+
+@felix
++char hellostr : +char = """sprintf(malloc(strlen($1)+9), "Hello, %s!", $1)""" 
+@
+
+If you don't include a definition, it assumes a function call of the same name:
+
+@felix
+// Give access to atoi()
+fun atoi : +char -> int
+@
+
+The output code is actually C++ so you can do method calls and operators, too:
+
+@felix
+// Assuming a class Foo with method GetOffset, ApplyOffset and operator +
+cstruct Foo {
+  offset:int;
+};
+fun ApplyOffset : Foo * int -> int = "$1.ApplyOffset($2)";
+fun GetOffset : Foo -> int = "$1.GetOffset()";
+fun + : Foo * Foo -> Foo = "$1 + $2";
+fun + : Foo + int -> Foo = "$1 + $2";
+@
+
 @h2 See also
 
 <ul>
