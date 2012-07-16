@@ -102,8 +102,8 @@ Use {is_empty(a)} or {a.is_empty} to check if a list is empty.
 
 Iteration over lists can be done using a standard for loop.
 
-You can also use the {iter p a} to call the proc once for
-each list element, passing in the element to each call.
+You can also use the {iter p a} or {p.iter(a)} to call a proc {p} 
+once for each list element, passing in the element to each call.
 
 @h3 Folding/Reducing Lists
 

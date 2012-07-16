@@ -1,10 +1,15 @@
 @h1 Classes
 
-A felix class creates a scope for global names to reduce naming conflicts.  Names
-inside a class are, by default, not visible outside the class.  This helps keep
-code organized and avoids naming conflicts.
+A felix class is a collection of types and subroutines.  It provides
+a seperate scope for the names and also allows common type parameters
+to be shared within that collection.
 
-This is similar to namespaces in C++.
+Unless a class is declared "open" or opened using the "open" keyword, names 
+inside a class must be prefixed with the class name plus the :: scope operator
+to refer to those names.
+
+This is similar to namespaces in C++, or when type parameters are used it is
+similar to a template in C++ which has only static members.
 
 To declare a class, use:
 
