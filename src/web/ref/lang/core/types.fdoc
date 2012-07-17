@@ -1,0 +1,108 @@
+@h1 Type Operators
+
+When declaring the type of a variable, function parameter, field,
+or function return type you can use certain operators to specify
+complex types.
+
+@h2 Type Name
+
+The building block of a type is the basic type name.  Type names
+can refer to any declared type, struct, or typedef.  For example:
+
+@felix
+type Foo = "void *";
+const NullFoo:Foo = "NULL";
+var x: Foo = NULL;
+@
+
+Here you see the definition of a type (as a C++ type), a constant
+of that type (using a C++ value), and a variable of that type.
+
+@h2 Tuple Types
+
+Tuples are an ordered sequence of fields where each field has its
+own type.  To declare a tuple type, we use a multiplication of other 
+types.  Parentheses are used to indicate a tuple within a tuple:
+
+@felix
+proc p(t:(int*int) * string) => 
+  println$ match t with | ((?x,?y),?s) =>
+    "x = "+x+" y = "+y+" s = "+(repr s)
+  endmatch;
+
+p((100,150), "Beware of draggons!");
+@
+
+@h2 Record types
+
+Records are an ordered sequence of named fields.  Each field has its
+own type and name.  To declare a record type, use the same syntax
+as when declaring a function parameter list:
+
+@felix
+proc p(t:(pos:(x:int, y:int), s:string)) =>
+  println$ "x = "+t.pos.x+" y = "+t.pos.y+" s = "+(repr t.s);
+p(pos=(x=100,y=150), s="Beware of draggons!");
+@
+
+@h2 Struct types
+
+Structs are a collection of named, mutable fields.  Structs have a name,
+so delcaring a variable of a struct type means using its name:
+
+@felix
+struct pt { x:int; y:int; };
+struct drawinfo { pos:pt; s:string; };
+proc p(t:drawinfo) =>
+  println$ "x = "+t.pos.x+" y = "+t.pos.y+" s = "+(repr t.s);
+p(drawinfo(pos=pt(x=100,y=150), s="Beware of draggons!"));
+@
+
+@h2 Typedef types
+
+A typedef assigns a new name to an existing type.  After using typedef,
+the new name is equivalent to using the old type.
+
+@felix
+typedef coord = int; 
+typedef pt = coord * coord;
+typedef drawinfo = (pos:pt, s:string);
+proc p(t:drawinfo) =>
+  match t.pos with | (?x, ?y) =>
+    { println$ "x = "+x+" y = "+y+" s = "+(repr t.s); };
+p((pos=(100,150), s="Beware of draggons!"));
+@
+
+If you are using the same tuple and record types several times, giving
+them a name this way can make the code more readable.
+
+@h2 Pointers / References
+
+A {var} can be shared with other subroutines by passing a "reference"
+or "pointer" to that {var} into other functions and/or storing such
+a reference into another {var}.
+
+Pointer types are identified using an ampersand ({&}) prefix:
+
+@felix
+proc inc(ptr:&int) => (*ptr) += 1;
+var a = 5;
+inc &a;
+println$ a;
+@
+
+@h3 C Style Pointers
+
+Felix pointers are not compatible with C/C++ pointers.  So, when 
+interoperating with C/C++ code you can use C/C++ style pointers
+by using the {+} prefix on the type name:
+
+@felix
+proc puts : +char; // Called "char *" in C
+puts(c"This is a test.\n");
+@
+
+These pointers are not processed by the garbage collector, so they
+should only be used to interoperate with C/C++ data.
+
+
