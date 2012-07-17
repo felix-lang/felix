@@ -28,5 +28,6 @@ also extends back to before the var is actually declared.
 <ul>
 <li><a href="val.fdoc">val</a></li>
 <li><a href="fun.fdoc">fun</a></li>
+<li><a href="types.fdoc">types</a></li>
 </ul>
 

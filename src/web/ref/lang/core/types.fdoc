@@ -18,6 +18,29 @@ var x: Foo = NULL;
 Here you see the definition of a type (as a C++ type), a constant
 of that type (using a C++ value), and a variable of that type.
 
+@h2 Function Types
+
+Function types are indicated using {->} operator; the function parameter is on the left
+and the result type is on the right:
+
+@felix
+fun curry(f: int * int -> int, a:int) : int -> int => fun(b:int):int => f(a,b);
+val adder:int*int->int = fun(a:int, b:int) => a+b;
+val add_1_to:int->int = curry(adder, 1);
+val add_2_to:int->int = curry(adder, 2);
+println("2+1 == "+add_1_to(2)+", 1+2 == "+add_2_to(1));
+@
+
+Conceptually when you store a function into a variable, pass a function to subroutine,
+or return a function from a subroutine, that function is a value that is copied.  The
+function value contains the information needed to access shared variables that were in
+scope where the function was defined, as well as the information needed to run the
+function's machine code.
+
+This is very different from a function pointer in C/C++, which has no state associated
+with it.  In C/C++ any shared state must be explicitly returned along with the function
+pointer and pass as a parameter to the function when it is called. 
+
 @h2 Tuple Types
 
 Tuples are an ordered sequence of fields where each field has its
@@ -47,8 +70,8 @@ p(pos=(x=100,y=150), s="Beware of draggons!");
 
 @h2 Struct types
 
-Structs are a collection of named, mutable fields.  Structs have a name,
-so delcaring a variable of a struct type means using its name:
+Structs are a sequential collection of named, mutable fields.  Structs 
+have a name, so declaring a variable of a struct type means using its name:
 
 @felix
 struct pt { x:int; y:int; };
@@ -57,6 +80,13 @@ proc p(t:drawinfo) =>
   println$ "x = "+t.pos.x+" y = "+t.pos.y+" s = "+(repr t.s);
 p(drawinfo(pos=pt(x=100,y=150), s="Beware of draggons!"));
 @
+
+@h2 Union types
+
+Unions are named types, so to use them simply use the union name where you
+would use any type name.
+
+See the <a href="union.fdoc">union docs</a> for more information about unions.
 
 @h2 Typedef types
 
@@ -106,3 +136,12 @@ These pointers are not processed by the garbage collector, so they
 should only be used to interoperate with C/C++ data.
 
 
+@h2 See Also
+
+<ul>
+<li><a href="union.fdoc">union</a></li>
+<li><a href="struct.fdoc">struct</a></li>
+<li><a href="cstruct.fdoc">cstruct</a></li>
+<li><a href="val.fdoc">val</a></li>
+<li><a href="var.fdoc">var</a></li>
+</ul>
