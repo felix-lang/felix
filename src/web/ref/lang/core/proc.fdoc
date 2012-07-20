@@ -74,6 +74,27 @@ procedures.
 
 ... TODO ...
 
+@h2 C++ Procedures
+
+You can also define a procedure using C++ code.  This is part of how you
+integrate your felix code with existing C++ code.  For example:
+
+@felix
+proc print_int : int = "printf("%d", $1);";
+@
+
+There's a shortcut for procedures that already exist in C++ with the same
+name and signature; just leave off the body:
+
+@felix
+// Version printf that takes an int and a c string
+proc printf : +char * int; // usage: printf(c"%d", 123);
+// puts
+proc puts : +char; // usage: puts c"whatever";
+// exit
+proc exit : int; // usage: exit 1;
+@
+
 @h2 See also
 
 <ul>

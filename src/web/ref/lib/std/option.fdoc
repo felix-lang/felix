@@ -1,0 +1,161 @@
+@h1 Option Type
+
+The option type {opt} represents a value that is either there, or not there.
+In felix this is used to replace cases where you might return -1, NULL, null,
+or 0 in other languages to indicate an invalid or non-existant value.
+
+When a value is present, it is represented as {Some x}, where {x} is the value.
+When there is no value it is represented as {None[T]} where {T} is the type
+of value that isn't there.  The type usually has to be attached to {None} 
+because the compiler does not infer this type.
+
+A very common use of optional types is to indicate success of failure of an
+operation.  For example, when trying to find an element in a list using a
+predicate function:
+
+@felix
+a := list('bob', 'joe', 'steve', 'sam');
+fun len_eq(x:int)(s:string) => s.len.int == x;
+f := len_eq 5;
+search_result := f.find(a);
+println$ search_result.or_else "nobody with a 5-letter name";
+f2 := len_eq 2;
+search_result2 := f2.find(a);
+println$ search_result2.or_else "nobody with a 2-letter name";
+@
+
+@h2 Using match with opt
+
+The {match} expression can be used to select logic based on where an option
+value is {Some} or {None} and name the {Some} value at the same time:
+
+@felix
+println$ match (fun(s:string)=>s.startswith("foo")).find(split('ghoul,fool,foul',',')) with
+  | Some ?word => word+" starts with foo"
+  | None => "Nothing starts with foo"
+endmatch;
+@
+
+This is generally considered the "canonical" way to use an option value, although
+it may not be the most compact.
+
+@h2 Using for with opt
+
+If you don't care about the {None} case and you want to execute a statement,
+the {for} loop can treat an {opt} value as a collection with either zero 
+(for {None}) or one (for {Some}) elements in it:
+
+@felix
+for x in Some "x" do println "Some x was here"; done
+for x in None[string] do fail "This should not be printed."; done
+@
+
+@h2 Using if/else with opt
+
+The {opt} type provides functions {is_defined} and {is_empty} that let you 
+use it with conditional expressions and statements.  Unlike with match and 
+for, however, the value isn't put in scope for you.  Call {get} to retrieve
+the value.  {get} will {fail} if the value is not present.:
+
+@felix
+a := Some 42;
+b := None[float];
+if a.is_defined do println$ "a is defined, as expected.  Value is "+str(a.get); done
+if b.is_empty do println$ "b is empty, as expected."; done
+if a.is_empty do fail$ "a is empty!?"; done
+if b.is_defined do fail$ "b is defined!?  as ... "+str(b.get); done
+@
+
+@h2 Procedure Application
+
+You can apply a procedure to an option using iter.  The
+procedure is only called if there is a value; it is passed the
+value as its only parameter.
+
+@felix
+(println of string).iter(Some "x"); // prints x
+(println of string).iter(None[string]); // does not print anything
+@
+
+This might be more compact in cases where you are only interested
+in operating on the {Some} value by calling a procedure on it.
+
+@h2 Function Application
+
+You can apply a function to an option value using {map}.  If there
+is a value, the function is called with the value as a parameter,
+and the function result is put into a new {Some} and returned from
+map.  Otherwise {map} returns a {None} with a type matching the
+function return type.
+
+@felix
+println$ (toupper of string).map(Some "sum"); // Some SUM
+println$ (toupper of string).map(None[string]); // None
+@
+
+This is useful where you want to apply a function to some value that
+may be {None} while deferring the actual processing of {None}.
+
+@h2 Applying a Predicate
+
+You can use {filter} to apply a predicate function to an option 
+such that if the value is present, but fails the predicate, 
+the result is {None}.
+
+@felix
+fun iscap(s:string) => s.[0].isupper;
+println$ iscap.filter(Some "Upper"); // Some Upper
+println$ iscap.filter(Some "lower"); // None
+@
+
+As with applying functions, this can be used in cases where you want
+to filter without checking for None at the time.
+
+@h2 Access Using a Default Value
+
+You can read an option value by providing a default value that should
+be used if the option is {None}:
+
+@felix
+println$ (Some "some").or_else("default"); // some
+println$ (None[string]).or_else("default"); // default
+@
+
+You can also instantiate the DefaultValue class with a shared default
+for a given type, and use {or_default} to return that default value
+instead of passing it as a parameter on each call:
+
+@felix
+instance DefaultValue[string] {
+  fun default[string]() => "(default)";
+}
+open DefaultValue[string];
+println$ (Some "some").or_default(); // some
+println$ (None[string]).or_default(); // (default)
+@
+
+You can also provide a substitute option to use in place of {None},
+rather than a value, if you want to stick a default value in there
+but still return an option value:
+
+@felix
+println$ ((None[string]).or_else(Some "foo")).or_else("default"); // foo
+@
+
+@h2 Making a list
+
+You can convert an option into a list using the list constructor:
+
+@felix
+println$ list(Some "a"); // list('a')
+println$ list(None[int]); // list()
+@
+
+@h2 See also
+
+<ul>
+<li><a href="list.fdoc">list</a></li>
+<li><a href="../../lang/core/match.fdoc">match</a></li>
+</ul>
+
+
