@@ -1,6 +1,6 @@
 header """
 // This is C++ code!
-class gauss;
+struct gauss;
 
 struct gauss {
   int x;

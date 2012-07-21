@@ -23,7 +23,7 @@ let do_unify counter varmap sym_table bsym_table a b =
   (*
   print_endline "Calling unification";
   *)
-  match Flx_unify.maybe_unification counter eqns with
+  match Flx_unify.maybe_unification bsym_table counter eqns with
   | None -> false
   | Some mgu ->
     (*

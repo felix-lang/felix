@@ -390,7 +390,7 @@ and beta_reduce' counter bsym_table sr termlist t =
           pattern_vars=dvars;
         }, t'
       in
-      match maybe_unification counter [p,tt] with
+      match maybe_unification bsym_table counter [p,tt] with
       | Some _ -> new_matches := x :: !new_matches
       | None ->
         (*
@@ -406,7 +406,7 @@ and beta_reduce' counter bsym_table sr termlist t =
       failwith "[beta-reduce] typematch failure"
     | ({pattern=p';pattern_vars=dvars;assignments=eqns},t') :: _ ->
       try
-        let mgu = unification counter [p', tt] dvars in
+        let mgu = unification bsym_table counter [p', tt] dvars in
         (*
         print_endline "Typematch success";
         *)
