@@ -314,9 +314,12 @@ and gen_expr'
   let seq = syms.counter in
   let t = rt t in
   match t with
-  | BTYP_tuple [] ->
+  (* This is now required for arrays of length 1 *)
+  | BTYP_tuple [] -> ce_atom "0"
+(*
       clierr sr
      ("[egen] In "^sbe bsym_table (e,t)^":\nunit value required, should have been eliminated")
+*)
 
      (* ce_atom ("UNIT_ERROR") *)
   | _ ->

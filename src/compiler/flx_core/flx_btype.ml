@@ -117,7 +117,9 @@ let btyp_tuple = function
 let btyp_array (t, n) =
   match n with
   | BTYP_void -> BTYP_tuple []
+(*
   | BTYP_tuple [] -> t
+*)
   | _ -> BTYP_array (t, n)
 
 (** Construct a BTYP_record type. *)

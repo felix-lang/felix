@@ -64,6 +64,9 @@ print_endline ("Calsym " ^ sbe bsym_table idx^ ", type="^ sbt bsym_table idxt);
     let sa = `Int (sizeof_linear_type bsym_table t) in
     List.fold_left (fun acc elt -> add (mul acc sa) (cax elt)) (`Int 0) es
 
+  | (BEXPR_tuple es,_), BTYP_array (t, BTYP_tuple [])  -> 
+    let sa = `Int (sizeof_linear_type bsym_table t) in
+    List.fold_left (fun acc elt -> add (mul acc sa) (cax elt)) (`Int 0) es
 
   | (BEXPR_match_case (i,t'),_), BTYP_sum ts ->
 print_endline ("Decomposing index of sum type " ^ sbe bsym_table idx ^ " MATCH case tag " ^si i^ "  found");
@@ -121,9 +124,20 @@ print_endline ("Decomposing index of sum type " ^ sbe bsym_table e);
      let caseno = modu e' (`Int (List.length ts)) in
      add (`Case_offset (ts, caseno)) (switch ts e')
 
-  | _ -> 
+  | e,BTYP_tuple [] -> `Int 0 
+
+  | e,BTYP_tuple _ -> 
+    print_endline ("cal_symbolic_array_index can't handle expression of tuple type " ^ sbe bsym_table idx);
+    print_endline ("Assume already linearised");
+    expr e 
+
+  | e,_ -> 
     print_endline ("cal_symbolic_array_index can't handle expression " ^ sbe bsym_table idx);
     assert false
+(* ;
+    print_endline ("Assume already linearised");
+    expr e 
+*)
 
 (* this is an auxilliary table that represents the cumulative sizes of the
    components of a sum used at run time to find the offset of a particular

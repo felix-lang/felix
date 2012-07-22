@@ -102,7 +102,9 @@ let rec register_type_r ui syms bsym_table exclude sr t =
   | BTYP_array (ps,ret) ->
     begin match ret with
     | BTYP_unitsum 0 | BTYP_void -> syserr sr "Unexpected array length 0"
+(*
     | BTYP_unitsum 1 | BTYP_tuple [] -> syserr sr "Unexpected array length 1"
+*)
     | BTYP_unitsum _ ->
       rr ps; rr ret; rnr t
     | _ -> rr ps; rr ret; rnr t
