@@ -480,7 +480,7 @@ let make_equations
   print_endline "...";
   *)
 
-  try Some (unification counter eqns !dvars) with Not_found -> None
+  try Some (unification bsym_table counter eqns !dvars) with Not_found -> None
 
 
 let solve_mgu
@@ -733,7 +733,7 @@ let solve_mgu
     *)
 
     let maybe_extra_mgu =
-      try Some (unification counter !extra_eqns !dvars)
+      try Some (unification bsym_table counter !extra_eqns !dvars)
       with Not_found -> None
     in
     match maybe_extra_mgu with
@@ -1153,7 +1153,7 @@ let overload
                 r::lhs
 
             | (Unique (i,typ,rtyp,mgu,ts) as x) :: t ->
-                begin match compare_sigs counter typ c with
+                begin match compare_sigs bsym_table counter typ c with
                 | `Less ->
                     (* Candidate is more general, discard it, retain whole
                      * list *)

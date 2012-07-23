@@ -45,7 +45,7 @@ let ematch syms bsym_table changed (name,bvs,bps,e1,e2) tvars evars e =
   (*
   print_endline ("Matching " ^ sbe bsym_table e ^ " with " ^ sbe bsym_table e1);
   *)
-  match Flx_unify.expr_maybe_matches syms.counter tvars evars e1 e with
+  match Flx_unify.expr_maybe_matches bsym_table syms.counter tvars evars e1 e with
   | Some (tmgu,emgu) ->
     changed := true;
       (*

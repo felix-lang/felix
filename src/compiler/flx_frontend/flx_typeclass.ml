@@ -423,7 +423,7 @@ let tcinst_chk syms bsym_table allow_fail i ts sr (inst_vs, inst_constraint, ins
 *)
      let assignments = map (fun (i,t) -> btyp_type_var (i,btyp_type 0),t) assigns in
      let mgu =
-       try Some (unification syms.counter (assignments @ eqns) vset)
+       try Some (unification bsym_table syms.counter (assignments @ eqns) vset)
        with Not_found -> None
      in
      begin match mgu with
@@ -551,7 +551,7 @@ let fixup_typeclass_instance' syms bsym_table allow_fail i ts =
            (*
            print_endline (" .. comparing with " ^ sbt bsym_table c');
            *)
-           begin match compare_sigs syms.counter c' c with
+           begin match compare_sigs bsym_table syms.counter c' c with
            | `Less ->
              (*
              print_endline "Candidate is more general, discard it, retain whole list";

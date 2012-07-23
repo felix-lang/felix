@@ -8,6 +8,8 @@ open class Farray
   publish "Array constructors"
   ctor[T,N] array[T,N] (x:array[T,N]) => x;
 
+  ctor[T] array[T,1] (x:T) => x :>> array[T,1];
+
   // array as value
   instance[t,n] ArrayValue[array[t,n], t] {
     fun len (x:array[t, n]): size => Typing::arrayindexcount[n];

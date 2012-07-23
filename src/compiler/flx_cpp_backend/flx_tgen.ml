@@ -417,7 +417,9 @@ let rec gen_type syms bsym_table (index,typ) =
         (Hashtbl.find syms.registry typ)
       with Not_found -> false 
     in
+(*
     if n < 2 then failwith "[flx_tgen] unexpected array length < 2";
+*)
     descr ^
     "struct " ^ name ^ " {\n" ^
     "  static size_t const len = " ^ si n ^ ";\n" ^

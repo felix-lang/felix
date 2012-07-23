@@ -37,17 +37,17 @@ open class Varray
   publish "Construct a full varray from an array"
   // funny, the N isn't explicitly used.
   ctor[t,N] varray[t] (x:array[t,N]) => 
-     varray[t] (len x, len x, (fun (i:size)=>x.i))
+     varray[t] (len x, len x, (fun (i:size):t =>x.i))
   ;
 
   publish "Construct a partially full varray from a varray"
   ctor[t] varray[t] (x:varray[t], maxlen:size) =>
-    varray[t] (maxlen, min(maxlen,len x), (fun (i:size)=> x.i))
+    varray[t] (maxlen, min(maxlen,len x), (fun (i:size):t=> x.i))
   ;
 
   publish "Construct a full varray from a varray (copy constructor)"
   ctor[t] varray[t] (x:varray[t]) =>
-    varray[t] (len x, len x, (fun (i:size)=> x.i))
+    varray[t] (len x, len x, (fun (i:size):t=> x.i))
   ;
 
   // construct a varray from a list

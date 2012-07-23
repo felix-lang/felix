@@ -485,7 +485,7 @@ let tailit syms bsym_table uses id this sr ps vs exes =
       let i = !(syms.counter) in incr (syms.counter);
       let n = length ls in
       let pbase = !(syms.counter) in syms.counter := !(syms.counter) + n;
-      let me e = match expr_maybe_matches syms.counter [] [] x e with
+      let me e = match expr_maybe_matches bsym_table syms.counter [] [] x e with
         | Some ([],[]) -> true
         | None -> false
         | _ -> assert false

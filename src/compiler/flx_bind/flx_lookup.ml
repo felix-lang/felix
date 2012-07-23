@@ -784,7 +784,7 @@ and bind_type'
         let t' = btp t' (params@args) in
         let t' = list_subst state.counter eqns t' in
         pts := ({pattern=p'; pattern_vars=varset; assignments=eqns},t') :: !pts;
-        let u = maybe_unification state.counter [p', t] in
+        let u = maybe_unification bsym_table state.counter [p', t] in
         match u with
         | None ->  ()
             (* CRAP! The below argument is correct BUT ..  our unification
@@ -4456,7 +4456,7 @@ and check_instances state bsym_table call_sr calledname classname es ts' mkenv =
       *)
       let matches =
         if List.length inst_ts <> List.length ts' then false else
-        match maybe_specialisation state.counter (List.combine inst_ts ts') with
+        match maybe_specialisation bsym_table state.counter (List.combine inst_ts ts') with
         | None -> false
         | Some mgu ->
           (*

@@ -299,7 +299,7 @@ let var_list_occurs ls t =
   that right requires unification .. :)
 *)
 
-let rec unification counter eqns dvars =
+let rec unification bsym_table counter eqns dvars =
   (*
   print_endline ( "Dvars = { " ^ catmap ", " si (BidSet.elements dvars) ^ "}");
   *)
@@ -438,18 +438,20 @@ let rec unification counter eqns dvars =
       | BTYP_fix i,BTYP_fix j ->
         if i <> j then raise Not_found
 
-      (* array/tuple sidedness must be preserved in
-         case of lvalue decay, which only affects the
-         RHS term [that is, argument lvalue[t] matches
-         parameter t, but not the other way around]
-      *)
       | BTYP_tuple ls, BTYP_array (ta,BTYP_unitsum n)
-        when n = List.length ls ->
-        List.iter (fun t -> eqns := (t,ta) :: !eqns) ls
-
       | BTYP_array (ta,BTYP_unitsum n), BTYP_tuple ls
         when n = List.length ls ->
-        List.iter (fun t -> eqns := (ta,t) :: !eqns) ls
+        List.iter (fun t -> eqns := (t,ta) :: !eqns) ls
+(*
+      (* T ^ N = T by setting N = 1 *)
+      | BTYP_array (t11, (BTYP_type_var (i,_) as tv)), t21 
+      | t21, BTYP_array (t11, (BTYP_type_var (i,_) as tv))
+        when BidSet.mem i dvars 
+       ->
+let lhs,rhs = h in
+print_endline ("Weird array thing " ^ Flx_print.sbt bsym_table lhs ^ " <--> " ^ Flx_print.sbt bsym_table rhs);
+        eqns := (t11,t21) :: (tv, btyp_tuple []) :: !eqns
+*)
 
       (* type tuple is handled same as a tuple type .. not
         really sure this is right. Certainly, the corresponding
@@ -481,9 +483,9 @@ let rec unification counter eqns dvars =
         s := None
 
       | x,y ->
-        (*
-        print_endline ("Terms do not match: " ^ sbt sym_table x ^ " <-> " ^ sbt sym_table y);
-        *)
+(*
+        print_endline ("Terms do not match: " ^ sbt bsym_table x ^ " <-> " ^ sbt bsym_table y);
+*)
         raise Not_found
       end
       ;
@@ -526,34 +528,34 @@ let find_vars_eqns eqns =
   ;
   !lhs_vars,!rhs_vars
 
-let maybe_unification counter eqns =
+let maybe_unification bsym_table counter eqns =
   let l,r = find_vars_eqns eqns in
   let dvars = BidSet.union l r in
-  try Some (unification counter eqns dvars)
+  try Some (unification bsym_table counter eqns dvars)
   with Not_found -> None
 
-let maybe_matches counter eqns =
+let maybe_matches bsym_table counter eqns =
   let l,r = find_vars_eqns eqns in
   let dvars = BidSet.union l r in
-  try Some (unification counter eqns dvars)
+  try Some (unification bsym_table counter eqns dvars)
   with Not_found -> None
 
-let maybe_specialisation counter eqns =
+let maybe_specialisation bsym_table counter eqns =
   let l,_ = find_vars_eqns eqns in
-  try Some (unification counter eqns l)
+  try Some (unification bsym_table counter eqns l)
   with Not_found -> None
 
-let unifies counter t1 t2 =
+let unifies bsym_table counter t1 t2 =
   let eqns = [t1,t2] in
-  match maybe_unification counter eqns with
+  match maybe_unification bsym_table counter eqns with
   | None -> false
   | Some _ -> true
 
-let ge counter a b =
+let ge bsym_table counter a b =
   (*
   print_endline ("Compare terms " ^ sbt sym_table a ^ " >? " ^ sbt sym_table b);
   *)
-  match maybe_specialisation counter [a,b] with
+  match maybe_specialisation bsym_table counter [a,b] with
   | None -> false
   | Some mgu ->
     (*
@@ -563,8 +565,8 @@ let ge counter a b =
     *)
     true
 
-let compare_sigs counter a b =
-  match ge counter a b, ge counter b a with
+let compare_sigs bsym_table counter a b =
+  match ge bsym_table counter a b, ge bsym_table counter b a with
   | true, true -> `Equal
   | false, false -> `Incomparable
   | true, false -> `Greater
@@ -890,7 +892,7 @@ let expr_term_subst e1 i e2 =
   in
   f_bexpr e1
 
-let rec expr_unification counter
+let rec expr_unification bsym_table counter
   eqns
   tdvars
   edvars
@@ -1034,18 +1036,18 @@ let rec expr_unification counter
       loop ()
     in
       loop ();
-      let tmgu = unification counter !teqns tdvars in
+      let tmgu = unification bsym_table counter !teqns tdvars in
       tmgu,
       !mgu
 
 let setoflist ls = List.fold_left (fun s i -> BidSet.add i s) BidSet.empty ls
 
-let expr_maybe_matches counter tvars evars le re =
+let expr_maybe_matches bsym_table counter tvars evars le re =
   let tvars = setoflist tvars in
   let evars = setoflist evars in
   let eqns = [le,re] in
   (*
   print_endline ("Expr unify: le = " ^ sbe sym_table le ^  "\nre = " ^ sbe sym_table re);
   *)
-  try Some (expr_unification counter eqns tvars evars)
+  try Some (expr_unification bsym_table counter eqns tvars evars)
   with Not_found -> None

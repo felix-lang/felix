@@ -78,11 +78,21 @@ let btyp_void () =
 
 (** Construct a BTYP_sum type. *)
 let btyp_sum ts =
-  BTYP_sum ts
+  match ts with 
+  | [] -> BTYP_void
+  (* | [t] -> t *)
+  | _ -> 
+   try 
+     List.iter (fun t -> if t <> BTYP_tuple [] then raise Not_found) ts;
+     BTYP_unitsum (List.length ts)
+   with Not_found -> BTYP_sum ts
 
 (** Construct a BTYP_unitsum type. *)
 let btyp_unitsum n =
-  BTYP_unitsum n
+  match n with
+  | 0 -> BTYP_void
+  | 1 -> BTYP_tuple []
+  | _ ->  BTYP_unitsum n
 
 (** Construct a BTYP_intersect type. *)
 let btyp_intersect ts =
@@ -106,9 +116,10 @@ let btyp_tuple = function
 (** Construct a BTYP_array type. *)
 let btyp_array (t, n) =
   match n with
-  | BTYP_void
-  | BTYP_unitsum 0 -> BTYP_tuple []
-  | BTYP_unitsum 1 -> t
+  | BTYP_void -> BTYP_tuple []
+(*
+  | BTYP_tuple [] -> t
+*)
   | _ -> BTYP_array (t, n)
 
 (** Construct a BTYP_record type. *)
@@ -197,6 +208,8 @@ let all_units = List.for_all is_unit
 
 (** Returns if the bound type is or is equivalent to a BTYP_unitsum. *)
 let is_unitsum t = match t with
+  | BTYP_void -> true
+  | BTYP_tuple [] -> true
   | BTYP_unitsum _ -> true
   | BTYP_sum ts -> all_units ts
   | _ -> false
@@ -296,36 +309,30 @@ let rec iter
  * function. *)
 let map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
   | BTYP_none as x -> x
-  | BTYP_sum ts ->
-      let ts = List.map f_btype ts in
-      if all_units ts then
-        BTYP_unitsum (List.length ts)
-      else
-        BTYP_sum ts
+  | BTYP_sum ts -> btyp_sum (List.map f_btype ts)
   | BTYP_unitsum k ->
-      if k > 0 then
-        let mapped_unit = f_btype (BTYP_tuple []) in
-        match mapped_unit with
-        | BTYP_tuple [] -> BTYP_unitsum k
-        | _ -> BTYP_tuple (Flx_list.repeat mapped_unit k)
-      else BTYP_unitsum k
-  | BTYP_intersect ts -> BTYP_intersect (List.map f_btype ts)
-  | BTYP_inst (i,ts) -> BTYP_inst (f_bid i, List.map f_btype ts)
-  | BTYP_tuple ts -> BTYP_tuple (List.map f_btype ts)
-  | BTYP_array (t1,t2) -> BTYP_array (f_btype t1, f_btype t2)
-  | BTYP_record (n,ts) -> BTYP_record (n,List.map (fun (s,t) -> s, f_btype t) ts)
-  | BTYP_variant ts -> BTYP_variant (List.map (fun (s,t) -> s, f_btype t) ts)
-  | BTYP_pointer t -> BTYP_pointer (f_btype t)
-  | BTYP_function (a,b) -> BTYP_function (f_btype a, f_btype b)
-  | BTYP_cfunction (a,b) -> BTYP_cfunction (f_btype a, f_btype b)
+    let mapped_unit = f_btype (BTYP_tuple []) in
+    begin match mapped_unit with
+    | BTYP_tuple [] -> BTYP_unitsum k
+    | _ -> BTYP_sum (Flx_list.repeat mapped_unit k)
+    end
+  | BTYP_intersect ts -> btyp_intersect (List.map f_btype ts)
+  | BTYP_inst (i,ts) -> btyp_inst (f_bid i, List.map f_btype ts)
+  | BTYP_tuple ts -> btyp_tuple (List.map f_btype ts)
+  | BTYP_array (t1,t2) -> btyp_array (f_btype t1, f_btype t2)
+  | BTYP_record (n,ts) -> btyp_record n (List.map (fun (s,t) -> s, f_btype t) ts)
+  | BTYP_variant ts -> btyp_variant (List.map (fun (s,t) -> s, f_btype t) ts)
+  | BTYP_pointer t -> btyp_pointer (f_btype t)
+  | BTYP_function (a,b) -> btyp_function (f_btype a, f_btype b)
+  | BTYP_cfunction (a,b) -> btyp_cfunction (f_btype a, f_btype b)
   | BTYP_void as x -> x
   | BTYP_fix _ as x -> x
   | BTYP_type _ as x -> x
-  | BTYP_type_tuple ts -> BTYP_type_tuple (List.map f_btype ts)
+  | BTYP_type_tuple ts -> btyp_type_tuple (List.map f_btype ts)
   | BTYP_type_function (its, a, b) ->
-      BTYP_type_function (List.map (fun (i,t) -> f_bid i, f_btype t) its, f_btype a, f_btype b)
-  | BTYP_type_var (i,t) -> BTYP_type_var (f_bid i, f_btype t)
-  | BTYP_type_apply (a, b) -> BTYP_type_apply (f_btype a, f_btype b)
+      btyp_type_function (List.map (fun (i,t) -> f_bid i, f_btype t) its, f_btype a, f_btype b)
+  | BTYP_type_var (i,t) -> btyp_type_var (f_bid i, f_btype t)
+  | BTYP_type_apply (a, b) -> btyp_type_apply (f_btype a, f_btype b)
   | BTYP_type_match (t,ps) ->
       let ps =
         List.map begin fun (tp, t) ->
@@ -337,7 +344,7 @@ let map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
           f_btype t
         end ps
       in
-      BTYP_type_match (f_btype t, ps)
+      btyp_type_match (f_btype t, ps)
   | BTYP_type_set ts ->
       let g acc elt =
         (* SHOULD USE UNIFICATIION! *)
@@ -346,8 +353,8 @@ let map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
       in
       let ts = List.rev (List.fold_left g [] ts) in
       if List.length ts = 1 then List.hd ts else
-      BTYP_type_set ts
-  | BTYP_type_set_union ls -> BTYP_type_set_union (List.map f_btype ls)
+      btyp_type_set ts
+  | BTYP_type_set_union ls -> btyp_type_set_union (List.map f_btype ls)
   | BTYP_type_set_intersection ls ->
-      BTYP_type_set_intersection (List.map f_btype ls)
+      btyp_type_set_intersection (List.map f_btype ls)
 

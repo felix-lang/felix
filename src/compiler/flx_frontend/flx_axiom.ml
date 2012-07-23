@@ -61,7 +61,7 @@ let verify syms bsym_table csr e =
     in
     let tvars = map (fun (_,i) -> i) bvs in
     let evars = Flx_bparameter.get_bids bpl in
-    let result = expr_maybe_matches syms.counter tvars evars param e in
+    let result = expr_maybe_matches bsym_table syms.counter tvars evars param e in
     match result with
     | None -> ()
     | Some (tmgu, emgu) ->
