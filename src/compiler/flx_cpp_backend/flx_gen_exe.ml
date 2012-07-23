@@ -283,7 +283,6 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
       end
 
     | BBDCL_external_fun (_,vs,ps_cf,ret,_,_,`Callback _) ->
-      assert (not is_jump);
       assert (ret = btyp_void ());
 
       if length vs <> length ts then
@@ -298,7 +297,16 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
       sub_start ^
       "      " ^ s ^ "\n" ^
       sub_end
-
+      ^
+      (* NOTE: the "stackable" here should refer to the context not the primcall *)
+      begin 
+        if is_jump then 
+          if stackable then
+            "      return;\n"
+          else
+            "      FLX_RETURN // procedure return\n"
+        else ""
+      end
 
     | BBDCL_fun (props,vs,ps,ret,bexes) ->
       begin match ret with
