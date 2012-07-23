@@ -71,3 +71,20 @@ on that class.
 A class can also use {inherit} to add names into its scope from another class; 
 in this case names are treated as if they were defined in that class.
 
+@h2 Felix Classes Versus Object-Oriented Classes
+
+The use of the term "class" here may seem confusing for those accustomed to the
+use of the same word in object oriented languages.
+
+In Felix, a class with type parameters is a namespace and a collection of re-usable 
+functions, types, and procedures that can be applied to different types of objects.
+
+In object-oriented programming a class is a namespace and a type plus a bunch 
+of methods, functions, and procedures that apply mainly to objects of that type.
+
+Probably the most important difference is that a Felix class is not a type of 
+object - it cannot be instantiated into an object and doesn't have any methods or
+instance variables.  All its members are essentially "static" members (to use the Java/C++ term).
+
+
+
