@@ -8,7 +8,7 @@ def build_lib(phase):
     path = Path('src/compiler/ocs/src')
 
     return phase.ocaml.build_lib(path/'ocs',
-        list((path/'*.ml{,i}').glob(exclude='ocs_main.ml')),
+        list((path/'*.ml{,i}').glob(exclude=path/'ocs_main.ml')),
         external_libs=['nums', 'unix'])
 
 def build_exe(phase):
