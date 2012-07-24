@@ -141,12 +141,6 @@ class Trig[t] {
   virtual fun cos: t -> t;
   virtual fun tan (x:t)=> sin x / cos x;
 
-  axiom unity (x:t) : sqr (cos x) + sqr (sin x) == #one;
-  axiom sumsin (x:t, y:t) : sin ( x + y ) == sin x * cos y + cos x * sin y;
-  axiom sumcos (x:t, y:t) : cos ( x + y ) == cos x * cos y - sin x * sin y;
-  axiom subsin (x:t, y:t) : sin ( x - y ) == sin x * cos y - cos x * sin y;
-  axiom subcos (x:t, y:t) : cos ( x - y ) == cos x * cos y + sin x * sin y;
-
   virtual fun sec (x:t)=> recip (cos x);
   virtual fun csc (x:t)=> recip (sin x);
   virtual fun cot (x:t)=> recip (tan x);
@@ -165,20 +159,9 @@ class Trig[t] {
   virtual fun cosh: t -> t;
   virtual fun tanh (x:t) => sinh x / cosh x;
 
-  axiom negsinh (x:t) : sinh (- x) == - sinh x;
-  axiom negcosh (x:t) : cosh (- x) == cosh x;
-  axiom negtanh (x:t) : tanh (- x) == -tanh x;
-  axiom unity (x:t) : sqr (cosh x) - sqr (sinh x) == #one;
-  axiom sumsinh (x:t, y:t) : sinh ( x + y ) == cosh x * sinh y + sinh x * cosh y;
-  axiom sumcosh (x:t, y:t) : cosh ( x + y ) == sinh x * sinh y + cosh x * cosh y;
-
   virtual fun sech (x:t) => recip (cosh x);
   virtual fun csch (x:t) => recip (sinh x);
   virtual fun coth (x:t) => recip (tanh x); 
-
-  axiom negcoth (x:t) : coth (- x) == - coth x;
-  axiom negsech (x:t) : sech (- x) == sech x;
-  axiom negcsch (x:t) : csch (- x) == - csch x;
 
   virtual fun asinh: t -> t;
   virtual fun acosh: t -> t;
