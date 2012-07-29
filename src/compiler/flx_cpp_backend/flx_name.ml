@@ -176,7 +176,7 @@ let rec cpp_type_classname syms bsym_table t =
   | BTYP_type_var (i,mt) ->
       failwith ("[cpp_type_classname] Can't name type variable " ^
         string_of_bid i ^ ":"^ sbt bsym_table mt)
-  | BTYP_fix i -> "void" (* failwith "[cpp_type_classname] Can't name type fixpoint" *)
+  | BTYP_fix (i,_) -> "void" (* failwith "[cpp_type_classname] Can't name type fixpoint" *)
   | BTYP_none -> "none" (* hack needed for null case in pgen *)
   | BTYP_void -> "void" (* failwith "void doesn't have a classname" *)
   | BTYP_tuple [] -> "::flx::rtl::unit"
@@ -304,7 +304,7 @@ and cpp_structure_name syms bsym_table t =
   | BTYP_type_var (i,mt) ->
       failwith ("[cpp_type_classname] Can't name type variable " ^
         string_of_bid i ^ ":"^ sbt bsym_table mt)
-  | BTYP_fix i -> "_fix<"^string_of_int (-i)^">" (* failwith "[cpp_type_classname] Can't name type fixpoint" *)
+  | BTYP_fix (i,_) -> "_fix<"^string_of_int (-i)^">" (* failwith "[cpp_type_classname] Can't name type fixpoint" *)
   | BTYP_none -> "none" (* hack needed for null case in pgen *)
   | BTYP_void -> "void" (* failwith "void doesn't have a classname" *)
   | BTYP_tuple [] -> "::flx::rtl::unit"

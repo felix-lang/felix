@@ -69,11 +69,12 @@ let rec fixup counter ps body =
  let rec aux term depth =
    let fx t = aux t (depth+1) in
    match Flx_btype.map ~f_btype:fx term with
-   | BTYP_type_apply (BTYP_fix i, arg)
+   | BTYP_type_apply (BTYP_fix (i,mt), arg)
      when arg = param
      && i + depth +1  = 0 (* looking inside application, one more level *)
      -> print_endline "SPECIAL REDUCTION";
-     btyp_fix (i+2) (* elide application AND skip under lambda abstraction *)
+(* HACK: meta type of fixpoint guessed *)
+     btyp_fix (i+2) (btyp_type 0) (* elide application AND skip under lambda abstraction *)
 
    | BTYP_type_function (a,b,c) ->
       (* NOTE we have to add 2 to depth here, an extra
@@ -105,7 +106,7 @@ and adjust t =
   let rec adj depth t =
     let fx t = adj (depth + 1) t in
     match Flx_btype.map ~f_btype:fx t with
-    | BTYP_fix i when i + depth < 0 -> btyp_fix (i+1)
+    | BTYP_fix (i, mt) when i + depth < 0 -> btyp_fix (i+1) mt
     | x -> x
   in adj 0 t
 
@@ -180,7 +181,8 @@ and beta_reduce' counter bsym_table sr termlist t =
     print_endline ("Beta find fixpoint " ^ si (-j-1));
     print_endline ("Repeated term " ^ sbt bsym_table t);
     *)
-    btyp_fix (-j - 1)
+(* HACK: meta type of fixpoint guessed *)
+    btyp_fix (-j - 1)  (btyp_type 0)
 
   | None ->
 
@@ -302,7 +304,7 @@ and beta_reduce' counter bsym_table sr termlist t =
     let t2 = br t2 in (* eager evaluation *)
     let t1 =
       match t1 with
-      | BTYP_fix j ->
+      | BTYP_fix (j,mt) ->
         (*
         print_endline ("++++Fixpoint application " ^ si j);
         print_endline "+++Trail:";

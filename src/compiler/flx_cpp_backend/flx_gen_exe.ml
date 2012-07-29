@@ -83,7 +83,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
   let our_display = get_display_list bsym_table this in
   let caller_name = Flx_bsym.id bsym in
   let kind = match Flx_bsym.bbdcl bsym with
-    | BBDCL_fun (_,_,_,BTYP_fix 0,_) -> Procedure
+    | BBDCL_fun (_,_,_,BTYP_fix (0,_),_) -> Procedure
     | BBDCL_fun (_,_,_,BTYP_void,_) -> Procedure
     | BBDCL_fun (_,_,_,_,_) -> Function
     | _ -> failwith "Expected executable code to be in function or procedure"
@@ -118,7 +118,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
     in
     let called_name = Flx_bsym.id bsym in
     let handle_call props vs ps ret bexes =
-      let is_ehandler = match ret with BTYP_fix 0 -> true | _ -> false in
+      let is_ehandler = match ret with BTYP_fix (0,_) -> true | _ -> false in
       if bexes = []
       then
       "      //call to empty procedure " ^ Flx_bsym.id bsym ^ " elided\n"
@@ -234,7 +234,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
     in
     begin
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_external_fun (_,vs,_,BTYP_fix 0,_,_,`Code code) ->
+    | BBDCL_external_fun (_,vs,_,BTYP_fix (0,_),_,_,`Code code) ->
       assert (is_jump); (* Should be a jump since doesn't return *)
 
       if length vs <> length ts then
@@ -311,7 +311,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
     | BBDCL_fun (props,vs,ps,ret,bexes) ->
       begin match ret with
       | BTYP_void 
-      | BTYP_fix 0 -> handle_call props vs ps ret bexes
+      | BTYP_fix (0,_) -> handle_call props vs ps ret bexes
       | _ ->
         failwith
         (
@@ -473,7 +473,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
         | _ -> assert false
       in
       begin match Flx_bsym.bbdcl bsym with
-      | BBDCL_fun (props,vs,(ps,traint),BTYP_fix 0,_)
+      | BBDCL_fun (props,vs,(ps,traint),BTYP_fix (0,_),_)
       | BBDCL_fun (props,vs,(ps,traint),BTYP_void,_) ->
         assert (mem `Stack_closure props);
         let a = match a with (a,t) -> a, tsub t in
@@ -724,7 +724,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
       else "") ^
       (* HACK WARNING! *)
       begin match t with
-      | BTYP_fix 0 -> "      "^ge sr e^"; // non-returning\n"
+      | BTYP_fix (0,_) -> "      "^ge sr e^"; // non-returning\n"
       | _ ->          "      return "^ge sr e^";\n"
       end
 

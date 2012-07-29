@@ -51,7 +51,7 @@ let rec check_recursion t = match t with
    | BTYP_cfunction _
      -> ()
 
-   | BTYP_fix i
+   | BTYP_fix (i,_)
      -> raise Bad_recursion
 
    | x -> Flx_btype.flat_iter ~f_btype:check_recursion x
@@ -250,7 +250,7 @@ let fix i t =
     let aux t = aux (n - 1) t in
     match t with
     | BTYP_none -> assert false
-    | BTYP_type_var (k,_) -> if k = i then btyp_fix n else t
+    | BTYP_type_var (k,mt) -> if k = i then btyp_fix n mt else t
     | BTYP_inst (k,ts) -> btyp_inst (k, List.map aux ts)
     | BTYP_tuple ts -> btyp_tuple (List.map aux ts)
     | BTYP_sum ts -> btyp_sum (List.map aux ts)
@@ -435,8 +435,9 @@ let rec unification bsym_table counter eqns dvars =
             s := None
         end
 
-      | BTYP_fix i,BTYP_fix j ->
-        if i <> j then raise Not_found
+      | BTYP_fix (i,t1),BTYP_fix (j,t2) ->
+        if i <> j then raise Not_found;
+        eqns := (t1,t2) :: !eqns
 
       | BTYP_tuple ls, BTYP_array (ta,BTYP_unitsum n)
       | BTYP_array (ta,BTYP_unitsum n), BTYP_tuple ls
@@ -690,11 +691,11 @@ let rec type_eq' counter ltrail ldepth rtrail rdepth trail t1 t2 =
     result
 
 
-  | BTYP_fix i,BTYP_fix j ->
+  | BTYP_fix (i,t1),BTYP_fix (j,t2) ->
     (*
     print_endline ("Check fixpoint " ^ si i ^ " vs " ^ si j);
     *)
-    if i = j then true else (* hack ..? *)
+    if i = j then te t1 t2 else (* hack ..? *)
     begin
       (*
       print_endline "Matching fixpoints";
@@ -706,7 +707,7 @@ let rec type_eq' counter ltrail ldepth rtrail rdepth trail t1 t2 =
       with Not_found -> false
     end
 
-  | BTYP_fix i,t ->
+  | BTYP_fix (i,mt1),t ->
     (*
     print_endline "LHS fixpoint";
     *)
@@ -716,7 +717,7 @@ let rec type_eq' counter ltrail ldepth rtrail rdepth trail t1 t2 =
     with Not_found -> false
     end
 
-  | t,BTYP_fix j ->
+  | t,BTYP_fix (j,mt2) ->
     (*
     print_endline "RHS fixpoint";
     *)
@@ -774,8 +775,8 @@ let unfold t =
     | BTYP_function (a,b) -> btyp_function (uf a,uf b)
     | BTYP_cfunction (a,b) -> btyp_cfunction (uf a,uf b)
     | BTYP_pointer a -> btyp_pointer (uf a)
-    | BTYP_fix i when (-i) = depth -> t
-    | BTYP_fix i when (-i) > depth -> raise (Free_fixpoint t')
+    | BTYP_fix (i,_) when (-i) = depth -> t
+    | BTYP_fix (i,_) when (-i) > depth -> raise (Free_fixpoint t')
     | BTYP_type_apply (a,b) -> btyp_type_apply (uf a,uf b)
     | BTYP_inst (i,ts) -> btyp_inst (i,List.map uf ts)
     | BTYP_type_function (p,r,b) ->
@@ -815,9 +816,9 @@ let fold counter t =
     | BTYP_void
     | BTYP_unitsum _
     | BTYP_type_var _
-    | BTYP_fix 0 -> ()
+    | BTYP_fix (0,_) -> ()
 
-    | BTYP_fix i ->
+    | BTYP_fix (i,_) ->
       let k = depth + i in
       begin try
         let t'' = List.assoc k trail in

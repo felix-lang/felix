@@ -28,7 +28,7 @@ and t =
   | BTYP_function of t * t
   | BTYP_cfunction of t * t
   | BTYP_void
-  | BTYP_fix of int
+  | BTYP_fix of int * t (* meta type *)
 
   | BTYP_type of int
   | BTYP_type_tuple of t list
@@ -149,8 +149,8 @@ let btyp_cfunction (args, ret) =
   BTYP_cfunction (args, ret)
 
 (** Construct a BTYP_fix type. *)
-let btyp_fix i =
-  BTYP_fix i
+let btyp_fix i mt =
+  BTYP_fix (i, mt)
 
 (** Construct a BTYP_type type. *)
 let btyp_type i =

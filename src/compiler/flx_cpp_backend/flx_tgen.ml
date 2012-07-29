@@ -149,7 +149,7 @@ let rec gen_type_name syms bsym_table (index,typ) =
   | t when Flx_btype.islinear_type bsym_table t -> descr 
       (* "typedef int " ^ tn typ ^ ";\n" *)
 
-  | BTYP_fix i -> ""
+  | BTYP_fix (i,_) -> ""
   | BTYP_type_var (i,mt) -> failwith "[gen_type_name] Can't gen name of type variable"
 
   | BTYP_pointer b -> ""
@@ -345,7 +345,7 @@ let rec gen_type syms bsym_table (index,typ) =
   (* PROCEDURE *)
   | BTYP_cfunction _ -> ""
 
-  | BTYP_function (a,BTYP_fix 0)
+  | BTYP_function (a,BTYP_fix (0,_))
   | BTYP_function (a,BTYP_void) ->
     descr ^
     let name = cn typ

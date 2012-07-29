@@ -195,7 +195,7 @@ let gen_functions syms bsym_table =
     in
     match Flx_bsym.bbdcl bsym with
     | BBDCL_fun (props,vs,(ps,traint),ret,_) ->
-      let is_proc = match ret with | BTYP_void | BTYP_fix 0 -> true | _ -> false in
+      let is_proc = match ret with | BTYP_void | BTYP_fix (0,_) -> true | _ -> false in
       let name = if is_proc then "PROCEDURE" else "FUNCTION" in
       bcat s ("\n//------------------------------\n");
       if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then begin
@@ -491,7 +491,7 @@ let gen_procedure_methods filename syms bsym_table
     )
   );
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_fun (props,vs,(bps,traint),BTYP_fix 0,exes)
+  | BBDCL_fun (props,vs,(bps,traint),BTYP_fix (0,_),exes)
   | BBDCL_fun (props,vs,(bps,traint),BTYP_void,exes) ->
     if length ts <> length vs then
     failwith
@@ -650,7 +650,7 @@ let gen_execute_methods filename syms bsym_table label_info counter bf bf2 =
   in
 
   begin match Flx_bsym.bbdcl bsym with
-  | BBDCL_fun (props,vs,(ps,traint),BTYP_fix 0,_)
+  | BBDCL_fun (props,vs,(ps,traint),BTYP_fix (0,_),_)
   | BBDCL_fun (props,vs,(ps,traint),BTYP_void,_) ->
     bcat s ("//------------------------------\n");
     if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then

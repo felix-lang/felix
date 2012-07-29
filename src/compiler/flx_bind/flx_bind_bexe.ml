@@ -173,8 +173,8 @@ let cal_call state bsym_table sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
     end
   in
   match unfold t1 with
-  | BTYP_cfunction (t, BTYP_fix 0)
-  | BTYP_function (t, BTYP_fix 0) 
+  | BTYP_cfunction (t, BTYP_fix (0,_))
+  | BTYP_function (t, BTYP_fix (0,_)) 
     ->
     let a = genargs t in
     bexe_jump a
@@ -634,7 +634,7 @@ let bind_exes state bsym_table sr exes =
     if 
       do_unify state bsym_table state.ret_type (btyp_void ()) || 
       (* hack, probably unify should unify it .. *)
-      (match state.ret_type with BTYP_fix 0 -> true | _ -> false) 
+      (match state.ret_type with BTYP_fix (0,_) -> true | _ -> false) 
     then
       state.ret_type <- varmap_subst (get_varmap state.lookup_state) state.ret_type
     else

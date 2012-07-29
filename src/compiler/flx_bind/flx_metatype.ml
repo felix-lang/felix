@@ -5,12 +5,12 @@ open Flx_types
 open Flx_btype
 open Flx_exceptions
 
-let rec metatype sym_table bsym_table sr term =
+let rec metatype sym_table bsym_table rs sr term =
   (*
   print_endline ("Find Metatype  of: " ^
     string_of_btypecode bsym_table term);
   *)
-  let t = metatype' sym_table bsym_table sr term in
+  let t = metatype' sym_table bsym_table rs sr term in
   (*
   print_endline ("Metatype  of: " ^ string_of_btypecode bsym_table term ^
     " is " ^ sbt bsym_table t);
@@ -18,9 +18,12 @@ let rec metatype sym_table bsym_table sr term =
   *)
   t
 
-and metatype' sym_table bsym_table sr term =
+and metatype' sym_table bsym_table rs sr term =
   let st t = sbt bsym_table t in
-  let mt t = metatype' sym_table bsym_table sr t in
+  let mt t = metatype' sym_table bsym_table rs sr t in
+(*
+print_endline ("Metatyping term " ^ st term);
+*)
   match term with
 
   | BTYP_type_function (a,b,c) ->
@@ -30,7 +33,7 @@ and metatype' sym_table bsym_table sr term =
       | [x] -> x
       | _ -> btyp_tuple ps
     in
-      let rt = metatype sym_table bsym_table sr c in
+      let rt = metatype sym_table bsym_table rs sr c in
       if b<>rt
       then
         clierr sr
@@ -56,10 +59,12 @@ and metatype' sym_table bsym_table sr term =
         if x = tb then y
         else
           clierr sr (
-            "Metatype error: function argument wrong metatype, expected:\n" ^
-            sbt bsym_table x ^
+            "Metatype error: type term " ^
+             st term ^
+            "\nfunction argument wrong metatype, expected:\n" ^
+            st  x ^
             "\nbut got:\n" ^
-            sbt bsym_table tb
+            st tb
           )
 
       | _ -> clierr sr
@@ -135,7 +140,20 @@ and metatype' sym_table bsym_table sr term =
   | BTYP_tuple _
   | BTYP_void
   | BTYP_unitsum _ -> btyp_type 0
-
+  | BTYP_fix (i,mt) -> 
+(*
+    let si i = string_of_int i in
+    let catmap sep f ls = String.concat sep (List.map f ls) in
+    print_endline ("Meta type of fix point " ^ si i ^ ", type-alias-fixlist = ");
+    print_endline (catmap ","  (fun (idx,level) -> "Index=" ^ si idx ^ " level = " ^ si level) (rs.type_alias_fixlist));
+    print_endline "Idx fixlist is:";
+    print_endline (catmap ","  (fun (idx) -> "Index=" ^ si idx ) (rs.idx_fixlist));
+    print_endline "Expr fixlist is:";
+    print_endline (catmap ","  (fun (e,d) -> "Expr=" ^ string_of_expr e ^ " depth=" ^ si d ) (rs.expr_fixlist));
+    print_endline "As fixlist is:";
+    print_endline (catmap ","  (fun (s,level) -> "as variable =" ^ s ^ " level = " ^ si level) (rs.as_fixlist));
+*)
+    mt
   | _ ->
     print_endline ("Questionable meta typing of term: " ^
       sbt bsym_table term);

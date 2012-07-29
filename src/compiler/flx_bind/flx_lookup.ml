@@ -345,9 +345,9 @@ and lookup_qn_in_env'
 
 *)
 and inner_bind_type state (bsym_table:Flx_bsym_table.t) env sr rs t =
-  (*
-  print_endline ("[bind_type] " ^ string_of_typecode t);
-  *)
+(*
+  print_endline ("[inner bind_type] " ^ string_of_typecode t);
+*)
   let mkenv i = build_env state bsym_table (Some i) in
   let bt =
     try
@@ -660,6 +660,9 @@ and bind_type'
   sr t params
   mkenv
 =
+(*
+print_endline ("Bind type " ^ string_of_typecode t);
+*)
   let btp t params = bind_type' state bsym_table env
     {rs with depth = rs.depth+1}
     sr t params mkenv
@@ -858,7 +861,8 @@ and bind_type'
         (* Typeof is recursive *)
         let outer_depth = List.assq e rs.expr_fixlist in
         let fixdepth = outer_depth -rs.depth in
-        btyp_fix fixdepth
+(* HACK metatype guess *)
+        btyp_fix fixdepth (btyp_type 0)
       end else begin
         snd (bind_expression' state bsym_table env rs e [])
       end
@@ -946,24 +950,35 @@ and bind_type'
       | _ -> clierr sr ("Cannot flatten type " ^ sbt bsym_table t2)
       end
 
-  | TYP_apply (TYP_void _ as qn, t2)
-  | TYP_apply (TYP_name _ as qn, t2)
-  | TYP_apply (TYP_case_tag _ as qn, t2)
-  | TYP_apply (TYP_typed_case _ as qn, t2)
-  | TYP_apply (TYP_lookup _ as qn, t2)
-  | TYP_apply (TYP_index _ as qn, t2)
-  | TYP_apply (TYP_callback _ as qn, t2) ->
+  | TYP_apply (TYP_void _ as qn, t2')
+  | TYP_apply (TYP_name _ as qn, t2')
+  | TYP_apply (TYP_case_tag _ as qn, t2')
+  | TYP_apply (TYP_typed_case _ as qn, t2')
+  | TYP_apply (TYP_lookup _ as qn, t2')
+  | TYP_apply (TYP_index _ as qn, t2')
+  | TYP_apply (TYP_callback _ as qn, t2') ->
       let qn =
         match qualified_name_of_typecode qn with
         | Some qn -> qn
         | None -> assert false
        in
-      let t2 = bt t2 in
-      let sign = Flx_metatype.metatype state.sym_table bsym_table sr t2 in
-
+(*
+print_endline ("Binding type application, qn = " ^ string_of_qualified_name qn ^" argument " ^ string_of_typecode t2');
+*)
+      let t2 = bt t2' in
+(*
+print_endline ("Type application,qn = " ^ string_of_qualified_name qn ^" argument " ^ string_of_typecode t2' ^ " bound=" ^ sbt bsym_table t2);
+*)
+      let sign = Flx_metatype.metatype state.sym_table bsym_table rs sr t2 in
+(*
+print_endline ("meta type of argument is " ^ sbt bsym_table sign);
+*)
       begin try
         match qn with
         | `AST_name (sr,name,[]) ->
+(*
+print_endline ("Looking up name " ^ name ^ " in param list");
+*)
             btyp_type_apply (List.assoc name params, t2)
         | _ -> raise Not_found
       with Not_found ->
@@ -976,6 +991,9 @@ and bind_type'
          * lookup_type_qn_with_sig is probably the wrong routine .. if it
          * finds a constructor, it seems to return the type of the constructor
          * instead of the actual constructor .. *)
+(*
+print_endline "Cannot find name in param list, doing lookup with metatype as sig";
+*)
         let t1 = lookup_type_qn_with_sig'
           state
           bsym_table
@@ -986,6 +1004,9 @@ and bind_type'
           qn
           [sign]
         in
+(*
+print_endline "Completed binding type apply OK";
+*)
         btyp_type_apply (t1,t2)
       end
 
@@ -994,10 +1015,11 @@ and bind_type'
   | TYP_type -> btyp_type 0
 
   | TYP_name (sr,s,[]) when List.mem_assoc s rs.as_fixlist ->
-      btyp_fix ((List.assoc s rs.as_fixlist) - rs.depth)
+(* HACK metatype guess *)
+    btyp_fix ((List.assoc s rs.as_fixlist) - rs.depth) (btyp_type 0)
 
   | TYP_name (sr,s,[]) when List.mem_assoc s params ->
-      List.assoc s params
+    List.assoc s params
 
   | TYP_index (sr,name,index) as x ->
       let sym =
@@ -1141,36 +1163,6 @@ and cal_assoc_type state (bsym_table:Flx_bsym_table.t) sr t =
 
 and bind_type_index state (bsym_table:Flx_bsym_table.t) (rs:recstop) sr index ts mkenv
 =
-(*
-  print_endline
-  (
-    "BINDING INDEX " ^ string_of_int index ^
-    " with ["^ catmap ", " (sbt bsym_table) ts^ "]"
-  );
-*)
-  (*
-  print_endline ("type alias fixlist is " ^ catmap ","
-    (fun (i,j) -> si i ^ "(depth "^si j^")") type_alias_fixlist
-  );
-  *)
-  if List.mem_assoc index rs.type_alias_fixlist
-  then begin
-    (*
-    print_endline (
-      "Making fixpoint for Recursive type alias " ^
-      (
-        match get_data state.sym_table index with { Flx_sym.id=id;sr=sr}->
-          id ^ " defined at " ^
-          Flx_srcref.short_string_of_src sr
-      )
-    );
-    *)
-    btyp_fix ((List.assoc index rs.type_alias_fixlist)-rs.depth)
-  end
-  else begin
-  (*
-  print_endline "bind_type_index";
-  *)
   let ts = adjust_ts state.sym_table bsym_table sr index ts in
   (*
   print_endline ("Adjusted ts =h ["^ catmap ", " (sbt bsym_table) ts^ "]");
@@ -1212,6 +1204,67 @@ and bind_type_index state (bsym_table:Flx_bsym_table.t) (rs:recstop) sr index ts
         *)
         t
   in
+(*
+  print_endline
+  (
+    "BINDING INDEX " ^ string_of_int index ^
+    " with ["^ catmap ", " (sbt bsym_table) ts^ "]"
+  );
+*)
+  (*
+  print_endline ("type alias fixlist is " ^ catmap ","
+    (fun (i,j) -> si i ^ "(depth "^si j^")") type_alias_fixlist
+  );
+  *)
+  if List.mem_assoc index rs.type_alias_fixlist
+  then begin
+(*
+    print_endline (
+      "Making fixpoint for Recursive type alias " ^
+      (
+        match get_data state.sym_table index with { Flx_sym.id=id;sr=sr}->
+          id ^ " defined at " ^
+          Flx_srcref.short_string_of_src sr
+      )
+    );
+*)
+    let mt = 
+      begin try
+        let data = get_data state.sym_table index in
+        match data with { Flx_sym.id=id; sr=sr; vs=vs; dirs=dirs; symdef=entry } ->
+        match entry with
+        | SYMDEF_type_alias t  -> (* print_endline ("A type alias " ^ string_of_typecode t); *)
+          begin match t with
+          | TYP_type_tuple _ -> print_endline "A type tuple"; assert false
+          | TYP_typefun (d,c,body) -> 
+      (*
+            print_endline ("A type fun: " ^ 
+            catmap "," (fun (n,t) -> string_of_typecode t) d ^ " -> " ^ string_of_typecode c);
+      *)
+            let atyps = List.map (fun (_,t) -> bt t) d in
+            let atyp = match atyps with
+            | [x]->x
+            | _ -> btyp_type_tuple atyps
+            in
+            let c = bt c in
+            btyp_function (atyp, c)
+
+      (* HACK: guess the meta type! *)
+          | TYP_name _ -> (* print_endline "A type name?"; *) btyp_type 0
+          | TYP_as _ -> print_endline "A type as (recursion)?"; assert false
+          | _ -> print_endline ("Woops, dunno meta type of " ^ string_of_typecode t); assert false
+          end
+        | _ -> print_endline ("Dunno, assume a type " ^ string_of_symdef entry id vs); assert false
+      with _ ->
+        print_endline "Can't bind type alias"; assert false
+      end
+    in
+    btyp_fix ((List.assoc index rs.type_alias_fixlist)-rs.depth) mt
+  end
+  else begin
+  (*
+  print_endline "bind_type_index";
+  *)
   let parent = Flx_sym_table.find_parent state.sym_table index in
   match get_data state.sym_table index with
   | { Flx_sym.id=id; sr=sr; vs=vs; dirs=dirs; symdef=entry } ->
@@ -1583,7 +1636,8 @@ and inner_type_of_index state bsym_table rs index =
   try Hashtbl.find state.ticache index with Not_found ->
 
   (* Check index recursion. If so, return a fix type. *)
-  if List.mem index rs.idx_fixlist then btyp_fix (-rs.depth) else
+(*  HACK: metatype guess *)
+  if List.mem index rs.idx_fixlist then btyp_fix (-rs.depth) (btyp_type 0) else
 
   let mkenv i = build_env state bsym_table (Some i) in
   let env = mkenv index in
@@ -1615,7 +1669,7 @@ and inner_type_of_index state bsym_table rs index =
         string_of_bid index)
   | SYMDEF_type_alias t ->
       let t = bt sym.Flx_sym.sr t in
-      Flx_metatype.metatype state.sym_table bsym_table sym.Flx_sym.sr t
+      Flx_metatype.metatype state.sym_table bsym_table rs sym.Flx_sym.sr t
 
   | SYMDEF_function ((ps,_),rt,props,_) ->
       let pts = List.map (fun (_,_,t,_) -> t) ps in

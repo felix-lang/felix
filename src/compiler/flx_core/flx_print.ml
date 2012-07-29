@@ -561,7 +561,7 @@ and sb bsym_table depth fixlist counter prec tc =
         "\nendmatch"
       )
 
-    | BTYP_fix i ->
+    | BTYP_fix (i,mt) ->
        0,
        (
          try assoc (depth+i) !fixlist
