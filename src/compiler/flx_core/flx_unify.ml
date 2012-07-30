@@ -437,6 +437,7 @@ let rec unification bsym_table counter eqns dvars =
 
       | BTYP_fix (i,t1),BTYP_fix (j,t2) ->
         if i <> j then raise Not_found;
+        if t1 <> t2 then print_endline "unification: fix points at same level with unequal metatypes!";
         eqns := (t1,t2) :: !eqns
 
       | BTYP_tuple ls, BTYP_array (ta,BTYP_unitsum n)
@@ -695,7 +696,14 @@ let rec type_eq' counter ltrail ldepth rtrail rdepth trail t1 t2 =
     (*
     print_endline ("Check fixpoint " ^ si i ^ " vs " ^ si j);
     *)
-    if i = j then te t1 t2 else (* hack ..? *)
+    if i = j then begin 
+      if t1 <> t2 then print_endline "[type_eq] Fix points at same level have different metatypes";
+(*
+      true
+*)
+      (* should be correct .. but something breaks *)
+      te t1 t2 
+    end else (* hack ..? *)
     begin
       (*
       print_endline "Matching fixpoints";
