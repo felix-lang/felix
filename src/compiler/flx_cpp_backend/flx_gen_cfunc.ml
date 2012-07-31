@@ -60,7 +60,7 @@ let gen_C_function syms bsym_table props index id sr vs bps ret' ts instance_no 
   let ret = rt' vs ret' in
   if ret = btyp_tuple [] then "// elided (returns unit)\n" else
 
-  let funtype = fold syms.counter (btyp_function (argtype, ret)) in
+  let funtype = fold bsym_table syms.counter (btyp_function (argtype, ret)) in
 
   (* let argtypename = cpp_typename syms bsym_table argtype in *)
   let display = get_display_list bsym_table index in
@@ -148,7 +148,7 @@ let gen_C_function_body filename syms bsym_table
     if ret = btyp_tuple [] then "// elided (returns unit)\n\n" else
 
 
-    let funtype = fold syms.counter (btyp_function (argtype, ret)) in
+    let funtype = fold bsym_table syms.counter (btyp_function (argtype, ret)) in
     (* let argtypename = cpp_typename syms bsym_table argtype in *)
     let rettypename = cpp_typename syms bsym_table ret in
 
@@ -280,7 +280,7 @@ let gen_C_procedure_body filename syms bsym_table
     let argtype = typeof_bparams bps in
     let argtype = rt vs argtype in
 
-    let funtype = fold syms.counter (btyp_function (argtype, btyp_void ())) in
+    let funtype = fold bsym_table syms.counter (btyp_function (argtype, btyp_void ())) in
     (* let argtypename = cpp_typename syms bsym_table argtype in *)
 
     let params = Flx_bparameter.get_bids bps in

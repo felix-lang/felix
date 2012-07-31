@@ -86,7 +86,7 @@ let cal_call state bsym_table sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
       e
   in
   let genargs t =
-    if type_match state.counter t t2
+    if type_match bsym_table state.counter t t2
     then
       (
         (*
@@ -437,10 +437,10 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
     state.reachable <- false;
     state.return_count <- state.return_count + 1;
     let e',t' as e = be e in
-    let t' = minimise state.counter t' in
+    let t' = minimise bsym_table state.counter t' in
     ignore (do_unify state bsym_table state.ret_type t');
     state.ret_type <- varmap_subst (Flx_lookup_state.get_varmap state.lookup_state) state.ret_type;
-    if type_match state.counter state.ret_type t' then
+    if type_match bsym_table state.counter state.ret_type t' then
       handle_bexe (bexe_fun_return (sr,(e',t'))) init
     else clierr sr
       (
@@ -454,10 +454,10 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
   | EXE_yield e ->
     state.return_count <- state.return_count + 1;
     let e',t' = be e in
-    let t' = minimise state.counter t' in
+    let t' = minimise bsym_table state.counter t' in
     ignore (do_unify state bsym_table state.ret_type t');
     state.ret_type <- varmap_subst (Flx_lookup_state.get_varmap state.lookup_state) state.ret_type;
-    if type_match state.counter state.ret_type t' then
+    if type_match bsym_table state.counter state.ret_type t' then
       handle_bexe (bexe_yield (sr,(e',t'))) init
     else
       clierr sr
@@ -505,8 +505,8 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
           index
           parent_ts
       in
-      let rhst = minimise state.counter rhst in
-      if type_match state.counter lhst rhst
+      let rhst = minimise bsym_table state.counter rhst in
+      if type_match bsym_table state.counter lhst rhst
       then handle_bexe (bexe_init (sr,index,(e',rhst))) init
       else clierr sr
       (
@@ -540,7 +540,7 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
               index
               parent_ts
           in
-          let rhst = minimise state.counter rhst in
+          let rhst = minimise bsym_table state.counter rhst in
           (*
           print_endline ("Checking type match " ^ sbt state.sym_table lhst ^ " ?= " ^ sbt state.sym_table rhst);
           *)
@@ -552,7 +552,7 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
             | _ -> lhst
           in
           *)
-          if type_match state.counter lhst rhst
+          if type_match bsym_table state.counter lhst rhst
           then handle_bexe (bexe_init (sr,index,(e',rhst))) init
           else clierr sr
           (
@@ -572,9 +572,23 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
       (* trick to generate diagnostic if l isn't an lvalue *)
       let _,lhst as lx = be l in
       let _,rhst as rx = be r in
-      let lhst = minimise state.counter lhst in
-      let rhst = minimise state.counter rhst in
-      if type_match state.counter lhst rhst
+      let lhst = minimise bsym_table state.counter lhst in
+(*
+print_endline ("assign: LHST = " ^ sbt bsym_table lhst);
+*)
+      let lhst = Flx_beta.beta_reduce state.counter bsym_table sr lhst in
+(*
+print_endline ("assign after beta-reduction: LHST = " ^ sbt bsym_table lhst);
+*)
+      let rhst = minimise bsym_table state.counter rhst in
+(*
+print_endline ("assign: RHST = " ^ sbt bsym_table rhst);
+*)
+      let rhst = Flx_beta.beta_reduce state.counter bsym_table sr rhst in
+(*
+print_endline ("assign after beta-reduction: RHST = " ^ sbt bsym_table rhst);
+*)
+      if type_match bsym_table state.counter lhst rhst
       then handle_bexe (bexe_assign (sr,lx,rx)) init
       else clierr sr
       (

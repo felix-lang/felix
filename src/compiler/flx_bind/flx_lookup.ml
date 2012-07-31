@@ -670,6 +670,7 @@ print_endline ("Bind type " ^ string_of_typecode t);
   let bt t = btp t params in
   let bi i ts = bind_type_index state bsym_table rs sr i ts mkenv in
   let bisub i ts = bind_type_index state bsym_table {rs with depth= rs.depth+1} sr i ts mkenv in
+  let br t = Flx_beta.beta_reduce state.counter bsym_table sr t in
 
   let t =
   match t with
@@ -979,7 +980,10 @@ print_endline ("meta type of argument is " ^ sbt bsym_table sign);
 (*
 print_endline ("Looking up name " ^ name ^ " in param list");
 *)
-            btyp_type_apply (List.assoc name params, t2)
+          let fn = List.assoc name params in
+          let r = btyp_type_apply (fn, t2) in
+          let r = beta_reduce state.counter bsym_table sr r in
+          r
         | _ -> raise Not_found
       with Not_found ->
         (* Note: parameters etc cannot be found with a qualified name, unless
@@ -1005,9 +1009,18 @@ print_endline "Cannot find name in param list, doing lookup with metatype as sig
           [sign]
         in
 (*
-print_endline "Completed binding type apply OK";
+print_endline ("Lookup type qn with sig: qn= " ^ string_of_qualified_name qn ^ " sig=" ^ sbt bsym_table sign);
+print_endline ("Lookup type qn with sig found type " ^ sbt bsym_table t1);
 *)
-        btyp_type_apply (t1,t2)
+        let r = btyp_type_apply (t1,t2) in
+(*
+print_endline ("Completed binding type apply OK; " ^ sbt bsym_table r);
+*)
+        let r = beta_reduce state.counter bsym_table sr r in
+(*
+print_endline ("reduced application is: " ^ sbt bsym_table r);
+*)
+        r
       end
 
   | TYP_apply (t1,t2) -> btyp_type_apply (bt t1, bt t2)
@@ -1824,54 +1837,64 @@ and cal_apply' state bsym_table be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) =
     match unfold t1 with
     | BTYP_function (argt,rest)
     | BTYP_cfunction (argt,rest) ->
-      if type_match state.counter argt t2
-      then rest, None
+      if type_match bsym_table state.counter argt t2
+      then begin 
+(*
+        print_endline "Type of function parameter agrees with type of argument";
+*)
+        rest, None
+      end
       else
       let reorder =
         match be1 with
         | BEXPR_closure (i,ts) ->
-            begin match t2 with
+          begin match t2 with
             (* a bit of a hack .. *)
             | BTYP_record _
             | BTYP_tuple [] ->
-                let rs = match t2 with
-                  | BTYP_record ("",rs) -> rs
-                  | BTYP_tuple [] -> []
-                  | _ -> assert false
-                in
-                let pnames =
-                  match hfind "lookup" state.sym_table i with
-                  | { Flx_sym.symdef=SYMDEF_function (ps,_,_,_) } ->
-                      List.map begin fun (_,name,_,d) ->
-                        name,
-                        match d with None -> None | Some e -> Some (be i e)
-                      end (fst ps)
-                  | _ -> assert false
-                in
-                let n = List.length rs in
-                let rs = List.sort (fun (a,_) (b,_) -> compare a b) rs in
-                let rs = List.map2
-                  (fun (name,t) j -> name,(j,t))
-                  rs
-                  (nlist n)
-                in
+              let rs = match t2 with
+                | BTYP_record ("",rs) -> rs
+                | BTYP_tuple [] -> []
+                | _ -> assert false
+              in
+              let pnames =
+                match hfind "lookup" state.sym_table i with
+                | { Flx_sym.symdef=SYMDEF_function (ps,_,_,_) } ->
+                  List.map 
+                    begin fun (_,name,_,d) -> name, 
+                      match d with 
+                      | None -> None 
+                      | Some e -> Some (be i e) 
+                    end 
+                    (fst ps)
+                | _ -> assert false
+              in
+              let n = List.length rs in
+              let rs = List.sort (fun (a,_) (b,_) -> compare a b) rs in
+              let rs = List.map2 (fun (name,t) j -> name,(j,t)) rs (nlist n) in
 
-                begin try
-                  Some (List.map begin fun (name,d) ->
-                    try
-                      match List.assoc name rs with
-                      | j,t -> bexpr_get_n t (bexpr_unitsum_case j n,tbe2)
-                    with Not_found ->
-                      match d with
-                      | Some d ->d
-                      | None -> raise Not_found
-                  end pnames)
+              begin try
+                Some 
+                  (List.map 
+                    begin fun (name,d) ->
+                      try
+                        match List.assoc name rs with
+                        | j,t -> bexpr_get_n t (bexpr_unitsum_case j n,tbe2)
+                      with Not_found ->
+                        match d with
+                        | Some d ->d
+                        | None -> raise Not_found
+                    end 
+                    pnames
+                  )
                 with Not_found -> None
-                end
+              end
             | _ -> None
-            end
-        | _ -> None
+          end
+        | _ -> print_endline "WOOPS WHAT IF BE1 is NOT A CLOSURE?"; None
       in
+      print_endline "Type of function parameter DOES NOT agree with type of argument";
+      print_endline ("Paramt = " ^ sbt bsym_table argt ^ " argt = " ^ sbt bsym_table t2);
       begin match reorder with
       | Some _ -> rest,reorder
       | None ->
@@ -2093,7 +2116,7 @@ and lookup_qn_with_sig'
         *)
         begin match t with
         | BTYP_function (a,_) ->
-          if not (type_match state.counter a sign) then
+          if not (type_match bsym_table state.counter a sign) then
             clierr sr
             (
               "[lookup_qn_with_sig] Struct constructor for "^id^" has wrong signature, got:\n" ^
@@ -2137,7 +2160,7 @@ and lookup_qn_with_sig'
         begin match t with
         | BTYP_function (a,b) ->
           let sign = try List.hd signs with _ -> assert false in
-          if not (type_match state.counter a sign) then
+          if not (type_match bsym_table state.counter a sign) then
           clierr srn
           (
             "[lookup_qn_with_sig] Expected variable "^id ^
@@ -2375,6 +2398,9 @@ and lookup_qn_with_sig'
         with Not_found -> failwith "Error generating error in lookup_qn_with_sig'"
     end
 
+(* NOTE TO ME: this routine looks up a type function, it does NOT
+   calculate the type OF something!
+*)
 and lookup_type_qn_with_sig'
   state
   bsym_table
@@ -2387,7 +2413,7 @@ and lookup_type_qn_with_sig'
     inner_bind_type state bsym_table env sr rs t
   in
   let handle_nonfunction_index index ts =
-(*    print_endline ("Found non function? index " ^ string_of_bid index); *)
+    print_endline ("Found non function? index " ^ string_of_bid index);
     begin match get_data state.sym_table index with
     { Flx_sym.id=id; sr=sr; vs=vs; dirs=dirs; symdef=entry } ->
       begin match entry with
@@ -2406,7 +2432,7 @@ and lookup_type_qn_with_sig'
         *)
         begin match t with
         | BTYP_function (a,_) ->
-          if not (type_match state.counter a sign) then
+          if not (type_match bsym_table state.counter a sign) then
             clierr sr
             (
               "[lookup_qn_with_sig] Struct constructor for "^id^" has wrong signature, got:\n" ^
@@ -2522,6 +2548,7 @@ and lookup_type_qn_with_sig'
     end
 
   | `AST_lookup (sr,(qn',name,ts)) ->
+print_endline ("Lookup type with qn found AST_lookup of " ^ name ^ " in " ^ string_of_expr qn');
     let m =  eval_module_expr state bsym_table env qn' in
     match m with (Simple_module (impl, ts',htab,dirs)) ->
     (* let n = List.length ts in *)
@@ -2538,25 +2565,58 @@ and lookup_type_qn_with_sig'
       (
         "[lookup_qn_with_sig] AST_lookup: Simple_module: Can't find name " ^ name
       )
-    | Some entries -> match entries with
+    | Some entries -> 
+      print_endline "Found some entries .. ";
+      match entries with
     | NonFunctionEntry (index) ->
+print_endline "Found non-function entry";
       handle_nonfunction_index (sye index) ts
 
     | FunctionEntry fs ->
+print_endline "Found function entry";
       match
         resolve_overload'
         state bsym_table env rs sra fs name signs ts
       with
       | Some (index,t,ret,mgu,ts) ->
-        print_endline ("Resolved overload for " ^ name);
+        print_endline ("Resolved overload for " ^ name ^ " index=" ^ string_of_int index);
         print_endline ("ts = [" ^ catmap ", " (sbt bsym_table) ts ^ "]");
+        print_endline ("return kind is " ^ sbt bsym_table ret);
+        print_endline ("argument kind is " ^ sbt bsym_table t);
+        print_endline ("MGU: " ^ catmap ", " (fun (i,t)-> si i ^ "->" ^ sbt bsym_table t) mgu);
+(* THIS IS WRONG!!!!! btyp_inst is ONLY for abstract types, never for type functions: 
+  if we get a type function we should returns its (specialised) body! Otherwise beta-reduce
+  wont work!
+*)
+(*
+        btyp_inst (index, ts)
+*)
+
+        let sym = get_data state.sym_table index in
+        begin match sym.Flx_sym.symdef with
+        | SYMDEF_type_alias (TYP_typefun (args,ret,body) as tf)->
+          print_endline ("Got type function " ^ string_of_typecode body); 
+          let btf = 
+            try bt sr tf 
+            with _ -> assert false
+          in 
+          btf
+
+        | SYMDEF_type_alias (TYP_name _) ->
+          print_endline "Got some name, not expected!! "; assert false
+        | _ -> print_endline "Got something weird"; assert false
+        end
+(*
+        assert false;
+        (* we should just return the actual function found, not its type! *)
+
         (*
         let ts = adjust_ts state.sym_table sr index ts in
         *)
         let t = type_of_index_with_ts' state bsym_table rs sr index ts in
         print_endline "WRONG!";
         t
-
+*)
       | None ->
         clierr sra
         (
@@ -2757,7 +2817,7 @@ and handle_variable state bsym_table env rs index id sr ts t t2 =
   match t with
   | BTYP_cfunction (d,c)
   | BTYP_function (d,c) ->
-      if type_match state.counter d t2 then
+      if type_match bsym_table state.counter d t2 then
         Some (bexpr_name t (index, ts))
       else
         clierr sr
@@ -4030,7 +4090,7 @@ print_endline "bind expression' succeeded";
             in
           let ct = bind_type' state bsym_table env' rsground sr ct bvs mkenv in
           let ct = tsubst vs' ts' ct in
-            if type_eq state.counter ct t then
+            if type_eq bsym_table state.counter ct t then
               bexpr_get_n t (bexpr_unitsum_case j na,a)
             else clierr sr ("Component " ^ name ^
               " struct component type " ^ sbt bsym_table ct ^

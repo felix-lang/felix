@@ -499,6 +499,31 @@ let fixup_typeclass_instance' syms bsym_table allow_fail i ts =
      | Some jts -> (jts,x)::acc
      ) [] entries
   in
+(*
+print_endline ("Number of matches left is " ^ string_of_int (List.length entries));
+*)
+(* THIS ALGORITHM IS WRONG. IT SHOULD WORK LIKE TYPEMATCH BINDING:
+
+  In step 1 we must do this:
+
+   (a) case cannot ever match: throw it out
+   (b) case might match later: keep it
+   (c) case matches now: keep it
+
+  (a) or (b or c) is determined by unification with all variables dependent
+  if this unification fails we can't ever get a match.
+  if it passes, we retry setting dependent variables to those in the LHS (virtual)
+  if that passes it matches now, otherwise it doesn't but still might later
+
+  Then, with all the cases (a) (b) we try for the most specialised one.
+  If we find exactly one most specialised one AND it matches NOW
+  then we can replace the virtual with it.
+
+  Otherwise we have to wait, even if there is a match NOW on a less
+  specialised instance, in case later the more specialised instances
+  matches after further replacement of type variables.
+*)
+
   match entries with
   | [] -> i,ts
   | [(j,ts),_] ->

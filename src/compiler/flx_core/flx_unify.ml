@@ -422,10 +422,16 @@ let rec unification bsym_table counter eqns dvars =
       | BTYP_void,BTYP_void -> ()
 
       | BTYP_inst (i1,ts1),BTYP_inst (i2,ts2) ->
+(*
+print_endline "Trying to unify instances (1)";
+*)
         if i1 <> i2 then raise Not_found
         else if List.length ts1 <> List.length ts2 then raise Not_found
         else
         begin
+(*
+print_endline "Trying to unify instances (2)";
+*)
           let rec merge e a b = match a,b with
           | [],[] -> e
           | ah :: at, bh :: bt -> merge ((ah,bh) :: e) at bt
@@ -479,10 +485,15 @@ print_endline ("Weird array thing " ^ Flx_print.sbt bsym_table lhs ^ " <--> " ^ 
       (* structural, not functional, equality of lambdas by alpha equivalence *)
       | BTYP_type_function (p1,r1,b1), BTYP_type_function (p2,r2,b2)
         when List.length p1 = List.length p2 ->
+print_endline "Trying to unify type function";
         let vs = List.map2 (fun (i1,_) (i2,t) -> i1,btyp_type_var (i2,t))  p1 p2 in
         let b1 = list_subst counter vs b1 in
         eqns := (b1, b2):: !eqns;
         s := None
+
+      | BTYP_type_apply (f1,a1), BTYP_type_apply (f2,a2)  ->
+print_endline "Trying to unify type application";
+        eqns := (f1,f2) :: (a1,a2) :: !eqns
 
       | x,y ->
 (*
@@ -578,10 +589,10 @@ let rec memq trail (a,b) = match trail with
   | [] -> false
   | (i,j)::t -> i == a && j == b || memq t (a,b)
 
-let rec type_eq' counter ltrail ldepth rtrail rdepth trail t1 t2 =
+let rec type_eq' bsym_table counter ltrail ldepth rtrail rdepth trail t1 t2 =
   (* print_endline (sbt sym_table t1 ^ " =? " ^ sbt sym_table t2); *)
   if memq trail (t1,t2) then true
-  else let te a b = type_eq' counter
+  else let te a b = type_eq' bsym_table counter
     ((ldepth,t1)::ltrail) (ldepth+1)
     ((rdepth,t2)::rtrail) (rdepth+1)
     ((t1,t2)::trail)
@@ -601,6 +612,7 @@ let rec type_eq' counter ltrail ldepth rtrail rdepth trail t1 t2 =
   in
   *)
   match t1,t2 with
+  | BTYP_type i, BTYP_type j -> i = j
   | BTYP_inst (i1,ts1),BTYP_inst (i2,ts2) ->
     i1 = i2 &&
     List.length ts1 = List.length ts2 &&
@@ -701,7 +713,10 @@ let rec type_eq' counter ltrail ldepth rtrail rdepth trail t1 t2 =
 (*
       true
 *)
-      (* should be correct .. but something breaks *)
+      (* should be correct .. but something breaks , it seems to clobber the trail.
+         but we're going down a level from types to meta-types, so this shouldn't
+         happen
+      *)
       te t1 t2 
     end else (* hack ..? *)
     begin
@@ -711,7 +726,7 @@ let rec type_eq' counter ltrail ldepth rtrail rdepth trail t1 t2 =
       try
       let a = List.assoc (ldepth+i) ltrail in
       let b = List.assoc (rdepth+j) rtrail in
-      type_eq' counter ltrail ldepth rtrail rdepth trail a b
+      type_eq' bsym_table counter ltrail ldepth rtrail rdepth trail a b
       with Not_found -> false
     end
 
@@ -721,7 +736,7 @@ let rec type_eq' counter ltrail ldepth rtrail rdepth trail t1 t2 =
     *)
     begin try
     let a = List.assoc (ldepth+i) ltrail in
-    type_eq' counter ltrail ldepth rtrail rdepth trail a t
+    type_eq' bsym_table counter ltrail ldepth rtrail rdepth trail a t
     with Not_found -> false
     end
 
@@ -731,39 +746,33 @@ let rec type_eq' counter ltrail ldepth rtrail rdepth trail t1 t2 =
     *)
     begin try
     let b = List.assoc (rdepth+j) rtrail in
-    type_eq' counter ltrail ldepth rtrail rdepth trail t b
+    type_eq' bsym_table counter ltrail ldepth rtrail rdepth trail t b
     with Not_found -> false
     end
 
   | BTYP_type_function (p1,r1,b1), BTYP_type_function (p2,r2,b2) ->
     List.length p1 = List.length p2 &&
     let vs = List.map2 (fun (i1,_) (i2,t) -> i1,btyp_type_var (i2,t))  p1 p2 in
-    (*
     print_endline "Comparing type functions";
-    print_endline ("b1 =          " ^ sbt sym_table b1);
-    *)
+    print_endline ("b1 =          " ^ sbt bsym_table b1);
     let b1 = list_subst counter vs b1 in
-    (*
-    print_endline ("Adjusted b1 = " ^ sbt sym_table b1);
-    print_endline ("b2 =          " ^ sbt sym_table b2);
-    *)
+    print_endline ("Adjusted b1 = " ^ sbt bsym_table b1);
+    print_endline ("b2 =          " ^ sbt bsym_table b2);
     let result = te b1 b2 in
-    (*
     print_endline ("Compared = " ^ (if result then "TRUE" else "FALSE"));
-    *)
     result
 
   | l,r ->
-    (*
-    print_endline ("WOOOPS .. dunno.." ^ sbt sym_table l ^" vs " ^ sbt sym_table r);
-    *)
+(*
+    print_endline ("WOOOPS .. dunno.." ^ sbt bsym_table l ^" vs " ^ sbt bsym_table r);
+*)
     false
 
-let type_eq counter t1 t2 = (* print_endline "TYPE EQ";  *)
-  type_eq' counter [] 0 [] 0 [] t1 t2
+let type_eq bsym_table counter t1 t2 = (* print_endline "TYPE EQ";  *)
+  type_eq' bsym_table counter [] 0 [] 0 [] t1 t2
 
-let type_match counter t1 t2 = (* print_endline "TYPE MATCH"; *)
-  type_eq' counter [] 0 [] 0 [] t1 t2
+let type_match bsym_table counter t1 t2 = (* print_endline "TYPE MATCH"; *)
+  type_eq' bsym_table counter [] 0 [] 0 [] t1 t2
 
 (* NOTE: only works on explicit fixpoint operators,
   i.e. it won't work on typedefs: no name lookup,
@@ -803,7 +812,7 @@ let unfold t =
 exception Found of Flx_btype.t
 
 (* this undoes an unfold: it won't minimise an arbitrary type *)
-let fold counter t =
+let fold bsym_table counter t =
   let rec aux trail depth t' =
     let ax t = aux ((depth,t')::trail) (depth+1) t in
     match t' with
@@ -830,7 +839,7 @@ let fold counter t =
       let k = depth + i in
       begin try
         let t'' = List.assoc k trail in
-        if type_eq counter t'' t then raise (Found t'')
+        if type_eq bsym_table counter t'' t then raise (Found t'')
       with Not_found -> ()
       end
 
@@ -851,8 +860,8 @@ let fold counter t =
 (* produces a unique minimal representation of a type
 by folding at every node *)
 
-let minimise counter t =
-  fold counter (Flx_btype.map ~f_btype:(fold counter) t)
+let minimise bsym_table counter t =
+  fold bsym_table counter (Flx_btype.map ~f_btype:(fold bsym_table counter) t)
 
 let var_occurs t =
   let rec aux' excl t = let aux t = aux' excl t in

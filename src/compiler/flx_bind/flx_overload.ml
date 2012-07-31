@@ -63,7 +63,7 @@ let is_subset tss1 tss2 : bool =
  * in the first list must be in the second list. The order must agree
  * as well, since typematches are ordered.
  *)
-let rec scancases counter tss1 tss2 = match (tss1, tss2) with
+let rec scancases bsym_table counter tss1 tss2 = match (tss1, tss2) with
   | [],_ -> true
   | _,[] -> false
   | (p1,v1)::t1 as c1, (p2,v2)::t2  ->
@@ -73,42 +73,42 @@ let rec scancases counter tss1 tss2 = match (tss1, tss2) with
       if BidSet.is_empty (p1.pattern_vars)
       && BidSet.is_empty (p2.pattern_vars)
       then
-        if type_eq counter p1.pattern p2.pattern
-        && type_eq counter v1 v2
-        then scancases counter t1 t2 (* advance both *)
-        else scancases counter c1 t2 (* skip rhs case *)
+        if type_eq bsym_table counter p1.pattern p2.pattern
+        && type_eq bsym_table counter v1 v2
+        then scancases bsym_table counter t1 t2 (* advance both *)
+        else scancases bsym_table counter c1 t2 (* skip rhs case *)
       (* special case of wildcard, somewhat hacked *)
       else match p1.pattern,p2.pattern with
       | BTYP_type_var _, BTYP_type_var _ ->
-         if type_eq counter v1 v2
-         then scancases counter t1 t2 (* advance both *)
-         else scancases counter c1 t2 (* skip rhs case *)
-      | BTYP_type_var _,_ -> scancases counter c1 t2 (* skip rhs case *)
+         if type_eq bsym_table counter v1 v2
+         then scancases bsym_table counter t1 t2 (* advance both *)
+         else scancases bsym_table counter c1 t2 (* skip rhs case *)
+      | BTYP_type_var _,_ -> scancases bsym_table counter c1 t2 (* skip rhs case *)
       | _ -> false
    else false
 
-let typematch_implies counter a b = match a, b with
+let typematch_implies bsym_table counter a b = match a, b with
   | BTYP_type_match (v1,tss1), BTYP_type_match (v2,tss2) ->
-     type_eq counter v1 v2 &&
+     type_eq bsym_table counter v1 v2 &&
      if is_typeset tss1 && is_typeset tss2 
      then is_subset tss1 tss2
-     else scancases counter tss1 tss2
+     else scancases bsym_table counter tss1 tss2
   | _ -> false
 
-let factor_implies counter ls b =
+let factor_implies bsym_table counter ls b =
   try 
     List.iter (fun a ->
-      if type_eq counter a b then raise Not_found
-      else if typematch_implies counter a b then raise Not_found
+      if type_eq bsym_table counter a b then raise Not_found
+      else if typematch_implies bsym_table counter a b then raise Not_found
     ) 
     ls;
     false
   with Not_found -> true
 
-let terms_imply counter ls1 ls2 =
+let terms_imply bsym_table counter ls1 ls2 =
   try
     List.iter (fun b ->
-      if not (factor_implies counter ls1 b) then raise Not_found
+      if not (factor_implies bsym_table counter ls1 b) then raise Not_found
     )  
     ls2;
     true
@@ -125,8 +125,8 @@ let filter_out_units ls =
 
 let split_conjuncts ls = filter_out_units (split_conjuncts' ls)
 
-let constraint_implies counter a b =
-  let r = terms_imply counter (split_conjuncts a) (split_conjuncts b) in
+let constraint_implies bsym_table counter a b =
+  let r = terms_imply bsym_table counter (split_conjuncts a) (split_conjuncts b) in
   r
 
 type overload_result =
@@ -856,7 +856,7 @@ let solve_mgu
         Some (entry_kind.base_sym,domain,spec_result,!mgu,parent_ts @ base_ts)
 
     | x ->
-        let implied = constraint_implies counter env_traint reduced_constraint in
+        let implied = constraint_implies bsym_table counter env_traint reduced_constraint in
         if implied then 
           let parent_ts = List.map
             (fun (n,i,_) -> btyp_type_var (i, btyp_type 0))

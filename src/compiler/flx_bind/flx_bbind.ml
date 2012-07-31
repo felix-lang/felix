@@ -443,7 +443,7 @@ print_endline ("Parent " ^ str_parent sym_parent ^ " mapped to true parent " ^ s
         then btyp_cfunction (d,brt)
         else btyp_function (d,brt)
       in
-      let t = fold state.counter ft in
+      let t = fold bsym_table state.counter ft in
       Hashtbl.add state.ticache symbol_index t
     end;
 
@@ -509,7 +509,7 @@ print_endline ("Parent " ^ str_parent sym_parent ^ " mapped to true parent " ^ s
 
     (* Cache the type of the match. *)
     if not (Hashtbl.mem state.ticache symbol_index) then begin
-      let t = fold
+      let t = fold bsym_table 
         state.counter
         (btyp_function (btyp_tuple [], flx_bbool))
       in
@@ -626,7 +626,7 @@ print_endline ("Parent " ^ str_parent sym_parent ^ " mapped to true parent " ^ s
 
     (* Cache the type of the function. *)
     if not (Hashtbl.mem state.ticache symbol_index) then begin
-      let t = fold state.counter (btyp_function (btyp_tuple ts, bret)) in
+      let t = fold bsym_table state.counter (btyp_function (btyp_tuple ts, bret)) in
       Hashtbl.add state.ticache symbol_index t
     end;
 
@@ -739,7 +739,7 @@ print_endline ("Binding callback " ^ sym.Flx_sym.id ^ " index=" ^ string_of_bid 
      * fresh names for type variables
      *)
     if not (Hashtbl.mem state.ticache symbol_index) then begin
-      let t = fold state.counter (btyp_cfunction (btyp_tuple ts_cf, bret)) in
+      let t = fold bsym_table state.counter (btyp_cfunction (btyp_tuple ts_cf, bret)) in
       Hashtbl.add state.ticache symbol_index t
     end;
 

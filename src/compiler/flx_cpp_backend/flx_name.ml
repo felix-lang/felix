@@ -171,7 +171,7 @@ let tix syms bsym_table t =
 let rec cpp_type_classname syms bsym_table t =
   let tn t = cpp_typename syms bsym_table t in
   let tix t = tix syms bsym_table t in
-  let t = fold syms.counter t in
+  let t = fold bsym_table syms.counter t in
   try match unfold t with
   | BTYP_type_var (i,mt) ->
       failwith ("[cpp_type_classname] Can't name type variable " ^
@@ -299,7 +299,7 @@ let rec cpp_type_classname syms bsym_table t =
 and cpp_structure_name syms bsym_table t =
   let tn t = cpp_typename syms bsym_table t in
   let tix t = tix syms bsym_table t in
-  let t = fold syms.counter t in
+  let t = fold bsym_table syms.counter t in
   try match unfold t with
   | BTYP_type_var (i,mt) ->
       failwith ("[cpp_type_classname] Can't name type variable " ^

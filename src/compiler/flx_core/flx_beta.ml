@@ -145,7 +145,7 @@ and type_list_index counter bsym_table ls t =
     print_endline ("Candidate : " ^ sbt bsym_table hd);
     *)
     if
-      begin try type_eq counter hd t
+      begin try type_eq bsym_table counter hd t
       with x ->
         print_endline ("Exception: " ^ Printexc.to_string x);
         false
@@ -300,6 +300,9 @@ and beta_reduce' counter bsym_table sr termlist t =
   | BTYP_unitsum _ -> t
 
   | BTYP_type_apply (t1,t2) ->
+(*
+print_endline "Attempting to beta-reduce type function application";
+*)
     let t1 = br t1 in (* eager evaluation *)
     let t2 = br t2 in (* eager evaluation *)
     let t1 =
@@ -329,12 +332,11 @@ and beta_reduce' counter bsym_table sr termlist t =
 
       | _ -> t1
     in
-    (*
+(*
     print_endline ("Function = " ^ sbt bsym_table t1);
     print_endline ("Argument = " ^ sbt bsym_table t2);
-    print_endline ("Unfolded = " ^
-      sbt bsym_table (unfold sym_table t1));
-    *)
+    print_endline ("Unfolded = " ^ sbt bsym_table (unfold t1));
+*)
     begin match unfold t1 with
     | BTYP_type_function (ps,r,body) ->
       let params' =
@@ -367,9 +369,9 @@ and beta_reduce' counter bsym_table sr termlist t =
       t'
 
     | _ ->
-      (*
+(*
       print_endline "Apply nonfunction .. can't reduce";
-      *)
+*)
       btyp_type_apply (t1,t2)
     end
 

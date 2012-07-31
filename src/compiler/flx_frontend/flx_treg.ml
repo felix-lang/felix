@@ -22,7 +22,7 @@ let register_type_nr syms bsym_table t =
     -> ()
   | _
     ->
-    let t = fold syms.counter t in
+    let t = fold bsym_table syms.counter t in
     if not (Hashtbl.mem syms.registry t)
     then begin
       let () = check_recursion t in
@@ -35,7 +35,7 @@ let register_type_nr syms bsym_table t =
 
 
 let register_tuple syms bsym_table t =
-  let t = fold syms.counter t in
+  let t = fold bsym_table syms.counter t in
   let record_tuple t =
     register_type_nr syms bsym_table t;
     try Hashtbl.replace syms.array_as_tuple_registry (Hashtbl.find syms.registry t) ()

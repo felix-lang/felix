@@ -20,7 +20,7 @@ let record_coercion state bsym_table sr x' n t' t'' ls' ls'' =
       match Flx_list.list_assoc_index ls' s with
       | Some j ->
         let tt = List.assoc s ls' in
-        if type_eq state.Flx_lookup_state.counter t tt then
+        if type_eq bsym_table state.Flx_lookup_state.counter t tt then
           s,(bexpr_get_n t (bexpr_unitsum_case j n,x'))
         else clierr sr (
           "Source Record field '" ^ s ^ "' has type:\n" ^
@@ -48,7 +48,7 @@ let variant_coercion state bsym_table sr x' t' t'' lhs rhs =
       match Flx_list.list_assoc_index rhs s with
       | Some j ->
         let tt = List.assoc s rhs in
-        if not (type_eq state.counter t tt) then
+        if not (type_eq bsym_table state.counter t tt) then
         clierr sr (
           "Source Variant field '" ^ s ^ "' has type:\n" ^
           sbt bsym_table t ^ "\n" ^
@@ -114,7 +114,7 @@ let coerce (state:Flx_lookup_state.lookup_state_t) bsym_table sr ((e',t') as x')
 (*
 print_endline ("Binding coercion " ^ sbe bsym_table x' ^ ": " ^ sbt bsym_table t' ^ " to " ^ sbt bsym_table t'');
 *)
-    if type_eq state.Flx_lookup_state.counter t' t'' then x'
+    if type_eq bsym_table state.Flx_lookup_state.counter t' t'' then x'
     else
     begin match t',t'' with
     | BTYP_inst (i,[]),t when Flx_btype.islinear_type bsym_table t->
