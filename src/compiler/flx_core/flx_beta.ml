@@ -127,7 +127,7 @@ and beta_reduce counter bsym_table sr t1 =
           sbt bsym_table t1)
     | Failure s ->
         failwith ("beta-reduce failed in " ^ sbt bsym_table t1 ^
-          "\nmsg: " ^ s)
+          "\nmsg: " ^ s ^ "\nsr= " ^ Flx_srcref.short_string_of_src sr)
   in
   (*
   print_endline ("============  reduced= " ^ sbt bsym_table t2);
@@ -155,18 +155,33 @@ and type_list_index counter bsym_table ls t =
   in aux ls 0
 
 and beta_reduce' counter bsym_table sr termlist t =
-  (*
+(*
   print_endline ("BETA REDUCE " ^ sbt bsym_table t ^ "\ntrail length = " ^
-    si (length termlist));
-  *)
+    si (List.length termlist));
+  List.iter (fun t -> print_endline ("Trail term " ^ sbt bsym_table t))
+  termlist
+  ;
+  begin match t with
+  | BTYP_fix (i,mt) ->
+    print_endline ("Fix point " ^ si i ^ " meta type " ^ sbt bsym_table mt);
+  | _ -> ()
+  end
+  ;
+*)
   if List.length termlist > 20
   then begin
     print_endline ("Trail=" ^ catmap "\n" (sbt bsym_table) termlist);
     failwith  ("Trail overflow, infinite expansion: BETA REDUCE " ^
     sbt bsym_table t ^ "\ntrail length = " ^ si (List.length termlist))
   end;
-
-  match type_list_index counter bsym_table termlist t with
+  let tli = 
+    try 
+      type_list_index counter bsym_table termlist t 
+    with exc -> 
+      print_endline ("type list index function failed  " ^ Printexc.to_string exc);
+      assert false
+  in
+  match tli with
   | Some j ->
         (*
         print_endline "+++Trail:";
@@ -185,12 +200,14 @@ and beta_reduce' counter bsym_table sr termlist t =
     btyp_fix (-j - 1)  (btyp_type 0)
 
   | None ->
-
+(*
+print_endline "Type list index returned None";
+*)
   let br t' = beta_reduce' counter bsym_table sr (t::termlist) t' in
   let st t = sbt bsym_table t in
   match t with
   | BTYP_none -> assert false
-  | BTYP_fix _ -> t
+  | BTYP_fix _ -> (* print_endline "Returning fixpoint"; *)  t
   | BTYP_type_var (i,_) -> t
 
   | BTYP_type_function (p,r,b) -> t
@@ -300,11 +317,14 @@ and beta_reduce' counter bsym_table sr termlist t =
   | BTYP_unitsum _ -> t
 
   | BTYP_type_apply (t1,t2) ->
+    begin
 (*
 print_endline "Attempting to beta-reduce type function application";
 *)
     let t1 = br t1 in (* eager evaluation *)
     let t2 = br t2 in (* eager evaluation *)
+    match t1 with BTYP_fix _ -> btyp_type_apply (t1,t2) | _ ->
+(*
     let t1 =
       match t1 with
       | BTYP_fix (j,mt) ->
@@ -320,18 +340,22 @@ print_endline "Attempting to beta-reduce type function application";
         ;
         print_endline "++++End";
         *)
-        let whole = List.nth termlist (-2-j) in
+        let whole = 
+          try `Whole (List.nth termlist (-2-j))
+          with Failure "nth" -> `Unred t1 
+        in
         (*
         print_endline ("Recfun = " ^ sbt bsym_table whole);
         *)
         begin match whole with
-        | BTYP_type_function _ -> ()
-        | _ -> assert false
-        end;
-        whole
+        | `Unred t -> t
+        | `Whole ((BTYP_type_function _) as t) -> t
+        | `Whole _ -> assert false
+        end
 
       | _ -> t1
     in
+*)
 (*
     print_endline ("Function = " ^ sbt bsym_table t1);
     print_endline ("Argument = " ^ sbt bsym_table t2);
@@ -373,6 +397,7 @@ print_endline "Attempting to beta-reduce type function application";
       print_endline "Apply nonfunction .. can't reduce";
 *)
       btyp_type_apply (t1,t2)
+    end
     end
 
   | BTYP_type_match (tt,pts) ->
