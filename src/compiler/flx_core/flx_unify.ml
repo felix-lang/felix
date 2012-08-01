@@ -753,13 +753,19 @@ let rec type_eq' bsym_table counter ltrail ldepth rtrail rdepth trail t1 t2 =
   | BTYP_type_function (p1,r1,b1), BTYP_type_function (p2,r2,b2) ->
     List.length p1 = List.length p2 &&
     let vs = List.map2 (fun (i1,_) (i2,t) -> i1,btyp_type_var (i2,t))  p1 p2 in
+(*
     print_endline "Comparing type functions";
     print_endline ("b1 =          " ^ sbt bsym_table b1);
+*)
     let b1 = list_subst counter vs b1 in
+(*
     print_endline ("Adjusted b1 = " ^ sbt bsym_table b1);
     print_endline ("b2 =          " ^ sbt bsym_table b2);
+*)
     let result = te b1 b2 in
+(*
     print_endline ("Compared = " ^ (if result then "TRUE" else "FALSE"));
+*)
     result
 
   | l,r ->
