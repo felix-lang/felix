@@ -65,12 +65,11 @@ of monads as stated in the introduction!)</em>
     endmatch
     ;
 @
-
-Only one last thing ingredient is needed to make this (almost) monad
-useful.  We need a function to "lift" values of type <code>a</code>
-into the monad <code>Fallible a</code>. The usual name for this
-function is <code>return</code> and is obliged to have type <code>a ->
-M a</code>. In Felix, the convention is to call this function
+One last ingredient is needed to make this (almost) monad useful.  We
+need a function to "lift" values of type <code>a</code> into the monad
+<code>Fallible a</code>. The usual name for this function is
+<code>return</code> and is obliged to have type <code>a -> M
+a</code>. In Felix, the convention is to call this function
 <code>ret[T]</code>:
 @felix
   fun ret[a](x:a):Fallible a => Success x ;
@@ -179,7 +178,8 @@ monads considerably.
 
 <h2>The state monad</h2>
 
-Narrative is on its way. Check back soon.
+Revenge of the monads is coming. Only the code for the example is here
+right now now... Check back soon!
 
 @felix
 
