@@ -9,11 +9,12 @@ expressed as a monad."
 
 If <code>a</code> is a type variable and <code>M a</code> is a type,
 then the characteristic property of <code>M</code> if it is a monad,
-is that, there is a function <code>bind</code> of type <code>M a -> (a
--> M b) -> M b</code> for <code>b</code> another type variable
+is that, there exists a function <code>bind</code> of type <code>M a
+-> (a -> M b) -> M b</code> for <code>b</code> another type variable
 (perhaps but not at all neccessarily the same as <code>a</code>). I
-suggest a helpful interpretation of <code>M a</code> is that of
-<code>M</code> as a type function applied to <code>a</code>.
+suggest that perhaps a helpful interpretation of <code>M a</code> is
+that of <code>M</code> as a type function <code></code> applied to a
+type <code>a</code>.
 
 It seems that one of the easier monads to start with in the study of
 monadic programming is the "maybe" monad built over something like the
@@ -32,10 +33,15 @@ union success[T] =
   | Failure of string
   ;
 @
+
 Instances of <code>success[T]</code> are values. There are two
-possibilities for a given value : <code>Success ?a</code> and
-<code>Failure[a] ?s</code>. Consider for example the function
+possibile patterns against which to match a given value :
+<code>Success ?a</code> and <code>Failure[a] ?s</code> (in the
+nomenclature of Haskell and Ocaml, <code>Success</code> and
+<code>Failure</code> are "data constructors", <code>success[T]</code>
+is a <em>type constructor</em>.). Consider for example the function
 <code>str</code> for any <code>x:success[T]</code>:
+
 @felix 
 instance[T with Str[T]] Str[success[T]]
 {
@@ -80,7 +86,7 @@ One last ingredient is needed to make this (almost) monad useful.  We
 need a function to "lift" values of type <code>a</code> into the monad
 <code>Fallible a</code>. The usual name for this function is
 <code>return</code> and is obliged to have type <code>a -> M
-a</code>. In Felix, the convention is to call this function
+a</code>. In Felix, the convention is to denote this function
 <code>ret[T]</code>:
 @felix
   fun ret[a](x:a):Fallible a => Success x ;
@@ -127,6 +133,20 @@ fun mdiv (x:int) (y:int) : success[int] =>
     endif 
     ;
 @
+Hopefully the syntax of the functions
+@felix
+fun madd (x:int) (y:int) : success[int] => 
+  //...
+  ;
+@
+didn't confuse you? <code>madd</code> above is a function in its
+"curried" form. A function like <code>fun f (x:a)(y:b)</code> is a
+shorthand for <code>fun f (x:a) => fun (y:b)</code>. Looked at this
+way it's clear that there really isn't any such thing as a
+multi-argument function in mathematics or Felix. Functions take (at
+<em>most</em>) one argument!  If you find that confusing don't worry -
+most everyone needs a while to get that idea.
+
 Enabling the monadic interpertation of <code>success[T]</code> is
 achieved with the directive
 @felix
@@ -164,7 +184,8 @@ syntax monad //Override the right shift assignment operator.
 open syntax monad;
 @
 Here the traditional rshift-assign operator is substituted for
-<code>bind</code>. Now safe arithmetic expressions are so naturally
+<code>bind</code> (I won't pretend to tell you that I understand the
+details of how!). Now safe arithmetic expressions are so naturally
 represented as computation chains!
 @felix
 println$ "zero = " + str (ret 0) ;
@@ -185,9 +206,9 @@ As an aside, I understand these constructions are called "workflows"
 in the F# community?
 
 In the next section we will examine arguably one of the harder monads
-to understand. As you will see, Felix type notations make it not much
-harder than the maybe monad and help deepen one's understanding of
-monads considerably.
+to understand. As you will see, Felix type notations make it not that
+much harder than the maybe monad and help deepen one's understanding
+considerably!
 
 <h2>The state monad</h2>
 
