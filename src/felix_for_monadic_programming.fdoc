@@ -163,7 +163,7 @@ syntax monad //Override the right shift assignment operator.
 }
 open syntax monad;
 @
-Here we have enabled the traditional rshift-assign operator for
+Here the traditional rshift-assign operator is substituted for
 <code>bind</code>. Now safe arithmetic expressions are so naturally
 represented as computation chains!
 @felix
@@ -182,7 +182,7 @@ println$ "2 * (INT_MAX/2) = " + str (ret INT_MAX >>= mdiv 2 >>= mmul 2 >>= madd 
 println$ "2 * (INT_MAX/2 + 1) = " + str (ret INT_MAX >>= mdiv 2 >>= madd 1 >>= mmul 2) ;
 @
 As an aside, I understand these constructions are called "workflows"
-in the F# community.
+in the F# community?
 
 In the next section we will examine arguably one of the harder monads
 to understand. As you will see, Felix type notations make it not much
