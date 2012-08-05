@@ -22,7 +22,7 @@ mean trying to evaluate integer arithmetic expressions while watching
 out for division by zero and those expressions that would result in
 underflow/overflow.
 
-To get going we first define the sum type ``success.
+To get going we first define the sum type <code>success</code>.
 @felix
 union success[T] = 
   | Success of T
@@ -173,8 +173,8 @@ println$ "2 * (INT_MAX/2 + 1) = " + str (ret INT_MAX >>= mdiv 2 >>= madd 1 >>= m
 @
 In the next section we will examine arguably one of the harder monads
 to understand. As you will see, Felix type notations make it not much
-harder than this than the maybe monad and helps deepen understanding
-considerably.
+harder than the maybe monad and helps deepen one's understanding of
+monads considerably.
 
 <h2>The state monad</h2>
 
