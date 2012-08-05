@@ -11,16 +11,21 @@ If <code>a</code> is a type variable and <code>M a</code> is a type,
 then the characteristic property of <code>M</code> if it is a monad,
 is that, there is a function <code>bind</code> of type <code>M a -> (a
 -> M b) -> M b</code> for <code>b</code> another type variable
-(perhaps but not at all neccessarily the same as <code>a</code>).
+(perhaps but not at all neccessarily the same as <code>a</code>). I
+suggest a helpful interpretation of <code>M a</code> is that of
+<code>M</code> as a type function applied to <code>a</code>.
 
 It seems that one of the easier monads to start with in the study of
-monadic programming is something like the <code>opt[T]</code> monad
-(see ?). Here's something equivalent and applied to the problem of
-"safe integer arithmetic". By "safe" we simply mean trying to evaluate
-integer arithmetic expressions while watching out for division by zero
-and under/overflow
+monadic programming is the "maybe" monad built over something like the
+Felix <code>opt[T]</code> types (see
+http://felix-lang.org/lib/std/option.flx and
+http://felix-lang.org/test/regress/monad-01.flx). Here's something
+equivalent applied to the problem of "safe integer arithmetic". By
+"safe" we simply mean trying to evaluate expressions while watching
+out for division by zero and under/overflow.
 
-To get going we first define the sum type <code>success</code>.
+To get going first define the sum <code>success[T]</code> to which
+later will be imbued monadic properties.
 @felix
 union success[T] = 
   | Success of T
@@ -32,12 +37,18 @@ possibilities for a given value : <code>Success ?a</code> and
 <code>Failure[a] ?s</code>. Consider for example the function
 <code>str</code> for any <code>x:success[T]</code>:
 @felix 
-fun str[T](x:success[T]) => 
-  match x with 
-    | Success ?t => "Success " + str(t) 
-    | Failure ?s => "Failure " + s 
-  endmatch 
-  ; 
+instance[T with Str[T]] Str[success[T]]
+{
+  //success[T] satisfies the requirements of the typeclass Str (if the
+  //same can be said of T)
+
+  fun str (x:success[T]):string =>
+    match x with 
+      | Success ?t => "Success " + (str t)
+      | Failure ?s => "Failure " + s
+    endmatch
+    ;
+}
 @
 Here is where things get interesting:
 @felix
@@ -48,17 +59,17 @@ type argument with domain and codomain both <code>TYPE</code>. The
 type this computation results in specifically is
 <code>success[t]</code>.
 
-The following syntax is where we now declare our intention to make a
-monad out of <code>Fallible</code>:
+The following syntax declares the intent to make a monad out of
+<code>Fallible</code>:
 @felix
 instance Monad[Fallible]
 {
 @
-And now, the crucial definition for <code>bind</code><em>(pay particular
-attention to the types and compare it with the characteristic property
-of monads as stated in the introduction!)</em>
+Now, the crucial definition for <code>bind</code><em> (pay particular
+attention to <code>bind</code>'s type and compare it with the type
+spelled out in the introduction!)</em>
 @felix
-  fun bind[a, b] (x:Fallible a, f: a -> Fallible b) =>
+  fun bind[a, b] (x:Fallible a, f: a -> Fallible b):Fallible b =>
     match x with
       | Success ?a => f a
       | Failure[a] ?s => Failure[b] s
@@ -76,8 +87,8 @@ a</code>. In Felix, the convention is to call this function
 
 }//instance Monad[Fallible]
 @
-That's it for defining our monad. We turn now to the functions to
-implement the safe arithmetic.
+That's it for defining the monad. The functions implementing safe
+arithmetic read as follows.
 @felix
 //Safe arithmetic. 
 
@@ -116,13 +127,13 @@ fun mdiv (x:int) (y:int) : success[int] =>
     endif 
     ;
 @
-We enable monadic interpertation of <code>success[T]</code> with the
-directive
+Enabling the monadic interpertation of <code>success[T]</code> is
+achieved with the directive
 @felix
 open Monad[Fallible] ;
 @
-We've now implemented sufficicient to create integer arithmetic
-arithmetic expressions and evaluate them.
+... and now we're ready to to build and evaluate arithmetic
+expressions.
 @felix
 //Evalue some simple expressions.
 
@@ -144,8 +155,7 @@ println$ "INT_MIN + 1 = " + str (bind ((ret INT_MIN), (madd 1))) ;
 
 println$ "--" ;
 @
-It's suprising what looking at things a different way can
-bring. Operator overloading can really change the picture...
+It's suprising what looking at things a different way can bring.
 @felix
 syntax monad //Override the right shift assignment operator.
 {
@@ -154,8 +164,8 @@ syntax monad //Override the right shift assignment operator.
 open syntax monad;
 @
 Here we have enabled the traditional rshift-assign operator for
-<code>bind</code>. Now we can build integer expressions as computation
-chains!
+<code>bind</code>. Now safe arithmetic expressions are so naturally
+represented as computation chains!
 @felix
 println$ "zero = " + str (ret 0) ;
 println$ "1 / 0 = " + str (ret 1 >>= mdiv 0) ;
@@ -171,9 +181,12 @@ println$ "INT_MIN + 1 = " + str (ret INT_MIN >>= madd 1) ;
 println$ "2 * (INT_MAX/2) = " + str (ret INT_MAX >>= mdiv 2 >>= mmul 2 >>= madd 1) ; //The last one since we know INT_MAX is odd and that division will truncate.
 println$ "2 * (INT_MAX/2 + 1) = " + str (ret INT_MAX >>= mdiv 2 >>= madd 1 >>= mmul 2) ;
 @
+As an aside, I understand these constructions are called "workflows"
+in the F# community.
+
 In the next section we will examine arguably one of the harder monads
 to understand. As you will see, Felix type notations make it not much
-harder than the maybe monad and helps deepen one's understanding of
+harder than the maybe monad and help deepen one's understanding of
 monads considerably.
 
 <h2>The state monad</h2>
