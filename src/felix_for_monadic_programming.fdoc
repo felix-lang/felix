@@ -9,18 +9,16 @@ expressed as a monad."
 
 If <code>a</code> is a type variable and <code>M a</code> is a type,
 then the characteristic property of <code>M</code> if it is a monad,
-is that, there is a function <code>bind</code> of type <code>M a -> f
--> a-> M b </code> for some function <code>f</code> and <code>b</code>
-another type variable (perhaps but not at all neccessarily the same as
-<code>a</code>).
+is that, there is a function <code>bind</code> of type <code>M a -> (a
+-> M b) -> M b</code> for <code>b</code> another type variable
+(perhaps but not at all neccessarily the same as <code>a</code>).
 
 It seems that one of the easier monads to start with in the study of
 monadic programming is something like the <code>opt[T]</code> monad
-(see ?). Here we'll develop something equivalent and apply it to the
-problem of "safe arithmetic". By safe integer arithmetic we simply
-mean trying to evaluate integer arithmetic expressions while watching
-out for division by zero and those expressions that would result in
-underflow/overflow.
+(see ?). Here's something equivalent and applied to the problem of
+"safe integer arithmetic". By "safe" we simply mean trying to evaluate
+integer arithmetic expressions while watching out for division by zero
+and under/overflow
 
 To get going we first define the sum type <code>success</code>.
 @felix
