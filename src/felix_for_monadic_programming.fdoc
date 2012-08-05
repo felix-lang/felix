@@ -1,0 +1,258 @@
+@h1 Felix for monadic programming
+
+"In plain terms, a monad is a set of rules that enforce regular
+behavior but broad enough to allow most computational processes to be
+expressed as a monad."
+<em>--http://c2.com/cgi/wiki?MonadicProgramming"</em>
+
+<h2>The maybe monad</h2>
+
+If <code>a</code> is a type variable and <code>M a</code> is a type,
+then the characteristic property of <code>M</code> if it is a monad,
+is that, there is a function <code>bind</code> of type <code>M a -> f
+-> a-> M b </code> for some function <code>f</code> and <code>b</code>
+another type variable (perhaps but not at all neccessarily the same as
+<code>a</code>).
+
+It seems that one of the easier monads to start with in the study of
+monadic programming is something like the <code>opt[T]</code> monad
+(see ?). Here we'll develop something equivalent and apply it to the
+problem of "safe arithmetic". By safe integer arithmetic we simply
+mean trying to evaluate integer arithmetic expressions while watching
+out for division by zero and those expressions that would result in
+underflow/overflow.
+
+To get going we first define the sum type ``success.
+@felix
+union success[T] = 
+  | Success of T
+  | Failure of string
+  ;
+@
+Instances of <code>success[T]</code> are values. There are two
+possibilities for a given value : <code>Success ?a</code> and
+<code>Failure[a] ?s</code>. Consider for example the function
+<code>str</code> for any <code>x:success[T]</code>:
+@felix 
+fun str[T](x:success[T]) => 
+  match x with 
+    | Success ?t => "Success " + str(t) 
+    | Failure ?s => "Failure " + s 
+  endmatch 
+  ; 
+@
+Here is where things get interesting:
+@felix
+typedef fun Fallible (t:TYPE) : TYPE => success[t] ;
+@
+This is a type function. <code>Fallible</code> is a function in one
+type argument with domand and codomain both <code>TYPE</code>. The
+type this computation results in specifically is
+<code>success[t]</code>.
+
+The following syntax is where we now declare our intention to make a
+monad out of <code>Fallible</code>:
+@felix
+instance Monad[Fallible]
+{
+@
+And now, the crucial definition for <code>bind</code><em>(pay particular
+attention to the types and compare it with the characteristic property
+of monads as stated in the introduction!)</em>
+@felix
+  fun bind[a, b] (x:Fallible a, f: a -> Fallible b) =>
+    match x with
+      | Success ?a => f a
+      | Failure[a] ?s => Failure[b] s
+    endmatch
+    ;
+@
+
+Only one last thing ingredient is needed to make this (almost) monad
+useful.  We need a function to "lift" values of type <code>a</code>
+into the monad <code>Fallible a</code>. The usual name for this
+function is <code>return</code> and is obliged to have type <code>a ->
+M a</code>. In Felix, the convention is to call this function
+<code>ret[T]</code>:
+@felix
+  fun ret[a](x:a):Fallible a => Success x ;
+@
+That's it for defining our monad. We turn now to the functions to
+implement the safe arithmetic.
+@felix
+//Safe arithmetic. 
+
+const INT_MAX:int requires Cxx_headers::cstdlib ;
+const INT_MIN:int requires Cxx_headers::cstdlib ;
+
+fun madd (x:int) (y:int) : success[int] => 
+  if x > 0 and y > (INT_MAX - x) then
+      Failure[int] "overflow"
+  else
+    Success (y + x)
+  endif
+  ;
+
+fun msub (x:int) (y:int) : success[int] => 
+  if x > 0 and y < (INT_MIN + x) then
+    Failure[int] "underflow"
+  else
+    Success (y - x)
+  endif
+  ;
+
+fun mmul (x:int) (y:int) : success[int] => 
+  if x != 0 and y > (INT_MAX / x) then
+    Failure[int] "overflow"
+  else
+    Success (y * x) 
+  endif
+  ;
+
+fun mdiv (x:int) (y:int) : success[int] => 
+    if (x == 0) then 
+        Failure[int] "attempted division by zero" 
+    else 
+      Success (y / x) 
+    endif 
+    ;
+@
+We enable monadic interpertation of success[T] with the directive,
+@felix
+open Monad[Fallible] ;
+@
+We've now implemented sufficicient to create integer arithmetic
+arithmetic expressions and evaluate them.
+@felix
+//Evalue some simple expressions.
+
+val zero = ret 0 ;
+val zero_over_one = bind ((Success 0), (mdiv 1)) ;
+val undefined = bind ((Success 1),(mdiv 0)) ;
+val two = bind((ret 1), (madd 1)) ;
+val two_by_one_plus_one = bind (two , (mmul 2)) ;
+
+println$ "zero = " + str zero ;
+println$ "1 / 0 = " + str undefined ;
+println$ "0 / 1 = " + str zero_over_one ;
+println$ "1 + 1 = " + str two ;
+println$ "2 * (1 + 1) = " + str (bind (bind((ret 1), (madd 1)) , (mmul 2))) ;
+println$ "INT_MAX - 1 = " + str (bind ((ret INT_MAX), (msub 1))) ;
+println$ "INT_MAX + 1 = " + str (bind ((ret INT_MAX), (madd 1))) ;
+println$ "INT_MIN - 1 = " + str (bind ((ret INT_MIN), (msub 1))) ;
+println$ "INT_MIN + 1 = " + str (bind ((ret INT_MIN), (madd 1))) ;
+
+println$ "--" ;
+@
+It's suprising what looking at things a different way can
+bring. Operator overloading can really change the picture...
+@felix
+syntax monad //Override the right shift assignment operator.
+{
+  x[ssetunion_pri] := x[ssetunion_pri] ">>=" x[>ssetunion_pri] =># "`(ast_apply ,_sr (bind (,_1 ,_3)))";
+}
+open syntax monad;
+@
+Here we have enabled the traditional rshift-assign operator for
+<code>bind</code>. Now we can build integer expressions as computation
+chains!
+@felix
+println$ "zero = " + str (ret 0) ;
+println$ "1 / 0 = " + str (ret 1 >>= mdiv 0) ;
+println$ "0 / 1 = " + str (ret 0 >>= mdiv 1) ;
+println$ "1 + 1 = " + str (ret 1 >>= madd 1) ;
+println$ "2 * (1 + 1) = " + str (ret 1 >>= madd 1 >>= mmul 2) ;
+println$ "INT_MAX = " + str (INT_MAX) ;
+println$ "INT_MAX - 1 = " + str (ret INT_MAX >>= msub 1) ;
+println$ "INT_MAX + 1 = " + str (ret INT_MAX >>= madd 1) ;
+println$ "INT_MIN = " + str (INT_MIN) ;
+println$ "INT_MIN - 1 = " + str (ret INT_MIN >>= msub 1) ;
+println$ "INT_MIN + 1 = " + str (ret INT_MIN >>= madd 1) ;
+println$ "2 * (INT_MAX/2) = " + str (ret INT_MAX >>= mdiv 2 >>= mmul 2 >>= madd 1) ; //The last one since we know INT_MAX is odd and that division will truncate.
+println$ "2 * (INT_MAX/2 + 1) = " + str (ret INT_MAX >>= mdiv 2 >>= madd 1 >>= mmul 2) ;
+@
+In the next section we will examine arguably one of the harder monads
+to understand. As you will see, Felix type notations make it not much
+harder than this than the maybe monad and helps deepen understanding
+considerably.
+
+<h2>The state monad</h2>
+
+Narrative is on its way. Check back soon.
+
+@felix
+
+//State monad.
+
+union state[s, a] =
+ | State of (s->a*s)
+ ;
+
+fun run_state[s, a] (x:state[s, a]):(s->a*s) =>
+ match x with
+   | State ?u => u
+ endmatch
+  ;
+
+typedef fun StateGen (s:TYPE) (a:TYPE) : TYPE => state[s, a] ;
+
+instance[s] Monad[StateGen s]
+{
+ fun bind[a,b](x:StateGen s  a, f:a->StateGen s b):StateGen s  b =
+ {
+   val run0:(s->a*s) = run_state x ;
+   fun run1 (state0:s):(b*s) =
+   {
+     val t:a*s = run0 state0 ;
+     return (run_state (f t.0)) t.1;
+   }
+
+   return State run1 ;
+ }
+
+ fun ret[a](x:a):StateGen s a =
+ {
+   return State (fun (st:s):a*s => (x, st)) ;
+ }
+}
+
+//--
+//
+//Test.
+
+struct counter
+{
+ value : int ;
+ number_of_increments : int ;
+};
+
+instance Str[counter]
+{
+ fun str (c:counter):string =>
+   "Counter (value = " + str (c.value) +
+   ", number_of_increments = " + str (c.number_of_increments) + ")"
+   ;
+}
+
+fun increment_counter (c:counter):(int*counter) =>
+ (c.value, counter (c.value+1, c.number_of_increments+1))
+ ;
+
+val increment_counter_state : state[counter, int] = State increment_counter ;
+
+open Monad[StateGen counter] ;
+
+val increment_counter_twice_state =
+ bind (increment_counter_state, (fun (x:int):state[counter,int] => increment_counter_state)) ;
+
+println $ str ((run_state increment_counter_twice_state) (counter (24, 3))) ;
+
+syntax monad //Override the right shift assignment operator.
+{
+   x[ssetunion_pri] := x[ssetunion_pri] ">>=" x[>ssetunion_pri] =># "`(ast_apply ,_sr (bind (,_1 ,_3)))";
+}
+open syntax monad;
+
+val g = increment_counter_state >>= (fun (x:int):state[counter,int] => increment_counter_state) ;
+println $ str ((run_state g) (counter (24, 3))) ;
+@
