@@ -451,7 +451,7 @@ let make_equations
   *)
 
   let curry_domains = List.map
-    (fun t -> beta_reduce counter bsym_table sr t)
+    (fun t -> beta_reduce "flx_overload: curry domains" counter bsym_table sr t)
     curry_domains
   in
 
@@ -596,7 +596,7 @@ let solve_mgu
       let et = bt sr et in
       let et = specialize_domain base_vs entry_kind.sub_ts et in
       let et = list_subst counter !mgu et in
-      let et = beta_reduce counter bsym_table sr et in
+      let et = beta_reduce "flx_overload: make equations" counter bsym_table sr et in
       (*
       print_endline ("After substitution of mgu, Reduced type is:\n  " ^
         sbt bsym_table et)
@@ -711,10 +711,10 @@ let solve_mgu
       | BTYP_type_match (arg,[{pattern=pat},BTYP_tuple[]]) ->
           let arg = specialize_domain base_vs entry_kind.sub_ts arg in
           let arg = list_subst counter !mgu arg in
-          let arg = beta_reduce counter bsym_table sr arg in
+          let arg = beta_reduce "flx_overload: typematch arg" counter bsym_table sr arg in
           let pat = specialize_domain base_vs entry_kind.sub_ts pat in
           let pat = list_subst counter !mgu pat in
-          let pat = beta_reduce counter bsym_table sr pat in
+          let pat = beta_reduce "flx_overload: typematch pat" counter bsym_table sr pat in
           extra_eqns := (arg, pat)::!extra_eqns
       | _ -> ()
     in
@@ -838,7 +838,7 @@ let solve_mgu
     (*
     print_endline ("Substituted type constraint " ^ sbt bsym_table type_constraint);
     *)
-    let reduced_constraint = beta_reduce counter bsym_table sr type_constraint in
+    let reduced_constraint = beta_reduce "flx_overload: constraint" counter bsym_table sr type_constraint in
     (*
     print_endline ("Reduced type constraint " ^ sbt bsym_table reduced_constraint);
     *)

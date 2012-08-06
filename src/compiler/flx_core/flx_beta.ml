@@ -37,6 +37,10 @@ open Flx_maps
 
    list int = fix z. int * z
 
+  Note: this is a recursive type NOT a recursive type function!
+  This is the point: the functional recursion is eliminated.
+  That is the kind of the recursion is changed.
+
   The rule ONLY works when a recursive function f
   is applied in its own definition to its own parameter.
 
@@ -54,6 +58,33 @@ open Flx_maps
 
   and the result must be reduced again.
 
+  SO: rules for beta-reduce:
+
+  Normally a free fixpoint is OK in a type expression being reduced.
+  It is just returned "as is" except possibly for an adjustment of
+  the level counter (to make sure it binds to the same term, in case
+  some terms git reduced away).
+
+  However if we have a type function application,
+  and the function is a fixpoint, the whole function must be on the trail.
+
+  If the application is to the functions parameter, the whole application
+  is replaced by a type fixpoint (eliminating  the function fixpoint),
+  i.e. we have a recursive type.
+
+  If the application is to any other type, the application is replaced
+  by ann application of the whole function and reduced. This unrolling
+  continues until it either terminates (via a typematch reduction),
+  or we get a recursive application. It is possible it may not
+  terminate too, in which case its a BUG in the function.
+
+  BOTTOM LINE: in an application the functional term can only
+  be a fixpoint if the trail contains the function. Fix points are
+  OK everywhere else and do not require a trail.
+
+  Normally, only beta-reduce itself can introduce a trail,
+  which means only beta-reduce is allowed to unravell a type
+  function application.
 *)
 
 let rec fixup counter ps body =
@@ -114,24 +145,24 @@ and mk_prim_type_inst i args =
   print_endline "MK_PRIM_TYPE";
   btyp_inst (i,args)
 
-and beta_reduce counter bsym_table sr t1 =
-  (*
-  print_endline ("---------- Beta reduce " ^ sbt bsym_table t1);
-  *)
+and beta_reduce calltag counter bsym_table sr t1 =
+(*
+  print_endline ("---------- " ^ calltag^ " Beta reduce " ^ sbt bsym_table t1);
+*)
   let t2 =
   try
-  beta_reduce' counter bsym_table sr [] t1
+  beta_reduce' calltag counter bsym_table sr [] t1
   with
     | Not_found ->
-        failwith ("Beta reduce failed with Not_found in " ^
+        failwith ("Beta reduce called from " ^ calltag ^ " f ailed with Not_found in " ^
           sbt bsym_table t1)
     | Failure s ->
-        failwith ("beta-reduce failed in " ^ sbt bsym_table t1 ^
+        failwith ("beta-reduce called from " ^ calltag ^ " failed in " ^ sbt bsym_table t1 ^
           "\nmsg: " ^ s ^ "\nsr= " ^ Flx_srcref.short_string_of_src sr)
   in
-  (*
-  print_endline ("============  reduced= " ^ sbt bsym_table t2);
-  *)
+(*
+  print_endline ("============" ^ calltag^ "   reduced= " ^ sbt bsym_table t2);
+*)
   t2
 
 and type_list_index counter bsym_table ls t =
@@ -154,10 +185,12 @@ and type_list_index counter bsym_table ls t =
     else aux tl (n+1)
   in aux ls 0
 
-and beta_reduce' counter bsym_table sr termlist t =
+and beta_reduce' calltag counter bsym_table sr termlist t =
 (*
-  print_endline ("BETA REDUCE " ^ sbt bsym_table t ^ "\ntrail length = " ^
+  print_endline ("BETA REDUCE' " ^ sbt bsym_table t ^ " trail length = " ^
     si (List.length termlist));
+*)
+  (*
   List.iter (fun t -> print_endline ("Trail term " ^ sbt bsym_table t))
   termlist
   ;
@@ -197,13 +230,17 @@ and beta_reduce' counter bsym_table sr termlist t =
     print_endline ("Repeated term " ^ sbt bsym_table t);
     *)
 (* HACK: meta type of fixpoint guessed *)
-    btyp_fix (-j - 1)  (btyp_type 0)
+    let fp = btyp_fix (-j - 1)  (btyp_type 0) in
+(*
+print_endline ("Beta-reduce: type list index found term in trail, returning fixpoint " ^ sbt bsym_table fp);
+*)
+    fp
 
   | None ->
 (*
 print_endline "Type list index returned None";
 *)
-  let br t' = beta_reduce' counter bsym_table sr (t::termlist) t' in
+  let br t' = beta_reduce' calltag counter bsym_table sr (t::termlist) t' in
   let st t = sbt bsym_table t in
   match t with
   | BTYP_none -> assert false
@@ -211,6 +248,24 @@ print_endline "Type list index returned None";
   | BTYP_type_var (i,_) -> t
 
   | BTYP_type_function (p,r,b) -> t
+
+  (* NOTE: we do not reduce a type function  by itself!
+     it is only reduced when it is applied. This doesn't make
+     sense! Why? Because the special rules for reducing type
+     function applications are based on whether the function
+     calls itself against its own parameter .. and are independent
+     of the argument. HMMMM!
+
+     HOWEVER, the unrolling when the function is NOT applied to its
+     own parameter cannot be done without replacing  the parameter
+     with its argument. This is because the branch containing the
+     recursive application may get reduced away by a type match
+     (or not) and that has to be applied to the actual argument.
+     If it isn't reduced away, we have to unroll the fixpoint
+     to recover the function as a whole, then apply that to the
+     argument expression AFTER any parameter is replaced  by the
+     original argument terms (so any typematch can work)
+  *)
   (*
     let b = fixup counter p b in
     let b' = beta_reduce' counter bsym_table sr (t::termlist) b in
@@ -319,49 +374,90 @@ print_endline "Type list index returned None";
   | BTYP_type_apply (t1,t2) ->
     begin
 (*
-print_endline "Attempting to beta-reduce type function application";
+print_endline ("Attempting to beta-reduce type function application " ^ sbt bsym_table t);
 *)
-    let t1 = br t1 in (* eager evaluation *)
-    let t2 = br t2 in (* eager evaluation *)
-    match t1 with BTYP_fix _ -> btyp_type_apply (t1,t2) | _ ->
-(*
-    let t1 =
-      match t1 with
+    let isrecfun = 
+      match t1 with 
       | BTYP_fix (j,mt) ->
-        (*
-        print_endline ("++++Fixpoint application " ^ si j);
-        print_endline "+++Trail:";
-        let i = ref 0 in
-        iter (fun t -> print_endline (
-          "    " ^ si (!i) ^ " ---> " ^sbt bsym_table t)
-          ; decr i
-        )
-        (t1::t::termlist)
-        ;
-        print_endline "++++End";
-        *)
+(*
+print_endline ("Called from " ^calltag^ ":");
+print_endline ("Attempting to beta-reduce type function application with fn as fixpoint! ");
+print_endline ("Application is " ^ sbt bsym_table t);
+
+    print_endline ("Function = " ^ sbt bsym_table t1);
+    print_endline ("Argument = " ^ sbt bsym_table t2);
+*)
         let whole = 
           try `Whole (List.nth termlist (-2-j))
           with Failure "nth" -> `Unred t1 
         in
-        (*
-        print_endline ("Recfun = " ^ sbt bsym_table whole);
-        *)
         begin match whole with
-        | `Unred t -> t
-        | `Whole ((BTYP_type_function _) as t) -> t
-        | `Whole _ -> assert false
-        end
-
-      | _ -> t1
-    in
+        | `Unred t -> 
+           print_endline ("Fixpoint " ^ string_of_int j ^ 
+             " not in trail, index = " ^string_of_int (-2-j) ^ "  called from " ^ calltag); 
+           print_endline "Trail is: ";
+           List.iter (fun t -> print_endline (sbt bsym_table t)) termlist;
+           assert false; 
+           false
+        | `Whole ((BTYP_type_function _) as t) -> 
+(*
+print_endline ("Found fixpoint function in trail: " ^ sbt bsym_table t);
 *)
+          true
+        | `Whole _ -> 
+print_endline ("Found fixpoint NON function in trail???: " ^ sbt bsym_table t);
+print_endline "Trail is:";
+          List.iter (fun t -> print_endline (sbt bsym_table t)) termlist;
+print_endline "We picked term:";
+print_endline (sbt bsym_table (List.nth termlist (-2-j)));
+
+          assert false;
+          false
+        end
+      | _ -> false
+    in
+
+(*
+print_endline ("Calculated isrecfun = " ^ if isrecfun then "true" else "false");
+*)
+    let getrecfun () =
+      match t1 with 
+      | BTYP_fix (j,mt) -> List.nth termlist (-2-j)
+      | _ -> assert false
+    in
+    let isrec = 
+      if isrecfun then
+        let fn = getrecfun () in
+        let arg = match fn with 
+          | BTYP_type_function ([i,mt],ret,body) -> btyp_type_var (i,mt)
+          | BTYP_type_function (ls,ret,body) -> 
+             btyp_type_tuple (List.map (fun (i,mt) -> btyp_type_var (i,mt)) ls)
+          | _ -> assert false
+        in
+        type_eq bsym_table counter arg t2
+      else false
+    in
+(*
+print_endline ("Calculated isrec= " ^ if isrec then "true" else "false");
+*)
+    let getmt () = 
+       match getrecfun () with 
+       | BTYP_type_function (_,ret,_) -> ret 
+       | _ -> assert false 
+    in
+    if isrec then 
+       match t1 with 
+       | BTYP_fix (j,_) -> 
+         print_endline "Calulcating recursive type";
+         btyp_fix (j+1) (getmt())
+       | _ -> assert false
+    else 
+    let t1 = if isrecfun then getrecfun () else unfold t1 in
 (*
     print_endline ("Function = " ^ sbt bsym_table t1);
     print_endline ("Argument = " ^ sbt bsym_table t2);
-    print_endline ("Unfolded = " ^ sbt bsym_table (unfold t1));
 *)
-    begin match unfold t1 with
+    begin match t1 with
     | BTYP_type_function (ps,r,body) ->
       let params' =
         match ps with
@@ -376,19 +472,19 @@ print_endline "Attempting to beta-reduce type function application";
             then failwith "Wrong number of arguments to typefun"
             else List.map2 (fun (i,_) t -> i, t) ps ts
       in
-      (*
+(*
       print_endline ("Body before subs    = " ^ sbt bsym_table body);
       print_endline ("Parameters= " ^ catmap ","
         (fun (i,t) -> "T"^si i ^ "=>" ^ sbt bsym_table t) params');
-      *)
+*)
       let t' = list_subst counter params' body in
-      (*
+(*
       print_endline ("Body after subs     = " ^ sbt bsym_table t');
-      *)
-      let t' = beta_reduce' counter bsym_table sr (t::termlist) t' in
-      (*
+*)
+      let t' = beta_reduce' calltag counter bsym_table sr (t::termlist) t' in
+(*
       print_endline ("Body after reduction = " ^ sbt bsym_table t');
-      *)
+*)
       let t' = adjust t' in
       t'
 
@@ -432,7 +528,9 @@ print_endline "Attempting to beta-reduce type function application";
     let pts = List.rev !new_matches in
     match pts with
     | [] ->
-      failwith "[beta-reduce] typematch failure"
+      print_endline ("[beta-reduce] typematch failure " ^ sbt bsym_table t);
+      t 
+
     | ({pattern=p';pattern_vars=dvars;assignments=eqns},t') :: _ ->
       try
         let mgu = unification bsym_table counter [p', tt] dvars in

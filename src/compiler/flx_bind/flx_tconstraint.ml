@@ -107,7 +107,7 @@ let build_type_constraints counter bsym_table bt sr vs =
     vs
   in
     let tc = btyp_intersect type_constraints in
-    let tc = Flx_beta.beta_reduce counter bsym_table sr tc in
+    let tc = Flx_beta.beta_reduce "build type constraints" counter bsym_table sr tc in
     (*
     print_endline ("Type constraints = " ^ sbt bsym_table tc);
     *)

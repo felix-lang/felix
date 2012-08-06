@@ -364,7 +364,7 @@ and inner_bind_type state (bsym_table:Flx_bsym_table.t) env sr rs t =
   print_endline ("Bound type= " ^ sbt bsym_table bt);
   *)
   let bt =
-    try beta_reduce state.counter bsym_table sr bt
+    try beta_reduce "flx_lookup: inner_bind_type" state.counter bsym_table sr bt
     with Not_found -> failwith ("Beta reduce failed with Not_found " ^ sbt bsym_table bt)
   in
     (*
@@ -405,7 +405,7 @@ and inner_bind_expression state bsym_table env rs e  =
        failwith "bind_expression' raised Not_found [BUG]"
   in
     let t' = 
-      try beta_reduce state.counter bsym_table sr t' 
+      try beta_reduce "flx_lookup: inner_bind_expression" state.counter bsym_table sr t' 
       with Not_found -> failwith "beta_reduce raised Not_found [BUG]"
     in
     e',t'
@@ -670,7 +670,7 @@ print_endline ("Bind type " ^ string_of_typecode t);
   let bt t = btp t params in
   let bi i ts = bind_type_index state bsym_table rs sr i ts mkenv in
   let bisub i ts = bind_type_index state bsym_table {rs with depth= rs.depth+1} sr i ts mkenv in
-  let br t = Flx_beta.beta_reduce state.counter bsym_table sr t in
+  let br t = Flx_beta.beta_reduce "flx_lookup: bind_type'" state.counter bsym_table sr t in
 
   let t =
   match t with
@@ -982,7 +982,7 @@ print_endline ("Looking up name " ^ name ^ " in param list");
 *)
           let fn = List.assoc name params in
           let r = btyp_type_apply (fn, t2) in
-          let r = beta_reduce state.counter bsym_table sr r in
+          let r = beta_reduce "flx_lookup: bind_TYP_apply" state.counter bsym_table sr r in
           r
         | _ -> raise Not_found
       with Not_found ->
@@ -1012,11 +1012,25 @@ print_endline "Cannot find name in param list, doing lookup with metatype as sig
 print_endline ("Lookup type qn with sig: qn= " ^ string_of_qualified_name qn ^ " sig=" ^ sbt bsym_table sign);
 print_endline ("Lookup type qn with sig found type " ^ sbt bsym_table t1);
 *)
+(*
+        begin  match t1 with
+        | BTYP_fix (j,mt) -> 
+          print_endline ("Hmm .. lookup found a fixpoint?? " ^ string_of_int j); 
+          print_endline "params = ";
+          List.iter (fun (n,t) -> 
+            print_endline (n ^ " value : " ^ sbt bsym_table t)
+          )
+          params
+        | _ -> ()
+        end;
+*)
         let r = btyp_type_apply (t1,t2) in
 (*
 print_endline ("Completed binding type apply OK; " ^ sbt bsym_table r);
 *)
-        let r = beta_reduce state.counter bsym_table sr r in
+(*
+        let r = beta_reduce "flx_lookup: bind_TYP_apply: reduced application" state.counter bsym_table sr r in
+*)
 (*
 print_endline ("reduced application is: " ^ sbt bsym_table r);
 *)
@@ -1317,6 +1331,9 @@ and bind_type_index state (bsym_table:Flx_bsym_table.t) (rs:recstop) sr index ts
         print_endline "Can't bind type alias"; assert false
       end
     in
+(*
+print_endline "flx_lookup: bind-type-index returning fixpoint";
+*)
     btyp_fix ((List.assoc index rs.type_alias_fixlist)-rs.depth) mt
   end
   else begin
@@ -1452,7 +1469,7 @@ and type_of_index' state bsym_table rs bid =
       try (hfind "lookup" state.sym_table bid).Flx_sym.sr
       with Not_found -> dummy_sr
     in
-    let t = beta_reduce state.counter bsym_table sr t in
+    let t = beta_reduce "flx_lookup: type_of_index'" state.counter bsym_table sr t in
 
     (* Finally, cache the type. *)
     Hashtbl.add state.ticache bid t;
@@ -1481,7 +1498,7 @@ and type_of_index_with_ts' state bsym_table rs sr bid ts =
   let t = varmap_subst varmap t in
 
   (* Beta reduce and return the type. *)
-  beta_reduce state.counter bsym_table sr t
+  beta_reduce "flx_lookup: type_of_index_with_ts'" state.counter bsym_table sr t
 
 (** Wrapper around inner_type_of_index that substitutes any type variables. *)
 and inner_type_of_index_with_ts state bsym_table rs sr bid ts =
@@ -1501,7 +1518,7 @@ and inner_type_of_index_with_ts state bsym_table rs sr bid ts =
     let varmap = make_varmap state.sym_table bsym_table sr bid ts in
     let t = varmap_subst varmap t in
 
-    beta_reduce state.counter bsym_table sr t
+    beta_reduce "flx_lookup: inner_type_of_index_with_ts'" state.counter bsym_table sr t
 
 (* -------------------------------------------------------------------------- *)
 
@@ -1531,7 +1548,7 @@ and cal_ret_type state bsym_table (rs:recstop) index args =
     } ->
 (* print_endline ("Cal ret type of " ^ id ^ " at " ^ Flx_srcref.short_string_of_src sr); *)
     let rt = bind_type' state bsym_table env rs sr rt args mkenv in
-    let rt = beta_reduce state.counter bsym_table sr rt in
+    let rt = beta_reduce "flx_lookup: cal_ret_type" state.counter bsym_table sr rt in
     let ret_type = ref rt in
     let return_counter = ref 0 in
     List.iter
@@ -1695,7 +1712,12 @@ and inner_type_of_index state bsym_table rs index =
 
   (* Check index recursion. If so, return a fix type. *)
 (*  HACK: metatype guess *)
-  if List.mem index rs.idx_fixlist then btyp_fix (-rs.depth) (btyp_type 0) else
+  if List.mem index rs.idx_fixlist then begin
+(*
+print_endline "inner_typeof+index returning fixpoint";
+*)
+    btyp_fix (-rs.depth) (btyp_type 0) 
+  end else
 
   let mkenv i = build_env state bsym_table (Some i) in
   let env = mkenv index in
@@ -1703,7 +1725,7 @@ and inner_type_of_index state bsym_table rs index =
   (* Helper function that binds and beta reduces a type. *)
   let bt sr t =
     let t = bind_type' state bsym_table env rs sr t [] mkenv in
-    beta_reduce state.counter bsym_table sr t
+    beta_reduce "flx_lookup: inner_type_of_index" state.counter bsym_table sr t
   in
 
   (* First check if we've already bound this index. If so, return the type of
@@ -2409,6 +2431,9 @@ and lookup_type_qn_with_sig'
   qn
   signs
 =
+(*
+print_endline ("Lookup type qn with sig, name = " ^ string_of_qualified_name qn);
+*)
   let bt sr t =
     inner_bind_type state bsym_table env sr rs t
   in
@@ -2508,9 +2533,9 @@ and lookup_type_qn_with_sig'
     end
 
   | `AST_name (sr,name,ts) ->
-    (*
+(*
     print_endline ("AST_name " ^ name);
-    *)
+*)
     let ts = List.map (bt sr) ts in
     lookup_type_name_with_sig
       state
@@ -2548,7 +2573,9 @@ and lookup_type_qn_with_sig'
     end
 
   | `AST_lookup (sr,(qn',name,ts)) ->
+(*
 print_endline ("Lookup type with qn found AST_lookup of " ^ name ^ " in " ^ string_of_expr qn');
+*)
     let m =  eval_module_expr state bsym_table env qn' in
     match m with (Simple_module (impl, ts',htab,dirs)) ->
     (* let n = List.length ts in *)
@@ -2569,11 +2596,15 @@ print_endline ("Lookup type with qn found AST_lookup of " ^ name ^ " in " ^ stri
       print_endline "Found some entries .. ";
       match entries with
     | NonFunctionEntry (index) ->
+(*
 print_endline "Found non-function entry";
+*)
       handle_nonfunction_index (sye index) ts
 
     | FunctionEntry fs ->
+(*
 print_endline "Found function entry";
+*)
       match
         resolve_overload'
         state bsym_table env rs sra fs name signs ts
@@ -2705,11 +2736,11 @@ and lookup_type_name_with_sig
   ts
   t2
 =
-  (*
+(*
   print_endline ("[lookup_type_name_with_sig] " ^ name ^
     " of " ^ catmap "," (sbt bsym_table) t2)
   ;
-  *)
+*)
   match env with
   | [] ->
     clierr srn
@@ -2750,8 +2781,16 @@ and handle_type state bsym_table rs sra srn name ts index =
   | SYMDEF_nonconst_ctor _
   | SYMDEF_callback _ -> btyp_inst (index,ts)
   | SYMDEF_type_alias _ ->
+(*
+print_endline ("Handle type " ^ name ^ " ... binding type index " ^ string_of_int index);
+*)
       let mkenv i = build_env state bsym_table (Some i) in
-      bind_type_index state bsym_table rs sym.Flx_sym.sr index ts mkenv
+      let t = bind_type_index state bsym_table rs sym.Flx_sym.sr index ts mkenv in
+(*
+print_endline ("Handle type " ^ name ^ " ... bound type is " ^ sbt bsym_table t);
+*)
+      t
+ 
   | _ ->
       clierr sra ("[handle_type] Expected " ^ name ^ " to be function, got: " ^
         string_of_symdef sym.Flx_sym.symdef name sym.Flx_sym.vs)
@@ -2812,7 +2851,7 @@ and handle_variable state bsym_table env rs index id sr ts t t2 =
   let ts = adjust_ts state.sym_table bsym_table sr index ts in
   let vs = find_vs state.sym_table bsym_table index in
   let bvs = List.map (fun (s,i,tp) -> s,i) (fst vs) in
-  let t = beta_reduce state.counter bsym_table sr (tsubst bvs ts t) in
+  let t = beta_reduce "flx_lookup: handle_variabe" state.counter bsym_table sr (tsubst bvs ts t) in
 
   match t with
   | BTYP_cfunction (d,c)
@@ -3070,14 +3109,14 @@ and lookup_type_name_in_table_dirs_with_sig
   caller_env env rs
   sra srn name ts t2
 =
-  (*
+(*
   print_endline
   (
     "LOOKUP TYPE NAME "^name ^"["^
     catmap "," (sbt bsym_table) ts ^
     "] IN TABLE DIRS WITH SIG " ^ catmap "," (sbt bsym_table) t2
   );
-  *)
+*)
   let mkenv i = build_env state bsym_table (Some i) in
   let bt sr t =
     bind_type' state bsym_table env rs sr t [] mkenv
@@ -3185,23 +3224,22 @@ and lookup_type_name_in_table_dirs_with_sig
     end
 
   | FunctionEntry fs ->
-    (*
+(*
     print_endline ("Found function set size " ^ si (List.length fs));
-    *)
+*)
     let ro =
       resolve_overload'
       state bsym_table caller_env rs sra fs name t2 ts
     in
     match ro with
       | Some (index,t,ret,mgu,ts) ->
-        (*
+(*
         print_endline ("handle_function (3) ts=" ^ catmap "," (sbt bsym_table) ts);
         let ts = adjust_ts state.sym_table sra index ts in
         print_endline "Adjusted ts";
         print_endline ("Found functional thingo, " ^ string_of_bid index);
         print_endline (" ts=" ^ catmap "," (sbt bsym_table) ts);
-        *)
-
+*)
         let tb =
           handle_type
           state
@@ -3209,11 +3247,11 @@ and lookup_type_name_in_table_dirs_with_sig
           rs
           sra srn name ts index
         in
-          (*
-          print_endline ("SUCCESS: overload chooses " ^ full_string_of_entry_kind state.sym_table (mkentry state dfltvs index));
+(*
+          print_endline ("SUCCESS: overload chooses " ^ full_string_of_entry_kind state.sym_table bsym_table (mkentry state dfltvs index));
           print_endline ("Value of ts is " ^ catmap "," (sbt bsym_table) ts);
           print_endline ("Instantiated type is " ^ sbt bsym_table tb);
-          *)
+*)
           Some tb
 
       | None ->
@@ -3332,7 +3370,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
   let bt sr t =
     (* we're really wanting to call bind type and propagate depth ? *)
     let t = bind_type' state bsym_table env { rs with depth=rs.depth +1 } sr t [] mkenv in
-    let t = beta_reduce state.counter bsym_table sr t in
+    let t = beta_reduce "flx_lookup: bind_expression'(1)" state.counter bsym_table sr t in
     t
   in
   let ti sr i ts =
@@ -3369,7 +3407,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
   print_env env;
   print_endline "==";
   *)
-  let rt t = beta_reduce state.counter bsym_table sr t in
+  let rt t = beta_reduce "flx_lookup: bind_expression'(2)" state.counter bsym_table sr t in
   let sr = src_of_expr e in
   match e with
   | EXPR_patvar _
@@ -4633,7 +4671,7 @@ and check_instances state bsym_table call_sr calledname classname es ts' mkenv =
           *)
           let cons = btyp_intersect [cons; icons] in
           let cons = list_subst state.counter mgu cons in
-          let cons = beta_reduce state.counter bsym_table sr cons in
+          let cons = beta_reduce "flx_lookup: check_instances: constraints" state.counter bsym_table sr cons in
           (*
           print_endline ("[flx_lookup:4] Reduced Constraint = " ^ sbt bsym_table cons);
           *)
@@ -4982,7 +5020,7 @@ and bind_dir
 *)
   let ts' = List.map (fun t ->
     try
-    beta_reduce
+    beta_reduce "flx_lookup: bind_dir"
       state.counter
       bsym_table
       dummy_sr

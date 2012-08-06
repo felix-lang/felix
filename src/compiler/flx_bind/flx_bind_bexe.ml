@@ -576,7 +576,7 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
 (*
 print_endline ("assign: LHST = " ^ sbt bsym_table lhst);
 *)
-      let lhst = Flx_beta.beta_reduce state.counter bsym_table sr lhst in
+      let lhst = Flx_beta.beta_reduce "flx_bind_bexe: EXE_assign lhst" state.counter bsym_table sr lhst in
 (*
 print_endline ("assign after beta-reduction: LHST = " ^ sbt bsym_table lhst);
 *)
@@ -584,7 +584,7 @@ print_endline ("assign after beta-reduction: LHST = " ^ sbt bsym_table lhst);
 (*
 print_endline ("assign: RHST = " ^ sbt bsym_table rhst);
 *)
-      let rhst = Flx_beta.beta_reduce state.counter bsym_table sr rhst in
+      let rhst = Flx_beta.beta_reduce "flx_bind_bexe: EXE_assign rhst" state.counter bsym_table sr rhst in
 (*
 print_endline ("assign after beta-reduction: RHST = " ^ sbt bsym_table rhst);
 *)

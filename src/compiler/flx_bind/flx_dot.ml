@@ -56,7 +56,7 @@ exception Not_field
 let handle_field_name state bsym_table build_env env rs be bt koenig_lookup cal_apply bind_type' mkenv 
   sr e e2 name ts i ts' isptr
 =
-  let rt t = beta_reduce state.counter bsym_table sr t in
+  let rt t = beta_reduce "flx_dot: handle_field_name" state.counter bsym_table sr t in
   let (_,t) as te = be e in
   let ttt =rt t in
   match hfind "lookup" state.sym_table i with
@@ -99,7 +99,7 @@ let handle_field_name state bsym_table build_env env rs be bt koenig_lookup cal_
 
 let handle_dot state bsym_table build_env env rs be bt koenig_lookup cal_apply bind_type' sr e e2 =
   let mkenv i = build_env state bsym_table (Some i) in
-  let rt t = beta_reduce state.counter bsym_table sr t in
+  let rt t = beta_reduce "flx_dot: handle-dot" state.counter bsym_table sr t in
 
   let (_,tt) as te = be e in (* polymorphic! *)
   let ttt = rt tt in

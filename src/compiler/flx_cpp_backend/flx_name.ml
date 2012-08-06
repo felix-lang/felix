@@ -108,7 +108,7 @@ let cpp_instance_name' syms bsym_table index ts =
     in
     let has_variables =
       List.fold_left
-      (fun truth t -> truth || var_occurs t)
+      (fun truth t -> truth || var_occurs bsym_table t)
       false
       ts
     in

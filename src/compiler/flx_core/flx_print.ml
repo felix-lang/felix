@@ -681,7 +681,7 @@ and sb bsym_table depth fixlist counter prec tc =
            (fun (i,t)-> "T" ^ string_of_bid i ^ ": " ^ sbt 8 t)
            args
          ) ^
-         "): " ^ sbt 0 ret ^ "=" ^ sbt 8 body
+         "): " ^ sbt 0 ret ^ "=" ^ sbt 8 body ^" endfun"
        )
   in
     let txt,lst = string_of_fixpoints depth !fixlist in

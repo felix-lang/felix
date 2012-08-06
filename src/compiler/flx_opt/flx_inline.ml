@@ -689,6 +689,7 @@ is an instance .. so nothing is lost here.. :)
 
 let virtual_check syms bsym_table sr i ts =
   let parent, bsym = Flx_bsym_table.find_with_parent bsym_table i in
+  let name : string = Flx_bsym.id bsym in
   match Flx_bsym.bbdcl bsym with
   | BBDCL_external_fun (props,_,_,_,_,_,_)
   | BBDCL_fun (props,_,_,_,_) when mem `Virtual props ->
@@ -724,6 +725,7 @@ let virtual_check syms bsym_table sr i ts =
     ;
     let fts = rev (list_prefix (rev ts) (tslen - tcvslen)) in
     let ts = list_prefix ts tcvslen in
+(*
     let instances =
       try Hashtbl.find syms.instances_of_typeclass parent
       with Not_found ->
@@ -754,19 +756,23 @@ let virtual_check syms bsym_table sr i ts =
           (jvs, jcon,jts, j)
       in
       begin match ok with
-      | Some _ ->
-        (*
-        print_endline "matches";
-        *)
-        matches := j :: !matches
+      | `MatchesNow,_,_ -> matches := j :: !matches
 
-      | None -> (* print_endline "Doesn't match"; *)  ()
+      | _ -> (* print_endline "Doesn't match"; *)  ()
       end
     )
     instances
     ;
     begin match !matches with
     | [_] ->
+*)
+      begin let res = Flx_typeclass.fixup_typeclass_instance' syms bsym_table true i ts in
+      match res with
+      | `MatchesNow,j,ts' -> (* print_endline (name ^ " Matches now, inline " ^ si j); *) true,j,ts' @ fts (* inline matching function *)
+      | `MaybeMatchesLater,_,_ -> (* print_endline (name ^ " May match later, deref " ^ si i); *) false,i,ts@fts (* wait *)
+      | `CannotMatch,_,_ -> (* print_endline (name ^ " No match use default " ^ si i); *) true,i,ts@fts (* inline default if any *)
+      end
+(*
       let i',ts' =
         Flx_typeclass.maybe_fixup_typeclass_instance syms bsym_table i ts
       in
@@ -787,6 +793,7 @@ let virtual_check syms bsym_table sr i ts =
       *)
       false,i,ts @ fts
     end
+*)
 
   | BBDCL_fun (_,_,_,_,exes) ->
     let chk_yield acc exe = match exe with BEXE_yield _ -> false | _ -> acc in

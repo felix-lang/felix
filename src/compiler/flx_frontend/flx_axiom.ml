@@ -109,13 +109,15 @@ let verify syms bsym_table csr e =
                       syms
                       bsym_table
                       true
+                      id
                       i
                       ts
                       (Flx_bsym.sr tc_bsym)
                       (inst_bvs, inst_traint, inst_ts, instidx)
                   with
-                  | None -> ()
-                  | Some _ -> raise Not_found
+                  | `CannotMatch,_,_-> ()
+                  | `MaybeMatchesLater,_,_-> ()
+                  | `MatchesNow,_,_ -> raise Not_found
                 end insts;
                 (*
                 print_endline "Couldn't find instance";

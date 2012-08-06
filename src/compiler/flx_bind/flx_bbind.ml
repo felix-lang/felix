@@ -307,7 +307,7 @@ print_endline ("Parent " ^ str_parent sym_parent ^ " mapped to true parent " ^ s
     cons
   in
   let bcons = bind_type_constraint ivs in
-  let bcons = Flx_beta.beta_reduce state.counter bsym_table sym.Flx_sym.sr bcons in
+  let bcons = Flx_beta.beta_reduce "flx_bbind: constraint" state.counter bsym_table sym.Flx_sym.sr bcons in
   (*
   print_endline ("[flx_bbind] Constraint = " ^ sbt bsym_table bcons);
   *)
@@ -923,7 +923,7 @@ let bind_interface (state:bbind_state_t) bsym_table = function
         Flx_srcref.dummy_sr
         typ
       in
-      if try var_occurs t with _ -> true then
+      if try var_occurs bsym_table t with _ -> true then
       clierr sr
       (
         "Can't export generic- or meta- type " ^

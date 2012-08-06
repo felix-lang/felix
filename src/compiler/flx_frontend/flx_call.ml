@@ -148,6 +148,13 @@ let use_closure uses i = cls uses i
   closure get out .. it has to be 'made' by someon
   who can see it ..
 
+
+  ANOTHER BUG: it doesn't handle indirect use through
+  virtual functions. If the function is itself inside
+  a instance it can call into the virtual and map back
+  into the same instance. If the function got cloned,
+  the reference through the virtual will still be
+  to the *original* uncloned function.
 *)
 
 let child_use_closure k uses i =

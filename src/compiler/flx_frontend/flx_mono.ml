@@ -226,7 +226,7 @@ let fixup_exes syms bsym_table fi mt exes =
 
 let mono syms bsym_table fi ts bsym =
   let mt vars t =
-    beta_reduce
+    beta_reduce "flx_mono: mono, metatype"
       syms.Flx_mtypes2.counter
       bsym_table
       (Flx_bsym.sr bsym)

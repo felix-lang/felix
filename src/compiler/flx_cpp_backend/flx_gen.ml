@@ -248,7 +248,7 @@ let gen_functions syms bsym_table =
       end
       ;
       let rt vs t =
-        beta_reduce syms.Flx_mtypes2.counter bsym_table (Flx_bsym.sr bsym) (tsubst vs ts t)
+        beta_reduce "flx_gen1" syms.Flx_mtypes2.counter bsym_table (Flx_bsym.sr bsym) (tsubst vs ts t)
       in
       if syms.compiler_options.print_flag then
       print_endline
@@ -333,7 +333,7 @@ let gen_function_methods filename syms bsym_table
     try Flx_bsym_table.find bsym_table index with Not_found ->
       failwith ("[gen_function_methods] can't find " ^ string_of_bid index)
   in
-  let rt vs t = beta_reduce syms.Flx_mtypes2.counter bsym_table (Flx_bsym.sr bsym) (tsubst vs ts t) in
+  let rt vs t = beta_reduce "flx_gen2" syms.Flx_mtypes2.counter bsym_table (Flx_bsym.sr bsym) (tsubst vs ts t) in
   if syms.compiler_options.print_flag then
   print_endline
   (
@@ -358,7 +358,7 @@ let gen_function_methods filename syms bsym_table
     );
     let argtype = typeof_bparams bps in
     let argtype = rt vs argtype in
-    let rt' vs t = beta_reduce syms.Flx_mtypes2.counter bsym_table (Flx_bsym.sr bsym) (tsubst vs ts t) in
+    let rt' vs t = beta_reduce "flx_gen3" syms.Flx_mtypes2.counter bsym_table (Flx_bsym.sr bsym) (tsubst vs ts t) in
     let ret = rt' vs ret' in
     if ret = btyp_tuple [] then "// elided (returns unit)\n","" else
 
@@ -478,7 +478,7 @@ let gen_procedure_methods filename syms bsym_table
       failwith ("[gen_procedure_methods] Can't find index " ^
         string_of_bid index)
   in (* can't fail *)
-  let rt vs t = beta_reduce syms.Flx_mtypes2.counter bsym_table (Flx_bsym.sr bsym) (tsubst vs ts t) in
+  let rt vs t = beta_reduce "flx_gen4" syms.Flx_mtypes2.counter bsym_table (Flx_bsym.sr bsym) (tsubst vs ts t) in
   if syms.compiler_options.print_flag then
   print_endline
   (
@@ -695,7 +695,7 @@ let gen_execute_methods filename syms bsym_table label_info counter bf bf2 =
           qualified_name_of_bindex bsym_table index ^ tss ^ "\n");
       end
       ;
-      let rt vs t = beta_reduce syms.Flx_mtypes2.counter bsym_table (Flx_bsym.sr bsym) (tsubst vs ts t) in
+      let rt vs t = beta_reduce "flx_gen5" syms.Flx_mtypes2.counter bsym_table (Flx_bsym.sr bsym) (tsubst vs ts t) in
       let ps_c = List.map (rt vs) ps_c in
       let ps_cf = List.map (rt vs) ps_cf in
       let ret = rt vs ret' in

@@ -508,7 +508,7 @@ class Assoc_list
   ;
 
 }
-
+/*
 class S_expr 
 {
   union sexpr[T] = | Leaf of T | Tree of list[sexpr[T]]; 
@@ -548,4 +548,4 @@ class S_expr
 
 open[T with Str[T]] Str[S_expr::sexpr[T]];
 open[T with Eq[T]] Set[S_expr::sexpr[T],T];
-
+*/

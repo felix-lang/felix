@@ -248,7 +248,7 @@ and gen_expr'
 
   let ge = gen_expr syms bsym_table this this_vs this_ts sr in
   let ge' = gen_expr' syms bsym_table this this_vs this_ts sr in
-  let tsub t = beta_reduce syms.Flx_mtypes2.counter bsym_table sr (tsubst this_vs this_ts t) in
+  let tsub t = beta_reduce "flx_egen" syms.Flx_mtypes2.counter bsym_table sr (tsubst this_vs this_ts t) in
   let tn t = cpp_typename syms bsym_table (tsub t) in
 
   (* NOTE this function does not do a reduce_type *)
@@ -256,7 +256,7 @@ and gen_expr'
     cpp_typename
     syms
     bsym_table
-    (beta_reduce syms.Flx_mtypes2.counter bsym_table sr (tsubst this_vs this_ts t))
+    (beta_reduce "flx_egen2" syms.Flx_mtypes2.counter bsym_table sr (tsubst this_vs this_ts t))
   in
   let ge_arg ((x,t) as a) =
     let t = tsub t in
@@ -287,7 +287,7 @@ and gen_expr'
 
     | _,tt ->
       let k = List.length ps in
-      let tt = beta_reduce syms.Flx_mtypes2.counter bsym_table sr  (tsubst vs ts tt) in
+      let tt = beta_reduce "flx_egen3" syms.Flx_mtypes2.counter bsym_table sr  (tsubst vs ts tt) in
       (* NASTY, EVALUATES EXPR MANY TIMES .. *)
       let n = ref 0 in
       fold_left
@@ -308,7 +308,7 @@ and gen_expr'
   in
   let our_display = get_display_list bsym_table this in
   let our_level = length our_display in
-  let rt t = beta_reduce syms.Flx_mtypes2.counter bsym_table sr (tsubst this_vs this_ts t) in
+  let rt t = beta_reduce "flx_egen4" syms.Flx_mtypes2.counter bsym_table sr (tsubst this_vs this_ts t) in
   let array_sum_offset_table = syms.array_sum_offset_table in
   let power_table = syms.power_table in
   let seq = syms.counter in
@@ -401,12 +401,12 @@ print_endline "gen_expr': BEXPR_get_n (first)";
   | BEXPR_get_n _ -> clierr sr "Can't handle generalised get_n yet"
 
   | BEXPR_match_case (n,((e',t') as e)) ->
-    let t' = beta_reduce syms.Flx_mtypes2.counter bsym_table sr t' in
+    let t' = beta_reduce "flx_egen get_n: match_case" syms.Flx_mtypes2.counter bsym_table sr t' in
     let x = Flx_vgen.gen_get_case_index ge' bsym_table e in
     ce_infix "==" x (ce_atom (si n))
 
   | BEXPR_not (BEXPR_match_case (n,((e',t') as e)),_) ->
-    let t' = beta_reduce syms.Flx_mtypes2.counter bsym_table sr t' in
+    let t' = beta_reduce "flx_egen: not" syms.Flx_mtypes2.counter bsym_table sr t' in
     let x = Flx_vgen.gen_get_case_index ge' bsym_table e in
     ce_infix "!=" x (ce_atom (si n))
 
@@ -916,7 +916,7 @@ print_endline "Apply struct";
          but units for sums .. hmm .. inconsistent!
       *)
       let ts = map tsub ts in
-      let ct = beta_reduce syms.Flx_mtypes2.counter bsym_table sr (tsubst vs ts ct) in
+      let ct = beta_reduce "flx_egen: nonconst ctor" syms.Flx_mtypes2.counter bsym_table sr (tsubst vs ts ct) in
       Flx_vgen.gen_make_nonconst_ctor ge' tn syms bsym_table udt cidx ct a 
     | _ -> assert false
     end
@@ -1215,13 +1215,13 @@ and gen_apply_prim
   ((arg,argt) as a)
 =
   let gen_expr' = gen_expr' syms bsym_table this this_vs this_ts in
-  let beta_reduce vs ts t =
-    beta_reduce syms.Flx_mtypes2.counter bsym_table sr (tsubst vs ts t)
+  let beta_reduce calltag vs ts t =
+    beta_reduce calltag syms.Flx_mtypes2.counter bsym_table sr (tsubst vs ts t)
   in
   let cpp_typename t = cpp_typename
     syms
     bsym_table
-    (beta_reduce this_vs this_ts t)
+    (beta_reduce "flx_egen gen_apply_prim: cpp_typename" this_vs this_ts t)
   in
   let bsym =
     try Flx_bsym_table.find bsym_table index with Not_found ->
@@ -1244,7 +1244,7 @@ and gen_apply_prim
       | `Code CS.Identity -> gen_expr' sr a
       | `Code CS.Virtual ->
           print_endline ("Flx_egen: Waring: delayed virtual instantiation, external fun " ^ Flx_bsym.id bsym^ "<"^string_of_bid index^ ">");
-          let ts = List.map (beta_reduce this_vs this_ts) ts in
+          let ts = List.map (beta_reduce "flx_egen: gen_apply_prim2" this_vs this_ts) ts in
           let index', ts' = Flx_typeclass.fixup_typeclass_instance
             syms
             bsym_table
@@ -1294,12 +1294,12 @@ and gen_apply_prim
           gen_prim_call
             syms
             bsym_table
-            (beta_reduce this_vs this_ts)
+            (beta_reduce "flx_egen: Code" this_vs this_ts)
             gen_expr'
             s
-            (List.map (beta_reduce this_vs this_ts) ts)
-            (arg, beta_reduce this_vs this_ts argt)
-            (beta_reduce vs ts retyp)
+            (List.map (beta_reduce "flx_egen: Code2 " this_vs this_ts) ts)
+            (arg, beta_reduce "flx_egen: code2" this_vs this_ts argt)
+            (beta_reduce "flx_egen: code4" vs ts retyp)
             sr
             (Flx_bsym.sr bsym)
             prec
@@ -1308,12 +1308,12 @@ and gen_apply_prim
           gen_prim_call
             syms
             bsym_table
-            (beta_reduce this_vs this_ts)
+            (beta_reduce "flx_egen: callback" this_vs this_ts)
             gen_expr'
             (Flx_bsym.id bsym ^ "($a)")
-            (List.map (beta_reduce this_vs this_ts) ts)
-            (arg, beta_reduce this_vs this_ts argt)
-            (beta_reduce vs ts retyp)
+            (List.map (beta_reduce "flx_egen: callback2" this_vs this_ts) ts)
+            (arg, beta_reduce "flx_egen: callback3" this_vs this_ts argt)
+            (beta_reduce "flx_egen: callback4" vs ts retyp)
             sr
             (Flx_bsym.sr bsym)
             "atom"

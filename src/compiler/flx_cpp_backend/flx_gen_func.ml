@@ -39,7 +39,7 @@ let gen_function syms bsym_table props index id sr vs bps ret' ts instance_no =
   (*
   let heapable = not stackable or heapable in
   *)
-  let rt vs t = beta_reduce syms.Flx_mtypes2.counter bsym_table sr (tsubst vs ts t) in
+  let rt vs t = beta_reduce "flx_gen_func: gen_function" syms.Flx_mtypes2.counter bsym_table sr (tsubst vs ts t) in
   let requires_ptf = mem `Requires_ptf props in
   let yields = mem `Yields props in
   (*
@@ -67,7 +67,7 @@ let gen_function syms bsym_table props index id sr vs bps ret' ts instance_no =
     si (length ts)
   );
   let argtype = rt vs argtype in
-  let rt' vs t = beta_reduce syms.Flx_mtypes2.counter bsym_table sr (tsubst vs ts t) in
+  let rt' vs t = beta_reduce "flx_gen_func: 2" syms.Flx_mtypes2.counter bsym_table sr (tsubst vs ts t) in
   let ret = rt' vs ret' in
   if ret = btyp_tuple [] then "// elided (returns unit)\n" else
 

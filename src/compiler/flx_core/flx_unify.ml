@@ -869,7 +869,7 @@ by folding at every node *)
 let minimise bsym_table counter t =
   fold bsym_table counter (Flx_btype.map ~f_btype:(fold bsym_table counter) t)
 
-let var_occurs t =
+let var_occurs bsym_table t =
   let rec aux' excl t = let aux t = aux' excl t in
     match t with
     | BTYP_intersect ls
@@ -895,8 +895,12 @@ let var_occurs t =
     | BTYP_type_var (k,_) -> if not (List.mem k excl) then raise Not_found
     | BTYP_type_function (p,r,b) ->
       aux' (List.map fst p @ excl) b
+    
+    | BTYP_type_apply (a,b) -> aux a; aux b
 
-    | _ -> failwith "[var_occurs] unexpected metatype"
+    | _ -> 
+      print_endline ("[var_occurs] unexpected metatype " ^ sbt bsym_table t);
+      failwith ("[var_occurs] unexpected metatype " ^ sbt bsym_table t)
 
  in try aux' [] t; false with Not_found -> true
 
