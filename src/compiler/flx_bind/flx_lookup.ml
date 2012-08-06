@@ -1915,8 +1915,10 @@ and cal_apply' state bsym_table be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) =
           end
         | _ -> print_endline "WOOPS WHAT IF BE1 is NOT A CLOSURE?"; None
       in
+(*
       print_endline "Type of function parameter DOES NOT agree with type of argument";
       print_endline ("Paramt = " ^ sbt bsym_table argt ^ " argt = " ^ sbt bsym_table t2);
+*)
       begin match reorder with
       | Some _ -> rest,reorder
       | None ->

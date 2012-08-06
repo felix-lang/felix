@@ -372,6 +372,9 @@ print_endline "Type list index returned None";
   | BTYP_unitsum _ -> t
 
   | BTYP_type_apply (t1,t2) ->
+(* NOT clear if this is OK or not *)
+    let t1 = br t1 in
+    let t2 = br t2 in
     begin
 (*
 print_endline ("Attempting to beta-reduce type function application " ^ sbt bsym_table t);
