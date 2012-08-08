@@ -462,7 +462,7 @@ inherit [T with Eq[T]] Set[list[T],T];
 // display list as string given element type with str operator
 // elements are separated by a comma and one space
 instance[T with Show[T]] Str[List::list[T]] {
-  fun str (xs:List::list[T]) =>
+  noinline fun str (xs:List::list[T]) =>
     'list(' +
       match xs with
       | Empty[T] => ''
@@ -508,7 +508,7 @@ class Assoc_list
   ;
 
 }
-/*
+
 class S_expr 
 {
   union sexpr[T] = | Leaf of T | Tree of list[sexpr[T]]; 
@@ -537,7 +537,7 @@ class S_expr
       fold_left (fun (acc:bool) (v:T) => acc or v == elt) false x; 
   }
   instance[T with Str[T]] Str[sexpr[T]] {
-    fun str(x:sexpr[T])=>
+    noinline fun str(x:sexpr[T])=>
       match x with 
       | Leaf ?a => str a
       | Tree ?b => str b 
@@ -548,4 +548,3 @@ class S_expr
 
 open[T with Str[T]] Str[S_expr::sexpr[T]];
 open[T with Eq[T]] Set[S_expr::sexpr[T],T];
-*/
