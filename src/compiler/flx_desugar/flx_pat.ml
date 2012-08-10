@@ -115,6 +115,28 @@ and check_match_tuple n pats =
     else find_match_type (List.hd pats) pats
   end tpats
 
+and check_match_tuple_cons pats =
+(* This should really do the transpose trick tuple does but I'm too lazy *)
+  let rec check pat =
+    match pat with
+    | PAT_any _ 
+    | PAT_name _ -> ()
+    | PAT_tuple_cons (_,p1,p2) -> check p2
+    | PAT_as (_,pat,_)
+    | PAT_when (_,pat,_)
+    | PAT_coercion (_,pat,_) -> check pat
+    | _ ->
+        let sr = src_of_pat pat in
+        clierr sr
+        (
+          Flx_srcref.short_string_of_src (src_of_pat pat) ^
+          ": tuple cons pattern (,,) expected, got " ^ string_of_pattern pat
+        )
+
+  in
+  List.iter check pats
+
+
 and check_match_union pats =
   let rec check pat =
     match pat with
@@ -158,6 +180,7 @@ and find_match_type pat =
   (* other *)
   | PAT_name _ -> renaming
   | PAT_tuple (_,pats) -> check_match_tuple (List.length pats)
+  | PAT_tuple_cons (_,p1,p2) -> check_match_tuple_cons 
   | PAT_any _ -> renaming
   | PAT_const_ctor _ -> check_match_union
   | PAT_nonconst_ctor _ -> check_match_union

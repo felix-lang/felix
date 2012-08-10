@@ -37,6 +37,9 @@ and t =
   | BTYP_type_apply of t * t
   | BTYP_type_match of t * (btpattern_t * t) list
 
+  (* only used for pattern matching *)
+  | BTYP_tuple_cons of t * t 
+
   (* type sets *)
   | BTYP_type_set of t list (** open union *)
   | BTYP_type_set_union of t list (** open union *)
@@ -112,6 +115,8 @@ let btyp_tuple = function
         BTYP_array (head, (BTYP_unitsum (List.length ts)))
       with Not_found ->
         BTYP_tuple ts
+
+let btyp_tuple_cons t ts = BTYP_tuple_cons (t,ts)
 
 (** Construct a BTYP_array type. *)
 let btyp_array (t, n) =
@@ -271,6 +276,7 @@ let flat_iter
   | BTYP_void -> ()
   | BTYP_fix _ -> ()
   | BTYP_type _ -> ()
+  | BTYP_tuple_cons (a,b) -> f_btype a; f_btype b
   | BTYP_type_tuple ts -> List.iter f_btype ts
   | BTYP_type_function (its, a, b) ->
       (* The first argument of [its] is an index, not a bid. *)
@@ -327,6 +333,7 @@ let map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
   | BTYP_cfunction (a,b) -> btyp_cfunction (f_btype a, f_btype b)
   | BTYP_void as x -> x
   | BTYP_fix _ as x -> x
+  | BTYP_tuple_cons (a,b) -> btyp_tuple_cons (f_btype a) (f_btype b)
   | BTYP_type _ as x -> x
   | BTYP_type_tuple ts -> btyp_type_tuple (List.map f_btype ts)
   | BTYP_type_function (its, a, b) ->

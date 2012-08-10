@@ -163,6 +163,11 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
           end
       | EXPR_name (_, "~", []) -> TYP_dual (typecode_of_expr e2)
       | EXPR_name (_, "typeof", []) -> TYP_typeof e2
+      | EXPR_name (sr, "pow", []) -> 
+          begin match e2 with
+          | EXPR_tuple (_,[s1;s2]) -> TYP_tuple_cons ( sr, typecode_of_expr s1, typecode_of_expr s2)
+          | _ -> assert false
+          end
       | EXPR_name (_, "setintersection", []) -> 
           begin match e2 with
           | EXPR_tuple (_,[s1;s2]) -> TYP_setintersection[typecode_of_expr s1; typecode_of_expr s2]

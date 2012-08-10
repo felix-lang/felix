@@ -58,6 +58,7 @@ let map_type f (t:typecode_t):typecode_t = match t with
     let ps = List.map (fun (p,t) -> f p, f t) ps in
     TYP_type_match (f t, ps)
 
+  | TYP_tuple_cons (sr,t1,t2) -> TYP_tuple_cons (sr, f t1, f t2)
   (* meta constructors *)
   | TYP_apply (a,b) -> TYP_apply (f a, f b)
   | TYP_typefun (ps, a, b) -> TYP_typefun (ps, f a, f b)
@@ -153,6 +154,7 @@ let map_expr f (e:expr_t):expr_t = match e with
   | EXPR_range_check (sr,mi,v,mx) -> EXPR_range_check (sr, f mi, f v, f mx)
   | EXPR_not (sr,e) -> EXPR_not (sr, f e)
   | EXPR_extension (sr,es,e) -> EXPR_extension (sr, List.map f es, f e)
+  | EXPR_get_tuple_tail (sr,e) -> EXPR_get_tuple_tail (sr, f e)
  
  
 let iter_expr f (e:expr_t) =
@@ -198,6 +200,7 @@ let iter_expr f (e:expr_t) =
   | EXPR_lookup (_,(x,_,_))
   | EXPR_coercion (_, (x,_))
   | EXPR_not (_,x) 
+  | EXPR_get_tuple_tail (_,x)
     -> f x
 
   | EXPR_letin (_,(_,a,b))

@@ -10,6 +10,7 @@ type extract_t =
   | Proj_n of Flx_srcref.t * int             (* tuple projections 1 .. n *)
   | Udtor of Flx_srcref.t * qualified_name_t (* argument of union component s *)
   | Proj_s of Flx_srcref.t * string          (* record projection name *)
+  | Proj_tail of Flx_srcref.t                (* tuple_cons tail extractor  *)
 
 (* the extractor is a function to be applied to
    the argument to extract the value of the identifier;
@@ -33,6 +34,7 @@ let gen_extractor
     | Proj_n (sr,n) -> EXPR_get_n (sr,(n,marg))
     | Udtor (sr,qn) -> EXPR_ctor_arg (sr,(qn,marg))
     | Proj_s (sr,s) -> EXPR_get_named_variable (sr,(s,marg))
+    | Proj_tail (sr) -> EXPR_get_tuple_tail (sr,(marg))
   )
   extractor
   mv
@@ -81,6 +83,7 @@ let rec subst vars (e:expr_t) mv : expr_t =
   | EXPR_variant_type _
   | EXPR_extension _
   | EXPR_not _
+  | EXPR_get_tuple_tail _
     ->
       let sr = src_of_expr e in
       clierr sr "[mbind:subst] Not expected in when part of pattern"
@@ -172,6 +175,15 @@ let rec get_pattern_vars
       get_pattern_vars vars pat extractor'
     )
     pats
+
+  | PAT_tuple_cons (sr,pat1,pat2) ->
+    let sr = src_of_pat pat1 in
+    let extractor' = Proj_n (sr,0) :: extractor in
+    get_pattern_vars vars pat1 extractor';
+
+    let sr = src_of_pat pat2 in
+    let extractor' = Proj_tail (sr) :: extractor in
+    get_pattern_vars vars pat2 extractor'
 
   | PAT_nonconst_ctor (sr,name,pat) ->
     let extractor' = (Udtor (sr, name)) :: extractor in
@@ -306,3 +318,11 @@ let rec gen_match_check pat (arg:expr_t) =
     let vars =  Hashtbl.create 97 in
     get_pattern_vars vars pat [];
     apl2 sr "land" (gen_match_check pat arg) (subst vars expr arg)
+
+  | PAT_tuple_cons (sr, p1, p2) -> 
+    (* Not clear how to check p2 matches the rest of the argument,
+       since we don't know the type of the argument, we don't know
+       how many components are involved. So p2 had better be a wildcard!
+    *)
+    gen_match_check p1 (EXPR_get_n (sr,(0, arg)))
+

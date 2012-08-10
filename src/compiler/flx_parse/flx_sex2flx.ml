@@ -254,6 +254,7 @@ and xpattern_t x =
 
   | Lst [Id "pat_name"; sr; id] -> PAT_name (xsr sr, xid id)
   | Lst [Id "pat_tuple"; sr; Lst ps] -> PAT_tuple (xsr sr, map xp ps)
+  | Lst [Id "pat_tuple_cons"; sr; a; b] -> PAT_tuple_cons (xsr sr, xp a, xp b)
 
   | Lst [Id "pat_any"; sr] -> PAT_any (xsr sr)
   | Lst [Id "pat_const_ctor"; sr; qn] ->

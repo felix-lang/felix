@@ -140,6 +140,7 @@ let fix_pattern counter pat =
 
   | PAT_coercion (sr, p, t) -> PAT_coercion (sr, aux p, t)
   | PAT_tuple (sr,ps) -> PAT_tuple (sr,List.map aux ps)
+  | PAT_tuple_cons (sr,a,b) -> PAT_tuple_cons (sr,aux a,aux b)
   | PAT_nonconst_ctor (sr,qn,p) -> PAT_nonconst_ctor (sr,qn,aux p)
   | PAT_as (sr,p,i) -> PAT_as (sr,aux p,i)
   | PAT_when (sr,p,e) -> PAT_when (sr,aux p,e)
@@ -164,6 +165,7 @@ let rec get_pattern_vars pat =
   | PAT_when (_,p,_) -> get_pattern_vars p
   | PAT_nonconst_ctor (_,_,p) -> get_pattern_vars p
   | PAT_tuple (_,ps) -> List.concat (List.map get_pattern_vars ps)
+  | PAT_tuple_cons (sr,a,b) -> get_pattern_vars a @ get_pattern_vars b
   | PAT_record (_,ps) -> List.concat(List.map get_pattern_vars (List.map snd ps))
   | _ -> []
 
@@ -176,6 +178,7 @@ let alpha_pat local_prefix seq fast_remap remap expand_expr pat =
   | PAT_when (sr,p,e) -> PAT_when (sr,aux p, rexp e)
   | PAT_nonconst_ctor (sr,n,p) -> PAT_nonconst_ctor (sr, n, aux p)
   | PAT_tuple (sr,ps) -> PAT_tuple (sr, List.map aux ps)
+  | PAT_tuple_cons (sr,a,b) -> PAT_tuple_cons (sr, aux a, aux b)
   | PAT_record (sr, ps) -> PAT_record (sr, List.map (fun (id,p) -> id, aux p) ps)
   | p -> p
   in aux pat
@@ -507,6 +510,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | EXPR_index (sr, n, i) -> EXPR_index (sr,n,i)
   | EXPR_intersect (sr, es) -> EXPR_intersect (sr, List.map me es)
   | EXPR_isin (sr,(a,b)) -> EXPR_isin (sr, (me a, me b))
+  | EXPR_get_tuple_tail (sr, e) -> EXPR_get_tuple_tail (sr, me e)
 
   | EXPR_lookup (sr, (e1, name,ts)) ->
       EXPR_lookup (sr,(me e1, mi sr name, List.map (mt sr) ts))

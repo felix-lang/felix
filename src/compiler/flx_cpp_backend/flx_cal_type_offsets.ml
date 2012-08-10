@@ -25,6 +25,7 @@ let rec get_offsets' syms bsym_table typ : string list =
   let tname = cpp_typename syms bsym_table typ in
   let t' = unfold typ in
   match t' with
+  | BTYP_tuple_cons _ -> assert false
   | BTYP_none -> assert false
 
   | BTYP_pointer t -> ["0"]

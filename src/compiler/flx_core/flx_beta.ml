@@ -273,6 +273,7 @@ print_endline "Type list index returned None";
     t
   *)
 
+  | BTYP_tuple_cons (t1,t2) -> btyp_tuple_cons (br t1) (br t2)
   | BTYP_inst (i,ts) -> btyp_inst (i, List.map br ts)
   | BTYP_tuple ls -> btyp_tuple (List.map br ls)
   | BTYP_array (i,t) -> btyp_array (br i, br t)

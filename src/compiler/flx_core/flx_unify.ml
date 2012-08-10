@@ -11,6 +11,18 @@ open Flx_exceptions
 
 let unit_t = btyp_tuple []
 
+(* NOTE: this routine doesn't adjust fixpoints! Probably should! *)
+let normalise_tuple_cons bsym_table t = 
+  match t with
+  | BTYP_tuple_cons (t1, t2) ->
+    let rec aux t0 =
+      match t0 with
+      | BTYP_tuple ts -> ts
+      | BTYP_tuple_cons (t1,t2) -> t1 :: aux t2
+      | x -> [x] 
+    in btyp_tuple (t1::aux t2)
+  | t -> t
+
 let rec dual t =
   match Flx_btype.map ~f_btype:dual t with
   | BTYP_none -> assert false
@@ -249,6 +261,7 @@ let fix i t =
   let rec aux n t =
     let aux t = aux (n - 1) t in
     match t with
+    | BTYP_tuple_cons _ -> assert false
     | BTYP_none -> assert false
     | BTYP_type_var (k,mt) -> if k = i then btyp_fix n mt else t
     | BTYP_inst (k,ts) -> btyp_inst (k, List.map aux ts)
@@ -450,6 +463,15 @@ print_endline "Trying to unify instances (2)";
       | BTYP_array (ta,BTYP_unitsum n), BTYP_tuple ls
         when n = List.length ls ->
         List.iter (fun t -> eqns := (t,ta) :: !eqns) ls
+
+      | BTYP_tuple_cons (t0,ts), BTYP_tuple_cons (t0',ts') ->
+        eqns := (t0,t0') :: (ts,ts'):: !eqns
+
+      | BTYP_tuple (t0::ts), BTYP_tuple_cons (t0',ts')
+      | BTYP_tuple_cons (t0',ts'), BTYP_tuple (t0::ts) ->
+        eqns := (t0,t0') :: (BTYP_tuple ts, ts') :: !eqns
+
+
 (*
       (* T ^ N = T by setting N = 1 *)
       | BTYP_array (t11, (BTYP_type_var (i,_) as tv)), t21 
@@ -678,6 +700,7 @@ let rec type_eq' bsym_table counter ltrail ldepth rtrail rdepth trail t1 t2 =
   | BTYP_function (s1,d1),BTYP_function (s2,d2)
   | BTYP_cfunction (s1,d1),BTYP_cfunction (s2,d2)
   | BTYP_type_apply(s1,d1),BTYP_type_apply(s2,d2)
+  | BTYP_tuple_cons (s1,d1),BTYP_tuple_cons (s2,d2)
     -> te s1 s2 && te d1 d2
 
   (* order is important for lvalues .. *)
@@ -834,6 +857,7 @@ let fold bsym_table counter t =
     | BTYP_cfunction (a,b) -> ax a; ax b
 
     | BTYP_pointer a -> ax a
+    | BTYP_tuple_cons (a,b) -> ax a; ax b
 
     | BTYP_none
     | BTYP_void
@@ -897,7 +921,7 @@ let var_occurs bsym_table t =
       aux' (List.map fst p @ excl) b
     
     | BTYP_type_apply (a,b) -> aux a; aux b
-
+    | BTYP_tuple_cons (a,b) -> aux a; aux b
     | _ -> 
       print_endline ("[var_occurs] unexpected metatype " ^ sbt bsym_table t);
       failwith ("[var_occurs] unexpected metatype " ^ sbt bsym_table t)

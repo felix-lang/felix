@@ -27,10 +27,13 @@ type bexpr_t =
   | BEXPR_range_check of t * t * t
   | BEXPR_coerce of t * Flx_btype.t
   | BEXPR_compose of t * t
+  | BEXPR_tuple_tail of t
 
 and t = bexpr_t * Flx_btype.t
 
 (* -------------------------------------------------------------------------- *)
+
+let bexpr_tuple_tail t e = BEXPR_tuple_tail e, t
 
 let bexpr_deref t e : t = BEXPR_deref e, t
 
@@ -177,6 +180,9 @@ let rec cmp ((a,_) as xa) ((b,_) as xb) =
   | BEXPR_range_check (e1,e2,e3), BEXPR_range_check (e1',e2',e3') ->
     cmp e1 e1' && cmp e2 e2' && cmp e3 e3'
 
+  | BEXPR_tuple_tail e1, BEXPR_tuple_tail e2 ->
+    cmp e1 e2
+
   | _ -> false
 
 (* -------------------------------------------------------------------------- *)
@@ -244,6 +250,7 @@ let flat_iter
   | BEXPR_coerce (e,t) ->
       f_bexpr e;
       f_btype t
+  | BEXPR_tuple_tail e -> f_bexpr e
 
 (* this is a self-recursing version of the above routine: the argument to this
  * routine must NOT recursively apply itself! *)
@@ -301,6 +308,8 @@ let map
   | BEXPR_range_check (e1,e2,e3),t ->
       BEXPR_range_check (f_bexpr e1, f_bexpr e2, f_bexpr e3), f_btype t
   | BEXPR_coerce (e,t'),t -> BEXPR_coerce (f_bexpr e, f_btype t'), f_btype t
+  | BEXPR_tuple_tail e,t -> BEXPR_tuple_tail (f_bexpr e), f_btype t
+
 
 (* -------------------------------------------------------------------------- *)
 

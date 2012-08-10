@@ -877,6 +877,7 @@ print_endline ("Bind type " ^ string_of_typecode t);
       btyp_array (bt t1, t2)
 
   | TYP_tuple ts -> btyp_tuple (List.map bt ts)
+  | TYP_tuple_cons (_,t1,t2) -> btyp_tuple_cons (bt t1) (bt t2)
   | TYP_unitsum k ->
       begin match k with
       | 0 -> btyp_void ()
@@ -1263,6 +1264,7 @@ and bind_type_index state (bsym_table:Flx_bsym_table.t) (rs:recstop) sr index ts
         | SYMDEF_type_alias t  -> (* print_endline ("A type alias " ^ string_of_typecode t); *)
           let rec guess_metatype t =
             match t with
+            | TYP_tuple_cons (sr,t1,t2) -> assert false
             | TYP_type_tuple _ -> print_endline "A type tuple"; assert false
             | TYP_typefun (d,c,body) -> 
         (*
@@ -3486,6 +3488,27 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
     let t'' = bt sr t in
     Flx_coerce.coerce state bsym_table sr x' t''
 
+  | EXPR_get_tuple_tail (sr,e) ->
+    let (e',t') as x' = be e in
+    begin match t' with
+    | BTYP_tuple [] -> x'
+    | BTYP_tuple ts ->
+      let unit_sum_type = btyp_unitsum (List.length ts) in
+      let ts' = List.tl ts in
+      let counter = ref 0 in
+      let es' = List.map (fun t-> 
+        incr counter; 
+        let caseval = bexpr_case t (!counter, unit_sum_type) in
+        bexpr_get_n t (caseval,x')
+      ) ts'
+      in 
+      bexpr_tuple (btyp_tuple ts') es'
+
+    | BTYP_tuple_cons (t1,t2) -> bexpr_tuple_tail t2 x'
+
+    | _ ->  print_endline ("tuple tail of type " ^ sbt bsym_table t'); assert false
+    end
+
   | EXPR_get_n (sr,(n,e')) ->
     let expr,typ = be e' in
     let ctyp,k = match unfold typ with
@@ -3512,6 +3535,18 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
           string_of_int (len-1)
         )
       else List.nth ts n,len
+
+    | BTYP_tuple_cons (t1,_) ->
+      if n = 0 then t1,2 (* HACK! We dunno the length of the tuple! *)
+      else
+      clierr sr
+      (
+        "[bind_expression] Expected tuple " ^
+        string_of_expr e' ^
+        " to have tuple type, got tuple cons " ^
+        sbt bsym_table typ ^ " with non-zero projection " ^ si n
+      )
+
     | _ ->
       clierr sr
       (
@@ -5351,6 +5386,7 @@ and build_env state bsym_table parent : env_t =
 and rebind_btype state bsym_table env sr ts t =
   let rbt t = rebind_btype state bsym_table env sr ts t in
   match t with
+  | BTYP_tuple_cons _ -> assert false
   | BTYP_none -> assert false
   | BTYP_inst (i,_) ->
     begin match get_data state.sym_table i with

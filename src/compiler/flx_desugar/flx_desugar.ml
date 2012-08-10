@@ -248,6 +248,10 @@ let rec rex mkreqs map_reqs state name (e:expr_t) : asm_t list * expr_t =
     let l1,x1 = rex e in 
     l1,EXPR_ctor_arg (sr,(qn,x1))
 
+  | EXPR_get_tuple_tail (sr, e) ->
+    let l1,x1 = rex e in 
+    l1,EXPR_get_tuple_tail (sr,x1)
+
   | EXPR_type_match _ -> [],e
 
   | EXPR_noexpand (_,e) -> rex e
@@ -1046,7 +1050,7 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
         begin match e with
         | EXPR_tuple (_,ls) ->
           let n = seq() in
-          let vn = "_" ^ string_of_bid n in
+          let vn = "_ds1_" ^ string_of_bid n in
           let sts = ref [] in
           let count = ref 0 in
           List.iter
@@ -1087,7 +1091,7 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
           [assign sr fid n r]
       | `List ls ->
           let n = seq() in
-          let vn = "_" ^ string_of_bid n in
+          let vn = "_ds2_" ^ string_of_bid n in
           let sts = ref [] in
           let count = ref 0 in
           List.iter
@@ -1169,6 +1173,10 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
     let need_final_label = ref false in
     List.iter
     (fun (pat,sts) ->
+(*
+print_endline "Pattern statements are:";
+List.iter (fun s -> print_endline (string_of_statement 2 s)) sts;
+*)
       let n1 = !n2 in (* this case *)
       n2 := seq(); (* the next case *)
       iswild := is_universal pat;
@@ -1177,17 +1185,16 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
       let match_checker = EXPR_index (patsrc,match_checker_id,n1) in
       let vars = Hashtbl.create 97 in
       Flx_mbind.get_pattern_vars vars pat [];
-          (*
-          print_endline ("PATTERN IS " ^ string_of_pattern pat ^ ", VARIABLE=" ^ mvname);
+(*
+          print_endline ("PATTERN IS " ^ string_of_pattern pat ^ ", VARIABLE=" ^ match_var_name);
           print_endline "VARIABLES ARE";
           Hashtbl.iter (fun vname (sr,extractor) ->
             let component =
-              Flx_mbind.gen_extractor extractor (EXPR_index (sr,mvname,match_var_index))
+              Flx_mbind.gen_extractor extractor (EXPR_index (sr,match_var_name,match_index))
             in
             print_endline ("  " ^ vname ^ " := " ^ string_of_expr component);
           ) vars;
-          *)
-
+*)
       let new_sts = ref sts in
       Hashtbl.iter
           (fun vname (sr,extractor) ->

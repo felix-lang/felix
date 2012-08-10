@@ -99,6 +99,7 @@ let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
   | BEXPR_match_case (_,e)
   | BEXPR_case_arg (_,e)
   | BEXPR_case_index e
+  | BEXPR_tuple_tail e
     -> ue e
 
   | BEXPR_apply_prim (index,ts,a)

@@ -94,19 +94,7 @@ and typecode_t =
 
   | TYP_type_match of typecode_t * (typecode_t * typecode_t) list
   | TYP_type_extension of Flx_srcref.t * typecode_t list * typecode_t
-
-and tpattern_t =
-  | TPAT_function of tpattern_t * tpattern_t
-  | TPAT_sum of tpattern_t list
-  | TPAT_tuple of tpattern_t list
-  | TPAT_pointer of tpattern_t
-  | TPAT_void
-  | TPAT_var of string
-  | TPAT_name of string * tpattern_t list
-  | TPAT_as of tpattern_t * string
-  | TPAT_any
-  | TPAT_unitsum of int
-  | TPAT_type_tuple of tpattern_t list
+  | TYP_tuple_cons of Flx_srcref.t * typecode_t * typecode_t
 
 and raw_typeclass_insts_t = qualified_name_t list
 and vs_aux_t = {
@@ -194,6 +182,9 @@ and expr_t =
   | EXPR_as of Flx_srcref.t * (expr_t * Flx_id.t)
   | EXPR_match of Flx_srcref.t * (expr_t * (pattern_t * expr_t) list)
 
+  (* this extracts the tail of a tuple *)
+  | EXPR_get_tuple_tail of Flx_srcref.t * expr_t
+
   | EXPR_typeof of Flx_srcref.t * expr_t
   | EXPR_cond of Flx_srcref.t * (expr_t * expr_t * expr_t)
 
@@ -220,6 +211,7 @@ and pattern_t =
 
   | PAT_name of Flx_srcref.t * Flx_id.t
   | PAT_tuple of Flx_srcref.t * pattern_t list
+  | PAT_tuple_cons of Flx_srcref.t * pattern_t * pattern_t
   | PAT_any of Flx_srcref.t
     (* second list is group bindings 1 .. n-1: EXCLUDES 0 cause we can use 'as' for that ?? *)
   | PAT_const_ctor of Flx_srcref.t * qualified_name_t
@@ -615,6 +607,7 @@ let src_of_typecode = function
   | TYP_patvar (s,_)
   | TYP_patany s
   | TYP_type_extension (s,_,_)
+  | TYP_tuple_cons (s,_,_)
   -> s
 
   | TYP_tuple _
@@ -703,6 +696,7 @@ let src_of_expr (e : expr_t) = match e with
   | EXPR_range_check (s,_,_,_)
   | EXPR_not (s,_)
   | EXPR_extension (s, _, _)
+  | EXPR_get_tuple_tail (s,_)
   -> s
 
 let src_of_stmt (e : statement_t) = match e with
@@ -786,6 +780,7 @@ let src_of_pat (e : pattern_t) = match e with
   | PAT_range (s,_,_)
   | PAT_name (s,_)
   | PAT_tuple (s,_)
+  | PAT_tuple_cons (s,_,_)
   | PAT_any s
   | PAT_const_ctor (s,_)
   | PAT_nonconst_ctor (s,_,_)

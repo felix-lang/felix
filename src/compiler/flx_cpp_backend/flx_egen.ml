@@ -217,6 +217,13 @@ print_endline ("Handling a get-n in egen, n=" ^ si n ^ ", e=" ^ sbe bsym_table (
     | BTYP_pointer (BTYP_tuple _) ->
       ce_prefix "&" (ce_arrow (ge' e2) ("mem_" ^ si n))
 
+    | BTYP_tuple_cons (t1,t2) ->
+(*
+      print_endline ("Tuple cons, projection " ^ si n);
+*)
+      (* NOTE: Won't work for compact linear types! *)
+      ce_dot (ge' e2) ("mem_" ^ si n)
+
     | _ -> assert false (* ce_dot (ge' e) ("mem_" ^ si n) *)
 
 and gen_expr'
@@ -399,6 +406,35 @@ print_endline "gen_expr': BEXPR_get_n (first)";
     handle_get_n syms bsym_table rt ge' e t n e2 
 
   | BEXPR_get_n _ -> clierr sr "Can't handle generalised get_n yet"
+
+  | BEXPR_tuple_tail (e',t' as x') ->
+(*
+    print_endline ("Tuple tail of expression " ^ sbe bsym_table x');
+    print_endline ("Type " ^ sbt bsym_table t');
+*)
+    let t' = normalise_tuple_cons bsym_table t' in
+(*
+    print_endline ("Normalised Type " ^ sbt bsym_table t');
+    print_endline ("Tail Type " ^ sbt bsym_table t);
+*)
+    begin match t' with 
+    | BTYP_tuple ts -> 
+      let unitsum = btyp_unitsum (List.length ts) in
+      let counter = ref 0 in
+      let es = 
+        List.map (fun t-> 
+          incr counter; 
+          let index = bexpr_case unitsum (!counter,unitsum) in
+          bexpr_get_n t (index, x')
+       ) 
+       (List.tl ts) 
+      in
+      let tail = match es with [x] -> x | es -> bexpr_tuple t es in
+      ge' tail
+    | _ -> 
+      print_endline "Expected tail to be tuple";
+      assert false
+    end
 
   | BEXPR_match_case (n,((e',t') as e)) ->
     let t' = beta_reduce "flx_egen get_n: match_case" syms.Flx_mtypes2.counter bsym_table sr t' in

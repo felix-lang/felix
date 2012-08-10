@@ -172,7 +172,9 @@ let rec cpp_type_classname syms bsym_table t =
   let tn t = cpp_typename syms bsym_table t in
   let tix t = tix syms bsym_table t in
   let t = fold bsym_table syms.counter t in
-  try match unfold t with
+  let t = normalise_tuple_cons bsym_table t in
+  let t' = unfold t in
+  try match t' with
   | BTYP_type_var (i,mt) ->
       failwith ("[cpp_type_classname] Can't name type variable " ^
         string_of_bid i ^ ":"^ sbt bsym_table mt)
@@ -189,6 +191,7 @@ let rec cpp_type_classname syms bsym_table t =
   | BTYP_cfunction _ -> "_cft" ^ cid_of_bid (tix t)
   | BTYP_array _ -> "_at" ^ cid_of_bid (tix t)
   | BTYP_tuple _ -> "_tt" ^ cid_of_bid (tix t)
+  | BTYP_tuple_cons _ -> "_tt" ^ cid_of_bid (tix t)
 (*  | BTYP_tuple ts -> "_tt"^string_of_int (List.length ts)^"<" ^ catmap "," tn ts ^ ">"  *)
   | BTYP_record _  -> "_art" ^ cid_of_bid (tix t)
 (*
@@ -285,7 +288,7 @@ let rec cpp_type_classname syms bsym_table t =
   | _ ->
     failwith
     (
-      "[cpp_type_classname] Unexpected " ^
+      "[cpp_type_classname] Unexpected type " ^
       sbt bsym_table t
     )
   with Not_found ->
@@ -299,8 +302,10 @@ let rec cpp_type_classname syms bsym_table t =
 and cpp_structure_name syms bsym_table t =
   let tn t = cpp_typename syms bsym_table t in
   let tix t = tix syms bsym_table t in
+  let t = normalise_tuple_cons bsym_table t in
   let t = fold bsym_table syms.counter t in
-  try match unfold t with
+  let t' = unfold t in
+  try match t' with
   | BTYP_type_var (i,mt) ->
       failwith ("[cpp_type_classname] Can't name type variable " ^
         string_of_bid i ^ ":"^ sbt bsym_table mt)

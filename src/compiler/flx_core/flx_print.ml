@@ -185,6 +185,7 @@ and string_of_expr (e:expr_t) =
     "(" ^ se a ^ " ^ " ^ se b ^ ")"
 
   | EXPR_tuple (_,t) -> "(" ^ catmap ", " sme t ^ ")"
+  | EXPR_get_tuple_tail (_,t) -> "get_tuple_tail(" ^ se t ^ ")"
 
   | EXPR_record (_,ts) ->
       "struct {" ^
@@ -329,6 +330,8 @@ and string_of_expr (e:expr_t) =
 and st prec tc : string =
   let iprec,txt =
     match tc with
+    | TYP_tuple_cons (sr, t1, t2) -> 6, st 4 t1 ^ "**" ^ st 4 t2
+
     | TYP_index (sr,name,idx) -> 0, name ^ "<" ^ string_of_bid idx ^ ">"
     | TYP_void _ -> 0, "void"
     | TYP_name (_,name,ts) ->
@@ -545,6 +548,8 @@ and sb bsym_table depth fixlist counter prec tc =
   let iprec, term =
     match tc with
     | BTYP_none -> 0,"none"
+    | BTYP_tuple_cons (t1,t2) -> 
+      5,(sbt 5 t1) ^ " ** " ^ (sbt 5 t2)
 
     | BTYP_type_match (t,ps) ->
       0,
@@ -775,28 +780,6 @@ and string_of_arguments ass =
 and string_of_component level (name, typ) =
    spaces level ^ name ^ ": " ^ (string_of_typecode typ)
 
-and string_of_tpattern p =
-  let sp p = string_of_tpattern p in
-  match p with
-  | TPAT_function (p1,p2) -> sp p1 ^ " -> " ^ sp p2
-  | TPAT_sum ps -> catmap " + " sp ps
-  | TPAT_tuple ps -> catmap " * " sp ps
-  | TPAT_pointer p -> "&" ^ sp p
-  | TPAT_void -> "0"
-  | TPAT_var s -> "?" ^ s
-  | TPAT_name (s,ps) ->
-    s ^
-    (
-      match ps with
-      | [] -> ""
-      | ps -> "[" ^ catmap "," sp ps ^ "]"
-    )
-
-  | TPAT_as (p,s) -> sp p ^ " as " ^ s
-  | TPAT_any -> "_"
-  | TPAT_unitsum j -> si j
-  | TPAT_type_tuple ps -> catmap ", " sp ps
-
 and string_of_pattern p =
   let se e = string_of_expr e in
   match p with
@@ -807,6 +790,7 @@ and string_of_pattern p =
   | PAT_range (sr,l1,l2) -> string_of_literal l1 ^ ".." ^ string_of_literal l2
   | PAT_name (_,s) -> string_of_id s
   | PAT_tuple (_,ps) -> "(" ^ catmap ", "  string_of_pattern ps ^ ")"
+  | PAT_tuple_cons (_,a,b) -> string_of_pattern a ^ ",," ^ string_of_pattern b
   | PAT_any _ -> "any"
   | PAT_const_ctor (_,s) -> "|" ^ string_of_qualified_name s
   | PAT_nonconst_ctor (_,s,p)-> "|" ^ string_of_qualified_name s ^ " " ^ string_of_pattern p
@@ -825,6 +809,7 @@ and string_of_letpat p =
   match p with
   | PAT_name (_,s) -> string_of_id s
   | PAT_tuple (_,ps) -> "(" ^ catmap ", " string_of_letpat ps ^ ")"
+  | PAT_tuple_cons (_,a,b) -> string_of_pattern a ^ ",," ^ string_of_pattern b
   | PAT_any _ -> "_"
   | PAT_const_ctor (_,s) -> "|" ^ string_of_qualified_name s
   | PAT_nonconst_ctor (_,s,p)-> "|" ^ string_of_qualified_name s ^ " " ^ string_of_letpat p
@@ -1789,6 +1774,7 @@ and string_of_bound_expression' bsym_table se e =
   let sid n = bound_name_of_bindex bsym_table n in
   match fst e with
 
+  | BEXPR_tuple_tail e -> "tuple_tail("^ se e ^")"
   | BEXPR_get_n (n,e') -> "/*proj*/"^ se n ^ "(" ^ se e' ^ ")"
 
   | BEXPR_not e -> "not("^ se e ^ ")"
