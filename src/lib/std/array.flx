@@ -94,7 +94,7 @@ open class Farray
 
 
   // will probably clash with tuple joining functions if we implement them
-  fun + [T, N, M] (x:array[T, N]) (y:array[T, M]):array[T, N + M] => join x y;
+  fun + [T, N, M] (x:array[T, N], y:array[T, M]):array[T, N + M] => join x y;
 
   // subsumes zip
   fun transpose[T,N,M] (y:array[array[T,M],N]) : array[array[T,N],M] = {

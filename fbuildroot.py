@@ -207,6 +207,7 @@ def make_cxx_builder(ctx, *args, includes=[], libpaths=[], flags=[], **kwargs):
         ({'darwin'}, {
             'warnings': ['all', 'fatal-errors', 
                 'no-invalid-offsetof', 
+                'no-logical-op-parentheses',
                 'no-bitwise-op-parentheses',
                 'no-parentheses-equality',
                 'no-return-stack-address',
