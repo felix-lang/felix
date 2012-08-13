@@ -38,9 +38,13 @@ let null_table = Hashtbl.create 3
 let add_inst syms bsym_table ref_insts1 (i,ts) =
   iter (fun t -> match t with 
     | BTYP_void -> 
-      print_endline ("Attempt to register instance " ^ si i ^ "[" ^
-      catmap ", " (sbt bsym_table) ts ^ "]");
-      failwith "Attempt to instantiate type variable with type void"
+      let sym = Flx_bsym_table.find bsym_table i in
+      let name = Flx_bsym.id sym in
+      print_endline ("Attempt to register instance " ^ name ^ ": " ^ si i ^ "[" ^
+      catmap ", " (sbt bsym_table) ts ^ "]")
+(*
+      ; failwith "Attempt to instantiate type variable with type void"
+*)
     | _ -> ()
     )
   ts;
@@ -55,6 +59,7 @@ let add_inst syms bsym_table ref_insts1 (i,ts) =
     print_endline ("remapped to instance " ^ si i ^ "[" ^
     catmap ", " (sbt bsym_table) ts ^ "]");
     *)
+  let ts = List.map (normalise_tuple_cons bsym_table) ts in
   let x = i, ts in
   let has_variables =
     fold_left
@@ -577,6 +582,7 @@ let instantiate syms bsym_table instps (root:bid_t) (bifaces:biface_t list) =
      have to be monomorphic anyhow
   *)
   let add_instance i ts =
+    let ts = List.map (normalise_tuple_cons bsym_table) ts in
     let n =
       match ts with
       | [] -> i

@@ -1,3 +1,27 @@
+class Tuple[U] {
+  virtual fun tuple_str (x:U) => str x;
+}
+
+instance[U,V with Str[U], Tuple[V]] Tuple[U ** V] {
+  fun tuple_str (x: U ** V) =>
+    match x with
+    | ?a ,, ?b => str a +", " + tuple_str b
+    endmatch
+  ;
+}
+
+instance[U,V with Str[U], Str[V]] Tuple[U * V] {
+  fun tuple_str (x: U * V) =>
+    match x with
+    | ?a , ?b => str a +", " + str b
+    endmatch
+  ;
+}
+
+instance [U, V with Tuple[U ** V]] Str[U ** V] {
+  fun str (x: U ** V) => "(" + tuple_str x +")";
+}
+
 // two components
 // string
 instance[T,U] Str[T*U] {
@@ -35,9 +59,11 @@ fun field[n,t,u where n==1] (a:t,b:u)=>b;
 //---------------------------------------------------------------------------------
 // three components
 // string
+/*
 instance[T,U,V] Str[T*U*V] {
   fun str (t:T, u:U, v:V) => "("+str t + ", " + str u + ", " + str v+")";
 }
+*/
 instance[T] Str[T*T*T] {
   fun str (t1:T, t2:T, t3:T) => "("+str t1 + ", " + str t2 + ", " + str t3+")";
 }
@@ -72,9 +98,11 @@ fun field[n,t,u,v where n==2] (a:t,b:u,c:v)=>c;
 //---------------------------------------------------------------------------------
 // four components
 // string
+/*
 instance[T,U,V,W] Str[T*U*V*W] {
   fun str (t:T, u:U, v:V, w:W) => "("+str t + ", " + str u + ", " + str v + ", " + str w+")";
 }
+*/
 instance[T] Str[T*T*T*T] {
   fun str (t1:T, t2:T, t3:T, t4:T) => "("+str t1 + ", " + str t2 + ", " + str t3 + ", " + str t4+")";
 }
@@ -111,11 +139,13 @@ fun field[n,t,u,v,w where n==3] (a:t,b:u,c:v,d:w)=>d;
 //---------------------------------------------------------------------------------
 // five components
 // string
+/*
 instance[T,U,V,W,X] Str[T*U*V*W*X] {
   fun str (t:T, u:U, v:V, w:W, x:X) => 
     "("+str t + ", " + str u + ", " + str v + ", " + str w+", "+ str x+")"
   ;
 }
+*/
 instance[T] Str[T*T*T*T*T] {
   fun str (t1:T, t2:T, t3:T, t4:T, t5:T) => 
     "("+str t1 + ", " + str t2 + ", " + str t3 + ", " + str t4+", "+str t5+")"

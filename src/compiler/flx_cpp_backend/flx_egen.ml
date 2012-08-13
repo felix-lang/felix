@@ -412,12 +412,12 @@ print_endline "gen_expr': BEXPR_get_n (first)";
     print_endline ("Tuple tail of expression " ^ sbe bsym_table x');
     print_endline ("Type " ^ sbt bsym_table t');
 *)
-    let t' = normalise_tuple_cons bsym_table t' in
+    let t'' = normalise_tuple_cons bsym_table t' in
 (*
     print_endline ("Normalised Type " ^ sbt bsym_table t');
     print_endline ("Tail Type " ^ sbt bsym_table t);
 *)
-    begin match t' with 
+    begin match t'' with 
     | BTYP_tuple ts -> 
       let unitsum = btyp_unitsum (List.length ts) in
       let counter = ref 0 in
@@ -432,7 +432,7 @@ print_endline "gen_expr': BEXPR_get_n (first)";
       let tail = match es with [x] -> x | es -> bexpr_tuple t es in
       ge' tail
     | _ -> 
-      print_endline "Expected tail to be tuple";
+      print_endline ("Expected tail to be tuple, got " ^ sbt bsym_table t' ^ " ->(normalised)-> " ^ sbt bsym_table t'');
       assert false
     end
 

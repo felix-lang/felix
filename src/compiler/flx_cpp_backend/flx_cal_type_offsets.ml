@@ -23,6 +23,7 @@ let unitsum bsym_table t =
  *)
 let rec get_offsets' syms bsym_table typ : string list =
   let tname = cpp_typename syms bsym_table typ in
+  let typ = normalise_tuple_cons bsym_table typ in
   let t' = unfold typ in
   match t' with
   | BTYP_tuple_cons _ -> assert false

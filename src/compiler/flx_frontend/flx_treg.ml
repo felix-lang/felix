@@ -13,6 +13,10 @@ open Flx_maps
 open Flx_beta
 
 let register_type_nr syms bsym_table t =
+let t = normalise_tuple_cons bsym_table t in
+(*
+print_endline ("Register type nr " ^ sbt bsym_table t);
+*)
   (*
   if t <> t' then print_endline ("UNREDUCED TYPE! " ^ sbt bsym_table t ^ " <> " ^ sbt bsym_table t');
   *)
@@ -60,6 +64,10 @@ let register_tuple syms bsym_table t =
   | _ -> assert false
 
 let rec register_type_r ui syms bsym_table exclude sr t =
+let t = normalise_tuple_cons bsym_table t in
+(*
+print_endline ("Register type r " ^ sbt bsym_table t);
+*)
   let t = beta_reduce "flx_treg: register_type" syms.Flx_mtypes2.counter bsym_table sr t in
   (*
   let sp = String.make (length exclude * 2) ' ' in
@@ -112,6 +120,7 @@ let rec register_type_r ui syms bsym_table exclude sr t =
     end
 
   | BTYP_tuple ps -> iter rr ps; rnr t
+  | BTYP_tuple_cons (t1,t2) ->  assert false
 
   | BTYP_record (n,ps) -> iter (fun (s,t)->rr t) ps; rnr t
   | BTYP_variant ps -> iter (fun (s,t)->rr t) ps; rnr t
@@ -209,11 +218,9 @@ let rec register_type_r ui syms bsym_table exclude sr t =
       )
     end
 
-  | _ ->  ()
-    (*
+  | _ ->  
     clierr sr
     (
       "Unexpected kind in register type: " ^
-      sbt sym_table t
+      sbt bsym_table t
     )
-    *)

@@ -67,11 +67,11 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
   );
   let src_str = string_of_bexe bsym_table 0 exe in
   let with_comments = syms.compiler_options.with_comments in
-  (*
+(*
   print_endline ("generating exe " ^ string_of_bexe bsym_table 0 exe);
   print_endline ("vs = " ^ catmap "," (fun (s,i) -> s ^ "->" ^ si i) vs);
   print_endline ("ts = " ^ catmap ","  (sbt bsym_table) ts);
-  *)
+*)
   let tsub t = beta_reduce "gen_exe" syms.Flx_mtypes2.counter bsym_table sr (tsubst vs ts t) in
   let ge = gen_expr syms bsym_table this vs ts in
   let ge' = gen_expr' syms bsym_table this vs ts in
@@ -815,7 +815,12 @@ print_endline ("Assign type = " ^ sbt bsym_table lhst ^ " lhs term = " ^ sbe bsy
             failwith ("[gen_exe] can't find index " ^ string_of_bid v)
         in
         begin match Flx_bsym.bbdcl bsym with
-        | BBDCL_val (_,_,kind) ->
+        | BBDCL_val (vs,vt,kind) ->
+(*
+print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
+print_endline ("init " ^ Flx_bsym.id bsym ^"< instno="^si instance_no^",this="^ si this^ ">:\nLHS type = "^
+      sbt bsym_table vt^ "\nRHS type = " ^ sbt bsym_table t ^ "\nLHS ts = " ^ catmap "," (sbt bsym_table) ts);
+*)
             (if with_comments then "      //"^src_str^"\n" else "") ^
             "      " ^
             begin match kind with

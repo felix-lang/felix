@@ -13,15 +13,27 @@ let unit_t = btyp_tuple []
 
 (* NOTE: this routine doesn't adjust fixpoints! Probably should! *)
 let normalise_tuple_cons bsym_table t = 
-  match t with
-  | BTYP_tuple_cons (t1, t2) ->
-    let rec aux t0 =
-      match t0 with
-      | BTYP_tuple ts -> ts
-      | BTYP_tuple_cons (t1,t2) -> t1 :: aux t2
-      | x -> [x] 
-    in btyp_tuple (t1::aux t2)
-  | t -> t
+  let rec nt t = 
+    match t with
+    | BTYP_tuple_cons (t1, t2) ->
+      let rec aux t0 =
+        match t0 with
+        | BTYP_tuple_cons (t1,t2) -> t1 :: aux t2
+        | BTYP_tuple ts -> ts
+        | BTYP_array (t, BTYP_unitsum n) ->
+          assert (n < 50);
+          let rec arr n ts = match n with 0 -> ts | _ -> arr (n-1) (t::ts) in
+          arr n []
+        | x -> [x] 
+      in nt (btyp_tuple (t1::aux t2))
+    | t -> Flx_btype.map ~f_btype:nt t
+  in 
+  let t' = nt t in
+(*
+  if t' <> t then
+    print_endline ("Normalise " ^ sbt bsym_table t ^ " --> " ^ sbt bsym_table t');
+*)
+  t'
 
 let rec dual t =
   match Flx_btype.map ~f_btype:dual t with
@@ -467,10 +479,9 @@ print_endline "Trying to unify instances (2)";
       | BTYP_tuple_cons (t0,ts), BTYP_tuple_cons (t0',ts') ->
         eqns := (t0,t0') :: (ts,ts'):: !eqns
 
-      | BTYP_tuple (t0::ts), BTYP_tuple_cons (t0',ts')
-      | BTYP_tuple_cons (t0',ts'), BTYP_tuple (t0::ts) ->
-        eqns := (t0,t0') :: (BTYP_tuple ts, ts') :: !eqns
-
+      | BTYP_tuple (t0::ts1::ts2::ts), BTYP_tuple_cons (t0',ts')
+      | BTYP_tuple_cons (t0',ts'), BTYP_tuple (t0::ts1::ts2::ts) ->
+        eqns := (t0,t0') :: (BTYP_tuple (ts1::ts2::ts), ts') :: !eqns
 
 (*
       (* T ^ N = T by setting N = 1 *)
