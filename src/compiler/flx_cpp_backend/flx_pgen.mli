@@ -12,6 +12,7 @@ val gen_prim_call :
   Flx_srcref.t ->
   Flx_srcref.t ->
   string ->
+  string ->
   Flx_ctypes.cexpr_t
 
 val shape_of:

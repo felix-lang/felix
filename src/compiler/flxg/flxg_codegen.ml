@@ -102,6 +102,7 @@ let codegen_bsyms
                     ["Error"]
                     ["Error"]
                     ["Error"]
+                    (Flx_bsym.id bsym)
             in
             let s = Flx_cexpr.sc "expr" s in
             if not (Hashtbl.mem insts s) then begin

@@ -16,6 +16,6 @@ val csubst:
   argshapes: string list             -> (* @n : value arg shape           *)
   display:   string list             -> (* @dn: first n types of display  *)
   gargshapes:string list             -> (* @?n: generic arg shape         *)
-
+  name:      string                  -> (* $0 : entity name in Felix      *)
 
   Flx_ctypes.cexpr_t

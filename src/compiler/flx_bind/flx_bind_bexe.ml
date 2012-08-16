@@ -441,6 +441,9 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
     ignore (do_unify state bsym_table state.ret_type t');
     state.ret_type <- varmap_subst (Flx_lookup_state.get_varmap state.lookup_state) state.ret_type;
     if type_match bsym_table state.counter state.ret_type t' then
+(*
+    if match maybe_matches bsym_table state.counter [state.ret_type, t'] with Some _ -> true | _ -> false then
+*)
       handle_bexe (bexe_fun_return (sr,(e',t'))) init
     else clierr sr
       (

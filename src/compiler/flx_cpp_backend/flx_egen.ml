@@ -699,6 +699,7 @@ print_endline ("make const ctor, union type = " ^ sbt bsym_table t' ^
             ~argshapes:["Error"] 
             ~display:["Error"] 
             ~gargshapes:["Error"]
+            ~name:(Flx_bsym.id bsym)
         end
 
       (* | BBDCL_fun (_,_,([s,(_,BTYP_void)],_),_,[BEXE_fun_return e]) -> *)
@@ -1264,6 +1265,7 @@ and gen_apply_prim
       failwith ("[gen_expr(apply instance)] Can't find index " ^
         string_of_bid index)
   in
+  let id = Flx_bsym.id bsym in
   match Flx_bsym.bbdcl bsym with
   | BBDCL_external_fun (_,vs,_,retyp,_,prec,kind) ->
       if length vs <> length ts then
@@ -1339,6 +1341,7 @@ and gen_apply_prim
             sr
             (Flx_bsym.sr bsym)
             prec
+            id
       | `Callback (_,_) ->
           assert (retyp <> btyp_void ());
           gen_prim_call
@@ -1353,6 +1356,7 @@ and gen_apply_prim
             sr
             (Flx_bsym.sr bsym)
             "atom"
+            id
       end
 
   (* but can't be a Felix function *)

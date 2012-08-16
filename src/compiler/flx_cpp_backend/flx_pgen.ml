@@ -100,7 +100,7 @@ let gen_prim_call
   ct
   ts
   (arg,argt as a)
-  ret sr sr2 prec
+  ret sr sr2 prec name
 =
   (*
   print_endline ("ct= "^ct);
@@ -171,6 +171,7 @@ let gen_prim_call
       ~argshapes:(shret::ashapes)
       ~display:["Error"] 
       ~gargshapes:gshapes
+      ~name:name
 
   (* the argument isnt a tuple, but the type is *)
   | (_,BTYP_tuple typs) as x ->
@@ -194,6 +195,7 @@ let gen_prim_call
       ~argshapes:(shret::(map sh typs))
       ~display:["Error"] 
       ~gargshapes:gshapes
+      ~name:name
 
   (* the argument isnt a tuple, but the type is an array *)
   | (_,(BTYP_array(t,BTYP_unitsum n) as ta)) as x ->
@@ -211,6 +213,7 @@ let gen_prim_call
       ~argshapes:(shret::map sh typs)
       ~display:["error"] 
       ~gargshapes:gshapes
+      ~name:name
 
   (* the argument isn't an explicit tuple, and the type
      is neither an array nor tuple
@@ -225,4 +228,6 @@ let gen_prim_call
     ~argshapes:(shret::[ashape])
     ~display:["Error"] 
     ~gargshapes:gshapes
+    ~name:name
+
 

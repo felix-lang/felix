@@ -227,6 +227,7 @@ let rec gen_type_name syms bsym_table (index,typ) =
            ~args:[] ~typs:[] ~argtyp:"Error" ~retyp:"Error" 
            ~gargs:tss 
            ~prec:"atom" ~argshape:"Error" ~argshapes:["Error"] ~display:["Error"] ~gargshapes:["Error"]
+           ~name:(Flx_bsym.id bsym)
           )
         with Not_found -> failwith "[gen_type_name] Unexpected error in csubst"
       in

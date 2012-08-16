@@ -7,6 +7,7 @@ open Flx_cexpr
 
 (* substitution encoding:
    $n: n'th component of argument tuple, 1 origin!
+   $0: the function (or other entity) name in Felix
    $a: expands to $1, $2, .. $n
    $b: expands to $2, .. $n
    `n: n'th component of argument tuple, reference kind
@@ -95,7 +96,7 @@ let is_atomic s =
 let islower = function | 'a' .. 'z' -> true | _ -> false
 
 let csubst sr sr2 ct 
-  ~arg ~(args:cexpr_t list) ~typs ~argtyp ~retyp ~gargs ~prec ~argshape ~argshapes ~display ~gargshapes
+  ~arg ~(args:cexpr_t list) ~typs ~argtyp ~retyp ~gargs ~prec ~argshape ~argshapes ~display ~gargshapes ~name
 =
   if ct = "" then clierr2 sr sr2 "Blank C data";
   (*
@@ -302,6 +303,11 @@ let csubst sr sr2 ct
         if !digits> List.length args
         then serr i
           ("Parameter $" ^ string_of_int !digits ^ " > number of arguments, only got " ^ si (length args))
+        else if !digits = 0 then begin
+          bcat name; 
+          mode := Normal;
+          trans i ch
+        end
         else if !digits<=0 then serr i ("Negative $" ^ string_of_int !digits)
         else begin
           let s' = nth args (!digits-1) in

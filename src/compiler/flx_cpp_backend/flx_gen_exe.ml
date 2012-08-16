@@ -254,7 +254,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
           clierr2 (Flx_bexe.get_srcref exe) (Flx_bsym.sr bsym) ("Instantiate virtual procedure(1) " ^ Flx_bsym.id bsym) ;
       | CS.Str s -> ws (ce_expr "expr" s)
       | CS.Str_template s ->
-        let ss = gen_prim_call syms bsym_table tsub ge' s ts a (Flx_btype.btyp_none()) sr (Flx_bsym.sr bsym) "atom"  in
+        let ss = gen_prim_call syms bsym_table tsub ge' s ts a (Flx_btype.btyp_none()) sr (Flx_bsym.sr bsym) "atom"  (Flx_bsym.id bsym) in
         ws ss
       end
 
@@ -278,7 +278,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
           clierr2 (Flx_bexe.get_srcref exe) (Flx_bsym.sr bsym) ("Instantiate virtual procedure(1) " ^ Flx_bsym.id bsym) ;
       | CS.Str s -> ws (ce_expr "expr" s)
       | CS.Str_template s ->
-        let ss = gen_prim_call syms bsym_table tsub ge' s ts a (Flx_btype.btyp_none()) sr (Flx_bsym.sr bsym) "atom"  in
+        let ss = gen_prim_call syms bsym_table tsub ge' s ts a (Flx_btype.btyp_none()) sr (Flx_bsym.sr bsym) "atom" (Flx_bsym.id bsym) in
         ws ss
       end
 
@@ -290,7 +290,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
       ;
       let s = Flx_bsym.id bsym ^ "($a);" in
       let s =
-        gen_prim_call syms bsym_table tsub ge' s ts a (Flx_btype.btyp_none()) sr (Flx_bsym.sr bsym) "atom"
+        gen_prim_call syms bsym_table tsub ge' s ts a (Flx_btype.btyp_none()) sr (Flx_bsym.sr bsym) "atom" (Flx_bsym.id bsym)
       in
       let s = sc "expr" s in
       (if with_comments then "      // " ^ src_str ^ "\n" else "") ^
