@@ -1857,6 +1857,8 @@ and cal_apply state bsym_table sr rs ((be1,t1) as tbe1) ((be2,t2) as tbe2) =
   r
 
 and cal_apply' state bsym_table be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) =
+  let t1 = normalise_tuple_cons bsym_table t1 in
+  let t2 = normalise_tuple_cons bsym_table t2 in
   let rest,reorder =
     match unfold t1 with
     | BTYP_function (argt,rest)

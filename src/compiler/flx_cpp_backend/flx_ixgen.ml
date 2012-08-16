@@ -119,10 +119,21 @@ print_endline ("Final index is " ^ print_index bsym_table ix);
     expr e
 
   | e, BTYP_sum ts ->
-print_endline ("Decomposing index of sum type " ^ sbe bsym_table e);
+print_endline ("xDecomposing index of sum type " ^ sbe bsym_table e);
      let e' = expr e in
+     (* top level case number is e mod ncases .. ? WRONG? That puts the
+        top level selector last instead of first! So if we join two arrays,
+        sequential indexing would alternate between the arrays, instead
+        of scanning one, then the other.
+
+        I'm being too smart! The expression "would be" the correct value
+        were the array coerced to a linear form.
+     *)
+     (*
      let caseno = modu e' (`Int (List.length ts)) in
      add (`Case_offset (ts, caseno)) (switch ts e')
+     *)
+     e'
 
   | e,BTYP_tuple [] -> `Int 0 
 

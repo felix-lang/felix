@@ -1,3 +1,7 @@
+//------------------------------------------------------------------------------
+// Class Str: convert to string
+
+// Tuple class for inner tuple listing
 class Tuple[U] {
   virtual fun tuple_str (x:U) => str x;
 }
@@ -18,42 +22,53 @@ instance[U,V with Str[U], Str[V]] Tuple[U * V] {
   ;
 }
 
+// actual Str class impl.
 instance [U, V with Tuple[U ** V]] Str[U ** V] {
   fun str (x: U ** V) => "(" + tuple_str x +")";
 }
 
-instance [T,U with Eq[T], Eq[U]] Eq[T ** U] {
-  fun == : (T ** U) * (T ** U) -> bool =
-  | (?ah ,, ?at) , (?bh ,, ?bt) => ah == bh and at == bt;
-  ;
-}
-
-instance [T,U with Tord[T], Tord[U]] Tord[T ** U] {
-  fun < : (T ** U) * (T ** U) -> bool =
-  | (?ah ,, ?at) , (?bh ,, ?bt) => ah < bh or ah == bh and at < bt;
-  ;
-}
-
-// two components
-// string
 instance[T,U] Str[T*U] {
    fun str (t:T, u:U) => "("+str t + ", " + str u+")";
 }
 instance[T] Str[T*T] {
    fun str (t1:T, t2:T) => "("+str t1 + ", " + str t2+")";
 }
-// equality
+
+open[U, V with Tuple[U **V]] Str [U**V];
+open[U, V with Str[U], Str[V]] Str [U*V];
+
+
+//------------------------------------------------------------------------------
+// Class Eq: Equality
+instance [T,U with Eq[T], Eq[U]] Eq[T ** U] {
+  fun == : (T ** U) * (T ** U) -> bool =
+  | (?ah ,, ?at) , (?bh ,, ?bt) => ah == bh and at == bt;
+  ;
+}
+
 instance[t,u with Eq[t],Eq[u]] Eq[t*u] {
   fun == : (t * u) * (t * u) -> bool =
   | (?x1,?y1),(?x2,?y2) => x1==x2 and y1 == y2
   ;
 }
+
 instance[t with Eq[t]] Eq[t*t] {
   fun == : (t * t) * (t * t) -> bool =
   | (?x1,?y1),(?x2,?y2) => x1==x2 and y1 == y2
   ;
 }
-// total order
+
+open[U,V with Eq[U], Eq[V]] Eq[U ** V];
+open[U,V with Eq[U], Eq[V]] Eq[U * V];
+
+//------------------------------------------------------------------------------
+// Class Tord: Total Order
+instance [T,U with Tord[T], Tord[U]] Tord[T ** U] {
+  fun < : (T ** U) * (T ** U) -> bool =
+  | (?ah ,, ?at) , (?bh ,, ?bt) => ah < bh or ah == bh and at < bt;
+  ;
+}
+
 instance[t,u with Tord[t],Tord[u]] Tord[t*u] {
   fun < : (t * u) * (t * u) -> bool =
   | (?x1,?y1),(?x2,?y2) => x1 < x2 or x1 == x2 and y1 < y2
@@ -64,149 +79,23 @@ instance[t with Tord[t]] Tord[t*t] {
   | (?x1,?y1),(?x2,?y2) => x1 < x2 or x1 == x2 and y1 < y2
   ;
 }
-open[t,u with Tord[t], Tord[u]] Tord[t*u];
+open [T,U with Tord[T], Tord[U]] Tord[T ** U];
+open [T,U with Tord[T], Tord[U]] Tord[T * U];
+
+//------------------------------------------------------------------------------
+// Generic Field access
 fun field[n,t,u where n==0] (a:t,b:u)=>a;
 fun field[n,t,u where n==1] (a:t,b:u)=>b;
 
-//---------------------------------------------------------------------------------
-// three components
-// string
-/*
-instance[T,U,V] Str[T*U*V] {
-  fun str (t:T, u:U, v:V) => "("+str t + ", " + str u + ", " + str v+")";
-}
-*/
-/*
-instance[T] Str[T*T*T] {
-  fun str (t1:T, t2:T, t3:T) => "("+str t1 + ", " + str t2 + ", " + str t3+")";
-}
-*/
-// equality
-/*
-instance[t,u,v with Eq[t], Eq[u], Eq[v]] Eq[t*u*v] {
-  fun == : (t * u * v) * (t * u * v) -> bool =
-  | (?x1,?y1,?z1),(?x2,?y2,?z2) => x1==x2 and y1 == y2 and z1 == z2
-  ;
-}
-*/
-instance[t with Eq[t]] Eq[t*t*t] {
-  fun == : (t * t * t) * (t * t * t) -> bool =
-  | (?x1,?y1,?z1),(?x2,?y2,?z2) => x1==x2 and y1 == y2 and z1 == z2
-  ;
-}
-// total order
-/*
-instance[t,u,v with Tord[t],Tord[u],Tord[v]] Tord[t*u*v] {
-  fun < : (t * u * v) * (t * u * v) -> bool =
-  | (?x1,?y1,?z1),(?x2,?y2,?z2) => x1 <= x2 and y1 <= y2 and z1 < z2
-  ;
-}
-*/
-
-instance[t with Tord[t]] Tord[t*t*t] {
-  fun < : (t * t * t) * (t * t * t) -> bool =
-  | (?x1,?y1,?z1),(?x2,?y2,?z2) => x1 <= x2 and y1 <= y2 and z1 < z2
-  ;
-}
-open[t,u,v with Tord[t], Tord[u], Tord[v]] Tord[t*u*v];
 fun field[n,t,u,v where n==0] (a:t,b:u,c:v)=>a;
 fun field[n,t,u,v where n==1] (a:t,b:u,c:v)=>b;
 fun field[n,t,u,v where n==2] (a:t,b:u,c:v)=>c;
 
-
-//---------------------------------------------------------------------------------
-// four components
-// string
-/*
-instance[T,U,V,W] Str[T*U*V*W] {
-  fun str (t:T, u:U, v:V, w:W) => "("+str t + ", " + str u + ", " + str v + ", " + str w+")";
-}
-*/
-/*
-instance[T] Str[T*T*T*T] {
-  fun str (t1:T, t2:T, t3:T, t4:T) => "("+str t1 + ", " + str t2 + ", " + str t3 + ", " + str t4+")";
-}
-*/
-// equality
-/*
-instance[t,u,v,w with Eq[t], Eq[u], Eq[v], Eq[w]] Eq[t*u*v*w] {
-  fun == : (t * u * v * w) * (t * u * v * w) -> bool =
-  | (?x1,?y1,?z1,?a1),(?x2,?y2,?z2,?a2) => x1==x2 and y1 == y2 and z1 == z2 and a1 == a2
-  ;
-}
-*/
-instance[t with Eq[t]] Eq[t*t*t*t] {
-  fun == : (t * t * t * t) * (t * t * t * t) -> bool =
-  | (?x1,?y1,?z1,?a1),(?x2,?y2,?z2,?a2) => x1==x2 and y1 == y2 and z1 == z2 and a1 == a2
-  ;
-}
-// total order
-/*
-instance[t,u,v,w with Tord[t],Tord[u],Tord[v],Tord[w]] Tord[t*u*v*w] {
-  fun < : (t * u * v *w) * (t * u * v * w) -> bool =
-  | (?x1,?y1,?z1,?a1),(?x2,?y2,?z2,?a2) => x1 <= x2 and y1 <= y2 and z1 <= z2 and a1 < a2
-  ;
-}
-*/
-instance[t with Tord[t]] Tord[t*t*t*t] {
-  fun < : (t * t * t * t) * (t * t * t * t) -> bool =
-  | (?x1,?y1,?z1,?a1),(?x2,?y2,?z2,?a2) => x1 <= x2 and y1 <= y2 and z1 <= z2 and a1 < a2
-  ;
-}
-open[t,u,v,w with Tord[t], Tord[u], Tord[v], Tord[w]] Tord[t*u*v*w];
 fun field[n,t,u,v,w where n==0] (a:t,b:u,c:v,d:w)=>a;
 fun field[n,t,u,v,w where n==1] (a:t,b:u,c:v,d:w)=>b;
 fun field[n,t,u,v,w where n==2] (a:t,b:u,c:v,d:w)=>c;
 fun field[n,t,u,v,w where n==3] (a:t,b:u,c:v,d:w)=>d;
 
-
-
-//---------------------------------------------------------------------------------
-// five components
-// string
-/*
-instance[T,U,V,W,X] Str[T*U*V*W*X] {
-  fun str (t:T, u:U, v:V, w:W, x:X) => 
-    "("+str t + ", " + str u + ", " + str v + ", " + str w+", "+ str x+")"
-  ;
-}
-*/
-/*
-instance[T] Str[T*T*T*T*T] {
-  fun str (t1:T, t2:T, t3:T, t4:T, t5:T) => 
-    "("+str t1 + ", " + str t2 + ", " + str t3 + ", " + str t4+", "+str t5+")"
-  ;
-}
-*/
-// equality
-/*
-instance[t,u,v,w,x with Eq[t], Eq[u], Eq[v], Eq[w], Eq[x]] Eq[t*u*v*w*x] {
-  fun == : (t * u * v * w *x) * (t * u * v * w * x) -> bool =
-  | (?x1,?y1,?z1,?a1,?b1),(?x2,?y2,?z2,?a2,?b2) => 
-    x1==x2 and y1 == y2 and z1 == z2 and a1 == a2 and b1 == b2;
-  ;
-}
-*/
-instance[t with Eq[t]] Eq[t*t*t*t*t] {
-  fun == : (t * t * t * t *t) * (t * t * t * t * t) -> bool =
-  | (?x1,?y1,?z1,?a1,?b1),(?x2,?y2,?z2,?a2,?b2) => 
-    x1==x2 and y1 == y2 and z1 == z2 and a1 == a2 and b1 == b2;
-  ;
-}
-// total order
-/*
-instance[t,u,v,w,x with Tord[t],Tord[u],Tord[v],Tord[w],Tord[x]] Tord[t*u*v*w*x] {
-  fun < : (t * u * v * w * x) * (t * u * v * w * x) -> bool =
-  | (?x1,?y1,?z1,?a1,?b1),(?x2,?y2,?z2,?a2,?b2) => x1 <= x2 and y1 <= y2 and z1 <= z2 and a1 <= a2 and b1 < b2
-  ;
-}
-*/
-instance[t with Tord[t]] Tord[t*t*t*t*t] {
-  fun < : (t * t * t * t *t) * (t * t * t * t * t) -> bool =
-  | (?x1,?y1,?z1,?a1,?b1),(?x2,?y2,?z2,?a2,?b2) => x1 <= x2 and y1 <= y2 and z1 <= z2 and a1 <= a2 and b1 < b2
-  ;
-}
-open[t,u,v,w,x with Tord[t], Tord[u], Tord[v], Tord[w], Tord[x]] Tord[t*u*v*w*x];
 fun field[n,t,u,v,w,x where n==0] (a:t,b:u,c:v,d:w,e:x)=>a;
 fun field[n,t,u,v,w,x where n==1] (a:t,b:u,c:v,d:w,e:x)=>b;
 fun field[n,t,u,v,w,x where n==2] (a:t,b:u,c:v,d:w,e:x)=>c;

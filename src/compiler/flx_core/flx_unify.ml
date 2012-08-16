@@ -466,9 +466,10 @@ print_endline "Trying to unify instances (2)";
             s := None
         end
 
+(*
       | BTYP_fix (0,_),_
       | _,BTYP_fix (0,_) -> ()
-
+*)
       | BTYP_fix (i,t1),BTYP_fix (j,t2) ->
         if i <> j then raise Not_found;
         if t1 <> t2 then print_endline "unification: fix points at same level with unequal metatypes!";
@@ -741,8 +742,10 @@ let rec type_eq' bsym_table counter ltrail ldepth rtrail rdepth trail t1 t2 =
     result
 
 
+(*
   | BTYP_fix (0,BTYP_type 0),_ 
   | _,BTYP_fix (0,BTYP_type 0) -> true
+*)
 
   | BTYP_fix (i,t1),BTYP_fix (j,t2) ->
     (*
