@@ -104,7 +104,6 @@ let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
   | BEXPR_match_case (_,e)
   | BEXPR_case_arg (_,e)
   | BEXPR_case_index e
-  | BEXPR_tuple_tail e
     -> ue e
 
   | BEXPR_apply_prim (index,ts,a)
@@ -165,6 +164,11 @@ let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
   | BEXPR_tuple es ->
     iter ue es;
     register_tuple syms bsym_table (vs t)
+
+  | BEXPR_tuple_tail e ->
+    ue e;
+    register_tuple syms bsym_table (vs t) (* NOTE: this is the type of the tail! *)
+
 
   | BEXPR_record es ->
     let ss,es = split es in
