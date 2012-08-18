@@ -15,8 +15,12 @@ syntax patterns {
   spattern := sas_pattern "when" sexpr =># "`(pat_when ,_sr ,_1 ,_3)";
   spattern := sas_pattern =># "_1";
 
-  sas_pattern := stuple_cons_pattern "as" sname =># "`(pat_as ,_sr ,_1 ,_3)";
-  sas_pattern := stuple_cons_pattern =># "_1";
+  sas_pattern := scons_pattern "as" sname =># "`(pat_as ,_sr ,_1 ,_3)";
+  sas_pattern := scons_pattern =># "_1";
+
+  scons_pattern := stuple_cons_pattern ":" scons_pattern =>#
+    '''`(pat_nonconst_ctor ,_sr ,(nos "Cons") (pat_tuple ,_sr (,_1 ,_3)))''';
+  scons_pattern := stuple_cons_pattern =># "_1";
 
   stuple_cons_pattern := stuple_pattern ",," stuple_pattern =>#
     "`(pat_tuple_cons ,_sr ,_1 ,_3)";
