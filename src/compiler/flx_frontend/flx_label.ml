@@ -11,7 +11,7 @@ open Flx_print
 type label_map_t =
   (bid_t, (string, bid_t) Hashtbl.t) Hashtbl.t
 
-type label_kind_t = [`Far | `Near | `Unused]
+type label_kind_t = [`Far | `Near | `Unused ]
 
 type label_usage_t = (bid_t, label_kind_t) Hashtbl.t
 
@@ -27,10 +27,11 @@ let get_labels counter exes =
   List.iter
     (fun exe -> match exe with
       | BEXE_label (_,s) ->
-        (*
-        print_endline ("Label " ^ s);
-        *)
-        Hashtbl.add labels s (fresh_bid counter)
+        let bid = fresh_bid counter in 
+(*
+        print_endline ("    Add Label " ^ s ^ " = " ^ si bid);
+*)
+        Hashtbl.add labels s bid
       | _ -> ()
     )
     exes
@@ -40,6 +41,9 @@ let get_labels counter exes =
 let update_label_map counter label_map index bsym =
   match Flx_bsym.bbdcl bsym with
   | BBDCL_fun (_,_,_,_,exes) ->
+(*
+print_endline ("Create label map for " ^ si index ^ " " ^ Flx_bsym.id bsym);
+*)
       Hashtbl.add label_map index (get_labels counter exes)
   | _ -> ()
 
@@ -77,14 +81,14 @@ let create_label_map bsym_table counter =
   control pointers (a goto is basically a control pointer).
 *)
 let rec find_label bsym_table label_map caller label =
-  let labels = Hashtbl.find label_map caller in
+  let labels = try Hashtbl.find label_map caller with Not_found -> 
+print_endline ("Cannot find label map for caller " ^ si caller ^ " to find label " ^ label);
+    assert false 
+  in
   try `Local (Hashtbl.find labels label)
   with Not_found ->
   let bsym_parent, bsym = Flx_bsym_table.find_with_parent bsym_table caller in
   match Flx_bsym.bbdcl bsym with
-(*
-  | BBDCL_fun (_,_,_,Flx_btype.BTYP_void,_) ->
-*)
   | BBDCL_fun (_,_,_,_,_) -> 
       begin match bsym_parent with
       | None -> `Unreachable
@@ -94,36 +98,52 @@ let rec find_label bsym_table label_map caller label =
           | x -> x
           end
       end
-(*
-  | BBDCL_fun (_,_,_,_,_) -> `Unreachable
-*)
   | _ -> assert false
 
 let get_label_kind_from_index usage lix =
   try Hashtbl.find usage lix with Not_found -> `Unused
 
 let get_label_kind label_map usage_map proc label =
-  let labels = Hashtbl.find label_map proc in
-  let lix = Hashtbl.find labels label in
-  get_label_kind_from_index usage_map lix
-
+(*
+print_endline ("Get labal kind of " ^ label ^ " in proc " ^ si 0);
+*)
+  let labels = try Hashtbl.find label_map proc with Not_found -> assert false in
+  try
+    let lix = Hashtbl.find labels label in
+    get_label_kind_from_index usage_map lix
+  with 
+    Not_found -> assert false
 
 let cal_usage bsym_table label_map caller exes usage =
+(*
+print_endline ("Scanning exes of procedure " ^ si caller);
+*)
   iter
   (function
     | BEXE_goto (sr,label)
     | BEXE_ifgoto (sr,_,label) ->
-      begin match find_label bsym_table label_map caller label with
+(*
+      print_endline ("goto Label " ^ label ^ " loc= .. ");
+*)
+      let label_loc = find_label bsym_table label_map caller label in
+      begin match label_loc with
       | `Unreachable ->
+print_endline "Unreachable or not found";
         syserr sr ("[flx_label] Caller " ^ string_of_bid caller ^
-          " Jump to unreachable label " ^ label ^ "\n" ^
+          " Jump to unreachable or non-existant label " ^ label ^ "\n" ^
           (catmap "\n" (string_of_bexe bsym_table 2) exes))
       | `Local lix ->
+(*
+print_endline ("Local label " ^ si lix);
+*)
         begin match get_label_kind_from_index usage lix with
         | `Unused -> Hashtbl.replace usage lix `Near
         | `Near | `Far -> ()
         end
       | `Nonlocal (lix,_) ->
+(*
+print_endline "Non-Local";
+*)
         begin match get_label_kind_from_index usage lix with
         | `Unused | `Near -> Hashtbl.replace usage lix `Far
         | `Far -> ()
@@ -136,6 +156,9 @@ let cal_usage bsym_table label_map caller exes usage =
 let update_label_usage bsym_table label_map usage index bsym =
   match Flx_bsym.bbdcl bsym with
   | BBDCL_fun (_,_,_,_,exes) ->
+(*
+print_endline ("Update label usage of " ^ si index ^ " " ^ Flx_bsym.id bsym);
+*)
       cal_usage bsym_table label_map index exes usage
   | _ -> ()
 
@@ -147,3 +170,5 @@ let create_label_usage bsym_table label_map =
   end bsym_table;
 
   usage
+
+

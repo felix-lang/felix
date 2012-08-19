@@ -65,7 +65,10 @@ let cal_props = function
   | `Virtual -> `Virtual::[]
   | _ -> []
 
-let mkcurry seq sr name (vs:vs_list_t) (args:params_t list) return_type (kind:funkind_t) body props =
+let mkcurry seq sr (name:string) (vs:vs_list_t) (args:params_t list) return_type (kind:funkind_t) body props =
+(*
+print_endline ("MK CURRY " ^ name);
+*)
   let vs, tcon = vs in
   let return_type, postcondition = return_type in
   let vss',(args:params_t list)= List.split (List.map (fix_params sr seq) args) in
@@ -87,7 +90,7 @@ let mkcurry seq sr name (vs:vs_list_t) (args:params_t list) return_type (kind:fu
   let isobject = kind = `Object in
   let rec aux (args:params_t list) (vs:vs_list_t) props =
     let n = List.length args in
-    let name n =
+    let synthname n =
       if n = arity
       then name
       else name^"'" ^ si (arity-n+1)
@@ -96,7 +99,15 @@ let mkcurry seq sr name (vs:vs_list_t) (args:params_t list) return_type (kind:fu
     | [] ->
         begin match return_type with
         | TYP_void _ ->
-          STMT_function (sr, name n, vs, ([],None), (return_type,postcondition), props, body)
+          let body = 
+            let reved = List.rev body in
+            List.rev (STMT_label (sr,"_endof_" ^ synthname n) ::
+              match reved with
+              | STMT_proc_return _ :: _ ->  reved
+              | _ -> STMT_proc_return sr :: reved
+            )
+          in
+          STMT_function (sr, synthname n, vs, ([],None), (return_type,postcondition), props, body)
         | _ ->
           (* allow functions with no arguments now .. *)
           begin match body with
@@ -105,7 +116,7 @@ let mkcurry seq sr name (vs:vs_list_t) (args:params_t list) return_type (kind:fu
             | TYP_none -> None
             | x -> Some x
             in
-            STMT_lazy_decl (sr, name n, vs, rt, Some e)
+            STMT_lazy_decl (sr, synthname n, vs, rt, Some e)
           | _ ->
           clierr sr "Function with no arguments"
           end
@@ -134,9 +145,23 @@ let mkcurry seq sr name (vs:vs_list_t) (args:params_t list) return_type (kind:fu
         let record = EXPR_record (sr, List.map mkfield (!methods)) in
         let retstatement = STMT_fun_return (sr, record) in
         let object_body = List.rev (retstatement :: List.rev body) in
-        STMT_function (sr, name n, vs, h, (return_type,postcondition), props, object_body)
-      end else
-        STMT_function (sr, name n, vs, h, (return_type,postcondition), props, body)
+        STMT_function (sr, synthname n, vs, h, (return_type,postcondition), props, object_body)
+      end else 
+        let body = 
+          match return_type with 
+          | TYP_void _  ->
+(*
+            print_endline ("(args) Name = " ^ name ^ "synthname n = " ^ synthname n);
+*)
+            let reved = List.rev body in
+            List.rev (STMT_label (sr,"_endof_" ^ synthname n) ::
+              match reved with
+              | STMT_proc_return _ :: _ ->  reved
+              | _ -> STMT_proc_return sr :: reved
+            )
+          | _ -> body
+        in
+        STMT_function (sr, synthname n, vs, h, (return_type,postcondition), props, body)
     | h :: t ->
       let argt =
         let hdt = List.hd t in
@@ -154,13 +179,13 @@ let mkcurry seq sr name (vs:vs_list_t) (args:params_t list) return_type (kind:fu
             (
               sr,
               (
-                `AST_name (sr,name (m-1),[]),argt
+                `AST_name (sr,synthname (m-1),[]),argt
               )
             )
           )
         ]
       in
-        STMT_function (sr, name m, vs, h, (rettype t,None), `Generated "curry"::props, body)
+        STMT_function (sr, synthname m, vs, h, (rettype t,None), `Generated "curry"::props, body)
    in aux args vs (cal_props kind @ props)
 
 (* split lambdas out. Each lambda is replaced by a
