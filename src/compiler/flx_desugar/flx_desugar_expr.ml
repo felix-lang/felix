@@ -56,11 +56,6 @@ let fix_params sr seq (ps:params_t):plain_vs_list_t * params_t =
   let vs,ps = aux ps in
   vs,(ps,traint)
 
-let arglist x =
-  match x with
-  | EXPR_tuple (_,ts) -> ts
-  | _ -> [x]
-
 let cal_props = function
   | `CFunction -> `Cfun::[]
   | `InlineFunction -> `Inline::[]
@@ -167,31 +162,6 @@ let mkcurry seq sr name (vs:vs_list_t) (args:params_t list) return_type (kind:fu
       in
         STMT_function (sr, name m, vs, h, (rettype t,None), `Generated "curry"::props, body)
    in aux args vs (cal_props kind @ props)
-
-(* model binary operator as procedure call *)
-let assign sr op l r =
-  match op with
-  | "_set" -> 
-    (* Note: I don't think this special case gets triggered,
-       because deref is usually handled by a library function
-    *)
-    let nul = match l with 
-    | EXPR_deref _ -> l 
-    | _ -> EXPR_deref (sr, (EXPR_ref (sr,l))) 
-    in 
-    STMT_cassign (sr,nul,r)
-  | "_pset" -> 
-    let deref = EXPR_name (sr, "deref", []) in
-    let deref_l = EXPR_apply (sr, (deref, l)) in
-    STMT_cassign (sr,deref_l,r)
-    (* STMT_cassign (sr,EXPR_deref (sr,l),r) *)
-  | _ ->
-  STMT_call
-  (
-    sr,
-    EXPR_name (sr, op,[]),
-    EXPR_tuple (sr, [EXPR_ref (sr,l); r])
-  )
 
 (* split lambdas out. Each lambda is replaced by a
    reference to a synthesised name in the original
@@ -596,23 +566,4 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
 
 (* remove blocks *)
 (* parent vs is containing module vs .. only for modules *)
-
-and merge_vs
-  (vs1,{raw_type_constraint=con1; raw_typeclass_reqs=rtcr1})
-  (vs2,{raw_type_constraint=con2; raw_typeclass_reqs=rtcr2})
-:vs_list_t =
-  let t =
-    match con1,con2 with
-    | TYP_tuple[],TYP_tuple[] -> TYP_tuple[]
-    | TYP_tuple[],b -> b
-    | a,TYP_tuple[] -> a
-    | TYP_intersect a, TYP_intersect b -> TYP_intersect (a@b)
-    | TYP_intersect a, b -> TYP_intersect (a @[b])
-    | a,TYP_intersect b -> TYP_intersect (a::b)
-    | a,b -> TYP_intersect [a;b]
-  and
-    rtcr = uniq_list (rtcr1 @ rtcr2)
-  in
-  vs1 @ vs2,
-  { raw_type_constraint=t; raw_typeclass_reqs=rtcr}
 
