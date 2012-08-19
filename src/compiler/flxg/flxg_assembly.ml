@@ -125,7 +125,7 @@ let assemble state parser_state exclusions module_name input =
 
       (* Desugar the parse tree, and also return list of include strings. *)
       let include_files, asms =
-        let desugar_state = Flx_desugar.make_desugar_state
+        let desugar_state = Flx_desugar_expr.make_desugar_state
           module_name
           fresh_bid
         in
