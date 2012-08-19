@@ -77,7 +77,7 @@ syntax expressions {
   x[sas_expr_pri] := x[sas_expr_pri] "as" sname =># "`(ast_as ,_sr (,_1 ,_3))";
 
   // right arrows: RIGHT ASSOCIATIVE!
-  x[sarrow_pri] := x[scase_literal_pri] ":" x[sarrow_pri] =># '''`(ast_apply ,_sr (,(nos "Cons") (,_1 ,_3)))''';
+  x[sarrow_pri] := x[scase_literal_pri] "!" x[sarrow_pri] =># '''`(ast_apply ,_sr (,(nos "Cons") (,_1 ,_3)))''';
   x[sarrow_pri] := x[scase_literal_pri] "->" x[sarrow_pri] =># "`(ast_arrow (,_1 ,_3))";
   x[sarrow_pri] := x[scase_literal_pri] "-->" x[sarrow_pri] =># "`(ast_longarrow (,_1 ,_3))";
 

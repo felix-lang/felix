@@ -18,7 +18,7 @@ syntax patterns {
   sas_pattern := scons_pattern "as" sname =># "`(pat_as ,_sr ,_1 ,_3)";
   sas_pattern := scons_pattern =># "_1";
 
-  scons_pattern := stuple_cons_pattern ":" scons_pattern =>#
+  scons_pattern := stuple_cons_pattern "!" scons_pattern =>#
     '''`(pat_nonconst_ctor ,_sr ,(nos "Cons") (pat_tuple ,_sr (,_1 ,_3)))''';
   scons_pattern := stuple_cons_pattern =># "_1";
 
