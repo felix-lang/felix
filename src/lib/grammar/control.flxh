@@ -6,6 +6,10 @@ syntax control
   // procedure return
   tstatement := "return" ";" =># "`(ast_proc_return ,_sr)";
 
+  // fast procedure return
+  tstatement := "return" "from" sname ";" =># "`(ast_proc_return_from ,_sr ,_3)";
+
+
   // procedure explicit tail call
   tstatement := "jump" sexpr ";" =># """(cons 'ast_jump (cons _sr (splitapply _2)))""";
 

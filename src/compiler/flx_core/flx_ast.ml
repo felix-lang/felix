@@ -482,6 +482,7 @@ and statement_t =
   | STMT_fun_return of Flx_srcref.t * expr_t
   | STMT_yield of Flx_srcref.t * expr_t
   | STMT_proc_return of Flx_srcref.t
+  | STMT_proc_return_from of Flx_srcref.t * string
   | STMT_halt of Flx_srcref.t  * string
   | STMT_trace of Flx_srcref.t  * Flx_id.t * string
   | STMT_nop of Flx_srcref.t * string
@@ -573,6 +574,7 @@ type exe_t =
   | EXE_try 
   | EXE_endtry
   | EXE_catch of Flx_id.t * typecode_t
+  | EXE_proc_return_from of string
 
 type sexe_t = Flx_srcref.t * exe_t
 
@@ -735,6 +737,7 @@ let src_of_stmt (e : statement_t) = match e with
   | STMT_fun_return (s,_)
   | STMT_yield (s,_)
   | STMT_proc_return s
+  | STMT_proc_return_from  (s,_)
   | STMT_halt (s,_)
   | STMT_trace (s,_,_)
   | STMT_ifgoto (s,_,_)

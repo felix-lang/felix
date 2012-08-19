@@ -660,6 +660,7 @@ and xstatement_t sr x : statement_t =
 
   | Lst [Id "ast_yield"; sr; e] -> STMT_yield(xsr sr,ex' sr e)
   | Lst [Id "ast_proc_return"; sr]  -> STMT_proc_return(xsr sr)
+  | Lst [Id "ast_proc_return_from"; sr; id]  -> STMT_proc_return_from(xsr sr, xid id)
   | Lst [Id "ast_halt"; sr; Str s] -> STMT_halt(xsr sr, s)
   | Lst [Id "ast_trace"; sr; id; Str s] -> STMT_trace (xsr sr, xid id, s)
   | Lst [Id "ast_nop"; sr; Str s] -> STMT_nop(xsr sr,s)

@@ -774,6 +774,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
 
   | STMT_svc (sr, id) ->  ctack (STMT_svc (sr, mi sr id))
   | STMT_proc_return (sr)  ->  ctack st; reachable := false
+  | STMT_proc_return_from (sr,s)  ->  ctack st; reachable := false
   | STMT_halt (sr,s)  ->  ctack st; reachable := false
   | STMT_trace (sr,v,s)  ->  ctack st
   | STMT_nop (sr, s) ->  ()

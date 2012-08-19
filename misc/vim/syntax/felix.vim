@@ -127,6 +127,7 @@ syn keyword felixStatement ref
 syn keyword felixStatement rename
 syn keyword felixStatement requires
 syn keyword felixStatement return
+syn keyword felixStatement from
 syn keyword felixStatement SCHEME
 syn keyword felixStatement syntax
 syn keyword felixStatement literal

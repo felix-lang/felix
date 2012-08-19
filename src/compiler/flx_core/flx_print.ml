@@ -1453,6 +1453,10 @@ and string_of_statement level s =
   | STMT_proc_return _ ->
     spaces level ^ "return;"
 
+  | STMT_proc_return_from (_,s) ->
+    spaces level ^ "return from "^s^";"
+
+
   | STMT_halt (_,s) ->
     spaces level ^ "halt "^string_of_string s^";"
 
@@ -1681,6 +1685,8 @@ and string_of_exe level s =
   and se e = string_of_expr e
   in
   match s with
+
+  | EXE_proc_return_from s -> "return from " ^ s
 
   | EXE_try  -> "try"
   | EXE_catch (id,typ)  -> "catch " ^ id ^ " : " ^ string_of_typecode typ ^ " => "
