@@ -297,7 +297,7 @@ print_endline ("define_scheme " ^ name);
             (* age := max !age seq; *)
             s
 
-          | k,`Obj_keyword -> Snull (* Sstring (Flx_prelex.string_of_token k) *)
+          | k,`Obj_keyword -> assert false; Snull (* Sstring (Flx_prelex.string_of_token k) *)
 
           | STRING s1, `Obj_NAME s2 ->
             if s1 <> s2 then raise Giveup;

@@ -9,8 +9,8 @@ exception EndOfInput
 (*
 open Flx_ast
 *)
-open Flx_print
 (*
+open Flx_print
 open Flx_exceptions
 *)
 open Ocs_types
@@ -122,51 +122,6 @@ let dyphack (ls : ( 'a * string) list) : 'a =
 %token <'obj Dyp.dyplexbuf> HASH_LINE
 %token <'obj Dyp.dyplexbuf> HASH_INCLUDE
 %token DUMMY
-
-/* This stuff is only needed to specify the type of the RHS elements of
-   an extensible grammar production, i.e. for parsing the Felix grammar.
-*/
-%token QUEST
-%constructor Obj_keyword %for QUEST
-%token PLUS
-%constructor Obj_keyword %for PLUS
-%token STAR
-%constructor Obj_keyword %for STAR
-
-%token LPAR
-%constructor Obj_keyword %for LPAR
-%token RPAR
-%constructor Obj_keyword %for RPAR
-
-%token LSQB
-%constructor Obj_keyword %for LSQB
-%token RSQB
-%constructor Obj_keyword %for RSQB
-
-%token LBRACE
-%constructor Obj_keyword %for LBRACE
-%token RBRACE
-%constructor Obj_keyword %for RBRACE
-
-%token COMMA
-%constructor Obj_keyword %for COMMA
-%token VBAR
-%constructor Obj_keyword %for VBAR
-
-%token LESS
-%constructor Obj_keyword %for LESS
-%token GREATER
-%constructor Obj_keyword %for GREATER
-%token EQUAL
-%constructor Obj_keyword %for EQUAL
-%token EQEQUAL
-%constructor Obj_keyword %for EQEQUAL
-%token NOTEQUAL
-%constructor Obj_keyword %for NOTEQUAL
-%token LESSEQUAL
-%constructor Obj_keyword %for LESSEQUAL
-%token GREATEREQUAL
-%constructor Obj_keyword %for GREATEREQUAL
 
 %token UNDERSCORE
 %constructor Obj_keyword %for UNDERSCORE

@@ -213,6 +213,7 @@ def make_cxx_builder(ctx, *args, includes=[], libpaths=[], flags=[], **kwargs):
                 'no-return-stack-address',
                 'no-tautological-compare',
                 'no-return-type-c-linkage',
+                'no-unused-variable',
                 ],
             'flags': ['-fno-common'] + flags,
             'optimize_flags': ['-O3', '-fomit-frame-pointer']}),
