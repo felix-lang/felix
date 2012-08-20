@@ -152,7 +152,10 @@ let local_data = {
   Flx_token.drules = Drules.empty;
   Flx_token.installed_dssls = [];
   Flx_token.scm = [];
+(*
   Flx_token.rev_stmts = [];
+*)
+  Flx_token.rev_stmts_as_scheme = [];
 }
 
 

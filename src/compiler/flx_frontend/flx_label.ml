@@ -105,7 +105,7 @@ let get_label_kind_from_index usage lix =
 
 let get_label_kind label_map usage_map proc label =
 (*
-print_endline ("Get labal kind of " ^ label ^ " in proc " ^ si 0);
+print_endline ("Get labal kind of " ^ label ^ " in proc " ^ si proc);
 *)
   let labels = try Hashtbl.find label_map proc with Not_found -> assert false in
   try

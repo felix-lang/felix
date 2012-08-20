@@ -13,8 +13,8 @@ let parse_syntax state =
   in
   (* print_endline ("//Parsing syntax " ^ String.concat ", " synfiles); *)
   let parser_state = List.fold_left
-    (fun state file -> Flx_parse.parse_syntax_file ~include_dirs state file)
-    (Flx_parse.make_parser_state ())
+    (fun state file -> Flx_parse_driver.parse_syntax_file ~include_dirs state file)
+    (Flx_parse_driver.make_parser_state ())
     (synfiles)
   in
 
@@ -24,7 +24,7 @@ let parse_syntax state =
   in
 
   let parser_state = List.fold_left
-    (fun state file -> Flx_parse.parse_file ~include_dirs state file)
+    (fun state file -> Flx_parse_driver.parse_file ~include_dirs state file)
     parser_state
     auto_imports
   in
@@ -83,8 +83,11 @@ let parse_file state parser_state file =
   if state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
   print_endline  ("//Parsing Implementation " ^ file_name);
   if state.syms.compiler_options.print_flag then print_endline ("Parsing " ^ file_name);
-  let parser_state = Flx_parse.parse_file ~include_dirs parser_state file_name in
+  let parser_state = Flx_parse_driver.parse_file ~include_dirs parser_state file_name in
+(*
   let stmts = List.rev (Flx_parse.parser_data parser_state) in
+*)
+  let stmts = List.rev_map (fun (sr,scm) -> Flx_parse_helper.ocs2flx sr scm) (Flx_parse_driver.parser_data parser_state) in
   let macro_state = Flx_macro.make_macro_state local_prefix in
   let stmts = Flx_macro.expand_macros macro_state stmts in
 

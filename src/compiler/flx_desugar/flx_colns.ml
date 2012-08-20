@@ -115,11 +115,14 @@ let include_file syms curpath inspec =
     if syms.compiler_options.print_flag then print_endline ("Parsing " ^ tf);
     let auto_imports = List.concat (List.map (render include_dirs) syms.compiler_options.auto_imports) in
     let parser_state = List.fold_left
-      (fun state file -> Flx_parse.parse_file ~include_dirs state file)
-      (Flx_parse.make_parser_state ())
+      (fun state file -> Flx_parse_driver.parse_file ~include_dirs state file)
+      (Flx_parse_driver.make_parser_state ())
       (auto_imports @ [tf])
     in
+(*
     let tree = List.rev (Flx_parse.parser_data parser_state) in
+*)
+    let tree = List.rev_map (fun (sr,scm) -> Flx_parse_helper.ocs2flx sr scm) (Flx_parse_driver.parser_data parser_state) in
     let local_prefix = Filename.basename basename in
     let macro_state = Flx_macro.make_macro_state local_prefix in
     let tree = Flx_macro.expand_macros macro_state tree in
