@@ -1,9 +1,5 @@
 open Lexing
 open Flx_drules
-(* open Flx_print *)
-(* open Flx_exceptions *)
-(* open Flx_util *)
-(* open Flx_list *)
 open Ocs_types
 open Sex_types
 open Dyp
@@ -462,18 +458,5 @@ print_endline ("Add Regex name=" ^ name);
     } 
     in
     global_data, m
-
-let ocs2flx sr r =
-  let sex = Ocs2sex.ocs2sex r in
-  (*
-  print_endline "OCS scheme term converted to s-expression:";
-  Sex_print.sex_print sex;
-  *)
-  let flx = Flx_sex2flx.xstatement_t sr sex in
-  (*
-  print_endline "s-expression converted to Felix statement!";
-  print_endline (string_of_statement 0 flx);
-  *)
-  flx
 
 

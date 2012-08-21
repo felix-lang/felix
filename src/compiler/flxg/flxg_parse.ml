@@ -87,7 +87,7 @@ let parse_file state parser_state file =
 (*
   let stmts = List.rev (Flx_parse.parser_data parser_state) in
 *)
-  let stmts = List.rev_map (fun (sr,scm) -> Flx_parse_helper.ocs2flx sr scm) (Flx_parse_driver.parser_data parser_state) in
+  let stmts = List.rev_map (fun (sr,scm) -> Flx_colns.ocs2flx sr scm) (Flx_parse_driver.parser_data parser_state) in
   let macro_state = Flx_macro.make_macro_state local_prefix in
   let stmts = Flx_macro.expand_macros macro_state stmts in
 

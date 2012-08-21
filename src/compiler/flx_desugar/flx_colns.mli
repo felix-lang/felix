@@ -2,6 +2,8 @@ open Flx_ast
 open Flx_types
 open Flx_mtypes2
 
+val ocs2flx: Flx_srcref.t -> Ocs_types.sval -> statement_t
+
 val render: string list -> string -> string list
 
 val include_file:

@@ -1,6 +1,6 @@
 (** String handling *)
 
-exception Error of string
+exception StringError of string
 
 val bin_char2int : char -> int
 val oct_char2int : char -> int

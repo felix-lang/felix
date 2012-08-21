@@ -4,7 +4,6 @@ open Flx_ast
 open Flx_types
 exception SyntaxError of string
 exception ParseError of string
-exception LexError of string
 exception TokenError of string
 exception ClientErrorn of Flx_srcref.t list * string
 exception ClientError of Flx_srcref.t * string

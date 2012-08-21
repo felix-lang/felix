@@ -1,4 +1,3 @@
-open Flx_ast
 type charset_t = bool array
 
 let charset_of_string s =

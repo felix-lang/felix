@@ -17,16 +17,6 @@ def build_flx_misc(phase):
         libs=[build_flx_version(phase)],
         external_libs=['nums', 'str', 'unix'])
 
-def build_flx_core(phase):
-    path = Path('src/compiler/flx_core')
-    return phase.ocaml.build_lib(path / 'flx_core',
-        srcs=Path.glob(path / '*.ml{,i}'),
-        libs=[
-            build_flx_misc(phase),
-            call('buildsystem.dypgen.build_lib', phase),
-            call('buildsystem.ocs.build_lib', phase)],
-        external_libs=['nums'])
-
 def build_flx_version_hook(phase):
     path = phase.ctx.buildroot / 'src/compiler/flx_version_hook'
     return phase.ocaml.build_lib(path / 'flx_version_hook',
@@ -43,7 +33,6 @@ def build_flx_lex(phase):
             call('buildsystem.ocs.build_lib', phase),
             call('buildsystem.sex.build', phase),
             build_flx_misc(phase),
-            build_flx_core(phase),
             build_flx_version(phase)])
 
 def build_flx_parse(phase):
@@ -59,9 +48,21 @@ def build_flx_parse(phase):
             call('buildsystem.ocs.build_lib', phase),
             call('buildsystem.sex.build', phase),
             build_flx_misc(phase),
-            build_flx_core(phase),
             build_flx_version(phase),
             build_flx_lex(phase)])
+
+def build_flx_core(phase):
+    path = Path('src/compiler/flx_core')
+    return phase.ocaml.build_lib(path / 'flx_core',
+        srcs=Path.glob(path / '*.ml{,i}'),
+        libs=[
+            build_flx_misc(phase),
+            call('buildsystem.dypgen.build_lib', phase),
+            call('buildsystem.ocs.build_lib', phase),
+            build_flx_lex(phase),
+            build_flx_parse(phase),
+            ],
+        external_libs=['nums'])
 
 def build_flx_desugar(phase):
     path = Path('src/compiler/flx_desugar')
@@ -73,10 +74,11 @@ def build_flx_desugar(phase):
             call('buildsystem.ocs.build_lib', phase),
             call('buildsystem.sex.build', phase),
             build_flx_misc(phase),
+            build_flx_lex(phase),
+            build_flx_parse(phase),
             build_flx_core(phase),
             build_flx_version(phase),
-            build_flx_lex(phase),
-            build_flx_parse(phase)],
+            ],
         external_libs=['nums', 'unix'])
 
 def build_flx_bind(phase):
@@ -85,6 +87,7 @@ def build_flx_bind(phase):
         srcs=Path.glob(path / '*.ml{,i}'),
         libs=[
             build_flx_misc(phase),
+            build_flx_lex(phase),
             build_flx_core(phase),
             build_flx_desugar(phase)],
         external_libs=['nums'])
@@ -95,6 +98,7 @@ def build_flx_frontend(phase):
         srcs=Path.glob(path / '*.ml{,i}'),
         libs=[
             build_flx_misc(phase),
+            build_flx_lex(phase),
             build_flx_core(phase)])
 
 def build_flx_opt(phase):
@@ -103,6 +107,7 @@ def build_flx_opt(phase):
         srcs=Path.glob(path / '*.ml{,i}'),
         libs=[
             build_flx_misc(phase),
+            build_flx_lex(phase),
             build_flx_core(phase),
             build_flx_frontend(phase)])
 
@@ -112,6 +117,7 @@ def build_flx_lower(phase):
         srcs=Path.glob(path / '*.ml{,i}'),
         libs=[
             build_flx_misc(phase),
+            build_flx_lex(phase),
             build_flx_core(phase),
             build_flx_frontend(phase)])
 
@@ -121,6 +127,7 @@ def build_flx_backend(phase):
         srcs=Path.glob(path / '*.ml{,i}'),
         libs=[
             build_flx_misc(phase),
+            build_flx_lex(phase),
             build_flx_core(phase)])
 
 def build_flx_cpp_backend(phase):
@@ -130,6 +137,7 @@ def build_flx_cpp_backend(phase):
             path / '*.ml{,i}',),
         libs=[
             build_flx_misc(phase),
+            build_flx_lex(phase),
             build_flx_core(phase),
             build_flx_frontend(phase),
             build_flx_backend(phase)],
@@ -142,6 +150,7 @@ def build_flx_llvm_backend(phase):
         includes=[phase.llvm_config.ocaml_libdir()],
         libs=[
             build_flx_misc(phase),
+            build_flx_lex(phase),
             build_flx_core(phase),
             build_flx_backend(phase),
             ])
@@ -153,9 +162,9 @@ def build_flx_drivers(ctx, phase):
         call('buildsystem.dypgen.build_lib', phase),
         build_flx_version(phase),
         build_flx_misc(phase),
-        build_flx_core(phase),
         build_flx_lex(phase),
         build_flx_parse(phase),
+        build_flx_core(phase),
         build_flx_desugar(phase),
         build_flx_bind(phase),
         build_flx_frontend(phase),
@@ -173,23 +182,6 @@ def build_flx_drivers(ctx, phase):
         libs=libs,
         external_libs=external_libs)
 
-    # Don't compile flxc if llvm isn't installed
-    if phase.llvm_config:
-        flxc = phase.ocaml.build_exe('bin/flxc',
-            Path('src/compiler/flxc/*.ml{,i}').glob(),
-            includes=[phase.llvm_config.ocaml_libdir()],
-            libs=libs + [build_flx_llvm_backend(phase)],
-            external_libs=external_libs + [
-                'llvm',
-                'llvm_analysis',
-                'llvm_executionengine',
-                'llvm_scalar_opts',
-                'llvm_target'],
-            cc=phase.cxx.static.compiler.gcc.exe)
-    else:
-        flxc = None
-
     return Record(
         flxg=flxg,
-        flxc=flxc,
     )

@@ -1,4 +1,3 @@
-open Flx_ast
 type charset_t
 val charset_of_string: string -> charset_t
 val charset_of_int_range: int -> int -> charset_t

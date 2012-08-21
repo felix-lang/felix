@@ -6,97 +6,14 @@ open Flx_drules
 
 (* parser header *)
 exception EndOfInput
-(*
-open Flx_ast
-*)
-(*
-open Flx_print
-open Flx_exceptions
-*)
 open Ocs_types
-(*
-open Sex_types
-*)
 open Dyp
 open Lexing
 open Flx_string
 open Flx_parse_helper
 open Flx_dssl
 
-(*
-let dypgen_choose_token = `all
-*)
-
-(*
-let dyp_merge = keep_all
-*)
-(*
-let smerge ((oseq,osr,osex),ogd,old as oit) ((nseq,nsr,nsex),ngd,nld as nit) =
-   if !(global_data.pdebug) then
-   begin
-     print_endline ("MERGING! prev=" ^ string_of_int oseq ^ ", nxt=" ^ string_of_int nseq);
-     print_endline ("MERGING! prev=" ^ Ocs_print.string_of_ocs osex ^ "\nnxt=" ^ Ocs_print.string_of_ocs nsex);
-   end;
-   if oseq > nseq then oit
-   else if nseq > oseq then nit
-   (* else if osex = nsex then oit *)
-   else if Ocs_misc.test_equal osex nsex then (
-     print_endline ("MERGING EQUAL TERMS! prev=" ^ string_of_int oseq ^ ", nxt=" ^ string_of_int nseq);
-     print_endline ("MERGING! =" ^ Ocs_print.string_of_ocs osex);
-   oit)
-   else begin
-     print_endline ("MERGING! prev=" ^ string_of_int oseq ^ ", nxt=" ^ string_of_int nseq);
-     print_endline ("MERGING! prev=" ^ Ocs_print.string_of_ocs osex ^ "\nnxt=" ^ Ocs_print.string_of_ocs nsex);
-     Flx_exceptions.clierr2 osr nsr ("AMBIGUITY PARSING, same production!,seq = " ^ string_of_int nseq)
-   end
-*)
-
 let dyp_merge_Obj_sexpr ol = keep_all ol
-
-(*
-let dyp_merge_Obj_sexpr ol =
- match ol with
- | [] -> assert false
-(* | [_] -> assert false *)
- | [ntt,gd,ld] -> [ntt],gd,ld
-
- | h :: t ->
-   match List.fold_left smerge h t with
-   ntt,gd,ld -> [ntt],gd,ld
-*)
-
-let rec elim_common_prefix x y =
-  match x, y with
-  | a :: ta, b :: tb ->
-    let eq = try a = b with _ -> false in
-    if eq then elim_common_prefix ta tb
-    else x,y
-
-  | x,y -> x,y
-
-(*
-let ssmerge ((xseq,x),xgd,xld as xit) ((yseq,y),ygd,yld as yit) =
-  print_endline "statement merge happening?";
-  if xseq > yseq then xit else
-  if yseq > xseq then yit else
-  let xsr = src_of_stmt (List.hd x) in
-  let ysr = src_of_stmt (List.hd y) in
-  print_endline "Ambiguity parsing statements:";
-  let x = List.rev x in
-  let y = List.rev y in
-  let x,y = elim_common_prefix x y in
-  print_endline ("Statements 1 = " ^ catmap "\n----\n" (string_of_statement 1) x);
-  print_endline ("Statement 2 = " ^ catmap "\n----\n" (string_of_statement 1) y);
-  Flx_exceptions.clierr2 xsr ysr "AMBIGUITY PARSING TOP LEVEL!"
-
-let dyp_merge_Obj_statement_star ol =
-  match ol with
-  | []
-  | [_] -> assert false
-  | h::t ->
-      match List.fold_left ssmerge h t with
-      | ntt,gd,ld -> [ntt],gd,ld
-*)
 
 let dyphack (ls : ( 'a * string) list) : 'a =
   match ls with
@@ -120,7 +37,6 @@ let dyphack (ls : ( 'a * string) list) : 'a =
 %token <int> INTEGER
 %token <string> STRING
 %token <'obj Dyp.dyplexbuf> HASH_LINE
-%token <'obj Dyp.dyplexbuf> HASH_INCLUDE
 %token DUMMY
 
 %token UNDERSCORE
@@ -233,13 +149,6 @@ main lexer =
      lexbuf
   }
 
-/*
-  "#include"  -> HASH_INCLUDE {
-     print_endline "Lexed a #include command";
-     lexbuf
-  }
-*/
-
  "/*" -> { parse_C_comment 1 lexbuf }
 
  digit+ -> INTEGER {
@@ -297,14 +206,7 @@ dddstring -> STRING {
 %parser
 
 syntax_unit:
-  | syntax_init top_statements ENDMARKER {
-    (*
-    print_endline ("Returning syntax, loaded dssls = " ^ String.concat ","dyp.last_local_data.installed_dssls);
-    print_endline ("Returning syntax, Schemes = " ^ string_of_int (List.length dyp.last_local_data.scm));
-    print_endline ("Returning syntax, Dssls = " ^ (Drules.fold (fun k _ acc -> acc ^ " " ^ k) dyp.last_local_data.dssls ""));
-    print_endline ("Returning syntax, statements = " ^ Flx_print.string_of_statements 0 (List.rev dyp.last_local_data.rev_stmts));
-    *)
-    dyp.last_local_data }
+  | syntax_init top_statements ENDMARKER { dyp.last_local_data }
 
 syntax_init: 
    {
@@ -313,14 +215,7 @@ syntax_init:
    }
 
 compilation_unit:
-  | grammar_init top_statements ENDMARKER {
-    (*
-    print_endline ("Returning syntax, loaded dssls = " ^ String.concat ","dyp.last_local_data.installed_dssls);
-    print_endline ("Returning syntax, Schemes = " ^ string_of_int (List.length dyp.last_local_data.scm));
-    print_endline ("Returning syntax, Dssls = " ^ (Drules.fold (fun k _ acc -> acc ^ " " ^ k) dyp.last_local_data.dssls ""));
-    print_endline ("Returning syntax, statements = " ^ Flx_print.string_of_statements 0 (List.rev dyp.last_local_data.rev_stmts));
-    *)
-    dyp.last_local_data }
+  | grammar_init top_statements ENDMARKER { dyp.last_local_data }
 
 grammar_init: @{
     (* print_endline ("grammar_init: Parsing " ^ file); *)
@@ -385,18 +280,6 @@ tstatement:
      set_lineno lexbuf n;
      0,sr,Snull
    }
-
-  | HASH_INCLUDE STRING newline
-    {
-      let sr = getsr dyp in
-      let lexbuf = $1 in
-      let include_file = $2 in
-      print_endline ("#include " ^ include_file);
-      (*
-      push_lexbuf dyp (Dyp.std_lexbuf lexbuf) $2;
-      *)
-      0,sr,Snull
-    }
 
 /* top level statements only */
 top_statements:

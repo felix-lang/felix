@@ -1,5 +1,4 @@
 open Flx_token
-open Flx_exceptions
 
 (* Translate all identifiers into nonterminals *)
 let fixup_prio sr rhs =
@@ -22,7 +21,7 @@ let fixup_prio sr rhs =
     aux t (NONTERMINAL (s,`Eq_prio p)::out)
    
   | NAME s :: LSQB :: _ ->
-    clierr sr "Dangling [ in grammar"
+    failwith "Dangling [ in grammar"
  
   | NAME s ::t ->
     aux t (NONTERMINAL (s,`No_prio)::out)

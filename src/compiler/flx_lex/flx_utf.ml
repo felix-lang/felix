@@ -13,6 +13,7 @@
    Digits must not be first.
 *)
 open Flx_string
+exception LexError of string
 
 let ucs_id_ranges = [
   (* ASCII *)
@@ -262,14 +263,14 @@ let check_code x =
     (fun (first, last) ->
       (* print_endline ((hex4 first) ^"-"^(hex4 last)); *)
       if x < first
-      then raise (Flx_exceptions.LexError ("Bad letter \\U"^hex8 x^" in identifier"))
+      then raise (LexError ("Bad letter \\U"^hex8 x^" in identifier"))
       ;
       if x <= last
       then raise Found
     )
     ucs_id_ranges
     ;
-    raise (Flx_exceptions.LexError ("Bad letter \\U"^hex8 x^" in identifier"))
+    raise (LexError ("Bad letter \\U"^hex8 x^" in identifier"))
   with Found -> ()
 
 let utf8_to_ucn s =

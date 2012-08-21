@@ -1,4 +1,4 @@
-exception Error of string
+exception StringError of string
 
 let hexchar_of_int i =
   if i < 10
@@ -60,21 +60,21 @@ let bin_char2int s =
   match s with
   | '0' -> 0
   | '1' -> 1
-  | _ -> raise (Error ("'" ^ (string_of_char s) ^ "' not binary digit"))
+  | _ -> raise (StringError ("'" ^ (string_of_char s) ^ "' not binary digit"))
 
 let oct_char2int s =
   let c = Char.code s in
   match s with
     _ when (s >= '0' & s <= '7') ->
       c - (Char.code '0')
-  | _ -> raise (Error ("'" ^ (string_of_char s) ^ "' not octal digit"))
+  | _ -> raise (StringError ("'" ^ (string_of_char s) ^ "' not octal digit"))
 
 let dec_char2int s =
   let c = Char.code s in
   match s with
     _ when (s >= '0' & s <= '9') ->
       c - (Char.code '0')
-  | _ -> raise (Error ("'" ^ (string_of_char s) ^ "' not decimal digit"))
+  | _ -> raise (StringError ("'" ^ (string_of_char s) ^ "' not decimal digit"))
 
 let hex_char2int s =
   let c = Char.code s in
@@ -85,7 +85,7 @@ let hex_char2int s =
       (c - (Char.code 'a')) + 10
   | _ when (s >= 'A' & s <= 'F') ->
       (c - (Char.code 'A')) + 10
-  | _ -> raise (Error ("'" ^ (string_of_char s) ^ "' not hexadecimal digit"))
+  | _ -> raise (StringError ("'" ^ (string_of_char s) ^ "' not hexadecimal digit"))
 
 
 let len = String.length;;
