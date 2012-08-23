@@ -9,7 +9,7 @@ let terminate rrp exc =
   | Exit n ->
     exit (if return_parity then n else (if n=0 then 1 else 0))
 
-  | Flx_string.StringError s | Flx_utf.LexError s ->
+  | Flx_string.StringError s | Flx_utf.Utf8_to_Ucn_Error s ->
     flush stdout; print_endline "LEX ERROR";
     print_endline s;
     exit (if return_parity then 1 else 0)

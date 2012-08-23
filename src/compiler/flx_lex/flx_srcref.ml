@@ -1,3 +1,8 @@
+(** Generic source reference manipulation.
+ *
+ * Note the special hack of forgetting the second filename when creating a
+ * range: the alternative would be to record a complete list of lines. *)
+
 (** type of a span between two positions in one file*)
 type t =
   string * (* filename *)
@@ -11,11 +16,6 @@ let make srcref = srcref
 let make_dummy name = make (name, 0, 0, 0, 0)
 
 let to_tuple srcref = srcref
-
-(** Generic source reference manipulation.
- *
- * Note the special hack of forgetting the second filename when creating a
- * range: the alternative would be to record a complete list of lines. *)
 
 let dummy_sr = make_dummy "[flx_srcref] generated"
 

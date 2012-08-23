@@ -277,6 +277,7 @@ and xpattern_t x =
   | x ->
     err x "pattern"
 
+(*
 and xcharset_t sr x =
   let cs x = xcharset_t sr x in
   match x with
@@ -295,7 +296,7 @@ and xcharset_t sr x =
 
   | x ->
     err x "charset"
-
+*)
 and xraw_typeclass_insts_t sr x =
   let ex x = xexpr_t sr x in
   let xq m qn = qne ex m qn in

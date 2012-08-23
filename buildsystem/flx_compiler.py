@@ -32,7 +32,7 @@ def build_flx_lex(phase):
             call('buildsystem.dypgen.build_lib', phase),
             call('buildsystem.ocs.build_lib', phase),
             call('buildsystem.sex.build', phase),
-            build_flx_misc(phase),
+#            build_flx_misc(phase),
             build_flx_version(phase)])
 
 def build_flx_parse(phase):
@@ -47,7 +47,7 @@ def build_flx_parse(phase):
             call('buildsystem.dypgen.build_lib', phase),
             call('buildsystem.ocs.build_lib', phase),
             call('buildsystem.sex.build', phase),
-            build_flx_misc(phase),
+#            build_flx_misc(phase),
             build_flx_version(phase),
             build_flx_lex(phase)])
 
@@ -56,11 +56,11 @@ def build_flx_core(phase):
     return phase.ocaml.build_lib(path / 'flx_core',
         srcs=Path.glob(path / '*.ml{,i}'),
         libs=[
-            build_flx_misc(phase),
             call('buildsystem.dypgen.build_lib', phase),
             call('buildsystem.ocs.build_lib', phase),
             build_flx_lex(phase),
             build_flx_parse(phase),
+            build_flx_misc(phase),
             ],
         external_libs=['nums'])
 
@@ -73,9 +73,9 @@ def build_flx_desugar(phase):
             call('buildsystem.dypgen.build_lib', phase),
             call('buildsystem.ocs.build_lib', phase),
             call('buildsystem.sex.build', phase),
-            build_flx_misc(phase),
             build_flx_lex(phase),
             build_flx_parse(phase),
+            build_flx_misc(phase),
             build_flx_core(phase),
             build_flx_version(phase),
             ],
@@ -86,8 +86,8 @@ def build_flx_bind(phase):
     return phase.ocaml.build_lib(path / 'flx_bind',
         srcs=Path.glob(path / '*.ml{,i}'),
         libs=[
-            build_flx_misc(phase),
             build_flx_lex(phase),
+            build_flx_misc(phase),
             build_flx_core(phase),
             build_flx_desugar(phase)],
         external_libs=['nums'])
@@ -97,8 +97,8 @@ def build_flx_frontend(phase):
     return phase.ocaml.build_lib(path / 'flx_frontend',
         srcs=Path.glob(path / '*.ml{,i}'),
         libs=[
-            build_flx_misc(phase),
             build_flx_lex(phase),
+            build_flx_misc(phase),
             build_flx_core(phase)])
 
 def build_flx_opt(phase):
@@ -106,8 +106,8 @@ def build_flx_opt(phase):
     return phase.ocaml.build_lib(path / 'flx_opt',
         srcs=Path.glob(path / '*.ml{,i}'),
         libs=[
-            build_flx_misc(phase),
             build_flx_lex(phase),
+            build_flx_misc(phase),
             build_flx_core(phase),
             build_flx_frontend(phase)])
 
@@ -116,8 +116,8 @@ def build_flx_lower(phase):
     return phase.ocaml.build_lib(path / 'flx_lower',
         srcs=Path.glob(path / '*.ml{,i}'),
         libs=[
-            build_flx_misc(phase),
             build_flx_lex(phase),
+            build_flx_misc(phase),
             build_flx_core(phase),
             build_flx_frontend(phase)])
 
@@ -126,8 +126,8 @@ def build_flx_backend(phase):
     return phase.ocaml.build_lib(path / 'flx_backend',
         srcs=Path.glob(path / '*.ml{,i}'),
         libs=[
-            build_flx_misc(phase),
             build_flx_lex(phase),
+            build_flx_misc(phase),
             build_flx_core(phase)])
 
 def build_flx_cpp_backend(phase):
@@ -136,8 +136,8 @@ def build_flx_cpp_backend(phase):
         srcs=Path.globall(
             path / '*.ml{,i}',),
         libs=[
-            build_flx_misc(phase),
             build_flx_lex(phase),
+            build_flx_misc(phase),
             build_flx_core(phase),
             build_flx_frontend(phase),
             build_flx_backend(phase)],
@@ -161,9 +161,9 @@ def build_flx_drivers(ctx, phase):
         call('buildsystem.sex.build', phase),
         call('buildsystem.dypgen.build_lib', phase),
         build_flx_version(phase),
-        build_flx_misc(phase),
         build_flx_lex(phase),
         build_flx_parse(phase),
+        build_flx_misc(phase),
         build_flx_core(phase),
         build_flx_desugar(phase),
         build_flx_bind(phase),
