@@ -8,6 +8,7 @@ open Flx_token
 open Flx_parse_ebnf
 open Flx_drules
 
+
 let catmap sep fn ls = String.concat sep (List.map fn ls)
 
 let uniq_add elt lst =
@@ -48,37 +49,15 @@ type action_t = Action_Scheme of string | Action_None
 type symbol_t = Grammar_Atom of token | Grammar_Group of dyalt_t list
 and dyalt_t = symbol_t list * Flx_srcref.t * action_t * anote_t
 type privacy_t = Privacy_Public | Privacy_Private
+type grammar_rule_t = 
+  | Rule_Scheme_rule of privacy_t * string * priority_level_t * action_kind_t * dyalt_t list
+  | Rule_Requires of string list 
+  | Rule_Priorities of string list
+  | Rule_Regex of string * Dyp.regexp 
+
+
 
 let lexeme x = Dyp.lexeme x
-
-let getsr dyp =
-  let s = dyp.symbol_start_pos() and e = dyp.symbol_end_pos() in
-  Flx_srcref.make (
-    s.pos_fname,
-    s.pos_lnum,
-    s.pos_cnum - s.pos_bol + 1,
-    e.pos_lnum,
-    e.pos_cnum - e.pos_bol)
-
-let incr_lineno lexbuf n = 
-  let n = ref n in
-  while !n <> 0 do Dyp.set_newline lexbuf; decr n done
-
-let set_lineno lexbuf n =
-  let lexbuf = (Dyp.std_lexbuf lexbuf) in 
-  let lcp = lexbuf.lex_curr_p in
-  lexbuf.lex_curr_p <- { lcp with
-    pos_lnum = n;
-    pos_bol = lcp.pos_cnum;
-  }
-
-let lfcount s =
-  let n = ref 0 in
-  for i = 0 to (String.length s) - 1 do
-    if s.[i] = '\n' then incr n
-  done;
-  !n
-
 let silly_strtoken k = Flx_prelex.string_of_token k
 
 let fresh_dssl = {
@@ -247,7 +226,7 @@ print_endline ("define_scheme " ^ name);
     aux rhs avl 1;
     if !(dyp.global_data.pdebug) then
     Buffer.add_string b "End of arguments\n";
-    let sr = getsr dyp2 in
+    let sr = Flx_parse_srcref.getsr dyp2 in
 (*
 print_endline ("sr of reduction is " ^ Flx_srcref.short_string_of_src sr);
 *)
@@ -282,14 +261,14 @@ let dflt_action kind prod =
   let rn = ref 1 in
   let action =
     match kind with
-    | `Sval ->
+    | Action_Kind_Sval ->
       "`(" ^
       List.fold_left (fun acc _ -> let n = !rn in incr rn;
         (if acc = "" then "" else acc ^ " ") ^ ",_" ^ string_of_int n
       ) "" prod
       ^ ")"
 
-    | `String -> 
+    | Action_Kind_String -> 
       "(strcat `(" ^
       List.fold_left (fun acc _ -> let n = !rn in incr rn;
         (if acc = "" then "" else acc ^ " ") ^ ",_" ^ string_of_int n
@@ -347,7 +326,7 @@ let add_rule global_data local_data dssl rule =
   let m = local_data in
   let d = try Drules.find dssl m.drules with Not_found -> fresh_dssl in
   match rule with
-  | `Scheme_rule (privacy,name,prio,kind,dyalts) ->
+  | Rule_Scheme_rule (privacy,name,prio,kind,dyalts) ->
      let rules = fixup_alternatives global_data.pcounter kind name prio dyalts in
      let rules = List.fold_left (fun acc rule -> uniq_add rule acc) d.rules rules in
      let privacy =
@@ -362,17 +341,17 @@ let add_rule global_data local_data dssl rule =
      let m = { m with drules = Drules.add dssl d m.drules } in
      global_data,m
 
-  | `Requires ls ->
+  | Rule_Requires ls ->
      let d = { d with deps = ls @ d.deps } in
      let m = { m with drules = Drules.add dssl d m.drules } in
      global_data,m
 
-  | `Priorities p ->
+  | Rule_Priorities p ->
     let d = { d with prios = p::d.prios } in
     let m = { m with drules = Drules.add dssl d m.drules } in
     global_data, m
 
-  | `Regex (name, re) -> (* do nothing at the moment *)
+  | Rule_Regex (name, re) -> (* do nothing at the moment *)
 (*
 print_endline ("Add Regex name=" ^ name);
 *)

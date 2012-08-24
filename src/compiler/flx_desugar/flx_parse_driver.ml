@@ -10,7 +10,7 @@ let parse_lexbuf old_local_data lexbuf =
   let env = Flx_parse_helper.global_data.Flx_token.env in
   let adjust_line s =
     match s with
-    | Sstring s -> incr_lineno lexbuf (lfcount s); Sunspec
+    | Sstring s -> Flx_parse_srcref.incr_lineno lexbuf (Flx_parse_srcref.lfcount s); Sunspec
     | _ -> raise (Ocs_error.Error ("adjust-linecount: not a string"))
     in
   Ocs_env.set_pf1 env adjust_line "adjust-linecount";

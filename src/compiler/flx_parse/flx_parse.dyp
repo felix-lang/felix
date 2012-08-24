@@ -134,7 +134,7 @@ let not_newline = not_hash_or_newline | hash
 
 rule parse_C_comment count = parse
 | "/*"    { parse_C_comment (count+1) lexbuf }
-| newline { incr_lineno lexbuf 1; parse_C_comment count lexbuf }
+| newline { Flx_parse_srcref.incr_lineno lexbuf 1; parse_C_comment count lexbuf }
 | "*/"    { if count = 1 then () else parse_C_comment (count - 1) lexbuf }
 | _       { parse_C_comment count lexbuf }
 
@@ -142,7 +142,7 @@ rule parse_C_comment count = parse
 main lexer =
 /* eof is not eaten up, so parent will find eof and emit ENDMARKER */
  "//" not_newline * (newline | eof) -> {
-      incr_lineno lexbuf 1
+      Flx_parse_srcref.incr_lineno lexbuf 1
   }
 
   "#line"  -> HASH_LINE {
@@ -159,32 +159,32 @@ main lexer =
 /* Python strings */
  qstring -> STRING { 
     let s = lexeme lexbuf in
-    let n = lfcount s in
-    incr_lineno lexbuf n;
+    let n = Flx_parse_srcref.lfcount s in
+    Flx_parse_srcref.incr_lineno lexbuf n;
     let m = String.length s in
     String.sub s 1 (m-2)
   }
 
 qqqstring    -> STRING { 
     let s = lexeme lexbuf in
-    let n = lfcount s in
-    incr_lineno lexbuf n;
+    let n = Flx_parse_srcref.lfcount s in
+    Flx_parse_srcref.incr_lineno lexbuf n;
     let m = String.length s in
     String.sub s 3 (m-3)
   }
 
 dstring -> STRING {
     let s = lexeme lexbuf in
-    let n = lfcount s in
-    incr_lineno lexbuf n;
+    let n = Flx_parse_srcref.lfcount s in
+    Flx_parse_srcref.incr_lineno lexbuf n;
     let m = String.length s in
     String.sub s 1 (m-2)
   }
 
 dddstring -> STRING {
     let s = lexeme lexbuf in
-    let n = lfcount s in
-    incr_lineno lexbuf n;
+    let n = Flx_parse_srcref.lfcount s in
+    Flx_parse_srcref.incr_lineno lexbuf n;
     let m = String.length s in
     String.sub s 3 (m-3)
   }
@@ -195,7 +195,7 @@ dddstring -> STRING {
  white+ -> { () }
 
 /* end of line */
- newline -> { incr_lineno lexbuf 1 }
+ newline -> { Flx_parse_srcref.incr_lineno lexbuf 1 }
 
 /* end of file */
  eof -> ENDMARKER { }
@@ -210,7 +210,7 @@ syntax_unit:
 
 syntax_init: 
    {
-    let file = Flx_srcref.file (getsr dyp) in
+    let file = Flx_srcref.file (Flx_parse_srcref.getsr dyp) in
     print_endline ("syninit: Parsing " ^ file)
    }
 
@@ -264,20 +264,20 @@ tstatement:
 */
   | HASH_LINE INTEGER STRING newline
    {
-     let sr = getsr dyp in
+     let sr = Flx_parse_srcref.getsr dyp in
      let lexbuf = $1 in
      let n = $2 in
-     set_lineno lexbuf n;
+     Flx_parse_srcref.set_lineno lexbuf n;
      Dyp.set_fname lexbuf $3;
      0,sr,Snull
    }
 
   | HASH_LINE INTEGER newline
    {
-     let sr = getsr dyp in
+     let sr = Flx_parse_srcref.getsr dyp in
      let lexbuf = $1 in
      let n = $2 in
-     set_lineno lexbuf n;
+     Flx_parse_srcref.set_lineno lexbuf n;
      0,sr,Snull
    }
 
@@ -361,7 +361,7 @@ dyprod:
        (*
        print_endline ("RULE " ^ snd $2);
        *)
-       `Scheme_rule ($1, $2, $3, `Sval, $5)
+       Rule_Scheme_rule ($1, $2, $3, Flx_parse_ebnf.Action_Kind_Sval, $5)
      }
 
    | opt_private NAME opt_prio ":" NAME "=" dyalts ";"
@@ -370,23 +370,23 @@ dyprod:
        (*
        print_endline ("STRING RULE " ^ $2);
        *)
-       `Scheme_rule ($1, $2, $3, `String, $7)
+       Rule_Scheme_rule ($1, $2, $3, Flx_parse_ebnf.Action_Kind_String, $7)
      }
 
 
    | "requires" basic_name_comma_list ";"
      {
         let dssls = List.map snd $2 in
-       `Requires dssls
+       Rule_Requires dssls
      }
 
    | NAME prilist ";"
      {
        if $1 <> "priority" then raise Giveup;
-       `Priorities $2
+       Rule_Priorities $2
      }
 
-   | "regdef" NAME "=" ssre ";" { `Regex ($2,$4) }
+   | "regdef" NAME "=" ssre ";" { Rule_Regex ($2,$4) }
 
    | opt_private "literal" NAME "=>#" STRING ";" 
      {
@@ -400,8 +400,8 @@ dyprod:
 (*
        print_endline ("Defining literal " ^ name ^ " as " ^ scm);
 *)
-       let dyalts = [prod,getsr dyp,action,anote] in
-       `Scheme_rule (priv,name,prio,`Sval,dyalts) 
+       let dyalts = [prod,Flx_parse_srcref.getsr dyp,action,anote] in
+       Rule_Scheme_rule (priv,name,prio,Flx_parse_ebnf.Action_Kind_Sval,dyalts) 
      }
 
   ssre :  ssre(>=ralt_prix) ["|" ssre(>ralt_prix)]+ { RE_Alt ($1::$2) } ralt_prix 
@@ -456,9 +456,9 @@ dyalt:
          | Action_Scheme _ as x -> x
          | Action_None as x -> x
        in
-       prod,getsr dyp,action,anote
+       prod,Flx_parse_srcref.getsr dyp,action,anote
      }
-   | rhs { $1,getsr dyp,Action_None,"" }
+   | rhs { $1,Flx_parse_srcref.getsr dyp,Action_None,"" }
 
 dyaltlist:
    | { [] }
@@ -501,7 +501,7 @@ rhs_atom:
 utstatement:
   | "SCHEME" STRING
     @{
-      let sr = getsr dyp in
+      let sr = Flx_parse_srcref.getsr dyp in
       let s = $2 in
       let failwith x = print_endline ("Evaluating " ^ s); failwith x in
       (*
@@ -521,7 +521,7 @@ utstatement:
   | "SAVE"
     {
       print_endline "Setting automaton";
-      let sr = getsr dyp in
+      let sr = Flx_parse_srcref.getsr dyp in
       let s = Marshal.to_string (function_free_pdev dyp.parser_pilot.pp_dev) [] in
       dyp.global_data.parsing_device := Some s;
       print_endline "Automaton set";
@@ -536,7 +536,7 @@ tstatement:
       print_endline ("Parsed syntax extensions " ^ $2);
       print_endline ("Defining syntax extensions " ^ $2);
       *)
-      let sr = getsr dyp in
+      let sr = Flx_parse_srcref.getsr dyp in
       let dssl = $2 in
       let m = dyp.local_data in
       let m =
@@ -563,7 +563,7 @@ tstatement:
 
   | "open" "syntax" basic_name_comma_list ";"
     @{
-      let sr = getsr dyp in
+      let sr = Flx_parse_srcref.getsr dyp in
       print_endline
         ("Opening syntax extensions " ^ Flx_srcref.short_string_of_src sr);
 
@@ -597,7 +597,7 @@ sepsilon: | { 0, Flx_srcref.dummy_sr, Snull }
 strepsilon: | { 0, Flx_srcref.dummy_sr, Sstring "" }
 
 basic_name:
-  | NAME { getsr dyp, $1 }
+  | NAME { Flx_parse_srcref.getsr dyp, $1 }
 
 basic_name_comma_list:
   | basic_name "," basic_name_comma_list { $1 :: $3 }

@@ -1,5 +1,7 @@
 open Flx_token
 
+type action_kind_t = Action_Kind_Sval | Action_Kind_String
+
 (* Translate all identifiers into nonterminals *)
 let fixup_prio sr rhs =
   let rec aux inp out = match inp with
@@ -109,6 +111,6 @@ let fixup_suffix_string sr pcounter rhs =
 
 let fixup_suffix sr pcounter kind rhs =
   match kind with
-  | `Sval -> fixup_suffix_scheme sr pcounter rhs
-  | `String -> fixup_suffix_string sr pcounter rhs
+  | Action_Kind_Sval -> fixup_suffix_scheme sr pcounter rhs
+  | Action_Kind_String -> fixup_suffix_string sr pcounter rhs
 
