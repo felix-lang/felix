@@ -3,13 +3,15 @@
 (** type of a span between two positions in one file *)
 type t
 
-(** construct a srcref from a tuple *)
+(** Construct a srcref from a tuple (filename, startline, startcol, endline, endcol) 
+Values are one origin.
+*)
 val make:
-  string * (** filename *)
-  int * (** starting line number, 1 origin *)
-  int * (** starting column, 1 origin *)
-  int * (** ending line number, 1 origin *)
-  int   (** ending column, 1 origin *)
+  string * (* filename *)
+  int * (* starting line number, 1 origin *)
+  int * (* starting column, 1 origin *)
+  int * (* ending line number, 1 origin *)
+  int   (* ending column, 1 origin *)
   -> t
 
 (** Convert a srcref to a tuple *)

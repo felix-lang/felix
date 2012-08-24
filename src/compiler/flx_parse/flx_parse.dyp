@@ -509,7 +509,7 @@ utstatement:
       *)
       let env = dyp.global_data.env in
       let r =
-        try scheme_run sr env s
+        try Flx_ocs_run.scheme_run sr env s
         with Ocs_error.Error err | Ocs_error.ErrorL (_,err) ->
           print_endline ("Error "^err^" executing " ^s);
           failwith "Error executing SCHEME"

@@ -87,58 +87,11 @@ let fresh_dssl = {
   deps = [];
   privacy = Drules.empty;
 }
-
-exception Scheme_error of sval
-
-let giveup () = raise Giveup; Sunspec
-let sraise s  = raise (Scheme_error s); Sunspec
-let sunescape s =
-  match s with
-  | Sstring s -> Sstring (Flx_string.unescape s)
-  | _ -> raise (Ocs_error.Error ("sunescape: not a string"))
-
-let cquote s =
-  match s with
-  | Sstring s -> Sstring (Flx_string.c_quote_of_string s)
-  | _ -> raise (Ocs_error.Error ("c-quote-string: not a string"))
-
-let utf2ucn s =
-  match s with
-  | Sstring s -> Sstring (Flx_utf.utf8_to_ucn s)
-  | _ -> raise (Ocs_error.Error ("utf8->ucn: not a string"))
-
- 
-let flx_ocs_init env =
-  Ocs_env.set_pf0 env giveup "giveup";
-  Ocs_env.set_pf1 env sraise "raise";
-  Ocs_env.set_pf1 env sunescape "unescape";
-  Ocs_env.set_pf1 env cquote "c-quote-string";
-  Ocs_env.set_pf1 env utf2ucn "utf8->ucn"
-
-let init_env () =
-  let env = Ocs_top.make_env () in
-  flx_ocs_init env;
-
-  let v1:Ocs_types.sval = Ocs_sym.get_symbol "_sr" in
-  let g1:Ocs_types.vbind = Vglob { g_sym=v1; g_val = Sunbound } in
-  Ocs_env.bind_name env v1 g1;
-
-  let v1:Ocs_types.sval = Ocs_sym.get_symbol "_arg" in
-  let g1:Ocs_types.vbind = Vglob { g_sym=v1; g_val = Sunbound } in
-  Ocs_env.bind_name env v1 g1;
-
-  for n = 1 to 20 do
-    let v1:Ocs_types.sval = Ocs_sym.get_symbol ("_" ^ string_of_int n) in
-    let g1:Ocs_types.vbind = Vglob { g_sym=v1; g_val = Sunbound } in
-    Ocs_env.bind_name env v1 g1;
-  done;
-  env
-
 let debug = try ignore(Sys.getenv "FLX_DEBUG_PARSER"); true with Not_found -> false
 
 let global_data = {
   pcounter = ref 1;
-  env = init_env ();
+  env = Flx_ocs_init.init_env ();
   pdebug = ref debug;
   parsing_device = ref None;
 }
@@ -161,31 +114,6 @@ let xsr sr =
 
 let buffer_add_ocs b r = Ocs_print.print_to_buffer b false r
 
-let scheme_lex sr (s:string):sval =
-  let sr = Flx_srcref.short_string_of_src sr in
-  let inp = Ocs_port.string_input_port s in
-  let lex = Ocs_lex.make_lexer inp sr in
-  match Ocs_read.read_expr lex with
-  | Ocs_types.Seof -> print_endline "END OF FILE?"; Snull
-  | v ->  v
-
-let scheme_compile env (s:sval):Ocs_types.code =
-  Ocs_compile.compile env s
-
-let scheme_eval (c:Ocs_types.code):sval =
-  let th = Ocs_top.make_thread () in
-  let term = ref None in
-  Ocs_eval.eval th (fun (r:sval) -> term := Some r) c;
-  match !term with
-  | None -> failwith "Scheme term not returned!"
-  | Some r -> r
-
-let scheme_run sr env (s:string):sval =
-  let l :sval = scheme_lex sr s in
-  let c :code = scheme_compile env l in
-  let r :sval = scheme_eval c in
-  r
-
 let cal_priority_relation p =
   match p with
   | `No_prio -> No_priority
@@ -207,8 +135,8 @@ print_endline ("define_scheme " ^ name);
 
   let cde =
     try
-      let l = scheme_lex sr scm in
-      let c = scheme_compile dyp.global_data.env l in
+      let l = Flx_ocs_run.scheme_lex sr scm in
+      let c = Flx_ocs_run.scheme_compile dyp.global_data.env l in
       c
     with
     | Ocs_error.Error err | Ocs_error.ErrorL (_,err) -> failwith ("Error " ^ err ^ " compiling " ^ scm)
@@ -331,7 +259,7 @@ print_endline ("sr of reduction is " ^ Flx_srcref.short_string_of_src sr);
     end
     ;
     let r =
-      try scheme_eval cde
+      try Flx_ocs_run.scheme_eval cde
       with Ocs_error.Error err | Ocs_error.ErrorL (_,err) ->
         print_string (Buffer.contents b);
         print_string ("Error "^err^" evaluating " ^ scm);

@@ -1,9 +1,13 @@
+(** Domain Specific Sub-Language, or DSSL representation *)
 open Flx_drules
 open Flx_token
 open Flx_parse_helper
 
+
 (* move this to elsewhere eventually *)
-(* Calculate the dssls that need to be loaded based on those already loaded. *)
+
+(** Calculate the dssls that need to be loaded based on those already loaded.
+That is; the transiive closure. *)
 let tran_cls_dssls drules installed_dssls dssls =
   (* Calculate the transitive closure of DSSL's required. *)
   let rec cal_install (visited, to_install) dssl =
@@ -40,8 +44,8 @@ let tran_cls_dssls drules installed_dssls dssls =
   (* print_endline ("Installing " ^ cat "," to_install); *)
   to_install
 
-(* Extract rules and priority scheme from the dssls which are to be
- * installed. *)
+(** Extract rules and priority scheme from the dssls which are to be
+ installed. *)
 let extract_syntax to_install dssls =
   List.fold_left
     begin fun (acc_rules, acc_prios) dssl ->
@@ -73,7 +77,13 @@ let bind_grammar_rules dyp rules =
   add_rules, !bindings
 
 
-(** Run all the scheme commands for a rule. *)
+(** Run all the scheme commands for a rule.
+[load_scheme_defs env scm] runs each of the scheme commands
+in the list [scm] in the environment [env]. Typically used to
+add definitions to the environment.
+@param env the scheme environment 
+@param scm the scheme code to run
+*)
 let load_scheme_defs env scm =
   (*
   print_endline ("Doing scheme .. " ^ string_of_int (List.length scm) ^ " fragments");
@@ -81,7 +91,7 @@ let load_scheme_defs env scm =
   List.iter begin fun (sr,s) ->
     ignore (
       (* print_endline ("Scheme: " ^ s); *)
-       try scheme_run sr env s
+       try Flx_ocs_run.scheme_run sr env s
        with Ocs_error.Error err | Ocs_error.ErrorL (_,err) ->
          print_endline ("Error "^err^" executing " ^s);
          failwith "Error executing SCHEME"
