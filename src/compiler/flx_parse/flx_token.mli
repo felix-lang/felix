@@ -1,13 +1,15 @@
 type anote_t = string
 
-type ntprio_t = [
-  | `No_prio
-  | `Eq_prio of string
-  | `Less_prio of string
-  | `Lesseq_prio of string
-  | `Greater_prio of string
-  | `Greatereq_prio of string
-]
+type priority_level_t = Priority_Default | Priority_Name of string
+
+type priority_relation_t = 
+  | Priority_None
+  | Priority_Eq of string 
+  | Priority_Less of string
+  | Priority_Lesseq of string
+  | Priority_Greater of string
+  | Priority_Greatereq of string
+
 
 (* NOTE!! These tokens have NOTHING to do with the parser.
   In fact they're just constructors used by the code that
@@ -18,7 +20,7 @@ type token =
   | ENDMARKER
   | NEWLINE
   | NAME of string
-  | NONTERMINAL of (string * ntprio_t)
+  | NONTERMINAL of (string * priority_relation_t)
   | STRING of string
   | REGEX of Dyp.regexp
   | DUMMY
@@ -42,9 +44,7 @@ type token =
   | GREATEREQUAL
   | UNDERSCORE
 
-and prio_t = [`Default | `Priority of string]
-
-and rule_t = string * prio_t * token list * string * anote_t * Flx_srcref.t
+and rule_t = string * priority_level_t * token list * string * anote_t * Flx_srcref.t
 
 and dssl_t = {
   regexps : (string * Dyp.regexp) list;

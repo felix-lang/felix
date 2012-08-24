@@ -3,12 +3,12 @@ open Flx_token
 let string_of_string s = "\"" ^  Flx_string.c_quote_of_string s ^ "\""
 
 let sp p = match p with
-  | `No_prio -> ""
-  | `Eq_prio p -> "[="^p^"]"
-  | `Less_prio p -> "[<"^p^"]"
-  | `Lesseq_prio p -> "[<="^p^"]"
-  | `Greater_prio p -> "[>"^p^"]"
-  | `Greatereq_prio p -> "[>="^p^"]"
+  | Priority_None -> ""
+  | Priority_Eq p -> "[="^p^"]"
+  | Priority_Less p -> "[<"^p^"]"
+  | Priority_Lesseq p -> "[<="^p^"]"
+  | Priority_Greater p -> "[>"^p^"]"
+  | Priority_Greatereq p -> "[>="^p^"]"
 
 let string_of_token = function
   | DUMMY -> "DUMMY"

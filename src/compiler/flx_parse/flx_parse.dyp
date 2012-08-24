@@ -341,12 +341,12 @@ dyprods:
   | { [] }
 
 opt_private:
-  | "private" { `Private }
-  | { `Public }
+  | "private" { Privacy_Private }
+  | { Privacy_Public }
 
 opt_prio:
-  | "[" NAME "]" { `Priority $2 }
-  | { `Default }
+  | "[" NAME "]" { Priority_Name $2 }
+  | { Priority_Default }
 
 pri:
   | NAME { $1 }
@@ -392,11 +392,11 @@ dyprod:
      {
        let priv = $1 in
        let name = $3 in
-       let prio = `Default in
+       let prio = Priority_Default in
        let scm = $5 in
-       let action = `Scheme scm in
+       let action = Action_Scheme scm in
        let anote = "" in
-       let prod = [`Atom (REGEX (RE_Name name))] in
+       let prod = [Grammar_Atom (REGEX (RE_Name name))] in
 (*
        print_endline ("Defining literal " ^ name ^ " as " ^ scm);
 *)
@@ -435,7 +435,7 @@ dyprod:
   ssre :  NAME {RE_Name $1 } ratom_prix /* probably won't work! */
  
 action:
-   | STRING { `Scheme $1 }
+   | STRING { Action_Scheme $1 }
 
 note:
    | NAME STRING
@@ -453,12 +453,12 @@ dyalt:
        let action = $3 in
        let action : action_t =
          match action with
-         | `Scheme _ as x -> x
-         | `None as x -> x
+         | Action_Scheme _ as x -> x
+         | Action_None as x -> x
        in
        prod,getsr dyp,action,anote
      }
-   | rhs { $1,getsr dyp,`None,"" }
+   | rhs { $1,getsr dyp,Action_None,"" }
 
 dyaltlist:
    | { [] }
@@ -473,8 +473,8 @@ rhs:
   | rhs_term rhs { $1 :: $2 }
 
 rhs_term :
-  | rhs_atom { `Atom $1 }
-  | "(" dyalts ")" { `Group $2 }
+  | rhs_atom { Grammar_Atom $1 }
+  | "(" dyalts ")" { Grammar_Group $2 }
 
 rhs_atom:
   | NAME { NAME $1 } /* arbitrary nonterminal */

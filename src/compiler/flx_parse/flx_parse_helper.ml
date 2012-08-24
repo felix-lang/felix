@@ -44,9 +44,10 @@ print_endline ("Found " ^ s ^ " as global name");
     | x -> x
   in aux re
 
-type action_t = [`Scheme of string | `None]
-type symbol_t = [`Atom of token | `Group of dyalt_t list]
+type action_t = Action_Scheme of string | Action_None
+type symbol_t = Grammar_Atom of token | Grammar_Group of dyalt_t list
 and dyalt_t = symbol_t list * Flx_srcref.t * action_t * anote_t
+type privacy_t = Privacy_Public | Privacy_Private
 
 let lexeme x = Dyp.lexeme x
 
@@ -116,12 +117,12 @@ let buffer_add_ocs b r = Ocs_print.print_to_buffer b false r
 
 let cal_priority_relation p =
   match p with
-  | `No_prio -> No_priority
-  | `Eq_prio p -> Eq_priority p
-  | `Less_prio p -> Less_priority p
-  | `Lesseq_prio p -> Lesseq_priority p
-  | `Greater_prio p -> Greater_priority p
-  | `Greatereq_prio p -> Greatereq_priority p
+  | Priority_None -> No_priority
+  | Priority_Eq p -> Eq_priority p
+  | Priority_Less p -> Less_priority p
+  | Priority_Lesseq p -> Lesseq_priority p
+  | Priority_Greater p -> Greater_priority p
+  | Priority_Greatereq p -> Greatereq_priority p
 
 (* Add a production to a dssl *)
 let define_scheme sr dyp global_regexps dssl_record dssl name prio rhs (scm:string) =
@@ -143,8 +144,8 @@ print_endline ("define_scheme " ^ name);
   in
 
   let priority = match prio with
-    | `Default -> "default_priority"
-    | `Priority p -> p
+    | Priority_Default -> "default_priority"
+    | Priority_Name p -> p
   in
 
   (* Translate Felix production to Dypgen production *)
@@ -305,20 +306,20 @@ let dflt_action kind prod =
 
 let cal_action kind prod action =
   match action with
-  | `None -> dflt_action kind prod
-  | `Scheme scm -> scm
+  | Action_None -> dflt_action kind prod
+  | Action_Scheme scm -> scm
 
 let rec flatten sr pcounter kind rhs =
   let rec aux inp out extras = match inp with
   | [] -> List.rev out,extras
 
-  | `Group dyalts :: t ->
+  | Grammar_Group dyalts :: t ->
     let x = string_of_int (!pcounter) in incr pcounter;
     let sl = "__grp_" ^ x in
-    let rules = fixup_alternatives pcounter kind sl `Default dyalts in
-    aux t (NONTERMINAL (sl, `No_prio)::out) (rules@extras)
+    let rules = fixup_alternatives pcounter kind sl Priority_Default dyalts in
+    aux t (NONTERMINAL (sl, Priority_None)::out) (rules@extras)
 
-  | `Atom h :: t -> aux t (h::out) extras
+  | Grammar_Atom h :: t -> aux t (h::out) extras
   in aux rhs [] []
 
 and fixup_rule sr pcounter kind rhs =
@@ -351,11 +352,11 @@ let add_rule global_data local_data dssl rule =
      let rules = List.fold_left (fun acc rule -> uniq_add rule acc) d.rules rules in
      let privacy =
        match privacy with
-       | `Private ->
+       | Privacy_Private ->
           let n = !(global_data.pcounter) in incr (global_data.pcounter);
           let secret = "_"^name^"_"^string_of_int n in
           Drules.add name secret d.privacy
-       | `Public -> d.privacy
+       | Privacy_Public -> d.privacy
      in
      let d = { d with rules = rules; privacy = privacy } in
      let m = { m with drules = Drules.add dssl d m.drules } in
