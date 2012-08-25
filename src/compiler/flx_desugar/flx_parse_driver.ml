@@ -43,6 +43,7 @@ let parse_lexbuf_with_parser aparser old_local_data lexbuf : local_data_t =
           show_error lexbuf;
           raise (Flx_exceptions.ParseError ("Failure \"" ^ s ^ "\" Parsing File"))
         end
+(*
       | Flx_exceptions.ClientError (sr, s)
       | Flx_exceptions.ClientError2 (sr, _, s)
       | Flx_exceptions.ClientErrorn (sr::_, s) as x  ->
@@ -54,7 +55,7 @@ let parse_lexbuf_with_parser aparser old_local_data lexbuf : local_data_t =
           print_endline (Flx_srcref.long_string_of_src sr);
           raise x
         end
-
+*)
       | Dyp.Syntax_error as x ->
           show_error lexbuf;
           raise x

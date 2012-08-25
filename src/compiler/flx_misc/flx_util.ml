@@ -4,6 +4,18 @@ let spaces level = String.make (level*2) ' '
 let catmap sep fn ls = String.concat sep (map fn ls)
 let (+>) x f = f x (* reverse application *)
 
+
+let finally fend f x =
+  let r =
+    try
+      f x
+    with e ->
+      fend ();
+      raise e
+  in
+  fend ();
+  r
+
 let catch_all f x =
   try Some (f x) with _ -> None
 
@@ -22,18 +34,6 @@ let hashtable_of_list lst =
   t
 
 let rec fix f x = f (fix f) x
-
-let finally fend f x =
-  let r =
-    try
-      f x
-    with e ->
-      fend ();
-      raise e
-  in
-  fend ();
-  r
-
 
 (** A series of functions that help to call a function that accepts a tuple with
  * curried arguments. *)

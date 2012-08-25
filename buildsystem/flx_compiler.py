@@ -32,7 +32,6 @@ def build_flx_lex(phase):
             call('buildsystem.dypgen.build_lib', phase),
             call('buildsystem.ocs.build_lib', phase),
             call('buildsystem.sex.build', phase),
-#            build_flx_misc(phase),
             build_flx_version(phase)])
 
 def build_flx_parse(phase):
@@ -47,9 +46,23 @@ def build_flx_parse(phase):
             call('buildsystem.dypgen.build_lib', phase),
             call('buildsystem.ocs.build_lib', phase),
             call('buildsystem.sex.build', phase),
-#            build_flx_misc(phase),
             build_flx_version(phase),
             build_flx_lex(phase)])
+
+def build_flx_file(phase):
+    path = Path('src/compiler/flx_file')
+    return phase.ocaml.build_lib(path/'flx_file',
+        srcs=Path.globall( path / '*.ml{,i}'),
+        libs=[
+            call('buildsystem.dypgen.build_lib', phase),
+            call('buildsystem.ocs.build_lib', phase),
+            call('buildsystem.sex.build', phase),
+            build_flx_version(phase),
+            build_flx_misc(phase),
+            build_flx_lex(phase),
+            build_flx_parse(phase),
+            ])
+
 
 def build_flx_core(phase):
     path = Path('src/compiler/flx_core')
@@ -75,6 +88,7 @@ def build_flx_desugar(phase):
             call('buildsystem.sex.build', phase),
             build_flx_lex(phase),
             build_flx_parse(phase),
+            build_flx_file(phase),
             build_flx_misc(phase),
             build_flx_core(phase),
             build_flx_version(phase),
@@ -164,6 +178,7 @@ def build_flx_drivers(ctx, phase):
         build_flx_lex(phase),
         build_flx_parse(phase),
         build_flx_misc(phase),
+        build_flx_file(phase),
         build_flx_core(phase),
         build_flx_desugar(phase),
         build_flx_bind(phase),
