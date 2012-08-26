@@ -133,6 +133,32 @@ tutindex:
 	build/release/bin/mktutindex streams Streams tutorial.fdoc
 	build/release/bin/mktutindex garray "Generalised Arrays" tutorial.fdoc
 
+ocamldoc:
+	mkdir -p parsedoc
+	ocamldoc -d parsedoc -html \
+		-I build/release/src/compiler/flx_version \
+		-I build/release/src/compiler/ocs/src \
+		-I build/release/src/compiler/dypgen/dyplib \
+		-I build/release/src/compiler/sex \
+		-I build/release/src/compiler/flx_lex \
+		-I build/release/src/compiler/flx_parse \
+		-I build/release/src/compiler/flx_parse \
+		-I build/release/src/compiler/flx_misc \
+		-I build/release/src/compiler/flx_file \
+		src/compiler/flx_version/*.mli \
+		src/compiler/flx_version/*.ml \
+		src/compiler/sex/*.mli \
+		src/compiler/sex/*.ml \
+		src/compiler/flx_lex/*.mli \
+		src/compiler/flx_lex/*.ml \
+		src/compiler/flx_parse/*.ml \
+		src/compiler/flx_parse/*.mli \
+		src/compiler/flx_file/*.mli \
+		src/compiler/flx_file/*.ml \
+		src/compiler/flx_misc/*.mli \
+		src/compiler/flx_misc/*.ml 
+
+
 .PHONY : build32 build64 build test32 test64 test 
 .PHONY : build32-debug build64-debug build-debug test32-debug test64-debug test-debug 
 .PHONY : doc install websites-linux  release install-bin 

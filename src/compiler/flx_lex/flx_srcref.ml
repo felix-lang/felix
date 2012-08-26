@@ -1,4 +1,4 @@
-(** Generic source reference manipulation.
+(** {6 Generic source reference manipulation}
  *
  * Note the special hack of forgetting the second filename when creating a
  * range: the alternative would be to record a complete list of lines. *)

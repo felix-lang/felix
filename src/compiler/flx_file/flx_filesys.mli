@@ -1,4 +1,4 @@
-(** System dependent path handling *)
+(** {6 System dependent path handling. } *)
 
 (** For search functions the filename to search for must be in Unix format,
 whilst the include file list members must be in native file format. The
@@ -15,6 +15,9 @@ val big_bang: float
 (** A time way in the future *)
 val big_crunch: float
 
+(** [virtual_filetime dflt filename] calculates the filetime
+of native syntax [filename] as a [float] if it is found, or returns the 
+default value [dflt] otherwise *)
 val virtual_filetime: 
   float ->                     (** default if file not found *)
   string ->                    (** native filename *)
@@ -22,10 +25,15 @@ val virtual_filetime:
 
 exception Missing_path of string
 
+(** Directory Separator. / on Unix, \ on Windows *)
 val dir_sep : string
+
+(** Root directory. / on Unix, \ on Windows *)
 val root_dir : string
 
-(** Look in the filesystem for the path. Raises Missing_path if not found. *)
+(** Look in the filesystem for the path. Raises Missing_path if not found. 
+Search the given list of directories if given, otherwise the current directory.
+*)
 val find_path:
   ?include_dirs:string list ->  (** Optional directories to search. *)
   string ->                     (** The path name. *)
@@ -141,7 +149,6 @@ val mkabs: string -> string
   * that, and of course we have to try reading it as well. That is,
   * the cache dir has priority on read and if specified forces any write.
   *)
-
 val cached_computation:
   string ->                         (** kind label *)
   string ->                         (** input filename of the cached data *)

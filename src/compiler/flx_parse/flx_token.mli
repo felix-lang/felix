@@ -1,3 +1,4 @@
+(** {6 Data Types for Parsing} *)
 type anote_t = string
 
 type priority_level_t = Priority_Default | Priority_Name of string

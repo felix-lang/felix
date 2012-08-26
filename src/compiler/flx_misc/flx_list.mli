@@ -50,7 +50,7 @@ val iteri: (int -> 'a -> unit) -> 'a list -> unit
  * recursive. *)
 val mapi: (int -> 'a -> 'b) -> 'a list -> 'b list
 
-(** [fold_lefti f a [b1; ...; bn] is [f 0 a1 (f 1 a2 (... (f n an b) ...))]. *)
+(** [fold_lefti f a [b1; ...; bn] is [f 0 a1 (f 1 a2 (... (f n an b) ...))]]. *)
 val fold_lefti: (int -> 'a -> 'b -> 'a) -> 'a -> 'b list -> 'a
 
 (** [range f N] is [f 0; f 1; ...; f N]. *)
