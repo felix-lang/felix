@@ -1,3 +1,4 @@
+(** {6 Type of sex lexical token} *)
 type token =
  | LB
  | RB
