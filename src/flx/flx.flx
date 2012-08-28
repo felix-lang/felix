@@ -101,6 +101,12 @@ proc print_help() {
   println "-Idir                : add dir to search path for both felix and C++ includes";                      
   println "-Ldir                : add dir to linker search path"; 
   println "-llib                : add dir lib to linker command";
+  println "-foption             : add switch to compiler command";
+  println "-Woption             : add switch to compiler command";
+  println "-O1                  : add switch to compiler command";
+  println "-O2                  : add switch to compiler command";
+  println "-O3                  : add switch to compiler command";
+  println "--cflags=flags       : addd flags to compiler command";
   println "-Dmac                : add macro def to C++ compiler command";
   println "-DFLX_ENABLE_TRACE       : enable compilation of trace generators (defaults off)";
   println "-DFLX_PTF_STATIC_STRUCT  : make the thread_frame a static object (default Felix heap)";
@@ -548,6 +554,7 @@ var TIMECMD="time -p";
 var STATIC=DEFAULT_LINK_STATIC;
 var SHOWCODE=0;
 var CCFLAGS="";
+var EXTRA_CCFLAGS="";
 var LINKER_SWITCHES="";
 var MACROS="";
 var cpps="";
@@ -842,6 +849,25 @@ grabbing_args: while grab == 1 and argno<System::argc do
     debugln "Set extra macros for C++ compilation";
     MACROS=MACROS + " " + arg;
 
+  elif arg \in ("-O1","-O2","-O3") do
+    debugln$ "Set C++ compilation optimisation " + arg;
+    OPTIMISE = arg;
+
+  elif prefix(arg,"-f") do
+    debugln$ "Set C++ compilation switch "+arg;
+    EXTRA_CCFLAGS += EXTRA_CCFLAGS + " " + arg;
+
+  elif prefix(arg,"--cflags=") do
+    {
+      var flags = arg.[9 to];
+      debugln$ "Set C++ compilation switch "+ flags;
+      EXTRA_CCFLAGS += EXTRA_CCFLAGS + " " + flags;
+    };
+
+  elif prefix(arg,"-W") do
+    debugln$ "Set C++ warning switch "+arg;
+    EXTRA_CCFLAGS += EXTRA_CCFLAGS + " " + arg;
+
   elif prefix(arg,"--pkg=") do
     debugln "Add pkgconfig package to link";
     pkgs= pkgs + " " + arg.[6 to];
@@ -1046,6 +1072,9 @@ if NOOPTIMISE == 0 do
 else
   debugln "What, no optimisation?";
 done
+// Note we have to do it this way so the -f switches turn
+// off optimisations previously introduced (order matters)
+CCFLAGS += EXTRA_CCFLAGS;
 
 var PKGCONFIG=quote(Filename::join$ List::list(FLX_INSTALL_DIR,"bin","flx_pkgconfig"));
 debugln$ "Felix package manager program is "+PKGCONFIG;
