@@ -119,6 +119,90 @@ val nav = '<p><button type="button" onclick="expand_all()">Expand</button>'
    '&nbsp;<button type="button" onclick="collapse_all()">Collapse</button> </p>'
 ;
 
+val slideshow_js = """
+<button id="start" onclick="start_slides()">Start</button>
+<button id="stop" onclick="stop_slides()" disabled="true">Stop</button>
+<button id="reset" onclick="reset_slides()">Reset</button>
+<p id="goose">Slideshow Ready</p>
+<script>
+var slides = new Array();
+var slideno = 0;
+var lineno = 0;
+var nslides = 0;
+slides[0]=0;
+
+function enable (slide, line) {
+  document.getElementById("slide-section-"+slide+","+line).style.display="";
+}
+
+function disable (slide, line) {
+  document.getElementById("slide-section-"+slide+","+line).style.display="none";
+}
+
+function disable_slide (slide) {
+  for (i = 1; i <= slides[slide]; i = i + 1) disable(slide,i);
+}
+
+function nextslide() {
+  slideno = slideno + 1;
+  if (slideno > nslides ) { reset_slides();}
+  lineno = 1;
+}
+
+function nextline() {
+  lineno = lineno + 1;
+  if (lineno > slides[slideno]) { nextslide(); }
+}
+
+function showline() { 
+  if (slideno == 0) {
+    document.getElementById("goose").innerHTML="<p>READY</p>";
+  }
+  else {
+    document.getElementById("goose").innerHTML="<p>SLIDE " + (slideno) + ", LINE " + (lineno) +"</p>";
+    enable (slideno, lineno); 
+  }
+}
+
+function showframe(){
+  oldslide = slideno;
+  oldline = lineno;
+  nextline();
+  if (oldslide != slideno) disable_slide(oldslide);
+  showline();
+}
+
+var interval_handle;
+function start_slides() { 
+  document.body.style.background="black";
+  document.body.style.color="white";
+  document.getElementById("start").disabled=true; 
+  document.getElementById("stop").disabled=false; 
+  document.getElementById("reset").disabled=false; 
+  interval_handle = setInterval (showframe, 2000); 
+}
+
+function stop_slides() { 
+  document.body.style.background="white";
+  document.body.style.color="black";
+  document.getElementById("start").disabled=false; 
+  document.getElementById("stop").disabled=true; 
+  document.getElementById("reset").disabled=false; 
+  clearInterval(interval_handle); 
+}
+
+function reset_slides() {
+  document.getElementById("reset").disabled=true; 
+  disable_slide(slideno);
+  stop_slides();
+  slideno = 0;
+  lineno = 0;
+  showline();
+}
+
+</script>
+""";
+
 // bid is the button id, cid is the stuff which is controlled by it
 fun tree_button(bid:string, cid:string)=>
   "<img src='/web/images/minus.gif' id='"+bid+"' onclick='toggle(this,\""+cid+"\")' alt='+'/>"
@@ -131,6 +215,21 @@ gen safer_popen(cmd:string)=>
 
 fun xlat_fdoc(t:string, filename:string): bool * string =
 {
+
+  // SLIDE SHOW 
+  var slide_count = 0;
+  var slide_section_count = 0;
+  proc end_slide_section() { write_string("\n</div>"); }
+  proc end_slide() {
+    write_string("</div>\n<script>\nslides["+str slide_count+"]=" + str slide_section_count + ";\n</script>\n");
+  }
+  proc start_slide() {
+    write_string('\n<div class="slide" id="slide-'+str slide_count+'">\n');
+  }
+  proc start_slide_section() {
+    write_string('\n<div class="slide-section" id="slide-section-'+
+     str slide_count+","+str slide_section_count+'" style="display:none">\n');
+  }
 
   var needs_mathjax = false;
   fun cal_nav() = 
@@ -456,6 +555,27 @@ nextc:>
             write_string("Failed cmd: " + b);
           done
           s=doc;
+        elif b == "slideshow" do
+          write_string (slideshow_js);
+          slide_count = 0;
+          slide_section_count = 0;
+        elif b == "slide" do
+          if slide_count != 0 do 
+            end_slide_section(); 
+            end_slide(); 
+          done
+          slide_count = slide_count + 1;
+          slide_section_count = 1;
+          start_slide();
+          start_slide_section();
+          s = doc;
+        elif b == "section" do
+          if slide_section_count != 0 do 
+            end_slide_section(); 
+          done
+          slide_section_count = slide_section_count + 1; 
+          start_slide_section();
+          s = doc;
         else s = doc;
         done
       done
@@ -472,6 +592,11 @@ fin:>
    ep;
    edivs(1);
    shownav();
+   if slide_count > 0 do
+     end_slide_section();
+     end_slide();
+     write_string("\n<script>nslides = " + str slide_count + ";</script>\n");
+   done
    return needs_mathjax, js1+all_buttons +js2+nav+out;
 }
 }
