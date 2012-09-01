@@ -534,8 +534,11 @@ proc serve_raw (k:socket_t, fname:string, suffix:string) {
   var eof_flag = false;
   var txt = load fname;
   println$ f"Loaded raw file %S, len=%d" (fname, txt.len.int);
+  var mime = MIMEType::mime_type_from_file fname;
+  println$ "File " + fname + " taken to be " + str mime;
   //println$ "Contents=" + flx;
-  val data = make_raw txt;
+  val data = make_mime (mime,txt);
+  //val data = make_raw txt;
   write_string (k, data, &eof_flag);
 }
 

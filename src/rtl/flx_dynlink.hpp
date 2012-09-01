@@ -160,6 +160,7 @@ typedef con_t *(*main_t)(void*);
 struct RTL_EXTERN flx_dynlink_t
 {
   // data
+  ::std::string filename;
   LIBHANDLE library;
   thread_frame_creator_t thread_frame_creator;
   start_t start_sym;

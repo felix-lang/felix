@@ -133,8 +133,9 @@ flx_dynlink_t::flx_dynlink_t(
     throw flx_link_failure_t("<static link>","dlsym","flx_start");
 }
 
-void flx_dynlink_t::link(const std::string& filename) throw(flx_link_failure_t)
+void flx_dynlink_t::link(const ::std::string& filename_a) throw(flx_link_failure_t)
 {
+  filename = filename_a;
   library = flx_load_library(filename);
   //fprintf(stderr,"File %s dlopened at %p ok\n",fname.c_str(),library);
 

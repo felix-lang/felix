@@ -1,8 +1,15 @@
 class Dynlink
 {
   requires package "flx_dynlink";
-  type flx_library = "flx::rtl::flx_dynlink_t*";
-  type flx_instance = "flx::rtl::flx_libinit_t*";
+  type flx_library = "::flx::rtl::flx_dynlink_t*";
+  type flx_instance = "::flx::rtl::flx_libinit_t*";
+
+  type flx_link_failure_t = "::flx::rtl::flx_link_failure_t";
+  ctor flx_link_failure_t : string * string * string = "::flx::rtl::flx_link_failure_t($1,$2,$3)";
+
+  fun filename : flx_library -> string = "::std::string($1->filename)";
+  fun filename : flx_instance -> string = "::std::string($1->lib->filename)";
+
   proc dlopen:flx_library * string = "$1->link($2.c_str());";
   proc dlclose:flx_library = "$1->unlink();";
 
@@ -46,7 +53,12 @@ class Dynlink
   noinline fun init_lib(filename:string):flx_instance = {
     var library = create_library_handle();
     var linstance =  create_instance_handle();
-    dlopen(library,filename);
+    try
+      dlopen(library,filename);
+    catch exn: flx_link_failure_t =>
+      eprintln$ "Dynamic linkage error opening DLL " + filename;
+      throw exn;
+    endtry
     create (library,linstance);
     var init = get_init linstance;
     Fibres::run init;
@@ -86,7 +98,13 @@ class Dynlink
   noinline fun flx_dlsym[T] (linst: flx_instance, sym:string) = {
     var library = Dynlink::get_library linst;
     var tf = Dynlink::get_thread_frame linst;
+//println$ "Trying to load symbol " + sym + " from library " + linst.filename;
     var raw_sym = Dynlink::dlsym$ library, sym;
+    if isNULL raw_sym do
+      eprintln$ "Unable to load symbol " + sym + " from library " + linst.filename;
+      throw$ flx_link_failure_t(linst.filename,"dlsym","Cannot find symbol " + sym); 
+    done
+//    eprintln$ "loaded symbol " + sym + " from library " + linst.filename + " address= " + str raw_sym;
     var typed_sym = C_hack::cast[T] raw_sym;
     return typed_sym, tf;
   }

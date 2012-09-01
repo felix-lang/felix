@@ -38,14 +38,10 @@ fun txt2html (x:string) =
 }
 
 
-typedef raw_xlat_t = address * string * string --> bool * string;
+typedef xlat_t = string * string -> bool * string;
 
-var xlat_felix: raw_xlat_t;
-var xlat_cpp: raw_xlat_t;
-
-var tf_xlat_felix: address;
-var tf_xlat_cpp: address;
-
+var xlat_felix: xlat_t;
+var xlat_cpp: xlat_t;
 
 module Fdoc2Html {
 
@@ -406,7 +402,7 @@ nextc:>
         if b != "" do 
           sp;
           write_string("<pre class='cppbg'>"); 
-          write_string((xlat_cpp (tf_xlat_cpp,b,"")).1); // no parent!
+          write_string((xlat_cpp,b,"").1); // no parent!
           write_string("</pre>");
           ep; 
           b= ""; 
@@ -423,7 +419,7 @@ nextc:>
         if b != "" do 
           sp;
           write_string("<pre class='flxbg'>"); 
-          needs_mathjax', txt := xlat_felix (tf_xlat_felix,b,"");
+          needs_mathjax', txt := xlat_felix (b,"");
           needs_mathjax |= needs_mathjax';
           write_string(txt); // no parent!
           write_string("</pre>");
@@ -478,7 +474,7 @@ nextc:>
                 flx = v3.1.string;
               done
             done
-            needs_mathjax', html := xlat_felix (tf_xlat_felix,flx,"");
+            needs_mathjax', html := xlat_felix (flx,"");
             needs_mathjax |= needs_mathjax';
             write_string("<pre class='inclusion'>\n"+fname+"</pre>\n");
             write_string("<pre class='flxbg'>"); 
@@ -490,7 +486,7 @@ nextc:>
           {
             fname := strip(b.[15 to]);
             var flx = get_flx(fname+".flx");
-            needs_mathjax', html := xlat_felix (tf_xlat_felix,flx,"");
+            needs_mathjax', html := xlat_felix (flx,"");
             needs_mathjax |= needs_mathjax';
             write_string("<pre class='inclusion'>"+fname+".flx</pre>\n");
             write_string("<pre class='flxbg'>"); 
@@ -512,7 +508,7 @@ nextc:>
             var flx = get_flx(fname);
             write_string("<pre class='inclusion'>\n"+fname+"</pre>\n");
             write_string("<pre class='cppbg'>"); 
-            write_string((xlat_cpp (tf_xlat_cpp,flx,"")).1);
+            write_string((xlat_cpp (flx,"")).1);
             write_string("</pre>"); 
           };
           s=doc;
@@ -655,28 +651,33 @@ fun setup(config_data:string) = {
         if lib in list("flx2html", "cpp2html") do
 //println$ "Adding lib " + lib;
           var linst = Dynlink::init_lib(lib + dll_extn);
-          var library = Dynlink::get_library linst;
-          var tf = Dynlink::get_thread_frame linst;
-          var raw_setup = Dynlink::dlsym$ library, "setup";
-//println$ lib+ " Got setup address " + str raw_setup;
-          var setup = C_hack::cast[address * string --> int] raw_setup;
-          var sresult = setup(tf,config_data);
+          var sresult = Dynlink::func1[int,string] (linst, "setup") config_data;
           C_hack::ignore(sresult);
 println$ lib+ " Library set up " + str sresult;
           libs = Cons ((lib, linst),libs); 
           match lib with
           | "flx2html" => 
-            xlat_felix = C_hack::cast[raw_xlat_t]$ Dynlink::dlsym (library,entry);
-            tf_xlat_felix = tf;
+            xlat_felix = Dynlink::func2[bool * string, string, string](linst,"xlat_felixx");
           | "cpp2html" => 
-            xlat_cpp= C_hack::cast[raw_xlat_t]$ Dynlink::dlsym (library,entry);
-            tf_xlat_cpp = tf;
+            xlat_cpp = Dynlink::func2[bool * string, string, string](linst,"xlat_cpp");
           endmatch;
         done
       done 
     endmatch;
   done
 
+// We now want fdoc to have plugins of its own to handle groups
+// of commands so its command set is extensible .. and to reduce
+// the cost of re-compiling all the time
+/*
+  var command-libs = list ("fdoc-slideshow");
+  for lib in command-libs do
+    linst = Dynlink::init_lib(lib + dll_extn);
+    sresult = Dynlink::func1[int,string] (linst, "setup") config_data;
+    C_hack::ignore(sresult);
+println$ lib+ " Library set up " + str sresult;
+  done
+*/
   return 0;
 }
 

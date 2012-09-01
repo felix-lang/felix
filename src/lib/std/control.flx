@@ -68,9 +68,10 @@ open class Control
     use a non-local goto, and they cannot pass across
     a function boundary.
   """
-  proc throw(x: unit->void) { _throw (C_hack::cast[cont] x); }
+  proc throw_continuation(x: unit->void) { _throw (C_hack::cast[cont] x); }
   private proc _throw: cont = "throw $1;";
 
+  proc throw[T] : T = "throw $1;";
 
   // should be private but needed in this class for the data type,
   // and also needed in schannels to do the svc call.

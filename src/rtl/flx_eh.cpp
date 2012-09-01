@@ -6,7 +6,7 @@
 using namespace ::flx::rtl;
 
 
-int ::flx::rtl::std_exception_handler (std::exception *e)
+int ::flx::rtl::std_exception_handler (::std::exception *e)
 {
   fprintf(stderr,"C++ STANDARD EXCEPTION %s\n",e->what());
   return 4;
