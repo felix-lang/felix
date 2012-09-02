@@ -46,7 +46,7 @@ gen fib(count:int)():opt[int] = {
     return None[int]; 
 }
 for n in fib(5) do
-    if n != 0 do print ", "; 
+    if n != 0 do print ", "; done 
     print(n);
 done // Print 0, 1, 1, 2, 3, 5
 endl;
