@@ -70,6 +70,12 @@ def build(phase, felix):
         print("Warning : fpc2html not built. Continuing..." )
 
     try:
+        shlib = felix.compile(phase.ctx.buildroot/'tools/fdoc-slideshow.flx')
+        fbuild.builders.file.copy(phase.ctx, shlib, 'shlib')
+    except:
+        print("Warning : fdoc-slideshow not built. Continuing..." )
+
+    try:
         exe = felix.compile(phase.ctx.buildroot/'tools/norK.flx', static=True)
         fbuild.builders.file.copy(phase.ctx, exe, 'bin')
     except:

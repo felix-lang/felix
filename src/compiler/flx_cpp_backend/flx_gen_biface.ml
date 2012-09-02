@@ -203,7 +203,7 @@ let gen_fun_body syms bsym_table kind index export_name =
         | `Cfun ->  cat ",\n " arglist
       in
 (*
-print_endline ("Export " ^ export_name);
+print_endline ("Export " ^ export_name ^ " properties " ^ string_of_properties props);
       if mem `Stackable props then print_endline ("Stackable " ^ export_name);
       if mem `Stack_closure props then print_endline ("Stack_closure" ^ export_name);
       if mem `Heap_closure props then print_endline ("Heap_closure" ^ export_name);
@@ -258,7 +258,7 @@ print_endline ("Export " ^ export_name);
           args^ ");\n"
       | `Heap_call ->
         "  return (new(*_PTF gcp,"^class_name^"_ptr_map,true)\n" ^
-        "    " ^ class_name ^ "(_PTFV)\n" ^
+        "    " ^ class_name ^ "(_PTFV))\n" ^
         "    ->apply(" ^ args ^ ");\n"
       end 
       ^

@@ -384,29 +384,9 @@ proc install_bin ()
   if result !=0 goto install_bin_failed;
   println$ "Installed executable flx_cp in /usr/local/bin";
 
-  result= system("cp -f "+FLX_INSTALL_DIR+"/tools/ocaml2html"+EXT_SHLIB+" /usr/local/lib");
+  result= system("cp -f "+FLX_INSTALL_DIR+"/shlib/*"+EXT_SHLIB+" /usr/local/lib");
   if result !=0 goto install_bin_failed;
-  println$ "Installed plugin ocaml2html in /usr/local/lib";
-
-  result= system("cp -f "+FLX_INSTALL_DIR+"/tools/py2html"+EXT_SHLIB+" /usr/local/lib");
-  if result !=0 goto install_bin_failed;
-  println$ "Installed plugin py2html in /usr/local/lib";
-
-  result= system("cp -f "+FLX_INSTALL_DIR+"/tools/fpc2html"+EXT_SHLIB+" /usr/local/lib");
-  if result !=0 goto install_bin_failed;
-  println$ "Installed plugin fpc2html in /usr/local/lib";
-
-  result= system("cp -f "+FLX_INSTALL_DIR+"/tools/flx2html"+EXT_SHLIB+" /usr/local/lib");
-  if result !=0 goto install_bin_failed;
-  println$ "Installed plugin flx2html in /usr/local/lib";
-
-  result= system("cp -f "+FLX_INSTALL_DIR+"/tools/fdoc2html"+EXT_SHLIB+" /usr/local/lib");
-  if result !=0 goto install_bin_failed;
-  println$ "Installed plugin fdoc2html in /usr/local/lib";
-
-  result= system("cp -f "+FLX_INSTALL_DIR+"/tools/cpp2html"+EXT_SHLIB+" /usr/local/lib");
-  if result !=0 goto install_bin_failed;
-  println$ "Installed plugin cpp2html in /usr/local/lib";
+  println$ "Installed plugins in /usr/local/lib";
 
   println "Install succeeded";
   System::exit(0);

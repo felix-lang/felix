@@ -68,10 +68,11 @@ let lower_bsym_table state bsym_table root_proc =
   (* fix up root procedures so if they're not stackable,
      then they need a heap closure -- wrappers require
      one or the other *)
+  (* JS: Change 2 sept 2012: also for functions! *)
   Flx_types.BidSet.iter begin fun i ->
     let bsym = Flx_bsym_table.find bsym_table i in
     match Flx_bsym.bbdcl bsym with
-    | Flx_bbdcl.BBDCL_fun (props,vs,p,Flx_btype.BTYP_void,exes) ->
+    | Flx_bbdcl.BBDCL_fun (props,vs,p,ret,exes) ->
         let props = ref props in
 
         if List.mem `Stackable !props then begin
@@ -97,7 +98,7 @@ let lower_bsym_table state bsym_table root_proc =
             !props,
             vs,
             p,
-            Flx_btype.btyp_void (),
+            ret,
             exes))
     | _ -> ()
   end !(state.syms.Flx_mtypes2.roots);

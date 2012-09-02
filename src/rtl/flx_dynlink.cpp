@@ -16,14 +16,6 @@ getmachosym(NSModule library, const char* symname)
 
 #endif
 
-flx_link_failure_t::flx_link_failure_t(string f, string o, string w) :
-  filename(f),
-  operation(o),
-  what(w)
-{}
-
-flx_link_failure_t::~flx_link_failure_t(){}
-
 LIBHANDLE
 flx_load_library(const std::string& filename)
 {

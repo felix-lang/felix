@@ -8,7 +8,7 @@ namespace flx { namespace rtl {
 // ********************************************************
 flx_exception_t::~flx_exception_t(){}
 
-flx_exec_failure_t::flx_exec_failure_t(std::string f, std::string o, std::string w) :
+flx_exec_failure_t::flx_exec_failure_t(::std::string f, ::std::string o, ::std::string w) :
   filename(f),
   operation(o),
   what(w)
@@ -23,7 +23,7 @@ flx_range_srcref_t::flx_range_srcref_t() :
 flx_range_srcref_t::flx_range_srcref_t(char const *f,int sl, int sc, int el, int ec) :
     filename(f),startline(sl),startcol(sc),endline(el),endcol(ec){}
 
-flx_halt_t::flx_halt_t(flx_range_srcref_t ff, char const *cf, int cl, std::string r) :
+flx_halt_t::flx_halt_t(flx_range_srcref_t ff, char const *cf, int cl, ::std::string r) :
    reason(r), flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
 flx_halt_t::~flx_halt_t(){}
 
@@ -52,6 +52,15 @@ flx_range_failure_t::flx_range_failure_t(long l, long x, long h, flx_range_srcre
 flx_range_failure_t::~flx_range_failure_t(){}
 
 flx_switch_failure_t::~flx_switch_failure_t(){}
+
+flx_link_failure_t::flx_link_failure_t(::std::string f, ::std::string o, ::std::string w) :
+  filename(f),
+  operation(o),
+  what(w)
+{}
+
+flx_link_failure_t::~flx_link_failure_t(){}
+
 
 long range_check (long l, long x, long h, flx_range_srcref_t sref, char const *cf, int cl)
 {

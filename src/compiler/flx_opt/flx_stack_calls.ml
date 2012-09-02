@@ -328,6 +328,9 @@ let can_stack_func syms bsym_table fn_cache ptr_cache i =
   let bsym = Flx_bsym_table.find bsym_table i in
   match Flx_bsym.bbdcl bsym with
   | BBDCL_fun (_,_,_,ret,_) ->
+(*
+print_endline ("Checking stackability of function " ^ Flx_bsym.id bsym);
+*)
     let has_vars = has_var_children bsym_table children in
     let has_funs = has_fun_children bsym_table children in
     let returns_fun = type_has_fn fn_cache syms bsym_table children ret in

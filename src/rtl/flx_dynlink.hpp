@@ -113,25 +113,16 @@ using namespace std;
 // must be at global scope, because the users' is
 namespace flx { namespace rtl {
 
-struct RTL_EXTERN flx_link_failure_t;
 struct RTL_EXTERN flx_dynlink_t;
 struct RTL_EXTERN flx_libinit_t;
 
 /// Dynamic linkage failure.
 
-struct RTL_EXTERN flx_link_failure_t : flx_exception_t {
-  string filename;
-  string operation;
-  string what;
-  flx_link_failure_t(string f, string o, string w);
-  virtual ~flx_link_failure_t();
-};
+RTL_EXTERN LIBHANDLE
+flx_load_library(const ::std::string& filename);
 
 RTL_EXTERN LIBHANDLE
-flx_load_library(const std::string& filename);
-
-RTL_EXTERN LIBHANDLE
-flx_load_module(const std::string& filename);
+flx_load_module(const ::std::string& filename);
 
 /// frame creators.
 
@@ -174,7 +165,7 @@ struct RTL_EXTERN flx_dynlink_t
     main_t main_sym) throw(flx_link_failure_t);
 
   // routines
-  void link(const std::string& filename) throw(flx_link_failure_t);
+  void link(const ::std::string& filename) throw(flx_link_failure_t);
   void unlink();
   virtual ~flx_dynlink_t();
 

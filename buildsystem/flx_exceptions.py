@@ -13,11 +13,15 @@ def build_runtime(phase):
     buildsystem.copy_hpps_to_rtl(phase.ctx,
         phase.ctx.buildroot / 'config/target/flx_exceptions_config.hpp',
         path / 'flx_exceptions.hpp',
+        path / 'flx_eh.hpp',
     )
 
     dst = 'lib/rtl/flx_exceptions'
-    srcs = [copy(ctx=phase.ctx, src=f, dst=phase.ctx.buildroot / f) for f in[path / 'flx_exceptions.cpp']]
-    includes = [phase.ctx.buildroot / 'config/target', phase.ctx.buildroot / 'lib/rtl']
+    srcs = [copy(ctx=phase.ctx, src=f, dst=phase.ctx.buildroot / f) for f in[
+     path / 'flx_exceptions.cpp',
+     path / 'flx_eh.cpp',
+     ]]
+    includes = ['src/rtl', phase.ctx.buildroot / 'config/target', phase.ctx.buildroot / 'lib/rtl']
     macros = ['BUILD_FLX_EXCEPTIONS']
 
     return Record(

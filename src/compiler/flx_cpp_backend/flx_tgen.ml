@@ -70,6 +70,7 @@ let gen_tuple name tn typs =
   "};\n"
 
 let gen_record rname tname tn typs =
+  let typs = List.map (fun (n,t) -> Flx_name.cid_of_flxid n,t) typs in
   let n = length typs in
   "// Record " ^ rname ^ "\n" ^
   "struct " ^ tname ^ " {\n" ^
@@ -481,7 +482,7 @@ let rec gen_type syms bsym_table (index,typ) =
       descr ^ "struct " ^ name ^ " {\n"
       ^
       catmap ""
-      (fun (name,typ) -> "  " ^ typ ^ " " ^ name ^ ";\n")
+      (fun (name,typ) -> "  " ^ typ ^ " " ^ cid_of_flxid name ^ ";\n")
       ctss
       ^
       "  " ^ name ^ "(){}\n" ^

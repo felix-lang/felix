@@ -171,7 +171,7 @@ print_endline ("Handling a get-n in egen, n=" ^ si n ^ ", e=" ^ sbe bsym_table (
         with Not_found ->
           failwith "[flx_egen] Woops, index of non-existent struct field"
       in
-      ce_dot (ge' e2) field_name
+      ce_dot (ge' e2) (cid_of_flxid field_name)
 
     | BTYP_inst (i,_) ->
       begin match Flx_bsym_table.find_bbdcl bsym_table i with
@@ -182,7 +182,7 @@ print_endline ("Handling a get-n in egen, n=" ^ si n ^ ", e=" ^ sbe bsym_table (
           with _ ->
             failwith "Woops, index of non-existent struct field"
         in
-        ce_dot (ge' e2) name
+        ce_dot (ge' e2) (cid_of_flxid name)
 
       | _ -> failwith ("[flx_egen] Expr "^sbe bsym_table (e,t)^ " type " ^ sbt bsym_table t ^
         " object " ^ sbe bsym_table e2 ^ " type " ^ sbt bsym_table t' ^ 
@@ -195,7 +195,7 @@ print_endline ("Handling a get-n in egen, n=" ^ si n ^ ", e=" ^ sbe bsym_table (
         with Not_found ->
           failwith "[flx_egen] Woops, index of non-existent struct field"
       in
-      ce_prefix "&" (ce_arrow (ge' e2) field_name)
+      ce_prefix "&" (ce_arrow (ge' e2) (cid_of_flxid field_name))
 
     | BTYP_pointer (BTYP_inst (i,_)) ->
       begin match Flx_bsym_table.find_bbdcl bsym_table i with
@@ -206,7 +206,7 @@ print_endline ("Handling a get-n in egen, n=" ^ si n ^ ", e=" ^ sbe bsym_table (
           with _ ->
             failwith "Woops, index of non-existent struct field"
         in
-        ce_prefix "&" (ce_arrow (ge' e2) name)
+        ce_prefix "&" (ce_arrow (ge' e2) (cid_of_flxid name))
 
       | _ -> failwith "[flx_egen] Instance expected to be (c)struct"
       end

@@ -18,6 +18,7 @@ struct FLX_EXCEPTIONS_EXTERN flx_assert2_failure_t;
 struct FLX_EXCEPTIONS_EXTERN flx_axiom_check_failure_t;
 struct FLX_EXCEPTIONS_EXTERN flx_switch_failure_t;
 struct FLX_EXCEPTIONS_EXTERN flx_dropthru_failure_t;
+struct FLX_EXCEPTIONS_EXTERN flx_link_failure_t;
 
 // ********************************************************
 /// EXCEPTION: Felix exception base abstraction.
@@ -45,10 +46,10 @@ struct FLX_EXCEPTIONS_EXTERN flx_out_of_memory_t : flx_exception_t {
 // ********************************************************
 
 struct FLX_EXCEPTIONS_EXTERN flx_exec_failure_t : flx_exception_t {
-  std::string filename;  ///< dll filename
-  std::string operation; ///< faulty operation
-  std::string what;      ///< error description
-  flx_exec_failure_t(std::string f, std::string o, std::string w);
+  ::std::string filename;  ///< dll filename
+  ::std::string operation; ///< faulty operation
+  ::std::string what;      ///< error description
+  flx_exec_failure_t(::std::string f, ::std::string o, ::std::string w);
   virtual ~flx_exec_failure_t();
 };
 
@@ -72,11 +73,11 @@ struct FLX_EXCEPTIONS_EXTERN flx_range_srcref_t {
 // ********************************************************
 
 struct FLX_EXCEPTIONS_EXTERN flx_halt_t : flx_exception_t {
-  std::string reason;         ///< halt argument
+  ::std::string reason;         ///< halt argument
   flx_range_srcref_t flx_loc; ///< location in Felix file
   char const *cxx_srcfile;          ///< C++ file name
   int cxx_srcline;            ///< C++ line number
-  flx_halt_t(flx_range_srcref_t ff, char const *cf, int cl, std::string reason);
+  flx_halt_t(flx_range_srcref_t ff, char const *cf, int cl, ::std::string reason);
   virtual ~flx_halt_t();
 };
 
@@ -163,5 +164,18 @@ FLX_EXCEPTIONS_EXTERN void print_loc(FILE *ef,flx_range_srcref_t x,char const *c
 struct FLX_EXCEPTIONS_EXTERN flx_switch_failure_t : flx_exception_t {
   virtual ~flx_switch_failure_t();
 };
+
+// ********************************************************
+/// EXCEPTION: DYNAMIC LINKAGE failure. this is a system failure!
+// ********************************************************
+
+struct FLX_EXCEPTIONS_EXTERN flx_link_failure_t : flx_exception_t {
+  ::std::string filename;
+  ::std::string operation;
+  ::std::string what;
+  flx_link_failure_t(::std::string f, ::std::string o, ::std::string w);
+  virtual ~flx_link_failure_t();
+};
+
 }}
 #endif

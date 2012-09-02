@@ -23,7 +23,6 @@ def build_runtime(host_phase, target_phase):
         path / 'flx_executil.hpp',
         path / 'flx_sync.hpp',
         path / 'plat_linux.hpp',
-        path / 'flx_eh.hpp',
     )
 
     dst = 'lib/rtl/flx'
