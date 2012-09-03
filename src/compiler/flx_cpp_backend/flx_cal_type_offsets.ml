@@ -75,7 +75,7 @@ let rec get_offsets' syms bsym_table typ : string list =
       iter
       (fun (s,t) ->
         let prefix =
-          "offsetof("^tname^","^s^")+"
+          "offsetof("^tname^","^cid_of_flxid s^")+"
         in
         iter
         (fun s -> lst := !lst @ [prefix ^ s])
@@ -135,7 +135,7 @@ let rec get_offsets' syms bsym_table typ : string list =
     iter
     (fun (s,t) ->
       let prefix =
-        "offsetof("^tname^","^s^")+"
+        "offsetof("^tname^","^cid_of_flxid s^")+"
       in
       iter
       (fun s -> lst := !lst @ [prefix ^ s])

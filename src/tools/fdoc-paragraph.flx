@@ -1,0 +1,25 @@
+include "./paragraph-interface";
+
+fun setup(config_data:string) = {
+  println$ "Setup fdoc-paragraph" + config_data;
+  return 0;
+}
+
+
+object paragraph-control (write_string: string -> 0) implements paragraph-control_t = 
+{
+  method fun whatami () => "Paragraph object";
+  var pstate = false;
+  proc start_p () { write_string("<p>"); pstate=true; }
+  proc start_p (cls:string) { write_string("<p class='"+cls+"'>"); pstate=true; }
+  proc end_p () { write_string("</p>"); pstate=false; }
+  proc break_p () { write_string("</p><p>"); }
+  method proc sp-clas (cls: string) { if not pstate do start_p cls; done }
+  method proc sp() { if not pstate do start_p; done }
+  method proc ep() { if pstate do end_p; done }
+  method proc bp() { if pstate do end_p; done start_p; }
+}
+
+export fun setup of (string) as "setup";
+export fun paragraph-control of (string->0) as "create_paragraph_manager";
+

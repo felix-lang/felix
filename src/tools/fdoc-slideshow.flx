@@ -140,7 +140,7 @@ object slideshow-maker (var write_string: string -> 0) implements slideshow_t =
     done
   }
 
-  method proc finalise-slideshow () =
+  method proc finalise() =
   {
     if slide_count > 0 do
       end_slide_section();

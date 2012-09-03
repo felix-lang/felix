@@ -1,7 +1,18 @@
 include "./charclass";
 include "./plugin_common";
+
 include "./slideshow-interface";
 var slideshow-maker : (string->0) -> slideshow_t;
+
+include "./paragraph-interface";
+var paragraph-maker : (string->0) -> paragraph-control_t;
+
+include "./heading-interface";
+var heading-maker : (paragraph-control_t * (string->0)) -> heading-control_t;
+
+include "./fileseq-interface";
+var fileseq-maker : (string) -> fileseq-control_t;
+
 
 // felix document
 var INSTALL_ROOT="";
@@ -56,71 +67,6 @@ fun markdown (s:string):string= {
   return x;
 }
 
-val js1 = 
-"""
-<script type="text/javascript">
-
-function expand(but,id)
-{
-  var n = document.getElementById(id).style;
-  var button = document.getElementById(but);
-  button.src = "/web/images/minus.gif";
-  button.alt = "-";
-  n.display = "block";
-}
-function collapse(but,id)
-{
-  var n = document.getElementById(id).style;
-  var button = document.getElementById(but);
-  button.src = "/web/images/plus.gif";
-  button.alt = "+";
-  n.display = "none";
-}
-function toggle(button,id)
-{
-  var n = document.getElementById(id).style;
-  if (n.display == "none")
-  {
-    button.src = "/web/images/minus.gif";
-    button.alt = "-";
-    n.display = "block";
-  }
-  else
-  {
-    button.src = "/web/images/plus.gif";
-    button.alt = "+";
-    n.display = "none";
-  }
-}
-var allbuttons = [
-""";
-val js2 =
-"""
-];
-function expand_all()
-{
-  for (i in allbuttons)
-  {
-    expand(allbuttons[i], allbuttons[i]+"_d");
-  }
-}
-function collapse_all()
-{
-  for (i in allbuttons)
-  {
-    collapse(allbuttons[i], allbuttons[i]+"_d");
-  }
-}
-</script>
-""";
-val nav = '<p><button type="button" onclick="expand_all()">Expand</button>'
-   '&nbsp;<button type="button" onclick="collapse_all()">Collapse</button> </p>'
-;
-
-// bid is the button id, cid is the stuff which is controlled by it
-fun tree_button(bid:string, cid:string)=>
-  "<img src='/web/images/minus.gif' id='"+bid+"' onclick='toggle(this,\""+cid+"\")' alt='+'/>"
-;
 val timeout = Filename::join (#Config::config.FLX_INSTALL_DIR, "bin", "timeout"+#Config::config.EXT_EXE);
 
 gen safer_popen(cmd:string)=>
@@ -132,66 +78,22 @@ fun xlat_fdoc(t:string, filename:string): bool * string =
   var slideshow = slideshow-maker write_string of (string);
   println$ "FDOC make slidehow .. " + #(slideshow.whatami);
 
+  var paragraph = paragraph-maker write_string of (string);
+  println$ "FDOC make paragraph .. " + #(paragraph.whatami);
+
+  var heading = heading-maker (paragraph, write_string of (string));
+  println$ "FDOC make heading .. " + #(heading.whatami);
+
+  var fileseq = fileseq-maker (filename);
+  println$ "FDOC make fileseq .. " + #(fileseq.whatami);
+
+
   var needs_mathjax = false;
-  fun cal_nav() = 
-  {
-    val relfile = match (filename,'/').split.rev with | Cons(?h,_) => h | Empty => "";
-    var lpos = relfile.len.int;
-    while lpos > 0 and not isdigit(relfile.[lpos - 1]) do 
-       --lpos; 
-    done 
-    assert lpos == 0 or relfile.[lpos - 1].isdigit;
-    var fpos = lpos;
-    while fpos > 0 and isdigit(relfile.[fpos - 1]) do --fpos; done 
-    assert fpos == 0 or relfile.[fpos].isdigit;
-    val digits = 
-      if fpos >=0 and lpos > fpos then
-        relfile.[fpos to lpos]
-      else ""
-    ;
-
-    val n = digits.len.int;
-    val v = digits.int;
-    val vnext = v + 1;
-    val vprev = v - 1;
-    var snext = (f"%010d" vnext).[10-n to];
-    var sprev= (f"%010d" vprev).[10-n to];
-
-    snext = relfile.[to fpos] + snext + relfile.[lpos to];
-    sprev = relfile.[to fpos] + sprev + relfile.[lpos to];
-    docindex := relfile.[to fpos] + "index" + relfile.[lpos to];
-
-    return
-      if digits == "" then 
-        None[int],None[string],None[string],docindex
-      elif vprev > 0 then 
-        Some v,Some sprev, Some snext,docindex
-      else
-        Some v,None[string], Some snext,docindex
-    ;
-  }
-
-  var all_buttons = "";
-
   var out = "";
   proc write_string(t:string) 
   { 
     out += t;
   }
-
-  proc shownav() {
-    write_string (
-       match cal_nav() with
-       | _,Some ?sprev, Some ?snext, ?docindex => "<a href='"+sprev+"'>Prev</a>  " +  "<a href='"+snext+"'>Next</a> " + "<a href='"+docindex+"'>Index</a>"
-       | _,None, Some ?snext, ?docindex => "<a href='"+snext+"'>Next</a> "+"<a href='"+docindex+"'>Index</a>" 
-       | _,None, None,_ => ""
-     );
-  }
-  fun docnum()=>
-    match cal_nav() with
-    | None,_,_,_ => ""
-    | Some ?v,_,_,_ => str v + "."
-  ; 
 
   private fun split_first (x:string, c:string):string*string =>
     match find_first_of (x, c) with
@@ -200,7 +102,7 @@ fun xlat_fdoc(t:string, filename:string): bool * string =
     endmatch
     ;
 
-  shownav();
+  write_string #(fileseq.shownav);
 
   union state_t = 
     | cmd // processing command
@@ -227,46 +129,16 @@ fun xlat_fdoc(t:string, filename:string): bool * string =
   var b = "";
   proc cp() { b += ch; }
 
+  // paragraphs
+  proc sp () { paragraph.sp (); }
+  proc sp (cls:string) { paragraph.sp-clas cls; }
+  proc ep () { paragraph.ep (); }
+  proc bp () { paragraph.bp (); }
 
-  // paragraph control
-  var pstate = false;
-  proc start_p () { write_string("<p>"); pstate=true; }
-  proc end_p () { write_string("</p>"); pstate=false; }
-  proc break_p () { write_string("</p><p>"); }
-  proc sp() { if not pstate do start_p; done }
-  proc ep() { if pstate do end_p; done }
-  proc bp() { if pstate do end_p; done start_p; }
-
-  // heading control
-  var hstack = 0; // number of open <div>s
-  var hnums = varray[int] (size 5,1); 
-  proc edivs(n:int) { 
-    while hstack > n do 
-      write_string("</div>"); 
-      --hstack;
-      set (hnums,hstack,1);
-     done
-     if hstack == n do
-       --hstack;
-       write_string("</div>"); 
-       set(hnums,hstack,hnums.hstack+1); 
-     done
-  }
-  fun hnum() = {
-    var s = ""; var i:int;
-    for i in 0 upto hstack - 2 do
-      s+=str(hnums.i) + ".";
-    done
-    return s + str(hnums.(hstack - 1));
-  } 
-  proc h(n:int, txt:string) { 
-    ep; 
-    edivs(n); 
-    all_buttons =if all_buttons != "" then all_buttons+',\n' else '' endif + '"' + txt + '"';
-    tb:=tree_button(txt,txt+"_d");
-    ++hstack;
-    write_string("<h"+str n+">"+tb+" "+docnum()+hnum()+" "+ txt+"</h"+str n+"><div id='"+txt+"_d' style='display:block'>\n"); 
-    s=doc;
+  // headings
+  proc h(n:int, txt:string) {
+    heading.head (#(fileseq.docnum), n, txt);
+    s = doc;
   }
  
 nextc:>
@@ -397,8 +269,8 @@ nextc:>
             write_string("<pre class='flxbg'>"); 
             write_string(html);
             write_string("</pre>\n");
-            all_buttons = if all_buttons != "" then all_buttons + ',' else '' endif + '"' + fname + '"';
-            write_string(tree_button(fname,fname+"_d"));
+            heading.add_button fname;
+            write_string(heading.tree_button(fname,fname+"_d"));
             write_string("<code class='inclusion'>  "+fname+".expect</code>\n");
             var xpected = get_flx(fname+".expect");
             write_string("<pre id='"+fname+"_d' class='expected' style='display:none'>"); 
@@ -419,14 +291,15 @@ nextc:>
           s=doc;
         elif b=="p" do bp; s=doc;
         elif b=="pre" do s = pre; 
-        elif b=="obsolete" do ep; pstate=true; write_string("<p class='obsolete'> <em>Obsolete</em> "); s=doc;
-        elif b=="caveat" do ep; pstate=true; write_string("<p class='caveat'> <em>Caveat: </em> "); s=doc;
-        elif b=="impl" do ep; pstate=true; write_string("<p class='implementation_detail'> <em>Implementation Detail: </em>"); s=doc;
-        elif b=="future" do ep; pstate=true; write_string("<p class='future'> <em>In future: </em>"); s=doc;
-        elif b=="note" do ep; pstate=true; write_string("<p class='bug'> <em>Note: </em>"); s=doc;
-        elif b=="bug" do ep; pstate=true; write_string("<p class='bug'> <em>Bug: </em>"); s=doc;
-        elif b=="fixed" do ep; pstate=true; write_string("<p class='fixed'> <em>Fixed: </em>"); s=doc;
-        elif b=="done" do ep; pstate=true; write_string("<p class='done'> <em>Done: </em>"); s=doc;
+        elif b=="obsolete" do ep; sp 'obsolete'; write_string("<em>Obsolete</em> "); s=doc;
+        elif b=="caveat" do ep; sp 'caveat'; write_string("<em>Caveat: </em> "); s=doc;
+        elif b=="impl" do ep; sp 'implementation_detail'; write_string("<em>Implementation Detail: </em>"); s=doc;
+        elif b=="future" do ep; sp 'future'; write_string("<em>In future: </em>"); s=doc;
+        elif b=="note" do ep; sp 'bug'; write_string("<em>Note: </em>"); s=doc;
+        elif b=="bug" do ep; sp 'bug'; write_string("<em>Bug: </em>"); s=doc;
+        elif b=="fixed" do ep; sp 'fixed'; write_string("<em>Fixed: </em>"); s=doc;
+        elif b=="done" do ep; sp 'done'; write_string("<em>Done: </em>"); s=doc;
+
         elif prefix(b,"h1") do h(1,b.[3 to]); 
         elif prefix(b,"h2") do h(2,b.[3 to]); 
         elif prefix(b,"h3") do h(3,b.[3 to]);
@@ -472,10 +345,10 @@ fin:>
 //   println "outof data";
    if b != "" do write_string(match s with | doc => markdown b | _ => b endmatch); done
    ep;
-   edivs(1);
-   shownav();
-   slideshow.finalise-slideshow;
-   return needs_mathjax, js1+all_buttons +js2+nav+out;
+   heading.finalise;
+   write_string #(fileseq.shownav);
+   slideshow.finalise;
+   return needs_mathjax, #(heading.emit-nav) + out;
 }
 }
 
@@ -548,13 +421,34 @@ println$ lib+ " Library set up " + str sresult;
     endmatch;
   done
 
+  // paragraph plugin
+  linst = Dynlink::init_lib("fdoc-paragraph"+ dll_extn);
+  sresult = Dynlink::func1[int,string] (linst, "setup") ("HELLO PARAGRAPH");
+  C_hack::ignore(sresult);
+  println$ "paragraph Library set up " + str sresult;
+  paragraph-maker = Dynlink::func1[paragraph-control_t,string->0] (linst, "create_paragraph_manager");
+
+  // heading plugin
+  linst = Dynlink::init_lib("fdoc-heading"+ dll_extn);
+  sresult = Dynlink::func1[int,string] (linst, "setup") ("HELLO HEADING");
+  C_hack::ignore(sresult);
+  println$ "heading Library set up " + str sresult;
+  heading-maker = Dynlink::func2[heading-control_t, paragraph-control_t, string->0] (linst, "create_heading_manager");
+
+  // fileseq plugin
+  linst = Dynlink::init_lib("fdoc-fileseq"+ dll_extn);
+  sresult = Dynlink::func1[int,string] (linst, "setup") ("HELLO FILESEQ");
+  C_hack::ignore(sresult);
+  println$ "fileseq Library set up " + str sresult;
+  fileseq-maker = Dynlink::func1[fileseq-control_t, string] (linst, "create_fileseq_manager");
+
   // slideshow plugin
   linst = Dynlink::init_lib("fdoc-slideshow"+ dll_extn);
   sresult = Dynlink::func1[int,string] (linst, "setup") ("HELLO SLIDESHOW");
   C_hack::ignore(sresult);
-println$ " slideshow Library set up " + str sresult;
-println$ "found slideshow maker";
+  println$ "slideshow Library set up " + str sresult;
   slideshow-maker = Dynlink::func1[slideshow_t,string->0] (linst, "create_slideshow_manager");
+
   return 0;
 }
 

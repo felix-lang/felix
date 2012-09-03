@@ -76,6 +76,24 @@ def build(phase, felix):
         print("Warning : fdoc-slideshow not built. Continuing..." )
 
     try:
+        shlib = felix.compile(phase.ctx.buildroot/'tools/fdoc-paragraph.flx')
+        fbuild.builders.file.copy(phase.ctx, shlib, 'shlib')
+    except:
+        print("Warning : fdoc-paragraph not built. Continuing..." )
+
+    try:
+        shlib = felix.compile(phase.ctx.buildroot/'tools/fdoc-heading.flx')
+        fbuild.builders.file.copy(phase.ctx, shlib, 'shlib')
+    except:
+        print("Warning : fdoc-heading not built. Continuing..." )
+
+    try:
+        shlib = felix.compile(phase.ctx.buildroot/'tools/fdoc-fileseq.flx')
+        fbuild.builders.file.copy(phase.ctx, shlib, 'shlib')
+    except:
+        print("Warning : fdoc-fileseq not built. Continuing..." )
+
+    try:
         exe = felix.compile(phase.ctx.buildroot/'tools/norK.flx', static=True)
         fbuild.builders.file.copy(phase.ctx, exe, 'bin')
     except:

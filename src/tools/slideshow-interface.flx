@@ -1,7 +1,7 @@
 interface slideshow_t {
   whatami : 1 -> string;
   check-slide-commands : string -> bool;
-  finalise-slideshow : 1 -> 0;
+  finalise: 1 -> 0;
 }
 
 
