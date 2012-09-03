@@ -9,9 +9,13 @@
 @rem FlexDLL
 @IF "%FLEXDLL_HOME%" == "" (
   IF EXIST "C:\Program Files (x86)\flexdll" SET "FLEXDLL_HOME=C:\Program Files (x86)\flexdll\"
-  IF EXIST "C:\Program Files\flexdll" SET "FLEXDLL_HOME=C:\Program Files\flexdll\" 
+  IF EXIST "C:\Program Files\flexdll" SET "FLEXDLL_HOME=C:\Program Files\flexdll\"
 )
-IF "%FLEXDLL_HOME:~-1%" == "\" SET FLEXDLL_HOME=%FLEXDLL_HOME:~0,-1%
+@IF "%FLEXDLL_HOME%" == "" ( 
+  IF EXIST "C:\Program Files\" SET "FLEXDLL_HOME=C:\Program Files\flexdll\"
+  IF EXIST "C:\Program Files (x86)\" SET "FLEXDLL_HOME=C:\Program Files (x86)\flexdll\"
+)
+@IF "%FLEXDLL_HOME:~-1%" == "\" SET FLEXDLL_HOME=%FLEXDLL_HOME:~0,-1%
 set FLEXDLL_HOME
 IF NOT EXIST "%FLEXDLL_HOME%" echo Warning: I do not see FlexDLL in the standard place (%FLEXDLL_HOME%).  Install FlexDLL or set FLEXDLL_HOME to point to an existing installation
 
