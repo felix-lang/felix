@@ -430,29 +430,6 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | EXPR_apply (sr,(EXPR_name(_,"_tuple",[]),x)) ->
     EXPR_tuple (sr,[me x])
 
-   (* _tuple_cons (a,t) ->
-    *  a,t if t is not a tuple
-    * tuple t with a prepended otherwise
-    *)
-  | EXPR_apply (sr,
-       (
-         EXPR_name(_,"_tuple_cons",[]),
-         EXPR_tuple (_,[h;t])
-       )
-     ) ->
-     begin match me t with
-     | EXPR_tuple (_,tail) ->
-       (*
-       print_endline "Packing tuple";
-       *)
-       EXPR_tuple (sr,me h :: tail)
-     | tail ->
-       (*
-       print_endline "Making pair";
-       *)
-       EXPR_tuple (sr, [me h; tail])
-     end
-
   (* _scheme string conversion to expression term *)
   | EXPR_apply (sr,
       (EXPR_name(srn,"_scheme", []),
@@ -511,6 +488,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | EXPR_intersect (sr, es) -> EXPR_intersect (sr, List.map me es)
   | EXPR_isin (sr,(a,b)) -> EXPR_isin (sr, (me a, me b))
   | EXPR_get_tuple_tail (sr, e) -> EXPR_get_tuple_tail (sr, me e)
+  | EXPR_get_tuple_head (sr, e) -> EXPR_get_tuple_head (sr, me e)
 
   | EXPR_lookup (sr, (e1, name,ts)) ->
       EXPR_lookup (sr,(me e1, mi sr name, List.map (mt sr) ts))
@@ -520,6 +498,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | EXPR_case_index (sr,e) -> EXPR_case_index (sr,me e)
 
   | EXPR_tuple (sr, es) -> EXPR_tuple (sr, List.map me es)
+  | EXPR_tuple_cons (sr, eh, et) -> EXPR_tuple_cons (sr, me eh, me et)
   | EXPR_record (sr, es) ->
     EXPR_record (sr, List.map (fun (s,e)-> s, me e) es)
 

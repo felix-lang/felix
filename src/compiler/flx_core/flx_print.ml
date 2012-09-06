@@ -186,6 +186,8 @@ and string_of_expr (e:expr_t) =
 
   | EXPR_tuple (_,t) -> "(" ^ catmap ", " sme t ^ ")"
   | EXPR_get_tuple_tail (_,t) -> "get_tuple_tail(" ^ se t ^ ")"
+  | EXPR_get_tuple_head (_,t) -> "get_tuple_head(" ^ se t ^ ")"
+  | EXPR_tuple_cons (_,eh, et) -> "tuple_cons (" ^ se eh ^ "," ^ se et ^ ")"
 
   | EXPR_record (_,ts) ->
       "struct {" ^
@@ -1780,7 +1782,9 @@ and string_of_bound_expression' bsym_table se e =
   let sid n = bound_name_of_bindex bsym_table n in
   match fst e with
 
+  | BEXPR_tuple_head e -> "tuple_head ("^ se e ^")"
   | BEXPR_tuple_tail e -> "tuple_tail("^ se e ^")"
+  | BEXPR_tuple_cons (eh,et) -> "tuple_cons("^ se eh ^"," ^ se et ^")"
   | BEXPR_get_n (n,e') -> "/*proj*/"^ se n ^ "(" ^ se e' ^ ")"
 
   | BEXPR_not e -> "not("^ se e ^ ")"

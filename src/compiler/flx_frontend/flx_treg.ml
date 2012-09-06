@@ -39,6 +39,7 @@ print_endline ("Register type nr " ^ sbt bsym_table t);
 
 
 let register_tuple syms bsym_table t =
+  let t = normalise_tuple_cons bsym_table t in
   let t = fold bsym_table syms.counter t in
   let record_tuple t =
     register_type_nr syms bsym_table t;
@@ -61,7 +62,9 @@ let register_tuple syms bsym_table t =
     | _ -> record_tuple t
     end
 
-  | _ -> assert false
+  | _ ->
+print_endline ("Trye to register tuple " ^ sbt bsym_table t);
+    assert false
 
 let rec register_type_r ui syms bsym_table exclude sr t =
 let t = normalise_tuple_cons bsym_table t in

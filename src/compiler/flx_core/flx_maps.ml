@@ -98,6 +98,7 @@ let map_expr f (e:expr_t):expr_t = match e with
   | EXPR_lookup (sr,(x,s,ts)) -> EXPR_lookup (sr,(f x, s, ts))
   | EXPR_apply (sr,(a,b)) -> EXPR_apply (sr,(f a, f b))
   | EXPR_tuple (sr,es) -> EXPR_tuple (sr, List.map f es)
+  | EXPR_tuple_cons (sr,eh, et) -> EXPR_tuple_cons (sr, f eh, f et)
   | EXPR_record (sr,es) -> EXPR_record (sr, List.map (fun (s,e) -> s,f e) es)
   | EXPR_variant (sr,(s,e)) -> EXPR_variant (sr, (s,f e))
   | EXPR_arrayof (sr, es) -> EXPR_arrayof (sr, List.map f es)
@@ -155,6 +156,7 @@ let map_expr f (e:expr_t):expr_t = match e with
   | EXPR_not (sr,e) -> EXPR_not (sr, f e)
   | EXPR_extension (sr,es,e) -> EXPR_extension (sr, List.map f es, f e)
   | EXPR_get_tuple_tail (sr,e) -> EXPR_get_tuple_tail (sr, f e)
+  | EXPR_get_tuple_head (sr,e) -> EXPR_get_tuple_head (sr, f e)
  
  
 let iter_expr f (e:expr_t) =
@@ -201,6 +203,7 @@ let iter_expr f (e:expr_t) =
   | EXPR_coercion (_, (x,_))
   | EXPR_not (_,x) 
   | EXPR_get_tuple_tail (_,x)
+  | EXPR_get_tuple_head (_,x)
     -> f x
 
   | EXPR_letin (_,(_,a,b))
@@ -211,6 +214,7 @@ let iter_expr f (e:expr_t) =
   | EXPR_map (_,a,b)
   | EXPR_apply (_,(a,b))
   | EXPR_isin (_,(a,b))
+  | EXPR_tuple_cons (_, a, b) 
     -> f a; f b
 
   | EXPR_tuple (_,es)

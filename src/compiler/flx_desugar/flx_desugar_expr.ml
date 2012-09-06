@@ -258,6 +258,10 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
     let l1,x1 = rex e in 
     l1,EXPR_get_tuple_tail (sr,x1)
 
+  | EXPR_get_tuple_head (sr, e) ->
+    let l1,x1 = rex e in 
+    l1,EXPR_get_tuple_head (sr,x1)
+
   | EXPR_type_match _ -> [],e
 
   | EXPR_noexpand (_,e) -> rex e
@@ -488,6 +492,12 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
   | EXPR_tuple (sr,t) ->
     let lss,xs = List.split (List.map rex t) in
     List.concat lss,EXPR_tuple (sr,xs)
+
+  | EXPR_tuple_cons (sr,eh,et) ->
+    let l1,x1 = rex eh in
+    let l2,x2 = rex et in
+    l1 @ l2, EXPR_tuple_cons (sr,x1,x2)
+
 
   | EXPR_record (sr,es) ->
     let ss,es = List.split es in

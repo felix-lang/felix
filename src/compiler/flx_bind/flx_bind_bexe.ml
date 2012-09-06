@@ -253,9 +253,9 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
       sr
       n
   in
-  (*
+(*
   print_endline ("EXE="^string_of_exe 1 exe);
-  *)
+*)
   if not state.reachable then
   begin
     match exe with
@@ -441,7 +441,13 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
   | EXE_fun_return e ->
     state.reachable <- false;
     state.return_count <- state.return_count + 1;
+(*
+print_endline ("Return expression raw " ^ string_of_expr e);
+*)
     let e',t' as e = be e in
+(*
+print_endline ("Function return value has type " ^ sbt bsym_table t');
+*)
     let t' = minimise bsym_table state.counter t' in
     ignore (do_unify state bsym_table state.ret_type t');
     state.ret_type <- varmap_subst (Flx_lookup_state.get_varmap state.lookup_state) state.ret_type;
@@ -452,11 +458,12 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
       handle_bexe (bexe_fun_return (sr,(e',t'))) init
     else clierr sr
       (
-        "[bind_exe: fun_return ] return of " ^
-        sbe bsym_table e ^ ":\n" ^
-        "fun return type:\n" ^ sbt bsym_table state.ret_type ^
-        "\nmust have same type as return expression:\n"^
-        sbt bsym_table t'
+        "[bind_exe: fun_return ] return expression \n" ^
+        sbe bsym_table e ^
+        "\nof type\n" ^
+        sbt bsym_table t' ^
+        "\ndoes not agree with the function return type:\n" ^ 
+        sbt bsym_table state.ret_type
       )
 
   | EXE_yield e ->
@@ -498,7 +505,9 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
       )
 
   | EXE_iinit ((s,index),e) ->
-(* print_endline ("Bind EXE_iinit "^s); *)
+(*
+print_endline ("Bind EXE_iinit "^s);
+*)
       let e',rhst = be e in 
       (* a type variable in executable code just has to be of kind TYPE *)
       let parent_ts = map
@@ -515,8 +524,13 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
       in
       let rhst = minimise bsym_table state.counter rhst in
       if type_match bsym_table state.counter lhst rhst
-      then handle_bexe (bexe_init (sr,index,(e',rhst))) init
-      else clierr sr
+      then begin 
+            let bexe = bexe_init (sr,index,(e',rhst)) in
+(*
+            print_endline ("Index = " ^ si index ^ " initexpr=" ^ sbe bsym_table (e',rhst) ^ " type of variable is " ^ sbt bsym_table rhst);
+*)
+            handle_bexe bexe init
+      end else clierr sr
       (
         "[bind_exe: iinit] LHS[" ^ s ^ "<" ^ string_of_bid index ^ ">]:\n" ^
         sbt bsym_table lhst^
@@ -529,7 +543,9 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
       )
 
   | EXE_init (s,e) ->
-(* print_endline ("Bind EXE_init "^s); *)
+(*
+print_endline ("Bind EXE_init "^s);
+*)
       begin match lun sr s with
       | FunctionEntry _ -> clierr sr "Can't init function constant"
       | NonFunctionEntry (index) ->
@@ -561,8 +577,13 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
           in
           *)
           if type_match bsym_table state.counter lhst rhst
-          then handle_bexe (bexe_init (sr,index,(e',rhst))) init
-          else clierr sr
+          then begin 
+            let bexe = bexe_init (sr,index,(e',rhst)) in
+(*
+            print_endline ("Index = " ^ si index ^ " initexpr=" ^ sbe bsym_table (e',rhst) ^ " type of variable is " ^ sbt bsym_table rhst);
+*)
+            handle_bexe bexe init
+          end else clierr sr
           (
             "[bind_exe: init] LHS[" ^ s ^ "<" ^ string_of_bid index ^ ">]:\n" ^
             sbt bsym_table lhst^

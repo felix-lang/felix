@@ -4,6 +4,7 @@ syntax expressions {
     let_pri < 
     slambda_pri <
     sdollar_apply_pri < 
+    stuple_cons_pri <
     stuple_pri <
     simplies_condition_pri <
     sor_condition_pri <
@@ -52,7 +53,10 @@ syntax expressions {
   // low precedence right associative application
   x[sdollar_apply_pri] := x[stuple_pri] "$" x[sdollar_apply_pri] =># "`(ast_apply ,_sr (,_1 ,_3))";
 
-  // tuple formation
+  // tuple formation by cons: right associative
+  x[stuple_cons_pri] := x[>stuple_cons_pri] ",," x[stuple_cons_pri] =># "`(ast_tuple_cons ,_sr ,_1 ,_3)";
+
+  // tuple formation non-associative
   x[stuple_pri] := x[>stuple_pri] ( "," x[>stuple_pri])+ =># "(chain 'ast_tuple _1 _2)";
 
   // logic
@@ -86,24 +90,24 @@ syntax expressions {
   x[scase_literal_pri] := "case" sinteger "of" x[ssum_pri] =># "`(ast_typed_case ,_2 ,_4)";
   x[scase_literal_pri] := "case" sname "of" x[ssum_pri] =># "`(ast_variant (,_2 ,_4))";
 
-  // bitwise operators
+  // bitwise operators: left associative
   x[sbor_pri] := x[sbor_pri] "\|" x[>sbor_pri] =># "(Infix)";
   x[sbxor_pri] := x[sbxor_pri] "\^" x[>sbxor_pri] =># "(Infix)";
   x[sband_pri] := x[sband_pri] "\&" x[>sband_pri] =># "(Infix)";
   x[sshift_pri] := x[sshift_pri] "<<" x[>sshift_pri] =># "(Infix)";
   x[sshift_pri] := x[sshift_pri] ">>" x[>sshift_pri] =># "(Infix)";
 
-  // addition
+  // addition: left weird
   x[ssum_pri] := x[>ssum_pri] ("+" x[>ssum_pri])+ =># "(chain 'ast_sum _1 _2)" note "add";
 
-  // subtraction
+  // subtraction: left weird
   x[ssubtraction_pri] := x[ssubtraction_pri] "-" x[sproduct_pri] =># "(Infix)";
 
   
   // multiplication
   x[sproduct_pri] := x[>sproduct_pri] ("*" x[>sproduct_pri])+ =># "(chain 'ast_product _1 _2)" note "mul";
 
-  // division
+  // division: left associative
   x[s_term_pri] := x[s_term_pri] "/" x[>s_term_pri] =># "(Infix)";
   x[s_term_pri] := x[s_term_pri] "%" x[>s_term_pri] =># "(Infix)";
 

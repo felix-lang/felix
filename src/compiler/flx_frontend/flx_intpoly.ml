@@ -126,6 +126,8 @@ let rec check_abstract_expr syms rls ((x,t) as e) =
   | BEXPR_range_check (e1,e2,e3) -> fe e1; fe e2; fe e3
   | BEXPR_coerce (e,t) -> fe e; ft t
   | BEXPR_tuple_tail e -> fe e
+  | BEXPR_tuple_head e -> fe e
+  | BEXPR_tuple_cons (eh,et) -> fe eh; fe et
 
 let check_abstract_exe syms rls exe =
  Flx_bexe.iter

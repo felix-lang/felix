@@ -407,6 +407,66 @@ print_endline "gen_expr': BEXPR_get_n (first)";
 
   | BEXPR_get_n _ -> clierr sr "Can't handle generalised get_n yet"
 
+  | BEXPR_tuple_cons ((eh',th' as xh'), (et', tt' as xt')) ->
+(*
+    print_endline ("Tuple_cons (" ^ sbe bsym_table xh' ^ " , " ^ sbe bsym_table xt');
+    print_endline ("Type " ^ sbt bsym_table t);
+    print_endline ("Head Type " ^ sbt bsym_table th');
+    print_endline ("Tail Type " ^ sbt bsym_table tt');
+*)
+    let ntt = normalise_tuple_cons bsym_table tt' in
+    let tts = match ntt with
+    | BTYP_tuple tts -> tts
+    | _ -> assert false
+    in 
+    let n = List.length tts in
+    let counter = ref 0 in
+(* NOTE: this is a hack! Doen't handle arrays. The code generated here
+   is ALWAYS correct BUT we may have neglected to create a tuple
+   constructor, because the scan for BEXPR_tuple is already done. 
+*)
+    let es = match et' with
+    | BEXPR_tuple es -> es 
+    | _ -> 
+      List.map (fun t-> 
+      let i = !counter in incr counter;
+      BEXPR_get_n 
+      (
+        (BEXPR_case (i,BTYP_unitsum n), BTYP_unitsum n), 
+        xt'
+      ),t)
+      tts
+    in
+    let es = xh' :: es in
+    let t = normalise_tuple_cons bsym_table t in
+    let e = BEXPR_tuple es, t in
+(*
+print_endline ("Normalised expression " ^ sbe bsym_table e);
+*)
+    ge' e
+
+  | BEXPR_tuple_head (e',t' as x') ->
+(*
+    print_endline ("Tuple head of expression " ^ sbe bsym_table x');
+    print_endline ("Type " ^ sbt bsym_table t');
+*)
+    let t'' = normalise_tuple_cons bsym_table t' in
+(*
+    print_endline ("Normalised Type " ^ sbt bsym_table t');
+    print_endline ("Tail Type " ^ sbt bsym_table t);
+*)
+    begin match t'' with 
+    | BTYP_tuple [] -> assert false
+    | BTYP_tuple ts -> 
+      let eltt = List.hd ts in
+      let n = List.length ts in
+      ge' (bexpr_get_n eltt (bexpr_unitsum_case 0 n,x'))
+
+    | _ -> 
+      print_endline ("Expected head to be tuple, got " ^ sbt bsym_table t' ^ " ->(normalised)-> " ^ sbt bsym_table t'');
+      assert false
+    end
+
   | BEXPR_tuple_tail (e',t' as x') ->
 (*
     print_endline ("Tuple tail of expression " ^ sbe bsym_table x');
@@ -419,12 +479,12 @@ print_endline "gen_expr': BEXPR_get_n (first)";
 *)
     begin match t'' with 
     | BTYP_tuple ts -> 
-      let unitsum = btyp_unitsum (List.length ts) in
+      let n = List.length ts in
       let counter = ref 0 in
       let es = 
         List.map (fun t-> 
           incr counter; 
-          let index = bexpr_case unitsum (!counter,unitsum) in
+          let index = bexpr_unitsum_case (!counter) n in
           bexpr_get_n t (index, x')
        ) 
        (List.tl ts) 

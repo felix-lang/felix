@@ -1645,7 +1645,6 @@ and cal_ret_type state bsym_table (rs:recstop) index args =
     print_endline ("state.varmap=" ^ !ss);
     print_endline ("  .. ret type index " ^ si index ^ " = " ^ sbt bsym_table !ret_type);
     *)
-(* print_endline ("Ret type is " ^ sbt bsym_table (!ret_type)); *)
     !ret_type
 
   | _ -> assert false
@@ -1754,6 +1753,9 @@ print_endline "inner_typeof+index returning fixpoint";
       Flx_metatype.metatype state.sym_table bsym_table rs sym.Flx_sym.sr t
 
   | SYMDEF_function ((ps,_),rt,props,_) ->
+(*
+print_endline ("** BEGIN ** Calculating Function type for function " ^ sym.Flx_sym.id ^ " index "^si index);
+*)
       let pts = List.map (fun (_,_,t,_) -> t) ps in
 
       (* Calculate the return type. *)
@@ -1765,7 +1767,9 @@ print_endline "inner_typeof+index returning fixpoint";
           let rs = { rs with idx_fixlist = index::rs.idx_fixlist } in
           cal_ret_type state bsym_table rs index []
       in
-
+(*
+print_endline ("** END **** Calculating Function type for function " ^ sym.Flx_sym.id ^ " index "^si index ^ " yields " ^ sbt bsym_table rt);
+*)
       (* this really isn't right .. need a better way to handle indeterminate
        * result .. hmm .. *)
       if var_i_occurs index rt then begin
@@ -1847,18 +1851,19 @@ print_endline "inner_typeof+index returning fixpoint";
 and cal_apply state bsym_table sr rs ((be1,t1) as tbe1) ((be2,t2) as tbe2) =
   let mkenv i = build_env state bsym_table (Some i) in
   let be i e = bind_expression' state bsym_table (mkenv i) rs e [] in
-  (*
-  print_endline ("Cal apply of " ^ sbe bsym_table tbe1 ^ " to " ^ sbe bsym_table tbe2);
-  *)
   let ((re,rt) as r) = cal_apply' state bsym_table be sr tbe1 tbe2 in
-  (*
-  print_endline ("Cal_apply, ret type=" ^ sbt bsym_table rt);
-  *)
   r
 
-and cal_apply' state bsym_table be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) =
-  let t1 = normalise_tuple_cons bsym_table t1 in
-  let t2 = normalise_tuple_cons bsym_table t2 in
+and cal_apply' state bsym_table be sr ((be1,t1') as tbe1) ((be2,t2') as tbe2) =
+  let t1 = normalise_tuple_cons bsym_table t1' in
+  let t2 = normalise_tuple_cons bsym_table t2' in
+(*
+  if t1 <> t1' || t2 <> t2' then begin
+print_endline ("cal_apply' BEFORE NORMALISE, fn = " ^ sbt bsym_table t1' ^ " arg=" ^ sbt bsym_table t2');
+print_endline ("cal_apply', AFTER NORMALISE, fn = " ^ sbt bsym_table t1 ^ " arg=" ^ sbt bsym_table t2);
+  end
+  ;
+*)
   let rest,reorder =
     match unfold t1 with
     | BTYP_function (argt,rest)
@@ -2257,7 +2262,7 @@ and lookup_qn_with_sig'
       | [argt] ->
         if argt = btyp_tuple [] then
           let ct = btyp_function (unit_t,t) in
-          bexpr_case ct (v,t)
+          bexpr_unitsum_case v k
         else
           clierr sr 
             ("Unitsum case constructor requires argument of type unit, got " ^
@@ -2272,8 +2277,7 @@ and lookup_qn_with_sig'
       begin match signs with
       | [argt] -> 
         if vt = argt then
-          let ct = btyp_function (vt,t) in
-          bexpr_case ct (v,t)
+          bexpr_nonconst_case vt (v,t)
         else
           clierr sr 
             ("Sum case constructor requires argument of type " ^
@@ -3490,25 +3494,74 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
     let t'' = bt sr t in
     Flx_coerce.coerce state bsym_table sr x' t''
 
+  | EXPR_tuple_cons (_, eh, et) ->
+    let _,eht' as xh' = be eh in
+    let _,ett' as xt' = be et in
+    let t = btyp_tuple_cons eht' ett' in
+(*
+    print_endline ("Type of tuple cons is " ^ sbt bsym_table t);
+*)
+    let _,t as x = bexpr_tuple_cons t (xh',xt') in
+(*
+print_endline ("Bound tuple cons " ^ sbe bsym_table x ^ " has type " ^ sbt bsym_table t);
+*)
+      x
+
+
   | EXPR_get_tuple_tail (sr,e) ->
+(*
+print_endline "Binding tuple tail";
+*)
     let (e',t') as x' = be e in
     begin match t' with
     | BTYP_tuple [] -> x'
     | BTYP_tuple ts ->
-      let unit_sum_type = btyp_unitsum (List.length ts) in
+      let n = List.length ts in
       let ts' = List.tl ts in
       let counter = ref 0 in
       let es' = List.map (fun t-> 
         incr counter; 
-        let caseval = bexpr_case t (!counter, unit_sum_type) in
+        let caseval = bexpr_unitsum_case (!counter) n in
         bexpr_get_n t (caseval,x')
       ) ts'
       in 
-      bexpr_tuple (btyp_tuple ts') es'
+      let _,t as x = bexpr_tuple (btyp_tuple ts') es' in
+(*
+print_endline ("Bound tuple tail " ^ sbe bsym_table x ^ " has type " ^ sbt bsym_table t);
+*)
+      x
 
-    | BTYP_tuple_cons (t1,t2) -> bexpr_tuple_tail t2 x'
+    | BTYP_tuple_cons (t1,t2) -> 
+      let _,t as x = bexpr_tuple_tail t2 x' in
+(*
+print_endline ("Bound tuple tail " ^ sbe bsym_table x ^ " has type " ^ sbt bsym_table t);
+*)
+      x
 
     | _ ->  print_endline ("tuple tail of type " ^ sbt bsym_table t'); assert false
+    end
+
+  | EXPR_get_tuple_head (sr,e) ->
+    let (e',t') as x' = be e in
+    begin match t' with
+    | BTYP_tuple [] -> assert false
+    | BTYP_tuple ts ->
+      let ht = List.hd ts in
+      let caseval = bexpr_unitsum_case 0 (List.length ts) in
+      let _,t as x  = bexpr_get_n ht (caseval,x')  in
+(*
+print_endline ("Bound tuple head " ^ sbe bsym_table x ^ " has type " ^ sbt bsym_table t);
+*)
+      x
+
+    | BTYP_tuple_cons (t1,t2) -> 
+      let _,t as x = bexpr_tuple_head t1 x' in
+(*
+print_endline ("Bound tuple head " ^ sbe bsym_table x ^ " has type " ^ sbt bsym_table t);
+*)
+      x
+
+    | _ ->  print_endline ("tuple head of type " ^ sbt bsym_table t'); assert false
     end
 
   | EXPR_get_n (sr,(n,e')) ->
@@ -3539,6 +3592,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
       else List.nth ts n,len
 
     | BTYP_tuple_cons (t1,_) ->
+assert false; (* shouldn't happen now! *)
       if n = 0 then t1,2 (* HACK! We dunno the length of the tuple! *)
       else
       clierr sr
@@ -3618,18 +3672,16 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
       if v<0 or v>= k
       then clierr sr "Case index out of range of sum"
       else
-        bexpr_case t (v,t)  (* const ctor *)
+        bexpr_unitsum_case v k  (* const ctor *)
 
     | BTYP_sum ls ->
       if v<0 or v>= List.length ls
       then clierr sr "Case index out of range of sum"
       else let vt = List.nth ls v in
-      let ct =
-        match vt with
-        | BTYP_tuple [] -> t        (* const ctor *)
-        | _ -> btyp_function (vt,t) (* non-const ctor *)
-      in
-      bexpr_case ct (v,t)
+      begin match vt with
+      | BTYP_tuple [] -> bexpr_const_case (v,t)
+      | _ -> bexpr_nonconst_case vt (v,t)
+      end
     | _ ->
       clierr sr
       (
@@ -4225,6 +4277,9 @@ print_endline "bind expression' succeeded";
     else syserr sr "Empty array?"
 
   (* the code for this is pretty messy and inefficient but it should work *)
+  (* actually no, it only works at binding time! we need tuple_cons, which
+     should work at instantiation time!
+  *)
   | EXPR_extension (sr, es, e') ->  
     let e'',t' = be e' in
     let es' = List.map be es in
@@ -4325,6 +4380,7 @@ print_endline "bind expression' succeeded";
     let t = btyp_record "" (List.combine ss ts) in
     bexpr_record t (List.combine ss es)
     end
+
 
   | EXPR_tuple (_,es) ->
     let bets = List.map be es in

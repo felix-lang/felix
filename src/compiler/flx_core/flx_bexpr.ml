@@ -28,12 +28,17 @@ type bexpr_t =
   | BEXPR_coerce of t * Flx_btype.t
   | BEXPR_compose of t * t
   | BEXPR_tuple_tail of t
+  | BEXPR_tuple_head of t
+  | BEXPR_tuple_cons of t * t
 
 and t = bexpr_t * Flx_btype.t
 
 (* -------------------------------------------------------------------------- *)
 
 let bexpr_tuple_tail t e = BEXPR_tuple_tail e, t
+let bexpr_tuple_head t e = BEXPR_tuple_head e, t
+
+let bexpr_tuple_cons t (eh,et) = BEXPR_tuple_cons (eh,et), t
 
 let bexpr_deref t e : t = BEXPR_deref e, t
 
@@ -75,7 +80,9 @@ let bexpr_get_n t (n, e) = BEXPR_get_n (n, e), t
 
 let bexpr_closure t (bid, ts) = BEXPR_closure (bid, ts), t
 
-let bexpr_case t (i, e) = BEXPR_case (i, e), t
+let bexpr_const_case (i, t) = BEXPR_case (i, t), t
+
+let bexpr_nonconst_case arg (i, sumt) = BEXPR_case (i, sumt), Flx_btype.btyp_function (arg,sumt)
 
 let bexpr_match_case t (i, e) = BEXPR_match_case (i, e), t
 
@@ -93,7 +100,7 @@ let bexpr_compose t (e1, e2) = BEXPR_compose (e1, e2), t
 
 let bexpr_unitsum_case i j =
   let case_type = Flx_btype.btyp_unitsum j in
-  bexpr_case case_type (i, case_type)
+  bexpr_const_case (i, case_type)
 
 (* -------------------------------------------------------------------------- *)
 
@@ -180,8 +187,13 @@ let rec cmp ((a,_) as xa) ((b,_) as xb) =
   | BEXPR_range_check (e1,e2,e3), BEXPR_range_check (e1',e2',e3') ->
     cmp e1 e1' && cmp e2 e2' && cmp e3 e3'
 
+  | BEXPR_tuple_head e1, BEXPR_tuple_head e2
   | BEXPR_tuple_tail e1, BEXPR_tuple_tail e2 ->
     cmp e1 e2
+
+  | BEXPR_tuple_cons (eh,et), BEXPR_tuple_cons (eh',et') ->
+    cmp eh eh' && cmp et et'
+
 
   | _ -> false
 
@@ -251,6 +263,8 @@ let flat_iter
       f_bexpr e;
       f_btype t
   | BEXPR_tuple_tail e -> f_bexpr e
+  | BEXPR_tuple_head e -> f_bexpr e
+  | BEXPR_tuple_cons (eh,et) -> f_bexpr eh; f_bexpr et
 
 (* this is a self-recursing version of the above routine: the argument to this
  * routine must NOT recursively apply itself! *)
@@ -309,6 +323,8 @@ let map
       BEXPR_range_check (f_bexpr e1, f_bexpr e2, f_bexpr e3), f_btype t
   | BEXPR_coerce (e,t'),t -> BEXPR_coerce (f_bexpr e, f_btype t'), f_btype t
   | BEXPR_tuple_tail e,t -> BEXPR_tuple_tail (f_bexpr e), f_btype t
+  | BEXPR_tuple_head e,t -> BEXPR_tuple_head (f_bexpr e), f_btype t
+  | BEXPR_tuple_cons (eh,et),t -> BEXPR_tuple_cons (f_bexpr eh, f_bexpr et), f_btype t
 
 
 (* -------------------------------------------------------------------------- *)

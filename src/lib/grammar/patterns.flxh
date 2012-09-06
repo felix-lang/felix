@@ -22,7 +22,7 @@ syntax patterns {
     '''`(pat_nonconst_ctor ,_sr ,(nos "Cons") (pat_tuple ,_sr (,_1 ,_3)))''';
   scons_pattern := stuple_cons_pattern =># "_1";
 
-  stuple_cons_pattern := stuple_pattern ",," stuple_pattern =>#
+  stuple_cons_pattern := stuple_pattern ",," stuple_cons_pattern =>#
     "`(pat_tuple_cons ,_sr ,_1 ,_3)";
   stuple_cons_pattern := stuple_pattern =># "_1";
 

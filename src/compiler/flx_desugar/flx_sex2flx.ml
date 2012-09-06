@@ -96,6 +96,7 @@ and xexpr_t sr x =
   | Lst [Id "ast_lookup";  Lst [e; Str s; Lst ts]] -> EXPR_lookup (sr,(ex e, s,map ti ts))
   | Lst [Id "ast_apply";  sr; Lst [e1; e2]] -> EXPR_apply(xsr sr,(xexpr_t (xsr sr) e1, xexpr_t (xsr sr) e2))
   | Lst [Id "ast_tuple";  sr; Lst es] -> EXPR_tuple (xsr sr,map (xexpr_t (xsr sr)) es)
+  | Lst [Id "ast_tuple_cons";  sr; eh; et] -> EXPR_tuple_cons (xsr sr, xexpr_t (xsr sr) eh, xexpr_t (xsr sr) et)
   | Lst [Id "ast_record";  sr; Lst rs] ->
    let rs =
      map (function

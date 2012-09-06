@@ -37,7 +37,6 @@ and t =
   | BTYP_type_apply of t * t
   | BTYP_type_match of t * (btpattern_t * t) list
 
-  (* only used for pattern matching *)
   | BTYP_tuple_cons of t * t 
 
   (* type sets *)

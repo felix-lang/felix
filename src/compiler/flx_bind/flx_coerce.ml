@@ -132,7 +132,7 @@ print_endline "Coercion from int literal";
             with _ -> clierr sr "Integer is too large for unitsum"
           in
           if m >=0 && m < n then
-            bexpr_case t'' (m,t'')
+            bexpr_unitsum_case m n
           else
             clierr sr "Integer is out of range for unitsum"
         | _ ->

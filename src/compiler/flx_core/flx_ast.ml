@@ -123,6 +123,7 @@ and expr_t =
   | EXPR_lookup of Flx_srcref.t * (expr_t * Flx_id.t * typecode_t list)
   | EXPR_apply of Flx_srcref.t * (expr_t * expr_t)
   | EXPR_tuple of Flx_srcref.t * expr_t list
+  | EXPR_tuple_cons of Flx_srcref.t * expr_t * expr_t
   | EXPR_record of Flx_srcref.t * (Flx_id.t * expr_t) list
   | EXPR_record_type of Flx_srcref.t * (Flx_id.t * typecode_t) list
   | EXPR_variant of Flx_srcref.t * (Flx_id.t * expr_t)
@@ -184,6 +185,7 @@ and expr_t =
 
   (* this extracts the tail of a tuple *)
   | EXPR_get_tuple_tail of Flx_srcref.t * expr_t
+  | EXPR_get_tuple_head of Flx_srcref.t * expr_t
 
   | EXPR_typeof of Flx_srcref.t * expr_t
   | EXPR_cond of Flx_srcref.t * (expr_t * expr_t * expr_t)
@@ -672,6 +674,7 @@ let src_of_expr (e : expr_t) = match e with
   | EXPR_unlikely (s,_)
   | EXPR_literal (s,_)
   | EXPR_tuple (s,_)
+  | EXPR_tuple_cons (s,_,_)
   | EXPR_record (s,_)
   | EXPR_variant (s,_)
   | EXPR_record_type (s,_)
@@ -699,6 +702,7 @@ let src_of_expr (e : expr_t) = match e with
   | EXPR_not (s,_)
   | EXPR_extension (s, _, _)
   | EXPR_get_tuple_tail (s,_)
+  | EXPR_get_tuple_head (s,_)
   -> s
 
 let src_of_stmt (e : statement_t) = match e with
