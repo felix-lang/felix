@@ -3430,6 +3430,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
   | EXPR_cond _
   | EXPR_typeof _
   | EXPR_as _
+  | EXPR_as_var _
   | EXPR_void _
   | EXPR_arrow _
   | EXPR_longarrow _

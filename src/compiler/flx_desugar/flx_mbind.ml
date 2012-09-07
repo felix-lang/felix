@@ -99,6 +99,7 @@ let rec subst vars (e:expr_t) mv : expr_t =
   | EXPR_literal _ -> e
   | EXPR_case_tag _ -> e
   | EXPR_as _ -> e
+  | EXPR_as_var _ -> e
 
   | EXPR_name (sr,name,idx) ->
     if idx = [] then

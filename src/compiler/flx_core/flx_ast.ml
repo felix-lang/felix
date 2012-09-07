@@ -181,6 +181,7 @@ and expr_t =
   | EXPR_get_n of Flx_srcref.t * (int * expr_t)
   | EXPR_get_named_variable of Flx_srcref.t * (Flx_id.t * expr_t)
   | EXPR_as of Flx_srcref.t * (expr_t * Flx_id.t)
+  | EXPR_as_var of Flx_srcref.t * (expr_t * Flx_id.t)
   | EXPR_match of Flx_srcref.t * (expr_t * (pattern_t * expr_t) list)
 
   (* this extracts the tail of a tuple *)
@@ -692,6 +693,7 @@ let src_of_expr (e : expr_t) = match e with
   | EXPR_get_named_variable (s,_)
   | EXPR_coercion (s,_)
   | EXPR_as (s,_)
+  | EXPR_as_var (s,_)
   | EXPR_match (s, _)
   | EXPR_type_match (s, _)
   | EXPR_cond (s,_)

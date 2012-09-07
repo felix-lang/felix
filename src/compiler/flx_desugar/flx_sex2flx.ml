@@ -181,6 +181,7 @@ and xexpr_t sr x =
  | Lst [Id "ast_get_named_variable";  Lst [Str s;e]]-> EXPR_get_named_variable (sr, (s, ex e))
  *)
  | Lst [Id "ast_as";  sr; Lst [e; Str s]] -> EXPR_as (xsr sr,(ex e, s))
+ | Lst [Id "ast_as_var";  sr; Lst [e; Str s]] -> EXPR_as_var (xsr sr,(ex e, s))
  | Lst [Id "ast_match";  sr; Lst [e; Lst pes]]->
    let pes = map (function
      | Lst [p;e] -> xp p, ex e

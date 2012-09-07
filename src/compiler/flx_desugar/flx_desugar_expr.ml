@@ -234,7 +234,6 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
   | EXPR_arrow _
   | EXPR_longarrow _
   | EXPR_superscript _
-  | EXPR_as _
   | EXPR_product _
   | EXPR_sum _
   | EXPR_andlist _
@@ -261,6 +260,20 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
   | EXPR_get_tuple_head (sr, e) ->
     let l1,x1 = rex e in 
     l1,EXPR_get_tuple_head (sr,x1)
+
+  | EXPR_as_var (sr,(e,name)) ->
+    let l1,x1 = rex e in
+    let dcl = Dcl (sr, name, None, `Private, dfltvs, DCL_value (TYP_typeof x1,`Var)) in
+    let asgn = Exe (sr,EXE_init (name,x1)) in
+    l1 @ [dcl] @ [asgn], EXPR_name (sr,name,[])
+
+
+  | EXPR_as (sr,(e,name)) ->
+    let l1,x1 = rex e in
+    let dcl = Dcl (sr, name, None, `Private, dfltvs, DCL_value (TYP_typeof x1,`Val)) in
+    let asgn = Exe (sr,EXE_init (name,x1)) in
+    l1 @ [dcl] @ [asgn], EXPR_name (sr,name,[])
+
 
   | EXPR_type_match _ -> [],e
 

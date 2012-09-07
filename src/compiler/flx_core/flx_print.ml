@@ -142,6 +142,7 @@ and string_of_expr (e:expr_t) =
 
   | EXPR_typeof (_,e) -> "typeof("^se e^")"
   | EXPR_as (_, (e1, name)) -> "(" ^ se e1 ^ ") as " ^ string_of_id name
+  | EXPR_as_var (_, (e1, name)) -> "(" ^ se e1 ^ ") as var " ^ string_of_id name
   | EXPR_get_n (_,(n,e)) -> "get (" ^ si n ^ ", " ^se e^")"
   | EXPR_get_named_variable (_,(n,e)) ->
       "get (" ^ string_of_id n ^ ", " ^ se e ^ ")"

@@ -79,6 +79,7 @@ syntax expressions {
 
   // named temporary
   x[sas_expr_pri] := x[sas_expr_pri] "as" sname =># "`(ast_as ,_sr (,_1 ,_3))";
+  x[sas_expr_pri] := x[sas_expr_pri] "as" "var" sname =># "`(ast_as_var ,_sr (,_1 ,_4))";
 
   // right arrows: RIGHT ASSOCIATIVE!
   x[sarrow_pri] := x[scase_literal_pri] "!" x[sarrow_pri] =># '''`(ast_apply ,_sr (,(nos "Cons") (,_1 ,_3)))''';
@@ -229,6 +230,19 @@ syntax expressions {
 
   // anonymous procedure closure
   satom := scompound =># "(lazy _1)";
+
+  // special anonymous variable forces eager eval
+  satom := "(" "var" sexpr ")" =># 
+    """
+    (
+      let
+      (
+        (name (string-append "_asvar_" (number->string (fresh_int ()))))
+      )
+      `(ast_as_var ,_sr (,_3 ,name))
+    )
+    """
+  ;
 
   // grouping
   satom := "(" sexpr ")" =># "_2";

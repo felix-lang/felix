@@ -144,6 +144,7 @@ let map_expr f (e:expr_t):expr_t = match e with
   | EXPR_get_n (sr,(j,x)) -> EXPR_get_n (sr,(j,f x))
   | EXPR_get_named_variable (sr,(j,x)) -> EXPR_get_named_variable (sr,(j,f x))
   | EXPR_as (sr,(x,s)) -> EXPR_as (sr,(f x, s))
+  | EXPR_as_var (sr,(x,s)) -> EXPR_as_var (sr,(f x, s))
   | EXPR_match (sr,(a,pes)) ->
     EXPR_match (sr, (f a, List.map (fun (pat,x) -> pat, f x) pes))
 
@@ -187,6 +188,7 @@ let iter_expr f (e:expr_t) =
   | EXPR_variant (_,(_,x))
   | EXPR_typeof (_,x)
   | EXPR_as (_,(x,_))
+  | EXPR_as_var (_,(x,_))
   | EXPR_get_n (_,(_,x))
   | EXPR_get_named_variable (_,(_,x))
   | EXPR_ctor_arg (_,(_,x))

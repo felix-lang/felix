@@ -550,6 +550,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | EXPR_get_n (sr, (i, e1)) ->  EXPR_get_n (sr,(i,me e1))
   | EXPR_get_named_variable (sr, (i, e1)) ->  EXPR_get_named_variable (sr,(i,me e1))
   | EXPR_as (sr, (e1, id)) ->  EXPR_as (sr,(me e1, mi sr id))
+  | EXPR_as_var (sr, (e1, id)) ->  EXPR_as_var (sr,(me e1, mi sr id))
 
   | EXPR_match (sr, (e1, pes)) ->
     let pes =
