@@ -832,7 +832,7 @@ let rec special_inline syms uses bsym_table caller_vs caller hic excludes sr e =
         let bsym = Flx_bsym_table.find bsym_table callee in
         begin match Flx_bsym.bbdcl bsym with
         | BBDCL_external_fun (props,_,_,_,_,_,_)
-(*        | BBDCL_fun (props,_,_,_,_)  *)
+        | BBDCL_fun (props,_,_,_,_)  
           when mem `Generator props
           ->
           (*
