@@ -17,6 +17,13 @@ def build(phase, felix):
         print("Warning : flx_grep not built. Continuing..." )
 
     try:
+        exe = felix.compile(phase.ctx.buildroot/'tools/flx_libindex.flx', static=True)
+        fbuild.builders.file.copy(phase.ctx, exe, 'bin')
+    except:
+        print("Warning : flx_libindex not built. Continuing..." )
+
+
+    try:
         exe = felix.compile(phase.ctx.buildroot/'tools/flx_cp.flx', static=True)
         fbuild.builders.file.copy(phase.ctx, exe, 'bin')
     except:
