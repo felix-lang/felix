@@ -1,0 +1,171 @@
+Press to start -->
+@slideshow
+<hr/>
+<p style="text-align:center; font-size:120%"> Felix Slideshow </center>
+<hr/>
+@slide
+Simple printing.
+<hr/>
+@section
+The {println} command prints some data to standard output followed by a newline.
+@felix
+println$ 21;
+println$ "Hi There";
+@
+@section
+Two or more values can be printed too:
+@felix
+println$ "Hello",42;
+@pre
+(Hello,42)
+@slide
+You can use {+} to concatenate two strings.
+@felix
+println$ "Hello " + "World";
+@pre
+Hello World
+@section
+And you can use the {str} function to convert most
+data to a string:
+@felix
+println$ "Hello " + str 42;
+@pre
+Hello 42
+@slide
+Felix supports strings in Python style.
+@section
+With double quotes:
+@felix
+println$ "Double Quotes";
+@
+@section
+or with single quotes:
+@felix
+println$ 'Double Quotes';
+@
+a string must be contained within a single line.
+@section
+With tripled double quotes:
+@felix
+println$ """
+Tripled
+Double
+Quotes""";
+@
+or with tripled single quotes:
+@felix
+println$ '''Tripled
+Single
+Quotes
+can span
+lines''';
+@
+
+@slide
+Variables.
+<hr/>
+@section
+You can store the result of a calculation in a variable:
+@felix
+var x = "hello " + str 42;
+println$ x;
+@pre
+hello 42
+@section
+If you like you can specify the type of a variable:
+@felix
+var i : int = 42;
+var x : string : = "hello " + str i;
+println$ x;
+@pre
+hello 42
+@section
+Variables do not need to be initialised,
+in this case the type is required. The variable will initially
+have C++ default value for the type, if there is one.
+@felix
+var s : string;          // initially ""
+var i : int;             // not initialised
+@
+Using an uninitialised value is an error. Using
+a default initialised value is not, but it is bad
+practice.
+@section
+The value stored in a variable can be modified, or set for the first time, by assignment:
+@felix
+var i = 42;
+i = 67;
+println$ 67;
+@pre
+67
+@
+@slide
+Pointers.
+<hr/>
+@section
+You can take the address of a variable with prefix operator {&} and use
+it to get or set the value stored in it.  
+The value of the address is called a pointer.
+@felix
+var x = 42;
+var px = &x;
+px <- 43;          // store 43 where px points (at x)
+println$ x;        // modified value stored in x
+println$ *px;      // value store at px
+@pre
+43
+43
+@section
+If the original variable had type {T} then
+a pointer to a variable of that type has type {&T},
+pronounced "pointer to T".
+@felix
+var x = 42;
+var px : &int = &x;
+println$ *px;
+@section
+Assignment to a variable {x} 
+is equivalent to storing at the address of {x}:
+@felix
+var x = 42;           // initial value
+x = 43;               // assignment to x
+&x <- 44;             // assignment via pointer
+@
+@section
+In fact assignment with {=} is just syntactic sugar
+for storing at the address of a variable.
+@slide
+Everyday Types.
+@section
+Here are some types you will use every day:
+@felix
+var i  : int     = 1;       // C int
+var x  : double = 4.2;      // C float double
+var ch : char   = char "H"; // C++ char
+var ch : char   = char 63;  // C++ char 'A'
+var s  : string  = "Hi";    // C++ string
+@section
+If you're a mathematican you may like to get complicated:
+@felix
+var cart : dcomplex = complex (4.2, 5.3);  // C++ complex<double>
+var pole : dcomplex = polar   (1,0, 0.5);  // C++ complex<double>
+@
+@slide
+Tuples.
+@section
+Felix builds aggregates of values called tuples automatically;
+@felix
+var x = "Hello",42;
+println$ x . 0, x . 1;
+@section
+As you can see you can use zero origin integers literals to extract
+a tuple component. We will see later you can also use pattern matching
+to do this.
+@section
+A tuple is a cartesian product and the type uses product notation:
+@felix
+var x : string * int = "Hello", 42;
+println$ x;
+@
+
+
