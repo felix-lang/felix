@@ -11,8 +11,12 @@ var lineno = 0;
 var nslides = 0;
 slides[0]=0;
 
+var interval_handle;
 function enable (slide, line) {
-  document.getElementById("slide-section-"+slide+","+line).style.display="";
+  var elt = document.getElementById("slide-section-"+slide+","+line)
+  elt.style.display="";
+  var n = elt.innerHTML.length;
+  interval_handle = setTimeout(showframe, 5000+n); 
 }
 
 function disable (slide, line) {
@@ -52,14 +56,13 @@ function showframe(){
   showline();
 }
 
-var interval_handle;
 function start_slides() { 
   document.body.style.background="black";
   document.body.style.color="white";
   document.getElementById("start").disabled=true; 
   document.getElementById("stop").disabled=false; 
   document.getElementById("reset").disabled=false; 
-  interval_handle = setInterval (showframe, 2000); 
+  showframe();
 }
 
 function stop_slides() { 
@@ -68,7 +71,7 @@ function stop_slides() {
   document.getElementById("start").disabled=false; 
   document.getElementById("stop").disabled=true; 
   document.getElementById("reset").disabled=false; 
-  clearInterval(interval_handle); 
+  clearTimeout(interval_handle); 
 }
 
 function reset_slides() {
@@ -94,6 +97,7 @@ fun setup(config_data:string) = {
 object slideshow-maker (var write_string: string -> 0) implements slideshow_t = 
 {
   method fun whatami () => "Slideshow object";
+  var slideshow-used = false;
   var slide_count = 0;
   var slide_section_count = 0;
 
@@ -112,6 +116,7 @@ object slideshow-maker (var write_string: string -> 0) implements slideshow_t =
   method fun check-slide-commands (b:string) : bool =
   {
     if b == "slideshow" do
+      slideshow-used = true;
       write_string (slideshow_js);
       slide_count = 0;
       slide_section_count = 0;
@@ -148,6 +153,7 @@ object slideshow-maker (var write_string: string -> 0) implements slideshow_t =
       write_string("\n<script>nslides = " + str slide_count + ";</script>\n");
     done
   }
+  method fun active () => slideshow-used;
 };
 
 export fun setup of (string) as "setup";

@@ -3,6 +3,7 @@ interface heading-control_t {
   head : string * int * string -> 0;
   tree_button : string * string -> string;
   add_button: string -> 0;
-  emit-nav: 1 -> string;
+  emit-buttons: 1 -> string;
+  emit-js: 1 -> string;
   finalise: 1 -> 0;
 }

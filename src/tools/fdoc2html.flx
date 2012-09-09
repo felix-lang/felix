@@ -348,7 +348,17 @@ fin:>
    heading.finalise;
    write_string #(fileseq.shownav);
    slideshow.finalise;
-   return needs_mathjax, #(heading.emit-nav) + out;
+if #(slideshow.active) do
+  println$ "Slideshow Active";
+else
+  println$ "Slideshow NOT active";
+done
+   return needs_mathjax, 
+     #(heading.emit-js) + 
+     if #(slideshow.active) then "" 
+     else #(heading.emit-buttons) endif + 
+     out
+   ;
 }
 }
 

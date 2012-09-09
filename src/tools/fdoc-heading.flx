@@ -76,7 +76,8 @@ object heading-control (paragraph: paragraph-control_t, write_string: string -> 
   var hnums = varray[int] (size 5,1); 
   var all_buttons = "";
 
-  method fun emit-nav () => js1 + all_buttons + js2 + nav;
+  method fun emit-buttons() => nav;
+  method fun emit-js() => js1 + all_buttons + js2;
 
   // bid is the button id, cid is the stuff which is controlled by it
   method fun tree_button(bid:string, cid:string)=>

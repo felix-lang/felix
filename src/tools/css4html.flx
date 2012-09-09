@@ -12,18 +12,18 @@ span.hack {color:#66DD00; }
 span.preproc {color:#005500; }
 span.embedded_c{background-color:#DDDDDD; }
 span.fpc_fieldname {color:#DD0000; }
-pre.flxbg {background-color:#90EF90; }
-pre.cppbg {background-color:#80FF80; }
-pre.expected {background-color:#E0FF80; }
-pre.inclusion {background-color:#D070D0; }
-code.inclusion {background-color:#D070D0; }
-.obsolete { background-color:#FFEFEF; font-size: small}
-.future { background-color:#FF8080; font-size: small}
-.implementation_detail { background-color:#E0E0E0; font-size: small; }
-.bug { background-color:#FFE0E0; font-size: small; }
-.fixed{ background-color:#FFE0E0; font-size: small; }
-.done { background-color:#FFE0E0; font-size: small; }
-.caveat { background-color:#FF8080; }
+pre.flxbg {background-color:#90EF90; color:black; }
+pre.cppbg {background-color:#80FF80; color:black; }
+pre.expected {background-color:#E0FF80; color:black; }
+pre.inclusion {background-color:#D070D0; color:black; }
+code.inclusion {background-color:#D070D0; color:black; }
+.obsolete { background-color:#FFEFEF; font-size: small; color:black; }
+.future { background-color:#FF8080; font-size: small; color:black; }
+.implementation_detail { background-color:#E0E0E0; font-size: small; color:black;  }
+.bug { background-color:#FFE0E0; font-size: small; color:black; }
+.fixed{ background-color:#FFE0E0; font-size: small; color:black; }
+.done { background-color:#FFE0E0; font-size: small; color:black; }
+.caveat { background-color:#FF8080; color:black; }
 </style>
 """;
 }
