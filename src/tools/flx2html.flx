@@ -28,6 +28,18 @@ typedef raw_xlat_t = address * string * string --> bool * string;
 var xlat_cpp: raw_xlat_t;
 var tf_xlat_cpp: address;
 
+// stick line numbers in front of each line (for hyperlinking source refs)
+fun lc (x:string) = {
+  var lines = split (x,"\n");
+  var result = "";
+  reserve (&result, len x + 50.size * len lines);
+  var count = 0;
+  for line in lines do
+    ++count;
+    result += f"<span class=\"lineno\" id=\"%04d\">%04d: </span> %S\n" (count,count,line);
+  done
+  return result;
+}
 
 // Felix
 module Flx2Html {
@@ -453,7 +465,7 @@ thisch:> // same char, reconsider it
 fin:>
    //println "outof data, final write ..";
    w(); // whatever is left over gets written
-   return needs_mathjax, out;
+   return needs_mathjax, lc out;
 }
 }
 

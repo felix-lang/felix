@@ -1,0 +1,42 @@
+var dir =  Filename::join #(Config::config).FLX_INSTALL_DIR "lib";
+var fregex = ".*\\.flx";
+var lregex = "^ *(virtual|noinline)* *(proc|fun|class|ctor|gen) *(([A-Z]|[a-z])([A-Z]|[a-z]|[0-9]|-|_)*).*";
+var lgrep = RE2 lregex;
+var n = NumberOfCapturingGroups(lgrep)+1;
+var v = varray[StringPiece] (n.size,StringPiece "");
+
+var grexp = RE2 lregex;
+var extract = RE2 " *([^={]*) *(=|{|;).*";
+var n2 = NumberOfCapturingGroups(extract)+1;
+var v2 = varray[StringPiece] (n2.size,StringPiece "");
+var v2a = varray[StringPiece] (n2.size,StringPiece "");
+
+for file in FileSystem::regfilesin (dir, fregex) do
+  println$ file;
+  var lines = load (Filename::join dir file);
+  var count = 0;
+  for line in split (lines,char "\n") do
+    ++count;
+    var m = Match (grexp, StringPiece line, 0, ANCHOR_BOTH, v.stl_begin,n); 
+    if m do
+      var sym = v.3.string;
+      var dfn = "";
+      var m2 = Match (extract, StringPiece line, 0, ANCHOR_BOTH, v2.stl_begin, n2);
+      if m2 do
+        m2 = Match (extract, StringPiece line, 0, ANCHOR_BOTH, v2a.stl_begin, n2);
+        if m2 do
+          dfn = v2a . 1 . string . strip;
+        else
+          dfn = v2 . 1 . string . strip;
+        done
+      else
+        dfn = line . strip;
+      done
+      if prefix (dfn, "class") do
+        println$ f"%4d" count + ":  " + dfn;
+      else
+        println$ f"%4d" count + ":    " + dfn;
+      done
+    done
+  done
+done
