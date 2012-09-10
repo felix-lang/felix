@@ -443,7 +443,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
       | `Local _ ->
         "      if(" ^ ge sr e ^ ") goto " ^ cid_of_flxid s ^ ";\n"
       | `Nonlocal (pc,frame) ->
-        let skip = "_" ^ cid_of_bid (fresh_bid syms.counter) in
+        let skip = "_skip_" ^ cid_of_bid (fresh_bid syms.counter) in
         let not_e = ce_prefix "!" (ge' sr e) in
         let not_e = string_of_cexpr not_e in
         "      if("^not_e^") goto " ^ cid_of_flxid skip ^ ";\n"  ^

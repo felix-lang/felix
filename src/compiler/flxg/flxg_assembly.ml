@@ -127,7 +127,7 @@ let assemble state parser_state exclusions module_name input =
       let include_files, asms =
         let desugar_state = Flx_desugar_expr.make_desugar_state
           module_name
-          fresh_bid
+          state.syms.counter
         in
         let include_files, asms = Flx_desugar.desugar_stmts
           desugar_state

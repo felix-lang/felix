@@ -28,6 +28,7 @@ type macro_state_t
 val make_macro_state:
   ?recursion_limit:int -> (** How deep to recurse. *)
   string ->               (** Local prefix used for creating unique names. *)
+  int ref ->
   macro_state_t
 
 (** Expand all the macros in the statements. *)

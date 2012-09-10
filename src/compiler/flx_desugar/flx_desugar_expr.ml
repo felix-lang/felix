@@ -21,10 +21,10 @@ type desugar_state_t = {
 }
 
 (** Construct a desugar state value needed for desugaring. *)
-let make_desugar_state name fresh_bid = {
+let make_desugar_state name seq = {
   name = name;
-  fresh_bid = fresh_bid;
-  macro_state = Flx_macro.make_macro_state name;
+  fresh_bid = (fun () -> let n = !seq in incr seq; n);
+  macro_state = Flx_macro.make_macro_state name seq;
   include_file_cache = [];
 }
 

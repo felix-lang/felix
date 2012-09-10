@@ -201,7 +201,7 @@ let rec alpha_expr sr local_prefix seq ps e =
     List.map begin fun _ ->
       let b = !seq in
       incr seq;
-      Flx_id.of_string ("_" ^ string_of_int b)
+      Flx_id.of_string ("_eparam_"^local_prefix^"_" ^ string_of_int b)
     end psn
   in
   let remap =
@@ -219,7 +219,7 @@ and alpha_stmts sr local_prefix seq ps sts =
     List.map begin fun _ ->
       let b = !seq in
       incr seq;
-      Flx_id.of_string ("_" ^ local_prefix ^ "_" ^ string_of_int b)
+      Flx_id.of_string ("_xparam_" ^ local_prefix ^ "_" ^ string_of_int b)
     end psn
   in
   let remap =
@@ -888,7 +888,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
       let pvs = get_pattern_vars pat in
       let pvs' =  (* new parameter names *)
         List.map
-        (fun _ -> let b = !seq in incr seq; "_" ^ string_of_int b)
+        (fun _ -> let b = !seq in incr seq; "_param_" ^ string_of_int b)
         pvs
       in
       let fast_remap = List.combine pvs pvs' in
@@ -1299,11 +1299,11 @@ let expand_macros_in_statement macro_state handle_stmt init stmt =
   in
   List.fold_left handle_stmt init stmts
 
-let make_macro_state ?(recursion_limit=5000) local_prefix =
+let make_macro_state ?(recursion_limit=5000) local_prefix seq =
   {
     recursion_limit = recursion_limit;
     local_prefix = local_prefix;
-    seq = ref 1;
+    seq = seq;
     reachable = ref true;
     ref_macros = ref [];
     macros = [];

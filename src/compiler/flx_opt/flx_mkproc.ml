@@ -274,7 +274,7 @@ let mkproc_gen syms bsym_table =
         (* make new parameter: note the name is remapped to _k_mkproc below *)
         let vix = fresh_bid syms.counter in
         let vdcl = bbdcl_val (vs,btyp_pointer ret,`Var) in
-        let vid = "_" ^ string_of_bid vix in
+        let vid = "_mkproc_" ^ string_of_bid vix in
         let ps = ps @ [{
           pindex=vix;
           pkind=`PVal;

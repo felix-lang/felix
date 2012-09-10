@@ -1,3 +1,4 @@
+var ishtml = System::argv 1 == "--html";
 var dir =  Filename::join #(Config::config).FLX_INSTALL_DIR "lib";
 var fregex = ".*\\.flx";
 var lregex = "^ *(virtual|noinline)* *(proc|fun|class|ctor|gen) *(([A-Z]|[a-z])([A-Z]|[a-z]|[0-9]|-|_)*).*";
@@ -11,8 +12,19 @@ var n2 = NumberOfCapturingGroups(extract)+1;
 var v2 = varray[StringPiece] (n2.size,StringPiece "");
 var v2a = varray[StringPiece] (n2.size,StringPiece "");
 
+if ishtml do
+  println$ "<html><body>";
+  println$ "<h1>Felix Library Contents</h1>";
+ println$ "<pre>";
+done
+
 for file in FileSystem::regfilesin (dir, fregex) do
-  println$ file;
+  var href = "/$"+dir+"/"+file; // URL always uses Unix filenames
+  if ishtml do
+    println$ '<hr/><a href="'+href+'">'+file+'</a>';
+  else
+    println$ file;
+  done
   var lines = load (Filename::join dir file);
   var count = 0;
   for line in split (lines,char "\n") do
@@ -32,11 +44,24 @@ for file in FileSystem::regfilesin (dir, fregex) do
       else
         dfn = line . strip;
       done
-      if prefix (dfn, "class") do
-        println$ f"%4d" count + ":  " + dfn;
+      if ishtml do
+        if prefix (dfn, "class") do
+          println$  f"%04d" count + ":  " + '<a href="'+href+'#'+f"%04d" count+'">'+dfn +'</a>';
+        else
+          println$ f"%04d" count + ":    " + '<a href="'+href+'#'+f"%04d" count+'">'+ dfn +'</a>';
+        done
       else
-        println$ f"%4d" count + ":    " + dfn;
+        if prefix (dfn, "class") do
+          println$ f"%04d" count + ":  " + dfn;
+        else
+          println$ f"%04d" count + ":    " + dfn;
+        done
       done
     done
   done
 done
+
+if ishtml do
+  println$ "</pre></body></html>";
+done
+
