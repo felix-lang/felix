@@ -267,28 +267,34 @@ let rec gen_type_shape s syms bsym_table need_int last_ptr_map primitive_shapes 
         )
     end
 
-   | BTYP_unitsum _ ->
-     bcat s ("static ::flx::gc::generic::gc_shape_t &"^ name ^"_ptr_map = ::flx::rtl::_int_ptr_map;\n");
+    | BTYP_record ("", es) ->
+      bcat s ("\n//OFFSETS for record type " ^ name ^ " instance\n");
+      let offsets = get_offsets syms bsym_table btyp in
+      let n = length offsets in
+      gen_offset_data s n name offsets false false [] None last_ptr_map
+ 
+    | BTYP_unitsum _ ->
+      bcat s ("static ::flx::gc::generic::gc_shape_t &"^ name ^"_ptr_map = ::flx::rtl::_int_ptr_map;\n");
 
-   | BTYP_sum _ ->
-     begin match Flx_vrep.cal_variant_rep bsym_table btyp with
-     | Flx_vrep.VR_self -> assert false
-     | Flx_vrep.VR_int ->
-       bcat s ("static ::flx::gc::generic::gc_shape_t &"^ name ^"_ptr_map = ::flx::rtl::_int_ptr_map;\n");
-     | Flx_vrep.VR_nullptr ->
-       bcat s ("static ::flx::gc::generic::gc_shape_t &"^ name ^"_ptr_map = ::flx::rtl::_address_ptr_map;\n");
-     | Flx_vrep.VR_packed ->
-       bcat s ("static ::flx::gc::generic::gc_shape_t &"^ name ^"_ptr_map = ::flx::rtl::_address_ptr_map;\n");
-     | Flx_vrep.VR_uctor ->
-       bcat s ("static ::flx::gc::generic::gc_shape_t &"^ name ^"_ptr_map = ::flx::rtl::_uctor_ptr_map;\n");
-     end
+    | BTYP_sum _ ->
+      begin match Flx_vrep.cal_variant_rep bsym_table btyp with
+      | Flx_vrep.VR_self -> assert false
+      | Flx_vrep.VR_int ->
+        bcat s ("static ::flx::gc::generic::gc_shape_t &"^ name ^"_ptr_map = ::flx::rtl::_int_ptr_map;\n");
+      | Flx_vrep.VR_nullptr ->
+        bcat s ("static ::flx::gc::generic::gc_shape_t &"^ name ^"_ptr_map = ::flx::rtl::_address_ptr_map;\n");
+      | Flx_vrep.VR_packed ->
+        bcat s ("static ::flx::gc::generic::gc_shape_t &"^ name ^"_ptr_map = ::flx::rtl::_address_ptr_map;\n");
+      | Flx_vrep.VR_uctor ->
+        bcat s ("static ::flx::gc::generic::gc_shape_t &"^ name ^"_ptr_map = ::flx::rtl::_uctor_ptr_map;\n");
+      end
 
-   | _ ->
-     failwith
-     (
-       "[ogen]: Unknown kind of allocable type " ^
-       sbt bsym_table btyp
-     )
+    | _ ->
+      failwith
+      (
+        "[ogen]: Unknown kind of allocable type " ^
+        sbt bsym_table btyp
+      )
 
 let gen_offset_tables syms bsym_table module_name first_ptr_map=
   let allocable_types = Hashtbl.create 97 in

@@ -130,7 +130,9 @@ let rec get_offsets' syms bsym_table typ : string list =
     ;
     !lst
 
-  | BTYP_record (_,args) ->
+  | BTYP_record (_,es) ->
+    let rcmp (s1,_) (s2,_) = compare s1 s2 in
+    let es = sort rcmp es in
     let lst = ref [] in
     iter
     (fun (s,t) ->
@@ -141,7 +143,7 @@ let rec get_offsets' syms bsym_table typ : string list =
       (fun s -> lst := !lst @ [prefix ^ s])
       (get_offsets' syms bsym_table t)
     )
-    args
+    es 
     ;
     !lst
 
