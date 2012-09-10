@@ -1,3 +1,4 @@
+var ishtml = System::argv 1 == "--html";
 var dir =  Filename::join #(Config::config).FLX_INSTALL_DIR "lib";
 var fregex = ".*\\.flx";
 var lregex = "^ *(virtual|noinline)* *(proc|fun|class|ctor|gen) *(([A-Z]|[a-z])([A-Z]|[a-z]|[0-9]|-|_)*).*";
@@ -11,7 +12,8 @@ var n2 = NumberOfCapturingGroups(extract)+1;
 var v2 = varray[StringPiece] (n2.size,StringPiece "");
 var v2a = varray[StringPiece] (n2.size,StringPiece "");
 
-var index = #strdict[list[string]];
+typedef data_t = (file:string, line:int, dfn:string);
+var index = #strdict[list[data_t]];
 
 for file in FileSystem::regfilesin (dir, fregex) do
   //println$ file;
@@ -35,14 +37,36 @@ for file in FileSystem::regfilesin (dir, fregex) do
         dfn = line . strip;
       done
       //println$ file, count, sym,dfn;
-      var data = file + ":" + str count+" "+dfn;
-      index.add sym (Cons (data, index.get_dflt (sym,Empty[string])));
+      var data = (file=file, line=count, dfn=dfn);
+      index.add sym (Cons (data, index.get_dflt (sym,Empty[data_t])));
     done
   done
 done
 
 //println$ "------------------";
-match ?key,?value in index do
-  println$ key;
-  for x in value do println$ "  " + x; done
-done 
+if ishtml do
+  var ctrl = char " ";
+  println$ "<html><body>";
+  println$ "<h1>Felix library Index</h1>";
+  println$ "<pre>";
+  match ?key,?value in index do
+    var newctrl = char key;
+    if ctrl != newctrl do
+      println$ "<hr/>";
+      ctrl = newctrl;
+    done
+    println$ key;
+    match  (file=?xfile,line=?xline,dfn=?xdfn) in value do
+     var href = "/$" + dir + "/" + xfile;
+     println$ '  <a href="'+href+ "#"+f"%04d" xline + '">' + xfile + ":"+ str xline + "</a>: " + xdfn;
+    done
+  done 
+  println$ "</pre></body></html>";
+else
+  match ?key,?value in index do
+    println$ key;
+    match  (file=?xfile,line=?xline,dfn=?xdfn) in value do
+     println$ "  " + xfile + ":"+ str xline + ": " + xdfn;
+    done
+  done 
+done
