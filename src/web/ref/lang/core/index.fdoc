@@ -1,0 +1,35 @@
+@h1 Felix Core Language Reference
+@link calls.fdoc | Calling Procedures
+@p
+@link class.fdoc | Type Classes
+@p
+@link for.fdoc |  Loops
+@p
+@link fun.fdoc |  Functions
+@p
+@link gen.fdoc |  Generators
+@p
+@link if.fdoc |  Conditionals
+@p
+@link match.fdoc |  Pattern Matching
+@p
+@link new.fdoc |  Heap Allocation
+@p
+@link package.fdoc | Packaged Resource Management
+@p
+@link proc.fdoc | Defining Procedures
+@p
+@link struct.fdoc | Defining Structs
+@p
+@link subroutines.fdoc | Subroutines
+@p
+@link try.fdoc |  Exception Handling
+@p
+@link types.fdoc | Type System
+@p
+@link union.fdoc | Unions
+@p
+@link val.fdoc |  Named Values
+@p
+@link var.fdoc | Variables
+

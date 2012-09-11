@@ -16,7 +16,7 @@ function enable (slide, line) {
   var elt = document.getElementById("slide-section-"+slide+","+line)
   elt.style.display="";
   var n = elt.innerHTML.length;
-  interval_handle = setTimeout(showframe, 5000+n); 
+  interval_handle = setTimeout(showframe, 7000+3 * n / 2); 
 }
 
 function disable (slide, line) {
@@ -52,8 +52,11 @@ function showframe(){
   oldslide = slideno;
   oldline = lineno;
   nextline();
-  if (oldslide != slideno) disable_slide(oldslide);
-  showline();
+  if (oldslide != slideno) { 
+    disable_slide(oldslide);
+    setTimeout(showline,2000);
+  }
+  else showline();
 }
 
 function start_slides() { 

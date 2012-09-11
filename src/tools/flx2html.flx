@@ -30,7 +30,13 @@ var tf_xlat_cpp: address;
 
 // stick line numbers in front of each line (for hyperlinking source refs)
 fun lc (x:string) = {
-  var lines = split (x,"\n");
+  var lines = rev
+    match rev_split (x,"\n") with 
+    | Cons ("",?t) => t
+    | ?x => x
+    endmatch
+  ;
+  
   var result = "";
   reserve (&result, len x + 50.size * len lines);
   var count = 0;
@@ -315,7 +321,7 @@ println$ "Package file basename is " + n;
     | sq3 => { ws; }
     | dq3 => { ws; }
     | ccomment _ => { write_string('<span class="comment">'+txt2html b+"</span>"); }
-    | cppcomment=> { write_string('<span class="comment">'+txt2html b+"</span>"); }
+    | cppcomment=> { write_string('<span class="comment">'+txt2html b.[to -2]+"</span>\n"); }
     | texid => { write_string (
         '<span class="tex_symbol" title="'+b+'">\\(' + txt2html b + '\\)</span>'
         ); 
