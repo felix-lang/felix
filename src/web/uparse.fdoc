@@ -1,0 +1,53 @@
+@h1 Universal Parser
+This document describes the universal parser provided with the
+Felix system. This component is a stand-alone set of libraries
+for the Ocaml programming language, together with some tools.
+
+Although these components are independent of the Felix
+programming language, it is recommended you build 
+and examine Felix since it is provides a good demonstration 
+of the parsing system.
+
+@h2 Functionality
+The parsing system is designed to allow parsing of a client
+programming language based on an EBNF like grammar without
+need for compile time code generation. Instead, the grammar
+is processed before processing the client programming language,
+in the same compilation step. This relieves the developer of
+the language of the need to process, recompile and relink
+the translator tool, and in particular makes changing the grammar
+possible in absence of the generator and Ocaml compiler.
+
+Since the grammar accepted is an extension of GLR,
+the need to fight with LALR1 or LR1 requirements imposed
+by old-school parser generators is removed. Naturally some
+care is still required designing your grammar!
+
+In addition, the parsing system is a so-called scannerless
+parser, which does not use a separate tokeniser, relieving
+the need to design the language lexicology as well.
+
+Furthermore, the parsing system support scoped inline
+grammar extensions.
+
+@h2 Overall Usage
+The overall usage of this system is intended to be as follows.
+First, the client translator loads the EBNF grammar. It does this
+either by parsing the grammar files and saving them to disk,
+or, if an up-to-date saved copy is found on disk that is used 
+instead.  As the system saves a binary image of the parsing automaton, 
+the amoritised cost of dynamic parser construction is effectively zero.
+
+Then, using this automaton, the client program is parsed. The result is
+naturally an Ocs Scheme s-expression, however itr can be converted
+to a different, simpler, kind of s-expression which is more amenable
+to pattern matching in Ocaml. The parse result can be saved to disk,
+and reloaded if the source file has not changed. For this to work,
+parsing a file must be independent of all other source files,
+a property not naturally possessed by C programs due to the
+unfortunate grammar and typedef feature.  The net effect of these features 
+is that parsing is eliminated except for changed files.
+
+We provide a total front end parsing solution which searches for
+files on a path, handles dependencies and inclusions, and
+processes options.
