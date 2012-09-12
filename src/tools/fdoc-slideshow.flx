@@ -3,6 +3,7 @@ val slideshow_js = """
 <button id="start" onclick="start_slides()">Start</button>
 <button id="stop" onclick="stop_slides()" disabled="true">Stop</button>
 <button id="reset" onclick="reset_slides()">Reset</button>
+<button id="next" onclick="skip_to_next()">Next</button>
 <p id="goose">Slideshow Ready</p>
 <script>
 var slides = new Array();
@@ -57,6 +58,13 @@ function showframe(){
     setTimeout(showline,2000);
   }
   else showline();
+}
+
+function skip_to_next() {
+  clearTimeout(interval_handle);
+  disable_slide (slideno);
+  nextslide();
+  showline();
 }
 
 function start_slides() { 
