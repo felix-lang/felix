@@ -13,6 +13,7 @@ var heading-maker : (paragraph-control_t * (string->0)) -> heading-control_t;
 include "./fileseq-interface";
 var fileseq-maker : (string) -> fileseq-control_t;
 
+include "./fdoc-scanner";
 
 // felix document
 var INSTALL_ROOT="";
@@ -95,39 +96,14 @@ fun xlat_fdoc(t:string, filename:string): bool * string =
     out += t;
   }
 
-  private fun split_first (x:string, c:string):string*string =>
+  fun split_first (x:string, c:string):string*string =>
     match find_first_of (x, c) with
       | Some ?n => (strip(x.[to n]),strip(x.[n+1 to]))
       | _ => (x,"")
     endmatch
-    ;
+  ;
 
   write_string #(fileseq.shownav);
-
-  union state_t = 
-    | cmd // processing command
-    | doc // processing document
-    | felix // processing felix code
-    | cpp // processing C/C++ code
-    | pre // processing pre-formatted code
-    | flx_and_expect // processing felix code and expect file
-  ;
-  fun str(s:state_t) => match s with
-  | doc => "doc"
-  | felix => "felix"
-  | cpp => "c++"
-  | pre => "preforma"
-  | flx_and_expect => "flx-and-expect"
-  | cmd => "cmd"
-  endmatch;
-  
-  var i = 0; var s:state_t=doc;
-  var ch = char "\n";
-  var sol = true;
-  proc next() { sol = ch == char "\n"; ch = t.[i]; ++i; }
-  fun ahead (j:int)=> t.[i + j -1]; 
-  var b = "";
-  proc cp() { b += ch; }
 
   // paragraphs
   proc sp () { paragraph.sp (); }
@@ -138,229 +114,199 @@ fun xlat_fdoc(t:string, filename:string): bool * string =
   // headings
   proc h(n:int, txt:string) {
     heading.head (#(fileseq.docnum), n, txt);
-    s = doc;
+  }
+
+//---------------------------------------------------
+  // main loop
+  var inp = fdoc-scan t;
+  gen get_text () =>
+    match #inp with
+    | Some (Text ?x) => x
+    | _ => ""
+    endmatch
+  ;
+next:>
+  var entry = #inp;
+  match entry with
+  | Some (Cmd ?cmdline) => handle_cmd cmdline; goto next;
+  | Some (Text ?x) =>
+    for para in psplit x do 
+      bp; 
+      write_string(markdown x); 
+    done
+    ep;
+    goto next;
+
+  | None => 
+    ep;
+    heading.finalise;
+    write_string #(fileseq.shownav);
+    slideshow.finalise;
+    if #(slideshow.active) do
+      println$ "Slideshow Active";
+    else
+      println$ "Slideshow NOT active";
+    done
+  endmatch;
+  return needs_mathjax, 
+    #(heading.emit-js) + 
+    if #(slideshow.active) then "" 
+    else #(heading.emit-buttons) endif + 
+    out
+  ;
+//---------------------------------------------------
+
+  // preformat
+  proc inline_pre(b:string)
+  {
+    sp; 
+    write_string("<pre>"); 
+    write_string(txt2html b); 
+    write_string("</pre>"); 
+    ep;
+  }
+
+  proc inline_cpp (b:string)
+  {
+    sp;
+    write_string("<pre class='cppbg'>"); 
+    write_string((xlat_cpp,b,"").1); // no parent!
+    write_string("</pre>");
+    ep; 
+  }
+
+  proc inline_felix (b:string)
+  {
+    sp;
+    write_string("<pre class='flxbg'>"); 
+    needs_mathjax', txt := xlat_felix (b,"");
+    needs_mathjax |= needs_mathjax';
+    write_string(txt); // no parent!
+    write_string("</pre>");
+    ep; 
+  }
+
+  proc felix_file (rest:string) 
+  {
+      var re1 = RE2('(.*) "(.*)" "(.*)"');
+      var re2 = RE2('(.*) "(.*)"');
+      var v1 = varray(4uz, StringPiece "");
+      var v2 = varray(4uz, StringPiece "");
+      var v3 = varray(4uz, StringPiece "");
+      var matched1 = Match(re1, StringPiece(rest),0,ANCHOR_BOTH,v1.stl_begin, v1.len.int);
+      var matched2 = Match(re2, StringPiece(rest),0,ANCHOR_BOTH,v2.stl_begin, v2.len.int);
+      if matched1 do
+        var fname = v1.1.string.strip;
+      elif matched2 do
+        fname = v2.1.string.strip;
+      else
+        fname = rest;
+      done
+      var flx = get_flx(fname);
+      if matched1 do
+        var p1 = match find(flx,v1.2.string) with
+        | Some ?i => i
+        | None => 0
+        endmatch;
+        flx = flx.[p1 to];
+        var p2 = match find(flx,v1.3.string) with
+        | Some ?i => i
+        | None => flx.len.int - 1
+        endmatch;
+        flx = flx.[to p2];
+      elif matched2 do
+        var re3 = RE2(v2.2.string);
+        var matched3 = Match(re3,StringPiece(flx),0,UNANCHORED,v3.stl_begin, v3.len.int);
+        if matched3 do
+          flx = v3.1.string;
+        done
+      done
+      needs_mathjax', html := xlat_felix (flx,"");
+      needs_mathjax |= needs_mathjax';
+      write_string("<pre class='inclusion'>\n"+fname+"</pre>\n");
+      write_string("<pre class='flxbg'>"); 
+      write_string(html);
+      write_string("</pre>"); 
+  }
+
+  proc flx_and_expect (fname:string)
+  {
+    var flx = get_flx(fname+".flx");
+    needs_mathjax', html := xlat_felix (flx,"");
+    needs_mathjax |= needs_mathjax';
+    write_string("<pre class='inclusion'>"+fname+".flx</pre>\n");
+    write_string("<pre class='flxbg'>"); 
+    write_string(html);
+    write_string("</pre>\n");
+    heading.add_button fname;
+    write_string(heading.tree_button(fname,fname+"_d"));
+    write_string("<code class='inclusion'>  "+fname+".expect</code>\n");
+    var xpected = get_flx(fname+".expect");
+    write_string("<pre id='"+fname+"_d' class='expected' style='display:none'>"); 
+    write_string(xpected);
+    write_string("</pre>"); 
+  }
+
+  proc extern_cpp (fname:string)
+  {
+    var flx = get_flx(fname);
+    write_string("<pre class='inclusion'>\n"+fname+"</pre>\n");
+    write_string("<pre class='cppbg'>"); 
+    write_string((xlat_cpp (flx,"")).1);
+    write_string("</pre>"); 
   }
  
-nextc:>
-  next();
-  if isnull ch goto fin; // out of data
-  match s with 
-  | doc =>
-    { 
-      if sol and char "@" == ch do 
-        if b != "" do sp; write_string(markdown b); done
-        s = cmd; b="";
-      elif char "\n" == ch and char "\n" == ahead(1) do 
-        sp; write_string(markdown b); ep;
-        b="";
-      else cp; 
-      done
-      goto nextc;
-    }
-  | pre =>
-    { 
-      if sol and char "@" == ch  do 
-        if b != "" do 
-          sp; 
-          write_string("<pre>"); 
-          write_string(txt2html b); 
-          write_string("</pre>"); 
-          ep;
-        done
-        s = cmd; b="";
-      else cp; 
-      done
-      goto nextc;
-    }
+  proc handle_cmd (b:string) 
+  {
+    if b == "felix" do inline_felix (#get_text);
+    elif prefix (b,"felix ") do felix_file (strip (b.[6 to]));
+    elif prefix (b,"flx-and-expect ") do flx_and_expect (strip(b.[15 to]));
+    elif b == "c++" do inline_cpp (#get_text);
+    elif prefix (b,"c++") do extern_cpp ( strip(b.[6 to]));
+    elif b=="p" do bp; 
+    elif b=="pre" do inline_pre (#get_text);
+    elif b=="obsolete" do ep; sp 'obsolete'; write_string("<em>Obsolete</em> ");
+    elif b=="caveat" do ep; sp 'caveat'; write_string("<em>Caveat: </em> ");
+    elif b=="impl" do ep; sp 'implementation_detail'; write_string("<em>Implementation Detail: </em>");
+    elif b=="future" do ep; sp 'future'; write_string("<em>In future: </em>");
+    elif b=="note" do ep; sp 'bug'; write_string("<em>Note: </em>");
+    elif b=="bug" do ep; sp 'bug'; write_string("<em>Bug: </em>");
+    elif b=="fixed" do ep; sp 'fixed'; write_string("<em>Fixed: </em>");
+    elif b=="done" do ep; sp 'done'; write_string("<em>Done: </em>");
 
-  | cpp =>
-    { 
-      if sol and char "@" == ch do 
-        if b != "" do 
-          sp;
-          write_string("<pre class='cppbg'>"); 
-          write_string((xlat_cpp,b,"").1); // no parent!
-          write_string("</pre>");
-          ep; 
-          b= ""; 
-        done
-        s = cmd;
-      else cp; 
-      done
-      goto nextc;
-    }
+    elif prefix(b,"h1") do h(1,b.[3 to]); 
+    elif prefix(b,"h2") do h(2,b.[3 to]); 
+    elif prefix(b,"h3") do h(3,b.[3 to]);
+    elif prefix(b,"h4") do h(4,b.[3 to]);
 
-  | felix =>
-    { 
-      if sol and char "@" == ch do 
-        if b != "" do 
-          sp;
-          write_string("<pre class='flxbg'>"); 
-          needs_mathjax', txt := xlat_felix (b,"");
-          needs_mathjax |= needs_mathjax';
-          write_string(txt); // no parent!
-          write_string("</pre>");
-          ep; 
-          b= ""; 
-        done
-        s = cmd;
-      else cp; 
-      done
-      goto nextc;
-    }
 
-  | cmd => 
-    {
-      if char "\n" != ch do cp; goto nextc;
+    // external image
+    elif prefix(b,"image") do 
+      var img = split_first(b.[6 to],"|");
+      write_string("<img src='"+img.(0)+"' style='"+img.(1)+"'></img>");
+
+    // arbitrary shell command
+    elif prefix(b,"sh") do 
+      var cmd = b.[3 to];
+      var fout = safer_popen(cmd);
+      if valid fout do
+        var output = load fout;
+        var result = Process::pclose fout; 
+        println$ "Ran cmd=" + cmd;
+        //println$ "Output = " + output;
+        write_string output;
       else
-        b = strip b;
-        if b == "felix" do s = felix;
-        elif prefix (b,"felix ") do 
-          {
-            var rest = strip(b.[6 to]);
-            var re1 = RE2('(.*) "(.*)" "(.*)"');
-            var re2 = RE2('(.*) "(.*)"');
-            var v1 = varray(4uz, StringPiece "");
-            var v2 = varray(4uz, StringPiece "");
-            var v3 = varray(4uz, StringPiece "");
-            var matched1 = Match(re1, StringPiece(rest),0,ANCHOR_BOTH,v1.stl_begin, v1.len.int);
-            var matched2 = Match(re2, StringPiece(rest),0,ANCHOR_BOTH,v2.stl_begin, v2.len.int);
-            if matched1 do
-              var fname = v1.1.string.strip;
-            elif matched2 do
-              fname = v2.1.string.strip;
-            else
-              fname = rest;
-            done
-            var flx = get_flx(fname);
-            if matched1 do
-               var p1 = match find(flx,v1.2.string) with
-               | Some ?i => i
-               | None => 0
-               endmatch;
-               flx = flx.[p1 to];
-               var p2 = match find(flx,v1.3.string) with
-               | Some ?i => i
-               | None => flx.len.int - 1
-               endmatch;
-               flx = flx.[to p2];
-            elif matched2 do
-              var re3 = RE2(v2.2.string);
-              var matched3 = Match(re3,StringPiece(flx),0,UNANCHORED,v3.stl_begin, v3.len.int);
-              if matched3 do
-                flx = v3.1.string;
-              done
-            done
-            needs_mathjax', html := xlat_felix (flx,"");
-            needs_mathjax |= needs_mathjax';
-            write_string("<pre class='inclusion'>\n"+fname+"</pre>\n");
-            write_string("<pre class='flxbg'>"); 
-            write_string(html);
-            write_string("</pre>"); 
-          };
-          s=doc;
-        elif prefix (b,"flx-and-expect ") do 
-          {
-            fname := strip(b.[15 to]);
-            var flx = get_flx(fname+".flx");
-            needs_mathjax', html := xlat_felix (flx,"");
-            needs_mathjax |= needs_mathjax';
-            write_string("<pre class='inclusion'>"+fname+".flx</pre>\n");
-            write_string("<pre class='flxbg'>"); 
-            write_string(html);
-            write_string("</pre>\n");
-            heading.add_button fname;
-            write_string(heading.tree_button(fname,fname+"_d"));
-            write_string("<code class='inclusion'>  "+fname+".expect</code>\n");
-            var xpected = get_flx(fname+".expect");
-            write_string("<pre id='"+fname+"_d' class='expected' style='display:none'>"); 
-            write_string(xpected);
-            write_string("</pre>"); 
-          };
-          s=doc;
-          elif b == "c++" do s = cpp;
-          elif prefix (b,"c++") do 
-          {
-            fname := strip(b.[6 to]);
-            var flx = get_flx(fname);
-            write_string("<pre class='inclusion'>\n"+fname+"</pre>\n");
-            write_string("<pre class='cppbg'>"); 
-            write_string((xlat_cpp (flx,"")).1);
-            write_string("</pre>"); 
-          };
-          s=doc;
-        elif b=="p" do bp; s=doc;
-        elif b=="pre" do s = pre; 
-        elif b=="obsolete" do ep; sp 'obsolete'; write_string("<em>Obsolete</em> "); s=doc;
-        elif b=="caveat" do ep; sp 'caveat'; write_string("<em>Caveat: </em> "); s=doc;
-        elif b=="impl" do ep; sp 'implementation_detail'; write_string("<em>Implementation Detail: </em>"); s=doc;
-        elif b=="future" do ep; sp 'future'; write_string("<em>In future: </em>"); s=doc;
-        elif b=="note" do ep; sp 'bug'; write_string("<em>Note: </em>"); s=doc;
-        elif b=="bug" do ep; sp 'bug'; write_string("<em>Bug: </em>"); s=doc;
-        elif b=="fixed" do ep; sp 'fixed'; write_string("<em>Fixed: </em>"); s=doc;
-        elif b=="done" do ep; sp 'done'; write_string("<em>Done: </em>"); s=doc;
-
-        elif prefix(b,"h1") do h(1,b.[3 to]); 
-        elif prefix(b,"h2") do h(2,b.[3 to]); 
-        elif prefix(b,"h3") do h(3,b.[3 to]);
-        elif prefix(b,"h4") do h(4,b.[3 to]);
-        elif prefix(b,"link") do 
-          var e = split_first(b.[5 to],"|");
-          var f = if e.(1) == ""then e else split_first(e.(1),"|") endif;
-          write_string("<a href='"+strip(e.(0))+"'"+
-              (if f.(1) == "" then "" else "style='"+f.(1)+"'" endif)+">"+
-              (if endswith f.(0) ".fdoc" then f.(0).[to (f.(0).len - size(5)) ]
-               else f.(0) endif)+"</a> ");
-          s = doc;
-        elif prefix(b,"image") do 
-          var img = split_first(b.[6 to],"|");
-          write_string("<img src='"+img.(0)+"' style='"+img.(1)+"'></img>");
-        elif prefix(b,"sh") do 
-          var cmd = b.[3 to];
-          var fout = safer_popen(cmd);
-          if valid fout do
-            var output = load fout;
-            var result = Process::pclose fout; 
-            println$ "Ran cmd=" + cmd;
-            //println$ "Output = " + output;
-            write_string output;
-          else
-            println$ "Unable to run command '" + cmd "'";
-            write_string("Failed cmd: " + b);
-          done
-          s=doc;
-        elif slideshow.check-slide-commands b do
-          s = doc;
-        else s = doc;
-        done
+        println$ "Unable to run shell command '" + cmd "'";
+        write_string("Failed cmd: " + b);
       done
-      b = "";
-      goto nextc;
-    }
-  endmatch
-  ; // execute selected function
-  println$ "Unexpected drop thru";
 
-fin:>
-//   println "outof data";
-   if b != "" do write_string(match s with | doc => markdown b | _ => b endmatch); done
-   ep;
-   heading.finalise;
-   write_string #(fileseq.shownav);
-   slideshow.finalise;
-if #(slideshow.active) do
-  println$ "Slideshow Active";
-else
-  println$ "Slideshow NOT active";
-done
-   return needs_mathjax, 
-     #(heading.emit-js) + 
-     if #(slideshow.active) then "" 
-     else #(heading.emit-buttons) endif + 
-     out
-   ;
-}
-}
+    // slideshow
+    elif slideshow.check-slide-commands b do ;
+    else
+      println$ "Unable to understand @command '"+b+"'";
+    done
+  }
+}}
 
 println$ "fdoc2html initialisation";
 

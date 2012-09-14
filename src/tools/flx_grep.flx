@@ -21,11 +21,13 @@ var grexp = RE2 lregex;
 //println$ "Dir=" dir;
 //println$ "Files in dir " + dir + "=";
 for file in FileSystem::regfilesin (dir, fregex) do
-  println$ file;
+//  println$ file;
   var lines = load (Filename::join dir file);
+  var count = 0;
   for line in split (lines,char "\n") do
+    ++count;
     if Match (grexp, line) do
-      println$ line;
+      println$ file+":"+str count+": " line;
     done
   done
 done

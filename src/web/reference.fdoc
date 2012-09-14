@@ -1,7 +1,7 @@
 @h1 Felix System Reference
 @h2 Language
-@link ref/lang/core/index.fdoc | Felix Core Language Topics
+<a href="ref/lang/core/index.fdoc">Felix Core Language Topics</a>
 @h2 Library
-@link flx_libcontents.html | Felix Library Contents by File
+<a href="flx_libcontents.html">Felix Library Contents by File</a>
 @p
-@link flx_libindex.html | Felix Library Alphabetical Symbol  Index 
+<a href="flx_libindex.html">Felix Library Alphabetical Symbol  Index</a>

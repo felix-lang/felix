@@ -1,38 +1,38 @@
 @h1 Tutorial
 
 Basic introduction:
-@link tut_index.fdoc | Getting Started
+<a href="tut_index.fdoc">Getting Started</a>
 
 @p
 Polymorphism:
-@link polymorphism_index.fdoc | Polymorphism
+<a href="polymorphism_index.fdoc">Polymorphism</a>
 
 @p
 Categorical type system: 
-@link garrays_index.fdoc | Generalised Arrays.
+<a href="garrays_index.fdoc">Generalised Arrays.</a>
 
 @p
 Pattern matching and unions:
-@link pattern_index.fdoc | Pattern Matching
+<a href="pattern_index.fdoc">Pattern Matching</a>
 
 @p
 Literals
-@link literals_index.fdoc | Literals
+<a href="literals_index.fdoc">Literals</a>
 
 @p
 Data types.
-@link data_types.fdoc | Data Types.
+<a href="data_types.fdoc">Data Types.</a>
 
 @p
 Streams
-@link streams_index.fdoc | Streams.
+<a href="streams_index.fdoc">Streams.</a>
 
 
 @p
 Objects
-@link objects_index.fdoc | Objects
+<a href="objects_index.fdoc">Objects</a>
 
 @p
 C Embedding:
-@link cbind_index.fdoc | Binding C
+<a href="cbind_index.fdoc">Binding C</a>
 

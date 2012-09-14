@@ -1,14 +1,14 @@
 @h1 Slide Shows
 <ul>
 <li>A brief
-@link slides/language-overview.fdoc | overview
+<a href="slides/language-overview.fdoc">overview</a>
 of the Felix language.</li>
 
 <li>Design
-@link slides/language-goals.fdoc | goals
+<a href="slides/language-goals.fdoc">goals</a>
 of the Felix system.</li>
 
 <li>Core
-@link slides/design-concepts.fdoc | concepts
+<a href="slides/design-concepts.fdoc">concepts</a>
 of the Felix system.</li>
 </ul>

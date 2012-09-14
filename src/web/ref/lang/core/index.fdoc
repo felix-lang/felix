@@ -1,35 +1,35 @@
 @h1 Felix Core Language Reference
-@link calls.fdoc | Calling Procedures
+<a href="calls.fdoc">Calling Procedures</a>
 @p
-@link class.fdoc | Type Classes
+<a href="class.fdoc">Type Classes</a>
 @p
-@link for.fdoc |  Loops
+<a href="for.fdoc">Loops</a>
 @p
-@link fun.fdoc |  Functions
+<a href="fun.fdoc">Functions</a>
 @p
-@link gen.fdoc |  Generators
+<a href="gen.fdoc">Generators</a>
 @p
-@link if.fdoc |  Conditionals
+<a href="if.fdoc">Conditionals</a>
 @p
-@link match.fdoc |  Pattern Matching
+<a href="match.fdoc">Pattern Matching</a>
 @p
-@link new.fdoc |  Heap Allocation
+<a href="new.fdoc">Heap Allocation</a>
 @p
-@link package.fdoc | Packaged Resource Management
+<a href="package.fdoc">Packaged Resource Management</a>
 @p
-@link proc.fdoc | Defining Procedures
+<a href="proc.fdoc">Defining Procedures</a>
 @p
-@link struct.fdoc | Defining Structs
+<a href="struct.fdoc">Defining Structs</a>
 @p
-@link subroutines.fdoc | Subroutines
+<a href="subroutines.fdoc">Subroutines</a>
 @p
-@link try.fdoc |  Exception Handling
+<a href="try.fdoc"> Exception Handling</a>
 @p
-@link types.fdoc | Type System
+<a href="types.fdoc">Type System</a>
 @p
-@link union.fdoc | Unions
+<a href="union.fdoc">Unions</a>
 @p
-@link val.fdoc |  Named Values
+<a href="val.fdoc"> Named Values</a>
 @p
-@link var.fdoc | Variables
+<a href="var.fdoc">Variables</a>
 
