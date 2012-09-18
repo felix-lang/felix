@@ -321,7 +321,7 @@ println$ "Package file basename is " + n;
     | sq3 => { ws; }
     | dq3 => { ws; }
     | ccomment _ => { write_string('<span class="comment">'+txt2html b+"</span>"); }
-    | cppcomment=> { write_string('<span class="comment">'+txt2html b.[to -2]+"</span>\n"); }
+    | cppcomment=> { write_string('<span class="comment">'+txt2html b.[to -1]+"</span>\n"); }
     | texid => { write_string (
         '<span class="tex_symbol" title="'+b+'">\\(' + txt2html b + '\\)</span>'
         ); 

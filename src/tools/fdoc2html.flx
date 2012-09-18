@@ -132,7 +132,7 @@ next:>
   | Some (Text ?x) =>
     for para in psplit x do 
       bp; 
-      write_string(markdown x); 
+      write_string(markdown para); 
     done
     ep;
     goto next;
@@ -294,7 +294,9 @@ next:>
         var result = Process::pclose fout; 
         println$ "Ran cmd=" + cmd;
         //println$ "Output = " + output;
+        write_string("<pre>");
         write_string output;
+        write_string("</pre>");
       else
         println$ "Unable to run shell command '" + cmd "'";
         write_string("Failed cmd: " + b);
