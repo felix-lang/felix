@@ -95,6 +95,11 @@ open class String
   instance Set[string,char] {
     fun \in (c:char, s:string) => stl_find (s,c) != stl_npos.int;
   }
+  
+  gen iterator(var x:string) () = {
+    for var i in 0 upto x.len.int - 1 do yield Some (x.[i]); done
+    return None[char];
+  }
 
   fun find (s:string, e:string) : opt[int] => match stl_find (s, e) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
   fun find (s:string, e:string, i:int) : opt[int] => match stl_find (s, e, i) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;

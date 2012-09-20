@@ -476,7 +476,7 @@ instance[T with Show[T]] Str[List::list[T]] {
 }
 
 publish "Association Lists (lists of pairs)"
-class Assoc_list
+open class Assoc_list
 {
   typedef assoc_list[A,B] = List::list[A*B];
 
@@ -491,6 +491,12 @@ class Assoc_list
   fun mem[A,B,T] (eq:A * T -> bool) (xs:assoc_list[A,B]) (e:T) : bool =>
     mem (fun (a:A) => eq(a, e)) xs;
   ;
+
+  instance[A,B] Set[assoc_list[A,B], A] {
+    fun mem[A,B with Eq[A]] (xs:assoc_list[A,B]) (e:A) : bool => 
+      mem eq of (A * A) xs e
+    ;
+  }
 
   // find optionally the first value whose associate key satisfies 
   // the given predicate
@@ -507,6 +513,9 @@ class Assoc_list
     find (fun (a:A) => eq (a, e)) xs;
   ;
 
+  fun find[A,B with Eq[A]] (xs:assoc_list[A,B]) (e:A) : opt[B] =>
+    find eq of (A * A) xs e
+  ;
 }
 
 class S_expr 

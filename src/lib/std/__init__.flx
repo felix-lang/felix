@@ -42,6 +42,7 @@ include "std/dynlink";
 include "std/env";
 include "std/cstdlib";
 include "std/categ";
+include "std/cmdopt";
 
 // control
 include "std/control";
