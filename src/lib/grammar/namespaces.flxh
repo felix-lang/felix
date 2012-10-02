@@ -55,5 +55,21 @@ syntax namespaces {
     `(ast_instance ,_sr ,_2 ,_3 ,_5)
     """;
 
+  tstatement := "with" sstatements "do" sstatements "done" =>#
+  """
+  (let* 
+    (
+      (dummy_class_name (string-append "_dummy_class_" (number->string (fresh_int ()))))
+      (decls1 (map make_private _2)) 
+      (decls (append decls1 _4))
+    )
+    `(ast_seq ,_sr 
+      (
+        (ast_typeclass ,_sr ,dummy_class_name ,dfltvs ,decls)
+        (ast_inject_module ,_sr ,dfltvs ,(nos dummy_class_name))
+      )
+    )
+  )
+  """;
 }
 

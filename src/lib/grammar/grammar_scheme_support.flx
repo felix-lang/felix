@@ -263,6 +263,9 @@ SCHEME """
   )
 """;
 
+SCHEME """
+  (define (make_private s) `(ast_private ,s))
+""";
 
 
 
