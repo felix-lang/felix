@@ -1,11 +1,30 @@
 open class CmdOpt 
 {
+  // Convert key/value pairs represented like -I path
+  // into form --include=path
+  noinline fun cvt-key-arg (keys: list[string * string]) (x:list[string]) = 
+  {
+     var out = Empty[string];
+     var inp = x.iterator;
+     for word in inp do
+       match keys.find word with
+       | None => out = Cons (word,out);
+       | Some ?prefix => 
+         match inp() with
+         | None => println$ "Error, expected argument to option " + word;
+         | Some ?arg => out = Cons (prefix+"=" + arg, out);
+         endmatch;
+       endmatch;
+     done
+     return rev out;
+  }
+
   // Parse key value pairs represented by --key=value.
   // Allows multiple values to be given.
   // Stores reversed list of values.
   // Returns ordered list of non-handled elements.
   var rekv = RE2 "(--.*)=(.*)";
-  gen parse-key-multi-value (keys:list[string]) (d:strdict[list[string]]) (x:list[string]) =
+  noinline gen parse-key-multi-value (keys:list[string]) (d:strdict[list[string]]) (x:list[string]) =
   {
     var out = Empty[string];
     var va = varray[StringPiece] (StringPiece "", StringPiece "", StringPiece "");
@@ -30,7 +49,7 @@ open class CmdOpt
   // Keys must be unique.
   // Stores reversed list of values.
   // Returns ordered list of non-handled elements.
-  gen parse-key-single-value (keys:list[string]) (d:strdict[string]) (x:list[string]) =
+  noinline gen parse-key-single-value (keys:list[string]) (d:strdict[string]) (x:list[string]) =
   {
     var out = Empty[string];
     var va = varray[StringPiece] (StringPiece "", StringPiece "", StringPiece "");
@@ -58,7 +77,7 @@ open class CmdOpt
   // Allows multiple values.
   // Stores count of occurences.
   var rek = RE2 "(--.*)";
-  gen parse-key (keys:list[string]) (d:strdict[int]) (x:list[string]) =
+  noinline gen parse-key (keys:list[string]) (d:strdict[int]) (x:list[string]) =
   {
     var out = Empty[string];
     var va = varray[StringPiece] (StringPiece "", StringPiece "");
@@ -84,7 +103,7 @@ open class CmdOpt
   // Replaces option letter with specified long option key.
   // Returns ordered list of non-handled elements.
   var resw = RE2 "(-.*)";
-  gen parse-switches (switchmap: list[char * string] ) (d:strdict[int]) (x:list[string]) =
+  noinline gen parse-switches (switchmap: list[char * string] ) (d:strdict[int]) (x:list[string]) =
   {
     var out = Empty[string];
     var va = varray[StringPiece] (StringPiece "", StringPiece "");
@@ -108,6 +127,7 @@ open class CmdOpt
   }
 
   typedef cmdspec_t = (
+    split-key-value-spec: list[string * string],
     multi-valued-keys-spec: list[string], 
     single-valued-keys-spec: list[string], 
     switches-spec: list[string], 
@@ -129,9 +149,10 @@ open class CmdOpt
     positional = Empty[string]
   );
 
-  gen parse-cmdline (spec:cmdspec_t) (x:list[string]) : cmdopt-parse-result_t = {
+  noinline gen parse-cmdline (spec:cmdspec_t) (x:list[string]) : cmdopt-parse-result_t = {
     var result = cmdopt-parse-result_t ();
-    var nonk = parse-key-multi-value spec.multi-valued-keys-spec result.multi-valued-keys x;
+    var nonk = cvt-key-arg spec.split-key-value-spec x;
+    nonk = parse-key-multi-value spec.multi-valued-keys-spec result.multi-valued-keys nonk;
     nonk = parse-key-single-value spec.single-valued-keys-spec result.single-valued-keys nonk;
     nonk = parse-key spec.switches-spec result.switches nonk;
     result.positional = parse-switches spec.short-switch-map-spec result.switches nonk;

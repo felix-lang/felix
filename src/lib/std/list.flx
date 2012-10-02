@@ -95,6 +95,8 @@ open class List
   ctor[T] list[T] () => Empty[T];
 
   // make a list with one element
+  // NOTE: list (1,2) is a list of 2 ints.
+  // To get a list of one pair use list[int*int] (1,2) instead!
   ctor[T] list[T] (x:T) => Cons(x, Empty[T]);
 
   // make a list from an array (tuple)
