@@ -10,9 +10,8 @@ let getsr dyp =
     e.pos_lnum,
     e.pos_cnum - e.pos_bol)
 
-let incr_lineno lexbuf n = 
-  let n = ref n in
-  while !n <> 0 do Dyp.set_newline lexbuf; decr n done
+let incr_lineno lexbuf= 
+  Dyp.set_newline lexbuf
 
 let set_lineno lexbuf n =
   let lexbuf = (Dyp.std_lexbuf lexbuf) in 
@@ -28,5 +27,31 @@ let lfcount s =
     if s.[i] = '\n' then incr n
   done;
   !n
+
+let adjust_lineno lexbuf s =
+  let lexbuf = (Dyp.std_lexbuf lexbuf) in 
+  let start_pos = lexbuf.lex_start_p in
+  let fname = start_pos.pos_fname in
+  let lnum = ref start_pos.pos_lnum in
+  let cnum = ref start_pos.pos_cnum in
+  let bol = ref start_pos.pos_bol in
+  for i = 0 to String.length s - 1 do
+    incr cnum;
+    if s.[i] = '\n' then begin
+     incr lnum;
+     bol := !cnum;
+    end
+  done;
+  let old_end = lexbuf.lex_curr_p in
+  assert (old_end.pos_cnum = !cnum);
+  let end_pos =  
+    { 
+      pos_fname = fname; 
+      pos_lnum = !lnum;
+      pos_bol = !bol;
+      pos_cnum = !cnum;
+    }
+  in
+  lexbuf.lex_curr_p <- end_pos
 
 

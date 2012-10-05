@@ -129,22 +129,23 @@ open class Re2 {
    ;
 
   // simple match
-  gen Match: RE2 * string -> bool = 
+  fun Match: RE2 * string -> bool = 
     "$1->Match(::re2::StringPiece($2),0, ::re2::StringPiece($2).length(),::re2::RE2::ANCHOR_BOTH, (::re2::StringPiece*)0, 0)"
   ;
-
+  
   fun CheckRewriteString: RE2 * StringPiece * &string -> bool = "$1->CheckRewriteString($2, $3)";
 
   instance Set[RE2, string] {
     fun \in (x:string, r:RE2) => Match (r, x);
   }
 
-  gen iterator (re2:string, var target:string) () : opt[varray[string]] = {
+  gen iterator (re2:string, var target:string) => iterator (RE2 re2, target);
+
+  gen iterator (r:RE2, var target:string) () : opt[varray[string]] = {
     var l = len target;
     var s = StringPiece target;
     var p1 = s.data;  
     var p = 0;
-    var r=RE2(re2);
     var n = NumberOfCapturingGroups(r)+1;
     var v1 = varray[StringPiece] (n.size,StringPiece "");
     var v2 = varray[string] (n.size,"");
@@ -160,6 +161,10 @@ open class Re2 {
   endoff:>
     return None[varray[string]];
   }
+
+  // Extract Some match array or None if not matching.
+  fun extract (re2:string, target:string) : opt[varray[string]] => iterator (RE2 re2, target) ();
+  fun extract (re2:RE2, target:string) : opt[varray[string]] => iterator (re2, target) ();
 
 }
 

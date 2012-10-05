@@ -134,7 +134,7 @@ let not_newline = not_hash_or_newline | hash
 
 rule parse_C_comment count = parse
 | "/*"    { parse_C_comment (count+1) lexbuf }
-| newline { Flx_parse_srcref.incr_lineno lexbuf 1; parse_C_comment count lexbuf }
+| newline { Flx_parse_srcref.incr_lineno lexbuf; parse_C_comment count lexbuf }
 | "*/"    { if count = 1 then () else parse_C_comment (count - 1) lexbuf }
 | _       { parse_C_comment count lexbuf }
 
@@ -142,7 +142,7 @@ rule parse_C_comment count = parse
 main lexer =
 /* eof is not eaten up, so parent will find eof and emit ENDMARKER */
  "//" not_newline * (newline | eof) -> {
-      Flx_parse_srcref.incr_lineno lexbuf 1
+      Flx_parse_srcref.incr_lineno lexbuf
   }
 
   "#line"  -> HASH_LINE {
@@ -159,32 +159,28 @@ main lexer =
 /* Python strings */
  qstring -> STRING { 
     let s = lexeme lexbuf in
-    let n = Flx_parse_srcref.lfcount s in
-    Flx_parse_srcref.incr_lineno lexbuf n;
+    Flx_parse_srcref.adjust_lineno lexbuf s;
     let m = String.length s in
     String.sub s 1 (m-2)
   }
 
 qqqstring    -> STRING { 
     let s = lexeme lexbuf in
-    let n = Flx_parse_srcref.lfcount s in
-    Flx_parse_srcref.incr_lineno lexbuf n;
+    Flx_parse_srcref.adjust_lineno lexbuf s;
     let m = String.length s in
     String.sub s 3 (m-3)
   }
 
 dstring -> STRING {
     let s = lexeme lexbuf in
-    let n = Flx_parse_srcref.lfcount s in
-    Flx_parse_srcref.incr_lineno lexbuf n;
+    Flx_parse_srcref.adjust_lineno lexbuf s;
     let m = String.length s in
     String.sub s 1 (m-2)
   }
 
 dddstring -> STRING {
     let s = lexeme lexbuf in
-    let n = Flx_parse_srcref.lfcount s in
-    Flx_parse_srcref.incr_lineno lexbuf n;
+    Flx_parse_srcref.adjust_lineno lexbuf s;
     let m = String.length s in
     String.sub s 3 (m-3)
   }
@@ -195,7 +191,7 @@ dddstring -> STRING {
  white+ -> { () }
 
 /* end of line */
- newline -> { Flx_parse_srcref.incr_lineno lexbuf 1 }
+ newline -> { Flx_parse_srcref.incr_lineno lexbuf }
 
 /* end of file */
  eof -> ENDMARKER { }
