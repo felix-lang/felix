@@ -384,6 +384,10 @@ proc install_bin ()
   if result !=0 goto install_bin_failed;
   println$ "Installed executable flx_grep in /usr/local/bin";
 
+  result= system("cp -f "+FLX_INSTALL_DIR+"/tools/flx_replace /usr/local/bin");
+  if result !=0 goto install_bin_failed;
+  println$ "Installed executable flx_replace in /usr/local/bin";
+
   result= system("cp -f "+FLX_INSTALL_DIR+"/tools/flx_libindex /usr/local/bin");
   if result !=0 goto install_bin_failed;
   println$ "Installed executable flx_libindex in /usr/local/bin";
