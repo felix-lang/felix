@@ -1,6 +1,7 @@
 #include "pthread_condv.hpp"
 #include <stdio.h>        // printf debugging
 #include <assert.h>
+#include <math.h>
 
 namespace flx { namespace pthread {
 
@@ -63,8 +64,8 @@ int flx_condv_t::timedwait(flx_mutex_t *m, timespec *t) {
 
 int flx_condv_t::timedwait(flx_mutex_t *m, double t) {
   struct timespec tv;
-  tv.tv_sec = trunc t;
-  tv.tv_nsec = trunc ((t - floor t) * 1E9); 
+  tv.tv_sec = trunc (t);
+  tv.tv_nsec = trunc ((t - floor (t)) * 1E9); 
   timedwait (m, &tv);
 }
 
