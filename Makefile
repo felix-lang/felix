@@ -105,6 +105,11 @@ install-felix-lang.org:
 	echo 'println ("installed "+ Version::felix_version);' > install-done.flx
 	flx install-done
 	rm install-done.*
+	flx_libcontents --html > tmp1.html
+	flx_libindex --html > tmp2.html
+	sudo cp tmp1.html /usr/local/lib/felix/felix-latest/web/flx_libcontents.html
+	sudo cp tmp2.html /usr/local/lib/felix/felix-latest/web/flx_libindex.html
+	rm tmp1.html tmp2.html
 	sudo start felixweb
 
 #

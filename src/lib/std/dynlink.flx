@@ -180,24 +180,28 @@ class Dynlink
     return proc (a0:A0,a1:A1) { s (tf, a0, a1); };
   }
 
-  publish """
-    execute an address representing a top
-    level exported felix procedure's C wrapper,
-    this creates a 'read to run' continuation object
-    by both constructing the object using the thread
-    frame of the instance as an argument, and calling
-    it to fix a null return address and an arbitrary
-    client data pointer as arguments to the call method.
-  """
+  //$ Execute an address representing a top
+  //$ level exported felix procedure's C wrapper,
+  //$ this creates a 'read to run' continuation object
+  //$ by both constructing the object using the thread
+  //$ frame of the instance as an argument, and calling
+  //$ it to fix a null return address and an arbitrary
+  //$ client data pointer as arguments to the call method.
   fun bind_proc: flx_instance * address * address -> cont =
     "$1->bind_proc($2,$3)";
 
+  //$ Get the OS dependent handle representing a loaded DLL.
+  //$ Return as an address. 
   fun dlib_of : flx_library -> address = "(void*)$1->library";
 
+  //$ Throw an exception indication the failure to 
+  //$ find a symbol in a DLL.
   proc dlsym_err:flx_library*string="""
     throw flx::rtl::flx_link_failure_t($1->filename,$2,"symbol not found");
   """;
 
+  //$ Run a procedure represented by a string name with
+  //$ given thread frame.
   noinline proc run_proc (linstance:flx_instance, p: string, data: address)
   {
     var lib = get_library linstance;
