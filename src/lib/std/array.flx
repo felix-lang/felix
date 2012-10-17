@@ -1,37 +1,41 @@
-publish "Compile Time Fixed Length Array"
-
+//$ Compile time fix length array.
 open class Farray
 {
-  publish "Array type"
   typedef array[t,n] = t ^ n;
 
-  publish "Array constructors"
-  ctor[T,N] array[T,N] (x:array[T,N]) => x;
+  //ctor[T,N] array[T,N] (x:array[T,N]) => x;
 
+  //$ Array copy.
+  fun copy[T,N] (var x:array[T,N]) => x;
+
+  //$ Array of one element.
   ctor[T] array[T,1] (x:T) => x :>> array[T,1];
 
-  // array as value
+  //$ Array as value.
   instance[t,n] ArrayValue[array[t,n], t] {
     fun len (x:array[t, n]): size => Typing::arrayindexcount[n];
     //fun unsafe_get: array[t, n] * size -> t = "$1.data[$2]";
     fun unsafe_get (var a: array[t, n], j: size): t => a . (j :>> n);
   }
 
-  // array as object
+  //$ Pointer to array as value.
   instance[t,n] ArrayValue[&array[t,n], t] {
     fun len (x:&array[t, n]): size => Typing::arrayindexcount[n];
     fun unsafe_get: &array[t, n] * size -> t = "$1->data[$2]";
   }
 
+  //$ Pointer to array as object.
   instance[t,n] ArrayObject[&array[t,n], t] {
     proc unsafe_set: &array[t,n] * size * t = "$1->data[$2]=$3;";
   }
 
+  //$ Pointer to array as STL contiguous sequence object.
   instance[t,n] ContiguousArrayObject[&array[t,n], t] {
     fun stl_begin: &array[t,n] -> +t = "$1->data";
     fun stl_end ( x:&array[t,n] ) : +t => stl_begin x + len x;
   }
 
+  //$ Array map.
   fun map[V,N,U] (_f:V->U) (x:array[V,N]):array[U,N] = {
     var o : array[U,N];
     val n = x.len;
@@ -49,6 +53,7 @@ open class Farray
   // iterating from 0 to N-1. Subtraction N-1 fails for n == 0
   // so we need a special test. 
 
+  //$ Join two arrays (functional).
   fun join[T, N, M] (x:array[T, N]) (y:array[T, M]):array[T, N + M] = {
     var o : array[T, N + M];
 
@@ -67,6 +72,7 @@ open class Farray
     return o;
   }
 
+  //$ Append value to end of an array (functional).
   fun join[T, N] (x:array[T, N]) (y:T):array[T, N + 1] = {
     var o : array[T, N + 1];
 
@@ -79,6 +85,7 @@ open class Farray
     return o;
   }
 
+  //$ Prepand value to start of an array (functional).
   fun join[T, M] (x:T) (y:array[T, M]):array[T, 1 + M] = {
     var o : array[T, 1 + M];
 
@@ -93,10 +100,13 @@ open class Farray
   }
 
 
+  //$ Join two arrays (functional).
   // will probably clash with tuple joining functions if we implement them
   fun + [T, N, M] (x:array[T, N], y:array[T, M]):array[T, N + M] => join x y;
 
-  // subsumes zip
+  //$ Transpose and array.
+  //$ Subsumes zip.
+  //$ Example: transpose ( (1,2,3), (4,5,6) ) = ( (1,4), (2,4), (3,6) ).
   fun transpose[T,N,M] (y:array[array[T,M],N]) : array[array[T,N],M] = {
     var o : array[array[T,N],M];
     var n = len y;
@@ -112,7 +122,7 @@ open class Farray
     return o;
   }
 
-  // reverse
+  //$ Reverse elements of an array.
   fun rev[T, N] (x:array[T, N]): array[T, N] = {
     var o : array[T, N];
     var n = len x;
@@ -124,7 +134,7 @@ open class Farray
     return o;
   }
 
-  // display
+  //$ Display: convert to string like (1,2,3).
   instance[T,N with Show[T]] Str[array[T, N]] {
     fun str (xs:array[T,N]) = {
       var o = '(';
@@ -140,7 +150,7 @@ open class Farray
     }
   }
 
-  // equality
+  //$ Equality and Inequality.
   instance[T,N with Eq[T]] Eq[array[T, N]] {
     fun == (xs:array[T,N],ys:array[T,N]) = {
       val n = xs.len;
@@ -156,7 +166,8 @@ open class Farray
     }
   }
 
-  // total ordering 
+  //$ Lexicographical total order based on
+  //$ total order of elements.
   instance[T,N with Tord[T]] Tord[array[T,N]] {
     fun < (xs:array[T,N],ys:array[T,N]) = {
       val n = xs.len;

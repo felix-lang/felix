@@ -75,6 +75,7 @@ syn keyword felixStatement do
 syn keyword felixStatement done
 syn keyword felixStatement elif
 syn keyword felixStatement else
+syn keyword felixStatement otherwise
 syn keyword felixStatement endcase
 syn keyword felixStatement endif
 syn keyword felixStatement endmatch

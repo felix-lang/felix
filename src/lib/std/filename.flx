@@ -54,7 +54,7 @@ class Filename {
 
   fun join(x:string) (y:string) => join(x,y);
 
-  fun join(ps: List::list[string])=> List::fold_left join of (string) "" ps;
+  fun join(ps: List::list[string])=> List::fold_left Filename::join of (string) "" ps;
 
 }
 

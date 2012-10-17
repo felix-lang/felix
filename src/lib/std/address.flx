@@ -1,16 +1,29 @@
-ctor[T] address: &T = "(void*)$1";
-ctor[T] address: +T = "(void*)$1";
-fun isNULL: address -> bool = "(0==$1)";
-const NULL : address = "NULL";
+//$ Core operations on addresses.
+open class Address {
+  //$ Construct from Felix object pointer.
+  ctor[T] address: &T = "(void*)$1";
 
-instance Eq[address] {
-  fun == : address * address -> bool = "$1==$2";
-}
-instance Tord[address] {
-  fun < : address * address -> bool = "::std::less<?1>($1,$2)";
-}
-instance[T in addressing] Str[T] {
-  fun str (t:T) : string => vsprintf (c"%i", t);
+  //$ Construct from possibly NULL pointer.
+  ctor[T] address: @T = "(void*)$1";
+
+  //$ Construct from possibly array element pointer.
+  ctor[T] address: +T = "(void*)$1";
+
+  //$ Check is an address is NULL.
+  fun isNULL: address -> bool = "(0==$1)";
+
+  //$ Define NULL address.
+  const NULL : address = "NULL";
+
+  instance Eq[address] {
+    fun == : address * address -> bool = "$1==$2";
+  }
+  instance Tord[address] {
+    fun < : address * address -> bool = "::std::less<?1>($1,$2)";
+  }
+  instance[T in addressing] Str[T] {
+    fun str (t:T) : string => vsprintf (c"%i", t);
+  }
 }
 
 // Do we want this to be hex?

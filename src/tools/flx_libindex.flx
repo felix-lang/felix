@@ -1,5 +1,5 @@
 var ishtml = System::argv 1 == "--html";
-var dir =  Filename::join #(Config::config).FLX_INSTALL_DIR "lib";
+var dir =  Filename::join (#(Config::config).FLX_INSTALL_DIR, "lib", "std");
 var fregex = ".*\\.flx";
 var lregex = "^ *(virtual|noinline)* *(proc|fun|class|ctor|gen) *(([A-Z]|[a-z])([A-Z]|[a-z]|[0-9]|-|_)*).*";
 var lgrep = RE2 lregex;

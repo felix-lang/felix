@@ -9,6 +9,9 @@ syntax conditional
   tstatement := "if" sexpr "do" sstatements "done" =>#
     "`(ast_ifdo ,_sr ,_2 ,_4 ())";
 
+  tstatement := "if" sexpr "do" sstatements "otherwise" sstatements  =>#
+    "`(ast_ifdo ,_sr ,_2 ,_4 ,_6)";
+
   tstatement := sexpr "??" tstatement =>#
     "`(ast_ifdo ,_sr ,_1 (,_3) ())";
 

@@ -1,5 +1,5 @@
 //Check Array::fold_right
 val f = fun (x:int) (y:int) => x - y;
-print$ fold_right f (array(4, 5)) 6; endl;
-print$ fold_right f (array(4, 5, 6)) 7; endl;
-print$ fold_right f (array(4, 5, 6, 7)) 8; endl;
+print$ fold_right f (4, 5) 6; endl;
+print$ fold_right f (4, 5, 6) 7; endl;
+print$ fold_right f (4, 5, 6, 7) 8; endl;

@@ -1,16 +1,24 @@
+//$ Array as Value (immutable).
 class ArrayValue[t,v]
 {
+  //$ Length.
   virtual fun len: t -> size;
+
+  //$ Unchecked common indexing.
   virtual fun unsafe_get: t * size -> v;
 
   //fun subscript[I in ints] (x:t, i:I) => get (x,i.size);
+
+  //$  Checked common indexing.
   fun apply [I in ints] (i:I, x:t) => get (x,i.size);
 
+  //$ Checked common indexing.
   fun get[I in ints] (x:t, i:I) = { 
     assert i.size < x.len;
     return unsafe_get (x,i.size);
   }
 
+  //$ Callback based value iterator.
   proc iter (_f:v->void) (x:t) {
     val n = x.len;
     if n > 0uz do
@@ -20,6 +28,8 @@ class ArrayValue[t,v]
     done
   }
 
+  //$ Callback based index and value iterator.
+  //$ Callback f index value.
   proc iiter (_f:size -> v->void) (x:t) {
     val n = x.len;
     if n > 0uz do
@@ -29,6 +39,7 @@ class ArrayValue[t,v]
     done
   }
 
+  //$ Stream  value iterator.
   gen iterator(xs:t) () : opt[v] = 
   {
     if xs.len > 0uz do
@@ -39,6 +50,7 @@ class ArrayValue[t,v]
     return None[v];
   } 
 
+  //$ Traditional left fold.
   fun fold_left[u] (_f:u->v->u) (init:u) (x:t): u = {
     var o = init;
     val n = x.len;
@@ -50,6 +62,7 @@ class ArrayValue[t,v]
     return o;
   }
 
+  //$ Traditional right fold.
   fun fold_right[u] (_f:v->u->u) (x:t) (init:u): u = {
     var o = init;
     val n = x.len;
@@ -63,7 +76,7 @@ class ArrayValue[t,v]
 
   // map: can't be implemented easily because constructor required for result
 
-  // searching by predicate
+  //$ Membership by predicate.
   fun mem(pred:v->bool) (x:t): bool = {
     val n = x.len;
     if n > 0uz do
@@ -76,14 +89,18 @@ class ArrayValue[t,v]
     return false;
   }
 
-  // searching by relation 
+  //$ Membership by relation to given value. 
   fun mem[u] (rel:v*u->bool) (x:t) (e:u): bool =>
     mem (fun (i:v) => rel(i, e)) x
   ;
+
+  //$ Array as Set:
+  //$ Membership by equality of value type.
   instance[with Eq[v]] Set[t,v] {
     fun \in (elt:v, a:t) => mem eq of (v * v) a elt;
   }
 
+  //$ Searching for value satisfying relation to given value.
   fun find (rel:v*v->bool) (x:t) (e:v): opt[v] = {
     val n = x.len;
     if n > 0uz do
@@ -97,6 +114,7 @@ class ArrayValue[t,v]
     return None[v];
   }
 
+  //$ Searching for value satisfying predicate.
   fun find(pred:v->bool) (x:t): opt[v] = {
     val n = x.len;
     if  n > 0uz do 
@@ -118,10 +136,15 @@ class TrueArrayValue [t,x,v]
    fun true_unsafe_get (a:t, i:x) => unsafe_get (a, render i);
 }
 
+//$ Array as Object (mutable).
 class ArrayObject[t,v]
 {
   inherit ArrayValue[t,v];
+
+  // Unsafe store value into array by common index.
   virtual proc unsafe_set: t * size * v;
+
+  // Checked store value into array by common index.
   proc set[I in ints] (x:t, i:I, a:v) { 
     assert i.size < x.len; unsafe_set (x,i.size,a); 
   } 
@@ -134,12 +157,19 @@ class TrueArrayObject[t,x, v]
   proc true_unsafe_set(a:t, i:x, e:v) => unsafe_set (a, render i, e);
 }
 
+//$ Array as Contiguous STL Object.
+//$ Provides STL iterators type +v
 class ContiguousArrayObject[t,v]
 {
   inherit ArrayObject[t,v];
+
+  //$ Start of array iterator.
   virtual fun stl_begin: t -> +v;
+
+  //$ One past the end of array iterator.
   virtual fun stl_end: t -> +v;
 
+  //$ Add integer to iterator.
   fun + [I in ints] (pa:t, i:I) : carray [v] = { 
      assert i.size < pa.len; 
      return pa.stl_begin + i.size; 

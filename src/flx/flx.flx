@@ -263,7 +263,8 @@ proc install() {
      (" * Run time libraries and C/C++ headers",
      list( 
        "lib/rtl/.*\\.(h|hpp|c|cpp|dylib|so|a)",
-       "lib/rtl/flx_a?run.(o|obj)"
+       "lib/rtl/flx_a?run_lib.(o|obj)",
+       "lib/rtl/flx_a?run_lib_main.(o|obj)"
      )),
 
 

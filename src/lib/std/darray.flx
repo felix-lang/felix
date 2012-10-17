@@ -1,5 +1,4 @@
-publish "Unbounded Variable length arrays"
-
+//$ Unbounded Variable length object array.
 open class Darray
 {
   private struct darray_ctl[T]
@@ -8,10 +7,10 @@ open class Darray
     resize: size * size --> size;
   }
 
-  // this is the default array resize function
-  // if we run out of space, allocate what we have + 50%
-  // if we need less than half the allocated space, return the requested size + 50%
-  // otherwise return the existing allocated space
+  //$ This is the default array resize function.
+  //$ If we run out of space, allocate what we have + 50%.
+  //$ If we need less than half the allocated space, return the requested size + 50%.
+  //$ Otherwise return the existing allocated space.
   cfun dflt_resize(old_max:size, requested:size):size=
   {
     // GOTCHA: don't forget that division has a higher precedence than multiplication!
@@ -23,52 +22,62 @@ open class Darray
     return old_max;
   }
 
+  //$ Type of a darray.
   type darray[T] = new &darray_ctl[T];
 
+  //$ Force a resize.
+  //$ Similar to C++ vector reserve function.
   proc do_resize[T] (pd: darray[T], new_size: size)
   {
     var old = (_repr_ pd)*.a;
     (_repr_ pd)*.a = varray[T] (new_size, (len old), (fun(i:size)=>old.i));
   }
 
-  // make an empty darray, give it 20 slots for no particular reason
+  //$ Make an empty darray, give it 20 slots for no particular reason.
   ctor[T] darray[T] () => _make_darray[T]$ new darray_ctl[T](varray[T] 20uz , dflt_resize);
 
-  // make a darray from an array
+  //$ Make a darray from an array
   ctor[T,N] darray[T] (a:array[T,N]) =>  _make_darray[T]$ new darray_ctl[T]( varray[T] a, dflt_resize);
 
-  // make a darray from a varray
+  //$ Make a darray from a varray
   ctor[T] darray[T] (a:varray[T]) =>  _make_darray[T]$ new darray_ctl[T]( varray[T] a, dflt_resize);
 
-  // make a darray of a certain size initialised with some default value
+  //$ make a darray of a certain size initialised with some default value
   ctor[T] darray[T] (n:size, default:T) => darray[T] (varray[T](n,default));
 
-  // basic array stuff, same interface as array
+  //$ Basic array value stuff.
   instance[v] ArrayValue[darray[v],v] {
     fun len (a:darray[v])=> len (_repr_ a)*.a;
     fun unsafe_get (a:darray[v], i:size) => (_repr_ a)*.a.i;
   }
 
+  //$ Basic array object stuff.
   instance[v] ArrayObject[darray[v],v] {
     proc unsafe_set (b:darray[v],  n:size, x:v) => unsafe_set ((_repr_ b)*.a,n,x);
   }
 
+  //$ Contrue as contiguous store.
   instance[v] ContiguousArrayObject[darray[v],v] {
     fun stl_begin(b:darray[v]) => stl_begin b._repr_*.a;
     fun stl_end(b:darray[v]) => stl_end b._repr_*.a;
   }
 
-  // basic array stuff, same interface as varray
+  //$ Pop a value from the end.
+  //$ Same as pop_back in C++.
   proc pop[t](a:darray[t]) {
     pop (_repr_ a)*.a;
     newsize := (_repr_ a)*.resize (maxlen (_repr_ a)*.a, len (_repr_ a)*.a);
     if newsize != maxlen (_repr_ a)*.a do do_resize (a,newsize); done 
   }
 
+  //$ Push a value onto the end.
+  //$ Same as push_back in C++.
   proc += [t] (a:&darray[t],v:t) {
     push_back (*a, v);
   }
 
+  //$ Push a value onto the end.
+  //$ Same as push_back in C++.
   proc push_back[t] (a:darray[t], v:t) {
     r := _repr_ a; 
     newsize := r*.resize (maxlen r*.a, len r*.a + 1uz);
@@ -78,12 +87,16 @@ open class Darray
 
   // uses _repr_ so has to be in the module
   instance[T with Show[T]] Str[Darray::darray[T]] {
+    //$ Convert an array to a string,
+    //$ provided the element type is convertible.
     fun str (x:darray[T])=> str (_repr_ x)*.a;
   }
 
 }
 
+//$ Construe a darray as a Set.
 instance[T with Eq[T]] Set[darray[T],T] {
+ //$ element membership test.
  fun \in (x:T, a:darray[T]) : bool = {
    for var i in 0uz upto len a -1uz do
      if a.i == x do return true; done

@@ -19,6 +19,7 @@ public:
   void broadcast();
   void wait(flx_mutex_t*);
   int timedwait(flx_mutex_t*, timespec*);
+  int timedwait(flx_mutex_t *m, double t);
 };
 
 }} // namespace pthread, flx

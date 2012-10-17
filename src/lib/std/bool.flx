@@ -1,25 +1,54 @@
+//$ Standard operations on boolean type.
+//$ Note bool = 2 defined in std/algebraic.flx.
+//$ Literals true and false defined in grammer/expressions.flxh.
 open class Bool
 {
+  //$ Disjunction: logical and.
   fun land: bool * bool -> bool = "$1&&$2";      // x and y
+
+  //$ Negated and.
   fun nand: bool * bool -> bool = "!($1&&$2)";   // not (x and y)
+
+  //$ Conjunction: logical or.
   fun lor: bool * bool -> bool = "$1||$2";       // x or y
+
+  //$ Negated or.
   fun nor: bool * bool -> bool = "!($1||$2)";    // not (x or y)
+
+  //$ Logical exclusive or.
   fun xor: bool * bool -> bool = "$1!=$2";       // (x or y) and not (x and y)
+
+  //$ Logical negation.
   fun lnot: bool -> bool = "!$1";                // not x
+
+  //$ Logical implication.
   fun implies: bool * bool -> bool = "!$1||$2";  // not x or y
+
+  //$ Mutating or.
   proc |= : &bool * bool = "*$1|=$2;";  
+
+  //$ Mutating and.
   proc &= : &bool * bool = "*$1&=$2;";  
 
-  reduce dneg(x:bool): lnot (lnot x) => x;       // elide double negations
+  // Elide double negations.
+  reduce dneg(x:bool): lnot (lnot x) => x;       
+
+  // Elide double negations.
   reduce dneg(x:bool,y:bool): lnot (nand(x,y)) => land(x,y); 
+
+  // Elide double negations.
   reduce dneg(x:bool,y:bool): lnot (nor(x,y)) => lor(x,y);
 }
 
 instance Str[bool] {
+  //$ Convert bool to string.
   fun str (b:bool) : string => if b then "true" else "false" endif;
 }
+
 instance Tord[bool] {
-  fun < : bool * bool -> bool = "$1<$2";   // aka "implication"
+  //$ Total ordering of bools, false < true.
+  //$ Note that x < y is equivalent to x implies y.
+  fun < : bool * bool -> bool = "$1<$2";
 }
 
 open Tord[bool];

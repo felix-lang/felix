@@ -3,11 +3,11 @@ open class List
 {
   union list[T] = | Empty | Cons of T * list[T];
 
-  // the second list is made the tail of the
-  // list stored at the location pointed at by the first argument
-  // if the first list is empty, the variable will point
-  // at the second list. This operation is DANGEROUS because
-  // it is a mutator: lists are traditionally purely functional
+  //$ The second list is made the tail of the
+  //$ list stored at the location pointed at by the first argument.
+  //$ If the first list is empty, the variable will point
+  //$ at the second list. This operation is DANGEROUS because
+  //$ it is a mutator: lists are traditionally purely functional.
 
   // this function is required for efficient joining of lists.
   // we copy the first list, then splice the second one onto its last element
@@ -31,7 +31,8 @@ open class List
     """
   ;
 
-  // in place list reversal: unsafe! second arg is a dummy to make overload work
+  //$ In place list reversal: unsafe!
+  // second arg is a dummy to make overload work
   proc rev[T,PLT=&list[T]] : &list[T] = "_rev($1,(?1*)0);" requires _iprev_[T,PLT];
 
   body _iprev_[T,PLT]=
@@ -76,30 +77,30 @@ open class List
     """
   ;
 
-  // copy a list
+  //$ Copy a list.
   fun copy[T] (x:list[T]):list[T]= {
     var y = rev x;
     rev (&y);
     return y;
   }
 
-  // copy a list, and return last element as a list 
-  // (empty if original list was empty)
+  //$ Copy a list, and return last element as a list,
+  //$ empty if original list was empty.
   proc copy_last[T] (inp:list[T], out:&list[T], last:&list[T]) {
     out <- rev inp;
     rev_last (out, last);
   }
 
 
-  // make an empty list
+  //$ Make an empty list.
   ctor[T] list[T] () => Empty[T];
 
-  // make a list with one element
-  // NOTE: list (1,2) is a list of 2 ints.
-  // To get a list of one pair use list[int*int] (1,2) instead!
+  //$ Make a list with one element.
+  //$ NOTE: list (1,2) is a list of 2 ints.
+  //$ To get a list of one pair use list[int*int] (1,2) instead!
   ctor[T] list[T] (x:T) => Cons(x, Empty[T]);
 
-  // make a list from an array (tuple)
+  //$ Make a list from an array.
   ctor[T,N] list[T] (x:array[T, N]) = {
     var o = Empty[T];
     for var i in x.len.int - 1 downto 0 do
@@ -108,11 +109,27 @@ open class List
     return o;
   }
 
-  // comprehension
+  //$ List comprehension:
+  //$ Make a list from a stream.
   ctor[T] list[T](f: (1->opt[T])) => list_comprehension f;
 
+  //$ List comprehension:
+  //$ Make a list from a stream.
+  fun list_comprehension[T] (f: (1->opt[T])) = {
+    var ff = f;
+    fun aux (l:list[T]) = {
+      var x = ff();
+      return 
+        match x with 
+       | Some ?elt => aux (Cons (elt,l)) 
+       | None => rev l
+       endmatch
+      ;
+    }
+    return aux Empty[T];
+  }
 
-  // number of elements in a list
+  //$ Return umber of elements in a list.
   pure fun len[T] (x:list[T]) = {
     fun aux (acc:size) (x:list[T]) =>
       match x with
@@ -123,13 +140,13 @@ open class List
     return aux 0uz x;
   }
 
-  // true if list is empty
+  //$ Test if a list is empty.
   pure fun is_empty[T] : list[T] -> 2 =
     | Empty => true
     | _ => false
   ;
 
-  // map a list, return mapped list in reverse order (tail rec)
+  //$ map a list, return mapped list in reverse order (tail rec).
   fun rev_map[T,U] (_f:T->U) (x:list[T]): list[U] = {
     fun aux (inp:list[T]) (out:list[U]) : list[U] =>
       match inp with
@@ -140,7 +157,8 @@ open class List
     return aux x Empty[U];
   }
 
-  // map a list (also tail rec due to in-place reversal of result)
+  //$ map a list (tail-rec).
+  //  tail rec due to in-place reversal of result.
   fun map[T,U] (_f:T->U) (x:list[T]): list[U] =
   {
     var r = rev_map _f x;
@@ -148,7 +166,7 @@ open class List
     return r;
   }
 
-  // reverse a list (tail rec)
+  //$ reverse a list (tail rec).
   pure fun rev[T] (x:list[T]):list[T]= {
     fun aux (x:list[T]) (y:list[T]) : list[T] =
     {
@@ -162,7 +180,7 @@ open class List
     return aux x Empty[T];
   }
 
-  // apply a procedure to each element of a list
+  //$ Apply a procedure to each element of a list.
   proc iter[T] (_f:T->void) (x:list[T]) {
     match x with
     | Empty[T] => {}
@@ -171,7 +189,7 @@ open class List
     ;
   }
 
-  // traditional left fold over list (tail rec)
+  //$ Traditional left fold over list (tail rec).
   fun fold_left[T,U] (_f:U->T->U) (init:U) (x:list[T]):U =
   {
     fun aux (init:U) (x:list[T]):U =>
@@ -183,7 +201,7 @@ open class List
     return aux init x;
   }
 
-  // right fold (not tail rec!)
+  //$ Right fold over list (not tail rec!).
   fun fold_right[T,U] (_f:T->U->U) (x:list[T]) (init:U):U =
   {
     fun aux (x:list[T]) (init:U):U =>
@@ -195,7 +213,8 @@ open class List
     return aux x init;
   }
 
-  // Note, zips to length of shortest list
+  //$ Zip two lists into a list of pairs.
+  //$ Zips to length of shortest list.
   fun zip2[T1,T2] (l1: list[T1]) (l2: list[T2]) : list[T1 * T2] = 
   {
     fun aux (l1: list[T1]) (l2: list[T2]) (acc: list[T1 * T2]) =>
@@ -207,8 +226,8 @@ open class List
     return aux l1 l2 Empty[T1 * T2];
   }
 
-  // ordered list of ints between low and high with given step
-  // low included, high not included
+  //$ Generate an ordered list of ints between low and high with given step.
+  //$ Low included, high not included.
   fun range (low:int, high:int, step:int) =
   {
     fun inner(low:int, high:int, step:int, values:list[int]) =
@@ -238,13 +257,13 @@ open class List
     ;
   }
 
-  // range with step 1
+  //$ Range with step 1.
   fun range (low:int, high:int) => range(low, high, 1);
 
-  // range from 0 to num (excluded)
+  //$ Range from 0 to num (excluded).
   fun range (num:int) => range(0, num, 1);
 
-  // concatenate two lists
+  //$ Concatenate two lists.
   fun join[T] (x:list[T]) (y:list[T]):list[T] =
   {
     if is_empty x do
@@ -258,20 +277,19 @@ open class List
     done;
   }
 
-  // concatenate two lists
+  //$ Concatenate two lists.
   pure fun + [T] (x:list[T], y: list[T]):list[T] => join x y;
 
-  // prepend element to head of list
+  //$ Prepend element to head of list.
   pure fun + [T] (x:T, y:list[T]):list[T] => Cons (x, y);
 
-  // append element to tail of list
-  // very slow, adding to end ..
+  //$ Append element to tail of list (slow!).
   noinline fun + [T] (x:list[T], y:T):list[T] => rev$ Cons (y, rev x);
 
-  // append element to tail of list
+  //$ Append element to tail of list (slow!).
   proc += [T] (x:&list[T], y:T) { x <- *x + y; }
 
-  // concatenate all the lists in a list of lists
+  //$ Concatenate all the lists in a list of lists.
   noinline fun cat[T] (x:list[list[T]]):list[T] =
   {
      return
@@ -282,7 +300,7 @@ open class List
      ;
    }
 
-  // concatenate all the strings in a list with given separator
+  //$ Concatenate all the strings in a list with given separator.
   pure fun cat (sep:string) (x:list[string]):string =
   {
     return
@@ -307,7 +325,7 @@ open class List
   ;
 
  
-  // return true if one value in a list satisfies the predicate
+  //$ Return true if one value in a list satisfies the predicate.
   fun mem[T] (eq:T -> bool) (xs:list[T]) : bool =>
     match xs with
     | Empty => false
@@ -315,20 +333,20 @@ open class List
     endmatch
   ;
 
-  // return true if one value in the list satisfies the relation 
-  // in the left slot with 
-  // the given element on the right slot
+  //$ Return true if one value in the list satisfies the relation 
+  //$ in the left slot with 
+  //$ the given element on the right slot.
   fun mem[T, U] (eq:T * U -> bool) (xs:list[T]) (e:U) : bool =>
     mem (fun (x:T) => eq(x, e)) xs
   ;
 
-  // construe a list as a set, imbuing it with a membership
-  // test, provided the element type has an equality operator
+  //$ Construe a list as a set, imbuing it with a membership
+  //$ test, provided the element type has an equality operator.
   instance[T with Eq[T]] Set[list[T],T] {
     fun \in (x:T, a:list[T]) => mem[T,T] eq of (T * T) a x;
   }
 
-  // return option of the first element in a list satisfying the predicate
+  //$ return option of the first element in a list satisfying the predicate.
   fun find[T] (eq:T -> bool) (xs:list[T]) : opt[T] =>
     match xs with
     | Empty => None[T]
@@ -337,14 +355,14 @@ open class List
   ;
 
 
-  // return option the first value in the list satisfies the relation 
-  // in the left slot with 
-  // the given element on the right slot
+  //$ Return option the first value in the list satisfies the relation 
+  //$ in the left slot with 
+  //$ the given element on the right slot.
   fun find[T, U] (eq:T * U -> bool) (xs:list[T]) (e:U) : opt[T] =>
     find (fun (x:T) => eq(x, e)) xs;
   ;
 
-  // return a sub list with elements satisfying the given predicate
+  //$ Return a sub list with elements satisfying the given predicate.
   noinline fun filter[T] (P:T -> bool) (x:list[T]) : list[T] =
   {
     fun aux (inp:list[T], out: list[T]) =>
@@ -359,25 +377,25 @@ open class List
     return aux (x,Empty[T]);
   }
 
-  // push element onto front of list if there isn't one in the
-  // list already satisfying the relation.
+  //$ Push element onto front of list if there isn't one in the
+  //$ list already satisfying the relation.
   fun prepend_unique[T] (eq: T * T -> bool) (x:list[T]) (e:T) : list[T] =>
     if mem eq x e then x else Cons (e,x) endif
   ;
 
-  // attach element to tail of list if there isn't one in the
-  // list already satisfying the relation.
+  //$ Attach element to tail of list if there isn't one in the
+  //$ list already satisfying the relation.
   fun insert_unique[T] (eq: T * T -> bool) (x:list[T]) (e:T) : list[T] =>
     if mem eq x e then x else rev$ Cons (e,rev x) endif
   ;
 
-  // remove all elements from a list satisfying relation
+  //$ Remove all elements from a list satisfying relation.
   fun remove[T] (eq: T * T -> bool) (x:list[T]) (e:T) : list[T] =>
     filter (fun (y:T) => not eq (e,y)) x
   ;
 
-  // attach element to tail of list if there isn't one in the
-  // list already satisfying the relation. Tail rec.
+  //$ Attach element to tail of list if there isn't one in the
+  //$ list already satisfying the relation (tail-rec).
   noinline fun append_unique[T] (eq: T * T -> bool) (x:list[T]) (e:T) : list[T] = {
     fun aux (inp:list[T], out: list[T]) =>
       match inp with
@@ -391,7 +409,7 @@ open class List
     return aux (x,Empty[T]);
   }
 
-  // take the first k elements from a list
+  //$ Take the first k elements from a list.
   fun take[T] (k:int) (lst:list[T]) : list[T] =>
     if k <= 0 then
       list[T] ()
@@ -403,7 +421,7 @@ open class List
     endif
   ;
 
-  // drop the first k elements from a list
+  //$ Drop the first k elements from a list.
   fun drop[T] (k:int) (lst:list[T]) : list[T] =>
     if k <= 0 then
       lst
@@ -415,8 +433,8 @@ open class List
   ;
 
 
-  // sort a list with given less than operator, which must be
-  // total order. Uses varray sort (which uses STL sort)
+  //$ Sort a list with given less than operator, which must be
+  //$ total order. Uses varray sort (which uses STL sort).
   fun sort[T] (lt:T*T->bool) (x:list[T])=
   {
     val n = len x;
@@ -430,22 +448,11 @@ open class List
     return r;
   }
 
+  //$ Sort a list with default total order.
+  //$ Uses varray sort (which uses STL sort).
   fun sort[T with Tord[T]](x:list[T])=> sort lt x;
     
-  fun list_comprehension[T] (f: (1->opt[T])) = {
-    var ff = f;
-    fun aux (l:list[T]) = {
-      var x = ff();
-      return 
-        match x with 
-       | Some ?elt => aux (Cons (elt,l)) 
-       | None => rev l
-       endmatch
-      ;
-    }
-    return aux Empty[T];
-  }
-
+  //$ Convert a list to a stream.
   gen iterator[T] (var xs:list[T]) () = {
     while true do
       match xs with

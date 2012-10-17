@@ -1,5 +1,6 @@
 
-// additive symmetric group
+//$ Additive symmetric float-approximate group, symbol +.
+//$ Note: associativity is not assumed.
 class FloatAddgrp[t] {
   inherit Eq[t];
   virtual fun zero: unit -> t;
@@ -25,13 +26,15 @@ class FloatAddgrp[t] {
 
 }
 
+//$ Additive symmetric group, symbol +.
 class Addgrp[t] {
   inherit FloatAddgrp[t];
   axiom assoc (x:t,y:t,z:t): (x + y) + z == x + (y + z);
   reduce inv(x:t,y:t): x + y - y => x;
 }
 
-// mult semi group with unit
+//$ Multiplicative symmetric float-approximate semi group with unit symbol *.
+//$ Note: associativity is not assumed.
 class FloatMultSemi1[t] {
   inherit Eq[t];
   proc muleq(px:&t, y:t) { *= (px,y); }
@@ -45,27 +48,27 @@ class FloatMultSemi1[t] {
   reduce id (x:t): one()*x => x;
 }
 
-// mult semi group with unit
+//$ Multiplicative semi group with unit.
 class MultSemi1[t] {
   inherit FloatMultSemi1[t];
   axiom assoc (x:t,y:t,z:t): (x * y) * z == x * (y * z);
   reduce cancel (x:t,y:t,z:t): x * z ==  y * z => x == y;
 }
 
-// ring
+//$ Float-approximate ring.
 class FloatRing[t] {
   inherit FloatAddgrp[t];
   inherit FloatMultSemi1[t];
 }
 
-// ring
+//$ Ring.
 class Ring[t] {
   inherit Addgrp[t];
   inherit MultSemi1[t];
   axiom distrib (x:t,y:t,z:t): x * ( y + z) == x * y + x * z;
 }
 
-// division ring
+//$ Float-approximate division ring.
 class FloatDring[t] {
   inherit FloatRing[t];
   virtual fun / : t * t -> t; // pre t != 0
@@ -81,13 +84,14 @@ class FloatDring[t] {
   proc modeq(px:&t, y:t) { %= (px,y); }
 }
 
-// division ring
+//$ Division ring.
 class Dring[t] {
   inherit Ring[t];
   inherit FloatDring[t];
 }
 
 
+//$ Bitwise operators.
 class Bits[t] {
   virtual fun \^ : t * t -> t = "(?1)($1^$2)";
   virtual fun \| : t * t -> t = "$1|$2";
@@ -104,6 +108,7 @@ class Bits[t] {
 
 }
 
+//$ Integers.
 class Integer[t] {
   inherit Tord[t];
   inherit Dring[t];
@@ -115,19 +120,20 @@ class Integer[t] {
   fun shr(x:t,y:t)=> x >> y;
 }
 
-// Signed Integers
+//$ Signed Integers.
 class Signed_integer[t] {
   inherit Integer[t];
   virtual fun sgn: t -> int;
   virtual fun abs: t -> t;
 }
 
-// Unsigned Integers
+//$ Unsigned Integers.
 class Unsigned_integer[t] {
   inherit Integer[t];
   inherit Bits[t];
 }
 
+//$ Float-approximate trigonometric functions.
 class Trig[t] {
   inherit FloatDring[t];
 
@@ -177,11 +183,13 @@ class Trig[t] {
   virtual fun pow: t * t -> t;
 }
 
+//$ Finance and Statistics.
 class Special[t] {
   virtual fun erf: t -> t;
   virtual fun erfc: t -> t;
 }
 
+//$ Float-approximate real numbers.
 class Real[t] {
   inherit Tord[t];
   inherit Trig[t];
@@ -196,6 +204,7 @@ class Real[t] {
   virtual fun trunc: t -> t;
 }
 
+//$ Float-approximate Complex.
 class Complex[t,r] {
   inherit Eq[t];
   inherit Special[t];

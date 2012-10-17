@@ -89,6 +89,11 @@ install:
 	flx install-done
 	rm install-done.*
 	sudo chown $(USER) $(HOME)/.felix
+	flx_libcontents --html > tmp1.html
+	flx_libindex --html > tmp2.html
+	sudo cp tmp1.html /usr/local/lib/felix/felix-latest/web/flx_libcontents.html
+	sudo cp tmp2.html /usr/local/lib/felix/felix-latest/web/flx_libindex.html
+	rm tmp1.html tmp2.html
 #
 # Install binaries on felix-lang.org
 #

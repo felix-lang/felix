@@ -1,25 +1,56 @@
+//$ Standard C operations on C character set.
 open class Char
 {
-  open Int;
+  //$ Ordinal value as int.
   fun ord: char -> int = "(int)$1";
+
+  //$ Constructor from any integer type.
   ctor[t in ints] char: t = "(char)$1";
   
+  //$ Convert to upper case.
   fun toupper : char -> char requires C89_headers::ctype_h;
+
+  //$ Convert to lower case.
   fun tolower : char -> char requires C89_headers::ctype_h;
   
+  //$ Test if upper case [A-Z].
   fun isupper : char -> bool requires C89_headers::ctype_h;
+
+  //$ Test if lower case [a-z].
   fun islower : char -> bool requires C89_headers::ctype_h;
+
+  //$ Test if alphanumeric [A-Za-z0-9].
   fun isalnum : char -> bool requires C89_headers::ctype_h;
+
+  //$ Test if alphabetic [A-Za-z]
   fun isalpha : char -> bool requires C89_headers::ctype_h;
+
+  //$ Test if digit [0-9].
   fun isdigit : char -> bool requires C89_headers::ctype_h;
+
+  //$ Test if hex digit [0-9A-Fa-f].
   fun isxdigit : char -> bool requires C89_headers::ctype_h;
+
+  //$ Test if control character 0x0 - 0x20, 0x7F
   fun iscntrl : char -> bool requires C89_headers::ctype_h;
+
+  //$ Test if space x020.
   fun isspace : char -> bool requires C89_headers::ctype_h;
+
+  //$ Test if space 0x20 or tab 0x09
   fun isblank : char -> bool requires C89_headers::ctype_h;
+
+  //$ Test if printable 0x20-0x7e
   fun isprint : char -> bool requires C89_headers::ctype_h;
+
+  //$ Test if punctuation character.
   fun ispunct : char -> bool requires C89_headers::ctype_h;
+
 }
 
+//$ Wide character support.
+//$ DO NOT USE except for C bindings.
+//$ C wchar_t is not portable.
 open class Wchar
 {
   open Long;
@@ -42,6 +73,8 @@ open class Wchar
   fun ispunct : wchar -> bool = "iswpunct($1)" requires C89_headers::ctype_h;
 }
 
+//$ Unicode character support.
+//$ Obsoleted by C++11.
 open class Uchar
 {
   fun ord: uchar -> uint32 ="$1";
