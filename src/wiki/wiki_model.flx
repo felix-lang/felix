@@ -1,6 +1,5 @@
 class WikiModel {
   open Sqlite3;
-  open Sqlite3Ext;
 
   gen db_get_auth_fdoc(name:string,passwd:string):bool = {
     val db = let Some ?d = db_pool.get_next() in d;

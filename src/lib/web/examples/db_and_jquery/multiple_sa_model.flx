@@ -1,6 +1,5 @@
 class MultipleSAModel {
   open Sqlite3;
-  open Sqlite3Ext;
   open ServerConfig;
  
   gen get_sas_for_ip(ip:string ) ():opt[string*string*string*string] = {

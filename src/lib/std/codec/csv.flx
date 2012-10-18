@@ -1,7 +1,10 @@
-// CSV reader
+//$ Comma Separated Values (CSV) reader
+//$ Splits a string like 1,2,"hell" up into three strings.
 class Csv {
   open List;
 
+  //$ Fetch a value string res from position i of string s.
+  //$ Update i past the comma ready to fetch another value.
   proc get_csv_value(s:string, i:&int,res:&string) {
     var r = "";
     proc add(j:int) { r += s.[j]; }
@@ -36,6 +39,8 @@ class Csv {
     res <- r;
   }
 
+  //$ Fetch all the values in a CSV string
+  //$ and return them as list.
   fun get_csv_values(s:string): list[string] = {
     var v: list[string] = Empty[string];
     var res = "";

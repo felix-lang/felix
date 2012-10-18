@@ -2,33 +2,47 @@ class Dynlink
 {
   requires package "flx_dynlink";
 
-  //$ Type of a DLL (dynamic link library) object.
-  type flx_library = "::flx::rtl::flx_dynlink_t*";
-
-  //$ Type of a DLL (dynamic link library) instance.
-  //$ Conceptually this is a pair consisting of
-  //$ a library object and a global data frame object.
-  type flx_instance = "::flx::rtl::flx_libinit_t*";
-
   //$ Exception thrown if dynamic linkage fails.
   type flx_link_failure_t = "::flx::rtl::flx_link_failure_t";
 
   //$ Constructor for dynamic linkage exception.
   ctor flx_link_failure_t : string * string * string = "::flx::rtl::flx_link_failure_t($1,$2,$3)";
 
+  //$ Type of a DLL (dynamic link library) object.
+  type flx_library = "::flx::rtl::flx_dynlink_t*";
+
+  //$ Create a fresh DLL object.
+  fun create_library_handle: unit->flx_library=
+    "new flx::rtl::flx_dynlink_t()";
+
+  //$ Delete a DLL object.
+  proc delete_library_handle: flx_library =
+    "delete $1;";
+
+  //$ Link a DLL using given filename.
+  proc dlopen:flx_library * string = "$1->link($2.c_str());";
+
   //$ Get the filename of a DLL.
   fun filename : flx_library -> string = "::std::string($1->filename)";
-
-  //$ Get the filename of a DLL from an instance of it.
-  fun filename : flx_instance -> string = "::std::string($1->lib->filename)";
-
-  //$ Link a DLL.
-  proc dlopen:flx_library * string = "$1->link($2.c_str());";
 
   //$ Unlink a DLL.
   //$ Unsafe! Use with extreme caution.
   //$ May cause pointers into the DLL code segment to dangle.
   proc dlclose:flx_library = "$1->unlink();";
+
+
+  //$ Type of a DLL (dynamic link library) instance.
+  //$ Conceptually this is a pair consisting of
+  //$ a library object and a global data frame object.
+  type flx_instance = "::flx::rtl::flx_libinit_t*";
+
+  //$ Create a fresh DLL instance object.
+  fun create_instance_handle: unit->flx_instance=
+    "new flx::rtl::flx_libinit_t()";
+
+  //$ Delete a DLL instance object.
+  proc delete_instance_handle: flx_instance =
+    "delete $1;";
 
   //$ Create a DLL instance from a DLL.
   //$ This is a procedure, so maybe the caller is too
@@ -51,6 +65,9 @@ class Dynlink
     }
     """;
 
+  //$ Get the filename of a DLL from an instance of it.
+  fun filename : flx_instance -> string = "::std::string($1->lib->filename)";
+
   //$ Get the initialisation continuation of an instance.
   fun get_init: flx_instance -> cont = "$1->start_proc";
 
@@ -60,22 +77,6 @@ class Dynlink
   //$ Get the thread frame (global data object) of an instance.
   fun get_thread_frame: flx_instance -> address = "(void*)$1->thread_frame";
   proc destroy: flx_instance = "$1->destroy();";
-
-  //$ Create a fresh DLL object.
-  fun create_library_handle: unit->flx_library=
-    "new flx::rtl::flx_dynlink_t()";
-
-  //$ Create a fresh DLL instance object.
-  fun create_instance_handle: unit->flx_instance=
-    "new flx::rtl::flx_libinit_t()";
-
-  //$ Delete a DLL object.
-  proc delete_library_handle: flx_library =
-    "delete $1;";
-
-  //$ Delete a DLL instance object.
-  proc delete_instance_handle: flx_instance =
-    "delete $1;";
 
   //$ Create, link, and initialise a  DLL instance from a filename.
   noinline fun init_lib(filename:string):flx_instance = {

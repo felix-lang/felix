@@ -2,7 +2,6 @@ include "collection/pool";
 
 class Sqlite3Pool {
   open Sqlite3;
-  open Sqlite3Ext;
   open Pool[Sqlite3::sqlite3_db_t];
   
   publish """
