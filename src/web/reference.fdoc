@@ -1,5 +1,7 @@
 @h1 Felix System Reference
 @h2 Language
+<a href="flx_gramdoc.html">Felix Core Syntax</a>
+@p
 <a href="ref/lang/core/index.fdoc">Felix Core Language Topics</a>
 @h2 Library
 <a href="flx_libcontents.html">Felix Library Contents by File</a>

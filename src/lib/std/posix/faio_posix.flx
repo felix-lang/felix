@@ -8,7 +8,7 @@ open Pthread;
 open Demux;
 
 header sockety_h = '#include "demux_sockety.hpp"';  // my socket utils
-header = '#include "faio_posixio.hpp"';
+header '#include "faio_posixio.hpp"';
 
 fun sys_job_queue_qbound() => 20;
 fun sys_job_queue_nthreads() =>  4;

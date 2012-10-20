@@ -1,23 +1,51 @@
+//$ Basic conditional statements.
 syntax conditional 
 {
+  //$ Short form conditional goto statement.
   tstatement := "if" sexpr "goto" sname ";" =># "`(ast_ifgoto ,_sr ,_2 ,_4)";
+
+  //$ Short form conditional return statement.
   tstatement := "if" sexpr "return" ";" =># "`(ast_ifreturn ,_sr ,_2)";
+
+  //$ Short form conditional call statement.
   tstatement := "if" sexpr "call" sexpr ";" =>#
     "`(ast_ifdo ,_sr ,_2 (,(cons 'ast_call (cons _sr (splitapply _4))))())";
-  tstatement := "if" sexpr "do" sstatements selse_clause "done" =>#
-    "`(ast_ifdo ,_sr ,_2 ,_4 ,_5)";
+
+  //$ Short form one branch conditional.
   tstatement := "if" sexpr "do" sstatements "done" =>#
     "`(ast_ifdo ,_sr ,_2 ,_4 ())";
 
+  //$ Short form two branch conditional.
   tstatement := "if" sexpr "do" sstatements "otherwise" sstatements  =>#
     "`(ast_ifdo ,_sr ,_2 ,_4 ,_6)";
 
+  //$ Perl style conditional.
   tstatement := sexpr "??" tstatement =>#
     "`(ast_ifdo ,_sr ,_1 (,_3) ())";
 
+  //$ General conditional chain statement.
+  //$
+  //$ if condition do
+  //$   ..
+  //$ elif condition do
+  //$   .
+  //$   .
+  //$ else
+  //$  ..
+  //$ done
+  tstatement := "if" sexpr "do" sstatements selse_clause "done" =>#
+    "`(ast_ifdo ,_sr ,_2 ,_4 ,_5)";
+
+  //$ General elif clause.
   selif_clause := "elif" sexpr "do" sstatements =># "`(,_2 ,_4)";
+
+  //$ Short form elif return clause.
   selif_clause := "elif" sexpr "return" ";"? =># "`(,_2 ((ast_proc_return ,_sr)))";
+
+  //$ Short form elif goto clause.
   selif_clause := "elif" sexpr "goto" sname ";"? =># "`(,_2 (ast_goto ,_sr ,_4))";
+
+
   selif_clauses := selif_clauses selif_clause =># "(cons _2 _1)";
   selif_clauses := selif_clause =># "`(,_1)";
   selse_clause := selif_clauses "else" sstatements =>#

@@ -1,43 +1,74 @@
+//$ Assignment forms.
 syntax assignment {
   requires statements;
 
-  // assignment operators
+  //$ Assignment form.
   sassignexpr := sexpr sassignop sexpr =># "`(ast_assign ,_sr ,_2 ((Expr ,_sr ,_1) none) ,_3)";
+
+  //$ Assignment.
     sassignop:= "=" =># "'_set";
+
+  //$ Store at pointer.
     sassignop:= "<-" =># "'_pset";
+
+  //$ Short form val declaration.
     sassignop:= ":=" =># "'_init";
 
-  // binary read-modify-write operators
+  //$ binary read-modify-write operators.
   sassignexpr := sexpr srmwop sexpr =># "`(ast_assign ,_sr ,_2 ((Expr ,_sr ,_1) none) ,_3)";
+
+    //$ Increment.
     srmwop:= "+=" =># "_1";
+    //$ Decrement.
     srmwop:= "-=" =># "_1";
+    //$ Multiply.
     srmwop:= "*=" =># "_1";
+    //$ Divide.
     srmwop:= "/=" =># "_1";
+    //$ C remainder.
     srmwop:= "%=" =># "_1";
+    //$ Left shift.
     srmwop:= "<<=" =># "_1";
+    //$ Right shift.
     srmwop:= ">>=" =># "_1";
+    //$ Bitwise exclusive or.
     srmwop:= "^=" =># "_1";
+    //$ Bitwise or.
     srmwop:= "|=" =># "_1";
+    //$ Bitwise and.
     srmwop:= "&=" =># "_1";
+    //$ Left shift.
     srmwop:= "<<=" =># "_1";
+    //$ Right shift.
     srmwop:= ">>=" =># "_1";
 
-  // swap operator
+  //$ Swap operator.
   sassignexpr := sexpr sswapop sexpr =># "`(ast_call ,_sr ,(noi _2) ((ast_ref ,_sr ,_1) (ast_ref ,_sr ,_3)))";
+    //$ Exchange.
     sswapop := "<->" =># "'_swap";
 
 
-  // prefix read/modify/write
+  //$ Prefix read/modify/write.
   sassignexpr := spreincrop sexpr =># "`(ast_call ,_sr ,(noi _1) (ast_ref ,_sr ,_2))";
+    //$ Pre-increment.
     spreincrop:= "++" =># "'pre_incr";
+    //$ Pre-decrement.
     spreincrop:= "--" =># "'pre_decr";
 
-  // postfix read/modify/write
+  //$ Postfix read/modify/write.
   sassignexpr := sexpr spostincrop =># "`(ast_call ,_sr ,(noi _2) (ast_ref ,_sr ,_1))";
+    //$ Post-increment.
     spostincrop:= "++" =># "'post_incr";
+    //$ Post-decrement.
     spostincrop:= "--" =># "'post_decr";
 
-  // multiple initialisation/assignment form
+  //$ Multiple initialisation/assignment form.
+  //$
+  //$ def x, (var y, val z) = 1,(2,3);
+  //$
+  //$ allows unpacking a tuple into a pre-existing variable,
+  //$ creating a new variable, and binding a new value,
+  //$ in a single form, with nesting.
   sassignexpr := "def" slexpr "=" sexpr =># "`(ast_assign ,_sr _set ,_2 ,_4)";
     slexpr := slexprs =># """ (if (null? (tail _1)) (first _1) `((List ,_1) none)) """;
     slexprs := stlelement "," slexprs =># "(cons _1 _3)";

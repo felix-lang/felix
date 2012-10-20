@@ -1,13 +1,19 @@
+//$ Special executable forms.
 syntax executable {
   requires statements;
+
+  //$ System service call.
   tstatement := "_svc" sname ";" =># "`(ast_svc ,_sr ,_2)";
 
+  //$ Assignment expression.
   tstatement := sassignexpr ";" =># "_1";
 
+  //$ Debug trace expression.
   tstatement := "trace" sname sstring ";" =># "`(ast_trace ,_sr ,_2 ,_3)";
 
-  // short form of "call f a;" is just "f a;"
-  // short form of "call f ();" is just "f"
+  //$ Call expression.
+  //$ Short form of "call f a;" is just "f a;"
+  //$ Short form of "call f ();" is just "f"
   tstatement := sexpr ";" =># "(cons 'ast_call (cons _sr (splitapply _1)))";
 
 }

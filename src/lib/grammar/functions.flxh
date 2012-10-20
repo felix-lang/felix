@@ -1,41 +1,72 @@
+//$ General functional forms.
 syntax functions {
   requires expressions;
+
+  //$ Anonymous function (lamda).
   satom := sadjectives "fun" stvarlist slambda_fun_args fun_return_type "=" scompound =>#
     """
     `(ast_lambda ,_sr (,_3 ,_4 ,(first _5) ,_7))
     """;
 
+  //$ Anonymous function (lamda).
   x[slambda_pri] := sadjectives "fun" stvarlist slambda_fun_args fun_return_type "=>" sexpr =>#
     """
     `(ast_lambda ,_sr (,_3 ,_4 ,(first _5) ((ast_fun_return ,_sr ,_7))))
     """;
 
+  //$ Anonymous procedure (lamda).
   satom := sadjectives "proc" stvarlist slambda_fun_args scompound =>#
     """
     `(ast_lambda ,_sr (,_3 ,_4 (ast_void ,_sr) ,_5))
     """;
 
+  //$ Anonymous procedure (lamda).
   satom  := sadjectives "proc" stvarlist scompound =>#
     """
     `(ast_lambda ,_sr (,_3 ((() none)) (ast_void ,_sr) ,_4))
     """;
 
+  //$ Anonymous object constructor (lamda).
+  //$ UGLY.
   satom := sadjectives "object" stvarlist slambda_fun_args fun_return_type "=" scompound =>#
     """
     `(ast_object ,_sr (,_3 ,_4 ,(first _5) ,_7))
     """;
 
-
+  //$ Function adjective (prefix property) inline.
   sadjective := "inline" =># "'InlineFunction";
+
+  //$ Function adjective (prefix property) noinline.
   sadjective := "noinline" =># "'NoInlineFunction";
   //sadjective := "static" =># "'Static";
+
+  //$ Function adjective (prefix property) extern.
   sadjective := "extern" =># "'NoInlineFunction";
+
+  //$ Function adjective (prefix property) virtual.
+  //$ In classes only. Specifies an overrideable function.
   sadjective := "virtual" =># "'Virtual";
+
+  //$ Function adjective (prefix property) lvalue.
+  //$ C function bindings only.
+  //$ Allows result of function call to be addressed.
   sadjective := "lvalue" =># "'Lvalue";
+
+  //$ Function dependent on its arguments only,
+  //$ not dependent on any variables in its enclosing context.
   sadjective := "pure" =># "'Pure";
+
+  //$ Function may be dependent on variables in its enclosing context.
   sadjective := "impure" =># "'ImPure";
+
+  //$ Function returns a result for all argument values.
   sadjective := "total" =># "'Total";
+
+  //$ Function may fail for some argument values.
+  //$ Equivalent to a function with a non-tautologous but unknown pre-condition.
   sadjective := "partial" =># "'Partal";
+
+  //$ Specifies a method, in an object definition only.
   sadjective := "method" =># "'Method";
   sadjectives := sadjective* =># "_1";
 
@@ -43,35 +74,79 @@ syntax functions {
   slambda_fun_arg := "(" sparameter_comma_list ")" =># "`(,_2 none)";
   slambda_fun_args := slambda_fun_arg+ =># "_1";
 
+  //$ Function return type specification with post-condition.
   fun_return_type := ":" stypeexpr "expect" sexpr =># "`(,_2 (some ,_4))";
+
+  //$ Function return type specification without post-condition.
   fun_return_type := ":" stypeexpr =># "`(,_2 none)";
+
+  //$ Function return postcondition without type.
   fun_return_type := "expect" sexpr =># "`(,(noi 'typ_none) (some ,_2))";
+
+  //$ No return type.
   fun_return_type := sepsilon =># "`(,(noi 'typ_none) none)";
+
+  //$ Object factory return type.
   object_return_type := stypeexpr =># "`(,_1 none)";
 
+  //$ Function parameter with type and default value.
   sparameter := sparam_qual sname ":" x[sarrow_pri] "=" x[sor_condition_pri] =># "`(,_1 ,_2 ,_4 (some ,_6))";
+
+  //$ Function parameter with type.
   sparameter := sparam_qual sname ":" x[sarrow_pri] =># "`(,_1 ,_2 ,_4 none)";
+ 
+  //$ Function parameter without type.
+  //$ Defaults to polymorphic in unnamed type variable.
   sparameter := sparam_qual sname =># "`(,_1 ,_2 ,(noi 'typ_none) none)";
 
+  //$ Empty parameter tuple.
   sparameter_comma_list := sepsilon =># "()";
+
+  //$ Populated parameter tuple.
   sparameter_comma_list := sparameter ("," sparameter)* =># "(cons _1 (map second _2))";
 
+  //$ Parameter qualifier: val.
   sparam_qual := "val" =># "'PVal";
+
+  //$ Parameter qualifier: var.
   sparam_qual := "var" =># "'PVar";
+
+  //$ Parameter qualifier: ref.
   sparam_qual := "ref" =># "'PRef";
+
+  //$ Parameter qualifier: fun.
   sparam_qual := "fun" =># "'PFun";
+
+  //$ Default parameter qualifier is val.
   sparam_qual := sepsilon =># "'PVal";
 
+  //$ Function tuple parameter with pre-condition.
   sfun_arg :=  "(" sparameter_comma_list "when" sexpr ")" =># "`(,_2 (some ,_4))";
+
+  //$ Function tuple parameter without pre-condition.
   sfun_arg :=  "(" sparameter_comma_list ")" =># "`(,_2 none)";
+
+  //$ Sort form function parameter single polymorphic variable.
   sfun_arg :=  sname =># "`(((PVal ,_1 ,(noi 'typ_none) none)) none)";
 
+  //$ Function binder: C function.
+  //$ A function with C function type.
   sfun_kind := "cfun" =># "'CFunction";
+
+  //$ Function binder: Generator.
+  //$ A function with side effects.
   sfun_kind := "gen" =># "'Generator";
+
+  //$ Function binder: Function.
+  //$ A function without side-effects.
   sfun_kind := "fun" =># "'Function";
 
   tstatement := sfunction =># "_1";
 
+  //$ General function definition. Multiple tuple arguments, body is expression.
+  //$ Example:
+  //$ 
+  //$ inline fun f (x:int when x>0) (y:long when y>0l) : long expect result > 0l => x.long + y;
   sfunction := sadjectives sfun_kind sdeclname sfun_arg* fun_return_type "=>" sexpr ";" =>#
     """
       (let ((body `((ast_fun_return ,_sr ,_7))))
@@ -79,21 +154,27 @@ syntax functions {
       )
     """;
 
+  //$ General function definition. Multiple tuple arguments, body of statements.
+  //$ inline fun f (x:int when x>0) (y:long when y>0l) : long expect result > 0l { return x.long + y; }
   sfunction := sadjectives sfun_kind sdeclname sfun_arg* fun_return_type "=" scompound =>#
     """
       `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 ,_5 ,(cal_funkind _1 _2) ,_7)
     """;
 
+  //$ Object factory definition with interface type.
   sfunction := "object" sdeclname sfun_arg* "implements" object_return_type "=" scompound =>#
     """
       `(ast_curry ,_sr ,(first _2) ,(second _2) ,_3 ,_5 Object ,_7)
     """;
 
+  //$ Object factory definition without interface type.
   sfunction := "object" sdeclname sfun_arg*  "=" scompound =>#
     """
       `(ast_curry ,_sr ,(first _2) ,(second _2) ,_3 none Object ,_5)
     """;
 
+  //$ Object factory definition with inherited methods and
+  //$ interface type.
   sfunction := 
     "object" sdeclname sfun_arg* "extends" stypeexpr_comma_list 
     "implements" object_return_type "=" scompound 
@@ -112,6 +193,7 @@ syntax functions {
     )
     """;
 
+  //$ Object factory definition with inherited methods.
   sfunction := "object" sdeclname sfun_arg*  "extends" stypeexpr_comma_list "=" scompound =>#
     """
    (let*  
@@ -133,6 +215,9 @@ syntax functions {
   sopt_cstring := "=" scode_spec =># "`(some ,_2)";
   sopt_cstring := sepsilon =># "'none";
 
+  //$ Short form function definition. Example:
+  //$
+  //$ fun f : int -> int = | 0 => 0 | _ => 1;
   sfunction := sadjectives sfun_kind sdeclname fun_return_type "=" smatching+ ";" =>#
     """
      (let
@@ -161,7 +246,11 @@ syntax functions {
      )
     """;
 
+  //$ Procedure binder.
   sproc_kind := "proc" =># "'Function";
+
+  //$ C procedure binder. 
+  //$ Procedure has C function type (with void result type).
   sproc_kind := "cproc" =># "'CFunction";
 
   sopt_traint_eq:= "expect" sexpr "=" =># "`(some ,_2)";
@@ -175,6 +264,9 @@ syntax functions {
   sctor_inits := ":" sctor_init ("," sctor_init)* =># "(cons _2 _3)";
   sctor_inits := sepsilon =># "()";
 
+  //$ Short form constructor function.
+  //$ The name of the function must be a type name.
+  //$ The return type is taken as the type with the name of the function.
   sfunction := "ctor" stvarlist squalified_name sfun_arg+ sopt_traint_eq scompound =>#
     """
     (let*
@@ -189,6 +281,9 @@ syntax functions {
       `(ast_curry ,_sr ,name ,vs ,args (,ret ,traint) Function ,body))
     """;
 
+  //$ Short form constructor function.
+  //$ The name of the function must be a type name.
+  //$ The return type is taken as the type with the name of the function.
   sfunction := "ctor" stvarlist squalified_name sfun_arg+ sopt_traint "=>" sexpr ";" =>#
     """
     (let*
@@ -203,11 +298,13 @@ syntax functions {
       `(ast_curry ,_sr ,name ,vs ,args (,ret ,traint) Function ,body))
     """;
 
+  //$ Procedure definition, general form.
   sfunction := sadjectives sproc_kind sdeclname sfun_arg* sopt_traint_eq scompound =>#
     """
       `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 ((ast_void ,_sr) ,_5) ,(cal_funkind _1 _2) ,_6)
     """;
 
+  //$ Procedure definition, short form (one statement).
   sfunction := sadjectives sproc_kind sdeclname sfun_arg* "=>" tstatement =>#
     """
       `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 ((ast_void ,_sr) none) ,(cal_funkind _1 _2) (,_6))

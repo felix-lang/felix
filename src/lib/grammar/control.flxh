@@ -1,35 +1,44 @@
+//$ Core control flow operators.
 syntax control 
 {
-  // call a procedure (verbose)
+  //$ Call a procedure (verbose).
   tstatement := "call" sexpr  ";" =># """(cons 'ast_call (cons _sr (splitapply _2)))""";
 
-  // procedure return
+  //$ Procedure return.
   tstatement := "return" ";" =># "`(ast_proc_return ,_sr)";
 
-  // fast procedure return
+  //$ Fast procedure return.
+  //$ Returns immediately from enclosing procedure with given name.
   tstatement := "return" "from" sname ";" =># "`(ast_proc_return_from ,_sr ,_3)";
 
 
-  // procedure explicit tail call
+  //$ Procedure explicit tail call.
+  //$ Equivalent to a call followed by a return.
   tstatement := "jump" sexpr ";" =># """(cons 'ast_jump (cons _sr (splitapply _2)))""";
 
-  // function return with value
+  //$ Function return with value.
   tstatement := "return" sexpr ";" =># "`(ast_fun_return ,_sr ,_2)";
 
-  // generator/iterator exchange with value (restart after yield)
+  //$ Generator/iterator exchange with value (restart after yield).
+  //$ Yield is like a return, except that re-entering the generator
+  //$ will continue on after the yield statement rather that starting
+  //$ from the top.
   tstatement := "yield" sexpr ";" =># "`(ast_yield ,_sr ,_2)";
 
-  // procedure self-tail calls
+  //$ Special short form procedure self-tail call with argument.
   tstatement := "loop" sname sexpr =># "`(ast_jump ,_sr (ast_name ,_sr ,_2 ()) ,_3)";
+
+  //$ Special short form procedure self-tail call without argument.
   tstatement := "loop" sname ";" =># "`(ast_jump ,_sr (ast_name ,_sr ,_2 ()) (ast_tuple,_sr ()))";
 
-  // stop the program with prejudice and a message
+  //$ Stop the program with prejudice and a message.
   tstatement := "halt" sstring ";" =># "`(ast_halt ,_sr ,_2)";
 
-  // label
+  //$ Label any statement.
+  //$ Do not confuse with loop labels.
   tstatement := sname ":>" =># "`(ast_label ,_sr ,_1)";
 
-  // unconditional goto label
+  //$ Unconditional goto label.
   tstatement := "goto" sname ";" =># "`(ast_goto ,_sr ,_2)";
 }
 
