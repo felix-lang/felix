@@ -1,10 +1,17 @@
+//$ Functions to format floating point numbers.
 open class float_format
 {
+  //$ Style of formatting.
+  //$ default (w,d)    : like C "w.dG" format
+  //$ fixed (w,d)      : like C "w.dF" format
+  //$ scientific (w,d) : like C "w.dE" format
   union mode =
     | default of int * int
     | fixed of int * int
     | scientific of int * int
   ;
+
+  //$ Format a real number v with format m.
   fun fmt[t in reals] (v:t, m: mode) =>
     match m with
     | default (?w,?p) => fmt_default(v,w,p)
@@ -12,6 +19,9 @@ open class float_format
     | scientific(?w,?p) => fmt_scientific(v,w,p)
     endmatch
   ;
+
+  //$ Format a complex number v in x + iy form,
+  //$ with format m for x and y.
   fun fmt[t,r with Complex[t,r]] (v:t, m: mode) =>
     match m with
     | default (?w,?p) => fmt_default(real v,w,p) +"+"+fmt_default(imag v,w,p)+"i"
@@ -19,13 +29,21 @@ open class float_format
     | scientific(?w,?p) => fmt_scientific(real v,w,p)+"+"+fmt_scientific(imag v,w,p)+"i"
     endmatch
   ;
+
+  //$ Format default.
   fun fmt_default[t] : t * int * int -> string="::flx::rtl::strutil::fmt_default($a)" requires package "flx_strutil";
+
+  //$ Format fixed.
   fun fmt_fixed[t] : t * int * int -> string="::flx::rtl::strutil::fmt_fixed($a)" requires package "flx_strutil";
+
+  //$ Format scientfic.
   fun fmt_scientific[t] : t * int * int -> string="::flx::rtl::strutil::fmt_scientific($a)" requires package "flx_strutil";
 }
 
 instance Str[float] {
   fun xstr: float -> string = "::flx::rtl::strutil::str<#1>($1)" requires package "flx_strutil";
+
+  //$ Default format float, also supports nan, +inf, -inf.
   fun str(x:float):string =>
     if Float::isnan x then "nan"
     elif Float::isinf x then
@@ -37,6 +55,8 @@ instance Str[float] {
 
 instance Str[double] {
   fun xstr: double -> string = "::flx::rtl::strutil::str<#1>($1)" requires package "flx_strutil";
+
+  //$ Default format double, also supports nan, +inf, -inf.
   fun str(x:double):string =>
     if Double::isnan x then "nan"
     elif Double::isinf x then
@@ -48,6 +68,8 @@ instance Str[double] {
 
 instance Str[ldouble] {
   fun xstr: ldouble -> string = "::flx::rtl::strutil::str<#1>($1)" requires package "flx_strutil";
+
+  //$ Default format long double, also supports nan, +inf, -inf.
   fun str(x:ldouble):string =>
     if Ldouble::isnan x then "nan"
     elif Ldouble::isinf x then

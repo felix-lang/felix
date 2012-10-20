@@ -1,18 +1,16 @@
 include "plat/filename";
 
+//$ Operations on host platform (native) filenames.
 class Filename {
+
+  //$ The path separator.
   fun sep() => #Plat_Filename::sep;
-  // these seem more generic
 
-  // split1 returns a pair consisting of a directory name and basename
-  // with the separator between them lost except in the special case
-  // "/x" where the "/" is kept as the directory name
-
-  // split and join are inverses, however join1
-  // not associative: join("x", join("","y")) = "x/y"
-  // whereas join(join("x",""),"y") = "x//y"
-  // since split pulls components off from the RHS we have to
-  // fold them back from the left
+  //$ split1 returns a pair consisting of a directory name and basename
+  //$ with the separator between them lost except in the special case
+  //$ "/x" where the "/" is kept as the directory name.
+  //$ If there is no separator, the path is the basename and
+  //$ the directory name is the empty string (NOT . !!!)
 
   fun split1(s:string)=> match find_last_of(s,#sep) with
     | Some ?pos => 
@@ -22,7 +20,7 @@ class Filename {
     endmatch
   ;
 
-  fun split(s:string, acc:List::list[string]):List::list[string]=>
+  private fun split(s:string, acc:List::list[string]):List::list[string]=>
     let ?d,?b = split1 s in
     if d == "" then List::Cons(b,acc) 
     elif d == #sep then List::Cons(d, List::Cons(b,acc))
@@ -30,7 +28,15 @@ class Filename {
     endif
   ;
 
+  //$ split a filename into a list of components.
   fun split(s:string)=> split (s, List::Empty[string]);
+
+  //$ Join two pathnames into a single pathname.
+  //$ split and join are inverses, however join is not
+  //$ not associative: join("x", join("","y")) = "x/y"
+  //$ whereas join(join("x",""),"y") = "x//y"
+  //$ since split pulls components off from the RHS we have to
+  //$ fold them back from the left
 
   fun join(p:string, b:string)=> 
     if p == "" then b
@@ -39,10 +45,14 @@ class Filename {
     endif
   ; 
   
+  //$ Get the basename of a path (last component).
   fun basename(s:string)=> match split1(s) with | _,?b => b endmatch;
+
+  //$ Get the directory name of a path (all but the last component).
   fun dirname(s:string)=> match split1(s) with | ?d,_ => d endmatch;
   
-  // all dirs in pathname eg a/b/c gives "a", "a/b"
+  //$ Return a list of all the directory names in a path.
+  //$ For example a/b/c gives "a", "a/b"
   fun directories (s:string) : list[string] =>
      let ?d,?b = split1 s in
      if d == "" then Empty[string]
@@ -50,10 +60,13 @@ class Filename {
      else directories d + d
   ;
 
+  //$ Join 3 strings into a pathname.
   fun join(a:string, b:string, c:string)=> join(join(a,b),c);
 
+  //$ Join 2 strings into a pathname (curried form).
   fun join(x:string) (y:string) => join(x,y);
 
+  //$ Join all the strings in a list into a pathname.
   fun join(ps: List::list[string])=> List::fold_left Filename::join of (string) "" ps;
 
 }

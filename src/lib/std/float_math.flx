@@ -10,29 +10,6 @@ open class Fcomplex
   instance Str[fcomplex] {
     fun str (z:fcomplex) => str(real z) + "+" + str(imag z)+"i";
   }
-/*
-  instance Complex[fcomplex,float] {
-    fun real : fcomplex -> float = "real($1)";
-    fun imag : fcomplex -> float = "imag($1)";
-    fun abs: fcomplex -> float = "abs($1)";
-    fun arg : fcomplex -> float = "arg($1)";
-    fun neg: fcomplex -> fcomplex = "-$1";
-    fun add : fcomplex * fcomplex -> fcomplex = "$1+$2";
-    fun sub: fcomplex * fcomplex -> fcomplex = "$1-$2";
-    fun mul: fcomplex * fcomplex -> fcomplex = "$1*$2";
-    fun div: fcomplex * fcomplex -> fcomplex = "$1/$2";
-    fun add : fcomplex * float -> fcomplex = "$1+$2";
-    fun sub: fcomplex * float -> fcomplex = "$1-$2";
-    fun mul: fcomplex * float -> fcomplex = "$1*$2";
-    fun div: fcomplex * float -> fcomplex = "$1/$2";
-    fun add : float * fcomplex -> fcomplex = "$1+$2";
-    fun sub: float * fcomplex -> fcomplex = "$1-$2";
-    fun mul: float * fcomplex -> fcomplex = "$1*$2";
-    fun div: float * fcomplex -> fcomplex = "$1/$2";
-    fun zero(): fcomplex => fcomplex 0.0;
-    fun one(): fcomplex => fcomplex 1.0;
-  }
-*/
 }
 
 open class Dcomplex
@@ -42,29 +19,6 @@ open class Dcomplex
   instance Str[dcomplex] {
     fun str (z:dcomplex) => str(real z) + "+" + str(imag z)+"i";
   }
-/*
-  instance Complex[dcomplex,double] {
-    fun real : dcomplex -> double = "real($1)";
-    fun imag : dcomplex -> double = "imag($1)";
-    fun abs: dcomplex -> double = "abs($1)";
-    fun arg : dcomplex -> double = "arg($1)";
-    fun neg: dcomplex -> dcomplex = "-$1";
-    fun add : dcomplex * dcomplex -> dcomplex = "$1+$2";
-    fun sub: dcomplex * dcomplex -> dcomplex = "$1-$2";
-    fun mul: dcomplex * dcomplex -> dcomplex = "$1*$2";
-    fun div: dcomplex * dcomplex -> dcomplex = "$1/$2";
-    fun add : dcomplex * double -> dcomplex = "$1+$2";
-    fun sub: dcomplex * double -> dcomplex = "$1-$2";
-    fun mul: dcomplex * double -> dcomplex = "$1*$2";
-    fun div: dcomplex * double -> dcomplex = "$1/$2";
-    fun add : double * dcomplex -> dcomplex = "$1+$2";
-    fun sub: double * dcomplex -> dcomplex = "$1-$2";
-    fun mul: double * dcomplex -> dcomplex = "$1*$2";
-    fun div: double * dcomplex -> dcomplex = "$1/$2";
-    fun zero(): dcomplex => dcomplex 0.0;
-    fun one(): dcomplex => dcomplex 1.0;
-  }
-*/
 }
 
 open class Lcomplex
@@ -75,27 +29,28 @@ open class Lcomplex
     fun str (z:lcomplex) => str(real z) + "+" + str(imag z)+"i";
   }
 }
-  instance[t in floats] Complex[complex[t],t] {
-    fun real : complex[t] -> t = "real($1)";
-    fun imag : complex[t] -> t = "imag($1)";
-    fun abs: complex[t] -> t = "abs($1)";
-    fun arg : complex[t] -> t = "arg($1)";
-    fun - : complex[t] -> complex[t] = "-$1";
-    fun + : complex[t] * complex[t] -> complex[t] = "$1+$2";
-    fun - : complex[t] * complex[t] -> complex[t] = "$1-$2";
-    fun * : complex[t] * complex[t] -> complex[t] = "$1*$2";
-    fun / : complex[t] * complex[t] -> complex[t] = "$1/$2";
-    fun + : complex[t] * t -> complex[t] = "$1+$2";
-    fun - : complex[t] * t -> complex[t] = "$1-$2";
-    fun * : complex[t] * t -> complex[t] = "$1*$2";
-    fun / : complex[t] * t -> complex[t] = "$1/$2";
-    fun + : t * complex[t] -> complex[t] = "$1+$2";
-    fun - : t * complex[t] -> complex[t] = "$1-$2";
-    fun * : t * complex[t] -> complex[t] = "$1*$2";
-    fun / : t * complex[t] -> complex[t] = "$1/$2";
-    fun zero: 1 -> complex[t] = "::std::complex<?1>(0.0)";
-    fun one: 1 -> complex[t] = "::std::complex<?1>(1.0)";
-  }
+
+instance[t in floats] Complex[complex[t],t] {
+  fun real : complex[t] -> t = "real($1)";
+  fun imag : complex[t] -> t = "imag($1)";
+  fun abs: complex[t] -> t = "abs($1)";
+  fun arg : complex[t] -> t = "arg($1)";
+  fun - : complex[t] -> complex[t] = "-$1";
+  fun + : complex[t] * complex[t] -> complex[t] = "$1+$2";
+  fun - : complex[t] * complex[t] -> complex[t] = "$1-$2";
+  fun * : complex[t] * complex[t] -> complex[t] = "$1*$2";
+  fun / : complex[t] * complex[t] -> complex[t] = "$1/$2";
+  fun + : complex[t] * t -> complex[t] = "$1+$2";
+  fun - : complex[t] * t -> complex[t] = "$1-$2";
+  fun * : complex[t] * t -> complex[t] = "$1*$2";
+  fun / : complex[t] * t -> complex[t] = "$1/$2";
+  fun + : t * complex[t] -> complex[t] = "$1+$2";
+  fun - : t * complex[t] -> complex[t] = "$1-$2";
+  fun * : t * complex[t] -> complex[t] = "$1*$2";
+  fun / : t * complex[t] -> complex[t] = "$1/$2";
+  fun zero: 1 -> complex[t] = "::std::complex<?1>(0.0)";
+  fun one: 1 -> complex[t] = "::std::complex<?1>(1.0)";
+}
 
 instance[t in (floats  \cup  complexes)] Trig[t] {
   requires Cxx_headers::cmath;

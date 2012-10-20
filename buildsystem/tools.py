@@ -34,6 +34,12 @@ def build(phase, felix):
     except:
         print("Warning : flx_libcontents not built. Continuing..." )
 
+    try:
+        exe = felix.compile(phase.ctx.buildroot/'tools/flx_gramdoc.flx', static=True)
+        fbuild.builders.file.copy(phase.ctx, exe, 'bin')
+    except:
+        print("Warning : flx_gramdoc not built. Continuing..." )
+
 
     try:
         exe = felix.compile(phase.ctx.buildroot/'tools/flx_cp.flx', static=True)

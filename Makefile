@@ -91,9 +91,13 @@ install:
 	sudo chown $(USER) $(HOME)/.felix
 	flx_libcontents --html > tmp1.html
 	flx_libindex --html > tmp2.html
+	flx_gramdoc --html > tmp3.html
 	sudo cp tmp1.html /usr/local/lib/felix/felix-latest/web/flx_libcontents.html
 	sudo cp tmp2.html /usr/local/lib/felix/felix-latest/web/flx_libindex.html
-	rm tmp1.html tmp2.html
+	sudo cp tmp3.html /usr/local/lib/felix/felix-latest/web/flx_gramdoc.html
+	rm tmp1.html tmp2.html tmp3.html
+
+
 #
 # Install binaries on felix-lang.org
 #
@@ -107,9 +111,11 @@ install-felix-lang.org:
 	rm install-done.*
 	flx_libcontents --html > tmp1.html
 	flx_libindex --html > tmp2.html
+	flx_gramdoc --html > tmp3.html
 	sudo cp tmp1.html /usr/local/lib/felix/felix-latest/web/flx_libcontents.html
 	sudo cp tmp2.html /usr/local/lib/felix/felix-latest/web/flx_libindex.html
-	rm tmp1.html tmp2.html
+	sudo cp tmp3.html /usr/local/lib/felix/felix-latest/web/flx_gramdoc.html
+	rm tmp1.html tmp2.html tmp3.html
 	sudo start felixweb
 
 #

@@ -397,6 +397,10 @@ proc install_bin ()
   if result !=0 goto install_bin_failed;
   println$ "Installed executable flx_libcontents in /usr/local/bin";
 
+  result= system("cp -f "+FLX_INSTALL_DIR+"/tools/flx_gramdoc /usr/local/bin");
+  if result !=0 goto install_bin_failed;
+  println$ "Installed executable flx_gramdoc in /usr/local/bin";
+
   result= system("cp -f "+FLX_INSTALL_DIR+"/tools/flx_cp /usr/local/bin");
   if result !=0 goto install_bin_failed;
   println$ "Installed executable flx_cp in /usr/local/bin";

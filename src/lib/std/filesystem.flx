@@ -1,7 +1,10 @@
+//$ Filesystem operations parametrised by operating system.
+//$ YET TO BE DONE.
 class FileSystem_class[os]
 {
 }
 
+//$ Platform dependent filesystem operations for host file system.
 class FileSystem {
 if PLAT_WIN32 do
   inherit Win32FileSystem;
@@ -9,7 +12,7 @@ else
   inherit PosixFileSystem;
 done
 
-  // find in path
+  //$ Find a file in a list of directories.
   fun find_in_path(x:string, path:list[string]):opt[string]=>
     match path with
     | Empty[string] => None[string]
@@ -22,8 +25,19 @@ done
     endmatch
   ;
 
+  //$ Find all the files matching an RE2-regular expression
+  //$ in a given directory. 
+  //$ NOTE: this search finds files in descendant directories too.
+  //$ The search is recursive, but the whole pathname within
+  //$ the specified directory must match the regexp.
+  //$ For example to find all *.flx files in src use:
+  //$   regfilesin("src", ".*[.]flx")
+  //$ To find the files only in the given directory, on Unix use instead
+  //$   regfilesin("src", "[^/]*[.]flx")
+  //$ to exclude files in child directories.
   fun regfilesin(dname:string, re:string): list[string] => regfilesin(dname, Re2::RE2 re);
 
+  //$ Find all the files matching a compiled RE2-regular expression.
   fun regfilesin(dname:string, re:RE2): list[string] = {
     //eprintln$ "regfilesin " + dname+ " with some kind of regexp .. ";
 
