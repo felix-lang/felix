@@ -1,12 +1,12 @@
-// This file contains a huge set of operators from TeX, AMSTeX and LaTeX.
+//$ This file contains a huge set of operators from TeX, AMSTeX and LaTeX.
 // 
-// The precedence classification is currently very crude.
-// Some operators are duplicate semantics with different names.
-// Some are negations, and should be handled properly.
-//
-// Nouns such as Greek letters are not included because they're atoms and don't
-// need any parsing.
-//
+//$ The precedence classification is currently very crude.
+//$ Some operators are duplicate semantics with different names.
+//$ Some are negations, and should be handled properly.
+//$
+//$ Nouns such as Greek letters are not included because they're atoms and don't
+//$ need any parsing.
+//$
 syntax texsyms {
 
 // A

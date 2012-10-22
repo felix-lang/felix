@@ -1,21 +1,64 @@
+//$ Technology for binding to C.
+//$ The forms in this DSSL are used to lift types and functions 
+//$ from C into Felix, and, export Felix types and functions
+//$ back into C.
+
 syntax cbind {
   requires expressions, statements;
 
+  //$ Export a Felix function into C.
+  //$ The function is exported by generating a C wrapper function
+  //$ which has external linkage and the link name
+  //$ given in the "as" phrase.
+  //$ The function must be identified by a suffixed name
+  //$ to choose between overloads. Example:
+  //$
+  //$ export fun myfun of (int) as "MyFun";
+  //$
   tstatement := "export" "fun" ssuffixed_name "as" sstring ";" =>#
     "`(ast_export_fun ,_sr ,_3 ,_5)";
+
+  //$ Export a Felix function with C type into C.
   tstatement := "export" "cfun" ssuffixed_name "as" sstring ";" =>#
     "`(ast_export_cfun ,_sr ,_3 ,_5)";
+
+  //$ Export a Felix procedure into C.
   tstatement := "export" "proc" ssuffixed_name "as" sstring ";" =>#
     "`(ast_export_fun ,_sr ,_3 ,_5)";
+
+  //$ Export a Felix procedure with C type into C.
   tstatement := "export" "cproc" ssuffixed_name "as" sstring ";" =>#
     "`(ast_export_cfun ,_sr ,_3 ,_5)";
+
+  //$ Export a type into C. 
+  //$ This is done using a typedef that defines the alias
+  //$ specified in the "as" phase to be the type expression.
   tstatement := "export" "type" "(" sexpr ")" "as" sstring ";" =>#
     "`(ast_export_type ,_sr ,_4 ,_7)";
 
-  sopt_prec := "is" sname =># "_2";
+  //$ The optional precedence phase specifies
+  //$ the C++ precedence of an expression, to allow
+  //$ the Felix compiler to minimise generated parentheses.
+  //$
+  //$ The precedence must be one of:
+  //$
+  //$ atom, primary, postfix, unary, cast, pm, mult, add, shift, rel, eq, 
+  //$ band, bxor, bor, and, xor, or, cond, assign, comma
+  //$ 
+  sopt_prec := "is" sname =># "_2"; 
   sopt_prec := sepsilon =># '(quote "")';
 
-  // note: also needed by typeclasses atm for virtual funs
+  //$ Define a function by a C expression.
+  //$ If the optional C string is elided, the function
+  //$ is taken to be bound to a C function of the same name.
+  //$ For example:
+  //$
+  //$ fun sin : double -> double;
+  //$
+  //$ is equivalent to
+  //$
+  //$ fun sin : double -> double = "sin($1)";
+  //$
   tstatement := sadjectives sfun_kind sdeclname fun_return_type sopt_cstring sopt_prec srequires_clause ";" =>#
     """
       (let* (
@@ -59,6 +102,7 @@ syntax cbind {
         ('ERROR)))))
     """;
 
+  //$ Define a constructor function by a C expression.
   tstatement := "ctor" stvarlist squalified_name ":" stypeexpr sopt_cstring sopt_prec srequires_clause ";" =>#
     """
     (let*
@@ -80,16 +124,21 @@ syntax cbind {
     )
     """;
 
+  //$ Define a type by a C type expression.
   tstatement:= stype_qual* "type" sdeclname "=" scode_spec srequires_clause ";" =>#
     """
     `(ast_abs_decl ,_sr ,(first _3) ,(second _3) ,_1 ,_5 ,_6)
     """;
 
+  //$ Define a special kind of procedure which can be used
+  //$ as a C callback.
   tstatement := "callback" "proc" sname ":" stypeexpr srequires_clause ";" =>#
     """
     `(ast_callback_decl ,_sr ,_3 ,(mkl2 _5) (ast_void ,_sr) ,_6)
     """;
 
+  //$ Define a special kind of function which can be used
+  //$ as a C callback.
   tstatement := "callback" "fun" sname ":" stypeexpr srequires_clause ";" =>#
     """
     (if (eq? 'ast_arrow (first _5))
@@ -106,21 +155,92 @@ syntax cbind {
     )
     """;
 
+  //$ The type qualifier incomplete is used to
+  //$ prevent allocation of values of this type.
+  //$ Pointers can still be formed.
   stype_qual := "incomplete" =># "'Incomplete";
+
+  //$ The type qualified pod is used to specify
+  //$ that a type has a trivial destructor.
+  //$ This allows the garbage collector to omit
+  //$ a call to the destructor, which is the default
+  //$ finaliser.
   stype_qual := "pod" =># "'Pod";
+
+  //$ Specify a C types is a garbage collectable
+  //$ pointer type, so it will be tracked by the collector.
   stype_qual := "_gc_pointer" =># "'GC_pointer";
+
+  //$ Specify the shape of the type should
+  //$ be taken as the shape of the given type expression.
+  //$ This is required when the type is immobile
+  //$ and represented by a pointer.
+  //$
+  //$ For example, the C++ RE2 type of Google's RE2 package
+  //$ cannot be used directly as a type because it is not
+  //$ copy assignable. Instead we have to use a pointer.
+  //$
+  //$ Here is the way this is done:
+  //$
+  //$ private type RE2_ = "::re2::RE2";
+  //$ _gc_pointer _gc_type RE2_ type RE2 = "::re2::RE2*";
+  //$ gen _ctor_RE2 : string -> RE2 = "new (*PTF gcp, @0, false) RE2($1)";
+  //$
+  //$ We bind the private type RE2_ to the C type RE2.
+  //$ It's private so the public cannot allocate it.
+  //$
+  //$ Instead we use the type RE2 which is a pointer, and thus
+  //$ copyable. because it is a pointer we have to specify
+  //$ _gc_pointer.
+  //$ 
+  //$ Now, the constructor _ctor_RE2 takes a string and returns
+  //$ a Felix RE2 (C type RE2*) which is a pointer to a heap allocated 
+  //$ object of type _RE2 (C type RE2).
+  //$ 
+  //$ The constructor does the allocation, so it must provde the
+  //$ shape of the RE2_ object, and this is what the specification
+  //$ _gc_type RE2_ does. This allows the notation @0 to refer to
+  //$ the shape of RE2_ instead of RE2 which it would normally.
+
   stype_qual := "_gc_type" stypeexpr =># "`(Raw_needs_shape ,_2)";
 
+  //$ Define a set of types as C types with the same names.
   tstatement:= stype_qual* "ctypes" sbasic_name_comma_list srequires_clause ";" =>#
     "`(ast_ctypes ,_sr ,_3 ,_1 ,_4)";
 
+  //$ Embed a C statement into Felix code.
   tstatement:= "code" scode_spec ";" =># "`(ast_code ,_sr ,_2)";
+
+  //$ Embed a C statement which does not return normally
+  //$ into Felix code. For example:
+  //$
+  //$ noreturn code "exit(0);";
+  //$
   tstatement:= "noreturn" "code" scode_spec ";" =># "`(ast_noreturn_code ,_sr ,_3)";
 
   sexpr_code_prefix := "code" "[" stypeexpr "]" =># "_3";
+
+  //$ Embed a C expression into Felix.
+  //$ This required giving the Felix type of the expression. 
+  //$ The expression is contained in the string. For example:
+  //$
+  //$ code [double] "sin(0.7)"
+  //$
   satom := sexpr_code_prefix sstring =># "`(ast_expr ,_sr ,_2 ,_1)";
+
+  //$ A short form embedding for variables.
+  //$
+  //$ code [double] M_PI
+  //$
   satom := sexpr_code_prefix sname =># "`(ast_expr ,_sr ,_2 ,_1)";
 
+  //$ Bind a C expression to a name.
+  //$ Note that despite the binding being called "const",
+  //$ the C expression does not have to be constant.
+  //$ For example:
+  //$
+  //$ const rand : int = "rand()";
+  //$
   // note: also needed by typeclasses atm for virtual consts
   tstatement := sadjectives "const" sdeclname ":" stypeexpr "=" scode_spec srequires_clause ";" =>#
     """
@@ -131,7 +251,12 @@ syntax cbind {
       )
     """;
 
-  // note: also needed by typeclasses atm for virtual consts
+  //$ Short form of const that declares a variable
+  //$ bound to the same name in C.
+  //$ Example:
+  //$
+  //$ const RAND_MAX: long;
+  //$
   tstatement := sadjectives "const" sdeclname ":" stypeexpr srequires_clause ";" =>#
     """
       (let ((reqs (if (memv 'Virtual _1)
@@ -143,7 +268,13 @@ syntax cbind {
 
   sdeclnames := sdeclname ("," sdeclname )+ =># "(cons _1 (map second _2))";
 
-  // note: also needed by typeclasses atm for virtual consts
+ 
+  //$ Short form of const that declares a list of variables
+  //$ of the same type to be bound to their C names.
+  //$ Useful for lifting enumerations. Example:
+  //$
+  //$ const a,b,c : int;
+  //$
   tstatement := sadjectives "const" sdeclnames ":" stypeexpr srequires_clause ";" =>#
     """
       (let ((reqs (if (memv 'Virtual _1)
@@ -157,7 +288,12 @@ syntax cbind {
     )
     """;
 
-  // note: also needed by typeclasses atm for virtual consts
+  //$ Special form for lifting C enumerations.
+  //$ Specifies the type name and enumeration constants
+  //$ in a single statement. Names bound to the same names in C.
+  //$
+  //$ This form also defined equality and inequality operators
+  //$ for the type automatically, as an instance of class Eq.
   tstatement := "cenum" sname "=" sbasic_name_comma_list srequires_clause ";" =>#
     """
       (begin 
@@ -176,6 +312,13 @@ syntax cbind {
       )
     """;
 
+  // Very special form for binding C enumeration used as bit flags.
+  //$ Specifies the type name and enumeration constants
+  //$ in a single statement. Names bound to the same names in C.
+  //$
+  //$ This form automatically defines equality as an instance of class Eq.
+  //$ Furthermore it defines all the standard bitwise operators,
+  //$ as an instance of class Bits.
   tstatement := "cflags" sname "=" sbasic_name_comma_list srequires_clause ";" =>#
     """
       (begin 
@@ -196,7 +339,13 @@ syntax cbind {
     """;
 
 
-  // note: also needed by typeclasses atm for virtual procs
+  //$ Define a Felix procedures as a binding to a 
+  //$ C statement. Only one statement is allowed.
+  //$ But you can use a block of course!
+  //$
+  //$ If the option C text is elided, the procedure
+  //$ is taken to be bound to a C function returning void
+  //$ of the same name.
   tstatement := sadjectives sproc_kind sdeclname ":" stypeexpr sopt_cstring srequires_clause ";" =>#
     """
       (let (

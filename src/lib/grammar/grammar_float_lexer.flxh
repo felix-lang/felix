@@ -1,9 +1,10 @@
+//$ Floating point literals.
+//$
+//$ Follows ISO C89, except that we allow underscores;
+//$ AND we require both leading and trailing digits so that
+//$ x.0 works for tuple projections and 0.f is a function
+//$ application
 syntax felix_float_lexer {
-  /* floats: Follows ISO C89, except that we allow underscores;
-     AND we require both leading and trailing digits so ;
-     x.0 works for tuple projections and 0.f is a function;
-     application;
-  */
   regdef decimal_string = digit (underscore? digit) *;
   regdef hexadecimal_string = hexdigit (underscore? hexdigit) *;
 

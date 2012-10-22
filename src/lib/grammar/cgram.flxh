@@ -1,3 +1,6 @@
+//$ Embed C into Felix using extern "C" { } style.
+//$ Direct name binding.
+//$ WORK IN PROGRESS, NOT OPERATIONAL!
 syntax cgram {
   tstatement := "extern" '"C"' cstatement =># '`(ast_comment ,_sr "C code ..")';
   tstatement := "extern" '"C"' "{" cstatement+ "}" =># '`(ast_comment ,_sr "C code ..")';

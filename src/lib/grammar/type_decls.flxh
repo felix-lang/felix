@@ -1,18 +1,29 @@
+//$ Stuff for defining types.
+//$
+//$ Felix type expressions use the same syntax as value expressions.
+
 syntax type_decls {
   requires statements;
 
   satom := stypematch =># "_1";
 
+  //$ Typedef creates an alias for a type.
   tstatement := "typedef" sdeclname "=" sexpr ";" =>#
     """
     `(ast_type_alias ,_sr ,(first _2) ,(second _2) ,_4)
     """;
 
+  //$ Typedef fun create a type function or functor.
+  //$ It maps some types to another type.
+  //$ This is the simple expression form.
   tstatement := "typedef" "fun" sdeclname stypefun_args ":" stypeexpr "=>" sexpr ";" =>#
     """
     `(mktypefun ,_sr ,(first _3) ,(second _3) ,_4 ,_6 ,_8)
     """;
 
+  //$ Typedef fun create a type function or functor.
+  //$ It maps some types to another type.
+  //$ This is the simple matching form.
   tstatement := "typedef" "fun" sdeclname ":" stypeexpr "=" stype_matching+ ";" =>#
     """
     (if (eq? 'ast_arrow (first _5))
@@ -29,9 +40,35 @@ syntax type_decls {
 
   stype_matching := "|" sexpr "=>" sexpr =># "`(,_2 ,_4)";
 
+  //$ A typematch expression computes a type based on a pattern match.
+  //$ The matching process never rejects a type variable which 
+  //$ mighht later match after substitution.
+  //$ It also never accepts a match which might later fail to match
+  //$ after substitution.
   stypematch := "typematch" sexpr "with" stype_matching+ "endmatch" =>#
     "`(ast_type_match ,_sr (,_2 ,_4))";
 
+  //$ A struct is a nominally type product type similar to a C struct.
+  //$ A struct may be polymorphic.  Felix generates a constructor for
+  //$ the struct from a tuple of the types of the fields of te struct,
+  //$ in the order they're written.
+  //$
+  //$ The syntax allows functions and procedures to be included in a struct, 
+  //$ however these are not non-static members. 
+  //$ Rather they global functions with an additional
+  //$ argument prefixed of the struct type (for a fun) or pointer
+  //$ to the struct type (for a proc). In such functinos the special
+  //$ identifier "self" must be used to refer to the struct.
+  //$ For example:
+  //$
+  //$ struct X { 
+  //$   a : int;
+  //$   fun f(b: int) => self.a + b;
+  //$ }
+  //$ println$ X 1 . f 2;
+  //$ // f is equivalent to
+  //$ fun f (self:X) (b:int) => self.a + b;
+  //$
   tstatement := "struct" sdeclname "=" ? "{" sstruct_mem_decl * "}" =>#
     """
      (let* 
@@ -78,6 +115,13 @@ syntax type_decls {
     sstruct_mem_decl := sname ":" stypeexpr ";" =># "`(Pval ,_1 ,_3)";
     sstruct_mem_decl := sfunction  =># "`(Pfun ,_1)";
 
+  //$ A ctruct provides a model of a C structure.
+  //$ This is the same as a struct except the structure is not emitted.
+  //$ Instead, it is assumed to be already defined in C.
+  //$
+  //$ CAVEAT: A C struct constructor should not be used
+  //$ unless the cstruct definition is a complete model of the C struct.
+
   tstatement := "cstruct" sdeclname "=" ? "{" sstruct_mem_decl * "}" srequires_clause ";" =>#
     """
     (let* 
@@ -120,11 +164,26 @@ syntax type_decls {
   sopt_name := sname =># "_1";
   sopt_name := sepsilon =># '""';
 
+  //$ A union is a model of a discriminated union or variant.
+  //$ Such unions have a discriminant tag that determines
+  //$ at run time which component is populated.
+  //$ The only way to access the union field is by using a
+  //$ match which automatically enforces proper access.
+  //$
+  //$ The fields of a union are called type constructors.
+  //$ A constant type constructor has no arguments.
+  //$ A non-constant type constructor has an argument
+  //$ which can be extracted in a match.
+  //$ 
+  //$ Unions provide a safe way to "unify" heterogenous data
+  //$ into a single data type.
+
   tstatement := "union" sdeclname "=" stype_sum_items2 ";" =>#
     """
     `(ast_union ,_sr ,(first _2) ,(second _2) ,_4)
      """;
 
+  //$ Deprecated C like syntax for unionx.
   tstatement := "union" sdeclname "{" stype_sum_item1* "}" =>#
     """
     `(ast_union ,_sr ,(first _2) ,(second _2) ,_4)
@@ -132,11 +191,16 @@ syntax type_decls {
 
   tstatement := senum_decl =># "_1";
 
+  //$ Short for for declaring an enumeration,
+  //$ which is a union all of whose fields are constant constructors.
+  //$ Deprecated syntax.
   tstatement := "enum" sdeclname "{" senum_items "}" =>#
     """
     `(ast_union ,_sr ,(first _2) ,(second _2) ,_4)
      """;
 
+  //$ Short for for declaring an enumeration,
+  //$ which is a union all of whose fields are constant constructors.
   tstatement := "enum" sdeclname "=" senum_items ";" =>#
     """
     `(ast_union ,_sr ,(first _2) ,(second _2) ,_4)
@@ -149,6 +213,8 @@ syntax type_decls {
   senum_items := senum_item =># "`(,_1)";
   senum_items := sepsilon =># "()";
 
+  //$ Java like interface of an object type.
+  //$ Equivalent to a record type.
   tstatement := "interface" sdeclname stype_extension "{" srecord_type "}" =>#
     """
     `(ast_type_alias ,_sr ,(first _2) ,(second _2) (ast_extension ,_sr ,_3 ,_5))

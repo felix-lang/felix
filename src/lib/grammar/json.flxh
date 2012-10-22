@@ -1,3 +1,17 @@
+//$ String grammar for JSON.
+//$
+//$ This DSSL just allows one to construct syntactically valid JSON strings.
+//$ That is, an expression like:
+//$
+//$ json ( { a:1 ,b:"hello", [1,2,null] } )
+//$ 
+//$ is equivalent to
+//$
+//$ '{ a:1 ,b:"hello", [1,2,null] }'
+//$ 
+//$ however, it is validated by the parser.
+//$
+
 syntax json {
   requires expressions;
   x[sapplication_pri] := "json" "(" json_value ")" =># "`(ast_literal ,_sr (ast_string ,_3))";
