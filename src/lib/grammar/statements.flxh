@@ -4,17 +4,17 @@ syntax statements {
   requires expressions;
 
   //$ A comment statement based on a string argument.
-  tstatement := "comment" sstring ";" =># "`(ast_comment ,_sr ,_2)";
+  stmt := "comment" sstring ";" =># "`(ast_comment ,_sr ,_2)";
 
   //$ Statement qualifier which makes a definition
   //$ private to the containing module or class.
-  tstatement := "private" tstatement =># "`(ast_private ,_2)";
+  stmt := "private" stmt =># "`(ast_private ,_2)";
 
   //$ Deprecated method of documenting a definition.
-  tstatement := "publish" sstring tstatement =># "_3";
+  stmt := "publish" sstring stmt =># "_3";
 
   //$ An empty statement.
-  tstatement := ";" =># """`(ast_nop ,_sr "")""";
+  stmt := ";" =># """`(ast_nop ,_sr "")""";
 
   //$ Include file directive.
   //$ This is similar to C's pre-processor include except that
@@ -24,7 +24,7 @@ syntax statements {
   //$ Thus the included file also has no influence on
   //$ the including file either: the two files are parsed
   //$ entirely independently.
-  tstatement := "include" sstring ";" =># "`(ast_include ,_sr ,_2)";
+  stmt := "include" sstring ";" =># "`(ast_include ,_sr ,_2)";
 
   // note: list is reversed, eg X::Y::name goes to list name, Y, Z
   sdeclname := sname stvarlist =># "`(,_1 ,_2)";
@@ -40,7 +40,7 @@ syntax statements {
   //$ details of the type to be accessed so as to define operations
   //$ on it, inside the same space as the definition, but leaves
   //$ the type abstract externally.
-  tstatement := stype_qual* "type" sdeclname "=" "new" sexpr ";" =>#
+  stmt := stype_qual* "type" sdeclname "=" "new" sexpr ";" =>#
     """
     `(ast_newtype ,_sr ,(first _3) ,(second _3) ,_6)
     """;
@@ -119,30 +119,10 @@ syntax statements {
   //$ Compound construction.
   //$ Note his is NOT a statement.
   //$ A compound followed by a semi-colon ";" is, however.
-  scompound := "{" tstatement* "}" =># "_2";
+  scompound := "{" stmt* "}" =># "_2";
 
   sname_suffix:= "," sname sname_suffix =># "(cons _2 _3)";
   sname_suffix:= "," sname =># "`(,_2)";
-
-  //$ Exception handling.
-  //$
-  //$ try .. catch x : T => handler endtry
-  //$
-  //$ can be used to execute code which might throw
-  //$ an exception, and catch the exception.
-  //$
-  //$ This is primarily intended to for wrapping C bindings.
-  //$ Exceptions do not propage properly in Felix across
-  //$ multiple function/procedure layers. If you have to use
-  //$ this construction be sure to keep wrap the try block
-  //$ closely around the throwing code.
-  tstatement := "try" tstatement+ catches "endtry" =>#
-    "`(ast_seq ,_sr ,(append `((ast_try ,_sr)) _2 _3 `((ast_endtry ,_sr))))";
-
-  catch := "catch" sname ":" sexpr  "=>" tstatement+ =>#
-    "`(ast_seq ,_sr ,(cons `(ast_catch ,_sr ,_2 ,_4) _6))";
-
-  catches := catch+ =># "_1";
 
 
 }

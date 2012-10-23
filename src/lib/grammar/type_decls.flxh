@@ -8,7 +8,7 @@ syntax type_decls {
   satom := stypematch =># "_1";
 
   //$ Typedef creates an alias for a type.
-  tstatement := "typedef" sdeclname "=" sexpr ";" =>#
+  stmt := "typedef" sdeclname "=" sexpr ";" =>#
     """
     `(ast_type_alias ,_sr ,(first _2) ,(second _2) ,_4)
     """;
@@ -16,7 +16,7 @@ syntax type_decls {
   //$ Typedef fun create a type function or functor.
   //$ It maps some types to another type.
   //$ This is the simple expression form.
-  tstatement := "typedef" "fun" sdeclname stypefun_args ":" stypeexpr "=>" sexpr ";" =>#
+  stmt := "typedef" "fun" sdeclname stypefun_args ":" stypeexpr "=>" sexpr ";" =>#
     """
     `(mktypefun ,_sr ,(first _3) ,(second _3) ,_4 ,_6 ,_8)
     """;
@@ -24,7 +24,7 @@ syntax type_decls {
   //$ Typedef fun create a type function or functor.
   //$ It maps some types to another type.
   //$ This is the simple matching form.
-  tstatement := "typedef" "fun" sdeclname ":" stypeexpr "=" stype_matching+ ";" =>#
+  stmt := "typedef" "fun" sdeclname ":" stypeexpr "=" stype_matching+ ";" =>#
     """
     (if (eq? 'ast_arrow (first _5))
       (let (
@@ -69,7 +69,7 @@ syntax type_decls {
   //$ // f is equivalent to
   //$ fun f (self:X) (b:int) => self.a + b;
   //$
-  tstatement := "struct" sdeclname "=" ? "{" sstruct_mem_decl * "}" =>#
+  stmt := "struct" sdeclname "=" ? "{" sstruct_mem_decl * "}" =>#
     """
      (let* 
        (
@@ -122,7 +122,7 @@ syntax type_decls {
   //$ CAVEAT: A C struct constructor should not be used
   //$ unless the cstruct definition is a complete model of the C struct.
 
-  tstatement := "cstruct" sdeclname "=" ? "{" sstruct_mem_decl * "}" srequires_clause ";" =>#
+  stmt := "cstruct" sdeclname "=" ? "{" sstruct_mem_decl * "}" srequires_clause ";" =>#
     """
     (let* 
        (
@@ -178,30 +178,30 @@ syntax type_decls {
   //$ Unions provide a safe way to "unify" heterogenous data
   //$ into a single data type.
 
-  tstatement := "union" sdeclname "=" stype_sum_items2 ";" =>#
+  stmt := "union" sdeclname "=" stype_sum_items2 ";" =>#
     """
     `(ast_union ,_sr ,(first _2) ,(second _2) ,_4)
      """;
 
   //$ Deprecated C like syntax for unionx.
-  tstatement := "union" sdeclname "{" stype_sum_item1* "}" =>#
+  stmt := "union" sdeclname "{" stype_sum_item1* "}" =>#
     """
     `(ast_union ,_sr ,(first _2) ,(second _2) ,_4)
      """;
 
-  tstatement := senum_decl =># "_1";
+  stmt := senum_decl =># "_1";
 
   //$ Short for for declaring an enumeration,
   //$ which is a union all of whose fields are constant constructors.
   //$ Deprecated syntax.
-  tstatement := "enum" sdeclname "{" senum_items "}" =>#
+  stmt := "enum" sdeclname "{" senum_items "}" =>#
     """
     `(ast_union ,_sr ,(first _2) ,(second _2) ,_4)
      """;
 
   //$ Short for for declaring an enumeration,
   //$ which is a union all of whose fields are constant constructors.
-  tstatement := "enum" sdeclname "=" senum_items ";" =>#
+  stmt := "enum" sdeclname "=" senum_items ";" =>#
     """
     `(ast_union ,_sr ,(first _2) ,(second _2) ,_4)
      """;
@@ -215,7 +215,7 @@ syntax type_decls {
 
   //$ Java like interface of an object type.
   //$ Equivalent to a record type.
-  tstatement := "interface" sdeclname stype_extension "{" srecord_type "}" =>#
+  stmt := "interface" sdeclname stype_extension "{" srecord_type "}" =>#
     """
     `(ast_type_alias ,_sr ,(first _2) ,(second _2) (ast_extension ,_sr ,_3 ,_5))
     """;

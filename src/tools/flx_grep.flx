@@ -26,7 +26,7 @@ for file in FileSystem::regfilesin (dir, fregex) do
   var count = 0;
   for line in split (lines,char "\n") do
     ++count;
-    if Match (grexp, line) do
+    if line \in grexp do
       println$ file+":"+str count+": " line;
     done
   done

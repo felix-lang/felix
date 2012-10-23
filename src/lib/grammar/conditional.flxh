@@ -2,25 +2,25 @@
 syntax conditional 
 {
   //$ Short form conditional goto statement.
-  tstatement := "if" sexpr "goto" sname ";" =># "`(ast_ifgoto ,_sr ,_2 ,_4)";
+  stmt := "if" sexpr "goto" sname ";" =># "`(ast_ifgoto ,_sr ,_2 ,_4)";
 
   //$ Short form conditional return statement.
-  tstatement := "if" sexpr "return" ";" =># "`(ast_ifreturn ,_sr ,_2)";
+  stmt := "if" sexpr "return" ";" =># "`(ast_ifreturn ,_sr ,_2)";
 
   //$ Short form conditional call statement.
-  tstatement := "if" sexpr "call" sexpr ";" =>#
+  stmt := "if" sexpr "call" sexpr ";" =>#
     "`(ast_ifdo ,_sr ,_2 (,(cons 'ast_call (cons _sr (splitapply _4))))())";
 
   //$ Short form one branch conditional.
-  tstatement := "if" sexpr "do" sstatements "done" =>#
+  stmt := "if" sexpr "do" sstatements "done" =>#
     "`(ast_ifdo ,_sr ,_2 ,_4 ())";
 
   //$ Short form two branch conditional.
-  tstatement := "if" sexpr "do" sstatements "otherwise" sstatements  =>#
+  stmt := "if" sexpr "do" sstatements "otherwise" sstatements  =>#
     "`(ast_ifdo ,_sr ,_2 ,_4 ,_6)";
 
   //$ Perl style conditional.
-  tstatement := sexpr "??" tstatement =>#
+  stmt := sexpr "??" stmt =>#
     "`(ast_ifdo ,_sr ,_1 (,_3) ())";
 
   //$ General conditional chain statement.
@@ -33,7 +33,7 @@ syntax conditional
   //$ else
   //$  ..
   //$ done
-  tstatement := "if" sexpr "do" sstatements selse_clause "done" =>#
+  stmt := "if" sexpr "do" sstatements selse_clause "done" =>#
     "`(ast_ifdo ,_sr ,_2 ,_4 ,_5)";
 
   //$ General elif clause.

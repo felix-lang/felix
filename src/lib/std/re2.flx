@@ -128,15 +128,26 @@ open class Re2 {
     "$1->Match($2, $3, $2.length(),$4, $5, $6)"
    ;
 
-  // simple match
-  fun Match: RE2 * string -> bool = 
-    "$1->Match(::re2::StringPiece($2),0, ::re2::StringPiece($2).length(),::re2::RE2::ANCHOR_BOTH, (::re2::StringPiece*)0, 0)"
-  ;
-  
+  gen Match(re:RE2, s:string) : opt[varray[string]] = {
+    var n = NumberOfCapturingGroups re;
+    var v = varray[StringPiece] (n.size,StringPiece "");
+    var Match-result = Match (re, StringPiece s, 0, ANCHOR_BOTH, v.stl_begin, n+1);
+    return 
+      if Match-result then
+        Some$ map string of (StringPiece) v
+      else 
+        None[varray[string]]
+    ;
+  }
+
+  gen apply (re:RE2, s:string) => Match (re,s);
+
   fun CheckRewriteString: RE2 * StringPiece * &string -> bool = "$1->CheckRewriteString($2, $3)";
 
   instance Set[RE2, string] {
-    fun \in (x:string, r:RE2) => Match (r, x);
+    fun \in : string * RE2 -> bool =
+      "$2->Match(::re2::StringPiece($1),0, ::re2::StringPiece($1).length(),::re2::RE2::ANCHOR_BOTH, (::re2::StringPiece*)0, 0)"
+    ;
   }
 
   gen iterator (re2:string, var target:string) => iterator (RE2 re2, target);

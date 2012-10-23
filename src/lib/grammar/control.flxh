@@ -1,44 +1,68 @@
 //$ Core control flow operators.
 syntax control 
 {
+  //$ Just a group of statements.
+  stmt := "do" sstatements "done" =># "`(ast_seq ,_sr ,_2)";
+
   //$ Call a procedure (verbose).
-  tstatement := "call" sexpr  ";" =># """(cons 'ast_call (cons _sr (splitapply _2)))""";
+  stmt := "call" sexpr  ";" =># """(cons 'ast_call (cons _sr (splitapply _2)))""";
 
   //$ Procedure return.
-  tstatement := "return" ";" =># "`(ast_proc_return ,_sr)";
+  stmt := "return" ";" =># "`(ast_proc_return ,_sr)";
 
   //$ Fast procedure return.
   //$ Returns immediately from enclosing procedure with given name.
-  tstatement := "return" "from" sname ";" =># "`(ast_proc_return_from ,_sr ,_3)";
+  stmt := "return" "from" sname ";" =># "`(ast_proc_return_from ,_sr ,_3)";
 
 
   //$ Procedure explicit tail call.
   //$ Equivalent to a call followed by a return.
-  tstatement := "jump" sexpr ";" =># """(cons 'ast_jump (cons _sr (splitapply _2)))""";
+  stmt := "jump" sexpr ";" =># """(cons 'ast_jump (cons _sr (splitapply _2)))""";
 
   //$ Function return with value.
-  tstatement := "return" sexpr ";" =># "`(ast_fun_return ,_sr ,_2)";
+  stmt := "return" sexpr ";" =># "`(ast_fun_return ,_sr ,_2)";
 
   //$ Generator/iterator exchange with value (restart after yield).
   //$ Yield is like a return, except that re-entering the generator
   //$ will continue on after the yield statement rather that starting
   //$ from the top.
-  tstatement := "yield" sexpr ";" =># "`(ast_yield ,_sr ,_2)";
+  stmt := "yield" sexpr ";" =># "`(ast_yield ,_sr ,_2)";
 
   //$ Special short form procedure self-tail call with argument.
-  tstatement := "loop" sname sexpr =># "`(ast_jump ,_sr (ast_name ,_sr ,_2 ()) ,_3)";
+  stmt := "loop" sname sexpr =># "`(ast_jump ,_sr (ast_name ,_sr ,_2 ()) ,_3)";
 
   //$ Special short form procedure self-tail call without argument.
-  tstatement := "loop" sname ";" =># "`(ast_jump ,_sr (ast_name ,_sr ,_2 ()) (ast_tuple,_sr ()))";
+  stmt := "loop" sname ";" =># "`(ast_jump ,_sr (ast_name ,_sr ,_2 ()) (ast_tuple,_sr ()))";
 
   //$ Stop the program with prejudice and a message.
-  tstatement := "halt" sstring ";" =># "`(ast_halt ,_sr ,_2)";
+  stmt := "halt" sstring ";" =># "`(ast_halt ,_sr ,_2)";
 
   //$ Label any statement.
   //$ Do not confuse with loop labels.
-  tstatement := sname ":>" =># "`(ast_label ,_sr ,_1)";
+  stmt := sname ":>" =># "`(ast_label ,_sr ,_1)";
 
   //$ Unconditional goto label.
-  tstatement := "goto" sname ";" =># "`(ast_goto ,_sr ,_2)";
+  stmt := "goto" sname ";" =># "`(ast_goto ,_sr ,_2)";
+
+  //$ Exception handling.
+  //$
+  //$ try .. catch x : T => handler endtry
+  //$
+  //$ can be used to execute code which might throw
+  //$ an exception, and catch the exception.
+  //$
+  //$ This is primarily intended to for wrapping C bindings.
+  //$ Exceptions do not propage properly in Felix across
+  //$ multiple function/procedure layers. If you have to use
+  //$ this construction be sure to keep wrap the try block
+  //$ closely around the throwing code.
+  stmt := "try" stmt+ catches "endtry" =>#
+    "`(ast_seq ,_sr ,(append `((ast_try ,_sr)) _2 _3 `((ast_endtry ,_sr))))";
+
+  catch := "catch" sname ":" sexpr  "=>" stmt+ =>#
+    "`(ast_seq ,_sr ,(cons `(ast_catch ,_sr ,_2 ,_4) _6))";
+
+  catches := catch+ =># "_1";
+
 }
 

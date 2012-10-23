@@ -6,7 +6,7 @@ syntax namespaces {
   //$ NOTE: it doesn't rename anything!
   //$ Used to inject solo names into a namespace.
 
-  tstatement := "rename" sdeclname "=" squalified_name ";" =>#
+  stmt := "rename" sdeclname "=" squalified_name ";" =>#
     """
     `(ast_inherit ,_sr ,(first _2) ,(second _2) ,_4)
     """;
@@ -14,14 +14,14 @@ syntax namespaces {
   //$ Create a new name for an existing set of function names.
   //$ NOTE: it doesn't rename anything!
   //$ Used to inject an overload set into a namespace.
-  tstatement := "rename" "fun" sdeclname "=" squalified_name ";" =>#
+  stmt := "rename" "fun" sdeclname "=" squalified_name ";" =>#
     """
     `(ast_inherit_fun ,_sr ,(first _3) ,(second _3) ,_5)
     """;
 
   //$ Inject all the public members of a class or module
   //$ into a namespace.
-  tstatement := "inherit" stvarlist squalified_name ";" =># 
+  stmt := "inherit" stvarlist squalified_name ";" =># 
     "`(ast_inject_module ,_sr ,_2 ,_3)";
 
   //$ Inject all the public members of a class or module
@@ -34,15 +34,15 @@ syntax namespaces {
   //$
   //$ Open makes names available for use in a namespace
   //$ without making them members for export.
-  tstatement := "open" stvarlist squalified_name ";" =>#
+  stmt := "open" stvarlist squalified_name ";" =>#
     "`(ast_open ,_sr ,_2 ,_3)";
 
   //$ Open a single name to a namespace bound to the given qualified name.
-  tstatement := "use" sname "=" squalified_name ";" =># "`(ast_use ,_sr ,_2 ,_4)";
+  stmt := "use" sname "=" squalified_name ";" =># "`(ast_use ,_sr ,_2 ,_4)";
 
   //$ A short form for opening a single name as the
   //$ base part of a qualified name.
-  tstatement := "use" squalified_name ";" =>#
+  stmt := "use" squalified_name ";" =>#
     """
     (let ((name
       (if (eq? (first _2) 'ast_lookup) (cadadr _2)
@@ -53,14 +53,14 @@ syntax namespaces {
 
   //$ Define a module.
   //$ DEPRECATED. Use classes instead.
-  tstatement := "module" sdeclname "=" ? scompound =>#
+  stmt := "module" sdeclname "=" ? scompound =>#
     """
     `(ast_untyped_module ,_sr ,(first _2) ,(second _2) ,_4)
      """;
 
   //$ Define a module and open in it in the current scope.
   //$ DEPRECATED: Use classes instead.
-  tstatement := "open" "module" sdeclname "=" ? scompound =>#
+  stmt := "open" "module" sdeclname "=" ? scompound =>#
     """
     `(ast_seq ,_sr (
       (ast_untyped_module ,_sr ,(first _3) ,(second _3) ,_5)
@@ -77,13 +77,13 @@ syntax namespaces {
   //$
   //$ NOTE: polymorphic classes may not contain variables.
   //$ Only variables of non-polymorphic classes can be instantiated.
-  tstatement := "class" sdeclname "=" ? scompound =>#
+  stmt := "class" sdeclname "=" ? scompound =>#
     """
     `(ast_typeclass ,_sr ,(first _2) ,(second _2) ,_4)
     """;
 
   //$ Define a class and open it.
-  tstatement := "open" "class" sdeclname "=" ? scompound =>#
+  stmt := "open" "class" sdeclname "=" ? scompound =>#
     """
     `(ast_seq ,_sr (
       (ast_typeclass ,_sr ,(first _3) ,(second _3) ,_5)
@@ -100,7 +100,7 @@ syntax namespaces {
   //$ Members of instances which are not overrides are private
   //$ to the instance.
   //$
-  tstatement := "instance" stvarlist squalified_name "=" ? scompound =>#
+  stmt := "instance" stvarlist squalified_name "=" ? scompound =>#
     """
     `(ast_instance ,_sr ,_2 ,_3 ,_5)
     """;
@@ -118,7 +118,7 @@ syntax namespaces {
   //$ with var x = 1 do var y = x; done
   //$ println$ x; // prints 42 not 1
   //$
-  tstatement := "with" sstatements "do" sstatements "done" =>#
+  stmt := "with" sstatements "do" sstatements "done" =>#
   """
   (let* 
     (

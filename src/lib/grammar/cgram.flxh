@@ -2,8 +2,8 @@
 //$ Direct name binding.
 //$ WORK IN PROGRESS, NOT OPERATIONAL!
 syntax cgram {
-  tstatement := "extern" '"C"' cstatement =># '`(ast_comment ,_sr "C code ..")';
-  tstatement := "extern" '"C"' "{" cstatement+ "}" =># '`(ast_comment ,_sr "C code ..")';
+  stmt := "extern" '"C"' cstatement =># '`(ast_comment ,_sr "C code ..")';
+  stmt := "extern" '"C"' "{" cstatement+ "}" =># '`(ast_comment ,_sr "C code ..")';
   cstatement := external_declaration;
   // this only for testing
   satom := "extern" '"C"' "(" expression ")" =># "_4";

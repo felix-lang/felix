@@ -47,7 +47,7 @@ let dyphack (ls : ( 'a * string) list) : 'a =
 
 /* predefined major non-terminals */
 %constructor Obj_sexpr %for sexpr
-%constructor Obj_sexpr %for sstatements tstatement utstatement
+%constructor Obj_sexpr %for sstatements stmt 
 
 /* nothing*/
 %constructor Obj_sexpr %for sepsilon
@@ -253,11 +253,7 @@ grammar_init: @{
       bindings @ [Add_rules add_rules; Local_data local_data; Relation prios]
   }
 
-tstatement:
-  | utstatement ";" @{ $1, [Keep_grammar; Local_data (dyp.last_local_data)] }
-/*
-  | utstatement newline @{ $1, [Keep_grammar; Local_data (dyp.last_local_data)] }
-*/
+stmt:
   | HASH_LINE INTEGER STRING newline
    {
      let sr = Flx_parse_srcref.getsr dyp in
@@ -265,7 +261,7 @@ tstatement:
      let n = $2 in
      Flx_parse_srcref.set_lineno lexbuf n;
      Dyp.set_fname lexbuf $3;
-     0,sr,Snull
+     sr,Snull
    }
 
   | HASH_LINE INTEGER newline
@@ -274,14 +270,14 @@ tstatement:
      let lexbuf = $1 in
      let n = $2 in
      Flx_parse_srcref.set_lineno lexbuf n;
-     0,sr,Snull
+     sr,Snull
    }
 
 /* top level statements only */
 top_statements:
- | top_statements tstatement
+ | top_statements stmt
    @{
-      let seq,sr,s = $2 in
+      let sr,s = $2 in
 (*
       print_endline ("BB sr=" ^ Flx_srcref.short_string_of_src sr);
 *)
@@ -290,9 +286,6 @@ top_statements:
         | Snull -> dyp.last_local_data
         | _ -> 
           { dyp.last_local_data with 
-(*
-            rev_stmts = ocs2flx sr s :: dyp.last_local_data.rev_stmts;
-*)
             rev_stmts_as_scheme = (sr,s) :: dyp.last_local_data.rev_stmts_as_scheme;
           }
       in
@@ -304,33 +297,23 @@ top_statements:
 
 /* inner statements only */
 sstatements:
-  | sstatement_star utstatement?
+  | sstatement_star 
     {
-      let _, stmts = $1 in
-      let stmts = match $2 with
-        | None -> stmts
-        | Some (seq,sr,s) ->
-          match s with
-          | Snull -> stmts
-          | _ -> s::stmts
-      in
+      let stmts = $1 in
       let stmts = Ocs_misc.make_slist Snull stmts in
-      (*
-      print_endline "Returning inner statement list";
-      *)
-      0, Flx_srcref.dummy_sr, stmts
+      Flx_srcref.dummy_sr, stmts
     }
 
 sstatement_star:
- | sstatement_star tstatement
+ | sstatement_star stmt
    @{
-     let seq,sr,s = $2 in
+     let sr,s = $2 in
      (match s with Snull -> $1 | _ ->
-     let sseq,stmts = $1 in
-     (max seq sseq, (s :: stmts))),
+     let stmts = $1 in
+     (s :: stmts)),
      [Keep_grammar; Local_data (dyp.last_local_data)]
     }
-  | { 0,[] }
+  | { [] }
 
 dyprods:
   | dyprods dyprod { $2 :: $1 }
@@ -494,8 +477,8 @@ rhs_atom:
   | ">=" { GREATEREQUAL }
   | "_" { UNDERSCORE }
 
-utstatement:
-  | "SCHEME" STRING
+stmt:
+  | "SCHEME" STRING ";"
     @{
       let sr = Flx_parse_srcref.getsr dyp in
       let s = $2 in
@@ -511,20 +494,20 @@ utstatement:
           failwith "Error executing SCHEME"
       in
       let local_data = { dyp.local_data with scm = (sr,s) :: dyp.local_data.scm } in
-      (0, sr, Snull), [Local_data local_data]
+      (sr, Snull), [Local_data local_data]
     }
 
-  | "SAVE"
+  | "SAVE" ";"
     {
       print_endline "Setting automaton";
       let sr = Flx_parse_srcref.getsr dyp in
       let s = Marshal.to_string (function_free_pdev dyp.parser_pilot.pp_dev) [] in
       dyp.global_data.parsing_device := Some s;
       print_endline "Automaton set";
-      (0,sr,Snull)
+      (sr,Snull)
     }
 
-tstatement:
+stmt:
   | "syntax" NAME "{" dyprods "}"
     @{
       (* NOTE ORDER!! dyprods is reversed, but the fold reverses it again *)
@@ -553,7 +536,7 @@ tstatement:
         @
         (if dyp.local_data != local_data then [Local_data local_data] else [])
       in
-      (0, sr, Snull), mods
+      (sr, Snull), mods
     }
 
 
@@ -578,19 +561,19 @@ tstatement:
         m with installed_dssls = to_install @ m.installed_dssls
       } 
       in
-      (0, sr, Snull),
+      (sr, Snull),
       bindings @ [Add_rules add_rules; Local_data local_data; Relation prios]
     }
 
-sexpr: | DUMMY { 0, Flx_srcref.dummy_sr, Snull }
+sexpr: | DUMMY { Flx_srcref.dummy_sr, Snull }
 
 /*
 a definite non-terminal for a sequence of no tokens,
 since the production syntax cannot parse an empty
 production at the moment
 */
-sepsilon: | { 0, Flx_srcref.dummy_sr, Snull }
-strepsilon: | { 0, Flx_srcref.dummy_sr, Sstring "" }
+sepsilon: | { Flx_srcref.dummy_sr, Snull }
+strepsilon: | { Flx_srcref.dummy_sr, Sstring "" }
 
 basic_name:
   | NAME { Flx_parse_srcref.getsr dyp, $1 }

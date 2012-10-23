@@ -15,25 +15,25 @@ syntax cbind {
   //$
   //$ export fun myfun of (int) as "MyFun";
   //$
-  tstatement := "export" "fun" ssuffixed_name "as" sstring ";" =>#
+  stmt := "export" "fun" ssuffixed_name "as" sstring ";" =>#
     "`(ast_export_fun ,_sr ,_3 ,_5)";
 
   //$ Export a Felix function with C type into C.
-  tstatement := "export" "cfun" ssuffixed_name "as" sstring ";" =>#
+  stmt := "export" "cfun" ssuffixed_name "as" sstring ";" =>#
     "`(ast_export_cfun ,_sr ,_3 ,_5)";
 
   //$ Export a Felix procedure into C.
-  tstatement := "export" "proc" ssuffixed_name "as" sstring ";" =>#
+  stmt := "export" "proc" ssuffixed_name "as" sstring ";" =>#
     "`(ast_export_fun ,_sr ,_3 ,_5)";
 
   //$ Export a Felix procedure with C type into C.
-  tstatement := "export" "cproc" ssuffixed_name "as" sstring ";" =>#
+  stmt := "export" "cproc" ssuffixed_name "as" sstring ";" =>#
     "`(ast_export_cfun ,_sr ,_3 ,_5)";
 
   //$ Export a type into C. 
   //$ This is done using a typedef that defines the alias
   //$ specified in the "as" phase to be the type expression.
-  tstatement := "export" "type" "(" sexpr ")" "as" sstring ";" =>#
+  stmt := "export" "type" "(" sexpr ")" "as" sstring ";" =>#
     "`(ast_export_type ,_sr ,_4 ,_7)";
 
   //$ The optional precedence phase specifies
@@ -59,7 +59,7 @@ syntax cbind {
   //$
   //$ fun sin : double -> double = "sin($1)";
   //$
-  tstatement := sadjectives sfun_kind sdeclname fun_return_type sopt_cstring sopt_prec srequires_clause ";" =>#
+  stmt := sadjectives sfun_kind sdeclname fun_return_type sopt_cstring sopt_prec srequires_clause ";" =>#
     """
       (let* (
         (name (first _3))
@@ -103,7 +103,7 @@ syntax cbind {
     """;
 
   //$ Define a constructor function by a C expression.
-  tstatement := "ctor" stvarlist squalified_name ":" stypeexpr sopt_cstring sopt_prec srequires_clause ";" =>#
+  stmt := "ctor" stvarlist squalified_name ":" stypeexpr sopt_cstring sopt_prec srequires_clause ";" =>#
     """
     (let*
       (
@@ -125,21 +125,21 @@ syntax cbind {
     """;
 
   //$ Define a type by a C type expression.
-  tstatement:= stype_qual* "type" sdeclname "=" scode_spec srequires_clause ";" =>#
+  stmt:= stype_qual* "type" sdeclname "=" scode_spec srequires_clause ";" =>#
     """
     `(ast_abs_decl ,_sr ,(first _3) ,(second _3) ,_1 ,_5 ,_6)
     """;
 
   //$ Define a special kind of procedure which can be used
   //$ as a C callback.
-  tstatement := "callback" "proc" sname ":" stypeexpr srequires_clause ";" =>#
+  stmt := "callback" "proc" sname ":" stypeexpr srequires_clause ";" =>#
     """
     `(ast_callback_decl ,_sr ,_3 ,(mkl2 _5) (ast_void ,_sr) ,_6)
     """;
 
   //$ Define a special kind of function which can be used
   //$ as a C callback.
-  tstatement := "callback" "fun" sname ":" stypeexpr srequires_clause ";" =>#
+  stmt := "callback" "fun" sname ":" stypeexpr srequires_clause ";" =>#
     """
     (if (eq? 'ast_arrow (first _5))
       (let*
@@ -205,18 +205,18 @@ syntax cbind {
   stype_qual := "_gc_type" stypeexpr =># "`(Raw_needs_shape ,_2)";
 
   //$ Define a set of types as C types with the same names.
-  tstatement:= stype_qual* "ctypes" sbasic_name_comma_list srequires_clause ";" =>#
+  stmt:= stype_qual* "ctypes" sbasic_name_comma_list srequires_clause ";" =>#
     "`(ast_ctypes ,_sr ,_3 ,_1 ,_4)";
 
   //$ Embed a C statement into Felix code.
-  tstatement:= "code" scode_spec ";" =># "`(ast_code ,_sr ,_2)";
+  stmt:= "code" scode_spec ";" =># "`(ast_code ,_sr ,_2)";
 
   //$ Embed a C statement which does not return normally
   //$ into Felix code. For example:
   //$
   //$ noreturn code "exit(0);";
   //$
-  tstatement:= "noreturn" "code" scode_spec ";" =># "`(ast_noreturn_code ,_sr ,_3)";
+  stmt:= "noreturn" "code" scode_spec ";" =># "`(ast_noreturn_code ,_sr ,_3)";
 
   sexpr_code_prefix := "code" "[" stypeexpr "]" =># "_3";
 
@@ -242,7 +242,7 @@ syntax cbind {
   //$ const rand : int = "rand()";
   //$
   // note: also needed by typeclasses atm for virtual consts
-  tstatement := sadjectives "const" sdeclname ":" stypeexpr "=" scode_spec srequires_clause ";" =>#
+  stmt := sadjectives "const" sdeclname ":" stypeexpr "=" scode_spec srequires_clause ";" =>#
     """
       (let ((reqs (if (memv 'Virtual _1)
         `(rreq_and (rreq_atom (Property_req "virtual")) ,_8)
@@ -257,7 +257,7 @@ syntax cbind {
   //$
   //$ const RAND_MAX: long;
   //$
-  tstatement := sadjectives "const" sdeclname ":" stypeexpr srequires_clause ";" =>#
+  stmt := sadjectives "const" sdeclname ":" stypeexpr srequires_clause ";" =>#
     """
       (let ((reqs (if (memv 'Virtual _1)
         `(rreq_and (rreq_atom (Property_req "virtual")) ,_6)
@@ -275,7 +275,7 @@ syntax cbind {
   //$
   //$ const a,b,c : int;
   //$
-  tstatement := sadjectives "const" sdeclnames ":" stypeexpr srequires_clause ";" =>#
+  stmt := sadjectives "const" sdeclnames ":" stypeexpr srequires_clause ";" =>#
     """
       (let ((reqs (if (memv 'Virtual _1)
         `(rreq_and (rreq_atom (Property_req "virtual")) ,_6)
@@ -294,7 +294,7 @@ syntax cbind {
   //$
   //$ This form also defined equality and inequality operators
   //$ for the type automatically, as an instance of class Eq.
-  tstatement := "cenum" sname "=" sbasic_name_comma_list srequires_clause ";" =>#
+  stmt := "cenum" sname "=" sbasic_name_comma_list srequires_clause ";" =>#
     """
       (begin 
          (define (constdef sym) 
@@ -319,7 +319,7 @@ syntax cbind {
   //$ This form automatically defines equality as an instance of class Eq.
   //$ Furthermore it defines all the standard bitwise operators,
   //$ as an instance of class Bits.
-  tstatement := "cflags" sname "=" sbasic_name_comma_list srequires_clause ";" =>#
+  stmt := "cflags" sname "=" sbasic_name_comma_list srequires_clause ";" =>#
     """
       (begin 
          (define (constdef sym) 
@@ -346,7 +346,7 @@ syntax cbind {
   //$ If the option C text is elided, the procedure
   //$ is taken to be bound to a C function returning void
   //$ of the same name.
-  tstatement := sadjectives sproc_kind sdeclname ":" stypeexpr sopt_cstring srequires_clause ";" =>#
+  stmt := sadjectives sproc_kind sdeclname ":" stypeexpr sopt_cstring srequires_clause ";" =>#
     """
       (let (
         (name (first _3))

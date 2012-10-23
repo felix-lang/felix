@@ -60,9 +60,6 @@ and local_data_t = {
   drules : dssl_t Flx_drules.Drules.t;
   installed_dssls : string list;
   scm : (Flx_srcref.t * string) list;
-(*
-  rev_stmts: Flx_ast.statement_t list;
-*)
   rev_stmts_as_scheme: (Flx_srcref.t * Ocs_types.sval) list;
 }
 

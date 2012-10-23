@@ -163,33 +163,33 @@ syntax requirements {
   //$ The anonymous requires statement specifies requirements which 
   //$ propagates to all C bindings
   //$ in the same class, or any descendant (enclosed) class.
-  tstatement := "requires" srequirements ";" =>#
+  stmt := "requires" srequirements ";" =>#
     """`(ast_insert ,_sr "_root" ,dfltvs (Str "") body ,_2)""";
 
   //$ The named requires statement simply names a requirement.
-  tstatement := sname "requires" srequirements ";" =>#
+  stmt := sname "requires" srequirements ";" =>#
     """`(ast_insert ,_sr ,_1 ,dfltvs (Str "") body ,_3)""";
 
   //$ The header statement specifies a header requirement which
   //$ propagates to all C bindings
   //$ in the same class, or any descendant (enclosed) class.
-  tstatement := "header" scode_spec srequires_clause ";" =>#
+  stmt := "header" scode_spec srequires_clause ";" =>#
     """`(ast_insert ,_sr "_root" ,dfltvs ,_2 header ,_3))""";
 
   //$ The body statement specifies a header requirement which
   //$ propagates to all C bindings
   //$ in the same class, or any descendant (enclosed) class.
-  tstatement := "body" scode_spec srequires_clause ";" =>#
+  stmt := "body" scode_spec srequires_clause ";" =>#
     """`(ast_insert ,_sr "_root" ,dfltvs ,_2 body ,_3))""";
 
   //$ Named header requirement.
-  tstatement := "header" sdeclname "=" scode_spec srequires_clause ";" =>#
+  stmt := "header" sdeclname "=" scode_spec srequires_clause ";" =>#
     """
     `(ast_insert ,_sr ,(first _2) ,(second _2) ,_4 header ,_5)
      """;
 
   //$ Named body requirement.
-  tstatement := "body" sdeclname "=" scode_spec srequires_clause ";" =>#
+  stmt := "body" sdeclname "=" scode_spec srequires_clause ";" =>#
     """
     `(ast_insert ,_sr ,(first _2) ,(second _2) ,_4 body ,_5)
      """;

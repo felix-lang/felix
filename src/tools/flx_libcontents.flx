@@ -24,7 +24,7 @@ regdef binder = "fun" | "proc" | "gen" | "class" | "union" | "struct" | "type" |
 regdef indent2 = "  ";
 
 regdef classbind= group ("class" | "open class");
-regdef otherbind= indent2 group (adjective* spaces binder);
+regdef otherbind= indent2? group (adjective* spaces binder);
 
 // Group 1 = class
 // Group 2 = other 
@@ -69,9 +69,9 @@ for file in FileSystem::regfilesin (dir, fregex) do
        comments = Cons (vcomment . 1 . string.strip, comments);
     otherwise
 
-    var m = Match (grexp, StringPiece line, 0, ANCHOR_BOTH, v.stl_begin,n); 
-    if m do
-      var sym = v.3.string;
+    match grexp line with
+    | Some ?v =>
+      var sym = v.3;
       var dfn = "";
       var m2 = Match (extract, StringPiece line, 0, ANCHOR_BOTH, v2.stl_begin, n2);
       if m2 do
@@ -107,7 +107,8 @@ for file in FileSystem::regfilesin (dir, fregex) do
           comments = Empty[string];
         done
       done
-    done
+    | None => ;
+    endmatch; //d grexp
   done
 done
 

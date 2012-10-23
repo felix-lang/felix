@@ -1,9 +1,9 @@
 syntax macros {
   requires expressions, statements;
-  tstatement := "macro" "val" sbasic_name_comma_list "=" sexpr ";" =>#
+  stmt := "macro" "val" sbasic_name_comma_list "=" sexpr ";" =>#
     "`(ast_macro_val ,_3 ,_5)";
 
-  tstatement := "forall" sname "in" sexpr "do" sstatements "done" =>#
+  stmt := "forall" sname "in" sexpr "do" sstatements "done" =>#
     "`(ast_macro_forall (,_2) ,_4 ,_6)"
   ;
 

@@ -3,16 +3,16 @@ syntax loops
 {
   //$ Labelled break.
   //$ Use to exit from the loop with the specified label.
-  tstatement := "break" sname =># '`(ast_goto ,_sr ,(string-append "break_" _2))';
+  stmt := "break" sname =># '`(ast_goto ,_sr ,(string-append "break_" _2))';
 
 
   //$ Labelled continue.
   //$ Use to continue with the next iteration of the loop with the specified label.
-  tstatement := "continue" sname =># '`(ast_goto ,_sr ,(string-append "continue_" _2))';
+  stmt := "continue" sname =># '`(ast_goto ,_sr ,(string-append "continue_" _2))';
 
   //$ Labelled redo.
   //$ Use to restart this iteration of the loop with the specified label.
-  tstatement := "redo" sname =># '`(ast_goto ,_sr ,(string-append "redo_" _2))';
+  stmt := "redo" sname =># '`(ast_goto ,_sr ,(string-append "redo_" _2))';
 
   //$ Syntax for a loop label.
   //$ Use just before the loop.
@@ -22,7 +22,7 @@ syntax loops
   optlabel := sepsilon =># "(number->string (fresh_int ()))";
 
   //$ Standard while loop.
-  tstatement := optlabel "while" sexpr "do" sstatements "done" =>#
+  stmt := optlabel "while" sexpr "do" sstatements "done" =>#
     """ 
     `(ast_seq ,_sr
       ,(append 
@@ -35,7 +35,7 @@ syntax loops
     """;
 
   //$ Negated while loop.
-  tstatement := optlabel "until" sexpr "do" sstatements "done" =>#
+  stmt := optlabel "until" sexpr "do" sstatements "done" =>#
     """
     `(ast_seq ,_sr
       ,(append 
@@ -57,7 +57,7 @@ syntax loops
   // the incr/decr is to be done, this is because it might be the max/min value
   // in the range and the incr/decr would be invalid.
 
-  tstatement := optlabel "for" sname "in" sexpr "upto" sexpr "do" sstatements "done" =>#
+  stmt := optlabel "for" sname "in" sexpr "upto" sexpr "do" sstatements "done" =>#
     """
     `(ast_seq ,_sr
       ,(append 
@@ -85,7 +85,7 @@ syntax loops
   //$ Ranges are inclusive. This is essential in case
   //$ the loops if over the complete domain of the control variable type.
   //$ The start and end argument types and the declared control variable type must be the same.
-  tstatement := optlabel "for" "var" sname ":" sexpr "in" sexpr "upto" sexpr "do" sstatements "done" =>#
+  stmt := optlabel "for" "var" sname ":" sexpr "in" sexpr "upto" sexpr "do" sstatements "done" =>#
     """
     `(ast_seq ,_sr
       ,(append 
@@ -113,7 +113,7 @@ syntax loops
   //$ Ranges are inclusive. This is essential in case
   //$ the loops if over the complete domain of the control variable type.
   //$ The start and end argument types must be the same.
-  tstatement := optlabel "for" "var" sname "in" sexpr "upto" sexpr "do" sstatements "done" =>#
+  stmt := optlabel "for" "var" sname "in" sexpr "upto" sexpr "do" sstatements "done" =>#
     """
     `(ast_seq ,_sr
       ,(append 
@@ -140,7 +140,7 @@ syntax loops
   //$ Ranges are inclusive. This is essential in case
   //$ the loops if over the complete domain of the control variable type.
   //$ The start and end argument types and the declared control variable type must be the same.
-  tstatement := optlabel "for" sname "in" sexpr "downto" sexpr "do" sstatements "done" =>#
+  stmt := optlabel "for" sname "in" sexpr "downto" sexpr "do" sstatements "done" =>#
     """
     `(ast_seq ,_sr
       ,(append 
@@ -168,7 +168,7 @@ syntax loops
   //$ Ranges are inclusive. This is essential in case
   //$ the loops if over the complete domain of the control variable type.
   //$ The start and end argument types and the declared control variable type must be the same.
-  tstatement := optlabel "for" "var" sname ":" sexpr "in" sexpr "downto" sexpr "do" sstatements "done" =>#
+  stmt := optlabel "for" "var" sname ":" sexpr "in" sexpr "downto" sexpr "do" sstatements "done" =>#
     """
     `(ast_seq ,_sr
       ,(append 
@@ -196,7 +196,7 @@ syntax loops
   //$ Ranges are inclusive. This is essential in case
   //$ the loops if over the complete domain of the control variable type.
   //$ The start and end argument types and the declared control variable type must be the same.
-  tstatement := optlabel "for" "var" sname "in" sexpr "downto" sexpr "do" sstatements "done" =>#
+  stmt := optlabel "for" "var" sname "in" sexpr "downto" sexpr "do" sstatements "done" =>#
     """
     `(ast_seq ,_sr
       ,(append 
@@ -233,7 +233,7 @@ syntax loops
   //$    control variable, 
   //$ 4. the loop body is executed, and
   //$ 6. we go back to step 1.
-  tstatement := optlabel "for" sname "in" sexpr "do" sstatements "done" =>#
+  stmt := optlabel "for" sname "in" sexpr "do" sstatements "done" =>#
     """
     (let* (
      (generator_string_name (string-append "_generator_" (number->string (fresh_int ()))))
@@ -275,7 +275,7 @@ syntax loops
   //$ 6. If the pattern does not match,
   //$ 7. we go back to step 1
   //$    without executing the loop body.
-  tstatement := optlabel "match" spattern "in" sexpr "do" sstatements "done" =>#
+  stmt := optlabel "match" spattern "in" sexpr "do" sstatements "done" =>#
     """
     (let* (
      (generator_string_name (string-append "_generator_" (number->string (fresh_int ()))))

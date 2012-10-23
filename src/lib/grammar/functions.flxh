@@ -141,7 +141,7 @@ syntax functions {
   //$ A function without side-effects.
   sfun_kind := "fun" =># "'Function";
 
-  tstatement := sfunction =># "_1";
+  stmt := sfunction =># "_1";
 
   //$ General function definition. Multiple tuple arguments, body is expression.
   //$ Example:
@@ -305,7 +305,7 @@ syntax functions {
     """;
 
   //$ Procedure definition, short form (one statement).
-  sfunction := sadjectives sproc_kind sdeclname sfun_arg* "=>" tstatement =>#
+  sfunction := sadjectives sproc_kind sdeclname sfun_arg* "=>" stmt =>#
     """
       `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 ((ast_void ,_sr) none) ,(cal_funkind _1 _2) (,_6))
     """;
