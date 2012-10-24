@@ -1,22 +1,25 @@
-publish "Bounded Variable length arrays, bound set at construction time"
+//$ Bounded Variable length arrays, bound set at construction time.
 
 open class Varray
 {
+  //$ A varray is just a pointer. 
+  //$ The current length and bound are maintained by the GC.
   _gc_pointer _gc_type t type varray[t] = "?1*";
 
-  // an ordinary carray, but owned by the GC
+  //$ An ordinary carray, but owned by the GC.
   ctor[t] carray[t] : varray[t] = "$1";
 
+  //$ Create an empty varray with the given bound.
   ctor[t] varray[t]: size =
     "(?1*)(PTF gcp->collector->create_empty_array(&@?1,$1))"
     requires property "needs_gc"
   ;
 
-  // raw memory initialisation (really, this belongs in C_hack)
+  //$ Raw memory initialisation (really, this belongs in C_hack).
   private proc _init[T]: &T * T = "new((void*)$1) ?1($2);";
  
 
-  publish "Construct a full varray with a default value"
+  //$ Construct a varray filled up with a default value.
   ctor[t] varray[t] (bound:size, default:t) = {
     var o = varray[t] bound;
     if bound > 0uz do for var i in 0uz upto bound - 1uz do
@@ -25,7 +28,7 @@ open class Varray
     return o;
   }
 
-  publish "Construct a partially filled varray with a default value computed by a function"
+  //$ Construct a partially filled varray with a default value computed by a function.
   ctor[t] varray[t] (bound:size, used:size, f:size->t when used <= bound) = {
     var o = varray[t] bound;
     if used > 0uz do for var i in 0uz upto used - 1uz do
@@ -34,23 +37,23 @@ open class Varray
     return o;
   }
 
-  publish "Construct a full varray from an array"
+  //$ Construct a full varray from an array.
   // funny, the N isn't explicitly used.
   ctor[t,N] varray[t] (x:array[t,N]) => 
      varray[t] (len x, len x, (fun (i:size):t =>x.i))
   ;
 
-  publish "Construct a partially full varray from a varray"
+  //$ Construct a partially full varray from a varray.
   ctor[t] varray[t] (x:varray[t], maxlen:size) =>
     varray[t] (maxlen, min(maxlen,len x), (fun (i:size):t=> x.i))
   ;
 
-  publish "Construct a full varray from a varray (copy constructor)"
+  //$ Construct a full varray from a varray (copy constructor).
   ctor[t] varray[t] (x:varray[t]) =>
     varray[t] (len x, len x, (fun (i:size):t=> x.i))
   ;
 
-  // construct a varray from a list
+  // Construct a varray from a list
   ctor[t] varray[t] (x:list[t]) = {
     val n = x.len.size;
     var a = varray[t] n;
@@ -58,6 +61,8 @@ open class Varray
     return a;
   }
 
+  //$ Construct a varray from a string.
+  //$ Include a trailing nul byte.
   ctor varray[char] (var x:string) = {
     var n = x.len; var p = x._unsafe_cstr;
     var v = varray[char] (n + 1);
@@ -73,29 +78,45 @@ open class Varray
     requires property "needs_gc"
   ;
 
+  //$ Treat a varray as an ArrayValue.
   instance[v] ArrayValue[varray[v],v] {
+    //$ Length of a varray (used).
     fun len: varray[v] -> size =
       "PTF gcp->collector->get_used($1)"
       requires property "needs_gc"
     ;
+    //$ Unsafe get value at position.
     fun unsafe_get: varray[v] * size -> v = "$1[$2]";
   } 
 
+  //$ Treat a varray as an ArrayObject.
+  //$ Allows modifications.
   instance[v] ArrayObject[varray[v],v] {
+    //$ Store the given value at the given position.
     proc unsafe_set: varray[v] * size * v = "$1[$2]=$3;";
   }
 
+  //$ Treat a varray as a ContiguousArrayObject.
   instance[v] ContiguousArrayObject[varray[v],v] {
+    //$ STL iterator to start of array.
     fun stl_begin: varray[v] -> +v = "$1";
+
+    //$ STL iterator to end of array.
     fun stl_end: varray[v] -> +v = "($1+PTF gcp->collector->get_used($1))";
   }
 
+  //$ Get the bound of a varray.
   fun maxlen[t]: varray[t] -> size =
     "PTF gcp->collector->get_count($1)"
     requires property "needs_gc"
   ;
+
+  //$ Append a new element to the end of a varray.
+  //$ Aborts if you go past the bound.
   proc += [t] (pa:&varray[t],v:t) { push_back (*pa,v); }
 
+  //$ Append a new element to the end of a varray.
+  //$ Aborts if you go past the bound.
   proc push_back[t] : varray[t] * t = """
     {
       //?1 * _p = *$1;
@@ -107,6 +128,8 @@ open class Varray
     requires property "needs_gc"
   ;
 
+  //$ Pop an element off the end of a varray.
+  //$ Aborts if the array is empty.
   proc pop[t] : varray[t] = """
     {
       ?1 * _p = $1;
@@ -118,6 +141,7 @@ open class Varray
     requires property "needs_gc"
   ;
 
+  //$ Traditional map varray to varray.
   fun map[T, U] (_f:T->U) (x:varray[T]): varray[U] = {
     var o = varray[U]$ len(x);
 
@@ -153,7 +177,7 @@ open class Varray
     requires Cxx_headers::algorithm;
 
 
-  // in place sort of varray using STL sort
+  //$ In place sort of varray using STL sort.
   proc sort[t] (cmp: t * t -> bool) (a:varray[t]) {
     var first = a.stl_begin;
     var last = a.stl_end;
@@ -164,6 +188,8 @@ open class Varray
 }
 
 instance[T with Show[T]] Str[Varray::varray[T]] {
+  //$ Convert a varray[T] to a string.
+  //$ Requires Show[T]
   fun str (xs:varray[T]) = {
     var o = 'varray(';
 
@@ -179,15 +205,17 @@ instance[T with Show[T]] Str[Varray::varray[T]] {
   }
 }
 
+//$ Treat varray as Set.
 instance[T with Eq[T]] Set[varray[T],T] {
- fun \in (x:T, a:varray[T]) : bool = {
-   if len a > 0uz do
-     for var i in 0uz upto len a - 1uz do
-       if a.i == x do return true; done
-     done
-   done
-   return false;
- } 
+  //$ Check is a value is stored in a varray.
+  fun \in (x:T, a:varray[T]) : bool = {
+    if len a > 0uz do
+      for var i in 0uz upto len a - 1uz do
+        if a.i == x do return true; done
+      done
+    done
+    return false;
+  } 
 }
 
 open[T] Show[Varray::varray[T]];

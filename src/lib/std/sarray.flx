@@ -1,11 +1,18 @@
+//$ Unbounded sparse psuedo-array sarray.
+//$ This data type is not a real array because it has no bounds
+//$ and therefore cannot support iteration.
 open class Sarray
 {
   open Judy;
   private struct sarray_ctl[T] { a: darray[T]; j:JLArray; free:J1Array; dflt:T; };
+
+  //$ Type of a sarray.
   type sarray[T] = new &sarray_ctl[T];
 
+  //$ Construct an infinite sarray with all values set to the given default.
   ctor[T] sarray[T] (dflt:T) => _make_sarray[T]$ new sarray_ctl[T] (darray[T](), JLArray(), J1Array(),dflt);
 
+  //$ Get the value at the given position.
   fun get[T] (a:sarray[T], i:size) : T = {
      var pk: &word;
      var e: JError_t;
@@ -14,6 +21,7 @@ open class Sarray
      return r;
   }
     
+  //$ Set the given value at the given position.
   proc set[T] (a:sarray[T], i:size, v:T) {
     var pk: &word;
     var e: JError_t;
@@ -36,6 +44,7 @@ open class Sarray
     done
   }
 
+  //$ Replace the value at a given position with the default.
   proc del[T] (a:sarray[T], i:size) {
     var pk: &word;
     var e: JError_t;
@@ -47,7 +56,11 @@ open class Sarray
     done    
   }
 
-  // pack a sparse array. Make a new varray with max number
+  //$ Pack a sparse array. 
+  //$ This is an optimisation with no semantics.
+  //$ Reorganises the sarray to reduce memory use and optimise lookup.
+  //$
+  // Make a new varray with max number
   // of elements in the j mapping, then fill it in order
   // of the j mapping, replacing the j value with the new index
   // finally replace the original darray with a new one made

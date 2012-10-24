@@ -14,12 +14,13 @@ open Flx_types
 open Flx_util
 open Flx_version
 
-let ocs2flx sr r =
+let ocs2flx r =
   let sex = Ocs2sex.ocs2sex r in
   (*
   print_endline "OCS scheme term converted to s-expression:";
   Sex_print.sex_print sex;
   *)
+  let sr = Flx_srcref.dummy_sr in
   let flx = Flx_sex2flx.xstatement_t sr sex in
   (*
   print_endline "s-expression converted to Felix statement!";
@@ -136,7 +137,7 @@ let include_file syms curpath inspec =
 (*
     let tree = List.rev (Flx_parse.parser_data parser_state) in
 *)
-    let tree = List.rev_map (fun (sr,scm) -> ocs2flx sr scm) (Flx_parse_driver.parser_data parser_state) in
+    let tree = List.rev_map (fun scm -> ocs2flx scm) (Flx_parse_driver.parser_data parser_state) in
     let local_prefix = Filename.basename basename in
     let macro_state = Flx_macro.make_macro_state local_prefix syms.counter in
     let tree = Flx_macro.expand_macros macro_state tree in

@@ -8,7 +8,7 @@ syntax statements {
 
   //$ Statement qualifier which makes a definition
   //$ private to the containing module or class.
-  stmt := "private" stmt =># "`(ast_private ,_2)";
+  stmt := "private" stmt =># "`(ast_private ,_sr ,_2)";
 
   //$ Deprecated method of documenting a definition.
   stmt := "publish" sstring stmt =># "_3";

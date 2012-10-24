@@ -60,7 +60,7 @@ and local_data_t = {
   drules : dssl_t Flx_drules.Drules.t;
   installed_dssls : string list;
   scm : (Flx_srcref.t * string) list;
-  rev_stmts_as_scheme: (Flx_srcref.t * Ocs_types.sval) list;
+  rev_stmts_as_scheme: Ocs_types.sval list;
 }
 
 and 'obj global_data_t = {

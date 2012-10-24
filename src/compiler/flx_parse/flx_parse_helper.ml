@@ -163,7 +163,7 @@ print_endline ("define_scheme " ^ name);
   let action = fun dyp2 avl ->
     match avl,scm with
     (* optimise special case *)
-    | [`Obj_sexpr (sr,s)],"_1" -> `Obj_sexpr (sr,s),[]
+    | [`Obj_sexpr s],"_1" -> `Obj_sexpr s,[]
     | _ ->
     let age = ref pr_age in
     let b = Buffer.create 200 in
@@ -196,7 +196,7 @@ print_endline ("define_scheme " ^ name);
       | h1::t1,h2::t2 ->
         let s =
           match h1,h2 with
-          | _,`Obj_sexpr (sr,s) ->
+          | _,`Obj_sexpr s ->
             s
 
           | k,`Obj_keyword -> assert false; Snull (* Sstring (Flx_prelex.string_of_token k) *)
@@ -243,7 +243,7 @@ print_endline ("sr of reduction is " ^ Flx_srcref.short_string_of_src sr);
         print_string ("Error "^err^" evaluating " ^ scm);
         failwith "Error evaluating Scheme"
     in
-    `Obj_sexpr (sr,r),[]
+    `Obj_sexpr r,[]
   in
   rule,action,Bind_to_cons [(name, "Obj_sexpr")]
 

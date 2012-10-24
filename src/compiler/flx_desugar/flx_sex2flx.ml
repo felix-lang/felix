@@ -462,100 +462,98 @@ and xstruct_component sr = function
   | x -> err x "struct component"
 
 and xstatement_t sr x : statement_t =
-  let xpvs x = xplain_vs_list_t sr x in
-  let xs x = xstatement_t sr x in
-  let ex x = xexpr_t sr x in
-  let ex' sr x = xexpr_t (xsr sr) x in
-  let xq m qn = qne ex m qn in
-  let xvs x = xvs_list_t sr x in
-  let xam x =  xaxiom_method_t sr x in
-  let xps x =  xparams_t sr x in
-  let xret x =  xret_t sr x in
-  let xsts x =  lst "statement" xs x in
-  let xsts' sr x =  lst "statement" (xstatement_t (xsr sr)) x in
-  let xfk x = xfunkind_t sr x in
-  let ti x = type_of_sex sr x in
+  let xpvs sr x = xplain_vs_list_t sr x in
+  let xs sr x = xstatement_t sr x in
+  let ex sr x = xexpr_t sr x in
+  let xq sr m qn = qne (ex sr) m qn in
+  let xvs sr x = xvs_list_t sr x in
+  let xam sr x =  xaxiom_method_t sr x in
+  let xps sr x =  xparams_t sr x in
+  let xret sr x =  xret_t sr x in
+  let xsts sr x =  lst "statement" (xs sr) x in
+  let xfk sr x = xfunkind_t sr x in
+  let ti sr x = type_of_sex sr x in
   let ii i = int_of_string i in
   let xi = function | Int i -> ii i | x -> err x "int" in
-  let xtlv x = xtlvalue_t sr x in
-  let xtq x = xtype_qual_t sr x in
-  let xtqs x = lst "typ_equal_t" xtq x in
-  let xc x = xcode_spec_t sr x in
-  let xrr x = xraw_req_expr_t sr x in
-  let xucmp x = xunion_component sr x in
-  let xscmp x = xstruct_component sr x in
+  let xtlv sr x = xtlvalue_t sr x in
+  let xtq sr x = xtype_qual_t sr x in
+  let xtqs sr x = lst "typ_equal_t" (xtq sr) x in
+  let xc sr x = xcode_spec_t sr x in
+  let xrr sr x = xraw_req_expr_t sr x in
+  let xucmp sr x = xunion_component sr x in
+  let xscmp sr x = xstruct_component sr x in
   let xp x = xpattern_t x in
   let lnot sr x = EXPR_not (sr, x) in
   match x with
-  | Lst [] -> STMT_nop(sr,"null")
-  | Lst [Id "ast_include"; sr; Str s] -> STMT_include (xsr sr, s)
-  | Lst [Id "ast_open"; sr; vs; qn] -> STMT_open (xsr sr, xvs vs, xq "ast_open" qn)
-  | Lst [Id "ast_inject_module"; sr; vs; qn] -> STMT_inject_module (xsr sr, xvs vs, xq "ast_inject_module" qn)
-  | Lst [Id "ast_use"; sr; id; qn] -> STMT_use (xsr sr, xid id, xq "ast_use" qn)
-  | Lst [Id "ast_comment"; sr; Str s] -> STMT_comment(xsr sr, s)
-  | Lst [Id "ast_private"; x] -> STMT_private (sr, xs x)
+  | Lst [] -> STMT_nop(Flx_srcref.dummy_sr, "null")
+  | Lst [Id "ast_include"; sr; Str s] -> let sr = xsr sr in STMT_include (sr, s)
+  | Lst [Id "ast_open"; sr; vs; qn] -> let sr = xsr sr in STMT_open (sr, xvs sr vs, xq sr "ast_open" qn)
+  | Lst [Id "ast_inject_module"; sr; vs; qn] -> let sr = xsr sr in STMT_inject_module (sr, xvs sr vs, xq sr "ast_inject_module" qn)
+  | Lst [Id "ast_use"; sr; id; qn] -> let sr = xsr sr in STMT_use (sr, xid id, xq sr "ast_use" qn)
+  | Lst [Id "ast_comment"; sr; Str s] -> let sr = xsr sr in STMT_comment (sr, s)
+  | Lst [Id "ast_private"; sr; x] -> let sr = xsr sr in STMT_private (sr, xs sr x)
 
-  | Lst [Id "ast_reduce"; sr; id; vs; spl; e1; e2] ->
+  | Lst [Id "ast_reduce"; sr; id; vs; spl; e1; e2] -> let sr = xsr sr in 
     STMT_reduce (
-      xsr sr,
+      sr,
       xid id,
-      xvs vs,
-      xpvs spl,
-      ex' sr e1,
-      ex' sr e2)
+      xvs sr vs,
+      xpvs sr spl,
+      ex sr e1,
+      ex sr e2)
 
-  | Lst [Id "ast_axiom"; sr; id; vs; ps; axm] ->
+  | Lst [Id "ast_axiom"; sr; id; vs; ps; axm] -> let sr = xsr sr in 
     STMT_axiom (
-      xsr sr,
+      sr,
       xid id,
-      xvs vs,
-      xps ps,
-      xam axm)
+      xvs sr vs,
+      xps sr ps,
+      xam sr axm)
 
-  | Lst [Id "ast_lemma"; sr; id; vs; ps; axm] ->
+  | Lst [Id "ast_lemma"; sr; id; vs; ps; axm] -> let sr = xsr sr in 
     STMT_lemma(
-      xsr sr,
+      sr,
       xid id,
-      xvs vs,
-      xps ps,
-      xam axm)
+      xvs sr vs,
+      xps sr ps,
+      xam sr axm)
 
-  | Lst [Id "ast_curry"; sr; id; vs; Lst pss; ret; fk; sts] ->
+  | Lst [Id "ast_curry"; sr; id; vs; Lst pss; ret; fk; sts] -> let sr = xsr sr in 
     STMT_curry(
-      xsr sr,
+      sr,
       xid id,
-      xvs vs,
-      map xps pss,
-      xret ret,
-      xfk fk,
-      xsts' sr sts)
+      xvs sr vs,
+      map (xps sr) pss,
+      xret sr ret,
+      xfk sr fk,
+      xsts sr sts)
 
-  | Lst [Id "ast_macro_val"; ids; v] ->
-      STMT_macro_val (sr, lst "ast_macro_val" xid ids, ex v)
+  | Lst [Id "ast_macro_val"; sr; ids; v] -> let sr = xsr sr in 
+      STMT_macro_val (sr, lst "ast_macro_val" xid ids, ex sr v)
 
-  | Lst [Id "ast_macro_forall";ids; e; sts] ->
-      STMT_macro_forall (sr,lst "ast_macro_forall" xid ids, ex e, xsts sts)
-  | Lst [Id "ast_seq"; sr; sts] -> 
-      STMT_seq (xsr sr,xsts' sr sts)
+  | Lst [Id "ast_macro_forall"; sr; ids; e; sts] -> let sr = xsr sr in 
+      STMT_macro_forall (sr,lst "ast_macro_forall" xid ids, ex sr e, xsts sr sts)
+  | Lst [Id "ast_seq"; sr; sts] -> let sr = xsr sr in 
+      STMT_seq (sr,xsts sr sts)
 
-  | Lst [Id "ast_union"; sr; id; vs; ucmp] ->
-      let ucmp = lst "union component" xucmp ucmp in
-      STMT_union (xsr sr, xid id, xvs vs, ucmp)
+  | Lst [Id "ast_union"; sr; id; vs; ucmp] -> let sr = xsr sr in 
+      let ucmp = lst "union component" (xucmp sr) ucmp in
+      STMT_union (sr, xid id, xvs sr vs, ucmp)
 
-  | Lst [Id "ast_struct"; sr; id; vs; ucmp] ->
-      let ucmp = lst "struct component" xscmp ucmp in
-      STMT_struct (xsr sr, xid id, xvs vs, ucmp)
+  | Lst [Id "ast_struct"; sr; id; vs; ucmp] -> let sr = xsr sr in 
+      let ucmp = lst "struct component" (xscmp sr) ucmp in
+      STMT_struct (sr, xid id, xvs sr vs, ucmp)
 
-  | Lst [Id "ast_cstruct"; sr; id; vs; ucmp; reqs] ->
-      let ucmp = lst "cstruct component" xscmp ucmp in
-      STMT_cstruct (xsr sr, xid id, xvs vs, ucmp, xrr reqs)
+  | Lst [Id "ast_cstruct"; sr; id; vs; ucmp; reqs] -> let sr = xsr sr in 
+      let ucmp = lst "cstruct component" (xscmp sr) ucmp in
+      STMT_cstruct (sr, xid id, xvs sr vs, ucmp, xrr sr reqs)
 
-  | Lst [Id "ast_type_alias"; sr; id; vs; t] -> 
-      STMT_type_alias (xsr sr, xid id, xvs vs, ti t)
+  | Lst [Id "ast_type_alias"; sr; id; vs; t] -> let sr = xsr sr in 
+      STMT_type_alias (sr, xid id, xvs sr vs, ti sr t)
 
-  | Lst [Id "mktypefun"; sr; id; vs; argss; ret; body] ->
+  | Lst [Id "mktypefun"; sr; id; vs; argss; ret; body] -> let sr = xsr sr in 
     let fixarg  arg = match arg with
-    | Lst [id; t] -> xid id, ti t
+    | Lst [id; t] -> xid id, ti sr t
     | x -> err x "mktypefun:unpack args1"
     in
     let fixargs args = match args with
@@ -566,49 +564,49 @@ and xstatement_t sr x : statement_t =
     | Lst args -> map fixargs args
     | x -> err x "mktypefun:unpack args3"
     in
-    Flx_typing.mktypefun (xsr sr) (xid id) (xvs vs) argss (ti ret) (ti body)
+    Flx_typing.mktypefun (sr) (xid id) (xvs sr vs) argss (ti sr ret) (ti sr body)
 
-  | Lst [Id "ast_inherit"; sr; id; vs; qn] ->
-      STMT_inherit (xsr sr, xid id, xvs vs, xq "ast_inherit" qn)
+  | Lst [Id "ast_inherit"; sr; id; vs; qn] -> let sr = xsr sr in 
+      STMT_inherit (sr, xid id, xvs sr vs, xq sr "ast_inherit" qn)
 
-  | Lst [Id "ast_inherit_fun"; sr; id; vs; qn] ->
-      STMT_inherit_fun (xsr sr, xid id, xvs vs, xq "ast_inherit_fun" qn)
+  | Lst [Id "ast_inherit_fun"; sr; id; vs; qn] -> let sr = xsr sr in 
+      STMT_inherit_fun (sr, xid id, xvs sr vs, xq sr "ast_inherit_fun" qn)
 
-  | Lst [Id "ast_val_decl"; sr; id; vs; ot; oe] ->
-      STMT_val_decl (xsr sr, xid id, xvs vs, opt "val_decl" ti ot, 
-        opt "val_decl" (ex' sr) oe)
+  | Lst [Id "ast_val_decl"; sr; id; vs; ot; oe] -> let sr = xsr sr in 
+      STMT_val_decl (sr, xid id, xvs sr vs, opt "val_decl" (ti sr) ot, 
+        opt "val_decl" (ex sr) oe)
 
-  | Lst [Id "ast_lazy_decl"; id; vs; ot; oe] ->
+  | Lst [Id "ast_lazy_decl"; sr; id; vs; ot; oe] -> let sr = xsr sr in 
       STMT_lazy_decl (
         sr,
         xid id,
-        xvs vs,
-        opt "lazy_decl" ti ot,
-        opt "lazy_decl" ex oe)
+        xvs sr vs,
+        opt "lazy_decl" (ti sr) ot,
+        opt "lazy_decl" (ex sr) oe)
 
-  | Lst [Id "ast_var_decl"; sr; id; vs; ot; oe] ->
+  | Lst [Id "ast_var_decl"; sr; id; vs; ot; oe] -> let sr = xsr sr in 
       STMT_var_decl (
-        xsr sr,
+        sr,
         xid id,
-        xvs vs,
-        opt "var_decl" ti ot, 
-        opt "var_decl" (ex' sr) oe)
+        xvs sr vs,
+        opt "var_decl" (ti sr) ot, 
+        opt "var_decl" (ex sr) oe)
 
-  | Lst [Id "ast_ref_decl"; id; vs; ot; oe] ->
+  | Lst [Id "ast_ref_decl"; sr; id; vs; ot; oe] -> let sr = xsr sr in 
       STMT_ref_decl (
         sr,
         xid id,
-        xvs vs,
-        opt "ref_decl" ti ot,
-        opt "ref_decl" ex oe)
+        xvs sr vs,
+        opt "ref_decl" (ti sr) ot,
+        opt "ref_decl" (ex sr) oe)
 
-  | Lst [Id "ast_untyped_module"; sr; id; vs; sts] ->
-      STMT_untyped_module (xsr sr, xid id, xvs vs, xsts' sr sts)
+  | Lst [Id "ast_untyped_module"; sr; id; vs; sts] -> let sr = xsr sr in 
+      STMT_untyped_module (sr, xid id, xvs sr vs, xsts sr sts)
 
-  | Lst [Id "ast_typeclass"; sr; id; vs; sts] ->
-      STMT_typeclass(xsr sr, xid id, xvs vs, xsts' sr sts)
+  | Lst [Id "ast_typeclass"; sr; id; vs; sts] -> let sr = xsr sr in 
+      STMT_typeclass (sr, xid id, xvs sr vs, xsts sr sts)
 
-  | Lst [Id "ast_instance"; sr; vs; qn; sts] ->
+  | Lst [Id "ast_instance"; sr; vs; qn; sts] -> let sr = xsr sr in 
     (*
     print_endline "Ast instance sts=";
     begin match sts with Lst sts->
@@ -619,125 +617,125 @@ and xstatement_t sr x : statement_t =
     end
     ;
     *)
-    STMT_instance(xsr sr, xvs vs, xq "ast_instance" qn, xsts' sr sts)
+    STMT_instance (sr, xvs sr vs, xq sr "ast_instance" qn, xsts sr sts)
 
-  | Lst [Id "ast_label"; sr; id] -> STMT_label (xsr sr, xid id)
-  | Lst [Id "ast_try"; sr] -> STMT_try (xsr sr)
-  | Lst [Id "ast_endtry"; sr] -> STMT_endtry (xsr sr)
-  | Lst [Id "ast_catch"; sr; Str id; t] -> STMT_catch (xsr sr, id, ti t)
+  | Lst [Id "ast_label"; sr; id] -> let sr = xsr sr in STMT_label (sr, xid id)
+  | Lst [Id "ast_try"; sr] -> let sr = xsr sr in STMT_try (sr)
+  | Lst [Id "ast_endtry"; sr] -> let sr = xsr sr in STMT_endtry (sr)
+  | Lst [Id "ast_catch"; sr; Str id; t] -> let sr = xsr sr in STMT_catch (sr, id, ti sr t)
 
-  | Lst [Id "ast_goto"; sr; id] -> STMT_goto (xsr sr, xid id)
-  | Lst [Id "ast_ifgoto"; sr; e; id] -> STMT_ifgoto (xsr sr,ex' sr e, xid id)
-  | Lst [Id "ast_likely_ifgoto"; sr; e; id] ->
-      STMT_ifgoto (xsr sr, EXPR_likely (xsr sr,ex' sr e), xid id)
+  | Lst [Id "ast_goto"; sr; id] -> let sr = xsr sr in STMT_goto (sr, xid id)
+  | Lst [Id "ast_ifgoto"; sr; e; id] -> let sr = xsr sr in STMT_ifgoto (sr,ex sr e, xid id)
+  | Lst [Id "ast_likely_ifgoto"; sr; e; id] -> let sr = xsr sr in 
+      STMT_ifgoto (sr, EXPR_likely (sr,ex sr e), xid id)
 
-  | Lst [Id "ast_unlikely_ifgoto"; sr; e; id] ->
-      STMT_ifgoto (xsr sr, EXPR_unlikely (xsr sr,ex' sr e), xid id)
+  | Lst [Id "ast_unlikely_ifgoto"; sr; e; id] -> let sr = xsr sr in 
+      STMT_ifgoto (sr, EXPR_unlikely (sr,ex sr e), xid id)
 
-  | Lst [Id "ast_ifnotgoto"; sr; e; id] ->
-      STMT_ifgoto (xsr sr, lnot (xsr sr) (ex' sr e), xid id)
+  | Lst [Id "ast_ifnotgoto"; sr; e; id] -> let sr = xsr sr in 
+      STMT_ifgoto (sr, lnot (sr) (ex sr e), xid id)
 
-  | Lst [Id "ast_likely_ifnotgoto"; sr; e; id] ->
+  | Lst [Id "ast_likely_ifnotgoto"; sr; e; id] -> let sr = xsr sr in 
       STMT_ifgoto (
-        xsr sr,
-        EXPR_likely (xsr sr, lnot (xsr sr) (ex' sr e)),
+        sr,
+        EXPR_likely (sr, lnot (sr) (ex sr e)),
         xid id)
 
-  | Lst [Id "ast_unlikely_ifnotgoto"; sr; e; id] ->
+  | Lst [Id "ast_unlikely_ifnotgoto"; sr; e; id] -> let sr = xsr sr in 
       STMT_ifgoto (
-        xsr sr,
-        EXPR_unlikely (xsr sr, lnot (xsr sr) (ex' sr e)),
+        sr,
+        EXPR_unlikely (sr, lnot (sr) (ex sr e)),
         xid id)
 
-  | Lst [Id "ast_ifreturn"; sr; e] -> STMT_ifreturn(xsr sr,ex' sr e)
-  | Lst [Id "ast_ifdo"; sr; e; sts1; sts2] -> STMT_ifdo(xsr sr,ex' sr e, xsts' sr sts1, xsts' sr sts2)
-  | Lst [Id "ast_call"; sr; f; a] -> STMT_call(xsr sr,ex' sr f,ex' sr a)
-  | Lst [Id "ast_assign"; sr; id; tlv; a] ->
-      STMT_assign (xsr sr, xid id, xtlv tlv, ex' sr a)
-  | Lst [Id "ast_cassign"; sr; e1; e2] -> STMT_cassign(xsr sr,ex' sr e1, ex' sr e2)
-  | Lst [Id "ast_jump"; sr; e1; e2] -> STMT_jump(xsr sr,ex' sr e1, ex' sr e2)
-  | Lst [Id "ast_loop"; sr; id; e2] ->
-      STMT_loop (xsr sr, xid id, ex' sr e2)
-  | Lst [Id "ast_svc"; sr; id] -> STMT_svc (xsr sr, xid id)
-  | Lst [Id "ast_fun_return"; sr; e] -> STMT_fun_return(xsr sr,ex' sr e)
+  | Lst [Id "ast_ifreturn"; sr; e] -> let sr = xsr sr in STMT_ifreturn (sr,ex sr e)
+  | Lst [Id "ast_ifdo"; sr; e; sts1; sts2] -> let sr = xsr sr in STMT_ifdo (sr,ex sr e, xsts sr sts1, xsts sr sts2)
+  | Lst [Id "ast_call"; sr; f; a] -> let sr = xsr sr in STMT_call (sr,ex sr f,ex sr a)
+  | Lst [Id "ast_assign"; sr; id; tlv; a] -> let sr = xsr sr in 
+      STMT_assign (sr, xid id, xtlv sr tlv, ex sr a)
+  | Lst [Id "ast_cassign"; sr; e1; e2] -> let sr = xsr sr in STMT_cassign (sr,ex sr e1, ex sr e2)
+  | Lst [Id "ast_jump"; sr; e1; e2] -> let sr = xsr sr in STMT_jump (sr,ex sr e1, ex sr e2)
+  | Lst [Id "ast_loop"; sr; id; e2] -> let sr = xsr sr in 
+      STMT_loop (sr, xid id, ex sr e2)
+  | Lst [Id "ast_svc"; sr; id] -> let sr = xsr sr in STMT_svc (sr, xid id)
+  | Lst [Id "ast_fun_return"; sr; e] -> let sr = xsr sr in STMT_fun_return (sr,ex sr e)
 
-  | Lst [Id "ast_yield"; sr; e] -> STMT_yield(xsr sr,ex' sr e)
-  | Lst [Id "ast_proc_return"; sr]  -> STMT_proc_return(xsr sr)
-  | Lst [Id "ast_proc_return_from"; sr; id]  -> STMT_proc_return_from(xsr sr, xid id)
-  | Lst [Id "ast_halt"; sr; Str s] -> STMT_halt(xsr sr, s)
-  | Lst [Id "ast_trace"; sr; id; Str s] -> STMT_trace (xsr sr, xid id, s)
-  | Lst [Id "ast_nop"; sr; Str s] -> STMT_nop(xsr sr,s)
-  | Lst [Id "ast_assert"; sr; e] -> STMT_assert(xsr sr,ex' sr e)
-  | Lst [Id "ast_init"; sr; id; e] -> STMT_init (xsr sr, xid id, ex' sr e)
-  | Lst [Id "ast_newtype"; sr; id; vs; t] ->
-      STMT_newtype (xsr sr, xid id, xvs vs, ti t)
-  | Lst [Id "ast_abs_decl"; sr; id; vs; tqs; ct; req] ->
-      STMT_abs_decl (xsr sr, xid id, xvs vs, xtqs tqs, xc ct, xrr req)
+  | Lst [Id "ast_yield"; sr; e] -> let sr = xsr sr in STMT_yield (sr,ex sr e)
+  | Lst [Id "ast_proc_return"; sr]  -> let sr = xsr sr in STMT_proc_return (sr)
+  | Lst [Id "ast_proc_return_from"; sr; id] -> let sr = xsr sr in STMT_proc_return_from (sr, xid id)
+  | Lst [Id "ast_halt"; sr; Str s] -> let sr = xsr sr in STMT_halt (sr, s)
+  | Lst [Id "ast_trace"; sr; id; Str s] -> let sr = xsr sr in STMT_trace (sr, xid id, s)
+  | Lst [Id "ast_nop"; sr; Str s] -> let sr = xsr sr in STMT_nop (sr,s)
+  | Lst [Id "ast_assert"; sr; e] -> let sr = xsr sr in STMT_assert (sr,ex sr e)
+  | Lst [Id "ast_init"; sr; id; e] -> let sr = xsr sr in STMT_init (sr, xid id, ex sr e)
+  | Lst [Id "ast_newtype"; sr; id; vs; t] -> let sr = xsr sr in 
+      STMT_newtype (sr, xid id, xvs sr vs, ti sr t)
+  | Lst [Id "ast_abs_decl"; sr; id; vs; tqs; ct; req] -> let sr = xsr sr in 
+      STMT_abs_decl (sr, xid id, xvs sr vs, xtqs sr tqs, xc sr ct, xrr sr req)
 
-  | Lst [Id "ast_ctypes"; sr; Lst ids; tqs; req] ->
-      let ids = map (fun id -> Flx_srcref.dummy_sr, xid id) ids in
-      STMT_ctypes (xsr sr, ids, xtqs tqs, xrr req)
+  | Lst [Id "ast_ctypes"; sr; Lst ids; tqs; req] -> let sr = xsr sr in 
+      let ids = map (fun id -> sr, xid id) ids in
+      STMT_ctypes (sr, ids, xtqs sr tqs, xrr sr req)
 
-  | Lst [Id "ast_const_decl"; sr; id; vs; t; ct; req] ->
-      STMT_const_decl (xsr sr, xid id, xvs vs, ti t, xc ct, xrr req)
+  | Lst [Id "ast_const_decl"; sr; id; vs; t; ct; req] -> let sr = xsr sr in 
+      STMT_const_decl (sr, xid id, xvs sr vs, ti sr t, xc sr ct, xrr sr req)
 
-  | Lst [Id "ast_fun_decl"; sr; id; vs; Lst ps; t; ct; req; Str prec] ->
+  | Lst [Id "ast_fun_decl"; sr; id; vs; Lst ps; t; ct; req; Str prec] -> let sr = xsr sr in 
       STMT_fun_decl (
-        xsr sr,
+        sr,
         xid id,
-        xvs vs,
-        List.map ti ps,
-        ti t,
-        xc ct,
-        xrr req,
+        xvs sr vs,
+        List.map (ti sr) ps,
+        ti sr t,
+        xc sr ct,
+        xrr sr req,
         prec)
 
-  | Lst [Id "ast_callback_decl"; sr; id; Lst ps; t; req] ->
-      STMT_callback_decl (xsr sr, xid id, map ti ps, ti t, xrr req)
+  | Lst [Id "ast_callback_decl"; sr; id; Lst ps; t; req] -> let sr = xsr sr in 
+      STMT_callback_decl (sr, xid id, map (ti sr) ps, ti sr t, xrr sr req)
 
-  | Lst [Id "ast_insert"; sr; id; vs; ct; ik; req] ->
+  | Lst [Id "ast_insert"; sr; id; vs; ct; ik; req] -> let sr = xsr sr in 
       let xik = function
         | Id "header" -> `Header
         | Id "body" -> `Body
         | Id "package" -> `Package
         | x -> err x "ikind_t"
       in
-      STMT_insert (xsr sr, xid id, xvs vs, xc ct, xik ik, xrr req)
+      STMT_insert (sr, xid id, xvs sr vs, xc sr ct, xik ik, xrr sr req)
 
-  | Lst [Id "ast_code"; sr; ct] -> STMT_code (xsr sr, xc ct)
-  | Lst [Id "ast_noreturn_code"; sr; ct] -> STMT_noreturn_code (xsr sr, xc ct)
-  | Lst [Id "ast_export_fun"; sr; sn; Str s] ->
-    let xsn x = match suffixed_name_of_expr (ex x) with
+  | Lst [Id "ast_code"; sr; ct] -> let sr = xsr sr in STMT_code (sr, xc sr ct)
+  | Lst [Id "ast_noreturn_code"; sr; ct] -> let sr = xsr sr in STMT_noreturn_code (sr, xc sr ct)
+  | Lst [Id "ast_export_fun"; sr; sn; Str s] -> let sr = xsr sr in 
+    let xsn x = match suffixed_name_of_expr (ex sr x) with
     | Some x -> x
     | None -> err x "suffixed_name_t"
     in
-    STMT_export_fun  (xsr sr, xsn sn, s)
+    STMT_export_fun  (sr, xsn sn, s)
 
-  | Lst [Id "ast_export_cfun"; sr; sn; Str s] ->
-    let xsn x = match suffixed_name_of_expr (ex x) with
+  | Lst [Id "ast_export_cfun"; sr; sn; Str s] -> let sr = xsr sr in 
+    let xsn x = match suffixed_name_of_expr (ex sr x) with
     | Some x -> x
     | None -> err x "suffixed_name_t"
     in
-    STMT_export_cfun  (xsr sr, xsn sn, s)
+    STMT_export_cfun  (sr, xsn sn, s)
 
-  | Lst [Id "ast_export_python_fun"; sr; sn; Str s] ->
-    let xsn x = match suffixed_name_of_expr (ex x) with
+  | Lst [Id "ast_export_python_fun"; sr; sn; Str s] -> let sr = xsr sr in 
+    let xsn x = match suffixed_name_of_expr (ex sr x) with
     | Some x -> x
     | None -> err x "suffixed_name_t"
     in
-    STMT_export_python_fun  (xsr sr, xsn sn, s)
+    STMT_export_python_fun  (sr, xsn sn, s)
 
-  | Lst [Id "ast_export_type"; sr; t; Str s] ->
-    STMT_export_type (xsr sr, ti t, s)
+  | Lst [Id "ast_export_type"; sr; t; Str s] -> let sr = xsr sr in 
+    STMT_export_type (sr, ti sr t, s)
 
   
-  | Lst [Id "ast_stmt_match";  Lst [sr; e; Lst pss]]->
+  | Lst [Id "ast_stmt_match";  Lst [sr; e; Lst pss]] -> let sr = xsr sr in 
     let pss = map (function
-      | Lst [p;stmts] ->  xp p, xsts' sr stmts
+      | Lst [p;stmts] ->  xp p, xsts sr stmts
       | x -> err x "ast_stmt_match syntax"
       )
      pss
    in
-   STMT_stmt_match (xsr sr, (ex' sr e,pss))
+   STMT_stmt_match (sr, (ex sr e,pss))
 
   | x -> err x "statement"

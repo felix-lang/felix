@@ -261,7 +261,7 @@ stmt:
      let n = $2 in
      Flx_parse_srcref.set_lineno lexbuf n;
      Dyp.set_fname lexbuf $3;
-     sr,Snull
+     Snull
    }
 
   | HASH_LINE INTEGER newline
@@ -270,14 +270,14 @@ stmt:
      let lexbuf = $1 in
      let n = $2 in
      Flx_parse_srcref.set_lineno lexbuf n;
-     sr,Snull
+     Snull
    }
 
 /* top level statements only */
 top_statements:
  | top_statements stmt
    @{
-      let sr,s = $2 in
+      let s = $2 in
 (*
       print_endline ("BB sr=" ^ Flx_srcref.short_string_of_src sr);
 *)
@@ -286,7 +286,7 @@ top_statements:
         | Snull -> dyp.last_local_data
         | _ -> 
           { dyp.last_local_data with 
-            rev_stmts_as_scheme = (sr,s) :: dyp.last_local_data.rev_stmts_as_scheme;
+            rev_stmts_as_scheme = s :: dyp.last_local_data.rev_stmts_as_scheme;
           }
       in
       (),[Keep_grammar; Local_data (local_data)]
@@ -301,13 +301,13 @@ sstatements:
     {
       let stmts = $1 in
       let stmts = Ocs_misc.make_slist Snull stmts in
-      Flx_srcref.dummy_sr, stmts
+      stmts
     }
 
 sstatement_star:
  | sstatement_star stmt
    @{
-     let sr,s = $2 in
+     let s = $2 in
      (match s with Snull -> $1 | _ ->
      let stmts = $1 in
      (s :: stmts)),
@@ -494,7 +494,7 @@ stmt:
           failwith "Error executing SCHEME"
       in
       let local_data = { dyp.local_data with scm = (sr,s) :: dyp.local_data.scm } in
-      (sr, Snull), [Local_data local_data]
+      Snull, [Local_data local_data]
     }
 
   | "SAVE" ";"
@@ -504,7 +504,7 @@ stmt:
       let s = Marshal.to_string (function_free_pdev dyp.parser_pilot.pp_dev) [] in
       dyp.global_data.parsing_device := Some s;
       print_endline "Automaton set";
-      (sr,Snull)
+      Snull
     }
 
 stmt:
@@ -536,7 +536,7 @@ stmt:
         @
         (if dyp.local_data != local_data then [Local_data local_data] else [])
       in
-      (sr, Snull), mods
+      Snull, mods
     }
 
 
@@ -561,22 +561,26 @@ stmt:
         m with installed_dssls = to_install @ m.installed_dssls
       } 
       in
-      (sr, Snull),
+      Snull,
       bindings @ [Add_rules add_rules; Local_data local_data; Relation prios]
     }
 
-sexpr: | DUMMY { Flx_srcref.dummy_sr, Snull }
+sexpr: | DUMMY { Snull }
 
 /*
 a definite non-terminal for a sequence of no tokens,
 since the production syntax cannot parse an empty
 production at the moment
 */
-sepsilon: | { Flx_srcref.dummy_sr, Snull }
-strepsilon: | { Flx_srcref.dummy_sr, Sstring "" }
+sepsilon: | { Snull }
+strepsilon: | { Sstring "" }
 
 basic_name:
-  | NAME { Flx_parse_srcref.getsr dyp, $1 }
+  | NAME 
+   { 
+     let sr = Flx_parse_srcref.getsr dyp in
+     sr,$1 
+   }
 
 basic_name_comma_list:
   | basic_name "," basic_name_comma_list { $1 :: $3 }

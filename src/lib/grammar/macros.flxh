@@ -1,10 +1,10 @@
 syntax macros {
   requires expressions, statements;
   stmt := "macro" "val" sbasic_name_comma_list "=" sexpr ";" =>#
-    "`(ast_macro_val ,_3 ,_5)";
+    "`(ast_macro_val ,_sr ,_3 ,_5)";
 
   stmt := "forall" sname "in" sexpr "do" sstatements "done" =>#
-    "`(ast_macro_forall (,_2) ,_4 ,_6)"
+    "`(ast_macro_forall ,_sr (,_2) ,_4 ,_6)"
   ;
 
 }
