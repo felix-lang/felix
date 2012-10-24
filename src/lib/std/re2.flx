@@ -1,5 +1,6 @@
 include "stl/stl_map";
 
+//$ Binding of Google RE2 regexp library.
 open class Re2 {
   requires package "re2";
 

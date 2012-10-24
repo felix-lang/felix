@@ -275,18 +275,15 @@ stmt:
 
 /* top level statements only */
 top_statements:
- | top_statements stmt
+ | sstatement_star 
    @{
-      let s = $2 in
-(*
-      print_endline ("BB sr=" ^ Flx_srcref.short_string_of_src sr);
-*)
      let local_data =
-        match s with
-        | Snull -> dyp.last_local_data
-        | _ -> 
-          { dyp.last_local_data with 
-            rev_stmts_as_scheme = s :: dyp.last_local_data.rev_stmts_as_scheme;
+        match $1 with
+        | [] -> dyp.last_local_data
+        | stmts -> 
+          { 
+            dyp.last_local_data with 
+            rev_stmts_as_scheme = stmts @ dyp.last_local_data.rev_stmts_as_scheme; 
           }
       in
       (),[Keep_grammar; Local_data (local_data)]
@@ -297,20 +294,12 @@ top_statements:
 
 /* inner statements only */
 sstatements:
-  | sstatement_star 
-    {
-      let stmts = $1 in
-      let stmts = Ocs_misc.make_slist Snull stmts in
-      stmts
-    }
+  | sstatement_star { Ocs_misc.make_slist Snull $1 } /* reverses order again */
 
 sstatement_star:
  | sstatement_star stmt
    @{
-     let s = $2 in
-     (match s with Snull -> $1 | _ ->
-     let stmts = $1 in
-     (s :: stmts)),
+     (match $2 with Snull -> $1 | stmt -> stmt :: $1), /* reverse order */
      [Keep_grammar; Local_data (dyp.last_local_data)]
     }
   | { [] }
