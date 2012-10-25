@@ -16,5 +16,7 @@ syntax executable {
   //$ Short form of "call f ();" is just "f"
   stmt := sexpr ";" =># "(cons 'ast_call (cons _sr (splitapply _1)))";
 
+  //$ Template replacement index.
+  stmt := "??" sinteger ";" =># "`(ast_seq ,_sr (PARSER_ARGUMENT ,_2))";
 }
 

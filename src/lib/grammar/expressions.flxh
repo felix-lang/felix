@@ -260,6 +260,9 @@ syntax expressions {
   //$ pattern variable.
   sthe_name := "?" sname =># "`(ast_patvar ,_sr ,_2)";
 
+  //$ Template replacement index.
+  sthe_name := "?" sinteger =># "`(PARSER_ARGUMENT ,_2)";
+
   sthe_name := squalified_name =># "_1";
   sthe_name := satom =># "_1";
 

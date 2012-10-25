@@ -44,7 +44,7 @@ print_endline ("Found " ^ s ^ " as global name");
     | x -> x
   in aux re
 
-type action_t = Action_Scheme of string | Action_None
+type action_t = Action_Scheme of string | Action_None | Action_Expr of sval | Action_Statements of sval
 type symbol_t = Grammar_Atom of token | Grammar_Group of dyalt_t list
 and dyalt_t = symbol_t list * Flx_srcref.t * action_t * anote_t
 type privacy_t = Privacy_Public | Privacy_Private
@@ -284,6 +284,20 @@ let dflt_action kind prod =
 let cal_action kind prod action =
   match action with
   | Action_None -> dflt_action kind prod
+  | Action_Expr scm -> 
+    let x =  
+      "(SUBST (quote " ^ Ocs_print.string_of_ocs scm ^ ") " ^ 
+      " (vector 0 _1 _2 _3 _4 _5 _6 _7 _8 _9 _10 _11 _12 _13 _14 _15 _16 _17 _18 _19 _20))" 
+    in
+    x
+
+  | Action_Statements scm -> 
+    let x =  
+      "(SUBST `(ast_seq ,_sr " ^ Ocs_print.string_of_ocs scm ^ ") " ^ 
+      " (vector 0 _1 _2 _3 _4 _5 _6 _7 _8 _9 _10 _11 _12 _13 _14 _15 _16 _17 _18 _19 _20))" 
+    in
+    x
+
   | Action_Scheme scm -> scm
 
 let rec flatten sr pcounter kind rhs =

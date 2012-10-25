@@ -267,10 +267,20 @@ SCHEME """
   (define (make_private s) `(ast_private ,s))
 """;
 
-
-
-
-
-
-
+SCHEME """
+  (define (SUBST term vals) 
+    (cond
+      ((symbol? term) term)
+      ((number? term) term)
+      ((string? term) term)
+      ((null? term) term)
+      ((list? term) 
+        (if (eq? (car term) 'PARSER_ARGUMENT)
+          (vector-ref vals (cadr term) )
+          (map (lambda (term) (SUBST term vals)) term)
+        )
+      )
+    ) 
+  )
+""";
 

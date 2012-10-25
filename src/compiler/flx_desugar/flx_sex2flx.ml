@@ -486,6 +486,10 @@ and xstatement_t sr x : statement_t =
   let lnot sr x = EXPR_not (sr, x) in
   match x with
   | Lst [] -> STMT_nop(Flx_srcref.dummy_sr, "null")
+
+  | Lst [Id "ast_seq"; sr; sts] -> let sr = xsr sr in 
+      STMT_seq (sr,xsts sr sts)
+
   | Lst [Id "ast_include"; sr; Str s] -> let sr = xsr sr in STMT_include (sr, s)
   | Lst [Id "ast_open"; sr; vs; qn] -> let sr = xsr sr in STMT_open (sr, xvs sr vs, xq sr "ast_open" qn)
   | Lst [Id "ast_inject_module"; sr; vs; qn] -> let sr = xsr sr in STMT_inject_module (sr, xvs sr vs, xq sr "ast_inject_module" qn)
@@ -533,8 +537,6 @@ and xstatement_t sr x : statement_t =
 
   | Lst [Id "ast_macro_forall"; sr; ids; e; sts] -> let sr = xsr sr in 
       STMT_macro_forall (sr,lst "ast_macro_forall" xid ids, ex sr e, xsts sr sts)
-  | Lst [Id "ast_seq"; sr; sts] -> let sr = xsr sr in 
-      STMT_seq (sr,xsts sr sts)
 
   | Lst [Id "ast_union"; sr; id; vs; ucmp] -> let sr = xsr sr in 
       let ucmp = lst "union component" (xucmp sr) ucmp in

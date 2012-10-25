@@ -299,7 +299,7 @@ sstatements:
 sstatement_star:
  | sstatement_star stmt
    @{
-     (match $2 with Snull -> $1 | stmt -> stmt :: $1), /* reverse order */
+     (match $2 with Snull -> $1 | stmt -> stmt :: $1), (* reverse order *)
      [Keep_grammar; Local_data (dyp.last_local_data)]
     }
   | { [] }
@@ -404,6 +404,8 @@ dyprod:
  
 action:
    | STRING { Action_Scheme $1 }
+   | "(" sexpr ")"  { Action_Expr $2 }
+   | "{" sstatements "}" { Action_Statements $2 }
 
 note:
    | NAME STRING
@@ -422,6 +424,8 @@ dyalt:
        let action : action_t =
          match action with
          | Action_Scheme _ as x -> x
+         | Action_Expr _ as x -> x
+         | Action_Statements _ as x -> x
          | Action_None as x -> x
        in
        prod,Flx_parse_srcref.getsr dyp,action,anote
