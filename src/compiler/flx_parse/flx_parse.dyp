@@ -21,8 +21,31 @@ let dyphack (ls : ( 'a * string) list) : 'a =
   | [] -> failwith "No parse found"
   | _ -> failwith "Multiple parses found"
 
-}
 
+let open_syntax dyp namelist =
+  let sr = Flx_parse_srcref.getsr dyp in
+  print_endline
+    ("Opening syntax extensions " ^ Flx_srcref.short_string_of_src sr);
+
+  let dssls = List.map snd namelist in
+
+  print_endline
+    ("Parsed open of syntax extensions " ^ String.concat "," dssls);
+
+  let m = dyp.local_data in
+
+  let to_install = tran_cls_dssls m.drules m.installed_dssls dssls in
+  let rules, prios = extract_syntax to_install m.drules in
+  let add_rules, bindings = bind_grammar_rules dyp rules in
+  let local_data = 
+  { 
+    m with installed_dssls = to_install @ m.installed_dssls
+  } 
+  in
+  bindings @ [Add_rules add_rules; Local_data local_data; Relation prios]
+
+
+}
 
 /* special */
 %token <(Flx_srcref.t * string)> ERRORTOKEN
@@ -330,27 +353,7 @@ prilist:
 dyprod:
   | "open" "syntax" basic_name_comma_list ";"
     @{
-      let sr = Flx_parse_srcref.getsr dyp in
-      print_endline
-        ("Opening syntax extensions " ^ Flx_srcref.short_string_of_src sr);
-
-      let dssls = List.map snd $3 in
-
-      print_endline
-        ("Parsed open of syntax extensions " ^ String.concat "," dssls);
-
-      let m = dyp.local_data in
-
-      let to_install = tran_cls_dssls m.drules m.installed_dssls dssls in
-      let rules, prios = extract_syntax to_install m.drules in
-      let add_rules, bindings = bind_grammar_rules dyp rules in
-      let local_data = 
-      { 
-        m with installed_dssls = to_install @ m.installed_dssls
-      } 
-      in
-      Rule_Nop,
-      bindings @ [Add_rules add_rules; Local_data local_data; Relation prios]
+      Rule_Nop, open_syntax dyp $3
     }
 
    | opt_private NAME opt_prio ":=" dyalts ";"
@@ -563,27 +566,7 @@ stmt:
 
   | "open" "syntax" basic_name_comma_list ";"
     @{
-      let sr = Flx_parse_srcref.getsr dyp in
-      print_endline
-        ("Opening syntax extensions " ^ Flx_srcref.short_string_of_src sr);
-
-      let dssls = List.map snd $3 in
-
-      print_endline
-        ("Parsed open of syntax extensions " ^ String.concat "," dssls);
-
-      let m = dyp.local_data in
-
-      let to_install = tran_cls_dssls m.drules m.installed_dssls dssls in
-      let rules, prios = extract_syntax to_install m.drules in
-      let add_rules, bindings = bind_grammar_rules dyp rules in
-      let local_data = 
-      { 
-        m with installed_dssls = to_install @ m.installed_dssls
-      } 
-      in
-      Snull,
-      bindings @ [Add_rules add_rules; Local_data local_data; Relation prios]
+       Snull,open_syntax dyp $3
     }
 
 sexpr: | DUMMY { Snull }
