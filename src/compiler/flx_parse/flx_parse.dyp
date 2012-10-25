@@ -44,6 +44,30 @@ let open_syntax dyp namelist =
   in
   bindings @ [Add_rules add_rules; Local_data local_data; Relation prios]
 
+let define_syntax dyp name dyprods =
+  (* NOTE ORDER!! dyprods is reversed, but the fold reverses it again *)
+  let sr = Flx_parse_srcref.getsr dyp in
+  let dssl = name in
+  let m = dyp.local_data in
+  let m =
+    if Drules.mem dssl m.drules then m
+    else { m with drules = Drules.add dssl fresh_dssl m.drules }
+  in
+  let global_data,local_data = List.fold_left
+    (fun (g,l) x -> add_rule g l dssl x)
+    (dyp.global_data, m)
+    dyprods 
+  in
+  (* This cal tries to avoid gratutions mods to global/local data
+     by checking for physical equality. Note changes to any
+     embedded mutable data structure propagate anyhow.
+  *)
+  let mods =
+    (if dyp.global_data != global_data then [Global_data global_data] else [])
+    @
+    (if dyp.local_data != local_data then [Local_data local_data] else [])
+  in
+  Snull, mods
 
 }
 
@@ -535,33 +559,7 @@ stmt:
 stmt:
   | "syntax" NAME "{" dyprods "}"
     @{
-      (* NOTE ORDER!! dyprods is reversed, but the fold reverses it again *)
-      (*
-      print_endline ("Parsed syntax extensions " ^ $2);
-      print_endline ("Defining syntax extensions " ^ $2);
-      *)
-      let sr = Flx_parse_srcref.getsr dyp in
-      let dssl = $2 in
-      let m = dyp.local_data in
-      let m =
-        if Drules.mem dssl m.drules then m
-        else { m with drules = Drules.add dssl fresh_dssl m.drules }
-      in
-      let global_data,local_data = List.fold_left
-        (fun (g,l) x -> add_rule g l dssl x)
-        (dyp.global_data, m)
-        $4
-      in
-      (* This cal tries to avoid gratutions mods to global/local data
-         by checking for physical equality. Note changes to any
-         embedded mutable data structure propagate anyhow.
-      *)
-      let mods =
-        (if dyp.global_data != global_data then [Global_data global_data] else [])
-        @
-        (if dyp.local_data != local_data then [Local_data local_data] else [])
-      in
-      Snull, mods
+       define_syntax dyp $2 $4
     }
 
   | "open" "syntax" basic_name_comma_list ";"
