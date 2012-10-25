@@ -305,7 +305,11 @@ sstatement_star:
   | { [] }
 
 dyprods:
-  | dyprods dyprod { $2 :: $1 }
+  | dyprods dyprod 
+    @{ 
+      $2 :: $1,  
+     [Keep_grammar; Local_data (dyp.last_local_data)]
+    }
   | { [] }
 
 opt_private:
@@ -324,6 +328,31 @@ prilist:
   | pri { [$1] }
 
 dyprod:
+  | "open" "syntax" basic_name_comma_list ";"
+    @{
+      let sr = Flx_parse_srcref.getsr dyp in
+      print_endline
+        ("Opening syntax extensions " ^ Flx_srcref.short_string_of_src sr);
+
+      let dssls = List.map snd $3 in
+
+      print_endline
+        ("Parsed open of syntax extensions " ^ String.concat "," dssls);
+
+      let m = dyp.local_data in
+
+      let to_install = tran_cls_dssls m.drules m.installed_dssls dssls in
+      let rules, prios = extract_syntax to_install m.drules in
+      let add_rules, bindings = bind_grammar_rules dyp rules in
+      let local_data = 
+      { 
+        m with installed_dssls = to_install @ m.installed_dssls
+      } 
+      in
+      Rule_Nop,
+      bindings @ [Add_rules add_rules; Local_data local_data; Relation prios]
+    }
+
    | opt_private NAME opt_prio ":=" dyalts ";"
      {
        (*
@@ -531,7 +560,6 @@ stmt:
       in
       Snull, mods
     }
-
 
   | "open" "syntax" basic_name_comma_list ";"
     @{

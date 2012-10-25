@@ -53,8 +53,8 @@ type grammar_rule_t =
   | Rule_Requires of string list 
   | Rule_Priorities of string list
   | Rule_Regex of string * Dyp.regexp 
-
-
+  | Rule_Nop
+ 
 
 let lexeme x = Dyp.lexeme x
 let silly_strtoken k = Flx_prelex.string_of_token k
@@ -338,6 +338,8 @@ let add_rule global_data local_data dssl rule =
   let m = local_data in
   let d = try Drules.find dssl m.drules with Not_found -> fresh_dssl in
   match rule with
+  | Rule_Nop -> global_data,m
+
   | Rule_Scheme_rule (privacy,name,prio,kind,dyalts) ->
      let rules = fixup_alternatives global_data.pcounter kind name prio dyalts in
      let rules = List.fold_left (fun acc rule -> uniq_add rule acc) d.rules rules in

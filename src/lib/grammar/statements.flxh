@@ -119,7 +119,8 @@ syntax statements {
   //$ Compound construction.
   //$ Note his is NOT a statement.
   //$ A compound followed by a semi-colon ";" is, however.
-  scompound := "{" stmt* "}" =># "_2";
+  //scompound := "{" stmt* "}" =># "_2";
+  scompound := "{" sstatements "}" =># "_2";
 
   sname_suffix:= "," sname sname_suffix =># "(cons _2 _3)";
   sname_suffix:= "," sname =># "`(,_2)";
