@@ -64,9 +64,9 @@ int flx_condv_t::timedwait(flx_mutex_t *m, struct timespec const *t) {
 
 int flx_condv_t::timedwait(flx_mutex_t *m, double t) {
   struct timespec tv;
-  tv.tv_sec = trunc (t);
-  tv.tv_nsec = trunc ((t - floor (t)) * 1E9); 
-  timedwait (m, &tv);
+  tv.tv_sec = (unsigned long) (t);
+  tv.tv_nsec = (unsigned long) ((t - floor (t)) * 1E9); // NanoSeconds
+  return timedwait (m, &tv);
 }
 
 }}

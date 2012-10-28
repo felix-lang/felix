@@ -71,7 +71,7 @@ private_cond_wait
 (
   pthread_cond_t *cv,
   pthread_mutex_t *external_mutex,
-  unsigned long ms
+  unsigned long ms // MilliSeconds
 )
 {
   // Avoid race conditions.
@@ -82,7 +82,7 @@ private_cond_wait
   // This call atomically releases the mutex and waits on the
   // semaphore until <pthread_cond_signal> or <pthread_cond_broadcast>
   // are called by another thread.
-  int res = SignalObjectAndWait (*external_mutex, cv->sema_, ms, FALSE);
+  int res = SignalObjectAndWait (*external_mutex, cv->sema_, ms, FALSE); // MilliSeconds
 
   // Reacquire lock to avoid race conditions.
   EnterCriticalSection (&cv->waiters_count_lock_);
@@ -133,12 +133,12 @@ pthread_cond_uswait
 (
   pthread_cond_t *cv,
   pthread_mutex_t *external_mutex,
-  unsigned long us
+  unsigned long us // MicroSeconds
 )
 {
 
   // Windows waits in ms, ours in us
-  return private_cond_wait(cv,external_mutex,us * 1000);
+  return private_cond_wait(cv,external_mutex,us / 1000ul); // MilliSeconds
 }
 
 int
@@ -149,7 +149,7 @@ pthread_cond_timedwait
   struct timespec const *abstime
 )
 {
-  unsigned long t1 = abstime->tv_sec * 1000 + abstime->tv_nsec / 1000;
+  unsigned long t1 = abstime->tv_sec * 1000ul + abstime->tv_nsec / 1000000ul; // MilliSeconds
   SYSTEMTIME tod;
   GetSystemTime(&tod);
   FILETIME ft;
