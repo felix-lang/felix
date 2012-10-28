@@ -11,6 +11,12 @@ typedef HANDLE pthread_mutex_t;
 typedef void pthread_mutexattr_t; // do NOT use them!
 typedef void pthread_condattr_t; // do NOT use them!
 
+struct timespec {
+  unsigned long tv_sec;
+  unsigned long tv_nsec;
+};
+
+
 struct pthread_cond_t
 {
   int waiters_count_;

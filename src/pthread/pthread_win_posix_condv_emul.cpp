@@ -3,11 +3,6 @@
 #if FLX_WIN32
 #include <string.h>
 
-struct timespec {
-  unsigned long tv_sec;
-  unsigned long tv_nsec;
-};
-
 // RF: unlike real pthread mutexes, windows mutexes are always recursive.
 // that's annoying because I use deadlock as a debugging tool. the upshot
 // is that recursively acquiring a mutex gives undefined results.
