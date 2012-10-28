@@ -50,7 +50,7 @@ void flx_condv_t::broadcast() {
   }
   #endif
 }
-int flx_condv_t::timedwait(flx_mutex_t *m, timespec *t) {
+int flx_condv_t::timedwait(flx_mutex_t *m, struct timespec const *t) {
   int res = pthread_cond_timedwait(&cv,&(m->m),t);
   #if !FLX_WIN32
   if(res==EINVAL) {
