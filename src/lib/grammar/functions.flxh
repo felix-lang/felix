@@ -14,6 +14,19 @@ syntax functions {
     `(ast_lambda ,_sr (,_3 ,_4 ,(first _5) ((ast_fun_return ,_sr ,_7))))
     """;
 
+  //$ Anonymous generator (lamda).
+  satom := sadjectives "gen" stvarlist slambda_fun_args fun_return_type "=" scompound =>#
+    """
+    `(ast_generator ,_sr (,_3 ,_4 ,(first _5) ,_7))
+    """;
+
+  //$ Anonymous generator (lamda).
+  x[slambda_pri] := sadjectives "gen" stvarlist slambda_fun_args fun_return_type "=>" sexpr =>#
+    """
+    `(ast_generator ,_sr (,_3 ,_4 ,(first _5) ((ast_fun_return ,_sr ,_7))))
+    """;
+
+
   //$ Anonymous procedure (lamda).
   satom := sadjectives "proc" stvarlist slambda_fun_args scompound =>#
     """

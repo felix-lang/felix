@@ -224,19 +224,9 @@ and string_of_expr (e:expr_t) =
   | EXPR_dot (_,(e1,e2)) ->
     "(" ^ se e1 ^ "." ^ se e2 ^  ")"
 
-  | EXPR_lambda (_,(vs,paramss,ret, sts)) ->
-    "(fun " ^ string_of_vs vs ^
-    catmap " "
-    (fun ps -> "(" ^ string_of_parameters ps ^ ")") paramss
-    ^
-    (match ret with
-    | TYP_none -> ""
-    | _ -> ": " ^string_of_typecode ret) ^
-    " = " ^
-    string_of_compound 0 sts ^ ")"
-
-  | EXPR_object (_,(vs,paramss,ret, sts)) ->
-    "(object " ^ string_of_vs vs ^
+  | EXPR_lambda (_,(kind,vs,paramss,ret, sts)) ->
+    "(" ^ string_of_funkind kind ^ " " ^
+     string_of_vs vs ^
     catmap " "
     (fun ps -> "(" ^ string_of_parameters ps ^ ")") paramss
     ^
@@ -1080,6 +1070,18 @@ and string_of_baxiom_method bsym_table a = match a with
 
 and string_of_statements level ss = String.concat "" (List.map (fun s -> string_of_statement level s) ss)
 
+and string_of_funkind kind = 
+  match kind with
+    | `Function -> "fun"
+    | `CFunction -> "cfun"
+    | `InlineFunction -> "inline fun"
+    | `NoInlineFunction -> "noinline fun"
+    | `Virtual -> "virtual fun"
+    | `Ctor -> "ctor"
+    | `Generator -> "generator"
+    | `Method-> "method"
+    | `Object -> "object"
+
 and string_of_statement level s =
   let se e = string_of_expr e in
   let sqn n = string_of_qualified_name n in
@@ -1300,18 +1302,7 @@ and string_of_statement level s =
     end
 
   | STMT_curry (_,name, vs, pss, (res,traint) , kind, ss) ->
-    spaces level ^
-    (match kind with
-    | `Function -> "fun "
-    | `CFunction -> "cfun "
-    | `InlineFunction -> "inline fun "
-    | `NoInlineFunction -> "noinline fun "
-    | `Virtual -> "virtual fun "
-    | `Ctor -> "ctor "
-    | `Generator -> "generator "
-    | `Method-> "method "
-    | `Object -> "object "
-    )
+    spaces level ^ string_of_funkind kind ^ " "
     ^
     string_of_id name ^ string_of_vs vs ^
     catmap " "

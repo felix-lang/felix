@@ -162,8 +162,9 @@ and xexpr_t sr x =
  | Lst [Id "ast_unlikely"; sr; e] -> EXPR_unlikely (xsr sr,ex e)
  | Lst [Id "ast_callback";  sr; qn] -> EXPR_callback (xsr sr,xq "ast_callback" qn)
  | Lst [Id "ast_dot"; sr; Lst [e1; e2]] -> EXPR_dot (xsr sr,(xexpr_t (xsr sr) e1, xexpr_t (xsr sr) e2))
- | Lst [Id "ast_lambda";  sr; Lst [vs; Lst pss; t; sts]] -> EXPR_lambda  (xsr sr, (xvs vs, map xps pss, ti t, xsts sts))
- | Lst [Id "ast_object";  sr; Lst [vs; Lst pss; t; sts]] -> EXPR_object (xsr sr, (xvs vs, map xps pss, ti t, xsts sts))
+ | Lst [Id "ast_lambda";  sr; Lst [vs; Lst pss; t; sts]] -> EXPR_lambda  (xsr sr, (`InlineFunction,xvs vs, map xps pss, ti t, xsts sts))
+ | Lst [Id "ast_object";  sr; Lst [vs; Lst pss; t; sts]] -> EXPR_lambda (xsr sr, (`Object,xvs vs, map xps pss, ti t, xsts sts))
+ | Lst [Id "ast_generator";  sr; Lst [vs; Lst pss; t; sts]] -> EXPR_lambda (xsr sr, (`Generator,xvs vs, map xps pss, ti t, xsts sts))
 
  (* can't occur in user code
  | Lst [Id "ast_match_ctor";  Lst [qn; e]] -> EXPR_match_ctor(sr,(xq "ast_match_ctor" qn,ex e))

@@ -128,7 +128,6 @@ let rec subst vars (e:expr_t) mv : expr_t =
     EXPR_dot (sr,(subst e, subst e2))
 
   | EXPR_lambda _ -> assert false
-  | EXPR_object _ -> assert false
 
   | EXPR_match_case _
   | EXPR_ctor_arg _

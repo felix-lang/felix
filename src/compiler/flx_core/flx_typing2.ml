@@ -187,7 +187,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
           TYP_apply (typecode_of_expr e1, typecode_of_expr e2)
       end
 
-  | EXPR_lambda (sr,(vs,paramss,ret,body)) ->
+  | EXPR_lambda (sr,(kind,vs,paramss,ret,body)) ->
      begin match paramss with
      | [params,traint] ->
        (* constraint is ignored for now!! *)

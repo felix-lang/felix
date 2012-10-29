@@ -32,7 +32,7 @@ let make_desugar_state name seq = {
 let generated = Flx_srcref.make_dummy "[flx_desugar_expr] generated"
 
 let block sr body :statement_t =
-  let e = EXPR_lambda (sr,(dfltvs,[[],None],TYP_void sr,body)) in
+  let e = EXPR_lambda (sr,(`InlineFunction,dfltvs,[[],None],TYP_void sr,body)) in
   STMT_call (sr,e,EXPR_tuple(sr,[]))
 
 let fix_params sr seq (ps:params_t):plain_vs_list_t * params_t =
@@ -534,33 +534,7 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
     let lss,xs = List.split (List.map rex t) in
     List.concat lss,EXPR_arrayof(sr,xs)
 
-  | EXPR_object (sr,(vs,pps,ret,sts)) ->
-    let kind = `Object in
-    let n = seq() in
-    let name' = "_lam_" ^ string_of_bid n in
-    let access = `Private in
-    let sts = rst
-      state
-      name
-      access
-      dfltvs
-      (mkcurry seq sr name' vs pps (ret,None) kind sts [`Generated "lambda"])
-    in
-    if List.length pps = 0 then syserr sr "[rex] Lambda with no arguments?" else
-    let t = type_of_argtypes (List.map (fun(x,y,z,d)->z) (fst (List.hd pps))) in
-    let e =
-      EXPR_suffix
-      (
-        sr,
-        (
-          `AST_name (sr,name',[]), t
-        )
-      )
-    in
-    sts,e
-
-  | EXPR_lambda (sr,(vs,pps,ret,sts)) ->
-    let kind = `InlineFunction in
+  | EXPR_lambda (sr,(kind,vs,pps,ret,sts)) ->
     let n = seq() in
     let name' = "_lam_" ^ string_of_bid n in
     let access = `Private in

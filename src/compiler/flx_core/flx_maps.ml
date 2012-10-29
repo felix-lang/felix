@@ -130,7 +130,6 @@ let map_expr f (e:expr_t):expr_t = match e with
   (* GIVE UP ON LAMBDAS FOR THE MOMENT .. NEEDS STATEMENT MAPPING TOO *)
   (* | EXPR_lambda of Flx_srcref.t * (vs_list_t * params_t list * typecode_t * statement_t list) *)
   | EXPR_lambda _ -> e
-  | EXPR_object _ -> e
 
   | EXPR_match_ctor (sr,(qn,x)) -> EXPR_match_ctor (sr,(qn,f x))
   | EXPR_match_case (sr,(j,x)) -> EXPR_match_case (sr,(j, f x))
@@ -180,7 +179,6 @@ let iter_expr f (e:expr_t) =
   | EXPR_suffix _
   | EXPR_literal _
   | EXPR_lambda _
-  | EXPR_object _
   | EXPR_expr _
   | EXPR_type_match _
     -> ()

@@ -4671,7 +4671,6 @@ print_endline "bind expression' succeeded";
     | _ -> clierr sr "Expected variant constructor name in union dtor"
     end
 
-  | EXPR_object (sr,_) 
   | EXPR_lambda (sr,_) ->
     syserr sr
     (
