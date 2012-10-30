@@ -129,9 +129,10 @@ open class Re2 {
     "$1->Match($2, $3, $2.length(),$4, $5, $6)"
    ;
 
-  gen Match(re:RE2, s:string) : opt[varray[string]] = {
+  noinline gen Match(re:RE2, var s:string) : opt[varray[string]] = {
+    var emptystring = "";
     var n = NumberOfCapturingGroups re;
-    var v = varray[StringPiece] (n.size,StringPiece "");
+    var v = varray[StringPiece] (n.size+1,StringPiece emptystring);
     var Match-result = Match (re, StringPiece s, 0, ANCHOR_BOTH, v.stl_begin, n+1);
     return 
       if Match-result then
@@ -154,12 +155,13 @@ open class Re2 {
   gen iterator (re2:string, var target:string) => iterator (RE2 re2, target);
 
   gen iterator (r:RE2, var target:string) () : opt[varray[string]] = {
+    var emptystring = "";
     var l = len target;
     var s = StringPiece target;
     var p1 = s.data;  
     var p = 0;
     var n = NumberOfCapturingGroups(r)+1;
-    var v1 = varray[StringPiece] (n.size,StringPiece "");
+    var v1 = varray[StringPiece] (n.size,StringPiece emptystring);
     var v2 = varray[string] (n.size,"");
   again:>
     var result = Match(r, s, p, UNANCHORED,v1.stl_begin, n);

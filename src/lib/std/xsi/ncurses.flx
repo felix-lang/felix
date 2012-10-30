@@ -603,6 +603,5 @@ class Ncurses
 
   const KEY_MAX     : int;
 
-  gen setupterm(
 }
 

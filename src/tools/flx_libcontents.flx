@@ -31,20 +31,20 @@ regdef otherbind= indent2? group (adjective* spaces binder);
 // group 3 = identifier
 regdef decl = (classbind | otherbind) spaces group (name) anychar*;
 
+var emptystring = "";
+var emptystringpiece = StringPiece emptystring;
+
 var lregex = decl . render;
-
 var lgrep = RE2 lregex;
-
 var n = NumberOfCapturingGroups(lgrep)+1;
-var v = varray[StringPiece] (n.size,StringPiece "");
+var v = varray[StringPiece] (n.size,emptystringpiece);
 
-var grexp = RE2 lregex;
 var extract = RE2 " *([^={]*) *(=|{|;).*";
 var n2 = NumberOfCapturingGroups(extract)+1;
-var v2 = varray[StringPiece] (n2.size,StringPiece "");
-var v2a = varray[StringPiece] (n2.size,StringPiece "");
+var v2 = varray[StringPiece] (n2.size,emptystringpiece);
+
 var scomment = RE2 " *//[$] (.*)";
-var vcomment = varray[StringPiece] (2.size, StringPiece "");
+var vcomment = varray[StringPiece] (2.size, emptystringpiece);
 
 if ishtml do
   println$ "<html><body>";
@@ -64,23 +64,19 @@ for file in FileSystem::regfilesin (dir, fregex) do
   var comments = Empty[string];
   for line in split (lines,char "\n") do
     ++count;
-    var commentry = Match (scomment, StringPiece line, 0, ANCHOR_BOTH, vcomment.stl_begin, 2);
+    var spl = StringPiece line;
+    var commentry = Match (scomment, spl, 0, ANCHOR_BOTH, vcomment.stl_begin, 2);
     if commentry do
        comments = Cons (vcomment . 1 . string.strip, comments);
     otherwise
 
-    match grexp line with
+    match lgrep line with
     | Some ?v =>
       var sym = v.3;
       var dfn = "";
-      var m2 = Match (extract, StringPiece line, 0, ANCHOR_BOTH, v2.stl_begin, n2);
+      var m2 = Match (extract, spl, 0, ANCHOR_BOTH, v2.stl_begin, n2);
       if m2 do
-        m2 = Match (extract, StringPiece line, 0, ANCHOR_BOTH, v2a.stl_begin, n2);
-        if m2 do
-          dfn = v2a . 1 . string . strip;
-        else
-          dfn = v2 . 1 . string . strip;
-        done
+        dfn = v2 . 1 . string . strip;
       else
         dfn = line . strip;
       done
