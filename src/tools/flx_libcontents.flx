@@ -53,7 +53,7 @@ if ishtml do
 done
 
 var files = FileSystem::regfilesin (dir, fregex);
-files = file.sort;
+files = files.sort;
 
 for file in files do
   var href = "/$"+dir+"/"+file; // URL always uses Unix filenames
