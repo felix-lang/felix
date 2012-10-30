@@ -18,8 +18,6 @@ There is also an alias in the library which can be used:
 @felix
   array[int,5]
 @
-You should note that {int^1} is exactly the same as {int}:
-it is technically not a tuple.
 
 This kind of array is a first class value, it is <em>not an object</em>.
 @h2 Array element

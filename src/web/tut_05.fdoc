@@ -1,10 +1,12 @@
 @h1 Simple generator definition
 A <em>generator</em> is a function that may have side effects.
+Alternatively you can think of it as a procedure that returns a value.
 @felix
 gen getnum():int {
   prompt "Input number : ";
   var x = readln stdin;
-  return x;
+  var y = int (strip x);
+  return y;
 }
 @
 You may ask, why not use generators all the time,
@@ -20,35 +22,4 @@ The second answer is <em>performance</em>. Generator applications
 are lifted out of expressions to ensure they're only evaluated once,
 and in a determinate order. Lifting purely functional code like this
 is not necessary and interferes with optimisation.
-
-@h2 Generators and for loops
-
-A special case for generators is that they can be used to create a stream
-of calculated values to use in the loop.  For example you can generate a Fibonacci
-series as a generator like this:
-
-@felix
-gen fib(count:int)():opt[int] = {
-    if count > 0 do
-        var a = 0;
-        yield Some a;
-        if count > 1 do
-            var b = 1;
-            yield Some b;
-            for var n in 2 upto count do
-               val c = a+b;
-               yield Some c;
-               a = b;
-               b = c;
-            done
-        done
-    done
-    return None[int]; 
-}
-for n in fib(5) do
-    if n != 0 do print ", "; done 
-    print(n);
-done // Print 0, 1, 1, 2, 3, 5
-endl;
-@
 

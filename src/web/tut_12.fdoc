@@ -56,7 +56,7 @@ fun f(x:int) : &int = {
    return &a; // safe!
 }
 @
-if you do this, Felix will allocate the function's stack from on the heap,
+if you do this, Felix will allocate the function's stack frame on the heap,
 and the garbage collector will not reap that object until it is unreachable.
 Whilst the pointer to the variable {a} is itself stored in a reachable location,
 the stack frame will remain allocated.

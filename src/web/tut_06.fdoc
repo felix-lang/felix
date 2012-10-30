@@ -33,7 +33,7 @@ val name = strip $ readln $ stdin;
 @
 the {$} is just a low precedence forward application, so 
 it is also the same as before. It is typically used for
-procedural commands to save writing brackets arguments:
+procedural commands to save writing brackets around arguments:
 @felix
 println$ "Hello "+name; // println ("Hello"+name)
 @

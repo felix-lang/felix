@@ -8,7 +8,8 @@ proc prompt (x:string) {
   write$ stdout, x; 
   fflush stdout;
 }
-prompt "Input number :";
+
+prompt "Input string:";
 println$ readln$ stdin;
 @
 Here:
