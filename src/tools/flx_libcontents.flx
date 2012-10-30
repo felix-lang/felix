@@ -52,7 +52,10 @@ if ishtml do
  println$ "<pre>";
 done
 
-for file in FileSystem::regfilesin (dir, fregex) do
+var files = FileSystem::regfilesin (dir, fregex);
+files = file.sort;
+
+for file in files do
   var href = "/$"+dir+"/"+file; // URL always uses Unix filenames
   if ishtml do
     println$ '<hr/><a href="'+href+'">'+file+'</a>';
