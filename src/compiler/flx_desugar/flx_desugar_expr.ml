@@ -62,6 +62,7 @@ let cal_props = function
   | `NoInlineFunction -> `NoInline::[]
   | `Ctor -> `Ctor::[]
   | `Generator -> (* `NoInline:: *) `Generator::[]
+  | `GeneratorMethod -> (* `NoInline:: *) `Generator::[]
   | `Virtual -> `Virtual::[]
   | _ -> []
 
@@ -135,7 +136,7 @@ print_endline ("MK CURRY " ^ name);
           match st with
           | STMT_fun_return _ -> clierr sr "FOUND function RETURN in Object";
           | STMT_proc_return _ -> clierr sr "FOUND procedure RETURN in Object";
-          | STMT_curry (_,name, vs, pss, (res,traint) , kind, ss) when kind = `Method ->
+          | STMT_curry (_,name, vs, pss, (res,traint) , kind, ss) when kind = `Method || kind = `GeneratorMethod->
                methods := name :: !methods;
           | _ -> ()
         )

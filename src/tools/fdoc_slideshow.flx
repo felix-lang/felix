@@ -17,7 +17,7 @@ function enable (slide, line) {
   var elt = document.getElementById("slide-section-"+slide+","+line)
   elt.style.display="";
   var n = elt.innerHTML.length;
-  interval_handle = setTimeout(showframe, 7000+3 * n / 2); 
+  interval_handle = setTimeout(showframe, 5000+50 * n); 
 }
 
 function disable (slide, line) {
@@ -100,12 +100,12 @@ function reset_slides() {
 include "./slideshow-interface";
 
 fun setup(config_data:string) = {
-  println$ "Setup fdoc-slideshow " + config_data;
+  println$ "Setup fdoc_slideshow " + config_data;
   return 0;
 }
 
 
-object slideshow-maker (var write_string: string -> 0) implements slideshow_t = 
+object fdoc_slideshow (var write_string: string -> 0) implements slideshow_t = 
 {
   method fun whatami () => "Slideshow object";
   var slideshow-used = false;
@@ -168,5 +168,5 @@ object slideshow-maker (var write_string: string -> 0) implements slideshow_t =
 };
 
 export fun setup of (string) as "setup";
-export fun slideshow-maker of (string->0) as "create_slideshow_manager";
+export fun fdoc_slideshow of (string->0) as "fdoc_slideshow";
 

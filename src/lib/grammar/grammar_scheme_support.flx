@@ -98,6 +98,7 @@ SCHEME """
 SCHEME """
 (define (cal_funkind adjs fk)
   (if (eq? fk 'CFunction)'CFunction
+  (if (and (eq? fk 'Generator)(list-mem? 'Method adjs))'GeneratorMethod
   (if (eq? fk 'Generator)'Generator
   (if (list-mem? 'NoInlineFunction adjs)'NoInlineFunction
   (if (list-mem? 'InlineFunction adjs)'InlineFunction
@@ -105,7 +106,7 @@ SCHEME """
   (if (list-mem? 'Ctor adjs)'Ctor
   (if (list-mem? 'Virtual adjs)'Virtual
   'Function
-))))))))
+)))))))))
 """;
 SCHEME """
 (define (tvfixup_folder vsct vtc)

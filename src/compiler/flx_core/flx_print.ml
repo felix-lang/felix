@@ -1079,6 +1079,7 @@ and string_of_funkind kind =
     | `Virtual -> "virtual fun"
     | `Ctor -> "ctor"
     | `Generator -> "generator"
+    | `GeneratorMethod-> "method generator"
     | `Method-> "method"
     | `Object -> "object"
 

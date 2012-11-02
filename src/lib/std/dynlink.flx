@@ -181,6 +181,70 @@ class Dynlink
     return proc (a0:A0,a1:A1) { s (tf, a0, a1); };
   }
 
+  //$ Specialised routine(s) to load stylised plugin.
+  //$ Two entry points:
+  //$
+  //$ setup: string -> int
+  //$
+  //$ is called to initialise the instance globals.
+  //$
+  //$ ctor-name: ctor-arg -> iftype
+  //$
+  //$ is the object factory, when called with an argument
+  //$ of type ctor-arg it returns //$ an object of type iftype.
+  //$
+  //$ This function returns the object factory.
+  //$ setup is called automatically with the supplied string.
+  //$
+  //$ There are 3 variants where the factory function accepts
+  //$ 0, 1 and 2 arguments.
+  gen  load-plugin-func0[iftype] (
+    dll-name: string,   // name of the DLL minus the extension
+    setup-str: string="",  // string to pass to setup
+    ctor-name: string=""   // export name of factory function
+  ) : unit -> iftype =
+  {
+    var ctorname = if ctor-name == "" then dll-name else ctor-name;
+    var dll_extn = #Config::config.EXT_SHLIB;
+    var linst = Dynlink::init_lib(dll-name + dll_extn);
+    var sresult = Dynlink::func1[int,string] (linst, "setup") (setup-str);
+    C_hack::ignore(sresult);
+    println$ "Plugin Library " + dll-name + " set up " + str sresult;
+    return Dynlink::func0[iftype] (linst, ctorname);
+  }
+
+  gen  load-plugin-func1[iftype, ctor-arg] (
+    dll-name: string,   // name of the DLL minus the extension
+    setup-str: string="",  // string to pass to setup
+    ctor-name: string=""   // export name of factory function
+  ) : ctor-arg -> iftype =
+  {
+    var ctorname = if ctor-name == "" then dll-name else ctor-name;
+    var dll_extn = #Config::config.EXT_SHLIB;
+    var linst = Dynlink::init_lib(dll-name + dll_extn);
+    var sresult = Dynlink::func1[int,string] (linst, "setup") (setup-str);
+    C_hack::ignore(sresult);
+    println$ "Plugin Library " + dll-name + " set up " + str sresult;
+    return Dynlink::func1[iftype,ctor-arg] (linst, ctorname);
+  }
+
+  gen  load-plugin-func2[iftype, ctor-arg1, ctor-arg2] (
+    dll-name: string,   // name of the DLL minus the extension
+    setup-str: string="",  // string to pass to setup
+    ctor-name: string=""   // export name of factory function
+  ) : ctor-arg1 * ctor-arg2 -> iftype =
+  {
+    var ctorname = if ctor-name == "" then dll-name else ctor-name;
+    var dll_extn = #Config::config.EXT_SHLIB;
+    var linst = Dynlink::init_lib(dll-name + dll_extn);
+    var sresult = Dynlink::func1[int,string] (linst, "setup") (setup-str);
+    C_hack::ignore(sresult);
+    println$ "Plugin Library " + dll-name + " set up " + str sresult;
+    return Dynlink::func2[iftype,ctor-arg1, ctor-arg2] (linst, ctorname);
+  }
+
+
+
   //$ Execute an address representing a top
   //$ level exported felix procedure's C wrapper,
   //$ this creates a 'read to run' continuation object

@@ -1,11 +1,11 @@
 include "./fileseq-interface";
 
 fun setup(config_data:string) = {
-  println$ "Setup fdoc-fileseq " + config_data;
+  println$ "Setup fdoc_fileseq " + config_data;
   return 0;
 }
 
-object fileseq-control (filename: string) implements fileseq-control_t = 
+object fdoc_fileseq (filename: string) implements fileseq-control_t = 
 {
   method fun whatami()=> "Filename sequence navigation object";
 
@@ -67,5 +67,5 @@ object fileseq-control (filename: string) implements fileseq-control_t =
 }
 
 export fun setup of (string) as "setup";
-export fun fileseq-control of (string) as "create_fileseq_manager";
+export fun fdoc_fileseq of (string) as "fdoc_fileseq";
 

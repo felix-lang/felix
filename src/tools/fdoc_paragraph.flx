@@ -1,12 +1,12 @@
 include "./paragraph-interface";
 
 fun setup(config_data:string) = {
-  println$ "Setup fdoc-paragraph" + config_data;
+  println$ "Setup fdoc_paragraph" + config_data;
   return 0;
 }
 
 
-object paragraph-control (write_string: string -> 0) implements paragraph-control_t = 
+object fdoc_paragraph (write_string: string -> 0) implements paragraph-control_t = 
 {
   method fun whatami () => "Paragraph object";
   var pstate = false;
@@ -21,5 +21,5 @@ object paragraph-control (write_string: string -> 0) implements paragraph-contro
 }
 
 export fun setup of (string) as "setup";
-export fun paragraph-control of (string->0) as "create_paragraph_manager";
+export fun fdoc_paragraph of (string->0) as "fdoc_paragraph";
 

@@ -2,18 +2,19 @@ include "./charclass";
 include "./plugin_common";
 
 include "./slideshow-interface";
-var slideshow-maker : (string->0) -> slideshow_t;
+var slideshow-maker  : (string->0) -> slideshow_t;
 
 include "./paragraph-interface";
 var paragraph-maker : (string->0) -> paragraph-control_t;
 
 include "./heading-interface";
-var heading-maker : (paragraph-control_t * (string->0)) -> heading-control_t;
+var heading-maker : paragraph-control_t * (string->0) -> heading-control_t;
 
 include "./fileseq-interface";
-var fileseq-maker : (string) -> fileseq-control_t;
+var fileseq-maker : string -> fileseq-control_t;
 
-include "./fdoc-scanner";
+include "./scanner-interface";
+var fdocscanner-maker : unit -> fdocscanner-control_t;
 
 // felix document
 var INSTALL_ROOT="";
@@ -88,6 +89,9 @@ fun xlat_fdoc(t:string, filename:string): bool * string =
   var fileseq = fileseq-maker (filename);
   println$ "FDOC make fileseq .. " + #(fileseq.whatami);
 
+  var fdocscanner = fdocscanner-maker ();
+  println$ "FDOC make scanner .. " + #(fdocscanner.whatami);
+
 
   var needs_mathjax = false;
   var out = "";
@@ -118,7 +122,7 @@ fun xlat_fdoc(t:string, filename:string): bool * string =
 
 //---------------------------------------------------
   // main loop
-  var inp = fdoc-scan t;
+  var inp = fdocscanner.fdoc_scan t;
   gen get_text () =>
     match #inp with
     | Some (Text ?x) => x
@@ -130,7 +134,7 @@ next:>
   match entry with
   | Some (Cmd ?cmdline) => handle_cmd cmdline; goto next;
   | Some (Text ?x) =>
-    for para in psplit x do 
+    for para in fdocscanner.psplit x do 
       bp; 
       write_string(markdown para); 
     done
@@ -378,34 +382,15 @@ println$ lib+ " Library set up " + str sresult;
       done 
     endmatch;
   done
+  slideshow-maker  = Dynlink::load-plugin-func1 [slideshow_t, (string->0)] (dll-name="fdoc_slideshow");
 
-  // paragraph plugin
-  linst = Dynlink::init_lib("fdoc-paragraph"+ dll_extn);
-  sresult = Dynlink::func1[int,string] (linst, "setup") ("HELLO PARAGRAPH");
-  C_hack::ignore(sresult);
-  println$ "paragraph Library set up " + str sresult;
-  paragraph-maker = Dynlink::func1[paragraph-control_t,string->0] (linst, "create_paragraph_manager");
+  paragraph-maker = Dynlink::load-plugin-func1 [paragraph-control_t, (string->0)] (dll-name="fdoc_paragraph");
 
-  // heading plugin
-  linst = Dynlink::init_lib("fdoc-heading"+ dll_extn);
-  sresult = Dynlink::func1[int,string] (linst, "setup") ("HELLO HEADING");
-  C_hack::ignore(sresult);
-  println$ "heading Library set up " + str sresult;
-  heading-maker = Dynlink::func2[heading-control_t, paragraph-control_t, string->0] (linst, "create_heading_manager");
+  heading-maker = Dynlink::load-plugin-func2 [heading-control_t, paragraph-control_t , (string->0)] (dll-name="fdoc_heading");
 
-  // fileseq plugin
-  linst = Dynlink::init_lib("fdoc-fileseq"+ dll_extn);
-  sresult = Dynlink::func1[int,string] (linst, "setup") ("HELLO FILESEQ");
-  C_hack::ignore(sresult);
-  println$ "fileseq Library set up " + str sresult;
-  fileseq-maker = Dynlink::func1[fileseq-control_t, string] (linst, "create_fileseq_manager");
+  fileseq-maker = Dynlink::load-plugin-func1 [fileseq-control_t,string] (dll-name="fdoc_fileseq");
 
-  // slideshow plugin
-  linst = Dynlink::init_lib("fdoc-slideshow"+ dll_extn);
-  sresult = Dynlink::func1[int,string] (linst, "setup") ("HELLO SLIDESHOW");
-  C_hack::ignore(sresult);
-  println$ "slideshow Library set up " + str sresult;
-  slideshow-maker = Dynlink::func1[slideshow_t,string->0] (linst, "create_slideshow_manager");
+  fdocscanner-maker = Dynlink::load-plugin-func0 [fdocscanner-control_t] (dll-name="fdoc_scanner");
 
   return 0;
 }

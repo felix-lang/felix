@@ -247,6 +247,7 @@ and funkind_t = [
   | `Virtual
   | `Ctor
   | `Generator
+  | `GeneratorMethod
   | `Method
   | `Object
 ]

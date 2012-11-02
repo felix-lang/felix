@@ -4,54 +4,6 @@ import os
 # ------------------------------------------------------------------------------
 
 def build(phase, felix):
-    try:
-        exe = felix.compile(phase.ctx.buildroot/'tools/flx_ls.flx', static=True)
-        fbuild.builders.file.copy(phase.ctx, exe, 'bin')
-    except:
-        print("Warning : flx_ls not built. Continuing..." )
-
-    try:
-        exe = felix.compile(phase.ctx.buildroot/'tools/flx_grep.flx', static=True)
-        fbuild.builders.file.copy(phase.ctx, exe, 'bin')
-    except:
-        print("Warning : flx_grep not built. Continuing..." )
-
-    try:
-        exe = felix.compile(phase.ctx.buildroot/'tools/flx_replace.flx', static=True)
-        fbuild.builders.file.copy(phase.ctx, exe, 'bin')
-    except:
-        print("Warning : flx_replace not built. Continuing..." )
-
-    try:
-        exe = felix.compile(phase.ctx.buildroot/'tools/flx_libindex.flx', static=True)
-        fbuild.builders.file.copy(phase.ctx, exe, 'bin')
-    except:
-        print("Warning : flx_libindex not built. Continuing..." )
-
-    try:
-        exe = felix.compile(phase.ctx.buildroot/'tools/flx_libcontents.flx', static=True)
-        fbuild.builders.file.copy(phase.ctx, exe, 'bin')
-    except:
-        print("Warning : flx_libcontents not built. Continuing..." )
-
-    try:
-        exe = felix.compile(phase.ctx.buildroot/'tools/flx_gramdoc.flx', static=True)
-        fbuild.builders.file.copy(phase.ctx, exe, 'bin')
-    except:
-        print("Warning : flx_gramdoc not built. Continuing..." )
-
-
-    try:
-        exe = felix.compile(phase.ctx.buildroot/'tools/flx_cp.flx', static=True)
-        fbuild.builders.file.copy(phase.ctx, exe, 'bin')
-    except:
-        print("Warning : flx_cp not built. Continuing..." )
-
-    try:
-        exe = felix.compile(phase.ctx.buildroot/'tools/webserver.flx', static=True)
-        fbuild.builders.file.copy(phase.ctx, exe, 'bin')
-    except:
-        print("Warning : webserver not built. Continuing..." )
 
     try:
         exe = felix.compile(phase.ctx.buildroot/'wiki/wiki.flx', static=True)
@@ -59,95 +11,51 @@ def build(phase, felix):
     except:
         print("Warning : wiki not built. Continuing..." )
 
+    exes = [
+      "flx_grep",
+      "flx_replace",
+      "flx_ls",
+      "flx_cp",
+      "webserver",
+      "flx_gramdoc",
+      "flx_libcontents",
+      "flx_libindex",
+      "norK",
+      "rentut",
+      "mktutindex",
+      "flx_perror",
+      ]
+
+    for base in exes:
+      try:
+          exe = felix.compile(phase.ctx.buildroot/('tools/'+base+'.flx'), static=True)
+          fbuild.builders.file.copy(phase.ctx, exe, 'bin')
+      except:
+          print("Warning : "+base+" not built. Continuing..." )
+
     try:
       os.mkdir(phase.ctx.buildroot/'shlib')
     except:
       pass
 
-    try:
-        shlib = felix.compile(phase.ctx.buildroot/'tools/ocaml2html.flx')
-        fbuild.builders.file.copy(phase.ctx, shlib, 'shlib')
-    except:
-        print("Warning : ocaml2html not built. Continuing..." )
-
-    try:
-        shlib = felix.compile(phase.ctx.buildroot/'tools/py2html.flx')
-        fbuild.builders.file.copy(phase.ctx, shlib, 'shlib')
-    except:
-        print("Warning : py2html not built. Continuing..." )
-
-    try:
-        shlib = felix.compile(phase.ctx.buildroot/'tools/fdoc2html.flx')
-        fbuild.builders.file.copy(phase.ctx, shlib, 'shlib')
-    except:
-        print("Warning : fdoc2html not built. Continuing..." )
-
-    try:
-        shlib = felix.compile(phase.ctx.buildroot/'tools/flx2html.flx')
-        fbuild.builders.file.copy(phase.ctx, shlib, 'shlib')
-    except:
-        print("Warning : flx2html not built. Continuing..." )
-
-    try:
-        shlib = felix.compile(phase.ctx.buildroot/'tools/cpp2html.flx')
-        fbuild.builders.file.copy(phase.ctx, shlib, 'shlib')
-    except:
-        print("Warning : cpp2html not built. Continuing..." )
-
-    try:
-        shlib = felix.compile(phase.ctx.buildroot/'tools/fpc2html.flx')
-        fbuild.builders.file.copy(phase.ctx, shlib, 'shlib')
-    except:
-        print("Warning : fpc2html not built. Continuing..." )
-
-    try:
-        shlib = felix.compile(phase.ctx.buildroot/'tools/fdoc-slideshow.flx')
-        fbuild.builders.file.copy(phase.ctx, shlib, 'shlib')
-    except:
-        print("Warning : fdoc-slideshow not built. Continuing..." )
-
-    try:
-        shlib = felix.compile(phase.ctx.buildroot/'tools/fdoc-paragraph.flx')
-        fbuild.builders.file.copy(phase.ctx, shlib, 'shlib')
-    except:
-        print("Warning : fdoc-paragraph not built. Continuing..." )
-
-    try:
-        shlib = felix.compile(phase.ctx.buildroot/'tools/fdoc-heading.flx')
-        fbuild.builders.file.copy(phase.ctx, shlib, 'shlib')
-    except:
-        print("Warning : fdoc-heading not built. Continuing..." )
-
-    try:
-        shlib = felix.compile(phase.ctx.buildroot/'tools/fdoc-fileseq.flx')
-        fbuild.builders.file.copy(phase.ctx, shlib, 'shlib')
-    except:
-        print("Warning : fdoc-fileseq not built. Continuing..." )
-
-    try:
-        exe = felix.compile(phase.ctx.buildroot/'tools/norK.flx', static=True)
-        fbuild.builders.file.copy(phase.ctx, exe, 'bin')
-    except:
-        print("Warning : norK not built. Continuing..." )
-
-    try:
-        exe = felix.compile(phase.ctx.buildroot/'tools/rentut.flx', static=True)
-        fbuild.builders.file.copy(phase.ctx, exe, 'bin')
-    except:
-        print("Warning : rentut not built. Continuing..." )
-
-    try:
-        exe = felix.compile(phase.ctx.buildroot/'tools/mktutindex.flx', static=True)
-        fbuild.builders.file.copy(phase.ctx, exe, 'bin')
-    except:
-        print("Warning : mkutindex not built. Continuing..." )
-
-    try:
-        exe = felix.compile(phase.ctx.buildroot/'tools/flx_perror.flx', static=True)
-        fbuild.builders.file.copy(phase.ctx, exe, 'bin')
-    except:
-        print("Warning : flx_perror not built. Continuing..." )
-
-
+    plugins = [
+      "ocaml2html",
+      "py2html",
+      "fdoc2html",
+      "flx2html",
+      "cpp2html",
+      "fpc2html",
+      "fdoc_slideshow",
+      "fdoc_paragraph",
+      "fdoc_heading",
+      "fdoc_fileseq",
+      "fdoc_scanner",
+      ]
+    for base in plugins:
+      try:
+          shlib = felix.compile(phase.ctx.buildroot/('tools/'+base+'.flx'))
+          fbuild.builders.file.copy(phase.ctx, shlib, 'shlib')
+      except:
+          print("Warning : " + base + " not built. Continuing..." )
 
 

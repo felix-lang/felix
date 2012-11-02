@@ -378,6 +378,7 @@ and xfunkind_t sr x : funkind_t =
   | Id "Virtual" -> `Virtual
   | Id "Ctor" -> `Ctor
   | Id "Generator" -> `Generator
+  | Id "GeneratorMethod" -> `GeneratorMethod
   | Id "Method" -> `Method
   | Id "Object" -> `Object
   | x -> err x "funkind_t"
