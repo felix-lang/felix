@@ -29,7 +29,7 @@ fun f[T,V] (x:T, y:V)=>y,x;               //1
 fun f[T] (x:T, y:T)=>y,x;                 //2
 fun f[A,B,C] (x: A * B, y : B *C) => y,x; //3
 @
-Here, 2 and 3 are more specialisaed than 1, however
+Here, 2 and 3 are more specialised than 1, however
 neither is more specialised than the other.
 
 If the call is to a higher order function and the call applies

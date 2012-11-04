@@ -16,6 +16,9 @@ var fileseq-maker : string -> fileseq-control_t;
 include "./scanner-interface";
 var fdocscanner-maker : unit -> fdocscanner-control_t;
 
+var xlat_cpp: string * string -> bool * string;
+var xlat_felix: string * string -> bool * string;
+
 // felix document
 var INSTALL_ROOT="";
 var FLX_PATH = Empty[string];
@@ -52,11 +55,6 @@ fun txt2html (x:string) =
   return out2;
 }
 
-
-typedef xlat_t = string * string -> bool * string;
-
-var xlat_felix: xlat_t;
-var xlat_cpp: xlat_t;
 
 module Fdoc2Html {
 
@@ -355,33 +353,14 @@ fun setup(config_data:string) = {
     done done done
   done
 
-  // Load Plugins.
-  typedef libmap_entry = string * Dynlink::flx_instance;
-  var libs = Empty[libmap_entry];
-  fun have_lib (k:string) => Assoc_list::mem (== of (string * string)) libs k;
-  var dll_extn = #Config::config.EXT_SHLIB;
+  xlat_felix = Dynlink::load-plugin-func2 [bool * string, string, string] (
+    dll-name="flx2html", setup-str=config_data, ctor-name="xlat_felix"
+  );
 
-  for d in PLUGIN_MAP do 
-    match d with 
-    | ?ext,?lib,?entry =>
-      if not (have_lib lib) do
-        if lib in list("flx2html", "cpp2html") do
-//println$ "Adding lib " + lib;
-          var linst = Dynlink::init_lib(lib + dll_extn);
-          var sresult = Dynlink::func1[int,string] (linst, "setup") config_data;
-          C_hack::ignore(sresult);
-println$ lib+ " Library set up " + str sresult;
-          libs = Cons ((lib, linst),libs); 
-          match lib with
-          | "flx2html" => 
-            xlat_felix = Dynlink::func2[bool * string, string, string](linst,"xlat_felix");
-          | "cpp2html" => 
-            xlat_cpp = Dynlink::func2[bool * string, string, string](linst,"xlat_cpp");
-          endmatch;
-        done
-      done 
-    endmatch;
-  done
+  xlat_cpp = Dynlink::load-plugin-func2 [bool * string, string, string] (
+    dll-name="cpp2html", setup-str=config_data, ctor-name="xlat_cpp"
+  );
+
   slideshow-maker  = Dynlink::load-plugin-func1 [slideshow_t, (string->0)] (dll-name="fdoc_slideshow");
 
   paragraph-maker = Dynlink::load-plugin-func1 [paragraph-control_t, (string->0)] (dll-name="fdoc_paragraph");

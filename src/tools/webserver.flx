@@ -195,34 +195,30 @@ for d in PLUGIN_MAP do
   endmatch;
 done
 
-// Load Plugins.
-typedef libmap_entry = string * Dynlink::flx_instance;
-var libs = Empty[libmap_entry];
-fun have_lib (k:string) => Assoc_list::mem (== of (string * string)) libs k;
-var dll_extn = #Config::config.EXT_SHLIB;
+var  xlat_felix = Dynlink::load-plugin-func2 [bool * string, string, string] (
+    dll-name="flx2html", setup-str=config_data, ctor-name="xlat_felix"
+  );
 
-for d in PLUGIN_MAP do 
-  match d with 
-  | ?ext,?lib,?entry =>
-    if not (have_lib lib) do
-println$ "Adding lib " + lib;
-      var linst = Dynlink::init_lib(lib + dll_extn);
-      var sresult = Dynlink::func1[int,string] (linst, "setup") (config);
-      C_hack::ignore(sresult);
-println$ lib+ " Library set up " + str sresult;
-      libs = Cons ((lib, linst),libs); 
-      var x = Dynlink::func2[bool*string, string, string] (linst,entry);
-      match lib with
-      | "flx2html" => var xlat_felix = x;
-      | "fdoc2html" => var xlat_fdoc = x;
-      | "fpc2html" => var xlat_fpc = x;
-      | "py2html" => var xlat_py = x;
-      | "ocaml2html" => var xlat_ocaml = x;
-      | "cpp2html" => var xlat_cpp = x; 
-      endmatch;
-    done 
-  endmatch;
-done
+var  xlat_fdoc = Dynlink::load-plugin-func2 [bool * string, string, string] (
+    dll-name="fdoc2html", setup-str=config_data, ctor-name="xlat_fdoc"
+  );
+
+var  xlat_fpc = Dynlink::load-plugin-func2 [bool * string, string, string] (
+    dll-name="fpc2html", setup-str=config_data, ctor-name="xlat_fpc"
+  );
+
+var  xlat_py = Dynlink::load-plugin-func2 [bool * string, string, string] (
+    dll-name="py2html", setup-str=config_data, ctor-name="xlat_py"
+  );
+
+var  xlat_ocaml = Dynlink::load-plugin-func2 [bool * string, string, string] (
+    dll-name="ocaml2html", setup-str=config_data, ctor-name="xlat_ocaml"
+  );
+
+var  xlat_cpp = Dynlink::load-plugin-func2 [bool * string, string, string] (
+    dll-name="cpp2html", setup-str=config_data, ctor-name="xlat_cpp"
+  );
+
 
 fun getline_to_url (get:string) =>
   if not startswith get "GET " then

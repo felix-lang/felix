@@ -23,10 +23,7 @@ var FLX_PATH = Empty[string];
 var FLX_WEBSERVER_PLUGIN_PATH = Empty[string];
 var PLUGIN_MAP = Empty[string * string * string];
 
-typedef raw_xlat_t = address * string * string --> bool * string;
-
-var xlat_cpp: raw_xlat_t;
-var tf_xlat_cpp: address;
+var xlat_cpp: string * string -> bool * string;
 
 // stick line numbers in front of each line (for hyperlinking source refs)
 fun lc (x:string) = {
@@ -293,7 +290,7 @@ fun xlat_felix(t:string, dir:string): bool * string =
       if prefix(b,quote) do n = b.[1 to -1]; goto unstring; done
       // shouldn't happen ..
 unstring:>
-      val c = (xlat_cpp (tf_xlat_cpp,n,dir)).1;
+      val c = (xlat_cpp (n,dir)).1;
       write_string(quote+'<span class="embedded_c">' + c + '</span>'+quote); 
     elif last_key == "package" do
        println$ "Package: " + b;
@@ -515,38 +512,11 @@ fun setup(config_data:string) = {
       PLUGIN_MAP = Cons ((extn, lib, entry), PLUGIN_MAP);
     done done done
   done
-  // Load Plugins.
-  typedef libmap_entry = string * Dynlink::flx_instance;
-  var libs = Empty[libmap_entry];
-  fun have_lib (k:string) => Assoc_list::mem (== of (string * string)) libs k;
-  var dll_extn = #Config::config.EXT_SHLIB;
 
-  for d in PLUGIN_MAP do 
-    match d with 
-    | ?ext,?lib,?entry =>
-      if not (have_lib lib) do
-        if lib in list("cpp2html") do
-//println$ "Adding lib " + lib;
-          var linst = Dynlink::init_lib(lib + dll_extn);
-          var library = Dynlink::get_library linst;
-          var tf = Dynlink::get_thread_frame linst;
-          var raw_setup = Dynlink::dlsym$ library, "setup";
-//println$ lib+" Got setup address " + str raw_setup;
-          var setup = C_hack::cast[address * string --> int] raw_setup;
-          var sresult = setup(tf,config_data);
-          C_hack::ignore(sresult);
-println$ lib+" Library set up " + str sresult;
-          libs = Cons ((lib, linst),libs); 
-          match lib with
-          | "cpp2html" => 
-            xlat_cpp= C_hack::cast[raw_xlat_t]$ Dynlink::dlsym (library,entry);
-            tf_xlat_cpp = tf;
-          endmatch;
-        done
-      done 
-    endmatch;
-  done
-
+  xlat_cpp = Dynlink::load-plugin-func2 [bool * string, string, string] (
+    dll-name="cpp2html", setup-str=config_data, ctor-name="xlat_cpp"
+  );
+  
   return 0;
 }
 
