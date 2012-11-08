@@ -50,6 +50,7 @@ def build(phase, felix):
       "fdoc_heading",
       "fdoc_fileseq",
       "fdoc_scanner",
+      "fdoc_button",
       ]
     for base in plugins:
       try:

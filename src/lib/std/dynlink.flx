@@ -188,10 +188,11 @@ class Dynlink
   //$
   //$ is called to initialise the instance globals.
   //$
-  //$ ctor-name: ctor-arg -> iftype
+  //$ entry-point: arg -> iftype
   //$
-  //$ is the object factory, when called with an argument
-  //$ of type ctor-arg it returns //$ an object of type iftype.
+  //$ is the primary entry point, typically an object factory, 
+  //$ when called with an argument
+  //$ of type arg_t it returns //$ an object of type iftype.
   //$
   //$ This function returns the object factory.
   //$ setup is called automatically with the supplied string.
@@ -201,46 +202,46 @@ class Dynlink
   gen  load-plugin-func0[iftype] (
     dll-name: string,   // name of the DLL minus the extension
     setup-str: string="",  // string to pass to setup
-    ctor-name: string=""   // export name of factory function
+    entry-point: string=""   // export name of factory function
   ) : unit -> iftype =
   {
-    var ctorname = if ctor-name == "" then dll-name else ctor-name;
+    var entrypoint = if entry-point == "" then dll-name else entry-point;
     var dll_extn = #Config::config.EXT_SHLIB;
     var linst = Dynlink::init_lib(dll-name + dll_extn);
     var sresult = Dynlink::func1[int,string] (linst, "setup") (setup-str);
     C_hack::ignore(sresult);
     println$ "Plugin Library " + dll-name + " set up " + str sresult;
-    return Dynlink::func0[iftype] (linst, ctorname);
+    return Dynlink::func0[iftype] (linst, entrypoint);
   }
 
-  gen  load-plugin-func1[iftype, ctor-arg] (
+  gen  load-plugin-func1[iftype, arg_t] (
     dll-name: string,   // name of the DLL minus the extension
     setup-str: string="",  // string to pass to setup
-    ctor-name: string=""   // export name of factory function
-  ) : ctor-arg -> iftype =
+    entry-point: string=""   // export name of factory function
+  ) : arg_t -> iftype =
   {
-    var ctorname = if ctor-name == "" then dll-name else ctor-name;
+    var entrypoint = if entry-point == "" then dll-name else entry-point;
     var dll_extn = #Config::config.EXT_SHLIB;
     var linst = Dynlink::init_lib(dll-name + dll_extn);
     var sresult = Dynlink::func1[int,string] (linst, "setup") (setup-str);
     C_hack::ignore(sresult);
     println$ "Plugin Library " + dll-name + " set up " + str sresult;
-    return Dynlink::func1[iftype,ctor-arg] (linst, ctorname);
+    return Dynlink::func1[iftype,arg_t] (linst, entrypoint);
   }
 
-  gen  load-plugin-func2[iftype, ctor-arg1, ctor-arg2] (
+  gen  load-plugin-func2[iftype, arg1_t, arg2_t] (
     dll-name: string,   // name of the DLL minus the extension
     setup-str: string="",  // string to pass to setup
-    ctor-name: string=""   // export name of factory function
-  ) : ctor-arg1 * ctor-arg2 -> iftype =
+    entry-point: string=""   // export name of factory function
+  ) : arg1_t * arg2_t -> iftype =
   {
-    var ctorname = if ctor-name == "" then dll-name else ctor-name;
+    var entrypoint = if entry-point == "" then dll-name else entry-point;
     var dll_extn = #Config::config.EXT_SHLIB;
     var linst = Dynlink::init_lib(dll-name + dll_extn);
     var sresult = Dynlink::func1[int,string] (linst, "setup") (setup-str);
     C_hack::ignore(sresult);
     println$ "Plugin Library " + dll-name + " set up " + str sresult;
-    return Dynlink::func2[iftype,ctor-arg1, ctor-arg2] (linst, ctorname);
+    return Dynlink::func2[iftype,arg1_t, arg2_t] (linst, entrypoint);
   }
 
 

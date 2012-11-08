@@ -150,6 +150,13 @@ tutindex:
 	build/release/bin/mktutindex garray "Generalised Arrays" tutorial.fdoc
 	build/release/bin/mktutindex uparse "Universal Parser" uparse.fdoc
 
+install-plugins:
+	sudo cp build/release/shlib/* /usr/local/lib/
+
+install-website:
+	sudo cp -r build/release/web/* /usr/local/lib/felix/felix-latest/web
+
+
 ocamldoc:
 	mkdir -p parsedoc
 	ocamldoc -d parsedoc -html \

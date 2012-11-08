@@ -1,6 +1,10 @@
 include "./paragraph-interface";
 include "./heading-interface";
 
+include "./button-interface";
+var button-factory : unit -> button-factory_t;
+
+
 val js1 = 
 """
 <script type="text/javascript">
@@ -42,14 +46,14 @@ var allbuttons = [
 val js2 =
 """
 ];
-function expand_all()
+function expand_all(dummy)
 {
   for (i in allbuttons)
   {
     expand(allbuttons[i], allbuttons[i]+"_d");
   }
 }
-function collapse_all()
+function collapse_all(dummy)
 {
   for (i in allbuttons)
   {
@@ -59,11 +63,8 @@ function collapse_all()
 </script>
 """;
 
-val nav = '<p><button type="button" onclick="expand_all()">Expand</button>'
-   '&nbsp;<button type="button" onclick="collapse_all()">Collapse</button> </p>'
-;
-
 fun setup(config_data:string) = {
+  button-factory = Dynlink::load-plugin-func0 [button-factory_t] (dll-name="fdoc_button");
   println$ "Setup fdoc_heading " + config_data;
   return 0;
 }
@@ -71,12 +72,18 @@ fun setup(config_data:string) = {
 
 object fdoc_heading (paragraph: paragraph-control_t, write_string: string -> 0) implements heading-control_t =
 {
+  var button = #button-factory;
+
   method fun whatami () => "Heading object";
   var hstack = 0; // number of open <div>s
   var hnums = varray[int] (size 5,1); 
   var all_buttons = "";
 
-  method fun emit-buttons() => nav;
+  method fun emit-buttons() => 
+   button.make-button(id="expand", text="Expand", onclick="expand_all") +
+   button.make-button(id="collapse", text="Collapse", onclick="collapse_all") 
+  ;
+
   method fun emit-js() => js1 + all_buttons + js2;
 
   // bid is the button id, cid is the stuff which is controlled by it

@@ -514,7 +514,7 @@ fun setup(config_data:string) = {
   done
 
   xlat_cpp = Dynlink::load-plugin-func2 [bool * string, string, string] (
-    dll-name="cpp2html", setup-str=config_data, ctor-name="xlat_cpp"
+    dll-name="cpp2html", setup-str=config_data, entry-point="xlat_cpp"
   );
   
   return 0;

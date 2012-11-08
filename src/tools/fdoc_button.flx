@@ -1,0 +1,55 @@
+//$ Make buttons in a consistent style
+include "./button-interface";
+
+fun setup(config_data:string) = {
+  println$ "Setup fdoc_button " + config_data;
+  return 0;
+}
+
+val jscript = """
+<script>
+function mouseover(id)
+{
+  var elt = document.getElementById(id);
+  elt.style.display="none";
+  var elt2 = document.getElementById(id+"_mo");
+  elt2.style.display="inline";
+}
+
+function mouseout(id)
+{
+  var elt = document.getElementById(id+"_mo");
+  elt.style.display="none";
+  var elt2 = document.getElementById(id);
+  elt2.style.display="inline";
+}
+
+</script>
+""";
+
+object fdoc_button () implements button-factory_t = {
+
+  method fun whatami () => "button factory";
+
+  method fun get-jscript () => jscript;
+
+  method fun make-button (b:button-spec_t) =>
+  """<span style="position:relative; bottom:6px"
+  onmouseover="mouseover('"""+b.id+"""')" 
+  onmouseout="mouseout('"""+b.id+"""')"
+  onclick=\""""+b.onclick+"""('"""+b.id+"""')"  
+  ><span id='"""+b.id+"""'><svg height=40 width=90>
+    <rect x="5" y="10px" rx="4px" ry="4px" width="80px" height="25"
+    style="fill:blue;stroke:black;stroke-width:4;opacity:0.5"/>
+    <text x="20" y="30" fill="black">"""+b.text+"""</text>
+  </svg></span><span id='"""+b.id+"""_mo' style="display:none"><svg height=40 width=90>
+    <rect x="5" y="10px" rx="4px" ry="4px" width="80px" height="25"
+    style="fill:red;stroke:black;stroke-width:4;opacity:0.5"/>
+    <text x="20" y="30" fill="black">"""+b.text+"""</text>
+  </svg></span></span>""";
+}
+
+export fun setup of (string) as "setup";
+export fun fdoc_button of () as "fdoc_button";
+
+

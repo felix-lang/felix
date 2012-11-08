@@ -196,27 +196,27 @@ for d in PLUGIN_MAP do
 done
 
 var  xlat_felix = Dynlink::load-plugin-func2 [bool * string, string, string] (
-    dll-name="flx2html", setup-str=config_data, ctor-name="xlat_felix"
+    dll-name="flx2html", setup-str=config_data, entry-point="xlat_felix"
   );
 
 var  xlat_fdoc = Dynlink::load-plugin-func2 [bool * string, string, string] (
-    dll-name="fdoc2html", setup-str=config_data, ctor-name="xlat_fdoc"
+    dll-name="fdoc2html", setup-str=config_data, entry-point="xlat_fdoc"
   );
 
 var  xlat_fpc = Dynlink::load-plugin-func2 [bool * string, string, string] (
-    dll-name="fpc2html", setup-str=config_data, ctor-name="xlat_fpc"
+    dll-name="fpc2html", setup-str=config_data, entry-point="xlat_fpc"
   );
 
 var  xlat_py = Dynlink::load-plugin-func2 [bool * string, string, string] (
-    dll-name="py2html", setup-str=config_data, ctor-name="xlat_py"
+    dll-name="py2html", setup-str=config_data, entry-point="xlat_py"
   );
 
 var  xlat_ocaml = Dynlink::load-plugin-func2 [bool * string, string, string] (
-    dll-name="ocaml2html", setup-str=config_data, ctor-name="xlat_ocaml"
+    dll-name="ocaml2html", setup-str=config_data, entry-point="xlat_ocaml"
   );
 
 var  xlat_cpp = Dynlink::load-plugin-func2 [bool * string, string, string] (
-    dll-name="cpp2html", setup-str=config_data, ctor-name="xlat_cpp"
+    dll-name="cpp2html", setup-str=config_data, entry-point="xlat_cpp"
   );
 
 
@@ -503,8 +503,8 @@ proc serve_fdoc (k:socket_t, fname:string) {
   val data = make_html(
     "<html><head>"+Css4Html::flx_head+
     if needs_mathjax then mathjax else "" endif +
-    "</head>"+
-    "<body>"+html+
+    "</head><body>"+
+    html+
     "</body></html>\n\r"
   );
   write_string(k,data,&eof_flag);

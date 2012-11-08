@@ -1,13 +1,19 @@
 include "./fileseq-interface";
 
+include "./button-interface";
+var button-factory : unit -> button-factory_t;
+
 fun setup(config_data:string) = {
   println$ "Setup fdoc_fileseq " + config_data;
+  button-factory = Dynlink::load-plugin-func0 [button-factory_t] (dll-name="fdoc_button");
   return 0;
 }
 
 object fdoc_fileseq (filename: string) implements fileseq-control_t = 
 {
+  var button = #button-factory;
   method fun whatami()=> "Filename sequence navigation object";
+  method fun get-jscript() => "<script> function nop(dummy) {} </script>";
 
   fun calnav() = 
   {
@@ -50,10 +56,12 @@ object fdoc_fileseq (filename: string) implements fileseq-control_t =
   method fun shownav() => 
     match calnav() with
     | _,Some ?sprev, Some ?snext, ?docindex => 
-        "<a href='"+sprev+"'>Prev</a>  " + 
-        "<a href='"+snext+"'>Next</a> " + 
-        "<a href='"+docindex+"'>Index</a>"
-    | _,None, Some ?snext, ?docindex => "<a href='"+snext+"'>Next</a> "+"<a href='"+docindex+"'>Index</a>" 
+        "<a href='"+sprev+"'>"+button.make-button(id="prev", text="Prev", onclick="nop")+"</a> " + 
+        "<a href='"+snext+"'>"+button.make-button(id="next", text="Next", onclick="nop")+"</a> " + 
+        "<a href='"+docindex+"'>"+button.make-button(id="index", text="Index", onclick="nop")+"</a> "
+    | _,None, Some ?snext, ?docindex => 
+       "<a href='"+snext+"'>"+button.make-button(id="next", text="Next", onclick="nop")+"</a> "+
+       "<a href='"+docindex+"'>"+button.make-button(id="index", text="Index", onclick="nop")+"</a>" 
     | _,None, None,_ => ""
     endmatch
   ;

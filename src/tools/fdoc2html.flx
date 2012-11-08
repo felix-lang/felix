@@ -16,6 +16,9 @@ var fileseq-maker : string -> fileseq-control_t;
 include "./scanner-interface";
 var fdocscanner-maker : unit -> fdocscanner-control_t;
 
+include "./button-interface";
+var button-factory : unit -> button-factory_t;
+
 var xlat_cpp: string * string -> bool * string;
 var xlat_felix: string * string -> bool * string;
 
@@ -105,8 +108,6 @@ fun xlat_fdoc(t:string, filename:string): bool * string =
     endmatch
   ;
 
-  write_string #(fileseq.shownav);
-
   // paragraphs
   proc sp () { paragraph.sp (); }
   proc sp (cls:string) { paragraph.sp-clas cls; }
@@ -142,7 +143,7 @@ next:>
   | None => 
     ep;
     heading.finalise;
-    write_string #(fileseq.shownav);
+
     slideshow.finalise;
     if #(slideshow.active) do
       println$ "Slideshow Active";
@@ -152,9 +153,30 @@ next:>
   endmatch;
   return needs_mathjax, 
     #(heading.emit-js) + 
+    #(#button-factory.get-jscript) +
+    #(fileseq.get-jscript) +
+    '<div style="background-color:#E0E0E0; font-family:sans-serif; color:#404040">' +
+
+    // fixed top nav bar 
+    '<div style="position:fixed; top:10px;  left:10px; right:10px; height:30px; background-color:#FFA500;padding:4px;'+
+    ' border-top-left-radius:10px; border-top-right-radius:10px">' +
     if #(slideshow.active) then "" 
     else #(heading.emit-buttons) endif + 
-    out
+    #(fileseq.shownav) + 
+    '</div>' +
+
+    // body
+    '<div style="position:fixed; top:48px; bottom:48px; left:14px; right:14px; '+
+    ' border:4px;overflow:auto; font-family:sans-serif; color:#404040; background-color:#E0E0E0;">' +
+    out +
+    '</div>'+
+
+    // fixed bottom nav bar
+    '<div style="position:fixed; bottom:10px;  left:10px; right:10px; height:30px; background-color:#FFA500;padding:4px;'+
+    ' border-bottom-left-radius:10px; border-bottom-right-radius:10px">' +
+    #(fileseq.shownav) + 
+    '</div>' +
+    '</div>'
   ;
 //---------------------------------------------------
 
@@ -354,11 +376,11 @@ fun setup(config_data:string) = {
   done
 
   xlat_felix = Dynlink::load-plugin-func2 [bool * string, string, string] (
-    dll-name="flx2html", setup-str=config_data, ctor-name="xlat_felix"
+    dll-name="flx2html", setup-str=config_data, entry-point="xlat_felix"
   );
 
   xlat_cpp = Dynlink::load-plugin-func2 [bool * string, string, string] (
-    dll-name="cpp2html", setup-str=config_data, ctor-name="xlat_cpp"
+    dll-name="cpp2html", setup-str=config_data, entry-point="xlat_cpp"
   );
 
   slideshow-maker  = Dynlink::load-plugin-func1 [slideshow_t, (string->0)] (dll-name="fdoc_slideshow");
@@ -370,6 +392,8 @@ fun setup(config_data:string) = {
   fileseq-maker = Dynlink::load-plugin-func1 [fileseq-control_t,string] (dll-name="fdoc_fileseq");
 
   fdocscanner-maker = Dynlink::load-plugin-func0 [fdocscanner-control_t] (dll-name="fdoc_scanner");
+
+  button-factory = Dynlink::load-plugin-func0 [button-factory_t] (dll-name="fdoc_button");
 
   return 0;
 }
