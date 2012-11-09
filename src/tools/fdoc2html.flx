@@ -19,6 +19,8 @@ var fdocscanner-maker : unit -> fdocscanner-control_t;
 include "./button-interface";
 var button-factory : unit -> button-factory_t;
 
+include "./fdoc-interface";
+
 var xlat_cpp: string * string -> bool * string;
 var xlat_felix: string * string -> bool * string;
 
@@ -59,8 +61,6 @@ fun txt2html (x:string) =
 }
 
 
-module Fdoc2Html {
-
 proc boreq(l:&bool, r:bool) { l <- *l or r; } 
 
 val markdown_code = RE2 ("({([^}]*)})");
@@ -76,8 +76,13 @@ gen safer_popen(cmd:string)=>
   Process::popen_in(timeout+" -t 15 " + cmd + " 2>&1")
 ;
 
-fun xlat_fdoc(t:string, filename:string): bool * string =
-{
+object xlat_fdoc (t:string, filename:string) implements fdoc_t = {
+
+  method fun whatami () => "Translator for " + filename;
+  method fun mathjax_required () => needs_mathjax;
+  method fun  html_raw () => out;
+  method fun html_page () => page;
+
   var slideshow = slideshow-maker write_string of (string);
   println$ "FDOC make slidehow .. " + #(slideshow.whatami);
 
@@ -151,7 +156,7 @@ next:>
       println$ "Slideshow NOT active";
     done
   endmatch;
-  return needs_mathjax, 
+  var page =  
     #(heading.emit-js) + 
     #(#button-factory.get-jscript) +
     #(fileseq.get-jscript) +
@@ -178,6 +183,7 @@ next:>
     '</div>' +
     '</div>'
   ;
+
 //---------------------------------------------------
 
   // preformat
@@ -332,7 +338,7 @@ next:>
       println$ "Unable to understand @command '"+b+"'";
     done
   }
-}}
+}
 
 println$ "fdoc2html initialisation";
 
@@ -399,6 +405,6 @@ fun setup(config_data:string) = {
 }
 
 export fun setup of (string) as "setup";
-export fun Fdoc2Html::xlat_fdoc of (string * string) as "xlat_fdoc";
+export fun xlat_fdoc of (string * string) as "xlat_fdoc";
 
 
