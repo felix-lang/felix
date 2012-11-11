@@ -1,7 +1,7 @@
 include "./paragraph-interface";
 
 fun setup(config_data:string) = {
-  println$ "Setup fdoc_paragraph" + config_data;
+  eprintln$ "Setup fdoc_paragraph" + config_data;
   return 0;
 }
 

@@ -1,7 +1,7 @@
 include "./scanner-interface";
 
 fun setup(config_data:string) = {
-  println$ "Setup fdoc_scanner " + config_data;
+  eprintln$ "Setup fdoc_scanner " + config_data;
   return 0;
 }
 

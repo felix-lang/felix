@@ -4,7 +4,7 @@ include "./button-interface";
 var button-factory : unit -> button-factory_t;
 
 fun setup(config_data:string) = {
-  println$ "Setup fdoc_fileseq " + config_data;
+  eprintln$ "Setup fdoc_fileseq " + config_data;
   button-factory = Dynlink::load-plugin-func0 [button-factory_t] (dll-name="fdoc_button");
   return 0;
 }

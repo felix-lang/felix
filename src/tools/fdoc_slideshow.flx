@@ -17,7 +17,7 @@ function enable (slide, line) {
   var elt = document.getElementById("slide-section-"+slide+","+line)
   elt.style.display="";
   var n = elt.innerHTML.length;
-  interval_handle = setTimeout(showframe, 5000+50 * n); 
+  interval_handle = setTimeout(showframe, 5000+20 * n); 
 }
 
 function disable (slide, line) {
@@ -100,7 +100,7 @@ function reset_slides() {
 include "./slideshow-interface";
 
 fun setup(config_data:string) = {
-  println$ "Setup fdoc_slideshow " + config_data;
+  eprintln$ "Setup fdoc_slideshow " + config_data;
   return 0;
 }
 

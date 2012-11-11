@@ -5,6 +5,7 @@
 //$ Iterator example:
 //$ 
 //$
+//$@felix
 //$ var db : sqlite3_db_t;
 //$ var stmt:sqlite3_stmt_t;
 //$ var err = sqlite3_open("multiple_sa.db", &db);
@@ -33,6 +34,7 @@
 //$   err = sqlite3_finalize(stmt);
 //$   println(str(err));
 //$   sqlite3_close(db);
+//$@
 
 class Sqlite3 {
   requires package "flx_sqlite3";

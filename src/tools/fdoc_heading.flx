@@ -65,7 +65,7 @@ function collapse_all(dummy)
 
 fun setup(config_data:string) = {
   button-factory = Dynlink::load-plugin-func0 [button-factory_t] (dll-name="fdoc_button");
-  println$ "Setup fdoc_heading " + config_data;
+  eprintln$ "Setup fdoc_heading " + config_data;
   return 0;
 }
 

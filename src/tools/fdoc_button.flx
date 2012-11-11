@@ -2,7 +2,7 @@
 include "./button-interface";
 
 fun setup(config_data:string) = {
-  println$ "Setup fdoc_button " + config_data;
+  eprintln$ "Setup fdoc_button " + config_data;
   return 0;
 }
 

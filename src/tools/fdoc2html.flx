@@ -84,19 +84,19 @@ object xlat_fdoc (t:string, filename:string) implements fdoc_t = {
   method fun html_page () => page;
 
   var slideshow = slideshow-maker write_string of (string);
-  println$ "FDOC make slidehow .. " + #(slideshow.whatami);
+  eprintln$ "FDOC make slidehow .. " + #(slideshow.whatami);
 
   var paragraph = paragraph-maker write_string of (string);
-  println$ "FDOC make paragraph .. " + #(paragraph.whatami);
+  eprintln$ "FDOC make paragraph .. " + #(paragraph.whatami);
 
   var heading = heading-maker (paragraph, write_string of (string));
-  println$ "FDOC make heading .. " + #(heading.whatami);
+  eprintln$ "FDOC make heading .. " + #(heading.whatami);
 
   var fileseq = fileseq-maker (filename);
-  println$ "FDOC make fileseq .. " + #(fileseq.whatami);
+  eprintln$ "FDOC make fileseq .. " + #(fileseq.whatami);
 
   var fdocscanner = fdocscanner-maker ();
-  println$ "FDOC make scanner .. " + #(fdocscanner.whatami);
+  eprintln$ "FDOC make scanner .. " + #(fdocscanner.whatami);
 
 
   var needs_mathjax = false;
@@ -151,9 +151,9 @@ next:>
 
     slideshow.finalise;
     if #(slideshow.active) do
-      println$ "Slideshow Active";
+      eprintln$ "Slideshow Active";
     else
-      println$ "Slideshow NOT active";
+      eprintln$ "Slideshow NOT active";
     done
   endmatch;
   var page =  

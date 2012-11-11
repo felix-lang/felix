@@ -210,7 +210,7 @@ class Dynlink
     var linst = Dynlink::init_lib(dll-name + dll_extn);
     var sresult = Dynlink::func1[int,string] (linst, "setup") (setup-str);
     C_hack::ignore(sresult);
-    println$ "Plugin Library " + dll-name + " set up " + str sresult;
+    eprintln$ "Plugin Library " + dll-name + " set up " + str sresult;
     return Dynlink::func0[iftype] (linst, entrypoint);
   }
 
@@ -225,7 +225,7 @@ class Dynlink
     var linst = Dynlink::init_lib(dll-name + dll_extn);
     var sresult = Dynlink::func1[int,string] (linst, "setup") (setup-str);
     C_hack::ignore(sresult);
-    println$ "Plugin Library " + dll-name + " set up " + str sresult;
+    eprintln$ "Plugin Library " + dll-name + " set up " + str sresult;
     return Dynlink::func1[iftype,arg_t] (linst, entrypoint);
   }
 
@@ -240,7 +240,7 @@ class Dynlink
     var linst = Dynlink::init_lib(dll-name + dll_extn);
     var sresult = Dynlink::func1[int,string] (linst, "setup") (setup-str);
     C_hack::ignore(sresult);
-    println$ "Plugin Library " + dll-name + " set up " + str sresult;
+    eprintln$ "Plugin Library " + dll-name + " set up " + str sresult;
     return Dynlink::func2[iftype,arg1_t, arg2_t] (linst, entrypoint);
   }
 

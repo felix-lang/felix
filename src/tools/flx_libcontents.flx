@@ -1,7 +1,13 @@
 var ishtml = System::argv 1 == "--html";
 var dir =  Filename::join (#(Config::config).FLX_INSTALL_DIR, "lib", "std");
-var fregex = ".*\\.flx";
 
+include "/fdoc-interface";
+var  xlat_fdoc = Dynlink::load-plugin-func2 [fdoc_t, string, string] (
+    dll-name="fdoc2html", setup-str="", entry-point="xlat_fdoc"
+  );
+
+
+var fregex = ".*\\.flx";
 open Regdef;
 regdef anychar = perl (".");
 
@@ -43,13 +49,12 @@ var extract = RE2 " *([^={]*) *(=|{|;).*";
 var n2 = NumberOfCapturingGroups(extract)+1;
 var v2 = varray[StringPiece] (n2.size,emptystringpiece);
 
-var scomment = RE2 " *//[$] (.*)";
+var scomment = RE2 " *//[$](.*)";
 var vcomment = varray[StringPiece] (2.size, emptystringpiece);
 
 if ishtml do
   println$ "<html><body>";
   println$ "<h1>Felix Library Contents</h1>";
- println$ "<pre>";
 done
 
 var files = FileSystem::regfilesin (dir, fregex);
@@ -70,7 +75,7 @@ for file in files do
     var spl = StringPiece line;
     var commentry = Match (scomment, spl, 0, ANCHOR_BOTH, vcomment.stl_begin, 2);
     if commentry do
-       comments = Cons (vcomment . 1 . string.strip, comments);
+       comments = Cons (vcomment . 1 . string, comments);
     otherwise
 
     match lgrep line with
@@ -86,12 +91,28 @@ for file in files do
       if ishtml do
         if prefix (dfn, "class") or prefix (dfn, "open class") do
           println$ "";
-          println$  f"%04d" count + ":  " + '<a href="'+href+'#'+f"%04d" count+'">'+dfn +'</a>';
-          for cline in rev comments do println$ "           "+cline; done
+          println$  "<pre>"+ f"%04d" count + ":  " + '<a href="'+href+'#'+f"%04d" count+'">'+dfn +'</a></pre>';
+          //for cline in rev comments do println$ "           "+cline; done
+          var txt = "";
+          for cline in rev comments do txt += cline+"\n"; done
+          var result = xlat_fdoc (txt, "dummy");
+          var html = #(result.html_raw);
+          if txt != "" do 
+            println$ "<div style='font-family:sans-serif; font-size:12pt; "+
+            "margin-left:100; margin-right:100; top:5; color:#406040'>" + html + "</div>"; 
+          done
           comments = Empty[string];
         else
-          println$ f"%04d" count + ":    " + '<a href="'+href+'#'+f"%04d" count+'">'+ dfn +'</a>';
-          for cline in rev comments do println$ "           "+ cline; done
+          println$ "<pre>"+f"%04d" count + ":    " + '<a href="'+href+'#'+f"%04d" count+'">'+ dfn +'</a></pre>';
+          //for cline in rev comments do println$ "           "+ cline; done
+          txt = "";
+          for cline in rev comments do txt += cline+"\n"; done
+          result = xlat_fdoc (txt, "dummy");
+          html = #(result.html_raw);
+          if txt != "" do 
+            println$ "<div style='font-family:sans-serif; font-size:10pt; " + 
+            "margin-left:100; margin-right:100; top:2; color:#404040; '>" + html + "</div>"; 
+          done
           comments = Empty[string];
         done
       else
@@ -112,6 +133,6 @@ for file in files do
 done
 
 if ishtml do
-  println$ "</pre></body></html>";
+  println$ "</body></html>";
 done
 
