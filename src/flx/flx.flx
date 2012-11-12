@@ -78,6 +78,9 @@ proc print_help() {
   println "--force              : force run Felix compiler";
   println "--cache_dir=dir      : directory cache output from parser (*.par files), autocreated, default $HOME/.felix/cache";
   println "--output_dir=dir     : directory to hold C++ output from translator, autocreated, default $HOME/.felix/cache";
+  println "                       Felix stored by absolute pathname within directory (tree directory).";
+  println "--bundle_dir=dir     : directory to hold C++ output from translator, autocreated.";
+  println "                       Files directly in directory by basename (flat directory).";
   println "--clean              : delete the caches first";
   println "--man                : show flx man page (if there is one)";
   println "--help               : show this help";
@@ -784,7 +787,7 @@ grabbing_args: while grab == 1 and argno<System::argc do
     OUTPUT_DIR=arg.[13 to];
     
   elif prefix(arg,"--bundle_dir=") do
-    debugln "Output files needed for C++ compilation into this folder";
+    debugln "Output files needed for C++ compilation into this folder (directly by basename)";
     BUNDLE_DIR=Some arg.[13 to];
 
   elif prefix(arg,"--cache_dir=") do

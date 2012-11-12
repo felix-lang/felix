@@ -4,6 +4,7 @@ flx_head := """
 body {margin:5%; }
 span.fstring {color:darkblue; font-style:italic; }
 span.comment {font-family:arial; color:blue; font-style:italic; }
+span.doccomment {font-family:arial; color:green; font-style:italic; }
 span.big_keyword {color:#FF1010; }
 span.small_keyword {color:#802040; }
 span.qualifier {color:#A02020; }
