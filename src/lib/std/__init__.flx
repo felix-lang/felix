@@ -1,5 +1,4 @@
 // platform dependent stuff
-include "plat/filename";
 include "plat/config";
 
 // ISO C++99 standard header tags
@@ -15,7 +14,7 @@ include "std/algebraic";
 include "std/flx_ctypes";
 include "std/cptr";
 
-include "plat/ctypedefs";
+include "std/ctypedefs";
 include "std/ctypesets";
 include "plat/arithmax";
 include "plat/float";

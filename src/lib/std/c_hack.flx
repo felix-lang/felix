@@ -1,66 +1,84 @@
-publish """
-This class provides access to raw C/C++ encodings.
-Incorrect typing is likely to pass by Felix and
-be trapped by the C/C++ compiler. Incorrect management
-of storage can lead to corruption. The use of the
-C_hack class is necessary for interfacing.
-"""
+//$ This class provides access to raw C/C++ encodings.
+//$ Incorrect typing is likely to pass by Felix and
+//$ be trapped by the C/C++ compiler. Incorrect management
+//$ of storage can lead to corruption. The use of the
+//$ C_hack class is necessary for interfacing.
 class C_hack
 {
-  publish "C void"
+  //$ _gc_pointer is a special code which tells the compiler
+  //$ that an opaque (primitive) data type is a pointer to be
+  //$ followed by the gc.
+  _gc_pointer type gcaddress = "void*";
+  _gc_pointer type gcptr[t]= "?1*";
+
+//$ C void type. Incomplete, can't be instantiated.
   incomplete type void_t = "void";
 
-  publish "standard variable argument list pointer type"
+  //$ Standard variable argument list pointer type.
   type va_list = "va_list";
 
-  publish """
-  GCC specific valist thingo: it will
-  be optimised away if not used (eg on MSVC)
-  """
+  //$ GCC specific valist thingo: it will
+  //$ be optimised away if not used (eg on MSVC).
   type __builtin_va_list = '__builtin_va_list';
 
-  publish """
-  Throw away result of a function call:
-  only useful for C functions that are mainly
-  called for side effects.
-  """
+  //$ Throw away result of a function call:
+  //$ only useful for C functions that are mainly
+  //$ called for side effects.
   proc ignore[t]:t = "(void)$t;";
 
+  //$ C style cast.
   fun cast[dst,src]: src->dst = '(?1)($1:assign)' is cast;
+
+  //$ C++ static cast.
   fun static_cast[dst,src]: src->dst = 'static_cast<?1>($1)' is postfix;
+
+  //$ C++ dynamic cast.
   fun dynamic_cast[dst,src]: src->dst = 'dynamic_cast<?1>($1)' is postfix;
+
+  //$ C++ const cast.
   fun const_cast[dst,src]: src->dst = 'const_cast<?1>($1)' is postfix;
+
+  //$ C++ reinterpret cast.
   fun reinterpret_cast[dst,src]: src->dst = 'reinterpret_cast<?1>($1)' is postfix;
+
+  //$ Felix reinterpret cast.
+  //$ More powerful than C++ reinterpret cast.
+  //$ Allows casting an rvalue to an lvalue.
   fun reinterpret[dst,src]: src->dst = 'reinterpret<?1>($1)' is postfix;
 
   const sizeof[t]:size = 'sizeof(?1)';
 
-  // deprecated
-  fun int_of:size->int='$1';
-  fun size_of:int->size='$1';
+  //$ Equality for gcptr
+  instance[T] Eq[gcptr[T]] {
+    fun eq[T]: gcptr[T] * gcptr[T] -> bool = "$1==$2";
+  }
 
-  publish "Pointer equality"
-  fun eq[T]: gcptr[T] * gcptr[T] -> bool = "$1==$2";
-  fun ne[T]: gcptr[T] * gcptr[T] -> bool = "$1!=$2";
-
+  //$ Special lvalue deref for gcptr
   lvalue fun deref[t]: gcptr[t] -> t = "*$1";
 
+  //$ Special NULL check for Felix pointers.
+  //$ Should never succeed.
   fun isNULL[t]: &t -> bool = "(0==$1)";
+
+  //$ Special NULL check for carray.
+  //$ Should never succeed.
   fun isNULL[t]: +t -> bool = "(0==$1)";
+
+  //$ Special NULL check for gcptr.
+  //$ Might succeed.
   fun isNULL[t]: gcptr[t] -> bool = "(0==$1)";
 
-  publish """
-  Polymorphic null pointer constant
-  """
+  //$ Polymorphic null pointer constant
+  //$ Values of this type should not exist.
+  //$ This value is provided for checking.
   const null[t]:&t = "(?1*)NULL";
 
-  header dflt_h = "template<class T> T dflt() { return T(); }";
-  publish """
-  Workaround for g++ 3.2.2 parsing bug,
-  it can parse T() as a default ctor call,
-  but screws up on (T())
-  """
-  fun dflt[t]:1->t = "dflt<?1>()" requires dflt_h;
+  //$ C++ default value for a type T.
+  //$ Workaround for g++ 3.2.2 parsing bug,
+  //$ it can parse T() as a default ctor call,
+  //$ but screws up on (T())
+  fun dflt[t]:1->t = "dflt<?1>()" requires header
+    "template<class T> T dflt() { return T(); }";
 
   body checked_malloc = """
     void *checked_malloc(size_t n) {
@@ -69,9 +87,16 @@ class C_hack
       else throw "out of memory";
     }
   """; 
-  // raw allocation and deallocation
+
+  //$ Raw unchecked malloc.
+  //$ Used typed malloc in carray if possible.
   gen raw_malloc: !ints -> address = '::std::malloc($1)' requires Cxx_headers::cstdlib;
+
+  //$ Malloc with out of memory check.
+  //$ Throws c"out of memory" if out of memory.
   gen malloc: !ints -> address = 'checked_malloc($1)' requires Cxx_headers::cstdlib, checked_malloc;
+
+  //$ Raw unchecked free.
   proc free: address = '::std::free($1);' requires Cxx_headers::cstdlib;
 }
 

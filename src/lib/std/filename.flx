@@ -1,10 +1,8 @@
-include "plat/filename";
-
-//$ Operations on host platform (native) filenames.
-class Filename {
+//$ Operations on filenames.
+class Filename_class[os] {
 
   //$ The path separator.
-  fun sep() => #Plat_Filename::sep;
+  virtual fun sep: 1 -> string;
 
   //$ split1 returns a pair consisting of a directory name and basename
   //$ with the separator between them lost except in the special case
@@ -71,3 +69,30 @@ class Filename {
 
 }
 
+//$ Windows Filenames
+class Win32Filename 
+{
+  inherit Filename_class[Win32];
+  instance Filename_class[Win32] {
+    fun sep() => "\\";
+  }
+}
+
+//$ Posix Filenames
+class PosixFilename 
+{
+  inherit Filename_class[Posix];
+  instance Filename_class[Posix] {
+    fun sep() => "/";
+  }
+}
+
+//$ Host Filenames.
+class Filename
+{
+if PLAT_WIN32 do
+  inherit Win32Filename;
+else
+  inherit PosixFilename;
+done
+}

@@ -739,50 +739,13 @@ tmap["uchar"]=tmap["int32"] # Unicode/ISO10646, note: SIGNED!
   if SIZEOF_LONG == size: return 'ulong'
   if SIZEOF_LONGLONG == size: return 'uvlong'
 
-@select(tangler("lib/plat/ctypedefs.flx",'data'))
-// GENERATED DURING CONFIGURATION
-@equiv_uchar = fint2cint[cint2fint[getattr(config.TARGET_CXX.options, 'ALIAS_int32_t')]]
-@print("Alias uchar -> " + equiv_uchar)
-@tmap['uchar']=equiv_uchar
-@
-@equiv_ptrdiff = fint2cint[cint2fint[getattr(config.TARGET_CXX.options, 'ALIAS_ptrdiff_t')]]
-@print("Alias ptrdiff -> " + equiv_ptrdiff)
-@tmap['offset']=equiv_ptrdiff
-@
-@equiv_wchar = fint2cint[cint2fint[getattr(config.TARGET_CXX.options, 'ALIAS_wchar_t')]]
-@print("Alias wchar -> " + equiv_wchar)
-@tmap['wchar']=equiv_wchar
-@
-@
-@for t in all:
-  gen_type(t)
-
-// _gc_pointer is a special code which tells the compiler
-// that an opaque (primitive) data type is a pointer to be
-// followed by the gc.
-_gc_pointer type gcaddress = "void*";
-_gc_pointer type gcptr[t]= "?1*";
-
-@# mandatory in C
-@for t in ['ptrdiff','size','ssize','intmax','uintmax','intptr','uintptr']:
-  equiv = fint2cint[cint2fint[getattr(config.TARGET_CXX.options, 'ALIAS_'+t+'_t')]]
-  if creq.__contains__(equiv):
-    tangle('pod type ' + t + ' = "' + equiv + '" requires '+creq[equiv]+';')
-  else:
-    tangle('pod type ' + t + ' = "' + equiv + '";')
-
-@# optional in C
-@for t in exact_ints:
-  equiv = fint2cint[cint2fint[getattr(config.TARGET_CXX.options, 'ALIAS_'+t+'_t')]]
-  if creq.__contains__(equiv):
-    tangle('pod type ' + t + ' = "' + equiv + '" requires '+creq[equiv]+';')
-  else:
-    tangle('pod type ' + t + ' = "' + equiv + '";')
-
 
 @select(tangler('lib/plat/arithmax.flx','data'))
 // GENERATED DURING CONFIGURATION
 // arithmetic conversion rule
+// DEPRECATED because its WRONG,
+// fbuild miscalculates promotions because it
+// does the calculation in C instead of C++
 typedef fun arithmax(l: TYPE, r: TYPE): TYPE =>
   typematch integral_promotion l, integral_promotion r with
 @for f1 in fint2cint.keys():
@@ -832,24 +795,6 @@ class Version
 @tangle('  const felix_version : string = \'::std::string("'+config.flx_version+'")\';')
 }
 
-
-@h = tangler("lib/plat/filename.flx")
-@select(h)
-// GENERATED DURING CONFIGURATION
-class Plat_Filename
-{
-@if os.sep == '\\':
-   # FFS!!! we put \\\\\\\\ here:
-   # Python reduces it to \\\\             !!!
-   # Felix then reduces it to \\           !!!
-   # and finally C reduces it to plain \   !!!
-   # don't remove the !!! because \ at eol is continuation .. argg
-   tangle('  fun sep()  => "\\\\";')
- else:
-   tangle('  fun sep() => "'+os.sep+'";')
-@#
- 
-}
 
 @h=tangler('src/compiler/flx_version_hook/flx_version_hook.ml')
 @select(h)
