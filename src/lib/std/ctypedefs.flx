@@ -1,0 +1,44 @@
+// GENERATED DURING CONFIGURATION
+pod type byte = "unsigned char";
+pod type address = "void *";
+pod type offset = "long";
+pod type char = "char";
+pod type wchar = "int";
+pod type uchar = "int";
+pod type tiny = "signed char";
+pod type short = "short";
+pod type int = "int";
+pod type long = "long";
+pod type vlong = "long long";
+pod type utiny = "unsigned char";
+pod type ushort = "unsigned short";
+pod type uint = "unsigned int";
+pod type ulong = "unsigned long";
+pod type uvlong = "unsigned long long";
+pod type float = "float";
+pod type double = "double";
+pod type ldouble = "long double";
+pod type fcomplex = "::std::complex<float>" requires Cxx_headers::complex;
+pod type dcomplex = "::std::complex<double>" requires Cxx_headers::complex;
+pod type lcomplex = "::std::complex<long double>" requires Cxx_headers::complex;
+// _gc_pointer is a special code which tells the compiler
+// that an opaque (primitive) data type is a pointer to be
+// followed by the gc.
+_gc_pointer type gcaddress = "void*";
+_gc_pointer type gcptr[t]= "?1*";
+
+pod type ptrdiff = "long";
+pod type size = "unsigned long";
+pod type ssize = "long";
+pod type intmax = "long";
+pod type uintmax = "unsigned long";
+pod type intptr = "long";
+pod type uintptr = "unsigned long";
+pod type int8 = "signed char";
+pod type int16 = "short";
+pod type int32 = "int";
+pod type int64 = "long";
+pod type uint8 = "unsigned char";
+pod type uint16 = "unsigned short";
+pod type uint32 = "unsigned int";
+pod type uint64 = "unsigned long";
