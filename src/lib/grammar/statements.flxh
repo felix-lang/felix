@@ -26,6 +26,8 @@ syntax statements {
   //$ entirely independently.
   stmt := "include" sstring ";" =># "`(ast_include ,_sr ,_2)";
 
+  //$ A declarative name consists of an identifier and
+  //$ an (optional) type variable specification.
   // note: list is reversed, eg X::Y::name goes to list name, Y, Z
   sdeclname := sname stvarlist =># "`(,_1 ,_2)";
 
@@ -72,7 +74,7 @@ syntax statements {
   stype_constraint := "where" sexpr "with" stypeclass_constraint_list =>#
     "`(,_2 ,_4)";
 
-  //$ The constrain is empty if the polymorphism is parametric.
+  //$ The constraint is empty if the polymorphism is parametric.
   stype_constraint := sepsilon =># "`((ast_tuple,_sr())())";
 
   //$ Individual type variable equational constraint.
@@ -87,14 +89,18 @@ syntax statements {
   //$ A type variable, possibly with an individual constraint.
   stvar := sname seqorin =># """`(,_1 (ast_name ,_sr "TYPE" ()) ,_2)"""; 
 
-  //$ A type variable with a kinding constraint.
+  //$ A type variable with an individual constraint.
   //$ This is usually the same as a predicate.
   stvar := sname ":" stypeexpr seqorin =># "`(,_1 ,_3 ,_4)";
 
-  stvar_comma_list := stvar scomma_tvar* =># "(cons _1 _2)";
+  //$ A list of type variables with optional individual constraints.
+  stvar_comma_list := stvar ("," stvar)* =># "(cons _1 (map second _2))";
   stvar_comma_list := sepsilon =># "'()";
-  scomma_tvar := "," stvar =># "_2";
 
+  //$ A type variable specification consists of
+  //$ a possibly empty list of type variables with 
+  //$ individual constraints, plus an optional
+  //$ type constraint relating the specified variables.
   stvarlist:= sepsilon =># "dfltvs";
   stvarlist:= "[" stvar_comma_list stype_constraint "]" =>#
     "(tvfixup _2 _3)";
@@ -102,8 +108,7 @@ syntax statements {
   stypeparameter:= sname ":" x[sarrow_pri] =># "`(,_1 ,_3)";
   stypeparameter:= sname =># "`(,_1 ,(noi 'typ_none))";
   stypeparameter_comma_list := sepsilon =># "()";
-  stypeparameter_comma_list := stypeparameter "," stypeparameter_comma_list =># "(cons _1 _3)";
-  stypeparameter_comma_list := stypeparameter =># "`(,_1)";
+  stypeparameter_comma_list := stypeparameter ("," stypeparameter)* =># "(cons _1 (map second _2))";
 
   stypefun_arg := sname =># "`((,_1 ,(noi 'typ_none)))";
   stypefun_arg := "(" stypeparameter_comma_list ")" =># "_2";
@@ -122,6 +127,8 @@ syntax statements {
   //scompound := "{" stmt* "}" =># "_2";
   scompound := "{" sstatements "}" =># "_2";
 
+  //$ A suffixed name.
+  //$ Used  to name an overloaded function.
   sname_suffix:= "," sname sname_suffix =># "(cons _2 _3)";
   sname_suffix:= "," sname =># "`(,_2)";
 
