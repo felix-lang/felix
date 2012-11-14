@@ -183,7 +183,7 @@ syntax functions {
   //$ Object factory definition without interface type.
   sfunction := "object" sdeclname sfun_arg*  "=" scompound =>#
     """
-      `(ast_curry ,_sr ,(first _2) ,(second _2) ,_3 none Object ,_5)
+      `(ast_curry ,_sr ,(first _2) ,(second _2) ,_3 (,(noi 'typ_none) none) Object ,_5)
     """;
 
   //$ Object factory definition with inherited methods and
