@@ -1,0 +1,84 @@
+@h1 Modelling Inheritance
+In felix, objects are defined dynamically by constructor
+functions. And we can combine objects with the {extend}
+combinator. Lets see how we can model inheritance with
+this mechanism!
+@felix
+// The base.
+interface A[T] { print : 1 -> 0; get: 1 -> list[T]; }
+object fred[T] (x:list[T]) implements A[T] = 
+{
+  method proc print () { println$ x; }
+  method fun get () => x;
+}
+
+var lst = list$ 1,2,3;
+var a = fred lst;
+
+a.print();
+println$ a.get();
+
+println$ "*" * 20;
+
+// OK, so an inheritance example.
+
+interface B[T] extends A[T] { pprint: 1 -> 0; }
+
+object joe () extends a implements B[int] = {
+  method proc pprint () { print "Hello "; a.print(); }
+}
+
+var b = joe();
+b.print();
+b.pprint();
+println$ b.get();
+@
+Here we have inherited from an object! 
+The two objects, {a} and {b}, encapsulate two distinct state variables,
+and can be modified independently.
+@p
+This is basically prototype based OO.
+Here's a more conventional class-like
+way to do it, with only a single state variable:
+
+@felix
+interface B[T] extends A[T] { pprint: 1 -> 0; }
+
+object joe[T] (x:list[T]) extends fred x as var y implements B[T] = {
+  method proc pprint () { print "Hello "; y.print(); }
+  method proc print () { print "OVERRIDE "; y.print(); }
+}
+
+var b = joe lst;
+b.print();
+b.pprint();
+println$ b.get();
+@
+This is quite different because the {fred} object we're extending
+is created by the {joe} constructor, in fact we have to use
+the "as var y" notation to give it a name. {fred} is very similar
+to a C++ base class here, except we don't make the mistake of
+C++ and refer to the base by its type: instead we name
+the subobject (which is what C++ should have done).
+@p
+In this example
+you can also observe overriding the {print} method. 
+This works because during extension if two record fields
+have the same name, only the later one is kept. Since
+methods are record fields, the {print} method of {fred}
+is discarded in favour of the {print} method of {joe}.
+@p
+I hope you can see that this system is very powerful.
+It can do both prototype based OO as well as class based OO,
+or both in any combination, depending entirely on how you
+construct the private state. In fact, you get multi-methods
+for free as well.
+@p
+What one needs to get used to is that the object is divorced
+from the private states its methods implement. It's also necessary
+to throw out the weak nominal typing an inheritance model used
+by C++ and Java in favour of the much more usable structural
+typing provided by records.
+
+
+

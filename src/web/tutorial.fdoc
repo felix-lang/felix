@@ -9,7 +9,7 @@ Polymorphism:
 
 @p
 Categorical type system: 
-<a href="garrays_index.fdoc">Generalised Arrays.</a>
+<a href="garray_index.fdoc">Generalised Arrays.</a>
 
 @p
 Pattern matching and unions:

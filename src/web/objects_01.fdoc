@@ -32,6 +32,32 @@ accessible outside the function: thus Felix leverages
 functional (lambda) abstraction to hide the private
 representation of an object.
 
+@h2 Named Objects
+In the above code we deliberately used an inline or literal
+object notation to emphasise that objects are first class
+and can be used anywhere: a lambda notation tha produces an
+anonymous object constructor as a closure.
+@p
+As for functions, more conventional syntax is
+also available:
+@felix
+object person (name:string, var age:int) = {
+  method fun get_name () => name; 
+  method fun get_age () => age; 
+  method proc set_age (x:int) { age = x; }
+}
+@p
+This is not equivalent because now {person} is a named object
+constructor function, not a variable. In particular, like
+all functions, named object constructor function can be overloaded.
+@p
+It is good to avoid confusion, and remember that whilst {person}
+is a constructor, it is the same as in Java or C++ that
+@felix
+   person ("fred", 22)
+@p
+is an object.
+
 @h1 Extending Objects
 It is easy to make an extended object. Lets suppose we want to
 give {john} an {occupation} then we first do this:

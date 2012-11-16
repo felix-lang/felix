@@ -180,16 +180,16 @@ CodeMirror.defineMode("felix", function(config, parserConfig) {
   }
 
    CodeMirror.defineMIME("text/x-felix", {
-    name: "clike",
+    name: "felix",
     keywords: words("while for try catch endtry match with endmatch if else elif endif " + 
                     "union type struct cstruct typedef class module instance " +
                     "fun proc gen object interface extends implements " +
                     "cfun enum typedef header body package " +
                     "do done with as " +
+                    "var val ref " +
                     ""),
-    blockKeywords: words("do done"),
-    atoms: words("true false"),
-    lineNumbers : true,
+    blockKeywords: words("do done "),
+    atoms: words("true false NULL "),
     hooks: {
       "@": function(stream, state) {
         stream.eatWhile(/[\w\$_]/);

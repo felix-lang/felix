@@ -1,0 +1,26 @@
+@h1 Polymorphic Objects
+Named object factories can be polymorphic because they're just functions,
+and functions can be polymorphic:
+@felix
+object fred[T] (x:list[T]) = 
+{
+  method proc print () { println$ x; }
+  method fun get () => x;
+}
+
+var lst = list$ 1,2,3;
+var a = fred lst;
+
+a.print();
+println$ a.get();
+@p
+Naturally interfaces can also be polymorphic because records can:
+@felix
+interface A[T] { print : 1 -> 0; get: 1 -> list[T]; }
+object fred[T] (x:list[T]) implements A[T] = 
+{
+  method proc print () { println$ x; }
+  method fun get () => x;
+}
+@
+

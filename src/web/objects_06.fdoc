@@ -1,0 +1,125 @@
+@h1 Objects and Plugins
+Objects work well with plugins.
+We'll look at a simple example, the paragraph control object
+used by the fdoc processor in the webserver.
+@felix
+// file doc_paragraph.flx
+interface paragraph-control_t {
+  whatami: 1 -> string;
+  sp : 1 -> 0;
+  sp-clas : string -> 0;
+  ep : 1 -> 0;
+  bp : 1 -> 0;
+}
+@p
+The interface has a {whatami} method to specify the kind
+of object in a human readable format. Then it provides
+method {sp} to start a paragraph, {sp-clas} to start 
+a paragraph with a given HTML class attribute, so CSS
+can modify the formatting.
+@p
+Then there's an end paragraph method and a method to
+break paragraphs, that is, end one and start a new one.
+Now lets look at the implementation:
+@felix
+// file fdoc_paragraph.flx
+include "./paragraph-interface";
+
+fun setup(config_data:string) = {
+  eprintln$ "Setup fdoc_paragraph" + config_data;
+  return 0;
+}
+
+
+object fdoc_paragraph (write_string: string -> 0) implements paragraph-control_t = 
+{
+  method fun whatami () => "Paragraph object";
+  var pstate = false;
+  proc start_p () { write_string("<p>"); pstate=true; }
+  proc start_p (cls:string) { write_string("<p class='"+cls+"'>"); pstate=true; }
+  proc end_p () { write_string("</p>"); pstate=false; }
+  proc break_p () { write_string("</p><p>"); }
+  method proc sp-clas (cls: string) { if not pstate do start_p cls; done }
+  method proc sp() { if not pstate do start_p; done }
+  method proc ep() { if pstate do end_p; done }
+  method proc bp() { if pstate do end_p; done start_p; }
+}
+
+export fun setup of (string) as "setup";
+export fun fdoc_paragraph of (string->0) as "fdoc_paragraph";
+@p
+The {include} directive includes the file containing the interface
+given above.
+@p
+The {setup} function here doesn't do anything, its required by
+the plugin loader. In more complex plugins it can parse a configuration
+string to extract any relevant data.
+@p
+Now you can see the methods implemented, and note that the
+object closure contains local variable {pstate} which records
+the current state: if true, we're in a paragraph, if false
+then we're not.
+@p
+The procedures not marked as {method} are private
+helpers.
+@p
+Finally, we have to export the {setup} and {fdoc_paragraph}
+functions so they get {extern "C"} linkage, so we can
+use {dlsym()} or {GetProcAddress()} on them when we load
+the plugin DLL (shared library).
+@p
+To use this stuff we do as follows in another plugin
+or mainline.
+@felix
+include "./paragraph-interface";
+var paragraph-maker : (string->0) -> paragraph-control_t;
+@
+We haul in the file containing the interface, and create
+an uninitialised global variable to hold the factory 
+function. Next, in the {setup} phase of the caller:
+@felix
+  paragraph-maker = 
+    Dynlink::load-plugin-func1 
+     [paragraph-control_t, (string->0)] 
+     (dll-name="fdoc_paragraph")
+  ;
+@
+we assign the factory function loaded from the plugin
+to the variable. The {load-plugin-func1} function actually
+loads the DLL, creates a data frame for its global variables,
+calls the {setup} function, and returns a closure of the
+factory function bound to the data frame which we store
+in the {paragraph-maker} variable.
+@p
+This isn't a paragraph control object yet.
+To make one of those we call:
+@felix
+  var paragraph = paragraph-maker write_string of (string);
+@
+and now we can use the object:
+@felix
+  paragraph.sp ();
+  write_string "Hello";
+  paragraph.ep();
+@
+
+Although this seems complicated you should note what is happening:
+there are two levels of binding. The first level creates the 
+global of the factory function, which is modified by the {setup}
+function. That environment is subsequently shared by all objects.
+Each object is created by a second level of binding which passes
+an argument to the factory function. You can use this to process
+multiple texts at once by having a separate paragraph object
+for each one.
+@p
+You should note that if another plugin also loads the paragraph
+plugin as shown .. the two instances will be utterly distinct.
+Each will have its own copy of the library's global environment.
+The code is shared, the data is not. Felix always generates
+reentrant code: there are no actual C level global variables.
+So use of plugins by threads is safe if each thread creates
+is own instance of the plugin.
+@p
+Of course you can share instances, but to do that you have
+to use lower level library functions and pass the relevant
+handles around yourself!

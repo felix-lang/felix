@@ -9,7 +9,14 @@ interface Person {
 }
 @
 @p
-<em>An interface is nothing more than alias for a record type.</em>
+<em>An interface is nothing more than alias for a record type.</em> In particular
+the above is equivalent to
+@felix
+typedef Person = {
+  get_name : 1 -> string;
+  get_age : 1 -> int;
+  set_age : int -> 0;
+};
 @p
 Now, we can define a person with the interface:
 @felix
@@ -19,6 +26,14 @@ var person = object (name:string, var age: int) implements Person = {
   method proc set_age (x:int) { age = x; }
 };
 @
+Naturally the interface implement is just the return type
+of the factory function. And you can write this too:
+@felix
+object person (name:string, var age: int) implements Person = {
+  method fun get_name () => name; 
+  method fun get_age () => age; 
+  method proc set_age (x:int) { age = x; }
+};@p
 Of course interfaces can be extended:
 @felix
 interface WorkingPerson extends Person { 

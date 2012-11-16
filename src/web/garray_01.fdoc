@@ -18,7 +18,7 @@ An integer constant can be used to denote a projection
 function, which extracts one of the components.
 @felix
 var c0 : string = 0 tup;
-var c1 ; int = tup . 1;
+var c1 : int = tup . 1;
 @
 The reverse application operator {.} makes the second form
 more intuitive. Projection functions are sometimes
@@ -32,7 +32,7 @@ to that here.
 
 Much less understood by programmers is the sum or variant type.
 Whilst a product may be thought of as "all of these things aggregated",
-a sum type is "pick of of these things". It is the type of choices,
+a sum type is "pick one of these things". It is the type of choices,
 conditionals, and switched control flow.
 
 The best known sum type is the humble enumeration, and the best
