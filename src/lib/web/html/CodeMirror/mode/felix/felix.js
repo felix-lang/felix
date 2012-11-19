@@ -42,8 +42,16 @@ CodeMirror.defineMode("felix", function(config, parserConfig) {
       stream.eatWhile(isOperatorChar);
       return "operator";
     }
-    stream.eatWhile(/[\w\$_]/);
+    stream.eatWhile(/[\w\$_\-]/);
     var cur = stream.current();
+    if (cur == "do") {
+      curPunc = "do";
+      return "keyword";
+    }
+    if (cur == "done") {
+      curPunc = "done";
+      return "keyword";
+    }
     if (keywords.propertyIsEnumerable(cur)) {
       if (blockKeywords.propertyIsEnumerable(cur)) curPunc = "newstatement";
       return "keyword";
@@ -93,7 +101,7 @@ CodeMirror.defineMode("felix", function(config, parserConfig) {
   }
   function popContext(state) {
     var t = state.context.type;
-    if (t == ")" || t == "]" || t == "}")
+    if (t == ")" || t == "]" || t == "}" || t == "done")
       state.indented = state.context.indented;
     return state.context = state.context.prev;
   }
@@ -124,12 +132,18 @@ CodeMirror.defineMode("felix", function(config, parserConfig) {
       if (ctx.align == null) ctx.align = true;
 
       if ((curPunc == ";" || curPunc == ":") && ctx.type == "statement") popContext(state);
+      else if (curPunc == "do") pushContext(state, stream.column(), "done");
       else if (curPunc == "{") pushContext(state, stream.column(), "}");
       else if (curPunc == "[") pushContext(state, stream.column(), "]");
       else if (curPunc == "(") pushContext(state, stream.column(), ")");
       else if (curPunc == "}") {
         while (ctx.type == "statement") ctx = popContext(state);
         if (ctx.type == "}") ctx = popContext(state);
+        while (ctx.type == "statement") ctx = popContext(state);
+      }
+      else if (curPunc == "done") {
+        while (ctx.type == "statement") ctx = popContext(state);
+        if (ctx.type == "done") ctx = popContext(state);
         while (ctx.type == "statement") ctx = popContext(state);
       }
       else if (curPunc == ctx.type) popContext(state);
@@ -188,7 +202,8 @@ CodeMirror.defineMode("felix", function(config, parserConfig) {
                     "do done with as " +
                     "var val ref " +
                     ""),
-    blockKeywords: words("do done "),
+    blockKeywords: words(""),
+    multiLineStrings: true,
     atoms: words("true false NULL "),
     hooks: {
       "@": function(stream, state) {
