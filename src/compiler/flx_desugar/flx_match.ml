@@ -203,7 +203,7 @@ let gen_match rex seq name sr e pss =
         (
           ([],None),
           TYP_none,
-          [`Inline;`Generated "desugar:match fun"],
+          [`GeneratedInline;`Generated "desugar:match fun"],
           match_function_body
         )
       )

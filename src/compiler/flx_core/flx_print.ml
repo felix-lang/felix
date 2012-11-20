@@ -932,6 +932,7 @@ and string_of_lvalue (x,t) =
 and string_of_property = function
 | `Recursive -> "recursive"
 | `Inline -> "inline"
+| `GeneratedInline -> "inline(generated)"
 | `Generated s -> "generated " ^ s
 | `NoInline -> "noinline"
 | `Inlining_started -> "inlining_started"
@@ -1074,6 +1075,8 @@ and string_of_funkind kind =
   match kind with
     | `Function -> "fun"
     | `CFunction -> "cfun"
+    | `GeneratedInlineProcedure -> "inline procedure(generated,block)"
+    | `GeneratedInlineFunction-> "inline function(lambda)"
     | `InlineFunction -> "inline fun"
     | `NoInlineFunction -> "noinline fun"
     | `Virtual -> "virtual fun"

@@ -597,7 +597,7 @@ and build_table_for_dcl
       add_symbol ~pubtab ~privtab ~dirs symbol_index id (SYMDEF_function (
           ([],None),
           TYP_var symbol_index,
-          [`Generated "symtab:match handler" ; `Inline],
+          [`Generated "symtab:match handler" ; `GeneratedInline],
           exes));
 
       (* Possibly add function to public symbol table. *)

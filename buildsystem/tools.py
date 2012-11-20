@@ -5,11 +5,18 @@ import os
 
 def build(phase, felix):
 
-    try:
-        exe = felix.compile(phase.ctx.buildroot/'wiki/wiki.flx', static=True)
-        fbuild.builders.file.copy(phase.ctx, exe, 'bin')
-    except:
-        print("Warning : wiki not built. Continuing..." )
+    
+    # The wiki is killing the compiler, inlining procedure
+    # cannot cope. Possible inline explosion.
+    # Need to investigate this. Maybe its too big,
+    # and maybe the small change I just introduced was enough
+    # to kill it.
+
+    #try:
+    #    exe = felix.compile(phase.ctx.buildroot/'wiki/wiki.flx', static=True)
+    #    fbuild.builders.file.copy(phase.ctx, exe, 'bin')
+    #except:
+    #    print("Warning : wiki not built. Continuing..." )
 
     exes = [
       "flx_grep",

@@ -242,6 +242,8 @@ and tlvalue_t = lvalue_t * typecode_t option
 and funkind_t = [
   | `Function
   | `CFunction
+  | `GeneratedInlineProcedure
+  | `GeneratedInlineFunction
   | `InlineFunction
   | `NoInlineFunction
   | `Virtual
@@ -255,6 +257,7 @@ and funkind_t = [
 and property_t = [
   | `Recursive
   | `Inline
+  | `GeneratedInline
   | `NoInline
   | `Inlining_started
   | `Inlining_complete

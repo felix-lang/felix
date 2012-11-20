@@ -803,6 +803,38 @@ let virtual_check syms bsym_table sr i ts =
 
   | _ -> (* print_endline (id ^ " -- Not virtual") *) true,i,ts
 
+let inline_check syms bsym_table uses srcall caller callee props exes =
+  if mem `NoInline props && mem `Inline props 
+  then begin
+    let bsym = Flx_bsym_table.find bsym_table callee in
+    let srdef = Flx_bsym.sr bsym in
+    let id = Flx_bsym.id bsym in
+    clierr srdef ("Function " ^ id ^ ": Conflicting properties inline and noinline")
+  end 
+  ;
+  if mem `Inline props &&
+    Flx_call.is_recursive_call uses caller callee &&
+    not (Flx_bsym_table.is_child bsym_table caller callee)
+  then begin
+    let bsym = Flx_bsym_table.find bsym_table callee in
+    let srdef = Flx_bsym.sr bsym in
+    let id = Flx_bsym.id bsym in
+    clierr2 srcall srdef ("Cannot inline recursive call to non-child inline function " ^ id)
+  end
+  ;
+  not (mem `NoInline props) &&
+  (
+      mem `Inline props || mem `GeneratedInline props ||
+      length exes <= syms.compiler_options.max_inline_length
+  ) &&
+  (
+    (* only inline a recursive call to a child *)
+    not (Flx_call.is_recursive_call uses callee callee) ||
+    (* inline a recursive call to a recursive child *)
+    Flx_call.is_recursive_call uses caller callee &&
+    Flx_bsym_table.is_child bsym_table caller callee
+  )
+
 let rec special_inline syms uses bsym_table caller_vs caller hic excludes sr e =
   (*
   print_endline ("Special inline " ^ sbe bsym_table e);
@@ -907,21 +939,7 @@ let rec special_inline syms uses bsym_table caller_vs caller hic excludes sr e =
           ;
           *)
           let inline_choice =
-            can_inline &&
-              not (mem `NoInline props) &&
-              (
-                mem `Inline props ||
-                length exes <= syms.compiler_options.max_inline_length
-              ) &&
-             (
-                (* inline a non-recursive function *)
-                not (Flx_call.is_recursive_call uses callee callee)
-                ||
-
-                (* inline a recursive call to a recursive child *)
-                Flx_call.is_recursive_call uses caller callee &&
-                Flx_bsym_table.is_child bsym_table caller callee
-             )
+            can_inline && inline_check syms bsym_table uses sr caller callee props exes 
           in
           (*
           print_endline ("  Inline decision: " ^
@@ -1031,18 +1049,6 @@ and heavy_inline_calls
   (*
   print_endline ("HIC: Input excludes = " ^ catmap "," si excludes);
   *)
-  let inline_check caller callee props exes =
-    not (mem `NoInline props) &&
-    (
-        mem `Inline props ||
-        length exes <= syms.compiler_options.max_inline_length
-    ) &&
-    (
-      (* only inline a recursive call to a child *)
-      not (Flx_call.is_recursive_call uses caller callee) ||
-      Flx_bsym_table.is_child bsym_table caller callee
-    )
-  in
   let specialise_check caller callee ts props exes = false
     (*
     (* for the moment, don't specialise recursive calls *)
@@ -1126,7 +1132,7 @@ and heavy_inline_calls
       *)
       begin match Flx_bsym.bbdcl bsym with
       | BBDCL_fun (props,vs,(ps,traint),BTYP_void,exes) ->
-        if can_inline && inline_check caller callee props exes then
+        if can_inline && inline_check syms bsym_table uses sr caller callee props exes then
         begin
           if syms.compiler_options.print_flag then
           print_endline ("inlining direct call: " ^ string_of_bexe bsym_table 0 exe);
@@ -1172,7 +1178,7 @@ and heavy_inline_calls
       let bsym = Flx_bsym_table.find bsym_table callee in
       begin match Flx_bsym.bbdcl bsym with
       | BBDCL_fun (props,vs,(ps,traint),ret,exes) ->
-        if can_inline && inline_check caller callee props exes then
+        if can_inline && inline_check syms bsym_table uses sr caller callee props exes then
         begin
           if syms.compiler_options.print_flag then
           print_endline ("Inline call lift: " ^ string_of_bexe bsym_table 0 exe);
@@ -1198,7 +1204,7 @@ and heavy_inline_calls
       let bsym = Flx_bsym_table.find bsym_table callee in
       begin match Flx_bsym.bbdcl bsym with
       | BBDCL_fun (props,vs,(ps,traint),ret,exes) ->
-        if can_inline && inline_check caller callee props exes then
+        if can_inline && inline_check syms bsym_table uses sr caller callee props exes then
           begin
             let bsymv = Flx_bsym_table.find bsym_table i in
             begin match Flx_bsym.bbdcl bsymv with
@@ -1236,7 +1242,7 @@ and heavy_inline_calls
       let bsym = Flx_bsym_table.find bsym_table callee in
       begin match Flx_bsym.bbdcl bsym with
       | BBDCL_fun (props,vs,(ps,traint),ret,exes) ->
-        if can_inline && inline_check caller callee props exes then
+        if can_inline && inline_check syms bsym_table uses sr caller callee props exes then
         begin
           if inlining_complete bsym_table callee then
           begin

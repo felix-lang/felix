@@ -523,7 +523,7 @@ print_endline ("Parent " ^ str_parent sym_parent ^ " mapped to true parent " ^ s
         (btyp_function (btyp_tuple [], flx_bbool)));
 
     add_bsym true_parent (bbdcl_fun
-      ([`Inline; `Generated "bbind: match check"], bvs, ([], None),
+      ([`GeneratedInline; `Generated "bbind: match check"], bvs, ([], None),
       flx_bbool, bbexes))
 
   | SYMDEF_const_ctor (uidx,ut,ctor_idx,vs') ->

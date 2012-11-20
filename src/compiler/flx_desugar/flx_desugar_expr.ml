@@ -32,7 +32,7 @@ let make_desugar_state name seq = {
 let generated = Flx_srcref.make_dummy "[flx_desugar_expr] generated"
 
 let block sr body :statement_t =
-  let e = EXPR_lambda (sr,(`InlineFunction,dfltvs,[[],None],TYP_void sr,body)) in
+  let e = EXPR_lambda (sr,(`GeneratedInlineProcedure,dfltvs,[[],None],TYP_void sr,body)) in
   STMT_call (sr,e,EXPR_tuple(sr,[]))
 
 let fix_params sr seq (ps:params_t):plain_vs_list_t * params_t =
@@ -59,6 +59,8 @@ let fix_params sr seq (ps:params_t):plain_vs_list_t * params_t =
 let cal_props = function
   | `CFunction -> `Cfun::[]
   | `InlineFunction -> `Inline::[]
+  | `GeneratedInlineProcedure-> `GeneratedInline::[]
+  | `GeneratedInlineFunction -> `GeneratedInline::[]
   | `NoInlineFunction -> `NoInline::[]
   | `Ctor -> `Ctor::[]
   | `Generator -> (* `NoInline:: *) `Generator::[]
