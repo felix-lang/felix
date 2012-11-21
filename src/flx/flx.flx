@@ -376,9 +376,11 @@ proc install_bin ()
   if result !=0 goto install_bin_failed;
   println$ "Installed executable webserver in /usr/local/bin";
 
+/*
   result= system("cp -f "+FLX_INSTALL_DIR+"/wiki/wiki /usr/local/bin");
   if result !=0 goto install_bin_failed;
   println$ "Installed executable wiki in /usr/local/bin";
+*/
 
   result= system("cp -f "+FLX_INSTALL_DIR+"/tools/flx_ls /usr/local/bin");
   if result !=0 goto install_bin_failed;
