@@ -102,7 +102,7 @@ install:
 # Install binaries on felix-lang.org
 #
 install-felix-lang.org:
-	~sudo stop felixweb
+	-sudo stop felixweb
 	sudo build/release/bin/flx --test=build/release --install 
 	sudo build/release/bin/flx --test=build/release --install-bin
 	sudo rm -rf $(HOME)/.felix/cache
