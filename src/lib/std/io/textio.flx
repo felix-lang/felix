@@ -1,86 +1,104 @@
-// These classes provide simple I/O for text, primarily intended for
-// naive use, debugging etc. This is because there is no error
-// handling. This simplifies usage at the expense of correctness,
-// and so these routines should not be used in production code.
+//$ These classes provide simple I/O for text, primarily intended for
+//$ naive use, debugging etc. This is because there is no error
+//$ handling. This simplifies usage at the expense of correctness,
+//$ and so these routines should not be used in production code.
 
+//$ Abstract input file.
 class Input_text_file[input_text_file]
 {
-  // open for reading 
+  //$ Open file for reading.
   virtual gen fopen_input: string -> input_text_file; 
 
-  // check if the file was opened correctly
+  //$ Check if the file was opened correctly.
   virtual gen valid : input_text_file -> bool;
  
-  // close
+  //$ Close file.
   virtual proc fclose: input_text_file;
 
-  // load the rest of an open file
+  //$ Load the rest of an open file.
   virtual gen load: input_text_file -> string;
 
-  // read one line with the trailing end-line mark stripped
+  //$ Read one line with the trailing end-line mark stripped.
   virtual gen readln: input_text_file -> string;
 
-  // check for end of file
+  //$ Check for end of file.
   virtual gen feof : input_text_file -> bool;
 }
 
+//$ Abstract output file.
 class Output_text_file[output_text_file]
 {
-  // open for writing
+  //$ Open file for writing.
   virtual gen fopen_output: string -> output_text_file;
 
-  // check if the file was opened correctly
+  //$ Check if the file was opened correctly.
   virtual gen valid : output_text_file -> bool;
  
-  // close
+  //$ Close file.
   virtual proc fclose: output_text_file;
 
-  // write one line adding the trailing end line mark
+  //$ Write one line adding the trailing end line mark.
   virtual proc writeln : output_text_file * string;
 
-  // write a string
+  //$ Write a string.
   virtual proc write : output_text_file * string;
 
-  // write a byte 
+  //$ Write a byte.
   virtual proc write : output_text_file * utiny;
 
-  // write a char 
+  //$ Write a char.
   virtual proc write : output_text_file * char;
 
-  // flush the buffers
+  //$ Flush the buffers.
   virtual proc fflush: output_text_file;
 
+  //$ Write a space.
   proc space (s:output_text_file) { write (s, " "); };
+
+  //$ Write end of line mark.
   proc endl (s:output_text_file) { write (s, "\n"); };
+
+  //$ Write data with conversion using Str::str.
   proc fprint[T with Str[T]] (s:output_text_file, x:T) { write (s, str x); };
+
+  //$ Write data with conversion using Str::str and end line mark.
   proc fprintln[T with Str[T]] (s:output_text_file, x:T) { write (s, str x+"\n"); };
 }
 
+//$ C standard IO with FILE*.
 open class Cstdio {
 
-  incomplete type FILE = "::std::FILE";
+  //$ C file type.
+  incomplete type FILE = "::std::FILE" requires Cxx_headers::cstdio;
 
   pod type ifile = "::std::FILE*" requires Cxx_headers::cstdio;
   pod type ofile = "::std::FILE*" requires Cxx_headers::cstdio;
 
-  // load file from filename
-  // note: loaded in binary mode not text mode!
+  //$ Load file from filename.
+  //$ Note: loaded in binary mode not text mode!
   fun load: string -> string = "::flx::rtl::ioutil::load_file($1)"
     requires package "flx_ioutil";
 
 
-  // standard files: Felix mapped
-  // can be redirected by flx_run
+  //$ Standard input, can be redirected by flx_run.
   const stdin: ifile = "PTF flx_stdin";
+
+  //$ Standard output, can be redirected by flx_run.
   const stdout: ofile = "PTF flx_stdout";
+
+  //$ Standard error, can be redirected by flx_run.
   const stderr: ofile = "PTF flx_stderr";
 
-  // standard files: C mapped
-  // can only be redirected by shell
+  //$ Standard input, redirected by shell.
   const cstdin: ifile = "::std::stdin";
+
+  //$ Standard output, redirected by shell.
   const cstdout: ofile = "::std::stdout";
+
+  //$ Standard error, redirected by shell.
   const cstderr: ofile = "::std::stderr";
 
+  //$ C standard IO as instance of Input_text_file.
   instance Input_text_file[ifile] {
     requires package "flx_ioutil";
     gen fopen_input: string -> ifile = '::std::fopen($1.c_str(),"rt")';
@@ -91,6 +109,7 @@ open class Cstdio {
     gen feof : ifile -> bool = "::std::feof($1)";
   }
 
+  //$ C standard IO as instance of Output_text_file.
   instance Output_text_file[ofile] {
     requires package "flx_ioutil";
     gen fopen_output: string -> ofile = '::std::fopen($1.c_str(),"wt")';
@@ -107,18 +126,28 @@ open class Cstdio {
 open Input_text_file[Cstdio::ifile];
 open Output_text_file[Cstdio::ofile];
 
+// C++ I/O streams.
 open class Iostream {
 
+  //$ istream type.
   pod type istream = "::std::istream*" requires Cxx_headers::fstream;
+
+  //$ ostream type.
   pod type ostream = "::std::ostream*" requires Cxx_headers::fstream;
 
-  // standard files: Felix mapped
-  // can be redirected by flx_run
+  //$ Standard input, redirected by shell.
   const cin : istream = "&::std::cin" requires Cxx_headers::iostream;
+
+  //$ Standard output, redirected by shell.
   const cout: ostream = "&::std::cout" requires Cxx_headers::iostream;
+
+  //$ Standard error, redirected by shell.
   const cerr: ostream = "&::std::cerr" requires Cxx_headers::iostream;
+
+  //$ Standard log, redirected by shell.
   const clog : ostream = "&::std::clog" requires Cxx_headers::iostream;
 
+  //$ C++ istream as instance of Input_text_file.
   instance Input_text_file[istream] {
     requires package "flx_ioutil";
     gen fopen_input: string -> istream = '::std::fopen($1.c_str(),"rt")';
@@ -129,6 +158,7 @@ open class Iostream {
     gen feof : istream -> bool = "$1->eof() || $1->fail()";
   }
 
+  //$ C++ ostream as instance of Output_text_file.
   instance Output_text_file[ostream] {
     requires package "flx_ioutil";
     gen fopen_output: string -> ostream = '::std::fopen($1.c_str(),"wt")';
@@ -146,17 +176,30 @@ open class Iostream {
 open Input_text_file[Iostream::istream];
 open Output_text_file[Iostream::ostream];
 
-// convenience writes to cout
+//$ Write string to cout.
 proc print  [T with Str[T]] (x:T) { fprint (cout, x); };
+
+//$ Write string to cout with end of line.
 proc println[T with Str[T]] (x:T) { fprintln (cout, x); };
+
+//$ Write end of line on cout.
 proc endl() { endl cout; }
+
+//$ Write space on cout.
 proc space() { space cout; }
+
+//$ flush buffers of cout.
 proc fflush() { fflush cout; }
 
-
-// convenience writes to cerr
+//$ Write string to cerr.
 proc eprint  [T with Str[T]] (x:T) { fprint (cerr, x); };
+
+//$ Write string to cerr with end of line.
 proc eprintln[T with Str[T]] (x:T) { fprintln (cerr, x);};
+
+//$ Write end of line on cerr.
 proc eendl() { endl cerr; }
+
+//$ Write space on cerr.
 proc espace() { space cerr; }
 

@@ -584,61 +584,61 @@ int FELIX_MAIN (int argc, char** argv)
 
 //  printf("Statically linked Felix program running\n");
 #endif
-  debug = egetv("FLX_DEBUG", debug);
+  debug = (bool)egetv("FLX_DEBUG", debug);
   if (debug) {
     fprintf(stderr,
       "[FLX_DEBUG] Debug enabled for %s link program\n",
       static_link ? "static" : "dynamic");
   }
 
-  bool debug_threads = egetv("FLX_DEBUG_THREADS", debug);
+  bool debug_threads = (bool)egetv("FLX_DEBUG_THREADS", debug);
   if (debug_threads) {
     fprintf(stderr, "[FLX_DEBUG_THREADS] Threads debug enabled\n");
   }
 
-  bool debug_allocations = egetv("FLX_DEBUG_ALLOCATIONS", debug);
+  bool debug_allocations = (bool)egetv("FLX_DEBUG_ALLOCATIONS", debug);
   if (debug_allocations) {
     fprintf(stderr, "[FLX_DEBUG_ALLOCATIONS] Allocation debug enabled\n");
   }
 
-  bool debug_collections = egetv("FLX_DEBUG_COLLECTIONS", debug);
+  bool debug_collections = (bool)egetv("FLX_DEBUG_COLLECTIONS", debug);
   if (debug_collections)
   {
     fprintf(stderr, "[FLX_DEBUG_COLLECTIONS] Collection debug enabled\n");
   }
 
-  bool report_collections = egetv("FLX_REPORT_COLLECTIONS", debug);
+  bool report_collections = (bool)egetv("FLX_REPORT_COLLECTIONS", debug);
   if (report_collections)
   {
     fprintf(stderr, "[FLX_REPORT_COLLECTIONS] Collection report enabled\n");
   }
 
 
-  bool debug_driver = egetv("FLX_DEBUG_DRIVER", debug);
+  bool debug_driver = (bool)egetv("FLX_DEBUG_DRIVER", debug);
   if (debug_driver)
   {
     fprintf(stderr, "[FLX_DEBUG_DRIVER] Driver debug enabled\n");
   }
 
-  bool finalise = egetv("FLX_FINALISE", 0);
+  bool finalise = (bool)egetv("FLX_FINALISE", 0);
   if (debug)
     fprintf(stderr,
       "[FLX_FINALISE] Finalisation %s\n", finalise ? "Enabled" : "Disabled");
 
   // default collection frequency is 1000 interations
-  unsigned long gc_freq = egetv("FLX_GC_FREQ", 1000);
+  unsigned long gc_freq = (unsigned long)egetv("FLX_GC_FREQ", 1000);
   if (gc_freq < 1) gc_freq = 1;
   if (debug)
     fprintf(stderr, "[FLX_GC_FREQ] call gc every %lu iterations\n", gc_freq);
 
   // default min mem is 10 Meg
-  unsigned long min_mem = egetv("FLX_MIN_MEM", 10) * 1000000.0;
+  unsigned long min_mem = (unsigned long)egetv("FLX_MIN_MEM", 10) * 1000000.0;
   if (min_mem < 0) min_mem = 0;
   if (debug)
     fprintf(stderr, "[FLX_MIN_MEM] call gc only if more than %lu Meg heap used\n", min_mem/1000000);
 
   // default max mem is unlimited
-  unsigned long max_mem = egetv("FLX_MAX_MEM", -1) * 1000000.0;
+  unsigned long max_mem = (unsigned long)egetv("FLX_MAX_MEM", -1) * 1000000.0;
   if (max_mem <= 0) max_mem = (unsigned long)-1;
   if (debug)
     fprintf(stderr, "[FLX_MAX_MEM] terminate if more than %lu Meg heap used\n", max_mem/1000000);
@@ -654,7 +654,7 @@ int FELIX_MAIN (int argc, char** argv)
   // find all the thread stacks, which should be possible
   // with gcc and probably msvc++
 
-  bool allow_collection_anywhere = egetv("FLX_ALLOW_COLLECTION_ANYWHERE", 1);
+  bool allow_collection_anywhere = (bool)egetv("FLX_ALLOW_COLLECTION_ANYWHERE", 1);
   if (debug)
     fprintf(stderr, "[FLX_ALLOW_COLLECTION_ANYWHERE] %s\n", allow_collection_anywhere ? "True" : "False");
 
