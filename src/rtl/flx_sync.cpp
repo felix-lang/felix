@@ -106,6 +106,7 @@ check_collect:
       readreq_t * pr = (readreq_t*)request->data;
       schannel_t *chan = pr->chan;
       if(debug_driver)fprintf(stderr,"Request to read on channel %p\n",chan);
+      if(chan==NULL) goto svc_read_none;
     svc_read_next:
       {
         fthread_t *writer= chan->pop_writer();
@@ -133,6 +134,7 @@ check_collect:
       readreq_t * pr = (readreq_t*)request->data;
       schannel_t *chan = pr->chan;
       if(debug_driver)fprintf(stderr,"Request to write on channel %p\n",chan);
+      if(chan==NULL)goto svc_write_none;
     svc_write_next:
       {
         fthread_t *reader= chan->pop_reader();

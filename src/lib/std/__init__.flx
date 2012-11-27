@@ -47,6 +47,7 @@ include "std/cmdopt";
 include "std/control";
 include "std/schannels";
 include "std/fibres";
+include "std/future";
 
 // pthreads (portable)
 include "std/pthread";

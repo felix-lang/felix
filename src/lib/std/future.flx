@@ -1,0 +1,37 @@
+open class Future
+{
+
+  private interface future_private_t[T] { 
+    doget: 1 -> T;
+    fetched: 1 -> bool;
+    fetch: 1 -> 0;
+  }
+
+  type future[T] = new future_private_t[T];
+
+  private object future_impl[T] (e:1->T) implements future_private_t[T] = {
+    var ch = mk_schannel[T]();
+    spawn_fthread { write (ch,#e); };
+    var x:T;
+    var flag = false;
+    method fun fetched() => flag;
+    method proc fetch() {
+      x = read ch;
+      // kill the schannel now.
+      ch = #mk_null_schannel[T];
+      flag = true;
+    }
+    method fun doget() => x;
+  };
+
+  ctor[T] future[T] (e:1->T) => _make_future (future_impl e);
+ 
+  inline gen get[T](fut:future[T]):T = { 
+    if not #((_repr_ fut).fetched) call (_repr_ fut).fetch; 
+    return #((_repr_ fut).doget); 
+  }
+
+  fun apply[T] (x:future[T], a:unit) => get x;
+}
+
+
