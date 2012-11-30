@@ -1,0 +1,47 @@
+class SyncControl
+{
+  //$ Model of synchronous control state value.
+  //$ terminated: Not used.
+  //$ blocked: out of fthreads to run.
+  //$ delegated: non synchronous service call, delegate to our caller.
+
+  enum fstate_t = terminated, blocked, delegated;
+
+  //$ Fthread state model.
+  //$ next_fthread_pos: restart scheduler by grabbing a new fthread
+  //$ from the active list.
+  //$ next_request_pos: restart scheduler by handling the service
+  //$ request of the currently active fthread.
+
+  enum fpc_t = next_fthread_pos, next_request_pos;
+
+  type fthread_list = "::std::list<::flx::rtl::fthread_t*>*" requires Cxx_headers::list;
+  ctor fthread_list: 1 = "new ::std::list<::flx::rtl::fthread_t*>";
+  proc delete : fthread_list = "delete $1;";
+
+  proc push_back: fthread_list * fthread = "$1->push_back($2); PTF gcp->collector->add_root($2);";
+
+  //$ Upcast a procedure closure to a continuation.
+  ctor cont: (1->0) = "static_cast<::flx::rtl::con_t*>($1)";
+
+  //$ create an fthread from a continuation.
+  ctor fthread: cont = "new (*PTF gcp, ::flx::rtl::_fthread_ptr_map, false) ::flx::rtl::fthread_t($1)";
+
+  //$ Type of a synchronous scheduler.
+  type scheduler = "::flx::run::sync_state_t*" requires header '#include "flx_sync.hpp"';
+
+  //$ Constructor for a synchronous scheduler.
+  //$ Accepts a list of fthreads to run.
+  //$ Uses the callers garbage collector.
+  ctor scheduler : fthread_list = "new ::flx::run::sync_state_t(false, PTF gcp, $1)";
+  proc delete: scheduler = "delete $1;";
+
+  //$ Invoke the scheduler and run until one of two
+  //$ events transpires:
+
+  proc run : scheduler = "$1->frun();";
+
+  //$ get the exit state of the scheduler after running.
+  fun get_scheduler_state : scheduler -> fstate_t = "$1->fs";
+
+}
