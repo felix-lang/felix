@@ -1,0 +1,91 @@
+@h1 Principle of Fibration.
+In passing we mention that function subroutines are just a special case 
+of this where argument is passed in using an channel and the return
+value is passed out using a channel too:
+
+@felix
+proc subroutine(argument: ischannel[int], result: oschannel[string)
+{
+  v := read argument;
+  s = str v;
+  write$ result, s;
+}
+
+{
+  iarg,oarg := mk_ioschannel_pair[int];
+  ires,ores := mk_ioschannel_pair[string];
+  spawn_fthread { subroutine (iarg, ores); }
+  write$ oarg, 42;
+  s := read ires;
+  println$ "42 as a string is " + s;
+};
+@
+
+In other words, the fibres and channels model subsumes the function
+and procedure call and return model. Note clearly that with subroutines
+we also pass data in and out along with control.
+
+Of course the fibre and channel model is more complex because it
+is vastly more flexible! In particular, communicating fibres are
+<em>control neutral</em> with respect to each other, unlike the
+asymmtric master/slave relation of the subroutine model. This is
+why fibres are a much better programming paradigm. Simply
+put .. <em>no more callbacks!</em> Callbacks are bad because they have
+to preserve where control resumes without the benefit of the usual
+control stack. Preserving control state as data this way is difficult
+and error prone. Many people use pre-emptibe threads to solve this problem.
+When doing that one is using the <em>control inversion</em> property
+of threads, but not the facet which is their real purpose: concurrency.
+
+Using threads also has much higher cost in terms of OS resources,
+and context switching time, not to mention the need to use locks
+or some construct built around them. [Note: Felix also provides
+pre-emptive threads or p-threads with p-channels for communication,
+the model is syntactically similar to f-thread and s-channels
+but the semantics are utterly different: pthreads can deadlock
+and they can exchange control at arbitrary points of time,
+or even run concurrently: locks must be used to access shared
+memory. Using Felix pchannels makes it easier to synchronise
+data exchange.
+
+As noted in the introduction: you can run millions of fibres
+at once without a problem. The context switches are extremely
+fast, and the data structures representing fibres and schannels
+extremely lightweight.
+
+By comparison pthreads are expensive in resources, slow to switch
+context, and most OS cannot support very many of them. Pthreads
+should <em>only</em> be used in two circumstances: first, to manage
+asynchonous data sources, and secondly to share the workload of
+real-time processes between multiple CPUs. If you merely want
+to obtain contol inversion, use fibres instead.
+
+A sophisticated example of use of fibres is to be found
+in the Felix webserver (in the tools directory). This launches
+a fibre for each connection. A single pthread is used in the
+system to monitor all socket I/O. The serves does not require
+a pthread for each connection: only one http request can be
+serviced at once so there's no reason for concurrency unless
+you want to shared the load between several CPUs.
+
+As noted before, consider what would happen if we wrote by mistake:
+@felix
+  s := read ires;
+  write$ oarg, 42;
+@
+
+It's simple. The read suspends the calling procedure (in braces),
+but the subroutine also suspends doing a read. So we have two
+reads an no writes. Deadlocked? No. We have two suspended procedures
+hanging on a channel owned by one of them so no active procedure
+can communicate with either of these suspended procedures,
+in other words they're unreachable and so they're reaped by
+the garbage collector.
+
+You can do this deliberately as a way to terminate a fibre!
+In that case it is known as <em>suicide</em>. Accidental suicide
+will cause code you expected to execute to simply evaporate.
+In the same circumstances pre-emptive threads deadlock (because
+the communication media are owned by the operating system
+not the user program, and the OS has no concept of reachability).
+

@@ -8,10 +8,6 @@ Polymorphism:
 <a href="polymorphism_index.fdoc">Polymorphism</a>
 
 @p
-Categorical type system: 
-<a href="garray_index.fdoc">Generalised Arrays.</a>
-
-@p
 Pattern matching and unions:
 <a href="pattern_index.fdoc">Pattern Matching</a>
 
@@ -31,6 +27,17 @@ Streams
 @p
 Objects
 <a href="objects_index.fdoc">Objects</a>
+
+
+@p
+Fibres
+<a href="fibres_index.fdoc">Fibres</a>
+
+@h2 Advanced Topics
+
+@p
+Categorical type system: 
+<a href="garray_index.fdoc">Generalised Arrays.</a>
 
 @p
 C Embedding:

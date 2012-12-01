@@ -1,0 +1,91 @@
+@h1 A broadcast service
+As noted, if you have multiple readers and one writer, only
+one of the readers is sent the data. That seems like a restriction,
+and suggests an extension. 
+
+But no! The existing model is enough:
+
+@felix
+gen broadcaster() : 
+  oschannel[oschannel[string]] * // subscription channel
+  oschannel[string]              // news reporting channel
+=
+{
+  // -------------------------------------------------------------
+  // SUBSCRIPTIONS
+  // -------------------------------------------------------------
+
+  // subscriber list
+  var clients = darray[oschannel[string]] ();
+
+  // subscription channel
+  iregistry, oregistry := mk_ioschannel_pair[oschannel[string]]();
+
+  // accept registrations
+  spawn_fthread {
+    while true do
+      push_back (clients, read iregistry);
+      println "Got a subscriber";
+    done
+  };
+ 
+  // -------------------------------------------------------------
+  // RELAY THE NEWS
+  // -------------------------------------------------------------
+
+  // news reading channel
+  inews, onews := mk_ioschannel_pair[string]();
+
+  // send news to all clients
+  spawn_fthread {
+    while true do
+      news_line := read inews;
+      if len clients > 0uz do
+        for var i in 0uz upto len clients - 1uz do
+          write$ clients.[i], news_line;
+        done
+      done
+    done
+  };
+
+  // return the channel for subscribing to news reports,
+  // and the channel for making news reports
+  return oregistry, onews;
+}
+
+// Create the broadcast station
+subscribe, news := broadcaster();
+
+// create a template for bored train commuters who want to read the news
+proc commuter (i:int) {
+  ichan, ochan := mk_ioschannel_pair[string]();
+  write$ subscribe, ochan; //subscribe to news
+  while true do 
+   line := read ichan;
+   print$ "Commuter " + str i + ": " + line;
+  done
+}
+
+// create two commuters
+spawn_fthread { commuter 1; };
+spawn_fthread { commuter 2; };
+
+// yield so that the commuters get a chance to subscribe
+// to the new before the broadcast begins
+// (this is a hack just to make the demo work)
+svc$ svc_yield;
+
+// create a reporter that just sends a file as news
+spawn_fthread {
+  f := Text_file::fopen_input "br.flx";
+  var line = Text_file::readln f;
+  while line != "" do
+    print$ "Reporting : " + line;
+    write$ news, line;
+    line = Text_file::readln f;
+  done
+  Text_file::fclose f;
+};
+
+println$ "Demo started";
+@
