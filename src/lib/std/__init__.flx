@@ -105,7 +105,6 @@ include "std/lexer";
 // google re2 regexps
 include "std/re2";
 include "std/regdef";
-include "std/regdef";
 
 // tre
 include "std/tre";
