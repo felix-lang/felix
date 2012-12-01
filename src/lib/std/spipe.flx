@@ -1,0 +1,36 @@
+
+//$ Synchronous Pipe.
+open class Spipe {
+
+  //$ Wire a source component to a sink.
+  //$ Return coupled fibre ready to run.
+  fun pipe[T] 
+    (w: oschannel[T] -> 0,
+    r: ischannel[T] -> 0)
+  :
+    1 -> 0
+  => 
+    {
+      var chi,cho = mk_ioschannel_pair[T] ();
+      spawn_fthread { (w cho); };
+      spawn_fthread { (r chi); };
+    }
+  ;
+
+  //$ Wire a source component to a transducer.
+  //$ Return source.
+  fun pipe[T,U]
+    (w: oschannel[T] -> 0,
+    t: ischannel[T] * oschannel[U] -> 0)
+  :
+    oschannel[U] -> 0 
+  => 
+    proc (out:oschannel[U])
+    {
+      var chi,cho = mk_ioschannel_pair[T] ();
+      spawn_fthread { (w cho); };
+      spawn_fthread { (t (chi, out)); };
+    }
+  ;
+}
+

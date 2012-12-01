@@ -105,6 +105,9 @@ syntax expressions {
   //$ Named variable.
   x[sas_expr_pri] := x[sas_expr_pri] "as" "var" sname =># "`(ast_as_var ,_sr (,_1 ,_4))";
 
+  //$ Left assoc, for schannel pipes.
+  x[ssetunion_pri] := x[ssetunion_pri] "|->" x[>ssetunion_pri] =># "(infix 'pipe)"; 
+
   // right arrows: RIGHT ASSOCIATIVE!
 
   //$ List cons, right associative.

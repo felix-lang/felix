@@ -6,6 +6,13 @@ class SyncControl
   //$ delegated: non synchronous service call, delegate to our caller.
 
   enum fstate_t = terminated, blocked, delegated;
+  instance Str[fstate_t] {
+    fun str: fstate_t -> string = 
+    | terminated => "terminated"
+    | blocked => "blocked"
+    | delegated => "delegated"
+    ;
+  }
 
   //$ Fthread state model.
   //$ next_fthread_pos: restart scheduler by grabbing a new fthread

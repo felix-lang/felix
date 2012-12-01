@@ -48,6 +48,7 @@ include "std/control";
 include "std/schannels";
 include "std/fibres";
 include "std/future";
+include "std/spipe";
 
 // pthreads (portable)
 include "std/pthread";
