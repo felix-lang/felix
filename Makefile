@@ -141,6 +141,7 @@ syntax:
 
 tutindex:
 	build/release/bin/mktutindex tut Tutorial tutorial.fdoc
+	build/release/bin/mktutindex fibres Fibres tutorial.fdoc
 	build/release/bin/mktutindex objects Objects tutorial.fdoc
 	build/release/bin/mktutindex polymorphism Polymorphism tutorial.fdoc
 	build/release/bin/mktutindex pattern Patterns tutorial.fdoc
