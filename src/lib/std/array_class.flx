@@ -39,16 +39,20 @@ class ArrayValue[t,v]
     done
   }
 
-  //$ Stream  value iterator.
-  gen iterator(xs:t) () : opt[v] = 
-  {
-    if xs.len > 0uz do
-      for var j in 0uz upto xs.len - 1uz do
-        yield Some (xs,j).unsafe_get;
+  instance Streamable[t,v] {
+    //$ Stream  value iterator.
+    gen iterator(xs:t) () : opt[v] = 
+    {
+      if xs.len > 0uz do
+        for var j in 0uz upto xs.len - 1uz do
+          yield Some (xs,j).unsafe_get;
+        done
       done
-    done
-    return None[v];
-  } 
+      return None[v];
+    } 
+  }
+
+  inherit Streamable[t,v];
 
   //$ Traditional left fold.
   fun fold_left[u] (_f:u->v->u) (init:u) (x:t): u = {

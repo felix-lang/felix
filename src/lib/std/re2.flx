@@ -154,27 +154,30 @@ open class Re2 {
 
   gen iterator (re2:string, var target:string) => iterator (RE2 re2, target);
 
-  gen iterator (r:RE2, var target:string) () : opt[varray[string]] = {
-    var emptystring = "";
-    var l = len target;
-    var s = StringPiece target;
-    var p1 = s.data;  
-    var p = 0;
-    var n = NumberOfCapturingGroups(r)+1;
-    var v1 = varray[StringPiece] (n.size,StringPiece emptystring);
-    var v2 = varray[string] (n.size,"");
-  again:>
-    var result = Match(r, s, p, UNANCHORED,v1.stl_begin, n);
-    if not result goto endoff;
-    for var i in 0 upto n - 1 do set(v2, i.size, string(v1.i)); done
-    var p2 = v1.0.data;
-    assert(v1.0.len.int > 0); // prevent infinite loop
-    p = (p2 - p1).int+v1.0.len.int;
-    yield Some v2;
-    goto again;
-  endoff:>
-    return None[varray[string]];
+  instance Streamable[RE2 * string, varray[string]] {
+    gen iterator (r:RE2, var target:string) () : opt[varray[string]] = {
+      var emptystring = "";
+      var l = len target;
+      var s = StringPiece target;
+      var p1 = s.data;  
+      var p = 0;
+      var n = NumberOfCapturingGroups(r)+1;
+      var v1 = varray[StringPiece] (n.size,StringPiece emptystring);
+      var v2 = varray[string] (n.size,"");
+    again:>
+      var result = Match(r, s, p, UNANCHORED,v1.stl_begin, n);
+      if not result goto endoff;
+      for var i in 0 upto n - 1 do set(v2, i.size, string(v1.i)); done
+      var p2 = v1.0.data;
+      assert(v1.0.len.int > 0); // prevent infinite loop
+      p = (p2 - p1).int+v1.0.len.int;
+      yield Some v2;
+      goto again;
+    endoff:>
+      return None[varray[string]];
+    }
   }
+  inherit Streamable[RE2 * string, Varray::varray[string]];
 
   // Extract Some match array or None if not matching.
   fun extract (re2:string, target:string) : opt[varray[string]] => iterator (RE2 re2, target) ();

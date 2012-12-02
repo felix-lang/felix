@@ -452,17 +452,21 @@ open class List
   //$ Uses varray sort (which uses STL sort).
   fun sort[T with Tord[T]](x:list[T])=> sort lt x;
     
+  instance[T] Streamable[list[T],T] {
   //$ Convert a list to a stream.
-  gen iterator[T] (var xs:list[T]) () = {
-    while true do
-      match xs with
-      | Cons (?h,?t) => xs = t; yield Some h;
-      | Empty => return None[T];
-      endmatch;
-    done
+    gen iterator (var xs:list[T]) () = {
+      while true do
+        match xs with
+        | Cons (?h,?t) => xs = t; yield Some h;
+        | Empty => return None[T];
+        endmatch;
+      done
+    }
   }
-inherit [T with Str[T]] Str[list[T]];
-inherit [T with Eq[T]] Set[list[T],T];
+  inherit[T] Streamable[list[T],T];
+
+  inherit [T with Str[T]] Str[list[T]];
+  inherit [T with Eq[T]] Set[list[T],T];
 
 }
 //open [T with Str[T]] Str[list[T]];

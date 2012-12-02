@@ -1,0 +1,9 @@
+//$ Class of data structures supporting streaming.
+//$ The container type just needs an iterator method.
+//$ The iterator method returns a generator which
+//$ yields the values stored in the container.
+open class Streamable[ContainerType, ValueType] {
+  virtual fun iterator : ContainerType -> 1 -> opt[ValueType];
+}
+
+

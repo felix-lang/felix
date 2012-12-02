@@ -204,19 +204,22 @@ class StrDict[T] {
    //$ Get the optional first key in the dictionary.
    fun first (x:strdict) : opt[string * T] => x.get_ge("");
 
-   //$ Stream iterator scanning through all key value pairs
-   //$ in the dictionary, in key order.
-   gen iterator (x:strdict) () : opt[string * T]  = {
-     var buffer : +char = array_alloc[char](JUDY_SL_MAXLEN+1);
-     var v = charp_first x buffer;
-     while true do
-       match v with 
-       | Some ?vv => yield Some (string buffer, vv);
-       | None => free buffer; return None[string * T];
-       endmatch;
-       v = charp_get_gt x buffer;
-     done
-   }
+   instance Streamable[strdict, string * T] {
+     //$ Stream iterator scanning through all key value pairs
+     //$ in the dictionary, in key order.
+     gen iterator (x:strdict) () : opt[string * T]  = {
+       var buffer : +char = array_alloc[char](JUDY_SL_MAXLEN+1);
+       var v = charp_first x buffer;
+       while true do
+         match v with 
+         | Some ?vv => yield Some (string buffer, vv);
+         | None => free buffer; return None[string * T];
+         endmatch;
+         v = charp_get_gt x buffer;
+       done
+     }
+  }
+  inherit Streamable[strdict, string * T];
 }
 
 open[T] StrDict[T];

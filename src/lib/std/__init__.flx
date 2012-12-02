@@ -45,10 +45,12 @@ include "std/cmdopt";
 
 // control
 include "std/control";
+include "std/stream";
 include "std/schannels";
 include "std/fibres";
 include "std/future";
 include "std/spipe";
+include "std/mux";
 
 // pthreads (portable)
 include "std/pthread";
