@@ -156,7 +156,9 @@ next:>
       //eprintln$ "Slideshow NOT active";
     done
   endmatch;
-  var page =  
+
+  var page = 
+   if #(slideshow.active)  then out else
     #(heading.emit-js) + 
     #(#button-factory.get-jscript) +
     #(fileseq.get-jscript) +
@@ -182,6 +184,7 @@ next:>
     #(fileseq.shownav) + 
     '</div>' +
     '</div>'
+    endif
   ;
 
 //---------------------------------------------------

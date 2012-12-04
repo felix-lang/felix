@@ -2,6 +2,15 @@
 //$ Synchronous Pipe.
 open class Spipe {
 
+  //$ Send an iterator based stream down a channel.
+//  proc source[T] (var iterator:1 -> opt[T], out:oschannel[opt[T]]) 
+//  {
+//    for v in iterator do 
+//      write (out,Some v); 
+//    done
+//    write (out, None[T]);
+//  }
+
   //$ Wire a source component to a sink.
   //$ Return coupled fibre ready to run.
   fun pipe[T] 
@@ -32,5 +41,21 @@ open class Spipe {
       spawn_fthread { (t (chi, out)); };
     }
   ;
+
+  proc sort[T with Tord[T]] (r: ischannel[opt[T]], w: oschannel[opt[T]]) () 
+  {
+     var x = darray[T]();
+     acquire:while true do
+       match read r with
+       | Some ?v => x+=v;
+       | None => break acquire;
+       endmatch;
+     done
+     x.sort;
+     for v in x do
+       write (w, Some v);
+     done
+     write (w,None[T]);
+  }
 }
 

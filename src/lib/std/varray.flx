@@ -185,6 +185,9 @@ open class Varray
     _sort[t] (z,first,last);
   }
 
+  //$ In place sort of varray using STL sort.
+  proc sort[t with Tord[t]] (a:varray[t]) => sort (< of (t*t)) a;
+
 }
 
 instance[T with Show[T]] Str[Varray::varray[T]] {

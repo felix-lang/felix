@@ -42,6 +42,10 @@ open class Darray
   //$ Make a darray from a varray
   ctor[T] darray[T] (a:varray[T]) =>  _make_darray[T]$ new darray_ctl[T]( varray[T] a, dflt_resize);
 
+  //$ Make a darray from a darray (copy)
+  ctor[T] darray[T] (a:darray[T]) => darray ((_repr_ a)*.a);
+
+
   //$ make a darray of a certain size initialised with some default value
   ctor[T] darray[T] (n:size, default:T) => darray[T] (varray[T](n,default));
 
@@ -84,6 +88,15 @@ open class Darray
     if newsize != maxlen r*.a do do_resize(a,newsize); done
     push_back (r*.a, v); // hack to workaround compiler error Address non variable
   }
+
+  //$ In place sort of darray using STL sort.
+  proc sort[t] (cmp: t * t -> bool) (a:darray[t]) =>
+    sort cmp (_repr_ a)*.a
+  ;
+
+  proc sort[t with Tord[t]] (a:darray[t]) =>
+    sort (< of (t*t)) a
+  ;
 
   // uses _repr_ so has to be in the module
   instance[T with Show[T]] Str[Darray::darray[T]] {

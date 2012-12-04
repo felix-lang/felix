@@ -1,10 +1,11 @@
 
+
 val slideshow_js = """
 <button id="start" onclick="start_slides()">Start</button>
 <button id="stop" onclick="stop_slides()" disabled="true">Stop</button>
 <button id="reset" onclick="reset_slides()">Reset</button>
 <button id="next" onclick="skip_to_next()">Next</button>
-<p id="goose">Slideshow Ready</p>
+<span id="goose" style="position:absolute; right:50px;">Slideshow Ready</span>
 <script>
 var slides = new Array();
 var slideno = 0;
@@ -41,10 +42,10 @@ function nextline() {
 
 function showline() { 
   if (slideno == 0) {
-    document.getElementById("goose").innerHTML="<p>READY</p>";
+    document.getElementById("goose").innerHTML="READY";
   }
   else {
-    document.getElementById("goose").innerHTML="<p>SLIDE " + (slideno) + ", LINE " + (lineno) +"</p>";
+    document.getElementById("goose").innerHTML="SLIDE " + (slideno) + ", LINE " + (lineno) +"";
     enable (slideno, lineno); 
   }
 }

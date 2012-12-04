@@ -1,4 +1,3 @@
-Press to start -->
 @slideshow
 <hr/>
 <p style="text-align:center; font-size:120%"> Felix Goals </center>
@@ -15,7 +14,7 @@ programming languages.
 Or better.
 @section
 We want Felix to be as fast as C.
-@section.
+@section
 Or faster!
 @section
 <hr/>
@@ -51,7 +50,7 @@ It must be easy to write, with syntax
 corresponding to ideas. 
 @section
 It should be reasonably brief...
-@sectiion
+@section
 ... but enough redundancy to
 catch simple errors and create patterns.
 @section
