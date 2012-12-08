@@ -1,4 +1,3 @@
-
 if PLAT_POSIX do
 PosixSignal::ignore_signal(PosixSignal::SIGPIPE);
 done

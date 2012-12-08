@@ -1,35 +1,34 @@
 @h1 Tutorial
 
-Basic introduction:
-<a href="tut_index.fdoc">Getting Started</a>
+<a href="tut_index.fdoc">Getting Started: </a>
+an introduction to the basics.
+@p
+<a href="literals_index.fdoc">Scalar Types:  </a>
+a summary of the core scalar types and
+a set of operations on them.
+@p
+<a href="pattern_index.fdoc">Pattern Matching: </a>
+pattern matching and the discriminated union construction.
+@p
+<a href="polymorphism_index.fdoc">Polymorphism: </a>
+basic parametric polymorphism in Felix.
 
 @p
-Scalar types:
-<a href="literals_index.fdoc">Scalar Types</a>
-
+<a href="array_index.fdoc">Arrays: </a>
+concepts of arrays and a collection
+of array types.
 @p
-Pattern matching and unions:
-<a href="pattern_index.fdoc">Pattern Matching</a>
-
+<a href="streams_index.fdoc">Streams: </a>
+a powerful construction translating spatial
+sequences into temporal ones.
 @p
-Polymorphism:
-<a href="polymorphism_index.fdoc">Polymorphism</a>
-
-Arrays:
-<a href="tut_index.fdoc">Getting Started</a>
+<a href="objects_index.fdoc">Objects: </a>
+a highly dynamic object system loosely
+modelled on Java.
 @p
-
-Streams
-<a href="streams_index.fdoc">Streams.</a>
-
-@p
-Objects
-<a href="objects_index.fdoc">Objects</a>
-
-
-@p
-Fibres
-<a href="fibres_index.fdoc">Fibres</a>
+<a href="fibres_index.fdoc">Fibres: </a>
+a mechanism for ultra-high speed synchronous context switching
+where control is exchanged using channels.
 
 @h2 Advanced Topics
 

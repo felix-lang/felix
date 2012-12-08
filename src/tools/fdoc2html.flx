@@ -1,3 +1,4 @@
+
 include "./charclass";
 include "./plugin_common";
 
@@ -173,7 +174,7 @@ next:>
     '</div>' +
 
     // body
-    '<div style="position:fixed; top:48px; bottom:48px; left:14px; right:14px; '+
+    '<div style="position:fixed; top:48px; bottom:48px; left:14px; right:14px; padding:4px; '+
     ' border:4px;overflow:auto; font-family:sans-serif; color:#404040; background-color:#E0E0E0;">' +
     out +
     '</div>'+

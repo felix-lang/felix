@@ -3,6 +3,7 @@ Ok, so in the last mail we discovered ArrayValues and you may
 have noted you cannot actually modify or store anything in something
 which is "merely" an ArrayValue.
 
+@h2 Array Object: writeable array.
 To store something, you need an ArrayObject.
 i am NOT going to explain it. Here is the definition in the library,
 you should be able to read the code!
@@ -13,15 +14,17 @@ class ArrayObject[t,v]
 {
  inherit ArrayValue[t,v];
 
- // Unsafe store value into array by common index.
+ //$ Unsafe store value into array by common index.
  virtual proc unsafe_set: t * size * v;
 
- // Checked store value into array by common index.
+ //$ Checked store value into array by common index.
  proc set[I in ints] (x:t, i:I, a:v) { 
    assert i.size < x.len; unsafe_set (x,i.size,a); 
  } 
 }
 @
+
+@h2 Contiguous Array Object: Array as sequence.
 Now, there is one more useful class in the file:
 
 @felix
@@ -56,13 +59,15 @@ which return incrementable pointers to the array,
 similar to STL in C++ begin() and end() methods,
 however here these are assured to be actual pointers.
 
+@h2 Carray
 The type:
 
 @felix
   +v
 @
 
-is a pointer to v which can be incremented. This has an alias
+is a pointer to v which can be incremented. Now, if a pointer can
+be incremented, it must point into an array! This has an alias
 in the library
   
 @felix

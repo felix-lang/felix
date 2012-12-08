@@ -1,15 +1,6 @@
-@h1 Felix System Reference
-@h2 Language
-<a href="flx_gramdoc.html">Felix Core Syntax</a>
-@p
-<a href="ref/lang/core/index.fdoc">Felix Core Language Topics</a>
-@h2 Library
-<a href="flx_libcontents.html">Felix Library Contents by File</a>
-@p
-<a href="flx_libindex.html">Felix Library Alphabetical Symbol  Index</a>
-@p
-@h2 Processing model
-<svg viewBox="43 59 887 340" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/PR-SVG-20010719/DTD/svg10.dtd">
+<svg width="45cm" height="17cm" viewBox="43 59 887 340" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
   <g>
     <rect style="fill: #ffffff" x="51.525" y="60" width="56.95" height="38"/>
     <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="51.525" y="60" width="56.95" height="38"/>

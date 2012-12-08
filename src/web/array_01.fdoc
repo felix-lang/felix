@@ -62,6 +62,7 @@ rest. These other derived methods are:
 @
 and more may be added.
 
+@h2 Getting an element by index.
 The {get(a,i)} method is a checked version of the unsafe_get method.
 
 The apply function is interesting. When you write:
@@ -126,7 +127,7 @@ to mean "reverse application" and replace it with
 @
 
 This is how Felix gets "OO like method calls" without any OO involved.
-
+@h2 Iteration
 Next we have iter and iiter. These are your usual higher order functions
 which take a callback procedure as an argument and call it for every
 entry in the array. The iter function is called with each array value
@@ -153,6 +154,7 @@ although usually its done in a loop. Here is how you do it in a loop:
 
 @felix
   for v in g do println$ v; done
+@
 
 This loop sets v to the argument of the Some value the generator produces
 until it gets a None, which signals the end of the stream.  Felix also allows you
@@ -166,11 +168,13 @@ This works for any data type with a suitable method named "iterator".
 [BTW: do NOT call your variables "iterator", its a special name due
 to the above magic]
 
+@h2 Folds
 The two folds are traditional fold operations, called "accumulate" in C++.
 However folds are purely functional. They accept a binary operator
 such as "add" which is used to aggregate the array values.
 Fold_left goes from left to right. Fold_right goes from right to left.
 
+@h2 Membership test
 The first mem function test if the array contains a value that has
 the given property (predicate). The second one accepts a comparison
 and a value instead. The third one is the easiest to use and just
@@ -180,6 +184,7 @@ use the infix operator \in for this method. That is a TeX symbol and
 will be displayed as the usual "e" set membership operator by
 the Felix webserver.
 
+@h2 Searching
 The two find functions are similar to the first two mem functions,
 only they return the first value in the array that matches the predicate
 as Some v, or None if there's no such value.
