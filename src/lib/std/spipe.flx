@@ -5,7 +5,7 @@ open class Spipe {
   //$ Send an stream down a channel.
   proc source[T] (var it:1 -> T, out:oschannel[T]) 
   {
-    while true it do write (out,#it); done 
+    while true do write (out,#it); done 
   }
 
   //$ Wire a source component to a sink.
