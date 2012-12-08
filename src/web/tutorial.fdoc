@@ -4,25 +4,23 @@ Basic introduction:
 <a href="tut_index.fdoc">Getting Started</a>
 
 @p
-Polymorphism:
-<a href="polymorphism_index.fdoc">Polymorphism</a>
+Scalar types:
+<a href="literals_index.fdoc">Scalar Types</a>
 
 @p
 Pattern matching and unions:
 <a href="pattern_index.fdoc">Pattern Matching</a>
 
 @p
-Literals
-<a href="literals_index.fdoc">Literals</a>
+Polymorphism:
+<a href="polymorphism_index.fdoc">Polymorphism</a>
 
+Arrays:
+<a href="tut_index.fdoc">Getting Started</a>
 @p
-Data types.
-<a href="data_types.fdoc">Data Types.</a>
 
-@p
 Streams
 <a href="streams_index.fdoc">Streams.</a>
-
 
 @p
 Objects

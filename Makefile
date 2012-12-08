@@ -148,6 +148,7 @@ tutindex:
 	build/release/bin/mktutindex literals Literals tutorial.fdoc
 	build/release/bin/mktutindex cbind "C Binding" tutorial.fdoc
 	build/release/bin/mktutindex streams Streams tutorial.fdoc
+	build/release/bin/mktutindex array "Arrays" tutorial.fdoc
 	build/release/bin/mktutindex garray "Generalised Arrays" tutorial.fdoc
 	build/release/bin/mktutindex uparse "Universal Parser" uparse.fdoc
 

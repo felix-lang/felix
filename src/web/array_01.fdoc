@@ -1,95 +1,201 @@
 @h1 Arrays
-@h2 Array Values
-When you write a tuple like this:
+Felix is using type classes to describe some array properties.
+The classes are in the file
+
+  lib/std/array_class.flx
+
+The most basic class is ArrayValue[t,v] where t is the array  
+type and v is the element value type. ArrayValue is the concept of an array
+as a value. It has two virtual functions:
+
 @felix
-  val x = 1,2,3,4,5;
-@
-where all the components have the same type, it is called an 
-array. A special notation may be used for this array type:
-@felix
-  int^5
-@
-that is, int multipled by itself 5 times: this type is exactly
-the same (not equivalent or isomorphic but exactly the same) as:
-@felix
-  int * int * int * int * int
-@
-There is also an alias in the library which can be used:
-@felix
-  array[int,5]
-@
-You should note that {int^1} is exactly the same as {int}:
-it is technically not a tuple.
+  //$ Length. 
+  virtual fun len: t -> size; 
 
-This kind of array is a first class value, it is <em>not an object</em>.
-
-Read the library code for <a href='/lib/std/array.flx'> array</a>.
-
-@h2 Carray
-A {carray} is your traditional C array: it has a bounded length,
-but the bound is unknown to the system: the client programmer must
-keep track of the bound manually.
-
-The type {carray[T]} is just an alias for {&amp;T}, a pointer to {T}.
-Generally {carray} is unsafe and should be avoided but it is
-essential for C interfacing so we had to put it in.
-
-Read the library code for <a href='/lib/std/carray.flx'>carray</a>.
-
-@h2 Varray and Darray
-Felix provides two variable length array objects called {varray} and {darray}
-in the library. A {varray} is a bounded variable length array, they're 
-good for buffers, but otherwise not use much because of the bound.
-{darray} is unbounded and typically just as efficient; it is implemented
-with {varray}, which is the main reason {varray} exists.
-
-@h3 Varray
-A {varray} is typically constructed from an {array}, you can use get and
-set functions to store a value at a particular index or retrieve it:
-@felix
-val a = varray (1,2,3,4,5);
-set (a, 2, 99);     // store 99 in slot index 2 (the third slot)
-println$ a;         // array(1,2,99,3,4,5)
-println$ get(a,2);  // 99
+  //$ Unchecked common indexing. 
+  virtual fun unsafe_get: t * size -> v; 
 @
 
-A {varray} can also be constructed with a fixed bound and completely filled
-with a single value:
+Any type which wants to be considered as an ArrayValue simply
+instantiates these functions, and it automatically gets all the
+rest. These other derived methods are:
+
 @felix
-val a = varray(5.ul,0); // 5 elements all 0
+ //$ Checked common indexing.
+ fun get[I in ints] (x:t, i:I)
+
+ //$  Checked common indexing.
+ fun apply [I in ints] (i:I, x:t) => get (x,i.size);
+
+ //$ Callback based value iterator.
+ proc iter (_f:v->void) (x:t) 
+
+ //$ Callback based index and value iterator.
+ //$ Callback f index value.
+ proc iiter (_f:size -> v->void) (x:t) {
+
+ //$ Stream  value iterator.
+ gen iterator(xs:t) () : opt[v] = 
+
+ //$ Traditional left fold.
+ fun fold_left[u] (_f:u->v->u) (init:u) (x:t): u = {
+
+ //$ Traditional right fold.
+ fun fold_right[u] (_f:v->u->u) (x:t) (init:u): u = {
+
+ //$ Membership by predicate.
+ fun mem(pred:v->bool) (x:t): bool = {
+
+ //$ Membership by relation to given value. 
+ fun mem[u] (rel:v*u->bool) (x:t) (e:u): bool =>
+
+ //$ Array as Set:
+ //$ Membership by equality of value type.
+ instance[with Eq[v]] Set[t,v] {
+   fun \in (elt:v, a:t) => mem eq of (v * v) a elt;
+
+ //$ Searching for value satisfying relation to given value.
+ fun find (rel:v*v->bool) (x:t) (e:v): opt[v] = {
+
+ //$ Searching for value satisfying predicate.
+ fun find(pred:v->bool) (x:t): opt[v] = {
 @
-Note that {varray(5ul,3ul)} is ambiguous! It could be either a two element
-array constructed from the tuple {5ul,3ul} or a 5 element array initialised
-to {3ul,3ul,3ul,3ul,3ul}.
+and more may be added.
 
-Pointers into a varray can only be invalidated by reducing the 
-number of elements in the array below the pointer location.
+The {get(a,i)} method is a checked version of the unsafe_get method.
 
-Read the library code for <a href='/lib/std/varray.flx'>varray</a>.
-@h3 Darray
-An unbounded variable length array implement using {varray}.
-If the {varray} gets full a new bigger one is allocated,
-and the elements copied from the old array to the new one.
-Pointers into the array can therefore be invalidated.
+The apply function is interesting. When you write:
 
-{darray} is roughly equivalent in fuctionality to C++ {vector}.
+@felix
+  f a
+@
 
-Read the library code for <a href='/lib/std/darray.flx'>darray</a>.
+where a has type A, and f has type A -> X, then f a is
+a function application. But suppose we want
 
-@h3 Sarray
-An {sarray} is an ultra-high performance sparse array.
-It is can accept elements at any non-negative integral position
-for integers up to the size of type {size}.
+@felix
+  assert 1 (1,2,3,4) == 2;
+@
+that is, we want to apply an integer to an array as an index,
+which indeed we do want. When a value is syntactically applied
+to another value, and the type of the value is NOT a function
+type, Felix tries to find an function named apply with a tuple
+argument consisting of the type of the applicator and the applicatee.
+In this case it tries to find a function that matches the name and
+signature
 
-{Sarray} is implemented using JudyL arrays.
+@felix
+  apply: int * int ^ 4
+@
 
-Read the library code for <a href='/lib/std/sarray.flx'>sarray</a>.
+This indeed matches the library function:
 
-@h3 Bsarray
-An {bsarray} is an ultra-high performance bounded sparse array.
+@felix
+  fun apply [I in ints] (i:I, x:t) => get (x,i.size);
+@
+where I in ints means "any integer type". So the application
 
-{Bsarray} is implemented using JudyL {sarray} plus a simple bound check,
-it supports iteration, folds, etc which sarray does not.
+@felix
+  1 (1,2,3,4)
+@
 
-Read the library code for <a href='/lib/std/bsarray.flx'>bsarray</a>.
+is replaced by
+
+@felix
+  get ( (1,2,3,4),  1)
+@
+
+and we have that integers can be used "as projection functions" for arrays.
+And now we can write this too:
+
+@felix
+  (1,2,3,4) . 1
+@
+
+because Felix compiler has another piece of magic: when it sees:
+
+@felix
+  a . f
+@
+
+and "a" isn't a struct or record or pointer thereto, it consider the operator
+to mean "reverse application" and replace it with
+
+@felix
+  f a
+@
+
+This is how Felix gets "OO like method calls" without any OO involved.
+
+Next we have iter and iiter. These are your usual higher order functions
+which take a callback procedure as an argument and call it for every
+entry in the array. The iter function is called with each array value
+in sequence, the iiter function also gets the index.
+
+The iterator function is a stream generator.  For our sample array
+it produces the infinite stream of values
+
+@felix
+  Some 1, Some 2, Some 3, Some 4, None, None, None .....
+@
+
+Generators work by assigning the generator to a variable and
+then repeatedly calling it, like this:
+
+@felix
+  var g = iterator (1,2,3,4);
+  var v1 = g(); // Some 1
+  var v2 = g(); // Some 2
+  ....
+@
+
+although usually its done in a loop. Here is how you do it in a loop:
+
+@felix
+  for v in g do println$ v; done
+
+This loop sets v to the argument of the Some value the generator produces
+until it gets a None, which signals the end of the stream.  Felix also allows you
+to write it like this:
+
+@felix
+  for v in (1,2,3,4) do .. done
+@
+
+This works for any data type with a suitable method named "iterator".
+[BTW: do NOT call your variables "iterator", its a special name due
+to the above magic]
+
+The two folds are traditional fold operations, called "accumulate" in C++.
+However folds are purely functional. They accept a binary operator
+such as "add" which is used to aggregate the array values.
+Fold_left goes from left to right. Fold_right goes from right to left.
+
+The first mem function test if the array contains a value that has
+the given property (predicate). The second one accepts a comparison
+and a value instead. The third one is the easiest to use and just
+uses the standard equality operator for the type (but of course only
+works if the type has a standard equality operator). You can also
+use the infix operator \in for this method. That is a TeX symbol and
+will be displayed as the usual "e" set membership operator by
+the Felix webserver.
+
+The two find functions are similar to the first two mem functions,
+only they return the first value in the array that matches the predicate
+as Some v, or None if there's no such value.
+
+The following SHOULD be defined in the library but isn't:
+
+@felix
+  index
+@
+
+which find the index of a matching value instead of the value,
+and 
+
+@felix
+  ifind
+@
+
+which returns both the index and value.
 

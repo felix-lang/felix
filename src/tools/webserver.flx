@@ -55,9 +55,10 @@ var PLUGIN_MAP = Empty[string^3];
 var default_config = list (
   "C_PATH += /usr/include/c++/4.2.1", 
   "C_PATH += /usr/include/c++/4.2.1/x86_64-apple-darwin10", 
-  "C_PATH += /usr/include/c++/4.4.3", 
-  "C_PATH += /usr/include/c++/4.4.3/x86_64-linux-gnu", 
-  "C_PATH += /usr/lib/gcc/x86_64-linux-gnu/4.4.3/include",
+
+  "C_PATH += /usr/include/c++/4.6", 
+  "C_PATH += /usr/include/c++/4.6.3", 
+  "C_PATH += /usr/lib/gcc/x86_64-linux-gnu/4.6.3/include",
 
    "extension flx -> flx2html::xlat_felix",
    "extension flxh -> flx2html::xlat_felix",

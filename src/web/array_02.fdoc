@@ -1,0 +1,192 @@
+@h1 Array Objects
+Ok, so in the last mail we discovered ArrayValues and you may
+have noted you cannot actually modify or store anything in something
+which is "merely" an ArrayValue.
+
+To store something, you need an ArrayObject.
+i am NOT going to explain it. Here is the definition in the library,
+you should be able to read the code!
+
+@felix
+//$ Array as Object (mutable).
+class ArrayObject[t,v]
+{
+ inherit ArrayValue[t,v];
+
+ // Unsafe store value into array by common index.
+ virtual proc unsafe_set: t * size * v;
+
+ // Checked store value into array by common index.
+ proc set[I in ints] (x:t, i:I, a:v) { 
+   assert i.size < x.len; unsafe_set (x,i.size,a); 
+ } 
+}
+@
+Now, there is one more useful class in the file:
+
+@felix
+//$ Array as Contiguous STL Object.
+//$ Provides STL iterators type +v
+class ContiguousArrayObject[t,v]
+{
+ inherit ArrayObject[t,v];
+
+ //$ Start of array iterator.
+ virtual fun stl_begin: t -> +v;
+
+ //$ One past the end of array iterator.
+ virtual fun stl_end: t -> +v;
+
+ //$ Add integer to iterator.
+ fun + [I in ints] (pa:t, i:I) : carray [v] = { 
+    assert i.size < pa.len; 
+    return pa.stl_begin + i.size; 
+ }
+}
+@
+
+This is an ArrayObject which also provides two methods:
+
+@felix
+  stl_begin
+  stl_end
+@
+
+which return incrementable pointers to the array,
+similar to STL in C++ begin() and end() methods,
+however here these are assured to be actual pointers.
+
+The type:
+
+@felix
+  +v
+@
+
+is a pointer to v which can be incremented. This has an alias
+in the library
+  
+@felix
+  carray[v]
+@
+
+and properties described in the class
+
+@felix
+  Carray
+@
+
+defined in the file lib/std/carray.flx.
+
+It is your traditional C array (only safer because it may not be NULL).
+Carray is dangerous, because pointers can dangle or go off the end.
+Felix cannot check, because C arrays do not have a fixed way to 
+determine the length.
+
+It is instructive to look at the class. In particular look at this:
+
+@felix
+//$ A carray[T] = +T is an incrementable, non-NULL, pointer.
+open class Carray
+{
+ requires Cxx_headers::cstdlib;
+ open C_hack;
+
+ //$ The carray type.
+ type carray[T] = new &T;
+
+ //$ Define prefix + notation.
+ typedef fun +(T:TYPE) : TYPE => carray[T]; 
+
+ //$ Unsafe conversion of Felix pointer to carray.
+ fun +[T]:&T -> carray[T] = "$1"; // unsafe
+
+ //$ Demote carray to Felix pointer (safe unless off the end).
+ fun -[T]: carray[T] -> &T = "$1"; // safe (unless we allow +T to be NULL later ..)
+
+ //$ Unsafe conversion of Felix pointer to carray.
+ ctor[T] carray[T] : &T = "$1";
+
+ //$ Get a carray from a Felix array object.
+ ctor[T,N] carray[T]: &array[T,N] = "($1)->data";
+@
+
+First, the open class specification says that all the methods in
+the class are available without qualification.
+
+The requires clause says that we need the C++ header file <cstdlib>.
+opening of C_hack makes the hackery in the C_hack class available
+for our definitions (but these are NOT exported by opening Carray!)
+
+Ok, so, the definition:
+
+@felix
+  type carray[T] = new &T;
+@
+
+makes a new abstract type carray[T] which is *implemented* by a pointer
+to a T.  Then, this bit:
+
+@felix
+  //$ Define prefix + notation.
+  typedef fun +(T:TYPE) : TYPE => carray[T]; 
+@
+
+says that + is a type function, which maps
+
+@felix
+  +T to carray[T]
+@
+
+so you can just use +int for a carray of ints. The next bit:
+
+@felix
+  //$ Unsafe conversion of Felix pointer to carray.
+  fun +[T]:&T -> carray[T] = "$1"; // unsafe
+@
+says that if you have an object pointer p, you can
+promote it, unsafely, to an array pointer:
+
+@felix
+  var x = 1; // an object of type int
+  var px : &int = &x; // a pointer to an int
+  var ipx = +px; // an incrementable pointer
+@
+
+The conversion is obviously unsafe as you can see from
+the example! You can also go back, to get an ordinary
+pointer from an incrementable one:
+
+@felix
+  var px' : &int = -ipx;
+@
+
+This isn't safe either, because ipx might be "past the end" of the array,
+or even dangle.
+
+We have to provide these unsafe operations so we can actually work
+with C arrays: C arrays are intrinsically unsafe, meaning, they're not
+just unsafe, but they cannot be made safe (because there is no 
+consistent way to find their length).
+
+The rest of the operations in the class provide the usual
+C like operations on pointers: increment, decrement,
+adding integers, difference of pointers, comparions,
+and allocation and freeing arrays on the heap.
+
+carrays should be used with care but they're useful, and,
+utility and performance come before safety in Felix.
+[That doesn't mean safety isn't important! It just means we will
+provide unsafe operations until we find a safe way to do them
+which is easy to use and which doesn't have a performance hit]
+
+An example is easily given:
+
+@felix
+  proc sort[T] : +T * +T = "::std::sort($1, $2)";
+@
+
+There's a one liner to sort an array. It works because
+{+T} is just a pointer, so it is also a valid RandomAccessIterator
+in C++ STL.
+
+
