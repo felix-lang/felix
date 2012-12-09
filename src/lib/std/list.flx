@@ -440,7 +440,7 @@ open class List
     val n = len x;
     var a = varray[T]$ n;
     iter (proc (e:T) { a+=e; }) x;
-    Varray::sort lt a;
+    sort lt a;
     var r = Empty[T];
     if n > 0uz do
       for var i in n - 1uz downto 0uz do r = Cons(a.i, r); done

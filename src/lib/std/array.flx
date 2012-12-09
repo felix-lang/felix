@@ -134,6 +134,17 @@ open class Farray
     return o;
   }
 
+  fun sort[T,N] (cmp: T * T -> bool) (var x:array[T,N]) : array[T,N] = {
+    Sort::stl_sort (Sort::stl_comparator cmp, stl_begin (&x), stl_end (&x));
+    return x;
+  }
+
+  fun sort[T,N] (var x:array[T,N]) : array[T,N] = {
+    Sort::stl_sort (stl_begin (&x), stl_end (&x));
+    return x;
+  }
+
+
   //$ Display: convert to string like (1,2,3).
   instance[T,N with Show[T]] Str[array[T, N]] {
     fun str (xs:array[T,N]) = {

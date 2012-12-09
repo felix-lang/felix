@@ -178,6 +178,18 @@ class ContiguousArrayObject[t,v]
      assert i.size < pa.len; 
      return pa.stl_begin + i.size; 
   }
+
+  //$ In place sort using STL sort with Felix comparator.
+  proc sort (cmp: v * v -> bool) (a:t) {
+    var first = a.stl_begin;
+    var last = a.stl_end;
+    var z = Sort::stl_comparator (cmp);
+    Sort::stl_sort (z,first,last);
+  }
+
+  //$ In place sort using STL sort with default comparison.
+  proc sort[with Tord[v]] (a:t) => sort (< of (v*v)) a;
+
 }
 
 class TrueContiguousArrayObject[t,x, v] 

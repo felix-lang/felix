@@ -89,15 +89,6 @@ open class Darray
     push_back (r*.a, v); // hack to workaround compiler error Address non variable
   }
 
-  //$ In place sort of darray using STL sort.
-  proc sort[t] (cmp: t * t -> bool) (a:darray[t]) =>
-    sort cmp (_repr_ a)*.a
-  ;
-
-  proc sort[t with Tord[t]] (a:darray[t]) =>
-    sort (< of (t*t)) a
-  ;
-
   // uses _repr_ so has to be in the module
   instance[T with Show[T]] Str[Darray::darray[T]] {
     //$ Convert an array to a string,

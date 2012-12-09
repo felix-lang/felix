@@ -152,17 +152,6 @@ open class Varray
   }
 
 
-  //$ In place sort of varray using STL sort.
-  proc sort[t] (cmp: t * t -> bool) (a:varray[t]) {
-    var first = a.stl_begin;
-    var last = a.stl_end;
-    var z = Sort::stl_comparator (cmp);
-    Sort::stl_sort[t] (z,first,last);
-  }
-
-  //$ In place sort of varray using STL sort.
-  proc sort[t with Tord[t]] (a:varray[t]) => sort (< of (t*t)) a;
-
 }
 
 instance[T with Show[T]] Str[Varray::varray[T]] {
