@@ -151,38 +151,13 @@ open class Varray
     return o;
   }
 
-  // sort
-  header 
-  """
-  template<class CT, class FT2, class FFT>
-  struct comparator {
-    FFT cmp;
-    comparator() : cmp(0) {}
-    comparator(FFT cmp_a) : cmp(cmp_a) {}
-    bool operator ()(CT x, CT y){
-      ::std::pair<CT,CT> z(x,y); 
-      return cmp->apply(*(FT2*)(void*)&z);
-    }
-  };
-  """ requires Cxx_headers::utility;
-
-  private type _comparator[CT,FT2,FFT] = "comparator<?1,?2,?3>";
-  private typedef comparator[T] = _comparator[T,T*T,T*T->bool];
-
-  private fun _make_comparator[CT,FT2,FFT]: FFT -> comparator[CT] = "comparator<?1,?2,?3>($1)";
-  private fun make_comparator[T](cmp:T * T -> bool) => _make_comparator[T, T*T, T*T->bool] (cmp);
-
-  // invoke stl sort
-  private proc _sort[T]: comparator[T] * +T * +T = "::std::sort($2, $3, $1);" 
-    requires Cxx_headers::algorithm;
-
 
   //$ In place sort of varray using STL sort.
   proc sort[t] (cmp: t * t -> bool) (a:varray[t]) {
     var first = a.stl_begin;
     var last = a.stl_end;
-    var z: comparator[t] = make_comparator[t] (cmp);
-    _sort[t] (z,first,last);
+    var z = Sort::stl_comparator (cmp);
+    Sort::stl_sort[t] (z,first,last);
   }
 
   //$ In place sort of varray using STL sort.
