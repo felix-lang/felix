@@ -3815,14 +3815,15 @@ assert false; (* shouldn't happen now! *)
 
 
     | FunctionEntry fs ->
-      assert (List.length fs > 0);
+      assert (List.length fs > 1);
       begin match args with
       | [] ->
         clierr sr
         (
           "[bind_expression] Simple name " ^ name ^
           " binds to function set in\n" ^
-          Flx_srcref.short_string_of_src sr
+          Flx_srcref.short_string_of_src sr ^
+          "\nCandidates are: " ^ catmap "," string_of_entry_kind fs
         )
       | args ->
         let sufs = List.map snd args in
@@ -3898,6 +3899,20 @@ assert false; (* shouldn't happen now! *)
             bexpr_name (ti sr i ts) (i,ts)
           end
 
+        | FunctionEntry [f] when args = []  ->
+            let sufs = List.map snd args in
+            let ro = resolve_overload' state bsym_table env rs sr [f] name sufs ts in
+            begin match ro with
+             | Some (index, dom,ret,mgu,ts) ->
+               (*
+               print_endline "OK, overload resolved!!";
+               *)
+               bexpr_closure (ti sr index ts) (index,ts)
+
+            | None ->
+              clierr sr "Overload resolution failed .. "
+            end
+
         | FunctionEntry fs ->
           begin match args with
           | [] ->
@@ -3905,7 +3920,9 @@ assert false; (* shouldn't happen now! *)
             (
               "[bind_expression] Qualified name " ^
               string_of_expr qn ^
-              " binds to function set"
+              " binds to function set in" ^
+              Flx_srcref.short_string_of_src sr ^
+              ", Candidates are: " ^ catmap "," string_of_entry_kind fs
             )
 
           | args ->

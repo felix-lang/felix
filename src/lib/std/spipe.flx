@@ -3,7 +3,7 @@
 open class Spipe {
 
   //$ Send an stream down a channel.
-  proc source[T] (var it:1 -> T, out:oschannel[T]) 
+  proc source[T] (var it:1 -> T) (out:oschannel[T]) 
   {
     while true do write (out,#it); done 
   }
@@ -39,7 +39,7 @@ open class Spipe {
     }
   ;
 
-  proc sort[T with Tord[T]] (r: ischannel[opt[T]], w: oschannel[opt[T]]) () 
+  proc sort[T with Tord[T]] (r: ischannel[opt[T]], w: oschannel[opt[T]])
   {
      var x = darray[T]();
      acquire:while true do

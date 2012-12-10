@@ -85,8 +85,8 @@
 #define FLX_NEWP(x) new(*PTF gcp,x##_ptr_map,true)x
 
 #define FLX_FINALISER(x) \
-static void x##_finaliser(::flx::gc::generic::collector_t *, void *p){\
-  ((x*)p)->~x();\
+static void x##_finaliser(::flx::gc::generic::collector_t *, void *__p){\
+  ((x*)__p)->~x();\
 }
 
 #if FLX_USE_REGPARM3 && FLX_HAVE_GNU_X86
@@ -165,111 +165,111 @@ extern "C" FLX_EXPORT mname::thread_frame_t *create_thread_frame(\
 #if defined(FLX_PTF_STATIC_STRUCT)
 #define FLX_START_WRAPPER(mname,x)\
 extern "C" ::flx::rtl::con_t *flx_start(\
-  mname::thread_frame_t *ptf,\
+  mname::thread_frame_t *__ptf,\
   int argc,\
   char **argv,\
   FILE *stdin_,\
   FILE *stdout_,\
   FILE *stderr_\
 ) {\
-  ptf->argc = argc;\
-  ptf->argv = argv;\
-  ptf->flx_stdin = stdin_;\
-  ptf->flx_stdout = stdout_;\
-  ptf->flx_stderr = stderr_;\
-  return (new(*ptf->gcp,mname::x##_ptr_map,false) \
+  __ptf->argc = argc;\
+  __ptf->argv = argv;\
+  __ptf->flx_stdin = stdin_;\
+  __ptf->flx_stdout = stdout_;\
+  __ptf->flx_stderr = stderr_;\
+  return (new(*__ptf->gcp,mname::x##_ptr_map,false) \
     mname::x()) ->call(0);\
 }
 #elif defined(FLX_PTF_STATIC_POINTER)
 #define FLX_START_WRAPPER(mname,x)\
 extern "C" ::flx::rtl::con_t *flx_start(\
-  mname::thread_frame_t *ptf,\
+  mname::thread_frame_t *__ptf,\
   int argc,\
   char **argv,\
   FILE *stdin_,\
   FILE *stdout_,\
   FILE *stderr_\
 ) {\
-  ptf->argc = argc;\
-  ptf->argv = argv;\
-  ptf->flx_stdin = stdin_;\
-  ptf->flx_stdout = stdout_;\
-  ptf->flx_stderr = stderr_;\
-  return (new(*ptf->gcp,mname::x##_ptr_map,false) \
+  __ptf->argc = argc;\
+  __ptf->argv = argv;\
+  __ptf->flx_stdin = stdin_;\
+  __ptf->flx_stdout = stdout_;\
+  __ptf->flx_stderr = stderr_;\
+  return (new(*__ptf->gcp,mname::x##_ptr_map,false) \
     mname::x()) ->call(0);\
 }
 #else
 #define FLX_START_WRAPPER(mname,x)\
 extern "C" FLX_EXPORT ::flx::rtl::con_t *flx_start(\
-  mname::thread_frame_t *ptf,\
+  mname::thread_frame_t *__ptf,\
   int argc,\
   char **argv,\
   FILE *stdin_,\
   FILE *stdout_,\
   FILE *stderr_\
 ) {\
-  ptf->argc = argc;\
-  ptf->argv = argv;\
-  ptf->flx_stdin = stdin_;\
-  ptf->flx_stdout = stdout_;\
-  ptf->flx_stderr = stderr_;\
-  return (new(*ptf->gcp,mname::x##_ptr_map,false) \
-    mname::x(ptf)) ->call(0);\
+  __ptf->argc = argc;\
+  __ptf->argv = argv;\
+  __ptf->flx_stdin = stdin_;\
+  __ptf->flx_stdout = stdout_;\
+  __ptf->flx_stderr = stderr_;\
+  return (new(*__ptf->gcp,mname::x##_ptr_map,false) \
+    mname::x(__ptf)) ->call(0);\
 }
 #endif
 
 #if defined(FLX_PTF_STATIC_STRUCT)
 #define FLX_STACK_START_WRAPPER(mname,x)\
 extern "C" ::flx::rtl::con_t *flx_start(\
-  mname::thread_frame_t *ptf,\
+  mname::thread_frame_t *__ptf,\
   int argc,\
   char **argv,\
   FILE *stdin_,\
   FILE *stdout_,\
   FILE *stderr_\
 ) {\
-  ptf->argc = argc;\
-  ptf->argv = argv;\
-  ptf->flx_stdin = stdin_;\
-  ptf->flx_stdout = stdout_;\
-  ptf->flx_stderr = stderr_;\
+  __ptf->argc = argc;\
+  __ptf->argv = argv;\
+  __ptf->flx_stdin = stdin_;\
+  __ptf->flx_stdout = stdout_;\
+  __ptf->flx_stderr = stderr_;\
   mname::x().stack_call();\
   return 0;\
 }
 #elif defined(FLX_PTF_STATIC_POINTER)
 #define FLX_STACK_START_WRAPPER(mname,x)\
 extern "C" ::flx::rtl::con_t *flx_start(\
-  mname::thread_frame_t *ptf,\
+  mname::thread_frame_t *__ptf,\
   int argc,\
   char **argv,\
   FILE *stdin_,\
   FILE *stdout_,\
   FILE *stderr_\
 ) {\
-  ptf->argc = argc;\
-  ptf->argv = argv;\
-  ptf->flx_stdin = stdin_;\
-  ptf->flx_stdout = stdout_;\
-  ptf->flx_stderr = stderr_;\
+  __ptf->argc = argc;\
+  __ptf->argv = argv;\
+  __ptf->flx_stdin = stdin_;\
+  __ptf->flx_stdout = stdout_;\
+  __ptf->flx_stderr = stderr_;\
   mname::x().stack_call();\
   return 0;\
 }
 #else
 #define FLX_STACK_START_WRAPPER(mname,x)\
 extern "C" FLX_EXPORT ::flx::rtl::con_t *flx_start(\
-  mname::thread_frame_t *ptf,\
+  mname::thread_frame_t *__ptf,\
   int argc,\
   char **argv,\
   FILE *stdin_,\
   FILE *stdout_,\
   FILE *stderr_\
 ) {\
-  ptf->argc = argc;\
-  ptf->argv = argv;\
-  ptf->flx_stdin = stdin_;\
-  ptf->flx_stdout = stdout_;\
-  ptf->flx_stderr = stderr_;\
-  mname::x(ptf).stack_call();\
+  __ptf->argc = argc;\
+  __ptf->argv = argv;\
+  __ptf->flx_stdin = stdin_;\
+  __ptf->flx_stdout = stdout_;\
+  __ptf->flx_stderr = stderr_;\
+  mname::x(__ptf).stack_call();\
   return 0;\
 }
 #endif
@@ -277,55 +277,55 @@ extern "C" FLX_EXPORT ::flx::rtl::con_t *flx_start(\
 #if defined(FLX_PTF_STATIC_STRUCT)
 #define FLX_C_START_WRAPPER(mname,x)\
 extern "C" ::flx::rtl::con_t *flx_start(\
-  mname::thread_frame_t *ptf,\
+  mname::thread_frame_t *__ptf,\
   int argc,\
   char **argv,\
   FILE *stdin_,\
   FILE *stdout_,\
   FILE *stderr_\
 ) {\
-  ptf->argc = argc;\
-  ptf->argv = argv;\
-  ptf->flx_stdin = stdin_;\
-  ptf->flx_stdout = stdout_;\
-  ptf->flx_stderr = stderr_;\
+  __ptf->argc = argc;\
+  __ptf->argv = argv;\
+  __ptf->flx_stdin = stdin_;\
+  __ptf->flx_stdout = stdout_;\
+  __ptf->flx_stderr = stderr_;\
   mname::x();\
   return 0;\
 }
 #elif defined(FLX_PTF_STATIC_POINTER)
 #define FLX_C_START_WRAPPER(mname,x)\
 extern "C" ::flx::rtl::con_t *flx_start(\
-  mname::thread_frame_t *ptf,\
+  mname::thread_frame_t *__ptf,\
   int argc,\
   char **argv,\
   FILE *stdin_,\
   FILE *stdout_,\
   FILE *stderr_\
 ) {\
-  ptf->argc = argc;\
-  ptf->argv = argv;\
-  ptf->flx_stdin = stdin_;\
-  ptf->flx_stdout = stdout_;\
-  ptf->flx_stderr = stderr_;\
+  __ptf->argc = argc;\
+  __ptf->argv = argv;\
+  __ptf->flx_stdin = stdin_;\
+  __ptf->flx_stdout = stdout_;\
+  __ptf->flx_stderr = stderr_;\
   mname::x();\
   return 0;\
 }
 #else
 #define FLX_C_START_WRAPPER(mname,x)\
 extern "C" FLX_EXPORT ::flx::rtl::con_t *flx_start(\
-  mname::thread_frame_t *ptf,\
+  mname::thread_frame_t *__ptf,\
   int argc,\
   char **argv,\
   FILE *stdin_,\
   FILE *stdout_,\
   FILE *stderr_\
 ) {\
-  ptf->argc = argc;\
-  ptf->argv = argv;\
-  ptf->flx_stdin = stdin_;\
-  ptf->flx_stdout = stdout_;\
-  ptf->flx_stderr = stderr_;\
-  mname::x(ptf);\
+  __ptf->argc = argc;\
+  __ptf->argv = argv;\
+  __ptf->flx_stdin = stdin_;\
+  __ptf->flx_stdout = stdout_;\
+  __ptf->flx_stderr = stderr_;\
+  mname::x(__ptf);\
   return 0;\
 }
 #endif

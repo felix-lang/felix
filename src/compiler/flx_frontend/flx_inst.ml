@@ -35,12 +35,12 @@ let dummy_sr = Flx_srcref.make_dummy "[flx_inst] generated"
 
 let null_table = Hashtbl.create 3
 
-let add_inst syms bsym_table ref_insts1 (i,ts) =
+let add_inst syms bsym_table ref_insts1 sr (i,ts) =
   iter (fun t -> match t with 
     | BTYP_void -> 
       let sym = Flx_bsym_table.find bsym_table i in
       let name = Flx_bsym.id sym in
-      print_endline ("Attempt to register instance " ^ name ^ ": " ^ si i ^ "[" ^
+      print_endline ("In " ^ Flx_srcref.short_string_of_src sr ^ "\nAttempt to register instance " ^ name ^ ": " ^ si i ^ "[" ^
       catmap ", " (sbt bsym_table) ts ^ "]")
 (*
       ; failwith "Attempt to instantiate type variable with type void"
@@ -73,7 +73,10 @@ let add_inst syms bsym_table ref_insts1 (i,ts) =
   if has_variables then
   failwith
   (
-    "Attempt to register instance " ^ string_of_bid i ^ "[" ^
+    let sym = Flx_bsym_table.find bsym_table i in
+    let name = Flx_bsym.id sym in
+    "In " ^ Flx_srcref.short_string_of_src sr ^
+    "\nAttempt to register instance " ^ name ^ ": " ^ string_of_bid i ^ "[" ^
     catmap ", " (sbt bsym_table) ts ^
     "] with type variable in a subscript"
   )
@@ -85,12 +88,12 @@ let add_inst syms bsym_table ref_insts1 (i,ts) =
   end
 
 let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
-  (*
-  print_endline ("Process expr " ^ sbe sym_table be ^ " .. raw type " ^ sbt bsym_table t);
-  print_endline (" .. instantiated type " ^ sbt sym_table (varmap_subst hvarmap t));
-  *)
+(*
+  print_endline ("Process expr " ^ sbe bsym_table be ^ " .. raw type " ^ sbt bsym_table t);
+  print_endline (" .. instantiated type " ^ sbt bsym_table (varmap_subst hvarmap t));
+*)
   let ue e = process_expr syms bsym_table ref_insts1 hvarmap sr e in
-  let ui i ts = add_inst syms bsym_table ref_insts1 (i,ts) in
+  let ui i ts = add_inst syms bsym_table ref_insts1 sr (i,ts) in
   let ut t = register_type_r ui syms bsym_table [] sr t in
   let vs t = varmap_subst hvarmap t in
   let t' = vs t in
@@ -111,9 +114,9 @@ let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
   | BEXPR_apply_struct (index,ts,a)
   | BEXPR_apply_stack (index,ts,a)
   | BEXPR_apply ((BEXPR_closure (index,ts),_),a) ->
-    (*
+(*
     print_endline "apply direct";
-    *)
+*)
     let bsym =
       try Flx_bsym_table.find bsym_table index with Not_found ->
         failwith ("[process_expr(apply instance)] Can't find index " ^
@@ -139,6 +142,7 @@ let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
       (*
       print_endline "struct component?";
       *)
+      let ts = map vs ts in
       ui index ts; ue a
     end
 
@@ -221,12 +225,12 @@ let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
 
 and process_exe syms bsym_table ref_insts1 ts hvarmap exe =
   let ue sr e = process_expr syms bsym_table ref_insts1 hvarmap sr e in
-  let uis i ts = add_inst syms bsym_table ref_insts1 (i,ts) in
-  let ui i = uis i ts in
-  (*
-  print_endline ("processing exe " ^ string_of_bexe sym_table bsym_table 0 exe);
+  let uis sr i ts = add_inst syms bsym_table ref_insts1 sr (i,ts) in
+  let ui sr i = uis sr i ts in
+(*
+  print_endline ("processing exe " ^ string_of_bexe bsym_table 0 exe);
   print_endline ("With ts = " ^ catmap "," (sbt bsym_table) ts);
-  *)
+*)
   (* TODO: replace with a map *)
   match exe with
   | BEXE_axiom_check _ -> assert false
@@ -235,11 +239,11 @@ and process_exe syms bsym_table ref_insts1 ts hvarmap exe =
   | BEXE_jump_direct (sr,i,ts,e2)
   | BEXE_call_stack (sr,i,ts,e2)
     ->
-    let ut t = register_type_r uis syms bsym_table [] sr t in
+    let ut t = register_type_r (uis sr) syms bsym_table [] sr t in
     let vs t = varmap_subst hvarmap t in
     let ts = map vs ts in
     iter ut ts;
-    uis i ts;
+    uis sr i ts;
     ue sr e2
 
   | BEXE_call (sr,e1,e2)
@@ -261,7 +265,7 @@ and process_exe syms bsym_table ref_insts1 ts hvarmap exe =
 
   | BEXE_init (sr,i,e) ->
     (*
-    print_endline ("[flx_inst] Initialisation " ^ si i ^ " := " ^ sbe sym_table bsym_table e);
+    print_endline ("[flx_inst] Initialisation " ^ si i ^ " := " ^ sbe bsym_table e);
     *)
     let vs' = Flx_bsym_table.find_bvs bsym_table i in
     (*
@@ -274,19 +278,20 @@ and process_exe syms bsym_table ref_insts1 ts hvarmap exe =
     *)
     let ts = map (fun (s,i) -> btyp_type_var (i, btyp_type 0)) vs' in
     let ts = map (varmap_subst hvarmap) ts in
-    uis i ts; (* this is wrong?: initialisation is not use .. *)
+    uis sr i ts; (* this is wrong?: initialisation is not use .. *)
     ue sr e
 
-  | BEXE_assign (sr,e1,e2) -> ue sr e1; ue sr e2
+  | BEXE_assign (sr,e1,e2) -> 
+    ue sr e1; ue sr e2
 
   | BEXE_svc (sr,i) ->
     let vs' = Flx_bsym_table.find_bvs bsym_table i in
     let ts = map (fun (s,i) -> btyp_type_var (i, btyp_type 0)) vs' in
     let ts = map (varmap_subst hvarmap) ts in
-    uis i ts
+    uis sr i ts
 
   | BEXE_catch (sr, s, t) -> 
-    let ut t = register_type_r uis syms bsym_table [] sr t in
+    let ut t = register_type_r (uis sr) syms bsym_table [] sr t in
     ut t
   | BEXE_label _
   | BEXE_halt _
@@ -316,13 +321,14 @@ and process_function syms bsym_table hvarmap ref_insts1 index sr argtypes ret ex
   *)
 
 and process_inst syms bsym_table instps ref_insts1 i ts inst =
-  let uis i ts = add_inst syms bsym_table ref_insts1 (i,ts) in
-  let ui i = uis i ts in
   let bsym =
     try Flx_bsym_table.find bsym_table i
     with Not_found -> failwith ("[process_inst] Can't find index " ^
       string_of_bid i)
   in
+  let sr = Flx_bsym.sr bsym in
+  let uis i ts = add_inst syms bsym_table ref_insts1 sr (i,ts) in
+  let ui i = uis i ts in
   let do_reqs vs reqs =
     iter (
       fun (i, ts)->
@@ -334,9 +340,9 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
     reqs
   in
   let ue hvarmap e =
-    process_expr syms bsym_table ref_insts1 hvarmap (Flx_bsym.sr bsym) e
+    process_expr syms bsym_table ref_insts1 hvarmap sr e
   in
-  let rtr t = register_type_r uis syms bsym_table [] (Flx_bsym.sr bsym) t in
+  let rtr t = register_type_r uis syms bsym_table [] sr t in
   let rtnr t = register_type_nr syms bsym_table t in
   if syms.compiler_options.Flx_options.print_flag then
   print_endline ("//Instance " ^ string_of_bid inst ^ "=" ^ Flx_bsym.id bsym ^
@@ -397,7 +403,7 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
     let hvarmap = hashtable_of_list vars in
     let tss = map (varmap_subst hvarmap) argtypes in
     iter rtr tss;
-    rtnr (btyp_inst (i,ts))
+    rtnr (btyp_inst (i,ts));
 
   | BBDCL_newtype (vs,t) ->
     rtnr t;
@@ -560,21 +566,22 @@ let instantiate syms bsym_table instps (root:bid_t) (bifaces:biface_t list) =
   add_cand root [];
 
   (* add exported functions, and register exported types *)
-  let ui i ts = add_inst syms bsym_table insts1 (i,ts) in
+  let ui sr i ts = add_inst syms bsym_table insts1 sr (i,ts) in
   iter
   (function
     | BIFACE_export_python_fun (_,x,_)
     | BIFACE_export_cfun (_,x,_)
     | BIFACE_export_fun (_,x,_) ->
       let bsym = Flx_bsym_table.find bsym_table x in
+      let sr = Flx_bsym.sr bsym in
       begin match Flx_bsym.bbdcl bsym with
       | BBDCL_fun (props,_,(ps,_),_,_) ->
         begin match ps with
         | [] -> ()
-        | [{ptyp=t}] -> register_type_r ui syms bsym_table [] (Flx_bsym.sr bsym) t
+        | [{ptyp=t}] -> register_type_r (ui sr) syms bsym_table [] sr t
         | _ ->
           let t = btyp_tuple (Flx_bparameter.get_btypes ps) in
-          register_type_r ui syms bsym_table [] (Flx_bsym.sr bsym) t;
+          register_type_r (ui sr) syms bsym_table [] sr t;
           register_type_nr syms bsym_table t;
           register_tuple syms bsym_table t;
         end
@@ -583,7 +590,7 @@ let instantiate syms bsym_table instps (root:bid_t) (bifaces:biface_t list) =
       add_cand x []
 
     | BIFACE_export_type (sr,t,_) ->
-      register_type_r ui syms bsym_table [] sr t
+      register_type_r (ui sr) syms bsym_table [] sr t
   )
   bifaces;
 
