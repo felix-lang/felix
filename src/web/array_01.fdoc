@@ -4,8 +4,8 @@ The classes are in the file
 
   lib/std/array_class.flx
 
-The most basic class is ArrayValue[t,v] where t is the array  
-type and v is the element value type. ArrayValue is the concept of an array
+The most basic class is {ArrayValue[t,v]} where {t} is the array  
+type and {v} is the element value type. {ArrayValue} is the concept of an array
 as a value. It has two virtual functions:
 
 @felix
@@ -16,7 +16,7 @@ as a value. It has two virtual functions:
   virtual fun unsafe_get: t * size -> v; 
 @
 
-Any type which wants to be considered as an ArrayValue simply
+Any type which wants to be considered as an {ArrayValue} simply
 instantiates these functions, and it automatically gets all the
 rest. These other derived methods are:
 
@@ -71,7 +71,7 @@ The apply function is interesting. When you write:
   f a
 @
 
-where a has type A, and f has type A -> X, then f a is
+where {a} has type {A}, and {f} has type {A -> X}, then {f a} is
 a function application. But suppose we want
 
 @felix
@@ -79,8 +79,8 @@ a function application. But suppose we want
 @
 that is, we want to apply an integer to an array as an index,
 which indeed we do want. When a value is syntactically applied
-to another value, and the type of the value is NOT a function
-type, Felix tries to find an function named apply with a tuple
+to another value, and the type of the first value is NOT a function
+type, Felix tries to find an function named {apply} with a tuple
 argument consisting of the type of the applicator and the applicatee.
 In this case it tries to find a function that matches the name and
 signature
@@ -94,7 +94,7 @@ This indeed matches the library function:
 @felix
   fun apply [I in ints] (i:I, x:t) => get (x,i.size);
 @
-where I in ints means "any integer type". So the application
+where {I in ints} means "any integer type". So the application
 
 @felix
   1 (1,2,3,4)
@@ -119,29 +119,42 @@ because Felix compiler has another piece of magic: when it sees:
   a . f
 @
 
-and "a" isn't a struct or record or pointer thereto, it consider the operator
-to mean "reverse application" and replace it with
+and {a} isn't a struct or record or pointer thereto, it consider the operator
+to mean "reverse application" and replaces it with
 
 @felix
   f a
 @
 
 This is how Felix gets "OO like method calls" without any OO involved.
+
 @h2 Iteration
-Next we have iter and iiter. These are your usual higher order functions
+Next we have {iter} and {iiter}. These are your usual higher order functions
 which take a callback procedure as an argument and call it for every
 entry in the array. The iter function is called with each array value
 in sequence, the iiter function also gets the index.
+Here's an example:
+@felix
+proc p(x:double) => 
+  println$ "value="+ str x
+;
+iter p (1.0,2.0,3.0,4.0);
+
+proc pp(i:size, v:int) => 
+  println$ "index=" + str i + ", value="+str v
+;
+iiter pp (1.0, 2.0, 3.0, 4.0);
+@
 
 The iterator function is a stream generator.  For our sample array
-it produces the infinite stream of values
+{(1,2,3,4)} it produces the infinite stream of values
 
 @felix
   Some 1, Some 2, Some 3, Some 4, None, None, None .....
 @
 
 Generators work by assigning the generator to a variable and
-then repeatedly calling it, like this:
+then repeatedly calling it through the variable, like this:
 
 @felix
   var g = iterator (1,2,3,4);
@@ -153,11 +166,13 @@ then repeatedly calling it, like this:
 although usually its done in a loop. Here is how you do it in a loop:
 
 @felix
-  for v in g do println$ v; done
+  for v in g do
+    println$ v; 
+  done
 @
 
-This loop sets v to the argument of the Some value the generator produces
-until it gets a None, which signals the end of the stream.  Felix also allows you
+This loop sets {v} to the argument of the Some value the generator produces
+until it gets a {None}, which signals the end of the stream.  Felix also allows you
 to write it like this:
 
 @felix
@@ -173,6 +188,23 @@ The two folds are traditional fold operations, called "accumulate" in C++.
 However folds are purely functional. They accept a binary operator
 such as "add" which is used to aggregate the array values.
 Fold_left goes from left to right. Fold_right goes from right to left.
+@felix
+  val sum = 
+    fold_left 
+      (fun (acc:double) (elt:double) => acc + elt) 
+      0.0
+      (1.0, 2.0, 3.0, 4.0)
+  ;
+
+  val sum2 = 
+    fold_right
+      (fun (elt:double) (acc:double) => acc + elt) 
+      (1.0, 2.0, 3.0, 4.0)
+      0.0
+  ;
+@
+Note the order of arguments of both the fold and the
+argument function.
 
 @h2 Membership test
 The first mem function test if the array contains a value that has
