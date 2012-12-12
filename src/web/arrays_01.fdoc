@@ -1,0 +1,147 @@
+@h1 Array Types
+Felix currently provides several array like types.
+These are:
+<ul>
+<li>carray: an incrementable pointer</li>
+<li>array: a tuple with components all the same type</li>
+<li>varray: a bounded variable length array object</li>
+<li>darray: an unbounded variable length array object</li>
+<li>sarray: a sparse array object without a length</li>
+<li>bsarray: a bounded sparse array object</li>
+<li>strdict: a string indexed associative store</li>
+<li>Judy Array: high performance integer to integer map</li>
+</ul>
+Their properties can be classified as follows.
+
+@h2 Array Value
+An array value is a readonly indexable store with amortised O(1) access times.
+It has two defining properties:
+@felix
+len: A -> size
+unsafe_get: A * size -> T
+@
+and several derived properties:
+@felix
+  //$  Checked common indexing.
+  fun apply [I in ints] (i:I, x:t) => get (x,i.size);
+
+  //$ Checked common indexing.
+  fun get[I in ints] (x:t, i:I) = { 
+
+  //$ Callback based value iterator.
+  proc iter (_f:v->void) (x:t) {
+
+  //$ Callback based index and value iterator.
+  //$ Callback f index value.
+  proc iiter (_f:size -> v->void) (x:t) {
+
+    //$ Stream  value iterator.
+    gen iterator(xs:t) () : opt[v] = 
+
+  //$ Traditional left fold.
+  fun fold_left[u] (_f:u->v->u) (init:u) (x:t): u = {
+
+  //$ Traditional right fold.
+  fun fold_right[u] (_f:v->u->u) (x:t) (init:u): u = {
+
+  // map: can't be implemented easily because constructor required for result
+
+  //$ Membership by predicate.
+  fun mem(pred:v->bool) (x:t): bool 
+
+  //$ Membership by relation to given value. 
+  fun mem[u] (rel:v*u->bool) (x:t) (e:u): bool =>
+    mem (fun (i:v) => rel(i, e)) x
+  ;
+
+  //$ Array as Set:
+  //$ Membership by equality of value type.
+  instance[with Eq[v]] Set[t,v] {
+    fun \in (elt:v, a:t) => mem eq of (v * v) a elt;
+  }
+
+  //$ Searching for value satisfying relation to given value.
+  fun find (rel:v*v->bool) (x:t) (e:v): opt[v] = {
+
+  //$ Searching for value satisfying predicate.
+  fun find(pred:v->bool) (x:t): opt[v] 
+@
+
+@h2 Array
+The built-in array type is a fixed length first class value
+which is a special case of a tuple with all elements the same
+type. For example
+@felix
+val a = 1,2,3,4;
+@
+has type
+@felix
+int^4 = array[int,4]
+@
+A component of an array can be fetched using an value of the
+index type as a projection function. Such indexes cannot
+exceed array bounds.  Unlike tuples, the projection index can be an 
+expression.
+@felix
+println$ (case 1 of 4) x;
+println$ x . (case 1 of 4);
+val k = case 1 of 4;
+println$ x . k;
+@
+For your convenience you may also index an array with 
+any integer type. The value is converted to the array's
+actual index type, so again array bounds cannot be exceeded,
+however the conversion may fail.
+@felix
+println$ a . 1;  // converted to case 1 of 4
+println$ a . 1uz;  // converted to case 1 of 4
+println$ a . 22; // fails at compile time
+var one = 1;
+printn$ a . (one + 22); // assertion failure at run time
+@
+If you use an integral literal or simple constant expression
+and the value is out of bounds, Felix may trap the error
+at compile time. If the expression is too complex,
+it will instead be checked at run time. If the expression
+is simple enough and the compiler can determine it is
+in bounds, the check may be optimised away.
+
+If the proper index type is used, no check is required
+and none will be generated. Note again these are technically
+not array bounds checks, but a checked type conversion.
+Therefore instead of this code:
+@felix
+val a1 = 1,2,3,4;
+val a2 = 5,6,7,8;
+val i = 1;
+println$ a1 . i, a2 . i;
+@
+it is better to write:
+@felix
+val i : 4 = 1 :>> 4;
+println$ a1 . i, a2 . i;
+@
+to reduce the number of checked conversions from 2 to 1. 
+
+The length of an array may be obtained at run time with
+the {len} method:
+@felix
+println$ a.len;
+@
+which returns a value of type {size}.
+
+Felix also provides the method {get} and {unsafe_get}:
+@felix
+println$ unsafe_get (a, 1.size), get (a, 1.size);
+@
+which are standard for all arrays. The {get} method
+does a bounds check then calls the {unsafe_get} method.
+Integer indexing maps to the {get} method. 
+
+Caveat: Unfortunately the {unsafe_get} method does a conversion to the 
+proper index type which is also checked, so bounds checks are performed twice.
+The conversion cannot be avoided by using a C primitive because builtin fixed
+array type supports multi-indices of compact linear type.
+See the separate tutorial section on generalised arrays for details.
+
+
