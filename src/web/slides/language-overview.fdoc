@@ -40,7 +40,7 @@ println$ "Double Quotes";
 @section
 or with single quotes:
 @felix
-println$ 'Double Quotes';
+println$ 'Single Quotes';
 @
 a string must be contained within a single line.
 @section
@@ -74,7 +74,7 @@ hello 42
 If you like you can specify the type of a variable:
 @felix
 var i : int = 42;
-var x : string : = "hello " + str i;
+var x : string = "hello " + str i;
 println$ x;
 @pre
 hello 42
@@ -110,7 +110,7 @@ var x = 42;
 var px = &x;
 px <- 43;          // store 43 where px points (at x)
 println$ x;        // modified value stored in x
-println$ *px;      // value store at px
+println$ *px;      // get value stored at px
 @pre
 43
 43

@@ -238,7 +238,7 @@ println$ world. get_greet(), world.get_name(), world.get_location();
 @section
 Functions:
 @felix
-var x = 
+var sqr = fun (a:int):int => a * a;
 @section
 Tuples, records, structurally typed objects, anonymous functions,
 and other manifestations of structural typing reduce clutter
@@ -287,7 +287,7 @@ a compromise between parametric polymorphism
 and overloading: type classes based on Haskell.
 
 @section
-Type classes treat functions as polymorphic and binding
+Type classes treat functions as polymorphic at binding
 time, but require type specific instances during
 monomorphisation.
 

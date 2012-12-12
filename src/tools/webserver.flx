@@ -31,6 +31,9 @@ fun strtod: string -> double = "strtod($1.data(),0)";
 fun atoi: string -> int = "atoi($1.data())";
 
 // command line argument processing
+
+// -------------------------------------------------------------------------
+// Setup the fixed defaults.
 var arg = "";
 var argno = 1;
 var INSTALL_ROOT = #Config::config.FLX_INSTALL_DIR;
@@ -51,6 +54,12 @@ var FLX_PKGCONFIG_PATH=Empty[string];
 var FLX_WEBSERVER_PLUGIN_PATH = Empty[string];
 var PLUGIN_MAP = Empty[string^3];
 
+// -------------------------------------------------------------------------
+// Set the hard coded default config.
+// This sucks totally, its just a hack based on my
+// local requirements. And even that screws up by
+// confusing multiple gcc installs and clang installs.
+
 var default_config = list (
   "C_PATH += /usr/include/c++/4.2.1", 
   "C_PATH += /usr/include/c++/4.2.1/x86_64-apple-darwin10", 
@@ -58,25 +67,12 @@ var default_config = list (
   "C_PATH += /usr/include/c++/4.6", 
   "C_PATH += /usr/include/c++/4.6.3", 
   "C_PATH += /usr/lib/gcc/x86_64-linux-gnu/4.6.3/include",
-
-   "extension flx -> flx2html::xlat_felix",
-   "extension flxh -> flx2html::xlat_felix",
-
-   "extension c     -> cpp2html::xlat_cpp",
-   "extension cpp   -> cpp2html::xlat_cpp",
-   "extension cxx   -> cpp2html::xlat_cpp",
-   "extension h     -> cpp2html::xlat_cpp",
-   "extension hpp   -> cpp2html::xlat_cpp",
-
-   "extension fpc  -> fpc2html::xlat_fpc",
-   "extension fdoc  -> fdoc2html::xlat_fdoc",
-   "extension ml    -> ocaml2html::xlat_ocaml",
-   "extension mli   -> ocaml2html::xlat_ocaml",
-
-   "extension py    -> py2html::xlat_py",
    ""
 );
 
+// -------------------------------------------------------------------------
+// Now find the users HOME directory.
+// Try to get the config string from there.
 var HOME: string = Env::getenv "HOME";
 println$ "Home=" + HOME;
 var FLX_HOME : string= Filename::join (HOME, ".felix");
@@ -86,15 +82,21 @@ println$ "Flxconfig=" + FLX_CONFIG;
 var config_data = load(FLX_CONFIG);
 println$ "loaded webserver config data = " + config_data;
 var config_lines = split(config_data, "\n");
+
+
+// -------------------------------------------------------------------------
+// If we couldn't get the webserver config string
+// from the HOME directory, use the fixed default.
 if len config_data == 0.size do
   println "Using default config";
   config_lines = default_config;
 done
 
+// -------------------------------------------------------------------------
+// Parse the config string.
 config_lines = map (strip of (string)) config_lines; 
 var pathext = RE2("(.*)\\+=(.*)");
 var varset = RE2("(.*)=(.*)");
-var plugin_spec = RE2 " *extension (.*)->(.*)::(.*)";
 
 var result = varray[StringPiece] (4.size,StringPiece(""));
 for line in config_lines do
@@ -120,16 +122,13 @@ for line in config_lines do
     | "INSTALL_ROOT" => INSTALL_ROOT = rhs;
     | _ => println$ "Unknown variable '" + lhs +"'";
     endmatch;
-  else
-  match_result = Match(plugin_spec, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,4);
-  if match_result do
-    var extn = result.1.str.strip;
-    var lib = result.2.str.strip;
-    var entry = result.3.str.strip;
-    PLUGIN_MAP = Cons ((extn, lib, entry), PLUGIN_MAP);
-  done done done
+  done done
 done
 
+// -------------------------------------------------------------------------
+// Process command line options.
+// These can reset the INSTALL_ROOT
+// or augment the C_PATH.
 while argno<System::argc do
   arg = System::argv argno;
   println$ "ARG=" + arg;
@@ -147,12 +146,18 @@ while argno<System::argc do
   ++argno;
 done
 
+// -------------------------------------------------------------------------
+// Now, use the INSTALL_ROOT to augment
+// the search paths.
 C_PATH+= INSTALL_ROOT+"/lib/rtl";
+C_PATH+= INSTALL_ROOT+"/config/target";
 FLX_PATH+=INSTALL_ROOT+"/lib";
 FDOC_PATH+=INSTALL_ROOT+"/doc";
 FLX_PKGCONFIG_PATH+=INSTALL_ROOT+"/config";
 FLX_WEBSERVER_PLUGIN_PATH+=INSTALL_ROOT+"/tools";
 
+// -------------------------------------------------------------------------
+// Print the configuation.
 println$ "INSTALL_ROOT="+INSTALL_ROOT;
 println$ "FLX_PATH="+str FLX_PATH;
 println$ "C_PATH="+str C_PATH;
@@ -163,6 +168,7 @@ println$ "DELAY="+str DELAY;
 println$ "PORT="+str PORT;
 
 
+// -------------------------------------------------------------------------
 // Build consolidated configuration string
 // for plugins.
 
@@ -189,35 +195,33 @@ for d in FLX_WEBSERVER_PLUGIN_PATH do
   config += "FLX_WEBSERVER_PLUGIN_PATH += " + d + newline;
 done
 
-for d in PLUGIN_MAP do
-  match d with 
-  | ?extn, ?lib, ?entry =>
-    config += "extension " + extn + " -> " + lib + "::" + entry + newline;
-  endmatch;
-done
+print$ "CONSOLIDATED CONFIG:\n" + config;
+
+// -------------------------------------------------------------------------
+// Now load the plugins.
 
 var  xlat_felix = Dynlink::load-plugin-func2 [bool * string, string, string] (
-    dll-name="flx2html", setup-str=config_data, entry-point="xlat_felix"
+    dll-name="flx2html", setup-str=config, entry-point="xlat_felix"
   );
 
 var  xlat_fdoc = Dynlink::load-plugin-func2 [fdoc_t, string, string] (
-    dll-name="fdoc2html", setup-str=config_data, entry-point="xlat_fdoc"
+    dll-name="fdoc2html", setup-str=config, entry-point="xlat_fdoc"
   );
 
 var  xlat_fpc = Dynlink::load-plugin-func2 [bool * string, string, string] (
-    dll-name="fpc2html", setup-str=config_data, entry-point="xlat_fpc"
+    dll-name="fpc2html", setup-str=config, entry-point="xlat_fpc"
   );
 
 var  xlat_py = Dynlink::load-plugin-func2 [bool * string, string, string] (
-    dll-name="py2html", setup-str=config_data, entry-point="xlat_py"
+    dll-name="py2html", setup-str=config, entry-point="xlat_py"
   );
 
 var  xlat_ocaml = Dynlink::load-plugin-func2 [bool * string, string, string] (
-    dll-name="ocaml2html", setup-str=config_data, entry-point="xlat_ocaml"
+    dll-name="ocaml2html", setup-str=config, entry-point="xlat_ocaml"
   );
 
 var  xlat_cpp = Dynlink::load-plugin-func2 [bool * string, string, string] (
-    dll-name="cpp2html", setup-str=config_data, entry-point="xlat_cpp"
+    dll-name="cpp2html", setup-str=config, entry-point="xlat_cpp"
   );
 
 
@@ -304,33 +308,11 @@ proc serve_forbidden (k:socket_t, fname:string) {
    write_string(k,data,&eof_flag);
 }
 
-fun get_flx (fname:string) = {
-  var flx =
-    match get_file(fname,INSTALL_ROOT,FLX_PATH) with
-    | Some ?name => load(name)
-    | None => f"NO FILE %S FOUND IN %S" (fname, str FLX_PATH)
-    endmatch
-  ;
-  println$ "Loaded felix file " + fname+", len="+str (flx.len.int);
-  return flx;
-}
-
-fun get_cpp (fname:string) = {
-  var flx =
-    match get_file(fname,INSTALL_ROOT,C_PATH) with
-    | Some ?name => load(name)
-    | None => "NO FILE "+fname+" FOUND IN " + str C_PATH
-    endmatch
-  ;
-  println$ "Loaded c++ file " + fname+", len="+str (len flx);
-  return flx;
-}
-
 
 proc serve_felix (k:socket_t, fname:string) {
   var eof_flag = false;
 
-  match get_file(fname,INSTALL_ROOT,C_PATH) with
+  match get_file(fname,INSTALL_ROOT,FLX_PATH) with
   | Some ?path =>
     {
       val text = load path;

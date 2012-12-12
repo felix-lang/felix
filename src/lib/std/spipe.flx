@@ -8,6 +8,14 @@ open class Spipe {
     while true do write (out,#it); done 
   }
 
+  //$ isrc converts a streamable data structure
+  //$ such as an array into a source.
+  proc isrc[V,T with Streamable[T,V]] (dat:T) (out:oschannel[opt[V]])
+  {
+    source[opt[V]] (dat.iterator) out;
+  }
+
+
   //$ Wire a source component to a sink.
   //$ Return coupled fibre ready to run.
   fun pipe[T] 
@@ -39,6 +47,37 @@ open class Spipe {
     }
   ;
 
+  //$ xpipe connects a streamable data structure
+  //$ such as an array directly into a transducer.
+  fun xpipe[V,T,U with Streamable[T,V]] 
+    (
+      a:T,
+      t: ischannel[opt[V]] * oschannel[U] -> 0
+    )
+    : oschannel[U] -> 0 =>
+    pipe (a.isrc[V],t)
+  ;
+
+
+  //$ Wire a transducer into a transducer.
+  //$ Return another transducer.
+  fun pipe[T,U,V]
+    (a: ischannel[T] * oschannel[U] -> 0,
+    b: ischannel[U] * oschannel[V] -> 0)
+  :
+    ischannel[T] * oschannel[V] -> 0 
+  => 
+    proc (inp:ischannel[T], out:oschannel[V])
+    {
+      var chi,cho = mk_ioschannel_pair[U] ();
+      spawn_fthread { a (inp, cho); };
+      spawn_fthread { b (chi, out); };
+    }
+  ;
+
+
+  //$ Stream sort using intermediate darray.
+  //$ Requires stream of option type.
   proc sort[T with Tord[T]] (r: ischannel[opt[T]], w: oschannel[opt[T]])
   {
      var x = darray[T]();

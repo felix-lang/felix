@@ -81,7 +81,7 @@ object xlat_fdoc (t:string, filename:string) implements fdoc_t = {
 
   method fun whatami () => "Translator for " + filename;
   method fun mathjax_required () => needs_mathjax;
-  method fun  html_raw () => out;
+  method fun html_raw () => out;
   method fun html_page () => page;
 
   var slideshow = slideshow-maker write_string of (string);

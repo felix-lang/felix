@@ -21,7 +21,6 @@ var INSTALL_ROOT = "";
 var FLX_PKGCONFIG_PATH = Empty[string];
 var FLX_PATH = Empty[string];
 var FLX_WEBSERVER_PLUGIN_PATH = Empty[string];
-var PLUGIN_MAP = Empty[string * string * string];
 
 var xlat_cpp: string * string -> bool * string;
 
@@ -511,14 +510,7 @@ fun setup(config_data:string) = {
       | "INSTALL_ROOT" => INSTALL_ROOT = rhs;
       | _ => ;
       endmatch;
-    else
-    match_result = Match(plugin_spec, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,4);
-    if match_result do
-      var extn = result.1.str.strip;
-      var lib = result.2.str.strip;
-      var entry = result.3.str.strip;
-      PLUGIN_MAP = Cons ((extn, lib, entry), PLUGIN_MAP);
-    done done done
+    done done
   done
 
   xlat_cpp = Dynlink::load-plugin-func2 [bool * string, string, string] (

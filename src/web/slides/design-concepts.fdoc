@@ -111,7 +111,7 @@ This is really fast if the parameter is only used once since
 it avoids overheads and allows further optimisations.
 @section
 It is generally achieved by inlining the function body
-as well as replacing in the parameters with their
+as well as replacing the parameters with their
 arguments.
 @section
 The other way to achive lazy evaluation is required when
@@ -143,7 +143,7 @@ The third strategy is called <em>indeterminate evaluation</em>.
 This just means the compiler can choose either eager or lazy!
 @section
 Indeterminate evaluation allows the compiler to replace parameters
-with arguments whan a function is inlined.
+with arguments when a function is inlined.
 @section
 or
 @section

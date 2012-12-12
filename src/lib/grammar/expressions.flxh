@@ -108,6 +108,10 @@ syntax expressions {
   //$ Left assoc, for schannel pipes.
   x[ssetunion_pri] := x[ssetunion_pri] "|->" x[>ssetunion_pri] =># "(infix 'pipe)"; 
 
+  //$ Non associative, streaming data structure into transducer.
+  x[ssetunion_pri] := x[>ssetunion_pri] ">->" x[>ssetunion_pri] =># "(infix 'xpipe)"; 
+
+
   // right arrows: RIGHT ASSOCIATIVE!
 
   //$ List cons, right associative.
