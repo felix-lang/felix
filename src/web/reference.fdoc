@@ -1,12 +1,29 @@
+<title>Felix System Reference</title>
 @h1 Felix System Reference
 @h2 Language
 <a href="flx_gramdoc.html">Felix Core Syntax</a>
 @p
 <a href="ref/lang/core/index.fdoc">Felix Core Language Topics</a>
 @h2 Library
+<a href="/config">The Configuration.</a> Actual, installed, complete configuration data.
+@p
+<a href="/lib">The Library.</a> Actual, installed, complete library.
+@p
 <a href="flx_libcontents.html">Felix Library Contents by File</a>
 @p
-<a href="flx_libindex.html">Felix Library Alphabetical Symbol  Index</a>
+<a href="flx_libindex.html">Felix Library Alphabetical Symbol Index</a>
+@p
+@h1 Install Image.
+<a href="/?">Image of the installation.</a>
+@h2 Test Suite.
+<a href="/test">Complete Test Suite</a>
+@p
+@h2 Tools.
+<a href="tools">Utility tools.</a> All the utility tools, including
+the webserver. Doesn't include {flx} or {flx_pkgconfig}.
+@p
+@h2 Web Site.
+<a href="web">The website</a>
 @p
 @h2 Processing model
 <svg viewBox="43 59 887 340" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
