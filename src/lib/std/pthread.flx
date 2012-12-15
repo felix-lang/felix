@@ -6,12 +6,10 @@ header semaphore_hxx = '#include "pthread_semaphore.hpp"';
 header monitor_hxx = '#include "pthread_monitor.hpp"';
 header work_fifo_hxx = '#include "pthread_work_fifo.hpp"';
 
-publish """
-This class provides access to the operating system's native
-threading routines. On systems with multiple cpus, this may
-increase performance as the operating system may schedule
-threads on different processors.
-"""
+//$ This class provides access to the operating system's native
+//$ threading routines. On systems with multiple cpus, this may
+//$ increase performance as the operating system may schedule
+//$ threads on different processors.
 open class Pthread
 {
   requires package "flx_pthread";
@@ -21,6 +19,7 @@ open class Pthread
   gen mk_job_queue: int * int -> job_queue = "new ::flx::pthread::worker_fifo($1,$2)";
   proc add_worker_task : job_queue  * worker_task = "$1->add_worker_task($2);";
 
+  //$ spawn a detached pthread.
   proc spawn_pthread(p:1->0)
   {
       var con = start p;              // get continuation of p

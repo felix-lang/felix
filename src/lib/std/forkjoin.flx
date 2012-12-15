@@ -1,0 +1,29 @@
+//$ Implement fork/join protocol.
+open class ForkJoin 
+{
+  //$ Launch a set of pthreads and wait
+  //$ until all of them are finished.
+  proc concurrently (it:1 -> opt[1->0]) 
+  {
+     // Make a channel to signal termination.
+     var iterm,oterm = mk_iopchannel_pair[int]();
+     noinline proc manager (var p: 1->0) () { p(); write (oterm, 1); }
+     // Count the number of pthreads.
+     var count = 0;
+   again:>
+     match #it with
+     | Some ?p => 
+       ++count; 
+       spawn_pthread$ manager p; 
+      goto again;
+
+     | None =>
+       while count > 0 do
+         C_hack::ignore (read iterm);
+         --count;
+       done
+     endmatch;
+  }
+
+  proc concurrently[N] (p: (1->0)^N) => concurrently p.iterator;
+}

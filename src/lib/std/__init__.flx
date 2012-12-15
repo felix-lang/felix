@@ -58,6 +58,8 @@ include "std/pchannels";
 include "std/mutex";
 include "std/ts_counter";
 include "std/ts_bound_queue";
+include "std/ppipe";
+include "std/forkjoin";
 
 //memory management
 include "std/gc";
@@ -118,7 +120,10 @@ include "std/db/__init__";
 // Version
 include "std/version";
 
-// Platform support
+// Platform support (implementation exposure)
 include "std/posix/__init__";
 include "std/win32/__init__";
+
+// Felix (implementation exposure)
+include "std/felix/__init__";
 

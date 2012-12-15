@@ -22,16 +22,22 @@ class SyncControl
 
   enum fpc_t = next_fthread_pos, next_request_pos;
 
+  //$ The type of a list of active fthreads to schedule.
   type fthread_list = "::std::list<::flx::rtl::fthread_t*>*" requires Cxx_headers::list;
+
+  //$ Construct an empty fthread list.
   ctor fthread_list: 1 = "new ::std::list<::flx::rtl::fthread_t*>";
+
+  //$ Delete an fthread list.
   proc delete : fthread_list = "delete $1;";
 
+  //$ Push an fthread onto an fthread list.
   proc push_back: fthread_list * fthread = "$1->push_back($2); PTF gcp->collector->add_root($2);";
 
   //$ Upcast a procedure closure to a continuation.
   ctor cont: (1->0) = "static_cast<::flx::rtl::con_t*>($1)";
 
-  //$ create an fthread from a continuation.
+  //$ Create an fthread from a continuation.
   ctor fthread: cont = "new (*PTF gcp, ::flx::rtl::_fthread_ptr_map, false) ::flx::rtl::fthread_t($1)";
 
   //$ Type of a synchronous scheduler.
@@ -44,11 +50,33 @@ class SyncControl
   proc delete: scheduler = "delete $1;";
 
   //$ Invoke the scheduler and run until one of two
-  //$ events transpires:
+  //$ events transpires: blocked, delegated.
 
   proc run : scheduler = "$1->frun();";
 
   //$ get the exit state of the scheduler after running.
   fun get_scheduler_state : scheduler -> fstate_t = "$1->fs";
 
+  //$ Run a single procedure as a fibre on
+  //$ new scheduler. This scheduler acts like a subroutine,
+  //$ control doesn't return to the caller until the scheduler
+  //$ queue is empty. This call cannot handle async I/O,
+  //$ so any attempt to do it will cause the program to abort.
+  proc run_proc (p: 1->0) {
+    var clsa = cont p;                       // cast procedure to continuation (throw out type)
+    var fthr = fthread clsa;                 // construct an fthread from the continuation.
+    var lst = #fthread_list;                 // make scheduler list for scheduler to use.
+    var sched = scheduler lst;               // construct scheduler.
+    push_back (lst,fthr);                    // add our job to the scheduler list.
+    run sched;                               // run the scheduler.
+    var result = get_scheduler_state sched;  // get return state of scheduler.
+    match result with 
+    | terminated => assert false;            // unused.
+    | delegated =>                           // bug out if async I/O attempted.
+      throw "Inner scheduler attemped unavailable service call";
+    | blocked =>                             // this scheduler ran out of threads.
+      delete sched;                          // cleanup: delete the scheduler
+      delete lst;                            // and the scheduler list.
+    endmatch;
+  }
 }

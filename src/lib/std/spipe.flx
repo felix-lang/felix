@@ -75,6 +75,22 @@ open class Spipe {
     }
   ;
 
+  //$ Wire a transducer into a sink.
+  //$ Return a sink.
+  fun pipe[T,U]
+    (a: ischannel[T] * oschannel[U] -> 0,
+    b: ischannel[U] -> 0)
+  :
+    ischannel[T]  -> 0 
+  => 
+    proc (inp:ischannel[T])
+    {
+      var chi,cho = mk_ioschannel_pair[U] ();
+      spawn_fthread { a (inp, cho); };
+      spawn_fthread { b (chi); };
+    }
+  ;
+
 
   //$ Stream sort using intermediate darray.
   //$ Requires stream of option type.
