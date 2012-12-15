@@ -124,7 +124,7 @@ let gen_prim_call
   let ts = map rtn ts in
   let carg =
     match argt with
-    | BTYP_tuple []  -> ce_atom "UNIT_VALUE_ERROR"
+    | BTYP_tuple []  -> ce_atom "(::flx::rtl::unit())/*UNIT_VALUE_ERROR?*/"
     | x -> ge sr a
   in
   let ashape = sh argt in

@@ -241,7 +241,7 @@ and gen_expr'
 *)
   match e with
   (* replace heap allocation of a unit with NULL pointer *)
-  | BEXPR_new (BEXPR_tuple [],_) -> ce_atom "0"
+  | BEXPR_new (BEXPR_tuple [],_) -> ce_atom "0/*NULL*/"
   | _ ->
   if length this_ts <> length this_vs then begin
     failwith
@@ -322,7 +322,7 @@ and gen_expr'
   let t = rt t in
   match t with
   (* This is now required for arrays of length 1 *)
-  | BTYP_tuple [] -> ce_atom "0"
+  | BTYP_tuple [] -> ce_atom "(::flx::rtl::unit())/*UNIT TUPLE?*/"
 (*
       clierr sr
      ("[egen] In "^sbe bsym_table (e,t)^":\nunit value required, should have been eliminated")
