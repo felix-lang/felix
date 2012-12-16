@@ -19,21 +19,19 @@ open class Farray
   }
 
   //$ Pointer to array as value.
-  instance[t,n] ArrayValue[&array[t,n], t] {
+  instance[t,n] ArrayValue[&array[t,n], &t] {
     fun len (x:&array[t, n]): size => Typing::arrayindexcount[n];
-    fun unsafe_get: &array[t, n] * size -> t = "$1->data[$2]";
+    fun unsafe_get: &array[t, n] * size -> &t = "(&($1->data[$2]))";
   }
 
-  //$ Pointer to array as object.
-  instance[t,n] ArrayObject[&array[t,n], t] {
-    proc unsafe_set: &array[t,n] * size * t = "$1->data[$2]=$3;";
+  proc unsafe_set[t,n]: &array[t,n] * size * t = "$1->data[$2]=$3;";
+  proc set[t,n, I in ints] (a: &array[t,n], i:I,v:t) {
+    assert i.size < (*a).len;
+    unsafe_set (a,i.size,v);
   }
 
-  //$ Pointer to array as STL contiguous sequence object.
-  instance[t,n] ContiguousArrayObject[&array[t,n], t] {
-    fun stl_begin: &array[t,n] -> +t = "$1->data";
-    fun stl_end ( x:&array[t,n] ) : +t => stl_begin x + len x;
-  }
+  fun stl_begin[t,n]: &array[t,n] -> +t = "(?1*)($1->data)";
+  fun stl_end[t,n] ( x:&array[t,n] ) : +t => stl_begin x + x*.len;
 
   //$ Array map.
   fun map[V,N,U] (_f:V->U) (x:array[V,N]):array[U,N] = {
@@ -201,7 +199,5 @@ open[T,N] Tord[array[T,N]];
 open[T,N with Eq[T]] Set[array[T,N],T];
 
 open[T,N] ArrayValue[array[T,N], T];
-open[T,N] ArrayValue[&array[T,N], T];
-open[T,N] ArrayObject[&array[T,N], T];
-open[T,N] ContiguousArrayObject[&array[T,N], T];
+open[T,N] ArrayValue[&array[T,N], &T];
 

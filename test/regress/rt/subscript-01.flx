@@ -15,7 +15,6 @@ proc vtst[V,T with ArrayValue[T,V]] (x:T, s:string)
 }
 
 vtst[int]$ x,"array";
-vtst[int]$ px,"&array";
 vtst[int]$ varray(1,2,3,4),"varray";
 vtst[int]$ darray(1,2,3,4),"darray";
 
@@ -35,7 +34,6 @@ proc otst[V,T with ContiguousArrayObject[T,V], Str[T]] (x:T, v1:V, v2:V, s:strin
   println "";
 }
 
-otst[int]$ px,42, 53, "array";
 otst[int]$ varray(1,2,3,4),42, 53, "varray";
 otst[int]$ darray(1,2,3,4),42, 53, "darray";
 

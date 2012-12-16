@@ -118,8 +118,10 @@ let lookup_name_in_table_dirs table dirs sr name : entry_set_t option =
             Some some
           else begin
             List.iter begin fun es ->
-              print_endline ("Symbol " ^ (string_of_entry_set es))
+              print_endline ("[lookup_name_in_table_dirs] Symbol " ^ (string_of_entry_set es))
             end opens;
+            print_endline ("[lookup_name_in_table_dirs] Conflicting nonfunction definitions for "^
+              name ^" found in open modules");
             clierr sr ("[lookup_name_in_table_dirs] Conflicting nonfunction definitions for "^
               name ^" found in open modules"
             )

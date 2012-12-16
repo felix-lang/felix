@@ -92,7 +92,7 @@ class Base64 {
     while in_len > 0ui and ( enc_str.[in_] != char('=')) do 
       //(and is_base64(enc_str[in_])) 
       in_len--;
-      set(&char_array_4,i,enc_str.[in_]); i++; in_++;
+      &char_array_4.i <- enc_str.[in_]; i++; in_++;
       if (i == 4) do
         for var ip in  0 upto 3 do
           set(&char_array_4,ip, ( match find(b64_string,char_array_4.(ip)) with 

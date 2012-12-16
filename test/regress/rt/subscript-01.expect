@@ -4,12 +4,6 @@ array
 2
 2
 
-&array
-3
-3
-2
-2
-
 varray
 3
 3
@@ -23,10 +17,6 @@ darray
 2
 
 -------
-array
-42
-(1,53,42,4)
-
 varray
 42
 varray(1, 53, 42, 4)
