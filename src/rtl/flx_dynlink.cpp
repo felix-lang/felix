@@ -1,4 +1,6 @@
 #include "flx_dynlink.hpp"
+#include "flx_strutil.hpp"
+
 #include <cstring>
 #include <cstdlib>
 
@@ -125,24 +127,25 @@ flx_dynlink_t::flx_dynlink_t(
     throw flx_link_failure_t("<static link>","dlsym","flx_start");
 }
 
-void flx_dynlink_t::link(const ::std::string& filename_a) throw(flx_link_failure_t)
+void flx_dynlink_t::link(const ::std::string& filename_a, const ::std::string& modulename_a) throw(flx_link_failure_t)
 {
   filename = filename_a;
+  modulename = modulename_a;
   library = flx_load_library(filename);
   //fprintf(stderr,"File %s dlopened at %p ok\n",fname.c_str(),library);
 
   thread_frame_creator = (thread_frame_creator_t)
-    DLSYM(library,create_thread_frame);
+    SDLSYM(library,(modulename+"_create_thread_frame").c_str());
   if(!thread_frame_creator)
-    throw flx_link_failure_t(filename,"dlsym","create_thread_frame");
+    throw flx_link_failure_t(filename,"dlsym",modulename+"_create_thread_frame");
 
   //fprintf(stderr,"Thread frame creator found at %p\n",thread_frame_creator);
 
-  start_sym = (start_t)DLSYM(library,flx_start);
+  start_sym = (start_t)FLX_SDLSYM(library,(modulename+"_flx_start").c_str());
   if(!start_sym)
-    throw flx_link_failure_t(filename,"dlsym","flx_start");
+    throw flx_link_failure_t(filename,"dlsym",modulename+"_flx_start");
 
-  main_sym = (main_t)DLSYM(library,flx_main);
+  main_sym = (main_t)FLX_DLSYM(library,flx_main);
 
   //fprintf(stderr,"Start symbol found at %p\n",start_sym);
   //fprintf(stderr,"main symbol found at %p\n",main_sym);
@@ -160,6 +163,12 @@ void flx_dynlink_t::link(const ::std::string& filename_a) throw(flx_link_failure
       "Unknown user exception"
     );
   }
+}
+
+void flx_dynlink_t::link(const ::std::string& filename_a) throw(flx_link_failure_t)
+{
+  string mname = ::flx::rtl::strutil::filename_to_modulename (filename_a);
+  link(filename_a,mname);
 }
 
 void flx_dynlink_t::unlink()

@@ -371,23 +371,23 @@ let codegen_bsyms
   plb "\n//-----------------------------------------";
   plb ("}} // namespace flxusr::" ^ Flx_name.cid_of_flxid state.module_name);
 
+  let mname = Flx_name.cid_of_flxid state.module_name in
   plb "//CREATE STANDARD EXTERNAL INTERFACE";
   plb (
-    "FLX_FRAME_WRAPPERS(::flxusr::" ^
-    Flx_name.cid_of_flxid state.module_name ^ ")");
+    "FLX_FRAME_WRAPPERS(::flxusr::" ^ mname ^","^mname ^ ")");
 
   begin if List.mem `Pure topclass_props then
     plb (
-      "FLX_C_START_WRAPPER(::flxusr::" ^
-      Flx_name.cid_of_flxid state.module_name ^ "," ^ top_class ^ ")")
+      "FLX_C_START_WRAPPER(::flxusr::" ^ 
+      mname ^ ","^mname^"," ^ top_class ^ ")")
   else if List.mem `Stackable topclass_props then
     plb (
       "FLX_STACK_START_WRAPPER(::flxusr::" ^
-      Flx_name.cid_of_flxid state.module_name ^ "," ^ top_class ^ ")")
+      mname ^ ","^mname^"," ^ top_class ^ ")")
   else
     plb (
       "FLX_START_WRAPPER(::flxusr::" ^
-      Flx_name.cid_of_flxid state.module_name ^ "," ^ top_class ^ ")")
+      mname ^ ","^mname^"," ^ top_class ^ ")")
   end;
 
   plb "\n//-----------------------------------------";

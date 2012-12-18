@@ -135,7 +135,14 @@ class Builder(fbuild.db.PersistentObject):
             buildroot=buildroot,
             flags=cflags)
 
-        return linker(dst, list(chain(objects, [obj])),
+        thunk_obj = self.cxx.compile(src[:-4]+"_static_link_thunk.cpp",
+            includes=includes,
+            macros=macros,
+            buildroot=buildroot,
+            flags=cflags)
+
+
+        return linker(dst, list(chain(objects, [obj,thunk_obj])),
             libs=libs,
             flags=lflags,
             buildroot=buildroot)

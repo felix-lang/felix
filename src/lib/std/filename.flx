@@ -67,6 +67,18 @@ class Filename_class[os] {
   //$ Join all the strings in a list into a pathname.
   fun join(ps: List::list[string])=> List::fold_left Filename::join of (string) "" ps;
 
+  //$ Remove an extension from a filename if there is one.
+  //$ Works backwards until it hits a dot, path separator,
+  //$ or end of data. If a dot, strip it and the tail of the string,
+  //$ otherwise return the original string.
+  fun strip_extension (s:string): string = {
+     for var i in s.len - 1uz downto 0uz do
+       var ch = s.[i];
+       if ch == char "." do return s.[0 to i]; done // excludes the dot
+       if ch == char #sep do return s;  done
+     done
+     return s;
+  }
 }
 
 //$ Windows Filenames

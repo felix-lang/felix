@@ -1,0 +1,26 @@
+//$ A function to convert a byte string into a
+//$ legal C identifier in a canonical way.
+//$ This routine should match the Ocaml function Flx_name.flxid_to_cid.
+
+class Cident 
+{
+  //$ Basename of a filename. Hacky, not the real thing.
+  //$ Enough for calculating module names hopefully.
+  //$ Treats / and \ as path separators.
+  fun basename : string -> string = "::flx::rtl::strutil::basename ($1)";
+
+  //$ Chop extension of a filename. Hacky, not the real thing.
+  //$ Enough for calculating module names hopefully.
+  //$ Treats / and \ as path separators.
+  fun chop_extension : string -> string = "::flx::rtl::strutil::chop_extension($1)";
+
+  //$ Convert a "normal enough" Felix identifier to a C identifier.
+  //$ Does canonical replacement of chars illegal in C identifiers.
+  //$ Hacky, only supports ASCII, doesn't support i18n.
+  fun flxid_to_cid : string -> string = "::flx::rtl::strutil::flxid_to_cid($1)";
+
+  //$ Convert a "normal enough" filename to a modulename.
+  //$ Uses all the above hacky stuff.
+  //$ Just please use sensible ASCII filenames!
+  fun filename_to_modulename : string -> string = "::flx::rtl::strutil::filename_to_modulename($1)";
+}

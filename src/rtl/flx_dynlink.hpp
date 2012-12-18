@@ -152,6 +152,7 @@ struct RTL_EXTERN flx_dynlink_t
 {
   // data
   ::std::string filename;
+  ::std::string modulename;
   LIBHANDLE library;
   thread_frame_creator_t thread_frame_creator;
   start_t start_sym;
@@ -165,7 +166,16 @@ struct RTL_EXTERN flx_dynlink_t
     main_t main_sym) throw(flx_link_failure_t);
 
   // routines
+  // link does dynamic loading independently of static/dynamic linkage.
+  // Static linked executables can do dynamic loading as well as
+  // other libraries, in fact that's the most common use!
+
+  // With this variant the user provides the module name.
+  void link(const ::std::string& filename, const ::std::string& modulename) throw(flx_link_failure_t);
+
+  // With this variant the module name is calculated from the filename.
   void link(const ::std::string& filename) throw(flx_link_failure_t);
+
   void unlink();
   virtual ~flx_dynlink_t();
 

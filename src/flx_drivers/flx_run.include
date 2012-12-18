@@ -56,9 +56,13 @@ static void *sp = 0;
 #endif
 
 #ifdef FLX_STATIC_LINK
+/*
 extern "C" void *create_thread_frame;
 extern "C" void *flx_start;
+*/
 extern "C" void *flx_main;
+extern "C" void *static_create_thread_frame;
+extern "C" void *static_flx_start;
 #endif
 
 int do_final_cleanup(
@@ -457,9 +461,15 @@ int run_felix(
     flx_libinit_t instance;
 
 #ifdef FLX_STATIC_LINK
+/*
     flx_dynlink_t library(
       (thread_frame_creator_t)&create_thread_frame,
       (start_t)&flx_start,
+      (main_t)&flx_main);
+*/
+    flx_dynlink_t library(
+      (thread_frame_creator_t)static_create_thread_frame,
+      (start_t)static_flx_start,
       (main_t)&flx_main);
 #else
     flx_dynlink_t library;

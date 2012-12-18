@@ -81,6 +81,9 @@ namespace flx { namespace rtl { namespace strutil {
   RTL_EXTERN string atostr(char const *a);
   RTL_EXTERN string flx_asprintf(char const *fmt,...);
 
+  RTL_EXTERN string flxid_to_cid(string const&);
+  RTL_EXTERN string filename_to_modulename (string const&);
+
 }}}
 
 #endif

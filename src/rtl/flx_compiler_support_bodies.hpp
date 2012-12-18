@@ -108,8 +108,8 @@ static void x##_finaliser(::flx::gc::generic::collector_t *, void *__p){\
 #define FLX_EAT_PTF(x) x
 #define FLX_DEF_THREAD_FRAME
 
-#define FLX_FRAME_WRAPPERS(mname) \
-extern "C" FLX_EXPORT mname::thread_frame_t *create_thread_frame(\
+#define FLX_FRAME_WRAPPERS(mname,name) \
+extern "C" FLX_EXPORT mname::thread_frame_t *name##_create_thread_frame(\
   ::flx::gc::generic::gc_profile_t *gcp\
 ) {\
   mname::thread_frame_t *p = new(*gcp,mname::thread_frame_t_ptr_map,false) mname::thread_frame_t();\
@@ -117,8 +117,8 @@ extern "C" FLX_EXPORT mname::thread_frame_t *create_thread_frame(\
   return p;\
 }
 
-#define FLX_START_WRAPPER(mname,x)\
-extern "C" FLX_EXPORT ::flx::rtl::con_t *flx_start(\
+#define FLX_START_WRAPPER(mname,name,x)\
+extern "C" FLX_EXPORT ::flx::rtl::con_t *name##_flx_start(\
   mname::thread_frame_t *__ptf,\
   int argc,\
   char **argv,\
@@ -135,8 +135,8 @@ extern "C" FLX_EXPORT ::flx::rtl::con_t *flx_start(\
     mname::x(__ptf)) ->call(0);\
 }
 
-#define FLX_STACK_START_WRAPPER(mname,x)\
-extern "C" FLX_EXPORT ::flx::rtl::con_t *flx_start(\
+#define FLX_STACK_START_WRAPPER(mname,name,x)\
+extern "C" FLX_EXPORT ::flx::rtl::con_t *name##_flx_start(\
   mname::thread_frame_t *__ptf,\
   int argc,\
   char **argv,\
@@ -153,8 +153,8 @@ extern "C" FLX_EXPORT ::flx::rtl::con_t *flx_start(\
   return 0;\
 }
 
-#define FLX_C_START_WRAPPER(mname,x)\
-extern "C" FLX_EXPORT ::flx::rtl::con_t *flx_start(\
+#define FLX_C_START_WRAPPER(mname,name,x)\
+extern "C" FLX_EXPORT ::flx::rtl::con_t *name##_flx_start(\
   mname::thread_frame_t *__ptf,\
   int argc,\
   char **argv,\

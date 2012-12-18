@@ -30,14 +30,29 @@ let generate_dep_file state =
 (* shouldn't need this, should be absolute already 
   let dep_file_name = Flx_filesys.mkabs (state.dep_file_name) in
 *)
+(*
   let dep_file_name = state.dep_file_name in
   Flx_filesys.mkdirs (Filename.dirname dep_file_name); 
   let chan = open_out state.dep_file_name in
   output_string chan (String.concat "\n" (!(state.syms.include_files)) ^ "\n");
   close_out chan
+*)
+  Flxg_file.output_string state.dep_file (String.concat "\n" (!(state.syms.include_files)) ^ "\n");
+  Flxg_file.close_out state.dep_file
+ 
+(* -------------------------------------------------------------------------- *)
+let generate_static_link_thunk state module_name =
+  let module_name = Flx_name.cid_of_flxid state.module_name in
+  let s = 
+     "extern \"C\" void "^ module_name ^ "_create_thread_frame();\n" ^
+     "extern \"C\" void "^ module_name ^ "_flx_start();\n" ^
+     "extern \"C\" void (*static_create_thread_frame)() = " ^ module_name ^ "_create_thread_frame;\n" ^
+     "extern \"C\" void (*static_flx_start)() = " ^ module_name ^ "_flx_start;\n" 
+  in
+  Flxg_file.output_string state.static_link_thunk_file s;
+  Flxg_file.close_out state.static_link_thunk_file
 
 (* -------------------------------------------------------------------------- *)
-
 (** Save basic profiling numbers. *)
 let save_profile () =
   let fname = "flxg_stats.txt" in
@@ -191,6 +206,8 @@ let handle_codegen state main_prog module_name =
     "Flxg_codegen.codegen"
     (Flxg_codegen.codegen state bsym_table)
     root_proc
+  ;
+  generate_static_link_thunk state module_name
 
 (* -------------------------------------------------------------------------- *)
 

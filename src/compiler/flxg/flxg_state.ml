@@ -16,7 +16,8 @@ type t = {
   rtti_file: Flxg_file.t;
   report_file: Flxg_file.t;
   why_file: Flxg_file.t;
-  dep_file_name: string;
+  dep_file: Flxg_file.t;
+  static_link_thunk_file: Flxg_file.t;
 }
 
 
@@ -72,7 +73,8 @@ print_endline ("File outbase = " ^ outbase);
     rtti_file = Flxg_file.make (outbase ^ ".rtti");
     report_file = Flxg_file.make (outbase ^ ".xref");
     why_file = Flxg_file.make (outbase ^ ".why");
-    dep_file_name = (outbase ^ ".dep");
+    dep_file = Flxg_file.make (outbase ^ ".dep");
+    static_link_thunk_file = Flxg_file.make (outbase ^ "_static_link_thunk.cpp");
   }
 
 
