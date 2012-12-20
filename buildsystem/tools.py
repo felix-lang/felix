@@ -27,18 +27,27 @@ def build(phase, felix):
       "flx_gramdoc",
       "flx_libcontents",
       "flx_libindex",
-      "norK",
       "rentut",
       "mktutindex",
       "flx_perror",
+      "flx_tangle"
+      ]
+
+    optional_exes = [
+      "norK",
       ]
 
     for base in exes:
+      exe = felix.compile(phase.ctx.buildroot/('tools/'+base+'.flx'), static=True)
+      fbuild.builders.file.copy(phase.ctx, exe, 'bin')
+
+    for base in optional_exes:
       try:
           exe = felix.compile(phase.ctx.buildroot/('tools/'+base+'.flx'), static=True)
           fbuild.builders.file.copy(phase.ctx, exe, 'bin')
       except:
           print("Warning : "+base+" not built. Continuing..." )
+
 
     try:
       os.mkdir(phase.ctx.buildroot/'shlib')
@@ -60,10 +69,7 @@ def build(phase, felix):
       "fdoc_button",
       ]
     for base in plugins:
-      try:
-          shlib = felix.compile(phase.ctx.buildroot/('tools/'+base+'.flx'))
-          fbuild.builders.file.copy(phase.ctx, shlib, 'shlib')
-      except:
-          print("Warning : " + base + " not built. Continuing..." )
+      shlib = felix.compile(phase.ctx.buildroot/('tools/'+base+'.flx'))
+      fbuild.builders.file.copy(phase.ctx, shlib, 'shlib')
 
 
