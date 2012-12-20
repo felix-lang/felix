@@ -135,7 +135,7 @@ void flx_dynlink_t::link(const ::std::string& filename_a, const ::std::string& m
   //fprintf(stderr,"File %s dlopened at %p ok\n",fname.c_str(),library);
 
   thread_frame_creator = (thread_frame_creator_t)
-    SDLSYM(library,(modulename+"_create_thread_frame").c_str());
+    FLX_SDLSYM(library,(modulename+"_create_thread_frame").c_str());
   if(!thread_frame_creator)
     throw flx_link_failure_t(filename,"dlsym",modulename+"_create_thread_frame");
 

@@ -43,6 +43,16 @@ class StrDict[T] {
      return if C_hack::isNULL slot then None[T] else Some (**slot);
    }
 
+   //$ Check if value is in the dictionary.
+   fun haskey (x:strdict) (key: string) : bool = 
+   {
+     var err: JError_t;
+     var slot : && T; 
+     JudySLGet (_repr_ x, key.cstr, &err, C_hack::cast[&&word] (&slot));
+     return slot.C_hack::isNULL.lnot;
+   }
+
+
    //$ Fetch a value using the given key.
    //$ If there is no value in the dictionary with that key,
    //$ then return a default value.
@@ -220,6 +230,27 @@ class StrDict[T] {
      }
   }
   inherit Streamable[strdict, string * T];
+
+  instance[with Str[T]] Str[strdict]
+  {
+    fun str(var x:strdict) : string = 
+    {
+      var s = "{";
+      match ?key,?value in x.iterator do
+        var entry = key +"=" + str value;
+        if s == "{" do s+= entry; else s+= ", "+ entry; done
+      done 
+      s+="}";
+      return s;
+    }
+  }
+  inherit Str[strdict];
+
+  instance Set[strdict,string] {
+    fun \in (key:string, dict:strdict) => haskey dict key;
+  }
+  inherit Set[strdict,string];
+
 }
 
 open[T] StrDict[T];

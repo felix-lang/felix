@@ -146,6 +146,13 @@ open class List
     | _ => false
   ;
 
+  //$ Tail of a list, abort with match failure if list is empty.
+  pure fun tail[T] (x:list[T]) : list[T] = {
+    match x with
+    | Cons (_,?t) => return t;
+    endmatch;
+  }
+
   //$ map a list, return mapped list in reverse order (tail rec).
   fun rev_map[T,U] (_f:T->U) (x:list[T]): list[U] = {
     fun aux (inp:list[T]) (out:list[U]) : list[U] =>

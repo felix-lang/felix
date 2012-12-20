@@ -1,0 +1,119 @@
+//$ flx_tangle --inoutdir --indir=indir --outdir=outdir basename
+//$ processes the file indir/basename.fdoc and generates
+//$ the file outdir/basename.flx by collating everything
+//$ between @felix and subsequent @ command.
+//$
+//$ If indidr is specified and outdir is not, the outdir
+//$ remains the default current directory.
+//$
+//$ If inoutdir is specified, indir and outdir are set
+//$ to it, and indir and outdir should not be specified.
+
+// --- COMMAND LINE PROCESSING --------------------------------
+val cmdspec : cmdspec_t = 
+  ( 
+    split-key-value-spec= Empty[string * string],
+    multi-valued-keys-spec= Empty[string], 
+    single-valued-keys-spec= list("--inoutdir","--indir","--outdir"),
+    switches-spec= Empty[string], 
+    short-switch-map-spec = Empty[char * string]
+  )
+;
+
+val inargs = #System::args;
+
+val outargs = parse-cmdline cmdspec inargs;
+
+println$ 
+  "Outargs: keyed: " + outargs.single-valued-keys.str + 
+  " positional:" + outargs.positional.str
+;
+
+var keys = outargs.single-valued-keys;
+
+if 
+  ("--inoutdir" in keys) and
+  (
+    ("--indir" in keys) or
+    ("--outdir" in keys) 
+  )
+do
+  println$ "Cannot specify --inoutdir with --indir or --outdir";
+  System::exit(1);
+done
+
+if outargs.positional.len.int <= 1 do
+  println$ "Usage: flx_tangle [--indir=indir] [--outdir=outdir] [--inoutdir=inoutdir] file1 ...";
+  System::exit(1);
+done
+
+var indir = keys.get_dflt ("--indir", keys.get_dflt ("--inoutdir", "") );
+var outdir = keys.get_dflt ("--outdir",  keys.get_dflt ("--inoutdir", ""));
+
+// --- FILE SCAN --------------------------------
+for base in outargs.positional.tail do
+  println$ "Base = " + base;
+  for file in FileSystem::regfilesin(indir, base+"\\.fdoc") do
+    var infile = Filename::join (indir, file);
+    var outfile = Filename::join (outdir, Filename::strip_extension file +".flx");
+    println$ "Infile = " + infile;
+    println$ "Outfile = " + outfile;
+    save_tangle (infile, outfile); 
+  done
+done
+
+// Source device.
+proc filesrc (file:string) (o:oschannel[string]) 
+{
+  var data = load file;
+  for line in split(data,"\n") do write (o, line+"\n"); done
+  write(o,"");
+}
+
+// Tangling transducer.
+proc tangle (i:ischannel[string], o:oschannel[string]) 
+{
+moredoc:>
+  var x = read i;
+  if x == "" goto finish;
+  if strip x != "@felix" goto moredoc;
+
+morefelix:>
+  x = read i;
+  if x == "" goto finish;
+  if x.[0] == char "@" goto moredoc;
+  write(o,x);
+  goto morefelix;
+
+finish:>
+  write (o,"");
+}
+
+// Concentrating transducer.
+proc grab (o:oschannel[string]) (i:ischannel[string])  
+{
+  var s = "";
+morelines:>
+  var x = read i;
+  if x == "" goto finish;
+  s+=x;
+  goto morelines;
+
+finish:> 
+  write(o,s);
+}
+
+// Pipeline controller.
+proc save_tangle (infile:string, outfile:string)
+{
+  var i,o = #mk_ioschannel_pair[string];
+  spawn_fthread$ filesrc infile |-> tangle |-> grab o;
+  var result  = read i;
+  println$ "RESULT=" + result;
+  if result != "" do
+    Directory::mkdirs$ Filename::dirname outfile;
+    var ofile = fopen_output outfile;
+    write (ofile,result);
+    fclose ofile;
+  done
+}

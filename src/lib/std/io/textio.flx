@@ -18,7 +18,8 @@ class Input_text_file[input_text_file]
   //$ Load the rest of an open file.
   virtual gen load: input_text_file -> string;
 
-  //$ Read one line with the trailing end-line mark stripped.
+  //$ Read one line with the trailing end-line mark included.
+  //$ Empty string indicates end of file.
   virtual gen readln: input_text_file -> string;
 
   //$ Check for end of file.

@@ -315,7 +315,7 @@ let tailit syms bsym_table uses id this sr ps vs exes =
     (nlist k)
   in
   let rec aux inp res =
-    let cal_par i t ls h tail =
+    let cal_par' i t ls h tail =
       if syms.compiler_options.print_flag then
       begin
         print_endline ("flx_tailit found possible parallel assignment opportunity in:");
@@ -386,6 +386,10 @@ let tailit syms bsym_table uses id this sr ps vs exes =
           with
             BadUse -> false
         in
+        print_endline ("Maybe can optimise passign, type = " ^ sbt bsym_table t);
+        if islinear_type bsym_table t then
+           print_endline "Woops, linear type shouldn't opt?"
+        ;
         if can_opt then
         begin
           if syms.compiler_options.print_flag then
@@ -408,6 +412,16 @@ let tailit syms bsym_table uses id this sr ps vs exes =
           aux tail (h::res)
         end
       end
+    in
+    let cal_par i t ls h tail =
+      (* don't split up tuple components if the type is a linear
+         type because the packed assignment is just an integer!
+         Can't get faster than that!
+      *)
+      if islinear_type bsym_table t then
+        aux tail (h::res)
+      else
+        cal_par' i t ls h tail 
     in
     match inp with
     | (BEXE_call_direct (sr,i,ts,a)) as x :: tail  -> assert false

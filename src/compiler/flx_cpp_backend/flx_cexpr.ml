@@ -93,6 +93,12 @@ let infix_cops = [
 let remaps = [
   "$1++",("$1:postfix ++ ","postfix");
   "$1--",("$1:postfix -- ","postfix");
+  "$1($2)",("$1:postfix($2:assign)","postfix");
+  "$1[$2]",("$1:postfix[$2:expr]","postfix");
+  "$1->$2",("$1:postfix->$2:atom","postfix");
+
+  "$1.*$2",("$1:pm.*$2:cast","pm");
+  "$1->*$2",("$1:pm->*$2:cast","pm");
 
   "~$1",("~$1:unary","unary");
   "+$1",("+ $1:unary","unary");
@@ -102,19 +108,32 @@ let remaps = [
   "*$1",("*$1:unary","unary");
   "++$1",("++ $1:unary","unary");
   "--$1",("-- $1:unary","unary");
-  "$1+$2",("$1:add + $2:mult","add");
-  "$1-$2",("$1:add - $2:mult","add");
+
   "$1*$2",("$1:mult * $2:pm","mult");
   "$1/$2",("$1:mult / $2:pm","mult");
   "$1%$2",("$1:mult % $2:pm","mult");
 
-  "$1<<$2",("$1:shift << $2:band","shift");
-  "$1>>$2",("$1:shift >> $2:band","shift");
-  "$1&$2",("$1:band & $2:bor","band");
-  "$1|$2",("$1:bor | $2:bxor","bor");
-  "$1^$2",("$1:bxor ^ $2:and","bxor");
-  "$1&&$2",("$1:and && $2:or","and");
-  "$1||$2",("$1:or || $2:cond","or");
+  "$1+$2",("$1:add + $2:mult","add");
+  "$1-$2",("$1:add - $2:mult","add");
+
+  "$1<<$2",("$1:shift << $2:add","shift");
+  "$1>>$2",("$1:shift >> $2:add","shift");
+
+  "$1<$2",("($1:rel < $2:shift)","rel");
+  "$1>$2",("($1:rel > $2:shift)","rel");
+  "$1>=$2",("($1:rel >= $2:shift)","rel");
+  "$1<=$2",("($1:rel <= $2:shift)","rel");
+
+  "$1==$2",("($1:eq == $2:rel)","eq");
+  "$1!=$2",("($1:eq != $2:rel)","eq");
+
+  "$1&$2",("$1:band & $2:eq","band");
+  "$1|$2",("$1:bor | $2:band","bor");
+  "$1^$2",("$1:bxor ^ $2:bor","bxor");
+
+  "$1&&$2",("$1:and && $2:bxor","and");
+  "$1||$2",("$1:or || $2:and","or");
+
 
   "$1+=$2",("$1:cond += $2:assign","assign");
   "$1-=$2",("$1:cond -= $2:assign","assign");
@@ -126,19 +145,6 @@ let remaps = [
   "$1&=$2",("$1:cond &= $2:assign","assign");
   "$1|=$2",("$1:cond |= $2:assign","assign");
   "$1^=$2",("$1:cond ^= $2:assign","assign");
-
-  "$1<$2",("($1:rel < $2:shift)","rel");
-  "$1>$2",("($1:rel > $2:shift)","rel");
-  "$1>=$2",("($1:rel >= $2:shift)","rel");
-  "$1<=$2",("($1:rel <= $2:shift)","rel");
-  "$1==$2",("($1:eq == $2:rel)","eq");
-  "$1!=$2",("($1:eq != $2:rel)","eq");
-
-  "$1($2)",("$1:postfix($2:assign)","postfix");
-  "$1[$2]",("$1:postfix[$2:expr]","postfix");
-  "$1->$2",("$1:postfix->$2:atom","postfix");
-  "$1.*$2",("$1:pm.*$2:cast","pm");
-  "$1->*$2",("$1:pm->*$2:cast","pm");
   "$1:comma,$2:comma",("$1,$2","comma");
 
   (* common library stuff: a hack but safe, prolly should fix in library*)
