@@ -386,7 +386,9 @@ let tailit syms bsym_table uses id this sr ps vs exes =
           with
             BadUse -> false
         in
+(*
         print_endline ("Maybe can optimise passign, type = " ^ sbt bsym_table t);
+*)
         if islinear_type bsym_table t then
            print_endline "Woops, linear type shouldn't opt?"
         ;

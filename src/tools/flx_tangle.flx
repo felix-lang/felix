@@ -10,27 +10,26 @@
 //$ to it, and indir and outdir should not be specified.
 
 // --- COMMAND LINE PROCESSING --------------------------------
+
 val cmdspec : cmdspec_t = 
   ( 
     split-key-value-spec= Empty[string * string],
     multi-valued-keys-spec= Empty[string], 
     single-valued-keys-spec= list("--inoutdir","--indir","--outdir"),
-    switches-spec= Empty[string], 
+    switches-spec= list("--help"), 
     short-switch-map-spec = Empty[char * string]
   )
+;
+
+proc print_help =>
+  println$ "Usage: flx_tangle [--indir=indir] [--outdir=outdir] [--inoutdir=inoutdir] [regexp1 ...]"
 ;
 
 val inargs = #System::args;
 
 val outargs = parse-cmdline cmdspec inargs;
 
-println$ 
-  "Outargs: keyed: " + outargs.single-valued-keys.str + 
-  " positional:" + outargs.positional.str
-;
-
 var keys = outargs.single-valued-keys;
-
 if 
   ("--inoutdir" in keys) and
   (
@@ -39,25 +38,32 @@ if
   )
 do
   println$ "Cannot specify --inoutdir with --indir or --outdir";
-  System::exit(1);
+  print_help;
+  System::exit 1;
 done
 
-if outargs.positional.len.int <= 1 do
-  println$ "Usage: flx_tangle [--indir=indir] [--outdir=outdir] [--inoutdir=inoutdir] file1 ...";
-  System::exit(1);
+if "--help" in outargs.switches do
+  print_help;
+  System::exit 0;
 done
 
-var indir = keys.get_dflt ("--indir", keys.get_dflt ("--inoutdir", "") );
-var outdir = keys.get_dflt ("--outdir",  keys.get_dflt ("--inoutdir", ""));
+var patterns = 
+  match outargs.positional with
+  | _ ! (_ ! _ as tail) => tail
+  | _ ! Empty => list ".*"
+;
+
+println$ patterns;
+
+var indir = keys.get_dflt ("--indir", keys.get_dflt ("--inoutdir", ".") );
+var outdir = keys.get_dflt ("--outdir",  keys.get_dflt ("--inoutdir", "."));
 
 // --- FILE SCAN --------------------------------
-for base in outargs.positional.tail do
+for base in patterns do
   println$ "Base = " + base;
   for file in FileSystem::regfilesin(indir, base+"\\.fdoc") do
     var infile = Filename::join (indir, file);
     var outfile = Filename::join (outdir, Filename::strip_extension file +".flx");
-    println$ "Infile = " + infile;
-    println$ "Outfile = " + outfile;
     save_tangle (infile, outfile); 
   done
 done
@@ -106,14 +112,22 @@ finish:>
 // Pipeline controller.
 proc save_tangle (infile:string, outfile:string)
 {
-  var i,o = #mk_ioschannel_pair[string];
-  spawn_fthread$ filesrc infile |-> tangle |-> grab o;
-  var result  = read i;
-  println$ "RESULT=" + result;
-  if result != "" do
-    Directory::mkdirs$ Filename::dirname outfile;
-    var ofile = fopen_output outfile;
-    write (ofile,result);
-    fclose ofile;
-  done
+  var itime = FileStat::filetime infile;
+  var otime = FileStat::filetime outfile; 
+  if otime <= itime do
+    var i,o = #mk_ioschannel_pair[string];
+    spawn_fthread$ filesrc infile |-> tangle |-> grab o;
+    var result  = read i;
+    if result != "" do
+      println$ "Tangle      : " + infile + " -> " +outfile;
+      Directory::mkdirs$ Filename::dirname outfile;
+      var ofile = fopen_output outfile;
+      write (ofile,result);
+      fclose ofile;
+    else
+      println$ "No Code    : " + infile;
+    done
+  else
+    println$   "Up-to-date : " + infile + " -> " +outfile;
+  done 
 }

@@ -1247,12 +1247,18 @@ print_endline "Apply general";
   | BEXPR_tuple es ->
     (* print_endline ("Construct tuple " ^ sbe bsym_table (e,t)); *)
     if islinear_type bsym_table t then begin
+(*
       print_endline ("Construct tuple of linear type " ^ sbe bsym_table (e,t));
       print_endline ("type " ^ sbt bsym_table t);
+*)
       let sidx = Flx_ixgen.cal_symbolic_array_index bsym_table (e,t) in
+(*
 print_endline ("egen:BEXPR_tuple: Symbolic index = " ^ Flx_ixgen.print_index bsym_table sidx );
+*)
       let cidx = Flx_ixgen.render_index bsym_table ge' array_sum_offset_table seq sidx in
+(*
 print_endline ("egen:BEXPR_tuple: rendered lineralised index .. C index = " ^ string_of_cexpr cidx);
+*)
       cidx 
     end
     else
