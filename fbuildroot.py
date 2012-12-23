@@ -545,35 +545,12 @@ def doc(ctx):
 
     # copy documentation into target
     ctx.logger.log('building documentation', color='cyan')
-    buildsystem.copy_dir_to(ctx, ctx.buildroot/'web', Path('src')/'wiki'/'html'/'images')
+
     # copy website index
     buildsystem.copy_to(ctx, ctx.buildroot, Path('src/*.html').glob())
 
     # copy website
     buildsystem.copy_dir_to(ctx, ctx.buildroot, Path('src')/'web')
-    # copy wiki site files
-    buildsystem.copy_dir_to(ctx, ctx.buildroot/'web', Path('src')/'wiki'/'html'/'css')
-
-    buildsystem.copy_dir_to(ctx, ctx.buildroot/'web', Path('src')/'wiki'/'html'/'CodeMirror')
-    buildsystem.copy_dir_to(ctx, ctx.buildroot/'web', Path('src')/'wiki'/'templates')
-
-    # copy the entire src directory so the user can browse it not actually used
-    # in the build process
-    buildsystem.copy_dir_to(ctx, ctx.buildroot, 'src',
-        pattern='*.{ml,mli,c,cc,cpp,h,hpp,flx,flxh}')
-
-    # copy the entire test directory so the user can browse it
-    buildsystem.copy_dir_to(ctx, ctx.buildroot, 'test',
-        pattern='*.{flx,expect}')
-
-    # copy the entire tut examples directory so the user can browse it
-    buildsystem.copy_dir_to(ctx, ctx.buildroot, 'tut',
-        pattern='*.{flx,expect}')
-
-    # copy docs
-    buildsystem.copy_to(ctx,
-        ctx.buildroot / 'doc',
-        Path('src/doc/*.fdoc').glob())
 
 # ------------------------------------------------------------------------------
 

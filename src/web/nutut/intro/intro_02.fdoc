@@ -1,0 +1,138 @@
+@h1 Extending Syntax
+In our last tutorial we showed how to lift some
+types and operators out of C++, however using them
+was pretty ugly:
+@pre
+myprint (myadd (one, two)); myendl();
+@
+In this tutorial, we're going to show how to fix this.
+
+@h2 User defined statements
+First, we'll show how to extend the grammar to add
+a new statement. 
+
+We're going to include the code
+from the last tutorial which we do like this:
+@felix
+include "./intro-01";
+@
+As this does some testing here again are the expected
+results from that code:
+@expect
+hello world
+3
+mytrue
+@
+Now for the new statement:
+@felix
+syntax mystatements
+{ 
+  stmt := "say" sexpr ";" =># { myprint ?2; myendl(); };
+}
+@
+The non-terminal {stmt} must be used to add new statements.
+The non-terminal {sexpr} can be used for expressions.
+We define our {say} command to print the expression
+denoted by {?2} which is the second symbol on the RHS of the
+{:=} sign, and then do an end of line.
+
+Note the RHS after the {=>#} is scoped inside curly braces.
+This tells Felix that we're defining a statement.
+
+Here's how we use this:
+
+@felix
+open syntax mystatements;
+
+say (myeq (myadd (one, two), myadd (two, one)));
+@
+When we define new syntax, it is packed up in a
+Domain Specific Sub-Language or DSSL.
+The new grammar isn't available until the DSSL
+is opened.
+
+Note that currently user extensions must go in the
+file using them or the master grammar (this is a design
+issue). 
+
+Of course we expect this:
+@expect
+mytrue
+@
+
+@h2 User defined expressions
+Of course we still have to write those ugly
+function calls when we'd like to use operators.
+We'd like to use {+} and {*} etc here but we
+can't because they're already defined, so for
+the purpose of this exercise we're going to
+use different symbols.
+
+@felix
+syntax myexpressions
+{
+  sexpr := myrel =># (?1);
+
+  myrel := myterm "==" myterm =>#  (myeq (?1, ?3) );
+  myrel := myterm =># (?1);
+
+  myterm := myterm "+" myfactor =># ( myadd (?1, ?3) );
+  myterm := myfactor =># (?1);
+
+  myfactor := myfactor "*" myatom =># ( mymul (?1, ?3) );
+  myfactor := myatom =># (?1);
+
+  myatom := sname =># "(nos _1)";
+  myatom := "(" myrel ")" =># "_2";
+
+}
+@
+Here, the predefined non-terminal {sexpr} is defined as {myrel}
+so we don't interfere with the existing grammar.
+
+We've written the grammar
+so {plus} and {mul} are left associative, whereas {equals}
+requires exactly two terms.
+
+When the RHS after the {=>#} symbol is enclosed in parentheses,
+this telle Felix that we're defining an expression.
+
+There is some magic in the last two lines. 
+When the RHS after the {=>#} symbol is a string,
+Felix interprets it as Scheme code. In the Scheme
+code the non-terminals of the production are denoted
+by  {_1}, {_2} etc instead of {?1}, {?2} etc.
+
+The Scheme function {nos} here converts the string designated
+by an {sname} into a Felix identifier term. {nos} stands
+for Name Of String.
+
+We introduced statement and expression template actions
+first because they're simpler and easier to use than
+Scheme actions: to use the Scheme actions you need to know
+Scheme, and you need to know exactly what s-expressions
+the Scheme code has to generate to build the Felix AST.
+To do advanced user defined syntax you need to use
+Scheme. 
+
+However the action templates for statements and expressions
+already give you vastly more power over the language than
+any other production programming language, the best of which
+might allow user defined operators. Felix generalises that
+to give you user defined grammar.
+
+So to try this out:
+@felix
+open syntax myexpressions;
+
+say one + two == two + one;
+@
+and of course that should print
+@expect
+mytrue
+@
+
+
+
+
+

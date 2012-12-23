@@ -24,7 +24,7 @@ fun mkentry(x:string):string =
   hline := f.readln;
   fclose f;
   title := hline.strip.[4 to];
-  html := '<li><a href="' + x + '">' + title + '</a></li>';
+  html := '<li><a href="' + Filename::basename x + '">' + title + '</a></li>';
   return html;
 }
 

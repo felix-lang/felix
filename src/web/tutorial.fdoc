@@ -31,7 +31,11 @@ a mechanism for ultra-high speed synchronous context switching
 where control is exchanged using channels.
 
 @h2 Advanced Topics
-
+<a href="nutut/intro/intro_index.fdoc">Library Implementation</a>
+A tutorial introducing the system for library implementors,
+starting from C++ bindings. Introduces the language and its
+features from an implementation viewpoint, rather than
+a semantic one.
 @p
 Categorical type system: 
 <a href="garray_index.fdoc">Generalised Arrays.</a>

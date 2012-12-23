@@ -151,6 +151,7 @@ tutindex:
 	build/release/bin/mktutindex array "Arrays" tutorial.fdoc
 	build/release/bin/mktutindex garray "Generalised Arrays" tutorial.fdoc
 	build/release/bin/mktutindex uparse "Universal Parser" uparse.fdoc
+	build/release/bin/mktutindex nutut/intro/intro "Ground Up" ../../tutorial.fdoc
 
 install-plugins:
 	sudo cp build/release/shlib/* /usr/local/lib/
