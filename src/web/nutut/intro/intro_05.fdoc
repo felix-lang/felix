@@ -19,7 +19,7 @@ The parens around the {sum} argument are required.
 Hey, that's a typo you say! {sum} has two arguments!
 
 No it doesn't. {sum} has a single argument which
-is of the type of a caresian product {int * int}.
+is of the type of a cartesian product {int * int}.
 The parens are only required because operator
 whitespace, which is used for application, has
 a higher precedence than operator comma, which

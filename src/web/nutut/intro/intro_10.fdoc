@@ -1,0 +1,72 @@
+@h1 Generators
+We're going to solve the problem with {rand()} we introduced in the
+last section. The key thing to note is that the definition:
+@felix
+fun myrand: 1 -> int = "rand()" 
+  requires header '#include <stdlib.h>'
+;
+@
+is in fact not permitted. Functions in Felix are not allowed to
+have side effects, and random number generators have state which
+is modified on each call. We saw you can fix this by:
+@felix
+fun mytwice : int -> int = "$1+$1";
+var tmp = myrand();
+var x = mytwice (tmp);
+@
+but this is a  bit messy. This is certain to work, because
+in Felix the initialisers of a {var} are always evaluated
+immediately control passes through them, and the result
+stored in an object. So using a {var} is a method for
+forcing eager evaluation. I want you to consider
+the following Felix function:
+@felix
+fun mytwice2 (var x: int) => x + x;
+@
+When you call {mytwice2} Felix guarantees to eagerly
+evaluate the argument and assign it to the parameter {x}.
+If you do not specifically use a {var} parameter there is
+no such assurance.
+
+Although this solves the problem in this case,
+it is not a proper solution because the responsibility
+is put in the wrong place: every function would have to
+use a var parameter, whereas the real problem is that
+we broke the rule that functions cannot have side effects.
+
+We could use a procedure. That does solve the problem too:
+@felix
+proc set_rand: &int = "*$1= rand();"
+  requires header '#include <stdlib.h>'
+;
+var r: int;
+set_rand (&r);
+@
+but this is also ugly!
+
+Here's the right way:
+@felix
+gen myrand_gen: 1 -> int = "rand()" 
+  requires header '#include <stdlib.h>'
+var x2 = mytwice (myrand_gen());
+@
+
+Here the binder {gen} specifies a generator.
+A generator is a function with side effects.
+Any function that gives different results on different
+calls and/or depends on any persistent state which it
+modifies, or which is modified externally (such as the
+current time), must be declared as a generator.
+
+What does this do? Well you already know!
+Felix creates a temporary variable and evaluates
+the generator call, then calls your function with the
+variable's value used in place of the generator call.
+We say the generator call is lifted out of the expression.
+
+Generator calls are evalued in a deterministic order:
+Felix scans an expresion by recursive descent of the 
+expression tree and lifts calls out as it sees them.
+This is roughly order of writing.
+
+ 

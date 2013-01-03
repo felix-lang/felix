@@ -58,7 +58,7 @@ with it:
   push (y,1);
   push (y,2);
   println$ get (y, 1);
-@expect 
+@expect
 2
 @
 If you know C++ and you're beginning to grok Felix binding mechanism

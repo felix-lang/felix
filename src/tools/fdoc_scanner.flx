@@ -19,7 +19,7 @@ object fdoc_scanner () implements fdocscanner-control_t = {
            yield Some (Text out);
            out = "";
         done
-        yield Some (Cmd line.[1 to]);
+        yield Some (Cmd$ strip(line.[1 to]));
       else
         out+=line;
         out+="\n";
