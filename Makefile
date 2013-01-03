@@ -15,72 +15,72 @@ all: build test doc
 
 VERSION = 1.1.7dev
 DISTDIR ?= ./build/dist
-
+EXTRA_PARAMS ?= ""
 build:
-	python3 fbuild/fbuild-light build
+	python3 fbuild/fbuild-light build $(EXTRA_PARAMS)
 
 build-clang:
-	python3 fbuild/fbuild-light build --build-cc=clang --build-cxx=clang++
+	python3 fbuild/fbuild-light build --build-cc=clang --build-cxx=clang++ $(EXTRA_PARAMS)
 
 test:
-	python3 fbuild/fbuild-light test
+	python3 fbuild/fbuild-light test $(EXTRA_PARAMS)
 
 test-clang:
-	python3 fbuild/fbuild-light build --build-cc=clang --build-cxx=clang++ test
+	python3 fbuild/fbuild-light build --build-cc=clang --build-cxx=clang++ test $(EXTRA_PARAMS)
 
 
 #
 # debug build
 #
 build-debug:
-	python3 fbuild/fbuild-light -g build
+	python3 fbuild/fbuild-light -g build $(EXTRA_PARAMS)
 
 test-debug:
-	python3 fbuild/fbuild-light -g test
+	python3 fbuild/fbuild-light -g test $(EXTRA_PARAMS)
 
 #
 # 32 bit build
 #
 build32:
-	python3 fbuild/fbuild-light --c-flag=-m32 --buildroot=build32 build
+	python3 fbuild/fbuild-light --c-flag=-m32 --buildroot=build32 build $(EXTRA_PARAMS)
 
 test32:
-	python3 fbuild/fbuild-light --c-flag=-m32 --buildroot=build32 test
+	python3 fbuild/fbuild-light --c-flag=-m32 --buildroot=build32 test $(EXTRA_PARAMS)
 
 #
 # 32 bit debug build
 #
 build32-debug:
-	python3 fbuild/fbuild-light -g --c-flag=-m32 --buildroot=build32 build
+	python3 fbuild/fbuild-light -g --c-flag=-m32 --buildroot=build32 build $(EXTRA_PARAMS)
 
 test32-debug:
-	python3 fbuild/fbuild-light -g --c-flag=-m32 --buildroot=build32 test
+	python3 fbuild/fbuild-light -g --c-flag=-m32 --buildroot=build32 test $(EXTRA_PARAMS)
 
 #
 # 64 bit build
 #
 build64:
-	python3 fbuild/fbuild-light --c-flag=-m64 --buildroot=build64 build
+	python3 fbuild/fbuild-light --c-flag=-m64 --buildroot=build64 build $(EXTRA_PARAMS)
 
 test64:
-	python3 fbuild/fbuild-light --c-flag=-m64 --buildroot=build64 test
+	python3 fbuild/fbuild-light --c-flag=-m64 --buildroot=build64 test $(EXTRA_PARAMS)
 
 #
 # 64 bit debug build
 build64-debug:
-	python3 fbuild/fbuild-light -g --c-flag=-m64 --buildroot=build64 build
+	python3 fbuild/fbuild-light -g --c-flag=-m64 --buildroot=build64 build $(EXTRA_PARAMS)
 
 test64-debug:
-	python3 fbuild/fbuild-light -g --c-flag=-m64 --buildroot=build64 test
+	python3 fbuild/fbuild-light -g --c-flag=-m64 --buildroot=build64 test $(EXTRA_PARAMS)
 
 #
 # Documentation
 #
 doc:
-	python3 fbuild/fbuild-light doc
+	python3 fbuild/fbuild-light doc $(EXTRA_PARAMS)
 
 doc-clang:
-	python3 fbuild/fbuild-light build --build-cc=clang --build-cxx=clang++ doc
+	python3 fbuild/fbuild-light build --build-cc=clang --build-cxx=clang++ doc $(EXTRA_PARAMS)
 
 #
 # Install default build into /usr/local/lib/felix/version/
