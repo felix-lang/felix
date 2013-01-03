@@ -12,6 +12,10 @@ all: build test doc
 # 
 # default build
 #
+
+VERSION = 1.1.7dev
+DISTDIR ?= ./build/dist
+
 build:
 	python3 fbuild/fbuild-light build
 
@@ -130,6 +134,24 @@ release:
 	sudo build/release/bin/flx --test=build/release --install-bin
 	echo "Restart webservers now"
 	echo "Upgrade buildsystem/version.py now and rebuild"
+
+
+make-dist:
+	rm -rf $(DISTDIR)
+	./build/release/bin/flx --test=build/release --dist=$(DISTDIR)
+	rm -rf $(HOME)/.felix/cache
+	echo 'println ("installed "+ Version::felix_version);' > $(DISTDIR)/install-done.flx
+	./build/dist/bin/flx --test=build/dist/lib/felix/felix-$(VERSION) $(DISTDIR)/install-done.flx
+	echo "export LD_LIBRARY_PATH=$(DISTDIR)/lib:$(DISTDIR)/lib/felix/felix-$(VERSION)/lib/rtl">$(DISTDIR)/build-idx.sh
+	echo "./build/dist/bin/flx_libcontents --html > $(DISTDIR)/tmp1.html">>$(DISTDIR)/build-idx.sh
+	echo "./build/dist/bin/flx_libindex --html > $(DISTDIR)/tmp2.html">>$(DISTDIR)/build-idx.sh
+	echo "./build/dist/bin/flx_gramdoc --html > $(DISTDIR)/tmp3.html">>$(DISTDIR)/build-idx.sh
+	sh $(DISTDIR)/build-idx.sh
+	cp $(DISTDIR)/tmp1.html $(DISTDIR)/lib/felix/felix-$(VERSION)/web/flx_libcontents.html
+	cp $(DISTDIR)/tmp2.html $(DISTDIR)/lib/felix/felix-$(VERSION)/web/flx_libindex.html
+	cp $(DISTDIR)/tmp3.html $(DISTDIR)/lib/felix/felix-$(VERSION)/web/flx_gramdoc.html
+	rm -f $(DISTDIR)/tmp1.html $(DISTDIR)/tmp2.html $(DISTDIR)/tmp3.html $(DISTDIR)/build-idx.sh $(DISTDIR)/install-done.flx  $(DISTDIR)/install-done.so
+
 
 #
 # Helper for checking new syntax
