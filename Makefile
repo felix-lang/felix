@@ -141,7 +141,7 @@ make-dist:
 	./build/release/bin/flx --test=build/release --dist=$(DISTDIR)
 	rm -rf $(HOME)/.felix/cache
 	echo 'println ("installed "+ Version::felix_version);' > $(DISTDIR)/install-done.flx
-	./build/dist/bin/flx --test=build/dist/lib/felix/felix-$(VERSION) $(DISTDIR)/install-done.flx
+	./build/release/bin/flx --test=$(DISTDIR)/lib/felix/felix-$(VERSION) $(DISTDIR)/install-done.flx
 	echo "export LD_LIBRARY_PATH=$(DISTDIR)/lib:$(DISTDIR)/lib/felix/felix-$(VERSION)/lib/rtl">$(DISTDIR)/build-idx.sh
 	echo "$(DISTDIR)/bin/flx_libcontents --html > $(DISTDIR)/tmp1.html">>$(DISTDIR)/build-idx.sh
 	echo "$(DISTDIR)/bin/flx_libindex --html > $(DISTDIR)/tmp2.html">>$(DISTDIR)/build-idx.sh

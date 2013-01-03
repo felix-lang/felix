@@ -1,0 +1,45 @@
+# Maintainer: Alexander Rødseth <rodseth@gmail.com>
+
+pkgname=felix-git
+pkgver=20130103
+pkgrel=1
+pkgdesc='Fast scripting language'
+arch=('x86_64' 'i686')
+url='http://felix-lang.org'
+license=('custom')
+sha256sums=('dca9d6e829f3247da8cb78434dd18d96f3439fc83a32626ff83d4a5c16099d31')
+_gitroot='git://github.com/felix-lang/felix.git'
+_gitname='felix'
+
+build() {
+  cd "$srcdir"
+
+  msg "Connecting to the $_gitname git repository..."
+  if [ -d "$srcdir/$_gitname" ] ; then
+    cd "$_gitname" && git pull origin
+    msg "The local files are updated."
+  else
+    git clone "$_gitroot"
+  fi
+
+  msg "GIT checkout done or server timeout"
+  cd "$srcdir"
+  rm -rf "$srcdir/$_gitname-build"
+  git clone "$_gitname" "$_gitname-build"
+
+  cd "$_gitname-build"
+
+  make build
+  make doc
+  make test
+}
+
+package() {
+  cd "$srcdir/$_gitname-build"
+  make DISTDIR="$pkgdir/usr" make-dist
+  # Felix util timeout conficts with gnu timeout, removing felix ver for now
+  rm $pkgdir/usr/bin/timeout
+#  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}
+
+# vim:set ts=2 sw=2 et:
