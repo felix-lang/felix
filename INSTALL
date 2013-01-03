@@ -1,29 +1,59 @@
-Installing Felix
-================
+Installing Felix: POSIX (UNIX, OSX, LINUX, etc)
+===============================================
 
 Requirements
 ------------
-* OCaml
+* OCaml >= 3.11
 * Python >= 3.1
+* C++ compiler (clang, gcc, msvc++)
 
-Compilation
------------
+Build
+-----
 
-1. First build it with
+make build
 
-python3 fbuild/fbuild-light --prefix=/usr/local --buildroot=build
+Test
+----
 
-2. Install with
+make test
 
-sudo python3 fbuild/fbuild-light --prefix=/usr/local --buildroot=build install
+Docs
+----
 
-Installation goes to directory /usr/local/lib/felix/felix-$version.
+make doc
 
-Default --prefix==/usr/local.
-Default --buildroot=build.
-For more build options say build/fbuild-light --help.
+Install
+-------
 
-Note Felix does not currently install the binary for the command line
-processor "flx". Each version of Felix has a completely separate
-install directory. You may choose not to copy "flx" but instead
-put it on your PATH.
+make install
+
+You will need to put a sudo password.
+
+WINDOWS: MSVC++
+================
+
+Ask for help on the mailing list. 
+
+
+You WILL need a few basic unix tools for Windows
+like make, cp, etc.
+
+The build system should
+more or less work out of the box up to installation,
+provided you have Ocaml built with MSVC++, Python built with MSVC++,
+and you have MSVC++ environment set up.
+
+You should set HOME environment variable to mirror the Unix 
+system setup. You should install Felix in 
+
+  c:\usr\local\lib
+
+just like on Unix.
+
+Windows: other
+==============
+
+It should be possible to build Felix for Cygwin,
+MSYS or other Windows setup but it may take a bit
+of fiddling to make this work!
+

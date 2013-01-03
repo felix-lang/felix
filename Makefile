@@ -152,6 +152,14 @@ tutindex:
 	build/release/bin/mktutindex garray "Generalised Arrays" tutorial.fdoc
 	build/release/bin/mktutindex uparse "Universal Parser" uparse.fdoc
 	build/release/bin/mktutindex nutut/intro/intro "Ground Up" ../../tutorial.fdoc
+	build/release/bin/flx_tangle --inoutdir=build/release/web/nutut/intro/ '.*'
+	for  i in build/release/web/nutut/intro/*.flx; \
+	do \
+		j=$$(echo $$i | sed s/.flx//); \
+		echo $$j; \
+		flx --test=build/release --stdout=$$j.output $$j; \
+		diff $$j.expect $$j.output; \
+	done
 
 install-plugins:
 	sudo cp build/release/shlib/* /usr/local/lib/

@@ -212,7 +212,7 @@ class Popen(subprocess.Popen):
             return self.returncode
 
         if mswindows:
-            if timeout != -1:
+            if timeout != -1 and timeout != None:
                 timeout = timeout * 1000
             rc = winprocess.WaitForSingleObject(self._handle, timeout)
             if rc == winprocess.WAIT_TIMEOUT:
@@ -220,7 +220,7 @@ class Popen(subprocess.Popen):
             else:
                 self.returncode = winprocess.GetExitCodeProcess(self._handle)
         else:
-            if timeout == -1:
+            if timeout == -1 or timeout == None:
                 subprocess.Popen.wait(self)
                 return self.returncode
 

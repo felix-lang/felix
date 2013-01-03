@@ -1,0 +1,93 @@
+@h1 Typesets
+Now that you know about polymorphism you might be tempted to write this:
+@felix
+  proc printline[T] : T = "::std::cout << $1 << ::std::endl;" 
+    requires header '#include <iostream>'
+  ;
+
+  printline 1;
+  printline "Hello";
+  printline 4.2;
+@expect
+1
+Hello
+4.2
+@
+
+and indeed that would work! But what if C++ doesn't know how to 
+print your type? What if you had a C struct you imported
+into Felix that didn't have an {operator <<} defined?
+
+Again, your Felix code would compile because you told it the
+C++ code would work for all type {T}, but you lied, and the
+C++ compiler will find you out!
+
+Before I show you the solution, I want to give another motivating
+example:
+@felix
+type myshort= "short";
+type myint = "int";
+type mylong = "long";
+
+type myushort= "unsigned short";
+type myuint = "unsigned int";
+type myulong = "unsigned long";
+
+type myfloat = "float";
+type mydouble = "double";
+
+fun + : myshort * myshort -> myshort = "$1+$2";
+fun + : myint * myint -> myint = "$1+$2";
+fun + : mylong * mylong -> myint = "$1+$2";
+fun + : myushort * myushort -> myushort = "$1+$2";
+fun + : myuint * myuint -> myuint = "$1+$2";
+fun + : myulong * myulong -> myulong = "$1+$2";
+fun + : myfloat * myfloat -> myfloat = "$1+$2";
+fun + : mydouble* mydouble -> mydouble = "$1+$2";
+@
+
+And that's just addition! Where's the macro processor??
+
+Well of course you're not just tempted to write:
+@felix
+fun +[T] : T * T -> T = "$1+$2";
+@
+you're more or less forced to: in practice you'd never maintain
+a set of such bindings effectively. There could be hundreds of
+lines of this code. The polymorphic function is so much easier.
+
+But it's wrong. How do we fix this?
+
+Here's the answer:
+@felix
+typedef myints = typesetof (myshort, myint, mylong);
+typedef myuints = typesetof (myushort, myuint, myulong);
+typedef myfloats = typesetof (myfloat, mydouble);
+typedef mynumbers = myints \cup myuints \cup myfloats;
+
+fun mymake [T in mynumbers] : int -> T = "int($1)";
+fun *[T in mynumbers] : T * T -> T = "$1*$2";
+proc printit[T in mynumbers] : T = "::std::cout<<$1<<::std::endl;";
+
+var xs = mymake[myshort] (42);
+var xi = mymake[myint] (42);
+var xl = mymake[mylong] (42);
+var xd = mymake[mydouble] (42);
+
+printit$ xs;
+printit$ xi;
+printit$ xl;
+printit$ xd;
+@expect
+42
+42
+42
+42
+@
+
+This is known as <em>constrained polymorphism</em>. 
+The entities {myints}, {myuints}, {myfloats}, and {mynumbers}
+are finite sets of concrete types. The setunion operator here
+is the TeX symbol spelled {\cup}.
+
+
