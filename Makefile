@@ -143,9 +143,9 @@ make-dist:
 	echo 'println ("installed "+ Version::felix_version);' > $(DISTDIR)/install-done.flx
 	./build/dist/bin/flx --test=build/dist/lib/felix/felix-$(VERSION) $(DISTDIR)/install-done.flx
 	echo "export LD_LIBRARY_PATH=$(DISTDIR)/lib:$(DISTDIR)/lib/felix/felix-$(VERSION)/lib/rtl">$(DISTDIR)/build-idx.sh
-	echo "./build/dist/bin/flx_libcontents --html > $(DISTDIR)/tmp1.html">>$(DISTDIR)/build-idx.sh
-	echo "./build/dist/bin/flx_libindex --html > $(DISTDIR)/tmp2.html">>$(DISTDIR)/build-idx.sh
-	echo "./build/dist/bin/flx_gramdoc --html > $(DISTDIR)/tmp3.html">>$(DISTDIR)/build-idx.sh
+	echo "$(DISTDIR)/bin/flx_libcontents --html > $(DISTDIR)/tmp1.html">>$(DISTDIR)/build-idx.sh
+	echo "$(DISTDIR)/bin/flx_libindex --html > $(DISTDIR)/tmp2.html">>$(DISTDIR)/build-idx.sh
+	echo "$(DISTDIR)/bin/flx_gramdoc --html > $(DISTDIR)/tmp3.html">>$(DISTDIR)/build-idx.sh
 	sh $(DISTDIR)/build-idx.sh
 	cp $(DISTDIR)/tmp1.html $(DISTDIR)/lib/felix/felix-$(VERSION)/web/flx_libcontents.html
 	cp $(DISTDIR)/tmp2.html $(DISTDIR)/lib/felix/felix-$(VERSION)/web/flx_libindex.html
