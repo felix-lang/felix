@@ -3762,8 +3762,11 @@ assert false; (* shouldn't happen now! *)
           begin match Flx_bsym.bbdcl bsym with
           | BBDCL_val (_,_,`Ref) ->
               (* We've got a reference, so make sure the type is a pointer. *)
-              let t' = match t with BTYP_pointer t' -> t' | _ ->
-                failwith ("[lookup, AST_name] expected ref " ^ name ^
+              let t' = 
+                match t with 
+                | BTYP_pointer t' -> t' 
+                | _ ->
+                  failwith ("[lookup, AST_name] expected ref " ^ name ^
                   " to have pointer type")
               in
               bexpr_deref t' (bexpr_name t (index, ts))
@@ -3777,7 +3780,10 @@ assert false; (* shouldn't happen now! *)
           | { Flx_sym.symdef=SYMDEF_parameter (`PRef,_) }
           | { Flx_sym.symdef=SYMDEF_ref _ } ->
               (* We've got a reference, so make sure the type is a pointer. *)
-              let t' = match t with BTYP_pointer t' -> t' | _ ->
+              let t' = 
+                match t with 
+                | BTYP_pointer t' -> t' 
+                | _ ->
                 failwith ("[lookup, AST_name] expected ref " ^ name ^
                   " to have pointer type")
               in

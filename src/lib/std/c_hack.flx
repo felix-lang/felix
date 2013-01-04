@@ -5,13 +5,7 @@
 //$ C_hack class is necessary for interfacing.
 class C_hack
 {
-  //$ _gc_pointer is a special code which tells the compiler
-  //$ that an opaque (primitive) data type is a pointer to be
-  //$ followed by the gc.
-  _gc_pointer type gcaddress = "void*";
-  _gc_pointer type gcptr[t]= "?1*";
-
-//$ C void type. Incomplete, can't be instantiated.
+  //$ C void type. Incomplete, can't be instantiated.
   incomplete type void_t = "void";
 
   //$ Standard variable argument list pointer type.

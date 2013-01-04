@@ -320,6 +320,23 @@ syntax expressions {
   //$ Short form anonymous procedure closure.
   satom := scompound =># "(lazy _1)";
 
+  //$ Short form sequence operator.
+  //$ ( stmt; expr ) means the same as #{stmt; return expr; }
+  satom := "(" stmt+ sexpr ")" =>#
+    """
+    (
+      let* 
+      (
+        (stmts _2)
+        (expr _3)
+        (retexp `(ast_fun_return ,_sr ,expr))
+        (nustmts (append stmts (list retexp)))
+      )
+      (block_expr nustmts)
+    )
+    """ 
+  ;
+
   //$ special anonymous variable forces eager eval.
   satom := "(" "var" sexpr ")" =># 
     """

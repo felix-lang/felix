@@ -99,10 +99,14 @@ let cpp_name bsym_table index =
 
 let cpp_instance_name' syms bsym_table index ts =
   let inst =
+    (* HACK! *)
     try Hashtbl.find syms.instances (index,ts)
     with Not_found ->
     let id =
       try Flx_bsym_table.find_id bsym_table index with Not_found ->
+(*
+print_endline "Cannot find entry";
+*)
         failwith ("[cpp_instance_name'] Can't find <" ^
           string_of_bid index ^ ">")
     in
@@ -112,6 +116,9 @@ let cpp_instance_name' syms bsym_table index ts =
       false
       ts
     in
+(*
+print_endline "Cannot find instance";
+*)
     failwith
     (
       "[cpp_instance_name] unable to find instance " ^ id ^

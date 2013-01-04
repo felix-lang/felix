@@ -2,6 +2,12 @@
  * objects
  *)
 
+(* Convenience function for printing debug statements. *)
+let print_debug syms msg =
+  if syms.Flx_mtypes2.compiler_options.Flx_options.print_flag
+  then print_endline msg
+
+
 open Flx_util
 open Flx_list
 open Flx_types
@@ -38,25 +44,25 @@ let id x = ()
 
 let scan_bexpr syms bsym_table allocable_types e : unit =
   let rec aux e = match e with
-  | BEXPR_new (_,t),_ when t <> Flx_btype.btyp_tuple [] ->
-    (* print_endline ("FOUND A NEW " ^ sbt bsym_table t); *)
-    let index =
-      try Hashtbl.find syms.registry t
-      with Not_found -> failwith ("Can't find type in registry " ^ sbt bsym_table t)
-    in
-    Hashtbl.replace allocable_types t index;
+    | BEXPR_new (_,t),_ when t <> Flx_btype.btyp_tuple [] ->
+      (* print_endline ("FOUND A NEW " ^ sbt bsym_table t); *)
+      let index =
+        try Hashtbl.find syms.registry t
+        with Not_found -> failwith ("new: Can't find type in registry " ^ sbt bsym_table t)
+      in
+      Hashtbl.replace allocable_types t index;
 
-    | BEXPR_class_new (cls, _),_ ->
-    (*
-    print_endline ("FOUND A CLASS NEW " ^ sbt bsym_table t);
-    *)
-    let index =
-      try Hashtbl.find syms.registry cls
-      with Not_found -> failwith ("Can't find type in registry " ^ sbt bsym_table cls)
-    in
-    Hashtbl.replace allocable_types cls index;
+      | BEXPR_class_new (cls, _),_ ->
+      (*
+      print_endline ("FOUND A CLASS NEW " ^ sbt bsym_table t);
+      *)
+      let index =
+        try Hashtbl.find syms.registry cls
+        with Not_found -> failwith ("class new: Can't find type in registry " ^ sbt bsym_table cls)
+      in
+      Hashtbl.replace allocable_types cls index;
 
-| x -> ()
+    | x -> ()
   in
   Flx_bexpr.iter ~f_bexpr:aux e
 
@@ -67,11 +73,9 @@ let scan_exes syms bsym_table allocable_types exes : unit =
   iter (scan_exe syms bsym_table allocable_types) exes
 
 let rec gen_type_shape s syms bsym_table need_int last_ptr_map primitive_shapes btyp index =
+    print_debug syms ("allocable type --> " ^ sbt bsym_table btyp);
     let name = cpp_type_classname syms bsym_table btyp in
     if name = "int" then need_int := true else
-    (*
-    print_endline ("allocable type --> " ^ string_of_btypecode sym_table btyp);
-    *)
     match unfold btyp with
     | BTYP_function _ -> ()
 
@@ -148,7 +152,7 @@ let rec gen_type_shape s syms bsym_table need_int last_ptr_map primitive_shapes 
       begin match Flx_bsym.bbdcl bsym with
       | BBDCL_external_type (_,quals,_,_) ->
         let complete = not (mem `Incomplete quals) in
-        let pod = mem `Pod quals in
+        let is_pod = mem `Pod quals in
         let scanner = 
            try 
             List.iter (fun q-> match q with | `Scanner cs -> raise (Scanner cs) | _ -> () ) quals; 
@@ -179,7 +183,7 @@ let rec gen_type_shape s syms bsym_table need_int last_ptr_map primitive_shapes 
         let finaliser, gen_dflt_finaliser =
           if finaliser = "0"
           then 
-            if pod then "0",false
+            if is_pod then "0",false
             else name ^ "_finaliser",true
           else finaliser, false
         in
@@ -187,10 +191,10 @@ let rec gen_type_shape s syms bsym_table need_int last_ptr_map primitive_shapes 
           if not (Hashtbl.mem primitive_shapes name) then
           begin
             Hashtbl.add primitive_shapes name true;
-            bcat s ("\n//OFFSETS for complete abstract "^(if pod then "pod " else "finalisable ")^
+            bcat s ("\n//OFFSETS for complete abstract "^(if is_pod then "pod " else "finalisable ")^
               "type " ^ name ^ " instance "^
               (if scanner="0" then "" else "with custom scanner ")^
-              (if pod || gen_dflt_finaliser then "" else "with custom finaliser ")^
+              (if is_pod || gen_dflt_finaliser then "" else "with custom finaliser ")^
               " \n"
             );
 
@@ -203,7 +207,7 @@ let rec gen_type_shape s syms bsym_table need_int last_ptr_map primitive_shapes 
             bcat s ("  " ^ old_ptr_map ^ ",\n");
             bcat s ("  \"" ^ name ^ "\",\n");
             bcat s ("  1,sizeof("^name^"),\n");
-            bcat s ("  "^finaliser^","^(if pod then " // no finaliser" else "")^"\n");
+            bcat s ("  "^finaliser^","^(if is_pod then " // no finaliser" else "")^"\n");
             bcat s ("  0, // no client data\n");
             bcat s ("  "^scanner^", // scanner\n");
             bcat s ("  ::flx::gc::generic::gc_flags_default\n");
@@ -233,12 +237,12 @@ let rec gen_type_shape s syms bsym_table need_int last_ptr_map primitive_shapes 
         bcat s ("\n//OFFSETS for cstruct type " ^ name ^ " instance\n");
 
         (* HACK .. in fact, some C structs might have finalisers! *)
-        let pod = true in
-        if not pod then bcat s ("FLX_FINALISER("^name^")\n");
+        let is_pod = true in
+        if not is_pod then bcat s ("FLX_FINALISER("^name^")\n");
         bcat s ( "static ::flx::gc::generic::gc_shape_t " ^ name ^ "_ptr_map ={\n") ;
         bcat s ("  " ^ old_ptr_map ^ ",\n");
         bcat s ("  \"" ^ name ^ "\",\n");
-        if pod then begin
+        if is_pod then begin
           bcat s ("  1,sizeof("^name^"),\n");
           bcat s ("  0,   // no finaliser\n");
           bcat s ("  0,0, // no client data or scanner\n");
@@ -297,15 +301,18 @@ let rec gen_type_shape s syms bsym_table need_int last_ptr_map primitive_shapes 
       )
 
 let gen_offset_tables syms bsym_table module_name first_ptr_map=
+  print_debug syms "GEN OFFSET TABLES";
   let allocable_types = Hashtbl.create 97 in
   let last_ptr_map = ref first_ptr_map in
   let primitive_shapes = Hashtbl.create 97 in
   let s = Buffer.create 20000 in
   
   (* Make a shape for every non-C style function with the property `Heap_closure *)
+  print_debug syms "Make fun shapes";
   gen_all_fun_shapes (scan_exes syms bsym_table allocable_types) s syms bsym_table last_ptr_map;
 
   (* generate offsets for all pointers store in the thread_frame *)
+  print_debug syms "Make thread frame offsets";
   gen_thread_frame_offsets s syms bsym_table last_ptr_map;
 
   (* We're not finished: we need offsets dynamically allocated types too *)
@@ -314,8 +321,10 @@ let gen_offset_tables syms bsym_table module_name first_ptr_map=
     are the arguments of non-constant variant constructors:
     this WILL change when a 'new' operator is introduced.
   *)
+  print_debug syms "Make shapes for dynamically allocated types";
   Hashtbl.iter
   (fun btyp index ->
+print_debug syms ("Handle type " ^ sbt bsym_table btyp ^ " instance " ^ si index);
     match unfold btyp with
     | BTYP_sum args ->
       iter begin fun t ->
@@ -342,9 +351,7 @@ let gen_offset_tables syms bsym_table module_name first_ptr_map=
       end args
 
     | BTYP_inst (i,ts) ->
-      (*
-      print_endline ("Thinking about instance type --> " ^ string_of_btypecode sym_table btyp);
-      *)
+      print_debug syms ("Thinking about type index " ^ si i ^ " ts = " ^ catmap "," (sbt bsym_table) ts);
       let bsym =
         try Flx_bsym_table.find bsym_table i
         with Not_found ->

@@ -1,3 +1,8 @@
+(* Convenience function for printing debug statements. *)
+let print_debug syms msg =
+  if syms.Flx_mtypes2.compiler_options.Flx_options.print_flag
+  then print_endline msg
+
 
 open Flx_util
 open Flx_list
@@ -20,6 +25,7 @@ open Flx_findvars
 let is_instantiated syms i ts = Hashtbl.mem syms.instances (i,ts)
 
 let gen_fun_offsets s syms bsym_table index vs ps ret ts instance props last_ptr_map : unit =
+  print_debug syms ("Gen fun offsets fun=" ^ si index^ " inst = " ^ si instance);
   let vars =  (find_references syms bsym_table index ts) in
   let vars = filter (fun (i, _) -> is_instantiated syms i ts) vars in
   let name = cpp_instance_name syms bsym_table index ts in
@@ -67,7 +73,7 @@ let gen_fun_offsets s syms bsym_table index vs ps ret ts instance props last_ptr
   gen_offset_data s n name offsets true false props None last_ptr_map
 
 let gen_all_fun_shapes scan s syms bsym_table last_ptr_map =
-
+  print_debug syms "gen all fun shapes ...";
   (* Make a shape for every non-C style function with the property `Heap_closure *)
   (* print_endline "Function and procedure offsets"; *)
   Hashtbl.iter begin fun (index,ts) instance ->
@@ -76,12 +82,12 @@ let gen_all_fun_shapes scan s syms bsym_table last_ptr_map =
       with Not_found ->
         failwith ("[gen_offset_tables] can't find index " ^ string_of_bid index)
     in
-    (*
-    print_endline ("Offsets for " ^ id ^ "<"^ si index ^">["^catmap "," (sbt bsym_table) ts ^"]");
-    *)
+    print_debug syms ("Offsets for " ^ Flx_bsym.id bsym ^ "<"^ si index ^">["^catmap "," (sbt bsym_table) ts ^"]");
     match Flx_bsym.bbdcl bsym with
     | BBDCL_fun (props,vs,ps,ret,exes) ->
+print_debug syms "Scan exes ..";
         scan exes;
+print_debug syms "Scan exes DONE"; 
 (*
 print_string ("Checking to see if we need RTTI for function " ^ Flx_bsym.id bsym);
 *)

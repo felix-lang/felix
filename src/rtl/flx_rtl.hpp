@@ -15,6 +15,7 @@
 
 namespace flx { namespace rtl {
 
+typedef void *void_pointer;
 // ********************************************************
 // Felix system classes
 // ********************************************************

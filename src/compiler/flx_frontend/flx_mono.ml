@@ -1,3 +1,8 @@
+(* Convenience function for printing debug statements. *)
+let print_debug syms msg =
+  if syms.Flx_mtypes2.compiler_options.Flx_options.print_flag
+  then print_endline msg
+
 (*
 This module is responsible for monomorphising code based on
 instantiations. It basically clones functions and substitutes
@@ -86,8 +91,10 @@ let cal_parent syms bsym_table bid ts' =
 let fixup_type' syms bsym_table fi t =
   match t with
   | BTYP_inst (i,ts) ->
+    (* typeclass fixup *)
     let i,ts = fi i ts in
-    btyp_inst (i,ts)
+    let t = btyp_inst (i,ts) in
+    t
   | x -> x
 
 let rec fixup_type syms bsym_table fi t =
@@ -307,10 +314,10 @@ let monomorphise syms bsym_table =
    else
      if chk_mono syms bsym_table i
      then begin
-       (*
+(*
        print_endline ("polyinst " ^ si n ^ " = " ^
        si i ^ "["^catmap "," (sbt bsym_table) ts^"]");
-       *)
+*)
        Hashtbl.add polyinst (i,ts) n
      end else begin
        (*
@@ -374,3 +381,4 @@ let monomorphise syms bsym_table =
     Hashtbl.remove syms.instances (i,ts);
     Hashtbl.add syms.instances (n,[]) n;
   end polyinst
+

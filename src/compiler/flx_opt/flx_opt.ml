@@ -187,6 +187,8 @@ let stack_calls syms bsym_table =
     label_map
     label_usage;
 
+  print_debug syms "//stackable calls done";
+
   bsym_table
 
 

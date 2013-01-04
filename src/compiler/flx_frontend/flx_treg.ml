@@ -133,7 +133,6 @@ print_endline ("Register type r " ^ sbt bsym_table t);
     rnr t
 
   | BTYP_unitsum k -> rnr t
-
   (* NOTE: pointer type is registered before the type it points
     to because it can be incomplete, whereas the type it
     points to may need a complete pointer type: this

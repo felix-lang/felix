@@ -63,10 +63,6 @@ mytrue
 @h2 User defined expressions
 Of course we still have to write those ugly
 function calls when we'd like to use operators.
-We'd like to use {+} and {*} etc here but we
-can't because they're already defined, so for
-the purpose of this exercise we're going to
-use different symbols.
 
 @felix
 syntax myexpressions
@@ -91,7 +87,7 @@ Here, the predefined non-terminal {sexpr} is defined as {myrel}
 so we don't interfere with the existing grammar.
 
 We've written the grammar
-so {plus} and {mul} are left associative, whereas {equals}
+so {+} and {*} are left associative, whereas {==}
 requires exactly two terms.
 
 When the RHS after the {=>#} symbol is enclosed in parentheses,

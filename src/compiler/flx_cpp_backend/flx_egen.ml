@@ -509,9 +509,9 @@ print_endline ("Normalised expression " ^ sbe bsym_table e);
   | BEXPR_not e -> ce_prefix "!" (ge' e)
 
   | BEXPR_case_arg (n,e) ->
-    (*
-    print_endline ("Decoding nonconst ctor type " ^ sbt bsym_table t);
-    *)
+(*
+    print_endline ("flx_egen[ge_carg]: Decoding nonconst ctor type " ^ sbt bsym_table t);
+*)
     Flx_vgen.gen_get_case_arg ge' tn bsym_table n e
     (*
     begin match t with (* t is the result of the whole expression *)
@@ -1019,9 +1019,7 @@ print_endline "Apply struct";
     end
 
   | BEXPR_apply_direct (index,ts,a) ->
-(*
-print_endline "Apply direct";
-*)
+    let bsym = Flx_bsym_table.find bsym_table index in
     let ts = map tsub ts in
     let index', ts' = Flx_typeclass.fixup_typeclass_instance syms bsym_table index ts in
     if index <> index' then
@@ -1091,9 +1089,7 @@ print_endline "Apply direct";
     end
 
   | BEXPR_apply_stack (index,ts,a) ->
-(*
-print_endline "Apply stack";
-*)
+    let bsym = Flx_bsym_table.find bsym_table index in
     let ts = map tsub ts in
     let index', ts' = Flx_typeclass.fixup_typeclass_instance syms bsym_table index ts in
     if index <> index' then
@@ -1120,17 +1116,13 @@ print_endline "Apply stack";
           string_of_bid index)
     in
     begin
-    (*
-    print_endline ("apply closure of "^ id );
-    print_endline ("  .. argument is " ^ string_of_bound_expression sym_table a);
-    *)
     match Flx_bsym.bbdcl bsym with
     | BBDCL_fun (props,vs,(ps,traint),retyp,_) ->
       let display = get_display_list bsym_table index in
       let name = cpp_instance_name syms bsym_table index ts in
-
       (* C FUNCTION CALL *)
       if mem `Pure props && not (mem `Heap_closure props) then
+      begin
         let s =
           assert (length display = 0);
           match ps with
@@ -1150,7 +1142,7 @@ print_endline "Apply stack";
           else s
         in
           ce_atom (name ^ "(" ^ s ^ ")")
-      else
+      end else
         let the_display =
           let d' =
             map (fun (i,vslen)-> "ptr"^ cpp_instance_name syms bsym_table i (list_prefix ts vslen))
@@ -1352,7 +1344,7 @@ and gen_apply_prim
       begin match kind with
       | `Code CS.Identity -> gen_expr' sr a
       | `Code CS.Virtual ->
-          print_endline ("Flx_egen: Waring: delayed virtual instantiation, external fun " ^ 
+          print_endline ("Flx_egen[gen_apply_prim]: Warning: delayed virtual instantiation, external fun " ^ 
             Flx_bsym.id bsym^ "<"^string_of_bid index^ ">["^catmap "," (sbt bsym_table) ts^"]");
           let ts = List.map (beta_reduce "flx_egen: gen_apply_prim2" this_vs this_ts) ts in
           let index', ts' = Flx_typeclass.fixup_typeclass_instance
@@ -1362,6 +1354,7 @@ and gen_apply_prim
             ts
           in
 
+(*
           if index <> index' then begin
             clierr sr ("[Flx_egen: apply_prim] Virtual call of " ^ string_of_bid index ^
               " dispatches to " ^ string_of_bid index')
@@ -1385,7 +1378,7 @@ and gen_apply_prim
                 ) 
                 entries)
           end;
-
+*)
           let bsym =
             try Flx_bsym_table.find bsym_table index' with Not_found ->
               syserr sr ("MISSING INSTANCE BBDCL " ^ string_of_bid index')

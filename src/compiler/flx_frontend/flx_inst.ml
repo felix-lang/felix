@@ -11,6 +11,10 @@ this ensures all polymorphic entities are fully monomorphised.
 This code does not actually monomorphise the program, it just
 generates a list of all the instantiations.
 *)
+let print_debug syms msg =
+  if syms.Flx_mtypes2.compiler_options.Flx_options.print_flag
+  then print_endline msg
+
 open Flx_util
 open Flx_ast
 open Flx_types
@@ -40,7 +44,7 @@ let add_inst syms bsym_table ref_insts1 sr (i,ts) =
     | BTYP_void -> 
       let sym = Flx_bsym_table.find bsym_table i in
       let name = Flx_bsym.id sym in
-      print_endline ("In " ^ Flx_srcref.short_string_of_src sr ^ "\nAttempt to register instance " ^ name ^ ": " ^ si i ^ "[" ^
+      print_debug syms ("In " ^ Flx_srcref.short_string_of_src sr ^ "\nAttempt to register instance " ^ name ^ ": " ^ si i ^ "[" ^
       catmap ", " (sbt bsym_table) ts ^ "]")
 (*
       ; failwith "Attempt to instantiate type variable with type void"
@@ -48,10 +52,8 @@ let add_inst syms bsym_table ref_insts1 sr (i,ts) =
     | _ -> ()
     )
   ts;
-    (*
-    print_endline ("Attempt to register instance " ^ si i ^ "[" ^
+    print_debug syms ("Attempt to register instance " ^ si i ^ "[" ^
     catmap ", " (sbt bsym_table) ts ^ "]");
-    *)
   let ts = map (fun t -> beta_reduce "flx_inst: add_inst" syms.Flx_mtypes2.counter bsym_table dummy_sr t) ts in
 
   let i,ts = Flx_typeclass.fixup_typeclass_instance syms bsym_table i ts in

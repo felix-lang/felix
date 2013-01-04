@@ -50,6 +50,7 @@ SCHEME """
   (define (lazy stmts) `(ast_lambda ,_sr (,dfltvs ,dfltargs ,(noi 'typ_none) ,stmts)))
   (define (lazy_proc stmts) `(ast_lambda ,_sr (,dfltvs ,dfltargs (ast_void ,_sr) ,stmts)))
   (define (block stmts)`(ast_call ,_sr ,(lazy_proc stmts) ()))
+  (define (block_expr stmts) `(ast_apply ,_sr (,(lazy stmts) ())))
   (define call (lambda (f a) `(ast_call ,_sr (ast_name ,_sr ,f ()) ,a)))
 )
 """;

@@ -218,14 +218,20 @@ let has_proc_children bsym_table children =
 exception Unsafe
 
 let type_has_fn cache syms bsym_table children t =
-  let rec aux t =
+  let rec aux limit t =
+    if limit = 0 then begin
+print_endline "Type has fun reached recursion limit, polymorphic recursion?";
+        Hashtbl.replace cache t `Unsafe;
+        raise Unsafe
+    end
+    ;
     let check_components vs ts tlist =
       let varmap = mk_varmap vs ts in
       begin try
         iter
           (fun t ->
             let t = varmap_subst varmap t in
-            aux t
+            aux (limit - 1) t
           )
         tlist;
         Hashtbl.replace cache t `Safe
@@ -261,23 +267,29 @@ let type_has_fn cache syms bsym_table children t =
         end
       | x ->
         try
-          Flx_btype.flat_iter ~f_btype:aux x;
+          Flx_btype.flat_iter ~f_btype:(aux (limit - 1)) x;
           Hashtbl.replace cache t `Safe
         with Unsafe ->
           Hashtbl.replace cache t `Unsafe;
           raise Unsafe
 
-  in try aux t; false with Unsafe -> true
+  in try aux 20 t; false with Unsafe -> true
 
 let type_has_ptr cache syms bsym_table children t =
-  let rec aux t =
+  let rec aux limit t =
+    if limit = 0 then begin
+print_endline "Type has ptr reached recursion limit, polymorphic recursion?";
+        Hashtbl.replace cache t `Unsafe;
+        raise Unsafe
+    end
+    ;
     let check_components vs ts tlist =
       let varmap = mk_varmap vs ts in
       begin try
         iter
           (fun t ->
             let t = varmap_subst varmap t in
-            aux t
+            aux (limit - 1) t
           )
         tlist;
         Hashtbl.replace cache t `Safe
@@ -312,13 +324,13 @@ let type_has_ptr cache syms bsym_table children t =
         end
       | x ->
         try
-          Flx_btype.flat_iter ~f_btype:aux x;
+          Flx_btype.flat_iter ~f_btype:(aux (limit - 1)) x;
           Hashtbl.replace cache t `Safe
         with Unsafe ->
           Hashtbl.replace cache t `Unsafe;
           raise Unsafe
 
-  in try aux t; false with Unsafe -> true
+  in try aux 20 t; false with Unsafe -> true
 
 let can_stack_func syms bsym_table fn_cache ptr_cache i =
   let children =
@@ -328,9 +340,6 @@ let can_stack_func syms bsym_table fn_cache ptr_cache i =
   let bsym = Flx_bsym_table.find bsym_table i in
   match Flx_bsym.bbdcl bsym with
   | BBDCL_fun (_,_,_,ret,_) ->
-(*
-print_endline ("Checking stackability of function " ^ Flx_bsym.id bsym);
-*)
     let has_vars = has_var_children bsym_table children in
     let has_funs = has_fun_children bsym_table children in
     let returns_fun = type_has_fn fn_cache syms bsym_table children ret in
@@ -381,9 +390,6 @@ let rec can_stack_proc
     with Not_found -> BidSet.empty
   in
   let bsym = Flx_bsym_table.find bsym_table i in
-  (*
-  print_endline ("Stackability Checking procedure " ^ id);
-  *)
   let bbdcl = Flx_bsym.bbdcl bsym in
   match bbdcl with
   | BBDCL_fun (_,_,_,BTYP_fix (0,_),exes) 
@@ -397,9 +403,6 @@ let rec can_stack_proc
     if has_proc_children bsym_table children then false else
     let labels = hfind "label_map" label_map i in
     begin try iter (fun exe ->
-    (*
-    print_endline (string_of_bexe syms.sym_table 0 exe);
-    *)
     match exe with
 
     | BEXE_axiom_check _ -> assert false
@@ -439,8 +442,8 @@ let rec can_stack_proc
 
     (* assignments not involving pointers or functions are safe *)
     | BEXE_init (sr,_,(_,t))
-    | BEXE_assign (sr,(_,t),_)
-      when 
+    | BEXE_assign (sr,(_,t),_) ->
+      if 
         let has_vars = has_var_children bsym_table children in
         let has_funs = has_fun_children bsym_table children in
         let returns_fun = type_has_fn fn_cache syms bsym_table children t in
@@ -463,14 +466,11 @@ let rec can_stack_proc
         in
         can_stack
 
-      -> ()
+      then 
+        () 
+      else 
+        raise  Unstackable
 
-    | BEXE_init _
-    | BEXE_assign _ ->
-      (*
-      print_endline (id ^ " does foreign init/assignment");
-      *)
-      raise Unstackable
 
     | BEXE_call _
        ->
@@ -729,6 +729,7 @@ let make_stack_calls
     ptr_cache
     label_map
     label_usage;
+
 
   Flx_bsym_table.iter begin fun i _ bsym ->
     match Flx_bsym.bbdcl bsym with

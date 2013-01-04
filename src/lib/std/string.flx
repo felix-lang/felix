@@ -422,8 +422,15 @@ open class String
 
   proc reserve: &string * !ints = "$1->reserve($2);";
 
+  // Entirely unsafe because string could be an rvalue.
   fun _unsafe_cstr: string -> +char = "((char*)$1.c_str())" is atom;
 
+  // partially unsafe because the string could be modified.
+  fun stl_begin: &string -> +char = "($1->c_str())" is atom;
+  fun stl_end: &string -> +char = "($1->c_str()+$1->size())" is atom;
+
+  // this operation is entirely safe because the char array
+  // provided is copied (and garbage collected)
   fun cstr (x:string) : +char => (varray[char] x).stl_begin;
 
   fun vsprintf[t]: +char  * t -> string =
