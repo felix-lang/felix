@@ -4,4 +4,9 @@
 <li><a href="intro_00.fdoc">Introduction</a></li>
 <li><a href="intro_01.fdoc">Fundamentals</a></li>
 <li><a href="intro_02.fdoc">Extending Syntax</a></li>
+<li><a href="intro_03.fdoc">Some basic stuff.</a></li>
+<li><a href="intro_04.fdoc">Constructors</a></li>
+<li><a href="intro_05.fdoc">Application syntax</a></li>
+<li><a href="intro_06.fdoc">Polymorphism</a></li>
+<li><a href="intro_07.fdoc">Typesets</a></li>
 </ul>

@@ -1,0 +1,93 @@
+@h1 Polymorphism
+You have learned how to lift C types into Felix. But what about
+C++ templates?
+
+We'll show how to do parametrically polymorphic bindings in
+Felix using C++ vector as a simple example.
+
+@h1 Polymorphic types
+@felix
+type vector[T] = "::std::vector<?1>" 
+  requires header '#include <vector>"
+;
+@
+
+Well that was pretty easy! The {?1} notation here
+simply means the first type argument. Note that the
+parameter has the name {T} but the name isn't used.
+
+@h2 Polymorphic functions
+It doesn't take much imagination to guess now:
+@felix
+  fun len: vector[T] -> size = "$1.size()";
+  fun + [T] : vector{T] * vector[T] -> vector[T] = "$1+$2";
+  fun get[T] : vector[T] * int -> T = "$1[$2]";
+@
+
+@h2 Polymorphic procedures.
+We can now do some mutators but you should observe very
+closely!
+
+@felix
+  proc push_back[T]: &vector[T] * T = "$1->push_back($2);";
+  proc make_vector[T] : &vector[T] = "$1 = ::std::vector();";
+@
+
+To use this we're going to do some ugly stuff:
+@felix
+var v: vector[int];
+make_vector (&v);
+push_back (&v, 1);
+push_back (&v, 2);
+println (get(v,1));
+@
+
+and we expect
+@expect
+2
+@
+Declaring an uninitialised variable then assigning to it is
+pretty ugly. We'll explain in detail how to work around this
+problem later. For now you should note that whilst the
+following code appears to work there are subtle problems
+with it:
+@felix
+  fun empty_vector[T] : 1 -> vector[T] = "::std::vector[?1]()";
+  proc push[T] : vector[T] * T = "$1.push_back($2);";
+  var y = empty_vector ();
+  push (y,1);
+  push (y,2);
+  println$ get (y, 1));
+@expect 
+2
+@
+If you know C++ and you're beginning to grok Felix binding mechanism
+you will probably spot the problem: C++ {push_back} requires the
+{vector} argument to be an lvalue. So our example above works,
+but only because we use it where we happen to know that
+{y} will be an lvalue in the generated C++ code.
+
+If we used an rvalue argument Felix would not complain,
+but the C++ compiler would. So we might write this code
+and even test it and assume everything was OK only to get
+unexpected errors later.
+
+As a Felix library developer you're expected to construct C
+bindings that just work, all the time! The Felix type system
+has no notion of lvalue. We use pointers instead.
+Dereferencing a pointer always yields an lvalue.
+
+At present the only way we know how to get a legitimate
+pointer is by addressing a variable, and this ensures
+that the vector value is stored in an object. 
+
+In Felix objects are mutable but values are not: to modify
+a value you must first ensure it is stored in an object,
+which makes it addressable and thus allows us to get a pointer
+to the object and modify it via that pointer.
+
+All mutations in Felix have to go through pointers,
+however as we shall see later, they do not have to be Felix pointers.
+A C pointer wrapped in a binding will do provided some arcane magic
+is applied to Felix knows about it.
+

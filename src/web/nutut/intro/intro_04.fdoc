@@ -1,0 +1,57 @@
+@h1 Constructors
+When we're introducing a new type such as {myint}, we often need to provide
+a way to convert to and from other types. We can do this as so:
+
+@felix
+type myint = "int";
+fun make_myint: int -> myint = "$1";
+fun make_int: myint -> int = "$1";
+var x : myint = make_myint (42);
+println$ make_int(x);
+@
+
+Since {int} and {myint} share the same C++ representation, the
+conversions are the identity in this case. However it's a bit hard to remember
+the names of the constructors. 
+
+Felix allows you to use the type name, like C++, you can
+make this happen like this:
+
+@felix
+fun _ctor_myint : int -> myint = "$1";
+fun _ctor_int : myint -> int = "$1";
+var y = myint : myint (42);
+println$ int(y);
+@
+
+This is a bit clumsy and repeats the typename in
+the function name and the return type, so there's
+a more readable shorthand:
+
+@felix
+type yourint = "int";
+ctor yourint : int = "$1";
+ctor int : yourint = "$1";
+var x = yourint (42);
+println$ int(x);
+@
+This removes the duplication with the {_ctor_} notation but
+it equivalent.
+
+When Felix is looking up a function and it finds a type
+name T, it will try to find the function {_ctor_T} instead.
+You know you can overload constructors because they're just ordinary
+function bindings.
+
+You can also use a typedef name:
+@felix
+typedef alias = myint;
+ctor alias : double = "int($1)";
+println$ int ( alias (4.2) );
+@
+
+This works because the translation rule says typename,
+which includes aliases.
+
+
+

@@ -1,0 +1,90 @@
+@h1 Some basic stuff.
+To move on it is convenient to use some of the stuff
+already in the Felix system. We will still try to teach
+the concepts and machinery from the ground up.
+
+Felix provides a way to create variables using the {var} binder.
+See below.
+
+The Felix libraries uses technology similar to what we've just
+seen to introduce many types. In future tutorials well use
+some of these types, now you have a rough idea how they're
+provided.  See below.
+
+The Felix syntax mechanism provides for user defined literals.
+This mechanism is too advanced to study yet, so we'll
+introduce literals by magic at the moment.
+
+Now we're in a position to give some examples, I hope
+there's no need for too much explanation here!
+Just look at the patterns to figure the basic idea!
+
+@felix
+  // typedef int = "int";
+  var i1 : int = 42;
+  var i2 : int = i1+1;
+
+  // typedef double = "double";
+  var d1 : double = 4.2;
+  var d2 : double = d1 * 2.3E7;
+
+  // typedef string = "::std::string";
+  var s1 = "hello";
+  var s2 = 'world';
+  var newline = "\n";
+  var s3 =
+    'Hello '
+    'World' newline
+  ;
+
+  var manylines = 
+"""Poetry can
+in Felix be done""";
+
+   // typedef char = "char";
+   var c1 = char "A";
+
+   println$ str d1 + " " + str c1
+@expect
+4.2 A
+@
+
+Strings follow Python. There is no char literal, but you can
+specify the first character of a string.
+
+Note that the {var} binder requires either a type or an initialiser
+or both.
+
+Unfortunately we have to provide a description of one more
+piece of magic to get anywhere .. the dreaded pointers:
+
+@felix
+  var x = 1;
+  var px : &int = &x;
+  ++x;
+  println$ *px; // 2
+  px <- 42;
+  println$ x;   // 42
+  x = 97;       // means &x <- 97
+  println$ x;   // 97 
+@
+
+In Felix, you can take the address of a {var} of type {T}
+with the usual prefix  operator {&} to get a value 
+called a pointer of a type denoted {&T}.
+
+Pointers of such a type should never be NULL, should never dangle,
+and cannot be incremented. You should think of a pointer to an object.
+
+You can the value stored in an object a pointer points at
+using the usual dereference operator {*}.
+
+You can store a value into an object a pointer points at
+using the operator {<-}. We can call this the <em>store at</em>
+operator.
+
+You can assign to variables using the C assignment operator {=}.
+However you should regard {x = 97; } as sugar for {&x <- 97}.
+
+
+
