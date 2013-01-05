@@ -26,7 +26,7 @@ a higher precedence than operator comma, which
 is used for tuple formation. Here's the proof:
 @felix
 var x = 1, neg 2;
-println ( sum x);
+println ( sum x );
 @
 @expect
 -1
@@ -34,7 +34,7 @@ println ( sum x);
 There's another syntax for application, using
 operator dot:
 @felix
-println (2,1.neg).sum;
+println (1,2.neg).sum;
 @
 @expect
 -1
@@ -47,7 +47,7 @@ natural to programmers than mathematical notation.
 
 Felix provides yet another application operator:
 @felix
-println$ sum$ 1, neg$ 2;
+println$ sum$ 1, neg 2;
 @
 @expect
 -1
@@ -93,8 +93,8 @@ values the way C does. So if it sees a whitespace application which would
 discard a value if the LHS term of the application were a function,
 Felix assumes it is a procedure. This means you can do this:
 @felix
-proc hello : 1 = '::std::cout<<"Hello";'
-  requires '#include <iostream>'
+proc hello : 1 = '::std::cout<<"hello"<<::std::endl;'
+  requires header '#include <iostream>'
 ;
 call hello ();
 hello ();

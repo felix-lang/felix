@@ -23,3 +23,14 @@ how the system is implemented.
 This tutorial also does not cover the use of the Felix
 tool set, installation, or configuration.
 
+The content of this tutorial is literate programmed with a simple
+format. A special tool is used to extract the code and expected results
+so that the code in the tutorial can be checked for correctness.
+This means the sample code on each page is a complete program
+(except when we link to library code).
+
+As a result, the tutorial may not be entirely idea for
+reading, since it has to also present a complete program.
+I hope the reader excuses this understanding the verifying
+that the code is correct automatically is important too.
+

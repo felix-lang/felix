@@ -14,8 +14,18 @@ a new statement.
 We're going to include the code
 from the last tutorial which we do like this:
 @felix
-include "./intro-01";
+include "./intro_01";
 @
+The filename format used here always uses {/} as a path
+separator, even on Windows. This rule makes path names platform
+independent. Please stick to lower case C identifiers,
+as these work on all platforms.
+
+The leading {.} does not mean
+the current directory: it means the directory containing
+the file with the include directive in it.  This makes
+shipping a set of files to another location simple.
+
 As this does some testing here again are the expected
 results from that code:
 @expect

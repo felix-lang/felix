@@ -8,8 +8,9 @@ fun make_myint: int -> myint = "$1";
 fun make_int: myint -> int = "$1";
 var x : myint = make_myint (42);
 println$ make_int(x);
+@expect
+42
 @
-
 Since {int} and {myint} share the same C++ representation, the
 conversions are the identity in this case. However it's a bit hard to remember
 the names of the constructors. 
@@ -20,8 +21,10 @@ make this happen like this:
 @felix
 fun _ctor_myint : int -> myint = "$1";
 fun _ctor_int : myint -> int = "$1";
-var y = myint : myint (42);
+var y : myint = myint (42);
 println$ int(y);
+@expect
+42
 @
 
 This is a bit clumsy and repeats the typename in
@@ -32,8 +35,10 @@ a more readable shorthand:
 type yourint = "int";
 ctor yourint : int = "$1";
 ctor int : yourint = "$1";
-var x = yourint (42);
-println$ int(x);
+var z = yourint (42);
+println$ int(z);
+@expect
+42
 @
 This removes the duplication with the {_ctor_} notation but
 it equivalent.
@@ -48,6 +53,8 @@ You can also use a typedef name:
 typedef alias = myint;
 ctor alias : double = "int($1)";
 println$ int ( alias (4.2) );
+@expect
+4
 @
 
 This works because the translation rule says typename,

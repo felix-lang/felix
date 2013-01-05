@@ -8,7 +8,7 @@ Felix using C++ vector as a simple example.
 @h1 Polymorphic types
 @felix
 type vector[T] = "::std::vector<?1>" 
-  requires header '#include <vector>"
+  requires header '#include <vector>'
 ;
 @
 
@@ -19,8 +19,8 @@ parameter has the name {T} but the name isn't used.
 @h2 Polymorphic functions
 It doesn't take much imagination to guess now:
 @felix
-  fun len: vector[T] -> size = "$1.size()";
-  fun + [T] : vector{T] * vector[T] -> vector[T] = "$1+$2";
+  fun len[T]: vector[T] -> size = "$1.size()";
+  fun + [T] : vector[T] * vector[T] -> vector[T] = "$1+$2";
   fun get[T] : vector[T] * int -> T = "$1[$2]";
 @
 
@@ -30,7 +30,7 @@ closely!
 
 @felix
   proc push_back[T]: &vector[T] * T = "$1->push_back($2);";
-  proc make_vector[T] : &vector[T] = "$1 = ::std::vector();";
+  proc make_vector[T] : &vector[T] = "*$1 = ::std::vector<?1>();";
 @
 
 To use this we're going to do some ugly stuff:
@@ -52,12 +52,12 @@ problem later. For now you should note that whilst the
 following code appears to work there are subtle problems
 with it:
 @felix
-  fun empty_vector[T] : 1 -> vector[T] = "::std::vector[?1]()";
+  fun empty_vector[T] : 1 -> vector[T] = "::std::vector<?1>()";
   proc push[T] : vector[T] * T = "$1.push_back($2);";
-  var y = empty_vector ();
+  var y = empty_vector[int] ();
   push (y,1);
   push (y,2);
-  println$ get (y, 1));
+  println$ get (y, 1);
 @expect 
 2
 @

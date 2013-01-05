@@ -44,7 +44,7 @@ in Felix be done""";
    // typedef char = "char";
    var c1 = char "A";
 
-   println$ str d1 + " " + str c1
+   println$ str d1 + " " + str c1;
 @expect
 4.2 A
 @
@@ -67,8 +67,11 @@ piece of magic to get anywhere .. the dreaded pointers:
   println$ x;   // 42
   x = 97;       // means &x <- 97
   println$ x;   // 97 
+@expect
+2
+42
+97
 @
-
 In Felix, you can take the address of a {var} of type {T}
 with the usual prefix  operator {&} to get a value 
 called a pointer of a type denoted {&T}.
