@@ -13,6 +13,8 @@ open List
 open Flx_ctypes
 open Flx_cexpr
 open Flx_maps
+open Flx_util
+open Flx_print
 
 exception Found of Flx_btype.t
 
@@ -102,13 +104,12 @@ let gen_prim_call
   (arg,argt as a)
   ret sr sr2 prec name
 =
-  (*
+(*
   print_endline ("ct= "^ct);
-  print_endline ("ts= "^catmap "," (sbt sym_table) ts);
-  print_endline ("argt = " ^ sbt sym_table argt);
-  print_endline ("arg = " ^ sbe sym_table a);
-  *)
-
+  print_endline ("ts= "^catmap "," (sbt bsym_table) ts);
+  print_endline ("argt = " ^ sbt bsym_table argt);
+  print_endline ("arg = " ^ sbe bsym_table a);
+*)
   (* we tolerate some errors at this point, in the hope the csubst won't 
    * actually use the bad types..
    *)
@@ -125,7 +126,7 @@ let gen_prim_call
   let carg =
     match argt with
     | BTYP_tuple []  -> ce_atom "(::flx::rtl::unit())/*UNIT_VALUE_ERROR?*/"
-    | x -> ge sr a
+    | x -> try ge sr a with _ -> ce_atom "(ILLEGAL PASSING WHOLE TUPLE WITH CURRIED ARGUMENTS)"
   in
   let ashape = sh argt in
   match arg,argt with

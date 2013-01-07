@@ -9,4 +9,8 @@
 <li><a href="intro_05.fdoc">Application syntax</a></li>
 <li><a href="intro_06.fdoc">Polymorphism</a></li>
 <li><a href="intro_07.fdoc">Typesets</a></li>
+<li><a href="intro_08.fdoc">Precedence in Bindings</a></li>
+<li><a href="intro_09.fdoc">Evaluation of bindings</a></li>
+<li><a href="intro_10.fdoc">Generators</a></li>
+<li><a href="intro_11.fdoc">Forcing Eager Evaluation</a></li>
 </ul>

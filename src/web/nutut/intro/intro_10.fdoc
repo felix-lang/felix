@@ -48,6 +48,7 @@ Here's the right way:
 @felix
 gen myrand_gen: 1 -> int = "rand()" 
   requires header '#include <stdlib.h>'
+;
 var x2 = mytwice (myrand_gen());
 @
 

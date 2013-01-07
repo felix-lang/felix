@@ -1,4 +1,4 @@
-all: build test doc 
+all: build test gen-doc 
 
 # Build directory structure:
 #
@@ -72,12 +72,6 @@ build64-debug:
 
 test64-debug:
 	python3 fbuild/fbuild-light -g --c-flag=-m64 --buildroot=build64 test
-
-#
-# Documentation
-#
-doc:
-	python3 fbuild/fbuild-light doc
 
 doc-clang:
 	python3 fbuild/fbuild-light build --build-cc=clang --build-cxx=clang++ doc
@@ -153,6 +147,13 @@ make-dist:
 	rm -f $(DISTDIR)/tmp1.html $(DISTDIR)/tmp2.html $(DISTDIR)/tmp3.html $(DISTDIR)/build-idx.sh $(DISTDIR)/install-done.flx  $(DISTDIR)/install-done.so
 
 
+install-plugins:
+	sudo cp build/release/shlib/* /usr/local/lib/
+
+install-website:
+	sudo cp -r build/release/web/* /usr/local/lib/felix/felix-latest/web
+
+
 #
 # Helper for checking new syntax
 #
@@ -161,7 +162,25 @@ syntax:
 	cp src/lib/grammar/* build/release/lib/grammar
 	rm *.par2
 
-tutindex:
+#
+# Documentation
+#
+doc: copy-doc check-tut
+
+# Copy docs from repo src to release image
+copy-doc: gen-doc
+	build/release/bin/flx_cp src/web '(.*\.fdoc)' 'build/release/web/$${1}'
+	build/release/bin/flx_cp src/web '(.*\.(png|jpg|gif))' 'build/release/web/$${1}'
+	build/release/bin/flx_cp src/web '(.*\.html)' 'build/release/web/$${1}'
+	build/release/bin/flx_cp src/ '(.*\.html)' 'build/release/$${1}'
+
+# upgrade tutorial indices in repo src
+# must be done prior to copy-doc
+# muut be done after primary build
+# results should be committed to repo.
+# Shouldn't be required on client build because the results
+# should already have been committed to the repo.
+gen-doc:
 	build/release/bin/mktutindex tut Tutorial tutorial.fdoc
 	build/release/bin/mktutindex fibres Fibres tutorial.fdoc
 	build/release/bin/mktutindex objects Objects tutorial.fdoc
@@ -174,22 +193,23 @@ tutindex:
 	build/release/bin/mktutindex garray "Generalised Arrays" tutorial.fdoc
 	build/release/bin/mktutindex uparse "Universal Parser" uparse.fdoc
 	build/release/bin/mktutindex nutut/intro/intro "Ground Up" ../../tutorial.fdoc
+
+# Checks correctness of tutorial in release image
+# must be done after copy-doc
+# must be done after primary build
+check-tut:
 	build/release/bin/flx_tangle --inoutdir=build/release/web/nutut/intro/ '.*'
 	for  i in build/release/web/nutut/intro/*.flx; \
 	do \
 		j=$$(echo $$i | sed s/.flx//); \
 		echo $$j; \
-		flx --test=build/release --stdout=$$j.output $$j; \
-		diff $$j.expect $$j.output; \
+		build/release/bin/flx --test=build/release --stdout=$$j.output $$j; \
+		diff -N $$j.expect $$j.output; \
 	done
 
-install-plugins:
-	sudo cp build/release/shlib/* /usr/local/lib/
-
-install-website:
-	sudo cp -r build/release/web/* /usr/local/lib/felix/felix-latest/web
-
-
+# optional build of compiler docs
+# targets repository
+# Don't run by default because ocamldoc is a bit buggy
 ocamldoc:
 	mkdir -p parsedoc
 	ocamldoc -d parsedoc -html \
@@ -216,7 +236,8 @@ ocamldoc:
 		src/compiler/flx_misc/*.ml 
 
 
-.PHONY : build32 build64 build test32 test64 test 
+.PHONY : build32 build64 build test32 test64 test  
 .PHONY : build32-debug build64-debug build-debug test32-debug test64-debug test-debug 
 .PHONY : doc install websites-linux  release install-bin 
+.PHONY : copy-doc gen-doc check-tut
 

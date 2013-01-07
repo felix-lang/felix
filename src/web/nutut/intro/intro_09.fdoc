@@ -7,10 +7,10 @@ issue!
 Consider:
 @felix
 fun myrand : 1 -> int  = "rand()" 
-  requires '#include <stdlib.h>'
+  requires header '#include <stdlib.h>'
 ;
 
-fun mycond : bool * int * int = "$1??$2:$3";
+fun mycond : bool * int * int -> int = "$1 ?? $2 : $3";
 
 fun mytwice : int  -> int = "$1+$1";
 fun mydiv: int * int -> int = "$1/$2";
@@ -30,7 +30,7 @@ and so it gets called twice, and the result is sure to be even
 from a macro, not a function. Of course you can fix this as so:
 @felix
 var tmp = myrand();
-var x2 = mytwice(rmp);
+var x2 = mytwice(tmp);
 @
 and this should work. But can you be sure that Felix doesn't
 do that itself? There's a good chance if you write:
@@ -57,7 +57,7 @@ Now lets look at a second example:
 @felix
 val a = 1;
 var b = 0;
-var x5 = mycond ( b==0, 0, mydiv (a/b));
+var x5 = mycond ( b==0, 0, mydiv (a,b));
 @
 If we follow through the substitutions, we would get this in C:
 @pre

@@ -965,6 +965,39 @@ print_endline "Apply case ctor";
           t' is the function type of the constructor,
           t'' is the type of the argument
        *)
+
+  (* HACKY EXPERIMENT ALLOWING PRIMITIVE FUNCTIONS LIKE f: T -> T -> T = "..."
+     i.e. with curried arguments, allowing call like f a b .. instead of tuple,
+     ONLY works for expressions not procedure calls. ONLY works for 2 or 3 arguments.
+     NO SUPPORT for closures! Do not use with tuple arguments as well as the
+     whole tuple gets passed!
+  *)
+  | BEXPR_apply ((BEXPR_apply ( ((BEXPR_apply_prim (index, ts, arg1)),_),arg2),_),arg3) ->
+    gen_apply_prim
+      syms
+      bsym_table
+      this
+      sr
+      this_vs
+      this_ts
+      t
+      index
+      ts
+      (bexpr_tuple (btyp_tuple [snd arg1; snd arg2; snd arg3]) [arg1; arg2; arg3])
+
+  | BEXPR_apply ((BEXPR_apply_prim (index, ts, arg1),_) ,arg2) ->
+    gen_apply_prim
+      syms
+      bsym_table
+      this
+      sr
+      this_vs
+      this_ts
+      t
+      index
+      ts
+      (bexpr_tuple (btyp_tuple [snd arg1; snd arg2]) [arg1; arg2])
+
   | BEXPR_apply_prim (index,ts,arg) ->
 (*
 print_endline "Apply prim";

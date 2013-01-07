@@ -11,7 +11,7 @@ fun myand : mybool * mybool -> mybool = "$1&&$2";
 fun myor : mybool * mybool -> mybool = "$1||$2";
 fun mynot : mybool -> mybool = "!$1";
 
-proc myprint : mybool= '::std::cout<<($1??"mytrue":"myfalse");' 
+proc myprint : mybool= '::std::cout<<($1??"mytrue":"myfalse")<<::std::endl;' 
   requires header "#include <iostream>"
 ;
 @
@@ -20,12 +20,12 @@ how Felix generates calculations by substitution.
 For example we understand that this works:
 @felix
 fun calc(x:mybool, y:mybool, z:mybool) =>
-  myand (myor (mynot x, myor (y, not z), myand (x,y)));
+  myand (myor (mynot x, myor (y, mynot z)), myand (x,y));
 ;
-myprint calc (mytrue, myfalse, mytrue);
+myprint (calc (mytrue, myfalse, mytrue));
 @
 @expect 
-false
+myfalse
 @
 but what does the generated code look like?
 Roughly we expect this:
