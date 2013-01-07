@@ -29,16 +29,20 @@ build() {
 
   cd "$_gitname-build"
 
-  make build
-  make doc
-  make test
+  make FBUILD_PARAMS="--prefix=/usr" build
+  make FBUILD_PARAMS="--prefix=/usr" doc
+  make FBUILD_PARAMS="--prefix=/usr" test
+
 }
 
 package() {
   cd "$srcdir/$_gitname-build"
-  make DISTDIR="$pkgdir/usr" make-dist
+  make FBUILD_PARAMS="--prefix=/usr" DISTDIR="$pkgdir/usr" make-dist
   # Felix util timeout conficts with gnu timeout, removing felix ver for now
   rm $pkgdir/usr/bin/timeout
+  mkdir -p $pkgdir/etc/ld.so.conf.d
+  echo "/usr/lib/felix/felix-1.1.7dev/lib/rtl">$pkgdir/etc/ld.so.conf.d/felix.conf
+  echo "" >>$pkgdir/etc/ld.so.conf.d/felix.conf
 #  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
 }
 
