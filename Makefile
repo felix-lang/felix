@@ -15,8 +15,9 @@ all: build test
 
 VERSION = 1.1.7dev
 DISTDIR ?= ./build/dist
-BUILDROOT ?= build/release
-DEBUGBUILDROOT ?= build/debug
+FBUILDROOT ?= build
+BUILDROOT ?= ${FBUILDROOT}/release
+DEBUGBUILDROOT ?= ${FBUILDROOT}/debug
 
 help:
 	# Makefile help
@@ -34,7 +35,7 @@ help:
 	#   gendoc: generate docs (developers only)
 	#
 	# Params:
-	#   BUILDROOT: directory to build into, default build/release
+	#   FBUILDROOT: directory to build into, default build
 	#   FBUILD_PARAMS: parameters to fbuild, default none
 	#     fbuild/fbuild-light --help for options 
 
@@ -48,23 +49,23 @@ user-build: fbuild doc
 # Core integrated build
 #
 fbuild:
-	python3 fbuild/fbuild-light build --buildroot=${BUILDROOT} $(FBUILD_PARAMS)
+	python3 fbuild/fbuild-light build --buildroot=${FBUILDROOT} $(FBUILD_PARAMS)
 
 #
 # regression test on release image
 # 
 test:
-	python3 fbuild/fbuild-light test --buildroot=${BUILDROOT} $(FBUILD_PARAMS)
+	python3 fbuild/fbuild-light test --buildroot=${FBUILDROOT} $(FBUILD_PARAMS)
 
 
 #
 # debug build
 #
 fbuild-debug:
-	python3 fbuild/fbuild-light -g build --buildroot=${DEBUGBUILDROOT} $(FBUILD_PARAMS)
+	python3 fbuild/fbuild-light -g build --buildroot=${FBUILDROOT} $(FBUILD_PARAMS)
 
 test-debug:
-	python3 fbuild/fbuild-light -g test --buildroot=${DEBUGBUILDROOT} $(FBUILD_PARAMS)
+	python3 fbuild/fbuild-light -g test --buildroot=${FBUILDROOT} $(FBUILD_PARAMS)
 
 #
 #
