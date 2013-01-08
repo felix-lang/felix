@@ -8,7 +8,7 @@ import buildsystem
 
 def build(phase):
     path = Path('src/tools')
-    dst = phase.ctx.buildroot / 'bin/mk_daemon'
+    dst = phase.ctx.buildroot / 'bin/flx_daemon'
     src = path / 'mk_daemon.c'
     includes = ['src/tools']
     return Record (

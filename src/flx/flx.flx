@@ -368,13 +368,13 @@ proc install_bin ()
   println$ "Installed executable flx in /usr/local/bin";
 
   if not PLAT_WIN32 do
-    result= system("cp -f "+FLX_INSTALL_DIR+"/bin/mk_daemon /usr/local/bin");
+    result= system("cp -f "+FLX_INSTALL_DIR+"/bin/flx_daemon /usr/local/bin");
     if result !=0 goto install_bin_failed;
-    println$ "Installed executable mk_daemon in /usr/local/bin";
+    println$ "Installed executable flx_daemon in /usr/local/bin";
 
-    result= system("cp -f "+FLX_INSTALL_DIR+"/bin/timeout /usr/local/bin");
+    result= system("cp -f "+FLX_INSTALL_DIR+"/bin/flx_timeout /usr/local/bin");
     if result !=0 goto install_bin_failed;
-    println$ "Installed executable timeout in /usr/local/bin";
+    println$ "Installed executable flx_timeout in /usr/local/bin";
   done
 
   result= system("cp -f "+FLX_INSTALL_DIR+"/tools/webserver /usr/local/bin");
