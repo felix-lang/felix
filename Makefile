@@ -1,4 +1,4 @@
-all: build test gen-doc 
+all: build test doc 
 
 # Build directory structure:
 #

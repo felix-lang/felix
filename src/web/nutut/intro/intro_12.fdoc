@@ -1,0 +1,60 @@
+@h1 Resource management: Floating insertions.
+We have seen code like this:
+@felix
+fun myrand : 1 -> int = "rand()"
+  requires header '#include <stdlib.h>'
+;
+@
+and understand this means that if {myrand} is used
+in a program, Felix will emit the include directive
+into the C++ code it generates, in fact, as suggested,
+into the header file.
+
+It probably won't surprise you to see this then:
+@felix
+fun mytwig : 1 -> int = "twig($1)" 
+  requires body 
+  """
+  static int twig(x:int) { return x + x; }
+  """
+;
+@
+and I'm sure you can guess this causes the C code for
+the {twig()} function to be emitted in the body of
+the generated C++.
+
+These things that get emitted are called <em>floating
+insertions</em> because they float to a fixed point
+in the generated C++, either in the header file or
+the body file.
+
+Floating insertions are emitted only once, which is checked
+by comparing the strings. We don't want to emit
+20 instances of {'#include <stdlib.h>'} although this would
+be harmless, it looks messy. For a body insertion defining
+a C function, on the other hand, duplication would break
+ISO C++ One Definition Rule.
+
+Floating insertions in each of the classes are emitted in
+order of writing textually. So you should think of all of
+them being conditionally emitted when Felix is scanning
+your program sources (although this is not how it is implemented).
+
+It is very tiresome to write out these floating insertions
+all the time when they're required in many places. So Felix
+provides a way to name them with what I call a <em>tag name</em>
+and then require the insertion by name:
+@felix
+header mystdlib = '#include <mystdlib.h>';
+fun myrand2 : 1 -> int = "rand()" requires mystdlib;
+@
+
+With some risk of premature exposure to a feature we haven't discussed
+you should examine the standard library:
+
+@felix lib/std/c_headers.flx
+@felix lib/std/cxx_headers.flx
+@felix lib/std/posix/posix_headers.flx
+@felix lib/std/win32/win32_headers.flx
+
+
