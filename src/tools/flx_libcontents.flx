@@ -1,5 +1,5 @@
 var ishtml = System::argv 1 == "--html";
-var dir =  Filename::join (#(Config::config).FLX_INSTALL_DIR, "lib", "std");
+var dir =  Filename::join ("src", "lib", "std");
 
 include "./fdoc-interface";
 var  xlat_fdoc = Dynlink::load-plugin-func2 [fdoc_t, string, string] (

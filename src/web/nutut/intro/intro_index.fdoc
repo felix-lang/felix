@@ -13,6 +13,7 @@
 <li><a href="intro_09.fdoc">Evaluation of bindings</a></li>
 <li><a href="intro_10.fdoc">Generators</a></li>
 <li><a href="intro_11.fdoc">Forcing Eager Evaluation</a></li>
-<li><a href="intro_12.fdoc">Resource management: Floating insertions.</a></li>
-<li><a href="intro_13.fdoc">Chaining requirements</a></li>
+<li><a href="intro_12.fdoc">Classes</a></li>
+<li><a href="intro_14.fdoc">Resource management: Floating insertions.</a></li>
+<li><a href="intro_15.fdoc">Chaining requirements</a></li>
 </ul>

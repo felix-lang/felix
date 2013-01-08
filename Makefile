@@ -80,14 +80,6 @@ install:
 	flx install-done
 	rm install-done.*
 	sudo chown $(USER) $(HOME)/.felix
-	flx_libcontents --html > tmp1.html
-	flx_libindex --html > tmp2.html
-	flx_gramdoc --html > tmp3.html
-	sudo cp tmp1.html /usr/local/lib/felix/felix-latest/web/flx_libcontents.html
-	sudo cp tmp2.html /usr/local/lib/felix/felix-latest/web/flx_libindex.html
-	sudo cp tmp3.html /usr/local/lib/felix/felix-latest/web/flx_gramdoc.html
-	rm tmp1.html tmp2.html tmp3.html
-
 
 #
 # Install binaries on felix-lang.org
@@ -101,13 +93,6 @@ install-felix-lang.org:
 	echo 'println ("installed "+ Version::felix_version);' > install-done.flx
 	flx install-done
 	rm install-done.*
-	flx_libcontents --html > tmp1.html
-	flx_libindex --html > tmp2.html
-	flx_gramdoc --html > tmp3.html
-	sudo cp tmp1.html /usr/local/lib/felix/felix-latest/web/flx_libcontents.html
-	sudo cp tmp2.html /usr/local/lib/felix/felix-latest/web/flx_libindex.html
-	sudo cp tmp3.html /usr/local/lib/felix/felix-latest/web/flx_gramdoc.html
-	rm tmp1.html tmp2.html tmp3.html
 	sudo start felixweb
 
 #
@@ -135,15 +120,7 @@ make-dist:
 	rm -rf $(HOME)/.felix/cache
 	echo 'println ("installed "+ Version::felix_version);' > $(DISTDIR)/install-done.flx
 	./${BUILDROOT}/bin/flx --test=$(DISTDIR)/lib/felix/felix-$(VERSION) $(DISTDIR)/install-done.flx
-	echo "export LD_LIBRARY_PATH=$(DISTDIR)/lib:$(DISTDIR)/lib/felix/felix-$(VERSION)/lib/rtl">$(DISTDIR)/build-idx.sh
-	echo "$(DISTDIR)/bin/flx_libcontents --html > $(DISTDIR)/tmp1.html">>$(DISTDIR)/build-idx.sh
-	echo "$(DISTDIR)/bin/flx_libindex --html > $(DISTDIR)/tmp2.html">>$(DISTDIR)/build-idx.sh
-	echo "$(DISTDIR)/bin/flx_gramdoc --html > $(DISTDIR)/tmp3.html">>$(DISTDIR)/build-idx.sh
-	sh $(DISTDIR)/build-idx.sh
-	cp $(DISTDIR)/tmp1.html $(DISTDIR)/lib/felix/felix-$(VERSION)/web/flx_libcontents.html
-	cp $(DISTDIR)/tmp2.html $(DISTDIR)/lib/felix/felix-$(VERSION)/web/flx_libindex.html
-	cp $(DISTDIR)/tmp3.html $(DISTDIR)/lib/felix/felix-$(VERSION)/web/flx_gramdoc.html
-	rm -f $(DISTDIR)/tmp1.html $(DISTDIR)/tmp2.html $(DISTDIR)/tmp3.html $(DISTDIR)/build-idx.sh $(DISTDIR)/install-done.flx  $(DISTDIR)/install-done.so
+	rm -f $(DISTDIR)/install-done.flx  $(DISTDIR)/install-done.so
 
 
 # 
@@ -199,6 +176,12 @@ gen-doc:
 	${BUILDROOT}/bin/mktutindex garray "Generalised Arrays" tutorial.fdoc
 	${BUILDROOT}/bin/mktutindex uparse "Universal Parser" uparse.fdoc
 	${BUILDROOT}/bin/mktutindex nutut/intro/intro "Ground Up" ../../tutorial.fdoc
+	# Build reference docs. Note this requires plugins and RTL to be installed
+	# on (DY)LD_LIBRARY_PATH. Won't work otherwise.
+	${BUILDROOT}/bin/flx_libcontents --html > src/web/flx_libcontents.html
+	${BUILDROOT}/bin/flx_libindex --html > src/web/flx_libindex.html
+	${BUILDROOT}/bin/flx_gramdoc --html > src/web/flx_gramdoc.html
+
 
 # Checks correctness of tutorial in release image
 # must be done after copy-doc
