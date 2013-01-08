@@ -179,9 +179,9 @@ gen-doc:
 	${BUILDROOT}/bin/mktutindex nutut/intro/intro "Ground Up" ../../tutorial.fdoc
 	# Build reference docs. Note this requires plugins and RTL to be installed
 	# on (DY)LD_LIBRARY_PATH. Won't work otherwise.
-	${BUILDROOT}/bin/flx_libcontents --html > src/web/flx_libcontents.html
-	${BUILDROOT}/bin/flx_libindex --html > src/web/flx_libindex.html
-	${BUILDROOT}/bin/flx_gramdoc --html > src/web/flx_gramdoc.html
+	env LD_LIBRARY_PATH=${BUILDROOT}/shlib ${BUILDROOT}/bin/flx_libcontents --html > src/web/flx_libcontents.html
+	env LD_LIBRARY_PATH=${BUILDROOT}/shlib ${BUILDROOT}/bin/flx_libindex --html > src/web/flx_libindex.html
+	env LD_LIBRARY_PATH=${BUILDROOT}/shlib ${BUILDROOT}/bin/flx_gramdoc --html > src/web/flx_gramdoc.html
 
 
 # Checks correctness of tutorial in release image
