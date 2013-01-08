@@ -1,0 +1,63 @@
+@h1 Chaining requirements
+We've seen that requirements for floating insertions can be
+named, and a dependence of a binding created using the name.
+@felix
+header stdlib_h = '#include <stdlib.h>';
+gen myrand: 1 -> int = "rand()" requires stdlib_h;
+@
+You can also supply multiple requirements:
+@felix
+header stddef_h = '#include <stddef.h>';
+fun something : int -> int = "something($1)"
+  requires stdlib_h, stddef_h
+;
+@
+Moreover, an insertion can itself have requirements:
+@felix
+body prit = "void pr () {}" requires stdlib_h;
+@
+
+Felix gathers the transitive closure of requirements
+for processing. Circular requirements are OK.
+
+@h2 Class requirements
+Inside a class, you can put global requirements. 
+These requirements are inherited by every binding
+in the class. For example:
+@felix
+header A = "";
+header B = "";
+class X {
+  requires A, B;
+  fun f: int -> int;
+  fun g: int -> int;
+}
+@
+is equivalent to defining the two functions {f} and {g}
+with requirements {A} and {B}:
+@felix
+class X2 {
+  fun f: int -> int requires A, B;
+  fun g: int -> int requires A, B;
+}
+@
+Just a note to be wary of the fact that requirements
+<em>only</em> apply to C bindings.
+
+If class is nested in another class, then the outer
+class requirements propagate into the inner class.
+For example:
+@felix
+header C = "";
+class Outer 
+{
+  requires A;
+  class Inner 
+  {
+    requires B;
+    fun f: int -> int requires C;
+  }
+}
+@
+then {f} requires {A}, {B}, and {C}.
+
