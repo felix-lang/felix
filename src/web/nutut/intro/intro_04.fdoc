@@ -1,64 +1,144 @@
-@h1 Constructors
-When we're introducing a new type such as {myint}, we often need to provide
-a way to convert to and from other types. We can do this as so:
+@h1 Extending Syntax
+In our last tutorial we showed how to lift some
+types and operators out of C++, however using them
+was pretty ugly:
+@pre
+myprint (myadd (one, two)); myendl();
+@
+In this tutorial, we're going to show how to fix this.
+
+@h2 User defined statements
+First, we'll show how to extend the grammar to add
+a new statement. 
+
+We're going to include the code
+from the last tutorial which we do like this:
+@felix
+include "./intro_01";
+@
+The filename format used here always uses {/} as a path
+separator, even on Windows. This rule makes path names platform
+independent. Please stick to lower case C identifiers,
+as these work on all platforms.
+
+The leading {.} does not mean
+the current directory: it means the directory containing
+the file with the include directive in it.  This makes
+shipping a set of files to another location simple.
+
+As this does some testing here again are the expected
+results from that code:
+@expect
+hello world
+3
+mytrue
+@
+Now for the new statement:
+@felix
+syntax mystatements
+{ 
+  stmt := "say" sexpr ";" =># { myprint ?2; myendl(); };
+}
+@
+The non-terminal {stmt} must be used to add new statements.
+The non-terminal {sexpr} can be used for expressions.
+We define our {say} command to print the expression
+denoted by {?2} which is the second symbol on the RHS of the
+{:=} sign, and then do an end of line.
+
+Note the RHS after the {=>#} is scoped inside curly braces.
+This tells Felix that we're defining a statement.
+
+Here's how we use this:
 
 @felix
-type myint = "int";
-fun make_myint: int -> myint = "$1";
-fun make_int: myint -> int = "$1";
-var x : myint = make_myint (42);
-println$ make_int(x);
-@expect
-42
-@
-Since {int} and {myint} share the same C++ representation, the
-conversions are the identity in this case. However it's a bit hard to remember
-the names of the constructors. 
+open syntax mystatements;
 
-Felix allows you to use the type name, like C++, you can
-make this happen like this:
+say (myeq (myadd (one, two), myadd (two, one)));
+@
+When we define new syntax, it is packed up in a
+Domain Specific Sub-Language or DSSL.
+The new grammar isn't available until the DSSL
+is opened.
+
+Note that currently user extensions must go in the
+file using them or the master grammar (this is a design
+issue). 
+
+Of course we expect this:
+@expect
+mytrue
+@
+
+@h2 User defined expressions
+Of course we still have to write those ugly
+function calls when we'd like to use operators.
 
 @felix
-fun _ctor_myint : int -> myint = "$1";
-fun _ctor_int : myint -> int = "$1";
-var y : myint = myint (42);
-println$ int(y);
-@expect
-42
+syntax myexpressions
+{
+  sexpr := myrel =># (?1);
+
+  myrel := myterm "==" myterm =>#  (myeq (?1, ?3) );
+  myrel := myterm =># (?1);
+
+  myterm := myterm "+" myfactor =># ( myadd (?1, ?3) );
+  myterm := myfactor =># (?1);
+
+  myfactor := myfactor "*" myatom =># ( mymul (?1, ?3) );
+  myfactor := myatom =># (?1);
+
+  myatom := sname =># "(nos _1)";
+  myatom := "(" myrel ")" =># "_2";
+
+}
 @
+Here, the predefined non-terminal {sexpr} is defined as {myrel}
+so we don't interfere with the existing grammar.
 
-This is a bit clumsy and repeats the typename in
-the function name and the return type, so there's
-a more readable shorthand:
+We've written the grammar
+so {+} and {*} are left associative, whereas {==}
+requires exactly two terms.
 
+When the RHS after the {=>#} symbol is enclosed in parentheses,
+this telle Felix that we're defining an expression.
+
+There is some magic in the last two lines. 
+When the RHS after the {=>#} symbol is a string,
+Felix interprets it as Scheme code. In the Scheme
+code the non-terminals of the production are denoted
+by  {_1}, {_2} etc instead of {?1}, {?2} etc.
+
+The Scheme function {nos} here converts the string designated
+by an {sname} into a Felix identifier term. {nos} stands
+for Name Of String.
+
+We introduced statement and expression template actions
+first because they're simpler and easier to use than
+Scheme actions: to use the Scheme actions you need to know
+Scheme, and you need to know exactly what s-expressions
+the Scheme code has to generate to build the Felix AST.
+To do advanced user defined syntax you need to use
+Scheme. 
+
+However the action templates for statements and expressions
+already give you vastly more power over the language than
+any other production programming language, the best of which
+might allow user defined operators. Felix generalises that
+to give you user defined grammar.
+
+So to try this out:
 @felix
-type yourint = "int";
-ctor yourint : int = "$1";
-ctor int : yourint = "$1";
-var z = yourint (42);
-println$ int(z);
-@expect
-42
+open syntax myexpressions;
+
+say one + two == two + one;
 @
-This removes the duplication with the {_ctor_} notation but
-it equivalent.
-
-When Felix is looking up a function and it finds a type
-name T, it will try to find the function {_ctor_T} instead.
-You know you can overload constructors because they're just ordinary
-function bindings.
-
-You can also use a typedef name:
-@felix
-typedef alias = myint;
-ctor alias : double = "int($1)";
-println$ int ( alias (4.2) );
+and of course that should print
 @expect
-4
+mytrue
 @
 
-This works because the translation rule says typename,
-which includes aliases.
+
 
 
 

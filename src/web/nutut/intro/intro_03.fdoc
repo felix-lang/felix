@@ -1,93 +1,46 @@
-@h1 Some basic stuff.
-To move on it is convenient to use some of the stuff
-already in the Felix system. We will still try to teach
-the concepts and machinery from the ground up.
-
-Felix provides a way to create variables using the {var} binder.
-See below.
-
-The Felix libraries uses technology similar to what we've just
-seen to introduce many types. In future tutorials well use
-some of these types, now you have a rough idea how they're
-provided.  See below.
-
-The Felix syntax mechanism provides for user defined literals.
-This mechanism is too advanced to study yet, so we'll
-introduce literals by magic at the moment.
-
-Now we're in a position to give some examples, I hope
-there's no need for too much explanation here!
-Just look at the patterns to figure the basic idea!
-
+@h1 Binding Shortcuts
+To make it a bit easier there are some shortcuts when making bindings.
+@h2 All arguments $a
+For a function or procedure you can write this:
 @felix
-  // typedef int = "int";
-  var i1 : int = 42;
-  var i2 : int = i1+1;
+fun add: int * int -> int = "add($a)";
+@
+where {$a} just means the same as {$1,$2} in this case.
+Useful for functions with a lot of arguments.
 
-  // typedef double = "double";
-  var d1 : double = 4.2;
-  var d2 : double = d1 * 2.3E7;
+@h2 Default definition
+You can also default the definition of a function
+or procedure by just leaving it out:
+@felix
+fun f: int * int -> int;
+@
+which is the same as if {f($1,$2)} had been specified.
+This only works for C functions, since there's no way to
+put a C++ namespace in.
 
-  // typedef string = "::std::string";
-  var s1 = "hello";
-  var s2 = 'world';
-  var newline = "\n";
-  var s3 =
-    'Hello '
-    'World' newline
-  ;
-
-  var manylines = 
-"""Poetry can
-in Felix be done""";
-
-   // typedef char = "char";
-   var c1 = char "A";
-
-   println$ str d1 + " " + str c1;
-@expect
-4.2 A
+@h2 Multiple C types
+you can bind one or more Felix types to C types of the
+same name:
+@felix
+ctypes myint, mylong;
 @
 
-Strings follow Python. There is no char literal, but you can
-specify the first character of a string.
-
-Note that the {var} binder requires either a type or an initialiser
-or both.
-
-Unfortunately we have to provide a description of one more
-piece of magic to get anywhere .. the dreaded pointers:
-
+@h2 Enumerations
+In Felix you can bind a C enumeration like:
 @felix
-  var x = 1;
-  var px : &int = &x;
-  ++x;
-  println$ *px; // 2
-  px <- 42;
-  println$ x;   // 42
-  x = 97;       // means &x <- 97
-  println$ x;   // 97 
-@expect
-2
-42
-97
+cenum myenum = one,two,three;
 @
-In Felix, you can take the address of a {var} of type {T}
-with the usual prefix  operator {&} to get a value 
-called a pointer of a type denoted {&T}.
+This defines the type {myenum}, and also constants
+{one}, {two}, {three} equal to their C values.
+The type is also equipped with equality and inequality
+comparisons automatically.
 
-Pointers of such a type should never be NULL, should never dangle,
-and cannot be incremented. You should think of a pointer to an object.
-
-You can the value stored in an object a pointer points at
-using the usual dereference operator {*}.
-
-You can store a value into an object a pointer points at
-using the operator {<-}. We can call this the <em>store at</em>
-operator.
-
-You can assign to variables using the C assignment operator {=}.
-However you should regard {x = 97; } as sugar for {&x <- 97}.
-
-
-
+@h2 Flags
+C enumerations are sometimes used for flags bits.
+So you can write this:
+@felix
+cflags myflags = flag1, flag2, flag3;
+@
+This type is provided with equality {==} and inequality {!=} 
+as well as bitwise operations: bitwise or {\|}, bitwise and {\&},
+bitwise exclusive or {\^} and bitwise not (complement) {~}.

@@ -1387,7 +1387,6 @@ and gen_apply_prim
             ts
           in
 
-(*
           if index <> index' then begin
             clierr sr ("[Flx_egen: apply_prim] Virtual call of " ^ string_of_bid index ^
               " dispatches to " ^ string_of_bid index')
@@ -1411,7 +1410,7 @@ and gen_apply_prim
                 ) 
                 entries)
           end;
-*)
+
           let bsym =
             try Flx_bsym_table.find bsym_table index' with Not_found ->
               syserr sr ("MISSING INSTANCE BBDCL " ^ string_of_bid index')
