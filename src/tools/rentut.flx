@@ -16,12 +16,21 @@ s_moveto  := System::argv 4;
 first := size s_first;
 moveto := size s_moveto;
 re := RE2(s_re);
+if first == moveto do
+  println$ "src = dst, not moving anything";
+  System::exit 0;
+done
 
 println$ "Renumber files in " + s_dir+ " matching "+"'"+s_re+"'"+" from " + str first + " to " + str moveto;
 
 docs := FileSystem::regfilesin(s_dir, re);
 var files = varray docs;
-sort gt of (string * string) files;
+
+// direction: if first < moveto, we're moving up, so we have to start at the end and work down.
+// if first > moveto, we're moving down, so we have to start at the start and work up.
+comparator := if first < moveto then gt of (string * string) else lt of (string * string) endif;
+
+sort comparator of (string * string) files;
 println$ "Files = " + str files;
 var groups : array[StringPiece,2];
 
