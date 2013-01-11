@@ -1107,7 +1107,8 @@ debugln$ "cache_time=" + strfiletime(cache_time);
 var flxg_stamp_data = load flxg_stamp;
 //println$ "Flxg_stamp_data=" + flxg_stamp_data; 
 
-var flxg_stamp_time = flxg_stamp_data.atof;
+var flxg_stamp_time = match flxg_stamp_data.atof with | 0.0 => past_time | ?x => x;
+
 debugln$ "Flxg_stamp_data : " + strfiletime(flxg_stamp_time);
 
 fun gramtime(path:string, s:string) : double = {
