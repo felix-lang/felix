@@ -78,7 +78,7 @@ install:
 	sudo rm -f /usr/local/lib/felix/felix-latest
 	sudo ln -s /usr/local/lib/felix/felix-$(VERSION) /usr/local/lib/felix/felix-latest
 	echo 'println ("installed "+ Version::felix_version);' > install-done.flx
-	flx install-done
+	flx --clean install-done
 	rm install-done.*
 	sudo chown $(USER) $(HOME)/.felix
 
@@ -92,7 +92,7 @@ install-felix-lang.org:
 	sudo ${BUILDROOT}/bin/flx --test=${BUILDROOT} --install-bin
 	sudo rm -rf $(HOME)/.felix/cache
 	echo 'println ("installed "+ Version::felix_version);' > install-done.flx
-	flx install-done
+	flx --clean install-done
 	rm install-done.*
 	sudo start felixweb
 
@@ -120,7 +120,7 @@ make-dist:
 	./${BUILDROOT}/bin/flx --test=${BUILDROOT} --dist=$(DISTDIR)
 	rm -rf $(HOME)/.felix/cache
 	echo 'println ("installed "+ Version::felix_version);' > $(DISTDIR)/install-done.flx
-	./${BUILDROOT}/bin/flx --test=$(DISTDIR)/lib/felix/felix-$(VERSION) $(DISTDIR)/install-done.flx
+	./${BUILDROOT}/bin/flx --clean --test=$(DISTDIR)/lib/felix/felix-$(VERSION) $(DISTDIR)/install-done.flx
 	rm -f $(DISTDIR)/install-done.flx  $(DISTDIR)/install-done.so
 
 
@@ -165,18 +165,18 @@ gendoc: gen-doc copy-doc check-tut
 # Shouldn't be required on client build because the results
 # should already have been committed to the repo.
 gen-doc:
-	${BUILDROOT}/bin/mktutindex tut Tutorial tutorial.fdoc
-	${BUILDROOT}/bin/mktutindex fibres Fibres tutorial.fdoc
-	${BUILDROOT}/bin/mktutindex objects Objects tutorial.fdoc
-	${BUILDROOT}/bin/mktutindex polymorphism Polymorphism tutorial.fdoc
-	${BUILDROOT}/bin/mktutindex pattern Patterns tutorial.fdoc
-	${BUILDROOT}/bin/mktutindex literals Literals tutorial.fdoc
-	${BUILDROOT}/bin/mktutindex cbind "C Binding" tutorial.fdoc
-	${BUILDROOT}/bin/mktutindex streams Streams tutorial.fdoc
-	${BUILDROOT}/bin/mktutindex array "Arrays" tutorial.fdoc
-	${BUILDROOT}/bin/mktutindex garray "Generalised Arrays" tutorial.fdoc
-	${BUILDROOT}/bin/mktutindex uparse "Universal Parser" uparse.fdoc
-	${BUILDROOT}/bin/mktutindex nutut/intro/intro "Ground Up" ../../tutorial.fdoc
+	${BUILDROOT}/bin/flx_mktutindex tut Tutorial tutorial.fdoc
+	${BUILDROOT}/bin/flx_mktutindex fibres Fibres tutorial.fdoc
+	${BUILDROOT}/bin/flx_mktutindex objects Objects tutorial.fdoc
+	${BUILDROOT}/bin/flx_mktutindex polymorphism Polymorphism tutorial.fdoc
+	${BUILDROOT}/bin/flx_mktutindex pattern Patterns tutorial.fdoc
+	${BUILDROOT}/bin/flx_mktutindex literals Literals tutorial.fdoc
+	${BUILDROOT}/bin/flx_mktutindex cbind "C Binding" tutorial.fdoc
+	${BUILDROOT}/bin/flx_mktutindex streams Streams tutorial.fdoc
+	${BUILDROOT}/bin/flx_mktutindex array "Arrays" tutorial.fdoc
+	${BUILDROOT}/bin/flx_mktutindex garray "Generalised Arrays" tutorial.fdoc
+	${BUILDROOT}/bin/flx_mktutindex uparse "Universal Parser" uparse.fdoc
+	${BUILDROOT}/bin/flx_mktutindex nutut/intro/intro "Ground Up" ../../tutorial.fdoc
 	# Build reference docs. Note this requires plugins and RTL to be installed
 	# on (DY)LD_LIBRARY_PATH. Won't work otherwise.
 	env LD_LIBRARY_PATH=${BUILDROOT}/shlib:${BUILDROOT}/lib/rtl ${BUILDROOT}/bin/flx_libcontents --html > src/web/flx_libcontents.html
