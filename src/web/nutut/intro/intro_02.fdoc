@@ -35,8 +35,10 @@ and function and procedure bindings.
 For example:
 @felix
 fun mytwice (x:myint) => myadd (x,x);
-myprint (two); myendl();
+myprintln (mytwice (one)); 
 @expect
 2
 @
+There are more advanced form of these constructions, but we're not ready
+to introduce them yet.
 

@@ -1,64 +1,64 @@
-@h1 Constructors
-When we're introducing a new type such as {myint}, we often need to provide
-a way to convert to and from other types. We can do this as so:
-
+@h1 Pointers
+We have introduced variables of the {var} kind, and now
+for the dreaded pointers! Again, our standard bindings:
 @felix
-type myint = "int";
-fun make_myint: int -> myint = "$1";
-fun make_int: myint -> int = "$1";
-var x : myint = make_myint (42);
-println$ make_int(x);
+include "./intro_02";
 @expect
-42
+hello world
+3
+mytrue
+3
+2
 @
-Since {int} and {myint} share the same C++ representation, the
-conversions are the identity in this case. However it's a bit hard to remember
-the names of the constructors. 
-
-Felix allows you to use the type name, like C++, you can
-make this happen like this:
-
+and now we meet pointer types:
 @felix
-fun _ctor_myint : int -> myint = "$1";
-fun _ctor_int : myint -> int = "$1";
-var y : myint = myint (42);
-println$ int(y);
+var x : myint = one;
+var px : &myint = &x;
+myprintln (*px);
 @expect
-42
+1
 @
 
-This is a bit clumsy and repeats the typename in
-the function name and the return type, so there's
-a more readable shorthand:
+@h2 Address of operator <code>&amp;</code>
+The address-of operator {&} can be used to take the address
+of a {var}iable of some type {T} to produce a value
+of type pointer-to-{T}, written {&T}.
 
+In the example, we have a variable {x} of type {myint}
+and we take its address and put it in another
+variable {px} of type {&myint}.
+
+@h2 Dereference operator <code>*</code>
+We can use the dereference operator {*} on any value
+of type {&T} to fetch a value of type {T} from the storage
+location pointer at by the ponter. In the example, we 
+retrieve the value of type {myint} from the pointer
+{px} of type {&myint) this way.
+
+This is not particularly useful, however if we assign
+a new value to {x} we retrieve that too:
 @felix
-type yourint = "int";
-ctor yourint : int = "$1";
-ctor int : yourint = "$1";
-var z = yourint (42);
-println$ int(z);
+x = two;
+myprintln (*px);
 @expect
-42
-@
-This removes the duplication with the {_ctor_} notation but
-it equivalent.
-
-When Felix is looking up a function and it finds a type
-name T, it will try to find the function {_ctor_T} instead.
-You know you can overload constructors because they're just ordinary
-function bindings.
-
-You can also use a typedef name:
-@felix
-typedef alias = myint;
-ctor alias : double = "int($1)";
-println$ int ( alias (4.2) );
-@expect
-4
+2
 @
 
-This works because the translation rule says typename,
-which includes aliases.
+@h2 Assignment through pointer <code>&lt;-</code>
+We can also assign a value to the store pointed at
+by {px} through that pointer:
+@felix
+px <- two;
+myprintln (x);
+@expect
+2
+@
 
+From these rules you may understand that {var}-ables
+are addressable and mutable. The store a {var}-able
+represents is one example of an object which may hold
+a value, however which value may change with time.
 
+The distinction between objects and values is crucial:
+in Felix all values are immutable and cannot be modified.
 

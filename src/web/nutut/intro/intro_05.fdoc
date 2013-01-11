@@ -1,93 +1,76 @@
-@h1 Variables and Pointers
-To move on it is convenient to use some of the stuff
-already in the Felix system. We will still try to teach
-the concepts and machinery from the ground up.
-
+@h1 Variables
 Felix provides a way to create variables using the {var} binder.
-See below.
-
-The Felix libraries uses technology similar to what we've just
-seen to introduce many types. In future tutorials well use
-some of these types, now you have a rough idea how they're
-provided.  See below.
-
-The Felix syntax mechanism provides for user defined literals.
-This mechanism is too advanced to study yet, so we'll
-introduce literals by magic at the moment.
-
-Now we're in a position to give some examples, I hope
-there's no need for too much explanation here!
-Just look at the patterns to figure the basic idea!
-
-@felix
-  // type int = "int";
-  var i1 : int = 42;
-  var i2 : int = i1+1;
-
-  // type double = "double";
-  var d1 : double = 4.2;
-  var d2 : double = d1 * 2.3E7;
-
-  // type string = "::std::string";
-  var s1 = "hello";
-  var s2 = 'world';
-  var newline = "\n";
-  var s3 =
-    'Hello '
-    'World' newline
-  ;
-
-  var manylines = 
-"""Poetry can
-in Felix be done""";
-
-   // type char = "char";
-   var c1 = char "A";
-
-   println$ str d1 + " " + str c1;
+Again using the bindings from the first and second chapters:
+@felix 
+include './intro_02';
 @expect
-4.2 A
-@
-
-Strings follow Python. There is no char literal, but you can
-specify the first character of a string.
-
-Note that the {var} binder requires either a type or an initialiser
-or both.
-
-Unfortunately we have to provide a description of one more
-piece of magic to get anywhere .. the dreaded pointers:
-
-@felix
-  var x = 1;
-  var px : &int = &x;
-  ++x;
-  println$ *px; // 2
-  px <- 42;
-  println$ x;   // 42
-  x = 97;       // means &x <- 97
-  println$ x;   // 97 
-@expect
+hello world
+3
+mytrue
+3
 2
-42
-97
 @
-In Felix, you can take the address of a {var} of type {T}
-with the usual prefix  operator {&} to get a value 
-called a pointer of a type denoted {&T}.
+Note that since {intro_02.flx} includes {intro_01.flx} both get
+included by {include './intro_02';}.
 
-Pointers of such a type should never be NULL, should never dangle,
-and cannot be incremented. You should think of a pointer to an object.
+@h2 The <code>var</code> binder
+We will now show you the {var} binder.
+We'll repeat the code, using variables:
+@felix
+var hello-world = mycat (mycat (hello, white), world); 
+myprint (hello-world); myendl();
 
-You can the value stored in an object a pointer points at
-using the usual dereference operator {*}.
+// show 1 + 2, should be 3
+var thre = (myadd (one, two));
+myprintln (thre);
 
-You can store a value into an object a pointer points at
-using the operator {<-}. We can call this the <em>store at</em>
-operator.
+// basic axiom check
+var onetwo = myadd (one, two);
+var twoone = myadd (two, one); 
+var ok = myeq (onetwo, twoone);
 
-You can assign to variables using the C assignment operator {=}.
-However you should regard {x = 97; } as sugar for {&x <- 97}.
+myprint (ok); myendl();
+@expect
+hello world
+3
+mytrue
+@
+Note the spelling {hello-world}. Felix allows hyphens in identifiers.
+So be careful not to write {x-1} and expect that to be considered
+a subtraction!
 
+@h2 Simple Assignment
+Variables can be assigned new values.
+For example:
+@felix
+var x = one;
+myprintln (x);
+x = two;
+myprintln (x);
+@expect
+1
+2
+@
 
+The {var} binder requires either a type or an initialiser
+or both. Here's an example:
+@felix
+var y : myint = two;
+var z = myadd(y,one);
+var u : myint;
+u = myadd(z,one);
+myprintln (u);
+@expect
+4
+@
+The first line shows a variable initialised by {two}
+and the type {myint} given. This serves and an extra
+check on the type.
+
+On the second line we allow the type of the RHS expression
+to determine the variable type.
+
+On the third line, we have an uninitialised variable
+of type {myint}. Use of variables before a value is stored
+in them may have unpredictable results.
 

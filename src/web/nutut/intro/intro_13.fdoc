@@ -1,84 +1,133 @@
-@h1 Forcing Eager Evaluation
-We have seen that given:
+@h1 Evaluation of bindings
+So far we have introduced some basic functional bindings
+but we glossed over some issues. We covered a minor prettiness issue
+in the last chapter. In this chapter we expose a major semantic
+issue!
+
+Consider:
 @felix
-fun myrand: 1 -> int = "rand()" 
+fun myrand : 1 -> int  = "rand()" 
   requires header '#include <stdlib.h>'
 ;
 
-fun mytwice : int -> int = "$1+$1";
-var result = mytwice (myrand());
+fun mycond : bool * int * int -> int = "$1 ?? $2 : $3";
+
+fun mytwice : int  -> int = "$1+$1";
+fun mydiv: int * int -> int = "$1/$2";
 @
-that we cannot be sure whether {rand()} is called once or twice.
-We have seen a solution:
+This code looks innocuous enough, but it hides
+subtle issues. Consider now:
+@felix
+var x = mytwice (myrand());
+@
+and let me ask the question: is {rand()} called once or twice?
+If we just substitute the C code would resolve to:
+@pre
+  int x = myrand() + myrand();
+@
+and so it gets called twice, and the result is sure to be even
+(if it doesn't overflow). This is the behaviour you'd expect
+from a macro, not a function. Of course you can fix this as so:
 @felix
 var tmp = myrand();
-var result2 = mytwice (tmp);
+var x2 = mytwice(tmp);
 @
-in which we can force the issue by using a variable initialised
-to the result of calling {rand()}, which Felix guarantees will
-be executed at most once, when control flows through the initialisation.
-
-We have seen we could fix this problem by:
+and this should work. But can you be sure that Felix doesn't
+do that itself? There's a good chance if you write:
 @felix
-fun mytwice2 (var x:int) => mytwice(x);
+var x3 = x+1 + x+1 + x+1 + x+1;
 @
-which uses a Felix function with a {var} parameter to force
-eager evaluation of the argument, or we could instead
-make a generator:
+that a decent compiler will want to lift the common expression {x+1}
+out. On the other hand, if you write this:
 @felix
-gen myrand2: 1 -> int = "rand()"
-  requires header '#include <stdlib.h>'
-;
+val tmp2 = myrand();
+var x4 = mytwice (tmp2);
 @
-which causes Felix to create and initialise a temporary
-whether the {twice} function has a var parameter or not.
+Felix semantics actually allow the compiler to replace {tmp2}
+with {myrand()}, because unlike {var} a {val} can be considered
+either as a variable or as a macro. Of the two usual evaluation
+strategies, substitution is lazy evaluation, whilst assignment
+to a parameter is eager evaluation, and as you can see in this
+case, it can matter.
 
-@h2 Inline named variables
-There are two other ways to achieve this result.
-You can specify any sub-expression is to be lifted out and 
-assigned to a new variable as so:
+In the example we probably want eager evaluation, but the macro
+like nature of C bindings suggests we may get lazy evaluation.
+
+Now lets look at a second example:
 @felix
-var result3 = mytwice (myrand() as var tmp1) + mytwice(tmp);
+val a = 1;
+var b = 0;
+var x5 = mycond ( b==0, 0, mydiv (a,b));
 @
-The {as var} operator here has a precedence just lower than a comparison.
-As you can see you can reuse the variable in the expression.
-Suprisingly this will work too:
-@felix
-var result4 = mytwice (tmp2) + mytwice (myrand() as tmp2);
+If we follow through the substitutions, we would get this in C:
+@pre
+int x5 = b==0 ? 0 : a / b;
 @
-because the initialisation of tmp2 is lifted out of the expression.
-Take note, however, of the rule that such variable initialisations
-are done in order of writing (strictly, by recursive descent of
-the parse tree).
+which is what we want: don't do the division if the divisor is zero.
+This works because Felix does substitution, which is lazy evaluation,
+and C also does lazy evaluation here: the second argument of a conditional
+expression is C is not evaluated if the condition is true.
+This is sometimes called a short-cut operator because it bypasses
+or short cuts some of the calculations, but the proper name is lazy
+evaluation.
 
-A variable created this way is exactly the same as writing:
-@felix
-var tmp3 = myrand();
-var result5 = mytwice (tmp3) + mytwice (tmp3);
+Now the problem here is that we want to be sure Felix doesn't
+try to lift the arguments out to variables, and emit this:
+@pre
+int true_case = 0;
+int false_case = a / b;
+int x5 = b == 0 ? true_case : false_case;
 @
-so the variable is still available after the expression using
-it completes.
+because if it did, you'd get a divide by zero error before
+even getting to conditional expression.
 
+The point now is that in some cases we want eager evaluation,
+to prevent duplicate calls to functions that return different
+values each call, and in some cases we want lazy evaluation,
+to prevent evaluating something that might prematurely
+abort your program, or perhaps even go into an infinite loop.
 
-@h2 Inline anonymous variables
-It is also possible to just write this:
-@felix
-var result6 = mytwice (var rand());
+Again, your nasty teacher glossed over these issues.
+So now, you want to know, how does Felix actually evaluate
+expressions. You will hate the answer. In most cases it is unspecified!
+You have to write your code so it doesn't matter.
+
+The reason for the lack of specification is simple: performance.
+The compiler tries to generate the fastest possible code and it
+simply assumes that functional code can be copied about,
+copies removed, and the time of evaluation doesn't matter
+
+Of course, you have to evaluate an argument before the 
+corresponding parameter is required, but don't forget the
+call to the function using that parameter may itself be
+a parameter .. so the time its required can be delayed
+significantly. In fact in purely lazy functional languages like Haskell
+the whole computation is delayed right up to the termination point
+of the program (then it does everything in a great hurry!).
+
+Now, you may think, well, C is an eagerly evaluated language,
+with a couple of minor exceptions like the three shortcut operators.
+
+You would be utterly and completely wrong. All traditional imperative
+languages are primarily lazily evaluated. Remember, evaluation of
+condition operations requires lazy evaluation. You choose one path
+for control to flow down or the other. The fact is, that control
+flow is just another name for lazy evaluation! The fact that you
+do one then <em>and then</em> another is precisely lazy evaluation.
+
+Now, in C, function arguments are evaluated before calling a function.
+This is eager evaluation. However the rules are not as determinate
+as you might think! The order of evaluation is not specified.
+In fact the exact order of calculations, including operators
+such as assignment, is only partially determinate, by rules
+which invoke the concept of a <em>sequence point</em> to specify
+when computations start and end, and when another computation can
+use the results of a previous one. Statements like:
+@pre
+x[i++]=x[i++];
 @
-which creates an unnamed temporary variable initialied by the following
-sub-expression.
+are not deterministic. Yet people do write working C code.
+So do not be too alarmed! We will show how Felix provides
+ways to ensure the desired semantics.
 
-From these examples I hope you will begin to picture
-a Felix {var} like a traditional variable in C
-and associate the notation with eager evaluation.
-
-We will see in more depth later that a {var} is an object
-which is a storage location which can contain a value.
-In particular, a {var} has an address which can  be captured
-as a pointer value.
-
-In turn such a pointer allows the value stored in a variable
-to be modified or replaced. So {var} is associated with three
-concepts: eager evaluation, addressability, and mutability
-which rolled together form a strong concept of an <em>object</em>.
 

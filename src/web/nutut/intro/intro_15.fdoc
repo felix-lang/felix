@@ -1,63 +1,84 @@
-@h1 Chaining requirements
-We've seen that requirements for floating insertions can be
-named, and a dependence of a binding created using the name.
+@h1 Forcing Eager Evaluation
+We have seen that given:
 @felix
-header stdlib_h = '#include <stdlib.h>';
-gen myrand: 1 -> int = "rand()" requires stdlib_h;
+fun myrand: 1 -> int = "rand()" 
+  requires header '#include <stdlib.h>'
+;
+
+fun mytwice : int -> int = "$1+$1";
+var result = mytwice (myrand());
 @
-You can also supply multiple requirements:
+that we cannot be sure whether {rand()} is called once or twice.
+We have seen a solution:
 @felix
-header stddef_h = '#include <stddef.h>';
-fun something : int -> int = "something($1)"
-  requires stdlib_h, stddef_h
+var tmp = myrand();
+var result2 = mytwice (tmp);
+@
+in which we can force the issue by using a variable initialised
+to the result of calling {rand()}, which Felix guarantees will
+be executed at most once, when control flows through the initialisation.
+
+We have seen we could fix this problem by:
+@felix
+fun mytwice2 (var x:int) => mytwice(x);
+@
+which uses a Felix function with a {var} parameter to force
+eager evaluation of the argument, or we could instead
+make a generator:
+@felix
+gen myrand2: 1 -> int = "rand()"
+  requires header '#include <stdlib.h>'
 ;
 @
-Moreover, an insertion can itself have requirements:
-@felix
-body prit = "void pr () {}" requires stdlib_h;
-@
+which causes Felix to create and initialise a temporary
+whether the {twice} function has a var parameter or not.
 
-Felix gathers the transitive closure of requirements
-for processing. Circular requirements are OK.
+@h2 Inline named variables
+There are two other ways to achieve this result.
+You can specify any sub-expression is to be lifted out and 
+assigned to a new variable as so:
+@felix
+var result3 = mytwice (myrand() as var tmp1) + mytwice(tmp);
+@
+The {as var} operator here has a precedence just lower than a comparison.
+As you can see you can reuse the variable in the expression.
+Suprisingly this will work too:
+@felix
+var result4 = mytwice (tmp2) + mytwice (myrand() as tmp2);
+@
+because the initialisation of tmp2 is lifted out of the expression.
+Take note, however, of the rule that such variable initialisations
+are done in order of writing (strictly, by recursive descent of
+the parse tree).
 
-@h2 Class requirements
-Inside a class, you can put global requirements. 
-These requirements are inherited by every binding
-in the class. For example:
+A variable created this way is exactly the same as writing:
 @felix
-header A = "";
-header B = "";
-class X {
-  requires A, B;
-  fun f: int -> int;
-  fun g: int -> int;
-}
+var tmp3 = myrand();
+var result5 = mytwice (tmp3) + mytwice (tmp3);
 @
-is equivalent to defining the two functions {f} and {g}
-with requirements {A} and {B}:
-@felix
-class X2 {
-  fun f: int -> int requires A, B;
-  fun g: int -> int requires A, B;
-}
-@
-Just a note to be wary of the fact that requirements
-<em>only</em> apply to C bindings.
+so the variable is still available after the expression using
+it completes.
 
-If class is nested in another class, then the outer
-class requirements propagate into the inner class.
-For example:
+
+@h2 Inline anonymous variables
+It is also possible to just write this:
 @felix
-header C = "";
-class Outer 
-{
-  requires A;
-  class Inner 
-  {
-    requires B;
-    fun f: int -> int requires C;
-  }
-}
+var result6 = mytwice (var rand());
 @
-then {f} requires {A}, {B}, and {C}.
+which creates an unnamed temporary variable initialied by the following
+sub-expression.
+
+From these examples I hope you will begin to picture
+a Felix {var} like a traditional variable in C
+and associate the notation with eager evaluation.
+
+We will see in more depth later that a {var} is an object
+which is a storage location which can contain a value.
+In particular, a {var} has an address which can  be captured
+as a pointer value.
+
+In turn such a pointer allows the value stored in a variable
+to be modified or replaced. So {var} is associated with three
+concepts: eager evaluation, addressability, and mutability
+which rolled together form a strong concept of an <em>object</em>.
 

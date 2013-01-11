@@ -1,112 +1,86 @@
-@h1 Application syntax 
-So far we've applied a function like in C.
-@felix
-fun sum : int * int -> int = '$1+$2';
-fun neg : int -> int = '-$1';
-println ( sum (1,neg (2)) );
-@expect
--1
-@
-However, parens in Felix simply provide grouping: functional
-style application does not require them:
-@felix
-println ( sum (1,neg 2) );
-@
-@expect
--1
-@
-The parens around the {sum} argument are required.
-Hey, that's a typo you say! {sum} has two arguments!
+@h1 Standard Types
+To move on it is convenient to use some of the stuff
+already in the Felix system. The types we introduce here
+and the functions and procedures that operate on them,
+are all defined in the Standard library by bindings
+similar to those in chapter 1. This is probably not
+surprising by now!
 
-No it doesn't. {sum} has a single argument which
-is of the type of a cartesian product {int * int}.
-The parens are only required because operator
-whitespace, which is used for application, has
-a higher precedence than operator comma, which
-is used for tuple formation. Here's the proof:
-@felix
-var x = 1, neg 2;
-println ( sum x );
-@
-@expect
--1
-@
-There's another syntax for application, using
-operator dot:
-@felix
-println (1,2.neg).sum;
-@
-@expect
--1
-@
-As you can see, operator dot is reverse application
-and has a higher precedence than operator whitespace.
-This operator gives expressions and "OO" feel, and the
-left to right ordering of application is arguably more
-natural to programmers than mathematical notation.
+It may come as a surprise however, that the literal values
+we illustrate below, are also defined in the library,
+and not built in to the compiler. You can probably guess
+this is done in the grammar with complicated Scheme codes,
+and you'd be right!
 
-Felix provides yet another application operator:
-@felix
-println$ sum$ 1, neg 2;
-@
-@expect
--1
-@
-Operator dollar is a forward infix operator like whitespace
-but it has very low precedence and is right associative.
-I commonly write the {$} hard up against the left hand function
-name if the LHS is an identifier, which gives the appearance
-of a command where the {$} is part of the name.
+We're not ready to examine the codes or the exact rules,
+so we'll just present examples.
 
-Operator dollar was stolen from Haskell.
-
-In combination, these three operators make it possible
-to write many expressions without any parentheses.
-However there's one more which is useful for that:
+@h2 Type <code>int</code>
+This type is bound to the underlying C++ {int} type.
+It is a signed type with most of the operators C provides
+<em>except</em> for bit masking operations, which are
+representation dependent.
 
 @felix
-fun zero : 1 -> int = "0";
-println$ zero();
-println$ #zero;
+// type int = "int";
+var i1 : int = 42;
+var i2 : int = i1+1;
 @
-@expect
-0
-0
-@
-If the argument is () you can use the very high precedence
-operator hash. Operator hash is higher precedence  than operator
-dot. It gives the feel of a specially named value, which makes
-sense because pure functions of unit argument must always return
-the same value, that is, they're constant functions.
+And as you might guess, we also have negation {-}, infix
+{-}, {*}, {/}, {%} as in C. We also have shift operators
+{<<} and {>>} because these are simply multiplication or
+division by a power of two, and hence representation independent.
+Remember to put spaces around infix {-}!
 
-@h1 Call syntax
-Although we didn't tell you the proper syntax for a call is:
+We also have the comparisons {<}, {<=}, {>=}, {>}, {==} and {!=}
+as in C.
+
+@h2 Type <code>uint</code>
+This is an unsigned integer type bound to {unsigned int}.
+It provides the same operators as {int} an by fixing the
+representation to the usual power series we also define
+bitwise and {\&}, bitwise or {\|} bitwise exclusive or {\^}
+and complement {~}.
+
 @felix
-call println 1;
+var ui1 = 123u;
+var ui2 = 0xFF80u;
 @
-@expect
-1
-@
-However the operator {call} can be left out. Felix then sees
-application syntax. However Felix does not allow you to discard
-values the way C does. So if it sees a whitespace application which would
-discard a value if the LHS term of the application were a function,
-Felix assumes it is a procedure. This means you can do this:
+
+@h2 Type <code>double</code>
+Double precision float.
 @felix
-proc hello : 1 = '::std::cout<<"hello"<<::std::endl;'
-  requires header '#include <iostream>'
+// type double = "double";
+var d1 : double = 4.2;
+var d2 : double = d1 * 2.3E7;
+var d3 = sin d2 + log d2;
+@
+@h2 Type <code>string</code>
+C++ standard string type.
+@felix
+// type string = "::std::string";
+var s1 = "hello";
+var s2 = 'world';
+var newline = "\n";
+var s3 =
+  'Hello '
+  'World' newline
 ;
-call hello ();
-hello ();
-hello;
-call hello;
-@expect
-hello
-hello
-hello
-hello
-@
-All these four calls are equivalent. Eliding the trailing () is
-inspired by Pascal.
 
-There are some things resembling calls we will meet later.
+var manylines = 
+"""Poetry can
+in Felix be done""";
+@
+@h2 Type <code>char</code>
+@felix
+// type char = "char";
+var c1 = char "A";
+
+println$ str d1 + " " + str c1;
+@expect
+4.2 A
+@
+
+Strings follow Python. There is no char literal, but you can
+specify the first character of a string.
+

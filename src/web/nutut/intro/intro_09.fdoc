@@ -1,93 +1,112 @@
-@h1 Typesets
-Now that you know about polymorphism you might be tempted to write this:
+@h1 Application syntax 
+So far we've applied a function like in C.
 @felix
-  proc printline[T] : T = "::std::cout << $1 << ::std::endl;" 
-    requires header '#include <iostream>'
-  ;
+fun sum : int * int -> int = '$1+$2';
+fun neg : int -> int = '-$1';
+println ( sum (1,neg (2)) );
+@expect
+-1
+@
+However, parens in Felix simply provide grouping: functional
+style application does not require them:
+@felix
+println ( sum (1,neg 2) );
+@
+@expect
+-1
+@
+The parens around the {sum} argument are required.
+Hey, that's a typo you say! {sum} has two arguments!
 
-  printline 1;
-  printline "Hello";
-  printline 4.2;
+No it doesn't. {sum} has a single argument which
+is of the type of a cartesian product {int * int}.
+The parens are only required because operator
+whitespace, which is used for application, has
+a higher precedence than operator comma, which
+is used for tuple formation. Here's the proof:
+@felix
+var x = 1, neg 2;
+println ( sum x );
+@
+@expect
+-1
+@
+There's another syntax for application, using
+operator dot:
+@felix
+println (1,2.neg).sum;
+@
+@expect
+-1
+@
+As you can see, operator dot is reverse application
+and has a higher precedence than operator whitespace.
+This operator gives expressions and "OO" feel, and the
+left to right ordering of application is arguably more
+natural to programmers than mathematical notation.
+
+Felix provides yet another application operator:
+@felix
+println$ sum$ 1, neg 2;
+@
+@expect
+-1
+@
+Operator dollar is a forward infix operator like whitespace
+but it has very low precedence and is right associative.
+I commonly write the {$} hard up against the left hand function
+name if the LHS is an identifier, which gives the appearance
+of a command where the {$} is part of the name.
+
+Operator dollar was stolen from Haskell.
+
+In combination, these three operators make it possible
+to write many expressions without any parentheses.
+However there's one more which is useful for that:
+
+@felix
+fun zero : 1 -> int = "0";
+println$ zero();
+println$ #zero;
+@
+@expect
+0
+0
+@
+If the argument is () you can use the very high precedence
+operator hash. Operator hash is higher precedence  than operator
+dot. It gives the feel of a specially named value, which makes
+sense because pure functions of unit argument must always return
+the same value, that is, they're constant functions.
+
+@h1 Call syntax
+Although we didn't tell you the proper syntax for a call is:
+@felix
+call println 1;
+@
 @expect
 1
-Hello
-4.2
 @
-
-and indeed that would work! But what if C++ doesn't know how to 
-print your type? What if you had a C struct you imported
-into Felix that didn't have an {operator <<} defined?
-
-Again, your Felix code would compile because you told it the
-C++ code would work for all type {T}, but you lied, and the
-C++ compiler will find you out!
-
-Before I show you the solution, I want to give another motivating
-example:
+However the operator {call} can be left out. Felix then sees
+application syntax. However Felix does not allow you to discard
+values the way C does. So if it sees a whitespace application which would
+discard a value if the LHS term of the application were a function,
+Felix assumes it is a procedure. This means you can do this:
 @felix
-type myshort= "short";
-type myint = "int";
-type mylong = "long";
-
-type myushort= "unsigned short";
-type myuint = "unsigned int";
-type myulong = "unsigned long";
-
-type myfloat = "float";
-type mydouble = "double";
-
-fun + : myshort * myshort -> myshort = "$1+$2";
-fun + : myint * myint -> myint = "$1+$2";
-fun + : mylong * mylong -> myint = "$1+$2";
-fun + : myushort * myushort -> myushort = "$1+$2";
-fun + : myuint * myuint -> myuint = "$1+$2";
-fun + : myulong * myulong -> myulong = "$1+$2";
-fun + : myfloat * myfloat -> myfloat = "$1+$2";
-fun + : mydouble* mydouble -> mydouble = "$1+$2";
-@
-
-And that's just addition! Where's the macro processor??
-
-Well of course you're not just tempted to write:
-@felix
-fun +[T] : T * T -> T = "$1+$2";
-@
-you're more or less forced to: in practice you'd never maintain
-a set of such bindings effectively. There could be hundreds of
-lines of this code. The polymorphic function is so much easier.
-
-But it's wrong. How do we fix this?
-
-Here's the answer:
-@felix
-typedef myints = typesetof (myshort, myint, mylong);
-typedef myuints = typesetof (myushort, myuint, myulong);
-typedef myfloats = typesetof (myfloat, mydouble);
-typedef mynumbers = myints \cup myuints \cup myfloats;
-
-fun mymake [T in mynumbers] : int -> T = "int($1)";
-fun *[T in mynumbers] : T * T -> T = "$1*$2";
-proc printit[T in mynumbers] : T = "::std::cout<<$1<<::std::endl;";
-
-var xs = mymake[myshort] (42);
-var xi = mymake[myint] (42);
-var xl = mymake[mylong] (42);
-var xd = mymake[mydouble] (42);
-
-printit$ xs;
-printit$ xi;
-printit$ xl;
-printit$ xd;
+proc hello : 1 = '::std::cout<<"hello"<<::std::endl;'
+  requires header '#include <iostream>'
+;
+call hello ();
+hello ();
+hello;
+call hello;
 @expect
-42
-42
-42
-42
+hello
+hello
+hello
+hello
 @
+All these four calls are equivalent. Eliding the trailing () is
+inspired by Pascal.
 
-This is known as <em>constrained polymorphism</em>. 
-The entities {myints}, {myuints}, {myfloats}, and {mynumbers}
-are finite sets of concrete types. The setunion operator here
-is the TeX symbol spelled {\cup}.
-
-
+There are some things resembling calls we will meet later.
