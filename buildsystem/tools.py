@@ -27,8 +27,8 @@ def build(phase, felix):
       "flx_gramdoc",
       "flx_libcontents",
       "flx_libindex",
-      "rentut",
-      "mktutindex",
+      "flx_renumber",
+      "flx_mktutindex",
       "flx_perror",
       "flx_tangle"
       ]

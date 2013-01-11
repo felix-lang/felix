@@ -17,7 +17,7 @@ proc myprintln (x:myint)
   myprint (x);
   myendl();
 }
-myprintln (add (one,two));
+myprintln (myadd (one,two));
 @expect
 3
 @
@@ -35,7 +35,7 @@ and function and procedure bindings.
 For example:
 @felix
 fun mytwice (x:myint) => myadd (x,x);
-myprint (two);
+myprint (two); myendl();
 @expect
 2
 @
