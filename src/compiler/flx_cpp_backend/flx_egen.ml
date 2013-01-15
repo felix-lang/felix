@@ -126,9 +126,14 @@ let isid x =
     true
   with _ -> false
 
-let rec handle_get_n syms bsym_table rt ge' e t n ((e',t') as e2) =
+let rec handle_get_n syms bsym_table rt ge' e t n ((e',t') as arg) =
 (*
-print_endline ("Handling a get-n in egen, n=" ^ si n ^ ", e=" ^ sbe bsym_table (e,t) ^ " e2=" ^ sbe bsym_table e2);
+print_endline ("Handling a get-n in egen"^
+  "\n  Expression          e=" ^ sbe bsym_table (e,t) ^ 
+  "\n  Projection index:   n= " ^ si n ^ 
+  "\n  Projection argument a = " ^ sbe bsym_table arg ^
+  "\n"
+);
 *)
     let array_sum_offset_table = syms.array_sum_offset_table in
     let power_table = syms.power_table in
@@ -137,41 +142,66 @@ print_endline ("Handling a get-n in egen, n=" ^ si n ^ ", e=" ^ sbe bsym_table (
     match rtt' with
     | BTYP_tuple ls  -> 
 (*
-      print_endline "expr e2 has tuple type"; 
+      print_endline "expr arg has tuple type"; 
 *)
       if islinear_type bsym_table rtt' then begin
-        let sidx = Flx_ixgen.cal_symbolic_array_index bsym_table e2 in
+        let sidx = Flx_ixgen.cal_symbolic_array_index bsym_table arg in
         let cidx = Flx_ixgen.render_index bsym_table ge' array_sum_offset_table seq sidx in
         (* now calculate the projection: this is given by 
              idx / a % b
              where a = product of sizes of first n  terms (or 1 if n=0)
              and b = size of term n
+
+             Example:
+
+             type 3 * 4 * 5: i,j,k
+             encoding is 20i + 5j + k
+             decoding is:
+                 k = ijk / 1 % 5
+                 j = ijk / 5 % 4
+                 i = ijk / 20 % 3  [the %3 is not required here]
+
+           SO: to get the n'th projection, where n=0 is i, n=1 is j, n=2 is k,
+           numbering big endian digits left to right, we have to divide by
+           the product of sizes of all the terms to its right: 
+
+               size(n+1) * size(n+2) ... (size m) 
+          
+           where there are m digits. This is m - n - 1 terms.
+           Here n ranges from 0 to m - 1, m - n thus ranges from m - 0 = m to m - (m - 1) = 1
+           and so the number of terms ranges from m - 1 to 0
         *)
         assert (0 <= n && n < List.length ls);
         let rec aux ls i out = match ls with [] -> assert false | h :: t ->
            if i = 0 then out else aux t (i-1) (sizeof_linear_type bsym_table h * out)
         in 
-        let a = aux ls n 1 in
+        let a = aux (rev ls) (List.length ls - n - 1) 1 in
         let b = sizeof_linear_type bsym_table (List.nth ls n) in
+(*
         let apart = if a = 1 then cidx else ce_infix "/" cidx (ce_atom (si a)) in
         let result = if n = List.length ls - 1 then apart else ce_infix "%" apart (ce_atom (si b)) in
+*)
+        let result = ce_infix "%" (ce_infix "/" cidx (ce_atom (si a))) (ce_atom (si b)) in
+(*
+print_endline ("Result= " ^ string_of_cexpr result);
+*)
         result
       end
       else
-        ce_dot (ge' e2) ("mem_" ^ si n)
+        ce_dot (ge' arg) ("mem_" ^ si n)
     | BTYP_array (_,BTYP_unitsum _) ->
-      begin match e2 with
+      begin match arg with
       | BEXPR_tuple _,_ -> print_endline "Failed to slice a tuple!"
       | _ -> ()
       end;
-      ce_dot (ge' e2) ("data["^si n^"]")
+      ce_dot (ge' arg) ("data["^si n^"]")
     | BTYP_record (name,es) ->
       let field_name,_ =
         try nth es n
         with Not_found ->
           failwith "[flx_egen] Woops, index of non-existent struct field"
       in
-      ce_dot (ge' e2) (cid_of_flxid field_name)
+      ce_dot (ge' arg) (cid_of_flxid field_name)
 
     | BTYP_inst (i,_) ->
       begin match Flx_bsym_table.find_bbdcl bsym_table i with
@@ -182,10 +212,10 @@ print_endline ("Handling a get-n in egen, n=" ^ si n ^ ", e=" ^ sbe bsym_table (
           with _ ->
             failwith "Woops, index of non-existent struct field"
         in
-        ce_dot (ge' e2) (cid_of_flxid name)
+        ce_dot (ge' arg) (cid_of_flxid name)
 
       | _ -> failwith ("[flx_egen] Expr "^sbe bsym_table (e,t)^ " type " ^ sbt bsym_table t ^
-        " object " ^ sbe bsym_table e2 ^ " type " ^ sbt bsym_table t' ^ 
+        " object " ^ sbe bsym_table arg ^ " type " ^ sbt bsym_table t' ^ 
         " Instance of " ^string_of_int i^ " expected to be (c)struct")
       end
 
@@ -195,7 +225,7 @@ print_endline ("Handling a get-n in egen, n=" ^ si n ^ ", e=" ^ sbe bsym_table (
         with Not_found ->
           failwith "[flx_egen] Woops, index of non-existent struct field"
       in
-      ce_prefix "&" (ce_arrow (ge' e2) (cid_of_flxid field_name))
+      ce_prefix "&" (ce_arrow (ge' arg) (cid_of_flxid field_name))
 
     | BTYP_pointer (BTYP_inst (i,_)) ->
       begin match Flx_bsym_table.find_bbdcl bsym_table i with
@@ -206,23 +236,23 @@ print_endline ("Handling a get-n in egen, n=" ^ si n ^ ", e=" ^ sbe bsym_table (
           with _ ->
             failwith "Woops, index of non-existent struct field"
         in
-        ce_prefix "&" (ce_arrow (ge' e2) (cid_of_flxid name))
+        ce_prefix "&" (ce_arrow (ge' arg) (cid_of_flxid name))
 
       | _ -> failwith "[flx_egen] Instance expected to be (c)struct"
       end
 
     | BTYP_pointer (BTYP_array _) ->
-      ce_prefix "&" (ce_arrow (ge' e2) ("data["^si n^"]"))
+      ce_prefix "&" (ce_arrow (ge' arg) ("data["^si n^"]"))
 
     | BTYP_pointer (BTYP_tuple _) ->
-      ce_prefix "&" (ce_arrow (ge' e2) ("mem_" ^ si n))
+      ce_prefix "&" (ce_arrow (ge' arg) ("mem_" ^ si n))
 
     | BTYP_tuple_cons (t1,t2) ->
 (*
       print_endline ("Tuple cons, projection " ^ si n);
 *)
       (* NOTE: Won't work for compact linear types! *)
-      ce_dot (ge' e2) ("mem_" ^ si n)
+      ce_dot (ge' arg) ("mem_" ^ si n)
 
     | _ -> assert false (* ce_dot (ge' e) ("mem_" ^ si n) *)
 

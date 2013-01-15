@@ -58,6 +58,10 @@ print_endline ("Calsym " ^ sbe bsym_table idx^ ", type="^ sbt bsym_table idxt);
   let cax x = cal_symbolic_array_index bsym_table x in
   match idx,idxt with
   | (BEXPR_tuple es,_), BTYP_tuple ts  -> 
+    (*  we get  ((0 * sizeof typeof i + i) * sizeof typeof j + j ) * sizeof typeof k + k 
+        which is BIG ENDIAN. The sizeof i is eliminated by multiplying by 0.
+        Example 3 * 4 * 5, so i:3, j:4, k:5 -> ijk = ((0 * 3 + i) * 4 + j) * 5 + k = 20i + 5j + k
+     *)
     List.fold_left (fun acc (elt,t) -> add (mul acc  (`Int (sizeof_linear_type bsym_table t))) (cax elt)) (`Int 0)(List.combine es ts)
 
   | (BEXPR_tuple es,_), BTYP_array (t, BTYP_unitsum n)  -> 

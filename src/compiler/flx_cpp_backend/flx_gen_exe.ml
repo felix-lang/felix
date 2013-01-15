@@ -731,6 +731,9 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
     | BEXE_nop (_,s) -> "      //Nop: " ^ s ^ "\n"
 
     | BEXE_assign (sr,(_,lhst as e1),(_,rhst as e2)) ->
+(*
+print_endline "Assignment";
+*)
       let projoflinear = match e1 with
         | BEXPR_get_n ((BEXPR_case _,_),(_,(BTYP_tuple _ as t'))),_ 
         | BEXPR_get_n ((BEXPR_case _,_),(_,(BTYP_array (_,BTYP_unitsum _) as t'))),_ 
@@ -740,27 +743,21 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
       let t = tsub rhst in
       let comment = (if with_comments then "      //"^src_str^"\n" else "") in
       let assign_to_packed_tuple n j ts t' var = 
+(*
+print_endline "Assign to packed tuple";
+*)
           let rec aux1 ls i out = 
              match ls with [] -> assert false 
              | h :: t ->
                if i = 0 then out,h
                else aux1 t (i-1) (sizeof_linear_type bsym_table h * out)
           in 
-          let lo,elt = aux1 ts j 1 in
+          let lo,elt = aux1 (List.rev ts) (List.length ts - j - 1) 1 in
           let elt = sizeof_linear_type bsym_table elt in
 (*
 print_endline ("Type of variable is " ^ sbt bsym_table t');
 print_endline ("proj = " ^ si j^ ", Size of component = " ^ si elt ^ ", size of lower bit = " ^ si lo);
 *)
-          (* the formula is:
-             old low half is value mod lo
-             divide by lo * elt to save the top half and remove the elt and lo half
-             multiply by elt to make a space and add in the rhs
-             multiply by lo and add back the old low half
-             so:
-             
-              (value / (lo*elt) * elt + new) * lo + value % lo
-          *)
           let ci i = ce_atom (si i) in
           let celt = ci elt in
           let clo = ci lo in

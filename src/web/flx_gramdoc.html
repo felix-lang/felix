@@ -895,65 +895,65 @@
 0017:    <a href="/$src/lib/grammar/json.flxh#0017">x[sapplication_pri] := "json" "(" json_value ")"</a>
 <hr/><a href="/$src/lib/grammar/loops.flxh">loops.flxh</a>
 
-0002:  <a href="/$src/lib/grammar/loops.flxh#0002">syntax loops</a>
+0030:  <a href="/$src/lib/grammar/loops.flxh#0030">syntax loops</a>
            Primary looping contructs.
-0006:    <a href="/$src/lib/grammar/loops.flxh#0006">stmt := "break" sname</a>
+0034:    <a href="/$src/lib/grammar/loops.flxh#0034">stmt := "break" sname</a>
            Labelled break.
            Use to exit from the loop with the specified label.
-0011:    <a href="/$src/lib/grammar/loops.flxh#0011">stmt := "continue" sname</a>
+0039:    <a href="/$src/lib/grammar/loops.flxh#0039">stmt := "continue" sname</a>
            Labelled continue.
            Use to continue with the next iteration of the loop with the specified label.
-0015:    <a href="/$src/lib/grammar/loops.flxh#0015">stmt := "redo" sname</a>
+0043:    <a href="/$src/lib/grammar/loops.flxh#0043">stmt := "redo" sname</a>
            Labelled redo.
            Use to restart this iteration of the loop with the specified label.
-0019:    <a href="/$src/lib/grammar/loops.flxh#0019">optlabel := sname ":"</a>
+0047:    <a href="/$src/lib/grammar/loops.flxh#0047">optlabel := sname ":"</a>
            Syntax for a loop label.
            Use just before the loop.
-0022:    <a href="/$src/lib/grammar/loops.flxh#0022">optlabel := sepsilon</a>
+0050:    <a href="/$src/lib/grammar/loops.flxh#0050">optlabel := sepsilon</a>
            Loop labels aren't required.
-0025:    <a href="/$src/lib/grammar/loops.flxh#0025">stmt := optlabel "while" sexpr "do" sstatements "done"</a>
+0053:    <a href="/$src/lib/grammar/loops.flxh#0053">stmt := optlabel "while" sexpr "do" sstatements "done"</a>
            Standard while loop.
-0038:    <a href="/$src/lib/grammar/loops.flxh#0038">stmt := optlabel "until" sexpr "do" sstatements "done"</a>
+0066:    <a href="/$src/lib/grammar/loops.flxh#0066">stmt := optlabel "until" sexpr "do" sstatements "done"</a>
            Negated while loop.
-0060:    <a href="/$src/lib/grammar/loops.flxh#0060">stmt := optlabel "for" sname "in" sexpr "upto" sexpr "do" sstatements "done"</a>
+0088:    <a href="/$src/lib/grammar/loops.flxh#0088">stmt := optlabel "for" sname "in" sexpr "upto" sexpr "do" sstatements "done"</a>
            Numeric upwards for loop, existing control variable.
            Ranges are inclusive. This is essential in case
            the loops if over the complete domain of the control variable type.
            The start and end argument types and the declared control variable type must be the same.
-0088:    <a href="/$src/lib/grammar/loops.flxh#0088">stmt := optlabel "for" "var" sname ":" sexpr "in" sexpr "upto" sexpr "do" sstatements "done"</a>
+0116:    <a href="/$src/lib/grammar/loops.flxh#0116">stmt := optlabel "for" "var" sname ":" sexpr "in" sexpr "upto" sexpr "do" sstatements "done"</a>
            Numeric upwards for loop, also declares the control variable with type.
            The control variable is local to the enclosing context,
            NOT the loop, so it can be inspected in code following the loop.
            Ranges are inclusive. This is essential in case
            the loops if over the complete domain of the control variable type.
            The start and end argument types and the declared control variable type must be the same.
-0116:    <a href="/$src/lib/grammar/loops.flxh#0116">stmt := optlabel "for" "var" sname "in" sexpr "upto" sexpr "do" sstatements "done"</a>
+0144:    <a href="/$src/lib/grammar/loops.flxh#0144">stmt := optlabel "for" "var" sname "in" sexpr "upto" sexpr "do" sstatements "done"</a>
            Numeric upwards for loop, also declares the control variable.
            The control variable is local to the enclosing context,
            NOT the loop, so it can be inspected in code following the loop.
            Ranges are inclusive. This is essential in case
            the loops if over the complete domain of the control variable type.
            The start and end argument types must be the same.
-0143:    <a href="/$src/lib/grammar/loops.flxh#0143">stmt := optlabel "for" sname "in" sexpr "downto" sexpr "do" sstatements "done"</a>
+0171:    <a href="/$src/lib/grammar/loops.flxh#0171">stmt := optlabel "for" sname "in" sexpr "downto" sexpr "do" sstatements "done"</a>
            Numeric downwards for loop, existing control variable.
            Ranges are inclusive. This is essential in case
            the loops if over the complete domain of the control variable type.
            The start and end argument types and the declared control variable type must be the same.
-0171:    <a href="/$src/lib/grammar/loops.flxh#0171">stmt := optlabel "for" "var" sname ":" sexpr "in" sexpr "downto" sexpr "do" sstatements "done"</a>
+0199:    <a href="/$src/lib/grammar/loops.flxh#0199">stmt := optlabel "for" "var" sname ":" sexpr "in" sexpr "downto" sexpr "do" sstatements "done"</a>
            Numeric downwards for loop, also declares the control variable with type.
            The control variable is local to the enclosing context,
            NOT the loop, so it can be inspected in code following the loop.
            Ranges are inclusive. This is essential in case
            the loops if over the complete domain of the control variable type.
            The start and end argument types and the declared control variable type must be the same.
-0199:    <a href="/$src/lib/grammar/loops.flxh#0199">stmt := optlabel "for" "var" sname "in" sexpr "downto" sexpr "do" sstatements "done"</a>
+0227:    <a href="/$src/lib/grammar/loops.flxh#0227">stmt := optlabel "for" "var" sname "in" sexpr "downto" sexpr "do" sstatements "done"</a>
            Numeric downwards for loop, also declares the control variable.
            The control variable is local to the enclosing context,
            NOT the loop, so it can be inspected in code following the loop.
            Ranges are inclusive. This is essential in case
            the loops if over the complete domain of the control variable type.
            The start and end argument types and the declared control variable type must be the same.
-0236:    <a href="/$src/lib/grammar/loops.flxh#0236">stmt := optlabel "for" sname "in" sexpr "do" sstatements "done"</a>
+0264:    <a href="/$src/lib/grammar/loops.flxh#0264">stmt := optlabel "for" sname "in" sexpr "do" sstatements "done"</a>
            Basic stream consumer.
            The second argument must either be a function of type:
            unit -> opt[T]
@@ -966,7 +966,7 @@
            control variable,
            4. the loop body is executed, and
            6. we go back to step 1.
-0278:    <a href="/$src/lib/grammar/loops.flxh#0278">stmt := optlabel "match" spattern "in" sexpr "do" sstatements "done"</a>
+0306:    <a href="/$src/lib/grammar/loops.flxh#0306">stmt := optlabel "match" spattern "in" sexpr "do" sstatements "done"</a>
            Upmarket stream consumer.
            The second argument must either be a function of type:
            unit -> opt[T]

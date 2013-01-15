@@ -1,3 +1,31 @@
+  SCHEME """
+    (define (notnumeric s) (fold_left notdigit #f (string->list s)))
+  """;
+
+  SCHEME """
+    (define (check-label first last term) 
+      (if 
+        (notnumeric first) 
+        (if 
+          (equal? first last) 
+          term 
+          (begin   
+            (display (string-append first " != " last " giveup\n"))
+            (giveup)
+          )
+        )
+        (if 
+          (equal? "" last) 
+          term
+          (begin   
+            (display (string-append first " != " last " giveup\n"))
+            (giveup)
+          )
+        )
+      )
+    )
+    """;
+   
 //$ Primary looping contructs.
 syntax loops
 {
