@@ -135,60 +135,18 @@ print_endline ("Handling a get-n in egen"^
   "\n"
 );
 *)
-    let array_sum_offset_table = syms.array_sum_offset_table in
-    let power_table = syms.power_table in
-    let seq = syms.counter in
     let rtt' = rt t' in
     match rtt' with
     | BTYP_tuple ls  -> 
 (*
       print_endline "expr arg has tuple type"; 
 *)
-      if islinear_type bsym_table rtt' then begin
-        let sidx = Flx_ixgen.cal_symbolic_array_index bsym_table arg in
-        let cidx = Flx_ixgen.render_index bsym_table ge' array_sum_offset_table seq sidx in
-        (* now calculate the projection: this is given by 
-             idx / a % b
-             where a = product of sizes of first n  terms (or 1 if n=0)
-             and b = size of term n
-
-             Example:
-
-             type 3 * 4 * 5: i,j,k
-             encoding is 20i + 5j + k
-             decoding is:
-                 k = ijk / 1 % 5
-                 j = ijk / 5 % 4
-                 i = ijk / 20 % 3  [the %3 is not required here]
-
-           SO: to get the n'th projection, where n=0 is i, n=1 is j, n=2 is k,
-           numbering big endian digits left to right, we have to divide by
-           the product of sizes of all the terms to its right: 
-
-               size(n+1) * size(n+2) ... (size m) 
-          
-           where there are m digits. This is m - n - 1 terms.
-           Here n ranges from 0 to m - 1, m - n thus ranges from m - 0 = m to m - (m - 1) = 1
-           and so the number of terms ranges from m - 1 to 0
-        *)
-        assert (0 <= n && n < List.length ls);
-        let rec aux ls i out = match ls with [] -> assert false | h :: t ->
-           if i = 0 then out else aux t (i-1) (sizeof_linear_type bsym_table h * out)
-        in 
-        let a = aux (rev ls) (List.length ls - n - 1) 1 in
-        let b = sizeof_linear_type bsym_table (List.nth ls n) in
-(*
-        let apart = if a = 1 then cidx else ce_infix "/" cidx (ce_atom (si a)) in
-        let result = if n = List.length ls - 1 then apart else ce_infix "%" apart (ce_atom (si b)) in
-*)
-        let result = ce_infix "%" (ce_infix "/" cidx (ce_atom (si a))) (ce_atom (si b)) in
-(*
-print_endline ("Result= " ^ string_of_cexpr result);
-*)
-        result
-      end
+      if islinear_type bsym_table rtt' 
+      then 
+        Flx_ixgen.handle_get_n syms bsym_table ls rt ge' e t n arg
       else
         ce_dot (ge' arg) ("mem_" ^ si n)
+
     | BTYP_array (_,BTYP_unitsum _) ->
       begin match arg with
       | BEXPR_tuple _,_ -> print_endline "Failed to slice a tuple!"
@@ -347,7 +305,6 @@ and gen_expr'
   let our_level = length our_display in
   let rt t = beta_reduce "flx_egen4" syms.Flx_mtypes2.counter bsym_table sr (tsubst this_vs this_ts t) in
   let array_sum_offset_table = syms.array_sum_offset_table in
-  let power_table = syms.power_table in
   let seq = syms.counter in
   let t = rt t in
   match t with
@@ -383,50 +340,11 @@ and gen_expr'
 (* linear index of linear  type .. handle directly *)
   | BEXPR_get_n ((_,idxt) as idx, (_,(BTYP_array (v,aixt) as at) as a)) 
     when islinear_type bsym_table at ->
-(*
-    print_endline "Projection of linear type!";
-*)
-    assert (idxt = aixt);
-    assert (islinear_type bsym_table v);
-    let array_value_size = sizeof_linear_type bsym_table v in
-
-    let sidx = Flx_ixgen.cal_symbolic_array_index bsym_table idx in
-    let sarr = Flx_ixgen.cal_symbolic_array_index bsym_table a in
-(*
-print_endline ("Symbolic index = " ^ Flx_ixgen.print_index bsym_table sidx );
-print_endline ("Symbolic array = " ^ Flx_ixgen.print_index bsym_table sarr );
-*)
-    let cidx = Flx_ixgen.render_index bsym_table ge' array_sum_offset_table seq sidx in
-(*
-print_endline ("rendered lineralised index .. C index = " ^ string_of_cexpr cidx);
-*)
-    let carr = Flx_ixgen.render_index bsym_table ge' array_sum_offset_table seq sarr in
-    let ipow = Flx_ixgen.get_power_table bsym_table power_table array_value_size in
-    let cdiv = ce_array (ce_atom ipow) cidx  in
-    let result = ce_infix "%" (ce_infix "/" carr cdiv) (ce_atom (si array_value_size)) in
-    result
+    Flx_ixgen.handle_get_n_array_clt syms bsym_table ge' idx idxt v aixt at a
 
 (* Ok, the value type isn't linear, just linearise the index *)
   | BEXPR_get_n ((_,idxt) as idx, (_,(BTYP_array (_,aixt) as at) as a)) ->
-(*
-print_endline ("Get n .. array " ^ sbe bsym_table a);
-print_endline ("array type " ^ sbt bsym_table at);
-*)
-    assert (idxt = aixt); 
-(*
-print_endline ("index type = " ^ sbt bsym_table idxt );
-print_endline ("index value = " ^ sbe bsym_table idx );
-*)
-    let sidx = Flx_ixgen.cal_symbolic_array_index bsym_table idx in
-(*
-print_endline ("Symbolic index = " ^ Flx_ixgen.print_index bsym_table sidx );
-*)
-    let cidx = Flx_ixgen.render_index bsym_table ge' array_sum_offset_table seq sidx in
-(*
-print_endline ("rendered lineralised index .. C index = " ^ string_of_cexpr cidx);
-*)
-    ce_array (ce_dot (ge' a) "data") cidx 
-
+    Flx_ixgen.handle_get_n_array_nonclt syms bsym_table ge' idx idxt aixt at a
 
 (* ordinary index .. *)
   | BEXPR_get_n ((BEXPR_case (n,_),_),(e',t' as e2)) ->

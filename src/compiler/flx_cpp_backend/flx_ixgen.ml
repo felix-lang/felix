@@ -250,4 +250,139 @@ let rec render_index bsym_table ge' array_sum_offset_table seq idx =
      aux 0 ts
  
 
+let assign_to_packed_tuple bsym_table ge' ge sr e2 n j ts t' var = 
+(*
+print_endline "Assign to packed tuple";
+*)
+    let rec aux1 ls i out = 
+       match ls with [] -> assert false 
+       | h :: t ->
+         if i = 0 then out,h
+         else aux1 t (i-1) (sizeof_linear_type bsym_table h * out)
+    in 
+    let lo,elt = aux1 (List.rev ts) (List.length ts - j - 1) 1 in
+    let elt = sizeof_linear_type bsym_table elt in
+(*
+print_endline ("Type of variable is " ^ sbt bsym_table t');
+print_endline ("proj = " ^ si j^ ", Size of component = " ^ si elt ^ ", size of lower bit = " ^ si lo);
+*)
+    let ci i = ce_atom (si i) in
+    let celt = ci elt in
+    let clo = ci lo in
+    let clomelt = ci (lo * elt) in
+    let ad x y = ce_infix "+" x y in
+    let di x y = ce_infix "/" x y in
+    let mu x y = ce_infix "*" x y in
+    let mo x y = ce_infix "%" x y in
+    let lhs = ge' sr var in
+    let rhs = ge' sr e2 in
+    let nuval =  ad (mu (ad (mu (di lhs clomelt) celt) rhs) clo) (mo lhs clo) in
+    let cnuval = string_of_cexpr nuval in
+(*
+    print_endline ("Formula = " ^ cnuval);
+*)
+    ge sr var ^ " = " ^ cnuval ^ "; //assign to packed tuple\n"
+
+(* Checks LHS of assignment for projection of compact linear type *)
+let projoflinear bsym_table e = match e with
+  | BEXPR_get_n ((BEXPR_case _,_),(_,(BTYP_tuple _ as t'))),_ 
+  | BEXPR_get_n ((BEXPR_case _,_),(_,(BTYP_array (_,BTYP_unitsum _) as t'))),_ 
+    when islinear_type bsym_table t' -> true
+  | _ -> false
+
+
+let handle_get_n (syms:Flx_mtypes2.sym_state_t) bsym_table ls rt ge' e t n ((e',t') as arg) =
+  let seq = syms.Flx_mtypes2.counter in
+  let array_sum_offset_table = syms.Flx_mtypes2.array_sum_offset_table in
+
+  let sidx = cal_symbolic_array_index bsym_table arg in
+  let cidx = render_index bsym_table ge' array_sum_offset_table seq sidx in
+        (* now calculate the projection: this is given by 
+             idx / a % b
+             where a = product of sizes of first n  terms (or 1 if n=0)
+             and b = size of term n
+
+             Example:
+
+             type 3 * 4 * 5: i,j,k
+             encoding is 20i + 5j + k
+             decoding is:
+                 k = ijk / 1 % 5
+                 j = ijk / 5 % 4
+                 i = ijk / 20 % 3  [the %3 is not required here]
+
+           SO: to get the n'th projection, where n=0 is i, n=1 is j, n=2 is k,
+           numbering big endian digits left to right, we have to divide by
+           the product of sizes of all the terms to its right: 
+
+               size(n+1) * size(n+2) ... (size m) 
+          
+           where there are m digits. This is m - n - 1 terms.
+           Here n ranges from 0 to m - 1, m - n thus ranges from m - 0 = m to m - (m - 1) = 1
+           and so the number of terms ranges from m - 1 to 0
+        *)
+  assert (0 <= n && n < List.length ls);
+  let rec aux ls i out = match ls with [] -> assert false | h :: t ->
+    if i = 0 then out else aux t (i-1) (sizeof_linear_type bsym_table h * out)
+  in 
+  let a = aux (List.rev ls) (List.length ls - n - 1) 1 in
+  let b = sizeof_linear_type bsym_table (List.nth ls n) in
+(*
+        let apart = if a = 1 then cidx else ce_infix "/" cidx (ce_atom (si a)) in
+        let result = if n = List.length ls - 1 then apart else ce_infix "%" apart (ce_atom (si b)) in
+*)
+  let result = ce_infix "%" (ce_infix "/" cidx (ce_atom (si a))) (ce_atom (si b)) in
+  result
+
+(* at is known to be a compact linear type *)
+let handle_get_n_array_clt syms bsym_table ge' idx idxt v aixt at a =
+  let seq = syms.Flx_mtypes2.counter in
+  let array_sum_offset_table = syms.Flx_mtypes2.array_sum_offset_table in
+  let power_table = syms.Flx_mtypes2.power_table in
+(*
+    print_endline "Projection of linear type!";
+*)
+    assert (idxt = aixt);
+    assert (islinear_type bsym_table v);
+    let array_value_size = sizeof_linear_type bsym_table v in
+
+    let sidx = cal_symbolic_array_index bsym_table idx in
+    let sarr = cal_symbolic_array_index bsym_table a in
+(*
+print_endline ("Symbolic index = " ^ Flx_ixgen.print_index bsym_table sidx );
+print_endline ("Symbolic array = " ^ Flx_ixgen.print_index bsym_table sarr );
+*)
+    let cidx = render_index bsym_table ge' array_sum_offset_table seq sidx in
+(*
+print_endline ("rendered lineralised index .. C index = " ^ string_of_cexpr cidx);
+*)
+    let carr = render_index bsym_table ge' array_sum_offset_table seq sarr in
+    let ipow = get_power_table bsym_table power_table array_value_size in
+    let cdiv = ce_array (ce_atom ipow) cidx  in
+    let result = ce_infix "%" (ce_infix "/" carr cdiv) (ce_atom (si array_value_size)) in
+    result
+
+(* at is known NOT to be a compact linear type (the index is though) *)
+let handle_get_n_array_nonclt syms bsym_table ge' idx idxt aixt at a =
+  let seq = syms.Flx_mtypes2.counter in
+  let array_sum_offset_table = syms.Flx_mtypes2.array_sum_offset_table in
+(*
+print_endline ("Get n .. array " ^ sbe bsym_table a);
+print_endline ("array type " ^ sbt bsym_table at);
+*)
+    assert (idxt = aixt); 
+(*
+print_endline ("index type = " ^ sbt bsym_table idxt );
+print_endline ("index value = " ^ sbe bsym_table idx );
+*)
+    let sidx = cal_symbolic_array_index bsym_table idx in
+(*
+print_endline ("Symbolic index = " ^ Flx_ixgen.print_index bsym_table sidx );
+*)
+    let cidx = render_index bsym_table ge' array_sum_offset_table seq sidx in
+(*
+print_endline ("rendered lineralised index .. C index = " ^ string_of_cexpr cidx);
+*)
+    ce_array (ce_dot (ge' a) "data") cidx 
+
 

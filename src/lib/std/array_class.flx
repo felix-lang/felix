@@ -19,7 +19,7 @@ class ArrayValue[t,v]
   }
 
   //$ Callback based value iterator.
-  proc iter (_f:v->void) (x:t) {
+  virtual proc iter (_f:v->void) (x:t) {
     val n = x.len;
     if n > 0uz do
       for var i:size in 0uz upto n - 1uz do
@@ -30,7 +30,7 @@ class ArrayValue[t,v]
 
   //$ Callback based index and value iterator.
   //$ Callback f index value.
-  proc iiter (_f:size -> v->void) (x:t) {
+  virtual proc iiter (_f:size -> v->void) (x:t) {
     val n = x.len;
     if n > 0uz do
       for var i:size in 0uz upto n - 1uz do
@@ -55,7 +55,7 @@ class ArrayValue[t,v]
   inherit Streamable[t,v];
 
   //$ Traditional left fold.
-  fun fold_left[u] (_f:u->v->u) (init:u) (x:t): u = {
+  virtual fun fold_left[u] (_f:u->v->u) (init:u) (x:t): u = {
     var o = init;
     val n = x.len;
     if n > 0uz do
@@ -67,7 +67,7 @@ class ArrayValue[t,v]
   }
 
   //$ Traditional right fold.
-  fun fold_right[u] (_f:v->u->u) (x:t) (init:u): u = {
+  virtual fun fold_right[u] (_f:v->u->u) (x:t) (init:u): u = {
     var o = init;
     val n = x.len;
     if n > 0uz do
@@ -81,7 +81,7 @@ class ArrayValue[t,v]
   // map: can't be implemented easily because constructor required for result
 
   //$ Membership by predicate.
-  fun mem(pred:v->bool) (x:t): bool = {
+  virtual fun mem(pred:v->bool) (x:t): bool = {
     val n = x.len;
     if n > 0uz do
       for var i:size in 0uz upto n  - 1uz do
@@ -94,7 +94,7 @@ class ArrayValue[t,v]
   }
 
   //$ Membership by relation to given value. 
-  fun mem[u] (rel:v*u->bool) (x:t) (e:u): bool =>
+  virtual fun mem[u] (rel:v*u->bool) (x:t) (e:u): bool =>
     mem (fun (i:v) => rel(i, e)) x
   ;
 
@@ -105,7 +105,7 @@ class ArrayValue[t,v]
   }
 
   //$ Searching for value satisfying relation to given value.
-  fun find (rel:v*v->bool) (x:t) (e:v): opt[v] = {
+  virtual fun find (rel:v*v->bool) (x:t) (e:v): opt[v] = {
     val n = x.len;
     if n > 0uz do
       for var i:size in 0uz upto n - 1uz do
@@ -119,7 +119,7 @@ class ArrayValue[t,v]
   }
 
   //$ Searching for value satisfying predicate.
-  fun find(pred:v->bool) (x:t): opt[v] = {
+  virtual fun find(pred:v->bool) (x:t): opt[v] = {
     val n = x.len;
     if  n > 0uz do 
       for var i:size in 0uz upto n - 1uz do

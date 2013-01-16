@@ -129,15 +129,59 @@ open class List
     return aux Empty[T];
   }
 
-  //$ Return umber of elements in a list.
-  pure fun len[T] (x:list[T]) = {
-    fun aux (acc:size) (x:list[T]) =>
-      match x with
-      | Empty => acc
-      | Cons (_,?t) => aux (acc + 1uz) t
-      endmatch
+  //$ Contrue a list as an array value
+  instance[T] ArrayValue[list[T],T] {
+
+    //$ Return umber of elements in a list.
+    pure fun len (x:list[T]) = {
+      fun aux (acc:size) (x:list[T]) =>
+        match x with
+        | Empty => acc
+        | Cons (_,?t) => aux (acc + 1uz) t
+        endmatch
+      ;
+      return aux 0uz x;
+    }
+
+    //$ get n'th element
+    pure fun unsafe_get: list[T] * size -> T =
+      | Cons (?h,_), 0uz => h
+      | Cons (_,?t), ?i => unsafe_get (t, i - 1uz)
     ;
-    return aux 0uz x;
+
+    //$ Apply a procedure to each element of a list.
+    proc iter (_f:T->void) (x:list[T]) {
+      match x with
+      | Empty[T] => {}
+      | Cons[T] (?h,?t) => { _f h; iter _f t; }
+      endmatch
+      ;
+    }
+
+    //$ Traditional left fold over list (tail rec).
+    fun fold_left[U] (_f:U->T->U) (init:U) (x:list[T]):U =
+    {
+      fun aux (init:U) (x:list[T]):U =>
+        match x with
+        | Empty[T] => init
+        | Cons[T] (?h,?t) => aux (_f init h) t
+        endmatch
+      ;
+      return aux init x;
+    }
+
+    //$ Right fold over list (not tail rec!).
+    fun fold_right[U] (_f:T->U->U) (x:list[T]) (init:U):U =
+    {
+      fun aux (x:list[T]) (init:U):U =>
+        match x with
+        | Empty[T] => init
+        | Cons[T] (?h,?t) => _f h (aux t init)
+        endmatch
+      ;
+      return aux x init;
+    }
+
   }
 
   //$ Test if a list is empty.
@@ -186,40 +230,6 @@ open class List
     }
     return aux x Empty[T];
   }
-
-  //$ Apply a procedure to each element of a list.
-  proc iter[T] (_f:T->void) (x:list[T]) {
-    match x with
-    | Empty[T] => {}
-    | Cons[T] (?h,?t) => { _f h; iter _f t; }
-    endmatch
-    ;
-  }
-
-  //$ Traditional left fold over list (tail rec).
-  fun fold_left[T,U] (_f:U->T->U) (init:U) (x:list[T]):U =
-  {
-    fun aux (init:U) (x:list[T]):U =>
-      match x with
-      | Empty[T] => init
-      | Cons[T] (?h,?t) => aux (_f init h) t
-      endmatch
-    ;
-    return aux init x;
-  }
-
-  //$ Right fold over list (not tail rec!).
-  fun fold_right[T,U] (_f:T->U->U) (x:list[T]) (init:U):U =
-  {
-    fun aux (x:list[T]) (init:U):U =>
-      match x with
-      | Empty[T] => init
-      | Cons[T] (?h,?t) => _f h (aux t init)
-      endmatch
-    ;
-    return aux x init;
-  }
-
   //$ Zip two lists into a list of pairs.
   //$ Zips to length of shortest list.
   fun zip2[T1,T2] (l1: list[T1]) (l2: list[T2]) : list[T1 * T2] = 
@@ -474,6 +484,7 @@ open class List
 
   inherit [T with Str[T]] Str[list[T]];
   inherit [T with Eq[T]] Set[list[T],T];
+  inherit[T] ArrayValue[list[T],T];
 
 }
 //open [T with Str[T]] Str[list[T]];
