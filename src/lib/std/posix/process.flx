@@ -4,7 +4,7 @@ class PosixProcess {
   gen popen_in: string -> Cstdio::ifile = 'popen($1.c_str(), "r")';
   gen pclose: Cstdio::ifile -> process_status_t = "pclose($1)";
 
-  type process_status_t = "int";
+  type process_status_t = "int" requires Posix_headers::sys_wait_h;
   ctor int:process_status_t = "$1";
   ctor process_status_t : int = "$1";
 
