@@ -1,5 +1,9 @@
 class Rtti {
+
+  //$ The type of the collector.
   type collector_t = "::flx::gc::generic::collector_t*";
+
+  //$ The type of an RTTI record.
   type gc_shape_t = "::flx::gc::generic::gc_shape_t*";
   fun isNULL: gc_shape_t -> bool = "$1==0";
   typedef gc_shape_flags_t = uint;
@@ -8,23 +12,50 @@ class Rtti {
     val gc_flags_persistent = 2;
     val gc_flags_conservative = 4;
 
+  //$ The type of a finalisation function.
   typedef gc_finaliser_t = collector_t * address --> void;
 
+  //$ Iterator to find the next shape after a given one.
   fun next_shape: gc_shape_t -> gc_shape_t = "$1->next_shape";
-  fun cname: gc_shape_t -> &char = "$1->cname";
+
+  //$ The C++ name of the Felix type.
+  fun cname: gc_shape_t -> +char = "$1->cname";
+
+  //$ The static number of elements in an array type.
+  //$ Note this is not the size of a varray!
   fun count: gc_shape_t -> size = "$1->size";
+
+  //$ Number of bytes in the object.
   fun amt: gc_shape_t -> size = "$1->amt";
+
+  //$ The finaliser function.
   fun finaliser: gc_shape_t -> &gc_finaliser_t  = "$1->finaliser";
+
+  //$ The number of pointers in the base type.
+  //$ If the type is an array that's the element type.
   fun n_offsets: gc_shape_t -> size = "$1->n_offsets";
+
+  //$ Pointer to the offset table.
   fun offsets: gc_shape_t -> &size = "$1->offsets";
+
+  //$ Flags.
   fun flags: gc_shape_t -> gc_shape_flags_t = "$1->flags";
 
+  //$ Global head of the compiled shape list.
+  //$ This is actually the first type, since they're linked together.
   fun shape_list_head : unit -> gc_shape_t = "PTF shape_list_head";
 
+  //$ C++ type_info for the type.
   type type_info = "::std::type_info" requires header "#include <typeinfo>";
+
+  //$ C++ source name of the type.
   fun name : type_info -> string = "::std::string($1.name())";
+
+  //$ C++ Type_info of a type.
   const typeid[T]: type_info = "typeid(?1)";
 
+  // PLATFORM DEPENDENT, REQUIRES cxxabi.h.
+  // Only sure to work for gcc.
   private proc _gxx_demangle: string * &string = """{
     int status;
     char *tmp=abi::__cxa_demangle($1.c_str(), 0,0, &status);
@@ -34,6 +65,7 @@ class Rtti {
     }
   """ requires header "#include <cxxabi.h>";
 
+  //$ For gcc only, the C++ name a mangled name represents.
   fun gxx_demangle(s:string) :string = 
   {
     var r: string;
@@ -55,6 +87,17 @@ class Rtti {
     *$1 = p;
     """ requires property "needs_gc";
 
+  //$ Put a new shape record into the global list.
+  //$ This routine constructs a new shape record on the heap.
+  //$ It fills in some of the data based on the type.
+  //$ It links the new record into the shape list.
+  //$ Then it stores the shape at the user specified address.
+  //$ Since the shape is represented in Felix by a pointer,
+  //$ subsequent modifications carry through to the linked shape object.
+  //$ This routine is only useful for adding a shape record for a statically
+  //$ known type: that's useful because not all statically known types get
+  //$ shape records: the compiler only generates them if the shape is
+  //$ required because an object of that type is allocated on the heap.
   gen link_shape[T]()= { var p: gc_shape_t; _link_shape[T] (&p); return p; }
 }
 

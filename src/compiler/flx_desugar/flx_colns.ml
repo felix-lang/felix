@@ -55,6 +55,82 @@ let rec render path f =
     !res
   else [f]
 
+(* NOTE USED DID NOT WORK RIGHT.
+
+this is the same idea as render routine,
+except scans for #include files, recursively.
+The #include is left in the target, the parser just
+skips over these. The syntax is a hack:
+  
+#include "filename"
+
+the # in column 1.
+
+The inclusion is done with auto-imports, before the main
+file, no matter where the #include is written.
+
+*)
+(*
+let prefix p s = 
+  String.length p <= String.length s &&
+  p = String.sub s 0 (String.length p)
+
+let pick_includes path scan_file =
+  if String.length scan_file < 1 then failwith "Empty #include filename";
+  let located_scan_file = Flx_filesys.find_file ~include_dirs:path scan_file in
+  let dirname = Filename.dirname located_scan_file in
+  let f = open_in located_scan_file in
+  let res = ref [] in
+  try
+    let rec aux () =
+      let line = input_line f in
+      if prefix "#include " line then begin
+        let n = String.length line in
+        let k = ref 9 in
+        (* skip white space *)
+        while !k < n && line.[!k]==' ' do incr k done;
+        if !k >= n then failwith ("Malformed #include line: "^ line);
+        if line.[!k] != '"' then failwith ("Missing \" mark: " ^ line);
+        incr k;
+        let start = !k in
+        while !k < n && line.[!k] != '"' do incr k done;
+        if line.[!k] != '"' then failwith ("Missing \" mark: " ^ line);
+        let include_file = String.sub line start (!k - start) in
+        (*
+        print_endline ("Master file: " ^ located_scan_file);
+        print_endline ("DEBUG: #include '" ^ include_file ^ "'");
+        print_endline ("PATH=" ^ String.concat ", " path);
+        print_endline ("Directory of containing file is " ^ dirname);
+        *)
+        let located = 
+          if prefix "./" include_file then
+            let trial = Filename.concat
+              dirname  
+               (Flx_filesys.unix2native (String.sub include_file 2 (String.length include_file - 2)))
+            in
+            if not (Sys.file_exists trial) then 
+              failwith ("#include file " ^ include_file ^ " rendered to " ^trial ^ "  not found");
+            trial 
+          else
+            Flx_filesys.find_file ~include_dirs:path include_file 
+        in
+        (* 
+        print_endline ("DEBUG: #include '" ^ include_file ^ "' located=" ^ located);
+        *)
+        if not (List.mem include_file (!res)) then
+        begin
+          res := include_file :: !res
+        end
+      end
+      ;
+      aux ()
+    in 
+    aux ()
+  with End_of_file ->
+    close_in f;
+    !res
+
+*)
 
 (* This routine does all the nasty work of trying to figure out
 where a file is, and if there is a viable cached parse of it.

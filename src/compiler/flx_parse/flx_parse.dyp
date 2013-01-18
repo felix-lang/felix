@@ -196,6 +196,14 @@ main lexer =
      lexbuf
   }
 
+  /* just drop #include directives, a special preprocessor
+     handles that
+  */
+  "#include" not_newline * (newline | eof) -> {
+      Flx_parse_srcref.incr_lineno lexbuf
+  }
+
+
  "/*" -> { parse_C_comment 1 lexbuf }
 
  digit+ -> INTEGER {

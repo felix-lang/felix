@@ -1,3 +1,10 @@
+// Synchronous fibres and channels scheduler.
 include "std/felix/sync";
+
+// Convert Felix identifiers to legal C identifiers.
 include "std/felix/cident";
+
+// run time type information
+include "std/felix/rtti";
+
 

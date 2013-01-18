@@ -64,9 +64,6 @@ include "std/forkjoin";
 //memory management
 include "std/gc";
 
-// run time type information
-include "std/rtti";
-
 // I/O
 include "std/io/__init__";
 include "std/filename";

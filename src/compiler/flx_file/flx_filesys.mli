@@ -1,5 +1,7 @@
 (** {6 System dependent path handling. } *)
 
+val unix2native : string -> string
+
 (** For search functions the filename to search for must be in Unix format,
 whilst the include file list members must be in native file format. The
 functions return native filenames in all cases.
