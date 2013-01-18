@@ -1,6 +1,0 @@
-Name: impl_specific
-Description: BSD implementation specific dependencies for Felix core runtime support
-provides_dlib: -lpthread
-provides_slib: -lpthread
-includes: <sys/wait.h>
-
