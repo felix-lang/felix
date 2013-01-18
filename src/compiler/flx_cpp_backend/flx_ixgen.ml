@@ -339,6 +339,10 @@ let handle_get_n_array_clt syms bsym_table ge' idx idxt v aixt at a =
 (*
 print_endline "handle_get_n_array_clt";
 *)
+  let array_len = Flx_btype.sizeof_linear_type bsym_table aixt in
+(*
+print_endline ("Array len = " ^ si array_len);
+*)
   let seq = syms.Flx_mtypes2.counter in
   let array_sum_offset_table = syms.Flx_mtypes2.array_sum_offset_table in
   let power_table = syms.Flx_mtypes2.power_table in
@@ -348,7 +352,9 @@ print_endline "handle_get_n_array_clt";
     assert (idxt = aixt);
     assert (islinear_type bsym_table v);
     let array_value_size = sizeof_linear_type bsym_table v in
-
+(*
+print_endline ("Array_value_size=" ^ si array_value_size);
+*)
     let sidx = cal_symbolic_array_index bsym_table idx in
     let sarr = cal_symbolic_array_index bsym_table a in
 (*
@@ -361,7 +367,7 @@ print_endline ("rendered lineralised index .. C index = " ^ string_of_cexpr cidx
 *)
     let carr = render_index bsym_table ge' array_sum_offset_table seq sarr in
     let ipow = get_power_table bsym_table power_table array_value_size in
-    let cdiv = ce_array (ce_atom ipow) (ce_infix "-" (ce_atom (si (array_value_size - 1))) cidx)  in
+    let cdiv = ce_array (ce_atom ipow) (ce_infix "-" (ce_atom (si (array_len - 1))) cidx)  in
     let result = ce_infix "%" (ce_infix "/" carr cdiv) (ce_atom (si array_value_size)) in
     result
 
