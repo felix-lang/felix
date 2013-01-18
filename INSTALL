@@ -7,6 +7,12 @@ Requirements
 * Python >= 3.1
 * C++ compiler (clang, gcc, msvc++)
 
+Optional
+--------
+SDL
+ZMQ
+libxml2
+
 Build
 -----
 
@@ -28,6 +34,49 @@ Install
 make install
 
 You will need to put a sudo password.
+
+Installing Felix: POSIX (BSD)
+===============================================
+
+Requirements Base
+-----------------
+* C++ compiler (clang, gcc)
+
+Requirements Ports
+------------------
+* lang/ocaml  >= 3.11
+* lang/python32 || lang/python31 (Python >= 3.1)
+* databases/sqlite3 
+* ports-mgmt/portconf
+* databases/py-sqlite3
+  ** special instructions **
+  The py-sqlite3 port by default targets Python2 inorder to build for 
+  python3 ports-mgmt/portconf must be installed and the file: 
+   /usr/local/etc/ports.conf must exist and contain:
+     databases/py-sqlite3: PYTHON_VERSION=python3.2
+
+Optional Ports
+--------------
+devel/sdl
+devel/zmq
+textproc/libxml2
+databases/postgresql83-client or greater
+
+Build
+-----
+gmake build
+
+Test
+----
+gmake test
+
+Docs
+----
+gmake doc
+
+Install
+-------
+gmake install
 
 WINDOWS: MSVC++
 ================

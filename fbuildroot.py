@@ -237,7 +237,6 @@ def config_build(ctx):
 
     platform = call('fbuild.builders.platform.guess_platform', ctx,
         ctx.options.build_platform)
-
     return Record(
         ctx=ctx,
         platform=platform,
@@ -349,7 +348,7 @@ def config_target(ctx, host):
         phase.sdl_config = call('fbuild.builders.sdl.SDLConfig', ctx,
             ctx.options.target_sdl_config,
             requires_at_least_version=(1, 3))
-    except fbuild.ConfigFailed:
+    except (fbuild.ConfigFailed,OSError):
         phase.sdl_config = None
 
     return phase
@@ -421,6 +420,11 @@ def configure(ctx):
     if 'macosx' in target.platform:
         buildsystem.copy_to(ctx,
             ctx.buildroot / 'config', Path('src/config/macosx/*.fpc').glob())
+
+    # enable this in bsd to replace impl_specific.fpc with 
+    #bsd_impl_specific.fpc.in
+    if 'bsd' in target.platform:
+        Path('src/config/unix/bsd_impl_specific.fpc.in').copyfile(ctx.buildroot / 'config'/ 'impl_specific.fpc')
 
     # extract the configuration
     iscr = call('buildsystem.iscr.Iscr', ctx)

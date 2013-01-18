@@ -18,6 +18,12 @@ DISTDIR ?= ./build/dist
 FBUILDROOT ?= build
 BUILDROOT ?= ${FBUILDROOT}/release
 DEBUGBUILDROOT ?= ${FBUILDROOT}/debug
+# If running as root skip sudo
+ifeq ($(USER),root)
+SUDO=
+else
+SUDO=sudo
+endif
 
 help:
 	# Makefile help
@@ -71,16 +77,17 @@ test-debug:
 #
 # Install default build into /usr/local/lib/felix/version/
 #
+
 install:
-	sudo ${BUILDROOT}/bin/flx --test=${BUILDROOT} --install 
-	sudo ${BUILDROOT}/bin/flx --test=${BUILDROOT} --install-bin
-	sudo rm -rf $(HOME)/.felix/cache
-	sudo rm -f /usr/local/lib/felix/felix-latest
-	sudo ln -s /usr/local/lib/felix/felix-$(VERSION) /usr/local/lib/felix/felix-latest
+	${SUDO} ${BUILDROOT}/bin/flx --test=${BUILDROOT} --install 
+	${SUDO} ${BUILDROOT}/bin/flx --test=${BUILDROOT} --install-bin
+	${SUDO} rm -rf $(HOME)/.felix/cache
+	${SUDO} rm -f /usr/local/lib/felix/felix-latest
+	${SUDO} ln -s /usr/local/lib/felix/felix-$(VERSION) /usr/local/lib/felix/felix-latest
 	echo 'println ("installed "+ Version::felix_version);' > install-done.flx
 	flx --clean install-done
 	rm install-done.*
-	sudo chown $(USER) $(HOME)/.felix
+	${SUDO} chown $(USER) $(HOME)/.felix
 
 #
 # Install binaries on felix-lang.org
@@ -129,10 +136,10 @@ make-dist:
 # Plugin developers only
 #
 install-plugins:
-	sudo cp ${BUILDROOT}/shlib/* /usr/local/lib/
+	${SUDO} cp ${BUILDROOT}/shlib/* /usr/local/lib/
 
 install-website:
-	sudo cp -r ${BUILDROOT}/web/* /usr/local/lib/felix/felix-latest/web
+	${SUDO} cp -r ${BUILDROOT}/web/* /usr/local/lib/felix/felix-latest/web
 
 
 #
