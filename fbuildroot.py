@@ -421,11 +421,6 @@ def configure(ctx):
         buildsystem.copy_to(ctx,
             ctx.buildroot / 'config', Path('src/config/macosx/*.fpc').glob())
 
-    # enable this in bsd to replace impl_specific.fpc with 
-    #bsd_impl_specific.fpc.in
-    if 'bsd' in target.platform:
-        Path('src/config/unix/bsd_impl_specific.fpc.in').copyfile(ctx.buildroot / 'config'/ 'impl_specific.fpc')
-
     # extract the configuration
     iscr = call('buildsystem.iscr.Iscr', ctx)
 

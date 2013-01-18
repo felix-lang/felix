@@ -177,7 +177,7 @@ class Builder(fbuild.db.PersistentObject):
     # --------------------------------------------------------------------------
 
     @fbuild.db.cachemethod
-    def _run_flx_pkgconfig(self, src:fbuild.db.SRC,flx_pkgconfig_flags=[]) -> fbuild.db.DSTS:
+    def _run_flx_pkgconfig(self, src:fbuild.db.SRC) -> fbuild.db.DSTS:
         """
         Run flx_pkgconfig to generate the include files, normally done by flx
         command line harness but we're probably building it here.
@@ -190,7 +190,8 @@ class Builder(fbuild.db.PersistentObject):
         cmd = [
             flx_pkgconfig,
             '--path+=' + self.ctx.buildroot / 'config',
-            '--field=includes'] + flx_pkgconfig_flags + ['@' + resh]
+            '--field=includes',
+            '@' + resh]
 
         stdout, stderr = self.ctx.execute(
             cmd,
@@ -213,10 +214,9 @@ class Builder(fbuild.db.PersistentObject):
             cxx_includes=[],
             cxx_cflags=[],
             cxx_libs=[],
-            cxx_lflags=[],
-            flx_pkgconfig_flags=[]):
+            cxx_lflags=[]):
         obj = self.compile(src, includes=includes, flags=flags)
-        self._run_flx_pkgconfig(obj,flx_pkgconfig_flags)
+        self._run_flx_pkgconfig(obj)
 
         return function(obj, dst,
             async=async,
@@ -292,7 +292,6 @@ def build_flx(host_phase, target_phase, flx_builder):
                       target_phase.ctx.buildroot / 'lib'/'rtl', 
                       target_phase.ctx.buildroot / 'config'/'target'],
         cxx_libs=[call('buildsystem.flx_rtl.build_runtime', host_phase, target_phase).static],
-        flx_pkgconfig_flags=['--rec']
     )
 
 # ------------------------------------------------------------------------------

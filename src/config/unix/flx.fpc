@@ -3,6 +3,6 @@ Description: Felix core runtime support
 provides_dlib: -lflx_dynamic
 provides_slib: -lflx_static
 cflags: -Ilib/rtl
-Requires: flx_gc flx_exceptions dl impl_specific
+Requires: flx_gc flx_exceptions dl
 includes:  '"flx_rtl.hpp"'  <iostream> <cstdio> <cstddef> <cassert> <climits> <string>
 
