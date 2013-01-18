@@ -123,7 +123,9 @@ print_endline ("Final index is " ^ print_index bsym_table ix);
     expr e
 
   | e, BTYP_sum ts ->
+(*
 print_endline ("xDecomposing index of sum type " ^ sbe bsym_table e);
+*)
      let e' = expr e in
      (* top level case number is e mod ncases .. ? WRONG? That puts the
         top level selector last instead of first! So if we join two arrays,
