@@ -1,0 +1,50 @@
+/* Min_TinyflxWM is port of TinyWM for Felix */
+include "X11/x11";
+open X11_Xlib;
+open X11_Xlib_Window;
+open X11_Xlib_Misc;
+open X11_Xlib_Event;
+var attr:xwindowattributes;
+var start:XButtonEvent;
+val ev:xevent = xevent_buff();
+
+match openDisplay("") with
+|Some ?dpy => {
+    var root_wnd = defaultRootWindow(dpy);
+    grabKey(dpy, keysymToKeycode(dpy, stringToKeysym("F1")), 
+     bor(ShiftMask,Mod1Mask), root_wnd,true, GrabModeAsync, GrabModeAsync);
+    grabButton(dpy, 1ui, bor(ShiftMask,Mod1Mask), root_wnd, true, 
+      ButtonPressMask, GrabModeAsync, GrabModeAsync);
+    grabButton(dpy, 3ui, bor(ShiftMask,Mod1Mask), root_wnd, true, 
+      ButtonPressMask, GrabModeAsync, GrabModeAsync);
+    forever({
+      nextEvent(dpy, ev);
+      if (getEventType(ev) == KeyPress and not(isNone((getXKeyEvent(ev)).subwindow))) do
+          raiseWindow(dpy, (getXKeyEvent(ev)).subwindow);
+      elif (getEventType(ev) == ButtonPress and not(isNone(getXButtonEvent(ev)).subwindow)) do
+        if  grabPointer(dpy, (getXButtonEvent(ev)).subwindow, true,
+            bor(PointerMotionMask,ButtonReleaseMask), 
+            GrabModeAsync, GrabModeAsync) == GrabSuccess do
+          attr = let Some ?a = getWindowAttributes(dpy, (getXButtonEvent(ev)).subwindow) in a;
+          start = getXButtonEvent(ev);
+        done
+      elif (getEventType(ev) == MotionNotify) do
+        while (checkTypedEvent(dpy, MotionNotify, ev))do done
+        val xdiff:int = (getXButtonEvent(ev)).x_root - start.x_root;
+        val ydiff:int = (getXButtonEvent(ev)).y_root - start.y_root;
+        moveResizeWindow(dpy, (getXMotionEvent(ev)).window,
+          attr.x + if start.button == 1ui then xdiff else 0 endif,
+          attr.y + if start.button == 1ui then ydiff else 0 endif,
+          (let ?width = (attr.width + if start.button == 3ui then xdiff else 0 endif) in
+             uint(if width > 0 then width else 1 endif)),
+          (let ?height = (attr.height + if start.button == 3ui then ydiff else  0 endif) in
+             uint(if height > 0 then height else 1 endif)));
+          elif(getEventType(ev) == ButtonRelease) do
+            ungrabPointer(dpy, CurrentTime);
+          done
+      });
+  }
+  |_ => {
+    fail("Can't open display");
+  }
+endmatch;

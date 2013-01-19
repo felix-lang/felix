@@ -1,0 +1,25 @@
+
+include "plat/config";
+var config = #Config::config;
+var INSTALL_ROOT_TOPDIR=config.INSTALL_ROOT_TOPDIR;
+var INSTALL_ROOT=config.INSTALL_ROOT;
+var FLX_INSTALL_DIR=config.FLX_INSTALL_DIR;
+if PLAT_WIN32 do
+fun quote(s:string)=>'"' + s + '"'; // windows filename quoting
+else
+fun quote(s:string)=>"'" + s + "'"; // unix prefers ' to stop expansion
+done
+
+proc cp_root(s:string,d:string) {
+    val cmd= 
+        FLX_INSTALL_DIR+"/bin/flx_cp '.' "+quote(s) +" '"+INSTALL_ROOT+"/"+d+"/${0}'";
+      val result=System::system(cmd);
+      if result != 0 do  
+        fail(q"Error copying $(s)");
+      done
+    }
+
+cp_root("X11/x11.flx","lib");
+cp_root("config/x11.fpc",".");
+println$ "X11/x11 installed..";
+

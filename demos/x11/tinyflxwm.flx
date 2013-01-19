@@ -1,0 +1,178 @@
+/* TinyFLXWM is a port of TinyWM is by Nick Welch <mack@incise.org>, 2005.
+ * to the Felix language.
+ * This software is in the public domain
+ * and is provided AS IS, with NO WARRANTY. */
+
+/* much of tinywm's purpose is to serve as a very basic example of how to do X
+ * stuff and/or understand window managers, so i wanted to put comments in the
+ * code explaining things, but i really hate wading through code that is
+ * over-commented -- and for that matter, tinywm is supposed to be as concise
+ * as possible, so having lots of comments just wasn't really fitting for it.
+ * i want tinywm.c to be something you can just look at and go "wow, that's
+ * it?  cool!"  so what i did was just copy it over to annotated.c and comment
+ * the hell out of it.  ahh, but now i have to make every code change twice!
+ * oh well.  i could always use some sort of script to process the comments out
+ * of this and write it to tinywm.c ... nah.
+ */
+
+/* most X stuff will be included with Xlib.h, but a few things require other
+ * headers, like Xmd.h, keysym.h, etc.
+ */
+include "X11/x11";
+open X11_Xlib;
+open X11_Xlib_Window;
+open X11_Xlib_Misc;
+open X11_Xlib_Event;
+
+var attr:xwindowattributes;
+/* we use this to save the pointer's state at the beginning of the
+ * move/resize.
+ */
+var start:XButtonEvent;
+val ev:xevent = xevent_buff();
+
+/* return failure status if we can't connect */
+match openDisplay("") with
+|Some ?dpy => {
+  /* you'll usually be referencing the root window a lot.  this is a somewhat
+   * naive approach that will only work on the default screen.  most people
+   * only have one screen, but not everyone.  if you run multi-head without
+   * xinerama then you quite possibly have multiple screens. (i'm not sure
+   * about vendor-specific implementations, like nvidia's)
+   *
+   * many, probably most window managers only handle one screen, so in
+   * reality this isn't really *that* naive.
+   *
+   * if you wanted to get the root window of a specific screen you'd use
+   * RootWindow(), but the user can also control which screen is our default:
+   * if they set $DISPLAY to ":0.foo", then our default screen number is
+   * whatever they specify "foo" as.
+   */
+   var root_wnd = defaultRootWindow(dpy);
+   /* you could also include keysym.h and use the XK_F1 constant instead of
+    * the call to XStringToKeysym, but this method is more "dynamic."  imagine
+    * you have config files which specify key bindings.  instead of parsing
+    * the key names and having a huge table or whatever to map strings to XK_*
+    * constants, you can just take the user-specified string and hand it off
+    * to XStringToKeysym.  XStringToKeysym will give you back the appropriate
+    * keysym or tell you if it's an invalid key name.
+    *
+    * a keysym is basically a platform-independent numeric representation of a
+    * key, like "F1", "a", "b", "L", "5", "Shift", etc.  a keycode is a
+    * numeric representation of a key on the keyboard sent by the keyboard
+    * driver (or something along those lines -- i'm no hardware/driver expert)
+    * to X.  so we never want to hard-code keycodes, because they can and will
+    * differ between systems.
+    */
+   grabKey(dpy, keysymToKeycode(dpy, stringToKeysym("F1")), 
+     bor(ShiftMask,Mod1Mask), root_wnd,true, GrabModeAsync, GrabModeAsync);
+
+    /* XGrabKey and XGrabButton are basically ways of saying "when this
+     * combination of modifiers and key/button is pressed, send me the events."
+     * so we can safely assume that we'll receive Alt+F1 events, Alt+Button1
+     * events, and Alt+Button3 events, but no others.  You can either do
+     * individual grabs like these for key/mouse combinations, or you can use
+     * XSelectInput with KeyPressMask/ButtonPressMask/etc to catch all events
+     * of those types and filter them as you receive them.
+     */
+    grabButton(dpy, 1ui, bor(ShiftMask,Mod1Mask), root_wnd, true, 
+      ButtonPressMask, GrabModeAsync, GrabModeAsync);
+    grabButton(dpy, 3ui, bor(ShiftMask,Mod1Mask), root_wnd, true, 
+      ButtonPressMask, GrabModeAsync, GrabModeAsync);
+
+    forever {
+      /* this is the most basic way of looping through X events; you can be
+       * more flexible by using XPending(), or ConnectionNumber() along with
+       * select() (or poll() or whatever floats your boat).
+       */
+      nextEvent(dpy, ev);
+
+      /* this is our keybinding for raising windows.  as i saw someone
+       * mention on the ratpoison wiki, it is pretty stupid; however, i
+       * wanted to fit some sort of keyboard binding in here somewhere, and
+       * this was the best fit for it.
+       *
+       * i was a little confused about .window vs. .subwindow for a while,
+       * but a little RTFMing took care of that.  our passive grabs above
+       * grabbed on the root window, so since we're only interested in events
+       * for its child windows, we look at .subwindow.  when subwindow
+       * None, that means that the window the event happened in was the same
+       * window that was grabbed on -- in this case, the root window.
+       */
+      if (getEventType(ev) == KeyPress and not(isNone((getXKeyEvent(ev)).subwindow))) do
+          raiseWindow(dpy, (getXKeyEvent(ev)).subwindow);
+      elif (getEventType(ev) == ButtonPress and not(isNone(getXButtonEvent(ev)).subwindow)) do
+
+        /* now we take command of the pointer, looking for motion and
+         * button release events.
+         */
+        if  grabPointer(dpy, (getXButtonEvent(ev)).subwindow, true,
+            bor(PointerMotionMask,ButtonReleaseMask), 
+            GrabModeAsync, GrabModeAsync) == GrabSuccess do
+
+          /* we "remember" the position of the pointer at the beginning of
+           * our move/resize, and the size/position of the window.  that way,
+           * when the pointer moves, we can compare it to our initial data
+           * and move/resize accordingly.
+           */
+          attr = let Some ?a = getWindowAttributes(dpy, (getXButtonEvent(ev)).subwindow) in a;
+          start = getXButtonEvent(ev);
+        done
+          /* the only way we'd receive a motion notify event is if we already did
+           * a pointer grab and we're in move/resize mode, so we assume that. */
+      elif (getEventType(ev) == MotionNotify) do
+        
+        /* here we "compress" motion notify events.  if there are 10 of
+         * them waiting, it makes no sense to look at any of them but the
+         * most recent.  in some cases -- if the window is really big or
+         * things are just acting slowly in general -- failing to do this
+         * can result in a lot of "drag lag."
+         *
+         * for window managers with things like desktop switching, it can
+         * also be useful to compress EnterNotify events, so that you don't
+         * get "focus flicker" as windows shuffle around underneath the
+         * pointer.
+         */
+        while (checkTypedEvent(dpy, MotionNotify, ev))do done
+
+        /* now we use the stuff we saved at the beginning of the
+         * move/resize and compare it to the pointer's current position to
+         * determine what the window's new size or position should be.
+         *
+         * if the initial button press was button 1, then we're moving.
+         * otherwise it was 3 and we're resizing.
+         *
+         * we also make sure not to go negative with the window's
+         * dimensions, resulting in "wrapping" which will make our window
+         * something ridiculous like 65000 pixels wide (often accompanied
+         * by lots of swapping and slowdown).
+         *
+         * even worse is if we get "lucky" and hit a width or height of
+         * exactly zero, triggering an X error.  so we specify a minimum
+         * width/height of 1 pixel.
+         */
+
+        val xdiff:int = (getXButtonEvent(ev)).x_root - start.x_root;
+        val ydiff:int = (getXButtonEvent(ev)).y_root - start.y_root;
+            
+        moveResizeWindow(dpy, (getXMotionEvent(ev)).window,
+          attr.x + if start.button == 1ui then xdiff else 0 endif,
+          attr.y + if start.button == 1ui then ydiff else 0 endif,
+          (let ?width = (attr.width + if start.button == 3ui then xdiff else 0 endif) in
+             uint(if width > 0 then width else 1 endif)),
+          (let ?height = (attr.height + if start.button == 3ui then ydiff else  0 endif) in
+             uint(if height > 0 then height else 1 endif)));
+
+        /* like motion notifies, the only way we'll receive a button release is
+         * during a move/resize, due to our pointer grab.  this ends the
+         * move/resize.
+         */
+      elif(getEventType(ev) == ButtonRelease) do
+        ungrabPointer(dpy, CurrentTime);
+      done
+    };
+  }
+  |_ => {
+    fail("Can't open display");
+  }
+endmatch;

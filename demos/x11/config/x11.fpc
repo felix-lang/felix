@@ -1,0 +1,10 @@
+cflags:-I/usr/local/include
+provides_dlib: -lX11
+provides_slib: -lX11
+includes: "<X11/Xlib.h>"
+includes: "<X11/Xutil.h>"
+includes: "<X11/cursorfont.h>"
+includes: "<X11/Xatom.h>"
+includes: "<X11/Xproto.h>"
+includes: "<X11/Xutil.h>"
+includes "<locale.h>
