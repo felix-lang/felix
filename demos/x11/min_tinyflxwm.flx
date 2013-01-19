@@ -17,6 +17,7 @@ match openDisplay("") with
       ButtonPressMask, GrabModeAsync, GrabModeAsync);
     grabButton(dpy, 3ui, bor(ShiftMask,Mod1Mask), root_wnd, true, 
       ButtonPressMask, GrabModeAsync, GrabModeAsync);
+    defineCursor(dpy,root_wnd,createFontCursor(dpy,XC_boat));
     forever({
       nextEvent(dpy, ev);
       if (getEventType(ev) == KeyPress and not(isNone((getXKeyEvent(ev)).subwindow))) do

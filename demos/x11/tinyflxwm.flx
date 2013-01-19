@@ -1,5 +1,5 @@
-/* TinyFLXWM is a port of TinyWM is by Nick Welch <mack@incise.org>, 2005.
- * to the Felix language.
+/* TinyFLXWM is a port of Nick Welch's TinyWM is  <mack@incise.org>, 2005.
+ * to the Felix language. (Most of the comments are from the C version)
  * This software is in the public domain
  * and is provided AS IS, with NO WARRANTY. */
 
@@ -79,6 +79,14 @@ match openDisplay("") with
       ButtonPressMask, GrabModeAsync, GrabModeAsync);
     grabButton(dpy, 3ui, bor(ShiftMask,Mod1Mask), root_wnd, true, 
       ButtonPressMask, GrabModeAsync, GrabModeAsync);
+
+    /* XcreateFontCursor returns one of the X11 font cursors, we used XC_boat
+     *  there are also XC_coffee_mug, XC_X_cursor, see class X11_Xlib_Misc in 
+     *  x11.flx for more. Since we are a window manager we need should set a 
+     *  cursor (Especially if we are running in a nested X server.) defineCursor
+     *  does the job nicely just supply the display, window and cursor.
+     */ 
+    defineCursor(dpy,root_wnd,createFontCursor(dpy,XC_boat));
 
     forever {
       /* this is the most basic way of looping through X events; you can be

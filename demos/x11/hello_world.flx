@@ -12,6 +12,8 @@ val dflt = defaultScreen(disp);
 val border = blackPixel(disp, dflt);
 val background = whitePixel(disp,dflt);
 val rootw = rootWindow(disp,dflt);
+val csr:cursor = createFontCursor(disp,XC_boat);
+defineCursor(disp,rootw,csr);
 val win =  createSimpleWindow (disp,rootw, (20,20), (300ui,100ui), 10, border, background);
 val e:xevent = xevent_buff();
 setTextProperty(disp,win, "[Hello World]", XA_WM_NAME);

@@ -19,7 +19,7 @@ class X11_Xlib {
 
   type window_source = "Window *";
 
-  type cursor = "Cursor *";
+  type cursor = "Cursor ";
 
   typedef cursor_ptr = &cursor;
 
@@ -330,8 +330,12 @@ class X11_Xlib_Misc {
 //    Display*		/* display */,
 //    unsigned int	/* shape */
 
-
-
+proc defineCursor:display_ptr*window*cursor = "XDefineCursor($1, $2, $3);";
+/*XDefineCursor(display, w, cursor)
+      Display *display;
+      Window w;
+      Cursor cursor;
+*/
 
 
 }
