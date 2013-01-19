@@ -26,6 +26,10 @@ Running
   * in BSD you need to supply -L/usr/local/lib arg to flx like
     flx -L/usr/local/lib hello_world
 
+  * on OSX and probably most Linux platforms, you will need to supply
+    the linker switch -L/usr/X11/lib so the x11 library can be found
+    by the linker
+
   tinyflxwm
   ---------
   To run the window manager examples first start a nested display with
