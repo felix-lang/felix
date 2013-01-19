@@ -46,9 +46,9 @@ syn cluster felixAllErrs contains=felixBraceErr,felixBrackErr,felixParenErr,feli
 syn match felixComment "^#!.*"
 
 " C/C++ keywords which are not Felix ones (bad style)
-"syn keyword felixError break
-"syn keyword felixError continue
-"syn keyword felixError repeat
+syn keyword felixError break
+syn keyword felixError continue
+syn keyword felixError repeat
 
 syn keyword felixStatement end
 syn keyword felixStatement catch 
@@ -370,10 +370,12 @@ syn match       felixNumber     display contained "0b_\=\([01]\+_\)*\([01]\)\+u\
 syn case match
 
 " comments
+syn region      fdocCommand     start="@" end="$" contained 
+syn region      fdocComment     start="@" end="@felix" contains=fdocCommand keepend
 syn region      felixComment    start="/\*" end="\*/" contains=felixComment,felixTodo
 syn region      felixCommentL   start="//" skip="\\$" end="$" keepend contains=felixComment,felixTodo
 syn keyword     felixTodo       contained TODO FIXME XXX NOTE KLUDGE HACK
-
+"
 " keep a // comment separately, it terminates a preproc. conditional
 syntax match    felixCommentError       display "\*/"
 
@@ -432,9 +434,10 @@ if version >= 508 || !exists("did_flx_syn_inits")
   HiLink felixArrErr            Error
   HiLink felixOctalZero         Error
 
+  HiLink fdocComment            Comment
   HiLink felixComment           Comment
   HiLink felixCommentL          Comment
-
+  HiLink fdocCommand            Number
   HiLink felixLabel             Label
   HiLink felixUserLabel         Label
 

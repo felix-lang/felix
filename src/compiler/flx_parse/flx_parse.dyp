@@ -75,9 +75,6 @@ let define_syntax dyp name dyprods =
 %token <(Flx_srcref.t * string)> ERRORTOKEN
 %token ENDMARKER
 
-/* whitespace and comments */
-%token NEWLINE
-
 /* literals */
 %token <string> NAME
 %token <(string * prio_t)> NONTERMINAL
@@ -185,6 +182,12 @@ rule parse_C_comment count = parse
 | "*/"    { if count = 1 then () else parse_C_comment (count - 1) lexbuf }
 | _       { parse_C_comment count lexbuf }
 
+and parse_fdoc_comment = parse
+| newline "@felix" white* newline  { Flx_parse_srcref.incr_lineno lexbuf; Flx_parse_srcref.incr_lineno lexbuf; }
+| newline { Flx_parse_srcref.incr_lineno lexbuf; parse_fdoc_comment lexbuf }
+| eof     { }
+| _       { parse_fdoc_comment lexbuf }
+
 
 main lexer =
 /* eof is not eaten up, so parent will find eof and emit ENDMARKER */
@@ -205,6 +208,8 @@ main lexer =
 
 
  "/*" -> { parse_C_comment 1 lexbuf }
+
+ newline "@" -> { Flx_parse_srcref.incr_lineno lexbuf; parse_fdoc_comment lexbuf }
 
  digit+ -> INTEGER {
       let s = lexeme lexbuf in
