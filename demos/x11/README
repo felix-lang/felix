@@ -16,7 +16,7 @@ install.flx       - Installs X11 (User have be able to write to felix install tr
 Running
 -------
   flx needs to find the config directory so either set
-    FLX_PKGCONFIG_PATH=./config
+    PKG_CONFIG_PATH=./config
   or run 
     . env.sh 
   and it will do it for you
