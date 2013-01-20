@@ -1,5 +1,5 @@
-/* TinyFLXWM is a port of TinyWM is by Nick Welch <mack@incise.org>, 2005.
- * to the Felix language.
+/* TinyFLXWM is a port of Nick Welch's TinyWM is  <mack@incise.org>, 2005.
+ * to the Felix language. (Most of the comments are from the C version)
  * This software is in the public domain
  * and is provided AS IS, with NO WARRANTY. */
 
@@ -49,6 +49,12 @@ match openDisplay("") with
    * whatever they specify "foo" as.
    */
    var root_wnd = defaultRootWindow(dpy);
+   /* Let's create some cursors so we can have a pointer, and also show
+      when we are in move or resize mode */
+   var boat = createFontCursor(dpy,XC_boat);
+   var hand2 = createFontCursor(dpy,XC_hand2);
+   var angle = createFontCursor(dpy,XC_lr_angle);
+   
    /* you could also include keysym.h and use the XK_F1 constant instead of
     * the call to XStringToKeysym, but this method is more "dynamic."  imagine
     * you have config files which specify key bindings.  instead of parsing
@@ -80,6 +86,14 @@ match openDisplay("") with
     grabButton(dpy, 3ui, bor(ShiftMask,Mod1Mask), root_wnd, true, 
       ButtonPressMask, GrabModeAsync, GrabModeAsync);
 
+    /* XcreateFontCursor returns one of the X11 font cursors, we used XC_boat
+     *  there are also XC_coffee_mug, XC_X_cursor, see class X11_Xlib_Misc in 
+     *  x11.flx for more. Since we are a window manager we need should set a 
+     *  cursor (Especially if we are running in a nested X server.) defineCursor
+     *  does the job nicely just supply the display, window and cursor.
+     */ 
+    defineCursor(dpy,root_wnd,boat);
+
     forever {
       /* this is the most basic way of looping through X events; you can be
        * more flexible by using XPending(), or ConnectionNumber() along with
@@ -109,7 +123,11 @@ match openDisplay("") with
         if  grabPointer(dpy, (getXButtonEvent(ev)).subwindow, true,
             bor(PointerMotionMask,ButtonReleaseMask), 
             GrabModeAsync, GrabModeAsync) == GrabSuccess do
-
+	  /* Lets change the cursor so we can change show if we are in move
+             or resize mode */
+          defineCursor(dpy,root_wnd,
+	    if start.button == 1ui then angle else hand2 endif);
+ 
           /* we "remember" the position of the pointer at the beginning of
            * our move/resize, and the size/position of the window.  that way,
            * when the pointer moves, we can compare it to our initial data
@@ -168,6 +186,7 @@ match openDisplay("") with
          * move/resize.
          */
       elif(getEventType(ev) == ButtonRelease) do
+        defineCursor(dpy,root_wnd,boat);
         ungrabPointer(dpy, CurrentTime);
       done
     };
