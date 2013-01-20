@@ -84,14 +84,42 @@ let assemble state parser_state exclusions module_name input =
     unprocessed := List.tl (!unprocessed);
 
     (* Resolve the filename. *)
-    let filedir,filename =
+    let filedir,filename,source_file_extension=
       match candidate with
       | Search s ->
+        let fdoc_filedir,fdoc_filename,fdoc_filetime = 
+        try
+          let f = 
           Flx_filesys.find_include_dir
             ~include_dirs:state.syms.compiler_options.include_dirs
-            (s ^ ".flx"),s
-      | NoSearch s -> "",s
+            (s ^ ".fdoc")
+          in 
+          let t = Flx_filesys.virtual_filetime 0.0 (Flx_filesys.join f s ^ ".fdoc") in
+          f,s,t
+        with Flx_filesys.Missing_path _ ->  "","",0.0
+        in
+        let flx_filedir,flx_filename,flx_filetime = 
+        try
+          let f = 
+          Flx_filesys.find_include_dir
+            ~include_dirs:state.syms.compiler_options.include_dirs
+            (s ^ ".flx")
+          in 
+          let t = Flx_filesys.virtual_filetime 0.0 (Flx_filesys.join f s ^ ".flx") in
+          f,s,t
+        with Flx_filesys.Missing_path _ ->  "","",0.0
+        in
+        if fdoc_filetime = 0.0 && flx_filetime = 0.0 then 
+          raise (Flx_filesys.Missing_path (s ^ ".(flx|fdoc)"))
+        ;
+        if fdoc_filetime > flx_filetime 
+        then fdoc_filedir, fdoc_filename,".fdoc"
+        else flx_filedir, flx_filename,".flx"
+      | NoSearch s -> "",s,""
     in
+(*
+print_endline ("DEBUG: Flxg_assembly.assemble dir=" ^ filedir ^ ", file=" ^ filename ^ ", extn=" ^ source_file_extension);
+*)
     let flx_base_name = Flx_filesys.join filedir filename in
 
     (* Check if already processed. *)
@@ -102,7 +130,7 @@ let assemble state parser_state exclusions module_name input =
       (* Get the parse of the felix file, with caching. *)
       let stmts =
         (* check the felix file modification time *)
-        let flx_name = flx_base_name ^ ".flx" in
+        let flx_name = flx_base_name ^ source_file_extension in
         let flx_time = Flx_filesys.virtual_filetime
           Flx_filesys.big_crunch
           flx_name

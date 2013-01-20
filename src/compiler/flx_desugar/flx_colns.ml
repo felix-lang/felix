@@ -143,24 +143,37 @@ and a list of STMT_* statements (raw straight from the parser).
 *)
 
 let include_file syms curpath inspec =
+print_endline ("DEBUG: Flx_colns.include_file, inspec=" ^ inspec);
   let force = syms.compiler_options.force_recompile in
   let this_version = !Flx_version.version_data in
-  let basename =
+  let basename, extn =
     let n = String.length inspec in
-    if n <= 3 then inspec
+    if n <= 3 then inspec,""
     else
       let x = String.sub inspec (n-4) 4 in
       match x with
-      | ".flx" | ".par" -> String.sub inspec 0 (n-4)
-      | _ -> inspec
+      | ".flx" -> String.sub inspec 0 (n-4),"flx"
+      | ".par" -> String.sub inspec 0 (n-4), "par"
+      | ".fdoc" -> String.sub inspec 0 (n-5), "fdoc"
+      | _ -> inspec, ""
 
   in
   let include_dirs = syms.compiler_options.include_dirs in
+  let fdocf =
+    try
+      if if String.length inspec > 2 then String.sub inspec 0 2 = "./" else false then
+        Flx_filesys.find_file ~include_dirs:[curpath] (basename ^ ".fdoc")
+      else
+        Flx_filesys.find_file ~include_dirs (basename ^ ".fdoc") 
+     with Flx_filesys.Missing_path _ -> ""
+  in
   let tf =
-     if if String.length inspec > 2 then String.sub inspec 0 2 = "./" else false then
-       Flx_filesys.find_file ~include_dirs:[curpath] (basename ^ ".flx")
-     else
-       Flx_filesys.find_file ~include_dirs (basename ^ ".flx") 
+    try
+      if if String.length inspec > 2 then String.sub inspec 0 2 = "./" else false then
+        Flx_filesys.find_file ~include_dirs:[curpath] (basename ^ ".flx")
+      else
+        Flx_filesys.find_file ~include_dirs (basename ^ ".flx") 
+    with Flx_filesys.Missing_path _ -> ""
   in
   let pf =
     try
@@ -174,6 +187,23 @@ let include_file syms curpath inspec =
       (* It's okay if the .par file doesn't exist. *)
       ""
   in
+
+  (* pick whether to parse the *.flx file or the *.fdoc file,
+     based on existence and time stamps 
+  *)
+  if fdocf = "" && tf == "" then
+     failwith ("flxg: cannot file file "  ^ basename ^ ".(flx|fdoc)")
+  ;
+  (* if an extension was given use that file. if no extension was
+     given, just use the most recent of the *.fdoc and *.flx files
+  *)
+  let tf = if extn = "flx" then tf else if extn = "fdoc" then fdocf else 
+    let flxt = Flx_filesys.virtual_filetime 0.0 tf in
+    let fdoct = Flx_filesys.virtual_filetime 0.0 fdocf in
+    if flxt > fdoct then tf
+    else if fdoct > flxt then fdocf
+    else tf
+  in
   let include_name =
     Filename.chop_extension
     (if tf <> "" then tf else pf)
@@ -185,6 +215,7 @@ let include_file syms curpath inspec =
   *)
   let tf_mt = Flx_filesys.virtual_filetime Flx_filesys.big_crunch tf in
   let pf_mt = Flx_filesys.virtual_filetime Flx_filesys.big_bang pf in
+
   let cbt = this_version.build_time_float in
   let saveit sts =
       let pf =

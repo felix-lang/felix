@@ -121,7 +121,7 @@ proc print_help() {
   println "                     : add files to C++ compilation (and linker) steps";
   println "*.o *.obj *.lib *.dll *.a *.so";
   println "                     : add files to linker steps";
-  println "* *.flx              : Felix program name, terminates options and starts runtime arguments";
+  println "* *.flx *.fdoc       : Felix program name, terminates options and starts runtime arguments";
 }
 
 
@@ -133,6 +133,7 @@ proc print_help() {
 fun splitext(p:string)=>
   if p.[-4 to] == ".flx" then p.[to -4],"flx"
   elif p.[-4 to] == ".cpp" then p.[to -4],"cpp"
+  elif p.[-5 to] == ".fdoc" then p.[to -5],"fdoc"
   else p,""
   endif
 ;
@@ -610,14 +611,18 @@ var HAVE_MACOSX=config.HAVE_MACOSX;
 val past_time = -1.0;
 val future_time = double(ulong(-1)); // a hacky way to get a big number
 
-fun strfiletime (x:double) = {
-  assert x != 0.0;
+fun strfiletime0 (x:double) = {
   return
     if x == past_time then "BIG BANG"
     elif x == future_time then "BIG CRUNCH"
     else fmt (x, fixed (0,3))
     endif
   ;
+}
+
+fun strfiletime (x:double) = {
+  assert x != 0.0;
+  return strfiletime0 x;
 }
 
 fun dfiletime(var f:string, dflt:double)=
@@ -628,21 +633,35 @@ fun dfiletime(var f:string, dflt:double)=
   return x;
 }
 
-fun maxf (x: double) (f:string) => max (x, if f == "" then x else dfiletime (f+".flx",future_time) endif);
-fun cal_files_time (fs: list[string])=> fold_left maxf past_time fs;
-fun cal_time_from_dep (df: string):double=
-{
-  val deptext = load df;
-  val lines = split (deptext, "\n"); 
-  debugln$ "Deps=" + str(lines);
-  val deptime = cal_files_time lines;
-  debugln$ "Deptime=" + strfiletime(deptime);
-  return deptime;
-}
+fun cal_dep_time(f:string)= {
+  fun maxf (x: double) (f:string) =>
+      if f == "" then x else max (x, dfiletime (f,past_time))
+  ;
 
-fun cal_dep_time(f:string)=> max(
-  FileStat::filetime(f+".flx"),
-  cal_time_from_dep(f+".dep"));
+  fun cal_files_time (fs: list[string])=> fold_left maxf past_time fs;
+
+  fun cal_time_from_dep (df: string):double=
+  {
+    val deptext = load df;
+    val lines = split (deptext, "\n"); 
+    debugln$ "Deps=" + str(lines);
+    val deptime = cal_files_time lines;
+    debugln$ "Deptime=" + strfiletime(deptime);
+    return deptime;
+  }
+
+  val fdoctime = dfiletime(f+".fdoc",past_time);
+  val flxtime = dfiletime(f+".flx",past_time);
+  val depfilename = cache_join (OUTPUT_DIR, f+".dep");
+  debugln$ "Dependency file name = " + depfilename;
+  val deptime = cal_time_from_dep (depfilename);
+  debugln$ "fdoc time = " + strfiletime fdoctime;
+  debugln$ "flx time = " + strfiletime flxtime;
+  debugln$ "dep time = " + strfiletime deptime;
+  val srctime =  max( fdoctime, max (flxtime, deptime));
+  debugln$ "Source time = " + strfiletime srctime;
+  return srctime;
+}
 
 
 // --------------------------------------------------
@@ -846,7 +865,7 @@ grabbing_args: while grab == 1 and argno<System::argc do
   var path,ext = splitext(arg);
   var dir,base = Filename::split1(path);
   debugln$ "path="+path+", ext="+ext+",dir="+dir+",base="+base;
-  if ext != "flx" and ext != "" do
+  if ext != "flx" and ext != "fdoc" and ext != "" do
     // add to list of things to link, and also things to compile
     // if the extension is appropriate
     if List::mem eq of (string * string) compile_exts ext do
@@ -1325,8 +1344,23 @@ done
   return k;
 }
 
-var rel_filebase = Filename::join(dir,base);
+debugln$ "FileDir= " + dir;
+var rel_filebase = if dir == "." then base else Filename::join(dir,base);
 debugln$ "Rel_filebase= " + rel_filebase;
+debugln$ "Given Extension=" + ext;
+  // this is a hack! We should resolve the filename first.
+var use_ext = if ext != "" then "."+ext else
+  #{ 
+     var flxt = dfiletime (rel_filebase+".flx",past_time);
+     var fdoct = dfiletime (rel_filebase+".fdoc",past_time);
+     return 
+       if flxt > fdoct then ".flx"
+       elif fdoct > flxt then ".fdoc"
+       else ""
+     ;
+  }
+;
+debugln$ "Computed Extension=" + use_ext;
 var filebase = Directory::mk_absolute_filename$ rel_filebase;
 debugln$ "User program base is " + filebase;
 var cpp_filebase =
@@ -1452,18 +1486,25 @@ var cmd = "";
 debugln$ "RECOMPILE="+str RECOMPILE;
 debugln$ "RUNIT="+str RUNIT;
 if SHOWCODE == 1 do {
-  prg := load(filebase+".flx");
+  var prg = 
+    if use_ext == "" then "// No file "+filebase+".(flx|fdoc) found"
+    else load(filebase+"."+use_ext)
+  ;
   print prg;
 }; done
 
 if RECOMPILE == 0 and RUNIT == 1 and CLEAR_CACHE == 0 do
   // not (--force or -c)
   debugln "Checking to see if the binary is uptodate";
-  debugln$ "Binary time = " + strfiletime (dfiletime(LINKER_OUTPUT_FILENAME,past_time));
+  var xtime = dfiletime(LINKER_OUTPUT_FILENAME,past_time);
+  var srctime = cal_dep_time (filebase);
+
+  debugln$ "Filebase = " + filebase; 
+  debugln$ "Binary time = " + strfiletime (xtime);
+  debugln$ "src time = " + strfiletime (srctime);
+  debugln$ "cache time = " + strfiletime (cache_time);
   if STATIC == 0 do
-    var xtime = dfiletime(LINKER_OUTPUT_FILENAME,past_time);
-//println$ "xtime=" + fmt(xtime,fixed(0,3)) + ", cache time =" + fmt(cache_time, fixed(0,3));
-    if xtime > cal_dep_time (filebase) and xtime > cache_time do
+    if xtime > srctime and xtime > cache_time do
       debugln$ "Running dynamically linked binary";
       calpackages();
       cmd=FLXRUN+DRIVER_EXE+DEBUGSWITCH+" "+ quote(LINKER_OUTPUT_FILENAME)+" "+args;
@@ -1474,8 +1515,7 @@ if RECOMPILE == 0 and RUNIT == 1 and CLEAR_CACHE == 0 do
       debugln$ "Dynamically linked binary out of date or non-existant";
     done
   else
-    xtime = dfiletime(LINKER_OUTPUT_FILENAME,past_time);
-    if xtime > cal_dep_time(filebase)  and xtime > cache_time do
+    if xtime > srctime and xtime > cache_time do
       debugln$ "Running statically linked binary";
       cmd=STATIC_ENV+" "+quote(LINKER_OUTPUT_FILENAME)+" "+args;
       if STDOUT != "" do cmd=cmd + " > "+STDOUT; done
@@ -1520,7 +1560,7 @@ if FELIX == 1 do
     VERBOSE, FLXFLAGS, FLXLIB,
     INCLUDE_DIRS, "--syntax="+STDGRAMMAR, STDIMPORT, IMPORTS)) + 
     ' ' + stdlibs + 
-    ' ' + quote(filebase)
+    ' ' + quote(filebase+use_ext)
   ;
   debugln$ "Felix command="+FCMD;
   

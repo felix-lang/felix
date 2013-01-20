@@ -25,7 +25,9 @@ let make_module_name inbase =
   let n = String.length inbase in
   let i = ref (n-1) in
   while !i <> -1 && inbase.[!i] <> '/' && inbase.[!i] <> '\\' do decr i done;
-  String.sub inbase (!i+1) (n - !i - 1)
+  let x = String.sub inbase (!i+1) (n - !i - 1) in
+  try Filename.chop_extension x 
+  with Invalid_argument _ -> x
 
 
 (** Make the state needed for flxg compilation. *)
@@ -49,22 +51,29 @@ let make_state compiler_options : t =
   let filename = List.hd compiler_options.files in
   let inbase = filename in
 
-  let input_filename = inbase ^ ".flx" in
+  let input_filename = inbase (* ^ ".flx" *) in
   (*
   and iface_file_name = filebase ^ ".fix"
   *)
   let outbase =
     (match compiler_options.bundle_dir with 
       Some bundle_dir -> Flx_filesys.join bundle_dir (Filename.basename filename) 
-      | None -> Flx_filesys.mk_cache_name compiler_options.output_dir (Flx_filesys.mkabs filename)) in
+      | None -> Flx_filesys.mk_cache_name compiler_options.output_dir (Flx_filesys.mkabs filename)) 
+  in
+  (* this is technically wrong: should only chop .flx or .fdoc but Im lazy *)
+  let outbase = try Filename.chop_extension outbase with Invalid_argument _ -> outbase in
+  let module_name = make_module_name inbase in
 (*
+print_endline ("File inbase = " ^ inbase);
 print_endline ("File outbase = " ^ outbase);
+print_endline ("Input Filename = " ^ input_filename);
+print_endline ("Module name = " ^ module_name);
 *)
   {
     compile_start_gm_string = compile_start_gm_string;
     compile_start_local_string = compile_start_local_string;
     syms = make_syms compiler_options;
-    module_name = make_module_name inbase;
+    module_name = module_name;
     input_filename = input_filename;
     header_file = Flxg_file.make (outbase ^ ".hpp");
     body_file = Flxg_file.make (outbase ^ ".cpp");

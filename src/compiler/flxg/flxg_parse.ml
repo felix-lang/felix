@@ -75,8 +75,15 @@ let load_syntax state =
 
 (** Parse an implementation file *)
 let parse_file state parser_state file =
+(*
+print_endline ("DEBUG: flxg_parse.parse_file, filename input=" ^ file);
+*)
   let file_name =
-    if Filename.check_suffix file ".flx" then file else file ^ ".flx"
+    if Filename.check_suffix file ".flx" then file else 
+    if Filename.check_suffix file ".fdoc" then file else 
+    let flxt = Flx_filesys.virtual_filetime 0.0 (file ^ ".flx") in
+    let fdoct = Flx_filesys.virtual_filetime 0.0 (file ^ ".fdoc") in
+    if fdoct > flxt then file ^ ".fdoc" else file ^ ".flx"
   in
   let local_prefix = Filename.chop_suffix (Filename.basename file_name) ".flx" in
   let include_dirs = state.syms.compiler_options.include_dirs in
