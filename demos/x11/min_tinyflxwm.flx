@@ -11,13 +11,16 @@ val ev:xevent = xevent_buff();
 match openDisplay("") with
 |Some ?dpy => {
     var root_wnd = defaultRootWindow(dpy);
+    var boat = createFontCursor(dpy,XC_boat);
+    var hand2 = createFontCursor(dpy,XC_hand2);
+    var angle = createFontCursor(dpy,XC_lr_angle);
     grabKey(dpy, keysymToKeycode(dpy, stringToKeysym("F1")), 
      bor(ShiftMask,Mod1Mask), root_wnd,true, GrabModeAsync, GrabModeAsync);
     grabButton(dpy, 1ui, bor(ShiftMask,Mod1Mask), root_wnd, true, 
       ButtonPressMask, GrabModeAsync, GrabModeAsync);
     grabButton(dpy, 3ui, bor(ShiftMask,Mod1Mask), root_wnd, true, 
       ButtonPressMask, GrabModeAsync, GrabModeAsync);
-    defineCursor(dpy,root_wnd,createFontCursor(dpy,XC_boat));
+    defineCursor(dpy,root_wnd,boat);
     forever({
       nextEvent(dpy, ev);
       if (getEventType(ev) == KeyPress and not(isNone((getXKeyEvent(ev)).subwindow))) do
@@ -26,6 +29,7 @@ match openDisplay("") with
         if  grabPointer(dpy, (getXButtonEvent(ev)).subwindow, true,
             bor(PointerMotionMask,ButtonReleaseMask), 
             GrabModeAsync, GrabModeAsync) == GrabSuccess do
+	   defineCursor(dpy,root_wnd,if start.button == 1ui then angle else hand2 endif);
           attr = let Some ?a = getWindowAttributes(dpy, (getXButtonEvent(ev)).subwindow) in a;
           start = getXButtonEvent(ev);
         done
@@ -41,6 +45,7 @@ match openDisplay("") with
           (let ?height = (attr.height + if start.button == 3ui then ydiff else  0 endif) in
              uint(if height > 0 then height else 1 endif)));
           elif(getEventType(ev) == ButtonRelease) do
+	    defineCursor(dpy,root_wnd,boat);
             ungrabPointer(dpy, CurrentTime);
           done
       });

@@ -49,6 +49,12 @@ match openDisplay("") with
    * whatever they specify "foo" as.
    */
    var root_wnd = defaultRootWindow(dpy);
+   /* Let's create some cursors so we can have a pointer, and also show
+      when we are in move or resize mode */
+   var boat = createFontCursor(dpy,XC_boat);
+   var hand2 = createFontCursor(dpy,XC_hand2);
+   var angle = createFontCursor(dpy,XC_lr_angle);
+   
    /* you could also include keysym.h and use the XK_F1 constant instead of
     * the call to XStringToKeysym, but this method is more "dynamic."  imagine
     * you have config files which specify key bindings.  instead of parsing
@@ -86,7 +92,7 @@ match openDisplay("") with
      *  cursor (Especially if we are running in a nested X server.) defineCursor
      *  does the job nicely just supply the display, window and cursor.
      */ 
-    defineCursor(dpy,root_wnd,createFontCursor(dpy,XC_boat));
+    defineCursor(dpy,root_wnd,boat);
 
     forever {
       /* this is the most basic way of looping through X events; you can be
@@ -117,7 +123,11 @@ match openDisplay("") with
         if  grabPointer(dpy, (getXButtonEvent(ev)).subwindow, true,
             bor(PointerMotionMask,ButtonReleaseMask), 
             GrabModeAsync, GrabModeAsync) == GrabSuccess do
-
+	  /* Lets change the cursor so we can change show if we are in move
+             or resize mode */
+          defineCursor(dpy,root_wnd,
+	    if start.button == 1ui then angle else hand2 endif);
+ 
           /* we "remember" the position of the pointer at the beginning of
            * our move/resize, and the size/position of the window.  that way,
            * when the pointer moves, we can compare it to our initial data
@@ -176,6 +186,7 @@ match openDisplay("") with
          * move/resize.
          */
       elif(getEventType(ev) == ButtonRelease) do
+        defineCursor(dpy,root_wnd,boat);
         ungrabPointer(dpy, CurrentTime);
       done
     };
