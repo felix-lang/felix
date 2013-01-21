@@ -1,3 +1,8 @@
+
+@h1 Array Abstactions.
+We specify two core array abstractions: arrays as values
+and arrays as objects.
+@felix
 //$ Array as Value (immutable).
 class ArrayValue[t,v]
 {
@@ -198,5 +203,4 @@ class TrueContiguousArrayObject[t,x, v]
   inherit ContiguousArrayObject[t,v];
   fun + (pa:t, i:x) : carray [v] => pa + render i;
 }
-
 

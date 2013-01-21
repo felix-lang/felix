@@ -277,11 +277,19 @@ fun xlat_felix(t:string, dir:string): bool * string =
       var n = b; 
       while n.[0] == char "'" or n.[0] == char '"' do n = n.[1 to]; done
       while n.[-1] == char "'" or n.[-1] == char '"' do n = n.[to -1]; done
-      if n.[-4 to] != ".flx" do n+= ".flx"; done // hack, fixme
-      match get_file(n,INSTALL_ROOT,FLX_PATH) with
-      | Some ?f => { write_string('<a href="/$'+f+'" >' + b + '</a>') ; }
-      | None => {  write_string('<span class="fstring">'+txt2html b+"</span>"); }
-      endmatch;
+      var try_flx = n+ ".flx"; 
+      var resolve_flx = get_file (try_flx, INSTALL_ROOT,FLX_PATH);
+      var try_fdoc = n+ ".fdoc"; 
+      var resolve_fdoc= get_file (try_fdoc, INSTALL_ROOT,FLX_PATH);
+      var flx_time,flx_file = match resolve_flx with | Some ?f => FileStat::filetime f,f | None => 0.0,"";
+      var fdoc_time,fdoc_file = match resolve_fdoc with | Some ?f => FileStat::filetime f,f | None => 0.0,"";
+      if flx_time > fdoc_time do 
+        write_string('<a href="/$'+flx_file+'" >' + b + '</a>') ;
+      elif fdoc_time > flx_time do
+        write_string('<a href="/$'+fdoc_file+'" >' + b + '</a>') ;
+      else 
+        write_string('<span class="fstring">'+txt2html b+"</span>");
+      done 
     elif last_key in ("header","body") do
       n = b; 
       var quote = '"""';
