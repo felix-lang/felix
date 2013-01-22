@@ -21,6 +21,8 @@ let process_lib
       ~include_dirs:state.syms.compiler_options.include_dirs
       (lib ^ ".flx"),lib
   in
+
+  (* TOP LEVEL LIBS HAVE TO BE *.flx -- should allow *.fdoc too *)
   let lib_name = Flx_filesys.join lib_filedir (lib_filename ^ ".flx") in
 
   (* this is wrong, should be he max of the included file times, but until
@@ -41,13 +43,38 @@ print_endline ("Libtab name = " ^ libtab_name);
     libtab_name
   in
 
-  (* Return if the file has been changed since it was cached. *)
+  (* if both files are deleted, that's new, otherwise just return the
+     time of the most recent file
+  *)
+  let filtim f = 
+    let flxt = Flx_filesys.virtual_filetime Flx_filesys.big_bang (f^".flx") in
+    let flxd = Flx_filesys.virtual_filetime Flx_filesys.big_bang (f^".fdoc") in
+    let result = 
+      if flxt = Flx_filesys.big_bang && flxd = Flx_filesys.big_bang then begin
+print_endline ("Cannot find either " ^ f^".flx" ^ " or " ^ f ^".fdoc: rebuilding library");
+        Flx_filesys.big_crunch
+      end
+      else max flxt flxd
+    in 
+(*
+    print_endline ("File " ^ f ^ " time= " ^ string_of_float result);
+*)
+    result
+  in
+(* Return if the file has been changed since it was cached. *)
   let validate (_,depnames,_,_,_,_,_,_,_,_,_) =
     let filetimes = List.fold_left (fun acc f ->
-(* print_endline ("dep file = " ^ f); *)
-      max acc (Flx_filesys.virtual_filetime Flx_filesys.big_crunch (f^".flx")))
+(*
+print_endline ("dep file = " ^ f);
+*)
+      max acc (filtim f))
       Flx_filesys.big_bang depnames
     in
+(*
+print_endline ("Dependent filetimes = " ^ string_of_float filetimes);
+print_endline ("cached library time = " ^ string_of_float lib_cache_time);
+print_endline (if filetimes < lib_cache_time then "Files unchanged using cache" else "Files changed, rebuilding");
+*)
     filetimes < lib_cache_time
   in
 
