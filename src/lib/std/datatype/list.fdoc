@@ -1,8 +1,16 @@
-publish "List manipulation"
+
+@h1  Singly Linked List.
+The core data type for most functional programming languages.
+@felix
 open class List
 {
+@h2 The {list} type.
+@felix
   union list[T] = | Empty | Cons of T * list[T];
 
+@h2 Splice
+This is primarily a non-functional helper routine.
+@felix
   //$ The second list is made the tail of the
   //$ list stored at the location pointed at by the first argument.
   //$ If the first list is empty, the variable will point
@@ -31,6 +39,9 @@ open class List
     """
   ;
 
+@h2 In-place unsafe reversal.
+Another helper routine.
+@felix
   //$ In place list reversal: unsafe!
   // second arg is a dummy to make overload work
   proc rev[T,PLT=&list[T]] : &list[T] = "_rev($1,(?1*)0);" requires _iprev_[T,PLT];
@@ -54,6 +65,9 @@ open class List
     """
   ;
 
+@h2 In-place reversal.
+Another variant of the unsafe reversal.
+@felix
   // in place list reversal, also returns the last element
   // as a list, empty iff the original list is
   // unsafe!
@@ -77,6 +91,10 @@ open class List
     """
   ;
 
+@h2 List {copy}
+Make an entirely new copy of a list.
+Primarily a helper.
+@felix
   //$ Copy a list.
   fun copy[T] (x:list[T]):list[T]= {
     var y = rev x;
@@ -84,6 +102,9 @@ open class List
     return y;
   }
 
+@h2 Copy and return last {copy_last}
+Yet another helper.
+@felix
   //$ Copy a list, and return last element as a list,
   //$ empty if original list was empty.
   proc copy_last[T] (inp:list[T], out:&list[T], last:&list[T]) {
@@ -92,14 +113,22 @@ open class List
   }
 
 
+@h2 Named constructor for empty list.
+@felix
   //$ Make an empty list.
   ctor[T] list[T] () => Empty[T];
 
+@h2 Construct a singleton list.
+Does not work if the argument is an array
+or option iterator.
+@felix
   //$ Make a list with one element.
   //$ NOTE: list (1,2) is a list of 2 ints.
   //$ To get a list of one pair use list[int*int] (1,2) instead!
   ctor[T] list[T] (x:T) => Cons(x, Empty[T]);
 
+@h2 Construct a list from an array.
+@felix
   //$ Make a list from an array.
   ctor[T,N] list[T] (x:array[T, N]) = {
     var o = Empty[T];
@@ -109,10 +138,10 @@ open class List
     return o;
   }
 
-  //$ List comprehension:
-  //$ Make a list from a stream.
-  ctor[T] list[T](f: (1->opt[T])) => list_comprehension f;
-
+@h2 List comprehension.
+Make a list from an option stream.
+Named variant.
+@felix
   //$ List comprehension:
   //$ Make a list from a stream.
   fun list_comprehension[T] (f: (1->opt[T])) = {
@@ -129,9 +158,20 @@ open class List
     return aux Empty[T];
   }
 
+@h2 List comprehension.
+Make a list from an option stream.
+Constructor variant.
+@felix
+//$ List comprehension:
+  //$ Make a list from a stream.
+  ctor[T] list[T](f: (1->opt[T])) => list_comprehension f;
+
+@h2 Construe a list as an array value.
+@felix
   //$ Contrue a list as an array value
   instance[T] ArrayValue[list[T],T] {
-
+@h3 Core routine {len}
+@felix
     //$ Return umber of elements in a list.
     pure fun len (x:list[T]) = {
       fun aux (acc:size) (x:list[T]) =>
@@ -142,13 +182,16 @@ open class List
       ;
       return aux 0uz x;
     }
-
+@h3 Core routine {unsafe_get}
+@felix
     //$ get n'th element
     pure fun unsafe_get: list[T] * size -> T =
       | Cons (?h,_), 0uz => h
       | Cons (_,?t), ?i => unsafe_get (t, i - 1uz)
     ;
 
+@h3 Default performance override {iter}
+@felix
     //$ Apply a procedure to each element of a list.
     proc iter (_f:T->void) (x:list[T]) {
       match x with
@@ -158,6 +201,8 @@ open class List
       ;
     }
 
+@h3 Default performance override {fold_left}
+@felix
     //$ Traditional left fold over list (tail rec).
     fun fold_left[U] (_f:U->T->U) (init:U) (x:list[T]):U =
     {
@@ -170,6 +215,8 @@ open class List
       return aux init x;
     }
 
+@h3 Default performance override {fold_right}
+@felix
     //$ Right fold over list (not tail rec!).
     fun fold_right[U] (_f:T->U->U) (x:list[T]) (init:U):U =
     {
@@ -184,12 +231,16 @@ open class List
 
   }
 
+@h2 Test for empty list {is_empty}
+@felix
   //$ Test if a list is empty.
   pure fun is_empty[T] : list[T] -> 2 =
     | Empty => true
     | _ => false
   ;
 
+@h2 Tail of a list {tail}
+@felix
   //$ Tail of a list, abort with match failure if list is empty.
   pure fun tail[T] (x:list[T]) : list[T] = {
     match x with
@@ -197,6 +248,9 @@ open class List
     endmatch;
   }
 
+@h2 Reverse map a list {rev_map}
+Tail recursive.
+@felix
   //$ map a list, return mapped list in reverse order (tail rec).
   fun rev_map[T,U] (_f:T->U) (x:list[T]): list[U] = {
     fun aux (inp:list[T]) (out:list[U]) : list[U] =>
@@ -208,6 +262,10 @@ open class List
     return aux x Empty[U];
   }
 
+@h2 Map a list {map}
+Tail recursive. Uses rev_map and then inplace revseral.
+This is safe because we enforce linearity by abstraction.
+@felix
   //$ map a list (tail-rec).
   //  tail rec due to in-place reversal of result.
   fun map[T,U] (_f:T->U) (x:list[T]): list[U] =
@@ -217,6 +275,9 @@ open class List
     return r;
   }
 
+@h2 Reverse a list {rev}.
+Tail recursive.
+@felix
   //$ reverse a list (tail rec).
   pure fun rev[T] (x:list[T]):list[T]= {
     fun aux (x:list[T]) (y:list[T]) : list[T] =
@@ -230,6 +291,10 @@ open class List
     }
     return aux x Empty[T];
   }
+
+@h2 Zip a pair of lists to a list of pairs {zip2}
+Returns a list the length of the shortest argument.
+@felix
   //$ Zip two lists into a list of pairs.
   //$ Zips to length of shortest list.
   fun zip2[T1,T2] (l1: list[T1]) (l2: list[T2]) : list[T1 * T2] = 
@@ -243,6 +308,9 @@ open class List
     return aux l1 l2 Empty[T1 * T2];
   }
 
+@h2 A list of integers {range}.
+From {low} to {high} exclusive with given {step}.
+@felix
   //$ Generate an ordered list of ints between low and high with given step.
   //$ Low included, high not included.
   fun range (low:int, high:int, step:int) =
@@ -274,12 +342,19 @@ open class List
     ;
   }
 
+@h2 Consecutive integers {range}
+@felix
   //$ Range with step 1.
   fun range (low:int, high:int) => range(low, high, 1);
 
+@h2 Non-negative integers to limit {range}
+{num} integers 0 to {num-1}.
+@felix
   //$ Range from 0 to num (excluded).
   fun range (num:int) => range(0, num, 1);
 
+@h2 Concatenate two lists {join}.
+@felix
   //$ Concatenate two lists.
   fun join[T] (x:list[T]) (y:list[T]):list[T] =
   {
@@ -297,15 +372,22 @@ open class List
   //$ Concatenate two lists.
   pure fun + [T] (x:list[T], y: list[T]):list[T] => join x y;
 
+@h2 Cons an element onto a list.
+@felix
   //$ Prepend element to head of list.
   pure fun + [T] (x:T, y:list[T]):list[T] => Cons (x, y);
 
+@h2 Append an element onto a list.
+O(N) slow.
+@felix
   //$ Append element to tail of list (slow!).
   noinline fun + [T] (x:list[T], y:T):list[T] => rev$ Cons (y, rev x);
 
   //$ Append element to tail of list (slow!).
   proc += [T] (x:&list[T], y:T) { x <- *x + y; }
 
+@h2 Concatenate a list of lists {cat}
+@felix
   //$ Concatenate all the lists in a list of lists.
   noinline fun cat[T] (x:list[list[T]]):list[T] =
   {
@@ -317,6 +399,8 @@ open class List
      ;
    }
 
+@h2 Pack list of strings into a string with separator {cat}
+@felix
   //$ Concatenate all the strings in a list with given separator.
   pure fun cat (sep:string) (x:list[string]):string =
   {
@@ -329,6 +413,8 @@ open class List
     ;
   }
 
+@h2 Map a list to a list of strings and cat with separator {catmap}
+@felix
   fun catmap[T] (sep:string) (f:T -> string) (ls: list[T]) =>
     cat sep (map f ls)
   ;
@@ -342,6 +428,8 @@ open class List
   ;
 
  
+@h2 Value membership
+@felix
   //$ Return true if one value in a list satisfies the predicate.
   fun mem[T] (eq:T -> bool) (xs:list[T]) : bool =>
     match xs with
@@ -363,6 +451,9 @@ open class List
     fun \in (x:T, a:list[T]) => mem[T,T] eq of (T * T) a x;
   }
 
+@h2 Value Find by relation {find}
+Returns option.
+@felix
   //$ return option of the first element in a list satisfying the predicate.
   fun find[T] (eq:T -> bool) (xs:list[T]) : opt[T] =>
     match xs with
@@ -506,85 +597,3 @@ instance[T with Show[T]] Str[List::list[T]] {
   ;
 }
 
-publish "Association Lists (lists of pairs)"
-open class Assoc_list
-{
-  typedef assoc_list[A,B] = List::list[A*B];
-
-  // check is the key (left element) of a pair
-  // satisfies the predicate
-  fun mem[A,B] (eq:A -> bool) (xs:assoc_list[A,B]) : bool =>
-    List::mem (fun (a:A, b:B) => eq a) xs;
-  ;
-
-  // check is the key (left element) of a pair
-  // satisfies the relation to given element 
-  fun mem[A,B,T] (eq:A * T -> bool) (xs:assoc_list[A,B]) (e:T) : bool =>
-    mem (fun (a:A) => eq(a, e)) xs;
-  ;
-
-  instance[A,B] Set[assoc_list[A,B], A] {
-    fun mem[A,B with Eq[A]] (xs:assoc_list[A,B]) (e:A) : bool => 
-      mem eq of (A * A) xs e
-    ;
-  }
-
-  // find optionally the first value whose associate key satisfies 
-  // the given predicate
-  fun find[A,B] (eq:A -> bool) (xs:assoc_list[A,B]) : opt[B] =>
-    match xs with
-    | Empty => None[B]
-    | Cons ((?a, ?b), ?t) => if eq(a) then Some b else find eq t endif
-    endmatch
-  ;
-
-  // find optionally the first value whose associate key (left slot)
-  // satisfies the given relation to the given element (right slot) 
-  fun find[A,B,T] (eq:A * T -> bool) (xs:assoc_list[A,B]) (e:T) : opt[B] =>
-    find (fun (a:A) => eq (a, e)) xs;
-  ;
-
-  fun find[A,B with Eq[A]] (xs:assoc_list[A,B]) (e:A) : opt[B] =>
-    find eq of (A * A) xs e
-  ;
-}
-
-class S_expr 
-{
-  union sexpr[T] = | Leaf of T | Tree of list[sexpr[T]]; 
-
-  fun fold_left[T,U] (_f:U->T->U) (init:U) (x:sexpr[T]):U =>
-    match x with
-    | Leaf ?a => _f init a
-    | Tree ?b => List::fold_left (S_expr::fold_left _f) init b
-  ;
-
-  proc iter[T] (_f:T->void) (x:sexpr[T]) {
-    match x with
-    | Leaf ?a => _f a;
-    | Tree ?b => List::iter (S_expr::iter _f) b;
-    endmatch;
-  }
-
-  fun map[T,U] (_f:T->U) (x:sexpr[T]):sexpr[U] =>
-    match x with
-    | Leaf ?a => Leaf (_f a)
-    | Tree ?b => Tree ( List::map (S_expr::map _f) b )
-  ;
-
-  instance[T with Eq[T]] Set[sexpr[T],T] {
-    fun \in (elt:T, x:sexpr[T]) => 
-      fold_left (fun (acc:bool) (v:T) => acc or v == elt) false x; 
-  }
-  instance[T with Str[T]] Str[sexpr[T]] {
-    noinline fun str(x:sexpr[T])=>
-      match x with 
-      | Leaf ?a => str a
-      | Tree ?b => str b 
-    ;
-  }
-
-}
-
-open[T with Str[T]] Str[S_expr::sexpr[T]];
-open[T with Eq[T]] Set[S_expr::sexpr[T],T];

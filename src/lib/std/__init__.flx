@@ -44,22 +44,7 @@ include "std/categ";
 include "std/cmdopt";
 
 // control
-include "std/control";
-include "std/stream";
-include "std/schannels";
-include "std/fibres";
-include "std/future";
-include "std/spipe";
-include "std/mux";
-
-// pthreads (portable)
-include "std/pthread";
-include "std/pchannels";
-include "std/mutex";
-include "std/ts_counter";
-include "std/ts_bound_queue";
-include "std/ppipe";
-include "std/forkjoin";
+include "std/control/__init__";
 
 //memory management
 include "std/gc";
@@ -78,38 +63,9 @@ include "std/time";
 include "std/codec/__init__";
 
 // base data types
-include "std/tuple";
-include "std/option";
-include "std/slice";
-include "std/string";
-include "std/list";
-
-// arrays
-include "std/array_class";
+include "std/datatype/__init__";
+include "std/strings/__init__";
 include "std/carray";
-include "std/array";
-include "std/varray";
-include "std/darray";
-include "std/sarray";
-include "std/bsarray";
-include "std/judy";
-include "std/sort";
-
-// dictionaries
-include "std/strdict";
-
-// tree
-include "std/avl";
-
-// misc
-include "std/lexer";
-
-// google re2 regexps
-include "std/re2";
-include "std/regdef";
-
-// tre
-include "std/tre";
 
 // database
 include "std/db/__init__";

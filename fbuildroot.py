@@ -466,7 +466,7 @@ def build(ctx):
 
     # copy files into the library
     buildsystem.copy_dir_to(ctx, ctx.buildroot, 'src/lib',
-        pattern='*.{flx,flxh,files,html,sql,css,js,py,png}')
+        pattern='*.{flx,flxh,fdoc,files,html,sql,css,js,py,png}')
     
     # copy extra files for web
     #buildsystem.copy_dir_to(ctx, ctx.buildroot+'/lib/web', 'src/lib/web',
@@ -482,7 +482,7 @@ def build(ctx):
 
     # copy tools
     buildsystem.copy_dir_to(ctx, ctx.buildroot, 'src/tools',
-        pattern='*.flx{,h}')
+        pattern='*.{flxh,flx,fdoc}')
 
     buildsystem.copy_dir_to(ctx, ctx.buildroot, 'src/wiki',
         pattern='*.*')

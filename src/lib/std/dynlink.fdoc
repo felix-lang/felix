@@ -18,7 +18,7 @@ These core operations are wrapped, in C++, to remove the
 file loading dependencies, and provide resource control
 integrated with the garbage collector. 
 
-We use "LoadLibrary" on Windows and "dlopen" on Unix platforms
+We use {LoadLibrary} on Windows and {dlopen} on Unix platforms
 wrapped inside a C++ class {flx_dynlink_t} that represents
 a library, in Felix the type {flx_library} is used.
 

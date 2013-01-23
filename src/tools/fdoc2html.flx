@@ -122,7 +122,7 @@ object xlat_fdoc (t:string, filename:string) implements fdoc_t = {
 
   // headings
   proc h(n:int, txt:string) {
-    heading.head (#(fileseq.docnum), n, txt);
+    heading.head (#(fileseq.docnum), n, markdown txt);
   }
 
 //---------------------------------------------------
