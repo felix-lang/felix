@@ -1,4 +1,3 @@
-include "std/ralist";
 open Ralist;
 
 val five = RAodd(N1 1, RAevn(
