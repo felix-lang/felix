@@ -17,6 +17,16 @@ struct GC_EXTERN gc_shape_t;   // the shape of collectable objects
 struct GC_EXTERN collector_t;  // the collector itself
 struct GC_EXTERN allocator_t;  // the collector itself
 struct GC_EXTERN offset_data_t; // private data for offset scanner
+struct GC_EXTERN pointer_data_t; // description of a pointer
+
+struct GC_EXTERN pointer_data_t
+{
+  void *pointer;                      //< candidate pointer
+  void *head;                         //< head object
+  unsigned long max_elements;         //< allocated slots
+  unsigned long used_elements;        //< used slots
+  gc_shape_t *shape;                  //< shape
+};
 
 enum gc_shape_flags_t {
   gc_flags_default    = 0,            //< collectable and mobile
@@ -148,6 +158,8 @@ struct GC_EXTERN collector_t
   virtual unsigned long get_used(void *memory)=0;
   virtual unsigned long get_count(void *memory)=0;
   virtual void *create_empty_array( gc_shape_t *shape, unsigned long count)=0;
+
+  virtual pointer_data_t get_pointer_data(void *)=0;
 private:
   virtual unsigned long v_get_allocation_count()const=0;
   virtual unsigned long v_get_root_count()const=0;

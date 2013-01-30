@@ -510,7 +510,7 @@ print_endline ("Normalised expression " ^ sbe bsym_table e);
   | BEXPR_new e ->
     let ref_type = tn t in
     let _,t' = e in
-    let pname = shape_of syms bsym_table tn t' in
+    let pname = direct_shape_of syms bsym_table tn t' in
     let typ = tn t' in
     let frame_ptr = ce_new 
         [ ce_atom "*PTF gcp"; ce_atom pname; ce_atom "true"] 

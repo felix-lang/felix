@@ -56,3 +56,31 @@ class Cxx_headers
   header cwctype = '#include <cwctype>';
 }
 
+class Cxx11_headers  // http://en.cppreference.com/w/cpp/header
+{
+  inherit Cxx_headers;
+  header system_error = '#include <system_error>'; // std=?
+  header typeidex = '#include <typeindex>';
+  header type_traits = '#include <type_traits>';
+  header chrono = '#include <chrono>';
+  header initialiser_list = '#include <initialiser_list>';
+  header tuple = '#include <tuple>';
+  header scope_allocator = '#include <tuple>';
+  header cuchar = '#include <cuchar>';
+  header array = '#include <array>';
+  header forward_list = '#include <forward_list>';
+  header unordered_set = '#include <unordered_set>';
+  header unordered_map = '#include <unordered_map>';
+  header ratio = '#include <ratio>';
+  header cfenv= '#include <ratio>';
+  header codecvt = '#include <codecvt>';
+  header regex = '#include <regex>';
+  header atomic = '#include <atomic>';
+  header thread = '#include <atomic>';
+  header mutex = '#include <mutex>';
+  header future = '#include <future>';
+  header condition_variable = '#include <condition_variable>';
+  header ctgmath = '#include <ctgmath>';
+  header cstdalign = '#include <cstdalign>';
+  header cstdbool = '#include <cstdbool>';
+}

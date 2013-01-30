@@ -1,0 +1,30 @@
+
+@h1 Low level Garbage Collector Access
+@felix
+class Collector
+{
+  open Rtti;
+  struct pointer_data_t
+  {
+     pointer: address;
+     head: address;
+     max_elements: ulong;  // dynamic slots
+     used_elements: ulong; // dynamic slots used
+     shape:gc_shape_t;
+  }; 
+
+  private type raw_pointer_data_t = "::flx::gc::generic::pointer_data_t" ;
+  private fun get_raw_pointer_data: address -> raw_pointer_data_t = 
+    "PTF gcp->collector->get_pointer_data($1)"
+    requires property "needs_gc"
+  ;
+  fun get_pointer_data (p:address) => C_hack::reinterpret[pointer_data_t](get_raw_pointer_data p);
+
+  fun is_felix_pointer (pd: pointer_data_t) => not (isNULL pd.head);
+  fun is_head_pointer (pd: pointer_data_t) => pd.pointer == pd.head; 
+  fun repeat_count (pd: pointer_data_t) => pd.used_elements *  pd.shape.number_of_elements.ulong;
+  fun allocated_bytes (pd: pointer_data_t) => pd.max_elements * 
+    pd.shape.number_of_elements.ulong * pd.shape.bytes_per_element.ulong
+  ;
+
+}

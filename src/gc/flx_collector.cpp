@@ -449,6 +449,32 @@ void flx_collector_t::register_pointer(void *q, int reclimit)
   else scan_object(q, reclimit-1);
 }
 
+::flx::gc::generic::pointer_data_t flx_collector_t::get_pointer_data (void *p)
+{
+  ::flx::gc::generic::pointer_data_t pdat;
+  pdat.head = NULL;
+  pdat.max_elements = 0ul;
+  pdat.used_elements = 0ul;
+  pdat.shape = NULL;
+  pdat.pointer = p;
+ 
+  Word_t cand = (Word_t)p;
+  Word_t head = cand;
+  Word_t *ppshape = (Word_t*)JudyLLast(j_shape,&head, &je);
+  if(ppshape==(Word_t*)PPJERR)judyerror("get_pointer_data");
+  if(ppshape == NULL) return pdat; // no lower object
+  gc_shape_t *pshape = (gc_shape_t*)(*ppshape & ~1UL);
+  unsigned long max_slots = get_count((void*)head);
+  unsigned long used_slots = get_used((void*)head);
+  unsigned long n = max_slots * pshape->count * pshape->amt;
+  if(cand >= (Word_t)(void*)((unsigned char*)(void*)head+n)) return pdat; // not interior
+  pdat.head = (void*)head;
+  pdat.max_elements = max_slots;
+  pdat.used_elements = used_slots;
+  pdat.shape = pshape;
+  return pdat;
+}
+
 void flx_collector_t::scan_object(void *p, int reclimit)
 {
   Word_t reachable = (parity & 1UL) ^ 1UL;
@@ -456,10 +482,10 @@ again:
   if(debug)
     fprintf(stderr,"Scan object %p, reachable bit value = %d\n",p,(int)reachable);
   Word_t cand = (Word_t)p;
-  Word_t fp=cand;
-  Word_t *w = (Word_t*)JudyLLast(j_shape,&fp,&je);
-  if(w==(Word_t*)PPJERR)judyerror("scan_object");
-  if(w == NULL) return; // no lower object
+  Word_t head=cand;
+  Word_t *ppshape = (Word_t*)JudyLLast(j_shape,&head,&je);
+  if(ppshape==(Word_t*)PPJERR)judyerror("scan_object");
+  if(ppshape == NULL) return; // no lower object
   /*
   if(debug)
   {
@@ -467,26 +493,26 @@ again:
     fprintf(stderr," .. type=%s!\n",((gc_shape_t*)(*w & ~1UL))->cname);
   }
   */
-  if( (*w & 1UL) == reachable) return;   // already handled
+  if( (*ppshape & 1UL) == reachable) return;   // already handled
 
-  gc_shape_t *shape = (gc_shape_t*)(*w & ~1UL);
-  unsigned long n = get_count((void*)fp) * shape->count * shape->amt;
-  if(cand >= (Word_t)(void*)((unsigned char*)(void*)fp+n)) return; // not interior
+  gc_shape_t *pshape = (gc_shape_t*)(*ppshape & ~1UL);
+  unsigned long n = get_count((void*)head) * pshape->count * pshape->amt;
+  if(cand >= (Word_t)(void*)((unsigned char*)(void*)head+n)) return; // not interior
   if(debug)
-    fprintf(stderr,"MARKING object %p, shape %p, type=%s\n",(void*)fp,shape,shape->cname);
+    fprintf(stderr,"MARKING object %p, shape %p, type=%s\n",(void*)head,pshape,pshape->cname);
 
-  *w = (*w & ~1uL) | reachable;
+  *ppshape = (*ppshape & ~1uL) | reachable;
 
 
-  if(shape->flags & gc_flags_conservative)
+  if(pshape->flags & gc_flags_conservative)
   {
-    unsigned long n_used = get_used((void*)fp) * shape->count;
+    unsigned long n_used = get_used((void*)head) * pshape->count;
     // end of object, rounded down to size of a void*
     void **end = (void**)(
-      (unsigned char*)(void*)fp +
+      (unsigned char*)(void*)head +
       n_used * n / sizeof(void*) * sizeof(void*)
     );
-    for ( void **i = (void**)fp; i != end; i = i+1)
+    for ( void **i = (void**)head; i != end; i = i+1)
     {
       //if(debug)
       //  fprintf(stderr, "Check if *%p=%p is a pointer\n",i,*(void**)i);
@@ -498,9 +524,9 @@ again:
   }
   else
   {
-    unsigned long dyncount = get_used((void*)fp);
-    if(shape->scanner) {
-      void *r = shape->scanner(this, shape, (void*)fp,dyncount,reclimit);
+    unsigned long dyncount = get_used((void*)head);
+    if(pshape->scanner) {
+      void *r = pshape->scanner(this, pshape, (void*)head,dyncount,reclimit);
       if (r) { p = r; goto again; }
     }
   }

@@ -23,10 +23,10 @@ class Rtti {
 
   //$ The static number of elements in an array type.
   //$ Note this is not the size of a varray!
-  fun count: gc_shape_t -> size = "$1->size";
+  fun number_of_elements: gc_shape_t -> size = "$1->count";
 
-  //$ Number of bytes in the object.
-  fun amt: gc_shape_t -> size = "$1->amt";
+  //$ Number of bytes in one element.
+  fun bytes_per_element: gc_shape_t -> size = "$1->amt";
 
   //$ The finaliser function.
   fun finaliser: gc_shape_t -> &gc_finaliser_t  = "$1->finaliser";

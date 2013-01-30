@@ -97,7 +97,7 @@ proc print_help() {
   println "--stdout=file        : run program with standard output redirected to file";
   println "--backup             : backup working source tree to dir 'backup'";
   println "--install            : install --test directory to configured location";
-  println "--dist=path            : install --test directory to configured location";
+  println "--dist=path          : install --test directory to configured location";
   println "--import=file        : add an import which is prefixed to all files being translated";
   println "--import=@file       : add all the files listed in file as imports (recursive on @)";
   println "--nostdimport        : don't import the standard imports nugram.flxh and flx.flxh";
@@ -291,8 +291,13 @@ proc install() {
        "(lib/web)/.*\\.(css|png|jpg|gif|js|db|sql|html)"
      )),
 
+     (" * Tool sources",
+     list( 
+       "(tools)/.*\\.(flx|fdoc)"
+     )),
 
-     (" * Regression and Unit test code", list("(test|tut)/.*\\.(flx|expect)")),
+
+     (" * Regression and Unit test code", list("(test|tut)/.*\\.(flx|fdoc|expect)")),
 
      (" * Documentation", 
        list (
@@ -311,41 +316,6 @@ proc install() {
 failure:> 
     println$ "Install failed, code = " + str(result);
     println$ "Flx_cp: ERROR " + str result+": "+strerror(result.errno_t); 
-    System::exit(result);
-}
-
-
-proc backup() {
-    debugln "Backup Felix build";
-    println$ "FROM: " + FLX_INSTALL_DIR;
-    println$ "TO  : backup";
-    var result = 0;
-    
-    proc cp(s:string) {
-      cmd=FLX_INSTALL_DIR+"/bin/flx_cp '"+FLX_INSTALL_DIR+"' '"+s+"' 'backup/${0}'";
-      println$ cmd;
-      result=system(cmd);
-      if result != 0 do println$ "ERROR " + str result; goto failure; done
-    }
-    srcs := list(
-     "(tools|lib)/.*\\.(flxh?|par2|libtab)",
-     "lib/rtl/.*\\.(h|hpp|c|cpp|dylib|so|a)",
-     "lib/rtl/flx_a?run.(o|obj)",
-     "bin/.*",
-     "config/.*",
-     "(test|tut)/.*\\.(flx|expect)",
-     "doc/.*\\.(fdoc|html)",
-     "web/.*\\.(fdoc|html|gif|png|jpg)",
-     "index.html",
-     "index2.html",
-     "VERSION"
-    );
-    iter cp srcs; 
-
-    println "Source Install succeeded";
-    System::exit(result);
-failure:> 
-    println$ "Install failed, code = " + str(result);
     System::exit(result);
 }
 
@@ -899,8 +869,7 @@ grabbing_args: while grab == 1 and argno<System::argc do
 
   elif arg=="--install" do
     install; // non-return
-  elif arg=="--backup" do
-    backup; // non-return
+
   elif arg=="--install-bin" do
     install_bin; // non-return
   elif prefix(arg,"--stdout=") do

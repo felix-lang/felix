@@ -7,7 +7,7 @@
 @h2 Library
 <a href="/config">The Configuration.</a> Actual, installed, complete configuration data.
 @p
-<a href="/lib">The Library.</a> Actual, installed, complete library.
+<a href="../lib">The Library.</a> Actual, installed, complete library.
 @p
 <a href="flx_libcontents.html">Felix Library Contents by File</a>
 @p

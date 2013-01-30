@@ -7,4 +7,6 @@ include "std/felix/cident";
 // run time type information
 include "std/felix/rtti";
 
+// Garbage Collector Internals.
+include "std/felix/flx_gc";
 
