@@ -48,6 +48,7 @@ static ::flx::gc::collector::offset_data_t slist_node_offset_data = { 2, slist_n
   0, // no finaliser,
   &slist_node_offset_data,
   ::flx::gc::generic::scan_by_offsets,
+  0,0, // no encoder or decoder
   ::flx::gc::generic::gc_flags_default
 };
 
@@ -86,6 +87,7 @@ static ::flx::gc::collector::offset_data_t slist_offset_data = { 1, slist_offset
   0, // no finaliser
   &slist_offset_data,
   ::flx::gc::generic::scan_by_offsets,
+  0,0, // no encoder or decoder
   ::flx::gc::generic::gc_flags_default
 };
 
@@ -154,6 +156,7 @@ static ::flx::gc::collector::offset_data_t _fthread_offset_data = { 1, _fthread_
   0,
   &_fthread_offset_data,
   ::flx::gc::generic::scan_by_offsets,
+  0,0, // no encoder or decoder
   gc::generic::gc_flags_immobile
 };
 
@@ -207,6 +210,7 @@ static ::flx::gc::collector::offset_data_t schannel_offset_data = { 2, schannel_
   0, // no finaliser
   &schannel_offset_data,
   ::flx::gc::generic::scan_by_offsets,
+  0,0, // no encoder or decoder
   gc::generic::gc_flags_default
 };
 
@@ -229,6 +233,7 @@ static ::flx::gc::collector::offset_data_t _uctor_offset_data = { 1, _uctor_offs
   0,
   &_uctor_offset_data,
   ::flx::gc::generic::scan_by_offsets,
+  0,0, // no encoder or decoder
   gc::generic::gc_flags_default
 };
 
@@ -244,6 +249,7 @@ static ::flx::gc::collector::offset_data_t _uctor_offset_data = { 1, _uctor_offs
   0,
   0,
   0,
+  0,0, // no encoder or decoder
   gc::generic::gc_flags_default
 };
 
@@ -263,6 +269,7 @@ static ::flx::gc::collector::offset_data_t _address_offset_data = { 1, _address_
   0,
   &_address_offset_data,
   ::flx::gc::generic::scan_by_offsets,
+  0,0, // no encoder or decoder
   gc::generic::gc_flags_default
 };
 
@@ -280,6 +287,7 @@ static ::flx::gc::collector::offset_data_t _address_offset_data = { 1, _address_
   0,
   0,
   0,
+  0,0, // no encoder or decoder
   gc::generic::gc_flags_default
 };
 

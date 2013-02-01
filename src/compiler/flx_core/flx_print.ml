@@ -988,6 +988,8 @@ and string_of_raw_req = function
   | Package_req c -> "package " ^ string_of_code_spec c
   | Scanner_req c -> "scanner " ^ string_of_code_spec c
   | Finaliser_req c -> "finaliser " ^ string_of_code_spec c
+  | Encoder_req c -> "encoder " ^ string_of_code_spec c
+  | Decoder_req c -> "decoder " ^ string_of_code_spec c
 
 (* fairly lame excess brackets here *)
 and string_of_raw_req_expr = function
@@ -1023,12 +1025,16 @@ and string_of_qual = function
 | `Raw_needs_shape t -> "needs_shape(" ^ string_of_typecode t ^ ")"
 | `Scanner cs -> "scanner(" ^ string_of_code_spec cs ^ ")"
 | `Finaliser cs -> "finaliser(" ^ string_of_code_spec cs ^ ")"
+| `Encoder cs -> "encoder(" ^ string_of_code_spec cs ^ ")"
+| `Decoder cs -> "decoder(" ^ string_of_code_spec cs ^ ")"
 
 and string_of_bqual bsym_table = function
 | #base_type_qual_t as x -> string_of_base_qual x
 | `Bound_needs_shape t -> "needs_shape(" ^ string_of_btypecode (Some bsym_table) t ^ ")"
 | `Scanner cs -> "scanner(" ^ string_of_code_spec cs ^ ")" 
 | `Finaliser cs -> "finaliser(" ^ string_of_code_spec cs ^ ")" 
+| `Encoder cs -> "encoder(" ^ string_of_code_spec cs ^ ")" 
+| `Decoder cs -> "decoder(" ^ string_of_code_spec cs ^ ")" 
 
 and string_of_quals qs = catmap " " string_of_qual qs
 and string_of_bquals bsym_table qs = catmap " " (string_of_bqual bsym_table) qs

@@ -107,6 +107,14 @@ let mkreqs state access parent_ts sr (rqs :raw_req_expr_t) : type_qual_t list *p
       | Finaliser_req s ->
         quals := `Finaliser s :: !quals;
         NREQ_true
+
+      | Encoder_req s ->
+        quals := `Encoder s :: !quals;
+        NREQ_true
+
+      | Decoder_req s ->
+        quals := `Decoder s :: !quals;
+        NREQ_true
     in
     let r = aux rqs in
     !quals, !props, !decls, r

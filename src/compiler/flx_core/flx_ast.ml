@@ -292,6 +292,8 @@ and type_qual_t = [
   | `Raw_needs_shape of typecode_t
   | `Scanner of CS.t
   | `Finaliser of CS.t
+  | `Encoder of CS.t
+  | `Decoder of CS.t
 ]
 
 and requirement_t =
@@ -302,6 +304,8 @@ and requirement_t =
   | Package_req of CS.t
   | Scanner_req of CS.t
   | Finaliser_req of CS.t
+  | Encoder_req of CS.t
+  | Decoder_req of CS.t
 
 and ikind_t = [
   | `Header

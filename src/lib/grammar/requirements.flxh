@@ -101,6 +101,21 @@ syntax requirements {
   //$ By default, if no finaliser is specifed, the C++ destructor is called.
   srequirement :=  "finaliser" scode_spec =># "`(Finaliser_req ,_2)";
 
+  //$ The encoder requirement applies only to a C type binding.
+  //$ It specifies the name of a C function which can be called 
+  //$ to serialise one element of the object.
+  //$ 
+  //$ By default, if no encoder is specifed, memcpy is used.
+  srequirement :=  "encoder" scode_spec =># "`(Encoder_req ,_2)";
+
+  //$ The decoder requirement applies only to a C type binding.
+  //$ It specifies the name of a C function which can be called 
+  //$ to deserialise one element of the object.
+  //$ 
+  //$ By default, if no decoder is specifed, memcpy is used.
+  srequirement :=  "decoder" scode_spec =># "`(Decoder_req ,_2)";
+
+
   //$ Requirement expressions. Deprecated.
   srequirement_atom:= srequirement =># "`(rreq_atom ,_1)";
 

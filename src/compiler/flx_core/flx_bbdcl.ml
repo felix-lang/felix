@@ -8,6 +8,8 @@ type btype_qual_t = [
   | `Bound_needs_shape of Flx_btype.t
   | `Scanner of CS.t
   | `Finaliser of CS.t
+  | `Encoder of CS.t
+  | `Decoder of CS.t
 ]
 
 type breqs_t = (Flx_types.bid_t * Flx_btype.t list) list
@@ -192,6 +194,8 @@ let iter
     | `Bound_needs_shape t -> f_btype t
     | `Scanner cs -> ()
     | `Finaliser cs -> ()
+    | `Encoder cs -> ()
+    | `Decoder cs -> ()
   in
   match bbdcl with
   | BBDCL_invalid -> ()
@@ -269,6 +273,8 @@ let map
     | `Bound_needs_shape t -> `Bound_needs_shape (f_btype t)
     | `Scanner cs -> `Scanner cs
     | `Finaliser cs -> `Finaliser cs
+    | `Encoder cs -> `Encoder cs
+    | `Decoder cs -> `Decoder cs
   in
   match bbdcl with
   | BBDCL_invalid -> bbdcl
@@ -355,6 +361,8 @@ let iter_uses f bbdcl =
     | `Bound_needs_shape t -> f_btype t
     | `Scanner cs -> ()
     | `Finaliser cs -> ()
+    | `Encoder cs -> ()
+    | `Decoder cs -> ()
   in
   match bbdcl with
   | BBDCL_fun (_,_,ps,res,_) ->

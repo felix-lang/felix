@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include "flx_gc_config.hpp"
 #include "pthread_thread.hpp"
+#include <string>
 
 // we use an STL set to hold the collection of roots
 #include <set>
@@ -36,7 +37,10 @@ enum gc_shape_flags_t {
 };
 
 /// Describes runtime object shape.
+typedef void finaliser_t (collector_t*, void*); 
 typedef void *scanner_t(collector_t*, gc_shape_t*, void *, unsigned long, int);
+typedef ::std::string encoder_t (void *);
+typedef void decoder_t (::std::string, void *);
 
 struct GC_EXTERN gc_shape_t
 {
@@ -44,9 +48,11 @@ struct GC_EXTERN gc_shape_t
   char const *cname;              ///< C++ typename
   std::size_t count;              ///< static array element count
   std::size_t amt;                ///< bytes allocated
-  void (*finaliser)(collector_t*, void*);  ///< finalisation function
+  finaliser_t *finaliser;         ///< finalisation function
   void *private_data;             ///< private data passed to scanner
   scanner_t *scanner;             ///< scanner function 
+  encoder_t *encoder;             ///< encoder function 
+  decoder_t *decoder;             ///< encoder function 
   gc_shape_flags_t flags;         ///< flags
 };
 

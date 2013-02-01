@@ -138,6 +138,7 @@ let rec gen_type_shape s syms bsym_table need_int last_ptr_map primitive_shapes 
       bcat s ( if not is_pod then ("  "^name^"_finaliser,\n") else ("  0,\n"));
       bcat s ("  "^ (if n<>0 then "&"^name^"_offset_data" else "0")^",\n");
       bcat s ("  "^ (if n<>0 then "&::flx::gc::generic::scan_by_offsets" else "0")^",\n");
+      bcat s ("  0,0, // no encoder or decoder\n");
       bcat s "  ::flx::gc::generic::gc_flags_default\n";
       bcat s "};\n"
 
@@ -187,6 +188,53 @@ let rec gen_type_shape s syms bsym_table need_int last_ptr_map primitive_shapes 
             else name ^ "_finaliser",true
           else finaliser, false
         in
+
+        let encoder = 
+           try 
+            List.iter (fun q-> match q with | `Encoder cs -> raise (Scanner cs) | _ -> () ) quals; 
+            None 
+          with Scanner cs -> Some cs 
+        in
+        let encoder = 
+          match encoder with 
+          | None -> "0" 
+          | Some (CS.Str s) -> s
+          | Some (CS.Str_template s) -> s
+          | Some _ -> assert false
+        in
+        let encoder, gen_dflt_encoder =
+          if encoder = "0"
+          then 
+            if is_pod then "0",false
+            else name ^ "_encoder",true
+          else encoder, false
+        in
+        (* hack because we can't gen an encoder yet *)
+        let encoder = if gen_dflt_encoder then "0" else encoder in
+
+        let decoder = 
+           try 
+            List.iter (fun q-> match q with | `Decoder cs -> raise (Scanner cs) | _ -> () ) quals; 
+            None 
+          with Scanner cs -> Some cs 
+        in
+        let decoder = 
+          match decoder with 
+          | None -> "0" 
+          | Some (CS.Str s) -> s
+          | Some (CS.Str_template s) -> s
+          | Some _ -> assert false
+        in
+        let decoder, gen_dflt_decoder =
+          if decoder = "0"
+          then 
+            if is_pod then "0",false
+            else name ^ "_decoder",true
+          else decoder, false
+        in
+        (* hack because we can't gen an decoder yet *)
+        let decoder = if gen_dflt_decoder then "0" else decoder in
+
         if complete then
           if not (Hashtbl.mem primitive_shapes name) then
           begin
@@ -210,6 +258,8 @@ let rec gen_type_shape s syms bsym_table need_int last_ptr_map primitive_shapes 
             bcat s ("  "^finaliser^","^(if is_pod then " // no finaliser" else "")^"\n");
             bcat s ("  0, // no client data\n");
             bcat s ("  "^scanner^", // scanner\n");
+            bcat s ("  "^encoder^","^(if is_pod then " // no encoder" else "")^"\n");
+            bcat s ("  "^decoder^","^(if is_pod then " // no decoder" else "")^"\n");
             bcat s ("  ::flx::gc::generic::gc_flags_default\n");
             bcat s "};\n"
           end else begin
@@ -246,11 +296,13 @@ let rec gen_type_shape s syms bsym_table need_int last_ptr_map primitive_shapes 
           bcat s ("  1,sizeof("^name^"),\n");
           bcat s ("  0,   // no finaliser\n");
           bcat s ("  0,0, // no client data or scanner\n");
+          bcat s ("  0,0, // no encoder or decoder\n");
           bcat s ("  ::flx::gc::generic::gc_flags_default\n")
         end else begin
           bcat s ("  1,sizeof("^name^"),\n");
           bcat s ("  "^name^"_finaliser,\n");
           bcat s ("  0,0,   // no client data or scanner\n");
+          bcat s ("  0,0, // no encoder or decoder\n");
           bcat s ("  ::flx::gc::generic::gc_flags_default\n")
         end
         ;

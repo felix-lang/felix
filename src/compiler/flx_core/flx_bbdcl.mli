@@ -6,6 +6,8 @@ type btype_qual_t = [
   | `Bound_needs_shape of Flx_btype.t
   | `Scanner of Flx_code_spec.t
   | `Finaliser of Flx_code_spec.t
+  | `Encoder of Flx_code_spec.t
+  | `Decoder of Flx_code_spec.t
 ]
 
 type breqs_t = (Flx_types.bid_t * Flx_btype.t list) list
