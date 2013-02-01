@@ -178,8 +178,7 @@ syn keyword felixDefine body
 syn keyword felixDefine comment
 syn keyword felixDefine export
 syn keyword felixDefine header
-syn keyword felixDefine scanner 
-syn keyword felixDefine finaliser 
+syn keyword felixDefine finaliser encoder decoder scanner
 syn keyword felixDefine include inherit inline
 syn keyword felixDefine macro
 syn keyword felixDefine noinline

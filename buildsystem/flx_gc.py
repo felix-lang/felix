@@ -14,6 +14,7 @@ def build_runtime(host_phase, target_phase):
     buildsystem.copy_hpps_to_rtl(target_phase.ctx,
         path / 'flx_gc.hpp',
         path / 'flx_judy_scanner.hpp',
+        path / 'flx_serialisers.hpp',
         path / 'flx_collector.hpp',
         path / 'flx_gc_private.hpp',
         path / 'flx_ts_collector.hpp',

@@ -14,6 +14,8 @@ class Rtti {
 
   //$ The type of a finalisation function.
   typedef gc_finaliser_t = collector_t * address --> void;
+  typedef gc_encoder_t = address --> string;
+  typedef gc_decoder_t = string * address --> void;
 
   //$ Iterator to find the next shape after a given one.
   fun next_shape: gc_shape_t -> gc_shape_t = "$1->next_shape";
@@ -30,6 +32,13 @@ class Rtti {
 
   //$ The finaliser function.
   fun finaliser: gc_shape_t -> &gc_finaliser_t  = "$1->finaliser";
+
+  //$ The encoder function.
+  fun encoder : gc_shape_t -> gc_encoder_t = "$1->encoder";
+
+  //$ The decoder function.
+  fun decoder: gc_shape_t -> &gc_decoder_t = "$1->decoder";
+
 
   //$ The number of pointers in the base type.
   //$ If the type is an array that's the element type.

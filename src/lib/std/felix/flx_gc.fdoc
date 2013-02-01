@@ -27,4 +27,32 @@ class Collector
     pd.shape.number_of_elements.ulong * pd.shape.bytes_per_element.ulong
   ;
 
+  //$ Diagnostic routine, dump pointer data and
+  //$ computed values.
+  proc print_pointer_data (pd: pointer_data_t)
+  {
+    println$ "Valid=" + str pd.Collector::is_felix_pointer;
+    println$ "Is head=" + pd.Collector::is_head_pointer.str;
+    var shape = pd.shape;
+    println$ "Element type =  " + shape.Rtti::cname.string;
+    var bpe = shape.Rtti::bytes_per_element.ulong;
+    println$ "Bytes per element = " + bpe.str;
+    println$ "Static array length = " + shape.Rtti::number_of_elements.str;
+    println$ "Dynamic array length = " + pd.used_elements.str; 
+    println$ "Max dynamic array length = " + pd.max_elements.str; 
+    var nelts = pd.used_elements * shape.Rtti::number_of_elements.ulong;
+    println$ "Aggregate number of used elements " + nelts.str;
+    println$ "Store to serialise: " + (nelts * bpe) . str;
+  }
+
+  //$ Diagnostic routine, print info about a pointer.
+  proc print_pointer_data (p:address) 
+  {
+    var pd = Collector::get_pointer_data p;
+    print_pointer_data (pd);
+  }
+  proc print_pointer_data[T] (p:&T) => print_pointer_data (C_hack::cast[address] p);
+  proc print_pointer_data[T] (p:@T) => print_pointer_data (C_hack::cast[address] p);
+  proc print_pointer_data[T] (p:+T) => print_pointer_data (C_hack::cast[address] p);
+
 }
