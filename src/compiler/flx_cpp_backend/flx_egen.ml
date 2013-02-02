@@ -699,7 +699,7 @@ print_endline ("make const ctor, union type = " ^ sbt bsym_table t' ^
         | CS.Str_template c ->
           let ts = map tn ts in
           csubst sr (Flx_bsym.sr bsym) c 
-            ~arg:(ce_atom "Error") ~args:[] 
+            ~arg:(fun () -> ce_atom "Error") ~args:[] 
             ~typs:[] ~argtyp:"Error" ~retyp:"Error" 
             ~gargs:ts 
             ~prec:"expr" 

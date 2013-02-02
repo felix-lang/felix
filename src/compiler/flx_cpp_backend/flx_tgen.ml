@@ -224,7 +224,7 @@ let rec gen_type_name syms bsym_table (index,typ) =
         | CS.Str c -> c
         | CS.Str_template c ->
         try sc "expr" (csubst (Flx_bsym.sr bsym) (Flx_bsym.sr bsym) c 
-           ~arg:(Flx_cexpr.ce_atom "Error") 
+           ~arg:(fun () -> Flx_cexpr.ce_atom "Error") 
            ~args:[] ~typs:[] ~argtyp:"Error" ~retyp:"Error" 
            ~gargs:tss 
            ~prec:"atom" ~argshape:"Error" ~argshapes:["Error"] ~display:["Error"] ~gargshapes:["Error"]
