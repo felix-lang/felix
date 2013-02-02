@@ -1,0 +1,56 @@
+
+@h1 Serialisation functions
+@felix
+class Serialise 
+{
+  open Collector;
+  open Rtti;
+
+  //$ Encode a string: write the length, then the chars.
+  fun string_encode (s:string) : string = 
+  {
+    var n : size = s.len;
+    var r = string ( C_hack::cast[+char] &n, C_hack::sizeof[size]);
+    return r + s;
+  }
+
+  //$ Encode binary image of a type, without length.
+  fun blit[T] (p: &T) => string ( C_hack::cast[+char] p, C_hack::sizeof[T]);
+  fun ncode [T] (var v: T) => blit &v;
+  fun ncode (p: address, n: size) => string (C_hack::cast[+char] p, n);
+
+  
+  fun encode (p:address) : string =
+  {
+    var pd = Collector::get_pointer_data p;
+    assert pd.is_felix_pointer;
+    var shape = pd.shape;
+
+    var pod = shape.finaliser.address.isNULL;
+    var has_encoder = not shape.encoder.C_hack::cast[address].isNULL;
+    var has_pointers = shape.n_offsets == 0uz;
+
+    // write shape
+    var out = ncode shape;
+
+    // write max slots
+    out += ncode pd.max_elements;
+  
+    // write used slots
+    out += ncode pd.used_elements;
+
+    if has_encoder do
+      for var i:size in 0uz upto pd.used_elements.size * shape.number_of_elements - 1uz do
+        // write out each encoded value prefixed by its length
+        out += string_encode (shape.encoder (C_hack::cast[+char] pd.head + i * shape.bytes_per_element).address);
+      done
+    elif pod do
+      // write the whole array out in one go, no need for length
+      out += ncode (pd.head, pd.used_elements.size * shape.number_of_elements * shape.bytes_per_element);
+    else
+      assert false;
+    done
+    return out;
+  }
+}
+
