@@ -13,7 +13,7 @@ open Flx_print
 open Flx_exceptions
 open Flx_maps
 
-let gen_offset_data s n name offsets isfun is_pod props flags last_ptr_map =
+let gen_offset_data s n name offsets isfun is_pod props flags last_ptr_map encoder_name =
   let this_ptr_map = name ^ "_ptr_map" in
   let old_ptr_map = !last_ptr_map in
   last_ptr_map := "&"^this_ptr_map;
@@ -39,7 +39,8 @@ let gen_offset_data s n name offsets isfun is_pod props flags last_ptr_map =
   bcat s ( if not is_pod then ("  "^name^"_finaliser,\n") else ("  0,\n"));
   bcat s ("  "^ (if n<>0 then "&"^name^"_offset_data" else "0")^",\n");
   bcat s ("  "^ (if n<>0 then "&::flx::gc::generic::scan_by_offsets" else "0")^",\n");
-  bcat s ("  0,0, // no encoder or decoder\n");
+  bcat s ("  " ^ encoder_name ^",\n");
+  bcat s ("  0, // no decoder\n");
   bcat s (match flags with None -> "  ::flx::gc::generic::gc_flags_default\n" | Some flags ->  flags^"\n");
   bcat s ( "};\n")
 

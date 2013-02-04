@@ -70,7 +70,7 @@ let gen_fun_offsets s syms bsym_table index vs ps ret ts instance props last_ptr
     (match ret with BTYP_void -> "procedure " | _ -> "function ") ^
     name ^ "\n"
   );
-  gen_offset_data s n name offsets true false props None last_ptr_map
+  gen_offset_data s n name offsets true false props None last_ptr_map "0" (* encoder name *)
 
 let gen_all_fun_shapes scan s syms bsym_table last_ptr_map =
   print_debug syms "gen all fun shapes ...";

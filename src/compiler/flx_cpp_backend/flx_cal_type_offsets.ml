@@ -13,6 +13,34 @@ open Flx_print
 open Flx_exceptions
 open Flx_maps
 
+(* EVERYTHING is a plain old data type, except primitives
+   which are not declared as such, non-pod primitives
+   require a destructor. Note function types are pod because
+   they're represented by pointers.
+*)
+let rec is_pod bsym_table t =
+  let is_pod t = is_pod bsym_table t in
+  match t with
+  | BTYP_unitsum _ 
+  | BTYP_sum _ 
+  | BTYP_pointer _
+  | BTYP_function _
+  | BTYP_cfunction _
+  | BTYP_variant _ -> true
+  | BTYP_tuple cps ->fold_left (fun acc t -> acc && is_pod t) true cps 
+  | BTYP_record (_,cps) ->fold_left (fun acc (_,t) -> acc && is_pod t) true cps 
+  | BTYP_array (t,_) -> is_pod t
+  | BTYP_inst (k,ts) ->
+  begin match Flx_bsym_table.find_bbdcl bsym_table k with
+    | BBDCL_union _ -> true
+    | BBDCL_external_type (_,quals,_,_) -> mem `Pod quals
+    | BBDCL_struct (vs,cps) -> fold_left (fun acc (_,t) -> acc && is_pod t) true cps
+    | BBDCL_cstruct _ -> false
+    | _ -> failwith ("[flx_cal_type_offsets: is_pod] Unexpected nominal type " ^ sbt bsym_table t)
+  end
+  | _ -> failwith ("[flx_cal_type_offsets: is_pod] Unexpected structural type " ^ sbt bsym_table t)
+ 
+
 let unitsum bsym_table t = 
   try Flx_btype.int_of_linear_type bsym_table t 
   with Invalid_int_of_unitsum -> -1
@@ -175,4 +203,95 @@ let rec get_offsets' syms bsym_table typ : string list =
 let get_offsets syms bsym_table typ =
   map (fun s -> s^",") (get_offsets' syms bsym_table typ)
 
+(**********************************************************************)
+
+module CS = Flx_code_spec
+exception Scanner of CS.t
+
+let rec get_encoder' syms bsym_table p typ : string list =
+  let tname = cpp_typename syms bsym_table typ in
+  let typ = normalise_tuple_cons bsym_table typ in
+  let t' = unfold typ in
+  if is_pod bsym_table typ
+  then
+    ["b+=::flx::gc::generic::blit("^p^",sizeof("^tname^")); // pod"]
+  else match t' with
+  | BTYP_inst (i,ts) ->
+    let bsym =
+      try Flx_bsym_table.find bsym_table i
+      with Not_found -> failwith
+        ("get_encoder'] can't find index " ^ string_of_bid i)
+    in
+    begin match Flx_bsym.bbdcl bsym with
+    | BBDCL_union (vs,idts) ->
+      ["b+=::flx::gc::generic::blit("^p^",sizeof("^tname^")); // union"]
+
+    | BBDCL_struct (vs,idts) ->
+      let varmap = mk_varmap vs ts in
+      let n = ref 0 in
+      let cpts = map (fun (s,t) -> s,varmap_subst varmap t) idts in
+      "//Struct" ::
+      List.concat ( List.map 
+      (fun (fld,t) ->
+        let s= "offsetof("^tname^","^cid_of_flxid fld^")" in
+        (get_encoder' syms bsym_table (p^"+"^s) t)
+      )
+      cpts
+      )
+
+    | BBDCL_external_type (_,quals,_,_) ->
+      let encoder = 
+         try 
+          List.iter (fun q-> match q with | `Encoder cs -> raise (Scanner cs) | _ -> () ) quals; 
+          None 
+        with Scanner cs -> Some cs 
+      in
+      let encoder = 
+        match encoder with 
+        | None -> ["b+=::flx::gc::generic::blit("^p^",sizeof("^tname^")); // prim"]
+        | Some (CS.Str s) 
+        | Some (CS.Str_template s) -> ["b+=::flx::gc::generic::string_blit("^ s ^ "("^p^")); //prim"]
+        | Some _ -> assert false
+      in
+      encoder
+     | _ -> assert false
+    end
+
+  | BTYP_array (t,u) when unitsum bsym_table u = 0 -> []
+  | BTYP_array (t,u) when unitsum bsym_table u > 0 -> 
+    let k = unitsum bsym_table u in
+    if k> 100 then
+      failwith ("[get_encoder] Too many elements in array for shape, type " ^ sbt bsym_table t')
+    else begin
+      let eltype = cpp_typename syms bsym_table t in
+      "//Array" ::
+      List.concat (
+      List.map
+      (fun k -> get_encoder' syms bsym_table (p^"+"^si k^"*sizeof("^eltype^")") t)
+      (nlist k) )
+    end
+
+  | BTYP_tuple args ->
+    let k = List.length args in
+    "//Tuple"::
+    List.concat ( List.map
+    (fun (k,t) ->
+      let s = "offsetof("^tname^",mem_"^si k^")" in
+      (get_encoder' syms bsym_table (p^"+"^s) t)
+    )
+    (List.combine (nlist k) args))
+
+  | BTYP_record (_,es) ->
+    let rcmp (s1,_) (s2,_) = compare s1 s2 in
+    let es = sort rcmp es in
+    "//Record" ::
+    List.concat (List.map 
+    (fun (fld,t) ->
+      let s = "offsetof("^tname^","^cid_of_flxid fld^")" in
+      (get_encoder' syms bsym_table (p^"+"^s) t)
+    )
+    es
+    )
+
+  | _ -> assert false
 
