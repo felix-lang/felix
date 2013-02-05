@@ -264,11 +264,12 @@ let rec get_encoder' syms bsym_table p typ : string list =
       failwith ("[get_encoder] Too many elements in array for shape, type " ^ sbt bsym_table t')
     else begin
       let eltype = cpp_typename syms bsym_table t in
+      let seq = !(syms.counter) in incr (syms.counter);
+      let index = "i"^si seq in 
       "//Array" ::
-      List.concat (
-      List.map
-      (fun k -> get_encoder' syms bsym_table (p^"+"^si k^"*sizeof("^eltype^")") t)
-      (nlist k) )
+      ("for(size_t "^index^"=0; "^index^"<"^si k^"; ++"^index^") {") ::
+      get_encoder' syms bsym_table (p^"+"^index^"*sizeof("^eltype^")") t @
+      ["}"]
     end
 
   | BTYP_tuple args ->
@@ -353,11 +354,12 @@ let rec get_decoder' syms bsym_table p typ : string list =
       failwith ("[get_decoder] Too many elements in array for shape, type " ^ sbt bsym_table t')
     else begin
       let eltype = cpp_typename syms bsym_table t in
+      let seq = !(syms.counter) in incr (syms.counter);
+      let index = "i"^si seq in 
       "//Array" ::
-      List.concat (
-      List.map
-      (fun k -> get_decoder' syms bsym_table (p^"+"^si k^"*sizeof("^eltype^")") t)
-      (nlist k) )
+      ("for(size_t "^index^"=0; "^index^"<"^si k^"; ++"^index^") {") ::
+      (get_decoder' syms bsym_table (p^"+"^index^"*sizeof("^eltype^")") t) @
+      ["}"]
     end
 
   | BTYP_tuple args ->
