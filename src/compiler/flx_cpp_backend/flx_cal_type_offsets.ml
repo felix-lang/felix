@@ -303,7 +303,7 @@ let rec get_decoder' syms bsym_table p typ : string list =
   let t' = unfold typ in
   if is_pod bsym_table typ
   then
-    ["i+=::flx::gc::generic::unblit("^p^",sizeof("^tname^"),s,i); // pod"]
+    ["i=::flx::gc::generic::unblit("^p^",sizeof("^tname^"),s,i); // pod"]
   else match t' with
   | BTYP_inst (i,ts) ->
     let bsym =
@@ -313,7 +313,7 @@ let rec get_decoder' syms bsym_table p typ : string list =
     in
     begin match Flx_bsym.bbdcl bsym with
     | BBDCL_union (vs,idts) ->
-      ["i+=::flx::gc::generic::blit("^p^",sizeof("^tname^"),s,i); // union"]
+      ["i=::flx::gc::generic::blit("^p^",sizeof("^tname^"),s,i); // union"]
 
     | BBDCL_struct (vs,idts) ->
       let varmap = mk_varmap vs ts in
@@ -337,9 +337,9 @@ let rec get_decoder' syms bsym_table p typ : string list =
       in
       let decoder = 
         match decoder with 
-        | None -> ["i+=::flx::gc::generic::unblit("^p^",sizeof("^tname^"),s,i); // prim"]
+        | None -> ["i=::flx::gc::generic::unblit("^p^",sizeof("^tname^"),s,i); // prim"]
         | Some (CS.Str cs) 
-        | Some (CS.Str_template cs) -> ["i+="^ cs ^ "("^p^",s,i); //prim"]
+        | Some (CS.Str_template cs) -> ["i="^ cs ^ "("^p^",s,i); //prim"]
         | Some _ -> assert false
       in
       decoder
