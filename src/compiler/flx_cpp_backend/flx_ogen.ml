@@ -91,7 +91,7 @@ let rec gen_type_shape s syms bsym_table need_int last_ptr_map primitive_shapes 
       let decoder_name = name ^ "_decoder" in
       let decoder_stmts = get_decoder' syms bsym_table "p" btyp' in
       bcat s ("\n// DECODER for type " ^sbt bsym_table btyp' ^ "\n"); 
-      bcat s ("  size_t "^decoder_name^"(void *d,char const *s, size_t i) {\n");
+      bcat s ("  size_t "^decoder_name^"(void *d,char *s, size_t i) {\n");
       bcat s ("   char *p = (char*)d;\n");
       iter (fun line -> bcat s ("   "^ line ^ "\n")) decoder_stmts;
       bcat s ("   return i;\n");
