@@ -31,7 +31,7 @@ class Rtti {
   fun bytes_per_element: gc_shape_t -> size = "$1->amt";
 
   //$ The finaliser function.
-  fun finaliser: gc_shape_t -> &gc_finaliser_t  = "$1->finaliser";
+  fun finaliser: gc_shape_t -> gc_finaliser_t  = "$1->finaliser";
 
   //$ The encoder function.
   fun encoder : gc_shape_t -> gc_encoder_t = "$1->encoder";

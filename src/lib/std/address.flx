@@ -4,10 +4,14 @@ open class Address {
   ctor[T] address: &T = "(void*)$1";
 
   //$ Construct from possibly NULL pointer.
-  ctor[T] address: @T = "(void*)$1";
+  ctor[T] address: @T = "(void*)$1"; //@
 
   //$ Construct from possibly array element pointer.
   ctor[T] address: +T = "(void*)$1";
+
+  //$ Construct from C function
+  ctor[D,C] address: D --> C = "(void*)$1";
+
 
   //$ Check is an address is NULL.
   fun isNULL: address -> bool = "(0==$1)";
@@ -24,6 +28,10 @@ open class Address {
   instance[T in addressing] Str[T] {
     fun str (t:T) : string => vsprintf (c"%i", t);
   }
+
+  fun + : address * !ints -> address = "(void*)((char*)$1+$2)";
+  fun - : address * !ints -> address = "(void*)((char*)$1-$2)";
+  fun - : address * address -> ptrdiff = "(char*)$1-(char*)$2";
 }
 
 // Do we want this to be hex?

@@ -6,32 +6,37 @@ class Serialise
   open Collector;
   open Rtti;
 
-  //$ Encode a string: write the length, then the chars.
-  fun string_encode (s:string) : string = 
-  {
-    var n : size = s.len;
-    var r = string ( C_hack::cast[+char] &n, C_hack::sizeof[size]);
-    return r + s;
-  }
-
   //$ Encode binary image of a type, without length.
   fun blit[T] (p: &T) => string ( C_hack::cast[+char] p, C_hack::sizeof[T]);
   fun ncode [T] (var v: T) => blit &v;
-  fun ncode (p: address, n: size) => string (C_hack::cast[+char] p, n);
 
+  //$ Decode a type
+  gen unblit[T] (p: &T, s: +char, i:size) : size = 
+  {
+     memcpy(p.address,(s+i).address,C_hack::sizeof[T]);
+     return i + C_hack::sizeof[T];
+  } 
   
-  fun encode (p:address) : string =
+  // Despite the name this is the general heap object encoder
+  // sans pointers and head adjustment.
+  fun encode_varray (p:address) : string =
   {
     var pd = Collector::get_pointer_data p;
     assert pd.is_felix_pointer;
     var shape = pd.shape;
 
-    var pod = shape.finaliser.address.isNULL;
     var has_encoder = not shape.encoder.C_hack::cast[address].isNULL;
     var has_pointers = shape.n_offsets == 0uz;
 
     // write shape
     var out = ncode shape;
+
+    // write head pointer
+    out += ncode pd.head;
+
+    // write out interior pointer
+    // might be a compact union too, so low bits matter
+    out += ncode p;
 
     // write max slots
     out += ncode pd.max_elements;
@@ -39,18 +44,51 @@ class Serialise
     // write used slots
     out += ncode pd.used_elements;
 
-    if has_encoder do
-      for var i:size in 0uz upto pd.used_elements.size * shape.number_of_elements - 1uz do
-        // write out each encoded value prefixed by its length
-        out += string_encode (shape.encoder (C_hack::cast[+char] pd.head + i * shape.bytes_per_element).address);
-      done
-    elif pod do
-      // write the whole array out in one go, no need for length
-      out += ncode (pd.head, pd.used_elements.size * shape.number_of_elements * shape.bytes_per_element);
-    else
-      assert false;
+    assert has_encoder;
+    var dynamic_slot_size = shape.bytes_per_element * shape.number_of_elements;
+    for var i:size in 0uz upto pd.used_elements.size  - 1uz do
+      // write out each encoded value 
+      out += shape.encoder (pd.head + i * dynamic_slot_size);
     done
     return out;
   }
+
+  gen create_empty_varray : gc_shape_t * size -> address =
+    "(PTF gcp->collector->create_empty_array($1,$2))"
+    requires property "needs_gc"
+  ;
+
+  proc set_used: address * size =
+    "PTF gcp->collector->set_used($1,$2);"
+    requires property "needs_gc"
+  ;
+
+  gen decode_varray (ss:string) : address = 
+  {
+    var s = ss.cstr;
+    var i = 0uz;
+
+    // get header data
+    var shape: gc_shape_t;
+    var head: address;
+    var iptr: address;
+    var maxslots : size;
+    var usedslots: size;
+    i = unblit (&shape, s, i);
+    i = unblit (&head, s, i);
+    i = unblit (&iptr, s, i);
+    i = unblit (&maxslots, s, i);
+    i = unblit (&usedslots, s, i);
+    assert not shape.decoder.C_hack::cast[address].isNULL;
+    var dynamic_slot_size = shape.bytes_per_element * shape.number_of_elements;
+    var p = create_empty_varray (shape, maxslots);
+    for var slot in 0uz upto usedslots - 1uz do
+      i = (shape.decoder ( p + slot * dynamic_slot_size, s, i));
+    done
+    set_used (p, usedslots);
+    return p;
+  }
+
+  
 }
 
