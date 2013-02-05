@@ -40,7 +40,7 @@ enum gc_shape_flags_t {
 typedef void finaliser_t (collector_t*, void*); 
 typedef void *scanner_t(collector_t*, gc_shape_t*, void *, unsigned long, int);
 typedef ::std::string encoder_t (void *);
-typedef void decoder_t (::std::string, void *);
+typedef size_t decoder_t(void *, char const*, size_t);
 
 struct GC_EXTERN gc_shape_t
 {

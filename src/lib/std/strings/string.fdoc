@@ -11,7 +11,8 @@ typedef cstring = +char;
 type string = "::std::basic_string<char>" 
   requires Cxx_headers::string,
   header '#include "flx_serialisers.hpp"',
-  encoder "::flx::gc::generic::string_encoder"
+  encoder "::flx::gc::generic::string_encoder",
+  decoder "::flx::gc::generic::string_decoder"
 ;
 type ustring = "::std::basic_string<uint32_t>" requires Cxx_headers::string;
 typedef strings = typesetof (string,ustring);

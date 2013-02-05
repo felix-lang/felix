@@ -28,5 +28,19 @@ namespace flx { namespace gc { namespace generic {
   return ::std::string((char*)p,n);
 }
 
+size_t string_decoder (void *p, char const *s, size_t i)
+{
+   size_t n;
+   memcpy (&n,s + i,sizeof(size_t));
+   new (p) ::std::string(s+i+sizeof(size_t), n);
+   return i + sizeof(size_t) + n;
+}
+
+size_t unblit (void *p, size_t n, char const *s, size_t i)
+{
+  memcpy (p,s+i,n);
+  return i + n;
+}
+
 }}}
 

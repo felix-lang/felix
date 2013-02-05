@@ -295,3 +295,92 @@ let rec get_encoder' syms bsym_table p typ : string list =
 
   | _ -> assert false
 
+(**********************************************************************)
+
+let rec get_decoder' syms bsym_table p typ : string list =
+  let tname = cpp_typename syms bsym_table typ in
+  let typ = normalise_tuple_cons bsym_table typ in
+  let t' = unfold typ in
+  if is_pod bsym_table typ
+  then
+    ["i+=::flx::gc::generic::unblit("^p^",sizeof("^tname^"),s,i); // pod"]
+  else match t' with
+  | BTYP_inst (i,ts) ->
+    let bsym =
+      try Flx_bsym_table.find bsym_table i
+      with Not_found -> failwith
+        ("get_decoder'] can't find index " ^ string_of_bid i)
+    in
+    begin match Flx_bsym.bbdcl bsym with
+    | BBDCL_union (vs,idts) ->
+      ["i+=::flx::gc::generic::blit("^p^",sizeof("^tname^"),s,i); // union"]
+
+    | BBDCL_struct (vs,idts) ->
+      let varmap = mk_varmap vs ts in
+      let n = ref 0 in
+      let cpts = map (fun (s,t) -> s,varmap_subst varmap t) idts in
+      "//Struct" ::
+      List.concat ( List.map 
+      (fun (fld,t) ->
+        let s= "offsetof("^tname^","^cid_of_flxid fld^")" in
+        (get_decoder' syms bsym_table (p^"+"^s) t)
+      )
+      cpts
+      )
+
+    | BBDCL_external_type (_,quals,_,_) ->
+      let decoder = 
+         try 
+          List.iter (fun q-> match q with | `Decoder cs -> raise (Scanner cs) | _ -> () ) quals; 
+          None 
+        with Scanner cs -> Some cs 
+      in
+      let decoder = 
+        match decoder with 
+        | None -> ["i+=::flx::gc::generic::unblit("^p^",sizeof("^tname^"),s,i); // prim"]
+        | Some (CS.Str cs) 
+        | Some (CS.Str_template cs) -> ["i+="^ cs ^ "("^p^",s,i); //prim"]
+        | Some _ -> assert false
+      in
+      decoder
+     | _ -> assert false
+    end
+
+  | BTYP_array (t,u) when unitsum bsym_table u = 0 -> []
+  | BTYP_array (t,u) when unitsum bsym_table u > 0 -> 
+    let k = unitsum bsym_table u in
+    if k> 100 then
+      failwith ("[get_decoder] Too many elements in array for shape, type " ^ sbt bsym_table t')
+    else begin
+      let eltype = cpp_typename syms bsym_table t in
+      "//Array" ::
+      List.concat (
+      List.map
+      (fun k -> get_decoder' syms bsym_table (p^"+"^si k^"*sizeof("^eltype^")") t)
+      (nlist k) )
+    end
+
+  | BTYP_tuple args ->
+    let k = List.length args in
+    "//Tuple"::
+    List.concat ( List.map
+    (fun (k,t) ->
+      let s = "offsetof("^tname^",mem_"^si k^")" in
+      (get_decoder' syms bsym_table (p^"+"^s) t)
+    )
+    (List.combine (nlist k) args))
+
+  | BTYP_record (_,es) ->
+    let rcmp (s1,_) (s2,_) = compare s1 s2 in
+    let es = sort rcmp es in
+    "//Record" ::
+    List.concat (List.map 
+    (fun (fld,t) ->
+      let s = "offsetof("^tname^","^cid_of_flxid fld^")" in
+      (get_decoder' syms bsym_table (p^"+"^s) t)
+    )
+    es
+    )
+
+  | _ -> assert false
+
