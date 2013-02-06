@@ -173,10 +173,10 @@ class Judy
     "*(Word_t**)$4=(Word_t*)JudyLNext(*$1,$2,$3);";
 
   proc JudyLLast: JLArray * &word * &JError_t * &&word =
-    "*$4=JudyLLast(*$1,$2,$3);";
+    "*(Word_t**)$4=(Word_t*)JudyLLast(*$1,$2,$3);";
 
   proc JudyLPrev: JLArray * &word * &JError_t * &&word =
-    "*$4=JudyLPrev(*$1,$2,$3);";
+    "*(Word_t**)$4=(Word_t*)JudyLPrev(*$1,$2,$3);";
 
   proc JudyLFirstEmpty: JLArray * &word * &JError_t * &word =
     "*$4=JudyLFirstEmpty(*$1,$2,$3);";

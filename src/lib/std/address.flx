@@ -23,7 +23,7 @@ open class Address {
     fun == : address * address -> bool = "$1==$2";
   }
   instance Tord[address] {
-    fun < : address * address -> bool = "::std::less<?1>($1,$2)";
+    fun < : address * address -> bool = "::std::less<void*>()($1,$2)";
   }
   instance[T in addressing] Str[T] {
     fun str (t:T) : string => vsprintf (c"%p", t);

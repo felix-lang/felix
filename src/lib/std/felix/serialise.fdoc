@@ -35,10 +35,6 @@ class Serialise
     // write head pointer
     out += ncode pd.head;
 
-    // write out interior pointer
-    // might be a compact union too, so low bits matter
-    out += ncode p;
-
     // write max slots
     out += ncode pd.max_elements;
   
@@ -65,17 +61,19 @@ class Serialise
     //Collector::print_pointer_data pd;
     var shape = pd.shape;
     var head = pd.head;
-    var n_offsets = shape.Rtti::_unsafe_n_offsets;
+    var n_offsets = shape.Rtti::n_offsets;
     //println$ "Number of offsets " + n_offsets.str;
-    var offsets = shape.Rtti::_unsafe_offsets;
-    var repeat_count = pd.used_elements.size * shape.number_of_elements;
-    var element_size = shape.bytes_per_element;
     var pointers = Empty[address];
-    for var sindex in 0uz upto repeat_count - 1uz do
-      for var oindex in 0uz upto n_offsets - 1uz do
-        var bindex = sindex * element_size + *(offsets+oindex);
-        var ptr = *((head + bindex).C_hack::cast[&address]);
-        pointers = Cons (ptr, pointers);
+    if n_offsets > 0uz do
+      var offsets = shape.Rtti::offsets;
+      var repeat_count = pd.used_elements.size * shape.number_of_elements;
+      var element_size = shape.bytes_per_element;
+      for var sindex in 0uz upto repeat_count - 1uz do
+        for var oindex in 0uz upto n_offsets - 1uz do
+          var bindex = sindex * element_size + *(offsets+oindex);
+          var ptr = *((head + bindex).C_hack::cast[&address]);
+          pointers = Cons (ptr, pointers);
+        done
       done
     done
     return pointers;
@@ -99,7 +97,7 @@ class Serialise
     if pd.is_felix_pointer do 
       var je : JError_t;
       var ret : int;
-      var w = p.Judy::word;
+      var w = pd.head.Judy::word;
       if not (w \in self*.processed or w \in self*.waiting) do
         Judy1Set (self*.waiting, w, &je, &ret);
       done
@@ -127,25 +125,40 @@ class Serialise
   fun find_closure (p:address) : list[address] =
   {
      var xpc = #pclosure;
-     add_pointer &xpc p;
+     var pd = Collector::get_pointer_data p;
+     add_pointer &xpc pd.head;
      for ptr in &xpc do
        //println$ "Processing pointer " + ptr.str;
        iter (add_pointer &xpc) (find_pointers ptr);
      done
-     var lst = Empty[address];
+     var lst = list[address] (pd.head);
      var a: word = 0.word;
      var ret: int;
      Judy1First (xpc.processed, &a, &je, &ret);
      while ret == 1 do
-       lst = Cons (a.address, lst);
+       if a.address != pd.head do
+         lst = Cons (a.address, lst);
+       done
        Judy1Next(xpc.processed, &a, &je, &ret);
      done
      var w:word;
      var je:JError_t;
      Judy1FreeArray (xpc.processed, &je, &w);
      // pc.waiting should be empty already
+     // original pointer is LAST in the list!
      return lst;
   } 
+
+  fun encode_closure (alst:list[address]) : string =
+  {
+    var b = "";
+    iter proc (elt:address) { b+=encode_varray elt; } alst;
+    return b;
+  }
+
+  fun encode_pointer_closure (p:address) =>
+     p.find_closure.encode_closure
+  ;
 
   gen create_empty_varray : gc_shape_t * size -> address =
     "(PTF gcp->collector->create_empty_array($1,$2))"
@@ -165,12 +178,10 @@ class Serialise
     // get header data
     var shape: gc_shape_t;
     var head: address;
-    var iptr: address;
     var maxslots : size;
     var usedslots: size;
     i = unblit (&shape, s, i);
     i = unblit (&head, s, i);
-    i = unblit (&iptr, s, i);
     i = unblit (&maxslots, s, i);
     i = unblit (&usedslots, s, i);
     assert not shape.decoder.C_hack::cast[address].isNULL;
@@ -183,6 +194,98 @@ class Serialise
     return p;
   }
 
-  
+  gen decode_pointer_closure (ss:string) : address =  
+  {
+    // A map from old object head to new head
+    var pmap = #JLArray; 
+    var je : JError_t;
+
+    // create set of objects from serialised data
+    // return a pointer to the last one which is 
+    // assumed to be the root of the closure
+    gen create_objects () : address =
+    {
+      var s = ss.cstr;
+      var n = ss.len;
+      var i = 0uz;
+      var pnew : &word;
+      while i != n do
+        // get header data
+        var shape: gc_shape_t;
+        var head: address;
+        var maxslots : size;
+        var usedslots: size;
+        i = unblit (&shape, s, i);
+        i = unblit (&head, s, i);
+        i = unblit (&maxslots, s, i);
+        i = unblit (&usedslots, s, i);
+        assert not shape.decoder.C_hack::cast[address].isNULL;
+        var dynamic_slot_size = shape.bytes_per_element * shape.number_of_elements;
+        var p = create_empty_varray (shape, maxslots);
+        for var slot in 0uz upto usedslots - 1uz do
+          i = (shape.decoder ( p + slot * dynamic_slot_size, s, i));
+        done
+        set_used (p, usedslots);
+
+        JudyLIns(pmap,head.word,&je,&pnew);
+        pnew <- p.word;
+      done
+      return head; // root pointer is last in list!
+    }
+
+    // Adjust a pointer at the given address
+    proc adjust_pointer (pptr:&address) 
+    {
+      var oldptr = *pptr;
+      var oldhead = oldptr.word;
+      var pnew2 : &word;
+      // find the equal or next lowest old object address
+      // and the associated new object address
+      JudyLLast(pmap,&oldhead,&je,&pnew2);
+      if not isNULL pnew2 do
+        var newhead2 = *pnew2;
+        var pd2 = Collector::get_pointer_data newhead2.address;
+        var nbytes = pd2.shape.bytes_per_element * pd2.max_elements.size * pd2.shape.number_of_elements;
+        if oldptr < oldhead.address + nbytes do
+           *pptr = newhead2.address + (oldptr - oldhead.address);
+        done
+      done
+    }
+
+    // Adjust all the pointers in one of the new objects
+    proc adjust_all_pointers (newhead:address)
+    {
+      var pd = Collector::get_pointer_data newhead;
+      var shape = pd.shape;
+      var head = pd.head;
+      var n_offsets = shape.Rtti::n_offsets;
+      //println$ "Number of offsets " + n_offsets.str;
+      if n_offsets > 0uz do
+        var offsets = shape.Rtti::offsets;
+        var repeat_count = pd.used_elements.size * shape.number_of_elements;
+        var element_size = shape.bytes_per_element;
+        for var sindex in 0uz upto repeat_count - 1uz do
+          for var oindex in 0uz upto n_offsets - 1uz do
+            var bindex = sindex * element_size + *(offsets+oindex);
+            var pptr = ((head + bindex).C_hack::cast[&address]);
+            adjust_pointer (pptr);
+          done
+        done
+      done
+    }
+
+    var rootp = create_objects();
+
+    // Adjust all the pointers in all of the new objects
+    var old : word = 0.word;
+    var pnew : &word;
+    JudyLFirst(pmap, &old, &je, &pnew);
+    while not (isNULL pnew) do
+      var newhead = (*pnew).address;
+      adjust_all_pointers (newhead);
+      JudyLNext(pmap, &old, &je, &pnew);
+    done
+    return rootp;
+  }
 }
 
