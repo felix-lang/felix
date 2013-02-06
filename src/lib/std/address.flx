@@ -26,7 +26,7 @@ open class Address {
     fun < : address * address -> bool = "::std::less<?1>($1,$2)";
   }
   instance[T in addressing] Str[T] {
-    fun str (t:T) : string => vsprintf (c"%i", t);
+    fun str (t:T) : string => vsprintf (c"%p", t);
   }
 
   fun + : address * !ints -> address = "(void*)((char*)$1+$2)";
@@ -36,7 +36,7 @@ open class Address {
 
 // Do we want this to be hex?
 //instance[T in addressing] Repr[T] {
-//  fun repr (t:T) : string => vsprintf (c"0x%x", t);
+//  fun repr (t:T) : string => vsprintf (c"%p" t);
 //}
 
 open Eq[byte];

@@ -31,19 +31,22 @@ class Collector
   //$ computed values.
   proc print_pointer_data (pd: pointer_data_t)
   {
-    println$ "Valid=" + str pd.Collector::is_felix_pointer;
-    println$ "Is head=" + pd.Collector::is_head_pointer.str;
-    var shape = pd.shape;
-    println$ "Element type =  " + shape.cname.string;
-    println$ "Pod[has no finaliser] = " + shape.finaliser.address.isNULL.str;
-    var bpe = shape.bytes_per_element.ulong;
-    println$ "Bytes per element = " + bpe.str;
-    println$ "Static array length = " + shape.number_of_elements.str;
-    println$ "Dynamic array length = " + pd.used_elements.str; 
-    println$ "Max dynamic array length = " + pd.max_elements.str; 
-    var nelts = pd.used_elements * shape.number_of_elements.ulong;
-    println$ "Aggregate number of used elements " + nelts.str;
-    println$ "Store to serialise: " + (nelts * bpe) . str;
+    println$ "Candidate pointer = " + pd.pointer.str;
+    println$ "Valid=" + pd.Collector::is_felix_pointer.str;
+    if pd.Collector::is_felix_pointer do
+      println$ "Is head=" + pd.Collector::is_head_pointer.str;
+      var shape = pd.shape;
+      println$ "Element type =  " + shape.cname.string;
+      println$ "Pod[has no finaliser] = " + shape.finaliser.address.isNULL.str;
+      var bpe = shape.bytes_per_element.ulong;
+      println$ "Bytes per element = " + bpe.str;
+      println$ "Static array length = " + shape.number_of_elements.str;
+      println$ "Dynamic array length = " + pd.used_elements.str; 
+      println$ "Max dynamic array length = " + pd.max_elements.str; 
+      var nelts = pd.used_elements * shape.number_of_elements.ulong;
+      println$ "Aggregate number of used elements " + nelts.str;
+      println$ "Store to serialise: " + (nelts * bpe) . str;
+    done
   }
 
   //$ Diagnostic routine, print info about a pointer.

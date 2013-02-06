@@ -3,6 +3,7 @@
 #include <cassert>
 #include "flx_exceptions.hpp"
 #include "flx_collector.hpp"
+#include "flx_serialisers.hpp"
 
 // main run time library code
 
@@ -48,7 +49,7 @@ static ::flx::gc::collector::offset_data_t slist_node_offset_data = { 2, slist_n
   0, // no finaliser,
   &slist_node_offset_data,
   ::flx::gc::generic::scan_by_offsets,
-  0,0, // no encoder or decoder
+  ::flx::gc::generic::tblit<slist_node_t>,::flx::gc::generic::tunblit<slist_node_t>, 
   ::flx::gc::generic::gc_flags_default
 };
 
@@ -87,7 +88,7 @@ static ::flx::gc::collector::offset_data_t slist_offset_data = { 1, slist_offset
   0, // no finaliser
   &slist_offset_data,
   ::flx::gc::generic::scan_by_offsets,
-  0,0, // no encoder or decoder
+  ::flx::gc::generic::tblit<slist_t>,::flx::gc::generic::tunblit<slist_t>, 
   ::flx::gc::generic::gc_flags_default
 };
 
@@ -156,7 +157,7 @@ static ::flx::gc::collector::offset_data_t _fthread_offset_data = { 1, _fthread_
   0,
   &_fthread_offset_data,
   ::flx::gc::generic::scan_by_offsets,
-  0,0, // no encoder or decoder
+  ::flx::gc::generic::tblit<fthread_t>,::flx::gc::generic::tunblit<fthread_t>, 
   gc::generic::gc_flags_immobile
 };
 
@@ -210,7 +211,7 @@ static ::flx::gc::collector::offset_data_t schannel_offset_data = { 2, schannel_
   0, // no finaliser
   &schannel_offset_data,
   ::flx::gc::generic::scan_by_offsets,
-  0,0, // no encoder or decoder
+  ::flx::gc::generic::tblit<schannel_t>,::flx::gc::generic::tunblit<schannel_t>, 
   gc::generic::gc_flags_default
 };
 
@@ -233,13 +234,14 @@ static ::flx::gc::collector::offset_data_t _uctor_offset_data = { 1, _uctor_offs
   0,
   &_uctor_offset_data,
   ::flx::gc::generic::scan_by_offsets,
-  0,0, // no encoder or decoder
+  ::flx::gc::generic::tblit<_uctor_>,::flx::gc::generic::tunblit<_uctor_>, 
   gc::generic::gc_flags_default
 };
 
 // ********************************************************
 // int implementation
 // ********************************************************
+
 
 ::flx::gc::generic::gc_shape_t _int_ptr_map = {
   &_uctor_ptr_map,
@@ -249,7 +251,7 @@ static ::flx::gc::collector::offset_data_t _uctor_offset_data = { 1, _uctor_offs
   0,
   0,
   0,
-  0,0, // no encoder or decoder
+  ::flx::gc::generic::tblit<int>,::flx::gc::generic::tunblit<int>, 
   gc::generic::gc_flags_default
 };
 
@@ -261,6 +263,15 @@ static ::flx::gc::collector::offset_data_t _uctor_offset_data = { 1, _uctor_offs
 static std::size_t _address_offsets[1]={ 0 };
 static ::flx::gc::collector::offset_data_t _address_offset_data = { 1, _address_offsets };
 
+static ::std::string address_encoder (void *p) { 
+  return ::flx::gc::generic::blit (p,sizeof (void*));
+}
+
+static size_t address_decoder (void *p, char *s, size_t i) { 
+  return ::flx::gc::generic::unblit (p,sizeof (void*),s,i);
+}
+
+
 ::flx::gc::generic::gc_shape_t _address_ptr_map = {
   &_int_ptr_map,
   "address",
@@ -269,7 +280,7 @@ static ::flx::gc::collector::offset_data_t _address_offset_data = { 1, _address_
   0,
   &_address_offset_data,
   ::flx::gc::generic::scan_by_offsets,
-  0,0, // no encoder or decoder
+  ::flx::gc::generic::tblit<void*>,::flx::gc::generic::tunblit<void*>, 
   gc::generic::gc_flags_default
 };
 
@@ -287,7 +298,7 @@ static ::flx::gc::collector::offset_data_t _address_offset_data = { 1, _address_
   0,
   0,
   0,
-  0,0, // no encoder or decoder
+  ::flx::gc::generic::tblit<unit>,::flx::gc::generic::tunblit<unit>, 
   gc::generic::gc_flags_default
 };
 

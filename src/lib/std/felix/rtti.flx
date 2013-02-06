@@ -42,10 +42,10 @@ class Rtti {
 
   //$ The number of pointers in the base type.
   //$ If the type is an array that's the element type.
-  fun n_offsets: gc_shape_t -> size = "$1->n_offsets";
+  fun _unsafe_n_offsets: gc_shape_t -> size = "((::flx::gc::generic::offset_data_t*)($1->private_data))->n_offsets";
 
   //$ Pointer to the offset table.
-  fun offsets: gc_shape_t -> &size = "$1->offsets";
+  fun _unsafe_offsets: gc_shape_t -> +size = "((::flx::gc::generic::offset_data_t*)($1->private_data))->offsets";
 
   //$ Flags.
   fun flags: gc_shape_t -> gc_shape_flags_t = "$1->flags";

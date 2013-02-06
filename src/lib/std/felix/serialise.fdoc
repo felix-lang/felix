@@ -5,6 +5,7 @@ class Serialise
 {
   open Collector;
   open Rtti;
+  open Judy;
 
   //$ Encode binary image of a type, without length.
   fun blit[T] (p: &T) => string ( C_hack::cast[+char] p, C_hack::sizeof[T]);
@@ -26,7 +27,7 @@ class Serialise
     var shape = pd.shape;
 
     var has_encoder = not shape.encoder.C_hack::cast[address].isNULL;
-    var has_pointers = shape.n_offsets == 0uz;
+    var has_pointers = shape._unsafe_n_offsets == 0uz;
 
     // write shape
     var out = ncode shape;
@@ -52,6 +53,99 @@ class Serialise
     done
     return out;
   }
+
+  fun find_pointers (p:address) : list[address] =
+  {
+    //println$ "Find pointers for object " + p.str;
+    var pd = Collector::get_pointer_data p;
+    if not pd.is_felix_pointer do
+      //println$ "Not Felix pointer";
+      return Empty[address];
+    done
+    //Collector::print_pointer_data pd;
+    var shape = pd.shape;
+    var head = pd.head;
+    var n_offsets = shape.Rtti::_unsafe_n_offsets;
+    //println$ "Number of offsets " + n_offsets.str;
+    var offsets = shape.Rtti::_unsafe_offsets;
+    var repeat_count = pd.used_elements.size * shape.number_of_elements;
+    var element_size = shape.bytes_per_element;
+    var pointers = Empty[address];
+    for var sindex in 0uz upto repeat_count - 1uz do
+      for var oindex in 0uz upto n_offsets - 1uz do
+        var bindex = sindex * element_size + *(offsets+oindex);
+        var ptr = *((head + bindex).C_hack::cast[&address]);
+        pointers = Cons (ptr, pointers);
+      done
+    done
+    return pointers;
+  }
+
+  // data structure to represent pointer closure
+  struct pclosure 
+  {
+     processed: J1Array;
+     waiting: J1Array;
+  };
+
+  // initially empty
+  ctor pclosure () => pclosure (#J1Array, #J1Array);
+
+  // add a pointer to the waiting set,
+  // provided it isn't already processed or waiting
+  proc add_pointer (self: &pclosure) (p:address) 
+  {
+    var pd = Collector::get_pointer_data p;
+    if pd.is_felix_pointer do 
+      var je : JError_t;
+      var ret : int;
+      var w = p.Judy::word;
+      if not (w \in self*.processed or w \in self*.waiting) do
+        Judy1Set (self*.waiting, w, &je, &ret);
+      done
+    done
+  }
+
+  // get a pointer from the waiting set, put it in
+  // the processed set, and return it, None if the
+  // waiting set is empty.
+  gen iterator (self: &pclosure) () : opt[address] =
+  {
+    var w: word = 0.word;
+    var je : JError_t;
+    var ret: int;
+    Judy1First(self*.waiting,&w,&je,&ret);
+    if ret == 1 do
+      Judy1Unset(self*.waiting, w, &je, &ret);
+      Judy1Set (self*.processed, w, &je, &ret);
+      return Some w.address;
+    else
+      return None[address];
+    done 
+   }
+
+  fun find_closure (p:address) : list[address] =
+  {
+     var xpc = #pclosure;
+     add_pointer &xpc p;
+     for ptr in &xpc do
+       //println$ "Processing pointer " + ptr.str;
+       iter (add_pointer &xpc) (find_pointers ptr);
+     done
+     var lst = Empty[address];
+     var a: word = 0.word;
+     var ret: int;
+     Judy1First (xpc.processed, &a, &je, &ret);
+     while ret == 1 do
+       lst = Cons (a.address, lst);
+       Judy1Next(xpc.processed, &a, &je, &ret);
+     done
+     var w:word;
+     var je:JError_t;
+     Judy1FreeArray (xpc.processed, &je, &w);
+     // pc.waiting should be empty already
+     return lst;
+  } 
 
   gen create_empty_varray : gc_shape_t * size -> address =
     "(PTF gcp->collector->create_empty_array($1,$2))"

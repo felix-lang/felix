@@ -7,5 +7,19 @@ GC_EXTERN ::std::string blit (void *, size_t);
 GC_EXTERN size_t unblit (void *, size_t, char*, size_t);
 
 GC_EXTERN ::std::string string_blit (::std::string const&);
+
+template<class T> 
+::std::string tblit(void *p) 
+{
+  return blit (p, sizeof(T));
+}
+
+template<class T> 
+size_t tunblit(void *p, char *s, size_t i) 
+{
+  return unblit (p, sizeof(T), s, i);
+}
+
+
 }}}
 
