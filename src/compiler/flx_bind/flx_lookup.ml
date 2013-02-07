@@ -3831,7 +3831,7 @@ assert false; (* shouldn't happen now! *)
           "[bind_expression] Simple name " ^ name ^
           " binds to function set in\n" ^
           Flx_srcref.short_string_of_src sr ^
-          "\nCandidates are: " ^ catmap "," string_of_entry_kind fs
+          "\nCandidates are\n: " ^ catmap "\n" (full_string_of_entry_kind state.sym_table bsym_table) fs 
         )
       | args ->
         let sufs = List.map snd args in
@@ -4134,11 +4134,40 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
     handle_map sr (be f) (be a)
 
   | EXPR_apply (sr,(f',a')) ->
+    begin (* apply *)
     (*
     print_endline ("Apply " ^ string_of_expr f' ^ " to " ^  string_of_expr a');
     print_env env;
     *)
     let (ea,ta) as a = be a' in
+    (* special hack here to handle fieldname of record type used as function *)
+    (* special hack here to handle fieldname of struct type used as function *)
+    try 
+      match f' with
+      | EXPR_name (sr, name, []) ->
+        begin match ta with 
+        | BTYP_record ("",es) ->
+          let k = List.length es in
+          let rcmp (s1,_) (s2,_) = compare s1 s2 in
+          let es = List.sort rcmp es in
+          let field_name = name in
+          begin match list_index (List.map fst es) field_name with
+          | Some n -> bexpr_get_n (List.assoc field_name es) (bexpr_unitsum_case n k,a)
+          | None -> raise OverloadResolutionError
+          end
+        | BTYP_inst (i,ts') ->
+          let ts = [] in
+          begin try
+          Flx_dot.handle_field_name state bsym_table build_env env rs 
+            be bt koenig_lookup cal_apply bind_type' mkenv 
+            sr a' f' name ts i ts' false
+          with Not_field -> raise OverloadResolutionError
+          end
+        | _ -> raise OverloadResolutionError 
+        end
+      | _ -> raise OverloadResolutionError
+    with OverloadResolutionError ->
+    
     (*
     print_endline ("Recursive descent into application " ^ string_of_expr e);
     *)
@@ -4280,6 +4309,7 @@ print_endline "bind expression' succeeded";
       apl "apply"
     end
 
+    end (* apply *)
 
   | EXPR_arrayof (sr,es) ->
     let bets = List.map be es in
