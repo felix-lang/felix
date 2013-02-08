@@ -24,6 +24,8 @@ include "./fdoc-interface";
 
 var xlat_cpp: string * string -> bool * string;
 var xlat_felix: string * string -> bool * string;
+var xlat_ocaml: string * string -> bool * string;
+var xlat_python: string * string -> bool * string;
 
 // felix document
 var INSTALL_ROOT="";
@@ -71,7 +73,7 @@ fun markdown (s:string):string= {
   return x;
 }
 
-val timeout = Filename::join (#Config::config.FLX_INSTALL_DIR, "bin", "timeout"+#Config::config.EXT_EXE);
+val timeout = Filename::join (#Config::config.FLX_INSTALL_DIR, "bin", "flx_timeout"+#Config::config.EXT_EXE);
 
 gen safer_popen(cmd:string)=>
   Process::popen_in(timeout+" -t 15 " + cmd + " 2>&1")
@@ -230,6 +232,30 @@ next:>
     ep; 
   }
 
+  proc inline_ocaml(b:string)
+  {
+    sp;
+    write_string("<pre class='flxbg'>"); 
+    needs_mathjax', txt := xlat_ocaml(b,"");
+    needs_mathjax |= needs_mathjax';
+    write_string(txt); // no parent!
+    write_string("</pre>");
+    ep; 
+  }
+
+  proc inline_python(b:string)
+  {
+    sp;
+    write_string("<pre class='flxbg'>"); 
+    needs_mathjax', txt := xlat_python(b,"");
+    needs_mathjax |= needs_mathjax';
+    write_string(txt); // no parent!
+    write_string("</pre>");
+    ep; 
+  }
+
+
+
   proc felix_file (rest:string) 
   {
       var re1 = RE2('(.*) "(.*)" "(.*)"');
@@ -299,14 +325,42 @@ next:>
     write_string((xlat_cpp (flx,"")).1);
     write_string("</pre>"); 
   }
+
+  proc extern_ocaml (fname:string)
+  {
+    var flx = get_flx(fname);
+    write_string("<pre class='inclusion'>\n"+fname+"</pre>\n");
+    write_string("<pre class='cppbg'>"); 
+    write_string((xlat_ocaml(flx,"")).1);
+    write_string("</pre>"); 
+  }
+
+  proc extern_python(fname:string)
+  {
+    var flx = get_flx(fname);
+    write_string("<pre class='inclusion'>\n"+fname+"</pre>\n");
+    write_string("<pre class='cppbg'>"); 
+    write_string((xlat_python(flx,"")).1);
+    write_string("</pre>"); 
+  }
+  
  
   proc handle_cmd (b:string) 
   {
     if b == "felix" do inline_felix (#get_text);
     elif prefix (b,"felix ") do felix_file (strip (b.[6 to]));
     elif prefix (b,"flx-and-expect ") do flx_and_expect (strip(b.[15 to]));
+
     elif b == "c++" do inline_cpp (#get_text);
-    elif prefix (b,"c++") do extern_cpp ( strip(b.[6 to]));
+    elif prefix (b,"c++") do extern_cpp ( strip(b.[4 to]));
+
+    elif b == "ocaml" do inline_ocaml (#get_text);
+    elif prefix (b,"ocaml") do extern_ocaml( strip(b.[6 to]));
+
+    elif b == "python" do inline_python(#get_text);
+    elif prefix (b,"python") do extern_python( strip(b.[7 to]));
+
+
     elif b=="p" do bp; 
     elif b=="pre" do inline_pre (#get_text);
     elif b=="expect" do inline_expect (#get_text);
@@ -403,6 +457,15 @@ fun setup(config_data:string) = {
   xlat_cpp = Dynlink::load-plugin-func2 [bool * string, string, string] (
     dll-name="cpp2html", setup-str=config_data, entry-point="xlat_cpp"
   );
+
+  xlat_ocaml = Dynlink::load-plugin-func2 [bool * string, string, string] (
+    dll-name="ocaml2html", setup-str=config_data, entry-point="xlat_ocaml"
+  );
+
+  xlat_python = Dynlink::load-plugin-func2 [bool * string, string, string] (
+    dll-name="py2html", setup-str=config_data, entry-point="xlat_py"
+  );
+
 
   slideshow-maker  = Dynlink::load-plugin-func1 [slideshow_t, (string->0)] (dll-name="fdoc_slideshow");
 

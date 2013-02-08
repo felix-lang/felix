@@ -30,7 +30,8 @@ def build(phase, felix):
       "flx_renumber",
       "flx_mktutindex",
       "flx_perror",
-      "flx_tangle"
+      "flx_tangle",
+      "flx_gengraph",
       ]
 
     optional_exes = [

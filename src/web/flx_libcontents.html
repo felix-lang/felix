@@ -2,6 +2,8 @@ fdoc2html initialisation
 flx2html initialisation
 cpp2html initialisation
 cpp2html initialisation
+ocaml2html initialisation
+Py2html initialisation
 <html><body>
 <h1>Felix Library Contents</h1>
 <hr/><a href="/$src/lib/std/__init__.flx">__init__.flx</a>
@@ -19,10 +21,13 @@ cpp2html initialisation
 <pre>0010:    <a href="/$src/lib/std/address.flx#0010">ctor[T] address: +T</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Construct from possibly array element pointer.
 </p></div>
-<pre>0013:    <a href="/$src/lib/std/address.flx#0013">fun isNULL: address -> bool</a></pre>
+<pre>0013:    <a href="/$src/lib/std/address.flx#0013">ctor[D,C] address: D --> C</a></pre>
+<div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Construct from C function
+</p></div>
+<pre>0017:    <a href="/$src/lib/std/address.flx#0017">fun isNULL: address -> bool</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Check is an address is NULL.
 </p></div>
-<pre>0025:    <a href="/$src/lib/std/address.flx#0025">fun str (t:T) : string</a></pre>
+<pre>0029:    <a href="/$src/lib/std/address.flx#0029">fun str (t:T) : string</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Define NULL address.
 </p></div>
 <hr/><a href="/$src/lib/std/algebraic.flx">algebraic.flx</a>
@@ -1794,7 +1799,7 @@ Unable to understand @command ''
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Get the value of a given variable.
  Returns empty string if the variable doesn't exist.
 </p></div>
-<pre>0012:    <a href="/$src/lib/std/env.flx#0012">fun getenv(name:string,dflt:string)</a></pre>
+<pre>0012:    <a href="/$src/lib/std/env.flx#0012">fun getenv(name:string,dflt:string):string</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Get the value of a given variable.
  Returns specified default if the variable doesn't exist.
 </p></div>
@@ -1855,7 +1860,7 @@ Unable to understand @command ''
 <pre>0031:    <a href="/$src/lib/std/felix/rtti.flx#0031">fun bytes_per_element: gc_shape_t -> size</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Number of bytes in one element.
 </p></div>
-<pre>0034:    <a href="/$src/lib/std/felix/rtti.flx#0034">fun finaliser: gc_shape_t -> &gc_finaliser_t</a></pre>
+<pre>0034:    <a href="/$src/lib/std/felix/rtti.flx#0034">fun finaliser: gc_shape_t -> gc_finaliser_t</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> The finaliser function.
 </p></div>
 <pre>0037:    <a href="/$src/lib/std/felix/rtti.flx#0037">fun encoder : gc_shape_t -> gc_encoder_t</a></pre>
@@ -1864,32 +1869,37 @@ Unable to understand @command ''
 <pre>0040:    <a href="/$src/lib/std/felix/rtti.flx#0040">fun decoder: gc_shape_t -> gc_decoder_t</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> The decoder function.
 </p></div>
-<pre>0045:    <a href="/$src/lib/std/felix/rtti.flx#0045">fun n_offsets: gc_shape_t -> size</a></pre>
+<pre>0043:    <a href="/$src/lib/std/felix/rtti.flx#0043">fun uses_offset_table : gc_shape_t -> bool</a></pre>
+<div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Check for offset data
+</p></div>
+<pre>0047:    <a href="/$src/lib/std/felix/rtti.flx#0047">fun _unsafe_n_offsets: gc_shape_t -> size</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> The number of pointers in the base type.
  If the type is an array that's the element type.
 </p></div>
-<pre>0048:    <a href="/$src/lib/std/felix/rtti.flx#0048">fun offsets: gc_shape_t -> &size</a></pre>
+<pre>0049:    <a href="/$src/lib/std/felix/rtti.flx#0049">fun n_offsets (shape: gc_shape_t) : size</a></pre>
+<pre>0054:    <a href="/$src/lib/std/felix/rtti.flx#0054">fun _unsafe_offsets: gc_shape_t -> +size</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Pointer to the offset table.
 </p></div>
-<pre>0051:    <a href="/$src/lib/std/felix/rtti.flx#0051">fun flags: gc_shape_t -> gc_shape_flags_t</a></pre>
+<pre>0056:    <a href="/$src/lib/std/felix/rtti.flx#0056">fun offsets (shape: gc_shape_t) : +size</a></pre>
+<pre>0061:    <a href="/$src/lib/std/felix/rtti.flx#0061">fun flags: gc_shape_t -> gc_shape_flags_t</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Flags.
 </p></div>
-<pre>0055:    <a href="/$src/lib/std/felix/rtti.flx#0055">fun shape_list_head : unit -> gc_shape_t</a></pre>
+<pre>0065:    <a href="/$src/lib/std/felix/rtti.flx#0065">fun shape_list_head : unit -> gc_shape_t</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Global head of the compiled shape list.
  This is actually the first type, since they're linked together.
 </p></div>
-<pre>0058:    <a href="/$src/lib/std/felix/rtti.flx#0058">type type_info</a></pre>
+<pre>0068:    <a href="/$src/lib/std/felix/rtti.flx#0068">type type_info</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> C++ type_info for the type.
 </p></div>
-<pre>0061:    <a href="/$src/lib/std/felix/rtti.flx#0061">fun name : type_info -> string</a></pre>
+<pre>0071:    <a href="/$src/lib/std/felix/rtti.flx#0071">fun name : type_info -> string</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> C++ source name of the type.
 </p></div>
-<pre>0078:    <a href="/$src/lib/std/felix/rtti.flx#0078">fun gxx_demangle(s:string) :string</a></pre>
+<pre>0088:    <a href="/$src/lib/std/felix/rtti.flx#0088">fun gxx_demangle(s:string) :string</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> C++ Type_info of a type.
  For gcc only, the C++ name a mangled name represents.
 </p></div>
-<pre>0085:    <a href="/$src/lib/std/felix/rtti.flx#0085">proc _link_shape[T]: &gc_shape_t</a></pre>
-<pre>0110:    <a href="/$src/lib/std/felix/rtti.flx#0110">gen link_shape[T]()</a></pre>
+<pre>0095:    <a href="/$src/lib/std/felix/rtti.flx#0095">proc _link_shape[T]: &gc_shape_t</a></pre>
+<pre>0120:    <a href="/$src/lib/std/felix/rtti.flx#0120">gen link_shape[T]()</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Put a new shape record into the global list.
  This routine constructs a new shape record on the heap.
  It fills in some of the data based on the type.
@@ -2985,64 +2995,64 @@ Unable to understand @command ''
 <pre>0004:  <a href="/$src/lib/std/strings/re2.flx#0004">open class Re2</a></pre>
 <div style='font-family:sans-serif; font-size:12pt; margin-left:100; margin-right:100; top:5; color:#406040'><p> Binding of Google RE2 regexp library.
 </p></div>
-<pre>0020:    <a href="/$src/lib/std/strings/re2.flx#0020">gen _ctor_RE2 : string -> RE2</a></pre>
-<pre>0023:    <a href="/$src/lib/std/strings/re2.flx#0023">type StringPiece</a></pre>
-<pre>0024:    <a href="/$src/lib/std/strings/re2.flx#0024">ctor StringPiece: string</a></pre>
-<pre>0025:    <a href="/$src/lib/std/strings/re2.flx#0025">ctor StringPiece: unit</a></pre>
-<pre>0026:    <a href="/$src/lib/std/strings/re2.flx#0026">ctor string: StringPiece</a></pre>
-<pre>0027:    <a href="/$src/lib/std/strings/re2.flx#0027">fun len: StringPiece -> size</a></pre>
-<pre>0028:    <a href="/$src/lib/std/strings/re2.flx#0028">fun data: StringPiece -> +char</a></pre>
-<pre>0032:    <a href="/$src/lib/std/strings/re2.flx#0032">fun len: StringPiece -> size</a></pre>
-<pre>0041:    <a href="/$src/lib/std/strings/re2.flx#0041">fun str: StringPiece -> string</a></pre>
-<pre>0044:    <a href="/$src/lib/std/strings/re2.flx#0044">type Arg</a></pre>
-<pre>0046:    <a href="/$src/lib/std/strings/re2.flx#0046">type Encoding</a></pre>
-<pre>0050:    <a href="/$src/lib/std/strings/re2.flx#0050">type RE2Options</a></pre>
-<pre>0052:    <a href="/$src/lib/std/strings/re2.flx#0052">proc Copy: RE2Options * RE2Options</a></pre>
-<pre>0054:    <a href="/$src/lib/std/strings/re2.flx#0054">fun encoding: RE2Options -> Encoding</a></pre>
-<pre>0055:    <a href="/$src/lib/std/strings/re2.flx#0055">proc set_encoding: RE2Options * Encoding</a></pre>
-<pre>0057:    <a href="/$src/lib/std/strings/re2.flx#0057">fun posix_syntax: RE2Options -> bool</a></pre>
-<pre>0058:    <a href="/$src/lib/std/strings/re2.flx#0058">proc set_posix_syntax: RE2Options * bool</a></pre>
-<pre>0060:    <a href="/$src/lib/std/strings/re2.flx#0060">fun longest_match: RE2Options -> bool</a></pre>
-<pre>0061:    <a href="/$src/lib/std/strings/re2.flx#0061">proc set_longest_match: RE2Options * bool</a></pre>
-<pre>0063:    <a href="/$src/lib/std/strings/re2.flx#0063">fun log_errors: RE2Options -> bool</a></pre>
-<pre>0064:    <a href="/$src/lib/std/strings/re2.flx#0064">proc set_log_errors: RE2Options * bool</a></pre>
-<pre>0066:    <a href="/$src/lib/std/strings/re2.flx#0066">fun max_mem: RE2Options -> int</a></pre>
-<pre>0067:    <a href="/$src/lib/std/strings/re2.flx#0067">proc set_max_mem: RE2Options * int</a></pre>
-<pre>0069:    <a href="/$src/lib/std/strings/re2.flx#0069">fun literal: RE2Options -> bool</a></pre>
-<pre>0070:    <a href="/$src/lib/std/strings/re2.flx#0070">proc set_literal: RE2Options * bool</a></pre>
-<pre>0072:    <a href="/$src/lib/std/strings/re2.flx#0072">fun never_nl: RE2Options -> bool</a></pre>
-<pre>0073:    <a href="/$src/lib/std/strings/re2.flx#0073">proc set_never_nl: RE2Options * bool</a></pre>
-<pre>0075:    <a href="/$src/lib/std/strings/re2.flx#0075">fun case_sensitive: RE2Options -> bool</a></pre>
-<pre>0076:    <a href="/$src/lib/std/strings/re2.flx#0076">proc set_case_sensitive: RE2Options * bool</a></pre>
-<pre>0078:    <a href="/$src/lib/std/strings/re2.flx#0078">fun perl_classes: RE2Options -> bool</a></pre>
-<pre>0079:    <a href="/$src/lib/std/strings/re2.flx#0079">proc set_perl_classes: RE2Options * bool</a></pre>
-<pre>0081:    <a href="/$src/lib/std/strings/re2.flx#0081">fun word_boundary: RE2Options -> bool</a></pre>
-<pre>0082:    <a href="/$src/lib/std/strings/re2.flx#0082">proc set_word_boundary: RE2Options * bool</a></pre>
-<pre>0084:    <a href="/$src/lib/std/strings/re2.flx#0084">fun one_line: RE2Options -> bool</a></pre>
-<pre>0085:    <a href="/$src/lib/std/strings/re2.flx#0085">proc set_one_line: RE2Options * bool</a></pre>
-<pre>0087:    <a href="/$src/lib/std/strings/re2.flx#0087">fun ParseFlags: RE2Options -> int</a></pre>
-<pre>0089:    <a href="/$src/lib/std/strings/re2.flx#0089">type ErrorCode</a></pre>
-<pre>0106:    <a href="/$src/lib/std/strings/re2.flx#0106">type Anchor</a></pre>
-<pre>0111:    <a href="/$src/lib/std/strings/re2.flx#0111">fun pattern: RE2 -> string</a></pre>
-<pre>0112:    <a href="/$src/lib/std/strings/re2.flx#0112">fun error: RE2 -> string</a></pre>
-<pre>0113:    <a href="/$src/lib/std/strings/re2.flx#0113">fun error_code: RE2 -> ErrorCode</a></pre>
-<pre>0114:    <a href="/$src/lib/std/strings/re2.flx#0114">fun error_arg: RE2 -> string</a></pre>
-<pre>0115:    <a href="/$src/lib/std/strings/re2.flx#0115">fun ok: RE2 -> bool</a></pre>
-<pre>0116:    <a href="/$src/lib/std/strings/re2.flx#0116">fun ProgramSize: RE2 -> int</a></pre>
-<pre>0118:    <a href="/$src/lib/std/strings/re2.flx#0118">gen GlobalReplace: &string * RE2 * StringPiece -> int</a></pre>
-<pre>0119:    <a href="/$src/lib/std/strings/re2.flx#0119">gen Extract: StringPiece * RE2 * StringPiece * &string -> bool</a></pre>
-<pre>0121:    <a href="/$src/lib/std/strings/re2.flx#0121">fun QuoteMeta: StringPiece -> string</a></pre>
-<pre>0123:    <a href="/$src/lib/std/strings/re2.flx#0123">fun PossibleMatchRange: RE2 * &string * &string * int -> bool</a></pre>
-<pre>0124:    <a href="/$src/lib/std/strings/re2.flx#0124">fun NumberOfCapturingGroups: RE2 -> int</a></pre>
-<pre>0125:    <a href="/$src/lib/std/strings/re2.flx#0125">fun NamedCapturingGroups: RE2 -> Stl_Map::stl_map[string, int]</a></pre>
-<pre>0128:    <a href="/$src/lib/std/strings/re2.flx#0128">gen Match: RE2 * StringPiece * int * Anchor * +StringPiece * int -> bool</a></pre>
-<pre>0132:    <a href="/$src/lib/std/strings/re2.flx#0132">noinline gen Match(re:RE2, var s:string) : opt[varray[string]]</a></pre>
-<pre>0145:    <a href="/$src/lib/std/strings/re2.flx#0145">gen apply (re:RE2, s:string)</a></pre>
-<pre>0147:    <a href="/$src/lib/std/strings/re2.flx#0147">fun CheckRewriteString: RE2 * StringPiece * &string -> bool</a></pre>
-<pre>0155:    <a href="/$src/lib/std/strings/re2.flx#0155">gen iterator (re2:string, var target:string)</a></pre>
-<pre>0158:    <a href="/$src/lib/std/strings/re2.flx#0158">gen iterator (r:RE2, var target:string) () : opt[varray[string]]</a></pre>
-<pre>0183:    <a href="/$src/lib/std/strings/re2.flx#0183">fun extract (re2:string, target:string) : opt[varray[string]]</a></pre>
-<pre>0184:    <a href="/$src/lib/std/strings/re2.flx#0184">fun extract (re2:RE2, target:string) : opt[varray[string]]</a></pre>
+<pre>0032:    <a href="/$src/lib/std/strings/re2.flx#0032">gen _ctor_RE2 : string -> RE2</a></pre>
+<pre>0035:    <a href="/$src/lib/std/strings/re2.flx#0035">type StringPiece</a></pre>
+<pre>0036:    <a href="/$src/lib/std/strings/re2.flx#0036">ctor StringPiece: string</a></pre>
+<pre>0037:    <a href="/$src/lib/std/strings/re2.flx#0037">ctor StringPiece: unit</a></pre>
+<pre>0038:    <a href="/$src/lib/std/strings/re2.flx#0038">ctor string: StringPiece</a></pre>
+<pre>0039:    <a href="/$src/lib/std/strings/re2.flx#0039">fun len: StringPiece -> size</a></pre>
+<pre>0040:    <a href="/$src/lib/std/strings/re2.flx#0040">fun data: StringPiece -> +char</a></pre>
+<pre>0044:    <a href="/$src/lib/std/strings/re2.flx#0044">fun len: StringPiece -> size</a></pre>
+<pre>0053:    <a href="/$src/lib/std/strings/re2.flx#0053">fun str: StringPiece -> string</a></pre>
+<pre>0056:    <a href="/$src/lib/std/strings/re2.flx#0056">type Arg</a></pre>
+<pre>0058:    <a href="/$src/lib/std/strings/re2.flx#0058">type Encoding</a></pre>
+<pre>0062:    <a href="/$src/lib/std/strings/re2.flx#0062">type RE2Options</a></pre>
+<pre>0064:    <a href="/$src/lib/std/strings/re2.flx#0064">proc Copy: RE2Options * RE2Options</a></pre>
+<pre>0066:    <a href="/$src/lib/std/strings/re2.flx#0066">fun encoding: RE2Options -> Encoding</a></pre>
+<pre>0067:    <a href="/$src/lib/std/strings/re2.flx#0067">proc set_encoding: RE2Options * Encoding</a></pre>
+<pre>0069:    <a href="/$src/lib/std/strings/re2.flx#0069">fun posix_syntax: RE2Options -> bool</a></pre>
+<pre>0070:    <a href="/$src/lib/std/strings/re2.flx#0070">proc set_posix_syntax: RE2Options * bool</a></pre>
+<pre>0072:    <a href="/$src/lib/std/strings/re2.flx#0072">fun longest_match: RE2Options -> bool</a></pre>
+<pre>0073:    <a href="/$src/lib/std/strings/re2.flx#0073">proc set_longest_match: RE2Options * bool</a></pre>
+<pre>0075:    <a href="/$src/lib/std/strings/re2.flx#0075">fun log_errors: RE2Options -> bool</a></pre>
+<pre>0076:    <a href="/$src/lib/std/strings/re2.flx#0076">proc set_log_errors: RE2Options * bool</a></pre>
+<pre>0078:    <a href="/$src/lib/std/strings/re2.flx#0078">fun max_mem: RE2Options -> int</a></pre>
+<pre>0079:    <a href="/$src/lib/std/strings/re2.flx#0079">proc set_max_mem: RE2Options * int</a></pre>
+<pre>0081:    <a href="/$src/lib/std/strings/re2.flx#0081">fun literal: RE2Options -> bool</a></pre>
+<pre>0082:    <a href="/$src/lib/std/strings/re2.flx#0082">proc set_literal: RE2Options * bool</a></pre>
+<pre>0084:    <a href="/$src/lib/std/strings/re2.flx#0084">fun never_nl: RE2Options -> bool</a></pre>
+<pre>0085:    <a href="/$src/lib/std/strings/re2.flx#0085">proc set_never_nl: RE2Options * bool</a></pre>
+<pre>0087:    <a href="/$src/lib/std/strings/re2.flx#0087">fun case_sensitive: RE2Options -> bool</a></pre>
+<pre>0088:    <a href="/$src/lib/std/strings/re2.flx#0088">proc set_case_sensitive: RE2Options * bool</a></pre>
+<pre>0090:    <a href="/$src/lib/std/strings/re2.flx#0090">fun perl_classes: RE2Options -> bool</a></pre>
+<pre>0091:    <a href="/$src/lib/std/strings/re2.flx#0091">proc set_perl_classes: RE2Options * bool</a></pre>
+<pre>0093:    <a href="/$src/lib/std/strings/re2.flx#0093">fun word_boundary: RE2Options -> bool</a></pre>
+<pre>0094:    <a href="/$src/lib/std/strings/re2.flx#0094">proc set_word_boundary: RE2Options * bool</a></pre>
+<pre>0096:    <a href="/$src/lib/std/strings/re2.flx#0096">fun one_line: RE2Options -> bool</a></pre>
+<pre>0097:    <a href="/$src/lib/std/strings/re2.flx#0097">proc set_one_line: RE2Options * bool</a></pre>
+<pre>0099:    <a href="/$src/lib/std/strings/re2.flx#0099">fun ParseFlags: RE2Options -> int</a></pre>
+<pre>0101:    <a href="/$src/lib/std/strings/re2.flx#0101">type ErrorCode</a></pre>
+<pre>0118:    <a href="/$src/lib/std/strings/re2.flx#0118">type Anchor</a></pre>
+<pre>0123:    <a href="/$src/lib/std/strings/re2.flx#0123">fun pattern: RE2 -> string</a></pre>
+<pre>0124:    <a href="/$src/lib/std/strings/re2.flx#0124">fun error: RE2 -> string</a></pre>
+<pre>0125:    <a href="/$src/lib/std/strings/re2.flx#0125">fun error_code: RE2 -> ErrorCode</a></pre>
+<pre>0126:    <a href="/$src/lib/std/strings/re2.flx#0126">fun error_arg: RE2 -> string</a></pre>
+<pre>0127:    <a href="/$src/lib/std/strings/re2.flx#0127">fun ok: RE2 -> bool</a></pre>
+<pre>0128:    <a href="/$src/lib/std/strings/re2.flx#0128">fun ProgramSize: RE2 -> int</a></pre>
+<pre>0130:    <a href="/$src/lib/std/strings/re2.flx#0130">gen GlobalReplace: &string * RE2 * StringPiece -> int</a></pre>
+<pre>0131:    <a href="/$src/lib/std/strings/re2.flx#0131">gen Extract: StringPiece * RE2 * StringPiece * &string -> bool</a></pre>
+<pre>0133:    <a href="/$src/lib/std/strings/re2.flx#0133">fun QuoteMeta: StringPiece -> string</a></pre>
+<pre>0135:    <a href="/$src/lib/std/strings/re2.flx#0135">fun PossibleMatchRange: RE2 * &string * &string * int -> bool</a></pre>
+<pre>0136:    <a href="/$src/lib/std/strings/re2.flx#0136">fun NumberOfCapturingGroups: RE2 -> int</a></pre>
+<pre>0137:    <a href="/$src/lib/std/strings/re2.flx#0137">fun NamedCapturingGroups: RE2 -> Stl_Map::stl_map[string, int]</a></pre>
+<pre>0140:    <a href="/$src/lib/std/strings/re2.flx#0140">gen Match: RE2 * StringPiece * int * Anchor * +StringPiece * int -> bool</a></pre>
+<pre>0144:    <a href="/$src/lib/std/strings/re2.flx#0144">noinline gen Match(re:RE2, var s:string) : opt[varray[string]]</a></pre>
+<pre>0157:    <a href="/$src/lib/std/strings/re2.flx#0157">gen apply (re:RE2, s:string)</a></pre>
+<pre>0159:    <a href="/$src/lib/std/strings/re2.flx#0159">fun CheckRewriteString: RE2 * StringPiece * &string -> bool</a></pre>
+<pre>0167:    <a href="/$src/lib/std/strings/re2.flx#0167">gen iterator (re2:string, var target:string)</a></pre>
+<pre>0170:    <a href="/$src/lib/std/strings/re2.flx#0170">gen iterator (r:RE2, var target:string) () : opt[varray[string]]</a></pre>
+<pre>0195:    <a href="/$src/lib/std/strings/re2.flx#0195">fun extract (re2:string, target:string) : opt[varray[string]]</a></pre>
+<pre>0196:    <a href="/$src/lib/std/strings/re2.flx#0196">fun extract (re2:RE2, target:string) : opt[varray[string]]</a></pre>
 <hr/><a href="/$src/lib/std/strings/regdef.flx">strings/regdef.flx</a>
 
 <pre>0001:  <a href="/$src/lib/std/strings/regdef.flx#0001">class Regdef</a></pre>

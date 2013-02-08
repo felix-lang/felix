@@ -1,0 +1,45 @@
+
+@h1 Micro Benchmark Performance
+@h2 Ackerman's function
+<span style="position:relative; left:100px;">
+<object data="ack/result.svg" type="image/svg+xml"></object>
+</span>
+
+@h3 C program
+@c++ speed/ack/c/ack.c
+
+@h3 Felix Program
+@felix speed/ack/felix/test.flx
+
+@h3 Ocaml Program
+@ocaml speed/ack/ocaml/test.ml
+
+@h2 N-body Problem 
+<span style="position:relative; left:100px;">
+<object data="nbody/result.svg" type="image/svg+xml"></object>
+</span>
+
+@h3 C program
+@c++ speed/nbody/c/nbody.c
+
+@h3 Felix Program
+@felix speed/nbody/felix/test.flx
+
+@h3 Ocaml Program
+@ocaml speed/nbody/ocaml/nbody.ml
+
+@h2 Mandelbrot Fun 
+<span style="position:relative; left:100px;">
+<object data="mandelbrot/result.svg" type="image/svg+xml"></object>
+</span>
+
+@h3 C++ program
+@c++ speed/mandelbrot/c++/test.cc
+
+@h3 Felix Program
+@felix speed/mandelbrot/felix/test.flx
+
+@h3 Ocaml Program
+@ocaml speed/mandelbrot/ocaml/test.ml
+
+
