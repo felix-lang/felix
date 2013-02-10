@@ -165,7 +165,7 @@ speed:
 
 gentest:
 	${BUILDROOT}/bin/flx_tangle --indir=src/test --outdir=test
-
+	git add test
 #
 # Documentation
 #

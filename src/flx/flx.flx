@@ -386,6 +386,10 @@ proc install_bin ()
   if result !=0 goto install_bin_failed;
   println$ "Installed executable flx_cp in /usr/local/bin";
 
+  result= system("cp -f "+FLX_INSTALL_DIR+"/tools/flx_tangle /usr/local/bin");
+  if result !=0 goto install_bin_failed;
+  println$ "Installed executable flx_tangle in /usr/local/bin";
+
   result= system("cp -f "+FLX_INSTALL_DIR+"/shlib/*"+EXT_SHLIB+" /usr/local/lib");
   if result !=0 goto install_bin_failed;
   println$ "Installed plugins in /usr/local/lib";

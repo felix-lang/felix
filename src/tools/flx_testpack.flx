@@ -1,0 +1,112 @@
+//$ flx_tmerg --inoutdir --indir=indir --outdir=outdir pattern ...
+//$ processes the file indir/basename.flx and generates
+//$ the file outdir/basename.fdoc by 
+//$ wrapping in an fdoc file. Throws in an expect file 
+//$ if one exists.
+//$
+//$ If indidr is specified and outdir is not, the outdir
+//$ remains the default current directory.
+//$
+//$ If inoutdir is specified, indir and outdir are set
+//$ to it, and indir and outdir should not be specified.
+//$
+//$ If no patterns are specified '.*' is used, i.e. all fdoc files
+//$ in the input directory (recursively).
+//$
+
+// --- COMMAND LINE PROCESSING --------------------------------
+
+val cmdspec : cmdspec_t = 
+  ( 
+    split-key-value-spec= Empty[string * string],
+    multi-valued-keys-spec= Empty[string], 
+    single-valued-keys-spec= list("--inoutdir","--indir","--outdir"),
+    switches-spec= list("--help"), 
+    short-switch-map-spec = Empty[char * string]
+  )
+;
+
+proc print_help =>
+  println$ "Usage: flx_tangle [--indir=indir] [--outdir=outdir] [--inoutdir=inoutdir] [regexp1 ...]"
+;
+
+val inargs = #System::args;
+
+val outargs = parse-cmdline cmdspec inargs;
+
+// --- Check for option conflicts
+var keys = outargs.single-valued-keys;
+if 
+  ("--inoutdir" in keys) and
+  (
+    ("--indir" in keys) or
+    ("--outdir" in keys) 
+  )
+do
+  println$ "Cannot specify --inoutdir with --indir or --outdir";
+  print_help;
+  System::exit 1;
+done
+
+// --- Check for help command
+if "--help" in outargs.switches do
+  print_help;
+  System::exit 0;
+done
+
+// ----- SETUP CONTROL ARGUMENTS ------------------------
+var patterns = 
+  match outargs.positional with
+  | _ ! (_ ! _ as tail) => tail
+  | _ ! Empty => list ".*"
+;
+
+var indir = keys.get_dflt ("--indir", keys.get_dflt ("--inoutdir", ".") );
+var outdir = keys.get_dflt ("--outdir",  keys.get_dflt ("--inoutdir", "."));
+
+// --- FILE SCAN --------------------------------
+for base in patterns do
+  println$ "Base = " + base;
+  for file in FileSystem::regfilesin(indir, base+"\\.flx") do
+    var filebase = file.Filename::strip_extension;
+    println$ filebase;
+    var inflx-file = Filename::join (indir, filebase)+".flx";
+    var inexpect-file = Filename::join (indir, filebase)+".expect";
+    var outfile = Filename::join (outdir, filebase)+'.fdoc';
+    if FileStat::fileexists inexpect-file do
+      pack-flx-expect (inflx-file, inexpect-file,outfile);
+    else
+      pack-flx (inflx-file, outfile);
+    done
+  done
+done
+
+proc pack-flx-expect (iflx:string, iexpect:string, out:string)
+{
+   var iflx-text = load (iflx);
+   var iexpect-text = load (iexpect);
+   Directory::mkdirs (Filename::dirname out);
+   var o = fopen_output$ out;
+   write$ o,'\n@h1 ' + Filename::basename iflx + 
+     '\n@felix\n' +
+     iflx-text +
+     '\n@expect\n' +
+     iexpect-text + '@\n'
+   ;
+   
+   fclose o;
+}
+
+proc pack-flx (iflx:string, out:string)
+{
+   var iflx-text = load (iflx);
+   Directory::mkdirs (Filename::dirname out);
+   var o = fopen_output$ out;
+   write$ o,'\n@h1 ' +Filename::basename iflx + 
+     '\n@felix\n' +
+     iflx-text
+   ;
+   
+   fclose o;
+}
+
