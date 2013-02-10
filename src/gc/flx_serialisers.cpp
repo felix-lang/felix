@@ -1,5 +1,7 @@
 #include "flx_serialisers.hpp"
 #include <string>
+#include <cstring>
+
 namespace flx { namespace gc { namespace generic {
 
 // This is an encoder for a primitive string.
@@ -31,14 +33,14 @@ namespace flx { namespace gc { namespace generic {
 size_t string_decoder (void *p, char *s, size_t i)
 {
    size_t n;
-   memcpy (&n,s + i,sizeof(size_t));
+   ::std::memcpy (&n,s + i,sizeof(size_t));
    new (p) ::std::string(s+i+sizeof(size_t), n);
    return i + sizeof(size_t) + n;
 }
 
 size_t unblit (void *p, size_t n, char *s, size_t i)
 {
-  memcpy (p,s+i,n);
+  ::std::memcpy (p,s+i,n);
   return i + n;
 }
 
