@@ -22,3 +22,4 @@ fun str2[T with Str2[T]] (x:T) => str2 x;
 print$ str2 5; endl;
 print$ str2$ list(1,2,3,4); endl;
 
+

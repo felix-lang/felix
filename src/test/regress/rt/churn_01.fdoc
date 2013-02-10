@@ -1,0 +1,48 @@
+
+@h1 churn_01.flx
+@felix
+// churn.flx
+// Compiler churns on this till number of references to struct fields
+// in fun str is reduced  to 5 or less
+struct fields {
+    a:string;
+    b:string; 
+    c:string; 
+    d:string;  
+    e:string;  
+    f:string;  
+    g:string;  
+    h:string;  
+    i:string;
+}
+fun _ctor_fields() => fields("A","B","C","D","E","F","G","H","I"); 
+
+instance Str[fields]  {
+  fun str (rec:fields) =>
+      "a: " + rec.a + "\n" + // comment me out if you want to live
+      "b: " + rec.b + "\n" + // comment me out if you want to live
+      "c: " + rec.c + "\n" + // comment me out if you have a life
+      "d: " + rec.d + "\n" + // comment me out if your in a hurry
+      "e: " + rec.e + "\n" +
+      "f: " + rec.f + "\n" +
+      "g: " + rec.g + "\n" +
+      "h: " + rec.h + "\n" +
+      "i: " + rec.i + "\n";
+}
+
+var a = fields();
+print a;
+
+
+
+@expect
+a: A
+b: B
+c: C
+d: D
+e: E
+f: F
+g: G
+h: H
+i: I
+@

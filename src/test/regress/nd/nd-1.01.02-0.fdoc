@@ -1,0 +1,51 @@
+
+@h1 nd-1.01.02-0.flx
+@felix
+//Check pthreads
+//Check pchannels
+open System;
+
+include "std/io/faio";
+
+open Faio; // async I/O module
+open Pthread; // pre-emptive threading
+
+var clock = mk_alarm_clock();
+
+var nthreads, njobs = 3,4;
+print$ f"%d threads, %d jobs\n"$ nthreads,njobs;
+
+// read delay, and wait that long, exit on 0
+proc worker(i:int, chan:pchannel[int])(){
+ print$ f"Starting pthread %d\n" i;
+ var delay = read chan;
+ while delay != 0 do
+   print$ f"Thread %i, Delay %d\n"$ i,delay;
+   sleep$ clock,double delay;
+   delay = read chan;
+ done;
+}
+
+// start the worker pthreads
+var chan = mk_pchannel[int]();
+proc spawn_workers(i:int)
+{
+  if i > nthreads return;
+  spawn_pthread (worker$ i,chan);
+  spawn_workers$ i+1;
+}
+spawn_workers 1;
+
+// dispatch jobs
+while njobs > 0 do
+  var delay = Cstdlib::rand () % 10 + 1;
+  print$ f"Dispatch job %d\n" delay;
+  write$ chan, delay;
+  --njobs;
+done;
+
+// terminate workers
+while nthreads > 0 do
+  write$ chan, 0;
+  --nthreads;
+done;

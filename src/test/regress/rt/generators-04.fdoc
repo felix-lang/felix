@@ -1,0 +1,24 @@
+
+@h1 generators-04.flx
+@felix
+//Check generators
+
+gen f ():int = {
+  var i:int; for i in 0 upto 5 do
+    yield i;
+  done;
+  halt "Call exhausted generator";
+}
+
+var g = f;
+print$ g (); endl;
+print$ g (); endl;
+print$ g (); endl;
+print$ g (); endl;
+
+@expect
+0
+1
+2
+3
+@

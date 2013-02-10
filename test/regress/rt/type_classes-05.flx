@@ -23,3 +23,4 @@ module Max[t with XEq[t]] {
 }
 print$ Max::feq(1,1); endl;
 
+

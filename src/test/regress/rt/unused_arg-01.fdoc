@@ -1,0 +1,16 @@
+
+@h1 unused_arg-01.flx
+@felix
+//Check export
+// The following program gets me c++ compilation errors when "print s" is
+// commented out:
+
+proc poot(s: &char) {
+  // print s;
+}
+
+export proc poot of (&char) as "poot";
+
+
+@expect
+@

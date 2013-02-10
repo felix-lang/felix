@@ -7,3 +7,4 @@ println s;
 s2 := fold_left (curry (add of (int * int))) 0 x;
 println s2;
 
+

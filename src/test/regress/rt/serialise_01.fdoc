@@ -1,0 +1,193 @@
+
+@h1 serialise_01.flx
+@felix
+proc test [T with Str[T]] (p: &T) {
+  // Print all the info about the pointer
+  //Collector::print_pointer_data p;
+
+  // Get the shape from the info.
+  var rtti = p.address.Collector::get_pointer_data.shape;
+
+  // get the encoder and print the address (to make sure it isn't NULL)
+  var encoder = rtti.Rtti::encoder;
+  //println$ "Encoder = " + (C_hack::cast[address] encoder).str;
+
+  // get the decoder and print the address (to make sure it isn't NULL)
+  var decoder = rtti.Rtti::decoder;
+  //println$ "Decoder = " + (C_hack::cast[address] decoder).str;
+
+  // Encode the data
+  var encoded_string = encoder p.address;
+
+  // Print the encoded data (will contain binary crap).
+  //println$ "Encoded=" + encoded_string;
+
+  // get pointer to the internal array because decoders use
+  // arrays whereas encoders use strings.
+  var sarr =  encoded_string.cstr;
+
+  // Allocate new storage for a copy of the data.
+  var slen = C_hack::sizeof[T];
+  var store = C_hack::malloc (slen);
+
+  // decode the encoded data into the store.
+  var endix = decoder (store, sarr, 0uz);
+
+  // Check the decoder consumed exactly the string length.
+  //println$ "End index = " + endix.str + " should = " + encoded_string.len.str;
+  assert endix == encoded_string.len;
+
+  // Now cast the store to the expected type and print it out.
+  var scopy = C_hack::cast[&T] store;
+  println$ "Decoded copy = " + str (*scopy);
+
+  var s2 = Serialise::encode_varray (p.address);
+  var p2 = C_hack::cast[&T]$ Serialise::decode_varray (s2);
+  println$ "Decoded copy2= " + str (*p2);
+
+}
+
+// Our first test case is just a string, we know these are nasty.
+var p = new "Hello";
+println$ *p;
+test p;
+
+println$ "-" * 20;
+// Our second test case is a struct, containing
+// a pod struct and a string.
+
+// The nested struct.
+struct X {
+  a:int;
+  b:int;
+};
+
+// The test case.
+struct Y {
+  c:X;
+  d:string;
+}
+
+// We need to print it.
+instance Str[Y] {
+  fun str (y: Y) =>
+    "This is a Y: (c:(" + y.c.a.str + ","+y.c.b.str+"),d:"+y.d+")"
+  ;
+}
+
+// A sample value.
+var c = new Y ( X(1,2), "hello world");
+println$ c*.str;
+test c;
+
+println$ "-" * 20;
+
+// Another example:
+var d = new (1,2.3,"World",99L);
+println$ *d;
+test d;
+
+println$ "-" * 20;
+// Ok lets try an array
+var e = new (1,2,3,4);
+println$ *e;
+test e;
+
+println$ "-" * 20;
+// And a non-pod array
+var f = new ("Hello","World","of","Felix");
+println$ *f;
+test f;
+
+println$ "-" * 20;
+// And an array of Y's
+var g = new ( Y (X(1,2),"three"), Y(X(4,5),"six"));
+println$ *g;
+test g;
+
+println$ "-" * 20; 
+// Tuple containing an nested array
+var  h = new (1, (*g,*g));
+println$ *h;
+test h;
+
+println$ "-" * 20; 
+// Now a varray
+var v = varray[string] (5.size);
+v+="42";
+v+="44";
+v+="46";
+println$ v;
+
+var vser = Serialise::encode_varray v.stl_begin.address;
+var cpy = C_hack::cast[varray[string]]$ Serialise::decode_varray vser;
+println$ cpy;
+
+
+// Now for some real fun!
+
+var li1 = list("hello","my","World");
+var pts1 = Serialise::find_closure li1.C_hack::cast[address];
+println$ pts1.len;
+println$ "-" * 20; 
+
+var li2 = list (li1, list("my","sweat","lord"), list("janis","joplin"));
+var pts2 = Serialise::find_closure li2.C_hack::cast[address];
+println$ pts2.len;
+println$ "-" * 20; 
+
+// The ULTIMATE!
+println$ li1;
+var enli1 = Serialise::encode_pointer_closure li1.C_hack::cast[address];
+var deli1 = (Serialise::decode_pointer_closure enli1).C_hack::cast[list[string]];
+println$ deli1;
+
+println$ "-" * 20; 
+println$ li2;
+var enli2 = Serialise::encode_pointer_closure li2.C_hack::cast[address];
+var deli2 = (Serialise::decode_pointer_closure enli2).C_hack::cast[list[list[string]]];
+println$ deli2;
+
+
+
+@expect
+Hello
+Decoded copy = Hello
+Decoded copy2= Hello
+--------------------
+This is a Y: (c:(1,2),d:hello world)
+Decoded copy = This is a Y: (c:(1,2),d:hello world)
+Decoded copy2= This is a Y: (c:(1,2),d:hello world)
+--------------------
+(1, 2.3, World, 99)
+Decoded copy = (1, 2.3, World, 99)
+Decoded copy2= (1, 2.3, World, 99)
+--------------------
+(1, 2, 3, 4)
+Decoded copy = (1, 2, 3, 4)
+Decoded copy2= (1, 2, 3, 4)
+--------------------
+('Hello', 'World', 'of', 'Felix')
+Decoded copy = ('Hello', 'World', 'of', 'Felix')
+Decoded copy2= ('Hello', 'World', 'of', 'Felix')
+--------------------
+(This is a Y: (c:(1,2),d:three), This is a Y: (c:(4,5),d:six))
+Decoded copy = (This is a Y: (c:(1,2),d:three), This is a Y: (c:(4,5),d:six))
+Decoded copy2= (This is a Y: (c:(1,2),d:three), This is a Y: (c:(4,5),d:six))
+--------------------
+(1, ((This is a Y: (c:(1,2),d:three), This is a Y: (c:(4,5),d:six)), (This is a Y: (c:(1,2),d:three), This is a Y: (c:(4,5),d:six))))
+Decoded copy = (1, ((This is a Y: (c:(1,2),d:three), This is a Y: (c:(4,5),d:six)), (This is a Y: (c:(1,2),d:three), This is a Y: (c:(4,5),d:six))))
+Decoded copy2= (1, ((This is a Y: (c:(1,2),d:three), This is a Y: (c:(4,5),d:six)), (This is a Y: (c:(1,2),d:three), This is a Y: (c:(4,5),d:six))))
+--------------------
+varray('42', '44', '46')
+varray('42', '44', '46')
+3
+--------------------
+11
+--------------------
+list('hello', 'my', 'World')
+list('hello', 'my', 'World')
+--------------------
+list(list('hello', 'my', 'World'), list('my', 'sweat', 'lord'), list('janis', 'joplin'))
+list(list('hello', 'my', 'World'), list('my', 'sweat', 'lord'), list('janis', 'joplin'))
+@

@@ -1,0 +1,16 @@
+
+@h1 abstract_types-02.flx
+@felix
+module A {
+  type p2[t] = new t * t;
+  ctor[t] p2[t](x:t)=> _make_p2$ x,x;
+  fun get1[t](x:p2[t])=> (_repr_ x).(0);
+  fun get2[t](x:p2[t])=> (_repr_ x).(1);
+}
+
+var a = A::p2[int] (2);
+println$ A::get1 a, A::get2 a;
+
+@expect
+(2, 2)
+@

@@ -1,0 +1,25 @@
+
+@h1 rt-1.01.31-0.flx
+@felix
+union U =
+| A of (unit -> void)
+;
+
+proc p0 (x:U)
+{
+  match x with
+  | A ?f => {f;}
+  endmatch;
+}
+
+proc p1
+{
+  print "hello"; endl;
+}
+
+p0$ A p1;
+
+
+@expect
+hello
+@

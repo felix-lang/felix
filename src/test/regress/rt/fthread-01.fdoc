@@ -1,0 +1,37 @@
+
+@h1 fthread-01.flx
+@felix
+//Check fibres
+//Check channels
+
+var y = ();
+proc f() { print "Hello"; endl; }
+f y;
+
+var x = mk_schannel[int]();
+
+proc reader() {
+  print "R1"; endl;
+  C_hack::ignore(read x); // prevent read being optimised away
+  print "R2"; endl;
+}
+
+proc writer() {
+  print "W1"; endl;
+  write (x,1);
+  print "W2"; endl;
+}
+
+spawn_fthread reader;
+spawn_fthread writer;
+
+print "Done"; endl;
+
+@expect
+Hello
+Done
+W1
+R1
+R2
+W2
+@

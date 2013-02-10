@@ -25,3 +25,4 @@ for k in list_comprehension (slice_range 10uz 20uz) do println k; done
 
 for k in (slice_range 10uz 20uz) do println k; done 
  
+

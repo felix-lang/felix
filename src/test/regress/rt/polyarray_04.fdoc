@@ -1,0 +1,19 @@
+
+@h1 polyarray_04.flx
+@felix
+var x = true, false, false, false;
+println$ x;
+
+x . 1 = true;
+println$ x;
+
+for i in x do println$ i; done
+
+@expect
+(true, false, false, false)
+(true, true, false, false)
+true
+true
+false
+false
+@

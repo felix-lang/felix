@@ -36,3 +36,4 @@ proc fire()
 print "Felix test_library1 initialising\n";
 fire();
 print "Felix test_library1 terminating\n";
+

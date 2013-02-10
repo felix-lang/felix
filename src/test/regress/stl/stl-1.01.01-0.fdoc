@@ -1,0 +1,91 @@
+
+@h1 stl-1.01.01-0.flx
+@felix
+//Check STL::vector
+include "stl/stl_vector";
+
+var x: stl_vector[int];
+
+print$ empty x; endl;
+
+push_back  (x,4);
+push_back  (x,5);
+push_back  (x,6);
+
+insert (x,begin x,3);
+insert (x,end x,7);
+insert (x,begin x,2);
+insert (x,begin x,1);
+
+print$ empty x; endl;
+
+proc check[c,it,rit with Reversible_Sequence[c,it,rit,int]]
+{
+  // forward iterator: forwards
+  var i = begin x;
+  while i != end x do
+    print$ *i; endl;
+    i++;
+  done;
+
+  // forward iterator: backwards
+  i = end x;
+  while i != begin x do
+    i--;
+    print$ *i; endl;
+  done;
+
+  // reverse iterator: forwards
+  var j = rbegin x;
+  while j != rend x do
+    print$ *j; endl;
+    j++;
+  done;
+
+  // reverse iterator: backwards
+  j = rend x;
+  while j != rbegin x do
+    j--;
+    print$ *j; endl;
+  done;
+}
+
+check [
+  stl_vector[int],
+  stl_vector_iterator[int],
+  stl_vector_reverse_iterator[int],
+  int
+]();
+
+@expect
+true
+false
+1
+2
+3
+4
+5
+6
+7
+7
+6
+5
+4
+3
+2
+1
+7
+6
+5
+4
+3
+2
+1
+1
+2
+3
+4
+5
+6
+7
+@

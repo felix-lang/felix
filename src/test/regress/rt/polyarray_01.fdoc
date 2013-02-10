@@ -1,0 +1,166 @@
+
+@h1 polyarray_01.flx
+@felix
+println$ "Test 1, expect 2";
+var a: int ^ 6 = (1,2,3,4,5,6);
+println$ (case 1 of 6) a;
+
+println$ "Test 2, expect 2";
+var ixk = case 1 of 6;
+println$ ixk a;
+
+println$ "Test 3, expect 1 to 6";
+var pa = &a;
+var pb = C_hack::cast[&(int ^ (3 * 2))] pa;
+var b = *pb;
+println$ b . (case 0 of 3, case 0 of 2);
+println$ b . (case 0 of 3, case 1 of 2);
+println$ b . (case 1 of 3, case 0 of 2);
+println$ b . (case 1 of 3, case 1 of 2);
+println$ b . (case 2 of 3, case 0 of 2);
+println$ b . (case 2 of 3, case 1 of 2);
+
+println$ "Test 4, expect 1 to 12";
+var a2 : int ^ 12 = (1,2,3,4,5,6,7,8,9,10,11,12);
+
+var pa2 = &a2;
+var pb2 = C_hack::cast[&(int ^ (3 * 2 * 2))] pa2;
+var b2 = *pb2;
+
+for var i  in 0 upto 2 do
+  var ii = i :>> 3;
+  for var j in 0 upto 1 do
+    var jj = j :>> 2;
+    for var k in 0 upto 1 do
+      var kk = k :>> 2;
+      println$ b2 . (ii,jj,kk);
+    done
+  done
+done
+
+// sums.. oo .. 
+// this: ((1,2,3),(4,5)) is not an array as such.:e
+// however the type int ^ 3 * int ^ 2 appears to
+// admit an isomorphism yielding int ^ ( 3 + 2)
+//
+// The five values of type 3 + 2 looks like this:
+// case 0 of (3+2) (case 0 of 3)
+// case 0 of (3+2) (case 1 of 3)
+// case 0 of (3+2) (case 2 of 3)
+// case 1 of (3+2) (case 0 of 2)
+// case 1 of (3+2) (case 1 of 2)
+
+// Lets see if we can make it work:
+
+println$ "Test 5, expect 1 to 5";
+var a3 = (1,2,3,4,5);
+var pa3 = &a3;
+var pb3 = C_hack::cast[& (int ^ (3 + 2))] pa3;
+var b3 = *pb3;
+
+println$ b3 . ((case 0 of (3+2)) (case 0 of 3));
+println$ b3 . ((case 0 of (3+2)) (case 1 of 3));
+println$ b3 . ((case 0 of (3+2)) (case 2 of 3));
+println$ b3 . ((case 1 of (3+2)) (case 0 of 2));
+println$ b3 . ((case 1 of (3+2)) (case 1 of 2));
+
+println$ "Test 6, expect 5";
+var zz = ((case 1 of (3+2)) (case 1 of 2));
+println$ b3 . zz;
+
+println$ "Test 7, expect 1 to 5";
+var a4 : (int^2*int)*int*int = ((1,2),3),4,5;
+var pa4 = &a4;
+var pb4 = C_hack::cast[& (int ^ ((2+1)+1+1))] pa4;
+var b4 = *pb4;
+
+println$  b4 . ((case 0 of (2+1)+1+1) ((case 0 of 2+1) (case 0 of 2))); // first index 3 cases second 2, third 2
+println$  b4 . ((case 0 of (2+1)+1+1) ((case 0 of 2+1) (case 1 of 2)));
+println$  b4 . ((case 0 of (2+1)+1+1) (case 1 of 2+1));
+println$  b4 . (case 1 of (2+1)+1+1);
+println$  b4 . (case 2 of (2+1)+1+1);
+
+
+
+println$ "Test 8, expect 1 to 5";
+var i1 = ((case 0 of (2+1)+1+1) ((case 0 of 2+1) (case 0 of 2))); // first index 3 cases second 2, third 2
+println$ b4 . i1;
+var i2 = ((case 0 of (2+1)+1+1) ((case 0 of 2+1) (case 1 of 2)));
+println$ b4 . i2;
+var i3 = ((case 0 of (2+1)+1+1) (case 1 of 2+1));
+println$ b4 . i3;
+var i4 = (case 1 of (2+1)+1+1);
+println$ b4 . i4;
+var i5 = (case 2 of (2+1)+1+1);
+println$ b4 . i5;
+
+println$ "Test 9, expect 1 to 9";
+var a5 = (1,2,3),(4,5,6), (7,8,9);
+var pa5 = &a5;
+var pb5 = C_hack::cast[& (int ^ (3*3))] pa5;
+var b5 = *pb5;
+for i in 0 upto 2 do
+  var ii3 = i :>> 3;
+  for j in 0 upto 2 do
+    var jj3 = j :>> 3;
+    println$ b5 . (ii3,jj3);
+  done
+done
+
+
+@expect
+Test 1, expect 2
+2
+Test 2, expect 2
+2
+Test 3, expect 1 to 6
+1
+2
+3
+4
+5
+6
+Test 4, expect 1 to 12
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+Test 5, expect 1 to 5
+1
+2
+3
+4
+5
+Test 6, expect 5
+5
+Test 7, expect 1 to 5
+1
+2
+3
+4
+5
+Test 8, expect 1 to 5
+1
+2
+3
+4
+5
+Test 9, expect 1 to 9
+1
+2
+3
+4
+5
+6
+7
+8
+9
+@

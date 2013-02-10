@@ -1,0 +1,37 @@
+
+@h1 win-1.01.01-0.flx
+@felix
+include "std/win32/faio_win32";
+open Faio_win32;
+
+var port = 1234;  // can't yet get os to choose the port. should fix that.
+var listener: SOCKET;
+mk_listener(&listener, &port, 1);
+
+print "spawning connector\n";
+// not printing in thread to make output repeatable in
+// the face of scheduler changes.
+spawn_fthread{
+  {
+    var c: SOCKET;
+    Connect(&c, c"127.0.0.1", port);
+  };
+};
+
+var s: SOCKET;
+var success: bool;
+mk_socket(&s);    // for async accept on win32 you create the accept socket yourself
+Accept(&success, listener, s);
+
+if success then {
+  print "successful accept!\n";
+  System::exit 0;
+} else {
+  print "accept failed!\n";
+  System::exit 1;
+} endif;
+
+@expect
+spawning connector
+successful accept!
+@

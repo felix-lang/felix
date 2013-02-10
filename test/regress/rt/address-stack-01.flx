@@ -5,3 +5,4 @@ px := f();
 println$ *px;
 px <- 2;
 println$ *px;
+

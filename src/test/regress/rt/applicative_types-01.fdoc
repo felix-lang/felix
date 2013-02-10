@@ -1,0 +1,24 @@
+
+@h1 applicative_types-01.flx
+@felix
+//Check applicative types
+
+open module Foo
+{
+  typedef foo = int;
+  fun _ctor_foo () => 5;
+  val x = foo ();
+  print x; endl;
+}
+
+val y = Foo::foo ();
+print y; endl;
+
+val z = foo ();
+print z; endl;
+
+@expect
+5
+5
+5
+@

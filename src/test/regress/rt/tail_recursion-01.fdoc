@@ -1,0 +1,24 @@
+
+@h1 tail_recursion-01.flx
+@felix
+//Check recursion
+//Check tail call optimisation
+// self-tail rec test (inspect output)
+// (requires --inline atm)
+var x = 4;
+proc recur ()
+{
+  if x == 0 goto endoff;
+  print x; endl;
+  --x;
+  recur();
+endoff:>
+}
+recur();
+
+@expect
+4
+3
+2
+1
+@

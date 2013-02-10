@@ -1,0 +1,33 @@
+
+@h1 type_classes-05.flx
+@felix
+//Check classes:imbue module
+//Check classes:polymorphic methods
+header '#include <iostream>';
+
+
+class XEq[t] {
+  virtual fun xeq: t * t -> bool;
+  virtual fun xne: t * t -> bool;
+}
+
+instance XEq[int] {
+  fun xeq: int * int -> bool = "$1==$2";
+  fun xne: int * int -> bool = "$1!=$2";
+}
+
+module Joe[with XEq[int]] {
+  fun feq(x:int,y:int) => xeq(x,y);
+}
+print$ Joe::feq(1,2); endl;
+
+module Max[t with XEq[t]] {
+  fun feq(x:t,y:t) => xeq(x,y);
+}
+print$ Max::feq(1,1); endl;
+
+
+@expect
+false
+true
+@

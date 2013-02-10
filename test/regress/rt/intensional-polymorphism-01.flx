@@ -12,3 +12,4 @@ var z2 = &x2, &y2;
 var r2 = poly z2;
 println$ *r2.(0), *r2.(1);
 
+

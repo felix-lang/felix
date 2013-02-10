@@ -10,3 +10,4 @@ print (appl (2, add of (int*int))); endl;
 print "closure of add primitive ";
 val c = add of (int*int);
 print (appl (3, c)); endl;
+

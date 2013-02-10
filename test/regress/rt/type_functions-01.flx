@@ -22,3 +22,4 @@ print k1.(0); print ","; print k1.(1); endl;
 print k2.(0); print ","; print k2.(1); endl;
 print k3.(0); print ","; print k3.(1); endl;
 //print k4.(0); print ","; print k4.(1); endl;
+

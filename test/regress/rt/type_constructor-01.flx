@@ -12,3 +12,4 @@ print$ match x with
 | Foo::B => "b"
 endmatch;
 endl;
+

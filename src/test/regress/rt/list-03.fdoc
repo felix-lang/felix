@@ -1,0 +1,30 @@
+
+@h1 list-03.flx
+@felix
+//take
+println$ (take 0 (list (1, 2, 3)));
+println$ (take 1 (list (1, 2, 3)));
+println$ (take 2 (list (1, 2, 3)));
+println$ (take 3 (list (1, 2, 3)));
+println$ (take 4 (list (1, 2, 3)));
+
+//drop
+println$ (drop 0 (list (1, 2, 3)));
+println$ (drop 1 (list (1, 2, 3)));
+println$ (drop 2 (list (1, 2, 3)));
+println$ (drop 3 (list (1, 2, 3)));
+println$ (drop 4 (list (1, 2, 3)));
+
+
+@expect
+list()
+list(1)
+list(1, 2)
+list(1, 2, 3)
+list(1, 2, 3)
+list(1, 2, 3)
+list(2, 3)
+list(3)
+list()
+list()
+@

@@ -15,3 +15,4 @@ typedef int5 = int -> int -> int -> int->int;
 println$ "by instance " + str #Trick[int5]::rank;
 
 
+

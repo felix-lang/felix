@@ -1,0 +1,9 @@
+
+@h1 bt-1.01.10-0.flx
+@felix
+// function drops off end
+fun f(x:int):int =
+{
+  if  x == 1 do return 1; done;
+}
+print (f 1); endl;

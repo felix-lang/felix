@@ -1,0 +1,32 @@
+
+@h1 generators-02.flx
+@felix
+//Check generators
+
+gen f(init:int)(inc:int):int = {
+  var counter = init;
+again:>
+  counter += inc;
+  yield counter;
+  yield counter+1;
+  goto again;
+}
+
+var x = f(40);
+print$ x(2); endl; // 42
+print$ x(999); endl; // 43
+print$ x(2); endl; // 44
+print$ x(999); endl; // 45
+print$ x(10); endl; // 54
+print$ x(999); endl; // 55
+print$ x(10); endl; // 64
+
+@expect
+42
+43
+44
+45
+54
+55
+64
+@

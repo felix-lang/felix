@@ -1,0 +1,68 @@
+
+@h1 faio-1.01.01-0.flx
+@felix
+//Check sockets
+include "std/io/stream";
+include "std/io/socket";
+open Stream;
+open Socket;
+open Stream::TerminalIOByteStream[Socket::socket_t];
+
+print "flx tcp stream test\n";
+
+var listener: socket_t;
+var port = 0;  // you choose
+// var port = 1024;
+
+// check errors. how is that done?
+mk_listener(&listener, &port, 1);
+//println$ "Got port: "; print port; endl;
+//println$ "listeneing on socket " + str listener;
+
+print "spawning connector\n";
+// not printing in thread to make output deterministic.
+// note that the connect shouldn't fail (immediately) because the
+// listener exists - it just hasn't called accept yet.
+spawn_fthread
+{
+  {
+    var eof = false;
+    // print "Connector dude\n";  // get rid of, hard to test
+    var c: socket_t;
+    connect(&c, c"127.0.0.1", port); // connect to localhost
+    //println$ "fthread's socket is " + str c;
+    var st: string;
+
+    get_line(c, &st);
+    print "connector got "; print st; endl;
+    write_string(c, "thanks\n", &eof);         // newline important
+
+    ioclose(c);  // finished with this
+    //println$ "fthread closed " + str c;
+  };
+};
+
+var s: socket_t;
+accept(listener, &s);
+//println$ "Mainline accepted connection on socket " + str s;
+ioclose(listener);  // not needed anymore
+
+var eof = false;
+print "got connection\n";
+write_string(s, "server says hi\n", &eof);     // newline important here
+
+var st: string;
+get_line(s, &st);
+
+print "server got "; print st; endl;
+ioclose(s);
+//println$ "mainline closed socket " + str s;
+
+
+@expect
+flx tcp stream test
+spawning connector
+got connection
+connector got server says hi
+server got thanks
+@

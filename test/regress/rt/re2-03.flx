@@ -1,3 +1,4 @@
 for m in (r"\w+", "Hello world today is good") do 
   println$ "Word = " + m.0; 
 done
+

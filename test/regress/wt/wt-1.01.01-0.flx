@@ -2,3 +2,4 @@ if (s.len.int > 3) do
   print s;
   s := "12345\n";
 done;
+

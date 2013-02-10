@@ -1,0 +1,12 @@
+
+@h1 rt-1.01.21-0.flx
+@felix
+//Check lvalues
+// lvalue decay if function called thru variable
+
+proc f(g:int->void) { var x=1; g x; }
+proc g(x:int) { }
+f g of (int);
+
+@expect
+@

@@ -1,0 +1,55 @@
+
+@h1 re2-02.flx
+@felix
+open Regdef;
+{
+  var digit = Charset "9";
+  val digits = Rpt (digit, 1, -1);
+  var letter = Charset "x";
+  var us = Regdef::String "_";
+  var id = Seqs (list (
+     Alts (list(us,letter)), 
+     Rpt( 
+       Alts(list(letter,digit,us)),0,-1)));
+  println$ render id;
+};
+
+// alternate encoding
+var digit = regexp(charset "9" );
+regdef digits = digit+;
+var letter = regexp(charset "x");
+var us = regexp("_");
+regdef id = (us|letter)(letter|digit|us)*;
+
+val pl = regexp ( perl ( "(?:_|[x])(?:[x]|[9]|_)*" ));
+println$ render id;
+println$ render pl;
+
+val dd = regexp ( regex  ( Alts(list(letter,digit,us))));
+println$ render dd;
+
+
+var r = RE2 (render (Group id));
+var n = r.NumberOfCapturingGroups;
+println$ "Captures = "+str n;
+
+var s = "x_9";
+var v = _ctor_varray[StringPiece]$ (n+1).size, StringPiece "";
+
+var res = Re2::Match(r,StringPiece s,0, ANCHOR_START, v.stl_begin, v.len.int);
+println$ res;
+println$ v;
+
+println$ "x_9" in r;
+
+
+@expect
+(?:\x5F|[x])(?:[x]|[9]|\x5F)*
+(?:\x5F|[x])(?:[x]|[9]|\x5F)*
+(?:_|[x])(?:[x]|[9]|_)*
+[x]|[9]|\x5F
+Captures = 1
+true
+varray(x_9, x_9)
+true
+@

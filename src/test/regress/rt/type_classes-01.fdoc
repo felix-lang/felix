@@ -1,0 +1,38 @@
+
+@h1 type_classes-01.flx
+@felix
+//Check typeclasses
+proc pr[t]:t="std::cout<<$1<<std::endl;" requires Cxx_headers::iostream;
+
+class XEq[t,u] {
+  virtual fun xeq: t * u -> 2;
+  virtual proc ppp: t;
+}
+
+instance XEq[int,int] {
+  fun xeq: int * int -> 2 = "$1==$2";
+  proc ppp (x:int) { pr x; }
+  fun fred: int -> int = "";
+}
+
+
+instance XEq[long,int] {
+  fun xeq: long * int -> 2 = "$1==$2";
+  proc ppp (x:long) { pr x; }
+}
+
+fun jeq[r,s with XEq[r,s]] (x:r,y:s)=> xeq(x,y);
+fun keq[t with XEq[t,t]] (x:t,y:t)=> jeq(x,y);
+fun peq[t with XEq[t,t]] (x:t,y:t)=> keq(x,y);
+proc zzz[t with XEq[t,t]] (x:t) { ppp x; }
+
+pr$ peq$ 1,2;
+pr$ peq$ 1,1;
+
+zzz 1;
+
+@expect
+0
+1
+1
+@

@@ -1,0 +1,18 @@
+
+@h1 dot-01.flx
+@felix
+fun f(a:int) (b:int) (c:int) => a + b + c;
+fun f(a:int) (b:double) (c:int) => a + b.int + c+100;
+
+println$ f 1 2 3;
+println$ f 1 2.0 3;
+println$ 1.f 2 3;
+println$ 1.f 2.0 3;
+
+
+@expect
+6
+106
+6
+106
+@

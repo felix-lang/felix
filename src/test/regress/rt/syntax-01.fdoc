@@ -1,0 +1,12 @@
+
+@h1 syntax-01.flx
+@felix
+println (if 1 > 2 then 0 else if 1 > 1 then 2 else 1);
+println "OK";
+println (match 3 with | 1 => 1 | 2 => match 42 with | 42 => 42 endmatch | 3 => 3);
+
+@expect
+1
+OK
+3
+@

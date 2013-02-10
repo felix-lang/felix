@@ -1,0 +1,29 @@
+
+@h1 struct_constructors-02.flx
+@felix
+// struct with one element as function
+struct S { x:int; y:int; z:int; }
+proc print (s:S) { print$ f"struct S x=%d y=%d z=%d" (s.x, s.y, s.z); }
+fun exec (p:(int * int * int) -> S, x:int, y:int, z:int) => p (x, y, z);
+
+val s1 = S (1, 2, 3); print s1; endl;
+
+val s2 = exec (S of (int * int * int), 4, 5, 6); print s2; endl;
+//val s3 = exec (S,                      7, 8, 9); print s3; endl;
+
+val s4 = (S of (int * int * int)) (10, 11, 12); print s4; endl;
+//val s5 = (S)                      (13, 14, 15); print s5; endl;
+
+val f1 = S of (int * int * int); val s6 = f1 (16, 17, 18); print s6; endl;
+//val f2 = S;                      val s7 = f2 (19, 20, 21); print s7; endl;
+
+print (exec (S of (int * int * int), 22, 23, 24)); endl;
+//print (exec (S,                      25, 26, 27)); endl;
+
+@expect
+struct S x=1 y=2 z=3
+struct S x=4 y=5 z=6
+struct S x=10 y=11 z=12
+struct S x=16 y=17 z=18
+struct S x=22 y=23 z=24
+@

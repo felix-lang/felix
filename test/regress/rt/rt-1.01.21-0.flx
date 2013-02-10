@@ -4,3 +4,4 @@
 proc f(g:int->void) { var x=1; g x; }
 proc g(x:int) { }
 f g of (int);
+

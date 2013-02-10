@@ -14,3 +14,4 @@ var c = extend a,(2.2,"s") with 2L,"str" end;
 println$ c.0, c.1, c.2, c.3, c.4;
 println$ c.5;
 
+

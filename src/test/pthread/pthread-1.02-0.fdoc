@@ -1,0 +1,34 @@
+
+@h1 pthread-1.02-0.flx
+@felix
+include "std/io/faio";
+
+print "Garbage collector world stop test"; endl;
+
+var clock = Faio::mk_alarm_clock();
+
+proc randprint(n:int)
+{
+  var i = 5;
+  print$ "Start Thread number "+str(n); endl;
+  while i > 0 do
+    var d = double$ Cstdlib::rand()%10;
+    if d == 0.0 do
+      print "ZERO FOUND -- collecting!"; endl;
+      collect;
+      print "collected!"; endl;
+    done;
+    print$ "Thread "+str n +" Sleep #"+str i+" for "+str d+" sec"; endl;
+    --i;
+    Faio::sleep (clock,d);
+  done;
+  print$ "Finish Thread number "+str(n); endl;
+}
+
+Pthread::spawn_pthread { randprint(1); };
+Pthread::spawn_pthread { randprint(2); };
+Pthread::spawn_pthread { randprint(3); };
+Pthread::spawn_pthread { randprint(4); };
+Pthread::spawn_pthread { randprint(5); };
+
+print "Mainline done!"; endl;

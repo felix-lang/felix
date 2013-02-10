@@ -17,3 +17,4 @@ fun f(x:int) = {
 val v,d = f 1;
 
 print$ d v; endl;
+

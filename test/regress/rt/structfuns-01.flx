@@ -17,3 +17,4 @@ println$ x.a, x.b, x.f 42, x.g;
 println x.cc;
 println$ x.cx 99.2;
 
+

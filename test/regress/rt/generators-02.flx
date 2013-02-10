@@ -17,3 +17,4 @@ print$ x(999); endl; // 45
 print$ x(10); endl; // 54
 print$ x(999); endl; // 55
 print$ x(10); endl; // 64
+

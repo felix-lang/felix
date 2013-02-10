@@ -2,3 +2,4 @@
 print$ rtrim "hello how are you" "you"; endl;
 print$ rtrim "hello how are you" "me"; endl;
 
+

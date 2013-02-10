@@ -8,3 +8,4 @@ export proc foo of (int*int) as "foo2";
 export proc foo of (int) as "foo1";
 export proc foo of (1) as "foo0";
 
+

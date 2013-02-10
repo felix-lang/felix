@@ -1,0 +1,13 @@
+
+@h1 kf-1.01.01-0.flx
+@felix
+proc foo(x, y:int)
+{
+}
+
+proc foo(x)
+{
+  foo (0, x);
+}
+
+foo 0;

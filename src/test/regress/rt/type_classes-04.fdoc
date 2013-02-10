@@ -1,0 +1,21 @@
+
+@h1 type_classes-04.flx
+@felix
+//Check classes:polymorphic methods
+
+class X[u] {
+  virtual fun f[v]: u * v -> int;
+}
+
+instance X[int] {
+  fun f[v]: int * v -> int = "(int)$1+$2";
+}
+
+fun g[with X[int]] (x:int, y:long) => f(x,y);
+
+print$ g$ 1,2L; endl;
+
+
+@expect
+3
+@

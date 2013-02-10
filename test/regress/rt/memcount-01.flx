@@ -11,3 +11,4 @@ proc f2[t] (a:t) { print who_cares[t]; endl; }
 var x: double ^ 42;
 f x;
 f2 x;
+

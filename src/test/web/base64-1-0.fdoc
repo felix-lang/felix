@@ -1,0 +1,51 @@
+
+@h1 base64-1-0.flx
+@felix
+open Base64; 
+println("----Test 1 Plain--------------------------------------------------");
+val tst1_plain = "Man";
+println(tst1_plain);
+println("----Test 1 Encode-------------------------------------------------");
+val tst1_enc = encode("Man");
+println(tst1_enc);
+println("----Test 1 Decode-------------------------------------------------");
+var tst1_dec:string = decode(tst1_enc);
+println(tst1_dec);
+println("----Test 2 Plain--------------------------------------------------");
+val tst2_plain = "Man is distinguished, not only by his reason, but by this singular passion from other animals, which is a lust of the mind, that by a perseverance of delight in the continued and indefatigable generation of knowledge, exceeds the short vehemence of any carnal pleasure.";
+println(tst2_plain);
+println("----Test 2 Encode-------------------------------------------------");
+val tst2_enc = encode(tst2_plain);
+println(tst2_enc);
+println("----Test 2 Decode-------------------------------------------------");
+var tst2_dec:string = decode(tst2_enc);
+println(tst2_dec);
+println("----Test 2 Wrap Encode--------------------------------------------");
+val tst2_wrap_enc = wrap(tst2_enc,76ui);
+println(tst2_wrap_enc);
+println("----Test 2 Wrap Decode--------------------------------------------");
+var test2_dec:string = decode(tst2_wrap_enc);
+println(tst2_dec);
+
+@expect
+----Test 1 Plain--------------------------------------------------
+Man
+----Test 1 Encode-------------------------------------------------
+TWFu
+----Test 1 Decode-------------------------------------------------
+Man
+----Test 2 Plain--------------------------------------------------
+Man is distinguished, not only by his reason, but by this singular passion from other animals, which is a lust of the mind, that by a perseverance of delight in the continued and indefatigable generation of knowledge, exceeds the short vehemence of any carnal pleasure.
+----Test 2 Encode-------------------------------------------------
+TWFuIGlzIGRpc3Rpbmd1aXNoZWQsIG5vdCBvbmx5IGJ5IGhpcyByZWFzb24sIGJ1dCBieSB0aGlzIHNpbmd1bGFyIHBhc3Npb24gZnJvbSBvdGhlciBhbmltYWxzLCB3aGljaCBpcyBhIGx1c3Qgb2YgdGhlIG1pbmQsIHRoYXQgYnkgYSBwZXJzZXZlcmFuY2Ugb2YgZGVsaWdodCBpbiB0aGUgY29udGludWVkIGFuZCBpbmRlZmF0aWdhYmxlIGdlbmVyYXRpb24gb2Yga25vd2xlZGdlLCBleGNlZWRzIHRoZSBzaG9ydCB2ZWhlbWVuY2Ugb2YgYW55IGNhcm5hbCBwbGVhc3VyZS4=
+----Test 2 Decode-------------------------------------------------
+Man is distinguished, not only by his reason, but by this singular passion from other animals, which is a lust of the mind, that by a perseverance of delight in the continued and indefatigable generation of knowledge, exceeds the short vehemence of any carnal pleasure.
+----Test 2 Wrap Encode--------------------------------------------
+TWFuIGlzIGRpc3Rpbmd1aXNoZWQsIG5vdCBvbmx5IGJ5IGhpcyByZWFzb24sIGJ1dCBieSB0aGlz
+IHNpbmd1bGFyIHBhc3Npb24gZnJvbSBvdGhlciBhbmltYWxzLCB3aGljaCBpcyBhIGx1c3Qgb2Yg
+dGhlIG1pbmQsIHRoYXQgYnkgYSBwZXJzZXZlcmFuY2Ugb2YgZGVsaWdodCBpbiB0aGUgY29udGlu
+dWVkIGFuZCBpbmRlZmF0aWdhYmxlIGdlbmVyYXRpb24gb2Yga25vd2xlZGdlLCBleGNlZWRzIHRo
+ZSBzaG9ydCB2ZWhlbWVuY2Ugb2YgYW55IGNhcm5hbCBwbGVhc3VyZS4=
+----Test 2 Wrap Decode--------------------------------------------
+Man is distinguished, not only by his reason, but by this singular passion from other animals, which is a lust of the mind, that by a perseverance of delight in the continued and indefatigable generation of knowledge, exceeds the short vehemence of any carnal pleasure.
+@

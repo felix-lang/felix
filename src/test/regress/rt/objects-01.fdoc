@@ -1,0 +1,63 @@
+
+@h1 objects-01.flx
+@felix
+val x = (a=1, b=2, c="m");
+val y = (c=9.9, s="Hello");
+
+typedef X = (a:int, b:int, c:string);
+typedef Y = (c:double, s:string);
+typedef XYZ = extend X, Y with (k:string) end;
+
+var xyz:XYZ = extend x,y with (k="world") end;
+
+println$ xyz.a, xyz.b, xyz.c, xyz.s, xyz.k;
+println$ "Felix Rocks";
+
+var a = object (x:int) = { method fun getx()=>x; };
+println$ (a 1).getx();
+var b = a 2;
+println$ b.getx();
+
+var d = (object () = { method fun getit() => "it"; })$();
+println$ d.getit();
+
+var xt = extend x,y, (a 1) with d end;
+println$ xt.getit();
+
+var xt2 = extend x,y, (a 1) with (object () = { method fun getit() => "it2"; }) () end;
+println$ xt2.getit();
+
+var objk42 = extend x,y, (a 1) with (object (var k:int) = { method fun getk() => k; }) 42 end;
+println$ objk42.getk();
+
+
+object K(p:int) extends x,y,a 1 = {
+  method fun getp () => p;
+}
+
+var k = K 26;
+println$ k.getp();
+
+
+interface A { geta: 1 -> int; }
+interface B extends A { getb: 1 -> int; }
+
+object anA (a:int) implements A = { method fun geta()=> a; }
+object anB(a:int, b:int) extends anA(a) implements B = { method fun getb()=> b; }
+
+var bb = anB(22,33);
+println$ bb.geta(), bb.getb();
+ 
+
+@expect
+(1, 2, 9.9, Hello, world)
+Felix Rocks
+1
+2
+it
+it
+it2
+42
+26
+(22, 33)
+@

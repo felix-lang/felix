@@ -12,3 +12,4 @@ fun g[with X[int]] (x:int, y:long) => f(x,y);
 
 print$ g$ 1,2L; endl;
 
+

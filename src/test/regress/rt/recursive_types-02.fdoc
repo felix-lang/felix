@@ -1,0 +1,25 @@
+
+@h1 recursive_types-02.flx
+@felix
+
+typedef fun succ (T:TYPE):TYPE => typematch T with
+  | 0 => 1
+  | 1 => 2
+  | 2 => 3
+  | 3 => 4
+  | 4 => 5
+  | 5 => 6
+  | 6 => 7
+endmatch;
+
+typedef fun arity (T:TYPE) : TYPE => typematch T with
+  | ?U -> ?V => succ (arity V)
+  | _ => 0
+endmatch;
+
+typedef int5 = int -> int -> int -> int->int;
+println$  "by arity fun " + str memcount[arity int5];
+
+@expect
+by arity fun 4
+@

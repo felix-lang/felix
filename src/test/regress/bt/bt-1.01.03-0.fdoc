@@ -1,0 +1,12 @@
+
+@h1 bt-1.01.03-0.flx
+@felix
+// open depends on self
+interface I { proc print_endl:int; }
+module X {
+  module M { proc print_endl (a:int) { print a; endl; } }
+  module B = M:I;
+}
+open X;
+open B;
+print_endl 1;

@@ -1,0 +1,38 @@
+
+@h1 string-01.flx
+@felix
+//Check strings
+var x = "Hello";
+x += "+";
+x += "World";
+print x; endl;
+assert(x == "Hello+World");
+print x.[1 to 6]; endl;
+print x.[to 6]; endl;
+print x.[6 to]; endl;
+print x.[6 to -1]; endl;
+
+var i = 0;
+var n = x.len.int;
+while i < n do 
+  print x.[i];
+  ++i;
+done
+endl;
+
+i = 1;
+while i <= n do
+  print x.[-i];
+  ++i;
+done
+endl;
+
+@expect
+Hello+World
+ello+
+Hello+
+World
+Worl
+Hello+World
+dlroW+olleH
+@

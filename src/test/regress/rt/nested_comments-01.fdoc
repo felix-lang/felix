@@ -1,0 +1,67 @@
+
+@h1 nested_comments-01.flx
+@felix
+//Check lexing:comments
+
+//test
+// test
+print "1"; endl;//test
+print "2"; endl; //test
+
+print "3"; endl;/*
+print "should not see this"; endl;
+*/
+print "4"; endl; /*
+print "should not see this"; endl;
+*/
+print/*
+print "should not see this"; endl;
+*/"5"; endl;
+print /*
+print "should not see this"; endl;
+*/"6"; endl;
+print/*
+print "should not see this"; endl;
+*/ "7"; endl;
+print /*
+print "should not see this"; endl;
+*/ "8"; endl;
+
+print /*
+print "should not see this"; endl;/*
+print "should not see this"; endl;
+*/print "should not see this"; endl;
+*/ "9"; endl;
+
+print /*
+print "should not see this"; endl; /*
+print "should not see this"; endl;
+*/print "should not see this"; endl;
+*/ "10"; endl;
+
+print /*
+print "should not see this"; endl;/*
+print "should not see this"; endl;
+*/ print "should not see this"; endl;
+*/ "11"; endl;
+
+print /*
+print "should not see this"; endl; /*
+print "should not see this"; endl;
+*/ print "should not see this"; endl;
+*/ "12"; endl;
+
+@expect
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+@

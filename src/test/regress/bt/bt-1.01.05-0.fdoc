@@ -1,0 +1,6 @@
+
+@h1 bt-1.01.05-0.flx
+@felix
+// impossible recursion
+type int = "int";
+fun neg(a:int) = { return -a; }

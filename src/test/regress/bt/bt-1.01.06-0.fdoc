@@ -1,0 +1,12 @@
+
+@h1 bt-1.01.06-0.flx
+@felix
+// privacy violation
+
+module X
+{
+  private fun f:int -> int = "$1";
+  val x = f 1;
+}
+open X;
+val x = f 1;

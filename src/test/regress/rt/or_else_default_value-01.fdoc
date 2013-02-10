@@ -1,0 +1,45 @@
+
+@h1 or_else_default_value-01.flx
+@felix
+//
+val x = Some "X";
+println$ x.or_else "Y";
+val y = None[string];
+println$ y.or_else("Y");
+//-----------------------------------------
+// "Test or_default of int
+instance DefaultValue[int] {
+  fun default[int] ():int => 0i;
+}
+
+open DefaultValue[int];
+
+val z = Some 1;
+println$ z.or_default();
+val a = None[int];
+println$ a.or_default();
+//-----------------------------------------
+// Test or_default of string
+instance DefaultValue[string] {
+  fun default[string] () => "thing";
+}
+
+proc test_or_default_string [with DefaultValue[string]]  () {
+ val b = Some "thing";
+ println$ b.or_default();
+  val c = None[string];
+  println$ c.or_default();
+}
+test_or_default_string();
+
+
+
+
+@expect
+X
+Y
+1
+0
+thing
+thing
+@

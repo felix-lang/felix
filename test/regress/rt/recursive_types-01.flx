@@ -32,3 +32,4 @@ eol;
 
 print (if 1==1 then "true" else "false" endif); eol;
 print (if 1==0 then "true" else "false" endif); eol;
+

@@ -23,3 +23,4 @@ val f2 = B;                      val u7 = f2 (19, 20, 21); print u7; endl;
 
 print (exec (B of (int * int * int), 22, 23, 24)); endl;
 print (exec (B,                      25, 26, 27)); endl;
+

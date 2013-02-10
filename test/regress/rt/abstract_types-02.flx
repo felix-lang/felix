@@ -7,3 +7,4 @@ module A {
 
 var a = A::p2[int] (2);
 println$ A::get1 a, A::get2 a;
+

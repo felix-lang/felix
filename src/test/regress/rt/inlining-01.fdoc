@@ -1,0 +1,64 @@
+
+@h1 inlining-01.flx
+@felix
+//Check inlining
+proc g[t]()
+{
+  proc h()
+  {
+    proc j[t]()
+    {
+      print "SIXTEEN\n";
+      print "SEVENTEEN\n";
+      print "EIGHTTEEN\n";
+    }
+    proc k()
+    {
+      print "THIRTEEN\n";
+      print "FOURTEEN\n";
+      print "FIFTEEN\n";
+      j[int]();
+    }
+    print "TEN\n";
+    print "ELEVEN\n";
+    print "TWELVE\n";
+    k();
+  }
+  print "SEVEN\n";
+  print "EIGHT\n";
+  print "NINE\n";
+  h();
+}
+
+proc f[t]() {
+  print "FOUR\n";
+  print "FIVE\n";
+  print "SIX\n";
+  g[t]();
+}
+
+print "ONE\n";
+print "TWO\n";
+print "THREE\n";
+f[int]();
+
+@expect
+ONE
+TWO
+THREE
+FOUR
+FIVE
+SIX
+SEVEN
+EIGHT
+NINE
+TEN
+ELEVEN
+TWELVE
+THIRTEEN
+FOURTEEN
+FIFTEEN
+SIXTEEN
+SEVENTEEN
+EIGHTTEEN
+@

@@ -61,7 +61,7 @@ fbuild:
 # regression test on release image
 # 
 test:
-	python3 fbuild/fbuild-light test --buildroot=${FBUILDROOT} $(FBUILD_PARAMS)
+	python3 fbuild/fbuild-light test --buildroot=${BUILDROOT} $(FBUILD_PARAMS)
 
 
 #
@@ -162,6 +162,9 @@ speed:
 	-rm -rf result.tmp
 	sh speed/perf.sh 2>>result.tmp
 	build/release/bin/flx_gengraph
+
+gentest:
+	${BUILDROOT}/bin/flx_tangle --indir=src/test --outdir=test
 
 #
 # Documentation

@@ -1,0 +1,16 @@
+
+@h1 rt-1.01.30-0.flx
+@felix
+var z = 0;
+noinline proc f
+  (a:unit ->int)
+  (b:unit ->int)
+{ z = a() + b(); }
+
+noinline proc g() { f {1} {2} ; };
+g();
+print z; endl;
+
+@expect
+3
+@

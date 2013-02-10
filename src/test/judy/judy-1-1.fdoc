@@ -1,0 +1,47 @@
+
+@h1 judy-1-1.flx
+@felix
+// test Judy1
+open Judy;
+
+print "judyable\n";
+
+var j1 = J1Array();  // new bit array, all zero
+var e :JError_t; // for error info
+var je = &e;
+
+var res: int;
+var pres = &res;
+Judy1Set(j1, word(1977), je, pres);
+
+Judy1Test(j1, word(1977), je, pres);
+print res; endl;
+
+Judy1Test(j1, word(1978), je, pres);
+print res; endl;
+
+Judy1Set(j1, word(1000000009), je, pres);
+
+var first: word = word 0;
+var last: word = word (-1);
+var n: word;
+
+Judy1First(j1, &first, je, pres);
+Judy1Last(j1, &last, je, pres);             // seems to give max uint
+println$ "first=" + str (int first);
+println$ "last=" + str (ulong last);
+
+// count 1 bits between range, returning in w.
+Judy1Count(j1, first, last, je, &n);
+println$ ulong n;
+
+free j1;
+
+@expect
+judyable
+1
+0
+first=1977
+last=1000000009
+2
+@

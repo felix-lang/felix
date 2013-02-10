@@ -1,0 +1,26 @@
+
+@h1 nested_cstruct-01.flx
+@felix
+//Check types:nested
+
+header """
+struct x_t { int x; };
+""";
+
+fun f(x:int) = {
+  cstruct x_t { x:int; };
+  fun pr(a:x_t): int = {
+    return a.x;
+  }
+  val a = x_t x;
+  return a,pr;
+}
+
+val v,d = f 1;
+
+print$ d v; endl;
+
+
+@expect
+1
+@

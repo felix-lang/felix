@@ -1,0 +1,17 @@
+
+@h1 tail_recursion-03.flx
+@felix
+//Check recursion
+//Check tail call optimisation
+fun g(x:int):int = {
+  if x == 0 goto endoff;
+  return g(x - 1);
+endoff:>
+  return 1;
+}
+
+print (g 10); endl;
+
+@expect
+1
+@

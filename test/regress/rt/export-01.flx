@@ -10,3 +10,4 @@ proc foo(x: int, y: int) {
 }
 
 export proc foo of (int*int) as "foo";
+

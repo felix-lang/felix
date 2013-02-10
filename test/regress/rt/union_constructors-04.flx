@@ -19,3 +19,4 @@ val u3 = (case 1 of U) (7, 8, 9); print u3; endl;
 val f1 = case 1 of U; val u4 = f1 (10, 11, 12); print u4; endl;
 
 print (exec (case 1 of U, 13, 14, 15)); endl;
+

@@ -1,0 +1,21 @@
+
+@h1 bt-1.01.09-0.flx
+@felix
+// this should give an error at felix time
+// but we only get one at C++ compile time
+
+/*
+[skaller@pelican] ~/links/flx>g++ -w -I. sss.cpp
+sss.cpp: In member function `virtual flx::rtl::con_t*
+   _i12_p11__init_::resume()':
+sss.cpp:256: no matching function for call to `_i15_p6__lam_1::call(
+   flx::rtl::con_t*&, _i18_f8__lam_2*&)'
+sss.cpp:121: candidates are: virtual flx::rtl::con_t*
+   _i15_p6__lam_1::call(flx::rtl::con_t*)
+*/
+ctypes int;
+{ var x:int; read x; }
+
+{ {var x:int; read x; } }
+
+;

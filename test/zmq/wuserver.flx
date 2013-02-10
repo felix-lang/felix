@@ -21,3 +21,4 @@ while true do
   update := f"%03d %d %d" (zipcode, temperature, relhumidity);
   publisher.send_string update;
 done
+

@@ -6,3 +6,4 @@ println y;
 
 val z = x * y;
 println z;
+

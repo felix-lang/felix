@@ -1,0 +1,177 @@
+
+@h1 judy-1-0.flx
+@felix
+open Judy;
+open C_hack;
+
+gen _ctor_address : string -> address = "(void*)$1.data()";
+
+var e : JError_t;
+val je = &e;
+var ires : int;
+var pires = &ires;
+var wres : word;
+var pwres = &wres;
+{
+  val ja = J1Array();
+  Judy1Set(ja,word 1,je,pires);
+  print "1 was unset="; println$ ires;
+
+  Judy1Set(ja,word 1,je,pires);
+  print "1 was unset="; println$ ires;
+
+  Judy1Set(ja,word 9,je,pires);
+  print "9 was unset="; println$ ires;
+  Judy1Set(ja,word 7,je,pires);
+  print "7 was unset="; println$ ires;
+  Judy1Set(ja,word 23,je,pires);
+  print "23 was unset="; println$ ires;
+  Judy1Set(ja,word 7,je,pires);
+  print "7 was unset="; println$ ires;
+
+  var i : int;
+  for i in 0 upto 10 do
+    Judy1Test(ja,word i,je,pires);
+    print i; print " isset="; println$ ires;
+  done;
+
+
+  Judy1Count(ja,word 0,word 10,je,pwres);
+  print "count="; println$ int wres;
+
+  var curr: word = word 0;
+  var pcurr= &curr;
+  Judy1First(ja,pcurr,je,pires);
+  print "First="; println$ ulong curr;
+  print "res="; println$ ires;
+  Judy1Next(ja,pcurr,je,pires);
+  print "Next="; println$ int curr;
+  print "res="; println$ ires;
+  Judy1Next(ja,pcurr,je,pires);
+  print "Next="; println$ int curr;
+  print "res="; println$ ires;
+  Judy1Next(ja,pcurr,je,pires);
+  print "Next="; println$ int curr;
+  print "res="; println$ ires;
+
+
+  println "Done J1";
+};
+
+{
+  val ja = JLArray();
+  var pv : &word; // pointer to space in the array to put value
+  var ppv = &pv;
+  JudyLIns(ja,word 1,je,ppv);
+  *pv = word 11;
+  JudyLIns(ja,word 7,je,ppv);
+  *pv = word 77;
+  JudyLIns(ja,word 23,je,ppv);
+  *pv = word 2323;
+
+  JudyLGet(ja,word 1,je,ppv);
+  print "1->"; println$ int$ *pv;
+
+  JudyLGet(ja,word 23,je,ppv);
+  print "23->"; println$ int$ *pv;
+
+  JudyLGet(ja,word 7,je,ppv);
+  print "7->"; println$ int$ *pv;
+
+  JudyLCount(ja,word 0,word 10,je,pwres);
+  print "Count="; println$ int wres;
+
+  var i : int;
+  for i in 0 upto 10 do
+    JudyLGet(ja,word i,je,ppv);
+    print i;
+    if isNULL pv do
+      println " --> NOT STORED";
+    else
+      print " --> ";
+      println$ ulong$ *pv;
+    done;
+  done;
+
+  var curr: word = word 0;
+  var pcurr= &curr;
+  JudyLFirst(ja,pcurr,je,ppv);
+  print "First="; print$ int curr; print " -> "; println$ int$ *pv;
+
+  JudyLNext(ja,pcurr,je,ppv);
+  print "Next="; print$ int curr; print " -> "; println$ int$ *pv;
+
+
+  println "Done JL";
+};
+
+/*
+{
+  val ja = JHSArray();
+  var pv : &word; // pointer to space in the array to put value
+  var ppv = &pv;
+
+  s1 := "Hello";
+  JudyHSIns(ja,address s1,word (len s1),je, ppv);
+  *pv = word 101;
+
+  s2 := "World";
+  JudyHSIns(ja,address s2,word (len s2),je,ppv);
+  *pv = word 22;
+
+  s3 := "Silly";
+  JudyHSIns(ja,address s3,word (len s3),je,ppv);
+  *pv = word 303;
+
+  JudyHSGet(ja,address s2, word (len s2),je, ppv);
+  println$ "s2 -> " + str (int(*pv));
+};
+*/
+
+@expect
+1 was unset=1
+1 was unset=0
+9 was unset=1
+7 was unset=1
+23 was unset=1
+7 was unset=0
+0 isset=0
+1 isset=1
+2 isset=0
+3 isset=0
+4 isset=0
+5 isset=0
+6 isset=0
+7 isset=1
+8 isset=0
+9 isset=1
+10 isset=0
+count=3
+First=1
+res=1
+Next=7
+res=1
+Next=9
+res=1
+Next=23
+res=1
+Done J1
+1->11
+23->2323
+7->77
+Count=2
+0 --> NOT STORED
+1 --> 11
+2 --> NOT STORED
+3 --> NOT STORED
+4 --> NOT STORED
+5 --> NOT STORED
+6 --> NOT STORED
+7 --> 77
+8 --> NOT STORED
+9 --> NOT STORED
+10 --> NOT STORED
+First=1 -> 11
+Next=7 -> 77
+Done JL
+@

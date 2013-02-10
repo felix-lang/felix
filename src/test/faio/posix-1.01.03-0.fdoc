@@ -1,0 +1,11 @@
+
+@h1 posix-1.01.03-0.flx
+@felix
+// actually portable, but I don't know the scheme for
+// adding those tests.
+include "std/io/stream";
+print "more output here\n";
+
+@expect
+more output here
+@

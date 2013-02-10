@@ -1,0 +1,74 @@
+
+@h1 xml2-2-1.flx
+@felix
+include "xml/xml2";
+
+open XML2;
+
+println("----------Test xml2-2-1------------------");
+println("-Test programatic document construction--");
+println("-----xml_new_doc--------xml_new_child----");
+println("----xml_new_node-xml_new_text_child------");
+println("xml_replace_node-xml_parse_in_nod_context");
+
+var xml_doc3 = xml_new_doc("1.0");
+var root_node = xml_new_node( "html");
+xml_doc_set_root_element(xml_doc3,root_node);
+
+val e1 = xml_new_child(root_node, Null[xml_ns_ptr],  "body","");
+if isNull[xml_node_ptr](e1) do
+  println("No child");
+done
+
+val e2 = xml_new_text_child(e1, Null[xml_ns_ptr],  "div","Hello World");
+if isNull[xml_node_ptr](e2) do
+  println("No child");
+done
+
+println("----------------------------------------");
+print(xml_doc_dump(xml_doc3));
+println("----------------------------------------");
+println("----------Test node replacement-----------");
+xml_replace_node_p(e1,xml_new_text_child(e1, Null[xml_ns_ptr],  "span","hello world"));
+println("----------------------------------------");
+print(xml_doc_dump(xml_doc3));
+println("----------------------------------------");
+println("----------Test parsing string node fragment-----------");
+var pnode:xml_node_ptr;
+var xml_str = """<hr/><div>I am an inserted node</div>""";
+val ret = xml_parse_in_node_context(root_node,xml_str,XML_PARSE_RECOVER,pnode);
+if ret == 0 do
+  println("No errors parsing fragment");
+  val nn = xml_add_child(root_node,pnode);
+  if not isNull[xml_node_ptr](nn) do println("Inserted successfully"); done
+  println("----------------------------------------");
+  print(xml_doc_dump(xml_doc3));
+  println("----------------------------------------");
+else
+  println("Problems parsing:"+str(ret));
+done
+
+xml_free_doc(xml_doc3);
+@expect
+----------Test xml2-2-1------------------
+-Test programatic document construction--
+-----xml_new_doc--------xml_new_child----
+----xml_new_node-xml_new_text_child------
+xml_replace_node-xml_parse_in_nod_context
+----------------------------------------
+<?xml version="1.0"?>
+<html><body><div>Hello World</div></body></html>
+----------------------------------------
+----------Test node replacement-----------
+----------------------------------------
+<?xml version="1.0"?>
+<html><span>hello world</span></html>
+----------------------------------------
+----------Test parsing string node fragment-----------
+No errors parsing fragment
+Inserted successfully
+----------------------------------------
+<?xml version="1.0"?>
+<html><span>hello world</span><hr/><div>I am an inserted node</div></html>
+----------------------------------------
+@

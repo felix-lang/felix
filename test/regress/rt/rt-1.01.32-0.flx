@@ -9,3 +9,4 @@ fun y : int => 1; // just check syntax here
 print$ x; endl;
 v = 2;
 print$ x; endl;
+

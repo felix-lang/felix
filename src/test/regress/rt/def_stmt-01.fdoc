@@ -1,0 +1,28 @@
+
+@h1 def_stmt-01.flx
+@felix
+//Check statements:def
+var a:int;
+var b:int;
+var c:int;
+
+a,(b,c) = 1,(2,3);
+
+print a; print " ";
+print b; print " ";
+print c; endl;
+
+def a = 1;
+def val x = 2;
+def var y = 3;
+
+def a, val d, var e = 9,8,7;
+
+print a; print " ";
+print d; print " ";
+print e; endl;
+
+@expect
+1 2 3
+9 8 7
+@

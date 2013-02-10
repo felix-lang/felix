@@ -1,0 +1,20 @@
+
+@h1 closure_constructors-01.flx
+@felix
+//Check closures
+// closure formation test
+
+// primitive function
+fun appl (x:int, f:int * int -> int):int => f (x,x);
+//fun add: int * int -> int = "$1+$2";
+print "closure of add primitive ";
+print (appl (2, add of (int*int))); endl;
+
+print "closure of add primitive ";
+val c = add of (int*int);
+print (appl (3, c)); endl;
+
+@expect
+closure of add primitive 4
+closure of add primitive 6
+@

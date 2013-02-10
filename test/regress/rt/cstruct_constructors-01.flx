@@ -20,3 +20,4 @@ val f1 = S of (int); val s6 = f1 6; print s6; endl;
 
 print (exec (S of (int), 8)); endl;
 //print (exec (S,          9)); endl;
+

@@ -1,0 +1,62 @@
+
+@h1 type_classes-03.flx
+@felix
+//Check classes:inheritance
+//Check inherit:specialisation
+header '#include <iostream>';
+
+class XEq[t] {
+  virtual fun xeq: t * t -> bool;
+  virtual fun xne: t * t -> bool;
+}
+
+class XCmp[t] {
+  inherit XEq[t];
+  virtual fun xlt: t * t -> bool;
+  virtual fun xgt: t * t -> bool;
+  virtual fun xle: t * t -> bool;
+  virtual fun xge: t * t -> bool;
+}
+
+instance XEq[int] {
+  fun xeq: int * int -> bool = "$1==$2";
+  fun xne: int * int -> bool = "$1!=$2";
+}
+
+instance XCmp[int] {
+  fun xlt: int * int -> bool = "$1<$2" ;
+  fun xgt: int * int -> bool = "$1>$2" ;
+  fun xle: int * int -> bool = "$1<=$2" ;
+  fun xge: int * int -> bool = "$1>=$2" ;
+}
+
+fun feq[with XEq[int]] (x:int,y:int) => xeq(x,y);
+fun geq[with XCmp[int]] (x:int,y:int) => xeq(x,y);
+
+print$ feq(1,2); endl;
+print$ geq(1,2); endl;
+
+module Fred[t]
+{
+  proc pr: t = "::std::cout<<$1<<::std::endl;";
+}
+
+Fred::pr 1;
+
+module Joe
+{
+  inherit Fred[int];
+}
+
+Joe::pr 1;
+
+open Joe;
+pr 1;
+
+@expect
+false
+false
+1
+1
+1
+@

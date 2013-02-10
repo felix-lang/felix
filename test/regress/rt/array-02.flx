@@ -17,3 +17,4 @@ var i:int; for i in 0 upto 9 do
   set(da,i.size,i); println$ i,get(da,i);
   set(sa,i.size,i); println$ i,get(sa,i.size);
 done
+

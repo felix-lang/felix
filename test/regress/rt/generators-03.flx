@@ -79,3 +79,4 @@ gen visitor(x:tree) () : int =
 var it = visitor(example);
 var res = accumulate(it);
 print$ res; endl;
+

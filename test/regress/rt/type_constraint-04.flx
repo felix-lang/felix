@@ -33,3 +33,4 @@ fun ff[t,k where t==k ]: t * k -> t = "$1+$2";
 
 pr$ ff$ 1,2;
 //pr$ ff$ 1,2.0; // should fail
+

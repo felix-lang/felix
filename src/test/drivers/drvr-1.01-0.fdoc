@@ -1,0 +1,56 @@
+
+@h1 drvr-1.01-0.flx
+@felix
+// dispatcher test
+header r"""
+#include <string>
+#include <stdio.h>
+using namespace std;
+""";
+
+union parity = Even | Odd;
+
+proc fire()
+{
+  var i : int = 0;
+  fun get_parity(): parity =
+  {
+    return
+      if(i%2==0) then Even
+      else Odd
+      endif;
+  }
+  while {i < 10}
+  {
+    print i; print " ";
+
+    val result =
+      match get_parity() with
+      |Even => "Even\n"
+      |Odd => "Odd\n"
+      endmatch
+    ;
+    print result;
+
+    ++i;
+  };
+}
+
+print "Felix test_library1 initialising\n";
+fire();
+print "Felix test_library1 terminating\n";
+
+@expect
+Felix test_library1 initialising
+0 Even
+1 Odd
+2 Even
+3 Odd
+4 Even
+5 Odd
+6 Even
+7 Odd
+8 Even
+9 Odd
+Felix test_library1 terminating
+@

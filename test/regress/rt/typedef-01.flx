@@ -7,3 +7,4 @@ module X[t] {
 open X[long];
 var x: mytype = 1L;
 println$ x;
+

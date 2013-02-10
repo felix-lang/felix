@@ -19,3 +19,4 @@ val f2 = B;          val u7 = f2 7; print u7; endl;
 
 print (exec (B of (int), 8)); endl;
 print (exec (B,          9)); endl;
+

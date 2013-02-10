@@ -1,0 +1,14 @@
+
+@h1 main1.flx
+@felix
+print "Starting .."; endl;
+Dynlink::run_lib(Env::getenv "lib1");
+Dynlink::run_lib(Env::getenv "lib2");
+print "Its run"; endl;
+
+@expect
+Starting ..
+lib1 running
+lib2 running
+Its run
+@

@@ -58,3 +58,4 @@ module A
   print 1;
   print "\n";
 }
+
