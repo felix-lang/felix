@@ -180,6 +180,9 @@ syntax expressions {
   //$ Superscript, exponential.
   x[ssuperscript_pri] := x[ssuperscript_pri] "^" x[srefr_pri] =># "`(ast_superscript (,_1 ,_3))";
 
+  //$ composition
+  x[ssuperscript_pri] := x[ssuperscript_pri] "\circ" x[>ssuperscript_pri] =># "(Infix)";
+
   //$ C dereference.
   x[srefr_pri] := "*" x[srefr_pri] =># "(prefix 'deref)";
 
