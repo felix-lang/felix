@@ -52,3 +52,5 @@ instance Tord[bool] {
 }
 
 open Tord[bool];
+open Show[bool];
+

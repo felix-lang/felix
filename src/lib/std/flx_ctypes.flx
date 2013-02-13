@@ -1,5 +1,0 @@
-instance [t in basic_types] Eq[t] {
-  fun == : t * t -> bool = "$1==$2";
-}
-open[T in basic_types] Show[T];
-open Show[bool];

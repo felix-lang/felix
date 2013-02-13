@@ -14,8 +14,7 @@ type string = "::std::basic_string<char>"
   encoder "::flx::gc::generic::string_encoder",
   decoder "::flx::gc::generic::string_decoder"
 ;
-type ustring = "::std::basic_string<uint32_t>" requires Cxx_headers::string;
-typedef strings = typesetof (string,ustring);
+typedef strings = typesetof (string);
 
 @h2 Equality and total ordering
 @felix
@@ -29,10 +28,8 @@ instance[t in strings] Tord[t] {
 open class String
 {
   inherit Eq[string];
-  inherit Eq[ustring];
 
   inherit Tord[string];
-  inherit Tord[ustring];
 
 @h2 Equality of {string} and {char}
 @felix
@@ -530,10 +527,6 @@ instance Str[+char] {
   fun str: +char -> string = '::flx::rtl::strutil::atostr($1)' requires package "flx_strutil";
 }
 
-instance Str[+uchar] {
-  fun str: +uchar -> string = '::flx::rtl::strutil::atostr((char const*)$1)' requires package "flx_strutil";
-}
-
 instance Repr[string] {
   fun repr (x:string) : string = {
     var o = "'";
@@ -544,31 +537,6 @@ instance Repr[string] {
     done
     return o + "'";
   }
-}
-
-@h2 Ustring
-@felix
-open class Ustring
-{
-  fun _ctor_uchar (x:ustring) => x.[0];
-  proc  += : ustring * ustring = "$1.append($2);";
-
-  fun len: ustring -> size = "$1.size()";
-  fun + : ustring * ustring -> ustring = "$1+$2";
-  fun * : ustring * int -> ustring = "::flx::lib::mul($1,$2)";
-  fun * : uchar * int -> ustring = "ustring($2,$1)";
-
-  fun apply (x:ustring, y:ustring):ustring => x + y;
-
-  fun subscript: ustring * int -> char =
-    "$1[$2<0??$1.size()+$2 : $2]";
-  fun copyfrom: ustring * int -> ustring =
-    "::flx::rtl::strutil::substr($1:assign,$2:assign,$1:postfix.size())" requires package "flx_strutil";
-  fun copyto: ustring * int -> ustring =
-    "::flx::rtl::strutil::substr($1:assign,0,$2:assign)" requires package "flx_strutil";
-  fun substring: ustring * int * int -> ustring =
-    "::flx::rtl::strutil::substr($1:assign,$2:assign,$3:assign)" requires package "flx_strutil";
-
 }
 
 open[T in strings] Show[T];

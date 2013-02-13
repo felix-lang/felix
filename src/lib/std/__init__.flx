@@ -11,12 +11,9 @@ include "std/order";
 include "std/algebraic";
 
 // base scalar types 
-include "std/flx_ctypes";
 include "std/cptr";
 
 include "std/ctypedefs";
-include "std/ctypesets";
-include "plat/arithmax";
 include "plat/float";
 
 include "std/address";
@@ -26,7 +23,6 @@ include "std/real";
 include "std/number";
 include "std/char";
 
-include "std/mixedint";
 include "std/float_format";
 include "std/float_math";
 include "std/quaternion";
