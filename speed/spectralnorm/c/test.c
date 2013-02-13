@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <time.h>
 
 double eval_A(int i, int j) { return 1.0/((i+j)*(i+j+1)/2+i+1); }
 
@@ -37,8 +36,6 @@ int main(int argc, char *argv[])
     int N = 2000;
     double u[N],v[N],vBv,vv;
     double result;
-    clock_t t0, t1;
-    t0 = clock();
     for(i=0;i<N;i++) u[i]=1.0;
     for(i=0;i<10;i++) {
         eval_AtA_times_u(N,u,v);
@@ -49,9 +46,7 @@ int main(int argc, char *argv[])
         vBv+=u[i]*v[i]; vv+=v[i]*v[i];
     }
     result = sqrt(vBv/vv);
-    t1 = clock();
     printf("%0.9f\n", result);
-    printf("%f\n", ((double) (t1 - t0)) / CLOCKS_PER_SEC);
     return 0;
 }
 

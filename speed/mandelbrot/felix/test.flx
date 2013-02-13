@@ -1,5 +1,3 @@
-include "std/posix/time";
-
 val runs = 1;
 val max_iterations = 99888;
 fun iterate (ci:double, cr:double) = {
@@ -36,9 +34,7 @@ proc mandelbrot (n:int) {
   done
 }
 
-val start_time = Time::time ();
 var iter:int; for iter in 1 upto runs do
   mandelbrot iter;
 done;
 endl;
-println$ (Time::time ()) - start_time;

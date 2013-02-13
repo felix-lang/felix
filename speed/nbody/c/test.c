@@ -127,8 +127,6 @@ int main(int argc, char ** argv)
     clock_t t0, t1;
     double r0, r1;
 
-    t0 = clock();
-
     offset_momentum(NBODIES, bodies);
     r0 = energy(NBODIES, bodies);
 
@@ -136,11 +134,8 @@ int main(int argc, char ** argv)
         advance(NBODIES, bodies, 0.01);
     r1 = energy(NBODIES, bodies);
 
-    t1 = clock();
-
     printf("%.9f\n", r0);
     printf("%.9f\n", r1);
-    printf("%f\n", ((double) (t1 - t0)) / CLOCKS_PER_SEC);
 
     return 0;
 }

@@ -1,6 +1,3 @@
-// Felix Performance Test Program
-include "std/posix/time";
-
 open Carray;
 
 typedef V = carray[double];
@@ -35,7 +32,6 @@ proc eval_AtA_times_u(N:int, u:V, AtAu:V) {
 proc main () {
   var i:int;
   var N = 2000;
-  val t0 = Time::time ();
 
   val u = array_alloc[double] N;
   val v = array_alloc[double] N;
@@ -58,7 +54,6 @@ proc main () {
   val t1 = Time::time ();
 
   println$ f"%0.9f" result;
-  println$ (t1 - t0);
 }
 
 main ();

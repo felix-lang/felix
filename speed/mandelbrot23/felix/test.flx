@@ -2,18 +2,12 @@ include "std/posix/time";
 
 val resolution = 5000;
 
-fun norm_square (c:struct {x:double; y:double;}) => c.x * c.x + c.y * c.y;
-
-fun mul (c1:struct {x:double; y:double;}, c2:struct {x:double; y:double;}) =>
-  (x=c1.x * c2.x - c1.y * c2.y, y=c1.x * c2.y + c1.y * c2.x);
-
-fun add (c1:struct {x:double; y:double;}, c2:struct {x:double; y:double;}) =>
-  (x=c1.x + c2.x, y=c1.y + c2.y);
+fun norm_square (c:dcomplex) => c.real * c.real + c.imag * c.imag;
 
 fun iters (max_iter:int, xc:double, yc:double) = {
-  val c = (x=xc, y=yc);
+  val c = dcomplex(xc, yc);
 
-  fun aux (count:int, z:struct {x:double; y:double;}) =>
+  fun aux (count:int, z:dcomplex) =>
     if count == max_iter then
       max_iter
     elif norm_square z >= 4.0 then
@@ -31,8 +25,8 @@ val min_val = -max_val;
 val scale = 2.0 / (double max_val);
 var count = 0;
 
-var i:int; forall i in min_val upto max_val do
-  var j:int; forall j in min_val upto max_val do
+var i:int; for i in min_val upto max_val do
+  var j:int; for j in min_val upto max_val do
     val x = (double i) * scale;
     val y = (double j) * scale;
     count += iters (100, x, y);

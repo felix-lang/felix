@@ -5,41 +5,89 @@
 <object data="ack/result.svg" type="image/svg+xml"></object>
 </span>
 
-@h3 C program
-@c++ speed/ack/c/ack.c
+@h3 Ack Code
+@h4 Ack C program
+@c++ speed/ack/c/test.c
 
-@h3 Felix Program
+@h4 Ack Felix Program
 @felix speed/ack/felix/test.flx
 
-@h3 Ocaml Program
+@h4 Ack Ocaml Program
 @ocaml speed/ack/ocaml/test.ml
+
+@h2 Takfp function
+<span style="position:relative; left:100px;">
+<object data="takfp/result.svg" type="image/svg+xml"></object>
+</span>
+
+@h3 Takfp Code
+@h4 Takfp C program
+@c++ speed/takfp/c/test.c
+
+@h4 Takfp Felix Program
+@felix speed/takfp/felix/test.flx
+
+@h4 Takfp Ocaml Program 
+@ocaml speed/takfp/ocaml/test.ml
 
 @h2 N-body Problem 
 <span style="position:relative; left:100px;">
 <object data="nbody/result.svg" type="image/svg+xml"></object>
 </span>
 
-@h3 C program
-@c++ speed/nbody/c/nbody.c
+@h3 Nbody Code
+@h4 Nbody C program
+@c++ speed/nbody/c/test.c
 
-@h3 Felix Program
+@h4 Nbody Felix Program
 @felix speed/nbody/felix/test.flx
 
-@h3 Ocaml Program
-@ocaml speed/nbody/ocaml/nbody.ml
+@h4 Nbody Ocaml Program
+@ocaml speed/nbody/ocaml/test.ml
 
 @h2 Mandelbrot Fun 
 <span style="position:relative; left:100px;">
 <object data="mandelbrot/result.svg" type="image/svg+xml"></object>
 </span>
 
-@h3 C++ program
+@h3 Mandelbrot Code
+@h4 Mandelbrot C++ program
 @c++ speed/mandelbrot/c++/test.cc
 
-@h3 Felix Program
+@h4 Mandelbrot Felix Program
 @felix speed/mandelbrot/felix/test.flx
 
-@h3 Ocaml Program
+@h4 Mandelbrot Ocaml Program
 @ocaml speed/mandelbrot/ocaml/test.ml
+
+@h2 Mandelbrot2-1 
+<span style="position:relative; left:100px;">
+<object data="mandelbrot21/result.svg" type="image/svg+xml"></object>
+</span>
+
+@h3 Mandelbrot21 Code
+@h4 Mandelbrot21 C++ program
+@c++ speed/mandelbrot21/c++/test.cc
+
+@h4 Mandelbrot21 Felix Program
+@felix speed/mandelbrot21/felix/test.flx
+
+@h4 Mandelbrot21 Ocaml Program
+@ocaml speed/mandelbrot21/ocaml/test.ml
+
+@h2 Spectral Norm
+<span style="position:relative; left:100px;">
+<object data="spectralnorm/result.svg" type="image/svg+xml"></object>
+</span>
+
+@h3 Spectral Norm Code
+@h4 Spectralnorm C program
+@c++ speed/spectralnorm/c/test.c
+
+@h4 Spectralnorm Felix Program
+@felix speed/spectralnorm/felix/test.flx
+
+@h4 Spectralnorm Ocaml Program
+@ocaml speed/spectralnorm/ocaml/test.ml
 
 

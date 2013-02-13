@@ -1,0 +1,30 @@
+val resolution = 5000;
+
+fun iters (max_iter:int, xc:double, yc:double) = {
+  fun aux (count:int, x:double, y:double) =>
+    if count == max_iter then
+      max_iter
+    elif x * x + y * y >= 4.0 then
+      count
+    else
+      aux (count + 1, x * x - y * y + xc, 2.0 * x * y + yc)
+    endif
+  ;
+  return aux (0, xc, yc);
+}
+
+val start_time = Time::time ();
+val max_val = resolution / 2;
+val min_val = -max_val;
+val scale = 2.0 / (double max_val);
+var count = 0;
+
+var i:int; for i in min_val upto max_val do
+  var j:int; for j in min_val upto max_val do
+    val x = (double i) * scale;
+    val y = (double j) * scale;
+    count += iters (100, x, y);
+  done;
+done;
+
+println count;

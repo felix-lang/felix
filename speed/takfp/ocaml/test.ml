@@ -4,8 +4,5 @@ let rec tak x y z =
 
 let () =
   let n = 10. in
-  let t0 = Unix.gettimeofday () in
   let v = (tak (3. *. n) (2. *. n) n) in
-  let t1 = Unix.gettimeofday () in
   Printf.printf "%.2f\n" v;
-  Printf.printf "%f\n" (t1 -. t0)

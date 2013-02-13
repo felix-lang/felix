@@ -11,7 +11,6 @@ let iters max_iter xc yc =
   aux 0 xc yc
 
 let _ =
-  let t0 = Unix.gettimeofday () in
   let max_val = resolution / 2 in
   let min_val = - max_val in
   let mul = 2.0 /. float_of_int max_val in
@@ -23,6 +22,4 @@ let _ =
       count := !count + iters 100 x y;
     done
   done;
-  let t1 = Unix.gettimeofday () in
   Printf.printf "%d\n" !count;
-  Printf.printf "%f\n" (t1 -. t0)

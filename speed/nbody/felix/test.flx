@@ -1,19 +1,16 @@
-// Felix Performance Test Program
-include "std/posix/time";
-
 PI := 3.141592653589793;
 SOLAR_MASS := 4.0 * PI * PI;
 DAYS_PER_YEAR := 365.24;
 
 typedef vec = array[double,3];
 
-fun + (x:vec,y:vec)=>x.0+y.0, x.1+y.1, x.2+y.2;
-fun - (x:vec,y:vec)=>x.0-y.0, x.1-y.1, x.2-y.2;
-fun - (x:vec)=>-x.0, -x.1,-x.2;
-fun * (x:vec,var y:double)=>x.0*y, x.1*y, x.2*y;
-fun / (x:vec,var y:double)=>x.0/y, x.1/y, x.2/y;
-fun * (var y:double,x:vec)=>x.0*y, x.1*y, x.2*y;
-fun sqr(x:vec)=>x.0*x.0+x.1*x.1+x.2*x.2;
+fun + (x:vec,y:vec)=>x.0 + y.0, x.1 + y.1, x.2 + y.2;
+fun - (x:vec,y:vec)=>x.0 - y.0, x.1 - y.1, x.2 - y.2;
+fun - (x:vec)=> - x.0, - x.1,- x.2;
+fun * (x:vec,var y:double)=>x.0 * y, x.1 * y, x.2 * y;
+fun / (x:vec,var y:double)=>x.0 / y, x.1 / y, x.2 / y;
+fun * (var y:double,x:vec)=>x.0 * y, x.1 * y, x.2 * y;
+fun sqr(x:vec)=>x.0 * x.0 + x.1 * x.1 + x.2 * x.2;
 fun norm(x:vec)=>sqrt(sqr x);
 fun addr: Body -> &Body = "&$1";
 
@@ -116,15 +113,11 @@ var bodies = (sun,jupiter,saturn,uranus,neptune);
 val nbodies = 5;
 val n = 50000000;
 
-val t0 = Time::time ();
 OffsetMomentum();
-val r0 = Energy ();
+var r0 = Energy ();
 
-var i : int;
-for i in 1 upto n do Advance 0.01; done;
-val r1 = Energy ();
-val t1 = Time::time ();
+for var i in 1 upto n do Advance 0.01; done;
+var r1 = Energy ();
 
 println$ f"%.9f"$ r0;
 println$ f"%.9f"$ r1;
-println$ (t1 - t0);

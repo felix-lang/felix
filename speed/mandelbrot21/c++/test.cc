@@ -1,13 +1,6 @@
-// based off http://metamatix.org/~ocaml/price-of-abstraction.html
-
-#include <sys/time.h>
 #include <iostream>
 
 #define RESOLUTION 5000
-
-void set_fpu (unsigned int mode) {
-    asm ("fldcw %0" : : "m" (*&mode));
-}
 
 int iters(int max_iter, double xc, double yc) {
     double x = xc;
@@ -22,13 +15,6 @@ int iters(int max_iter, double xc, double yc) {
 }
 
 int main() {
-    set_fpu (0x27F);
-
-    timeval t0;
-    if (gettimeofday(&t0, NULL)) {
-        std::cerr << "gettimeofday failed" << std::endl;
-        return 1;
-    }
 
     int    max_val = RESOLUTION/2;
     int    min_val = -max_val;
@@ -40,17 +26,6 @@ int main() {
         }
     }
 
-    timeval t1;
-    if (gettimeofday(&t1, NULL)) {
-        std::cerr << "gettimeofday failed" << std::endl;
-        return 1;
-    }
-
     std::cout << count << std::endl;
-
-    double t = t1.tv_sec - t0.tv_sec;
-    t += double(t1.tv_usec - t0.tv_usec) / 1000000.0;
-    std::cout << t << std::endl;
-
     return 0;
 }
