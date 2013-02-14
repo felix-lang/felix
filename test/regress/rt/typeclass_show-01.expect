@@ -48,14 +48,8 @@ str:  -inf
 repr: -inf
 str:  a
 repr: a
-str:  97
-repr: 97
-str:  97
-repr: 97
 str:  0x1
 repr: 0x1
-str:  0x10
-repr: 0x10
 str:  0x10
 repr: 0x10
 str:  Domo Arigato,

@@ -27,6 +27,7 @@ open class Int
 {
   ctor int: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
   ctor[T in reals] int: T = "static_cast<#0>($1)/*int.flx: ctor*/";
+  ctor int : int = "($1)/*int.flx: ctor int IDENT*/";
   // special hack
   ctor int(x:bool)=> match x with | true => 1 | false => 0 endmatch;
 }

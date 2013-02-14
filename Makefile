@@ -164,6 +164,10 @@ speed:
 	build/release/bin/flx_gengraph
 
 gentest:
+	rm -rf test
+	mkdir test
+	mkdir test/test-data
+	cp src/test/test-data/* test/test-data
 	${BUILDROOT}/bin/flx_tangle --indir=src/test --outdir=test
 	git add test
 #
