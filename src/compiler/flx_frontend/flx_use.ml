@@ -14,6 +14,7 @@ open Flx_unify
 open Flx_maps
 open Flx_exceptions
 
+(* THIS CODE IS NOW WRONG! Because projections can be written as applications now! *)
 let rec is_proj (e,t) =
   match e with
   | BEXPR_name _-> true
@@ -60,12 +61,65 @@ let rec uses_btype add bsym_table count_inits t =
 and uses_bexe add bsym_table count_inits exe =
   let f_bexpr e = uses_bexpr add bsym_table count_inits e in
 
+  let rec chkl e = 
+    match e with
+    | BEXPR_deref ((BEXPR_ref _),_ as p),_ -> 
+      print_endline "Deref a ref in lcontext: variable not considered used";
+      print_endline ("In assignment " ^ string_of_bexe bsym_table 0 exe);
+      ()
+
+    | BEXPR_deref _,_ -> 
+      (*
+      print_endline "Can't handle deref yet";
+      print_endline ("In assignment " ^ string_of_bexe bsym_table 0 exe);
+      *) 
+      f_bexpr e
+
+    | BEXPR_ref _,_ -> 
+      print_endline "Can't handle address yet, assume variable is used";
+      print_endline ("In assignment " ^ string_of_bexe bsym_table 0 exe);
+      assert false;
+      f_bexpr e
+
+    | BEXPR_case _,_ -> () (* case used as projection *)
+    | BEXPR_name _,_ -> ()
+
+    | BEXPR_get_n (j,e),_ -> f_bexpr e; chkl j
+
+    | BEXPR_apply ((BEXPR_closure (i,_),_),_),_ 
+    | BEXPR_apply_prim (i,_,_),_ -> 
+      let bsym = Flx_bsym_table.find bsym_table i in
+      let bbdcl = Flx_bsym.bbdcl bsym in 
+      begin match  bbdcl with
+      | Flx_bbdcl.BBDCL_external_fun (props,_,_,_,_,_,_) ->
+        if List.mem `Lvalue  props then begin
+          (*
+          print_endline ("[Flx_use.uses_bexe:assign:lhs] Unexpected apply prim ret lvalue " ^ sbe bsym_table e);
+          print_endline ("In assignment " ^ string_of_bexe bsym_table 0 exe);
+          *) 
+          f_bexpr e
+        end
+        else assert false
+      | _ -> assert false
+      end
+
+    | BEXPR_apply (a,b),_ -> 
+      print_endline ("[Flx_use.uses_bexe:assign:lhs] Unexpected apply " ^ sbe bsym_table e);
+      print_endline ("In assignment " ^ string_of_bexe bsym_table 0 exe);
+      assert false;
+      f_bexpr a; f_bexpr b
+
+    | _ -> 
+      print_endline ("Unexpected " ^ sbe bsym_table e);
+      print_endline ("In assignment " ^ string_of_bexe bsym_table 0 exe);
+      assert false
+  in
   match exe,count_inits with
   | BEXE_init (_,i,e),false -> f_bexpr e
   | BEXE_assign (_,lhs,rhs),_ ->
       (* check is a term is a tuple projection of a variable *)
-      if count_inits or not (is_proj lhs)
-      then f_bexpr lhs;
+      if count_inits then f_bexpr lhs
+      else chkl lhs;
       f_bexpr rhs
   | _ ->
 

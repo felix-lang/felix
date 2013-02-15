@@ -207,7 +207,7 @@ class StrDict[T] {
    //$ Get the optional first key in the dictionary into
    //$ the supplied NTBS (unsafe!)
    gen charp_first (x:strdict) (buffer:+char) = {
-     buffer.[0] = char "";
+     set(buffer,0,char "");
      return x.charp_get_ge buffer;
    }
 
