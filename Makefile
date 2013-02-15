@@ -61,7 +61,7 @@ fbuild:
 # regression test on release image
 # 
 test:
-	python3 fbuild/fbuild-light test --buildroot=${BUILDROOT} $(FBUILD_PARAMS)
+	python3 fbuild/fbuild-light test --buildroot=${FBUILDROOT} $(FBUILD_PARAMS)
 
 
 #

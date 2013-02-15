@@ -247,25 +247,20 @@ let cal_use_closure syms bsym_table (count_inits:bool) =
 let full_use_closure syms bsym_table =
   cal_use_closure syms bsym_table true
 
+exception Bad
 
-let strip_inits bidset exes =
+let strip_inits bsym_table bidset exes =
   let rec aux exes_in exes_out =
     match exes_in with
     | [] -> List.rev exes_out
     | exe::tail ->
-      match exe with
-      | BEXE_init (sr,i,e) when not (Flx_types.BidSet.mem i bidset) ->
-        (*
-        print_endline ("Stripping init of variable " ^ string_of_int i);
-        *)
-        aux tail exes_out 
-      | BEXE_assign (sr,lhs,rhs) when is_proj lhs && not (Flx_types.BidSet.mem (get_var lhs) bidset) ->
-        (*
-        let i = get_var lhs in
-        print_endline ("Stripping assign of variable " ^ string_of_int i);
-        *)
-        aux tail exes_out 
-      | _ -> aux tail (exe::exes_out) 
+      (* any exe containing an "unused" symbol gets thrown out *)
+      let add i = if BidSet.mem i bidset then () else raise Bad in
+      let keep = 
+        try uses_bexe add bsym_table true exe; true
+        with Bad -> false
+      in
+      aux tail (if keep then (exe::exes_out) else exes_out)
   in
   aux exes [] 
 
@@ -325,7 +320,7 @@ let copy_used1 syms bsym_table =
       let bsym =
         match bsym.Flx_bsym.bbdcl with 
         | BBDCL_fun  (prop, bvs, ps, res, exes) ->  
-          let exes = strip_inits bidset exes in
+          let exes = strip_inits bsym_table bidset exes in
           let bbdcl = Flx_bbdcl.bbdcl_fun  (prop, bvs, ps, res, exes) in
           Flx_bsym.create 
             ~sr:(bsym.Flx_bsym.sr) 
