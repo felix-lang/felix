@@ -128,9 +128,10 @@ let btyp_array (t, n) =
 
 (** Construct a BTYP_record type. *)
 let btyp_record name ts = 
-      (* Make sure all the elements are sorted by name. *)
-      let ts = List.sort compare ts in
-      BTYP_record (name,ts)
+   (* Make sure all the elements are sorted by name. *)
+   let cmp (s1,t1) (s2, t2) = compare s1 s2 in
+   let ts = List.sort cmp ts in
+   BTYP_record (name,ts)
 
 (** Construct a BTYP_variant type. *)
 let btyp_variant = function
