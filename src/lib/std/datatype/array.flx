@@ -24,6 +24,13 @@ open class Farray
     fun unsafe_get: &array[t, n] * size -> &t = "(&($1->data[$2]))";
   }
 
+  // These are wrong! Included here to remind NOT to implement!
+  // We can already do this with just get on a pointer to array eg:
+  //   var a = 1,2.3;
+  //   (&a) . 1 <- 42;
+  // fun unsafe_get_ref[t,n]: &array[t, n] * size -> &t => "$1->data+$2";
+  // fun n"&." [t,n]: &array[t, n] * size -> &t => "$1->data+$2";
+
   proc unsafe_set[t,n]: &array[t,n] * size * t = "$1->data[$2]=$3;";
   proc set[t,n, I in ints] (a: &array[t,n], i:I,v:t) {
     assert i.size < (*a).len;

@@ -271,6 +271,14 @@ by assigning a new value without a bounds check.
   // Unsafe store value into array by common index.
   virtual proc unsafe_set: t * size * v;
 
+@h3 Fatching a pointer to an element with {unsafe_get_ref}.
+Note this is problematic as it forces a value to
+addressabe be stored as an object. A bitarray
+will not satisfy this requirement. Do we need
+another abstraction?
+@felix
+  virtual fun unsafe_get_ref : t * size -> &v;
+
 @h3 Storing a value with {set}.
 Modify an array object by assigning a new value
 to the slot at a given index position. Bounds checked.
@@ -279,7 +287,15 @@ to the slot at a given index position. Bounds checked.
   proc set[I in ints] (x:t, i:I, a:v) { 
     assert i.size < x.len; unsafe_set (x,i.size,a); 
   } 
+
+@h3 Getting a pointer to an array element.
+@felix
+  fun n"&." [I in ints] (x:t, i:I) : &v = {
+    assert i.size < x.len; 
+    return unsafe_get_ref (x,i.size); 
+  }
 }
+
 @h2 True Array Object.
 Incomplete work for arrays in a more precise setting
 where the index type is fixed.

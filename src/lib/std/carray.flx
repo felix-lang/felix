@@ -16,6 +16,9 @@ open class Carray
   //$ Demote carray to Felix pointer (safe unless off the end).
   fun -[T]: carray[T] -> &T = "$1"; // safe (unless we allow +T to be NULL later ..)
 
+  //$ a &. i returns pointer to i'th component of an array.
+  fun n"&." [T]: carray[T] * !ints -> &T = "$1+$2"; // safe (unless we allow +T to be NULL later ..)
+
   //$ Unsafe conversion of Felix pointer to carray.
   ctor[T] carray[T] : &T = "$1";
 

@@ -94,6 +94,7 @@ open class Varray
   instance[v] ArrayObject[varray[v],v] {
     //$ Store the given value at the given position.
     proc unsafe_set: varray[v] * size * v = "$1[$2]=$3;";
+    fun unsafe_get_ref: varray[v] * size -> &v = "$1+$2";
   }
 
   //$ Treat a varray as a ContiguousArrayObject.

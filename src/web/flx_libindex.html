@@ -214,8 +214,6 @@ Lexer
 Match
   <a href="/$src/lib/std/strings/re2.flx#0144">strings/re2.flx:144</a>: noinline gen Match(re:RE2, var s:string) : opt[varray[string]]
   <a href="/$src/lib/std/strings/re2.flx#0140">strings/re2.flx:140</a>: gen Match: RE2 * StringPiece * int * Anchor * +StringPiece * int -> bool
-MixedInt
-  <a href="/$src/lib/std/mixedint.flx#0002">mixedint.flx:2</a>: class MixedInt
 Mmap
   <a href="/$src/lib/std/posix/mmap.flx#0001">posix/mmap.flx:1</a>: class Mmap
 Monad
@@ -419,7 +417,7 @@ ZeroMQ
 abort
   <a href="/$src/lib/std/system.flx#0014">system.flx:14</a>: gen abort: 1 -> any
 abs
-  <a href="/$src/lib/std/int.flx#0260">int.flx:260</a>: fun abs: t -> t
+  <a href="/$src/lib/std/int.flx#0249">int.flx:249</a>: fun abs: t -> t
   <a href="/$src/lib/std/float_math.flx#0076">float_math.flx:76</a>: fun abs: t -> t
   <a href="/$src/lib/std/float_math.flx#0036">float_math.flx:36</a>: fun abs: complex[t] -> t
   <a href="/$src/lib/std/algebraic.flx#0214">algebraic.flx:214</a>: virtual fun abs: t -> r
@@ -475,7 +473,7 @@ all_but_last
   <a href="/$src/lib/std/datatype/avl.flx#0120">datatype/avl.flx:120</a>: fun all_but_last[T] : avl[T]->avl[T]
 apply
   <a href="/$src/lib/std/strings/re2.flx#0157">strings/re2.flx:157</a>: gen apply (re:RE2, s:string)
-  <a href="/$src/lib/std/carray.flx#0048">carray.flx:48</a>: fun apply [T,I in ints] (i:I, x:carray[T])
+  <a href="/$src/lib/std/carray.flx#0051">carray.flx:51</a>: fun apply [T,I in ints] (i:I, x:carray[T])
 arg
   <a href="/$src/lib/std/float_math.flx#0037">float_math.flx:37</a>: fun arg : complex[t] -> t
   <a href="/$src/lib/std/algebraic.flx#0215">algebraic.flx:215</a>: virtual fun arg: t -> r
@@ -486,11 +484,11 @@ argv
 argv_dflt
   <a href="/$src/lib/std/system.flx#0008">system.flx:8</a>: fun argv_dflt (x:int) (y:string)
 array_alloc
-  <a href="/$src/lib/std/carray.flx#0027">carray.flx:27</a>: fun array_alloc[T]: !ints -> carray[T]
+  <a href="/$src/lib/std/carray.flx#0030">carray.flx:30</a>: fun array_alloc[T]: !ints -> carray[T]
 array_calloc
-  <a href="/$src/lib/std/carray.flx#0031">carray.flx:31</a>: fun array_calloc[T]: !ints -> carray[T]
+  <a href="/$src/lib/std/carray.flx#0034">carray.flx:34</a>: fun array_calloc[T]: !ints -> carray[T]
 array_of
-  <a href="/$src/lib/std/carray.flx#0099">carray.flx:99</a>: fun array_of[T,N]: carray[T] -> &array[T,N]
+  <a href="/$src/lib/std/carray.flx#0102">carray.flx:102</a>: fun array_of[T,N]: carray[T] -> &array[T,N]
 asec
   <a href="/$src/lib/std/algebraic.flx#0158">algebraic.flx:158</a>: virtual fun asec (x:t)
 asech
@@ -1024,7 +1022,7 @@ free
   <a href="/$src/lib/std/datatype/judy.flx#0222">datatype/judy.flx:222</a>: proc free: JSLArray
   <a href="/$src/lib/std/datatype/judy.flx#0145">datatype/judy.flx:145</a>: proc free: JLArray
   <a href="/$src/lib/std/datatype/judy.flx#0066">datatype/judy.flx:66</a>: proc free: J1Array
-  <a href="/$src/lib/std/carray.flx#0035">carray.flx:35</a>: proc free[T]: carray[T]
+  <a href="/$src/lib/std/carray.flx#0038">carray.flx:38</a>: proc free[T]: carray[T]
   <a href="/$src/lib/std/c_hack.flx#0094">c_hack.flx:94</a>: proc free: address
 fthread
   <a href="/$src/lib/std/felix/sync.flx#0041">felix/sync.flx:41</a>: ctor fthread: cont
@@ -1044,7 +1042,7 @@ get
   <a href="/$src/lib/std/datatype/sarray.flx#0016">datatype/sarray.flx:16</a>: fun get[T] (a:sarray[T], i:size) : T
   <a href="/$src/lib/std/datatype/option.flx#0067">datatype/option.flx:67</a>: fun get[T] : opt[T] -> T
   <a href="/$src/lib/std/control/ts_counter.flx#0011">control/ts_counter.flx:11</a>: gen get: ts_counter -> long
-  <a href="/$src/lib/std/carray.flx#0044">carray.flx:44</a>: fun get[T]: carray[T] * !ints -> T
+  <a href="/$src/lib/std/carray.flx#0047">carray.flx:47</a>: fun get[T]: carray[T] * !ints -> T
 get_bytes_done
   <a href="/$src/lib/std/io/faio.flx#0019">io/faio.flx:19</a>: fun get_bytes_done : sel_param_ptr -> int
 get_cpu_nr
@@ -1234,27 +1232,28 @@ int
   <a href="/$src/lib/std/posix/process.flx#0008">posix/process.flx:8</a>: ctor int:process_status_t
   <a href="/$src/lib/std/posix/filesystem.flx#0028">posix/filesystem.flx:28</a>: ctor int : posix_file
   <a href="/$src/lib/std/posix/errno.flx#0004">posix/errno.flx:4</a>: ctor int : errno_t
-  <a href="/$src/lib/std/int.flx#0031">int.flx:31</a>: ctor int(x:bool)
+  <a href="/$src/lib/std/int.flx#0032">int.flx:32</a>: ctor int(x:bool)
+  <a href="/$src/lib/std/int.flx#0030">int.flx:30</a>: ctor int : int
   <a href="/$src/lib/std/int.flx#0028">int.flx:28</a>: ctor int: string
   <a href="/$src/lib/std/datatype/judy.flx#0017">datatype/judy.flx:17</a>: ctor int: word
 int16
-  <a href="/$src/lib/std/int.flx#0084">int.flx:84</a>: ctor int16: string
+  <a href="/$src/lib/std/int.flx#0085">int.flx:85</a>: ctor int16: string
 int32
-  <a href="/$src/lib/std/int.flx#0090">int.flx:90</a>: ctor int32: string
+  <a href="/$src/lib/std/int.flx#0091">int.flx:91</a>: ctor int32: string
 int64
-  <a href="/$src/lib/std/int.flx#0096">int.flx:96</a>: ctor int64: string
+  <a href="/$src/lib/std/int.flx#0097">int.flx:97</a>: ctor int64: string
 int8
-  <a href="/$src/lib/std/int.flx#0078">int.flx:78</a>: ctor int8: string
+  <a href="/$src/lib/std/int.flx#0079">int.flx:79</a>: ctor int8: string
 int_to_int
   <a href="/$src/lib/std/posix/errno.flx#0055">posix/errno.flx:55</a>: fun int_to_int (var x:int)
 int_to_proc
   <a href="/$src/lib/std/posix/errno.flx#0054">posix/errno.flx:54</a>: proc int_to_proc (var x:int)
 intmax
-  <a href="/$src/lib/std/int.flx#0166">int.flx:166</a>: ctor intmax: string
+  <a href="/$src/lib/std/int.flx#0156">int.flx:156</a>: ctor intmax: string
 intptr
   <a href="/$src/lib/std/win32/process.flx#0051">win32/process.flx:51</a>: ctor intptr: pid_t
   <a href="/$src/lib/std/win32/process.flx#0007">win32/process.flx:7</a>: ctor intptr:process_status_t
-  <a href="/$src/lib/std/int.flx#0154">int.flx:154</a>: ctor intptr: string
+  <a href="/$src/lib/std/int.flx#0144">int.flx:144</a>: ctor intptr: string
 intrflush
   <a href="/$src/lib/std/xsi/ncurses.flx#0093">xsi/ncurses.flx:93</a>: gen intrflush: WINDOW * bool -> int
 ioclose
@@ -1309,41 +1308,30 @@ is_term_resized
 is_wintouched
   <a href="/$src/lib/std/xsi/ncurses.flx#0096">xsi/ncurses.flx:96</a>: gen is_wintouched: WINDOW -> bool
 isalnum
-  <a href="/$src/lib/std/char.flx#0065">char.flx:65</a>: fun isalnum : wchar -> bool
   <a href="/$src/lib/std/char.flx#0023">char.flx:23</a>: fun isalnum : char -> bool requires C89_headers::ctype_h
 isalpha
-  <a href="/$src/lib/std/char.flx#0066">char.flx:66</a>: fun isalpha : wchar -> bool
   <a href="/$src/lib/std/char.flx#0026">char.flx:26</a>: fun isalpha : char -> bool requires C89_headers::ctype_h
 isblank
-  <a href="/$src/lib/std/char.flx#0071">char.flx:71</a>: fun isblank : wchar -> bool
   <a href="/$src/lib/std/char.flx#0041">char.flx:41</a>: fun isblank : char -> bool requires C89_headers::ctype_h
 iscntrl
-  <a href="/$src/lib/std/char.flx#0069">char.flx:69</a>: fun iscntrl : wchar -> bool
   <a href="/$src/lib/std/char.flx#0035">char.flx:35</a>: fun iscntrl : char -> bool requires C89_headers::ctype_h
 isdigit
-  <a href="/$src/lib/std/char.flx#0067">char.flx:67</a>: fun isdigit : wchar -> bool
   <a href="/$src/lib/std/char.flx#0029">char.flx:29</a>: fun isdigit : char -> bool requires C89_headers::ctype_h
 isendwin
   <a href="/$src/lib/std/xsi/ncurses.flx#0094">xsi/ncurses.flx:94</a>: gen isendwin: unit -> bool
 islower
-  <a href="/$src/lib/std/char.flx#0064">char.flx:64</a>: fun islower : wchar -> bool
   <a href="/$src/lib/std/char.flx#0020">char.flx:20</a>: fun islower : char -> bool requires C89_headers::ctype_h
 isprint
-  <a href="/$src/lib/std/char.flx#0072">char.flx:72</a>: fun isprint : wchar -> bool
   <a href="/$src/lib/std/char.flx#0044">char.flx:44</a>: fun isprint : char -> bool requires C89_headers::ctype_h
 ispunct
-  <a href="/$src/lib/std/char.flx#0073">char.flx:73</a>: fun ispunct : wchar -> bool
   <a href="/$src/lib/std/char.flx#0047">char.flx:47</a>: fun ispunct : char -> bool requires C89_headers::ctype_h
 isrc
   <a href="/$src/lib/std/control/spipe.flx#0013">control/spipe.flx:13</a>: proc isrc[V,T with Streamable[T,V]] (var dat:T) (out:oschannel[opt[V]])
 isspace
-  <a href="/$src/lib/std/char.flx#0070">char.flx:70</a>: fun isspace : wchar -> bool
   <a href="/$src/lib/std/char.flx#0038">char.flx:38</a>: fun isspace : char -> bool requires C89_headers::ctype_h
 isupper
-  <a href="/$src/lib/std/char.flx#0063">char.flx:63</a>: fun isupper : wchar -> bool
   <a href="/$src/lib/std/char.flx#0017">char.flx:17</a>: fun isupper : char -> bool requires C89_headers::ctype_h
 isxdigit
-  <a href="/$src/lib/std/char.flx#0068">char.flx:68</a>: fun isxdigit : wchar -> bool
   <a href="/$src/lib/std/char.flx#0032">char.flx:32</a>: fun isxdigit : char -> bool requires C89_headers::ctype_h
 iter
   <a href="/$src/lib/std/datatype/option.flx#0039">datatype/option.flx:39</a>: proc iter[T] (_f:T->void) (x:opt[T])
@@ -1365,9 +1353,9 @@ join
   <a href="/$src/lib/std/filename.flx#0062">filename.flx:62</a>: fun join(a:string, b:string, c:string)
   <a href="/$src/lib/std/filename.flx#0039">filename.flx:39</a>: fun join(p:string, b:string)
   <a href="/$src/lib/std/datatype/avl.flx#0139">datatype/avl.flx:139</a>: fun join[T] (A : avl[T], B : avl[T])
-  <a href="/$src/lib/std/datatype/array.flx#0087">datatype/array.flx:87</a>: fun join[T, M] (x:T) (y:array[T, M]):array[T, 1 + M]
-  <a href="/$src/lib/std/datatype/array.flx#0074">datatype/array.flx:74</a>: fun join[T, N] (x:array[T, N]) (y:T):array[T, N + 1]
-  <a href="/$src/lib/std/datatype/array.flx#0055">datatype/array.flx:55</a>: fun join[T, N, M] (x:array[T, N]) (y:array[T, M]):array[T, N + M]
+  <a href="/$src/lib/std/datatype/array.flx#0094">datatype/array.flx:94</a>: fun join[T, M] (x:T) (y:array[T, M]):array[T, 1 + M]
+  <a href="/$src/lib/std/datatype/array.flx#0081">datatype/array.flx:81</a>: fun join[T, N] (x:array[T, N]) (y:T):array[T, N + 1]
+  <a href="/$src/lib/std/datatype/array.flx#0062">datatype/array.flx:62</a>: fun join[T, N, M] (x:array[T, N]) (y:array[T, M]):array[T, N + M]
 <hr/>
 k
   <a href="/$src/lib/std/quaternion.flx#0009">quaternion.flx:9</a>: fun k(x:q)
@@ -1426,7 +1414,7 @@ log10
 log_errors
   <a href="/$src/lib/std/strings/re2.flx#0075">strings/re2.flx:75</a>: fun log_errors: RE2Options -> bool
 long
-  <a href="/$src/lib/std/int.flx#0036">int.flx:36</a>: ctor long: string
+  <a href="/$src/lib/std/int.flx#0037">int.flx:37</a>: ctor long: string
 longest_match
   <a href="/$src/lib/std/strings/re2.flx#0072">strings/re2.flx:72</a>: fun longest_match: RE2Options -> bool
 longname
@@ -1446,15 +1434,15 @@ malloc
 manager
   <a href="/$src/lib/std/control/forkjoin.flx#0010">control/forkjoin.flx:10</a>: noinline proc manager (var p: 1->0) ()
 map
-  <a href="/$src/lib/std/datatype/varray.flx#0145">datatype/varray.flx:145</a>: fun map[T, U] (_f:T->U) (x:varray[T]): varray[U]
+  <a href="/$src/lib/std/datatype/varray.flx#0146">datatype/varray.flx:146</a>: fun map[T, U] (_f:T->U) (x:varray[T]): varray[U]
   <a href="/$src/lib/std/datatype/option.flx#0073">datatype/option.flx:73</a>: fun map[T,U] (_f:T->U) (x:opt[T]): opt[U]
-  <a href="/$src/lib/std/datatype/array.flx#0037">datatype/array.flx:37</a>: fun map[V,N,U] (_f:V->U) (x:array[V,N]):array[U,N]
+  <a href="/$src/lib/std/datatype/array.flx#0044">datatype/array.flx:44</a>: fun map[V,N,U] (_f:V->U) (x:array[V,N]):array[U,N]
 max
   <a href="/$src/lib/std/order.flx#0047">order.flx:47</a>: fun max(x:t,y:t):t
 max_mem
   <a href="/$src/lib/std/strings/re2.flx#0078">strings/re2.flx:78</a>: fun max_mem: RE2Options -> int
 maxlen
-  <a href="/$src/lib/std/datatype/varray.flx#0109">datatype/varray.flx:109</a>: fun maxlen[t]: varray[t] -> size
+  <a href="/$src/lib/std/datatype/varray.flx#0110">datatype/varray.flx:110</a>: fun maxlen[t]: varray[t] -> size
 maybe_exit
   <a href="/$src/lib/std/posix/errno.flx#0023">posix/errno.flx:23</a>: proc maybe_exit()
   <a href="/$src/lib/std/posix/errno.flx#0022">posix/errno.flx:22</a>: proc maybe_exit(var n:errno_t)
@@ -1462,10 +1450,10 @@ maybe_exit
 mem
   <a href="/$src/lib/std/flx_tclass.flx#0051">flx_tclass.flx:51</a>: fun mem (elt:t, container:c):bool
 memcmp
-  <a href="/$src/lib/std/carray.flx#0109">carray.flx:109</a>: fun memcmp: address * address * size -> int
+  <a href="/$src/lib/std/carray.flx#0112">carray.flx:112</a>: fun memcmp: address * address * size -> int
 memcpy
   <a href="/$src/lib/std/rawc.flx#0030">rawc.flx:30</a>: gen memcpy:address * address * size -> address
-  <a href="/$src/lib/std/carray.flx#0103">carray.flx:103</a>: proc memcpy: address * address * size
+  <a href="/$src/lib/std/carray.flx#0106">carray.flx:106</a>: proc memcpy: address * address * size
 memmove
   <a href="/$src/lib/std/rawc.flx#0031">rawc.flx:31</a>: gen memmove:address * address * size -> address
 memset
@@ -1548,7 +1536,7 @@ mkdirs
   <a href="/$src/lib/std/posix/directory.flx#0021">posix/directory.flx:21</a>: proc mkdirs (s:string)
   <a href="/$src/lib/std/directory.flx#0015">directory.flx:15</a>: virtual proc mkdirs: string
 mmap
-  <a href="/$src/lib/std/posix/mmap.flx#0054">posix/mmap.flx:54</a>: fun mmap:
+  <a href="/$src/lib/std/posix/mmap.flx#0073">posix/mmap.flx:73</a>: fun mmap:
 mod
   <a href="/$src/lib/std/algebraic.flx#0080">algebraic.flx:80</a>: fun mod(x:t, y:t)
 modeq
@@ -1562,7 +1550,7 @@ mousemask
 move
   <a href="/$src/lib/std/xsi/ncurses.flx#0103">xsi/ncurses.flx:103</a>: gen move: int * int -> int
 msync
-  <a href="/$src/lib/std/posix/mmap.flx#0067">posix/mmap.flx:67</a>: fun msync: address * size * int -> int
+  <a href="/$src/lib/std/posix/mmap.flx#0086">posix/mmap.flx:86</a>: fun msync: address * size * int -> int
 mtime
   <a href="/$src/lib/std/filestat.flx#0051">filestat.flx:51</a>: fun mtime: &stat_t -> double
 mul
@@ -1570,7 +1558,7 @@ mul
 muleq
   <a href="/$src/lib/std/algebraic.flx#0040">algebraic.flx:40</a>: proc muleq(px:&t, y:t)
 munmap
-  <a href="/$src/lib/std/posix/mmap.flx#0064">posix/mmap.flx:64</a>: fun munmap: address * size -> int
+  <a href="/$src/lib/std/posix/mmap.flx#0083">posix/mmap.flx:83</a>: fun munmap: address * size -> int
 mutex
   <a href="/$src/lib/std/control/mutex.flx#0007">control/mutex.flx:7</a>: ctor mutex: unit
 mux
@@ -1667,6 +1655,8 @@ mvwprintw
 mvwvline
   <a href="/$src/lib/std/xsi/ncurses.flx#0158">xsi/ncurses.flx:158</a>: gen mvwvline: WINDOW * int * int * chtype * int -> int
 <hr/>
+n
+  <a href="/$src/lib/std/carray.flx#0020">carray.flx:20</a>: fun n"&." [T]: carray[T] * !ints -> &T
 n_offsets
   <a href="/$src/lib/std/felix/rtti.flx#0049">felix/rtti.flx:49</a>: fun n_offsets (shape: gc_shape_t) : size
 name
@@ -1721,8 +1711,6 @@ oclose
   <a href="/$src/lib/std/io/stream.flx#0048">io/stream.flx:48</a>: virtual proc oclose: T
   <a href="/$src/lib/std/io/socket.flx#0100">io/socket.flx:100</a>: proc oclose (s:socket_t)
   <a href="/$src/lib/std/io/socket.flx#0097">io/socket.flx:97</a>: proc oclose (s:socket_t)
-offset
-  <a href="/$src/lib/std/int.flx#0142">int.flx:142</a>: ctor offset: string
 offsets
   <a href="/$src/lib/std/felix/rtti.flx#0056">felix/rtti.flx:56</a>: fun offsets (shape: gc_shape_t) : +size
 ok
@@ -1746,8 +1734,6 @@ or_else
   <a href="/$src/lib/std/datatype/option.flx#0031">datatype/option.flx:31</a>: fun or_else[T] (x:opt[T]) (alt:opt[T]) : opt[T]
   <a href="/$src/lib/std/datatype/option.flx#0022">datatype/option.flx:22</a>: fun or_else[T] (x:opt[T]) (d:T) : T
 ord
-  <a href="/$src/lib/std/char.flx#0080">char.flx:80</a>: fun ord: uchar -> uint32
-  <a href="/$src/lib/std/char.flx#0057">char.flx:57</a>: fun ord: wchar -> long
   <a href="/$src/lib/std/char.flx#0005">char.flx:5</a>: fun ord: char -> int
 overlay
   <a href="/$src/lib/std/xsi/ncurses.flx#0171">xsi/ncurses.flx:171</a>: gen overlay: &WINDOW * WINDOW -> int
@@ -1811,7 +1797,7 @@ pointer_to_pointer
 poll
   <a href="/$src/lib/std/io/zmq.flx#0449">io/zmq.flx:449</a>: gen poll(pits:varray[zmq_poll_item], timeout:double)
 pop
-  <a href="/$src/lib/std/datatype/varray.flx#0133">datatype/varray.flx:133</a>: proc pop[t] : varray[t]
+  <a href="/$src/lib/std/datatype/varray.flx#0134">datatype/varray.flx:134</a>: proc pop[t] : varray[t]
 popen_in
   <a href="/$src/lib/std/win32/process.flx#0004">win32/process.flx:4</a>: gen popen_in: string -> Cstdio::ifile
   <a href="/$src/lib/std/posix/process.flx#0004">posix/process.flx:4</a>: gen popen_in: string -> Cstdio::ifile
@@ -1821,14 +1807,14 @@ post
   <a href="/$src/lib/std/semaphore.flx#0008">semaphore.flx:8</a>: proc post: semaphore
 post_decr
   <a href="/$src/lib/std/order.flx#0062">order.flx:62</a>: virtual proc post_decr: &t
-  <a href="/$src/lib/std/int.flx#0250">int.flx:250</a>: proc post_decr: &t
+  <a href="/$src/lib/std/int.flx#0239">int.flx:239</a>: proc post_decr: &t
   <a href="/$src/lib/std/control/ts_counter.flx#0009">control/ts_counter.flx:9</a>: gen post_decr: ts_counter -> long
-  <a href="/$src/lib/std/carray.flx#0076">carray.flx:76</a>: proc post_decr[T]: &carray[T]
+  <a href="/$src/lib/std/carray.flx#0079">carray.flx:79</a>: proc post_decr[T]: &carray[T]
 post_incr
   <a href="/$src/lib/std/order.flx#0055">order.flx:55</a>: virtual proc post_incr: &t
-  <a href="/$src/lib/std/int.flx#0244">int.flx:244</a>: proc post_incr: &t
+  <a href="/$src/lib/std/int.flx#0233">int.flx:233</a>: proc post_incr: &t
   <a href="/$src/lib/std/control/ts_counter.flx#0007">control/ts_counter.flx:7</a>: gen post_incr: ts_counter-> long
-  <a href="/$src/lib/std/carray.flx#0070">carray.flx:70</a>: proc post_incr[T]: &carray[T]
+  <a href="/$src/lib/std/carray.flx#0073">carray.flx:73</a>: proc post_incr[T]: &carray[T]
 pow
   <a href="/$src/lib/std/float_math.flx#0071">float_math.flx:71</a>: fun pow: t * t -> t
   <a href="/$src/lib/std/algebraic.flx#0183">algebraic.flx:183</a>: virtual fun pow: t * t -> t
@@ -1864,17 +1850,17 @@ pq_transaction_status
   <a href="/$src/lib/std/db/pgsql/pgsql.flx#0104">db/pgsql/pgsql.flx:104</a>: gen pq_transaction_status: pgconn_ptr->pg_transaction_status_type
 pre_decr
   <a href="/$src/lib/std/order.flx#0061">order.flx:61</a>: virtual proc pre_decr: &t
-  <a href="/$src/lib/std/int.flx#0249">int.flx:249</a>: proc pre_decr: &t
+  <a href="/$src/lib/std/int.flx#0238">int.flx:238</a>: proc pre_decr: &t
   <a href="/$src/lib/std/control/ts_counter.flx#0008">control/ts_counter.flx:8</a>: gen pre_decr: ts_counter -> long
-  <a href="/$src/lib/std/carray.flx#0073">carray.flx:73</a>: proc pre_decr[T]: &carray[T]
+  <a href="/$src/lib/std/carray.flx#0076">carray.flx:76</a>: proc pre_decr[T]: &carray[T]
 pre_incr
   <a href="/$src/lib/std/order.flx#0054">order.flx:54</a>: virtual proc pre_incr: &t
-  <a href="/$src/lib/std/int.flx#0243">int.flx:243</a>: proc pre_incr: &t
+  <a href="/$src/lib/std/int.flx#0232">int.flx:232</a>: proc pre_incr: &t
   <a href="/$src/lib/std/control/ts_counter.flx#0006">control/ts_counter.flx:6</a>: gen pre_incr: ts_counter -> long
-  <a href="/$src/lib/std/carray.flx#0067">carray.flx:67</a>: proc pre_incr[T]: &carray[T]
+  <a href="/$src/lib/std/carray.flx#0070">carray.flx:70</a>: proc pre_incr[T]: &carray[T]
 pred
   <a href="/$src/lib/std/order.flx#0060">order.flx:60</a>: virtual fun pred: t -> t
-  <a href="/$src/lib/std/int.flx#0248">int.flx:248</a>: fun pred: t -> t
+  <a href="/$src/lib/std/int.flx#0237">int.flx:237</a>: fun pred: t -> t
 prefresh
   <a href="/$src/lib/std/xsi/ncurses.flx#0177">xsi/ncurses.flx:177</a>: gen prefresh: WINDOW * int * int * int * int * int * int -> int
 print
@@ -1893,10 +1879,10 @@ proj2
 psource
   <a href="/$src/lib/std/control/ppipe.flx#0006">control/ppipe.flx:6</a>: proc psource[T] (var it:1 -> T) (out:opchannel[T])
 ptrdiff
-  <a href="/$src/lib/std/int.flx#0148">int.flx:148</a>: ctor ptrdiff: string
+  <a href="/$src/lib/std/int.flx#0138">int.flx:138</a>: ctor ptrdiff: string
 push_back
   <a href="/$src/lib/std/felix/sync.flx#0035">felix/sync.flx:35</a>: proc push_back: fthread_list * fthread
-  <a href="/$src/lib/std/datatype/varray.flx#0120">datatype/varray.flx:120</a>: proc push_back[t] : varray[t] * t
+  <a href="/$src/lib/std/datatype/varray.flx#0121">datatype/varray.flx:121</a>: proc push_back[t] : varray[t] * t
 putp
   <a href="/$src/lib/std/xsi/ncurses.flx#0307">xsi/ncurses.flx:307</a>: gen putp: &char -> int
 putwin
@@ -1999,7 +1985,7 @@ render
   <a href="/$src/lib/std/strings/regdef.flx#0048">strings/regdef.flx:48</a>: fun render: regex -> string
 repr
   <a href="/$src/lib/std/flx_tclass.flx#0077">flx_tclass.flx:77</a>: virtual fun repr (t:T) : string
-  <a href="/$src/lib/std/char.flx#0089">char.flx:89</a>: fun repr[with Str[T]] (c:T) : string
+  <a href="/$src/lib/std/char.flx#0056">char.flx:56</a>: fun repr[with Str[T]] (c:T) : string
 repr_expr
   <a href="/$src/lib/std/debug.flx#0030">debug.flx:30</a>: fun repr_expr[t]: t -> string
 reset_prog_mode
@@ -2017,9 +2003,9 @@ resizeterm
 ret
   <a href="/$src/lib/std/flx_tclass.flx#0067">flx_tclass.flx:67</a>: virtual fun ret[a]: a -> M a
 rev
-  <a href="/$src/lib/std/datatype/array.flx#0124">datatype/array.flx:124</a>: fun rev[T, N] (x:array[T, N]): array[T, N]
+  <a href="/$src/lib/std/datatype/array.flx#0131">datatype/array.flx:131</a>: fun rev[T, N] (x:array[T, N]): array[T, N]
 rev_compose
-  <a href="/$src/lib/std/categ.flx#0046">categ.flx:46</a>: fun rev_compose[u,v,w] (f:u->v, g:v->w) : u -> w
+  <a href="/$src/lib/std/categ.flx#0051">categ.flx:51</a>: fun rev_compose[u,v,w] (f:u->v, g:v->w) : u -> w
 revents
   <a href="/$src/lib/std/io/zmq.flx#0365">io/zmq.flx:365</a>: fun revents: zmq_poll_item -> zmq_pollitem_flag_t
 rfi
@@ -2080,9 +2066,9 @@ sep
   <a href="/$src/lib/std/filename.flx#0005">filename.flx:5</a>: virtual fun sep: 1 -> string
 set
   <a href="/$src/lib/std/datatype/sarray.flx#0025">datatype/sarray.flx:25</a>: proc set[T] (a:sarray[T], i:size, v:T)
-  <a href="/$src/lib/std/datatype/array.flx#0028">datatype/array.flx:28</a>: proc set[t,n, I in ints] (a: &array[t,n], i:I,v:t)
+  <a href="/$src/lib/std/datatype/array.flx#0035">datatype/array.flx:35</a>: proc set[t,n, I in ints] (a: &array[t,n], i:I,v:t)
   <a href="/$src/lib/std/control/ts_counter.flx#0012">control/ts_counter.flx:12</a>: proc set: ts_counter * long
-  <a href="/$src/lib/std/carray.flx#0051">carray.flx:51</a>: proc set[T] : carray[T] * !ints * T
+  <a href="/$src/lib/std/carray.flx#0054">carray.flx:54</a>: proc set[T] : carray[T] * !ints * T
 set_case_sensitive
   <a href="/$src/lib/std/strings/re2.flx#0088">strings/re2.flx:88</a>: proc set_case_sensitive: RE2Options * bool
 set_ctrl_c_flag
@@ -2120,18 +2106,16 @@ set_word_boundary
 setscrreg
   <a href="/$src/lib/std/xsi/ncurses.flx#0202">xsi/ncurses.flx:202</a>: gen setscrreg: int * int -> int
 sgn
-  <a href="/$src/lib/std/int.flx#0259">int.flx:259</a>: fun sgn: t -> int
+  <a href="/$src/lib/std/int.flx#0248">int.flx:248</a>: fun sgn: t -> int
   <a href="/$src/lib/std/algebraic.flx#0126">algebraic.flx:126</a>: virtual fun sgn: t -> int
 shape_list_head
   <a href="/$src/lib/std/felix/rtti.flx#0065">felix/rtti.flx:65</a>: fun shape_list_head : unit -> gc_shape_t
 shl
-  <a href="/$src/lib/std/mixedint.flx#0013">mixedint.flx:13</a>: fun shl [t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> arithmax(t1,t2)
   <a href="/$src/lib/std/algebraic.flx#0119">algebraic.flx:119</a>: fun shl(x:t,y:t)
 short
   <a href="/$src/lib/std/io/zmq.flx#0350">io/zmq.flx:350</a>: ctor short: zmq_pollitem_flag_t
   <a href="/$src/lib/std/int.flx#0022">int.flx:22</a>: ctor short: string
 shr
-  <a href="/$src/lib/std/mixedint.flx#0014">mixedint.flx:14</a>: fun shr [t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> arithmax(t1,t2)
   <a href="/$src/lib/std/algebraic.flx#0120">algebraic.flx:120</a>: fun shr(x:t,y:t)
 shutdown
   <a href="/$src/lib/std/win32/faio_win32.flx#0103">win32/faio_win32.flx:103</a>: proc shutdown: SOCKET*int
@@ -2151,7 +2135,8 @@ sinh
   <a href="/$src/lib/std/float_math.flx#0063">float_math.flx:63</a>: fun sinh: t -> t
   <a href="/$src/lib/std/algebraic.flx#0164">algebraic.flx:164</a>: virtual fun sinh: t -> t
 size
-  <a href="/$src/lib/std/int.flx#0132">int.flx:132</a>: ctor size: string
+  <a href="/$src/lib/std/int.flx#0129">int.flx:129</a>: ctor size: size
+  <a href="/$src/lib/std/int.flx#0127">int.flx:127</a>: ctor size: string
   <a href="/$src/lib/std/datatype/judy.flx#0020">datatype/judy.flx:20</a>: ctor size: word
 sleep
   <a href="/$src/lib/std/io/faio.flx#0041">io/faio.flx:41</a>: proc sleep(clock: alarm_clock, delta: double)
@@ -2192,8 +2177,8 @@ slk_touch
 smaps_total
   <a href="/$src/lib/std/linux/smaps.flx#0060">linux/smaps.flx:60</a>: fun smaps_total(p:Process::pid_t,path:string):smaps_metric
 sort
-  <a href="/$src/lib/std/datatype/array.flx#0140">datatype/array.flx:140</a>: fun sort[T,N] (var x:array[T,N]) : array[T,N]
-  <a href="/$src/lib/std/datatype/array.flx#0135">datatype/array.flx:135</a>: fun sort[T,N] (cmp: T * T -> bool) (var x:array[T,N]) : array[T,N]
+  <a href="/$src/lib/std/datatype/array.flx#0147">datatype/array.flx:147</a>: fun sort[T,N] (var x:array[T,N]) : array[T,N]
+  <a href="/$src/lib/std/datatype/array.flx#0142">datatype/array.flx:142</a>: fun sort[T,N] (cmp: T * T -> bool) (var x:array[T,N]) : array[T,N]
   <a href="/$src/lib/std/control/spipe.flx#0240">control/spipe.flx:240</a>: proc sort[T with Tord[T]] (r: ischannel[opt[T]], w: oschannel[opt[T]])
   <a href="/$src/lib/std/control/ppipe.flx#0097">control/ppipe.flx:97</a>: proc sort[T with Tord[T]] (r: ipchannel[opt[T]], w: opchannel[opt[T]])
 source
@@ -2274,8 +2259,6 @@ sqrt
   <a href="/$src/lib/std/algebraic.flx#0201">algebraic.flx:201</a>: virtual fun sqrt: t -> t
 srand
   <a href="/$src/lib/std/cstdlib.flx#0007">cstdlib.flx:7</a>: proc srand: uint
-ssize
-  <a href="/$src/lib/std/int.flx#0126">int.flx:126</a>: ctor ssize: string
 standend
   <a href="/$src/lib/std/xsi/ncurses.flx#0221">xsi/ncurses.flx:221</a>: gen standend: unit -> int
 standout
@@ -2301,12 +2284,12 @@ static_cast
 step
   <a href="/$src/lib/std/control/fibres.flx#0077">control/fibres.flx:77</a>: gen step: cont -> cont
 stl_begin
-  <a href="/$src/lib/std/datatype/varray.flx#0102">datatype/varray.flx:102</a>: fun stl_begin: varray[v] -> +v
-  <a href="/$src/lib/std/datatype/array.flx#0033">datatype/array.flx:33</a>: fun stl_begin[t,n]: &array[t,n] -> +t
-  <a href="/$src/lib/std/carray.flx#0054">carray.flx:54</a>: fun stl_begin[T,N]: carray[array[T,N]] -> carray[T]
+  <a href="/$src/lib/std/datatype/varray.flx#0103">datatype/varray.flx:103</a>: fun stl_begin: varray[v] -> +v
+  <a href="/$src/lib/std/datatype/array.flx#0040">datatype/array.flx:40</a>: fun stl_begin[t,n]: &array[t,n] -> +t
+  <a href="/$src/lib/std/carray.flx#0057">carray.flx:57</a>: fun stl_begin[T,N]: carray[array[T,N]] -> carray[T]
 stl_end
-  <a href="/$src/lib/std/datatype/varray.flx#0105">datatype/varray.flx:105</a>: fun stl_end: varray[v] -> +v
-  <a href="/$src/lib/std/datatype/array.flx#0034">datatype/array.flx:34</a>: fun stl_end[t,n] ( x:&array[t,n] ) : +t
+  <a href="/$src/lib/std/datatype/varray.flx#0106">datatype/varray.flx:106</a>: fun stl_end: varray[v] -> +v
+  <a href="/$src/lib/std/datatype/array.flx#0041">datatype/array.flx:41</a>: fun stl_end[t,n] ( x:&array[t,n] ) : +t
 stl_sort
   <a href="/$src/lib/std/datatype/sort.flx#0033">datatype/sort.flx:33</a>: proc stl_sort[T]: stl_comparator[T] * +T * +T
 str
@@ -2324,9 +2307,9 @@ str
   <a href="/$src/lib/std/io/zmq.flx#0203">io/zmq.flx:203</a>: fun str: zmq_socket_options -> string
   <a href="/$src/lib/std/io/zmq.flx#0148">io/zmq.flx:148</a>: fun str:zmq_sockopts_tag-> string
   <a href="/$src/lib/std/io/zmq.flx#0118">io/zmq.flx:118</a>: fun str: zmq_socket_type_t -> string
-  <a href="/$src/lib/std/int.flx#0193">int.flx:193</a>: fun str: T -> string
-  <a href="/$src/lib/std/int.flx#0182">int.flx:182</a>: fun str: utiny -> string
-  <a href="/$src/lib/std/int.flx#0178">int.flx:178</a>: fun str: tiny -> string
+  <a href="/$src/lib/std/int.flx#0183">int.flx:183</a>: fun str: T -> string
+  <a href="/$src/lib/std/int.flx#0172">int.flx:172</a>: fun str: utiny -> string
+  <a href="/$src/lib/std/int.flx#0168">int.flx:168</a>: fun str: tiny -> string
   <a href="/$src/lib/std/flx_tclass.flx#0095">flx_tclass.flx:95</a>: fun str (x:unit)
   <a href="/$src/lib/std/flx_tclass.flx#0088">flx_tclass.flx:88</a>: fun str (x:void)
   <a href="/$src/lib/std/flx_tclass.flx#0073">flx_tclass.flx:73</a>: virtual fun str: T -> string
@@ -2338,7 +2321,7 @@ str
   <a href="/$src/lib/std/float_format.flx#0047">float_format.flx:47</a>: fun str(x:float):string
   <a href="/$src/lib/std/felix/sync.flx#0010">felix/sync.flx:10</a>: fun str: fstate_t -> string
   <a href="/$src/lib/std/debug.flx#0019">debug.flx:19</a>: fun str(var x:flx_location_t)
-  <a href="/$src/lib/std/datatype/varray.flx#0160">datatype/varray.flx:160</a>: fun str (xs:varray[T])
+  <a href="/$src/lib/std/datatype/varray.flx#0161">datatype/varray.flx:161</a>: fun str (xs:varray[T])
   <a href="/$src/lib/std/datatype/tuple.flx#0034">datatype/tuple.flx:34</a>: fun str (t1:T, t2:T)
   <a href="/$src/lib/std/datatype/tuple.flx#0031">datatype/tuple.flx:31</a>: fun str (t:T, u:U)
   <a href="/$src/lib/std/datatype/tuple.flx#0027">datatype/tuple.flx:27</a>: fun str (x: U ** V)
@@ -2346,8 +2329,8 @@ str
   <a href="/$src/lib/std/datatype/ralist.flx#0229">datatype/ralist.flx:229</a>: fun str (xx: ralist[a]):string
   <a href="/$src/lib/std/datatype/option.flx#0012">datatype/option.flx:12</a>: fun str (x:opt[T])
   <a href="/$src/lib/std/datatype/bsarray.flx#0041">datatype/bsarray.flx:41</a>: fun str (xs:bsarray[T])
-  <a href="/$src/lib/std/datatype/array.flx#0148">datatype/array.flx:148</a>: fun str (xs:array[T,N])
-  <a href="/$src/lib/std/char.flx#0085">char.flx:85</a>: fun str: T -> string
+  <a href="/$src/lib/std/datatype/array.flx#0155">datatype/array.flx:155</a>: fun str (xs:array[T,N])
+  <a href="/$src/lib/std/char.flx#0052">char.flx:52</a>: fun str: T -> string
   <a href="/$src/lib/std/bool.flx#0045">bool.flx:45</a>: fun str (b:bool) : string
   <a href="/$src/lib/std/address.flx#0029">address.flx:29</a>: fun str (t:T) : string
 strcat
@@ -2358,13 +2341,13 @@ strcmp
   <a href="/$src/lib/std/rawc.flx#0040">rawc.flx:40</a>: gen strcmp:ntbs * ntbs-> int
 strcpy
   <a href="/$src/lib/std/rawc.flx#0035">rawc.flx:35</a>: gen strcpy:ntbs * ntbs -> ntbs
-  <a href="/$src/lib/std/carray.flx#0117">carray.flx:117</a>: proc strcpy: carray[char] * carray[char]
+  <a href="/$src/lib/std/carray.flx#0120">carray.flx:120</a>: proc strcpy: carray[char] * carray[char]
 strdict
   <a href="/$src/lib/std/datatype/strdict.flx#0031">datatype/strdict.flx:31</a>: ctor strdict ( kv: list[string * T] )
   <a href="/$src/lib/std/datatype/strdict.flx#0021">datatype/strdict.flx:21</a>: ctor strdict()
 strdup
   <a href="/$src/lib/std/rawc.flx#0037">rawc.flx:37</a>: gen strdup:ntbs -> ntbs
-  <a href="/$src/lib/std/carray.flx#0126">carray.flx:126</a>: gen strdup(s:carray[char])
+  <a href="/$src/lib/std/carray.flx#0129">carray.flx:129</a>: gen strdup(s:carray[char])
 stream_cmp
   <a href="/$src/lib/std/io/stream.flx#0193">io/stream.flx:193</a>: proc stream_cmp[istr1,istr2 with IByteStream[istr1], IByteStream[istr2]] (
 strerror
@@ -2382,20 +2365,22 @@ strip_extension
   <a href="/$src/lib/std/filename.flx#0074">filename.flx:74</a>: fun strip_extension (s:string): string
 strlen
   <a href="/$src/lib/std/rawc.flx#0034">rawc.flx:34</a>: gen strlen: ntbs -> size
-  <a href="/$src/lib/std/carray.flx#0123">carray.flx:123</a>: fun strlen: carray[char] ->size
+  <a href="/$src/lib/std/carray.flx#0126">carray.flx:126</a>: fun strlen: carray[char] ->size
 strncpy
   <a href="/$src/lib/std/rawc.flx#0036">rawc.flx:36</a>: gen strncpy:ntbs * ntbs * size -> ntbs
-  <a href="/$src/lib/std/carray.flx#0120">carray.flx:120</a>: proc strncpy: carray[char] * carray[char] * !ints
+  <a href="/$src/lib/std/carray.flx#0123">carray.flx:123</a>: proc strncpy: carray[char] * carray[char] * !ints
 sub
   <a href="/$src/lib/std/strings/tre.flx#0030">strings/tre.flx:30</a>: fun sub: regoff_t * regoff_t -> int
   <a href="/$src/lib/std/algebraic.flx#0022">algebraic.flx:22</a>: fun sub(x:t,y:t)
 subpad
   <a href="/$src/lib/std/xsi/ncurses.flx#0223">xsi/ncurses.flx:223</a>: gen subpad: WINDOW * int * int * int * int -> WINDOW
+subscript
+  <a href="/$src/lib/std/carray.flx#0041">carray.flx:41</a>: fun subscript[T]: carray[T] * !ints -> T
 subwin
   <a href="/$src/lib/std/xsi/ncurses.flx#0224">xsi/ncurses.flx:224</a>: gen subwin: WINDOW * int * int * int * int -> WINDOW
 succ
   <a href="/$src/lib/std/order.flx#0053">order.flx:53</a>: virtual fun succ: t -> t
-  <a href="/$src/lib/std/int.flx#0242">int.flx:242</a>: fun succ: t -> t
+  <a href="/$src/lib/std/int.flx#0231">int.flx:231</a>: fun succ: t -> t
 svc
   <a href="/$src/lib/std/control/control.flx#0102">control/control.flx:102</a>: noinline proc svc(x:svc_req_t)
 swap
@@ -2451,17 +2436,15 @@ to_sqlite3_result_code
 to_sqlite3_type
   <a href="/$src/lib/std/db/sqlite3/sqlite3.flx#0174">db/sqlite3/sqlite3.flx:174</a>: fun to_sqlite3_type: int -> sqlite3_types
 tolower
-  <a href="/$src/lib/std/char.flx#0061">char.flx:61</a>: fun tolower : wchar -> wchar
   <a href="/$src/lib/std/char.flx#0014">char.flx:14</a>: fun tolower : char -> char requires C89_headers::ctype_h
 touchline
   <a href="/$src/lib/std/xsi/ncurses.flx#0229">xsi/ncurses.flx:229</a>: gen touchline: WINDOW * int * int -> int
 touchwin
   <a href="/$src/lib/std/xsi/ncurses.flx#0230">xsi/ncurses.flx:230</a>: gen touchwin: WINDOW -> int
 toupper
-  <a href="/$src/lib/std/char.flx#0060">char.flx:60</a>: fun toupper : wchar -> wchar
   <a href="/$src/lib/std/char.flx#0011">char.flx:11</a>: fun toupper : char -> char requires C89_headers::ctype_h
 transpose
-  <a href="/$src/lib/std/datatype/array.flx#0108">datatype/array.flx:108</a>: fun transpose[T,N,M] (y:array[array[T,M],N]) : array[array[T,N],M]
+  <a href="/$src/lib/std/datatype/array.flx#0115">datatype/array.flx:115</a>: fun transpose[T,N,M] (y:array[array[T,M],N]) : array[array[T,N],M]
 trap_ctrl_c
   <a href="/$src/lib/std/win32/signal.flx#0049">win32/signal.flx:49</a>: proc trap_ctrl_c: unit requires ctrl_c_handling
   <a href="/$src/lib/std/signal.flx#0011">signal.flx:11</a>: virtual proc trap_ctrl_c: 1
@@ -2489,24 +2472,24 @@ typeahead
 uint
   <a href="/$src/lib/std/win32/filestat.flx#0036">win32/filestat.flx:36</a>: ctor uint: mode_t
   <a href="/$src/lib/std/posix/filestat.flx#0050">posix/filestat.flx:50</a>: ctor uint: mode_t
-  <a href="/$src/lib/std/int.flx#0060">int.flx:60</a>: ctor uint: string
+  <a href="/$src/lib/std/int.flx#0061">int.flx:61</a>: ctor uint: string
   <a href="/$src/lib/std/datatype/judy.flx#0018">datatype/judy.flx:18</a>: ctor uint: word
 uint16
-  <a href="/$src/lib/std/int.flx#0108">int.flx:108</a>: ctor uint16: string
+  <a href="/$src/lib/std/int.flx#0109">int.flx:109</a>: ctor uint16: string
 uint32
-  <a href="/$src/lib/std/int.flx#0114">int.flx:114</a>: ctor uint32: string
+  <a href="/$src/lib/std/int.flx#0115">int.flx:115</a>: ctor uint32: string
 uint64
-  <a href="/$src/lib/std/int.flx#0120">int.flx:120</a>: ctor uint64: string
+  <a href="/$src/lib/std/int.flx#0121">int.flx:121</a>: ctor uint64: string
 uint8
-  <a href="/$src/lib/std/int.flx#0102">int.flx:102</a>: ctor uint8: string
+  <a href="/$src/lib/std/int.flx#0103">int.flx:103</a>: ctor uint8: string
 uint_topid
   <a href="/$src/lib/std/linux/smaps.flx#0040">linux/smaps.flx:40</a>: fun uint_topid: uint->Process::pid_t
 uintmax
-  <a href="/$src/lib/std/int.flx#0172">int.flx:172</a>: ctor uintmax: string
+  <a href="/$src/lib/std/int.flx#0162">int.flx:162</a>: ctor uintmax: string
 uintptr
-  <a href="/$src/lib/std/int.flx#0160">int.flx:160</a>: ctor uintptr: string
+  <a href="/$src/lib/std/int.flx#0150">int.flx:150</a>: ctor uintptr: string
 ulong
-  <a href="/$src/lib/std/int.flx#0066">int.flx:66</a>: ctor ulong: string
+  <a href="/$src/lib/std/int.flx#0067">int.flx:67</a>: ctor ulong: string
   <a href="/$src/lib/std/datatype/judy.flx#0019">datatype/judy.flx:19</a>: ctor ulong: word
 umask
   <a href="/$src/lib/std/win32/filestat.flx#0058">win32/filestat.flx:58</a>: gen umask: mode_t -> mode_t
@@ -2530,10 +2513,12 @@ unsafe_get
   <a href="/$src/lib/std/datatype/bsarray.flx#0018">datatype/bsarray.flx:18</a>: fun unsafe_get(b:bsarray[T], i:size)
   <a href="/$src/lib/std/datatype/array.flx#0024">datatype/array.flx:24</a>: fun unsafe_get: &array[t, n] * size -> &t
   <a href="/$src/lib/std/datatype/array.flx#0018">datatype/array.flx:18</a>: fun unsafe_get (var a: array[t, n], j: size): t
+unsafe_get_ref
+  <a href="/$src/lib/std/datatype/varray.flx#0097">datatype/varray.flx:97</a>: fun unsafe_get_ref: varray[v] * size -> &v
 unsafe_set
   <a href="/$src/lib/std/datatype/varray.flx#0096">datatype/varray.flx:96</a>: proc unsafe_set: varray[v] * size * v
   <a href="/$src/lib/std/datatype/bsarray.flx#0023">datatype/bsarray.flx:23</a>: proc unsafe_set(b:bsarray[T], i:size, v:T)
-  <a href="/$src/lib/std/datatype/array.flx#0027">datatype/array.flx:27</a>: proc unsafe_set[t,n]: &array[t,n] * size * t
+  <a href="/$src/lib/std/datatype/array.flx#0034">datatype/array.flx:34</a>: proc unsafe_set[t,n]: &array[t,n] * size * t
 untouchwin
   <a href="/$src/lib/std/xsi/ncurses.flx#0233">xsi/ncurses.flx:233</a>: gen untouchwin: WINDOW -> int
 uri_decode
@@ -2555,7 +2540,7 @@ use_window
 uses_offset_table
   <a href="/$src/lib/std/felix/rtti.flx#0043">felix/rtti.flx:43</a>: fun uses_offset_table : gc_shape_t -> bool
 ushort
-  <a href="/$src/lib/std/int.flx#0054">int.flx:54</a>: ctor ushort: string
+  <a href="/$src/lib/std/int.flx#0055">int.flx:55</a>: ctor ushort: string
 utime
   <a href="/$src/lib/std/win32/filestat.flx#0045">win32/filestat.flx:45</a>: proc utime: string * double * double * &int
   <a href="/$src/lib/std/posix/filestat.flx#0059">posix/filestat.flx:59</a>: proc utime: string * double * double * &int
@@ -2563,9 +2548,9 @@ utime
   <a href="/$src/lib/std/filestat.flx#0069">filestat.flx:69</a>: gen utime(f:string, a:double, m:double): bool
   <a href="/$src/lib/std/filestat.flx#0012">filestat.flx:12</a>: virtual proc utime: string * double * double * &int
 utiny
-  <a href="/$src/lib/std/int.flx#0048">int.flx:48</a>: ctor utiny: string
+  <a href="/$src/lib/std/int.flx#0049">int.flx:49</a>: ctor utiny: string
 uvlong
-  <a href="/$src/lib/std/int.flx#0072">int.flx:72</a>: ctor uvlong: string
+  <a href="/$src/lib/std/int.flx#0073">int.flx:73</a>: ctor uvlong: string
 <hr/>
 valid
   <a href="/$src/lib/std/win32/filesystem.flx#0027">win32/filesystem.flx:27</a>: fun valid: posix_file -> bool
@@ -2584,7 +2569,7 @@ vidattr
 vline
   <a href="/$src/lib/std/xsi/ncurses.flx#0237">xsi/ncurses.flx:237</a>: gen vline: chtype * int -> int
 vlong
-  <a href="/$src/lib/std/int.flx#0042">int.flx:42</a>: ctor vlong: string
+  <a href="/$src/lib/std/int.flx#0043">int.flx:43</a>: ctor vlong: string
 vw_printw
   <a href="/$src/lib/std/xsi/ncurses.flx#0239">xsi/ncurses.flx:239</a>: gen vw_printw: WINDOW * &char * C_hack::va_list -> int
 vw_scanw

@@ -4432,9 +4432,7 @@ print_endline "bind expression' succeeded";
     | _ ->
     let ss,es = List.split ls in
     let es = List.map be es in
-    let ts = List.map snd es in
-    let t = btyp_record "" (List.combine ss ts) in
-    bexpr_record t (List.combine ss es)
+    bexpr_record (List.combine ss es)
     end
 
 

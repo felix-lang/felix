@@ -115,6 +115,7 @@ operation such as a {push_back} or {pop}.
   //$ Basic array object stuff.
   instance[v] ArrayObject[darray[v],v] {
     proc unsafe_set (b:darray[v],  n:size, x:v) => unsafe_set ((_repr_ b)*.a,n,x);
+    fun unsafe_get_ref (b:darray[v],  n:size) : &v => unsafe_get_ref ((_repr_ b)*.a,n);
   }
 
 @h2 As an contiguous array.

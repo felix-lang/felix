@@ -485,115 +485,120 @@
            Fortran power.
 0181:    <a href="/$src/lib/grammar/expressions.flxh#0181">x[ssuperscript_pri] := x[ssuperscript_pri] "^" x[srefr_pri]</a>
            Superscript, exponential.
-0184:    <a href="/$src/lib/grammar/expressions.flxh#0184">x[srefr_pri] := "*" x[srefr_pri]</a>
+0184:    <a href="/$src/lib/grammar/expressions.flxh#0184">x[ssuperscript_pri] := x[ssuperscript_pri] "\circ" x[>ssuperscript_pri]</a>
+           composition
+0187:    <a href="/$src/lib/grammar/expressions.flxh#0187">x[srefr_pri] := "*" x[srefr_pri]</a>
            C dereference.
-0187:    <a href="/$src/lib/grammar/expressions.flxh#0187">x[srefr_pri] := "_deref" x[srefr_pri]</a>
+0190:    <a href="/$src/lib/grammar/expressions.flxh#0190">x[srefr_pri] := "_deref" x[srefr_pri]</a>
            Deref primitive.
-0190:    <a href="/$src/lib/grammar/expressions.flxh#0190">x[srefr_pri] := "new" x[srefr_pri]</a>
+0193:    <a href="/$src/lib/grammar/expressions.flxh#0193">x[srefr_pri] := "new" x[srefr_pri]</a>
            Operator new.
-0193:    <a href="/$src/lib/grammar/expressions.flxh#0193">satom := "(" srecord_mem_decl ("," srecord_mem_decl)*  ")"</a>
+0196:    <a href="/$src/lib/grammar/expressions.flxh#0196">satom := "(" srecord_mem_decl ("," srecord_mem_decl)*  ")"</a>
            Record type.
-0195:    <a href="/$src/lib/grammar/expressions.flxh#0195">srecord_mem_decl := sname ":" stypeexpr</a>
-0198:    <a href="/$src/lib/grammar/expressions.flxh#0198">satom := "union" "{" stype_sum_item0* "}"</a>
+0198:    <a href="/$src/lib/grammar/expressions.flxh#0198">srecord_mem_decl := sname ":" stypeexpr</a>
+0201:    <a href="/$src/lib/grammar/expressions.flxh#0201">satom := "union" "{" stype_sum_item0* "}"</a>
            Variant type.
-0199:    <a href="/$src/lib/grammar/expressions.flxh#0199">stype_sum_item := sname sopt_value stvarlist "of" sexpr</a>
-0200:    <a href="/$src/lib/grammar/expressions.flxh#0200">stype_sum_item := sname sopt_value stvarlist</a>
-0202:    <a href="/$src/lib/grammar/expressions.flxh#0202">stype_sum_item0 := sname "of" sexpr</a>
-0203:    <a href="/$src/lib/grammar/expressions.flxh#0203">stype_sum_item0 := sname</a>
-0205:    <a href="/$src/lib/grammar/expressions.flxh#0205">stype_sum_item1 := stype_sum_item ";"</a>
-0207:    <a href="/$src/lib/grammar/expressions.flxh#0207">stype_sum_item2 := "|" stype_sum_item</a>
-0208:    <a href="/$src/lib/grammar/expressions.flxh#0208">stype_sum_items2 := stype_sum_item stype_sum_item2*</a>
-0209:    <a href="/$src/lib/grammar/expressions.flxh#0209">stype_sum_items2 := stype_sum_item2*</a>
-0212:    <a href="/$src/lib/grammar/expressions.flxh#0212">x[sapplication_pri] := x[sapplication_pri] x[scoercion_pri]</a>
+0202:    <a href="/$src/lib/grammar/expressions.flxh#0202">stype_sum_item := sname sopt_value stvarlist "of" sexpr</a>
+0203:    <a href="/$src/lib/grammar/expressions.flxh#0203">stype_sum_item := sname sopt_value stvarlist</a>
+0205:    <a href="/$src/lib/grammar/expressions.flxh#0205">stype_sum_item0 := sname "of" sexpr</a>
+0206:    <a href="/$src/lib/grammar/expressions.flxh#0206">stype_sum_item0 := sname</a>
+0208:    <a href="/$src/lib/grammar/expressions.flxh#0208">stype_sum_item1 := stype_sum_item ";"</a>
+0210:    <a href="/$src/lib/grammar/expressions.flxh#0210">stype_sum_item2 := "|" stype_sum_item</a>
+0211:    <a href="/$src/lib/grammar/expressions.flxh#0211">stype_sum_items2 := stype_sum_item stype_sum_item2*</a>
+0212:    <a href="/$src/lib/grammar/expressions.flxh#0212">stype_sum_items2 := stype_sum_item2*</a>
+0215:    <a href="/$src/lib/grammar/expressions.flxh#0215">x[sapplication_pri] := x[sapplication_pri] x[scoercion_pri]</a>
            Operator whitespace: application.
-0215:    <a href="/$src/lib/grammar/expressions.flxh#0215">x[sapplication_pri] := "caseno" x[scoercion_pri]</a>
+0218:    <a href="/$src/lib/grammar/expressions.flxh#0218">x[sapplication_pri] := "caseno" x[scoercion_pri]</a>
            Variant index.
-0219:    <a href="/$src/lib/grammar/expressions.flxh#0219">x[sapplication_pri] := "likely" x[scoercion_pri]</a>
+0222:    <a href="/$src/lib/grammar/expressions.flxh#0222">x[sapplication_pri] := "likely" x[scoercion_pri]</a>
            Optimisation hint: likely.
            Use in conditionals, e.g. if likely(x) do ...
-0223:    <a href="/$src/lib/grammar/expressions.flxh#0223">x[sapplication_pri] := "unlikely" x[scoercion_pri]</a>
+0226:    <a href="/$src/lib/grammar/expressions.flxh#0226">x[sapplication_pri] := "unlikely" x[scoercion_pri]</a>
            Optimisation hint: unlikely.
            Use in conditionals, e.g. if unlikely(x) do ...
-0226:    <a href="/$src/lib/grammar/expressions.flxh#0226">x[scoercion_pri] := x[scoercion_pri] ":>>" x[sfactor_pri]</a>
+0229:    <a href="/$src/lib/grammar/expressions.flxh#0229">x[scoercion_pri] := x[scoercion_pri] ":>>" x[sfactor_pri]</a>
            Suffixed coercion.
-0227:    <a href="/$src/lib/grammar/expressions.flxh#0227">x[scoercion_pri] := ssuffixed_name</a>
-0229:    <a href="/$src/lib/grammar/expressions.flxh#0229">x[sfactor_pri] := sthe_name</a>
-0234:    <a href="/$src/lib/grammar/expressions.flxh#0234">x[sfactor_pri] := x[sfactor_pri] "." "[" sexpr "]"</a>
+0230:    <a href="/$src/lib/grammar/expressions.flxh#0230">x[scoercion_pri] := ssuffixed_name</a>
+0232:    <a href="/$src/lib/grammar/expressions.flxh#0232">x[sfactor_pri] := sthe_name</a>
+0237:    <a href="/$src/lib/grammar/expressions.flxh#0237">x[sfactor_pri] := x[sfactor_pri] "." "[" sexpr "]"</a>
            String subscript.
-0237:    <a href="/$src/lib/grammar/expressions.flxh#0237">x[sfactor_pri] := x[sfactor_pri] "." "[" sexpr "to" sexpr "]"</a>
+0240:    <a href="/$src/lib/grammar/expressions.flxh#0240">x[sfactor_pri] := x[sfactor_pri] "." "[" sexpr "to" sexpr "]"</a>
            String substring.
-0240:    <a href="/$src/lib/grammar/expressions.flxh#0240">x[sfactor_pri] := x[sfactor_pri] "." "[" sexpr "to" "]"</a>
+0243:    <a href="/$src/lib/grammar/expressions.flxh#0243">x[sfactor_pri] := x[sfactor_pri] "." "[" sexpr "to" "]"</a>
            String substring, to end of string.
-0243:    <a href="/$src/lib/grammar/expressions.flxh#0243">x[sfactor_pri] := x[sfactor_pri] "." "[" "to" sexpr "]"</a>
+0246:    <a href="/$src/lib/grammar/expressions.flxh#0246">x[sfactor_pri] := x[sfactor_pri] "." "[" "to" sexpr "]"</a>
            String substring, from start of string.
-0246:    <a href="/$src/lib/grammar/expressions.flxh#0246">x[sfactor_pri] := x[sfactor_pri] "." sthe_name</a>
+0249:    <a href="/$src/lib/grammar/expressions.flxh#0249">x[sfactor_pri] := x[sfactor_pri] "." sthe_name</a>
            Reverse application.
-0250:    <a href="/$src/lib/grammar/expressions.flxh#0250">x[sfactor_pri] := x[sfactor_pri] "*." sthe_name</a>
+0253:    <a href="/$src/lib/grammar/expressions.flxh#0253">x[sfactor_pri] := x[sfactor_pri] "*." sthe_name</a>
            Reverse application with dereference.
-           a .* b same as (*a) . b, like C  a -> b.
-0253:    <a href="/$src/lib/grammar/expressions.flxh#0253">sbasic_name_comma_list:= sname ("," sname)*</a>
-0256:    <a href="/$src/lib/grammar/expressions.flxh#0256">sthe_name := "#" sthe_name</a>
+           a *. b same as (*a) . b, like C  a -> b.
+0257:    <a href="/$src/lib/grammar/expressions.flxh#0257">x[sfactor_pri] := x[sfactor_pri] "&." sthe_name</a>
+           a &. b is similar to &a . b for an array, but can be overloaded
+           for abstract arrays: like a + b in C. Returns pointer.
+0260:    <a href="/$src/lib/grammar/expressions.flxh#0260">sbasic_name_comma_list:= sname ("," sname)*</a>
+0263:    <a href="/$src/lib/grammar/expressions.flxh#0263">sthe_name := "#" sthe_name</a>
            High precedence unit application. #f = f ().
-0259:    <a href="/$src/lib/grammar/expressions.flxh#0259">sthe_name := "&" sthe_name</a>
+0266:    <a href="/$src/lib/grammar/expressions.flxh#0266">sthe_name := "&" sthe_name</a>
            Felix pointer type and address of operator.
-0262:    <a href="/$src/lib/grammar/expressions.flxh#0262">sthe_name :=  "@" sthe_name</a>
+0269:    <a href="/$src/lib/grammar/expressions.flxh#0269">sthe_name :=  "@" sthe_name</a>
            C pointer type.
-0265:    <a href="/$src/lib/grammar/expressions.flxh#0265">sthe_name := "noexpand" squalified_name</a>
+0272:    <a href="/$src/lib/grammar/expressions.flxh#0272">sthe_name := "noexpand" squalified_name</a>
            macro expansion freezer.
-0268:    <a href="/$src/lib/grammar/expressions.flxh#0268">sthe_name := "?" sname</a>
+0275:    <a href="/$src/lib/grammar/expressions.flxh#0275">sthe_name := "?" sname</a>
            pattern variable.
-0271:    <a href="/$src/lib/grammar/expressions.flxh#0271">sthe_name := "?" sinteger</a>
+0278:    <a href="/$src/lib/grammar/expressions.flxh#0278">sthe_name := "?" sinteger</a>
            Template replacement index.
-0273:    <a href="/$src/lib/grammar/expressions.flxh#0273">sthe_name := squalified_name</a>
-0274:    <a href="/$src/lib/grammar/expressions.flxh#0274">sthe_name := satom</a>
-0277:    <a href="/$src/lib/grammar/expressions.flxh#0277">squalified_name := squalified_name "::" ssimple_name_parts</a>
+0280:    <a href="/$src/lib/grammar/expressions.flxh#0280">sthe_name := squalified_name</a>
+0281:    <a href="/$src/lib/grammar/expressions.flxh#0281">sthe_name := satom</a>
+0284:    <a href="/$src/lib/grammar/expressions.flxh#0284">squalified_name := squalified_name "::" ssimple_name_parts</a>
            Qualified name.
-0280:    <a href="/$src/lib/grammar/expressions.flxh#0280">squalified_name := ssimple_name_parts</a>
-0283:    <a href="/$src/lib/grammar/expressions.flxh#0283">ssimple_name_parts := sname</a>
-0284:    <a href="/$src/lib/grammar/expressions.flxh#0284">ssimple_name_parts := sname "[" sexpr "]"</a>
-0287:    <a href="/$src/lib/grammar/expressions.flxh#0287">ssuffixed_name := squalified_name "of" x[sfactor_pri]</a>
+0287:    <a href="/$src/lib/grammar/expressions.flxh#0287">squalified_name := ssimple_name_parts</a>
+0290:    <a href="/$src/lib/grammar/expressions.flxh#0290">ssimple_name_parts := sname</a>
+0291:    <a href="/$src/lib/grammar/expressions.flxh#0291">ssimple_name_parts := sname "[" sexpr "]"</a>
+0294:    <a href="/$src/lib/grammar/expressions.flxh#0294">ssuffixed_name := squalified_name "of" x[sfactor_pri]</a>
            Suffixed name (to name functions).
-0291:    <a href="/$src/lib/grammar/expressions.flxh#0291">satom := "(" rassign ("," rassign )* ")"</a>
+0298:    <a href="/$src/lib/grammar/expressions.flxh#0298">satom := "(" rassign ("," rassign )* ")"</a>
            record value (comma separated).
-0294:    <a href="/$src/lib/grammar/expressions.flxh#0294">rassign := sname "=" x[sor_condition_pri]</a>
-0297:    <a href="/$src/lib/grammar/expressions.flxh#0297">satom := sliteral</a>
+0301:    <a href="/$src/lib/grammar/expressions.flxh#0301">rassign := sname "=" x[sor_condition_pri]</a>
+0304:    <a href="/$src/lib/grammar/expressions.flxh#0304">satom := sliteral</a>
            scalar literals (numbers, strings).
-0300:    <a href="/$src/lib/grammar/expressions.flxh#0300">satom := _</a>
+0307:    <a href="/$src/lib/grammar/expressions.flxh#0307">satom := _</a>
            Wildcard pattern.
-0303:    <a href="/$src/lib/grammar/expressions.flxh#0303">satom := "..."</a>
+0310:    <a href="/$src/lib/grammar/expressions.flxh#0310">satom := "..."</a>
            Ellipsis (for binding C varags functions).
-0306:    <a href="/$src/lib/grammar/expressions.flxh#0306">satom := "false"</a>
+0313:    <a href="/$src/lib/grammar/expressions.flxh#0313">satom := "false"</a>
            Boolean false.
-0309:    <a href="/$src/lib/grammar/expressions.flxh#0309">satom := "true"</a>
+0316:    <a href="/$src/lib/grammar/expressions.flxh#0316">satom := "true"</a>
            Boolean true.
-0312:    <a href="/$src/lib/grammar/expressions.flxh#0312">satom := "callback" "[" sexpr "]"</a>
+0319:    <a href="/$src/lib/grammar/expressions.flxh#0319">satom := "callback" "[" sexpr "]"</a>
            Callback expression.
-0315:    <a href="/$src/lib/grammar/expressions.flxh#0315">satom := "[|" sexpr "|]"</a>
+0322:    <a href="/$src/lib/grammar/expressions.flxh#0322">satom := "[|" sexpr "|]"</a>
            Array expression (deprecated).
-0318:    <a href="/$src/lib/grammar/expressions.flxh#0318">satom := "{" sexpr "}"</a>
+0325:    <a href="/$src/lib/grammar/expressions.flxh#0325">satom := "{" sexpr "}"</a>
            Short form anonymous function closure.
-0321:    <a href="/$src/lib/grammar/expressions.flxh#0321">satom := scompound</a>
+0328:    <a href="/$src/lib/grammar/expressions.flxh#0328">satom := scompound</a>
            Short form anonymous procedure closure.
-0325:    <a href="/$src/lib/grammar/expressions.flxh#0325">satom := "(" stmt+ sexpr ")"</a>
+0332:    <a href="/$src/lib/grammar/expressions.flxh#0332">satom := "(" stmt+ sexpr ")"</a>
            Short form sequence operator.
            ( stmt; expr ) means the same as #{stmt; return expr; }
-0341:    <a href="/$src/lib/grammar/expressions.flxh#0341">satom := "(" "var" sexpr ")"</a>
+0348:    <a href="/$src/lib/grammar/expressions.flxh#0348">satom := "(" "var" sexpr ")"</a>
            special anonymous variable forces eager eval.
-0354:    <a href="/$src/lib/grammar/expressions.flxh#0354">satom := "(" sexpr ")"</a>
+0361:    <a href="/$src/lib/grammar/expressions.flxh#0361">satom := "(" sexpr ")"</a>
            Grouping.
-0357:    <a href="/$src/lib/grammar/expressions.flxh#0357">satom := "(" ")"</a>
+0364:    <a href="/$src/lib/grammar/expressions.flxh#0364">satom := "(" ")"</a>
            Empty tuple (unit tuple).
-0360:    <a href="/$src/lib/grammar/expressions.flxh#0360">satom := "extend" stypelist "with" sexpr "end"</a>
+0367:    <a href="/$src/lib/grammar/expressions.flxh#0367">satom := "extend" stypelist "with" sexpr "end"</a>
            Object extension.
-0363:    <a href="/$src/lib/grammar/expressions.flxh#0363">satom := sconditional "endif"</a>
+0370:    <a href="/$src/lib/grammar/expressions.flxh#0370">satom := sconditional "endif"</a>
            Conditional expression.
-0366:    <a href="/$src/lib/grammar/expressions.flxh#0366">sconditional := "if" sexpr "then" sexpr selse_part</a>
+0373:    <a href="/$src/lib/grammar/expressions.flxh#0373">sconditional := "if" sexpr "then" sexpr selse_part</a>
            Conditional expression (prefix).
-0369:    <a href="/$src/lib/grammar/expressions.flxh#0369">selif := "elif" sexpr "then" sexpr</a>
-0371:    <a href="/$src/lib/grammar/expressions.flxh#0371">selifs := selif</a>
-0372:    <a href="/$src/lib/grammar/expressions.flxh#0372">selifs := selifs selif</a>
-0374:    <a href="/$src/lib/grammar/expressions.flxh#0374">selse_part:= "else" sexpr</a>
-0375:    <a href="/$src/lib/grammar/expressions.flxh#0375">selse_part:= selifs "else" sexpr</a>
+0376:    <a href="/$src/lib/grammar/expressions.flxh#0376">selif := "elif" sexpr "then" sexpr</a>
+0378:    <a href="/$src/lib/grammar/expressions.flxh#0378">selifs := selif</a>
+0379:    <a href="/$src/lib/grammar/expressions.flxh#0379">selifs := selifs selif</a>
+0381:    <a href="/$src/lib/grammar/expressions.flxh#0381">selse_part:= "else" sexpr</a>
+0382:    <a href="/$src/lib/grammar/expressions.flxh#0382">selse_part:= selifs "else" sexpr</a>
 <hr/><a href="/$src/lib/grammar/felix.flxh">felix.flxh</a>
 
 0001:  <a href="/$src/lib/grammar/felix.flxh#0001">syntax felix</a>

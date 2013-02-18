@@ -1,3 +1,4 @@
+
 PI := 3.141592653589793;
 SOLAR_MASS := 4.0 * PI * PI;
 DAYS_PER_YEAR := 365.24;
@@ -19,24 +20,28 @@ struct Body { pos:vec; vel:vec; mass: double; };
 proc Advance(dt: double){
    var i: int; var j:int;
    for i in 0 upto nbodies - 1 do
-      val bimass = bodies.i.mass;
+      val pi = &bodies.i;
+      val bimass = pi*.mass;
       var delta = 0.0,0.0,0.0;
       for j in i+1 upto nbodies - 1 do
-         val bjmass = bodies.j.mass;
-         val d = bodies.i.pos - bodies.j.pos;
+         val pj = &bodies.j;
+         val bjmass = pj*.mass;
+         val d = pi*.pos - pj*.pos;
          val d2 = sqr d;
          val distance = sqrt d2;
 
          delta = delta + d * bjmass * dt / (distance * d2);
-         bodies.j.vel = bodies.j.vel + d * bimass * dt / (distance * d2);
+         pj.vel <- pj*.vel + d * bimass * dt / (distance * d2);
       done;
-      bodies.i.vel = bodies.i.vel - delta;
+      pi.vel <- pi*.vel - delta;
    done;
 
    for i in 0 upto nbodies - 1 do
-      bodies.i.pos = bodies.i.pos + dt * bodies.i.vel;
+      pi = &bodies.i;
+      pi.pos <- pi*.pos + dt * pi*.vel;
    done;
 }
+
 
 fun Energy (): double =
 {

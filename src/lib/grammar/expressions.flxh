@@ -249,8 +249,12 @@ syntax expressions {
   x[sfactor_pri] := x[sfactor_pri] "." sthe_name =># "`(ast_dot ,_sr (,_1 ,_3))";
 
   //$ Reverse application with dereference.
-  //$ a .* b same as (*a) . b, like C  a -> b.
+  //$ a *. b same as (*a) . b, like C  a -> b.
   x[sfactor_pri] := x[sfactor_pri] "*." sthe_name =># "`(ast_dot ,_sr ((ast_deref ,_sr ,_1) ,_3))";
+
+  //$ a &. b is similar to &a . b for an array, but can be overloaded
+  //$ for abstract arrays: like a + b in C. Returns pointer.
+  x[sfactor_pri] := x[sfactor_pri] "&." sthe_name =># "(Infix)";
 
   // these are weirdos
   sbasic_name_comma_list:= sname ("," sname)* =># "(cons _1 (map second _2))";
