@@ -28,8 +28,19 @@ proc print_options() {
     println$ "USAGE              = "+control.USAGE;
 }
 
+fun init_loopctl () => struct {
+    // Argument parsing loop
+    var argno=1;
+    var grab=1;
+    var path="";
+    var ext="";
+    var base="";
+    var dir="";
+};
+
 fun dflt_control () =>
   struct {
+
     var RECOMPILE=0;
     var RUNIT=1;
     var CCOMPILEIT=1;
@@ -84,6 +95,7 @@ fun dflt_control () =>
     var pkgs="";
 
     var CONFIG_DIR = "";
+    var PKGCONFIG = "";
     var FLXG = "";
     var QUOTE_FLXG = "";
     var FLXRUN = "";

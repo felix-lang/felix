@@ -7,6 +7,7 @@ include "./flx_pkg";
 include "./flx_config";
 include "./flx_control";
 include "./flx_profile";
+include "./flx_run";
 
 // Felix version of THIS program (NOT the one being installed
 // if you're using flx to install Felix)
@@ -32,30 +33,17 @@ var compile_exts = List::list ('cpp','cxx','c','cc');
 var linkexts =  List::list ('o','obj','lib','dll','a','so');
 var result = 0;
 
-// Argument parsing loop
-var argno=1;
-var grab=1;
-var arg = "";
-var path="";
-var ext="";
-var base="";
-var dir="";
-
-
+var loopctl = #init_loopctl;
 processing_stage1;
 
-var PKGCONFIG=quote(Filename::join$ List::list(config.FLX_INSTALL_DIR,"bin","flx_pkgconfig"));
-debugln$ "Felix package manager program is "+PKGCONFIG;
+debugln$ "Felix package manager program is "+control.PKGCONFIG;
 
 if ECHO == 1 do
   fprintln (cerr, "#FLX_INSTALL_DIR="+config.FLX_INSTALL_DIR);
-  fprintln (cerr, "#PKGCONFIG="+PKGCONFIG);
+  fprintln (cerr, "#PKGCONFIG="+control.PKGCONFIG);
 done
 
-control.DLINK_STRING, control.SLINK_STRING = Config::link_strings(config.FLX_INSTALL_DIR);
-
-var CONFIG_DIR = Filename::join(config.FLX_INSTALL_DIR,'config');
-debugln$ "Felix package manager config directory is "+CONFIG_DIR;
+debugln$ "Felix package manager config directory is "+control.CONFIG_DIR;
 // make a list of any *.cpp files (or other g++ options ..)
 
 var EXT_OBJ = 
@@ -63,29 +51,13 @@ var EXT_OBJ =
   else config.EXT_STATIC_OBJ
   endif
 ;
-
-// this hack forces a directory name, because executing "prog"
-// can fail if the currect directory is not on the PATH, 
-// or worse, the wrong program can execute. The PATH is not
-// searched if the filename includes a / somewhere so force one in.
-// similarly for dynamic loaders looking for shared libraries
-//
-// It would probably be better to convert any relative filename
-// to an absolute one, however this only makes sense on Unix 
-// since Windows has multiple "drives" it is much harder to
-// do the conversion.
-dir = 
-  if dir != "" then dir 
-  else "."
-  endif
-;
-debugln$ "FileDir= " + dir;
-var rel_filebase = if dir == "." then base else Filename::join(dir,base);
+debugln$ "FileDir= " + loopctl.dir;
+var rel_filebase = if loopctl.dir == "." then loopctl.base else Filename::join(loopctl.dir,loopctl.base);
 debugln$ "Rel_filebase= " + rel_filebase;
-debugln$ "Given Extension=" + ext;
+debugln$ "Given Extension=" + loopctl.ext;
 
   // this is a hack! We should resolve the filename first.
-var use_ext = if ext != "" then "."+ext else
+var use_ext = if loopctl.ext != "" then "."+loopctl.ext else
   #{ 
      var flxt = dfiletime (rel_filebase+".flx",#past_time);
      var fdoct = dfiletime (rel_filebase+".fdoc",#past_time);
@@ -110,8 +82,8 @@ debugln$ "C++ file base is " + cpp_filebase;
 
 // Find absolute pathname
 
-if path == "" do
-  fprint$ cerr, ("No such felix program: "+path+"\n");
+if loopctl.path == "" do
+  fprint$ cerr, ("No such felix program: "+loopctl.path+"\n");
   System::exit(1);
 done
 
@@ -154,39 +126,7 @@ if control.SHOWCODE == 1 do {
   print prg;
 }; done
 
-if control.RECOMPILE == 0 and control.RUNIT == 1 and control.CLEAR_CACHE == 0 do
-  // not (--force or -c)
-  debugln "Checking to see if the binary is uptodate";
-  var xtime = dfiletime(control.LINKER_OUTPUT_FILENAME,#past_time);
-  var srctime = cal_dep_time (filebase);
-
-  debugln$ "Filebase = " + filebase; 
-  debugln$ "Binary time = " + strfiletime (xtime);
-  debugln$ "src time = " + strfiletime (srctime);
-  debugln$ "cache time = " + strfiletime (control.cache_time);
-  if control.STATIC == 0 do
-    if xtime > srctime and xtime > control.cache_time do
-      debugln$ "Running dynamically linked binary";
-      calpackages();
-      cmd=control.FLXRUN+control.DRIVER_EXE+DEBUGSWITCH+" "+ quote(control.LINKER_OUTPUT_FILENAME)+" "+args;
-      if control.STDOUT != "" do cmd=cmd + " > "+control.STDOUT; done
-      debugln$ "Uptodate shared lib: Running command " + cmd;
-      pexit(system(cmd));
-    else
-      debugln$ "Dynamically linked binary out of date or non-existant";
-    done
-  else
-    if xtime > srctime and xtime > control.cache_time do
-      debugln$ "Running statically linked binary";
-      cmd=STATIC_ENV+" "+quote(control.LINKER_OUTPUT_FILENAME)+" "+args;
-      if control.STDOUT != "" do cmd=cmd + " > "+control.STDOUT; done
-      debugln$ "Uptodate executable: Running command " + cmd;
-      pexit(system(cmd));
-    else
-      debugln$ "Statically linked binary out of date or non-existant";
-    done
-  done
-done
+run_if_required_and_uptodate;
 
 // Need Felix and c++ compile, then run it
 dbug??println$ "RECOMPILING!!";

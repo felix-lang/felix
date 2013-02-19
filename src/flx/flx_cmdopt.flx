@@ -85,26 +85,26 @@ fun splitext(p:string)=>
 proc parse_cmd_line
 {
 var SET_LINKER_OUTPUT = false;
-grabbing_args: while grab == 1 and argno<System::argc do
-  arg = System::argv argno;
-  debugln$ "ARGNO="+str(argno)+", arg='"+arg+"'";
+grabbing_args: while loopctl.grab == 1 and loopctl.argno<System::argc do
+  var arg = System::argv loopctl.argno;
+  debugln$ "ARGNO="+str(loopctl.argno)+", arg='"+arg+"'";
   if SET_LINKER_OUTPUT do
      control.LINKER_OUTPUT_FILENAME = arg;
      debugln$ "Set linker output file=" + control.LINKER_OUTPUT_FILENAME;
      SET_LINKER_OUTPUT = false;
-     ++argno;
+     ++loopctl.argno;
      continue grabbing_args;
   done
 
-  path,ext = splitext(arg);
-  dir,base = Filename::split1(path);
-  debugln$ "path="+path+", ext="+ext+",dir="+dir+",base="+base;
-  if ext != "flx" and ext != "fdoc" and ext != "" do
+  loopctl.path,loopctl.ext = splitext(arg);
+  loopctl.dir,loopctl.base = Filename::split1(loopctl.path);
+  debugln$ "path="+loopctl.path+", ext="+loopctl.ext+",dir="+loopctl.dir+",base="+loopctl.base;
+  if loopctl.ext != "flx" and loopctl.ext != "fdoc" and loopctl.ext != "" do
     // add to list of things to link, and also things to compile
     // if the extension is appropriate
-    if List::mem eq of (string * string) compile_exts ext do
+    if List::mem eq of (string * string) compile_exts loopctl.ext do
       control.cpps = control.cpps + " " + arg;
-      control.cppos = control.cppos + " " + path + "." + EXT_OBJ;
+      control.cppos = control.cppos + " " + loopctl.path + "." + EXT_OBJ;
     else
      control.cppos = control.cppos + " " + arg;
     done
@@ -326,27 +326,11 @@ grabbing_args: while grab == 1 and argno<System::argc do
 // the main filename -- subsequent args are args to flx_run
   else
     debugln "Assume we have the filename now";
-    grab=0;
+    loopctl.grab=0;
   done
-  argno = argno + 1;
+  loopctl.argno = loopctl.argno + 1;
 done
-
-if config.HAVE_WIN32 do
-  control.FLXG=Filename::join(config.FLX_INSTALL_DIR, 'bin', 'flxg.exe');
-  control.QUOTE_FLXG=quote(control.FLXG);
-  control.FLXRUN="set PATH="+(Directory::mk_absolute_filename config.FLX_INSTALL_DIR)+"\\lib\\rtl;"+"%PATH%&&";
-  //println$ "FLXRUN=" + FLXRUN;
-else
-  control.FLXG=config.FLX_INSTALL_DIR+"/bin/flxg";
-  control.QUOTE_FLXG=quote(control.FLXG);
-  // the mac uses DYLD_LIBRARY_PATH instead of LD_LIBRARY_PATH
-  if config.HAVE_MACOSX do
-    control.FLXRUN="env DYLD_LIBRARY_PATH="+config.FLX_INSTALL_DIR+"/lib/rtl:$DYLD_LIBRARY_PATH ";
-  else
-    control.FLXRUN="env LD_LIBRARY_PATH="+config.FLX_INSTALL_DIR+"/lib/rtl:$LD_LIBRARY_PATH ";
-  done
-done
-
+ 
 }
 
 proc processing_stage1 
@@ -357,11 +341,11 @@ proc processing_stage1
   validate_cache;
 
 
-  debugln$ grab, argno, System::argc;
+  debugln$ loopctl.grab, loopctl.argno, System::argc;
 
   // If we're still trying to grab a filename,
   // but we've run out of arguments ..
-  if grab == 1 and argno == System::argc do
+  if loopctl.grab == 1 and loopctl.argno == System::argc do
     if control.CLEAR_CACHE == 1 do
       System::exit(0);
     else
@@ -371,13 +355,13 @@ proc processing_stage1
   done
 
   debugln "#--------";
-  debugln$ "DONE, option index = "+str(argno);
-  debugln$ "path="+path+": dir="+dir+",base="+base+", ext="+ext;
+  debugln$ "DONE, option index = "+str(loopctl.argno);
+  debugln$ "path="+loopctl.path+": dir="+loopctl.dir+",base="+loopctl.base+", ext="+loopctl.ext;
   debugln$ "cpps="+control.cpps;
   debugln$ "cppos="+control.cppos;
 
-  while argno < System::argc do 
-    control.USER_ARGS+=" " + quote (System::argv argno); ++argno; 
+  while loopctl.argno < System::argc do 
+    control.USER_ARGS+=" " + quote (System::argv loopctl.argno); ++loopctl.argno; 
   done
   debugln$ "USER_ARGS=" + control.USER_ARGS;
 
@@ -390,6 +374,44 @@ proc processing_stage1
   // Note we have to do it this way so the -f switches turn
   // off optimisations previously introduced (order matters)
   control.CCFLAGS += control.EXTRA_CCFLAGS;
+
+  if config.HAVE_WIN32 do
+    control.FLXG=Filename::join(config.FLX_INSTALL_DIR, 'bin', 'flxg.exe');
+    control.QUOTE_FLXG=quote(control.FLXG);
+    control.FLXRUN="set PATH="+(Directory::mk_absolute_filename config.FLX_INSTALL_DIR)+"\\lib\\rtl;"+"%PATH%&&";
+    //println$ "FLXRUN=" + FLXRUN;
+  else
+    control.FLXG=config.FLX_INSTALL_DIR+"/bin/flxg";
+    control.QUOTE_FLXG=quote(control.FLXG);
+    // the mac uses DYLD_LIBRARY_PATH instead of LD_LIBRARY_PATH
+    if config.HAVE_MACOSX do
+      control.FLXRUN="env DYLD_LIBRARY_PATH="+config.FLX_INSTALL_DIR+"/lib/rtl:$DYLD_LIBRARY_PATH ";
+    else
+      control.FLXRUN="env LD_LIBRARY_PATH="+config.FLX_INSTALL_DIR+"/lib/rtl:$LD_LIBRARY_PATH ";
+    done
+  done
+
+  control.PKGCONFIG=quote(Filename::join$ List::list(config.FLX_INSTALL_DIR,"bin","flx_pkgconfig"));
+
+  control.DLINK_STRING, control.SLINK_STRING = Config::link_strings(config.FLX_INSTALL_DIR);
+
+  control.CONFIG_DIR = Filename::join(config.FLX_INSTALL_DIR,'config');
+
+  // this hack forces a directory name, because executing "prog"
+  // can fail if the currect directory is not on the PATH, 
+  // or worse, the wrong program can execute. The PATH is not
+  // searched if the filename includes a / somewhere so force one in.
+  // similarly for dynamic loaders looking for shared libraries
+  //
+  // It would probably be better to convert any relative filename
+  // to an absolute one, however this only makes sense on Unix 
+  // since Windows has multiple "drives" it is much harder to
+  // do the conversion.
+  loopctl.dir = 
+    if loopctl.dir != "" then loopctl.dir 
+    else "."
+    endif
+  ;
 
 }
 

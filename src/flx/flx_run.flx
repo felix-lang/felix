@@ -1,0 +1,39 @@
+proc run_if_required_and_uptodate
+{
+
+  if control.RECOMPILE == 0 and control.RUNIT == 1 and control.CLEAR_CACHE == 0 do
+    // not (--force or -c)
+    debugln "Checking to see if the binary is uptodate";
+    var xtime = dfiletime(control.LINKER_OUTPUT_FILENAME,#past_time);
+    var srctime = cal_dep_time (filebase);
+
+    debugln$ "Filebase = " + filebase; 
+    debugln$ "Binary time = " + strfiletime (xtime);
+    debugln$ "src time = " + strfiletime (srctime);
+    debugln$ "cache time = " + strfiletime (control.cache_time);
+    if control.STATIC == 0 do
+      if xtime > srctime and xtime > control.cache_time do
+        debugln$ "Running dynamically linked binary";
+        calpackages();
+        cmd=control.FLXRUN+control.DRIVER_EXE+DEBUGSWITCH+" "+ quote(control.LINKER_OUTPUT_FILENAME)+" "+args;
+        if control.STDOUT != "" do cmd=cmd + " > "+control.STDOUT; done
+        debugln$ "Uptodate shared lib: Running command " + cmd;
+        pexit(system(cmd));
+      else
+        debugln$ "Dynamically linked binary out of date or non-existant";
+      done
+    else
+      if xtime > srctime and xtime > control.cache_time do
+        debugln$ "Running statically linked binary";
+        cmd=STATIC_ENV+" "+quote(control.LINKER_OUTPUT_FILENAME)+" "+args;
+        if control.STDOUT != "" do cmd=cmd + " > "+control.STDOUT; done
+        debugln$ "Uptodate executable: Running command " + cmd;
+        pexit(system(cmd));
+      else
+        debugln$ "Statically linked binary out of date or non-existant";
+      done
+    done
+  done
+
+
+}

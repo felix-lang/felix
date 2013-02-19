@@ -1,19 +1,19 @@
 proc calpackages () {
 
   // find external header files
-  var PKGCONFIG_CFLAGS=PKGCONFIG+ " --path+="+Filename::join(config.FLX_INSTALL_DIR,"config") + " --field=cflags ";
+  var PKGCONFIG_CFLAGS=control.PKGCONFIG+ " --path+="+Filename::join(config.FLX_INSTALL_DIR,"config") + " --field=cflags ";
 
   // external header files
-  var PKGCONFIG_INCLUDES=PKGCONFIG+ " --path+="+Filename::join(config.FLX_INSTALL_DIR,"config") + " --field=includes ";
+  var PKGCONFIG_INCLUDES=control.PKGCONFIG+ " --path+="+Filename::join(config.FLX_INSTALL_DIR,"config") + " --field=includes ";
 
   // find external dynload libraries
-  var PKGCONFIG_DLIBS=PKGCONFIG+" -r --path+="+Filename::join(config.FLX_INSTALL_DIR,"config") + " --field=provides_dlib --field=requires_dlibs ";
+  var PKGCONFIG_DLIBS=control.PKGCONFIG+" -r --path+="+Filename::join(config.FLX_INSTALL_DIR,"config") + " --field=provides_dlib --field=requires_dlibs ";
 
   // find external static libraries
-  var PKGCONFIG_SLIBS=PKGCONFIG+" -r --keeprightmost --path+="+Filename::join(config.FLX_INSTALL_DIR,"config") + " --field=provides_slib --field=requires_slibs ";
+  var PKGCONFIG_SLIBS=control.PKGCONFIG+" -r --keeprightmost --path+="+Filename::join(config.FLX_INSTALL_DIR,"config") + " --field=provides_slib --field=requires_slibs ";
 
   //find driver package required
-  var PKGCONFIG_DRIVER=PKGCONFIG+" --path+="+Filename::join(config.FLX_INSTALL_DIR,"config") + " --field=flx_requires_driver ";
+  var PKGCONFIG_DRIVER=control.PKGCONFIG+" --path+="+Filename::join(config.FLX_INSTALL_DIR,"config") + " --field=flx_requires_driver ";
 
 
   // find all include directories
