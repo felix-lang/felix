@@ -1,0 +1,97 @@
+
+proc print_options() {
+    println$ "NOOPTIMISE         = "+str control.NOOPTIMISE;
+    println$ "STATIC             = "+str control.STATIC;
+    println$ "ECHO               = "+str ECHO;
+    println$ "NOSTDLIB           = "+str control.NOSTDLIB;
+    println$ "DEBUG              = "+str control.DEBUG;
+    println$ "DEBUG_COMPILER     = "+str control.DEBUG_COMPILER;
+    println$ "STDIMPORT          = "+str control.STDIMPORT;
+    println$ "STDGRAMMAR         = "+str control.STDGRAMMAR;
+    println$ "IMPORTS            = "+str control.IMPORTS;
+    println$ "RECOMPILE          = "+str control.RECOMPILE;
+    println$ "cpps               = "+str control.cpps;
+    println$ "cppos              = "+str control.cppos;
+    println$ "TIME               = "+str control.TIME;
+    println$ "OUTPUT_DIR         = "+str control.OUTPUT_DIR;
+    println$ "BUNDLE_DIR         = "+str control.BUNDLE_DIR;
+    println$ "CACHE_DIR          = "+str control.CACHE_DIR;
+    println$ "RUNIT              = "+str control.RUNIT;
+    println$ "CCOMPILEIT         = "+str control.CCOMPILEIT;
+    println$ "LINKIT             = "+str control.LINKIT;
+    println$ "INCLUDE_DIRS       = "+str control.INCLUDE_DIRS;
+    println$ "FELIX              = "+str control.FELIX;
+    println$ "LINKER_SWITCHES    = "+str control.LINKER_SWITCHES;
+    println$ "LINKER_OUTPUT_FILENAME = "+str control.LINKER_OUTPUT_FILENAME;
+    println$ "MACROS             = "+str control.MACROS;
+    println$ "SHOWCODE           = "+str control.SHOWCODE;
+    println$ "USAGE              = "+control.USAGE;
+}
+
+fun dflt_control () =>
+  struct {
+    var RECOMPILE=0;
+    var RUNIT=1;
+    var CCOMPILEIT=1;
+    var LINKIT=1;
+    var FELIX=1;
+
+    // --------------------------------------------------
+    // processing options
+    // --------------------------------------------------
+
+    var DIST_ROOT="";
+    var DEBUG=0;
+    var DEBUG_COMPILER=0;
+    var COMPILER_PHASE="";
+    var INLINE=100;
+    var TIME=0;
+    var NOOPTIMISE=0;
+    var TIMECMD="time -p";
+    var STATIC=config.DEFAULT_LINK_STATIC;
+    var OPTIMISE=config.OPTIMISE;
+    var SHOWCODE=0;
+    var CCFLAGS="";
+    var EXTRA_CCFLAGS="";
+    var LINKER_SWITCHES="";
+    var MACROS="";
+    var cpps="";
+    var cppos="";
+    var INCLUDE_DIRS="";
+    var INCLUDE_FILES="";
+    var NOSTDLIB=0;
+    var STDOUT="";
+    var STDGRAMMAR="@grammar/grammar.files";
+    var STDIMPORT="--import=plat/flx.flxh";
+    var IMPORTS="";
+    var USAGE = "production";
+    var CLEAR_CACHE=0;
+    var CACHE_DIR=
+      let ?x = Env::getenv "FLX_CACHE_DIR" in 
+      if x != "" then x else DEFAULT_CACHE_DIR
+    ;
+    var OUTPUT_DIR=
+      let ?x = Env::getenv "FLX_OUTPUT_DIR" in 
+      if x != "" then x else DEFAULT_OUTPUT_DIR
+    ;
+    var BUNDLE_DIR = match Env::getenv("FLX_BUNDLE_DIR") with | "" => None[string] | ?dir => Some dir endmatch;
+
+    var DRIVER_PKG = "";
+    var DRIVER_EXE = ""; // dynamic linkage only 
+    var DRIVER_OBJS = Empty[string]; // static linkage only
+    var LINK_STRING = "";
+
+    var pkgs="";
+
+    var CONFIG_DIR = "";
+    var FLXG = "";
+    var QUOTE_FLXG = "";
+    var FLXRUN = "";
+    var LINKER_OUTPUT_FILENAME = "";
+    var USER_ARGS = ""; 
+    var DLINK_STRING = "";
+    var SLINK_STRING = "";
+  }
+;
+
+

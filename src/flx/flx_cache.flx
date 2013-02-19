@@ -1,0 +1,186 @@
+
+fun gramtime(path:string, s:string) : double = {
+  //println$ "Path=" + path + " file = " + s;
+  fun maxtime (x:double) (s:string) => max (x, gramtime (path, s));
+  if s.[0]=="@".char do
+    var file = Filename::join$ path, s.[1 to].strip;
+    var filetime = dfiletime(file,0.0);
+    if filetime == 0.0 do
+      println$ "Grammar include file " + file " doesn't exist, exiting";
+      System::exit 1;
+    done
+    debugln$ "Grammar include file " + file + " time=" + strfiletime(filetime);
+    var filetext = load file;
+    var files = split (filetext, "\n");
+    files = map strip of (string) files;
+    files = filter (fun (s:string) => s != "") files;
+    files = map (fun (s:string) => Filename::join (split(s,"/"))) files;
+    //println$ "Files=" + files;
+    return fold_left maxtime filetime files;
+  else
+    file = Filename::join$ path, s;
+    filetime = dfiletime(file,0.0);
+    if filetime == 0.0 do
+      println$ "Grammar file " + file " doesn't exist, exiting";
+      System::exit 1;
+    done
+    debugln$ "Grammar file " + file + " time=" + strfiletime(filetime);
+    return filetime;
+  done
+}
+
+
+fun strfiletime0 (x:double) = {
+  return
+    if x == past_time then "BIG BANG"
+    elif x == future_time then "BIG CRUNCH"
+    else fmt (x, fixed (0,3))
+    endif
+  ;
+}
+
+fun strfiletime (x:double) = {
+  assert x != 0.0;
+  return strfiletime0 x;
+}
+
+fun dfiletime(var f:string, dflt:double)=
+{
+  var x = FileStat::filetime (f);
+  x = if x == 0.0 then dflt else x endif;
+  debugln$ "Time of file '" + f + "' is " + strfiletime x; 
+  return x;
+}
+
+fun cal_dep_time(f:string)= {
+  fun maxf (x: double) (f:string) =>
+      if f == "" then x else max (x, dfiletime (f,past_time))
+  ;
+
+  fun cal_files_time (fs: list[string])=> fold_left maxf past_time fs;
+
+  fun cal_time_from_dep (df: string):double=
+  {
+    val deptext = load df;
+    val lines = split (deptext, "\n"); 
+    debugln$ "Deps=" + str(lines);
+    val deptime = cal_files_time lines;
+    debugln$ "Deptime=" + strfiletime(deptime);
+    return deptime;
+  }
+
+  val fdoctime = dfiletime(f+".fdoc",past_time);
+  val flxtime = dfiletime(f+".flx",past_time);
+  val depfilename = cache_join (control.OUTPUT_DIR, f+".dep");
+  debugln$ "Dependency file name = " + depfilename;
+  val deptime = cal_time_from_dep (depfilename);
+  debugln$ "fdoc time = " + strfiletime fdoctime;
+  debugln$ "flx time = " + strfiletime flxtime;
+  debugln$ "dep time = " + strfiletime deptime;
+  val srctime =  max( fdoctime, max (flxtime, deptime));
+  debugln$ "Source time = " + strfiletime srctime;
+  return srctime;
+}
+
+
+proc validate_cache 
+{
+// Still if this fails,  the compiler is new and 
+// the cache should be deleted.
+if cache_time != future_time and flxg_stamp_time != flxg_time do
+  println$ "Cache may be out of date due to compiler upgrade!";
+  println$ "Flxg compiler time stamp=" + strfiletime(flxg_time);
+  println$ "Cache time stamp        =" + strfiletime(cache_time);
+  if not (
+    (control.OUTPUT_DIR == "/" or control.OUTPUT_DIR == "" or control.OUTPUT_DIR == ".") or
+    (control.CACHE_DIR == "/" or control.CACHE_DIR == "" or control.CACHE_DIR == ".")
+  )
+  do 
+    control.CLEAR_CACHE = 1;
+  done
+elif automaton_time != future_time and grammar_time > automaton_time do
+  println$ "Cache may be out of date due to grammar upgrade!";
+  println$ "Grammar time stamp          =" + strfiletime(grammar_time);
+  println$ "Automaton.syntax time stamp =" + strfiletime(automaton_time);
+  if not (
+    (control.OUTPUT_DIR == "/" or control.OUTPUT_DIR == "" or control.OUTPUT_DIR == ".") or
+    (control.CACHE_DIR == "/" or control.CACHE_DIR == "" or control.CACHE_DIR == ".")
+  )
+  do 
+    control.CLEAR_CACHE = 1;
+  done
+done
+
+// FFF BE CAREFUL! The value "/" for these caches is perfectly good
+if control.CLEAR_CACHE != 0 do
+  // refuse to delete "" or "/" or ".", basic safety check
+  if 
+    (control.OUTPUT_DIR == "/" or control.OUTPUT_DIR == "" or control.OUTPUT_DIR == ".") or
+    (control.CACHE_DIR == "/" or control.CACHE_DIR == "" or control.CACHE_DIR == ".")
+  do
+    println "WILL NOT DELETE CACHES";
+    println$ "output cache " + control.OUTPUT_DIR;
+    println$ "binary cache " + control.CACHE_DIR;
+    System::exit(1);
+  done
+
+  // if the cache is default $HOME one, which cannot be ""
+  // due to previous check, then delete without question
+  if 
+    control.OUTPUT_DIR == DEFAULT_OUTPUT_DIR and 
+    control.CACHE_DIR == DEFAULT_CACHE_DIR 
+  do 
+    var answer = "Y\n";
+  else
+    // otherwise prompt for confirmation
+    println$ "Would delete cache " + control.OUTPUT_DIR;
+    println$ "Would delete cache " + control.CACHE_DIR;
+    print "Are you SURE? (Y/n) "; fflush stdout;
+    answer = readln stdin;
+  done
+  if answer == "Y\n" or answer == "y\n" do
+    // delete the caches loudly
+    println$ "Delete cache " + control.OUTPUT_DIR;
+    if PLAT_WIN32 do
+        C_hack::ignore$ xqt("rd /Q /S " + quote(control.OUTPUT_DIR));
+    else
+        C_hack::ignore$ xqt("rm -rf " + quote(control.OUTPUT_DIR));
+    done
+    println$ "Delete cache " + control.CACHE_DIR;
+
+    if PLAT_WIN32 do
+        C_hack::ignore$ xqt("rd /Q /S " + quote(control.CACHE_DIR));
+    else
+        C_hack::ignore$ xqt("rm -rf " + quote(control.CACHE_DIR));
+    done
+
+    Directory::mkdirs(control.CACHE_DIR);
+    var f = fopen_output flxg_stamp;
+    write(f, fmt(flxg_time, fixed (0,3)));
+    f.fclose;
+  else
+    // otherwise exit with an error
+    println "Not deleting cache, exiting with error 1";
+    System::exit(1);
+  done
+done
+
+}
+
+fun cache_join (c:string, var f:string) = 
+{
+debugln$ "[cache_join] " + c + " with  " + f;
+if PLAT_WIN32 do
+  if f.[1 to 3] == ":\\" do f = f.[0 to 1]+f.[2 to]; 
+  elif f.[1] == char ":" do f = f.[0 to 1]+"\\"+f.[2 to]; 
+  done
+  if f.[0] == char "\\" do f = f.[1 to]; done
+else
+  if f.[0] == char "/" do f = f.[1 to]; done
+done
+  var k = Filename::join(c,f);
+  debugln$ "[cache_join] result = " + k;
+  return k;
+}
+
+

@@ -1,0 +1,351 @@
+proc print_help() {
+  debugln "Display top level manual page using 'man' program";
+  println "Usage: flx [options] filename[.flx] [args ..]";
+  println "options:";
+  println "--test               : use felix installation in current directory";
+  println "--test=dir           : use felix installation in dir";
+  println "--where              : print location of felix installation";
+  println "--show               : print the felix program to stdout";
+  println "-c                   : compile only, do not run";
+  println "-o                   : linker output filename";
+  println "--usage=prototype    : fast compilation at the expense of slower executables";
+  println "--usage=debugging    : enable debugging aids";
+  println "--usage=production   : optimised code with run time safety checks retained";
+  println "--usage=hyperlight   : optimised code without run time safety checks";
+  println "--static             : make standalone statically linked executable";
+  println "--nofelix            : do not run felix translator, leave C++ outputs alone";
+  println "--nocc               : do not C/C++ compiler; implies --nolink";
+  println "--nolink             : do not link object files to an executable";
+  println "--options            : show option set";
+  println "--config             : show configuration";
+  println "--version            : show felix version";
+  println "--force              : force run Felix compiler";
+  println "--cache_dir=dir      : directory cache output from parser (*.par files), autocreated, default $HOME/.felix/cache";
+  println "--output_dir=dir     : directory to hold C++ output from translator, autocreated, default $HOME/.felix/cache";
+  println "                       Felix stored by absolute pathname within directory (tree directory).";
+  println "--bundle_dir=dir     : directory to hold C++ output from translator, autocreated.";
+  println "                       Files directly in directory by basename (flat directory).";
+  println "--clean              : delete the caches first";
+  println "--man                : show flx man page (if there is one)";
+  println "--help               : show this help";
+  println "--noinline           : force inlining off, may break things!";
+  println "--inline             : aggressive inlining"; 
+  println "--inline=999         : set inline cap to 999 'instructions'"; 
+  println "--echo               : print shell commands before running them";
+  println "--time               : print target program run time after it finishes";
+  println "--nostdlib           : don't load the standard library";
+  println "--nooptimise         : disable C++ compiler optimisation";
+  println "--debug              : put debug symbols in generated binaries";
+  println "--debug-compiler     : make felix compiler print progress diagnostics";
+  println "--debug-flx          : make flx tool print diagnostics";
+  println "--stdout=file        : run program with standard output redirected to file";
+  println "--backup             : backup working source tree to dir 'backup'";
+  println "--install            : install --test directory to configured location";
+  println "--dist=path          : install --test directory to configured location";
+  println "--import=file        : add an import which is prefixed to all files being translated";
+  println "--import=@file       : add all the files listed in file as imports (recursive on @)";
+  println "--nostdimport        : don't import the standard imports nugram.flxh and flx.flxh";
+  println "--compiler-phase     : specify which phase of the compiler to run";
+  println "-Idir                : add dir to search path for both felix and C++ includes";                      
+  println "-Ldir                : add dir to linker search path"; 
+  println "-llib                : add dir lib to linker command";
+  println "-foption             : add switch to compiler command";
+  println "-Woption             : add switch to compiler command";
+  println "-O1                  : add switch to compiler command";
+  println "-O2                  : add switch to compiler command";
+  println "-O3                  : add switch to compiler command";
+  println "--cflags=flags       : addd flags to compiler command";
+  println "-Dmac                : add macro def to C++ compiler command";
+  println "-DFLX_ENABLE_TRACE       : enable compilation of trace generators (defaults off)";
+  println "-DFLX_PTF_STATIC_STRUCT  : make the thread_frame a static object (default Felix heap)";
+  println "-DFLX_PTF_STATIC_POINTER : access the thread_frame from a static pointer (default pass as arg)";
+  println "-DFLX_CGOTO              : use gcc indirect gotos and use assembler hack for long jumps (default on if config detects support)";
+  println "";
+  println "*.c *.cc *.cpp *.cxx ";
+  println "                     : add files to C++ compilation (and linker) steps";
+  println "*.o *.obj *.lib *.dll *.a *.so";
+  println "                     : add files to linker steps";
+  println "* *.flx *.fdoc       : Felix program name, terminates options and starts runtime arguments";
+}
+
+
+
+// --------------------------------------------------
+// String Utilities 
+// --------------------------------------------------
+
+fun splitext(p:string)=>
+  if p.[-4 to] == ".flx" then p.[to -4],"flx"
+  elif p.[-4 to] == ".cpp" then p.[to -4],"cpp"
+  elif p.[-5 to] == ".fdoc" then p.[to -5],"fdoc"
+  else p,""
+  endif
+;
+
+proc parse_cmd_line
+{
+var SET_LINKER_OUTPUT = false;
+grabbing_args: while grab == 1 and argno<System::argc do
+  arg = System::argv argno;
+  debugln$ "ARGNO="+str(argno)+", arg='"+arg+"'";
+  if SET_LINKER_OUTPUT do
+     control.LINKER_OUTPUT_FILENAME = arg;
+     debugln$ "Set linker output file=" + control.LINKER_OUTPUT_FILENAME;
+     SET_LINKER_OUTPUT = false;
+     ++argno;
+     continue grabbing_args;
+  done
+
+  path,ext = splitext(arg);
+  dir,base = Filename::split1(path);
+  debugln$ "path="+path+", ext="+ext+",dir="+dir+",base="+base;
+  if ext != "flx" and ext != "fdoc" and ext != "" do
+    // add to list of things to link, and also things to compile
+    // if the extension is appropriate
+    if List::mem eq of (string * string) compile_exts ext do
+      control.cpps = control.cpps + " " + arg;
+      control.cppos = control.cppos + " " + path + "." + EXT_OBJ;
+    else
+     control.cppos = control.cppos + " " + arg;
+    done
+
+  elif arg == "--nostdimport" do
+    debugln "No standard library import";
+    // Note: currently, Felix compiler generates code that REQUIRES
+    // the standard library, eg the driver passes a gc_profile_t record
+    // and the compiler generates _uctor_ objects, etc etc
+    control.STDIMPORT="";
+
+  elif prefix(arg,"--import=") do
+   debugln "Add import";
+   control.IMPORTS=control.IMPORTS + " " + arg.[9 to];
+
+  elif prefix(arg,"--test=") do
+    debugln "Set test directory";
+    config.FLX_INSTALL_DIR=arg.[7 to];
+  elif prefix(arg,"--dist=") do
+    debugln "distribution at";
+    control.DIST_ROOT=arg.[7 to];
+    dist();
+  elif arg=="--test" do
+    debugln "Set test directory";
+    config.FLX_INSTALL_DIR=".";
+
+  elif arg=="--install" do
+    install; // non-return
+
+  elif arg=="--install-bin" do
+    install_bin; // non-return
+  elif prefix(arg,"--stdout=") do
+    debugln "Redirect standard output";
+    // of the Felix program only: used for saving the output
+    // to a file so the test harness can compare it with an .expect file
+    control.STDOUT=arg.[9 to];
+
+  elif arg=="--show" do
+    control.SHOWCODE=1;
+
+  elif arg=="--clean" do
+    debugln "Clear caches";
+    control.CLEAR_CACHE=1;
+
+  elif arg=="--force" do
+    debugln "Force recompilation";
+    // of the felix code, runs Felix unless --nofelix is set
+    // the C++ compiler is run unless the felix compile failed
+    control.RECOMPILE=1;
+
+  elif arg=="--debug-flx" do
+    dbug = true;
+    debugln "debug flx tool ON";
+    control.DEBUG=1;
+
+  elif arg=="--debug" do
+    debugln "Enable runtime debugging";
+    control.DEBUG=1;
+
+  elif arg=="--debug-compiler" do
+    debugln "Enable compiler debugging";
+    control.DEBUG_COMPILER=1;
+
+  elif prefix(arg,"--compiler-phase=") do
+    debugln "Change the compiler phase";
+    control.COMPILER_PHASE=arg.[len "--compiler-phase=" to];
+    control.RUNIT=0;
+
+  elif arg=="--nooptimise" do
+    debugln "Disable optimisation";
+    control.NOOPTIMISE=1;
+
+  elif arg=="--nostdlib" do
+    debugln "Do not load standard library";
+    control.NOSTDLIB=1;
+
+  elif arg == "--echo" do
+    debugln "Echo commands sent to system";
+    ECHO=1;
+
+  elif arg == "--static" do
+    debugln "Compile a statically linked program";
+    control.STATIC=1;
+
+  elif prefix(arg,"--inline=") do
+    debugln "Set inline aggressiveness";
+    control.INLINE=int(arg.[to 9]);
+
+  elif arg == "--inline" do
+    debugln "Set inline aggressiveness";
+    control.INLINE=100;
+
+  elif arg == "--noinline" do
+    debugln "Disable inlining (NOT RECOMMENDED)";
+    control.INLINE=0;
+
+  elif arg == "--version" do
+    debugln "Print Felix version and exit";
+    print("version ");
+    println(config.VERSION);
+    System::exit(0);
+
+  elif arg == "--config" do
+    print_config;
+    System::exit(0);
+
+  elif arg == "--options" do
+    print_options;
+    System::exit(0);
+
+  elif arg == "--where" do
+    debugln "Print location of install directory and exit";
+    println(config.FLX_INSTALL_DIR);
+    System::exit(0);
+
+  elif arg == "--time" do
+    debugln "Time program execution and print after running";
+    control.TIME=1;
+
+  elif prefix(arg,"--output_dir=") do
+    debugln "Set the directory for compiler generated C++ files";
+    control.OUTPUT_DIR=arg.[13 to];
+    
+  elif prefix(arg,"--bundle_dir=") do
+    debugln "Output files needed for C++ compilation into this folder (directly by basename)";
+    control.BUNDLE_DIR=Some arg.[13 to];
+
+  elif prefix(arg,"--cache_dir=") do
+    debugln "Set the directory for compiler generated *.par files";
+    control.CACHE_DIR=arg.[12 to];
+
+  elif arg == "--usage=prototype" do
+    debugln "Set usage prototyping";
+    control.USAGE = "prototype";
+    control.NOOPTIMISE=1;
+
+  elif arg == "--usage=debugging" do
+    debugln "Set usage debugging";
+    control.USAGE = "debugging";
+    control.NOOPTIMISE=1;
+    control.DEBUG = 1;
+
+  elif arg == "--usage=production" do
+    debugln "Set usage production";
+    control.USAGE = "production";
+
+  elif arg == "--usage=hyperlight" do
+    debugln "Set usage hyperlight";
+    control.USAGE = "hyperlight";
+
+  elif arg == "--man" do
+    debugln "Display top level manual page using 'man' program";
+    C_hack::ignore(system( "man -M "+config.FLX_INSTALL_DIR+#Filename::sep+"man"+" flx"));
+    System::exit(0);
+
+  elif arg == "--help" do
+    print_help;
+    System::exit(0);
+
+  elif arg == "-c" do
+    debugln "Compile program but do not run it";
+    control.RUNIT=0;
+
+  elif arg == "-o" do
+    debugln "Set linker output name (next arg)";
+    SET_LINKER_OUTPUT=true;
+
+  elif prefix(arg,"-I") do
+    debugln "Set include directories for both Felix and C/C++";
+    control.INCLUDE_DIRS=control.INCLUDE_DIRS + " " + arg;
+
+  elif arg== "--nofelix" do
+    debugln "Do not translate Felix code, just compile generated C++ (used to debug at C++ level)";
+    control.FELIX=0;
+
+  elif arg== "--nocc" do
+    debugln "Do not run the C/C++ compiler, just generate C++ source code and exit; implies -c and --nolink";
+    control.CCOMPILEIT=0;
+  elif arg== "--nolink" do
+    debugln "Do not link object code to an executable, just generate and compile the C++ source code; implies -c";
+    control.LINKIT=0;
+
+  elif prefix(arg,"-l") or prefix(arg,"-L") do
+    debugln "Set extra switched for linker";
+    control.LINKER_SWITCHES=control.LINKER_SWITCHES + " " + arg;
+
+  elif prefix(arg,"-D") do
+    debugln "Set extra macros for C++ compilation";
+    control.MACROS=control.MACROS + " " + arg;
+
+  elif arg \in ("-O1","-O2","-O3") do
+    debugln$ "Set C++ compilation optimisation " + arg;
+    control.OPTIMISE = arg;
+
+  elif prefix(arg,"-f") do
+    debugln$ "Set C++ compilation switch "+arg;
+    control.EXTRA_CCFLAGS += control.EXTRA_CCFLAGS + " " + arg;
+
+  elif prefix(arg,"--cflags=") do
+    {
+      var flags = arg.[9 to];
+      debugln$ "Set C++ compilation switch "+ flags;
+      control.EXTRA_CCFLAGS += control.EXTRA_CCFLAGS + " " + flags;
+    };
+
+  elif prefix(arg,"-W") do
+    debugln$ "Set C++ warning switch "+arg;
+    control.EXTRA_CCFLAGS += control.EXTRA_CCFLAGS + " " + arg;
+
+  elif prefix(arg,"--pkg=") do
+    debugln "Add pkgconfig package to link";
+    control.pkgs= control.pkgs + " " + arg.[6 to];
+
+  elif prefix(arg,"--") do
+    debugln "Unknown -- style option, abort";
+    println("Unknown option '"+ arg+"'");
+    System::exit(1);
+
+// the main filename -- subsequent args are args to flx_run
+  else
+    debugln "Assume we have the filename now";
+    grab=0;
+  done
+  argno = argno + 1;
+done
+
+if config.HAVE_WIN32 do
+  control.FLXG=Filename::join(config.FLX_INSTALL_DIR, 'bin', 'flxg.exe');
+  control.QUOTE_FLXG=quote(control.FLXG);
+  control.FLXRUN="set PATH="+(Directory::mk_absolute_filename config.FLX_INSTALL_DIR)+"\\lib\\rtl;"+"%PATH%&&";
+  //println$ "FLXRUN=" + FLXRUN;
+else
+  control.FLXG=config.FLX_INSTALL_DIR+"/bin/flxg";
+  control.QUOTE_FLXG=quote(control.FLXG);
+  // the mac uses DYLD_LIBRARY_PATH instead of LD_LIBRARY_PATH
+  if config.HAVE_MACOSX do
+    control.FLXRUN="env DYLD_LIBRARY_PATH="+config.FLX_INSTALL_DIR+"/lib/rtl:$DYLD_LIBRARY_PATH ";
+  else
+    control.FLXRUN="env LD_LIBRARY_PATH="+config.FLX_INSTALL_DIR+"/lib/rtl:$LD_LIBRARY_PATH ";
+  done
+done
+
+}
+

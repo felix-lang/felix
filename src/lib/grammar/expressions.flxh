@@ -300,6 +300,15 @@ syntax expressions {
   ;
     rassign := sname "=" x[sor_condition_pri] =># "`(,_1 ,_3)";
 
+  //$ record value, statement list.
+  //$ this variant is useful for encapsulating
+  //$ a series of var x = y; style statements.
+  satom := "struct" "{" vassign+ "}" =>#
+    "`(ast_record ,_sr ,_3 )"
+  ;
+    vassign := "var" sname "=" sexpr ";" =># "`(,_2 ,_4)";
+
+
   //$ scalar literals (numbers, strings).
   satom := sliteral =># "_1";
 
