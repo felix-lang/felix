@@ -6,6 +6,7 @@ include "./flx_cache";
 include "./flx_pkg";
 include "./flx_config";
 include "./flx_control";
+include "./flx_profile";
 
 // Felix version of THIS program (NOT the one being installed
 // if you're using flx to install Felix)
@@ -17,45 +18,13 @@ var config = #Config::config;
 // --------------------------------------------------
 
 var dbug = false; // switch off for production
+var ECHO= if dbug then 1 else 0;
+
 proc debugln[T with Str[T]] (x:T) {
   dbug ?? fprintln (cerr, "[flx] " + str x);
 }
 
-// --------------------------------------------------
-// Invoke the shell
-// --------------------------------------------------
-
-var ECHO=0;
-
-val past_time = -1.0;
-val future_time = double(ulong(-1)); // a hacky way to get a big number
-// --------------------------------------------------
-// Other Configuration Data
-// --------------------------------------------------
-
-// --------------------------------------------------
-// Control Values
-// --------------------------------------------------
-var HOME= 
-  let ?h = Env::getenv "HOME" in
-    if h!="" then h 
-    elif PLAT_WIN32 then Env::getenv "USERPROFILE"
-    else ""
-    endif
-;
-if HOME == "" do
-    eprintln$ "HOME environment variable is not set.  Please set HOME before building."; 
-	System::exit 1;
-done 
-
-var DEFAULT_CACHE_DIR = 
-  Filename::join (list(HOME,".felix","cache","binary")) 
-;
-
-
-var DEFAULT_OUTPUT_DIR = 
-  Filename::join (list (HOME,".felix","cache","text"))
-;
+var profile = #dflt_profile;
 
 var control = #dflt_control;
 
@@ -72,75 +41,8 @@ var ext="";
 var base="";
 var dir="";
 
-parse_cmd_line;
 
-Directory::mkdirs(control.CACHE_DIR);
-
-var flxg_time = dfiletime(control.FLXG, future_time);
-debugln$ "Flxg_time=" + strfiletime(flxg_time);
-
-var flxg_stamp = Filename::join control.CACHE_DIR "flxg_time.stamp";
-var cache_time = dfiletime(flxg_stamp,future_time);
-debugln$ "cache_time=" + strfiletime(cache_time);
-
-var flxg_stamp_data = load flxg_stamp;
-//println$ "Flxg_stamp_data=" + flxg_stamp_data; 
-
-var flxg_stamp_time = match flxg_stamp_data.atof with | 0.0 => past_time | ?x => x;
-
-debugln$ "Flxg_stamp_data : " + strfiletime(flxg_stamp_time);
-var grammar_time = gramtime(Filename::join (config.FLX_INSTALL_DIR,"lib"), control.STDGRAMMAR);
-debugln$ "Grammar text time=" + strfiletime (grammar_time);
-var automaton_name = 
-  cache_join(control.CACHE_DIR, 
-  Directory::mk_absolute_filename (Filename::join (list( 
-    config.FLX_INSTALL_DIR,
-    "lib",
-    "grammar",
-    "syntax.automaton"
-  ))))
-;
-
-var automaton_time = dfiletime(automaton_name,future_time);
-debugln$ "Automaton " + automaton_name + " time=" + strfiletime(automaton_time);
-
-validate_cache;
-
-
-debugln$ grab, argno, System::argc;
-if grab == 1 and argno == System::argc do
-  if control.CLEAR_CACHE == 1 do
-    System::exit(0);
-  else
-    println "usage: flx [options] filename";
-    System::exit(1);
-  done
-done
-
-debugln "#--------";
-debugln$ "DONE, option index = "+str(argno);
-debugln$ "path="+path+": dir="+dir+",base="+base+", ext="+ext;
-debugln$ "cpps="+control.cpps;
-debugln$ "cppos="+control.cppos;
-
-if dbug do 
-  ECHO=1;
-done
-
-while argno < System::argc do 
-  control.USER_ARGS+=" " + quote (System::argv argno); ++argno; 
-done
-debugln$ "USER_ARGS=" + control.USER_ARGS;
-
-if control.NOOPTIMISE == 0 do
-  debugln "Set C++ compiler optimisation switches";
-  control.CCFLAGS=control.CCFLAGS+" " + control.OPTIMISE;
-else
-  debugln "What, no optimisation?";
-done
-// Note we have to do it this way so the -f switches turn
-// off optimisations previously introduced (order matters)
-control.CCFLAGS += control.EXTRA_CCFLAGS;
+processing_stage1;
 
 var PKGCONFIG=quote(Filename::join$ List::list(config.FLX_INSTALL_DIR,"bin","flx_pkgconfig"));
 debugln$ "Felix package manager program is "+PKGCONFIG;
@@ -185,8 +87,8 @@ debugln$ "Given Extension=" + ext;
   // this is a hack! We should resolve the filename first.
 var use_ext = if ext != "" then "."+ext else
   #{ 
-     var flxt = dfiletime (rel_filebase+".flx",past_time);
-     var fdoct = dfiletime (rel_filebase+".fdoc",past_time);
+     var flxt = dfiletime (rel_filebase+".flx",#past_time);
+     var fdoct = dfiletime (rel_filebase+".fdoc",#past_time);
      return 
        if flxt > fdoct then ".flx"
        elif fdoct > flxt then ".fdoc"
@@ -255,15 +157,15 @@ if control.SHOWCODE == 1 do {
 if control.RECOMPILE == 0 and control.RUNIT == 1 and control.CLEAR_CACHE == 0 do
   // not (--force or -c)
   debugln "Checking to see if the binary is uptodate";
-  var xtime = dfiletime(control.LINKER_OUTPUT_FILENAME,past_time);
+  var xtime = dfiletime(control.LINKER_OUTPUT_FILENAME,#past_time);
   var srctime = cal_dep_time (filebase);
 
   debugln$ "Filebase = " + filebase; 
   debugln$ "Binary time = " + strfiletime (xtime);
   debugln$ "src time = " + strfiletime (srctime);
-  debugln$ "cache time = " + strfiletime (cache_time);
+  debugln$ "cache time = " + strfiletime (control.cache_time);
   if control.STATIC == 0 do
-    if xtime > srctime and xtime > cache_time do
+    if xtime > srctime and xtime > control.cache_time do
       debugln$ "Running dynamically linked binary";
       calpackages();
       cmd=control.FLXRUN+control.DRIVER_EXE+DEBUGSWITCH+" "+ quote(control.LINKER_OUTPUT_FILENAME)+" "+args;
@@ -274,7 +176,7 @@ if control.RECOMPILE == 0 and control.RUNIT == 1 and control.CLEAR_CACHE == 0 do
       debugln$ "Dynamically linked binary out of date or non-existant";
     done
   else
-    if xtime > srctime and xtime > cache_time do
+    if xtime > srctime and xtime > control.cache_time do
       debugln$ "Running statically linked binary";
       cmd=STATIC_ENV+" "+quote(control.LINKER_OUTPUT_FILENAME)+" "+args;
       if control.STDOUT != "" do cmd=cmd + " > "+control.STDOUT; done

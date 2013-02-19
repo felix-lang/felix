@@ -349,3 +349,47 @@ done
 
 }
 
+proc processing_stage1 
+{
+
+  parse_cmd_line;
+
+  validate_cache;
+
+
+  debugln$ grab, argno, System::argc;
+
+  // If we're still trying to grab a filename,
+  // but we've run out of arguments ..
+  if grab == 1 and argno == System::argc do
+    if control.CLEAR_CACHE == 1 do
+      System::exit(0);
+    else
+      println "usage: flx [options] filename";
+      System::exit(1);
+    done
+  done
+
+  debugln "#--------";
+  debugln$ "DONE, option index = "+str(argno);
+  debugln$ "path="+path+": dir="+dir+",base="+base+", ext="+ext;
+  debugln$ "cpps="+control.cpps;
+  debugln$ "cppos="+control.cppos;
+
+  while argno < System::argc do 
+    control.USER_ARGS+=" " + quote (System::argv argno); ++argno; 
+  done
+  debugln$ "USER_ARGS=" + control.USER_ARGS;
+
+  if control.NOOPTIMISE == 0 do
+    debugln "Set C++ compiler optimisation switches";
+    control.CCFLAGS=control.CCFLAGS+" " + control.OPTIMISE;
+  else
+    debugln "What, no optimisation?";
+  done
+  // Note we have to do it this way so the -f switches turn
+  // off optimisations previously introduced (order matters)
+  control.CCFLAGS += control.EXTRA_CCFLAGS;
+
+}
+

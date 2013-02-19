@@ -68,11 +68,11 @@ fun dflt_control () =>
     var CLEAR_CACHE=0;
     var CACHE_DIR=
       let ?x = Env::getenv "FLX_CACHE_DIR" in 
-      if x != "" then x else DEFAULT_CACHE_DIR
+      if x != "" then x else profile.DEFAULT_CACHE_DIR
     ;
     var OUTPUT_DIR=
       let ?x = Env::getenv "FLX_OUTPUT_DIR" in 
-      if x != "" then x else DEFAULT_OUTPUT_DIR
+      if x != "" then x else profile.DEFAULT_OUTPUT_DIR
     ;
     var BUNDLE_DIR = match Env::getenv("FLX_BUNDLE_DIR") with | "" => None[string] | ?dir => Some dir endmatch;
 
@@ -91,6 +91,7 @@ fun dflt_control () =>
     var USER_ARGS = ""; 
     var DLINK_STRING = "";
     var SLINK_STRING = "";
+    var cache_time = 0.0;
   }
 ;
 
