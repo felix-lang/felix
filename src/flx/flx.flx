@@ -144,153 +144,42 @@ if control.DEBUG==1 do
   control.CCFLAGS=control.CCFLAGS+config.DEBUG_FLAGS;
 done
 
-var FLXFLAGS="--inline="+str(control.INLINE);
-if control.OUTPUT_DIR != "" do FLXFLAGS += ' '+quote('--output_dir=' + str(control.OUTPUT_DIR)); done;
-for dir in control.BUNDLE_DIR do FLXFLAGS += ' ' + quote('--bundle_dir=' + dir); done;
-if control.CACHE_DIR != "" do FLXFLAGS += " "+quote("--cache_dir=" + control.CACHE_DIR); done
-if control.COMPILER_PHASE != "" do FLXFLAGS += ' --compiler-phase=' + control.COMPILER_PHASE; done;
-
-var FCMD="";
-var LCMD="";
-var CCMD="";
-
-if control.FELIX == 1 do
-  var stdlibs = cat ' ' STDLIB;
-  FCMD=List::cat ' ' (List::list (
-    control.QUOTE_FLXG,
-    VERBOSE, FLXFLAGS, FLXLIB,
-    control.INCLUDE_DIRS, "--syntax="+control.STDGRAMMAR, control.STDIMPORT, control.IMPORTS)) + 
-    ' ' + stdlibs + 
-    ' ' + quote(filebase+use_ext)
-  ;
-  debugln$ "Felix command="+FCMD;
-  
-  result=system(FCMD);
-  if result != 0 do 
-    debugln "Felix compilation failed";
-    pexit(result); 
-  done
-  debugln "Felix compilation succeeded";
-  calpackages();
-  write_include_file(cpp_filebase);
-else
-  debugln "Felix compilation skipped by switch";
-  calpackages(); // need to do this here to set linker switches
-done
+run_felix_compiler_if_required;
 
 if control.CCOMPILEIT == 0 do
   debugln "C++ compilation skipped by switch";
 elif control.STATIC == 0 do
+
   debugln "Dynamic linkage";
-  CCMD=List::cat ' ' (List::list (
-    config.CCOBJ_DLLIB, control.CCFLAGS, "-DTARGET_BUILD",
-    INCLUDE_DIR, control.INCLUDE_DIRS, control.MACROS,
-    control.cpps, quote(cpp_filebase+".cpp"),
-    config.SPEC_OBJ_FILENAME+quote(cpp_filebase+EXT_OBJ)));
-  LCMD=List::cat ' ' (List::list (
-    config.CCLINK_DLLIB, control.CCFLAGS,
-    control.cppos, quote(cpp_filebase+EXT_OBJ),
-    config.SPEC_EXE_FILENAME+quote(control.LINKER_OUTPUT_FILENAME),
-    control.LINK_STRING));
-  debugln$ "C++ command="+CCMD;
-  result = system(CCMD);
+  cxx_compile_dynamic;
+
   if control.LINKIT == 0 do
     debugln "Not linking program selected by switch";
-  elif result == 0 do
-    debugln$ "Link command="+LCMD;
-    result = system(LCMD);
-    if result == 0 do
-      if control.RUNIT == 1 do
-        if control.TIME == 1 do
-          cmd=List::cat ' ' (List::list (
-            control.TIMECMD,
-            control.FLXRUN+control.DRIVER_EXE+DEBUGSWITCH,
-            quote(control.LINKER_OUTPUT_FILENAME), args));
-        else
-          cmd=List::cat ' ' (List::list (
-            control.FLXRUN+control.DRIVER_EXE+DEBUGSWITCH,
-            quote(control.LINKER_OUTPUT_FILENAME), args));
-        done
-        if control.STDOUT != "" do cmd=cmd+" > " +quote(control.STDOUT); done
-        debugln$ "Run command="+cmd;
-        pexit(system(cmd));
-      else
-        debugln "Not running program selected by switch";
-      done
-    else
-      debugln "Dynamic linkage failed";
-    done
   else
-    debugln "C++ compilation failed";
+    cxx_link_dynamic;
+    if control.RUNIT == 1 do
+      run_program_dynamic;
+    else
+      debugln "Not running program selected by switch";
+    done
   done
 else
+
   debugln "Static linkage";
-  var CCMD1=List::cat ' ' (List::list (
-    config.CCOBJ_STATIC_LIB,
-    control.CCFLAGS, "-DTARGET_BUILD",
-    "-DFLX_STATIC_LINK", INCLUDE_DIR, control.INCLUDE_DIRS,
-    control.MACROS, control.cpps, 
-    quote(cpp_filebase+"_static_link_thunk.cpp"),
-    config.SPEC_OBJ_FILENAME+quote(cpp_filebase+"_static_link_thunk"+EXT_OBJ)));
-
-  var CCMD2=List::cat ' ' (List::list (
-    config.CCOBJ_STATIC_LIB,
-    control.CCFLAGS, "-DTARGET_BUILD",
-    "-DFLX_STATIC_LINK", INCLUDE_DIR, control.INCLUDE_DIRS,
-    control.MACROS, control.cpps, 
-    quote(cpp_filebase+".cpp"),
-    config.SPEC_OBJ_FILENAME+quote(cpp_filebase+EXT_OBJ)));
-
-
-  LCMD=List::cat ' ' (List::list 
-    (
-      config.CCLINK_STATIC, config.SPEC_EXE_FILENAME+quote(control.LINKER_OUTPUT_FILENAME),
-      quote(cpp_filebase+"_static_link_thunk"+EXT_OBJ),
-      quote(cpp_filebase+EXT_OBJ)
-    ) + 
-    control.DRIVER_OBJS + 
-    list( control.cppos, control.LINK_STRING))
-  ;
-  debugln$ "C++ command="+CCMD1;
-  result=system(CCMD1);
-  if result != 0 do
-    debugln$ "C++ compilation failed";
-  else
-  result=system(CCMD2);
-  debugln$ "C++ command="+CCMD2;
-  if result != 0 do
-    debugln$ "C++ compilation failed";
-  done
-  done
+  cxx_compile_static;
 
   if control.LINKIT == 0 do
     debugln "Not linking based on switch";
-  elif result == 0 do
-    debugln$ "Link command="+LCMD;
-    result=system(LCMD);
-    if result == 0 do
-      // rm -f "$base.cpp"
-      if control.RUNIT == 1 do
-        if control.TIME == 1 do
-          cmd= List::cat ' ' (List::list (
-            control.TIMECMD, STATIC_ENV, quote(control.LINKER_OUTPUT_FILENAME), args));
-        else
-          cmd=List::cat ' ' (List::list (
-            STATIC_ENV, quote(control.LINKER_OUTPUT_FILENAME),args));
-        done
-        if control.STDOUT != "" do cmd=cmd + " > "+control.STDOUT; done
-        debugln$ "Run command="+cmd;
-        pexit(system(cmd));
-      else
-        debugln "Not running program selected by switch";
-      done
-    else
-      debugln "Static Linkage failed";
-    done
   else
-    debugln "C++ compilation failed";
+    cxx_link_static;
+    if control.RUNIT == 1 do
+      run_program_static;
+    else
+      debugln "Not running program selected by switch";
+    done
   done
 done
 
 pexit(result);
+
 
