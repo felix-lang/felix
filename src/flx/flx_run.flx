@@ -53,6 +53,13 @@ proc cxx_compile_dynamic1(src:string, dst:string)
 proc cxx_compile_dynamic
 {
   cxx_compile_dynamic1 (cpp_filebase+".cpp", cpp_filebase+EXT_OBJ);
+
+  for src in control.cpps do
+    var dst = Filename::strip_extension src + EXT_OBJ;
+    cxx_compile_dynamic1 (src,dst);
+    control.cppos += dst;
+  done
+ 
 }
 
 proc cxx_link_dynamic
@@ -108,6 +115,7 @@ proc cxx_compile_static
   for src in control.cpps do
     var dst = Filename::strip_extension src + EXT_OBJ;
     cxx_compile_static1 (src,dst);
+    control.cppos += dst;
   done
  
   cxx_compile_static1 (cpp_filebase+".cpp",cpp_filebase+EXT_OBJ);

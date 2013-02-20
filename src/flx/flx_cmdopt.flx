@@ -104,7 +104,6 @@ grabbing_args: while loopctl.grab == 1 and loopctl.argno<System::argc do
     // if the extension is appropriate
     if List::mem eq of (string * string) compile_exts loopctl.ext do
       control.cpps = control.cpps + arg;
-      control.cppos = control.cppos + (loopctl.path + "." + EXT_OBJ);
     else
      control.cppos = control.cppos + arg;
     done
