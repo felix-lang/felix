@@ -10,10 +10,12 @@ proc run_felix_compiler_if_required
     if control.COMPILER_PHASE != "" do FLXFLAGS += ' --compiler-phase=' + control.COMPILER_PHASE; done;
 
     var stdlibs = cat ' ' STDLIB;
-    var CMD=List::cat ' ' (List::list (
+    var CMD=cat ' ' (list (
       control.QUOTE_FLXG,
       VERBOSE, FLXFLAGS, FLXLIB,
-      control.INCLUDE_DIRS, "--syntax="+control.STDGRAMMAR, control.STDIMPORT, control.IMPORTS)) + 
+      control.INCLUDE_DIRS, 
+      "--syntax="+control.STDGRAMMAR, 
+      control.STDIMPORT, control.IMPORTS)) + 
       ' ' + stdlibs + 
       ' ' + quote(filebase+use_ext)
     ;
@@ -52,10 +54,10 @@ proc cxx_compile_dynamic1(src:string, dst:string)
 
 proc cxx_compile_dynamic
 {
-  cxx_compile_dynamic1 (cpp_filebase+".cpp", cpp_filebase+EXT_OBJ);
+  cxx_compile_dynamic1 (cpp_filebase+".cpp", cpp_filebase+config.EXT_SHARED_OBJ);
 
   for src in control.cpps do
-    var dst = Filename::strip_extension src + EXT_OBJ;
+    var dst = Filename::strip_extension src + config.EXT_SHARED_OBJ;
     cxx_compile_dynamic1 (src,dst);
     control.cppos += dst;
   done
@@ -68,7 +70,7 @@ proc cxx_link_dynamic
     config.CCLINK_DLLIB, 
     control.CCFLAGS,
     cat " " control.cppos, 
-    quote(cpp_filebase+EXT_OBJ),
+    quote(cpp_filebase+config.EXT_SHARED_OBJ),
     config.SPEC_EXE_FILENAME+quote(control.LINKER_OUTPUT_FILENAME),
     control.LINK_STRING))
   ;
@@ -109,16 +111,18 @@ proc cxx_compile_static
   cxx_compile_static1
   (
     cpp_filebase+"_static_link_thunk.cpp",
-    cpp_filebase+"_static_link_thunk"+EXT_OBJ
+    cpp_filebase+"_static_link_thunk"+config.EXT_STATIC_OBJ
   );
 
   for src in control.cpps do
-    var dst = Filename::strip_extension src + EXT_OBJ;
-    cxx_compile_static1 (src,dst);
+    var dst = Filename::strip_extension src +config.EXT_STATIC_OBJ;
+    if control.RECOMPILE == 1 or dfiletime(src,#past_time) > dfiletime (dst, #future_time) do
+      cxx_compile_static1 (src,dst);
+    done
     control.cppos += dst;
   done
  
-  cxx_compile_static1 (cpp_filebase+".cpp",cpp_filebase+EXT_OBJ);
+  cxx_compile_static1 (cpp_filebase+".cpp",cpp_filebase+config.EXT_STATIC_OBJ);
 
 }
 
@@ -127,8 +131,8 @@ proc cxx_link_static
   var xargs = list 
     (
       config.CCLINK_STATIC, config.SPEC_EXE_FILENAME+quote(control.LINKER_OUTPUT_FILENAME),
-      quote(cpp_filebase+"_static_link_thunk"+EXT_OBJ),
-      quote(cpp_filebase+EXT_OBJ)
+      quote(cpp_filebase+"_static_link_thunk"+config.EXT_STATIC_OBJ),
+      quote(cpp_filebase+config.EXT_STATIC_OBJ)
     ) + 
     control.DRIVER_OBJS + 
     control.cppos + 
@@ -177,6 +181,8 @@ proc run_if_required_and_uptodate
     debugln "Checking to see if the binary is uptodate";
     var xtime = dfiletime(control.LINKER_OUTPUT_FILENAME,#past_time);
     var srctime = cal_dep_time (filebase);
+    srctime = fold_left maxf srctime control.cpps;
+    srctime = fold_left maxf srctime control.cppos;
 
     debugln$ "Filebase = " + filebase; 
     debugln$ "Binary time = " + strfiletime (xtime);

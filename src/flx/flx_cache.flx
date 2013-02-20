@@ -54,13 +54,13 @@ fun dfiletime(var f:string, dflt:double)=
   return x;
 }
 
+fun maxf (x: double) (f:string) =>
+  if f == "" then x else max (x, dfiletime (f,#past_time))
+;
+
+fun cal_files_time (fs: list[string])=> fold_left maxf #past_time fs;
+
 fun cal_dep_time(f:string)= {
-  fun maxf (x: double) (f:string) =>
-      if f == "" then x else max (x, dfiletime (f,#past_time))
-  ;
-
-  fun cal_files_time (fs: list[string])=> fold_left maxf #past_time fs;
-
   fun cal_time_from_dep (df: string):double=
   {
     val deptext = load df;

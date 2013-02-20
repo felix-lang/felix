@@ -46,11 +46,6 @@ done
 debugln$ "Felix package manager config directory is "+control.CONFIG_DIR;
 // make a list of any *.cpp files (or other g++ options ..)
 
-var EXT_OBJ = 
-  if control.STATIC == 0 then config.EXT_SHARED_OBJ
-  else config.EXT_STATIC_OBJ
-  endif
-;
 debugln$ "FileDir= " + loopctl.dir;
 var rel_filebase = if loopctl.dir == "." then loopctl.base else Filename::join(loopctl.dir,loopctl.base);
 debugln$ "Rel_filebase= " + rel_filebase;
@@ -181,4 +176,5 @@ else
 done
 
 pexit(result);
+
 
