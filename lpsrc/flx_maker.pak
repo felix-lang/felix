@@ -27,6 +27,7 @@ fun config() =>
 @tv('CCLINK_DLLIB=r"""'+config.TARGET_CXX.options.CCLINK_DYNAMIC_FLX+'"""')
 @tv('CCOBJ_STATIC_LIB=r"""'+config.TARGET_CXX.options.CCOBJ_STATIC_FLX+'"""')
 @tv('CCLINK_STATIC=r"""'+config.TARGET_CXX.options.CCLINK_STATIC+'"""')
+@tv('CCLINK_STATIC_LIB=r"""'+config.TARGET_CXX.options.CCLINK_STATIC_LIB+'"""')
 @tv('VERSION="'+config.flx_version+'"')
 @tv('EXT_LIB=r"""'+config.TARGET_CXX.options.EXT_LIB+'"""')
 @tv('EXT_STATIC_OBJ=r"""'+config.TARGET_CXX.options.EXT_STATIC_OBJ+'"""')

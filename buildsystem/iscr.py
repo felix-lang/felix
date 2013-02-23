@@ -201,6 +201,10 @@ def _print_compiler(ctx, lang, platform, p):
             ' '.join(static.compiler.flags) + ' ' +
             ' '.join('-I' + i for i in static.compiler.cl.includes))
 
+        p('CCLINK_STATIC_LIB', '"'+str(static.lib_linker.exe) + '" ' +
+            ' '.join(i for i in static.lib_linker.flags))
+
+
         p('CCOBJ_DYNAMIC_FLX', '"' + str(shared.compiler.cl.exe) + '" /nologo /c ' +
             ' '.join(shared.compiler.flags) + ' ' +
             ' '.join('-I' + i for i in static.compiler.cl.includes))
@@ -223,6 +227,9 @@ def _print_compiler(ctx, lang, platform, p):
             ' '.join('-m' + i for i in static.compiler.cc.machine_flags) + ' ' +
             ('-arch ' + static_arch if static_arch else '') + ' ' +
             ' '.join('-W' + i for i in static.compiler.cc.warnings))
+
+        p('CCLINK_STATIC_LIB', str(static.lib_linker.exe) + ' ' +
+            ' '.join(i for i in static.lib_linker.flags))
 
         p('CCLINK_STATIC', str(static.exe_linker.cc.exe) + ' ' +
             ' '.join(shared.exe_linker.flags) + ' ' +
