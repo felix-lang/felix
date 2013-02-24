@@ -27,6 +27,10 @@ echo "C: clang 3.3 -O2" >&2
 clang -O2 -m64 speed/nbody/c/test.c -o sandbox/clang-O2-nbody && time sandbox/clang-O2-nbody
 echo "C: gcc 4.2.1 -O2" >&2
 gcc -O2 -m64 speed/nbody/c/test.c -o sandbox/gcc-O2-nbody && time sandbox/gcc-O2-nbody
+echo "C++: clang 3.3 -O2" >&2
+clang -O2 -m64 speed/nbody/c++/test.cc -o sandbox/clang-O2-nbody && time sandbox/clang-O2-nbody
+echo "C++: g++ 4.2.1 -O2" >&2
+g++ -O2 -m64 speed/nbody/c++/test.cc -o sandbox/gcc-O2-nbody && time sandbox/gcc-O2-nbody
 echo "Ocaml 3.11.1" >&2
 ocamlopt.opt -o sandbox/ocaml-nbody unix.cmxa speed/nbody/ocaml/test.ml && time sandbox/ocaml-nbody
 #---------------------------------------------------------

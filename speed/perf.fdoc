@@ -39,6 +39,9 @@
 @h4 Nbody C program
 @c++ speed/nbody/c/test.c
 
+@h4 Nbody C++ program
+@c++ speed/nbody/c++/test.cc
+
 @h4 Nbody Felix Program
 @felix speed/nbody/felix/test.flx
 
