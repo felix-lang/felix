@@ -217,21 +217,30 @@ let cal_use_closure syms bsym_table (count_inits:bool) =
       List.iter ut ts
     end entries
   end syms.instances_of_typeclass;
-(*
-  (* Register use for the typeclass instance functions. *)
-  print_endline "typeclass to instance";
-  Hashtbl.iter begin fun i entries ->
-    add i;
-    List.iter begin fun (vs,con,ts,j) ->
-      add j;
-      ut con;
-      List.iter ut ts
-    end entries
-  end syms.virtual_to_instances;
-*)
-(*
-  print_endline "Tracing untraced";
-*)
+  
+  (* process reductions. assume temporarily that useless ones
+    have been removed. Check later this is right. This is a 
+    nasty routine here, adds stuff that cannot match because it
+    is based on the input table (which contains garbage).
+    However it's not trivial because a reduction whose LHS has
+    symbols not at this time in the output table could still match
+    the RHS of a reduction.
+  *)
+
+  (* Reduction parameters don't exist, if a reduction is applied
+     the parameter is substituted with the argument.
+  *)
+  let maybe_add ignores j = 
+    if not (List.mem j ignores) then add j
+  in
+  List.iter
+  (fun (id,bvs,bps,lhs, rhs) ->
+    let ignorelist = List.map (fun p -> p.Flx_bparameter.pindex) bps in
+    uses_bexpr (maybe_add ignorelist) bsym_table count_inits rhs;
+  )
+  !(syms.reductions)
+  ;
+
   while not (BidSet.is_empty !untraced) do
     let bid = BidSet.choose !untraced in
 (*

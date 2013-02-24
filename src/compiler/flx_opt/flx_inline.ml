@@ -480,7 +480,13 @@ let expand_exe syms bsym_table u exe =
     let xs = rev xs in
     xs
 
-let check_reductions syms bsym_table exes = Flx_reduce.reduce_exes syms bsym_table !(syms.reductions) exes
+let check_reductions syms bsym_table exes = 
+  let exes = 
+    try 
+      Flx_reduce.reduce_exes syms bsym_table !(syms.reductions) exes 
+    with Not_found -> assert false
+  in
+  exes
 
 let heavy_inline_call syms uses bsym_table
   caller caller_vs callee ts argument id sr (props, vs, (ps,traint), exes)

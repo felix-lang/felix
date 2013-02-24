@@ -2495,7 +2495,7 @@ let print_symbols bsym_table =
           | `Ref -> "REFERENCE"
           | `Tmp -> "TEMPORARY"
         in
-        Printf.printf "%s %s <%s> [%s] type %s"
+        Printf.printf "%s %s <%s> [%s] type %s\n"
           kind
           (string_of_id (Flx_bsym.id bsym))
           (string_of_bid i)
