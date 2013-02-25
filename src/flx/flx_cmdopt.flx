@@ -35,6 +35,8 @@ proc print_help() {
   println "--time               : print target program run time after it finishes";
   println "--nostdlib           : don't load the standard library";
   println "--nooptimise         : disable C++ compiler optimisation";
+  println "--noreduce           : disable reductions (default for compilation speed)";
+  println "--doreduce           : enable reductions (default for performance)";
   println "--debug              : put debug symbols in generated binaries";
   println "--debug-compiler     : make felix compiler print progress diagnostics";
   println "--debug-flx          : make flx tool print diagnostics";
@@ -175,6 +177,7 @@ grabbing_args: while loopctl.grab == 1 and loopctl.argno<System::argc do
   elif arg=="--nooptimise" do
     debugln "Disable optimisation";
     control.NOOPTIMISE=1;
+    control.DOREDUCE=0;
 
   elif arg=="--nostdlib" do
     debugln "Do not load standard library";
@@ -183,6 +186,15 @@ grabbing_args: while loopctl.grab == 1 and loopctl.argno<System::argc do
   elif arg == "--echo" do
     debugln "Echo commands sent to system";
     ECHO=1;
+
+  elif arg == "--noreduce" do
+    debugln "do not perform reductions";
+    control.DOREDUCE=0;
+
+  elif arg == "--doreduce" do
+    debugln "do perform reductions";
+    control.DOREDUCE=1;
+
 
   elif arg == "--static" do
     debugln "Compile a statically linked program";
@@ -239,20 +251,28 @@ grabbing_args: while loopctl.grab == 1 and loopctl.argno<System::argc do
     debugln "Set usage prototyping";
     control.USAGE = "prototype";
     control.NOOPTIMISE=1;
+    control.OPTIMISE = "-O1";
+    control.DOREDUCE = 0;
 
   elif arg == "--usage=debugging" do
     debugln "Set usage debugging";
     control.USAGE = "debugging";
     control.NOOPTIMISE=1;
     control.DEBUG = 1;
+    control.DOREDUCE= 0;
+    control.OPTIMISE = "-O0";
 
   elif arg == "--usage=production" do
     debugln "Set usage production";
     control.USAGE = "production";
+    control.DOREDUCE = 1;
+    control.OPTIMISE = "-O2";
 
   elif arg == "--usage=hyperlight" do
     debugln "Set usage hyperlight";
     control.USAGE = "hyperlight";
+    control.DOREDUCE = 1;
+    control.OPTIMISE = "-O2";
 
   elif arg == "--man" do
     debugln "Display top level manual page using 'man' program";

@@ -1392,12 +1392,10 @@ and heavily_inline_bbdcl syms uses bsym_table excludes i =
       let props = `Inlining_started :: props in
       let bbdcl = bbdcl_fun (props,vs,(ps,traint),ret,exes) in
       Flx_bsym_table.update_bbdcl bsym_table i bbdcl;
-
       (* inline into all children first *)
       let children = Flx_bsym_table.find_children bsym_table i in
       BidSet.iter (fun i-> heavily_inline_bbdcl syms uses bsym_table excludes i) children;
-
-      let exes = check_reductions syms bsym_table exes in (* typeclass reduce statements *)
+      let exes = check_reductions syms bsym_table exes in (* user reductions *)
       let xcls = Flx_tailit.exes_get_xclosures syms exes in
       BidSet.iter (fun i-> heavily_inline_bbdcl syms uses bsym_table excludes i) xcls;
 
@@ -1408,6 +1406,8 @@ and heavily_inline_bbdcl syms uses bsym_table excludes i =
       let exes = List.map Flx_bexe.reduce exes in (* term reduction *)
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
       let exes = fold_vars syms bsym_table uses i ps exes in
+      let exes = check_reductions syms bsym_table exes in (* user reductions *)
+
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
       let exes = heavy_inline_calls
         syms
@@ -1431,12 +1431,12 @@ and heavily_inline_bbdcl syms uses bsym_table excludes i =
         vs
         exes
       in
-      let exes = check_reductions syms bsym_table exes in (* typeclass reduce statements *)
+      let exes = check_reductions syms bsym_table exes in (* user reductions *)
       let exes = List.map Flx_bexe.reduce exes in (* term reduction *)
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
       let exes = fold_vars syms bsym_table uses i ps exes in
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
-      let exes = check_reductions syms bsym_table exes in
+      let exes = check_reductions syms bsym_table exes in (* user reductions *)
       let exes = Flx_cflow.chain_gotos syms exes in
       let exes = List.map Flx_bexe.reduce exes in
       let props = `Inlining_complete :: props in

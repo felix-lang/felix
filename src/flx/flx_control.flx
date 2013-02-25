@@ -26,6 +26,7 @@ proc print_options() {
     println$ "MACROS             = "+str control.MACROS;
     println$ "SHOWCODE           = "+str control.SHOWCODE;
     println$ "USAGE              = "+control.USAGE;
+    println$ "DOREDUCE           = "+str control.DOREDUCE;
 }
 
 fun init_loopctl () => struct {
@@ -58,6 +59,7 @@ fun dflt_control () =>
     var INLINE=100;
     var TIME=0;
     var NOOPTIMISE=0;
+    var DOREDUCE=1;
     var TIMECMD="time -p";
     var STATIC=config.DEFAULT_LINK_STATIC;
     var OPTIMISE=config.OPTIMISE;
