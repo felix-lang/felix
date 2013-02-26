@@ -1,0 +1,55 @@
+include "PKGTOOL/libflx_interface";
+include "PKGTOOL/pkgtool_base";
+open PkgTool;
+
+var libflx_factory : () -> libflx_interface;
+libflx_factory =
+      Dynlink::load-plugin-func1 
+       [libflx_interface, ()] 
+       (dll-name="PKGTOOL/libflx",
+        entry-point="libflx");
+
+var myflx = libflx_factory();
+
+myflx.set_dbug(false);
+myflx.set_showcode(true);
+myflx.set_snort(true);
+
+match myflx.init_compiler() with
+|OK[string] => {
+  imply("Compiler initialization");
+  match myflx.flx_compile("test/D01-libflx.flx") with
+  |OK[string] => {
+    imply("Compiliation of D01-libflx.flx");
+    match myflx.c_compile() with
+    |ERR[string] (?e,?m) => { 
+      test_fail("Returned with error code:"+e+":"+m);
+    }
+    |OK[string] ?m => {
+      assert_true(m == "A\na\n", 
+        "Compiling D01-libflx.flx to shared object and running");
+    }
+    endmatch;
+  }
+  |ERR[string] (?e,?m) => {
+    test_fail("Returned with error code:"+e+":"+m);
+  }
+  endmatch;
+}
+|ERR[string] (?e,?m) => {
+  test_fail("Returned with error code:"+e+":"+m);
+}
+endmatch;
+
+imply("Control returned to test harness");
+
+test_title("Testing flx_and_c_compile");
+match myflx.flx_and_c_compile("test/D01-libflx.flx") with
+|ERR[string] (?e,?m) => { 
+  test_fail("Returned with error code:"+e+":"+m);
+}
+|OK[string] ?m => {
+  assert_true(m == "A\na\n");
+}
+endmatch;
+

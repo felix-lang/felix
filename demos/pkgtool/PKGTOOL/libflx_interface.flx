@@ -1,0 +1,83 @@
+//$ libflx_interface.flx
+//$ Author Mike Maul
+//$ See README.md for more details
+union compiler_result_code_t[T] = 
+  |OK of T
+  |ERR of int*string;
+var init_libflx_factory = true;
+interface libflx_interface {
+  get_version:1->string;
+  set_echo:bool->0;
+  get_echo:1->bool;
+  set_dbug:bool->0;
+  get_dbug:1->bool;
+  set_optimise:int->0;
+  get_optimise:1->int;
+  set_flx_install_dir:string->0;
+  get_flx_install_dir:1->string;
+  set_recompile:bool->0;
+  get_recompile:1->bool;
+  set_runit:bool->0;
+  get_runit:1->bool;
+  set_ccompileit:bool->0;
+  get_ccompileit:1->bool;
+  set_linkit:bool->0;
+  get_linkit:1->bool;
+  set_felix:bool->0;
+  get_felix:1->bool;
+  set_debug:bool->0;
+  get_debug:1->bool;
+  set_debug_compiler:bool->0;
+  get_debug_compiler:1->bool;
+  set_inline:int->0;
+  get_inline:1->int;
+  set_time:bool->0;
+  get_time:1->bool;
+  set_nooptimise:bool->0;
+  get_nooptimise:1->bool;
+  set_static:bool->0;
+  get_static:1->bool;
+  set_showcode:bool->0;
+  get_showcode:1->bool;
+  set_ccflags:string->0;
+  get_ccflags:1->string;
+  set_extra_ccflags:string->0;
+  get_extra_ccflags:1->string;
+  set_linker_switches:string->0;
+  get_linker_switcher:1->string;
+  set_macros:string->0;
+  get_macros:1->string;
+  set_include_dirs:string->0;
+  get_include_dirs:1->string;
+  set_include_files:string->0;
+  get_include_files:1->string;
+  set_nostdlib:bool->0;
+  get_nostdlib:1->bool;
+  set_stdout:string->0;
+  get_stdout:1->string;
+  set_snort:bool->0;
+  get_snort:1->bool;
+  set_imports:string->0;
+  get_imports:1->string;
+  set_usage:string->0;
+  get_usage:1->string;
+  set_clear_cache:bool->0;
+  get_clear_cache:1->bool;
+  set_cache_dir:string->0;
+  get_cache_dir:1->string;
+  set_output_dir:string->0;
+  get_output_dir:1->string;
+  set_bundle_dir:opt[string]->0;
+  get_bundle_dir:1->opt[string];
+  set_pkgs:string->0;
+  get_pkgs:1->string;
+  set_linker_output:string->0;
+  get_linker_output:1->string;
+  set_user_args:string->0;
+  get_user_args:1->string;
+  init_compiler:1->compiler_result_code_t[string];
+  flx_compile:string->compiler_result_code_t[string];
+  c_compile:1->compiler_result_code_t[string];
+  flx_and_c_compile:string->compiler_result_code_t[string];
+  init_and_flx_and_c_compile:string->compiler_result_code_t[string];
+}

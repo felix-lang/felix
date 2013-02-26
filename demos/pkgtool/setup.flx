@@ -1,0 +1,48 @@
+include "PKGTOOL/pkgtool";
+include "PKGTOOL/pkgtool_base";
+// Package parameters
+NAME = 'pkgtool';
+VERSION = '.01';
+AUTHOR = 'Mike Maul';
+AUTHOR_URL="";
+PKG_URL = 'https://github.com/mmaul/pkgtool';
+DESCRIPTION = 'Packaging Management Tool';
+LONG_DESCRIPTION = """
+
+""";
+CATEGORY=list("UTIL");
+LIBDIR = "PKGTOOL";
+STOP_ON_TEST_FAILURES = false;
+open PkgTool;
+instance PkgTool {
+
+  proc build () {
+    task("Building libflx plugin");
+    log(run_cmd("flx -c PKGTOOL/libflx.flx","Error building libflx plugin."));
+    default_build();
+  }
+
+  proc install() {
+    default_install();
+    task("Installing libflx plugin");
+    cp_root(BUILD_DIR, LIBDIR.join("libflx"+#Config::config.EXT_SHLIB),
+      DEST_DIR.join(r"lib"));
+    if not CMD == "dist" do 
+    var bin_dir = (PREFIX.join("bin"));
+    match filetype(bin_dir) with
+    |DIRECTORY => { 
+      cp_root(BUILD_DIR.join("bin"),"scoop" + #Config::config.EXT_EXE,
+        bin_dir); 
+    }
+    |_ => { 
+      warning("Unable to install 'scoop' to " + bin_dir + ". " + 
+      "You can either run scoop from the Felix installation bin directory (" +
+      ((INSTALL_ROOT.join("bin")).join("scoop")) + 
+      " or install agin using the --prefix= option to specify a location");
+    }
+    endmatch;
+    done
+  }
+}
+
+SetupTool::run();
