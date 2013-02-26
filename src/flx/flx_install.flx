@@ -1,5 +1,7 @@
 
 proc install() {
+    var cmd="";
+    var result = 0;
     var FLX_INSTALL_DIR = config.FLX_INSTALL_DIR;
     var INSTALL_ROOT = config.INSTALL_ROOT;
 
@@ -12,7 +14,6 @@ proc install() {
       System::exit(1);
     done
 
-    var result = 0;
 
     // remove old install
 
@@ -101,6 +102,8 @@ proc install_bin ()
   // NOTE: these installs use the immediate build directory,
   // NOT the final build target, eg tools/webserver not bin/webserver
   // This may be wrong!
+  var cmd = "";
+  var result = 0;
   var FLX_INSTALL_DIR = config.FLX_INSTALL_DIR;
   debugln "Install executables and plugins";
   println$ "FROM: " + FLX_INSTALL_DIR;
@@ -177,6 +180,8 @@ install_bin_failed:>
 
 
 proc dist_install() {
+    var cmd = "";
+    var result = 0;
     var FLX_INSTALL_DIR = config.FLX_INSTALL_DIR;
     val DIST_ROOT=control.DIST_ROOT;
     val DIST_ROOT_FLX=DIST_ROOT+"/lib/felix/felix-1.1.7dev";
@@ -189,7 +194,6 @@ proc dist_install() {
       System::exit(1);
     done
 
-    var result = 0;
 
     // remove old dist
 
@@ -266,6 +270,8 @@ failure:>
 proc dist_install_bin ()
 {
   var FLX_INSTALL_DIR = config.FLX_INSTALL_DIR;
+  var cmd = "";
+  var result = 0;
   // NOTE: these installs use the immediate build directory,
   // NOT the final build target, eg tools/webserver not bin/webserver
   // This may be wrong

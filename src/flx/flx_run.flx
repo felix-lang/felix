@@ -20,26 +20,26 @@ proc run_felix_compiler_if_required
       FLXFLAGS += ' --no-reduce';
     done
 
-    var stdlibs = cat ' ' STDLIB;
+    var stdlibs = cat ' ' dvars.STDLIB;
     var CMD=cat ' ' (list (
       control.QUOTE_FLXG,
-      VERBOSE, FLXFLAGS, FLXLIB,
+      VERBOSE, FLXFLAGS, dvars.FLXLIB,
       control.INCLUDE_DIRS, 
       "--syntax="+control.STDGRAMMAR, 
       control.STDIMPORT, control.IMPORTS)) + 
       ' ' + stdlibs + 
-      ' ' + quote(filebase+use_ext)
+      ' ' + quote(dvars.filebase+dvars.use_ext)
     ;
     debugln$ "Felix command="+CMD;
     
-    result=system(CMD);
+    var result=system(CMD);
     if result != 0 do 
       eprintln$ "Felix compilation "+CMD+" failed";
       pexit(result); 
     done
     debugln "Felix compilation succeeded";
     calpackages;
-    write_include_file(cpp_filebase);
+    write_include_file(dvars.cpp_filebase);
   else
     debugln "Felix compilation skipped by switch";
     calpackages;
@@ -50,12 +50,12 @@ proc cxx_compile_dynamic1(src:string, dst:string)
 {
   var CMD=List::cat ' ' (list (
     config.CCOBJ_DLLIB, control.CCFLAGS, "-DTARGET_BUILD",
-    INCLUDE_DIR, control.INCLUDE_DIRS, control.MACROS,
+    dvars.INCLUDE_DIR, control.INCLUDE_DIRS, control.MACROS,
     quote(src),
     config.SPEC_OBJ_FILENAME+quote(dst)))
   ;
   debugln$ "C++ command="+CMD;
-  result = system(CMD);
+  var result = system(CMD);
   if result != 0 do
     eprintln $ "C++ command="+CMD + " FAILED";
     pexit(result);
@@ -65,7 +65,7 @@ proc cxx_compile_dynamic1(src:string, dst:string)
 
 proc cxx_compile_dynamic
 {
-  cxx_compile_dynamic1 (cpp_filebase+".cpp", cpp_filebase+config.EXT_SHARED_OBJ);
+  cxx_compile_dynamic1 (dvars.cpp_filebase+".cpp", dvars.cpp_filebase+config.EXT_SHARED_OBJ);
 
   for src in control.cpps do
     var dst = Filename::strip_extension src + config.EXT_SHARED_OBJ;
@@ -81,12 +81,12 @@ proc cxx_link_dynamic
     config.CCLINK_DLLIB, 
     control.CCFLAGS,
     cat " " control.cppos, 
-    quote(cpp_filebase+config.EXT_SHARED_OBJ),
+    quote(dvars.cpp_filebase+config.EXT_SHARED_OBJ),
     config.SPEC_EXE_FILENAME+quote(control.LINKER_OUTPUT_FILENAME),
     control.LINK_STRING))
   ;
   debugln$ "Link command="+CMD;
-  result = system(CMD);
+  var result = system(CMD);
 
   if result != 0 do
     eprintln $ "Dynamic link command="+CMD + " FAILED";
@@ -101,14 +101,14 @@ proc cxx_compile_static1 (src: string, dst: string)
     control.CCFLAGS, 
     "-DTARGET_BUILD",
     "-DFLX_STATIC_LINK", 
-    INCLUDE_DIR, 
+    dvars.INCLUDE_DIR, 
     control.INCLUDE_DIRS,
     control.MACROS, 
     quote(src),
     config.SPEC_OBJ_FILENAME+quote(dst)));
 
   debugln$ "C++ command="+CMD;
-  result=system(CMD);
+  var result=system(CMD);
 
   if result != 0 do
     eprintln$ "C++ compilation "+src+" failed";
@@ -121,8 +121,8 @@ proc cxx_compile_static
 {
   cxx_compile_static1
   (
-    cpp_filebase+"_static_link_thunk.cpp",
-    cpp_filebase+"_static_link_thunk"+config.EXT_STATIC_OBJ
+    dvars.cpp_filebase+"_static_link_thunk.cpp",
+    dvars.cpp_filebase+"_static_link_thunk"+config.EXT_STATIC_OBJ
   );
 
   for src in control.cpps do
@@ -133,7 +133,7 @@ proc cxx_compile_static
     control.cppos += dst;
   done
  
-  cxx_compile_static1 (cpp_filebase+".cpp",cpp_filebase+config.EXT_STATIC_OBJ);
+  cxx_compile_static1 (dvars.cpp_filebase+".cpp",dvars.cpp_filebase+config.EXT_STATIC_OBJ);
 
 }
 
@@ -142,8 +142,8 @@ proc cxx_link_static
   var xargs = list 
     (
       config.CCLINK_STATIC, config.SPEC_EXE_FILENAME+quote(control.LINKER_OUTPUT_FILENAME),
-      quote(cpp_filebase+"_static_link_thunk"+config.EXT_STATIC_OBJ),
-      quote(cpp_filebase+config.EXT_STATIC_OBJ)
+      quote(dvars.cpp_filebase+"_static_link_thunk"+config.EXT_STATIC_OBJ),
+      quote(dvars.cpp_filebase+config.EXT_STATIC_OBJ)
     ) + 
     control.DRIVER_OBJS + 
     control.cppos + 
@@ -152,36 +152,65 @@ proc cxx_link_static
   var CMD = cat ' ' xargs;
 
   debugln$ "Link command="+CMD;
-  result=system(CMD);
+  var result=system(CMD);
   if result != 0 do
     debugln$ "Link command="+CMD+ " FAILED";
     pexit(result);
   done 
 }
 
+proc check_output
+{
+  var expected = control.EXPECT;
+  if expected == "" return;
+
+  var output = control.STDOUT;
+
+  if output == "" do
+    println$ "No output file given";
+
+  otherwise 
+  
+  // note load never fails, at worse loads empty string.
+  var output_text = load (output);
+  var expected_text = load (expected);
+  if output_text != expected_text do
+    println$ "Output " + output + " doesn't match expected " + expected;
+    System::exit(1);
+  done
+  
+}
+
+
 proc run_program_dynamic
 {
   var xargs = list (
-      control.FLXRUN,control.DRIVER_EXE,DEBUGSWITCH,
-      quote(control.LINKER_OUTPUT_FILENAME), args)
+      control.FLXRUN,control.DRIVER_EXE,dvars.DEBUGSWITCH,
+      quote(control.LINKER_OUTPUT_FILENAME), dvars.args)
   ;
   if control.TIME == 1 do xargs = control.TIMECMD + xargs; done
   var CMD = cat ' ' xargs;
   if control.STDOUT != "" do CMD=CMD+" > " +quote(control.STDOUT); done
   debugln$ "Run command="+CMD;
-  pexit(system(CMD));
-
+  var result = system(CMD);
+  if result != 0 do
+    pexit(result);
+  done
+  check_output;
 }
 
 proc run_program_static
 {
-  var xargs = list ( STATIC_ENV, quote(control.LINKER_OUTPUT_FILENAME),args);
+  var xargs = list ( dvars.STATIC_ENV, quote(control.LINKER_OUTPUT_FILENAME),dvars.args);
   if control.TIME == 1 do xargs = control.TIMECMD + xargs; done
   var CMD = cat ' ' xargs;
   if control.STDOUT != "" do CMD=CMD + " > "+quote(control.STDOUT); done
   debugln$ "Run command="+CMD;
-  pexit(system(CMD));
-
+  var result=system(CMD);
+  if result != 0 do
+    pexit(result);
+  done
+  check_output;
 }
 
 proc run_if_required_and_uptodate
@@ -191,11 +220,11 @@ proc run_if_required_and_uptodate
     // not (--force or -c)
     debugln "Checking to see if the binary is uptodate";
     var xtime = dfiletime(control.LINKER_OUTPUT_FILENAME,#past_time);
-    var srctime = cal_dep_time (filebase);
+    var srctime = cal_dep_time (dvars.filebase);
     srctime = fold_left maxf srctime control.cpps;
     srctime = fold_left maxf srctime control.cppos;
 
-    debugln$ "Filebase = " + filebase; 
+    debugln$ "Filebase = " + dvars.filebase; 
     debugln$ "Binary time = " + strfiletime (xtime);
     debugln$ "src time = " + strfiletime (srctime);
     debugln$ "cache time = " + strfiletime (control.cache_time);
@@ -203,7 +232,6 @@ proc run_if_required_and_uptodate
       if xtime > srctime and xtime > control.cache_time do
         debugln$ "Running dynamically linked binary";
         calpackages;
-        debugln$ "Uptodate shared lib: Running command " + cmd;
         run_program_dynamic;
       else
         debugln$ "Dynamically linked binary out of date or non-existant";

@@ -1,57 +1,76 @@
 proc calpackages () {
 
   // find external header files
-  var PKGCONFIG_CFLAGS=control.PKGCONFIG+ " --path+="+Filename::join(config.FLX_INSTALL_DIR,"config") + " --field=cflags ";
+  var PKGCONFIG_CFLAGS=control.PKGCONFIG+ 
+    " --path+="+Filename::join(config.FLX_INSTALL_DIR,"config") + " --field=cflags ";
 
   // external header files
-  var PKGCONFIG_INCLUDES=control.PKGCONFIG+ " --path+="+Filename::join(config.FLX_INSTALL_DIR,"config") + " --field=includes ";
+  var PKGCONFIG_INCLUDES=control.PKGCONFIG+ 
+    " --path+="+Filename::join(config.FLX_INSTALL_DIR,"config") + " --field=includes ";
 
   // find external dynload libraries
-  var PKGCONFIG_DLIBS=control.PKGCONFIG+" -r --path+="+Filename::join(config.FLX_INSTALL_DIR,"config") + " --field=provides_dlib --field=requires_dlibs ";
+  var PKGCONFIG_DLIBS=control.PKGCONFIG+
+    " -r --path+="+Filename::join(config.FLX_INSTALL_DIR,"config") + " --field=provides_dlib --field=requires_dlibs ";
 
   // find external static libraries
-  var PKGCONFIG_SLIBS=control.PKGCONFIG+" -r --keeprightmost --path+="+Filename::join(config.FLX_INSTALL_DIR,"config") + " --field=provides_slib --field=requires_slibs ";
+  var PKGCONFIG_SLIBS=control.PKGCONFIG+
+    " -r --keeprightmost --path+="+Filename::join(config.FLX_INSTALL_DIR,"config") + " --field=provides_slib --field=requires_slibs ";
 
   //find driver package required
-  var PKGCONFIG_DRIVER=control.PKGCONFIG+" --path+="+Filename::join(config.FLX_INSTALL_DIR,"config") + " --field=flx_requires_driver ";
+  var PKGCONFIG_DRIVER=control.PKGCONFIG+
+    " --path+="+Filename::join(config.FLX_INSTALL_DIR,"config") + " --field=flx_requires_driver ";
 
 
   // find all include directories
-  var x = xqt(PKGCONFIG_CFLAGS+ " " + quote("@"+cpp_filebase+".resh"));
+  var x = xqt(PKGCONFIG_CFLAGS+ " " + quote("@"+dvars.cpp_filebase+".resh"));
   control.INCLUDE_DIRS=control.INCLUDE_DIRS +" " + x;
 
   // find all include files
-  x = xqt(PKGCONFIG_INCLUDES+ " "+quote("@"+cpp_filebase+".resh"));
+  x = xqt(PKGCONFIG_INCLUDES+ " "+quote("@"+dvars.cpp_filebase+".resh"));
   control.INCLUDE_FILES=control.INCLUDE_FILES +" " + x;
 
   // find the driver package
-  control.DRIVER_PKG=xqt(PKGCONFIG_DRIVER+" "+ quote("@"+cpp_filebase+".resh"));
+  control.DRIVER_PKG=xqt(PKGCONFIG_DRIVER+" "+ quote("@"+dvars.cpp_filebase+".resh"));
   control.DRIVER_PKG == "" ??  control.DRIVER_PKG="flx_run";
 
   // find the driver entity
   if control.STATIC == 0 do
     // dynamic linkage: the driver executable
-    control.DRIVER_EXE= Filename::join$ List::list (config.FLX_INSTALL_DIR,"bin",control.DRIVER_PKG+config.EXT_EXE);
+    control.DRIVER_EXE= Filename::join$ list (
+      config.FLX_INSTALL_DIR,
+      "bin",
+      control.DRIVER_PKG+config.EXT_EXE
+    )
+  ;
   else
     // static linkage: the driver object files
     control.DRIVER_OBJS =list(
-      Filename::join (List::list (config.FLX_INSTALL_DIR,"lib","rtl",control.DRIVER_PKG+"_lib"+config.EXT_STATIC_OBJ)),
-      Filename::join (List::list (config.FLX_INSTALL_DIR,"lib","rtl",control.DRIVER_PKG+"_main"+config.EXT_STATIC_OBJ))
+      Filename::join (list (
+        config.FLX_INSTALL_DIR,
+        "lib",
+        "rtl",
+        control.DRIVER_PKG+"_lib"+
+        config.EXT_STATIC_OBJ)),
+      Filename::join (list (
+        config.FLX_INSTALL_DIR,
+        "lib",
+        "rtl",
+        control.DRIVER_PKG+"_main"+config.EXT_STATIC_OBJ))
     );
   done
 
   if control.STATIC == 0 do
     // dynamic linkage: all the libraries required by the application
     control.LINK_STRING=control.DLINK_STRING+control.LINKER_SWITCHES+" "+xqt(
-      PKGCONFIG_DLIBS+" "+control.DRIVER_PKG+" "+quote("@"+cpp_filebase+".resh"));
+      PKGCONFIG_DLIBS+" "+control.DRIVER_PKG+" "+quote("@"+dvars.cpp_filebase+".resh"));
   else
     // static linkage: all the libraries required by the application and driver
     control.LINK_STRING=control.SLINK_STRING+control.LINKER_SWITCHES+" "+xqt(
-      PKGCONFIG_SLIBS+" "+control.DRIVER_PKG+" "+quote("@"+cpp_filebase+".resh"));
+      PKGCONFIG_SLIBS+" "+control.DRIVER_PKG+" "+quote("@"+dvars.cpp_filebase+".resh"));
   done
 
   if ECHO == 1 do
-    fprintln (cerr, "//RESOURCE FILE="+cpp_filebase+".resh");
+    fprintln (cerr, "//RESOURCE FILE="+dvars.cpp_filebase+".resh");
     fprintln (cerr, "//INCLUDE_DIRS="+control.INCLUDE_DIRS);
     fprintln (cerr, "//INCLUDE_FILES="+control.INCLUDE_FILES);
   if control.STATIC == 0 do

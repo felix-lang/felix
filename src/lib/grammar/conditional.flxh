@@ -16,8 +16,21 @@ syntax conditional
     "`(ast_ifdo ,_sr ,_2 ,_4 ())";
 
   //$ Short form two branch conditional.
-  stmt := "if" sexpr "do" sstatements "otherwise" sstatements  =>#
-    "`(ast_ifdo ,_sr ,_2 ,_4 ,_6)";
+  //stmt := "if" sexpr "do" sstatements "otherwise" sstatements  =>#
+  //  "`(ast_ifdo ,_sr ,_2 ,_4 ,_6)";
+
+  stmt := "if" sexpr "do" sstatements sotherwise_clause =>#
+    "`(ast_ifdo ,_sr ,_2 ,_4 ,_5)";
+
+  sotherwise_clause := selif_clauses "otherwise" sstatements =>#
+    """
+        (let ((f (lambda (result condthn)
+          (let ((cond (first condthn)) (thn (second condthn)))
+            `((ast_ifdo ,_sr ,cond ,thn ,result))))))
+        (fold_left f _3 _1))
+    """;
+
+  sotherwise_clause := "otherwise" sstatements =># "_2";
 
   //$ Perl style conditional.
   stmt := sexpr "??" stmt =>#

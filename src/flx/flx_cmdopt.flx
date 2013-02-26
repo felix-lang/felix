@@ -41,6 +41,8 @@ proc print_help() {
   println "--debug-compiler     : make felix compiler print progress diagnostics";
   println "--debug-flx          : make flx tool print diagnostics";
   println "--stdout=file        : run program with standard output redirected to file";
+  println "--expect=file        : compare stdout with expect file";
+  println "--expect             : compare stdout with basename.expect";
   println "--backup             : backup working source tree to dir 'backup'";
   println "--install            : install --test directory to configured location";
   println "--dist=path          : install --test directory to configured location";
@@ -137,13 +139,27 @@ grabbing_args: while loopctl.grab == 1 and loopctl.argno<System::argc do
 
   elif arg=="--install-bin" do
     install_bin; // non-return
+
   elif prefix(arg,"--stdout=") do
     debugln "Redirect standard output";
     // of the Felix program only: used for saving the output
     // to a file so the test harness can compare it with an .expect file
     control.STDOUT=arg.[9 to];
 
-  elif arg=="--show" do
+  elif arg == "--expect" do
+    debugln "compare stdout with expect file (default name)";
+    // of the Felix program only: used for saving the output
+    // to a file so the test harness can compare it with an .expect file
+    control.CHECK_EXPECT=1;
+
+  elif prefix(arg,"--expect=") do
+    debugln "compare stdout with expect file";
+    // of the Felix program only: used for saving the output
+    // to a file so the test harness can compare it with an .expect file
+    control.EXPECT=arg.[9 to];
+    control.CHECK_EXPECT=1;
+
+elif arg=="--show" do
     control.SHOWCODE=1;
 
   elif arg=="--clean" do
@@ -337,10 +353,18 @@ grabbing_args: while loopctl.grab == 1 and loopctl.argno<System::argc do
     debugln "Add pkgconfig package to link";
     control.pkgs= control.pkgs + " " + arg.[6 to];
 
-  elif prefix(arg,"--") do
-    debugln "Unknown -- style option, abort";
-    println("Unknown option '"+ arg+"'");
-    System::exit(1);
+  /* end of flx options, the next argument is
+     the primary filename
+  */
+  elif arg == "--" do
+    loopctl.grab=0;
+    loopctl.argno = loopctl.argno + 1;
+    arg = System::argv loopctl.argno;
+    debugln$ "ARGNO="+str(loopctl.argno)+", arg='"+arg+"'";
+
+    loopctl.path,loopctl.ext = splitext(arg);
+    loopctl.dir,loopctl.base = Filename::split1(loopctl.path);
+    debugln$ "path="+loopctl.path+", ext="+loopctl.ext+",dir="+loopctl.dir+",base="+loopctl.base;
 
 // the main filename -- subsequent args are args to flx_run
   else
@@ -373,17 +397,20 @@ proc processing_stage1
     done
   done
 
+  // Primary filename established.
   debugln "#--------";
   debugln$ "DONE, option index = "+str(loopctl.argno);
   debugln$ "path="+loopctl.path+": dir="+loopctl.dir+",base="+loopctl.base+", ext="+loopctl.ext;
   debugln$ "cpps="+str control.cpps;
   debugln$ "cppos="+str control.cppos;
 
+  // Grab program arguments.
   while loopctl.argno < System::argc do 
     control.USER_ARGS+=" " + quote (System::argv loopctl.argno); ++loopctl.argno; 
   done
   debugln$ "USER_ARGS=" + control.USER_ARGS;
 
+  // Establish C++ optimisation switches.
   if control.NOOPTIMISE == 0 do
     debugln "Set C++ compiler optimisation switches";
     control.CCFLAGS=control.CCFLAGS+" " + control.OPTIMISE;
@@ -394,6 +421,7 @@ proc processing_stage1
   // off optimisations previously introduced (order matters)
   control.CCFLAGS += control.EXTRA_CCFLAGS;
 
+  // Establish name of Felix compiler.
   if config.HAVE_WIN32 do
     control.FLXG=Filename::join(config.FLX_INSTALL_DIR, 'bin', 'flxg.exe');
     control.QUOTE_FLXG=quote(control.FLXG);
@@ -410,10 +438,13 @@ proc processing_stage1
     done
   done
 
+  // Establish name of flx_pkgconfig.
   control.PKGCONFIG=quote(Filename::join$ List::list(config.FLX_INSTALL_DIR,"bin","flx_pkgconfig"));
 
+  // Get linker names.
   control.DLINK_STRING, control.SLINK_STRING = Config::link_strings(config.FLX_INSTALL_DIR);
 
+  // Get location of flx_pkgconfig's config directory.
   control.CONFIG_DIR = Filename::join(config.FLX_INSTALL_DIR,'config');
 
   // this hack forces a directory name, because executing "prog"
