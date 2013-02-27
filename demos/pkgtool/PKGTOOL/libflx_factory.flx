@@ -10,9 +10,9 @@ var libflx-dll-base-name = "libflx";
 var libflx-dll-name=match FileSystem::find_in_path(
   libflx-dll-base-name + #Config::config.EXT_SHLIB,
   list(libflx-install-path,
-    "PKGTOOL")) with
+    (Directory::getcwd()).join("PKGTOOL"))) with
   |Some ?p => p.[0 to p.len.int - (#Config::config.EXT_SHLIB).len.int]
-  |_ => "PKGTOOL/"+libflx-dll-base-name
+  |_ => ((Directory::getcwd()).join("PKGTOOL")).join(libflx-dll-base-name)
   endmatch;
 
 var libflx_factory : () -> libflx_interface;
