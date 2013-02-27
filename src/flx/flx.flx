@@ -30,68 +30,51 @@ var profile = #dflt_profile;
 
 var control = #dflt_control;
 
-var compile_exts = List::list ('cpp','cxx','c','cc');
-var linkexts =  List::list ('o','obj','lib','dll','a','so');
-
 var loopctl = #init_loopctl;
 processing_stage1;
 
-var dvars = #cal_depvars;
 
-run_if_required_and_uptodate;
-
-// Need Felix and c++ compile, then run it
-dbug??println$ "RECOMPILING!!";
-
-var VERBOSE = "";
-if control.DEBUG_COMPILER == 1 do
-  VERBOSE="-v";
-  debugln "Compiler debugging on";
-else
-  VERBOSE="-q";
-  debugln "Compiler debugging off";
-done
-
-if control.DEBUG==1 do
-  control.CCFLAGS=control.CCFLAGS+config.DEBUG_FLAGS;
-done
-
-run_felix_compiler_if_required;
-
-if control.CCOMPILEIT == 0 do
-  debugln "C++ compilation skipped by switch";
-elif control.STATIC == 0 do
-
-  debugln "Dynamic linkage";
-  cxx_compile_dynamic;
-
-  if control.LINKIT == 0 do
-    debugln "Not linking program selected by switch";
-  else
-    cxx_link_dynamic;
-    if control.RUNIT == 1 do
-      run_program_dynamic;
-    else
-      debugln "Not running program selected by switch";
-    done
+if control.INREGEX != "" do
+  control.USER_ARGS = quote(loopctl.progname) + ' ' + control.USER_ARGS;
+  if control.INDIR == "" do control.INDIR = "."; done
+  var regex = RE2 control.INREGEX;
+  if not regex.ok do
+    eprintln$ "Malformed regex " + control.INREGEX;
+    System::exit(1);
   done
-else
-
-  debugln "Static linkage";
-  cxx_compile_static;
-
-  if control.LINKIT == 0 do
-    debugln "Not linking based on switch";
-  else
-    cxx_link_static;
-    if control.RUNIT == 1 do
-      run_program_static;
-    else
-      debugln "Not running program selected by switch";
-    done
+  var files = FileSystem::regfilesin (control.INDIR, regex);
+  var n = files.len.int;
+  println$ "Processing " + files.len.str + " files";
+  var i = 1;
+  for file in files do
+    var arg = Filename::join (control.INDIR, file);
+    loopctl.path,loopctl.ext = Filename::split_extension(arg);
+    loopctl.dir,loopctl.base = Filename::split1(loopctl.path);
+    // temporary hack, to force reset of the linker filename, stdout, and expect
+    // file names in cal_depvars so they depend on the current file.
+    control.LINKER_OUTPUT_FILENAME = "";
+    control.STDOUT = "";
+    control.EXPECT = "";
+    var dvars = #cal_depvars;
+    println$ f"Processing [%02d/%02d]: %S" (i, n, file);
+    runit;
+    ++i;
   done
+  System::exit (0); 
 done
 
-pexit(0);
+if control.SHOWCODE == 1 do {
+    var prg = 
+      if dvars.use_ext == "" then "// No file "+dvars.filebase+".(flx|fdoc) found"
+      else load(dvars.filebase+"."+dvars.use_ext)
+    ;
+    print prg;
+  }; 
+done
+
+dvars = #cal_depvars;
+runit;
+
+System::exit (0);
 
 

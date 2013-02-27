@@ -23,7 +23,7 @@ proc run_felix_compiler_if_required
     var stdlibs = cat ' ' dvars.STDLIB;
     var CMD=cat ' ' (list (
       control.QUOTE_FLXG,
-      VERBOSE, FLXFLAGS, dvars.FLXLIB,
+      dvars.VERBOSE, FLXFLAGS, dvars.FLXLIB,
       control.INCLUDE_DIRS, 
       "--syntax="+control.STDGRAMMAR, 
       control.STDIMPORT, control.IMPORTS)) + 
@@ -213,7 +213,13 @@ proc run_program_static
   check_output;
 }
 
-proc run_if_required_and_uptodate
+proc run_dynamic_with_calpackages
+{
+  calpackages;
+  run_program_dynamic;
+}
+
+gen check_run_if_required_and_uptodate() =
 {
 
   if control.RECOMPILE == 0 and control.RUNIT == 1 and control.CLEAR_CACHE == 0 do
@@ -231,22 +237,78 @@ proc run_if_required_and_uptodate
     if control.STATIC == 0 do
       if xtime > srctime and xtime > control.cache_time do
         debugln$ "Running dynamically linked binary";
-        calpackages;
-        run_program_dynamic;
+        return true;
       else
         debugln$ "Dynamically linked binary out of date or non-existant";
       done
     else
       if xtime > srctime and xtime > control.cache_time do
         debugln$ "Running statically linked binary";
-        run_program_static;
+        return true;
       else
         debugln$ "Statically linked binary out of date or non-existant";
       done
     done
   done
-
+  return false;
 
 }
 
+proc run_with_calpackages
+{
+  if control.STATIC == 0 do
+    run_dynamic_with_calpackages;
+  else
+    run_program_static;
+  done
+}
+
+proc run_cxx_and_exe_as_required
+{
+
+  if control.CCOMPILEIT == 0 do
+    debugln "C++ compilation skipped by switch";
+  elif control.STATIC == 0 do
+
+    debugln "Dynamic linkage";
+    cxx_compile_dynamic;
+
+    if control.LINKIT == 0 do
+      debugln "Not linking program selected by switch";
+    else
+      cxx_link_dynamic;
+      if control.RUNIT == 1 do
+        run_program_dynamic;
+      else
+        debugln "Not running program selected by switch";
+      done
+    done
+  else
+
+    debugln "Static linkage";
+    cxx_compile_static;
+
+    if control.LINKIT == 0 do
+      debugln "Not linking based on switch";
+    else
+      cxx_link_static;
+      if control.RUNIT == 1 do
+        run_program_static;
+      else
+        debugln "Not running program selected by switch";
+      done
+    done
+  done
+}
+
+proc runit 
+{
+  var immediate_run = #check_run_if_required_and_uptodate;
+  if immediate_run do
+    run_with_calpackages;
+  else
+    run_felix_compiler_if_required;
+    run_cxx_and_exe_as_required;
+  done
+}
 

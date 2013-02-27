@@ -16,7 +16,7 @@ gen cal_depvars() =
   debugln$ "Given Extension=" + loopctl.ext;
 
     // this is a hack! We should resolve the filename first.
-  var use_ext = if loopctl.ext != "" then "."+loopctl.ext else
+  var use_ext = if loopctl.ext != "" then loopctl.ext else
     #{ 
        var flxt = dfiletime (rel_filebase+".flx",#past_time);
        var fdoct = dfiletime (rel_filebase+".fdoc",#past_time);
@@ -93,13 +93,20 @@ gen cal_depvars() =
 
   debugln$ "RECOMPILE="+str control.RECOMPILE;
   debugln$ "RUNIT="+str control.RUNIT;
-  if control.SHOWCODE == 1 do {
-    var prg = 
-      if use_ext == "" then "// No file "+filebase+".(flx|fdoc) found"
-      else load(filebase+"."+use_ext)
-    ;
-    print prg;
-  }; done
+
+  var VERBOSE = "";
+  if control.DEBUG_COMPILER == 1 do
+    VERBOSE="-v";
+    debugln "Compiler debugging on";
+  else
+    VERBOSE="-q";
+    debugln "Compiler debugging off";
+  done
+
+  if control.DEBUG==1 do
+    control.CCFLAGS=control.CCFLAGS+config.DEBUG_FLAGS;
+  done
+
 
   return struct { 
     var filebase=filebase;
@@ -111,6 +118,7 @@ gen cal_depvars() =
     var FLXLIB=FLXLIB;
     var DEBUGSWITCH=DEBUGSWITCH;
     var STATIC_ENV=STATIC_ENV;
+    var VERBOSE = VERBOSE;
   };
 
 }

@@ -426,7 +426,7 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
       its
     in
     let ss = Flx_print.string_of_string fmt in
-    let fs = "flx::rtl::strutil::flx_asprintf("^ss^","^args^")" in
+    let fs = "::flx::rtl::strutil::flx_asprintf("^ss^","^args^")" in
     let rreq = RREQ_atom (Package_req (CS.Str "flx_strutil")) in
     let _,props, dcls, req = mkreqs sr rreq in
     assert (props = []);

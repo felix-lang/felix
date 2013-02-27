@@ -37,6 +37,7 @@ fun init_loopctl () => struct {
     var ext="";
     var base="";
     var dir="";
+    var progname = "";
 };
 
 fun dflt_control () =>
@@ -108,6 +109,8 @@ fun dflt_control () =>
     var DLINK_STRING = "";
     var SLINK_STRING = "";
     var cache_time = 0.0;
+    var INDIR = "";
+    var INREGEX = "";
   }
 ;
 

@@ -73,46 +73,9 @@ proc print_help() {
 }
 
 
-
-// --------------------------------------------------
-// String Utilities 
-// --------------------------------------------------
-
-fun splitext(p:string)=>
-  if p.[-4 to] == ".flx" then p.[to -4],"flx"
-  elif p.[-4 to] == ".cpp" then p.[to -4],"cpp"
-  elif p.[-5 to] == ".fdoc" then p.[to -5],"fdoc"
-  else p,""
-  endif
-;
-
-proc parse_cmd_line
+proc handle_switch(arg:string)
 {
-var SET_LINKER_OUTPUT = false;
-grabbing_args: while loopctl.grab == 1 and loopctl.argno<System::argc do
-  var arg = System::argv loopctl.argno;
-  debugln$ "ARGNO="+str(loopctl.argno)+", arg='"+arg+"'";
-  if SET_LINKER_OUTPUT do
-     control.LINKER_OUTPUT_FILENAME = arg;
-     debugln$ "Set linker output file=" + control.LINKER_OUTPUT_FILENAME;
-     SET_LINKER_OUTPUT = false;
-     ++loopctl.argno;
-     continue grabbing_args;
-  done
-
-  loopctl.path,loopctl.ext = splitext(arg);
-  loopctl.dir,loopctl.base = Filename::split1(loopctl.path);
-  debugln$ "path="+loopctl.path+", ext="+loopctl.ext+",dir="+loopctl.dir+",base="+loopctl.base;
-  if loopctl.ext != "flx" and loopctl.ext != "fdoc" and loopctl.ext != "" do
-    // add to list of things to link, and also things to compile
-    // if the extension is appropriate
-    if List::mem eq of (string * string) compile_exts loopctl.ext do
-      control.cpps = control.cpps + arg;
-    else
-     control.cppos = control.cppos + arg;
-    done
-
-  elif arg == "--nostdimport" do
+  if arg == "--nostdimport" do
     debugln "No standard library import";
     // Note: currently, Felix compiler generates code that REQUIRES
     // the standard library, eg the driver passes a gc_profile_t record
@@ -159,7 +122,7 @@ grabbing_args: while loopctl.grab == 1 and loopctl.argno<System::argc do
     control.EXPECT=arg.[9 to];
     control.CHECK_EXPECT=1;
 
-elif arg=="--show" do
+  elif arg=="--show" do
     control.SHOWCODE=1;
 
   elif arg=="--clean" do
@@ -303,10 +266,6 @@ elif arg=="--show" do
     debugln "Compile program but do not run it";
     control.RUNIT=0;
 
-  elif arg == "-o" do
-    debugln "Set linker output name (next arg)";
-    SET_LINKER_OUTPUT=true;
-
   elif prefix(arg,"-I") do
     debugln "Set include directories for both Felix and C/C++";
     control.INCLUDE_DIRS=control.INCLUDE_DIRS + " " + arg;
@@ -362,16 +321,108 @@ elif arg=="--show" do
     arg = System::argv loopctl.argno;
     debugln$ "ARGNO="+str(loopctl.argno)+", arg='"+arg+"'";
 
-    loopctl.path,loopctl.ext = splitext(arg);
+    loopctl.path,loopctl.ext = Filename::split_extension(arg);
     loopctl.dir,loopctl.base = Filename::split1(loopctl.path);
     debugln$ "path="+loopctl.path+", ext="+loopctl.ext+",dir="+loopctl.dir+",base="+loopctl.base;
 
+  elif prefix (arg,"--indir=") do
+    control.INDIR = arg.[8 to];
+    debugln$ "Set input directory for regexp to " + control.INDIR;
+
+  elif prefix (arg,"--regex=") do
+    control.INREGEX = arg.[8 to];
+    debugln$ "Set input regex to " + control.INREGEX;
+
 // the main filename -- subsequent args are args to flx_run
   else
-    debugln "Assume we have the filename now";
-    loopctl.grab=0;
+    eprintln$ "Unknown switch " + arg;
+    System::exit 1;
   done
-  loopctl.argno = loopctl.argno + 1;
+}
+
+// --------------------------------------------------
+// String Utilities 
+// --------------------------------------------------
+
+// utility to classify extensions.
+fun exts () = {
+  var compile_exts = list ('.cpp','.cxx','.c','.cc');
+  var link_exts =  list ('.o','.obj','.lib','.dll','.a','.so');
+  var felix_exts = list (".flx",".fdoc");
+  var exts =
+    map (fun (s:string) => s,"compile") compile_exts +
+    map (fun (s:string) => s,"link") link_exts +
+    map (fun (s:string) => s,"felix") felix_exts + 
+    ("","none")
+  ;
+  return exts;
+}
+
+fun check_ext (s:string) => match find #exts s with
+  | Some ?tag => tag
+  | None => "unknown"
+;
+
+proc parse_cmd_line
+{
+var SET_LINKER_OUTPUT = false;
+grabbing_args: while loopctl.grab == 1 and loopctl.argno<System::argc do
+  var arg = System::argv loopctl.argno;
+  debugln$ "ARGNO="+str(loopctl.argno)+", arg='"+arg+"'";
+
+  if SET_LINKER_OUTPUT do
+     control.LINKER_OUTPUT_FILENAME = arg;
+     debugln$ "Set linker output file=" + control.LINKER_OUTPUT_FILENAME;
+     SET_LINKER_OUTPUT = false;
+     ++loopctl.argno;
+
+  elif arg == "-o" do
+    debugln "Set linker output name (next arg)";
+    SET_LINKER_OUTPUT=true;
+
+  elif not (prefix (arg,"-")) do
+    loopctl.progname = arg;
+//println$ "No - so checking filename extension of " + arg;
+//var extension = Filename::get_extension arg;
+//println$ "Extension is " + extension;
+//println$ "Class is " + check_ext extension;
+
+    match check_ext $ Filename::get_extension arg with
+    | "compile" => 
+       control.cpps = control.cpps + arg;
+       ++loopctl.argno;
+
+    | "link" =>
+       control.cppos = control.cppos + arg;
+       ++loopctl.argno;
+
+    | "felix" =>
+      loopctl.progname = arg;
+      loopctl.path,loopctl.ext = Filename::split_extension(arg);
+      loopctl.dir,loopctl.base = Filename::split1(loopctl.path);
+      debugln$ "path="+loopctl.path+", ext="+loopctl.ext+",dir="+loopctl.dir+",base="+loopctl.base;
+      loopctl.grab = 0;
+
+    | "none" =>
+      loopctl.progname = arg;
+      loopctl.path,loopctl.ext = Filename::split_extension(arg);
+      loopctl.dir,loopctl.base = Filename::split1(loopctl.path);
+      debugln$ "path="+loopctl.path+", ext="+loopctl.ext+",dir="+loopctl.dir+",base="+loopctl.base;
+      loopctl.grab = 0;
+
+    | "unknown" =>
+      eprintln$ "Unknown file extension in " + arg;
+      System::exit 1;
+
+    | _ => assert false;
+    endmatch
+  ;
+   
+  else
+  handle_switch(arg);
+
+  done
+  ++loopctl.argno;
 done
  
 }
@@ -388,7 +439,7 @@ proc processing_stage1
 
   // If we're still trying to grab a filename,
   // but we've run out of arguments ..
-  if loopctl.grab == 1 and loopctl.argno == System::argc do
+  if loopctl.grab == 1 and loopctl.argno == System::argc and control.INREGEX == "" do
     if control.CLEAR_CACHE == 1 do
       System::exit(0);
     else
