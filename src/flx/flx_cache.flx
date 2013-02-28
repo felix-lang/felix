@@ -60,7 +60,7 @@ fun maxf (x: double) (f:string) =>
 
 fun cal_files_time (fs: list[string])=> fold_left maxf #past_time fs;
 
-fun cal_dep_time(f:string)= {
+fun cal_dep_time(OUTPUT_DIR:string, f:string)= {
   fun cal_time_from_dep (df: string):double=
   {
     val deptext = load df;
@@ -73,7 +73,7 @@ fun cal_dep_time(f:string)= {
 
   val fdoctime = dfiletime(f+".fdoc",#past_time);
   val flxtime = dfiletime(f+".flx",#past_time);
-  val depfilename = cache_join (control.OUTPUT_DIR, f+".dep");
+  val depfilename = cache_join (OUTPUT_DIR, f+".dep");
   debugln$ "Dependency file name = " + depfilename;
   val deptime = cal_time_from_dep (depfilename);
   debugln$ "fdoc time = " + strfiletime fdoctime;
@@ -84,18 +84,47 @@ fun cal_dep_time(f:string)= {
   return srctime;
 }
 
+// FLX_INSTALL_DIR: root for finding standard grammar
+// STDGRAMMAR: root standard grammar key, within FLX_INSTALL_DIR
+//      usually "@grammar/grammar.files"
+// FLXG: absolute filename of felix compiler executable
 
-proc validate_cache 
+// CACHE_DIR: absolute filename of binary cache
+// OUTPUT_DIR: absolute filename of text cache
+
+// DEFAULT_CACHE_DIR: default location of CACHE_DIR
+// DEFAULT_OUTPUT_DIR: default location of OUTPUT_DIR
+//    These defaults are used to determine if the
+//    the cache should be deleted automatically
+//    or a an interactive query used to verify.
+//    Automatic deletion requies the caches to be the default.
+// CLEAR_CACHE: switch to force clearing the cache
+
+typedef cache_validation_spec_t = 
+(
+   FLX_INSTALL_DIR:string, 
+   STDGRAMMAR:string, 
+   FLXG:string,    
+   CACHE_DIR:string,
+   OUTPUT_DIR:string,
+   DEFAULT_CACHE_DIR: string,
+   DEFAULT_OUTPUT_DIR: string,
+   CLEAR_CACHE: int
+);
+
+
+// returns cache time
+gen validate_cache  (spec: cache_validation_spec_t) : int * double =
 {
 
-  Directory::mkdirs(control.CACHE_DIR);
+  Directory::mkdirs(spec.CACHE_DIR);
 
-  var flxg_time = dfiletime(control.FLXG, #future_time);
+  var flxg_time = dfiletime(spec.FLXG, #future_time);
   debugln$ "Flxg_time=" + strfiletime(flxg_time);
 
-  var flxg_stamp = Filename::join control.CACHE_DIR "flxg_time.stamp";
-  control.cache_time = dfiletime(flxg_stamp,#future_time);
-  debugln$ "cache_time=" + strfiletime(control.cache_time);
+  var flxg_stamp = Filename::join spec.CACHE_DIR "flxg_time.stamp";
+  var cache_time = dfiletime(flxg_stamp,#future_time);
+  debugln$ "cache_time=" + strfiletime(cache_time);
 
   var flxg_stamp_data = load flxg_stamp;
   //println$ "Flxg_stamp_data=" + flxg_stamp_data; 
@@ -103,12 +132,12 @@ proc validate_cache
   var flxg_stamp_time = match flxg_stamp_data.atof with | 0.0 => #past_time | ?x => x;
 
   debugln$ "Flxg_stamp_data : " + strfiletime(flxg_stamp_time);
-  var grammar_time = gramtime(Filename::join (config.FLX_INSTALL_DIR,"lib"), control.STDGRAMMAR);
+  var grammar_time = gramtime(Filename::join (spec.FLX_INSTALL_DIR,"lib"), spec.STDGRAMMAR);
   debugln$ "Grammar text time=" + strfiletime (grammar_time);
   var automaton_name = 
-    cache_join(control.CACHE_DIR, 
+    cache_join(spec.CACHE_DIR, 
     Directory::mk_absolute_filename (Filename::join (list( 
-      config.FLX_INSTALL_DIR,
+      spec.FLX_INSTALL_DIR,
       "lib",
       "grammar",
       "syntax.automaton"
@@ -120,74 +149,74 @@ proc validate_cache
 
   // Still if this fails,  the compiler is new and 
   // the cache should be deleted.
-  if control.cache_time != #future_time and flxg_stamp_time != flxg_time do
+  if cache_time != #future_time and flxg_stamp_time != flxg_time do
     println$ "Cache may be out of date due to compiler upgrade!";
     println$ "Flxg compiler time stamp=" + strfiletime(flxg_time);
-    println$ "Cache time stamp        =" + strfiletime(control.cache_time);
+    println$ "Cache time stamp        =" + strfiletime(cache_time);
     if not (
-      (control.OUTPUT_DIR == "/" or control.OUTPUT_DIR == "" or control.OUTPUT_DIR == ".") or
-      (control.CACHE_DIR == "/" or control.CACHE_DIR == "" or control.CACHE_DIR == ".")
+      (spec.OUTPUT_DIR == "/" or spec.OUTPUT_DIR == "" or spec.OUTPUT_DIR == ".") or
+      (spec.CACHE_DIR == "/" or spec.CACHE_DIR == "" or spec.CACHE_DIR == ".")
     )
     do 
-      control.CLEAR_CACHE = 1;
+      spec.CLEAR_CACHE = 1;
     done
   elif automaton_time != #future_time and grammar_time > automaton_time do
     println$ "Cache may be out of date due to grammar upgrade!";
     println$ "Grammar time stamp          =" + strfiletime(grammar_time);
     println$ "Automaton.syntax time stamp =" + strfiletime(automaton_time);
     if not (
-      (control.OUTPUT_DIR == "/" or control.OUTPUT_DIR == "" or control.OUTPUT_DIR == ".") or
-      (control.CACHE_DIR == "/" or control.CACHE_DIR == "" or control.CACHE_DIR == ".")
+      (spec.OUTPUT_DIR == "/" or spec.OUTPUT_DIR == "" or spec.OUTPUT_DIR == ".") or
+      (spec.CACHE_DIR == "/" or spec.CACHE_DIR == "" or spec.CACHE_DIR == ".")
     )
     do 
-      control.CLEAR_CACHE = 1;
+      spec.CLEAR_CACHE = 1;
     done
   done
 
   // FFF BE CAREFUL! The value "/" for these caches is perfectly good
-  if control.CLEAR_CACHE != 0 do
+  if spec.CLEAR_CACHE != 0 do
     // refuse to delete "" or "/" or ".", basic safety check
     if 
-      (control.OUTPUT_DIR == "/" or control.OUTPUT_DIR == "" or control.OUTPUT_DIR == ".") or
-      (control.CACHE_DIR == "/" or control.CACHE_DIR == "" or control.CACHE_DIR == ".")
+      (spec.OUTPUT_DIR == "/" or spec.OUTPUT_DIR == "" or spec.OUTPUT_DIR == ".") or
+      (spec.CACHE_DIR == "/" or spec.CACHE_DIR == "" or spec.CACHE_DIR == ".")
     do
       println "WILL NOT DELETE CACHES";
-      println$ "output cache " + control.OUTPUT_DIR;
-      println$ "binary cache " + control.CACHE_DIR;
+      println$ "output cache " + spec.OUTPUT_DIR;
+      println$ "binary cache " + spec.CACHE_DIR;
       System::exit(1);
     done
 
     // if the cache is default $HOME one, which cannot be ""
     // due to previous check, then delete without question
     if 
-      control.OUTPUT_DIR == profile.DEFAULT_OUTPUT_DIR and 
-      control.CACHE_DIR == profile.DEFAULT_CACHE_DIR 
+      spec.OUTPUT_DIR == spec.DEFAULT_OUTPUT_DIR and 
+      spec.CACHE_DIR == spec.DEFAULT_CACHE_DIR 
     do 
       var answer = "Y\n";
     else
       // otherwise prompt for confirmation
-      println$ "Would delete cache " + control.OUTPUT_DIR;
-      println$ "Would delete cache " + control.CACHE_DIR;
+      println$ "Would delete cache " + spec.OUTPUT_DIR;
+      println$ "Would delete cache " + spec.CACHE_DIR;
       print "Are you SURE? (Y/n) "; fflush stdout;
       answer = readln stdin;
     done
     if answer == "Y\n" or answer == "y\n" do
       // delete the caches loudly
-      println$ "Delete cache " + control.OUTPUT_DIR;
+      println$ "Delete cache " + spec.OUTPUT_DIR;
       if PLAT_WIN32 do
-          C_hack::ignore$ xqt("rd /Q /S " + quote(control.OUTPUT_DIR));
+          C_hack::ignore$ xqt("rd /Q /S " + quote(spec.OUTPUT_DIR));
       else
-          C_hack::ignore$ xqt("rm -rf " + quote(control.OUTPUT_DIR));
+          C_hack::ignore$ xqt("rm -rf " + quote(spec.OUTPUT_DIR));
       done
-      println$ "Delete cache " + control.CACHE_DIR;
+      println$ "Delete cache " + spec.CACHE_DIR;
 
       if PLAT_WIN32 do
-          C_hack::ignore$ xqt("rd /Q /S " + quote(control.CACHE_DIR));
+          C_hack::ignore$ xqt("rd /Q /S " + quote(spec.CACHE_DIR));
       else
-          C_hack::ignore$ xqt("rm -rf " + quote(control.CACHE_DIR));
+          C_hack::ignore$ xqt("rm -rf " + quote(spec.CACHE_DIR));
       done
 
-      Directory::mkdirs(control.CACHE_DIR);
+      Directory::mkdirs(spec.CACHE_DIR);
       var f = fopen_output flxg_stamp;
       write(f, fmt(flxg_time, fixed (0,3)));
       f.fclose;
@@ -197,7 +226,7 @@ proc validate_cache
       System::exit(1);
     done
   done
-
+  return spec.CLEAR_CACHE, cache_time;
 }
 
 fun cache_join (c:string, var f:string) = 

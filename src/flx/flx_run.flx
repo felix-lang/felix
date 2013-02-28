@@ -226,7 +226,7 @@ gen check_run_if_required_and_uptodate() =
     // not (--force or -c)
     debugln "Checking to see if the binary is uptodate";
     var xtime = dfiletime(control.LINKER_OUTPUT_FILENAME,#past_time);
-    var srctime = cal_dep_time (dvars.filebase);
+    var srctime = cal_dep_time (control.OUTPUT_DIR, dvars.filebase);
     srctime = fold_left maxf srctime control.cpps;
     srctime = fold_left maxf srctime control.cppos;
 

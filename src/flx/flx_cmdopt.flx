@@ -432,8 +432,16 @@ proc processing_stage1
 
   parse_cmd_line;
 
-  validate_cache;
-
+  control.CLEAR_CACHE, control.cache_time = validate_cache (
+    FLX_INSTALL_DIR = config.FLX_INSTALL_DIR,
+    STDGRAMMAR = control.STDGRAMMAR,
+    FLXG = control.FLXG,
+    CACHE_DIR = control.CACHE_DIR,
+    OUTPUT_DIR = control.OUTPUT_DIR,
+    DEFAULT_CACHE_DIR = profile.DEFAULT_CACHE_DIR,
+    DEFAULT_OUTPUT_DIR = profile.DEFAULT_OUTPUT_DIR,
+    CLEAR_CACHE= control.CLEAR_CACHE
+  );
 
   debugln$ loopctl.grab, loopctl.argno, System::argc;
 
