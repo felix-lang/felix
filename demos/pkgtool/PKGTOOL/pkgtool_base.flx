@@ -2,7 +2,7 @@
 //$ Author Mike Maul
 //$ See README.md for more details
 include "plat/config";
-include "PKGTOOL/libflx_interface";
+#include "PKGTOOL/libflx_interface";
 open Filename;
 open FileStat;
 open Output_text_file[ofile];
@@ -277,7 +277,7 @@ class PkgTool {
 
 //$ Test invocation
   proc run_test(name:string,noheader:bool) {
-    var flx_cmd = redir_err(((FLX_INSTALL_DIR.join("bin")).join("flx --inline=1 ") +
+    var flx_cmd = redir_err(((FLX_INSTALL_DIR.join("bin")).join("flx --noinline ") +
     " "+ FLX_OPTS + (BUILD_DIR.join("test")).join(name)),TEST_LOG);
     if PLAT_WIN32 do
       var run_test_bat:ofile = fopen_output(BUILD_DIR.join("RUN_TEST.BAT"));
@@ -603,6 +603,8 @@ class PkgTool {
 //$ The 'C' prefix is reserved for functionality tests that may be used.
 //$ The 'D' prefix is reserved for datafiles during build phase
   proc default_test() {
+    var test_ok_fn = (BUILD_DIR.join("test")).join("TEST.OK");
+    C_hack::ignore(FileSystem::unlink_file(test_ok_fn));
     var file="";
     match Directory::filesin(BUILD_DIR.join("test")) with
     |Some ?files => { for file in sort(files) do
@@ -616,7 +618,12 @@ class PkgTool {
     |_ => { }
     endmatch;
     if STOP_ON_TEST_FAILURES do
+      C_hack::ignore(FileSystem::unlink_file(test_ok_fn));
       test_fail("One or more test has failed. Resolve failure or set STOP_ON_TEST_FAILURES to false in setup.flx");
+    else
+      var test_ok:ofile = fopen_output(test_ok_fn);
+      write(test_ok,"TEST.OK\n");
+      fclose(test_ok);
     done
   }
 
@@ -673,6 +680,8 @@ class PkgTool {
 //$ implementaion of default clean behavior see README.md for
 //$ discussion of behavior
   proc default_clean() {
+   var test_ok_fn = (BUILD_DIR.join("test")).join("TEST.OK");
+   C_hack::ignore(FileSystem::unlink_file(test_ok_fn));
    for dir in list("test",LIBDIR,"bin","app") do
       var dir_path = BUILD_DIR.join(dir);
       match filetype(dir_path) with
@@ -937,10 +946,17 @@ open PkgTool;
           invalid_opts(options,command);
         else
           banner(q"Installing package $(NAME)");
-          phase("Build",build);
-          phase("Test",test);
+// Decoupling build and test from install for now
+          match filetype((BUILD_DIR.join("test")).join("TEST.OK")) with
+          |NONEXISTANT => {
+            phase("Build",build);
+            phase("Test",test);
+          }
+          |_ => {}
+          endmatch;
           phase("Install",install);
-          phase("Clean",clean);
+          
+//          phase("Clean",clean);
           if DRY_RUN do
             phase("Dry Run");
             task("See '"+SETUP_LOG+"' for results.");
@@ -952,9 +968,9 @@ open PkgTool;
           invalid_opts(options,command);
         else
           banner(q"Installing with force package $(NAME)"); 
-          phase("Build",build);
+//          phase("Build",build);
           phase("Install",install);
-          phase("Clean",clean);
+//          phase("Clean",clean);
           if DRY_RUN do
             phase("Dry Run");
             task("See '"+SETUP_LOG+"' for results.");
