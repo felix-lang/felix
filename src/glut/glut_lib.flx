@@ -254,8 +254,8 @@ module GL_glut_h
   proc glutInitWindowPosition: int * int;
   proc glutInitWindowSize: int * int;
   proc glutJoystickFunc: (uint * int * int * int --> void) * int;
-  proc glutKeyboardFunc: uchar * int * int --> void;
-  proc glutKeyboardUpFunc: uchar * int * int --> void;
+  proc glutKeyboardFunc: utiny * int * int --> void;
+  proc glutKeyboardUpFunc: utiny * int * int --> void;
   proc glutLeaveGameMode: 1;
   proc glutMainLoop: 1;
   proc glutMenuStateFunc: int --> void;
