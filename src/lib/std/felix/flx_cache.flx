@@ -1,9 +1,11 @@
+class FlxCache
+{
 fun past_time () => -1.0;
 fun future_time () => double(ulong(-1)); // a hacky way to get a big number
 
-fun gramtime(path:string, s:string) : double = {
+fun gramtime(debugln: string -> 0) (path:string, s:string) : double = {
   //println$ "Path=" + path + " file = " + s;
-  fun maxtime (x:double) (s:string) => max (x, gramtime (path, s));
+  fun maxtime (x:double) (s:string) => max (x, gramtime debugln (path, s));
   if s.[0]=="@".char do
     var file = Filename::join$ path, s.[1 to].strip;
     var filetime = dfiletime(file,0.0);
@@ -50,7 +52,7 @@ fun dfiletime(var f:string, dflt:double)=
 {
   var x = FileStat::filetime (f);
   x = if x == 0.0 then dflt else x endif;
-  debugln$ "Time of file '" + f + "' is " + strfiletime x; 
+  //debugln$ "Time of file '" + f + "' is " + strfiletime x; 
   return x;
 }
 
@@ -109,7 +111,8 @@ typedef cache_validation_spec_t =
    OUTPUT_DIR:string,
    DEFAULT_CACHE_DIR: string,
    DEFAULT_OUTPUT_DIR: string,
-   CLEAR_CACHE: int
+   CLEAR_CACHE: int,
+   debugln : string -> 0
 );
 
 
@@ -120,20 +123,20 @@ gen validate_cache  (spec: cache_validation_spec_t) : int * double =
   Directory::mkdirs(spec.CACHE_DIR);
 
   var flxg_time = dfiletime(spec.FLXG, #future_time);
-  debugln$ "Flxg_time=" + strfiletime(flxg_time);
+  spec.debugln$ "Flxg_time=" + strfiletime(flxg_time);
 
   var flxg_stamp = Filename::join spec.CACHE_DIR "flxg_time.stamp";
   var cache_time = dfiletime(flxg_stamp,#future_time);
-  debugln$ "cache_time=" + strfiletime(cache_time);
+  spec.debugln$ "cache_time=" + strfiletime(cache_time);
 
   var flxg_stamp_data = load flxg_stamp;
   //println$ "Flxg_stamp_data=" + flxg_stamp_data; 
 
   var flxg_stamp_time = match flxg_stamp_data.atof with | 0.0 => #past_time | ?x => x;
 
-  debugln$ "Flxg_stamp_data : " + strfiletime(flxg_stamp_time);
-  var grammar_time = gramtime(Filename::join (spec.FLX_INSTALL_DIR,"lib"), spec.STDGRAMMAR);
-  debugln$ "Grammar text time=" + strfiletime (grammar_time);
+  spec.debugln$ "Flxg_stamp_data : " + strfiletime(flxg_stamp_time);
+  var grammar_time = gramtime spec.debugln (Filename::join (spec.FLX_INSTALL_DIR,"lib"), spec.STDGRAMMAR);
+  spec.debugln$ "Grammar text time=" + strfiletime (grammar_time);
   var automaton_name = 
     cache_join(spec.CACHE_DIR, 
     Directory::mk_absolute_filename (Filename::join (list( 
@@ -145,7 +148,7 @@ gen validate_cache  (spec: cache_validation_spec_t) : int * double =
   ;
 
   var automaton_time = dfiletime(automaton_name,#future_time);
-  debugln$ "Automaton " + automaton_name + " time=" + strfiletime(automaton_time);
+  spec.debugln$ "Automaton " + automaton_name + " time=" + strfiletime(automaton_time);
 
   // Still if this fails,  the compiler is new and 
   // the cache should be deleted.
@@ -231,7 +234,7 @@ gen validate_cache  (spec: cache_validation_spec_t) : int * double =
 
 fun cache_join (c:string, var f:string) = 
 {
-  debugln$ "[cache_join] " + c + " with  " + f;
+  //debugln$ "[cache_join] " + c + " with  " + f;
   if PLAT_WIN32 do
     if f.[1 to 3] == ":\\" do f = f.[0 to 1]+f.[2 to]; 
     elif f.[1] == char ":" do f = f.[0 to 1]+"\\"+f.[2 to]; 
@@ -241,8 +244,8 @@ fun cache_join (c:string, var f:string) =
     if f.[0] == char "/" do f = f.[1 to]; done
   done
     var k = Filename::join(c,f);
-    debugln$ "[cache_join] result = " + k;
+    //debugln$ "[cache_join] result = " + k;
     return k;
 }
 
-
+}
