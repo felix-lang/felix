@@ -33,7 +33,7 @@ var cfg = strdict[string]();
 var BUILD_LIKE = Lib; //$ Set build behavior
 var FLX_INSTALL_DIR=config.FLX_INSTALL_DIR;
 var LINELEN = 64;
-var FLX_OPTS = "";
+var FLX_OPTS = " ";//"  --usage=prototype ";
 var INDENT = "  ";
 var build_tasks = Empty[string*uint->void];
 var TEST_LOG = "setup.log";
@@ -228,6 +228,13 @@ class PkgTool {
   }
 
 //$ Fatal or unhandlable problem, abort program
+  proc general_fail(s:string) {
+    warning(s);
+    System::exit(-1);
+  }
+
+
+//$ Fatal or unhandlable problem, abort program
   proc setup_fail(s:string) {
     warning(s+NL+"See "+SETUP_LOG+" for more information.");
     System::exit(-1);
@@ -391,6 +398,25 @@ class PkgTool {
     return default_run_flx(file,on_error);
   }
 
+//$ Displays Question 'q' and acceptable single character answers 'a'
+//$ of characters in a only alpha and numeric values will be considered
+//$ a valid response and will be returned. If the first character of a 
+//$ is an uppercase character it will be considered the default answer 
+//$ and propmpt will return the first character in awnser if only a 
+//$ newline is recieved.
+fun prompt(q:string,a:string) = {
+  while(true) do
+    print$ q+"?["+a+"] ";
+    var in = (readln(stdin)).[0];
+    match find(a,in ) with
+    |Some ?c => if isalpha(a.[c]) or isdigit(a.[c]) do 
+        return Some (str(a.[c])); 
+      done
+    |_ => if in == "\n" and isupper(a.[0]) do return Some (str(a.[0])); done
+    endmatch;
+  done
+
+}
 
 //$ #### Logging and console output
 
@@ -455,25 +481,28 @@ class PkgTool {
 //$ If a dependency is declared in DEPENDENCIES in the package README.md
 //$ then handle_dependency will invoke 'scoop install <required package>
 //$ to satisfy the dependency
-  proc handle_dependency(dependency:string) { 
+  proc handle_dependency(dependency:string) {
     match is_installed(dependency) with
     |Some _ => { }
     |None[float] => {
-      task("Installing required dependency:"+blue_(dependency));  
-      if (not System::system((INSTALL_ROOT.join("bin")).join("scoop")+" install "+
-          dependency) == 0) do
-        var msg = "unable to install package "+blue_(dependency)+
-          " which is required by "+NAME;
-        if not FORCE do
-          setup_fail(msg);
-        else
-          warning("Continuing anyways...");
+      task("Found required dependencies:"+blue_(dependency));
+      match prompt(INDENT+"Scoop "+blue_(dependency)+" from litterbox","Yn") with  
+      |Some ?y when toupper(y) == "Y" => 
+        if (not System::system((INSTALL_ROOT.join("bin")).join("scoop")+
+          " install "+ dependency) == 0) do
+          var msg = "Unable to install package(s) "+blue_(dependency)+
+            red_(" which is required by ") + blue_(NAME);
+          if not FORCE do
+            general_fail(msg);
+          else
+            warning("Continuing anyways...");
+          done
         done
-      done
-      }
-    endmatch;
-  }
-
+      |_ => general_fail("Setup failed, missing dependencies "+blue_(dependency));
+      endmatch;
+    }
+  endmatch;
+ }
 
 //$ Request clone or pull from git repo specified in PKG_URL
   proc git_get(dest:string) {
@@ -516,22 +545,25 @@ class PkgTool {
 
 
 //$ Phases/Command Implementations
+  proc check_dependencies() {
+    task("Checking dependencies");
+    var cfg = read_cfg(BUILD_DIR.join("README.md"));
+    match (get cfg "DEPENDENCIES") with
+    |Some ?dependencies => {
+      for dependency in split(dependencies, ",") do
+        var d = strip(dependency);
+	if not d == "" do handle_dependency(d); done
+      done          
+    }
+    |_ => {}
+    endmatch;
+}
 
 //$ implementaion of default build behavior see README.md for
 //$ discussion of behavior
   proc default_build() {
     var file="";
     var build_dirs = Empty[string];
-    task("Checking dependencies");
-    var cfg = read_cfg(BUILD_DIR.join("README.md"));
-    match (get cfg "DEPENDENCIES") with
-    |Some ?dependencies => {
-      for dependency in split(dependencies, ",") do
-        handle_dependency(dependency);
-      done          
-    }
-    |_ => {}
-    endmatch;
     if BUILD_LIKE == App or BUILD_LIKE == Lib do
       match Directory::filesin(BUILD_DIR.join("bin")) with
       |Some ?files => { 
@@ -929,6 +961,7 @@ open PkgTool;
           invalid_opts(options,command);
         else
 	  banner(q"Building package $(NAME)");
+          check_dependencies();
           phase("Build",build);
         done
         }
@@ -937,6 +970,7 @@ open PkgTool;
           invalid_opts(options,command);
         else
           banner(q"Testing package $(NAME)");
+          check_dependencies();
           phase("Build",build);
           phase("Test",test);
         done
@@ -949,6 +983,7 @@ open PkgTool;
 // Decoupling build and test from install for now
           match filetype((BUILD_DIR.join("test")).join("TEST.OK")) with
           |NONEXISTANT => {
+            check_dependencies();
             phase("Build",build);
             phase("Test",test);
           }
