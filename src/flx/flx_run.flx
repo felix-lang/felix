@@ -13,7 +13,8 @@ proc calpackages
      DLINK_STRING = control.DLINK_STRING,
      LINKER_SWITCHES = control.LINKER_SWITCHES,
      cpp_filebase = dvars.cpp_filebase,
-     xqt = xqt
+     xqt = xqt,
+     quote = quote
   );
   control.INCLUDE_DIRS = x.INCLUDE_DIRS;
   control.INCLUDE_FILES = x.INCLUDE_FILES;
@@ -56,7 +57,8 @@ proc run_felix_compiler_if_required
       INCLUDE_DIRS = control.INCLUDE_DIRS,
       filebase = dvars.filebase,
       use_ext = dvars.use_ext,
-      debugln = debugln[string]
+      debugln = debugln[string],
+      quote = quote
     );
     if result != 0 do 
       pexit(result); 

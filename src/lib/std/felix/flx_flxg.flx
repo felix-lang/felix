@@ -18,7 +18,8 @@ class Flxg
     INCLUDE_DIRS:string,
     filebase:string,
     use_ext:string,
-    debugln: string -> 0
+    debugln: string -> 0,
+    quote: string -> string
   );
 
 
@@ -26,15 +27,15 @@ class Flxg
   {
     var FLXFLAGS="--inline="+str(spec.INLINE);
     if spec.OUTPUT_DIR != "" do 
-      FLXFLAGS += ' '+quote('--output_dir=' + str(spec.OUTPUT_DIR)); 
+      FLXFLAGS += ' '+spec.quote('--output_dir=' + str(spec.OUTPUT_DIR)); 
     done
     match spec.BUNDLE_DIR with
     | Some ?dir =>
-      FLXFLAGS += ' ' + quote('--bundle_dir=' + dir); 
+      FLXFLAGS += ' ' + spec.quote('--bundle_dir=' + dir); 
     | None=> ;
     endmatch;
     if spec.CACHE_DIR != "" do 
-      FLXFLAGS += " "+quote("--cache_dir=" + spec.CACHE_DIR); 
+      FLXFLAGS += " "+spec.quote("--cache_dir=" + spec.CACHE_DIR); 
     done
     if spec.COMPILER_PHASE != "" do 
       FLXFLAGS += ' --compiler-phase=' + spec.COMPILER_PHASE; 
@@ -51,11 +52,11 @@ class Flxg
       "--syntax="+spec.STDGRAMMAR, 
       spec.STDIMPORT, spec.IMPORTS)) + 
       ' ' + stdlibs + 
-      ' ' + quote(spec.filebase+spec.use_ext)
+      ' ' + spec.quote(spec.filebase+spec.use_ext)
     ;
     spec.debugln$ "Felix command="+CMD;
     
-    var result=system(CMD);
+    var result=System::system(CMD);
     if result != 0 do 
       eprintln$ "Felix compilation "+CMD+" failed";
     done

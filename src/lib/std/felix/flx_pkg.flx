@@ -12,7 +12,8 @@ class FlxPkg
     DLINK_STRING: string,
     LINKER_SWITCHES: string,
     cpp_filebase : string,
-    xqt : string -> string
+    xqt : string -> string,
+    quote: string -> string
   );
 
   typedef pkgconfig_outspec_t = (
@@ -48,15 +49,15 @@ class FlxPkg
 
 
     // find all include directories
-    var x = spec.xqt(PKGCONFIG_CFLAGS+ " " + quote("@"+spec.cpp_filebase+".resh"));
+    var x = spec.xqt(PKGCONFIG_CFLAGS+ " " + spec.quote("@"+spec.cpp_filebase+".resh"));
     var INCLUDE_DIRS=spec.INCLUDE_DIRS +" " + x;
 
     // find all include files
-    x = spec.xqt(PKGCONFIG_INCLUDES+ " "+quote("@"+spec.cpp_filebase+".resh"));
+    x = spec.xqt(PKGCONFIG_INCLUDES+ " "+spec.quote("@"+spec.cpp_filebase+".resh"));
     var INCLUDE_FILES=spec.INCLUDE_FILES +" " + x;
 
     // find the driver package
-    var DRIVER_PKG=spec.xqt(PKGCONFIG_DRIVER+" "+ quote("@"+spec.cpp_filebase+".resh"));
+    var DRIVER_PKG=spec.xqt(PKGCONFIG_DRIVER+" "+ spec.quote("@"+spec.cpp_filebase+".resh"));
     DRIVER_PKG == "" ??  DRIVER_PKG="flx_run";
 
     // find the driver entity
@@ -88,11 +89,11 @@ class FlxPkg
     if spec.STATIC == 0 do
       // dynamic linkage: all the libraries required by the application
       var LINK_STRING=spec.DLINK_STRING+spec.LINKER_SWITCHES+" "+spec.xqt(
-        PKGCONFIG_DLIBS+" "+DRIVER_PKG+" "+quote("@"+spec.cpp_filebase+".resh"));
+        PKGCONFIG_DLIBS+" "+DRIVER_PKG+" "+spec.quote("@"+spec.cpp_filebase+".resh"));
     else
       // static linkage: all the libraries required by the application and driver
       LINK_STRING=spec.SLINK_STRING+spec.LINKER_SWITCHES+" "+spec.xqt(
-        PKGCONFIG_SLIBS+" "+DRIVER_PKG+" "+quote("@"+spec.cpp_filebase+".resh"));
+        PKGCONFIG_SLIBS+" "+DRIVER_PKG+" "+spec.quote("@"+spec.cpp_filebase+".resh"));
     done
 
     return ( 
