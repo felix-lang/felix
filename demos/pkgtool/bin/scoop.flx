@@ -293,8 +293,8 @@ proc install(cmd:string,options:list[string]) {
     phase(q"Scooping package $(pkg) from litterbox.",
       proc () { get_pkg(pkg,pkg_dir); });
     val result = System::system("flx --noinline " +
-      pkg_dir.join("setup")+" " + cmd + " --build-dir=" + pkg_dir +
-      extra_opts);
+    pkg_dir.join("setup")+" " + cmd + " --build-dir=" + pkg_dir +
+    extra_opts);
     if result != 0 do  
       warning("Installation failed");
     else

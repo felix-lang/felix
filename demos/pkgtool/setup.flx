@@ -16,17 +16,8 @@ STOP_ON_TEST_FAILURES = false;
 open PkgTool;
 instance PkgTool {
 
-  proc build () {
-    task("Building libflx plugin");
-    log(run_cmd("flx -c PKGTOOL/libflx.flx","Error building libflx plugin."));
-    default_build();
-  }
-
   proc install() {
     default_install();
-    task("Installing libflx plugin");
-    cp_root(BUILD_DIR, LIBDIR.join("libflx"+#Config::config.EXT_SHLIB),
-      DEST_DIR.join(r"lib"));
     if not CMD == "dist" do 
     var bin_dir = (PREFIX.join("bin"));
     match filetype(bin_dir) with

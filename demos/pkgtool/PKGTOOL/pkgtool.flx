@@ -1,11 +1,12 @@
 //$ pkgtool.flx
 //$ Author Mike Maul
 //$ See README.md for more details
-include "PKGTOOL/libflx_interface";
-include "PKGTOOL/libflx";
+//include "PKGTOOL/libflx_interface";
+//include "PKGTOOL/libflx";
 //include "PKGTOOL/libflx_factory";
 include "PKGTOOL/pkgtool_base";
-open PkgTool;
+
+/*open PkgTool;
 instance PkgTool {
   fun run_flx(file:string,on_error:string) = {
     log(INDENT+cyan_(file)+NL);
@@ -25,3 +26,4 @@ instance PkgTool {
 
 
 }
+*/
