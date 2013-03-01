@@ -440,7 +440,8 @@ proc processing_stage1
     OUTPUT_DIR = control.OUTPUT_DIR,
     DEFAULT_CACHE_DIR = profile.DEFAULT_CACHE_DIR,
     DEFAULT_OUTPUT_DIR = profile.DEFAULT_OUTPUT_DIR,
-    CLEAR_CACHE= control.CLEAR_CACHE
+    CLEAR_CACHE= control.CLEAR_CACHE,
+    debugln = debugln[string]
   );
 
   debugln$ loopctl.grab, loopctl.argno, System::argc;

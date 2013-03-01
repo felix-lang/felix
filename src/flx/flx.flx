@@ -2,13 +2,15 @@ include "plat/config";
 include "./flx_plat";
 include "./flx_install";
 include "./flx_cmdopt";
-include "./flx_cache";
+include "std/felix/flx_cache";
 include "./flx_pkg";
 include "./flx_config";
 include "./flx_control";
 include "./flx_profile";
 include "./flx_run";
 include "./flx_depvars";
+
+open FlxCache;
 
 // Felix version of THIS program (NOT the one being installed
 // if you're using flx to install Felix)
