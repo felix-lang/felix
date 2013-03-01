@@ -16,7 +16,7 @@ var HOME =
     endif
 ;
 if HOME == "" do
-    setup_fail$ "HOME environment variable is not set.  Please set HOME before building."; 
+    general_fail$ "HOME environment variable is not set.  Please set HOME before building."; 
 	System::exit 1;
 done 
 
@@ -36,7 +36,7 @@ proc get_pkg (pkg:string,dest:string) {
   cfg = read_cfg((LITTERBOX.join(pkg)).join("README.md"));
   match get cfg 'PKG_URL' with
   |Some ?pkg_url => { git_get(pkg_url,dest); }
-  |_ => { setup_fail("No package url present in package definition.");  }
+  |_ => { general_fail(pkg+" not found in litterbox.");  }
   endmatch;
 }
 
@@ -47,7 +47,7 @@ proc search (opts:list[string]) () {
    val num_opts = int(len(opts));
    var not_even_num_args = (num_opts > 1) and ((num_opts % 2) != 0);
    if (num_opts < 1) or not_even_num_args do
-     setup_fail("""search requires ether a single name or an even number of terms 
+     general_fail("""search requires ether a single name or an even number of terms 
 (e.g. field search_string ...)""");
    done
    fun to_assoc_list[T] (l:list[T]):list[T^2] =>
@@ -132,7 +132,7 @@ proc info (pkg:string) () {
     display$ "----"+NL;
     display(((get cfg 'LONG_DESCRIPTION').or_else "")+NL);
   }
-  |_ => { setup_fail(q"No package README.md found for $(pkg) or $(pkg) does not exist");}
+  |_ => { general_fail(q"No package README.md found for $(pkg) or $(pkg) does not exist");}
   endmatch; 
 }
 
@@ -313,7 +313,7 @@ proc install(cmd:string,options:list[string]) {
     done
   }
   |_ => {
-    setup_fail("No package specified");
+    general_fail("No package specified");
   }
   endmatch;
 }
@@ -325,7 +325,7 @@ proc run() {
     match filetype(LITTERBOX) with
     |NONEXISTANT => { phase("Initializing package repository",refresh);}
     |DIRECTORY => { }
-    |_ => { setup_fail("Error creating:"+LITTERBOX + ", try removing if it exists or checking permissions"); }
+    |_ => { general_fail("Error creating:"+LITTERBOX + ", try removing if it exists or checking permissions"); }
     endmatch;
     refresh();
     var opts = Empty[string];
@@ -345,7 +345,7 @@ proc run() {
                     if DEGITIFY do degitify(pkg_dir); done
              }
              |_ => {
-               setup_fail("No package specified");
+               general_fail("No package specified");
              }
              endmatch;
            }
