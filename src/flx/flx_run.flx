@@ -35,48 +35,36 @@ proc calpackages
 
 }
 
-
 proc run_felix_compiler_if_required
 {
   if control.FELIX == 1 do
-
-    var FLXFLAGS="--inline="+str(control.INLINE);
-    if control.OUTPUT_DIR != "" do 
-      FLXFLAGS += ' '+quote('--output_dir=' + str(control.OUTPUT_DIR)); 
-    done
-    for dir in control.BUNDLE_DIR do 
-      FLXFLAGS += ' ' + quote('--bundle_dir=' + dir); 
-    done
-    if control.CACHE_DIR != "" do 
-      FLXFLAGS += " "+quote("--cache_dir=" + control.CACHE_DIR); 
-    done
-    if control.COMPILER_PHASE != "" do 
-      FLXFLAGS += ' --compiler-phase=' + control.COMPILER_PHASE; 
-    done
-    if control.DOREDUCE == 0 do
-      FLXFLAGS += ' --no-reduce';
-    done
-
-    var stdlibs = cat ' ' dvars.STDLIB;
-    var CMD=cat ' ' (list (
-      control.QUOTE_FLXG,
-      dvars.VERBOSE, FLXFLAGS, dvars.FLXLIB,
-      control.INCLUDE_DIRS, 
-      "--syntax="+control.STDGRAMMAR, 
-      control.STDIMPORT, control.IMPORTS)) + 
-      ' ' + stdlibs + 
-      ' ' + quote(dvars.filebase+dvars.use_ext)
-    ;
-    debugln$ "Felix command="+CMD;
-    
-    var result=system(CMD);
+    var result = Flxg::run_felix_compiler
+    (
+      INLINE=control.INLINE,
+      OUTPUT_DIR=control.OUTPUT_DIR,
+      BUNDLE_DIR=control.BUNDLE_DIR,
+      CACHE_DIR=control.CACHE_DIR,
+      COMPILER_PHASE= control.COMPILER_PHASE,
+      DOREDUCE=control.DOREDUCE,
+      STDLIB = dvars.STDLIB,
+      QUOTE_FLXG = control.QUOTE_FLXG,
+      VERBOSE = dvars.VERBOSE,
+      STDGRAMMAR = control.STDGRAMMAR,
+      STDIMPORT = control.STDIMPORT,
+      IMPORTS = control.IMPORTS,
+      FLXLIB = dvars.FLXLIB,
+      INCLUDE_DIRS = control.INCLUDE_DIRS,
+      filebase = dvars.filebase,
+      use_ext = dvars.use_ext,
+      debugln = debugln[string]
+    );
     if result != 0 do 
-      eprintln$ "Felix compilation "+CMD+" failed";
       pexit(result); 
     done
     debugln "Felix compilation succeeded";
     calpackages;
     FlxPkg::write_include_file(dvars.cpp_filebase, control.INCLUDE_FILES);
+
   else
     debugln "Felix compilation skipped by switch";
     calpackages;
