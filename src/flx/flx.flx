@@ -3,7 +3,7 @@ include "./flx_plat";
 include "./flx_install";
 include "./flx_cmdopt";
 include "std/felix/flx_cache";
-include "./flx_pkg";
+include "std/felix/flx_pkg";
 include "./flx_config";
 include "./flx_control";
 include "./flx_profile";

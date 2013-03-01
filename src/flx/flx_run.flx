@@ -1,3 +1,40 @@
+proc calpackages 
+{
+  var x = FlxPkg::map_package_requirements 
+  (
+     FLX_INSTALL_DIR = config.FLX_INSTALL_DIR,
+     PKGCONFIG = control.PKGCONFIG,
+     INCLUDE_DIRS = control.INCLUDE_DIRS,
+     INCLUDE_FILES = control.INCLUDE_FILES,
+     EXT_EXE = config.EXT_EXE,
+     EXT_STATIC_OBJ = config.EXT_STATIC_OBJ,
+     STATIC = control.STATIC,
+     SLINK_STRING = control.SLINK_STRING,
+     DLINK_STRING = control.DLINK_STRING,
+     LINKER_SWITCHES = control.LINKER_SWITCHES,
+     cpp_filebase = dvars.cpp_filebase,
+     xqt = xqt
+  );
+  control.INCLUDE_DIRS = x.INCLUDE_DIRS;
+  control.INCLUDE_FILES = x.INCLUDE_FILES;
+  control.DRIVER_EXE = x.DRIVER_EXE;
+  control.DRIVER_OBJS = x.DRIVER_OBJS;
+  control.LINK_STRING = x.LINK_STRING;
+  if ECHO == 1 do
+    fprintln (cerr, "//RESOURCE FILE="+dvars.cpp_filebase+".resh");
+    fprintln (cerr, "//INCLUDE_DIRS="+control.INCLUDE_DIRS);
+    fprintln (cerr, "//INCLUDE_FILES="+control.INCLUDE_FILES);
+    if control.STATIC == 0 do
+      fprintln (cerr, "//DYNAMIC DRIVER EXE ="+str control.DRIVER_EXE);
+    else
+      fprintln (cerr, "//STATIC DRIVER OBJS ="+str control.DRIVER_OBJS);
+    done
+    fprintln (cerr, "//LINK_STRING="+control.LINK_STRING);
+  done
+
+
+}
+
 
 proc run_felix_compiler_if_required
 {
@@ -39,7 +76,7 @@ proc run_felix_compiler_if_required
     done
     debugln "Felix compilation succeeded";
     calpackages;
-    write_include_file(dvars.cpp_filebase);
+    FlxPkg::write_include_file(dvars.cpp_filebase, control.INCLUDE_FILES);
   else
     debugln "Felix compilation skipped by switch";
     calpackages;

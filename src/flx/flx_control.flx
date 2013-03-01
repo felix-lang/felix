@@ -92,7 +92,6 @@ fun dflt_control () =>
     ;
     var BUNDLE_DIR = match Env::getenv("FLX_BUNDLE_DIR") with | "" => None[string] | ?dir => Some dir endmatch;
 
-    var DRIVER_PKG = "";
     var DRIVER_EXE = ""; // dynamic linkage only 
     var DRIVER_OBJS = Empty[string]; // static linkage only
     var LINK_STRING = "";

@@ -112,7 +112,8 @@ typedef cache_validation_spec_t =
    DEFAULT_CACHE_DIR: string,
    DEFAULT_OUTPUT_DIR: string,
    CLEAR_CACHE: int,
-   debugln : string -> 0
+   debugln : string -> 0,
+   xqt: string -> string
 );
 
 
@@ -207,16 +208,16 @@ gen validate_cache  (spec: cache_validation_spec_t) : int * double =
       // delete the caches loudly
       println$ "Delete cache " + spec.OUTPUT_DIR;
       if PLAT_WIN32 do
-          C_hack::ignore$ xqt("rd /Q /S " + quote(spec.OUTPUT_DIR));
+          C_hack::ignore$ spec.xqt("rd /Q /S " + quote(spec.OUTPUT_DIR));
       else
-          C_hack::ignore$ xqt("rm -rf " + quote(spec.OUTPUT_DIR));
+          C_hack::ignore$ spec.xqt("rm -rf " + quote(spec.OUTPUT_DIR));
       done
       println$ "Delete cache " + spec.CACHE_DIR;
 
       if PLAT_WIN32 do
-          C_hack::ignore$ xqt("rd /Q /S " + quote(spec.CACHE_DIR));
+          C_hack::ignore$ spec.xqt("rd /Q /S " + quote(spec.CACHE_DIR));
       else
-          C_hack::ignore$ xqt("rm -rf " + quote(spec.CACHE_DIR));
+          C_hack::ignore$ spec.xqt("rm -rf " + quote(spec.CACHE_DIR));
       done
 
       Directory::mkdirs(spec.CACHE_DIR);
