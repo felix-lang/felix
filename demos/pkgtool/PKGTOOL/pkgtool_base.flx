@@ -28,6 +28,8 @@ done
 var INSTALL_ROOT_TOPDIR=config.INSTALL_ROOT_TOPDIR;
 var INSTALL_ROOT=config.INSTALL_ROOT;
 var cfg = strdict[string](); 
+var INCLUDE_DIRS=list ("/usr/include","/usr/local/include");
+var LIB_DIRS = list ("/lib","/usr/lib","/usr/local/lib");
 
 //$ ### Globals parameters
 var BUILD_LIKE = Lib; //$ Set build behavior
@@ -218,13 +220,16 @@ class PkgTool {
     if status then green_(" OK ") else red_("FAIL") endif + 
     NC_("]");
   
-//$ Displays name of test
-  proc test_title(name:string) {
+  fun test_title_(name:string) = {
     var line = yellow_(INDENT+name+":"); 
     for var dot in 0 upto (LINELEN - name.len.int) do
       line += ".";
     done
-    display$ line;
+    return line;
+  }
+//$ Displays name of test
+  proc test_title(name:string) {
+    display$ test_title_(name);
   }
 
 //$ Fatal or unhandlable problem, abort program
@@ -463,6 +468,122 @@ fun prompt(q:string,a:string) = {
         cmd
       endif
     endif;
+
+//$ #### Felix Package Config Utilities
+  //$ Locates path to to 'name' given list of 'paths'
+  fun find_path_to(name:string,paths:list[string]) = {
+    var path = "";
+    for path in paths do
+      match filetype(path.join(name)) with
+      |REGULAR => return Some path;
+      |SYMLINK => return Some path;
+      |_ => {}();
+      endmatch;
+    done
+    return None[string];
+  }
+  //$ Creates 'name'.fpc file with 'description', 'cflags' and
+  //$ list of dynamic libraries 'dlibs' and static libraries 'slibs'
+  proc create_fpc(name:string,description:string,cflags:string,includes:list[string],
+                   dlibs:string,slibs:string,reqs:list[string]) {
+    var fpc_name = name+".fpc";
+    task("Creating config/" + fpc_name);
+    var fpc:ofile = fopen_output((BUILD_DIR.join("config")).join(fpc_name));
+    if valid(fpc) do
+      var fpc_s:string = q"""
+Name: $(name)
+cflags: $(cflags)
+Description: $(description)
+requires_dlibs: $(slibs)
+requires_slibs: $(dlibs)
+""";
+      for inc in includes do
+        fpc_s += "includes: <"+inc+">\n";
+      done
+      write (fpc,fpc_s);
+      var req_s = "Requires: ";
+      for req in reqs do
+        req_s += req +" ";
+      done  
+      write (fpc,req_s);
+      fclose(fpc);
+    else
+      general_fail("Failed creating "+fpc_name);
+    done 
+  }
+
+  //$ Determines proper configuration given package 'name', list of C/C++
+  //$ 'includes' and list of C/C++ 'libs'. Then generates config/'name'.fpc
+  //$ Felix Package Config file
+  proc create_config(name:string,includes:list[string],libs:list[string],
+                     reqs:list[string]) {
+    var config_ok_fn = (BUILD_DIR.join("config")).join("CONFIG_"+name+".OK");
+    if not FileStat::fileexists config_ok_fn do 
+      task("Configuring " + NAME);
+      var idirs = strdict[string]();
+      var c_flags:string = "";
+      for inc in includes do
+       add idirs (match
+        find_path_to(inc,INCLUDE_DIRS + EXTRA_INCDIR)
+        with
+        |Some ?path => "-I" + path
+        |None => (
+          general_fail("Unable to find " + inc + " Please locate and pass path to setup with the -L switch");
+          "")
+        endmatch) "";
+      done
+      for idir in idirs do
+        c_flags += let ?k,_ = idir in k; 
+      done
+
+      var lib_dirs="";
+      for lib in libs do
+        lib_dirs += match
+          find_path_to(lib,LIB_DIRS + EXTRA_LIBDIR)
+        with
+        |Some ?path => "-L" + path + " -l" + 
+          lib.[if startswith lib "lib" then 3 else 0 endif 
+               to len(lib)-len(#Config::config.EXT_SHLIB)] 
+        |None => (
+          setup_fail("Unable to find " + lib + 
+            ". Please locate and pass path to setup with the -L switch");
+          "")
+        endmatch;
+      done
+      create_fpc(name,DESCRIPTION,c_flags,includes,
+                     lib_dirs,lib_dirs,reqs);
+      test_config(name);
+      var config_ok:ofile = fopen_output(config_ok_fn);
+      write(config_ok,"CONFIG.OK\n");
+      fclose(config_ok);
+    done
+  }
+
+  proc test_config(name:string) {
+    var test_result_status_fail = test_result_status(false);
+    var test_result_status_ok = test_result_status(true);
+    var title = "Testing configuration for "+name;
+    var title_len = title.len.int;
+    var test_code = q"""
+      requires package "gl";
+      const cc:char = "(char)27";
+      var NC = cc + '[0m'; 
+      var green = cc+'[0;32m';
+      var red = cc + '[0;31m';
+      var yellow = cc + '[0;33m';
+      var line = yellow + "$(INDENT)" + "$(title)" +":"; 
+      for var dot in 0 upto ($(LINELEN) - $(title_len)) do
+        line += ".";
+      done
+      println(line + NC + "[" +green+" OK "+NC +"]");
+    """;
+    var test_fn = "C_test_"+name+"_config.flx";
+    var test_path = (BUILD_DIR.join("test")).join(test_fn);
+    var test:ofile = fopen_output(test_path);
+    write(test,test_code);
+    fclose(test);
+    run_test(test_fn,true);
+  }
 
 //$ #### Package Utilities
 
@@ -712,9 +833,30 @@ fun prompt(q:string,a:string) = {
 //$ implementaion of default clean behavior see README.md for
 //$ discussion of behavior
   proc default_clean() {
-   var test_ok_fn = (BUILD_DIR.join("test")).join("TEST.OK");
-   C_hack::ignore(FileSystem::unlink_file(test_ok_fn));
-   for dir in list("test",LIBDIR,"bin","app") do
+    var test_ok_fn = (BUILD_DIR.join("test")).join("TEST.OK");
+    C_hack::ignore(FileSystem::unlink_file(test_ok_fn));
+    proc clean_flx(file:string) {
+      var file_base = if (file.endswith ".flx") then
+          file.[ to file.len - 4]
+        elif (file.endswith ".fdoc") then
+          file.[ to file.len - 5]
+        else
+          ""
+       endif;
+       if not file_base == "" do
+         for ext in list (#Config::config.EXT_SHLIB,
+                          #Config::config.EXT_EXE) do
+           match filetype(dir_path.join(file_base) + ext ) with 
+           |REGULAR => {  
+             assert_true(FileSystem::unlink_file(dir_path.join(file_base)
+             + ext) == 0,"Deleting " + file_base + ext);
+            }
+            |_ => {}
+            endmatch;
+          done
+        done
+     }
+    for dir in list("test",LIBDIR,"bin","app","config") do
       var dir_path = BUILD_DIR.join(dir);
       match filetype(dir_path) with
       |DIRECTORY => {
@@ -722,36 +864,30 @@ fun prompt(q:string,a:string) = {
         match Directory::filesin(dir_path) with
         |Some ?files => { 
           for file in files do
-            var file_base = if (file.endswith ".flx") then
-              file.[ to file.len - 4]
-            elif (file.endswith ".fdoc") then
-              file.[ to file.len - 5]
-            else
-              ""
-            endif;
-            if not file_base == "" do
-            for ext in list (#Config::config.EXT_SHLIB,
-                                    #Config::config.EXT_EXE) do
-              match filetype(dir_path.join(file_base) + ext ) with 
-              |REGULAR => {  
-                assert_true(FileSystem::unlink_file(dir_path.join(file_base) + 
-                  ext) == 0,"Deleting " + file_base + ext);
-              }
-              |_ => {}
-              endmatch;
-            done
-          done
-          done
+            match file with
+            |?f when endswith f ".OK" => {
+              assert_true(FileSystem::unlink_file(dir_path.join(f)) == 0,
+                          "Deleting " + f);
+            }
+            |?f when (f.endswith ".flx")  => {
+              clean_flx(file);
+            }
+            |?f when (f.endswith ".fdoc") => {
+              clean_flx(file);
+            }
+            |_ => { }
+            endmatch;
+          done 
         }
-        |_ => {}
+        |_ => { }
         endmatch;
       }
-      |_ => { }
+      |_ => {}
       endmatch;
-    done
+    done  
     print NL;    
-  }
-
+  
+}
   virtual proc clean() {
     default_clean();
   }
