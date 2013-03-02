@@ -14,19 +14,20 @@ typedef fun integral_promotion: TYPE -> TYPE =
 open class Tiny
 {
   ctor tiny: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] tiny: T = "static_cast<#0>($1)";
+  ctor[T in reals] tiny: T = "static_cast<#0>($1)/*int.flx: ctor*/";
 }
 
 open class Short
 {
   ctor short: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] short: T = "static_cast<#0>($1)";
+  ctor[T in reals] short: T = "static_cast<#0>($1)/*int.flx: ctor*/";
 }
 
 open class Int
 {
   ctor int: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] int: T = "static_cast<#0>($1)";
+  ctor[T in reals] int: T = "static_cast<#0>($1)/*int.flx: ctor*/";
+  ctor int : int = "($1)/*int.flx: ctor int IDENT*/";
   // special hack
   ctor int(x:bool)=> match x with | true => 1 | false => 0 endmatch;
 }
@@ -34,143 +35,132 @@ open class Int
 open class Long
 {
   ctor long: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] long: T = "static_cast<#0>($1)";
+  ctor[T in reals] long: T = "static_cast<#0>($1)/*int.flx: ctor*/";
 }
 
 open class Vlong
 {
   ctor vlong: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] vlong: T = "static_cast<#0>($1)";
+  ctor[T in reals] vlong: T = "static_cast<#0>($1)/*int.flx: ctor*/";
 }
 
 open class Utiny
 {
   ctor utiny: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] utiny: T = "static_cast<#0>($1)";
+  ctor[T in reals] utiny: T = "static_cast<#0>($1)/*int.flx: ctor*/";
 }
 
 open class Ushort
 {
   ctor ushort: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] ushort: T = "static_cast<#0>($1)";
+  ctor[T in reals] ushort: T = "static_cast<#0>($1)/*int.flx: ctor*/";
 }
 
 open class Uint
 {
   ctor uint: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] uint: T = "static_cast<#0>($1)";
+  ctor[T in reals] uint: T = "static_cast<#0>($1)/*int.flx: ctor*/";
 }
 
 open class Ulong
 {
   ctor ulong: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] ulong: T = "static_cast<#0>($1)";
+  ctor[T in reals] ulong: T = "static_cast<#0>($1)/*int.flx: ctor*/";
 }
 
 open class Uvlong
 {
   ctor uvlong: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] uvlong: T = "static_cast<#0>($1)";
+  ctor[T in reals] uvlong: T = "static_cast<#0>($1)/*int.flx: ctor*/";
 }
 
 open class Int8
 {
   ctor int8: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] int8: T = "static_cast<#0>($1)";
+  ctor[T in reals] int8: T = "static_cast<#0>($1)/*int.flx: ctor*/";
 }
 
 open class Int16
 {
   ctor int16: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] int16: T = "static_cast<#0>($1)";
+  ctor[T in reals] int16: T = "static_cast<#0>($1)/*int.flx: ctor*/";
 }
 
 open class Int32
 {
   ctor int32: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] int32: T = "static_cast<#0>($1)";
+  ctor[T in reals] int32: T = "static_cast<#0>($1)/*int.flx: ctor*/";
 }
 
 open class Int64
 {
   ctor int64: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] int64: T = "static_cast<#0>($1)";
+  ctor[T in reals] int64: T = "static_cast<#0>($1)/*int.flx: ctor*/";
 }
 
 open class Uint8
 {
   ctor uint8: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] uint8: T = "static_cast<#0>($1)";
+  ctor[T in reals] uint8: T = "static_cast<#0>($1)/*int.flx: ctor*/";
 }
 
 open class Uint16
 {
   ctor uint16: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] uint16: T = "static_cast<#0>($1)";
+  ctor[T in reals] uint16: T = "static_cast<#0>($1)/*int.flx: ctor*/";
 }
 
 open class Uint32
 {
   ctor uint32: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] uint32: T = "static_cast<#0>($1)";
+  ctor[T in reals] uint32: T = "static_cast<#0>($1)/*int.flx: ctor*/";
 }
 
 open class Uint64
 {
   ctor uint64: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] uint64: T = "static_cast<#0>($1)";
-}
-
-open class Ssize
-{
-  ctor ssize: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] ssize: T = "static_cast<#0>($1)";
+  ctor[T in reals] uint64: T = "static_cast<#0>($1)/*int.flx: ctor*/";
 }
 
 open class Size
 {
   ctor size: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] size: T = "static_cast<#0>($1)";
+  ctor[T in reals] size: T = "static_cast<#0>($1)/*int.flx: ctor size from #0*/";
+  ctor size: size = "($1)/*int.flx: ctor size IDENT*/";
 
   // special overrides so s.len - 1 works
   fun - : size * int -> size = "$1-$2";
   fun + : size * int -> size = "$1+$2";
 }
 
-open class Offset 
-{
-  ctor offset: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] offset: T = "static_cast<#0>($1)";
-}
-
 open class Ptrdiff
 {
   ctor ptrdiff: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] ptrdiff: T = "static_cast<#0>($1)";
+  ctor[T in reals] ptrdiff: T = "static_cast<#0>($1)/*int.flx: ctor*/";
 }
 
 open class Intptr
 {
   ctor intptr: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] intptr: T = "static_cast<#0>($1)";
+  ctor[T in reals] intptr: T = "static_cast<#0>($1)/*int.flx: ctor*/";
 }
 
 open class Uintptr
 {
   ctor uintptr: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] uintptr: T = "static_cast<#0>($1)";
+  ctor[T in reals] uintptr: T = "static_cast<#0>($1)/*int.flx: ctor*/";
 }
 
 open class Intmax 
 {
   ctor intmax: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] intmax: T = "static_cast<#0>($1)";
+  ctor[T in reals] intmax: T = "static_cast<#0>($1)/*int.flx: ctor*/";
 }
 
 open class Uintmax
 {
   ctor uintmax: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] uintmax: T = "static_cast<#0>($1)";
+  ctor[T in reals] uintmax: T = "static_cast<#0>($1)/*int.flx: ctor*/";
 }
 
 
@@ -202,7 +192,6 @@ instance Repr[int8]  { fun repr[with Str[int8]]  (t:int8)  : string => (str t) +
 instance Repr[int16]  { fun repr[with Str[int16]]  (t:int16)  : string => (str t) + "i16";  }
 instance Repr[int32]  { fun repr[with Str[int32]]  (t:int32)  : string => (str t) + "i32";  }
 instance Repr[int64]  { fun repr[with Str[int64]]  (t:int64)  : string => (str t) + "i64";  }
-instance Repr[ssize]  { fun repr[with Str[ssize]]  (t:ssize)  : string => (str t) + "z";  }
 instance Repr[intmax]  { fun repr[with Str[intmax]]  (t:intmax)  : string => (str t) + "j";  }
 instance Repr[intptr]  { fun repr[with Str[intptr]]  (t:intptr)  : string => (str t) + "p";  }
 instance Repr[ptrdiff]  { fun repr[with Str[ptrdiff]]  (t:ptrdiff)  : string => (str t) + "d";  }
@@ -271,7 +260,6 @@ open Signed_integer[int8];
 open Signed_integer[int16];
 open Signed_integer[int32];
 open Signed_integer[int64];
-open Signed_integer[ssize];
 open Signed_integer[intmax];
 open Signed_integer[intptr];
 open Signed_integer[ptrdiff];

@@ -40,12 +40,9 @@ p (1.0l/ldzero);
 p (-1.0l/ldzero);
 
 p $ char 'a';
-p $ wchar 97l;
-p $ uchar $ 97u;
 
 p $ C_hack::cast[byte] 1t;
 p $ C_hack::cast[address] 16ul;
-p $ C_hack::cast[offset] 16ul;
 
 p "Domo Arigato,\nMr Roboto!";
 //p u"Domo Arigato,\nMr Roboto!";
@@ -61,3 +58,4 @@ p $ (1,2,3,4,5,6);
 p $ (1,"b");
 p $ (1,"b",1.0);
 */
+

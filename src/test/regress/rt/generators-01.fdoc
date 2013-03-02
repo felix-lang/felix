@@ -1,0 +1,45 @@
+
+@h1 generators-01.flx
+@felix
+//Check generators
+
+var cheat : int = 0;
+gen f():int = {
+  ++cheat;
+  //print "Generator "; print cheat; endl;
+  return cheat;
+}
+
+print "F 1="; print$ f(); endl; // 1
+
+body """
+  static int x = 0;
+  int g() { ++x; return x; }
+""";
+
+gen g : 1 -> int;
+
+print "C 1="; print$ g(); endl; // 1
+
+fun d(x:int) => x + x;
+
+// all these should be even
+print "F Even? "; print$ d(f()); endl; // 4
+print "F Even? "; print$ d(f()); endl; // 6
+
+print "C Even? "; print$ d(g()); endl; // 4
+print "C Even? "; print$ d(g()); endl; // 6
+
+print "F 4="; print$ f(); endl; // 4
+print "C 4="; print$ g(); endl; // 4
+
+@expect
+F 1=1
+C 1=1
+F Even? 4
+F Even? 6
+C Even? 4
+C Even? 6
+F 4=4
+C 4=4
+@

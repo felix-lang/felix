@@ -1,0 +1,22 @@
+
+@h1 forall-02.flx
+@felix
+var i:int; lab:for i in 0 upto 10 do
+  if i == 5 do
+    continue lab;
+  done;
+  println i;
+done;
+
+@expect
+0
+1
+2
+3
+4
+6
+7
+8
+9
+10
+@

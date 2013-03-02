@@ -53,6 +53,7 @@ let get_options raw_options =
   {
     compiler_phase = compiler_phase;
     optimise    = check_keys raw_options ["opt"; "optimise"];
+    doreductions = not (check_key raw_options "no-reduce");
     debug       = check_key raw_options "debug";
     with_comments = check_key raw_options "with-comments";
     mangle_names = check_key raw_options "mangle-names";

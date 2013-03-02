@@ -1,0 +1,394 @@
+//$ scoop - Distributed Felix package manager 
+//$ Author Mike Maul
+//$ See README.md for more details
+
+SETUP_LOG="";
+include "PKGTOOL/pkgtool";
+
+open PkgTool;
+open Filename;
+var LIST_INSTALLED = false;
+var HOME = 
+  let ?h = Env::getenv "HOME" in
+    if h!="" then h 
+    elif PLAT_WIN32 then Env::getenv "USERPROFILE"
+    else ""
+    endif
+;
+if HOME == "" do
+    general_fail$ "HOME environment variable is not set.  Please set HOME before building."; 
+	System::exit 1;
+done 
+
+var FELIX_HOME = HOME.join(".felix");
+
+var LITTERBOX = if Env::getenv("LITTERBOX") == "" then 
+  FELIX_HOME.join("litterbox")
+  else Env::getenv("LITTERBOX") endif;
+
+var LITTERBOX_URL = if Env::getenv("LITTERBOX_URL") == "" then
+  'https://github.com/mmaul/litterbox.git'
+  else Env::getenv("LITTERBOX_URL") endif;
+
+var DEGITIFY = false;
+
+proc get_pkg (pkg:string,dest:string) {
+  cfg = read_cfg((LITTERBOX.join(pkg)).join("README.md"));
+  match get cfg 'PKG_URL' with
+  |Some ?pkg_url => { git_get(pkg_url,dest); }
+  |_ => { general_fail(pkg+" not found in litterbox.");  }
+  endmatch;
+}
+
+
+fun head[T] (l:list[T]) => match l with |Cons[T] (?hd,_) => Some hd |Empty[T] => None[T] endmatch;
+
+proc search (opts:list[string]) () {
+   val num_opts = int(len(opts));
+   var not_even_num_args = (num_opts > 1) and ((num_opts % 2) != 0);
+   if (num_opts < 1) or not_even_num_args do
+     general_fail("""search requires ether a single name or an even number of terms 
+(e.g. field search_string ...)""");
+   done
+   fun to_assoc_list[T] (l:list[T]):list[T^2] =>
+     match l with
+     |Cons (?k,Cons(?v,?tl)) => Cons((k,v) , to_assoc_list(tl))
+     |Empty[T] => Empty[T^2]
+     endmatch;
+
+
+   var search = if num_opts == 1 then 
+     list[string^2](("NAME",(let Some ?v = head(opts) in v)))
+   else 
+     to_assoc_list(opts)     
+   endif;
+   
+   match Directory::filesin(LITTERBOX) with
+   |Some ?files => { 
+     for file in sort(filter (fun (f:string) => not f == "build" and not f.startswith ".") files) do
+       var dir_path = LITTERBOX.join(file);
+        match filetype(dir_path) with 
+       |DIRECTORY => {
+        var pkg_readme = dir_path.join("README.md");
+        match filetype(pkg_readme) with
+        |REGULAR => { 
+          var pkg = read_cfg(pkg_readme);
+          for itm in sort(search) do
+            match get pkg (toupper(itm.0)) with
+            |Some ?pkg_v => { 
+              match find((toupper(pkg_v)), (toupper(itm.1))) with
+              |Some _ => {
+	        var name = (get pkg "NAME").or_else("");
+                if not name == "" do
+                  var inst_ver = is_installed(name);
+                  var pkg_ver = atof(match get pkg "VERSION" with |Some ?v =>v |_ => "" endmatch);
+	          task$ ((match is_installed(name) with
+                  |Some ?inst_ver when inst_ver == pkg_ver => blue_("*installed* ")+name+" "+str(pkg_ver) 
+                  |Some ?inst_ver when pkg_ver > inst_ver  => 
+                      red_("  *newer*   "+name+" "+ str(pkg_ver)) 
+                  |_ =>  "            "+yellow_(name+" "+ str(pkg_ver))
+                  endmatch) + 
+                    "   "  + NC_(((get pkg "DESCRIPTION").or_else "")));
+                  
+                done
+                goto enough; 
+              }
+              |_ => {}
+              endmatch;
+            }
+	    |_ => { }
+            endmatch;  
+          done
+enough:>
+        }
+        |_ => {}
+        endmatch;
+      }
+      |_ => {}
+      endmatch;
+      
+    done
+  }
+  |_ => {}
+  endmatch;
+}
+
+proc refresh () {
+  git_get(LITTERBOX_URL,LITTERBOX);
+
+}
+
+proc info (pkg:string) () {
+  var readme = (LITTERBOX.join(pkg)).join("README.md");
+  match filetype(readme) with
+  |REGULAR => { 
+    val cfg = read_cfg(readme);
+    task("NAME: " + (get cfg 'NAME').or_else "");
+    task("DESCRIPTION: " + (get cfg 'DESCRIPTION').or_else "");
+    task("VERSION: " + (get cfg 'VERSION').or_else "");
+    task("PKG_URL: " + (get cfg 'PKG_URL').or_else "");
+    task("AUTHOR: " + (get cfg 'AUTHOR').or_else "");
+    task("AUTHOR_URL: " + (get cfg 'AUTHOR_URL').or_else "");
+    display$ "----"+NL;
+    display(((get cfg 'LONG_DESCRIPTION').or_else "")+NL);
+  }
+  |_ => { general_fail(q"No package README.md found for $(pkg) or $(pkg) does not exist");}
+  endmatch; 
+}
+
+  proc help(unit) {
+    println$ """
+scoop: A distributed package manager for Felix
+
+usage:
+  scoop get     <package>  [options] Pull package from litterbox to current working directory
+  scoop list   [installed] [options] Lists all packages on litterbox. 
+                                     If 'installed' argument is passed then
+                                     only installed packages are listed.
+  scoop search  <package>  [options] Searches for package on litterbox
+  scoop info    <package>  [options] Displays package info
+  scoop install <package>  [options] Pull, builds and install package
+  scoop refresh            [options] Refreshes litterbox package directory cache
+  scoop help               Displays this message
+  scoop help    <command>  Displays detailed help for command
+
+options:
+  --litterbox-url=[Repository URL]           Specify a new repository to use
+  --litterbox=[Local repository cache dir]   Use a specific litterbox cache dir
+  --degitify                                 Strip git repo info from package
+                                             only active for 'scoop get'
+  --force                                    Skip tests and do not stop on
+                                             missing dependencies durring
+                                             'scoop install' 
+""";
+NC();
+}
+
+  proc help_command (command:list[string]) {
+    match command with
+    |Empty => {help();}
+    |Cons (?cmd,_) when cmd == 'get'   => { println$ """
+Description: Pulls package from remote package source into the current working directory and places into a driectory with the same name as the package.
+
+For package build options run 'flx setup help' inside the package directory.
+Refer to the package README.md as well. 
+Usage: scoop get [package]
+
+""";
+    }
+    |Cons (?cmd,_) when cmd == 'list'    => {
+      println$ """
+Description: List all available packages in the litterbox package directory.
+
+Usage: setup.flx list
+""";
+      }
+    |Cons (?cmd,_) when cmd == 'search' => {
+      println$ """
+Description: Searchs package definitions. Given one argument 'scoop search' will
+search for a package name that is a partial match for the given argument.
+For example:  scoop search x
+Will find the x11 package
+Given an even number of argument search will search is specific package 
+definition fields for string matches. Package definition fields are 
+ NAME , DESCRIPTION, CATEGORY, VERSION, AUTHOR, PKGDIR, PKG_URL, LICENSE,
+ REQUIRES
+For example: 'scoop search CATEGORY GUI' will match the 'fltk' and 'x11' packages.
+Multiple package fields can be specified. For example: 'scoop search CATEGORY GUI NAME fltk' will only match the 'fltk' package.
+
+Package field names and match strings are case independant.
+
+Usage: scoop search [package name]
+       scoop search [<package field> <string match>]...
+""";
+      }
+    |Cons (?cmd,_) when cmd == 'info'   => {
+      println$ """
+Description: Displays detailed package info.
+
+Usage: scoop info [package]
+
+""";
+      }
+    |Cons (?cmd,_) when cmd == 'install'    => {
+      println$ """
+Description: Install package into Felix root installation. This command pulls 
+the package from the remote package to the directory HOME/.felix/.litterbox/build/<package>.
+It then proceeds to execute the packages install script.
+
+Usage: scoop install [package]
+""";
+      }
+
+   |Cons (?cmd,_) when cmd == 'refresh'    => {
+      println$ """
+Description: Pull a updated copy of the litterbox package directory.
+
+Usage: scoop refresh
+""";
+      }
+     |Cons (?cmd,_) when cmd == 'help'    => {
+      println$ """
+Description:  Displays help.
+""";
+    }
+    |Cons (?cmd,_) when cmd == 'installed'    => {
+      println$ """
+Description:  Displays a listing of all installed packages and versions.
+""";
+    }
+    |?cmd                       => {
+      invalid_cmd(join_list(cmd));
+    }
+  endmatch;
+  }
+
+proc invalid_cmd(cmd:string) {
+      warning("Invalid commaind:"+cmd);
+      help();  
+}
+
+gen handle_local_options(optt:int*list[string]) = {
+  var valid_opts = 0;
+  var unused_opts = Empty[string];
+  match optt with
+  |?v,?opts => {
+    for arg in opts do
+      match arg with
+      |?option when option.startswith "--litterbox-url=" => {
+        LITTERBOX_URL = arg.[16 to];
+        valid_opts++;
+      }
+      |?option when option.startswith "--litterbox=" => {
+        LITTERBOX = arg.[12 to];
+        valid_opts++;
+      }
+      |?option when option.startswith "--degitify" => {
+        DEGITIFY = true;
+        valid_opts++;
+      }
+      |?option when option.startswith "--force" => {
+        FORCE = true;
+        valid_opts++;
+      }
+      |?option => { unused_opts += option; }
+      endmatch;
+    done
+  }
+  endmatch;
+  return (valid_opts,unused_opts);
+}
+
+proc install(cmd:string,options:list[string]) {
+  banner("Installing package");
+  match options with
+  |Cons (?pkg,?opts) => {
+    var extra_opts = "";
+    if not DEST_DIR == "" do extra_opts += " --dest-dir=" + DEST_DIR + " "; done
+    if not EXTRA_INCDIR == "" do extra_opts += " -I" + EXTRA_INCDIR + " "; done
+    if not EXTRA_LIBDIR == "" do extra_opts += " -L" + EXTRA_LIBDIR + " "; done
+    if FORCE do extra_opts += " --force "; done
+    if DRY_RUN  do extra_opts += " --dry-run "; done
+    val pkg_dir = (LITTERBOX.join("build")).join(pkg);
+    phase(q"Scooping package $(pkg) from litterbox.",
+      proc () { get_pkg(pkg,pkg_dir); });
+    val result = System::system("flx --noinline " +
+    pkg_dir.join("setup")+" " + cmd + " --build-dir=" + pkg_dir +
+    extra_opts);
+    if result != 0 do  
+      warning("Installation failed");
+    else
+      kudos("Installation successful");
+      var result_code = 0;
+      if PLAT_WIN32 do
+        task "Removing build directory:" + pkg_dir;
+        result_code=System::system("rd /S /Q "+pkg_dir);
+      else
+        result_code=System::system("rm -rf "+pkg_dir);
+      done
+        if not result_code == 0 do
+          warning$ "Unable to remove build directory:"+pkg_dir;
+        done
+          kudos("Installation complete");
+    done
+  }
+  |_ => {
+    general_fail("No package specified");
+  }
+  endmatch;
+}
+
+proc run() {
+    banner("Felix package manager");
+    var args = tail(System::args());
+    C_hack::ignore(handle_local_options$ handle_global_options(args));
+    match filetype(LITTERBOX) with
+    |NONEXISTANT => { phase("Initializing package repository",refresh);}
+    |DIRECTORY => { }
+    |_ => { general_fail("Error creating:"+LITTERBOX + ", try removing if it exists or checking permissions"); }
+    endmatch;
+    refresh();
+    var opts = Empty[string];
+    var valid_opts = 0;
+    match args with
+    |Cons (?command,?options) => {
+        match command with
+        |?cmd when cmd == "get" => { 
+             match options with
+             |Cons (?pkg,?as) => {
+                var pkg_dir = 
+                  match head(as) with |Some ?dir => dir |_ => pkg endmatch;
+                phase(q"Scooping package $(pkg) from litterbox.",
+                  proc () { 
+		    get_pkg(pkg,pkg_dir); 
+		    });
+                    if DEGITIFY do degitify(pkg_dir); done
+             }
+             |_ => {
+               general_fail("No package specified");
+             }
+             endmatch;
+           }
+        |?cmd when cmd == "install" => { install(cmd,options); }
+      |?cmd when cmd == "search" => { 
+          banner("Search");
+          phase("packages matching:"+str(options),(search options) );
+        }
+      |?cmd when cmd == "list" => {
+        match options with
+        |Cons (?opt,_) when opt == 'installed' => { 
+          banner("Installed Package");
+          for pkg in installed() do
+            match pkg with
+            | ?p,?v when not p == "" => { task(INDENT+p+" "+v); }
+            |_ => { }
+            endmatch; 
+          done
+        }
+        |_ => {
+          banner("Packages");
+          phase("package listing:",(search (list('NAME','')) ));
+        }
+        endmatch; 
+       }
+      |?cmd when cmd == "info" => { 
+          banner("Info");
+          phase("packages info:" + ((head(options)).or_else ""),
+            (info ((head(options)).or_else "")) );
+        }
+      |?cmd when cmd == "refresh" => { 
+          banner("Refresh");
+          phase("Refresh Repository",refresh);
+        }
+      |?cmd when cmd == "help" => {
+        help_command(options);
+        }
+      |?cmd => { invalid_cmd(cmd); }
+      endmatch;
+    }
+    
+    |_ => { invalid_cmd("?"); }
+    endmatch;
+}
+
+run();

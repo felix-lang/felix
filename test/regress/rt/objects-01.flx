@@ -45,3 +45,4 @@ object anB(a:int, b:int) extends anA(a) implements B = { method fun getb()=> b; 
 var bb = anB(22,33);
 println$ bb.geta(), bb.getb();
  
+

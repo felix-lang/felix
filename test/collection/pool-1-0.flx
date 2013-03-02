@@ -43,3 +43,4 @@ n.free(let Some ?p = m in p);
 println(n.get_next());
 println(n.get_next());
 n.destroy();
+

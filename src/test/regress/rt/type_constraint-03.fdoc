@@ -1,0 +1,26 @@
+
+@h1 type_constraint-03.flx
+@felix
+//Check type constraints
+header '#include <iostream>';
+
+fun f: !fast_ints * !fast_ints -> int = "$1+$2";
+
+print$ f$ 1,2L; endl;
+
+var x = 1;
+var px:&int = &x;
+
+proc h[t,u=&t]: u  * t = "*$1=$2;";
+h(px,1);
+
+proc h2[t,u=&t]: u  * t = "*$1=$2;";
+h2(px,1);
+
+proc k[t,u=&t]: u = "::std::cout << *$1 <<::std::endl;";
+k px;
+
+@expect
+3
+1
+@

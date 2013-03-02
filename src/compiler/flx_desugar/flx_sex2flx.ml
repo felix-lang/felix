@@ -435,6 +435,8 @@ and xrequirement_t sr x : requirement_t =
   | Lst [Id "Package_req"; ct] -> Package_req (xct ct)
   | Lst [Id "Scanner_req"; ct] -> Scanner_req (xct ct)
   | Lst [Id "Finaliser_req"; ct] -> Finaliser_req (xct ct)
+  | Lst [Id "Encoder_req"; ct] -> Encoder_req (xct ct)
+  | Lst [Id "Decoder_req"; ct] -> Decoder_req (xct ct)
   | x -> err x "requirement_t"
 
 and xraw_req_expr_t sr x : raw_req_expr_t =

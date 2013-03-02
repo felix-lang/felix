@@ -106,8 +106,8 @@ group10 :=
 fun pack_args(t:list[string]) = {
   var out = array_alloc[+char] (t.len+1uz);
   var i = 0;
-  for k in t do out.[i]=strdup k.cstr; ++i; done
-  out.[i] = C_hack::cast[+char] C_hack::null[char];
+  for k in t do set(out,i,strdup k.cstr); ++i; done
+  set(out,i, C_hack::cast[+char] C_hack::null[char]);
   return out;
 }
 

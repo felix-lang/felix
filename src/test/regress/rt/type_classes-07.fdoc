@@ -1,0 +1,24 @@
+
+@h1 type_classes-07.flx
+@felix
+class Trick[T] {
+  virtual fun rank : 1 -> int;
+}
+
+instance [A,B] Trick[A -> B] {
+  fun rank() => 1 + Trick[B]::rank ();
+}
+
+instance [K] Trick [K] {
+  fun rank() => 0;
+}
+
+typedef int5 = int -> int -> int -> int->int;
+
+println$ "by instance " + str #Trick[int5]::rank;
+
+
+
+@expect
+by instance 4
+@

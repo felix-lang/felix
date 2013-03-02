@@ -1,0 +1,7 @@
+
+@h1 wt-1.01.01-0.flx
+@felix
+if (s.len.int > 3) do
+  print s;
+  s := "12345\n";
+done;

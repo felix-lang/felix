@@ -46,8 +46,8 @@ let generate_static_link_thunk state module_name =
   let s = 
      "extern \"C\" void "^ module_name ^ "_create_thread_frame();\n" ^
      "extern \"C\" void "^ module_name ^ "_flx_start();\n" ^
-     "extern \"C\" void (*static_create_thread_frame)() = " ^ module_name ^ "_create_thread_frame;\n" ^
-     "extern \"C\" void (*static_flx_start)() = " ^ module_name ^ "_flx_start;\n" 
+     "void (*static_create_thread_frame)() = " ^ module_name ^ "_create_thread_frame;\n" ^
+     "void (*static_flx_start)() = " ^ module_name ^ "_flx_start;\n" 
   in
   Flxg_file.output_string state.static_link_thunk_file s;
   Flxg_file.close_out state.static_link_thunk_file

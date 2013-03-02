@@ -56,3 +56,4 @@ run(db);
 
 finish:>
   sqlite3_close(db);
+

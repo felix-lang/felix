@@ -1,4 +1,3 @@
-include "std/ralist";
 open Ralist;
 
 val five = RAodd(N1 1, RAevn(
@@ -25,5 +24,6 @@ val fivemod = ralist_update (five, 3, 44);
 println$ ralist_lookup(fivemod,3);
 println "--------";
 ralist_foreach (fivemod, (println of (int)));
+
 
 

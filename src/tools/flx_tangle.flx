@@ -123,7 +123,7 @@ proc save_tangle (infile:string, outbase:string)
   var itime = FileStat::filetime infile;
   var flx-time = FileStat::filetime$ outbase+".flx"; 
   var xpect-time = FileStat::filetime$ outbase+".expect"; 
-  if flx-time <= itime or xpect-time <= itime do
+  if flx-time <= itime do
 
     // Run processing pipeline.
     var iflx,oflx = #mk_ioschannel_pair[string];

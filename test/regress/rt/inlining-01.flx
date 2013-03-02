@@ -38,3 +38,4 @@ print "ONE\n";
 print "TWO\n";
 print "THREE\n";
 f[int]();
+

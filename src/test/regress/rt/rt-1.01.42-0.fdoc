@@ -1,0 +1,29 @@
+
+@h1 rt-1.01.42-0.flx
+@felix
+//Check goto:nonlocal
+
+proc f () {
+  val x = { goto foo; };
+  print 'there'; endl;
+  foo:>
+  print 'here'; endl;
+}
+
+f;
+
+proc g () {
+  val x = { goto foo; };
+  print 'there'; endl;
+  foo:>
+  print 'here'; endl;
+}
+
+g;
+
+@expect
+there
+here
+there
+here
+@

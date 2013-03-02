@@ -1,0 +1,26 @@
+
+@h1 darray-01.flx
+@felix
+
+a := darray (20uz, 1);
+println$ "len=" + str (len a);
+println a;
+
+var b = darray[int]();
+println$ len b;
+
+//println$ "add 22 to darray";
+b+= 22;
+//println$ "add 33 to darray";
+b+= 33;
+//println$ "Print darray";
+iter println of (int) b;
+//println$ "Program done";
+
+@expect
+len=20
+varray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
+0
+22
+33
+@

@@ -1,15 +1,10 @@
-include "std/posix/time";
-
-fun Tak (x:float, y:float, z:float): float =>
+fun Tak (x:double, y:double, z:double): double =>
   if (y >= x) then z
-  else Tak(Tak(x - 1.0f,y,z), Tak(y - 1.0f,z,x), Tak(z - 1.0f,x,y))
+  else Tak(Tak(x - 1.0,y,z), Tak(y - 1.0,z,x), Tak(z - 1.0,x,y))
   endif
 ;
 
-val n = 10.0f;
-val t0 = Time::time ();
-val v = Tak(n*3.0f, n*2.0f, n*1.0f);
-val t1 = Time::time ();
+val n = 10.0;
+val v = Tak(n*3.0, n*2.0, n*1.0);
 
-println$ f"%.2f" (double v);
-println$ (t1 - t0);
+println$ f"%.2f" v;

@@ -175,7 +175,7 @@ let csubst sr sr2 ct
         mode := Normal
 
       | 't' ->
-        bcat (string_of_cexpr arg);
+        bcat (string_of_cexpr (arg ()));
         (*
         bcat ( argtyp ^ "(" ^ catmap "," string_of_cexpr args ^ ")");
         *)

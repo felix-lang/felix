@@ -1,0 +1,38 @@
+
+@h1 patterns-tuple-01.flx
+@felix
+println
+  match () with
+  | () => "()"
+  endmatch;
+
+union t1 =
+  | T1_1 of int
+  | T1_2 of unit;
+
+println
+  match T1_1 5 with
+  | T1_1 5 => "T1_1 5"
+  | T1_2 () => "T1_2 ()"
+  endmatch;
+
+println
+  match T1_2 () with
+  | T1_1 5 => "T1_1 5"
+  | T1_2 () => "T1_2 ()"
+  endmatch;
+
+union t2 =
+  | T2_1 of int * unit;
+
+println
+  match T2_1 (5, ()) with
+  | T2_1 (5, ()) => "T2_1 (5, ())"
+  endmatch;
+
+@expect
+()
+T1_1 5
+T1_2 ()
+T2_1 (5, ())
+@

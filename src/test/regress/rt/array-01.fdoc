@@ -1,0 +1,31 @@
+
+@h1 array-01.flx
+@felix
+//Check arrays
+//Check array iterators
+
+proc foo (x:int) {
+  print x;
+  endl;
+}
+
+var x = 1,2,3;
+var y = list(x);
+var z = list(4,5,6);
+
+iter[int, 3] (foo) x;
+iter (foo) y;
+iter (foo) z;
+
+
+@expect
+1
+2
+3
+1
+2
+3
+4
+5
+6
+@

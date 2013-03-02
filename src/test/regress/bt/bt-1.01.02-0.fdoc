@@ -1,0 +1,8 @@
+
+@h1 bt-1.01.02-0.flx
+@felix
+module X { proc p(){} }
+module Y { proc p(){} }
+open X;
+open Y;
+p; // ambiguous

@@ -16,3 +16,4 @@ endmatch;
 
 typedef int5 = int -> int -> int -> int->int;
 println$  "by arity fun " + str memcount[arity int5];
+

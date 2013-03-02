@@ -1,0 +1,20 @@
+
+@h1 re2-01.flx
+@felix
+var r = RE2 ("(h)ello|(H)ello");
+var n = r.NumberOfCapturingGroups;
+println$ "Captures = "+str n;
+
+var s = "Hello";
+var v = _ctor_varray[StringPiece]$ (n+1).size, StringPiece "";
+
+var res = Re2::Match(r,StringPiece s,0, ANCHOR_START, v.stl_begin, v.len.int);
+println$ res;
+println$ v;
+
+
+@expect
+Captures = 2
+true
+varray(Hello, , H)
+@

@@ -1,0 +1,25 @@
+
+@h1 struct_constructors-04.flx
+@felix
+// polymorphic struct constructors, with qualification
+
+open module A {
+  type a[t] = "?1";
+  fun _ctor_a[t]: t -> a[t] = "$1";
+  fun f[t]:a[t]->t="$1";
+}
+
+open module B {
+  struct b[t] = { m: A::a[t]; };
+  fun f[t](x:b[t])=>f (x.m);
+}
+
+var x = A::a(1.1);
+var y = B::b(x);
+println$ f y;
+
+ 
+
+@expect
+1.1
+@

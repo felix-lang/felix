@@ -1,0 +1,119 @@
+class FlxPkg
+{
+  typedef pkgconfig_inspec_t = (
+    FLX_INSTALL_DIR:string,
+    PKGCONFIG:string,
+    INCLUDE_DIRS:string,
+    INCLUDE_FILES:string,
+    EXT_EXE: string,
+    EXT_STATIC_OBJ: string,
+    STATIC: int,
+    SLINK_STRING: string,
+    DLINK_STRING: string,
+    LINKER_SWITCHES: string,
+    cpp_filebase : string,
+    xqt : string -> string,
+    quote: string -> string
+  );
+
+  typedef pkgconfig_outspec_t = (
+    INCLUDE_DIRS: string,
+    INCLUDE_FILES: string,
+    DRIVER_EXE: string,
+    DRIVER_OBJS: list[string],
+    LINK_STRING: string
+  );
+
+  gen map_package_requirements(spec:pkgconfig_inspec_t) : pkgconfig_outspec_t =
+  {
+
+    // find external header files
+    var PKGCONFIG_CFLAGS=spec.PKGCONFIG+ 
+      " --path+="+Filename::join(spec.FLX_INSTALL_DIR,"config") + " --field=cflags ";
+
+    // external header files
+    var PKGCONFIG_INCLUDES=spec.PKGCONFIG+ 
+      " --path+="+Filename::join(spec.FLX_INSTALL_DIR,"config") + " --field=includes ";
+
+    // find external dynload libraries
+    var PKGCONFIG_DLIBS=spec.PKGCONFIG+
+      " -r --path+="+Filename::join(spec.FLX_INSTALL_DIR,"config") + " --field=provides_dlib --field=requires_dlibs ";
+
+    // find external static libraries
+    var PKGCONFIG_SLIBS=spec.PKGCONFIG+
+      " -r --keeprightmost --path+="+Filename::join(spec.FLX_INSTALL_DIR,"config") + " --field=provides_slib --field=requires_slibs ";
+
+    //find driver package required
+    var PKGCONFIG_DRIVER=spec.PKGCONFIG+
+      " --path+="+Filename::join(spec.FLX_INSTALL_DIR,"config") + " --field=flx_requires_driver ";
+
+
+    // find all include directories
+    var x = spec.xqt(PKGCONFIG_CFLAGS+ " " + spec.quote("@"+spec.cpp_filebase+".resh"));
+    var INCLUDE_DIRS=spec.INCLUDE_DIRS +" " + x;
+
+    // find all include files
+    x = spec.xqt(PKGCONFIG_INCLUDES+ " "+spec.quote("@"+spec.cpp_filebase+".resh"));
+    var INCLUDE_FILES=spec.INCLUDE_FILES +" " + x;
+
+    // find the driver package
+    var DRIVER_PKG=spec.xqt(PKGCONFIG_DRIVER+" "+ spec.quote("@"+spec.cpp_filebase+".resh"));
+    DRIVER_PKG == "" ??  DRIVER_PKG="flx_run";
+
+    // find the driver entity
+    if spec.STATIC == 0 do
+      // dynamic linkage: the driver executable
+      var DRIVER_EXE= Filename::join$ list (
+        spec.FLX_INSTALL_DIR,
+        "bin",
+        DRIVER_PKG+config.EXT_EXE
+      )
+    ;
+    else
+      // static linkage: the driver object files
+      var DRIVER_OBJS =list(
+        Filename::join (list (
+          spec.FLX_INSTALL_DIR,
+          "lib",
+          "rtl",
+          DRIVER_PKG+"_lib"+
+          spec.EXT_STATIC_OBJ)),
+        Filename::join (list (
+          spec.FLX_INSTALL_DIR,
+          "lib",
+          "rtl",
+          DRIVER_PKG+"_main"+spec.EXT_STATIC_OBJ))
+      );
+    done
+
+    if spec.STATIC == 0 do
+      // dynamic linkage: all the libraries required by the application
+      var LINK_STRING=spec.DLINK_STRING+spec.LINKER_SWITCHES+" "+spec.xqt(
+        PKGCONFIG_DLIBS+" "+DRIVER_PKG+" "+spec.quote("@"+spec.cpp_filebase+".resh"));
+    else
+      // static linkage: all the libraries required by the application and driver
+      LINK_STRING=spec.SLINK_STRING+spec.LINKER_SWITCHES+" "+spec.xqt(
+        PKGCONFIG_SLIBS+" "+DRIVER_PKG+" "+spec.quote("@"+spec.cpp_filebase+".resh"));
+    done
+
+    return ( 
+      INCLUDE_DIRS = INCLUDE_DIRS,
+      INCLUDE_FILES = INCLUDE_FILES,
+      DRIVER_EXE = DRIVER_EXE,
+      DRIVER_OBJS = DRIVER_OBJS,
+      LINK_STRING = LINK_STRING
+    );
+  }
+
+  proc write_include_file(path:string, INCLUDE_FILES:string) {
+    includes := split (strip INCLUDE_FILES,char " ");
+    var f = fopen_output(path+".includes");
+    List::iter  
+      (proc (i:string) { writeln$ f, "#include " + i; })
+      includes
+    ;
+    fclose f;
+  }
+
+}
+

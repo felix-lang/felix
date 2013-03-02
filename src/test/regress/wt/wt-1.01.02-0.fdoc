@@ -1,0 +1,8 @@
+
+@h1 wt-1.01.02-0.flx
+@felix
+proc foo (x:int) = {
+  print 'here'; endl;
+}
+
+proc bar (x:int) => foo x;

@@ -53,3 +53,4 @@ check [
   stl_vector_reverse_iterator[int],
   int
 ]();
+

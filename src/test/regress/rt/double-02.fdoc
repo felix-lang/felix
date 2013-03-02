@@ -1,0 +1,15 @@
+
+@h1 double-02.flx
+@felix
+val scale = 0.5;
+var i:int; for i in 1 upto 5 do
+  println$ (double i) * scale;
+done;
+
+@expect
+0.5
+1
+1.5
+2
+2.5
+@

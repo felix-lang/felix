@@ -5,7 +5,7 @@ val csubst:
   Flx_srcref.t ->
   string ->
 
-  arg:       Flx_ctypes.cexpr_t      -> (* $t : value argument 'as is'    *)
+  arg:       (unit -> Flx_ctypes.cexpr_t) -> (* $t : value argument 'as is'    *)
   args:      Flx_ctypes.cexpr_t list -> (* $n : value arguments           *)
   typs:      string list             -> (* #n : value argument type       *)
   argtyp:    string                  -> (* #t   value arg tuple type      *)

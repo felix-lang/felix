@@ -5,3 +5,4 @@ module    Foo::Bar { val c = 3; }
 
 open Foo::Bar;
 println a;
+

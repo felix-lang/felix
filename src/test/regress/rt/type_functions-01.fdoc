@@ -1,0 +1,33 @@
+
+@h1 type_functions-01.flx
+@felix
+//Check functors
+//Check polymorphism
+//Check types:higher order
+
+typedef fun pair (t:TYPE):TYPE => t * t;
+typedef Pair[t] = t * t;
+typedef PAIR = fun (t:TYPE):TYPE =>Pair[t];
+
+var x: pair int;
+
+fun f[t,u:TYPE->TYPE] (x: u t)=>x;
+
+var k1 = f[int, pair] (1,1);
+var k2 = f[int, (fun (t:TYPE):TYPE =>Pair[t] ) ] (1,2);
+var k3 = f[int, PAIR] (1,3);
+
+// NOTE: this used to work with "the Pair", which converted an indexed
+// type into a type function, since that's been removed it doesn't work
+//var k4 = f[int, Pair] (1,4);
+
+print k1.(0); print ","; print k1.(1); endl;
+print k2.(0); print ","; print k2.(1); endl;
+print k3.(0); print ","; print k3.(1); endl;
+//print k4.(0); print ","; print k4.(1); endl;
+
+@expect
+1,1
+1,2
+1,3
+@

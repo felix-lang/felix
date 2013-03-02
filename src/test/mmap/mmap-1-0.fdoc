@@ -1,0 +1,32 @@
+
+@h1 mmap-1-0.flx
+@felix
+include "std/posix/mmap";
+open Mmap;
+open C_hack;
+
+val n = cast[size](10000);
+data :=
+  mmap
+    (
+      NULL,n,
+      PROT_WRITE \| PROT_READ,
+      MAP_PRIVATE \| MAP_ANONYMOUS,
+      -1,cast[off_t]0
+    )
+;
+
+if data == MAP_FAILED do
+  print$ "mmap failed!\n";
+else
+  res := munmap(data,n);
+  if res != 0 do
+    print$ "munmap failed!\n";
+  else
+    print$ "mmap worked!\n";
+  done;
+done;
+
+@expect
+mmap worked!
+@

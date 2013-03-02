@@ -1,0 +1,23 @@
+
+@h1 axiom_check-01.flx
+@felix
+//Check axiom checks:integer
+axiom_check(-1);
+axiom_check(0);
+axiom_check(1);
+
+axiom_check(0,1);
+axiom_check(1,0);
+axiom_check(-1,0);
+axiom_check(0,-1);
+axiom_check(1,-1);
+axiom_check(1,2);
+axiom_check(3,4);
+axiom_check(42,0);
+
+axiom_check(5,6,7);
+axiom_check(0,-8,9);
+
+
+@expect
+@

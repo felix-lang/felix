@@ -1,0 +1,22 @@
+
+@h1 memcount-01.flx
+@felix
+//Check member count
+// HACK!
+// NOTE: who_cares is now in the library!
+// See Typing::memcount.
+//
+const who_cares[t] : int = "#memcount";
+print who_cares[22]; endl;
+
+proc f[t,n] (a:t ^ n) { print who_cares[n]; endl; }
+proc f2[t] (a:t) { print who_cares[t]; endl; }
+var x: double ^ 42;
+f x;
+f2 x;
+
+@expect
+22
+42
+42
+@

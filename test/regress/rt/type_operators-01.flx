@@ -26,3 +26,4 @@ val one:itys = 1;
 val two:ityf = 1;
 print one; endl;
 print two; endl;
+

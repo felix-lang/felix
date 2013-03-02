@@ -38,3 +38,4 @@ fun f(px: &X) => px*.a + 1;
 
 println$ "px.f = f px = " + px.f.str;
 
+

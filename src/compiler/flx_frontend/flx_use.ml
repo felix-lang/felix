@@ -14,6 +14,7 @@ open Flx_unify
 open Flx_maps
 open Flx_exceptions
 
+(* THIS CODE IS NOW WRONG! Because projections can be written as applications now! *)
 let rec is_proj (e,t) =
   match e with
   | BEXPR_name _-> true
@@ -60,12 +61,65 @@ let rec uses_btype add bsym_table count_inits t =
 and uses_bexe add bsym_table count_inits exe =
   let f_bexpr e = uses_bexpr add bsym_table count_inits e in
 
+  let rec chkl e = 
+    match e with
+    | BEXPR_deref ((BEXPR_ref _),_ as p),_ -> 
+      print_endline "Deref a ref in lcontext: variable not considered used";
+      print_endline ("In assignment " ^ string_of_bexe bsym_table 0 exe);
+      ()
+
+    | BEXPR_deref _,_ -> 
+      (*
+      print_endline "Can't handle deref yet";
+      print_endline ("In assignment " ^ string_of_bexe bsym_table 0 exe);
+      *) 
+      f_bexpr e
+
+    | BEXPR_ref _,_ -> 
+      print_endline "Can't handle address yet, assume variable is used";
+      print_endline ("In assignment " ^ string_of_bexe bsym_table 0 exe);
+      assert false;
+      f_bexpr e
+
+    | BEXPR_case _,_ -> () (* case used as projection *)
+    | BEXPR_name _,_ -> ()
+
+    | BEXPR_get_n (j,e),_ -> f_bexpr e; chkl j
+
+    | BEXPR_apply ((BEXPR_closure (i,_),_),_),_ 
+    | BEXPR_apply_prim (i,_,_),_ -> 
+      let bsym = Flx_bsym_table.find bsym_table i in
+      let bbdcl = Flx_bsym.bbdcl bsym in 
+      begin match  bbdcl with
+      | Flx_bbdcl.BBDCL_external_fun (props,_,_,_,_,_,_) ->
+        if List.mem `Lvalue  props then begin
+          (*
+          print_endline ("[Flx_use.uses_bexe:assign:lhs] Unexpected apply prim ret lvalue " ^ sbe bsym_table e);
+          print_endline ("In assignment " ^ string_of_bexe bsym_table 0 exe);
+          *) 
+          f_bexpr e
+        end
+        else assert false
+      | _ -> assert false
+      end
+
+    | BEXPR_apply (a,b),_ -> 
+      print_endline ("[Flx_use.uses_bexe:assign:lhs] Unexpected apply " ^ sbe bsym_table e);
+      print_endline ("In assignment " ^ string_of_bexe bsym_table 0 exe);
+      assert false;
+      f_bexpr a; f_bexpr b
+
+    | _ -> 
+      print_endline ("Unexpected " ^ sbe bsym_table e);
+      print_endline ("In assignment " ^ string_of_bexe bsym_table 0 exe);
+      assert false
+  in
   match exe,count_inits with
   | BEXE_init (_,i,e),false -> f_bexpr e
   | BEXE_assign (_,lhs,rhs),_ ->
       (* check is a term is a tuple projection of a variable *)
-      if count_inits or not (is_proj lhs)
-      then f_bexpr lhs;
+      if count_inits then f_bexpr lhs
+      else chkl lhs;
       f_bexpr rhs
   | _ ->
 
@@ -163,21 +217,30 @@ let cal_use_closure syms bsym_table (count_inits:bool) =
       List.iter ut ts
     end entries
   end syms.instances_of_typeclass;
-(*
-  (* Register use for the typeclass instance functions. *)
-  print_endline "typeclass to instance";
-  Hashtbl.iter begin fun i entries ->
-    add i;
-    List.iter begin fun (vs,con,ts,j) ->
-      add j;
-      ut con;
-      List.iter ut ts
-    end entries
-  end syms.virtual_to_instances;
-*)
-(*
-  print_endline "Tracing untraced";
-*)
+  
+  (* process reductions. assume temporarily that useless ones
+    have been removed. Check later this is right. This is a 
+    nasty routine here, adds stuff that cannot match because it
+    is based on the input table (which contains garbage).
+    However it's not trivial because a reduction whose LHS has
+    symbols not at this time in the output table could still match
+    the RHS of a reduction.
+  *)
+
+  (* Reduction parameters don't exist, if a reduction is applied
+     the parameter is substituted with the argument.
+  *)
+  let maybe_add ignores j = 
+    if not (List.mem j ignores) then add j
+  in
+  List.iter
+  (fun (id,bvs,bps,lhs, rhs) ->
+    let ignorelist = List.map (fun p -> p.Flx_bparameter.pindex) bps in
+    uses_bexpr (maybe_add ignorelist) bsym_table count_inits rhs;
+  )
+  !(syms.reductions)
+  ;
+
   while not (BidSet.is_empty !untraced) do
     let bid = BidSet.choose !untraced in
 (*
@@ -193,25 +256,20 @@ let cal_use_closure syms bsym_table (count_inits:bool) =
 let full_use_closure syms bsym_table =
   cal_use_closure syms bsym_table true
 
+exception Bad
 
-let strip_inits bidset exes =
+let strip_inits bsym_table bidset exes =
   let rec aux exes_in exes_out =
     match exes_in with
     | [] -> List.rev exes_out
     | exe::tail ->
-      match exe with
-      | BEXE_init (sr,i,e) when not (Flx_types.BidSet.mem i bidset) ->
-        (*
-        print_endline ("Stripping init of variable " ^ string_of_int i);
-        *)
-        aux tail exes_out 
-      | BEXE_assign (sr,lhs,rhs) when is_proj lhs && not (Flx_types.BidSet.mem (get_var lhs) bidset) ->
-        (*
-        let i = get_var lhs in
-        print_endline ("Stripping assign of variable " ^ string_of_int i);
-        *)
-        aux tail exes_out 
-      | _ -> aux tail (exe::exes_out) 
+      (* any exe containing an "unused" symbol gets thrown out *)
+      let add i = if BidSet.mem i bidset then () else raise Bad in
+      let keep = 
+        try uses_bexe add bsym_table true exe; true
+        with Bad -> false
+      in
+      aux tail (if keep then (exe::exes_out) else exes_out)
   in
   aux exes [] 
 
@@ -271,7 +329,7 @@ let copy_used1 syms bsym_table =
       let bsym =
         match bsym.Flx_bsym.bbdcl with 
         | BBDCL_fun  (prop, bvs, ps, res, exes) ->  
-          let exes = strip_inits bidset exes in
+          let exes = strip_inits bsym_table bidset exes in
           let bbdcl = Flx_bbdcl.bbdcl_fun  (prop, bvs, ps, res, exes) in
           Flx_bsym.create 
             ~sr:(bsym.Flx_bsym.sr) 

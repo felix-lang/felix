@@ -7,3 +7,4 @@ noinline proc f
 noinline proc g() { f {1} {2} ; };
 g();
 print z; endl;
+

@@ -1,0 +1,14 @@
+
+@h1 re2-03.flx
+@felix
+for m in (r"\w+", "Hello world today is good") do 
+  println$ "Word = " + m.0; 
+done
+
+@expect
+Word = Hello
+Word = world
+Word = today
+Word = is
+Word = good
+@

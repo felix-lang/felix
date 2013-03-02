@@ -72,7 +72,11 @@ let bexpr_apply_struct t (bid, ts, e) = BEXPR_apply_struct (bid, ts, e), t
 
 let bexpr_tuple t es = BEXPR_tuple es, t
 
-let bexpr_record t es = BEXPR_record es, t
+let bexpr_record es = 
+  let cmp (s1,e1) (s2,e2) = compare s1 s2 in
+  let es = List.sort cmp es in
+  let ts = List.map (fun (s,(_,t)) -> s,t) es in
+  BEXPR_record es, Flx_btype.btyp_record "" ts
 
 let bexpr_variant t (n, e) = BEXPR_variant (n, e), t
 
@@ -129,9 +133,6 @@ let rec cmp ((a,_) as xa) ((b,_) as xb) =
 
   | BEXPR_record ts,BEXPR_record ts' ->
     List.length ts = List.length ts' &&
-    let rcmp (s,t) (s',t') = compare s s' in
-    let ts = List.sort rcmp ts in
-    let ts' = List.sort rcmp ts' in
     List.map fst ts = List.map fst ts' &&
     List.fold_left2 (fun r a b -> r && a = b)
       true (List.map snd ts) (List.map snd ts')

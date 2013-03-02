@@ -18,15 +18,47 @@ let generated = Flx_srcref.make_dummy "[flx_desugar] generated"
 (* model binary operator as procedure call *)
 let assign sr op l r =
   match op with
-  | "_set" -> 
-    (* Note: I don't think this special case gets triggered,
-       because deref is usually handled by a library function
-    *)
-    let nul = match l with 
-    | EXPR_deref _ -> l 
-    | _ -> EXPR_deref (sr, (EXPR_ref (sr,l))) 
-    in 
-    STMT_cassign (sr,nul,r)
+  | "_set" ->  STMT_cassign (sr,l,r)
+(*
+    begin match l with
+    | EXPR_apply (sr, (EXPR_name (sr2, "deref", []), p)) ->
+      STMT_cassign (sr,l,r)
+      | _ ->
+      let nul = 
+        match l with 
+        | EXPR_noexpand (_,EXPR_name _ )
+        | EXPR_noexpand (_,EXPR_lookup _)
+        | EXPR_name _ 
+        | EXPR_lookup _ -> l
+        | _ ->
+          let rec aux l2 = 
+            match l2 with
+            | EXPR_noexpand (_,EXPR_name _ )
+            | EXPR_noexpand (_,EXPR_lookup _)
+            | EXPR_name _
+            | EXPR_lookup _ -> EXPR_ref (sr,l2)
+            | EXPR_apply (sr, (EXPR_name (sr2, "deref", []), p)) -> p
+            | EXPR_deref (sr,p) -> p
+            | EXPR_apply (sr, (f, a)) -> EXPR_apply (sr, (f, aux a))
+            | EXPR_get_n (sr,(i, a)) -> EXPR_get_n (sr, (i, aux a))
+            | EXPR_dot (sr, (a, f)) -> EXPR_dot (sr, (aux a, f))
+            | EXPR_index _ -> assert false
+            | EXPR_noexpand _ -> assert false
+            | EXPR_suffix _ -> assert false
+            | EXPR_expr _ -> assert false
+            | _ -> 
+              print_endline ("Flx_desugar:assign, unexpected term " ^ 
+                 string_of_expr l2^ " in assign LHS of assign " ^
+                 string_of_expr l ^ " = " ^ string_of_expr r);
+              print_endline (Flx_srcref.long_string_of_src sr);
+              assert false (* unfinished here *)
+          in 
+          (* NOTE MAYBE THIS SHOULD BE FUNCTION "deref" not hard deref operator *)
+          EXPR_deref (sr, aux l)
+      in
+      STMT_cassign (sr,nul,r)
+    end
+*)
   | "_pset" -> 
     let deref = EXPR_name (sr, "deref", []) in
     let deref_l = EXPR_apply (sr, (deref, l)) in
@@ -383,6 +415,10 @@ let rec rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t lis
      let l2,x2 = rex r in
      l1 @ l2 @ [Exe (sr,EXE_assign (x1,x2))]
 
+  (* STMT_assign translates to many things, including
+     STMT_cassign (via the function assign) but never
+     to itself. STMT_cassign eventually becomes EXE_assign
+  *)
   | STMT_assign (sr,fid,l,r) ->
     let rec aux (l,t) r =
       match l with

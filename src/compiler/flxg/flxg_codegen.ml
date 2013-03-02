@@ -91,7 +91,7 @@ let codegen_bsyms
                     (Flx_bsym.sr bsym)
                     (Flx_bsym.sr bsym)
                     s
-                    (Flx_cexpr.ce_atom "Error")
+                    (fun () -> Flx_cexpr.ce_atom "Error")
                     []
                     []
                     "Error"

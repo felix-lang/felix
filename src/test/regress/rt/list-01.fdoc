@@ -1,0 +1,17 @@
+
+@h1 list-01.flx
+@felix
+// fold test
+open List;
+x := list(1,2,3,4,5,6,7,8,9,10);
+s := fold_left (fun (x:int) (y:int)=>x+y) 0 x;
+println s;
+
+s2 := fold_left (curry (add of (int * int))) 0 x;
+println s2;
+
+
+@expect
+55
+55
+@

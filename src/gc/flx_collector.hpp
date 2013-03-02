@@ -39,6 +39,7 @@ struct GC_EXTERN flx_collector_t : public collector_t
   gc_shape_t *get_shape(void *memory);
   flx::pthread::thread_control_t *get_thread_control()const;
   void register_pointer(void *q, int reclimit);
+  ::flx::gc::generic::pointer_data_t get_pointer_data(void *);
 
 protected:
 

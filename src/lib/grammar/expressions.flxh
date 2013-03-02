@@ -180,6 +180,9 @@ syntax expressions {
   //$ Superscript, exponential.
   x[ssuperscript_pri] := x[ssuperscript_pri] "^" x[srefr_pri] =># "`(ast_superscript (,_1 ,_3))";
 
+  //$ composition
+  x[ssuperscript_pri] := x[ssuperscript_pri] "\circ" x[>ssuperscript_pri] =># "(Infix)";
+
   //$ C dereference.
   x[srefr_pri] := "*" x[srefr_pri] =># "(prefix 'deref)";
 
@@ -246,8 +249,12 @@ syntax expressions {
   x[sfactor_pri] := x[sfactor_pri] "." sthe_name =># "`(ast_dot ,_sr (,_1 ,_3))";
 
   //$ Reverse application with dereference.
-  //$ a .* b same as (*a) . b, like C  a -> b.
+  //$ a *. b same as (*a) . b, like C  a -> b.
   x[sfactor_pri] := x[sfactor_pri] "*." sthe_name =># "`(ast_dot ,_sr ((ast_deref ,_sr ,_1) ,_3))";
+
+  //$ a &. b is similar to &a . b for an array, but can be overloaded
+  //$ for abstract arrays: like a + b in C. Returns pointer.
+  x[sfactor_pri] := x[sfactor_pri] "&." sthe_name =># "(Infix)";
 
   // these are weirdos
   sbasic_name_comma_list:= sname ("," sname)* =># "(cons _1 (map second _2))";
@@ -292,6 +299,15 @@ syntax expressions {
     "`(ast_record ,_sr ,(cons _2 (map second _3)))"
   ;
     rassign := sname "=" x[sor_condition_pri] =># "`(,_1 ,_3)";
+
+  //$ record value, statement list.
+  //$ this variant is useful for encapsulating
+  //$ a series of var x = y; style statements.
+  satom := "struct" "{" vassign+ "}" =>#
+    "`(ast_record ,_sr ,_3 )"
+  ;
+    vassign := "var" sname "=" sexpr ";" =># "`(,_2 ,_4)";
+
 
   //$ scalar literals (numbers, strings).
   satom := sliteral =># "_1";

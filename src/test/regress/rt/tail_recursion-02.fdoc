@@ -1,0 +1,24 @@
+
+@h1 tail_recursion-02.flx
+@felix
+//Check recursion
+//Check tail call optimisation
+var x = 4;
+proc recur2 ()
+{
+  if x > 0 then
+  {
+    print x; endl;
+    --x;
+    recur2();
+  }
+  else {} endif;
+}
+recur2();
+
+@expect
+4
+3
+2
+1
+@

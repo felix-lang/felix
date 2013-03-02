@@ -32,3 +32,4 @@ var i = begin m; until i == end m do
   def val k, val vl = deref i;
   print k; print " -> "; print vl; endl; ++i;
 done;
+

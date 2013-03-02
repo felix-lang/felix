@@ -18,3 +18,4 @@ spawn_fthread {
     x = read chin; print x; endl;
   done;
 };
+

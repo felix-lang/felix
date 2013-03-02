@@ -12,3 +12,4 @@ fun f: !fast_ints * !fast_ints -> int = "$1+$2";
 print$ f$ 1,2L; endl; // 3
 print$ f$ 1,2.0; endl; // 999
 
+

@@ -1,0 +1,36 @@
+
+@h1 nd-1.01.01-0.flx
+@felix
+//Check garbage collector
+open List;
+Gc::collect();
+var a = list(1,2,3,4);
+fun conv (a:list[int])=>
+  fold_left
+    (fun (acc: list[int]) (item2:int)=>
+      acc + map (fun (item1:int)=> item1+item2) a
+    )
+    Empty[int]
+    a
+;
+
+var x = conv a;
+Gc::collect();
+println$ "x="+str x;
+Gc::collect();
+x = conv x;
+Gc::collect();
+println$ "x=" + str x;
+Gc::collect();
+x = conv x;
+Gc::collect();
+//println$ "x="+str x;
+Gc::collect();
+
+var x_sum = fold_left (fun (acc:int) (item:int)=>acc+item) 0 x;
+var y = map (fun (item:int)=> item * item) x;
+var y_sum = fold_left (fun (acc:int) (item:int)=>acc+item) 0 y;
+
+println$ "x_sum="+ str x_sum+ ", y_sum" + str y_sum;
+
+

@@ -12,6 +12,7 @@ type t =
   print_flag: bool;
   debug : bool;
   optimise : bool;
+  doreductions : bool;
   trace : bool;
   include_dirs : string list;
   files : string list;

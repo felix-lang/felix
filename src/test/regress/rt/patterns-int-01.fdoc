@@ -1,0 +1,42 @@
+
+@h1 patterns-int-01.flx
+@felix
+println
+  match 5t with
+  | 5t => "5t"
+  endmatch;
+
+println
+  match 5s with
+  | 5s => "5s"
+  endmatch;
+
+println
+  match 5 with
+  | 5 => "5"
+  endmatch;
+
+println
+  match 5l with
+  | 5l => "5l"
+  endmatch;
+
+println
+  match 5v with
+  | 5v => "5v"
+  endmatch;
+
+println
+  match 5 with
+  | 1 .. 10 => "true"
+  | _ => "false"
+  endmatch;
+
+@expect
+5t
+5s
+5
+5l
+5v
+true
+@

@@ -1,0 +1,164 @@
+
+@h1 polyarray_03.flx
+@felix
+fun ==: 3 * 3 -> bool = "$1==$2";
+
+var i : 3 = case 0 of 3;
+var j : 3 = case 1 of 3;
+var k : 3 = case 2 of 3;
+var ijk : 3 * 3 * 3 = i,j,k; 
+
+fun str (x:3*3*3) => (x :>> int) . str;
+fun str (x:3) => (x :>> int) . str;
+
+println$ "ijk=" + str ijk;
+println$ ijk . 0 .str;
+println$ ijk . 1 .str;
+println$ ijk . 2 .str;
+
+assert ijk . 0 == i;
+assert ijk . 1 == j;
+assert ijk . 2 == k;
+
+assert ijk . 0 :>> int == 0;
+assert ijk . 1 :>> int == 1;
+assert ijk . 2 :>> int == 2;
+
+// Encoding test
+println$ "Encoding test";
+for var ii in 0 upto 2 do
+  i = ii :>> 3;
+  for var jj in 0 upto 2 do
+    j = jj :>> 3;
+    for var kk in 0 upto 2 do
+      k = kk :>> 3;
+      ijk = i,j,k;
+      println$ ijk.0.str + "," + ijk.1.str + "," + ijk.2.str+" encoding=" + (ijk :>>int) .str;
+      assert 9 * (i:>>int) + 3 * (j:>>int) + (k:>>int) == ijk :>>int;
+    done
+  done
+done
+
+println$ str ijk;
+ijk.1 = case 2 of 3;
+println$ str ijk;
+
+println$ "Decoding test";
+// Decoding test
+for var v in 0 upto 26 do
+  ijk = v :>> (3 * 3 * 3);
+  println$ ijk.0.str + "," + ijk.1.str + "," + ijk.2.str+" encoding=" + (ijk :>>int) .str;
+  assert 9 * (ijk.0 :>>int)+ 3 * (ijk.1:>>int)+ (ijk.2 :>>int) == ijk :>>int;
+done
+
+// Assignment test
+println$ "Assignment test";
+for ii in 0 upto 2 do
+  i = ii :>> 3;
+  for jj in 0 upto 2 do
+    j = jj :>> 3;
+    for kk in 0 upto 2 do
+      k = kk :>> 3;
+      ijk.0 = i;
+      ijk.1 = j;
+      ijk.2 = k;
+      println$ ijk.0.str + "," + ijk.1.str + "," + ijk.2.str+" encoding=" + (ijk :>>int) .str;
+      assert 9 * (i:>>int) + 3 * (j:>>int) + (k:>>int) == ijk :>>int;
+    done
+  done
+done
+
+ 
+
+@expect
+ijk=5
+0
+1
+2
+Encoding test
+0,0,0 encoding=0
+0,0,1 encoding=1
+0,0,2 encoding=2
+0,1,0 encoding=3
+0,1,1 encoding=4
+0,1,2 encoding=5
+0,2,0 encoding=6
+0,2,1 encoding=7
+0,2,2 encoding=8
+1,0,0 encoding=9
+1,0,1 encoding=10
+1,0,2 encoding=11
+1,1,0 encoding=12
+1,1,1 encoding=13
+1,1,2 encoding=14
+1,2,0 encoding=15
+1,2,1 encoding=16
+1,2,2 encoding=17
+2,0,0 encoding=18
+2,0,1 encoding=19
+2,0,2 encoding=20
+2,1,0 encoding=21
+2,1,1 encoding=22
+2,1,2 encoding=23
+2,2,0 encoding=24
+2,2,1 encoding=25
+2,2,2 encoding=26
+26
+26
+Decoding test
+0,0,0 encoding=0
+0,0,1 encoding=1
+0,0,2 encoding=2
+0,1,0 encoding=3
+0,1,1 encoding=4
+0,1,2 encoding=5
+0,2,0 encoding=6
+0,2,1 encoding=7
+0,2,2 encoding=8
+1,0,0 encoding=9
+1,0,1 encoding=10
+1,0,2 encoding=11
+1,1,0 encoding=12
+1,1,1 encoding=13
+1,1,2 encoding=14
+1,2,0 encoding=15
+1,2,1 encoding=16
+1,2,2 encoding=17
+2,0,0 encoding=18
+2,0,1 encoding=19
+2,0,2 encoding=20
+2,1,0 encoding=21
+2,1,1 encoding=22
+2,1,2 encoding=23
+2,2,0 encoding=24
+2,2,1 encoding=25
+2,2,2 encoding=26
+Assignment test
+0,0,0 encoding=0
+0,0,1 encoding=1
+0,0,2 encoding=2
+0,1,0 encoding=3
+0,1,1 encoding=4
+0,1,2 encoding=5
+0,2,0 encoding=6
+0,2,1 encoding=7
+0,2,2 encoding=8
+1,0,0 encoding=9
+1,0,1 encoding=10
+1,0,2 encoding=11
+1,1,0 encoding=12
+1,1,1 encoding=13
+1,1,2 encoding=14
+1,2,0 encoding=15
+1,2,1 encoding=16
+1,2,2 encoding=17
+2,0,0 encoding=18
+2,0,1 encoding=19
+2,0,2 encoding=20
+2,1,0 encoding=21
+2,1,1 encoding=22
+2,1,2 encoding=23
+2,2,0 encoding=24
+2,2,1 encoding=25
+2,2,2 encoding=26
+@

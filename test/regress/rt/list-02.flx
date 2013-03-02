@@ -5,3 +5,4 @@ var i:int; for i in 0 upto 19 do
   println$ str i + " " + str (len ls);
 done
 
+

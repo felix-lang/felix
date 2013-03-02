@@ -38,3 +38,4 @@ var eof: bool;
 async_read(s, &n, b.get_data, &eof);
 print "acceptor read "; print n; print " bytes: "; dprint b; endl;
 async_write(s, &n, get_data((c"thanks!!")), &eof);
+

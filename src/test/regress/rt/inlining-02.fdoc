@@ -1,0 +1,24 @@
+
+@h1 inlining-02.flx
+@felix
+//Check inlining
+
+val x = 1;
+if x == 1 then
+{
+  if x == 1
+  then { print "ONE\n"; }
+  else { print "IMPOSSIBLE"; }
+  endif
+  ;
+}
+else
+{
+  print "TWO\n";
+}
+endif
+;
+
+@expect
+ONE
+@

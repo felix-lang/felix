@@ -13,3 +13,4 @@ println $ find (fun (a:int) => a == 1) xs;
 println $ find (fun (a:int) => a == 2) xs;
 println $ find (eq of (int*int)) xs 3;
 println $ find (eq of (int*int)) xs 4;
+

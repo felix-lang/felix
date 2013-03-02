@@ -1,0 +1,190 @@
+
+@h1 win-1.01.02-0.flx
+@felix
+include "std/win32/faio_win32";
+open Faio_win32;
+
+// let's add a win32 namedpipe test!
+// type WFILE is a HANDLE. that should work.
+// note the "r" for felix string raw mode.
+var pname = r"\\.\pipe\flx_pipe";
+
+// CreateNamedPipe binding (put in a library somewhere)
+// duplex, byte stream, one instance,
+// guessing 256 bytes for input and output buffers
+// 0 default timeout (not using default wait, shouldn't matter)
+// default security attributes
+// associating with the iocp doesn't work, the pipe must be created with
+// FILE_FLAG_OVERLAPPED set in dwOpenMode. Otherwise OVERLAPPED calls block.
+gen CreateNamedPipe: string -> WFILE =
+ '''CreateNamedPipe($1.c_str(), PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,
+     PIPE_TYPE_BYTE, 1, 256, 256, 0, NULL);''';
+
+// OpenFile in faio_win32 should work fine here
+
+print "Creating named pipe "; print pname; endl;
+var pipe: WFILE = CreateNamedPipe(pname);
+
+// how to connect with this stuff? can I open it non blockingly?
+if pipe == INVALID_HANDLE_VALUE then
+{
+  print "BUGGER: CreateNamedPipeFailed: "; print (GetLastError()); endl;
+} else {
+  print "whoo!\n";
+} endif;
+
+// let's try to associate with IOCP here...
+// Hack: the interface requires a SOCKET, which it then casts to a HANDLE.
+// don't forget to create pipe with FILE_FLAG_OVERLAPPED, else we
+// error #87 -> ERROR_INVALID_PARAMETER
+fun HACK_TO_SOCKET: WFILE -> SOCKET = '(SOCKET)$1';
+associate_with_iocp(HACK_TO_SOCKET(pipe));
+
+header = """
+
+using namespace flx;
+using namespace demux;
+using namespace faio;
+
+// wrap up ConnectNamedPipe. This function normally blocks, so we must
+// use it in a way that allows us to deschedule the fthread.
+class connect_namedpipe
+  : public waio_base,  public flx::demux::iocp_wakeup {
+  HANDLE pipe;       // for demux
+public:
+  connect_namedpipe(HANDLE p = INVALID_HANDLE_VALUE) : pipe(p) {}
+
+  // this belongs in demux class
+  virtual bool start_overlapped()
+  {
+    fprintf(stderr, "connect named pipe start overlapped %p\\n", pipe);
+
+    clear_overlapped();  // everyone's doing this
+
+    BOOL success;
+    success = ConnectNamedPipe(pipe, &ol);
+
+    // fprintf(stderr, "Connect named pipe: %i\\n", success);
+    if(success)
+    {
+      // this shouldn't happen ever. make it an error.
+      fprintf(stderr, "ConnectNamedPipe SUCCEEDED (shouldn't happen)\\n");
+    } else {
+      int err = GetLastError();
+      fprintf(stderr, "ConnectNamedPipe returned %i\\n", err);
+
+      // this doesn't always signify failure.
+      switch(err)
+      {
+         case ERROR_PIPE_CONNECTED: // got a connection already
+           fprintf(stderr, "ALREADY GOT CONNECTION\\n");
+           // do fake wakeup here for great greatness. eats user cookie.
+           iocp_op_finished(0, 0, &ol, NO_ERROR);
+           return true;  // async finished
+         break;
+
+         case ERROR_IO_PENDING:  // completion packet is in the mail
+           fprintf(stderr, "Connection pending... (normal)\\n");
+           return false;         // not finished, packet still to come
+         break;
+         default:
+           fprintf(stderr, "ConnectNamedPipe FAILED (%i)\\n", err);
+         break;
+      }
+    }
+
+    return false;  // let's not get woken, packet still to come (??)
+  }
+
+  // this belongs in faio class
+  bool start_async_op_impl()
+  {
+    fprintf(stderr,"named_pipe: start async_op_impl\\n");
+    fprintf(stderr, "start_async_op for named pipe\\n");
+    return start_overlapped();
+  }
+
+  // as does this
+  virtual void iocp_op_finished(DWORD nbytes, ULONG_PTR udat,
+    LPOVERLAPPED olp, int err)
+  {
+    fprintf(stderr, "connect named pipe FINISHED! err: %i\\n", err);
+    waio_base::iocp_op_finished(nbytes, udat, olp, err);
+  }
+
+
+};
+""";
+
+proc getbyte(f: WFILE, outc: &char)
+{
+  var c: char;
+  val ac = &c;
+  var len = 1;
+  var eof: bool;
+
+  ReadFile(f, &len, ac.address, &eof);
+  *outc = c;
+}
+
+proc putbyte(f: WFILE, c: char)
+{
+  var copyc = c;
+  val ac = &copyc;
+  var len = 1;
+  var eof: bool;
+
+  WriteFile(f, &len, ac.address, &eof);
+}
+
+// spawn a connect fthread after having created the named pipe
+
+// I'm not yet "accepting", but hopefully I can spawn a client here
+spawn_fthread {
+  // print "Gudday, client thread, trying to open PIPE\n";
+  // var p: WFILE <- OpenFile(pname);
+  // having trouble getting io...
+  var p: WFILE = OpenFileDuplex(pname);
+
+  // print "Client thread returned from OpenFile\n";
+
+  if p == INVALID_HANDLE_VALUE then
+  { print "BUGGER: client couldn't open pipe: "; print (GetLastError()); endl; }
+  else { print "client opened pipe\n"; } endif;
+
+  // HUM need to associate.
+  print "associating client\n";
+  associate_with_iocp(HACK_TO_SOCKET(p));
+
+  var c: char;
+  getbyte(p, &c);
+  print "client got "; print c; endl;
+  putbyte(p, char 'b');
+  CloseFile(p);
+};
+
+type np_request = 'connect_namedpipe';
+fun mk_np_request: WFILE -> np_request = 'connect_namedpipe($1)';
+
+var npr = mk_np_request(pipe);
+Faio::faio_req$ &npr;
+
+print "poot! got connection (maybe)\n";
+print "server trying to put byte\n";
+putbyte(pipe, char 'a');
+var c: char;
+getbyte(pipe, &c);
+print "server got "; print c; endl;
+CloseFile(pipe);
+
+
+@expect
+Creating named pipe \\.\pipe\flx_pipe
+whoo!
+client opened pipe
+associating client
+poot! got connection (maybe)
+server trying to put byte
+client got a
+server got b
+@

@@ -1,0 +1,50 @@
+
+@h1 syntax-02.flx
+@felix
+// test that match statements degenerate correctly
+
+// basic match
+var x = 1;
+retry:>
+match x with
+| 1 =>
+    println "Pass 1";
+| 2 =>
+    println "Pass 2";
+endmatch;
+
+
+goto joe;
+
+match x with 
+| 1 => println "Unreachable 1";
+| 2 => joe:> println "Reachable 2";
+| _ => println "Unreachable 3";
+endmatch;
+println "Reachable 4";
+goto mel;
+
+match x with 
+| 1 => println "Unreachable 5";
+| 2 => mel:> println "Reachable 6"; goto fred;
+| _ => println "Unreachable 7";
+endmatch;
+println "UnReachable 8";
+
+fred:>
+if x == 1 do x = 2; goto retry; done
+
+println "At the end";
+
+
+@expect
+Pass 1
+Reachable 2
+Reachable 4
+Reachable 6
+Pass 2
+Reachable 2
+Reachable 4
+Reachable 6
+At the end
+@

@@ -13,7 +13,7 @@ let si = string_of_int
 
 let record_coercion state bsym_table sr x' n t' t'' ls' ls'' = 
   try
-  bexpr_record t''
+  bexpr_record (* t'' *)
   (
     List.map
     (fun (s,t)->

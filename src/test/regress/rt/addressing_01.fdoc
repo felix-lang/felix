@@ -1,0 +1,62 @@
+
+@h1 addressing_01.flx
+@felix
+// test if pointer to struct + field name works
+
+struct X { a: int; };
+var x: X = X(1);
+println$ "x.a = " + x.a.str;
+var px = &x;
+
+println$ "px*.a   = " + px*.a.str;
+println$ "(*px).a = " + (*px).a.str;
+println$ "*(px.a) = " + (*(px.a)).str;
+println$ "*(px.a) = " + px.a*.str;
+
+x.a = 2;
+
+println$ "px*.a   = " + px*.a.str;
+println$ "(*px).a = " + (*px).a.str;
+println$ "*(px.a) = " + (*(px.a)).str;
+println$ "*(px.a) = " + px.a*.str;
+
+px . a <- 3;
+
+println$ "px*.a   = " + px*.a.str;
+println$ "(*px).a = " + (*px).a.str;
+println$ "*(px.a) = " + (*(px.a)).str;
+println$ "*(px.a) = " + px.a*.str;
+
+struct Y { b: X; };
+var y = Y(X(1));
+
+println$ "y.b.a = " + y.b.a.str;
+
+y.b.a = 5;
+println$ "y.b.a = " + y.b.a.str;
+
+// check functions accepting pointers still work
+
+fun f(px: &X) => px*.a + 1;
+
+println$ "px.f = f px = " + px.f.str;
+
+
+@expect
+x.a = 1
+px*.a   = 1
+(*px).a = 1
+*(px.a) = 1
+*(px.a) = 1
+px*.a   = 2
+(*px).a = 2
+*(px.a) = 2
+*(px.a) = 2
+px*.a   = 3
+(*px).a = 3
+*(px.a) = 3
+*(px.a) = 3
+y.b.a = 1
+y.b.a = 5
+px.f = f px = 4
+@

@@ -1,6 +1,5 @@
 include "std/posix/mmap";
 open Mmap;
-open MixedInt;
 open C_hack;
 
 val n = cast[size](10000);
@@ -24,3 +23,4 @@ else
     print$ "mmap worked!\n";
   done;
 done;
+

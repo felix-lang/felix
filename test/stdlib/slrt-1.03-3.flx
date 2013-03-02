@@ -5,3 +5,4 @@ print$ trim "hello how are you" "you"; endl;
 
 print$ trim "hello how are hello" "hello"; endl;
 print$ trim "hello how are hello" "goodbye"; endl;
+

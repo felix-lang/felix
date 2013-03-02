@@ -1,0 +1,16 @@
+
+@h1 export-02.flx
+@felix
+//Check export
+
+proc foo(x: int, y: int) { print x; print y; endl; }
+proc foo(a:int) { print a; }
+proc foo { }
+
+export proc foo of (int*int) as "foo2";
+export proc foo of (int) as "foo1";
+export proc foo of (1) as "foo0";
+
+
+@expect
+@

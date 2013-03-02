@@ -20,3 +20,4 @@ done*/
 print(xml_doc_dump(xml_doc1));
 println("----------------------------------------");
 xml_free_doc(xml_doc1);
+

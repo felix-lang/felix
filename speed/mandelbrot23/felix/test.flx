@@ -1,0 +1,38 @@
+include "std/posix/time";
+
+val resolution = 5000;
+
+fun norm_square (c:dcomplex) => c.real * c.real + c.imag * c.imag;
+
+fun iters (max_iter:int, xc:double, yc:double) = {
+  val c = dcomplex(xc, yc);
+
+  fun aux (count:int, z:dcomplex) =>
+    if count == max_iter then
+      max_iter
+    elif norm_square z >= 4.0 then
+      count
+    else
+      aux (count + 1, (z * z) + c)
+    endif
+  ;
+  return aux (0, c);
+}
+
+val start_time = Time::time ();
+val max_val = resolution / 2;
+val min_val = -max_val;
+val scale = 2.0 / (double max_val);
+var count = 0;
+
+var i:int; for i in min_val upto max_val do
+  var j:int; for j in min_val upto max_val do
+    val x = (double i) * scale;
+    val y = (double j) * scale;
+    count += iters (100, x, y);
+  done;
+done;
+
+val end_time = Time::time ();
+println count;
+println$ (end_time - start_time);

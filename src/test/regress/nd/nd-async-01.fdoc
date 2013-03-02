@@ -1,0 +1,38 @@
+
+@h1 nd-async-01.flx
+@felix
+include "std/io/faio";
+
+// fthread/sleep test
+
+var sys_clock = #Faio::mk_alarm_clock;
+
+noinline proc mkfibre(p:int, f:int) {
+  spawn_fthread {
+    for var k in 1 upto 3 do
+      eprint$ "Thr " + str p + " fibre " + str f + " step " + str k + "\n";
+      Faio::sleep(sys_clock, 0.01 + f.double / 5.0);
+    done
+    eprint$ "Thr " + str p + " fibre " + str f + " DEAD " + "="*20+"\n";
+  };
+}
+
+noinline proc mkthread (x:int) {
+  spawn_pthread {
+    for var j in 1 upto 2 do
+      eprint$ "Thr " + str x + " step " + str j + "\n";
+      Faio::sleep(sys_clock, 0.1 + x.double / 2.0);
+      for var f in 0 upto 3 do
+        mkfibre(x, f);
+      done
+    done
+    eprint$ "Thread " + str x + " main fibre done" + "*"*20+"\n";
+  };
+}
+
+for var k in 1 upto 3 do
+   mkthread k;
+done;
+
+eprintln "mainline main fibre done";
+

@@ -1,0 +1,22 @@
+
+@h1 type_constraint-02.flx
+@felix
+//Check type constraints
+// basic type constraints
+
+// The general case is put in an open module
+// so it is not considered if the specialisation applies
+// but can still be selected otherwise
+// Note Felix cannot order this kind of constraint.
+
+open module X { fun f[t,u]: t * u -> int = "999"; }
+fun f: !fast_ints * !fast_ints -> int = "$1+$2";
+
+print$ f$ 1,2L; endl; // 3
+print$ f$ 1,2.0; endl; // 999
+
+
+@expect
+3
+999
+@

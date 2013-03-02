@@ -42,6 +42,11 @@ open class Categ
     fun (x:u) => f (g x)
   ;
 
+  fun \circ [u,v,w] (f:v->w, g:u->v) : u -> w => 
+    fun (x:u) => f (g x)
+  ;
+
+
   //$ series reverse composition (2 functions)
   fun rev_compose[u,v,w] (f:u->v, g:v->w) : u -> w => 
     fun (x:u) => g (f x)

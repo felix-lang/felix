@@ -1,0 +1,18 @@
+
+@h1 export-01.flx
+@felix
+//Check export
+
+include "std/io/faio";
+
+var clock = Faio::mk_alarm_clock();
+
+proc foo(x: int, y: int) {
+    print x; endl; print y; endl;
+    Faio::sleep (clock,1.0);
+}
+
+export proc foo of (int*int) as "foo";
+
+@expect
+@

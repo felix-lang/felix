@@ -1,0 +1,101 @@
+
+fun svg (title: string, cs: list[string * double]) =
+{
+  var max-time = 
+    fold_left 
+      (fun (acc:double) (name:string, time:double) => max (acc, time)) 
+      0.0 
+      cs
+  ;
+  var margin-x = 10;
+  var barwidth = 50;
+  var barsep = 10;
+  fun barx (index:int) => margin-x + index * (barwidth+barsep);
+  
+  var bartop-y = 10; 
+  var barbase-y = 190;
+  var barspan = double$ barbase-y - bartop-y;
+
+  var barname-y = 220;
+
+  var tstart = 
+    '  <svg xmlns="http://www.w3.org/2000/svg" version="1.1"\n'
+    '    width="650" height="450" viewBox="0 0 650 450" preserveAspectRatio="none">\n'
+  ;
+  var tend = 
+    "  </svg>\n"
+  ;
+  fun tbar (idx: int, v: double) =
+  {
+    var bar-height = int$ (v / max-time) * barspan;
+    return
+    '    <rect x="' + idx.barx.str
+      +'" y="'+ (bartop-y + (barspan.int - bar-height)).str
+      +'" width="50" height="'+ bar-height.str 
+      +'" style="fill:red;stroke:purple;stroke-width:5;"/>\n'
+    ;
+  }
+
+  fun txt (idx:int, barname: string) =>
+    '    <text x="'+idx.barx.str +'" y="220" '
+      +' transform="rotate(60 '+idx.barx.str+',220)"'
+      +'>'+barname+'</text>\n'
+  ;
+
+  var bars = "";
+  var index = 0;
+  iter proc (name:string, time:double) 
+  {
+    bars += tbar (index, time);
+    bars += txt (index, name);
+    ++index;
+  }
+  cs;
+  return tstart + bars + tend;
+ }
+
+var tmatch = RE2 ("([0-9]+)m([0-9.]+)s");
+
+var f = fopen_input ("result.tmp");
+var line = readln f;
+var data = Empty[string * double];
+proc emit () 
+{
+  match data with
+  | Empty => ;
+  | _ => 
+    var result = svg(program,data);
+    var outfile = fopen_output ("speed/"+program+"/result.svg");
+    write$ outfile,result;
+    fclose outfile;
+    data = Empty[string * double];
+  endmatch;
+}
+
+while line != "" do
+  if prefix (line, "PROG:") do 
+     emit;
+     var program = line.[6 to -1];
+     println$ "PROGRAM " + program;
+  elif prefix (line, "user") or prefix (line, "sys") or strip(line) == "" do
+    // nothing
+  elif prefix (line, "real") do
+    var time = line.[4 to -1].strip;
+    // println$ compiler + " " + time; 
+    var tsub = Match (tmatch,time);
+    // println$ tsub;
+    match tsub with
+    | None => println "what?";
+    | Some ?v => 
+      var secs = v . 1 . double * 60.0 + v . 2 . double;
+      println$ compiler + " " + secs.str; 
+      data += compiler,secs;      
+    endmatch;
+  else
+    var compiler = strip (line);
+  done
+  line = readln f;
+done
+emit;
+fclose f;
+

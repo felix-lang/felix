@@ -4,3 +4,4 @@ var i:int; lab:for i in 0 upto 10 do
   done;
   println i;
 done;
+

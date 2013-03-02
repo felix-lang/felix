@@ -351,7 +351,7 @@ let fold_vars syms bsym_table uses i ps exes =
           begin
             delete_var();
             (*
-            print_endline ("DELETE VAR "^si j^", ELIMINATING Exe = " ^ string_of_bexe 0 x);
+            print_endline ("DELETE VAR "^si j^", ELIMINATING Exe = " ^ string_of_bexe bsym_table 0 x);
             *)
             find_tassign t' outexes
           end

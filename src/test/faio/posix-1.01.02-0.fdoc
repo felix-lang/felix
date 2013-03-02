@@ -1,0 +1,48 @@
+
+@h1 posix-1.01.02-0.flx
+@felix
+include "std/posix/faio_posix";
+open Faio_posix;
+
+header "typedef struct { char dat[8]; } tstbuf;";
+ctypes tstbuf;
+proc dprint: tstbuf = 'printf("%.8s", $1.dat);';
+fun get_data: tstbuf -> address = "$1.dat";
+fun get_data: +char -> address = "$1";
+
+// try to send some data down a socket
+var port = 0;   // let mk_listener choose the port
+var listener: socket_t;  mk_listener(&listener,&port, 1);
+
+// not printing in thread to make output repeatable in
+// the face of scheduler changes.
+spawn_fthread{
+  {
+    var c: socket_t;
+    connect(&c, c"127.0.0.1", port);
+
+    var n = 8;
+    var eof: bool;
+    async_write(c, &n, get_data((c"faio2you")), &eof);
+    shutdown(c, 1);  // no further writes (wakes reader)
+
+    var b: tstbuf;
+    async_read(c, &n, b.get_data, &eof);
+    print "connector read "; dprint b; endl;
+    System::exit 0;
+  };
+};
+
+var s: socket_t;
+accept (&s, listener);  // async!
+var b: tstbuf;
+var n = 16;           // ask for more than there is and rely on shutdown
+var eof: bool;
+async_read(s, &n, b.get_data, &eof);
+print "acceptor read "; print n; print " bytes: "; dprint b; endl;
+async_write(s, &n, get_data((c"thanks!!")), &eof);
+
+@expect
+acceptor read 8 bytes: faio2you
+connector read thanks!!
+@

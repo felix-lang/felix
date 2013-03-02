@@ -59,3 +59,4 @@ val a4 = list(has(varray("55","66")), has(a3));
 println$ "1" \in a4, "3" \in a4, "5" \in a4;
 println$ "11" \in a4, "33" \in a4, "55" \in a4;
 
+

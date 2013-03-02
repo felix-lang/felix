@@ -3,3 +3,4 @@ module Y { proc p(){} }
 open X;
 open Y;
 p; // ambiguous
+

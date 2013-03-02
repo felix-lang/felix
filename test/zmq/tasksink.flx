@@ -39,3 +39,4 @@ println$ f"Total elapsed time: %d ms"
 
 receiver.close;
 context.term;
+

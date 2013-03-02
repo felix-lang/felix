@@ -28,3 +28,4 @@ p e;
 val e2 = (h=1,g="Hello",k="dont care");
 p (e2:>>X[string]::r);
 
+

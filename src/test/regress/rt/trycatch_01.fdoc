@@ -1,0 +1,22 @@
+
+@h1 trycatch_01.flx
+@felix
+proc throwint : int = "throw $1;";
+
+try
+  println$ "Hello";
+  throwint 42;
+  println$ "World";
+catch x: int =>
+  println$ "Caught " + str x;
+endtry
+
+println$ "Finished";
+
+  
+
+@expect
+Hello
+Caught 42
+Finished
+@

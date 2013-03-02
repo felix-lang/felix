@@ -1,0 +1,68 @@
+
+@h1 array-02.flx
+@felix
+// All arrays test
+
+//var ca = carray[int,10];
+var aa = 0,0,0,0,0,0,0,0,0,0;
+var va = varray[int] (10uz,0);
+var da = darray[int] (10uz,0);
+var sa = sarray[int] (0);
+
+println$ "len aa= " + aa.len.str;
+println$ "len va= " + va.len.str;
+println$ "len da= " + (len da).str;
+
+var i:int; for i in 0 upto 9 do
+//  set(ca,i,i); println$ i," ",get(ca,i);
+  set(&aa,i,i); println$ i,get(aa,i);
+  set(va,i,i); println$ i,get(va,i);
+  set(da,i.size,i); println$ i,get(da,i);
+  set(sa,i.size,i); println$ i,get(sa,i.size);
+done
+
+@expect
+len aa= 10
+len va= 10
+len da= 10
+(0, 0)
+(0, 0)
+(0, 0)
+(0, 0)
+(1, 1)
+(1, 1)
+(1, 1)
+(1, 1)
+(2, 2)
+(2, 2)
+(2, 2)
+(2, 2)
+(3, 3)
+(3, 3)
+(3, 3)
+(3, 3)
+(4, 4)
+(4, 4)
+(4, 4)
+(4, 4)
+(5, 5)
+(5, 5)
+(5, 5)
+(5, 5)
+(6, 6)
+(6, 6)
+(6, 6)
+(6, 6)
+(7, 7)
+(7, 7)
+(7, 7)
+(7, 7)
+(8, 8)
+(8, 8)
+(8, 8)
+(8, 8)
+(9, 9)
+(9, 9)
+(9, 9)
+(9, 9)
+@

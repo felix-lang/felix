@@ -16,3 +16,4 @@ h2(px,1);
 
 proc k[t,u=&t]: u = "::std::cout << *$1 <<::std::endl;";
 k px;
+

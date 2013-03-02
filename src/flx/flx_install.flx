@@ -1,0 +1,355 @@
+
+proc install() {
+    var cmd="";
+    var result = 0;
+    var FLX_INSTALL_DIR = config.FLX_INSTALL_DIR;
+    var INSTALL_ROOT = config.INSTALL_ROOT;
+
+    debugln "Install Felix build";
+    println$ "FROM: " + FLX_INSTALL_DIR;
+    println$ "TO  : " + INSTALL_ROOT;
+
+    if FLX_INSTALL_DIR == INSTALL_ROOT do
+      println "Can't install, src and dst are the same";
+      System::exit(1);
+    done
+
+
+    // remove old install
+
+    if PLAT_WIN32 do
+      println$ "Cleaning INSTALL_ROOT = " + INSTALL_ROOT;
+      result=system("rd /S /Q "+INSTALL_ROOT);
+    else
+      result=system("rm -rf "+INSTALL_ROOT);
+    done
+    result=system("mkdir -pv "+INSTALL_ROOT);
+    println "Target directory cleaned";
+ 
+    // copy using flx_cp from build
+    proc cp(s:string) {
+      if PLAT_WIN32 do
+        cmd=quote(FLX_INSTALL_DIR+"\\bin\\flx_cp")+" "+quote(FLX_INSTALL_DIR)+' ' + quote(s)+' '+quote(INSTALL_ROOT+"${0}");
+      else
+        cmd=FLX_INSTALL_DIR+"/bin/flx_cp '"+FLX_INSTALL_DIR+"' '"+s+"' '"+INSTALL_ROOT+"/${0}'";
+      done
+      //println$ "shell cmd = " + cmd;
+      result=system(cmd);
+      if result != 0 do  
+        goto failure; done
+    }
+    dss:= list(
+
+     (" * Tools", list( "bin/.*" )),
+
+     (" * Run time libraries and C/C++ headers",
+     list( 
+       "lib/rtl/.*\\.(h|hpp|c|cpp|dylib|so|a)",
+       "lib/rtl/flx_a?run_lib.(o|obj)",
+       "lib/rtl/flx_a?run_main.(o|obj)"
+     )),
+
+
+     (" * Resource database", list("config/[^/]*\\.fpc")),
+
+     (" * Platform Dependent C++ headers", list("config/.*\\.hpp")),
+
+     (" * Felix library",
+     list( 
+       "(tools|lib)/.*\\.(flxh?|files|fdoc)"
+     )),
+
+     (" * Felix web resources",
+     list( 
+       "(lib/web)/.*\\.(css|png|jpg|gif|js|db|sql|html)"
+     )),
+
+     (" * Tool sources",
+     list( 
+       "(tools)/.*\\.(flx|fdoc)"
+     )),
+
+
+     (" * Regression and Unit test code", list("(test|tut)/.*\\.(flx|fdoc|expect)")),
+
+     (" * Documentation", 
+       list (
+        "doc/.*\\.(fdoc|html)",
+        "web/.*\\.(fdoc|html|gif|png|jpg|css|js)",
+        "index.html",
+        "index2.html",
+        "VERSION"
+     ))
+
+    );
+    iter (proc (desc:string, srcs:list[string]) { println$ desc; iter cp srcs; }) dss; 
+
+    println "Source Install succeeded";
+    System::exit(result);
+failure:> 
+    println$ "Install failed, code = " + str(result);
+    println$ "Flx_cp: ERROR " + str result+": "+strerror(result.errno_t); 
+    System::exit(result);
+}
+
+
+
+// install executable files in usr/local/bin
+// target cannot be changed.
+
+proc install_bin ()
+{
+  // NOTE: these installs use the immediate build directory,
+  // NOT the final build target, eg tools/webserver not bin/webserver
+  // This may be wrong!
+  var cmd = "";
+  var result = 0;
+  var FLX_INSTALL_DIR = config.FLX_INSTALL_DIR;
+  debugln "Install executables and plugins";
+  println$ "FROM: " + FLX_INSTALL_DIR;
+  println$ "TO   : /usr/local/bin (fixed, can't be changed: privilege required)";
+  println$ "AND  : /usr/local/lib (fixed, can't be changed: privilege required)";
+
+  result=system("cp -f "+FLX_INSTALL_DIR+"/bin/flx /usr/local/bin");
+  if result !=0 goto install_bin_failed;
+  println$ "Installed executable flx in /usr/local/bin";
+
+  if not PLAT_WIN32 do
+    result= system("cp -f "+FLX_INSTALL_DIR+"/bin/flx_daemon /usr/local/bin");
+    if result !=0 goto install_bin_failed;
+    println$ "Installed executable flx_daemon in /usr/local/bin";
+
+    result= system("cp -f "+FLX_INSTALL_DIR+"/bin/flx_timeout /usr/local/bin");
+    if result !=0 goto install_bin_failed;
+    println$ "Installed executable flx_timeout in /usr/local/bin";
+  done
+
+  result= system("cp -f "+FLX_INSTALL_DIR+"/tools/webserver /usr/local/bin");
+  if result !=0 goto install_bin_failed;
+  println$ "Installed executable webserver in /usr/local/bin";
+
+/*
+  result= system("cp -f "+FLX_INSTALL_DIR+"/wiki/wiki /usr/local/bin");
+  if result !=0 goto install_bin_failed;
+  println$ "Installed executable wiki in /usr/local/bin";
+*/
+
+  result= system("cp -f "+FLX_INSTALL_DIR+"/tools/flx_ls /usr/local/bin");
+  if result !=0 goto install_bin_failed;
+  println$ "Installed executable flx_ls in /usr/local/bin";
+
+  result= system("cp -f "+FLX_INSTALL_DIR+"/tools/flx_grep /usr/local/bin");
+  if result !=0 goto install_bin_failed;
+  println$ "Installed executable flx_grep in /usr/local/bin";
+
+  result= system("cp -f "+FLX_INSTALL_DIR+"/tools/flx_replace /usr/local/bin");
+  if result !=0 goto install_bin_failed;
+  println$ "Installed executable flx_replace in /usr/local/bin";
+
+  result= system("cp -f "+FLX_INSTALL_DIR+"/tools/flx_libindex /usr/local/bin");
+  if result !=0 goto install_bin_failed;
+  println$ "Installed executable flx_libindex in /usr/local/bin";
+
+  result= system("cp -f "+FLX_INSTALL_DIR+"/tools/flx_libcontents /usr/local/bin");
+  if result !=0 goto install_bin_failed;
+  println$ "Installed executable flx_libcontents in /usr/local/bin";
+
+  result= system("cp -f "+FLX_INSTALL_DIR+"/tools/flx_gramdoc /usr/local/bin");
+  if result !=0 goto install_bin_failed;
+  println$ "Installed executable flx_gramdoc in /usr/local/bin";
+
+  result= system("cp -f "+FLX_INSTALL_DIR+"/tools/flx_cp /usr/local/bin");
+  if result !=0 goto install_bin_failed;
+  println$ "Installed executable flx_cp in /usr/local/bin";
+
+  result= system("cp -f "+FLX_INSTALL_DIR+"/tools/flx_tangle /usr/local/bin");
+  if result !=0 goto install_bin_failed;
+  println$ "Installed executable flx_tangle in /usr/local/bin";
+
+  result= system("cp -f "+FLX_INSTALL_DIR+"/shlib/*"+config.EXT_SHLIB+" /usr/local/lib");
+  if result !=0 goto install_bin_failed;
+  println$ "Installed plugins in /usr/local/lib";
+
+  println "Install succeeded";
+  System::exit(0);
+
+install_bin_failed:>
+  println$ "Install failed, code = " + str(result);
+  System::exit(result);
+}
+
+
+proc dist_install() {
+    var cmd = "";
+    var result = 0;
+    var FLX_INSTALL_DIR = config.FLX_INSTALL_DIR;
+    val DIST_ROOT=control.DIST_ROOT;
+    val DIST_ROOT_FLX=DIST_ROOT+"/lib/felix/felix-1.1.7dev";
+    debugln "Install Felix build";
+    println$ "FROM: " + FLX_INSTALL_DIR;
+    println$ "TO  : " + DIST_ROOT;
+
+    if FLX_INSTALL_DIR == DIST_ROOT do
+      println "Can't install, src and dst are the same";
+      System::exit(1);
+    done
+
+
+    // remove old dist
+
+    if PLAT_WIN32 do
+      println$ "Cleaning DIST_ROOT = " + DIST_ROOT;
+      result=system("rd /S /Q "+DIST_ROOT);
+    else
+      result=system("rm -rf "+DIST_ROOT);
+    done
+    result=system("mkdir -pv "+DIST_ROOT_FLX);
+    result=system("mkdir -pv "+DIST_ROOT+"/bin");
+    println "Target directory cleaned";
+ 
+    // copy using flx_cp from build
+    proc cp(s:string) {
+      if PLAT_WIN32 do
+        cmd=quote(FLX_INSTALL_DIR+"\\bin\\flx_cp")+" "+quote(FLX_INSTALL_DIR)+' ' + quote(s)+' '+quote(DIST_ROOT_FLX+"${0}");
+      else
+        cmd=FLX_INSTALL_DIR+"/bin/flx_cp '"+FLX_INSTALL_DIR+"' '"+s+"' '"+DIST_ROOT_FLX+"/${0}'";
+      done
+      //println$ "shell cmd = " + cmd;
+      result=system(cmd);
+      if result != 0 do  
+        goto failure; done
+    }
+    dss:= list(
+
+     (" * Tools", list( "bin/.*" )),
+
+     (" * Run time libraries and C/C++ headers",
+     list( 
+       "lib/rtl/.*\\.(h|hpp|c|cpp|dylib|so|a)",
+       "lib/rtl/flx_a?run_lib.(o|obj)",
+       "lib/rtl/flx_a?run_main.(o|obj)"
+     )),
+
+     (" * Resource database", list("config/[^/]*\\.fpc")),
+
+     (" * Platform Dependent C++ headers", list("config/.*\\.hpp")),
+
+     (" * Felix library",
+     list( 
+       "(tools|lib)/.*\\.(flxh?|files|fdoc)"
+     )),
+
+     (" * Felix web resources",
+     list( 
+       "(lib/web)/.*\\.(css|png|jpg|gif|js|db|sql|html)"
+     )),
+
+
+     (" * Regression and Unit test code", list("(test|tut)/.*\\.(flx|expect)")),
+
+     (" * Documentation", 
+       list (
+        "doc/.*\\.(fdoc|html)",
+        "web/.*\\.(fdoc|html|gif|png|jpg|css|js)",
+        "index.html",
+        "index2.html",
+        "VERSION"
+     ))
+
+    );
+    iter (proc (desc:string, srcs:list[string]) { println$ desc; iter cp srcs; }) dss; 
+
+    println "Source Distribution succeeded";
+    return;
+failure:> 
+    println$ "Distribution failed, code = " + str(result);
+    println$ "Flx_cp: ERROR " + str result+": "+strerror(result.errno_t); 
+    System::exit(result);
+}
+
+proc dist_install_bin ()
+{
+  var FLX_INSTALL_DIR = config.FLX_INSTALL_DIR;
+  var cmd = "";
+  var result = 0;
+  // NOTE: these installs use the immediate build directory,
+  // NOT the final build target, eg tools/webserver not bin/webserver
+  // This may be wrong
+  val DIST_ROOT=control.DIST_ROOT;
+  val DIST_ROOT_BIN = DIST_ROOT+"/bin";
+  val DIST_ROOT_LIB = DIST_ROOT+"/lib";
+
+  debugln "Install executables and plugins";
+  println$ "FROM: " + FLX_INSTALL_DIR;
+  println$ "TO   : " + DIST_ROOT_BIN;
+  println$ "AND  : " + DIST_ROOT_LIB;
+
+  result=system("cp -f "+FLX_INSTALL_DIR+"/bin/flx "+DIST_ROOT_BIN);
+  if result !=0 goto dist_bin_failed;
+  println$ "Installed executable flx in "+DIST_ROOT_BIN;
+
+  if not PLAT_WIN32 do
+    result= system("cp -f "+FLX_INSTALL_DIR+"/bin/flx_mk_daemon "+DIST_ROOT_BIN);
+    if result !=0 goto dist_bin_failed;
+    println$ "Installed executable mk_daemon in "+DIST_ROOT_BIN;
+
+    result= system("cp -f "+FLX_INSTALL_DIR+"/bin/flx_timeout "+DIST_ROOT_BIN);
+    if result !=0 goto dist_bin_failed;
+    println$ "Installed executable timeout in "+DIST_ROOT_BIN;
+  done
+
+  result= system("cp -f "+FLX_INSTALL_DIR+"/tools/webserver "+DIST_ROOT_BIN);
+  if result !=0 goto dist_bin_failed;
+  println$ "Installed executable webserver in "+DIST_ROOT_BIN;
+
+/*
+  result= system("cp -f "+FLX_INSTALL_DIR+"/wiki/wiki "+DIST_ROOT_BIN);
+  if result !=0 goto dist_bin_failed;
+  println$ "Installed executable wiki in "+DIST_ROOT_BIN;
+*/
+
+  result= system("cp -f "+FLX_INSTALL_DIR+"/tools/flx_ls "+DIST_ROOT_BIN);
+  if result !=0 goto dist_bin_failed;
+  println$ "Installed executable flx_ls in "+DIST_ROOT_BIN;
+
+  result= system("cp -f "+FLX_INSTALL_DIR+"/tools/flx_grep "+DIST_ROOT_BIN);
+  if result !=0 goto dist_bin_failed;
+  println$ "Installed executable flx_grep in "+DIST_ROOT_BIN;
+
+  result= system("cp -f "+FLX_INSTALL_DIR+"/tools/flx_replace "+DIST_ROOT_BIN);
+  if result !=0 goto dist_bin_failed;
+  println$ "Installed executable flx_replace in /usr/local/bin";
+
+  result= system("cp -f "+FLX_INSTALL_DIR+"/tools/flx_libindex "+DIST_ROOT_BIN);
+  if result !=0 goto dist_bin_failed;
+  println$ "Installed executable flx_libindex in "+DIST_ROOT_BIN;
+
+  result= system("cp -f "+FLX_INSTALL_DIR+"/tools/flx_libcontents "DIST_ROOT_BIN);
+  if result !=0 goto dist_bin_failed;
+  println$ "Installed executable flx_libcontents in "+DIST_ROOT_BIN;
+
+  result= system("cp -f "+FLX_INSTALL_DIR+"/tools/flx_gramdoc "+DIST_ROOT_BIN);
+  if result !=0 goto dist_bin_failed;
+  println$ "Installed executable flx_gramdoc in "+DIST_ROOT_BIN;
+
+  result= system("cp -f "+FLX_INSTALL_DIR+"/tools/flx_cp "+DIST_ROOT_BIN);
+  if result !=0 goto dist_bin_failed;
+  println$ "Installed executable flx_cp in "+DIST_ROOT_BIN;
+
+  result= system("cp -f "+FLX_INSTALL_DIR+"/shlib/*"+config.EXT_SHLIB+" "+DIST_ROOT_LIB);
+  if result !=0 goto dist_bin_failed;
+  println$ "Installed plugins in "+DIST_ROOT_LIB;
+  return;
+
+dist_bin_failed:>
+  println$ "Distribution failed, code = " + str(result);
+  System::exit(result);
+}
+
+proc dist() {
+  dist_install();
+  dist_install_bin();
+  println "Distribution succeeded";
+  System::exit(0);
+}
+

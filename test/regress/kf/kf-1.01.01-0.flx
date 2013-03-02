@@ -8,3 +8,4 @@ proc foo(x)
 }
 
 foo 0;
+

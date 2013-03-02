@@ -1,0 +1,29 @@
+
+@h1 assoc_list-01.flx
+@felix
+//Check assoc_list
+open List;
+open Assoc_list;
+
+val xs = list((1,"a"), (3, "c"), (5, "e"));
+
+println $ mem (fun (a:int) => a == 1) xs;
+println $ mem (fun (a:int) => a == 2) xs;
+println $ mem (eq of (int*int)) xs 3;
+println $ mem (eq of (int*int)) xs 4;
+
+println $ find (fun (a:int) => a == 1) xs;
+println $ find (fun (a:int) => a == 2) xs;
+println $ find (eq of (int*int)) xs 3;
+println $ find (eq of (int*int)) xs 4;
+
+@expect
+true
+false
+true
+false
+Some a
+None
+Some c
+None
+@

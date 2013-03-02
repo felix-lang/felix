@@ -1,0 +1,33 @@
+
+@h1 cstruct_constructors-01.flx
+@felix
+header """
+struct S { int x; };
+""";
+
+// cstruct with one element as function
+cstruct S { x:int; } ;
+proc print (s:S) { print "cstruct S x="; print s.x; }
+fun exec (p:int -> S, x:int) => p x;
+
+val s1 = S 1; print s1; endl;
+
+val s2 = exec (S of (int), 2); print s2; endl;
+//val s3 = exec (S,          3); print s3; endl;
+
+val s4 = (S of (int)) 4; print s4; endl;
+//val s5 = (S)          5; print s5; endl;
+
+val f1 = S of (int); val s6 = f1 6; print s6; endl;
+//val f2 = S;          val s7 = f2 7; print s7; endl;
+
+print (exec (S of (int), 8)); endl;
+//print (exec (S,          9)); endl;
+
+@expect
+cstruct S x=1
+cstruct S x=2
+cstruct S x=4
+cstruct S x=6
+cstruct S x=8
+@

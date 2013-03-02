@@ -26,7 +26,7 @@ Last-Modified: """ + rfc1123_date(response.last_modified) +"""\r
 Connection: close\r
 Content-Type: """ + str(response.content_type) + """\r
 Content-Length: """ + str (len response.content) + """\r
-"""+(fold_left (fun(x:string) (y:string):string => x + y) "" (map (fun (n:string*string) => n.(0)+": "+n.(1)+"") response.headers))+"""\r
+"""+(fold_left (fun(x:string) (y:string):string => x + y) "" (map (fun (n:string*string) => n.(0)+": "+n.(1)+"\r\n") response.headers))+"""\r
 """;
 
   

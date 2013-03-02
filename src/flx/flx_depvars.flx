@@ -1,0 +1,125 @@
+gen cal_depvars() = 
+{
+  debugln$ "Felix package manager program is "+control.PKGCONFIG;
+
+  if ECHO == 1 do
+    fprintln (cerr, "#FLX_INSTALL_DIR="+config.FLX_INSTALL_DIR);
+    fprintln (cerr, "#PKGCONFIG="+control.PKGCONFIG);
+  done
+
+  debugln$ "Felix package manager config directory is "+control.CONFIG_DIR;
+  // make a list of any *.cpp files (or other g++ options ..)
+
+  debugln$ "FileDir= " + loopctl.dir;
+  var rel_filebase = if loopctl.dir == "." then loopctl.base else Filename::join(loopctl.dir,loopctl.base);
+  debugln$ "Rel_filebase= " + rel_filebase;
+  debugln$ "Given Extension=" + loopctl.ext;
+
+    // this is a hack! We should resolve the filename first.
+  var use_ext = if loopctl.ext != "" then loopctl.ext else
+    #{ 
+       var flxt = dfiletime (rel_filebase+".flx",#past_time);
+       var fdoct = dfiletime (rel_filebase+".fdoc",#past_time);
+       return 
+         if flxt > fdoct then ".flx"
+         elif fdoct > flxt then ".fdoc"
+         else ""
+       ;
+    }
+  ;
+  debugln$ "Computed Extension=" + use_ext;
+  var filebase = Directory::mk_absolute_filename$ rel_filebase;
+  debugln$ "User program base is " + filebase;
+  var cpp_filebase =
+    match control.BUNDLE_DIR with
+    | Some ?dir => Filename::join(dir,Filename::basename filebase)
+    | None =>if control.OUTPUT_DIR=="" then filebase 
+             else cache_join(control.OUTPUT_DIR,filebase) 
+             endif
+    endmatch;         
+  debugln$ "C++ file base is " + cpp_filebase;
+
+  // if we're supposed to check output against an expect file,
+  // and no stdout file name is given, then direct output
+  // into the cache.
+  if control.CHECK_EXPECT != 0 and control.STDOUT == "" do
+    control.STDOUT = cache_join (control.OUTPUT_DIR,filebase + ".stdout");
+    debugln$ "Set stdout to " + control.STDOUT;
+  done
+
+  // if we're supposed to check output against an expect file,
+  // and no expect file name is given, then use the filebase
+  // with extension .expect.
+  if control.CHECK_EXPECT != 0 and control.EXPECT == "" do
+    control.EXPECT= filebase + ".expect";
+    debugln$ "Set expect to " + control.EXPECT;
+  done
+
+
+  // Find absolute pathname
+
+  if loopctl.path == "" do
+    fprint$ cerr, ("No such felix program: "+loopctl.path+"\n");
+    System::exit(1);
+  done
+
+  if control.LINKER_OUTPUT_FILENAME == "" do
+    if control.STATIC == 0 do // dynamic
+      control.LINKER_OUTPUT_FILENAME = filebase+config.EXT_SHLIB;
+    else
+      control.LINKER_OUTPUT_FILENAME = filebase+config.EXT_EXE;
+    done
+  done
+  control.LINKER_OUTPUT_FILENAME =  Directory::mk_absolute_filename control.LINKER_OUTPUT_FILENAME; 
+
+  val args = control.USER_ARGS;
+  debugln$ "Target program args = "+args;
+
+  var INCLUDE_DIR=quote("-I"+Filename::join(config.FLX_INSTALL_DIR,"lib","rtl")) + " "+quote("-I"+Filename::join(config.FLX_INSTALL_DIR,"config","target"));
+  debugln$ "C++ Include directory for Felix library " + INCLUDE_DIR;
+
+  var FLXLIB=quote("-I"+Filename::join(config.FLX_INSTALL_DIR,"lib"));
+  var STDLIB=list("std","web");
+  if control.NOSTDLIB == 1 do
+    FLXLIB="";
+    STDLIB=Empty[string];
+  done
+
+  var DEBUGSWITCH="";
+  if control.DEBUG_COMPILER == 1 do DEBUGSWITCH=" --debug"; done
+
+  var STATIC_ENV="";
+  if control.DEBUG_COMPILER == 1 do STATIC_ENV="env FLX_DEBUG=1 "; done
+
+  debugln$ "RECOMPILE="+str control.RECOMPILE;
+  debugln$ "RUNIT="+str control.RUNIT;
+
+  var VERBOSE = "";
+  if control.DEBUG_COMPILER == 1 do
+    VERBOSE="-v";
+    debugln "Compiler debugging on";
+  else
+    VERBOSE="-q";
+    debugln "Compiler debugging off";
+  done
+
+  if control.DEBUG==1 do
+    control.CCFLAGS=control.CCFLAGS+config.DEBUG_FLAGS;
+  done
+
+
+  return struct { 
+    var filebase=filebase;
+    var cpp_filebase=cpp_filebase;
+    var args = args;
+    var use_ext = use_ext;
+    var INCLUDE_DIR=INCLUDE_DIR;
+    var STDLIB=STDLIB;
+    var FLXLIB=FLXLIB;
+    var DEBUGSWITCH=DEBUGSWITCH;
+    var STATIC_ENV=STATIC_ENV;
+    var VERBOSE = VERBOSE;
+  };
+
+}
+

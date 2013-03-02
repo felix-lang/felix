@@ -1,0 +1,26 @@
+
+@h1 nested_union-01.flx
+@felix
+//Check types:nested
+
+fun f(x:int) = {
+  union x_t = | X of int;
+  fun pr(a:x_t): int = {
+    return
+      match a with
+      | X ?i => i
+      | _ => 0
+      endmatch
+    ;
+  }
+  val a = X x;
+  return a,pr;
+}
+
+val v,d = f 1;
+
+print$ d v; endl;
+
+@expect
+1
+@

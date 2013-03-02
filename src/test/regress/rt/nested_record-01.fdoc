@@ -1,0 +1,22 @@
+
+@h1 nested_record-01.flx
+@felix
+//Check types:nested
+
+fun f(x:int) = {
+  typedef x_t =( x:int );
+  fun pr(a:x_t): int = {
+    return a.x;
+  }
+  val a = (x=x);
+  return a,pr;
+}
+
+val v,d = f 1;
+
+print$ d v; endl;
+
+
+@expect
+1
+@

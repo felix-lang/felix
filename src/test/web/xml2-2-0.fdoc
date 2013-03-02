@@ -1,0 +1,74 @@
+
+@h1 xml2-2-0.flx
+@felix
+include "xml/xml2";
+
+open XML2;
+
+println("----------Test xml2-2-0------------------");
+println("-xml_doc_get_root_element-xml_set_prop---");
+println("-xml_get_prop-xml_new_text_child---------");
+val xml_string = """<notes id="notes_list">
+  <note id="note1">
+	<to>Tove</to>
+	<from>Jani</from>
+	<heading>Reminder</heading>
+	<body id="note1_body">Don't forget me this weekend!</body>
+  </note>
+   <note id="note2">
+	<to>Becca</to>
+	<from>Mike</from>
+	<heading>Reminder</heading>
+	<body id="note2_body">Your awesome!</body>
+  </note>
+</notes>
+""";
+var xml_doc2 = xml_parse_string(xml_string);
+var root_node2 = xml_doc_get_root_element(xml_doc2);
+val nc2 = xml_new_text_child(root_node2, Null[xml_ns_ptr],  "node1","Another node");
+if isNull[xml_node_ptr](nc2) do
+  println("No child");
+done
+match xml_get_prop(root_node2,"id") with
+  |Some ?v => {println("Root node had id: "+v);}
+  |_       => {println("No id found for root node");}
+endmatch;
+// Set element attribute programatically
+val attr = xml_set_prop(root_node2,"priority","high");
+if isNull[xml_attr_ptr](attr) do 
+  println("xml_set_prop failed");
+else
+  match xml_get_prop(root_node2,"priority") with
+    |Some ?v => {println("notes node has priority: "+v);}
+    |_       => {println("No priority attribute found for notes");}
+  endmatch;
+done
+println("----------------------------------------");
+print(xml_doc_dump(xml_doc2));
+println("----------------------------------------");
+xml_free_doc(xml_doc2);
+
+@expect
+----------Test xml2-2-0------------------
+-xml_doc_get_root_element-xml_set_prop---
+-xml_get_prop-xml_new_text_child---------
+Root node had id: notes_list
+notes node has priority: high
+----------------------------------------
+<?xml version="1.0"?>
+<notes id="notes_list" priority="high">
+  <note id="note1">
+	<to>Tove</to>
+	<from>Jani</from>
+	<heading>Reminder</heading>
+	<body id="note1_body">Don't forget me this weekend!</body>
+  </note>
+   <note id="note2">
+	<to>Becca</to>
+	<from>Mike</from>
+	<heading>Reminder</heading>
+	<body id="note2_body">Your awesome!</body>
+  </note>
+<node1>Another node</node1></notes>
+----------------------------------------
+@

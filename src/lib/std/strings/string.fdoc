@@ -1,0 +1,544 @@
+
+@h1 Strings
+We have three string like things.
+{cstring} is just an alias for a NTBS (Null Terminated Byte String).
+The workhorse {string} type based on C++ string.
+A {ustring} is a unicode representation using a 32 bit unsigned integer as
+the character base.
+This type is deprecated, to be repalced by C++11 unicode string type.
+@felix
+typedef cstring = +char;
+type string = "::std::basic_string<char>" 
+  requires Cxx_headers::string,
+  header '#include "flx_serialisers.hpp"',
+  encoder "::flx::gc::generic::string_encoder",
+  decoder "::flx::gc::generic::string_decoder"
+;
+typedef strings = typesetof (string);
+
+@h2 Equality and total ordering
+@felix
+instance[t in strings] Eq[t] {
+  fun == : t * t -> bool = "$1==$2";
+}
+instance[t in strings] Tord[t] {
+  fun < : t * t -> bool = "$1<$2";
+}
+
+open class String
+{
+  inherit Eq[string];
+
+  inherit Tord[string];
+
+@h2 Equality of {string} and {char}
+@felix
+  fun == (s:string, c:char) => len s == 1uz and s.[0] == c;
+  fun == (c:char, s:string) => len s == 1uz and s.[0] == c;
+
+@h2 Append to {string} object
+@felix
+  proc  += : &string * string = "$1->append($2:assign);";
+  proc  += : &string * +char = "$1->append($2:assign);";
+  proc  += : &string * char = "*$1 += $2;";
+
+@h2 Length of {string}
+@felix
+  // we need to cast to an int so that c++ won't complain
+  fun len: string -> size = "$1.size()";
+
+@h2 String concatenation.
+@felix
+  fun + : string * string -> string = "$1+$2";
+  fun + : string * carray[char] -> string = "$1+$2";
+  fun + : string * char -> string = "$1+$2";
+  fun + : char * string -> string = "$1+$2";
+  //fun + : string * int -> string = "$1+::flx::rtl::i18n::utf8($2:assign)" is add requires package "flx_i18n";
+  fun + ( x:string,  y: int) => x + str y;
+
+  // may be a bit risky!
+  // IT WAS: interferes with "hello" + list ("world","blah"): 
+  // is this a string or a list of strings?
+  //fun + [T with Str[T]] (x:string, y:T) => x + str y;
+
+@h2 Repetition of {string} or {char}
+@felix
+  fun * : string * int -> string = "::flx::rtl::strutil::mul($1:assign,$2:assign)" requires package "flx_strutil";
+  fun * : char * int -> string = "::std::string($2:assign,$1:assign)";
+
+@h2 Application of {string} to {string} or {int} is concatenation
+@felix
+  fun apply (x:string, y:string):string => x + y;
+  fun apply (x:string, y:int):string => x + y;
+
+@h2 Construct a char from first byte of a {string}.
+Returns nul char (code 0) if the string is empty.
+@felix
+  ctor char (x:string) => x.[0];
+@h2 Constructors for {string}
+@felix
+  ctor string (c:char) => ""+c;
+  ctor string: +char = "::std::string($1:assign)";
+  ctor string: +char  * !ints = "::std::string($1:assign,$2:assign)";
+  fun utf8: int -> string = "::flx::rtl::i18n::utf8($1)" requires package "flx_i18n";
+
+@h2 Substrings
+@felix
+  fun subscript: string * !ints -> char =
+    "::flx::rtl::strutil::subscript($1:assign,$2:assign)" requires package "flx_strutil";
+  fun copyfrom: string * !ints -> string =
+    "::flx::rtl::strutil::substr($1:assign,$2:assign,$1:postfix.size())" requires package "flx_strutil";
+  fun copyto: string * !ints -> string =
+    "::flx::rtl::strutil::substr($1:assign,0,$2:assign)" requires package "flx_strutil";
+  fun substring: string * !ints * !ints -> string =
+    "::flx::rtl::strutil::substr($1:assign,$2:assign,$3:assign)" requires package "flx_strutil";
+
+  fun subscript (x:string, s:slice[int]):string =>
+    match s with
+    | Slice_all[int] => substring (x, 0, x.len.int)
+    | Slice_from (?start) => copyfrom (x, start)
+    | Slice_to (?end) => copyto (x, end)
+    | Slice_range (?start, ?end) => substring (x, start, end)
+    | Slice_one (?index) => string x.[index]
+    endmatch
+  ;
+
+  proc store: &string * !ints * char = "(*$1)[$2] = $3;";
+
+@h2 Map a string {char} by {char}
+@felix
+  fun map (f:char->char) (var x:string): string = {
+    if len x > 0uz do
+      for var i in 0uz upto (len x) - 1uz do
+        store(&x, i, f x.[i]);
+      done
+    done
+    return x;
+  }
+
+@h2 STL string functions
+These come in two flavours: the standard C++ operations
+which return {stl_npos} on failure, and a more Felix
+like variant which uses an {option} type.
+@felix
+  const stl_npos: size = "::std::string::npos";
+
+  fun stl_find: string * string -> int = "(int)$1.find($2)" is cast;
+  fun stl_find: string * string * int -> int = "(int)$1.find($2,$3)" is cast;
+  fun stl_find: string * +char -> int = "(int)$1.find($2)" is cast;
+  fun stl_find: string * +char * int -> int = "(int)$1.find($2,$3)" is cast;
+  fun stl_find: string * char -> int = "(int)$1.find($2)" is cast;
+  fun stl_find: string * char * int -> int = "(int)$1.find($2,$3)" is cast;
+
+  fun find (s:string, e:string) : opt[int] => match stl_find (s, e) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find (s:string, e:string, i:int) : opt[int] => match stl_find (s, e, i) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find (s:string, e:+char) : opt[int] => match stl_find (s, e) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find (s:string, e:+char, i:int) : opt[int] => match stl_find (s, e, i) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find (s:string, e:char) : opt[int] => match stl_find (s, e) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find (s:string, e:char, i:int) : opt[int] => match stl_find (s, e, i) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+
+  fun stl_rfind: string * string -> int = "$1.rfind($2)";
+  fun stl_rfind: string * string * int -> int = "$1.rfind($2,$3)";
+  fun stl_rfind: string * +char-> int = "$1.rfind($2)";
+  fun stl_rfind: string * +char * int -> int = "$1.rfind($2,$3)";
+  fun stl_rfind: string * char -> int = "$1.rfind($2)";
+  fun stl_rfind: string * char * int -> int = "$1.rfind($2,$3)";
+
+  fun rfind (s:string, e:string) : opt[int] => match stl_rfind (s, e) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+  fun rfind (s:string, e:string, i:int) : opt[int] => match stl_rfind (s, e, i) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+  fun rfind (s:string, e:+char) : opt[int] => match stl_rfind (s, e) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+  fun rfind (s:string, e:+char, i:int) : opt[int] => match stl_rfind (s, e, i) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+  fun rfind (s:string, e:char) : opt[int] => match stl_rfind (s, e) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+  fun rfind (s:string, e:char, i:int) : opt[int] => match stl_rfind (s, e, i) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+
+  fun stl_find_first_of: string * string -> int = "$1.find_first_of($2)";
+  fun stl_find_first_of: string * string * int -> int = "$1.find_first_of($2,$3)";
+  fun stl_find_first_of: string * +char -> int = "$1.find_first_of($2)";
+  fun stl_find_first_of: string * +char * int -> int = "$1.find_first_of($2,$3)";
+  fun stl_find_first_of: string * char -> int = "$1.find_first_of($2)";
+  fun stl_find_first_of: string * char * int -> int = "$1.find_first_of($2,$3)";
+
+  fun find_first_of (s:string, e:string) : opt[int] => match stl_find_first_of (s, e) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_first_of (s:string, e:string, i:int) : opt[int] => match stl_find_first_of (s, e, i) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_first_of (s:string, e:+char) : opt[int] => match stl_find_first_of (s, e) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_first_of (s:string, e:+char, i:int) : opt[int] => match stl_find_first_of (s, e, i) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_first_of (s:string, e:char) : opt[int] => match stl_find_first_of (s, e) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_first_of (s:string, e:char, i:int) : opt[int] => match stl_find_first_of (s, e, i) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+
+  fun stl_find_first_not_of: string * string -> int = "$1.find_first_not_of($2)";
+  fun stl_find_first_not_of: string * string * int -> int = "$1.find_first_not_of($2,$3)";
+  fun stl_find_first_not_of: string * +char -> int = "$1.find_first_not_of($2)";
+  fun stl_find_first_not_of: string * +char * int -> int = "$1.find_first_not_of($2,$3)";
+  fun stl_find_first_not_of: string * char -> int = "$1.find_first_not_of($2)";
+  fun stl_find_first_not_of: string * char * int -> int = "$1.find_first_not_of($2,$3)";
+
+  fun find_first_not_of (s:string, e:string) : opt[int] => match stl_find_first_not_of (s, e) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_first_not_of (s:string, e:string, i:int) : opt[int] => match stl_find_first_not_of (s, e, i) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_first_not_of (s:string, e:+char) : opt[int] => match stl_find_first_not_of (s, e) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_first_not_of (s:string, e:+char, i:int) : opt[int] => match stl_find_first_not_of (s, e, i) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_first_not_of (s:string, e:char) : opt[int] => match stl_find_first_not_of (s, e) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_first_not_of (s:string, e:char, i:int) : opt[int] => match stl_find_first_not_of (s, e, i) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+
+  fun stl_find_last_of: string * string -> int = "$1.find_last_of($2)";
+  fun stl_find_last_of: string * string * int -> int = "$1.find_last_of($2,$3)";
+  fun stl_find_last_of: string * +char -> int = "$1.find_last_of($2)";
+  fun stl_find_last_of: string * +char * int -> int = "$1.find_last_of($2,$3)";
+  fun stl_find_last_of: string * char -> int = "$1.find_last_of($2)";
+  fun stl_find_last_of: string * char * int -> int = "$1.find_last_of($2,$3)";
+
+  fun find_last_of (s:string, e:string) : opt[int] => match stl_find_last_of (s, e) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_last_of (s:string, e:string, i:int) : opt[int] => match stl_find_last_of (s, e, i) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_last_of (s:string, e:+char) : opt[int] => match stl_find_last_of (s, e) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_last_of (s:string, e:+char, i:int) : opt[int] => match stl_find_last_of (s, e, i) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_last_of (s:string, e:char) : opt[int] => match stl_find_last_of (s, e) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_last_of (s:string, e:char, i:int) : opt[int] => match stl_find_last_of (s, e, i) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+
+  fun stl_find_last_not_of: string * string -> int = "$1.find_last_not_of($2)";
+  fun stl_find_last_not_of: string * string * int -> int = "$1.find_last_not_of($2,$3)";
+  fun stl_find_last_not_of: string * +char -> int = "$1.find_last_not_of($2)";
+  fun stl_find_last_not_of: string * +char * int -> int = "$1.find_last_not_of($2,$3)";
+  fun stl_find_last_not_of: string * char -> int = "$1.find_last_not_of($2)";
+  fun stl_find_last_not_of: string * char * int -> int = "$1.find_last_not_of($2,$3)";
+
+  fun find_last_not_of (s:string, e:string) : opt[int] => match stl_find_last_not_of (s, e) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_last_not_of (s:string, e:string, i:int) : opt[int] => match stl_find_last_not_of (s, e, i) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_last_not_of (s:string, e:+char) : opt[int] => match stl_find_last_not_of (s, e) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_last_not_of (s:string, e:+char, i:int) : opt[int] => match stl_find_last_not_of (s, e, i) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_last_not_of (s:string, e:char) : opt[int] => match stl_find_last_not_of (s, e) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_last_not_of (s:string, e:char, i:int) : opt[int] => match stl_find_last_not_of (s, e, i) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+
+  
+@h2 Construe {string} as set of {char}
+@felix
+  instance Set[string,char] {
+    fun \in (c:char, s:string) => stl_find (s,c) != stl_npos.int;
+  }
+  
+@h2 Construe {string} as stream of {char}
+@felix
+  instance Streamable[string, char] {
+    gen iterator(var x:string) () = {
+      for var i in 0 upto x.len.int - 1 do yield Some (x.[i]); done
+      return None[char];
+    }
+  }
+  inherit Streamable[string,char];
+
+@h2 Test if a string has given prefix or suffix
+@felix
+  fun prefix(arg:string,key:string)=>
+    arg.[to len key]==key
+  ;
+
+  fun suffix (arg:string,key:string)=>
+    arg.[-key.len to]==key
+  ;
+
+
+  fun startswith (x:string) (e:string) : bool => prefix (x,e);
+
+  // as above: slices are faster
+  fun endswith (x:string) (e:string) : bool => suffix (x,e);
+
+  fun startswith (x:string) (e:char) : bool => x.[0] == e;
+  fun endswith (x:string) (e:char) : bool => x.[-1] == e;
+
+@h2 Trim off specified prefix or suffix or both
+@felix
+  fun ltrim (x:string) (e:string) : string =>
+    if startswith x e then
+      x.[e.len.int to]
+    else
+      x
+    endif
+  ;
+
+  fun rtrim (x:string) (e:string) : string =>
+    if endswith x e then
+      x.[to x.len.int - e.len.int]
+    else
+      x
+    endif
+  ;
+
+  fun trim (x:string) (e:string) : string => ltrim (rtrim x e) e;
+
+@h2 Strip characters from left, right, or both end of a string.
+@felix
+  fun lstrip (x:string, e:string) : string =
+  {
+    if len x > 0uz do
+      for var i in 0uz upto len x - 1uz do
+        var found = false;
+        for var j in 0uz upto len e - 1uz do
+          if x.[i] == e.[j] do
+            found = true;
+          done
+        done
+
+        if not found do
+          return x.[i to];
+        done
+      done;
+    done
+    return '';
+  }
+
+  fun rstrip (x:string, e:string) : string =
+  {
+    if len x > 0uz do
+      for var i in len x - 1uz downto 0uz do
+        var found = false;
+        for var j in 0uz upto len e - 1uz do
+          if x.[i] == e.[j] do
+            found = true;
+          done
+        done
+
+        if not found do
+          return x.[to i.int + 1];
+        done
+      done
+    done
+    return '';
+  }
+
+  fun strip (x:string, e:string) : string => lstrip(rstrip(x, e), e);
+
+  fun lstrip (x:string) : string => lstrip(x, " \t\n\r\f\v");
+  fun rstrip (x:string) : string => rstrip(x, " \t\n\r\f\v");
+  fun strip (x:string) : string => lstrip$ rstrip x;
+
+@h2 Justify string contents
+@felix
+  fun ljust(x:string, width:int) : string =>
+    if x.len.int >= width
+      then x
+      else x + (' ' * (width - x.len.int))
+    endif
+  ;
+
+  fun rjust(x:string, width:int) : string =>
+    if x.len.int >= width
+      then x
+      else (' ' * (width - x.len.int)) + x
+    endif
+  ;
+
+@h2 Split a string into a list on given separator
+@felix
+  fun split (x:string, d:char): List::list[string] => List::rev (rev_split (x,d));
+
+  fun rev_split (x:string, d:char): List::list[string] = {
+    fun aux (x:string,y:List::list[string]) =>
+      match find (x, d) with
+      | None => Cons (x, y)
+      | Some ?n => aux$ x.[n+1 to], List::Cons (x.[to n],y)
+      endmatch
+    ;
+    return aux$ x, List::Empty[string];
+  }
+
+  fun split (x:string, d:string): List::list[string] => List::rev (rev_split (x,d));
+
+  fun rev_split (x:string, d:string): List::list[string] = {
+    fun aux (x:string,y:List::list[string]) =>
+      match find_first_of (x, d) with
+      | None => List::Cons (x, y)
+      | Some ?n => aux$ x.[n+1 to], List::Cons (x.[to n],y)
+      endmatch
+    ;
+    return aux$ x, List::Empty[string];
+  }
+
+  fun split (x:string, d:+char): List::list[string] => List::rev (rev_split (x,d));
+
+  fun rev_split (x:string, d:+char): List::list[string] = {
+    fun aux (x:string,y:List::list[string]) =>
+      match find_first_of (x, d) with
+      | None => List::Cons (x, y)
+      | Some ?n => aux$ x.[n+1 to], List::Cons (x.[to n],y)
+      endmatch
+    ;
+    return aux$ x, List::Empty[string];
+  }
+
+  fun split_first (x:string, d:string): opt[string*string] =>
+    match find_first_of (x, d) with
+    | None => None[string*string]
+    | Some ?n => Some (x.[to n],substring(x,n+1,(len x)))
+    endmatch
+  ;
+
+
+@h2 erase, insert or replace substrings
+@felix
+  // Note: pos, length!
+  proc erase: string * int * int = "$1.erase($2,$3);";
+  proc insert: string * int * string = "$1.insert($2,$3);";
+  proc replace: string * int * int * string = "$1.replace($2,$3,$4);";
+
+@h2 search and replace
+Search and replace by string.
+@felix
+  fun search_and_replace (x:string, var spos:size, s:string, r:string) : string =
+  {
+    val m = s.len;
+    var o = x.[to spos];
+    var n = (x,s,spos.int).stl_find.size;
+    while n != stl_npos do
+      o+=x.[spos to n]+r;
+      spos = n+m;
+      n = (x,s,spos.int).stl_find.size;
+    done
+    o+=x.[spos to];
+    return o;
+  }
+  fun search_and_replace (x:string, s:string, r:string) : string => search_and_replace (x,0uz,s,r);
+
+  fun search_and_replace (vs:list[string * string]) (var v:string) = {
+    match ?k,?b in vs do
+      v = search_and_replace (v,k,b);
+    done
+    return v;
+  }
+
+@h2 Regexp search and replace
+Uses Google RE2 engine.
+@felix
+  // Replace \0 \1 \2 etc in s with text from v
+  fun subst(s:string, v:varray[StringPiece]): string =
+  {
+  //println$ "Subst " + s +" with " + str v;
+     enum mode_t {cp, ins};
+     var b = "";
+     var mode=cp;
+     var j = 0;
+     var count = 0;
+     for var i in 0 upto s.len.int - 1 do
+       match mode with
+       | cp => 
+         if s.[i] == char "\\" do 
+           mode = ins; 
+           j=0; count = 0; 
+         else 
+          b += s.[i]; 
+         done
+       | ins =>
+         if s.[i] in "0123456789" do
+           j = j * 10 + ord(s.[i]) - ord (char "0");
+           ++count;
+         else
+           if count == 0 do
+             b += "\\";
+           elif j < v.len.int do
+             b+= str v.stl_begin.j;
+           done
+           // adjacent insertion?
+           if s.[i] == char "\\" do
+             j=0; count=0;
+           else
+             mode = cp;
+             b += s.[i]; 
+           done
+         done
+       endmatch;
+     done
+     // run off end
+     match mode with
+     | cp => ;
+     | ins =>
+       if count == 0 do
+         b += "\\";
+       elif j < v.len.int do
+         b+= str v.j;
+       done
+     endmatch;
+     return b;
+  }
+  // Search for regex, replace by r with \0 \1 \2 etc replace by match groups.
+  fun search_and_replace (x:string, var spos: size, re:Re2::RE2, r:string) : string =
+  {
+    var ngroups = re.NumberOfCapturingGroups + 1;
+    var v = varray[StringPiece]$ (ngroups+1).size, StringPiece "";
+    var o = x.[to spos];             // initial substring
+    var sp = StringPiece(x);
+    var base : +char = sp.data;      // base pointer of char array
+    while Re2::Match(re, sp, spos.int, UNANCHORED, v.stl_begin, v.len.int) do
+      var mpos = size(v.0.data - base);  // start of match
+      o+= x.[spos to mpos];          // copy upto start of match
+      o+= subst(r,v);                // copy replacement
+      spos = mpos + v.0.len;       // advance over match
+    done
+    o+=x.[spos to];                  // rest of string
+    return o;
+  }
+@h2 Parse string to numeric type
+@felix
+  fun atoi: string -> int = "::std::atoi($1:postfix.c_str())"  requires Cxx_headers::cstdlib;
+  fun atol: string -> long = "::std::atol($1:postfix.c_str())"  requires Cxx_headers::cstdlib;
+  fun atoll: string -> long = "::std::atoll($1:postfix.c_str())"  requires Cxx_headers::cstdlib;
+  fun atof: string -> double = "::std::atof($1:postfix.c_str())"  requires Cxx_headers::cstdlib;
+
+@h2 Reserve store
+@felix
+  proc reserve: &string * !ints = "$1->reserve($2);";
+
+@h2 Fetch underlying cstring.
+@felix
+  // Entirely unsafe because string could be an rvalue.
+  fun _unsafe_cstr: string -> +char = "((char*)$1.c_str())" is atom;
+
+  // partially unsafe because the string could be modified.
+  fun stl_begin: &string -> +char = "($1->c_str())" is atom;
+  fun stl_end: &string -> +char = "($1->c_str()+$1->size())" is atom;
+
+  // this operation is entirely safe because the char array
+  // provided is copied (and garbage collected)
+  fun cstr (x:string) : +char => (varray[char] x).stl_begin;
+
+@h2 Polymorphic vsprintf hack
+@felix
+  fun vsprintf[t]: +char  * t -> string =
+    "::flx::rtl::strutil::flx_asprintf($1,$2)" requires package "flx_strutil"
+  ;
+
+  fun vsprintf[t]: string * t -> string =
+    "::flx::rtl::strutil::flx_asprintf(const_cast<char*>($1.c_str()),$2)" requires package "flx_strutil"
+  ;
+
+@h2 Case translation
+@felix
+  // Convert all characters to upper case  
+  fun toupper(s:string):string => map (toupper of char) s;
+  // Convert all characters to lower case
+  fun tolower(s:string):string => map (tolower of char) s;
+}
+
+
+@h2 Transation to string
+@felix
+
+instance Str[string] {
+  fun str (s:string) : string => s;
+}
+
+instance Str[+char] {
+  fun str: +char -> string = '::flx::rtl::strutil::atostr($1)' requires package "flx_strutil";
+}
+
+instance Repr[string] {
+  fun repr (x:string) : string = {
+    var o = "'";
+    if len x > 0uz do
+      for var i in 0uz upto (String::len x) - 1uz do
+        o += repr x.[i];
+      done
+    done
+    return o + "'";
+  }
+}
+
+open[T in strings] Show[T];
+open Set[string,char];
+

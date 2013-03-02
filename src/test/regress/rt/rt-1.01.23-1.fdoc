@@ -1,0 +1,36 @@
+
+@h1 rt-1.01.23-1.flx
+@felix
+//Check fibres
+//Check channels
+open Control;
+
+var chin,chout = mk_ioschannel_pair[int] ();
+
+spawn_fthread {
+  var x = 1;
+  while x <= 10 do
+    write$ chout,x;
+    ++x;
+  done;
+};
+
+spawn_fthread {
+  var x = 1;
+  while x < 10 do
+    x = read chin; print x; endl;
+  done;
+};
+
+@expect
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+@

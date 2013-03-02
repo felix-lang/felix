@@ -28,9 +28,7 @@ open Flx_cal_threadframe_offsets
 open Flx_findvars
 open Flx_gen_shape
 
-module CS = Flx_code_spec
 
-exception Scanner of CS.t
 let comma_sub s =
   let rec aux l r =
     try   (* note: breaks tail recursion optimisation *)
@@ -76,15 +74,42 @@ let rec gen_type_shape s syms bsym_table need_int last_ptr_map primitive_shapes 
     print_debug syms ("allocable type --> " ^ sbt bsym_table btyp);
     let name = cpp_type_classname syms bsym_table btyp in
     if name = "int" then need_int := true else
-    match unfold btyp with
+    let btyp' = unfold btyp in 
+    let gen_encoder () =
+      let encoder_name = name ^ "_encoder" in
+      let encoder_stmts = get_encoder' syms bsym_table "p" btyp' in
+      bcat s ("\n// ENCODER for type " ^sbt bsym_table btyp' ^ "\n"); 
+      bcat s (" ::std::string "^encoder_name^"(void *d) {\n");
+      bcat s ("   char *p = (char*)d;\n");
+      bcat s ("   ::std::string b = \"\";\n");
+      iter (fun line -> bcat s ("   "^ line ^ "\n")) encoder_stmts;
+      bcat s ("   return b;\n");
+      bcat s (" }\n");
+      encoder_name
+    in
+    let gen_decoder () =
+      let decoder_name = name ^ "_decoder" in
+      let decoder_stmts = get_decoder' syms bsym_table "p" btyp' in
+      bcat s ("\n// DECODER for type " ^sbt bsym_table btyp' ^ "\n"); 
+      bcat s ("  size_t "^decoder_name^"(void *d,char *s, size_t i) {\n");
+      bcat s ("   char *p = (char*)d;\n");
+      iter (fun line -> bcat s ("   "^ line ^ "\n")) decoder_stmts;
+      bcat s ("   return i;\n");
+      bcat s (" }\n");
+      decoder_name
+    in
+
+
+    match btyp' with
     | BTYP_function _ -> ()
 
     | BTYP_tuple args ->
       let offsets = get_offsets syms bsym_table btyp in
       let n = length offsets in
-      let classname = cpp_type_classname syms bsym_table btyp in
+      let encoder_name = gen_encoder () in
+      let decoder_name = gen_decoder () in
       bcat s ("\n//OFFSETS for tuple type " ^ string_of_bid index ^ "\n");
-      gen_offset_data s n name offsets false false [] None last_ptr_map
+      gen_offset_data s n name offsets false false [] None last_ptr_map encoder_name decoder_name
 
     (* This is a pointer, the offset data is in the system library *)
     | BTYP_pointer t -> ()
@@ -95,20 +120,11 @@ let rec gen_type_shape s syms bsym_table need_int last_ptr_map primitive_shapes 
         try Flx_btype.int_of_linear_type bsym_table i
         with Invalid_int_of_unitsum -> failwith "Array index must be unitsum"
       in
+      let encoder_name = gen_encoder () in
+      let decoder_name = gen_decoder () in
       let tname = cpp_typename syms bsym_table t in
       let offsets = get_offsets syms bsym_table t in
-      let is_pod =
-        match t with
-        | BTYP_sum _ 
-        | BTYP_variant _ -> true
-        | BTYP_inst (k,ts) ->
-          begin match Flx_bsym_table.find_bbdcl bsym_table k with
-          | BBDCL_union _ -> true
-          | BBDCL_external_type (_,quals,_,_) -> mem `Pod quals
-          | _ -> false
-          end
-        | _ -> false
-      in
+      let is_pod = is_pod bsym_table t in
       let n = length offsets in
       bcat s ("\n//OFFSETS for array type " ^ string_of_bid index ^ "\n");
       if n <> 0 then begin
@@ -138,6 +154,8 @@ let rec gen_type_shape s syms bsym_table need_int last_ptr_map primitive_shapes 
       bcat s ( if not is_pod then ("  "^name^"_finaliser,\n") else ("  0,\n"));
       bcat s ("  "^ (if n<>0 then "&"^name^"_offset_data" else "0")^",\n");
       bcat s ("  "^ (if n<>0 then "&::flx::gc::generic::scan_by_offsets" else "0")^",\n");
+      bcat s ("  "^encoder_name^",\n");
+      bcat s ("  "^decoder_name^",\n");
       bcat s "  ::flx::gc::generic::gc_flags_default\n";
       bcat s "};\n"
 
@@ -187,9 +205,13 @@ let rec gen_type_shape s syms bsym_table need_int last_ptr_map primitive_shapes 
             else name ^ "_finaliser",true
           else finaliser, false
         in
+
+
         if complete then
           if not (Hashtbl.mem primitive_shapes name) then
           begin
+            let encoder_name = gen_encoder () in
+            let decoder_name = gen_decoder () in
             Hashtbl.add primitive_shapes name true;
             bcat s ("\n//OFFSETS for complete abstract "^(if is_pod then "pod " else "finalisable ")^
               "type " ^ name ^ " instance "^
@@ -210,6 +232,8 @@ let rec gen_type_shape s syms bsym_table need_int last_ptr_map primitive_shapes 
             bcat s ("  "^finaliser^","^(if is_pod then " // no finaliser" else "")^"\n");
             bcat s ("  0, // no client data\n");
             bcat s ("  "^scanner^", // scanner\n");
+            bcat s ("  "^encoder_name^", // encoder\n");
+            bcat s ("  "^decoder_name^", //decoder\n");
             bcat s ("  ::flx::gc::generic::gc_flags_default\n");
             bcat s "};\n"
           end else begin
@@ -221,6 +245,8 @@ let rec gen_type_shape s syms bsym_table need_int last_ptr_map primitive_shapes 
           ("[ogen] attempt to allocate an incomplete type: '" ^ Flx_bsym.id bsym ^"'")
 
       | BBDCL_union (vs,[id,n,t']) -> 
+        let encoder_name = gen_encoder () in
+        let decoder_name = gen_decoder () in
         print_endline "Warning VR_self rep not handled right?";
         let t'' = tsubst vs ts t' in
         gen_type_shape s syms bsym_table need_int last_ptr_map primitive_shapes t'' index
@@ -237,7 +263,7 @@ let rec gen_type_shape s syms bsym_table need_int last_ptr_map primitive_shapes 
         bcat s ("\n//OFFSETS for cstruct type " ^ name ^ " instance\n");
 
         (* HACK .. in fact, some C structs might have finalisers! *)
-        let is_pod = true in
+        let is_pod = false in
         if not is_pod then bcat s ("FLX_FINALISER("^name^")\n");
         bcat s ( "static ::flx::gc::generic::gc_shape_t " ^ name ^ "_ptr_map ={\n") ;
         bcat s ("  " ^ old_ptr_map ^ ",\n");
@@ -246,22 +272,26 @@ let rec gen_type_shape s syms bsym_table need_int last_ptr_map primitive_shapes 
           bcat s ("  1,sizeof("^name^"),\n");
           bcat s ("  0,   // no finaliser\n");
           bcat s ("  0,0, // no client data or scanner\n");
+          bcat s ("  0,0, // no encoder or decoder\n");
           bcat s ("  ::flx::gc::generic::gc_flags_default\n")
         end else begin
           bcat s ("  1,sizeof("^name^"),\n");
           bcat s ("  "^name^"_finaliser,\n");
           bcat s ("  0,0,   // no client data or scanner\n");
+          bcat s ("  0,0, // no encoder or decoder\n");
           bcat s ("  ::flx::gc::generic::gc_flags_default\n")
         end
         ;
         bcat s "};\n"
 
       | BBDCL_struct (vs,cps) ->
+        let encoder_name = gen_encoder () in
+        let decoder_name = gen_decoder () in
 
         bcat s ("\n//OFFSETS for struct type " ^ name ^ " instance\n");
         let offsets = get_offsets syms bsym_table btyp in
         let n = length offsets in
-        gen_offset_data s n name offsets false false [] None last_ptr_map
+        gen_offset_data s n name offsets false false [] None last_ptr_map encoder_name decoder_name
 
       | _ ->
         failwith
@@ -272,10 +302,12 @@ let rec gen_type_shape s syms bsym_table need_int last_ptr_map primitive_shapes 
     end
 
     | BTYP_record ("", es) ->
+      let encoder_name = gen_encoder () in
+      let decoder_name = gen_decoder () in
       bcat s ("\n//OFFSETS for record type " ^ name ^ " instance\n");
       let offsets = get_offsets syms bsym_table btyp in
       let n = length offsets in
-      gen_offset_data s n name offsets false false [] None last_ptr_map
+      gen_offset_data s n name offsets false false [] None last_ptr_map encoder_name decoder_name
  
     | BTYP_unitsum _ ->
       bcat s ("static ::flx::gc::generic::gc_shape_t &"^ name ^"_ptr_map = ::flx::rtl::_int_ptr_map;\n");

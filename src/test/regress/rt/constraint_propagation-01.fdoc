@@ -1,0 +1,23 @@
+
+@h1 constraint_propagation-01.flx
+@felix
+{
+  fun g[v in int  \cup  long ] (a:v) : string = {
+    fun f[u in int  \cup  long  \cup  double] (x:u)=> "int";
+    return f a;
+  }
+  println$ g 1;
+};
+
+{
+  fun g[v in long  \cup  int] (a:v) : string = {
+    fun f[u in int  \cup  double  \cup  long] (x:u)=> "int";
+    return f a;
+  }
+  println$ g 1;
+};
+
+@expect
+int
+int
+@

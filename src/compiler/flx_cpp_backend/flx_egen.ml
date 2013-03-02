@@ -510,7 +510,7 @@ print_endline ("Normalised expression " ^ sbe bsym_table e);
   | BEXPR_new e ->
     let ref_type = tn t in
     let _,t' = e in
-    let pname = shape_of syms bsym_table tn t' in
+    let pname = direct_shape_of syms bsym_table tn t' in
     let typ = tn t' in
     let frame_ptr = ce_new 
         [ ce_atom "*PTF gcp"; ce_atom pname; ce_atom "true"] 
@@ -699,7 +699,7 @@ print_endline ("make const ctor, union type = " ^ sbt bsym_table t' ^
         | CS.Str_template c ->
           let ts = map tn ts in
           csubst sr (Flx_bsym.sr bsym) c 
-            ~arg:(ce_atom "Error") ~args:[] 
+            ~arg:(fun () -> ce_atom "Error") ~args:[] 
             ~typs:[] ~argtyp:"Error" ~retyp:"Error" 
             ~gargs:ts 
             ~prec:"expr" 
@@ -875,7 +875,7 @@ print_endline ("Handling coercion in egen " ^ sbt bsym_table srct ^ " -> " ^ sbt
     in
     begin match dstt with
     | BTYP_variant _ -> coerce_variant ()
-    | _ -> ce_atom ("reinterpret<"^tn dstt^">("^ge srce^")")
+    | _ -> ce_atom ("reinterpret<"^tn dstt^">("^ge srce^")/*variant*/")
     end
 
 
@@ -920,6 +920,7 @@ print_endline "Apply case ctor";
      NO SUPPORT for closures! Do not use with tuple arguments as well as the
      whole tuple gets passed!
   *)
+(*
   | BEXPR_apply ((BEXPR_apply ( ((BEXPR_apply_prim (index, ts, arg1)),_),arg2),_),arg3) ->
     gen_apply_prim
       syms
@@ -945,6 +946,7 @@ print_endline "Apply case ctor";
       index
       ts
       (bexpr_tuple (btyp_tuple [snd arg1; snd arg2]) [arg1; arg2])
+*)
 
   | BEXPR_apply_prim (index,ts,arg) ->
 (*
@@ -975,13 +977,13 @@ print_endline "Apply struct";
     begin match Flx_bsym.bbdcl bsym with
     | BBDCL_cstruct (vs,_,_) ->
       let name = tn (btyp_inst (index,ts)) in
-      ce_atom ("reinterpret<"^ name ^">(" ^ ge a ^ ")")
+      ce_atom ("reinterpret<"^ name ^">(" ^ ge a ^ ")/* apply cstruct*/")
 
     | BBDCL_struct (vs,cts) ->
       let name = tn (btyp_inst (index,ts)) in
       if length cts > 1 then
         (* argument must be an lvalue *)
-        ce_atom ("reinterpret<"^ name ^">(" ^ ge a ^ ")")
+        ce_atom ("reinterpret<"^ name ^">(" ^ ge a ^ ")/* apply struct */")
       else if length cts = 0 then
         ce_atom (name ^ "()")
       else

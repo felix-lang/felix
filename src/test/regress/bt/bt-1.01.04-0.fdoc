@@ -1,0 +1,6 @@
+
+@h1 bt-1.01.04-0.flx
+@felix
+// these now fail OK: (should yield 'any' .. then fail overload :-)
+val aa = bb + 1;
+val bb = aa + 1;

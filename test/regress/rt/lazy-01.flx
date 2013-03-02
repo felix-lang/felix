@@ -7,3 +7,4 @@ val f = {x+y};
 print (f ()); print "\n";
 x = 3;
 print (f ()); print "\n";
+

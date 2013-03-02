@@ -1,0 +1,127 @@
+
+@h1 typeclass_show-01.flx
+@felix
+//Check show typeclass
+
+proc p[T with Show[T]] (t:T) {
+  var x = t;
+  print $ "str:  " + (str x); endl;
+  print $ "repr: " + (repr x); endl;
+}
+
+p true;
+p 1t;
+p 1ut;
+p 1s;
+p 1us;
+p 1;
+p 1u;
+p 1l;
+p 1ul;
+p 1v;
+p 1uv;
+
+// to dodge c++'s divide-by-zero check
+val fzero = 0.0f;
+val dzero = 0.0;
+val ldzero = 0.0l;
+
+p 1.0f;
+p 1.5f;
+p (0.0f/fzero);
+p (1.0f/fzero);
+p (-1.0f/fzero);
+
+p 1.0;
+p (0.0/dzero);
+p (1.0/dzero);
+p (-1.0/dzero);
+
+p 1.0l;
+p (0.0l/ldzero);
+p (1.0l/ldzero);
+p (-1.0l/ldzero);
+
+p $ char 'a';
+
+p $ C_hack::cast[byte] 1t;
+p $ C_hack::cast[address] 16ul;
+
+p "Domo Arigato,\nMr Roboto!";
+//p u"Domo Arigato,\nMr Roboto!";
+
+p $ List::list(1,2,3);
+p $ List::list("a","b","c");
+
+// can't have the same number of template and array typeclasses
+/*
+p $ (1,2,3,4);
+p $ (1,2,3,4,5);
+p $ (1,2,3,4,5,6);
+p $ (1,"b");
+p $ (1,"b",1.0);
+*/
+
+@expect
+str:  true
+repr: true
+str:  1
+repr: 1t
+str:  1
+repr: 1ut
+str:  1
+repr: 1s
+str:  1
+repr: 1us
+str:  1
+repr: 1
+str:  1
+repr: 1u
+str:  1
+repr: 1l
+str:  1
+repr: 1ul
+str:  1
+repr: 1v
+str:  1
+repr: 1uv
+str:  1
+repr: 1
+str:  1.5
+repr: 1.5
+str:  nan
+repr: nan
+str:  +inf
+repr: +inf
+str:  -inf
+repr: -inf
+str:  1
+repr: 1
+str:  nan
+repr: nan
+str:  +inf
+repr: +inf
+str:  -inf
+repr: -inf
+str:  1
+repr: 1
+str:  nan
+repr: nan
+str:  +inf
+repr: +inf
+str:  -inf
+repr: -inf
+str:  a
+repr: a
+str:  0x1
+repr: 0x1
+str:  0x10
+repr: 0x10
+str:  Domo Arigato,
+Mr Roboto!
+repr: 'Domo Arigato,\nMr Roboto!'
+str:  list(1, 2, 3)
+repr: list(1, 2, 3)
+str:  list('a', 'b', 'c')
+repr: list('a', 'b', 'c')
+@

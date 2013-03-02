@@ -48,16 +48,10 @@ str:  -inf
 repr: -inf
 str:  a
 repr: a
-str:  97
-repr: 97
-str:  97
-repr: 97
-str:  1
-repr: 1
-str:  16
-repr: 16
-str:  16
-repr: 16
+str:  0x1
+repr: 0x1
+str:  0x10
+repr: 0x10
 str:  Domo Arigato,
 Mr Roboto!
 repr: 'Domo Arigato,\nMr Roboto!'

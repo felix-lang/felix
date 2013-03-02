@@ -1,0 +1,18 @@
+
+@h1 lazy-01.flx
+@felix
+//Check laziness
+// test lazy functions and procedures
+print "lazy expr eval test\n";
+var x = 1;
+var y = 2;
+val f = {x+y};
+print (f ()); print "\n";
+x = 3;
+print (f ()); print "\n";
+
+@expect
+lazy expr eval test
+3
+5
+@

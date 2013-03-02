@@ -163,6 +163,8 @@ let bind_qual bt qual = match qual with
   | `Raw_needs_shape t -> `Bound_needs_shape (bt t)
   | `Scanner cs -> `Scanner cs
   | `Finaliser cs -> `Finaliser cs
+  | `Encoder cs -> `Encoder cs
+  | `Decoder cs -> `Decoder cs
 
 let bind_quals bt quals = map (bind_qual bt) quals
 

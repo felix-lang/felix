@@ -1,0 +1,29 @@
+
+@h1 varray-01.flx
+@felix
+a := varray (20uz, 1);
+println$ "len=" + str (len a) + ", maxlen=" + str (maxlen a);
+println a;
+println$ fold_left (fun (x:int) (y:int) => x + y) 0 a;
+
+var b = varray[int] 20uz;
+println$ len b;
+
+iter println of (int) b;
+b+= 22;
+b+= 33;
+iter println of (int) b;
+c:= map (curry (sub of (int * int)) 100) b;
+println c;
+
+
+
+@expect
+len=20, maxlen=20
+varray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
+20
+0
+22
+33
+varray(78, 67)
+@

@@ -3,3 +3,4 @@ proc foo (x:int) = {
 }
 
 proc bar (x:int) => foo x;
+

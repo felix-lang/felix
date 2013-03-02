@@ -105,6 +105,7 @@ let gen_prim_call
   ret sr sr2 prec name
 =
 (*
+  print_endline "Gen_prim_call data=";
   print_endline ("ct= "^ct);
   print_endline ("ts= "^catmap "," (sbt bsym_table) ts);
   print_endline ("argt = " ^ sbt bsym_table argt);
@@ -123,11 +124,12 @@ let gen_prim_call
   let shret = sh ret in (* hmm .. argghhh .. *)
   let gshapes = map sh ts in
   let ts = map rtn ts in
-  let carg =
+  let carg () =
     match argt with
     | BTYP_tuple []  -> ce_atom "(::flx::rtl::unit())/*UNIT_VALUE_ERROR?*/"
     | x -> try ge sr a with _ -> ce_atom "(ILLEGAL PASSING WHOLE TUPLE WITH CURRIED ARGUMENTS)"
   in
+
   let ashape = sh argt in
   match arg,argt with
 
@@ -147,7 +149,8 @@ let gen_prim_call
           *)
           `Ce_atom "/*()*/"
 
-        | _ -> ge sr e
+        | _ -> 
+          ge sr e
       )
       es
     in
@@ -221,7 +224,7 @@ let gen_prim_call
   *)
   | (_,typ) ->
     csubst sr sr2 ct 
-    ~arg:carg ~args:[carg] 
+    ~arg:carg ~args:[carg()] 
     ~typs:[tt] ~argtyp:tt ~retyp:(tn ret) 
     ~gargs:ts 
     ~prec:prec 

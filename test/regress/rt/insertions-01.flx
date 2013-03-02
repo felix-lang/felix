@@ -6,3 +6,4 @@ fun + :INT * INT -> INT = "$1 + $2";
 fun two (): INT = { return code[INT]x + code[INT]'x'; }
 proc print:INT = 'std::cout << $1 << std::endl;';
 print (two());
+

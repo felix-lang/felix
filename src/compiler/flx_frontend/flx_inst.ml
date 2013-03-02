@@ -469,17 +469,45 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
     do_reqs vs reqs;
 
     begin match kind with
-    | `Callback (argtypes_c,_) ->
-        let ret = varmap_subst hvarmap ret in
-        rtr ret;
+    | `Callback (argtypes_c,client_data_pos) ->
+(*
+print_endline ("MISHANDLING CALLBACK TYPE REGISTRATION "  ^Flx_bsym.id bsym) ;
+*)
+      let ret = varmap_subst hvarmap ret in
+      rtr ret;
+(*
+print_endline ("instantiated return type " ^ sbt bsym_table ret);
+*)
+      (* prolly not necessary .. *)
+      let tss = map (varmap_subst hvarmap) argtypes in
+      List.iter rtr tss;
+(*
+print_endline ("Felix arg types " ^ catmap "," (sbt bsym_table) tss);
+*)
+      (* just to register 'address' .. lol *)
+      let tss = map (varmap_subst hvarmap) argtypes_c in
+(*
+print_endline ("arg types c " ^ catmap "," (sbt bsym_table) tss);
+*)
+      List.iter rtr tss;
 
-        (* prolly not necessary .. *)
-        let tss = map (varmap_subst hvarmap) argtypes in
-        List.iter rtr tss;
-
-        (* just to register 'address' .. lol *)
-        let tss = map (varmap_subst hvarmap) argtypes_c in
-        List.iter rtr tss
+      let flx_fun_atypes =
+        rev
+        (
+          fold_left
+          (fun lst (t,i) ->
+            if i = client_data_pos
+            then lst
+            else (t,i)::lst
+          )
+          []
+          (combine argtypes_c (Flx_list.nlist (List.length argtypes_c)))
+        )
+      in
+      if length flx_fun_atypes != 1 then 
+        let tt = btyp_tuple (List.map fst flx_fun_atypes) in
+        Flx_treg.register_tuple syms bsym_table tt
+      
 
     | _ ->
         process_function
@@ -557,6 +585,7 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
 let instantiate syms bsym_table instps (root:bid_t) (bifaces:biface_t list) =
   Hashtbl.clear syms.instances;
   Hashtbl.clear syms.registry;
+  Hashtbl.clear syms.array_as_tuple_registry;
 
   (* empty instantiation registry *)
   let insts1 = ref FunInstSet.empty in

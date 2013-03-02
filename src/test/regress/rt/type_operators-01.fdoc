@@ -1,0 +1,38 @@
+
+@h1 type_operators-01.flx
+@felix
+//Check type operators
+open Long;
+
+// test dual
+typedef y = ~(int+int); // = int * int
+val x : y = (1,2);
+
+print x.(0); print " "; print x.(1); endl;
+
+typedef ibl = typeof (1,1L);
+
+// test typematch
+typedef tt = typematch ibl with | _ * ?t as z => t * t * z endmatch;
+var a:tt = (1L, 2L, (3,4L));
+
+print a.(0); print " "; print a.(1); print " ";
+print a.(2).(0); print " "; print a.(2).(1); endl;
+
+typedef fun domainf (t:TYPE):TYPE => typematch t with | ?aa -> ?bb => aa endmatch;
+typedef domains [t] = typematch t with | ?aa -> ?bb => aa endmatch;
+typedef il = int -> long;
+typedef ityf = domainf il;
+typedef itys = domains [il];
+
+val one:itys = 1;
+val two:ityf = 1;
+print one; endl;
+print two; endl;
+
+@expect
+1 2
+1 2 3 4
+1
+1
+@

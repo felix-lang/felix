@@ -1,0 +1,79 @@
+
+@h1 tuple-02.flx
+@felix
+var z = 1, (2.2, "xx");
+println$ str z;
+var z2 = 1, 2.2, "xx", 3, 4.3;
+println$ z2;
+
+var z3 = 1,23.3, z, z2, 99, "Jah";
+println$ z3;
+
+println$ 1,2;
+println$ 1,2,3;
+println$ 1,2,3,4;
+println$ 1,2,3,4,5;
+a :=  1,2,3,4,5,6,7,8,9,10;
+println$ (a, a) :>> (int ^ 20);
+
+println$ (1,"x") == (1,"x");
+println$ (1,"x",4.2) == (1,"x",4.2);
+println$ (1,"x",4.2,"x") == (1,"x",4.2,"y");
+x1 := (1,"x",4.2,"x");
+x2 := (1,"x",4.2,"y");
+println$ x1 == x2;
+
+println$ "-" * 20;
+y1 := (1,"x",4.2,"x",55,"hello",4.222);
+y2 := (1,"x",4.2,"y",55,"hello",4.222);
+println$ y1 == y2; // false
+println$ y1 != y2; // true
+println$ y1 < y2;  // true
+println$ y1 <= y2; // true
+println$ y1 > y2;  // false 
+println$ y1 >= y2; // false
+
+println$ a == a;
+
+b:= 1,2;
+println$ b == b;
+
+println$ (1,2) == (1,2);
+println$ (1,2,3) == (1,2,3);
+println$ (1,2,3,4) == (1,2,3,4);
+println$ (1,2,3,4,5) == (1,2,3,4,5);
+println$ (1,2,3,4,5,6) == (1,2,3,4,5,6);
+
+println$ ("1",2,3,4,5,6) == ("1",2,3,4,5,6);
+
+
+
+@expect
+(1, (2.2, xx))
+(1, 2.2, xx, 3, 4.3)
+(1, 23.3, (1, (2.2, xx)), (1, 2.2, xx, 3, 4.3), 99, Jah)
+(1, 2)
+(1, 2, 3)
+(1, 2, 3, 4)
+(1, 2, 3, 4, 5)
+(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+true
+true
+false
+false
+--------------------
+false
+true
+true
+true
+false
+false
+true
+true
+true
+true
+true
+true
+true
+true
+@

@@ -43,6 +43,8 @@ let gen_thread_frame_offsets s syms bsym_table last_ptr_map =
   (
     "\n//OFFSETS for "^ name ^ "\n"
   );
-  gen_offset_data s n name offsets false false [] (Some "::flx::gc::generic::gc_flags_immobile") last_ptr_map
+  gen_offset_data s n name offsets 
+    false false [] (Some "::flx::gc::generic::gc_flags_immobile") 
+    last_ptr_map "0" "0"
 
 

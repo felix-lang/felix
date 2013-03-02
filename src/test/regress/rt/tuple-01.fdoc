@@ -1,0 +1,28 @@
+
+@h1 tuple-01.flx
+@felix
+println$ 19,"fred";                                  // tuple
+println$ 19,20;                                      // array \cap tuple
+println$ 1,2,3,4,5,6,7,8,9;                          // array
+
+println$ (1,2.3,3,4) == (1,2.3,3,4);                 // tuple
+println$ (1,2) == (1,2);                             // array \cap tuple
+println$ (1,2,3,4,5,6,7,8,9) == (1,2,3,4,5,6,7,8,9); // array
+
+println$ (1,1.1) < (1,2.1);                          // tuple
+println$ (1,1) < (1,2);                              // array \cap tuple
+println$ (1,2,3,4,5,6,7,8,9) < (2,3,4,5,6,7,8,9,10); // general array
+
+
+
+@expect
+(19, fred)
+(19, 20)
+(1, 2, 3, 4, 5, 6, 7, 8, 9)
+true
+true
+true
+true
+true
+true
+@

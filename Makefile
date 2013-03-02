@@ -81,6 +81,7 @@ test-debug:
 install:
 	${SUDO} ${BUILDROOT}/bin/flx --test=${BUILDROOT} --install 
 	${SUDO} ${BUILDROOT}/bin/flx --test=${BUILDROOT} --install-bin
+	${SUDO} ${BUILDROOT}/bin/flx_cp ${BUILDROOT}/speed '(.*)' '/usr/local/lib/felix/felix-${VERSION}/speed/$${1}'
 	${SUDO} rm -rf $(HOME)/.felix/cache
 	${SUDO} rm -f /usr/local/lib/felix/felix-latest
 	${SUDO} ln -s /usr/local/lib/felix/felix-$(VERSION) /usr/local/lib/felix/felix-latest
@@ -97,6 +98,7 @@ install-felix-lang.org:
 	-sudo stop felixweb
 	sudo ${BUILDROOT}/bin/flx --test=${BUILDROOT} --install 
 	sudo ${BUILDROOT}/bin/flx --test=${BUILDROOT} --install-bin
+	sudo ${BUILDROOT}/bin/flx_cp ${BUILDROOT}/speed '(.*)' '/usr/local/lib/felix/felix-${VERSION}/speed/$${1}'
 	sudo rm -rf $(HOME)/.felix/cache
 	echo 'println ("installed "+ Version::felix_version);' > install-done.flx
 	flx --clean install-done
@@ -125,6 +127,7 @@ release:
 make-dist:
 	rm -rf $(DISTDIR)
 	./${BUILDROOT}/bin/flx --test=${BUILDROOT} --dist=$(DISTDIR)
+	./${BUILDROOT}/bin/flx_cp ${BUILDROOT}/speed '(.*)' '${DISTDIR}/speed/$${1}'
 	rm -rf $(HOME)/.felix/cache
 	echo 'println ("installed "+ Version::felix_version);' > $(DISTDIR)/install-done.flx
 	./${BUILDROOT}/bin/flx --clean --test=$(DISTDIR)/lib/felix/felix-$(VERSION) $(DISTDIR)/install-done.flx
@@ -152,6 +155,22 @@ syntax:
 	rm *.par2
 
 #
+# Speedway
+# Developer only
+#
+speed:
+	-rm -rf result.tmp
+	sh speed/perf.sh 2>>result.tmp
+	build/release/bin/flx_gengraph
+
+gentest:
+	rm -rf test
+	mkdir test
+	mkdir test/test-data
+	cp src/test/test-data/* test/test-data
+	${BUILDROOT}/bin/flx_tangle --indir=src/test --outdir=test
+	git add test
+#
 # Documentation
 #
 doc: copy-doc 
@@ -162,6 +181,7 @@ copy-doc:
 	${BUILDROOT}/bin/flx_cp src/web '(.*\.(png|jpg|gif))' '${BUILDROOT}/web/$${1}'
 	${BUILDROOT}/bin/flx_cp src/web '(.*\.html)' '${BUILDROOT}/web/$${1}'
 	${BUILDROOT}/bin/flx_cp src/ '(.*\.html)' '${BUILDROOT}/$${1}'
+	${BUILDROOT}/bin/flx_cp speed/ '(.*)' '${BUILDROOT}/speed/$${1}'
 
 gendoc: gen-doc copy-doc check-tut
 
@@ -236,5 +256,5 @@ ocamldoc:
 .PHONY : build32 build64 build test32 test64 test  
 .PHONY : build32-debug build64-debug build-debug test32-debug test64-debug test-debug 
 .PHONY : doc install websites-linux  release install-bin 
-.PHONY : copy-doc gen-doc check-tut gendoc fbuild
+.PHONY : copy-doc gen-doc check-tut gendoc fbuild speed
 

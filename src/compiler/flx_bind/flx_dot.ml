@@ -194,50 +194,6 @@ let handle_dot state bsym_table build_env env rs be bt koenig_lookup cal_apply b
         )
       end
 
-    (* LHS FUNCTION TYPE *)
-    | BTYP_function (d,c) ->
-      (* print_endline ("AST_dot: LHS function, RHS name= " ^ name ); *)
-      let bound = begin try be (EXPR_apply (sr,(e2,e)))
-      with exn ->
-      (* print_endline "Reverse application failed, checking for composition"; *)
-      try 
-        let r,rt = be e2 in
-        match rt with
-        | BTYP_function (a,b) ->
-          (* print_endline "RHS is a function"; *)
-          (* NOTE: this is WRONG: it only works for non-polymorphic types. Clearly
-             f[t]: list[t] -> list[t]
-             g[u]: list[u] -> list[u]
-             can be composed, so equality of terms is the wrong idea: we need 
-             equality "modulo" names of the type variables. 
-          *)
-          if c = a then (
-            (* print_endline "Composed!";  *)
-            bexpr_compose (btyp_function (d,b)) (te,(r,rt))
-          )
-          else
-           clierr sr (
-             "AST_dot " ^ string_of_expr e ^ " . " ^ string_of_expr e2^
-             "codomain of LHS function should match domain of RHS function"
-           )
-
-        | _ -> 
-          clierr sr (
-          "AST_dot, LHS function, RHS arg "^ string_of_expr e2^
-          " is simple name, should have been a function but got " ^
-          Printexc.to_string exn
-          )
-      with exn2 ->
-        clierr sr (
-        "AST_dot, LHS function, RHS arg "^ string_of_expr e2^
-        " is simple name, and attempt to bind it failed with " ^
-        Printexc.to_string exn2
-        )
-      end
-      in
-      (* print_endline "AST_dot, RHS simple name, is done"; *)
-      bound
-
     (* LHS OTHER ALGEBRAIC TYPE *)
     | _ ->
       begin try be (EXPR_apply (sr,(e2,e)))

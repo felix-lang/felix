@@ -1,0 +1,16 @@
+
+@h1 typedef-01.flx
+@felix
+//Check typedef
+
+module X[t] {
+  typedef mytype = t;
+}
+
+open X[long];
+var x: mytype = 1L;
+println$ x;
+
+@expect
+1
+@

@@ -14,3 +14,4 @@ c:= map (curry (sub of (int * int)) 100) b;
 println c;
 
 
+

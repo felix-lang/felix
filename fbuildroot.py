@@ -214,6 +214,9 @@ def make_cxx_builder(ctx, *args, includes=[], libpaths=[], flags=[], **kwargs):
                 'no-tautological-compare',
                 'no-return-type-c-linkage',
                 'no-unused-variable',
+                'no-unused-function',
+                'no-c++11-narrowing',
+                'no-missing-braces',
                 ],
             'flags': ['-fno-common', '-fno-strict-aliasing', '-std=c++11'] + flags,
             'optimize_flags': ['-O1', '-fomit-frame-pointer']}),
@@ -460,13 +463,14 @@ def build(ctx):
     call('buildsystem.re2.build_runtime', phases.target)
     call('buildsystem.flx_glob.build_runtime', phases.host, phases.target)
     call('buildsystem.sqlite3.build_runtime', phases.host, phases.target)
+    #call('buildsystem.botan.build_runtime', phases.host, phases.target)
 
     # --------------------------------------------------------------------------
     # Build the standard library.
 
     # copy files into the library
     buildsystem.copy_dir_to(ctx, ctx.buildroot, 'src/lib',
-        pattern='*.{flx,flxh,files,html,sql,css,js,py,png}')
+        pattern='*.{flx,flxh,fdoc,files,html,sql,css,js,py,png}')
     
     # copy extra files for web
     #buildsystem.copy_dir_to(ctx, ctx.buildroot+'/lib/web', 'src/lib/web',
@@ -482,7 +486,7 @@ def build(ctx):
 
     # copy tools
     buildsystem.copy_dir_to(ctx, ctx.buildroot, 'src/tools',
-        pattern='*.flx{,h}')
+        pattern='*.{flxh,flx,fdoc}')
 
     buildsystem.copy_dir_to(ctx, ctx.buildroot, 'src/wiki',
         pattern='*.*')

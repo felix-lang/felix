@@ -10,3 +10,4 @@ fun f(x:int)=>
 ;
 
 print (f 10); endl;
+

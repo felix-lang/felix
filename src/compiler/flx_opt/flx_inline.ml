@@ -480,7 +480,13 @@ let expand_exe syms bsym_table u exe =
     let xs = rev xs in
     xs
 
-let check_reductions syms bsym_table exes = Flx_reduce.reduce_exes syms bsym_table !(syms.reductions) exes
+let check_reductions syms bsym_table exes = 
+  let exes = 
+    try 
+      Flx_reduce.reduce_exes syms bsym_table !(syms.reductions) exes 
+    with Not_found -> assert false
+  in
+  exes
 
 let heavy_inline_call syms uses bsym_table
   caller caller_vs callee ts argument id sr (props, vs, (ps,traint), exes)
@@ -902,7 +908,23 @@ let rec special_inline syms uses bsym_table caller_vs caller hic excludes sr e =
   print_endline (" ... Special inline subexpr: " ^ sbe bsym_table e);
   *)
   match Flx_bexpr.map ~f_bexpr:aux e with
-  | BEXPR_get_n ((BEXPR_case (n,_),_),(BEXPR_tuple ls,_)),_ -> nth ls n
+  | BEXPR_get_n ((BEXPR_case (n,_),_),(BEXPR_tuple ls,_)),_ -> 
+    nth ls n
+
+  | BEXPR_get_n ((BEXPR_case (n,_),_),(BEXPR_record ls,_)),_ -> 
+    snd (nth ls n)
+
+  (* get_n on a struct apply to an explicit tuple .. *)
+  | BEXPR_get_n (
+      (BEXPR_case (n,_),_),
+      (BEXPR_apply ((BEXPR_closure (bid,ts),_),(BEXPR_tuple ls,_)),_)
+    ),_ -> 
+    let bbdcl = Flx_bsym_table.find_bbdcl bsym_table bid in
+    begin match bbdcl with 
+    | BBDCL_struct _
+    | BBDCL_cstruct _ -> nth ls n
+    | _ ->  e
+    end
 
   | BEXPR_closure (callee,_),_ as x ->
       heavily_inline_bbdcl syms uses bsym_table (callee::excludes) callee;
@@ -1370,12 +1392,10 @@ and heavily_inline_bbdcl syms uses bsym_table excludes i =
       let props = `Inlining_started :: props in
       let bbdcl = bbdcl_fun (props,vs,(ps,traint),ret,exes) in
       Flx_bsym_table.update_bbdcl bsym_table i bbdcl;
-
       (* inline into all children first *)
       let children = Flx_bsym_table.find_children bsym_table i in
       BidSet.iter (fun i-> heavily_inline_bbdcl syms uses bsym_table excludes i) children;
-
-      let exes = check_reductions syms bsym_table exes in (* typeclass reduce statements *)
+      let exes = check_reductions syms bsym_table exes in (* user reductions *)
       let xcls = Flx_tailit.exes_get_xclosures syms exes in
       BidSet.iter (fun i-> heavily_inline_bbdcl syms uses bsym_table excludes i) xcls;
 
@@ -1386,6 +1406,8 @@ and heavily_inline_bbdcl syms uses bsym_table excludes i =
       let exes = List.map Flx_bexe.reduce exes in (* term reduction *)
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
       let exes = fold_vars syms bsym_table uses i ps exes in
+      let exes = check_reductions syms bsym_table exes in (* user reductions *)
+
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
       let exes = heavy_inline_calls
         syms
@@ -1409,12 +1431,12 @@ and heavily_inline_bbdcl syms uses bsym_table excludes i =
         vs
         exes
       in
-      let exes = check_reductions syms bsym_table exes in (* typeclass reduce statements *)
+      let exes = check_reductions syms bsym_table exes in (* user reductions *)
       let exes = List.map Flx_bexe.reduce exes in (* term reduction *)
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
       let exes = fold_vars syms bsym_table uses i ps exes in
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
-      let exes = check_reductions syms bsym_table exes in
+      let exes = check_reductions syms bsym_table exes in (* user reductions *)
       let exes = Flx_cflow.chain_gotos syms exes in
       let exes = List.map Flx_bexe.reduce exes in
       let props = `Inlining_complete :: props in

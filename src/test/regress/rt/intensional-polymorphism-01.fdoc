@@ -1,0 +1,22 @@
+
+@h1 intensional-polymorphism-01.flx
+@felix
+// check for polyvars!
+noinline fun poly[u] (px:&u, py:&u) => py,px;
+var x = 1;
+var y = 2;
+var z = &x, &y;
+var r = poly z;
+println$ *r.(0), *r.(1);
+
+var x2 = 1.1;
+var y2 = 2.1;
+var z2 = &x2, &y2;
+var r2 = poly z2;
+println$ *r2.(0), *r2.(1);
+
+
+@expect
+(2, 1)
+(2.1, 1.1)
+@

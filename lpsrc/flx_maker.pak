@@ -27,6 +27,7 @@ fun config() =>
 @tv('CCLINK_DLLIB=r"""'+config.TARGET_CXX.options.CCLINK_DYNAMIC_FLX+'"""')
 @tv('CCOBJ_STATIC_LIB=r"""'+config.TARGET_CXX.options.CCOBJ_STATIC_FLX+'"""')
 @tv('CCLINK_STATIC=r"""'+config.TARGET_CXX.options.CCLINK_STATIC+'"""')
+@tv('CCLINK_STATIC_LIB=r"""'+config.TARGET_CXX.options.CCLINK_STATIC_LIB+'"""')
 @tv('VERSION="'+config.flx_version+'"')
 @tv('EXT_LIB=r"""'+config.TARGET_CXX.options.EXT_LIB+'"""')
 @tv('EXT_STATIC_OBJ=r"""'+config.TARGET_CXX.options.EXT_STATIC_OBJ+'"""')
@@ -499,124 +500,6 @@ includes: '"flx_demux.hpp"'
 @tangle('typedef %s FLX_SOCKLEN_T;' % config.TARGET_CXX.options.FLX_SOCKLEN_T)
 #endif
 
-
-@python("//")
-creq = {
-  "wchar_t":"c89_headers::wchar_h",
-  "ptrdiff_t":"c89_headers::stddef_h",
-  "size_t":"<stddef.h>",
-  "ssize_t":"<stddef.h>",
-  "intptr_t":"c99_headers::stdint_h",
-  "uintptr_t":"c99_headers::stdint_h",
-  "intmax_t":"c99_headers::stdint_h",
-  "uintmax_t":"c99_headers::stdint_h",
-  "int8_t":"c99_headers::stdint_h",
-  "int16_t":"c99_headers::stdint_h",
-  "int32_t":"c99_headers::stdint_h",
-  "int64_t":"c99_headers::stdint_h",
-  "uint8_t":"c99_headers::stdint_h",
-  "uint16_t":"c99_headers::stdint_h",
-  "uint32_t":"c99_headers::stdint_h",
-  "uint64_t":"c99_headers::stdint_h",
-  "::std::complex<float>":"Cxx_headers::complex",
-  "::std::complex<double>":"Cxx_headers::complex",
-  "::std::complex<long double>":"Cxx_headers::complex",
-  }
-
-tmap = {
-  # addressing
-  "byte"      : "unsigned char",
-  "size"      : "size_t",
-  "address"   : "void *",
-  "offset"    : "ptrdiff_t",
-  "ptrdiff"   : "ptrdiff_t",
-
-  #characters
-  "char"    : "char",
-  "wchar"   : "wchar_t",
-
-  #signed integers
-  "tiny"    : "signed char",
-  "short"   : "short",
-  "int"     : "int",
-  "long"    : "long",
-
-  #unsigned integers
-  "utiny"   : "unsigned char",
-  "ushort"  : "unsigned short",
-  "uint"    : "unsigned int",
-  "ulong"   : "unsigned long",
-
-  #floating
-  "float"   : "float",
-  "double"  : "double",
-  "ldouble"  : "long double"
- }
-
-tmap["fcomplex" ]="::std::complex<float>"
-tmap["dcomplex"]="::std::complex<double>"
-
-if config.TARGET_CXX.options.HAVE_LONGDOUBLE:
-  tmap["ldouble"]="long double"
-  tmap["lcomplex"]="::std::complex<long double>"
-else:
-  tmap["ldouble"]="double"
-  tmap["lcomplex"]="::std::complex<double>"
-
-if config.TARGET_CXX.options.HAVE_LONGLONG:
-  tmap["vlong"]="long long"
-  tmap["uvlong"]="unsigned long long"
-else:
-  tmap["vlong"]="long"
-  tmap["uvlong"]="unsigned long"
-
-if config.TARGET_CXX.options.HAVE_STDINT:
-  tmap["int8"]="int8_t"
-  tmap["uint8"]="uint8_t"
-  tmap["int16"]="int16_t"
-  tmap["uint16"]="uint16_t"
-  tmap["int32"]="int32_t"
-  tmap["uint32"]="uint32_t"
-  tmap["int64"]="int64_t"
-  tmap["uint64"]="uint64_t"
-  tmap["intptr"]="intptr_t"
-  tmap["uintptr"]="uintptr_t"
-  tmap["intmax"]="intmax_t"
-  tmap["uintmax"]="uintmax_t"
-
-else:
-  tmap["int8"]="signed char"
-  tmap["uint8"]="unsigned char"
-  sizes = {
-    config.TARGET_CXX.options.SIZEOF_SHORT*8 : "short",
-    config.TARGET_CXX.options.SIZEOF_INT*8: "int",
-    config.TARGET_CXX.options.SIZEOF_LONG*8 : "long",
-  }
-  tmap["intmax"]="long"
-  tmap["uintmax"]="unsigned long"
-  if config.TARGET_CXX.options.HAVE_LONGLONG:
-    sizes[config.TARGET_CXX.options.SIZEOF_LONGLONG*8]="long long"
-    tmap["intmax"]="long long"
-    tmap["uintmax"]="unsigned long long"
-  for size in [16,32,64]:
-    try:
-      t = sizes[size]
-    except KeyError:
-      tmap["int"+str(size)]="emul_int"+str(size)
-      tmap["uint"+str(size)]="emul_uint"+str(size)
-    else:
-      tmap["int"+str(size)]=t
-      tmap["uint"+str(size)]="unsigned " + t
-  try:
-    tmap["intptr"]=sizes[config.TARGET_CXX.options.SIZEOF_VOIDP*8]
-    tmap["uintptr"]="unsigned "+sizes[config.TARGET_CXX.options.SIZEOF_VOIDP*8]
-  except:
-    print("NO INTEGER THE SIZE OF A VOID*!")
-    sys.exit(1)
-
-tmap["uchar"]=tmap["int32"] # Unicode/ISO10646, note: SIGNED!
-//
-
 @fc = {'float':'f', 'double':'','ldouble':'l'}
 
 @def gen_nan(t):
@@ -666,114 +549,11 @@ tmap["uchar"]=tmap["int32"] # Unicode/ISO10646, note: SIGNED!
   else:
     tangle("macro val PLAT_" + i + " = false;")
 
-@chars = ["char", "wchar", "uchar"]
-@fast_sints = [
-  "tiny", "short", "int", "long", "vlong"
-  ]
-@fast_uints = [
-  "utiny", "ushort", "uint", "ulong", "uvlong"
-  ]
-@exact_sints = [
-  "int8","int16","int32","int64"
-  ]
-@exact_uints = [
-  "uint8","uint16","uint32","uint64"
-  ]
-@sints = fast_sints + exact_sints
-@uints = fast_uints + exact_uints
-@fast_ints = fast_sints + fast_uints
-@exact_ints = exact_sints + exact_uints
-@ints = uints + sints
-
 @floats = ["float", "double", "ldouble"]
 
 @complex = ["fcomplex","dcomplex","lcomplex"]
-@all = [
-  "byte", "address",
-  "offset",
-  ] + chars + fast_ints + floats + complex
-
-@def gen_type(t):
-  equiv = tmap[t]
-  print("Equiv " + t + " -> " + equiv)
-  if creq.__contains__(equiv):
-    tangle('pod type '+t+' = "'+equiv+'" requires '+creq[equiv]+';')
-  else:
-    tangle('pod type '+t+' = "'+tmap[t]+'";')
-
-@fint2cint={
-  'tiny':'signed char',
-  'short':'short',
-  'int':'int',
-  'long':'long',
-  'vlong':'long long',
-  'utiny':'unsigned char',
-  'ushort':'unsigned short',
-  'uint':'unsigned int',
-  'ulong':'unsigned long',
-  'uvlong':'unsigned long long',
-  }
-
-@cint2fint = {}
-@for f in fint2cint.keys(): cint2fint[fint2cint[f]]=f
-
-@def alias_sint(t):
-  if t == 'int8': size = 1
-  elif t == 'int16': size = 2
-  elif t == 'int32': size = 4
-  elif t == 'int64': size = 8
-  if SIZEOF_CHAR == size: return 'tiny'
-  if SIZEOF_SHORT == size: return 'short'
-  if SIZEOF_INT == size: return 'int'
-  if SIZEOF_LONG == size: return 'long'
-  if SIZEOF_LONGLONG == size: return 'vlong'
-
-@def alias_uint(t):
-  if t == 'uint8': size = 1
-  elif t == 'uint16': size = 2
-  elif t == 'uint32': size = 4
-  elif t == 'uint64': size = 8
-  if SIZEOF_CHAR == size: return 'utiny'
-  if SIZEOF_SHORT == size: return 'ushort'
-  if SIZEOF_INT == size: return 'uint'
-  if SIZEOF_LONG == size: return 'ulong'
-  if SIZEOF_LONGLONG == size: return 'uvlong'
-
-
-@select(tangler('lib/plat/arithmax.flx','data'))
-// GENERATED DURING CONFIGURATION
-// arithmetic conversion rule
-// DEPRECATED because its WRONG,
-// fbuild miscalculates promotions because it
-// does the calculation in C instead of C++
-typedef fun arithmax(l: TYPE, r: TYPE): TYPE =>
-  typematch integral_promotion l, integral_promotion r with
-@for f1 in fint2cint.keys():
-  if f1 not in ['tiny','short','utiny','ushort']:
-    for f2 in fint2cint.keys():
-      if f2 not in ['tiny','short','utiny','ushort']:
-        f3 = cint2fint[config.TARGET_CXX.options.arith_conv[(fint2cint[f1],fint2cint[f2])]]
-        comment = ""
-        if f1 == f2:
-          if f2 != f1: comment = "// ERROR"
-        if (f1 == 'uvlong' or f2 == 'uvlong') and f3 != 'uvlong':
-          comment = "// ERROR, uvlong expected"
-        elif f3 != f1 and f3 != f2:
-          comment = "// SPECIAL PROMOTION"
-        elif f1 == 'uint' and f2=='long' or f1=='long' and f2=='uint':
-          comment = '// Representation Dependent (long or ulong)'
-        if f1 == 'uvlong' or f2 == 'uvlong' or f3 == 'int':
-          pass
-        else:
-          tangle('  | '+f1+','+f2+' => '+f3+' '+comment)
-@#
-  | uvlong,_ => uvlong
-  | _,uvlong => uvlong
-  | _,_ => int
-  endmatch
-;
-
-
+@tmap  = {"float":"float", "double":"double", "ldouble":"long double"}
+  
 @select(tangler('lib/plat/float.flx','data'))
 // GENERATED DURING CONFIGURATION
 @for t in floats:

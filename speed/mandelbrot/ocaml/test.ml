@@ -29,11 +29,7 @@ let mandelbrot n =
   done
 
 let () =
-  let t0 = Unix.gettimeofday () in
   for iter = 1 to runs do
     mandelbrot iter
   done;
-  let t1 = Unix.gettimeofday () in
   print_newline ();
-  print_float (t1 -. t0);
-  print_newline ()

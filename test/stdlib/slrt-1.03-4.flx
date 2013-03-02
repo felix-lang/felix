@@ -1,3 +1,4 @@
 //Check String::lstrip
 print$ lstrip "  a b c  "; endl;
 print$ lstrip "a b c  "; endl;
+

@@ -73,3 +73,4 @@ inline proc k(fun y: int)
 
 h { a+1 };
 k { a +1 };
+

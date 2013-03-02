@@ -48,39 +48,6 @@ open class Char
 
 }
 
-//$ Wide character support.
-//$ DO NOT USE except for C bindings.
-//$ C wchar_t is not portable.
-open class Wchar
-{
-  open Long;
-  fun ord: wchar -> long ="(long)$1";
-  ctor[t in ints] wchar: t = "(wchar_t)$1";
-  
-  fun toupper : wchar -> wchar = "towupper($1)" requires C89_headers::ctype_h;
-  fun tolower : wchar -> wchar = "towupper($1)" requires C89_headers::ctype_h;
-  
-  fun isupper : wchar -> bool = "iswupper($1)" requires C89_headers::ctype_h;
-  fun islower : wchar -> bool = "iswlower($1)" requires C89_headers::ctype_h;
-  fun isalnum : wchar -> bool = "iswalnum($1)" requires C89_headers::ctype_h;
-  fun isalpha : wchar -> bool = "iswalpha($1)" requires C89_headers::ctype_h;
-  fun isdigit : wchar -> bool = "iswdigit($1)" requires C89_headers::ctype_h;
-  fun isxdigit : wchar -> bool = "iswxdigit($1)" requires C89_headers::ctype_h;
-  fun iscntrl : wchar -> bool = "iswcntrl($1)" requires C89_headers::ctype_h;
-  fun isspace : wchar -> bool = "iswspace($1)" requires C89_headers::ctype_h;
-  fun isblank : wchar -> bool = "iswblank($1)" requires C89_headers::ctype_h;
-  fun isprint : wchar -> bool = "iswprint($1)" requires C89_headers::ctype_h;
-  fun ispunct : wchar -> bool = "iswpunct($1)" requires C89_headers::ctype_h;
-}
-
-//$ Unicode character support.
-//$ Obsoleted by C++11.
-open class Uchar
-{
-  fun ord: uchar -> uint32 ="$1";
-  ctor[t in ints] uchar: t = "$1";
-}
-
 instance[T in chars] Str[T] {
   fun str: T -> string = "::flx::rtl::strutil::str<#1>($1)" requires package "flx_strutil";
 }
@@ -103,6 +70,4 @@ instance[T in chars] Repr[T] {
 }
 
 open Eq[char];
-open Eq[wchar];
-open Eq[uchar];
 

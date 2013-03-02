@@ -1,0 +1,23 @@
+
+@h1 rrclient.flx
+@felix
+//
+//  Hello World client
+//  Connects REQ socket to tcp://localhost:5559
+//  Sends "Hello" to server, expects "World" back
+//
+open ZMQ;
+
+var context = zmq_init 1;
+
+//  Socket to talk to server
+var requester = context.mk_socket ZMQ_REQ;
+requester.connect "tcp://localhost:5559";
+
+for var request_nbr in 0 upto 9 do
+  requester.send_string "Hello";
+  var s = requester.recv_string;
+  println$ f"Received reply %d [%S]"$  request_nbr, s;
+done
+requester.close;
+context.term;

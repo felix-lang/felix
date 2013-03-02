@@ -14,6 +14,8 @@ class Rtti {
 
   //$ The type of a finalisation function.
   typedef gc_finaliser_t = collector_t * address --> void;
+  typedef gc_encoder_t = address --> string;
+  typedef gc_decoder_t = address * +char * size --> size;
 
   //$ Iterator to find the next shape after a given one.
   fun next_shape: gc_shape_t -> gc_shape_t = "$1->next_shape";
@@ -23,21 +25,38 @@ class Rtti {
 
   //$ The static number of elements in an array type.
   //$ Note this is not the size of a varray!
-  fun count: gc_shape_t -> size = "$1->size";
+  fun number_of_elements: gc_shape_t -> size = "$1->count";
 
-  //$ Number of bytes in the object.
-  fun amt: gc_shape_t -> size = "$1->amt";
+  //$ Number of bytes in one element.
+  fun bytes_per_element: gc_shape_t -> size = "$1->amt";
 
   //$ The finaliser function.
-  fun finaliser: gc_shape_t -> &gc_finaliser_t  = "$1->finaliser";
+  fun finaliser: gc_shape_t -> gc_finaliser_t  = "$1->finaliser";
+
+  //$ The encoder function.
+  fun encoder : gc_shape_t -> gc_encoder_t = "$1->encoder";
+
+  //$ The decoder function.
+  fun decoder: gc_shape_t -> gc_decoder_t = "$1->decoder";
+
+  //$ Check for offset data
+  fun uses_offset_table : gc_shape_t -> bool = "$1->scanner == ::flx::gc::generic::scan_by_offsets";
 
   //$ The number of pointers in the base type.
   //$ If the type is an array that's the element type.
-  fun n_offsets: gc_shape_t -> size = "$1->n_offsets";
+  fun _unsafe_n_offsets: gc_shape_t -> size = "((::flx::gc::generic::offset_data_t*)($1->private_data))->n_offsets";
+
+  fun n_offsets (shape: gc_shape_t) : size => 
+    if uses_offset_table shape then _unsafe_n_offsets shape else 0uz
+  ;
 
   //$ Pointer to the offset table.
-  fun offsets: gc_shape_t -> &size = "$1->offsets";
+  fun _unsafe_offsets: gc_shape_t -> +size = "((::flx::gc::generic::offset_data_t*)($1->private_data))->offsets";
 
+  fun offsets (shape: gc_shape_t) : +size => 
+    if uses_offset_table shape then _unsafe_offsets shape else C_hack::cast[+size] 0 
+  ;
+ 
   //$ Flags.
   fun flags: gc_shape_t -> gc_shape_flags_t = "$1->flags";
 

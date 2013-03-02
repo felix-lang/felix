@@ -1,0 +1,341 @@
+proc calpackages 
+{
+  var x = FlxPkg::map_package_requirements 
+  (
+     FLX_INSTALL_DIR = config.FLX_INSTALL_DIR,
+     PKGCONFIG = control.PKGCONFIG,
+     INCLUDE_DIRS = control.INCLUDE_DIRS,
+     INCLUDE_FILES = control.INCLUDE_FILES,
+     EXT_EXE = config.EXT_EXE,
+     EXT_STATIC_OBJ = config.EXT_STATIC_OBJ,
+     STATIC = control.STATIC,
+     SLINK_STRING = control.SLINK_STRING,
+     DLINK_STRING = control.DLINK_STRING,
+     LINKER_SWITCHES = control.LINKER_SWITCHES,
+     cpp_filebase = dvars.cpp_filebase,
+     xqt = xqt,
+     quote = quote
+  );
+  control.INCLUDE_DIRS = x.INCLUDE_DIRS;
+  control.INCLUDE_FILES = x.INCLUDE_FILES;
+  control.DRIVER_EXE = x.DRIVER_EXE;
+  control.DRIVER_OBJS = x.DRIVER_OBJS;
+  control.LINK_STRING = x.LINK_STRING;
+  if ECHO == 1 do
+    fprintln (cerr, "//RESOURCE FILE="+dvars.cpp_filebase+".resh");
+    fprintln (cerr, "//INCLUDE_DIRS="+control.INCLUDE_DIRS);
+    fprintln (cerr, "//INCLUDE_FILES="+control.INCLUDE_FILES);
+    if control.STATIC == 0 do
+      fprintln (cerr, "//DYNAMIC DRIVER EXE ="+str control.DRIVER_EXE);
+    else
+      fprintln (cerr, "//STATIC DRIVER OBJS ="+str control.DRIVER_OBJS);
+    done
+    fprintln (cerr, "//LINK_STRING="+control.LINK_STRING);
+  done
+
+
+}
+
+proc run_felix_compiler_if_required
+{
+  if control.FELIX == 1 do
+    var result = Flxg::run_felix_compiler
+    (
+      INLINE=control.INLINE,
+      OUTPUT_DIR=control.OUTPUT_DIR,
+      BUNDLE_DIR=control.BUNDLE_DIR,
+      CACHE_DIR=control.CACHE_DIR,
+      COMPILER_PHASE= control.COMPILER_PHASE,
+      DOREDUCE=control.DOREDUCE,
+      STDLIB = dvars.STDLIB,
+      QUOTE_FLXG = control.QUOTE_FLXG,
+      VERBOSE = dvars.VERBOSE,
+      STDGRAMMAR = control.STDGRAMMAR,
+      STDIMPORT = control.STDIMPORT,
+      IMPORTS = control.IMPORTS,
+      FLXLIB = dvars.FLXLIB,
+      INCLUDE_DIRS = control.INCLUDE_DIRS,
+      filebase = dvars.filebase,
+      use_ext = dvars.use_ext,
+      debugln = debugln[string],
+      quote = quote
+    );
+    if result != 0 do 
+      pexit(result); 
+    done
+    debugln "Felix compilation succeeded";
+    calpackages;
+    FlxPkg::write_include_file(dvars.cpp_filebase, control.INCLUDE_FILES);
+
+  else
+    debugln "Felix compilation skipped by switch";
+    calpackages;
+  done
+}
+
+proc cxx_compile_dynamic1(src:string, dst:string)
+{
+  var CMD=List::cat ' ' (list (
+    config.CCOBJ_DLLIB, control.CCFLAGS, "-DTARGET_BUILD",
+    dvars.INCLUDE_DIR, control.INCLUDE_DIRS, control.MACROS,
+    quote(src),
+    config.SPEC_OBJ_FILENAME+quote(dst)))
+  ;
+  debugln$ "C++ command="+CMD;
+  var result = system(CMD);
+  if result != 0 do
+    eprintln $ "C++ command="+CMD + " FAILED";
+    pexit(result);
+  done
+
+}
+
+proc cxx_compile_dynamic
+{
+  cxx_compile_dynamic1 (dvars.cpp_filebase+".cpp", dvars.cpp_filebase+config.EXT_SHARED_OBJ);
+
+  for src in control.cpps do
+    var dst = Filename::strip_extension src + config.EXT_SHARED_OBJ;
+    cxx_compile_dynamic1 (src,dst);
+    control.cppos += dst;
+  done
+ 
+}
+
+proc cxx_link_dynamic
+{
+  var CMD=List::cat ' ' (list (
+    config.CCLINK_DLLIB, 
+    control.CCFLAGS,
+    cat " " control.cppos, 
+    quote(dvars.cpp_filebase+config.EXT_SHARED_OBJ),
+    config.SPEC_EXE_FILENAME+quote(control.LINKER_OUTPUT_FILENAME),
+    control.LINK_STRING))
+  ;
+  debugln$ "Link command="+CMD;
+  var result = system(CMD);
+
+  if result != 0 do
+    eprintln $ "Dynamic link command="+CMD + " FAILED";
+    pexit(result);
+  done
+}
+
+proc cxx_compile_static1 (src: string, dst: string)
+{
+  var CMD=List::cat ' ' (list (
+    config.CCOBJ_STATIC_LIB,
+    control.CCFLAGS, 
+    "-DTARGET_BUILD",
+    "-DFLX_STATIC_LINK", 
+    dvars.INCLUDE_DIR, 
+    control.INCLUDE_DIRS,
+    control.MACROS, 
+    quote(src),
+    config.SPEC_OBJ_FILENAME+quote(dst)));
+
+  debugln$ "C++ command="+CMD;
+  var result=system(CMD);
+
+  if result != 0 do
+    eprintln$ "C++ compilation "+src+" failed";
+    pexit(result);
+  done
+
+}
+
+proc cxx_compile_static
+{
+  cxx_compile_static1
+  (
+    dvars.cpp_filebase+"_static_link_thunk.cpp",
+    dvars.cpp_filebase+"_static_link_thunk"+config.EXT_STATIC_OBJ
+  );
+
+  for src in control.cpps do
+    var dst = Filename::strip_extension src +config.EXT_STATIC_OBJ;
+    if control.RECOMPILE == 1 or dfiletime(src,#past_time) > dfiletime (dst, #future_time) do
+      cxx_compile_static1 (src,dst);
+    done
+    control.cppos += dst;
+  done
+ 
+  cxx_compile_static1 (dvars.cpp_filebase+".cpp",dvars.cpp_filebase+config.EXT_STATIC_OBJ);
+
+}
+
+proc cxx_link_static
+{
+  var xargs = list 
+    (
+      config.CCLINK_STATIC, config.SPEC_EXE_FILENAME+quote(control.LINKER_OUTPUT_FILENAME),
+      quote(dvars.cpp_filebase+"_static_link_thunk"+config.EXT_STATIC_OBJ),
+      quote(dvars.cpp_filebase+config.EXT_STATIC_OBJ)
+    ) + 
+    control.DRIVER_OBJS + 
+    control.cppos + 
+    control.LINK_STRING
+  ;
+  var CMD = cat ' ' xargs;
+
+  debugln$ "Link command="+CMD;
+  var result=system(CMD);
+  if result != 0 do
+    debugln$ "Link command="+CMD+ " FAILED";
+    pexit(result);
+  done 
+}
+
+proc check_output
+{
+  var expected = control.EXPECT;
+  if expected == "" return;
+
+  var output = control.STDOUT;
+
+  if output == "" do
+    println$ "No output file given";
+
+  otherwise 
+  
+  // note load never fails, at worse loads empty string.
+  var output_text = load (output);
+  var expected_text = load (expected);
+  if output_text != expected_text do
+    println$ "Output " + output + " doesn't match expected " + expected;
+    System::exit(1);
+  done
+  
+}
+
+
+proc run_program_dynamic
+{
+  var xargs = list (
+      control.FLXRUN,control.DRIVER_EXE,dvars.DEBUGSWITCH,
+      quote(control.LINKER_OUTPUT_FILENAME), dvars.args)
+  ;
+  if control.TIME == 1 do xargs = control.TIMECMD + xargs; done
+  var CMD = cat ' ' xargs;
+  if control.STDOUT != "" do CMD=CMD+" > " +quote(control.STDOUT); done
+  debugln$ "Run command="+CMD;
+  var result = system(CMD);
+  if result != 0 do
+    pexit(result);
+  done
+  check_output;
+}
+
+proc run_program_static
+{
+  var xargs = list ( dvars.STATIC_ENV, quote(control.LINKER_OUTPUT_FILENAME),dvars.args);
+  if control.TIME == 1 do xargs = control.TIMECMD + xargs; done
+  var CMD = cat ' ' xargs;
+  if control.STDOUT != "" do CMD=CMD + " > "+quote(control.STDOUT); done
+  debugln$ "Run command="+CMD;
+  var result=system(CMD);
+  if result != 0 do
+    pexit(result);
+  done
+  check_output;
+}
+
+proc run_dynamic_with_calpackages
+{
+  calpackages;
+  run_program_dynamic;
+}
+
+gen check_run_if_required_and_uptodate() =
+{
+
+  if control.RECOMPILE == 0 and control.RUNIT == 1 and control.CLEAR_CACHE == 0 do
+    // not (--force or -c)
+    debugln "Checking to see if the binary is uptodate";
+    var xtime = dfiletime(control.LINKER_OUTPUT_FILENAME,#past_time);
+    var srctime = cal_dep_time (control.OUTPUT_DIR, dvars.filebase);
+    srctime = fold_left maxf srctime control.cpps;
+    srctime = fold_left maxf srctime control.cppos;
+
+    debugln$ "Filebase = " + dvars.filebase; 
+    debugln$ "Binary time = " + strfiletime (xtime);
+    debugln$ "src time = " + strfiletime (srctime);
+    debugln$ "cache time = " + strfiletime (control.cache_time);
+    if control.STATIC == 0 do
+      if xtime > srctime and xtime > control.cache_time do
+        debugln$ "Running dynamically linked binary";
+        return true;
+      else
+        debugln$ "Dynamically linked binary out of date or non-existant";
+      done
+    else
+      if xtime > srctime and xtime > control.cache_time do
+        debugln$ "Running statically linked binary";
+        return true;
+      else
+        debugln$ "Statically linked binary out of date or non-existant";
+      done
+    done
+  done
+  return false;
+
+}
+
+proc run_with_calpackages
+{
+  if control.STATIC == 0 do
+    run_dynamic_with_calpackages;
+  else
+    run_program_static;
+  done
+}
+
+proc run_cxx_and_exe_as_required
+{
+
+  if control.CCOMPILEIT == 0 do
+    debugln "C++ compilation skipped by switch";
+  elif control.STATIC == 0 do
+
+    debugln "Dynamic linkage";
+    cxx_compile_dynamic;
+
+    if control.LINKIT == 0 do
+      debugln "Not linking program selected by switch";
+    else
+      cxx_link_dynamic;
+      if control.RUNIT == 1 do
+        run_program_dynamic;
+      else
+        debugln "Not running program selected by switch";
+      done
+    done
+  else
+
+    debugln "Static linkage";
+    cxx_compile_static;
+
+    if control.LINKIT == 0 do
+      debugln "Not linking based on switch";
+    else
+      cxx_link_static;
+      if control.RUNIT == 1 do
+        run_program_static;
+      else
+        debugln "Not running program selected by switch";
+      done
+    done
+  done
+}
+
+proc runit 
+{
+  var immediate_run = #check_run_if_required_and_uptodate;
+  if immediate_run do
+    run_with_calpackages;
+  else
+    run_felix_compiler_if_required;
+    run_cxx_and_exe_as_required;
+  done
+}
+

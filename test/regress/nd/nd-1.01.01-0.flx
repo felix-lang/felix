@@ -31,3 +31,4 @@ var y_sum = fold_left (fun (acc:int) (item:int)=>acc+item) 0 y;
 println$ "x_sum="+ str x_sum+ ", y_sum" + str y_sum;
 
 
+

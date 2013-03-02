@@ -1,3 +1,4 @@
 //Check String::ltrim
 print$ ltrim "hello how are you" "hello"; endl;
 print$ ltrim "hello how are you" "goodbye"; endl;
+

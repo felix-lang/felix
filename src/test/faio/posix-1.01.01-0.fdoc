@@ -1,0 +1,35 @@
+
+@h1 posix-1.01.01-0.flx
+@felix
+include "std/posix/faio_posix";
+open Faio_posix;
+
+// create a listening socket, spawn a thread to connect to it.
+// in case something goes wrong could make test time out with
+// spawn_fthread { { sleep 5.0; System::exit 1; }; };
+print "felix posix accept/connect test\n";
+
+var port = 0;   // let mk_listener choose the port
+print "creating listener\n";
+var listener: socket_t; mk_listener(&listener,&port, 1);
+
+print "spawning connector\n";
+// not printing in thread to make output repeatable in
+// the face of scheduler changes.
+spawn_fthread{ { var c: socket_t; connect(&c, c"127.0.0.1", port); }; };
+
+var s: socket_t;
+accept (&s, listener);  // async!
+if bad_socket s then {
+  System::exit 1;
+} else {
+  print "accepted connection\n";
+  System::exit 0;
+} endif;
+
+@expect
+felix posix accept/connect test
+creating listener
+spawning connector
+accepted connection
+@

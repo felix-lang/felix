@@ -1,0 +1,5 @@
+
+@h1 bt-1.01.08-0.flx
+@felix
+#define FIRST
+#import "test/regress/bt-1.01.08.imp"
