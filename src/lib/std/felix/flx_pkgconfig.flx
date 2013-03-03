@@ -120,14 +120,6 @@ class FlxPkgConfig
     var keep= keepleftmost;
     var extension = "fpc";
 
-/*
-    var i = 1;
-    var arg = argv i;
-    var args = Empty[string];
-    while arg != "" do args = arg + args; ++i; arg=argv i; done;
-    args = rev args;
-*/
-
     fun is_prefix_of(p:string,w:string)=> p == w.[to len p];
 
     fun xfind(flags: string, c: string) =>
