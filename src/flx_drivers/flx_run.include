@@ -61,8 +61,8 @@ extern "C" void *create_thread_frame;
 extern "C" void *flx_start;
 */
 extern "C" void *flx_main;
-extern "C" void *static_create_thread_frame;
-extern "C" void *static_flx_start;
+extern void *static_create_thread_frame;
+extern void *static_flx_start;
 #endif
 
 int do_final_cleanup(
