@@ -11,9 +11,9 @@ class System
   gen raw_system: string -> int = "::std::system($1.c_str())"
     requires Cxx_headers::cstdlib;
   if PLAT_WIN32 do
-    gen system(cmd:string) => System::system('"'+cmd+'"');
+    gen system(cmd:string) => System::raw_system('"'+cmd+'"');
   else
-    gen system (cmd:string) => System::system(cmd);
+    gen system (cmd:string) => System::raw_system(cmd);
   done
   gen exit: int -> any = '::std::exit($1)' requires Cxx_headers::cstdlib;
   gen abort: 1 -> any = "::std::abort($1)" requires Cxx_headers::cstdlib;
