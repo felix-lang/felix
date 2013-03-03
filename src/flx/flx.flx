@@ -5,6 +5,7 @@ include "./flx_cmdopt";
 include "std/felix/flx_cache";
 include "std/felix/flx_pkg";
 include "std/felix/flx_flxg";
+include "std/felix/flx_cxx";
 include "./flx_config";
 include "./flx_control";
 include "./flx_profile";
@@ -79,4 +80,5 @@ dvars = #cal_depvars;
 runit;
 
 System::exit (0);
+
 
