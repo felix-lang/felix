@@ -27,7 +27,15 @@ if PLAT_WIN32 do
 done
 var INSTALL_ROOT_TOPDIR=config.INSTALL_ROOT_TOPDIR;
 var INSTALL_ROOT=config.INSTALL_ROOT;
-var cfg = strdict[string](); 
+var cfg = strdict[string]();
+var OSX_LIB_DIRS = list("/Developer/SDKs/MacOSX10.5.sdk/usr/lib",
+                        "/Developer/SDKs/MacOSX10.6.sdk/usr/lib",
+                        "/Developer/SDKs/MacOSX10.7.sdk/usr/lib",
+                        "/opt/local/lib");
+var OSX_INCLUDE_DIRS = list("/Developer/SDKs/MacOSX10.5.sdk/usr/include",
+                        "/Developer/SDKs/MacOSX10.6.sdk/usr/include",
+                        "/Developer/SDKs/MacOSX10.7.sdk/usr/include",
+                        "/opt/local/include");
 var INCLUDE_DIRS=list ("/usr/include","/usr/local/include");
 var LIB_DIRS = list ("/lib","/usr/lib","/usr/local/lib");
 
@@ -519,27 +527,30 @@ requires_slibs: $(dlibs)
                      reqs:list[string]) {
     var config_ok_fn = (BUILD_DIR.join("config")).join("CONFIG_"+name+".OK");
     if not FileStat::fileexists config_ok_fn do 
-      task("Configuring " + NAME);
       var idirs = strdict[string]();
       var c_flags:string = "";
       for inc in includes do
        add idirs (match
-        find_path_to(inc,INCLUDE_DIRS + EXTRA_INCDIR)
+        find_path_to(inc,
+          if #Config::config.HAVE_MACOSX then OSX_INCLUDE_DIRS else INCLUDE_DIRS endif + 
+          EXTRA_INCDIR)
         with
         |Some ?path => "-I" + path
         |None => (
-          general_fail("Unable to find " + inc + " Please locate and pass path to setup with the -L switch");
+          general_fail("Unable to find " + inc + 
+            " Please locate and pass path to setup with the -L switch");
           "")
         endmatch) "";
       done
       for idir in idirs do
         c_flags += let ?k,_ = idir in k; 
       done
-
-      var lib_dirs="";
+       var lib_dirs="";
       for lib in libs do
         lib_dirs += match
-          find_path_to(lib,LIB_DIRS + EXTRA_LIBDIR)
+          find_path_to(lib,
+	    if #Config::config.HAVE_MACOSX then OSX_LIB_DIRS else LIB_DIRS endif + 
+            EXTRA_LIBDIR)
         with
         |Some ?path => "-L" + path + " -l" + 
           lib.[if startswith lib "lib" then 3 else 0 endif 
