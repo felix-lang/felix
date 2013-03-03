@@ -45,11 +45,7 @@ done
 gen system(cmd:string):int= {
   var now = #Time::time;
   if ECHO==1 do fprintln$ cerr, cmd; done
-if PLAT_WIN32 do
-  var result = System::system('"'+cmd+'"');
-else
   var result = System::system(cmd);
-done
   var elapsed = #Time::time - now;
   if ECHO==1 do fprintln$ cerr, "System:Elapsed: " + fmt (elapsed, fixed (8,3)) + ", Result code " + str(result); done
   return result;

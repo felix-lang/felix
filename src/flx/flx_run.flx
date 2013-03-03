@@ -73,21 +73,27 @@ proc run_felix_compiler_if_required
   done
 }
 
+
 proc cxx_compile_dynamic1(src:string, dst:string)
 {
-  var CMD=List::cat ' ' (list (
-    config.CCOBJ_DLLIB, control.CCFLAGS, "-DTARGET_BUILD",
-    dvars.INCLUDE_DIR, control.INCLUDE_DIRS, control.MACROS,
-    quote(src),
-    config.SPEC_OBJ_FILENAME+quote(dst)))
+
+  var result = 
+    CxxCompiler::generic_cxx_compile_for_dynamic 
+    (
+      CCOBJ_DLLIB = config.CCOBJ_DLLIB, 
+      CCFLAGS = control.CCFLAGS, 
+      INCLUDE_DIR = dvars.INCLUDE_DIR, 
+      INCLUDE_DIRS = control.INCLUDE_DIRS, 
+      MACROS = control.MACROS,
+      SPEC_OBJ_FILENAME = config.SPEC_OBJ_FILENAME,
+      debugln = debugln[string],
+      quote = quote
+    ) 
+    (src, dst)
   ;
-  debugln$ "C++ command="+CMD;
-  var result = system(CMD);
   if result != 0 do
-    eprintln $ "C++ command="+CMD + " FAILED";
     pexit(result);
   done
-
 }
 
 proc cxx_compile_dynamic
@@ -104,38 +110,42 @@ proc cxx_compile_dynamic
 
 proc cxx_link_dynamic
 {
-  var CMD=List::cat ' ' (list (
-    config.CCLINK_DLLIB, 
-    control.CCFLAGS,
-    cat " " control.cppos, 
-    quote(dvars.cpp_filebase+config.EXT_SHARED_OBJ),
-    config.SPEC_EXE_FILENAME+quote(control.LINKER_OUTPUT_FILENAME),
-    control.LINK_STRING))
+  var result = 
+    CxxCompiler::generic_link_dynamic 
+    (
+      CCLINK_DLLIB = config.CCLINK_DLLIB, 
+      CCFLAGS = control.CCFLAGS,
+      EXT_SHARED_OBJ = config.EXT_SHARED_OBJ,
+      SPEC_EXE_FILENAME = config.SPEC_EXE_FILENAME,
+      LINK_STRING = control.LINK_STRING,
+      debugln = debugln[string],
+      quote = quote
+    )
+    (
+      control.cppos + quote(dvars.cpp_filebase+config.EXT_SHARED_OBJ),
+      control.LINKER_OUTPUT_FILENAME
+    )
   ;
-  debugln$ "Link command="+CMD;
-  var result = system(CMD);
-
   if result != 0 do
-    eprintln $ "Dynamic link command="+CMD + " FAILED";
     pexit(result);
   done
 }
-
 proc cxx_compile_static1 (src: string, dst: string)
 {
-  var CMD=List::cat ' ' (list (
-    config.CCOBJ_STATIC_LIB,
-    control.CCFLAGS, 
-    "-DTARGET_BUILD",
-    "-DFLX_STATIC_LINK", 
-    dvars.INCLUDE_DIR, 
-    control.INCLUDE_DIRS,
-    control.MACROS, 
-    quote(src),
-    config.SPEC_OBJ_FILENAME+quote(dst)));
-
-  debugln$ "C++ command="+CMD;
-  var result=system(CMD);
+  var result = 
+    CxxCompiler::generic_cxx_compile_for_static 
+    (
+      CCOBJ_STATIC_LIB = config.CCOBJ_STATIC_LIB,
+      CCFLAGS = control.CCFLAGS, 
+      INCLUDE_DIR = dvars.INCLUDE_DIR, 
+      INCLUDE_DIRS = control.INCLUDE_DIRS,
+      MACROS = control.MACROS, 
+      SPEC_OBJ_FILENAME = config.SPEC_OBJ_FILENAME,
+      debugln = debugln[string],
+      quote = quote
+    )
+    (src, dst)
+  ;
 
   if result != 0 do
     eprintln$ "C++ compilation "+src+" failed";
@@ -163,25 +173,27 @@ proc cxx_compile_static
   cxx_compile_static1 (dvars.cpp_filebase+".cpp",dvars.cpp_filebase+config.EXT_STATIC_OBJ);
 
 }
-
 proc cxx_link_static
 {
-  var xargs = list 
+  var result =
+    CxxCompiler::generic_link_static
     (
-      config.CCLINK_STATIC, config.SPEC_EXE_FILENAME+quote(control.LINKER_OUTPUT_FILENAME),
-      quote(dvars.cpp_filebase+"_static_link_thunk"+config.EXT_STATIC_OBJ),
-      quote(dvars.cpp_filebase+config.EXT_STATIC_OBJ)
-    ) + 
-    control.DRIVER_OBJS + 
-    control.cppos + 
-    control.LINK_STRING
+      CCLINK_STATIC = config.CCLINK_STATIC, 
+      SPEC_EXE_FILENAME = config.SPEC_EXE_FILENAME,
+      LINK_STRING = control.LINK_STRING,
+      debugln = debugln[string],
+      quote = quote
+    )  
+    ( list[string] () +
+        control.DRIVER_OBJS + 
+        control.cppos + 
+        quote(dvars.cpp_filebase+"_static_link_thunk"+config.EXT_STATIC_OBJ) + 
+        quote(dvars.cpp_filebase+config.EXT_STATIC_OBJ)
+      ,
+      control.LINKER_OUTPUT_FILENAME
+    )
   ;
-  var CMD = cat ' ' xargs;
-
-  debugln$ "Link command="+CMD;
-  var result=system(CMD);
   if result != 0 do
-    debugln$ "Link command="+CMD+ " FAILED";
     pexit(result);
   done 
 }
