@@ -33,9 +33,20 @@ proc calpackages
 
 }
 
+proc showtime(msg:string, t0:double)
+{
+  if control.TIME == 1 do
+    var elapsed = #Time::time - t0;
+    var minutes = floor (elapsed / 60.0);
+    var seconds = elapsed - minutes * 60.0;
+    println$ "Time : " + fmt(minutes,fixed(2,0))+"m" + fmt(seconds,fixed(4,1)) + "s for " + msg;
+  done
+}
+
 proc run_felix_compiler_if_required
 {
   if control.FELIX == 1 do
+    var t0 = #Time::time;
     var result = Flxg::run_felix_compiler
     (
       INLINE=control.INLINE,
@@ -57,6 +68,7 @@ proc run_felix_compiler_if_required
       debugln = debugln[string],
       quote = quote
     );
+    showtime("Felix flxg   : "+dvars.cpp_filebase, t0);
     if result != 0 do 
       pexit(result); 
     done
@@ -74,6 +86,7 @@ proc run_felix_compiler_if_required
 proc cxx_compile_dynamic1(src:string, dst:string)
 {
 
+  var t0 = #Time::time;
   var result = 
     CxxCompiler::generic_cxx_compile_for_dynamic 
     (
@@ -88,6 +101,7 @@ proc cxx_compile_dynamic1(src:string, dst:string)
     ) 
     (src, dst)
   ;
+  showtime("Dynamic c++  : "+src, t0);
   if result != 0 do
     pexit(result);
   done
@@ -107,6 +121,7 @@ proc cxx_compile_dynamic
 
 proc cxx_link_dynamic
 {
+  var t0 = #Time::time;
   var result = 
     CxxCompiler::generic_link_dynamic 
     (
@@ -123,12 +138,15 @@ proc cxx_link_dynamic
       control.LINKER_OUTPUT_FILENAME
     )
   ;
+  showtime("Dynamic link : "+control.LINKER_OUTPUT_FILENAME,t0);
   if result != 0 do
     pexit(result);
   done
 }
+
 proc cxx_compile_static1 (src: string, dst: string)
 {
+  var t0 = #Time::time;
   var result = 
     CxxCompiler::generic_cxx_compile_for_static 
     (
@@ -143,6 +161,7 @@ proc cxx_compile_static1 (src: string, dst: string)
     )
     (src, dst)
   ;
+  showtime("Static c++   : "+src,t0);
 
   if result != 0 do
     eprintln$ "C++ compilation "+src+" failed";
@@ -172,6 +191,7 @@ proc cxx_compile_static
 }
 proc cxx_link_static
 {
+  var t0 = #Time::time;
   var result =
     CxxCompiler::generic_link_static
     (
@@ -190,6 +210,7 @@ proc cxx_link_static
       control.LINKER_OUTPUT_FILENAME
     )
   ;
+  showtime("Static link  : "+control.LINKER_OUTPUT_FILENAME,t0);
   if result != 0 do
     pexit(result);
   done 
@@ -224,11 +245,12 @@ proc run_program_dynamic
       control.FLXRUN,control.DRIVER_EXE,dvars.DEBUGSWITCH,
       quote(control.LINKER_OUTPUT_FILENAME), dvars.args)
   ;
-  if control.TIME == 1 do xargs = control.TIMECMD + xargs; done
   var CMD = cat ' ' xargs;
   if control.STDOUT != "" do CMD=CMD+" > " +quote(control.STDOUT); done
   debugln$ "Run command="+CMD;
+  var t0 = #Time::time;
   var result = system(CMD);
+  showtime("Dynamic Run : "+control.LINKER_OUTPUT_FILENAME,t0);
   if result != 0 do
     pexit(result);
   done
@@ -238,11 +260,12 @@ proc run_program_dynamic
 proc run_program_static
 {
   var xargs = list ( dvars.STATIC_ENV, quote(control.LINKER_OUTPUT_FILENAME),dvars.args);
-  if control.TIME == 1 do xargs = control.TIMECMD + xargs; done
   var CMD = cat ' ' xargs;
   if control.STDOUT != "" do CMD=CMD + " > "+quote(control.STDOUT); done
   debugln$ "Run command="+CMD;
+  var t0 = #Time::time;
   var result=system(CMD);
+  showtime("Static Run   : "+control.LINKER_OUTPUT_FILENAME,t0);
   if result != 0 do
     pexit(result);
   done

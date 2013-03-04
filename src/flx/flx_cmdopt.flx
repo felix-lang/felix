@@ -181,7 +181,7 @@ proc handle_switch(arg:string)
 
   elif prefix(arg,"--inline=") do
     debugln "Set inline aggressiveness";
-    control.INLINE=int(arg.[to 9]);
+    control.INLINE=int(arg.[9 to]);
 
   elif arg == "--inline" do
     debugln "Set inline aggressiveness";
@@ -232,6 +232,7 @@ proc handle_switch(arg:string)
     control.NOOPTIMISE=1;
     control.OPTIMISE = "-O1";
     control.DOREDUCE = 0;
+    control.INLINE=5;
 
   elif arg == "--usage=debugging" do
     debugln "Set usage debugging";
@@ -240,18 +241,21 @@ proc handle_switch(arg:string)
     control.DEBUG = 1;
     control.DOREDUCE= 0;
     control.OPTIMISE = "-O0";
+    control.INLINE=5;
 
   elif arg == "--usage=production" do
     debugln "Set usage production";
     control.USAGE = "production";
     control.DOREDUCE = 1;
     control.OPTIMISE = "-O2";
+    control.INLINE=25;
 
   elif arg == "--usage=hyperlight" do
     debugln "Set usage hyperlight";
     control.USAGE = "hyperlight";
     control.DOREDUCE = 1;
     control.OPTIMISE = "-O2";
+    control.INLINE=100;
 
   elif arg == "--man" do
     debugln "Display top level manual page using 'man' program";
@@ -366,7 +370,7 @@ fun check_ext (s:string) => match find #exts s with
 proc parse_cmd_line
 {
 var SET_LINKER_OUTPUT = false;
-grabbing_args: while loopctl.grab == 1 and loopctl.argno<System::argc do
+grabbing_args: while loopctl.grab == 1 and loopctl.argno < System::argc do
   var arg = System::argv loopctl.argno;
   debugln$ "ARGNO="+str(loopctl.argno)+", arg='"+arg+"'";
 
@@ -374,7 +378,6 @@ grabbing_args: while loopctl.grab == 1 and loopctl.argno<System::argc do
      control.LINKER_OUTPUT_FILENAME = arg;
      debugln$ "Set linker output file=" + control.LINKER_OUTPUT_FILENAME;
      SET_LINKER_OUTPUT = false;
-     ++loopctl.argno;
 
   elif arg == "-o" do
     debugln "Set linker output name (next arg)";
@@ -382,19 +385,13 @@ grabbing_args: while loopctl.grab == 1 and loopctl.argno<System::argc do
 
   elif not (prefix (arg,"-")) do
     loopctl.progname = arg;
-//println$ "No - so checking filename extension of " + arg;
-//var extension = Filename::get_extension arg;
-//println$ "Extension is " + extension;
-//println$ "Class is " + check_ext extension;
 
     match check_ext $ Filename::get_extension arg with
     | "compile" => 
        control.cpps = control.cpps + arg;
-       ++loopctl.argno;
 
     | "link" =>
        control.cppos = control.cppos + arg;
-       ++loopctl.argno;
 
     | "felix" =>
       loopctl.progname = arg;

@@ -22,7 +22,7 @@ include "web/mime_type";
 include "./charclass";
 include "./css4html";
 include "./plugin_common";
-include "/fdoc-interface";
+include "./fdoc-interface";
 
 proc dbg(x:string) { fprint (cerr,x); };
 

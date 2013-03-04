@@ -351,7 +351,13 @@ let copy_used1 syms bsym_table =
   new_bsym_table
 
 let copy_used syms bsym_table =
+(*
+print_endline "Copy used";
+*)
   let rec aux bsym_table old =
+(*
+print_endline ("Copy used1: ninput symbols = " ^ si old);
+*)
     let bsym_table = copy_used1 syms bsym_table in
     let nu = Flx_bsym_table.length bsym_table in
     assert (nu <= old);

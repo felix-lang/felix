@@ -323,7 +323,7 @@ def test_flx(phase, felix, src, *args, **kwargs):
     passed = True
     for static in False, True:
         try:
-            exe = felix.compile(src, static=static)
+            exe = felix.compile(src, static=static,flags=['--usage=prototype'])
         except fbuild.ExecutionError as e:
             phase.ctx.logger.log(e, verbose=1)
             if e.stdout:
