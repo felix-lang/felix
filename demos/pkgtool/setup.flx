@@ -17,13 +17,30 @@ open PkgTool;
 instance PkgTool {
 
   proc install() {
-    default_install();
     if not CMD == "dist" do 
     var bin_dir = (PREFIX.join("bin"));
     match filetype(bin_dir) with
     |DIRECTORY => { 
+      var bin_path = PREFIX.join("bin");
+      var scoop_exe = bin_path.join("scoop")+
+         #Config::config.EXT_EXE;
+      if FileStat::fileexists(scoop_exe) do
+        var old_scoop_exe = bin_path.join("scoop_old")+
+            #Config::config.EXT_EXE;
+        var rslt = if PLAT_WIN32 then
+          System::system(q"rename $(scoop_exe) $(old_scoop_exe)")
+        else
+          System::system(q"mv $(scoop_exe) $(old_scoop_exe)")
+        endif;
+
+        if not rslt == 0 do 
+          warning(q"Unable to rename $(scoop_exe) $(old_scoop_exe)");
+        done
+      done
       cp_root(BUILD_DIR.join("bin"),"scoop" + #Config::config.EXT_EXE,
-        bin_dir); 
+        bin_dir);
+      cp_root(BUILD_DIR.join("bin"),"scoop" + #Config::config.EXT_EXE,
+        bin_path); 
     }
     |_ => { 
       warning("Unable to install 'scoop' to " + bin_dir + ". " + 
@@ -33,6 +50,7 @@ instance PkgTool {
     }
     endmatch;
     done
+    default_install();
   }
 }
 

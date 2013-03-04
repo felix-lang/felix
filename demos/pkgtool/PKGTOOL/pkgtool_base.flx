@@ -38,6 +38,28 @@ var OSX_INCLUDE_DIRS = list("/Developer/SDKs/MacOSX10.5.sdk/usr/include",
                         "/opt/local/include");
 var INCLUDE_DIRS=list ("/usr/include","/usr/local/include");
 var LIB_DIRS = list ("/lib","/usr/lib","/usr/local/lib");
+var HOME = 
+  let ?h = Env::getenv "HOME" in
+    if h!="" then h 
+    elif PLAT_WIN32 then Env::getenv "USERPROFILE"
+    else ""
+    endif
+;
+if HOME == "" do
+    general_fail$ "HOME environment variable is not set.  Please set HOME before building."; 
+	System::exit 1;
+done 
+
+var FELIX_HOME = HOME.join(".felix");
+
+var LITTERBOX = if Env::getenv("LITTERBOX") == "" then 
+  FELIX_HOME.join("litterbox")
+  else Env::getenv("LITTERBOX") endif;
+
+var LITTERBOX_URL = if Env::getenv("LITTERBOX_URL") == "" then
+  'https://github.com/mmaul/litterbox.git'
+  else Env::getenv("LITTERBOX_URL") endif;
+
 
 //$ ### Globals parameters
 var BUILD_LIKE = Lib; //$ Set build behavior
@@ -109,7 +131,6 @@ class PkgTool {
   fun read_cfg(fn:string) = {
     var fh = fopen_input(fn);
     var cfg = strdict[string]();
-//    var pat = RE2 ("^([A-Z_]+)\:\s*(.*?)\s*$");
     var pat = RE2 ("^([A-Z_]+)\:\s*([A-Za-z0-9,_':/+@. -]*)\s*$");
     var n = pat.NumberOfCapturingGroups;
     if valid(fh) do
@@ -563,20 +584,22 @@ requires_slibs: $(dlibs)
       done
       create_fpc(name,DESCRIPTION,c_flags,includes,
                      lib_dirs,lib_dirs,reqs);
-      test_config(name);
+      test_config(name,reqs);
       var config_ok:ofile = fopen_output(config_ok_fn);
       write(config_ok,"CONFIG.OK\n");
       fclose(config_ok);
     done
   }
 
-  proc test_config(name:string) {
+  proc test_config(name:string,reqs:list[string]) {
     var test_result_status_fail = test_result_status(false);
     var test_result_status_ok = test_result_status(true);
     var title = "Testing configuration for "+name;
     var title_len = title.len.int;
-    var test_code = q"""
-      requires package "gl";
+    var test_code = (fold_left
+      (fun (a:string) (b:string) => a+"requires package '"+b+"';\n") "" reqs)+
+      q"""
+      requires package "$(name)";
       const cc:char = "(char)27";
       var NC = cc + '[0m'; 
       var green = cc+'[0;32m';
@@ -800,14 +823,17 @@ requires_slibs: $(dlibs)
 //$ implementaion of default install behavior see README.md for
 //$ discussion of behavior 
   proc default_install() {
+
     if BUILD_LIKE == App or BUILD_LIKE == Lib do
-      task("Installing bin files");
-      cp_root(BUILD_DIR, "bin[/\\][^.][a-zA-Z0-9_-]+$",DEST_DIR);
-      if PLAT_WIN32 do
-        match filetype(PREFIX) with
-        |DIRECTORY => {cp_root(BUILD_DIR, "bin[/\\][^.][a-zA-Z0-9_-]+$",PREFIX); }
-        |_ => {}
-        endmatch;
+      if not NAME == "pkgtool" do
+        task("Installing bin files");
+        cp_root(BUILD_DIR, "bin[/\\][^.][a-zA-Z0-9_-]+$",DEST_DIR);
+        if PLAT_WIN32 do
+          match filetype(PREFIX) with
+          |DIRECTORY => {cp_root(BUILD_DIR, "bin[/\\][^.][a-zA-Z0-9_-]+$",PREFIX); }
+          |_ => {}
+          endmatch;
+        done
       done
     done
     if BUILD_LIKE == Lib do
@@ -835,10 +861,140 @@ requires_slibs: $(dlibs)
       cp_root(BUILD_DIR, "README.md",((DEST_DIR.join("web")).join("packages")).join(NAME));
       cp_root(BUILD_DIR, "examples[/\\\].(.*\.flx)",((DEST_DIR.join("web")).join("packages")).join(NAME));
     done
+    make_history(NAME);
   }
 
   virtual proc install() {
     default_install();
+  }
+
+  //$ Reads package installation history. History consists of a file
+  //$ in the pgktool config format (see read_cfg) where keys are
+  //$ <package name>-<felix INSTALL_ROOT>\t<package name>
+  //$ The general idea is to have a set of records of package installations
+  //$ to a given felix installation
+  fun study_history() = {
+    var history_book = LITTERBOX.join(".history");
+    var fh = fopen_input(history_book);
+    var cfg = strdict[string]();
+    var pat = RE2 ("^([a-zA-Z0-9_:~/\\/ .-]+)\t\s*([A-Za-z0-9,_':/+@. -]*)\s*$");
+    var n = pat.NumberOfCapturingGroups;
+    if valid(fh) do
+      while not feof(fh) do
+        ln := readln$ fh; 
+        v := _ctor_varray[StringPiece]$ (n+1).size, StringPiece "";
+        matches := _ctor_varray[StringPiece]$ (n+1).size, StringPiece "";
+        res := Re2::Match(pat,StringPiece ln,0, ANCHOR_START, v.stl_begin, v.len.int);
+        if res do
+          add cfg (str(get(v,1))) (str(get(v,2)));
+        done 
+      done 
+    done
+    return cfg;
+  }
+
+
+  //$ Reads history, rewrites history and adds current install
+  //$ package to history
+  proc make_history (name:string) {
+    var prior_knowledge = study_history();
+    add prior_knowledge (name+"-"+INSTALL_ROOT) name;
+    rewrite_history(prior_knowledge);
+  }
+
+    //$ Reads history, rewrites history and adds current install
+  //$ package to history
+  proc rewrite_history (prior_knowledge:strdict[string]) {
+    var history_book:ofile = fopen_output(LITTERBOX.join(".history"));
+    if valid(history_book) do 
+      for memory in prior_knowledge do
+        match memory with
+        |(?event,?description) => {
+	  write(history_book,event+"\t"+description+"\n");
+        }
+        endmatch;
+      done
+      fclose(history_book);
+    done
+  }
+
+
+  //$ Return list of packages in litterbox
+  fun dump_litterbox() = {
+    var contents = Empty[string];
+    match Directory::filesin(LITTERBOX) with
+    |Some ?files => { 
+      for file in sort(filter (fun (f:string) => not f == "build" and not f.startswith ".") files) do
+        var dir_path = LITTERBOX.join(file);
+        match filetype(dir_path) with 
+        |DIRECTORY => {
+          var pkg_readme = dir_path.join("README.md");
+          match filetype(pkg_readme) with
+          |REGULAR => { 
+            var pkg = read_cfg(pkg_readme);
+            var name = (get pkg "NAME").or_else("");
+            contents += name;
+          }
+          |_ => {}
+          endmatch;
+        }
+        |_ => {}
+        endmatch;
+      
+      done
+    }
+    |_ => {}
+    endmatch;              
+    return contents;
+  }
+
+
+  //$ Sometimes even those that study history are doomed to repeat it.
+  //$ Reinstalls package in history that do not exist in the felix
+  //$ installation. This is something that would be done after a new
+  //$ new felix installation
+  proc repeat_history() {
+    phase("Reinstalling packages from package history");
+    var skipped = Empty[string];
+    var prior_knowledge = study_history();
+    var noneed = true;
+    for pkg in dump_litterbox() do
+      var p = pkg+"-"+INSTALL_ROOT;
+      var q = get prior_knowledge p;
+      match q with
+      |Some ?pkg_k => {
+        if not match is_installed(pkg) with |Some _ => true |_ => false endmatch do
+          noneed = false;
+          task(INDENT"Found that "+blue_(pkg)+
+            " was installed in the past but is not currently installed");
+          match prompt(INDENT+"Would you like to re-install "+blue_(pkg),
+                       "Yn") with  
+          |Some ?y when toupper(y) == "Y" => 
+            if (not System::system((INSTALL_ROOT.join("bin")).join("scoop")+
+              " install "+ pkg) == 0) do
+              var msg = "Unable to re-install package "+blue_(pkg);
+              if not FORCE do
+                general_fail(msg);
+              else
+                warning(msg+NL+"Continuing anyways...");
+              done
+            done
+          |_ => skipped += pkg;
+          endmatch;
+        done
+      }
+      |_ => {}
+      endmatch;
+    done
+    if not noneed do
+      var did_skip = false;
+      for event in skipped do
+        did_skip = did_skip or (del prior_knowledge event);
+      done
+      rewrite_history(prior_knowledge);
+    else
+      display$ INDENT+"No packages were found in the history that needed to be installed."+NL;
+    done    
   }
 
 //$ implementaion of default clean behavior see README.md for
