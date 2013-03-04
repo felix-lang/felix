@@ -8,29 +8,8 @@ include "PKGTOOL/pkgtool";
 open PkgTool;
 open Filename;
 var LIST_INSTALLED = false;
-var HOME = 
-  let ?h = Env::getenv "HOME" in
-    if h!="" then h 
-    elif PLAT_WIN32 then Env::getenv "USERPROFILE"
-    else ""
-    endif
-;
-if HOME == "" do
-    general_fail$ "HOME environment variable is not set.  Please set HOME before building."; 
-	System::exit 1;
-done 
-
-var FELIX_HOME = HOME.join(".felix");
-
-var LITTERBOX = if Env::getenv("LITTERBOX") == "" then 
-  FELIX_HOME.join("litterbox")
-  else Env::getenv("LITTERBOX") endif;
-
-var LITTERBOX_URL = if Env::getenv("LITTERBOX_URL") == "" then
-  'https://github.com/mmaul/litterbox.git'
-  else Env::getenv("LITTERBOX_URL") endif;
-
 var DEGITIFY = false;
+var CLEANBUILD = false;
 
 proc get_pkg (pkg:string,dest:string) {
   cfg = read_cfg((LITTERBOX.join(pkg)).join("README.md"));
@@ -73,7 +52,8 @@ proc search (opts:list[string]) () {
         match filetype(pkg_readme) with
         |REGULAR => { 
           var pkg = read_cfg(pkg_readme);
-          for itm in sort(search) do
+          for itm1 in sort(search) do
+            var itm:string^2 = itm1; 
             match get pkg (toupper(itm.0)) with
             |Some ?pkg_v => { 
               match find((toupper(pkg_v)), (toupper(itm.1))) with
@@ -148,7 +128,10 @@ usage:
   scoop search  <package>  [options] Searches for package on litterbox
   scoop info    <package>  [options] Displays package info
   scoop install <package>  [options] Pull, builds and install package
+  scoop build   <package>  [options] Pull and  build package
+  scoop test    <package>  [options] Pull, build and test package
   scoop refresh            [options] Refreshes litterbox package directory cache
+  scoop reinstall          [options] Reinstalls all previously installed packages
   scoop help               Displays this message
   scoop help    <command>  Displays detailed help for command
 
@@ -271,6 +254,10 @@ gen handle_local_options(optt:int*list[string]) = {
         FORCE = true;
         valid_opts++;
       }
+      |?option when option.startswith "--clean" => {
+        CLEANBUILD = true;
+        valid_opts++;
+      }
       |?option => { unused_opts += option; }
       endmatch;
     done
@@ -290,26 +277,39 @@ proc install(cmd:string,options:list[string]) {
     if FORCE do extra_opts += " --force "; done
     if DRY_RUN  do extra_opts += " --dry-run "; done
     val pkg_dir = (LITTERBOX.join("build")).join(pkg);
+    if CLEANBUILD and match filetype(pkg_dir) with |DIRECTORY => true |_ => false endmatch do
+      if System::system("flx --noinline " +
+        pkg_dir.join("setup")+" clean --build-dir=" + pkg_dir +
+        extra_opts) != 0 do
+        warning(cmd+" failed");
+      done
+    done
     phase(q"Scooping package $(pkg) from litterbox.",
       proc () { get_pkg(pkg,pkg_dir); });
     val result = System::system("flx --noinline " +
     pkg_dir.join("setup")+" " + cmd + " --build-dir=" + pkg_dir +
     extra_opts);
     if result != 0 do  
-      warning("Installation failed");
+      warning(cmd+" failed");
     else
-      kudos("Installation successful");
-      var result_code = 0;
-      if PLAT_WIN32 do
-        task "Removing build directory:" + pkg_dir;
-        result_code=System::system("rd /S /Q "+pkg_dir);
-      else
-        result_code=System::system("rm -rf "+pkg_dir);
-      done
+      kudos(cmd+" successful");
+      if not cmd == "build" and not cmd == "test" do
+        var result_code = 0;
+        if PLAT_WIN32 do
+          task "Removing build directory:" + pkg_dir;
+          result_code=System::system("rd /S /Q "+pkg_dir);
+        else
+          result_code=System::system("rm -rf "+pkg_dir);
+        done
         if not result_code == 0 do
           warning$ "Unable to remove build directory:"+pkg_dir;
         done
-          kudos("Installation complete");
+        kudos("Installation complete");
+      else 
+        var next_cmd = if cmd == "build" then "test" else "install" endif;
+        task("Rember to do "+blue_("scoop "+next_cmd+" " + pkg) + 
+             yellow_(" when you are ready.")); 
+      done
     done
   }
   |_ => {
@@ -349,7 +349,10 @@ proc run() {
              }
              endmatch;
            }
-        |?cmd when cmd == "install" => { install(cmd,options); }
+      |?cmd when cmd == "install" => { install(cmd,options); }
+      |?cmd when cmd == "build" => { install(cmd,options); }
+      |?cmd when cmd == "test" => { install(cmd,options); }
+      |?cmd when cmd == "reinstall" => { repeat_history(); }
       |?cmd when cmd == "search" => { 
           banner("Search");
           phase("packages matching:"+str(options),(search options) );
