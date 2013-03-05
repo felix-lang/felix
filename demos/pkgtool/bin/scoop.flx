@@ -296,7 +296,7 @@ proc install(cmd:string,options:list[string]) {
       if not cmd == "build" and not cmd == "test" do
         var result_code = 0;
         if PLAT_WIN32 do
-          task "Removing build directory:" + pkg_dir;
+          task$ "Removing build directory:" + pkg_dir;
           result_code=System::system("rd /S /Q "+pkg_dir);
         else
           result_code=System::system("rm -rf "+pkg_dir);
