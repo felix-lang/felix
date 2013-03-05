@@ -302,9 +302,9 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
       begin 
         if is_jump then 
           if stackable then
-            "      return;\n"
+            "      return; //  Callback\n"
           else
-            "      FLX_RETURN // procedure return\n"
+            "      FLX_RETURN // Callback: procedure return\n"
         else ""
       end
 
@@ -674,7 +674,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
       begin match kind with
       | Procedure ->
         if stackable then
-        "      return;\n"
+        "      return; // proc return from stackable \n"
         else
         "      FLX_RETURN // procedure return\n"
       | Function ->

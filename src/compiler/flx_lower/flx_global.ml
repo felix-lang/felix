@@ -20,6 +20,9 @@ open Flx_use
 *)
 
 let throw_on_gc bsym_table e : unit = match e with
+  | BEXPR_new _,_
+  | BEXPR_class_new _,_ -> raise Not_found
+
   | BEXPR_closure (i,_),_ ->
     (*
     print_endline ("Found closure of " ^ si i);
@@ -142,6 +145,7 @@ let exes_use_global bsym_table exes =
     false
   with Not_found -> true
 
+
 let set_local_globals bsym_table index bsym =
   match Flx_bsym.bbdcl bsym with
   | BBDCL_fun (props,vs,ps,rt,exes) ->
@@ -151,114 +155,147 @@ let set_local_globals bsym_table index bsym =
       end
   | _ -> ()
 
-type ptf_required = | Required | Not_required | Unknown
-
-let rec set_ptf_usage bsym_table usage excludes i bsym =
-  (* cal reqs for functions we call and fold together *)
-  let cal_reqs calls i : ptf_required * property_t =
-    let result1 =
-      List.fold_left begin fun u (j,_) ->
-        let bsym = Flx_bsym_table.find bsym_table j in
-        let r = set_ptf_usage bsym_table usage (i::excludes) j bsym in
-          (*
-          print_endline ("Call of " ^ si i^ " to " ^ si j ^ " PTF of j " ^ (
-            match r with
-            | Unknown -> "UNKNOWN"
-            | Required -> "REQUIRED"
-            | Not_required -> "NOT REQUIRED"
-          ));
-          *)
-
-          begin match u,r with
-          | Unknown, x | x, Unknown -> x
-          | Required, _ | _, Required -> Required
-          | Not_required, _ (* | _, Not_required *) -> Not_required
-          end
-      end Not_required calls
-    in
-    let result2 =
-      match result1 with
-      | Required -> `Requires_ptf
-      | Not_required -> `Not_requires_ptf
-      | _ -> assert false
-    in
-    result1, result2
-  in
-
-  if List.mem i excludes then Unknown else
-
-  (* main routine *)
-  let calls = try Hashtbl.find usage i with Not_found -> [] in
-
+let set_base_ptf_use bsym_table bid bsym  =
   match Flx_bsym.bbdcl bsym with
   | BBDCL_fun (props,vs,ps,rt,exes) ->
-    if List.mem `Requires_ptf props then Required
-    else if List.mem `Not_requires_ptf props then Not_required
-    else if
-      List.mem `Uses_global_var props or
-      List.mem `Uses_gc props or
-      List.mem `Heap_closure props then begin
+    (*
+    print_endline ("Set base ptf usage of felix fun " ^ Flx_bsym.id bsym ^ "<"^si bid^">");
+    *)
+(*
+    if List.mem `Requires_ptf props then begin
+      print_endline "Set_base_ptf_use found symbol with Requires_ptf use already set!";
+    end
+    ;
+*)
+    if List.mem `Not_requires_ptf props then begin
+      print_endline "Set_base_ptf_use found symbol with Not_requires_ptf use already set!";
+      assert false;
+    end
+    ;
+(*
+    if List.mem `Uses_gc props then begin
+      print_endline "Set_base_ptf_use found symbol with Uses_gc use already set!";
+    end
+    ;
+*)
+(*
+    if List.mem `Heap_closure props then begin
+      print_endline "Set_base_ptf_use found symbol with Heap_closure use already set!";
+    end
+    ;
+*)
+(*
+    if List.mem `Uses_global_var props then begin
+      print_endline "Set_base_ptf_use found symbol with Uses_global_var set!";
+    end
+    ;
+*)
+    if List.mem `Uses_gc props or List.mem `Heap_closure props or List.mem `Uses_global_var props then begin
+      if List.mem `Not_requires_ptf props then begin
+        print_endline "Conflicting requirements";
+        assert false
+      end else 
+      if not (List.mem `Requires_ptf props) then begin
         let bbdcl = bbdcl_fun (`Requires_ptf :: props,vs,ps,rt,exes) in
-        Flx_bsym_table.update_bbdcl bsym_table i bbdcl;
-        Required
-    end else begin
-      let result1, result2 = cal_reqs calls i in
-      let bbdcl = bbdcl_fun (result2 :: props,vs,ps,rt,exes) in
-      Flx_bsym_table.update_bbdcl bsym_table i bbdcl;
-      result1
-   end
+        Flx_bsym_table.update_bbdcl bsym_table bid bbdcl
+      end
+    end 
 
   | BBDCL_external_fun (props,vs,ps,ret,ct,reqs,prec) ->
-    if List.mem `Requires_ptf props then Required
-    else if List.mem `Not_requires_ptf props then Not_required
-    else if
-      List.mem `Uses_global_var props or
-      List.mem `Uses_gc props or
-      List.mem `Heap_closure props then begin
-        Flx_bsym_table.update_bbdcl bsym_table i (bbdcl_external_fun (
-          `Requires_ptf :: props,
-          vs,
-          ps,
-          ret,
-          ct,
-          reqs,
-          prec));
-        Required
-    end else Not_required
+(*
+    print_endline ("Set base ptf usage of primitive fun " ^ Flx_bsym.id bsym ^ "<"^si bid^">");
+*)
+(*
+    if List.mem `Requires_ptf props then begin
+      print_endline "Set_base_ptf_use found symbol with Requires_ptf set!";
+    end
+    ;
+*)
+    if List.mem `Not_requires_ptf props then begin
+      print_endline "Set_base_ptf_use found symbol with Not_requires_ptf set!";
+    end
+    ;
+(*
+    if List.mem `Uses_gc props then begin
+      print_endline "Set_base_ptf_use found symbol with Uses_gc set!";
+    end
+    ;
+*)
+    if List.mem `Heap_closure props then begin
+      print_endline "Set_base_ptf_use found symbol with Heap_closure set!";
+      assert false;
+    end
+    ;
+    if List.mem `Uses_gc props or List.mem `Heap_closure props then begin
+      if List.mem `Not_requires_ptf props then begin
+        print_endline "Conflicting requirements";
+        assert false
+      end else
+      if not (List.mem `Requires_ptf props) then begin
+        let bbdcl = bbdcl_external_fun ( `Requires_ptf :: props, vs, ps, ret, ct, reqs, prec) in
+        Flx_bsym_table.update_bbdcl bsym_table bid bbdcl
+      end
+    end 
 
-  | _ -> Not_required
 
-let set_globals_for_symbol bsym_table uses index symbol =
-  ignore (set_ptf_usage bsym_table uses [] index symbol)
+  | _ -> ()
 
-let set_globals_for_symbols bsym_table uses bids =
-  (* Iterate through each symbol and mark if the function needs a frame. *)
-  List.iter begin fun bid ->
-    let symbol =
-      try Some (Flx_bsym_table.find bsym_table bid)
-      with Not_found -> None
-    in
-    match symbol with
-    | Some bsym -> set_globals_for_symbol bsym_table uses bid bsym
-    | None -> ()
-  end bids;
+let set_ptf_for_symbol bsym_table usedby bid bsym  =
+  let props = 
+    match Flx_bsym.bbdcl bsym with
+    | BBDCL_fun (props,_,_,_,_) 
+    | BBDCL_external_fun (props,_,_,_,_,_,_) -> props
+    | _ -> []
+  in
+  if List.mem `Requires_ptf props then
+  let cls = Flx_call.use_closure usedby bid in
+  BidSet.iter (fun bid ->
+    let bsym = Flx_bsym_table.find bsym_table bid in
+    let bbdcl = Flx_bsym.bbdcl bsym in
+    match bbdcl with
+    | BBDCL_fun (props,vs,ps,rt,exes) ->
+      if List.mem `Not_requires_ptf props then begin
+        print_endline "Conflicting requirements";
+        assert false
+      end else 
+      if not (List.mem `Requires_ptf props) then begin
+        let bbdcl = bbdcl_fun (`Requires_ptf :: props,vs,ps,rt,exes) in
+        Flx_bsym_table.update_bbdcl bsym_table bid bbdcl
+      end
+    | _ -> ()
+  )
+  cls
 
-  bids
 
 let set_globals bsym_table =
+(*
+print_endline "Set globals";
+*)
   Flx_bsym_table.iter begin fun bid _ bsym ->
     set_local_globals bsym_table bid bsym
   end bsym_table;
 
+(*
+print_endline "Set gc use";
+*)
   Flx_bsym_table.iter begin fun bid _ bsym ->
     set_gc_use bsym_table bid bsym
   end bsym_table;
 
-  let uses, _ = Flx_call.call_data bsym_table in
+  let uses, usedby = Flx_call.call_data bsym_table in
+
+(*
+  print_endline "calculating base ptf usage";
+*)
+  Flx_bsym_table.iter (fun bid _ bsym ->
+     set_base_ptf_use bsym_table bid bsym;
+  )
+  bsym_table
+  ;
 
   (* Iterate through each symbol and mark if the function needs a frame. *)
   Flx_bsym_table.iter begin fun bid _ bsym ->
-    set_globals_for_symbol bsym_table uses bid bsym
+    set_ptf_for_symbol bsym_table usedby bid bsym
   end bsym_table
 
 let find_global_vars bsym_table =

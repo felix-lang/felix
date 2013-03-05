@@ -527,10 +527,10 @@ let gen_procedure_methods filename syms bsym_table
     let ps = List.map (fun {pid=id; pindex=ix; ptyp=t} -> id,t) bps in
     let params = Flx_bparameter.get_bids bps in
     let exe_string,needs_switch =
-      (*
-      gen_exes filename syms bsym_table display label_info counter index exes vs ts instance_no (stackable && not heapable)
-      *)
+      Flx_gen_exe.gen_exes filename syms bsym_table display label_info counter index exes vs ts instance_no (stackable && not heapable)
+(*
       Flx_gen_exe.gen_exes filename syms bsym_table display label_info counter index exes vs ts instance_no stackable
+*)
     in
 
     let cont = "::flx::rtl::con_t *" in

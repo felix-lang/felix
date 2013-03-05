@@ -23,12 +23,6 @@ open Flx_set
 open Flx_mtypes2
 open Flx_call
 
-val set_globals_for_symbols :
-  Flx_bsym_table.t ->
-  Flx_call.usage_table_t ->
-  Flx_types.bid_t list ->   (* The list of symbols to mark. *)
-  Flx_types.bid_t list
-
 val set_globals:
   Flx_bsym_table.t ->
   unit

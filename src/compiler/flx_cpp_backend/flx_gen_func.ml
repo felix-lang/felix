@@ -42,9 +42,9 @@ let gen_function syms bsym_table props index id sr vs bps ret' ts instance_no =
   let rt vs t = beta_reduce "flx_gen_func: gen_function" syms.Flx_mtypes2.counter bsym_table sr (tsubst vs ts t) in
   let requires_ptf = mem `Requires_ptf props in
   let yields = mem `Yields props in
-  (*
-  print_endline ("The function " ^ id ^ (if requires_ptf then " REQUIRES PTF" else "DOES NOT REQUIRE PTF"));
-  *)
+(*
+  print_endline ("The function " ^ id ^ (if requires_ptf then " REQUIRES PTF" else " DOES NOT REQUIRE PTF"));
+*)
   let ps = List.map (fun {pid=id; pindex=ix; ptyp=t} -> id,t) bps in
   if syms.compiler_options.print_flag then
   print_endline
