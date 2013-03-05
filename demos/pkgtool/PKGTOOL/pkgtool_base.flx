@@ -325,7 +325,7 @@ class PkgTool {
       write(run_test_bat,"SET PKG_CONFIG_PATH="+BUILD_DIR.join("config")+"\r\n");
       write(run_test_bat,flx_cmd+"\r\n");
       fclose(run_test_bat);
-      flx_cmd = BUID_DIR.join("RUN_TEST.BAT");
+      flx_cmd = BUILD_DIR.join("RUN_TEST.BAT");
     else
       flx_cmd = "cd "+BUILD_DIR+";export PKG_CONFIG_PATH="+BUILD_DIR+"/config;" + flx_cmd;
     done
@@ -482,7 +482,7 @@ fun prompt(q:string,a:string) = {
 //$ Wrap command in shell redirection to append output to
 //$ file specified in to_file arg
   fun >>(cmd:string,to_file:string):string => cmd + 
-    if PLAT_WIN32 then q">>$to_file" else q">> $(to_file) 2>&1" endif;
+    if PLAT_WIN32 then q">>$(to_file)" else q">> $(to_file) 2>&1" endif;
 
 //$ Wrap command in shell redirection to append STDERR to
 //$ file specified in to_file arg
