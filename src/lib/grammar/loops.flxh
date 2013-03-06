@@ -47,7 +47,7 @@ syntax loops
   optlabel := sname ":" =># "_1";
 
   //$ Loop labels aren't required.
-  optlabel := sepsilon =># "(number->string (fresh_int ()))";
+  optlabel := sepsilon =># '(fresh_name "ll")';
 
   //$ Standard while loop.
   stmt := optlabel "while" sexpr "do" sstatements "done" =>#
@@ -264,7 +264,7 @@ syntax loops
   stmt := optlabel "for" sname "in" sexpr "do" sstatements "done" =>#
     """
     (let* (
-     (generator_string_name (string-append "_generator_" (number->string (fresh_int ()))))
+     (generator_string_name (fresh_name "generator" ))
      (generator_call_name (nos generator_string_name))
      (generator_init `(ast_apply ,_sr (,(nos "iterator") ,_5 )))
      (generator_call `(ast_apply ,_sr (,generator_call_name ())))
@@ -306,7 +306,7 @@ syntax loops
   stmt := optlabel "match" spattern "in" sexpr "do" sstatements "done" =>#
     """
     (let* (
-     (generator_string_name (string-append "_generator_" (number->string (fresh_int ()))))
+     (generator_string_name (fresh_name "generator" ))
      (generator_call_name (nos generator_string_name))
      (generator_init `(ast_apply ,_sr (,(nos "iterator") ,_5 )))
      (generator_call `(ast_apply ,_sr (,generator_call_name ())))

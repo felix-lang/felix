@@ -8,6 +8,23 @@ open Flx_token
 open Flx_parse_ebnf
 open Flx_drules
 
+let munge s = 
+  let s2 = ref "" in
+  for i=0 to String.length s - 1 do
+    let ch = s.[i] in
+    if 
+      ch >= '0' && ch <= '9' or
+      ch >= 'A' && ch <= 'Z' or
+      ch >= 'a' && ch <= 'z' or
+      ch = '_' 
+    then
+      s2 := !s2 ^ String.make 1 ch
+    else if ch = '.' then
+      s2 := !s2 ^ "_"
+  done
+  ;
+  !s2
+
 let catmap sep fn ls = String.concat sep (List.map fn ls)
 
 let uniq_add elt lst =
@@ -230,10 +247,14 @@ print_endline ("sr of reduction is " ^ Flx_srcref.short_string_of_src sr);
 *)
     begin
       let v1:Ocs_types.sval = Ocs_sym.get_symbol ("_sr") in
+      let v2:Ocs_types.sval = Ocs_sym.get_symbol ("_filebase") in
       (*
       let g1:Ocs_types.vbind = Vglob { g_sym=v1; g_val = ssr } in
       *)
-      Ocs_env.set_glob env v1 (xsr sr)
+      Ocs_env.set_glob env v1 (xsr sr);
+      let filebase = Filename.basename (Flx_srcref.file sr) in
+      let filenase = munge filebase in 
+      Ocs_env.set_glob env v2 (Sstring filebase)
     end
     ;
     let r =

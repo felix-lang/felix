@@ -122,7 +122,7 @@ syntax namespaces {
   """
   (let* 
     (
-      (dummy_class_name (string-append "_dummy_class_" (number->string (fresh_int ()))))
+      (dummy_class_name (fresh_name "dummy_class"))
       (decls1 (map make_private _2)) 
       (decls (append decls1 _4))
     )

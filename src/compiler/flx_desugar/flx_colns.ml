@@ -246,6 +246,7 @@ print_endline ("DEBUG: Flx_colns.include_file, inspec=" ^ inspec);
 *)
     let tree = List.rev_map (fun scm -> ocs2flx scm) (Flx_parse_driver.parser_data parser_state) in
     let local_prefix = Filename.basename basename in
+    let local_prefix = Flx_parse_helper.munge local_prefix in
     let macro_state = Flx_macro.make_macro_state local_prefix syms.counter in
     let tree = Flx_macro.expand_macros macro_state tree in
     tree

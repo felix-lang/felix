@@ -373,7 +373,7 @@ syntax expressions {
     (
       let
       (
-        (name (string-append "_asvar_" (number->string (fresh_int ()))))
+        (name (fresh_name "asvar"))
       )
       `(ast_as_var ,_sr (,_3 ,name))
     )

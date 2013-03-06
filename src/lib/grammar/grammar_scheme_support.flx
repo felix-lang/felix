@@ -2,6 +2,8 @@ SCHEME """(define counter 100)""";
 
 SCHEME """(define (fresh_int x)(begin (set! counter (+ counter 1)) counter))""";
 
+SCHEME """(define (fresh_name x)(string-append "_" x "_" _filebase "_" (number->string (fresh_int()))))""";
+
 SCHEME """
 (begin
   ;; lists
@@ -30,6 +32,7 @@ SCHEME """
   (define dfltargs '((() none)))
 )
 """;
+
 SCHEME """
 (begin
   (define (base_of_ast_lookup qn) (second (second qn)))

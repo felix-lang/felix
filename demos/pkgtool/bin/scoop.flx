@@ -22,6 +22,25 @@ proc get_pkg (pkg:string,dest:string) {
 
 fun head[T] (l:list[T]) => match l with |Cons[T] (?hd,_) => Some hd |Empty[T] => None[T] endmatch;
 
+proc info (pkg:string) () {
+  var readme = (LITTERBOX.join(pkg)).join("README.md");
+  match filetype(readme) with
+  |REGULAR => { 
+    val cfg = read_cfg(readme);
+    task("NAME: " + (get cfg 'NAME').or_else "");
+    task("DESCRIPTION: " + (get cfg 'DESCRIPTION').or_else "");
+    task("VERSION: " + (get cfg 'VERSION').or_else "");
+    task("PKG_URL: " + (get cfg 'PKG_URL').or_else "");
+    task("AUTHOR: " + (get cfg 'AUTHOR').or_else "");
+    task("AUTHOR_URL: " + (get cfg 'AUTHOR_URL').or_else "");
+    display$ "----"+NL;
+    display(((get cfg 'LONG_DESCRIPTION').or_else "")+NL);
+  }
+  |_ => { general_fail(q"No package README.md found for $(pkg) or $(pkg) does not exist");}
+  endmatch; 
+}
+
+
 proc search (opts:list[string]) () {
    val num_opts = int(len(opts));
    var not_even_num_args = (num_opts > 1) and ((num_opts % 2) != 0);
@@ -36,12 +55,12 @@ proc search (opts:list[string]) () {
      endmatch;
 
 
-   var search = if num_opts == 1 then 
+   var searchd = if num_opts == 1 then 
      list[string^2](("NAME",(let Some ?v = head(opts) in v)))
    else 
      to_assoc_list(opts)     
    endif;
-   
+
    match Directory::filesin(LITTERBOX) with
    |Some ?files => { 
      for file in sort(filter (fun (f:string) => not f == "build" and not f.startswith ".") files) do
@@ -52,11 +71,12 @@ proc search (opts:list[string]) () {
         match filetype(pkg_readme) with
         |REGULAR => { 
           var pkg = read_cfg(pkg_readme);
-          for itm1 in sort(search) do
-            var itm:string^2 = itm1; 
-            match get pkg (toupper(itm.0)) with
+          var ss : list[string*string] = sort searchd;
+          for itm12 in ss.iterator do
+            var iiiitm:string^2 = itm12; 
+            match get pkg (toupper(iiiitm.0)) with
             |Some ?pkg_v => { 
-              match find((toupper(pkg_v)), (toupper(itm.1))) with
+              match find((toupper(pkg_v)), (toupper(iiiitm.1))) with
               |Some _ => {
 	        var name = (get pkg "NAME").or_else("");
                 if not name == "" do
@@ -97,25 +117,6 @@ proc refresh () {
   git_get(LITTERBOX_URL,LITTERBOX);
 
 }
-
-proc info (pkg:string) () {
-  var readme = (LITTERBOX.join(pkg)).join("README.md");
-  match filetype(readme) with
-  |REGULAR => { 
-    val cfg = read_cfg(readme);
-    task("NAME: " + (get cfg 'NAME').or_else "");
-    task("DESCRIPTION: " + (get cfg 'DESCRIPTION').or_else "");
-    task("VERSION: " + (get cfg 'VERSION').or_else "");
-    task("PKG_URL: " + (get cfg 'PKG_URL').or_else "");
-    task("AUTHOR: " + (get cfg 'AUTHOR').or_else "");
-    task("AUTHOR_URL: " + (get cfg 'AUTHOR_URL').or_else "");
-    display$ "----"+NL;
-    display(((get cfg 'LONG_DESCRIPTION').or_else "")+NL);
-  }
-  |_ => { general_fail(q"No package README.md found for $(pkg) or $(pkg) does not exist");}
-  endmatch; 
-}
-
   proc help(unit) {
     println$ """
 scoop: A distributed package manager for Felix

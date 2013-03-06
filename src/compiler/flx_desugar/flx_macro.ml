@@ -871,13 +871,13 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
 
     let start_reachable = !reachable in
     let case_end_reachable = ref false in
-    let end_label = "_degen_stmt_match_end_" ^ string_of_int (let n = !seq in incr seq; n) in
+    let end_label = "_degen_stmt_match_end_" ^ local_prefix ^ "_" ^ string_of_int (let n = !seq in incr seq; n) in
     let pss = List.map (fun (pat,sts) ->
       let pat = fix_pattern seq pat in
       let pvs = get_pattern_vars pat in
       let pvs' =  (* new parameter names *)
         List.map
-        (fun _ -> let b = !seq in incr seq; "_param_" ^ string_of_int b)
+        (fun _ -> let b = !seq in incr seq; "_param_" ^ local_prefix ^ "_" ^ string_of_int b)
         pvs
       in
       let fast_remap = List.combine pvs pvs' in
@@ -953,7 +953,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     | Some false -> ()
     | None ->
       let n = !seq in incr seq;
-      let lab = "_ifret_" ^ string_of_int n in
+      let lab = "_ifret_" ^ local_prefix ^ "_" ^ string_of_int n in
       ctack (STMT_ifgoto (sr, EXPR_not (sr,e) , lab));
       ctack (STMT_proc_return sr);
       ctack (STMT_label (sr,lab))
@@ -970,8 +970,8 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     | None ->
       let n1 = !seq in incr seq;
       let n2 = !seq in incr seq;
-      let lab1 = "_ifdoend_" ^ string_of_int n1 in
-      let lab2 = "_ifdoelse_" ^ string_of_int n2 in
+      let lab1 = "_ifdoend_" ^ local_prefix ^ "_" ^ string_of_int n1 in
+      let lab2 = "_ifdoelse_" ^ local_prefix ^ "_" ^ string_of_int n2 in
       (*
       print_endline ("Assigned labels " ^ lab1 ^ " and " ^ lab2);
       *)

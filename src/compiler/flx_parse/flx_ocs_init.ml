@@ -34,6 +34,10 @@ let init_env () =
   let env = Ocs_top.make_env () in
   flx_ocs_init env;
 
+  let v1:Ocs_types.sval = Ocs_sym.get_symbol "_filebase" in
+  let g1:Ocs_types.vbind = Vglob { g_sym=v1; g_val = Sunbound } in
+  Ocs_env.bind_name env v1 g1;
+
   let v1:Ocs_types.sval = Ocs_sym.get_symbol "_sr" in
   let g1:Ocs_types.vbind = Vglob { g_sym=v1; g_val = Sunbound } in
   Ocs_env.bind_name env v1 g1;
