@@ -213,6 +213,7 @@ let set_base_ptf_use bsym_table bid bsym  =
 *)
     if List.mem `Not_requires_ptf props then begin
       print_endline "Set_base_ptf_use found symbol with Not_requires_ptf set!";
+      assert false;
     end
     ;
 (*
@@ -221,11 +222,12 @@ let set_base_ptf_use bsym_table bid bsym  =
     end
     ;
 *)
+(*
     if List.mem `Heap_closure props then begin
       print_endline "Set_base_ptf_use found symbol with Heap_closure set!";
-      assert false;
     end
     ;
+*)
     if List.mem `Uses_gc props or List.mem `Heap_closure props then begin
       if List.mem `Not_requires_ptf props then begin
         print_endline "Conflicting requirements";

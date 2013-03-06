@@ -42,6 +42,20 @@ syntax expressions {
   //$ Let binding.
   x[let_pri] := "let" spattern "=" x[let_pri] "in" x[let_pri] =># "`(ast_letin ,_sr (,_2 ,_4 ,_6))";
 
+  //$ Let fun binding.
+  x[let_pri] := "let" "fun" sdeclname sfun_arg* fun_return_type "=>" x[let_pri] "in" x[let_pri] =># 
+    """
+    (let* 
+      (
+        (body `((ast_fun_return ,_sr ,_7)))
+        (fun_decl `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 ,_5 Function ,body))
+        (final_return `(ast_fun_return ,_sr ,_9))
+      )
+      (block_expr `(,fun_decl ,final_return))
+    )
+    """;
+
+
   //$ Conditional expression.
   x[let_pri] := sconditional =># '_1';
 
