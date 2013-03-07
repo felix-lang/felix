@@ -344,7 +344,7 @@ gen handle_local_options(optt:int*list[string]) = {
   }
 
   fun pkg_setup_exists(pkg:string,pkg_dir:string) =>
-    FileStat::fileexists((pkg_dir.join(pkg)).join("setup.flx"));
+    FileStat::fileexists(pkg_dir.join("setup.flx"));
 
   proc install(pkg:string, pkg_dir:string, extra_opts:string) {
     if not pkg_setup_exists(pkg,pkg_dir) do
