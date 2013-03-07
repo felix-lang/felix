@@ -65,6 +65,7 @@ proc run_felix_compiler_if_required
       INCLUDE_DIRS = control.INCLUDE_DIRS,
       filebase = dvars.filebase,
       use_ext = dvars.use_ext,
+      TIME = control.TIME,
       debugln = debugln[string],
       quote = quote
     );

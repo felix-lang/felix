@@ -44,3 +44,5 @@ val expand_macros_in_statement:
   'a ->                                 (** The initial value. *)
   Flx_ast.statement_t ->                (** Statement to expand. *)
   'a
+
+val get_macro_seq: macro_state_t -> int

@@ -140,7 +140,15 @@ print_endline (if filetimes < lib_cache_time then "Files unchanged using cache" 
       end)
   in
 
+(*
+  print_endline ("LIBRARY LOADED or PARSED " ^ lib);
+  print_endline ("Saved counter " ^ string_of_int saved_counter);
+  print_endline ("Current counter " ^ string_of_int (!(state.syms.counter)));
+*)
   state.syms.counter := max !(state.syms.counter) saved_counter;
+(*
+  print_endline ("Set counter " ^ string_of_int (!(state.syms.counter)));
+*)
   state.syms.varmap <- varmap;
   state.syms.ticache <- ticache;
   state.syms.virtual_to_instances <- virtual_to_instances;

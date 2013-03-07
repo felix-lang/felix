@@ -141,6 +141,9 @@ print_endline ("DEBUG: Flxg_assembly.assemble dir=" ^ filedir ^ ", file=" ^ file
         let par_name =
            Flx_filesys.mk_cache_name state.syms.compiler_options.cache_dir par_name
         in
+(*
+print_endline ("Parsing or loading file " ^ par_name);
+*)
         let stmts = Flx_filesys.cached_computation "parse" par_name ~outfile:None
           ~min_time:flx_time
           (fun () -> Flx_profile.call
@@ -151,6 +154,9 @@ print_endline ("DEBUG: Flxg_assembly.assemble dir=" ^ filedir ^ ", file=" ^ file
         stmts
       in
 
+(*
+print_endline ("Desugaring file" ^ flx_base_name ^ " Counter= " ^ string_of_int (!(state.syms.counter)));
+*)
       (* Desugar the parse tree, and also return list of include strings. *)
       let include_files, asms =
         let desugar_state = Flx_desugar_expr.make_desugar_state
@@ -162,7 +168,9 @@ print_endline ("DEBUG: Flxg_assembly.assemble dir=" ^ filedir ^ ", file=" ^ file
           (Filename.dirname filename)
           stmts
         in
-
+(*
+print_endline ("  AFTER Desugaring file" ^ flx_base_name ^ " Counter= " ^ string_of_int (!(state.syms.counter)));
+*)
         let top_req =
           let sr = Flx_srcref.dummy_sr in
           let body = Flx_types.DCL_insert (

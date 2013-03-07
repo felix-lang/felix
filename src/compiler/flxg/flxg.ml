@@ -63,6 +63,16 @@ let save_profile () =
     close_out f
   with _ -> ()
 
+
+(* -------------------------------------------------------------------------- *)
+let showtime (s:string) (t0:float) =
+  let s = s ^ "                   " in 
+  let s = String.sub s 0 8 in
+  let elapsed = Unix.gettimeofday() -. t0 in
+  let minutes = floor (elapsed /. 60.0) in
+  let seconds = elapsed -. minutes *. 60.0 in
+  print_endline ( " flxg: " ^ s ^ " : " ^ string_of_int (int_of_float minutes) ^ "m" ^ Printf.sprintf "%2.1f" seconds)
+
 (* -------------------------------------------------------------------------- *)
 
 (** Handle the assembly of the parse tree. *)
@@ -73,6 +83,9 @@ let handle_assembly state main_prog module_name =
     state
   in
 
+(*
+print_endline "Flxg.HANDLE ASSEMBLY";
+*)
   let start_counter = ref 2 in
   let excls, sym_table, bsym_table = Flxg_lib.process_libs
     state
@@ -95,6 +108,9 @@ let handle_assembly state main_prog module_name =
   state.syms.include_files := depnames;
   generate_dep_file state;
 
+(*
+print_endline "Flxg.HANDLE ASSEMBLY DONE";
+*)
   start_counter, sym_table, bsym_table, stmtss, asmss
 
 
@@ -114,6 +130,7 @@ let handle_parse state main_prog module_name =
 
 (** Handle the AST desugaring. *)
 let handle_desugar state main_prog module_name =
+  let t0 = Unix.gettimeofday () in
   let start_counter, sym_table, bsym_table, _, asmss = handle_assembly
     state
     main_prog
@@ -121,7 +138,8 @@ let handle_desugar state main_prog module_name =
   in
 
   let asms = List.concat (List.rev asmss) in
-
+  if state.syms.compiler_options.showtime  then
+  showtime "frontend" t0;
   start_counter, sym_table, bsym_table, asms
 
 
@@ -132,6 +150,8 @@ let handle_bind state main_prog module_name =
     main_prog
     module_name
   in
+  
+  let t0 = Unix.gettimeofday () in
 
   let root_proc = Flx_profile.call
     "Flxg_bind.bind"
@@ -147,6 +167,8 @@ let handle_bind state main_prog module_name =
     state.syms.compiler_options.generate_axiom_checks;
 
   Flx_reachability.check_reachability bsym_table;
+  if state.syms.compiler_options.showtime  then
+  showtime "bind" t0;
 
   bsym_table, root_proc
 
@@ -170,12 +192,16 @@ let handle_optimize state main_prog module_name =
   let bsym_table = Flx_use.copy_used state.syms bsym_table in
   *)
 
+  let t0 = Unix.gettimeofday () in
+
   (* Optimize the bound values. *)
   let bsym_table = Flx_profile.call
     "Flxg_opt.optimize"
     (Flxg_opt.optimize state bsym_table)
     root_proc
   in
+  if state.syms.compiler_options.showtime  then
+  showtime "optimse" t0;
 
   bsym_table, root_proc
 
@@ -183,6 +209,8 @@ let handle_optimize state main_prog module_name =
 (** Handle the lowering of abstract types. *)
 let handle_lower state main_prog module_name =
   let bsym_table, root_proc = handle_optimize state main_prog module_name in
+
+  let t0 = Unix.gettimeofday () in
 
   (* Downgrade abstract types now. *)
   Flx_strabs.strabs (Flx_strabs.make_strabs_state ()) bsym_table;
@@ -193,24 +221,26 @@ let handle_lower state main_prog module_name =
     (Flxg_lower.lower state bsym_table)
     root_proc
   in
-
+  if state.syms.compiler_options.showtime  then
+  showtime "lower" t0;
   bsym_table, root_proc
 
 
 (** Handle the code generation. *)
 let handle_codegen state main_prog module_name =
   let bsym_table, root_proc = handle_lower state main_prog module_name in
-
+  let t0 = Unix.gettimeofday () in
   (* Start working on the backend. *)
   Flx_profile.call
     "Flxg_codegen.codegen"
     (Flxg_codegen.codegen state bsym_table)
     root_proc
   ;
-  generate_static_link_thunk state module_name
+  generate_static_link_thunk state module_name;
+  if state.syms.compiler_options.showtime  then
+  showtime "codegen" t0
 
 (* -------------------------------------------------------------------------- *)
-
 let main () =
   let compiler_options = Flxg_options.parse_args () in
   let state = Flxg_state.make_state compiler_options in
