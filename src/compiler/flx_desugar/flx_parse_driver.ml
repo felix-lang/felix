@@ -97,6 +97,9 @@ let parse_channel ?(name="<channel>") parser_state channel =
 
 let parse_file ?(include_dirs=[]) parser_state name =
   let name = Flx_filesys.find_file ~include_dirs name in
+(*
+print_endline ("    DEBUG: flx_parse_driver.parse_file pcounter="^string_of_int (!(Flx_parse_helper.global_data.pcounter))^", filename input=" ^ name);
+*)
   Flx_filesys.with_file_in name (parse_channel ~name parser_state)
 
 let parse_string ?(name="<string>") parser_state str =

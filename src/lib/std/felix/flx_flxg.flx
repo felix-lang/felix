@@ -16,6 +16,7 @@ class Flxg
     IMPORTS:string,
     FLXLIB:string,
     INCLUDE_DIRS:string,
+    TIME:int,
     filebase:string,
     use_ext:string,
     debugln: string -> 0,
@@ -42,6 +43,9 @@ class Flxg
     done
     if spec.DOREDUCE == 0 do
       FLXFLAGS += ' --no-reduce';
+    done
+    if spec.TIME == 1 do
+      FLXFLAGS += ' --time';
     done
 
     var stdlibs = cat ' ' spec.STDLIB;

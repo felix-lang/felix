@@ -30,4 +30,5 @@ type t =
   cache_dir : string;
   output_dir : string;
   bundle_dir : string option;
+  showtime: bool;
 }

@@ -530,13 +530,23 @@ let rec desugar_stmts state curpath stmts =
     | [] -> [STMT_nop (generated, "empty module")]
     | _ -> stmts
   in
+(*
+  print_endline ("   PRE Macro expand counter = " ^ 
+    string_of_int (Flx_macro.get_macro_seq (state.Flx_desugar_expr.macro_state))); 
+*)
   let stmts = Flx_macro.expand_macros state.Flx_desugar_expr.macro_state stmts in
-
+(*
+  print_endline ("   POST Macro expand counter = " ^ 
+     string_of_int (Flx_macro.get_macro_seq (state.Flx_desugar_expr.macro_state))); 
+*)
   let asms = List.concat (List.map
     (rst state state.Flx_desugar_expr.name `Public dfltvs)
     stmts)
   in
-
+(*
+  print_endline ("   POST DESUGAR counter = " ^ 
+     string_of_int (Flx_macro.get_macro_seq (state.Flx_desugar_expr.macro_state))); 
+*)
   (* Clear the include file cache. *)
   let include_files = state.Flx_desugar_expr.include_file_cache in
   state.Flx_desugar_expr.include_file_cache <- [];

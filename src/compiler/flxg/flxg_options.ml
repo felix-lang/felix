@@ -98,7 +98,8 @@ let get_options raw_options =
     auto_imports = get_key_values raw_options "import";
     syntax= get_key_values raw_options "syntax";
     automaton_filename=""; 
-    compile_only = check_keys raw_options ["c";"compile-only"]
+    compile_only = check_keys raw_options ["c";"compile-only"];
+    showtime = check_keys raw_options ["time"]
   }
   in
   let automaton =
@@ -146,7 +147,8 @@ let print_options () =
   print_endline "  --bundle_dir=<none>: output files needed for C++ compilation to this folder";
   print_endline "  --force : force recompilation";
   print_endline "  --with-comments : generate code with comments";
-  print_endline "  --mangle-names : generate code with fully mangled names"
+  print_endline "  --mangle-names : generate code with fully mangled names";
+  print_endline "  --time : show processing time for each stage"
 
 
 (* Parse the felix arguments and do some option parsing while we're at it. *)

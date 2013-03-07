@@ -59,6 +59,8 @@ type macro_state_t = {
   macros: macro_dfn_t list;
 }
 
+let get_macro_seq x = !(x.seq)
+
 let string_of_statements sts =
   String.concat "\n" (List.map (string_of_statement 1) sts)
 

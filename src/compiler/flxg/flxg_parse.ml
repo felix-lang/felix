@@ -76,7 +76,7 @@ let load_syntax state =
 (** Parse an implementation file *)
 let parse_file state parser_state file =
 (*
-print_endline ("DEBUG: flxg_parse.parse_file, filename input=" ^ file);
+print_endline ("DEBUG: flxg_parse.parse_file counter="^string_of_int (!(state.syms.counter))^", filename input=" ^ file);
 *)
   let file_name =
     if Filename.check_suffix file ".flx" then file else 
@@ -96,7 +96,12 @@ print_endline ("DEBUG: flxg_parse.parse_file, filename input=" ^ file);
   let stmts = List.rev (Flx_parse.parser_data parser_state) in
 *)
   let stmts = List.rev_map (fun scm -> Flx_colns.ocs2flx scm) (Flx_parse_driver.parser_data parser_state) in
+(*
+print_endline (    "DEBUG: AFTER PARSE: flxg_parse.parse_file counter="^string_of_int (!(state.syms.counter))^", filename input=" ^ file);
+*)
+(*
   let macro_state = Flx_macro.make_macro_state local_prefix state.syms.counter in
   let stmts = Flx_macro.expand_macros macro_state stmts in
-
+print_endline (    "DEBUG: AFTER MACRO: flxg_parse.parse_file counter="^string_of_int (!(state.syms.counter))^", filename input=" ^ file);
+*)
   stmts
