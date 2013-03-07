@@ -2,13 +2,13 @@
 //$ Author Mike Maul
 //$ See README.md for more details
 include "plat/config";
-#include "PKGTOOL/libflx_interface";
+//include "PKGTOOL/libflx_interface";
 open Filename;
 open FileStat;
 open Output_text_file[ofile];
 open Input_text_file[ifile];
 open Process;
-
+//requires header '#include <unistd.h>';
 union build_behavior = 
 | App
 | Lib
@@ -317,7 +317,11 @@ noinline  proc assert_true(result:bool,name:string,fail_message:string) {
   }
 
 //$ Test invocation
-noinline  proc run_test(name:string,noheader:bool) {
+noinline proc run_test(name:string,noheader:bool) {
+  run_test(name,noheader,false); 
+}
+;
+noinline  proc run_test(name:string,noheader:bool,fail_not_fatal:bool) {
     var flx_cmd = redir_err(((FLX_INSTALL_DIR.join("bin")).join("flx --noinline ") +
     " "+ FLX_OPTS + (BUILD_DIR.join("test")).join(name)),TEST_LOG);
     if PLAT_WIN32 do
@@ -331,7 +335,7 @@ noinline  proc run_test(name:string,noheader:bool) {
     done
     if not noheader do test_case(name); done
     log(INDENT+cyan_(flx_cmd)+NL);
-    var outp = run_cmd(flx_cmd,"");
+    var outp = run_cmd(flx_cmd,"",false,fail_not_fatal);
     print outp;
     HAS_TEST_FAILURES = match find(outp,test_result_status(false)) with
     |Some _ =>  true
@@ -400,11 +404,13 @@ noinline  proc check_pkgconfig_path (unit) {
   fun run_cmd (cmd:string,on_error:string) = {
     return run_cmd(cmd,on_error,false);
   }
-
+noinline  fun run_cmd (cmd:string,on_error:string,echo:bool) = {
+  return run_cmd (cmd,on_error,echo,false) ;
+}
 //$ Execute command string specified in command in shell consuming
 //$ output. Redirects output to log. Non-zero result codes call setup_fail
 //$ output from command is returned.
-noinline  fun run_cmd (cmd:string,on_error:string,echo:bool) = {
+noinline  fun run_cmd (cmd:string,on_error:string,echo:bool,fail_not_fatal:bool) = {
     log(INDENT+cyan_(cmd)+NL);
     var h = popen_in(redir_err(cmd,SETUP_LOG));
     if valid(h) do
@@ -420,7 +426,11 @@ noinline  fun run_cmd (cmd:string,on_error:string,echo:bool) = {
         return(out);
       done
     done
+    if fail_not_fatal do
+      return test_result_status(false);
+   else
     setup_fail(on_error);
+   done
     return "";
   }
   
@@ -797,8 +807,12 @@ noinline  proc default_test() {
     |Some ?files => { for file in sort(files) do
                        if not (file.startswith ".") and (file.endswith ".flx") 
                           and not (file.startswith "C") and 
+                          not (file.startswith "D") and
                           not (file.startswith "D") do
-                         run_test(file);                    
+                          var skip_file = "S"+file.[ 0 to (int(len(file)) - 4)];
+                          if not FileStat::fileexists((BUILD_DIR.join("test")).join(skip_file)) do
+                            run_test(file);
+                          done
                        done
                      done
                    }
@@ -1033,6 +1047,10 @@ noinline  proc default_clean() {
           for file in files do
             match file with
             |?f when endswith f ".OK" => {
+              assert_true(FileSystem::unlink_file(dir_path.join(f)) == 0,
+                          "Deleting " + f);
+            }
+            |?f when startswith f "S" => {
               assert_true(FileSystem::unlink_file(dir_path.join(f)) == 0,
                           "Deleting " + f);
             }

@@ -155,15 +155,18 @@ usage:
   scoop get     <package> [build dir] [options] Pull package from litterbox 
     to the HOME/.felix/litterbox/build/<package> directory or [build dir] 
     if specified
-  scoop build   <package> [build dir] [options] Builds package in
+  scoop build   [package] [build dir] [options] Builds package in
     HOME/.felix/litterbox/build/<package> or [build dir]
-  scoop test    <package>  [options] Runs package test on package in
+  scoop test    [package]  [options] Runs package test on package in
     HOME/.felix/litterbox/build/<package> or [build dir]
-  scoop install <package>  [options] Installs package located at
+  scoop install [package]  [options] Installs package located at
     HOME/.felix/litterbox/build/<package> or [build dir]
-  scoop clean <package>  [options] Removes package build directory at
+  scoop clean [package]  [options] Removes package build directory at
     HOME/.felix/litterbox/build/<package> or [build dir]
 
+  * For package commands with optional [package] argument when [package] is omitted
+     and you are in a package directory, scoop will apply command to current directory.
+ 
   Miscelaneous Commands and Options
   ---------------------------------
   scoop help               Displays this message
@@ -387,29 +390,33 @@ gen handle_local_options(optt:int*list[string]) = {
   }
 
   proc cleanup(pkg:string, pkg_dir:string) {
-    var result_code = 0;
-    task$ "Removing build directory:" + pkg_dir;
-    if FileStat::fileexists(pkg_dir.join("setup.flx")) do
-      var cfg = read_cfg(pkg_dir.join("README.md"));
-      match get cfg "NAME" with
-      |None => { general_fail("Unable to remove package direcotry "+pkg_dir+
-        " because it does not appear to be a package dir"); }
-      |Some ?p => { if not p == pkg do 
-        general_fail("Unable to remove build directory because "+pkg_dir+
-          " does not appear to be a package dir for the package "+pkg);
+    if not pkg_dir == "." do  
+      var result_code = 0;
+        task$ "Removing build directory:" + pkg_dir;
+        if FileStat::fileexists(pkg_dir.join("setup.flx")) do
+          var cfg = read_cfg(pkg_dir.join("README.md"));
+          match get cfg "NAME" with
+          |None => { general_fail("Unable to remove package direcotry "+pkg_dir+
+            " because it does not appear to be a package dir"); }
+          |Some ?p => { if not p == pkg do 
+            general_fail("Unable to remove build directory because "+pkg_dir+
+              " does not appear to be a package dir for the package "+pkg);
+            done
+          }
+          endmatch;
+          if PLAT_WIN32 do
+            result_code=System::system("rd /S /Q "+pkg_dir);
+          else
+            result_code=System::system("rm -rf "+pkg_dir);
+          done
+          if not result_code == 0 do
+            warning$ "Unable to remove build directory:"+pkg_dir;
+          done
+        else
+          general_fail("Error:"+pkg_dir+" does not appear to be a scoop_package dir");
         done
-      }
-      endmatch;
-      if PLAT_WIN32 do
-        result_code=System::system("rd /S /Q "+pkg_dir);
-      else
-        result_code=System::system("rm -rf "+pkg_dir);
-      done
-      if not result_code == 0 do
-        warning$ "Unable to remove build directory:"+pkg_dir;
-      done
     else
-      general_fail("Error:"+pkg_dir+" does not appear to be a scoop_package dir");
+      default_clean();
     done
   }
 
@@ -441,7 +448,17 @@ fun get_pkg_dir_and_opts(options:list[string]) = {
       |_ => name,(LITTERBOX.join("build")).join(pkg),safe_tail(as) 
     endmatch;
   }
-  |_ => { general_fail("No package name specified"); }
+  |_ => {
+    var cfg = read_cfg(".".join("README.md"));
+    match get cfg "NAME" with
+    |Some ?pkg =>
+      if pkg_setup_exists(pkg,".") do
+        retval = pkg,".",options;
+      done
+    |_ =>
+      general_fail("No package name specified");
+    endmatch; 
+  }
   endmatch;
   return retval;
 }
