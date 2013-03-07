@@ -15,7 +15,13 @@ LIBDIR = "PKGTOOL";
 STOP_ON_TEST_FAILURES = false;
 open PkgTool;
 instance PkgTool {
-
+  proc build () {
+    // Temporary workaround for compiler issue with scoop.flx
+    if not FileStat::utime((BUILD_DIR.join("bin")).join("scoop.flx"),time()) do
+      warning("Error updating modified timestamp on scoop.flx");
+    done
+    default_build();
+  }
   proc install() {
     if not CMD == "dist" do 
     var bin_dir = (PREFIX.join("bin"));
