@@ -320,6 +320,7 @@ gen handle_local_options(optt:int*list[string]) = {
   }
 
   proc build(pkg:string, pkg_dir:string,extra_opts:string) {
+    validate_pkg_dir(pkg,pkg_dir);
     val result = System::system("flx --noinline " +
     pkg_dir.join("setup")+" build --build-dir=" + pkg_dir +
     extra_opts);
@@ -331,6 +332,7 @@ gen handle_local_options(optt:int*list[string]) = {
   }
 
   proc test(pkg:string, pkg_dir:string,extra_opts:string) {
+    validate_pkg_dir(pkg,pkg_dir);
     val result = System::system("flx --noinline " +
     pkg_dir.join("setup")+" test --build-dir=" + pkg_dir +
     extra_opts);
@@ -360,6 +362,28 @@ gen handle_local_options(optt:int*list[string]) = {
       kudos("Install successful");
       cleanup(pkg,pkg_dir);
     done   
+  }
+
+  fun validate_pkg_dir(pkg:string, pkg_dir:string) = {
+    if not FileStat::fileexists(pkg_dir) do
+      general_fail("Error package directory "+pkg_dir+
+        " does not exist. Did you forget to do 'scoop get "+pkg+"'?");
+    done
+    if FileStat::fileexists(pkg_dir.join("setup.flx")) do
+      var cfg = read_cfg(pkg_dir.join("README.md"));
+      match get cfg "NAME" with
+      |None => { general_fail("Error package directory "+pkg_dir+
+        " because it does not appear to be a valid package directory"); }
+      |Some ?p => { if not p == pkg do 
+        general_fail("Error package direcotry "+pkg_dir+
+        " because it does not appear to be a valid package directory");
+        done
+      }
+      endmatch;
+    else
+      general_fail("Error package directory "+pkg_dir+
+        " because it does not appear to be a valid package directory");
+    done
   }
 
   proc cleanup(pkg:string, pkg_dir:string) {
