@@ -2,7 +2,7 @@ NAME: pkgtool
 
 DESCRIPTION: Packaging Management Tool
 
-VERSION: .02
+VERSION: .03
 
 AUTHOR:  Mike Maul
 

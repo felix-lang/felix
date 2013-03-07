@@ -10,6 +10,7 @@ open Filename;
 var LIST_INSTALLED = false;
 var DEGITIFY = false;
 var CLEANBUILD = false;
+val SCOOP_VERSION = "0.3";
 
 proc get_pkg (pkg:string,dest:string) {
   cfg = read_cfg((LITTERBOX.join(pkg)).join("README.md"));
@@ -20,8 +21,10 @@ proc get_pkg (pkg:string,dest:string) {
 }
 
 
-fun head[T] (l:list[T]) => match l with |Cons[T] (?hd,_) => Some hd |Empty[T] => None[T] endmatch;
+fun head[T] (l:list[T]) => match l with |Cons[T] (?hd,_) => Some hd |Empty => None[T] endmatch;
 
+fun safe_tail[T](l:list[T]) => match l with |Empty[T] => Empty[T] |Cons(_,?t) => t endmatch;
+ 
 proc info (pkg:string) () {
   var readme = (LITTERBOX.join(pkg)).join("README.md");
   match filetype(readme) with
@@ -41,6 +44,20 @@ proc info (pkg:string) () {
 }
 
 
+fun is_litterbox_fresh() =>
+  let ?git_dir = LITTERBOX.join(".git") in
+  if FileStat::fileexists(git_dir) then
+    let ?fetch_head = git_dir.join("FETCH_HEAD") in
+      if FileStat::fileexists(fetch_head) then
+        (time() - FileStat::filetime(fetch_head)) < 86400.0
+      else 
+        false
+      endif
+  else
+    false
+  endif;
+
+
 proc search (opts:list[string]) () {
    val num_opts = int(len(opts));
    var not_even_num_args = (num_opts > 1) and ((num_opts % 2) != 0);
@@ -53,7 +70,6 @@ proc search (opts:list[string]) () {
      |Cons (?k,Cons(?v,?tl)) => Cons((k,v) , to_assoc_list(tl))
      |Empty[T] => Empty[T^2]
      endmatch;
-
 
    var searchd = if num_opts == 1 then 
      list[string^2](("NAME",(let Some ?v = head(opts) in v)))
@@ -72,7 +88,8 @@ proc search (opts:list[string]) () {
         |REGULAR => { 
           var pkg = read_cfg(pkg_readme);
           var ss : list[string*string] = sort searchd;
-          for itm12 in ss.iterator do
+          var it  = iterator(ss);
+          for itm12 in it do
             var iiiitm:string^2 = itm12; 
             match get pkg (toupper(iiiitm.0)) with
             |Some ?pkg_v => { 
@@ -91,13 +108,14 @@ proc search (opts:list[string]) () {
                     "   "  + NC_(((get pkg "DESCRIPTION").or_else "")));
                   
                 done
+                //grr(Empty);
                 goto enough; 
               }
               |_ => {}
               endmatch;
             }
 	    |_ => { }
-            endmatch;  
+            endmatch;
           done
 enough:>
         }
@@ -122,21 +140,36 @@ proc refresh () {
 scoop: A distributed package manager for Felix
 
 usage:
-  scoop get     <package>  [options] Pull package from litterbox to current working directory
+  Repository Related commands
+  ---------------------------
   scoop list   [installed] [options] Lists all packages on litterbox. 
                                      If 'installed' argument is passed then
-                                     only installed packages are listed.
+                                   only installed packages are listed.
   scoop search  <package>  [options] Searches for package on litterbox
   scoop info    <package>  [options] Displays package info
-  scoop install <package>  [options] Pull, builds and install package
-  scoop build   <package>  [options] Pull and  build package
-  scoop test    <package>  [options] Pull, build and test package
   scoop refresh            [options] Refreshes litterbox package directory cache
   scoop reinstall          [options] Reinstalls all previously installed packages
+
+  Package Commands
+  ---------------
+  scoop get     <package> [build dir] [options] Pull package from litterbox 
+    to the HOME/.felix/litterbox/build/<package> directory or [build dir] 
+    if specified
+  scoop build   <package> [build dir] [options] Builds package in
+    HOME/.felix/litterbox/build/<package> or [build dir]
+  scoop test    <package>  [options] Runs package test on package in
+    HOME/.felix/litterbox/build/<package> or [build dir]
+  scoop install <package>  [options] Installs package located at
+    HOME/.felix/litterbox/build/<package> or [build dir]
+  scoop clean <package>  [options] Removes package build directory at
+    HOME/.felix/litterbox/build/<package> or [build dir]
+
+  Miscelaneous Commands and Options
+  ---------------------------------
   scoop help               Displays this message
   scoop help    <command>  Displays detailed help for command
 
-options:
+  options:
   --litterbox-url=[Repository URL]           Specify a new repository to use
   --litterbox=[Local repository cache dir]   Use a specific litterbox cache dir
   --degitify                                 Strip git repo info from package
@@ -259,6 +292,10 @@ gen handle_local_options(optt:int*list[string]) = {
         CLEANBUILD = true;
         valid_opts++;
       }
+      |?option when option.startswith "--version" => {
+        display$ "Scoop version " + SCOOP_VERSION;
+        valid_opts++;
+      }
       |?option => { unused_opts += option; }
       endmatch;
     done
@@ -267,57 +304,124 @@ gen handle_local_options(optt:int*list[string]) = {
   return (valid_opts,unused_opts);
 }
 
-proc install(cmd:string,options:list[string]) {
-  banner("Installing package");
-  match options with
-  |Cons (?pkg,?opts) => {
+  proc clean(pkg:string,pkg_dir:string,extra_opts:string) {
+  if CLEANBUILD and match filetype(pkg_dir) with |DIRECTORY => true |_ => false endmatch do
+      if System::system("flx --inline=5 " +
+        pkg_dir.join("setup")+" clean --build-dir=" + pkg_dir +
+        extra_opts) != 0 do
+        warning("Clean failed");
+      done
+    done
+  }
+
+  proc get(pkg:string,pkg_dir:string) {
+    phase(q"Scooping package $(pkg) from litterbox.",
+      proc () { get_pkg(pkg,pkg_dir); });
+  }
+
+  proc build(pkg:string, pkg_dir:string,extra_opts:string) {
+    val result = System::system("flx --noinline " +
+    pkg_dir.join("setup")+" build --build-dir=" + pkg_dir +
+    extra_opts);
+    if result != 0 do  
+      warning("Build failed");
+    else
+      kudos("Build successful");
+    done  
+  }
+
+  proc test(pkg:string, pkg_dir:string,extra_opts:string) {
+    val result = System::system("flx --noinline " +
+    pkg_dir.join("setup")+" test --build-dir=" + pkg_dir +
+    extra_opts);
+    if result != 0 do  
+      warning("Test failed");
+    else
+      kudos("Test successful");
+    done  
+  }
+
+  fun pkg_setup_exists(pkg:string,pkg_dir:string) =>
+    FileStat::fileexists((pkg_dir.join(pkg)).join("setup.flx"));
+
+  proc install(pkg:string, pkg_dir:string, extra_opts:string) {
+    if not pkg_setup_exists(pkg,pkg_dir) do
+      get(pkg,pkg_dir);
+      build(pkg,pkg_dir,extra_opts);
+      if not FORCE do test(pkg,pkg_dir,extra_opts); done
+    done 
+    
+    val result = System::system("flx --inline=0 " +
+    pkg_dir.join("setup")+" install --build-dir=" + pkg_dir +
+    extra_opts);
+    if result != 0 do  
+      warning("Install failed");
+    else
+      kudos("Install successful");
+      cleanup(pkg,pkg_dir);
+    done   
+  }
+
+  proc cleanup(pkg:string, pkg_dir:string) {
+    var result_code = 0;
+    task$ "Removing build directory:" + pkg_dir;
+    if FileStat::fileexists(pkg_dir.join("setup.flx")) do
+      var cfg = read_cfg(pkg_dir.join("README.md"));
+      match get cfg "NAME" with
+      |None => { general_fail("Unable to remove package direcotry "+pkg_dir+
+        " because it does not appear to be a package dir"); }
+      |Some ?p => { if not p == pkg do 
+        general_fail("Unable to remove build directory because "+pkg_dir+
+          " does not appear to be a package dir for the package "+pkg);
+        done
+      }
+      endmatch;
+      if PLAT_WIN32 do
+        result_code=System::system("rd /S /Q "+pkg_dir);
+      else
+        result_code=System::system("rm -rf "+pkg_dir);
+      done
+      if not result_code == 0 do
+        warning$ "Unable to remove build directory:"+pkg_dir;
+      done
+    else
+      general_fail("Error:"+pkg_dir+" does not appear to be a scoop_package dir");
+    done
+  }
+
+  proc do_package_command(cmd:string,options:list[string]) {
+    var pkg,pkg_dir,remaining_options = get_pkg_dir_and_opts(options);
     var extra_opts = "";
     if not DEST_DIR == "" do extra_opts += " --dest-dir=" + DEST_DIR + " "; done
     if not EXTRA_INCDIR == "" do extra_opts += " -I" + EXTRA_INCDIR + " "; done
     if not EXTRA_LIBDIR == "" do extra_opts += " -L" + EXTRA_LIBDIR + " "; done
     if FORCE do extra_opts += " --force "; done
     if DRY_RUN  do extra_opts += " --dry-run "; done
-    val pkg_dir = (LITTERBOX.join("build")).join(pkg);
-    if CLEANBUILD and match filetype(pkg_dir) with |DIRECTORY => true |_ => false endmatch do
-      if System::system("flx --noinline " +
-        pkg_dir.join("setup")+" clean --build-dir=" + pkg_dir +
-        extra_opts) != 0 do
-        warning(cmd+" failed");
-      done
-    done
-    phase(q"Scooping package $(pkg) from litterbox.",
-      proc () { get_pkg(pkg,pkg_dir); });
-    val result = System::system("flx --noinline " +
-    pkg_dir.join("setup")+" " + cmd + " --build-dir=" + pkg_dir +
-    extra_opts);
-    if result != 0 do  
-      warning(cmd+" failed");
-    else
-      kudos(cmd+" successful");
-      if not cmd == "build" and not cmd == "test" do
-        var result_code = 0;
-        if PLAT_WIN32 do
-          task$ "Removing build directory:" + pkg_dir;
-          result_code=System::system("rd /S /Q "+pkg_dir);
-        else
-          result_code=System::system("rm -rf "+pkg_dir);
-        done
-        if not result_code == 0 do
-          warning$ "Unable to remove build directory:"+pkg_dir;
-        done
-        kudos("Installation complete");
-      else 
-        var next_cmd = if cmd == "build" then "test" else "install" endif;
-        task("Rember to do "+blue_("scoop "+next_cmd+" " + pkg) + 
-             yellow_(" when you are ready.")); 
-      done
-    done
+    match cmd with
+    |"get" => get(pkg,pkg_dir);
+    |"build" => build(pkg,pkg_dir,extra_opts);
+    |"test" => test(pkg,pkg_dir,extra_opts);
+    |"install" => install(pkg,pkg_dir,extra_opts);
+    |"clean" => cleanup(pkg,pkg_dir);
+    |_ => warning("Invalid command");
+    endmatch;
   }
-  |_ => {
-    general_fail("No package specified");
+
+fun get_pkg_dir_and_opts(options:list[string]) = {
+  var retval = "","",Empty[string];
+  match options with
+  |Cons (?pkg,?as) when not pkg.startswith "--" => {
+    var name=pkg; 
+    retval = match head(as) with 
+      |Some ?dir => name,dir,safe_tail(as) 
+      |_ => name,(LITTERBOX.join("build")).join(pkg),safe_tail(as) 
+    endmatch;
   }
+  |_ => { general_fail("No package name specified"); }
   endmatch;
+  return retval;
 }
+
 
 proc run() {
     banner("Felix package manager");
@@ -328,31 +432,19 @@ proc run() {
     |DIRECTORY => { }
     |_ => { general_fail("Error creating:"+LITTERBOX + ", try removing if it exists or checking permissions"); }
     endmatch;
-    refresh();
+    if not is_litterbox_fresh() do
+      refresh();
+    done
     var opts = Empty[string];
     var valid_opts = 0;
     match args with
     |Cons (?command,?options) => {
-        match command with
-        |?cmd when cmd == "get" => { 
-             match options with
-             |Cons (?pkg,?as) => {
-                var pkg_dir = 
-                  match head(as) with |Some ?dir => dir |_ => pkg endmatch;
-                phase(q"Scooping package $(pkg) from litterbox.",
-                  proc () { 
-		    get_pkg(pkg,pkg_dir); 
-		    });
-                    if DEGITIFY do degitify(pkg_dir); done
-             }
-             |_ => {
-               general_fail("No package specified");
-             }
-             endmatch;
-           }
-      |?cmd when cmd == "install" => { install(cmd,options); }
-      |?cmd when cmd == "build" => { install(cmd,options); }
-      |?cmd when cmd == "test" => { install(cmd,options); }
+      match command with
+      |?cmd when cmd == "get" => { do_package_command(cmd,options); }
+      |?cmd when cmd == "install" => { do_package_command(cmd,options); }
+      |?cmd when cmd == "build" => { do_package_command(cmd,options); }
+      |?cmd when cmd == "test" => { do_package_command(cmd,options); }
+      |?cmd when cmd == "clean" => { do_package_command(cmd,options); }
       |?cmd when cmd == "reinstall" => { repeat_history(); }
       |?cmd when cmd == "search" => { 
           banner("Search");

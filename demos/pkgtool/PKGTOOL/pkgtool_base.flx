@@ -128,7 +128,7 @@ class PkgTool {
 //$ Ignoreing any lines not matching format and stopping at first occurance
 //$ of line starting with 5 or more dashes
 //$ returns strdict[string] with keys/values
-  fun read_cfg(fn:string) = {
+noinline  fun read_cfg(fn:string) = {
     var fh = fopen_input(fn);
     var cfg = strdict[string]();
     var pat = RE2 ("^([A-Z_]+)\:\s*([A-Za-z0-9,_':/+@. -]*)\s*$");
@@ -203,53 +203,53 @@ class PkgTool {
 //$ #### Presentation Formatting
 
 //$ Display for program activation of major section
-  proc banner(name:string) {
+noinline  proc banner(name:string) {
      display$ GREEN_(name) + NL;
   }
 
 //$ Display of current phast (e.g. build,test,install...)
-  proc phase(name:string) {
+noinline  proc phase(name:string) {
     display$ cyan_(name) + NC_() + NL;
     for c in name do display$ "-"; done
     display$ NL;
   }
 
-  proc phase(label:string,step_p:unit->void) {
+noinline  proc phase(label:string,step_p:unit->void) {
     phase$ label; step_p();
   }
 
 //$ Header to indicate a group of related tasks  
-  proc task_group(title:string) {
+noinline  proc task_group(title:string) {
     display$ blue_(title) + NL;
   }
 
 //$ Task display
-  proc task(task:string) {
+noinline  proc task(task:string) {
     display$ yellow_(INDENT + task + NL);
   }
 
-  proc task(task_s:string,task_p:unit->void) {
+noinline  proc task(task_s:string,task_p:unit->void) {
     task(task_s); task_p();
   }
 
 //$ Similar for task_group but for tests
 //$ Identifies related tests
-  proc test_case(title:string) {
+noinline  proc test_case(title:string) {
     display$ blue_(title) + NL;
   }
 
 //$ Indication of test failure or success
-  proc test_result (status:bool) = {
+noinline  proc test_result (status:bool) = {
     HAS_TEST_FAILURES = if not HAS_TEST_FAILURES then status else HAS_TEST_FAILURES;
     display$ test_result_status(status)+NL;
   }
  
-  fun test_result_status(status:bool) =>
+noinline  fun test_result_status(status:bool) =>
     NC_("[") +
     if status then green_(" OK ") else red_("FAIL") endif + 
     NC_("]");
   
-  fun test_title_(name:string) = {
+noinline  fun test_title_(name:string) = {
     var line = yellow_(INDENT+name+":"); 
     for var dot in 0 upto (LINELEN - name.len.int) do
       line += ".";
@@ -257,40 +257,40 @@ class PkgTool {
     return line;
   }
 //$ Displays name of test
-  proc test_title(name:string) {
+noinline  proc test_title(name:string) {
     display$ test_title_(name);
   }
 
 //$ Fatal or unhandlable problem, abort program
-  proc general_fail(s:string) {
+noinline  proc general_fail(s:string) {
     warning(s);
     System::exit(-1);
   }
 
 
 //$ Fatal or unhandlable problem, abort program
-  proc setup_fail(s:string) {
+noinline  proc setup_fail(s:string) {
     warning(s+NL+"See "+SETUP_LOG+" for more information.");
     System::exit(-1);
   }
 
 //$ Indicator of invalid options passed to program
-  proc invalid_opts (opts:list[string],cmd:string) {
+noinline  proc invalid_opts (opts:list[string],cmd:string) {
     red("Invalid options:");yellow(join(opts));endl;help(cmd);
   }  
   
 //$ Indicator of invalid command passed to program
-  proc invalid_cmd(cmd:string) {
+noinline  proc invalid_cmd(cmd:string) {
     red("Invalid command:"); yellow(cmd); endl; help(); 
   }      
 
 //$ Indication of successful completion of phase or task_group
-  proc kudos(s:string) {
+noinline  proc kudos(s:string) {
     display$ green_(s) + NL + NL;
   }
 
 //$ Convey a warning in test, task, task group or phase
-  proc warning(s:string) {
+noinline  proc warning(s:string) {
     display$ red_(s) + NL + NL;
   }
 
@@ -298,13 +298,13 @@ class PkgTool {
 //$ #### Testing 
 
 //$ Reachability test if executed implies success
-  proc imply(name:string) {
+noinline  proc imply(name:string) {
     test_title(name);test_result(true);
   }
 
 //$ if result argument true test is successful, fail message if present
 //$ is output on failure 
-  proc assert_true(result:bool,name:string,fail_message:string) {
+noinline  proc assert_true(result:bool,name:string,fail_message:string) {
     test_title(name);
     test_result(result);
     if not result do display$ NC_(fail_message) + NL; done
@@ -317,7 +317,7 @@ class PkgTool {
   }
 
 //$ Test invocation
-  proc run_test(name:string,noheader:bool) {
+noinline  proc run_test(name:string,noheader:bool) {
     var flx_cmd = redir_err(((FLX_INSTALL_DIR.join("bin")).join("flx --noinline ") +
     " "+ FLX_OPTS + (BUILD_DIR.join("test")).join(name)),TEST_LOG);
     if PLAT_WIN32 do
@@ -352,12 +352,12 @@ class PkgTool {
 //$ ### Utilities
 
 //$ See cp_root:string*string*string
-  proc cp_root(s:string,p:string) {
+noinline  proc cp_root(s:string,p:string) {
     cp_root(s,p,INSTALL_ROOT);
   }
 
 //$ Copy files using flx_cp
-  proc cp_root(s:string,p:string,dest:string) {
+noinline  proc cp_root(s:string,p:string,dest:string) {
       var flags = if DRY_RUN then " --verbose --test " else "" endif;
       val cmd = 
         (FLX_INSTALL_DIR.join("bin")).join("flx_cp") + flags +
@@ -371,7 +371,7 @@ class PkgTool {
     }
 
 //$ Ensure user has PKG_CONFIG_PATH ser
-  proc check_pkgconfig_path (unit) {
+noinline  proc check_pkgconfig_path (unit) {
     var pkgconfig_path = Env::getenv("PKG_CONFIG_PATH");
     if pkgconfig_path == "" do
       red("Add the environmental variable below to your environment:");endl;
@@ -404,7 +404,7 @@ class PkgTool {
 //$ Execute command string specified in command in shell consuming
 //$ output. Redirects output to log. Non-zero result codes call setup_fail
 //$ output from command is returned.
-  fun run_cmd (cmd:string,on_error:string,echo:bool) = {
+noinline  fun run_cmd (cmd:string,on_error:string,echo:bool) = {
     log(INDENT+cyan_(cmd)+NL);
     var h = popen_in(redir_err(cmd,SETUP_LOG));
     if valid(h) do
@@ -438,7 +438,7 @@ class PkgTool {
 //$ is an uppercase character it will be considered the default answer 
 //$ and propmpt will return the first character in awnser if only a 
 //$ newline is recieved.
-fun prompt(q:string,a:string) = {
+noinline fun prompt(q:string,a:string) = {
   while(true) do
     print$ q+"?["+a+"] ";
     var in = (readln(stdin)).[0];
@@ -460,7 +460,7 @@ fun prompt(q:string,a:string) = {
   }
   
 //$ Write output to file specified in log_file argument
-  proc log(message:string,log_file:string) {
+noinline  proc log(message:string,log_file:string) {
     if not log_file == "" do
       var log_h = fopen_append (log_file);
       if valid(log_h) do
@@ -481,12 +481,12 @@ fun prompt(q:string,a:string) = {
 
 //$ Wrap command in shell redirection to append output to
 //$ file specified in to_file arg
-  fun >>(cmd:string,to_file:string):string => cmd + 
+noinline  fun >>(cmd:string,to_file:string):string => cmd + 
     if PLAT_WIN32 then q">>$(to_file)" else q">> $(to_file) 2>&1" endif;
 
 //$ Wrap command in shell redirection to append STDERR to
 //$ file specified in to_file arg
-  fun redir_err (cmd:string,to_file:string):string => 
+noinline  fun redir_err (cmd:string,to_file:string):string => 
     if PLAT_WIN32 then 
       // Can't do err redirect in WIN32 so don't
       cmd
@@ -500,7 +500,7 @@ fun prompt(q:string,a:string) = {
 
 //$ #### Felix Package Config Utilities
   //$ Locates path to to 'name' given list of 'paths'
-  fun find_path_to(name:string,paths:list[string]) = {
+noinline  fun find_path_to(name:string,paths:list[string]) = {
     var path = "";
     for path in paths do
       match filetype(path.join(name)) with
@@ -513,7 +513,7 @@ fun prompt(q:string,a:string) = {
   }
   //$ Creates 'name'.fpc file with 'description', 'cflags' and
   //$ list of dynamic libraries 'dlibs' and static libraries 'slibs'
-  proc create_fpc(name:string,description:string,cflags:string,includes:list[string],
+noinline  proc create_fpc(name:string,description:string,cflags:string,includes:list[string],
                    dlibs:string,slibs:string,reqs:list[string]) {
     var fpc_name = name+".fpc";
     task("Creating config/" + fpc_name);
@@ -544,7 +544,7 @@ requires_slibs: $(dlibs)
   //$ Determines proper configuration given package 'name', list of C/C++
   //$ 'includes' and list of C/C++ 'libs'. Then generates config/'name'.fpc
   //$ Felix Package Config file
-  proc create_config(name:string,includes:list[string],libs:list[string],
+noinline  proc create_config(name:string,includes:list[string],libs:list[string],
                      reqs:list[string]) {
     var config_ok_fn = (BUILD_DIR.join("config")).join("CONFIG_"+name+".OK");
     if not FileStat::fileexists config_ok_fn do 
@@ -591,7 +591,7 @@ requires_slibs: $(dlibs)
     done
   }
 
-  proc test_config(name:string,reqs:list[string]) {
+noinline  proc test_config(name:string,reqs:list[string]) {
     var test_result_status_fail = test_result_status(false);
     var test_result_status_ok = test_result_status(true);
     var title = "Testing configuration for "+name;
@@ -622,7 +622,7 @@ requires_slibs: $(dlibs)
 //$ #### Package Utilities
 
 //$ return opt version of package installed
-  fun is_installed(name:string) = {
+noinline  fun is_installed(name:string) = {
     var cfg = read_cfg$
      (((INSTALL_ROOT.join("web")).join("packages")).join(name)).join("README.md");
     return 
@@ -636,7 +636,7 @@ requires_slibs: $(dlibs)
 //$ If a dependency is declared in DEPENDENCIES in the package README.md
 //$ then handle_dependency will invoke 'scoop install <required package>
 //$ to satisfy the dependency
-  proc handle_dependency(dependency:string) {
+noinline  proc handle_dependency(dependency:string) {
     match is_installed(dependency) with
     |Some _ => { }
     |None[float] => {
@@ -660,7 +660,7 @@ requires_slibs: $(dlibs)
  }
 
 //$ Request clone or pull from git repo specified in PKG_URL
-  proc git_get(dest:string) {
+noinline  proc git_get(dest:string) {
     match cfg.get 'PKG_URL' with
     |Some ?url => { git_get(url,dest); }
     |_ => { setup_fail$ "No PKG_URL defined in package README.md."; }
@@ -668,7 +668,7 @@ requires_slibs: $(dlibs)
   }
 
 //$ Request clone or pull from git repo specified in PKG_URL
-  proc git_get(url:string,dest:string) {
+noinline  proc git_get(url:string,dest:string) {
     // 1 Check if dir exists
     match filetype(dest) with
     |DIRECTORY => {  // 2 Check if dir is git dir
@@ -700,7 +700,7 @@ requires_slibs: $(dlibs)
 
 
 //$ Phases/Command Implementations
-  proc check_dependencies() {
+noinline  proc check_dependencies() {
     task("Checking dependencies");
     var cfg = read_cfg(BUILD_DIR.join("README.md"));
     match (get cfg "DEPENDENCIES") with
@@ -716,7 +716,7 @@ requires_slibs: $(dlibs)
 
 //$ implementaion of default build behavior see README.md for
 //$ discussion of behavior
-  proc default_build() {
+noinline  proc default_build() {
     var file="";
     var build_dirs = Empty[string];
     if BUILD_LIKE == App or BUILD_LIKE == Lib do
@@ -789,7 +789,7 @@ requires_slibs: $(dlibs)
 //$ Executes files in test directory not starting with 'C' or 'D'
 //$ The 'C' prefix is reserved for functionality tests that may be used.
 //$ The 'D' prefix is reserved for datafiles during build phase
-  proc default_test() {
+noinline  proc default_test() {
     var test_ok_fn = (BUILD_DIR.join("test")).join("TEST.OK");
     C_hack::ignore(FileSystem::unlink_file(test_ok_fn));
     var file="";
@@ -822,7 +822,7 @@ requires_slibs: $(dlibs)
 
 //$ implementaion of default install behavior see README.md for
 //$ discussion of behavior 
-  proc default_install() {
+noinline  proc default_install() {
 
     if BUILD_LIKE == App or BUILD_LIKE == Lib do
       if not NAME == "pkgtool" do
@@ -873,7 +873,7 @@ requires_slibs: $(dlibs)
   //$ <package name>-<felix INSTALL_ROOT>\t<package name>
   //$ The general idea is to have a set of records of package installations
   //$ to a given felix installation
-  fun study_history() = {
+noinline  fun study_history() = {
     var history_book = LITTERBOX.join(".history");
     var fh = fopen_input(history_book);
     var cfg = strdict[string]();
@@ -896,7 +896,7 @@ requires_slibs: $(dlibs)
 
   //$ Reads history, rewrites history and adds current install
   //$ package to history
-  proc make_history (name:string) {
+noinline  proc make_history (name:string) {
     var prior_knowledge = study_history();
     add prior_knowledge (name+"-"+INSTALL_ROOT) name;
     rewrite_history(prior_knowledge);
@@ -904,7 +904,7 @@ requires_slibs: $(dlibs)
 
     //$ Reads history, rewrites history and adds current install
   //$ package to history
-  proc rewrite_history (prior_knowledge:strdict[string]) {
+noinline  proc rewrite_history (prior_knowledge:strdict[string]) {
     var history_book:ofile = fopen_output(LITTERBOX.join(".history"));
     if valid(history_book) do 
       for memory in prior_knowledge do
@@ -920,7 +920,7 @@ requires_slibs: $(dlibs)
 
 
   //$ Return list of packages in litterbox
-  fun dump_litterbox() = {
+noinline  fun dump_litterbox() = {
     var contents = Empty[string];
     match Directory::filesin(LITTERBOX) with
     |Some ?files => { 
@@ -953,7 +953,7 @@ requires_slibs: $(dlibs)
   //$ Reinstalls package in history that do not exist in the felix
   //$ installation. This is something that would be done after a new
   //$ new felix installation
-  proc repeat_history() {
+noinline  proc repeat_history() {
     phase("Reinstalling packages from package history");
     var skipped = Empty[string];
     var prior_knowledge = study_history();
@@ -999,7 +999,7 @@ requires_slibs: $(dlibs)
 
 //$ implementaion of default clean behavior see README.md for
 //$ discussion of behavior
-  proc default_clean() {
+noinline  proc default_clean() {
     var test_ok_fn = (BUILD_DIR.join("test")).join("TEST.OK");
     C_hack::ignore(FileSystem::unlink_file(test_ok_fn));
     proc clean_flx(file:string) {
@@ -1163,7 +1163,7 @@ Description: Removes git repo information from package dir. Usfull if you want t
   }
 
 //$ Write list of installed packges to console
-  fun installed() = {
+noinline  fun installed() = {
     var instd = strdict[string]();   
     var inst_base = (INSTALL_ROOT.join("web")).join("packages");
     match Directory::filesin(inst_base) with
@@ -1185,12 +1185,12 @@ Description: Removes git repo information from package dir. Usfull if you want t
   }
 
 //$ See degitify:string
-  proc degitify() {
+noinline  proc degitify() {
     degitify(BUILD_DIR);
   }
 
 //$ Strip .git directory from directory specified in dir 
-  proc degitify(dir:string) {
+noinline  proc degitify(dir:string) {
       var pkg_git = dir.join(".git");
       task$ "Degitifying:" + pkg_git;
       var result_code = if PLAT_WIN32 then
@@ -1230,12 +1230,14 @@ class SetupTool {
 open PkgTool;
 
   //$ Executes package phases 
-  proc run() {
+noinline  proc run() {
     //check_pkgconfig_path();
     // Read config
     var cfg:strdict[string];
     var opts = Empty[string];
     var valid_opts = 0;
+    var build_ok_fn = (BUILD_DIR.join("config")).join("BUILD.OK");
+    var test_ok_fn = (BUILD_DIR.join("test")).join("TEST.OK");
     match tail(System::args()) with
     |Cons (?command,?options) => {
     valid_opts,opts = handle_global_options(options); 
@@ -1260,12 +1262,18 @@ open PkgTool;
     done
       match command with
       |?cmd when cmd == "build" => { 
+        if FileStat::fileexists(build_ok_fn) do
+          C_hack::ignore(FileSystem::unlink_file(build_ok_fn));
+        done
         if (len(options) - valid_opts) > size(0) do
           invalid_opts(options,command);
         else
 	  banner(q"Building package $(NAME)");
           check_dependencies();
           phase("Build",build);
+          var build_ok:ofile = fopen_output(build_ok_fn);
+          write(build_ok,"BUILD.OK\n");
+          fclose(build_ok);
         done
         }
       |?cmd when cmd == "test" => { 
@@ -1274,7 +1282,9 @@ open PkgTool;
         else
           banner(q"Testing package $(NAME)");
           check_dependencies();
-          phase("Build",build);
+          if not FileStat::fileexists(build_ok_fn) do
+	    phase("Build",build);
+          done
           phase("Test",test);
         done
         }
@@ -1284,10 +1294,12 @@ open PkgTool;
         else
           banner(q"Installing package $(NAME)");
 // Decoupling build and test from install for now
-          match filetype((BUILD_DIR.join("test")).join("TEST.OK")) with
+          match filetype(test_ok_fn) with
           |NONEXISTANT => {
             check_dependencies();
-            phase("Build",build);
+            if not FileStat::fileexists(build_ok_fn) do
+              phase("Build",build);
+            done
             phase("Test",test);
           }
           |_ => {}
@@ -1306,7 +1318,9 @@ open PkgTool;
           invalid_opts(options,command);
         else
           banner(q"Installing with force package $(NAME)"); 
-//          phase("Build",build);
+          if not FileStat::fileexists(build_ok_fn) do
+            phase("Build",build);
+          done
           phase("Install",install);
 //          phase("Clean",clean);
           if DRY_RUN do
@@ -1321,8 +1335,12 @@ open PkgTool;
           invalid_opts(options,command);
         else
           banner(q"Creating distribution $(NAME)");
-          phase("Build",build);
-          phase("Test",test);
+          if not FileStat::fileexists(build_ok_fn) do
+            phase("Build",build);
+          done
+          if not FileStat::fileexists(test_ok_fn) do
+            phase("Test",test);
+          done
           DEST_DIR = BUILD_DIR.join("dist");
           phase("Install",install);
           if DRY_RUN do

@@ -21,6 +21,7 @@ instance PkgTool {
     var bin_dir = (PREFIX.join("bin"));
     match filetype(bin_dir) with
     |DIRECTORY => { 
+      task("Installing scoop");
       var bin_path = PREFIX.join("bin");
       var scoop_exe = bin_path.join("scoop")+
          #Config::config.EXT_EXE;
