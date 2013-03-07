@@ -65,7 +65,7 @@ class PosixFileSystem
   //------------------------------------------------------------
   // delete (unlink) a file
   //------------------------------------------------------------
-  gen unlink_file: string -> int = "unlink($1.c_str())";
+  gen unlink_file: string -> int = "unlink($1.c_str())" requires Posix_headers::unistd_h;
 
   //------------------------------------------------------------
   // rename a file
