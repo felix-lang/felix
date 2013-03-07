@@ -210,6 +210,7 @@ def make_cxx_builder(ctx, *args, includes=[], libpaths=[], flags=[], **kwargs):
                 'no-logical-op-parentheses',
                 'no-bitwise-op-parentheses',
                 'no-parentheses-equality',
+                'no-parentheses',
                 'no-return-stack-address',
                 'no-tautological-compare',
                 'no-return-type-c-linkage',
