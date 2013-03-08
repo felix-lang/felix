@@ -464,6 +464,7 @@ def build(ctx):
     call('buildsystem.re2.build_runtime', phases.target)
     call('buildsystem.flx_glob.build_runtime', phases.host, phases.target)
     call('buildsystem.sqlite3.build_runtime', phases.host, phases.target)
+    call('buildsystem.sundown.build_runtime', phases.target)
     #call('buildsystem.botan.build_runtime', phases.host, phases.target)
 
     # --------------------------------------------------------------------------
