@@ -167,10 +167,8 @@ let rec gen_type_shape s syms bsym_table need_int last_ptr_map primitive_shapes 
             "[gen_offset_tables:BTYP_inst:allocable_types] can't find index " ^
             string_of_bid i)
       in
-print_endline ("gen_type_shape: Handling type " ^ Flx_bsym.id bsym);
       begin match Flx_bsym.bbdcl bsym with
       | BBDCL_external_type (_,quals,_,_) ->
-print_endline "External type";
         let complete = not (mem `Incomplete quals) in
         let is_pod = mem `Pod quals in
         let scanner = 
