@@ -56,7 +56,7 @@ class Collector
     print_pointer_data (pd);
   }
   proc print_pointer_data[T] (p:&T) => print_pointer_data (C_hack::cast[address] p);
-  proc print_pointer_data[T] (p:@T) => print_pointer_data (C_hack::cast[address] p);
+  proc print_pointer_data[T] (p:cptr[T]) => print_pointer_data (C_hack::cast[address] p);
   proc print_pointer_data[T] (p:+T) => print_pointer_data (C_hack::cast[address] p);
 
 }

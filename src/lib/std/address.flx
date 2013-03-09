@@ -4,7 +4,7 @@ open class Address {
   ctor[T] address: &T = "(void*)$1";
 
   //$ Construct from possibly NULL pointer.
-  ctor[T] address: @T = "(void*)$1"; //@
+  ctor[T] address: cptr[T] = "(void*)$1"; //@
 
   //$ Construct from possibly array element pointer.
   ctor[T] address: +T = "(void*)$1";

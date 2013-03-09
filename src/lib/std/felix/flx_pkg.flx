@@ -4,8 +4,6 @@ class FlxPkg
 {
   typedef pkgconfig_inspec_t = (
     FLX_INSTALL_DIR:string,
-    INCLUDE_DIRS:string,
-    INCLUDE_FILES:string,
     EXT_EXE: string,
     EXT_STATIC_OBJ: string,
     STATIC: int,
@@ -43,10 +41,10 @@ class FlxPkg
     var e = Empty[string];
 
     // find all include directories
-    var INCLUDE_DIRS=spec.INCLUDE_DIRS + ' ' + pkgconf(e+'--field=cflags');
+    var INCLUDE_DIRS=pkgconf(e+'--field=cflags'+'--keepleftmost');
 
     // find all include files
-    var INCLUDE_FILES=spec.INCLUDE_FILES + " " + pkgconf(e+'--field=includes');
+    var INCLUDE_FILES=pkgconf(e+'--field=includes'+'--keepleftmost');
 
 
     // find the driver package

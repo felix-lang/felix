@@ -3,8 +3,6 @@ proc calpackages
   var x = FlxPkg::map_package_requirements 
   (
      FLX_INSTALL_DIR = config.FLX_INSTALL_DIR,
-     INCLUDE_DIRS = control.INCLUDE_DIRS,
-     INCLUDE_FILES = control.INCLUDE_FILES,
      EXT_EXE = config.EXT_EXE,
      EXT_STATIC_OBJ = config.EXT_STATIC_OBJ,
      STATIC = control.STATIC,
@@ -13,15 +11,15 @@ proc calpackages
      LINKER_SWITCHES = control.LINKER_SWITCHES,
      cpp_filebase = dvars.cpp_filebase
   );
-  control.INCLUDE_DIRS = x.INCLUDE_DIRS;
-  control.INCLUDE_FILES = x.INCLUDE_FILES;
+  control.EXTRA_INCLUDE_DIRS = x.INCLUDE_DIRS;
+  control.EXTRA_INCLUDE_FILES = x.INCLUDE_FILES;
   control.DRIVER_EXE = x.DRIVER_EXE;
   control.DRIVER_OBJS = x.DRIVER_OBJS;
   control.LINK_STRING = x.LINK_STRING;
   if ECHO == 1 do
     fprintln (cerr, "//RESOURCE FILE="+dvars.cpp_filebase+".resh");
-    fprintln (cerr, "//INCLUDE_DIRS="+control.INCLUDE_DIRS);
-    fprintln (cerr, "//INCLUDE_FILES="+control.INCLUDE_FILES);
+    fprintln (cerr, "//INCLUDE_DIRS="+control.STANDARD_INCLUDE_DIRS+' '+ control.EXTRA_INCLUDE_DIRS);
+    fprintln (cerr, "//INCLUDE_FILES="+control.STANDARD_INCLUDE_FILES+ ' ' + control.EXTRA_INCLUDE_FILES);
     if control.STATIC == 0 do
       fprintln (cerr, "//DYNAMIC DRIVER EXE ="+str control.DRIVER_EXE);
     else
@@ -62,7 +60,7 @@ proc run_felix_compiler_if_required
       STDIMPORT = control.STDIMPORT,
       IMPORTS = control.IMPORTS,
       FLXLIB = dvars.FLXLIB,
-      INCLUDE_DIRS = control.INCLUDE_DIRS,
+      INCLUDE_DIRS = control.STANDARD_INCLUDE_DIRS,
       filebase = dvars.filebase,
       use_ext = dvars.use_ext,
       TIME = control.TIME,
@@ -75,7 +73,7 @@ proc run_felix_compiler_if_required
     done
     debugln "Felix compilation succeeded";
     calpackages;
-    FlxPkg::write_include_file(dvars.cpp_filebase, control.INCLUDE_FILES);
+    FlxPkg::write_include_file(dvars.cpp_filebase, control.EXTRA_INCLUDE_FILES);
 
   else
     debugln "Felix compilation skipped by switch";
@@ -94,7 +92,7 @@ proc cxx_compile_dynamic1(src:string, dst:string)
       CCOBJ_DLLIB = config.CCOBJ_DLLIB, 
       CCFLAGS = control.CCFLAGS, 
       INCLUDE_DIR = dvars.INCLUDE_DIR, 
-      INCLUDE_DIRS = control.INCLUDE_DIRS, 
+      INCLUDE_DIRS = control.STANDARD_INCLUDE_DIRS+' '+control.EXTRA_INCLUDE_DIRS, 
       MACROS = control.MACROS,
       SPEC_OBJ_FILENAME = config.SPEC_OBJ_FILENAME,
       debugln = debugln[string],
@@ -154,7 +152,7 @@ proc cxx_compile_static1 (src: string, dst: string)
       CCOBJ_STATIC_LIB = config.CCOBJ_STATIC_LIB,
       CCFLAGS = control.CCFLAGS, 
       INCLUDE_DIR = dvars.INCLUDE_DIR, 
-      INCLUDE_DIRS = control.INCLUDE_DIRS,
+      INCLUDE_DIRS = control.STANDARD_INCLUDE_DIRS+' '+control.EXTRA_INCLUDE_DIRS, 
       MACROS = control.MACROS, 
       SPEC_OBJ_FILENAME = config.SPEC_OBJ_FILENAME,
       debugln = debugln[string],

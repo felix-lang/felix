@@ -43,6 +43,8 @@ proc print_help() {
   println "--stdout=file        : run program with standard output redirected to file";
   println "--expect=file        : compare stdout with expect file";
   println "--expect             : compare stdout with basename.expect";
+  println "--indir=dir          : set directory for regexp search, default current directory";
+  println "--regexp=pattern     : Perl regexp for batch file processing";
   println "--backup             : backup working source tree to dir 'backup'";
   println "--install            : install --test directory to configured location";
   println "--dist=path          : install --test directory to configured location";
@@ -272,7 +274,7 @@ proc handle_switch(arg:string)
 
   elif prefix(arg,"-I") do
     debugln "Set include directories for both Felix and C/C++";
-    control.INCLUDE_DIRS=control.INCLUDE_DIRS + " " + arg;
+    control.STANDARD_INCLUDE_DIRS=control.STANDARD_INCLUDE_DIRS + " " + arg;
 
   elif arg== "--nofelix" do
     debugln "Do not translate Felix code, just compile generated C++ (used to debug at C++ level)";
