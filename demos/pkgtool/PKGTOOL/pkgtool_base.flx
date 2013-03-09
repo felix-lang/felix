@@ -793,6 +793,7 @@ noinline  proc default_build() {
         setup_fail(q"Error building: $(NAME)");
       done
     done
+
   }
 
 //$ To preform custom build behaior create instance of build.
@@ -847,7 +848,6 @@ noinline  proc default_test() {
 noinline  proc default_install() {
 
     if BUILD_LIKE == App or BUILD_LIKE == Lib do
-      if not NAME == "pkgtool" do
         task("Installing bin files");
         cp_root(BUILD_DIR, "bin[/\\][^.][a-zA-Z0-9_-]+$",DEST_DIR);
         if PLAT_WIN32 do
@@ -856,7 +856,6 @@ noinline  proc default_install() {
           |_ => {}
           endmatch;
         done
-      done
     done
     if BUILD_LIKE == Lib do
       task("Installing Library files");
@@ -864,7 +863,6 @@ noinline  proc default_install() {
     done
     if BUILD_LIKE == WebApp do
       task("Installing package app files");
-//      cp_root(BUILD_DIR, "app[/\\\].(.*\.flx)$",DEST_DIR);
       cp_root(BUILD_DIR, "app[/\\\]"+NAME+"$",DEST_DIR);
       task("Installing package html files");
       cp_root(BUILD_DIR, "html[/\\\]..*",DEST_DIR);
@@ -1234,7 +1232,9 @@ noinline  proc degitify(dir:string) {
       match arg with
       |?option when option.startswith "-L" => { valid_opts++; EXTRA_LIBDIR += " " + arg; }
       |?option when option.startswith "-I" => { valid_opts++; EXTRA_INCDIR += " " + arg; }
-      |?option when option.startswith "--build-dir=" => { valid_opts++; BUILD_DIR = arg.[12 to]; }
+      |?option when option.startswith "--build-dir=" => {
+println$ arg.[12 to];
+ valid_opts++; BUILD_DIR = arg.[12 to]; }
       |?option when option == "--dry-run" => { valid_opts++; DRY_RUN = true; }
       |?option when option.startswith "--dest-dir=" => { valid_opts++; DEST_DIR = arg.[11 to]; }
       |?option when option.startswith "--prefix=" => { valid_opts++; PREFIX = arg.[9 to]; }
@@ -1262,30 +1262,30 @@ noinline  proc run() {
     var cfg:strdict[string];
     var opts = Empty[string];
     var valid_opts = 0;
-    var build_ok_fn = (BUILD_DIR.join("config")).join("BUILD.OK");
-    var test_ok_fn = (BUILD_DIR.join("test")).join("TEST.OK");
     match tail(System::args()) with
     |Cons (?command,?options) => {
-    valid_opts,opts = handle_global_options(options); 
-    SETUP_LOG = if (SETUP_LOG == "") then SETUP_LOG else 
+      valid_opts,opts = handle_global_options(options); 
+      var build_ok_fn = (BUILD_DIR.join("config")).join("BUILD.OK");
+      var test_ok_fn = (BUILD_DIR.join("test")).join("TEST.OK");
+      SETUP_LOG = if (SETUP_LOG == "") then SETUP_LOG else 
                   BUILD_DIR.join(SETUP_LOG) endif;
-    TEST_LOG = if (TEST_LOG == "") then TEST_LOG else 
+      TEST_LOG = if (TEST_LOG == "") then TEST_LOG else 
                   BUILD_DIR.join(TEST_LOG);
-    cfg = read_cfg(BUILD_DIR.join("README.md"));
-    NAME = or_else(get cfg 'NAME') NAME;
-    VERSION = or_else(get cfg 'VERSION') VERSION;
-    AUTHOR = or_else(get cfg 'AUTHOR') AUTHOR;
-    URL = or_else(get cfg 'URL') URL;
-    DESCRIPTION = or_else(get cfg 'DESCRIPTION') DESCRIPTION;
-    LONG_DESCRIPTION = or_else(get cfg 'LONG_DESCRIPTION') LONG_DESCRIPTION;
-    LIBDIR = or_else(get cfg 'LIBDIR') NAME;
-    REQUIRES = split(or_else(get cfg 'REQUIRES') (join_list(REQUIRES,",")));
-    TEST_REQUIRES = split(or_else(get cfg 'TEST_REQUIRES') (join_list(TEST_REQUIRES,",")));
-    CATEGORY = split(or_else(get cfg 'CATEGORY') (join_list(CATEGORY,",")));
-    LICENSE = or_else(get cfg 'LICENSE') '';
-    if not SETUP_LOG == "" do 
-      C_hack::ignore(FileSystem::unlink_file(SETUP_LOG));    
-    done
+      cfg = read_cfg(BUILD_DIR.join("README.md"));
+      NAME = or_else(get cfg 'NAME') NAME;
+      VERSION = or_else(get cfg 'VERSION') VERSION;
+      AUTHOR = or_else(get cfg 'AUTHOR') AUTHOR;
+      URL = or_else(get cfg 'URL') URL;
+      DESCRIPTION = or_else(get cfg 'DESCRIPTION') DESCRIPTION;
+      LONG_DESCRIPTION = or_else(get cfg 'LONG_DESCRIPTION') LONG_DESCRIPTION;
+      LIBDIR = or_else(get cfg 'LIBDIR') NAME;
+      REQUIRES = split(or_else(get cfg 'REQUIRES') (join_list(REQUIRES,",")));
+      TEST_REQUIRES = split(or_else(get cfg 'TEST_REQUIRES') (join_list(TEST_REQUIRES,",")));
+      CATEGORY = split(or_else(get cfg 'CATEGORY') (join_list(CATEGORY,",")));
+      LICENSE = or_else(get cfg 'LICENSE') '';
+      if not SETUP_LOG == "" do 
+        C_hack::ignore(FileSystem::unlink_file(SETUP_LOG));    
+      done
       match command with
       |?cmd when cmd == "build" => { 
         if FileStat::fileexists(build_ok_fn) do
@@ -1297,10 +1297,11 @@ noinline  proc run() {
 	  banner(q"Building package $(NAME)");
           check_dependencies();
           phase("Build",build);
-          var build_ok:ofile = fopen_output(build_ok_fn);
+         var build_ok:ofile = fopen_output(build_ok_fn);
           write(build_ok,"BUILD.OK\n");
-          fclose(build_ok);
-        done
+         fclose(build_ok);
+       done
+ 
         }
       |?cmd when cmd == "test" => { 
         if (len(options) - valid_opts) > size(0) do
