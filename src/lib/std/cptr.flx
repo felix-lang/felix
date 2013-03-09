@@ -19,7 +19,7 @@ open class Cptr
   union cptr[T] = | nullptr | Ptr of &T;
 
   //$ Demote a Felix pointer to a C pointer. Safe.
-  ctor[T] cptr[T]: &T -> cptr[T] = "$1";
+  ctor[T] cptr[T]: &T = "$1";
 
   //$ Promote a C pointer to a Felix pointer.
   //$ Conversion is checked.

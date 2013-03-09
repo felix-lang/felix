@@ -167,8 +167,10 @@ let rec gen_type_shape s syms bsym_table need_int last_ptr_map primitive_shapes 
             "[gen_offset_tables:BTYP_inst:allocable_types] can't find index " ^
             string_of_bid i)
       in
+print_endline ("gen_type_shape: Handling type " ^ Flx_bsym.id bsym);
       begin match Flx_bsym.bbdcl bsym with
       | BBDCL_external_type (_,quals,_,_) ->
+print_endline "External type";
         let complete = not (mem `Incomplete quals) in
         let is_pod = mem `Pod quals in
         let scanner = 
@@ -393,8 +395,8 @@ print_debug syms ("Handle type " ^ sbt bsym_table btyp ^ " instance " ^ si index
       begin match Flx_bsym.bbdcl bsym with
       | BBDCL_external_type (vs,bquals,_,_) ->
         (*
-        print_endline ("abstract type "^id^".. quals:");
-        print_endline (string_of_bquals sym_table bquals);
+        print_endline ("abstract type "^Flx_bsym.id bsym ^ "["^catmap "," (sbt bsym_table) ts^"]");
+        print_endline ("  properties: " ^ string_of_bquals bsym_table bquals);
         *)
         let handle_qual bqual = match bqual with
         | `Bound_needs_shape t ->
@@ -410,8 +412,8 @@ print_debug syms ("Handle type " ^ sbt bsym_table btyp ^ " instance " ^ si index
             let index = Hashtbl.find syms.registry t in
             Hashtbl.replace allocable_types t index
           with
-          | Not_found -> failwith ("[gen_offset_tables] Woops, type "^si i^ "-->" ^ 
-             sbt bsym_table t ^" isn't in registry! Required shape of " ^ bsym.Flx_bsym.id)
+          | Not_found -> failwith ("[gen_offset_tables] Woops, type "^si i^ " = " ^ 
+             sbt bsym_table t ^" isn't in registry! Required shape for " ^ bsym.Flx_bsym.id)
           end
 
         | _ -> ()

@@ -5,6 +5,7 @@
 #include "flx_meta.hpp"
 #include "flx_exceptions.hpp"
 #include "flx_gc.hpp"
+#include "flx_serialisers.hpp"
 
 // temporary compatibility hack
 #include "flx_compiler_support_headers.hpp"

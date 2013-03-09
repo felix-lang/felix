@@ -1,3 +1,6 @@
+#ifndef __FLX_SERIALISERS_HPP__
+#define __FLX_SERIALISERS_HPP__
+
 #include "flx_gc.hpp"
 namespace flx { namespace gc { namespace generic {
 GC_EXTERN encoder_t string_encoder;
@@ -22,4 +25,6 @@ size_t tunblit(void *p, char *s, size_t i)
 
 
 }}}
+
+#endif
 

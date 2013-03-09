@@ -139,9 +139,11 @@ print_endline ("Register type r " ^ sbt bsym_table t);
     is always the case for recursion under a pointer
   *)
 
-  (* pointer type is no longer registered, just us t* *)
+  (* pointer type is no longer registered, just us t* .. 
+     WRONG! What if have a varray of pointers?
+   *)
 
-  | BTYP_pointer t' -> rr t'
+  | BTYP_pointer t' -> rnr t; rr t'
 
   | BTYP_inst (i,ts)->
     iter rr ts;
@@ -193,7 +195,7 @@ print_endline ("Register type r " ^ sbt bsym_table t);
        let handle_qual bqual = match bqual with
         | `Bound_needs_shape t ->
           (*
-          print_endline ("Needs shape (uninstantiated) " ^ sbt bsym_table t);
+          print_endline ("treg: Needs shape (uninstantiated) " ^ sbt bsym_table t);
           *)
           (*
           let varmap = mk_varmap vs ts in
@@ -201,7 +203,7 @@ print_endline ("Register type r " ^ sbt bsym_table t);
           *)
           let t' = tsubst vs ts t in
           (*
-          print_endline ("Needs shape (instantiated) " ^ sbt bsym_table t);
+          print_endline ("treg: Needs shape (instantiated) " ^ sbt bsym_table t');
           *)
           rr t'
         | _ -> ()
