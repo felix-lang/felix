@@ -64,7 +64,9 @@ gen cal_depvars() =
   done
 
   if control.LINKER_OUTPUT_FILENAME == "" do
-    if control.STATIC == 0 do // dynamic
+    if control.STATICLIB == 1 do
+      control.LINKER_OUTPUT_FILENAME = filebase+config.EXT_LIB;
+    elif control.STATIC == 0 do // dynamic
       control.LINKER_OUTPUT_FILENAME = filebase+config.EXT_SHLIB;
     else
       control.LINKER_OUTPUT_FILENAME = filebase+config.EXT_EXE;

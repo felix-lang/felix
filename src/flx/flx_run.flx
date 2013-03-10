@@ -188,6 +188,7 @@ proc cxx_compile_static
   cxx_compile_static1 (dvars.cpp_filebase+".cpp",dvars.cpp_filebase+config.EXT_STATIC_OBJ);
 
 }
+
 proc cxx_link_static
 {
   var t0 = #Time::time;
@@ -210,6 +211,30 @@ proc cxx_link_static
     )
   ;
   showtime("Static link  : "+control.LINKER_OUTPUT_FILENAME,t0);
+  if result != 0 do
+    pexit(result);
+  done 
+}
+
+proc cxx_static_library
+{
+  var t0 = #Time::time;
+  var result =
+    CxxCompiler::generic_static_library
+    (
+      CCLINK_STATIC_LIB = config.CCLINK_STATIC_LIB, 
+      SPEC_LIB_FILENAME = config.SPEC_LIB_FILENAME,
+      debugln = debugln[string],
+      quote = quote
+    )  
+    ( list[string] () +
+        control.cppos + 
+        quote(dvars.cpp_filebase+config.EXT_STATIC_OBJ)
+      ,
+      control.LINKER_OUTPUT_FILENAME
+    )
+  ;
+  showtime("Static lib   : "+control.LINKER_OUTPUT_FILENAME,t0);
   if result != 0 do
     pexit(result);
   done 
@@ -345,8 +370,9 @@ proc run_cxx_and_exe_as_required
 
     debugln "Static linkage";
     cxx_compile_static;
-
-    if control.LINKIT == 0 do
+    if control.STATICLIB == 1 do
+      cxx_static_library;
+    elif control.LINKIT == 0 do
       debugln "Not linking based on switch";
     else
       cxx_link_static;

@@ -63,6 +63,7 @@ fun dflt_control () =>
     var DOREDUCE=1;
     var TIMECMD="time -p";
     var STATIC=config.DEFAULT_LINK_STATIC;
+    var STATICLIB=0;
     var OPTIMISE=config.OPTIMISE;
     var SHOWCODE=0;
     var CCFLAGS="";

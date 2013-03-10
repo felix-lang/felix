@@ -115,8 +115,8 @@ class CxxCompiler
     (cppos:list[string], LINKER_OUTPUT_FILENAME:string) : int =
   {
     var xargs = list[string] () +
-        config.CCLINK_STATIC +
-        (config.SPEC_EXE_FILENAME+quote(control.LINKER_OUTPUT_FILENAME)) +
+        spec.CCLINK_STATIC +
+        (spec.SPEC_EXE_FILENAME+quote(LINKER_OUTPUT_FILENAME)) +
         cppos + 
         spec.LINK_STRING
     ;
@@ -129,6 +129,34 @@ class CxxCompiler
     done 
     return result;
   }
+
+  typedef generic_lib_static_t =
+  (
+    CCLINK_STATIC_LIB: string,
+    SPEC_LIB_FILENAME: string,
+    debugln: string->0,
+    quote: string -> string
+  );
+
+  gen generic_static_library 
+    (spec:generic_lib_static_t) 
+    (cppos:list[string], LINKER_OUTPUT_FILENAME:string) : int =
+  {
+    var xargs = list[string] () +
+        spec.CCLINK_STATIC_LIB +
+        (spec.SPEC_LIB_FILENAME+quote(LINKER_OUTPUT_FILENAME)) +
+        cppos
+    ;
+    var CMD = cat ' ' xargs;
+
+    debugln$ "Library archive command="+CMD;
+    var result=system(CMD);
+    if result != 0 do
+      debugln$ "Library archive command="+CMD+ " FAILED";
+    done 
+    return result;
+  }
+
 
 }
 

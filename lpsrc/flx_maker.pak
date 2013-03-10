@@ -36,6 +36,7 @@ fun config() =>
 @tv('EXT_SHLIB=r"""'+config.TARGET_CXX.options.EXT_SHLIB+'"""')
 @tv('SPEC_OBJ_FILENAME=r"""'+config.TARGET_CXX.options.SPEC_OBJ_FILENAME+'"""')
 @tv('SPEC_EXE_FILENAME=r"""'+config.TARGET_CXX.options.SPEC_EXE_FILENAME+'"""')
+@tv('SPEC_LIB_FILENAME=""')
 @tv('OPTIMISE=r"""'+config.TARGET_CXX.options.OPTIMISE+' """')
 @tv('DEBUG_FLAGS=r"""'+config.TARGET_CXX.options.DEBUG_FLAGS+' """')
 @if config.DEFAULT_LINK_MODEL=="dynamic":

@@ -13,6 +13,7 @@ proc print_help() {
   println "--usage=production   : optimised code with run time safety checks retained";
   println "--usage=hyperlight   : optimised code without run time safety checks";
   println "--static             : make standalone statically linked executable";
+  println "--staticlib          : make standalone library of static objects";
   println "--nofelix            : do not run felix translator, leave C++ outputs alone";
   println "--nocc               : do not C/C++ compiler; implies --nolink";
   println "--nolink             : do not link object files to an executable";
@@ -180,6 +181,12 @@ proc handle_switch(arg:string)
   elif arg == "--static" do
     debugln "Compile a statically linked program";
     control.STATIC=1;
+
+  elif arg == "--staticlib" do
+    debugln "make a static link library (instead of a program)";
+    control.STATIC=1;
+    control.STATICLIB=1;
+    control.RUNIT=0;
 
   elif prefix(arg,"--inline=") do
     debugln "Set inline aggressiveness";
