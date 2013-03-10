@@ -99,6 +99,12 @@ failure:>
 
 proc install_bin ()
 {
+  // NOTE: this function will only work on Windows if you have
+  // base unix tools installed:
+  //
+  // mkdir
+  // cp
+  //
   // NOTE: these installs use the immediate build directory,
   // NOT the final build target, eg tools/webserver not bin/webserver
   // This may be wrong!
@@ -109,6 +115,11 @@ proc install_bin ()
   println$ "FROM: " + FLX_INSTALL_DIR;
   println$ "TO   : /usr/local/bin (fixed, can't be changed: privilege required)";
   println$ "AND  : /usr/local/lib (fixed, can't be changed: privilege required)";
+
+  result = system("mkdir -pv /usr/local/bin");
+    // this command can't fail so no point checking the return code
+    // if the user doesn't have mkdir on Windows the rest of the install
+    // probably won't work either.
 
   result=system("cp -f "+FLX_INSTALL_DIR+"/bin/flx /usr/local/bin");
   if result !=0 goto install_bin_failed;
