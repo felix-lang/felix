@@ -27,7 +27,7 @@ instance Str[&(int^4)] {
   fun str (x:&(int^4)) => "(" + str x*.0 + "," + str x*.1 + "," + str x*.2  +","+str x*.3+")"; 
 }
 var i = 2;
-proc otst[V,T with ContiguousArrayObject[T,V], Str[T]] (x:T, v1:V, v2:V, s:string)
+proc otst[V,T with ContiguousArrayObject[T,V], Str[T]] (var x:T, v1:V, v2:V, s:string)
 {
   println$ s;
   x.stl_begin + i <- v1;

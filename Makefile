@@ -163,6 +163,9 @@ speed:
 	sh speed/perf.sh 2>>result.tmp
 	build/release/bin/flx_gengraph
 
+upgrade-test:
+	${BUILDROOT}/bin/flx_tangle --indir=src/test --outdir=test
+
 gentest:
 	rm -rf test
 	mkdir test

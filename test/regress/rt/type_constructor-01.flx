@@ -8,8 +8,8 @@ module Foo
 val x = Foo::foo 5;
 
 print$ match x with
-| Foo::A => "a"
-| Foo::B => "b"
+| A => "a"
+| B => "b"
 endmatch;
 endl;
 
