@@ -12,7 +12,7 @@ open class Option {
     fun str (x:opt[T]) =>
       match x with
       | Some ?x => "Some " + (str x)
-      | None[T] => "None"
+      | None => "None"
       endmatch
     ;
   }

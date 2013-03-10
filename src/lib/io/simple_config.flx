@@ -111,7 +111,7 @@ class SimpleConfig {
     else
       match split_first(line, "=") with 
         |Some ?s => list[string*string]((strip(s.(0)),strip(s.(1)))) 
-        |None[string*string] => Empty[string*string] 
+        |None => Empty[string*string] 
       endmatch 
     endif;
   

@@ -106,7 +106,6 @@ syntax patterns {
   sargument_pattern := "case" sinteger =># "`(pat_const_ctor ,_sr (ast_case_tag ,_sr ,_2))";
 
   sargument_pattern := sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_1)";
-  sargument_pattern := sreally_qualified_name =># "`(pat_const_ctor ,_sr ,_1)";
 
 
   sapplicative_pattern := satomic_pattern =># "_1";
@@ -117,7 +116,7 @@ syntax patterns {
   sapplicative_pattern := sctor_name =># "`(pat_const_ctor ,_sr ,_1)";
 
   //$ The sum type constructor can either be a qualified name...
-  sctor_name := squalified_name =># "_1";
+  sctor_name := sname =># "`(ast_name ,_sr ,_1 ())";
 
   //$ or it can be a case literal.
   sctor_name := "case" sinteger =># "`(ast_case_tag ,_sr ,_2)";

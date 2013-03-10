@@ -2367,9 +2367,11 @@ and lookup_qn_with_sig'
         (fun (_,i,_) -> btyp_type_var (i,btyp_type 0))
         (fst vs)
       in
-      bexpr_closure
+      let x = bexpr_closure
         (inner_type_of_index state bsym_table rs index)
         (index,ts)
+      in
+      x
 
     | _ ->
       (*
@@ -4516,49 +4518,6 @@ print_endline "bind expression' succeeded";
       | _ -> clierr sr ("expected nominal type, got" ^ sbt bsym_table ut)
       end
 
-    | `AST_lookup (sr,(context,name,ts)) ->
-      (*
-      print_endline ("WARNING(deprecate): match constructor by name! " ^ name);
-      *)
-      let (_,ut) as ue = be e in
-      let ut = rt ut in
-      (*
-      print_endline ("Union type is " ^ sbt bsym_table ut);
-      *)
-      begin match ut with
-      | BTYP_inst (i,ts') ->
-        (*
-        print_endline ("OK got type " ^ si i);
-        *)
-        begin match hfind "lookup" state.sym_table i with
-        | { Flx_sym.id=id; symdef=SYMDEF_union ls } ->
-          (*
-          print_endline ("UNION TYPE! " ^ id);
-          *)
-          let vidx =
-            let rec scan = function
-            | [] -> failwith ("AST_lookup1: Can't find union variant " ^ name)
-            | (vn,vidx,vs,vat)::_ when vn = name -> vidx
-            | _:: t -> scan t
-            in scan ls
-          in
-          (*
-          print_endline ("Index is " ^ si vidx);
-          *)
-          bexpr_match_case flx_bbool (vidx,ue)
-
-        (* this handles the case of a C type we want to model
-        as a union by provding _match_ctor_name style function
-        as C primitives ..
-        *)
-        | { Flx_sym.id=id; symdef=SYMDEF_abs _ } ->
-          let fname = EXPR_lookup (sr,(context,"_match_ctor_" ^ name,ts)) in
-          be (EXPR_apply ( sr, (fname,e)))
-        | _ -> failwith "Woooops expected union or abstract type"
-        end
-      | _ -> failwith "Woops, expected nominal type"
-      end
-
     | `AST_typed_case (sr,v,_)
     | `AST_case_tag (sr,v) ->
        be (EXPR_match_case (sr,(v,e)))
@@ -4587,10 +4546,10 @@ print_endline "bind expression' succeeded";
      end
 
   | EXPR_ctor_arg (sr,(qn,e)) ->
-(* print_endline ("Bind expression: EXPR_ctor_arg "^ string_of_qualified_name qn ^ " of " ^ string_of_expr e); *)
+
     let (_,ut) as ue = be e in
     let ut = rt ut in
-(*    print_endline ("Match expression type: " ^ sbt bsym_table ut); *)
+
     begin match qn with
     | `AST_name (sr,name,ts) ->
 (*      print_endline ("Constructor to extract: " ^ name ^ "[" ^ catmap "," string_of_typecode ts ^ "]"); *)
@@ -4644,71 +4603,6 @@ print_endline "bind expression' succeeded";
         *)
         | { Flx_sym.id=id; symdef=SYMDEF_abs _ } ->
           let fname = EXPR_name (sr,"_ctor_arg_" ^ name,ts) in
-          be (EXPR_apply ( sr, (fname,e)))
-
-        | _ -> failwith "Woooops expected union or abstract type"
-        end
-      | _ -> failwith "Woops, expected nominal type"
-      end
-
-
-    | `AST_lookup (sr,(e,name,ts)) ->
-      (*
-      print_endline ("WARNING(deprecate): decode variant by name! " ^ name);
-      *)
-      let (_,ut) as ue = be e in
-      let ut = rt ut in
-      (*
-      print_endline ("Union type is " ^ sbt bsym_table ut);
-      *)
-      begin match ut with
-      | BTYP_inst (i,ts') ->
-        (*
-        print_endline ("OK got type " ^ si i);
-        *)
-        begin match hfind "lookup" state.sym_table i with
-        | { Flx_sym.id=id; symdef=SYMDEF_union ls } ->
-          let _,vs,_  = find_split_vs state.sym_table bsym_table i in
-          (*
-          print_endline ("UNION TYPE! " ^ id);
-          *)
-          let vidx,vt =
-            let rec scan = function
-            | [] -> failwith ("AST_lookup2: Can't find union variant " ^ name)
-            | (vn,vidx,vs',vt)::_ when vn = name -> vidx,vt
-            | _:: t -> scan t
-            in scan ls
-          in
-          (*
-          print_endline ("Index is " ^ si vidx);
-          *)
-          let vt =
-            let bvs = List.map
-              (fun (n,i,_) -> n, btyp_type_var (i, btyp_type 0))
-              vs
-            in
-            (*
-            print_endline ("Binding ctor arg type = " ^ string_of_typecode vt);
-            *)
-            let env' = build_env state bsym_table (Some i) in
-            bind_type' state bsym_table env' rsground sr vt bvs mkenv
-          in
-          (*
-          print_endline ("Bound polymorphic type = " ^ sbt bsym_table vt);
-          *)
-          let vs' = List.map (fun (s,i,tp) -> s,i) vs in
-          let vt = tsubst vs' ts' vt in
-          (*
-          print_endline ("Instantiated type = " ^ sbt bsym_table vt);
-          *)
-          bexpr_case_arg vt (vidx,ue)
-
-        (* this handles the case of a C type we want to model
-        as a union by provding _match_ctor_name style function
-        as C primitives ..
-        *)
-        | { Flx_sym.id=id; symdef=SYMDEF_abs _ } ->
-          let fname = EXPR_lookup (sr,(e,"_ctor_arg_" ^ name,ts)) in
           be (EXPR_apply ( sr, (fname,e)))
 
         | _ -> failwith "Woooops expected union or abstract type"

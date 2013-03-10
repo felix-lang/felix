@@ -195,8 +195,8 @@ Constructor variant.
     //$ Apply a procedure to each element of a list.
     proc iter (_f:T->void) (x:list[T]) {
       match x with
-      | Empty[T] => {}
-      | Cons[T] (?h,?t) => { _f h; iter _f t; }
+      | Empty => {}
+      | Cons (?h,?t) => { _f h; iter _f t; }
       endmatch
       ;
     }
@@ -208,8 +208,8 @@ Constructor variant.
     {
       fun aux (init:U) (x:list[T]):U =>
         match x with
-        | Empty[T] => init
-        | Cons[T] (?h,?t) => aux (_f init h) t
+        | Empty => init
+        | Cons (?h,?t) => aux (_f init h) t
         endmatch
       ;
       return aux init x;
@@ -222,8 +222,8 @@ Constructor variant.
     {
       fun aux (x:list[T]) (init:U):U =>
         match x with
-        | Empty[T] => init
-        | Cons[T] (?h,?t) => _f h (aux t init)
+        | Empty => init
+        | Cons (?h,?t) => _f h (aux t init)
         endmatch
       ;
       return aux x init;
@@ -255,8 +255,8 @@ Tail recursive.
   fun rev_map[T,U] (_f:T->U) (x:list[T]): list[U] = {
     fun aux (inp:list[T]) (out:list[U]) : list[U] =>
       match inp with
-      | Empty[T] => out
-      | Cons[T] (?h, ?t) => aux t (Cons (_f(h), out))
+      | Empty => out
+      | Cons (?h, ?t) => aux t (Cons (_f(h), out))
       endmatch
     ;
     return aux x Empty[U];
@@ -284,8 +284,8 @@ Tail recursive.
     {
       return
         match x with
-        | Empty[T] => y
-        | Cons[T] (?h, ?t) => aux t (Cons (h, y))
+        | Empty => y
+        | Cons (?h, ?t) => aux t (Cons (h, y))
         endmatch
       ;
     }
@@ -393,8 +393,8 @@ O(N) slow.
   {
      return
        match x with
-       | Empty[list[T]] => Empty[T]
-       | Cons[list[T]] (?h,?t) => fold_left join of (list[T]) h t
+       | Empty => Empty[T]
+       | Cons (?h,?t) => fold_left join of (list[T]) h t
        endmatch
      ;
    }
@@ -406,8 +406,8 @@ O(N) slow.
   {
     return
       match x with
-      | Empty[string] => ''
-      | Cons[string] (?h, ?t) =>
+      | Empty => ''
+      | Cons (?h, ?t) =>
           fold_left (fun (a:string) (b:string) => a + sep + b) h t
       endmatch
     ;
@@ -587,7 +587,7 @@ instance[T with Show[T]] Str[List::list[T]] {
   noinline fun str (xs:List::list[T]) =>
     'list(' +
       match xs with
-      | Empty[T] => ''
+      | Empty => ''
       | Cons(?o, ?os) =>
           List::fold_left (
             fun (a:string) (b:T):string => a + ', ' + (repr b)

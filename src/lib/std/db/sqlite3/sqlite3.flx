@@ -299,7 +299,7 @@ class Sqlite3 {
   gen get_next ( iter:()->ret_val[darray[column_value]],row:&ret_val[darray[column_value]]):bool = { 
     *row = iter();
      return (match *row with 
-              |end_of_results[darray[column_value]] =>false 
+              |end_of_results =>false 
               |row_fail =>false 
               |_ => true
             endmatch); 

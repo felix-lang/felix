@@ -95,7 +95,7 @@ Returns nul char (code 0) if the string is empty.
 
   fun subscript (x:string, s:slice[int]):string =>
     match s with
-    | Slice_all[int] => substring (x, 0, x.len.int)
+    | Slice_all => substring (x, 0, x.len.int)
     | Slice_from (?start) => copyfrom (x, start)
     | Slice_to (?end) => copyto (x, end)
     | Slice_range (?start, ?end) => substring (x, start, end)

@@ -113,7 +113,7 @@ class Avl
   //=================================
 
   fun last[T] : avl[T]->T =
-    | Tree(_, ?x, _, Nil[T]) => x
+    | Tree(_, ?x, _, Nil) => x
     | Tree(_, _, _, ?right) => last(right)
   ;
 
@@ -125,7 +125,7 @@ class Avl
   //=================================
 
   fun first[T] : avl[T]->T =
-    | Tree(_, ?x, Nil[T], _) => x
+    | Tree(_, ?x, Nil, _) => x
     | Tree(_, _, ?left, _) => first(left)
   ;
 

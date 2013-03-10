@@ -43,7 +43,7 @@ class Templates {
 
    gen apply_decorators (templates:list[string],decorators:Decorators::decorators) (conn:http_connection, request:http_request) = {
      var template:string = match get_fname(request) with |Some ?s => s |_ => "" endmatch;
-     if match templates with |Empty[string] => false |_ => true endmatch do
+     if match templates with |Empty => false |_ => true endmatch do
        if match find (fun (x:string) => x == template) templates with
           |Some _ => false |_ => true endmatch do
          return ;

@@ -254,15 +254,15 @@ TODO: implement more MIME types.
   fun from_str (s:string):opt[mime_type] => 
     match application_type_from_str s with
       | Some ?t => Some (application t)
-      | None[application_mime_subtype] => match audio_type_from_str s with
+      | None => match audio_type_from_str s with
         | Some ?t =>  Some (audio t)
-        | None[audio_mime_subtype] => match image_type_from_str s with
+        | None => match image_type_from_str s with
            | Some ?t => Some (image t)
-           | None[image_mime_subtype] => match text_type_from_str s with
+           | None => match text_type_from_str s with
              | Some ?t => Some (text t)
-             | None[text_mime_subtype] => match multipart_type_from_str s with
+             | None => match multipart_type_from_str s with
                | Some ?t => Some (multipart t)
-               | None[multipart_mime_subtype] => None[mime_type]
+               | None => None[mime_type]
              endmatch
            endmatch
          endmatch
