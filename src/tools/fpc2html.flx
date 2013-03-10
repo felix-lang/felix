@@ -30,7 +30,7 @@ println$ "formatting fpc data";
 
   proc handle_line(s:string) {
     match split(s,":") with
-    | Cons(?fn,Cons(?fv,Empty[string]))  =>
+    | Cons(?fn,Cons(?fv,Empty))  =>
       { 
         out+= "<span class=fpc_fieldname>"+fn+": </span>";
         if fn in ("Requires","flx_requires_driver") do

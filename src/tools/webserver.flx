@@ -230,7 +230,7 @@ fun getline_to_url (get:string) =>
     ""
   else
     match find (get, ' ', 4) with
-    | None[int] => ""
+    | None => ""
     | Some ?pos => get.[4 to pos]
     endmatch
   endif
@@ -248,7 +248,7 @@ fun split_url (inurl:string) = {
 
   return
     match find (url, '/') with
-    | None[int] => None[string*string]
+    | None => None[string*string]
     | Some ?pos => Some$ url.[0 to pos], url.[pos + 1 to]
     endmatch
   ;
@@ -604,7 +604,7 @@ fun mk_reg_lines (fname:string, files: list[string]) = {
       entry = h; rest = t;
       base,extn =
         match rfind (entry, ".") with
-        | None[int] => entry, "" 
+        | None => entry, "" 
         | Some ?pos => entry.[to pos], entry.[pos to]
         endmatch
       ;
@@ -692,10 +692,10 @@ proc serve_file(s: socket_t, infname: string)
   var suffix = "";
   match rfind (fname, "?") with
   | Some ?pos => { suffix = fname.[pos + 1 to]; fname=fname.[0 to pos]; }
-  | None[int] =>
+  | None =>
     {
       match rfind (fname, ".") with
-      | None[int] => {}
+      | None => {}
       | Some ?pos => { suffix = fname.[pos + 1 to]; }
       endmatch; 
     }
@@ -739,8 +739,8 @@ proc serve_file(s: socket_t, infname: string)
         if prefix(fname,"/etc") do serve_forbidden(s,fname);
         else
         match FileStat::filetype f with
-        | FileStat::REGULAR => { serve_raw(s,f,suffix); }
-        | FileStat::DIRECTORY => { serve_directory (s,f); }
+        | REGULAR => { serve_raw(s,f,suffix); }
+        | DIRECTORY => { serve_directory (s,f); }
         | _ => { serve_not_found(s,f); }
         endmatch;
         done
@@ -776,7 +776,7 @@ noinline proc handler (var k:socket_t) ()
   // now I need to parse the GET line, get a file name out of its url
   // (e.g. unqualfied -> index.html and name/flx.jpg -> flx.jpg
   match parse_get_line line with
-  | None[string*string] => {
+  | None => {
       print "BAD get line: "; print line; endl;
     }
   | Some (?base, ?file) => {
