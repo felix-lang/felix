@@ -89,19 +89,47 @@ syntax patterns {
   //$ Match a value with a coercion.
   //$ The subexpression corresponding to the LHS is compared.
   //$ If it matches the result is coerced to the RHS type expression. 
-  scoercive_pattern := satomic_pattern "|>" x[sarrow_pri] =>#
+  scoercive_pattern := sapplicative_pattern "|>" x[sarrow_pri] =>#
     "`(pat_coercion ,_sr ,_1 ,_3)";
-  scoercive_pattern := satomic_pattern =># "_1";
+  scoercive_pattern := sapplicative_pattern =># "_1";
+
+  //$ Match a non-constant sum type constructor
+  //$ that is, one with an argument.
+  //$ The LHS name must match the constructor used to make the value.
+  //$ The RHS pattern is matched against the argument it was constructed with.
+  sapplicative_pattern := sctor_name sargument_pattern =>#
+    "`(pat_nonconst_ctor ,_sr ,_1 ,_2)";
+
+  sargument_pattern := satomic_pattern =># "_1";
+  sargument_pattern := "?" sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_2)";
+  sargument_pattern := "#" sctor_name =># "`(pat_const_ctor ,_sr ,_2)";
+  sargument_pattern := "case" sinteger =># "`(pat_const_ctor ,_sr (ast_case_tag ,_sr ,_2))";
+
+  sargument_pattern := sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_1)";
+  sargument_pattern := sreally_qualified_name =># "`(pat_const_ctor ,_sr ,_1)";
+
+
+  sapplicative_pattern := satomic_pattern =># "_1";
+  sapplicative_pattern := "?" sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_2)";
+  sapplicative_pattern := "#" sctor_name =># "`(pat_const_ctor ,_sr ,_2)";
+  sapplicative_pattern := "case" sinteger =># "`(pat_const_ctor ,_sr (ast_case_tag ,_sr ,_2))";
+
+  sapplicative_pattern := sctor_name =># "`(pat_const_ctor ,_sr ,_1)";
+
+  //$ The sum type constructor can either be a qualified name...
+  sctor_name := squalified_name =># "_1";
+
+  //$ or it can be a case literal.
+  sctor_name := "case" sinteger =># "`(ast_case_tag ,_sr ,_2)";
+
+  //-----------------------------------------------------------------------
+  // atomic pattern excludes name, ?name and qualified names
 
   //$ Match the value true = case 1 of 2.
   satomic_pattern := "true" =># "`(pat_const_ctor ,_sr (ast_case_tag ,_sr 1))";
 
   //$ Match the value false = case 0 of 2.
   satomic_pattern := "false" =># "`(pat_const_ctor ,_sr (ast_case_tag ,_sr 0))";
-
-  //$ Match anything.
-  //$ The corresponding subexpression is given the name.
-  satomic_pattern := "?" sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_2)";
 
   //$ Match anything without naming the subexpression.
   satomic_pattern := "_" =># "`(pat_any ,_sr)";
@@ -126,20 +154,6 @@ syntax patterns {
   //$  ?name when name == expr.
   //$
   satomic_pattern := "$" "(" sexpr ")" =># "`(pat_expr ,_sr ,_3)";
-
-
-  //$ Match a non-constant sum type constructor
-  //$ that is, one with an argument.
-  //$ The LHS name must match the constructor used to make the value.
-  //$ The RHS pattern is matched against the argument it was constructed with.
-  satomic_pattern := sctor_name satomic_pattern =>#
-    "`(pat_nonconst_ctor ,_sr ,_1 ,_2)";
-  satomic_pattern := sctor_name =># "`(pat_const_ctor ,_sr ,_1)";
-
-  //$ The sum type constructor can either be a qualified name...
-  sctor_name := squalified_name =># "_1";
-  //$ or it can be a case literal.
-  sctor_name := "case" sinteger =># "`(ast_case_tag ,_sr ,_2)";
 
   //$ Match against any literal value.
   //$ This includes integers, strings, whatever.
