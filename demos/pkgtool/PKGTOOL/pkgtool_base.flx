@@ -556,10 +556,18 @@ requires_slibs: $(dlibs)
   //$ Felix Package Config file
 noinline  proc create_config(name:string,includes:list[string],libs:list[string],
                      reqs:list[string]) {
+  create_config(name,includes,libs,reqs,"");
+}
+
+  //$ Determines proper configuration given package 'name', list of C/C++
+  //$ 'includes' and list of C/C++ 'libs'. Then generates config/'name'.fpc
+  //$ Felix Package Config file
+noinline  proc create_config(name:string,includes:list[string],libs:list[string],
+                     reqs:list[string],extra_cflags:string) {
     var config_ok_fn = (BUILD_DIR.join("config")).join("CONFIG_"+name+".OK");
     if not FileStat::fileexists config_ok_fn do 
       var idirs = strdict[string]();
-      var c_flags:string = "";
+      var c_flags:string = extra_cflags+" ";
       for inc in includes do
        add idirs (match
         find_path_to(inc,
