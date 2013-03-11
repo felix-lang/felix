@@ -1,7 +1,0 @@
-header "#include <cstdio>";
-{
-  ctypes int, long;
-  proc print:int = 'printf("%d\\n",$1);';
-  print 1;
-  print 2;
-};

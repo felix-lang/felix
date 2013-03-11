@@ -1,5 +1,0 @@
-fun f[t,u] (x:t,y:u)=> 1; //1
-fun f[v] (x:v,y:v)=>2; //2: specialises 1
-
-print (f (1,2.0)); endl; //calls 1
-print (f (1,2)); endl; //calls 2

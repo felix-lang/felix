@@ -1,5 +1,0 @@
-fun guarded_div(a:int, b:int when b!=0) =
-{
-  return a/b;
-}
-print (guarded_div(2,4)); print "\n";

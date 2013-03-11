@@ -606,10 +606,6 @@ def test(ctx):
       ('regress_nd' , Path.globall('test/regress/nd/*.flx')),
       ('regress_stl' , Path.globall('test/regress/stl/*.flx')),
 
-      ('tut_embedding' , Path.globall('tut/embedding/*.flx')),
-      ('tut_migration', Path.globall('tut/migration/*.flx')),
-      ('tut_tutorial', Path.globall('tut/tutorial/*.flx')),
-
       ('collection' , Path.globall('test/collection/*.flx')),
       #('drivers' , Path.globall('test/drivers/*.flx')),
       ('glob' , Path.globall('test/glob/*.flx')),

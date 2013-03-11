@@ -3,20 +3,38 @@
 // and sh is always an ash, which is almost always bash
 class Bash {
 
-  // we can't use single quotes becase there's no way to represent a ' 
-  // in a single quoted string .. so we have to use double quotes and
-  // backslash the 4 special characters: " $ \ `
-  // I think this is all ..
-  fun quote(s:string):string= {
-    var r = "";
-    for var i in 0uz upto s.len - 1uz do
-      var ch = s.[i];
-      if ch in "\\$\"`" do
-        r += "\\"+ str ch;
-      else
-        r+= ch;
+  instance Shell_class[Posix] {
+    // we can't use single quotes becase there's no way to represent a ' 
+    // in a single quoted string .. so we have to use double quotes and
+    // backslash the 4 special characters: " $ \ `
+    // I think this is all ..
+    fun quote_arg(s:string):string= {
+      var r = "";
+      for var i in 0uz upto s.len - 1uz do
+        var ch = s.[i];
+        if ch in "\\$\"`" do
+          r += "\\"+ str ch;
+        else
+          r+= ch;
+        done
       done
-    done
-    return '"'+r+'"';
+      return '"'+r+'"';
+    }
+    fun quote_line_for_system (s:string) => s;
+    fun quote_line_for_popen (s:string) => s + " ";
+
+    gen get_stdout(x:string) = {
+        var fout = Process::popen_in(x+" ");
+        if valid fout do
+          var output = load fout;
+
+          var result = Process::pclose fout; 
+          return (Process::WEXITSTATUS result), output;
+        else
+          println$ "Unable to run command '" + x "'";
+          return -1,"";
+        done
+    }
   }
+  inherit Shell_class[Posix];
 }

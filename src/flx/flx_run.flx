@@ -65,11 +65,11 @@ proc run_felix_compiler_if_required
       use_ext = dvars.use_ext,
       TIME = control.TIME,
       debugln = debugln[string],
-      quote = quote
+      quote = Shell::quote_arg
     );
     showtime("Felix flxg   : "+dvars.cpp_filebase, t0);
     if result != 0 do 
-      pexit(result); 
+      System::pexit(result); 
     done
     debugln "Felix compilation succeeded";
     calpackages;
@@ -96,13 +96,13 @@ proc cxx_compile_dynamic1(src:string, dst:string)
       MACROS = control.MACROS,
       SPEC_OBJ_FILENAME = config.SPEC_OBJ_FILENAME,
       debugln = debugln[string],
-      quote = quote
+      quote = Shell::quote_arg
     ) 
     (src, dst)
   ;
   showtime("Dynamic c++  : "+src, t0);
   if result != 0 do
-    pexit(result);
+    System::pexit(result);
   done
 }
 
@@ -130,16 +130,16 @@ proc cxx_link_dynamic
       SPEC_EXE_FILENAME = config.SPEC_EXE_FILENAME,
       LINK_STRING = control.LINK_STRING,
       debugln = debugln[string],
-      quote = quote
+      quote = Shell::quote_arg
     )
     (
-      control.cppos + quote(dvars.cpp_filebase+config.EXT_SHARED_OBJ),
+      control.cppos + Shell::quote_arg(dvars.cpp_filebase+config.EXT_SHARED_OBJ),
       control.LINKER_OUTPUT_FILENAME
     )
   ;
   showtime("Dynamic link : "+control.LINKER_OUTPUT_FILENAME,t0);
   if result != 0 do
-    pexit(result);
+    System::pexit(result);
   done
 }
 
@@ -156,7 +156,7 @@ proc cxx_compile_static1 (src: string, dst: string)
       MACROS = control.MACROS, 
       SPEC_OBJ_FILENAME = config.SPEC_OBJ_FILENAME,
       debugln = debugln[string],
-      quote = quote
+      quote = Shell::quote_arg
     )
     (src, dst)
   ;
@@ -164,7 +164,7 @@ proc cxx_compile_static1 (src: string, dst: string)
 
   if result != 0 do
     eprintln$ "C++ compilation "+src+" failed";
-    pexit(result);
+    System::pexit(result);
   done
 
 }
@@ -199,20 +199,20 @@ proc cxx_link_static
       SPEC_EXE_FILENAME = config.SPEC_EXE_FILENAME,
       LINK_STRING = control.LINK_STRING,
       debugln = debugln[string],
-      quote = quote
+      quote = Shell::quote_arg
     )  
     ( list[string] () +
         control.DRIVER_OBJS + 
         control.cppos + 
-        quote(dvars.cpp_filebase+"_static_link_thunk"+config.EXT_STATIC_OBJ) + 
-        quote(dvars.cpp_filebase+config.EXT_STATIC_OBJ)
+        Shell::quote_arg(dvars.cpp_filebase+"_static_link_thunk"+config.EXT_STATIC_OBJ) + 
+        Shell::quote_arg(dvars.cpp_filebase+config.EXT_STATIC_OBJ)
       ,
       control.LINKER_OUTPUT_FILENAME
     )
   ;
   showtime("Static link  : "+control.LINKER_OUTPUT_FILENAME,t0);
   if result != 0 do
-    pexit(result);
+    System::pexit(result);
   done 
 }
 
@@ -225,18 +225,18 @@ proc cxx_static_library
       CCLINK_STATIC_LIB = config.CCLINK_STATIC_LIB, 
       SPEC_LIB_FILENAME = config.SPEC_LIB_FILENAME,
       debugln = debugln[string],
-      quote = quote
+      quote = Shell::quote_arg
     )  
     ( list[string] () +
         control.cppos + 
-        quote(dvars.cpp_filebase+config.EXT_STATIC_OBJ)
+        Shell::quote_arg(dvars.cpp_filebase+config.EXT_STATIC_OBJ)
       ,
       control.LINKER_OUTPUT_FILENAME
     )
   ;
   showtime("Static lib   : "+control.LINKER_OUTPUT_FILENAME,t0);
   if result != 0 do
-    pexit(result);
+    System::pexit(result);
   done 
 }
 
@@ -267,31 +267,31 @@ proc run_program_dynamic
 {
   var xargs = list (
       control.FLXRUN,control.DRIVER_EXE,dvars.DEBUGSWITCH,
-      quote(control.LINKER_OUTPUT_FILENAME), dvars.args)
+      Shell::quote_arg(control.LINKER_OUTPUT_FILENAME), dvars.args)
   ;
   var CMD = cat ' ' xargs;
-  if control.STDOUT != "" do CMD=CMD+" > " +quote(control.STDOUT); done
+  if control.STDOUT != "" do CMD=CMD+" > " +Shell::quote_arg(control.STDOUT); done
   debugln$ "Run command="+CMD;
   var t0 = #Time::time;
   var result = system(CMD);
   showtime("Dynamic Run : "+control.LINKER_OUTPUT_FILENAME,t0);
   if result != 0 do
-    pexit(result);
+    System::pexit(result);
   done
   check_output;
 }
 
 proc run_program_static
 {
-  var xargs = list ( dvars.STATIC_ENV, quote(control.LINKER_OUTPUT_FILENAME),dvars.args);
+  var xargs = list ( dvars.STATIC_ENV, Shell::quote_arg(control.LINKER_OUTPUT_FILENAME),dvars.args);
   var CMD = cat ' ' xargs;
-  if control.STDOUT != "" do CMD=CMD + " > "+quote(control.STDOUT); done
+  if control.STDOUT != "" do CMD=CMD + " > "+Shell::quote_arg(control.STDOUT); done
   debugln$ "Run command="+CMD;
   var t0 = #Time::time;
   var result=system(CMD);
   showtime("Static Run   : "+control.LINKER_OUTPUT_FILENAME,t0);
   if result != 0 do
-    pexit(result);
+    System::pexit(result);
   done
   check_output;
 }

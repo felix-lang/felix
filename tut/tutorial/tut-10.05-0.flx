@@ -1,4 +1,0 @@
-//Check let
-print (match 1 with | ?x =>  x + x endmatch); endl;
-print (let ?z = 1 in z + z); endl;
-print (let ?x = (let ?y = 2 in y + y) in x + x); endl; // 8

@@ -77,10 +77,13 @@ gen cal_depvars() =
   val args = control.USER_ARGS;
   debugln$ "Target program args = "+args;
 
-  var INCLUDE_DIR=quote("-I"+Filename::join(config.FLX_INSTALL_DIR,"lib","rtl")) + " "+quote("-I"+Filename::join(config.FLX_INSTALL_DIR,"config","target"));
+  var INCLUDE_DIR=
+    Shell::quote_arg("-I"+Filename::join(config.FLX_INSTALL_DIR,"lib","rtl")) + " "+
+    Shell::quote_arg("-I"+Filename::join(config.FLX_INSTALL_DIR,"config","target"))
+  ;
   debugln$ "C++ Include directory for Felix library " + INCLUDE_DIR;
 
-  var FLXLIB=quote("-I"+Filename::join(config.FLX_INSTALL_DIR,"lib"));
+  var FLXLIB=Shell::quote_arg("-I"+Filename::join(config.FLX_INSTALL_DIR,"lib"));
   var STDLIB=list("std","web");
   if control.NOSTDLIB == 1 do
     FLXLIB="";

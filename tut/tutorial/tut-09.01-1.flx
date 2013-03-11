@@ -1,5 +1,0 @@
-fun abs_div(a:int, b:int when b!=0) expect result >=0 =
-{
-  return abs(a/b);
-}
-print (abs_div(2,4)); print "\n";

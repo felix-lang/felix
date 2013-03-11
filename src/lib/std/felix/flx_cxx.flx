@@ -17,8 +17,8 @@ class CxxCompiler
     var CMD=List::cat ' ' (list (
       spec.CCOBJ_DLLIB, spec.CCFLAGS, "-DTARGET_BUILD",
       spec.INCLUDE_DIR, spec.INCLUDE_DIRS, spec.MACROS,
-      quote(src),
-      (spec.SPEC_OBJ_FILENAME+quote(dst))))
+      spec.quote(src),
+      (spec.SPEC_OBJ_FILENAME+spec.quote(dst))))
     ;
     spec.debugln$ "C++ compile command="+CMD;
     var result = System::system(CMD);
@@ -116,7 +116,7 @@ class CxxCompiler
   {
     var xargs = list[string] () +
         spec.CCLINK_STATIC +
-        (spec.SPEC_EXE_FILENAME+quote(LINKER_OUTPUT_FILENAME)) +
+        (spec.SPEC_EXE_FILENAME+spec.quote(LINKER_OUTPUT_FILENAME)) +
         cppos + 
         spec.LINK_STRING
     ;
@@ -144,7 +144,7 @@ class CxxCompiler
   {
     var xargs = list[string] () +
         spec.CCLINK_STATIC_LIB +
-        (spec.SPEC_LIB_FILENAME+quote(LINKER_OUTPUT_FILENAME)) +
+        (spec.SPEC_LIB_FILENAME+spec.quote(LINKER_OUTPUT_FILENAME)) +
         cppos
     ;
     var CMD = cat ' ' xargs;

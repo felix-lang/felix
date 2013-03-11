@@ -1,5 +1,0 @@
-body prb[t] = "void pr(?1 x) { std::cout << x << std::endl; }"
-  requires header "#include <iostream>";
-
-proc pr[t]:t = "pr($1);" requires prb[t];
-pr 1; pr 1.1;

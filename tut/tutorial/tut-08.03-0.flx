@@ -1,6 +1,0 @@
-//Check the:keyword
-
-fun f(x:int):int=>x*x;
-fun apply[s,d] (f:s->d) (x:s) : d => f x;
-
-print (apply (f) 4); endl;

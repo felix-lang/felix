@@ -1,0 +1,30 @@
+class Shell_class[OS]
+{
+  virtual fun quote_arg:string->string;
+  virtual fun quote_line_for_system: string->string;
+  virtual fun quote_line_for_popen: string -> string;
+  virtual gen get_stdout : string -> int * string;
+
+  fun create_system_command (s:list[string]) =>
+    quote_line_for_system $ catmap[string] ' ' quote_arg s
+  ;
+  gen raw_system: string -> int = "::std::system($1.c_str())"
+    requires Cxx_headers::cstdlib
+  ;
+  gen system (cmd: string) :int => 
+    cmd.quote_line_for_system.raw_system
+  ;
+
+  gen system (args:list[string]) : int =>
+    args.create_system_command.system
+  ;
+
+}
+
+class Shell {
+if PLAT_WIN32 do
+  inherit Cmd;
+else
+  inherit Bash;
+done
+}

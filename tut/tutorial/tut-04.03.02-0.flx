@@ -1,2 +1,0 @@
-fun mid: int * int -> int = "($1+$2)/2";
-print (mid(2,4)); print "\n";

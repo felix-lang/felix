@@ -449,7 +449,7 @@ proc processing_stage1
     CLEAR_CACHE= control.CLEAR_CACHE,
     debugln = debugln[string],
     xqt = xqt,
-    quote = quote
+    quote = Shell::quote_arg
   );
 
   debugln$ loopctl.grab, loopctl.argno, System::argc;
@@ -474,7 +474,7 @@ proc processing_stage1
 
   // Grab program arguments.
   while loopctl.argno < System::argc do 
-    control.USER_ARGS+=" " + quote (System::argv loopctl.argno); ++loopctl.argno; 
+    control.USER_ARGS+=" " + Shell::quote_arg(System::argv loopctl.argno); ++loopctl.argno; 
   done
   debugln$ "USER_ARGS=" + control.USER_ARGS;
 
@@ -492,12 +492,12 @@ proc processing_stage1
   // Establish name of Felix compiler.
   if config.HAVE_WIN32 do
     control.FLXG=Filename::join(config.FLX_INSTALL_DIR, 'bin', 'flxg.exe');
-    control.QUOTE_FLXG=quote(control.FLXG);
+    control.QUOTE_FLXG=Shell::quote_arg(control.FLXG);
     control.FLXRUN="set PATH="+(Directory::mk_absolute_filename config.FLX_INSTALL_DIR)+"\\lib\\rtl;"+"%PATH%&&";
     //println$ "FLXRUN=" + FLXRUN;
   else
     control.FLXG=config.FLX_INSTALL_DIR+"/bin/flxg";
-    control.QUOTE_FLXG=quote(control.FLXG);
+    control.QUOTE_FLXG=Shell::quote_arg(control.FLXG);
     // the mac uses DYLD_LIBRARY_PATH instead of LD_LIBRARY_PATH
     if config.HAVE_MACOSX do
       control.FLXRUN="env DYLD_LIBRARY_PATH="+config.FLX_INSTALL_DIR+"/lib/rtl:$DYLD_LIBRARY_PATH ";
@@ -507,7 +507,7 @@ proc processing_stage1
   done
 
   // Establish name of flx_pkgconfig.
-  control.PKGCONFIG=quote(Filename::join$ List::list(config.FLX_INSTALL_DIR,"bin","flx_pkgconfig"));
+  control.PKGCONFIG=Shell::quote_arg(Filename::join$ List::list(config.FLX_INSTALL_DIR,"bin","flx_pkgconfig"));
 
   // Get linker names.
   control.DLINK_STRING, control.SLINK_STRING = Config::link_strings(config.FLX_INSTALL_DIR);

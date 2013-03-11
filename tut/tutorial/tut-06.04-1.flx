@@ -1,9 +1,0 @@
-
-struct XY = {
-  x : int;
-  y : int;
-}
-
-val xy = XY(1,2);
-print xy.x; endl;
-print xy.y; endl;

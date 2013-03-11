@@ -1,8 +1,0 @@
-//Check C syntax
-var i = 1;
-var j : int;
-while i < 10 do
-  j = i + i;
-  print j; print "\n";
-  ++i;
-done

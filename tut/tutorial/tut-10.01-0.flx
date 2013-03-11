@@ -1,8 +1,0 @@
-//Check open directive
-module X {
-  proc print_endl (a:int) { print a; endl; }
-  fun square (a:int):int = { return a * a; }
-}
-
-open X;
-print_endl (square 2);

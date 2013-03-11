@@ -1,0 +1,23 @@
+class Cmd
+{
+  instance Shell_class[Win32]
+  {
+    fun quote_arg(s:string):string => '"' + s + '"';
+    fun quote_line_for_system(s:string) => '"' + s + '"';
+    fun quote_line_for_popen(s:string) => '"' + s + '"';
+
+    gen get_stdout(x:string) = {
+      var fout = Process::popen_in('"'+x+'"');
+      if valid fout do
+        var output = load fout;
+        var result = Process::pclose fout; 
+        return result.int, output;
+      else
+        println$ "Unable to run command '" + x "'";
+        return -1,"";
+      done
+    }
+  }
+  inherit Shell_class[Win32];
+
+}

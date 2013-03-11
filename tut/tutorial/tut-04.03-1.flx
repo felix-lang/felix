@@ -1,6 +1,0 @@
-fun mid(a:int, b:int) =
-{
-  val c = (a + b) / 2;
-  return c;
-}
-print (mid(2,4)); print "\n";

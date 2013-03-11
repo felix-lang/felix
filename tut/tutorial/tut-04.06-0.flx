@@ -1,9 +1,0 @@
-var cheat : int = 0;
-gen f():int = {
-  ++cheat;
-  //print "Generator "; print cheat; endl;
-  return cheat;
-}
-
-print "F 1="; print$ f(); endl; // 1
-

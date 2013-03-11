@@ -1,3 +1,0 @@
-var s = "Hello" + 32.char; // add a space after "Hello"
-s = s s + 42; // says "Hello Hello 42"
-println s;

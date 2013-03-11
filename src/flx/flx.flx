@@ -39,7 +39,7 @@ processing_stage1;
 
 
 if control.INREGEX != "" do
-  control.USER_ARGS = quote(loopctl.progname) + ' ' + control.USER_ARGS;
+  control.USER_ARGS = Shell::quote_arg(loopctl.progname) + ' ' + control.USER_ARGS;
   if control.INDIR == "" do control.INDIR = "."; done
   var regex = RE2 control.INREGEX;
   if not regex.ok do
@@ -80,4 +80,5 @@ dvars = #cal_depvars;
 runit;
 
 System::exit (0);
+
 

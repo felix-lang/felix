@@ -33,6 +33,7 @@ include "std/debug";
 include "std/c_hack";
 include "std/typing";
 include "std/system";
+include "std/shell";
 include "std/dynlink";
 include "std/env";
 include "std/cstdlib";

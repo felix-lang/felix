@@ -1,6 +1,0 @@
-body "#include <stdio.h>";
-body xprint = "void printx(char const *fmt, char const *s) { printf(fmt,s);}";
-body printu = 'void print(char const *s) { printx("%s\\n",s); }';
-
-proc hello:1='print("Hello");' requires xprint, printu;
-hello;

@@ -1,4 +1,0 @@
-val i = 40;
-val j = 2;
-val k = i + j;
-print k; print "\n";

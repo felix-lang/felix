@@ -1,46 +1,12 @@
 open Process;
 
+/*
 if PLAT_WIN32 do
 fun quote(s:string)=>'"' + s + '"'; // windows filename quoting
 else
 fun quote(s:string)=>"'" + s + "'"; // unix prefers ' to stop expansion
 done
-
-if PLAT_WIN32 do
-proc pexit(e:int)
-{
-  if e != 0 do
-    if e == -1 do
-      err :=  errno;
-      eprintln$ "Error "+err.str+" in flx: " + strerror err;
-      System::exit err.int;
-    else
-      eprintln$ "Unknown error in shell " + str e;
-      System::exit 3;
-    done
-  done
-  System::exit e;
-}
-else
-proc pexit(e:int)
-{
-  if e != 0 do
-    if WIFEXITED e.process_status_t do
-      err :=  WEXITSTATUS e.process_status_t;
-      eprintln$ "Error "+err.str+" in flx: " + strerror err.errno_t;
-      System::exit err;
-    elif WIFSIGNALED e.process_status_t do
-      sig := WTERMSIG e.process_status_t;
-      eprintln$ "Shell terminated by signal " + str sig;
-      System::exit 2;
-    else
-      eprintln$ "Unknown error in shell " + str e;
-      System::exit 3;
-    done
-  done
-  System::exit e;
-}
-done
+*/
 
 gen system(cmd:string):int= {
   var now = #Time::time;
@@ -51,41 +17,10 @@ gen system(cmd:string):int= {
   return result;
 }
 
-gen get_stdout(x:string) = {
-  // We're screwed if popen doesn't work ..
-/*
-  if os.name == "nt": // popen doesn't work on Windows
-    result := system(x + " >tmp.out");
-    Stdout::flush();
-    output := load "tmp.out";
-  else:
-*/
-    //var fout = Process::popen_in(x+" 2>&1 "); // this screws up flx_pkgconfig!
-if PLAT_WIN32 do
-   var fout = Process::popen_in('"'+x+'"');
-else
-    var fout = Process::popen_in(x+" ");
-done
-    if valid fout do
-      var output = load fout;
-debugln$ "[popen command returns data]" + output + "[end popen data]";
-
-      var result = Process::pclose fout; 
-if PLAT_WIN32 do
-      return result.int, output;
-else
-      return (Process::WEXITSTATUS result), output;
-done
-    else
-      println$ "Unable to run command '" + x "'";
-      return -1,"";
-    done
-}
-
 gen xqt(cmd:string) = {
   ECHO == 1 or dbug ?? fprintln (cerr, "cmd="+cmd);
   var now = #Time::time;
-  var result,output = get_stdout(cmd);
+  var result,output = Shell::get_stdout(cmd);
   if result == 0 do
     n := 
       match find_first_of (output, char "\n") with
@@ -99,7 +34,7 @@ gen xqt(cmd:string) = {
   else
     debugln "COMMAND FAILED";
     fprint$ cerr, ("Error "+repr(result)+" executing command " + cmd + "\n");
-    pexit result;
+    System::pexit result;
   done
   return output;
 }
