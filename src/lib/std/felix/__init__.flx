@@ -13,3 +13,5 @@ include "std/felix/flx_gc";
 // serialisation
 include "std/felix/serialise";
 
+// Felix Package Management
+include "std/felix/serialise";

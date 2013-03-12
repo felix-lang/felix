@@ -1,18 +1,6 @@
-include "PKGTOOL/pkgtool";
-include "PKGTOOL/pkgtool_base";
-// Package parameters
-//NAME = 'pkgtool';
-//VERSION = '.01';
-//AUTHOR = 'Mike Maul';
-//AUTHOR_URL="";
-//PKG_URL = 'https://github.com/mmaul/pkgtool';
-//DESCRIPTION = 'Packaging Management Tool';
-//LONG_DESCRIPTION = """
-//
-//""";
-//CATEGORY=list("UTIL");
-//LIBDIR = "PKGTOOL";
-BUILD_LIKE = Lib;
+//include "PKGTOOL/pkgtool";
+include "std/felix/pkgtool_base";
+BUILD_LIKE = App;//Lib;
 STOP_ON_TEST_FAILURES = false;
 open PkgTool;
 instance PkgTool {

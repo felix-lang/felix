@@ -3,7 +3,7 @@
 //$ See README.md for more details
 
 SETUP_LOG="";
-include "PKGTOOL/pkgtool";
+include "std/felix/pkgtool";
 
 open PkgTool;
 open Filename;

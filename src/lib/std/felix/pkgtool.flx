@@ -1,10 +1,10 @@
 //$ pkgtool.flx
 //$ Author Mike Maul
-//$ See README.md for more details
-//include "PKGTOOL/libflx_interface";
-//include "PKGTOOL/libflx";
-//include "PKGTOOL/libflx_factory";
-include "PKGTOOL/pkgtool_base";
+//
+//$ This file exists to overlay compiler integration on to pkgtool.
+//$ Work is just about done on API interface for flx when it is
+//$ this file will be more meaninful.
+include "std/felix/pkgtool_base";
 
 /*open PkgTool;
 instance PkgTool {
@@ -15,14 +15,10 @@ instance PkgTool {
     return match myflx.init_and_flx_and_c_compile(file) with
     |ERR[string] (?e,?m) => (
       setup_fail(m);"")
-    
-    |OK[string] ?out => (
+     |OK[string] ?out => (
       log(INDENT+out);out)
-    
-    
-    endmatch;
-    
-  }
+     endmatch;
+   }
 
 
 }
