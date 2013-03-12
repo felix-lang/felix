@@ -1,10 +1,7 @@
 gen cal_depvars() = 
 {
-  debugln$ "Felix package manager program is "+control.PKGCONFIG;
-
   if ECHO == 1 do
     fprintln (cerr, "#FLX_INSTALL_DIR="+config.FLX_INSTALL_DIR);
-    fprintln (cerr, "#PKGCONFIG="+control.PKGCONFIG);
   done
 
   debugln$ "Felix package manager config directory is "+control.CONFIG_DIR;
@@ -77,39 +74,39 @@ gen cal_depvars() =
   val args = control.USER_ARGS;
   debugln$ "Target program args = "+args;
 
-  var INCLUDE_DIR=
-    Shell::quote_arg("-I"+Filename::join(config.FLX_INSTALL_DIR,"lib","rtl")) + " "+
-    Shell::quote_arg("-I"+Filename::join(config.FLX_INSTALL_DIR,"config","target"))
+  var INCLUDE_DIR= list (
+    ("-I"+Filename::join(config.FLX_INSTALL_DIR,"lib","rtl")),
+    ("-I"+Filename::join(config.FLX_INSTALL_DIR,"config","target")))
   ;
-  debugln$ "C++ Include directory for Felix library " + INCLUDE_DIR;
+  debugln$ "C++ Include directory for Felix library " + str INCLUDE_DIR;
 
-  var FLXLIB=Shell::quote_arg("-I"+Filename::join(config.FLX_INSTALL_DIR,"lib"));
+  var FLXLIB="-I"+Filename::join(config.FLX_INSTALL_DIR,"lib");
   var STDLIB=list("std","web");
   if control.NOSTDLIB == 1 do
     FLXLIB="";
     STDLIB=Empty[string];
   done
 
-  var DEBUGSWITCH="";
-  if control.DEBUG_COMPILER == 1 do DEBUGSWITCH=" --debug"; done
+  var DEBUGSWITCH=Empty[string];
+  if control.DEBUG_COMPILER == 1 do DEBUGSWITCH=list[string]$ "--debug"; done
 
-  var STATIC_ENV="";
-  if control.DEBUG_COMPILER == 1 do STATIC_ENV="env FLX_DEBUG=1 "; done
+  var STATIC_ENV=Empty[string];
+  if control.DEBUG_COMPILER == 1 do STATIC_ENV=list[string] ("env","FLX_DEBUG=1"); done
 
   debugln$ "RECOMPILE="+str control.RECOMPILE;
   debugln$ "RUNIT="+str control.RUNIT;
 
-  var VERBOSE = "";
+  var VERBOSE = Empty[string];
   if control.DEBUG_COMPILER == 1 do
-    VERBOSE="-v";
+    VERBOSE=list[string] "-v";
     debugln "Compiler debugging on";
   else
-    VERBOSE="-q";
+    VERBOSE=list[string]$  "-q";
     debugln "Compiler debugging off";
   done
 
   if control.DEBUG==1 do
-    control.CCFLAGS=control.CCFLAGS+config.DEBUG_FLAGS;
+    control.CCFLAGS=control.CCFLAGS+Shell::parse config.DEBUG_FLAGS;
   done
 
 

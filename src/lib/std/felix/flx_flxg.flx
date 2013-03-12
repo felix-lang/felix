@@ -9,55 +9,58 @@ class Flxg
     COMPILER_PHASE:string,
     DOREDUCE:int,
     STDLIB:list[string],
-    QUOTE_FLXG:string,
-    VERBOSE:string,
+    FLXG:string,
+    VERBOSE:list[string],
     STDGRAMMAR:string,
     STDIMPORT:string,
-    IMPORTS:string,
+    IMPORTS:list[string],
     FLXLIB:string,
-    INCLUDE_DIRS:string,
+    INCLUDE_DIRS:list[string],
     TIME:int,
     filebase:string,
     use_ext:string,
-    debugln: string -> 0,
-    quote: string -> string
+    debugln: string -> 0
   );
 
 
   gen run_felix_compiler (spec:flxg_spec_t) : int =
   {
-    var FLXFLAGS="--inline="+str(spec.INLINE);
+println$ "Run flxg";
+    var FLXFLAGS=list[string]$ "--inline="+str(spec.INLINE);
     if spec.OUTPUT_DIR != "" do 
-      FLXFLAGS += ' '+spec.quote('--output_dir=' + str(spec.OUTPUT_DIR)); 
+      FLXFLAGS += '--output_dir=' + str(spec.OUTPUT_DIR); 
     done
     match spec.BUNDLE_DIR with
-    | Some ?dir =>
-      FLXFLAGS += ' ' + spec.quote('--bundle_dir=' + dir); 
-    | None=> ;
+    | Some dir =>
+      FLXFLAGS += '--bundle_dir=' + dir; 
+    | #None=> ;
     endmatch;
     if spec.CACHE_DIR != "" do 
-      FLXFLAGS += " "+spec.quote("--cache_dir=" + spec.CACHE_DIR); 
+      FLXFLAGS +="--cache_dir=" + spec.CACHE_DIR; 
     done
     if spec.COMPILER_PHASE != "" do 
-      FLXFLAGS += ' --compiler-phase=' + spec.COMPILER_PHASE; 
+      FLXFLAGS += '--compiler-phase=' + spec.COMPILER_PHASE; 
     done
     if spec.DOREDUCE == 0 do
-      FLXFLAGS += ' --no-reduce';
+      FLXFLAGS += '--no-reduce';
     done
     if spec.TIME == 1 do
-      FLXFLAGS += ' --time';
+      FLXFLAGS += '--time';
     done
-
-    var stdlibs = cat ' ' spec.STDLIB;
-    var CMD=cat ' ' (list (
-      spec.QUOTE_FLXG,
-      spec.VERBOSE, FLXFLAGS, spec.FLXLIB,
-      spec.INCLUDE_DIRS, 
-      "--syntax="+spec.STDGRAMMAR, 
-      spec.STDIMPORT, spec.IMPORTS)) + 
-      ' ' + stdlibs + 
-      ' ' + spec.quote(spec.filebase+spec.use_ext)
+    var cmd = 
+      spec.FLXG ! 
+      spec.VERBOSE +
+      FLXFLAGS + 
+      spec.FLXLIB +
+      spec.INCLUDE_DIRS + 
+      ("--syntax="+spec.STDGRAMMAR) + 
+      spec.STDIMPORT + 
+      spec.IMPORTS +
+      spec.STDLIB +
+      (spec.filebase + spec.use_ext)
     ;
+
+    var CMD = catmap ' ' Shell::quote_arg cmd;
     spec.debugln$ "Felix command="+CMD;
     
     var result=System::system(CMD);

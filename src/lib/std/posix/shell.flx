@@ -72,7 +72,7 @@ class Bash {
       var r = "";
       for var i in 0uz upto s.len - 1uz do
         var ch = s.[i];
-        if ch in "\\$\"`" do
+        if ch in "\\\"" do   // leave $ and ` in there, unquoted.
           r += "\\"+ str ch;
         else
           r+= ch;

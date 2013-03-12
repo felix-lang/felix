@@ -18,8 +18,8 @@ proc calpackages
   control.LINK_STRING = x.LINK_STRING;
   if ECHO == 1 do
     fprintln (cerr, "//RESOURCE FILE="+dvars.cpp_filebase+".resh");
-    fprintln (cerr, "//INCLUDE_DIRS="+control.STANDARD_INCLUDE_DIRS+' '+ control.EXTRA_INCLUDE_DIRS);
-    fprintln (cerr, "//INCLUDE_FILES="+control.STANDARD_INCLUDE_FILES+ ' ' + control.EXTRA_INCLUDE_FILES);
+    fprintln (cerr, "//INCLUDE_DIRS="+ str control.STANDARD_INCLUDE_DIRS+' '+ str control.EXTRA_INCLUDE_DIRS);
+    fprintln (cerr, "//INCLUDE_FILES="+str control.STANDARD_INCLUDE_FILES+ ' ' + str control.EXTRA_INCLUDE_FILES);
     if control.STATIC == 0 do
       fprintln (cerr, "//DYNAMIC DRIVER EXE ="+str control.DRIVER_EXE);
     else
@@ -54,7 +54,7 @@ proc run_felix_compiler_if_required
       COMPILER_PHASE= control.COMPILER_PHASE,
       DOREDUCE=control.DOREDUCE,
       STDLIB = dvars.STDLIB,
-      QUOTE_FLXG = control.QUOTE_FLXG,
+      FLXG = control.FLXG,
       VERBOSE = dvars.VERBOSE,
       STDGRAMMAR = control.STDGRAMMAR,
       STDIMPORT = control.STDIMPORT,
@@ -64,8 +64,7 @@ proc run_felix_compiler_if_required
       filebase = dvars.filebase,
       use_ext = dvars.use_ext,
       TIME = control.TIME,
-      debugln = debugln[string],
-      quote = Shell::quote_arg
+      debugln = debugln[string]
     );
     showtime("Felix flxg   : "+dvars.cpp_filebase, t0);
     if result != 0 do 
@@ -86,17 +85,21 @@ proc cxx_compile_dynamic1(src:string, dst:string)
 {
 
   var t0 = #Time::time;
+  var cc,ccflags = 
+    match Shell::parse config.CCOBJ_DLLIB with
+    | Cons (?h,?t) => h, t
+    endmatch
+  ;
+
   var result = 
     CxxCompiler::generic_cxx_compile_for_dynamic 
     (
-      CCOBJ_DLLIB = config.CCOBJ_DLLIB, 
-      CCFLAGS = control.CCFLAGS, 
-      INCLUDE_DIR = dvars.INCLUDE_DIR, 
-      INCLUDE_DIRS = control.STANDARD_INCLUDE_DIRS+' '+control.EXTRA_INCLUDE_DIRS, 
+      CCOBJ_DLLIB = cc, 
+      CCFLAGS = ccflags + control.CCFLAGS, 
+      INCLUDE_DIRS = dvars.INCLUDE_DIR + control.STANDARD_INCLUDE_DIRS+control.EXTRA_INCLUDE_DIRS, 
       MACROS = control.MACROS,
       SPEC_OBJ_FILENAME = config.SPEC_OBJ_FILENAME,
-      debugln = debugln[string],
-      quote = Shell::quote_arg
+      debugln = debugln[string]
     ) 
     (src, dst)
   ;
@@ -121,19 +124,24 @@ proc cxx_compile_dynamic
 proc cxx_link_dynamic
 {
   var t0 = #Time::time;
+  var cc,ccflags = 
+    match Shell::parse config.CCLINK_DLLIB with
+    | Cons (?h,?t) => h, t
+    endmatch
+  ;
+
   var result = 
     CxxCompiler::generic_link_dynamic 
     (
-      CCLINK_DLLIB = config.CCLINK_DLLIB, 
-      CCFLAGS = control.CCFLAGS,
+      CCLINK_DLLIB = cc,
+      CCFLAGS = ccflags + control.CCFLAGS,
       EXT_SHARED_OBJ = config.EXT_SHARED_OBJ,
       SPEC_EXE_FILENAME = config.SPEC_EXE_FILENAME,
       LINK_STRING = control.LINK_STRING,
-      debugln = debugln[string],
-      quote = Shell::quote_arg
+      debugln = debugln[string]
     )
     (
-      control.cppos + Shell::quote_arg(dvars.cpp_filebase+config.EXT_SHARED_OBJ),
+      control.cppos + (dvars.cpp_filebase+config.EXT_SHARED_OBJ),
       control.LINKER_OUTPUT_FILENAME
     )
   ;
@@ -146,17 +154,21 @@ proc cxx_link_dynamic
 proc cxx_compile_static1 (src: string, dst: string)
 {
   var t0 = #Time::time;
+  var cc,ccflags = 
+    match Shell::parse config.CCOBJ_STATIC_LIB with
+    | Cons (?h,?t) => h, t
+    endmatch
+  ;
+
   var result = 
     CxxCompiler::generic_cxx_compile_for_static 
     (
-      CCOBJ_STATIC_LIB = config.CCOBJ_STATIC_LIB,
-      CCFLAGS = control.CCFLAGS, 
-      INCLUDE_DIR = dvars.INCLUDE_DIR, 
-      INCLUDE_DIRS = control.STANDARD_INCLUDE_DIRS+' '+control.EXTRA_INCLUDE_DIRS, 
+      CCOBJ_STATIC_LIB = cc,
+      CCFLAGS = ccflags + control.CCFLAGS, 
+      INCLUDE_DIRS = dvars.INCLUDE_DIR+control.STANDARD_INCLUDE_DIRS+control.EXTRA_INCLUDE_DIRS, 
       MACROS = control.MACROS, 
       SPEC_OBJ_FILENAME = config.SPEC_OBJ_FILENAME,
-      debugln = debugln[string],
-      quote = Shell::quote_arg
+      debugln = debugln[string]
     )
     (src, dst)
   ;
@@ -192,20 +204,26 @@ proc cxx_compile_static
 proc cxx_link_static
 {
   var t0 = #Time::time;
+  var cc,ccflags = 
+    match Shell::parse config.CCLINK_STATIC with
+    | Cons (?h,?t) => h, t
+    endmatch
+  ;
+
   var result =
     CxxCompiler::generic_link_static
     (
-      CCLINK_STATIC = config.CCLINK_STATIC, 
+      CCLINK_STATIC = cc, 
+      CCFLAGS = ccflags,
       SPEC_EXE_FILENAME = config.SPEC_EXE_FILENAME,
       LINK_STRING = control.LINK_STRING,
-      debugln = debugln[string],
-      quote = Shell::quote_arg
+      debugln = debugln[string]
     )  
-    ( list[string] () +
-        control.DRIVER_OBJS + 
+    ( 
+        control.DRIVER_OBJS +
         control.cppos + 
-        Shell::quote_arg(dvars.cpp_filebase+"_static_link_thunk"+config.EXT_STATIC_OBJ) + 
-        Shell::quote_arg(dvars.cpp_filebase+config.EXT_STATIC_OBJ)
+        (dvars.cpp_filebase+"_static_link_thunk"+config.EXT_STATIC_OBJ) + 
+        (dvars.cpp_filebase+config.EXT_STATIC_OBJ)
       ,
       control.LINKER_OUTPUT_FILENAME
     )
@@ -219,17 +237,23 @@ proc cxx_link_static
 proc cxx_static_library
 {
   var t0 = #Time::time;
+  var cc,ccflags = 
+    match Shell::parse config.CCLINK_STATIC_LIB with
+    | Cons (?h,?t) => h, t
+    endmatch
+  ;
+
   var result =
     CxxCompiler::generic_static_library
     (
-      CCLINK_STATIC_LIB = config.CCLINK_STATIC_LIB, 
+      CCLINK_STATIC_LIB = cc, 
+      CCFLAGS = ccflags,
       SPEC_LIB_FILENAME = config.SPEC_LIB_FILENAME,
-      debugln = debugln[string],
-      quote = Shell::quote_arg
+      debugln = debugln[string]
     )  
-    ( list[string] () +
-        control.cppos + 
-        Shell::quote_arg(dvars.cpp_filebase+config.EXT_STATIC_OBJ)
+    ( 
+      control.cppos +
+      dvars.cpp_filebase+config.EXT_STATIC_OBJ
       ,
       control.LINKER_OUTPUT_FILENAME
     )
@@ -265,11 +289,14 @@ proc check_output
 
 proc run_program_dynamic
 {
-  var xargs = list (
-      control.FLXRUN,control.DRIVER_EXE,dvars.DEBUGSWITCH,
-      Shell::quote_arg(control.LINKER_OUTPUT_FILENAME), dvars.args)
+  var xargs =
+    control.FLXRUN +
+    control.DRIVER_EXE +
+    dvars.DEBUGSWITCH +
+    control.LINKER_OUTPUT_FILENAME +
+    dvars.args
   ;
-  var CMD = cat ' ' xargs;
+  var CMD = catmap ' ' Shell::quote_arg xargs;
   if control.STDOUT != "" do CMD=CMD+" > " +Shell::quote_arg(control.STDOUT); done
   debugln$ "Run command="+CMD;
   var t0 = #Time::time;
@@ -283,8 +310,10 @@ proc run_program_dynamic
 
 proc run_program_static
 {
-  var xargs = list ( dvars.STATIC_ENV, Shell::quote_arg(control.LINKER_OUTPUT_FILENAME),dvars.args);
-  var CMD = cat ' ' xargs;
+  var CMD = 
+    catmap ' ' Shell::quote_arg ( dvars.STATIC_ENV + control.LINKER_OUTPUT_FILENAME + dvars.args )
+  ;
+
   if control.STDOUT != "" do CMD=CMD + " > "+Shell::quote_arg(control.STDOUT); done
   debugln$ "Run command="+CMD;
   var t0 = #Time::time;
