@@ -26,7 +26,7 @@ class Shell_class[OS]
 
 class Shell {
 if PLAT_WIN32 do
-  inherit Cmd;
+  inherit CmdExe;
 else
   inherit Bash;
 done

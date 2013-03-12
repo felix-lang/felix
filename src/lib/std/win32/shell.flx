@@ -33,7 +33,7 @@ arguments given on the operating system command line:
     double quotation mark (") to be placed in argv.
 */
 
-class Cmd
+class CmdExe
 {
   instance Shell_class[Win32]
   {
