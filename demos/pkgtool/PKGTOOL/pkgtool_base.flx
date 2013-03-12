@@ -574,7 +574,7 @@ noinline  proc create_config(name:string,includes:list[string],libs:list[string]
           if #Config::config.HAVE_MACOSX then OSX_INCLUDE_DIRS else INCLUDE_DIRS endif + 
           EXTRA_INCDIR)
         with
-        |Some ?path => "-I" + path
+        |Some path => "-I" + path
         |None => (
           general_fail("Unable to find " + inc + 
             " Please locate and pass path to setup with the -L switch");
@@ -657,7 +657,7 @@ noinline  fun is_installed(name:string) = {
 noinline  proc handle_dependency(dependency:string) {
     match is_installed(dependency) with
     |Some _ => { }
-    |None[float] => {
+    |None => {
       task("Found required dependencies:"+blue_(dependency));
       match prompt(INDENT+"Scoop "+blue_(dependency)+" from litterbox","Yn") with  
       |Some ?y when toupper(y) == "Y" => 

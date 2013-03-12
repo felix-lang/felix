@@ -21,9 +21,9 @@ proc get_pkg (pkg:string,dest:string) {
 }
 
 
-fun head[T] (l:list[T]) => match l with |Cons[T] (?hd,_) => Some hd |Empty => None[T] endmatch;
+fun head[T] (l:list[T]) => match l with |Cons (?hd,_) => Some hd |Empty => None[T] endmatch;
 
-fun safe_tail[T](l:list[T]) => match l with |Empty[T] => Empty[T] |Cons(_,?t) => t endmatch;
+fun safe_tail[T](l:list[T]) => match l with |Empty => Empty[T] |Cons(_,?t) => t endmatch;
  
 proc info (pkg:string) () {
   var readme = (LITTERBOX.join(pkg)).join("README.md");
@@ -68,7 +68,7 @@ proc search (opts:list[string]) () {
    fun to_assoc_list[T] (l:list[T]):list[T^2] =>
      match l with
      |Cons (?k,Cons(?v,?tl)) => Cons((k,v) , to_assoc_list(tl))
-     |Empty[T] => Empty[T^2]
+     |Empty => Empty[T^2]
      endmatch;
 
    var searchd = if num_opts == 1 then 
