@@ -7,6 +7,8 @@ class Win32Process {
   ctor intptr:process_status_t = "$1";
   ctor int:process_status_t = "int($1)";
   ctor process_status_t : intptr = "$1";
+  fun int_of_process_status_t: process_status_t -> int = "(int)$1";
+
 /*
 
   fun WIFCONTINUED: process_status_t -> bool = "WIFCONTINUED($1)!=0";

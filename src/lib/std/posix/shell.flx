@@ -84,12 +84,12 @@ class Bash {
     fun quote_line_for_popen (s:string) => s + " ";
 
     gen get_stdout(x:string) = {
-        var fout = Process::popen_in(x+" ");
+        var fout = PosixProcess::popen_in(x+" ");
         if valid fout do
           var output = load fout;
 
-          var result = Process::pclose fout; 
-          return (Process::WEXITSTATUS result), output;
+          var result = PosixProcess::pclose fout; 
+          return PosixProcess::WEXITSTATUS result, output;
         else
           println$ "Unable to run command '" + x "'";
           return -1,"";

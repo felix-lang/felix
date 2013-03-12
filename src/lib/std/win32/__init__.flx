@@ -1,6 +1,7 @@
 struct Win32 {};
 
 // windows services
+include "std/win32/shell";
 include "std/win32/filestat";
 include "std/win32/directory";
 include "std/win32/process";
