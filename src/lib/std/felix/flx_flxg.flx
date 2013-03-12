@@ -25,7 +25,6 @@ class Flxg
 
   gen run_felix_compiler (spec:flxg_spec_t) : int =
   {
-println$ "Run flxg";
     var FLXFLAGS=list[string]$ "--inline="+str(spec.INLINE);
     if spec.OUTPUT_DIR != "" do 
       FLXFLAGS += '--output_dir=' + str(spec.OUTPUT_DIR); 
