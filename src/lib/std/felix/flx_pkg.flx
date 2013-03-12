@@ -7,8 +7,8 @@ class FlxPkg
     EXT_EXE: string,
     EXT_STATIC_OBJ: string,
     STATIC: int,
-    SLINK_STRING: string,
-    DLINK_STRING: string,
+    SLINK_STRINGS: list[string],
+    DLINK_STRINGS: list[string],
     LINKER_SWITCHES: list[string],
     cpp_filebase : string
   );
@@ -18,7 +18,7 @@ class FlxPkg
     INCLUDE_FILES: list[string],
     DRIVER_EXE: string,
     DRIVER_OBJS: list[string],
-    LINK_STRING: string
+    LINK_STRINGS: list[string]
   );
 
   gen map_package_requirements(spec:pkgconfig_inspec_t) : pkgconfig_outspec_t =
@@ -80,16 +80,16 @@ class FlxPkg
 
     if spec.STATIC == 0 do
       // dynamic linkage: all the libraries required by the application
-      var LINK_STRING=
-        spec.DLINK_STRING+' ' +
-        catmap ' ' Shell::quote_arg spec.LINKER_SWITCHES+" "+
-        pkgconfs(e+"-r"+'--field=provides_dlib'+'--field=requires_dlibs'+DRIVER_PKG);
+      var LINK_STRINGS =
+        spec.DLINK_STRINGS +
+        spec.LINKER_SWITCHES+
+        pkgconfl(e+"-r"+'--field=provides_dlib'+'--field=requires_dlibs'+DRIVER_PKG);
     else
       // static linkage: all the libraries required by the application and driver
-      LINK_STRING=
-        spec.SLINK_STRING+' ' +
-        catmap ' ' Shell::quote_arg spec.LINKER_SWITCHES+" "+
-        pkgconfs(e+'-r'+'--keeprightmost'+'--field=provides_slib'+'--field=requires_slibs'+DRIVER_PKG);
+      LINK_STRINGS =
+        spec.SLINK_STRINGS+
+        spec.LINKER_SWITCHES+
+        pkgconfl(e+'-r'+'--keeprightmost'+'--field=provides_slib'+'--field=requires_slibs'+DRIVER_PKG);
     done
 
     return ( 
@@ -97,7 +97,7 @@ class FlxPkg
       INCLUDE_FILES = INCLUDE_FILES,
       DRIVER_EXE = DRIVER_EXE,
       DRIVER_OBJS = DRIVER_OBJS,
-      LINK_STRING = LINK_STRING
+      LINK_STRINGS = LINK_STRINGS
     );
   }
 

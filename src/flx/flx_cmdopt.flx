@@ -507,7 +507,9 @@ proc processing_stage1
   done
 
   // Get linker names.
-  control.DLINK_STRING, control.SLINK_STRING = Config::link_strings(config.FLX_INSTALL_DIR);
+  var d,s = Config::link_strings(config.FLX_INSTALL_DIR);
+  control.DLINK_STRINGS = Shell::parse d;
+  control.SLINK_STRINGS = Shell::parse s;
 
   // Get location of flx_pkgconfig's config directory.
   control.CONFIG_DIR = Filename::join(config.FLX_INSTALL_DIR,'config');

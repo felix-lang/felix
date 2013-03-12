@@ -38,7 +38,7 @@ class CxxCompiler
     CCFLAGS: list[string],
     EXT_SHARED_OBJ:string,
     SPEC_EXE_FILENAME: string,
-    LINK_STRING: string,
+    LINK_STRINGS: list[string],
     debugln: string -> 0
   );
 
@@ -57,7 +57,7 @@ class CxxCompiler
     // But Windows uses /Fefilename (no space)
     var CMD = catmap ' ' Shell::quote_arg cmd + ' ' +
       spec.SPEC_EXE_FILENAME+Shell::quote_arg LINKER_OUTPUT_FILENAME+ ' ' +
-      spec.LINK_STRING
+      catmap ' ' Shell::quote_arg spec.LINK_STRINGS
     ;
     debugln$ "Link command="+CMD;
     var result = System::system(CMD);
@@ -112,7 +112,7 @@ class CxxCompiler
     CCLINK_STATIC: string,
     CCFLAGS: list[string],
     SPEC_EXE_FILENAME: string,
-    LINK_STRING: string,
+    LINK_STRINGS: list[string],
     debugln: string->0
   );
 
@@ -125,7 +125,7 @@ class CxxCompiler
         catmap ' ' Shell::quote_arg spec.CCFLAGS + ' ' +
         (spec.SPEC_EXE_FILENAME+Shell::quote_arg(LINKER_OUTPUT_FILENAME)) + ' ' +
         catmap ' ' Shell::quote_arg cppos + ' ' +
-        spec.LINK_STRING
+        catmap ' ' Shell::quote_arg spec.LINK_STRINGS
     ;
 
     debugln$ "Link command="+CMD;
