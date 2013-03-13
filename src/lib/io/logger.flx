@@ -5,11 +5,12 @@ example:
    and is archived 4 times. my_debug.log does not roll over and will grow to infinite size.
    log messages with log_level INFO are routed to my_info.log.log messages with log level DEBUG
    are routed to my_debug.log */
-open Logger
-var mylog = logger(simple_logger(log("log","my.log",size(1024),4ui),INFO)+
-                   simple_logger(log("log","my_debug.log",0,0),DEBUG));
-mylog.log(INFO,"Starting Application");
-mylog.log(DEBUG,"Debugging enabled");
+include "io/logger";
+open Logger;
+var mylog = logger(simple_logger(
+  Logger::log("log","my.log",size(1024),4ui),   INFO)+
+  simple_logger(Logger::log("log","my_debug.log",size(0),0ui),  DEBUG));
+mylog(DEBUG,"Debugging enabled");
 """
 class Logger {
   open LowResTime;

@@ -163,6 +163,8 @@ usage:
     HOME/.felix/litterbox/build/<package> or [build dir]
   scoop clean [package]  [options] Removes package build directory at
     HOME/.felix/litterbox/build/<package> or [build dir]
+  scoop dump  Removes litterbox package directory at
+    HOME/.felix/litterbox
 
   * For package commands with optional [package] argument when [package] is omitted
      and you are in a package directory, scoop will apply command to current directory.
@@ -421,6 +423,27 @@ gen handle_local_options(optt:int*list[string]) = {
     done
   }
 
+  proc dump() {
+println$ LITTERBOX_URL;
+println$ LITTERBOX;
+    if FileStat::fileexists(LITTERBOX) do
+      match filetype(LITTERBOX) with
+      |DIRECTORY => { 
+         var result_code = if PLAT_WIN32 then
+           System::system("rd /S /Q "+LITTERBOX)
+         else
+           System::system("rm -rf "+LITTERBOX)
+         endif;
+         if not result_code == 0 do
+           general_fail("Unable to empty litterbox:" + LITTERBOX);
+         done
+      }
+      endmatch;
+    done
+    task$ "Litterbox at "+LITTERBOX+" emptyed";
+    refresh();  
+  }  
+
   proc do_package_command(cmd:string,options:list[string]) {
     var pkg,pkg_dir,remaining_options = get_pkg_dir_and_opts(options);
     var extra_opts = "";
@@ -519,6 +542,10 @@ proc run() {
       |?cmd when cmd == "refresh" => { 
           banner("Refresh");
           phase("Refresh Repository",refresh);
+        }
+      |?cmd when cmd == "dump" => { 
+          banner("Dumping Litterbox");
+          phase("Emptying Litterbox",dump);
         }
       |?cmd when cmd == "help" => {
         help_command(options);
