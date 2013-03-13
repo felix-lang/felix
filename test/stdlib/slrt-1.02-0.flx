@@ -3,7 +3,7 @@ open List;
 
 fun str (x:list[int]) =>
   match x with
-  | Empty[int] => "()"
+  | Empty => "()"
   | Cons (?h, ?t) => "(" + (str h) + ", " + (str t) + ")"
   endmatch
 ;

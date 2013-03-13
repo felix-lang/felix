@@ -6,8 +6,8 @@ proc calpackages
      EXT_EXE = config.EXT_EXE,
      EXT_STATIC_OBJ = config.EXT_STATIC_OBJ,
      STATIC = control.STATIC,
-     SLINK_STRING = control.SLINK_STRING,
-     DLINK_STRING = control.DLINK_STRING,
+     SLINK_STRINGS = control.SLINK_STRINGS,
+     DLINK_STRINGS = control.DLINK_STRINGS,
      LINKER_SWITCHES = control.LINKER_SWITCHES,
      cpp_filebase = dvars.cpp_filebase
   );
@@ -15,17 +15,17 @@ proc calpackages
   control.EXTRA_INCLUDE_FILES = x.INCLUDE_FILES;
   control.DRIVER_EXE = x.DRIVER_EXE;
   control.DRIVER_OBJS = x.DRIVER_OBJS;
-  control.LINK_STRING = x.LINK_STRING;
+  control.LINK_STRINGS = x.LINK_STRINGS;
   if ECHO == 1 do
     fprintln (cerr, "//RESOURCE FILE="+dvars.cpp_filebase+".resh");
-    fprintln (cerr, "//INCLUDE_DIRS="+ str control.STANDARD_INCLUDE_DIRS+' '+ str control.EXTRA_INCLUDE_DIRS);
-    fprintln (cerr, "//INCLUDE_FILES="+str control.STANDARD_INCLUDE_FILES+ ' ' + str control.EXTRA_INCLUDE_FILES);
+    fprintln (cerr, "//INCLUDE_DIRS="+ str (control.STANDARD_INCLUDE_DIRS+ str control.EXTRA_INCLUDE_DIRS));
+    fprintln (cerr, "//INCLUDE_FILES="+str (control.STANDARD_INCLUDE_FILES+ str control.EXTRA_INCLUDE_FILES));
     if control.STATIC == 0 do
       fprintln (cerr, "//DYNAMIC DRIVER EXE ="+str control.DRIVER_EXE);
     else
       fprintln (cerr, "//STATIC DRIVER OBJS ="+str control.DRIVER_OBJS);
     done
-    fprintln (cerr, "//LINK_STRING="+control.LINK_STRING);
+    fprintln (cerr, "//LINK_STRING="+str control.LINK_STRINGS);
   done
 
 
@@ -137,7 +137,7 @@ proc cxx_link_dynamic
       CCFLAGS = ccflags + control.CCFLAGS,
       EXT_SHARED_OBJ = config.EXT_SHARED_OBJ,
       SPEC_EXE_FILENAME = config.SPEC_EXE_FILENAME,
-      LINK_STRING = control.LINK_STRING,
+      LINK_STRINGS = control.LINK_STRINGS,
       debugln = debugln[string]
     )
     (
@@ -216,7 +216,7 @@ proc cxx_link_static
       CCLINK_STATIC = cc, 
       CCFLAGS = ccflags,
       SPEC_EXE_FILENAME = config.SPEC_EXE_FILENAME,
-      LINK_STRING = control.LINK_STRING,
+      LINK_STRINGS = control.LINK_STRINGS,
       debugln = debugln[string]
     )  
     ( 

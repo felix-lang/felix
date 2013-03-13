@@ -97,7 +97,7 @@ fun dflt_control () =>
 
     var DRIVER_EXE = ""; // dynamic linkage only 
     var DRIVER_OBJS = Empty[string]; // static linkage only
-    var LINK_STRING = "";
+    var LINK_STRINGS = Empty[string];
 
     var pkgs="";
 
@@ -106,8 +106,8 @@ fun dflt_control () =>
     var FLXRUN = Empty[string];
     var LINKER_OUTPUT_FILENAME = "";
     var USER_ARGS = Empty[string];
-    var DLINK_STRING = "";
-    var SLINK_STRING = "";
+    var DLINK_STRINGS = Empty[string];
+    var SLINK_STRINGS = Empty[string];
     var cache_time = 0.0;
     var INDIR = "";
     var INREGEX = "";
