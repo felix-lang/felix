@@ -255,6 +255,18 @@ ocamldoc:
 		src/compiler/flx_misc/*.mli \
 		src/compiler/flx_misc/*.ml 
 
+${BUILDROOT}/bin/scoop:
+	@${BUILDROOT}/bin/flx --inline=1 --test=${BUILDROOT} demos/scoop/setup build  --test=${BUILDROOT} --build-dir=demos/scoop 2> /dev/null
+	@${BUILDROOT}/bin/flx --inline=1 --test=${BUILDROOT} demos/scoop/setup install  --test=${BUILDROOT} --build-dir=demos/scoop 2> /dev/null
+	@${BUILDROOT}/bin/flx --inline=1 --test=${BUILDROOT} demos/scoop/setup clean  --test=${BUILDROOT} --build-dir=demos/scoop 2> /dev/null
+
+scoop: ${BUILDROOT}/bin/scoop
+	@echo "Scoop Package Manager"
+
+install-scoop-bin: ${BUILDROOT}/bin/scoop
+	@echo "Installing scoop binary in ${BUILDROOT}/bin"
+	@${SUDO} cp ${BUILDROOT}/bin/scoop /usr/local/lib/felix/felix-latest/bin
+	@${SUDO} ${BUILDROOT}/bin/flx_cp src/lib/std/felix '(pkgtool.*\.(flx))' '/usr/local/lib/felix/felix-latest/lib/std/felix/$${0}' 
 
 .PHONY : build32 build64 build test32 test64 test  
 .PHONY : build32-debug build64-debug build-debug test32-debug test64-debug test-debug 
