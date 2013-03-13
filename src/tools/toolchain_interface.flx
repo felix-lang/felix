@@ -1,0 +1,16 @@
+interface toolchain_t {
+  whatami : 1 -> string;
+  host_os : 1 -> string;
+  target_os : 1 -> string;
+  cxx_compiler_vendor : 1 -> string;
+
+  cxx_static_object_compiler : (dst:string,src: string) -> int;
+  c_static_object_compiler : (dst:string,src: string) -> int;
+  static_library_linker : (dst:string,srcs:list[string]) -> int;
+  executable_linker : (dst:string,srcs:list[string]) -> int;
+
+  cxx_dynamic_object_compiler : (dst:string,src: string) -> int;
+  c_dynamic_object_compiler : (dst:string,src: string) -> int;
+  dynamic_library_linker : (dst:string,srcs: list[string]) -> int;
+}
+

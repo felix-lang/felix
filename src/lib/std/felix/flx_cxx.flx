@@ -59,7 +59,7 @@ class CxxCompiler
       spec.SPEC_EXE_FILENAME+Shell::quote_arg LINKER_OUTPUT_FILENAME+ ' ' +
       catmap ' ' Shell::quote_arg spec.LINK_STRINGS
     ;
-    debugln$ "Link command="+CMD;
+    spec.debugln$ "Link command="+CMD;
     var result = System::system(CMD);
     if result != 0 do
       eprintln $ "Dynamic link command="+CMD + " FAILED";
@@ -97,7 +97,7 @@ class CxxCompiler
     ;
 
     spec.debugln$ "C++ command="+CMD;
-    var result=system(CMD);
+    var result=System::system(CMD);
 
     if result != 0 do
       eprintln$ "C++ compilation "+src+" failed";
@@ -128,10 +128,10 @@ class CxxCompiler
         catmap ' ' Shell::quote_arg spec.LINK_STRINGS
     ;
 
-    debugln$ "Link command="+CMD;
-    var result=system(CMD);
+    spec.debugln$ "Link command="+CMD;
+    var result=System::system(CMD);
     if result != 0 do
-      debugln$ "Link command="+CMD+ " FAILED";
+      spec.debugln$ "Link command="+CMD+ " FAILED";
     done 
     return result;
   }
@@ -155,10 +155,10 @@ class CxxCompiler
         catmap ' ' Shell::quote_arg cppos
     ;
 
-    debugln$ "Library archive command="+CMD;
-    var result=system(CMD);
+    spec.debugln$ "Library archive command="+CMD;
+    var result=System::system(CMD);
     if result != 0 do
-      debugln$ "Library archive command="+CMD+ " FAILED";
+      spec.debugln$ "Library archive command="+CMD+ " FAILED";
     done 
     return result;
   }
