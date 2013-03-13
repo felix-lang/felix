@@ -264,9 +264,9 @@ ${BUILDROOT}/bin/scoop:
 scoop: ${BUILDROOT}/bin/scoop
 	@echo "Scoop Package Manager"
 
-install-scoop-bin: ${BUILDROOT}/bin/scoop
-	@echo "Installing scoop binary in ${BUILDROOT}/bin"
-	@${SUDO} cp ${BUILDROOT}/bin/scoop /usr/local/lib/felix/felix-latest/bin
+install-scoop: ${BUILDROOT}/bin/scoop
+	@echo "Installing scoop binary in /usr/local/bin"
+	@${SUDO} cp ${BUILDROOT}/bin/scoop /usr/local/bin
 	@${SUDO} ${BUILDROOT}/bin/flx_cp src/lib/std/felix '(pkgtool.*\.(flx))' '/usr/local/lib/felix/felix-latest/lib/std/felix/$${0}' --verbose
 
 .PHONY : build32 build64 build test32 test64 test  
