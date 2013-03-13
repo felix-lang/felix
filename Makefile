@@ -18,6 +18,7 @@ DISTDIR ?= ./build/dist
 FBUILDROOT ?= build
 BUILDROOT ?= ${FBUILDROOT}/release
 DEBUGBUILDROOT ?= ${FBUILDROOT}/debug
+PYTHON ?= python3
 # If running as root skip sudo
 ifeq ($(USER),root)
 SUDO=
@@ -55,23 +56,23 @@ user-build: fbuild doc
 # Core integrated build
 #
 fbuild:
-	python3 fbuild/fbuild-light build --buildroot=${FBUILDROOT} $(FBUILD_PARAMS)
+	$(PYTHON) fbuild/fbuild-light build --buildroot=${FBUILDROOT} $(FBUILD_PARAMS)
 
 #
 # regression test on release image
 # 
 test:
-	python3 fbuild/fbuild-light test --buildroot=${FBUILDROOT} $(FBUILD_PARAMS)
+	$(PYTHON) fbuild/fbuild-light test --buildroot=${FBUILDROOT} $(FBUILD_PARAMS)
 
 
 #
 # debug build
 #
 fbuild-debug:
-	python3 fbuild/fbuild-light -g build --buildroot=${FBUILDROOT} $(FBUILD_PARAMS)
+	$(PYTHON) fbuild/fbuild-light -g build --buildroot=${FBUILDROOT} $(FBUILD_PARAMS)
 
 test-debug:
-	python3 fbuild/fbuild-light -g test --buildroot=${FBUILDROOT} $(FBUILD_PARAMS)
+	$(PYTHON) fbuild/fbuild-light -g test --buildroot=${FBUILDROOT} $(FBUILD_PARAMS)
 
 #
 #
