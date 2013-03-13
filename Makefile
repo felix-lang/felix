@@ -13,7 +13,7 @@ all: build test
 # default build
 #
 
-VERSION = 1.1.7dev
+VERSION = 1.1.8dev
 DISTDIR ?= ./build/dist
 FBUILDROOT ?= build
 BUILDROOT ?= ${FBUILDROOT}/release
@@ -267,7 +267,7 @@ scoop: ${BUILDROOT}/bin/scoop
 install-scoop-bin: ${BUILDROOT}/bin/scoop
 	@echo "Installing scoop binary in ${BUILDROOT}/bin"
 	@${SUDO} cp ${BUILDROOT}/bin/scoop /usr/local/lib/felix/felix-latest/bin
-	@${SUDO} ${BUILDROOT}/bin/flx_cp src/lib/std/felix '(pkgtool.*\.(flx))' '/usr/local/lib/felix/felix-latest/lib/std/felix/$${0}' 
+	@${SUDO} ${BUILDROOT}/bin/flx_cp src/lib/std/felix '(pkgtool.*\.(flx))' '/usr/local/lib/felix/felix-latest/lib/std/felix/$${0}' --verbose
 
 .PHONY : build32 build64 build test32 test64 test  
 .PHONY : build32-debug build64-debug build-debug test32-debug test64-debug test-debug 
