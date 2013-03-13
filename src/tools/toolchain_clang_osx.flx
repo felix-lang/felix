@@ -38,7 +38,7 @@ object toolchain_clang_osx (config:clang_config_t) implements toolchain_t =
       CxxCompiler::generic_cxx_compile_for_static
       (
         CCOBJ_STATIC_LIB = "clang", 
-        CCFLAGS = "-c" ! "-O1" + "-fno-common"+ "-fno-strict-aliasing" + c_compile_warning_flags,
+        CCFLAGS = "-c" ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! c_compile_warning_flags,
         INCLUDE_DIRS = config.header_search_dirs,
         MACROS = config.macros,
         SPEC_OBJ_FILENAME = "-o ",
@@ -73,7 +73,7 @@ object toolchain_clang_osx (config:clang_config_t) implements toolchain_t =
       CxxCompiler::generic_cxx_compile_for_static
       (
         CCOBJ_STATIC_LIB = "clang++", 
-        CCFLAGS = "-c" ! "-O1" + "-fno-common"+ "-fno-strict-aliasing" + "-std=c++11" +cxx_compile_warning_flags,
+        CCFLAGS = "-c" ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! "-std=c++11" +cxx_compile_warning_flags,
         INCLUDE_DIRS = config.header_search_dirs,
         MACROS = config.macros,
         SPEC_OBJ_FILENAME = "-o ",
@@ -121,7 +121,7 @@ object toolchain_clang_osx (config:clang_config_t) implements toolchain_t =
     var result =
       CxxCompiler::generic_link_static
       (
-        CCLINK_STATIC = "clamg++",
+        CCLINK_STATIC = "clang++",
         CCFLAGS = Empty[string],
         SPEC_EXE_FILENAME = "-o ",
         LINK_STRINGS = config.library_search_dirs + config.static_libraries,
