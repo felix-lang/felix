@@ -10,9 +10,9 @@ class HTTPBasicAuth {
   open HTTPHandler;
 
   publish """
-  A default app_handler for implementing Basic Auth. You mush supply a function that 
+  A default app_handler for implementing Basic Auth. You must supply a function that 
   takes a user name and password and returns fru or fals if authenticated. You must
-  also supply a realm string wwhich appears in the Authentication Prompt of the browser.
+  also supply a realm string which appears in the Authentication Prompt of the browser.
   This app_handler uses a route that applies to all pages
   """
   fun app_handlers(auth_source:(string*string->bool),realm:string) =>
