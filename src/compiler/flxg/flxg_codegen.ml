@@ -468,7 +468,7 @@ let codegen_bsyms
   begin
     plr "\n// integer powers of constants \n";
     Hashtbl.iter (fun size values ->
-      plr  ("static int flx_ipow_"^si size^ "[" ^ string_of_int (List.length values) ^ "] = {" ^
+      plr  ("static int const flx_ipow_"^si size^ "[" ^ string_of_int (List.length values) ^ "] = {" ^
       catmap "," string_of_int  values ^
       "};")
     )
