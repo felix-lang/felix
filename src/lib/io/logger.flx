@@ -15,8 +15,6 @@ mylog(DEBUG,"Debugging enabled");
 """
 class Logger {
 
-  private fun get_stdout : 1 -> ofile = "PTF flx_stdout" requires property "needs_ptf";
-
   open LowResTime;
 
   struct log {
@@ -155,7 +153,7 @@ class Logger {
     var log_handle = fopen_output (log_file);
     if not valid log_handle do
       eprintln("Unable to open log at "+log_file+".\nLogging to console instead.");
-      return #get_stdout;
+      return stdout;
     else
       return log_handle;
     done

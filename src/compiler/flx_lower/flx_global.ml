@@ -247,6 +247,7 @@ let set_ptf_for_symbol bsym_table usedby bid bsym  =
     match Flx_bsym.bbdcl bsym with
     | BBDCL_fun (props,_,_,_,_) 
     | BBDCL_external_fun (props,_,_,_,_,_,_) -> props
+    | BBDCL_external_const (props,_,_,_,_) -> props
     | _ -> []
   in
   if List.mem `Requires_ptf props then
