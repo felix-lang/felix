@@ -4,6 +4,13 @@ interface toolchain_t {
   target_os : 1 -> string;
   cxx_compiler_vendor : 1 -> string;
 
+  executable_extension : 1 -> string;
+  static_object_extension: 1 -> string;
+  dynamic_object_extension: 1 -> string;
+  static_library_extension: 1 -> string;
+  dynamic_library_extension: 1 -> string;
+
+
   cxx_static_object_compiler : (dst:string,src: string) -> int;
   c_static_object_compiler : (dst:string,src: string) -> int;
   static_library_linker : (dst:string,srcs:list[string]) -> int;

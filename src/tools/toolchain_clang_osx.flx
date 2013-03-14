@@ -1,5 +1,5 @@
-include "./toolchain_interface.flx";
-include "./toolchain_clang_config.flx";
+include "std/felix/toolchain_interface.flx";
+include "std/felix/toolchain_clang_config.flx";
 include "std/felix/flx_cxx";
 
 fun setup(config_data:string) = {
@@ -31,6 +31,13 @@ object toolchain_clang_osx (config:clang_config_t) implements toolchain_t =
   method fun host_os () => "OSX";
   method fun target_os () => "OSX";
   method fun cxx_compiler_vendor () => "clang";
+
+  method fun executable_extension () => "";
+  method fun static_object_extension () => ".o";
+  method fun dynamic_object_extension () => ".os";
+  method fun static_library_extension () => ".a";
+  method fun dynamic_library_extension () => ".dylib";
+
 
   method gen c_static_object_compiler (spec:(dst:string, src:string)) : int = 
   {

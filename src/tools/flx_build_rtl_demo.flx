@@ -1,0 +1,88 @@
+include "./src/tools/toolchain_clang_config";
+include "std/felix/toolchain_interface";
+include "std/felix/flx_cp";
+
+var toolchain-maker = 
+  Dynlink::load-plugin-func1 [toolchain_t,clang_config_t] 
+  (
+    dll-name="src/tools/toolchain_clang_osx", 
+    setup-str="",
+    entry-point="toolchain_clang_osx"
+  )
+;
+
+
+var dirs = list (
+  "pthread",
+  "exceptions",
+  "flx_async",
+  "gc",
+  "rtl",
+  "demux",
+  "faio"
+);
+
+var repo = "src";
+var build = "trial";
+
+proc dbug (x:string) {
+// println x;
+}
+
+proc make_lib (repo: string, build:string, dir:string, deps:list[string])
+{
+  println$ "------------";
+  println$ "Make lib " + dir;
+  var configdir = Filename::join ((#Config::config).FLX_INSTALL_DIR, "config", "target");
+  var srcpath = Filename::join (repo, dir);
+  var config = 
+    (
+      header_search_dirs= list[string] ("-I"+build, "-I"+configdir),
+      macros= Empty[string],
+      library_search_dirs= list[string] ("-L"+build),
+      dynamic_libraries= deps,
+      static_libraries= Empty[string],
+      debugln = dbug
+    )
+  ;
+  var toolchain = toolchain-maker config;
+  println$ #(toolchain.whatami);
+  CopyFiles::copyfiles (srcpath, RE2 r".*\.h(pp)?",Filename::join(build,"${0}"),true, true);
+
+  var pat = r".*\.cpp";
+  var files = FileSystem::regfilesin (srcpath,pat);
+  fun objname (file:string) => let 
+      ?dstobj = file.Filename::strip_extension + #(toolchain.dynamic_object_extension) in
+      Filename::join (build, dstobj)
+  ;
+
+  for file in files do
+    //println$ "Compiling " + file " -> " + objname file;
+    var srcfile = Filename::join (srcpath, file);
+    var result = toolchain.cxx_dynamic_object_compiler (src=srcfile, dst=objname file);
+    if result != 0 do
+      println$ "Compiler result " + str result;
+      System::exit(1);
+    done
+  done
+
+  var objs = map objname files;
+  var dstlib = Filename::join (build, dir+#(toolchain.dynamic_library_extension));
+  result = toolchain.dynamic_library_linker(srcs=objs, dst=dstlib);
+  if result != 0 do
+    println$ "Linker result " + str result;
+    System::exit(1);
+  done
+}
+
+proc make_rtl (repo:string, build:string, dirs:list[string])
+{
+  var deps = Empty[string];
+  for dir in dirs do 
+    make_lib (repo,build, dir,deps); 
+    deps += "-l"+dir;
+  done
+}
+
+make_rtl (repo, build, dirs);
+System::exit (0);

@@ -70,8 +70,7 @@ class Bash {
     // I think this is all ..
     fun quote_arg(s:string):string= {
       var r = "";
-      for var i in 0uz upto s.len - 1uz do
-        var ch = s.[i];
+      for ch in s do
         if ch in "\\\"" do   // leave $ and ` in there, unquoted.
           r += "\\"+ str ch;
         else

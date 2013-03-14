@@ -23,7 +23,7 @@ class CxxCompiler
     var CMD = catmap ' ' Shell::quote_arg cmd + ' ' +
       (spec.SPEC_OBJ_FILENAME+Shell::quote_arg dst)
     ;
-    spec.debugln$ "C++ compile command="+CMD;
+   spec.debugln$ "C++ compile: " + CMD;
     var result = System::system(CMD);
     if result != 0 do
       eprintln $ "C++ command="+CMD + " FAILED";
