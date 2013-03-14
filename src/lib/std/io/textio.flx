@@ -85,7 +85,7 @@ open class Cstdio {
   const stdin: ifile = "PTF flx_stdin";
 
   //$ Standard output, can be redirected by flx_run.
-  const stdout: ofile = "PTF flx_stdout";
+  const stdout: ofile = "PTF flx_stdout" requires property "needs_ptf";
 
   //$ Standard error, can be redirected by flx_run.
   const stderr: ofile = "PTF flx_stderr";
