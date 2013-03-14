@@ -11,7 +11,7 @@ var LIST_INSTALLED = false;
 var DEGITIFY = false;
 var CLEANBUILD = false;
 val SCOOP_VERSION = "0.3";
-
+var flx_extra_opts = "";
 proc get_pkg (pkg:string,dest:string) {
   cfg = read_cfg((LITTERBOX.join(pkg)).join("README.md"));
   match get cfg 'PKG_URL' with
@@ -309,7 +309,7 @@ gen handle_local_options(optt:int*list[string]) = {
 
   proc clean(pkg:string,pkg_dir:string,extra_opts:string) {
   if CLEANBUILD and match filetype(pkg_dir) with |DIRECTORY => true |_ => false endmatch do
-      if System::system("flx --inline=5 " +
+      if System::system((FLX_INSTALL_DIR.join("bin")).join("flx")+" --inline=5 " + " "+ flx_extra_opts + " "+
         pkg_dir.join("setup")+" clean --build-dir=" + pkg_dir +
         extra_opts) != 0 do
         warning("Clean failed");
@@ -324,9 +324,10 @@ gen handle_local_options(optt:int*list[string]) = {
 
   proc build(pkg:string, pkg_dir:string,extra_opts:string) {
     validate_pkg_dir(pkg,pkg_dir);
-    val result = System::system("flx --noinline " +
-    pkg_dir.join("setup")+" build --build-dir=" + pkg_dir +
-    extra_opts);
+    var cmd = (FLX_INSTALL_DIR.join("bin")).join("flx")+" --inline=0 " + " "+ flx_extra_opts + " "+
+      pkg_dir.join("setup")+" build --build-dir=" + pkg_dir +
+      extra_opts;
+   val result = System::system(cmd);
     if result != 0 do  
       warning("Build failed");
     else
@@ -336,7 +337,7 @@ gen handle_local_options(optt:int*list[string]) = {
 
   proc test(pkg:string, pkg_dir:string,extra_opts:string) {
     validate_pkg_dir(pkg,pkg_dir);
-    val result = System::system("flx --noinline " +
+    val result = System::system((FLX_INSTALL_DIR.join("bin")).join("flx")+" --inline=0 " + " "+ flx_extra_opts + " "+
     pkg_dir.join("setup")+" test --build-dir=" + pkg_dir +
     extra_opts);
     if result != 0 do  
@@ -356,7 +357,7 @@ gen handle_local_options(optt:int*list[string]) = {
       if not FORCE do test(pkg,pkg_dir,extra_opts); done
     done 
     
-    val result = System::system("flx --inline=0 " +
+    val result = System::system((FLX_INSTALL_DIR.join("bin")).join("flx")+" --inline=0 " + " "+ flx_extra_opts + " "+
     pkg_dir.join("setup")+" install --build-dir=" + pkg_dir +
     extra_opts);
     if result != 0 do  
@@ -426,6 +427,8 @@ gen handle_local_options(optt:int*list[string]) = {
     if not DEST_DIR == "" do extra_opts += " --dest-dir=" + DEST_DIR + " "; done
     if not EXTRA_INCDIR == "" do extra_opts += " -I" + EXTRA_INCDIR + " "; done
     if not EXTRA_LIBDIR == "" do extra_opts += " -L" + EXTRA_LIBDIR + " "; done
+    if TEST_MODE do flx_extra_opts +=  " --test=" + DEST_DIR; 
+                                 extra_opts += " --test=" + DEST_DIR;  FLX_INSTALL_DIR=DEST_DIR; done
     if FORCE do extra_opts += " --force "; done
     if DRY_RUN  do extra_opts += " --dry-run "; done
     match cmd with
@@ -444,8 +447,8 @@ fun get_pkg_dir_and_opts(options:list[string]) = {
   |Cons (?pkg,?as) when not pkg.startswith "--" => {
     var name=pkg; 
     retval = match head(as) with 
-      |Some ?dir => name,dir,safe_tail(as) 
-      |_ => name,(LITTERBOX.join("build")).join(pkg),safe_tail(as) 
+      |Some ?dir  when not dir.startswith "--" => name,dir,safe_tail(as) 
+      |_ => name,(LITTERBOX.join("build")).join(pkg),as //safe_tail(as) 
     endmatch;
   }
   |_ => {
