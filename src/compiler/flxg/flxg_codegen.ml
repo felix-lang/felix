@@ -226,7 +226,7 @@ let codegen_bsyms
   "  FILE *flx_stdout;";
   "  FILE *flx_stderr;";
   "  ::flx::gc::generic::gc_profile_t *gcp;";
-  "  ::flx::gc::generic::gc_shape_t *shape_list_head;";
+  "  ::flx::gc::generic::gc_shape_t const * const shape_list_head;";
   "  thread_frame_t(";
   "  );";
   ]

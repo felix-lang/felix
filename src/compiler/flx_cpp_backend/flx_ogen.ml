@@ -128,10 +128,10 @@ let rec gen_type_shape s syms bsym_table need_int last_ptr_map primitive_shapes 
       let n = length offsets in
       bcat s ("\n//OFFSETS for array type " ^ string_of_bid index ^ "\n");
       if n <> 0 then begin
-        bcat s ("static ::std::size_t " ^ name ^ "_offsets["^si n^"]={\n  ");
+        bcat s ("static ::std::size_t const " ^ name ^ "_offsets["^si n^"]={\n  ");
         bcat s ("  " ^ cat ",\n  " offsets);
         bcat s "};\n";
-        bcat s ("static ::flx::gc::generic::offset_data_t " ^name^"_offset_data = { " ^ 
+        bcat s ("static ::flx::gc::generic::offset_data_t const " ^name^"_offset_data = { " ^ 
           string_of_int n ^", " ^ name^ "_offsets};\n");
       end
       ;
@@ -146,7 +146,7 @@ let rec gen_type_shape s syms bsym_table need_int last_ptr_map primitive_shapes 
         bcat s ("}\n")
       end
       ;
-      bcat s ("static ::flx::gc::generic::gc_shape_t "^ name ^"_ptr_map = {\n");
+      bcat s ("static ::flx::gc::generic::gc_shape_t const "^ name ^"_ptr_map = {\n");
       bcat s ("  " ^ old_ptr_map ^ ",\n");
       bcat s ("  \"" ^ name ^ "\",\n");
       bcat s ("  " ^ si k ^ ",\n");
@@ -225,7 +225,7 @@ let rec gen_type_shape s syms bsym_table need_int last_ptr_map primitive_shapes 
             last_ptr_map := "&"^this_ptr_map;
 
             if gen_dflt_finaliser then bcat s ("FLX_FINALISER("^name^")\n");
-            bcat s ( "static ::flx::gc::generic::gc_shape_t " ^ name ^ "_ptr_map = {\n") ;
+            bcat s ( "static ::flx::gc::generic::gc_shape_t const " ^ name ^ "_ptr_map = {\n") ;
             bcat s ("  " ^ old_ptr_map ^ ",\n");
             bcat s ("  \"" ^ name ^ "\",\n");
             bcat s ("  1,sizeof("^name^"),\n");
@@ -265,7 +265,7 @@ let rec gen_type_shape s syms bsym_table need_int last_ptr_map primitive_shapes 
         (* HACK .. in fact, some C structs might have finalisers! *)
         let is_pod = false in
         if not is_pod then bcat s ("FLX_FINALISER("^name^")\n");
-        bcat s ( "static ::flx::gc::generic::gc_shape_t " ^ name ^ "_ptr_map ={\n") ;
+        bcat s ( "static ::flx::gc::generic::gc_shape_t const " ^ name ^ "_ptr_map ={\n") ;
         bcat s ("  " ^ old_ptr_map ^ ",\n");
         bcat s ("  \"" ^ name ^ "\",\n");
         if is_pod then begin
@@ -310,19 +310,19 @@ let rec gen_type_shape s syms bsym_table need_int last_ptr_map primitive_shapes 
       gen_offset_data s n name offsets false false [] None last_ptr_map encoder_name decoder_name
  
     | BTYP_unitsum _ ->
-      bcat s ("static ::flx::gc::generic::gc_shape_t &"^ name ^"_ptr_map = ::flx::rtl::_int_ptr_map;\n");
+      bcat s ("static ::flx::gc::generic::gc_shape_t const &"^ name ^"_ptr_map = ::flx::rtl::_int_ptr_map;\n");
 
     | BTYP_sum _ ->
       begin match Flx_vrep.cal_variant_rep bsym_table btyp with
       | Flx_vrep.VR_self -> assert false
       | Flx_vrep.VR_int ->
-        bcat s ("static ::flx::gc::generic::gc_shape_t &"^ name ^"_ptr_map = ::flx::rtl::_int_ptr_map;\n");
+        bcat s ("static ::flx::gc::generic::gc_shape_t const &"^ name ^"_ptr_map = ::flx::rtl::_int_ptr_map;\n");
       | Flx_vrep.VR_nullptr ->
-        bcat s ("static ::flx::gc::generic::gc_shape_t &"^ name ^"_ptr_map = ::flx::rtl::_address_ptr_map;\n");
+        bcat s ("static ::flx::gc::generic::gc_shape_t const &"^ name ^"_ptr_map = ::flx::rtl::_address_ptr_map;\n");
       | Flx_vrep.VR_packed ->
-        bcat s ("static ::flx::gc::generic::gc_shape_t &"^ name ^"_ptr_map = ::flx::rtl::_address_ptr_map;\n");
+        bcat s ("static ::flx::gc::generic::gc_shape_t const &"^ name ^"_ptr_map = ::flx::rtl::_address_ptr_map;\n");
       | Flx_vrep.VR_uctor ->
-        bcat s ("static ::flx::gc::generic::gc_shape_t &"^ name ^"_ptr_map = ::flx::rtl::_uctor_ptr_map;\n");
+        bcat s ("static ::flx::gc::generic::gc_shape_t const &"^ name ^"_ptr_map = ::flx::rtl::_uctor_ptr_map;\n");
       end
 
     | _ ->
@@ -459,10 +459,10 @@ print_debug syms ("Handle type " ^ sbt bsym_table btyp ^ " instance " ^ si index
   ;
   bcat s ("\n");
   if !need_int then
-  bcat s ("static ::flx::gc::generic::gc_shape_t &int_ptr_map = ::flx::rtl::_int_ptr_map;\n");
+  bcat s ("static ::flx::gc::generic::gc_shape_t const &int_ptr_map = ::flx::rtl::_int_ptr_map;\n");
 
   bcat s ("// Head of shape list, included so dlsym() can find it when\n");
   bcat s ("// this file is a shared lib, uses module name for uniqueness.\n");
-  bcat s ("extern \"C\" FLX_EXPORT ::flx::gc::generic::gc_shape_t *" ^ cid_of_flxid module_name ^ "_head_shape;\n");
-  bcat s ("::flx::gc::generic::gc_shape_t *" ^ cid_of_flxid module_name ^ "_head_shape=" ^ !last_ptr_map ^ ";\n");
+  bcat s ("extern \"C\" FLX_EXPORT ::flx::gc::generic::gc_shape_t const * const " ^ cid_of_flxid module_name ^ "_head_shape;\n");
+  bcat s ("::flx::gc::generic::gc_shape_t const * const " ^ cid_of_flxid module_name ^ "_head_shape=" ^ !last_ptr_map ^ ";\n");
   !last_ptr_map,Buffer.contents s
