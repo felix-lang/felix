@@ -57,7 +57,7 @@ var LITTERBOX = if Env::getenv("LITTERBOX") == "" then
   else Env::getenv("LITTERBOX") endif;
 
 var LITTERBOX_URL = if Env::getenv("LITTERBOX_URL") == "" then
-  'https://github.com/mmaul/litterbox.git'
+  'https://github.com/felix-lang/litterbox.git'
   else Env::getenv("LITTERBOX_URL") endif;
 
 

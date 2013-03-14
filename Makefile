@@ -256,7 +256,7 @@ ocamldoc:
 		src/compiler/flx_misc/*.mli \
 		src/compiler/flx_misc/*.ml 
 
-${BUILDROOT}/bin/scoop:
+${BUILDROOT}/bin/scoop: demos/scoop/bin/scoop.flx ${BUILDROOT}/lib/std/felix/pkgtool_base.flx ${BUILDROOT}/lib/std/felix/pkgtool.flx
 	@${BUILDROOT}/bin/flx --inline=1 --test=${BUILDROOT} demos/scoop/setup build  --test=${BUILDROOT} --build-dir=demos/scoop 2> /dev/null
 	@${BUILDROOT}/bin/flx --inline=1 --test=${BUILDROOT} demos/scoop/setup install  --test=${BUILDROOT} --build-dir=demos/scoop 2> /dev/null
 	@${BUILDROOT}/bin/flx --inline=1 --test=${BUILDROOT} demos/scoop/setup clean  --test=${BUILDROOT} --build-dir=demos/scoop 2> /dev/null
