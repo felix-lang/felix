@@ -457,7 +457,7 @@ let codegen_bsyms
   begin
     plr "\n// Array indexing helpers for sum indexes\n";
     Hashtbl.iter (fun _ (name,values) ->
-      plr  ("static int " ^ name ^ "[" ^ string_of_int (List.length values) ^ "] = {" ^
+      plr  ("static int const " ^ name ^ "[" ^ string_of_int (List.length values) ^ "] = {" ^
       catmap "," string_of_int  values ^
       "};")
     )
