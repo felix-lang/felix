@@ -25,7 +25,13 @@ let add a b = match a,b with
   | `Int x, `Int y -> `Int (x + y)
   | `Int 0, x
   | x, `Int 0 -> x
+  | x, `Int y -> if y < 0 then `Sub (x, `Int ( - y )) else `Add (a,b)
   | _ -> `Add (a,b)
+
+let sub a b = match a,b with
+  | `Int x, `Int y -> `Int (x - y)
+  | _, `Int y -> if y <= 0 then add a b else `Sub (a,b)
+  | _, _ -> `Sub (a,b)
 
 let modu a b = match a,b with
   | `Int x, `Int y -> `Int (x mod y)
@@ -38,14 +44,30 @@ let div a b = match a,b with
 
 let switch ts e = `Switch (ts,e)
 
+let get_array_sum_offset_values bsym_table ts =
+  let sizes = List.map (sizeof_linear_type bsym_table) ts in
+  let rec aux acc tsin tsout = 
+    match tsin with
+    | [] -> List.rev tsout
+    | h :: t -> aux (acc + h) t (acc :: tsout)
+  in
+    aux 0 sizes []
+
+let case_offset bsym_table ts caseno = match caseno with
+  | `Int 0 -> `Int 0
+  | `Int n -> `Int (List.nth (get_array_sum_offset_values bsym_table ts) n)
+  | _ -> `Case_offset (ts,caseno)
+
 let rec print_index bsym_table idx = 
   let pi x = print_index bsym_table x in
   match idx with
   | `Int n -> si n
   | `Mul (a,b) -> "(" ^ pi a ^ ")*(" ^ pi b ^")"
   | `Add (a,b) -> "(" ^ pi a ^ ")+(" ^ pi b ^")"
+  | `Sub (a,b) -> "(" ^ pi a ^ ")-(" ^ pi b ^")"
   | `Mod (a,b) -> "(" ^ pi a ^ ")%(" ^ pi b ^")"
   | `Div (a,b) -> "(" ^ pi a ^ ")/(" ^ pi b ^")"
+  | `Lookup (t,e) -> t ^ "[" ^ pi e ^ "]"
   | `Expr e -> "Expr (" ^ sbe bsym_table e  ^ ")"
   | `Case_offset (ts,c) -> "case_offset ["^sbt bsym_table (Flx_btype.btyp_sum ts) ^"](" ^ pi c ^ ")"
   | `Switch (ts,e) -> "switch (" ^ pi e ^ ") { " ^ catmap "," (sbt bsym_table) ts ^ " }"
@@ -89,7 +111,7 @@ print_endline ("Argument is " ^ sbe bsym_table b);
 print_endline ("case type is " ^ sbt bsym_table its);
 *)
     let caseno = i in 
-    let ix = add (`Case_offset (ts, (`Int caseno))) (cax b) in
+    let ix = add (case_offset bsym_table ts (`Int caseno)) (cax b) in
 (*
 print_endline ("Final index is " ^ print_index bsym_table ix);
 *)
@@ -99,7 +121,7 @@ print_endline ("Final index is " ^ print_index bsym_table ix);
      let e' = expr idx in
      let caseno = i in 
      let caset = List.nth ts i in
-     (`Case_offset (ts, (`Int caseno))) 
+     (case_offset bsym_table ts (`Int caseno)) 
 
 (*
   | (BEXPR_case (i,t'),_), BTYP_unitsum n ->
@@ -137,7 +159,7 @@ print_endline ("xDecomposing index of sum type " ^ sbe bsym_table e);
      *)
      (*
      let caseno = modu e' (`Int (List.length ts)) in
-     add (`Case_offset (ts, caseno)) (switch ts e')
+     add (case_offset bsym_table ts caseno) (switch ts e')
      *)
      e'
 
@@ -171,26 +193,7 @@ let get_array_sum_offset_table bsym_table seq array_sum_offset_table ts =
      let n = !seq in 
      incr seq;
      let name = "_gas_"^si n in
-     let values =
-(*
-       List.iter
-         (fun t -> print_endline ("Size of " ^ sbt bsym_table t ^ " is " ^ si  (size t)))
-          ts
-       ;
-*)
-       let sizes = List.map (sizeof_linear_type bsym_table) ts in
-       let rec aux acc tsin tsout = 
-         match tsin with
-         | [] -> List.rev tsout
-         | h :: t -> aux (acc + h) t (acc :: tsout)
-       in
-       let sizes = aux 0 sizes [] in
-(*
-       List.iter (fun x -> print_endline ("Sizes = " ^ si x)) sizes;
-*)
-       sizes
-     in 
-     Hashtbl.add array_sum_offset_table t (name,values);
+     Hashtbl.add array_sum_offset_table t (name, get_array_sum_offset_values bsym_table ts);
      name
 
 let get_power_table bsym_table power_table size =
@@ -209,6 +212,7 @@ let get_power_table bsym_table power_table size =
   ;
   "flx_ipow_"^si size
 
+
 (* Linearise a structured index *)
 let rec render_index bsym_table ge' array_sum_offset_table seq idx = 
   let ri x = render_index bsym_table ge' array_sum_offset_table seq x in
@@ -216,8 +220,10 @@ let rec render_index bsym_table ge' array_sum_offset_table seq idx =
   | `Int n -> ce_atom (si n)
   | `Mul (a,b) -> ce_infix "*" (ri a) (ri b)
   | `Add (a,b) -> ce_infix "+" (ri a) (ri b)
+  | `Sub (a,b) -> ce_infix "-" (ri a) (ri b)
   | `Mod (a,b) -> ce_infix "%" (ri a) (ri b)
   | `Div (a,b) -> ce_infix "/" (ri a) (ri b)
+  | `Lookup (tbl,e) -> ce_array (ce_atom tbl) (ri e)
   | `Expr e -> ge' e
   | `Case_offset (ts, caseno) ->
      let index = ri caseno in
@@ -240,7 +246,7 @@ let rec render_index bsym_table ge' array_sum_offset_table seq idx =
          | BTYP_sum ls ->
            let m = List.length ls in
            let cond = ce_infix "==" (ce_atom (si i)) (ri (modu e (`Int m))) in
-           let arg = ri (`Case_offset (ts, (div e (`Int m)))) in
+           let arg = ri (case_offset bsym_table ts (div e (`Int m))) in
            ce_cond cond arg (aux (i+1) tl)
          | _ ->
            let m = Flx_btype.ncases_of_sum bsym_table hd in
@@ -298,7 +304,6 @@ let handle_get_n (syms:Flx_mtypes2.sym_state_t) bsym_table ls rt ge' e t n ((e',
   let array_sum_offset_table = syms.Flx_mtypes2.array_sum_offset_table in
 
   let sidx = cal_symbolic_array_index bsym_table arg in
-  let cidx = render_index bsym_table ge' array_sum_offset_table seq sidx in
         (* now calculate the projection: this is given by 
              idx / a % b
              where a = product of sizes of first n  terms (or 1 if n=0)
@@ -333,8 +338,8 @@ let handle_get_n (syms:Flx_mtypes2.sym_state_t) bsym_table ls rt ge' e t n ((e',
         let apart = if a = 1 then cidx else ce_infix "/" cidx (ce_atom (si a)) in
         let result = if n = List.length ls - 1 then apart else ce_infix "%" apart (ce_atom (si b)) in
 *)
-  let result = ce_infix "%" (ce_infix "/" cidx (ce_atom (si a))) (ce_atom (si b)) in
-  result
+  let result = modu (div sidx (`Int a)) (`Int b) in
+  render_index bsym_table ge' array_sum_offset_table seq result
 
 (* at is known to be a compact linear type *)
 let handle_get_n_array_clt syms bsym_table ge' idx idxt v aixt at a =
@@ -348,6 +353,15 @@ print_endline ("Array len = " ^ si array_len);
   let seq = syms.Flx_mtypes2.counter in
   let array_sum_offset_table = syms.Flx_mtypes2.array_sum_offset_table in
   let power_table = syms.Flx_mtypes2.power_table in
+  let ipow' base exp = match exp with
+      | `Int i -> 
+          let rec ipow = begin function 0 -> 1 | n -> base * (ipow (n - 1)) end in
+            `Int (ipow i)
+      | _ ->
+          let ipow = get_power_table bsym_table power_table base in
+            `Lookup (ipow, exp)
+  in
+
 (*
     print_endline "Projection of linear type!";
 *)
@@ -363,15 +377,9 @@ print_endline ("Array_value_size=" ^ si array_value_size);
 print_endline ("Symbolic index = " ^ Flx_ixgen.print_index bsym_table sidx );
 print_endline ("Symbolic array = " ^ Flx_ixgen.print_index bsym_table sarr );
 *)
-    let cidx = render_index bsym_table ge' array_sum_offset_table seq sidx in
-(*
-print_endline ("rendered lineralised index .. C index = " ^ string_of_cexpr cidx);
-*)
-    let carr = render_index bsym_table ge' array_sum_offset_table seq sarr in
-    let ipow = get_power_table bsym_table power_table array_value_size in
-    let cdiv = ce_array (ce_atom ipow) (ce_infix "-" (ce_atom (si (array_len - 1))) cidx)  in
-    let result = ce_infix "%" (ce_infix "/" carr cdiv) (ce_atom (si array_value_size)) in
-    result
+    let sdiv = ipow' array_value_size (sub (`Int (array_len - 1)) sidx) in
+    let result = (modu (div sarr sdiv) (`Int array_value_size)) in
+    render_index bsym_table ge' array_sum_offset_table seq result
 
 (* at is known NOT to be a compact linear type (the index is though) *)
 let handle_get_n_array_nonclt syms bsym_table ge' idx idxt aixt at a =
