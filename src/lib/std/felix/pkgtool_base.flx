@@ -525,7 +525,7 @@ noinline  fun find_path_to(name:string,paths:list[string]) = {
   }
   //$ Creates 'name'.fpc file with 'description', 'cflags' and
   //$ list of dynamic libraries 'dlibs' and static libraries 'slibs'
-noinline  proc create_fpc(name:string,description:string,cflags:string,includes:list[string],
+noinline  proc create_fpc(name:string,description:string,cflags:list[string],includes:list[string],
                    dlibs:string,slibs:string,reqs:list[string]) {
     var fpc_name = name+".fpc";
     task("Creating config/" + fpc_name);
@@ -533,7 +533,7 @@ noinline  proc create_fpc(name:string,description:string,cflags:string,includes:
     if valid(fpc) do
       var fpc_s:string = q"""
 Name: $(name)
-cflags: $(cflags)
+"""+join_list( (map (fun(s:string)=>"cflags: "+s) cflags),"\n")+q"""
 Description: $(description)
 requires_dlibs: $(slibs)
 requires_slibs: $(dlibs)
@@ -558,25 +558,25 @@ requires_slibs: $(dlibs)
   //$ Felix Package Config file
 noinline  proc create_config(name:string,includes:list[string],libs:list[string],
                      reqs:list[string]) {
-  create_config(name,includes,libs,reqs,"");
+  create_config(name,includes,libs,reqs,Empty[string]);
 }
 
   //$ Determines proper configuration given package 'name', list of C/C++
   //$ 'includes' and list of C/C++ 'libs'. Then generates config/'name'.fpc
   //$ Felix Package Config file
 noinline  proc create_config(name:string,includes:list[string],libs:list[string],
-                     reqs:list[string],extra_cflags:string) {
+                     reqs:list[string],extra_cflags:list[string]) {
+    var c_flags:list[string] = extra_cflags+Empty[string];
     var config_ok_fn = (BUILD_DIR.join("config")).join("CONFIG_"+name+".OK");
     if not FileStat::fileexists config_ok_fn do 
       var idirs = strdict[string]();
-      var c_flags:string = extra_cflags+" ";
       for inc in includes do
        add idirs (match
         find_path_to(inc,
           if #Config::config.HAVE_MACOSX then OSX_INCLUDE_DIRS else INCLUDE_DIRS endif + 
           EXTRA_INCDIR)
         with
-        |Some path => "-I" + path
+        |Some path => " -I" + path
         |None => (
           general_fail("Unable to find " + inc + 
             " Please locate and pass path to setup with the -L switch");
@@ -584,7 +584,7 @@ noinline  proc create_config(name:string,includes:list[string],libs:list[string]
         endmatch) "";
       done
       for idir in idirs do
-        c_flags += let ?k,_ = idir in k; 
+        c_flags = (let ?k,_ = idir in k) + c_flags; 
       done
        var lib_dirs="";
       for lib in libs do
