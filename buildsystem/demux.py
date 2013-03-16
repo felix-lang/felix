@@ -111,6 +111,9 @@ def build_runtime(phase):
 
     srcs = Path.globall(srcs)
 
+    lp = len (path)
+    print("demux: srcs = ", [str (src)[lp+1:] for src in srcs])
+    print("demux: include paths = ", [str(inc) for inc in includes])
     return Record(
         static=buildsystem.build_cxx_static_lib(phase, dst, srcs,
             includes=includes,

@@ -4,4 +4,6 @@ provides_dlib: -lflx_async_dynamic
 provides_slib: -lflx_async_static
 includes: '"flx_async.hpp"'
 Requires: flx_pthread flx 
+srcdir: src/flx_async
+src: .*\.cpp
 

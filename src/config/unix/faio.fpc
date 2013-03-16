@@ -4,5 +4,7 @@ provides_dlib: -lfaio_dynamic
 provides_slib: -lfaio_static
 includes: '"faio_posixio.hpp"'
 Requires: flx_async flx_pthread demux flx 
+srcdir: src/faio
+src: .*\.cpp
 
 

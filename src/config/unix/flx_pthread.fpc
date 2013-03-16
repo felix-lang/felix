@@ -5,4 +5,6 @@ provides_dlib: -lflx_pthread_dynamic
 provides_slib: -lflx_pthread_static
 includes: '"pthread_thread.hpp"'
 Requires: flx_gc pthread
+srcdir: src/pthread
+src: .*\.cpp
 

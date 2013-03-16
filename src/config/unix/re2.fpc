@@ -3,4 +3,6 @@ Description: Google Re2 regexp library
 provides_dlib: -lflx_re2_dynamic
 provides_slib: -lflx_re2_static
 includes: '"re2/re2.h"'
+srcdir: src/re2/re2
+src: re2/.*\.cc|util/arena\.cc|util/hash\.cc|util/rune\.cc|util/stringpiece\.cc|util/stringprintf\.cc|util/valgrind\.cc
 

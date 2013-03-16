@@ -1,39 +1,17 @@
-include "./src/tools/toolchain_clang_config";
+include "std/felix/toolchain_clang_config";
 include "std/felix/toolchain_interface";
 include "std/felix/flx_cp";
-
-var toolchain-maker = 
-  Dynlink::load-plugin-func1 [toolchain_t,clang_config_t] 
-  (
-    dll-name="src/tools/toolchain_clang_osx", 
-    setup-str="",
-    entry-point="toolchain_clang_osx"
-  )
-;
-
-
-var dirs = list (
-  "pthread",
-  "exceptions",
-  "flx_async",
-  "gc",
-  "rtl",
-  "demux",
-  "faio"
-);
-
-var repo = "src";
-var build = "trial";
+include "std/felix/flx_pkgconfig";
 
 proc dbug (x:string) {
 // println x;
 }
-
-proc make_lib (repo: string, build:string, dir:string, deps:list[string])
+/*
+proc make_lib (repo: string, build:string, pkg:string)
 {
   println$ "------------";
   println$ "Make lib " + dir;
-  var configdir = Filename::join ((#Config::config).FLX_INSTALL_DIR, "config", "target");
+  var configdir = Filename::join (FLX_INSTALL_DIR, "config", "target");
   var srcpath = Filename::join (repo, dir);
   var config = 
     (
@@ -74,15 +52,126 @@ proc make_lib (repo: string, build:string, dir:string, deps:list[string])
     System::exit(1);
   done
 }
+*/
 
-proc make_rtl (repo:string, build:string, dirs:list[string])
+proc make_rtl (repo:string, build:string, pkgconfig_dir:string, boot_package:string)
 {
-  var deps = Empty[string];
-  for dir in dirs do 
-    make_lib (repo,build, dir,deps); 
-    deps += "-l"+dir;
+  
+  println$ 
+    "flx_build: configdir=" + pkgconfig_dir + 
+    ", bootpkg=" + boot_package +
+    ", builddir=" + build +
+    ", repository=" + repo
+  ;
+
+  // Get all the values of a field in a particular package
+  gen getpkgfield (pkg:string, field:string) : list[string] = {
+    var result,values = FlxPkgConfig::flx_pkgconfig $ list $
+      "--path="+pkgconfig_dir, "--field="+field,pkg
+    ;
+    if result != 0 do
+      println$ "Can't find package " + pkg;
+      System::exit(1);
+    done
+    return values;
+  }
+  
+  // Get the single value of a field in a particular package.
+  // Bug out if missing or multiple values.
+  gen getpkgfield1 (pkg:string, field:string) : string = {
+    var values = getpkgfield (pkg,field);
+    match values with
+    | Cons (?h,#Empty) => return h;
+    | #Empty => 
+      println$ "Required field " + field + " not found in package "+pkg;
+      System::exit(1);
+    | _ =>
+      println$ "Multiple values for field " + field + " in " + pkg + " not allowed, got" + str values;
+      System::exit(1);
+    endmatch;
+  }
+
+  // Get the single value of a field in a particular package.
+  // Bug out if multiple values.
+  gen getpkgfieldopt (pkg:string, field:string) : opt[string] = {
+    var values = getpkgfield (pkg,field);
+    match values with
+    | Cons (?h,#Empty) => return Some h;
+    | #Empty => return None[string];
+    | _ =>
+      println$ "Multiple values for field " + field + " in " + pkg + " not allowed, got" + str values;
+      System::exit(1);
+    endmatch;
+  }
+
+  gen getpkgfielddflt (pkg:string, field:string) : string =>
+    match getpkgfieldopt (pkg, field) with
+    | Some h => h
+    | #None => ""
+    endmatch
+  ;
+
+
+  gen getbootfield (field:string) => getpkgfield1 (boot_package, field);
+
+  // Get Reqiores closure.
+  gen getclosure (pkg:string) : list[string] = {
+    var result,values = FlxPkgConfig::flx_pkgconfig $ list $
+      "--path="+pkgconfig_dir, "--rec", "--list", pkg
+    ;
+    if result != 0 do
+      println$ "missing package for closure of " + pkg;
+      System::exit(1);
+    done
+    return values;
+  }
+
+  var compiler = getbootfield "compiler"; 
+  var os = getbootfield "os"; 
+  var toolchain = getbootfield "toolchain"; 
+  println$ "compiler     : " + str compiler;
+  println$ "os           : " + str os;
+  println$ "toolchain    : " + str toolchain;
+
+  var allpkgs = getclosure boot_package;
+  println$ "Closure      : " + str allpkgs;
+
+  for pkg in allpkgs do
+    var slib = getpkgfielddflt (pkg,"provides_slib");
+    var dlib = getpkgfielddflt (pkg,"provides_dlib");
+    var srcdir = getpkgfielddflt (pkg,"srcdir");
+    var src = getpkgfielddflt (pkg,"src");
+    println$ f"%15S %20S %20S %20S %20S" (pkg,slib,dlib,srcdir,src);
   done
+
+  var toolchain-maker = 
+    Dynlink::load-plugin-func1 [toolchain_t,clang_config_t] 
+    (
+      dll-name="src/tools/" + toolchain, // temporary hack!
+      setup-str="",
+      entry-point=toolchain
+    )
+  ;
+  
+
 }
 
-make_rtl (repo, build, dirs);
+if System::argc < 4 do
+  println$ "Usage: flx_build configdir bootpkg builddir repo";
+done
+
+var pkgconfig_dir = System::argv 1;
+var boot_package = System::argv 2;
+var build = System::argv 3;
+var repo = System::argv 4;
+
+
+make_rtl (repo, build, pkgconfig_dir,boot_package);
 System::exit (0);
+
+
+
+
+
+
+
