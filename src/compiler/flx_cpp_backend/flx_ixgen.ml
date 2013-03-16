@@ -196,20 +196,21 @@ let get_array_sum_offset_table bsym_table seq array_sum_offset_table ts =
      Hashtbl.add array_sum_offset_table t (name, get_array_sum_offset_values bsym_table ts);
      name
 
-let get_power_table bsym_table power_table size =
-  if not (Hashtbl.mem power_table size) then begin
-    let name = "_ipow_"^si size in
-    let values = ref [] in
-     let pow = ref 1 in
-     while (!pow) < 60000 do
-       values := !pow :: !values;
-       pow := !pow * size;
-     done
-     ;
-     let values = List.rev (!values) in
-     Hashtbl.add power_table size values;
-  end
-  ;
+(* A lookup table computing size^n for n in [0..count) *)
+let get_power_table bsym_table power_table size count =
+  begin
+  if try
+       (List.length (Hashtbl.find power_table size)) < count
+     with Not_found -> true then
+    let values =
+      let rec ipows = function 
+            | n,l when n < 1 -> l
+            | n,(h::t as l) -> ipows (pred n, (size*h)::l)
+            | _ -> invalid_arg "power_table ipows"
+      in List.rev (ipows (pred count, [1]))
+    in
+      Hashtbl.replace power_table size values
+  end;
   "flx_ipow_"^si size
 
 
@@ -358,7 +359,7 @@ print_endline ("Array len = " ^ si array_len);
           let rec ipow = begin function 0 -> 1 | n -> base * (ipow (n - 1)) end in
             `Int (ipow i)
       | _ ->
-          let ipow = get_power_table bsym_table power_table base in
+          let ipow = get_power_table bsym_table power_table base array_len in
             `Lookup (ipow, exp)
   in
 
