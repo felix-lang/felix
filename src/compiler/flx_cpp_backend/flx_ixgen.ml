@@ -30,7 +30,7 @@ let add a b = match a,b with
 
 let sub a b = match a,b with
   | `Int x, `Int y -> `Int (x - y)
-  | _, `Int y -> if y <= 0 then add a b else `Sub (a,b)
+  | x, `Int y -> if y <= 0 then add x (`Int ( - y )) else `Sub (a,b)
   | _, _ -> `Sub (a,b)
 
 let modu a b = match a,b with
