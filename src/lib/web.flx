@@ -1,3 +1,3 @@
 include "web/__init__";
-include "xml/__init__";
+//include "xml/__init__";
 include "io/__init__";
