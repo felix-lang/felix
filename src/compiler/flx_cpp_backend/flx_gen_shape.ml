@@ -23,16 +23,16 @@ let gen_offset_data s n name offsets isfun is_pod props flags last_ptr_map encod
   in
   if n <> 0 then
   begin
-    bcat s ("static ::std::size_t " ^ name ^
+    bcat s ("static ::std::size_t const " ^ name ^
       "_offsets["^noffsets^ "]={\n");
     bcat s ("  " ^ cat "\n  " offsets);
     bcat s ("\n" ^  "};\n");
-    bcat s ("static ::flx::gc::generic::offset_data_t " ^name^"_offset_data = { " ^ 
+    bcat s ("static ::flx::gc::generic::offset_data_t const " ^name^"_offset_data = { " ^ 
      noffsets ^", " ^ name^ "_offsets};\n");
   end;
 
   if not is_pod then bcat s ("FLX_FINALISER("^name^")\n");
-  bcat s (  "static ::flx::gc::generic::gc_shape_t "^ this_ptr_map ^" ={\n");
+  bcat s (  "static ::flx::gc::generic::gc_shape_t const "^ this_ptr_map ^" ={\n");
   bcat s ("  " ^ old_ptr_map ^ ",\n");
   bcat s ("  \"" ^ name ^ "\",\n");
   bcat s ("  1,sizeof("^name^"),\n");
