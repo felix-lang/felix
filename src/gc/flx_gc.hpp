@@ -26,7 +26,7 @@ struct GC_EXTERN pointer_data_t
   void *head;                         //< head object
   unsigned long max_elements;         //< allocated slots
   unsigned long used_elements;        //< used slots
-  gc_shape_t *shape;                  //< shape
+  gc_shape_t const *shape;            //< shape
 };
 
 enum gc_shape_flags_t {
@@ -38,18 +38,18 @@ enum gc_shape_flags_t {
 
 /// Describes runtime object shape.
 typedef void finaliser_t (collector_t*, void*); 
-typedef void *scanner_t(collector_t*, gc_shape_t*, void *, unsigned long, int);
+typedef void *scanner_t(collector_t*, gc_shape_t const *, void *, unsigned long, int);
 typedef ::std::string encoder_t (void *);
 typedef size_t decoder_t(void *, char *, size_t);
 
 struct GC_EXTERN gc_shape_t
 {
-  gc_shape_t *next_shape;         ///< pointer to next shape in list or NULL
+  gc_shape_t const *next_shape;   ///< pointer to next shape in list or NULL
   char const *cname;              ///< C++ typename
   std::size_t count;              ///< static array element count
   std::size_t amt;                ///< bytes allocated
   finaliser_t *finaliser;         ///< finalisation function
-  void *private_data;             ///< private data passed to scanner
+  void const *private_data;       ///< private data passed to scanner
   scanner_t *scanner;             ///< scanner function 
   encoder_t *encoder;             ///< encoder function 
   decoder_t *decoder;             ///< encoder function 
@@ -59,7 +59,7 @@ struct GC_EXTERN gc_shape_t
 struct GC_EXTERN offset_data_t
 {
   ::std::size_t n_offsets;
-  ::std::size_t *offsets;
+  ::std::size_t const *offsets;
 };
 
 GC_EXTERN scanner_t scan_by_offsets;
@@ -127,7 +127,7 @@ struct GC_EXTERN collector_t
 
   // Hooks for the supplied allocator, which operate in
   // terms of shape objects rather than raw memory amounts.
-  void *allocate(gc_shape_t *shape, unsigned long x) {
+  void *allocate(gc_shape_t const *shape, unsigned long x) {
     return v_allocate(shape,x);
   }
 
@@ -163,14 +163,14 @@ struct GC_EXTERN collector_t
   virtual void incr_used(void *memory, unsigned long)=0;
   virtual unsigned long get_used(void *memory)=0;
   virtual unsigned long get_count(void *memory)=0;
-  virtual void *create_empty_array( gc_shape_t *shape, unsigned long count)=0;
+  virtual void *create_empty_array( gc_shape_t const *shape, unsigned long count)=0;
 
   virtual pointer_data_t get_pointer_data(void *)=0;
 private:
   virtual unsigned long v_get_allocation_count()const=0;
   virtual unsigned long v_get_root_count()const=0;
   virtual unsigned long v_get_allocation_amt()const=0;
-  virtual void *v_allocate(gc_shape_t *shape, unsigned long)=0;
+  virtual void *v_allocate(gc_shape_t const *shape, unsigned long)=0;
   virtual void v_finalise(void *fp)=0;
   virtual unsigned long v_collect()=0;
   virtual void v_add_root(void *memory)=0;
@@ -207,7 +207,7 @@ struct GC_EXTERN gc_profile_t {
   unsigned long actually_collect(); ///< function which actually collects
 
   void *allocate(
-    flx::gc::generic::gc_shape_t *shape,
+    flx::gc::generic::gc_shape_t const *shape,
     unsigned long count,
     bool allow_gc
   );
@@ -242,7 +242,7 @@ GC_EXTERN void *operator new
 (
   std::size_t,
   flx::gc::generic::gc_profile_t &,
-  flx::gc::generic::gc_shape_t &,
+  flx::gc::generic::gc_shape_t const &,
   bool
 );
 
@@ -252,7 +252,7 @@ GC_EXTERN void *operator new
 GC_EXTERN void operator delete(
   void*,
   flx::gc::generic::gc_profile_t &,
-  flx::gc::generic::gc_shape_t &,
+  flx::gc::generic::gc_shape_t const &,
   bool
 );
 
