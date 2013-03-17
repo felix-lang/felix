@@ -6,19 +6,25 @@ include "std/felix/flx_pkgconfig";
 proc dbug (x:string) {
 // println x;
 }
-/*
-proc make_lib (repo: string, build:string, pkg:string)
+proc make_lib 
+(
+  db: FlxPkgConfig::FlxPkgConfigQuery_t,  
+  toolchain-maker: clang_config_t -> toolchain_t, 
+  repo: string, build:string, pkg:string
+)
 {
+  var FLX_INSTALL_DIR = #(Config::config).FLX_INSTALL_DIR;
   println$ "------------";
-  println$ "Make lib " + dir;
+  println$ "Make lib " + pkg;
   var configdir = Filename::join (FLX_INSTALL_DIR, "config", "target");
-  var srcpath = Filename::join (repo, dir);
+  var srcpath = Filename::join (repo, pkg);
+  var ddeps = db.getpkgfield (pkg,"requires_dlibs");
   var config = 
     (
       header_search_dirs= list[string] ("-I"+build, "-I"+configdir),
       macros= Empty[string],
       library_search_dirs= list[string] ("-L"+build),
-      dynamic_libraries= deps,
+      dynamic_libraries= ddeps,
       static_libraries= Empty[string],
       debugln = dbug
     )
@@ -45,14 +51,13 @@ proc make_lib (repo: string, build:string, pkg:string)
   done
 
   var objs = map objname files;
-  var dstlib = Filename::join (build, dir+#(toolchain.dynamic_library_extension));
+  var dstlib = Filename::join (build, pkg+#(toolchain.dynamic_library_extension));
   result = toolchain.dynamic_library_linker(srcs=objs, dst=dstlib);
   if result != 0 do
     println$ "Linker result " + str result;
     System::exit(1);
   done
 }
-*/
 
 proc make_rtl (repo:string, build:string, pkgconfig_dir:string, boot_package:string)
 {
@@ -64,67 +69,9 @@ proc make_rtl (repo:string, build:string, pkgconfig_dir:string, boot_package:str
     ", repository=" + repo
   ;
 
-  // Get all the values of a field in a particular package
-  gen getpkgfield (pkg:string, field:string) : list[string] = {
-    var result,values = FlxPkgConfig::flx_pkgconfig $ list $
-      "--path="+pkgconfig_dir, "--field="+field,pkg
-    ;
-    if result != 0 do
-      println$ "Can't find package " + pkg;
-      System::exit(1);
-    done
-    return values;
-  }
-  
-  // Get the single value of a field in a particular package.
-  // Bug out if missing or multiple values.
-  gen getpkgfield1 (pkg:string, field:string) : string = {
-    var values = getpkgfield (pkg,field);
-    match values with
-    | Cons (?h,#Empty) => return h;
-    | #Empty => 
-      println$ "Required field " + field + " not found in package "+pkg;
-      System::exit(1);
-    | _ =>
-      println$ "Multiple values for field " + field + " in " + pkg + " not allowed, got" + str values;
-      System::exit(1);
-    endmatch;
-  }
+  var db = FlxPkgConfig::FlxPkgConfigQuery (list[string] pkgconfig_dir);
 
-  // Get the single value of a field in a particular package.
-  // Bug out if multiple values.
-  gen getpkgfieldopt (pkg:string, field:string) : opt[string] = {
-    var values = getpkgfield (pkg,field);
-    match values with
-    | Cons (?h,#Empty) => return Some h;
-    | #Empty => return None[string];
-    | _ =>
-      println$ "Multiple values for field " + field + " in " + pkg + " not allowed, got" + str values;
-      System::exit(1);
-    endmatch;
-  }
-
-  gen getpkgfielddflt (pkg:string, field:string) : string =>
-    match getpkgfieldopt (pkg, field) with
-    | Some h => h
-    | #None => ""
-    endmatch
-  ;
-
-
-  gen getbootfield (field:string) => getpkgfield1 (boot_package, field);
-
-  // Get Reqiores closure.
-  gen getclosure (pkg:string) : list[string] = {
-    var result,values = FlxPkgConfig::flx_pkgconfig $ list $
-      "--path="+pkgconfig_dir, "--rec", "--list", pkg
-    ;
-    if result != 0 do
-      println$ "missing package for closure of " + pkg;
-      System::exit(1);
-    done
-    return values;
-  }
+  gen getbootfield (field:string) => db.getpkgfield1 (boot_package, field);
 
   var compiler = getbootfield "compiler"; 
   var os = getbootfield "os"; 
@@ -133,14 +80,14 @@ proc make_rtl (repo:string, build:string, pkgconfig_dir:string, boot_package:str
   println$ "os           : " + str os;
   println$ "toolchain    : " + str toolchain;
 
-  var allpkgs = getclosure boot_package;
+  var allpkgs = db.getclosure boot_package;
   println$ "Closure      : " + str allpkgs;
 
   for pkg in allpkgs do
-    var slib = getpkgfielddflt (pkg,"provides_slib");
-    var dlib = getpkgfielddflt (pkg,"provides_dlib");
-    var srcdir = getpkgfielddflt (pkg,"srcdir");
-    var src = getpkgfielddflt (pkg,"src");
+    var slib = db.getpkgfielddflt (pkg,"provides_slib");
+    var dlib = db.getpkgfielddflt (pkg,"provides_dlib");
+    var srcdir = db.getpkgfielddflt (pkg,"srcdir");
+    var src = db.getpkgfielddflt (pkg,"src");
     println$ f"%15S %20S %20S %20S %20S" (pkg,slib,dlib,srcdir,src);
   done
 
@@ -152,8 +99,9 @@ proc make_rtl (repo:string, build:string, pkgconfig_dir:string, boot_package:str
       entry-point=toolchain
     )
   ;
-  
-
+  for pkg in rev allpkgs do
+    make_lib (db,toolchain-maker, repo,build,pkg);
+  done
 }
 
 if System::argc < 4 do
