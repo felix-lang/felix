@@ -36,13 +36,13 @@ struct slist_node_t {
 };
 
 //OFFSETS for slist_node_t
-static std::size_t slist_node_offsets[2]={
+static const std::size_t slist_node_offsets[2]={
     offsetof(slist_node_t,next),
     offsetof(slist_node_t,data)
 };
 
-static ::flx::gc::collector::offset_data_t slist_node_offset_data = { 2, slist_node_offsets };
-::flx::gc::generic::gc_shape_t slist_node_ptr_map = {
+static ::flx::gc::collector::offset_data_t const slist_node_offset_data = { 2, slist_node_offsets };
+::flx::gc::generic::gc_shape_t const slist_node_ptr_map = {
   NULL,
   "slist_node_t",
   1,sizeof(slist_node_t),
@@ -76,12 +76,12 @@ void *slist_t::pop()
 }
 
 //OFFSETS for slist_t
-static std::size_t slist_offsets[1]={
+static const std::size_t slist_offsets[1]={
     offsetof(slist_t,head)
 };
-static ::flx::gc::collector::offset_data_t slist_offset_data = { 1, slist_offsets };
+static ::flx::gc::collector::offset_data_t const slist_offset_data = { 1, slist_offsets };
 
-::flx::gc::generic::gc_shape_t slist_ptr_map = {
+::flx::gc::generic::gc_shape_t const slist_ptr_map = {
   &slist_node_ptr_map,
   "slist_t",
   1,sizeof(slist_t),
@@ -144,13 +144,13 @@ step:
 
 
 //OFFSETS for fthread_t
-static std::size_t _fthread_offsets[1]={
+static const std::size_t _fthread_offsets[1]={
     offsetof(fthread_t,cc)
 };
 
-static ::flx::gc::collector::offset_data_t _fthread_offset_data = { 1, _fthread_offsets };
+static ::flx::gc::collector::offset_data_t const _fthread_offset_data = { 1, _fthread_offsets };
 
-::flx::gc::generic::gc_shape_t _fthread_ptr_map = {
+::flx::gc::generic::gc_shape_t const _fthread_ptr_map = {
   &slist_ptr_map,
   "fthread_t",
   1,sizeof(fthread_t),
@@ -197,14 +197,14 @@ fthread_t *schannel_t::pop_writer()
 }
 
 //OFFSETS for schannel_t
-static std::size_t schannel_offsets[2]={
+static const std::size_t schannel_offsets[2]={
     offsetof(schannel_t,waiting_to_read),
     offsetof(schannel_t,waiting_to_write)
 };
 
-static ::flx::gc::collector::offset_data_t schannel_offset_data = { 2, schannel_offsets };
+static ::flx::gc::collector::offset_data_t const schannel_offset_data = { 2, schannel_offsets };
 
-::flx::gc::generic::gc_shape_t schannel_ptr_map = {
+::flx::gc::generic::gc_shape_t const schannel_ptr_map = {
   &_fthread_ptr_map,
   "schannel_t",
   1,sizeof(schannel_t),
@@ -220,13 +220,13 @@ static ::flx::gc::collector::offset_data_t schannel_offset_data = { 2, schannel_
 // ********************************************************
 
 //OFFSETS for _uctor_
-static std::size_t _uctor_offsets[1]= {
+static const std::size_t _uctor_offsets[1]= {
   offsetof(_uctor_,data)
 };
 
-static ::flx::gc::collector::offset_data_t _uctor_offset_data = { 1, _uctor_offsets };
+static ::flx::gc::collector::offset_data_t const _uctor_offset_data = { 1, _uctor_offsets };
 
-::flx::gc::generic::gc_shape_t _uctor_ptr_map = {
+::flx::gc::generic::gc_shape_t const _uctor_ptr_map = {
   &schannel_ptr_map,
   "_uctor_",
   1,
@@ -243,7 +243,7 @@ static ::flx::gc::collector::offset_data_t _uctor_offset_data = { 1, _uctor_offs
 // ********************************************************
 
 
-::flx::gc::generic::gc_shape_t _int_ptr_map = {
+::flx::gc::generic::gc_shape_t const _int_ptr_map = {
   &_uctor_ptr_map,
   "int",
   1,
@@ -260,8 +260,8 @@ static ::flx::gc::collector::offset_data_t _uctor_offset_data = { 1, _uctor_offs
 // ********************************************************
 
 //OFFSETS for address
-static std::size_t _address_offsets[1]={ 0 };
-static ::flx::gc::collector::offset_data_t _address_offset_data = { 1, _address_offsets };
+static const std::size_t _address_offsets[1]={ 0 };
+static ::flx::gc::collector::offset_data_t const _address_offset_data = { 1, _address_offsets };
 
 static ::std::string address_encoder (void *p) { 
   return ::flx::gc::generic::blit (p,sizeof (void*));
@@ -272,7 +272,7 @@ static size_t address_decoder (void *p, char *s, size_t i) {
 }
 
 
-::flx::gc::generic::gc_shape_t _address_ptr_map = {
+::flx::gc::generic::gc_shape_t const _address_ptr_map = {
   &_int_ptr_map,
   "address",
   1,
@@ -290,7 +290,7 @@ static size_t address_decoder (void *p, char *s, size_t i) {
 // uses "unit_pre_map" as the back link for generated shape tables
 // ********************************************************
 
-::flx::gc::generic::gc_shape_t unit_ptr_map = {
+::flx::gc::generic::gc_shape_t const unit_ptr_map = {
   &_address_ptr_map,
   "unit",
   1,

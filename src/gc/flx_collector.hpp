@@ -35,8 +35,8 @@ struct GC_EXTERN flx_collector_t : public collector_t
   void incr_used(void *memory, unsigned long);
   unsigned long get_used(void *memory);
   unsigned long get_count(void *memory);
-  void *create_empty_array( gc_shape_t *shape, unsigned long count);
-  gc_shape_t *get_shape(void *memory);
+  void *create_empty_array( gc_shape_t const *shape, unsigned long count);
+  gc_shape_t const *get_shape(void *memory);
   flx::pthread::thread_control_t *get_thread_control()const;
   void register_pointer(void *q, int reclimit);
   ::flx::gc::generic::pointer_data_t get_pointer_data(void *);
@@ -44,7 +44,7 @@ struct GC_EXTERN flx_collector_t : public collector_t
 protected:
 
   /// allocator
-  void *impl_allocate(gc_shape_t *ptr_map, unsigned long);
+  void *impl_allocate(gc_shape_t const *ptr_map, unsigned long);
 
   /// collector (returns number of objects collected)
   unsigned long impl_collect();
@@ -64,7 +64,7 @@ protected:
 
 private:
   /// allocator
-  void *v_allocate(gc_shape_t *ptr_map, unsigned long);
+  void *v_allocate(gc_shape_t const *ptr_map, unsigned long);
 
   /// collector (returns number of objects collected)
   unsigned long v_collect();

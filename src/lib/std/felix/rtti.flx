@@ -4,7 +4,7 @@ class Rtti {
   type collector_t = "::flx::gc::generic::collector_t*";
 
   //$ The type of an RTTI record.
-  type gc_shape_t = "::flx::gc::generic::gc_shape_t*";
+  type gc_shape_t = "::flx::gc::generic::gc_shape_t const *";
   fun isNULL: gc_shape_t -> bool = "$1==0";
   typedef gc_shape_flags_t = uint;
     val gc_flags_default = 0;
@@ -44,14 +44,14 @@ class Rtti {
 
   //$ The number of pointers in the base type.
   //$ If the type is an array that's the element type.
-  fun _unsafe_n_offsets: gc_shape_t -> size = "((::flx::gc::generic::offset_data_t*)($1->private_data))->n_offsets";
+  fun _unsafe_n_offsets: gc_shape_t -> size = "((::flx::gc::generic::offset_data_t const *)($1->private_data))->n_offsets";
 
   fun n_offsets (shape: gc_shape_t) : size => 
     if uses_offset_table shape then _unsafe_n_offsets shape else 0uz
   ;
 
   //$ Pointer to the offset table.
-  fun _unsafe_offsets: gc_shape_t -> +size = "((::flx::gc::generic::offset_data_t*)($1->private_data))->offsets";
+  fun _unsafe_offsets: gc_shape_t -> +size = "const_cast<::std::size_t *>(((::flx::gc::generic::offset_data_t const *)($1->private_data))->offsets)";
 
   fun offsets (shape: gc_shape_t) : +size => 
     if uses_offset_table shape then _unsafe_offsets shape else C_hack::cast[+size] 0 

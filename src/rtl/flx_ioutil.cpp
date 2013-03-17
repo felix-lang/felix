@@ -72,14 +72,12 @@ next:
     fwrite(s.data(),s.size(),1,fi);
   }
 
+  static const char eol[] = { '\n' };
 
   void writeln (FILE *fi, string s)
   {
-    static char const *eol = "\n";
-    static int n = 0;
-    if(n==0)n=strlen(eol);
     fwrite(s.data(),s.size(),1,fi);
-    fwrite(eol,n,1,fi);
+    fwrite(eol,sizeof(eol),1,fi);
   }
 
 // C++ file IO
@@ -121,11 +119,8 @@ more:
 
   void writeln (ostream *fi, string s)
   {
-    static char const *eol = "\n";
-    static int n = 0;
-    if(n==0)n=strlen(eol);
     fi->write(s.data(),s.size());
-    fi->write(eol,n);
+    fi->write(eol,sizeof(eol));
   }
 
 

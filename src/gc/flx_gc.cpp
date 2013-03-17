@@ -69,7 +69,7 @@ unsigned long gc_profile_t::actually_collect() {
 }
 
 void *gc_profile_t::allocate(
-  flx::gc::generic::gc_shape_t *shape,
+  flx::gc::generic::gc_shape_t const *shape,
   unsigned long count,
   bool allow_gc
 )
@@ -92,14 +92,14 @@ void *gc_profile_t::allocate(
     return collector -> allocate(shape,count);
 }
 
-void *scan_by_offsets(collector_t *collector, gc_shape_t *shape, void *p, unsigned long dyncount, int reclimit)
+void *scan_by_offsets(collector_t *collector, gc_shape_t const *shape, void *p, unsigned long dyncount, int reclimit)
 {
   Word_t fp = (Word_t)p;
   unsigned long n_used = dyncount  * shape->count;
 
-  offset_data_t *data = (offset_data_t*)shape->private_data;
+  offset_data_t const *data = (offset_data_t const *)shape->private_data;
   ::std::size_t n_offsets = data->n_offsets;
-  ::std::size_t *offsets = data->offsets;
+  ::std::size_t const *offsets = data->offsets;
   if (n_used * n_offsets == 1) // tail rec optimisation
   {
       void **pq = (void**)(void*)((unsigned char*)fp + offsets[0]);
@@ -136,7 +136,7 @@ void *scan_by_offsets(collector_t *collector, gc_shape_t *shape, void *p, unsign
 void *operator new(
   std::size_t amt,
   flx::gc::generic::gc_profile_t &gcp,
-  flx::gc::generic::gc_shape_t &shape,
+  flx::gc::generic::gc_shape_t const &shape,
   bool allow_gc
 )
 {
@@ -153,7 +153,7 @@ void *operator new(
 void operator delete(
   void*,
   flx::gc::generic::gc_profile_t &,
-  flx::gc::generic::gc_shape_t &,
+  flx::gc::generic::gc_shape_t const &,
   bool
 )
 {

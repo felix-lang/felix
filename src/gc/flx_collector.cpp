@@ -32,7 +32,7 @@ void malloc_free::deallocate(void *p)
   free(p);
 }
 
-void *flx_collector_t::v_allocate(gc_shape_t *ptr_map, unsigned long x) {
+void *flx_collector_t::v_allocate(gc_shape_t const *ptr_map, unsigned long x) {
   return impl_allocate(ptr_map, x);
 }
 
@@ -110,7 +110,7 @@ void flx_collector_t::judyerror(char const *loc)
   abort();
 }
 
-void * flx_collector_t::impl_allocate(gc_shape_t *shape, unsigned long nobj)
+void * flx_collector_t::impl_allocate(gc_shape_t const *shape, unsigned long nobj)
 {
   // calculate how much memory to request
   std::size_t amt = nobj * shape->amt * shape->count;
@@ -204,18 +204,18 @@ unsigned long flx_collector_t::get_count(void *memory)
   return z;
 }
 
-gc_shape_t *flx_collector_t::get_shape(void *memory)
+gc_shape_t const *flx_collector_t::get_shape(void *memory)
 {
   assert(memory);
   //fprintf(stderr, "Get shape of %p\n",memory);
   Word_t *pshape= (Word_t*)JudyLGet(j_shape,(Word_t)memory,&je);
   if(pshape==(Word_t*)PPJERR)judyerror("get_shape");
   if(pshape==NULL) abort();
-  return (gc_shape_t*)(*pshape & (~1ul));
+  return (gc_shape_t const *)(*pshape & (~1ul));
 }
 
 void *flx_collector_t::create_empty_array(
-  flx::gc::generic::gc_shape_t *shape,
+  flx::gc::generic::gc_shape_t const *shape,
   unsigned long count
 )
 {
@@ -231,7 +231,7 @@ void flx_collector_t::impl_finalise(void *fp)
 {
   assert(fp!=NULL);
   //fprintf(stderr, "Finaliser for %p\n", fp);
-  gc_shape_t *shape = get_shape(fp); // inefficient, since we already know the shape!
+  gc_shape_t const *shape = get_shape(fp); // inefficient, since we already know the shape!
   //fprintf(stderr, "Got shape %p=%s\n", shape,shape->cname);
   void (*finaliser)(collector_t*, void*) = shape->finaliser;
   //fprintf(stderr, "Got finaliser %p\n", finaliser);
@@ -259,7 +259,7 @@ void flx_collector_t::unlink(void *fp)
   impl_finalise(fp);
 
   allocation_count--;
-  gc_shape_t *shape = get_shape(fp);
+  gc_shape_t const *shape = get_shape(fp);
   unsigned long n_objects = get_count(fp);
   unsigned long nobj = shape -> count * n_objects;
   std::size_t size = shape->amt * nobj;
@@ -385,7 +385,7 @@ unsigned long flx_collector_t::sweep()
     if((*pshape & 1) == (parity & 1UL))
     {
       if(debug)
-        fprintf(stderr,"Garbage %p=%s\n",current,((gc_shape_t*)(*pshape & ~1UL))->cname);
+        fprintf(stderr,"Garbage %p=%s\n",current,((gc_shape_t const *)(*pshape & ~1UL))->cname);
       ++ sweeped;
       //fprintf(stderr,"Unlinking ..\n");
       unlink(current);
@@ -395,7 +395,7 @@ unsigned long flx_collector_t::sweep()
     }
     else
       if(debug)
-        fprintf(stderr,"Reachable %p=%s\n",current,((gc_shape_t*)(*pshape & ~1UL))->cname);
+        fprintf(stderr,"Reachable %p=%s\n",current,((gc_shape_t const *)(*pshape & ~1UL))->cname);
 
     //fprintf(stderr,"Calling Judy for next object\n");
     pshape = (Word_t*)JudyLNext(j_shape,(Word_t*)(void*)&current,&je);
@@ -463,7 +463,7 @@ void flx_collector_t::register_pointer(void *q, int reclimit)
   Word_t *ppshape = (Word_t*)JudyLLast(j_shape,&head, &je);
   if(ppshape==(Word_t*)PPJERR)judyerror("get_pointer_data");
   if(ppshape == NULL) return pdat; // no lower object
-  gc_shape_t *pshape = (gc_shape_t*)(*ppshape & ~1UL);
+  gc_shape_t const *pshape = (gc_shape_t const *)(*ppshape & ~1UL);
   unsigned long max_slots = get_count((void*)head);
   unsigned long used_slots = get_used((void*)head);
   unsigned long n = max_slots * pshape->count * pshape->amt;
@@ -495,7 +495,7 @@ again:
   */
   if( (*ppshape & 1UL) == reachable) return;   // already handled
 
-  gc_shape_t *pshape = (gc_shape_t*)(*ppshape & ~1UL);
+  gc_shape_t const *pshape = (gc_shape_t const *)(*ppshape & ~1UL);
   unsigned long n = get_count((void*)head) * pshape->count * pshape->amt;
   if(cand >= (Word_t)(void*)((unsigned char*)(void*)head+n)) return; // not interior
   if(debug)
