@@ -17,33 +17,50 @@ proc make_lib
   println$ "------------";
   println$ "Make lib " + pkg;
   var configdir = Filename::join (FLX_INSTALL_DIR, "config", "target");
-  var srcpath = Filename::join (repo, pkg);
-  var ddeps = db.getpkgfield (pkg,"requires_dlibs");
+  var srcdir = db.getpkgfielddflt (pkg,"srcdir");
+  var srcpath = Filename::join (repo, srcdir);
+  var build_includes= db.getpkgfield (pkg,"build_includes");
+  var ddeps = db.getpkgfield (pkg,"requires_dlibs"); // external libs
+  var deps = db.getpkgfield(pkg,"Requires");
+  var result,depdlibs =  db.query("--field=provides_dlib"+deps); // packaged dlibs
+println$ "Debug DEPLIBS: " + str ddeps + " AND " + str depdlibs;
   var config = 
     (
-      header_search_dirs= list[string] ("-I"+build, "-I"+configdir),
+      header_search_dirs= list[string] ("-I"+build, "-I"+configdir)+build_includes,
       macros= Empty[string],
       library_search_dirs= list[string] ("-L"+build),
-      dynamic_libraries= ddeps,
+      dynamic_libraries= ddeps+depdlibs,
       static_libraries= Empty[string],
       debugln = dbug
     )
   ;
   var toolchain = toolchain-maker config;
   println$ #(toolchain.whatami);
+println$ "Copying files";
   CopyFiles::copyfiles (srcpath, RE2 r".*\.h(pp)?",Filename::join(build,"${0}"),true, true);
 
-  var pat = r".*\.cpp";
+  var pat = db.getpkgfielddflt (pkg,"src");
+println$ "Finding Sources in "+srcpath;
   var files = FileSystem::regfilesin (srcpath,pat);
+println$ "Sources = " + str files;
   fun objname (file:string) => let 
       ?dstobj = file.Filename::strip_extension + #(toolchain.dynamic_object_extension) in
       Filename::join (build, dstobj)
   ;
 
   for file in files do
-    //println$ "Compiling " + file " -> " + objname file;
+    println$ "Compiling " + file " -> " + objname file;
     var srcfile = Filename::join (srcpath, file);
-    var result = toolchain.cxx_dynamic_object_compiler (src=srcfile, dst=objname file);
+    var dst = objname file;
+    Directory::mkdirs (Filename::dirname dst);
+    match Filename::get_extension srcfile with
+    | ?x when x == ".cc" or x == ".cpp" =>
+      result = toolchain.cxx_dynamic_object_compiler (src=srcfile, dst=dst);
+    | ".c" =>
+      result = toolchain.c_dynamic_object_compiler (src=srcfile, dst=dst);
+    | ?x => println$ "Unknown extension " + x; System::exit(1);
+    endmatch
+    ;
     if result != 0 do
       println$ "Compiler result " + str result;
       System::exit(1);
@@ -51,7 +68,9 @@ proc make_lib
   done
 
   var objs = map objname files;
-  var dstlib = Filename::join (build, pkg+#(toolchain.dynamic_library_extension));
+  var libname = "lib" + (db.getpkgfield1(pkg,"provides_dlib")).[2 to] +#(toolchain.dynamic_library_extension);
+  var dstlib = Filename::join (build, libname);
+  println$ "Linking " + dstlib;
   result = toolchain.dynamic_library_linker(srcs=objs, dst=dstlib);
   if result != 0 do
     println$ "Linker result " + str result;
@@ -99,8 +118,16 @@ proc make_rtl (repo:string, build:string, pkgconfig_dir:string, boot_package:str
       entry-point=toolchain
     )
   ;
-  for pkg in rev allpkgs do
-    make_lib (db,toolchain-maker, repo,build,pkg);
+  for pkg in allpkgs do
+    slib = db.getpkgfielddflt (pkg,"provides_slib");
+    dlib = db.getpkgfielddflt (pkg,"provides_dlib");
+    srcdir = db.getpkgfielddflt (pkg,"srcdir");
+    src = db.getpkgfielddflt (pkg,"src");
+    if (slib != "" or dlib != "") and srcdir != "" and src != "" do
+      make_lib (db,toolchain-maker, repo,build,pkg);
+    else 
+      println$ "External package " + pkg;
+    done
   done
 }
 

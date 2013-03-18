@@ -24,7 +24,7 @@ namespace flx { namespace pthread {
 /// and continues without waiting for the data to be read.
 // ********************************************************
 
-class PTHREAD_EXTERN bound_queue_t {
+class GC_EXTERN bound_queue_t {
   flx_condv_t size_changed;
   size_t bound;
 public:
@@ -38,7 +38,7 @@ public:
   void wait_until_empty();
 };
 
-PTHREAD_EXTERN ::flx::gc::generic::scanner_t bound_queue_scanner;
+GC_EXTERN ::flx::gc::generic::scanner_t bound_queue_scanner;
 
 }} // namespace pthread, flx
 #endif

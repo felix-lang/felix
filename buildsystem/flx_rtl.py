@@ -33,7 +33,7 @@ def build_runtime(host_phase, target_phase):
     ]
     macros = ['BUILD_RTL']
     libs = [
-        call('buildsystem.flx_async.build_runtime', target_phase),
+        call('buildsystem.flx_async.build_runtime', host_phase,target_phase),
         call('buildsystem.flx_exceptions.build_runtime', target_phase),
         call('buildsystem.flx_gc.build_runtime', host_phase, target_phase),
     ]

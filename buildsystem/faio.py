@@ -7,11 +7,11 @@ import buildsystem
 
 # ------------------------------------------------------------------------------
 
-def build_runtime(phase):
+def build_runtime(host_phase,target_phase):
     path = Path('src/faio')
 
-    buildsystem.copy_hpps_to_rtl(phase.ctx,
-        phase.ctx.buildroot / 'config/target/flx_faio_config.hpp',
+    buildsystem.copy_hpps_to_rtl(target_phase.ctx,
+        target_phase.ctx.buildroot / 'config/target/flx_faio_config.hpp',
         path / 'faio_job.hpp',
         path / 'faio_timer.hpp',
         path / 'faio_posixio.hpp',
@@ -24,7 +24,7 @@ def build_runtime(phase):
         path / 'faio_timer.cpp',
     ]
     includes = [
-        phase.ctx.buildroot / 'config/target',
+        target_phase.ctx.buildroot / 'config/target',
         Path('src', 'flx_async'),
         Path('src', 'pthread'),
         Path('src', 'demux'),
@@ -35,29 +35,29 @@ def build_runtime(phase):
     ]
     macros = ['BUILD_FAIO']
     libs=[
-        call('buildsystem.flx_pthread.build_runtime', phase),
-        call('buildsystem.flx_async.build_runtime', phase),
-        call('buildsystem.demux.build_runtime', phase),
+        call('buildsystem.flx_pthread.build_runtime', target_phase),
+        call('buildsystem.flx_async.build_runtime', host_phase,target_phase),
+        call('buildsystem.demux.build_runtime', target_phase),
     ]
 
-    if 'win32' in phase.platform:
+    if 'win32' in target_phase.platform:
         srcs.append(path / 'faio_winio.cpp')
         includes.append(Path('src', 'demux', 'win'))
 
-    if 'posix' in phase.platform:
+    if 'posix' in target_phase.platform:
         srcs.append(path / 'faio_posixio.cpp')
         includes.append(Path('src', 'demux', 'posix'))
 
     return Record(
-        static=buildsystem.build_cxx_static_lib(phase, dst, srcs,
+        static=buildsystem.build_cxx_static_lib(target_phase, dst, srcs,
             includes=includes,
             macros=macros,
             libs=[lib.static for lib in libs]),
-        shared=buildsystem.build_cxx_shared_lib(phase, dst, srcs,
+        shared=buildsystem.build_cxx_shared_lib(target_phase, dst, srcs,
             includes=includes,
             macros=macros,
             libs=[lib.shared for lib in libs]))
 
-def build_flx(phase):
-    return buildsystem.copy_flxs_to_lib(phase.ctx,
+def build_flx(target_phase):
+    return buildsystem.copy_flxs_to_lib(target_phase.ctx,
         Path('src/faio/*.flx').glob())

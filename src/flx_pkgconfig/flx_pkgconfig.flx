@@ -13,3 +13,4 @@ var return_code, result = FlxPkgConfig::flx_pkgconfig (tail #System::args);
 
 print$ strip$ cat ' ' result; endl;
 System::exit return_code;
+

@@ -3,11 +3,6 @@
 #include "flx_compiler_support_headers.hpp"
 
 
-#define FLX_SAVE_REGS \
-  jmp_buf reg_save_on_stack; \
-  setjmp (reg_save_on_stack)
-
-
 #define FLX_EXEC_FAILURE(f,op,what) \
   throw ::flx::rtl::flx_exec_failure_t (f,op,what)
 

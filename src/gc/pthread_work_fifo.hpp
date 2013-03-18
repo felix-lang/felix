@@ -8,7 +8,7 @@
 namespace flx { namespace pthread {
 
 /// Class of jobs to be queued in fifo for execution.
-class PTHREAD_EXTERN worker_task
+class GC_EXTERN worker_task
 {
 public:
   virtual ~worker_task() {}   // c++ should do this automatically
@@ -23,7 +23,7 @@ public:
 
 /// Job scheduler, executes jobs in turn from queue
 /// Does not delete dequeued jobs
-class PTHREAD_EXTERN worker_fifo
+class GC_EXTERN worker_fifo
 {
   flx_mutex_t nlock;
   int nthreads;                 /// scheduled number of threads

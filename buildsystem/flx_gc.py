@@ -18,6 +18,8 @@ def build_runtime(host_phase, target_phase):
         path / 'flx_collector.hpp',
         path / 'flx_gc_private.hpp',
         path / 'flx_ts_collector.hpp',
+        path / 'pthread_bound_queue.hpp',
+        path / 'pthread_work_fifo.hpp',
     )
 
     dst = 'lib/rtl/flx_gc'

@@ -2,7 +2,11 @@
 #include <stdio.h>
 #include <cstdlib>
 #include <cassert>
-#include "flx_compiler_support_bodies.hpp"
+
+#define FLX_SAVE_REGS \
+  jmp_buf reg_save_on_stack; \
+  setjmp (reg_save_on_stack)
+
 
 namespace flx { namespace pthread {
 

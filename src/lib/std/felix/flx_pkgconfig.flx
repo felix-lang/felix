@@ -271,7 +271,13 @@ class FlxPkgConfig
          // examine line of one file
          file := fopen_input filename;
          if valid file do
-           if dolist call add_val pkg;
+           if dolist do
+             match keep with
+             | keepleftmost => add_val pkg;
+             | keeprightmost => tail_val pkg;
+             | keepall => keep_val pkg;
+             endmatch;
+           done
            var lines = Empty[string];
            var line = readln file;
            while line != "" do
@@ -416,16 +422,18 @@ class FlxPkgConfig
       endmatch
     ;
 
-    // Get Requires closure.
+    //$ Get Requires closure.
+    //$ Result is topologically sorted with each package listed
+    //$ after ones it requires.
     method gen getclosure (pkg:string) : list[string] = {
       var result,values = FlxPkgConfig::flx_pkgconfig $ paths +
-        "--rec" + "--list" +  pkg
+        "--keeprightmost" + "--rec" + "--list" +  pkg
       ;
       if result != 0 do
         println$ "missing package for closure of " + pkg;
         System::exit(1);
       done
-      return values;
+      return rev values;
     }
   }
 }

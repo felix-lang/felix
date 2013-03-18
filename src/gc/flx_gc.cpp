@@ -1,8 +1,8 @@
-#include "flx_gc.hpp"
-#include "flx_rtl.hpp"
 #include <cstdlib>
 #include <cstdio>
 #include <cassert>
+#include "flx_gc.hpp"
+#include "flx_exceptions.hpp"
 #include "flx_gc_private.hpp"
 #include <Judy.h>
 

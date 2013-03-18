@@ -22,8 +22,6 @@ def build_runtime(phase):
         path / 'pthread_condv.hpp',
         path / 'pthread_semaphore.hpp',
         path / 'pthread_monitor.hpp',
-        path / 'pthread_bound_queue.hpp',
-        path / 'pthread_work_fifo.hpp',
 
         # win32 and posix
         path / 'pthread_win_posix_condv_emul.hpp',
@@ -38,13 +36,11 @@ def build_runtime(phase):
         path / 'pthread_waitable_bool.cpp',
         path / 'pthread_semaphore.cpp',
         path / 'pthread_monitor.cpp',
-        path / 'pthread_bound_queue.cpp',
-        path / 'pthread_work_fifo.cpp',
         path / 'pthread_thread_control.cpp',
         path / 'pthread_win_thread.cpp',
         path / 'pthread_posix_thread.cpp',
     ]]
-    includes = [phase.ctx.buildroot / 'config/target', phase.ctx.buildroot / 'lib/rtl', 'src/rtl', 'src/gc']
+    includes = [phase.ctx.buildroot / 'config/target', phase.ctx.buildroot / 'lib/rtl', 'src/rtl',]
     macros = ['BUILD_PTHREAD']
     flags = []
     libs = []
