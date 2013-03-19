@@ -1,4 +1,3 @@
-include "./charclass";
 include "./plugin_common";
 
 // fixup text by replacing < > and & characters

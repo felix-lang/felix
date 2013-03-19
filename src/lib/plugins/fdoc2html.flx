@@ -1,5 +1,4 @@
 
-include "./charclass";
 include "./plugin_common";
 
 include "./slideshow-interface";

@@ -1,4 +1,3 @@
-include "./charclass";
 include "./plugin_common";
 
 var C_PATH = Empty[string];

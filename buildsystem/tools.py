@@ -1,6 +1,9 @@
 import fbuild
 import fbuild.builders.file
 import os
+from fbuild.path import Path
+from fbuild.builders.file import copy
+
 # ------------------------------------------------------------------------------
 
 def build(phase, felix):
@@ -17,6 +20,9 @@ def build(phase, felix):
     #    fbuild.builders.file.copy(phase.ctx, exe, 'bin')
     #except:
     #    print("Warning : wiki not built. Continuing..." )
+
+    for f in Path.glob('src/lib/plugins/*'):
+      copy(ctx=phase.ctx, src=f, dst=phase.ctx.buildroot / f[4:]) 
 
     exes = [
       "flx_grep",
@@ -40,12 +46,16 @@ def build(phase, felix):
       ]
 
     for base in exes:
-      exe = felix.compile(phase.ctx.buildroot/('tools/'+base+'.flx'), static=True)
+      exe = felix.compile(phase.ctx.buildroot/('tools/'+base+'.flx'), 
+        static=True,
+        includes=[phase.ctx.buildroot/'lib'/'plugins'])
       fbuild.builders.file.copy(phase.ctx, exe, 'bin')
 
     for base in optional_exes:
       try:
-          exe = felix.compile(phase.ctx.buildroot/('tools/'+base+'.flx'), static=True)
+          exe = felix.compile(phase.ctx.buildroot/('tools/'+base+'.flx'), 
+            static=True,
+            includes=[phase.ctx.buildroot/'lib'/'plugins'])
           fbuild.builders.file.copy(phase.ctx, exe, 'bin')
       except:
           print("Warning : "+base+" not built. Continuing..." )
@@ -69,9 +79,10 @@ def build(phase, felix):
       "fdoc_fileseq",
       "fdoc_scanner",
       "fdoc_button",
+      "toolchain_clang_osx",
       ]
     for base in plugins:
-      shlib = felix.compile(phase.ctx.buildroot/('tools/'+base+'.flx'))
+      shlib = felix.compile(phase.ctx.buildroot/('lib/plugins/'+base+'.flx'))
       fbuild.builders.file.copy(phase.ctx, shlib, 'shlib')
 
 

@@ -46,7 +46,7 @@ class Flx(fbuild.db.PersistentObject):
         if stdout:
             cmd.append('--stdout='+stdout)
 
-        cmd.extend('-I' + i for i in sorted(includes) if Path(i).exists())
+        cmd.extend('-I' + i for i in sorted(includes))
         cmd.extend(self.flags)
         cmd.extend(flags)
         if src[-4:] != ".flx":

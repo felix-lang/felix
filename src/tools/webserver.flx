@@ -21,8 +21,8 @@ include "web/mime_type";
 
 include "./charclass";
 include "./css4html";
-include "./plugin_common";
-include "./fdoc-interface";
+include "plugins/plugin_common";
+include "plugins/fdoc-interface";
 
 proc dbg(x:string) { fprint (cerr,x); };
 

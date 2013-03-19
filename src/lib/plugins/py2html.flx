@@ -1,33 +1,22 @@
-include "./charclass";
 
-// Ocaml
-module Ocaml2Html {
+// Python 
+module Py2Html {
 private val big_keywords = 
-  "module",
-  "functor",
-  "open",
-  "type",
+  "def",
   "class",
-  "struct",
-  "end",
-  "val",
-  "inherit",
-  "exception"
+  "import"
 ;
 private val small_keywords =
-  "if", "then", "else", "elif", "endif", "do", "done",
-  "let", "in", "for", "while", "to", "upto","downto",
-  "try","match","with","fun","function",
-  "begin","end"
+  "if", "while", "for", "return", "in", "from","else","elsif","except","try",
+  "not","with","raise"
 ;
 
 private val qualifiers = 
-  "virtual", "private"
+  "None", "True", "False", "pass","self"
 ;
-private val hack = "C_hack","C_hack"; // to make it an array we need 2 components
 
 
-fun xlat_ocaml(t:string, dir:string) : bool * string =
+fun xlat_py(t:string, dir:string) : bool * string =
 {
   var out = "";
   proc write_string(t:string) 
@@ -39,21 +28,37 @@ fun xlat_ocaml(t:string, dir:string) : bool * string =
     | sot // start of token
     | id // processing identifier
     | num // in a number
+    | sq // processing single quote string
     | dq // processing double quote string
-    | ccomment // a C style comment
+    | sq3 // processing single quote string
+    | dq3 // processing double quote string
+    | cppcomment // a C++ style comment
   ;
   fun str(s:state_t) => match s with
   | sot => "sot"
   | id => "id"
   | num => "num"
+  | sq => "sq"
   | dq => "dq"
-  | ccomment=> "ccomment"
+  | sq3 => "sq3"
+  | dq3 => "dq3"
+  | cppcomment => "cppcomment"
   endmatch;
   
   var i = 0; var s:state_t;
   var ch = t.[i];
   proc next() { ch = t.[i]; ++i; }
   fun ahead (j:int)=> t.[i + j - 1]; 
+  fun issq3() => 
+    ch == char "'" and 
+    ahead(1) == char "'" and
+    ahead(2) == char "'" 
+  ;
+  fun isdq3() => 
+    ch == char '"'  and
+    ahead(1) == char '"' and
+    ahead(2) == char '"' 
+  ;
 
   var b = "";
   var last_id = "";
@@ -66,14 +71,16 @@ fun xlat_ocaml(t:string, dir:string) : bool * string =
     //println$ "Token["+str s+"]="+b; 
     match s with 
     | dq => { ws; }
-    | ccomment=> { write_string('<span class=comment>'+b+"</span>"); }
+    | sq => { ws; }
+    | sq3 => { ws; }
+    | dq3 => { ws; }
+    | cppcomment=> { write_string('<span class=comment>'+b+"</span>"); }
     | id => 
       { 
         last_id = b;
         if b in big_keywords do write_string('<span class=big_keyword>'+b+"</span>"); 
         elif b in small_keywords do write_string('<span class=small_keyword>'+b+"</span>"); 
         elif b in qualifiers do write_string('<span class=qualifier>'+b+"</span>"); 
-        elif isupper b.[0] do write_string('<span class=ctor>'+b+"</span>"); 
         else write_string(b); done
       }
     | _ =>
@@ -119,18 +126,18 @@ thisch:> // same char, reconsider it
     { 
       if isidstart ch do s = id; goto contin;
       elif isdigit ch do s = num; goto contin;
+      elif issq3() do cp; next; cp; next; s = sq3; goto contin;
+      elif isdq3() do cp; next; cp; next; s = dq3; goto contin;
+      elif issq ch do s = sq; goto contin;
       elif isdq ch do s = dq; goto contin;
-      elif ch == char "(" do
-        if ahead(1) == char "*" do cp; next; s = ccomment; goto contin;
-        else goto lastch;
-        done 
+      elif ch == char "#" do s = cppcomment; goto contin;
       else cp; w; goto nextt;
       done
     }
 
   | id => 
     {
-      if iscamlidcont ch do goto contin;
+      if isalphanum ch do goto contin;
       else goto overrun;
       done
     }
@@ -140,6 +147,16 @@ thisch:> // same char, reconsider it
       else goto overrun; 
       done
     } 
+  // single quoted strings
+  | sq =>
+    {
+      if issq ch do goto lastch; 
+      elif ch== char "<" do b+="&lt;"; goto nextch;
+      elif ch== char ">" do b+="&gt;"; goto nextch;
+      elif ch== char "&" do b+="&amp;"; goto nextch;
+      else goto contin;
+      done
+    }
   | dq =>
     {
       if isdq ch do goto lastch;
@@ -149,12 +166,29 @@ thisch:> // same char, reconsider it
       else goto contin;
       done
     }
-   // comments
-  | ccomment => // doesn't handle nested comments yet
+   // triple quoted strings
+  | sq3 =>
     {
-      if ch == char "*" and ahead(1) == char ")" do 
-        cp; 
-        goto lastch;
+      if issq3() do cp; next; cp; next; cp; w; goto nextt; 
+      elif ch== char "<" do b+="&lt;"; goto nextch;
+      elif ch== char ">" do b+="&gt;"; goto nextch;
+      elif ch== char "&" do b+="&amp;"; goto nextch;
+      else goto contin;
+      done
+    }
+  | dq3 =>
+    {
+      if isdq3() do cp; next; cp; next; cp; w; goto nextt;
+      elif ch== char "<" do b+="&lt;"; goto nextch;
+      elif ch== char ">" do b+="&gt;"; goto nextch;
+      elif ch== char "&" do b+="&amp;"; goto nextch;
+      else goto contin;
+      done
+    }
+   // comments
+  | cppcomment =>
+    {
+      if iseol ch do goto lastch;
       else goto contin;
       done
     }
@@ -169,14 +203,14 @@ fin:>
 }
 }
 
-
-println$ "ocaml2html initialisation";
+println$ "Py2html initialisation";
 
 fun setup(x:string) = {
-  C_hack::ignore(x); // which means, don't ignore it!
+  C_hack::ignore(x); // which means, don't ignore it .. :)
   return 0;
 }
 
 export fun setup of (string) as "setup";
-export fun Ocaml2Html::xlat_ocaml of (string * string) as "xlat_ocaml";
+export fun Py2Html::xlat_py of (string * string) as "xlat_py";
+
 

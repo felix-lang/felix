@@ -1,4 +1,3 @@
-include "./charclass";
 
 var FLX_PKGCONFIG_PATH = Empty[string];
 var INSTALL_ROOT = "";
