@@ -4,6 +4,7 @@ Description: Felix default garbage collector (Unix)
 provides_dlib: -lflx_gc_dynamic
 provides_slib: -lflx_gc_static
 includes: '"flx_gc.hpp"'
+macros: BUILD_FLX_GC
 Requires: judy flx_pthread flx_exceptions
 srcdir: src/gc
 src: .*\.cpp

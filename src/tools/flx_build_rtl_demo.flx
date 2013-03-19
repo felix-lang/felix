@@ -4,7 +4,7 @@ include "std/felix/flx_cp";
 include "std/felix/flx_pkgconfig";
 
 proc dbug (x:string) {
-// println x;
+ println x;
 }
 proc make_lib 
 (
@@ -23,11 +23,14 @@ proc make_lib
   var ddeps = db.getpkgfield (pkg,"requires_dlibs"); // external libs
   var deps = db.getpkgfield(pkg,"Requires");
   var result,depdlibs =  db.query("--field=provides_dlib"+deps); // packaged dlibs
-println$ "Debug DEPLIBS: " + str ddeps + " AND " + str depdlibs;
+//println$ "Debug DEPLIBS: " + str ddeps + " AND " + str depdlibs;
+  var macros = db.getpkgfield(pkg,"macros");
+  var ccflags = db.getpkgfield(pkg,"cflags");
   var config = 
     (
       header_search_dirs= list[string] ("-I"+build, "-I"+configdir)+build_includes,
-      macros= Empty[string],
+      macros= map (fun (x:string)=> "-D"+x) macros,
+      cflags = ccflags,
       library_search_dirs= list[string] ("-L"+build),
       dynamic_libraries= ddeps+depdlibs,
       static_libraries= Empty[string],
@@ -36,13 +39,16 @@ println$ "Debug DEPLIBS: " + str ddeps + " AND " + str depdlibs;
   ;
   var toolchain = toolchain-maker config;
   println$ #(toolchain.whatami);
-println$ "Copying files";
-  CopyFiles::copyfiles (srcpath, RE2 r".*\.h(pp)?",Filename::join(build,"${0}"),true, true);
+println$ "Copying headers";
+  var headers = db.getpkgfielddflt(pkg,"headers");
+  if headers == "" do headers = r".*\.h(pp)?"; println$ "copying all header files"; done
+  CopyFiles::copyfiles (srcpath, RE2 headers,Filename::join(build,"${0}"),true, true);
 
-  var pat = db.getpkgfielddflt (pkg,"src");
-println$ "Finding Sources in "+srcpath;
+  var pats = db.getpkgfield(pkg,"src");
+  var pat = catmap '|' (fun (x:string)=>"("+x+")") pats;
+//println$ "Finding Sources in "+srcpath;
   var files = FileSystem::regfilesin (srcpath,pat);
-println$ "Sources = " + str files;
+//println$ "Sources = " + str files;
   fun objname (file:string) => let 
       ?dstobj = file.Filename::strip_extension + #(toolchain.dynamic_object_extension) in
       Filename::join (build, dstobj)
@@ -142,6 +148,7 @@ var repo = System::argv 4;
 
 
 make_rtl (repo, build, pkgconfig_dir,boot_package);
+println$ "Build Complete";
 System::exit (0);
 
 

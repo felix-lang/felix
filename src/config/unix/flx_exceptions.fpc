@@ -2,6 +2,7 @@ Name: flx_exceptions
 Description: Felix exceptions
 provides_dlib: -lflx_exceptions_dynamic
 provides_slib: -lflx_exceptions_static
+macros: BUILD_FLX_EXCEPTIONS
 includes: '"flx_exceptions.hpp"'
 srcdir: src/exceptions
 src: .*\.cpp 
