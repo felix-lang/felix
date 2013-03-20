@@ -595,7 +595,7 @@ noinline  proc create_config(name:string,includes:list[string],libs:list[string]
         with
         |Some ?path => "-L" + path + " -l" + 
           lib.[if startswith lib "lib" then 3 else 0 endif 
-               to len(lib)-len(#Config::config.EXT_SHLIB)] 
+               to len(lib)-len(#Config::config.EXT_SHLIB)] + " " 
         |None => (
           setup_fail("Unable to find " + lib + 
             ". Please locate and pass path to setup with the -L switch");

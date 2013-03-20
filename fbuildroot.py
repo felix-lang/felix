@@ -493,6 +493,10 @@ def build(ctx):
     buildsystem.copy_dir_to(ctx, ctx.buildroot, 'src/wiki',
         pattern='*.*')
 
+    # copy scoop
+    buildsystem.copy_dir_to(ctx, ctx.buildroot, 'src/pkgtool',
+        pattern='*.{flxh,flx,fdoc}')
+
     for module in (
             'flx_stdlib',
             'bindings'):
@@ -537,6 +541,13 @@ def build(ctx):
     # Felix tools
     #
     call('buildsystem.tools.build', phases.target, felix)
+
+    # --------------------------------------------------------------------------
+    # package manager
+    # 
+    # scoop package manager
+    #
+    call('buildsystem.pkgtool.build', phases.target, felix)
 
     return phases, iscr, felix
 
@@ -620,12 +631,12 @@ def test(ctx):
       ('faio',Path.globall('test/faio/*.flx',exclude=['test/faio/posix-*.flx','test/faio/win-*.flx'])),
       ]
 
-    gmp_h = config_call(
-        'fbuild.config.c.gmp.gmp_h', 
-        phases.target.platform,
-        phases.target.c.static).header
-    if gmp_h: ctx.logger.log("gmp supported",color='green')
-    else: ctx.logger.log("gmp NOT supported",color='red')
+#    gmp_h = config_call(
+#        'fbuild.config.c.gmp.gmp_h', 
+#        phases.target.platform,
+#        phases.target.c.static).header
+#    if gmp_h: ctx.logger.log("gmp supported",color='green')
+#    else: ctx.logger.log("gmp NOT supported",color='red')
 
     mman_h = config_call(
         'fbuild.config.c.posix04.sys_mman_h', 
@@ -634,12 +645,12 @@ def test(ctx):
     if mman_h: ctx.logger.log("mmap supported",color='green')
     else: ctx.logger.log("mmap NOT supported",color='red')
 
-    libxml2_libxml_xmlexports_h = config_call(
-        'fbuild.config.c.xml2.libxml2_libxml_xmlexports_h', 
-        phases.target.platform,
-        phases.target.c.static).header
-    if libxml2_libxml_xmlexports_h: ctx.logger.log("libxml2 supported",color='green')
-    else: ctx.logger.log("libxml2 NOT supported",color='red')
+#    libxml2_libxml_xmlexports_h = config_call(
+#        'fbuild.config.c.xml2.libxml2_libxml_xmlexports_h', 
+#        phases.target.platform,
+#        phases.target.c.static).header
+#    if libxml2_libxml_xmlexports_h: ctx.logger.log("libxml2 supported",color='green')
+#    else: ctx.logger.log("libxml2 NOT supported",color='red')
 
     zmq_h = config_call(
         'fbuild.config.c.zmq.zmq_h', 
@@ -812,6 +823,7 @@ def install_bin(ctx, phases):
       (ctx.buildroot / 'bin/mk_daemon').copy(ctx.options.bindir)
       (ctx.buildroot / 'bin/timeout').copy(ctx.options.bindir)
       (ctx.buildroot / 'bin/webserver').copy(ctx.options.bindir)
+      (ctx.buildroot / 'bin/scoop').copy(ctx.options.bindir)
 
 # ------------------------------------------------------------------------------
 
