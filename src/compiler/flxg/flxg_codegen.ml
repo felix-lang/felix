@@ -67,7 +67,6 @@ let codegen_bsyms
       try Flx_bsym_table.find bsym_table bid with Not_found ->
         failwith ("can't find index " ^ string_of_bid bid)
     in
-
     match Flx_bsym.bbdcl bsym with
     | BBDCL_external_code (_,s,kind',_) when kind' = kind ->
         begin match s with

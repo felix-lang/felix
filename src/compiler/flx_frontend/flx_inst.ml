@@ -331,21 +331,23 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
   let sr = Flx_bsym.sr bsym in
   let uis i ts = add_inst syms bsym_table ref_insts1 sr (i,ts) in
   let ui i = uis i ts in
+  let ue hvarmap e =
+    process_expr syms bsym_table ref_insts1 hvarmap sr e
+  in
+  let rtr t = register_type_r uis syms bsym_table [] sr t in
+  let rtnr t = register_type_nr syms bsym_table t in
   let do_reqs vs reqs =
     iter (
       fun (i, ts)->
       if i = dummy_bid then
         clierr (Flx_bsym.sr bsym) ("Entity " ^ Flx_bsym.id bsym ^
           " has uninstantiable requirements");
-      uis i (map vs ts)
+      let ts' = map vs ts in
+      iter rtr ts';
+      uis i ts'
     )
     reqs
   in
-  let ue hvarmap e =
-    process_expr syms bsym_table ref_insts1 hvarmap sr e
-  in
-  let rtr t = register_type_r uis syms bsym_table [] sr t in
-  let rtnr t = register_type_nr syms bsym_table t in
   if syms.compiler_options.Flx_options.print_flag then
   print_endline ("//Instance " ^ string_of_bid inst ^ "=" ^ Flx_bsym.id bsym ^
     "<" ^ string_of_bid i ^ ">[" ^
@@ -452,9 +454,10 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
   (* shortcut -- header and body can only require other header and body *)
   | BBDCL_external_code (vs,s,ikind,reqs)
     ->
-    (*
-    print_endline ("Handling requirements of header/body " ^ s);
-    *)
+(*
+    print_endline ("Handling requirements of header/body " ^ 
+    Flx_bsym.id bsym ^ " = " ^ Flx_print.string_of_code_spec s);
+*)
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
