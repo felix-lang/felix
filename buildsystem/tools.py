@@ -80,6 +80,9 @@ def build(phase, felix):
       "fdoc_scanner",
       "fdoc_button",
       "toolchain_clang_osx",
+      "toolchain_clang_linux",
+      "toolchain_gcc_osx",
+      "toolchain_gcc_linux",
       ]
     for base in plugins:
       shlib = felix.compile(phase.ctx.buildroot/('lib/plugins/'+base+'.flx'))

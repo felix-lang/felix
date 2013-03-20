@@ -19,7 +19,6 @@ include "web/http_response";
 open HTTPResponse;
 include "web/mime_type";
 
-include "./charclass";
 include "./css4html";
 include "plugins/plugin_common";
 include "plugins/fdoc-interface";
