@@ -4,15 +4,17 @@ include "std/felix/flx_cp";
 include "std/felix/flx_pkgconfig";
 
 proc dbug (x:string) {
- println x;
+ if debug do println x; done
 }
+
 proc make_lib 
 (
   db: FlxPkgConfig::FlxPkgConfigQuery_t,  
   toolchain-maker: clang_config_t -> toolchain_t, 
-  repo: string, build:string, pkg:string
+  repo: string, build:string, pkg:string, tmpdir:string
 )
 {
+  Directory::mkdirs (Filename::dirname tmpdir);
   var FLX_INSTALL_DIR = #(Config::config).FLX_INSTALL_DIR;
   println$ "------------";
   println$ "Make lib " + pkg;
@@ -49,42 +51,79 @@ println$ "Copying headers";
 //println$ "Finding Sources in "+srcpath;
   var files = FileSystem::regfilesin (srcpath,pat);
 //println$ "Sources = " + str files;
-  fun objname (file:string) => let 
-      ?dstobj = file.Filename::strip_extension + #(toolchain.dynamic_object_extension) in
-      Filename::join (build, dstobj)
-  ;
-
-  for file in files do
-    println$ "Compiling " + file " -> " + objname file;
-    var srcfile = Filename::join (srcpath, file);
-    var dst = objname file;
-    Directory::mkdirs (Filename::dirname dst);
-    match Filename::get_extension srcfile with
-    | ?x when x == ".cc" or x == ".cpp" =>
-      result = toolchain.cxx_dynamic_object_compiler (src=srcfile, dst=dst);
-    | ".c" =>
-      result = toolchain.c_dynamic_object_compiler (src=srcfile, dst=dst);
-    | ?x => println$ "Unknown extension " + x; System::exit(1);
-    endmatch
+  {
+    fun objname (file:string) => let 
+        ?dstobj = file.Filename::strip_extension + #(toolchain.dynamic_object_extension) in
+        Filename::join (tmpdir, dstobj)
     ;
+
+    for file in files do
+      println$ "Compiling [dynamic] " + file " -> " + objname file;
+      var srcfile = Filename::join (srcpath, file);
+      var dst = objname file;
+      Directory::mkdirs (Filename::dirname dst);
+      match Filename::get_extension srcfile with
+      | ?x when x == ".cc" or x == ".cpp" =>
+        result = toolchain.cxx_dynamic_object_compiler (src=srcfile, dst=dst);
+      | ".c" =>
+        result = toolchain.c_dynamic_object_compiler (src=srcfile, dst=dst);
+      | ?x => println$ "Unknown extension " + x; System::exit(1);
+      endmatch
+      ;
+      if result != 0 do
+        println$ "Compiler result " + str result;
+        System::exit(1);
+      done
+    done
+
+    var objs = map objname files;
+    var libname = "lib" + (db.getpkgfield1(pkg,"provides_dlib")).[2 to] +#(toolchain.dynamic_library_extension);
+    var dstlib = Filename::join (build, libname);
+    println$ "Dynamic Linking library " + dstlib;
+    result = toolchain.dynamic_library_linker(srcs=objs, dst=dstlib);
     if result != 0 do
-      println$ "Compiler result " + str result;
+      println$ "Linker result " + str result;
       System::exit(1);
     done
-  done
+  };
+  {
+    fun objname (file:string) => let 
+        ?dstobj = file.Filename::strip_extension + #(toolchain.static_object_extension) in
+        Filename::join (tmpdir, dstobj)
+    ;
 
-  var objs = map objname files;
-  var libname = "lib" + (db.getpkgfield1(pkg,"provides_dlib")).[2 to] +#(toolchain.dynamic_library_extension);
-  var dstlib = Filename::join (build, libname);
-  println$ "Linking " + dstlib;
-  result = toolchain.dynamic_library_linker(srcs=objs, dst=dstlib);
-  if result != 0 do
-    println$ "Linker result " + str result;
-    System::exit(1);
-  done
+    for file in files do
+      println$ "Compiling [static] " + file " -> " + objname file;
+      var srcfile = Filename::join (srcpath, file);
+      var dst = objname file;
+      Directory::mkdirs (Filename::dirname dst);
+      match Filename::get_extension srcfile with
+      | ?x when x == ".cc" or x == ".cpp" =>
+        result = toolchain.cxx_static_object_compiler (src=srcfile, dst=dst);
+      | ".c" =>
+        result = toolchain.c_static_object_compiler (src=srcfile, dst=dst);
+      | ?x => println$ "Unknown extension " + x; System::exit(1);
+      endmatch
+      ;
+      if result != 0 do
+        println$ "Compiler result " + str result;
+        System::exit(1);
+      done
+    done
+
+    var objs = map objname files;
+    var libname = "lib" + (db.getpkgfield1(pkg,"provides_slib")).[2 to] +#(toolchain.static_library_extension);
+    var dstlib = Filename::join (build, libname);
+    println$ "Static Linking Library " + dstlib;
+    result = toolchain.static_library_linker(srcs=objs, dst=dstlib);
+    if result != 0 do
+      println$ "Linker result " + str result;
+      System::exit(1);
+    done
+  };
 }
 
-proc make_rtl (repo:string, build:string, pkgconfig_dir:string, boot_package:string)
+proc make_rtl (repo:string, build:string, pkgconfig_dir:string, boot_package:string, plugin_path:string, tmpdir:string)
 {
   
   println$ 
@@ -119,7 +158,7 @@ proc make_rtl (repo:string, build:string, pkgconfig_dir:string, boot_package:str
   var toolchain-maker = 
     Dynlink::load-plugin-func1 [toolchain_t,clang_config_t] 
     (
-      dll-name="src/tools/" + toolchain, // temporary hack!
+      dll-name=Filename::join (pluginpath,toolchain), 
       setup-str="",
       entry-point=toolchain
     )
@@ -130,24 +169,27 @@ proc make_rtl (repo:string, build:string, pkgconfig_dir:string, boot_package:str
     srcdir = db.getpkgfielddflt (pkg,"srcdir");
     src = db.getpkgfielddflt (pkg,"src");
     if (slib != "" or dlib != "") and srcdir != "" and src != "" do
-      make_lib (db,toolchain-maker, repo,build,pkg);
+      make_lib (db,toolchain-maker, repo,build,pkg,tmpdir);
     else 
       println$ "External package " + pkg;
     done
   done
 }
 
-if System::argc < 4 do
-  println$ "Usage: flx_build configdir bootpkg builddir repo";
+if System::argc < 6 do
+  println$ "Usage: flx_build configdir bootpkg builddir repo plugindir tmpdir [debug]";
 done
 
 var pkgconfig_dir = System::argv 1;
 var boot_package = System::argv 2;
 var build = System::argv 3;
 var repo = System::argv 4;
+var pluginpath = System::argv 5;
+var tmpdir = System::argv 6;
+var debug = System::argv 7 != "";
 
 
-make_rtl (repo, build, pkgconfig_dir,boot_package);
+make_rtl (repo, build, pkgconfig_dir,boot_package, pluginpath, tmpdir);
 println$ "Build Complete";
 System::exit (0);
 
