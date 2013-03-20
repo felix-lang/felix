@@ -28,9 +28,10 @@ proc make_lib
 //println$ "Debug DEPLIBS: " + str ddeps + " AND " + str depdlibs;
   var macros = db.getpkgfield(pkg,"macros");
   var ccflags = db.getpkgfield(pkg,"cflags");
+  fun mkinc (x:string) => "-I"+x;
   var config = 
     (
-      header_search_dirs= list[string] ("-I"+build, "-I"+configdir)+build_includes,
+      header_search_dirs= list[string] (mkinc build, mkinc configdir)+map mkinc build_includes,
       macros= map (fun (x:string)=> "-D"+x) macros,
       cflags = ccflags,
       library_search_dirs= list[string] ("-L"+build),

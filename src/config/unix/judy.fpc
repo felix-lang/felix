@@ -8,6 +8,6 @@ srcdir: src/judy/src
 headers: Judy\.h
 cflags: -Wno-array-bounds
 src: (JudyCommon/JudyMalloc|JudySL/.*|JudyHS/.*|Judy1/.*|JudyL/.*)\.c
-build_includes: -Isrc/judy/src -Isrc/judy/src/Judy1 -Isrc/judy/src/JudyL -Isrc/judy/src/JudyHS -Isrc/judy/src/JudyCommon
+build_includes: src/judy/src src/judy/src/Judy1 src/judy/src/JudyL src/judy/src/JudyHS src/judy/src/JudyCommon
 
 
