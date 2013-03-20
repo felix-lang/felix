@@ -663,13 +663,13 @@ def test(ctx):
       # EXTERNAL LIBS
       ('windows' in phases.target.platform,'faio_win', Path.globall('test/faio/win-*.flx')),
       ('posix' in phases.target.platform, 'faio_posix', Path.globall('test/faio/posix-*.flx')),
-      (gmp_h,'gmp', Path.globall('test/gmp/*.flx')),
+      #(gmp_h,'gmp', Path.globall('test/gmp/*.flx')),
       (mman_h,'mmap', Path.globall('test/mmap/*.flx')),
-      (libxml2_libxml_xmlexports_h,'xml2', Path.globall('test/web/xml2-*flx')),
+      #(libxml2_libxml_xmlexports_h,'xml2', Path.globall('test/web/xml2-*flx')),
       ]
 
     osrcs_compileonly = [
-      (zmq_h,'zmq', Path.globall('test/zmq/*.flx')),
+      #(zmq_h,'zmq', Path.globall('test/zmq/*.flx')),
     ]
     #--------------------------------
     ctx.logger.log("\nRunning core tests\n", color='cyan')
