@@ -95,6 +95,10 @@ let is_atomic s =
 
 let islower = function | 'a' .. 'z' -> true | _ -> false
 
+(* in case <?i> generates <::std::x> .. which has a digraph! *)
+let fixup_type t = 
+  if t.[0] = ':' then " " ^ t else t 
+
 let csubst sr sr2 ct 
   ~arg ~(args:cexpr_t list) ~typs ~argtyp ~retyp ~gargs ~prec ~argshape ~argshapes ~display ~gargshapes ~name
 =
@@ -271,7 +275,7 @@ let csubst sr sr2 ct
         else
           bcat
           (
-            nth gargshapes (!digits-1)
+            fixup_type (nth gargshapes (!digits-1))
           );
         mode := Normal;
         trans i ch
@@ -412,8 +416,8 @@ let csubst sr sr2 ct
           bcat
           (
             if !digits = 0
-            then retyp
-            else nth typs (!digits-1)
+            then fixup_type retyp
+            else fixup_type (nth typs (!digits-1))
           );
           mode := Normal;
           trans i ch
@@ -423,10 +427,8 @@ let csubst sr sr2 ct
         then serr i ("Generic type parameter ?" ^ string_of_int !digits ^ " too large")
         else if !digits<1 then serr i ("Generic type arg no " ^ string_of_int !digits ^ " too small")
         else
-          bcat
-          (
-            nth gargs (!digits-1)
-          );
+          let t = nth gargs (!digits-1) in
+          bcat (fixup_type t);
           mode := Normal;
           trans i ch
 in
