@@ -2,12 +2,10 @@
 #define __FLX_RTL_H__
 
 #include "flx_rtl_config.hpp"
-#include "flx_meta.hpp"
 #include "flx_exceptions.hpp"
 #include "flx_gc.hpp"
 #include "flx_serialisers.hpp"
 
-// temporary compatibility hack
 #include "flx_compiler_support_headers.hpp"
 #include "flx_compiler_support_bodies.hpp"
 

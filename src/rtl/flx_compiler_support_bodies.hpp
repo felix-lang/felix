@@ -1,6 +1,22 @@
 #ifndef __FLX_COMPILER_SUPPORT_BODIES_H__
 #define __FLX_COMPILER_SUPPORT_BODIES_H__
 #include "flx_compiler_support_headers.hpp"
+//
+// convert an rvalue to an lvalue
+template<typename T>
+T const &lvalue(T const &x)
+{
+  return x;
+}
+
+// this reinterpret cast works with rvalues too
+template<typename T, typename U>
+T &reinterpret(U const &x) {
+  return reinterpret_cast<T&>(const_cast<U&>(x));
+}
+
+template<typename T> void destroy(T *p){ p->T::~T(); }
+
 
 
 #define FLX_EXEC_FAILURE(f,op,what) \

@@ -79,7 +79,7 @@ let gen_get_case_arg ge tn bsym_table n (e:Flx_bexpr.t) : cexpr_t =
     begin match size ct with
     | 0 -> assert false
            (* convert to uintptr_t first *) 
-    | 1 -> ce_cast cast (ce_cast "FLX_RAWADDRESS" (ce_dot (ge e) "data")) 
+    | 1 -> ce_cast cast (ce_cast "uintptr_t" (ce_dot (ge e) "data")) 
     | _ -> ce_prefix "*" (ce_cast (cast^"*") (ce_dot (ge e) "data"))
     end
 
