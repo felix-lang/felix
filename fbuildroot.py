@@ -222,7 +222,7 @@ def make_cxx_builder(ctx, *args, includes=[], libpaths=[], flags=[], **kwargs):
             'flags': ['-fno-common', '-fno-strict-aliasing', '-std=c++11'] + flags,
             'optimize_flags': ['-O1', '-fomit-frame-pointer']}),
         ({'posix'}, {
-            'warnings': ['all', 'fatal-errors', 'no-invalid-offsetof'],
+            'warnings': ['all', 'fatal-errors', 'no-invalid-offsetof','no-parentheses'],
             'flags': ['-fno-common', '-fno-strict-aliasing'] + flags,
             'optimize_flags': ['-O2', '-fomit-frame-pointer']}),
         ({'windows'}, {
