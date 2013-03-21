@@ -51,7 +51,7 @@ class Rtti {
   ;
 
   //$ Pointer to the offset table.
-  fun _unsafe_offsets: gc_shape_t -> +size = "const_cast<::std::size_t *>(((::flx::gc::generic::offset_data_t const *)($1->private_data))->offsets)";
+  fun _unsafe_offsets: gc_shape_t -> +size = "const_cast< ::std::size_t *>(((::flx::gc::generic::offset_data_t const *)($1->private_data))->offsets)";
 
   fun offsets (shape: gc_shape_t) : +size => 
     if uses_offset_table shape then _unsafe_offsets shape else C_hack::cast[+size] 0 
