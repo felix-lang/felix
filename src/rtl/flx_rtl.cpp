@@ -1,6 +1,7 @@
 #include "flx_rtl.hpp"
 #include <cstdio>
 #include <cassert>
+#include <stddef.h>
 #include "flx_exceptions.hpp"
 #include "flx_collector.hpp"
 #include "flx_serialisers.hpp"
