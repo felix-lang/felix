@@ -267,7 +267,7 @@ let rec get_encoder' syms bsym_table p typ : string list =
       let seq = !(syms.counter) in incr (syms.counter);
       let index = "i"^si seq in 
       "//Array" ::
-      ("for(size_t "^index^"=0; "^index^"<"^si k^"; ++"^index^") {") ::
+      ("for(::std::size_t "^index^"=0; "^index^"<"^si k^"; ++"^index^") {") ::
       get_encoder' syms bsym_table (p^"+"^index^"*sizeof("^eltype^")") t @
       ["}"]
     end
@@ -357,7 +357,7 @@ let rec get_decoder' syms bsym_table p typ : string list =
       let seq = !(syms.counter) in incr (syms.counter);
       let index = "i"^si seq in 
       "//Array" ::
-      ("for(size_t "^index^"=0; "^index^"<"^si k^"; ++"^index^") {") ::
+      ("for(::std::size_t "^index^"=0; "^index^"<"^si k^"; ++"^index^") {") ::
       (get_decoder' syms bsym_table (p^"+"^index^"*sizeof("^eltype^")") t) @
       ["}"]
     end

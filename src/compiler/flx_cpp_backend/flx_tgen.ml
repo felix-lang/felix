@@ -424,7 +424,7 @@ let rec gen_type syms bsym_table (index,typ) =
 *)
     descr ^
     "struct " ^ name ^ " {\n" ^
-    "  static size_t const len = " ^ si n ^ ";\n" ^
+    "  static ::std::size_t const len = " ^ si n ^ ";\n" ^
     "  typedef " ^ v ^ " element_type;\n" ^
     "  " ^ v ^ " data[" ^ si n ^ "];\n" ^
     "  " ^ name ^ "() {}\n" ^ (* default constructor *)

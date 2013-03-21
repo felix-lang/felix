@@ -15,7 +15,7 @@ namespace collector {
 
 static int mcount FLX_UNUSED = 0;
 
-void *malloc_free::allocate(std::size_t amt)
+void *malloc_free::allocate(::std::size_t amt)
 {
   void *p = malloc(amt);
   if(debug)
@@ -115,7 +115,7 @@ void flx_collector_t::judyerror(char const *loc)
 void * flx_collector_t::impl_allocate(gc_shape_t const *shape, unsigned long nobj)
 {
   // calculate how much memory to request
-  std::size_t amt = nobj * shape->amt * shape->count;
+  ::std::size_t amt = nobj * shape->amt * shape->count;
   //fprintf(stderr, "req amt = %ld\n",amt);
   if(amt & 1) ++amt; // round up to even number
   //fprintf(stderr, "rounded req amt = %ld\n",amt);
@@ -264,7 +264,7 @@ void flx_collector_t::unlink(void *fp)
   gc_shape_t const *shape = get_shape(fp);
   unsigned long n_objects = get_count(fp);
   unsigned long nobj = shape -> count * n_objects;
-  std::size_t size = shape->amt * nobj;
+ ::std::size_t size = shape->amt * nobj;
   //fprintf(stderr, "Uncounting %ld bytes\n", long(size));
   allocation_amt -= size;
 

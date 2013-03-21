@@ -399,6 +399,8 @@ def configure(ctx):
     # platform mods.
     buildsystem.copy_to(ctx, ctx.buildroot/'config/target',
         Path('src/config/target/*.hpp').glob())
+    buildsystem.copy_to(ctx, ctx.buildroot/'config/target',
+        Path('src/config/target/*.h').glob())
 
     # this is a hack: assume we're running on Unix.
     # later when Erick figures out how to fix this

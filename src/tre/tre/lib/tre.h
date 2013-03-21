@@ -1,4 +1,4 @@
-#include "flx_tre_config.hpp"
+#include "flx_tre_config.h"
 
 /*
   tre.h - TRE public API definitions

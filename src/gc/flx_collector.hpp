@@ -1,5 +1,6 @@
 #ifndef __FLX_COLLECTOR_H__
 #define __FLX_COLLECTOR_H__
+#include <cstddef>
 #include "flx_gc.hpp"
 #include "flx_gc_private.hpp"
 #include <map>
@@ -17,7 +18,7 @@ struct GC_EXTERN flx_collector_t;
 /// Allocator using malloc and free.
 struct GC_EXTERN malloc_free : public virtual allocator_t
 {
-  void *allocate(std::size_t);
+  void *allocate(::std::size_t);
   void deallocate(void *);
 };
 

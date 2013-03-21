@@ -40,14 +40,14 @@ enum gc_shape_flags_t {
 typedef void finaliser_t (collector_t*, void*); 
 typedef void *scanner_t(collector_t*, gc_shape_t const *, void *, unsigned long, int);
 typedef ::std::string encoder_t (void *);
-typedef size_t decoder_t(void *, char *, size_t);
+typedef ::std::size_t decoder_t(void *, char *, ::std::size_t);
 
 struct GC_EXTERN gc_shape_t
 {
   gc_shape_t const *next_shape;   ///< pointer to next shape in list or NULL
   char const *cname;              ///< C++ typename
-  std::size_t count;              ///< static array element count
-  std::size_t amt;                ///< bytes allocated
+  ::std::size_t count;              ///< static array element count
+  ::std::size_t amt;                ///< bytes allocated
   finaliser_t *finaliser;         ///< finalisation function
   void const *private_data;       ///< private data passed to scanner
   scanner_t *scanner;             ///< scanner function 
@@ -96,7 +96,7 @@ void std_finaliser(collector_t*, void *t)
 struct allocator_t {
   bool debug;
   allocator_t():debug(false){}
-  virtual void *allocate(std::size_t)=0;
+  virtual void *allocate(::std::size_t)=0;
   virtual void deallocate(void *)=0;
   virtual ~allocator_t(){};
   void set_debug(bool d){debug=d;}
@@ -240,7 +240,7 @@ struct GC_EXTERN gc_profile_t {
  */
 GC_EXTERN void *operator new
 (
-  std::size_t,
+  ::std::size_t,
   flx::gc::generic::gc_profile_t &,
   flx::gc::generic::gc_shape_t const &,
   bool

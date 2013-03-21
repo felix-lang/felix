@@ -1,6 +1,7 @@
 #include "flx_serialisers.hpp"
 #include <string>
 #include <cstring>
+#include <cstddef>
 
 namespace flx { namespace gc { namespace generic {
 
@@ -18,27 +19,27 @@ namespace flx { namespace gc { namespace generic {
 // to get a length managed serialisation.
 ::std::string string_blit (::std::string const &s) 
 {
-  size_t n = s.size();
-  ::std::string b = blit (&n, sizeof(size_t));
+  ::std::size_t n = s.size();
+  ::std::string b = blit (&n, sizeof(::std::size_t));
   b+=s;
   return b;
 }
 
 // This is a utility for encoding a pod of size n.
 // We don't need a length because it is statically known.
-::std::string blit (void *p, size_t n) {
+::std::string blit (void *p, ::std::size_t n) {
   return ::std::string((char*)p,n);
 }
 
-size_t string_decoder (void *p, char *s, size_t i)
+::std::size_t string_decoder (void *p, char *s, ::std::size_t i)
 {
-   size_t n;
-   ::std::memcpy (&n,s + i,sizeof(size_t));
-   new (p) ::std::string(s+i+sizeof(size_t), n);
-   return i + sizeof(size_t) + n;
+   ::std::size_t n;
+   ::std::memcpy (&n,s + i,sizeof(::std::size_t));
+   new (p) ::std::string(s+i+sizeof(::std::size_t), n);
+   return i + sizeof(::std::size_t) + n;
 }
 
-size_t unblit (void *p, size_t n, char *s, size_t i)
+::std::size_t unblit (void *p, ::std::size_t n, char *s, ::std::size_t i)
 {
   ::std::memcpy (p,s+i,n);
   return i + n;
