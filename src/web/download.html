@@ -4,9 +4,34 @@
     <title>Felix</title>
 </head>
 <body>
-<h1>Downloading Felix</h1>
-<p>Felix is currently only available from the git repository on GitHub.
-We have ceased providing packages and tarballs.
+<h1>Downloading Prebuilt Felix</h1>
+<p>On linux you will require gcc. On OSX you will require clang.
+On Windows, MSVC++.
+
+<p>Please download a tarball from the directory below.
+Create an empty directory and change into it.
+Unpack the tarball into that directory.
+The unpacked tarball is a complete Felix system ready to use.
+
+<p>On Unix systems only, you will require sudo privilege.
+The install goes to prefix
+<pre>
+/usr/local
+</pre>
+in prescribed places and cannot be changed, it must exist, it must
+have bin and lib subdirectories, the bin directory must be on your
+PATH and the lib directory must be on your (DY)LD_LIBRARY_PATH or
+be otherwise searched by your dynamic linker.
+<pre>
+make install
+</pre>
+Enter sudo password.
+
+<h2>Available Tarballs</h2>
+<a href=tarballs>Tarballs</a> 
+
+<h1>Building from Source</h1>
+<p>Felix is currently available from the git repository on GitHub.
 To download on a Unix box, ensure the following are installed:
 <pre>
 git

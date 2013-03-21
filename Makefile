@@ -269,8 +269,19 @@ install-scoop: ${BUILDROOT}/bin/scoop
 	@${SUDO} cp ${BUILDROOT}/bin/scoop /usr/local/bin
 	@${SUDO} ${BUILDROOT}/bin/flx_cp src/lib/std/felix '(pkgtool.*\.(flx))' '/usr/local/lib/felix/felix-latest/lib/std/felix/$${0}' --verbose
 
+tarball:
+	tar -vzcf felix_${VERSION}_`uname`_tarball.tar.gz Makefile  \
+		${BUILDROOT}/index.html \
+		${BUILDROOT}/VERSION \
+		${BUILDROOT}/bin \
+		${BUILDROOT}/config \
+		${BUILDROOT}/web \
+		${BUILDROOT}/lib \
+		${BUILDROOT}/shlib \
+		${BUILDROOT}/tools 
+
 .PHONY : build32 build64 build test32 test64 test  
 .PHONY : build32-debug build64-debug build-debug test32-debug test64-debug test-debug 
 .PHONY : doc install websites-linux  release install-bin 
-.PHONY : copy-doc gen-doc check-tut gendoc fbuild speed
+.PHONY : copy-doc gen-doc check-tut gendoc fbuild speed tarball
 
