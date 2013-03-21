@@ -52,7 +52,7 @@ proc install() {
 
      (" * Resource database", list("config/[^/]*\\.fpc")),
 
-     (" * Platform Dependent C++ headers", list("config/.*\\.hpp")),
+     (" * Platform Dependent C++ headers", list("config/.*\\.h(pp)?")),
 
      (" * Felix library",
      list( 
