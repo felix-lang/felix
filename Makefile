@@ -101,6 +101,8 @@ install-felix-lang.org:
 	sudo ${BUILDROOT}/bin/flx --test=${BUILDROOT} --install-bin
 	sudo ${BUILDROOT}/bin/flx_cp ${BUILDROOT}/speed '(.*)' '/usr/local/lib/felix/felix-${VERSION}/speed/$${1}'
 	sudo rm -rf $(HOME)/.felix/cache
+	sudo rm -f /usr/local/lib/felix/felix-latest
+	sudo ln -s /usr/local/lib/felix/felix-$(VERSION) /usr/local/lib/felix/felix-latest
 	echo 'println ("installed "+ Version::felix_version);' > install-done.flx
 	flx --clean install-done
 	rm install-done.*
