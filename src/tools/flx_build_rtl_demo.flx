@@ -42,10 +42,19 @@ proc make_lib
   ;
   var toolchain = toolchain-maker config;
   println$ #(toolchain.whatami);
-println$ "Copying headers";
   var headers = db.getpkgfielddflt(pkg,"headers");
   if headers == "" do headers = r".*\.h(pp)?"; println$ "copying all header files"; done
-  CopyFiles::copyfiles (srcpath, RE2 headers,Filename::join(build,"${0}"),true, true);
+  var hsrc, hdst = "","";
+  match split (headers, ">") with
+  | #Empty => ;
+  | Cons (?h,#Empty) => hsrc = h;
+  | Cons (?h,Cons (?d,#Empty)) => hsrc = h; hdst = d;
+  | _ => println$ "Header file too many > characters " + headers;
+  endmatch;
+
+  if hdst == "" do hdst = "${0}"; done
+  println$ "Copying headers " + hsrc + " > " + hdst;
+  CopyFiles::copyfiles (srcpath, RE2 hsrc,Filename::join(build,hdst),true, true);
 
   var pats = db.getpkgfield(pkg,"src");
   var pat = catmap '|' (fun (x:string)=>"("+x+")") pats;
@@ -148,12 +157,12 @@ proc make_rtl (repo:string, build:string, pkgconfig_dir:string, boot_package:str
   var allpkgs = db.getclosure boot_package;
   println$ "Closure      : " + str allpkgs;
 
-  for pkg in allpkgs do
+  for pkg in allpkgs do {
     var slib = db.getpkgfielddflt (pkg,"provides_slib");
     var dlib = db.getpkgfielddflt (pkg,"provides_dlib");
     var srcdir = db.getpkgfielddflt (pkg,"srcdir");
-    var src = db.getpkgfielddflt (pkg,"src");
-    println$ f"%15S %20S %20S %20S %20S" (pkg,slib,dlib,srcdir,src);
+    println$ f"%15S %20S %20S %20S" (pkg,slib,dlib,srcdir);
+  };
   done
 
   var toolchain-maker = 
@@ -165,11 +174,11 @@ proc make_rtl (repo:string, build:string, pkgconfig_dir:string, boot_package:str
     )
   ;
   for pkg in allpkgs do
-    slib = db.getpkgfielddflt (pkg,"provides_slib");
-    dlib = db.getpkgfielddflt (pkg,"provides_dlib");
-    srcdir = db.getpkgfielddflt (pkg,"srcdir");
-    src = db.getpkgfielddflt (pkg,"src");
-    if (slib != "" or dlib != "") and srcdir != "" and src != "" do
+    var slib = db.getpkgfielddflt (pkg,"provides_slib");
+    var dlib = db.getpkgfielddflt (pkg,"provides_dlib");
+    var srcdir = db.getpkgfielddflt (pkg,"srcdir");
+    var src = db.getpkgfield(pkg,"src");
+    if (slib != "" or dlib != "") and srcdir != "" and not src.is_empty do
       make_lib (db,toolchain-maker, repo,build,pkg,tmpdir);
     else 
       println$ "External package " + pkg;
