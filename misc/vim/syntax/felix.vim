@@ -73,6 +73,7 @@ syn keyword felixStatement ctypes
 syn keyword felixStatement def
 syn keyword felixStatement do
 syn keyword felixStatement done
+syn keyword felixStatement begin
 syn keyword felixStatement elif
 syn keyword felixStatement else
 syn keyword felixStatement otherwise

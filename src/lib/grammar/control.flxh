@@ -3,6 +3,7 @@ syntax control
 {
   //$ Just a group of statements.
   stmt := "do" sstatements "done" =># "`(ast_seq ,_sr ,_2)";
+  stmt := "begin" sstatements "end" =># "(block _2)";
 
   //$ Call a procedure (verbose).
   stmt := "call" sexpr  ";" =># """(cons 'ast_call (cons _sr (splitapply _2)))""";
