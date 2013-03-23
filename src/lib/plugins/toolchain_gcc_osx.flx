@@ -10,20 +10,8 @@ object toolchain_gcc_osx (config:clang_config_t) implements toolchain_t =
 {
 
   var cxx_compile_warning_flags = list$ 
-    "-Wall",
     "-Wfatal-errors",
-    "-Wno-invalid-offsetof",
-    "-Wno-logical-op-parentheses",
-    "-Wno-bitwise-op-parentheses",
-    "-Wno-parentheses-equality",
-    "-Wno-parentheses",
-    "-Wno-return-stack-address",
-    "-Wno-tautological-compare",
-    "-Wno-return-type-c-linkage",
-    "-Wno-unused-variable",
-    "-Wno-unused-function",
-    "-Wno-c++11-narrowing",
-    "-Wno-missing-braces"
+    "-Wno-invalid-offsetof"
   ;
   var c_compile_warning_flags = list$ "-Wall", "-Wfatal-errors";
   var c_compiler = "gcc";
@@ -85,7 +73,7 @@ object toolchain_gcc_osx (config:clang_config_t) implements toolchain_t =
       CxxCompiler::generic_cxx_compile_for_static
       (
         CCOBJ_STATIC_LIB = cxx_compiler, 
-        CCFLAGS = "-c" ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! "-std=c++11" ! (cxx_compile_warning_flags+config.cflags),
+        CCFLAGS = "-c" ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" !(cxx_compile_warning_flags+config.cflags),
         INCLUDE_DIRS = config.header_search_dirs,
         MACROS = config.macros,
         SPEC_OBJ_FILENAME = "-o ",
@@ -102,7 +90,7 @@ object toolchain_gcc_osx (config:clang_config_t) implements toolchain_t =
       CxxCompiler::generic_cxx_compile_for_dynamic 
       (
         CCOBJ_DLLIB = linker, 
-        CCFLAGS = "-fPIC" ! "-O1" !  "-c"! "-fno-common"! "-fno-strict-aliasing" ! "-std=c++11" ! (cxx_compile_warning_flags+config.cflags),
+        CCFLAGS = "-fPIC" ! "-O1" !  "-c"! "-fno-common"! "-fno-strict-aliasing" !  (cxx_compile_warning_flags+config.cflags),
         INCLUDE_DIRS = config.header_search_dirs,
         MACROS = config.macros,
         SPEC_OBJ_FILENAME = "-o ",
