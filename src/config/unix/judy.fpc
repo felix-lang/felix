@@ -3,6 +3,7 @@ Description: Judy arrays
 provides_dlib: -ljudy_dynamic
 provides_slib: -ljudy_static
 includes: '"Judy.h"'
+library: judy
 macros: JU_64BIT BUILD_JUDY
 srcdir: src/judy/src
 headers: Judy\.h

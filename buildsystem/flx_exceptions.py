@@ -11,7 +11,7 @@ def build_runtime(phase):
     path = Path('src/exceptions')
 
     buildsystem.copy_hpps_to_rtl(phase.ctx,
-        phase.ctx.buildroot / 'config/target/flx_exceptions_config.hpp',
+        #phase.ctx.buildroot / 'config/target/flx_exceptions_config.hpp',
         path / 'flx_exceptions.hpp',
         path / 'flx_eh.hpp',
     )

@@ -2,5 +2,6 @@ Name: flx_dynlink
 Description: Felix Dynamic loading support
 Requires: flx
 includes: '"flx_dynlink.hpp"'
+library: flx_dynlink
 srcdir: src/rtl
 src: flx_dynlink.cpp

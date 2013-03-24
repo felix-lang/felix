@@ -48,35 +48,36 @@ for file in FileSystem::regfilesin (dir, fregex) do
     var commentry = Match (scomment, StringPiece line, 0, ANCHOR_BOTH, vcomment.stl_begin, 2);
     if commentry do
        comments = Cons (vcomment . 1 . string.strip, comments);
-    otherwise
+    else
 
-    var m = Match (lgrep, StringPiece line, 0, ANCHOR_BOTH, v.stl_begin,n); 
-    if m do
-      var syn = v.1.string.strip;
-      var prod = v.2.string.strip;
-      if ishtml do
-        if syn != "" do
-          println$ "";
-          println$  f"%04d" count + ":  " + '<a href="'+href+'#'+f"%04d" count+'">'+syn+'</a>';
-          for cline in rev comments do println$ "           "+cline; done
-          comments = Empty[string];
+      var m = Match (lgrep, StringPiece line, 0, ANCHOR_BOTH, v.stl_begin,n); 
+      if m do
+        var syn = v.1.string.strip;
+        var prod = v.2.string.strip;
+        if ishtml do
+          if syn != "" do
+            println$ "";
+            println$  f"%04d" count + ":  " + '<a href="'+href+'#'+f"%04d" count+'">'+syn+'</a>';
+            for cline in rev comments do println$ "           "+cline; done
+            comments = Empty[string];
+          else
+            println$ f"%04d" count + ":    " + '<a href="'+href+'#'+f"%04d" count+'">'+ prod +'</a>';
+            for cline in rev comments do println$ "           "+ cline; done
+            comments = Empty[string];
+          done
         else
-          println$ f"%04d" count + ":    " + '<a href="'+href+'#'+f"%04d" count+'">'+ prod +'</a>';
-          for cline in rev comments do println$ "           "+ cline; done
-          comments = Empty[string];
-        done
-      else
-        if syn != "" do
-          println$ "";
-          println$ f"%04d" count + ":  " + syn;
-          for cline in rev comments do println$ "           "+cline; done
-          comments = Empty[string];
-        else
-          println$ f"%04d" count + ":    " + prod;
-          for cline in rev comments do println$ "           "+ cline; done
-          comments = Empty[string];
-        done
-      done // html
+          if syn != "" do
+            println$ "";
+            println$ f"%04d" count + ":  " + syn;
+            for cline in rev comments do println$ "           "+cline; done
+            comments = Empty[string];
+          else
+            println$ f"%04d" count + ":    " + prod;
+            for cline in rev comments do println$ "           "+ cline; done
+            comments = Empty[string];
+          done
+        done // html
+      done
     done
   done
 done

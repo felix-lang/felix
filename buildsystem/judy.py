@@ -58,9 +58,7 @@ def build_runtime(host_phase, target_phase):
     # Copy the header into the runtime library.
     buildsystem.copy_to(target_phase.ctx,
         target_phase.ctx.buildroot / 'lib/rtl',
-        [path / 'Judy.h',
-         path / 'Judy1/Judy1.h',
-         path / 'JudyL/JudyL.h'])
+        [path / 'Judy.h'])
 
     types = config_call('fbuild.config.c.c99.types',
         target_phase.platform, target_phase.c.static)

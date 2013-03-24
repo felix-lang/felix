@@ -11,7 +11,7 @@ def build_runtime(host_phase,target_phase):
     path = Path('src/faio')
 
     buildsystem.copy_hpps_to_rtl(target_phase.ctx,
-        target_phase.ctx.buildroot / 'config/target/flx_faio_config.hpp',
+        #target_phase.ctx.buildroot / 'config/target/flx_faio_config.hpp',
         path / 'faio_job.hpp',
         path / 'faio_timer.hpp',
         path / 'faio_posixio.hpp',

@@ -274,16 +274,16 @@ proc check_output
   if output == "" do
     println$ "No output file given";
 
-  otherwise 
-  
-  // note load never fails, at worse loads empty string.
-  var output_text = load (output);
-  var expected_text = load (expected);
-  if output_text != expected_text do
-    println$ "Output " + output + " doesn't match expected " + expected;
-    System::exit(1);
-  done
-  
+  else 
+    
+    // note load never fails, at worse loads empty string.
+    var output_text = load (output);
+    var expected_text = load (expected);
+    if output_text != expected_text do
+      println$ "Output " + output + " doesn't match expected " + expected;
+      System::exit(1);
+    done
+  done 
 }
 
 
