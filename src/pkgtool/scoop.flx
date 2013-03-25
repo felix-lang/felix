@@ -43,6 +43,32 @@ proc info (pkg:string) () {
   endmatch; 
 }
 
+fun getchar: 1->int = "getchar()" requires C89_headers::stdio_h;
+
+proc readme (pkg:string) {
+  var readme = (LITTERBOX.join(pkg)).join("README.md");
+  var lines = atoi(Env::getenv("LINES","24"));
+  match filetype(readme) with
+  |REGULAR => { 
+    val cfg_h = fopen_input(readme);
+    if valid(cfg_h) do
+      while not feof(cfg_h) do
+        for var i in 0 upto lines do
+          print$ readln$ cfg_h;
+        done
+        if not feof(cfg_h) do
+          endl;print$ "More....(Press Enter)";
+          C_hack::ignore(getchar());
+        done
+      done
+      endl;
+    done
+  }
+  |_ => { general_fail(q"No package README.md found for $(pkg) or $(pkg) does not exist");}
+  endmatch; 
+}
+
+
 
 fun is_litterbox_fresh() =>
   let ?git_dir = LITTERBOX.join(".git") in
@@ -76,7 +102,6 @@ proc search (opts:list[string]) () {
    else 
      to_assoc_list(opts)     
    endif;
-
    match Directory::filesin(LITTERBOX) with
    |Some ?files => { 
      for file in sort(filter (fun (f:string) => not f == "build" and not f.startswith ".") files) do
@@ -100,10 +125,14 @@ proc search (opts:list[string]) () {
                   var inst_ver = is_installed(name);
                   var pkg_ver = atof(match get pkg "VERSION" with |Some ?v =>v |_ => "" endmatch);
 	          task$ ((match is_installed(name) with
-                  |Some ?inst_ver when inst_ver == pkg_ver => blue_("*installed* ")+name+" "+str(pkg_ver) 
+                  |Some ?inst_ver when inst_ver == pkg_ver => 
+                    blue_((ljust(name,20)).[0 to 20]+" "+
+                    (ljust(str(pkg_ver),6)).[0 to 6]) 
                   |Some ?inst_ver when pkg_ver > inst_ver  => 
-                      red_("  *newer*   "+name+" "+ str(pkg_ver)) 
-                  |_ =>  "            "+yellow_(name+" "+ str(pkg_ver))
+                      red_((ljust(name,20)).[0 to 20]+" "+
+                    (ljust(str(pkg_ver),6)).[0 to 6]) 
+                  |_ => yellow_((ljust(name,20)).[0 to 20]+" "+
+                    (ljust(str(pkg_ver),6)).[0 to 6])
                   endmatch) + 
                     "   "  + NC_(((get pkg "DESCRIPTION").or_else "")));
                   
@@ -129,6 +158,9 @@ enough:>
   }
   |_ => {}
   endmatch;
+  endl;
+  task(blue_("* installed")+" "+red_("* newer version")+" "+
+       yellow_("* not installed"));  
 }
 
 proc refresh () {
@@ -147,6 +179,7 @@ usage:
                                    only installed packages are listed.
   scoop search  <package>  [options] Searches for package on litterbox
   scoop info    <package>  [options] Displays package info
+  scoop info    <package>  [options] Displays package README.md
   scoop refresh            [options] Refreshes litterbox package directory cache
   scoop reinstall          [options] Reinstalls all previously installed packages
 
@@ -530,7 +563,8 @@ proc run() {
         }
         |_ => {
           banner("Packages");
-          phase("package listing:",(search (list('NAME','')) ));
+          phase(INDENT+(ljust("package",20)).[0 to 20]+" "+
+            (ljust("ver.",6)).[0 to 6],(search (list('NAME','')) ));
         }
         endmatch; 
        }
@@ -538,6 +572,10 @@ proc run() {
           banner("Info");
           phase("packages info:" + ((head(options)).or_else ""),
             (info ((head(options)).or_else "")) );
+        }
+      |?cmd when cmd == "readme" => { 
+          banner("README.md");
+          readme ((head(options)).or_else "");
         }
       |?cmd when cmd == "refresh" => { 
           banner("Refresh");
