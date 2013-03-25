@@ -137,13 +137,6 @@ make-dist:
 	rm -f $(DISTDIR)/install-done.flx  $(DISTDIR)/install-done.so
 
 
-# 
-# Quick install plugins
-# Plugin developers only
-#
-install-plugins:
-	${SUDO} cp ${BUILDROOT}/shlib/* /usr/local/lib/
-
 install-website:
 	${SUDO} cp -r ${BUILDROOT}/web/* /usr/local/lib/felix/felix-latest/web
 
@@ -212,9 +205,9 @@ gen-doc:
 	${BUILDROOT}/bin/flx_mktutindex nutut/intro/intro "Ground Up" ../../tutorial.fdoc
 	# Build reference docs. Note this requires plugins and RTL to be installed
 	# on (DY)LD_LIBRARY_PATH. Won't work otherwise.
-	env LD_LIBRARY_PATH=${BUILDROOT}/shlib:${BUILDROOT}/lib/rtl ${BUILDROOT}/bin/flx_libcontents --html > src/web/flx_libcontents.html
-	env LD_LIBRARY_PATH=${BUILDROOT}/shlib:${BUILDROOT}/lib/rtl ${BUILDROOT}/bin/flx_libindex --html > src/web/flx_libindex.html
-	env LD_LIBRARY_PATH=${BUILDROOT}/shlib:${BUILDROOT}/lib/rtl ${BUILDROOT}/bin/flx_gramdoc --html > src/web/flx_gramdoc.html
+	env LD_LIBRARY_PATH=${BUILDROOT}/plugins:${BUILDROOT}/lib/rtl ${BUILDROOT}/bin/flx_libcontents --html > src/web/flx_libcontents.html
+	env LD_LIBRARY_PATH=${BUILDROOT}/plugins:${BUILDROOT}/lib/rtl ${BUILDROOT}/bin/flx_libindex --html > src/web/flx_libindex.html
+	env LD_LIBRARY_PATH=${BUILDROOT}/plugins:${BUILDROOT}/lib/rtl ${BUILDROOT}/bin/flx_gramdoc --html > src/web/flx_gramdoc.html
 
 
 # Checks correctness of tutorial in release image
@@ -279,7 +272,7 @@ tarball:
 		${BUILDROOT}/config \
 		${BUILDROOT}/web \
 		${BUILDROOT}/lib \
-		${BUILDROOT}/shlib \
+		${BUILDROOT}/plugins \
 		${BUILDROOT}/tools 
 
 .PHONY : build32 build64 build test32 test64 test  

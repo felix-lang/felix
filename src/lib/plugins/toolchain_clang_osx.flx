@@ -10,22 +10,15 @@ object toolchain_clang_osx (config:clang_config_t) implements toolchain_t =
 {
 
   var cxx_compile_warning_flags = list$ 
-    "-Wall",
     "-Wfatal-errors",
     "-Wno-invalid-offsetof",
-    "-Wno-logical-op-parentheses",
-    "-Wno-bitwise-op-parentheses",
-    "-Wno-parentheses-equality",
-    "-Wno-parentheses",
-    "-Wno-return-stack-address",
-    "-Wno-tautological-compare",
-    "-Wno-return-type-c-linkage",
-    "-Wno-unused-variable",
-    "-Wno-unused-function",
-    "-Wno-c++11-narrowing",
-    "-Wno-missing-braces"
+    "-Wno-bitwise-op-parentheses"
   ;
-  var c_compile_warning_flags = list$ "-Wall", "-Wfatal-errors";
+  var c_compile_warning_flags = list$ 
+    "-Wfatal-errors", 
+    "-Wno-array-bounds"
+  ;
+
   var c_compiler = "clang";
   var cxx_compiler = "clang++";
   var linker = "clang++";
@@ -168,4 +161,5 @@ fun setup(config_data:string) = {
 }
 
 export fun setup of (string) as "setup";
+
 
