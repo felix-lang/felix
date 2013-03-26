@@ -45,7 +45,7 @@ proc print_help() {
   println "--expect=file        : compare stdout with expect file";
   println "--expect             : compare stdout with basename.expect";
   println "--indir=dir          : set directory for regexp search, default current directory";
-  println "--regexp=pattern     : Perl regexp for batch file processing";
+  println "--regex=pattern      : Perl regexp for batch file processing";
   println "--backup             : backup working source tree to dir 'backup'";
   println "--install            : install --test directory to configured location";
   println "--dist=path          : install --test directory to configured location";

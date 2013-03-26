@@ -3,6 +3,7 @@ Description: Google Re2 regexp library
 provides_dlib: -lflx_re2_dynamic
 provides_slib: -lflx_re2_static
 includes: '"re2/re2.h"'
+library: flx_re2
 macros: BUILD_RE2
 srcdir: src/re2/re2
 headers: re2/(re2|set|stringpiece|variadic_function)\.h  

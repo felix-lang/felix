@@ -12,7 +12,7 @@ def build_runtime(phase):
     path = Path('src/demux')
 
     buildsystem.copy_hpps_to_rtl(phase.ctx,
-        phase.ctx.buildroot / 'config/target/flx_demux_config.hpp', # portable
+        #phase.ctx.buildroot / 'config/target/flx_demux_config.hpp', # portable
 
         # portable
         path / 'flx_demux.hpp',
@@ -62,6 +62,7 @@ def build_runtime(phase):
     extra_libs = []
 
     if 'win32' in phase.platform:
+        print("DEMUX: providing WIN32 IO COMPLETION PORTS");
         srcs.extend((
             path / 'win/demux_iocp_demuxer.cpp',       # windows
             path / 'win/demux_overlapped.cpp',         # windows
@@ -72,6 +73,7 @@ def build_runtime(phase):
         extra_libs.extend(('ws2_32', 'mswsock'))
 
     if 'posix' in phase.platform:
+        print("DEMUX: providing POSIX SELECT");
         srcs.extend((
             path / 'posix/demux_posix_demuxer.cpp',      # posix
             path / 'posix/demux_select_demuxer.cpp',     # posix
@@ -89,6 +91,7 @@ def build_runtime(phase):
     port_h = config_call('fbuild.config.c.solaris.port_h', phase.platform, phase.cxx.shared)
 
     if poll_h.header:
+        print("DEMUX: providing UNIX POLL");
         srcs.extend((
             # I've seen poll on linux and osx10.4 systems.
             # conditionally compiled and used.
@@ -98,22 +101,25 @@ def build_runtime(phase):
         includes.append(path / 'poll')
 
     if sys_epoll_h.header:
+        print("DEMUX: providing LINUX EPOLL");
         srcs.append(path / 'epoll/demux_epoll_demuxer.cpp')
         includes.append(path / 'epoll')
 
     if sys_event_h.header:
+        print("DEMUX: providing OSX KQUEUE");
         srcs.append(path / 'kqueue/demux_kqueue_demuxer.cpp')
         includes.append(path / 'kqueue')
 
     if port_h.header:
+        print("DEMUX: providingd SOLARIS EVENT PORTS");
         srcs.append(path / 'evtport/demux_evtport_demuxer.cpp')
         includes.append(path / 'evtport')
 
     srcs = Path.globall(srcs)
 
     lp = len (path)
-    print("demux: srcs = ", [str (src)[lp+1:] for src in srcs])
-    print("demux: include paths = ", [str(inc) for inc in includes])
+    #print("demux: srcs = ", [str (src)[lp+1:] for src in srcs])
+    #print("demux: include paths = ", [str(inc) for inc in includes])
     return Record(
         static=buildsystem.build_cxx_static_lib(phase, dst, srcs,
             includes=includes,
@@ -129,3 +135,4 @@ def build_runtime(phase):
 def build_flx(phase):
     return buildsystem.copy_flxs_to_lib(phase.ctx,
         Path('src/demux/*.flx').glob())
+

@@ -4,6 +4,7 @@ provides_dlib: -lflx_dynamic
 provides_slib: -lflx_static
 cflags: -Ilib/rtl
 Requires: flx_gc flx_exceptions dl
+library: rtl
 includes:  '"flx_rtl.hpp"'  <iostream> <cstdio> <cstddef> <cassert> <climits> <string>
 srcdir: src/rtl
 src: .*\.cpp

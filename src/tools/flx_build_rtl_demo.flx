@@ -14,10 +14,10 @@ proc make_lib
   repo: string, build:string, pkg:string, tmpdir:string
 )
 {
-  Directory::mkdirs (Filename::dirname tmpdir);
   var FLX_INSTALL_DIR = #(Config::config).FLX_INSTALL_DIR;
   println$ "------------";
   println$ "Make lib " + pkg;
+  println$ "------------";
   var configdir = Filename::join (FLX_INSTALL_DIR, "config", "target");
   var srcdir = db.getpkgfielddflt (pkg,"srcdir");
   var srcpath = Filename::join (repo, srcdir);
@@ -136,10 +136,13 @@ proc make_lib
 proc make_rtl (repo:string, build:string, pkgconfig_dir:string, boot_package:string, plugin_path:string, tmpdir:string)
 {
   
+  var librtl = Filename::join (build,"lib","rtl");
+  Directory::mkdirs tmpdir;
+  Directory::mkdirs librtl;
   println$ 
-    "flx_build: configdir=" + pkgconfig_dir + 
+    "flx_librtl: configdir=" + pkgconfig_dir + 
     ", bootpkg=" + boot_package +
-    ", builddir=" + build +
+    ", librtldir=" + librtl +
     ", repository=" + repo
   ;
 
@@ -155,15 +158,13 @@ proc make_rtl (repo:string, build:string, pkgconfig_dir:string, boot_package:str
   println$ "toolchain    : " + str toolchain;
 
   var allpkgs = db.getclosure boot_package;
-  println$ "Closure      : " + str allpkgs;
+  //println$ "Closure      : " + str allpkgs;
 
-  for pkg in allpkgs do {
-    var slib = db.getpkgfielddflt (pkg,"provides_slib");
-    var dlib = db.getpkgfielddflt (pkg,"provides_dlib");
+  for pkg in allpkgs begin 
+    var lib = db.getpkgfielddflt (pkg,"library");
     var srcdir = db.getpkgfielddflt (pkg,"srcdir");
-    println$ f"%15S %20S %20S %20S" (pkg,slib,dlib,srcdir);
-  };
-  done
+    println$ f"%15S %20S %20S" (pkg,lib,srcdir);
+  end 
 
   var toolchain-maker = 
     Dynlink::load-plugin-func1 [toolchain_t,clang_config_t] 
@@ -173,17 +174,66 @@ proc make_rtl (repo:string, build:string, pkgconfig_dir:string, boot_package:str
       entry-point=toolchain
     )
   ;
-  for pkg in allpkgs do
-    var slib = db.getpkgfielddflt (pkg,"provides_slib");
-    var dlib = db.getpkgfielddflt (pkg,"provides_dlib");
+  for pkg in allpkgs begin
+    var library = db.getpkgfielddflt (pkg,"library");
     var srcdir = db.getpkgfielddflt (pkg,"srcdir");
     var src = db.getpkgfield(pkg,"src");
-    if (slib != "" or dlib != "") and srcdir != "" and not src.is_empty do
-      make_lib (db,toolchain-maker, repo,build,pkg,tmpdir);
+    if library != "" do
+      if srcdir == "" do
+        println$ "Package error, package " + pkg + " library " + library + " No srcdir specified";
+        System::exit(1);
+      done
+      if src.is_empty do
+        println$ "Package error, package " + pkg + " library " + library + " No src files specified";
+        System::exit(1);
+      done
+      make_lib (db,toolchain-maker, repo,librtl,pkg,tmpdir);
     else 
+      println$ "------------";
       println$ "External package " + pkg;
+      println$ "------------";
     done
-  done
+  end 
+
+  // make drivers
+  begin
+    println$ "Make drivers";
+    var FLX_INSTALL_DIR = #(Config::config).FLX_INSTALL_DIR;
+    var configdir = Filename::join (FLX_INSTALL_DIR, "config", "target");
+    fun mkinc (x:string) => "-I"+x;
+    var srcdir = Filename::join (repo,"src","flx_drivers");
+    var config = 
+      (
+        header_search_dirs= list[string] (mkinc librtl, mkinc srcdir, mkinc configdir),
+        macros= Empty[string],
+        cflags = Empty[string],
+        library_search_dirs= list[string] ("-L"+librtl),
+        dynamic_libraries= Empty[string],
+        static_libraries= Empty[string],
+        debugln = dbug
+      )
+    ;
+    fun objname (file:string) => let 
+        ?dstobj = file.Filename::strip_extension + #(toolchain.static_object_extension) in
+        Filename::join (librtl, dstobj)
+    ;
+
+    var toolchain = toolchain-maker config;
+    println$ #(toolchain.whatami);
+    proc cobj (file:string) {
+      var src = Filename::join (srcdir,file);
+      var dst = objname file;
+      println$ "Compiling [static] " + src + " -> " + dst;
+      var result = toolchain.cxx_static_object_compiler(src=src, dst=dst);
+      if result != 0 do
+        println$ "Driver compile "+ file+" FAILED";
+      done
+    }
+    cobj("flx_run_lib.cpp");
+    cobj("flx_arun_lib.cpp");
+    cobj("flx_run_main.cxx");
+    cobj("flx_arun_main.cxx");
+  end
 }
 
 if System::argc < 6 do

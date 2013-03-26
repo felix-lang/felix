@@ -123,7 +123,7 @@ class Builder(fbuild.db.PersistentObject):
             buildroot=None):
         buildroot = buildroot or self.ctx.buildroot
 
-        print("_link: C++ compile src = " + src)
+        #print("_link: C++ compile src = " + src)
 
         if dst is None:
             dst = src.replaceext('')
@@ -234,8 +234,8 @@ class Builder(fbuild.db.PersistentObject):
             cxx_cflags=[],
             cxx_libs=[],
             cxx_lflags=[]):
-        print("_build_flx_pkgconfig_link: src="+src)
-        print("_build_flx_pkgconfig_link: dst="+dst)
+        #print("_build_flx_pkgconfig_link: src="+src)
+        #print("_build_flx_pkgconfig_link: dst="+dst)
         obj = self.compile(src, includes=includes, flags=flags)
 
         return function(obj, dst,
