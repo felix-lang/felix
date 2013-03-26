@@ -527,6 +527,6 @@ fun setup(config_data:string) = {
   return 0;
 }
 
-export fun setup of (string) as "setup";
+export fun setup of (string) as "flx2html_setup";
 export fun Flx2Html::xlat_felix of (string * string) as "xlat_felix";
 

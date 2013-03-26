@@ -58,6 +58,6 @@ object fdoc_scanner () implements fdocscanner-control_t = {
 }
 
  
-export fun setup of (string) as "setup";
+export fun setup of (string) as "fdoc_scanner_setup";
 export fun fdoc_scanner of () as "fdoc_scanner";
 

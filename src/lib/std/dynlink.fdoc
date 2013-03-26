@@ -428,7 +428,7 @@ parameters, extracts them with a parser, and stores them
 in variables.
 
 The current protocol is that the setup function must
-be called "setup", the entry point name is passed
+be called "dllname_setup", the entry point name is passed
 as a string. 
 
 In order to accomodate static linking of plugins in the
@@ -465,7 +465,7 @@ to require the library name as a prefix. Stay tuned.
     var entrypoint = if entry-point == "" then dll-name else entry-point;
     var dll_extn = #Config::config.EXT_SHLIB;
     var linst = Dynlink::init_lib(dll-name + dll_extn);
-    var sresult = Dynlink::func1[int,string] (linst, "setup") (setup-str);
+    var sresult = Dynlink::func1[int,string] (linst, dll-name+"_setup") (setup-str);
     C_hack::ignore(sresult);
     eprintln$ "Plugin Library " + dll-name + " set up " + str sresult;
     return Dynlink::func0[iftype] (linst, entrypoint);
@@ -480,7 +480,7 @@ to require the library name as a prefix. Stay tuned.
     var entrypoint = if entry-point == "" then dll-name else entry-point;
     var dll_extn = #Config::config.EXT_SHLIB;
     var linst = Dynlink::init_lib(dll-name + dll_extn);
-    var sresult = Dynlink::func1[int,string] (linst, "setup") (setup-str);
+    var sresult = Dynlink::func1[int,string] (linst, dll-name+"_setup") (setup-str);
     C_hack::ignore(sresult);
     eprintln$ "Plugin Library " + dll-name + " set up " + str sresult;
     return Dynlink::func1[iftype,arg_t] (linst, entrypoint);
@@ -495,7 +495,7 @@ to require the library name as a prefix. Stay tuned.
     var entrypoint = if entry-point == "" then dll-name else entry-point;
     var dll_extn = #Config::config.EXT_SHLIB;
     var linst = Dynlink::init_lib(dll-name + dll_extn);
-    var sresult = Dynlink::func1[int,string] (linst, "setup") (setup-str);
+    var sresult = Dynlink::func1[int,string] (linst, dll-name+"_setup") (setup-str);
     C_hack::ignore(sresult);
     eprintln$ "Plugin Library " + dll-name + " set up " + str sresult;
     return Dynlink::func2[iftype,arg1_t, arg2_t] (linst, entrypoint);

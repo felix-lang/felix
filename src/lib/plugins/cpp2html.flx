@@ -263,7 +263,7 @@ fun setup(config_data:string) = {
   return 0;
 }
 
-export fun setup of (string) as "setup";
+export fun setup of (string) as "cpp2html_setup";
 export fun Cpp2Html::xlat_cpp of (string * string) as "xlat_cpp";
 
 

@@ -175,6 +175,6 @@ fun setup(x:string) = {
   return 0;
 }
 
-export fun setup of (string) as "setup";
+export fun setup of (string) as "ocaml2html_setup";
 export fun Ocaml2Html::xlat_ocaml of (string * string) as "xlat_ocaml";
 

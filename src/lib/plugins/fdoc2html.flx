@@ -481,7 +481,7 @@ fun setup(config_data:string) = {
   return 0;
 }
 
-export fun setup of (string) as "setup";
+export fun setup of (string) as "fdoc2html_setup";
 export fun xlat_fdoc of (string * string) as "xlat_fdoc";
 
 

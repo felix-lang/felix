@@ -155,5 +155,5 @@ fun setup(config_data:string) = {
   return 0;
 }
 
-export fun setup of (string) as "setup";
+export fun setup of (string) as "toolchain_gcc_osx_setup";
 

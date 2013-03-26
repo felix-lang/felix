@@ -210,7 +210,7 @@ fun setup(x:string) = {
   return 0;
 }
 
-export fun setup of (string) as "setup";
+export fun setup of (string) as "py2html_setup";
 export fun Py2Html::xlat_py of (string * string) as "xlat_py";
 
 

@@ -49,7 +49,7 @@ object fdoc_button () implements button-factory_t = {
   </svg></span></span>""";
 }
 
-export fun setup of (string) as "setup";
+export fun setup of (string) as "fdoc_button_setup";
 export fun fdoc_button of () as "fdoc_button";
 
 

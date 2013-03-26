@@ -168,6 +168,6 @@ object fdoc_slideshow (var write_string: string -> 0) implements slideshow_t =
   method fun active () => slideshow-used;
 };
 
-export fun setup of (string) as "setup";
+export fun setup of (string) as "fdoc_slideshow_setup";
 export fun fdoc_slideshow of (string->0) as "fdoc_slideshow";
 

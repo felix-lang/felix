@@ -74,6 +74,6 @@ object fdoc_fileseq (filename: string) implements fileseq-control_t =
 
 }
 
-export fun setup of (string) as "setup";
+export fun setup of (string) as "fdoc_fileseq_setup";
 export fun fdoc_fileseq of (string) as "fdoc_fileseq";
 
