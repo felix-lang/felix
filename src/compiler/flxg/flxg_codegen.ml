@@ -415,6 +415,11 @@ let codegen_bsyms
       state.syms.bifaces);
   end;
 
+  let gen_uint_array name values =
+    "static unsigned int const " ^ name ^ "[" ^ string_of_int (List.length values) ^ "] = {" ^ (
+        catmap "," (fun x -> (string_of_int x) ^ "u") values
+    ) ^ "};" in
+
   (* rather late: generate variant remapping tables *)
   if Hashtbl.length state.syms.variant_map > 0 then begin
     plr "// VARIANT REMAP ARRAYS";
@@ -456,9 +461,7 @@ let codegen_bsyms
   begin
     plr "\n// Array indexing helpers for sum indexes\n";
     Hashtbl.iter (fun _ (name,values) ->
-      plr  ("static int const " ^ name ^ "[" ^ string_of_int (List.length values) ^ "] = {" ^
-      catmap "," string_of_int  values ^
-      "};")
+      plr  (gen_uint_array name values)
     )
     state.syms.array_sum_offset_table;
   end;
@@ -467,9 +470,7 @@ let codegen_bsyms
   begin
     plr "\n// integer powers of constants \n";
     Hashtbl.iter (fun size values ->
-      plr  ("static int const flx_ipow_"^si size^ "[" ^ string_of_int (List.length values) ^ "] = {" ^
-      catmap "," string_of_int  values ^
-      "};")
+      plr  (gen_uint_array ("flx_ipow_"^si size) values)
     )
     state.syms.power_table;
   end;
