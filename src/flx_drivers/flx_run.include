@@ -443,6 +443,13 @@ int do_final_cleanup(
   return 0;
 }
 
+::std::string modulenameoffilename(::std::string const &s) 
+{
+  ::std::size_t i = s.find_last_of("\\/");
+  ::std::size_t j = s.find_first_of(".",i+1);
+  return s.substr (i+1,j-i-1);
+}
+
 // MAINLINE, ONLY DONE ONCE
 int run_felix(
   bool debug_driver,
@@ -468,6 +475,7 @@ int run_felix(
       (main_t)&flx_main);
 */
     flx_dynlink_t library(
+      modulenameoffilename(filename),
       (thread_frame_creator_t)static_create_thread_frame,
       (start_t)static_flx_start,
       (main_t)&flx_main);

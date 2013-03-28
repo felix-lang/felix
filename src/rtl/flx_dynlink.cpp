@@ -103,6 +103,8 @@ flx_dynlink_t::flx_dynlink_t(flx_dynlink_t const&) {} // no copy hack
 void flx_dynlink_t::operator=(flx_dynlink_t const&) {} // no copy hack
 
 flx_dynlink_t::flx_dynlink_t():
+  filename(""),
+  modulename(""),
   library(0),
   thread_frame_creator(NULL),
   start_sym(NULL),
@@ -111,9 +113,12 @@ flx_dynlink_t::flx_dynlink_t():
 {}
 
 flx_dynlink_t::flx_dynlink_t(
-        thread_frame_creator_t thread_frame_creator,
-        start_t start_sym,
-        main_t main_sym) throw(flx_link_failure_t):
+  ::std::string modulename_a,
+  thread_frame_creator_t thread_frame_creator,
+  start_t start_sym,
+  main_t main_sym) throw(flx_link_failure_t)
+:
+  modulename (modulename_a),
   library(0),
   thread_frame_creator(thread_frame_creator),
   start_sym(start_sym),
@@ -126,6 +131,20 @@ flx_dynlink_t::flx_dynlink_t(
   if(!start_sym)
     throw flx_link_failure_t("<static link>","dlsym","flx_start");
 }
+
+void flx_dynlink_t::link (
+  ::std::string modulename,
+  thread_frame_creator_t thread_frame_creator,
+  start_t start_sym,
+  main_t main_sym
+)
+{
+  this->modulename = modulename;
+  this->thread_frame_creator = thread_frame_creator;
+  this->start_sym = start_sym;
+  this->main_sym = main_sym;
+}
+
 
 void flx_dynlink_t::link(const ::std::string& filename_a, const ::std::string& modulename_a) throw(flx_link_failure_t)
 {

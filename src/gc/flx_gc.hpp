@@ -106,6 +106,7 @@ struct allocator_t {
 struct GC_EXTERN collector_t
 {
   bool debug;
+  void *module_registry; 
   void set_debug(bool d){debug=d;}
   collector_t();
   virtual ~collector_t(){}

@@ -14,7 +14,7 @@ namespace flx {
 namespace gc {
 namespace generic {
 
-collector_t::collector_t() : debug(false){}
+collector_t::collector_t() : debug(false), module_registry(0){}
 
 gc_profile_t::gc_profile_t (
   bool debug_allocations_,

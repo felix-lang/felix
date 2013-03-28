@@ -161,9 +161,17 @@ struct RTL_EXTERN flx_dynlink_t
 
   flx_dynlink_t();
   flx_dynlink_t(
+    ::std::string modulename,
     thread_frame_creator_t thread_frame_creator,
     start_t start_sym,
     main_t main_sym) throw(flx_link_failure_t);
+
+  void link(
+    ::std::string modulename,
+    thread_frame_creator_t thread_frame_creator,
+    start_t start_sym,
+    main_t main_sym);
+
 
   // routines
   // link does dynamic loading independently of static/dynamic linkage.

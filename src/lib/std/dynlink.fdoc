@@ -104,12 +104,43 @@ This procedure associates a library handle with a particular
 file name and also attempts to load the library.
 @felix
   //$ Link a DLL using given filename.
-  proc dlopen:flx_library * string = "$1->link($2.c_str());";
+  proc dlopen:flx_library * string = "$1->link($2);";
+
+
+  //$ Link a DLL using given filename and modulename.
+  proc modopen:flx_library * string * string = "$1->link($2, $3);";
+
+  //$ Link static 
+  proc set_entry_points : flx_library * string * opt[address] * opt[address] =
+    "$1->link($2,(::flx::rtl::thread_frame_creator_t)$3, (::flx::rtl::start_t)$4, NULL);";
+
+@h3 Load a library from registry <code>regopen</code>
+Given a registry, simulate dynamic linkage.
+@felix
+  typedef module_dictionary_t = StrDict::strdict[address];
+  typedef registry_t = StrDict::strdict[module_dictionary_t];
+  fun get_module_registry: 1 -> registry_t = "&(PTF gcp->collector->module_registry)";
+
+  proc regopen (registry:registry_t) (lib:flx_library, modulename:string)
+  {
+     var mod = StrDict::get registry modulename;
+     match mod with
+     | #None => modopen$ lib, modulename+#(Config::config).EXT_SHLIB, modulename;
+     | Some dict =>
+       var tfc = dict.get (modulename+"_create_thread_frame");
+       var start_sym = dict.get (modulename+"_flx_start");
+       set_entry_points$ lib,modulename,tfc, start_sym;
+     endmatch;
+  }
 
 @h3 Get the filename associated with a library handle: <code>filename</code>
 @felix
   //$ Get the filename of a DLL.
-  fun filename : flx_library -> string = "::std::string($1->filename)";
+  fun filename : flx_library -> string = "$1->filename";
+
+  //$ Get the modulename of a DLL.
+  fun modulename : flx_library -> string = "$1->modulename";
+
 
 @h3 Unlink a dll : <code>dlclose</code>.
 This routine reduces the reference count of a library handle
@@ -158,8 +189,25 @@ is itself a pointer.
   //$ even for static linkage: after all 
   //$ statically linked executables can still
   //$ load DLLs at run time.
-  fun dlsym:flx_library * string->address =
+  fun raw_dlsym:flx_library * string->address =
       "FLX_SDLSYM($1->library,$2.c_str())";
+
+  fun find_sym(lib:flx_library, sym:string) : address =
+  {
+    if lib.filename == "" do
+      var reg = #get_module_registry;
+      match reg.get lib.modulename with
+      | #None => return NULL;
+      | Some dict =>
+        match dict.get sym with
+        | #None => return NULL;
+        | Some sym => return sym;
+        endmatch;
+      endmatch; 
+    else 
+      return raw_dlsym (lib,sym);
+    done
+  }
 
 @h2 Library instance type <code>flx_instance</code>
 A library instance is a closure consisting of the
@@ -282,13 +330,13 @@ Finally the instance is returned.
 @felix
 
   //$ Create, link, and initialise a  DLL instance from a filename.
-  noinline fun init_lib(filename:string):flx_instance = {
+  noinline fun init_lib(modulename:string):flx_instance = {
     var library = create_library_handle();
     var linstance =  create_instance_handle();
     try
-      dlopen(library,filename);
+      regopen #get_module_registry (library,modulename);
     catch exn: flx_link_failure_t =>
-      eprintln$ "Dynamic linkage error opening DLL " + filename;
+      eprintln$ "Dynamic linkage error opening DLL " + modulename;
       throw exn;
     endtry
     create (library,linstance);
@@ -307,9 +355,9 @@ program.
   //$  WARNING!! All data created by the target
   //$  program must be destroyed
   //$  before the library code is unlinked.
-  proc run_lib(filename:string)
+  proc run_lib(modulename:string)
   {
-    var linstance = init_lib(filename);
+    var linstance = init_lib(modulename);
     destroy_lib linstance;
   }
 
@@ -342,7 +390,7 @@ if the symbol cannot be found.
     var library = Dynlink::get_library linst;
     var tf = Dynlink::get_thread_frame linst;
 //println$ "Trying to load symbol " + sym + " from library " + linst.filename;
-    var raw_sym = Dynlink::dlsym$ library, sym;
+    var raw_sym = Dynlink::find_sym$ library, sym;
     if isNULL raw_sym do
       eprintln$ "Unable to load symbol " + sym + " from library " + linst.filename;
       throw$ flx_link_failure_t(linst.filename,"dlsym","Cannot find symbol " + sym); 
@@ -463,8 +511,7 @@ to require the library name as a prefix. Stay tuned.
   ) : unit -> iftype =
   {
     var entrypoint = if entry-point == "" then dll-name else entry-point;
-    var dll_extn = #Config::config.EXT_SHLIB;
-    var linst = Dynlink::init_lib(dll-name + dll_extn);
+    var linst = Dynlink::init_lib(dll-name);
     var sresult = Dynlink::func1[int,string] (linst, dll-name+"_setup") (setup-str);
     C_hack::ignore(sresult);
     eprintln$ "Plugin Library " + dll-name + " set up " + str sresult;
@@ -478,8 +525,7 @@ to require the library name as a prefix. Stay tuned.
   ) : arg_t -> iftype =
   {
     var entrypoint = if entry-point == "" then dll-name else entry-point;
-    var dll_extn = #Config::config.EXT_SHLIB;
-    var linst = Dynlink::init_lib(dll-name + dll_extn);
+    var linst = Dynlink::init_lib(dll-name);
     var sresult = Dynlink::func1[int,string] (linst, dll-name+"_setup") (setup-str);
     C_hack::ignore(sresult);
     eprintln$ "Plugin Library " + dll-name + " set up " + str sresult;
@@ -493,8 +539,7 @@ to require the library name as a prefix. Stay tuned.
   ) : arg1_t * arg2_t -> iftype =
   {
     var entrypoint = if entry-point == "" then dll-name else entry-point;
-    var dll_extn = #Config::config.EXT_SHLIB;
-    var linst = Dynlink::init_lib(dll-name + dll_extn);
+    var linst = Dynlink::init_lib(dll-name);
     var sresult = Dynlink::func1[int,string] (linst, dll-name+"_setup") (setup-str);
     C_hack::ignore(sresult);
     eprintln$ "Plugin Library " + dll-name + " set up " + str sresult;
@@ -529,7 +574,7 @@ to require the library name as a prefix. Stay tuned.
   noinline proc run_proc (linstance:flx_instance, p: string, data: address)
   {
     var lib = get_library linstance;
-    var sym = dlsym(lib, p);
+    var sym = find_sym(lib, p);
     if isNULL(sym) do dlsym_err(lib,p); done;
     var f = bind_proc(linstance, sym, data);
     run f;

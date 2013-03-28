@@ -89,7 +89,8 @@ unsigned long flx_collector_t::impl_get_allocation_amt()const
 
 
 flx_collector_t::flx_collector_t(allocator_t *a, pthread::thread_control_t *tc)
-  :allocation_count(0)
+  :
+  allocation_count(0)
   ,root_count(0)
   ,allocation_amt(0)
   ,parity(false)
