@@ -111,7 +111,7 @@ file name and also attempts to load the library.
   proc modopen:flx_library * string * string = "$1->link($2, $3);";
 
   //$ Link static 
-  proc set_entry_points : flx_library * string * opt[address] * opt[address] =
+  proc set_entry_points : flx_library * string * address * address =
     "$1->link($2,(::flx::rtl::thread_frame_creator_t)$3, (::flx::rtl::start_t)$4, NULL);";
 
 @h3 Load a library from registry <code>regopen</code>
@@ -123,12 +123,24 @@ Given a registry, simulate dynamic linkage.
 
   proc regopen (registry:registry_t) (lib:flx_library, modulename:string)
   {
+     //println$ "regopen " + modulename;
      var mod = StrDict::get registry modulename;
      match mod with
-     | #None => modopen$ lib, modulename+#(Config::config).EXT_SHLIB, modulename;
+     | #None => 
+       //println$ "Not in registry, using dlopen for " + modulename;
+       modopen$ lib, modulename+#(Config::config).EXT_SHLIB, modulename;
      | Some dict =>
-       var tfc = dict.get (modulename+"_create_thread_frame");
-       var start_sym = dict.get (modulename+"_flx_start");
+       //println$ "Found module "+modulename+" in registry"; 
+       var tfc = dict.get_dflt (modulename+"_create_thread_frame", NULL);
+       //println$ "Thread frame creator = " + str tfc;
+       if tfc == NULL do
+         throw$ flx_link_failure_t(modulename,"regopen","Cannot find symbol " + modulename+"_create_thread_frame in module registry for " + modulename);
+       done
+       var start_sym = dict.get_dflt (modulename+"_flx_start",NULL);
+       if start_sym == NULL do
+         throw$ flx_link_failure_t(modulename,"regopen","Cannot find symbol " + modulename+"_flx_start in module registry for "+modulename);
+       done
+       //println$ "Start symbol = " + str start_sym;
        set_entry_points$ lib,modulename,tfc, start_sym;
      endmatch;
   }
@@ -140,6 +152,28 @@ Given a registry, simulate dynamic linkage.
 
   //$ Get the modulename of a DLL.
   fun modulename : flx_library -> string = "$1->modulename";
+
+  //$ Get the threadframe creator function
+  fun get_thread_frame_creator_as_address: flx_library -> address  = "(void*)$1->thread_frame_creator";
+
+  //$ Get start function
+  fun get_start_as_address: flx_library -> address  = "(void*)$1->start_sym";
+
+  proc add_symbol  (modulename:string, symbolname:string, adr:address)
+  {
+     //println$ "add symbol " + symbolname + " to module " + modulename+ " value " + str adr;
+     var registry = #Dynlink::get_module_registry;
+     var mod = #{
+       match get registry modulename with
+       | #None =>
+          var mod = #strdict[address];
+          add registry modulename mod;
+          return mod;
+       | Some dict => return dict;
+       endmatch;
+     };
+     mod.add symbolname adr;
+  }
 
 
 @h3 Unlink a dll : <code>dlclose</code>.
@@ -335,6 +369,10 @@ Finally the instance is returned.
     var linstance =  create_instance_handle();
     try
       regopen #get_module_registry (library,modulename);
+      // var tfc = Dynlink::get_thread_frame_creator_as_address library;
+      // var star = Dynlink::get_start_as_address library;
+      // println$ "regopen: creator " + str tfc;
+      // println$ "regopen: start " + str star;
     catch exn: flx_link_failure_t =>
       eprintln$ "Dynamic linkage error opening DLL " + modulename;
       throw exn;
