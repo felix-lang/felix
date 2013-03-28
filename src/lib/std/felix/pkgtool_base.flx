@@ -31,11 +31,13 @@ var cfg = strdict[string]();
 var OSX_LIB_DIRS = list("/Developer/SDKs/MacOSX10.5.sdk/usr/lib",
                         "/Developer/SDKs/MacOSX10.6.sdk/usr/lib",
                         "/Developer/SDKs/MacOSX10.7.sdk/usr/lib",
-                        "/opt/local/lib");
+                        "/opt/local/lib",
+                        "/usr/lib","/usr/local/lib");
 var OSX_INCLUDE_DIRS = list("/Developer/SDKs/MacOSX10.5.sdk/usr/include",
                         "/Developer/SDKs/MacOSX10.6.sdk/usr/include",
                         "/Developer/SDKs/MacOSX10.7.sdk/usr/include",
-                        "/opt/local/include");
+                        "/opt/local/include","/usr/include",
+                        "/usr/local/include");
 var INCLUDE_DIRS=list ("/usr/include","/usr/local/include");
 var LIB_DIRS = list ("/lib","/usr/lib","/usr/local/lib");
 var HOME = 
@@ -579,7 +581,7 @@ noinline  proc create_config(name:string,includes:list[string],libs:list[string]
         |Some path => " -I" + path
         |None => (
           general_fail("Unable to find " + inc + 
-            " Please locate and pass path to setup with the -L switch");
+            " Please locate and pass path to setup with the -I switch");
           "")
         endmatch) "";
       done
