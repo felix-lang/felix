@@ -388,6 +388,7 @@ grabbing_args: while loopctl.grab == 1 and loopctl.argno < System::argc do
      control.LINKER_OUTPUT_FILENAME = arg;
      debugln$ "Set linker output file=" + control.LINKER_OUTPUT_FILENAME;
      SET_LINKER_OUTPUT = false;
+     control.OUTPUT_FILENAME_SPECIFIED = 1;
 
   elif arg == "-o" do
     debugln "Set linker output name (next arg)";

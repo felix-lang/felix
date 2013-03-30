@@ -16,19 +16,6 @@ proc calpackages
   control.DRIVER_EXE = x.DRIVER_EXE;
   control.DRIVER_OBJS = x.DRIVER_OBJS;
   control.LINK_STRINGS = x.LINK_STRINGS;
-  if ECHO == 1 do
-    fprintln (cerr, "//RESOURCE FILE="+dvars.cpp_filebase+".resh");
-    fprintln (cerr, "//INCLUDE_DIRS="+ str (control.STANDARD_INCLUDE_DIRS+ str control.EXTRA_INCLUDE_DIRS));
-    fprintln (cerr, "//INCLUDE_FILES="+str (control.STANDARD_INCLUDE_FILES+ str control.EXTRA_INCLUDE_FILES));
-    if control.STATIC == 0 do
-      fprintln (cerr, "//DYNAMIC DRIVER EXE ="+str control.DRIVER_EXE);
-    else
-      fprintln (cerr, "//STATIC DRIVER OBJS ="+str control.DRIVER_OBJS);
-    done
-    fprintln (cerr, "//LINK_STRING="+str control.LINK_STRINGS);
-  done
-
-
 }
 
 proc showtime(msg:string, t0:double)
@@ -64,7 +51,7 @@ proc run_felix_compiler_if_required
       filebase = dvars.filebase,
       use_ext = dvars.use_ext,
       TIME = control.TIME,
-      debugln = debugln[string]
+      debugln = if ECHO==1 then echoln[string] else debugln[string] endif
     );
     showtime("Felix flxg   : "+dvars.cpp_filebase, t0);
     if result != 0 do 
@@ -99,7 +86,7 @@ proc cxx_compile_dynamic1(src:string, dst:string)
       INCLUDE_DIRS = dvars.INCLUDE_DIR + control.STANDARD_INCLUDE_DIRS+control.EXTRA_INCLUDE_DIRS, 
       MACROS = control.MACROS,
       SPEC_OBJ_FILENAME = config.SPEC_OBJ_FILENAME,
-      debugln = debugln[string]
+      debugln = if ECHO==1 then echoln[string] else debugln[string] endif
     ) 
     (src, dst)
   ;
@@ -138,7 +125,7 @@ proc cxx_link_dynamic
       EXT_SHARED_OBJ = config.EXT_SHARED_OBJ,
       SPEC_EXE_FILENAME = config.SPEC_EXE_FILENAME,
       LINK_STRINGS = control.LINK_STRINGS,
-      debugln = debugln[string]
+      debugln = if ECHO==1 then echoln[string] else debugln[string] endif
     )
     (
       control.cppos + (dvars.cpp_filebase+config.EXT_SHARED_OBJ),
@@ -168,7 +155,7 @@ proc cxx_compile_static1 (src: string, dst: string)
       INCLUDE_DIRS = dvars.INCLUDE_DIR+control.STANDARD_INCLUDE_DIRS+control.EXTRA_INCLUDE_DIRS, 
       MACROS = control.MACROS, 
       SPEC_OBJ_FILENAME = config.SPEC_OBJ_FILENAME,
-      debugln = debugln[string]
+      debugln = if ECHO==1 then echoln[string] else debugln[string] endif
     )
     (src, dst)
   ;
@@ -183,11 +170,16 @@ proc cxx_compile_static1 (src: string, dst: string)
 
 proc cxx_compile_static
 {
-  cxx_compile_static1
-  (
-    dvars.cpp_filebase+"_static_link_thunk.cpp",
-    dvars.cpp_filebase+"_static_link_thunk"+config.EXT_STATIC_OBJ
-  );
+  // we only need the thunk if we're linking OR -o switch was NOT specified
+  // i.e. skip compiling the thunk the output name was specified and 
+  // represents an object file (or library archive?)
+  if control.LINKIT == 1 or control.OUTPUT_FILENAME_SPECIFIED == 0 do
+    cxx_compile_static1
+    (
+      dvars.cpp_filebase+"_static_link_thunk.cpp",
+      dvars.cpp_filebase+"_static_link_thunk"+config.EXT_STATIC_OBJ
+    );
+  done
 
   for src in control.cpps do
     var dst = Filename::strip_extension src +config.EXT_STATIC_OBJ;
@@ -197,7 +189,11 @@ proc cxx_compile_static
     control.cppos += dst;
   done
  
-  cxx_compile_static1 (dvars.cpp_filebase+".cpp",dvars.cpp_filebase+config.EXT_STATIC_OBJ);
+  if control.LINKIT == 0 do
+    cxx_compile_static1 (dvars.cpp_filebase+".cpp",control.LINKER_OUTPUT_FILENAME);
+  else 
+    cxx_compile_static1 (dvars.cpp_filebase+".cpp",dvars.cpp_filebase+config.EXT_STATIC_OBJ);
+  done
 
 }
 
@@ -217,7 +213,7 @@ proc cxx_link_static
       CCFLAGS = ccflags,
       SPEC_EXE_FILENAME = config.SPEC_EXE_FILENAME,
       LINK_STRINGS = control.LINK_STRINGS,
-      debugln = debugln[string]
+      debugln = if ECHO==1 then echoln[string] else debugln[string] endif
     )  
     ( 
         control.DRIVER_OBJS +
@@ -249,11 +245,11 @@ proc cxx_static_library
       CCLINK_STATIC_LIB = cc, 
       CCFLAGS = ccflags,
       SPEC_LIB_FILENAME = config.SPEC_LIB_FILENAME,
-      debugln = debugln[string]
+      debugln = if ECHO==1 then echoln[string] else debugln[string] endif
     )  
     ( 
       control.cppos +
-      dvars.cpp_filebase+config.EXT_STATIC_OBJ
+      (dvars.cpp_filebase+config.EXT_STATIC_OBJ)
       ,
       control.LINKER_OUTPUT_FILENAME
     )

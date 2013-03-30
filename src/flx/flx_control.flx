@@ -105,6 +105,7 @@ fun dflt_control () =>
     var FLXG = "";
     var FLXRUN = Empty[string];
     var LINKER_OUTPUT_FILENAME = "";
+    var OUTPUT_FILENAME_SPECIFIED = 0;
     var USER_ARGS = Empty[string];
     var DLINK_STRINGS = Empty[string];
     var SLINK_STRINGS = Empty[string];

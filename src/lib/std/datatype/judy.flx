@@ -26,7 +26,7 @@ class Judy
 
   private body mkjudy =
     """
-      void **_mkjudy(FLX_APAR_DECL ::flx::gc::generic::gc_shape_t const *jptr_map){
+      static void **_mkjudy(FLX_APAR_DECL ::flx::gc::generic::gc_shape_t const *jptr_map){
         typedef void *voidp; // syntax
         void **m = new (*PTF gcp, *jptr_map, false) voidp; 
         *m=0;
@@ -41,7 +41,7 @@ class Judy
   // so that it can be copied about
   private body j1free =
     """
-      void _j1free(::flx::gc::generic::collector_t*,void *p) {
+      static void _j1free(::flx::gc::generic::collector_t*,void *p) {
         //printf("Free J1Array %p\\n",p);
         JError_t je;
         Judy1FreeArray((void**)p, &je); 
@@ -120,7 +120,7 @@ class Judy
 ///////////////////////////////////////
   private body jLfree =
     """
-      void _jLfree(::flx::gc::generic::collector_t*,void *p) {
+      static void _jLfree(::flx::gc::generic::collector_t*,void *p) {
         //printf("Free JLArray %p\\n",p);
         JError_t je;
         JudyLFreeArray((void**)p, &je); 
@@ -197,7 +197,7 @@ class Judy
   body JudySL_maxlen = "#define JUDY_SL_MAXLEN 10000";
   body jSLfree =
     """
-      void _jSLfree(::flx::gc::generic::collector_t*,void *p) {
+      static void _jSLfree(::flx::gc::generic::collector_t*,void *p) {
         //printf("Free JSLArray %p\\n",p);
         JError_t je;
         JudySLFreeArray((void**)p, &je); 

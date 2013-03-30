@@ -30,6 +30,11 @@ proc debugln[T with Str[T]] (x:T) {
   dbug ?? fprintln (cerr, "[flx] " + str x);
 }
 
+proc echoln[T with Str[T]] (x:T) {
+  ECHO == 1 ?? fprintln (cerr, "[flx] " + str x);
+}
+
+
 var profile = #dflt_profile;
 
 var control = #dflt_control;

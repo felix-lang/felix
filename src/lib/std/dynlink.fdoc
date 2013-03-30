@@ -289,7 +289,7 @@ to prevent the garbage collector deleting it prematurely.
     "_create($1,$2,PTF gcp,$1->main_sym,PTF argc,PTF argv,PTF flx_stdin, PTF flx_stdout, PTF flx_stderr);"
     requires property "needs_gc",
     body """
-    void _create
+    static void _create
     (
       flx::rtl::flx_dynlink_t *library,
       flx::rtl::flx_libinit_t *instance,

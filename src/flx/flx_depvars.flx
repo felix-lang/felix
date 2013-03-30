@@ -1,9 +1,5 @@
 gen cal_depvars() = 
 {
-  if ECHO == 1 do
-    fprintln (cerr, "#FLX_INSTALL_DIR="+config.FLX_INSTALL_DIR);
-  done
-
   debugln$ "Felix package manager config directory is "+control.CONFIG_DIR;
   // make a list of any *.cpp files (or other g++ options ..)
 
@@ -61,12 +57,20 @@ gen cal_depvars() =
   done
 
   if control.LINKER_OUTPUT_FILENAME == "" do
-    if control.STATICLIB == 1 do
-      control.LINKER_OUTPUT_FILENAME = filebase+config.EXT_LIB;
-    elif control.STATIC == 0 do // dynamic
-      control.LINKER_OUTPUT_FILENAME = filebase+config.EXT_SHLIB;
-    else
-      control.LINKER_OUTPUT_FILENAME = filebase+config.EXT_EXE;
+    if control.LINKIT == 1 do
+      if control.STATICLIB == 1 do
+        control.LINKER_OUTPUT_FILENAME = filebase+config.EXT_LIB;
+      elif control.STATIC == 0 do // dynamic
+        control.LINKER_OUTPUT_FILENAME = filebase+config.EXT_SHLIB;
+      else
+        control.LINKER_OUTPUT_FILENAME = filebase+config.EXT_EXE;
+      done
+    else // No link, name specifies object file only.
+      if control.STATIC == 0 do
+        control.LINKER_OUTPUT_FILENAME = filebase+config.EXT_STATIC_OBJ;
+      else
+        control.LINKER_OUTPUT_FILENAME = filebase+config.EXT_SHARED_OBJ;
+      done
     done
   done
   control.LINKER_OUTPUT_FILENAME =  Directory::mk_absolute_filename control.LINKER_OUTPUT_FILENAME; 

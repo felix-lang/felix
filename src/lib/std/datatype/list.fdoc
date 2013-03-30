@@ -48,7 +48,7 @@ Another helper routine.
 
   body _iprev_[T,PLT]=
     """
-    void _rev(?2 plt, ?1*) // second arg is a dummy
+    static void _rev(?2 plt, ?1*) // second arg is a dummy
     { // in place reversal
       struct node_t { ?1 elt; void *tail; };
       void *nutail = 0; 

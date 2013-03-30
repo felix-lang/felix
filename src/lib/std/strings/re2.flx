@@ -16,8 +16,9 @@ open class Re2 {
   // hackery because ::re2::RE2 isn't copyable, so we have to use a pointer
   // but we need the shape of RE2 to create on the heap
   private body RE2_serial = """
-  ::std::string RE2_encoder(void *p) { return ((::re2::RE2*)p)->pattern(); }
-  size_t RE2_decoder (void *p, char *s, size_t i) { 
+  static ::std::string RE2_encoder(void *p) { return ((::re2::RE2*)p)->pattern(); }
+
+  static size_t RE2_decoder (void *p, char *s, size_t i) { 
     char tmp[sizeof(::std::string)];
     i = ::flx::gc::generic::string_decoder (&tmp,s,i);
     new(p) ::re2::RE2 (*(::std::string*)(&tmp));
