@@ -363,8 +363,8 @@ Then it runs the startup initialisation procedure.
 Finally the instance is returned.
 @felix
 
-  //$ Create, link, and initialise a  DLL instance from a filename.
-  noinline fun init_lib(modulename:string):flx_instance = {
+  //$ Create, link, and prepare a DLL instance from a modulename.
+  noinline gen prepare_lib(modulename:string):flx_instance = {
     var library = create_library_handle();
     var linstance =  create_instance_handle();
     try
@@ -378,10 +378,17 @@ Finally the instance is returned.
       throw exn;
     endtry
     create (library,linstance);
+    return linstance;
+  }
+
+  //$ Create, link, and initialise a  DLL instance from a modulename.
+  noinline gen init_lib(modulename:string):flx_instance = {
+    var linstance = prepare_lib(modulename);
     var init = get_init linstance;
     Fibres::run init;
     return linstance;
   }
+
 
 @h3 Convenience to run a program <code>run_lib</code>
 This function does the same as {init_lib} except
