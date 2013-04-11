@@ -126,7 +126,7 @@ using the supplied function. The scan is left to right.
 
 @h4 Callback based right fold {fold_right}.
 This HOF folds the values in an array into an accumulator
-using the supplied function. The scan is rght to left.
+using the supplied function. The scan is right to left.
 @felix
 //$ Traditional right fold.
   virtual fun fold_right[u] (_f:v->u->u) (x:t) (init:u): u = {

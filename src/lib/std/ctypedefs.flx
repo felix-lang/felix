@@ -28,6 +28,7 @@ _gc_pointer type gcptr[t]= "?1*";
 
 pod type ptrdiff = "ptrdiff_t" requires C89_headers::stddef_h;
 pod type size = "size_t" requires C89_headers::stddef_h;
+pod type ssize = "ssize_t" requires C89_headers::stddef_h;
 
 pod type intmax = "intmax_t" requires C99_headers::stdint_h;
 pod type uintmax = "uintmax_t" requires C99_headers::stdint_h;
@@ -72,7 +73,7 @@ typedef exact_uints = typesetof (uint8,uint16,uint32,uint64);
 
 //$ Weirdo signed integers types corresponding to
 //$ typedefs in C.
-typedef weird_sints = typesetof (ptrdiff, intmax, intptr);
+typedef weird_sints = typesetof (ptrdiff, ssize, intmax, intptr);
 
 //$ Weirdo unsigned integers types corresponding to
 //$ typedefs in C.

@@ -21,10 +21,11 @@ namespace flx { namespace rtl { namespace ioutil {
     {
       string x = "";
       char buffer[MYBUFSIZ];
-more:
-      int n = fread(buffer,1,MYBUFSIZ,fi);
-      if(n>0) x = x + string(buffer,n);
-      if(n == MYBUFSIZ)goto more;
+      while (!feof(fi)) {
+        int n = fread(buffer,1,MYBUFSIZ,fi);
+        if(n>0) x = x + string(buffer,n);
+        else break;
+      }
       fclose(fi);
       return x;
     }
@@ -39,10 +40,11 @@ more:
     {
       string x = "";
       char buffer[MYBUFSIZ];
-more:
-      int n = fread(buffer,1,MYBUFSIZ,fi);
-      if(n>0) x = x + string(buffer,n);
-      if (n == MYBUFSIZ)goto more;
+      while (!feof(fi)) {
+        int n = fread(buffer,1,MYBUFSIZ,fi);
+        if(n>0) x = x + string(buffer,n);
+        else break;
+      }
       return x;
     }
     else return "";

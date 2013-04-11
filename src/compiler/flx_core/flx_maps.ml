@@ -17,7 +17,7 @@ let map_type f (t:typecode_t):typecode_t = match t with
   | TYP_variant ts -> TYP_variant (List.map (fun (s,t) -> s,f t) ts)
   | TYP_isin (a,b) -> TYP_isin (f a, f b)
 
-  (* we have to do this, so that a large unitsume
+  (* we have to do this, so that a large unitsum
      can be specified without overflowing the compiler
      storage
   *)
