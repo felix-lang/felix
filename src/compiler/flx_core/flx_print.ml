@@ -192,12 +192,12 @@ and string_of_expr (e:expr_t) =
 
   | EXPR_record (_,ts) ->
       "struct {" ^
-      catmap "; " (fun (s,e) -> string_of_id s ^ "=" ^ sme e ^ ";") ts ^
+      catmap " " (fun (s,e) -> string_of_id s ^ "=" ^ sme e ^ ";") ts ^
       "}"
 
   | EXPR_record_type (_,ts) ->
       "struct {" ^
-      catmap "; "
+      catmap " "
         (fun (s,t) -> string_of_id s ^ ":" ^ string_of_typecode t ^ ";")
         ts ^
       "}"

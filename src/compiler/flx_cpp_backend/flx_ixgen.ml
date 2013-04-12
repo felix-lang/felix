@@ -6,6 +6,7 @@ let sbe b e = Flx_print.string_of_bound_expression b e
 let sbt b t = Flx_print.string_of_btypecode (Some b) t
 let catmap sep f ls = String.concat sep (List.map f ls)
 let si i = string_of_int i
+let siu i = if i < 0 then string_of_int i else string_of_int i ^ "u"
 (* Note that this computation must be driven by the array index type not
   the type of the index.
 *)
@@ -218,7 +219,7 @@ let get_power_table bsym_table power_table size count =
 let rec render_index bsym_table ge' array_sum_offset_table seq idx = 
   let ri x = render_index bsym_table ge' array_sum_offset_table seq x in
   match idx with
-  | `Int n -> ce_atom (si n)
+  | `Int n -> ce_atom (siu n)
   | `Mul (a,b) -> ce_infix "*" (ri a) (ri b)
   | `Add (a,b) -> ce_infix "+" (ri a) (ri b)
   | `Sub (a,b) -> ce_infix "-" (ri a) (ri b)
@@ -246,12 +247,12 @@ let rec render_index bsym_table ge' array_sum_offset_table seq idx =
          begin match hd with
          | BTYP_sum ls ->
            let m = List.length ls in
-           let cond = ce_infix "==" (ce_atom (si i)) (ri (modu e (`Int m))) in
+           let cond = ce_infix "==" (ce_atom (siu i)) (ri (modu e (`Int m))) in
            let arg = ri (case_offset bsym_table ts (div e (`Int m))) in
            ce_cond cond arg (aux (i+1) tl)
          | _ ->
            let m = Flx_btype.ncases_of_sum bsym_table hd in
-           let cond = ce_infix "==" (ce_atom (si i)) (ri (modu e (`Int m))) in
+           let cond = ce_infix "==" (ce_atom (siu i)) (ri (modu e (`Int m))) in
            let arg = ri (div e (`Int m)) in
            ce_cond cond arg (aux (i+1) tl)
          end
@@ -275,7 +276,7 @@ print_endline "Assign to packed tuple";
 print_endline ("Type of variable is " ^ sbt bsym_table t');
 print_endline ("proj = " ^ si j^ ", Size of component = " ^ si elt ^ ", size of lower bit = " ^ si lo);
 *)
-    let ci i = ce_atom (si i) in
+    let ci i = ce_atom (siu i) in
     let celt = ci elt in
     let clo = ci lo in
     let clomelt = ci (lo * elt) in

@@ -3796,7 +3796,7 @@ assert false; (* shouldn't happen now! *)
           end
       end
 
-    | FunctionEntry [{base_sym=index; spec_vs=spec_vs; sub_ts=sub_ts}]
+    | FunctionEntry [{base_sym=index; spec_vs=spec_vs; sub_ts=sub_ts} as f]
     ->
       (* should be a client error not an assertion *)
       if List.length spec_vs <> List.length ts then begin
@@ -3815,7 +3815,9 @@ assert false; (* shouldn't happen now! *)
         print_endline ("spec_ts=" ^ catmap "," (sbt bsym_table) sub_ts);
         print_endline ("input_ts=" ^ catmap "," (sbt bsym_table) ts);
         *)
-        clierr sr "[lookup,AST_name] ts/vs mismatch"
+        clierr sr ( "[lookup,AST_name] ts/vs mismatch binding " ^ string_of_expr e ^ "\nName " ^ name ^
+                    " is bound to " ^
+                    (full_string_of_entry_kind state.sym_table bsym_table f) )
       end;
 
       let ts = List.map (tsubst spec_vs ts) sub_ts in

@@ -41,7 +41,7 @@ making additions to the output bound tables. References
 to the variables are modified. Note the parent is the
 caller now.
 
-(3) Paremeters are replaced like variables, initialised
+(3) Parameters are replaced like variables, initialised
 by the arguments.
 
 (4) Any type variables instantiated by the call must
