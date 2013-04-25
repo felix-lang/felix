@@ -137,12 +137,13 @@ gen validate_cache  (spec: cache_validation_spec_t) : int * double =
   var flxg_stamp_time = match flxg_stamp_data.atof with | 0.0 => #past_time | ?x => x;
 
   spec.debugln$ "Flxg_stamp_data : " + strfiletime(flxg_stamp_time);
-  var grammar_time = gramtime spec.debugln (Filename::join (spec.FLX_INSTALL_DIR,"lib"), spec.STDGRAMMAR);
+  var grammar_time = gramtime spec.debugln (Filename::join (spec.FLX_INSTALL_DIR,"share","lib"), spec.STDGRAMMAR);
   spec.debugln$ "Grammar text time=" + strfiletime (grammar_time);
   var automaton_name = 
     cache_join(spec.CACHE_DIR, 
     Directory::mk_absolute_filename (Filename::join (list( 
       spec.FLX_INSTALL_DIR,
+      "host",
       "lib",
       "grammar",
       "syntax.automaton"

@@ -57,7 +57,7 @@ def build_runtime(host_phase, target_phase):
 
     # Copy the header into the runtime library.
     buildsystem.copy_to(target_phase.ctx,
-        target_phase.ctx.buildroot / 'lib/rtl',
+        target_phase.ctx.buildroot / 'share/lib/rtl',
         [path / 'Judy.h'])
 
     types = config_call('fbuild.config.c.c99.types',
@@ -71,7 +71,7 @@ def build_runtime(host_phase, target_phase):
     if 'windows' in target_phase.platform:
         macros.append('BUILD_JUDY') #Apply this to all source files.
 
-    srcs = [copy(target_phase.ctx, p, target_phase.ctx.buildroot / p) for p in [
+    srcs = [copy(target_phase.ctx, p, target_phase.ctx.buildroot / 'share'/p) for p in [
         path / 'JudyCommon/JudyMalloc.c',
         path / 'JudySL/JudySL.c',
         path / 'JudyHS/JudyHS.c'] +
@@ -82,19 +82,19 @@ def build_runtime(host_phase, target_phase):
     for p in ((path / 'JudyCommon' / '*.c').glob() + 
               (path / 'Judy*' / '*.h').glob()): 
         if p not in ('JudyMalloc.c', 'JudyPrintJP.c'):
-            copy(target_phase.ctx, p, target_phase.ctx.buildroot / p)
+            copy(target_phase.ctx, p, target_phase.ctx.buildroot / 'share'/ p)
 
     includes = [path, 
                 path / 'JudyCommon', 
                 path / 'JudyL', 
                 path / 'Judy1']
     
-    static = buildsystem.build_c_static_lib(target_phase, 'lib/rtl/judy',
+    static = buildsystem.build_c_static_lib(target_phase, 'host/lib/rtl/judy',
         srcs=srcs,
         macros=macros,
         includes=includes)
 
-    shared = buildsystem.build_c_shared_lib(target_phase, 'lib/rtl/judy',
+    shared = buildsystem.build_c_shared_lib(target_phase, 'host/lib/rtl/judy',
         srcs=srcs,
         macros=macros,
         includes=includes)

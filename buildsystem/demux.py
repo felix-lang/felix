@@ -12,7 +12,7 @@ def build_runtime(phase):
     path = Path('src/demux')
 
     buildsystem.copy_hpps_to_rtl(phase.ctx,
-        #phase.ctx.buildroot / 'config/target/flx_demux_config.hpp', # portable
+        #phase.ctx.buildroot / 'lib/rtl/flx_demux_config.hpp', # portable
 
         # portable
         path / 'flx_demux.hpp',
@@ -49,10 +49,10 @@ def build_runtime(phase):
         path / 'evtport/demux_evtport_demuxer.hpp',
     )
 
-    dst = 'lib/rtl/demux'
+    dst = 'host/lib/rtl/demux'
     srcs = [path / '*.cpp']
     includes = [
-        phase.ctx.buildroot / 'config/target',
+        phase.ctx.buildroot / 'host/lib/rtl',
         Path('src', 'pthread'),
         Path('src', 'gc'),
         path,

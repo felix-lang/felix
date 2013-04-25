@@ -14,18 +14,19 @@ def build_runtime(host_phase, target_phase):
     )
 
 
-    buildsystem.copy_to(target_phase.ctx, target_phase.ctx.buildroot / "lib/rtl", [
+    buildsystem.copy_to(target_phase.ctx, target_phase.ctx.buildroot / "share/lib/rtl", [
         path / 'sqlite3.h',
         path / 'sqlite3ext.h',
         ]
      )
 
-    dst = 'lib/rtl/flx_sqlite3'
+    dst = 'host/lib/rtl/flx_sqlite3'
     srcs = [
         path / 'sqlite3.c',
      ]
     includes = [
-      target_phase.ctx.buildroot / 'config/target',
+      target_phase.ctx.buildroot / 'host/lib/rtl',
+      target_phase.ctx.buildroot / 'share/lib/rtl',
       ]
     macros = ['BUILD_SQLITE3']
     cflags = ([], ['-Wno-sign-compare'])[not 'win32' in target_phase.platform]

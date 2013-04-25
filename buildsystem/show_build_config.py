@@ -36,15 +36,15 @@ def dodict(f,nm,d,n):
 
 def build(ctx):
     sys.path = sys.path + [ctx.buildroot] # hack ..
-    import config
+    import pyconfig
     sys.path = sys.path[:-1] # chop off the hack
     try: 
-      os.mkdir("lib/plat")
+      os.mkdir("host/lib/plat")
     except:
       pass
-    dst = ctx.buildroot / "lib/plat/build_config.flx"
+    dst = ctx.buildroot / "host/lib/plat/build_config.flx"
     f = open(dst,"w")
-    dodict(f,"build_config",config.__dict__,0)
+    dodict(f,"build_config",pyconfig.__dict__,0)
     f.close()
 
 

@@ -237,9 +237,7 @@ void flx_libinit_t::create
   lib = lib_a;
   gcp = gcp_a;
   //fprintf(stderr, "Creating thread frame\n");
-  thread_frame = lib->thread_frame_creator(
-    gcp
-  );
+  thread_frame = lib->thread_frame_creator( gcp);
   //fprintf(stderr, "thread frame CREATED\n");
   //fprintf(stderr,"Incrementing refcnt\n");
   ++lib->refcnt;

@@ -11,7 +11,7 @@ import buildsystem
 def build_runtime(phase):
     path = Path('src/re2/re2')
 
-    buildsystem.copy_to(phase.ctx, phase.ctx.buildroot / "lib/rtl/re2", [
+    buildsystem.copy_to(phase.ctx, phase.ctx.buildroot / "share/lib/rtl/re2", [
         path / 're2/re2.h',
         path / 're2/set.h',
         path / 're2/stringpiece.h',
@@ -19,7 +19,7 @@ def build_runtime(phase):
         ]
      )
 
-    dst = 'lib/rtl/flx_re2'
+    dst = 'host/lib/rtl/flx_re2'
     srcs = [
         path / 're2/bitstate.cc',
         path / 're2/compile.cc',
@@ -53,7 +53,7 @@ def build_runtime(phase):
         path / 'util/valgrind.cc',
      ]
     includes = [
-      phase.ctx.buildroot / 'config/target',
+      phase.ctx.buildroot / 'host/lib/rtl',
       path ]
     macros = ['BUILD_RE2'] + (['WIN32', 'NOMINMAX'],[])[not 'win32' in phase.platform]
     cflags = ([], ['-Wno-sign-compare'])[not 'win32' in phase.platform]

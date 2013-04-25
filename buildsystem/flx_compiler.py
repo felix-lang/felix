@@ -192,7 +192,7 @@ def build_flx_drivers(ctx, phase):
 
     external_libs = ['nums', 'unix', 'str']
 
-    flxg = phase.ocaml.build_exe('bin/flxg',
+    flxg = phase.ocaml.build_exe('host/bin/flxg',
         Path.glob('src/compiler/flxg/*.ml{,i}'),
         libs=libs,
         external_libs=external_libs)

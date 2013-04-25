@@ -14,7 +14,7 @@ def build_runtime(phase):
         path / 'flx_sundown.hpp',
     )
 
-    dst = 'lib/rtl/flx_sundown'
+    dst = 'host/lib/rtl/flx_sundown'
     suffix = '.so'
     srcs = [
       'src/sundown/autolink.cpp',
@@ -25,7 +25,7 @@ def build_runtime(phase):
       'src/sundown/houdini_href_e.cpp',
       'src/sundown/houdini_html_e.cpp',
       'src/sundown/flx_sundown.cpp']
-    includes = [path,phase.ctx.buildroot / 'config/target']
+    includes = [path,phase.ctx.buildroot / 'host/lib/rtl']
     macros = ['BUILD_SUNDOWN']
 
     return Record(

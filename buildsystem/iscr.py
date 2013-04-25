@@ -85,12 +85,12 @@ def config_iscr_config(ctx, build, host, target) -> fbuild.db.DST:
     with open(ctx.buildroot/'__init__.py', 'w'):
         pass
 
-    dst = ctx.buildroot/'config/__init__.py'
+    dst = ctx.buildroot/'pyconfig/__init__.py'
 
     # JS temporary hack, failed because config dir didn't exist
     # at the time of trying to write the __init__.py file
     try:
-      os.mkdir(ctx.buildroot/'config')
+      os.mkdir(ctx.buildroot/'pyconfig')
     except:
       pass
     with open(dst, 'w') as f:

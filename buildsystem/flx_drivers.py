@@ -9,13 +9,13 @@ import buildsystem
 def build(host_phase, target_phase):
     path = Path('src/flx_drivers')
 
-    buildsystem.copy_to(target_phase.ctx, target_phase.ctx.buildroot / "lib/rtl/", [
+    buildsystem.copy_to(target_phase.ctx, target_phase.ctx.buildroot / "share/lib/rtl/", [
         path / 'flx_run.hpp',
         ]
      )
 
     run_includes = [
-        target_phase.ctx.buildroot / 'config/target',
+        target_phase.ctx.buildroot / 'host/lib/rtl',
         'src/exceptions',
         'src/gc',
         'src/judy/src',
@@ -25,48 +25,48 @@ def build(host_phase, target_phase):
     ]
 
     arun_includes = run_includes + [
-        target_phase.ctx.buildroot / 'lib/rtl',
+        target_phase.ctx.buildroot / 'host/lib/rtl',
         'src/demux',
         'src/faio',
     ] + ([], ['src/demux/win'])['win32' in target_phase.platform]
 
     flx_run_static_obj = target_phase.cxx.static.compile(
-        dst='lib/rtl/flx_run_lib',
+        dst='host/lib/rtl/flx_run_lib',
         src=path / 'flx_run_lib.cpp',
         includes=run_includes,
         macros=['FLX_STATIC_LINK'],
     )
 
     flx_run_static_main= target_phase.cxx.static.compile(
-        dst='lib/rtl/flx_run_main',
+        dst='host/lib/rtl/flx_run_main',
         src=path / 'flx_run_main.cxx',
         includes=run_includes,
         macros=['FLX_STATIC_LINK'],
     )
 
     flx_run_exe = target_phase.cxx.shared.build_exe(
-        dst='bin/flx_run',
+        dst='host/bin/flx_run',
         srcs=[path / 'flx_run_main.cxx', path / 'flx_run_lib.cpp'],
         includes=run_includes,
         libs=[call('buildsystem.flx_rtl.build_runtime', host_phase, target_phase).shared],
     )
 
     flx_arun_static_obj = target_phase.cxx.static.compile(
-        dst='lib/rtl/flx_arun_lib',
+        dst='host/lib/rtl/flx_arun_lib',
         src=path / 'flx_arun_lib.cpp',
         includes=arun_includes,
         macros=['FLX_STATIC_LINK'],
     )
 
     flx_arun_static_main= target_phase.cxx.static.compile(
-        dst='lib/rtl/flx_arun_main',
+        dst='host/lib/rtl/flx_arun_main',
         src=path / 'flx_arun_main.cxx',
         includes=arun_includes,
         macros=['FLX_STATIC_LINK'],
     )
 
     flx_arun_exe = target_phase.cxx.shared.build_exe(
-        dst='bin/flx_arun',
+        dst='host/bin/flx_arun',
         srcs=[path / 'flx_arun_main.cxx', path/ 'flx_arun_lib.cpp'],
         includes=arun_includes,
         libs=[

@@ -148,12 +148,13 @@ done
 // -------------------------------------------------------------------------
 // Now, use the INSTALL_ROOT to augment
 // the search paths.
-C_PATH+= INSTALL_ROOT+"/lib/rtl";
-C_PATH+= INSTALL_ROOT+"/config/target";
-FLX_PATH+=INSTALL_ROOT+"/lib";
+C_PATH+= INSTALL_ROOT+"/host/lib/rtl";
+C_PATH+= INSTALL_ROOT+"/share/lib/rtl";
+FLX_PATH+=INSTALL_ROOT+"/share/lib";
+FLX_PATH+=INSTALL_ROOT+"/host/lib";
 FDOC_PATH+=INSTALL_ROOT+"/doc";
-FLX_PKGCONFIG_PATH+=INSTALL_ROOT+"/config";
-FLX_WEBSERVER_PLUGIN_PATH+=INSTALL_ROOT+"/tools";
+FLX_PKGCONFIG_PATH+=INSTALL_ROOT+"/host/config";
+FLX_WEBSERVER_PLUGIN_PATH+=INSTALL_ROOT+"/lib";
 
 // -------------------------------------------------------------------------
 // Print the configuation.

@@ -58,8 +58,9 @@ class Filename_class[os] {
      else directories d + d
   ;
 
-  //$ Join 3 strings into a pathname.
+  //$ Join 3 and 4 strings into a pathname.
   fun join(a:string, b:string, c:string)=> join(join(a,b),c);
+  fun join(a:string, b:string, c:string,d:string)=> join(join(join(a,b),c),d);
 
   //$ Join 2 strings into a pathname (curried form).
   fun join(x:string) (y:string) => join(x,y);

@@ -16,17 +16,21 @@ def build(phase, felix):
       ]
 
     for base in exes:
-      exe = felix.compile(phase.ctx.buildroot/('pkgtool/'+base+'.flx'), 
+      exe = felix.compile(phase.ctx.buildroot/('share/pkgtool/'+base+'.flx'), 
         static=True,
-        includes=[phase.ctx.buildroot/'lib'])
-      fbuild.builders.file.copy(phase.ctx, exe, 'bin')
-
+        #includes=[phase.ctx.buildroot/'share/lib']
+        )
+      fbuild.builders.file.copy(phase.ctx, exe, 'host/bin')
+      os.unlink(exe)
+        
     for base in optional_exes:
       try:
-          exe = felix.compile(phase.ctx.buildroot/('pkgtool/'+base+'.flx'), 
+          exe = felix.compile(phase.ctx.buildroot/('share/pkgtool/'+base+'.flx'), 
             static=True,
-            includes=[phase.ctx.buildroot/'lib'])
-          fbuild.builders.file.copy(phase.ctx, exe, 'bin')
+            #includes=[phase.ctx.buildroot/'share/lib']
+            )
+          fbuild.builders.file.copy(phase.ctx, exe, 'host/bin')
+          os.unlink(exe)
       except:
           print("Warning : "+base+" not built. Continuing..." )
 

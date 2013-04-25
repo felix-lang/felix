@@ -7,7 +7,7 @@ from fbuild.builders.file import copy
 # ------------------------------------------------------------------------------
 
 def build(phase, felix):
-
+    print("BUILDING TOOLS")
     
     # The wiki is killing the compiler, inlining procedure
     # cannot cope. Possible inline explosion.
@@ -20,9 +20,6 @@ def build(phase, felix):
     #    fbuild.builders.file.copy(phase.ctx, exe, 'bin')
     #except:
     #    print("Warning : wiki not built. Continuing..." )
-
-    for f in Path.glob('src/lib/plugins/*'):
-      copy(ctx=phase.ctx, src=f, dst=phase.ctx.buildroot / f[4:]) 
 
     exes = [
       "flx_grep",
@@ -46,46 +43,25 @@ def build(phase, felix):
       ]
 
     for base in exes:
-      exe = felix.compile(phase.ctx.buildroot/('tools/'+base+'.flx'), 
+      exe = felix.compile(phase.ctx.buildroot/('share/tools/'+base+'.flx'), 
         static=True,
-        includes=[phase.ctx.buildroot/'lib'/'plugins'])
-      fbuild.builders.file.copy(phase.ctx, exe, 'bin')
+        includes=[
+          phase.ctx.buildroot/'host'/'lib'/'rtl',
+          phase.ctx.buildroot/'share'/'lib'/'rtl',
+          ])
+      fbuild.builders.file.copy(phase.ctx, exe, 'host/bin')
+      #os.unlink(exe)
 
     for base in optional_exes:
       try:
           exe = felix.compile(phase.ctx.buildroot/('tools/'+base+'.flx'), 
             static=True,
-            includes=[phase.ctx.buildroot/'lib'/'plugins'])
-          fbuild.builders.file.copy(phase.ctx, exe, 'bin')
+            includes=[
+              phase.ctx.buildroot/'host'/'lib'/'rtl',
+              phase.ctx.buildroot/'share'/'lib'/'rtl',
+              ])
+          fbuild.builders.file.copy(phase.ctx, exe, 'host/bin')
       except:
           print("Warning : "+base+" not built. Continuing..." )
-
-
-    try:
-      os.mkdir(phase.ctx.buildroot/'shlib')
-    except:
-      pass
-
-    plugins = [
-      "ocaml2html",
-      "py2html",
-      "fdoc2html",
-      "flx2html",
-      "cpp2html",
-      "fpc2html",
-      "fdoc_slideshow",
-      "fdoc_paragraph",
-      "fdoc_heading",
-      "fdoc_fileseq",
-      "fdoc_scanner",
-      "fdoc_button",
-      "toolchain_clang_osx",
-      "toolchain_clang_linux",
-      "toolchain_gcc_osx",
-      "toolchain_gcc_linux",
-      ]
-    for base in plugins:
-      shlib = felix.compile(phase.ctx.buildroot/('lib/plugins/'+base+'.flx'))
-      fbuild.builders.file.copy(phase.ctx, shlib, 'shlib')
 
 

@@ -16,7 +16,7 @@ def build_runtime(host_phase, target_phase):
 
     dst = target_phase.ctx.buildroot / 'lib/rtl/flx_glob'
     srcs = []
-    includes = [target_phase.ctx.buildroot / 'config/target']
+    includes = [target_phase.ctx.buildroot / 'lib/rtl']
     macros = ['BUILD_GLOB']
     libs = [call('buildsystem.flx_gc.build_runtime', host_phase, target_phase)]
 

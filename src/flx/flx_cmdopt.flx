@@ -1,3 +1,6 @@
+// NOTE: below the string "host" is used to help find files eg flxg.
+// This is a temporary hack to get Felix working after filesystem reorgnisation.
+
 proc print_help() {
   debugln "Display top level manual page using 'man' program";
   println "Usage: flx [options] filename[.flx] [args ..]";
@@ -492,18 +495,21 @@ proc processing_stage1
   // off optimisations previously introduced (order matters)
   control.CCFLAGS = control.CCFLAGS + control.EXTRA_CCFLAGS;
 
-  // Establish name of Felix compiler.
+  // Establish name of Felix compiler and run time library.
+  // The one in "host" is good enough for flxg, however the
+  // library location MUST be changed for cross compilation.
+  // FIXME!
   if config.HAVE_WIN32 do
-    control.FLXG=Filename::join(config.FLX_INSTALL_DIR, 'bin', 'flxg.exe');
-    control.FLXRUN=list$ "set", "PATH="+(Directory::mk_absolute_filename config.FLX_INSTALL_DIR)+"\\lib\\rtl;"+"%PATH%&&";
+    control.FLXG=Filename::join(config.FLX_INSTALL_DIR, 'host', 'bin', 'flxg.exe');
+    control.FLXRUN=list$ "set", "PATH="+(Directory::mk_absolute_filename config.FLX_INSTALL_DIR)+"\\host\\lib\\rtl;"+"%PATH%&&";
     //println$ "FLXRUN=" + FLXRUN;
   else
-    control.FLXG=config.FLX_INSTALL_DIR+"/bin/flxg";
+    control.FLXG=config.FLX_INSTALL_DIR+"/host/bin/flxg";
     // the mac uses DYLD_LIBRARY_PATH instead of LD_LIBRARY_PATH
     if config.HAVE_MACOSX do
-      control.FLXRUN=list$ "env","DYLD_LIBRARY_PATH="+config.FLX_INSTALL_DIR+"/lib/rtl:$DYLD_LIBRARY_PATH";
+      control.FLXRUN=list$ "env","DYLD_LIBRARY_PATH="+config.FLX_INSTALL_DIR+"/host/lib/rtl:$DYLD_LIBRARY_PATH";
     else
-      control.FLXRUN=list$ "env", "LD_LIBRARY_PATH="+config.FLX_INSTALL_DIR+"/lib/rtl:$LD_LIBRARY_PATH";
+      control.FLXRUN=list$ "env", "LD_LIBRARY_PATH="+config.FLX_INSTALL_DIR+"/host/lib/rtl:$LD_LIBRARY_PATH";
     done
   done
 
@@ -513,7 +519,7 @@ proc processing_stage1
   control.SLINK_STRINGS = Shell::parse s;
 
   // Get location of flx_pkgconfig's config directory.
-  control.CONFIG_DIR = Filename::join(config.FLX_INSTALL_DIR,'config');
+  control.CONFIG_DIR = Filename::join(config.FLX_INSTALL_DIR,'host','config');
 
   // this hack forces a directory name, because executing "prog"
   // can fail if the currect directory is not on the PATH, 

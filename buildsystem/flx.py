@@ -183,13 +183,13 @@ class Builder(fbuild.db.PersistentObject):
         command line harness but we're probably building it here.
         """
 
-        flx_pkgconfig = self.ctx.buildroot / 'bin'/'flx_pkgconfig'
+        flx_pkgconfig = self.ctx.buildroot / 'host'/'bin'/'flx_pkgconfig'
         resh = src.replaceext('.resh')
         includes = src.replaceext('.includes')
 
         cmd = [
             flx_pkgconfig,
-            '--path+=' + self.ctx.buildroot / 'config',
+            '--path+=' + self.ctx.buildroot / 'host'/'config',
             '--field=includes',
             '@' + resh]
 
@@ -272,12 +272,15 @@ def build(ctx, flxg, cxx, drivers):
 
 def build_flx_pkgconfig(host_phase, target_phase, flx_builder):
     return flx_builder.build_flx_pkgconfig_exe(
-        dst=Path('bin')/'flx_pkgconfig',
+        dst=Path('host')/'bin'/'flx_pkgconfig',
         src=Path('src')/'flx_pkgconfig'/'flx_pkgconfig.flx',
-        includes=[target_phase.ctx.buildroot / 'lib'],
+        includes=[
+          target_phase.ctx.buildroot / 'host'/'lib',
+          target_phase.ctx.buildroot / 'share'/'lib',
+          ],
         cxx_includes=[Path('src')/'flx_pkgconfig', 
-                      target_phase.ctx.buildroot / 'lib'/'rtl', 
-                      target_phase.ctx.buildroot / 'config'/'target'],
+                      target_phase.ctx.buildroot / 'share'/'lib'/'rtl', 
+                      target_phase.ctx.buildroot / 'host'/'lib'/'rtl'],
         cxx_libs=[call('buildsystem.flx_rtl.build_runtime', host_phase, target_phase).static],
     )
 
@@ -285,12 +288,15 @@ def build_flx_pkgconfig(host_phase, target_phase, flx_builder):
 def build_flx(host_phase, target_phase, flx_builder):
     return flx_builder.build_exe(
         async=False,
-        dst=Path('bin')/'flx',
+        dst=Path('host')/'bin'/'flx',
         src=Path('src')/'flx'/'flx.flx',
-        includes=[target_phase.ctx.buildroot / 'lib'],
+        includes=[
+          target_phase.ctx.buildroot / 'host'/'lib',
+          target_phase.ctx.buildroot / 'share'/'lib',
+          ],
         cxx_includes=[Path('src')/'flx', 
-                      target_phase.ctx.buildroot / 'lib'/'rtl', 
-                      target_phase.ctx.buildroot / 'config'/'target'],
+                      target_phase.ctx.buildroot / 'share'/'lib'/'rtl', 
+                      target_phase.ctx.buildroot / 'host'/'lib'/'rtl'],
         cxx_libs=[
           call('buildsystem.flx_rtl.build_runtime', host_phase, target_phase).static,
           call('buildsystem.re2.build_runtime', host_phase).static,

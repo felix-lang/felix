@@ -45,22 +45,22 @@ def copy_dir_to(ctx, dstdir, srcdir, *, pattern=None) -> fbuild.db.DSTS:
 
 
 def copy_hpps_to_rtl(ctx, *hpps):
-    return copy_to(ctx, ctx.buildroot / 'lib/rtl', tuple(hpps))
+    return copy_to(ctx, ctx.buildroot / 'share/lib/rtl', tuple(hpps))
 
 def copy_flxs_to_lib(ctx, flxs):
-    return copy_to(ctx, ctx.buildroot / 'lib', tuple(flxs))
+    return copy_to(ctx, ctx.buildroot / 'share/lib', tuple(flxs))
 
 def copy_flxs_to_libstd(ctx, flxs):
-    return copy_to(ctx, ctx.buildroot / 'lib/std', tuple(flxs))
+    return copy_to(ctx, ctx.buildroot / 'share/lib/std', tuple(flxs))
 
 def copy_flxs_to_libstd_posix(ctx, flxs):
-    return copy_to(ctx, ctx.buildroot / 'lib/std/posix', tuple(flxs))
+    return copy_to(ctx, ctx.buildroot / 'share/lib/std/posix', tuple(flxs))
 
 def copy_flxs_to_libstl(ctx, flxs):
-    return copy_to(ctx, ctx.buildroot / 'lib/stl', tuple(flxs))
+    return copy_to(ctx, ctx.buildroot / 'share/lib/stl', tuple(flxs))
 
 def copy_fpc_to_config(ctx, fpcs):
-    return copy_to(ctx, ctx.buildroot / 'config', tuple(fpcs))
+    return copy_to(ctx, ctx.buildroot / 'host/config', tuple(fpcs))
 
 @fbuild.db.caches
 def move_to(ctx, dstdir, srcs:fbuild.db.SRCS) -> fbuild.db.DSTS:
@@ -88,7 +88,7 @@ def build_c_shared_lib(phase, dst, *args, **kwargs):
     lib = phase.c.shared.build_lib(dst + '_dynamic', *args, **kwargs)
 
     if 'windows' in phase.platform:
-        copy_to(phase.ctx, phase.ctx.buildroot / 'bin', (lib,))
+        copy_to(phase.ctx, phase.ctx.buildroot / 'host/bin', (lib,))
 
     return lib
 
@@ -103,6 +103,6 @@ def build_cxx_shared_lib(phase, dst, *args, **kwargs):
     lib = phase.cxx.shared.build_lib(dst + '_dynamic', *args, **kwargs)
 
     if 'windows' in phase.platform:
-        copy_to(phase.ctx, phase.ctx.buildroot / 'bin', (lib,))
+        copy_to(phase.ctx, phase.ctx.buildroot / 'host/bin', (lib,))
 
     return lib

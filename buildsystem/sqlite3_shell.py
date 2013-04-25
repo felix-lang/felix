@@ -22,9 +22,9 @@ def build(phase):
     libs=[call('buildsystem.sqlite3.build_runtime', phase, phase).static]
     external_libs = []
     path = Path('src/tools')
-    dst = phase.ctx.buildroot / 'bin/flx_sqlite3'
+    dst = phase.ctx.buildroot / 'host/bin/flx_sqlite3'
     srcs = [path / 'flx_sqlite3.c'] 
-    includes = [ phase.ctx.buildroot / 'lib/rtl', phase.ctx.buildroot / 'config/target' ]
+    includes = [ phase.ctx.buildroot / 'share/lib/rtl', phase.ctx.buildroot / 'host/lib/rtl' ]
 
     if dlfcn_h.dlopen:
         external_libs.extend ( dlfcn_h.external_libs)

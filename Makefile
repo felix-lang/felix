@@ -80,9 +80,9 @@ test-debug:
 #
 
 install:
-	${SUDO} ${BUILDROOT}/bin/flx --test=${BUILDROOT} --install 
-	${SUDO} ${BUILDROOT}/bin/flx --test=${BUILDROOT} --install-bin
-	${SUDO} ${BUILDROOT}/bin/flx_cp ${BUILDROOT}/speed '(.*)' '/usr/local/lib/felix/felix-${VERSION}/speed/$${1}'
+	${SUDO} ${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --install 
+	${SUDO} ${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --install-bin
+	${SUDO} ${BUILDROOT}/host/bin/flx_cp ${BUILDROOT}/speed '(.*)' '/usr/local/lib/felix/felix-${VERSION}/speed/$${1}'
 	${SUDO} rm -rf $(HOME)/.felix/cache
 	${SUDO} rm -f /usr/local/lib/felix/felix-latest
 	${SUDO} ln -s /usr/local/lib/felix/felix-$(VERSION) /usr/local/lib/felix/felix-latest
@@ -97,9 +97,9 @@ install:
 #
 install-felix-lang.org:
 	-sudo stop felixweb
-	sudo ${BUILDROOT}/bin/flx --test=${BUILDROOT} --install 
-	sudo ${BUILDROOT}/bin/flx --test=${BUILDROOT} --install-bin
-	sudo ${BUILDROOT}/bin/flx_cp ${BUILDROOT}/speed '(.*)' '/usr/local/lib/felix/felix-${VERSION}/speed/$${1}'
+	sudo ${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --install 
+	sudo ${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --install-bin
+	sudo ${BUILDROOT}/host/bin/flx_cp ${BUILDROOT}/speed '(.*)' '/usr/local/lib/felix/felix-${VERSION}/speed/$${1}'
 	sudo rm -rf $(HOME)/.felix/cache
 	sudo rm -f /usr/local/lib/felix/felix-latest
 	sudo ln -s /usr/local/lib/felix/felix-$(VERSION) /usr/local/lib/felix/felix-latest
@@ -117,8 +117,8 @@ release:
 	git commit v`flx --version`
 	git push
 	fbuild/fbuild-light configure build doc dist
-	sudo ${BUILDROOT}/bin/flx --test=${BUILDROOT} --install
-	sudo ${BUILDROOT}/bin/flx --test=${BUILDROOT} --install-bin
+	sudo ${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --install
+	sudo ${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --install-bin
 	echo "Restart webservers now"
 	echo "Upgrade buildsystem/version.py now and rebuild"
 
@@ -129,11 +129,11 @@ release:
 #
 make-dist:
 	rm -rf $(DISTDIR)
-	./${BUILDROOT}/bin/flx --test=${BUILDROOT} --dist=$(DISTDIR)
-	./${BUILDROOT}/bin/flx_cp ${BUILDROOT}/speed '(.*)' '${DISTDIR}/speed/$${1}'
+	./${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --dist=$(DISTDIR)
+	./${BUILDROOT}/host/bin/flx_cp ${BUILDROOT}/speed '(.*)' '${DISTDIR}/speed/$${1}'
 	rm -rf $(HOME)/.felix/cache
 	echo 'println ("installed "+ Version::felix_version);' > $(DISTDIR)/install-done.flx
-	./${BUILDROOT}/bin/flx --clean --test=$(DISTDIR)/lib/felix/felix-$(VERSION) $(DISTDIR)/install-done.flx
+	./${BUILDROOT}/host/bin/flx --clean --test=$(DISTDIR)/lib/felix/felix-$(VERSION) $(DISTDIR)/install-done.flx
 	rm -f $(DISTDIR)/install-done.flx  $(DISTDIR)/install-done.so
 
 
@@ -157,17 +157,17 @@ syntax:
 speed:
 	-rm -rf result.tmp
 	sh speed/perf.sh 2>>result.tmp
-	build/release/bin/flx_gengraph
+	${BUILDROOT}/host/bin/flx_gengraph
 
 upgrade-test:
-	${BUILDROOT}/bin/flx_tangle --indir=src/test --outdir=test
+	${BUILDROOT}/host/bin/flx_tangle --indir=src/test --outdir=test
 
 gentest:
 	rm -rf test
 	mkdir test
 	mkdir test/test-data
 	cp src/test/test-data/* test/test-data
-	${BUILDROOT}/bin/flx_tangle --indir=src/test --outdir=test
+	${BUILDROOT}/host/bin/flx_tangle --indir=src/test --outdir=test
 	git add test
 #
 # Documentation
@@ -176,11 +176,11 @@ doc: copy-doc
 
 # Copy docs from repo src to release image
 copy-doc: 
-	${BUILDROOT}/bin/flx_cp src/web '(.*\.fdoc)' '${BUILDROOT}/web/$${1}'
-	${BUILDROOT}/bin/flx_cp src/web '(.*\.(png|jpg|gif))' '${BUILDROOT}/web/$${1}'
-	${BUILDROOT}/bin/flx_cp src/web '(.*\.html)' '${BUILDROOT}/web/$${1}'
-	${BUILDROOT}/bin/flx_cp src/ '(.*\.html)' '${BUILDROOT}/$${1}'
-	${BUILDROOT}/bin/flx_cp speed/ '(.*)' '${BUILDROOT}/speed/$${1}'
+	${BUILDROOT}/host/bin/flx_cp src/web '(.*\.fdoc)' '${BUILDROOT}/web/$${1}'
+	${BUILDROOT}/host/bin/flx_cp src/web '(.*\.(png|jpg|gif))' '${BUILDROOT}/web/$${1}'
+	${BUILDROOT}/host/bin/flx_cp src/web '(.*\.html)' '${BUILDROOT}/web/$${1}'
+	${BUILDROOT}/host/bin/flx_cp src/ '(.*\.html)' '${BUILDROOT}/$${1}'
+	${BUILDROOT}/host/bin/flx_cp speed/ '(.*)' '${BUILDROOT}/speed/$${1}'
 
 gendoc: gen-doc copy-doc check-tut
 
@@ -191,35 +191,35 @@ gendoc: gen-doc copy-doc check-tut
 # Shouldn't be required on client build because the results
 # should already have been committed to the repo.
 gen-doc:
-	${BUILDROOT}/bin/flx_mktutindex tut Tutorial tutorial.fdoc
-	${BUILDROOT}/bin/flx_mktutindex fibres Fibres tutorial.fdoc
-	${BUILDROOT}/bin/flx_mktutindex objects Objects tutorial.fdoc
-	${BUILDROOT}/bin/flx_mktutindex polymorphism Polymorphism tutorial.fdoc
-	${BUILDROOT}/bin/flx_mktutindex pattern Patterns tutorial.fdoc
-	${BUILDROOT}/bin/flx_mktutindex literals Literals tutorial.fdoc
-	${BUILDROOT}/bin/flx_mktutindex cbind "C Binding" tutorial.fdoc
-	${BUILDROOT}/bin/flx_mktutindex streams Streams tutorial.fdoc
-	${BUILDROOT}/bin/flx_mktutindex array "Arrays" tutorial.fdoc
-	${BUILDROOT}/bin/flx_mktutindex garray "Generalised Arrays" tutorial.fdoc
-	${BUILDROOT}/bin/flx_mktutindex uparse "Universal Parser" uparse.fdoc
-	${BUILDROOT}/bin/flx_mktutindex nutut/intro/intro "Ground Up" ../../tutorial.fdoc
+	${BUILDROOT}/host/bin/flx_mktutindex tut Tutorial tutorial.fdoc
+	${BUILDROOT}/host/bin/flx_mktutindex fibres Fibres tutorial.fdoc
+	${BUILDROOT}/host/bin/flx_mktutindex objects Objects tutorial.fdoc
+	${BUILDROOT}/host/bin/flx_mktutindex polymorphism Polymorphism tutorial.fdoc
+	${BUILDROOT}/host/bin/flx_mktutindex pattern Patterns tutorial.fdoc
+	${BUILDROOT}/host/bin/flx_mktutindex literals Literals tutorial.fdoc
+	${BUILDROOT}/host/bin/flx_mktutindex cbind "C Binding" tutorial.fdoc
+	${BUILDROOT}/host/bin/flx_mktutindex streams Streams tutorial.fdoc
+	${BUILDROOT}/host/bin/flx_mktutindex array "Arrays" tutorial.fdoc
+	${BUILDROOT}/host/bin/flx_mktutindex garray "Generalised Arrays" tutorial.fdoc
+	${BUILDROOT}/host/bin/flx_mktutindex uparse "Universal Parser" uparse.fdoc
+	${BUILDROOT}/host/bin/flx_mktutindex nutut/intro/intro "Ground Up" ../../tutorial.fdoc
 	# Build reference docs. Note this requires plugins and RTL to be installed
 	# on (DY)LD_LIBRARY_PATH. Won't work otherwise.
-	env LD_LIBRARY_PATH=${BUILDROOT}/plugins:${BUILDROOT}/lib/rtl ${BUILDROOT}/bin/flx_libcontents --html > src/web/flx_libcontents.html
-	env LD_LIBRARY_PATH=${BUILDROOT}/plugins:${BUILDROOT}/lib/rtl ${BUILDROOT}/bin/flx_libindex --html > src/web/flx_libindex.html
-	env LD_LIBRARY_PATH=${BUILDROOT}/plugins:${BUILDROOT}/lib/rtl ${BUILDROOT}/bin/flx_gramdoc --html > src/web/flx_gramdoc.html
+	env LD_LIBRARY_PATH=${BUILDROOT}/plugins:${BUILDROOT}/lib/rtl ${BUILDROOT}/host/bin/flx_libcontents --html > src/web/flx_libcontents.html
+	env LD_LIBRARY_PATH=${BUILDROOT}/plugins:${BUILDROOT}/lib/rtl ${BUILDROOT}/host/bin/flx_libindex --html > src/web/flx_libindex.html
+	env LD_LIBRARY_PATH=${BUILDROOT}/plugins:${BUILDROOT}/lib/rtl ${BUILDROOT}/host/bin/flx_gramdoc --html > src/web/flx_gramdoc.html
 
 
 # Checks correctness of tutorial in release image
 # must be done after copy-doc
 # must be done after primary build
 check-tut:
-	${BUILDROOT}/bin/flx_tangle --inoutdir=${BUILDROOT}/web/nutut/intro/ '.*'
+	${BUILDROOT}/host/bin/flx_tangle --inoutdir=${BUILDROOT}/web/nutut/intro/ '.*'
 	for  i in ${BUILDROOT}/web/nutut/intro/*.flx; \
 	do \
 		j=$$(echo $$i | sed s/.flx//); \
 		echo $$j; \
-		${BUILDROOT}/bin/flx --test=${BUILDROOT} --stdout=$$j.output $$j; \
+		${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --stdout=$$j.output $$j; \
 		diff -N $$j.expect $$j.output; \
 	done
 
@@ -251,32 +251,34 @@ ocamldoc:
 		src/compiler/flx_misc/*.mli \
 		src/compiler/flx_misc/*.ml 
 
-${BUILDROOT}/bin/scoop: demos/scoop/bin/scoop.flx ${BUILDROOT}/lib/std/felix/pkgtool_base.flx ${BUILDROOT}/lib/std/felix/pkgtool.flx
-	@${BUILDROOT}/bin/flx --inline=1 --test=${BUILDROOT} demos/scoop/setup build  --test=${BUILDROOT} --build-dir=demos/scoop 2> /dev/null
-	@${BUILDROOT}/bin/flx --inline=1 --test=${BUILDROOT} demos/scoop/setup install  --test=${BUILDROOT} --build-dir=demos/scoop 2> /dev/null
-	@${BUILDROOT}/bin/flx --inline=1 --test=${BUILDROOT} demos/scoop/setup clean  --test=${BUILDROOT} --build-dir=demos/scoop 2> /dev/null
+${BUILDROOT}/host/bin/scoop: demos/scoop/bin/scoop.flx ${BUILDROOT}/lib/std/felix/pkgtool_base.flx ${BUILDROOT}/lib/std/felix/pkgtool.flx
+	@${BUILDROOT}/host/bin/flx --inline=1 --test=${BUILDROOT} demos/scoop/setup build  --test=${BUILDROOT} --build-dir=demos/scoop 2> /dev/null
+	@${BUILDROOT}/host/bin/flx --inline=1 --test=${BUILDROOT} demos/scoop/setup install  --test=${BUILDROOT} --build-dir=demos/scoop 2> /dev/null
+	@${BUILDROOT}/host/bin/flx --inline=1 --test=${BUILDROOT} demos/scoop/setup clean  --test=${BUILDROOT} --build-dir=demos/scoop 2> /dev/null
 
-scoop: ${BUILDROOT}/bin/scoop
+scoop: ${BUILDROOT}/host/bin/scoop
 	@echo "Scoop Package Manager"
 
-install-scoop: ${BUILDROOT}/bin/scoop
+install-scoop: ${BUILDROOT}/host/bin/scoop
 	@echo "Installing scoop binary in /usr/local/bin"
-	@${SUDO} cp ${BUILDROOT}/bin/scoop /usr/local/bin
-	@${SUDO} ${BUILDROOT}/bin/flx_cp src/lib/std/felix '(pkgtool.*\.(flx))' '/usr/local/lib/felix/felix-latest/lib/std/felix/$${0}' --verbose
+	@${SUDO} cp ${BUILDROOT}/host/bin/scoop /usr/local/bin
+	@${SUDO} ${BUILDROOT}/host/bin/flx_cp src/lib/std/felix '(pkgtool.*\.(flx))' '/usr/local/lib/felix/felix-latest/lib/std/felix/$${0}' --verbose
 
 tarball:
 	tar -vzcf felix_${VERSION}_`uname`_tarball.tar.gz Makefile  \
 		${BUILDROOT}/index.html \
 		${BUILDROOT}/VERSION \
-		${BUILDROOT}/bin \
-		${BUILDROOT}/config \
-		${BUILDROOT}/web \
-		${BUILDROOT}/lib \
-		${BUILDROOT}/plugins \
-		${BUILDROOT}/tools 
+		${BUILDROOT}/host \
+		${BUILDROOT}/share
+
+rtlbuild:
+	rm -rf trial
+	rm -rf trial-tmp
+	flx --test=build/release src/tools/flx_build_rtl_demo build/release/host/config build_flx_rtl_clang_osx trial . trial-tmp
 
 .PHONY : build32 build64 build test32 test64 test  
 .PHONY : build32-debug build64-debug build-debug test32-debug test64-debug test-debug 
 .PHONY : doc install websites-linux  release install-bin 
 .PHONY : copy-doc gen-doc check-tut gendoc fbuild speed tarball
+.PHONY : rtlbuild
 

@@ -119,25 +119,27 @@ def build_runtime(phase):
     }
 
     fbuild.builders.text.autoconf_config_header(phase.ctx,
-        path / 'config.h',
+        phase.ctx.buildroot/'host/lib/rtl/tre/config.h',
         path / 'config.h.in',
         patterns)
 
     fbuild.builders.text.autoconf_config_header(phase.ctx,
-        path / 'lib/tre-config.h',
+        phase.ctx.buildroot/'host/lib/rtl/tre/lib/tre-config.h',
         path / 'lib/tre-config.h.in',
         patterns)
 
-    buildsystem.copy_to(phase.ctx, phase.ctx.buildroot / 'lib/rtl/tre', [
-        path / 'lib/tre.h',
-        phase.ctx.buildroot / path / 'lib/tre-config.h'])
+    #buildsystem.copy_to(phase.ctx, phase.ctx.buildroot / 'share/lib/rtl/tre', [
+    #    path / 'lib/tre.h',
+    #    phase.ctx.buildroot / path / 'lib/tre-config.h'])
 
-    dst = 'lib/rtl/tre'
+    dst = 'host/lib/rtl/tre'
     srcs = Path.glob('src/tre/tre/lib/*.c')
     includes = [
-        phase.ctx.buildroot / 'config/target',
-        phase.ctx.buildroot / path,
-        phase.ctx.buildroot / path / 'lib',
+        phase.ctx.buildroot / 'host/lib/rtl',
+        phase.ctx.buildroot / 'host/lib/rtl/tre',
+        phase.ctx.buildroot / 'host/lib/rtl/tre/lib',
+        phase.ctx.buildroot / 'share'/ path,
+        phase.ctx.buildroot / 'share'/ path / 'lib',
         path / 'gnulib/lib',
     ]
     macros = ['HAVE_CONFIG_H', 'BUILD_TRE']

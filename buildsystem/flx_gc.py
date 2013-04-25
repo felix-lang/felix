@@ -22,11 +22,11 @@ def build_runtime(host_phase, target_phase):
         path / 'pthread_work_fifo.hpp',
     )
 
-    dst = 'lib/rtl/flx_gc'
+    dst = 'host/lib/rtl/flx_gc'
     srcs = [copy(ctx=target_phase.ctx, src=f, dst=target_phase.ctx.buildroot / f) for f in Path.glob(path / '*.cpp')]
     includes = [
-        target_phase.ctx.buildroot / 'config/target',
-        target_phase.ctx.buildroot / 'lib/rtl',
+        target_phase.ctx.buildroot / 'host/lib/rtl',
+        target_phase.ctx.buildroot / 'share/lib/rtl',
         'src/rtl',
         'src/pthread',
         'src/exceptions',

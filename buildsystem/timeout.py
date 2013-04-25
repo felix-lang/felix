@@ -8,7 +8,7 @@ import buildsystem
 
 def build(phase):
     path = Path('src/tools/timeout-4.11')
-    dst = phase.ctx.buildroot / 'bin/flx_timeout'
+    dst = phase.ctx.buildroot / 'host/bin/flx_timeout'
     srcs = [path / 'errhelp.c', path / 'stderr.c', path / 'timeout.c'] 
     includes = ['src/tools/timeout-4.11']
     return Record (

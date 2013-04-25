@@ -23,6 +23,7 @@ open class Fibres
       svc$ svc_spawn_detached fthr;
   }
 
+  proc chain : cont = "return $1;";
 
   //$ The type of a fibre scheduler.
   type fibre_scheduler = "::flx::run::sync_state_t*";

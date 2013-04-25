@@ -14,7 +14,7 @@ class Flxg
     STDGRAMMAR:string,
     STDIMPORT:string,
     IMPORTS:list[string],
-    FLXLIB:string,
+    FLXLIBS:list[string],
     INCLUDE_DIRS:list[string],
     TIME:int,
     filebase:string,
@@ -50,7 +50,7 @@ class Flxg
       spec.FLXG ! 
       spec.VERBOSE +
       FLXFLAGS + 
-      spec.FLXLIB +
+      spec.FLXLIBS +
       spec.INCLUDE_DIRS + 
       ("--syntax="+spec.STDGRAMMAR) + 
       spec.STDIMPORT + 

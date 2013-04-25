@@ -11,20 +11,19 @@ def build_runtime(host_phase,target_phase):
     path = Path('src/faio')
 
     buildsystem.copy_hpps_to_rtl(target_phase.ctx,
-        #target_phase.ctx.buildroot / 'config/target/flx_faio_config.hpp',
         path / 'faio_job.hpp',
         path / 'faio_timer.hpp',
         path / 'faio_posixio.hpp',
         path / 'faio_winio.hpp',
     )
 
-    dst = 'lib/rtl/faio'
+    dst = 'host/lib/rtl/faio'
     srcs = [
         path / 'faio_job.cpp',
         path / 'faio_timer.cpp',
     ]
     includes = [
-        target_phase.ctx.buildroot / 'config/target',
+        target_phase.ctx.buildroot / 'host/lib/rtl',
         Path('src', 'flx_async'),
         Path('src', 'pthread'),
         Path('src', 'demux'),

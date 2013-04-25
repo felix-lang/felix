@@ -381,25 +381,22 @@ def configure(ctx):
     target = config_target(ctx, host)
 
     # Make sure the config directories exist.
-    (ctx.buildroot / 'config/build').makedirs()
-    (ctx.buildroot / 'config/host').makedirs()
-    (ctx.buildroot / 'config/target').makedirs()
+    #(ctx.buildroot / 'host/config').makedirs()
 
     # copy the config directory for initial config
     # this will be overwritten by subsequent steps if
     # necessary
     #
-    buildsystem.copy_dir_to(ctx, ctx.buildroot, 'src/config',
-        pattern='*.fpc')
+    buildsystem.copy_to(ctx, ctx.buildroot/'host/config', Path('src/config/*.fpc').glob())
     # most of these ones are actually platform independent
     # just do the windows EXTERN to dllexport mapping
     # which is controlled by compile time switches anyhow
     # should probably move these out of config directory
     # they're put in config in case there really are any
     # platform mods.
-    buildsystem.copy_to(ctx, ctx.buildroot/'config/target',
+    buildsystem.copy_to(ctx, ctx.buildroot/'host/lib/rtl',
         Path('src/config/target/*.hpp').glob())
-    buildsystem.copy_to(ctx, ctx.buildroot/'config/target',
+    buildsystem.copy_to(ctx, ctx.buildroot/'host/lib/rtl',
         Path('src/config/target/*.h').glob())
 
     # this is a hack: assume we're running on Unix.
@@ -408,13 +405,13 @@ def configure(ctx):
     if "posix" in target.platform:
       print("COPYING POSIX RESOURCE DATABASE")
       buildsystem.copy_to(ctx,
-          ctx.buildroot / 'config', Path('src/config/unix/*.fpc').glob())
+          ctx.buildroot / 'host/config', Path('src/config/unix/*.fpc').glob())
 
     # enable this on win32 **instead** of the above to copy fpc files 
     if "windows" in target.platform:
       print("COPYING WIN32 RESOURCE DATABASE")
       buildsystem.copy_to(ctx,
-          ctx.buildroot / 'config', Path('src/config/win32/*.fpc').glob())
+          ctx.buildroot / 'host/config', Path('src/config/win32/*.fpc').glob())
 
     # enable this on solaris to clobber any fpc files 
     # where the generic unix ones are inadequate
@@ -425,7 +422,7 @@ def configure(ctx):
     # where the generic unix ones are inadequate
     if 'macosx' in target.platform:
         buildsystem.copy_to(ctx,
-            ctx.buildroot / 'config', Path('src/config/macosx/*.fpc').glob())
+            ctx.buildroot / 'host/config', Path('src/config/macosx/*.fpc').glob())
 
     # extract the configuration
     iscr = call('buildsystem.iscr.Iscr', ctx)
@@ -473,7 +470,7 @@ def build(ctx):
     # Build the standard library.
 
     # copy files into the library
-    buildsystem.copy_dir_to(ctx, ctx.buildroot, 'src/lib',
+    buildsystem.copy_dir_to(ctx, ctx.buildroot/'share', 'src/lib',
         pattern='*.{flx,flxh,fdoc,files,html,sql,css,js,py,png}')
     
     # copy extra files for web
@@ -489,14 +486,14 @@ def build(ctx):
     #    pattern='*')
 
     # copy tools
-    buildsystem.copy_dir_to(ctx, ctx.buildroot, 'src/tools',
+    buildsystem.copy_dir_to(ctx, ctx.buildroot/'share', 'src/tools',
         pattern='*.{flxh,flx,fdoc}')
 
-    buildsystem.copy_dir_to(ctx, ctx.buildroot, 'src/wiki',
-        pattern='*.*')
+    #buildsystem.copy_dir_to(ctx, ctx.buildroot, 'src/wiki',
+    #    pattern='*.*')
 
     # copy scoop
-    buildsystem.copy_dir_to(ctx, ctx.buildroot, 'src/pkgtool',
+    buildsystem.copy_dir_to(ctx, ctx.buildroot/'share', 'src/pkgtool',
         pattern='*.{flxh,flx,fdoc}')
 
     for module in (
@@ -523,7 +520,7 @@ def build(ctx):
     # now, try building a file
 
     felix = call('fbuild.builders.felix.Felix', ctx,
-        exe=ctx.buildroot / 'bin/flx',
+        exe=ctx.buildroot / 'host/bin/flx',
         debug=ctx.options.debug,
         flags=['--test=' + ctx.buildroot])
 
@@ -543,6 +540,7 @@ def build(ctx):
     # Felix tools
     #
     call('buildsystem.tools.build', phases.target, felix)
+    call('buildsystem.plugins.build', phases.target, felix)
 
     # --------------------------------------------------------------------------
     # package manager
@@ -565,10 +563,10 @@ def doc(ctx):
     ctx.logger.log('building documentation', color='cyan')
 
     # copy website index
-    buildsystem.copy_to(ctx, ctx.buildroot, Path('src/*.html').glob())
+    buildsystem.copy_to(ctx, ctx.buildroot/'share', Path('src/*.html').glob())
 
     # copy website
-    buildsystem.copy_dir_to(ctx, ctx.buildroot, Path('src')/'web')
+    buildsystem.copy_dir_to(ctx, ctx.buildroot/'share', Path('src')/'web')
 
 # ------------------------------------------------------------------------------
 

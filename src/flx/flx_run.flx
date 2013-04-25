@@ -46,7 +46,7 @@ proc run_felix_compiler_if_required
       STDGRAMMAR = control.STDGRAMMAR,
       STDIMPORT = control.STDIMPORT,
       IMPORTS = control.IMPORTS,
-      FLXLIB = dvars.FLXLIB,
+      FLXLIBS = dvars.FLXLIBS,
       INCLUDE_DIRS = control.STANDARD_INCLUDE_DIRS,
       filebase = dvars.filebase,
       use_ext = dvars.use_ext,

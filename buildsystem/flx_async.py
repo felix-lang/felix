@@ -14,12 +14,12 @@ def build_runtime(host_phase,target_phase):
         path / 'flx_async.hpp',
     )
 
-    dst = 'lib/rtl/flx_async'
+    dst = 'host/lib/rtl/flx_async'
     suffix = '.so'
     srcs = [copy(ctx=target_phase.ctx, src=f, dst=target_phase.ctx.buildroot / f) for f in ['src/flx_async/flx_async.cpp']]
     includes = [
-        target_phase.ctx.buildroot / 'config/target',
-        target_phase.ctx.buildroot / 'lib/rtl'
+        target_phase.ctx.buildroot / 'host/lib/rtl',
+        target_phase.ctx.buildroot / 'share/lib/rtl'
     ]
     macros = ['BUILD_ASYNC']
     libs = [

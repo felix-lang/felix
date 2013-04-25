@@ -1,3 +1,4 @@
+// NOTE: host/lib/rtl is used below but that is WRONG for cross compilation.
 gen cal_depvars() = 
 {
   debugln$ "Felix package manager config directory is "+control.CONFIG_DIR;
@@ -79,15 +80,18 @@ gen cal_depvars() =
   debugln$ "Target program args = "+args;
 
   var INCLUDE_DIR= list (
-    ("-I"+Filename::join(config.FLX_INSTALL_DIR,"lib","rtl")),
-    ("-I"+Filename::join(config.FLX_INSTALL_DIR,"config","target")))
+    ("-I"+Filename::join(config.FLX_INSTALL_DIR,"share","lib","rtl")), // NOTE: this is WRONG
+    ("-I"+Filename::join(config.FLX_INSTALL_DIR,"host","lib","rtl")))
   ;
   debugln$ "C++ Include directory for Felix library " + str INCLUDE_DIR;
 
-  var FLXLIB="-I"+Filename::join(config.FLX_INSTALL_DIR,"lib");
+  var FLXLIBS=list (
+    "-I"+Filename::join(config.FLX_INSTALL_DIR,"host","lib"),
+    "-I"+Filename::join(config.FLX_INSTALL_DIR,"share","lib")
+  );
   var STDLIB=list("std","web");
   if control.NOSTDLIB == 1 do
-    FLXLIB="";
+    FLXLIBS=Empty[string];
     STDLIB=Empty[string];
   done
 
@@ -121,7 +125,7 @@ gen cal_depvars() =
     var use_ext = use_ext;
     var INCLUDE_DIR=INCLUDE_DIR;
     var STDLIB=STDLIB;
-    var FLXLIB=FLXLIB;
+    var FLXLIBS=FLXLIBS;
     var DEBUGSWITCH=DEBUGSWITCH;
     var STATIC_ENV=STATIC_ENV;
     var VERBOSE = VERBOSE;
