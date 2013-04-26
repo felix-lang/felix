@@ -13,7 +13,7 @@ all: build test
 # default build
 #
 
-VERSION = 1.1.8dev
+VERSION = 1.1.9dev
 DISTDIR ?= ./build/dist
 FBUILDROOT ?= build
 BUILDROOT ?= ${FBUILDROOT}/release
@@ -50,7 +50,7 @@ build: user-build
 
 dev-build: fbuild gendoc
 
-user-build: fbuild doc
+user-build: fbuild doc copy-src
   
 #
 # Core integrated build
@@ -80,9 +80,11 @@ test-debug:
 #
 
 install:
-	${SUDO} ${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --install 
-	${SUDO} ${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --install-bin
-	${SUDO} ${BUILDROOT}/host/bin/flx_cp ${BUILDROOT}/speed '(.*)' '/usr/local/lib/felix/felix-${VERSION}/speed/$${1}'
+	${SUDO} rm -rf /usr/local/lib/felix/felix-${VERSION}
+	${SUDO} ${BUILDROOT}/host/bin/flx_cp ${BUILDROOT}/host '(.*)' '/usr/local/lib/felix/felix-${VERSION}/host/$${1}'
+	${SUDO} ${BUILDROOT}/host/bin/flx_cp ${BUILDROOT}/share '(.*)' '/usr/local/lib/felix/felix-${VERSION}/share/$${1}'
+	${SUDO} ${BUILDROOT}/host/bin/flx_cp ${BUILDROOT} '(VERSION)' '/usr/local/lib/felix/felix-${VERSION}/$${1}'
+	${SUDO} ${BUILDROOT}/host/bin/flx_cp ${BUILDROOT}/host/bin '(flx)' '/usr/local/bin/$${1}'
 	${SUDO} rm -rf $(HOME)/.felix/cache
 	${SUDO} rm -f /usr/local/lib/felix/felix-latest
 	${SUDO} ln -s /usr/local/lib/felix/felix-$(VERSION) /usr/local/lib/felix/felix-latest
@@ -147,7 +149,7 @@ install-website:
 #
 syntax:
 	rm -f ${BUILDROOT}/lib/grammar/*
-	cp src/lib/grammar/* ${BUILDROOT}/lib/grammar
+	cp src/lib/grammar/* ${BUILDROOT}/share/lib/grammar
 	rm *.par2
 
 #
@@ -176,12 +178,17 @@ doc: copy-doc
 
 # Copy docs from repo src to release image
 copy-doc: 
-	${BUILDROOT}/host/bin/flx_cp src/web '(.*\.fdoc)' '${BUILDROOT}/web/$${1}'
-	${BUILDROOT}/host/bin/flx_cp src/web '(.*\.(png|jpg|gif))' '${BUILDROOT}/web/$${1}'
-	${BUILDROOT}/host/bin/flx_cp src/web '(.*\.html)' '${BUILDROOT}/web/$${1}'
-	${BUILDROOT}/host/bin/flx_cp src/ '(.*\.html)' '${BUILDROOT}/$${1}'
-	${BUILDROOT}/host/bin/flx_cp speed/ '(.*)' '${BUILDROOT}/speed/$${1}'
+	${BUILDROOT}/host/bin/flx_cp src/web '(.*\.fdoc)' '${BUILDROOT}/share/web/$${1}'
+	${BUILDROOT}/host/bin/flx_cp src/web '(.*\.(png|jpg|gif))' '${BUILDROOT}/share/web/$${1}'
+	${BUILDROOT}/host/bin/flx_cp src/web '(.*\.html)' '${BUILDROOT}/share/web/$${1}'
+	${BUILDROOT}/host/bin/flx_cp src/ '(index\.html)' '${BUILDROOT}/share/$${1}'
+	${BUILDROOT}/host/bin/flx_cp speed/ '(.*\.(c|ml|cc|flx|ada|hs|svg))' '${BUILDROOT}/share/speed/$${1}'
+	${BUILDROOT}/host/bin/flx_cp speed/ '(.*/expect)' '${BUILDROOT}/share/speed/$${1}'
 
+copy-src:
+	rm -rf ${BUILDROOT}/src
+	${BUILDROOT}/host/bin/flx_cp src/ '(.*\.(c|cxx|cpp|h|hpp|flx|flxh|fdoc|fpc|ml|mli))' '${BUILDROOT}/share/src/$${1}'
+	
 gendoc: gen-doc copy-doc check-tut
 
 # upgrade tutorial indices in repo src
@@ -280,5 +287,5 @@ rtlbuild:
 .PHONY : build32-debug build64-debug build-debug test32-debug test64-debug test-debug 
 .PHONY : doc install websites-linux  release install-bin 
 .PHONY : copy-doc gen-doc check-tut gendoc fbuild speed tarball
-.PHONY : rtlbuild
+.PHONY : rtlbuild copy-src
 
