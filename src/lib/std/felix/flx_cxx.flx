@@ -15,7 +15,6 @@ class CxxCompiler
     var cmd=
       spec.CCOBJ_DLLIB !
       spec.CCFLAGS +
-      "-DTARGET_BUILD" +
       spec.INCLUDE_DIRS + 
       spec.MACROS + 
       src
@@ -86,8 +85,6 @@ class CxxCompiler
     var cmd=
       spec.CCOBJ_STATIC_LIB !
       spec.CCFLAGS +
-      "-DTARGET_BUILD" +
-      "-DFLX_STATIC_LINK" + 
       spec.INCLUDE_DIRS + 
       spec.MACROS +
       src

@@ -1,6 +1,5 @@
 include "plat/config";
 include "./flx_plat";
-include "./flx_install";
 include "./flx_cmdopt";
 include "std/felix/flx_cache";
 include "std/felix/flx_pkg";

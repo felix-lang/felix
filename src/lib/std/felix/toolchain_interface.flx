@@ -12,6 +12,7 @@ interface toolchain_t {
 
 
   cxx_static_object_compiler : (dst:string,src: string) -> int;
+  cxx_static_library_object_compiler : (dst:string,src: string) -> int;
   c_static_object_compiler : (dst:string,src: string) -> int;
   static_library_linker : (dst:string,srcs:list[string]) -> int;
   executable_linker : (dst:string,srcs:list[string]) -> int;

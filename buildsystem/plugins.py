@@ -31,6 +31,6 @@ def build(phase, felix):
       ]
     for base in plugins:
       shlib = felix.compile(phase.ctx.buildroot/('share/lib/plugins/'+base+'.flx'))
-      fbuild.builders.file.copy(phase.ctx, shlib, 'host/lib')
+      fbuild.builders.file.copy(phase.ctx, shlib, 'host/lib/rtl')
       #os.unlink(shlib)
 

@@ -67,10 +67,26 @@ gen cal_depvars() =
         control.LINKER_OUTPUT_FILENAME = filebase+config.EXT_EXE;
       done
     else // No link, name specifies object file only.
-      if control.STATIC == 0 do
+      if control.STATIC == 1 do
         control.LINKER_OUTPUT_FILENAME = filebase+config.EXT_STATIC_OBJ;
       else
         control.LINKER_OUTPUT_FILENAME = filebase+config.EXT_SHARED_OBJ;
+      done
+    done
+  elif control.OUTPUT_FILENAME_WITHOUT_EXTENSION_SPECIFIED == 1 do
+    if control.LINKIT == 1 do
+      if control.STATICLIB == 1 do
+        control.LINKER_OUTPUT_FILENAME += config.EXT_LIB;
+      elif control.STATIC == 0 do // dynamic
+        control.LINKER_OUTPUT_FILENAME += config.EXT_SHLIB;
+      else
+        control.LINKER_OUTPUT_FILENAME += config.EXT_EXE;
+      done
+    else // No link, name specifies object file only.
+      if control.STATIC == 1 do
+        control.LINKER_OUTPUT_FILENAME += config.EXT_STATIC_OBJ;
+      else
+        control.LINKER_OUTPUT_FILENAME += config.EXT_SHARED_OBJ;
       done
     done
   done

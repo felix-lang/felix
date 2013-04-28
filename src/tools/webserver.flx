@@ -152,9 +152,9 @@ C_PATH+= INSTALL_ROOT+"/host/lib/rtl";
 C_PATH+= INSTALL_ROOT+"/share/lib/rtl";
 FLX_PATH+=INSTALL_ROOT+"/share/lib";
 FLX_PATH+=INSTALL_ROOT+"/host/lib";
-FDOC_PATH+=INSTALL_ROOT+"/doc";
+FDOC_PATH+=INSTALL_ROOT+"/share/doc";
 FLX_PKGCONFIG_PATH+=INSTALL_ROOT+"/host/config";
-FLX_WEBSERVER_PLUGIN_PATH+=INSTALL_ROOT+"/lib";
+FLX_WEBSERVER_PLUGIN_PATH+=INSTALL_ROOT+"/host/lib";
 
 // -------------------------------------------------------------------------
 // Print the configuation.
@@ -673,7 +673,7 @@ proc serve_file(s: socket_t, infname: string)
   // if empty string, serve index.html
   // not quite right - needs to handle directories too, so
   // not only foo.com/ -> index.html, but foo.com/images/ -> images/index.html
-  var fname = if "" == infname then "index.html" else infname endif;
+  var fname = if "" == infname then "share/index.html" else infname endif;
 
   fname = if fname.[0] == char "$" then fname.[1 to] else fname endif;
 

@@ -18,7 +18,7 @@ proc make_lib
   println$ "------------";
   println$ "Make lib " + pkg;
   println$ "------------";
-  var configdir = Filename::join (FLX_INSTALL_DIR, "config", "target");
+  var configdir = Filename::join (FLX_INSTALL_DIR, "host", "lib", "rtl");
   var srcdir = db.getpkgfielddflt (pkg,"srcdir");
   var srcpath = Filename::join (repo, srcdir);
   var build_includes= db.getpkgfield (pkg,"build_includes");
@@ -109,7 +109,7 @@ proc make_lib
       Directory::mkdirs (Filename::dirname dst);
       match Filename::get_extension srcfile with
       | ?x when x == ".cc" or x == ".cpp" =>
-        result = toolchain.cxx_static_object_compiler (src=srcfile, dst=dst);
+        result = toolchain.cxx_static_library_object_compiler (src=srcfile, dst=dst);
       | ".c" =>
         result = toolchain.c_static_object_compiler (src=srcfile, dst=dst);
       | ?x => println$ "Unknown extension " + x; System::exit(1);
@@ -133,10 +133,18 @@ proc make_lib
   };
 }
 
-proc make_rtl (repo:string, build:string, pkgconfig_dir:string, boot_package:string, /*plugin_path:string,*/ tmpdir:string)
+proc make_rtl (
+  repo:string, 
+  build:string, 
+  pkgconfig_dir:string, 
+  boot_package:string, 
+  /*plugin_path:string,*/ 
+  tmpdir:string
+)
 {
   
-  var librtl = Filename::join (build,"lib","rtl");
+  var librtl = Filename::join (build,"host","lib","rtl");
+  var bin = Filename::join (build,"host","bin");
   Directory::mkdirs tmpdir;
   Directory::mkdirs librtl;
   println$ 
@@ -200,7 +208,7 @@ proc make_rtl (repo:string, build:string, pkgconfig_dir:string, boot_package:str
   begin
     println$ "Make drivers";
     var FLX_INSTALL_DIR = #(Config::config).FLX_INSTALL_DIR;
-    var configdir = Filename::join (FLX_INSTALL_DIR, "config", "target");
+    var configdir = Filename::join (FLX_INSTALL_DIR, "host", "lib","rtl");
     fun mkinc (x:string) => "-I"+x;
     var srcdir = Filename::join (repo,"src","flx_drivers");
     var config = 
@@ -210,7 +218,7 @@ proc make_rtl (repo:string, build:string, pkgconfig_dir:string, boot_package:str
         cflags = Empty[string],
         library_search_dirs= list[string] ("-L"+librtl),
         dynamic_libraries= Empty[string],
-        static_libraries= Empty[string],
+        static_libraries= Empty[string], //############ FIXME or the link won't work!
         debugln = dbug
       )
     ;
@@ -218,6 +226,11 @@ proc make_rtl (repo:string, build:string, pkgconfig_dir:string, boot_package:str
         ?dstobj = file.Filename::strip_extension + #(toolchain.static_object_extension) in
         Filename::join (librtl, dstobj)
     ;
+    fun prgname (file:string) => let 
+        ?dstprg = file.Filename::strip_extension + #(toolchain.executable_extension) in
+        Filename::join (bin, dstprg)
+    ;
+
 
     var toolchain = toolchain-maker config;
     println$ #(toolchain.whatami);
@@ -234,6 +247,25 @@ proc make_rtl (repo:string, build:string, pkgconfig_dir:string, boot_package:str
     cobj("flx_arun_lib.cpp");
     cobj("flx_run_main.cxx");
     cobj("flx_arun_main.cxx");
+
+    proc prg(file:string) {
+      var exe = prgname file;
+      println$ "Linking [executable] " + exe;
+      var objs = list (
+        Filename::join(librtl,file+"_lib")+#(toolchain.static_object_extension),
+        Filename::join(librtl,file+"_main")+#(toolchain.static_object_extension)
+      );
+      var result,libs = db.query$ list("--rec","--keeprightmost","--field=provides_slib",file);
+      if result != 0 do
+        println$ "Driver pkgconfig query for "+ file+" FAILED";
+      done
+      result = toolchain.executable_linker(srcs=objs+libs, dst=exe);
+      if result != 0 do
+        println$ "Driver link  "+ file+" FAILED";
+      done
+    }
+    prg("flx_run");
+    prg("flx_arun");
   end
 }
 

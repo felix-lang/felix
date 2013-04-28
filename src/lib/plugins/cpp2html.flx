@@ -229,7 +229,7 @@ fin:>
    return false, out;
 }
 }
-println$ "cpp2html initialisation";
+println$ Version::felix_version+ " cpp2html initialisation";
 
 fun setup(config_data:string) = {
   var config_lines = split(config_data, "\n");

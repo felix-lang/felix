@@ -1734,7 +1734,7 @@ bool DFA::Search(const StringPiece& text,
     return false;
   }
   if (params.start == DeadState)
-    return NULL;
+    return false;
   if (params.start == FullMatchState) {
     if (run_forward == want_earliest_match)
       *epp = text.begin();

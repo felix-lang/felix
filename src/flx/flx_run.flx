@@ -98,7 +98,11 @@ proc cxx_compile_dynamic1(src:string, dst:string)
 
 proc cxx_compile_dynamic
 {
-  cxx_compile_dynamic1 (dvars.cpp_filebase+".cpp", dvars.cpp_filebase+config.EXT_SHARED_OBJ);
+  if control.LINKIT == 0 do
+    cxx_compile_dynamic1 (dvars.cpp_filebase+".cpp", control.LINKER_OUTPUT_FILENAME);
+  else
+    cxx_compile_dynamic1 (dvars.cpp_filebase+".cpp", dvars.cpp_filebase+config.EXT_SHARED_OBJ);
+  done
 
   for src in control.cpps do
     var dst = Filename::strip_extension src + config.EXT_SHARED_OBJ;
@@ -173,7 +177,11 @@ proc cxx_compile_static
   // we only need the thunk if we're linking OR -o switch was NOT specified
   // i.e. skip compiling the thunk the output name was specified and 
   // represents an object file (or library archive?)
-  if control.LINKIT == 1 or control.OUTPUT_FILENAME_SPECIFIED == 0 do
+  if 
+    control.LINKIT == 1 or 
+    control.OUTPUT_FILENAME_SPECIFIED == 0 and
+    control.OUTPUT_FILENAME_WITHOUT_EXTENSION_SPECIFIED == 0
+  do
     cxx_compile_static1
     (
       dvars.cpp_filebase+"_static_link_thunk.cpp",
@@ -190,8 +198,10 @@ proc cxx_compile_static
   done
  
   if control.LINKIT == 0 do
+    // compile only
     cxx_compile_static1 (dvars.cpp_filebase+".cpp",control.LINKER_OUTPUT_FILENAME);
   else 
+    // compile and link
     cxx_compile_static1 (dvars.cpp_filebase+".cpp",dvars.cpp_filebase+config.EXT_STATIC_OBJ);
   done
 

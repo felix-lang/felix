@@ -11,6 +11,7 @@ proc print_help() {
   println "--show               : print the felix program to stdout";
   println "-c                   : compile only, do not run";
   println "-o                   : linker output filename";
+  println "-ox                  : linker output filename (without extension)";
   println "--usage=prototype    : fast compilation at the expense of slower executables";
   println "--usage=debugging    : enable debugging aids";
   println "--usage=production   : optimised code with run time safety checks retained";
@@ -50,8 +51,6 @@ proc print_help() {
   println "--indir=dir          : set directory for regexp search, default current directory";
   println "--regex=pattern      : Perl regexp for batch file processing";
   println "--backup             : backup working source tree to dir 'backup'";
-  println "--install            : install --test directory to configured location";
-  println "--dist=path          : install --test directory to configured location";
   println "--import=file        : add an import which is prefixed to all files being translated";
   println "--import=@file       : add all the files listed in file as imports (recursive on @)";
   println "--nostdimport        : don't import the standard imports nugram.flxh and flx.flxh";
@@ -96,19 +95,9 @@ proc handle_switch(arg:string)
     debugln "Set test directory";
     config.FLX_INSTALL_DIR=arg.[7 to];
 
-  elif prefix(arg,"--dist=") do
-    debugln "distribution at";
-    control.DIST_ROOT=arg.[7 to];
-    dist();
   elif arg=="--test" do
     debugln "Set test directory";
     config.FLX_INSTALL_DIR=".";
-
-  elif arg=="--install" do
-    install; // non-return
-
-  elif arg=="--install-bin" do
-    install_bin; // non-return
 
   elif prefix(arg,"--stdout=") do
     debugln "Redirect standard output";
@@ -383,6 +372,7 @@ fun check_ext (s:string) => match find #exts s with
 proc parse_cmd_line
 {
 var SET_LINKER_OUTPUT = false;
+var SET_LINKER_OUTPUT_WITHOUT_EXTENSION = false;
 grabbing_args: while loopctl.grab == 1 and loopctl.argno < System::argc do
   var arg = System::argv loopctl.argno;
   debugln$ "ARGNO="+str(loopctl.argno)+", arg='"+arg+"'";
@@ -393,9 +383,21 @@ grabbing_args: while loopctl.grab == 1 and loopctl.argno < System::argc do
      SET_LINKER_OUTPUT = false;
      control.OUTPUT_FILENAME_SPECIFIED = 1;
 
+  elif SET_LINKER_OUTPUT_WITHOUT_EXTENSION do
+     control.LINKER_OUTPUT_FILENAME = arg;
+     debugln$ "Set linker output file=" + control.LINKER_OUTPUT_FILENAME;
+     SET_LINKER_OUTPUT_WITHOUT_EXTENSION = false;
+     control.OUTPUT_FILENAME_WITHOUT_EXTENSION_SPECIFIED = 1;
+
+
   elif arg == "-o" do
     debugln "Set linker output name (next arg)";
     SET_LINKER_OUTPUT=true;
+
+  elif arg == "-ox" do
+    debugln "Set linker output name (without extension) (next arg) ";
+    SET_LINKER_OUTPUT_WITHOUT_EXTENSION=true;
+
 
   elif not (prefix (arg,"-")) do
     loopctl.progname = arg;
@@ -442,6 +444,11 @@ proc processing_stage1
 {
 
   parse_cmd_line;
+
+  if control.LINK == 0 and control.STATICLIB == 1 do
+    eprintln$ "Conflicting switches --nolink and --staticlib";
+    System::exit 1;
+  done
 
   control.CLEAR_CACHE, control.cache_time = validate_cache (
     FLX_INSTALL_DIR = config.FLX_INSTALL_DIR,
