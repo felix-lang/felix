@@ -222,10 +222,6 @@ proc make_rtl (
         debugln = dbug
       )
     ;
-    fun objname (file:string) => let 
-        ?dstobj = file.Filename::strip_extension + #(toolchain.static_object_extension) in
-        Filename::join (librtl, dstobj)
-    ;
     fun prgname (file:string) => let 
         ?dstprg = file.Filename::strip_extension + #(toolchain.executable_extension) in
         Filename::join (bin, dstprg)
@@ -234,25 +230,26 @@ proc make_rtl (
 
     var toolchain = toolchain-maker config;
     println$ #(toolchain.whatami);
-    proc cobj (file:string) {
-      var src = Filename::join (srcdir,file);
-      var dst = objname file;
+    proc cobj (s:string,dst:string) {
+      var src = Filename::join (srcdir,s);
       println$ "Compiling [static] " + src + " -> " + dst;
       var result = toolchain.cxx_static_object_compiler(src=src, dst=dst);
       if result != 0 do
-        println$ "Driver compile "+ file+" FAILED";
+        println$ "Driver compile "+ s + " -> " + dst +" FAILED";
       done
     }
-    cobj("flx_run_lib.cpp");
-    cobj("flx_arun_lib.cpp");
-    cobj("flx_run_main.cxx");
-    cobj("flx_arun_main.cxx");
+    cobj("flx_run_lib_static.cpp",Filename::join(librtl,"flx_run_lib"+#(toolchain.static_object_extension)));
+    cobj("flx_run_lib_dynamic.cpp",Filename::join(tmpdir,"flx_run_lib_dynamic"+#(toolchain.static_object_extension)));
+    cobj("flx_arun_lib_static.cpp",Filename::join(librtl,"flx_arun_lib"+#(toolchain.static_object_extension)));
+    cobj("flx_arun_lib_dynamic.cpp",Filename::join(tmpdir,"flx_arun_lib_dynamic"+#(toolchain.static_object_extension)));
+    cobj("flx_run_main.cxx",Filename::join(librtl,"flx_run_main"+#(toolchain.static_object_extension)));
+    cobj("flx_arun_main.cxx",Filename::join(librtl,"flx_arun_main"+#(toolchain.static_object_extension)));
 
     proc prg(file:string) {
       var exe = prgname file;
       println$ "Linking [executable] " + exe;
       var objs = list (
-        Filename::join(librtl,file+"_lib")+#(toolchain.static_object_extension),
+        Filename::join(tmpdir,file+"_lib_dynamic")+#(toolchain.static_object_extension),
         Filename::join(librtl,file+"_main")+#(toolchain.static_object_extension)
       );
       var result,libs = db.query$ list("--rec","--keeprightmost","--field=provides_slib",file);

@@ -32,42 +32,38 @@ def build(host_phase, target_phase):
 
     flx_run_static_obj = target_phase.cxx.static.compile(
         dst='host/lib/rtl/flx_run_lib',
-        src=path / 'flx_run_lib.cpp',
+        src=path / 'flx_run_lib_static.cpp',
         includes=run_includes,
-        macros=['FLX_STATIC_LINK'],
     )
 
     flx_run_static_main= target_phase.cxx.static.compile(
         dst='host/lib/rtl/flx_run_main',
         src=path / 'flx_run_main.cxx',
         includes=run_includes,
-        macros=['FLX_STATIC_LINK'],
     )
 
     flx_run_exe = target_phase.cxx.shared.build_exe(
         dst='host/bin/flx_run',
-        srcs=[path / 'flx_run_main.cxx', path / 'flx_run_lib.cpp'],
+        srcs=[path / 'flx_run_main.cxx', path / 'flx_run_lib_dynamic.cpp'],
         includes=run_includes,
         libs=[call('buildsystem.flx_rtl.build_runtime', host_phase, target_phase).shared],
     )
 
     flx_arun_static_obj = target_phase.cxx.static.compile(
         dst='host/lib/rtl/flx_arun_lib',
-        src=path / 'flx_arun_lib.cpp',
+        src=path / 'flx_arun_lib_static.cpp',
         includes=arun_includes,
-        macros=['FLX_STATIC_LINK'],
     )
 
     flx_arun_static_main= target_phase.cxx.static.compile(
         dst='host/lib/rtl/flx_arun_main',
         src=path / 'flx_arun_main.cxx',
         includes=arun_includes,
-        macros=['FLX_STATIC_LINK'],
     )
 
     flx_arun_exe = target_phase.cxx.shared.build_exe(
         dst='host/bin/flx_arun',
-        srcs=[path / 'flx_arun_main.cxx', path/ 'flx_arun_lib.cpp'],
+        srcs=[path / 'flx_arun_main.cxx', path/ 'flx_arun_lib_dynamic.cpp'],
         includes=arun_includes,
         libs=[
            call('buildsystem.flx_rtl.build_runtime', host_phase, target_phase).shared,

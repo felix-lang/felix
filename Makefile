@@ -243,6 +243,8 @@ tarball:
 		${BUILDROOT}/host \
 		${BUILDROOT}/share
 
+bootstrap: rtlbuild trial-plugins trial-exes
+
 rtlbuild:
 	# ##############################################
 	# build a new Felix system: build/trial
@@ -363,11 +365,21 @@ trial-plugins:
 	build/release/host/bin/flx --test=build/trial --static -c --nolink -ox build/trial/host/lib/rtl/toolchain_gcc_linux build/trial/share/lib/plugins/toolchain_gcc_linux
 	build/release/host/bin/flx --test=build/trial --static -c --nolink -ox build/trial/host/lib/rtl/toolhcain_gcc_osx build/trial/share/lib/plugins/toolchain_gcc_osx
 
+trial-exes:
+	build/release/host/bin/flx --test=build/trial --static -c -ox build/trial/host/bin/flx build/trial/share/src/flx/flx.flx
+	build/trial/host/bin/flx --test=build/trial --static -c -ox build/trial/host/bin/flx_pkgconfig build/trial/share/src/flx_pkgconfig/flx_pkgconfig
+	build/trial/host/bin/flx --test=build/trial --static -c -ox build/trial/host/bin/flx_cp build/trial/share/src/tools/flx_cp
+	build/trial/host/bin/flx --test=build/trial --static -c -ox build/trial/host/bin/flx_ls build/trial/share/src/tools/flx_ls
+	build/trial/host/bin/flx --test=build/trial --static -c -ox build/trial/host/bin/flx_grep build/trial/share/src/tools/flx_grep
+	build/trial/host/bin/flx --test=build/trial --static -c -ox build/trial/host/bin/flx_replace build/trial/share/src/tools/flx_replace
+	build/trial/host/bin/flx --test=build/trial --static -c -ox build/trial/host/bin/flx_tangle build/trial/share/src/tools/flx_tangle
+	build/trial/host/bin/flx --test=build/trial --static -c -ox build/trial/host/bin/flx_perror build/trial/share/src/tools/flx_perror
+	build/trial/host/bin/flx --test=build/trial --static -c -ox build/trial/host/bin/webserver build/trial/share/src/tools/webserver
 
 
 .PHONY : build32 build64 build test32 test64 test  
 .PHONY : build32-debug build64-debug build-debug test32-debug test64-debug test-debug 
 .PHONY : doc install websites-linux  release install-bin 
 .PHONY : copy-doc gen-doc check-tut gendoc fbuild speed tarball
-.PHONY : rtlbuild copy-src
+.PHONY : rtlbuild copy-src trial-exes trial-plugins
 

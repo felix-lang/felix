@@ -445,7 +445,7 @@ proc processing_stage1
 
   parse_cmd_line;
 
-  if control.LINK == 0 and control.STATICLIB == 1 do
+  if control.LINKIT == 0 and control.STATICLIB == 1 do
     eprintln$ "Conflicting switches --nolink and --staticlib";
     System::exit 1;
   done
