@@ -77,86 +77,93 @@ proc print_help() {
   println "* *.flx *.fdoc       : Felix program name, terminates options and starts runtime arguments";
 }
 
+typedef config_type = typeof (#Config::config);
 
-proc handle_switch(arg:string)
+proc handle_switch
+(
+  config:&config_type,
+  control:&control_type, 
+  loopctl:&loopctl_type,
+  arg:string
+)
 {
   if arg == "--nostdimport" do
     debugln "No standard library import";
     // Note: currently, Felix compiler generates code that REQUIRES
     // the standard library, eg the driver passes a gc_profile_t record
     // and the compiler generates _uctor_ objects, etc etc
-    control.STDIMPORT="";
+    control.STDIMPORT <- "";
 
   elif prefix(arg,"--import=") do
    debugln "Add import";
-   control.IMPORTS=control.IMPORTS + arg.[9 to];
+   control.IMPORTS <- control*.IMPORTS + arg.[9 to];
 
   elif prefix(arg,"--test=") do
     debugln "Set test directory";
-    config.FLX_INSTALL_DIR=arg.[7 to];
+    config.FLX_INSTALL_DIR <- arg.[7 to];
 
   elif arg=="--test" do
     debugln "Set test directory";
-    config.FLX_INSTALL_DIR=".";
+    config.FLX_INSTALL_DIR <- ".";
 
   elif prefix(arg,"--stdout=") do
     debugln "Redirect standard output";
     // of the Felix program only: used for saving the output
     // to a file so the test harness can compare it with an .expect file
-    control.STDOUT=arg.[9 to];
+    control.STDOUT <- arg.[9 to];
 
   elif arg == "--expect" do
     debugln "compare stdout with expect file (default name)";
     // of the Felix program only: used for saving the output
     // to a file so the test harness can compare it with an .expect file
-    control.CHECK_EXPECT=1;
+    control.CHECK_EXPECT <- 1;
 
   elif prefix(arg,"--expect=") do
     debugln "compare stdout with expect file";
     // of the Felix program only: used for saving the output
     // to a file so the test harness can compare it with an .expect file
-    control.EXPECT=arg.[9 to];
-    control.CHECK_EXPECT=1;
+    control.EXPECT <- arg.[9 to];
+    control.CHECK_EXPECT <- 1;
 
   elif arg=="--show" do
-    control.SHOWCODE=1;
+    control.SHOWCODE <- 1;
 
   elif arg=="--clean" do
     debugln "Clear caches";
-    control.CLEAR_CACHE=1;
+    control.CLEAR_CACHE <- 1;
 
   elif arg=="--force" do
     debugln "Force recompilation";
     // of the felix code, runs Felix unless --nofelix is set
     // the C++ compiler is run unless the felix compile failed
-    control.RECOMPILE=1;
+    control.RECOMPILE <- 1;
 
   elif arg=="--debug-flx" do
     dbug = true;
     debugln "debug flx tool ON";
-    control.DEBUG=1;
+    control.DEBUG <- 1;
 
   elif arg=="--debug" do
     debugln "Enable runtime debugging";
-    control.DEBUG=1;
+    control.DEBUG <- 1;
 
   elif arg=="--debug-compiler" do
     debugln "Enable compiler debugging";
-    control.DEBUG_COMPILER=1;
+    control.DEBUG_COMPILER <- 1;
 
   elif prefix(arg,"--compiler-phase=") do
     debugln "Change the compiler phase";
-    control.COMPILER_PHASE=arg.[len "--compiler-phase=" to];
-    control.RUNIT=0;
+    control.COMPILER_PHASE <- arg.[len "--compiler-phase=" to];
+    control.RUNIT <- 0;
 
   elif arg=="--nooptimise" do
     debugln "Disable optimisation";
-    control.NOOPTIMISE=1;
-    control.DOREDUCE=0;
+    control.NOOPTIMISE <- 1;
+    control.DOREDUCE <- 0;
 
   elif arg=="--nostdlib" do
     debugln "Do not load standard library";
-    control.NOSTDLIB=1;
+    control.NOSTDLIB <- 1;
 
   elif arg == "--echo" do
     debugln "Echo commands sent to system";
@@ -164,43 +171,43 @@ proc handle_switch(arg:string)
 
   elif arg == "--noreduce" do
     debugln "do not perform reductions";
-    control.DOREDUCE=0;
+    control.DOREDUCE <- 0;
 
   elif arg == "--doreduce" do
     debugln "do perform reductions";
-    control.DOREDUCE=1;
+    control.DOREDUCE <- 1;
 
 
   elif arg == "--static" do
     debugln "Compile a statically linked program";
-    control.STATIC=1;
+    control.STATIC <- 1;
 
   elif arg == "--staticlib" do
     debugln "make a static link library (instead of a program)";
-    control.STATIC=1;
-    control.STATICLIB=1;
-    control.RUNIT=0;
+    control.STATIC <- 1;
+    control.STATICLIB <- 1;
+    control.RUNIT <- 0;
 
   elif prefix(arg,"--inline=") do
     debugln "Set inline aggressiveness";
-    control.INLINE=int(arg.[9 to]);
+    control.INLINE <- int(arg.[9 to]);
 
   elif arg == "--inline" do
     debugln "Set inline aggressiveness";
-    control.INLINE=100;
+    control.INLINE <- 100;
 
   elif arg == "--noinline" do
     debugln "Disable inlining (NOT RECOMMENDED)";
-    control.INLINE=0;
+    control.INLINE <- 0;
 
   elif arg == "--version" do
     debugln "Print Felix version and exit";
     print("version ");
-    println(config.VERSION);
+    println(config*.VERSION);
     System::exit(0);
 
   elif arg == "--config" do
-    print_config;
+    print_config(config);
     System::exit(0);
 
   elif arg == "--options" do
@@ -209,59 +216,59 @@ proc handle_switch(arg:string)
 
   elif arg == "--where" do
     debugln "Print location of install directory and exit";
-    println(config.FLX_INSTALL_DIR);
+    println(config*.FLX_INSTALL_DIR);
     System::exit(0);
 
   elif arg == "--time" do
     debugln "Time program execution and print after running";
-    control.TIME=1;
+    control.TIME <- 1;
 
   elif prefix(arg,"--output_dir=") do
     debugln "Set the directory for compiler generated C++ files";
-    control.OUTPUT_DIR=arg.[13 to];
+    control.OUTPUT_DIR <- arg.[13 to];
     
   elif prefix(arg,"--bundle_dir=") do
     debugln "Output files needed for C++ compilation into this folder (directly by basename)";
-    control.BUNDLE_DIR=Some arg.[13 to];
+    control.BUNDLE_DIR <- Some arg.[13 to];
 
   elif prefix(arg,"--cache_dir=") do
     debugln "Set the directory for compiler generated *.par files";
-    control.CACHE_DIR=arg.[12 to];
+    control.CACHE_DIR <- arg.[12 to];
 
   elif arg == "--usage=prototype" do
     debugln "Set usage prototyping";
-    control.USAGE = "prototype";
-    control.NOOPTIMISE=1;
-    control.OPTIMISE = list[string]$ "-O1";
-    control.DOREDUCE = 0;
-    control.INLINE=5;
+    control.USAGE  <-  "prototype";
+    control.NOOPTIMISE <- 1;
+    control.OPTIMISE  <-  list[string]$ "-O1";
+    control.DOREDUCE  <-  0;
+    control.INLINE <- 5;
 
   elif arg == "--usage=debugging" do
     debugln "Set usage debugging";
-    control.USAGE = "debugging";
-    control.NOOPTIMISE=1;
-    control.DEBUG = 1;
-    control.DOREDUCE= 0;
-    control.OPTIMISE =  list[string]$"-O0";
-    control.INLINE=5;
+    control.USAGE  <-  "debugging";
+    control.NOOPTIMISE <- 1;
+    control.DEBUG  <-  1;
+    control.DOREDUCE <-  0;
+    control.OPTIMISE  <-   list[string]$"-O0";
+    control.INLINE <- 5;
 
   elif arg == "--usage=production" do
     debugln "Set usage production";
-    control.USAGE = "production";
-    control.DOREDUCE = 1;
-    control.OPTIMISE =  list[string]$"-O2";
-    control.INLINE=25;
+    control.USAGE  <-  "production";
+    control.DOREDUCE  <-  1;
+    control.OPTIMISE  <-   list[string]$"-O2";
+    control.INLINE <- 25;
 
   elif arg == "--usage=hyperlight" do
     debugln "Set usage hyperlight";
-    control.USAGE = "hyperlight";
-    control.DOREDUCE = 1;
-    control.OPTIMISE =  list[string]$"-O2";
-    control.INLINE=100;
+    control.USAGE  <-  "hyperlight";
+    control.DOREDUCE  <-  1;
+    control.OPTIMISE  <-   list[string]$"-O2";
+    control.INLINE <- 100;
 
   elif arg == "--man" do
     debugln "Display top level manual page using 'man' program";
-    C_hack::ignore(system( "man -M "+config.FLX_INSTALL_DIR+#Filename::sep+"man"+" flx"));
+    C_hack::ignore(system( "man -M "+config*.FLX_INSTALL_DIR+#Filename::sep+"man"+" flx"));
     System::exit(0);
 
   elif arg == "--help" do
@@ -270,78 +277,78 @@ proc handle_switch(arg:string)
 
   elif arg == "-c" do
     debugln "Compile program but do not run it";
-    control.RUNIT=0;
+    control.RUNIT <- 0;
 
   elif prefix(arg,"-I") do
     debugln "Set include directories for both Felix and C/C++";
-    control.STANDARD_INCLUDE_DIRS=control.STANDARD_INCLUDE_DIRS + arg;
+    control.STANDARD_INCLUDE_DIRS <- control*.STANDARD_INCLUDE_DIRS + arg;
 
   elif arg== "--nofelix" do
     debugln "Do not translate Felix code, just compile generated C++ (used to debug at C++ level)";
-    control.FELIX=0;
+    control.FELIX <- 0;
 
   elif arg== "--nocc" do
     debugln "Do not run the C/C++ compiler, just generate C++ source code and exit; implies -c and --nolink";
-    control.CCOMPILEIT=0;
+    control.CCOMPILEIT <- 0;
   elif arg== "--nolink" do
     debugln "Do not link object code to an executable, just generate and compile the C++ source code; implies -c";
-    control.LINKIT=0;
+    control.LINKIT <- 0;
 
   elif prefix(arg,"-l") or prefix(arg,"-L") do
     debugln "Set extra switched for linker";
-    control.LINKER_SWITCHES=control.LINKER_SWITCHES + arg;
+    control.LINKER_SWITCHES <- control*.LINKER_SWITCHES + arg;
 
   elif prefix(arg,"-D") do
     debugln "Set extra macros for C++ compilation";
-    control.MACROS=control.MACROS + arg;
+    control.MACROS <- control*.MACROS + arg;
 
   elif arg \in ("-O1","-O2","-O3") do
     debugln$ "Set C++ compilation optimisation " + arg;
-    control.OPTIMISE =  list[string]$ arg;
+    control.OPTIMISE <-  list[string]$ arg;
 
   elif prefix(arg,"-f") do
     debugln$ "Set C++ compilation switch "+arg;
-    control.EXTRA_CCFLAGS = control.EXTRA_CCFLAGS + arg;
+    control.EXTRA_CCFLAGS  <-  control*.EXTRA_CCFLAGS + arg;
 
   elif prefix(arg,"--cflags=") do
     {
       var flags = arg.[9 to];
       debugln$ "Set C++ compilation switch "+ flags;
-      control.EXTRA_CCFLAGS = control.EXTRA_CCFLAGS + flags;
+      control.EXTRA_CCFLAGS  <-  control*.EXTRA_CCFLAGS + flags;
     };
 
   elif prefix(arg,"-W") do
     debugln$ "Set C++ warning switch "+arg;
-    control.EXTRA_CCFLAGS = control.EXTRA_CCFLAGS + arg;
+    control.EXTRA_CCFLAGS  <-  control*.EXTRA_CCFLAGS + arg;
 
   elif prefix(arg,"--pkg=") do
     debugln "Add pkgconfig package to link";
-    control.pkgs= control.pkgs + " " + arg.[6 to];
+    control.pkgs <-  control*.pkgs + " " + arg.[6 to];
 
   /* end of flx options, the next argument is
      the primary filename
   */
   elif arg == "--" do
-    loopctl.grab=0;
-    loopctl.argno = loopctl.argno + 1;
-    arg = System::argv loopctl.argno;
-    debugln$ "ARGNO="+str(loopctl.argno)+", arg='"+arg+"'";
+    loopctl.grab <- 0;
+    loopctl.argno <- loopctl*.argno + 1;
+    arg = System::argv loopctl*.argno;
+    debugln$ "ARGNO="+str(loopctl*.argno)+", arg='"+arg+"'";
 
-    loopctl.path,loopctl.ext = Filename::split_extension(arg);
-    loopctl.dir,loopctl.base = Filename::split1(loopctl.path);
-    debugln$ "path="+loopctl.path+", ext="+loopctl.ext+",dir="+loopctl.dir+",base="+loopctl.base;
+    loopctl*.path,loopctl*.ext = Filename::split_extension(arg);
+    loopctl*.dir,loopctl*.base = Filename::split1(loopctl*.path);
+    debugln$ "path="+loopctl*.path+", ext="+loopctl*.ext+",dir="+loopctl*.dir+",base="+loopctl*.base;
 
   elif prefix (arg,"--indir=") do
-    control.INDIR = arg.[8 to];
-    debugln$ "Set input directory for regexp to " + control.INDIR;
+    control.INDIR  <-  arg.[8 to];
+    debugln$ "Set input directory for regexp to " + control*.INDIR;
 
   elif prefix (arg,"--regex=") do
-    control.INREGEX = arg.[8 to];
-    debugln$ "Set input regex to " + control.INREGEX;
+    control.INREGEX  <-  arg.[8 to];
+    debugln$ "Set input regex to " + control*.INREGEX;
 
 // the main filename -- subsequent args are args to flx_run
   else
-    eprintln$ "Unknown switch " + arg;
+    eprintln$ "Unknown switch '" + arg+"'";
     System::exit 1;
   done
 }
@@ -369,25 +376,30 @@ fun check_ext (s:string) => match find #exts s with
   | None => "unknown"
 ;
 
-proc parse_cmd_line
+proc parse_cmd_line 
+(
+  config:&config_type, 
+  control:&control_type, 
+  loopctl:&loopctl_type
+)
 {
 var SET_LINKER_OUTPUT = false;
 var SET_LINKER_OUTPUT_WITHOUT_EXTENSION = false;
-grabbing_args: while loopctl.grab == 1 and loopctl.argno < System::argc do
-  var arg = System::argv loopctl.argno;
-  debugln$ "ARGNO="+str(loopctl.argno)+", arg='"+arg+"'";
+grabbing_args: while loopctl*.grab == 1 and loopctl*.argno < System::argc do
+  var arg = System::argv loopctl*.argno;
+  debugln$ "ARGNO="+str(loopctl*.argno)+", arg='"+arg+"'";
 
   if SET_LINKER_OUTPUT do
-     control.LINKER_OUTPUT_FILENAME = arg;
-     debugln$ "Set linker output file=" + control.LINKER_OUTPUT_FILENAME;
+     control.LINKER_OUTPUT_FILENAME <- arg;
+     debugln$ "Set linker output file=" + control*.LINKER_OUTPUT_FILENAME;
      SET_LINKER_OUTPUT = false;
-     control.OUTPUT_FILENAME_SPECIFIED = 1;
+     control.OUTPUT_FILENAME_SPECIFIED <- 1;
 
   elif SET_LINKER_OUTPUT_WITHOUT_EXTENSION do
-     control.LINKER_OUTPUT_FILENAME = arg;
-     debugln$ "Set linker output file=" + control.LINKER_OUTPUT_FILENAME;
+     control.LINKER_OUTPUT_FILENAME <- arg;
+     debugln$ "Set linker output file=" + control*.LINKER_OUTPUT_FILENAME;
      SET_LINKER_OUTPUT_WITHOUT_EXTENSION = false;
-     control.OUTPUT_FILENAME_WITHOUT_EXTENSION_SPECIFIED = 1;
+     control.OUTPUT_FILENAME_WITHOUT_EXTENSION_SPECIFIED <- 1;
 
 
   elif arg == "-o" do
@@ -400,28 +412,28 @@ grabbing_args: while loopctl.grab == 1 and loopctl.argno < System::argc do
 
 
   elif not (prefix (arg,"-")) do
-    loopctl.progname = arg;
+    loopctl.progname <- arg;
 
     match check_ext $ Filename::get_extension arg with
     | "compile" => 
-       control.cpps = control.cpps + arg;
+       control.cpps <- control*.cpps + arg;
 
     | "link" =>
-       control.cppos = control.cppos + arg;
+       control.cppos <- control*.cppos + arg;
 
     | "felix" =>
-      loopctl.progname = arg;
-      loopctl.path,loopctl.ext = Filename::split_extension(arg);
-      loopctl.dir,loopctl.base = Filename::split1(loopctl.path);
-      debugln$ "path="+loopctl.path+", ext="+loopctl.ext+",dir="+loopctl.dir+",base="+loopctl.base;
-      loopctl.grab = 0;
+      loopctl.progname <- arg;
+      loopctl*.path,loopctl*.ext = Filename::split_extension(arg);
+      loopctl*.dir,loopctl*.base = Filename::split1(loopctl*.path);
+      debugln$ "path="+loopctl*.path+", ext="+loopctl*.ext+",dir="+loopctl*.dir+",base="+loopctl*.base;
+      loopctl.grab <- 0;
 
     | "none" =>
-      loopctl.progname = arg;
-      loopctl.path,loopctl.ext = Filename::split_extension(arg);
-      loopctl.dir,loopctl.base = Filename::split1(loopctl.path);
-      debugln$ "path="+loopctl.path+", ext="+loopctl.ext+",dir="+loopctl.dir+",base="+loopctl.base;
-      loopctl.grab = 0;
+      loopctl.progname <- arg;
+      loopctl*.path,loopctl*.ext = Filename::split_extension(arg);
+      loopctl*.dir,loopctl*.base = Filename::split1(loopctl*.path);
+      debugln$ "path="+loopctl*.path+", ext="+loopctl*.ext+",dir="+loopctl*.dir+",base="+loopctl*.base;
+      loopctl.grab <- 0;
 
     | "unknown" =>
       eprintln$ "Unknown file extension in " + arg;
@@ -432,44 +444,49 @@ grabbing_args: while loopctl.grab == 1 and loopctl.argno < System::argc do
   ;
    
   else
-  handle_switch(arg);
+  handle_switch(config,control,loopctl,arg);
 
   done
-  ++loopctl.argno;
+  loopctl.argno <- loopctl*.argno + 1;
 done
  
 }
 
-proc processing_stage1 
+proc processing_stage1
+(
+  config:&config_type, 
+  control:&control_type, 
+  loopctl:&loopctl_type,
+  profile:&profile_type
+) 
 {
+  parse_cmd_line(config,control,loopctl);
 
-  parse_cmd_line;
-
-  if control.LINKIT == 0 and control.STATICLIB == 1 do
+  if control*.LINKIT == 0 and control*.STATICLIB == 1 do
     eprintln$ "Conflicting switches --nolink and --staticlib";
     System::exit 1;
   done
 
-  control.CLEAR_CACHE, control.cache_time = validate_cache (
-    FLX_INSTALL_DIR = config.FLX_INSTALL_DIR,
-    STDGRAMMAR = control.STDGRAMMAR,
-    FLXG = control.FLXG,
-    CACHE_DIR = control.CACHE_DIR,
-    OUTPUT_DIR = control.OUTPUT_DIR,
-    DEFAULT_CACHE_DIR = profile.DEFAULT_CACHE_DIR,
-    DEFAULT_OUTPUT_DIR = profile.DEFAULT_OUTPUT_DIR,
-    CLEAR_CACHE= control.CLEAR_CACHE,
+  control*.CLEAR_CACHE, control*.cache_time = validate_cache (
+    FLX_INSTALL_DIR = config*.FLX_INSTALL_DIR,
+    STDGRAMMAR = control*.STDGRAMMAR,
+    FLXG = control*.FLXG,
+    CACHE_DIR = control*.CACHE_DIR,
+    OUTPUT_DIR = control*.OUTPUT_DIR,
+    DEFAULT_CACHE_DIR = profile*.DEFAULT_CACHE_DIR,
+    DEFAULT_OUTPUT_DIR = profile*.DEFAULT_OUTPUT_DIR,
+    CLEAR_CACHE= control*.CLEAR_CACHE,
     debugln = debugln[string],
     xqt = xqt,
     quote = Shell::quote_arg
   );
 
-  debugln$ loopctl.grab, loopctl.argno, System::argc;
+  debugln$ loopctl*.grab, loopctl*.argno, System::argc;
 
   // If we're still trying to grab a filename,
   // but we've run out of arguments ..
-  if loopctl.grab == 1 and loopctl.argno == System::argc and control.INREGEX == "" do
-    if control.CLEAR_CACHE == 1 do
+  if loopctl*.grab == 1 and loopctl*.argno == System::argc and control*.INREGEX == "" do
+    if control*.CLEAR_CACHE == 1 do
       System::exit(0);
     else
       println "usage: flx [options] filename";
@@ -479,54 +496,54 @@ proc processing_stage1
 
   // Primary filename established.
   debugln "#--------";
-  debugln$ "DONE, option index = "+str(loopctl.argno);
-  debugln$ "path="+loopctl.path+": dir="+loopctl.dir+",base="+loopctl.base+", ext="+loopctl.ext;
-  debugln$ "cpps="+str control.cpps;
-  debugln$ "cppos="+str control.cppos;
+  debugln$ "DONE, option index = "+str(loopctl*.argno);
+  debugln$ "path="+loopctl*.path+": dir="+loopctl*.dir+",base="+loopctl*.base+", ext="+loopctl*.ext;
+  debugln$ "cpps="+str control*.cpps;
+  debugln$ "cppos="+str control*.cppos;
 
   // Grab program arguments.
-  while loopctl.argno < System::argc do 
-    control.USER_ARGS += System::argv loopctl.argno; 
-    ++loopctl.argno; 
+  while loopctl*.argno < System::argc do 
+    control*.USER_ARGS += System::argv loopctl*.argno; 
+    ++loopctl*.argno; 
   done
-  debugln$ "USER_ARGS=" + str control.USER_ARGS;
+  debugln$ "USER_ARGS=" + str control*.USER_ARGS;
 
   // Establish C++ optimisation switches.
-  if control.NOOPTIMISE == 0 do
+  if control*.NOOPTIMISE == 0 do
     debugln "Set C++ compiler optimisation switches";
-    control.CCFLAGS=control.CCFLAGS+ control.OPTIMISE;
+    control.CCFLAGS <- control*.CCFLAGS+ control*.OPTIMISE;
   else
     debugln "What, no optimisation?";
   done
   // Note we have to do it this way so the -f switches turn
   // off optimisations previously introduced (order matters)
-  control.CCFLAGS = control.CCFLAGS + control.EXTRA_CCFLAGS;
+  control.CCFLAGS <- control*.CCFLAGS + control*.EXTRA_CCFLAGS;
 
   // Establish name of Felix compiler and run time library.
   // The one in "host" is good enough for flxg, however the
   // library location MUST be changed for cross compilation.
   // FIXME!
-  if config.HAVE_WIN32 do
-    control.FLXG=Filename::join(config.FLX_INSTALL_DIR, 'host', 'bin', 'flxg.exe');
-    control.FLXRUN=list$ "set", "PATH="+(Directory::mk_absolute_filename config.FLX_INSTALL_DIR)+"\\host\\lib\\rtl;"+"%PATH%&&";
+  if config*.HAVE_WIN32 do
+    control.FLXG <- Filename::join(config*.FLX_INSTALL_DIR, 'host', 'bin', 'flxg.exe');
+    control.FLXRUN <- list$ "set", "PATH="+(Directory::mk_absolute_filename config*.FLX_INSTALL_DIR)+"\\host\\lib\\rtl;"+"%PATH%&&";
     //println$ "FLXRUN=" + FLXRUN;
   else
-    control.FLXG=config.FLX_INSTALL_DIR+"/host/bin/flxg";
+    control.FLXG <- config*.FLX_INSTALL_DIR+"/host/bin/flxg";
     // the mac uses DYLD_LIBRARY_PATH instead of LD_LIBRARY_PATH
-    if config.HAVE_MACOSX do
-      control.FLXRUN=list$ "env","DYLD_LIBRARY_PATH="+config.FLX_INSTALL_DIR+"/host/lib/rtl:$DYLD_LIBRARY_PATH";
+    if config*.HAVE_MACOSX do
+      control.FLXRUN <- list$ "env","DYLD_LIBRARY_PATH="+config*.FLX_INSTALL_DIR+"/host/lib/rtl:$DYLD_LIBRARY_PATH";
     else
-      control.FLXRUN=list$ "env", "LD_LIBRARY_PATH="+config.FLX_INSTALL_DIR+"/host/lib/rtl:$LD_LIBRARY_PATH";
+      control.FLXRUN <- list$ "env", "LD_LIBRARY_PATH="+config*.FLX_INSTALL_DIR+"/host/lib/rtl:$LD_LIBRARY_PATH";
     done
   done
 
   // Get linker names.
-  var d,s = Config::link_strings(config.FLX_INSTALL_DIR);
-  control.DLINK_STRINGS = Shell::parse d;
-  control.SLINK_STRINGS = Shell::parse s;
+  var d,s = Config::link_strings(config*.FLX_INSTALL_DIR);
+  control.DLINK_STRINGS <-  Shell::parse d;
+  control.SLINK_STRINGS <-  Shell::parse s;
 
   // Get location of flx_pkgconfig's config directory.
-  control.CONFIG_DIR = Filename::join(config.FLX_INSTALL_DIR,'host','config');
+  control.CONFIG_DIR <- Filename::join(config*.FLX_INSTALL_DIR,'host','config');
 
   // this hack forces a directory name, because executing "prog"
   // can fail if the currect directory is not on the PATH, 
@@ -538,8 +555,8 @@ proc processing_stage1
   // to an absolute one, however this only makes sense on Unix 
   // since Windows has multiple "drives" it is much harder to
   // do the conversion.
-  loopctl.dir = 
-    if loopctl.dir != "" then loopctl.dir 
+  loopctl.dir <- 
+    if loopctl*.dir != "" then loopctl*.dir 
     else "."
     endif
   ;
