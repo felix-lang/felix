@@ -29,3 +29,6 @@ fun dflt_profile () =
     )
   ;
 }
+
+typedef profile_type = typeof (#dflt_profile);
+

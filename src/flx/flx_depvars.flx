@@ -1,7 +1,19 @@
-// NOTE: host/lib/rtl is used below but that is WRONG for cross compilation.
-gen cal_depvars() = 
+typedef dvars_type = (
+    filebase:string,
+    cpp_filebase:string,
+    args: list[string],
+    use_ext:string,
+    INCLUDE_DIR: list[string],
+    STDLIB:list[string],
+    FLXLIBS: list[string],
+    DEBUGSWITCH:list[string],
+    STATIC_ENV:list[string],
+    VERBOSE: list[string]
+  );
+
+gen cal_depvars(control:&control_type, loopctl:loopctl_type) : dvars_type = 
 {
-  debugln$ "Felix package manager config directory is "+control.CONFIG_DIR;
+  debugln$ "Felix package manager config directory is "+control*.CONFIG_DIR;
   // make a list of any *.cpp files (or other g++ options ..)
 
   debugln$ "FileDir= " + loopctl.dir;
@@ -25,10 +37,10 @@ gen cal_depvars() =
   var filebase = Directory::mk_absolute_filename$ rel_filebase;
   debugln$ "User program base is " + filebase;
   var cpp_filebase =
-    match control.BUNDLE_DIR with
+    match control*.BUNDLE_DIR with
     | Some ?dir => Filename::join(dir,Filename::basename filebase)
-    | None =>if control.OUTPUT_DIR=="" then filebase 
-             else cache_join(control.OUTPUT_DIR,filebase) 
+    | None =>if control*.OUTPUT_DIR=="" then filebase 
+             else cache_join(control*.OUTPUT_DIR,filebase) 
              endif
     endmatch;         
   debugln$ "C++ file base is " + cpp_filebase;
@@ -36,17 +48,17 @@ gen cal_depvars() =
   // if we're supposed to check output against an expect file,
   // and no stdout file name is given, then direct output
   // into the cache.
-  if control.CHECK_EXPECT != 0 and control.STDOUT == "" do
-    control.STDOUT = cache_join (control.OUTPUT_DIR,filebase + ".stdout");
-    debugln$ "Set stdout to " + control.STDOUT;
+  if control*.CHECK_EXPECT != 0 and control*.STDOUT == "" do
+    control.STDOUT <- cache_join (control*.OUTPUT_DIR,filebase + ".stdout");
+    debugln$ "Set stdout to " + control*.STDOUT;
   done
 
   // if we're supposed to check output against an expect file,
   // and no expect file name is given, then use the filebase
   // with extension .expect.
-  if control.CHECK_EXPECT != 0 and control.EXPECT == "" do
-    control.EXPECT= filebase + ".expect";
-    debugln$ "Set expect to " + control.EXPECT;
+  if control*.CHECK_EXPECT != 0 and control*.EXPECT == "" do
+    control.EXPECT <- filebase + ".expect";
+    debugln$ "Set expect to " + control*.EXPECT;
   done
 
 
@@ -57,42 +69,42 @@ gen cal_depvars() =
     System::exit(1);
   done
 
-  if control.LINKER_OUTPUT_FILENAME == "" do
-    if control.LINKIT == 1 do
-      if control.STATICLIB == 1 do
-        control.LINKER_OUTPUT_FILENAME = filebase+config.EXT_LIB;
-      elif control.STATIC == 0 do // dynamic
-        control.LINKER_OUTPUT_FILENAME = filebase+config.EXT_SHLIB;
+  if control*.LINKER_OUTPUT_FILENAME == "" do
+    if control*.LINKIT == 1 do
+      if control*.STATICLIB == 1 do
+        control*.LINKER_OUTPUT_FILENAME = filebase+config.EXT_LIB;
+      elif control*.STATIC == 0 do // dynamic
+        control*.LINKER_OUTPUT_FILENAME = filebase+config.EXT_SHLIB;
       else
-        control.LINKER_OUTPUT_FILENAME = filebase+config.EXT_EXE;
+        control*.LINKER_OUTPUT_FILENAME = filebase+config.EXT_EXE;
       done
     else // No link, name specifies object file only.
-      if control.STATIC == 1 do
-        control.LINKER_OUTPUT_FILENAME = filebase+config.EXT_STATIC_OBJ;
+      if control*.STATIC == 1 do
+        control*.LINKER_OUTPUT_FILENAME = filebase+config.EXT_STATIC_OBJ;
       else
-        control.LINKER_OUTPUT_FILENAME = filebase+config.EXT_SHARED_OBJ;
+        control*.LINKER_OUTPUT_FILENAME = filebase+config.EXT_SHARED_OBJ;
       done
     done
-  elif control.OUTPUT_FILENAME_WITHOUT_EXTENSION_SPECIFIED == 1 do
-    if control.LINKIT == 1 do
-      if control.STATICLIB == 1 do
-        control.LINKER_OUTPUT_FILENAME += config.EXT_LIB;
-      elif control.STATIC == 0 do // dynamic
-        control.LINKER_OUTPUT_FILENAME += config.EXT_SHLIB;
+  elif control*.OUTPUT_FILENAME_WITHOUT_EXTENSION_SPECIFIED == 1 do
+    if control*.LINKIT == 1 do
+      if control*.STATICLIB == 1 do
+        control*.LINKER_OUTPUT_FILENAME += config.EXT_LIB;
+      elif control*.STATIC == 0 do // dynamic
+        control*.LINKER_OUTPUT_FILENAME += config.EXT_SHLIB;
       else
-        control.LINKER_OUTPUT_FILENAME += config.EXT_EXE;
+        control*.LINKER_OUTPUT_FILENAME += config.EXT_EXE;
       done
     else // No link, name specifies object file only.
-      if control.STATIC == 1 do
-        control.LINKER_OUTPUT_FILENAME += config.EXT_STATIC_OBJ;
+      if control*.STATIC == 1 do
+        control*.LINKER_OUTPUT_FILENAME += config.EXT_STATIC_OBJ;
       else
-        control.LINKER_OUTPUT_FILENAME += config.EXT_SHARED_OBJ;
+        control*.LINKER_OUTPUT_FILENAME += config.EXT_SHARED_OBJ;
       done
     done
   done
-  control.LINKER_OUTPUT_FILENAME =  Directory::mk_absolute_filename control.LINKER_OUTPUT_FILENAME; 
+  control*.LINKER_OUTPUT_FILENAME =  Directory::mk_absolute_filename control*.LINKER_OUTPUT_FILENAME; 
 
-  val args = control.USER_ARGS;
+  val args = control*.USER_ARGS;
   debugln$ "Target program args = "+args;
 
   var INCLUDE_DIR= list (
@@ -106,22 +118,22 @@ gen cal_depvars() =
     "-I"+Filename::join(config.FLX_INSTALL_DIR,"share","lib")
   );
   var STDLIB=list("std","web");
-  if control.NOSTDLIB == 1 do
+  if control*.NOSTDLIB == 1 do
     FLXLIBS=Empty[string];
     STDLIB=Empty[string];
   done
 
   var DEBUGSWITCH=Empty[string];
-  if control.DEBUG_COMPILER == 1 do DEBUGSWITCH=list[string]$ "--debug"; done
+  if control*.DEBUG_COMPILER == 1 do DEBUGSWITCH=list[string]$ "--debug"; done
 
   var STATIC_ENV=Empty[string];
-  if control.DEBUG_COMPILER == 1 do STATIC_ENV=list[string] ("env","FLX_DEBUG=1"); done
+  if control*.DEBUG_COMPILER == 1 do STATIC_ENV=list[string] ("env","FLX_DEBUG=1"); done
 
-  debugln$ "RECOMPILE="+str control.RECOMPILE;
-  debugln$ "RUNIT="+str control.RUNIT;
+  debugln$ "RECOMPILE="+str control*.RECOMPILE;
+  debugln$ "RUNIT="+str control*.RUNIT;
 
   var VERBOSE = Empty[string];
-  if control.DEBUG_COMPILER == 1 do
+  if control*.DEBUG_COMPILER == 1 do
     VERBOSE=list[string] "-v";
     debugln "Compiler debugging on";
   else
@@ -129,8 +141,8 @@ gen cal_depvars() =
     debugln "Compiler debugging off";
   done
 
-  if control.DEBUG==1 do
-    control.CCFLAGS=control.CCFLAGS+Shell::parse config.DEBUG_FLAGS;
+  if control*.DEBUG==1 do
+    control.CCFLAGS <- control*.CCFLAGS+Shell::parse config.DEBUG_FLAGS;
   done
 
 

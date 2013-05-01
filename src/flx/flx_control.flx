@@ -39,6 +39,7 @@ fun init_loopctl () => struct {
     var dir="";
     var progname = "";
 };
+typedef loopctl_type = typeof (#init_loopctl);
 
 fun dflt_control () =>
   struct {
@@ -116,4 +117,5 @@ fun dflt_control () =>
   }
 ;
 
-
+typedef control_type = typeof (#dflt_control);
+ 
