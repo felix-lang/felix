@@ -344,7 +344,7 @@ gen handle_local_options(optt:int*list[string]) = {
 
   proc clean(pkg:string,pkg_dir:string,extra_opts:string) {
   if CLEANBUILD and match filetype(pkg_dir) with |DIRECTORY => true |_ => false endmatch do
-      if System::system((FLX_INSTALL_DIR.join("bin")).join("flx")+" --inline=5 " + " "+ flx_extra_opts + " "+
+      if System::system(FLX+" --inline=5 " + " "+ flx_extra_opts + " "+
         pkg_dir.join("setup")+" clean --build-dir=" + pkg_dir +
         extra_opts) != 0 do
         warning("Clean failed");
@@ -359,7 +359,7 @@ gen handle_local_options(optt:int*list[string]) = {
 
   proc build(pkg:string, pkg_dir:string,extra_opts:string) {
     validate_pkg_dir(pkg,pkg_dir);
-    var cmd = (FLX_INSTALL_DIR.join("bin")).join("flx")+" --inline=0 " + " "+ flx_extra_opts + " "+
+    var cmd = FLX+" --inline=0 " + " "+ flx_extra_opts + " "+
       pkg_dir.join("setup")+" build --build-dir=" + pkg_dir +
       extra_opts;
    val result = System::system(cmd);
@@ -372,7 +372,7 @@ gen handle_local_options(optt:int*list[string]) = {
 
   proc test(pkg:string, pkg_dir:string,extra_opts:string) {
     validate_pkg_dir(pkg,pkg_dir);
-    val result = System::system((FLX_INSTALL_DIR.join("bin")).join("flx")+" --inline=0 " + " "+ flx_extra_opts + " "+
+    val result = System::system(FLX+" --inline=0 " + " "+ flx_extra_opts + " "+
     pkg_dir.join("setup")+" test --build-dir=" + pkg_dir +
     extra_opts);
     if result != 0 do  
@@ -392,7 +392,7 @@ gen handle_local_options(optt:int*list[string]) = {
       if not FORCE do test(pkg,pkg_dir,extra_opts); done
     done 
     
-    val result = System::system((FLX_INSTALL_DIR.join("bin")).join("flx")+" --inline=0 " + " "+ flx_extra_opts + " "+
+    val result = System::system(FLX+" --inline=0 " + " "+ flx_extra_opts + " "+
     pkg_dir.join("setup")+" install --build-dir=" + pkg_dir +
     extra_opts);
     if result != 0 do  

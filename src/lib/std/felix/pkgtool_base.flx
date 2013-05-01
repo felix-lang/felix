@@ -27,6 +27,9 @@ if PLAT_WIN32 do
 done
 var INSTALL_ROOT_TOPDIR=config.INSTALL_ROOT_TOPDIR;
 var INSTALL_ROOT=config.INSTALL_ROOT;
+var HOST_ROOT=INSTALL_ROOT.join("host");
+var SHARE_ROOT = INSTALL_ROOT.join("share");
+var FLX = (HOST_ROOT.join("bin")).join("flx");
 var cfg = strdict[string]();
 var OSX_LIB_DIRS = list("/Developer/SDKs/MacOSX10.5.sdk/usr/lib",
                         "/Developer/SDKs/MacOSX10.6.sdk/usr/lib",
@@ -97,7 +100,7 @@ var PLATFORMS = Empty[string];
 
 //$ #### Options populated from command line
 var BUILD_DIR = ".";        //--build-dir=[SOMETHING]
-var DEST_DIR = INSTALL_ROOT; //--dest-dir=[SOMETHING]
+var DEST_DIR = SHARE_ROOT; //--dest-dir=[SOMETHING]
 var DIST_DIR="";
 var DRY_RUN = false;        //--dry-run
 var EXTRA_LIBDIR = "";      // -L[SOMETHING]
@@ -325,8 +328,8 @@ noinline proc run_test(name:string,noheader:bool) {
 }
 ;
 noinline  proc run_test(name:string,noheader:bool,fail_not_fatal:bool) {
-    var flx_cmd = redir_err(((FLX_INSTALL_DIR.join("bin")).join("flx --noinline ") +
-    " "+ FLX_OPTS + " "+(BUILD_DIR.join("test")).join(name)),TEST_LOG);
+    var flx_cmd = redir_err(FLX+" --noinline " +
+    " "+ FLX_OPTS + " "+(BUILD_DIR.join("test")).join(name),TEST_LOG);
     if PLAT_WIN32 do
       var run_test_bat:ofile = fopen_output(BUILD_DIR.join("RUN_TEST.BAT"));
       write(run_test_bat,"SET PKG_CONFIG_PATH="+BUILD_DIR.join("config")+"\r\n");
@@ -368,7 +371,7 @@ noinline  proc cp_root(s:string,p:string) {
 noinline  proc cp_root(s:string,p:string,dest:string) {
       var flags = if DRY_RUN then " --verbose --test " else "" endif;
       val cmd = 
-        (FLX_INSTALL_DIR.join("bin")).join("flx_cp") + flags +
+        FLX+"_cp" + flags +
         " '" + s + "' " + quote(p) + " '" + dest.join("${0}") +
         "'";
       log(cmd);
@@ -439,7 +442,7 @@ noinline  fun run_cmd (cmd:string,on_error:string,echo:bool,fail_not_fatal:bool)
   }
   
   fun default_run_flx(file:string,on_error:string) = {
-    return run_cmd("flx " + file,on_error);
+    return run_cmd(FLX+" " + file,on_error);
   }
 
   virtual fun run_flx(file:string,on_error:string) = {
@@ -746,8 +749,8 @@ noinline  proc default_build() {
       |Some ?files => { 
         for file in files do
           if not (file.startswith ".") and (file.endswith ".flx") do
-            var flx_cmd = redir_err(((FLX_INSTALL_DIR.join("bin")).join("flx ") +
-              " -c --static "+ FLX_OPTS + " "+"bin".join(file)),
+            var flx_cmd = redir_err(FLX+" " +
+              " -c --static "+ FLX_OPTS + " "+"bin".join(file),
               SETUP_LOG);
 
             if PLAT_WIN32 do
@@ -775,8 +778,8 @@ noinline  proc default_build() {
       endmatch;
     done    
     if BUILD_LIKE == WebApp do
-      var flx_cmd = redir_err(((FLX_INSTALL_DIR.join("bin")).join("flx ") +
-        " -c --static "+ FLX_OPTS + " " + (BUILD_DIR.join("app")).join(NAME)),
+      var flx_cmd = redir_err(FLX+" " +
+        " -c --static "+ FLX_OPTS + " " + (BUILD_DIR.join("app")).join(NAME),
         SETUP_LOG);
       if PLAT_WIN32 do
         // Commented out to silence unreachable code warning
