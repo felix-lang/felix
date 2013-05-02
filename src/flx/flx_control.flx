@@ -1,5 +1,5 @@
 
-proc print_options() {
+proc print_options(control:control_type) {
     println$ "NOOPTIMISE         = "+str control.NOOPTIMISE;
     println$ "STATIC             = "+str control.STATIC;
     println$ "ECHO               = "+str ECHO;
@@ -41,7 +41,7 @@ fun init_loopctl () => struct {
 };
 typedef loopctl_type = typeof (#init_loopctl);
 
-fun dflt_control () =>
+fun dflt_control (config:config_type, profile:profile_type) =>
   struct {
 
     var RECOMPILE=0;
@@ -117,5 +117,5 @@ fun dflt_control () =>
   }
 ;
 
-typedef control_type = typeof (#dflt_control);
+typedef control_type = typeof (dflt_control(#Config::config,#dflt_profile));
  

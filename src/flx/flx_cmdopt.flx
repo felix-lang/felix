@@ -79,11 +79,10 @@ proc print_help() {
 
 typedef config_type = typeof (#Config::config);
 
-proc handle_switch
+noinline proc handle_switch
 (
   config:&config_type,
   control:&control_type, 
-  loopctl:&loopctl_type,
   arg:string
 )
 {
@@ -207,11 +206,11 @@ proc handle_switch
     System::exit(0);
 
   elif arg == "--config" do
-    print_config(config);
+    print_config(*config);
     System::exit(0);
 
   elif arg == "--options" do
-    print_options;
+    print_options(*control);
     System::exit(0);
 
   elif arg == "--where" do
@@ -327,16 +326,19 @@ proc handle_switch
 
   /* end of flx options, the next argument is
      the primary filename
-  */
-  elif arg == "--" do
-    loopctl.grab <- 0;
-    loopctl.argno <- loopctl*.argno + 1;
-    arg = System::argv loopctl*.argno;
-    debugln$ "ARGNO="+str(loopctl*.argno)+", arg='"+arg+"'";
 
-    loopctl*.path,loopctl*.ext = Filename::split_extension(arg);
-    loopctl*.dir,loopctl*.base = Filename::split1(loopctl*.path);
-    debugln$ "path="+loopctl*.path+", ext="+loopctl*.ext+",dir="+loopctl*.dir+",base="+loopctl*.base;
+  //Doeesn't work anyhow ..
+  
+  elif arg == "--" do
+    zloopctl.grab <- 0;
+    zloopctl.argno <- zloopctl*.argno + 1;
+    arg = vargs . (zloopctl*.argno);
+    debugln$ "ARGNO="+str(zloopctl*.argno)+", arg='"+arg+"'";
+
+    zloopctl*.path,zloopctl*.ext = Filename::split_extension(arg);
+    zloopctl*.dir,zloopctl*.base = Filename::split1(zloopctl*.path);
+    debugln$ "path="+zloopctl*.path+", ext="+zloopctl*.ext+",dir="+zloopctl*.dir+",base="+zloopctl*.base;
+  */
 
   elif prefix (arg,"--indir=") do
     control.INDIR  <-  arg.[8 to];
@@ -376,18 +378,20 @@ fun check_ext (s:string) => match find #exts s with
   | None => "unknown"
 ;
 
-proc parse_cmd_line 
+noinline proc xparse_cmd_line 
 (
   config:&config_type, 
   control:&control_type, 
-  loopctl:&loopctl_type
+  ploopctl:&loopctl_type,
+  vargs: varray[string]
 )
 {
-var SET_LINKER_OUTPUT = false;
-var SET_LINKER_OUTPUT_WITHOUT_EXTENSION = false;
-grabbing_args: while loopctl*.grab == 1 and loopctl*.argno < System::argc do
-  var arg = System::argv loopctl*.argno;
-  debugln$ "ARGNO="+str(loopctl*.argno)+", arg='"+arg+"'";
+  var SET_LINKER_OUTPUT = false;
+  var SET_LINKER_OUTPUT_WITHOUT_EXTENSION = false;
+
+grabbing_args: while ploopctl*.grab == 1 and ploopctl*.argno < vargs.len.int do
+  var arg = vargs . (ploopctl*.argno);
+  debugln$ "ARGNO="+str(ploopctl*.argno)+", arg='"+arg+"'";
 
   if SET_LINKER_OUTPUT do
      control.LINKER_OUTPUT_FILENAME <- arg;
@@ -412,7 +416,7 @@ grabbing_args: while loopctl*.grab == 1 and loopctl*.argno < System::argc do
 
 
   elif not (prefix (arg,"-")) do
-    loopctl.progname <- arg;
+    ploopctl.progname <- arg;
 
     match check_ext $ Filename::get_extension arg with
     | "compile" => 
@@ -422,18 +426,18 @@ grabbing_args: while loopctl*.grab == 1 and loopctl*.argno < System::argc do
        control.cppos <- control*.cppos + arg;
 
     | "felix" =>
-      loopctl.progname <- arg;
-      loopctl*.path,loopctl*.ext = Filename::split_extension(arg);
-      loopctl*.dir,loopctl*.base = Filename::split1(loopctl*.path);
-      debugln$ "path="+loopctl*.path+", ext="+loopctl*.ext+",dir="+loopctl*.dir+",base="+loopctl*.base;
-      loopctl.grab <- 0;
+      ploopctl.progname <- arg;
+      ploopctl*.path,ploopctl*.ext = Filename::split_extension(arg);
+      ploopctl*.dir,ploopctl*.base = Filename::split1(ploopctl*.path);
+      debugln$ "path="+ploopctl*.path+", ext="+ploopctl*.ext+",dir="+ploopctl*.dir+",base="+ploopctl*.base;
+      ploopctl.grab <- 0;
 
     | "none" =>
-      loopctl.progname <- arg;
-      loopctl*.path,loopctl*.ext = Filename::split_extension(arg);
-      loopctl*.dir,loopctl*.base = Filename::split1(loopctl*.path);
-      debugln$ "path="+loopctl*.path+", ext="+loopctl*.ext+",dir="+loopctl*.dir+",base="+loopctl*.base;
-      loopctl.grab <- 0;
+      ploopctl.progname <- arg;
+      ploopctl*.path,ploopctl*.ext = Filename::split_extension(arg);
+      ploopctl*.dir,ploopctl*.base = Filename::split1(ploopctl*.path);
+      debugln$ "path="+ploopctl*.path+", ext="+ploopctl*.ext+",dir="+ploopctl*.dir+",base="+ploopctl*.base;
+      ploopctl.grab <- 0;
 
     | "unknown" =>
       eprintln$ "Unknown file extension in " + arg;
@@ -444,23 +448,24 @@ grabbing_args: while loopctl*.grab == 1 and loopctl*.argno < System::argc do
   ;
    
   else
-  handle_switch(config,control,loopctl,arg);
+  handle_switch(config,control,arg);
 
   done
-  loopctl.argno <- loopctl*.argno + 1;
+  ploopctl.argno <- ploopctl*.argno + 1;
 done
  
 }
 
-proc processing_stage1
+noinline proc processing_stage1
 (
   config:&config_type, 
   control:&control_type, 
-  loopctl:&loopctl_type,
-  profile:&profile_type
+  xloopctl:&loopctl_type,
+  profile:&profile_type,
+  vargs:varray[string]
 ) 
 {
-  parse_cmd_line(config,control,loopctl);
+  xparse_cmd_line(config,control,xloopctl, vargs);
 
   if control*.LINKIT == 0 and control*.STATICLIB == 1 do
     eprintln$ "Conflicting switches --nolink and --staticlib";
@@ -481,11 +486,11 @@ proc processing_stage1
     quote = Shell::quote_arg
   );
 
-  debugln$ loopctl*.grab, loopctl*.argno, System::argc;
+  debugln$ xloopctl*.grab, xloopctl*.argno, System::argc;
 
   // If we're still trying to grab a filename,
   // but we've run out of arguments ..
-  if loopctl*.grab == 1 and loopctl*.argno == System::argc and control*.INREGEX == "" do
+  if xloopctl*.grab == 1 and xloopctl*.argno == System::argc and control*.INREGEX == "" do
     if control*.CLEAR_CACHE == 1 do
       System::exit(0);
     else
@@ -496,15 +501,15 @@ proc processing_stage1
 
   // Primary filename established.
   debugln "#--------";
-  debugln$ "DONE, option index = "+str(loopctl*.argno);
-  debugln$ "path="+loopctl*.path+": dir="+loopctl*.dir+",base="+loopctl*.base+", ext="+loopctl*.ext;
+  debugln$ "DONE, option index = "+str(xloopctl*.argno);
+  debugln$ "path="+xloopctl*.path+": dir="+xloopctl*.dir+",base="+xloopctl*.base+", ext="+xloopctl*.ext;
   debugln$ "cpps="+str control*.cpps;
   debugln$ "cppos="+str control*.cppos;
 
   // Grab program arguments.
-  while loopctl*.argno < System::argc do 
-    control*.USER_ARGS += System::argv loopctl*.argno; 
-    ++loopctl*.argno; 
+  while xloopctl*.argno < vargs.len.int do 
+    control*.USER_ARGS += vargs . (xloopctl*.argno); 
+    ++xloopctl*.argno; 
   done
   debugln$ "USER_ARGS=" + str control*.USER_ARGS;
 
@@ -555,8 +560,8 @@ proc processing_stage1
   // to an absolute one, however this only makes sense on Unix 
   // since Windows has multiple "drives" it is much harder to
   // do the conversion.
-  loopctl.dir <- 
-    if loopctl*.dir != "" then loopctl*.dir 
+  xloopctl.dir <- 
+    if xloopctl*.dir != "" then xloopctl*.dir 
     else "."
     endif
   ;

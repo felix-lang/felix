@@ -1,4 +1,4 @@
-object processing_env(var control:control_type,dvars:dvars_type)  =
+object processing_env(config:config_type,var control:control_type,dvars:dvars_type)  =
 {
   method proc runit() {
     var immediate_run = #check_run_if_required_and_uptodate;

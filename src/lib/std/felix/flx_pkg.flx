@@ -59,7 +59,7 @@ class FlxPkg
         spec.FLX_INSTALL_DIR,
         "host",
         "bin",
-        DRIVER_PKG+config.EXT_EXE
+        DRIVER_PKG+spec.EXT_EXE
       )
     ;
     else

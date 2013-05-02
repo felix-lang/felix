@@ -16,8 +16,6 @@ open FlxCache;
 // Felix version of THIS program (NOT the one being installed
 // if you're using flx to install Felix)
 
-var config = #Config::config;
-
 // --------------------------------------------------
 // Optionally print a debug line.
 // --------------------------------------------------
@@ -40,10 +38,11 @@ proc flx_processing
   config:&config_type, 
   control:&control_type,
   loopctl:&loopctl_type,
-  profile:&profile_type
+  profile:&profile_type,
+  args:list[string]
 )
 {
-  processing_stage1 (config,control,loopctl,profile);
+  processing_stage1 (config,control,loopctl,profile, varray[string] args);
 
   if control*.INREGEX != "" do 
 
@@ -68,9 +67,9 @@ proc flx_processing
         control.LINKER_OUTPUT_FILENAME <- "";
         control.STDOUT <- "";
         control.EXPECT <- "";
-        var dvars = cal_depvars(control,*loopctl);
+        var dvars = cal_depvars(*config,control,*loopctl);
         println$ f"Processing [%02d/%02d]: %S" (i, n, file);
-        var pe = processing_env(*control,dvars);
+        var pe = processing_env(*config,*control,dvars);
         pe.runit();
         ++i;
       done 
@@ -84,21 +83,24 @@ proc flx_processing
           );
           print prg;
       done
-      var dvars = cal_depvars(control, *loopctl);
-      var pe = processing_env(*control,dvars);
+      var dvars = cal_depvars(*config,control, *loopctl);
+      var pe = processing_env(*config,*control,dvars);
       pe.runit();
     end 
   done
 }
 
-var profile = #dflt_profile;
-var control = #dflt_control;
-var loopctl = #init_loopctl;
-flx_processing(&config, &control, &loopctl, &profile);
+proc runflx(args:list[string])
+{
+  var config = #Config::config;
+  var profile = #dflt_profile;
+  var control = dflt_control(config,profile);
+  var loopctl = #init_loopctl;
+  flx_processing(&config, &control, &loopctl, &profile, args);
+}
+
+runflx(#System::args);
 
 System::exit (0);
-
-
-
 
 
