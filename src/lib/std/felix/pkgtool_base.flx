@@ -100,7 +100,7 @@ var PLATFORMS = Empty[string];
 
 //$ #### Options populated from command line
 var BUILD_DIR = ".";        //--build-dir=[SOMETHING]
-var DEST_DIR = SHARE_ROOT; //--dest-dir=[SOMETHING]
+var DEST_DIR = HOST_ROOT; //--dest-dir=[SOMETHING]
 var DIST_DIR="";
 var DRY_RUN = false;        //--dry-run
 var EXTRA_LIBDIR = "";      // -L[SOMETHING]
@@ -649,7 +649,7 @@ noinline  proc test_config(name:string,reqs:list[string]) {
 //$ return opt version of package installed
 noinline  fun is_installed(name:string) = {
     var cfg = read_cfg$
-     (((INSTALL_ROOT.join("web")).join("packages")).join(name)).join("README.md");
+     (((DEST_DIR.join("web")).join("packages")).join(name)).join("README.md");
     return 
       match (get cfg "NAME") with
       |Some ?v => (match (get cfg "VERSION") with |Some ?w => Some (atof(w)) |_ => Some 0.0 endmatch)
