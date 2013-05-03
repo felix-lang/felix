@@ -2,7 +2,6 @@
 // This is a temporary hack to get Felix working after filesystem reorgnisation.
 
 proc print_help() {
-  debugln "Display top level manual page using 'man' program";
   println "Usage: flx [options] filename[.flx] [args ..]";
   println "options:";
   println "--test               : use felix installation in current directory";
@@ -31,7 +30,6 @@ proc print_help() {
   println "--bundle_dir=dir     : directory to hold C++ output from translator, autocreated.";
   println "                       Files directly in directory by basename (flat directory).";
   println "--clean              : delete the caches first";
-  println "--man                : show flx man page (if there is one)";
   println "--help               : show this help";
   println "--noinline           : force inlining off, may break things!";
   println "--inline             : aggressive inlining"; 
@@ -86,6 +84,10 @@ noinline proc handle_switch
   arg:string
 )
 {
+  proc debugln[T with Str[T]] (x:T) {
+    control*.DEBUG_FLX ?? fprintln (cerr, "[flx] " + str x);
+  }
+
   if arg == "--nostdimport" do
     debugln "No standard library import";
     // Note: currently, Felix compiler generates code that REQUIRES
@@ -138,7 +140,8 @@ noinline proc handle_switch
     control.RECOMPILE <- 1;
 
   elif arg=="--debug-flx" do
-    dbug = true;
+    control.DEBUG_FLX <- true;
+    control.ECHO <- 1;
     debugln "debug flx tool ON";
     control.DEBUG <- 1;
 
@@ -166,7 +169,7 @@ noinline proc handle_switch
 
   elif arg == "--echo" do
     debugln "Echo commands sent to system";
-    ECHO=1;
+    control.ECHO <- 1;
 
   elif arg == "--noreduce" do
     debugln "do not perform reductions";
@@ -264,11 +267,6 @@ noinline proc handle_switch
     control.DOREDUCE  <-  1;
     control.OPTIMISE  <-   list[string]$"-O2";
     control.INLINE <- 100;
-
-  elif arg == "--man" do
-    debugln "Display top level manual page using 'man' program";
-    C_hack::ignore(system( "man -M "+config*.FLX_INSTALL_DIR+#Filename::sep+"man"+" flx"));
-    System::exit(0);
 
   elif arg == "--help" do
     print_help;
@@ -386,6 +384,10 @@ noinline proc xparse_cmd_line
   vargs: varray[string]
 )
 {
+  proc debugln[T with Str[T]] (x:T) {
+    control*.DEBUG_FLX ?? fprintln (cerr, "[flx] " + str x);
+  }
+
   var SET_LINKER_OUTPUT = false;
   var SET_LINKER_OUTPUT_WITHOUT_EXTENSION = false;
 
@@ -465,6 +467,33 @@ noinline proc processing_stage1
   vargs:varray[string]
 ) 
 {
+  proc debugln[T with Str[T]] (x:T) {
+    control*.DEBUG_FLX ?? fprintln (cerr, "[flx] " + str x);
+  }
+
+  gen xqt(cmd:string) = {
+    control*.ECHO == 1 or control*.DEBUG_FLX ?? fprintln (cerr, "cmd="+cmd);
+    var now = #Time::time;
+    var result,output = Shell::get_stdout(cmd);
+    if result == 0 do
+      n := 
+        match find_first_of (output, char "\n") with
+        | Some ?n => n 
+        | None => output.len.int 
+        endmatch
+      ; 
+      output = output.[to n]; // first line excluding newline
+      var elapsed = #Time::time - now;
+      control*.ECHO==1 or control*.DEBUG_FLX ?? fprintln (cerr, "Popen:Elapsed: " + fmt (elapsed, fixed(9,3)) + ", output='"+output+"'");
+    else
+      debugln "COMMAND FAILED";
+      fprint$ cerr, ("Error "+repr(result)+" executing command " + cmd + "\n");
+      System::pexit result;
+    done
+    return output;
+  }
+
+
   xparse_cmd_line(config,control,xloopctl, vargs);
 
   if control*.LINKIT == 0 and control*.STATICLIB == 1 do

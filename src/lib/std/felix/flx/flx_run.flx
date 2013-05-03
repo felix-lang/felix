@@ -1,5 +1,22 @@
-object processing_env(config:config_type,var control:control_type,dvars:dvars_type)  =
+object processing_env(config:config_type, var control:control_type,dvars:dvars_type)  =
 {
+  proc debugln[T with Str[T]] (x:T) {
+    control.DEBUG_FLX ?? fprintln (cerr, "[flx] " + str x);
+  }
+
+  proc echoln[T with Str[T]] (x:T) {
+    control.ECHO == 1 ?? fprintln (cerr, "[flx] " + str x);
+  }
+
+  method gen system(cmd:string):int= {
+    var now = #Time::time;
+    if control.ECHO==1 do fprintln$ cerr, cmd; done
+    var result = System::system(cmd);
+    var elapsed = #Time::time - now;
+    if control.ECHO==1 do fprintln$ cerr, "System:Elapsed: " + fmt (elapsed, fixed (8,3)) + ", Result code " + str(result); done
+    return result;
+  }
+
   method proc runit() {
     var immediate_run = #check_run_if_required_and_uptodate;
     if immediate_run do
@@ -63,7 +80,7 @@ object processing_env(config:config_type,var control:control_type,dvars:dvars_ty
         filebase = dvars.filebase,
         use_ext = dvars.use_ext,
         TIME = control.TIME,
-        debugln = if ECHO==1 then echoln[string] else debugln[string] endif
+        debugln = if control.ECHO==1 then echoln[string] else debugln[string] endif
       );
       showtime("Felix flxg   : "+dvars.cpp_filebase, t0);
       if result != 0 do 
@@ -98,7 +115,7 @@ object processing_env(config:config_type,var control:control_type,dvars:dvars_ty
         INCLUDE_DIRS = dvars.INCLUDE_DIR + control.STANDARD_INCLUDE_DIRS+control.EXTRA_INCLUDE_DIRS, 
         MACROS = control.MACROS,
         SPEC_OBJ_FILENAME = config.SPEC_OBJ_FILENAME,
-        debugln = if ECHO==1 then echoln[string] else debugln[string] endif
+        debugln = if control.ECHO==1 then echoln[string] else debugln[string] endif
       ) 
       (src, dst)
     ;
@@ -141,7 +158,7 @@ object processing_env(config:config_type,var control:control_type,dvars:dvars_ty
         EXT_SHARED_OBJ = config.EXT_SHARED_OBJ,
         SPEC_EXE_FILENAME = config.SPEC_EXE_FILENAME,
         LINK_STRINGS = control.LINK_STRINGS,
-        debugln = if ECHO==1 then echoln[string] else debugln[string] endif
+        debugln = if control.ECHO==1 then echoln[string] else debugln[string] endif
       )
       (
         control.cppos + (dvars.cpp_filebase+config.EXT_SHARED_OBJ),
@@ -171,7 +188,7 @@ object processing_env(config:config_type,var control:control_type,dvars:dvars_ty
         INCLUDE_DIRS = dvars.INCLUDE_DIR+control.STANDARD_INCLUDE_DIRS+control.EXTRA_INCLUDE_DIRS, 
         MACROS = control.MACROS, 
         SPEC_OBJ_FILENAME = config.SPEC_OBJ_FILENAME,
-        debugln = if ECHO==1 then echoln[string] else debugln[string] endif
+        debugln = if control.ECHO==1 then echoln[string] else debugln[string] endif
       )
       (src, dst)
     ;
@@ -235,7 +252,7 @@ object processing_env(config:config_type,var control:control_type,dvars:dvars_ty
         CCFLAGS = ccflags,
         SPEC_EXE_FILENAME = config.SPEC_EXE_FILENAME,
         LINK_STRINGS = control.LINK_STRINGS,
-        debugln = if ECHO==1 then echoln[string] else debugln[string] endif
+        debugln = if control.ECHO==1 then echoln[string] else debugln[string] endif
       )  
       ( 
           control.DRIVER_OBJS +
@@ -267,7 +284,7 @@ object processing_env(config:config_type,var control:control_type,dvars:dvars_ty
         CCLINK_STATIC_LIB = cc, 
         CCFLAGS = ccflags,
         SPEC_LIB_FILENAME = config.SPEC_LIB_FILENAME,
-        debugln = if ECHO==1 then echoln[string] else debugln[string] endif
+        debugln = if control.ECHO==1 then echoln[string] else debugln[string] endif
       )  
       ( 
         control.cppos +
@@ -356,7 +373,7 @@ object processing_env(config:config_type,var control:control_type,dvars:dvars_ty
       // not (--force or -c)
       debugln "Checking to see if the binary is uptodate";
       var xtime = dfiletime(control.LINKER_OUTPUT_FILENAME,#past_time);
-      var srctime = cal_dep_time (control.OUTPUT_DIR, dvars.filebase);
+      var srctime = cal_dep_time (debugln[string], control.OUTPUT_DIR, dvars.filebase);
       srctime = fold_left maxf srctime control.cpps;
       srctime = fold_left maxf srctime control.cppos;
 

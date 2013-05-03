@@ -2,7 +2,7 @@
 proc print_options(control:control_type) {
     println$ "NOOPTIMISE         = "+str control.NOOPTIMISE;
     println$ "STATIC             = "+str control.STATIC;
-    println$ "ECHO               = "+str ECHO;
+    println$ "ECHO               = "+str control.ECHO;
     println$ "NOSTDLIB           = "+str control.NOSTDLIB;
     println$ "DEBUG              = "+str control.DEBUG;
     println$ "DEBUG_COMPILER     = "+str control.DEBUG_COMPILER;
@@ -49,6 +49,8 @@ fun dflt_control (config:config_type, profile:profile_type) =>
     var CCOMPILEIT=1;
     var LINKIT=1;
     var FELIX=1;
+    var ECHO=0;
+    var DEBUG_FLX=false;
 
     // --------------------------------------------------
     // processing options

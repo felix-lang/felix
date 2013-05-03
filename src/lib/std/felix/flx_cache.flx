@@ -62,7 +62,7 @@ fun maxf (x: double) (f:string) =>
 
 fun cal_files_time (fs: list[string])=> fold_left maxf #past_time fs;
 
-fun cal_dep_time(OUTPUT_DIR:string, f:string)= {
+fun cal_dep_time(debugln:string -> 0, OUTPUT_DIR:string, f:string)= {
   fun cal_time_from_dep (df: string):double=
   {
     val deptext = load df;

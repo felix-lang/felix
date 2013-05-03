@@ -13,6 +13,10 @@ typedef dvars_type = (
 
 gen cal_depvars(config:config_type,control:&control_type, loopctl:loopctl_type) : dvars_type = 
 {
+  proc debugln[T with Str[T]] (x:T) {
+    control*.DEBUG_FLX ?? fprintln (cerr, "[flx] " + str x);
+  }
+
   debugln$ "Felix package manager config directory is "+control*.CONFIG_DIR;
   // make a list of any *.cpp files (or other g++ options ..)
 
