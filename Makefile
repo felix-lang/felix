@@ -245,7 +245,7 @@ tarball:
 		${BUILDROOT}/host \
 		${BUILDROOT}/share
 
-bootstrap: rtlbuild trial-plugins trial-exes
+bootstrap: rtlbuild trial-exes
 
 rtlbuild:
 	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl_demo $(TARGET_TOOLCHAIN_PACKAGE)

@@ -17,75 +17,73 @@ open FlxCache;
 // if you're using flx to install Felix)
 
 
-
-proc flx_processing
-(
-  config:&config_type, 
-  control:&control_type,
-  loopctl:&loopctl_type,
-  profile:&profile_type,
-  args:list[string]
-)
+class Flx
 {
-  processing_stage1 (config,control,loopctl,profile, varray[string] args);
+  proc flx_processing
+  (
+    config:&config_type, 
+    control:&control_type,
+    loopctl:&loopctl_type,
+    profile:&profile_type,
+    args:list[string]
+  )
+  {
+    processing_stage1 (config,control,loopctl,profile, varray[string] args);
 
-  if control*.INREGEX != "" do 
+    if control*.INREGEX != "" do 
 
-    begin
-      control.USER_ARGS <- Shell::quote_arg(loopctl*.progname) + ' ' + control*.USER_ARGS;
-      if control*.INDIR == "" do control.INDIR <- "."; done
-      var regex = RE2 control*.INREGEX;
-      if not regex.ok do
-        eprintln$ "Malformed regex " + control*.INREGEX;
-        System::exit(1);
-      done
-      var files = FileSystem::regfilesin (control*.INDIR, regex);
-      var n = files.len.int;
-      println$ "Processing " + files.len.str + " files";
-      var i = 1;
-      for file in files do
-        var arg = Filename::join (control*.INDIR, file);
-        loopctl*.path,loopctl*.ext = Filename::split_extension(arg);
-        loopctl*.dir,loopctl*.base = Filename::split1(loopctl*.path);
-        // temporary hack, to force reset of the linker filename, stdout, and expect
-        // file names in cal_depvars so they depend on the current file.
-        control.LINKER_OUTPUT_FILENAME <- "";
-        control.STDOUT <- "";
-        control.EXPECT <- "";
-        var dvars = cal_depvars(*config,control,*loopctl);
-        println$ f"Processing [%02d/%02d]: %S" (i, n, file);
+      begin
+        control.USER_ARGS <- Shell::quote_arg(loopctl*.progname) + ' ' + control*.USER_ARGS;
+        if control*.INDIR == "" do control.INDIR <- "."; done
+        var regex = RE2 control*.INREGEX;
+        if not regex.ok do
+          eprintln$ "Malformed regex " + control*.INREGEX;
+          System::exit(1);
+        done
+        var files = FileSystem::regfilesin (control*.INDIR, regex);
+        var n = files.len.int;
+        println$ "Processing " + files.len.str + " files";
+        var i = 1;
+        for file in files do
+          var arg = Filename::join (control*.INDIR, file);
+          loopctl*.path,loopctl*.ext = Filename::split_extension(arg);
+          loopctl*.dir,loopctl*.base = Filename::split1(loopctl*.path);
+          // temporary hack, to force reset of the linker filename, stdout, and expect
+          // file names in cal_depvars so they depend on the current file.
+          control.LINKER_OUTPUT_FILENAME <- "";
+          control.STDOUT <- "";
+          control.EXPECT <- "";
+          var dvars = cal_depvars(*config,control,*loopctl);
+          println$ f"Processing [%02d/%02d]: %S" (i, n, file);
+          var pe = processing_env(*config,*control,dvars);
+          pe.runit();
+          ++i;
+        done 
+      end
+    else 
+      begin
+        if control*.SHOWCODE == 1 do
+            var prg = 
+              (if dvars.use_ext == "" then "// No file "+dvars.filebase+".(flx|fdoc) found"
+              else load(dvars.filebase+"."+dvars.use_ext)
+            );
+            print prg;
+        done
+        var dvars = cal_depvars(*config,control, *loopctl);
         var pe = processing_env(*config,*control,dvars);
         pe.runit();
-        ++i;
-      done 
-    end
-  else 
-    begin
-      if control*.SHOWCODE == 1 do
-          var prg = 
-            (if dvars.use_ext == "" then "// No file "+dvars.filebase+".(flx|fdoc) found"
-            else load(dvars.filebase+"."+dvars.use_ext)
-          );
-          print prg;
-      done
-      var dvars = cal_depvars(*config,control, *loopctl);
-      var pe = processing_env(*config,*control,dvars);
-      pe.runit();
-    end 
-  done
+      end 
+    done
+  }
+
+  proc runflx(args:list[string])
+  {
+    var config = #Config::config;
+    var profile = #dflt_profile;
+    var control = dflt_control(config,profile);
+    var loopctl = #init_loopctl;
+    flx_processing(&config, &control, &loopctl, &profile, args);
+  }
 }
-
-proc runflx(args:list[string])
-{
-  var config = #Config::config;
-  var profile = #dflt_profile;
-  var control = dflt_control(config,profile);
-  var loopctl = #init_loopctl;
-  flx_processing(&config, &control, &loopctl, &profile, args);
-}
-
-runflx(#System::args);
-
-System::exit (0);
 
 

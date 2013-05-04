@@ -2,6 +2,7 @@ include "std/felix/toolchain_clang_config";
 include "std/felix/toolchain_interface";
 include "std/felix/flx_cp";
 include "std/felix/flx_pkgconfig";
+include "std/felix/flx/flx";
 
 proc make_lib 
 (
@@ -286,7 +287,7 @@ proc dirsetup(debug:bool)
 	CopyFiles::copyfiles('src', '(.*\.(h|hpp|ml|c|cpp|cxx|cc|flx|flxh|fdoc|js|html|svg|png|files|include))', 'build'/'trial'/'share'/'src'/'${1}',true,debug);
 
   println$ "Copy Felix library";
-	CopyFiles::copyfiles ('build'/'trial'/'share'/'src'/'lib', r"(.*\.(flx|flxh|fdoc|files))", 'build/trial/share/lib/$${1}',true,debug);
+	CopyFiles::copyfiles ('build'/'trial'/'share'/'src'/'lib', r"(.*\.(flx|flxh|fdoc|files))", 'build/trial/share/lib/${1}',true,debug);
 
   // This is SPECIAL because "version.flx" is the only file which is both
   // shared-readonly and generated. So it has to be copied out of an
@@ -294,6 +295,34 @@ proc dirsetup(debug:bool)
 	CopyFiles::copyfiles ('build'/'release'/'share'/'lib'/'std', '(version.flx)', 'build'/'trial'/'share'/'lib'/'std/${1}',true,debug);
 }
 
+proc build_plugins()
+{
+  var plugins = list (
+    'cpp2html',
+    'fdoc2html',
+    'fdoc_button',
+    'fdoc_fileseq',
+    'fdoc_heading',
+    'fdoc_paragraph',
+    'fdoc_scanner',
+    'fdoc_slideshow',
+    'flx2html',
+    'fpc2html',
+    'ocaml2html',
+    'py2html',
+    'toolchain_clang_linux',
+    'toolchain_clang_osx',
+    'toolchain_gcc_linux',
+    'toolchain_gcc_osx'
+  );
+  for plugin in plugins do
+    println$ "Building plugin " + plugin;
+    Flx::runflx$ list ('--test=build'/'trial', '-c', '-ox','build'/'trial'/'host'/'lib'/'rtl'/plugin, 'build'/'trial'/'share'/'lib'/'plugins'/plugin);
+    Flx::runflx$ list ('--test=build'/'trial', '-c', '--nolink','-ox', 'build'/'trial'/'host'/'lib'/'rtl'/plugin, 'build'/'trial'/'share'/'lib'/'plugins'/plugin);
+    Flx::runflx$ list ('--test=build'/'trial', '--static','-c', '--nolink','-ox', 'build'/'trial'/'host'/'lib'/'rtl'/plugin, 'build'/'trial'/'share'/'lib'/'plugins'/plugin);
+  done
+ 
+}
 proc flx_build(boot_package:string, debug:bool)
 {
   dirsetup(debug);
@@ -303,22 +332,23 @@ proc flx_build(boot_package:string, debug:bool)
 
   // copy the compiler 
   CopyFiles::copyfiles('build'/'release'/'host'/'bin', 'flxg', 'build'/'trial'/'host'/'bin'/'flxg', true, debug);
+  build_plugins;
   println$ "Build Complete";
 }
 
 
-proc build_felix (args:list[string])
+noinline proc build_felix (xargs:list[string])
 {
-  if args.len.int < 2 do
+  if xargs.len.int < 2 do
     println$ "Usage: flx_build [debug]";
     println$ "Execute from directory containing repository";
     println$ "Uses build/release to create build/trial";
     System::exit(1);
   done
 
-  var v = varray args;
-  var boot_package = v . 1;
-  var debug = args.len.int == 3;
+  var v = varray xargs;
+  var boot_package = xargs . 1uz;
+  var debug = xargs.len.int == 3;
   flx_build (boot_package, debug);
 }
 
