@@ -133,6 +133,10 @@ open Judy;
      C_hack::free(address buffer);
      C_hack::free(address buffer2);
   }
+  proc copyfiles(dname:string, re:string , tpat:string, live:bool, verbose:bool) =>
+    copyfiles(dname, RE2 re, tpat, live, verbose)
+  ;
+
 
 }
 

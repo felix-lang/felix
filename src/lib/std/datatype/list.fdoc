@@ -176,7 +176,7 @@ Constructor variant.
     pure fun len (x:list[T]) = {
       fun aux (acc:size) (x:list[T]) =>
         match x with
-        | Empty => acc
+        | #Empty => acc
         | Cons (_,?t) => aux (acc + 1uz) t
         endmatch
       ;
@@ -195,7 +195,7 @@ Constructor variant.
     //$ Apply a procedure to each element of a list.
     proc iter (_f:T->void) (x:list[T]) {
       match x with
-      | Empty => {}
+      | #Empty => {}
       | Cons (?h,?t) => { _f h; iter _f t; }
       endmatch
       ;
@@ -208,7 +208,7 @@ Constructor variant.
     {
       fun aux (init:U) (x:list[T]):U =>
         match x with
-        | Empty => init
+        | #Empty => init
         | Cons (?h,?t) => aux (_f init h) t
         endmatch
       ;
@@ -222,7 +222,7 @@ Constructor variant.
     {
       fun aux (x:list[T]) (init:U):U =>
         match x with
-        | Empty => init
+        | #Empty => init
         | Cons (?h,?t) => _f h (aux t init)
         endmatch
       ;
@@ -235,7 +235,7 @@ Constructor variant.
 @felix
   //$ Test if a list is empty.
   pure fun is_empty[T] : list[T] -> 2 =
-    | Empty => true
+    | #Empty => true
     | _ => false
   ;
 
@@ -255,7 +255,7 @@ Tail recursive.
   fun rev_map[T,U] (_f:T->U) (x:list[T]): list[U] = {
     fun aux (inp:list[T]) (out:list[U]) : list[U] =>
       match inp with
-      | Empty => out
+      | #Empty => out
       | Cons (?h, ?t) => aux t (Cons (_f(h), out))
       endmatch
     ;
@@ -284,7 +284,7 @@ Tail recursive.
     {
       return
         match x with
-        | Empty => y
+        | #Empty => y
         | Cons (?h, ?t) => aux t (Cons (h, y))
         endmatch
       ;
@@ -393,7 +393,7 @@ O(N) slow.
   {
      return
        match x with
-       | Empty => Empty[T]
+       | #Empty => Empty[T]
        | Cons (?h,?t) => fold_left join of (list[T]) h t
        endmatch
      ;
@@ -406,7 +406,7 @@ O(N) slow.
   {
     return
       match x with
-      | Empty => ''
+      | #Empty => ''
       | Cons (?h, ?t) =>
           fold_left (fun (a:string) (b:string) => a + sep + b) h t
       endmatch
@@ -433,7 +433,7 @@ O(N) slow.
   //$ Return true if one value in a list satisfies the predicate.
   fun mem[T] (eq:T -> bool) (xs:list[T]) : bool =>
     match xs with
-    | Empty => false
+    | #Empty => false
     | Cons (?h,?t) => if eq(h) then true else mem eq t endif
     endmatch
   ;
@@ -457,7 +457,7 @@ Returns option.
   //$ return option of the first element in a list satisfying the predicate.
   fun find[T] (eq:T -> bool) (xs:list[T]) : opt[T] =>
     match xs with
-    | Empty => None[T]
+    | #Empty => None[T]
     | Cons (?h,?t) => if eq(h) then Some h else find eq t endif
     endmatch
   ;
@@ -475,7 +475,7 @@ Returns option.
   {
     fun aux (inp:list[T], out: list[T]) =>
       match inp with
-      | Empty => rev out
+      | #Empty => rev out
       | Cons(?h,?t) =>
         if P(h) then aux(t,Cons(h,out))
         else aux (t,out)
@@ -507,7 +507,7 @@ Returns option.
   noinline fun append_unique[T] (eq: T * T -> bool) (x:list[T]) (e:T) : list[T] = {
     fun aux (inp:list[T], out: list[T]) =>
       match inp with
-      | Empty => rev$ Cons(e,out)
+      | #Empty => rev$ Cons(e,out)
       | Cons(?h,?t) =>
         if not eq (h, e) then aux(t,Cons(h,out))
         else aux (t,out)
@@ -523,7 +523,7 @@ Returns option.
       list[T] ()
     else
       match lst with
-        | Empty => list[T] ()
+        | #Empty => list[T] ()
         | Cons(?x, ?xs) => join (list[T] x) (take[T] (k - 1) xs)
       endmatch
     endif
@@ -535,7 +535,7 @@ Returns option.
       lst
     else
       match lst with
-        | Empty => list[T] ()
+        | #Empty => list[T] ()
         | Cons(?x, ?xs) => drop (k - 1) xs
     endif
   ;
@@ -566,7 +566,7 @@ Returns option.
       while true do
         match xs with
         | Cons (?h,?t) => xs = t; yield Some h;
-        | Empty => return None[T];
+        | #Empty => return None[T];
         endmatch;
       done
     }
@@ -587,7 +587,7 @@ instance[T with Show[T]] Str[List::list[T]] {
   noinline fun str (xs:List::list[T]) =>
     'list(' +
       match xs with
-      | Empty => ''
+      | #Empty => ''
       | Cons(?o, ?os) =>
           List::fold_left (
             fun (a:string) (b:T):string => a + ', ' + (repr b)

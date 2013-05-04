@@ -27,6 +27,8 @@ else
 SUDO=sudo
 endif
 
+TARGET_TOOLCHAIN_PACKAGE ?= build_flx_rtl_clang_osx 
+
 help:
 	# Makefile help
 	# FELIX VERSION  ${VERSION}
@@ -246,58 +248,7 @@ tarball:
 bootstrap: rtlbuild trial-plugins trial-exes
 
 rtlbuild:
-	# ##############################################
-	# build a new Felix system: build/trial
-	# using the existing one: build/release
-	# ##############################################
-	#  
-	# ##############################################
-	# clean out build target
-	# ##############################################
-	# 
-	rm -rf build/trial
-	rm -rf trial-tmp
-	# 
-	# ##############################################
-	# create some essential directories
-	# ##############################################
-	# 
-	mkdir build/trial
-	mkdir build/trial/host
-	mkdir build/trial/host/bin
-	#
-	# ##############################################
-	# copy the configuration (later use a config program)
-	# ##############################################
-	#
-	build/release/host/bin/flx_cp 'build/release/host/config' '(.*)' 'build/trial/host/config/$${1}'
-	build/release/host/bin/flx_cp 'build/release/host/lib' '(.*\.(h|hpp|flx|flxh))' 'build/trial/host/lib/$${1}'
-	#
-	# ##############################################
-	# copy the whole repository source
-	# ##############################################
-	#
-	build/release/host/bin/flx_cp 'src' '(.*\.(h|hpp|ml|c|cpp|cxx|cc|flx|flxh|fdoc|js|html|svg|files))' 'build/trial/share/src/$${1}'
-	#
-	#
-	# ##############################################
-	# copy the Felix library
-	# ##############################################
-	#
-	build/release/host/bin/flx_cp 'build/trial/share/src/lib' '(.*\.(flx|flxh|fdoc|files))' 'build/trial/share/lib/$${1}'
-	build/release/host/bin/flx_cp 'build/release/share/lib/std' '(version.flx)' 'build/trial/share/lib/std/$${1}'
-	#
-	# ##############################################
-	# Build the rtl
-	# ##############################################
-	#
-	LD_LIBRARY_PATH=build/release/host/lib/rtl build/release/host/bin/flx --test=build/release --static -o build/trial/host/bin/flx_build_rtl_demo build/trial/share/src/tools/flx_build_rtl_demo build/trial/host/config build_flx_rtl_clang_osx build/trial . trial-tmp
-	#
-	# ##############################################
-	# Copy the compiler
-	# ##############################################
-	#
-	build/release/host/bin/flx_cp build/release/host/bin flxg build/trial/host/bin/flxg
+	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl_demo $(TARGET_TOOLCHAIN_PACKAGE)
 
 trial-plugins:
 	#

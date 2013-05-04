@@ -99,8 +99,15 @@ and uses_bexe add bsym_table count_inits exe =
           *) 
           f_bexpr e
         end
-        else assert false
-      | _ -> assert false
+        else begin 
+          clierr (Flx_bexe.get_srcref exe)
+          ("In assignment " ^ string_of_bexe bsym_table 0 exe ^ "\n" ^
+          "Expected primitive " ^ Flx_bsym.id bsym ^ "<" ^ si i ^ "> to have property lvalue")
+        end
+      | _ -> 
+          clierr (Flx_bexe.get_srcref exe)
+          ("In assignment " ^ string_of_bexe bsym_table 0 exe ^ "\n" ^
+          "Lvalue required on LHS of assignment")
       end
 
     | BEXPR_apply (a,b),_ -> 
