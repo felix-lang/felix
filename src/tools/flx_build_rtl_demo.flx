@@ -4,356 +4,471 @@ include "std/felix/flx_cp";
 include "std/felix/flx_pkgconfig";
 include "std/felix/flx/flx";
 
-proc make_lib 
-(
-  db: FlxPkgConfig::FlxPkgConfigQuery_t,  
-  toolchain-maker: clang_config_t -> toolchain_t, 
-  repo: string, build:string, pkg:string, tmpdir:string,
-  debug: bool
-)
-{
-  proc dbug (x:string) => debug ?? println$ '[make_lib: '+pkg+']' x;
-
-  var FLX_INSTALL_DIR = #(Config::config).FLX_INSTALL_DIR;
-  println$ "------------";
-  println$ "Make lib " + pkg;
-  println$ "------------";
-  var configdir = Filename::join (FLX_INSTALL_DIR, "host", "lib", "rtl");
-  var srcdir = db.getpkgfielddflt (pkg,"srcdir");
-  var srcpath = Filename::join (repo, srcdir);
-  var build_includes= db.getpkgfield (pkg,"build_includes");
-  var ddeps = db.getpkgfield (pkg,"requires_dlibs"); // external libs
-  var deps = db.getpkgfield(pkg,"Requires");
-  var result,depdlibs =  db.query("--field=provides_dlib"+deps); // packaged dlibs
-//println$ "Debug DEPLIBS: " + str ddeps + " AND " + str depdlibs;
-  var macros = db.getpkgfield(pkg,"macros");
-  var ccflags = db.getpkgfield(pkg,"cflags");
-  fun mkinc (x:string) => "-I"+x;
-  var config = 
-    (
-      header_search_dirs= list[string] (mkinc build, mkinc configdir)+map mkinc build_includes,
-      macros= map (fun (x:string)=> "-D"+x) macros,
-      cflags = ccflags,
-      library_search_dirs= list[string] ("-L"+build),
-      dynamic_libraries= ddeps+depdlibs,
-      static_libraries= Empty[string],
-      debugln = dbug
-    )
-  ;
-  var toolchain = toolchain-maker config;
-  println$ #(toolchain.whatami);
-  var headers = db.getpkgfielddflt(pkg,"headers");
-  if headers == "" do headers = r".*\.h(pp)?"; println$ "copying all header files"; done
-  var hsrc, hdst = "","";
-  match split (headers, ">") with
-  | #Empty => ;
-  | Cons (?h,#Empty) => hsrc = h;
-  | Cons (?h,Cons (?d,#Empty)) => hsrc = h; hdst = d;
-  | _ => println$ "Header file too many > characters " + headers;
-  endmatch;
-
-  if hdst == "" do hdst = "${0}"; done
-  println$ "Copying headers " + hsrc + " > " + hdst;
-  CopyFiles::copyfiles (srcpath, hsrc,Filename::join(build,hdst),true, true);
-
-  var pats = db.getpkgfield(pkg,"src");
-  var pat = catmap '|' (fun (x:string)=>"("+x+")") pats;
-//println$ "Finding Sources in "+srcpath;
-  var files = FileSystem::regfilesin (srcpath,pat);
-//println$ "Sources = " + str files;
-  {
-    fun objname (file:string) => let 
-        ?dstobj = file.Filename::strip_extension + #(toolchain.dynamic_object_extension) in
-        Filename::join (tmpdir, dstobj)
-    ;
-
-    for file in files do
-      println$ "Compiling [dynamic] " + file " -> " + objname file;
-      var srcfile = Filename::join (srcpath, file);
-      var dst = objname file;
-      Directory::mkdirs (Filename::dirname dst);
-      match Filename::get_extension srcfile with
-      | ?x when x == ".cc" or x == ".cpp" =>
-        result = toolchain.cxx_dynamic_object_compiler (src=srcfile, dst=dst);
-      | ".c" =>
-        result = toolchain.c_dynamic_object_compiler (src=srcfile, dst=dst);
-      | ?x => println$ "Unknown extension " + x; System::exit(1);
-      endmatch
-      ;
-      if result != 0 do
-        println$ "Compiler result " + str result;
-        System::exit(1);
-      done
-    done
-
-    var objs = map objname files;
-    var libname = "lib" + (db.getpkgfield1(pkg,"provides_dlib")).[2 to] +#(toolchain.dynamic_library_extension);
-    var dstlib = Filename::join (build, libname);
-    println$ "Dynamic Linking library " + dstlib;
-    result = toolchain.dynamic_library_linker(srcs=objs, dst=dstlib);
-    if result != 0 do
-      println$ "Linker result " + str result;
-      System::exit(1);
-    done
-  };
-  {
-    fun objname (file:string) => let 
-        ?dstobj = file.Filename::strip_extension + #(toolchain.static_object_extension) in
-        Filename::join (tmpdir, dstobj)
-    ;
-
-    for file in files do
-      println$ "Compiling [static] " + file " -> " + objname file;
-      var srcfile = Filename::join (srcpath, file);
-      var dst = objname file;
-      Directory::mkdirs (Filename::dirname dst);
-      match Filename::get_extension srcfile with
-      | ?x when x == ".cc" or x == ".cpp" =>
-        result = toolchain.cxx_static_library_object_compiler (src=srcfile, dst=dst);
-      | ".c" =>
-        result = toolchain.c_static_object_compiler (src=srcfile, dst=dst);
-      | ?x => println$ "Unknown extension " + x; System::exit(1);
-      endmatch
-      ;
-      if result != 0 do
-        println$ "Compiler result " + str result;
-        System::exit(1);
-      done
-    done
-
-    var objs = map objname files;
-    var libname = "lib" + (db.getpkgfield1(pkg,"provides_slib")).[2 to] +#(toolchain.static_library_extension);
-    var dstlib = Filename::join (build, libname);
-    println$ "Static Linking Library " + dstlib;
-    result = toolchain.static_library_linker(srcs=objs, dst=dstlib);
-    if result != 0 do
-      println$ "Linker result " + str result;
-      System::exit(1);
-    done
-  };
-}
-
-proc make_rtl (
-  repo:string, 
-  build:string, 
-  pkgconfig_dir:string, 
-  boot_package:string, 
-  tmpdir:string,
-  debug: bool
-)
+class FlxCoreBuild
 {
 
-  proc dbug (x:string) => debug ?? println$ '[make_rtl] ' + x;
-  var librtl = Filename::join (build,"host","lib","rtl");
-  var bin = Filename::join (build,"host","bin");
-  Directory::mkdirs tmpdir;
-  Directory::mkdirs librtl;
-  println$ 
-    "flx_librtl: configdir=" + pkgconfig_dir + 
-    ", bootpkg=" + boot_package +
-    ", librtldir=" + librtl +
-    ", repository=" + repo
-  ;
+  fun / (x:string,y:string) => Filename::join(x,y);
 
-  var db = FlxPkgConfig::FlxPkgConfigQuery (list[string] pkgconfig_dir);
+  proc make_lib 
+  (
+    db: FlxPkgConfig::FlxPkgConfigQuery_t,  
+    toolchain-maker: clang_config_t -> toolchain_t, 
+    build:string, 
+    target:string, 
+    pkg:string, 
+    tmpdir:string,
+    debug: bool
+  )
+  {
+    proc dbug (x:string) => debug ?? println$ '[make_lib: '+pkg+']' x;
 
-  gen getbootfield (field:string) => db.getpkgfield1 (boot_package, field);
+    val pkgdir = build / target / 'config';
+    val srtl = build / 'share' / 'lib' / 'rtl';
+    val hrtl = build / target / 'lib' / 'rtl';
+    val repo = build / 'share'; // excludes "src" cause that's in the packages
 
-  var compiler = getbootfield "compiler"; 
-  var os = getbootfield "os"; 
-  var toolchain = getbootfield "toolchain"; 
-  println$ "compiler     : " + str compiler;
-  println$ "os           : " + str os;
-  println$ "toolchain    : " + str toolchain;
-
-  var allpkgs = db.getclosure boot_package;
-  //println$ "Closure      : " + str allpkgs;
-
-  for pkg in allpkgs begin 
-    var lib = db.getpkgfielddflt (pkg,"library");
+    println$ "------------";
+    println$ "Make lib " + pkg;
+    println$ "------------";
     var srcdir = db.getpkgfielddflt (pkg,"srcdir");
-    println$ f"%15S %20S %20S" (pkg,lib,srcdir);
-  end 
-
-  var toolchain-maker = 
-    Dynlink::load-plugin-func1 [toolchain_t,clang_config_t] 
-    (
-      //dll-name=Filename::join (pluginpath,toolchain), 
-      dll-name=toolchain, 
-      setup-str="",
-      entry-point=toolchain
-    )
-  ;
-  for pkg in allpkgs begin
-    var library = db.getpkgfielddflt (pkg,"library");
-    var srcdir = db.getpkgfielddflt (pkg,"srcdir");
-    var src = db.getpkgfield(pkg,"src");
-    if library != "" do
-      if srcdir == "" do
-        println$ "Package error, package " + pkg + " library " + library + " No srcdir specified";
-        System::exit(1);
-      done
-      if src.is_empty do
-        println$ "Package error, package " + pkg + " library " + library + " No src files specified";
-        System::exit(1);
-      done
-      make_lib (db,toolchain-maker, repo,librtl,pkg,tmpdir, debug);
-    else 
-      println$ "------------";
-      println$ "External package " + pkg;
-      println$ "------------";
-    done
-  end 
-
-  // make drivers
-  begin
-    println$ "Make drivers";
-    var FLX_INSTALL_DIR = #(Config::config).FLX_INSTALL_DIR;
-    var configdir = Filename::join (FLX_INSTALL_DIR, "host", "lib","rtl");
+    var srcpath =repo / srcdir;
+    var build_includes= db.getpkgfield (pkg,"build_includes");
+    var ddeps = db.getpkgfield (pkg,"requires_dlibs"); // external libs
+    var deps = db.getpkgfield(pkg,"Requires");
+    var result,depdlibs =  db.query("--field=provides_dlib"+deps); // packaged dlibs
+    var macros = db.getpkgfield(pkg,"macros");
+    var ccflags = db.getpkgfield(pkg,"cflags");
     fun mkinc (x:string) => "-I"+x;
-    var srcdir = Filename::join (repo,"src","flx_drivers");
     var config = 
       (
-        header_search_dirs= list[string] (mkinc librtl, mkinc srcdir, mkinc configdir),
-        macros= Empty[string],
-        cflags = Empty[string],
-        library_search_dirs= list[string] ("-L"+librtl),
-        dynamic_libraries= Empty[string],
-        static_libraries= Empty[string], //############ FIXME or the link won't work!
+        header_search_dirs= list[string] (mkinc hrtl, mkinc srtl)+map mkinc build_includes,
+        macros= map (fun (x:string)=> "-D"+x) macros,
+        cflags = ccflags,
+        library_search_dirs= list[string] ("-L"+hrtl),
+        dynamic_libraries= ddeps+depdlibs,
+        static_libraries= Empty[string],
         debugln = dbug
       )
     ;
-    fun prgname (file:string) => let 
-        ?dstprg = file.Filename::strip_extension + #(toolchain.executable_extension) in
-        Filename::join (bin, dstprg)
-    ;
-
-
     var toolchain = toolchain-maker config;
     println$ #(toolchain.whatami);
-    proc cobj (s:string,dst:string) {
-      var src = Filename::join (srcdir,s);
-      println$ "Compiling [static] " + src + " -> " + dst;
-      var result = toolchain.cxx_static_object_compiler(src=src, dst=dst);
-      if result != 0 do
-        println$ "Driver compile "+ s + " -> " + dst +" FAILED";
+    var headers = db.getpkgfielddflt(pkg,"headers");
+    if headers == "" do headers = r".*\.h(pp)?"; println$ "copying all header files"; done
+    var hsrc, hdst = "","";
+    match split (headers, ">") with
+    | #Empty => ;
+    | Cons (?h,#Empty) => hsrc = h;
+    | Cons (?h,Cons (?d,#Empty)) => hsrc = h; hdst = d;
+    | _ => println$ "Header file too many > characters " + headers;
+    endmatch;
+
+    if hdst == "" do hdst = "${0}"; done
+    println$ "Copying headers " + hsrc + " > " + hdst;
+    CopyFiles::copyfiles (srcpath, hsrc,srtl/hdst,true, true);
+
+    var pats = db.getpkgfield(pkg,"src");
+    var pat = catmap '|' (fun (x:string)=>"("+x+")") pats;
+  //println$ "Finding Sources in "+srcpath;
+    var files = FileSystem::regfilesin (srcpath,pat);
+  //println$ "Sources = " + str files;
+    {
+      fun objname (file:string) => let 
+          ?dstobj = file.Filename::strip_extension + #(toolchain.dynamic_object_extension) in
+          tmpdir/ dstobj
+      ;
+
+      for file in files do
+        println$ "Compiling [dynamic] " + file " -> " + objname file;
+        var srcfile = srcpath/ file;
+        var dst = objname file;
+        Directory::mkdirs (Filename::dirname dst);
+        match Filename::get_extension srcfile with
+        | ?x when x == ".cc" or x == ".cpp" =>
+          result = toolchain.cxx_dynamic_object_compiler (src=srcfile, dst=dst);
+        | ".c" =>
+          result = toolchain.c_dynamic_object_compiler (src=srcfile, dst=dst);
+        | ?x => println$ "Unknown extension " + x; System::exit(1);
+        endmatch
+        ;
+        if result != 0 do
+          println$ "Compiler result " + str result;
+          System::exit(1);
+        done
       done
-    }
-    cobj("flx_run_lib_static.cpp",Filename::join(librtl,"flx_run_lib"+#(toolchain.static_object_extension)));
-    cobj("flx_run_lib_dynamic.cpp",Filename::join(tmpdir,"flx_run_lib_dynamic"+#(toolchain.static_object_extension)));
-    cobj("flx_arun_lib_static.cpp",Filename::join(librtl,"flx_arun_lib"+#(toolchain.static_object_extension)));
-    cobj("flx_arun_lib_dynamic.cpp",Filename::join(tmpdir,"flx_arun_lib_dynamic"+#(toolchain.static_object_extension)));
-    cobj("flx_run_main.cxx",Filename::join(librtl,"flx_run_main"+#(toolchain.static_object_extension)));
-    cobj("flx_arun_main.cxx",Filename::join(librtl,"flx_arun_main"+#(toolchain.static_object_extension)));
 
-    proc prg(file:string) {
-      var exe = prgname file;
-      println$ "Linking [executable] " + exe;
-      var objs = list (
-        Filename::join(tmpdir,file+"_lib_dynamic")+#(toolchain.static_object_extension),
-        Filename::join(librtl,file+"_main")+#(toolchain.static_object_extension)
-      );
-      var result,libs = db.query$ list("--rec","--keeprightmost","--field=provides_slib",file);
+      var objs = map objname files;
+      var libname = "lib" + (db.getpkgfield1(pkg,"provides_dlib")).[2 to] +#(toolchain.dynamic_library_extension);
+      var dstlib = build/libname;
+      println$ "Dynamic Linking library " + dstlib;
+      result = toolchain.dynamic_library_linker(srcs=objs, dst=dstlib);
       if result != 0 do
-        println$ "Driver pkgconfig query for "+ file+" FAILED";
+        println$ "Linker result " + str result;
+        System::exit(1);
       done
-      result = toolchain.executable_linker(srcs=objs+libs, dst=exe);
+    };
+    {
+      fun objname (file:string) => let 
+          ?dstobj = file.Filename::strip_extension + #(toolchain.static_object_extension) in
+          tmpdir/ dstobj
+      ;
+
+      for file in files do
+        println$ "Compiling [static] " + file " -> " + objname file;
+        var srcfile = srcpath/ file;
+        var dst = objname file;
+        Directory::mkdirs (Filename::dirname dst);
+        match Filename::get_extension srcfile with
+        | ?x when x == ".cc" or x == ".cpp" =>
+          result = toolchain.cxx_static_library_object_compiler (src=srcfile, dst=dst);
+        | ".c" =>
+          result = toolchain.c_static_object_compiler (src=srcfile, dst=dst);
+        | ?x => println$ "Unknown extension " + x; System::exit(1);
+        endmatch
+        ;
+        if result != 0 do
+          println$ "Compiler result " + str result;
+          System::exit(1);
+        done
+      done
+
+      var objs = map objname files;
+      var libname = "lib" + (db.getpkgfield1(pkg,"provides_slib")).[2 to] +#(toolchain.static_library_extension);
+      var dstlib = build/ libname;
+      println$ "Static Linking Library " + dstlib;
+      result = toolchain.static_library_linker(srcs=objs, dst=dstlib);
       if result != 0 do
-        println$ "Driver link  "+ file+" FAILED";
+        println$ "Linker result " + str result;
+        System::exit(1);
       done
-    }
-    prg("flx_run");
-    prg("flx_arun");
-  end
+    };
+  }
+
+  proc make_rtl (
+    build:string, target:string,
+    boot_package:string, 
+    tmpdir:string,
+    debug: bool
+  )
+  {
+    val pkgdir = build / target / 'config';
+    val srtl = build / 'share' / 'lib' / 'rtl';
+    val hrtl = build / target / 'lib' / 'rtl';
+    val bin = build / target / 'bin';
+    val repo = build / 'share'; // excludes "src" cause that's in the packages
+    
+    proc dbug (x:string) => debug ?? println$ '[make_rtl] ' + x;
+    Directory::mkdirs tmpdir;
+    Directory::mkdirs hrtl;
+    Directory::mkdirs srtl;
+    println$ "bootpkg=" + boot_package + " build image=" + build;
+
+    var db = FlxPkgConfig::FlxPkgConfigQuery (list[string] pkgdir);
+
+    gen getbootfield (field:string) => db.getpkgfield1 (boot_package, field);
+
+    var compiler = getbootfield "compiler"; 
+    var os = getbootfield "os"; 
+    var toolchain = getbootfield "toolchain"; 
+    println$ "compiler     : " + str compiler;
+    println$ "os           : " + str os;
+    println$ "toolchain    : " + str toolchain;
+
+    var allpkgs = db.getclosure boot_package;
+    //println$ "Closure      : " + str allpkgs;
+
+    for pkg in allpkgs begin 
+      var lib = db.getpkgfielddflt (pkg,"library");
+      var srcdir = db.getpkgfielddflt (pkg,"srcdir");
+      println$ f"%15S %20S %20S" (pkg,lib,srcdir);
+    end 
+
+    var toolchain-maker = 
+      Dynlink::load-plugin-func1 [toolchain_t,clang_config_t] 
+      (
+        dll-name=toolchain, 
+        setup-str="",
+        entry-point=toolchain
+      )
+    ;
+    for pkg in allpkgs begin
+      var library = db.getpkgfielddflt (pkg,"library");
+      var srcdir = db.getpkgfielddflt (pkg,"srcdir");
+      var src = db.getpkgfield(pkg,"src");
+      if library != "" do
+        if srcdir == "" do
+          println$ "Package error, package " + pkg + " library " + library + " No srcdir specified";
+          System::exit(1);
+        done
+        if src.is_empty do
+          println$ "Package error, package " + pkg + " library " + library + " No src files specified";
+          System::exit(1);
+        done
+        make_lib (db,toolchain-maker, build, target, pkg,tmpdir, debug);
+      else 
+        println$ "------------";
+        println$ "External package " + pkg;
+        println$ "------------";
+      done
+    end 
+
+    // make drivers
+    begin
+      println$ "Make drivers";
+      fun mkinc (x:string) => "-I"+x;
+      var srcdir = repo/"src"/"flx_drivers";
+      var config = 
+        (
+          header_search_dirs= list[string] (mkinc hrtl, mkinc srcdir, mkinc srtl),
+          macros= Empty[string],
+          cflags = Empty[string],
+          library_search_dirs= list[string] ("-L"+hrtl),
+          dynamic_libraries= Empty[string],
+          static_libraries= Empty[string], //############ FIXME or the link won't work!
+          debugln = dbug
+        )
+      ;
+      fun prgname (file:string) => let 
+          ?dstprg = file.Filename::strip_extension + #(toolchain.executable_extension) in
+          bin / dstprg
+      ;
+
+
+      var toolchain = toolchain-maker config;
+      println$ #(toolchain.whatami);
+      proc cobj (s:string,dst:string) {
+        var src = srcdir/s;
+        println$ "Compiling [static] " + src + " -> " + dst;
+        var result = toolchain.cxx_static_object_compiler(src=src, dst=dst);
+        if result != 0 do
+          println$ "Driver compile "+ s + " -> " + dst +" FAILED";
+        done
+      }
+      cobj("flx_run_lib_static.cpp",hrtl/"flx_run_lib"+#(toolchain.static_object_extension));
+      cobj("flx_run_lib_dynamic.cpp",tmpdir/"flx_run_lib_dynamic"+#(toolchain.static_object_extension));
+      cobj("flx_arun_lib_static.cpp",hrtl/"flx_arun_lib"+#(toolchain.static_object_extension));
+      cobj("flx_arun_lib_dynamic.cpp",hrtl/"flx_arun_lib_dynamic"+#(toolchain.static_object_extension));
+      cobj("flx_run_main.cxx",hrtl/"flx_run_main"+#(toolchain.static_object_extension));
+      cobj("flx_arun_main.cxx",hrtl/"flx_arun_main"+#(toolchain.static_object_extension));
+
+      proc prg(file:string) {
+        var exe = prgname file;
+        println$ "Linking [executable] " + exe;
+        var objs = list (
+          tmpdir/file+"_lib_dynamic"+#(toolchain.static_object_extension),
+          hrtl/file+"_main"+#(toolchain.static_object_extension)
+        );
+        var result,libs = db.query$ list("--rec","--keeprightmost","--field=provides_slib",file);
+        if result != 0 do
+          println$ "Driver pkgconfig query for "+ file+" FAILED";
+        done
+        result = toolchain.executable_linker(srcs=objs+libs, dst=exe);
+        if result != 0 do
+          println$ "Driver link  "+ file+" FAILED";
+        done
+      }
+      prg("flx_run");
+      prg("flx_arun");
+    end
+  }
+
+  proc dirsetup(repo:string, target_image:string, target:string, source_image:string, source_bin:string, debug:bool)
+  {
+    println$ "Create clean target "+target_image;
+    C_hack::ignore$ FileSystem::unlink_file(target_image);
+    C_hack::ignore$ FileSystem::unlink_file("trial-tmp");
+
+    C_hack::ignore$ Directory::mkdir(target_image);
+    C_hack::ignore$ Directory::mkdir(target_image/target);
+    C_hack::ignore$ Directory::mkdir(target_image/target/'bin');
+
+    if source_image/source_bin != target_image/target do
+      println$ "Copy config";
+      CopyFiles::copyfiles(source_image/source_bin/'config', '(.*)',target_image/target/'config'/'${1}',true,debug);
+      CopyFiles::copyfiles(source_image/source_bin/'lib', r"(.*\.(h|hpp|flx|flxh))", target_image/target/'lib'/'${1}',true,debug);
+    done
+
+    if repo != target_image/'share' do
+      println$ "Copy repository src";
+      CopyFiles::copyfiles(repo/'src', 
+       '(.*\.(h|hpp|ml|c|cpp|cxx|cc|flx|flxh|fdoc|js|html|svg|png|files|include))', 
+       target_image/'share'/'src'/'${1}',true,debug);
+    done
+
+    println$ "Copy Felix library";
+    CopyFiles::copyfiles (target_image/'share'/'src'/'lib', r"(.*\.(flx|flxh|fdoc|files))", target_image/'share'/'lib/${1}',true,debug);
+
+    // This is SPECIAL because "version.flx" is the only file which is both
+    // shared-readonly and generated. So it has to be copied out of an
+    // existing built library not the repository image.
+    if source_image != target_image do
+      CopyFiles::copyfiles (source_image/'share'/'lib'/'std', '(version.flx)', target_image/'share'/'lib'/'std/${1}',true,debug);
+    done
+  }
+
+  proc build_plugins(target_image:string, target:string)
+  {
+    var plugins = list (
+      'cpp2html',
+      'fdoc2html',
+      'fdoc_button',
+      'fdoc_fileseq',
+      'fdoc_heading',
+      'fdoc_paragraph',
+      'fdoc_scanner',
+      'fdoc_slideshow',
+      'flx2html',
+      'fpc2html',
+      'ocaml2html',
+      'py2html',
+      'toolchain_clang_linux',
+      'toolchain_clang_osx',
+      'toolchain_gcc_linux',
+      'toolchain_gcc_osx'
+    );
+    for plugin in plugins do
+      println$ "Building plugin " + plugin;
+      Flx::runflx$ list ('[flx]','--test='+target_image, 
+        '-c', '-ox',target_image/target/'lib'/'rtl'/plugin, 
+        target_image/'share'/'lib'/'plugins'/plugin);
+
+      Flx::runflx$ list ('[flx]','--test='+target_image, 
+        '-c', '--nolink','-ox', target_image/target/'lib'/'rtl'/plugin, 
+        target_image/'share'/'lib'/'plugins'/plugin);
+
+      Flx::runflx$ list ('[flx]','--test='+target_image, 
+        '--static','-c', '--nolink','-ox', target_image/target/'lib'/'rtl'/plugin, 
+        target_image/'share'/'lib'/'plugins'/plugin);
+    done
+   
+  }
+
+
+  proc build_exes(target_image:string, target:string)
+  {
+    var exes = 
+    (
+      ('flx', 'flx'/'flx'),
+      ('flx_pkgconfig', 'flx_pkgconfig'/'flx_pkgconfig'),
+      ('flx_cp', 'tools'/'flx_cp'),
+      ('flx_ls', 'tools'/'flx_ls'),
+      ('flx_grep', 'tools'/'flx_grep'),
+      ('flx_replace', 'tools'/'flx_replace'),
+      ('flx_tangle', 'tools'/'flx_tangle'),
+      ('flx_perror', 'tools'/'flx_perror'),
+      ('webserver', 'tools'/'webserver')
+    );
+    println$ "build exes";
+    match ?exe,?src in exes do
+      println$ src + " -> " + exe;
+      Flx::runflx$ list ('[flx]','--test='+target_image, '--static','-c',
+        '-ox', target_image/target/'bin'/exe, target_image/'share'/'src'/src);
+    done
+  }
+
+  proc flx_build(repo:string, boot_package:string, target_image:string, target:string, source_image:string, source_bin:string, debug:bool)
+  {
+    dirsetup(repo, target_image, target, source_image, source_bin, debug);
+
+    // at this point, the build proceeds using host tools, but only target sources.
+    make_rtl ( target_image, target, boot_package, 'trial-tmp', debug);
+
+    // copy the compiler 
+    CopyFiles::copyfiles(source_image/source_bin/'bin', 'flxg', target_image/target/'bin'/'flxg', true, debug);
+    build_plugins(target_image, target);
+    build_exes(target_image, target);
+    println$ "Build Complete";
+  }
+
+  noinline fun parse_args (args: list[string]) = 
+  {
+     var cmd = (
+       repo = 'src',
+       boot_package="",
+       target_image="build"/"trial",
+       target_bin="host",
+       source_image="build"/"release",
+       source_bin="host",
+       debug = false
+     );
+     for arg in args do
+       if prefix(arg,"--repo=") do
+         &cmd.repo <- arg.[7 to];
+       elif prefix(arg,"--pkg=") do
+         &cmd.boot_package<- arg.[6 to];
+       elif prefix(arg,"--target-dir=") do
+         &cmd.target_image<- arg.[13 to];
+       elif prefix(arg,"--target-bin=") do
+         &cmd.target_bin <- arg.[13 to];
+       elif prefix(arg,"--source-dir=") do
+         &cmd.source_image <- arg.[13 to];
+       elif prefix(arg,"--source-bin=") do
+         &cmd.source_bin <- arg.[13 to];
+       elif prefix(arg,"--debug") do
+         &cmd.debug <- true;
+       else
+         println$ "Unknown switch " + arg;
+         System::exit(1);
+       done 
+     done
+
+     // if no boot package is specified guess using shell command uname.
+     if cmd.boot_package == "" do
+       match Shell::get_stdout ("uname") with
+       | _, "" => &cmd.boot_package <- "flx_build_rtl_mscv_win32";
+       | _, "Linux" => &cmd.boot_package <- "flx_build_rtl_gcc_linux";
+       | _, "Darwin" => &cmd.boot_package <- "flx_build_rtl_clang_osx";
+       | _, ?x => 
+         println$ "No build package specified and uname returns unknown OS: " +x;
+         System::exit(1);
+       endmatch;
+       println$ "Guess --pkg="+cmd.boot_package;
+     done
+
+     return cmd;
+  }
+
+  noinline proc build_felix (xargs:list[string])
+  {
+    if xargs.len.int < 6 do
+      println$ "Usage: flx_build ";
+      println$ "  --repo=repo               default: src";
+      println$ "  --pkg=bootpkg";
+      println$ "  --target-dir=target_dir   default: build/trial";
+      println$ "  --target-bin=target_bin   default: host";
+      println$ "  --source-dir=source_dir   default: build/release";
+      println$ "  --source-bin=source_bin   default: host";
+      println$ "  --debug";
+      println$ "";
+      println$ "Build new Felix target";
+      println$ "";
+      println$ "Requires repository 'repo' contain 'src'";
+      println$ "Requires source_dir contain source_bin";
+      println$ "Ensures target_dir contains:";
+      println$ "";
+      println$ "  (a) Repository source";
+      println$ "  (b) Share library";
+      println$ "  (c) config db, C++ headers, libraries and executables";
+      println$ "";
+      println$ "Copies version, flxg, config db, and C++ headers from source_dir if required";
+      println$ "Compiles all C++ sources to libraries and executables";
+      System::exit(1);
+    done
+
+    var cmd = parse_args (tail xargs);
+    println$ "Flx_build";
+    println$ "  repository    = " + cmd.repo;
+    println$ "  build_package = " + cmd.boot_package;
+    println$ "  target_dir    = " + cmd.target_image;
+    println$ "  target_bin    = " + cmd.target_bin;
+    println$ "  source_dir    = " + cmd.source_image;
+    println$ "  source_bin    = " + cmd.source_bin;
+
+    flx_build (cmd.repo, cmd.boot_package, cmd.target_image, cmd.target_bin,cmd.source_image,cmd.source_bin, cmd.debug);
+  }
+
 }
 
-fun / (x:string,y:string) => Filename::join(x,y);
-
-proc dirsetup(debug:bool)
-{
-  println$ "Create clean target build/trial";
-  C_hack::ignore$ FileSystem::unlink_file('build'/'trial');
-  C_hack::ignore$ FileSystem::unlink_file("trial-tmp");
-
-  C_hack::ignore$ Directory::mkdir('build'/'trial');
-  C_hack::ignore$ Directory::mkdir('build'/'trial'/'host');
-  C_hack::ignore$ Directory::mkdir('build'/'trial'/'host'/'bin');
-
-  println$ "copy config";
-  CopyFiles::copyfiles('build'/'release'/'host'/'config', '(.*)','build'/'trial'/'host'/'config'/'${1}',true,debug);
-  CopyFiles::copyfiles('build'/'release'/'host'/'lib', r"(.*\.(h|hpp|flx|flxh))", 'build'/'trial'/'host'/'lib'/'${1}',true,debug);
-
-  println$ "Copy repository src";
-	CopyFiles::copyfiles('src', '(.*\.(h|hpp|ml|c|cpp|cxx|cc|flx|flxh|fdoc|js|html|svg|png|files|include))', 'build'/'trial'/'share'/'src'/'${1}',true,debug);
-
-  println$ "Copy Felix library";
-	CopyFiles::copyfiles ('build'/'trial'/'share'/'src'/'lib', r"(.*\.(flx|flxh|fdoc|files))", 'build/trial/share/lib/${1}',true,debug);
-
-  // This is SPECIAL because "version.flx" is the only file which is both
-  // shared-readonly and generated. So it has to be copied out of an
-  // existing built library not the repository image.
-	CopyFiles::copyfiles ('build'/'release'/'share'/'lib'/'std', '(version.flx)', 'build'/'trial'/'share'/'lib'/'std/${1}',true,debug);
-}
-
-proc build_plugins()
-{
-  var plugins = list (
-    'cpp2html',
-    'fdoc2html',
-    'fdoc_button',
-    'fdoc_fileseq',
-    'fdoc_heading',
-    'fdoc_paragraph',
-    'fdoc_scanner',
-    'fdoc_slideshow',
-    'flx2html',
-    'fpc2html',
-    'ocaml2html',
-    'py2html',
-    'toolchain_clang_linux',
-    'toolchain_clang_osx',
-    'toolchain_gcc_linux',
-    'toolchain_gcc_osx'
-  );
-  for plugin in plugins do
-    println$ "Building plugin " + plugin;
-    Flx::runflx$ list ('--test=build'/'trial', '-c', '-ox','build'/'trial'/'host'/'lib'/'rtl'/plugin, 'build'/'trial'/'share'/'lib'/'plugins'/plugin);
-    Flx::runflx$ list ('--test=build'/'trial', '-c', '--nolink','-ox', 'build'/'trial'/'host'/'lib'/'rtl'/plugin, 'build'/'trial'/'share'/'lib'/'plugins'/plugin);
-    Flx::runflx$ list ('--test=build'/'trial', '--static','-c', '--nolink','-ox', 'build'/'trial'/'host'/'lib'/'rtl'/plugin, 'build'/'trial'/'share'/'lib'/'plugins'/plugin);
-  done
- 
-}
-proc flx_build(boot_package:string, debug:bool)
-{
-  dirsetup(debug);
-
-  // at this point, the build proceeds using host tools, but only target sources.
-  make_rtl ('build'/'trial'/'share', 'build'/'trial', 'build'/'trial'/'host'/'config',boot_package, 'trial-tmp', debug);
-
-  // copy the compiler 
-  CopyFiles::copyfiles('build'/'release'/'host'/'bin', 'flxg', 'build'/'trial'/'host'/'bin'/'flxg', true, debug);
-  build_plugins;
-  println$ "Build Complete";
-}
-
-
-noinline proc build_felix (xargs:list[string])
-{
-  if xargs.len.int < 2 do
-    println$ "Usage: flx_build [debug]";
-    println$ "Execute from directory containing repository";
-    println$ "Uses build/release to create build/trial";
-    System::exit(1);
-  done
-
-  var v = varray xargs;
-  var boot_package = xargs . 1uz;
-  var debug = xargs.len.int == 3;
-  flx_build (boot_package, debug);
-}
-
-
-build_felix (#System::args);
+FlxCoreBuild::build_felix (#System::args);
 
 System::exit (0);
 

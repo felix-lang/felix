@@ -63,7 +63,7 @@ QUOTING
 
 class Bash {
 
-  instance Shell_class[Posix] {
+  instance Shell_class[Posix, PosixProcess::process_status_t] {
     // we can't use single quotes becase there's no way to represent a ' 
     // in a single quoted string .. so we have to use double quotes and
     // backslash the 4 special characters: " $ \ `
@@ -82,7 +82,7 @@ class Bash {
     fun quote_line_for_system (s:string) => s;
     fun quote_line_for_popen (s:string) => s + " ";
 
-    gen get_stdout(x:string) = {
+    gen raw_get_stdout(x:string) = {
         var fout = PosixProcess::popen_in(x+" ");
         if valid fout do
           var output = load fout;
@@ -167,5 +167,5 @@ class Bash {
       return args;
     }
   }
-  inherit Shell_class[Posix];
+  inherit Shell_class[Posix, PosixProcess::process_status_t];
 }

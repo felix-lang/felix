@@ -1,8 +1,12 @@
 class Win32Process {
   open Win32Signal;
 
-  gen popen_in: string -> Cstdio::ifile = '_popen($1.c_str(), "r")' requires C89_headers::stdio_h;
-  gen pclose: Cstdio::ifile -> process_status_t = "_pclose($1)" requires C89_headers::stdio_h;
+  instance Process_class[Win32, process_status_t] 
+  {
+    gen popen_in: string -> Cstdio::ifile = '_popen($1.c_str(), "r")' requires C89_headers::stdio_h;
+    gen pclose: Cstdio::ifile -> process_status_t = "_pclose($1)" requires C89_headers::stdio_h;
+  }
+  inherit Process_class[Win32, process_status_t];
   type process_status_t = "intptr_t";
   ctor intptr:process_status_t = "$1";
   ctor int:process_status_t = "int($1)";

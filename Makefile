@@ -245,88 +245,14 @@ tarball:
 		${BUILDROOT}/host \
 		${BUILDROOT}/share
 
-bootstrap: rtlbuild trial-exes
-
 rtlbuild:
-	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl_demo $(TARGET_TOOLCHAIN_PACKAGE)
-
-trial-plugins:
-	#
-	# ##############################################
-	# Build the plugins: dynamic library
-	# ##############################################
-	#
-	build/release/host/bin/flx --test=build/trial -c -ox build/trial/host/lib/rtl/cpp2html build/trial/share/lib/plugins/cpp2html
-	build/release/host/bin/flx --test=build/trial -c -ox build/trial/host/lib/rtl/fdoc2html build/trial/share/lib/plugins/fdoc2html
-	build/release/host/bin/flx --test=build/trial -c -ox build/trial/host/lib/rtl/fdoc_button build/trial/share/lib/plugins/fdoc_button 
-	build/release/host/bin/flx --test=build/trial -c -ox build/trial/host/lib/rtl/fdoc_fileseq build/trial/share/lib/plugins/fdoc_fileseq
-	build/release/host/bin/flx --test=build/trial -c -ox build/trial/host/lib/rtl/fdoc_heading build/trial/share/lib/plugins/fdoc_heading
-	build/release/host/bin/flx --test=build/trial -c -ox build/trial/host/lib/rtl/fdoc_paragraph build/trial/share/lib/plugins/fdoc_paragraph
-	build/release/host/bin/flx --test=build/trial -c -ox build/trial/host/lib/rtl/fdoc_scanner build/trial/share/lib/plugins/fdoc_scanner
-	build/release/host/bin/flx --test=build/trial -c -ox build/trial/host/lib/rtl/fdoc_slideshow build/trial/share/lib/plugins/fdoc_slideshow
-	build/release/host/bin/flx --test=build/trial -c -ox build/trial/host/lib/rtl/flx2html build/trial/share/lib/plugins/flx2html
-	build/release/host/bin/flx --test=build/trial -c -ox build/trial/host/lib/rtl/fpc2html build/trial/share/lib/plugins/fpc2html
-	build/release/host/bin/flx --test=build/trial -c -ox build/trial/host/lib/rtl/ocaml2html build/trial/share/lib/plugins/ocaml2html
-	build/release/host/bin/flx --test=build/trial -c -ox build/trial/host/lib/rtl/py2html build/trial/share/lib/plugins/py2html
-	build/release/host/bin/flx --test=build/trial -c -ox build/trial/host/lib/rtl/toolchain_clang_linux build/trial/share/lib/plugins/toolchain_clang_linux
-	build/release/host/bin/flx --test=build/trial -c -ox build/trial/host/lib/rtl/toolchain_clang_osx build/trial/share/lib/plugins/toolchain_clang_osx
-	build/release/host/bin/flx --test=build/trial -c -ox build/trial/host/lib/rtl/toolchain_gcc_linux build/trial/share/lib/plugins/toolchain_gcc_linux
-	build/release/host/bin/flx --test=build/trial -c -ox build/trial/host/lib/rtl/toolhcain_gcc_osx build/trial/share/lib/plugins/toolchain_gcc_osx
-	#
-	#
-	# ##############################################
-	# Build the plugins: dynamic object
-	# ##############################################
-	#
-	build/release/host/bin/flx --test=build/trial -c --nolink -ox build/trial/host/lib/rtl/cpp2html build/trial/share/lib/plugins/cpp2html
-	build/release/host/bin/flx --test=build/trial -c --nolink -ox build/trial/host/lib/rtl/fdoc2html build/trial/share/lib/plugins/fdoc2html
-	build/release/host/bin/flx --test=build/trial -c --nolink -ox build/trial/host/lib/rtl/fdoc_button build/trial/share/lib/plugins/fdoc_button 
-	build/release/host/bin/flx --test=build/trial -c --nolink -ox build/trial/host/lib/rtl/fdoc_fileseq build/trial/share/lib/plugins/fdoc_fileseq
-	build/release/host/bin/flx --test=build/trial -c --nolink -ox build/trial/host/lib/rtl/fdoc_heading build/trial/share/lib/plugins/fdoc_heading
-	build/release/host/bin/flx --test=build/trial -c --nolink -ox build/trial/host/lib/rtl/fdoc_paragraph build/trial/share/lib/plugins/fdoc_paragraph
-	build/release/host/bin/flx --test=build/trial -c --nolink -ox build/trial/host/lib/rtl/fdoc_scanner build/trial/share/lib/plugins/fdoc_scanner
-	build/release/host/bin/flx --test=build/trial -c --nolink -ox build/trial/host/lib/rtl/fdoc_slideshow build/trial/share/lib/plugins/fdoc_slideshow
-	build/release/host/bin/flx --test=build/trial -c --nolink -ox build/trial/host/lib/rtl/flx2html build/trial/share/lib/plugins/flx2html
-	build/release/host/bin/flx --test=build/trial -c --nolink -ox build/trial/host/lib/rtl/fpc2html build/trial/share/lib/plugins/fpc2html
-	build/release/host/bin/flx --test=build/trial -c --nolink -ox build/trial/host/lib/rtl/ocaml2html build/trial/share/lib/plugins/ocaml2html
-	build/release/host/bin/flx --test=build/trial -c --nolink -ox build/trial/host/lib/rtl/py2html build/trial/share/lib/plugins/py2html
-	build/release/host/bin/flx --test=build/trial -c --nolink -ox build/trial/host/lib/rtl/toolchain_clang_linux build/trial/share/lib/plugins/toolchain_clang_linux
-	build/release/host/bin/flx --test=build/trial -c --nolink -ox build/trial/host/lib/rtl/toolchain_clang_osx build/trial/share/lib/plugins/toolchain_clang_osx
-	build/release/host/bin/flx --test=build/trial -c --nolink -ox build/trial/host/lib/rtl/toolchain_gcc_linux build/trial/share/lib/plugins/toolchain_gcc_linux
-	build/release/host/bin/flx --test=build/trial -c --nolink -ox build/trial/host/lib/rtl/toolhcain_gcc_osx build/trial/share/lib/plugins/toolchain_gcc_osx
-	#
-	# ##############################################
-	# Build the plugins: static object
-	# ##############################################
-	#
-	build/release/host/bin/flx --test=build/trial --static -c --nolink -ox build/trial/host/lib/rtl/cpp2html build/trial/share/lib/plugins/cpp2html
-	build/release/host/bin/flx --test=build/trial --static -c --nolink -ox build/trial/host/lib/rtl/fdoc2html build/trial/share/lib/plugins/fdoc2html
-	build/release/host/bin/flx --test=build/trial --static -c --nolink -ox build/trial/host/lib/rtl/fdoc_button build/trial/share/lib/plugins/fdoc_button 
-	build/release/host/bin/flx --test=build/trial --static -c --nolink -ox build/trial/host/lib/rtl/fdoc_fileseq build/trial/share/lib/plugins/fdoc_fileseq
-	build/release/host/bin/flx --test=build/trial --static -c --nolink -ox build/trial/host/lib/rtl/fdoc_heading build/trial/share/lib/plugins/fdoc_heading
-	build/release/host/bin/flx --test=build/trial --static -c --nolink -ox build/trial/host/lib/rtl/fdoc_paragraph build/trial/share/lib/plugins/fdoc_paragraph
-	build/release/host/bin/flx --test=build/trial --static -c --nolink -ox build/trial/host/lib/rtl/fdoc_scanner build/trial/share/lib/plugins/fdoc_scanner
-	build/release/host/bin/flx --test=build/trial --static -c --nolink -ox build/trial/host/lib/rtl/fdoc_slideshow build/trial/share/lib/plugins/fdoc_slideshow
-	build/release/host/bin/flx --test=build/trial --static -c --nolink -ox build/trial/host/lib/rtl/flx2html build/trial/share/lib/plugins/flx2html
-	build/release/host/bin/flx --test=build/trial --static -c --nolink -ox build/trial/host/lib/rtl/fpc2html build/trial/share/lib/plugins/fpc2html
-	build/release/host/bin/flx --test=build/trial --static -c --nolink -ox build/trial/host/lib/rtl/ocaml2html build/trial/share/lib/plugins/ocaml2html
-	build/release/host/bin/flx --test=build/trial --static -c --nolink -ox build/trial/host/lib/rtl/py2html build/trial/share/lib/plugins/py2html
-	build/release/host/bin/flx --test=build/trial --static -c --nolink -ox build/trial/host/lib/rtl/toolchain_clang_linux build/trial/share/lib/plugins/toolchain_clang_linux
-	build/release/host/bin/flx --test=build/trial --static -c --nolink -ox build/trial/host/lib/rtl/toolchain_clang_osx build/trial/share/lib/plugins/toolchain_clang_osx
-	build/release/host/bin/flx --test=build/trial --static -c --nolink -ox build/trial/host/lib/rtl/toolchain_gcc_linux build/trial/share/lib/plugins/toolchain_gcc_linux
-	build/release/host/bin/flx --test=build/trial --static -c --nolink -ox build/trial/host/lib/rtl/toolhcain_gcc_osx build/trial/share/lib/plugins/toolchain_gcc_osx
-
-trial-exes:
-	build/release/host/bin/flx --test=build/trial --static -c -ox build/trial/host/bin/flx build/trial/share/src/flx/flx.flx
-	build/trial/host/bin/flx --test=build/trial --static -c -ox build/trial/host/bin/flx_pkgconfig build/trial/share/src/flx_pkgconfig/flx_pkgconfig
-	build/trial/host/bin/flx --test=build/trial --static -c -ox build/trial/host/bin/flx_cp build/trial/share/src/tools/flx_cp
-	build/trial/host/bin/flx --test=build/trial --static -c -ox build/trial/host/bin/flx_ls build/trial/share/src/tools/flx_ls
-	build/trial/host/bin/flx --test=build/trial --static -c -ox build/trial/host/bin/flx_grep build/trial/share/src/tools/flx_grep
-	build/trial/host/bin/flx --test=build/trial --static -c -ox build/trial/host/bin/flx_replace build/trial/share/src/tools/flx_replace
-	build/trial/host/bin/flx --test=build/trial --static -c -ox build/trial/host/bin/flx_tangle build/trial/share/src/tools/flx_tangle
-	build/trial/host/bin/flx --test=build/trial --static -c -ox build/trial/host/bin/flx_perror build/trial/share/src/tools/flx_perror
-	build/trial/host/bin/flx --test=build/trial --static -c -ox build/trial/host/bin/webserver build/trial/share/src/tools/webserver
-
+	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl_demo \
+		--repo=src \
+		--pkg=$(TARGET_TOOLCHAIN_PACKAGE) \
+		--target-dir=build/trial \
+		--target-bin=host \
+		--source-dir=build/release \
+		--source-bin=host
 
 .PHONY : build32 build64 build test32 test64 test  
 .PHONY : build32-debug build64-debug build-debug test32-debug test64-debug test-debug 

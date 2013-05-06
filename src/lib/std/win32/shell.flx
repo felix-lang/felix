@@ -35,7 +35,7 @@ arguments given on the operating system command line:
 
 class CmdExe
 {
-  instance Shell_class[Win32]
+  instance Shell_class[Win32, Win32Process::process_status_t]
   {
     fun quote_arg(s:string):string => '"' + s + '"';
     fun quote_line_for_system(s:string) => '"' + s + '"';
@@ -118,6 +118,6 @@ class CmdExe
       return args;
     }
   }
-  inherit Shell_class[Win32];
+  inherit Shell_class[Win32, Win32Process::process_status_t];
 
 }

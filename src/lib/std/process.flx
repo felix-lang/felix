@@ -1,7 +1,9 @@
 
 
-class Process_class[os]
+class Process_class[os, process_status_t]
 {
+  virtual gen popen_in : string -> Cstdio::ifile;
+  virtual gen pclose: Cstdio::ifile -> process_status_t; 
 }
 
 class Process {
