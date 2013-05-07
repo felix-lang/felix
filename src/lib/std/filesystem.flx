@@ -12,6 +12,37 @@ else
   inherit PosixFileSystem;
 done
 
+  proc unlink(f:string)
+  {
+    proc aux (d:string) (b:string) 
+    {
+      if b == "." or b == ".." return;
+      var f = if d == "" then b else Filename::join (d,b);
+      match FileStat::filetype f with
+      | PIPE  => ;
+      | STREAM => ;
+      | DIRECTORY =>
+        match Directory::filesin f with
+        | None => ;
+        | Some ?files => 
+          for file in files do
+            aux f file;
+          done
+          C_hack::ignore$ Directory::unlink_empty_dir f;
+        endmatch;
+      | BLOCK => ;
+      | REGULAR => C_hack::ignore$ unlink_file f; 
+      | SYMLINK => C_hack::ignore$ unlink_file f;
+      | SOCKET => ;
+      | INDETERMINATE => ;
+      | NONEXISTANT => ;
+      | NOPERMISSION => ;
+      endmatch;
+    }
+    aux "" f;
+  }
+
+ 
   //$ Find a file in a list of directories.
   fun find_in_path(x:string, path:list[string]):opt[string]=>
     match path with
@@ -74,8 +105,9 @@ done
                 //eprintln ("Regular file " + d);
                 var result = d in re;
                 if result do 
-		  //eprintln$ d + " Matches"; 
-		  foundfiles = Cons (d, foundfiles); done
+	                //eprintln$ d + " Matches"; 
+		              foundfiles = Cons (d, foundfiles); 
+                done
               | DIRECTORY => 
                 //eprintln ("found directory " + d);
                 rfi (d);

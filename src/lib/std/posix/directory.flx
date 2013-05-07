@@ -27,6 +27,10 @@ class PosixDirectory
       C_hack::ignore$ mkdir s;
     }
 
+    // Delete an empty directory.
+    gen unlink_empty_dir : string -> int = "rmdir ($1.c_str())" requires Posix_headers::unistd_h;
+
+
     fun getcwd():string = {
       var b: array[char,1024]; 
       var p = getcwd((&b).stl_begin,size 1024);

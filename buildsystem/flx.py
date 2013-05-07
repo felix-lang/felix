@@ -244,6 +244,7 @@ class Builder(fbuild.db.PersistentObject):
             libs=cxx_libs,
             cflags=cxx_cflags,
             lflags=cxx_lflags,
+            macros=["FLX_NO_INCLUDES"],
         )
 
     def build_lib(self, *args, **kwargs):
@@ -273,7 +274,7 @@ def build(ctx, flxg, cxx, drivers):
 def build_flx_pkgconfig(host_phase, target_phase, flx_builder):
     return flx_builder.build_flx_pkgconfig_exe(
         dst=Path('host')/'bin'/'flx_pkgconfig',
-        src=Path('src')/'flx_pkgconfig'/'flx_pkgconfig.flx',
+        src=Path('src')/'tools'/'flx_pkgconfig.flx',
         includes=[
           target_phase.ctx.buildroot / 'host'/'lib',
           target_phase.ctx.buildroot / 'share'/'lib',
@@ -289,7 +290,7 @@ def build_flx(host_phase, target_phase, flx_builder):
     return flx_builder.build_exe(
         async=False,
         dst=Path('host')/'bin'/'flx',
-        src=Path('src')/'flx'/'flx.flx',
+        src=Path('src')/'tools'/'flx.flx',
         includes=[
           target_phase.ctx.buildroot / 'host'/'lib',
           target_phase.ctx.buildroot / 'share'/'lib',

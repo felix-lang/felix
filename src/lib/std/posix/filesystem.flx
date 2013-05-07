@@ -65,12 +65,14 @@ class PosixFileSystem
   //------------------------------------------------------------
   // delete (unlink) a file
   //------------------------------------------------------------
-  gen unlink_file: string -> int = "unlink($1.c_str())" requires Posix_headers::unistd_h;
+  gen unlink_file: string -> int = "::unlink($1.c_str())" 
+    requires Posix_headers::unistd_h;
 
   //------------------------------------------------------------
   // rename a file
   //------------------------------------------------------------
-  gen rename_file: string * string -> int = "rename($1.c_str(),$2.c_str())";
+  gen rename_file: string * string -> int = "::rename($1.c_str(),$2.c_str())"
+    requires Posix_headers::unistd_h;
 
   //------------------------------------------------------------
   // copy a file, preserving last access and modification times

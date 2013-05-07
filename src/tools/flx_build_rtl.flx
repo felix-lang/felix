@@ -246,7 +246,7 @@ class FlxCoreBuild
       cobj("flx_run_lib_static.cpp",hrtl/"flx_run_lib"+#(toolchain.static_object_extension));
       cobj("flx_run_lib_dynamic.cpp",tmpdir/"flx_run_lib_dynamic"+#(toolchain.static_object_extension));
       cobj("flx_arun_lib_static.cpp",hrtl/"flx_arun_lib"+#(toolchain.static_object_extension));
-      cobj("flx_arun_lib_dynamic.cpp",hrtl/"flx_arun_lib_dynamic"+#(toolchain.static_object_extension));
+      cobj("flx_arun_lib_dynamic.cpp",tmpdir/"flx_arun_lib_dynamic"+#(toolchain.static_object_extension));
       cobj("flx_run_main.cxx",hrtl/"flx_run_main"+#(toolchain.static_object_extension));
       cobj("flx_arun_main.cxx",hrtl/"flx_arun_main"+#(toolchain.static_object_extension));
 
@@ -276,10 +276,10 @@ class FlxCoreBuild
     println$ "Create clean target "+cmd.target_dir;
     // NOTE: unlink doesn't work on directories anyhow ...
     // We need rmdir(), but that doesn't work unless dir is empty!
-    C_hack::ignore$ FileSystem::unlink_file("trial-tmp");
+    FileSystem::unlink("trial-tmp");
 
-    if cmd.clean_target_dir do C_hack::ignore$ FileSystem::unlink_file(cmd.target_dir);
-    elif cmd.clean_target_bin_dir do C_hack::ignore$ FileSystem::unlink_file(cmd.target_dir/cmd.target_bin);
+    if cmd.clean_target_dir do FileSystem::unlink(cmd.target_dir);
+    elif cmd.clean_target_bin_dir do FileSystem::unlink(cmd.target_dir/cmd.target_bin);
     elif cmd.clean_target_bin_binaries do println$ "Cleaning binaries out of target not implemented";
     done
 
@@ -402,9 +402,9 @@ class FlxCoreBuild
   {
     var exes = 
     (
-      ('flx', 'flx'/'flx'),
-      ('flx_pkgconfig', 'flx_pkgconfig'/'flx_pkgconfig'),
-      ('scoop', 'flx_pkgtool'/'scoop'),
+      ('flx', 'tools'/'flx'),
+      ('flx_pkgconfig', 'tools'/'flx_pkgconfig'),
+      ('scoop', 'tools'/'scoop'),
       ('flx_build_rtl', 'tools'/'flx_build_rtl')
     );
     println$ "build flx";
