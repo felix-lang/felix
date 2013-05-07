@@ -246,13 +246,25 @@ tarball:
 		${BUILDROOT}/share
 
 rtlbuild:
-	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl_demo \
-		--repo=src \
-		--pkg=$(TARGET_TOOLCHAIN_PACKAGE) \
+	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl \
+		--repo=.\
 		--target-dir=build/trial \
 		--target-bin=host \
 		--source-dir=build/release \
-		--source-bin=host
+		--source-bin=host \
+		--clean-target-dir \
+		--clean-target-bin-dir \
+		--copy-repo \
+		--copy-compiler \
+		--copy-pkg-db \
+		--copy-config-headers \
+		--copy-version \
+		--copy-library \
+		--build-rtl \
+		--build-plugins \
+		--build-flx \
+		--build-tools
+
 
 .PHONY : build32 build64 build test32 test64 test  
 .PHONY : build32-debug build64-debug build-debug test32-debug test64-debug test-debug 

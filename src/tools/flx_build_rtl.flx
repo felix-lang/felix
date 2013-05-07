@@ -98,7 +98,7 @@ class FlxCoreBuild
 
       var objs = map objname files;
       var libname = "lib" + (db.getpkgfield1(pkg,"provides_dlib")).[2 to] +#(toolchain.dynamic_library_extension);
-      var dstlib = build/libname;
+      var dstlib = build/target/'lib'/'rtl'/libname;
       println$ "Dynamic Linking library " + dstlib;
       result = toolchain.dynamic_library_linker(srcs=objs, dst=dstlib);
       if result != 0 do
@@ -133,7 +133,7 @@ class FlxCoreBuild
 
       var objs = map objname files;
       var libname = "lib" + (db.getpkgfield1(pkg,"provides_slib")).[2 to] +#(toolchain.static_library_extension);
-      var dstlib = build/ libname;
+      var dstlib = build/ target/'lib'/'rtl'/libname;
       println$ "Static Linking Library " + dstlib;
       result = toolchain.static_library_linker(srcs=objs, dst=dstlib);
       if result != 0 do
@@ -271,41 +271,76 @@ class FlxCoreBuild
     end
   }
 
-  proc dirsetup(repo:string, target_image:string, target:string, source_image:string, source_bin:string, debug:bool)
+  proc dirsetup(cmd:cmd_type)
   {
-    println$ "Create clean target "+target_image;
-    C_hack::ignore$ FileSystem::unlink_file(target_image);
+    println$ "Create clean target "+cmd.target_dir;
+    // NOTE: unlink doesn't work on directories anyhow ...
+    // We need rmdir(), but that doesn't work unless dir is empty!
     C_hack::ignore$ FileSystem::unlink_file("trial-tmp");
 
-    C_hack::ignore$ Directory::mkdir(target_image);
-    C_hack::ignore$ Directory::mkdir(target_image/target);
-    C_hack::ignore$ Directory::mkdir(target_image/target/'bin');
-
-    if source_image/source_bin != target_image/target do
-      println$ "Copy config";
-      CopyFiles::copyfiles(source_image/source_bin/'config', '(.*)',target_image/target/'config'/'${1}',true,debug);
-      CopyFiles::copyfiles(source_image/source_bin/'lib', r"(.*\.(h|hpp|flx|flxh))", target_image/target/'lib'/'${1}',true,debug);
+    if cmd.clean_target_dir do C_hack::ignore$ FileSystem::unlink_file(cmd.target_dir);
+    elif cmd.clean_target_bin_dir do C_hack::ignore$ FileSystem::unlink_file(cmd.target_dir/cmd.target_bin);
+    elif cmd.clean_target_bin_binaries do println$ "Cleaning binaries out of target not implemented";
     done
 
-    if repo != target_image/'share' do
-      println$ "Copy repository src";
-      CopyFiles::copyfiles(repo/'src', 
-       '(.*\.(h|hpp|ml|c|cpp|cxx|cc|flx|flxh|fdoc|js|html|svg|png|files|include))', 
-       target_image/'share'/'src'/'${1}',true,debug);
+    C_hack::ignore$ Directory::mkdir(cmd.target_dir);
+    C_hack::ignore$ Directory::mkdir(cmd.target_dir/cmd.target_bin);
+    C_hack::ignore$ Directory::mkdir(cmd.target_dir/cmd.target_bin/'bin');
+
+    // Set up the share subdirectory.
+    if cmd.copy_repo do
+      if cmd.repo != cmd.target_dir/'share' do
+        println$ "Copy repository src";
+        CopyFiles::copyfiles(cmd.repo/'src', 
+         '(.*\.(h|hpp|ml|c|cpp|cxx|cc|flx|flxh|fdoc|js|html|svg|png|files|include))', 
+         cmd.target_dir/'share'/'src'/'${1}',true,cmd.debug);
+      else
+        println$ "Cannot copy repo because source = target";
+      done
     done
 
-    println$ "Copy Felix library";
-    CopyFiles::copyfiles (target_image/'share'/'src'/'lib', r"(.*\.(flx|flxh|fdoc|files))", target_image/'share'/'lib/${1}',true,debug);
+    if cmd.copy_library do
+      println$ "Copy Felix library";
+      CopyFiles::copyfiles (cmd.target_dir/'share'/'src'/'lib', r"(.*\.(flx|flxh|fdoc|files))", 
+        cmd.target_dir/'share'/'lib/${1}',true,cmd.debug);
+    done
 
     // This is SPECIAL because "version.flx" is the only file which is both
     // shared-readonly and generated. So it has to be copied out of an
-    // existing built library not the repository image.
-    if source_image != target_image do
-      CopyFiles::copyfiles (source_image/'share'/'lib'/'std', '(version.flx)', target_image/'share'/'lib'/'std/${1}',true,debug);
+    // existing built library not the repository dir.
+    // TODO: generate it using, say, flx or flxg.
+    if cmd.copy_version do
+      if cmd.source_dir != cmd.target_dir do
+        CopyFiles::copyfiles (cmd.source_dir/'share'/'lib'/'std', '(version.flx)', 
+          cmd.target_dir/'share'/'lib'/'std/${1}',true,cmd.debug);
+      else
+        println$ "Cannot copy version because source = target";
+      done
     done
+
+    if cmd.copy_pkg_db do
+      if cmd.source_dir/cmd.source_bin != cmd.target_dir/cmd.target_bin do
+        println$ "Copy config db";
+        CopyFiles::copyfiles(cmd.source_dir/cmd.source_bin/'config', '(.*)',
+          cmd.target_dir/cmd.target_bin/'config'/'${1}',true,cmd.debug);
+      else
+        println$ "Cannot copy config db because source = target";
+      done
+    done
+
+    if cmd.copy_config_headers do
+      if cmd.source_dir/cmd.source_bin != cmd.target_dir/cmd.target_bin do
+        println$ "Copy rtl config headers";
+        CopyFiles::copyfiles(cmd.source_dir/cmd.source_bin/'lib', r"(.*\.(h|hpp|flx|flxh))", 
+          cmd.target_dir/cmd.target_bin/'lib'/'${1}',true,cmd.debug);
+      else
+        println$ "Cannot copy rtl config headers because source = target";
+      done
+    done
+
   }
 
-  proc build_plugins(target_image:string, target:string)
+  proc build_plugins(target_dir:string, target_bin:string)
   {
     var plugins = list (
       'cpp2html',
@@ -327,28 +362,26 @@ class FlxCoreBuild
     );
     for plugin in plugins do
       println$ "Building plugin " + plugin;
-      Flx::runflx$ list ('[flx]','--test='+target_image, 
-        '-c', '-ox',target_image/target/'lib'/'rtl'/plugin, 
-        target_image/'share'/'lib'/'plugins'/plugin);
+      Flx::runflx$ list ('[flx]','--test='+target_dir, 
+        '-c', '-ox',target_dir/target_bin/'lib'/'rtl'/plugin, 
+        target_dir/'share'/'lib'/'plugins'/plugin);
 
-      Flx::runflx$ list ('[flx]','--test='+target_image, 
-        '-c', '--nolink','-ox', target_image/target/'lib'/'rtl'/plugin, 
-        target_image/'share'/'lib'/'plugins'/plugin);
+      Flx::runflx$ list ('[flx]','--test='+target_dir, 
+        '-c', '--nolink','-ox', target_dir/target_bin/'lib'/'rtl'/plugin, 
+        target_dir/'share'/'lib'/'plugins'/plugin);
 
-      Flx::runflx$ list ('[flx]','--test='+target_image, 
-        '--static','-c', '--nolink','-ox', target_image/target/'lib'/'rtl'/plugin, 
-        target_image/'share'/'lib'/'plugins'/plugin);
+      Flx::runflx$ list ('[flx]','--test='+target_dir, 
+        '--static','-c', '--nolink','-ox', target_dir/target_bin/'lib'/'rtl'/plugin, 
+        target_dir/'share'/'lib'/'plugins'/plugin);
     done
    
   }
 
 
-  proc build_exes(target_image:string, target:string)
+  proc build_exes(target_dir:string, target_bin:string)
   {
     var exes = 
     (
-      ('flx', 'flx'/'flx'),
-      ('flx_pkgconfig', 'flx_pkgconfig'/'flx_pkgconfig'),
       ('flx_cp', 'tools'/'flx_cp'),
       ('flx_ls', 'tools'/'flx_ls'),
       ('flx_grep', 'tools'/'flx_grep'),
@@ -360,65 +393,196 @@ class FlxCoreBuild
     println$ "build exes";
     match ?exe,?src in exes do
       println$ src + " -> " + exe;
-      Flx::runflx$ list ('[flx]','--test='+target_image, '--static','-c',
-        '-ox', target_image/target/'bin'/exe, target_image/'share'/'src'/src);
+      Flx::runflx$ list ('[flx]','--test='+target_dir, '--static','-c',
+        '-ox', target_dir/target_bin/'bin'/exe, target_dir/'share'/'src'/src);
     done
   }
 
-  proc flx_build(repo:string, boot_package:string, target_image:string, target:string, source_image:string, source_bin:string, debug:bool)
+  proc build_flx (target_dir:string, target_bin:string)
   {
-    dirsetup(repo, target_image, target, source_image, source_bin, debug);
+    var exes = 
+    (
+      ('flx', 'flx'/'flx'),
+      ('flx_pkgconfig', 'flx_pkgconfig'/'flx_pkgconfig'),
+      ('scoop', 'flx_pkgtool'/'scoop'),
+      ('flx_build_rtl', 'tools'/'flx_build_rtl')
+    );
+    println$ "build flx";
+    match ?exe,?src in exes do
+      println$ src + " -> " + exe;
+      Flx::runflx$ list ('[flx]','--test='+target_dir, '--static','-c',
+        '-ox', target_dir/target_bin/'bin'/exe, target_dir/'share'/'src'/src);
+    done
+}
+
+  proc flx_build(cmd: cmd_type)
+  {
+    dirsetup(cmd);
+    // copy the compiler 
+    cmd.copy_compiler ?? CopyFiles::copyfiles(cmd.source_dir/cmd.source_bin/'bin', 'flxg', 
+      cmd.target_dir/cmd.target_bin/'bin'/'flxg', true, cmd.debug);
 
     // at this point, the build proceeds using host tools, but only target sources.
-    make_rtl ( target_image, target, boot_package, 'trial-tmp', debug);
-
-    // copy the compiler 
-    CopyFiles::copyfiles(source_image/source_bin/'bin', 'flxg', target_image/target/'bin'/'flxg', true, debug);
-    build_plugins(target_image, target);
-    build_exes(target_image, target);
+    cmd.build_rtl ?? make_rtl ( cmd.target_dir, cmd.target_bin, cmd.boot_package, 'trial-tmp', cmd.debug);
+    cmd.build_plugins ?? build_plugins(cmd.target_dir, cmd.target_bin);
+    cmd.build_flx ?? build_flx(cmd.target_dir, cmd.target_bin);
+    cmd.build_tools ?? build_exes(cmd.target_dir, cmd.target_bin);
     println$ "Build Complete";
   }
+
+  proc print_help()
+  {
+    println$ "Usage: flx_build ";
+    println$ "";
+    println$ "# locations";
+    println$ "";
+    println$ "  --repo=repo               default: src";
+    println$ "  --pkg=bootpkg";
+    println$ "  --target-dir=target_dir     default: build/trial";
+    println$ "  --target-bin=target_bin     default: host";
+    println$ "  --source-dir=source_dir     default: build/release";
+    println$ "  --source-bin=source_bin     default: host";
+    println$ "";
+    println$ "# cleaning options";
+    println$ "";
+    println$ "  --clean-target-dir          delete entire target directory";
+    println$ "  --clean-target-bin-dir      delete target sub-directory";
+    println$ "  --clean-target-bin-binaries delete binaries from target sub-directory (not implemented yet)";
+    println$ "";
+    println$ "# copy options";
+    println$ "";
+    println$ "  --copy-repo                 copy src dir of repository";
+    println$ "  --copy-compiler             copy compiler flxg";
+    println$ "  --copy-pkg-db               copy package database";
+    println$ "  --copy-config-headers       copy C++ config headers";
+    println$ "  --copy-version              copy Felix version file";
+    println$ "  --copy-library              copy Felix library";
+    println$ "";
+    println$ "# compilation options";
+    println$ "";
+    println$ "  --build-rtl                 C++ compile the run time library";
+    println$ "  --build-plugins             Felix compile the plugins";
+    println$ "  --build-flx                 Felix compile flx";
+    println$ "  --build-tools               Felix compile standard tools";
+    println$ "";
+    println$ "  --debug                     do stuff verbosely";
+    println$ "";
+    println$ "# Environment variables";
+    println$ "";
+    println$ "FLX_SHELL_ECHO=1              echo all shell callouts (system, popen)";
+    println$ "";
+    println$ "Purpuse: Build new Felix target";
+    println$ "";
+    println$ "Requires repository 'repo' contain 'src'";
+    println$ "Requires source_dir contain source_bin";
+    println$ "Ensures target_dir contains:";
+    println$ "";
+    println$ "  (a) Repository source";
+    println$ "  (b) Share library";
+    println$ "  (c) config db, C++ headers, libraries and executables";
+    println$ "";
+    println$ "Copies version, flxg, config db, and C++ headers from source_dir if required";
+    println$ "Compiles all C++ sources to libraries and executables";
+  }
+
+  typedef cmd_type = typeof (parse_args Empty[string]);
 
   noinline fun parse_args (args: list[string]) = 
   {
      var cmd = (
-       repo = 'src',
+       repo = '.',
        boot_package="",
-       target_image="build"/"trial",
+       target_dir="build"/"trial",
        target_bin="host",
-       source_image="build"/"release",
+       source_dir="build"/"release",
        source_bin="host",
+
+       clean_target_dir=false,
+       clean_target_bin_dir=false,
+       clean_target_bin_binaries=false,
+
+       copy_repo=false,
+       copy_compiler=false,
+       copy_pkg_db=false,
+       copy_config_headers=false,
+       copy_version=false,
+       copy_library=false,
+
+       build_rtl=false,
+       build_plugins=false,
+       build_flx=false,
+       build_tools=false,
        debug = false
      );
+
      for arg in args do
+       // location options
        if prefix(arg,"--repo=") do
          &cmd.repo <- arg.[7 to];
        elif prefix(arg,"--pkg=") do
-         &cmd.boot_package<- arg.[6 to];
+         &cmd.boot_package <- arg.[6 to];
        elif prefix(arg,"--target-dir=") do
-         &cmd.target_image<- arg.[13 to];
+         &cmd.target_dir <- arg.[13 to];
        elif prefix(arg,"--target-bin=") do
          &cmd.target_bin <- arg.[13 to];
        elif prefix(arg,"--source-dir=") do
-         &cmd.source_image <- arg.[13 to];
+         &cmd.source_dir <- arg.[13 to];
        elif prefix(arg,"--source-bin=") do
          &cmd.source_bin <- arg.[13 to];
-       elif prefix(arg,"--debug") do
+       elif arg == "--debug" do
          &cmd.debug <- true;
+
+       // operation options: cleaning
+       elif arg == "--clean-target-dir" do
+         &cmd.clean_target_dir <- true;
+       elif arg == "--clean-target-bin-dir" do
+         &cmd.clean_target_bin_dir <- true;
+       elif arg == "--clean-target-bin-binaries" do
+         &cmd.clean_target_bin_binaries <- true;
+
+       // operation options: copying
+       elif arg == "--copy-repo" do
+         &cmd.copy_repo<- true;
+       elif arg == "--copy-compiler" do
+         &cmd.copy_compiler<- true;
+       elif arg == "--copy-pkg-db" do
+         &cmd.copy_pkg_db <- true;
+       elif arg == "--copy-config-headers" do
+         &cmd.copy_config_headers <- true;
+       elif arg == "--copy-version" do
+         &cmd.copy_version <- true;
+       elif arg == "--copy-library" do
+         &cmd.copy_library <- true;
+
+       // operation options: compilation
+       elif arg == "--build-rtl" do
+         &cmd.build_rtl <- true;
+       elif arg == "--build-plugins" do
+         &cmd.build_plugins<- true;
+       elif arg == "--build-flx" do
+         &cmd.build_flx <- true;
+       elif arg == "--build-tools" do
+         &cmd.build_tools<- true;
+       elif arg == "--help" do
+         print_help();
+         System::exit(0);
        else
          println$ "Unknown switch " + arg;
+         print_help();
          System::exit(1);
        done 
      done
 
      // if no boot package is specified guess using shell command uname.
      if cmd.boot_package == "" do
-       match Shell::get_stdout ("uname") with
-       | _, "" => &cmd.boot_package <- "flx_build_rtl_mscv_win32";
-       | _, "Linux" => &cmd.boot_package <- "flx_build_rtl_gcc_linux";
-       | _, "Darwin" => &cmd.boot_package <- "flx_build_rtl_clang_osx";
-       | _, ?x => 
-         println$ "No build package specified and uname returns unknown OS: " +x;
+       var res, os = Shell::get_stdout("uname");
+       &os <- os.strip;
+       match os with
+       | "" => &cmd.boot_package <- "build_flx_rtl_mscv_win32";
+       | "Linux" => &cmd.boot_package <- "build_flx_rtl_gcc_linux";
+       | "Darwin" => &cmd.boot_package <- "build_flx_rtl_clang_osx";
+       | ?x => 
+         println$ "No build package specified and uname returns unknown OS: '" +x+'"';
          System::exit(1);
        endmatch;
        println$ "Guess --pkg="+cmd.boot_package;
@@ -429,41 +593,20 @@ class FlxCoreBuild
 
   noinline proc build_felix (xargs:list[string])
   {
-    if xargs.len.int < 6 do
-      println$ "Usage: flx_build ";
-      println$ "  --repo=repo               default: src";
-      println$ "  --pkg=bootpkg";
-      println$ "  --target-dir=target_dir   default: build/trial";
-      println$ "  --target-bin=target_bin   default: host";
-      println$ "  --source-dir=source_dir   default: build/release";
-      println$ "  --source-bin=source_bin   default: host";
-      println$ "  --debug";
-      println$ "";
-      println$ "Build new Felix target";
-      println$ "";
-      println$ "Requires repository 'repo' contain 'src'";
-      println$ "Requires source_dir contain source_bin";
-      println$ "Ensures target_dir contains:";
-      println$ "";
-      println$ "  (a) Repository source";
-      println$ "  (b) Share library";
-      println$ "  (c) config db, C++ headers, libraries and executables";
-      println$ "";
-      println$ "Copies version, flxg, config db, and C++ headers from source_dir if required";
-      println$ "Compiles all C++ sources to libraries and executables";
+    if xargs.len.int < 6 do 
+      print_help();
       System::exit(1);
     done
-
     var cmd = parse_args (tail xargs);
-    println$ "Flx_build";
+    println$ "flx_build_rtl";
     println$ "  repository    = " + cmd.repo;
     println$ "  build_package = " + cmd.boot_package;
-    println$ "  target_dir    = " + cmd.target_image;
+    println$ "  target_dir    = " + cmd.target_dir;
     println$ "  target_bin    = " + cmd.target_bin;
-    println$ "  source_dir    = " + cmd.source_image;
+    println$ "  source_dir    = " + cmd.source_dir;
     println$ "  source_bin    = " + cmd.source_bin;
 
-    flx_build (cmd.repo, cmd.boot_package, cmd.target_image, cmd.target_bin,cmd.source_image,cmd.source_bin, cmd.debug);
+    flx_build (cmd);
   }
 
 }
