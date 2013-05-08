@@ -7,7 +7,7 @@ from fbuild.builders.file import copy
 # ------------------------------------------------------------------------------
 
 def build(phase, felix):
-      exe = felix.compile(phase.ctx.buildroot/('share/src/tools/scoop.flx'), 
+      exe = felix.compile('src/tools/scoop.flx', 
         static=True,
         )
       fbuild.builders.file.copy(phase.ctx, exe, 'host/bin')
