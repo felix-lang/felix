@@ -266,9 +266,28 @@ rtlbuild:
 		--build-tools
 
 
+weblink:
+	build/trial/host/bin/flx --test=build/trial -c --nolink --static -ox build/trial/host/lib/rtl/webserver src/tools/webserver.flx 
+	build/trial/host/bin/flx --test=build/trial -c --static -ox build/trial/host/bin/weblink \
+		build/trial/host/lib/rtl/fdoc_heading.o \
+		build/trial/host/lib/rtl/fdoc_button.o \
+		build/trial/host/lib/rtl/fdoc_fileseq.o \
+		build/trial/host/lib/rtl/fdoc_paragraph.o \
+		build/trial/host/lib/rtl/fdoc_scanner.o \
+		build/trial/host/lib/rtl/fdoc_slideshow.o \
+		build/trial/host/lib/rtl/fdoc2html.o \
+		build/trial/host/lib/rtl/flx2html.o \
+		build/trial/host/lib/rtl/py2html.o \
+		build/trial/host/lib/rtl/cpp2html.o \
+		build/trial/host/lib/rtl/ocaml2html.o \
+		build/trial/host/lib/rtl/fpc2html.o \
+		build/trial/host/lib/rtl/webserver.o \
+		src/tools/weblink.flx
+
+
 .PHONY : build32 build64 build test32 test64 test  
 .PHONY : build32-debug build64-debug build-debug test32-debug test64-debug test-debug 
 .PHONY : doc install websites-linux  release install-bin 
 .PHONY : copy-doc gen-doc check-tut gendoc fbuild speed tarball
 .PHONY : rtlbuild copy-src trial-exes trial-plugins
-
+.PHONY : weblink

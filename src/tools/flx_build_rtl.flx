@@ -388,7 +388,7 @@ class FlxCoreBuild
       ('flx_replace', 'tools'/'flx_replace'),
       ('flx_tangle', 'tools'/'flx_tangle'),
       ('flx_perror', 'tools'/'flx_perror'),
-      ('webserver', 'tools'/'webserver')
+      ('webserver', 'tools'/'webserver') // dynamically loads plugins
     );
     println$ "build exes";
     match ?exe,?src in exes do
@@ -593,7 +593,7 @@ class FlxCoreBuild
 
   noinline proc build_felix (xargs:list[string])
   {
-    if xargs.len.int < 6 do 
+    if xargs.len.int < 2 do 
       print_help();
       System::exit(1);
     done
