@@ -4,6 +4,15 @@
 //$ yields the values stored in the container.
 open class Streamable[ContainerType, ValueType] {
   virtual fun iterator : ContainerType -> 1 -> opt[ValueType];
+
+  // check if a streamable x is a subset of a set y.
+  fun \subseteq[T with Set[T,ValueType]] (x:ContainerType, y:T) = 
+  {
+    for v in x do
+      if not (v \in y) do return false; done
+    done
+    return true;
+  }
 }
 
 

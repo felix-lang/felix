@@ -85,7 +85,7 @@ operator dot {.} is also made available this way.
 Class {Streamable} provides a set of functions based
 on a generated named {iterator} which returns an
 infinite stream of option values. Loops based on such
-streams work with any Streamable} data type, including 
+streams work with any {Streamable} data type, including 
 {ArrayValue}.
 
 Such loops operate by providing the loop body with the

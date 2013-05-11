@@ -1,0 +1,536 @@
+
+class BuildFlxg
+{
+  // remove slosh-newline
+  fun pack(s:string) = {
+    var slosh = false;
+    var space = true;
+    var out = "";
+    for ch in s do
+      if ch == char "\n" and slosh do slosh = false;
+      elif ch == char "\\" do slosh=true; 
+      elif slosh do slosh=false; out+="\\"; out+=ch;
+      elif ch == "\t" do out+=char ' '; space=true;
+      elif ch == ' ' and space do ;
+      elif ch == ' ' do out+=ch; space=true;
+      else out+=ch; space=false;
+      done
+    done
+    return out;
+  }
+
+  fun first (a:string, b:string) => a;
+  fun second (a:string, b:string) => b;
+  proc build_flx_drivers() 
+  {
+    var tmpdir = 'tmp-dir';
+    fun entmp (a:string) => if prefix (a,tmpdir) then a else tmpdir/a;
+
+    C_hack::ignore$ Directory::mkdir tmpdir;
+
+    var db = strdict[bool]();
+    typedef db_t = strdict[bool];
+
+
+    fun libdflt () => (
+      srcs=Empty[string], 
+      libs=Empty[string],
+      includes=Empty[string],
+      external_libs=Empty[string]
+    );
+
+    typedef libspec_t = typeof (#libdflt);
+
+    fun exedflt () => libdflt();
+    typedef exespec_t = typeof (#exedflt);
+
+    fun lexdflt () => (flags=Empty[string]);
+    typedef lexspec_t = typeof #lexdflt;
+
+    fun yaccflt () => (flags=Empty[string]);
+    typedef yaccspec_t = typeof #lexdflt;
+
+    fun dypgendflt () => (flags=Empty[string]);
+    typedef dypgenspec_t = typeof #dypgendflt;
+
+    gen ocamldep (dir:string, src:string) = {
+      var result, dep = Shell::get_stdout$ list$ "ocamldep.opt", "-native","-I", Filename::dirname src, "-I", dir, src;
+      if result != 0 do
+        println$ "Ocamldep failed to process " + src;
+        System::exit (1);
+      done
+      //println$ "Ocamldep raw return = " + dep;
+      var out = dep.pack.strip;
+      //println$ "Ocamldep packed return = " + out;
+      var lines = filter (fun (s:string) => stl_find (s,".cmo") == stl_npos.int) (split(out,"\n"));
+      //println$ "Ocamldep lines = " + str lines;
+      var res = head lines;
+      //println$ "ocamldep result=" + res;
+      var pos = stl_find (res, ":");
+      if pos == stl_npos.int do 
+        println$ "Cannot find ':' in string " + res;
+        System::exit 1;
+      done
+      res = res.[pos+2 to].strip;
+      //println$ "ocamldep result 2 =" + res;
+      var dfiles = split(res,' ');
+      //println$ "ocamldep result 3 =" + str dfiles;
+      dfiles = map (fun (s:string) = { //println$ "Extension swap case '" + s+"'";
+        match Filename::get_extension s with 
+        | ".cmi" => return Filename::strip_extension s + ".mli";
+        | ".cmx" => return Filename::strip_extension s + ".ml";
+        | "" => return "";
+        | ?x => return  "ERROR" ;
+        endmatch;
+        }) 
+        dfiles
+      ;
+      //println$ "ocamldep result 4 =" + str dfiles;
+      dfiles = filter (fun (s:string) => s != "") dfiles;
+      return dfiles;
+    }
+
+    gen ocaml_build_lib (dir:string, lib:string, spec:libspec_t) =
+    {
+
+      println$ "-" * 20;
+      println$ "Lib=" + lib + " in " + dir;
+      println$ "-" * 20;
+      //println$ "srcs = \n    " +strcat "\n    " spec.srcs;
+      println$ "libs= \n    " + strcat "\n    " spec.libs;
+      println$ "includes= \n" + strcat "\n    " spec.includes;
+      /*
+      println$ "external libs = \n    " + strcat "\n    " spec.external_libs;
+      println$ "-" * 20;
+      println$ "";
+      */
+
+      // copy the list of files, processing dyp, mll, and mly files we encounter.
+      var infiles = spec.srcs;
+      var files = Empty[string];
+      for file in infiles do
+        match Filename::get_extension file with
+        | ".mli" => files += file;
+        | ".ml" => files += file;
+        | ".dyp" => files += dypgen file;
+        | ".mll" => files += ocamllex file;
+        | ".mly" => var out = ocamlyacc file; files += out+".ml"; files += out+".mli";
+        endmatch;
+      done
+
+      var sorted_files = Empty[string];
+      begin
+        // calculate dependencies
+        var db = strdict[list[string]]();
+        for file in files do
+          var deps = ocamldep (dir,file);
+          db.add file deps;
+          //println$ "Ocamldep : " + src + " : " + str deps;
+        done
+
+        // topological sort
+        while not files.is_empty do
+          var unsorted = Empty[string];
+          for file in files do
+            match db.get file with
+            | Some dps =>
+              if dps \subseteq sorted_files do
+                sorted_files = file + sorted_files;
+              else
+                unsorted = file + unsorted;
+              done
+            | #None => assert false;
+            endmatch;
+          done
+          files = unsorted;
+        done
+        sorted_files = rev sorted_files;
+        //println$ "Library build order: " + str sorted_files;
+      end
+
+      // compile the files
+      var include_flags = fold_left (fun (acc:list[string]) (a:string) => acc+"-I"+entmp a) Empty[string] spec.libs;
+      for file in sorted_files do
+        var path = tmpdir/(Filename::dirname file);
+        Directory::mkdirs path;
+        match Filename::get_extension file with
+        | ".mli" => 
+          println$ "Compiling interface " + file;
+          begin
+            var result = Shell::system$ list(
+               "ocamlc.opt",
+               "-I",tmpdir, 
+               "-I",tmpdir/dir, 
+               "-I", entmp (Filename::dirname file)) + 
+               include_flags +
+               list("-c", "-w",'yzex','-warn-error',"FDPSU",
+               '-o',entmp (Filename::strip_extension file) + ".cmi",
+               file)
+            ;
+            if result != 0 do
+              println$ "Interface Compile Failed : " + file;
+              System::exit 1;
+            done
+          end
+        | ".ml" => 
+          println$ "Compiling ML " + file;
+          begin
+            var result = Shell::system$ list(
+               "ocamlopt.opt",
+               "-I",tmpdir, 
+               "-I",tmpdir/dir, 
+               "-I", entmp (Filename::dirname file)) +
+               include_flags +
+               list("-c", "-w",'yzex','-warn-error',"FDPSU",
+               '-o',entmp (Filename::strip_extension file) + ".cmx",
+               file)
+            ;
+            if result != 0 do
+              println$ "Interface Compile Failed : " + file;
+              System::exit 1;
+            done
+          end
+        | ?x => println$ "Ignoring " + file;
+        endmatch;
+      done
+
+      // link files into library
+      println$ "Linking library " + tmpdir/lib + ".cmxa";
+      var result = Shell::system$ "ocamlopt.opt" + list(
+        "-a", "-w",'yzex','-warn-error',"FDPSU",
+        '-o',tmpdir/lib + ".cmxa") +
+        map 
+          (fun (s:string) => entmp (Filename::strip_extension s) + ".cmx") 
+          (filter (fun (s:string)=> Filename::get_extension s == ".ml") sorted_files)
+      ;
+      if result !=0 do
+        println$ "Linking cmxa library " + tmpdir/lib+'.cmxa' + " failed";
+        System::exit 1;
+      done 
+      // return the directory containing the library source.
+      return dir;
+    }
+
+    // src, including .mll suffix, dst: including .ml suffix
+    gen ocamllex (file:string) : string =
+    {
+      var out = entmp (file.Filename::basename.Filename::strip_extension + ".ml");
+      var result = Shell::system$ list$ 'ocamllex.opt','-o',out,file;
+      if result != 0 do
+        println$ "Ocamllex failed to process " + file;
+        System::exit (1);
+      done
+      return out;
+    }
+
+    // src, including .mly suffix, dst: excluding suffices
+    gen ocamlyacc(file:string) : string =
+    {
+      var out = entmp (file.Filename::basename.Filename::strip_extension);
+      var result = Shell::system('ocamlyacc.opt','-b'+out,file);
+      if result != 0 do
+        println$ "Ocamlyacc failed to process " + file;
+        System::exit (1);
+      done
+      return out;
+    }
+
+    // executable: the dypgen executable name
+    // src: including .dyp suffix
+    // tmpdir: directory for target .ml, .mli files
+    gen dypgen(file:string) : string =
+    {
+      var flags = list$ "--no-mli", "--no-undef-nt", "--pv-obj", "--noemit-token-type";
+      var executable = tmpdir / 'dypgen';
+
+      // Dypgen doesn't allow an output spec
+      // so we process a copy of the file.
+      var dyp = entmp (file.Filename::basename);
+      C_hack::ignore$ FileSystem::filecopy (file, dyp);
+      var result = Shell::system(executable + flags +  dyp);
+      if result != 0 do
+        println$ "dypgen failed to process " +file;
+        System::exit (1);
+      done
+      return dyp.Filename::strip_extension+".ml";
+    }
+
+    gen build_dypgen() = 
+    {
+      println$ "Would Build dypgen here .. cheating .. copying from build/release";
+      var exe = tmpdir / "dypgen";
+      // CHEAT, copy the one in build/release
+      var result = FileSystem::filecopy ('build'/'release'/'src'/'compiler'/'dypgen'/'dypgen'/'dypgen', exe);
+      if not result do
+        println$ "failed to copy dypgen from build/release";
+        System::exit (1);
+      done
+  
+      return exe ;
+    }
+    //----------------------------------------------------------------------------------
+
+    gen ocaml_build_exe (dir:string, exe:string, spec:exespec_t) =
+    {
+      return exe;
+    }
+
+    fun / (a:string, b:string) => Filename::join (a,b);
+
+    gen mls (d:string) = {
+      var files = FileSystem::regfilesin (d, RE2 '.*\\.(mli?|dyp|mll|mly)');
+      return map (fun (f:string) = { return d/f;}) files;
+    }
+
+    gen build_ocs() =
+    {
+      var path = ('src'/'compiler'/'ocs'/'src');
+      if db.haskey path do return path; done
+      db.add path true;
+      return ocaml_build_lib(path, 'ocs',
+          extend #libdflt with (srcs=mls path) end);
+    }
+
+    gen build_sex() =
+    {
+      var path = ('src'/'compiler'/'sex');
+      if db.haskey path do return path; done
+      db.add path true;
+      return ocaml_build_lib(path, 'sex',
+          extend #libdflt with (srcs=mls path,
+          libs=list[string] (build_dyplib(), build_ocs())) end);
+    }
+
+    gen build_dyplib() =
+    {
+      var path = ('src'/'compiler'/'dypgen'/'dyplib');
+      if db.haskey path do return path; done
+      db.add path true;
+
+      return ocaml_build_lib(path, 'dyp',
+          extend #libdflt with (srcs=mls path) end);
+    }
+
+    gen build_flx_version() = {
+        var path = ('src'/'compiler'/'flx_version');
+        if db.haskey path do return path; done
+        db.add path true;
+
+        return ocaml_build_lib(path, 'flx_version',
+            extend #libdflt with (srcs=mls path) end);
+    }
+
+    gen build_flx_misc() = {
+        var path = 'src'/'compiler'/'flx_misc';
+        if db.haskey path do return path; done
+        db.add path true;
+        return ocaml_build_lib(path, 'flx_misc',
+            extend #libdflt with (srcs=mls path,
+            libs=list[string] (build_flx_version()),
+            external_libs=list[string]('nums', 'str', 'unix')) end);
+    }
+
+    gen build_flx_version_hook() = {
+        var path = 'src'/'compiler'/'flx_version_hook';
+        if db.haskey path do return path; done
+        db.add path true;
+        return ocaml_build_lib(path, 'flx_version_hook',
+            extend #libdflt with (srcs=mls path,
+            libs=list[string](build_flx_version())) end);
+    }
+
+    gen build_flx_lex() = {
+        var path = 'src'/'compiler'/'flx_lex';
+        if db.haskey path do return path; done
+        db.add path true;
+        return ocaml_build_lib(path,'flx_lex',
+            extend #libdflt with (srcs=mls path,
+            libs=list[string](
+                build_dyplib(),
+                build_ocs(),
+                build_sex(),
+                build_flx_version())) end);
+    }
+
+    gen build_flx_parse() = {
+        var path = 'src'/'compiler'/'flx_parse';
+        if db.haskey path do return path; done
+        db.add path true;
+        return ocaml_build_lib(path,'flx_parse',
+            extend #libdflt with (srcs=mls path,
+            libs=list[string](
+                build_dyplib(),
+                build_ocs(),
+                build_sex(),
+                build_flx_version(),
+                build_flx_lex())) end);
+    }
+
+    gen build_flx_file() = {
+        var path = 'src'/'compiler'/'flx_file';
+        if db.haskey path do return path; done
+        db.add path true;
+        return ocaml_build_lib(path,'flx_file',
+            extend #libdflt with (srcs=mls path,
+            libs=list[string](
+                build_dyplib(),
+                build_ocs(),
+                build_sex(),
+                build_flx_version(),
+                build_flx_misc(),
+                build_flx_lex(),
+                build_flx_parse()
+                )) end);
+    }
+
+    gen build_flx_core() = {
+        var path = 'src'/'compiler'/'flx_core';
+        if db.haskey path do return path; done
+        db.add path true;
+        return ocaml_build_lib(path, 'flx_core',
+            extend #libdflt with (srcs=mls path,
+            libs=list[string](
+                build_dyplib(),
+                build_ocs(),
+                build_flx_lex(),
+                build_flx_parse(),
+                build_flx_misc()
+                ),
+            external_libs=list[string]('nums')) end);
+    }
+
+    gen build_flx_desugar() = {
+        var path = 'src'/'compiler'/'flx_desugar';
+        if db.haskey path do return path; done
+        db.add path true;
+
+        return ocaml_build_lib(path, 'flx_desugar',
+            extend #libdflt with (srcs=mls path,
+            libs=list[string](
+                build_dyplib(),
+                build_ocs(),
+                build_sex(),
+                build_flx_lex(),
+                build_flx_parse(),
+                build_flx_file(),
+                build_flx_misc(),
+                build_flx_core(),
+                build_flx_version()
+                ),
+            external_libs=list[string]('nums', 'unix')) end);
+    }
+
+    gen build_flx_bind() = {
+        var path = 'src'/'compiler'/'flx_bind';
+        if db.haskey path do return path; done
+        db.add path true;
+        return ocaml_build_lib(path, 'flx_bind',
+            extend #libdflt with (srcs=mls path,
+            libs=list[string](
+                build_flx_lex(),
+                build_flx_misc(),
+                build_flx_core(),
+                build_flx_desugar()),
+            external_libs=list[string]('nums')) end);
+    }
+
+    gen build_flx_frontend() = {
+        var path = 'src'/'compiler'/'flx_frontend';
+        if db.haskey path do return path; done
+        db.add path true;
+        return ocaml_build_lib(path, 'flx_frontend',
+            extend #libdflt with (srcs=mls path,
+            libs=list[string](
+                build_flx_lex(),
+                build_flx_misc(),
+                build_flx_core())) end);
+    }
+
+    gen build_flx_opt() = {
+        var path = 'src'/'compiler'/'flx_opt';
+        if db.haskey path do return path; done
+        db.add path true;
+        return ocaml_build_lib(path, 'flx_opt',
+            extend #libdflt with (srcs=mls path,
+            libs=list[string](
+                build_flx_lex(),
+                build_flx_misc(),
+                build_flx_core(),
+                build_flx_frontend())) end);
+    }
+
+    gen build_flx_lower() = {
+        var path = 'src'/'compiler'/'flx_lower';
+        if db.haskey path do return path; done
+        db.add path true;
+        return ocaml_build_lib(path, 'flx_lower',
+            extend #libdflt with (srcs=mls path,
+            libs=list[string](
+                build_flx_lex(),
+                build_flx_misc(),
+                build_flx_core(),
+                build_flx_frontend())) end);
+    }
+
+    gen build_flx_backend() = {
+        var path = 'src'/'compiler'/'flx_backend';
+        if db.haskey path do return path; done
+        db.add path true;
+        return ocaml_build_lib(path, 'flx_backend',
+            extend #libdflt with (srcs=mls path,
+            libs=list[string](
+                build_flx_lex(),
+                build_flx_misc(),
+                build_flx_core())) end);
+    }
+
+    gen build_flx_cpp_backend() = {
+        var path = 'src'/'compiler'/'flx_cpp_backend';
+        if db.haskey path do return path; done
+        db.add path true;
+        return ocaml_build_lib(path, 'flx_cpp_backend',
+            extend #libdflt with (srcs=mls path,
+            libs=list[string](
+                build_flx_lex(),
+                build_flx_misc(),
+                build_flx_core(),
+                build_flx_frontend(),
+                build_flx_backend()),
+            external_libs=list[string]('nums')) end);
+    }
+
+    var libs = list ( 
+          build_ocs(),
+          build_sex(),
+          build_dypgen(),
+          build_flx_version(),
+          build_flx_lex(),
+          build_flx_parse(),
+          build_flx_misc(),
+          build_flx_file(),
+          build_flx_core(),
+          build_flx_desugar(),
+          build_flx_bind(),
+          build_flx_frontend(),
+          build_flx_opt(),
+          build_flx_lower(),
+          build_flx_backend(),
+          build_flx_cpp_backend(),
+          build_flx_version_hook()
+    );
+
+    var external_libs = list('nums', 'unix', 'str');
+    C_hack::ignore$ libs;
+    println$ "Done";
+  } // end build_drivers
+} // end class
+
+
+BuildFlxg::build_flx_drivers();
+
+//      flxg = phase.ocaml.build_exe('host/bin/flxg',
+//          Path.glob('src'/'compiler'/'flxg'/'*.ml{,i}'),
+//          libs=libs,
+//          external_libs=external_libs)
+//      )
+

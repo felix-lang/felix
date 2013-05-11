@@ -37,12 +37,14 @@ class Shell_class[OS, process_status_t]
     cmd.quote_line_for_popen.raw_get_stdout
   ;
 
+  // string argument
   gen system (cmd:string) = {
     if Env::getenv "FLX_SHELL_ECHO" != "" do
       eprintln$ "[system] " + cmd;
     done
     return basic_system cmd;
   }
+
   gen get_stdout (cmd:string) : int * string = {
     if Env::getenv "FLX_SHELL_ECHO" != "" do
       eprintln$ "[get_stdout] " + cmd;
@@ -50,14 +52,35 @@ class Shell_class[OS, process_status_t]
     return basic_get_stdout cmd;
   }
 
+  // list of string argument
   gen system (args:list[string]) : int =>
     args.create_system_command.system
   ;
 
+  gen system[T with Streamable[T,string]] (args:T) : int =
+  {
+    var lst = Empty[string];
+    for arg in args do 
+      lst = lst + arg; 
+    done
+    return system lst;
+  }  
+
+
+  // arbitrary Streamable argument
   gen get_stdout (args:list[string]) : int * string =>
     args.create_popen_command.get_stdout
   ;
-  
+ 
+  gen get_stdout[T with Streamable[T,string]] (args:T) : int * string =
+  {
+    var lst = Empty[string];
+    for arg in args do 
+      lst = lst + arg; 
+    done
+    return get_stdout lst;
+  }  
+
 }
 
 class Shell {

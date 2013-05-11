@@ -248,6 +248,15 @@ Constructor variant.
     endmatch;
   }
 
+@h2 Head of a list {head}
+@felix
+  //$ Head of a list, abort with match failure if list is empty.
+  pure fun head[T] (x:list[T]) : T = {
+    match x with
+    | Cons (?h,_) => return h;
+    endmatch;
+  }
+
 @h2 Reverse map a list {rev_map}
 Tail recursive.
 @felix
