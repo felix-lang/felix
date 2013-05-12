@@ -347,16 +347,13 @@ class BuildFlxg
 
     gen build_dypgen() = 
     {
-      println$ "Would Build dypgen here .. cheating .. copying from build/release";
-      var exe = tmpdir / "dypgen";
-      // CHEAT, copy the one in build/release
-      var result = FileSystem::filecopy ('build'/'release'/'src'/'compiler'/'dypgen'/'dypgen'/'dypgen', exe);
-      if not result do
-        println$ "failed to copy dypgen from build/release";
-        System::exit (1);
-      done
-  
-      return exe ;
+      var path = 'src'/'compiler'/'dypgen'/'dypgen';
+      var exe = ocaml_build_exe (path,'dypgen',
+         extend #libdflt with (srcs=mls_nodyp path,
+            libs = list[string] (build_dyplib())
+            ) end);
+      println$ "Done, exe = " + exe;
+      return exe;
     }
     //----------------------------------------------------------------------------------
 
@@ -366,6 +363,12 @@ class BuildFlxg
       var files = FileSystem::regfilesin (d, RE2 '.*\\.(mli?|dyp|mll|mly)');
       return map (fun (f:string) = { return d/f;}) files;
     }
+
+    gen mls_nodyp (d:string) = {
+      var files = FileSystem::regfilesin (d, RE2 '.*\\.(mli?|mll|mly)');
+      return map (fun (f:string) = { return d/f;}) files;
+    }
+
 
     gen build_ocs() =
     {
@@ -584,10 +587,12 @@ class BuildFlxg
             external_libs=list[string]('nums')) end);
     }
 
+    println$ "Build dypgen";
+    C_hack::ignore$ build_dypgen();
     var libs = list ( 
           build_ocs(),
           build_sex(),
-          build_dypgen(),
+          build_dyplib(),
           build_flx_version(),
           build_flx_lex(),
           build_flx_parse(),

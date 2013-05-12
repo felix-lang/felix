@@ -42,6 +42,7 @@ done
     aux "" f;
   }
 
+  proc rm (f:string) => unlink f;
  
   //$ Find a file in a list of directories.
   fun find_in_path(x:string, path:list[string]):opt[string]=>
