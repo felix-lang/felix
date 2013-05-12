@@ -245,17 +245,21 @@ tarball:
 		${BUILDROOT}/host \
 		${BUILDROOT}/share
 
-rtlbuild:
+bootstrap:
+	rm -rf tmp-dir
+	build/release/host/bin/flx --test=build/release src/tools/flx_build_flxg
+	rm -rf build/trial
+	mkdir build/trial
+	mkdir build/trial/host
+	mkdir build/trial/host/bin
+	cp tmp-dir/flxg build/trial/host/bin
 	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl \
 		--repo=.\
 		--target-dir=build/trial \
 		--target-bin=host \
 		--source-dir=build/release \
 		--source-bin=host \
-		--clean-target-dir \
-		--clean-target-bin-dir \
 		--copy-repo \
-		--copy-compiler \
 		--copy-pkg-db \
 		--copy-config-headers \
 		--copy-version \
@@ -264,7 +268,9 @@ rtlbuild:
 		--build-plugins \
 		--build-flx \
 		--build-tools
-
+	build/trial/host/bin/flx --test=build/trial --expect --indir=test/regress/rt --regex='.*\.flx'
+	rm -rf build/release
+	mv build/trial build/release
 
 weblink:
 	build/trial/host/bin/flx --test=build/trial -c --nolink --static -ox build/trial/host/lib/rtl/webserver src/tools/webserver.flx 
