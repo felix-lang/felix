@@ -110,8 +110,7 @@ class BuildFlxg
     typedef dypgenspec_t = typeof #dypgendflt;
 
     gen ocamldep (dir:string, src:string) = {
-      var result, dep = Shell::get_stdout$ list$ "ocamldep.opt", "-native",
-       "-I", Filename::dirname src, "-I", dir, "-I", tmpdir, src;
+      var result, dep = Shell::get_stdout$ list$ "ocamldep.opt", "-native","-I", Filename::dirname src, "-I", dir, "-I", tmpdir, src;
       if result != 0 do
         println$ "Ocamldep failed to process " + src;
         System::exit (1);
@@ -183,12 +182,19 @@ class BuildFlxg
         var db = strdict[list[string]]();
         for file in files do
           var deps = ocamldep (dir,file);
+          deps = filter (fun (f:string) => f in files) deps;
           db.add file deps;
           //println$ "Ocamldep : " + src + " : " + str deps;
         done
 
         // topological sort
+        var count = 0;
         while not files.is_empty do
+          ++count;
+          if count > 40 do
+            println$ "Invalid file or circular reference";
+            System::exit 1;
+          done
           var unsorted = Empty[string];
           for file in files do
             match db.get file with

@@ -132,9 +132,11 @@ or option iterator.
   //$ Make a list from an array.
   ctor[T,N] list[T] (x:array[T, N]) = {
     var o = Empty[T];
-    for var i in x.len.int - 1 downto 0 do
-      o = Cons (x.i,o);
-    done;
+    if x.len > 0uz do
+      for var i in x.len.int - 1 downto 0 do
+        o = Cons (x.i,o);
+      done
+    done
     return o;
   }
 

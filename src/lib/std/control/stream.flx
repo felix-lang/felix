@@ -9,9 +9,11 @@ open class Streamable[ContainerType, ValueType] {
   fun \subseteq[T with Set[T,ValueType]] (x:ContainerType, y:T) = 
   {
     for v in x do
-      if not (v \in y) do return false; done
+      if not (v \in y) goto bad;
     done
     return true;
+bad:>
+    return false;
   }
 }
 
