@@ -112,7 +112,7 @@ make-dist:
 
 
 install-website:
-	${SUDO} cp -r ${BUILDROOT}/share/web/* /usr/local/lib/felix/felix-latest/share/web
+	${SUDO} cp -r src/web/* /usr/local/lib/felix/felix-latest/share/src/web
 
 
 #
@@ -268,6 +268,7 @@ bootstrap:
 		--build-plugins \
 		--build-flx \
 		--build-tools
+	build/trial/host/bin/flx --test=build/trial --clean
 	build/trial/host/bin/flx --test=build/trial --expect --indir=test/regress/rt --regex='.*\.flx'
 	rm -rf build/release
 	mv build/trial build/release

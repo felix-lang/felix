@@ -707,7 +707,7 @@ proc serve_file(s: socket_t, infname: string)
   // if empty string, serve index.html
   // not quite right - needs to handle directories too, so
   // not only foo.com/ -> index.html, but foo.com/images/ -> images/index.html
-  var fname = if "" == infname then "share/index.html" else infname endif;
+  var fname = if "" == infname then "share/src/web/index.html" else infname endif;
 
   fname = if fname.[0] == char "$" then fname.[1 to] else fname endif;
 

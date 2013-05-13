@@ -6,11 +6,11 @@
   <string>felixweb</string>
 
   <key>Program</key>
-  <string>/usr/local/bin/webserver</string>
+  <string>/usr/local/lib/felix/felix-latest/host/bin/webserver</string>
 
   <key>ProgramArguments</key>
   <array>
-    <string>/usr/local/bin/webserver</string>
+    <string>/usr/local/lib/felix/felix-latest/host/bin/webserver</string>
   </array>
 
   <key>WorkingDirectory</key>
@@ -18,6 +18,12 @@
 
   <key>RunAtLoad</key>
   <true/>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>DYLD_LIBRARY_PATH</key>
+    <string>/usr/local/lib/felix/felix-latest/host/lib/rtl</string>
+  </dict>
 
 </dict>
 

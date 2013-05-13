@@ -20,11 +20,11 @@ This is generally the right way because it makes coupling explicit.
 
 For the standard library we encourage you instead to click:
 
-@felix /lib/std/__init__.flx
+@felix /share/lib/std/__init__.flx
 
 and for the Posix subsystem
 
-@felix /lib/std/posix/__init__.flx
+@felix /share/lib/std/posix/__init__.flx
 
 @h2 The Felix webserver
 The web server you're using right now is written in Felix and is
