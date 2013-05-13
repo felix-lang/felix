@@ -13,13 +13,7 @@ object toolchain_gcc_linux (config:clang_config_t) implements toolchain_t =
     "-Wall",
     "-Wfatal-errors",
     "-Wno-invalid-offsetof",
-    "-Wno-logical-op-parentheses",
-    "-Wno-bitwise-op-parentheses",
-    "-Wno-parentheses-equality",
     "-Wno-parentheses",
-    "-Wno-return-stack-address",
-    "-Wno-tautological-compare",
-    "-Wno-return-type-c-linkage",
     "-Wno-unused-variable",
     "-Wno-unused-function",
     "-Wno-missing-braces"
