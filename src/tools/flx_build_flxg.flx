@@ -110,7 +110,8 @@ class BuildFlxg
     typedef dypgenspec_t = typeof #dypgendflt;
 
     gen ocamldep (dir:string, src:string) = {
-      var result, dep = Shell::get_stdout$ list$ "ocamldep.opt", "-native","-I", Filename::dirname src, "-I", dir, src;
+      var result, dep = Shell::get_stdout$ list$ "ocamldep.opt", "-native",
+       "-I", Filename::dirname src, "-I", dir, "-I", tmpdir, src;
       if result != 0 do
         println$ "Ocamldep failed to process " + src;
         System::exit (1);
