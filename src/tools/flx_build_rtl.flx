@@ -258,7 +258,8 @@ class FlxCoreBuild
           tmpdir/file+"_lib_dynamic"+#(toolchain.static_object_extension),
           hrtl/file+"_main"+#(toolchain.static_object_extension)
         );
-        var result,libs = db.query$ list("--rec","--keeprightmost","--field=provides_slib",file);
+        var result,libs = db.query$ list("--rec","--keeprightmost",
+          "--field=provides_slib","--field=requires_slibs",file);
         if result != 0 do
           println$ "Driver pkgconfig query for "+ file+" FAILED";
           System::exit 1;
