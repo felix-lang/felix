@@ -241,6 +241,7 @@ class FlxCoreBuild
         var result = toolchain.cxx_static_object_compiler(src=src, dst=dst);
         if result != 0 do
           println$ "Driver compile "+ s + " -> " + dst +" FAILED";
+          System::exit 1;
         done
       }
       cobj("flx_run_lib_static.cpp",hrtl/"flx_run_lib"+#(toolchain.static_object_extension));
@@ -260,10 +261,12 @@ class FlxCoreBuild
         var result,libs = db.query$ list("--rec","--keeprightmost","--field=provides_slib",file);
         if result != 0 do
           println$ "Driver pkgconfig query for "+ file+" FAILED";
+          System::exit 1;
         done
         result = toolchain.executable_linker(srcs=objs+libs, dst=exe);
         if result != 0 do
           println$ "Driver link  "+ file+" FAILED";
+          System::exit 1;
         done
       }
       prg("flx_run");
