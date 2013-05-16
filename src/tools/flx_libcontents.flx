@@ -3,7 +3,7 @@ var dir =  Filename::join ("src", "lib", "std");
 
 include "plugins/fdoc-interface";
 var  xlat_fdoc = Dynlink::load-plugin-func2 [fdoc_t, string, string] (
-    dll-name="fdoc2html", setup-str="", entry-point="xlat_fdoc"
+    dll-name="fdoc2html", setup-str="", entry-point="fdoc2html"
   );
 
 

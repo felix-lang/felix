@@ -25,5 +25,6 @@ grammar/namespaces.flxh
 grammar/regexps.flxh
 grammar/cgram.flxh
 grammar/json.flxh
+grammar/plugins.flxh
 grammar/felix.flxh
 grammar/save.flxh

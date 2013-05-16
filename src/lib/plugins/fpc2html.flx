@@ -101,5 +101,5 @@ fun setup(config_data:string) = {
 
 
 export fun setup of (string) as "fpc2html_setup";
-export fun Fpc2Html::xlat_fpc of (string * string) as "xlat_fpc";
+export fun Fpc2Html::xlat_fpc of (string * string) as "fpc2html";
 

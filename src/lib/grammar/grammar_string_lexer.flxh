@@ -86,6 +86,13 @@ SCHEME """
 )
 """;
 
+// Scheme string to Felix string literal
+SCHEME """
+(define (strlit s) 
+    `(ast_literal ,_sr "string" ,s ,(string-append "::std::string(" (c-quote-string s) ")"))
+)
+""";
+
 //$ String literals.
 //$
 //$ Generaly we follow Python here.

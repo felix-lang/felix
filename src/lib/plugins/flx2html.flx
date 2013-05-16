@@ -521,12 +521,12 @@ fun setup(config_data:string) = {
   done
 
   xlat_cpp = Dynlink::load-plugin-func2 [bool * string, string, string] (
-    dll-name="cpp2html", setup-str=config_data, entry-point="xlat_cpp"
+    dll-name="cpp2html", setup-str=config_data, entry-point="cpp2html"
   );
   
   return 0;
 }
 
 export fun setup of (string) as "flx2html_setup";
-export fun Flx2Html::xlat_felix of (string * string) as "xlat_felix";
+export fun Flx2Html::xlat_felix of (string * string) as "flx2html";
 

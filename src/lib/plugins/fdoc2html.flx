@@ -450,19 +450,19 @@ fun setup(config_data:string) = {
   done
 
   xlat_felix = Dynlink::load-plugin-func2 [bool * string, string, string] (
-    dll-name="flx2html", setup-str=config_data, entry-point="xlat_felix"
+    dll-name="flx2html", setup-str=config_data, entry-point="flx2html"
   );
 
   xlat_cpp = Dynlink::load-plugin-func2 [bool * string, string, string] (
-    dll-name="cpp2html", setup-str=config_data, entry-point="xlat_cpp"
+    dll-name="cpp2html", setup-str=config_data, entry-point="cpp2html"
   );
 
   xlat_ocaml = Dynlink::load-plugin-func2 [bool * string, string, string] (
-    dll-name="ocaml2html", setup-str=config_data, entry-point="xlat_ocaml"
+    dll-name="ocaml2html", setup-str=config_data, entry-point="ocaml2html"
   );
 
   xlat_python = Dynlink::load-plugin-func2 [bool * string, string, string] (
-    dll-name="py2html", setup-str=config_data, entry-point="xlat_py"
+    dll-name="py2html", setup-str=config_data, entry-point="py2html"
   );
 
 
@@ -482,6 +482,6 @@ fun setup(config_data:string) = {
 }
 
 export fun setup of (string) as "fdoc2html_setup";
-export fun xlat_fdoc of (string * string) as "xlat_fdoc";
+export fun xlat_fdoc of (string * string) as "fdoc2html";
 
 

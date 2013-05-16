@@ -1,91 +1,7 @@
 // webserver plugin linker
 
-// Step 1: name the symbols. They're all extern C so the type is irrelevant.
-header syms = '''
-  // Fdoc
-  extern "C" void *fdoc2html_create_thread_frame;
-  extern "C" void *fdoc2html_flx_start;
-  extern "C" void *fdoc2html_setup;
-  extern "C" void *xlat_fdoc;
-
-  // Felix
-  extern "C" void *flx2html_create_thread_frame;
-  extern "C" void *flx2html_flx_start;
-  extern "C" void *flx2html_setup;
-  extern "C" void *xlat_felix;
-
-  // Flx_pkgconfig
-  extern "C" void *fpc2html_create_thread_frame;
-  extern "C" void *fpc2html_flx_start;
-  extern "C" void *fpc2html_setup;
-  extern "C" void *xlat_fpc;
-
-  // Python
-  extern "C" void *py2html_create_thread_frame;
-  extern "C" void *py2html_flx_start;
-  extern "C" void *py2html_setup;
-  extern "C" void *xlat_py;
-
-  // Ocaml
-  extern "C" void *ocaml2html_create_thread_frame;
-  extern "C" void *ocaml2html_flx_start;
-  extern "C" void *ocaml2html_setup;
-  extern "C" void *xlat_ocaml;
-
-  // C++
-  extern "C" void *cpp2html_create_thread_frame;
-  extern "C" void *cpp2html_flx_start;
-  extern "C" void *cpp2html_setup;
-  extern "C" void *xlat_cpp;
-
-  //  fdoc scanner
-  extern "C" void *fdoc_scanner_create_thread_frame;
-  extern "C" void *fdoc_scanner_flx_start;
-  extern "C" void *fdoc_scanner_setup;
-  extern "C" void *fdoc_scanner;
-
-  //  fdoc slideshow
-  extern "C" void *fdoc_slideshow_create_thread_frame;
-  extern "C" void *fdoc_slideshow_flx_start;
-  extern "C" void *fdoc_slideshow_setup;
-  extern "C" void *fdoc_slideshow;
-
-  //  fdoc heading 
-  extern "C" void *fdoc_heading_create_thread_frame;
-  extern "C" void *fdoc_heading_flx_start;
-  extern "C" void *fdoc_heading_setup;
-  extern "C" void *fdoc_heading;
-
-  //  fdoc fileseq 
-  extern "C" void *fdoc_fileseq_create_thread_frame;
-  extern "C" void *fdoc_fileseq_flx_start;
-  extern "C" void *fdoc_fileseq_setup;
-  extern "C" void *fdoc_fileseq;
-
-  //  fdoc paragraph
-  extern "C" void *fdoc_paragraph_create_thread_frame;
-  extern "C" void *fdoc_paragraph_flx_start;
-  extern "C" void *fdoc_paragraph_setup;
-  extern "C" void *fdoc_paragraph;
-
-  //  fdoc button 
-  extern "C" void *fdoc_button_create_thread_frame;
-  extern "C" void *fdoc_button_flx_start;
-  extern "C" void *fdoc_button_setup;
-  extern "C" void *fdoc_button;
-
-  //  the webserver
-  extern "C" void *webserver_create_thread_frame;
-  extern "C" void *webserver_flx_start;
-
-''';
-
-// Now, we make felix bindings of the symbols.
-// Note we have to take the address of the symbol!
-
 class WebserverPluginSymbols 
 {
-  requires syms; // make sure the extern decls are included
 
   // We have to do this dummy requirements because static
   // linking removes
@@ -93,162 +9,29 @@ class WebserverPluginSymbols
   requires package "faio";
   requires package "flx_arun";
 
-  // Fdoc
-  const fdoc2html_create_thread_frame : address = "&fdoc2html_create_thread_frame";
-  const fdoc2html_flx_start : address = "&fdoc2html_flx_start";
-  const fdoc2html_setup : address = "&fdoc2html_setup";
-  const fdoc2html_xlat_fdoc : address = "&xlat_fdoc";
-
-  // Felix
-  const flx2html_create_thread_frame : address = "&flx2html_create_thread_frame";
-  const flx2html_flx_start : address = "&flx2html_flx_start";
-  const flx2html_setup : address = "&flx2html_setup";
-  const flx2html_xlat_flx : address = "&xlat_felix";
-
-  // Flx_pkgconfig
-  const fpc2html_create_thread_frame : address = "&fpc2html_create_thread_frame";
-  const fpc2html_flx_start : address = "&fpc2html_flx_start";
-  const fpc2html_setup : address = "&fpc2html_setup";
-  const fpc2html_xlat_fpc : address = "&xlat_fpc";
-
-  // Python
-  const py2html_create_thread_frame : address = "&py2html_create_thread_frame";
-  const py2html_flx_start : address = "&py2html_flx_start";
-  const py2html_setup : address = "&py2html_setup";
-  const py2html_xlat_py : address = "&xlat_py";
-
-  // Ocaml
-  const ocaml2html_create_thread_frame : address = "&ocaml2html_create_thread_frame";
-  const ocaml2html_flx_start : address = "&ocaml2html_flx_start";
-  const ocaml2html_setup : address = "&ocaml2html_setup";
-  const ocaml2html_xlat_ocaml : address = "&xlat_ocaml";
-
-  // C++
-  const cpp2html_create_thread_frame : address = "&cpp2html_create_thread_frame";
-  const cpp2html_flx_start : address = "&cpp2html_flx_start";
-  const cpp2html_setup : address = "&cpp2html_setup";
-  const cpp2html_xlat_cpp : address = "&xlat_cpp";
-
-  //  fdoc scanner
-  const fdoc_scanner_create_thread_frame : address = "&fdoc_scanner_create_thread_frame";
-  const fdoc_scanner_flx_start : address = "&fdoc_scanner_flx_start";
-  const fdoc_scanner_setup : address = "&fdoc_scanner_setup";
-  const fdoc_scanner : address = "&fdoc_scanner";
-
-  //  fdoc slideshow
-  const fdoc_slideshow_create_thread_frame : address = "&fdoc_slideshow_create_thread_frame";
-  const fdoc_slideshow_flx_start : address = "&fdoc_slideshow_flx_start";
-  const fdoc_slideshow_setup : address = "&fdoc_slideshow_setup";
-  const fdoc_slideshow : address = "&fdoc_slideshow";
-
-  //  fdoc heading 
-  const fdoc_heading_create_thread_frame : address = "&fdoc_heading_create_thread_frame";
-  const fdoc_heading_flx_start : address = "&fdoc_heading_flx_start";
-  const fdoc_heading_setup : address = "&fdoc_heading_setup";
-  const fdoc_heading : address = "&fdoc_heading";
-
-  //  fdoc fileseq 
-  const fdoc_fileseq_create_thread_frame : address = "&fdoc_fileseq_create_thread_frame";
-  const fdoc_fileseq_flx_start : address = "&fdoc_fileseq_flx_start";
-  const fdoc_fileseq_setup : address = "&fdoc_fileseq_setup";
-  const fdoc_fileseq : address = "&fdoc_fileseq";
-
-  //  fdoc paragraph
-  const fdoc_paragraph_create_thread_frame : address = "&fdoc_paragraph_create_thread_frame";
-  const fdoc_paragraph_flx_start : address = "&fdoc_paragraph_flx_start";
-  const fdoc_paragraph_setup : address = "&fdoc_paragraph_setup";
-  const fdoc_paragraph : address = "&fdoc_paragraph";
-
-  //  fdoc button 
-  const fdoc_button_create_thread_frame : address = "&fdoc_button_create_thread_frame";
-  const fdoc_button_flx_start : address = "&fdoc_button_flx_start";
-  const fdoc_button_setup : address = "&fdoc_button_setup";
-  const fdoc_button : address = "&fdoc_button";
-
-  // the webserver
-  const webserver_create_thread_frame : address = "&webserver_create_thread_frame";
-  const webserver_flx_start : address = "&webserver_flx_start";
-
   open Dynlink;
 
   // Now add all the symbols.
   proc addsymbols ()
   {
-    // open Dynlink; // DID NOT WORK HERE!! WHY??  IT SHOULD HAVE!!
-    add_symbol("fdoc2html","fdoc2html_create_thread_frame",fdoc2html_create_thread_frame);
-    add_symbol("fdoc2html","fdoc2html_flx_start",fdoc2html_flx_start);
-    add_symbol("fdoc2html","fdoc2html_setup",fdoc2html_setup);
-    add_symbol("fdoc2html","xlat_fdoc",fdoc2html_xlat_fdoc);
-
-    // Felix
-    add_symbol("flx2html","flx2html_create_thread_frame",flx2html_create_thread_frame);
-    add_symbol("flx2html","flx2html_flx_start",flx2html_flx_start);
-    add_symbol("flx2html","flx2html_setup",flx2html_setup);
-    add_symbol("flx2html","xlat_felix",flx2html_xlat_flx);
-
-    // Flx_pkgconfig
-    add_symbol("fpc2html","fpc2html_create_thread_frame",fpc2html_create_thread_frame);
-    add_symbol("fpc2html","fpc2html_flx_start",fpc2html_flx_start);
-    add_symbol("fpc2html","fpc2html_setup",fpc2html_setup);
-    add_symbol("fpc2html","xlat_fpc",fpc2html_xlat_fpc);
-
-    // Python
-    add_symbol("py2html","py2html_create_thread_frame",py2html_create_thread_frame);
-    add_symbol("py2html","py2html_flx_start",py2html_flx_start);
-    add_symbol("py2html","py2html_setup",py2html_setup);
-    add_symbol("py2html","xlat_py",py2html_xlat_py);
-
-    // Ocaml
-    add_symbol("ocaml2html","ocaml2html_create_thread_frame",ocaml2html_create_thread_frame);
-    add_symbol("ocaml2html","ocaml2html_flx_start",ocaml2html_flx_start);
-    add_symbol("ocaml2html","ocaml2html_setup",ocaml2html_setup);
-    add_symbol("ocaml2html","xlat_ocaml",ocaml2html_xlat_ocaml);
-
-    // C++
-    add_symbol("cpp2html","cpp2html_create_thread_frame",cpp2html_create_thread_frame);
-    add_symbol("cpp2html","cpp2html_flx_start",cpp2html_flx_start);
-    add_symbol("cpp2html","cpp2html_setup",cpp2html_setup);
-    add_symbol("cpp2html","xlat_cpp",cpp2html_xlat_cpp);
-
-    //  fdoc scanner
-    add_symbol("fdoc_scanner","fdoc_scanner_create_thread_frame",fdoc_scanner_create_thread_frame);
-    add_symbol("fdoc_scanner","fdoc_scanner_flx_start",fdoc_scanner_flx_start);
-    add_symbol("fdoc_scanner","fdoc_scanner_setup",fdoc_scanner_setup);
-    add_symbol("fdoc_scanner","fdoc_scanner",fdoc_scanner);
-
-    //  fdoc slideshow
-    add_symbol("fdoc_slideshow","fdoc_slideshow_create_thread_frame",fdoc_slideshow_create_thread_frame);
-    add_symbol("fdoc_slideshow","fdoc_slideshow_flx_start",fdoc_slideshow_flx_start);
-    add_symbol("fdoc_slideshow","fdoc_slideshow_setup",fdoc_slideshow_setup);
-    add_symbol("fdoc_slideshow","fdoc_slideshow",fdoc_slideshow);
-
-    //  fdoc heading 
-    add_symbol("fdoc_heading","fdoc_heading_create_thread_frame",fdoc_heading_create_thread_frame);
-    add_symbol("fdoc_heading","fdoc_heading_flx_start",fdoc_heading_flx_start);
-    add_symbol("fdoc_heading","fdoc_heading_setup",fdoc_heading_setup);
-    add_symbol("fdoc_heading","fdoc_heading",fdoc_heading);
-
-    //  fdoc fileseq 
-    add_symbol("fdoc_fileseq","fdoc_fileseq_create_thread_frame",fdoc_fileseq_create_thread_frame);
-    add_symbol("fdoc_fileseq","fdoc_fileseq_flx_start",fdoc_fileseq_flx_start);
-    add_symbol("fdoc_fileseq","fdoc_fileseq_setup",fdoc_fileseq_setup);
-    add_symbol("fdoc_fileseq","fdoc_fileseq",fdoc_fileseq);
-
-    //  fdoc paragraph
-    add_symbol("fdoc_paragraph","fdoc_paragraph_create_thread_frame",fdoc_paragraph_create_thread_frame);
-    add_symbol("fdoc_paragraph","fdoc_paragraph_flx_start",fdoc_paragraph_flx_start);
-    add_symbol("fdoc_paragraph","fdoc_paragraph_setup",fdoc_paragraph_setup);
-    add_symbol("fdoc_paragraph","fdoc_paragraph",fdoc_paragraph);
-
-    //  fdoc button 
-    add_symbol("fdoc_button","fdoc_button_create_thread_frame",fdoc_button_create_thread_frame);
-    add_symbol("fdoc_button","fdoc_button_flx_start",fdoc_button_flx_start);
-    add_symbol("fdoc_button","fdoc_button_setup",fdoc_button_setup);
-    add_symbol("fdoc_button","fdoc_button",fdoc_button);
+    static-link-plugin 
+      fdoc2html,
+      flx2html,
+      fpc2html,
+      py2html,
+      ocaml2html,
+      cpp2html,
+      fdoc_scanner,
+      fdoc_slideshow,
+      fdoc_heading,
+      fdoc_fileseq,
+      fdoc_paragraph,
+      fdoc_button
+    ;
 
     // webserver
-    add_symbol("webserver","webserver_create_thread_frame",webserver_create_thread_frame);
-    add_symbol("webserver","webserver_flx_start",webserver_flx_start);
+    static-link-symbol webserver_create_thread_frame in "webserver";
+    static-link-symbol webserver_flx_start in "webserver";
     
   }
 }

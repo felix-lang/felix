@@ -27,8 +27,6 @@ else
 SUDO=sudo
 endif
 
-TARGET_TOOLCHAIN_PACKAGE ?= build_flx_rtl_clang_osx 
-
 help:
 	# Makefile help
 	# FELIX VERSION  ${VERSION}
@@ -274,21 +272,21 @@ bootstrap:
 	mv build/trial build/release
 
 weblink:
-	build/trial/host/bin/flx --test=build/trial -c --nolink --static -ox build/trial/host/lib/rtl/webserver src/tools/webserver.flx 
-	build/trial/host/bin/flx --test=build/trial -c --static -ox build/trial/host/bin/weblink \
-		build/trial/host/lib/rtl/fdoc_heading.o \
-		build/trial/host/lib/rtl/fdoc_button.o \
-		build/trial/host/lib/rtl/fdoc_fileseq.o \
-		build/trial/host/lib/rtl/fdoc_paragraph.o \
-		build/trial/host/lib/rtl/fdoc_scanner.o \
-		build/trial/host/lib/rtl/fdoc_slideshow.o \
-		build/trial/host/lib/rtl/fdoc2html.o \
-		build/trial/host/lib/rtl/flx2html.o \
-		build/trial/host/lib/rtl/py2html.o \
-		build/trial/host/lib/rtl/cpp2html.o \
-		build/trial/host/lib/rtl/ocaml2html.o \
-		build/trial/host/lib/rtl/fpc2html.o \
-		build/trial/host/lib/rtl/webserver.o \
+	build/release/host/bin/flx --test=build/release -c --nolink --static -ox build/release/host/lib/rtl/webserver src/tools/webserver.flx 
+	build/release/host/bin/flx --test=build/release -c --static -ox build/release/host/bin/weblink \
+		build/release/host/lib/rtl/fdoc_heading.o \
+		build/release/host/lib/rtl/fdoc_button.o \
+		build/release/host/lib/rtl/fdoc_fileseq.o \
+		build/release/host/lib/rtl/fdoc_paragraph.o \
+		build/release/host/lib/rtl/fdoc_scanner.o \
+		build/release/host/lib/rtl/fdoc_slideshow.o \
+		build/release/host/lib/rtl/fdoc2html.o \
+		build/release/host/lib/rtl/flx2html.o \
+		build/release/host/lib/rtl/py2html.o \
+		build/release/host/lib/rtl/cpp2html.o \
+		build/release/host/lib/rtl/ocaml2html.o \
+		build/release/host/lib/rtl/fpc2html.o \
+		build/release/host/lib/rtl/webserver.o \
 		src/tools/weblink.flx
 
 

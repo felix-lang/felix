@@ -77,7 +77,7 @@ and xexpr_t sr x =
   let xsts x =  lst "statement" xs x in
   match x with
   | Str s ->
-      print_endline ("Deprecated Scheme string " ^ s ^ "' as Felix string");
+      print_endline ("Deprecated Scheme string '" ^ s ^ "' as Felix string");
       EXPR_literal (sr, {Flx_literal.felix_type="string"; internal_value=s; c_value=Flx_string.c_quote_of_string s})
 
   | Lst [] -> EXPR_tuple (sr,[])

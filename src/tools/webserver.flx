@@ -235,27 +235,27 @@ print$ "CONSOLIDATED CONFIG:\n" + config;
 // Now load the plugins.
 
 var  xlat_felix = Dynlink::load-plugin-func2 [bool * string, string, string] (
-    dll-name="flx2html", setup-str=config, entry-point="xlat_felix"
+    dll-name="flx2html", setup-str=config, entry-point="flx2html"
   );
 
 var  xlat_fdoc = Dynlink::load-plugin-func2 [fdoc_t, string, string] (
-    dll-name="fdoc2html", setup-str=config, entry-point="xlat_fdoc"
+    dll-name="fdoc2html", setup-str=config, entry-point="fdoc2html"
   );
 
 var  xlat_fpc = Dynlink::load-plugin-func2 [bool * string, string, string] (
-    dll-name="fpc2html", setup-str=config, entry-point="xlat_fpc"
+    dll-name="fpc2html", setup-str=config, entry-point="fpc2html"
   );
 
 var  xlat_py = Dynlink::load-plugin-func2 [bool * string, string, string] (
-    dll-name="py2html", setup-str=config, entry-point="xlat_py"
+    dll-name="py2html", setup-str=config, entry-point="py2html"
   );
 
 var  xlat_ocaml = Dynlink::load-plugin-func2 [bool * string, string, string] (
-    dll-name="ocaml2html", setup-str=config, entry-point="xlat_ocaml"
+    dll-name="ocaml2html", setup-str=config, entry-point="ocaml2html"
   );
 
 var  xlat_cpp = Dynlink::load-plugin-func2 [bool * string, string, string] (
-    dll-name="cpp2html", setup-str=config, entry-point="xlat_cpp"
+    dll-name="cpp2html", setup-str=config, entry-point="cpp2html"
   );
 
 
