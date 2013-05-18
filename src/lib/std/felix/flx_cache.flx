@@ -105,6 +105,7 @@ fun cal_dep_time(debugln:string -> 0, OUTPUT_DIR:string, f:string)= {
 typedef cache_validation_spec_t = 
 (
    FLX_INSTALL_DIR:string, 
+   FLX_TARGET_SUBDIR:string,
    STDGRAMMAR:string, 
    FLXG:string,    
    CACHE_DIR:string,
@@ -143,7 +144,7 @@ gen validate_cache  (spec: cache_validation_spec_t) : int * double =
     cache_join(spec.CACHE_DIR, 
     Directory::mk_absolute_filename (Filename::join (list( 
       spec.FLX_INSTALL_DIR,
-      "host",
+      spec.FLX_TARGET_SUBDIR,
       "lib",
       "grammar",
       "syntax.automaton"

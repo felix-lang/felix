@@ -271,6 +271,34 @@ bootstrap:
 	rm -rf build/release
 	mv build/trial build/release
 
+gccosxtarget:
+	# This Make target is used to make a Felix target 'gccosx'
+	# in the build/release directory. It's a target for OSX
+	# which uses gcc instead of the default clang used by 'host'
+	#
+	# Because this is a target OF build/release we can use the
+	# existing share directory, so no need to copy the repo src
+	# or the library. However we have to copy flxg.
+	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl \
+		--repo=build/release/share \
+		--target-dir=build/release \
+		--target-bin=gccosx \
+		--source-dir=build/release \
+		--source-bin=host \
+		--pkg=build_flx_rtl_gcc_osx \
+		--clean-target-bin-dir \
+		--copy-compiler \
+		--copy-pkg-db \
+		--copy-config-headers \
+		--copy-version \
+		--build-rtl \
+		--build-plugins \
+		--build-flx \
+		--build-tools
+	build/release/gccosx/bin/flx --test=build/release --target=gccosx --clean
+	build/release/gccosx/bin/flx --test=build/release --target=gccosx  --expect --indir=test/regress/rt --regex='.*\.flx'
+
+
 weblink:
 	build/release/host/bin/flx --test=build/release -c --nolink --static -ox build/release/host/lib/rtl/webserver src/tools/webserver.flx 
 	build/release/host/bin/flx --test=build/release -c --static -ox build/release/host/bin/weblink \

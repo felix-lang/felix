@@ -32,6 +32,7 @@ object processing_env(config:config_type, var control:control_type,dvars:dvars_t
     var x = FlxPkg::map_package_requirements 
     (
        FLX_INSTALL_DIR = config.FLX_INSTALL_DIR,
+       FLX_TARGET_SUBDIR = config.FLX_TARGET_SUBDIR,
        EXT_EXE = config.EXT_EXE,
        EXT_STATIC_OBJ = config.EXT_STATIC_OBJ,
        STATIC = control.STATIC,

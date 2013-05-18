@@ -4,6 +4,7 @@ class FlxPkg
 {
   typedef pkgconfig_inspec_t = (
     FLX_INSTALL_DIR:string,
+    FLX_TARGET_SUBDIR:string,
     EXT_EXE: string,
     EXT_STATIC_OBJ: string,
     STATIC: int,
@@ -24,7 +25,7 @@ class FlxPkg
   gen map_package_requirements(spec:pkgconfig_inspec_t) : pkgconfig_outspec_t =
   {
 
-    var PKGCONFIG_PATH="--path+="+Filename::join(spec.FLX_INSTALL_DIR,"host","config");
+    var PKGCONFIG_PATH="--path+="+Filename::join(spec.FLX_INSTALL_DIR,spec.FLX_TARGET_SUBDIR,"config");
     var RESH = "@"+spec.cpp_filebase+".resh";
 
     gen pkgconfl(args:list[string]) : list[string] =
@@ -57,7 +58,7 @@ class FlxPkg
       // dynamic linkage: the driver executable
       var DRIVER_EXE= Filename::join$ list (
         spec.FLX_INSTALL_DIR,
-        "host",
+        spec.FLX_TARGET_SUBDIR,
         "bin",
         DRIVER_PKG+spec.EXT_EXE
       )
@@ -67,14 +68,14 @@ class FlxPkg
       var DRIVER_OBJS =list(
         Filename::join (list (
           spec.FLX_INSTALL_DIR,
-          "host",
+          spec.FLX_TARGET_SUBDIR,
           "lib",
           "rtl",
           DRIVER_PKG+"_lib"+
           spec.EXT_STATIC_OBJ)),
         Filename::join (list (
           spec.FLX_INSTALL_DIR,
-          "host",
+          spec.FLX_TARGET_SUBDIR,
           "lib",
           "rtl",
           DRIVER_PKG+"_main"+spec.EXT_STATIC_OBJ))

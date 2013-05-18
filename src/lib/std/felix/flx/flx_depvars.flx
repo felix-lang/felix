@@ -113,12 +113,12 @@ gen cal_depvars(config:config_type,control:&control_type, loopctl:loopctl_type) 
 
   var INCLUDE_DIR= list (
     ("-I"+Filename::join(config.FLX_INSTALL_DIR,"share","lib","rtl")), // NOTE: this is WRONG
-    ("-I"+Filename::join(config.FLX_INSTALL_DIR,"host","lib","rtl")))
+    ("-I"+Filename::join(config.FLX_INSTALL_DIR,config.FLX_TARGET_SUBDIR,"lib","rtl")))
   ;
   debugln$ "C++ Include directory for Felix library " + str INCLUDE_DIR;
 
   var FLXLIBS=list (
-    "-I"+Filename::join(config.FLX_INSTALL_DIR,"host","lib"),
+    "-I"+Filename::join(config.FLX_INSTALL_DIR,config.FLX_TARGET_SUBDIR,"lib"),
     "-I"+Filename::join(config.FLX_INSTALL_DIR,"share","lib")
   );
   var STDLIB=list("std","web");

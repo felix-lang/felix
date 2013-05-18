@@ -4,6 +4,7 @@ proc print_config(config:config_type) {
   println$ "INSTALL_ROOT_TOPDIR= "+config.INSTALL_ROOT_TOPDIR;
   println$ "INSTALL_ROOT       = "+config.INSTALL_ROOT;
   println$ "FLX_INSTALL_DIR    = "+config.FLX_INSTALL_DIR;
+  println$ "FLX_TARGET_SUBDIR  = "+config.FLX_TARGET_SUBDIR;
   println$ "";
   println$ "HAVE_CYGWIN        = "+str config.HAVE_CYGWIN;
   println$ "HAVE_WIN32         = "+str config.HAVE_WIN32;

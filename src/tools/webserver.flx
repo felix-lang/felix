@@ -70,6 +70,7 @@ fun atoi: string -> int = "atoi($1.data())";
 var arg = "";
 var argno = 1;
 var INSTALL_ROOT = #Config::config.FLX_INSTALL_DIR;
+var TARGET = #Config::config.FLX_TARGET_SUBDIR;
  
 var DELAY = 0.1;
 var PORT=1234;
@@ -182,13 +183,13 @@ done
 // -------------------------------------------------------------------------
 // Now, use the INSTALL_ROOT to augment
 // the search paths.
-C_PATH+= INSTALL_ROOT+"/host/lib/rtl";
+C_PATH+= INSTALL_ROOT+"/"+TARGET+"/lib/rtl";
 C_PATH+= INSTALL_ROOT+"/share/lib/rtl";
 FLX_PATH+=INSTALL_ROOT+"/share/lib";
-FLX_PATH+=INSTALL_ROOT+"/host/lib";
+FLX_PATH+=INSTALL_ROOT+"/"+TARGET+"/lib";
 FDOC_PATH+=INSTALL_ROOT+"/share/doc";
-FLX_PKGCONFIG_PATH+=INSTALL_ROOT+"/host/config";
-FLX_WEBSERVER_PLUGIN_PATH+=INSTALL_ROOT+"/host/lib";
+FLX_PKGCONFIG_PATH+=INSTALL_ROOT+"/"+TARGET+"/config";
+FLX_WEBSERVER_PLUGIN_PATH+=INSTALL_ROOT+"/"+TARGET+"/lib";
 
 // -------------------------------------------------------------------------
 // Print the configuation.

@@ -27,7 +27,8 @@ if PLAT_WIN32 do
 done
 var INSTALL_ROOT_TOPDIR=config.INSTALL_ROOT_TOPDIR;
 var INSTALL_ROOT=config.INSTALL_ROOT;
-var HOST_ROOT=INSTALL_ROOT.join("host");
+var FLX_TARGET_SUBDIR = config.FLX_TARGET_SUBDIR;
+var HOST_ROOT=INSTALL_ROOT.join(FLX_TARGET_SUBDIR);
 var SHARE_ROOT = INSTALL_ROOT.join("share");
 var FLX = (HOST_ROOT.join("bin")).join("flx");
 var cfg = strdict[string]();

@@ -6,6 +6,7 @@ proc print_help() {
   println "options:";
   println "--test               : use felix installation in current directory";
   println "--test=dir           : use felix installation in dir";
+  println "--target=dir         : subdir of install dir containing target configuration (default 'host')";
   println "--where              : print location of felix installation";
   println "--show               : print the felix program to stdout";
   println "-c                   : compile only, do not run";
@@ -102,6 +103,11 @@ noinline proc handle_switch
   elif prefix(arg,"--test=") do
     debugln "Set test directory";
     config.FLX_INSTALL_DIR <- arg.[7 to];
+
+  elif prefix(arg,"--target=") do
+    debugln "Set target configuration subdirectory";
+    config.FLX_TARGET_SUBDIR <- arg.[9 to];
+
 
   elif arg=="--test" do
     debugln "Set test directory";
@@ -503,6 +509,7 @@ noinline proc processing_stage1
 
   control*.CLEAR_CACHE, control*.cache_time = validate_cache (
     FLX_INSTALL_DIR = config*.FLX_INSTALL_DIR,
+    FLX_TARGET_SUBDIR = config*.FLX_TARGET_SUBDIR,
     STDGRAMMAR = control*.STDGRAMMAR,
     FLXG = control*.FLXG,
     CACHE_DIR = control*.CACHE_DIR,
@@ -558,16 +565,16 @@ noinline proc processing_stage1
   // library location MUST be changed for cross compilation.
   // FIXME!
   if config*.HAVE_WIN32 do
-    control.FLXG <- Filename::join(config*.FLX_INSTALL_DIR, 'host', 'bin', 'flxg.exe');
-    control.FLXRUN <- list$ "set", "PATH="+(Directory::mk_absolute_filename config*.FLX_INSTALL_DIR)+"\\host\\lib\\rtl;"+"%PATH%&&";
+    control.FLXG <- Filename::join(config*.FLX_INSTALL_DIR, config*.FLX_TARGET_SUBDIR, 'bin', 'flxg.exe');
+    control.FLXRUN <- list$ "set", "PATH="+(Directory::mk_absolute_filename config*.FLX_INSTALL_DIR)+"\\"+config*.FLX_TARGET_SUBDIR+"\\lib\\rtl;"+"%PATH%&&";
     //println$ "FLXRUN=" + FLXRUN;
   else
-    control.FLXG <- config*.FLX_INSTALL_DIR+"/host/bin/flxg";
+    control.FLXG <- config*.FLX_INSTALL_DIR+"/"+config*.FLX_TARGET_SUBDIR+"/bin/flxg";
     // the mac uses DYLD_LIBRARY_PATH instead of LD_LIBRARY_PATH
     if config*.HAVE_MACOSX do
-      control.FLXRUN <- list$ "env","DYLD_LIBRARY_PATH="+config*.FLX_INSTALL_DIR+"/host/lib/rtl:$DYLD_LIBRARY_PATH";
+      control.FLXRUN <- list$ "env","DYLD_LIBRARY_PATH="+config*.FLX_INSTALL_DIR+"/"+config*.FLX_TARGET_SUBDIR+"/lib/rtl:$DYLD_LIBRARY_PATH";
     else
-      control.FLXRUN <- list$ "env", "LD_LIBRARY_PATH="+config*.FLX_INSTALL_DIR+"/host/lib/rtl:$LD_LIBRARY_PATH";
+      control.FLXRUN <- list$ "env", "LD_LIBRARY_PATH="+config*.FLX_INSTALL_DIR+"/"+config*.FLX_TARGET_SUBDIR+"/lib/rtl:$LD_LIBRARY_PATH";
     done
   done
 
@@ -577,7 +584,7 @@ noinline proc processing_stage1
   control.SLINK_STRINGS <-  Shell::parse s;
 
   // Get location of flx_pkgconfig's config directory.
-  control.CONFIG_DIR <- Filename::join(config*.FLX_INSTALL_DIR,'host','config');
+  control.CONFIG_DIR <- Filename::join(config*.FLX_INSTALL_DIR,config*.FLX_TARGET_SUBDIR,'config');
 
   // this hack forces a directory name, because executing "prog"
   // can fail if the currect directory is not on the PATH, 

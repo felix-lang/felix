@@ -15,6 +15,7 @@ fun config() =>
 @tv("INSTALL_ROOT_TOPDIR=INSTALL_ROOT_TOPDIR")
 @tv("INSTALL_ROOT=INSTALL_ROOT")
     FLX_INSTALL_DIR = Env::getenv("FLX_INSTALL_DIR", INSTALL_ROOT),
+    FLX_TARGET_SUBDIR = Env::getenv("FLX_TARGET_SUBDIR", "host"),
 @tv("HAVE_CYGWIN="+b(pyconfig.CYGWIN))
 @tv("HAVE_WIN32="+b(pyconfig.WIN32))
 @tv("HAVE_MACOSX="+b(pyconfig.MACOSX))
