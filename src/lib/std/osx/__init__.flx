@@ -1,0 +1,3 @@
+struct Osx{};
+include "std/posix/__init__";
+

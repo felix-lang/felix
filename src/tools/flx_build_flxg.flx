@@ -54,7 +54,7 @@ class BuildFlxg
       "open Flx_version\n" +
       "let version_data: version_data_t = \n" +
       "{\n" +
-      '  version_string = "' + #Config::config.VERSION + '";\n' +
+      '  version_string = "' + Version::felix_version + '";\n' +
       '  build_time_float = '+ str time + ';\n'+ 
       '  build_time = "' + fmttime + '";\n'+
       "}\n" +

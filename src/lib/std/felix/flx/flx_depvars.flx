@@ -11,11 +11,29 @@ typedef dvars_type = (
     VERBOSE: list[string]
   );
 
-gen cal_depvars(config:config_type,control:&control_type, loopctl:loopctl_type) : dvars_type = 
+gen cal_depvars(toolchain: clang_config_t -> toolchain_t, config:config_type,control:&control_type, loopctl:loopctl_type) : dvars_type = 
 {
   proc debugln[T with Str[T]] (x:T) {
     control*.DEBUG_FLX ?? fprintln (cerr, "[flx] " + str x);
   }
+
+  var dflt_clang_config = (
+      header_search_dirs = Empty[string],
+      macros = Empty[string],
+      library_search_dirs= Empty[string],
+      ccflags= Empty[string],
+      dynamic_libraries= Empty[string],
+      static_libraries= Empty[string],
+      debugln = debugln[string]
+  );
+  var tc = toolchain dflt_clang_config;
+  var EXT_LIB = #(tc.static_library_extension);
+  var EXT_SHLIB = #(tc.dynamic_library_extension);
+  var EXT_EXE = #(tc.executable_extension);
+  var EXT_STATIC_OBJ = #(tc.static_object_extension);
+  var EXT_SHARED_OBJ = #(tc.dynamic_object_extension);
+  var DEBUG_FLAGS = #(tc.debug_flags);
+
 
   debugln$ "Felix package manager config directory is "+control*.CONFIG_DIR;
   // make a list of any *.cpp files (or other g++ options ..)
@@ -76,33 +94,33 @@ gen cal_depvars(config:config_type,control:&control_type, loopctl:loopctl_type) 
   if control*.LINKER_OUTPUT_FILENAME == "" do
     if control*.LINKIT == 1 do
       if control*.STATICLIB == 1 do
-        control*.LINKER_OUTPUT_FILENAME = filebase+config.EXT_LIB;
+        control*.LINKER_OUTPUT_FILENAME = filebase+EXT_LIB;
       elif control*.STATIC == 0 do // dynamic
-        control*.LINKER_OUTPUT_FILENAME = filebase+config.EXT_SHLIB;
+        control*.LINKER_OUTPUT_FILENAME = filebase+EXT_SHLIB;
       else
-        control*.LINKER_OUTPUT_FILENAME = filebase+config.EXT_EXE;
+        control*.LINKER_OUTPUT_FILENAME = filebase+EXT_EXE;
       done
     else // No link, name specifies object file only.
       if control*.STATIC == 1 do
-        control*.LINKER_OUTPUT_FILENAME = filebase+config.EXT_STATIC_OBJ;
+        control*.LINKER_OUTPUT_FILENAME = filebase+EXT_STATIC_OBJ;
       else
-        control*.LINKER_OUTPUT_FILENAME = filebase+config.EXT_SHARED_OBJ;
+        control*.LINKER_OUTPUT_FILENAME = filebase+EXT_SHARED_OBJ;
       done
     done
   elif control*.OUTPUT_FILENAME_WITHOUT_EXTENSION_SPECIFIED == 1 do
     if control*.LINKIT == 1 do
       if control*.STATICLIB == 1 do
-        control*.LINKER_OUTPUT_FILENAME += config.EXT_LIB;
+        control*.LINKER_OUTPUT_FILENAME += EXT_LIB;
       elif control*.STATIC == 0 do // dynamic
-        control*.LINKER_OUTPUT_FILENAME += config.EXT_SHLIB;
+        control*.LINKER_OUTPUT_FILENAME += EXT_SHLIB;
       else
-        control*.LINKER_OUTPUT_FILENAME += config.EXT_EXE;
+        control*.LINKER_OUTPUT_FILENAME += EXT_EXE;
       done
     else // No link, name specifies object file only.
       if control*.STATIC == 1 do
-        control*.LINKER_OUTPUT_FILENAME += config.EXT_STATIC_OBJ;
+        control*.LINKER_OUTPUT_FILENAME += EXT_STATIC_OBJ;
       else
-        control*.LINKER_OUTPUT_FILENAME += config.EXT_SHARED_OBJ;
+        control*.LINKER_OUTPUT_FILENAME += EXT_SHARED_OBJ;
       done
     done
   done
@@ -146,7 +164,7 @@ gen cal_depvars(config:config_type,control:&control_type, loopctl:loopctl_type) 
   done
 
   if control*.DEBUG==1 do
-    control.CCFLAGS <- control*.CCFLAGS+Shell::parse config.DEBUG_FLAGS;
+    control.CCFLAGS <- control*.CCFLAGS+DEBUG_FLAGS;
   done
 
 

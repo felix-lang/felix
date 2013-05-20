@@ -1,6 +1,5 @@
 
 proc print_config(config:config_type) {
-  println$ "VERSION            = "+config.VERSION;
   println$ "INSTALL_ROOT_TOPDIR= "+config.INSTALL_ROOT_TOPDIR;
   println$ "INSTALL_ROOT       = "+config.INSTALL_ROOT;
   println$ "FLX_INSTALL_DIR    = "+config.FLX_INSTALL_DIR;
@@ -14,24 +13,6 @@ proc print_config(config:config_type) {
   println$ "HAVE_GNU           = "+str config.HAVE_GNU;
   println$ "HAVE_MSVC          = "+str config.HAVE_MSVC;
 
-  println$ "";
-  println$ "CCOBJ_DLLIB        = "+config.CCOBJ_DLLIB;
-  println$ "CCLINK_DLLIB       = "+config.CCLINK_DLLIB;
-  println$ "CCOBJ_STATIC_LIB   = "+config.CCOBJ_STATIC_LIB;
-  println$ "CCLINK_STATIC      = "+config.CCLINK_STATIC;
-
-  println$ "";
-  println$ "EXT_LIB            = "+config.EXT_LIB;
-  println$ "EXT_STATIC_OBJ     = "+config.EXT_STATIC_OBJ;
-  println$ "EXT_SHARED_OBJ     = "+config.EXT_SHARED_OBJ;
-  println$ "EXT_EXE            = "+config.EXT_EXE;
-  println$ "EXT_SHLIB          = "+config.EXT_SHLIB;
-  println$ "SPEC_OBJ_FILENAME  = "+config.SPEC_OBJ_FILENAME;
-  println$ "SPEC_EXE_FILENAME  = "+config.SPEC_EXE_FILENAME;
-
-  println$ "";
-  println$ "OPTIMISE           = "+str config.OPTIMISE;
-  println$ "DEBUG_FLAGS        = "+str config.DEBUG_FLAGS;
 }
 
 

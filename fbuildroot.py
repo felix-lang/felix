@@ -205,7 +205,7 @@ def make_cxx_builder(ctx, *args, includes=[], libpaths=[], flags=[], **kwargs):
     kwargs['platform_options'] = [
         # GRRR .. for clang++
         ({'darwin'}, {
-            'warnings': ['all', 'fatal-errors', 
+            'warnings': ['fatal-errors', 
                 'no-invalid-offsetof', 
                 'no-logical-op-parentheses',
                 'no-bitwise-op-parentheses',
@@ -218,12 +218,13 @@ def make_cxx_builder(ctx, *args, includes=[], libpaths=[], flags=[], **kwargs):
                 'no-unused-function',
                 'no-c++11-narrowing',
                 'no-missing-braces',
+                'no-return-type-c-linkage',
                 ],
-            'flags': ['-fno-common', '-fno-strict-aliasing', '-std=c++11'] + flags,
+            'flags': ['-w','-fno-common', '-fno-strict-aliasing', '-std=c++11'] + flags,
             'optimize_flags': ['-O1', '-fomit-frame-pointer']}),
         ({'posix'}, {
-            'warnings': ['all', 'fatal-errors', 'no-invalid-offsetof','no-parentheses'],
-            'flags': ['-fno-common', '-fno-strict-aliasing'] + flags,
+            'warnings': ['fatal-errors', 'no-invalid-offsetof','no-parentheses'],
+            'flags': ['-w','-fno-common', '-fno-strict-aliasing'] + flags,
             'optimize_flags': ['-O2', '-fomit-frame-pointer']}),
         ({'windows'}, {
             'flags': ['/GR', '/MD', '/EHs', '/wd4291'] + flags,

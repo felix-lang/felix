@@ -1,5 +1,14 @@
 @import pyconfig
 
+@select(tangler('host/config/toolchain.fpc'))
+@if pyconfig.MACOSX:
+    tangle("toolchain: toolchain_clang_osx")
+ elif pyconfig.HAVE_MSVC:
+    tangle("toolchain: toolchain_msvc_win32")
+ else:
+    tangle("toolchain: toolchain_gcc_linux")
+
+
 @select(tangler('host/lib/plat/config.flx','data'))
 //GENERATED during config
 class Config {
@@ -20,31 +29,7 @@ fun config() =>
 @tv("HAVE_WIN32="+b(pyconfig.WIN32))
 @tv("HAVE_MACOSX="+b(pyconfig.MACOSX))
 @tv("HAVE_GNU="+b(pyconfig.HAVE_GNU))
-@tv("HAVE_MSVC="+b(pyconfig.HAVE_MSVC))
-@if pyconfig.TARGET_CXX.options.HAVE_PIC:
-  tv('CCOBJ_DLLIB=r"""'+pyconfig.TARGET_CXX.options.CCOBJ_DYNAMIC_FLX+' '+pyconfig.TARGET_CXX.options.PIC+'"""')
- else:
-  tv('CCOBJ_DLLIB=r"""'+pyconfig.TARGET_CXX.options.CCOBJ_DYNAMIC_FLX+'"""')
-@tv('CCLINK_DLLIB=r"""'+pyconfig.TARGET_CXX.options.CCLINK_DYNAMIC_FLX+'"""')
-@tv('CCOBJ_STATIC_LIB=r"""'+pyconfig.TARGET_CXX.options.CCOBJ_STATIC_FLX+'"""')
-@tv('CCLINK_STATIC=r"""'+pyconfig.TARGET_CXX.options.CCLINK_STATIC+'"""')
-@tv('CCLINK_STATIC_LIB=r"""'+pyconfig.TARGET_CXX.options.CCLINK_STATIC_LIB+'"""')
-@tv('VERSION="'+pyconfig.flx_version+'"')
-@tv('EXT_LIB=r"""'+pyconfig.TARGET_CXX.options.EXT_LIB+'"""')
-@tv('EXT_STATIC_OBJ=r"""'+pyconfig.TARGET_CXX.options.EXT_STATIC_OBJ+'"""')
-@tv('EXT_SHARED_OBJ=r"""'+pyconfig.TARGET_CXX.options.EXT_SHARED_OBJ+'"""')
-@tv('EXT_EXE=r"""'+pyconfig.TARGET_CXX.options.EXT_EXE+'"""')
-@tv('EXT_SHLIB=r"""'+pyconfig.TARGET_CXX.options.EXT_SHLIB+'"""')
-@tv('SPEC_OBJ_FILENAME=r"""'+pyconfig.TARGET_CXX.options.SPEC_OBJ_FILENAME+'"""')
-@tv('SPEC_EXE_FILENAME=r"""'+pyconfig.TARGET_CXX.options.SPEC_EXE_FILENAME+'"""')
-@tv('SPEC_LIB_FILENAME=""')
-@tv('OPTIMISE=r"""'+pyconfig.TARGET_CXX.options.OPTIMISE+' """')
-@tv('DEBUG_FLAGS=r"""'+pyconfig.TARGET_CXX.options.DEBUG_FLAGS+' """')
-@if pyconfig.DEFAULT_LINK_MODEL=="dynamic":
-  tangle("    DEFAULT_LINK_STATIC=0")
- else:
-  tangle("    DEFAULT_LINK_STATIC=1")
-@#
+@tangle("    HAVE_MSVC="+b(pyconfig.HAVE_MSVC))
   )
 ;
 

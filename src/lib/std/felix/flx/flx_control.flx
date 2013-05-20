@@ -27,6 +27,7 @@ proc print_options(control:control_type) {
     println$ "SHOWCODE           = "+str control.SHOWCODE;
     println$ "USAGE              = "+control.USAGE;
     println$ "DOREDUCE           = "+str control.DOREDUCE;
+    println$ "OPTIMISE           = "+str control.OPTIMISE;
 }
 
 fun init_loopctl () => struct {
@@ -65,9 +66,8 @@ fun dflt_control (config:config_type, profile:profile_type) =>
     var NOOPTIMISE=0;
     var DOREDUCE=1;
     var TIMECMD="time -p";
-    var STATIC=config.DEFAULT_LINK_STATIC;
+    var STATIC=0;
     var STATICLIB=0;
-    var OPTIMISE=Shell::parse config.OPTIMISE;
     var SHOWCODE=0;
     var CCFLAGS=Empty[string];
     var EXTRA_CCFLAGS=Empty[string];
@@ -116,6 +116,7 @@ fun dflt_control (config:config_type, profile:profile_type) =>
     var cache_time = 0.0;
     var INDIR = "";
     var INREGEX = "";
+    var OPTIMISE = list[string]$ "-O1";
   }
 ;
 

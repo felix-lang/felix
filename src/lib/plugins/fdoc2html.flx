@@ -72,7 +72,7 @@ fun markdown (s:string):string= {
   return x;
 }
 
-val timeout = Filename::join (#Config::config.FLX_INSTALL_DIR, "bin", "flx_timeout"+#Config::config.EXT_EXE);
+val timeout = Filename::join (#Config::config.FLX_INSTALL_DIR, "bin", "flx_timeout"+#(Filename::executable_extension));
 
 gen safer_popen(cmd:string)=>
   Process::popen_in(timeout+" -t 15 " + cmd + " 2>&1")

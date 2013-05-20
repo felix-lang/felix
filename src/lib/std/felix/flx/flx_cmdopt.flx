@@ -211,7 +211,7 @@ noinline proc handle_switch
   elif arg == "--version" do
     debugln "Print Felix version and exit";
     print("version ");
-    println(config*.VERSION);
+    println(Version::felix_version);
     System::exit(0);
 
   elif arg == "--config" do

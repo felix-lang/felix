@@ -43,7 +43,7 @@ class FlxCoreBuild
       (
         header_search_dirs= list[string] (mkinc hrtl, mkinc srtl)+map mkinc build_includes,
         macros= map (fun (x:string)=> "-D"+x) macros,
-        cflags = ccflags,
+        ccflags = ccflags,
         library_search_dirs= list[string] ("-L"+hrtl),
         dynamic_libraries= ddeps+depdlibs,
         static_libraries= Empty[string],
@@ -173,6 +173,15 @@ class FlxCoreBuild
     println$ "os           : " + str os;
     println$ "toolchain    : " + str toolchain;
 
+    // write the toolchain package, overwrites copied one!
+    begin
+      println$ "Write toolchain " + toolchain " into package " + pkgdir/'toolchain.fpc';
+      var f = fopen_output (pkgdir/'toolchain.fpc');
+      write (f,"toolchain: " + toolchain +"\n");
+      fclose f;
+    end
+
+
     var allpkgs = db.getclosure boot_package;
     //println$ "Closure      : " + str allpkgs;
 
@@ -220,7 +229,7 @@ class FlxCoreBuild
         (
           header_search_dirs= list[string] (mkinc hrtl, mkinc srcdir, mkinc srtl),
           macros= Empty[string],
-          cflags = Empty[string],
+          ccflags = Empty[string],
           library_search_dirs= list[string] ("-L"+hrtl),
           dynamic_libraries= Empty[string],
           static_libraries= Empty[string], //############ FIXME or the link won't work!
@@ -277,14 +286,18 @@ class FlxCoreBuild
 
   proc dirsetup(cmd:cmd_type)
   {
-    println$ "Create clean target "+cmd.target_dir;
     // NOTE: unlink doesn't work on directories anyhow ...
     // We need rmdir(), but that doesn't work unless dir is empty!
     FileSystem::unlink("trial-tmp");
 
-    if cmd.clean_target_dir do FileSystem::unlink(cmd.target_dir);
-    elif cmd.clean_target_bin_dir do FileSystem::unlink(cmd.target_dir/cmd.target_bin);
-    elif cmd.clean_target_bin_binaries do println$ "Cleaning binaries out of target not implemented";
+    if cmd.clean_target_dir do 
+       println$ "Deleting target-dir=" + cmd.target_dir;
+       FileSystem::unlink(cmd.target_dir);
+    elif cmd.clean_target_bin_dir do 
+       println$ "Deleting target-bin=" + cmd.target_dir/cmd.target_bin;
+       FileSystem::unlink(cmd.target_dir/cmd.target_bin);
+    elif cmd.clean_target_bin_binaries do 
+      println$ "Cleaning binaries out of target not implemented";
     done
 
     C_hack::ignore$ Directory::mkdir(cmd.target_dir);
@@ -294,7 +307,7 @@ class FlxCoreBuild
     // Set up the share subdirectory.
     if cmd.copy_repo do
       if cmd.repo != cmd.target_dir/'share' do
-        println$ "Copy repository src";
+        println$ "Copy repository "+cmd.repo/'src -> ' + cmd.target_dir/'share'/'src';
         CopyFiles::copyfiles(cmd.repo/'src', 
          '(.*\.(h|hpp|ml|c|cpp|cxx|cc|flx|flxh|fdoc|js|html|svg|png|files|include))', 
          cmd.target_dir/'share'/'src'/'${1}',true,cmd.debug);

@@ -4,6 +4,14 @@ class Filename_class[os] {
   //$ The path separator.
   virtual fun sep: 1 -> string;
 
+  virtual fun executable_extension : 1 -> string;
+  virtual fun static_object_extension: 1 -> string;
+  virtual fun dynamic_object_extension: 1 -> string;
+  virtual fun static_library_extension: 1 -> string;
+  virtual fun dynamic_library_extension: 1 -> string;
+
+
+
   //$ split1 returns a pair consisting of a directory name and basename
   //$ with the separator between them lost except in the special case
   //$ "/x" where the "/" is kept as the directory name.
@@ -99,6 +107,27 @@ class Win32Filename
   inherit Filename_class[Win32];
   instance Filename_class[Win32] {
     fun sep() => "\\";
+    fun executable_extension ()=> ".exe";
+    fun static_object_extension() => ".obj";
+    fun dynamic_object_extension() => ".obj";
+    fun static_library_extension() => ".lib";
+    fun dynamic_library_extension() => ".dll";
+
+  }
+}
+
+//$ OSX Filenames
+class OsxFilename 
+{
+  inherit Filename_class[Osx];
+  instance Filename_class[Osx] {
+    fun sep() => "/";
+    fun executable_extension ()=> "";
+    fun static_object_extension() => ".o";
+    fun dynamic_object_extension() => ".os";
+    fun static_library_extension() => ".a";
+    fun dynamic_library_extension() => ".dylib";
+
   }
 }
 
@@ -108,6 +137,11 @@ class PosixFilename
   inherit Filename_class[Posix];
   instance Filename_class[Posix] {
     fun sep() => "/";
+    fun executable_extension ()=> "";
+    fun static_object_extension() => ".o";
+    fun dynamic_object_extension() => ".os";
+    fun static_library_extension() => ".a";
+    fun dynamic_library_extension() => ".so";
   }
 }
 
@@ -116,6 +150,8 @@ class Filename
 {
 if PLAT_WIN32 do
   inherit Win32Filename;
+elif PLAT_MACOSX do
+  inherit OsxFilename;
 else
   inherit PosixFilename;
 done

@@ -71,6 +71,7 @@ include "std/db/__init__";
 include "std/version";
 
 // Platform support (implementation exposure)
+include "std/osx/__init__";
 include "std/posix/__init__";
 include "std/win32/__init__";
 

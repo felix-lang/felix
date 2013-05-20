@@ -531,7 +531,7 @@ noinline  fun find_path_to(name:string,paths:list[string]) = {
   }
   //$ Creates 'name'.fpc file with 'description', 'cflags' and
   //$ list of dynamic libraries 'dlibs' and static libraries 'slibs'
-noinline  proc create_fpc(name:string,description:string,cflags:list[string],includes:list[string],
+noinline  proc create_fpc(name:string,description:string,ccflags:list[string],includes:list[string],
                    dlibs:string,slibs:string,reqs:list[string]) {
     var fpc_name = name+".fpc";
     task("Creating config/" + fpc_name);
@@ -539,7 +539,7 @@ noinline  proc create_fpc(name:string,description:string,cflags:list[string],inc
     if valid(fpc) do
       var fpc_s:string = q"""
 Name: $(name)
-"""+join_list( (map (fun(s:string)=>"cflags: "+s) cflags),"\n")+q"""
+"""+join_list( (map (fun(s:string)=>"cflags: "+s) ccflags),"\n")+q"""
 Description: $(description)
 requires_dlibs: $(slibs)
 requires_slibs: $(dlibs)
@@ -571,8 +571,8 @@ noinline  proc create_config(name:string,includes:list[string],libs:list[string]
   //$ 'includes' and list of C/C++ 'libs'. Then generates config/'name'.fpc
   //$ Felix Package Config file
 noinline  proc create_config(name:string,includes:list[string],libs:list[string],
-                     reqs:list[string],extra_cflags:list[string]) {
-    var c_flags:list[string] = extra_cflags+Empty[string];
+                     reqs:list[string],extra_ccflags:list[string]) {
+    var c_flags:list[string] = extra_ccflags+Empty[string];
     var config_ok_fn = (BUILD_DIR.join("config")).join("CONFIG_"+name+".OK");
     if not FileStat::fileexists config_ok_fn do 
       var idirs = strdict[string]();
@@ -601,7 +601,7 @@ noinline  proc create_config(name:string,includes:list[string],libs:list[string]
         with
         |Some ?path => "-L" + path + " -l" + 
           lib.[if startswith lib "lib" then 3 else 0 endif 
-               to len(lib)-len(#Config::config.EXT_SHLIB)] + " " 
+               to len(lib)-len(#Filename::dynamic_library_extension)] + " " 
         |None => (
           setup_fail("Unable to find " + lib + 
             ". Please locate and pass path to setup with the -L switch");
@@ -1038,8 +1038,13 @@ noinline  proc default_clean() {
           ""
        endif;
        if not file_base == "" do
-         for ext in list (#Config::config.EXT_SHLIB,
-                          #Config::config.EXT_EXE) do
+// FIXME: JS: Config no longer contains default OS filename extensions
+// For the host system only, Filename class is used instead.
+// For builders like scoop which may be cross compiling,
+// a selected cross compilation toolchain object should be propagated
+// and used. For now, I'll just hack the code so it compiles.
+         for ext in list (#Filename::dynamic_library_extension,
+                          #Filename::executable_extension) do
            match filetype(dir_path.join(file_base) + ext ) with 
            |REGULAR => {  
              assert_true(FileSystem::unlink_file(dir_path.join(file_base)

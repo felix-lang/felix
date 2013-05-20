@@ -271,6 +271,24 @@ bootstrap:
 	rm -rf build/release
 	mv build/trial build/release
 
+hosttools:
+	# rebuild Felix code executables and plugins "in place"
+	# switch from clang to gcc just so we can check it all works
+	# This target should handle all changes to Felix code
+	# in the repository.
+	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl \
+		--repo=. \
+		--target-dir=build/release \
+		--target-bin=host \
+		--source-dir=build/release \
+		--source-bin=host \
+		--pkg=build_flx_rtl_gcc_osx \
+		--copy-repo \
+		--copy-library \
+		--build-plugins \
+		--build-flx \
+		--build-tools
+
 gccosxtarget:
 	# This Make target is used to make a Felix target 'gccosx'
 	# in the build/release directory. It's a target for OSX

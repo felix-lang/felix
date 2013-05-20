@@ -128,7 +128,7 @@ Given a registry, simulate dynamic linkage.
      match mod with
      | #None => 
        //println$ "Not in registry, using dlopen for " + modulename;
-       modopen$ lib, modulename+#(Config::config).EXT_SHLIB, modulename;
+       modopen$ lib, modulename+#Filename::dynamic_library_extension, modulename;
      | Some dict =>
        //println$ "Found module "+modulename+" in registry"; 
        var tfc = dict.get_dflt (modulename+"_create_thread_frame", NULL);
