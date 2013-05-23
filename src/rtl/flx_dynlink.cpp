@@ -23,7 +23,8 @@ flx_load_library(const std::string& filename)
 {
   LIBHANDLE library;
   FLX_SET_NOLIBRARY(library);
-
+  if (std::getenv("FLX_SHELL_ECHO")!=(char*)0)
+    fprintf(stderr,"[load_library] %s\n", filename.c_str());
 //#if FLX_WIN32 || FLX_CYGWIN
 #if FLX_WIN32
   // stop windows showing err dialogues, ignoring error code.

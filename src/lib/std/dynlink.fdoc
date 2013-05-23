@@ -89,7 +89,7 @@ not associated with any particular DLL.
 @felix
   //$ Create a fresh DLL object.
   fun create_library_handle: unit->flx_library=
-    "new flx::rtl::flx_dynlink_t()";
+    "new ::flx::rtl::flx_dynlink_t()";
 
 @h3 Destructor for <copde>flx_library</code>: <code>delete_library_handle</code>.
 This operation forcibly deletes a library handle. It has no effect
@@ -261,7 +261,7 @@ library or thread frame.
 @felix
   //$ Create a fresh DLL instance object.
   fun create_instance_handle: unit->flx_instance=
-    "new flx::rtl::flx_libinit_t()";
+    "new ::flx::rtl::flx_libinit_t()";
 
 @h3 Library instance destructor<code>delete_instance_handle</code>
 Delete a library instance. If associated with a library handle,
@@ -291,10 +291,10 @@ to prevent the garbage collector deleting it prematurely.
     body """
     static void _create
     (
-      flx::rtl::flx_dynlink_t *library,
-      flx::rtl::flx_libinit_t *instance,
+      ::flx::rtl::flx_dynlink_t *library,
+      ::flx::rtl::flx_libinit_t *instance,
       flx::gc::generic::gc_profile_t *gcp,
-      flx::rtl::main_t main_sym,
+      ::flx::rtl::main_t main_sym,
       int argc, char **argv,
       FILE *stdin_, FILE *stdout_, FILE *stderr_
     )
@@ -611,7 +611,7 @@ to require the library name as a prefix. Stay tuned.
   //$ Throw an exception indicating the failure to 
   //$ find a symbol in a DLL.
   proc dlsym_err:flx_library*string="""
-    throw flx::rtl::flx_link_failure_t($1->filename,$2,"symbol not found");
+    throw ::flx::rtl::flx_link_failure_t($1->filename,$2,"symbol not found");
   """;
 
   //$ Run a procedure represented by a string name with
