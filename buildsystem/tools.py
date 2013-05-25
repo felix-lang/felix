@@ -36,6 +36,8 @@ def build(phase, felix):
       "flx_tangle",
       "flx_gengraph",
       "flx_testpack",
+      "flx_build_flxg",
+      "flx_build_rtl",
       ]
 
     optional_exes = [

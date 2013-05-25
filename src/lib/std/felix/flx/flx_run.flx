@@ -28,17 +28,22 @@ object processing_env(
     if control.ECHO==1 do fprintln$ cerr, cmd; done
     var result = System::system(cmd);
     var elapsed = #Time::time - now;
-    if control.ECHO==1 do fprintln$ cerr, "System:Elapsed: " + fmt (elapsed, fixed (8,3)) + ", Result code " + str(result); done
+    if control.ECHO==1 do 
+      fprintln$ cerr, "System:Elapsed: " + fmt (elapsed, fixed (8,3)) + 
+        ", Result code " + str(result)
+      ; 
+    done
     return result;
   }
 
-  method proc runit() {
+  method gen runit() : int = {
     var immediate_run = #check_run_if_required_and_uptodate;
     if immediate_run do
-      run_with_calpackages;
+      return #run_with_calpackages;
     else
-      run_felix_compiler_if_required;
-      run_cxx_and_exe_as_required;
+      var result = #run_felix_compiler_if_required;
+      if result != 0 return result;
+      return #run_cxx_and_exe_as_required;
     done
   }
 
@@ -71,11 +76,11 @@ object processing_env(
       var elapsed = #Time::time - t0;
       var minutes = floor (elapsed / 60.0);
       var seconds = elapsed - minutes * 60.0;
-      println$ "Time : " + fmt(minutes,fixed(2,0))+"m" + fmt(seconds,fixed(4,1)) + "s for " + msg;
+      println$ "[flx] Time : " + fmt(minutes,fixed(2,0))+"m" + fmt(seconds,fixed(4,1)) + "s for " + msg;
     done
   }
 
-  proc run_felix_compiler_if_required
+  gen run_felix_compiler_if_required () : int = 
   {
     if control.FELIX == 1 do
       var t0 = #Time::time;
@@ -101,9 +106,7 @@ object processing_env(
         debugln = if control.ECHO==1 then echoln[string] else debugln[string] endif
       );
       showtime("Felix flxg   : "+dvars.cpp_filebase, t0);
-      if result != 0 do 
-        System::pexit(result); 
-      done
+      if result != 0 return result;
       debugln "Felix compilation succeeded";
       calpackages;
       FlxPkg::write_include_file(dvars.cpp_filebase, control.EXTRA_INCLUDE_FILES);
@@ -112,21 +115,14 @@ object processing_env(
       debugln "Felix compilation skipped by switch";
       calpackages;
     done
+    return 0;
   }
 
 
-  proc cxx_compile_dynamic1(src:string, dst:string)
+  gen cxx_compile_dynamic1(src:string, dst:string) : int =
   {
 
     var t0 = #Time::time;
-    /*
-    var cc,ccflags = 
-      match Shell::parse config.CCOBJ_DLLIB with
-      | Cons (?h,?t) => h, t
-      endmatch
-    ;
-    */
-
     var tc = toolchain 
       extend dflt_clang_config with 
       (
@@ -139,53 +135,33 @@ object processing_env(
     ;
 
     var result = tc.cxx_dynamic_object_compiler (dst=dst,src=src);
-/*
-    var result = 
-      CxxCompiler::generic_cxx_compile_for_dynamic 
-      (
-        CCOBJ_DLLIB = cc, 
-        CCFLAGS = ccflags + control.CCFLAGS, 
-        INCLUDE_DIRS = dvars.INCLUDE_DIR + control.STANDARD_INCLUDE_DIRS+control.EXTRA_INCLUDE_DIRS, 
-        MACROS = control.MACROS,
-        SPEC_OBJ_FILENAME = config.SPEC_OBJ_FILENAME,
-        debugln = if control.ECHO==1 then echoln[string] else debugln[string] endif
-      ) 
-      (src, dst)
-    ;
-*/
     showtime("Dynamic c++  : "+src, t0);
-    if result != 0 do
-      System::pexit(result);
-    done
+    return result;
   }
 
-  proc cxx_compile_dynamic
+  gen cxx_compile_dynamic () : int =
   {
     var EXT_SHARED_OBJ = #((toolchain dflt_clang_config).dynamic_object_extension);
     if control.LINKIT == 0 do
-      cxx_compile_dynamic1 (dvars.cpp_filebase+".cpp", control.LINKER_OUTPUT_FILENAME);
+      var result = cxx_compile_dynamic1 (dvars.cpp_filebase+".cpp", control.LINKER_OUTPUT_FILENAME);
+      if result != 0 return result;
     else
-      cxx_compile_dynamic1 (dvars.cpp_filebase+".cpp", dvars.cpp_filebase+EXT_SHARED_OBJ);
+      result = cxx_compile_dynamic1 (dvars.cpp_filebase+".cpp", dvars.cpp_filebase+EXT_SHARED_OBJ);
+      if result != 0 return result;
     done
 
     for src in control.cpps do
       var dst = Filename::strip_extension src + EXT_SHARED_OBJ;
-      cxx_compile_dynamic1 (src,dst);
+      result = cxx_compile_dynamic1 (src,dst);
+      if result != 0 return result;
       control.cppos += dst;
     done
-   
+    return 0;
   }
 
-  proc cxx_link_dynamic
+  gen cxx_link_dynamic () : int =
   {
     var t0 = #Time::time;
-    /*
-    var cc,ccflags = 
-      match Shell::parse config.CCLINK_DLLIB with
-      | Cons (?h,?t) => h, t
-      endmatch
-    ;
-    */
     var tc = toolchain 
       extend dflt_clang_config with 
       (
@@ -202,39 +178,16 @@ object processing_env(
         srcs= control.cppos + (dvars.cpp_filebase+EXT_SHARED_OBJ)
       )
     ;
-/*
-    var result = 
-      CxxCompiler::generic_link_dynamic 
-      (
-        CCLINK_DLLIB = cc,
-        CCFLAGS = ccflags + control.CCFLAGS,
-        EXT_SHARED_OBJ = config.EXT_SHARED_OBJ,
-        SPEC_EXE_FILENAME = config.SPEC_EXE_FILENAME,
-        LINK_STRINGS = control.LINK_STRINGS,
-        debugln = if control.ECHO==1 then echoln[string] else debugln[string] endif
-      )
-      (
-        control.cppos + (dvars.cpp_filebase+config.EXT_SHARED_OBJ),
-        control.LINKER_OUTPUT_FILENAME
-      )
-    ;
-*/
     showtime("Dynamic link : "+control.LINKER_OUTPUT_FILENAME,t0);
     if result != 0 do
-      System::pexit(result);
+      eprintln$ "[flx] C++ clink "+control.LINKER_OUTPUT_FILENAME+" failed";
     done
+    return result;
   }
 
-  proc cxx_compile_static1 (src: string, dst: string)
+  gen cxx_compile_static1 (src: string, dst: string) : int = 
   {
     var t0 = #Time::time;
-    /*
-    var cc,ccflags = 
-      match Shell::parse config.CCOBJ_STATIC_LIB with
-      | Cons (?h,?t) => h, t
-      endmatch
-    ;
-    */
     var tc = toolchain  
       extend dflt_clang_config with 
       (
@@ -246,30 +199,16 @@ object processing_env(
       end
     ;
     var result = tc.cxx_static_object_compiler (dst=dst,src=src); 
-/*
-    var result = 
-      CxxCompiler::generic_cxx_compile_for_static 
-      (
-        CCOBJ_STATIC_LIB = cc,
-        CCFLAGS = ccflags + control.CCFLAGS, 
-        INCLUDE_DIRS = dvars.INCLUDE_DIR+control.STANDARD_INCLUDE_DIRS+control.EXTRA_INCLUDE_DIRS, 
-        MACROS = control.MACROS, 
-        SPEC_OBJ_FILENAME = config.SPEC_OBJ_FILENAME,
-        debugln = if control.ECHO==1 then echoln[string] else debugln[string] endif
-      )
-      (src, dst)
-    ;
-*/
     showtime("Static c++   : "+src,t0);
 
     if result != 0 do
-      eprintln$ "C++ compilation "+src+" failed";
-      System::pexit(result);
+      eprintln$ "[flx] C++ compilation "+src+" failed";
     done
+    return result;
 
   }
 
-  proc cxx_compile_static
+  gen cxx_compile_static () : int = 
   {
     // we only need the thunk if we're linking OR -o switch was NOT specified
     // i.e. skip compiling the thunk the output name was specified and 
@@ -280,41 +219,36 @@ object processing_env(
       control.OUTPUT_FILENAME_SPECIFIED == 0 and
       control.OUTPUT_FILENAME_WITHOUT_EXTENSION_SPECIFIED == 0
     do
-      cxx_compile_static1
+      var result = cxx_compile_static1
       (
         dvars.cpp_filebase+"_static_link_thunk.cpp",
         dvars.cpp_filebase+"_static_link_thunk"+EXT_STATIC_OBJ
       );
+      if result != 0 return result;
     done
 
     for src in control.cpps do
       var dst = Filename::strip_extension src +EXT_STATIC_OBJ;
       if control.RECOMPILE == 1 or dfiletime(src,#past_time) > dfiletime (dst, #future_time) do
-        cxx_compile_static1 (src,dst);
+        result = cxx_compile_static1 (src,dst);
+        if result != 0 return result;
       done
       control.cppos += dst;
     done
    
     if control.LINKIT == 0 do
       // compile only
-      cxx_compile_static1 (dvars.cpp_filebase+".cpp",control.LINKER_OUTPUT_FILENAME);
+      return cxx_compile_static1 (dvars.cpp_filebase+".cpp",control.LINKER_OUTPUT_FILENAME);
     else 
       // compile and link
-      cxx_compile_static1 (dvars.cpp_filebase+".cpp",dvars.cpp_filebase+EXT_STATIC_OBJ);
+      return cxx_compile_static1 (dvars.cpp_filebase+".cpp",dvars.cpp_filebase+EXT_STATIC_OBJ);
     done
 
   }
 
-  proc cxx_link_static
+  gen cxx_link_static () : int = 
   {
     var t0 = #Time::time;
-    /*
-    var cc,ccflags = 
-      match Shell::parse config.CCLINK_STATIC with
-      | Cons (?h,?t) => h, t
-      endmatch
-    ;
-    */
     var tc = toolchain  
       extend dflt_clang_config with 
       (
@@ -335,43 +269,16 @@ object processing_env(
           (dvars.cpp_filebase+EXT_STATIC_OBJ)
       )
     ;
-
-/*
-    var result =
-      CxxCompiler::generic_link_static
-      (
-        CCLINK_STATIC = cc, 
-        CCFLAGS = ccflags,
-        SPEC_EXE_FILENAME = config.SPEC_EXE_FILENAME,
-        LINK_STRINGS = control.LINK_STRINGS,
-        debugln = if control.ECHO==1 then echoln[string] else debugln[string] endif
-      )  
-      ( 
-          control.DRIVER_OBJS +
-          control.cppos + 
-          (dvars.cpp_filebase+"_static_link_thunk"+config.EXT_STATIC_OBJ) + 
-          (dvars.cpp_filebase+config.EXT_STATIC_OBJ)
-        ,
-        control.LINKER_OUTPUT_FILENAME
-      )
-    ;
-*/
-    showtime("Static link  : "+control.LINKER_OUTPUT_FILENAME,t0);
+    showtime("Static executable link  : "+control.LINKER_OUTPUT_FILENAME,t0);
     if result != 0 do
-      System::pexit(result);
-    done 
+      eprintln$ "[flx] C++ static executable link "+control.LINKER_OUTPUT_FILENAME+" failed";
+    done
+    return result;
   }
 
-  proc cxx_static_library
+  gen cxx_static_library () : int = 
   {
     var t0 = #Time::time;
-    /*
-    var cc,ccflags = 
-      match Shell::parse config.CCLINK_STATIC_LIB with
-      | Cons (?h,?t) => h, t
-      endmatch
-    ;
-    */
     var tc = toolchain  
       extend dflt_clang_config with 
       (
@@ -387,53 +294,39 @@ object processing_env(
         dst=control.LINKER_OUTPUT_FILENAME
       )
     ;
-/*
-    var result =
-      CxxCompiler::generic_static_library
-      (
-        CCLINK_STATIC_LIB = cc, 
-        CCFLAGS = ccflags,
-        SPEC_LIB_FILENAME = config.SPEC_LIB_FILENAME,
-        debugln = if control.ECHO==1 then echoln[string] else debugln[string] endif
-      )  
-      ( 
-        control.cppos +
-        (dvars.cpp_filebase+config.EXT_STATIC_OBJ)
-        ,
-        control.LINKER_OUTPUT_FILENAME
-      )
-    ;
-*/
     showtime("Static lib   : "+control.LINKER_OUTPUT_FILENAME,t0);
     if result != 0 do
-      System::pexit(result);
-    done 
+      eprintln$ "[flx] C++ static library link "+control.LINKER_OUTPUT_FILENAME+" failed";
+    done
+    return result;
   }
 
-  proc check_output
+  gen check_output () : int = 
   {
     var expected = control.EXPECT;
-    if expected == "" return;
+    if expected == "" return 0;
 
     var output = control.STDOUT;
 
     if output == "" do
-      println$ "No output file given";
-
+      println$ "[flx] No output file given";
+      return 0;
     else 
       
       // note load never fails, at worse loads empty string.
       var output_text = load (output);
       var expected_text = load (expected);
-      if output_text != expected_text do
-        println$ "Output " + output + " doesn't match expected " + expected;
-        System::exit(1);
+      var result = output_text != expected_text;
+      if not result do
+        println$ "[flx] Output " + output + " doesn't match expected " + expected;
+        return 1;
       done
     done 
+    return 0;
   }
 
 
-  proc run_program_dynamic
+  gen run_program_dynamic () : int =
   {
     var xargs =
       control.FLXRUN +
@@ -448,56 +341,52 @@ object processing_env(
     var t0 = #Time::time;
     var result = system(CMD);
     showtime("Dynamic Run : "+control.LINKER_OUTPUT_FILENAME,t0);
-    if result != 0 do
-      System::pexit(result);
-    done
-    check_output;
+    if result != 0 return result;
+    return #check_output;
   }
 
-  proc run_program_static
+  gen run_program_static () : int = 
   {
     var CMD = 
       catmap ' ' Shell::quote_arg ( dvars.STATIC_ENV + control.LINKER_OUTPUT_FILENAME + dvars.args )
     ;
 
     if control.STDOUT != "" do CMD=CMD + " > "+Shell::quote_arg(control.STDOUT); done
-    debugln$ "Run command="+CMD;
+    debugln$ "[flx] Run command="+CMD;
     var t0 = #Time::time;
     var result=system(CMD);
     showtime("Static Run   : "+control.LINKER_OUTPUT_FILENAME,t0);
-    if result != 0 do
-      System::pexit(result);
-    done
-    check_output;
+    if result != 0 return result;
+    return #check_output;
   }
 
-  proc run_dynamic_with_calpackages
+  gen run_dynamic_with_calpackages () : int = 
   {
     calpackages;
-    run_program_dynamic;
+    return #run_program_dynamic;
   }
 
-  gen check_run_if_required_and_uptodate() =
+  gen check_run_if_required_and_uptodate() : bool  =
   {
 
     if control.RECOMPILE == 0 and control.RUNIT == 1 and control.CLEAR_CACHE == 0 do
       // not (--force or -c)
-      debugln "Checking to see if the binary is uptodate";
+      debugln "[flx] Checking to see if the binary is uptodate";
       var xtime = dfiletime(control.LINKER_OUTPUT_FILENAME,#past_time);
       var srctime = cal_dep_time (debugln[string], control.OUTPUT_DIR, dvars.filebase);
       srctime = fold_left maxf srctime control.cpps;
       srctime = fold_left maxf srctime control.cppos;
 
-      debugln$ "Filebase = " + dvars.filebase; 
-      debugln$ "Binary time = " + strfiletime (xtime);
-      debugln$ "src time = " + strfiletime (srctime);
-      debugln$ "cache time = " + strfiletime (control.cache_time);
+      debugln$ "[flx] Filebase = " + dvars.filebase; 
+      debugln$ "[flx] Binary time = " + strfiletime (xtime);
+      debugln$ "[flx] src time = " + strfiletime (srctime);
+      debugln$ "[flx] cache time = " + strfiletime (control.cache_time);
       if control.STATIC == 0 do
         if xtime > srctime and xtime > control.cache_time do
-          debugln$ "Running dynamically linked binary";
+          debugln$ "[flx] Running dynamically linked binary";
           return true;
         else
-          debugln$ "Dynamically linked binary out of date or non-existant";
+          debugln$ "[flx] Dynamically linked binary out of date or non-existant";
         done
       else
         if xtime > srctime and xtime > control.cache_time do
@@ -512,16 +401,16 @@ object processing_env(
 
   }
 
-  proc run_with_calpackages
+  gen run_with_calpackages () : int = 
   {
     if control.STATIC == 0 do
-      run_dynamic_with_calpackages;
+      return #run_dynamic_with_calpackages;
     else
-      run_program_static;
+      return #run_program_static;
     done
   }
 
-  proc run_cxx_and_exe_as_required
+  gen run_cxx_and_exe_as_required () : int = 
   {
 
     if control.CCOMPILEIT == 0 do
@@ -529,14 +418,16 @@ object processing_env(
     elif control.STATIC == 0 do
 
       debugln "Dynamic linkage";
-      cxx_compile_dynamic;
+      var result = #cxx_compile_dynamic;
+      if result != 0 return result;
 
       if control.LINKIT == 0 do
         debugln "Not linking program selected by switch";
       else
-        cxx_link_dynamic;
+        result = #cxx_link_dynamic;
+        if result != 0 return result;
         if control.RUNIT == 1 do
-          run_program_dynamic;
+          return #run_program_dynamic;
         else
           debugln "Not running program selected by switch";
         done
@@ -544,20 +435,23 @@ object processing_env(
     else
 
       debugln "Static linkage";
-      cxx_compile_static;
+      result = #cxx_compile_static;
       if control.STATICLIB == 1 do
-        cxx_static_library;
+        return #cxx_static_library;
       elif control.LINKIT == 0 do
         debugln "Not linking based on switch";
       else
-        cxx_link_static;
+        result = #cxx_link_static;
+        if result != 0 return result;
+
         if control.RUNIT == 1 do
-          run_program_static;
+          return #run_program_static;
         else
           debugln "Not running program selected by switch";
         done
       done
     done
+    return 0;
   }
 
 }

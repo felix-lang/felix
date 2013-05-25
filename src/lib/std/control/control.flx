@@ -33,10 +33,10 @@ open class Control
   fun fail:string -> any = 'throw ::std::runtime_error($1);' requires Cxx_headers::stdexcept;
 
   publish "WILL BE DEPRECATED, these don't work right"
-  fun fail_fun[t]:1->t = 'throw ::std::runtime_error(""),*(?1*)0' requires Cxx_headers::stdexcept;
+  fun fail_fun[t]:1->t = '(throw ::std::runtime_error(""),*(?1*)0)' requires Cxx_headers::stdexcept;
 
   publish "WILL BE DEPRECATED, these don't work right"
-  fun fail_fun[t]:string->t = 'throw ::std::runtime_error($1),*(?1*)0' requires Cxx_headers::stdexcept;
+  fun fail_fun[t]:string->t = '(throw ::std::runtime_error($1),*(?1*)0)' requires Cxx_headers::stdexcept;
 
   publish "Felix procedural continuation type"
   _gc_pointer type cont = "::flx::rtl::con_t*";

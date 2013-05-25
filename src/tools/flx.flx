@@ -1,6 +1,5 @@
 include "std/felix/flx/flx";
 
-Flx::runflx(#System::args);
-System::exit (0);
+System::pexit$ Flx::runflx #System::args;
 
 

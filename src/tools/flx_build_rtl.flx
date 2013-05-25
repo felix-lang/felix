@@ -379,17 +379,29 @@ class FlxCoreBuild
     );
     for plugin in plugins do
       println$ "Building plugin " + plugin;
-      Flx::runflx$ list ('[flx]','--test='+target_dir, 
+      var result = Flx::runflx$ list ('[flx]','--test='+target_dir, 
         '-c', '-ox',target_dir/target_bin/'lib'/'rtl'/plugin, 
         target_dir/'share'/'lib'/'plugins'/plugin);
+      if result != 0 do 
+        println$ "plugin (dynamic) build failed";
+        System::exit 1; 
+      done
 
-      Flx::runflx$ list ('[flx]','--test='+target_dir, 
+      result = Flx::runflx$ list ('[flx]','--test='+target_dir, 
         '-c', '--nolink','-ox', target_dir/target_bin/'lib'/'rtl'/plugin, 
         target_dir/'share'/'lib'/'plugins'/plugin);
+      if result != 0 do 
+        println$ "plugin (dynamic obj) build failed";
+        System::exit 1; 
+      done
 
-      Flx::runflx$ list ('[flx]','--test='+target_dir, 
+      result = Flx::runflx$ list ('[flx]','--test='+target_dir, 
         '--static','-c', '--nolink','-ox', target_dir/target_bin/'lib'/'rtl'/plugin, 
         target_dir/'share'/'lib'/'plugins'/plugin);
+      if result != 0 do 
+        println$ "plugin (static obj) build failed";
+        System::exit 1; 
+      done
     done
    
   }
@@ -410,8 +422,12 @@ class FlxCoreBuild
     println$ "build exes";
     match ?exe,?src in exes do
       println$ src + " -> " + exe;
-      Flx::runflx$ list ('[flx]','--test='+target_dir, '--static','-c',
+      var result = Flx::runflx$ list ('[flx]','--test='+target_dir, '--static','-c',
         '-ox', target_dir/target_bin/'bin'/exe, target_dir/'share'/'src'/src);
+      if result != 0 do 
+        println$ "exe build failed";
+        System::exit 1; 
+      done
     done
   }
 
@@ -427,8 +443,12 @@ class FlxCoreBuild
     println$ "build flx";
     match ?exe,?src in exes do
       println$ src + " -> " + exe;
-      Flx::runflx$ list ('[flx]','--test='+target_dir, '--static','-c',
+      var result = Flx::runflx$ list ('[flx]','--test='+target_dir, '--static','-c',
         '-ox', target_dir/target_bin/'bin'/exe, target_dir/'share'/'src'/src);
+      if result != 0 do 
+        println$ "exe build failed";
+        System::exit 1; 
+      done
     done
 }
 

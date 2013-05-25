@@ -536,10 +536,8 @@ int run_felix(
       }
     }
   }
-  catch (flx_exception_t &x)
-  {
-    return flx_exception_handler(&x);
-  }
+  catch (flx_exception_t &x) { return flx_exception_handler(&x); }
+  catch (std::exception &x) { return std_exception_handler (&x); }
   catch (...)
   {
     fprintf(stderr, "flx_run driver ends with unknown EXCEPTION\n");

@@ -24,15 +24,16 @@ open FlxCache;
 
 class Flx
 {
-  proc flx_processing
+  gen flx_processing
   (
     config:&config_type, 
     control:&control_type,
     loopctl:&loopctl_type,
     profile:&profile_type,
     args:list[string]
-  )
+  ) : int =
   {
+    var result = 0;
     fun / (a:string, b:string) => Filename::join (a,b);
     processing_stage1 (config,control,loopctl,profile, varray[string] args);
 
@@ -58,7 +59,8 @@ class Flx
         var regex = RE2 control*.INREGEX;
         if not regex.ok do
           eprintln$ "Malformed regex " + control*.INREGEX;
-          System::exit(1);
+          result = 1;
+          goto endoff;
         done
         var files = FileSystem::regfilesin (control*.INDIR, regex);
         var n = files.len.int;
@@ -76,7 +78,8 @@ class Flx
           var dvars = cal_depvars(toolchain,*config,control,*loopctl);
           println$ f"Processing [%02d/%02d]: %S" (i, n, file);
           var pe = processing_env(toolchain,*config,*control,dvars);
-          pe.runit();
+          result = pe.runit();
+          if result != 0 goto endoff;
           ++i;
         done 
       end
@@ -91,18 +94,20 @@ class Flx
         done
         var dvars = cal_depvars(toolchain,*config,control, *loopctl);
         var pe = processing_env(toolchain,*config,*control,dvars);
-        pe.runit();
+        result = pe.runit();
       end 
     done
+endoff:>
+    return result;
   }
 
-  proc runflx(args:list[string])
+  gen runflx(args:list[string]) : int = 
   {
     var config = #Config::config;
     var profile = #dflt_profile;
     var control = dflt_control(config,profile);
     var loopctl = #init_loopctl;
-    flx_processing(&config, &control, &loopctl, &profile, args);
+    return flx_processing(&config, &control, &loopctl, &profile, args);
   }
 }
 

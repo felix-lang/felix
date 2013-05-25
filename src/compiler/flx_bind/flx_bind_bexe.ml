@@ -456,6 +456,20 @@ print_endline ("Function return value has type " ^ sbt bsym_table t');
     if match maybe_matches bsym_table state.counter [state.ret_type, t'] with Some _ -> true | _ -> false then
 *)
       handle_bexe (bexe_fun_return (sr,(e',t'))) init
+    else if t' = BTYP_fix (0, BTYP_type 0) then begin
+      print_endline "Converting return of 'any' type to procedure call";
+      state.reachable <- false;
+      begin match e' with
+      | BEXPR_apply (f,a) -> handle_bexe (bexe_jump (sr,f,a)) init
+      | _ ->
+        clierr sr
+          (
+            "[bind_exe: fun_return ] return expression \n" ^
+            sbe bsym_table e ^
+            "\nof type 'any' must be application" 
+          )
+      end
+    end
     else clierr sr
       (
         "[bind_exe: fun_return ] return expression \n" ^
