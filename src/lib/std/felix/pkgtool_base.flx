@@ -2,6 +2,8 @@
 //$ Author Mike Maul
 //$ See README.md for more details
 include "plat/config";
+include "std/io/ansi_terminal";
+
 //include "PKGTOOL/libflx_interface";
 open Filename;
 open FileStat;
