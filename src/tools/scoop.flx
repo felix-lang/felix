@@ -3,7 +3,7 @@
 //$ See README.md for more details
 
 SETUP_LOG="";
-include "std/felix/pkgtool";
+include "std/felix/pkgtool/pkgtool_base";
 
 open PkgTool;
 open Filename;
@@ -20,6 +20,11 @@ proc get_pkg (pkg:string,dest:string) {
   endmatch;
 }
 
+proc task (s:string) { dsply.task s; }
+proc warning (s:string) { dsply.warning s; }
+proc banner (s:string) { dsply.banner s; }
+proc phase (s:string) { dsply.phase s; }
+proc kudos (s:string) { dsply.kudos s; }
 
 fun head[T] (l:list[T]) => match l with |Cons (?hd,_) => Some hd |Empty => None[T] endmatch;
 
@@ -159,7 +164,7 @@ enough:>
   |_ => {}
   endmatch;
   endl;
-  task(blue_("* installed")+" "+red_("* newer version")+" "+
+  dsply.task(blue_("* installed")+" "+red_("* newer version")+" "+
        yellow_("* not installed"));  
 }
 

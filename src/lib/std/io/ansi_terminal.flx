@@ -1,3 +1,4 @@
+// Author Mike Maul
 //$ #### Color output formatting for Ansi Terminals.
 class AnsiTerminal
 {
