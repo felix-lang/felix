@@ -493,10 +493,6 @@ def build(ctx):
     #buildsystem.copy_dir_to(ctx, ctx.buildroot, 'src/wiki',
     #    pattern='*.*')
 
-    # copy scoop
-    buildsystem.copy_dir_to(ctx, ctx.buildroot/'share', 'src/pkgtool',
-        pattern='*.{flxh,flx,fdoc}')
-
     for module in (
             'flx_stdlib',
             'bindings'):
@@ -542,13 +538,6 @@ def build(ctx):
     #
     call('buildsystem.tools.build', phases.target, felix)
     call('buildsystem.plugins.build', phases.target, felix)
-
-    # --------------------------------------------------------------------------
-    # package manager
-    # 
-    # scoop package manager
-    #
-    call('buildsystem.pkgtool.build', phases.target, felix)
 
     return phases, iscr, felix
 

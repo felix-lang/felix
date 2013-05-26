@@ -836,7 +836,7 @@ noinline  proc default_test() {
 //$ discussion of behavior 
 noinline  proc default_install() {
     if BUILD_LIKE == App or BUILD_LIKE == Lib do
-        task("Installing bin files");
+        task("Installing bin files to "+DEST_DIR);
         cp_root(BUILD_DIR, "bin[/\\][^.][a-zA-Z0-9_-]+$",DEST_DIR);
         if PLAT_WIN32 do
           match filetype(PREFIX) with
@@ -846,26 +846,26 @@ noinline  proc default_install() {
         done
     done
     if BUILD_LIKE == Lib do
-      task("Installing Library files");
+      task("Installing Library files to " + DEST_DIR);
       cp_root(BUILD_DIR, LIBDIR+"[/\\\].(.*\.flx)",DEST_DIR.join("lib"));
     done
     if BUILD_LIKE == WebApp do
-      task("Installing package app files");
+      task("Installing package app files to " + DEST_DIR);
       cp_root(BUILD_DIR, "app[/\\\]"+NAME+"$",DEST_DIR);
-      task("Installing package html files");
+      task("Installing package html files to " + DEST_DIR);
       cp_root(BUILD_DIR, "html[/\\\]..*",DEST_DIR);
       cp_root(BUILD_DIR, "html[/\\\]css[/\\\]..*",DEST_DIR);
       cp_root(BUILD_DIR, "html[/\\\]js[/\\\]..*",DEST_DIR);
       cp_root(BUILD_DIR, "html[/\\\]images[/\\\]..*",DEST_DIR);
     done
     if BUILD_LIKE == WebApp do
-      task("Installing webapp config files");
+      task("Installing webapp config files to "+ DEST_DIR);
       cp_root(BUILD_DIR, "config[/\\\].(.*\.cfg)$",DEST_DIR);
     done
     if BUILD_LIKE == Lib do
-      task("Installing package config files");
+      task("Installing package config files to " + DEST_DIR);
       cp_root(BUILD_DIR, "config[/\\\].(.*\.fpc)$",DEST_DIR);
-      task("Installing package documentation and examples");
+      task("Installing package documentation and examples to " + DEST_DIR);
       cp_root(BUILD_DIR, "README.md",((DEST_DIR.join("web")).join("packages")).join(NAME));
       cp_root(BUILD_DIR, "examples[/\\\].(.*\.flx)",((DEST_DIR.join("web")).join("packages")).join(NAME));
     done

@@ -38,6 +38,7 @@ def build(phase, felix):
       "flx_testpack",
       "flx_build_flxg",
       "flx_build_rtl",
+      "scoop",
       ]
 
     optional_exes = [
