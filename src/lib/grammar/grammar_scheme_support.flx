@@ -289,3 +289,9 @@ SCHEME """
   )
 """;
 
+SCHEME """
+  (define (stringof s) 
+    `(ast_literal ,_sr "string" ,s ,(string-append "::std::string(\"" s "\")"))
+  )
+""";
+
