@@ -73,7 +73,7 @@ class SyncControl
     match result with 
     | terminated => assert false;            // unused.
     | delegated =>                           // bug out if async I/O attempted.
-      throw "Inner scheduler attemped unavailable service call";
+      throw[void] "Inner scheduler attemped unavailable service call";
     | blocked =>                             // this scheduler ran out of threads.
       delete sched;                          // cleanup: delete the scheduler
       delete lst;                            // and the scheduler list.

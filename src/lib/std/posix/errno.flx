@@ -65,7 +65,7 @@ done
   type check_throw = "";
   instance Check[check_throw] 
   {
-    fun ehandler ():any = { fail #strerror; }
+    fun ehandler ():any = { throw[void] #strerror; }
   }
 }
 

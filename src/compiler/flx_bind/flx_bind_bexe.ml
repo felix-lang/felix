@@ -262,6 +262,8 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
     | EXE_label _ -> ()
     | EXE_comment _ -> ()
     | EXE_nop _ -> ()
+    | EXE_catch _ -> ()
+    | EXE_endtry -> ()
     | _ -> print_endline
       (
         "WARNING: Unreachable code in " ^ state.id ^ ": " ^
@@ -459,6 +461,8 @@ print_endline ("Function return value has type " ^ sbt bsym_table t');
     else if t' = BTYP_fix (0, BTYP_type 0) then begin
       print_endline "Converting return of 'any' type to procedure call";
       state.reachable <- false;
+      handle_bexe (bexe_fun_return (sr,(e',state.ret_type))) init
+(*
       begin match e' with
       | BEXPR_apply (f,a) -> handle_bexe (bexe_jump (sr,f,a)) init
       | _ ->
@@ -469,6 +473,7 @@ print_endline ("Function return value has type " ^ sbt bsym_table t');
             "\nof type 'any' must be application" 
           )
       end
+*)
     end
     else clierr sr
       (
@@ -643,14 +648,20 @@ print_endline ("assign after beta-reduction: RHST = " ^ sbt bsym_table rhst);
         "RHS type: " ^ sbt bsym_table rhst
       )
 
-   | EXE_try -> handle_bexe (bexe_try sr) init
-   | EXE_endtry -> handle_bexe (bexe_endtry sr) init
+   | EXE_try -> 
+     state.reachable <- true;
+     handle_bexe (bexe_try sr) init
+
+   | EXE_endtry -> 
+     handle_bexe (bexe_endtry sr) init
+
    | EXE_catch (s,t) -> 
+     state.reachable <- true;
      let t = bind_type state.lookup_state bsym_table state.env sr t in
      handle_bexe (bexe_catch sr s t) init
 
 let bind_exes state bsym_table sr exes =
-  (*
+(*
   print_endline ("bind_exes.. env depth="^ string_of_int (List.length state.env));
   print_endline "Dumping Source Executables";
   print_endline "--------------------------";
@@ -664,25 +675,24 @@ let bind_exes state bsym_table sr exes =
 
   print_endline "Binding Executables";
   print_endline "-------------------";
-  *)
+*)
 
   let bound_exes = List.fold_left begin fun init exe ->
     bind_exe state bsym_table (fun bexe init -> bexe :: init) exe init
   end [] exes in
   let bound_exes = List.rev bound_exes in
-  (*
+(*
   print_endline ""
   ;
   List.iter
-    (fun x -> print_endline (string_of_bexe state.sym_table 1 x))
+    (fun x -> print_endline (string_of_bexe bsym_table 1 x))
     bound_exes
   ;
   print_endline ""
   ;
   print_endline "BINDING COMPLETE"
   ;
-  *)
-
+*)
   (* No function return statements found: it must be a procedure,
      so unify void [just a comparison with void .. heh!]
   *)

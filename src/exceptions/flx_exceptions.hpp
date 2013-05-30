@@ -174,6 +174,7 @@ struct FLX_EXCEPTIONS_EXTERN flx_link_failure_t : flx_exception_t {
   ::std::string operation;
   ::std::string what;
   flx_link_failure_t(::std::string f, ::std::string o, ::std::string w);
+  flx_link_failure_t(); // unfortunately this one requires a default ctor.
   virtual ~flx_link_failure_t();
 };
 

@@ -60,6 +60,7 @@ flx_link_failure_t::flx_link_failure_t(::std::string f, ::std::string o, ::std::
 {}
 
 flx_link_failure_t::~flx_link_failure_t(){}
+flx_link_failure_t::flx_link_failure_t(){}
 
 
 long range_check (long l, long x, long h, flx_range_srcref_t sref, char const *cf, int cl)

@@ -12,7 +12,7 @@ class Sqlite3Pool {
        var db : sqlite3_db_t;
        val err = sqlite3_open(db_file, &db);
        if err != 0 do
-         fail ("sqlite3 cannot open database file " + db_file + ", aborting");
+         throw[void] ("sqlite3 cannot open database file " + db_file + ", aborting");
        done
        return db;
       }),size(1),CIR);

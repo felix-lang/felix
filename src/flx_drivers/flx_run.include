@@ -298,6 +298,8 @@ void doflx(void *data) {
   }
   catch (flx_exception_t &x) { flx_exception_handler (&x); }
   catch (std::exception &x) { std_exception_handler (&x); }
+  catch (int &x) { fprintf (stderr, "Exception type int: %d\n", x); }
+  catch (::std::string &x) { fprintf (stderr, "Exception type string : %s\n", x.c_str()); }
   catch (...) { fprintf(stderr, "Unknown exception in thread!\n"); }
 
   try

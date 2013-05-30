@@ -121,7 +121,7 @@ Given a registry, simulate dynamic linkage.
   typedef registry_t = StrDict::strdict[module_dictionary_t];
   fun get_module_registry: 1 -> registry_t = "&(PTF gcp->collector->module_registry)";
 
-  proc regopen (registry:registry_t) (lib:flx_library, modulename:string)
+  noinline proc regopen (registry:registry_t) (lib:flx_library, modulename:string)
   {
      //println$ "regopen " + modulename;
      var mod = StrDict::get registry modulename;
@@ -134,11 +134,11 @@ Given a registry, simulate dynamic linkage.
        var tfc = dict.get_dflt (modulename+"_create_thread_frame", NULL);
        //println$ "Thread frame creator = " + str tfc;
        if tfc == NULL do
-         throw$ flx_link_failure_t(modulename,"regopen","Cannot find symbol " + modulename+"_create_thread_frame in module registry for " + modulename);
+         throw[void]$ flx_link_failure_t(modulename,"regopen","Cannot find symbol " + modulename+"_create_thread_frame in module registry for " + modulename);
        done
        var start_sym = dict.get_dflt (modulename+"_flx_start",NULL);
        if start_sym == NULL do
-         throw$ flx_link_failure_t(modulename,"regopen","Cannot find symbol " + modulename+"_flx_start in module registry for "+modulename);
+         throw[void]$ flx_link_failure_t(modulename,"regopen","Cannot find symbol " + modulename+"_flx_start in module registry for "+modulename);
        done
        //println$ "Start symbol = " + str start_sym;
        set_entry_points$ lib,modulename,tfc, start_sym;
@@ -159,7 +159,7 @@ Given a registry, simulate dynamic linkage.
   //$ Get start function
   fun get_start_as_address: flx_library -> address  = "(void*)$1->start_sym";
 
-  proc add_symbol  (modulename:string, symbolname:string, adr:address)
+  noinline proc add_symbol  (modulename:string, symbolname:string, adr:address)
   {
      //println$ "add symbol " + symbolname + " to module " + modulename+ " value " + str adr;
      var registry = #Dynlink::get_module_registry;
@@ -226,7 +226,7 @@ is itself a pointer.
   fun raw_dlsym:flx_library * string->address =
       "FLX_SDLSYM($1->library,$2.c_str())";
 
-  fun find_sym(lib:flx_library, sym:string) : address =
+  noinline fun find_sym(lib:flx_library, sym:string) : address =
   {
     if lib.filename == "" do
       var reg = #get_module_registry;
@@ -375,7 +375,7 @@ Finally the instance is returned.
       // println$ "regopen: start " + str star;
     catch exn: flx_link_failure_t =>
       eprintln$ "Dynamic linkage error opening DLL " + modulename;
-      throw exn;
+      throw[void] exn;
     endtry
     create (library,linstance);
     return linstance;
@@ -438,7 +438,7 @@ if the symbol cannot be found.
     var raw_sym = Dynlink::find_sym$ library, sym;
     if isNULL raw_sym do
       eprintln$ "Unable to load symbol " + sym + " from library " + linst.filename;
-      throw$ flx_link_failure_t(linst.filename,"dlsym","Cannot find symbol " + sym); 
+      throw[void]$ flx_link_failure_t(linst.filename,"dlsym","Cannot find symbol " + sym); 
     done
 //    eprintln$ "loaded symbol " + sym + " from library " + linst.filename + " address= " + str raw_sym;
     var typed_sym = C_hack::cast[T] raw_sym;
@@ -549,7 +549,7 @@ to require the library name as a prefix. Stay tuned.
   //$
   //$ There are 3 variants where the factory function accepts
   //$ 0, 1 and 2 arguments.
-  gen  load-plugin-func0[iftype] (
+  noinline gen  load-plugin-func0[iftype] (
     dll-name: string,   // name of the DLL minus the extension
     setup-str: string="",  // string to pass to setup
     entry-point: string=""   // export name of factory function
@@ -563,7 +563,7 @@ to require the library name as a prefix. Stay tuned.
     return Dynlink::func0[iftype] (linst, entrypoint);
   }
 
-  gen  load-plugin-func1[iftype, arg_t] (
+  noinline gen  load-plugin-func1[iftype, arg_t] (
     dll-name: string,   // name of the DLL minus the extension
     setup-str: string="",  // string to pass to setup
     entry-point: string=""   // export name of factory function
@@ -577,7 +577,7 @@ to require the library name as a prefix. Stay tuned.
     return Dynlink::func1[iftype,arg_t] (linst, entrypoint);
   }
 
-  gen  load-plugin-func2[iftype, arg1_t, arg2_t] (
+  noinline gen  load-plugin-func2[iftype, arg1_t, arg2_t] (
     dll-name: string,   // name of the DLL minus the extension
     setup-str: string="",  // string to pass to setup
     entry-point: string=""   // export name of factory function

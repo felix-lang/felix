@@ -1,7 +1,7 @@
 open class Control
 {
   open C_hack;
-  publish 'infinite loop'
+  //$ infinite loop
   proc forever (bdy:unit->void)
   {
     rpeat:>
@@ -13,7 +13,7 @@ open class Control
   publish "do nothing [the name pass comes from Python]"
   proc pass(){}
 
-  publish 'C style for loop'
+  //$ C style for loop
   proc for_each
     (init:unit->void)
     (cond:unit->bool)
@@ -29,55 +29,68 @@ open class Control
     finish:>
   }
 
-  publish 'abnormal termination with message'
-  fun fail:string -> any = 'throw ::std::runtime_error($1);' requires Cxx_headers::stdexcept;
+  //$ throw[ret, exn] throw exception of type exn
+  //$ in a context expecting type ret. It can only be
+  //$ used in an expecting context such as the argument
+  //$ of a function return or handler of a match expression.
+  //$ Felix does not check the ret type, since it sees 
+  //$ the type is 'any'. The generated C++, however, will
+  //$ fail if the wrong type is used.
+  gen throw[ret,exn] : exn -> any = "(throw $1,*(?1*)0)";
 
-  publish "WILL BE DEPRECATED, these don't work right"
-  fun fail_fun[t]:1->t = '(throw ::std::runtime_error(""),*(?1*)0)' requires Cxx_headers::stdexcept;
+  //$ raise is a statement/procedure which doesn't return.
+  //$ that is, it's the function throw with C++ type void.
+  gen raise[exn] : exn -> any = "(throw $1)";
 
-  publish "WILL BE DEPRECATED, these don't work right"
-  fun fail_fun[t]:string->t = '(throw ::std::runtime_error($1),*(?1*)0)' requires Cxx_headers::stdexcept;
+  //$ fail is a deprecated procedure which throws
+  //$ a C++ standard runtime_error with the given message string.
+  //$ It is deprecated because Felix cannot detect it never returns.
+  proc fail:string = 'throw ::std::runtime_error($1);' requires Cxx_headers::stdexcept;
 
-  publish "Felix procedural continuation type"
+  //$ This is the type of a Felix procedural
+  //$ continuations in C++ lifted into Felix.
+  //$ Do not confuse this with the Felix type of the procedure.
   _gc_pointer type cont = "::flx::rtl::con_t*";
 
-  publish "Current continuation"
+  //$ This is a hack to get the procedural continuation
+  //$ currently executing, it is just the procedures
+  //$ C++ this pointer.
   fun current_continuation: unit -> cont = "this";
 
-  publish "Felix fthread"
+  //$ The type of a Felix fthread or fibre, which is
+  //$ a container which holds a procedural continuation.
   _gc_pointer type fthread = "::flx::rtl::fthread_t*";
 
 
-  publish """
-    Throw a continuation. This is unsafe. It should
-    work from a top level procedure, or any function
-    called by such a procedure, but may fail
-    if thrown from a procedure called by a function.
-    The library run and driver will catch the
-    continuation and execute it instead of the
-    current continuation. If the library run is used
-    and the continuation being executed is down the
-    C stack, the C stack will not have been correctly
-    popped. Crudely, nested drivers should rethrow
-    the exception until the C stack is in the correct
-    state to execute the continuation, but there is no
-    way to determine that at the moment.
+  //$  Throw a continuation. This is unsafe. It should
+  //$  work from a top level procedure, or any function
+  //$  called by such a procedure, but may fail
+  //$  if thrown from a procedure called by a function.
+  //$  The library run and driver will catch the
+  //$  continuation and execute it instead of the
+  //$  current continuation. If the library run is used
+  //$  and the continuation being executed is down the
+  //$  C stack, the C stack will not have been correctly
+  //$  popped. Crudely, nested drivers should rethrow
+  //$  the exception until the C stack is in the correct
+  //$  state to execute the continuation, but there is no
+  //$  way to determine that at the moment.
+  //$
+  //$  Compiler generated runs ignore the exception,
+  //$  the library run catches it. Exceptions typically
+  //$  use a non-local goto, and they cannot pass across
+  //$  a function boundary.
 
-    Compiler generated runs ignore the exception,
-    the library run catches it. Exceptions typically
-    use a non-local goto, and they cannot pass across
-    a function boundary.
-  """
   proc throw_continuation(x: unit->void) { _throw (C_hack::cast[cont] x); }
   private proc _throw: cont = "throw $1;";
 
-  proc throw[T] : T = "throw $1;";
-
-  // should be private but needed in this class for the data type,
-  // and also needed in schannels to do the svc call.
+  //$ Type of the implementation of a  synchronous channel.
+  //$ should be private but needed in this class for the data type,
+  //$ and also needed in schannels to do the svc call.
 
   _gc_pointer type _schannel = "::flx::rtl::schannel_t*";
 
+  //$ Felix-OS service call codes.
   // THESE VALUES MUST SYNC WITH THE RTL
   // LAYOUT CHANGE: pointers are now stored in the _uctor_
   // instead of on the heap with a pointer in the uctor
@@ -96,9 +109,10 @@ open class Control
   /*10*/ | svc_collect
   ;
 
-  publish "Call Supervisor"
-  // this interface just gets rid of the horrible requirement
-  // the request be in a variable so it is addressable
+  //$ Procedure to perform a supervisor call. 
+  //$ this interface just gets rid of the horrible requirement
+  //$ the request be in a variable so it is addressable.
+  //$ The _svc statement is a compiler intrinsic.
   noinline proc svc(x:svc_req_t) {
     var y=x;
     _svc y;

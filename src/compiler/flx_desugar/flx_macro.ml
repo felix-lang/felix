@@ -629,8 +629,14 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
 
   begin match st with
   | STMT_try _ -> tack st
-  | STMT_endtry _ -> tack st
-  | STMT_catch (sr, s, t) -> tack (STMT_catch (sr, s, mt sr t))
+
+  | STMT_endtry _ -> 
+    reachable := true;
+    tack st
+
+  | STMT_catch (sr, s, t) -> 
+    reachable := true;
+    tack (STMT_catch (sr, s, mt sr t))
 
   | STMT_private (sr,st) ->
     List.iter (fun st -> tack (STMT_private (sr,st))) (ms [st])

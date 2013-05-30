@@ -68,6 +68,27 @@ let check_reachability_exes bsym_table label_map label_usage idx sr name rt exes
     let target = Flx_set.IntSet.choose (!unprocessed_targets) in
     unprocessed_targets := Flx_set.IntSet.remove target (!unprocessed_targets);
     processed_targets := Flx_set.IntSet.add target (!processed_targets);
+
+    (* When a try is reachable, mark corresponding catch and entry as
+       reachable targets
+    *)
+    let rec scan_trycatch level index =
+      match a.(index).instr with
+      | BEXE_try _ ->  (* nested, maybe add later*) scan_trycatch (level + 1) (index + 1) 
+      | BEXE_catch _ -> 
+        if level = 0 && not (Flx_set.IntSet.mem index (!processed_targets)) then 
+          unprocessed_targets := Flx_set.IntSet.add index (!unprocessed_targets)
+        ;
+        scan_trycatch level (index + 1)
+      | BEXE_endtry _ ->
+        if level = 0 then
+          if not (Flx_set.IntSet.mem index (!processed_targets)) then 
+            unprocessed_targets := Flx_set.IntSet.add index (!unprocessed_targets)
+          else scan_trycatch (level - 1) (index + 1)
+      | _ ->
+        scan_trycatch level (index + 1)
+    in
+
     try 
       for i = target to n - 1 do
         (* mark this instruction reachable *)
@@ -85,6 +106,9 @@ let check_reachability_exes bsym_table label_map label_usage idx sr name rt exes
              if not (Flx_set.IntSet.mem i (!processed_targets)) then 
                unprocessed_targets := Flx_set.IntSet.add i (!unprocessed_targets) 
            end
+        | BEXE_try _ ->
+          scan_trycatch 0 (i+1)
+
         | _ -> ()
         end
         ;

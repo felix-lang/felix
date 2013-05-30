@@ -243,6 +243,58 @@ tarball:
 		${BUILDROOT}/host \
 		${BUILDROOT}/share
 
+flxg:
+	# building flxg
+	build/release/host/bin/flx --test=build/release src/tools/flx_build_flxg
+	cp tmp-dir/flxg build/release/host/bin
+
+copy:
+	# copying ./src to build/release/src
+	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl \
+		--repo=.\
+		--target-dir=build/release \
+		--target-bin=host \
+		--copy-repo 
+
+rtl:
+	# rebuild rtl
+	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl \
+		--repo=.\
+		--target-dir=build/release \
+		--target-bin=host \
+		--build-rtl
+
+plugins:
+	# rebuild plugins
+	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl \
+		--target-dir=build/release \
+		--target-bin=host \
+		--build-plugins
+
+tools:
+	# rebuild tools
+	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl \
+		--target-dir=build/release \
+		--target-bin=host \
+		--build-tools
+
+flx:
+	# rebuild flx
+	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl \
+		--target-dir=build/release \
+		--target-bin=host \
+		--build-flx
+
+lib: copy
+	# copy files from src to lib
+	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl \
+		--target-dir=build/release \
+		--target-bin=host \
+		--build-lib
+
+
+
+
 bootstrap:
 	rm -rf tmp-dir
 	build/release/host/bin/flx --test=build/release src/tools/flx_build_flxg
@@ -340,5 +392,5 @@ weblink:
 .PHONY : build32-debug build64-debug build-debug test32-debug test64-debug test-debug 
 .PHONY : doc install websites-linux  release install-bin 
 .PHONY : copy-doc gen-doc check-tut gendoc fbuild speed tarball
-.PHONY : rtlbuild copy-src trial-exes trial-plugins
-.PHONY : weblink
+.PHONY : copy-src 
+.PHONY : weblink flx tools plugins rtl copy lib

@@ -364,7 +364,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
     *)
     match exe with
     | BEXE_try _ -> "  try {\n";
-    | BEXE_endtry _ -> "  }\n";
+    | BEXE_endtry _ -> "\n  }//end try/catch\n";
     | BEXE_catch (sr, s, t) -> "\n}\n  catch (" ^tn t^ " &" ^s^") {\n";
 
     | BEXE_axiom_check _ -> assert false
