@@ -290,7 +290,7 @@ lib: copy
 	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl \
 		--target-dir=build/release \
 		--target-bin=host \
-		--build-lib
+		--copy-library
 
 
 

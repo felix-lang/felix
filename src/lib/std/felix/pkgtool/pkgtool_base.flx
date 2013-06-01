@@ -266,6 +266,8 @@ proc task(task_s:string,task_p:unit->void) {
   dsply.task(task_s); task_p();
 }
 
+proc task (s:string)=> dsply.task;
+
 proc setup_fail(s:string) {
   dsply.setup_fail s;
   System::exit(-1);

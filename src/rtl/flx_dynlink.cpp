@@ -1,6 +1,6 @@
 #include "flx_dynlink.hpp"
 #include "flx_strutil.hpp"
-
+#include <stdio.h>
 #include <cstring>
 #include <cstdlib>
 

@@ -256,6 +256,7 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
 (*
   print_endline ("EXE="^string_of_exe 1 exe);
 *)
+(*
   if not state.reachable then
   begin
     match exe with
@@ -272,6 +273,7 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
       );
   end
   ;
+*)
   match exe with
   | EXE_comment s ->
       handle_bexe (bexe_comment (sr,s)) init
