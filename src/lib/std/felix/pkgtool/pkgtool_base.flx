@@ -268,6 +268,8 @@ proc task(task_s:string,task_p:unit->void) {
 
 proc task (s:string)=> dsply.task s;
 
+proc warning (s:string) => dsply.warning s;
+
 proc setup_fail(s:string) {
   dsply.setup_fail s;
   System::exit(-1);
@@ -1338,8 +1340,8 @@ noinline  proc run() {
           
 //          phase("Clean",clean);
           if DRY_RUN do
-            phase("Dry Run");
-            task("See '"+SETUP_LOG+"' for results.");
+            dsply.phase("Dry Run");
+            dsply.task("See '"+SETUP_LOG+"' for results.");
           done
         done
         }
@@ -1354,8 +1356,8 @@ noinline  proc run() {
           phase("Install",install);
 //          phase("Clean",clean);
           if DRY_RUN do
-            phase("Dry Run");
-            task("See '"+SETUP_LOG+"' for results.");
+            dsply.phase("Dry Run");
+            dsply.task("See '"+SETUP_LOG+"' for results.");
           done
         done
         }
@@ -1374,7 +1376,7 @@ noinline  proc run() {
           DEST_DIR = if DIST_DIR == "" then BUILD_DIR.join("dist") else DIST_DIR endif;
           phase("Install",install);
           if DRY_RUN do
-            phase("Dry Run");
+            dsply.phase("Dry Run");
             task("See '"+SETUP_LOG+"' for results.");
           done
         done
