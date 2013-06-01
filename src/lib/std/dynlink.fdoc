@@ -134,11 +134,11 @@ Given a registry, simulate dynamic linkage.
        var tfc = dict.get_dflt (modulename+"_create_thread_frame", NULL);
        //println$ "Thread frame creator = " + str tfc;
        if tfc == NULL do
-         throw[void]$ flx_link_failure_t(modulename,"regopen","Cannot find symbol " + modulename+"_create_thread_frame in module registry for " + modulename);
+         raise$ flx_link_failure_t(modulename,"regopen","Cannot find symbol " + modulename+"_create_thread_frame in module registry for " + modulename);
        done
        var start_sym = dict.get_dflt (modulename+"_flx_start",NULL);
        if start_sym == NULL do
-         throw[void]$ flx_link_failure_t(modulename,"regopen","Cannot find symbol " + modulename+"_flx_start in module registry for "+modulename);
+         raise$ flx_link_failure_t(modulename,"regopen","Cannot find symbol " + modulename+"_flx_start in module registry for "+modulename);
        done
        //println$ "Start symbol = " + str start_sym;
        set_entry_points$ lib,modulename,tfc, start_sym;
@@ -375,7 +375,7 @@ Finally the instance is returned.
       // println$ "regopen: start " + str star;
     catch exn: flx_link_failure_t =>
       eprintln$ "Dynamic linkage error opening DLL " + modulename;
-      throw[void] exn;
+      raise exn;
     endtry
     create (library,linstance);
     return linstance;
@@ -438,7 +438,7 @@ if the symbol cannot be found.
     var raw_sym = Dynlink::find_sym$ library, sym;
     if isNULL raw_sym do
       eprintln$ "Unable to load symbol " + sym + " from library " + linst.filename;
-      throw[void]$ flx_link_failure_t(linst.filename,"dlsym","Cannot find symbol " + sym); 
+      raise$ flx_link_failure_t(linst.filename,"dlsym","Cannot find symbol " + sym); 
     done
 //    eprintln$ "loaded symbol " + sym + " from library " + linst.filename + " address= " + str raw_sym;
     var typed_sym = C_hack::cast[T] raw_sym;
