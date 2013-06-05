@@ -33,11 +33,11 @@ class FlxCoreBuild
     var srcdir = db.getpkgfielddflt (pkg,"srcdir");
     var srcpath =repo / srcdir;
     var build_includes= db.getpkgfield (pkg,"build_includes");
-    var ddeps = db.getpkgfield (pkg,"requires_dlibs"); // external libs
+    var result3,ddeps= db.query$ list$ pkg, "--keepall", "--field=requires_dlibs";
     var deps = db.getpkgfield(pkg,"Requires");
     var result,depdlibs =  db.query("--field=provides_dlib"+deps); // packaged dlibs
     var macros = db.getpkgfield(pkg,"macros");
-    var ccflags = db.getpkgfield(pkg,"cflags");
+    var result2,ccflags = db.query$ list$ pkg, "--keepall", "--field=cflags";
     fun mkinc (x:string) => "-I"+x;
     var config = 
       (
@@ -267,7 +267,7 @@ class FlxCoreBuild
           tmpdir/file+"_lib_dynamic"+#(toolchain.static_object_extension),
           hrtl/file+"_main"+#(toolchain.static_object_extension)
         );
-        var result,libs = db.query$ list("--rec","--keeprightmost",
+        var result,libs = db.query$ list("--rec","--keepall",
           "--field=provides_slib","--field=requires_slibs",file);
         if result != 0 do
           println$ "Driver pkgconfig query for "+ file+" FAILED";
