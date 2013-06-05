@@ -84,16 +84,20 @@ class FlxPkg
 
     if spec.STATIC == 0 do
       // dynamic linkage: all the libraries required by the application
+      // NOTE: this is wrong. Dynamic linkage should NOT be recursive,
+      // that is, the linker is responsible for loading the closure,
+      // not the application.
       var LINK_STRINGS =
         spec.DLINK_STRINGS +
         spec.LINKER_SWITCHES+
-        pkgconfl(e+"-r"+'--field=provides_dlib'+'--field=requires_dlibs'+DRIVER_PKG);
+        pkgconfl(e+"-r"+'--keepall'+'--field=provides_dlib'+'--field=requires_dlibs'+DRIVER_PKG);
     else
       // static linkage: all the libraries required by the application and driver
+      // This has to be recursive to find the closure.
       LINK_STRINGS =
         spec.SLINK_STRINGS+
         spec.LINKER_SWITCHES+
-        pkgconfl(e+'-r'+'--keeprightmost'+'--field=provides_slib'+'--field=requires_slibs'+DRIVER_PKG);
+        pkgconfl(e+'-r'+'--keepall'+'--field=provides_slib'+'--field=requires_slibs'+DRIVER_PKG);
     done
 
     return ( 

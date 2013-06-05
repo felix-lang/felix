@@ -9,6 +9,8 @@
 #ifndef _INCLUDE_MANYMOUSE_H_
 #define _INCLUDE_MANYMOUSE_H_
 
+#include "flx_manymouse.hpp"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -47,11 +49,11 @@ typedef struct
 } ManyMouseDriver;
 
 
-int ManyMouse_Init(void);
-const char *ManyMouse_DriverName(void);
-void ManyMouse_Quit(void);
-const char *ManyMouse_DeviceName(unsigned int index);
-int ManyMouse_PollEvent(ManyMouseEvent *event);
+extern FLX_MANYMOUSE_EXTERN int ManyMouse_Init(void);
+extern FLX_MANYMOUSE_EXTERN const char *ManyMouse_DriverName(void);
+extern FLX_MANYMOUSE_EXTERN void ManyMouse_Quit(void);
+extern FLX_MANYMOUSE_EXTERN const char *ManyMouse_DeviceName(unsigned int index);
+extern FLX_MANYMOUSE_EXTERN int ManyMouse_PollEvent(ManyMouseEvent *event);
 
 #ifdef __cplusplus
 }
