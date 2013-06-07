@@ -812,7 +812,8 @@ noinline proc handler (var k:socket_t) ()
   // (e.g. unqualfied -> index.html and name/flx.jpg -> flx.jpg
   match parse_get_line line with
   | None => {
-      print "BAD get line: "; print line; endl;
+      println$ "BAD get line: '"+line+"', using homepage";
+      serve_file(k,"");
     }
   | Some (?base, ?file) => {
       print "well formed get...\n";

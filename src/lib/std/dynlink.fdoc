@@ -367,16 +367,17 @@ Finally the instance is returned.
   noinline gen prepare_lib(modulename:string):flx_instance = {
     var library = create_library_handle();
     var linstance =  create_instance_handle();
-    try
+    // Can't call procedure inside try/catch GRRR
+    //try
       regopen #get_module_registry (library,modulename);
       // var tfc = Dynlink::get_thread_frame_creator_as_address library;
       // var star = Dynlink::get_start_as_address library;
       // println$ "regopen: creator " + str tfc;
       // println$ "regopen: start " + str star;
-    catch exn: flx_link_failure_t =>
-      eprintln$ "Dynamic linkage error opening DLL " + modulename;
-      raise exn;
-    endtry
+    //catch exn: flx_link_failure_t =>
+    //  eprintln$ "Dynamic linkage error opening DLL " + modulename;
+    //  raise exn;
+    //endtry
     create (library,linstance);
     return linstance;
   }

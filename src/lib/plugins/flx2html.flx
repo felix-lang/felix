@@ -109,6 +109,7 @@ private val small_keywords =
   ("return","return"),
   ("yield","return a value saving the current location for future resumption"),
   ("goto","jump to label"),
+  ("call","call a procedure"),
   ("jump","tail call of function"),
   ("loop","self-tail call"),
   ("package","specifies an abstract package name"),

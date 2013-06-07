@@ -31,7 +31,11 @@ a mechanism for ultra-high speed synchronous context switching
 where control is exchanged using channels.
 
 @h2 Advanced Topics
+@p
+<a href="abstract_machine.fdoc">Felix Abstract Machine</a>
+@p
 <a href="nutut/intro/intro_index.fdoc">Library Implementation</a>
+<br/>
 A tutorial introducing the system for library implementors,
 starting from C++ bindings. Introduces the language and its
 features from an implementation viewpoint, rather than
