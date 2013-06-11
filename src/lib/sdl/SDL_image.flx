@@ -1,0 +1,51 @@
+//Module        : SDL_image_h
+//Timestamp     : 2006/1/8 3:36:0 UTC
+//Timestamp     : 2006/1/8 14:36:0 (local)
+//Raw Header    : /usr/include/SDL/SDL_image.h
+//Preprocessor  : gcc -E
+//Input file: sdl.flxcc.i
+//Flxcc Control : sdl.flxcc
+//Felix Version : 1.1.2_rc1
+
+//#define IMG_GetError  SDL_GetError
+//#define IMG_SetError  SDL_SetError
+//#define SDL_IMAGE_VERSION(X)                                          \
+//#define SDL_IMAGE_PATCHLEVEL  4
+//#define SDL_IMAGE_MINOR_VERSION       2
+//#define SDL_IMAGE_MAJOR_VERSION       1
+//#define _SDL_IMAGE_H
+
+open module SDL_image_h
+{
+  requires package "sdl";
+  header '#include "SDL_image.h"';
+
+  //FUNCTIONS
+  fun IMG_InvertAlpha: int -> int;
+  fun IMG_Linked_Version: 1 -> &SDL_version;
+  fun IMG_Load: &char -> &SDL_Surface;
+  fun IMG_LoadBMP_RW: &SDL_RWops -> &SDL_Surface;
+  fun IMG_LoadGIF_RW: &SDL_RWops -> &SDL_Surface;
+  fun IMG_LoadJPG_RW: &SDL_RWops -> &SDL_Surface;
+  fun IMG_LoadLBM_RW: &SDL_RWops -> &SDL_Surface;
+  fun IMG_LoadPCX_RW: &SDL_RWops -> &SDL_Surface;
+  fun IMG_LoadPNG_RW: &SDL_RWops -> &SDL_Surface;
+  fun IMG_LoadPNM_RW: &SDL_RWops -> &SDL_Surface;
+  fun IMG_LoadTGA_RW: &SDL_RWops -> &SDL_Surface;
+  fun IMG_LoadTIF_RW: &SDL_RWops -> &SDL_Surface;
+  fun IMG_LoadTyped_RW: &SDL_RWops * int * &char -> &SDL_Surface;
+  fun IMG_LoadXCF_RW: &SDL_RWops -> &SDL_Surface;
+  fun IMG_LoadXPM_RW: &SDL_RWops -> &SDL_Surface;
+  fun IMG_Load_RW: &SDL_RWops * int -> &SDL_Surface;
+  fun IMG_ReadXPMFromArray: &&char -> &SDL_Surface;
+  fun IMG_isBMP: &SDL_RWops -> int;
+  fun IMG_isGIF: &SDL_RWops -> int;
+  fun IMG_isJPG: &SDL_RWops -> int;
+  fun IMG_isLBM: &SDL_RWops -> int;
+  fun IMG_isPCX: &SDL_RWops -> int;
+  fun IMG_isPNG: &SDL_RWops -> int;
+  fun IMG_isPNM: &SDL_RWops -> int;
+  fun IMG_isTIF: &SDL_RWops -> int;
+  fun IMG_isXCF: &SDL_RWops -> int;
+  fun IMG_isXPM: &SDL_RWops -> int;
+}

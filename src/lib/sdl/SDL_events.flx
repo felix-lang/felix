@@ -1,0 +1,280 @@
+//Module        : SDL_events_h
+//Timestamp     : 2006/1/6 2:18:42 UTC
+//Timestamp     : 2006/1/6 13:18:42 (local)
+//Raw Header    : SDL_events.h
+//Preprocessor  : gcc -E
+//Input file: sdl.flxcc.i
+//Flxcc Control : sdl.flxcc
+//Felix Version : 1.1.2_rc1
+
+//#define SDL_ENABLE     1
+//#define SDL_DISABLE    0
+//#define SDL_IGNORE     0
+//#define SDL_QUERY     -1
+//#define SDL_ALLEVENTS         0xFFFFFFFF
+//#define SDL_EVENTMASK(X)      (1<<(X))
+//#define _SDL_events_h
+
+open class SDL_events_h
+{
+  requires package "sdl2";
+
+  cenum SDL_EventType = 
+    SDL_QUIT,
+    SDL_WINDOWEVENT,
+    SDL_SYSWMEVENT,
+
+    // Mouse
+    SDL_MOUSEBUTTONUP,
+    SDL_MOUSEBUTTONDOWN,
+    SDL_MOUSEMOTION,
+    SDL_MOUSEWHEEL,
+    // Keyboard
+    SDL_KEYDOWN,
+    SDL_KEYUP,
+    SDL_TEXTEDITING,
+    SDL_TEXTINPUT,
+
+    // Tablet or multiple mice input 
+    SDL_INPUTMOTION,
+    SDL_INPUTBUTTONDOWN,
+    SDL_INPUTBUTTONUP,
+    SDL_INPUTWHEEL,
+    SDL_PROXIMITYIN,
+    SDL_PROXIMITYOUT,
+
+    // joy
+    SDL_JOYAXISMOTION,
+    SDL_JOYBALLMOTION,
+    SDL_JOYHATMOTION,
+    SDL_JOYBUTTONDOWN,
+    SDL_JOYBUTTONUP,
+
+    // getsure
+    SDL_DOLLARGESTURE,
+    SDL_DOLLARRECORD,
+    SDL_MULTIGESTURE,
+    SDL_CLIPBOARDUPDATE,
+
+    SDL_DROPFILE,
+    SDL_USERVEVENT,
+    SDL_LASTEVENT
+  ;
+
+  cenum SDL_WindowEventID =
+    SDL_WINDOWEVENT_NONE,
+    SDL_WINDOWEVENT_SHOWN,
+    SDL_WINDOWEVENT_EXPOSED,
+    SDL_WINDOWEVENT_MOVED,
+    SDL_WINDOWEVENT_RESIZED,
+    SDL_WINDOWEVENT_SIZE_CHANGED,
+    SDL_WINDOWEVENT_MINIMISED,
+    SDL_WINDOWEVENT_MAXIMISED,
+    SDL_WINDOWEVENT_RESTORED,
+    SDL_WINDOWEVENT_ENTER,
+    SDL_WINDOWEVENT_LEAVE,
+    SDL_WINDOWEVENT_FOCUS_GAINED,
+    SDL_WINDOWEVENT_FOCUS_GAINED,
+    SDL_WINDOWEVENT_CLOSE
+  ;
+ 
+/*
+  const SDL_KEYUP: uint32 = 'SDL_KEYUP';
+  const SDL_JOYBALLMOTION: uint32 = 'SDL_JOYBALLMOTION';
+  const SDL_NOEVENT: uint32 = 'SDL_NOEVENT';
+  const SDL_JOYAXISMOTION: uint32 = 'SDL_JOYAXISMOTION';
+  const SDL_QUIT: uint32 = 'SDL_QUIT';
+  const SDL_VIDEORESIZE: uint32 = 'SDL_VIDEORESIZE';
+  const SDL_JOYBUTTONDOWN: uint32 = 'SDL_JOYBUTTONDOWN';
+  const SDL_KEYDOWN: uint32 = 'SDL_KEYDOWN';
+  const SDL_JOYBUTTONUP: uint32 = 'SDL_JOYBUTTONUP';
+  const SDL_SYSWMEVENT: uint32 = 'SDL_SYSWMEVENT';
+  const SDL_USEREVENT: uint32 = 'SDL_USEREVENT';
+  const SDL_JOYHATMOTION: uint32 = 'SDL_JOYHATMOTION';
+  const SDL_ACTIVEEVENT: uint32 = 'SDL_ACTIVEEVENT';
+  const SDL_VIDEOEXPOSE: uint32 = 'SDL_VIDEOEXPOSE';
+  const SDL_MOUSEMOTION: uint32 = 'SDL_MOUSEMOTION';
+
+  //ABSTRACT TYPES
+  type SDL_eventaction = 'SDL_eventaction';
+
+  //CSTRUCTS
+  cstruct SDL_SysWMEvent {
+    type: uint32;
+    msg: &SDL_SysWMmsg;
+  };
+  cstruct SDL_WindowEvent {
+    type: uint32;
+    windowID: uint32;
+    event: uint8;
+    data1: int;
+    data2: int;
+  };
+  cstruct SDL_ResizeEvent {
+    type: uint32;
+    w: int;
+    h: int;
+  };
+  cstruct SDL_KeyboardEvent {
+    type: uint32;
+    windowID: uint32;
+    which: uint32;
+    state: uint8;
+    repeat: uint8;
+    keysym: SDL_keysym;
+  };
+  cstruct SDL_JoyBallEvent {
+    type: uint32;
+    which: uint8;
+    ball: uint8;
+    xrel: int16;
+    yrel: int16;
+  };
+  cstruct SDL_JoyHatEvent {
+    type: uint32;
+    which: uint8;
+    hat: uint8;
+    value: uint8;
+  };
+  cstruct SDL_MouseButtonEvent {
+    type: uint32;
+    windowID: uint32;
+    button: uint8;
+    state: uint8;
+    x: uint16;
+    y: uint16;
+  };
+  cstruct SDL_MouseWheelEvent {
+    type: uint32;
+    windowID: uint32;
+    x: uint16;
+    y: uint16;
+  };
+  cstruct SDL_MouseMotionEvent {
+    type: uint32;
+    windowID: uint32;
+    state: uint8;
+    x: uint16;
+    y: uint16;
+    xrel: int16;
+    yrel: int16;
+  };
+  cstruct SDL_JoyButtonEvent {
+    type: uint32;
+    which: uint8;
+    button: uint8;
+    state: uint8;
+  };
+  cstruct SDL_QuitEvent {
+    type: uint32;
+  };
+  cstruct SDL_JoyAxisEvent {
+    type: uint32;
+    which: uint8;
+    axis: uint8;
+    value: int16;
+  };
+  cstruct SDL_UserEvent {
+    type: uint32;
+    code_: int;
+    data1: address;
+    data2: address;
+  };
+  cstruct SDL_ActiveEvent {
+    type: uint32;
+    gain: uint8;
+    state: uint8;
+  };
+
+  // This is ACTUALLY a C union .. but the syntax is the same
+  // as for a struct .. so we can model it with a struct
+  cstruct SDL_Event = {
+    active : SDL_ActiveEvent;
+    key : SDL_KeyboardEvent;
+    motion: SDL_MouseMotionEvent;
+    button: SDL_MouseButtonEvent;
+    wheel: SDL_MouseWheelEvent;
+    jaxis : SDL_JoyAxisEvent;
+    jball : SDL_JoyBallEvent;
+    jhat : SDL_JoyHatEvent;
+    jbutton : SDL_JoyButtonEvent;
+    resize : SDL_ResizeEvent;
+    quit: SDL_QuitEvent;
+    user : SDL_UserEvent;
+    window: SDL_WindowEvent;
+    syswm : SDL_SysWMEvent;
+  };
+
+  // use name type_ instead of type ..
+  fun get_type:SDL_Event -> uint32 = "(Uint32)$1.active.type"; // pick any component
+
+  //C FUNCTION POINTER TYPES
+  header '''typedef int (*SDL_events_h_cft_1)(SDL_Event const *);''';
+  type SDL_events_h_cft_1 = 'SDL_events_h_cft_1';
+
+  //PURE INCOMPLETE TYPES
+  type _struct_SDL_SysWMmsg = 'struct SDL_SysWMmsg'; //local
+
+  //STRUCT or UNION TAG ALIASES
+  typedef SDL_SysWMmsg = _struct_SDL_SysWMmsg;
+
+  typedef SDL_EventMasks = int;
+  typedef SDL_EventFilter = SDL_events_h_cft_1;
+  typedef SDL_Events = uint32;
+
+  // Weird
+  const SDL_PEEKEVENT: uint32 = 'SDL_PEEKEVENT';
+  const SDL_GETEVENT: uint32 = 'SDL_GETEVENT';
+  const SDL_ADDEVENT: uint32 = 'SDL_ADDEVENT';
+  const SDL_NUMEVENTS: uint32 = 'SDL_NUMEVENTS';
+
+  // reserved
+  const SDL_EVENT_RESERVED2: uint32 = 'SDL_EVENT_RESERVED2';
+  const SDL_EVENT_RESERVED3: uint32 = 'SDL_EVENT_RESERVED3';
+  const SDL_EVENT_RESERVED4: uint32 = 'SDL_EVENT_RESERVED4';
+  const SDL_EVENT_RESERVED5: uint32 = 'SDL_EVENT_RESERVED5';
+  const SDL_EVENT_RESERVED6: uint32 = 'SDL_EVENT_RESERVED6';
+  const SDL_EVENT_RESERVED7: uint32 = 'SDL_EVENT_RESERVED7';
+  const SDL_EVENT_RESERVEDA: uint32 = 'SDL_EVENT_RESERVEDA';
+  const SDL_EVENT_RESERVEDB: uint32 = 'SDL_EVENT_RESERVEDB';
+
+  // MASKS
+  // Joystick
+  const SDL_JOYBUTTONDOWNMASK: uint32 = 'SDL_JOYBUTTONDOWNMASK';
+  const SDL_JOYBUTTONUPMASK: uint32 = 'SDL_JOYBUTTONUPMASK';
+  const SDL_JOYHATMOTIONMASK: uint32 = 'SDL_JOYHATMOTIONMASK';
+  const SDL_JOYAXISMOTIONMASK: uint32 = 'SDL_JOYAXISMOTIONMASK';
+  const SDL_JOYBALLMOTIONMASK: uint32 = 'SDL_JOYBALLMOTIONMASK';
+  const SDL_JOYEVENTMASK: uint32 = 'SDL_JOYEVENTMASK';
+
+  // mouse
+  const SDL_MOUSEMOTIONMASK: uint32 = 'SDL_MOUSEMOTIONMASK';
+  const SDL_MOUSEEVENTMASK: uint32 = 'SDL_MOUSEEVENTMASK';
+  const SDL_MOUSEBUTTONUPMASK: uint32 = 'SDL_MOUSEBUTTONUPMASK';
+  const SDL_MOUSEBUTTONDOWNMASK: uint32 = 'SDL_MOUSEBUTTONDOWNMASK';
+
+  // video
+  const SDL_VIDEORESIZEMASK: uint32 = 'SDL_VIDEORESIZEMASK';
+  const SDL_ACTIVEEVENTMASK: uint32 = 'SDL_ACTIVEEVENTMASK';
+  const SDL_SYSWMEVENTMASK: uint32 = 'SDL_SYSWMEVENTMASK';
+  const SDL_VIDEOEXPOSEMASK: uint32 = 'SDL_VIDEOEXPOSEMASK';
+
+  // keyboard
+  const SDL_KEYDOWNMASK: uint32 = 'SDL_KEYDOWNMASK';
+  const SDL_KEYUPMASK: uint32 = 'SDL_KEYUPMASK';
+  const SDL_QUITMASK: uint32 = 'SDL_QUITMASK';
+
+  //PROCEDURES
+  proc SDL_PumpEvents: 1;
+  proc SDL_SetEventFilter: SDL_events_h_cft_1;
+
+  //FUNCTIONS
+  fun SDL_EventState: uint8 * int -> uint8;
+  fun SDL_GetEventFilter: 1 -> SDL_EventFilter;
+  fun SDL_PeepEvents: &SDL_Event * int * SDL_eventaction * uint32 -> int;
+  fun SDL_PollEvent: &SDL_Event -> int;
+  fun SDL_PushEvent: &SDL_Event -> int;
+  fun SDL_WaitEvent: &SDL_Event -> int;
+*/
+
+}

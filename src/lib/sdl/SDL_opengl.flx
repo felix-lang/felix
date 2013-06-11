@@ -1,0 +1,10 @@
+header '#include "SDL_opengl.h"';
+
+include "GL/gl_lib";
+include "GL/glu_lib";
+
+open module SDL_opengl_h
+{
+  inherit GL_gl_h;
+  inherit GL_glu_h;
+}

@@ -1,0 +1,44 @@
+//Module        : SDL_keyboard_h
+//Timestamp     : 2006/1/6 2:18:42 UTC
+//Timestamp     : 2006/1/6 13:18:42 (local)
+//Raw Header    : SDL_keyboard.h
+//Preprocessor  : gcc -E
+//Input file: sdl.flxcc.i
+//Flxcc Control : sdl.flxcc
+//Felix Version : 1.1.2_rc1
+
+//#define SDL_DEFAULT_REPEAT_INTERVAL   30
+//#define SDL_DEFAULT_REPEAT_DELAY      500
+//#define SDL_ALL_HOTKEYS               0xFFFFFFFF
+//#define _SDL_keyboard_h
+
+open module SDL_keyboard_h
+{
+  requires package "sdl";
+  header '#include "SDL_keyboard.h"';
+
+  //CSTRUCTS
+  cstruct SDL_keysym {
+    scancode: uint8;
+    sym: SDLKey;
+    mod: SDLMod;
+    unicode: uint16;
+  };
+
+  //STRUCT or UNION TAG ALIASES
+
+  /*
+  //TYPE ALIASES
+  typedef _struct_SDL_keysym = SDL_keysym;
+  */
+
+  //PROCEDURES
+  proc SDL_SetModState: SDLMod;
+
+  //FUNCTIONS
+  fun SDL_EnableKeyRepeat: int * int -> int;
+  fun SDL_EnableUNICODE: int -> int;
+  fun SDL_GetKeyName: SDLKey -> &char;
+  fun SDL_GetKeyState: &int -> &uint8;
+  fun SDL_GetModState: 1 -> SDLMod;
+}
