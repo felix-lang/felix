@@ -25,6 +25,17 @@ include "sdl/SDL_error";
 include "sdl/SDL_version";
 
 include "sdl/SDL_video";
+include "sdl/SDL_events";
+
+include "sdl/SDL_keyboard";
+include "sdl/SDL_keycode";
+include "sdl/SDL_scancode";
+include "sdl/SDL_mouse";
+include "sdl/SDL_rect";
+
+include "sdl/SDL_rwops";
+include "sdl/SDL_pixels";
+include "sdl/SDL_surface";
 
 /*
 include "std/io/faio";
@@ -34,22 +45,17 @@ include "sdl/SDL_active";
 include "sdl/SDL_audio";
 include "sdl/SDL_cdrom";
 include "sdl/SDL_endian";
-include "sdl/SDL_events";
 include "sdl/SDL_framerate";
 include "sdl/SDL_gfxPrimitives";
 include "sdl/SDL_gfxPrimitives_font";
 include "sdl/SDL_image";
 include "sdl/SDL_imageFilter";
 include "sdl/SDL_joystick";
-include "sdl/SDL_keyboard";
-include "sdl/SDL_keysym";
 include "sdl/SDL_mixer";
-include "sdl/SDL_mouse";
 include "sdl/SDL_mutex"; // DONT USE (Felix does it better)
 //include "sdl/SDL_net";   // DONT USE (Felix does it better) 
 include "sdl/SDL_opengl";
 include "sdl/SDL_rotozoom";
-include "sdl/SDL_rwops";
 include "sdl/SDL_sound";
 include "sdl/SDL_timer"; // DONT USE (Felix does it better)
 include "sdl/SDL_ttf";

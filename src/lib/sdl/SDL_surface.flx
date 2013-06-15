@@ -1,0 +1,32 @@
+open class SDL_surface_h
+{
+  requires package "sdl2";
+
+  typedef struct SDL_Surface
+  {
+      uint32 flags;               /**< Read-only */
+      SDL_PixelFormat format;    /**< Read-only */
+      int w; int h;                   /**< Read-only */
+      int pitch;                  /**< Read-only */
+      address pixels;               /**< Read-write */
+
+      /** Application data associated with the surface */
+      address userdata;             /**< Read-write */
+
+      /** information needed for surfaces requiring locks */
+      int locked;                 /**< Read-only */
+      address lock_data;            /**< Read-only */
+
+      /** clipping information */
+      SDL_Rect clip_rect;         /**< Read-only */
+
+      /** info for fast blit mapping to other surfaces */
+      //struct SDL_BlitMap *map;    /**< Private */
+
+      /** Reference count -- used when freeing surface */
+      int refcount;               /**< Read-mostly */
+  } SDL_Surface;
+
+  gen SDL_BlitSurface : &SDL_Surface * &SDL_Rect * &SDL_Surface * &SDL_Rect -> int;
+
+}

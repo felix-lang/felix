@@ -1,21 +1,7 @@
-//Module        : SDL_ttf_h
-//Timestamp     : 2006/1/8 3:36:0 UTC
-//Timestamp     : 2006/1/8 14:36:0 (local)
-//Raw Header    : /usr/include/SDL/SDL_ttf.h
-//Preprocessor  : gcc -E
-//Input file: sdl.flxcc.i
-//Flxcc Control : sdl.flxcc
-//Felix Version : 1.1.2_rc1
-
-//#define TTF_GetError  SDL_GetError
 //#define TTF_SetError  SDL_SetError
 //#define TTF_RenderUNICODE(font, text, fg, bg) \
 //#define TTF_RenderUTF8(font, text, fg, bg)    \
 //#define TTF_RenderText(font, text, fg, bg)    \
-//#define TTF_STYLE_UNDERLINE   0x04
-//#define TTF_STYLE_ITALIC      0x02
-//#define TTF_STYLE_BOLD                0x01
-//#define TTF_STYLE_NORMAL      0x00
 //#define UNICODE_BOM_SWAPPED   0xFFFE
 //#define UNICODE_BOM_NATIVE    0xFEFF
 //#define TTF_VERSION(X)                                                        \
@@ -24,54 +10,122 @@
 //#define TTF_MAJOR_VERSION     2
 //#define _SDLttf_h
 
-open module SDL_ttf_h
+open class SDL_ttf_h
 {
-  requires package "sdl";
-  header '#include "SDL_ttf.h"';
+  requires package "sdl2", package "sdl2_ttf";
 
-  //PURE INCOMPLETE TYPES
-  type _struct__TTF_Font = 'struct _TTF_Font'; //local
+  proc TTF_Compiled_Version: &SDL_version = "SDL_TTF_VERSION($1);"; // macro
+  fun TTF_Linked_Version: 1 -> SDL_version = "*(TTF_Linked_Version())";
 
-  //STRUCT or UNION TAG ALIASES
-  typedef TTF_Font = _struct__TTF_Font;
+  fun TTF_Compiled_Version () : SDL_version = {
+    var v: SDL_version;
+    TTF_Compiled_Version$ &v;
+    return v;
+  }
 
-  //PROCEDURES
-  proc TTF_ByteSwappedUNICODE: int;
-  proc TTF_CloseFont: &TTF_Font;
+  gen TTF_Init : 1 -> int;
+  gen TTF_GetError: 1 -> string = "::std::string(TTF_GetError())";
   proc TTF_Quit: 1;
-  proc TTF_SetFontStyle: &TTF_Font * int;
-
-  //FUNCTIONS
-  fun TTF_FontAscent: &TTF_Font -> int;
-  fun TTF_FontDescent: &TTF_Font -> int;
-  fun TTF_FontFaceFamilyName: &TTF_Font -> &char;
-  fun TTF_FontFaceIsFixedWidth: &TTF_Font -> int;
-  fun TTF_FontFaceStyleName: &TTF_Font -> &char;
-  fun TTF_FontFaces: &TTF_Font -> long;
-  fun TTF_FontHeight: &TTF_Font -> int;
-  fun TTF_FontLineSkip: &TTF_Font -> int;
-  fun TTF_GetFontStyle: &TTF_Font -> int;
-  fun TTF_GlyphMetrics: &TTF_Font * uint16 * &int * &int * &int * &int * &int -> int;
-  fun TTF_Init: 1 -> int;
-  fun TTF_Linked_Version: 1 -> &SDL_version;
-  fun TTF_OpenFont: &char * int -> &TTF_Font;
-  fun TTF_OpenFontIndex: &char * int * long -> &TTF_Font;
-  fun TTF_OpenFontIndexRW: &SDL_RWops * int * int * long -> &TTF_Font;
-  fun TTF_OpenFontRW: &SDL_RWops * int * int -> &TTF_Font;
-  fun TTF_RenderGlyph_Blended: &TTF_Font * uint16 * SDL_Color -> &SDL_Surface;
-  fun TTF_RenderGlyph_Shaded: &TTF_Font * uint16 * SDL_Color * SDL_Color -> &SDL_Surface;
-  fun TTF_RenderGlyph_Solid: &TTF_Font * uint16 * SDL_Color -> &SDL_Surface;
-  fun TTF_RenderText_Blended: &TTF_Font * &char * SDL_Color -> &SDL_Surface;
-  fun TTF_RenderText_Shaded: &TTF_Font * &char * SDL_Color * SDL_Color -> &SDL_Surface;
-  fun TTF_RenderText_Solid: &TTF_Font * &char * SDL_Color -> &SDL_Surface;
-  fun TTF_RenderUNICODE_Blended: &TTF_Font * &uint16 * SDL_Color -> &SDL_Surface;
-  fun TTF_RenderUNICODE_Shaded: &TTF_Font * &uint16 * SDL_Color * SDL_Color -> &SDL_Surface;
-  fun TTF_RenderUNICODE_Solid: &TTF_Font * &uint16 * SDL_Color -> &SDL_Surface;
-  fun TTF_RenderUTF8_Blended: &TTF_Font * &char * SDL_Color -> &SDL_Surface;
-  fun TTF_RenderUTF8_Shaded: &TTF_Font * &char * SDL_Color * SDL_Color -> &SDL_Surface;
-  fun TTF_RenderUTF8_Solid: &TTF_Font * &char * SDL_Color -> &SDL_Surface;
-  fun TTF_SizeText: &TTF_Font * &char * &int * &int -> int;
-  fun TTF_SizeUNICODE: &TTF_Font * &uint16 * &int * &int -> int;
-  fun TTF_SizeUTF8: &TTF_Font * &char * &int * &int -> int;
   fun TTF_WasInit: 1 -> int;
+  proc TTF_ByteSwappedUNICODE: int;
+
+
+  type TTF_Font = 'TTF_Font*'; 
+
+  gen TTF_OpenFontIndexRW: SDL_RWops * int * int * long -> TTF_Font;
+  gen TTF_OpenFontIndex: string * int * long -> TTF_Font = "TTF_OpenFont($1.c_str(),$2, $3)";
+  fun TTF_OpenFontRW: SDL_RWops * int * int -> TTF_Font;
+  gen TTF_OpenFont: string * int -> TTF_Font = "TTF_OpenFont($1.c_str(),$2)";
+  proc TTF_CloseFont: TTF_Font;
+  fun TTF_ValidFont : TTF_Font -> bool = "($1!=NULL)";
+
+  // Metrics
+  fun TTF_GetFontStyle: TTF_Font -> int;
+  proc TTF_SetFontStyle: TTF_Font * int;
+
+    const TTF_STYLE_UNDERLINE : int; // 0x4
+    const TTF_STYLE_ITALIC : int; // 0x2
+    const TTF_STYLE_BOLD : int; // 0x01
+    const TTF_STYLE_NORMAL : int; // 0x00
+
+  fun TTF_GetFontOutline: TTF_Font -> int;
+  proc TTF_SetFontOutline: TTF_Font * int;
+
+  fun TTF_GetFontHeight: TTF_Font -> int;
+
+  fun TTF_GetFontHinting: TTF_Font -> int;
+  proc TTF_SetFontHinting: TTF_Font * int;
+
+    const TTF_HINTING_NORMAL :int; //    0
+    const TTF_HINTING_LIGHT  :int; //    1
+    const TTF_HINTING_MONO  :int; //     2
+    const TTF_HINTING_NONE  :int; //     3
+
+  fun TTF_GetFontKerning: TTF_Font -> int;
+  proc TTF_SetFontKerning: TTF_Font * int;
+
+
+  fun TTF_FontHeight: TTF_Font -> int;
+  fun TTF_FontAscent: TTF_Font -> int;
+  fun TTF_FontDescent: TTF_Font -> int;
+  fun TTF_FontLineSkip: TTF_Font -> int;
+  fun TTF_FontFaces: TTF_Font -> long;
+  fun TTF_FontFaceIsFixedWidth: TTF_Font -> int;
+  fun TTF_FontFaceFamilyName: TTF_Font -> string = "::std::string(TTF_FontFaceFamilyName($1))";
+  fun TTF_FontFaceStyleName: TTF_Font -> string = "::std::string(TTF_FontFaceStyleName($1))";
+  
+  fun TTF_GlyphIsProvided: TTF_Font * uint16 -> int;
+
+  fun TTF_GlyphMetrics: TTF_Font * uint16 * &int * &int * &int * &int * &int -> int;
+
+  gen TTF_SizeText: TTF_Font * string * &int * &int -> int =
+    "TTF_SizeText($1,$2.c_str(),$3,$4)"
+  ;
+  gen TTF_SizeUNICODE: TTF_Font * +uint16 * &int * &int -> int;
+  gen TTF_SizeUTF8: TTF_Font * string * &int * &int -> int = 
+    "TTF_SizeUTF8($1,$2.c_str(),$3,$4)"
+  ;
+
+  // Render Solid
+  fun TTF_RenderGlyph_Solid: TTF_Font * uint16 * SDL_Color -> &SDL_Surface;
+  fun TTF_RenderText_Solid: TTF_Font * string * SDL_Color -> &SDL_Surface =
+     "TTF_RenderText_Solid($1,$2.c_str(),$3)"
+  ;
+  fun TTF_RenderUNICODE_Solid: TTF_Font * +uint16 * SDL_Color -> &SDL_Surface;
+  fun TTF_RenderUTF8_Solid: TTF_Font * string * SDL_Color -> &SDL_Surface =
+     "TTF_RenderUTF8_Solid($1,$2.c_str(),$3)"
+  ;
+
+  // Render Shaded
+  fun TTF_RenderGlyph_Shaded: TTF_Font * uint16 * SDL_Color * SDL_Color -> &SDL_Surface;
+  fun TTF_RenderText_Shaded: TTF_Font * string * SDL_Color * SDL_Color -> &SDL_Surface =
+    "TTF_RenderText_Shaded($1,$2.c_str(),$3,$4)"
+  ;
+  fun TTF_RenderUNICODE_Shaded: TTF_Font * +uint16 * SDL_Color * SDL_Color -> &SDL_Surface;
+  fun TTF_RenderUTF8_Shaded: TTF_Font * string * SDL_Color * SDL_Color -> &SDL_Surface =
+    "TTF_RenderUTF8_Shaded($1,$2.c_str(),$3,$4)"
+  ;
+
+  // Render Blended
+  fun TTF_RenderGlyph_Blended: TTF_Font * uint16 * SDL_Color -> &SDL_Surface;
+  fun TTF_RenderText_Blended: TTF_Font * string * SDL_Color -> &SDL_Surface =
+    "TTF_RenderText_Blended($1,$2.c_str(),$3)"
+  ;
+  fun TTF_RenderUNICODE_Blended: TTF_Font * +uint16 * SDL_Color -> &SDL_Surface;
+  fun TTF_RenderUTF8_Blended: TTF_Font * string * SDL_Color -> &SDL_Surface =
+    "TTF_RenderUTF8_Blended($1,$2.c_str(),$3)"
+  ;
+
+  // Render Blended Wrapped
+  fun TTF_RenderGlyph_Blended_Wrapped: TTF_Font * uint16 * SDL_Color * uint32 -> &SDL_Surface;
+  fun TTF_RenderText_Blended_Wrapped: TTF_Font * string * SDL_Color * uint32  -> &SDL_Surface=
+    "TTF_RenderText_Blended_Wrapped($1,$2.c_str(),$3,$4)"
+  ;
+  fun TTF_RenderUNICODE_Blended_Wrapped: TTF_Font * +uint16 * SDL_Color * uint32 -> &SDL_Surface;
+  fun TTF_RenderUTF8_Blended_Wrapped: TTF_Font * string * SDL_Color * uint32 -> &SDL_Surface=
+    "TTF_RenderUTF8_Blended_Wrapped($1,$2.c_str(),$3,$4)"
+  ;
+
+  fun TTF_GetFontKerningSize: TTF_Font * int * int -> int;
+
 }

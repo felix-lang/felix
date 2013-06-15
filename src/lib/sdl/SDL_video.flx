@@ -68,6 +68,10 @@ open class SDL_video_h
   ;
   proc SDL_DestroyWindow : SDL_Window;
 
+  fun SDL_GetWindowSurface : SDL_Window -> &SDL_Surface;
+  gen SDL_UpdateWindowSurface: SDL_Window -> int;
+
+
 /*
   fun SDL_MUSTLOCK: &SDL_Surface -> bool;
   const SDL_PHYSPAL : uint32;
@@ -99,13 +103,6 @@ open class SDL_video_h
   type SDL_GrabMode = 'SDL_GrabMode';
   type SDL_GLattr = 'SDL_GLattr';
 
-  //CSTRUCTS
-  cstruct SDL_Color {
-    r: uint8;
-    g: uint8;
-    b: uint8;
-    unused: uint8;
-  };
   cstruct SDL_Surface {
     flags: uint32;
     format: &SDL_PixelFormat;

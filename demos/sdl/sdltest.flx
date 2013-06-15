@@ -1,0 +1,115 @@
+// SDL2 test
+include "sdl/SDL2";
+include "sdl/SDL_ttf";
+
+proc mainline ()
+{
+  if SDL_Init(SDL_INIT_AUDIO \| SDL_INIT_VIDEO) < 0  do
+    eprintln$ f"Unable to init SDL: %S\n" #SDL_GetError;
+    System::exit(1);
+  done
+  println$ "SDL_init OK";
+  if TTF_Init() < 0 do 
+    eprintln$ f"Unable to init TTF: %S\n" #TTF_GetError;
+    System::exit(1);
+  done
+  println$ "TTF_init OK";
+
+  begin
+    var compiled = #SDL_Compiled_Version;
+    var linked = #SDL_Linked_Version;
+    println$ f"We compiled against SDL version %d.%d.%d ..."
+      (compiled.major.int, compiled.minor.int, compiled.patch.int);
+    println$ f"But we are linking against SDL version %d.%d.%d."
+      (linked.major.int, linked.minor.int, linked.patch.int);
+  end 
+
+  begin
+    var compiled = #TTF_Compiled_Version;
+    var linked = #TTF_Linked_Version;
+    println$ f"We compiled against TTF version %d.%d.%d ..."
+      (compiled.major.int, compiled.minor.int, compiled.patch.int);
+    println$ f"But we are linking against TTF version %d.%d.%d."
+      (linked.major.int, linked.minor.int, linked.patch.int);
+  end 
+
+  var font = #{ 
+    var font_file = "/Library/Fonts/Arial.ttf";
+    var font = TTF_OpenFont (font_file,16);
+    if not (TTF_ValidFont font) do
+      eprintln$ f"Unable to open TTF font %S\n" font_file;
+      System::exit 1;
+    done
+    println$ "Opened Font " + font_file + " Facename: " + TTF_FontFaceFamilyName font;
+    return font;
+  };
+ 
+  var window = SDL_CreateWindow(
+    "SDL_RenderClear",
+    SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+    512, 512,
+    SDL_WINDOW_SHOWN)
+  ;
+  var clock = #Faio::mk_alarm_clock;
+
+  var red = SDL_Color (250u8,200u8, 200u8,0u8);
+  var intro = "Hello from Felix";
+  var intro_rendered = TTF_RenderText_Solid (font,intro,red);
+  var nullRect = C_hack::null[SDL_Rect];
+  var window_surface = SDL_GetWindowSurface window;
+
+  var result = SDL_BlitSurface (intro_rendered, nullRect, window_surface, nullRect); 
+  if result != 0 do
+    eprintln$ "Unable to blit text to window surface";
+    System::exit 1;
+  done
+  println$ "Blitted Text to Window Surface";
+  result = SDL_UpdateWindowSurface window;
+  if result != 0 do
+    eprintln$ "Unable to update window";
+    System::exit 1;
+  done
+ 
+
+  getevent:while true do
+    var e : SDL_Event;
+    C_hack::ignore$ SDL_WaitEvent$ &e;
+    match e.type.SDL_EventType with
+    | $(SDL_QUIT) =>
+      println$ "QUIT";
+      break getevent;
+    | $(SDL_KEYDOWN) =>
+      begin 
+        var vkey = e.key.keysym.sym;
+        println$ "Keydown " + str vkey;
+      end
+    | $(SDL_KEYUP) => 
+      println$ "Keyup";
+    | $(SDL_TEXTEDITING) =>
+      println$ "Textediting";
+    | $(SDL_TEXTINPUT) =>
+      println$ "Textinput";
+    | $(SDL_MOUSEBUTTONDOWN) => 
+      println$ "Mousedown";
+    | $(SDL_MOUSEBUTTONUP) => 
+      println$ "Mouseup";
+    | $(SDL_MOUSEMOTION) => 
+      println$ "Mousemove";
+    | $(SDL_MOUSEWHEEL) => 
+      println$ "Mousewheel";
+    | $(SDL_WINDOWEVENT) => 
+        println$ "WindowEvent " + 
+          e.window.event.SDL_WindowEventID.str
+        ;
+    | _ => 
+      println$ "Event type " + e.type.str;
+    endmatch;
+  done
+  Faio::sleep(clock,1.0);
+  SDL_DestroyWindow(window);
+  SDL_Quit;
+ 
+}
+
+mainline;
+

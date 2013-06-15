@@ -70,7 +70,7 @@ class Output_text_file[output_text_file]
 open class Cstdio {
 
   //$ C file type.
-  incomplete type FILE = "::std::FILE" requires Cxx_headers::cstdio;
+  type FILE = "::std::FILE*" requires Cxx_headers::cstdio;
 
   pod type ifile = "::std::FILE*" requires Cxx_headers::cstdio;
   pod type ofile = "::std::FILE*" requires Cxx_headers::cstdio;

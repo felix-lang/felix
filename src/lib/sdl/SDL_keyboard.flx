@@ -1,12 +1,3 @@
-//Module        : SDL_keyboard_h
-//Timestamp     : 2006/1/6 2:18:42 UTC
-//Timestamp     : 2006/1/6 13:18:42 (local)
-//Raw Header    : SDL_keyboard.h
-//Preprocessor  : gcc -E
-//Input file: sdl.flxcc.i
-//Flxcc Control : sdl.flxcc
-//Felix Version : 1.1.2_rc1
-
 //#define SDL_DEFAULT_REPEAT_INTERVAL   30
 //#define SDL_DEFAULT_REPEAT_DELAY      500
 //#define SDL_ALL_HOTKEYS               0xFFFFFFFF
@@ -14,19 +5,21 @@
 
 open module SDL_keyboard_h
 {
-  requires package "sdl";
-  header '#include "SDL_keyboard.h"';
+  requires package "sdl2";
 
-  //CSTRUCTS
-  cstruct SDL_keysym {
-    scancode: uint8;
-    sym: SDLKey;
-    mod: SDLMod;
-    unicode: uint16;
-  };
+  /**
+   *  \brief The SDL keysym structure, used in key events.
+   */
+  typedef struct SDL_Keysym
+  {
+      SDL_Scancode scancode;      /**< SDL physical key code - see ::SDL_Scancode for details */
+      SDL_Keycode sym;            /**< SDL virtual key code - see ::SDL_Keycode for details */
+      uint16 mod;                 /**< current key modifiers */
+      uint32 unicode;             /**< \deprecated use SDL_TextInputEvent instead */
+  } SDL_Keysym;
 
-  //STRUCT or UNION TAG ALIASES
 
+/*
   /*
   //TYPE ALIASES
   typedef _struct_SDL_keysym = SDL_keysym;
@@ -41,4 +34,6 @@ open module SDL_keyboard_h
   fun SDL_GetKeyName: SDLKey -> &char;
   fun SDL_GetKeyState: &int -> &uint8;
   fun SDL_GetModState: 1 -> SDLMod;
+*/
+
 }

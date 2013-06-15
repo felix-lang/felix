@@ -1,0 +1,16 @@
+open class SDL_rect_h
+{
+  typedef struct
+  {
+    int x;
+    int y;
+  } SDL_Point;
+
+  typedef struct SDL_Rect
+  {
+    int x; int y;
+    int w; int h;
+  } SDL_Rect;
+
+ 
+}

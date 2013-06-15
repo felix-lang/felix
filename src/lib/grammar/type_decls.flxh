@@ -2,6 +2,65 @@
 //$
 //$ Felix type expressions use the same syntax as value expressions.
 
+  SCHEME """
+    (define (makecstruct type members reqs) 
+      (let* 
+       (
+         (vals (filter_first 'Pval members))
+         (funs (filter_first 'Pfun members))
+         (struct-name (first type))
+         (struct-polyspec (second type))
+         (struct-polyvars (first struct-polyspec))
+         (struct-pvids (map first struct-polyvars))
+         (struct-pvs (map nos struct-pvids))
+         (struct-polyaux (second struct-polyspec))
+         (struct `(ast_cstruct ,_sr ,struct-name ,struct-polyspec ,vals ,reqs))
+         (mfuns (map (lambda (x) 
+           (let* 
+             (
+               (lst (first x))
+               (t0 (list-ref lst 0)) ; ast_curry
+               (t1 (list-ref lst 1)) ; sr
+               (t2 (list-ref lst 2)) ; name
+               (polyspec (list-ref lst 3)) ; polyvars
+               (t4 (list-ref lst 4)) ; args
+               (t5 (list-ref lst 5)) ; return type
+               (t6 (list-ref lst 6)) ; fun kind
+               (t7 (list-ref lst 7)) ; body
+               (polyvars (first polyspec))
+               (polyaux (second polyspec))
+               (outpolyvars `(,(append struct-polyvars polyvars) ,polyaux))
+               (kind (if (equal? (first (first t5)) 'ast_void) 'PRef 'PVal))
+               (self-name 'self)
+               (self-type `(ast_name ,_sr ,struct-name ,struct-pvs))
+               (self-arg `(,kind ,self-name ,self-type none)) 
+               (self-args `((,self-arg) none))
+               (args (cons self-args t4))
+             ) 
+             `(,t0 ,t1 ,t2 ,outpolyvars ,args, t5 ,t6 ,t7)
+           )) funs)
+         )
+         
+         (sts (cons struct mfuns))
+       )
+       `(ast_seq ,_sr ,sts)
+      )
+    )
+  """;
+
+  SCHEME """
+  (define (asserteq a b code)
+    (if (equal? a b) 
+      code
+      (begin 
+        (display "struct tag ")(display a)(display " and typedef name ")
+        (display b)(display " must be equal\n")
+        (raise "typedef-struct-error") 
+      )
+    )
+  )
+  """;
+
 syntax type_decls {
   requires statements;
 
@@ -112,6 +171,7 @@ syntax type_decls {
        `(ast_seq ,_sr ,sts)
      )
      """;
+    sstruct_mem_decl := stypeexpr sname ";" =># "`(Pval ,_2 ,_1)"; // like C: int x;!
     sstruct_mem_decl := sname ":" stypeexpr ";" =># "`(Pval ,_1 ,_3)";
     sstruct_mem_decl := sfunction  =># "`(Pfun ,_1)";
 
@@ -123,43 +183,18 @@ syntax type_decls {
   //$ unless the cstruct definition is a complete model of the C struct.
 
   stmt := "cstruct" sdeclname "=" ? "{" sstruct_mem_decl * "}" srequires_clause ";" =>#
-    """
-    (let* 
-       (
-         (vals (filter_first 'Pval _5))
-         (funs (filter_first 'Pfun _5))
-         (struct `(ast_cstruct ,_sr ,(first _2) ,(second _2) ,vals ,_7))
-         (mfuns (map (lambda (x) 
-           (let* 
-             (
-               (lst (first x))
-               (t0 (list-ref lst 0)) ; ast_curry
-               (t1 (list-ref lst 1)) ; sr
-               (t2 (list-ref lst 2)) ; name
-               (polyspec (list-ref lst 3)) ; polyvars
-               (t4 (list-ref lst 4)) ; args
-               (t5 (list-ref lst 5)) ; return type
-               (t6 (list-ref lst 6)) ; fun kind
-               (t7 (list-ref lst 7)) ; body
-               (polyvars (first polyspec))
-               (polyaux (second polyspec))
-               (outpolyvars `(,(append struct-polyvars polyvars) ,polyaux))
-               (kind (if (equal? (first (first t5)) 'ast_void) 'PRef 'PVal))
-               (self-name 'self)
-               (self-type `(ast_name ,_sr ,struct-name ,struct-pvs))
-               (self-arg `(,kind ,self-name ,self-type none)) 
-               (self-args `((,self-arg) none))
-               (args (cons self-args t4))
-             ) 
-             `(,t0 ,t1 ,t2 ,outpolyvars ,args, t5 ,t6 ,t7)
-           )) funs)
-         )
-         
-         (sts (cons struct mfuns))
-       )
-       `(ast_seq ,_sr ,sts)
-     )
-     """;
+    "(makecstruct _2 _5 _7)"
+  ;
+
+  //$ A hack to help with cut and paste from C headers into Felix
+  stmt := "typedef" "struct" "{" sstruct_mem_decl * "}" sdeclname srequires_clause ";" =>#
+    "(makecstruct _6 _4 _7)"
+  ;
+
+  //$ A hack to help with cut and paste from C headers into Felix
+  stmt := "typedef" "struct" sdeclname "{" sstruct_mem_decl * "}" sdeclname srequires_clause ";" =>#
+    "(asserteq (first _3)(first _7) (makecstruct _7 _5 _8))"
+  ;
 
   sopt_name := sname =># "_1";
   sopt_name := sepsilon =># '""';
