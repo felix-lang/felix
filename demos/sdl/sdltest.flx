@@ -1,10 +1,11 @@
 // SDL2 test
 include "sdl/SDL2";
 include "sdl/SDL_ttf";
+include "sdl/SDL_image";
 
-proc mainline ()
+proc init()
 {
-  if SDL_Init(SDL_INIT_AUDIO \| SDL_INIT_VIDEO) < 0  do
+ if SDL_Init(SDL_INIT_AUDIO \| SDL_INIT_VIDEO) < 0  do
     eprintln$ f"Unable to init SDL: %S\n" #SDL_GetError;
     System::exit(1);
   done
@@ -14,8 +15,16 @@ proc mainline ()
     System::exit(1);
   done
   println$ "TTF_init OK";
+   if IMG_Init(IMG_INIT_PNG) < 0 do 
+    eprintln$ f"Unable to init IMG with PNG: %S\n" #IMG_GetError;
+    System::exit(1);
+  done
+  println$ "IMG_init OK";
+}
 
-  begin
+proc versions ()
+{
+   begin
     var compiled = #SDL_Compiled_Version;
     var linked = #SDL_Linked_Version;
     println$ f"We compiled against SDL version %d.%d.%d ..."
@@ -33,8 +42,24 @@ proc mainline ()
       (linked.major.int, linked.minor.int, linked.patch.int);
   end 
 
+  begin
+    var compiled = #IMG_Compiled_Version;
+    var linked = #IMG_Linked_Version;
+    println$ f"We compiled against IMG version %d.%d.%d ..."
+      (compiled.major.int, compiled.minor.int, compiled.patch.int);
+    println$ f"But we are linking against IMG version %d.%d.%d."
+      (linked.major.int, linked.minor.int, linked.patch.int);
+  end 
+
+} 
+
+proc mainline ()
+{
+  init;
+  versions;
+
   var font = #{ 
-    var font_file = "/Library/Fonts/Arial.ttf";
+    var font_file = "/Library/Fonts/Courier New.ttf";
     var font = TTF_OpenFont (font_file,16);
     if not (TTF_ValidFont font) do
       eprintln$ f"Unable to open TTF font %S\n" font_file;
@@ -44,15 +69,26 @@ proc mainline ()
     return font;
   };
  
+  var charwidth = #{
+    var width: int; var depth: int;
+    var result = TTF_SizeText (font,"m",&width,&depth);
+    if result < 0 do 
+      eprintln$ "Couldn't get size of 'm' in courier font";
+      System::exit 1;
+    done
+    return width;
+  };
+
   var window = SDL_CreateWindow(
     "SDL_RenderClear",
     SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
     512, 512,
-    SDL_WINDOW_SHOWN)
+    SDL_WINDOW_SHOWN \| SDL_WINDOW_RESIZABLE)
   ;
   var clock = #Faio::mk_alarm_clock;
 
   var red = SDL_Color (250u8,200u8, 200u8,0u8);
+  var white = SDL_Color (250u8,250u8, 250u8,0u8);
   var intro = "Hello from Felix";
   var intro_rendered = TTF_RenderText_Solid (font,intro,red);
   var nullRect = C_hack::null[SDL_Rect];
@@ -64,13 +100,62 @@ proc mainline ()
     System::exit 1;
   done
   println$ "Blitted Text to Window Surface";
+  SDL_FreeSurface intro_rendered;
+ 
   result = SDL_UpdateWindowSurface window;
   if result != 0 do
     eprintln$ "Unable to update window";
     System::exit 1;
   done
- 
 
+  var ibeam = #{
+    var f = SDL_RWFromInputFile "Ibeam.png";
+    var ibeam = IMG_LoadPNG_RW f;
+    SDL_FreeRW f;
+    return ibeam;
+  };
+ 
+  var text = load "demos/sdl/sdltest.flx";
+  println$ "-" * 20;
+  print text;
+  println$ "-" * 20;
+  var lines = split (text, char '\n');
+  var curline = 0;
+  var curcol = 0;
+  var startline = 0;
+  proc draw()
+  {
+    var pixelformat : &SDL_PixelFormat  = window_surface*.format;
+    var result = SDL_FillRect(window_surface, nullRect, SDL_MapRGB(pixelformat,0u8, 0u8, 250u8)); 
+    var lno = 0;
+    for line in lines do
+      if lno >= startline do
+        var viewport = SDL_Rect (20,10 + (lno - startline) * 20,500,500);
+        var text_rendered = TTF_RenderText_Solid (font,line,white);
+        if lno == curline do
+           // this is total hack
+           var xpos = 20 + curcol * charwidth;
+           var currect = SDL_Rect (xpos,0,5,20);
+           result = SDL_BlitSurface (ibeam, nullRect, text_rendered, &currect); 
+        done
+        result = SDL_BlitSurface (text_rendered, nullRect, window_surface, &viewport); 
+        /* 
+        if result != 0 do
+          eprintln$ "Unable to blit text to window surface";
+          System::exit 1;
+        done
+        */
+        SDL_FreeSurface text_rendered;
+      done
+      ++lno;
+    done
+    result = SDL_UpdateWindowSurface window;
+    if result != 0 do
+      eprintln$ "Unable to update window";
+      System::exit 1;
+    done
+   }
+  draw; 
   getevent:while true do
     var e : SDL_Event;
     C_hack::ignore$ SDL_WaitEvent$ &e;
@@ -94,13 +179,28 @@ proc mainline ()
     | $(SDL_MOUSEBUTTONUP) => 
       println$ "Mouseup";
     | $(SDL_MOUSEMOTION) => 
-      println$ "Mousemove";
+      /* println$ "Mousemove"*/ ;
     | $(SDL_MOUSEWHEEL) => 
-      println$ "Mousewheel";
+      begin
+        //println$ "Mousewheel x=" + e.wheel.x.str + ", y=" + e.wheel.y.str;
+        var y = e.wheel.y.str;
+        var newstartline = startline - y.int;
+        if newstartline < 0 do newstartline = 0; done
+        if newstartline > lines.len.int do newstartline = lines.len.int; done
+        if startline != newstartline do
+          startline = newstartline;
+          draw;
+        done
+      end 
+
     | $(SDL_WINDOWEVENT) => 
         println$ "WindowEvent " + 
           e.window.event.SDL_WindowEventID.str
         ;
+        if e.window.event.SDL_WindowEventID == SDL_WINDOWEVENT_SIZE_CHANGED do
+          window_surface = SDL_GetWindowSurface window;
+          draw;
+        done
     | _ => 
       println$ "Event type " + e.type.str;
     endmatch;

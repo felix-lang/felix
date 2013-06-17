@@ -30,7 +30,8 @@ open class SDL_rwops_h
   fun SDL_AllocRW: 1 -> SDL_RWops;
   fun SDL_RWFromConstMem: address * int -> SDL_RWops;
   fun SDL_RWFromFP: FILE * int -> SDL_RWops;
-  fun SDL_RWFromFile: +char * +char -> SDL_RWops;
+  fun SDL_RWFromInputFile: string -> SDL_RWops = 'SDL_RWFromFile($1.c_str(),"r")';
+  fun SDL_RWFromFile: string -> SDL_RWops = 'SDL_RWFromFile($1.c_str(),"rw")';
   fun SDL_RWFromMem: address * int -> SDL_RWops;
 
 /*

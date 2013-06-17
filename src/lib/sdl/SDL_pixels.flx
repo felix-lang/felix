@@ -41,4 +41,7 @@ open class SDL_pixels_h
     int refcount;
     next: &SDL_PixelFormat; // should allow NULL
   } SDL_PixelFormat;
+ 
+  fun SDL_MapRGB: &SDL_PixelFormat * uint8 * uint8 * uint8 -> uint32;
+  fun SDL_MapRGBA: &SDL_PixelFormat * uint8 * uint8 * uint8 * uint8 -> uint32;
 }

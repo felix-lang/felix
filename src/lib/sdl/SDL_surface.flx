@@ -5,7 +5,7 @@ open class SDL_surface_h
   typedef struct SDL_Surface
   {
       uint32 flags;               /**< Read-only */
-      SDL_PixelFormat format;    /**< Read-only */
+      &SDL_PixelFormat format;    /**< Read-only */
       int w; int h;                   /**< Read-only */
       int pitch;                  /**< Read-only */
       address pixels;               /**< Read-write */
@@ -28,5 +28,7 @@ open class SDL_surface_h
   } SDL_Surface;
 
   gen SDL_BlitSurface : &SDL_Surface * &SDL_Rect * &SDL_Surface * &SDL_Rect -> int;
+  proc SDL_FreeSurface: &SDL_Surface;
+  gen SDL_FillRect : &SDL_Surface * &SDL_Rect * uint32 -> int;
 
 }
