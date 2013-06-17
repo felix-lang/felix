@@ -147,8 +147,8 @@ open class SDL_events_h
     type     : uint32;
     window   : SDL_WindowEvent;
     key      : SDL_KeyboardEvent;
-    //edit     : SDL_TextEditingEvent;
-    //text     : SDL_TextInputEvent;
+    edit     : SDL_TextEditingEvent;
+    text     : SDL_TextInputEvent;
     motion   : SDL_MouseMotionEvent;
     button   : SDL_MouseButtonEvent;
     wheel    : SDL_MouseWheelEvent;
@@ -206,8 +206,7 @@ open class SDL_events_h
       SDL_Keysym keysym;  /**< The key that was pressed or released */
   } SDL_KeyboardEvent;
 
-/*
-  #define SDL_TEXTEDITINGEVENT_TEXT_SIZE (32)
+  macro val SDL_TEXTEDITINGEVENT_TEXT_SIZE = 32;
   /**
    *  \brief Keyboard text editing event structure (event.edit.*)
    */
@@ -216,14 +215,12 @@ open class SDL_events_h
       uint32 type;                                /**< ::SDL_TEXTEDITING */
       uint32 timestamp;
       uint32 windowID;                            /**< The window with keyboard focus, if any */
-      char text[SDL_TEXTEDITINGEVENT_TEXT_SIZE];  /**< The editing text */
+      +char text;    /* actually a buffer size 32 */ /**< The editing text */
       int32 start;                               /**< The start cursor of selected editing text */
       int32 length;                              /**< The length of selected editing text */
   } SDL_TextEditingEvent;
-*/
 
-/*
-  #define SDL_TEXTINPUTEVENT_TEXT_SIZE (32)
+  macro val SDL_TEXTINPUTEVENT_TEXT_SIZE = 32;
   /**
    *  \brief Keyboard text input event structure (event.text.*)
    */
@@ -232,9 +229,9 @@ open class SDL_events_h
       uint32 type;                              /**< ::SDL_TEXTINPUT */
       uint32 timestamp;
       uint32 windowID;                          /**< The window with keyboard focus, if any */
-      char text[SDL_TEXTINPUTEVENT_TEXT_SIZE];  /**< The input text */
+      +char text;       /* actually a buffer */ /**< The input text */
   } SDL_TextInputEvent;
-*/
+
   /**
    *  \brief Mouse motion event structure (event.motion.*)
    */
