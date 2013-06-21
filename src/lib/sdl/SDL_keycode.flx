@@ -536,7 +536,24 @@ open class SDL_keycode_h
     KMOD_ALT,
     KMOD_GUI
   ;
+  ctor uint16 : SDL_Keymod = "$1";
 
+  fun strmods (m:uint16) =
+  {
+    var mods = "";
+    if m \& KMOD_LSHIFT.uint16 != 0u16 do mods += "LSHIFT-"; done;
+    if m \& KMOD_RSHIFT.uint16 != 0u16 do mods += "RSHIFT-"; done;
+    if m \& KMOD_LCTRL.uint16 != 0u16 do mods += "LCTRL-"; done;
+    if m \& KMOD_RCTRL.uint16 != 0u16 do mods += "RCTRL-"; done;
+    if m \& KMOD_LALT.uint16 != 0u16 do mods += "LALT-"; done;
+    if m \& KMOD_RALT.uint16 != 0u16 do mods += "RALT-"; done;
+    if m \& KMOD_LGUI.uint16 != 0u16 do mods += "LGUI-"; done;
+    if m \& KMOD_RGUI.uint16 != 0u16 do mods += "RGUI-"; done;
+    if m \& KMOD_NUM.uint16 != 0u16 do mods += "NUM-"; done;
+    if m \& KMOD_CAPS.uint16 != 0u16 do mods += "CAPS-"; done;
+    if m \& KMOD_MODE.uint16 != 0u16 do mods += "MODE-"; done;
+    return mods;
+  }
 
 }
 

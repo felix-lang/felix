@@ -136,11 +136,32 @@ open class Varray
       ?1 * _p = $1;
       unsigned long n = PTF gcp->collector->get_used(_p);
       PTF gcp->collector->incr_used(_p,-1L);
-      destroy(_p+n-1);
+      ::std::allocator::destroy(_p+n-1);
     }
   """
-    requires property "needs_gc"
+    requires property "needs_gc", Cxx_headers::memory;
   ;
+
+  proc erase[v] (a:varray[v], first:int, last:int)
+  {
+    if first > last return;
+    var l = a.len.int;
+    var b = if first < 0 then 0 else first;
+    var e = if last >= l then l - 1 else last;
+    var d = e - b;
+    if d > 0 do
+      for var i in b upto e - d do
+         unsafe_set (a, i.size, unsafe_get (a, size (i + d)));
+      done
+      var s : carray[v] = a.stl_begin;
+      for i in e + 1 upto l - 1 do
+        var p : carray[v] = s + i;
+        C_hack::destroy$ -p;
+      done 
+      set_used$ a, (l - d).size;
+    done 
+  }
+
 
   //$ Traditional map varray to varray.
   fun map[T, U] (_f:T->U) (x:varray[T]): varray[U] = {
@@ -151,7 +172,6 @@ open class Varray
     done done
     return o;
   }
-
 
 }
 

@@ -562,9 +562,16 @@ like variant which uses an {option} type.
 @h2 erase, insert or replace substrings
 @felix
   // Note: pos, length!
-  proc erase: string * int * int = "$1.erase($2,$3);";
-  proc insert: string * int * string = "$1.insert($2,$3);";
-  proc replace: string * int * int * string = "$1.replace($2,$3,$4);";
+  //$ mutators
+  proc erase: &string * int * int = "$1->erase($2,$3);";
+  proc insert: &string * int * string = "$1->insert($2,$3);";
+  proc replace: &string * int * int * string = "$1->replace($2,$3,$4);";
+
+  //$ functional
+  fun erase: string * int * int -> string = "::std::string($1).erase($2,$3)";
+  fun insert: string * int * string -> string = "::std::string($1).insert($2,$3)";
+  fun replace: string * int * int * string -> string = "::std::string($1).replace($2,$3,$4)";
+
 
 @h2 search and replace
 Search and replace by string.

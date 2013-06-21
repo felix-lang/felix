@@ -92,6 +92,9 @@ class C_hack
 
   //$ Raw unchecked free.
   proc free: address = '::std::free($1);' requires Cxx_headers::cstdlib;
+
+  //$ Invoke C++ destructor
+  proc destroy[T] : &T = "::std::allocator::destroy($1);" requires Cxx_headers::memory;
 }
 
 
