@@ -132,14 +132,14 @@ open class Varray
   //$ Pop an element off the end of a varray.
   //$ Aborts if the array is empty.
   proc pop[t] : varray[t] = """
-    {
+    { // pop varray
       ?1 * _p = $1;
       unsigned long n = PTF gcp->collector->get_used(_p);
       PTF gcp->collector->incr_used(_p,-1L);
-      ::std::allocator::destroy(_p+n-1);
+      destroy(_p+n-1); // from flx_compiler_support_bodies
     }
   """
-    requires property "needs_gc", Cxx_headers::memory;
+    requires property "needs_gc";
   ;
 
   proc erase[v] (a:varray[v], first:int, last:int)

@@ -2,6 +2,7 @@
 include "sdl/SDL2";
 include "sdl/SDL_ttf";
 include "sdl/SDL_image";
+include "./edit_buffer_interface";
 
 proc init()
 {
@@ -73,17 +74,6 @@ proc mainline ()
     return font;
   };
  
-  /*
-  proc showmetrics (var i:int)
-  {
-    var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
-    var fi : uint16 = i.uint16; 
-    C_hack::ignore$ TTF_GlyphMetrics(font,fi,&minx, &maxx, &miny, &maxy, &advance);
-    println$ "Metrics char "+fi.str+"="+i.str+"'"+i.char+"' = minx="+minx.str+" maxx="+maxx.str+" adv="+advance.str;
-  }
-  begin for var i in "A".char.ord upto "Z".char.ord do showmetrics i; done end
-  begin for var i in "a".char.ord upto "z".char.ord do showmetrics i; done end
-  */
   fun minx (font:TTF_Font, chrix : int) =
   {
     var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
@@ -141,38 +131,39 @@ proc mainline ()
     SDL_FreeRW f;
     return ibeam;
   };
- 
-  var text = load "demos/sdl/sdltest.flx";
-  /*
-  println$ "-" * 20;
-  print text;
-  println$ "-" * 20;
-  */
-  var lines = darray$ varray$ split$ text, char '\n';
-  var curline = 0;
-  var curcol = 0;
+
+// ------------------------------------------------------------------------------
+  var editor = #{
+    var text = load "demos/sdl/sdltest.flx";
+    var lines = darray$ varray$ split$ text, char '\n';
+    var editor = Dynlink::load-plugin-func1 [edit_buffer_interface, darray[string]] (dll-name="edit_buffer");
+    return editor lines;
+  };
+
   var startline = 0;
   var nlines = 30; // hack, calculate on resize
   var soffset = nlines / 2;
   var lineskip = TTF_FontHeight(font)+1;
   var yoffset = 10; 
   var xoffset = 20;
-  var dotext = true;
-  typedef selection_t = (first_line:int, first_col:int, last_line:int, past_col:int); 
-  var null_selection : selection_t = (first_line = 0, first_col = 0, last_line = 0, past_col=0);
-  var selection = null_selection;
-
-  selection = (first_line = 0, first_col= 0, last_line = 0, past_col = 0);
 
   proc draw()
   {
+    var curline = #(editor.get_curline);
+    var curcol= #(editor.get_curcol);
+    var selection = #(editor.get_selection);
+    var lines = #(editor.get_lines);
+ 
     startline = curline - soffset;
     if startline < 0 do startline = 0; done
     var blue = SDL_Color (0u8, 0u8, 250u8, 0u8);
     var bg = blue;
     var pixelformat : &SDL_PixelFormat  = window_surface*.format;
     var bgpixels = SDL_MapRGB(pixelformat,bg.r, bg.g, bg.b);
-    var result = SDL_FillRect(window_surface, nullRect,bgpixels); 
+    var result = SDL_FillRect(window_surface, nullRect,bgpixels);
+    var r = SDL_CreateSoftwareRenderer (window_surface); 
+    C_hack::ignore$ SDL_RenderDrawLine (r, 10,10,100,10);
+    SDL_DestroyRenderer r;
     var lno = 0;
     var sel = 
       if selection.first_line > selection.last_line 
@@ -237,266 +228,45 @@ proc mainline ()
           SDL_FreeSurface text_rendered;
         done
 
-        if lno == curline do
-           var xpos = xoffset + curcol * charwidth;
-           var ypos = yoffset + (lno - startline) * lineskip;
-           var dstpos = SDL_Rect (xpos,ypos,0,0);
-           var srcrect = SDL_Rect (0,0,1,20);
-           result = SDL_BlitSurface (ibeam, &srcrect, window_surface, &dstpos); 
-        done
       done
       ++lno;
     done
+    var xpos = xoffset + curcol * charwidth;
+    var ypos = yoffset + (curline - startline) * lineskip;
+    var dstpos = SDL_Rect (xpos,ypos,0,0);
+    var srcrect = SDL_Rect (0,0,1,20);
+    result = SDL_BlitSurface (ibeam, &srcrect, window_surface, &dstpos); 
     result = SDL_UpdateWindowSurface window;
     if result != 0 do
       eprintln$ "Unable to update window";
       System::exit 1;
     done
-   }
-  proc shift_keys()
-  {
-    match vkey with
-    | $(SDLK_RETURN) =>
-      begin
-        if curline < lines.len.int do
-          var tmp = lines.curline.[curcol to];
-          set(lines,curline,lines.curline.[to curcol]);
-          push_back (lines,lines.(lines.len.int - 1)); // last line
-          var last = lines.len.int - 2;
-          var first = curline + 1;
-          if first <= last do
-            for var i in last downto first do
-              set(lines, i + 1, lines.i);
-            done
-          done
-          set(lines,curline+1,tmp);
-          draw;
-        done
-      end
-    | _ => ;
-    endmatch;
   }
-
-  proc modless_keys()
-  {
-    match vkey with
-    | $(SDLK_DOWN) => 
-      if curline < lines.len.int do
-        curline = curline + 1;
-        draw;
-      done
-
-    | $(SDLK_UP) => 
-      if curline >0 do
-        curline = curline - 1;
-        draw;
-      done
-
-    | $(SDLK_LEFT) => 
-      if curcol > 0 do
-        curcol = curcol - 1;
-        draw;
-      elif curline > 0 do
-        curline = curline - 1;
-        curcol = lines.curline.len.int;
-        draw;
-      done
-
-    | $(SDLK_RIGHT) => 
-      if curcol < lines.curline.len.int do
-        curcol = curcol + 1;
-        draw;
-      elif curline < lines.len.int do
-        curline = curline + 1;
-        curcol = 0;
-        draw;
-      done
-
-    | $(SDLK_DELETE) =>
-      begin
-        if curline < lines.len.int do
-          var n = lines.curline.len.int;
-          if curcol < n do
-            var tmp = lines.curline;
-            erase$ &tmp,curcol,1;
-            set(lines,curline,tmp);
-            draw; 
-          elif curline < lines.len.int - 1 do
-            tmp = lines.curline;
-            tmp = tmp + ' ' * (curcol - n) + lines.(curline+1);
-            set(lines,curline, tmp);
-            var first = curline + 1;
-            var last = lines.len.int - 2;
-            if first <= last do
-              for var i in first upto last do
-                set(lines,i,lines.(i+1));
-              done
-            done
-            pop lines;
-            draw;
-          done
-        done
-      end
-
-    | $(SDLK_BACKSPACE) =>
-      begin
-        var n = lines.curline.len.int;
-        if curcol > 0 do
-          if curcol <= n do
-            var tmp = lines.curline;
-            erase$ &tmp,curcol - 1,1;
-            set(lines,curline,tmp);
-          done
-          --curcol;
-          draw; 
-        elif curline > 0 do
-          --curline;
-          curcol = lines.curline.len.int;
-          set(lines,curline, lines.curline+lines.(curline + 1));
-          for var i in curline + 1 upto lines.len.int - 2 do
-            set(lines,i,lines.(i+1));
-          done
-          pop lines;
-          draw;
-        done
-      end
-
-    | $(SDLK_RETURN) =>
-      begin
-        if curline < lines.len.int do
-          var tmp = lines.curline.[curcol to];
-          set(lines,curline,lines.curline.[to curcol]);
-          push_back (lines,lines.(lines.len.int - 1)); // last line
-          var last = lines.len.int - 2;
-          var first = curline + 1;
-          if first <= last do
-            for var i in last downto first do
-              set(lines, i + 1, lines.i);
-            done
-          done
-          set(lines,curline+1,tmp);
-          ++curline;
-          curcol = 0;
-          draw;
-        done
-      end
-
-    | $(SDLK_HOME) => 
-      curcol = 0;
-      draw;
-
-    | $(SDLK_END) => 
-      curcol = lines.curline.len.int;
-      draw;
-
-    | $(SDLK_KP_0) =>
-      dotext = false;
-
-    | $(SDLK_KP_1) =>
-      dotext = false;
-      if curcol > 0 do 
-        curcol = 0;
-        draw;
-      elif curline < lines.len.int do
-        ++curline;
-        draw;
-      done
-
-    | $(SDLK_KP_2) =>
-      dotext = false;
-      if curline < lines.len.int do
-        curline = curline + 1;
-        draw;
-      done
-
-    | $(SDLK_KP_3) =>
-      dotext = false;
-      if curcol < lines.curline.len.int do
-        curcol = lines.curline.len.int;
-        draw;
-      elif curline < lines.len.int do
-        ++curline;
-        curcol = lines.curline.len.int;
-        draw;
-      done
-
-
-    | $(SDLK_KP_4) =>
-      dotext = false;
-      if curcol > 0 do
-        curcol = curcol - 1;
-        draw;
-      elif curline > 0 do
-        curline = curline - 1;
-        curcol = lines.curline.len.int;
-        draw;
-      done
-
-    | $(SDLK_KP_5) =>
-      dotext = false;
-
-    | $(SDLK_KP_6) =>
-      dotext = false;
-      if curcol < lines.curline.len.int do
-        curcol = curcol + 1;
-        draw;
-      elif curline < lines.len.int do
-        curline = curline + 1;
-        curcol = 0;
-        draw;
-      done
-
-    | $(SDLK_KP_7) =>
-      dotext = false;
-      if curcol > 0 do 
-        curcol = 0;
-        draw;
-      elif curline > 0 do
-        --curline;
-        draw;
-      done
-
-    | $(SDLK_KP_8) =>
-      dotext = false;
-      if curline >0 do
-        curline = curline - 1;
-        draw;
-      done
-
-    | $(SDLK_KP_9) =>
-      dotext = false;
-      if curcol < lines.curline.len.int do
-        curcol = lines.curline.len.int;
-        draw;
-      elif curline > 0 do
-        --curline;
-        curcol = lines.curline.len.int;
-        draw;
-      done
-
-    | $(SDLK_KP_PERIOD) =>
-      dotext = false;
-
-    | _ => ;
-    endmatch; // vkey
-  } // keydown
+// ------------------------------------------------------------------------------
 
   draw; 
+
   getevent:while true do
     var e : SDL_Event;
     C_hack::ignore$ SDL_WaitEvent$ &e;
+    if #(editor.get_changed) do
+      editor.reset();
+      draw;
+    done
     match e.type.SDL_EventType with
     | $(SDL_QUIT) =>
       println$ "QUIT";
       break getevent;
 
     | $(SDL_KEYDOWN) =>
-      dotext = true;
+      editor.set_dotext();
       var vkey = e.key.keysym.sym;
       println$ "Keydown " + strmods e.key.keysym.mod + str vkey;
-      if e.key.keysym.mod == 0u16 do modless_keys;
-      elif e.key.keysym.mod \& (KMOD_LSHIFT.uint16 \| KMOD_RSHIFT.uint16) != 0u16 do shift_keys;
+      if e.key.keysym.mod == 0u16 do editor.modless_keys vkey;
+      elif e.key.keysym.mod \& (KMOD_LSHIFT.uint16 \| KMOD_RSHIFT.uint16) != 0u16 do editor.shift_keys vkey;
+      elif e.key.keysym.mod \& (KMOD_CTRL .uint16 \| KMOD_RCTRL.uint16) != 0u16 do editor.control_keys vkey;
       done
+
     | $(SDL_KEYUP) => 
       println$ "Keyup";
     | $(SDL_TEXTEDITING) =>
@@ -504,21 +274,10 @@ proc mainline ()
 
     | $(SDL_TEXTINPUT) =>
       begin
-        if dotext do
+        if #(editor.get_dotext) do
           var buffer : +char = e.text.text;
           var ch = buffer.0; 
-          var ins = ch.str;
-          println$ "Textinput char0=" + ins;
-          var tmp = lines.curline;
-          var n = tmp.len.int;
-          if curcol > n do
-            tmp = tmp + ' ' * (curcol - n) + ins;
-          else
-            insert$ &tmp, curcol, ins;
-          done
-          set (lines,curline,tmp);
-          ++curcol;
-          draw;
+          editor.insert_char ch;
         done
       end
     | $(SDL_MOUSEBUTTONDOWN) => 
@@ -528,12 +287,15 @@ proc mainline ()
         var y = e.button.y.int;
         //println$ "Mousedown b="+bno.int.str + " x=" + x.str + " y=" + y.str;
         soffset = (y - yoffset) / lineskip;
-        curline = soffset + startline;
-        curcol = max ((x - xoffset) / charwidth,0);
-        selection.first_line = curline;
-        selection.first_col = curcol;
-        selection.last_line = curline;
-        selection.past_col = curcol;
+        var curline = soffset + startline;
+        var curcol = max ((x - xoffset) / charwidth,0);
+        editor.set_pos (curcol, curline);
+        editor.set_selection (
+          first_line = curline,
+          first_col = curcol,
+          last_line = curline,
+          past_col = curcol 
+        );
         draw; 
       end
     | $(SDL_MOUSEBUTTONUP) => 
@@ -543,10 +305,12 @@ proc mainline ()
         var y = e.button.y.int;
         //println$ "Mouseup="+bno.int.str + " x=" + x.str + " y=" + y.str;
         soffset = (y - yoffset) / lineskip;
-        curline = soffset + startline;
-        curcol = max((x - xoffset) / charwidth,0);
-        selection.last_line = curline;
-        selection.past_col = curcol;
+        var curline = soffset + startline;
+        var curcol = max((x - xoffset) / charwidth,0);
+        editor.set_pos (curcol, curline);
+        editor.set_selection extend #(editor.get_selection) with 
+          (last_line = curline, past_col = curcol) 
+        end;
         draw; 
       end
     | $(SDL_MOUSEMOTION) => 
@@ -558,10 +322,12 @@ proc mainline ()
         var y = e.button.y.int;
         //println$ "Mouse move="+bno.int.str + " x=" + x.str + " y=" + y.str;
         soffset = (y - yoffset) / lineskip;
-        curline = soffset + startline;
-        curcol = max ((x - xoffset) / charwidth,0);
-        selection.last_line = curline;
-        selection.past_col = curcol;
+        var curline = soffset + startline;
+        var curcol = max ((x - xoffset) / charwidth,0);
+        editor.set_pos (curcol, curline);
+        editor.set_selection extend #(editor.get_selection) with
+          (last_line = curline, past_col = curcol)
+        end;
         draw; 
       end
       done
@@ -577,6 +343,8 @@ proc mainline ()
         // so curline - soffset < number of text lines
         // so curline < N + S  or S > C - N
         var y = e.wheel.y.str;
+        var curline = #(editor.get_curline);
+        var lines = #(editor.get_lines);
         soffset = soffset + y.int;
         if soffset > curline do soffset = curline; done
         if soffset < curline - lines.len.int - 1 do soffset = curline - lines.len.int - 1; done
@@ -602,4 +370,3 @@ proc mainline ()
 }
 
 mainline;
-

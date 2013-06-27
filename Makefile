@@ -368,6 +368,10 @@ gccosxtarget:
 	build/release/gccosx/bin/flx --test=build/release --target=gccosx --clean
 	build/release/gccosx/bin/flx --test=build/release --target=gccosx  --expect --indir=test/regress/rt --regex='.*\.flx'
 
+sdltest:
+	build/release/host/bin/flx --test=build/release -c demos/sdl/edit_buffer
+	DYLD_LIBRARY_PATH=demos/sdl build/release/host/bin/flx --test=build/release demos/sdl/sdltest
+
 
 weblink:
 	build/release/host/bin/flx --test=build/release -c --nolink --static -ox build/release/host/lib/rtl/webserver src/tools/webserver.flx 
@@ -394,3 +398,4 @@ weblink:
 .PHONY : copy-doc gen-doc check-tut gendoc fbuild speed tarball
 .PHONY : copy-src 
 .PHONY : weblink flx tools plugins rtl copy lib
+.PHONY : sdltest
