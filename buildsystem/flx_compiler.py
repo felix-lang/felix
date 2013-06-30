@@ -157,18 +157,6 @@ def build_flx_cpp_backend(phase):
             build_flx_backend(phase)],
         external_libs=['nums'])
 
-def build_flx_llvm_backend(phase):
-    path = Path('src/compiler/flx_llvm_backend')
-    return phase.ocaml.build_lib(path / 'flx_llvm_backend',
-        srcs=Path.globall(path / '*.ml{,i}'),
-        includes=[phase.llvm_config.ocaml_libdir()],
-        libs=[
-            build_flx_misc(phase),
-            build_flx_lex(phase),
-            build_flx_core(phase),
-            build_flx_backend(phase),
-            ])
-
 def build_flx_drivers(ctx, phase):
     libs = [
         call('buildsystem.ocs.build_lib', phase),

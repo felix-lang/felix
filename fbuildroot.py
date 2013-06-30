@@ -460,12 +460,7 @@ def build(ctx):
     # Compile the runtime dependencies.
 
     call('buildsystem.judy.build_runtime', phases.host, phases.target)
-    call('buildsystem.tre.build_runtime', phases.target)
     call('buildsystem.re2.build_runtime', phases.target)
-    call('buildsystem.flx_glob.build_runtime', phases.host, phases.target)
-    call('buildsystem.sqlite3.build_runtime', phases.host, phases.target)
-    call('buildsystem.sundown.build_runtime', phases.target)
-    #call('buildsystem.botan.build_runtime', phases.host, phases.target)
 
     # --------------------------------------------------------------------------
     # Build the standard library.
@@ -474,28 +469,7 @@ def build(ctx):
     buildsystem.copy_dir_to(ctx, ctx.buildroot/'share', 'src/lib',
         pattern='*.{flx,flxh,fdoc,files,html,sql,css,js,py,png}')
     
-    # copy extra files for web
-    #buildsystem.copy_dir_to(ctx, ctx.buildroot+'/lib/web', 'src/lib/web',
-    #    pattern='*')
-    #buildsystem.copy_dir_to(ctx, ctx.buildroot+'/lib/db', 'src/lib/db',
-    #    pattern='*')
-    #buildsystem.copy_dir_to(ctx, ctx.buildroot+'/lib/codec', 'src/lib/codec',
-    #    pattern='*')
-    #buildsystem.copy_dir_to(ctx, ctx.buildroot+'/lib/web', 'src/lib/io',
-    #    pattern='*')
-    #buildsystem.copy_dir_to(ctx, ctx.buildroot+'/lib/web', 'src/lib/collection',
-    #    pattern='*')
-
-    # copy tools
-    buildsystem.copy_dir_to(ctx, ctx.buildroot/'share', 'src/tools',
-        pattern='*.{flxh,flx,fdoc}')
-
-    #buildsystem.copy_dir_to(ctx, ctx.buildroot, 'src/wiki',
-    #    pattern='*.*')
-
-    for module in (
-            'flx_stdlib',
-            'bindings'):
+    for module in ( 'flx_stdlib'):
         call('buildsystem.' + module + '.build_flx', phases.target)
 
     # --------------------------------------------------------------------------
@@ -521,42 +495,9 @@ def build(ctx):
         debug=ctx.options.debug,
         flags=['--test=' + ctx.buildroot])
 
-    # --------------------------------------------------------------------------
-    # build support tools
-    # 
-    # C tools
-    #
-    if 'windows' not in phases.target.platform:
-      mk_daemon = call('buildsystem.mk_daemon.build', phases.target)
-      timeout = call('buildsystem.timeout.build', phases.target)
-    sqlite3_shell = call('buildsystem.sqlite3_shell.build', phases.target)
-
-    # --------------------------------------------------------------------------
-    # build support tools
-    # 
-    # Felix tools
-    #
-    call('buildsystem.tools.build', phases.target, felix)
     call('buildsystem.plugins.build', phases.target, felix)
 
     return phases, iscr, felix
-
-# ------------------------------------------------------------------------------
-
-@fbuild.target.register()
-def doc(ctx):
-    """Build the Felix documentation."""
-
-    phases, iscr, felix = build(ctx)
-
-    # copy documentation into target
-    ctx.logger.log('building documentation', color='cyan')
-
-    # copy website index
-    buildsystem.copy_to(ctx, ctx.buildroot/'share', Path('src/*.html').glob())
-
-    # copy website
-    buildsystem.copy_dir_to(ctx, ctx.buildroot/'share', Path('src')/'web')
 
 # ------------------------------------------------------------------------------
 

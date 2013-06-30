@@ -90,7 +90,7 @@ class FlxPkg
       var LINK_STRINGS =
         spec.DLINK_STRINGS +
         spec.LINKER_SWITCHES+
-        pkgconfl(e+'--keepleftmost'+'--field=provides_dlib'+'--field=requires_dlibs'+DRIVER_PKG);
+        pkgconfl(e+'-r'+'--keepleftmost'+'--field=provides_dlib'+'--field=requires_dlibs'+DRIVER_PKG);
     else
       // static linkage: all the libraries required by the application and driver
       // This has to be recursive to find the closure.
