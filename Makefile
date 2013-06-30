@@ -51,7 +51,7 @@ build: user-build
 
 dev-build: fbuild gendoc
 
-user-build: fbuild doc copy-src
+user-build: fbuild
   
 #
 # Core integrated build
@@ -396,6 +396,5 @@ weblink:
 .PHONY : build32-debug build64-debug build-debug test32-debug test64-debug test-debug 
 .PHONY : doc install websites-linux  release install-bin 
 .PHONY : copy-doc gen-doc check-tut gendoc fbuild speed tarball
-.PHONY : copy-src 
 .PHONY : weblink flx tools plugins rtl copy lib
 .PHONY : sdltest

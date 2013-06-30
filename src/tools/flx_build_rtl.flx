@@ -8,6 +8,15 @@ class FlxCoreBuild
 {
 
   fun / (x:string,y:string) => Filename::join(x,y);
+  fun fix2word_flags (fs: list[string]) => rev$ fold_left
+    (fun (acc:list[string]) (elt:string) =>
+      if prefix (elt, "---") then acc + rev (split (elt.[2 to], char "="))
+      else acc + elt
+      endif
+    )
+    Empty[string]
+    fs
+  ;
 
   proc make_lib 
   (
@@ -33,11 +42,12 @@ class FlxCoreBuild
     var srcdir = db.getpkgfielddflt (pkg,"srcdir");
     var srcpath =repo / srcdir;
     var build_includes= db.getpkgfield (pkg,"build_includes");
-    var result3,ddeps= db.query$ list$ pkg, "--keepall", "--field=requires_dlibs";
+    var result3,ddeps= db.query$ list$ pkg, "--keepleftmost", "--field=requires_dlibs";
+    ddeps = fix2word_flags ddeps;
     var deps = db.getpkgfield(pkg,"Requires");
     var result,depdlibs =  db.query("--field=provides_dlib"+deps); // packaged dlibs
     var macros = db.getpkgfield(pkg,"macros");
-    var result2,ccflags = db.query$ list$ pkg, "--keepall", "--field=cflags";
+    var result2,ccflags = db.query$ list$ pkg, "--keepleftmost", "--field=cflags";
     fun mkinc (x:string) => "-I"+x;
     var config = 
       (
@@ -267,8 +277,9 @@ class FlxCoreBuild
           tmpdir/file+"_lib_dynamic"+#(toolchain.static_object_extension),
           hrtl/file+"_main"+#(toolchain.static_object_extension)
         );
-        var result,libs = db.query$ list("--rec","--keepall",
+        var result,libs = db.query$ list("--rec","--keepleftmost",
           "--field=provides_slib","--field=requires_slibs",file);
+        libs = fix2word_flags libs;
         if result != 0 do
           println$ "Driver pkgconfig query for "+ file+" FAILED";
           System::exit 1;

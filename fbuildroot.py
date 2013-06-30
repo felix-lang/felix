@@ -469,7 +469,7 @@ def build(ctx):
     buildsystem.copy_dir_to(ctx, ctx.buildroot/'share', 'src/lib',
         pattern='*.{flx,flxh,fdoc,files,html,sql,css,js,py,png}')
     
-    for module in ( 'flx_stdlib'):
+    for module in ( 'flx_stdlib',):
         call('buildsystem.' + module + '.build_flx', phases.target)
 
     # --------------------------------------------------------------------------
@@ -550,24 +550,13 @@ def test(ctx):
 
       ('collection' , Path.globall('test/collection/*.flx')),
       #('drivers' , Path.globall('test/drivers/*.flx')),
-      ('glob' , Path.globall('test/glob/*.flx')),
       ('judy' , Path.globall('test/judy/*.flx')),
-      ('sqlite3' , Path.globall('test/sqlite/*.flx')),
       ('pthread' , Path.globall('test/pthread/*.flx')),
       ('stdlib' , Path.globall('test/stdlib/*.flx')),
-      ('tre' , Path.globall('test/tre/*.flx')),
-      ('web' , Path.globall('test/web/*.flx',exclude=['test/web/xml2-*.flx'])),
 
       # ASYNC I/O
       ('faio',Path.globall('test/faio/*.flx',exclude=['test/faio/posix-*.flx','test/faio/win-*.flx'])),
       ]
-
-#    gmp_h = config_call(
-#        'fbuild.config.c.gmp.gmp_h', 
-#        phases.target.platform,
-#        phases.target.c.static).header
-#    if gmp_h: ctx.logger.log("gmp supported",color='green')
-#    else: ctx.logger.log("gmp NOT supported",color='red')
 
     mman_h = config_call(
         'fbuild.config.c.posix04.sys_mman_h', 
@@ -576,31 +565,14 @@ def test(ctx):
     if mman_h: ctx.logger.log("mmap supported",color='green')
     else: ctx.logger.log("mmap NOT supported",color='red')
 
-#    libxml2_libxml_xmlexports_h = config_call(
-#        'fbuild.config.c.xml2.libxml2_libxml_xmlexports_h', 
-#        phases.target.platform,
-#        phases.target.c.static).header
-#    if libxml2_libxml_xmlexports_h: ctx.logger.log("libxml2 supported",color='green')
-#    else: ctx.logger.log("libxml2 NOT supported",color='red')
-
-    zmq_h = config_call(
-        'fbuild.config.c.zmq.zmq_h', 
-        phases.target.platform,
-        phases.target.c.static).header
-    if zmq_h: ctx.logger.log("zmq supported",color='green')
-    else: ctx.logger.log("zmq NOT supported",color='red')
-
     osrcs = [
       # EXTERNAL LIBS
       ('windows' in phases.target.platform,'faio_win', Path.globall('test/faio/win-*.flx')),
       ('posix' in phases.target.platform, 'faio_posix', Path.globall('test/faio/posix-*.flx')),
-      #(gmp_h,'gmp', Path.globall('test/gmp/*.flx')),
       (mman_h,'mmap', Path.globall('test/mmap/*.flx')),
-      #(libxml2_libxml_xmlexports_h,'xml2', Path.globall('test/web/xml2-*flx')),
       ]
 
     osrcs_compileonly = [
-      #(zmq_h,'zmq', Path.globall('test/zmq/*.flx')),
     ]
     #--------------------------------
     ctx.logger.log("\nRunning core tests\n", color='cyan')

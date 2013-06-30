@@ -224,6 +224,12 @@ class FlxPkgConfig
 
     var result = Empty[string];
 
+    fun check_id (s:string) = {
+      var acc=true;
+      for elt in s do acc = acc and isalphanum elt; done
+      return acc;
+    }
+
     fun get_field(line:string):string * string =>
         match find (line,char ':') with
         | None => "",""
@@ -238,8 +244,9 @@ class FlxPkgConfig
         match find (line,char '=') with
         | None => "",""
         | Some ?n =>
-            strip line.[to n],
-            strip line.[n+1 to]
+            let ?name = strip line.[to n] in 
+            let ?value = strip line.[n+1 to] in
+            if check_id name then name,value else "",""
         endmatch
       ;
 
