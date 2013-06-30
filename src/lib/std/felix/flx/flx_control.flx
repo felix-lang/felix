@@ -110,6 +110,7 @@ fun dflt_control (config:config_type, profile:profile_type) =>
     var LINKER_OUTPUT_FILENAME = "";
     var OUTPUT_FILENAME_SPECIFIED = 0;
     var OUTPUT_FILENAME_WITHOUT_EXTENSION_SPECIFIED = 0;
+    var OUTPUT_DIRECTORY_SPECIFIED = 0;
     var USER_ARGS = Empty[string];
     var DLINK_STRINGS = Empty[string];
     var SLINK_STRINGS = Empty[string];

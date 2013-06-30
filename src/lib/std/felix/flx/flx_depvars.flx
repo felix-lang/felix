@@ -11,11 +11,18 @@ typedef dvars_type = (
     VERBOSE: list[string]
   );
 
-gen cal_depvars(toolchain: clang_config_t -> toolchain_t, config:config_type,control:&control_type, loopctl:loopctl_type) : dvars_type = 
+gen cal_depvars(
+  toolchain: clang_config_t -> toolchain_t, 
+  config:config_type,
+  control:&control_type, 
+  loopctl:loopctl_type) 
+  : dvars_type 
+  = 
 {
   proc debugln[T with Str[T]] (x:T) {
     control*.DEBUG_FLX ?? fprintln (cerr, "[flx] " + str x);
   }
+  fun / (d:string, f:string) => Filename::join (d,f);
 
   var dflt_clang_config = (
       header_search_dirs = Empty[string],
@@ -91,22 +98,31 @@ gen cal_depvars(toolchain: clang_config_t -> toolchain_t, config:config_type,con
     System::exit(1);
   done
 
+  // CHANGE IN SEMANTICS 29/6/2013
+  // 
+  // The new rule is: the generated shared lib or executable
+  // now goes in the cache UNLESS explicitly specified
+  // with -o or -ox. I need to add another option as well,
+  // -od which sets the directory to put it in.
+
   if control*.LINKER_OUTPUT_FILENAME == "" do
     if control*.LINKIT == 1 do
       if control*.STATICLIB == 1 do
-        control*.LINKER_OUTPUT_FILENAME = filebase+EXT_LIB;
+        var f = filebase+EXT_LIB;
       elif control*.STATIC == 0 do // dynamic
-        control*.LINKER_OUTPUT_FILENAME = filebase+EXT_SHLIB;
+        f = filebase+EXT_SHLIB;
       else
-        control*.LINKER_OUTPUT_FILENAME = filebase+EXT_EXE;
+        f = filebase+EXT_EXE;
       done
     else // No link, name specifies object file only.
       if control*.STATIC == 1 do
-        control*.LINKER_OUTPUT_FILENAME = filebase+EXT_STATIC_OBJ;
+        f = filebase+EXT_STATIC_OBJ;
       else
-        control*.LINKER_OUTPUT_FILENAME = filebase+EXT_SHARED_OBJ;
+        f = filebase+EXT_SHARED_OBJ;
       done
     done
+    control*.LINKER_OUTPUT_FILENAME = cache_join (control*.CACHE_DIR,f);
+    debugln$ "Felx writing output binary to " + control*.LINKER_OUTPUT_FILENAME;
   elif control*.OUTPUT_FILENAME_WITHOUT_EXTENSION_SPECIFIED == 1 do
     if control*.LINKIT == 1 do
       if control*.STATICLIB == 1 do
@@ -121,6 +137,23 @@ gen cal_depvars(toolchain: clang_config_t -> toolchain_t, config:config_type,con
         control*.LINKER_OUTPUT_FILENAME += EXT_STATIC_OBJ;
       else
         control*.LINKER_OUTPUT_FILENAME += EXT_SHARED_OBJ;
+      done
+    done
+  elif control*.OUTPUT_DIRECTORY_SPECIFIED == 1 do
+    var basename = Filename::basename (Filename::strip_extension filebase);
+    if control*.LINKIT == 1 do
+      if control*.STATICLIB == 1 do
+        control*.LINKER_OUTPUT_FILENAME = control*.LINKER_OUTPUT_FILENAME / basename + EXT_LIB;
+      elif control*.STATIC == 0 do // dynamic
+        control*.LINKER_OUTPUT_FILENAME = control*.LINKER_OUTPUT_FILENAME / basename + EXT_SHLIB;
+      else
+        control*.LINKER_OUTPUT_FILENAME = control*.LINKER_OUTPUT_FILENAME / basename + EXT_EXE;
+      done
+    else // No link, name specifies object file only.
+      if control*.STATIC == 1 do
+        control*.LINKER_OUTPUT_FILENAME = control*.LINKER_OUTPUT_FILENAME / basename + EXT_STATIC_OBJ;
+      else
+        control*.LINKER_OUTPUT_FILENAME = control*.LINKER_OUTPUT_FILENAME / basename + EXT_SHARED_OBJ;
       done
     done
   done

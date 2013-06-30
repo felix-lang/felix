@@ -12,6 +12,7 @@ proc print_help() {
   println "-c                   : compile only, do not run";
   println "-o                   : linker output filename";
   println "-ox                  : linker output filename (without extension)";
+  println "-od                  : linker output directory" ;
   println "--usage=prototype    : fast compilation at the expense of slower executables";
   println "--usage=debugging    : enable debugging aids";
   println "--usage=production   : optimised code with run time safety checks retained";
@@ -396,6 +397,7 @@ noinline proc xparse_cmd_line
 
   var SET_LINKER_OUTPUT = false;
   var SET_LINKER_OUTPUT_WITHOUT_EXTENSION = false;
+  var SET_LINKER_OUTPUT_DIRECTORY = false;
 
 grabbing_args: while ploopctl*.grab == 1 and ploopctl*.argno < vargs.len.int do
   var arg = vargs . (ploopctl*.argno);
@@ -413,6 +415,12 @@ grabbing_args: while ploopctl*.grab == 1 and ploopctl*.argno < vargs.len.int do
      SET_LINKER_OUTPUT_WITHOUT_EXTENSION = false;
      control.OUTPUT_FILENAME_WITHOUT_EXTENSION_SPECIFIED <- 1;
 
+  elif SET_LINKER_OUTPUT_DIRECTORY do
+     control.LINKER_OUTPUT_FILENAME <- arg;
+     debugln$ "Set linker output directory =" + control*.LINKER_OUTPUT_FILENAME;
+     SET_LINKER_OUTPUT_DIRECTORY= false;
+     control.OUTPUT_DIRECTORY_SPECIFIED <- 1;
+
 
   elif arg == "-o" do
     debugln "Set linker output name (next arg)";
@@ -421,6 +429,11 @@ grabbing_args: while ploopctl*.grab == 1 and ploopctl*.argno < vargs.len.int do
   elif arg == "-ox" do
     debugln "Set linker output name (without extension) (next arg) ";
     SET_LINKER_OUTPUT_WITHOUT_EXTENSION=true;
+
+  elif arg == "-od" do
+    debugln "Set linker output directory (next arg) ";
+    SET_LINKER_OUTPUT_DIRECTORY=true;
+
 
 
   elif not (prefix (arg,"-")) do

@@ -1,5 +1,5 @@
 Name: OpenGL
 Description OpenGL graphics
-requires_dlibs: -framework OpenGL
-requires_slibs: -framework OpenGL
+requires_dlibs: ---framework=OpenGL
+requires_slibs: ---framework=OpenGL
 

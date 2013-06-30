@@ -90,15 +90,25 @@ class FlxPkg
       var LINK_STRINGS =
         spec.DLINK_STRINGS +
         spec.LINKER_SWITCHES+
-        pkgconfl(e+"-r"+'--keepall'+'--field=provides_dlib'+'--field=requires_dlibs'+DRIVER_PKG);
+        pkgconfl(e+'--keepleftmost'+'--field=provides_dlib'+'--field=requires_dlibs'+DRIVER_PKG);
     else
       // static linkage: all the libraries required by the application and driver
       // This has to be recursive to find the closure.
       LINK_STRINGS =
         spec.SLINK_STRINGS+
         spec.LINKER_SWITCHES+
-        pkgconfl(e+'-r'+'--keepall'+'--field=provides_slib'+'--field=requires_slibs'+DRIVER_PKG);
+        pkgconfl(e+'-r'+'--keepleftmost'+'--field=provides_slib'+'--field=requires_slibs'+DRIVER_PKG);
     done
+    LINK_STRINGS = rev$ fold_left
+      (fun (acc:list[string]) (elt:string) =>
+        if prefix (elt, "---") then
+         acc + rev (split (elt.[2 to], char "="))
+        else acc + elt
+        endif
+      )
+      Empty[string]
+      LINK_STRINGS
+    ;
 
     return ( 
       INCLUDE_DIRS = INCLUDE_DIRS,

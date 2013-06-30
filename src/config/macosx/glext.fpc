@@ -1,5 +1,5 @@
 Name: GLEXT
 Description: GLEXT graphics
-requires_dlibs: -framework OpenGL
-requires_slibs: -framework OpenGL
+requires_dlibs: ---framework=OpenGL
+requires_slibs: ---framework=OpenGL
 Requires: gl glu
