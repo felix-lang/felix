@@ -286,6 +286,7 @@ class FlxCoreBuild
           println$ "Driver pkgconfig query for "+ file+" FAILED";
           System::exit 1;
         done
+println$ "LIBS=" + libs.str;
         result = toolchain.executable_linker(srcs=objs+libs, dst=exe);
         if result != 0 do
           println$ "Driver link  "+ file+" FAILED";
