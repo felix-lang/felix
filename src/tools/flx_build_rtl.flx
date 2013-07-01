@@ -8,9 +8,9 @@ class FlxCoreBuild
 {
 
   fun / (x:string,y:string) => Filename::join(x,y);
-  fun fix2word_flags (fs: list[string]) => rev$ fold_left
+  fun fix2word_flags (fs: list[string]) => fold_left
     (fun (acc:list[string]) (elt:string) =>
-      if prefix (elt, "---") then acc + rev (split (elt.[2 to], char "="))
+      if prefix (elt, "---") then acc + (split (elt.[2 to], char "="))
       else acc + elt
       endif
     )
