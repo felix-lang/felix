@@ -232,7 +232,9 @@ class FlxCoreBuild
 
     // make drivers
     begin
+      println$ "------------";
       println$ "Make drivers";
+      println$ "------------";
       fun mkinc (x:string) => "-I"+x;
       var srcdir = repo/"src"/"flx_drivers";
       var config = 
@@ -277,7 +279,7 @@ class FlxCoreBuild
           tmpdir/file+"_lib_dynamic"+#(toolchain.static_object_extension),
           hrtl/file+"_main"+#(toolchain.static_object_extension)
         );
-        var result,libs = db.query$ list("--rec","--keepleftmost",
+        var result,libs = db.query$ list("--rec","--keeprightmost",
           "--field=provides_slib","--field=requires_slibs",file);
         libs = fix2word_flags libs;
         if result != 0 do
