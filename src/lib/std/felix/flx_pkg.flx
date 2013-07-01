@@ -97,12 +97,12 @@ class FlxPkg
       LINK_STRINGS =
         spec.SLINK_STRINGS+
         spec.LINKER_SWITCHES+
-        pkgconfl(e+'-r'+'--keepleftmost'+'--field=provides_slib'+'--field=requires_slibs'+DRIVER_PKG);
+        pkgconfl(e+'-r'+'--keeprightmost'+'--field=provides_slib'+'--field=requires_slibs'+DRIVER_PKG);
     done
-    LINK_STRINGS = rev$ fold_left
+    LINK_STRINGS = fold_left
       (fun (acc:list[string]) (elt:string) =>
         if prefix (elt, "---") then
-         acc + rev (split (elt.[2 to], char "="))
+         acc + split (elt.[2 to], char "=")
         else acc + elt
         endif
       )
