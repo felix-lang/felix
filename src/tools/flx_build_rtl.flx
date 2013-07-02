@@ -2,21 +2,13 @@ include "std/felix/toolchain_clang_config";
 include "std/felix/toolchain_interface";
 include "std/felix/flx_cp";
 include "std/felix/flx_pkgconfig";
+include "std/felix/flx_pkg"; // only for "fix2word_flags"
 include "std/felix/flx/flx";
 
 class FlxCoreBuild
 {
 
   fun / (x:string,y:string) => Filename::join(x,y);
-  fun fix2word_flags (fs: list[string]) => fold_left
-    (fun (acc:list[string]) (elt:string) =>
-      if prefix (elt, "---") then acc + (split (elt.[2 to], char "="))
-      else acc + elt
-      endif
-    )
-    Empty[string]
-    fs
-  ;
 
   proc make_lib 
   (
@@ -43,7 +35,7 @@ class FlxCoreBuild
     var srcpath =repo / srcdir;
     var build_includes= db.getpkgfield (pkg,"build_includes");
     var result3,ddeps= db.query$ list$ pkg, "--keepleftmost", "--field=requires_dlibs";
-    ddeps = fix2word_flags ddeps;
+    ddeps = FlxPkg::fix2word_flags ddeps;
     var deps = db.getpkgfield(pkg,"Requires");
     var result,depdlibs =  db.query("--field=provides_dlib"+deps); // packaged dlibs
     var macros = db.getpkgfield(pkg,"macros");
@@ -281,12 +273,11 @@ class FlxCoreBuild
         );
         var result,libs = db.query$ list("--rec","--keeprightmost",
           "--field=provides_slib","--field=requires_slibs",file);
-        libs = fix2word_flags libs;
+        libs = FlxPkg::fix2word_flags libs;
         if result != 0 do
           println$ "Driver pkgconfig query for "+ file+" FAILED";
           System::exit 1;
         done
-println$ "LIBS=" + libs.str;
         result = toolchain.executable_linker(srcs=objs+libs, dst=exe);
         if result != 0 do
           println$ "Driver link  "+ file+" FAILED";

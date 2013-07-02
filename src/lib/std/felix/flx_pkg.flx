@@ -22,6 +22,22 @@ class FlxPkg
     LINK_STRINGS: list[string]
   );
 
+  fun fix2word_flags (fs: list[string]) = {
+    println$ "Fix2word, input=" + fs.str;
+    var output =  fold_left
+     (fun (acc:list[string]) (elt:string) =>
+       if prefix (elt, "---") then acc + (split (elt.[2 to], char "="))
+       else acc + elt
+       endif
+      )
+      Empty[string]
+      fs
+    ;
+    println$ "Fix2word, output=" + output.str;
+    return output;
+  }
+
+
   gen map_package_requirements(spec:pkgconfig_inspec_t) : pkgconfig_outspec_t =
   {
 
