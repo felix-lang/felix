@@ -422,6 +422,10 @@ class FlxCoreBuild
       ('flx_replace', 'tools'/'flx_replace'),
       ('flx_tangle', 'tools'/'flx_tangle'),
       ('flx_perror', 'tools'/'flx_perror'),
+      ('flx_gramdoc', 'tools'/'flx_gramdoc'),
+      ('flx_libindex', 'tools'/'flx_libindex'),
+      ('flx_libcontents', 'tools'/'flx_libcontents'),
+      ('flx_mktutindex', 'tools'/'flx_mktutindex'),
       ('webserver', 'tools'/'webserver') // dynamically loads plugins
     );
     println$ "build exes";
@@ -443,7 +447,8 @@ class FlxCoreBuild
       ('flx', 'tools'/'flx'),
       ('flx_pkgconfig', 'tools'/'flx_pkgconfig'),
       ('scoop', 'tools'/'scoop'),
-      ('flx_build_rtl', 'tools'/'flx_build_rtl')
+      ('flx_build_rtl', 'tools'/'flx_build_rtl'),
+      ('flx_build_flxg', 'tools'/'flx_build_flxg')
     );
     println$ "build flx";
     match ?exe,?src in exes do

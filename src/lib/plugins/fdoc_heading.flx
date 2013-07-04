@@ -21,7 +21,7 @@ function collapse(but,id)
 {
   var n = document.getElementById(id).style;
   var button = document.getElementById(but);
-  button.src = "/share/src//web/images/plus.gif";
+  button.src = "/share/src/web/images/plus.gif";
   button.alt = "+";
   n.display = "none";
 }
@@ -30,7 +30,7 @@ function toggle(button,id)
   var n = document.getElementById(id).style;
   if (n.display == "none")
   {
-    button.src = "/share/src//web/images/minus.gif";
+    button.src = "/share/src/web/images/minus.gif";
     button.alt = "-";
     n.display = "block";
   }

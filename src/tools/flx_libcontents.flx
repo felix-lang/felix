@@ -7,7 +7,7 @@ var  xlat_fdoc = Dynlink::load-plugin-func2 [fdoc_t, string, string] (
   );
 
 
-var fregex = ".*\\.flx";
+var fregex = ".*\\.(flx|fdoc)";
 open Regdef;
 regdef anychar = perl (".");
 
@@ -61,7 +61,7 @@ var files = FileSystem::regfilesin (dir, fregex);
 files = files.sort;
 
 for file in files do
-  var href = "/$"+dir+"/"+file; // URL always uses Unix filenames
+  var href = "/share/lib/std/"+file; // URL always uses Unix filenames
   if ishtml do
     println$ '<hr/><a href="'+href+'">'+file+'</a>';
   else

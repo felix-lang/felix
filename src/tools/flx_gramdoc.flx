@@ -33,7 +33,7 @@ if ishtml do
 done
 
 for file in FileSystem::regfilesin (dir, fregex) do
-  var href = "/$"+dir+"/"+file; // URL always uses Unix filenames
+  var href = "/share/lib/grammar/"+file; // URL always uses Unix filenames
   if ishtml do
     println$ '<hr/><a href="'+href+'">'+file+'</a>';
   else
