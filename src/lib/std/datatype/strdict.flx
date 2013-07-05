@@ -20,7 +20,7 @@ class StrDict[T] {
    //$ Construct and empty dictionary.
    ctor strdict() => _make_strdict$ JSLArray ();
 
-   proc add (x:strdict) (var key:string) (var value: T) { 
+   proc add (x:strdict) (key:string) (value: T) { 
      var err: JError_t;
      var slot : && T; 
      JudySLIns (_repr_ x, key.cstr, &err, C_hack::cast[&&word] (&slot));

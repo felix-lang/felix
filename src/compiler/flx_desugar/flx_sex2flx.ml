@@ -1,4 +1,5 @@
-open Flx_ast
+
+   open Flx_ast
 open Sex_types
 open Flx_typing2
 open List
@@ -71,7 +72,7 @@ and xexpr_t sr x =
   let ii i = int_of_string i in
   let xq m qn = qne ex m qn in
   let xp x = xpattern_t x in
-  let xps x =  xparams_t sr x in
+  let xps pdef x =  xparams_t pdef sr x in
   let xvs x = xvs_list_t sr x in
   let xs x = xstatement_t sr x in
   let xsts x =  lst "statement" xs x in
@@ -163,9 +164,18 @@ and xexpr_t sr x =
  | Lst [Id "ast_unlikely"; sr; e] -> EXPR_unlikely (xsr sr,ex e)
  | Lst [Id "ast_callback";  sr; qn] -> EXPR_callback (xsr sr,xq "ast_callback" qn)
  | Lst [Id "ast_dot"; sr; Lst [e1; e2]] -> EXPR_dot (xsr sr,(xexpr_t (xsr sr) e1, xexpr_t (xsr sr) e2))
- | Lst [Id "ast_lambda";  sr; Lst [vs; Lst pss; t; sts]] -> EXPR_lambda  (xsr sr, (`GeneratedInlineFunction,xvs vs, map xps pss, ti t, xsts sts))
- | Lst [Id "ast_object";  sr; Lst [vs; Lst pss; t; sts]] -> EXPR_lambda (xsr sr, (`Object,xvs vs, map xps pss, ti t, xsts sts))
- | Lst [Id "ast_generator";  sr; Lst [vs; Lst pss; t; sts]] -> EXPR_lambda (xsr sr, (`Generator,xvs vs, map xps pss, ti t, xsts sts))
+ | Lst [Id "ast_lambda";  sr; Lst [vs; Lst pss; t; sts]] -> 
+   let rt = ti t in
+   let pdef = match rt with TYP_void _ -> `PVar | _ -> `PVal in 
+   EXPR_lambda  (xsr sr, (`GeneratedInlineFunction,xvs vs, map (xps pdef) pss, rt, xsts sts))
+ | Lst [Id "ast_object";  sr; Lst [vs; Lst pss; t; sts]] -> 
+   let rt = ti t in
+   let pdef = match rt with TYP_void _ -> `PVar | _ -> `PVal in 
+   EXPR_lambda (xsr sr, (`Object,xvs vs, map (xps pdef) pss, rt, xsts sts))
+ | Lst [Id "ast_generator";  sr; Lst [vs; Lst pss; t; sts]] -> 
+   let rt = ti t in
+   let pdef = `PVar in 
+   EXPR_lambda (xsr sr, (`Generator,xvs vs, map (xps pdef) pss, rt, xsts sts))
 
  (* can't occur in user code
  | Lst [Id "ast_match_ctor";  Lst [qn; e]] -> EXPR_match_ctor(sr,(xq "ast_match_ctor" qn,ex e))
@@ -340,25 +350,26 @@ and xaxiom_method_t sr x : axiom_method_t =
   | Lst [Id "Equation"; e1; e2] -> Equation (ex e1, ex e2)
   | x -> err x "axiom_method_t"
 
-and xparam_kind_t sr x : param_kind_t =
+and xparam_kind_t def_val sr x : param_kind_t =
   match x with
   | Id "PVal" -> `PVal
   | Id "PVar" -> `PVar
   | Id "PFun" -> `PFun
   | Id "PRef" -> `PRef
+  | Id "PDef" -> def_val
   | x -> err x "param_kind_t"
 
-and xparameter_t sr x : parameter_t =
+and xparameter_t sr def_val x : parameter_t =
   let ex x = xexpr_t sr x in
   let ti x = type_of_sex sr x in
-  let xpk x = xparam_kind_t sr x in
+  let xpk x = xparam_kind_t def_val sr x in
   match x with
   | Lst [pk; id; t; e] -> xpk pk, xid id, ti t, opt "dflt_arg" ex e
   | x -> err x "parameter_t"
 
-and xparams_t sr x : params_t =
+and xparams_t def_val sr x : params_t =
   let ex x = xexpr_t sr x in
-  let xpa x = xparameter_t sr x in
+  let xpa x = xparameter_t sr def_val x in
   match x with
   | Lst [Lst ps; eo] -> map xpa ps, opt "params" ex eo
   | x -> err x "params_t"
@@ -473,7 +484,7 @@ and xstatement_t sr x : statement_t =
   let xq sr m qn = qne (ex sr) m qn in
   let xvs sr x = xvs_list_t sr x in
   let xam sr x =  xaxiom_method_t sr x in
-  let xps sr x =  xparams_t sr x in
+  let xps pdef sr x =  xparams_t pdef sr x in
   let xret sr x =  xret_t sr x in
   let xsts sr x =  lst "statement" (xs sr) x in
   let xfk sr x = xfunkind_t sr x in
@@ -516,7 +527,7 @@ and xstatement_t sr x : statement_t =
       sr,
       xid id,
       xvs sr vs,
-      xps sr ps,
+      xps `PVal sr ps,
       xam sr axm)
 
   | Lst [Id "ast_lemma"; sr; id; vs; ps; axm] -> let sr = xsr sr in 
@@ -524,16 +535,19 @@ and xstatement_t sr x : statement_t =
       sr,
       xid id,
       xvs sr vs,
-      xps sr ps,
+      xps `PVal sr ps,
       xam sr axm)
 
   | Lst [Id "ast_curry"; sr; id; vs; Lst pss; ret; fk; sts] -> let sr = xsr sr in 
+    let fret = xret sr ret in
+    let rett, _ = fret in 
+    let pdef = match rett with TYP_void _ -> `PVar | _ -> `PVal in
     STMT_curry(
       sr,
       xid id,
       xvs sr vs,
-      map (xps sr) pss,
-      xret sr ret,
+      map (xps pdef sr) pss,
+      fret,
       xfk sr fk,
       xsts sr sts)
 

@@ -20,7 +20,7 @@ instance Str[data_t] {
 var index = #strdict[list[data_t]];
 
 for file in FileSystem::regfilesin (dir, fregex) do
-  println$ file;
+  //println$ file;
   var text = load (Filename::join dir file);
   var count = 0;
   var lines = split (text, char "\n");
@@ -42,12 +42,13 @@ for file in FileSystem::regfilesin (dir, fregex) do
         else
           dfn = line . strip;
         done
-        println$ file, count, sym,dfn;
+        //println$ file, count, sym,dfn;
         var data = (file=file, line=count, dfn=dfn);
-        val old_data =index.get_dflt(sym,Empty[data_t]);
-        val new_data = Cons (data, old_data);
-        index.add sym new_data;
-        //index.add sym (Cons (data, index.get_dflt(sym,Empty[data_t])));
+        //val old_data =index.get_dflt(sym,Empty[data_t]);
+        //val new_data = Cons (data, old_data);
+        //val new_data =Cons (data,index.get_dflt(sym,Empty[data_t]));
+        //index.add sym new_data;
+        index.add sym (var Cons (data,index.get_dflt(sym,Empty[data_t])));
       done
     done
   done

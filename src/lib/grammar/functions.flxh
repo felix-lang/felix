@@ -131,7 +131,7 @@ syntax functions {
   sparam_qual := "fun" =># "'PFun";
 
   //$ Default parameter qualifier is val.
-  sparam_qual := sepsilon =># "'PVal";
+  sparam_qual := sepsilon =># "'PDef";
 
   //$ Function tuple parameter with pre-condition.
   sfun_arg :=  "(" sparameter_comma_list "when" sexpr ")" =># "`(,_2 (some ,_4))";
@@ -139,7 +139,7 @@ syntax functions {
   //$ Function tuple parameter without pre-condition.
   sfun_arg :=  "(" sparameter_comma_list ")" =># "`(,_2 none)";
 
-  //$ Sort form function parameter single polymorphic variable.
+  //$ Short form function parameter single polymorphic variable.
   sfun_arg :=  sname =># "`(((PVal ,_1 ,(noi 'typ_none) none)) none)";
 
   //$ Function binder: C function.
