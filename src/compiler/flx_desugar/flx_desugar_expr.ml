@@ -69,9 +69,6 @@ let cal_props = function
   | _ -> []
 
 let mkcurry seq sr (name:string) (vs:vs_list_t) (args:params_t list) return_type (kind:funkind_t) body props =
-(*
-print_endline ("MK CURRY " ^ name);
-*)
   let vs, tcon = vs in
   let return_type, postcondition = return_type in
   let vss',(args:params_t list)= List.split (List.map (fix_params sr seq) args) in

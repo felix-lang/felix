@@ -1,0 +1,162 @@
+include "sdl/SDL2";
+include "sdl/SDL_ttf";
+include "sdl/SDL_image";
+include "./edit_display_interface";
+
+object edit_display (init: edit_display_init) 
+implements edit_display_interface = 
+{
+
+  var ibeam = #{
+    var f = SDL_RWFromInputFile "Ibeam.png";
+    var ibeam = IMG_LoadPNG_RW f;
+    SDL_FreeRW f;
+    return ibeam;
+  };
+
+  var nullRect = C_hack::null[SDL_Rect];
+
+  var red = SDL_Color (250u8,200u8, 200u8,0u8);
+  var white = SDL_Color (250u8,250u8, 250u8,0u8);
+  var black = SDL_Color (0u8,0u8, 0u8,0u8);
+
+
+  var startline = 0;
+  var nlines = 30; // hack, calculate on resize
+  var soffset = nlines / 2;
+  var lineskip = TTF_FontHeight(init.font)+1;
+  var yoffset = 10; 
+  var xoffset = 20;
+
+  method fun get_soffset () => soffset;
+  method proc set_soffset (x:int) => soffset = x;
+
+  method fun get_xoffset () => xoffset;
+  method proc set_xoffset (x:int) => xoffset = x;
+
+  method fun get_yoffset () => yoffset;
+  method proc set_yoffset (x:int) => yoffset = x;
+
+  method fun get_lineskip () => lineskip;
+  method fun get_startline () => startline;
+   
+  fun minx (font:TTF_Font, chrix : int) =
+  {
+    var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
+    var fi : uint16 = chrix.uint16; 
+    C_hack::ignore$ TTF_GlyphMetrics(font,fi,&minx, &maxx, &miny, &maxy, &advance);
+    return minx;
+  }
+
+  var charwidth = #{
+    var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
+
+    var result = TTF_GlyphMetrics(init.font,"m".char.ord.uint16,&minx, &maxx, &miny, &maxy, &advance);
+    if result < 0 do 
+      eprintln$ "Couldn't get size of 'm' in courier font";
+      System::exit 1;
+    done
+    println$ "Metrics m = minx="+minx.str+" maxx="+maxx.str+" adv="+advance.str;
+    return advance;
+  };
+
+  method fun get_charwidth () => charwidth;
+ 
+  method proc draw()
+  {
+    var window_surface = SDL_GetWindowSurface init.window;
+    var curline = #(init.editor.get_curline);
+    var curcol= #(init.editor.get_curcol);
+    var selection = #(init.editor.get_selection);
+    var lines = #(init.editor.get_lines);
+ 
+    startline = curline - soffset;
+    if startline < 0 do startline = 0; done
+    var blue = SDL_Color (0u8, 0u8, 250u8, 0u8);
+    var bg = blue;
+    var pixelformat : &SDL_PixelFormat  = window_surface*.format;
+    var bgpixels = SDL_MapRGB(pixelformat,bg.r, bg.g, bg.b);
+    var result = SDL_FillRect(window_surface, nullRect,bgpixels);
+    var r = SDL_CreateSoftwareRenderer (window_surface); 
+    C_hack::ignore$ SDL_RenderDrawLine (r, 10,10,100,10);
+    SDL_DestroyRenderer r;
+    var lno = 0;
+    var sel = 
+      if selection.first_line > selection.last_line 
+      or 
+        selection.first_line == selection.last_line and 
+        selection.first_col > selection.past_col
+      then (
+        first_line=selection.last_line, 
+        first_col=selection.past_col, 
+        last_line=selection.first_line, 
+        past_col=selection.first_col
+      )
+      else selection
+   ;
+
+    val unused=0;
+    for line in lines do
+      if lno >= startline do
+        var presel = 
+          if lno == sel.first_line then sel.first_col 
+          else 0
+        ;
+        var postsel = 
+          if lno == sel.last_line then sel.past_col 
+          elif lno >= sel.first_line and lno < sel.last_line then line.len.int
+          else 0
+        ;
+        var x = 0;
+        fun dstview() => SDL_Rect (
+          xoffset+x+xadj,
+          yoffset + (lno - startline) * lineskip,
+          unused,unused)
+        ;
+
+        if presel > 0 do
+          var text = line.[to presel];
+          var xadj = min (0,minx (init.font, text.[0].ord));
+          var viewport = #dstview;
+          var text_rendered = TTF_RenderText_Solid(init.font,text,white);
+          result = SDL_BlitSurface (text_rendered, nullRect, window_surface, &viewport); 
+          SDL_FreeSurface text_rendered;
+          x = charwidth * presel;
+        done
+
+        if presel < postsel do
+          text = line.[presel to postsel];
+          xadj = 0;
+          viewport = #dstview;
+          text_rendered = TTF_RenderText_Shaded(init.font,text,black,red);
+          var srcrec = SDL_Rect (0,0,text.len.int * charwidth,lineskip);
+          result = SDL_BlitSurface (text_rendered, &srcrec, window_surface, &viewport); 
+          SDL_FreeSurface text_rendered;
+          x += charwidth * (postsel - presel); 
+        done
+        
+        if postsel < line.len.int do
+          text = line.[postsel to];
+          xadj = min(0,minx (init.font, text.[0].ord));
+          viewport = #dstview;
+          text_rendered = TTF_RenderText_Solid(init.font,text,white);
+          result = SDL_BlitSurface (text_rendered, nullRect, window_surface, &viewport); 
+          SDL_FreeSurface text_rendered;
+        done
+
+      done
+      ++lno;
+    done
+    var xpos = xoffset + curcol * charwidth;
+    var ypos = yoffset + (curline - startline) * lineskip;
+    var dstpos = SDL_Rect (xpos,ypos,0,0);
+    var srcrect = SDL_Rect (0,0,1,20);
+    result = SDL_BlitSurface (ibeam, &srcrect, window_surface, &dstpos); 
+    result = SDL_UpdateWindowSurface init.window;
+    if result != 0 do
+      eprintln$ "Unable to update window";
+      System::exit 1;
+    done
+  }
+}
+

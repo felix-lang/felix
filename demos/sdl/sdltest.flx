@@ -3,6 +3,7 @@ include "sdl/SDL2";
 include "sdl/SDL_ttf";
 include "sdl/SDL_image";
 include "./edit_buffer_interface";
+include "./edit_display_interface";
 
 proc init()
 {
@@ -74,26 +75,6 @@ proc mainline ()
     return font;
   };
  
-  fun minx (font:TTF_Font, chrix : int) =
-  {
-    var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
-    var fi : uint16 = chrix.uint16; 
-    C_hack::ignore$ TTF_GlyphMetrics(font,fi,&minx, &maxx, &miny, &maxy, &advance);
-    return minx;
-  }
-
-  var charwidth = #{
-    var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
-
-    var result = TTF_GlyphMetrics(font,"m".char.ord.uint16,&minx, &maxx, &miny, &maxy, &advance);
-    if result < 0 do 
-      eprintln$ "Couldn't get size of 'm' in courier font";
-      System::exit 1;
-    done
-    println$ "Metrics m = minx="+minx.str+" maxx="+maxx.str+" adv="+advance.str;
-    return advance;
-  };
-
   var window = SDL_CreateWindow(
     "SDL_RenderClear",
     SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
@@ -125,133 +106,31 @@ proc mainline ()
     System::exit 1;
   done
 
-  var ibeam = #{
-    var f = SDL_RWFromInputFile "Ibeam.png";
-    var ibeam = IMG_LoadPNG_RW f;
-    SDL_FreeRW f;
-    return ibeam;
-  };
-
 // ------------------------------------------------------------------------------
-  var editor = #{
+  var E = #{
     var text = load "demos/sdl/sdltest.flx";
     var lines = darray$ varray$ split$ text, char '\n';
-    var editor = Dynlink::load-plugin-func1 [edit_buffer_interface, darray[string]] (dll-name="edit_buffer");
+    var editor = Dynlink::load-plugin-func1 [edit_buffer_interface, darray[string]] (
+       dll-name="edit_buffer");
     return editor lines;
   };
 
-  var startline = 0;
-  var nlines = 30; // hack, calculate on resize
-  var soffset = nlines / 2;
-  var lineskip = TTF_FontHeight(font)+1;
-  var yoffset = 10; 
-  var xoffset = 20;
+  var D = #{
+    var display = Dynlink::load-plugin-func1 [edit_display_interface, edit_display_init] (dll-name="edit_buffer");
+    return display (font=font, editor=E, window=window);
+  };
 
-  proc draw()
-  {
-    var curline = #(editor.get_curline);
-    var curcol= #(editor.get_curcol);
-    var selection = #(editor.get_selection);
-    var lines = #(editor.get_lines);
- 
-    startline = curline - soffset;
-    if startline < 0 do startline = 0; done
-    var blue = SDL_Color (0u8, 0u8, 250u8, 0u8);
-    var bg = blue;
-    var pixelformat : &SDL_PixelFormat  = window_surface*.format;
-    var bgpixels = SDL_MapRGB(pixelformat,bg.r, bg.g, bg.b);
-    var result = SDL_FillRect(window_surface, nullRect,bgpixels);
-    var r = SDL_CreateSoftwareRenderer (window_surface); 
-    C_hack::ignore$ SDL_RenderDrawLine (r, 10,10,100,10);
-    SDL_DestroyRenderer r;
-    var lno = 0;
-    var sel = 
-      if selection.first_line > selection.last_line 
-      or 
-        selection.first_line == selection.last_line and 
-        selection.first_col > selection.past_col
-      then (
-        first_line=selection.last_line, 
-        first_col=selection.past_col, 
-        last_line=selection.first_line, 
-        past_col=selection.first_col
-      )
-      else selection
-   ;
 
-    val unused=0;
-    for line in lines do
-      if lno >= startline do
-        var presel = 
-          if lno == sel.first_line then sel.first_col 
-          else 0
-        ;
-        var postsel = 
-          if lno == sel.last_line then sel.past_col 
-          elif lno >= sel.first_line and lno < sel.last_line then line.len.int
-          else 0
-        ;
-        var x = 0;
-        fun dstview() => SDL_Rect (
-          xoffset+x+xadj,
-          yoffset + (lno - startline) * lineskip,
-          unused,unused)
-        ;
-
-        if presel > 0 do
-          var text = line.[to presel];
-          var xadj = min (0,minx (font, text.[0].ord));
-          var viewport = #dstview;
-          var text_rendered = TTF_RenderText_Solid(font,text,white);
-          result = SDL_BlitSurface (text_rendered, nullRect, window_surface, &viewport); 
-          SDL_FreeSurface text_rendered;
-          x = charwidth * presel;
-        done
-
-        if presel < postsel do
-          text = line.[presel to postsel];
-          xadj = 0;
-          viewport = #dstview;
-          text_rendered = TTF_RenderText_Shaded(font,text,black,red);
-          var srcrec = SDL_Rect (0,0,text.len.int * charwidth,lineskip);
-          result = SDL_BlitSurface (text_rendered, &srcrec, window_surface, &viewport); 
-          SDL_FreeSurface text_rendered;
-          x += charwidth * (postsel - presel); 
-        done
-        
-        if postsel < line.len.int do
-          text = line.[postsel to];
-          xadj = min(0,minx (font, text.[0].ord));
-          viewport = #dstview;
-          text_rendered = TTF_RenderText_Solid(font,text,white);
-          result = SDL_BlitSurface (text_rendered, nullRect, window_surface, &viewport); 
-          SDL_FreeSurface text_rendered;
-        done
-
-      done
-      ++lno;
-    done
-    var xpos = xoffset + curcol * charwidth;
-    var ypos = yoffset + (curline - startline) * lineskip;
-    var dstpos = SDL_Rect (xpos,ypos,0,0);
-    var srcrect = SDL_Rect (0,0,1,20);
-    result = SDL_BlitSurface (ibeam, &srcrect, window_surface, &dstpos); 
-    result = SDL_UpdateWindowSurface window;
-    if result != 0 do
-      eprintln$ "Unable to update window";
-      System::exit 1;
-    done
-  }
 // ------------------------------------------------------------------------------
 
-  draw; 
+  D.draw; 
 
   getevent:while true do
     var e : SDL_Event;
     C_hack::ignore$ SDL_WaitEvent$ &e;
-    if #(editor.get_changed) do
-      editor.reset();
-      draw;
+    if #(E.get_changed) do
+      E.reset();
+      D.draw;
     done
     match e.type.SDL_EventType with
     | $(SDL_QUIT) =>
@@ -259,12 +138,12 @@ proc mainline ()
       break getevent;
 
     | $(SDL_KEYDOWN) =>
-      editor.set_dotext();
+      E.set_dotext();
       var vkey = e.key.keysym.sym;
       println$ "Keydown " + strmods e.key.keysym.mod + str vkey;
-      if e.key.keysym.mod == 0u16 do editor.modless_keys vkey;
-      elif e.key.keysym.mod \& (KMOD_LSHIFT.uint16 \| KMOD_RSHIFT.uint16) != 0u16 do editor.shift_keys vkey;
-      elif e.key.keysym.mod \& (KMOD_CTRL .uint16 \| KMOD_RCTRL.uint16) != 0u16 do editor.control_keys vkey;
+      if e.key.keysym.mod == 0u16 do E.modless_keys vkey;
+      elif e.key.keysym.mod \& (KMOD_LSHIFT.uint16 \| KMOD_RSHIFT.uint16) != 0u16 do E.shift_keys vkey;
+      elif e.key.keysym.mod \& (KMOD_CTRL .uint16 \| KMOD_RCTRL.uint16) != 0u16 do E.control_keys vkey;
       done
 
     | $(SDL_KEYUP) => 
@@ -274,10 +153,10 @@ proc mainline ()
 
     | $(SDL_TEXTINPUT) =>
       begin
-        if #(editor.get_dotext) do
+        if #(E.get_dotext) do
           var buffer : +char = e.text.text;
           var ch = buffer.0; 
-          editor.insert_char ch;
+          E.insert_char ch;
         done
       end
     | $(SDL_MOUSEBUTTONDOWN) => 
@@ -286,17 +165,17 @@ proc mainline ()
         var x = e.button.x.int;
         var y = e.button.y.int;
         //println$ "Mousedown b="+bno.int.str + " x=" + x.str + " y=" + y.str;
-        soffset = (y - yoffset) / lineskip;
-        var curline = soffset + startline;
-        var curcol = max ((x - xoffset) / charwidth,0);
-        editor.set_pos (curcol, curline);
-        editor.set_selection (
+        D.set_soffset$ (y - #(D.get_yoffset)) / #(D.get_lineskip);
+        var curline = #(D.get_soffset) + #(D.get_startline);
+        var curcol = max ((x - #(D.get_xoffset)) / #(D.get_charwidth),0);
+        E.set_pos (curcol, curline);
+        E.set_selection (
           first_line = curline,
           first_col = curcol,
           last_line = curline,
           past_col = curcol 
         );
-        draw; 
+        D.draw; 
       end
     | $(SDL_MOUSEBUTTONUP) => 
       begin
@@ -304,14 +183,14 @@ proc mainline ()
         var x = e.button.x.int;
         var y = e.button.y.int;
         //println$ "Mouseup="+bno.int.str + " x=" + x.str + " y=" + y.str;
-        soffset = (y - yoffset) / lineskip;
-        var curline = soffset + startline;
-        var curcol = max((x - xoffset) / charwidth,0);
-        editor.set_pos (curcol, curline);
-        editor.set_selection extend #(editor.get_selection) with 
+        D.set_soffset$ (y - #(D.get_yoffset)) / #(D.get_lineskip);
+        var curline = #(D.get_soffset) + #(D.get_startline);
+        var curcol = max((x - #(D.get_xoffset)) / #(D.get_charwidth),0);
+        E.set_pos (curcol, curline);
+        E.set_selection extend #(E.get_selection) with 
           (last_line = curline, past_col = curcol) 
         end;
-        draw; 
+        D.draw; 
       end
     | $(SDL_MOUSEMOTION) => 
       /* println$ "Mousemove"*/ ;
@@ -321,14 +200,14 @@ proc mainline ()
         var x = e.button.x.int;
         var y = e.button.y.int;
         //println$ "Mouse move="+bno.int.str + " x=" + x.str + " y=" + y.str;
-        soffset = (y - yoffset) / lineskip;
-        var curline = soffset + startline;
-        var curcol = max ((x - xoffset) / charwidth,0);
-        editor.set_pos (curcol, curline);
-        editor.set_selection extend #(editor.get_selection) with
+        D.set_soffset$ (y - #(D.get_yoffset)) / #(D.get_lineskip);
+        var curline = #(D.get_soffset) + #(D.get_startline);
+        var curcol = max ((x - #(D.get_xoffset)) / #(D.get_charwidth),0);
+        E.set_pos (curcol, curline);
+        E.set_selection extend #(E.get_selection) with
           (last_line = curline, past_col = curcol)
         end;
-        draw; 
+        D.draw; 
       end
       done
 
@@ -343,12 +222,12 @@ proc mainline ()
         // so curline - soffset < number of text lines
         // so curline < N + S  or S > C - N
         var y = e.wheel.y.str;
-        var curline = #(editor.get_curline);
-        var lines = #(editor.get_lines);
-        soffset = soffset + y.int;
-        if soffset > curline do soffset = curline; done
-        if soffset < curline - lines.len.int - 1 do soffset = curline - lines.len.int - 1; done
-        draw;
+        var curline = #(E.get_curline);
+        var lines = #(E.get_lines);
+        D.set_soffset$ #(D.get_soffset) + y.int;
+        if #(D.get_soffset) > curline do D.set_soffset curline; done
+        if #(D.get_soffset) < curline - lines.len.int - 1 do D.set_soffset$ curline - lines.len.int - 1; done
+        D.draw;
       end 
 
     | $(SDL_WINDOWEVENT) => 
@@ -357,7 +236,7 @@ proc mainline ()
         ;
         if e.window.event.SDL_WindowEventID == SDL_WINDOWEVENT_SIZE_CHANGED do
           window_surface = SDL_GetWindowSurface window;
-          draw;
+          D.draw;
         done
     | _ => 
       println$ "Event type " + e.type.str;

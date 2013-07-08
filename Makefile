@@ -369,6 +369,7 @@ gccosxtarget:
 
 sdltest:
 	build/release/host/bin/flx --test=build/release -c demos/sdl/edit_buffer
+	build/release/host/bin/flx --test=build/release -c demos/sdl/edit_display
 	DYLD_LIBRARY_PATH=demos/sdl build/release/host/bin/flx --test=build/release demos/sdl/sdltest
 
 

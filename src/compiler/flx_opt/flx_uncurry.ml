@@ -247,7 +247,7 @@ let fixup_function
     | _ -> failwith "Unimplemented curried fun param not var or val"
     in
 
-    if syms.compiler_options.print_flag then
+    if syms.compiler_options.print_flag then 
       print_endline ("New param " ^ s ^ "_uncurry<" ^ string_of_bid n ^
         ">[" ^ catmap
         "," (fun (s,i) -> s ^ "<" ^ string_of_bid i ^ ">") vs ^
@@ -277,6 +277,12 @@ let fixup_function
 
   (* Finally, merge the parent and child parameters. *)
   let ps = ps @ psc in
+  if syms.compiler_options.print_flag then
+  List.iter (fun {pkind=pk; pid=s; ptyp=pt}->
+    print_endline ("param " ^ string_of_param_kind pk ^" " ^ s ^ ":" ^ sbt bsym_table pt))
+    ps
+  ;
+
 
   (* Update the child's expressions and executables. *)
   let rec revare e = Flx_bexpr.map ~f_bid:revar ~f_bexpr:revare e in
@@ -289,15 +295,16 @@ let fixup_function
 
 
 let synthesize_function syms bsym_table ut vm rl i (c, k, n) =
-  if syms.compiler_options.print_flag then
-    print_endline ("UNCURRY: Orig " ^ string_of_bid i ^ " ret child " ^
-      string_of_bid c ^ " synth " ^ string_of_bid k ^ " count=" ^ si n);
-
   (* As a safety check, make sure that the child has the parent as the
    * parent. *)
   assert (Flx_bsym_table.find_parent bsym_table c = Some i);
 
   let bsymi_parent, bsymi = Flx_bsym_table.find_with_parent bsym_table i in
+
+  if syms.compiler_options.print_flag then
+    print_endline ("UNCURRY: Orig " ^ Flx_bsym.id bsymi ^"<" ^ string_of_bid i ^ "> ret child " ^
+      string_of_bid c ^ " synth " ^ string_of_bid k ^ " count=" ^ si n);
+
 
   (* Add a placeholder symbol that will be updated later. *)
   Flx_bsym_table.add bsym_table k bsymi_parent
@@ -318,9 +325,10 @@ let synthesize_function syms bsym_table ut vm rl i (c, k, n) =
   let bbdcl =
     match Flx_bsym_table.find_bbdcl bsym_table c with
     | BBDCL_fun (propsc,vsc,(psc,traintc),retc,exesc) ->
-        let vs,ps,exes = fixup_function vsc psc exesc in
-        bbdcl_fun (propsc,vs,(ps,traintc),retc,exes)
-
+      if syms.compiler_options.print_flag then
+      print_endline ("Properties " ^ Flx_print.string_of_properties propsc);
+      let vs,ps,exes = fixup_function vsc psc exesc in
+      bbdcl_fun (propsc,vs,(ps,traintc),retc,exes)
     | _ -> assert false
   in
 

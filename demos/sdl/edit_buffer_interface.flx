@@ -11,6 +11,8 @@
 // in here that really belongs in the controller.
 // --------------------------------------------------------------------------
 
+include "sdl/SDL2"; // for SDL_keycode
+
 typedef selection_t = (first_line:int, first_col:int, last_line:int, past_col:int); 
 
 interface edit_buffer_interface  
