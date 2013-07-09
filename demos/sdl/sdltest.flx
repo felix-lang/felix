@@ -110,16 +110,23 @@ proc mainline ()
   var E = #{
     var text = load "demos/sdl/sdltest.flx";
     var lines = darray$ varray$ split$ text, char '\n';
-    var editor = Dynlink::load-plugin-func1 [edit_buffer_interface, darray[string]] (
-       dll-name="edit_buffer");
+    var editor = Dynlink::load-plugin-func1 [edit_buffer_interface, darray[string]] 
+      (dll-name="edit_buffer")
+    ;
     return editor lines;
   };
 
+println$ "Editor bound";
+
   var D = #{
-    var display = Dynlink::load-plugin-func1 [edit_display_interface, edit_display_init] (dll-name="edit_buffer");
+    var display = 
+      Dynlink::load-plugin-func1 [edit_display_interface, edit_display_init] 
+      (dll-name="edit_display")
+    ;
     return display (font=font, editor=E, window=window);
   };
 
+println$ "Display bound";
 
 // ------------------------------------------------------------------------------
 
@@ -138,10 +145,17 @@ proc mainline ()
       break getevent;
 
     | $(SDL_KEYDOWN) =>
-      E.set_dotext();
+      E.set_dotext true;
       var vkey = e.key.keysym.sym;
       println$ "Keydown " + strmods e.key.keysym.mod + str vkey;
-      if e.key.keysym.mod == 0u16 do E.modless_keys vkey;
+      if e.key.keysym.mod == 0u16 do 
+        if vkey == SDLK_KP_5 do
+          E.set_dotext false;
+          D.set_soffset$ #(D.get_nlines) /2;
+          D.draw;
+        else
+          E.modless_keys vkey;
+        done
       elif e.key.keysym.mod \& (KMOD_LSHIFT.uint16 \| KMOD_RSHIFT.uint16) != 0u16 do E.shift_keys vkey;
       elif e.key.keysym.mod \& (KMOD_CTRL .uint16 \| KMOD_RCTRL.uint16) != 0u16 do E.control_keys vkey;
       done

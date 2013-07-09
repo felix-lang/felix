@@ -27,7 +27,7 @@ interface edit_buffer_interface
   get_changed: 1 -> 2;
   reset: 1 -> 0; 
 
-  set_dotext: 1 -> 0;
+  set_dotext: 2 -> 0;
   get_dotext: 1 -> 2;
 
   insert_char: char -> 0;

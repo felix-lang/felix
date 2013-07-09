@@ -22,7 +22,7 @@ object edit_buffer (var lines: darray[string]) implements edit_buffer_interface 
   method proc reset () { changed = false; } 
 
   var dotext = true;
-  method proc set_dotext() { dotext = true; }
+  method proc set_dotext(b:bool) { dotext = b; }
   method fun get_dotext() => dotext;
 
   fun next() => if curline < lines.len.int then lines.curline.[curcol] else 0.char;
@@ -50,6 +50,8 @@ object edit_buffer (var lines: darray[string]) implements edit_buffer_interface 
 
   method proc insert_char (ch:char)
   {
+    while curline >= lines.len.int do push_back (lines, ""); done
+     
     var tmp = lines.curline;
     var n = tmp.len.int;
     if curcol > n do
@@ -164,6 +166,7 @@ object edit_buffer (var lines: darray[string]) implements edit_buffer_interface 
       end
 
     | $(SDLK_BACKSPACE) =>
+      if curline < lines.len.int do
       begin
         var n = lines.curline.len.int;
         if curcol > 0 do
@@ -185,6 +188,10 @@ object edit_buffer (var lines: darray[string]) implements edit_buffer_interface 
           draw;
         done
       end
+      else 
+        back1; 
+        draw;
+      done
 
     | $(SDLK_RETURN) =>
       begin
@@ -308,7 +315,7 @@ object edit_buffer (var lines: darray[string]) implements edit_buffer_interface 
 
 }
 
-fun setup(x:string)= { C_hack::ignore x; return 0; } 
+fun setup(x:string)= { println$ "edit buffer setup"; C_hack::ignore x; return 0; } 
   // the hack here is a BUG in the compiler, dropping
   // an unused parameter
 

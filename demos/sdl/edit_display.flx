@@ -39,7 +39,8 @@ implements edit_display_interface =
 
   method fun get_lineskip () => lineskip;
   method fun get_startline () => startline;
-   
+  method fun get_nlines () => nlines;
+
   fun minx (font:TTF_Font, chrix : int) =
   {
     var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
@@ -159,4 +160,12 @@ implements edit_display_interface =
     done
   }
 }
+
+
+fun setup(x:string)= { println$ "edit display setup"; C_hack::ignore x; return 0; } 
+  // the hack here is a BUG in the compiler, dropping
+  // an unused parameter
+
+export fun setup of (string) as "edit_display_setup";
+export proc edit_display of (edit_display_init) as "edit_display";
 
