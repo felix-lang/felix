@@ -1,3 +1,39 @@
+/* SDL based programmers text editor 
+
+Design notes.
+
+We use roughly an MVC system, the Model is the
+edit buffer, the View is the display, and the
+control dispatches keystrokes to the editor and
+calls for the display at various times.
+
+In an ideal system the text editing API would be
+cleanly separated from the display management.
+
+However, some user operations both modify the buffer
+and require adjustments to the view. The general
+invariant which separates the buffer from the display
+is that the current cursor location be display on
+approximately the middle line of the display area.
+
+Some commands such as a mouse click reposition
+the cursor (edit buffer) AND change the current screen
+line (display) the cursor is shown on (so that in fact the operation
+moves the cursor but not the text).
+
+The display is naturally dependent on the edit buffer (since it
+has to get the text to display from it!). However if the cursor
+is part of the edit buffer then commands like page-up and page-down
+move an amount dependent on the number of screen lines. However
+the movement might be clipped by the total number of text lines,
+so the calculation depends on BOTH the display state and the
+edit buffer state.
+
+So again we have an operation which exhibits coupling.
+
+*/
+
+
 // SDL2 test
 include "sdl/SDL2";
 include "sdl/SDL_ttf";
@@ -26,7 +62,7 @@ proc init()
 
 proc versions ()
 {
-   begin
+  begin
     var compiled = #SDL_Compiled_Version;
     var linked = #SDL_Linked_Version;
     println$ f"We compiled against SDL version %d.%d.%d ..."
@@ -116,7 +152,6 @@ proc mainline ()
     return editor lines;
   };
 
-println$ "Editor bound";
 
   var D = #{
     var display = 
@@ -126,11 +161,78 @@ println$ "Editor bound";
     return display (font=font, editor=E, window=window);
   };
 
-println$ "Display bound";
 
 // ------------------------------------------------------------------------------
 
   D.draw; 
+
+  object controller (E:edit_buffer_interface, D:edit_display_interface) =
+  {
+    method proc recentre() 
+    {
+      E.set_dotext false;
+      E.set_soffset$ #(E.get_nlines) /2;
+      D.draw;
+    }
+
+    method proc begin_mark_selection(x:int, y:int)
+    {
+        E.set_soffset$ (y - #(D.get_yoffset)) / #(D.get_lineskip);
+        var curline = #(E.get_soffset) + #(D.get_startline);
+        var curcol = max ((x - #(D.get_xoffset)) / #(D.get_charwidth),0);
+        E.set_pos (curcol, curline);
+        E.set_selection (
+          first_line = curline,
+          first_col = curcol,
+          last_line = curline,
+          past_col = curcol 
+        );
+        D.draw; 
+    }
+
+    method proc end_mark_selection (x:int, y:int) 
+    { 
+      var curline = #(E.get_soffset) + #(D.get_startline);
+      var curcol = max((x - #(D.get_xoffset)) / #(D.get_charwidth),0);
+      E.set_pos (curcol, curline);
+      E.set_selection extend #(E.get_selection) with 
+          (last_line = curline, past_col = curcol) 
+      end;
+      D.draw; 
+    }
+    
+    method proc extend_selection (x:int, y:int)
+    {
+      E.set_soffset$ (y - #(D.get_yoffset)) / #(D.get_lineskip);
+      var curline = #(E.get_soffset) + #(D.get_startline);
+      var curcol = max ((x - #(D.get_xoffset)) / #(D.get_charwidth),0);
+      E.set_pos (curcol, curline);
+      E.set_selection extend #(E.get_selection) with
+          (last_line = curline, past_col = curcol)
+      end;
+      D.draw; 
+    }
+
+    //println$ "Mousewheel x=" + e.wheel.x.str + ", y=" + e.wheel.y.str;
+    // caret offset from top of screen is normally 0 to nlines-1.
+    // invariant: curline = startline + soffset.
+    // so: startline = curline - soffset
+    // but we want startline >= 0 hence soffset <= curline
+    // we also want startline < number of text lines.
+    // so curline - soffset < number of text lines
+    // so curline < N + S  or S > C - N
+    method proc pan (y:int)
+    {
+      var curline = #(E.get_curline);
+      var lines = #(E.get_lines);
+      E.set_soffset$ #(E.get_soffset) + y.int;
+      if #(E.get_soffset) > curline do E.set_soffset curline; done
+      if #(E.get_soffset) < curline - lines.len.int - 1 do E.set_soffset$ curline - lines.len.int - 1; done
+      D.draw;
+   }
+}
+
+  var CTL = controller (E,D);
 
   getevent:while true do
     var e : SDL_Event;
@@ -147,12 +249,9 @@ println$ "Display bound";
     | $(SDL_KEYDOWN) =>
       E.set_dotext true;
       var vkey = e.key.keysym.sym;
-      println$ "Keydown " + strmods e.key.keysym.mod + str vkey;
+      //println$ "Keydown " + strmods e.key.keysym.mod + str vkey;
       if e.key.keysym.mod == 0u16 do 
-        if vkey == SDLK_KP_5 do
-          E.set_dotext false;
-          D.set_soffset$ #(D.get_nlines) /2;
-          D.draw;
+        if vkey == SDLK_KP_5 do CTL.recentre;
         else
           E.modless_keys vkey;
         done
@@ -161,7 +260,8 @@ println$ "Display bound";
       done
 
     | $(SDL_KEYUP) => 
-      println$ "Keyup";
+      //println$ "Keyup"
+      ;
     | $(SDL_TEXTEDITING) =>
       println$ "TextEditing";
 
@@ -178,18 +278,8 @@ println$ "Display bound";
         var bno = e.button.button;
         var x = e.button.x.int;
         var y = e.button.y.int;
+        CTL.begin_mark_selection (x,y);
         //println$ "Mousedown b="+bno.int.str + " x=" + x.str + " y=" + y.str;
-        D.set_soffset$ (y - #(D.get_yoffset)) / #(D.get_lineskip);
-        var curline = #(D.get_soffset) + #(D.get_startline);
-        var curcol = max ((x - #(D.get_xoffset)) / #(D.get_charwidth),0);
-        E.set_pos (curcol, curline);
-        E.set_selection (
-          first_line = curline,
-          first_col = curcol,
-          last_line = curline,
-          past_col = curcol 
-        );
-        D.draw; 
       end
     | $(SDL_MOUSEBUTTONUP) => 
       begin
@@ -197,14 +287,7 @@ println$ "Display bound";
         var x = e.button.x.int;
         var y = e.button.y.int;
         //println$ "Mouseup="+bno.int.str + " x=" + x.str + " y=" + y.str;
-        D.set_soffset$ (y - #(D.get_yoffset)) / #(D.get_lineskip);
-        var curline = #(D.get_soffset) + #(D.get_startline);
-        var curcol = max((x - #(D.get_xoffset)) / #(D.get_charwidth),0);
-        E.set_pos (curcol, curline);
-        E.set_selection extend #(E.get_selection) with 
-          (last_line = curline, past_col = curcol) 
-        end;
-        D.draw; 
+        CTL.end_mark_selection (x,y);
       end
     | $(SDL_MOUSEMOTION) => 
       /* println$ "Mousemove"*/ ;
@@ -213,35 +296,16 @@ println$ "Display bound";
         var bno = e.button.button;
         var x = e.button.x.int;
         var y = e.button.y.int;
+        CTL.extend_selection (x,y);
+
         //println$ "Mouse move="+bno.int.str + " x=" + x.str + " y=" + y.str;
-        D.set_soffset$ (y - #(D.get_yoffset)) / #(D.get_lineskip);
-        var curline = #(D.get_soffset) + #(D.get_startline);
-        var curcol = max ((x - #(D.get_xoffset)) / #(D.get_charwidth),0);
-        E.set_pos (curcol, curline);
-        E.set_selection extend #(E.get_selection) with
-          (last_line = curline, past_col = curcol)
-        end;
-        D.draw; 
       end
       done
 
     | $(SDL_MOUSEWHEEL) => 
       begin
-        //println$ "Mousewheel x=" + e.wheel.x.str + ", y=" + e.wheel.y.str;
-        // caret offset from top of screen is normally 0 to nlines-1.
-        // invariant: curline = startline + soffset.
-        // so: startline = curline - soffset
-        // but we want startline >= 0 hence soffset <= curline
-        // we also want startline < number of text lines.
-        // so curline - soffset < number of text lines
-        // so curline < N + S  or S > C - N
-        var y = e.wheel.y.str;
-        var curline = #(E.get_curline);
-        var lines = #(E.get_lines);
-        D.set_soffset$ #(D.get_soffset) + y.int;
-        if #(D.get_soffset) > curline do D.set_soffset curline; done
-        if #(D.get_soffset) < curline - lines.len.int - 1 do D.set_soffset$ curline - lines.len.int - 1; done
-        D.draw;
+        var y = e.wheel.y.int;
+        CTL.pan y;
       end 
 
     | $(SDL_WINDOWEVENT) => 
@@ -249,7 +313,7 @@ println$ "Display bound";
           e.window.event.SDL_WindowEventID.str
         ;
         if e.window.event.SDL_WindowEventID == SDL_WINDOWEVENT_SIZE_CHANGED do
-          window_surface = SDL_GetWindowSurface window;
+          // reset nlines etc here!
           D.draw;
         done
     | _ => 

@@ -16,8 +16,6 @@ interface edit_display_init {
 
 interface edit_display_interface {
   draw: 1 -> 0;
-  get_soffset: 1 -> int;
-  set_soffset : int -> 0;
 
   get_xoffset: 1 -> int;
   set_xoffset: int -> 0;
@@ -27,7 +25,6 @@ interface edit_display_interface {
 
   get_lineskip : 1 -> int;
   get_startline: 1 -> int;
-  get_nlines : 1 -> int;
   get_charwidth : 1 -> int;
    
 }

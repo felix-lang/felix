@@ -23,7 +23,10 @@ interface edit_buffer_interface
   get_curcol: 1 -> int;
   set_selection: selection_t -> 0;
   set_pos : int * int -> 0;
-
+  get_nlines : 1 -> int; // screen lines not lines in buffer!
+  set_nlines : int -> 0;
+  get_soffset: 1 -> int; // screen lines not lines in buffer!
+  set_soffset: int -> 0;
   get_changed: 1 -> 2;
   reset: 1 -> 0; 
 

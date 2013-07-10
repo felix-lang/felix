@@ -22,14 +22,9 @@ implements edit_display_interface =
 
 
   var startline = 0;
-  var nlines = 30; // hack, calculate on resize
-  var soffset = nlines / 2;
   var lineskip = TTF_FontHeight(init.font)+1;
   var yoffset = 10; 
   var xoffset = 20;
-
-  method fun get_soffset () => soffset;
-  method proc set_soffset (x:int) => soffset = x;
 
   method fun get_xoffset () => xoffset;
   method proc set_xoffset (x:int) => xoffset = x;
@@ -39,7 +34,6 @@ implements edit_display_interface =
 
   method fun get_lineskip () => lineskip;
   method fun get_startline () => startline;
-  method fun get_nlines () => nlines;
 
   fun minx (font:TTF_Font, chrix : int) =
   {
@@ -71,7 +65,7 @@ implements edit_display_interface =
     var selection = #(init.editor.get_selection);
     var lines = #(init.editor.get_lines);
  
-    startline = curline - soffset;
+    startline = curline - #(init.editor.get_soffset);
     if startline < 0 do startline = 0; done
     var blue = SDL_Color (0u8, 0u8, 250u8, 0u8);
     var bg = blue;

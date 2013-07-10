@@ -10,6 +10,14 @@ object edit_buffer (var lines: darray[string]) implements edit_buffer_interface 
   var curcol = 0;
   var selection = null_selection;
   var nlines = 30; // HACK!
+  var soffset = nlines / 2;
+
+  method fun get_nlines () => nlines;
+  method proc set_nlines (x:int) => nlines = x;
+  method fun get_soffset () => soffset;
+  method proc set_soffset (x:int) => soffset = x;
+
+
   method fun get_selection () => selection;
   method fun get_curline () => curline;
   method fun get_curcol () => curcol;
@@ -30,11 +38,13 @@ object edit_buffer (var lines: darray[string]) implements edit_buffer_interface 
 
   proc fwd1()
   {
-    if curcol < lines.curline.len.int do
-      curcol = curcol + 1;
-    elif curline < lines.len.int do
-      curline = curline + 1;
-      curcol = 0;
+    if curline < lines.len.int do
+      if curcol < lines.curline.len.int do
+        curcol = curcol + 1;
+      else 
+        curline++; 
+        curcol = 0;
+      done
     done
   }
 
@@ -44,7 +54,11 @@ object edit_buffer (var lines: darray[string]) implements edit_buffer_interface 
      curcol = curcol - 1;
    elif curline > 0 do
      curline = curline - 1;
-     curcol = lines.curline.len.int;
+     if curline < lines.len.int do
+       curcol = lines.curline.len.int;
+     else
+       curcol = 0;
+     done
    done
  }
 
@@ -77,6 +91,18 @@ object edit_buffer (var lines: darray[string]) implements edit_buffer_interface 
     | $(SDLK_RIGHT) => 
       while #next in alphanum do fwd1; done
       while curline < lines.len.int and not (#next in alphanum) do fwd1; done
+      draw;
+
+    | $(SDLK_y) => // delete line
+      if curline < lines.len.int do
+        if curline + 1 < lines.len.int do
+          for var i in curline + 1 upto lines.len.int - 1 do
+            set(lines, i - 1, get(lines, i));
+          done
+        done
+        pop lines;
+      done
+      curcol = 0;
       draw;
 
     | _ => ;
