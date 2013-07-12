@@ -40,6 +40,7 @@ include "sdl/SDL_ttf";
 include "sdl/SDL_image";
 include "./edit_buffer_interface";
 include "./edit_display_interface";
+include "./edit_controller_interface";
 
 proc init()
 {
@@ -165,74 +166,12 @@ proc mainline ()
 // ------------------------------------------------------------------------------
 
   D.draw; 
-
-  object controller (E:edit_buffer_interface, D:edit_display_interface) =
-  {
-    method proc recentre() 
-    {
-      E.set_dotext false;
-      E.set_soffset$ #(E.get_nlines) /2;
-      D.draw;
-    }
-
-    method proc begin_mark_selection(x:int, y:int)
-    {
-        E.set_soffset$ (y - #(D.get_yoffset)) / #(D.get_lineskip);
-        var curline = #(E.get_soffset) + #(D.get_startline);
-        var curcol = max ((x - #(D.get_xoffset)) / #(D.get_charwidth),0);
-        E.set_pos (curcol, curline);
-        E.set_selection (
-          first_line = curline,
-          first_col = curcol,
-          last_line = curline,
-          past_col = curcol 
-        );
-        D.draw; 
-    }
-
-    method proc end_mark_selection (x:int, y:int) 
-    { 
-      var curline = #(E.get_soffset) + #(D.get_startline);
-      var curcol = max((x - #(D.get_xoffset)) / #(D.get_charwidth),0);
-      E.set_pos (curcol, curline);
-      E.set_selection extend #(E.get_selection) with 
-          (last_line = curline, past_col = curcol) 
-      end;
-      D.draw; 
-    }
-    
-    method proc extend_selection (x:int, y:int)
-    {
-      E.set_soffset$ (y - #(D.get_yoffset)) / #(D.get_lineskip);
-      var curline = #(E.get_soffset) + #(D.get_startline);
-      var curcol = max ((x - #(D.get_xoffset)) / #(D.get_charwidth),0);
-      E.set_pos (curcol, curline);
-      E.set_selection extend #(E.get_selection) with
-          (last_line = curline, past_col = curcol)
-      end;
-      D.draw; 
-    }
-
-    //println$ "Mousewheel x=" + e.wheel.x.str + ", y=" + e.wheel.y.str;
-    // caret offset from top of screen is normally 0 to nlines-1.
-    // invariant: curline = startline + soffset.
-    // so: startline = curline - soffset
-    // but we want startline >= 0 hence soffset <= curline
-    // we also want startline < number of text lines.
-    // so curline - soffset < number of text lines
-    // so curline < N + S  or S > C - N
-    method proc pan (y:int)
-    {
-      var curline = #(E.get_curline);
-      var lines = #(E.get_lines);
-      E.set_soffset$ #(E.get_soffset) + y.int;
-      if #(E.get_soffset) > curline do E.set_soffset curline; done
-      if #(E.get_soffset) < curline - lines.len.int - 1 do E.set_soffset$ curline - lines.len.int - 1; done
-      D.draw;
-   }
-}
-
-  var CTL = controller (E,D);
+  var CTL = #{
+    var ctl = Dynlink::load-plugin-func2 [edit_controller_interface, edit_buffer_interface, edit_display_interface]
+      (dll-name="edit_controller")
+    ;
+    return ctl (E,D);
+  };
 
   getevent:while true do
     var e : SDL_Event;

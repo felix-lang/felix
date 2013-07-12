@@ -1,0 +1,8 @@
+interface edit_controller_interface {
+  recentre : 1 -> 0;
+  begin_mark_selection : int * int -> 0;
+  end_mark_selection : int * int -> 0;
+  extend_selection: int * int -> 0;
+  pan : int -> 0;
+}
+
