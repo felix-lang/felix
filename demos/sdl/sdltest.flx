@@ -44,7 +44,7 @@ include "./edit_controller_interface";
 
 proc init()
 {
- if SDL_Init(SDL_INIT_AUDIO \| SDL_INIT_VIDEO) < 0  do
+  if SDL_Init(SDL_INIT_AUDIO \| SDL_INIT_VIDEO) < 0  do
     eprintln$ f"Unable to init SDL: %S\n" #SDL_GetError;
     System::exit(1);
   done
@@ -54,7 +54,7 @@ proc init()
     System::exit(1);
   done
   println$ "TTF_init OK";
-   if IMG_Init(IMG_INIT_PNG) < 0 do 
+  if IMG_Init(IMG_INIT_PNG) < 0 do 
     eprintln$ f"Unable to init IMG with PNG: %S\n" #IMG_GetError;
     System::exit(1);
   done
@@ -120,8 +120,8 @@ proc mainline ()
   ;
   var clock = #Faio::mk_alarm_clock;
 
-  var red = SDL_Color (250u8,200u8, 200u8,0u8);
-  var white = SDL_Color (250u8,250u8, 250u8,0u8);
+  var red = SDL_Color (250u8,0u8, 0u8,0u8);
+  var white = SDL_Color (250u8,255u8, 255u8,0u8);
   var black = SDL_Color (0u8,0u8, 0u8,0u8);
 
   var intro = "Hello from Felix";

@@ -16,10 +16,22 @@ implements edit_display_interface =
 
   var nullRect = C_hack::null[SDL_Rect];
 
-  var red = SDL_Color (250u8,200u8, 200u8,0u8);
-  var white = SDL_Color (250u8,250u8, 250u8,0u8);
+  var red = SDL_Color (255u8,0u8, 0u8,0u8);
+  var white = SDL_Color (255u8,250u8, 250u8,0u8);
   var black = SDL_Color (0u8,0u8, 0u8,0u8);
+  var brown = SDL_Color (200u8, 150u8, 190u8, 0u8);
+  var blue = SDL_Color (0u8, 0u8, 255u8, 0u8);
+  var green = SDL_Color (0u8, 255u8, 0u8, 0u8);
+  var darkgreen = SDL_Color (50u8, 200u8, 50u8, 0u8);
+  var yellow = SDL_Color (0u8, 255u8, 255u8, 0u8);
+  var orange = SDL_Color (200u8, 150u8, 150u8, 0u8);
+  var purple = SDL_Color (255u8, 0u8, 255u8, 0u8);
+  var keycolour = SDL_Color (150u8, 80u8, 80u8, 0u8);
 
+  var lightgrey = SDL_Color (200u8, 200u8, 200u8, 0u8);
+  var grey = SDL_Color (150u8, 150u8, 150u8, 0u8);
+  var darkgrey = SDL_Color (100u8, 100u8, 100u8, 0u8);
+  var soot = SDL_Color (50u8, 50u8, 50u8, 0u8);
 
   var startline = 0;
   var lineskip = TTF_FontHeight(init.font)+1;
@@ -56,7 +68,74 @@ implements edit_display_interface =
   };
 
   method fun get_charwidth () => charwidth;
- 
+
+  enum tclass = ordinary, identifier, keyword, coment, strng, error;
+
+  // hack tokeniser
+  fun tokenise (var state:int, s:string) = 
+  {
+    var words = Empty[tclass * string];
+    var word = "";
+    var kind = ordinary;
+    proc setkind() {
+      kind = match state with | 0 => ordinary | 1 => identifier | 2 => coment | _ => error;
+      if word in 
+      (
+        "fun", "proc", "var","gen","val",
+        "typedef","union","struct",
+        "do", "done",
+        "if","else","elif","begin","end","while","then",
+        "for","upto","downto"
+        "match","endmatch",
+        "return","yield",
+        "method","object","interface","implements",
+        "and","or","not"
+      ) 
+      do 
+        kind = keyword; 
+      done
+    }
+    if s.len.int > 0 do 
+      for var i in 0 upto s.len.int - 1 do
+        var ch = s.[i];
+        if state == 0 do // scanning non-ident
+          if ch in alphanum do
+            if word.len.int > 0 do
+              words += (ordinary,word);
+              word = "";
+            done
+            state = 1; // scanning ident
+          elif ch == char "/" and s.[i+1] == char "/" do
+            state = 2; // scanning comment
+          done
+        elif state ==  1 do
+          if not (ch in alphanum) do
+            if word.len.int > 0 do 
+              setkind;
+              words += (kind,word);
+              word = "";
+            done
+            if ch == char "/" and s.[i+1] == char "/" do
+              state = 2; // scanning comment
+            else
+              state = 0;
+            done
+          done
+        else // state = 3, scanning C++ comment
+          // nothing to do 
+        done
+        word += ch;
+      done
+    done
+    if word.len.int > 0 do
+      setkind;
+      words += (kind,word);
+      word = "";
+    done
+    state = 0;
+    return state,words;
+  } 
+
   method proc draw()
   {
     var window_surface = SDL_GetWindowSurface init.window;
@@ -67,8 +146,7 @@ implements edit_display_interface =
  
     startline = curline - #(init.editor.get_soffset);
     if startline < 0 do startline = 0; done
-    var blue = SDL_Color (0u8, 0u8, 250u8, 0u8);
-    var bg = blue;
+    var bg = white;
     var pixelformat : &SDL_PixelFormat  = window_surface*.format;
     var bgpixels = SDL_MapRGB(pixelformat,bg.r, bg.g, bg.b);
     var result = SDL_FillRect(window_surface, nullRect,bgpixels);
@@ -91,8 +169,10 @@ implements edit_display_interface =
    ;
 
     val unused=0;
+    var state = 0;
     for line in lines do
       if lno >= startline do
+        def state, var words = tokenise (state,line);
         var presel = 
           if lno == sel.first_line then sel.first_col 
           else 0
@@ -102,43 +182,37 @@ implements edit_display_interface =
           elif lno >= sel.first_line and lno < sel.last_line then line.len.int
           else 0
         ;
-        var x = 0;
         fun dstview() => SDL_Rect (
           xoffset+x+xadj,
           yoffset + (lno - startline) * lineskip,
           unused,unused)
         ;
 
-        if presel > 0 do
-          var text = line.[to presel];
-          var xadj = min (0,minx (init.font, text.[0].ord));
-          var viewport = #dstview;
-          var text_rendered = TTF_RenderText_Solid(init.font,text,white);
-          result = SDL_BlitSurface (text_rendered, nullRect, window_surface, &viewport); 
-          SDL_FreeSurface text_rendered;
-          x = charwidth * presel;
+        var i = 0;
+        match ?kind,?word in words do
+          for var j in 0 upto word.len.int - 1 do // no null words
+            if i >=presel and i < postsel do
+              var xadj = 0; // min (0,minx (init.font, line.[i].ord));
+              var text_rendered = TTF_RenderGlyph_Shaded(init.font,word.[j].ord.uint16,red,grey);
+            else
+              var colour = 
+                match kind with 
+                | ordinary => soot 
+                | identifier => soot 
+                | keyword => keycolour
+                | coment => darkgreen
+                | _ => red
+              ;
+              xadj = min (0,minx (init.font, word.[j].ord));
+              text_rendered = TTF_RenderGlyph_Solid(init.font,word.[j].ord.uint16,colour);
+            done
+            var x = charwidth * i;
+            var viewport = #dstview;
+            result = SDL_BlitSurface (text_rendered, nullRect, window_surface, &viewport); 
+            SDL_FreeSurface text_rendered;
+            ++i;
+          done
         done
-
-        if presel < postsel do
-          text = line.[presel to postsel];
-          xadj = 0;
-          viewport = #dstview;
-          text_rendered = TTF_RenderText_Shaded(init.font,text,black,red);
-          var srcrec = SDL_Rect (0,0,text.len.int * charwidth,lineskip);
-          result = SDL_BlitSurface (text_rendered, &srcrec, window_surface, &viewport); 
-          SDL_FreeSurface text_rendered;
-          x += charwidth * (postsel - presel); 
-        done
-        
-        if postsel < line.len.int do
-          text = line.[postsel to];
-          xadj = min(0,minx (init.font, text.[0].ord));
-          viewport = #dstview;
-          text_rendered = TTF_RenderText_Solid(init.font,text,white);
-          result = SDL_BlitSurface (text_rendered, nullRect, window_surface, &viewport); 
-          SDL_FreeSurface text_rendered;
-        done
-
       done
       ++lno;
     done
