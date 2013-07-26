@@ -144,58 +144,109 @@ proc mainline ()
   done
 
 // ------------------------------------------------------------------------------
-  var E = #{
-    var text = load "demos/sdl/sdltest.flx";
-    var lines = darray$ varray$ split$ text, char '\n';
-    var editor = Dynlink::load-plugin-func1 [edit_buffer_interface, darray[string]] 
-      (dll-name="edit_buffer")
-    ;
-    return editor lines;
-  };
-
-
-  var D = #{
-    var display = 
-      Dynlink::load-plugin-func1 [edit_display_interface, edit_display_init] 
-      (dll-name="edit_display")
-    ;
-    return display (font=font, editor=E, window=window);
-  };
-
+  var text = load "demos/sdl/sdltest.flx";
+  var lines = darray$ varray$ split$ text, char '\n';
+  var editor = Dynlink::load-plugin-func1 [edit_buffer_interface, darray[string]] 
+    (dll-name="edit_buffer")
+  ;
+  var display = 
+    Dynlink::load-plugin-func1 [edit_display_interface, edit_display_init] 
+    (dll-name="edit_display")
+  ;
+  
 
 // ------------------------------------------------------------------------------
 
-  D.draw; 
+  var ctl = Dynlink::load-plugin-func2 [edit_controller_interface, edit_buffer_interface, edit_display_interface]
+    (dll-name="edit_controller")
+  ;
+
   var CTL = #{
-    var ctl = Dynlink::load-plugin-func2 [edit_controller_interface, edit_buffer_interface, edit_display_interface]
-      (dll-name="edit_controller")
-    ;
+    var E = editor lines;
+    E.whoami;
+    var s = SDL_GetWindowSurface window;
+    var dr = SDL_Rect (20,20, s*.w - 40, s*.h - 40);
+    var D = display (font=font, editor=E, window=window, r = dr);
+    D.whoami;
     return ctl (E,D);
   };
+  CTL.whoami;
+  CTL.draw;
+
+
+  // at this stage, editor in a single window
+  // extend to many windows later
+  var editors = darray[edit_controller_interface] ();
+  editors += CTL;
+  var editor_index = 0;
+
+  proc select_editor (i:int) 
+  {
+     CTL = editors . i;
+     editor_index = i;
+  }
+
+  fun find_editor_in_window (x:int, y:int) : int = 
+  {
+    return -1;
+  }
+
+  proc vsplit()
+  {
+    var oldE = CTL.get_editor ();
+    var oldD = CTL.get_display ();
+    var E = oldE;
+    var D = display (font=font, editor=E, window=window, r = dr);
+    var dr = oldD.get_display_rect ();
+    var h = dr.h/2;
+    dr.h = h;
+    oldD.set_display_rect dr;
+    D.set_display_rect (dr.x, dr.y+h, dr.w, dr.h).SDL_Rect;
+    CTL = ctl (E,D);
+    CTL.draw;
+    editors += CTL;
+    editor_index = editors.len.int - 1;
+  }
+
+  proc sswap () 
+  {
+     var i = editor_index;
+     ++i;
+     editor_index = if i >= editors.len.int then 0 else i;
+     CTL = editors.editor_index;
+  }
 
   getevent:while true do
     var e : SDL_Event;
+    begin 
+      for var i in 0 upto editors.len.int - 1 do
+        editors.i.draw ();
+      done 
+    end
+
     C_hack::ignore$ SDL_WaitEvent$ &e;
-    if #(E.get_changed) do
-      E.reset();
-      D.draw;
-    done
     match e.type.SDL_EventType with
     | $(SDL_QUIT) =>
       println$ "QUIT";
       break getevent;
 
     | $(SDL_KEYDOWN) =>
-      E.set_dotext true;
+      CTL.set_dotext true;
       var vkey = e.key.keysym.sym;
       //println$ "Keydown " + strmods e.key.keysym.mod + str vkey;
       if e.key.keysym.mod == 0u16 do 
         if vkey == SDLK_KP_5 do CTL.recentre;
         else
-          E.modless_keys vkey;
+          CTL.dispatch_modless_key vkey;
         done
-      elif e.key.keysym.mod \& (KMOD_LSHIFT.uint16 \| KMOD_RSHIFT.uint16) != 0u16 do E.shift_keys vkey;
-      elif e.key.keysym.mod \& (KMOD_CTRL .uint16 \| KMOD_RCTRL.uint16) != 0u16 do E.control_keys vkey;
+      elif e.key.keysym.mod \& (KMOD_LSHIFT.uint16 \| KMOD_RSHIFT.uint16) != 0u16 do CTL.dispatch_shift_key vkey;
+      elif e.key.keysym.mod \& (KMOD_CTRL .uint16 \| KMOD_RCTRL.uint16) != 0u16 do CTL.dispatch_control_key vkey;
+      elif e.key.keysym.mod \& (KMOD_LALT.uint16 \| KMOD_RALT.uint16) != 0u16 do 
+        if vkey == SDLK_v do vsplit;
+        elif vkey == SDLK_s do sswap;
+        else
+          println "Unknown ALT combo";
+        done
       done
 
     | $(SDL_KEYUP) => 
@@ -204,14 +255,8 @@ proc mainline ()
     | $(SDL_TEXTEDITING) =>
       println$ "TextEditing";
 
-    | $(SDL_TEXTINPUT) =>
-      begin
-        if #(E.get_dotext) do
-          var buffer : +char = e.text.text;
-          var ch = buffer.0; 
-          E.insert_char ch;
-        done
-      end
+    | $(SDL_TEXTINPUT) => CTL.dispatch_text_input e.text;
+
     | $(SDL_MOUSEBUTTONDOWN) => 
       begin
         var bno = e.button.button;
@@ -253,7 +298,7 @@ proc mainline ()
         ;
         if e.window.event.SDL_WindowEventID == SDL_WINDOWEVENT_SIZE_CHANGED do
           // reset nlines etc here!
-          D.draw;
+          #(CTL.draw);
         done
     | _ => 
       println$ "Event type " + e.type.str;

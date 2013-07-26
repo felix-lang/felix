@@ -17,6 +17,7 @@ typedef selection_t = (first_line:int, first_col:int, last_line:int, past_col:in
 
 interface edit_buffer_interface  
 {
+  whoami: 1 -> 0;
   get_lines: 1 ->darray[string];
   get_selection: 1 -> selection_t;
   get_curline: 1 -> int;

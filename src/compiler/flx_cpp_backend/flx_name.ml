@@ -26,6 +26,7 @@ let fixups = [
   "flx_stdout","_flx_stdout";
   "flx_stderr","_flx_stderr";
   "gc","_gc";
+  "apply","_apply"; (* we get a class apply with method apply otherwise *)
 ] @ List.map (fun k -> k, "_" ^ k) cpp_keywords
 
 let cid_of_flxid s =

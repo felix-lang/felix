@@ -368,10 +368,10 @@ gccosxtarget:
 	build/release/gccosx/bin/flx --test=build/release --target=gccosx  --expect --indir=test/regress/rt --regex='.*\.flx'
 
 sdltest:
-	build/release/host/bin/flx --test=build/release -c -od demos/sdl demos/sdl/edit_buffer
-	build/release/host/bin/flx --test=build/release -c -od demos/sdl demos/sdl/edit_display
-	build/release/host/bin/flx --test=build/release -c -od demos/sdl demos/sdl/edit_controller
-	DYLD_LIBRARY_PATH=demos/sdl build/release/host/bin/flx --test=build/release -od demos/sdl demos/sdl/sdltest
+	build/release/host/bin/flx --test=build/release --force -c -od demos/sdl demos/sdl/edit_buffer
+	build/release/host/bin/flx --test=build/release --force -c -od demos/sdl demos/sdl/edit_display
+	build/release/host/bin/flx --test=build/release --force -c -od demos/sdl demos/sdl/edit_controller
+	DYLD_LIBRARY_PATH=demos/sdl build/release/host/bin/flx --test=build/release --force -od demos/sdl demos/sdl/sdltest
 
 
 weblink:

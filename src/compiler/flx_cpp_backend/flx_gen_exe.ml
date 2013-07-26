@@ -666,7 +666,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
       "      {\n" ^
       "        ::flx::rtl::con_t *tmp = _caller;\n" ^
       "        _caller=0;\n" ^
-      "        return (" ^ ge sr p ^ ")\n      ->call(" ^ args ^");\n" ^
+      "        return (" ^ ge sr p ^ ")->clone()\n      ->call(" ^ args ^");//tail call (BEXE_jump)\n" ^
       "      }\n"
       end
 
@@ -709,7 +709,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
           (if with_comments then
           "      //" ^ src_str ^ ": type "^tn t^"\n"
           else "") ^
-          "      return "^ge sr e^";\n"
+          "      return "^ge sr e^";//yield\n"
         )
         ^
         "    FLX_CASE_LABEL(" ^ cid_of_bid labno ^ ")\n"

@@ -12,16 +12,15 @@ interface edit_display_init {
   font: TTF_Font;
   editor: edit_buffer_interface;
   window: SDL_Window;
+  r: SDL_Rect;
 }
 
 interface edit_display_interface {
+  whoami: 1 -> 0;
   draw: 1 -> 0;
 
-  get_xoffset: 1 -> int;
-  set_xoffset: int -> 0;
-
-  get_yoffset : 1 -> int;
-  set_yoffset: int -> 0;
+  get_display_rect : 1 -> SDL_Rect;
+  set_display_rect : SDL_Rect -> 0;
 
   get_lineskip : 1 -> int;
   get_startline: 1 -> int;

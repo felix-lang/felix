@@ -5,6 +5,7 @@ var null_selection : selection_t = (first_line = 0, first_col = 0, last_line = 0
 
 object edit_buffer (var lines: darray[string]) implements edit_buffer_interface = 
 {
+  method proc whoami () { println$ "[Model]"; }
   method fun get_lines () => lines;
   var curline = 0;
   var curcol = 0;

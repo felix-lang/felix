@@ -3,14 +3,16 @@ include "sdl/SDL_ttf";
 include "sdl/SDL_image";
 include "./edit_display_interface";
 
-object edit_display (init: edit_display_init) 
+object edit_display (var init: edit_display_init) 
 implements edit_display_interface = 
 {
 
+  method proc whoami () { println$ "[Display]"; init.editor.whoami;}
   var ibeam = #{
     var f = SDL_RWFromInputFile "Ibeam.png";
     var ibeam = IMG_LoadPNG_RW f;
     SDL_FreeRW f;
+println$ "Loading ibeam .. " + (C_hack::cast[address] ibeam).str;
     return ibeam;
   };
 
@@ -35,14 +37,9 @@ implements edit_display_interface =
 
   var startline = 0;
   var lineskip = TTF_FontHeight(init.font)+1;
-  var yoffset = 10; 
-  var xoffset = 20;
 
-  method fun get_xoffset () => xoffset;
-  method proc set_xoffset (x:int) => xoffset = x;
-
-  method fun get_yoffset () => yoffset;
-  method proc set_yoffset (x:int) => yoffset = x;
+  method fun get_display_rect () => init.r;
+  method proc set_display_rect (dr: SDL_Rect) => init.r = dr;
 
   method fun get_lineskip () => lineskip;
   method fun get_startline () => startline;
@@ -183,8 +180,8 @@ implements edit_display_interface =
           else 0
         ;
         fun dstview() => SDL_Rect (
-          xoffset+x+xadj,
-          yoffset + (lno - startline) * lineskip,
+          init.r.x+x+xadj,
+          init.r.y + (lno - startline) * lineskip,
           unused,unused)
         ;
 
@@ -216,12 +213,13 @@ implements edit_display_interface =
       done
       ++lno;
     done
-    var xpos = xoffset + curcol * charwidth;
-    var ypos = yoffset + (curline - startline) * lineskip;
+    var xpos = init.r.x + curcol * charwidth;
+    var ypos = init.r.y + (curline - startline) * lineskip;
     var dstpos = SDL_Rect (xpos,ypos,0,0);
     var srcrect = SDL_Rect (0,0,1,20);
     result = SDL_BlitSurface (ibeam, &srcrect, window_surface, &dstpos); 
     result = SDL_UpdateWindowSurface init.window;
+//println$ "Updating window";
     if result != 0 do
       eprintln$ "Unable to update window";
       System::exit 1;
