@@ -12,5 +12,10 @@ open class SDL_rect_h
     int w; int h;
   } SDL_Rect;
 
- 
+  fun \in (p:SDL_Point, r:SDL_Rect) =>
+    p.x >= r.x and p.x < r.x + r.w and p.y >= r.y and p.y < r.y + r.h
+  ;
+
+  fun inRect (x:int, y:int, r:SDL_Rect) => SDL_Point (x,y) in r;
+
 }

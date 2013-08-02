@@ -532,6 +532,15 @@ open class SDL_events_h
   ;
 
 /*@}*/
+/**
+ *  Pumps the event loop, gathering events from the input devices.
+ *
+ *  This function updates the event queue and internal input device state.
+ *
+ *  This should only be run in the thread that sets the video mode.
+ */
+
+  proc SDL_PumpEvents: 1;
 
 /**
  *  Checks to see if certain event types are in the event queue.

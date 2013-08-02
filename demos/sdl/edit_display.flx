@@ -2,38 +2,32 @@ include "sdl/SDL2";
 include "sdl/SDL_ttf";
 include "sdl/SDL_image";
 include "./edit_display_interface";
-
 object edit_display (var init: edit_display_init) 
 implements edit_display_interface = 
 {
 
   method proc whoami () { println$ "[Display]"; init.editor.whoami;}
-  var ibeam = #{
-    var f = SDL_RWFromInputFile "Ibeam.png";
-    var ibeam = IMG_LoadPNG_RW f;
-    SDL_FreeRW f;
-println$ "Loading ibeam .. " + (C_hack::cast[address] ibeam).str;
-    return ibeam;
-  };
 
   var nullRect = C_hack::null[SDL_Rect];
 
-  var red = SDL_Color (255u8,0u8, 0u8,0u8);
-  var white = SDL_Color (255u8,250u8, 250u8,0u8);
-  var black = SDL_Color (0u8,0u8, 0u8,0u8);
-  var brown = SDL_Color (200u8, 150u8, 190u8, 0u8);
-  var blue = SDL_Color (0u8, 0u8, 255u8, 0u8);
-  var green = SDL_Color (0u8, 255u8, 0u8, 0u8);
-  var darkgreen = SDL_Color (50u8, 200u8, 50u8, 0u8);
-  var yellow = SDL_Color (0u8, 255u8, 255u8, 0u8);
-  var orange = SDL_Color (200u8, 150u8, 150u8, 0u8);
-  var purple = SDL_Color (255u8, 0u8, 255u8, 0u8);
-  var keycolour = SDL_Color (150u8, 80u8, 80u8, 0u8);
+  // Colours
+  var opaque = 255u8;
+  var red = SDL_Color (255u8,0u8, 0u8,opaque);
+  var white = SDL_Color (255u8,250u8, 250u8,opaque);
+  var black = SDL_Color (0u8,0u8, 0u8,opaque);
+  var brown = SDL_Color (200u8, 150u8, 190u8, opaque);
+  var blue = SDL_Color (0u8, 0u8, 255u8, opaque);
+  var green = SDL_Color (0u8, 255u8, 0u8, opaque);
+  var darkgreen = SDL_Color (50u8, 200u8, 50u8, opaque);
+  var yellow = SDL_Color (0u8, 255u8, 255u8, opaque);
+  var orange = SDL_Color (200u8, 150u8, 150u8, opaque);
+  var purple = SDL_Color (255u8, 0u8, 255u8, opaque);
+  var keycolour = SDL_Color (150u8, 80u8, 80u8, opaque);
 
-  var lightgrey = SDL_Color (200u8, 200u8, 200u8, 0u8);
-  var grey = SDL_Color (150u8, 150u8, 150u8, 0u8);
-  var darkgrey = SDL_Color (100u8, 100u8, 100u8, 0u8);
-  var soot = SDL_Color (50u8, 50u8, 50u8, 0u8);
+  var lightgrey = SDL_Color (200u8, 200u8, 200u8, opaque);
+  var grey = SDL_Color (150u8, 150u8, 150u8, opaque);
+  var darkgrey = SDL_Color (100u8, 100u8, 100u8, opaque);
+  var soot = SDL_Color (50u8, 50u8, 50u8, opaque);
 
   var startline = 0;
   var lineskip = TTF_FontHeight(init.font)+1;
@@ -146,10 +140,37 @@ println$ "Loading ibeam .. " + (C_hack::cast[address] ibeam).str;
     var bg = white;
     var pixelformat : &SDL_PixelFormat  = window_surface*.format;
     var bgpixels = SDL_MapRGB(pixelformat,bg.r, bg.g, bg.b);
-    var result = SDL_FillRect(window_surface, nullRect,bgpixels);
-    var r = SDL_CreateSoftwareRenderer (window_surface); 
-    C_hack::ignore$ SDL_RenderDrawLine (r, 10,10,100,10);
-    SDL_DestroyRenderer r;
+    SDL_ClearClipRect(window_surface);
+    C_hack::ignore$ SDL_FillRect(window_surface, &init.r, bgpixels);
+    var swrend = SDL_CreateSoftwareRenderer (window_surface); 
+    begin
+      var x0 = init.r.x;
+      var x1 = x0 + init.r.w - 1;
+      var y0 = init.r.y;
+      var y1 = y0 + init.r.h - 1;
+      C_hack::ignore$ SDL_SetRenderDrawColor (swrend, 200u8, 50u8, 50u8, 255u8);
+      C_hack::ignore$ SDL_RenderDrawLine (swrend, x0,y0,x1,y0); // top 
+      C_hack::ignore$ SDL_RenderDrawLine (swrend, x0,y1,x1,y1); // bot
+      C_hack::ignore$ SDL_RenderDrawLine (swrend, x0,y0,x0,y1); // left
+      C_hack::ignore$ SDL_RenderDrawLine (swrend, x1,y0,x1,y1); // right
+      --x0; ++x1; --y0; ++y1;
+      C_hack::ignore$ SDL_RenderDrawLine (swrend, x0,y0,x1,y0); // top 
+      C_hack::ignore$ SDL_RenderDrawLine (swrend, x0,y1,x1,y1); // bot
+      C_hack::ignore$ SDL_RenderDrawLine (swrend, x0,y0,x0,y1); // left
+      C_hack::ignore$ SDL_RenderDrawLine (swrend, x1,y0,x1,y1); // right
+      --x0; ++x1; --y0; ++y1;
+      C_hack::ignore$ SDL_RenderDrawLine (swrend, x0,y0,x1,y0); // top 
+      C_hack::ignore$ SDL_RenderDrawLine (swrend, x0,y1,x1,y1); // bot
+      C_hack::ignore$ SDL_RenderDrawLine (swrend, x0,y0,x0,y1); // left
+      C_hack::ignore$ SDL_RenderDrawLine (swrend, x1,y0,x1,y1); // right
+      C_hack::ignore$ SDL_SetRenderDrawColor (swrend, 0u8, 250u8, 50u8, 255u8);
+      C_hack::ignore$ SDL_RenderDrawLine (swrend, x0,y1+1,x1,y1+1); // top 
+      C_hack::ignore$ SDL_RenderDrawLine (swrend, x0,y1+4,x1,y1+4); // bottom
+      C_hack::ignore$ SDL_RenderDrawLine (swrend, x0,y1+1,x0,y1+4); // left
+      C_hack::ignore$ SDL_RenderDrawLine (swrend, x1,y1+1,x1,y1+4); // tighht
+
+    end
+    C_hack::ignore$ SDL_RenderSetClipRect (swrend, &init.r); 
     var lno = 0;
     var sel = 
       if selection.first_line > selection.last_line 
@@ -163,12 +184,13 @@ println$ "Loading ibeam .. " + (C_hack::cast[address] ibeam).str;
         past_col=selection.first_col
       )
       else selection
-   ;
-
+    ;
+    var screenlines = init.r.h / lineskip; 
+    var lastline = startline + screenlines - 1;
     val unused=0;
     var state = 0;
     for line in lines do
-      if lno >= startline do
+      if lno >= startline and lno <= lastline do
         def state, var words = tokenise (state,line);
         var presel = 
           if lno == sel.first_line then sel.first_col 
@@ -205,7 +227,7 @@ println$ "Loading ibeam .. " + (C_hack::cast[address] ibeam).str;
             done
             var x = charwidth * i;
             var viewport = #dstview;
-            result = SDL_BlitSurface (text_rendered, nullRect, window_surface, &viewport); 
+            C_hack::ignore$ SDL_BlitSurface (text_rendered, nullRect, window_surface, &viewport); 
             SDL_FreeSurface text_rendered;
             ++i;
           done
@@ -213,17 +235,16 @@ println$ "Loading ibeam .. " + (C_hack::cast[address] ibeam).str;
       done
       ++lno;
     done
-    var xpos = init.r.x + curcol * charwidth;
-    var ypos = init.r.y + (curline - startline) * lineskip;
-    var dstpos = SDL_Rect (xpos,ypos,0,0);
-    var srcrect = SDL_Rect (0,0,1,20);
-    result = SDL_BlitSurface (ibeam, &srcrect, window_surface, &dstpos); 
-    result = SDL_UpdateWindowSurface init.window;
-//println$ "Updating window";
-    if result != 0 do
-      eprintln$ "Unable to update window";
-      System::exit 1;
-    done
+
+    begin
+      var xpos = init.r.x + curcol * charwidth;
+      var ypos = init.r.y + (curline - startline) * lineskip;
+      if inRect (xpos,ypos,init.r) do
+        C_hack::ignore$ SDL_RenderDrawLine (swrend, xpos,ypos,xpos,ypos+lineskip);
+      done
+    end
+
+    SDL_DestroyRenderer swrend;
   }
 }
 

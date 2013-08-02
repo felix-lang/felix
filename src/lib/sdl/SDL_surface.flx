@@ -30,5 +30,7 @@ open class SDL_surface_h
   gen SDL_BlitSurface : &SDL_Surface * &SDL_Rect * &SDL_Surface * &SDL_Rect -> int;
   proc SDL_FreeSurface: &SDL_Surface;
   gen SDL_FillRect : &SDL_Surface * &SDL_Rect * uint32 -> int;
-
+  gen SDL_FillSurface : &SDL_Surface * uint32 -> int = "SDL_FillRect ($1, NULL, $2)";
+  gen SDL_SetClipRect : &SDL_Surface * &SDL_Rect -> bool;
+  proc SDL_ClearClipRect : &SDL_Surface = "SDL_SetClipRect($1,NULL);";
 }

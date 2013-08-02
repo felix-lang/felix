@@ -155,6 +155,16 @@ Generally, this class is very incomplete.
     push_back (r*.a, v); // hack to workaround compiler error Address non variable
   }
 
+  //$ insert
+  proc insert[t] (a:darray[t], i:int, v:t)
+  {
+    var r = _repr_ a; 
+    newsize := r*.resize (maxlen r*.a, len r*.a + 1uz);
+    if newsize != maxlen r*.a do do_resize(a,newsize); done
+    r = _repr_ a;
+    insert (r*.a,i,v);
+  }
+
 @h2 Convert a darray to a string.
 @felix
   // uses _repr_ so has to be in the module

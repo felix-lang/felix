@@ -92,28 +92,31 @@ proc versions ()
 
 } 
 
+fun choose_font () = {
+  var font_file = "/Library/Fonts/Courier New Bold.ttf";
+  var font = TTF_OpenFont (font_file,12);
+  if not (TTF_ValidFont font) do
+    eprintln$ f"Unable to open TTF font %S\n" font_file;
+    System::exit 1;
+  done
+  TTF_SetFontKerning (font,0);
+  var isfixed = TTF_FontFaceIsFixedWidth (font);
+  println$ "Opened Font " + font_file + 
+    " Facename: " + TTF_FontFaceFamilyName font + 
+    (if isfixed>0 then " MONOSPACED" else " VARIABLE WIDTH");
+  return font;
+}
+
 proc mainline ()
 {
   init;
   versions;
 
-  var font = #{ 
-    var font_file = "/Library/Fonts/Courier New Bold.ttf";
-    var font = TTF_OpenFont (font_file,12);
-    if not (TTF_ValidFont font) do
-      eprintln$ f"Unable to open TTF font %S\n" font_file;
-      System::exit 1;
-    done
-    TTF_SetFontKerning (font,0);
-    var isfixed = TTF_FontFaceIsFixedWidth (font);
-    println$ "Opened Font " + font_file + 
-      " Facename: " + TTF_FontFaceFamilyName font + 
-      (if isfixed>0 then " MONOSPACED" else " VARIABLE WIDTH");
-    return font;
-  };
- 
+  var font = #choose_font;
+  var lineskip = TTF_FontHeight(font)+1;
+  var vsep = lineskip; 
   var window = SDL_CreateWindow(
-    "SDL_RenderClear",
+    "Felix Editor",
     SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
     512, 512,
     SDL_WINDOW_SHOWN \| SDL_WINDOW_RESIZABLE)
@@ -182,12 +185,18 @@ proc mainline ()
 
   proc select_editor (i:int) 
   {
-     CTL = editors . i;
-     editor_index = i;
+    if i >= 0 and i < editors.len.int do
+      CTL = editors . i;
+      editor_index = i;
+    done
   }
 
   fun find_editor_in_window (x:int, y:int) : int = 
   {
+    for var i in 0 upto editors.len.int - 1 do
+      var r = #(editors.i.get_display_rect);
+      if inRect(x,y,r) return i;
+    done
     return -1;
   }
 
@@ -195,17 +204,18 @@ proc mainline ()
   {
     var oldE = CTL.get_editor ();
     var oldD = CTL.get_display ();
-    var E = oldE;
-    var D = display (font=font, editor=E, window=window, r = dr);
     var dr = oldD.get_display_rect ();
+
+    var E = editor #(oldE.get_lines);
+    var D = display (font=font, editor=E, window=window, r = dr);
     var h = dr.h/2;
-    dr.h = h;
+    dr.h = h - vsep/2;
     oldD.set_display_rect dr;
-    D.set_display_rect (dr.x, dr.y+h, dr.w, dr.h).SDL_Rect;
+    D.set_display_rect (dr.x, dr.y+h+vsep, dr.w, dr.h).SDL_Rect;
     CTL = ctl (E,D);
     CTL.draw;
-    editors += CTL;
-    editor_index = editors.len.int - 1;
+    ++editor_index;
+    insert (editors, editor_index, CTL);
   }
 
   proc sswap () 
@@ -216,14 +226,56 @@ proc mainline ()
      CTL = editors.editor_index;
   }
 
-  getevent:while true do
-    var e : SDL_Event;
-    begin 
-      for var i in 0 upto editors.len.int - 1 do
-        editors.i.draw ();
-      done 
-    end
+  proc adjust_panes()
+  {
+    var surf = SDL_GetWindowSurface window;
+    var w = surf*.w - 40;
+    var h = surf*.h;
+    var vused = 40;
+    for var i in 0 upto editors.len.int - 2 do
+      var r = #(editors.i.get_display).get_display_rect();
+      r.w = w;
+      vused += r.h + vsep;
+      #(editors.i.get_display).set_display_rect r;
+    done
+    i = editors.len.int - 1;
+    r = #(editors.i.get_display).get_display_rect();
+    r.w = w;
+    var newh = h - vused;
+    if newh > 0 do r.h = newh; done
+    #(editors.i.get_display).set_display_rect r;
+  }
 
+  // clear whole window to black
+  proc clear_window ()
+  {
+    var surf = SDL_GetWindowSurface window;
+    var pixelformat : &SDL_PixelFormat  = surf*.format;
+    var bgpixels = SDL_MapRGB(pixelformat,0u8, 0u8, 0u8);
+    SDL_ClearClipRect (surf);
+    C_hack::ignore$ SDL_FillSurface (surf, bgpixels);
+  }
+
+  // draw each pane, then update window from surface
+  proc draw_panes()
+  {
+    for var i in 0 upto editors.len.int - 1 do
+      editors.i.draw ();
+    done 
+    var result = SDL_UpdateWindowSurface window;
+    if result != 0 do
+      eprintln$ "Unable to update window";
+      System::exit 1;
+    done
+  }
+
+  adjust_panes;
+  clear_window;
+  getevent:while true do
+    draw_panes;
+
+    var e : SDL_Event;
+    SDL_PumpEvents;
     C_hack::ignore$ SDL_WaitEvent$ &e;
     match e.type.SDL_EventType with
     | $(SDL_QUIT) =>
@@ -242,11 +294,12 @@ proc mainline ()
       elif e.key.keysym.mod \& (KMOD_LSHIFT.uint16 \| KMOD_RSHIFT.uint16) != 0u16 do CTL.dispatch_shift_key vkey;
       elif e.key.keysym.mod \& (KMOD_CTRL .uint16 \| KMOD_RCTRL.uint16) != 0u16 do CTL.dispatch_control_key vkey;
       elif e.key.keysym.mod \& (KMOD_LALT.uint16 \| KMOD_RALT.uint16) != 0u16 do 
-        if vkey == SDLK_v do vsplit;
+        if vkey == SDLK_v do vsplit; adjust_panes; clear_window;
         elif vkey == SDLK_s do sswap;
         else
           println "Unknown ALT combo";
         done
+        CTL.set_dotext false;
       done
 
     | $(SDL_KEYUP) => 
@@ -262,6 +315,7 @@ proc mainline ()
         var bno = e.button.button;
         var x = e.button.x.int;
         var y = e.button.y.int;
+        select_editor$ find_editor_in_window (x,y);
         CTL.begin_mark_selection (x,y);
         //println$ "Mousedown b="+bno.int.str + " x=" + x.str + " y=" + y.str;
       end
@@ -296,9 +350,9 @@ proc mainline ()
         println$ "WindowEvent " + 
           e.window.event.SDL_WindowEventID.str
         ;
-        if e.window.event.SDL_WindowEventID == SDL_WINDOWEVENT_SIZE_CHANGED do
-          // reset nlines etc here!
-          #(CTL.draw);
+        if e.window.event.SDL_WindowEventID == SDL_WINDOWEVENT_RESIZED do
+          adjust_panes;
+          clear_window;
         done
     | _ => 
       println$ "Event type " + e.type.str;
