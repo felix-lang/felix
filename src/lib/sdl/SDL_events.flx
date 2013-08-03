@@ -518,6 +518,21 @@ open class SDL_events_h
       address msg;  /**< driver dependent data, defined in SDL_syswm.h */
   } SDL_SysWMEvent;
 
+  fun SDL_GetWindowID (w:SDL_Event) : opt[uint32] =>
+    match w.type.SDL_EventType with
+    | $(SDL_WINDOWEVENT) => Some w.window.windowID
+    | $(SDL_KEYDOWN) => Some w.key.windowID
+    | $(SDL_KEYUP) => Some w.key.windowID
+    | $(SDL_TEXTEDITING) => Some w.edit.windowID
+    | $(SDL_TEXTINPUT) => Some w.text.windowID
+    | $(SDL_MOUSEMOTION) => Some w.motion.windowID
+    | $(SDL_MOUSEBUTTONDOWN) => Some w.button.windowID
+    | $(SDL_MOUSEBUTTONUP) => Some w.button.windowID
+    | $(SDL_MOUSEWHEEL) => Some w.wheel.windowID
+    | _ => None[uint32]
+    endmatch
+  ;
+ 
   cenum SDL_eventaction =
     SDL_ADDEVENT,
     SDL_PEEKEVENT,

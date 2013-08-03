@@ -70,7 +70,9 @@ open class SDL_video_h
 
   fun SDL_GetWindowSurface : SDL_Window -> &SDL_Surface;
   gen SDL_UpdateWindowSurface: SDL_Window -> int;
-
+  fun SDL_GetWindowID: SDL_Window -> uint32;
+  proc SDL_GetWindowPosition : SDL_Window * &int * &int;
+  proc SDL_GetWindowSize: SDL_Window * &int * &int;
 
 /*
   fun SDL_MUSTLOCK: &SDL_Surface -> bool;

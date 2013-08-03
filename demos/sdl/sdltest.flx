@@ -112,254 +112,318 @@ proc mainline ()
   init;
   versions;
 
+  // default font
   var font = #choose_font;
   var lineskip = TTF_FontHeight(font)+1;
   var vsep = lineskip; 
+
+  // Async I/O: timer
+  var clock = #Faio::mk_alarm_clock;
+
+  // edit model
+  var editor = Dynlink::load-plugin-func1 [edit_buffer_interface, darray[string]] 
+      (dll-name="edit_buffer")
+  ;
+
+  // edit display
+  var display = 
+      Dynlink::load-plugin-func1 [edit_display_interface, edit_display_init] 
+      (dll-name="edit_display")
+  ;
+    
+  // control
+  var ctl = Dynlink::load-plugin-func2 [edit_controller_interface, edit_buffer_interface, edit_display_interface]
+      (dll-name="edit_controller")
+  ;
+
+interface window_controller_interface {
+  get_window_id : 1 -> uint32;
+  get_oschannel : 1 -> oschannel[SDL_Event];
+  window_proc : 1 -> 0;
+}
+
+object window_controller () implements window_controller_interface = 
+{
   var window = SDL_CreateWindow(
     "Felix Editor",
     SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
     512, 512,
     SDL_WINDOW_SHOWN \| SDL_WINDOW_RESIZABLE)
   ;
-  var clock = #Faio::mk_alarm_clock;
 
-  var red = SDL_Color (250u8,0u8, 0u8,0u8);
-  var white = SDL_Color (250u8,255u8, 255u8,0u8);
-  var black = SDL_Color (0u8,0u8, 0u8,0u8);
+  var imsgs,omsgs = #mk_ioschannel_pair[SDL_Event]; 
 
-  var intro = "Hello from Felix";
-  var intro_rendered = TTF_RenderText_Solid (font,intro,red);
-  var nullRect = C_hack::null[SDL_Rect];
-  var window_surface = SDL_GetWindowSurface window;
+  method fun get_window_id () => SDL_GetWindowID window;
+  method fun get_oschannel () => omsgs;
 
-  var result = SDL_BlitSurface (intro_rendered, nullRect, window_surface, nullRect); 
-  if result != 0 do
-    eprintln$ "Unable to blit text to window surface";
-    System::exit 1;
-  done
-  println$ "Blitted Text to Window Surface";
-  SDL_FreeSurface intro_rendered;
- 
-  result = SDL_UpdateWindowSurface window;
-  if result != 0 do
-    eprintln$ "Unable to update window";
-    System::exit 1;
-  done
-
-// ------------------------------------------------------------------------------
-  var text = load "demos/sdl/sdltest.flx";
-  var lines = darray$ varray$ split$ text, char '\n';
-  var editor = Dynlink::load-plugin-func1 [edit_buffer_interface, darray[string]] 
-    (dll-name="edit_buffer")
-  ;
-  var display = 
-    Dynlink::load-plugin-func1 [edit_display_interface, edit_display_init] 
-    (dll-name="edit_display")
-  ;
-  
-
-// ------------------------------------------------------------------------------
-
-  var ctl = Dynlink::load-plugin-func2 [edit_controller_interface, edit_buffer_interface, edit_display_interface]
-    (dll-name="edit_controller")
-  ;
-
-  var CTL = #{
-    var E = editor lines;
-    E.whoami;
-    var s = SDL_GetWindowSurface window;
-    var dr = SDL_Rect (20,20, s*.w - 40, s*.h - 40);
-    var D = display (font=font, editor=E, window=window, r = dr);
-    D.whoami;
-    return ctl (E,D);
-  };
-  CTL.whoami;
-  CTL.draw;
-
-
-  // at this stage, editor in a single window
-  // extend to many windows later
-  var editors = darray[edit_controller_interface] ();
-  editors += CTL;
-  var editor_index = 0;
-
-  proc select_editor (i:int) 
+  method proc window_proc () 
   {
-    if i >= 0 and i < editors.len.int do
-      CTL = editors . i;
-      editor_index = i;
+    println$  "Starting window proc";
+    var red = SDL_Color (250u8,0u8, 0u8,0u8);
+    var white = SDL_Color (250u8,255u8, 255u8,0u8);
+    var black = SDL_Color (0u8,0u8, 0u8,0u8);
+
+    var intro = "Hello from Felix";
+    var intro_rendered = TTF_RenderText_Solid (font,intro,red);
+    var nullRect = C_hack::null[SDL_Rect];
+    var window_surface = SDL_GetWindowSurface window;
+
+    var result = SDL_BlitSurface (intro_rendered, nullRect, window_surface, nullRect); 
+    if result != 0 do
+      eprintln$ "Unable to blit text to window surface";
+      System::exit 1;
     done
-  }
-
-  fun find_editor_in_window (x:int, y:int) : int = 
-  {
-    for var i in 0 upto editors.len.int - 1 do
-      var r = #(editors.i.get_display_rect);
-      if inRect(x,y,r) return i;
-    done
-    return -1;
-  }
-
-  proc vsplit()
-  {
-    var oldE = CTL.get_editor ();
-    var oldD = CTL.get_display ();
-    var dr = oldD.get_display_rect ();
-
-    var E = editor #(oldE.get_lines);
-    var D = display (font=font, editor=E, window=window, r = dr);
-    var h = dr.h/2;
-    dr.h = h - vsep/2;
-    oldD.set_display_rect dr;
-    D.set_display_rect (dr.x, dr.y+h+vsep, dr.w, dr.h).SDL_Rect;
-    CTL = ctl (E,D);
-    CTL.draw;
-    ++editor_index;
-    insert (editors, editor_index, CTL);
-  }
-
-  proc sswap () 
-  {
-     var i = editor_index;
-     ++i;
-     editor_index = if i >= editors.len.int then 0 else i;
-     CTL = editors.editor_index;
-  }
-
-  proc adjust_panes()
-  {
-    var surf = SDL_GetWindowSurface window;
-    var w = surf*.w - 40;
-    var h = surf*.h;
-    var vused = 40;
-    for var i in 0 upto editors.len.int - 2 do
-      var r = #(editors.i.get_display).get_display_rect();
-      r.w = w;
-      vused += r.h + vsep;
-      #(editors.i.get_display).set_display_rect r;
-    done
-    i = editors.len.int - 1;
-    r = #(editors.i.get_display).get_display_rect();
-    r.w = w;
-    var newh = h - vused;
-    if newh > 0 do r.h = newh; done
-    #(editors.i.get_display).set_display_rect r;
-  }
-
-  // clear whole window to black
-  proc clear_window ()
-  {
-    var surf = SDL_GetWindowSurface window;
-    var pixelformat : &SDL_PixelFormat  = surf*.format;
-    var bgpixels = SDL_MapRGB(pixelformat,0u8, 0u8, 0u8);
-    SDL_ClearClipRect (surf);
-    C_hack::ignore$ SDL_FillSurface (surf, bgpixels);
-  }
-
-  // draw each pane, then update window from surface
-  proc draw_panes()
-  {
-    for var i in 0 upto editors.len.int - 1 do
-      editors.i.draw ();
-    done 
-    var result = SDL_UpdateWindowSurface window;
+    println$ "Blitted Text to Window Surface";
+    SDL_FreeSurface intro_rendered;
+   
+    result = SDL_UpdateWindowSurface window;
     if result != 0 do
       eprintln$ "Unable to update window";
       System::exit 1;
     done
+
+  // ------------------------------------------------------------------------------
+    var text = load "demos/sdl/sdltest.flx";
+    var lines = darray$ varray$ split$ text, char '\n';
+
+  // ------------------------------------------------------------------------------
+
+    var CTL = #{
+      var E = editor lines;
+      E.whoami;
+      var s = SDL_GetWindowSurface window;
+      var dr = SDL_Rect (20,20, s*.w - 40, s*.h - 40);
+      var D = display (font=font, editor=E, window=window, r = dr);
+      D.whoami;
+      return ctl (E,D);
+    };
+    CTL.whoami;
+    CTL.draw;
+
+
+    // at this stage, editor in a single window
+    // extend to many windows later
+    var editors = darray[edit_controller_interface] ();
+    editors += CTL;
+    var editor_index = 0;
+
+    proc select_editor (i:int) 
+    {
+      if i >= 0 and i < editors.len.int do
+        CTL = editors . i;
+        editor_index = i;
+      done
+    }
+
+    fun find_editor_in_window (x:int, y:int) : int = 
+    {
+      for var i in 0 upto editors.len.int - 1 do
+        var r = #(editors.i.get_display_rect);
+        if inRect(x,y,r) return i;
+      done
+      return -1;
+    }
+
+    proc vsplit()
+    {
+      var oldE = CTL.get_editor ();
+      var oldD = CTL.get_display ();
+      var dr = oldD.get_display_rect ();
+
+      var E = editor #(oldE.get_lines);
+      var D = display (font=font, editor=E, window=window, r = dr);
+      var h = dr.h/2;
+      dr.h = h - vsep/2;
+      oldD.set_display_rect dr;
+      D.set_display_rect (dr.x, dr.y+h+vsep, dr.w, dr.h).SDL_Rect;
+      CTL = ctl (E,D);
+      CTL.draw;
+      ++editor_index;
+      insert (editors, editor_index, CTL);
+    }
+
+    proc sswap () 
+    {
+       var i = editor_index;
+       ++i;
+       editor_index = if i >= editors.len.int then 0 else i;
+       CTL = editors.editor_index;
+    }
+
+    proc adjust_panes()
+    {
+      var surf = SDL_GetWindowSurface window;
+      var w = surf*.w - 40;
+      var h = surf*.h;
+      var vused = 40;
+      for var i in 0 upto editors.len.int - 2 do
+        var r = #(editors.i.get_display).get_display_rect();
+        r.w = w;
+        vused += r.h + vsep;
+        #(editors.i.get_display).set_display_rect r;
+      done
+      i = editors.len.int - 1;
+      r = #(editors.i.get_display).get_display_rect();
+      r.w = w;
+      var newh = h - vused;
+      if newh > 0 do r.h = newh; done
+      #(editors.i.get_display).set_display_rect r;
+    }
+
+    // clear whole window to black
+    proc clear_window ()
+    {
+      var surf = SDL_GetWindowSurface window;
+      var pixelformat : &SDL_PixelFormat  = surf*.format;
+      var bgpixels = SDL_MapRGB(pixelformat,0u8, 0u8, 0u8);
+      SDL_ClearClipRect (surf);
+      C_hack::ignore$ SDL_FillSurface (surf, bgpixels);
+    }
+
+    // draw each pane, then update window from surface
+    proc draw_panes()
+    {
+      for var i in 0 upto editors.len.int - 1 do
+        editors.i.draw ();
+      done 
+      var result = SDL_UpdateWindowSurface window;
+      if result != 0 do
+        eprintln$ "Unable to update window";
+        System::exit 1;
+      done
+    }
+
+    adjust_panes;
+    clear_window;
+    getevent:while true do
+      draw_panes;
+      var e : SDL_Event = read imsgs;
+      match e.type.SDL_EventType with
+      | $(SDL_QUIT) =>
+        println$ "QUIT";
+        break getevent;
+
+      | $(SDL_KEYDOWN) =>
+        CTL.set_dotext true;
+        var vkey = e.key.keysym.sym;
+        //println$ "Keydown " + strmods e.key.keysym.mod + str vkey;
+        if e.key.keysym.mod == 0u16 do 
+          if vkey == SDLK_KP_5 do CTL.recentre;
+          else
+            CTL.dispatch_modless_key vkey;
+          done
+        elif e.key.keysym.mod \& (KMOD_LSHIFT.uint16 \| KMOD_RSHIFT.uint16) != 0u16 do CTL.dispatch_shift_key vkey;
+        elif e.key.keysym.mod \& (KMOD_CTRL .uint16 \| KMOD_RCTRL.uint16) != 0u16 do CTL.dispatch_control_key vkey;
+        elif e.key.keysym.mod \& (KMOD_LALT.uint16 \| KMOD_RALT.uint16) != 0u16 do 
+          if vkey == SDLK_v do vsplit; adjust_panes; clear_window;
+          elif vkey == SDLK_s do sswap;
+          else
+            println "Unknown ALT combo";
+          done
+          CTL.set_dotext false;
+        done
+
+      | $(SDL_KEYUP) => 
+        //println$ "Keyup"
+        ;
+      | $(SDL_TEXTEDITING) =>
+        println$ "TextEditing";
+
+      | $(SDL_TEXTINPUT) => CTL.dispatch_text_input e.text;
+
+      | $(SDL_MOUSEBUTTONDOWN) => 
+        begin
+          var bno = e.button.button;
+          var x = e.button.x.int;
+          var y = e.button.y.int;
+          select_editor$ find_editor_in_window (x,y);
+          CTL.begin_mark_selection (x,y);
+          //println$ "Mousedown b="+bno.int.str + " x=" + x.str + " y=" + y.str;
+        end
+      | $(SDL_MOUSEBUTTONUP) => 
+        begin
+          var bno = e.button.button;
+          var x = e.button.x.int;
+          var y = e.button.y.int;
+          //println$ "Mouseup="+bno.int.str + " x=" + x.str + " y=" + y.str;
+          CTL.end_mark_selection (x,y);
+        end
+      | $(SDL_MOUSEMOTION) => 
+        /* println$ "Mousemove"*/ ;
+        if e.motion.state != 0u32 do // some button down will do for now
+        begin
+          var bno = e.button.button;
+          var x = e.button.x.int;
+          var y = e.button.y.int;
+          CTL.extend_selection (x,y);
+
+          //println$ "Mouse move="+bno.int.str + " x=" + x.str + " y=" + y.str;
+        end
+        done
+
+      | $(SDL_MOUSEWHEEL) => 
+        begin
+          var y = e.wheel.y.int;
+          CTL.pan y;
+        end 
+
+      | $(SDL_WINDOWEVENT) => 
+          println$ "WindowEvent " + 
+            e.window.event.SDL_WindowEventID.str
+          ;
+          if e.window.event.SDL_WindowEventID == SDL_WINDOWEVENT_RESIZED do
+            adjust_panes;
+            clear_window;
+          done
+      | _ => 
+        println$ "Event type " + e.type.str;
+      endmatch;
+    done
+    SDL_DestroyWindow(window);
   }
+}
 
-  adjust_panes;
-  clear_window;
-  getevent:while true do
-    draw_panes;
+  // MAIN LOOP
+  var windows = darray[window_controller_interface]();
 
-    var e : SDL_Event;
+  var wobj = #window_controller;
+  spawn_fthread (wobj.window_proc);
+  windows += wobj;
+
+  var wobj2 = #window_controller;
+  spawn_fthread (wobj2.window_proc);
+  windows += wobj2;
+ 
+ 
+  fun find_window(wid: uint32) : opt[window_controller_interface] =
+  {
+    for wobj in windows do
+      if wid == #(wobj.get_window_id) return Some wobj;
+    done
+    return None[window_controller_interface];
+  }
+ 
+  var e : SDL_Event;
+  e.type = SDL_FIRSTEVENT.uint32;
+  write$ #(wobj.get_oschannel),e;
+  SDL_PumpEvents;
+  C_hack::ignore$ SDL_WaitEvent$ &e;
+  while e.type.SDL_EventType != SDL_QUIT do
+    match SDL_GetWindowID e with
+    | Some ?wid =>
+      match find_window wid with
+      | Some ?wobj => 
+        var omsgs = #(wobj.get_oschannel);
+        write (omsgs, e);
+      | None => println$ "Can't find window ID = " + str wid;
+      endmatch;
+    | None => println$ "No window for message";
+    endmatch;
     SDL_PumpEvents;
     C_hack::ignore$ SDL_WaitEvent$ &e;
-    match e.type.SDL_EventType with
-    | $(SDL_QUIT) =>
-      println$ "QUIT";
-      break getevent;
+  done 
 
-    | $(SDL_KEYDOWN) =>
-      CTL.set_dotext true;
-      var vkey = e.key.keysym.sym;
-      //println$ "Keydown " + strmods e.key.keysym.mod + str vkey;
-      if e.key.keysym.mod == 0u16 do 
-        if vkey == SDLK_KP_5 do CTL.recentre;
-        else
-          CTL.dispatch_modless_key vkey;
-        done
-      elif e.key.keysym.mod \& (KMOD_LSHIFT.uint16 \| KMOD_RSHIFT.uint16) != 0u16 do CTL.dispatch_shift_key vkey;
-      elif e.key.keysym.mod \& (KMOD_CTRL .uint16 \| KMOD_RCTRL.uint16) != 0u16 do CTL.dispatch_control_key vkey;
-      elif e.key.keysym.mod \& (KMOD_LALT.uint16 \| KMOD_RALT.uint16) != 0u16 do 
-        if vkey == SDLK_v do vsplit; adjust_panes; clear_window;
-        elif vkey == SDLK_s do sswap;
-        else
-          println "Unknown ALT combo";
-        done
-        CTL.set_dotext false;
-      done
-
-    | $(SDL_KEYUP) => 
-      //println$ "Keyup"
-      ;
-    | $(SDL_TEXTEDITING) =>
-      println$ "TextEditing";
-
-    | $(SDL_TEXTINPUT) => CTL.dispatch_text_input e.text;
-
-    | $(SDL_MOUSEBUTTONDOWN) => 
-      begin
-        var bno = e.button.button;
-        var x = e.button.x.int;
-        var y = e.button.y.int;
-        select_editor$ find_editor_in_window (x,y);
-        CTL.begin_mark_selection (x,y);
-        //println$ "Mousedown b="+bno.int.str + " x=" + x.str + " y=" + y.str;
-      end
-    | $(SDL_MOUSEBUTTONUP) => 
-      begin
-        var bno = e.button.button;
-        var x = e.button.x.int;
-        var y = e.button.y.int;
-        //println$ "Mouseup="+bno.int.str + " x=" + x.str + " y=" + y.str;
-        CTL.end_mark_selection (x,y);
-      end
-    | $(SDL_MOUSEMOTION) => 
-      /* println$ "Mousemove"*/ ;
-      if e.motion.state != 0u32 do // some button down will do for now
-      begin
-        var bno = e.button.button;
-        var x = e.button.x.int;
-        var y = e.button.y.int;
-        CTL.extend_selection (x,y);
-
-        //println$ "Mouse move="+bno.int.str + " x=" + x.str + " y=" + y.str;
-      end
-      done
-
-    | $(SDL_MOUSEWHEEL) => 
-      begin
-        var y = e.wheel.y.int;
-        CTL.pan y;
-      end 
-
-    | $(SDL_WINDOWEVENT) => 
-        println$ "WindowEvent " + 
-          e.window.event.SDL_WindowEventID.str
-        ;
-        if e.window.event.SDL_WindowEventID == SDL_WINDOWEVENT_RESIZED do
-          adjust_panes;
-          clear_window;
-        done
-    | _ => 
-      println$ "Event type " + e.type.str;
-    endmatch;
-  done
   Faio::sleep(clock,1.0);
-  SDL_DestroyWindow(window);
   SDL_Quit;
  
 }
