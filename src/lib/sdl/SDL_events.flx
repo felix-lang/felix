@@ -94,6 +94,51 @@ open class SDL_events_h
       SDL_LASTEVENT    /* 0xFFFF */
   ;
 
+  instance Str[SDL_EventType] {
+    fun str: SDL_EventType -> string =
+      | $(SDL_FIRSTEVENT) => "SDL_FIRSTEVENT"
+      | $(SDL_QUIT) => "SDL_QUIT"
+      | $(SDL_APP_TERMINATING) => "SDL_APP_TERMINATING"
+      | $(SDL_APP_LOWMEMORY) => "SDL_APP_LOWMEMORY"
+      | $(SDL_APP_WILLENTERBACKGROUND) => "SDL_APP_WILLENTERBACKGROUND"
+      | $(SDL_APP_DIDENTERBACKGROUND) => "SDL_APP_DIDENTERBACKGROUND"
+      | $(SDL_APP_WILLENTERFOREGROUND) => "SDL_APP_WILLENTERFOREGROUND"
+      | $(SDL_APP_DIDENTERFOREGROUND) => "SDL_APP_DIDENTERFOREGROUND"
+      | $(SDL_WINDOWEVENT) => "SDL_WINDOWEVENT"
+      | $(SDL_SYSWMEVENT) => "SDL_SYSWMEVENT"
+      | $(SDL_KEYDOWN) => "SDL_KEYDOWN"
+      | $(SDL_KEYUP) => "SDL_KEYUP"
+      | $(SDL_TEXTEDITING) => "SDL_TEXTEDITING"
+      | $(SDL_TEXTINPUT) => "SDL_TEXTINPUT"
+      | $(SDL_MOUSEMOTION) => "SDL_MOUSEMOTION"
+      | $(SDL_MOUSEBUTTONDOWN) => "SDL_MOUSEBUTTONDOWN"
+      | $(SDL_MOUSEBUTTONUP) => "SDL_MOUSEBUTTONUP"
+      | $(SDL_MOUSEWHEEL) => "SDL_MOUSEWHEEL"
+      | $(SDL_JOYAXISMOTION) => "SDL_JOYAXISMOTION"
+      | $(SDL_JOYBALLMOTION) => "SDL_JOYBALLMOTION"
+      | $(SDL_JOYHATMOTION) => "SDL_JOYHATMOTION"
+      | $(SDL_JOYBUTTONDOWN) => "SDL_JOYBUTTONDOWN"
+      | $(SDL_JOYBUTTONUP) => "SDL_JOYBUTTONUP"
+      | $(SDL_JOYDEVICEADDED) => "SDL_JOYDEVICEADDED"
+      | $(SDL_JOYDEVICEREMOVED) => "SDL_JOYDEVICEREMOVED"
+      | $(SDL_CONTROLLERAXISMOTION) => "SDL_CONTROLLERAXISMOTION"
+      | $(SDL_CONTROLLERBUTTONDOWN) => "SDL_CONTROLLERBUTTONDOWN"
+      | $(SDL_CONTROLLERBUTTONUP) => "SDL_CONTROLLERBUTTONUP"
+      | $(SDL_CONTROLLERDEVICEADDED) => "SDL_CONTROLLERDEVICEADDED"
+      | $(SDL_CONTROLLERDEVICEREMOVED) => "SDL_CONTROLLERDEVICEREMOVED"
+      | $(SDL_CONTROLLERDEVICEREMAPPED) => "SDL_CONTROLLERDEVICEREMAPPED"
+      | $(SDL_FINGERDOWN) => "SDL_FINGERDOWN"
+      | $(SDL_FINGERUP) => "SDL_FINGERUP"
+      | $(SDL_FINGERMOTION) => "SDL_FINGERMOTION"
+      | $(SDL_DOLLARGESTURE) => "SDL_DOLLARGESTURE"
+      | $(SDL_DOLLARRECORD) => "SDL_DOLLARRECORD"
+      | $(SDL_MULTIGESTURE) => "SDL_MULTIGESTURE"
+      | $(SDL_CLIPBOARDUPDATE) => "SDL_CLIPBOARDUPDATE"
+      | $(SDL_DROPFILE) => "SDL_DROPFILE"
+      | $(SDL_USEREVENT) => "SDL_USEREVENT"
+      | _ => "UNKNOWN_EVENT"
+    ;
+  }
 
   ctor uint32 : SDL_EventType = "(uint32_t)$1";
   ctor SDL_EventType : uint32 = "(SDL_EventType)$1";
@@ -651,7 +696,7 @@ open class SDL_events_h
 /**
  *  Add a function which is called when an event is added to the queue.
  */
-  proc SDL_AddEventWatc: SDL_EventFilter * address;
+  proc SDL_AddEventWatch: SDL_EventFilter * address;
 
 /**
  *  Remove an event watch function added with SDL_AddEventWatch()
@@ -664,12 +709,10 @@ open class SDL_events_h
  */
   proc SDL_FilterEvents:SDL_EventFilter * address;
 
-/*
-/*@{*/
-#define SDL_QUERY   -1
-#define SDL_IGNORE   0
-#define SDL_DISABLE  0
-#define SDL_ENABLE   1
+  const SDL_QUERY : int; // -1
+  const SDL_IGNORE: int; // 0
+  const SDL_DISABLE : int; // 0
+  const SDL_ENABLE : int; // 1
 
 /**
  *  This function allows you to set the state of processing certain events.
@@ -680,9 +723,8 @@ open class SDL_events_h
  *   - If \c state is set to ::SDL_QUERY, SDL_EventState() will return the
  *     current processing state of the specified event.
  */
-extern DECLSPEC Uint8 SDLCALL SDL_EventState(Uint32 type, int state);
-/*@}*/
-#define SDL_GetEventState(type) SDL_EventState(type, SDL_QUERY)
+
+  gen SDL_EventState:uint32 * int -> int = "(int)SDL_EventState ($1,$2)";
 
 /**
  *  This function allocates a set of user-defined events, and returns
@@ -691,143 +733,9 @@ extern DECLSPEC Uint8 SDLCALL SDL_EventState(Uint32 type, int state);
  *  If there aren't enough user-defined events left, this function
  *  returns (Uint32)-1
  */
+/*
 extern DECLSPEC Uint32 SDLCALL SDL_RegisterEvents(int numevents);
 */
 
-/*
-  const SDL_KEYUP: uint32 = 'SDL_KEYUP';
-  const SDL_JOYBALLMOTION: uint32 = 'SDL_JOYBALLMOTION';
-  const SDL_NOEVENT: uint32 = 'SDL_NOEVENT';
-  const SDL_JOYAXISMOTION: uint32 = 'SDL_JOYAXISMOTION';
-  const SDL_QUIT: uint32 = 'SDL_QUIT';
-  const SDL_VIDEORESIZE: uint32 = 'SDL_VIDEORESIZE';
-  const SDL_JOYBUTTONDOWN: uint32 = 'SDL_JOYBUTTONDOWN';
-  const SDL_KEYDOWN: uint32 = 'SDL_KEYDOWN';
-  const SDL_JOYBUTTONUP: uint32 = 'SDL_JOYBUTTONUP';
-  const SDL_SYSWMEVENT: uint32 = 'SDL_SYSWMEVENT';
-  const SDL_USEREVENT: uint32 = 'SDL_USEREVENT';
-  const SDL_JOYHATMOTION: uint32 = 'SDL_JOYHATMOTION';
-  const SDL_ACTIVEEVENT: uint32 = 'SDL_ACTIVEEVENT';
-  const SDL_VIDEOEXPOSE: uint32 = 'SDL_VIDEOEXPOSE';
-  const SDL_MOUSEMOTION: uint32 = 'SDL_MOUSEMOTION';
-
-  //ABSTRACT TYPES
-  type SDL_eventaction = 'SDL_eventaction';
-
-  //CSTRUCTS
-  cstruct SDL_WindowEvent {
-    type: uint32;
-    windowID: uint32;
-    event: uint8;
-    data1: int;
-    data2: int;
-  };
-  cstruct SDL_ResizeEvent {
-    type: uint32;
-    w: int;
-    h: int;
-  };
-  cstruct SDL_UserEvent {
-    type: uint32;
-    code_: int;
-    data1: address;
-    data2: address;
-  };
-  cstruct SDL_ActiveEvent {
-    type: uint32;
-    gain: uint8;
-    state: uint8;
-  };
-
-  // This is ACTUALLY a C union .. but the syntax is the same
-  // as for a struct .. so we can model it with a struct
-  cstruct SDL_Event = {
-    active : SDL_ActiveEvent;
-    key : SDL_KeyboardEvent;
-    motion: SDL_MouseMotionEvent;
-    button: SDL_MouseButtonEvent;
-    wheel: SDL_MouseWheelEvent;
-    jaxis : SDL_JoyAxisEvent;
-    jball : SDL_JoyBallEvent;
-    jhat : SDL_JoyHatEvent;
-    jbutton : SDL_JoyButtonEvent;
-    resize : SDL_ResizeEvent;
-    quit: SDL_QuitEvent;
-    user : SDL_UserEvent;
-    window: SDL_WindowEvent;
-    syswm : SDL_SysWMEvent;
-  };
-
-  // use name type_ instead of type ..
-  fun get_type:SDL_Event -> uint32 = "(Uint32)$1.active.type"; // pick any component
-
-  //C FUNCTION POINTER TYPES
-  header '''typedef int (*SDL_events_h_cft_1)(SDL_Event const *);''';
-  type SDL_events_h_cft_1 = 'SDL_events_h_cft_1';
-
-  //PURE INCOMPLETE TYPES
-  type _struct_SDL_SysWMmsg = 'struct SDL_SysWMmsg'; //local
-
-  //STRUCT or UNION TAG ALIASES
-  typedef SDL_SysWMmsg = _struct_SDL_SysWMmsg;
-
-  typedef SDL_EventMasks = int;
-  typedef SDL_EventFilter = SDL_events_h_cft_1;
-  typedef SDL_Events = uint32;
-
-  // Weird
-  const SDL_PEEKEVENT: uint32 = 'SDL_PEEKEVENT';
-  const SDL_GETEVENT: uint32 = 'SDL_GETEVENT';
-  const SDL_ADDEVENT: uint32 = 'SDL_ADDEVENT';
-  const SDL_NUMEVENTS: uint32 = 'SDL_NUMEVENTS';
-
-  // reserved
-  const SDL_EVENT_RESERVED2: uint32 = 'SDL_EVENT_RESERVED2';
-  const SDL_EVENT_RESERVED3: uint32 = 'SDL_EVENT_RESERVED3';
-  const SDL_EVENT_RESERVED4: uint32 = 'SDL_EVENT_RESERVED4';
-  const SDL_EVENT_RESERVED5: uint32 = 'SDL_EVENT_RESERVED5';
-  const SDL_EVENT_RESERVED6: uint32 = 'SDL_EVENT_RESERVED6';
-  const SDL_EVENT_RESERVED7: uint32 = 'SDL_EVENT_RESERVED7';
-  const SDL_EVENT_RESERVEDA: uint32 = 'SDL_EVENT_RESERVEDA';
-  const SDL_EVENT_RESERVEDB: uint32 = 'SDL_EVENT_RESERVEDB';
-
-  // MASKS
-  // Joystick
-  const SDL_JOYBUTTONDOWNMASK: uint32 = 'SDL_JOYBUTTONDOWNMASK';
-  const SDL_JOYBUTTONUPMASK: uint32 = 'SDL_JOYBUTTONUPMASK';
-  const SDL_JOYHATMOTIONMASK: uint32 = 'SDL_JOYHATMOTIONMASK';
-  const SDL_JOYAXISMOTIONMASK: uint32 = 'SDL_JOYAXISMOTIONMASK';
-  const SDL_JOYBALLMOTIONMASK: uint32 = 'SDL_JOYBALLMOTIONMASK';
-  const SDL_JOYEVENTMASK: uint32 = 'SDL_JOYEVENTMASK';
-
-  // mouse
-  const SDL_MOUSEMOTIONMASK: uint32 = 'SDL_MOUSEMOTIONMASK';
-  const SDL_MOUSEEVENTMASK: uint32 = 'SDL_MOUSEEVENTMASK';
-  const SDL_MOUSEBUTTONUPMASK: uint32 = 'SDL_MOUSEBUTTONUPMASK';
-  const SDL_MOUSEBUTTONDOWNMASK: uint32 = 'SDL_MOUSEBUTTONDOWNMASK';
-
-  // video
-  const SDL_VIDEORESIZEMASK: uint32 = 'SDL_VIDEORESIZEMASK';
-  const SDL_ACTIVEEVENTMASK: uint32 = 'SDL_ACTIVEEVENTMASK';
-  const SDL_SYSWMEVENTMASK: uint32 = 'SDL_SYSWMEVENTMASK';
-  const SDL_VIDEOEXPOSEMASK: uint32 = 'SDL_VIDEOEXPOSEMASK';
-
-  // keyboard
-  const SDL_KEYDOWNMASK: uint32 = 'SDL_KEYDOWNMASK';
-  const SDL_KEYUPMASK: uint32 = 'SDL_KEYUPMASK';
-  const SDL_QUITMASK: uint32 = 'SDL_QUITMASK';
-
-  //PROCEDURES
-  proc SDL_PumpEvents: 1;
-  proc SDL_SetEventFilter: SDL_events_h_cft_1;
-
-  //FUNCTIONS
-  fun SDL_EventState: uint8 * int -> uint8;
-  fun SDL_GetEventFilter: 1 -> SDL_EventFilter;
-  fun SDL_PeepEvents: &SDL_Event * int * SDL_eventaction * uint32 -> int;
-  fun SDL_PollEvent: &SDL_Event -> int;
-  fun SDL_PushEvent: &SDL_Event -> int;
-  fun SDL_WaitEvent: &SDL_Event -> int;
-*/
 
 }

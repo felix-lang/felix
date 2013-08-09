@@ -142,6 +142,9 @@ open class Varray
     requires property "needs_gc";
   ;
 
+  //$ Erase elements of array between and including first and last.
+  //$ Include first and last, intersect with array span.
+  //$ Cannot fail.
   proc erase[v] (a:varray[v], first:int, last:int)
   {
     if first > last return;
@@ -161,6 +164,8 @@ open class Varray
       set_used$ a, (l - d).size;
     done 
   }
+
+  proc erase[v] (a:varray[v], i:int) => erase (a,i,i);
 
   //$ insert (a,i,v) inserts v in a at position i
   //$ that is, inserts before element i.

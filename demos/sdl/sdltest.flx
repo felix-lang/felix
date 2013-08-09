@@ -112,6 +112,8 @@ proc mainline ()
   init;
   versions;
 
+  C_hack::ignore$ SDL_EventState (SDL_DROPFILE.uint32, SDL_ENABLE);
+
   // default font
   var font = #choose_font;
   var lineskip = TTF_FontHeight(font)+1;
@@ -140,6 +142,7 @@ interface window_controller_interface {
   get_window_id : 1 -> uint32;
   get_oschannel : 1 -> oschannel[SDL_Event];
   window_proc : 1 -> 0;
+  destroy_window : 1 -> 0;
 }
 
 object window_controller () implements window_controller_interface = 
@@ -154,6 +157,7 @@ object window_controller () implements window_controller_interface =
   var imsgs,omsgs = #mk_ioschannel_pair[SDL_Event]; 
 
   method fun get_window_id () => SDL_GetWindowID window;
+  method proc destroy_window () { SDL_DestroyWindow window; }
   method fun get_oschannel () => omsgs;
 
   method proc window_proc () 
@@ -219,6 +223,19 @@ object window_controller () implements window_controller_interface =
     {
       for var i in 0 upto editors.len.int - 1 do
         var r = #(editors.i.get_display_rect);
+        if inRect(x,y,r) return i;
+      done
+      return -1;
+    }
+
+    fun find_divider_in_window (x:int, y:int) : int = 
+    {
+      for var i in 0 upto editors.len.int - 1 do
+        var r = #(editors.i.get_display_rect);
+        var y0 = r.y + r.h;
+        var h = 4;
+        r.y = y0; 
+        r.h = h;
         if inRect(x,y,r) return i;
       done
       return -1;
@@ -350,16 +367,25 @@ object window_controller () implements window_controller_interface =
         end
       | $(SDL_MOUSEMOTION) => 
         /* println$ "Mousemove"*/ ;
-        if e.motion.state != 0u32 do // some button down will do for now
         begin
-          var bno = e.button.button;
-          var x = e.button.x.int;
-          var y = e.button.y.int;
-          CTL.extend_selection (x,y);
+            var x = e.button.x.int;
+            var y = e.button.y.int;
+          if e.motion.state != 0u32 do // some button down will do for now
+            var bno = e.button.button;
+            CTL.extend_selection (x,y);
 
-          //println$ "Mouse move="+bno.int.str + " x=" + x.str + " y=" + y.str;
+            //println$ "Mouse move="+bno.int.str + " x=" + x.str + " y=" + y.str;
+          else
+            if find_editor_in_window (x,y) >= 0 do 
+              var cursor = SDL_CreateSystemCursor SDL_SYSTEM_CURSOR_IBEAM;
+            elif find_divider_in_window (x,y) >=0 do
+              cursor = SDL_CreateSystemCursor SDL_SYSTEM_CURSOR_SIZENS;
+            else
+              cursor = SDL_CreateSystemCursor SDL_SYSTEM_CURSOR_ARROW;
+            done
+            SDL_SetCursor cursor;
+          done
         end
-        done
 
       | $(SDL_MOUSEWHEEL) => 
         begin
@@ -402,6 +428,22 @@ object window_controller () implements window_controller_interface =
     done
     return None[window_controller_interface];
   }
+
+  fun find_window_index (wid: uint32) : opt[int] =
+  {
+    for var i in 0 upto windows.len.int - 1 do
+      if wid == #(windows.i.get_window_id) return Some i;
+    done
+    return None[int];
+  }
+
+  proc delete_window (wid: uint32)
+  {
+    match find_window_index wid with
+    | None => ;
+    | Some ?i => windows.i.destroy_window; erase (windows, i);
+    endmatch;
+  }
  
   var e : SDL_Event;
   e.type = SDL_FIRSTEVENT.uint32;
@@ -412,12 +454,18 @@ object window_controller () implements window_controller_interface =
     match SDL_GetWindowID e with
     | Some ?wid =>
       match find_window wid with
-      | Some ?wobj => 
-        var omsgs = #(wobj.get_oschannel);
-        write (omsgs, e);
+      | Some ?wobj =>
+        if e.type.SDL_EventType == SDL_WINDOWEVENT and 
+          e.window.event.SDL_WindowEventID == SDL_WINDOWEVENT_CLOSE 
+        do
+          delete_window wid;
+        else
+          var omsgs = #(wobj.get_oschannel);
+          write (omsgs, e);
+        done
       | None => println$ "Can't find window ID = " + str wid;
       endmatch;
-    | None => println$ "No window for message";
+    | None => println$ "No window for message: Event type " + e.type.SDL_EventType.str;
     endmatch;
     SDL_PumpEvents;
     C_hack::ignore$ SDL_WaitEvent$ &e;

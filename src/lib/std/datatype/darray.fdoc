@@ -165,6 +165,10 @@ Generally, this class is very incomplete.
     insert (r*.a,i,v);
   }
 
+  //$ Erase an element, note doesn't resize the varray,
+  //$ probably should ..
+  proc erase[t] (a:darray[t], i:int) => erase ((_repr_ a)*.a,i);
+
 @h2 Convert a darray to a string.
 @felix
   // uses _repr_ so has to be in the module
