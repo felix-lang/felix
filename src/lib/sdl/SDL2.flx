@@ -37,6 +37,7 @@ include "sdl/SDL_rwops";
 include "sdl/SDL_pixels";
 include "sdl/SDL_surface";
 include "sdl/SDL_render";
+include "sdl/SDL_clipboard";
 
 /*
 include "std/io/faio";

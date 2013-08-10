@@ -269,6 +269,7 @@ object window_controller () implements window_controller_interface =
 
     proc adjust_panes()
     {
+      var minh = 40;
       var surf = SDL_GetWindowSurface window;
       var w = surf*.w - 40;
       var h = surf*.h;
@@ -276,14 +277,16 @@ object window_controller () implements window_controller_interface =
       for var i in 0 upto editors.len.int - 2 do
         var r = #(editors.i.get_display).get_display_rect();
         r.w = w;
+        r.h = max (r.h, minh);
+        r.y = vused;
         vused += r.h + vsep;
         #(editors.i.get_display).set_display_rect r;
       done
       i = editors.len.int - 1;
       r = #(editors.i.get_display).get_display_rect();
       r.w = w;
-      var newh = h - vused;
-      if newh > 0 do r.h = newh; done
+      r.y = vused;
+      r.h = max (h - vused - vsep, minh);
       #(editors.i.get_display).set_display_rect r;
     }
 
@@ -310,6 +313,7 @@ object window_controller () implements window_controller_interface =
       done
     }
 
+    var drag_divider = -1;
     adjust_panes;
     clear_window;
     getevent:while true do
@@ -353,37 +357,67 @@ object window_controller () implements window_controller_interface =
           var bno = e.button.button;
           var x = e.button.x.int;
           var y = e.button.y.int;
-          select_editor$ find_editor_in_window (x,y);
-          CTL.begin_mark_selection (x,y);
+          var eix = find_editor_in_window (x,y);
+          if eix >= 0 do
+            select_editor$ eix;
+            CTL.begin_mark_selection (x,y);
+          else
+            var dix = find_divider_in_window (x,y);
+            if dix >=0 do
+              drag_divider = dix;
+            done
+          done
           //println$ "Mousedown b="+bno.int.str + " x=" + x.str + " y=" + y.str;
         end
       | $(SDL_MOUSEBUTTONUP) => 
         begin
-          var bno = e.button.button;
-          var x = e.button.x.int;
-          var y = e.button.y.int;
-          //println$ "Mouseup="+bno.int.str + " x=" + x.str + " y=" + y.str;
-          CTL.end_mark_selection (x,y);
+          if drag_divider >= 0 do
+            drag_divider = -1;
+          else
+            var bno = e.button.button;
+            var x = e.button.x.int;
+            var y = e.button.y.int;
+            //println$ "Mouseup="+bno.int.str + " x=" + x.str + " y=" + y.str;
+            CTL.end_mark_selection (x,y);
+          done
         end
+       
       | $(SDL_MOUSEMOTION) => 
         /* println$ "Mousemove"*/ ;
         begin
-            var x = e.button.x.int;
-            var y = e.button.y.int;
-          if e.motion.state != 0u32 do // some button down will do for now
-            var bno = e.button.button;
-            CTL.extend_selection (x,y);
-
-            //println$ "Mouse move="+bno.int.str + " x=" + x.str + " y=" + y.str;
-          else
-            if find_editor_in_window (x,y) >= 0 do 
-              var cursor = SDL_CreateSystemCursor SDL_SYSTEM_CURSOR_IBEAM;
-            elif find_divider_in_window (x,y) >=0 do
-              cursor = SDL_CreateSystemCursor SDL_SYSTEM_CURSOR_SIZENS;
-            else
-              cursor = SDL_CreateSystemCursor SDL_SYSTEM_CURSOR_ARROW;
+          var x = e.button.x.int;
+          var y = e.button.y.int;
+          // dragging divider between panes
+          // TODO: something about clobbering (negative sizes)
+          if drag_divider >= 0 do
+            var r = #(editors.drag_divider.get_display).get_display_rect();
+            var deltay = y - (r.y  + r.h);
+            r.h += deltay;
+            #(editors.drag_divider.get_display).set_display_rect r;
+            if drag_divider < editors.len.int - 1 do
+              r = #(editors.(drag_divider+1).get_display).get_display_rect();
+              r.y += deltay;
+              r.h -= deltay;
+              #(editors.(drag_divider+1).get_display).set_display_rect r;
             done
-            SDL_SetCursor cursor;
+            clear_window;
+            adjust_panes;
+          else
+            if e.motion.state != 0u32 do // some button down will do for now
+              var bno = e.button.button;
+              CTL.extend_selection (x,y);
+
+              //println$ "Mouse move="+bno.int.str + " x=" + x.str + " y=" + y.str;
+            else
+              if find_editor_in_window (x,y) >= 0 do 
+                var cursor = SDL_CreateSystemCursor SDL_SYSTEM_CURSOR_IBEAM;
+              elif find_divider_in_window (x,y) >=0 do
+                cursor = SDL_CreateSystemCursor SDL_SYSTEM_CURSOR_SIZENS;
+              else
+                cursor = SDL_CreateSystemCursor SDL_SYSTEM_CURSOR_ARROW;
+              done
+              SDL_SetCursor cursor;
+            done
           done
         end
 
