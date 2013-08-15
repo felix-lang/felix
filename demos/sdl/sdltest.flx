@@ -112,6 +112,8 @@ proc mainline ()
   init;
   versions;
 
+  // This will never work on OSX because it requires a real
+  // Apple "Application" thing with an info.plist to enable it.
   C_hack::ignore$ SDL_EventState (SDL_DROPFILE.uint32, SDL_ENABLE);
 
   // default font
@@ -364,6 +366,7 @@ object window_controller () implements window_controller_interface =
           else
             var dix = find_divider_in_window (x,y);
             if dix >=0 do
+              SDL_SetWindowGrab (window,true);
               drag_divider = dix;
             done
           done
@@ -373,6 +376,7 @@ object window_controller () implements window_controller_interface =
         begin
           if drag_divider >= 0 do
             drag_divider = -1;
+            SDL_SetWindowGrab (window,false);
           else
             var bno = e.button.button;
             var x = e.button.x.int;
@@ -423,8 +427,14 @@ object window_controller () implements window_controller_interface =
 
       | $(SDL_MOUSEWHEEL) => 
         begin
-          var y = e.wheel.y.int;
-          CTL.pan y;
+          var pany = e.wheel.y.int;
+          var x:int; 
+          var y:int;
+          C_hack::ignore$ SDL_GetMouseState (&x,&y);
+          var i = find_editor_in_window (x,y); 
+          if i >= 0 do
+            editors.i.pan pany;
+          done
         end 
 
       | $(SDL_WINDOWEVENT) => 

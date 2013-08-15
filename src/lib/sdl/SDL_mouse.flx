@@ -1,11 +1,3 @@
-//Module        : SDL_mouse_h
-//Timestamp     : 2006/1/6 2:18:42 UTC
-//Timestamp     : 2006/1/6 13:18:42 (local)
-//Raw Header    : SDL_mouse.h
-//Preprocessor  : gcc -E
-//Input file: sdl.flxcc.i
-//Flxcc Control : sdl.flxcc
-//Felix Version : 1.1.2_rc1
 
 open class SDL_mouse_h
 {

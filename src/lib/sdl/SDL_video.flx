@@ -73,221 +73,26 @@ open class SDL_video_h
   fun SDL_GetWindowID: SDL_Window -> uint32;
   proc SDL_GetWindowPosition : SDL_Window * &int * &int;
   proc SDL_GetWindowSize: SDL_Window * &int * &int;
+  proc SDL_SetWindowGrab: SDL_Window * bool = "SDL_SetWindowGrab($1,SDL_bool($2));";
+  fun SDL_GetWindowGrab: SDL_Window -> bool;
 
-/*
-  fun SDL_MUSTLOCK: &SDL_Surface -> bool;
-  const SDL_PHYSPAL : uint32;
-  const SDL_LOGPAL : uint32;
-  const SDL_YVYU_OVERLAY  : uint32;
-  const SDL_UYVY_OVERLAY  : uint32;
-  const SDL_YUY2_OVERLAY  : uint32;
-  const SDL_IYUV_OVERLAY  : uint32;
-  const SDL_YV12_OVERLAY  : uint32;
-  const SDL_PREALLOC  : uint32;
-  const SDL_SRCALPHA  : uint32;
-  const SDL_RLEACCEL  : uint32;
-  const SDL_RLEACCELOK        : uint32;
-  const SDL_SRCCOLORKEY       : uint32;
-  const SDL_HWACCEL   : uint32;
-  const SDL_NOFRAME   : uint32;
-  const SDL_RESIZABLE : uint32;
-  const SDL_OPENGLBLIT        : uint32;
-  const SDL_OPENGL      : uint32;
-  const SDL_FULLSCREEN        : uint32;
-  const SDL_DOUBLEBUF : uint32;
-  const SDL_HWPALETTE : uint32;
-  const SDL_ANYFORMAT : uint32;
-  const SDL_ASYNCBLIT : uint32;
-  const SDL_HWSURFACE : uint32;
-  const SDL_SWSURFACE : uint32;
+  proc SDL_SetWindowMinumumSize: SDL_Window * int * int;
+  proc SDL_GetWindowMinumumSize: SDL_Window * &int * &int;
+  proc SDL_SetWindowMaximumSize: SDL_Window * int * int;
+  proc SDL_GetWindowMaximumSize: SDL_Window * &int * &int;
 
-  //ABSTRACT TYPES
-  type SDL_GrabMode = 'SDL_GrabMode';
-  type SDL_GLattr = 'SDL_GLattr';
+  proc SDL_ShowWindow: SDL_Window;
+  proc SDL_HideWindow: SDL_Window;
+  proc SDL_RaiseWindow: SDL_Window;
+  proc SDL_MaximizeWindow: SDL_Window;
+  proc SDL_MinimizeWindow: SDL_Window;
+  proc SDL_RestoreWindow: SDL_Window;
+  proc SDL_SetWindowFullScreen: SDL_Window;
+  proc SDL_SetWindowBrightness: SDL_Window * float;
+  fun SDL_SetWindowBrightness: SDL_Window -> float;
+  fun SDL_GetWindowBordered: SDL_Window -> bool;
+  proc SDL_SetWindowBordered: SDL_Window * bool = "SDL_SetWindowBordered($1,SDL_bool($2));";
 
-  cstruct SDL_Surface {
-    flags: uint32;
-    format: &SDL_PixelFormat;
-    w: int;
-    h: int;
-    pitch: uint16;
-    pixels: address;
-    offset: int;
-    hwdata: &_struct_private_hwdata;
-    clip_rect: SDL_Rect;
-    unused1: uint32;
-    locked: uint32;
-    map: &_struct_SDL_BlitMap;
-    format_version: uint;
-    refcount: int;
-  };
-  cstruct SDL_Overlay {
-    format: uint32;
-    w: int;
-    h: int;
-    planes: int;
-    pitches: &uint16;
-    pixels: &&uint8;
-    hwfuncs: &_struct_private_yuvhwfuncs;
-    hwdata: &_struct_private_yuvhwdata;
-    hw_overlay: uint32;
-    UnusedBits: uint32;
-  };
-  cstruct SDL_Palette {
-    ncolors: int;
-    colors: &SDL_Color;
-  };
-  cstruct SDL_Rect {
-    x: int16;
-    y: int16;
-    w: uint16;
-    h: uint16;
-  };
-  cstruct SDL_VideoInfo {
-    hw_available: uint32;
-    wm_available: uint32;
-    UnusedBits1: uint32;
-    UnusedBits2: uint32;
-    blit_hw: uint32;
-    blit_hw_CC: uint32;
-    blit_hw_A: uint32;
-    blit_sw: uint32;
-    blit_sw_CC: uint32;
-    blit_sw_A: uint32;
-    blit_fill: uint32;
-    UnusedBits3: uint32;
-    video_mem: uint32;
-    vfmt: &SDL_PixelFormat;
-  };
-  cstruct SDL_PixelFormat {
-    palette: &SDL_Palette;
-    BitsPerPixel: uint8;
-    BytesPerPixel: uint8;
-    Rloss: uint8;
-    Gloss: uint8;
-    Bloss: uint8;
-    Aloss: uint8;
-    Rshift: uint8;
-    Gshift: uint8;
-    Bshift: uint8;
-    Ashift: uint8;
-    Rmask: uint32;
-    Gmask: uint32;
-    Bmask: uint32;
-    Amask: uint32;
-    colorkey: uint32;
-    alpha: uint8;
-  };
-
-  //C FUNCTION POINTER TYPES
-  header '''typedef int (*SDL_video_h_cft_1)(struct SDL_Surface *,  SDL_Rect *,  struct SDL_Surface *,  SDL_Rect *);''';
-  type SDL_video_h_cft_1 = 'SDL_video_h_cft_1';
-
-  //EXTERNALLY COMPLETED TYPES
-  //type _struct_SDL_Surface defined in SDL_video_h='SDL_video.h';
-
-  //PURE INCOMPLETE TYPES
-  type _struct_SDL_BlitMap = 'struct SDL_BlitMap'; //local
-  type _struct_private_yuvhwfuncs = 'struct private_yuvhwfuncs'; //local
-  type _struct_private_hwdata = 'struct private_hwdata'; //local
-  type _struct_private_yuvhwdata = 'struct private_yuvhwdata'; //local
-
-  //STRUCT or UNION TAG ALIASES
-
-  //TYPE ALIASES
-  typedef _struct_SDL_Surface = SDL_Surface;
-  typedef _struct_SDL_Overlay = SDL_Overlay;
-  typedef _struct_SDL_Palette = SDL_Palette;
-  typedef _struct_SDL_PixelFormat = SDL_PixelFormat;
-  typedef _struct_SDL_Rect = SDL_Rect;
-  typedef _struct_SDL_Color = SDL_Color;
-  typedef _struct_SDL_VideoInfo = SDL_VideoInfo;
-  typedef SDL_blit = SDL_video_h_cft_1;
-
-  //ENUMERATION CONSTANTS
-  const SDL_GL_STENCIL_SIZE: int = 'SDL_GL_STENCIL_SIZE';
-  const SDL_GL_MULTISAMPLEBUFFERS: int = 'SDL_GL_MULTISAMPLEBUFFERS';
-  const SDL_GL_STEREO: int = 'SDL_GL_STEREO';
-  const SDL_GL_ACCUM_RED_SIZE: int = 'SDL_GL_ACCUM_RED_SIZE';
-  const SDL_GRAB_OFF: int = 'SDL_GRAB_OFF';
-  const SDL_GL_ACCUM_GREEN_SIZE: int = 'SDL_GL_ACCUM_GREEN_SIZE';
-  const SDL_GL_ACCUM_ALPHA_SIZE: int = 'SDL_GL_ACCUM_ALPHA_SIZE';
-  const SDL_GL_DEPTH_SIZE: int = 'SDL_GL_DEPTH_SIZE';
-  const SDL_GRAB_FULLSCREEN: int = 'SDL_GRAB_FULLSCREEN';
-  const SDL_GL_RED_SIZE: int = 'SDL_GL_RED_SIZE';
-  const SDL_GL_BLUE_SIZE: int = 'SDL_GL_BLUE_SIZE';
-  const SDL_GL_ACCUM_BLUE_SIZE: int = 'SDL_GL_ACCUM_BLUE_SIZE';
-  const SDL_GL_GREEN_SIZE: int = 'SDL_GL_GREEN_SIZE';
-  const SDL_GRAB_QUERY: int = 'SDL_GRAB_QUERY';
-  const SDL_GL_ALPHA_SIZE: int = 'SDL_GL_ALPHA_SIZE';
-  const SDL_GL_MULTISAMPLESAMPLES: int = 'SDL_GL_MULTISAMPLESAMPLES';
-  const SDL_GL_DOUBLEBUFFER: int = 'SDL_GL_DOUBLEBUFFER';
-  const SDL_GL_BUFFER_SIZE: int = 'SDL_GL_BUFFER_SIZE';
-  const SDL_GRAB_ON: int = 'SDL_GRAB_ON';
-
-  //PROCEDURES
-  proc SDL_FreeSurface: &SDL_Surface;
-  proc SDL_FreeYUVOverlay: &SDL_Overlay;
-  proc SDL_GL_Lock: 1;
-  proc SDL_GL_SwapBuffers: 1;
-  proc SDL_GL_Unlock: 1;
-  proc SDL_GL_UpdateRects: int * &SDL_Rect;
-  proc SDL_GetClipRect: &SDL_Surface * &SDL_Rect;
-  proc SDL_GetRGB: uint32 * &SDL_PixelFormat * &uint8 * &uint8 * &uint8;
-  proc SDL_GetRGBA: uint32 * &SDL_PixelFormat * &uint8 * &uint8 * &uint8 * &uint8;
-  proc SDL_UnlockSurface: &SDL_Surface;
-  proc SDL_UnlockYUVOverlay: &SDL_Overlay;
-  proc SDL_UpdateRect: &SDL_Surface * int32 * int32 * uint32 * uint32;
-  proc SDL_UpdateRects: &SDL_Surface * int * &SDL_Rect;
-  proc SDL_VideoQuit: 1;
-  proc SDL_WM_GetCaption: &&char * &&char;
-  proc SDL_WM_SetCaption: &char * &char;
-  proc SDL_WM_SetIcon: &SDL_Surface * &uint8;
-
-  //FUNCTIONS
-  fun SDL_BlitSurface : &SDL_Surface * &SDL_Rect * &SDL_Surface * &SDL_Rect -> int;
-  fun SDL_ConvertSurface: &SDL_Surface * &SDL_PixelFormat * uint32 -> &SDL_Surface;
-  fun SDL_CreateRGBSurface: uint32 * int * int * int * uint32 * uint32 * uint32 * uint32 -> &SDL_Surface;
-  fun SDL_CreateRGBSurfaceFrom: address * int * int * int * int * uint32 * uint32 * uint32 * uint32 -> &SDL_Surface;
-  fun SDL_CreateYUVOverlay: int * int * uint32 * &SDL_Surface -> &SDL_Overlay;
-  fun SDL_DisplayFormat: &SDL_Surface -> &SDL_Surface;
-  fun SDL_DisplayFormatAlpha: &SDL_Surface -> &SDL_Surface;
-  fun SDL_DisplayYUVOverlay: &SDL_Overlay * &SDL_Rect -> int;
-  fun SDL_FillRect: &SDL_Surface * &SDL_Rect * uint32 -> int;
-  fun SDL_Flip: &SDL_Surface -> int;
-  fun SDL_GL_GetAttribute: SDL_GLattr * &int -> int;
-  fun SDL_GL_GetProcAddress: &char -> address;
-  fun SDL_GL_LoadLibrary: &char -> int;
-  fun SDL_GL_SetAttribute: SDL_GLattr * int -> int;
-  fun SDL_GetGammaRamp: &uint16 * &uint16 * &uint16 -> int;
-  fun SDL_GetVideoInfo: 1 -> &SDL_VideoInfo;
-  fun SDL_GetVideoSurface: 1 -> &SDL_Surface;
-  fun SDL_ListModes: &SDL_PixelFormat * uint32 -> &&SDL_Rect;
-  fun SDL_LoadBMP_RW: &SDL_RWops * int -> &SDL_Surface;
-  fun SDL_LoadBMP:&char->&SDL_Surface;
-  fun SDL_LockSurface: &SDL_Surface -> int;
-  fun SDL_LockYUVOverlay: &SDL_Overlay -> int;
-  fun SDL_LowerBlit: &SDL_Surface * &SDL_Rect * &SDL_Surface * &SDL_Rect -> int;
-  fun SDL_MapRGB: &SDL_PixelFormat * uint8 * uint8 * uint8 -> uint32;
-  fun SDL_MapRGBA: &SDL_PixelFormat * uint8 * uint8 * uint8 * uint8 -> uint32;
-  fun SDL_SaveBMP_RW: &SDL_Surface * &SDL_RWops * int -> int;
-  fun SDL_SetAlpha: &SDL_Surface * uint32 * uint8 -> int;
-  fun SDL_SetClipRect: &SDL_Surface * &SDL_Rect -> SDL_bool;
-  fun SDL_SetColorKey: &SDL_Surface * uint32 * uint32 -> int;
-  fun SDL_SetColors: &SDL_Surface * &SDL_Color * int * int -> int;
-  fun SDL_SetGamma: float * float * float -> int;
-  fun SDL_SetGammaRamp: &uint16 * &uint16 * &uint16 -> int;
-  fun SDL_SetPalette: &SDL_Surface * int * &SDL_Color * int * int -> int;
-  fun SDL_SetVideoMode: int * int * int * uint32 -> &SDL_Surface;
-  fun SDL_SoftStretch: &SDL_Surface * &SDL_Rect * &SDL_Surface * &SDL_Rect -> int;
-  fun SDL_UpperBlit: &SDL_Surface * &SDL_Rect * &SDL_Surface * &SDL_Rect -> int;
-  fun SDL_VideoDriverName: &char * int -> &char;
-  fun SDL_VideoInit: &char * uint32 -> int;
-  fun SDL_VideoModeOK: int * int * int * uint32 -> int;
-  fun SDL_WM_GrabInput: SDL_GrabMode -> SDL_GrabMode;
-  fun SDL_WM_IconifyWindow: 1 -> int;
-  fun SDL_WM_ToggleFullScreen: &SDL_Surface -> int;
-*/
 
 }
 

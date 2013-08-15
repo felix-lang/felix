@@ -8,6 +8,7 @@ interface edit_controller_interface {
   begin_mark_selection : int * int -> 0;
   end_mark_selection : int * int -> 0;
   extend_selection: int * int -> 0;
+  clear_selection: 1 -> 0;
   pan : int -> 0;
   dispatch_modless_key: SDL_Keycode -> 0;
   dispatch_control_key: SDL_Keycode -> 0;

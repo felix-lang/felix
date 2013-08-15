@@ -15,7 +15,7 @@ open class SDL_clipboard_h
    *
    * \sa SDL_SetClipboardText()
    */
-  private fun gcbt :1 -> +char = "SDL_GetClipboardText($1)";
+  private fun gcbt :1 -> +char = "SDL_GetClipboardText()";
   fun SDL_GetClipboardText () : string =
   {
     var p = gcbt();

@@ -151,13 +151,13 @@ open class Varray
     var l = a.len.int;
     var b = if first < 0 then 0 else first;
     var e = if last >= l then l - 1 else last;
-    var d = e - b;
+    var d = e - b + 1;
     if d > 0 do
-      for var i in b upto e - d do
+      for var i in b upto l - d - 1 do
          unsafe_set (a, i.size, unsafe_get (a, size (i + d)));
       done
       var s : carray[v] = a.stl_begin;
-      for i in e + 1 upto l - 1 do
+      for i in l - d upto l - 1 do
         var p : carray[v] = s + i;
         C_hack::destroy$ -p;
       done 

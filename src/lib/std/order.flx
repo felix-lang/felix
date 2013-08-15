@@ -27,7 +27,7 @@ class Pord[t]{
 // total order
 class Tord[t]{
   inherit Eq[t];
-  virtual fun < : t * t -> bool;;
+  virtual fun < : t * t -> bool;
 
   // defined in terms of <, argument order swap, and boolean negation
   // note: not using equality, only works for total order

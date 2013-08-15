@@ -22,6 +22,7 @@ implements edit_controller_interface  =
     D.draw;
   }
 
+  // on mouse key down
   method proc begin_mark_selection(x:int, y:int)
   {
       E.set_soffset$ (y - #(D.get_display_rect).y) / #(D.get_lineskip);
@@ -37,29 +38,39 @@ implements edit_controller_interface  =
       D.draw; 
   }
 
-  method proc end_mark_selection (x:int, y:int) 
-  { 
-    var curline = #(E.get_soffset) + #(D.get_startline);
-    var curcol = max((x - #(D.get_display_rect).x) / #(D.get_charwidth),0);
-    E.set_pos (curcol, curline);
-    E.set_selection extend #(E.get_selection) with 
-        (last_line = curline, past_col = curcol) 
-    end;
-    D.draw; 
-  }
-  
-  method proc extend_selection (x:int, y:int)
+  proc expand_selection (x:int, y:int)
   {
-    E.set_soffset$ (y - #(D.get_display_rect).y) / #(D.get_lineskip);
     var curline = #(E.get_soffset) + #(D.get_startline);
     var curcol = max ((x - #(D.get_display_rect).x) / #(D.get_charwidth),0);
     E.set_pos (curcol, curline);
-    E.set_selection extend #(E.get_selection) with
-        (last_line = curline, past_col = curcol)
-    end;
+    var selection = #(E.get_selection);
+    E.set_selection
+      ( 
+        first_line = selection.first_line, first_col = selection.first_col, 
+        last_line = curline, past_col = curcol 
+      )
+    ;
+  }
+
+  // on mouse key up
+  method proc end_mark_selection (x:int, y:int) 
+  { 
+    expand_selection(x,y);
+    D.draw; 
+  }
+  
+  // used when dragging mouse
+  method proc extend_selection (x:int, y:int)
+  {
+    E.set_soffset$ (y - #(D.get_display_rect).y) / #(D.get_lineskip);
+    expand_selection (x,y);
     D.draw; 
   }
 
+  method proc clear_selection () 
+  {
+    E.clear_selection;
+  }
   //println$ "Mousewheel x=" + e.wheel.x.str + ", y=" + e.wheel.y.str;
   // caret offset from top of screen is normally 0 to nlines-1.
   // invariant: curline = startline + soffset.
@@ -82,6 +93,7 @@ implements edit_controller_interface  =
 
   method proc dispatch_text_input (et: SDL_TextInputEvent)
   {
+    clear_selection;
     if E.get_dotext() do
       var buffer : +char = et.text;
       var ch = buffer.0; 

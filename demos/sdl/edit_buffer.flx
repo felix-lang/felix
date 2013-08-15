@@ -1,7 +1,22 @@
 include "./edit_buffer_interface";
 include "sdl/SDL2";
 
-var null_selection : selection_t = (first_line = 0, first_col = 0, last_line = 0, past_col=0);
+var null_selection : selection_t = (first_line = -1, first_col = 0, last_line = 0, past_col=0);
+fun is_null_selection (x:selection_t) => x.first_line == -1;
+
+fun normalised_selection (selection:selection_t) =>
+  if selection.first_line > selection.last_line 
+  or 
+    selection.first_line == selection.last_line and 
+    selection.first_col > selection.past_col
+  then (
+    first_line=selection.last_line, 
+    first_col=selection.past_col, 
+    last_line=selection.first_line, 
+    past_col=selection.first_col
+  )
+  else selection
+;
 
 object edit_buffer (var lines: darray[string]) implements edit_buffer_interface = 
 {
@@ -20,10 +35,52 @@ object edit_buffer (var lines: darray[string]) implements edit_buffer_interface 
 
 
   method fun get_selection () => selection;
+
+  fun get_selection_text () : string = 
+  {
+    var sel = normalised_selection selection;
+    val cr = "\n";
+    var s = "";
+    if sel.first_line == sel.last_line do
+      s += lines.(sel.first_line).[sel.first_col to sel.past_col];
+    else
+      s += lines.(sel.first_line).[sel.first_col to];
+      for var i in sel.first_line + 1 upto sel.last_line - 1 do
+        s += cr + lines.i;
+      done
+      s += cr + lines.(sel.last_line).[to sel.past_col];
+    done
+    return s;
+  } 
+
+  proc start_selection () { 
+    if is_null_selection selection do
+      selection.first_line = curline;
+      selection.first_col = curcol;
+      selection.last_line = curline;
+      selection.past_col = curcol;
+    done
+  }
+
+  proc extend_selection () {
+    selection.last_line = curline;
+    selection.past_col = curcol;
+  }
+
+  proc erase_selection () 
+  {
+    var sel = normalised_selection selection;
+    set (lines, sel.first_line,
+      lines.(sel.first_line).[to sel.first_col] + 
+      lines.(sel.last_line).[sel.past_col to]);
+    erase (lines, sel.first_line + 1, sel.last_line);
+  }
+
   method fun get_curline () => curline;
   method fun get_curcol () => curcol;
   method proc set_selection (s:selection_t) { selection = s; }
   method proc set_pos (x:int, y:int) {  curline = y; curcol = x; }
+  method proc clear_selection => selection = null_selection;
 
   var changed = true;
   proc draw () { changed = true; }
@@ -49,19 +106,19 @@ object edit_buffer (var lines: darray[string]) implements edit_buffer_interface 
     done
   }
 
- proc back1 ()
- {
-   if curcol > 0 do
-     curcol = curcol - 1;
-   elif curline > 0 do
-     curline = curline - 1;
-     if curline < lines.len.int do
-       curcol = lines.curline.len.int;
-     else
-       curcol = 0;
-     done
-   done
- }
+  proc back1 ()
+  {
+    if curcol > 0 do
+      curcol = curcol - 1;
+    elif curline > 0 do
+      curline = curline - 1;
+      if curline < lines.len.int do
+        curcol = lines.curline.len.int;
+      else
+        curcol = 0;
+      done
+    done
+  }
 
   method proc insert_char (ch:char)
   {
@@ -77,6 +134,26 @@ object edit_buffer (var lines: darray[string]) implements edit_buffer_interface 
     set (lines,curline,tmp);
     ++curcol;
     draw;
+  }
+
+  proc insert_line ()
+  {
+    if curline < lines.len.int do
+      var tmp = lines.curline.[curcol to];
+      set(lines,curline,lines.curline.[to curcol]);
+      push_back (lines,lines.(lines.len.int - 1)); // last line
+      var last = lines.len.int - 2;
+      var first = curline + 1;
+      if first <= last do
+        for var i in last downto first do
+          set(lines, i + 1, lines.i);
+        done
+      done
+      set(lines,curline+1,tmp);
+      ++curline;
+      curcol = 0;
+      draw;
+    done
   }
 
   method proc control_keys(var vkey: SDL_Keycode)
@@ -104,8 +181,35 @@ object edit_buffer (var lines: darray[string]) implements edit_buffer_interface 
         pop lines;
       done
       curcol = 0;
+      clear_selection;
       draw;
 
+    // Cut to clipboard
+    | $(SDLK_x) => ;
+      C_hack::ignore$ SDL_SetClipboardText #get_selection_text;
+      curline = selection.first_line;
+      curcol = selection.first_col;
+      erase_selection;
+      clear_selection;
+      
+    // Copy to clipboard
+    | $(SDLK_c) => 
+      C_hack::ignore$ SDL_SetClipboardText #get_selection_text;
+     
+    // Paste from clipboard
+    | $(SDLK_v) => 
+      begin
+        clear_selection;
+        if #SDL_HasClipboardText do
+          var s = #SDL_GetClipboardText;
+          for ch in s do
+            if ch >= ' '.char do insert_char ch;
+            elif ch == char "\n" do insert_line;
+            else ;
+            done
+          done // loop over text
+        done // has text
+      end
     | _ => ;
     endmatch;
   }
@@ -129,7 +233,45 @@ object edit_buffer (var lines: darray[string]) implements edit_buffer_interface 
           set(lines,curline+1,tmp);
           draw;
         done
+        clear_selection;
       end
+
+    | $(SDLK_HOME) => start_selection; curline=0; extend_selection; draw;
+    | $(SDLK_END) => start_selection; curline=lines.len.int; draw;
+    | $(SDLK_PAGEDOWN) => 
+      start_selection; curline = min (curline + nlines, lines.len.int);
+      extend_selection; 
+      draw;
+
+    | $(SDLK_PAGEUP) => 
+      start_selection; 
+      curline = max (curline - nlines, 0);
+      draw;
+      extend_selection; 
+
+
+    | $(SDLK_DOWN) => 
+      start_selection; 
+      if curline < lines.len.int do
+        curline = curline + 1;
+        draw;
+      done
+      extend_selection; 
+
+    | $(SDLK_UP) => 
+      start_selection; 
+      if curline >0 do
+        curline = curline - 1;
+        draw;
+      done
+      extend_selection; 
+
+    | $(SDLK_LEFT) => 
+       start_selection; back1; extend_selection; draw;
+
+    | $(SDLK_RIGHT) => 
+      start_selection; fwd1; extend_selection; draw;
+
     | _ => ;
     endmatch;
   }
@@ -170,7 +312,10 @@ object edit_buffer (var lines: darray[string]) implements edit_buffer_interface 
       begin
         if curline < lines.len.int do
           var n = lines.curline.len.int;
-          if curcol < n do
+          var sel = normalised_selection selection;
+          if curline == sel.first_line and curcol == sel.first_col do
+            erase_selection;
+          elif curcol < n do
             var tmp = lines.curline;
             erase$ &tmp,curcol,1;
             set(lines,curline,tmp);
@@ -190,55 +335,44 @@ object edit_buffer (var lines: darray[string]) implements edit_buffer_interface 
             draw;
           done
         done
+        clear_selection;
       end
 
     | $(SDLK_BACKSPACE) =>
-      if curline < lines.len.int do
-      begin
-        var n = lines.curline.len.int;
-        if curcol > 0 do
-          if curcol <= n do
-            var tmp = lines.curline;
-            erase$ &tmp,curcol - 1,1;
-            set(lines,curline,tmp);
-          done
-          --curcol;
-          draw; 
-        elif curline > 0 do
-          --curline;
-          curcol = lines.curline.len.int;
-          set(lines,curline, lines.curline+lines.(curline + 1));
-          for var i in curline + 1 upto lines.len.int - 2 do
-            set(lines,i,lines.(i+1));
-          done
-          pop lines;
-          draw;
-        done
-      end
-      else 
-        back1; 
-        draw;
-      done
-
-    | $(SDLK_RETURN) =>
       begin
         if curline < lines.len.int do
-          var tmp = lines.curline.[curcol to];
-          set(lines,curline,lines.curline.[to curcol]);
-          push_back (lines,lines.(lines.len.int - 1)); // last line
-          var last = lines.len.int - 2;
-          var first = curline + 1;
-          if first <= last do
-            for var i in last downto first do
-              set(lines, i + 1, lines.i);
+          var n = lines.curline.len.int;
+          var sel = normalised_selection selection;
+          if curline == sel.last_line and curcol == sel.past_col do
+            curline = sel.first_line;
+            curcol = sel.first_col;
+            erase_selection;
+          elif curcol > 0 do
+            if curcol <= n do
+              var tmp = lines.curline;
+              erase$ &tmp,curcol - 1,1;
+              set(lines,curline,tmp);
             done
+            --curcol;
+            draw; 
+          elif curline > 0 do
+            --curline;
+            curcol = lines.curline.len.int;
+            set(lines,curline, lines.curline+lines.(curline + 1));
+            for var i in curline + 1 upto lines.len.int - 2 do
+              set(lines,i,lines.(i+1));
+            done
+            pop lines;
+            draw;
           done
-          set(lines,curline+1,tmp);
-          ++curline;
-          curcol = 0;
+        else 
+          back1; 
           draw;
         done
+        clear_selection;
       end
+
+    | $(SDLK_RETURN) => clear_selection; insert_line;
 
     | $(SDLK_HOME) => 
       curcol = 0;

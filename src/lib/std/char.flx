@@ -91,5 +91,9 @@ instance[T in chars] Repr[T] {
   }
 }
 
-open Eq[char];
+instance Tord[char]
+{
+  fun < : char * char -> bool = "$1<$2";
+}
+open Tord[char];
 

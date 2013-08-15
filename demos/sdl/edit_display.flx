@@ -2,6 +2,21 @@ include "sdl/SDL2";
 include "sdl/SDL_ttf";
 include "sdl/SDL_image";
 include "./edit_display_interface";
+
+fun normalised_selection (selection:selection_t) =>
+  if selection.first_line > selection.last_line 
+  or 
+    selection.first_line == selection.last_line and 
+    selection.first_col > selection.past_col
+  then (
+    first_line=selection.last_line, 
+    first_col=selection.past_col, 
+    last_line=selection.first_line, 
+    past_col=selection.first_col
+  )
+  else selection
+;
+
 object edit_display (var init: edit_display_init) 
 implements edit_display_interface = 
 {
@@ -172,18 +187,7 @@ implements edit_display_interface =
     end
     C_hack::ignore$ SDL_RenderSetClipRect (swrend, &init.r); 
     var lno = 0;
-    var sel = 
-      if selection.first_line > selection.last_line 
-      or 
-        selection.first_line == selection.last_line and 
-        selection.first_col > selection.past_col
-      then (
-        first_line=selection.last_line, 
-        first_col=selection.past_col, 
-        last_line=selection.first_line, 
-        past_col=selection.first_col
-      )
-      else selection
+    var sel = normalised_selection selection; 
     ;
     var screenlines = init.r.h / lineskip; 
     var lastline = startline + screenlines - 1;
