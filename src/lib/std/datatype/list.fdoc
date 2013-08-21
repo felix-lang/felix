@@ -28,6 +28,8 @@ This is primarily a non-functional helper routine.
   // Note that cleverly, if the variant is 0, the data is also 0
   // so the packed representation is 0
 
+  // NOTE: this will fail if the second argument is named "p"!
+  // fix as for rev, rev_last!
   proc splice[T] : &list[T] * list[T] =
     """
     { // list splice
@@ -71,12 +73,15 @@ Another variant of the unsafe reversal.
   // in place list reversal, also returns the last element
   // as a list, empty iff the original list is
   // unsafe!
-  proc rev_last[T] : &list[T] * &list[T] =
+  proc rev_last[T,PLT=&list[T]] : &list[T] * &list[T] = "_rev_last($1,$2,(?1*)0);" requires _rev_last_[T,PLT];
+
+  body _rev_last_[T,PLT]=
     """
+    static void _rev_last(?2 p1, ?2 p2, ?1*)
     { // in place reversal returns tail as well
       struct node_t { ?1 elt; void *tail; };
       void *nutail = (void*)0;                 // new temp tail
-      void *cur = *$1;                         // list to reverse
+      void *cur = *p1;                         // list to reverse
       void *last = cur;                        // save head
       while(cur)
       {
@@ -85,8 +90,8 @@ Another variant of the unsafe reversal.
         nutail = cur;                                            // set nutail to current
         cur = oldtail;                                           // set current to old tail
       }
-      *$1 = nutail;                                              // reversed list
-      *$2 = last;                                                // original lists tail
+      *p1 = nutail;                                              // reversed list
+      *p2 = last;                                                // original lists tail
     }
     """
   ;

@@ -113,6 +113,7 @@ let codegen_bsyms
   in
 
   let instantiate_instances f kind =
+    let tn t = Flx_name.cpp_typename state.syms bsym_table t in
     let dfnlist = ref [] in
     Hashtbl.iter
       (fun (i,ts) _ -> dfnlist := (i,ts) :: !dfnlist)
