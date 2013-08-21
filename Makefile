@@ -63,7 +63,11 @@ fbuild:
 # regression test on release image
 # 
 test:
-	$(PYTHON) fbuild/fbuild-light test --buildroot=${FBUILDROOT} $(FBUILD_PARAMS)
+	build/release/host/bin/flx --test=build/release --expect --indir=test/regress/rt --regex='.*\.flx'
+
+cleantest:
+	build/release/host/bin/flx --clean
+	build/release/host/bin/flx --test=build/release --expect --indir=test/regress/rt --regex='.*\.flx'
 
 #
 #
