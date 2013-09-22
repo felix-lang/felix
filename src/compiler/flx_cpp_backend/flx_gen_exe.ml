@@ -527,7 +527,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
                   print_endline ("tt=" ^ sbt bsym_table tt);
                   *)
                   let t = nth_type tt i in
-                  let a' = bexpr_get_n t (bexpr_unitsum_case i k,a) in
+                  let a' = bexpr_get_n t i a in
                   let x =
                     if Hashtbl.mem syms.instances (j,ts)
                     && not (t = btyp_tuple [])
@@ -744,13 +744,13 @@ print_endline "Assignment";
 print_endline "PROJ OF LINEAR";
 *)
         begin match e1 with
-        | BEXPR_get_n ((BEXPR_case (j,_),_),(_,(BTYP_tuple ts as t') as var)),_ ->
+        | BEXPR_apply ((BEXPR_prj (j,_,_),_),(_,(BTYP_tuple ts as t') as var)),_ ->
           let n = List.length ts in
           comment ^ 
           "      "^ 
           Flx_ixgen.assign_to_packed_tuple bsym_table ge' ge sr e2 n j ts t' var
 
-        | BEXPR_get_n ((BEXPR_case (j,_),_),(_,(BTYP_array (vt,BTYP_unitsum n) as t') as var)),_ ->
+        | BEXPR_apply ((BEXPR_prj (j,_,_),_),(_,(BTYP_array (vt,BTYP_unitsum n) as t') as var)),_ ->
           let ts =  (* list of n vt's *)
             let rec aux n out = 
               match n with 

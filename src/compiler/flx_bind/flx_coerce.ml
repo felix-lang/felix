@@ -21,7 +21,7 @@ let record_coercion state bsym_table sr x' n t' t'' ls' ls'' =
       | Some j ->
         let tt = List.assoc s ls' in
         if type_eq bsym_table state.Flx_lookup_state.counter t tt then
-          s,(bexpr_get_n t (bexpr_unitsum_case j n,x'))
+          s,(bexpr_get_n t j x')
         else clierr sr (
           "Source Record field '" ^ s ^ "' has type:\n" ^
           sbt bsym_table tt ^ "\n" ^

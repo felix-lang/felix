@@ -112,7 +112,9 @@ let rec check_abstract_expr syms rls ((x,t) as e) =
   | BEXPR_record es -> iter (fun (s,e) -> fe e) es
   | BEXPR_variant (s,e) -> fe e
 
-  | BEXPR_get_n (i,e) -> fe e
+  | BEXPR_aprj (ix,_,_) -> fe e
+  | BEXPR_prj _ -> ()
+  | BEXPR_inj _ -> ()
 
   | BEXPR_closure (i,ts) -> fi i
   | BEXPR_name (i,ts) -> fi i

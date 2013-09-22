@@ -127,7 +127,12 @@ let gen_prim_call
   let carg () =
     match argt with
     | BTYP_tuple []  -> ce_atom "(::flx::rtl::unit())/*UNIT_VALUE_ERROR?*/"
-    | x -> try ge sr a with _ -> ce_atom "(ILLEGAL PASSING WHOLE TUPLE WITH CURRIED ARGUMENTS)"
+    | x -> 
+      try ge sr a 
+      with exc -> 
+       print_endline ("[flx_pgen] ERROR generating expression " ^ sbe bsym_table a);
+       print_endline ("Diag: " ^ Printexc.to_string exc); 
+       ce_atom "(ILLEGAL PASSING WHOLE TUPLE WITH CURRIED ARGUMENTS)"
   in
 
   let ashape = sh argt in
@@ -182,7 +187,7 @@ let gen_prim_call
     let typs = map rt typs in
     let k = List.length typs in
     let es = Flx_list.mapi
-      (fun i t -> bexpr_get_n t (bexpr_unitsum_case i k,x))
+      (fun i t -> bexpr_get_n t i x)
       typs
     in
     let ess = map (ge sr) es in
@@ -205,7 +210,7 @@ let gen_prim_call
   | (_,(BTYP_array(t,BTYP_unitsum n) as ta)) as x ->
     let t = rt t in
     let typs = map (fun _ -> rt t) (nlist n) in
-    let es = Flx_list.range (fun i -> bexpr_get_n t (bexpr_unitsum_case i n,x)) n in
+    let es = Flx_list.range (fun i -> bexpr_get_n t i x) n in
     let ess = map (ge sr) es in
     let ets = map tn typs in
     csubst sr sr2 ct 

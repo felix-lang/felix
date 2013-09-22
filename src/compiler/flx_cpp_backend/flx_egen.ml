@@ -132,6 +132,7 @@ print_endline ("Handling a get-n in egen"^
   "\n  Expression          e=" ^ sbe bsym_table (e,t) ^ 
   "\n  Projection index:   n= " ^ si n ^ 
   "\n  Projection argument a = " ^ sbe bsym_table arg ^
+  "\n  Argument type      t' = " ^ sbt bsym_table t' ^
   "\n"
 );
 *)
@@ -212,7 +213,10 @@ print_endline ("Handling a get-n in egen"^
       (* NOTE: Won't work for compact linear types! *)
       ce_dot (ge' arg) ("mem_" ^ si n)
 
-    | _ -> assert false (* ce_dot (ge' e) ("mem_" ^ si n) *)
+    | t -> 
+      print_endline ("Handle get_n failed with type " ^ sbt bsym_table t);
+      print_endline ("This type does not admit a projection");
+      assert false (* ce_dot (ge' e) ("mem_" ^ si n) *)
 
 and gen_expr'
   syms
@@ -292,7 +296,7 @@ and gen_expr'
         print_endline ("tt=" ^ sbt bsym_table tt);
         *)
         let t = nth_type tt i in
-        let a' = bexpr_get_n t (bexpr_unitsum_case i k,a) in
+        let a' = bexpr_get_n t i a in
         let x = ge_arg a' in
         incr n;
         if String.length x = 0 then s else
@@ -318,6 +322,10 @@ and gen_expr'
      (* ce_atom ("UNIT_ERROR") *)
   | _ ->
   match e with
+  | BEXPR_prj (n,_,_) -> assert false; ce_atom (si n ^ " /* prj FIXME!! */ ") 
+  | BEXPR_inj _ -> assert false (* can't handle yet *)
+  | BEXPR_aprj _ -> assert false (* can't handle yet *)
+
   | BEXPR_expr (s,_) -> ce_top (s)
 
   | BEXPR_case_index e -> Flx_vgen.gen_get_case_index ge' bsym_table e
@@ -337,23 +345,343 @@ and gen_expr'
      in
      ce_call (ce_atom "flx::rtl::range_check") args
 
-(* linear index of linear  type .. handle directly *)
-  | BEXPR_get_n ((_,idxt) as idx, (_,(BTYP_array (v,aixt) as at) as a)) 
+(* ARRAY PROJECTIONS *)
+(* COMPACT LINEAR ARRAY *)
+  | BEXPR_apply ((BEXPR_aprj((_,ixt) as ix,_,_),_), (_,(BTYP_array (v,aixt) as at) as a)) 
     when islinear_type bsym_table at ->
-    Flx_ixgen.handle_get_n_array_clt syms bsym_table ge' idx idxt v aixt at a
-
-(* Ok, the value type isn't linear, just linearise the index *)
-  | BEXPR_get_n ((_,idxt) as idx, (_,(BTYP_array (_,aixt) as at) as a)) ->
-    Flx_ixgen.handle_get_n_array_nonclt syms bsym_table ge' idx idxt aixt at a
-
-(* ordinary index .. *)
-  | BEXPR_get_n ((BEXPR_case (n,_),_),(e',t' as e2)) ->
 (*
-print_endline "gen_expr': BEXPR_get_n (first)";
+print_endline ("Non-constant index of compact array");
+print_endline ("Apply index " ^ sbe bsym_table ix ^ " to array " ^ sbe bsym_table a);
+print_endline ("array type " ^ sbt bsym_table at);
+print_endline ("index  type " ^ sbt bsym_table ixt ^ " array index type " ^ sbt bsym_table aixt);
+*)
+    Flx_ixgen.handle_get_n_array_clt syms bsym_table ge' ix ixt v aixt at a
+
+(* constant index *)
+  | BEXPR_apply ( (BEXPR_prj(n,d,c),_), (_,(BTYP_array (v,aixt) as at) as a)) 
+    when islinear_type bsym_table at ->
+    let (_,ixt) as ix = bexpr_const_case (n, aixt) in
+(*
+print_endline ("Constant index of compact array");
+print_endline ("Apply index " ^ sbe bsym_table ix ^ " to array " ^ sbe bsym_table a);
+print_endline ("array type " ^ sbt bsym_table at);
+print_endline ("index  type " ^ sbt bsym_table ixt ^ " array index type " ^ sbt bsym_table aixt);
+*)
+    Flx_ixgen.handle_get_n_array_clt syms bsym_table ge' ix ixt v aixt at a
+
+(* NON COMPACT LINEAR ARRAY *)
+  | BEXPR_apply ((BEXPR_aprj((_,ixt) as ix,_,_),_), (_,(BTYP_array (_,aixt) as at) as a)) ->
+(*
+print_endline ("Nonconstant index of non-compact array");
+print_endline ("Apply index " ^ sbe bsym_table ix ^ " to array " ^ sbe bsym_table a);
+print_endline ("array type " ^ sbt bsym_table at);
+print_endline ("index  type " ^ sbt bsym_table ixt ^ " array index type " ^ sbt bsym_table aixt);
+*)
+    Flx_ixgen.handle_get_n_array_nonclt syms bsym_table ge' ix ixt aixt at a
+
+  | BEXPR_apply ((BEXPR_prj (n,d,c),ixt) as ix, (_,(BTYP_array (_,aixt) as at) as a)) ->
+(*
+print_endline ("Constant index of non-compact array");
+print_endline ("Apply index " ^ sbe bsym_table ix ^ " to array " ^ sbe bsym_table a);
+print_endline ("array type " ^ sbt bsym_table at);
+print_endline ("index  type " ^ sbt bsym_table ixt ^ " array index type " ^ sbt bsym_table aixt);
+*)
+    handle_get_n syms bsym_table rt ge' e t n a 
+
+(* NON ARRAY PROJECTIONS *)
+(* ordinary index .. *)
+  | BEXPR_apply ((BEXPR_prj (n,_,_),_),(e',t' as e2)) ->
+(*
+print_endline ("Projection "^si n ^ " of non-array " ^ sbe bsym_table e2);
 *)
     handle_get_n syms bsym_table rt ge' e t n e2 
 
-  | BEXPR_get_n _ -> clierr sr "Can't handle generalised get_n yet"
+  | BEXPR_apply ((BEXPR_compose (f1, f2),_), e) ->
+      failwith ("flx_egen: application of composition should have been reduced away")
+
+(* INJECTIONS *)
+  | BEXPR_apply ( (BEXPR_inj (v,d,c),ft' as f), (_,argt as a)) -> 
+(*
+print_endline "Apply injection ....";
+print_endline ("egen:BEXPR_apply-inj: fun=" ^ sbe bsym_table f);
+print_endline ("  case index " ^ si v ^ " dom=" ^ sbt bsym_table d ^ " cod=" ^ sbt bsym_table c);
+print_endline ("  arg=" ^ sbe bsym_table a);
+*)
+    assert (d = argt);
+    assert (c = t); 
+    if Flx_btype.islinear_type bsym_table c then begin
+      let sidx = Flx_ixgen.cal_symbolic_array_index bsym_table (e,t) in
+(*
+print_endline ("egen:BEXPR_apply BEXPR_case: Symbolic index = " ^ Flx_ixgen.print_index bsym_table sidx );
+*)
+      let cidx = Flx_ixgen.render_index bsym_table ge' array_sum_offset_table seq sidx in
+(*
+print_endline ("egen:BEXPR_apply BEXPR_case: rendered lineralised index .. C index = " ^ string_of_cexpr cidx);
+*)
+      cidx
+    end
+    else 
+    begin
+(*
+     print_endline "Apply injection: general construct from argument";
+*)
+       Flx_vgen.gen_make_nonconst_ctor ge' tn syms bsym_table c v a
+       (* t is the type of the sum,
+          ft' is the function type of the constructor,
+          argt is the type of the argument
+       *)
+    end
+
+  | BEXPR_apply ((BEXPR_closure (index,ts),_),a) ->
+    print_endline "Compiler bug in flx_egen, application of closure found, should have been factored out!";
+    assert false (* should have been factored out *)
+
+  (* application of C function pointer, type
+     f: a --> b
+  *)
+
+  | BEXPR_apply ( (_,BTYP_cfunction (d,_)) as f,a) ->
+(*
+print_endline "Apply cfunction";
+*)
+    begin match d with
+    | BTYP_tuple ts ->
+      begin match a with
+      | BEXPR_tuple xs,_ ->
+        let s = String.concat ", " (List.map (fun x -> ge x) xs) in
+        ce_atom ( (ge f) ^"(" ^ s ^ ")")
+      | _ ->
+       failwith "[flx_egen][tuple] can't split up arg to C function yet"
+      end
+    | BTYP_array (t,BTYP_unitsum n) ->
+      let ts = 
+       let rec aux ts n = if n = 0 then ts else aux (t::ts) (n-1) in
+       aux [] n
+      in
+      begin match a with
+      | BEXPR_tuple xs,_ ->
+        let s = String.concat ", " (List.map (fun x -> ge x) xs) in
+        ce_atom ( (ge f) ^"(" ^ s ^ ")")
+      | _ ->
+        failwith "[flx_egen][array] can't split up arg to C function yet"
+      end
+
+    | _ ->
+      ce_atom ( (ge f) ^"(" ^ ge_arg a ^ ")")
+    end
+
+  (* General application*)
+  | BEXPR_apply (f,a) ->
+(*
+print_endline "Apply general";
+*)
+    ce_atom (
+    "("^(ge f) ^ ")->clone()\n      ->apply(" ^ ge_arg a ^ ")"
+    )
+
+
+
+  | BEXPR_apply_prim (index,ts,arg) ->
+(*
+print_endline "Apply prim";
+*)
+    gen_apply_prim
+      syms
+      bsym_table
+      this
+      sr
+      this_vs
+      this_ts
+      t
+      index
+      ts
+      arg
+
+  | BEXPR_apply_struct (index,ts,a) ->
+(*
+print_endline "Apply struct";
+*)
+    let bsym =
+      try Flx_bsym_table.find bsym_table index with _ ->
+        failwith ("[gen_expr(apply instance)] Can't find index " ^
+          string_of_bid index)
+    in
+    let ts = map tsub ts in
+    begin match Flx_bsym.bbdcl bsym with
+    | BBDCL_cstruct (vs,_,_) ->
+      let name = tn (btyp_inst (index,ts)) in
+      ce_atom ("reinterpret<"^ name ^">(" ^ ge a ^ ")/* apply cstruct*/")
+
+    | BBDCL_struct (vs,cts) ->
+      let name = tn (btyp_inst (index,ts)) in
+      if length cts > 1 then
+        (* argument must be an lvalue *)
+        ce_atom ("reinterpret<"^ name ^">(" ^ ge a ^ ")/* apply struct */")
+      else if length cts = 0 then
+        ce_atom (name ^ "()")
+      else
+        ce_atom (name ^ "(" ^ ge a ^ ")")
+
+    | BBDCL_nonconst_ctor (vs,uidx,udt,cidx,ct,evs, etraint) ->
+      (* due to some hackery .. the argument of a non-const
+         ctor can STILL be a unit .. prolly cause the stupid
+         compiler is checking for voids for these pests,
+         but units for sums .. hmm .. inconsistent!
+      *)
+      let ts = map tsub ts in
+      let ct = beta_reduce "flx_egen: nonconst ctor" syms.Flx_mtypes2.counter bsym_table sr (tsubst vs ts ct) in
+      Flx_vgen.gen_make_nonconst_ctor ge' tn syms bsym_table udt cidx a 
+    | _ -> assert false
+    end
+
+  | BEXPR_apply_direct (index,ts,a) ->
+    let bsym = Flx_bsym_table.find bsym_table index in
+    let ts = map tsub ts in
+    let index', ts' = Flx_typeclass.fixup_typeclass_instance syms bsym_table index ts in
+    if index <> index' then
+      clierr sr ("[Flx_egen:apply_direct] Virtual call of " ^ string_of_bid index ^ " dispatches to " ^
+        string_of_bid index')
+    ;
+    if index <> index' then
+    begin
+      let bsym =
+        try Flx_bsym_table.find bsym_table index' with Not_found ->
+          syserr sr ("MISSING INSTANCE BBDCL " ^ string_of_bid index')
+      in
+      match Flx_bsym.bbdcl bsym with
+      | BBDCL_fun _ -> ge' (bexpr_apply_direct t (index',ts',a))
+      | BBDCL_external_fun _ -> ge' (bexpr_apply_prim t (index',ts',a))
+      | _ ->
+          clierr2 sr (Flx_bsym.sr bsym) ("expected instance to be function " ^
+            Flx_bsym.id bsym)
+    end else
+
+    let bsym =
+      try Flx_bsym_table.find bsym_table index with _ ->
+        failwith ("[gen_expr(apply instance)] Can't find index " ^
+          string_of_bid index)
+    in
+    begin
+    (*
+    print_endline ("apply closure of "^ id );
+    print_endline ("  .. argument is " ^ string_of_bound_expression sym_table a);
+    *)
+    match Flx_bsym.bbdcl bsym with
+    | BBDCL_fun (props,_,_,_,_) ->
+      (*
+      print_endline ("Generating closure[apply direct] of " ^ si index);
+      *)
+      let the_display =
+        let d' =
+          map begin fun (i,vslen)->
+            "ptr" ^ cpp_instance_name syms bsym_table i (list_prefix ts vslen)
+          end (get_display_list bsym_table index)
+        in
+          if length d' > our_level
+          then "this" :: tl d'
+          else d'
+      in
+      let name = cpp_instance_name syms bsym_table index ts in
+      if mem `Cfun props
+      then  (* this is probably wrong because it doesn't split arguments up *)
+        ce_call (ce_atom name) [ce_atom (ge_arg a)]
+      else
+        ce_atom (
+        "(FLX_NEWP("^name^")"^ Flx_gen_display.strd the_display props ^")"^
+        "\n      ->apply(" ^ ge_arg a ^ ")"
+        )
+
+    | BBDCL_external_fun _ -> assert false
+    (*
+      ge' (BEXPR_apply_prim (index,ts,a),t)
+    *)
+
+    | _ ->
+      failwith
+      (
+        "[gen_expr: apply_direct] Expected '" ^ Flx_bsym.id bsym ^ "' to be generic function instance, got:\n" ^
+        string_of_bbdcl bsym_table (Flx_bsym.bbdcl bsym) index
+      )
+    end
+
+  | BEXPR_apply_stack (index,ts,a) ->
+    let bsym = Flx_bsym_table.find bsym_table index in
+    let ts = map tsub ts in
+    let index', ts' = Flx_typeclass.fixup_typeclass_instance syms bsym_table index ts in
+    if index <> index' then
+      clierr sr ("[Flx_egen: apply_stack] Virtual call of " ^ string_of_bid index ^ " dispatches to " ^
+        string_of_bid index')
+    ;
+    if index <> index' then
+    begin
+      let bsym =
+        try Flx_bsym_table.find bsym_table index' with Not_found ->
+          syserr sr ("MISSING INSTANCE BBDCL " ^ string_of_bid index')
+      in
+      match Flx_bsym.bbdcl bsym with
+      | BBDCL_fun _ -> ge' (bexpr_apply_direct t (index',ts',a))
+      | BBDCL_external_fun _ -> ge' (bexpr_apply_prim t (index',ts',a))
+      | _ ->
+          clierr2 sr (Flx_bsym.sr bsym) ("expected instance to be function " ^
+            Flx_bsym.id bsym)
+    end else
+
+    let bsym =
+      try Flx_bsym_table.find bsym_table index with _ ->
+        failwith ("[gen_expr(apply instance)] Can't find index " ^
+          string_of_bid index)
+    in
+    begin
+    match Flx_bsym.bbdcl bsym with
+    | BBDCL_fun (props,vs,(ps,traint),retyp,_) ->
+      let display = get_display_list bsym_table index in
+      let name = cpp_instance_name syms bsym_table index ts in
+      (* C FUNCTION CALL *)
+      if mem `Pure props && not (mem `Heap_closure props) then
+      begin
+        let s =
+          assert (length display = 0);
+          match ps with
+          | [] -> ""
+          | [{pindex=ix; ptyp=t}] ->
+            if Hashtbl.mem syms.instances (ix,ts)
+            then ge_arg a
+            else ""
+
+          | _ ->
+            ge_carg ps ts vs a
+        in
+        let s =
+          if mem `Requires_ptf props then
+            if String.length s > 0 then "FLX_FPAR_PASS " ^ s
+            else "FLX_FPAR_PASS_ONLY"
+          else s
+        in
+          ce_atom (name ^ "(" ^ s ^ ")")
+      end else
+        let the_display =
+          let d' =
+            map (fun (i,vslen)-> "ptr"^ cpp_instance_name syms bsym_table i (list_prefix ts vslen))
+            display
+          in
+            if length d' > our_level
+            then "this" :: tl d'
+            else d'
+        in
+        let s =
+          name^ Flx_gen_display.strd the_display props
+          ^
+          "\n      .apply(" ^ ge_arg a ^ ")"
+        in ce_atom s
+
+    | _ ->
+      failwith
+      (
+        "[gen_expr: apply_stack] Expected '" ^ Flx_bsym.id bsym ^ "' to be generic function instance, got:\n" ^
+        string_of_bbdcl bsym_table (Flx_bsym.bbdcl bsym) index
+      )
+    end
+
 
   | BEXPR_tuple_cons ((eh',th' as xh'), (et', tt' as xt')) ->
 (*
@@ -376,14 +704,12 @@ print_endline "gen_expr': BEXPR_get_n (first)";
     let es = match et' with
     | BEXPR_tuple es -> es 
     | _ -> 
-      List.map (fun t-> 
-      let i = !counter in incr counter;
-      BEXPR_get_n 
-      (
-        (BEXPR_case (i,BTYP_unitsum n), BTYP_unitsum n), 
-        xt'
-      ),t)
-      tts
+      List.map 
+        (fun t-> 
+          let i = !counter in incr counter;
+          bexpr_get_n t i xt'
+        )
+        tts
     in
     let es = xh' :: es in
     let t = normalise_tuple_cons bsym_table t in
@@ -408,7 +734,7 @@ print_endline ("Normalised expression " ^ sbe bsym_table e);
     | BTYP_tuple ts -> 
       let eltt = List.hd ts in
       let n = List.length ts in
-      ge' (bexpr_get_n eltt (bexpr_unitsum_case 0 n,x'))
+      ge' (bexpr_get_n eltt 0 x')
 
     | _ -> 
       print_endline ("Expected head to be tuple, got " ^ sbt bsym_table t' ^ " ->(normalised)-> " ^ sbt bsym_table t'');
@@ -432,8 +758,7 @@ print_endline ("Normalised expression " ^ sbe bsym_table e);
       let es = 
         List.map (fun t-> 
           incr counter; 
-          let index = bexpr_unitsum_case (!counter) n in
-          bexpr_get_n t (index, x')
+          bexpr_get_n t (!counter) x'
        ) 
        (List.tl ts) 
       in
@@ -880,323 +1205,6 @@ print_endline ("Handling coercion in egen " ^ sbt bsym_table srct ^ " -> " ^ sbt
 
 
   | BEXPR_compose _ -> failwith "Flx_egen:Can't handle closure of composition yet"
-
-  | BEXPR_apply ((BEXPR_compose (f1, f2),_), e) ->
-      failwith ("flx_egen: application of composition should have been reduced away")
-
-  | BEXPR_apply
-     (
-       (BEXPR_case (v,t),t'),
-       (a,t'')
-     ) -> 
-    if Flx_btype.islinear_type bsym_table t then begin
-print_endline ("egen:BEXPR_apply BEXPR_case: index type = " ^ sbt bsym_table t );
-(*
-print_endline ("egen:BEXPR_apply BEXPR_case: index value = " ^ sbe bsym_table (e,t));
-*)
-      let sidx = Flx_ixgen.cal_symbolic_array_index bsym_table (e,t) in
-(*
-print_endline ("egen:BEXPR_apply BEXPR_case: Symbolic index = " ^ Flx_ixgen.print_index bsym_table sidx );
-*)
-      let cidx = Flx_ixgen.render_index bsym_table ge' array_sum_offset_table seq sidx in
-(*
-print_endline ("egen:BEXPR_apply BEXPR_case: rendered lineralised index .. C index = " ^ string_of_cexpr cidx);
-*)
-      cidx
-    end
-    else
-(*
-print_endline "Apply case ctor";
-*)
-       Flx_vgen.gen_make_nonconst_ctor ge' tn syms bsym_table t v t' (a,t'')
-       (* t is the type of the sum,
-          t' is the function type of the constructor,
-          t'' is the type of the argument
-       *)
-
-  (* HACKY EXPERIMENT ALLOWING PRIMITIVE FUNCTIONS LIKE f: T -> T -> T = "..."
-     i.e. with curried arguments, allowing call like f a b .. instead of tuple,
-     ONLY works for expressions not procedure calls. ONLY works for 2 or 3 arguments.
-     NO SUPPORT for closures! Do not use with tuple arguments as well as the
-     whole tuple gets passed!
-  *)
-(*
-  | BEXPR_apply ((BEXPR_apply ( ((BEXPR_apply_prim (index, ts, arg1)),_),arg2),_),arg3) ->
-    gen_apply_prim
-      syms
-      bsym_table
-      this
-      sr
-      this_vs
-      this_ts
-      t
-      index
-      ts
-      (bexpr_tuple (btyp_tuple [snd arg1; snd arg2; snd arg3]) [arg1; arg2; arg3])
-
-  | BEXPR_apply ((BEXPR_apply_prim (index, ts, arg1),_) ,arg2) ->
-    gen_apply_prim
-      syms
-      bsym_table
-      this
-      sr
-      this_vs
-      this_ts
-      t
-      index
-      ts
-      (bexpr_tuple (btyp_tuple [snd arg1; snd arg2]) [arg1; arg2])
-*)
-
-  | BEXPR_apply_prim (index,ts,arg) ->
-(*
-print_endline "Apply prim";
-*)
-    gen_apply_prim
-      syms
-      bsym_table
-      this
-      sr
-      this_vs
-      this_ts
-      t
-      index
-      ts
-      arg
-
-  | BEXPR_apply_struct (index,ts,a) ->
-(*
-print_endline "Apply struct";
-*)
-    let bsym =
-      try Flx_bsym_table.find bsym_table index with _ ->
-        failwith ("[gen_expr(apply instance)] Can't find index " ^
-          string_of_bid index)
-    in
-    let ts = map tsub ts in
-    begin match Flx_bsym.bbdcl bsym with
-    | BBDCL_cstruct (vs,_,_) ->
-      let name = tn (btyp_inst (index,ts)) in
-      ce_atom ("reinterpret<"^ name ^">(" ^ ge a ^ ")/* apply cstruct*/")
-
-    | BBDCL_struct (vs,cts) ->
-      let name = tn (btyp_inst (index,ts)) in
-      if length cts > 1 then
-        (* argument must be an lvalue *)
-        ce_atom ("reinterpret<"^ name ^">(" ^ ge a ^ ")/* apply struct */")
-      else if length cts = 0 then
-        ce_atom (name ^ "()")
-      else
-        ce_atom (name ^ "(" ^ ge a ^ ")")
-
-    | BBDCL_nonconst_ctor (vs,uidx,udt,cidx,ct,evs, etraint) ->
-      (* due to some hackery .. the argument of a non-const
-         ctor can STILL be a unit .. prolly cause the stupid
-         compiler is checking for voids for these pests,
-         but units for sums .. hmm .. inconsistent!
-      *)
-      let ts = map tsub ts in
-      let ct = beta_reduce "flx_egen: nonconst ctor" syms.Flx_mtypes2.counter bsym_table sr (tsubst vs ts ct) in
-      Flx_vgen.gen_make_nonconst_ctor ge' tn syms bsym_table udt cidx ct a 
-    | _ -> assert false
-    end
-
-  | BEXPR_apply_direct (index,ts,a) ->
-    let bsym = Flx_bsym_table.find bsym_table index in
-    let ts = map tsub ts in
-    let index', ts' = Flx_typeclass.fixup_typeclass_instance syms bsym_table index ts in
-    if index <> index' then
-      clierr sr ("[Flx_egen:apply_direct] Virtual call of " ^ string_of_bid index ^ " dispatches to " ^
-        string_of_bid index')
-    ;
-    if index <> index' then
-    begin
-      let bsym =
-        try Flx_bsym_table.find bsym_table index' with Not_found ->
-          syserr sr ("MISSING INSTANCE BBDCL " ^ string_of_bid index')
-      in
-      match Flx_bsym.bbdcl bsym with
-      | BBDCL_fun _ -> ge' (bexpr_apply_direct t (index',ts',a))
-      | BBDCL_external_fun _ -> ge' (bexpr_apply_prim t (index',ts',a))
-      | _ ->
-          clierr2 sr (Flx_bsym.sr bsym) ("expected instance to be function " ^
-            Flx_bsym.id bsym)
-    end else
-
-    let bsym =
-      try Flx_bsym_table.find bsym_table index with _ ->
-        failwith ("[gen_expr(apply instance)] Can't find index " ^
-          string_of_bid index)
-    in
-    begin
-    (*
-    print_endline ("apply closure of "^ id );
-    print_endline ("  .. argument is " ^ string_of_bound_expression sym_table a);
-    *)
-    match Flx_bsym.bbdcl bsym with
-    | BBDCL_fun (props,_,_,_,_) ->
-      (*
-      print_endline ("Generating closure[apply direct] of " ^ si index);
-      *)
-      let the_display =
-        let d' =
-          map begin fun (i,vslen)->
-            "ptr" ^ cpp_instance_name syms bsym_table i (list_prefix ts vslen)
-          end (get_display_list bsym_table index)
-        in
-          if length d' > our_level
-          then "this" :: tl d'
-          else d'
-      in
-      let name = cpp_instance_name syms bsym_table index ts in
-      if mem `Cfun props
-      then  (* this is probably wrong because it doesn't split arguments up *)
-        ce_call (ce_atom name) [ce_atom (ge_arg a)]
-      else
-        ce_atom (
-        "(FLX_NEWP("^name^")"^ Flx_gen_display.strd the_display props ^")"^
-        "\n      ->apply(" ^ ge_arg a ^ ")"
-        )
-
-    | BBDCL_external_fun _ -> assert false
-    (*
-      ge' (BEXPR_apply_prim (index,ts,a),t)
-    *)
-
-    | _ ->
-      failwith
-      (
-        "[gen_expr: apply_direct] Expected '" ^ Flx_bsym.id bsym ^ "' to be generic function instance, got:\n" ^
-        string_of_bbdcl bsym_table (Flx_bsym.bbdcl bsym) index
-      )
-    end
-
-  | BEXPR_apply_stack (index,ts,a) ->
-    let bsym = Flx_bsym_table.find bsym_table index in
-    let ts = map tsub ts in
-    let index', ts' = Flx_typeclass.fixup_typeclass_instance syms bsym_table index ts in
-    if index <> index' then
-      clierr sr ("[Flx_egen: apply_stack] Virtual call of " ^ string_of_bid index ^ " dispatches to " ^
-        string_of_bid index')
-    ;
-    if index <> index' then
-    begin
-      let bsym =
-        try Flx_bsym_table.find bsym_table index' with Not_found ->
-          syserr sr ("MISSING INSTANCE BBDCL " ^ string_of_bid index')
-      in
-      match Flx_bsym.bbdcl bsym with
-      | BBDCL_fun _ -> ge' (bexpr_apply_direct t (index',ts',a))
-      | BBDCL_external_fun _ -> ge' (bexpr_apply_prim t (index',ts',a))
-      | _ ->
-          clierr2 sr (Flx_bsym.sr bsym) ("expected instance to be function " ^
-            Flx_bsym.id bsym)
-    end else
-
-    let bsym =
-      try Flx_bsym_table.find bsym_table index with _ ->
-        failwith ("[gen_expr(apply instance)] Can't find index " ^
-          string_of_bid index)
-    in
-    begin
-    match Flx_bsym.bbdcl bsym with
-    | BBDCL_fun (props,vs,(ps,traint),retyp,_) ->
-      let display = get_display_list bsym_table index in
-      let name = cpp_instance_name syms bsym_table index ts in
-      (* C FUNCTION CALL *)
-      if mem `Pure props && not (mem `Heap_closure props) then
-      begin
-        let s =
-          assert (length display = 0);
-          match ps with
-          | [] -> ""
-          | [{pindex=ix; ptyp=t}] ->
-            if Hashtbl.mem syms.instances (ix,ts)
-            then ge_arg a
-            else ""
-
-          | _ ->
-            ge_carg ps ts vs a
-        in
-        let s =
-          if mem `Requires_ptf props then
-            if String.length s > 0 then "FLX_FPAR_PASS " ^ s
-            else "FLX_FPAR_PASS_ONLY"
-          else s
-        in
-          ce_atom (name ^ "(" ^ s ^ ")")
-      end else
-        let the_display =
-          let d' =
-            map (fun (i,vslen)-> "ptr"^ cpp_instance_name syms bsym_table i (list_prefix ts vslen))
-            display
-          in
-            if length d' > our_level
-            then "this" :: tl d'
-            else d'
-        in
-        let s =
-          name^ Flx_gen_display.strd the_display props
-          ^
-          "\n      .apply(" ^ ge_arg a ^ ")"
-        in ce_atom s
-
-    | _ ->
-      failwith
-      (
-        "[gen_expr: apply_stack] Expected '" ^ Flx_bsym.id bsym ^ "' to be generic function instance, got:\n" ^
-        string_of_bbdcl bsym_table (Flx_bsym.bbdcl bsym) index
-      )
-    end
-
-  | BEXPR_apply ((BEXPR_closure (index,ts),_),a) ->
-    print_endline "Compiler bug in flx_egen, application of closure found, should have been factored out!";
-    assert false (* should have been factored out *)
-
-  (* application of C function pointer, type
-     f: a --> b
-  *)
-  (*
-  | BEXPR_apply ( (_,BTYP_lvalue(BTYP_cfunction _)) as f,a)
-  *)
-  | BEXPR_apply ( (_,BTYP_cfunction (d,_)) as f,a) ->
-(*
-print_endline "Apply cfunction";
-*)
-    begin match d with
-    | BTYP_tuple ts ->
-      begin match a with
-      | BEXPR_tuple xs,_ ->
-        let s = String.concat ", " (List.map (fun x -> ge x) xs) in
-        ce_atom ( (ge f) ^"(" ^ s ^ ")")
-      | _ ->
-       failwith "[flx_egen][tuple] can't split up arg to C function yet"
-      end
-    | BTYP_array (t,BTYP_unitsum n) ->
-      let ts = 
-       let rec aux ts n = if n = 0 then ts else aux (t::ts) (n-1) in
-       aux [] n
-      in
-      begin match a with
-      | BEXPR_tuple xs,_ ->
-        let s = String.concat ", " (List.map (fun x -> ge x) xs) in
-        ce_atom ( (ge f) ^"(" ^ s ^ ")")
-      | _ ->
-        failwith "[flx_egen][array] can't split up arg to C function yet"
-      end
-
-    | _ ->
-      ce_atom ( (ge f) ^"(" ^ ge_arg a ^ ")")
-    end
-
-  (* General application*)
-  | BEXPR_apply (f,a) ->
-(*
-print_endline "Apply general";
-*)
-    ce_atom (
-    "("^(ge f) ^ ")->clone()\n      ->apply(" ^ ge_arg a ^ ")"
-    )
 
   | BEXPR_record es ->
     let rcmp (s1,_) (s2,_) = compare s1 s2 in

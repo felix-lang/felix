@@ -18,13 +18,12 @@ open Flx_exceptions
 let rec is_proj (e,t) =
   match e with
   | BEXPR_name _-> true
-  | BEXPR_get_n (_,e) -> is_proj e
+  | BEXPR_prj _ -> true
   | _ -> false
 
 let rec get_var (e,t) =
   match e with
   | BEXPR_name (i,ts) -> i
-  | BEXPR_get_n (j,e) -> get_var e 
   | _ -> assert false
 
 (* These routines find the absolute use closure of a symbol,
@@ -84,7 +83,8 @@ and uses_bexe add bsym_table count_inits exe =
     | BEXPR_case _,_ -> () (* case used as projection *)
     | BEXPR_name _,_ -> ()
 
-    | BEXPR_get_n (j,e),_ -> f_bexpr e; chkl j
+    | BEXPR_prj (j,_,_),_ -> ()
+    | BEXPR_inj (j,_,_),_ -> ()
 
     | BEXPR_apply ((BEXPR_closure (i,_),_),_),_ 
     | BEXPR_apply_prim (i,_,_),_ -> 
@@ -110,6 +110,8 @@ and uses_bexe add bsym_table count_inits exe =
           "Lvalue required on LHS of assignment")
       end
 
+    | BEXPR_apply ((BEXPR_prj _,_),b),_ -> chkl b
+ 
     | BEXPR_apply (a,b),_ -> 
       print_endline ("[Flx_use.uses_bexe:assign:lhs] Unexpected apply " ^ sbe bsym_table e);
       print_endline ("In assignment " ^ string_of_bexe bsym_table 0 exe);

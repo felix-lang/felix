@@ -43,7 +43,9 @@ let unravel syms bsym_table e =
         | BBDCL_external_fun _ -> bexpr_apply_direct t (i, ts, aux b)
         | _ -> assert false
         end
-
+      | BEXPR_apply ((BEXPR_prj _,_) as f,b),t -> bexpr_apply t (f, aux b)
+      | BEXPR_apply ((BEXPR_inj _,_) as f,b),t -> bexpr_apply t (f, aux b)
+      | BEXPR_apply ((BEXPR_aprj _,_) as f,b),t -> bexpr_apply t (f, aux b)
       | BEXPR_apply (f, b), t -> refer (bexpr_apply t (aux f, aux b))
       | BEXPR_tuple ls, t -> (bexpr_tuple t (List.map aux ls))
       | (BEXPR_name _, t) as x -> x

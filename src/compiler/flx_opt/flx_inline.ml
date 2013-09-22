@@ -908,15 +908,15 @@ let rec special_inline syms uses bsym_table caller_vs caller hic excludes sr e =
   print_endline (" ... Special inline subexpr: " ^ sbe bsym_table e);
   *)
   match Flx_bexpr.map ~f_bexpr:aux e with
-  | BEXPR_get_n ((BEXPR_case (n,_),_),(BEXPR_tuple ls,_)),_ -> 
+  | BEXPR_apply ((BEXPR_prj (n,_,_),_),(BEXPR_tuple ls,_)),_ -> 
     nth ls n
 
-  | BEXPR_get_n ((BEXPR_case (n,_),_),(BEXPR_record ls,_)),_ -> 
+  | BEXPR_apply ((BEXPR_prj (n,_,_),_),(BEXPR_record ls,_)),_ -> 
     snd (nth ls n)
 
   (* get_n on a struct apply to an explicit tuple .. *)
-  | BEXPR_get_n (
-      (BEXPR_case (n,_),_),
+  | BEXPR_apply (
+      (BEXPR_prj (n,_,_),_),
       (BEXPR_apply ((BEXPR_closure (bid,ts),_),(BEXPR_tuple ls,_)),_)
     ),_ -> 
     let bbdcl = Flx_bsym_table.find_bbdcl bsym_table bid in

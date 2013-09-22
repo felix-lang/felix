@@ -230,7 +230,7 @@ let fold_vars syms bsym_table uses i ps exes =
             *)
             let rec subi j ys e =
               match Flx_bexpr.map ~f_bexpr:(subi j ys) e with
-              | BEXPR_get_n ((BEXPR_case (k,Flx_btype.BTYP_unitsum _),_), (BEXPR_name(i,_),_) ),_
+              | BEXPR_apply ((BEXPR_prj (k,_,_),_), (BEXPR_name(i,_),_) ),_
                 when j = i ->
                 if syms.compiler_options.print_flag then
                 print_endline ("[flx_fold_vars: tuple init] Replacing " ^ sbe bsym_table e ^

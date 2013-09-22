@@ -38,11 +38,11 @@ let unpack syms bsym_table f ps a =
   | x,BTYP_tuple ts ->
     assert (length ts = length ps);
     let k = List.length ts in
-    Flx_list.mapi (fun i t -> bexpr_get_n t (bexpr_unitsum_case i k,a)) ts
+    Flx_list.mapi (fun i t -> bexpr_get_n t i a) ts
 
   | x,BTYP_array (t,BTYP_unitsum k) ->
     assert (k = length ps);
-    Flx_list.range (fun i -> bexpr_get_n t (bexpr_unitsum_case i k,a)) k
+    Flx_list.range (fun i -> bexpr_get_n t i a) k
 
   | x,t ->
     print_endline ("Function " ^ string_of_bid f);

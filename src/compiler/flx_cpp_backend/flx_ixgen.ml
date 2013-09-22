@@ -104,9 +104,23 @@ print_endline ("Decomposing index of sum type " ^ sbe bsym_table idx ^ " MATCH c
     assert false;
 
 
-  | (BEXPR_apply ((BEXPR_case (i,its),t'),(_,bt as b)),_), BTYP_sum ts ->
+  (* I think this cannot happen! *)
+  | (BEXPR_apply ((BEXPR_prj (i,its,_),t'),(_,bt as b)),_), BTYP_sum ts ->
+print_endline ("Decomposing index of sum type " ^ sbe bsym_table idx ^ " APPLY prj"^ si i^" found");
+print_endline ("Top level type is " ^ sbt bsym_table t');
+print_endline ("Argument is " ^ sbe bsym_table b);
+print_endline ("case type is " ^ sbt bsym_table its);
+    assert false;
+    let caseno = i in 
+    let ix = add (case_offset bsym_table ts (`Int caseno)) (cax b) in
+print_endline ("Final index is " ^ print_index bsym_table ix);
+    ix
+
+  (* For an injection, the domain must be the type of one of the summands of a sum *)
+  (* So, its would have to be a member of ts *)
+  | (BEXPR_apply ((BEXPR_inj (i,its,_),t'),(_,bt as b)),_), BTYP_sum ts ->
 (*
-print_endline ("Decomposing index of sum type " ^ sbe bsym_table idx ^ " APPLY case tag "^ si i^" found");
+print_endline ("Decomposing index of sum type " ^ sbe bsym_table idx ^ " APPLY inj"^ si i^" found");
 print_endline ("Top level type is " ^ sbt bsym_table t');
 print_endline ("Argument is " ^ sbe bsym_table b);
 print_endline ("case type is " ^ sbt bsym_table its);
@@ -117,6 +131,7 @@ print_endline ("case type is " ^ sbt bsym_table its);
 print_endline ("Final index is " ^ print_index bsym_table ix);
 *)
     ix
+
 
   | (BEXPR_case (i,t'),_), BTYP_sum ts ->
      let e' = expr idx in
@@ -295,8 +310,8 @@ print_endline ("proj = " ^ si j^ ", Size of component = " ^ si elt ^ ", size of 
 
 (* Checks LHS of assignment for projection of compact linear type *)
 let projoflinear bsym_table e = match e with
-  | BEXPR_get_n ((BEXPR_case _,_),(_,(BTYP_tuple _ as t'))),_ 
-  | BEXPR_get_n ((BEXPR_case _,_),(_,(BTYP_array (_,BTYP_unitsum _) as t'))),_ 
+  | BEXPR_apply ((BEXPR_prj _,_),(_,(BTYP_tuple _ as t'))),_ 
+  | BEXPR_apply ((BEXPR_prj _,_),(_,(BTYP_array (_,BTYP_unitsum _) as t'))),_ 
     when islinear_type bsym_table t' -> true
   | _ -> false
 

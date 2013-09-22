@@ -134,7 +134,7 @@ let cal_call state bsym_table sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
             try Some (map
               (fun (name,d) ->
                 try (match assoc name rs with
-                | j,t-> bexpr_get_n t (bexpr_unitsum_case j n,tbe2))
+                | j,t-> bexpr_get_n t j tbe2)
                 with Not_found ->
                 match d with
                 | Some d ->d

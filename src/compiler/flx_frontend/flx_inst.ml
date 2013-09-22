@@ -105,11 +105,13 @@ let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
   begin match e with
   | BEXPR_not e
   | BEXPR_deref e
-  | BEXPR_get_n (_,e)
   | BEXPR_match_case (_,e)
   | BEXPR_case_arg (_,e)
   | BEXPR_case_index e
     -> ue e
+  | BEXPR_aprj (e,d,c) ->
+    ue e;
+    ut (vs (BTYP_function (d,c)))
 
   | BEXPR_apply_prim (index,ts,a)
   | BEXPR_apply_direct (index,ts,a)
@@ -191,6 +193,9 @@ let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
     ue e
 
   | BEXPR_case (_,t) -> ut (vs t)
+
+  | BEXPR_prj (_,d,c) 
+  | BEXPR_inj (_,d,c) -> ut (vs (BTYP_function (d,c)))
 
   | BEXPR_ref (i,ts)
   | BEXPR_name (i,ts)

@@ -1787,7 +1787,9 @@ and string_of_bound_expression' bsym_table se e =
   | BEXPR_tuple_head e -> "tuple_head ("^ se e ^")"
   | BEXPR_tuple_tail e -> "tuple_tail("^ se e ^")"
   | BEXPR_tuple_cons (eh,et) -> "tuple_cons("^ se eh ^"," ^ se et ^")"
-  | BEXPR_get_n (n,e') -> "/*proj*/"^ se n ^ "(" ^ se e' ^ ")"
+  | BEXPR_aprj (ix,d,c) -> "aprj("^se ix^")"
+  | BEXPR_prj (n,d,c) -> "prj"^ si n^":"^sbt bsym_table d ^ " -> " ^ sbt bsym_table c
+  | BEXPR_inj (n,d,c) -> "inj"^ si n^":"^sbt bsym_table d ^ " -> " ^ sbt bsym_table c
 
   | BEXPR_not e -> "not("^ se e ^ ")"
   | BEXPR_deref e -> "*("^ se e ^ ")"

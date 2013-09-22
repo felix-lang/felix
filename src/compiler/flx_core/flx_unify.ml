@@ -1066,9 +1066,15 @@ let rec expr_unification bsym_table counter
         teqns := (t,t') :: !teqns;
         eqns := (e,e') :: !eqns
 
-      | BEXPR_get_n (n1,e1), BEXPR_get_n (n2,e2) when n1 = n2 ->
-        eqns := (e1,e2) :: !eqns
+      | BEXPR_aprj (ix,d,c), BEXPR_aprj (ix',d',c') ->
+        teqns := (d,d') :: (c,c') :: !teqns;
+        eqns := (ix,ix') :: !eqns
 
+      | BEXPR_prj (n,d,c), BEXPR_prj (n',d',c')
+      | BEXPR_inj (n,d,c), BEXPR_inj (n',d',c') ->
+        teqns := (d,d') :: (c,c') :: !teqns;
+        if n <> n' then raise Not_found
+ 
       | BEXPR_deref e1, BEXPR_deref e2  ->
         eqns := (e1,e2) :: !eqns
 

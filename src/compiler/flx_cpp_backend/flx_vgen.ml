@@ -161,11 +161,12 @@ let gen_make_ctor_arg rep ge tn syms bsym_table a : cexpr_t =
 
 
 (* Value constructor for non-constant (argumentful) variant constructor case *)
-let gen_make_nonconst_ctor ge tn syms bsym_table ut cidx ct a : cexpr_t =
+let gen_make_nonconst_ctor ge tn syms bsym_table codt cidx a : cexpr_t =
 (*
-print_endline ("gen_make_nonconst_ctor arg=" ^ Flx_print.sbe bsym_table a ^ " type=" ^ Flx_print.sbt bsym_table ut); 
+print_endline ("gen_make_nonconst_ctor arg=" ^ Flx_print.sbe bsym_table a ^ 
+" type=" ^ Flx_print.sbt bsym_table codt); 
 *)
-  let rep = cal_variant_rep bsym_table ut in
+  let rep = cal_variant_rep bsym_table codt in
   match rep with
   | VR_self -> ge a
   | VR_int -> ge a

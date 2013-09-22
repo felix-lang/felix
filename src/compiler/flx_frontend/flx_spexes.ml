@@ -436,7 +436,7 @@ let gen_body syms uses bsym_table id
                   "[gen_body2] Woops, prj "^si (!n) ^" tuple wrong length? " ^ si (length ts)
                 )
             end
-          | p -> bexpr_get_n prjt (bexpr_unitsum_case (!n) k,p)
+          | p -> bexpr_get_n prjt (!n) p
         in
         (*
         let prj = Flx_bexpr.reduce bsym_table pj in

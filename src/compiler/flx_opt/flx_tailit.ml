@@ -70,9 +70,9 @@ let rec check_ahead i n ls res =
   if n = 0 then rev res else match ls with
   | [] -> []
   | h :: t ->  match h with
-  | BEXE_init (_,k, ( BEXPR_get_n ((BEXPR_case (p,_),_),(BEXPR_name (j,[]),_)),typ))
+  | BEXE_init (_,k, ( BEXPR_apply ((BEXPR_prj (p,_,_),_),(BEXPR_name (j,[]),_)),typ))
 
-  | BEXE_assign (_,(BEXPR_name (k,[]),_), ( BEXPR_get_n ((BEXPR_case (p,_),_),(BEXPR_name (j,[]),_)),typ))
+  | BEXE_assign (_,(BEXPR_name (k,[]),_), ( BEXPR_apply ((BEXPR_prj (p,_,_),_),(BEXPR_name (j,[]),_)),typ))
     when i = j -> check_ahead i (n-1) t ((k,p,typ)::res)
 
   | _ -> []
@@ -87,7 +87,7 @@ let rec drop n ls =
 exception BadUse
 let rec check_proj_wrap_expr n i e = match e with
   | BEXPR_name (i',_),_ when i = i' -> raise BadUse
-  | BEXPR_get_n ((BEXPR_case (n',_),_), (BEXPR_name (i',_),_)),_
+  | BEXPR_apply ((BEXPR_prj (n',_,_),_), (BEXPR_name (i',_),_)),_
      when i = i' && n = n' ->  ()
 
   | x -> Flx_bexpr.flat_iter ~f_bexpr:(check_proj_wrap_expr n i) x
@@ -249,7 +249,7 @@ let tailit syms bsym_table uses id this sr ps vs exes =
         let param_decode =
           List.map
           (fun {pindex=ix; ptyp=prjt} ->
-            let prj = Flx_bexpr.reduce (bexpr_get_n prjt (bexpr_unitsum_case (!n) k,p)) in
+            let prj = Flx_bexpr.reduce (bexpr_get_n prjt (!n) p) in
             incr n;
             bexe_init (sr,ix,prj)
           )
@@ -307,7 +307,7 @@ let tailit syms bsym_table uses id this sr ps vs exes =
       bexe_assign
       (
         sr,
-        (bexpr_get_n t' (bexpr_unitsum_case j k,(bexpr_name t (i,ts')))),
+        (bexpr_get_n t' j (bexpr_name t (i,ts'))),
         x
       )
     )
@@ -490,7 +490,7 @@ let tailit syms bsym_table uses id this sr ps vs exes =
     | (BEXE_assign (sr,x,(BEXPR_tuple ls,t)) as h) :: tail
       ->
       let rec unproj e = match Flx_bexpr.map ~f_bexpr:unproj e with
-      | BEXPR_get_n ((BEXPR_case (k,_),_),(BEXPR_tuple ls,_)),_ -> nth ls k
+      | BEXPR_apply ((BEXPR_prj (k,_,_),_),(BEXPR_tuple ls,_)),_ -> nth ls k
       | x -> x
       in
       let ls = List.map unproj ls in
@@ -508,7 +508,7 @@ let tailit syms bsym_table uses id this sr ps vs exes =
       in
       let rec repl e = match Flx_bexpr.map ~f_bexpr:repl e with
         | x when me x -> bexpr_name t (i,[])
-        | BEXPR_get_n (  (BEXPR_case (k,_),_),(BEXPR_name (j,[]),t)),t' when i = j->
+        | BEXPR_apply  ((BEXPR_prj (k,_,_),_),(BEXPR_name (j,[]),t)),t' when i = j->
           bexpr_name t' (pbase+k,[])
         | x -> x
       in
@@ -563,14 +563,14 @@ let tailit syms bsym_table uses id this sr ps vs exes =
         end;
         let rec undo_expr e = match Flx_bexpr.map ~f_bexpr:undo_expr e with
         | BEXPR_name (j,[]),t when i = j  -> x
-        | BEXPR_name (j,[]),t when j >= pbase && j < pbase + n-> bexpr_get_n t (bexpr_unitsum_case (j-pbase) n,x)
+        | BEXPR_name (j,[]),t when j >= pbase && j < pbase + n-> bexpr_get_n t (j-pbase) x
         | x -> x
         in
         let undo_st st = match st with
         | BEXE_init (sr,j,e) when j >= pbase && j < pbase + n ->
           let k = j - pbase in
           let _,t' = nth ls k in
-          bexe_assign (sr,(bexpr_get_n t' (bexpr_unitsum_case k n,x)),undo_expr e)
+          bexe_assign (sr,(bexpr_get_n t' k x),undo_expr e)
 
         | x -> Flx_bexe.map ~f_bexpr:undo_expr x
         in
