@@ -16,10 +16,7 @@ val u2 = exec (case 1 of U, 2); print u2; endl;
 
 val u3 = (case 1 of U) 3; print u3; endl;
 
-// Replaced temporarily since injection function 
-// closures aren't implemented yet ..
-// val f1 = case 1 of U; val u4 = f1 4; print u4; endl;
-val f1 = fun (x:int) => (case 1 of U) x; val u4 = f1 4; print u4; endl;
+val f1 = case 1 of U; val u4 = f1 4; print u4; endl;
 
 print (exec (case 1 of U, 5)); endl;
 

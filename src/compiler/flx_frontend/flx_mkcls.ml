@@ -77,7 +77,7 @@ let make_inner_function state bsym_table closure_bid sr vs ps =
 
 
 
-let gen_case_closure_entry state bsym_table sr f rt at  =
+let gen_case_closure_entry state bsym_table sr f at rt =
   let vs = [] in (* HACK, temporary, WRONG *)
   let ts = [] in (* HACK, temporary, WRONG *)
   (* Make a bid for our closure wrapper function. *)
@@ -308,9 +308,10 @@ let rec adj_lambda state bsym_table all_closures sr e =
       all_closures := BidSet.add i !all_closures;
       Flx_bexpr.bexpr_closure t (i,ts)
 
-  | BEXPR_case (v,t'),t as x ->
-      begin match unfold t' with
-      | t when Flx_btype.islinear_type bsym_table t -> x
+  (* THIS SHOULDN'T HAPPEN NOW *)
+  | BEXPR_case (v,d),ft as x ->
+      begin match unfold d with
+      | t when Flx_btype.islinear_type bsym_table t -> x (* ??? *)
 
       | BTYP_sum ls ->
           let n = List.length ls in
@@ -321,16 +322,31 @@ let rec adj_lambda state bsym_table all_closures sr e =
               "Invalid case index " ^ si v ^
               " of " ^ si n ^ " cases"
             )
-          else let t2 = List.nth ls v in
-          if t2 = btyp_tuple []
+          else let c = List.nth ls v in
+          if c = btyp_tuple []
           then x
-          else
-            let i,ts = gen_case_closure_entry state bsym_table sr x t' t2 in
+          else begin
+            print_endline ("Deprecated closure of BEXE_case " ^ si v ^ 
+             " domain type=" ^ sbt bsym_table d ^ 
+             " codomain type= " ^ sbt bsym_table c ^
+             " term function type= " ^ sbt bsym_table ft
+             );
+            assert (ft = BTYP_function (d,c));
+            let i,ts = gen_case_closure_entry state bsym_table sr x d c in
             all_closures := BidSet.add i !all_closures;
-            Flx_bexpr.bexpr_closure t (i,ts)
+            Flx_bexpr.bexpr_closure ft (i,ts)
+         end
 
       | _ -> failwith ("flx_mkcls: Unexpected case of non sum")
       end
+  | (BEXPR_inj (_,d,c),t as x)
+  | (BEXPR_prj (_,d,c),t as x)
+  | (BEXPR_aprj (_,d,c),t as x)
+     ->
+      let i,ts = gen_case_closure_entry state bsym_table sr x d c in
+      all_closures := BidSet.add i !all_closures;
+      Flx_bexpr.bexpr_closure t (i,ts)
+
 
   | x -> x
 
