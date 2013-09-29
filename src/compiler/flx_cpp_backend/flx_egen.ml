@@ -126,8 +126,7 @@ let isid x =
     true
   with _ -> false
 
-let rec handle_get_n syms bsym_table rt ge' e t n ((e',t') as arg) =
-(*
+let rec handle_get_n syms bsym_table rt ge' (e,t) n ((e',t') as arg) =
 print_endline ("Handling a get-n in egen"^
   "\n  Expression          e=" ^ sbe bsym_table (e,t) ^ 
   "\n  Projection index:   n= " ^ si n ^ 
@@ -135,17 +134,15 @@ print_endline ("Handling a get-n in egen"^
   "\n  Argument type      t' = " ^ sbt bsym_table t' ^
   "\n"
 );
-*)
     let rtt' = rt t' in
     match rtt' with
     | BTYP_tuple ls  -> 
-(*
       print_endline "expr arg has tuple type"; 
-*)
       if islinear_type bsym_table rtt' 
-      then 
-        Flx_ixgen.handle_get_n syms bsym_table ls rt ge' e t n arg
-      else
+      then begin
+        print_endline "argument is compact linear tuple";
+        Flx_ixgen.handle_get_n syms bsym_table ls rt ge' (e,t) t n arg
+      end else
         ce_dot (ge' arg) ("mem_" ^ si n)
 
     | BTYP_array (_,BTYP_unitsum _) ->
@@ -231,6 +228,8 @@ and gen_expr'
 (*
   print_endline ("Gen_expr': " ^ sbe bsym_table (e,t));
 *)
+  let rec f_bexpr e = Flx_bexpr.map ~f_bexpr ~f_btype:(Flx_unify.normalise_tuple_cons bsym_table) e in
+  let e,t = f_bexpr (e,t) in
   match e with
   (* replace heap allocation of a unit with NULL pointer *)
   | BEXPR_new (BEXPR_tuple [],_) -> ce_atom "0/*NULL*/"
@@ -249,7 +248,7 @@ and gen_expr'
   let ge' = gen_expr' syms bsym_table this this_vs this_ts sr in
   let tsub t = beta_reduce "flx_egen" syms.Flx_mtypes2.counter bsym_table sr (tsubst this_vs this_ts t) in
   let tn t = cpp_typename syms bsym_table (tsub t) in
-
+  let clt t = islinear_type bsym_table t in
   (* NOTE this function does not do a reduce_type *)
   let raw_typename t =
     cpp_typename
@@ -322,8 +321,260 @@ and gen_expr'
      (* ce_atom ("UNIT_ERROR") *)
   | _ ->
   match e with
-  | BEXPR_prj (n,_,_) -> assert false; ce_atom (si n ^ " /* prj FIXME!! */ ") 
+
+  | BEXPR_case (n,BTYP_sum ts) when clt t ->
+    let get_array_sum_offset_values bsym_table ts =
+      let sizes = List.map (sizeof_linear_type bsym_table) ts in
+      let rec aux acc tsin tsout = 
+        match tsin with
+        | [] -> List.rev tsout
+        | h :: t -> aux (acc + h) t (acc :: tsout)
+      in
+      aux 0 sizes []
+    in
+    let case_offset bsym_table ts caseno = 
+      match caseno with
+      | 0 -> ce_int 0
+      | n -> ce_int (List.nth (get_array_sum_offset_values bsym_table ts) n)
+    in
+    case_offset bsym_table ts n
+
+  | BEXPR_case (n,BTYP_unitsum _) ->
+    ce_int n
+
+  (* if a tuple is compact linear, all the components must be
+     too, and the result is just a linear combination 
+  *)
+  | BEXPR_tuple es when clt t ->
+    begin match t with
+      | BTYP_tuple ts  -> 
+        assert (List.length ts = List.length es);
+        (*  we get  ((0 * sizeof typeof i + i) * sizeof typeof j + j ) * sizeof typeof k + k 
+            which is BIG ENDIAN. The sizeof i is eliminated by multiplying by 0.
+            Example 3 * 4 * 5, so i:3, j:4, k:5 -> ijk = ((0 * 3 + i) * 4 + j) * 5 + k = 20i + 5j + k
+         *)
+        List.fold_left 
+          (fun acc (elt,t) -> 
+            ce_add (ce_mul acc  (ce_int (sizeof_linear_type bsym_table t))) (ge' elt)
+          ) 
+          (ce_int 0)
+          (List.combine es ts)
+
+    | BTYP_array (t, BTYP_unitsum n)  -> 
+      assert (List.length es = n);
+      let sa = ce_int (sizeof_linear_type bsym_table t) in
+      List.fold_left (fun acc elt -> ce_add (ce_mul acc sa) (ge' elt)) (ce_int 0) es
+
+    | _ -> assert false
+    end
+
+  (* if this is an injection into a compact linear type, then the argument
+     must be compact linear also, the result is just its value plus
+     the sum of the sizes on its right.
+  *)
+  | BEXPR_apply ( (BEXPR_inj (caseno,_,_),_), ((_,at) as a) ) 
+    when clt t ->
+    assert (clt at);
+    begin match t with
+    | BTYP_sum ts ->
+      let get_array_sum_offset_values bsym_table ts =
+        let sizes = List.map (sizeof_linear_type bsym_table) ts in
+        let rec aux acc tsin tsout = 
+          match tsin with
+          | [] -> List.rev tsout
+          | h :: t -> aux (acc + h) t (acc :: tsout)
+        in
+          aux 0 sizes []
+      in
+      let case_offset bsym_table ts caseno = 
+        match caseno with
+        | 0 -> ce_int 0
+        | n -> ce_int (List.nth (get_array_sum_offset_values bsym_table ts) n)
+      in
+      ce_add (case_offset bsym_table ts caseno) (ge' a)
+    | _ -> assert false
+    end
+
+  | BEXPR_apply ( (BEXPR_inj (v,d,c),ft' as f), (_,argt as a)) -> 
+    assert (d = argt);
+    assert (c = t);
+    assert (not (clt c)); 
+    Flx_vgen.gen_make_nonconst_ctor ge' tn syms bsym_table c v a
+
+  (* if this is a constant projection of a compact linear array *) 
+  | BEXPR_apply ( 
+      (BEXPR_prj (ix,(BTYP_array (vt,aixt) as ixd),ixc),_), 
+      (_,at as a)
+    ) when clt at ->
+    assert (ixd = at);
+    assert (ixc = vt);
+    assert (ixc = t); 
+    assert (clt ixd);
+    assert (clt ixc);
+    let array_len = Flx_btype.sizeof_linear_type bsym_table aixt in
+    let seq = syms.Flx_mtypes2.counter in
+    let power_table = syms.Flx_mtypes2.power_table in
+    let ipow' base exp = 
+      match exp with
+      | `Ce_int i -> 
+        let rec ipow = begin function 0 -> 1 | n -> base * (ipow (n - 1)) end in
+        ce_int (ipow i)
+      | _ ->
+        let ipow = Flx_ixgen.get_power_table bsym_table power_table base array_len in
+        ce_array (ce_atom ipow) exp
+    in
+    let array_value_size = sizeof_linear_type bsym_table vt in
+    let a = ge' a in
+    let ix = ce_int ix in
+    let exp = ce_sub (ce_int (array_len - 1)) ix in
+    let sdiv = ipow' array_value_size exp in
+    let result = (ce_rmd (ce_div a sdiv) (ce_int array_value_size)) in
+    result
+
+  | BEXPR_apply ( 
+      (BEXPR_prj (ix,(BTYP_pointer (BTYP_array (vt,aixt) as ixd)),ixc),_), 
+      (_,BTYP_pointer at as a)
+    ) when clt at ->
+    clierr sr "flx_egen: can't address constant component of compact linear array"
+
+  (* if this is a constant projection of a non-compact linear array *) 
+  | BEXPR_apply ( (BEXPR_prj (n,BTYP_array _,_),_), a) -> 
+    ce_array (ce_dot (ge' a) "data") (ce_int n)
+
+  (* if this is a constant projection of a non-compact linear array *) 
+  | BEXPR_apply ( (BEXPR_prj (n,BTYP_pointer (BTYP_array _),_),_), a) -> 
+    ce_prefix "&" (ce_array (ce_arrow (ge' a) "data") (ce_int n))
+
+
+  (* if this is a constant projection of a compact linear tuple *) 
+  | BEXPR_apply ( (BEXPR_prj (n,BTYP_tuple ts,_),_), ((_,at) as a)) 
+    when clt at ->
+    assert (0 <= n && n < List.length ts);
+    let rec aux ls i out = match ls with [] -> assert false | h :: t ->
+      if i = 0 then out else aux t (i-1) (sizeof_linear_type bsym_table h * out)
+    in 
+    let x = aux (List.rev ts) (List.length ts - n - 1) 1 in
+    let y = sizeof_linear_type bsym_table (List.nth ts n) in
+    let a = ge' a in
+    let result = ce_rmd (ce_div a (ce_int x)) (ce_int y) in
+    result
+
+  | BEXPR_apply ( (BEXPR_prj (n,BTYP_pointer (BTYP_tuple ts),_),_), ((_,at) as a)) 
+    when clt at ->
+    clierr sr "flx_egen: Cannot address component of compact linear type"
+
+
+  (* a constant projection of a non-compact linear tuple, just
+     fetch the n'th component by its field name
+  *) 
+  | BEXPR_apply ( (BEXPR_prj (n,BTYP_tuple _,_),_), a ) ->
+    ce_dot (ge' a) ("mem_" ^ si n) 
+
+  | BEXPR_apply ( (BEXPR_prj (n,BTYP_pointer (BTYP_tuple _),_),_), a ) ->
+    ce_prefix "&" (ce_arrow (ge' a) ("mem_" ^ si n)) 
+
+
+  | BEXPR_apply ( (BEXPR_prj (n,BTYP_record (name,es),_),_), a) ->
+    let field_name,_ =
+      try nth es n
+      with Not_found ->
+        failwith "[flx_egen] Woops, index of non-existent struct field"
+    in
+    ce_dot (ge' a) (cid_of_flxid field_name)
+
+  | BEXPR_apply ( (BEXPR_prj (n,BTYP_pointer (BTYP_record (name,es)),_),_), a) ->
+    let field_name,_ =
+      try nth es n
+      with Not_found ->
+        failwith "[flx_egen] Woops, index of non-existent struct field"
+    in
+    ce_prefix "&" (ce_arrow (ge' a) (cid_of_flxid field_name))
+
+
+  | BEXPR_apply ( (BEXPR_prj (n,BTYP_inst (i,_),_),_), (_,at as a)) ->
+    begin match Flx_bsym_table.find_bbdcl bsym_table i with
+    | BBDCL_cstruct (_,ls,_)
+    | BBDCL_struct (_,ls) ->
+      let name,_ =
+        try nth ls n
+        with Not_found ->
+          failwith "Woops, index of non-existent struct field"
+      in
+      ce_dot (ge' a) (cid_of_flxid name)
+
+      | _ -> failwith ("[flx_egen] Expr "^sbe bsym_table (e,t)^ " type " ^ sbt bsym_table t ^
+        " object " ^ sbe bsym_table a ^ " type " ^ sbt bsym_table at ^ 
+        " Instance of " ^string_of_int i^ " expected to be (c)struct")
+    end
+
+  | BEXPR_apply ( (BEXPR_prj (n,BTYP_pointer (BTYP_inst (i,_)),_),_), (_,at as a)) ->
+    begin match Flx_bsym_table.find_bbdcl bsym_table i with
+    | BBDCL_cstruct (_,ls,_)
+    | BBDCL_struct (_,ls) ->
+      let name,_ =
+        try nth ls n
+        with Not_found ->
+          failwith "Woops, index of non-existent struct field"
+      in
+      ce_prefix "&" (ce_arrow (ge' a) (cid_of_flxid name))
+
+      | _ -> failwith ("[flx_egen] Expr "^sbe bsym_table (e,t)^ " type " ^ sbt bsym_table t ^
+        " object " ^ sbe bsym_table a ^ " type " ^ sbt bsym_table at ^ 
+        " Instance of " ^string_of_int i^ " expected to be (c)struct")
+    end
+
+
+  (* if this is an array projection of a compact linear array *)
+  | BEXPR_apply ( 
+      (BEXPR_aprj (ix,ixd,ixc),_), 
+      (_,(BTYP_array (vt,aixt) as at) as a)
+    ) when clt at ->
+    assert (ixd = at);
+    assert (ixc = vt);
+    assert (clt ixd);
+    assert (clt ixc);
+    let array_len = Flx_btype.sizeof_linear_type bsym_table aixt in
+    let seq = syms.Flx_mtypes2.counter in
+    let power_table = syms.Flx_mtypes2.power_table in
+    let ipow' base exp = 
+      match exp with
+      | `Ce_int i -> 
+        let rec ipow = begin function 0 -> 1 | n -> base * (ipow (n - 1)) end in
+        ce_int (ipow i)
+      | _ ->
+        let ipow = Flx_ixgen.get_power_table bsym_table power_table base array_len in
+        ce_array (ce_atom ipow) exp
+    in
+    let array_value_size = sizeof_linear_type bsym_table vt in
+    let a = ge' a in
+    let ix = ge' ix in
+    let sdiv = ipow' array_value_size (ce_sub (ce_int (array_len - 1)) ix) in
+    let result = (ce_rmd (ce_div a sdiv) (ce_int array_value_size)) in
+    result
+
+  | BEXPR_apply ( 
+      (BEXPR_aprj (ix,ixd,ixc),_), 
+      (_,(BTYP_pointer (BTYP_array (vt,aixt) as at)) as a)
+    ) when clt at -> 
+    clierr sr "flx_egen: can't address component of compact linear array"
+
+  (* if this is an array projection of a non-compact linear array *)
+  | BEXPR_apply ( (BEXPR_aprj (idx,BTYP_array _,_),_), a ) ->
+    ce_array (ce_dot (ge' a) "data") (ge' idx) 
+
+  (* if this is an array projection of a non-compact linear array *)
+  | BEXPR_apply ( (BEXPR_aprj (idx,BTYP_pointer (BTYP_array _),_),_), a ) ->
+    ce_prefix "&" (ce_array (ce_arrow (ge' a) "data") (ge' idx)) 
+
+
+
+  (* we CAN handle this now, since we have made a closure for it: FIXME *)
+  | BEXPR_prj (n,_,_) -> assert false
+
+  (* we CAN handle this now, since we have made a closure for it: FIXME *)
   | BEXPR_inj _ -> assert false (* can't handle yet *)
+
+  (* we cannot handle this one yet, because we didn't yet make a closure for it: FIXME *)
   | BEXPR_aprj _ -> assert false (* can't handle yet *)
 
   | BEXPR_expr (s,_) -> ce_top (s)
@@ -345,10 +596,11 @@ and gen_expr'
      in
      ce_call (ce_atom "flx::rtl::range_check") args
 
+(* OLD CODE ....
 (* ARRAY PROJECTIONS *)
 (* COMPACT LINEAR ARRAY *)
   | BEXPR_apply ((BEXPR_aprj((_,ixt) as ix,_,_),_), (_,(BTYP_array (v,aixt) as at) as a)) 
-    when islinear_type bsym_table at ->
+    when clt at ->
 (*
 print_endline ("Non-constant index of compact array");
 print_endline ("Apply index " ^ sbe bsym_table ix ^ " to array " ^ sbe bsym_table a);
@@ -356,10 +608,13 @@ print_endline ("array type " ^ sbt bsym_table at);
 print_endline ("index  type " ^ sbt bsym_table ixt ^ " array index type " ^ sbt bsym_table aixt);
 *)
     Flx_ixgen.handle_get_n_array_clt syms bsym_table ge' ix ixt v aixt at a
+*)
 
+
+(* OLD CODE 
 (* constant index *)
   | BEXPR_apply ( (BEXPR_prj(n,d,c),_), (_,(BTYP_array (v,aixt) as at) as a)) 
-    when islinear_type bsym_table at ->
+    when clt at ->
     let (_,ixt) as ix = bexpr_const_case (n, aixt) in
 (*
 print_endline ("Constant index of compact array");
@@ -368,7 +623,9 @@ print_endline ("array type " ^ sbt bsym_table at);
 print_endline ("index  type " ^ sbt bsym_table ixt ^ " array index type " ^ sbt bsym_table aixt);
 *)
     Flx_ixgen.handle_get_n_array_clt syms bsym_table ge' ix ixt v aixt at a
+*)
 
+(* OLD CODE
 (* NON COMPACT LINEAR ARRAY *)
   | BEXPR_apply ((BEXPR_aprj((_,ixt) as ix,_,_),_), (_,(BTYP_array (_,aixt) as at) as a)) ->
 (*
@@ -378,7 +635,9 @@ print_endline ("array type " ^ sbt bsym_table at);
 print_endline ("index  type " ^ sbt bsym_table ixt ^ " array index type " ^ sbt bsym_table aixt);
 *)
     Flx_ixgen.handle_get_n_array_nonclt syms bsym_table ge' ix ixt aixt at a
+*)
 
+(* OLD CODE 
   | BEXPR_apply ((BEXPR_prj (n,d,c),ixt) as ix, (_,(BTYP_array (_,aixt) as at) as a)) ->
 (*
 print_endline ("Constant index of non-compact array");
@@ -386,38 +645,32 @@ print_endline ("Apply index " ^ sbe bsym_table ix ^ " to array " ^ sbe bsym_tabl
 print_endline ("array type " ^ sbt bsym_table at);
 print_endline ("index  type " ^ sbt bsym_table ixt ^ " array index type " ^ sbt bsym_table aixt);
 *)
-    handle_get_n syms bsym_table rt ge' e t n a 
+    handle_get_n syms bsym_table rt ge' (e, t) n a 
+*)
 
 (* NON ARRAY PROJECTIONS *)
 (* ordinary index .. *)
   | BEXPR_apply ((BEXPR_prj (n,_,_),_),(e',t' as e2)) ->
-(*
-print_endline ("Projection "^si n ^ " of non-array " ^ sbe bsym_table e2);
-*)
-    handle_get_n syms bsym_table rt ge' e t n e2 
+print_endline ("Projection "^si n ^ " of non-array non-tuple " ^ sbe bsym_table e2);
+    handle_get_n syms bsym_table rt ge' (e, t) n e2 
 
   | BEXPR_apply ((BEXPR_compose (f1, f2),_), e) ->
       failwith ("flx_egen: application of composition should have been reduced away")
 
+(* OLD CODE
 (* INJECTIONS *)
   | BEXPR_apply ( (BEXPR_inj (v,d,c),ft' as f), (_,argt as a)) -> 
-(*
 print_endline "Apply injection ....";
 print_endline ("egen:BEXPR_apply-inj: fun=" ^ sbe bsym_table f);
 print_endline ("  case index " ^ si v ^ " dom=" ^ sbt bsym_table d ^ " cod=" ^ sbt bsym_table c);
 print_endline ("  arg=" ^ sbe bsym_table a);
-*)
     assert (d = argt);
     assert (c = t); 
-    if Flx_btype.islinear_type bsym_table c then begin
-      let sidx = Flx_ixgen.cal_symbolic_array_index bsym_table (e,t) in
-(*
+    if clt c then begin
+      let sidx = Flx_ixgen.cal_symbolic_compact_linear_value bsym_table (e,t) in
 print_endline ("egen:BEXPR_apply BEXPR_case: Symbolic index = " ^ Flx_ixgen.print_index bsym_table sidx );
-*)
-      let cidx = Flx_ixgen.render_index bsym_table ge' array_sum_offset_table seq sidx in
-(*
+      let cidx = Flx_ixgen.render_compact_linear_value bsym_table ge' array_sum_offset_table seq sidx in
 print_endline ("egen:BEXPR_apply BEXPR_case: rendered lineralised index .. C index = " ^ string_of_cexpr cidx);
-*)
       cidx
     end
     else 
@@ -431,6 +684,7 @@ print_endline ("egen:BEXPR_apply BEXPR_case: rendered lineralised index .. C ind
           argt is the type of the argument
        *)
     end
+*)
 
   | BEXPR_apply ((BEXPR_closure (index,ts),_),a) ->
     print_endline "Compiler bug in flx_egen, application of closure found, should have been factored out!";
@@ -870,27 +1124,20 @@ print_endline ("Generating class new for t=" ^ ref_type);
    * particularly enums.
    *)
   | BEXPR_case (v,t') ->
-    if Flx_btype.islinear_type bsym_table t then begin
-(*
+    if clt t then begin
 print_endline ("egen:BEXPR_case: index type = " ^ sbt bsym_table t );
 print_endline ("egen:BEXPR_case: index value = " ^ sbe bsym_table (e,t));
-*)
-      let sidx = Flx_ixgen.cal_symbolic_array_index bsym_table (e,t) in
-(*
+      let sidx = Flx_ixgen.cal_symbolic_compact_linear_value bsym_table (e,t) in
 print_endline ("egen:BEXPR_case: Symbolic index = " ^ Flx_ixgen.print_index bsym_table sidx );
-*)
-      let cidx = Flx_ixgen.render_index bsym_table ge' array_sum_offset_table seq sidx in
-(*
+      let cidx = Flx_ixgen.render_compact_linear_value bsym_table ge' array_sum_offset_table seq sidx in
 print_endline ("egen:BEXPR_case: rendered lineralised index .. C index = " ^ string_of_cexpr cidx);
-*)
       cidx
     end
     else
-(*
-print_endline ("make const ctor, union type = " ^ sbt bsym_table t' ^ 
+begin print_endline ("make const ctor, union type = " ^ sbt bsym_table t' ^ 
 " ctor#= " ^ si v ^ " union type = " ^ sbt bsym_table t);
-*)
     Flx_vgen.gen_make_const_ctor bsym_table (e,t)
+end
     (* 
     begin match unfold t' with
     | BTYP_unitsum n ->
@@ -1229,16 +1476,16 @@ print_endline ("Handling coercion in egen " ^ sbt bsym_table srct ^ " -> " ^ sbt
 
   | BEXPR_tuple es ->
     (* print_endline ("Construct tuple " ^ sbe bsym_table (e,t)); *)
-    if islinear_type bsym_table t then begin
+    if clt t then begin
 (*
       print_endline ("Construct tuple of linear type " ^ sbe bsym_table (e,t));
       print_endline ("type " ^ sbt bsym_table t);
 *)
-      let sidx = Flx_ixgen.cal_symbolic_array_index bsym_table (e,t) in
+      let sidx = Flx_ixgen.cal_symbolic_compact_linear_value bsym_table (e,t) in
 (*
 print_endline ("egen:BEXPR_tuple: Symbolic index = " ^ Flx_ixgen.print_index bsym_table sidx );
 *)
-      let cidx = Flx_ixgen.render_index bsym_table ge' array_sum_offset_table seq sidx in
+      let cidx = Flx_ixgen.render_compact_linear_value bsym_table ge' array_sum_offset_table seq sidx in
 (*
 print_endline ("egen:BEXPR_tuple: rendered lineralised index .. C index = " ^ string_of_cexpr cidx);
 *)

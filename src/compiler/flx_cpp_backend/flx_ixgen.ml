@@ -74,11 +74,10 @@ let rec print_index bsym_table idx =
   | `Switch (ts,e) -> "switch (" ^ pi e ^ ") { " ^ catmap "," (sbt bsym_table) ts ^ " }"
 
 
-let rec cal_symbolic_array_index bsym_table (_,idxt as idx) = 
-(*
+(* Note: this calculates a compact linear value *)
+let rec cal_symbolic_compact_linear_value bsym_table (_,idxt as idx) = 
 print_endline ("Calsym " ^ sbe bsym_table idx^ ", type="^ sbt bsym_table idxt);
-*)
-  let cax x = cal_symbolic_array_index bsym_table x in
+  let cax x = cal_symbolic_compact_linear_value bsym_table x in
   match idx,idxt with
   | (BEXPR_tuple es,_), BTYP_tuple ts  -> 
     (*  we get  ((0 * sizeof typeof i + i) * sizeof typeof j + j ) * sizeof typeof k + k 
@@ -103,6 +102,7 @@ print_endline ("Decomposing index of sum type " ^ sbe bsym_table idx ^ " MATCH c
 print_endline ("Decomposing index of sum type " ^ sbe bsym_table idx ^ " MATCH case tag " ^si i^ "  found");
     assert false;
 
+  | (BEXPR_apply ((BEXPR_prj (i,its,_),t'),(_,bt as b)),_), BTYP_tuple ts -> assert false
 
   (* I think this cannot happen! *)
   | (BEXPR_apply ((BEXPR_prj (i,its,_),t'),(_,bt as b)),_), BTYP_sum ts ->
@@ -182,12 +182,13 @@ print_endline ("xDecomposing index of sum type " ^ sbe bsym_table e);
   | e,BTYP_tuple [] -> `Int 0 
 
   | e,BTYP_tuple _ -> 
-    print_endline ("cal_symbolic_array_index can't handle expression of tuple type " ^ sbe bsym_table idx);
+    print_endline ("cal_symbolic_compact_linear_value can't handle expression of tuple type " ^ sbe bsym_table idx);
     print_endline ("Assume already linearised");
     expr e 
 
   | e,_ -> 
-    print_endline ("cal_symbolic_array_index can't handle expression " ^ sbe bsym_table idx);
+    print_endline ("cal_symbolic_compact_linear_value can't handle expression " ^ sbe bsym_table idx);
+    print_endline ("type " ^ sbt bsym_table idxt);
     assert false
 (* ;
     print_endline ("Assume already linearised");
@@ -231,8 +232,8 @@ let get_power_table bsym_table power_table size count =
 
 
 (* Linearise a structured index *)
-let rec render_index bsym_table ge' array_sum_offset_table seq idx = 
-  let ri x = render_index bsym_table ge' array_sum_offset_table seq x in
+let rec render_compact_linear_value bsym_table ge' array_sum_offset_table seq idx = 
+  let ri x = render_compact_linear_value bsym_table ge' array_sum_offset_table seq x in
   match idx with
   | `Int n -> ce_atom (siu n)
   | `Mul (a,b) -> ce_infix "*" (ri a) (ri b)
@@ -319,8 +320,9 @@ let projoflinear bsym_table e = match e with
 let handle_get_n (syms:Flx_mtypes2.sym_state_t) bsym_table ls rt ge' e t n ((e',t') as arg) =
   let seq = syms.Flx_mtypes2.counter in
   let array_sum_offset_table = syms.Flx_mtypes2.array_sum_offset_table in
-
-  let sidx = cal_symbolic_array_index bsym_table arg in
+print_endline ("Flx_ixgen:handle_get_n expr : " ^ sbe bsym_table e);
+print_endline ("Flx_ixgen:handle_get_n arg  : " ^ sbe bsym_table arg);
+  let sidx = cal_symbolic_compact_linear_value bsym_table arg in
         (* now calculate the projection: this is given by 
              idx / a % b
              where a = product of sizes of first n  terms (or 1 if n=0)
@@ -356,7 +358,7 @@ let handle_get_n (syms:Flx_mtypes2.sym_state_t) bsym_table ls rt ge' e t n ((e',
         let result = if n = List.length ls - 1 then apart else ce_infix "%" apart (ce_atom (si b)) in
 *)
   let result = modu (div sidx (`Int a)) (`Int b) in
-  render_index bsym_table ge' array_sum_offset_table seq result
+  render_compact_linear_value bsym_table ge' array_sum_offset_table seq result
 
 (* at is known to be a compact linear type *)
 let handle_get_n_array_clt syms bsym_table ge' idx idxt v aixt at a =
@@ -388,15 +390,15 @@ print_endline ("Array len = " ^ si array_len);
 (*
 print_endline ("Array_value_size=" ^ si array_value_size);
 *)
-    let sidx = cal_symbolic_array_index bsym_table idx in
-    let sarr = cal_symbolic_array_index bsym_table a in
+    let sidx = cal_symbolic_compact_linear_value bsym_table idx in
+    let sarr = cal_symbolic_compact_linear_value bsym_table a in
 (*
 print_endline ("Symbolic index = " ^ Flx_ixgen.print_index bsym_table sidx );
 print_endline ("Symbolic array = " ^ Flx_ixgen.print_index bsym_table sarr );
 *)
     let sdiv = ipow' array_value_size (sub (`Int (array_len - 1)) sidx) in
     let result = (modu (div sarr sdiv) (`Int array_value_size)) in
-    render_index bsym_table ge' array_sum_offset_table seq result
+    render_compact_linear_value bsym_table ge' array_sum_offset_table seq result
 
 (* at is known NOT to be a compact linear type (the index is though) *)
 let handle_get_n_array_nonclt syms bsym_table ge' idx idxt aixt at a =
@@ -414,11 +416,11 @@ print_endline ("array type " ^ sbt bsym_table at);
 print_endline ("index type = " ^ sbt bsym_table idxt );
 print_endline ("index value = " ^ sbe bsym_table idx );
 *)
-    let sidx = cal_symbolic_array_index bsym_table idx in
+    let sidx = cal_symbolic_compact_linear_value bsym_table idx in
 (*
 print_endline ("Symbolic index = " ^ Flx_ixgen.print_index bsym_table sidx );
 *)
-    let cidx = render_index bsym_table ge' array_sum_offset_table seq sidx in
+    let cidx = render_compact_linear_value bsym_table ge' array_sum_offset_table seq sidx in
 (*
 print_endline ("rendered lineralised index .. C index = " ^ string_of_cexpr cidx);
 *)

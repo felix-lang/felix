@@ -18,6 +18,18 @@ val ce_expr : prec_t -> string -> cexpr_t
 val ce_top : string -> cexpr_t
 val ce_dot : cexpr_t -> string -> cexpr_t
 val ce_arrow : cexpr_t -> string -> cexpr_t
+
+val ce_add : cexpr_t -> cexpr_t -> cexpr_t
+val ce_sub : cexpr_t -> cexpr_t -> cexpr_t
+val ce_mul : cexpr_t -> cexpr_t -> cexpr_t
+val ce_div : cexpr_t -> cexpr_t -> cexpr_t
+val ce_rmd : cexpr_t -> cexpr_t -> cexpr_t
+val ce_neg : cexpr_t -> cexpr_t
+val ce_int : int -> cexpr_t
+
+
+
+
 exception Unknown_prec of prec_t
 
 val genprec: string -> prec_t -> string * prec_t

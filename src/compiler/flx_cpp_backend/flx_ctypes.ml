@@ -11,6 +11,14 @@ type cexpr_t =
   | `Ce_cast of string * cexpr_t
   | `Ce_cond of cexpr_t * cexpr_t * cexpr_t
   | `Ce_expr of string * string
+
+  | `Ce_add of cexpr_t * cexpr_t
+  | `Ce_sub of cexpr_t * cexpr_t
+  | `Ce_mul of cexpr_t * cexpr_t
+  | `Ce_div of cexpr_t * cexpr_t
+  | `Ce_rmd of cexpr_t * cexpr_t
+  | `Ce_neg of cexpr_t
+  | `Ce_int of int
 ]
 
 type ctype_t =

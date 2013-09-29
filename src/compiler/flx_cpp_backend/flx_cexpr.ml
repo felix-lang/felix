@@ -195,6 +195,16 @@ let pr cop =
   | `Ce_cond _ -> find_prec "cond"
   | `Ce_expr (p,_) -> find_prec p
 
+  | `Ce_add (a,b)
+  | `Ce_sub (a,b) -> find_prec "add"
+  | `Ce_div (a,b)
+  | `Ce_mul (a,b)
+  | `Ce_rmd (a,b) -> find_prec "mult"
+
+  | `Ce_neg a -> find_prec "unary"
+  | `Ce_int i -> 0
+
+
 let commaprec = find_prec "comma"
 let rec comma es = "(" ^ strcat ", " (map (cep commaprec) es) ^ ")"
 and comma_opt = function | [] -> "" | ps -> comma ps
@@ -225,6 +235,15 @@ and cep cp e =
     | `Ce_cast (cast,e) -> "(" ^ cast ^ ")" ^ rce e
     | `Ce_cond (e,e1,e2) -> lce e ^ "?" ^ rce e1 ^ ":" ^ rce e2
     | `Ce_expr (_, s) -> s
+
+    | `Ce_int i -> string_of_int i
+    | `Ce_add (a,b) -> lce a ^ "+" ^ rce b
+    | `Ce_sub (a,b) -> lce a ^ "-" ^ rce b
+    | `Ce_mul (a,b) -> lce a ^ "*" ^ rce b
+    | `Ce_div (a,b) -> lce a ^ "/" ^ rce b
+    | `Ce_rmd (a,b) -> lce a ^ "%" ^ rce b
+    | `Ce_neg a  -> "-" ^ rce a
+
   end
   ^
   (if need_brackets then ")" else "")
@@ -255,6 +274,14 @@ let ce_expr p s = `Ce_expr (p,s)
 let ce_top s = ce_expr "expr" s
 let ce_dot e s = ce_infix "." e (ce_atom s)
 let ce_arrow e s = ce_infix "->" e (ce_atom s)
+
+let ce_add a b = `Ce_add (a,b)
+let ce_sub a b = `Ce_sub (a,b)
+let ce_mul a b = `Ce_mul (a,b)
+let ce_div a b = `Ce_div (a,b)
+let ce_rmd a b = `Ce_rmd (a,b)
+let ce_neg a  = `Ce_neg a
+let ce_int i = `Ce_int i
 
 let sc p e = cep (find_prec p) e
 let ce p s = ce_expr p s
