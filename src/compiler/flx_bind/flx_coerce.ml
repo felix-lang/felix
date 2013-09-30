@@ -177,6 +177,21 @@ print_endline ("Coercion from int expression result is " ^ sbe bsym_table r);
     | BTYP_variant lhs,BTYP_variant rhs ->
       variant_coercion state bsym_table sr x' t' t'' lhs rhs 
 
+    (* This isn't really right, but it's safe storage wise *)
+    | BTYP_array (lhsv,lhst), BTYP_array (rhsv, rhst) 
+      when lhsv = rhsv &&
+      islinear_type bsym_table lhst && islinear_type bsym_table rhst &&
+      sizeof_linear_type bsym_table lhst = sizeof_linear_type bsym_table rhst ->
+      bexpr_coerce (x',t'')
+
+    (* This isn't really right, but it's safe storage wise *)
+    | BTYP_pointer lhst, BTYP_pointer rhst
+    | lhst, rhst 
+      when 
+      islinear_type bsym_table lhst && islinear_type bsym_table rhst &&
+      sizeof_linear_type bsym_table lhst = sizeof_linear_type bsym_table rhst ->
+      bexpr_coerce (x',t'')
+
     | BTYP_array(v',BTYP_tuple ls),BTYP_array (v,ix)
     | BTYP_array (v,ix),BTYP_array(v',BTYP_tuple ls) 
     | BTYP_pointer (BTYP_array(v',BTYP_tuple ls)), BTYP_pointer (BTYP_array (v,ix))
