@@ -94,6 +94,20 @@ and xexpr_t sr x =
 
   | Lst [Id "ast_case_tag";  sr; Int i] -> EXPR_case_tag (xsr sr,ii i)
   | Lst [Id "ast_typed_case";  Int i; t] -> EXPR_typed_case (sr,ii i,ti t)
+  | Lst [Id "ast_typed_case";  i; t] -> 
+    let i = ex i in
+    let t = ex t in
+    begin match i,t with
+    | EXPR_literal (_, {Flx_literal.felix_type="int"; internal_value=internal_value1; c_value=c_value1 }),
+      EXPR_literal (_, {Flx_literal.felix_type="int"; internal_value=internal_value2; c_value=c_value2 })
+      ->
+      let i = int_of_string internal_value1 in
+      let t = int_of_string internal_value2 in
+      EXPR_typed_case (sr, i, TYP_unitsum t)
+    | _ -> err x "case expression i:j requires i,j be integer literals"
+    end
+
+
   | Lst [Id "ast_lookup";  Lst [e; Str s; Lst ts]] -> EXPR_lookup (sr,(ex e, s,map ti ts))
   | Lst [Id "ast_apply";  sr; Lst [e1; e2]] -> EXPR_apply(xsr sr,(xexpr_t (xsr sr) e1, xexpr_t (xsr sr) e2))
   | Lst [Id "ast_tuple";  sr; Lst es] -> EXPR_tuple (xsr sr,map (xexpr_t (xsr sr)) es)

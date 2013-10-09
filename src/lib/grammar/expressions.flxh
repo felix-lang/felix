@@ -241,6 +241,7 @@ syntax expressions {
 
   //$ Suffixed coercion.
   x[scoercion_pri] := x[scoercion_pri] ":>>" x[sfactor_pri] =># "`(ast_coercion ,_sr (,_1 ,_3))";
+  //x[scoercion_pri] := x[scoercion_pri] ":" sinteger =># "`(ast_typed_case ,_1 ,_3)";
   x[scoercion_pri] := ssuffixed_name =># "_1";
 
   x[sfactor_pri] := sthe_name =># "_1";

@@ -311,8 +311,8 @@ print_endline ("proj = " ^ si j^ ", Size of component = " ^ si elt ^ ", size of 
 
 (* Checks LHS of assignment for projection of compact linear type *)
 let projoflinear bsym_table e = match e with
-  | BEXPR_apply ((BEXPR_prj _,_),(_,(BTYP_tuple _ as t'))),_ 
-  | BEXPR_apply ((BEXPR_prj _,_),(_,(BTYP_array (_,BTYP_unitsum _) as t'))),_ 
+  | BEXPR_apply ((BEXPR_prj _,_),(_,t')),_ 
+  | BEXPR_apply ((BEXPR_aprj _,_),(_,t')),_ 
     when islinear_type bsym_table t' -> true
   | _ -> false
 

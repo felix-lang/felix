@@ -1,6 +1,8 @@
 
 @h1 Core data types
 @felix
+// special
+include "std/datatype/unitsum";
 
 // base data types
 include "std/datatype/tuple";

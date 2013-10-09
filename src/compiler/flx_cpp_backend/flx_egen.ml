@@ -596,58 +596,6 @@ and gen_expr'
      in
      ce_call (ce_atom "flx::rtl::range_check") args
 
-(* OLD CODE ....
-(* ARRAY PROJECTIONS *)
-(* COMPACT LINEAR ARRAY *)
-  | BEXPR_apply ((BEXPR_aprj((_,ixt) as ix,_,_),_), (_,(BTYP_array (v,aixt) as at) as a)) 
-    when clt at ->
-(*
-print_endline ("Non-constant index of compact array");
-print_endline ("Apply index " ^ sbe bsym_table ix ^ " to array " ^ sbe bsym_table a);
-print_endline ("array type " ^ sbt bsym_table at);
-print_endline ("index  type " ^ sbt bsym_table ixt ^ " array index type " ^ sbt bsym_table aixt);
-*)
-    Flx_ixgen.handle_get_n_array_clt syms bsym_table ge' ix ixt v aixt at a
-*)
-
-
-(* OLD CODE 
-(* constant index *)
-  | BEXPR_apply ( (BEXPR_prj(n,d,c),_), (_,(BTYP_array (v,aixt) as at) as a)) 
-    when clt at ->
-    let (_,ixt) as ix = bexpr_const_case (n, aixt) in
-(*
-print_endline ("Constant index of compact array");
-print_endline ("Apply index " ^ sbe bsym_table ix ^ " to array " ^ sbe bsym_table a);
-print_endline ("array type " ^ sbt bsym_table at);
-print_endline ("index  type " ^ sbt bsym_table ixt ^ " array index type " ^ sbt bsym_table aixt);
-*)
-    Flx_ixgen.handle_get_n_array_clt syms bsym_table ge' ix ixt v aixt at a
-*)
-
-(* OLD CODE
-(* NON COMPACT LINEAR ARRAY *)
-  | BEXPR_apply ((BEXPR_aprj((_,ixt) as ix,_,_),_), (_,(BTYP_array (_,aixt) as at) as a)) ->
-(*
-print_endline ("Nonconstant index of non-compact array");
-print_endline ("Apply index " ^ sbe bsym_table ix ^ " to array " ^ sbe bsym_table a);
-print_endline ("array type " ^ sbt bsym_table at);
-print_endline ("index  type " ^ sbt bsym_table ixt ^ " array index type " ^ sbt bsym_table aixt);
-*)
-    Flx_ixgen.handle_get_n_array_nonclt syms bsym_table ge' ix ixt aixt at a
-*)
-
-(* OLD CODE 
-  | BEXPR_apply ((BEXPR_prj (n,d,c),ixt) as ix, (_,(BTYP_array (_,aixt) as at) as a)) ->
-(*
-print_endline ("Constant index of non-compact array");
-print_endline ("Apply index " ^ sbe bsym_table ix ^ " to array " ^ sbe bsym_table a);
-print_endline ("array type " ^ sbt bsym_table at);
-print_endline ("index  type " ^ sbt bsym_table ixt ^ " array index type " ^ sbt bsym_table aixt);
-*)
-    handle_get_n syms bsym_table rt ge' (e, t) n a 
-*)
-
 (* NON ARRAY PROJECTIONS *)
 (* ordinary index .. *)
   | BEXPR_apply ((BEXPR_prj (n,_,_),_),(e',t' as e2)) ->
@@ -656,35 +604,6 @@ print_endline ("Projection "^si n ^ " of non-array non-tuple " ^ sbe bsym_table 
 
   | BEXPR_apply ((BEXPR_compose (f1, f2),_), e) ->
       failwith ("flx_egen: application of composition should have been reduced away")
-
-(* OLD CODE
-(* INJECTIONS *)
-  | BEXPR_apply ( (BEXPR_inj (v,d,c),ft' as f), (_,argt as a)) -> 
-print_endline "Apply injection ....";
-print_endline ("egen:BEXPR_apply-inj: fun=" ^ sbe bsym_table f);
-print_endline ("  case index " ^ si v ^ " dom=" ^ sbt bsym_table d ^ " cod=" ^ sbt bsym_table c);
-print_endline ("  arg=" ^ sbe bsym_table a);
-    assert (d = argt);
-    assert (c = t); 
-    if clt c then begin
-      let sidx = Flx_ixgen.cal_symbolic_compact_linear_value bsym_table (e,t) in
-print_endline ("egen:BEXPR_apply BEXPR_case: Symbolic index = " ^ Flx_ixgen.print_index bsym_table sidx );
-      let cidx = Flx_ixgen.render_compact_linear_value bsym_table ge' array_sum_offset_table seq sidx in
-print_endline ("egen:BEXPR_apply BEXPR_case: rendered lineralised index .. C index = " ^ string_of_cexpr cidx);
-      cidx
-    end
-    else 
-    begin
-(*
-     print_endline "Apply injection: general construct from argument";
-*)
-       Flx_vgen.gen_make_nonconst_ctor ge' tn syms bsym_table c v a
-       (* t is the type of the sum,
-          ft' is the function type of the constructor,
-          argt is the type of the argument
-       *)
-    end
-*)
 
   | BEXPR_apply ((BEXPR_closure (index,ts),_),a) ->
     print_endline "Compiler bug in flx_egen, application of closure found, should have been factored out!";
@@ -1123,7 +1042,7 @@ print_endline ("Generating class new for t=" ^ ref_type);
    * with an argument. This is here for constant constructors,
    * particularly enums.
    *)
-  | BEXPR_case (v,t') ->
+  | BEXPR_case (v,t') -> assert false;
     if clt t then begin
 print_endline ("egen:BEXPR_case: index type = " ^ sbt bsym_table t );
 print_endline ("egen:BEXPR_case: index value = " ^ sbe bsym_table (e,t));
@@ -1475,7 +1394,9 @@ print_endline ("Handling coercion in egen " ^ sbt bsym_table srct ^ " -> " ^ sbt
     )
 
   | BEXPR_tuple es ->
-    (* print_endline ("Construct tuple " ^ sbe bsym_table (e,t)); *)
+(*
+    print_endline ("Construct tuple " ^ sbe bsym_table (e,t));
+*)
     if clt t then begin
 (*
       print_endline ("Construct tuple of linear type " ^ sbe bsym_table (e,t));

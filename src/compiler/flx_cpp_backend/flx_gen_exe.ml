@@ -72,6 +72,13 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
   print_endline ("vs = " ^ catmap "," (fun (s,i) -> s ^ "->" ^ si i) vs);
   print_endline ("ts = " ^ catmap ","  (sbt bsym_table) ts);
 *)
+  let islvalueprim i = 
+    let bsym = Flx_bsym_table.find bsym_table i in
+    match Flx_bsym.bbdcl bsym with
+    | BBDCL_external_fun (props,_,_,_,_,_,_) ->
+      List.mem `Lvalue props
+    | _ -> false
+  in
   let tsub t = beta_reduce "gen_exe" syms.Flx_mtypes2.counter bsym_table sr (tsubst vs ts t) in
   let ge = gen_expr syms bsym_table this vs ts in
   let ge' = gen_expr' syms bsym_table this vs ts in
@@ -731,6 +738,149 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
     | BEXE_nop (_,s) -> "      //Nop: " ^ s ^ "\n"
 
     | BEXE_assign (sr,(_,lhst as e1),(_,rhst as e2)) ->
+      let comment = (if with_comments then "      //"^src_str^"\n" else "") in
+      (* j: component to assign, ts: types of components *)
+      let rec aux1 ls i out = 
+         match ls with 
+         | [] -> assert false 
+         | h :: t ->
+           if i = 0 then out,h
+           else aux1 t (i-1) (sizeof_linear_type bsym_table h * out)
+      in 
+      let assign_to_packed_tuple lhs rhs j ts =
+        let lo,elt = aux1 (List.rev ts) (List.length ts - j - 1) 1 in
+        let elt = sizeof_linear_type bsym_table elt in
+    (*
+    print_endline ("Type of variable is " ^ sbt bsym_table t');
+    print_endline ("proj = " ^ si j^ ", Size of component = " ^ si elt ^ ", size of lower bit = " ^ si lo);
+    *)
+        let celt = ce_int elt in
+        let clo = ce_int lo in
+        let clomelt = ce_int (lo * elt) in
+        let ad x y = ce_add x y in
+        let di x y = ce_div x y in
+        let mu x y = ce_mul x y in
+        let mo x y = ce_rmd x y in
+        let nuval =  ad (mu (ad (mu (di lhs clomelt) celt) rhs) clo) (mo lhs clo) in
+        nuval
+      in
+      let assign_to_packed_array lhs rhs ix vt array_len =
+        let seq = syms.Flx_mtypes2.counter in
+        let power_table = syms.Flx_mtypes2.power_table in
+        let ipow' base exp = 
+          match exp with
+          | `Ce_int i -> 
+            let rec ipow = begin function 0 -> 1 | n -> base * (ipow (n - 1)) end in
+            ce_int (ipow i)
+          | _ ->
+            let ipow = Flx_ixgen.get_power_table bsym_table power_table base array_len in
+            ce_array (ce_atom ipow) exp
+        in
+        let elt = sizeof_linear_type bsym_table vt in
+        let celt = ce_int elt in
+        let rix = ce_sub (ce_sub (ce_int array_len) ix) (ce_int 1) in
+        let clo = ipow' elt ix in 
+        let clomelt = ce_mul clo celt in
+        let ad x y = ce_add x y in
+        let di x y = ce_div x y in
+        let mu x y = ce_mul x y in
+        let mo x y = ce_rmd x y in
+        let nuval =  ad (mu (ad (mu (di lhs clomelt) celt) rhs) clo) (mo lhs clo) in
+        nuval
+      in
+
+      let rec split e trail = 
+        match e with
+        | BEXPR_name _,t
+        | BEXPR_deref _,t ->
+          let t' = snd e in ge' sr e, t', trail
+
+        | BEXPR_apply_prim (i,_,_),t when islvalueprim i -> 
+          let t' = snd e in ge' sr e, t', trail
+
+        | BEXPR_apply ((BEXPR_prj (_,d,_),_ as p), arg ),t
+        | BEXPR_apply ((BEXPR_aprj (_,d,_),_ as p), arg ),t-> 
+          if islinear_type bsym_table d then split arg ((p,t)::trail)
+          else let t' = snd e in ge' sr e,t',trail
+        | x -> 
+          print_endline src_str;
+          clierr sr ("lvalue required on lhs of assignment got lhs = " ^ sbe bsym_table x)
+      in
+      let lv,lvt,prjs = split e1 [] in
+      begin match prjs with
+      | [] -> 
+          comment ^ 
+          "      "^ 
+          string_of_cexpr lv ^ " = " ^ ge sr e2 ^ "; //assign simple\n"
+      | _ -> 
+(*
+        print_endline src_str;
+        print_endline ("Assign to projection of compact linear type " ^ sbt bsym_table lvt); 
+*)
+        (* This is a functional update of the lhs with the rhs. The lhs is divided
+           into three parts: hi, mid, lo. We return hi, rhs, lo.
+
+           If there is a projection in the list, however, then the rhs we have
+           is too small. We have split mid into hi2 mid2 lo2 and return
+           hi2 rhs lo2. So mid is the new lhs.
+        *)
+        let rec evp lhs rhs prjs =
+          match prjs with
+          | [] -> rhs
+          | ((BEXPR_prj (j,BTYP_tuple ts,c),_ as p),_) :: tl ->
+            (* should work for 1 component *)
+            let lo,elt = aux1 (List.rev ts) (List.length ts - j - 1) 1 in
+            let elt = sizeof_linear_type bsym_table elt in
+            let celt = ce_int elt in
+            let clo = ce_int lo in
+            let mid = ce_rmd (ce_div lhs clo) celt in
+            let rhs = evp mid rhs tl in
+            assign_to_packed_tuple lhs rhs j ts 
+
+          | ((BEXPR_prj (j,BTYP_array (vt,BTYP_unitsum n),c),_),_) :: tl ->
+            (* should work for 1 component *)
+            let ts = let rec aux ts n = if n = 0 then ts else aux (vt::ts) (n-1) in aux [] n in
+            let lo,elt = aux1 (List.rev ts) (List.length ts - j - 1) 1 in
+            let elt = sizeof_linear_type bsym_table elt in
+            let celt = ce_int elt in
+            let clo = ce_int lo in
+            let mid = ce_rmd (ce_div lhs clo) celt in
+            let rhs = evp mid rhs tl in
+            assign_to_packed_tuple lhs rhs j ts 
+
+          | ((BEXPR_prj (ix,t,c),_),_) :: tl -> assert false
+
+          | ((BEXPR_aprj (ix,BTYP_array (vt,aixt),c),_),_) :: tl ->
+            let array_len = Flx_btype.sizeof_linear_type bsym_table aixt in
+            let seq = syms.Flx_mtypes2.counter in
+            let power_table = syms.Flx_mtypes2.power_table in
+            let ipow' base exp = 
+              match exp with
+              | `Ce_int i -> 
+                let rec ipow = begin function 0 -> 1 | n -> base * (ipow (n - 1)) end in
+                ce_int (ipow i)
+              | _ ->
+                let ipow = Flx_ixgen.get_power_table bsym_table power_table base array_len in
+                ce_array (ce_atom ipow) exp
+            in
+            let array_value_size = sizeof_linear_type bsym_table vt in
+            let ix = ge' sr ix in
+            let sdiv = ipow' array_value_size (ce_sub (ce_int (array_len - 1)) ix) in
+            let mid = (ce_rmd (ce_div lhs sdiv) (ce_int array_value_size)) in
+            let rhs = evp mid rhs tl in
+            assign_to_packed_array lhs rhs ix vt array_len 
+
+          | _ -> assert false
+        in
+        let newv = evp (ce_atom "lv") (ce_atom "rv") prjs in
+        comment ^
+        "     { // assign compact\n" ^
+        "        " ^ tn lvt ^ " & lv = " ^ string_of_cexpr lv ^ ";\n" ^
+        "        " ^ (let t' = snd e2 in tn t') ^ " const & rv = " ^ ge sr e2 ^ ";\n" ^
+        "        lv = " ^ string_of_cexpr newv ^ ";" ^
+        "     }\n"
+      end
+(*
 (*
 print_endline "Assignment";
 *)
@@ -751,6 +901,8 @@ print_endline "PROJ OF LINEAR";
           Flx_ixgen.assign_to_packed_tuple bsym_table ge' ge sr e2 n j ts t' var
 
         | BEXPR_apply ((BEXPR_prj (j,_,_),_),(_,(BTYP_array (vt,BTYP_unitsum n) as t') as var)),_ ->
+
+print_endline ("Assign to array component " ^ si j ^ ", array = " ^ sbe bsym_table var);
           let ts =  (* list of n vt's *)
             let rec aux n out = 
               match n with 
@@ -775,6 +927,7 @@ print_endline ("Assign type = " ^ sbt bsym_table lhst ^ " lhs term = " ^ sbe bsy
         "      "^ ge sr e1 ^ " = " ^ ge sr e2 ^
         "; //assign\n"
       end
+*)
 
     | BEXE_init (sr,v,((_,t) as e)) ->
       let t = tsub t in

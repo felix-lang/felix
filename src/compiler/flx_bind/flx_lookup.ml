@@ -3750,7 +3750,7 @@ print_endline ("Evaluating EXPPR_typed_case index=" ^ si v ^ " type=" ^ string_o
     let ts = List.map (bt sr) ts in
     let lookup_result = 
       try inner_lookup_name_in_env state bsym_table env rs sr name 
-      with exn -> print_endline "lookup FAILED"; raise exn
+      with exn -> (* print_endline ("lookup of name "^name^" FAILED with "^ Printexc.to_string exn); *) raise exn
     in
     begin match lookup_result with
     | NonFunctionEntry { base_sym=index; spec_vs=spec_vs; sub_ts=sub_ts } ->
@@ -4191,12 +4191,110 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
     print_env env;
     *)
     let (ea,ta) as a = be a' in
+    let rt t = beta_reduce "flx_lookup: Expr_apply" state.counter bsym_table sr t in
+    let ttt = rt ta in
 (*
     print_endline ("Bound argument " ^ sbe bsym_table a);
 *)
     (* special hack here to handle fieldname of struct type used as function *)
     try 
+      let handle_constant_projection n =
+        begin match ttt with
+        | BTYP_tuple ls ->
+          let m = List.length ls in
+          if n < 0 || n >= m then
+            clierr sr ("AST_dot, tuple index "^ string_of_int n ^ 
+            " out of range 0 to " ^ string_of_int (m-1) ^
+            " for type " ^ sbt bsym_table ttt
+            )
+          else
+           bexpr_get_n (List.nth ls n) n a
+     
+        | BTYP_array (t,BTYP_unitsum m) ->
+          if n < 0 || n >= m then
+            clierr sr ("AST_dot, constant array index "^ string_of_int n ^ 
+            " out of range 0 to " ^ string_of_int (m-1) ^
+            " for type " ^ sbt bsym_table ttt
+            )
+          else
+           bexpr_get_n t n a
+      
+        | BTYP_pointer (BTYP_tuple ls) ->
+          let m = List.length ls in
+          if n < 0 || n >= m then
+            clierr sr ("AST_dot, tuple index "^ string_of_int n ^ 
+            " out of range 0 to " ^ string_of_int (m-1) ^
+            " for type " ^ sbt bsym_table ttt
+            )
+          else
+           bexpr_get_n (btyp_pointer (List.nth ls n)) n a
+     
+        | BTYP_pointer (BTYP_array (t,BTYP_unitsum m)) -> 
+          if n < 0 || n >= m then
+            clierr sr ("AST_dot, constant array index "^ string_of_int n ^ 
+            " out of range 0 to " ^ string_of_int (m-1) ^
+            " for type " ^ sbt bsym_table ttt
+            )
+          else
+           bexpr_get_n (btyp_pointer t) n a
+
+        | _ -> raise OverloadResolutionError
+        end
+      in
+      let int_t = bt sr (TYP_name (sr,"int",[])) in
+      let handle_array_projection n =
+(*
+print_endline ("Maybe Array projection " ^ sbe bsym_table n);
+*)
+        let n = 
+          let ixt = match ttt with
+            | BTYP_array (_,ixt)
+            | BTYP_pointer (BTYP_array (_,ixt)) -> ixt
+            | _ -> assert false
+          in
+          if snd n = int_t then bexpr_coerce (n,ixt)
+          else n
+        in
+        match ttt with
+        | BTYP_array (vt,ixt) ->
+          assert (snd n = ixt);
+(*
+print_endline ("Actual Array projection " ^ sbe bsym_table n);
+*)
+          bexpr_apply vt (bexpr_aprj n ttt vt, a)
+
+        | BTYP_pointer (BTYP_array (vt,ixt)) ->
+          assert (snd n = ixt);
+print_endline ("Actual Array pointer projection " ^ sbe bsym_table n);
+(* NOTE: array pointer projections don't work with compact linear arrays !! 
+   However we can't know here, since the base type could be a type variable.
+*)
+          bexpr_apply (BTYP_pointer vt) (bexpr_aprj n ttt vt, a)
+        | _ -> assert false
+      in
       match f' with
+      | EXPR_literal (_, {Flx_literal.felix_type="int"; internal_value=s}) ->
+        let n = int_of_string s in
+        handle_constant_projection n
+      | _ ->
+        try 
+          let f = try be f' with _ -> raise OverloadResolutionError in
+          if snd f = int_t then 
+          begin
+            match ta with
+            | BTYP_array _ ->
+              handle_array_projection f
+            | _ -> raise OverloadResolutionError
+          end
+          else raise OverloadResolutionError
+        with 
+      | OverloadResolutionError ->  
+      match f' with
+
+      (* a dirty hack .. doesn't check unitsum is right size or type *)
+      | EXPR_typed_case (sr,n,sumt) when (match bt sr sumt with | BTYP_unitsum _ -> true | _ -> false)  ->
+        handle_constant_projection n
+
       | EXPR_name (sr, name, []) ->
         begin match ta with 
         | BTYP_record ("",es) ->
@@ -4213,12 +4311,34 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
             bexpr_get_n t n a
           | None -> raise OverloadResolutionError
           end
+        | BTYP_pointer (BTYP_record ("",es)) ->
+          let k = List.length es in
+          let rcmp (s1,_) (s2,_) = compare s1 s2 in
+          let es = List.sort rcmp es in
+          let field_name = name in
+          begin match list_index (List.map fst es) field_name with
+          | Some n -> 
+            let t = List.assoc field_name es in
+(*
+            print_endline ("6:get_n arg" ^ sbe bsym_table a);         
+*)
+            bexpr_get_n (BTYP_pointer t) n a
+          | None -> raise OverloadResolutionError
+          end
         | BTYP_inst (i,ts') ->
           let ts = [] in
           begin try
           Flx_dot.handle_field_name state bsym_table build_env env rs 
             be bt koenig_lookup cal_apply bind_type' mkenv 
             sr a' f' name ts i ts' false
+          with Not_field -> raise OverloadResolutionError
+          end
+        | BTYP_pointer (BTYP_inst (i,ts')) ->
+          let ts = [] in
+          begin try
+          Flx_dot.handle_field_name state bsym_table build_env env rs 
+            be bt koenig_lookup cal_apply bind_type' mkenv 
+            sr a' f' name ts i ts' true 
           with Not_field -> raise OverloadResolutionError
           end
         | _ -> raise OverloadResolutionError 
@@ -4539,9 +4659,16 @@ print_endline ("Bound f = " ^ sbe bsym_table f);
     be (EXPR_get_n (sr,(int_of_string s,e)))
 *)
 
-  | EXPR_dot (sr,(e,e2)) -> 
-(* DEPRECATED: TO BE REPLACED EXCLUSIVELY BY REVERSE APPLICATION *)
-    Flx_dot.handle_dot state bsym_table build_env env rs bea bt koenig_lookup cal_apply bind_type' sr e e2
+  | EXPR_dot (sr,(e1,e2)) ->
+    begin try 
+      be (EXPR_apply (sr,(e2,e1)))
+    with _ ->
+      print_endline ("Handling EXPR_dot! " ^ string_of_expr e ^ "\n"^
+        "arg type = " ^ sbt bsym_table (snd (be e1))
+      ); 
+      (* DEPRECATED: TO BE REPLACED EXCLUSIVELY BY REVERSE APPLICATION *)
+      Flx_dot.handle_dot state bsym_table build_env env rs bea bt koenig_lookup cal_apply bind_type' sr e1 e2
+    end
 
   | EXPR_match_case (sr,(v,e)) ->
      bexpr_match_case flx_bbool (v,be e)

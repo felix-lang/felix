@@ -93,9 +93,11 @@ print_endline ("Register type r " ^ sbt bsym_table t);
   | BTYP_type_var (i,mt) -> clierr sr ("Attempt to register type variable " ^ si i ^":"^sbt sym_table mt)
   *)
   | BTYP_type_var (i,mt) ->
+    (*
     print_endline ("Attempt to register type variable " ^ string_of_bid i ^
-      ":" ^ sbt bsym_table mt)
-
+      ":" ^ sbt bsym_table mt);
+    *)
+    ()
   | BTYP_function (ps,ret) ->
     let ps = match ps with
     | BTYP_void -> btyp_tuple []

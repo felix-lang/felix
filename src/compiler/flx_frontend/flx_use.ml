@@ -111,6 +111,7 @@ and uses_bexe add bsym_table count_inits exe =
       end
 
     | BEXPR_apply ((BEXPR_prj _,_),b),_ -> chkl b
+    | BEXPR_apply ((BEXPR_aprj (ix,_,_),_),b),_ -> f_bexpr ix; chkl b
  
     | BEXPR_apply (a,b),_ -> 
       print_endline ("[Flx_use.uses_bexe:assign:lhs] Unexpected apply " ^ sbe bsym_table e);
