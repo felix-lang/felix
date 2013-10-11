@@ -219,7 +219,7 @@ slightly higher.
 and cep cp e =
   let ep = pr e in
   let rce e = cep ep e and lce e = cep (ep+1) e in
-  let need_brackets = ep > cp in
+  let need_brackets = ep >= cp in
   (if need_brackets then "(" else "")
   ^
   begin match e with

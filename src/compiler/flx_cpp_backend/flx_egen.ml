@@ -126,96 +126,7 @@ let isid x =
     true
   with _ -> false
 
-let rec handle_get_n syms bsym_table rt ge' (e,t) n ((e',t') as arg) =
-print_endline ("Handling a get-n in egen"^
-  "\n  Expression          e=" ^ sbe bsym_table (e,t) ^ 
-  "\n  Projection index:   n= " ^ si n ^ 
-  "\n  Projection argument a = " ^ sbe bsym_table arg ^
-  "\n  Argument type      t' = " ^ sbt bsym_table t' ^
-  "\n"
-);
-    let rtt' = rt t' in
-    match rtt' with
-    | BTYP_tuple ls  -> 
-      print_endline "expr arg has tuple type"; 
-      if islinear_type bsym_table rtt' 
-      then begin
-        print_endline "argument is compact linear tuple";
-        Flx_ixgen.handle_get_n syms bsym_table ls rt ge' (e,t) t n arg
-      end else
-        ce_dot (ge' arg) ("mem_" ^ si n)
-
-    | BTYP_array (_,BTYP_unitsum _) ->
-      begin match arg with
-      | BEXPR_tuple _,_ -> print_endline "Failed to slice a tuple!"
-      | _ -> ()
-      end;
-      ce_dot (ge' arg) ("data["^si n^"]")
-    | BTYP_record (name,es) ->
-      let field_name,_ =
-        try nth es n
-        with Not_found ->
-          failwith "[flx_egen] Woops, index of non-existent struct field"
-      in
-      ce_dot (ge' arg) (cid_of_flxid field_name)
-
-    | BTYP_inst (i,_) ->
-      begin match Flx_bsym_table.find_bbdcl bsym_table i with
-      | BBDCL_cstruct (_,ls,_)
-      | BBDCL_struct (_,ls) ->
-        let name,_ =
-          try nth ls n
-          with _ ->
-            failwith "Woops, index of non-existent struct field"
-        in
-        ce_dot (ge' arg) (cid_of_flxid name)
-
-      | _ -> failwith ("[flx_egen] Expr "^sbe bsym_table (e,t)^ " type " ^ sbt bsym_table t ^
-        " object " ^ sbe bsym_table arg ^ " type " ^ sbt bsym_table t' ^ 
-        " Instance of " ^string_of_int i^ " expected to be (c)struct")
-      end
-
-    | BTYP_pointer (BTYP_record (name,es)) ->
-      let field_name,_ =
-        try nth es n
-        with Not_found ->
-          failwith "[flx_egen] Woops, index of non-existent struct field"
-      in
-      ce_prefix "&" (ce_arrow (ge' arg) (cid_of_flxid field_name))
-
-    | BTYP_pointer (BTYP_inst (i,_)) ->
-      begin match Flx_bsym_table.find_bbdcl bsym_table i with
-      | BBDCL_cstruct (_,ls,_)
-      | BBDCL_struct (_,ls) ->
-        let name,_ =
-          try nth ls n
-          with _ ->
-            failwith "Woops, index of non-existent struct field"
-        in
-        ce_prefix "&" (ce_arrow (ge' arg) (cid_of_flxid name))
-
-      | _ -> failwith "[flx_egen] Instance expected to be (c)struct"
-      end
-
-    | BTYP_pointer (BTYP_array _) ->
-      ce_prefix "&" (ce_arrow (ge' arg) ("data["^si n^"]"))
-
-    | BTYP_pointer (BTYP_tuple _) ->
-      ce_prefix "&" (ce_arrow (ge' arg) ("mem_" ^ si n))
-
-    | BTYP_tuple_cons (t1,t2) ->
-(*
-      print_endline ("Tuple cons, projection " ^ si n);
-*)
-      (* NOTE: Won't work for compact linear types! *)
-      ce_dot (ge' arg) ("mem_" ^ si n)
-
-    | t -> 
-      print_endline ("Handle get_n failed with type " ^ sbt bsym_table t);
-      print_endline ("This type does not admit a projection");
-      assert false (* ce_dot (ge' e) ("mem_" ^ si n) *)
-
-and gen_expr'
+let rec gen_expr'
   syms
   bsym_table
   this
@@ -401,6 +312,7 @@ and gen_expr'
     assert (not (clt c)); 
     Flx_vgen.gen_make_nonconst_ctor ge' tn syms bsym_table c v a
 
+(* -------------- CONSTANT PROJECTIONS ----------------------------- *)
   (* if this is a constant projection of a compact linear array *) 
   | BEXPR_apply ( 
       (BEXPR_prj (ix,(BTYP_array (vt,aixt) as ixd),ixc),_), 
@@ -441,7 +353,7 @@ and gen_expr'
   | BEXPR_apply ( (BEXPR_prj (n,BTYP_array _,_),_), a) -> 
     ce_array (ce_dot (ge' a) "data") (ce_int n)
 
-  (* if this is a constant projection of a non-compact linear array *) 
+  (* if this is a constant projection of a pointer to a non-compact linear array *) 
   | BEXPR_apply ( (BEXPR_prj (n,BTYP_pointer (BTYP_array _),_),_), a) -> 
     ce_prefix "&" (ce_array (ce_arrow (ge' a) "data") (ce_int n))
 
@@ -470,10 +382,12 @@ and gen_expr'
   | BEXPR_apply ( (BEXPR_prj (n,BTYP_tuple _,_),_), a ) ->
     ce_dot (ge' a) ("mem_" ^ si n) 
 
+  (* constant projection of pointer to non-compact linear tuple *)
   | BEXPR_apply ( (BEXPR_prj (n,BTYP_pointer (BTYP_tuple _),_),_), a ) ->
     ce_prefix "&" (ce_arrow (ge' a) ("mem_" ^ si n)) 
 
 
+  (* record projection *)
   | BEXPR_apply ( (BEXPR_prj (n,BTYP_record (name,es),_),_), a) ->
     let field_name,_ =
       try nth es n
@@ -482,6 +396,7 @@ and gen_expr'
     in
     ce_dot (ge' a) (cid_of_flxid field_name)
 
+  (* pointer to record projection *)
   | BEXPR_apply ( (BEXPR_prj (n,BTYP_pointer (BTYP_record (name,es)),_),_), a) ->
     let field_name,_ =
       try nth es n
@@ -491,6 +406,7 @@ and gen_expr'
     ce_prefix "&" (ce_arrow (ge' a) (cid_of_flxid field_name))
 
 
+  (* struct or cstruct projection *)
   | BEXPR_apply ( (BEXPR_prj (n,BTYP_inst (i,_),_),_), (_,at as a)) ->
     begin match Flx_bsym_table.find_bbdcl bsym_table i with
     | BBDCL_cstruct (_,ls,_)
@@ -507,6 +423,7 @@ and gen_expr'
         " Instance of " ^string_of_int i^ " expected to be (c)struct")
     end
 
+  (* pointer to struct or cstruct projection *)
   | BEXPR_apply ( (BEXPR_prj (n,BTYP_pointer (BTYP_inst (i,_)),_),_), (_,at as a)) ->
     begin match Flx_bsym_table.find_bbdcl bsym_table i with
     | BBDCL_cstruct (_,ls,_)
@@ -523,6 +440,11 @@ and gen_expr'
         " Instance of " ^string_of_int i^ " expected to be (c)struct")
     end
 
+  (* that's it, there are no more *)
+  | BEXPR_apply ((BEXPR_prj (n,_,_),_),(e',t' as e2)) -> assert false;
+
+
+(* ------------ ARRAY PROJECTIONS ---------------------- *)
 
   (* if this is an array projection of a compact linear array *)
   | BEXPR_apply ( 
@@ -595,12 +517,6 @@ and gen_expr'
        [ ge' e1 ; ge' e2; ge' e3; sref; cf; cl]
      in
      ce_call (ce_atom "flx::rtl::range_check") args
-
-(* NON ARRAY PROJECTIONS *)
-(* ordinary index .. *)
-  | BEXPR_apply ((BEXPR_prj (n,_,_),_),(e',t' as e2)) ->
-print_endline ("Projection "^si n ^ " of non-array non-tuple " ^ sbe bsym_table e2);
-    handle_get_n syms bsym_table rt ge' (e, t) n e2 
 
   | BEXPR_apply ((BEXPR_compose (f1, f2),_), e) ->
       failwith ("flx_egen: application of composition should have been reduced away")

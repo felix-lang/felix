@@ -1,5 +1,5 @@
 //$ Standard operations on boolean type.
-//$ Note bool = 2 defined in std/algebraic.flx.
+//$ Note bool = 2 defined in std/flx_tclass.flx.
 //$ Literals true and false defined in grammer/expressions.flxh.
 open class Bool
 {
@@ -40,6 +40,13 @@ open class Bool
   reduce dneg(x:bool,y:bool): lnot (nor(x,y)) => lor(x,y);
 }
 
+instance FloatAddgrp[2] {
+  fun zero () => 0 :>> 2;
+  fun - (x:2) => (sub (2, caseno x)) :>> 2;
+  fun + (x:2, y:2) : 2 => (add ((caseno x , caseno y)) % 2) :>> 2;
+  fun - (x:2, y:2) : 2 => (add (2, sub(caseno x , caseno y)) % 2) :>> 2;
+}
+
 instance Str[bool] {
   //$ Convert bool to string.
   fun str (b:bool) : string => if b then "true" else "false" endif;
@@ -53,4 +60,4 @@ instance Tord[bool] {
 
 open Tord[bool];
 open Show[bool];
-
+open Addgrp[bool];
