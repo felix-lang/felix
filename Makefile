@@ -245,6 +245,94 @@ tarball:
 		${BUILDROOT}/VERSION \
 		${BUILDROOT}/host \
 		${BUILDROOT}/share
+#--------------------------------------------------
+# NEW BUILD ROUTINES
+#--------------------------------------------------
+
+#--------------------------------------------------
+# FALLBACK BUILD: use already built binary versions
+# of the tools, flx_build_flxg and flx_build_rtl
+# located in build/release/host/bin
+#
+# Use these when you managed to clear the cache and
+# the build screws up rebuilding the build tools.
+#
+# Normally only fallack-copy and fallback-flxg will
+# be needed, due to screwing up the flxg compiler,
+# and then needing it to build the tool that builds
+# that compiler.
+#
+# There's an extra fallback for that: you can fallback
+# to the *installed* tools as well.
+#
+# If NONE of that works you'll have to fallback all the
+# way to the boostrap Python build (make build)
+#--------------------------------------------------
+
+recovery-fallback-flxg:
+	# building flxg
+	/usr/local/lib/felix/felix-latest/host/bin/flx_build_flxg
+	cp tmp-dir/flxg build/release/host/bin
+
+recovery-fallback-copy:
+	# copying ./src to build/release/src
+	/usr/local/lib/felix/felix-latest/host/bin/flx_build_rtl \
+		--repo=.\
+		--target-dir=build/release \
+		--target-bin=host \
+		--copy-repo 
+
+fallback-flxg:
+	# building flxg
+	build/release/host/bin/flx_build_flxg
+	cp tmp-dir/flxg build/release/host/bin
+
+fallback-copy:
+	# copying ./src to build/release/src
+	build/release/host/bin/flx_build_rtl \
+		--repo=.\
+		--target-dir=build/release \
+		--target-bin=host \
+		--copy-repo 
+
+fallback-rtl:
+	# rebuild rtl
+	build/release/host/bin/flx_build_rtl \
+		--repo=.\
+		--target-dir=build/release \
+		--target-bin=host \
+		--build-rtl
+
+fallback-plugins:
+	# rebuild plugins
+	build/release/host/bin/flx_build_rtl \
+		--target-dir=build/release \
+		--target-bin=host \
+		--build-plugins
+
+fallback-tools:
+	# rebuild tools
+	build/release/host/bin/flx_build_rtl \
+		--target-dir=build/release \
+		--target-bin=host \
+		--build-tools
+
+fallback-flx:
+	# rebuild flx
+	build/release/host/bin/flx_build_rtl \
+		--target-dir=build/release \
+		--target-bin=host \
+		--build-flx
+
+fallback-lib: fallback-copy
+	# copy files from src to lib
+	build/release/host/bin/flx_build_rtl \
+		--target-dir=build/release \
+		--target-bin=host \
+		--copy-library
+
+
+
 
 flxg:
 	# building flxg

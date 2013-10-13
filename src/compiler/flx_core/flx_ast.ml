@@ -151,7 +151,6 @@ and expr_t =
   | EXPR_unlikely of Flx_srcref.t * expr_t
   | EXPR_new of Flx_srcref.t * expr_t
   | EXPR_callback of Flx_srcref.t * qualified_name_t
-  | EXPR_dot of Flx_srcref.t * (expr_t * expr_t)
   | EXPR_lambda of Flx_srcref.t * (funkind_t * vs_list_t * params_t list * typecode_t * statement_t list)
   | EXPR_range_check of Flx_srcref.t * expr_t * expr_t * expr_t
   | EXPR_not of Flx_srcref.t * expr_t
@@ -688,7 +687,6 @@ let src_of_expr (e : expr_t) = match e with
   | EXPR_record_type (s,_)
   | EXPR_variant_type (s,_)
   | EXPR_arrayof (s,_)
-  | EXPR_dot (s,_)
   | EXPR_lambda (s,_)
   | EXPR_match_ctor (s,_)
   | EXPR_match_case (s,_)

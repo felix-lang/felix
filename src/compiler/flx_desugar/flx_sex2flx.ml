@@ -177,7 +177,7 @@ and xexpr_t sr x =
  | Lst [Id "ast_likely"; sr; e] -> EXPR_likely (xsr sr,ex e)
  | Lst [Id "ast_unlikely"; sr; e] -> EXPR_unlikely (xsr sr,ex e)
  | Lst [Id "ast_callback";  sr; qn] -> EXPR_callback (xsr sr,xq "ast_callback" qn)
- | Lst [Id "ast_dot"; sr; Lst [e1; e2]] -> EXPR_dot (xsr sr,(xexpr_t (xsr sr) e1, xexpr_t (xsr sr) e2))
+ | Lst [Id "ast_dot"; sr; Lst [e2; e1]] -> EXPR_apply (xsr sr,(xexpr_t (xsr sr) e1, xexpr_t (xsr sr) e2))
  | Lst [Id "ast_lambda";  sr; Lst [vs; Lst pss; t; sts]] -> 
    let rt = ti t in
    let pdef = match rt with TYP_void _ -> `PVar | _ -> `PVal in 

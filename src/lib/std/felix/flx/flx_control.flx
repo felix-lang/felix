@@ -10,6 +10,7 @@ proc print_options(control:control_type) {
     println$ "STDGRAMMAR         = "+str control.STDGRAMMAR;
     println$ "IMPORTS            = "+str control.IMPORTS;
     println$ "RECOMPILE          = "+str control.RECOMPILE;
+    println$ "FLXG_FORCE         = "+str control.FLXG_FORCE;
     println$ "cpps               = "+str control.cpps;
     println$ "cppos              = "+str control.cppos;
     println$ "TIME               = "+str control.TIME;
@@ -45,6 +46,7 @@ typedef loopctl_type = typeof (#init_loopctl);
 fun dflt_control (config:config_type, profile:profile_type) =>
   struct {
 
+    var FLXG_FORCE=0;
     var RECOMPILE=0;
     var RUNIT=1;
     var CCOMPILEIT=1;

@@ -125,7 +125,6 @@ let map_expr f (e:expr_t):expr_t = match e with
   | EXPR_likely (sr,x) -> EXPR_likely (sr, f x)
   | EXPR_unlikely (sr,x) -> EXPR_unlikely (sr, f x)
   | EXPR_new (sr,x) -> EXPR_new (sr, f x)
-  | EXPR_dot (sr,(x,x2)) -> EXPR_dot (sr,(f x,f x2))
 
   (* GIVE UP ON LAMBDAS FOR THE MOMENT .. NEEDS STATEMENT MAPPING TOO *)
   (* | EXPR_lambda of Flx_srcref.t * (vs_list_t * params_t list * typecode_t * statement_t list) *)
@@ -207,7 +206,6 @@ let iter_expr f (e:expr_t) =
     -> f x
 
   | EXPR_letin (_,(_,a,b))
-  | EXPR_dot (_,(a,b))
   | EXPR_longarrow (_,(a,b))
   | EXPR_superscript (_,(a,b))
   | EXPR_arrow (_,(a,b))

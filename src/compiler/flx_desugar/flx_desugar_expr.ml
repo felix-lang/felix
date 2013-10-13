@@ -558,11 +558,6 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
     in
     sts,e
 
-  | EXPR_dot (sr,(a,b)) ->
-    let l1,x1 = rex a in
-    let l2,x2 = rex b in
-    l1@l2 , EXPR_dot (sr,(x1,x2))
-
   | EXPR_coercion (sr,(e,t)) ->
     let l1,x1 = rex e in
     l1, EXPR_coercion (sr,(x1,t))

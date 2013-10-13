@@ -96,7 +96,7 @@ let handle_field_name state bsym_table build_env env rs be bt koenig_lookup cal_
     bexpr_get_n ct cidx te
   | _ ->  raise Not_field
 
-let handle_dot state bsym_table build_env env rs be bt koenig_lookup cal_apply bind_type' sr e e2 =
+let handle_dot state bsym_table build_env env rs be bt koenig_lookup cal_apply bind_type' sr e e2 = assert false;
   let mkenv i = build_env state bsym_table (Some i) in
   let rt t = beta_reduce "flx_dot: handle-dot" state.counter bsym_table sr t in
 

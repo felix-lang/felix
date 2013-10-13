@@ -4016,9 +4016,6 @@ print_endline ("Evaluating EXPPR_typed_case index=" ^ si v ^ " type=" ^ string_o
 
   | EXPR_ref (_,(EXPR_deref (_,e))) -> be e
 
-  (* define &(a.b) = ((&a).b) *)
-  | EXPR_ref (sr1,EXPR_dot (sr2,(l,r))) -> be (EXPR_dot (sr2, (EXPR_ref (sr1,l),r)))
-
   | EXPR_ref (srr,e) ->
       (* Helper function to look up a property in a symbol. *)
       let has_property bid property =
@@ -4295,9 +4292,10 @@ print_endline ("Actual Array pointer projection " ^ sbe bsym_table n);
       | EXPR_typed_case (sr,n,sumt) when (match bt sr sumt with | BTYP_unitsum _ -> true | _ -> false)  ->
         handle_constant_projection n
 
-      | EXPR_name (sr, name, []) ->
+      | EXPR_name (sr, name, ts) ->
         begin match ta with 
         | BTYP_record ("",es) ->
+          assert (ts = []);
           let k = List.length es in
           let rcmp (s1,_) (s2,_) = compare s1 s2 in
           let es = List.sort rcmp es in
@@ -4312,6 +4310,7 @@ print_endline ("Actual Array pointer projection " ^ sbe bsym_table n);
           | None -> raise OverloadResolutionError
           end
         | BTYP_pointer (BTYP_record ("",es)) ->
+          assert (ts = []);
           let k = List.length es in
           let rcmp (s1,_) (s2,_) = compare s1 s2 in
           let es = List.sort rcmp es in
@@ -4326,7 +4325,6 @@ print_endline ("Actual Array pointer projection " ^ sbe bsym_table n);
           | None -> raise OverloadResolutionError
           end
         | BTYP_inst (i,ts') ->
-          let ts = [] in
           begin try
           Flx_dot.handle_field_name state bsym_table build_env env rs 
             be bt koenig_lookup cal_apply bind_type' mkenv 
@@ -4334,7 +4332,6 @@ print_endline ("Actual Array pointer projection " ^ sbe bsym_table n);
           with Not_field -> raise OverloadResolutionError
           end
         | BTYP_pointer (BTYP_inst (i,ts')) ->
-          let ts = [] in
           begin try
           Flx_dot.handle_field_name state bsym_table build_env env rs 
             be bt koenig_lookup cal_apply bind_type' mkenv 
@@ -4652,23 +4649,6 @@ print_endline ("Bound f = " ^ sbe bsym_table f);
     else
     bexpr_tuple (btyp_tuple []) []
 
-
-  (* x.0 or x.(0) where rhs arg is int literal: tuple projection *)
-(*
-  | EXPR_dot (sr,(e, EXPR_literal (_, L.Int (_,s)) )) ->
-    be (EXPR_get_n (sr,(int_of_string s,e)))
-*)
-
-  | EXPR_dot (sr,(e1,e2)) ->
-    begin try 
-      be (EXPR_apply (sr,(e2,e1)))
-    with _ ->
-      print_endline ("Handling EXPR_dot! " ^ string_of_expr e ^ "\n"^
-        "arg type = " ^ sbt bsym_table (snd (be e1))
-      ); 
-      (* DEPRECATED: TO BE REPLACED EXCLUSIVELY BY REVERSE APPLICATION *)
-      Flx_dot.handle_dot state bsym_table build_env env rs bea bt koenig_lookup cal_apply bind_type' sr e1 e2
-    end
 
   | EXPR_match_case (sr,(v,e)) ->
      bexpr_match_case flx_bbool (v,be e)

@@ -55,6 +55,9 @@ print_endline ("Trying to store automaton " ^ filename);
   parser_state
 
 let load_syntax state =
+  if state.syms.compiler_options.force_recompile then
+    Flx_profile.call "Flxg_parse.parse_syntax" parse_syntax state
+  else
   try
      let filename = state.syms.compiler_options.automaton_filename in
 (* print_endline ("Trying to load automaton " ^ filename); *)

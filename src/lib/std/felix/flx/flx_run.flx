@@ -103,6 +103,7 @@ object processing_env(
         filebase = dvars.filebase,
         use_ext = dvars.use_ext,
         TIME = control.TIME,
+        FORCE = control.FLXG_FORCE,
         debugln = if control.ECHO==1 then echoln[string] else debugln[string] endif
       );
       showtime("Felix flxg   : "+dvars.cpp_filebase, t0);
@@ -154,7 +155,7 @@ object processing_env(
       var dst = Filename::strip_extension src + EXT_SHARED_OBJ;
       result = cxx_compile_dynamic1 (src,dst);
       if result != 0 return result;
-      control.cppos += dst;
+      *&control.cppos += dst;
     done
     return 0;
   }
@@ -233,7 +234,7 @@ object processing_env(
         result = cxx_compile_static1 (src,dst);
         if result != 0 return result;
       done
-      control.cppos += dst;
+      *&control.cppos += dst;
     done
    
     if control.LINKIT == 0 do

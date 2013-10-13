@@ -4,6 +4,7 @@ open Flx_types
 open Flxg_state
 
 (* -------------------------------------------------------------------------- *)
+let string_of_bool b = if b then "true" else "false"
 
 let process_lib
   state
@@ -91,6 +92,10 @@ print_endline (if filetimes < lib_cache_time then "Files unchanged using cache" 
     out_sym_table,
     out_bsym_table
   =
+(*
+print_endline ("Potentially cached computation: building library " ^ libtab_name);
+print_endline ("Force flag = " ^ string_of_bool state.syms.compiler_options.force_recompile);
+*)
     Flx_filesys.cached_computation "libtab" libtab_name
       ~outfile:None
       ~force_calc:(false || state.syms.compiler_options.force_recompile)

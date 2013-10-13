@@ -17,6 +17,7 @@ class Flxg
     FLXLIBS:list[string],
     INCLUDE_DIRS:list[string],
     TIME:int,
+    FORCE:int,
     filebase:string,
     use_ext:string,
     debugln: string -> 0
@@ -45,6 +46,9 @@ class Flxg
     done
     if spec.TIME == 1 do
       FLXFLAGS += '--time';
+    done
+    if spec.FORCE == 1 do
+      FLXFLAGS += '--force';
     done
     var cmd = 
       spec.FLXG ! 

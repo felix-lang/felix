@@ -26,6 +26,7 @@ proc print_help() {
   println "--config             : show configuration";
   println "--version            : show felix version";
   println "--force              : force run Felix compiler";
+  println "--force-compiler     : force Felix compiler to rebuild everything";
   println "--cache_dir=dir      : directory cache output from parser (*.par files), autocreated, default $HOME/.felix/cache";
   println "--output_dir=dir     : directory to hold C++ output from translator, autocreated, default $HOME/.felix/cache";
   println "                       Felix stored by absolute pathname within directory (tree directory).";
@@ -66,8 +67,6 @@ proc print_help() {
   println "--cflags=flags       : addd flags to compiler command";
   println "-Dmac                : add macro def to C++ compiler command";
   println "-DFLX_ENABLE_TRACE       : enable compilation of trace generators (defaults off)";
-  println "-DFLX_PTF_STATIC_STRUCT  : make the thread_frame a static object (default Felix heap)";
-  println "-DFLX_PTF_STATIC_POINTER : access the thread_frame from a static pointer (default pass as arg)";
   println "-DFLX_CGOTO              : use gcc indirect gotos and use assembler hack for long jumps (default on if config detects support)";
   println "";
   println "*.c *.cc *.cpp *.cxx ";
@@ -145,6 +144,13 @@ noinline proc handle_switch
     // of the felix code, runs Felix unless --nofelix is set
     // the C++ compiler is run unless the felix compile failed
     control.RECOMPILE <- 1;
+
+  elif arg=="--force-compiler" do
+    debugln "Force flxg compiler to rebuild everything";
+    // of the felix code, runs Felix unless --nofelix is set
+    // the C++ compiler is run unless the felix compile failed
+    control.RECOMPILE <- 1;
+    control.FLXG_FORCE<- 1;
 
   elif arg=="--debug-flx" do
     control.DEBUG_FLX <- true;
@@ -557,8 +563,8 @@ noinline proc processing_stage1
 
   // Grab program arguments.
   while xloopctl*.argno < vargs.len.int do 
-    control*.USER_ARGS += vargs . (xloopctl*.argno); 
-    ++xloopctl*.argno; 
+    *(control.USER_ARGS) += vargs . (xloopctl*.argno); 
+    ++*xloopctl.argno; 
   done
   debugln$ "USER_ARGS=" + str control*.USER_ARGS;
 

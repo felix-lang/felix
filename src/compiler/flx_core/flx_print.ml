@@ -212,17 +212,6 @@ and string_of_expr (e:expr_t) =
       "}"
 
   | EXPR_arrayof (_,t) -> "[|" ^ catmap ", " sme t ^ "|]"
-  (*
-  | EXPR_dot (_,(e,n,ts)) ->
-    "get_" ^ n ^
-      begin match ts with | [] ->
-        "" | _ -> "[" ^ catmap "," string_of_typecode ts^ "]"
-      end ^
-      "(" ^ se e ^ ")"
-  *)
-
-  | EXPR_dot (_,(e1,e2)) ->
-    "(" ^ se e1 ^ "." ^ se e2 ^  ")"
 
   | EXPR_lambda (_,(kind,vs,paramss,ret, sts)) ->
     "(" ^ string_of_funkind kind ^ " " ^

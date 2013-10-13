@@ -21,7 +21,8 @@ open class Farray
   //$ Pointer to array as value.
   instance[t,n] ArrayValue[&array[t,n], &t] {
     fun len (x:&array[t, n]): size => Typing::arrayindexcount[n];
-    fun unsafe_get (var a: &array[t, n], i: size) :  -> &t = "(&($1->data[$2]))";
+    /* won't work for compact linear types! */
+    fun unsafe_get: &array[t, n] * size  -> &t = "(&($1->data[$2]))";
   }
 
   // this one should

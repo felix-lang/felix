@@ -124,9 +124,6 @@ let rec subst vars (e:expr_t) mv : expr_t =
   | EXPR_variant (sr,(s,e)) -> EXPR_variant (sr,(s,subst e))
   | EXPR_arrayof (sr,es) -> EXPR_arrayof (sr,map subst es)
 
-  | EXPR_dot (sr,(e,e2)) ->
-    EXPR_dot (sr,(subst e, subst e2))
-
   | EXPR_lambda _ -> assert false
 
   | EXPR_match_case _

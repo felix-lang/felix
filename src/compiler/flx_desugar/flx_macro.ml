@@ -531,7 +531,6 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | EXPR_likely (sr, e1) ->  EXPR_likely (sr, me e1)
   | EXPR_unlikely (sr, e1) ->  EXPR_unlikely (sr, me e1)
   | EXPR_new (sr, e1) ->  EXPR_new (sr, me e1)
-  | EXPR_dot (sr, (e1, e2)) ->  EXPR_dot (sr,(me e1, me e2))
   | EXPR_match_ctor (sr, (qn, e1)) -> EXPR_match_ctor (sr,(qn,me e1))
   | EXPR_match_case (sr, (i, e1)) ->  EXPR_match_case (sr,(i, me e1))
   | EXPR_ctor_arg (sr, (qn, e1)) -> EXPR_ctor_arg (sr,(qn, me e1))

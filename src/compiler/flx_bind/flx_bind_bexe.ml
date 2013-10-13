@@ -391,7 +391,7 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
     with x ->
       begin try 
         match f',a' with
-        | EXPR_dot (sr,(a'',f'')), EXPR_tuple (_,[]) -> 
+        | EXPR_apply (sr,(f'',a'')), EXPR_tuple (_,[]) -> 
           bind_exe state bsym_table handle_bexe (sr, EXE_call (f'',a'')) init
         | _ -> raise x
       with _ -> raise x
