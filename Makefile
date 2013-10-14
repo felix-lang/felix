@@ -241,10 +241,13 @@ install-scoop: ${BUILDROOT}/host/bin/scoop
 
 tarball:
 	tar -vzcf felix_${VERSION}_`uname`_tarball.tar.gz Makefile  \
-		${BUILDROOT}/index.html \
-		${BUILDROOT}/VERSION \
 		${BUILDROOT}/host \
 		${BUILDROOT}/share
+
+post-tarball:
+	scp felix_${VERSION}_`uname`_tarball.tar.gz \
+		skaller@felix-lang.org:/usr/local/lib/felix/tarballs/felix_${VERSION}_`uname`_tarball.tar.gz
+
 #--------------------------------------------------
 # NEW BUILD ROUTINES
 #--------------------------------------------------
