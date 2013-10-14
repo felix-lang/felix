@@ -811,7 +811,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
       | [] -> 
           comment ^ 
           "      "^ 
-          string_of_cexpr lv ^ " = " ^ ge sr e2 ^ "; //assign simple\n"
+          string_of_cexpr lv ^ " = " ^ ge sr e2 ^ "; //assign simple\n"
       | _ -> 
 (*
         print_endline src_str;
