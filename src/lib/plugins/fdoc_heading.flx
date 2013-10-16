@@ -88,7 +88,7 @@ object fdoc_heading (paragraph: paragraph-control_t, write_string: string -> 0) 
 
   // bid is the button id, cid is the stuff which is controlled by it
   method fun tree_button(bid:string, cid:string)=>
-    "<img src='/web/images/minus.gif' id='"+bid+"' onclick='toggle(this,\""+cid+"\")' alt='+'/>"
+    "<img src='/share/src/web/images/minus.gif' id='"+bid+"' onclick='toggle(this,\""+cid+"\")' alt='+'/>"
   ;
 
   method proc add_button (fname: string) {
