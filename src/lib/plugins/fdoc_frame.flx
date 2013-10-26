@@ -1,0 +1,41 @@
+include "./fdoc-frame-interface";
+fun setup (config_data:string) = {
+  eprintln$ "Setup fdoc_frame " + config_data;
+  return 0;
+}
+
+object fdoc_frame (d:fdoc_frame_data_t) implements fdoc_frame_t = 
+{
+  method fun whatami () => "fdoc_framer maker";
+
+  method fun make_frame (out:string) =>
+    #(d.heading.emit-js) + 
+    #(d.button-factory.get-jscript) +
+    #(d.fileseq.get-jscript) +
+    '<div style="background-color:#E0E0E0; font-family:sans-serif; color:#404040">' +
+
+    // fixed top nav bar 
+    '<div style="position:fixed; top:10px;  left:10px; right:10px; height:30px; background-color:#FFA500;padding:4px;'+
+    ' border-top-left-radius:10px; border-top-right-radius:10px">' +
+    #(d.heading.emit-buttons) + 
+    #(d.fileseq.shownav) + 
+    '</div>' +
+
+    // body
+    '<div style="position:fixed; top:48px; bottom:48px; left:14px; right:14px; padding:4px; '+
+    ' border:4px;overflow:auto; font-family:sans-serif; color:#404040; background-color:#E0E0E0;">' +
+    out +
+    '</div>'+
+
+    // fixed bottom nav bar
+    '<div style="position:fixed; bottom:10px;  left:10px; right:10px; height:30px; background-color:#FFA500;padding:4px;'+
+    ' border-bottom-left-radius:10px; border-bottom-right-radius:10px">' +
+    #(d.fileseq.shownav) + 
+    '</div>' +
+    '</div>'
+  ;
+
+}
+export fun setup of (string) as "fdoc_frame_setup";
+export fun fdoc_frame of (fdoc_frame_data_t) as "fdoc_frame";
+

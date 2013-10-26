@@ -33,20 +33,59 @@ object fdoc_button () implements button-factory_t = {
 
   method fun get-jscript () => jscript;
 
+  val sz = 90,40; // frame size
+  val bz = 80,20; // button size
+  val bp = 5,10; // button pos in frame
+  val cr = 4,40; // corner radii
+  val st = 3,"black"; // border stroke thickness and colour
+  val fc = "blue",0.7; // fill colour and opacity
+  val hfc = "red",0.7; // hilight colour and opacity
+  val tp = 20,30; // text position in frame
+  val tc = "black"; // text colour
+
+  fun rect (bz: int^2, cr:int^2, st: int * string, fc: string * double) (bp:int^2) =>
+    '<rect '+
+      'x="'+bp.0.str+'px" y="'+bp.1.str+'px" '+
+      'rx="'+cr.0.str+'px" ry="'+cr.1.str+'px" '+
+      'width="'+bz.0.str+'px" height="'+bz.1.str+'px" '+
+      'style='+
+        '"'+
+          'fill:'+fc.0+';opacity:'+fc.1.str+';'+
+          'stroke:'+st.1+';stroke-width:'+st.0.str+
+       '"'+
+     '/>'
+  ;
+  fun text (tc:string, txt:string) (tp:int^2) =>
+    '<text x="'+tp.0.str+'px" y="'+tp.1+'px" fill="'+tc+'">'+"xx"+txt+'</text>'
+  ;
+  fun span (id:string) (txt:string) => 
+    '<span id="'+id+'">' + txt + '</span>\n'
+  ;
+
+  fun span_hide (id:string) (txt:string) => 
+    '<span id="'+id+'" style="display:none">' + txt + '</span>\n'
+  ;
+
+  fun svg (sz:int^2) (txt:string) =>
+    '<svg height="'+sz.1.str+'px" width="' + sz.0.str + 'px">' + txt + '</svg>'
+  ;
+
   method fun make-button (b:button-spec_t) =>
   """<span style="position:relative; bottom:6px"
   onmouseover="mouseover('"""+b.id+"""')" 
   onmouseout="mouseout('"""+b.id+"""')"
   onclick=\""""+b.onclick+"""('"""+b.id+"""')"  
-  ><span id='"""+b.id+"""'><svg height=40 width=90>
-    <rect x="5" y="10px" rx="4px" ry="4px" width="80px" height="25"
-    style="fill:blue;stroke:black;stroke-width:4;opacity:0.5"/>
-    <text x="20" y="30" fill="black">"""+b.text+"""</text>
-  </svg></span><span id='"""+b.id+"""_mo' style="display:none"><svg height=40 width=90>
-    <rect x="5" y="10px" rx="4px" ry="4px" width="80px" height="25"
-    style="fill:red;stroke:black;stroke-width:4;opacity:0.5"/>
-    <text x="20" y="30" fill="black">"""+b.text+"""</text>
-  </svg></span></span>""";
+  >""" +
+
+   span b.id (
+    svg sz ( rect (bz,cr,st,fc) bp + text (tc,b.text) tp )
+   ) +
+   span_hide (b.id+"_mo") (
+    svg sz ( rect (bz,cr,st,hfc) bp + text (tc,b.text) tp ) 
+   )
+   +
+  '</span>'
+  ;
 }
 
 export fun setup of (string) as "fdoc_button_setup";

@@ -17,7 +17,10 @@ include "./scanner-interface";
 var fdocscanner-maker : unit -> fdocscanner-control_t;
 
 include "./button-interface";
-var button-factory : unit -> button-factory_t;
+var button-factory-maker : unit -> button-factory_t;
+
+include "./fdoc-frame-interface";
+var fdoc_frame_maker : fdoc_frame_data_t -> fdoc_frame_t;
 
 include "./fdoc-interface";
 
@@ -100,6 +103,9 @@ object xlat_fdoc (t:string, filename:string) implements fdoc_t = {
   var fdocscanner = fdocscanner-maker ();
   //eprintln$ "FDOC make scanner .. " + #(fdocscanner.whatami);
 
+  var fdoc_frame_data :fdoc_frame_data_t = (heading=heading, button-factory=#button-factory-maker,fileseq=fileseq);
+  var fdoc_frame = fdoc_frame_maker fdoc_frame_data;
+
 
   var needs_mathjax = false;
   var out = "";
@@ -160,33 +166,9 @@ next:>
   endmatch;
 
   var page = 
-   if #(slideshow.active)  then out else
-    #(heading.emit-js) + 
-    #(#button-factory.get-jscript) +
-    #(fileseq.get-jscript) +
-    '<div style="background-color:#E0E0E0; font-family:sans-serif; color:#404040">' +
-
-    // fixed top nav bar 
-    '<div style="position:fixed; top:10px;  left:10px; right:10px; height:30px; background-color:#FFA500;padding:4px;'+
-    ' border-top-left-radius:10px; border-top-right-radius:10px">' +
-    if #(slideshow.active) then "" 
-    else #(heading.emit-buttons) endif + 
-    #(fileseq.shownav) + 
-    '</div>' +
-
-    // body
-    '<div style="position:fixed; top:48px; bottom:48px; left:14px; right:14px; padding:4px; '+
-    ' border:4px;overflow:auto; font-family:sans-serif; color:#404040; background-color:#E0E0E0;">' +
-    out +
-    '</div>'+
-
-    // fixed bottom nav bar
-    '<div style="position:fixed; bottom:10px;  left:10px; right:10px; height:30px; background-color:#FFA500;padding:4px;'+
-    ' border-bottom-left-radius:10px; border-bottom-right-radius:10px">' +
-    #(fileseq.shownav) + 
-    '</div>' +
-    '</div>'
-    endif
+   if #(slideshow.active)  then out 
+   else fdoc_frame.make_frame out
+   endif
   ;
 
 //---------------------------------------------------
@@ -476,7 +458,9 @@ fun setup(config_data:string) = {
 
   fdocscanner-maker = Dynlink::load-plugin-func0 [fdocscanner-control_t] (dll-name="fdoc_scanner");
 
-  button-factory = Dynlink::load-plugin-func0 [button-factory_t] (dll-name="fdoc_button");
+  button-factory-maker = Dynlink::load-plugin-func0 [button-factory_t] (dll-name="fdoc_button");
+
+  fdoc_frame_maker = Dynlink::load-plugin-func1 [fdoc_frame_t,fdoc_frame_data_t] (dll-name="fdoc_frame");
 
   return 0;
 }

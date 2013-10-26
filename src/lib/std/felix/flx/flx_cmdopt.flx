@@ -74,6 +74,13 @@ proc print_help() {
   println "*.o *.obj *.lib *.dll *.a *.so";
   println "                     : add files to linker steps";
   println "* *.flx *.fdoc       : Felix program name, terminates options and starts runtime arguments";
+  println "";
+  println "Environment variables";
+  println "---------------------";
+  println "";
+  println "FLX_SHELL_ECHO=1     : show shell callouts (system,popen)";
+  println "FLX_DEBUG_FLX=1      : debug flx (as if --debug-flx set)";
+
 }
 
 typedef config_type = typeof (#Config::config);
@@ -621,5 +628,12 @@ noinline proc processing_stage1
     endif
   ;
 
+  // process environment variables
+  if Env::getenv "FLX_DEBUG_FLX" do
+    control.DEBUG_FLX <- true;
+    control.ECHO <- 1;
+    debugln "debug flx tool ON";
+    control.DEBUG <- 1;
+  done
 }
 

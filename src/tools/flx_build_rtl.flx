@@ -373,6 +373,7 @@ class FlxCoreBuild
       'fdoc_paragraph',
       'fdoc_scanner',
       'fdoc_slideshow',
+      'fdoc_frame',
       'flx2html',
       'fpc2html',
       'ocaml2html',
