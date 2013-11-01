@@ -13,30 +13,6 @@ Flx_version_hook.set_version ()
 (* -------------------------------------------------------------------------- *)
 
 let generate_dep_file state =
-(* NOTE: as is this can't work, because it lists the *.flx filename without the
- * flx, but it doesn't say where the *.par files are.. we need to list both,
- * since the *.par files might be in a --cache_dir directory.
- *
- * Still there's another way to use the information here:
- * We just check the time stamps relative to the main program *.par file
- * and/or generated program, whatever flx does now with the main program
- * filename. I.e. we just take the time stamp of the main program as the
- * largest of all the time stamps. If a file is deleted its stamp is 0,
- * which will only cause a problem if there's a dangling reference,
- * otherwise the including file had to be changed to stop this, and its
- * time stamp will be bigger.
- *)
-
-(* shouldn't need this, should be absolute already 
-  let dep_file_name = Flx_filesys.mkabs (state.dep_file_name) in
-*)
-(*
-  let dep_file_name = state.dep_file_name in
-  Flx_filesys.mkdirs (Filename.dirname dep_file_name); 
-  let chan = open_out state.dep_file_name in
-  output_string chan (String.concat "\n" (!(state.syms.include_files)) ^ "\n");
-  close_out chan
-*)
   Flxg_file.output_string state.dep_file (String.concat "\n" (!(state.syms.include_files)) ^ "\n");
   Flxg_file.close_out state.dep_file
  
@@ -87,7 +63,7 @@ let handle_assembly state main_prog module_name =
 print_endline "Flxg.HANDLE ASSEMBLY";
 *)
   let start_counter = ref 2 in
-  let excls, sym_table, bsym_table = Flxg_lib.process_libs
+  let deps, excls, sym_table, bsym_table = Flxg_lib.process_libs
     state
     parser_state
     module_name
@@ -103,9 +79,10 @@ print_endline "Flxg.HANDLE ASSEMBLY";
     (Flxg_assembly.NoSearch main_prog)
   in
 
+  deps := depnames @ !deps;
 
   (* update the global include file list *)
-  state.syms.include_files := depnames;
+  state.syms.include_files := !deps;
   generate_dep_file state;
 
 (*

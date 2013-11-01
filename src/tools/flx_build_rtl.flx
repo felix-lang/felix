@@ -447,7 +447,7 @@ class FlxCoreBuild
     (
       ('flx', 'tools'/'flx'),
       ('flx_pkgconfig', 'tools'/'flx_pkgconfig'),
-      ('scoop', 'tools'/'scoop'),
+      //  ('scoop', 'tools'/'scoop'),
       ('flx_build_rtl', 'tools'/'flx_build_rtl'),
       ('flx_build_flxg', 'tools'/'flx_build_flxg')
     );
@@ -484,7 +484,7 @@ class FlxCoreBuild
     println$ "";
     println$ "# locations";
     println$ "";
-    println$ "  --repo=repo               default: src";
+    println$ "  --repo=repo                 default: src";
     println$ "  --pkg=bootpkg";
     println$ "  --target-dir=target_dir     default: build/trial";
     println$ "  --target-bin=target_bin     default: host";
@@ -518,18 +518,19 @@ class FlxCoreBuild
     println$ "# Environment variables";
     println$ "";
     println$ "FLX_SHELL_ECHO=1              echo all shell callouts (system, popen)";
+    println$ "FLX_DEBUG_FLX=1               make 'flx' explain its processing decisions";
     println$ "";
-    println$ "Purpuse: Build new Felix target";
+    println$ "Purpose: Build new Felix target";
     println$ "";
-    println$ "Requires repository 'repo' contain 'src'";
-    println$ "Requires source_dir contain source_bin";
+    println$ "Requires repository directory $repo contain subdirectory 'src'";
+    println$ "Requires directory $source_dir contain subdirectory $source_bin which contains program 'flxg'";
     println$ "Ensures target_dir contains:";
     println$ "";
-    println$ "  (a) Repository source";
-    println$ "  (b) Share library";
-    println$ "  (c) config db, C++ headers, libraries and executables";
+    println$ "  (a) Repository source in $target_dir/share/src";
+    println$ "  (b) Share library in $target_dir/share/lib";
+    println$ "  (c) config db, C++ headers, libraries and executables in $target_dir/$target_bin/*";
     println$ "";
-    println$ "Copies version, flxg, config db, and C++ headers from source_dir if required";
+    println$ "Copies version, flxg, config db, and C++ headers from $source_dir if required";
     println$ "Compiles all C++ sources to libraries and executables";
   }
 

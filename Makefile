@@ -63,11 +63,11 @@ fbuild:
 # regression test on release image
 # 
 test:
-	build/release/host/bin/flx --test=build/release --expect --indir=test/regress/rt --regex='.*\.flx'
+	build/release/host/bin/flx --test=build/release --usage=prototype --expect --indir=test/regress/rt --regex='.*\.flx'
 
 cleantest:
 	build/release/host/bin/flx --clean
-	build/release/host/bin/flx --test=build/release --expect --indir=test/regress/rt --regex='.*\.flx'
+	build/release/host/bin/flx --test=build/release --expect --usage=prototype --indir=test/regress/rt --regex='.*\.flx'
 
 #
 #
@@ -334,9 +334,6 @@ fallback-lib: fallback-copy
 		--target-bin=host \
 		--copy-library
 
-
-
-
 flxg:
 	# building flxg
 	build/release/host/bin/flx --test=build/release src/tools/flx_build_flxg
@@ -386,9 +383,6 @@ lib: copy
 		--target-bin=host \
 		--copy-library
 
-
-
-
 bootstrap:
 	rm -rf tmp-dir
 	build/release/host/bin/flx --test=build/release src/tools/flx_build_flxg
@@ -413,9 +407,29 @@ bootstrap:
 		--build-flx \
 		--build-tools
 	build/trial/host/bin/flx --test=build/trial --clean
-	build/trial/host/bin/flx --test=build/trial --expect --indir=test/regress/rt --regex='.*\.flx'
+	build/trial/host/bin/flx --test=build/trial --expect --usage=prototype --indir=test/regress/rt --regex='.*\.flx'
 	rm -rf build/release
 	mv build/trial build/release
+
+fast-bootstrap:
+	rm -rf tmp-dir
+	build/release/host/bin/flx_build_flxg
+	DYLD_LIBRARY_PATH=build/release/host/lib/rtl build/release/host/bin/flx_build_rtl \
+		--repo=.\
+		--target-dir=build/release \
+		--target-bin=host \
+		--source-dir=build/release \
+		--source-bin=host \
+		--copy-repo \
+		--copy-pkg-db \
+		--copy-config-headers \
+		--copy-version \
+		--copy-library \
+		--build-rtl \
+		--build-plugins \
+		--build-flx \
+		--build-tools
+	build/release/host/bin/flx --test=build/release --expect --usage=prototype --indir=test/regress/rt --regex='.*\.flx'
 
 hosttools:
 	# rebuild Felix code executables and plugins "in place"
@@ -460,7 +474,7 @@ gccosxtarget:
 		--build-flx \
 		--build-tools
 	build/release/gccosx/bin/flx --test=build/release --target=gccosx --clean
-	build/release/gccosx/bin/flx --test=build/release --target=gccosx  --expect --indir=test/regress/rt --regex='.*\.flx'
+	build/release/gccosx/bin/flx --test=build/release --target=gccosx  --expect --usage=prototype --indir=test/regress/rt --regex='.*\.flx'
 
 sdltest:
 	build/release/host/bin/flx --test=build/release --force -c -od demos/sdl demos/sdl/edit_buffer

@@ -11,8 +11,9 @@ let process_lib
   parser_state
   sym_table_ref
   bsym_table_ref
+  deps
   excls
-  outdir
+  cache_dir
   module_name
   start_counter
   lib
@@ -33,8 +34,11 @@ let process_lib
    * the include file list into the cache!
    *)
   let lib_time = Flx_filesys.virtual_filetime Flx_filesys.big_crunch lib_name in
-  let libtab_name = Flx_filesys.join lib_filedir lib_filename ^ ".libtab" in
-  let libtab_name = (Flx_filesys.mk_cache_name outdir libtab_name) in
+  let libcache_name = Flx_filesys.join lib_filedir lib_filename in
+  let libtab_name = (Flx_filesys.mk_cache_name cache_dir libcache_name) in
+  let libtab_name = libtab_name ^ ".libtab" in
+
+
 (*
 print_endline ("Libtab name = " ^ libtab_name);
 *)
@@ -163,6 +167,7 @@ print_endline ("Force flag = " ^ string_of_bool state.syms.compiler_options.forc
   start_counter := !(state.syms.counter);
   sym_table_ref := out_sym_table;
   bsym_table_ref := out_bsym_table;
+  deps := depnames @ !deps;
 
   (* already processed include files *)
   excls := includes @ !excls
@@ -206,16 +211,18 @@ let process_libs state parser_state module_name start_counter =
   let libs = List.rev (List.tl state.syms.compiler_options.files) in
 
   let excls = ref [] in
+  let deps = ref [] in
   List.iter
     (process_lib
       state
       parser_state
       sym_table_ref
       bsym_table_ref
+      deps
       excls
       state.syms.compiler_options.cache_dir
       module_name
       start_counter)
     libs;
 
-  excls, !sym_table_ref, !bsym_table_ref
+  deps, excls, !sym_table_ref, !bsym_table_ref

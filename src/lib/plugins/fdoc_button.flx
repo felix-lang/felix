@@ -34,7 +34,7 @@ object fdoc_button () implements button-factory_t = {
   method fun get-jscript () => jscript;
 
   val sz = 90,40; // frame size
-  val bz = 80,20; // button size
+  val bz = 80,25; // button size
   val bp = 5,10; // button pos in frame
   val cr = 4,40; // corner radii
   val st = 3,"black"; // border stroke thickness and colour
@@ -56,7 +56,7 @@ object fdoc_button () implements button-factory_t = {
      '/>'
   ;
   fun text (tc:string, txt:string) (tp:int^2) =>
-    '<text x="'+tp.0.str+'px" y="'+tp.1+'px" fill="'+tc+'">'+"xx"+txt+'</text>'
+    '<text x="'+tp.0.str+'px" y="'+tp.1+'px" fill="'+tc+'">'+txt+'</text>'
   ;
   fun span (id:string) (txt:string) => 
     '<span id="'+id+'">' + txt + '</span>\n'

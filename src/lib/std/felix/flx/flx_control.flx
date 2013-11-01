@@ -46,6 +46,8 @@ typedef loopctl_type = typeof (#init_loopctl);
 fun dflt_control (config:config_type, profile:profile_type) =>
   struct {
 
+    var PRINT_HELP=0;
+
     var FLXG_FORCE=0;
     var RECOMPILE=0;
     var RUNIT=1;

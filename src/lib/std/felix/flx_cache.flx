@@ -119,27 +119,65 @@ typedef cache_validation_spec_t =
 );
 
 
+// CACHE VALIDATION
+// 
+// This function validates the current cache, and if it is considered
+// stale may flush it. If the cache is the default one in the users
+// home directory the flush is done noisily but unconditionally.
+// Otherwise the user is prompted for permission.
+// The special cache locations / and . or "" are never deleted
+// in case it wipes out parts of the root, home, or current directory.
+
+// The validation checks the time of the flxg compiler used to build
+// it against the current flxg compiler, these must be exactly equal.
+//
+// It also checks that all the files defining the grammar are older
+// than the generated automaton.
+//
+// It does NOT check any RTL C++ libraries are up to date.
+// It does NOT check any Felix program files are up to date.
+// Therefore it does NOT guarrantee the contents of the cache are valid.
+// Rather it ensures only that the compiler and cached automaton are not stale.
+// However if they are stale the whole cache is invalidated.
+//
+// In effect this means this function ensures the parser is ready and valid
+// or non-existant. The compiler and automaton are locked together. If the compiler
+// changes the automaton must be rebuilt. 
+
 // returns cache time
 gen validate_cache  (spec: cache_validation_spec_t) : int * double =
 {
 
+  // ensure the cache directory exists
   Directory::mkdirs(spec.CACHE_DIR);
 
+  // get the OS timestamp of the flxg compiler, +inf if not found
   var flxg_time = dfiletime(spec.FLXG, #future_time);
   spec.debugln$ "Flxg_time=" + strfiletime(flxg_time);
 
+  // get the OS timestamp of the file flxg_time.stamp
+  // this file is created with the cache
   var flxg_stamp = Filename::join spec.CACHE_DIR "flxg_time.stamp";
   var cache_time = dfiletime(flxg_stamp,#future_time);
   spec.debugln$ "cache_time=" + strfiletime(cache_time);
 
+  // get the timestamp string recorded in flxg_time.stamp
   var flxg_stamp_data = load flxg_stamp;
   //println$ "Flxg_stamp_data=" + flxg_stamp_data; 
 
+  // convert the timestamp string to a double, if there is junk
+  // there or the string is empty, 0.0 is returned by atof,
+  // adjust that to -inf
   var flxg_stamp_time = match flxg_stamp_data.atof with | 0.0 => #past_time | ?x => x;
 
   spec.debugln$ "Flxg_stamp_data : " + strfiletime(flxg_stamp_time);
+
+  // Calculate the time of the newest text file defining the grammar
+  // these are files in directory share/lib/grammar.
   var grammar_time = gramtime spec.debugln (Filename::join (spec.FLX_INSTALL_DIR,"share","lib"), spec.STDGRAMMAR);
   spec.debugln$ "Grammar text time=" + strfiletime (grammar_time);
+
+  // calculate the name of the compiled grammar automaton in the cache
   var automaton_name = 
     cache_join(spec.CACHE_DIR, 
     Directory::mk_absolute_filename (Filename::join (list( 
@@ -151,15 +189,19 @@ gen validate_cache  (spec: cache_validation_spec_t) : int * double =
     ))))
   ;
 
+  // Get the timestamp of the grammar automaton or +inf if it doesn't exist.
   var automaton_time = dfiletime(automaton_name,#future_time);
   spec.debugln$ "Automaton " + automaton_name + " time=" + strfiletime(automaton_time);
 
-  // Still if this fails,  the compiler is new and 
-  // the cache should be deleted.
+  // If the cache exists and the recorded compiler time stamp is not equal
+  // to the current compiler time stamp, then the cache is stale 
+  // and should be deleted.
   if cache_time != #future_time and flxg_stamp_time != flxg_time do
     println$ "Cache may be out of date due to compiler upgrade!";
     println$ "Flxg compiler time stamp=" + strfiletime(flxg_time);
     println$ "Cache time stamp        =" + strfiletime(cache_time);
+
+    // special safety check if the output dirs are root or current directory
     if not (
       (spec.OUTPUT_DIR == "/" or spec.OUTPUT_DIR == "" or spec.OUTPUT_DIR == ".") or
       (spec.CACHE_DIR == "/" or spec.CACHE_DIR == "" or spec.CACHE_DIR == ".")
@@ -167,17 +209,14 @@ gen validate_cache  (spec: cache_validation_spec_t) : int * double =
     do 
       spec.CLEAR_CACHE = 1;
     done
+
+  // If the automaton exists and the grammar is newer than the automaton
+  // then the cache is stale and should be deleted.
   elif automaton_time != #future_time and grammar_time > automaton_time do
     println$ "Cache may be out of date due to grammar upgrade!";
     println$ "Grammar time stamp          =" + strfiletime(grammar_time);
     println$ "Automaton.syntax time stamp =" + strfiletime(automaton_time);
-    if not (
-      (spec.OUTPUT_DIR == "/" or spec.OUTPUT_DIR == "" or spec.OUTPUT_DIR == ".") or
-      (spec.CACHE_DIR == "/" or spec.CACHE_DIR == "" or spec.CACHE_DIR == ".")
-    )
-    do 
-      spec.CLEAR_CACHE = 1;
-    done
+    spec.CLEAR_CACHE = 1;
   done
 
   // FFF BE CAREFUL! The value "/" for these caches is perfectly good
@@ -207,6 +246,7 @@ gen validate_cache  (spec: cache_validation_spec_t) : int * double =
       print "Are you SURE? (Y/n) "; fflush stdout;
       answer = readln stdin;
     done
+
     if answer == "Y\n" or answer == "y\n" do
       // delete the caches loudly
       println$ "Delete cache " + spec.OUTPUT_DIR;
@@ -223,7 +263,10 @@ gen validate_cache  (spec: cache_validation_spec_t) : int * double =
           C_hack::ignore$ spec.xqt("rm -rf " + spec.quote(spec.CACHE_DIR));
       done
 
+      // Make a new cache.
       Directory::mkdirs(spec.CACHE_DIR);
+
+      // make the stamp file with the time of the current compiler.
       var f = fopen_output flxg_stamp;
       write(f, fmt(flxg_time, fixed (0,3)));
       f.fclose;

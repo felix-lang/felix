@@ -35,7 +35,16 @@ class Flx
   {
     var result = 0;
     fun / (a:string, b:string) => Filename::join (a,b);
-    processing_stage1 (config,control,loopctl,profile, varray[string] args);
+    processing_stage1 (config,control,loopctl,varray[string] args);
+    check_cache(config, control,profile);
+
+    if loopctl*.base == "" and control*.INREGEX == "" do
+      if control*.CLEAR_CACHE != 1 do
+        println "usage: flx [options] filename";
+      done
+      System::exit(1);
+    done
+
 
     var dbdir = config*.FLX_INSTALL_DIR / config*.FLX_TARGET_SUBDIR / "config";
     var pkgconfig = FlxPkgConfig::FlxPkgConfigQuery$ list[string] dbdir;
@@ -77,7 +86,7 @@ class Flx
           control.EXPECT <- "";
           var dvars = cal_depvars(toolchain,*config,control,*loopctl);
           println$ f"Processing [%02d/%02d]: %S" (i, n, file);
-          var pe = processing_env(toolchain,*config,*control,dvars);
+          var pe = processing_env(toolchain,*config,*control,dvars, *profile);
           result = pe.runit();
           if result != 0 goto endoff;
           ++i;
@@ -93,7 +102,7 @@ class Flx
             print prg;
         done
         var dvars = cal_depvars(toolchain,*config,control, *loopctl);
-        var pe = processing_env(toolchain,*config,*control,dvars);
+        var pe = processing_env(toolchain,*config,*control,dvars, *profile);
         result = pe.runit();
       end 
     done

@@ -289,8 +289,7 @@ noinline proc handle_switch
     control.INLINE <- 100;
 
   elif arg == "--help" do
-    print_help;
-    System::exit(0);
+    control.PRINT_HELP <- 1;
 
   elif arg == "-c" do
     debugln "Compile program but do not run it";
@@ -341,22 +340,6 @@ noinline proc handle_switch
   elif prefix(arg,"--pkg=") do
     debugln "Add pkgconfig package to link";
     control.pkgs <-  control*.pkgs + " " + arg.[6 to];
-
-  /* end of flx options, the next argument is
-     the primary filename
-
-  //Doeesn't work anyhow ..
-  
-  elif arg == "--" do
-    zloopctl.grab <- 0;
-    zloopctl.argno <- zloopctl*.argno + 1;
-    arg = vargs . (zloopctl*.argno);
-    debugln$ "ARGNO="+str(zloopctl*.argno)+", arg='"+arg+"'";
-
-    zloopctl*.path,zloopctl*.ext = Filename::split_extension(arg);
-    zloopctl*.dir,zloopctl*.base = Filename::split1(zloopctl*.path);
-    debugln$ "path="+zloopctl*.path+", ext="+zloopctl*.ext+",dir="+zloopctl*.dir+",base="+zloopctl*.base;
-  */
 
   elif prefix (arg,"--indir=") do
     control.INDIR  <-  arg.[8 to];
@@ -495,7 +478,6 @@ noinline proc processing_stage1
   config:&config_type, 
   control:&control_type, 
   xloopctl:&loopctl_type,
-  profile:&profile_type,
   vargs:varray[string]
 ) 
 {
@@ -503,63 +485,28 @@ noinline proc processing_stage1
     control*.DEBUG_FLX ?? fprintln (cerr, "[flx] " + str x);
   }
 
-  gen xqt(cmd:string) = {
-    control*.ECHO == 1 or control*.DEBUG_FLX ?? fprintln (cerr, "cmd="+cmd);
-    var now = #Time::time;
-    var result,output = Shell::get_stdout(cmd);
-    if result == 0 do
-      n := 
-        match find_first_of (output, char "\n") with
-        | Some ?n => n 
-        | None => output.len.int 
-        endmatch
-      ; 
-      output = output.[to n]; // first line excluding newline
-      var elapsed = #Time::time - now;
-      control*.ECHO==1 or control*.DEBUG_FLX ?? fprintln (cerr, "Popen:Elapsed: " + fmt (elapsed, fixed(9,3)) + ", output='"+output+"'");
-    else
-      debugln "COMMAND FAILED";
-      fprint$ cerr, ("Error "+repr(result)+" executing command " + cmd + "\n");
-      System::pexit result;
-    done
-    return output;
-  }
-
+  // process environment variables
+  if Env::getenv "FLX_DEBUG_FLX" != "" do
+    control.DEBUG_FLX <- true;
+    control.ECHO <- 1;
+    debugln "debug flx tool ON";
+    control.DEBUG <- 1;
+  done
 
   xparse_cmd_line(config,control,xloopctl, vargs);
+  if control*.PRINT_HELP == 1 do
+    print_help;
+    System::exit(0);
+  done
+
+  var xqt = dxqt (control*.ECHO==1 or control*.DEBUG_FLX);
 
   if control*.LINKIT == 0 and control*.STATICLIB == 1 do
     eprintln$ "Conflicting switches --nolink and --staticlib";
     System::exit 1;
   done
 
-  control*.CLEAR_CACHE, control*.cache_time = validate_cache (
-    FLX_INSTALL_DIR = config*.FLX_INSTALL_DIR,
-    FLX_TARGET_SUBDIR = config*.FLX_TARGET_SUBDIR,
-    STDGRAMMAR = control*.STDGRAMMAR,
-    FLXG = control*.FLXG,
-    CACHE_DIR = control*.CACHE_DIR,
-    OUTPUT_DIR = control*.OUTPUT_DIR,
-    DEFAULT_CACHE_DIR = profile*.DEFAULT_CACHE_DIR,
-    DEFAULT_OUTPUT_DIR = profile*.DEFAULT_OUTPUT_DIR,
-    CLEAR_CACHE= control*.CLEAR_CACHE,
-    debugln = debugln[string],
-    xqt = xqt,
-    quote = Shell::quote_arg
-  );
-
   debugln$ xloopctl*.grab, xloopctl*.argno, System::argc;
-
-  // If we're still trying to grab a filename,
-  // but we've run out of arguments ..
-  if xloopctl*.grab == 1 and xloopctl*.argno == System::argc and control*.INREGEX == "" do
-    if control*.CLEAR_CACHE == 1 do
-      System::exit(0);
-    else
-      println "usage: flx [options] filename";
-      System::exit(1);
-    done
-  done
 
   // Primary filename established.
   debugln "#--------";
@@ -627,13 +574,5 @@ noinline proc processing_stage1
     else "."
     endif
   ;
-
-  // process environment variables
-  if Env::getenv "FLX_DEBUG_FLX" do
-    control.DEBUG_FLX <- true;
-    control.ECHO <- 1;
-    debugln "debug flx tool ON";
-    control.DEBUG <- 1;
-  done
 }
 
