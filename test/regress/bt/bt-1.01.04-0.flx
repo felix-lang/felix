@@ -1,4 +1,0 @@
-// these now fail OK: (should yield 'any' .. then fail overload :-)
-val aa = bb + 1;
-val bb = aa + 1;
-

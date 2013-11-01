@@ -63,11 +63,9 @@ fbuild:
 # regression test on release image
 # 
 test:
-	build/release/host/bin/flx --test=build/release --usage=prototype --expect --indir=test/regress/rt --regex='.*\.flx'
-
-cleantest:
-	build/release/host/bin/flx --clean
-	build/release/host/bin/flx --test=build/release --expect --usage=prototype --indir=test/regress/rt --regex='.*\.flx'
+	mkdir -p test
+	${BUILDROOT}/host/bin/flx_tangle --indir=${BUILDROOT}/share/src/test --outdir=test
+	${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --usage=prototype --expect --indir=test/regress/rt --regex='.*\.flx'
 
 #
 #
@@ -134,16 +132,6 @@ speed:
 	sh speed/perf.sh 2>>result.tmp
 	${BUILDROOT}/host/bin/flx_gengraph
 
-upgrade-test:
-	${BUILDROOT}/host/bin/flx_tangle --indir=src/test --outdir=test
-
-gentest:
-	rm -rf test
-	mkdir test
-	mkdir test/test-data
-	cp src/test/test-data/* test/test-data
-	${BUILDROOT}/host/bin/flx_tangle --indir=src/test --outdir=test
-	git add test
 #
 # Documentation
 #

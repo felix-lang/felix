@@ -1,9 +1,0 @@
-val x : double = 2.0;
-println x;
-
-var y = 4.0;
-println y;
-
-val z = x * y;
-println z;
-

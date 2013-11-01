@@ -1,7 +1,0 @@
-// CSV reader
-open Csv;
-inp := '1, 2.0 , "Hel lo" , joe';
-res := get_csv_values inp;
-println res;
-
-

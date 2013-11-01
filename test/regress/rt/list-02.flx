@@ -1,8 +1,0 @@
-// 2 million list element
-var ls = list (1,2);
-var i:int; for i in 0 upto 19 do
-  ls = rev (fold_left (fun (acc:list[int]) (x:int) => Cons(x,acc)) (rev ls) ls);
-  println$ str i + " " + str (len ls);
-done
-
-

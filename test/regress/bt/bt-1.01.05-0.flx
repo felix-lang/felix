@@ -1,4 +1,0 @@
-// impossible recursion
-type int = "int";
-fun neg(a:int) = { return -a; }
-

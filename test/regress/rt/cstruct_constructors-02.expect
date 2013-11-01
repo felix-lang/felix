@@ -1,5 +1,0 @@
-cstruct S x=1 y=2 z=3
-cstruct S x=4 y=5 z=6
-cstruct S x=10 y=11 z=12
-cstruct S x=16 y=17 z=18
-cstruct S x=22 y=23 z=24

@@ -1,6 +1,0 @@
-//Check String::subscript
-print$ "hello how are you".[4]; endl;
-print$ "hello how are you".[5 to]; endl;
-print$ "hello how are you".[to 7]; endl;
-print$ "hello how are you".[3 to 8]; endl;
-

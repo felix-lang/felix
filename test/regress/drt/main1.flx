@@ -1,5 +1,0 @@
-print "Starting .."; endl;
-Dynlink::run_lib(Env::getenv "lib1");
-Dynlink::run_lib(Env::getenv "lib2");
-print "Its run"; endl;
-

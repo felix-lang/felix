@@ -1,4 +1,0 @@
-10
-10x=1, y=2
-Not hidden: int=1 print:int hides outer
-module A print int=1

@@ -1,5 +1,0 @@
-val scale = 0.5;
-var i:int; for i in 1 upto 5 do
-  println$ (double i) * scale;
-done;
-

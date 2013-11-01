@@ -1,7 +1,0 @@
-//Check arrays
-val f = proc (i:int) { print i; };
-val g = fun (i:int) => i - 1;
-iter f$ map g$ (4, 5); endl;
-iter f$ map g$ (4, 5, 6); endl;
-iter f$ map g$ (4, 5, 6, 7); endl;
-

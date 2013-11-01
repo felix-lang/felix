@@ -1,8 +1,0 @@
-Using tre TRE 0.8.0 (BSD)
-Done tre compile
-Compiled
-Result = 0
-nmatches = 2
-0-> match 'aabbabababb'
-1-> match 'b'
-Finished

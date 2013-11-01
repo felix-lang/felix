@@ -1,8 +1,0 @@
-//Check namespace
-namespace Foo      { val a = 1; }
-namespace Foo      { val b = 2; }
-module    Foo::Bar { val c = 3; }
-
-open Foo::Bar;
-println a;
-

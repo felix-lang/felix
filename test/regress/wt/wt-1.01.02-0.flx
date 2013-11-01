@@ -1,6 +1,0 @@
-proc foo (x:int) = {
-  print 'here'; endl;
-}
-
-proc bar (x:int) => foo x;
-

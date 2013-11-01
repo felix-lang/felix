@@ -1,4 +1,0 @@
-//Check String::strip
-print$ strip "  a b c  "; endl;
-print$ strip "a b c"; endl;
-

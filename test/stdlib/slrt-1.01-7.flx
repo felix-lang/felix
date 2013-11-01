@@ -1,6 +1,0 @@
-//Check arrays
-val f = fun (x:int) (y:int) => x - y;
-print$ fold_left f 3$ (4, 5); endl;
-print$ fold_left f 3$ (4, 5, 6); endl;
-print$ fold_left f 3$ (4, 5, 6, 7); endl;
-

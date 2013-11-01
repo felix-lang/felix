@@ -1,8 +1,0 @@
-var x = true, false, false, false;
-println$ x;
-
-x . 1 = true;
-println$ x;
-
-for i in x do println$ i; done
-
