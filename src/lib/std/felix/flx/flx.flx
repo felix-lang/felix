@@ -41,8 +41,9 @@ class Flx
     if loopctl*.base == "" and control*.INREGEX == "" do
       if control*.CLEAR_CACHE != 1 do
         println "usage: flx [options] filename";
+        System::exit(1);
       done
-      System::exit(1);
+      System::exit(0);
     done
 
 
