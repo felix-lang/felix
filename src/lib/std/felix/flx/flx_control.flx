@@ -56,6 +56,8 @@ fun dflt_control (config:config_type, profile:profile_type) =>
     var FELIX=1;
     var ECHO=0;
     var DEBUG_FLX=false;
+    var VALIDATE_CACHE=1;
+    var CHECK_DEPENDENCIES=1;
 
     // --------------------------------------------------
     // processing options

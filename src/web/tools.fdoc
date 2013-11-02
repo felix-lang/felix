@@ -1,0 +1,270 @@
+@h1 Felix toolkit
+The Felix system consists of a number of executable tools.
+Together these tools are design to deliver platform independent
+operation. The core tools are the compiler {flxg} and the 
+user command line interface {flx}.
+
+@h2 {flx}
+Felix is designed so that the programmer generally only needs
+to use a single, integrated tool: {flx}.
+
+The most basic operation of flx is quite simple, given a program
+script {hello.flx} which accepts a single argument, 
+you can run the script like:
+@pre
+flx hello world
+@
+This is the same as an ordinary command except that we must
+prefix the word {flx}.
+
+Behind the scenes, {flx} will invoke the actual compiler {flxg}
+to translate the program {hello.flx} into {C++}, then it invokes
+the system C++ compiler to generate object files, links these
+object files along with any required libraries, and finally
+runs the resulting executable.
+
+All this happens in the background and without touching any directories
+other than the Felix cache. You need permission to read the program
+and libraries, but neither write nor execute permission is required.
+
+The {flx} tool has depencency checking based on time stamps, and will
+skip over any steps where a cached output is already up to date.
+Recompilation when Felix is upgraded is automatic.
+
+@h3 Package management.
+In order to allow linking to various libraries,
+both Felix own run time libraries (RTL) and third
+party libraries, Felix uses a resource management
+system based on packages.
+
+A package descriptor is a file with suffix {*.fpc}
+similar to a pkgconfig file. These files are typically
+located in the directory
+
+@pre
+$FLX_INSTALL_DIR/host/config
+@
+
+The directory acts as a database which maps abstract
+package names specified in program text like:
+@felix
+requires package "gmp";
+@
+to the names of the required C or C++ header files
+and the name of the required static or dynamic link
+shared libraries. 
+
+The flxg compile emits a list of the required abstract
+package names in the file
+@pre
+basename.resh
+@
+in the cache, next to the generated C++ with the
+same basename. {flx} then uses this file to find
+all the headers and libraries required to compile
+and link your program. Therefore usually, you do not
+need to specify any search paths or library names
+to compile, link, and run your Felix code.
+
+The standalone tool {flx_pkgconfig} can be used to
+query the configuration database and is documented
+elsewhere.
+
+@h3 Options
+Flx has a large number of options.
+
+@h4 Location of installation.
+@pre
+--test               : use felix installation in current directory
+--test=dir           : use felix installation in dir
+--target=dir         : subdir of install dir containing target configuration (default 'host')
+--where              : print location of felix installation
+--backup             : backup working source tree to dir 'backup'
+@
+
+@h4 Processing control.
+@pre
+-c                   : compile only, do not run
+--nofelix            : do not run felix translator, leave C++ outputs alone
+--nocc               : do not C/C++ compiler; implies --nolink
+--nolink             : do not link object files to an executable
+--force              : force run Felix compiler
+--force-compiler     : force Felix compiler to rebuild everything
+--run                : just run the executable (located where it would end up)
+-o file.exe          : linker output filename
+-ox file                  : linker output filename (without extension)
+-od                  : linker output directory
+--static             : make standalone statically linked executable
+--staticlib          : make standalone library of static objects
+@
+
+@h4 Cache control
+Felix has two caches, by default these are
+@pre
+$HOME/.felix/binary
+$HOME/.felix/text
+@
+On Windows, Felix tries environment variable {HOME} first,
+if that does not exist it tries {USERPROFILE} instead.
+The cache will generally be on drive {C:} and of course the 
+Unix {/} will be replaced by {\}.
+
+The binary cache contains generally unreadable encoded output including caches of 
+the grammar automaton, each file's parsed AST, precompiled library
+symbol tables, object files, and executables.
+
+The text cache contains human readable text files including dependency
+information and the generated C++ code.
+
+Files in both caches are named by first extending the filename to
+an absolute filename, then prefixing the appropriate cache name.
+
+@pre
+--clean              : delete the caches first to force rebuilding
+--cache_dir=dir      : directory cache output from parser (*.par files), autocreated, default $HOME/.felix/cache
+--output_dir=dir     : directory to hold C++ output from translator, autocreated, default $HOME/.felix/cache
+                       Felix stored by absolute pathname within directory (tree directory).
+--bundle_dir=dir     : directory to hold C++ output from translator, autocreated.
+                       Files directly in directory by basename (flat directory).
+@
+
+The {bundle_dir=} is a special combination of setting the {output_dir}
+and also causing Felix to copy all required C++ files so the that
+the resulting bundle can be shipped to another machine and
+compiled. The target machine must still have built Felix Run Time
+Library (RTL) installed, as well as a suitable host configuration.
+
+
+
+@h4 Regression testing
+Flx has some builtin support for regression testing. If you compile and
+run a test case and save the standard outpout to a file with the {--stdout=}
+switch, this output wll be compared with the file named in the {--expect=}
+switch, or the program name with {.expect} replacing the source extension.
+Felix exits with an error code if the comparison fails.
+
+@pre
+--stdout=file        : run program with standard output redirected to file
+--expect=file        : compare stdout with expect file
+--expect             : compare stdout with basename.expect
+@
+
+@h4 Diagnostics.
+@pre
+--help               : show help
+--version            : show felix version
+--options            : show option set
+--config             : show configuration
+--show               : print the felix program to stdout
+--echo               : print shell commands before running them
+--time               : print target program run time after it finishes
+--debug              : put debug symbols in generated binaries
+--debug-compiler     : make felix compiler print progress diagnostics
+--debug-flx          : make flx tool print diagnostics
+@
+
+@h4 Optimisation
+@pre
+--usage=prototype    : fast compilation at the expense of slower executables
+--usage=debugging    : enable debugging aids
+--usage=production   : optimised code with run time safety checks retained
+--usage=hyperlight   : optimised code without run time safety checks
+--noinline           : force inlining off, may break things!
+--inline             : aggressive inlining
+--inline=999         : set inline cap to 999 'instructions'
+--nooptimise         : disable C++ compiler optimisation
+--noreduce           : disable reductions (default for compilation speed)
+--doreduce           : enable reductions (default for performance)
+@
+
+@h4 Source
+@pre
+--nostdlib           : don't load the standard library
+--import=file        : add an import which is prefixed to all files being translated
+--import=@file       : add all the files listed in file as imports (recursive on @)
+--nostdimport        : don't import the standard imports nugram.flxh and flx.flxh
+-Idir                : add dir to search path for both felix and C++ includes
+@
+
+@h4 Batch processing
+Felix can process a set of files specified by a regex, instead of
+just one file. The usual processing is applied to each file matching
+the regexp. The regexp is specified by two switches: {--indir=} specifies
+the directory from which to start the search, and {--regex=} specifies
+a Perl style regexp which is matched against all files in the input
+directory. The scan includes files in subdirectories. The match must
+be exact. 
+
+
+@pre
+--indir=dir          : set directory for regexp search, default current directory
+--regex=pattern      : Perl regexp for batch file processing
+@
+
+For example to run all files ending in {.flx} in the current 
+directory or any subdirectory use
+@pre
+flx --indir=. '--regex=.*\.flx'
+@
+Note the single quotes are required to prevent bash getting confused.
+
+
+@h4 C++ compiler and linker options
+@pre
+-Idir                : add dir to search path for both felix and C++ includes
+-Ldir                : add dir to linker search path
+-llib                : add dir lib to linker command
+-foption             : add switch to compiler command
+-Woption             : add switch to compiler command
+-O1                  : add switch to compiler command
+-O2                  : add switch to compiler command
+-O3                  : add switch to compiler command
+--cflags=flags       : addd flags to compiler command
+-Dmac                : add macro def to C++ compiler command
+-DFLX_ENABLE_TRACE   : enable compilation of trace generators (defaults off)
+-DFLX_CGOTO          : use gcc indirect gotos and use assembler hack for long jumps 
+                       (default on if config detects support)
+
+@h4 Interpretation of suffixed file names.
+@pre
+*.c *.cc *.cpp *.cxx
+                     : add files to C++ compilation (and linker) steps
+*.o *.obj *.lib *.dll *.a *.so
+                     : add files to linker steps
+* *.flx *.fdoc       : Felix program name, terminates options and starts runtime arguments
+@
+
+@h4 Callouts
+Felix requires two external programs for normal operation.
+It requires the Felix compiler {flxg} which is located in the
+{bin} subdirectory of the target subdirectory of the install.
+This is usually {host}.
+
+Felix also requires a C++ compiler which can compile
+both static and dynamic object files, and which can link
+dynamic objects into a share library. 
+
+If a static library is to be produced Felix will also
+perform a callout to the library manager which is
+{ar} on Unix platforms. 
+
+Felix does not normally call the system linker directly,
+it uses the C++ compiler to link code.
+
+Callouts are performed using {popen} or {system}.
+The shell commands can be monitored by setting
+the environment variable {FLX_SHELL_ECHO=1}.
+Note this is a feature of the Felix library and not
+the {flx} tool, and it will also exhibit callouts in
+the client program when it runs.
+
+@h4 Environment variables
+@pre
+FLX_INSTALL_DIR=dir  : Specifies the location of the Felix installation.
+                       This is normally {/usr/local/lib/felix/felix-latest},
+                       but this location is overriden by the environment variable.
+                       This default and the environment variable can
+                       be overriden by the {--test=} command line switch.
+FLX_SHELL_ECHO=1     : show shell callouts (system,popen)
+FLX_DEBUG_FLX=1      : debug flx (as if --debug-flx set)
+@

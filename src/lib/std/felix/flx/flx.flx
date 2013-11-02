@@ -36,7 +36,9 @@ class Flx
     var result = 0;
     fun / (a:string, b:string) => Filename::join (a,b);
     processing_stage1 (config,control,loopctl,varray[string] args);
-    check_cache(config, control,profile);
+    if control*.VALIDATE_CACHE == 1 do
+      check_cache(config, control,profile);
+    done
 
     if loopctl*.base == "" and control*.INREGEX == "" do
       if control*.CLEAR_CACHE != 1 do

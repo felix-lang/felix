@@ -432,19 +432,24 @@ object processing_env(
   
   gen check_uptodate () : bool =
   {
-    debugln "Checking to see if the output is uptodate";
-    var xtime = dfiletime(control.LINKER_OUTPUT_FILENAME,#past_time);
-    var srctime = cal_dep_time (debugln[string], control.OUTPUT_DIR, dvars.filebase);
-    srctime = fold_left maxf srctime control.cpps;
-    srctime = fold_left maxf srctime control.cppos;
+    if control.CHECK_DEPENDENCIES == 1 do
+      debugln "Checking to see if the output is uptodate";
+      var xtime = dfiletime(control.LINKER_OUTPUT_FILENAME,#past_time);
+      var srctime = cal_dep_time (debugln[string], control.OUTPUT_DIR, dvars.filebase);
+      srctime = fold_left maxf srctime control.cpps;
+      srctime = fold_left maxf srctime control.cppos;
 
-    debugln$ "Filebase = " + dvars.filebase; 
-    debugln$ "Binary time = " + strfiletime (xtime);
-    debugln$ "src time = " + strfiletime (srctime);
-    debugln$ "cache time = " + strfiletime (control.cache_time);
-    var uptodate = xtime > srctime and xtime > control.cache_time;
-    debugln$ "output is " + if uptodate then "" else " NOT " endif + " up to date";
-    return uptodate;
+      debugln$ "Filebase = " + dvars.filebase; 
+      debugln$ "Binary time = " + strfiletime (xtime);
+      debugln$ "src time = " + strfiletime (srctime);
+      debugln$ "cache time = " + strfiletime (control.cache_time);
+      var uptodate = xtime > srctime and xtime > control.cache_time;
+      debugln$ "output is " + if uptodate then "" else " NOT " endif + " up to date";
+      return uptodate;
+    else
+      debugln$ "dependency checking skipped due to switch";
+      return true;
+    done
   }
 
   gen check_run_if_required_and_uptodate() : bool  =
