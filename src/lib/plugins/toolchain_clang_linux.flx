@@ -6,7 +6,7 @@ export fun toolchain_clang_linux of (clang_config_t) as "toolchain_clang_linux";
 
 
 fun setup(config_data:string) = {
-  eprintln$ "Setup toolchain " + config_data;
+  //eprintln$ "Setup toolchain clang_linux " + config_data;
   return 0;
 }
 

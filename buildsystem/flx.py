@@ -289,8 +289,8 @@ def build_flx_pkgconfig(host_phase, target_phase, flx_builder):
 def build_flx(host_phase, target_phase, flx_builder):
     return flx_builder.build_exe(
         async=False,
-        dst=Path('host')/'bin'/'flx',
-        src=Path('src')/'tools'/'flx.flx',
+        dst=Path('host')/'bin'/'bootflx',
+        src=Path('src')/'tools'/'bootflx.flx',
         includes=[
           target_phase.ctx.buildroot / 'host'/'lib',
           target_phase.ctx.buildroot / 'share'/'lib',

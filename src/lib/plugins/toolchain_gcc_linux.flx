@@ -4,7 +4,7 @@ include "src/lib/std/felix/toolchain/gcc_linux";
 export fun toolchain_gcc_linux of (clang_config_t) as "toolchain_gcc_linux";
 
 fun setup(config_data:string) = {
-  eprintln$ "Setup toolchain " + config_data;
+  //eprintln$ "Setup toolchain gcc_linux " + config_data;
   return 0;
 }
 

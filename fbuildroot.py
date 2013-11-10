@@ -491,7 +491,7 @@ def build(ctx):
     # now, try building a file
 
     felix = call('fbuild.builders.felix.Felix', ctx,
-        exe=ctx.buildroot / 'host/bin/flx',
+        exe=ctx.buildroot / 'host/bin/bootflx',
         debug=ctx.options.debug,
         flags=['--test=' + ctx.buildroot])
 

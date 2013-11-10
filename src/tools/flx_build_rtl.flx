@@ -443,9 +443,10 @@ class FlxCoreBuild
 
   proc build_flx (target_dir:string, target_bin:string)
   {
+
     var exes = 
     (
-      ('flx', 'tools'/'flx'),
+      ('dflx', 'tools'/'dflx'),
       ('flx_pkgconfig', 'tools'/'flx_pkgconfig'),
       //  ('scoop', 'tools'/'scoop'),
       ('flx_build_rtl', 'tools'/'flx_build_rtl'),
@@ -461,7 +462,65 @@ class FlxCoreBuild
         System::exit 1; 
       done
     done
-}
+    begin
+      var obj_extn = ".o"; // HACK!!!!!!!! 
+      println$ "dflx  -> dflx object file";
+      var result = Flx::runflx$ list ('[flx]','--test='+target_dir, '--static','-c','--nolink',
+        '-o', target_dir/target_bin/'lib'/'rtl'/'dflx'+obj_extn, target_dir/'share'/'src'/'tools'/'dflx');
+      if result != 0 do 
+        println$ "dflx build failed";
+        System::exit 1; 
+      done
+
+      result = Flx::runflx$ list ('[flx]','--test='+target_dir, '--static','-c','--nolink',
+        '-o', target_dir/target_bin/'lib'/'rtl'/'toolchain_clang_linux'+obj_extn, 
+        target_dir/'share'/'src'/'lib'/'plugins'/'toolchain_clang_linux');
+      if result != 0 do 
+        println$ "toolchain_clang_linux compile failed";
+        System::exit 1; 
+      done
+
+      result = Flx::runflx$ list ('[flx]','--test='+target_dir, '--static','-c','--nolink',
+        '-o', target_dir/target_bin/'lib'/'rtl'/'toolchain_clang_osx'+obj_extn, 
+        target_dir/'share'/'src'/'lib'/'plugins'/'toolchain_clang_osx');
+      if result != 0 do 
+        println$ "toolchain_clang_osx compile failed";
+        System::exit 1; 
+      done
+
+      result = Flx::runflx$ list ('[flx]','--test='+target_dir, '--static','-c','--nolink',
+        '-o', target_dir/target_bin/'lib'/'rtl'/'toolchain_gcc_linux'+obj_extn, 
+        target_dir/'share'/'src'/'lib'/'plugins'/'toolchain_gcc_linux');
+      if result != 0 do 
+        println$ "toolchain_gcc_linux compile failed";
+        System::exit 1; 
+      done
+
+      result = Flx::runflx$ list ('[flx]','--test='+target_dir, '--static','-c','--nolink',
+        '-o', target_dir/target_bin/'lib'/'rtl'/'toolchain_gcc_osx'+obj_extn, 
+        target_dir/'share'/'src'/'lib'/'plugins'/'toolchain_gcc_osx');
+      if result != 0 do 
+        println$ "toolchain_gcc_osx compile failed";
+        System::exit 1; 
+      done
+
+
+	    println$ "flx  -> flx";
+      result = Flx::runflx$ list ('[flx]','--test='+target_dir, '--static','-c',
+        '-ox', target_dir/target_bin/'bin'/'flx', 
+        target_dir/target_bin/'lib'/'rtl'/'toolchain_clang_osx' + obj_extn, 
+        target_dir/target_bin/'lib'/'rtl'/'toolchain_gcc_osx' + obj_extn, 
+        target_dir/target_bin/'lib'/'rtl'/'toolchain_clang_linux' + obj_extn, 
+        target_dir/target_bin/'lib'/'rtl'/'toolchain_gcc_linux' + obj_extn, 
+        target_dir/target_bin/'lib'/'rtl'/'dflx' + obj_extn, 
+        target_dir/'share'/'src'/'tools'/'flx.flx'
+      );
+      if result != 0 do 
+        println$ "exe build failed";
+        System::exit 1; 
+      done
+    end
+  }
 
   proc flx_build(cmd: cmd_type)
   {

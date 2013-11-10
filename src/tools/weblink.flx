@@ -45,3 +45,4 @@ println$ "Webserver prepared";
 var init: cont = Dynlink::get_init linstance;
 
 Fibres::chain init;
+

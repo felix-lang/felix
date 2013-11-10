@@ -47,16 +47,27 @@ help:
 	#   FBUILD_PARAMS: parameters to fbuild, default none
 	#     fbuild/fbuild-light --help for options 
 
-build: user-build
+build: user-build flxg copy lib rtl flx plugins tools
 
 dev-build: fbuild gendoc
 
 user-build: fbuild
-  
+	cp ${BUILDROOT}/host/bin/bootflx ${BUILDROOT}/host/bin/flx
+	
+ 
 #
 # Core integrated build
 #
 fbuild:
+	#
+	# ============================================================
+	# 
+	# BOOTSTRAPPING FELIX
+	#
+	#   See build/release/fbuild.log for full transcript
+	#
+	# ============================================================
+	# 
 	$(PYTHON) fbuild/fbuild-light build --buildroot=${FBUILDROOT} $(FBUILD_PARAMS)
 
 #
@@ -260,13 +271,24 @@ post-tarball:
 # way to the boostrap Python build (make build)
 #--------------------------------------------------
 
+dflx:
+	build/release/host/bin/flx --test=build/release -c --nolink --static -ox build/release/host/lib/rtl/dflx src/tools/dflx.flx
+	build/release/host/bin/flx --test=build/release -c --static -ox build/release/host/bin/sflx \
+		build/release/host/lib/rtl/toolchain_clang_osx.o \
+		build/release/host/lib/rtl/toolchain_clang_linux.o \
+		build/release/host/lib/rtl/toolchain_gcc_osx.o \
+		build/release/host/lib/rtl/toolchain_gcc_linux.o \
+		build/release/host/lib/rtl/dflx.o \
+		src/tools/flx.flx
+
+ 
 recovery-fallback-flxg:
 	# building flxg
 	/usr/local/lib/felix/felix-latest/host/bin/flx_build_flxg
 	cp tmp-dir/flxg build/release/host/bin
 
 recovery-fallback-copy:
-	# copying ./src to build/release/src
+	# copying ./src to build/release/share/src
 	/usr/local/lib/felix/felix-latest/host/bin/flx_build_rtl \
 		--repo=.\
 		--target-dir=build/release \
@@ -323,12 +345,16 @@ fallback-lib: fallback-copy
 		--copy-library
 
 flxg:
+	# =========================================================
 	# building flxg
+	# =========================================================
 	build/release/host/bin/flx --test=build/release src/tools/flx_build_flxg
 	cp tmp-dir/flxg build/release/host/bin
 
 copy:
+	# =========================================================
 	# copying ./src to build/release/src
+	# =========================================================
 	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl \
 		--repo=.\
 		--target-dir=build/release \
@@ -336,7 +362,9 @@ copy:
 		--copy-repo 
 
 rtl:
+	# =========================================================
 	# rebuild rtl
+	# =========================================================
 	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl \
 		--repo=.\
 		--target-dir=build/release \
@@ -344,28 +372,36 @@ rtl:
 		--build-rtl
 
 plugins:
+	# =========================================================
 	# rebuild plugins
+	# =========================================================
 	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl \
 		--target-dir=build/release \
 		--target-bin=host \
 		--build-plugins
 
 tools:
+	# =========================================================
 	# rebuild tools
+	# =========================================================
 	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl \
 		--target-dir=build/release \
 		--target-bin=host \
 		--build-tools
 
 flx:
+	# =========================================================
 	# rebuild flx
+	# =========================================================
 	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl \
 		--target-dir=build/release \
 		--target-bin=host \
 		--build-flx
 
 lib: copy
+	# =========================================================
 	# copy files from src to lib
+	# =========================================================
 	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl \
 		--target-dir=build/release \
 		--target-bin=host \

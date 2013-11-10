@@ -5,7 +5,7 @@ include "std/felix/toolchain/clang_osx";
 export fun toolchain_clang_osx of (clang_config_t) as "toolchain_clang_osx";
 
 fun setup(config_data:string) = {
-  eprintln$ "Setup toolchain " + config_data;
+  //eprintln$ "Setup toolchain clang_osx " + config_data;
   return 0;
 }
 

@@ -1,0 +1,4 @@
+include "std/felix/flx/bootflx";
+
+System::pexit$ BootFlx::runflx #System::args;
+
