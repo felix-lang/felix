@@ -5,6 +5,7 @@ include "std/felix/toolchain/clang_osx";
 export fun toolchain_clang_osx of (clang_config_t) as "toolchain_clang_osx";
 
 fun setup(config_data:string) = {
+   C_hack::ignore (config_data); // due to bug in Felix
   //eprintln$ "Setup toolchain clang_osx " + config_data;
   return 0;
 }
