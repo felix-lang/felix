@@ -403,12 +403,19 @@ object processing_env(
     return #check_output;
   }
 
+
+  gen run_dynamic_with_calpackages () : int = 
+  {
+    calpackages;
+    return #run_program_dynamic;
+  }
+
   gen maybe_run_program () : int = 
   {
     if control.STATIC == 0 do
       if control.RUNIT == 1 do
         debugln$ "Running dynamic program";
-        return #run_program_dynamic;
+        return #run_dynamic_with_calpackages;
       else
         debugln "Running dynamic skipped by switch";
       done
@@ -423,12 +430,6 @@ object processing_env(
     return 0;
   }
 
-
-  gen run_dynamic_with_calpackages () : int = 
-  {
-    calpackages;
-    return #run_program_dynamic;
-  }
   
   gen check_uptodate () : bool =
   {

@@ -27,6 +27,7 @@ object toolchain_clang_osx (config:clang_config_t) implements toolchain_t =
   method fun target_os () => "OSX";
   method fun cxx_compiler_vendor () => "clang";
 
+  method fun dependency_extension () => ".d";
   method fun executable_extension () => "";
   method fun static_object_extension () => ".o";
   method fun dynamic_object_extension () => ".os";
@@ -36,6 +37,40 @@ object toolchain_clang_osx (config:clang_config_t) implements toolchain_t =
   method fun debug_flags () => list[string] "-g";
 
 // Boilerplate 
+
+  method gen c_dependency_generator (spec:(src:string, dst:string)) =
+  {
+     var result = 
+       CxxCompiler::generic_cxx_gen_deps 
+       (
+          CCDEP=c_compiler,
+          CCFLAGS = "-M" ! config.ccflags,
+          INCLUDE_DIRS=config.header_search_dirs,
+          MACROS=config.macros,
+          SPEC_DEP_FILENAME = "-MF",
+          debugln = config.debugln
+       )
+       (spec.src, spec.dst)
+     ;
+     return result;
+  }
+
+  method gen cxx_dependency_generator (spec:(src:string, dst:string)) =
+  {
+     var result = 
+       CxxCompiler::generic_cxx_gen_deps 
+       (
+          CCDEP=cxx_compiler,
+          CCFLAGS = "-M" ! config.ccflags,
+          INCLUDE_DIRS=config.header_search_dirs,
+          MACROS=config.macros,
+          SPEC_DEP_FILENAME = "-MF",
+          debugln = config.debugln
+       )
+       (spec.src, spec.dst)
+     ;
+     return result;
+  }
 
   method gen c_static_object_compiler (spec:(dst:string, src:string)) : int = 
   {

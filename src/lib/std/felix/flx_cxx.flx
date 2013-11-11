@@ -1,5 +1,36 @@
 class CxxCompiler
 {
+  typedef cxx_dep_spec_t = 
+  (
+    CCDEP: string,
+    CCFLAGS: list[string],
+    INCLUDE_DIRS: list[string],
+    MACROS: list[string],
+    SPEC_DEP_FILENAME:string,
+    debugln: string -> 0
+  );
+
+  gen generic_cxx_gen_deps (spec: cxx_dep_spec_t) (src:string, dst:string) : int =
+  {
+    var cmd=
+      spec.CCDEP !
+      spec.CCFLAGS +
+      spec.INCLUDE_DIRS + 
+      spec.MACROS + 
+      src
+    ;
+    var CMD = catmap ' ' Shell::quote_arg cmd + ' ' +
+      (spec.SPEC_DEP_FILENAME+Shell::quote_arg dst)
+    ;
+    spec.debugln$ "C++ generate dependencies : " + CMD;
+    var result = System::system(CMD);
+    if result != 0 do
+      eprintln $ "C++ command="+CMD + " FAILED";
+    done
+    return result;
+  }
+
+
   typedef cxx_dynamic_spec_t = 
   (
     CCOBJ_DLLIB: string,
