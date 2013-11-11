@@ -433,8 +433,12 @@ object processing_env(
   
   gen check_uptodate () : bool =
   {
-    if control.CHECK_DEPENDENCIES == 1 do
-      debugln "Checking to see if the output is uptodate";
+    debugln "Check uptodate";
+    if control.RECOMPILE == 1 do 
+      debugln$ "dependency checking skipped due to switch RECOMPILE=1: forced not uptodate";
+      return false;
+    elif control.CHECK_DEPENDENCIES == 1 do
+      debugln "Checking dependencies since CHECK_DEPENDENCIES=1 to see if the output is uptodate";
       var xtime = dfiletime(control.LINKER_OUTPUT_FILENAME,#past_time);
       var srctime = cal_dep_time (debugln[string], control.OUTPUT_DIR, dvars.filebase);
       srctime = fold_left maxf srctime control.cpps;
@@ -448,7 +452,7 @@ object processing_env(
       debugln$ "output is " + if uptodate then "" else " NOT " endif + " up to date";
       return uptodate;
     else
-      debugln$ "dependency checking skipped due to switch";
+      debugln$ "dependency checking skipped due to switch CHECK_DEPENDENCIES=0: forced uptodate";
       return true;
     done
   }

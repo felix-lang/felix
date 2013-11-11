@@ -362,27 +362,8 @@ class FlxCoreBuild
 
   }
 
-  proc build_plugins(target_dir:string, target_bin:string)
+  proc build_plugins(target_dir:string, target_bin:string, plugins:list[string])
   {
-    var plugins = list (
-      'cpp2html',
-      'fdoc2html',
-      'fdoc_button',
-      'fdoc_fileseq',
-      'fdoc_heading',
-      'fdoc_paragraph',
-      'fdoc_scanner',
-      'fdoc_slideshow',
-      'fdoc_frame',
-      'flx2html',
-      'fpc2html',
-      'ocaml2html',
-      'py2html',
-      'toolchain_clang_linux',
-      'toolchain_clang_osx',
-      'toolchain_gcc_linux',
-      'toolchain_gcc_osx'
-    );
     for plugin in plugins do
       println$ "Building plugin " + plugin;
       var result = Flx::runflx$ list ('[flx]','--test='+target_dir, 
@@ -410,6 +391,37 @@ class FlxCoreBuild
       done
     done
    
+  }
+
+  proc build_web_plugins (target_dir:string, target_bin:string)
+  {
+    var plugins = list (
+      'cpp2html',
+      'fdoc2html',
+      'fdoc_button',
+      'fdoc_fileseq',
+      'fdoc_heading',
+      'fdoc_paragraph',
+      'fdoc_scanner',
+      'fdoc_slideshow',
+      'fdoc_frame',
+      'flx2html',
+      'fpc2html',
+      'ocaml2html',
+      'py2html'
+    );
+    build_plugins (target_dir, target_bin, plugins);
+  }
+
+  proc build_toolchain_plugins (target_dir:string, target_bin:string)
+  {
+    var plugins = list (
+      'toolchain_clang_linux',
+      'toolchain_clang_osx',
+      'toolchain_gcc_linux',
+      'toolchain_gcc_osx'
+    );
+    build_plugins (target_dir, target_bin, plugins);
   }
 
 
@@ -472,39 +484,6 @@ class FlxCoreBuild
         System::exit 1; 
       done
 
-      result = Flx::runflx$ list ('[flx]','--test='+target_dir, '--static','-c','--nolink',
-        '-o', target_dir/target_bin/'lib'/'rtl'/'toolchain_clang_linux'+obj_extn, 
-        target_dir/'share'/'src'/'lib'/'plugins'/'toolchain_clang_linux');
-      if result != 0 do 
-        println$ "toolchain_clang_linux compile failed";
-        System::exit 1; 
-      done
-
-      result = Flx::runflx$ list ('[flx]','--test='+target_dir, '--static','-c','--nolink',
-        '-o', target_dir/target_bin/'lib'/'rtl'/'toolchain_clang_osx'+obj_extn, 
-        target_dir/'share'/'src'/'lib'/'plugins'/'toolchain_clang_osx');
-      if result != 0 do 
-        println$ "toolchain_clang_osx compile failed";
-        System::exit 1; 
-      done
-
-      result = Flx::runflx$ list ('[flx]','--test='+target_dir, '--static','-c','--nolink',
-        '-o', target_dir/target_bin/'lib'/'rtl'/'toolchain_gcc_linux'+obj_extn, 
-        target_dir/'share'/'src'/'lib'/'plugins'/'toolchain_gcc_linux');
-      if result != 0 do 
-        println$ "toolchain_gcc_linux compile failed";
-        System::exit 1; 
-      done
-
-      result = Flx::runflx$ list ('[flx]','--test='+target_dir, '--static','-c','--nolink',
-        '-o', target_dir/target_bin/'lib'/'rtl'/'toolchain_gcc_osx'+obj_extn, 
-        target_dir/'share'/'src'/'lib'/'plugins'/'toolchain_gcc_osx');
-      if result != 0 do 
-        println$ "toolchain_gcc_osx compile failed";
-        System::exit 1; 
-      done
-
-
 	    println$ "flx  -> flx";
       result = Flx::runflx$ list ('[flx]','--test='+target_dir, '--static','-c',
         '-ox', target_dir/target_bin/'bin'/'flx', 
@@ -531,8 +510,9 @@ class FlxCoreBuild
 
     // at this point, the build proceeds using host tools, but only target sources.
     cmd.build_rtl ?? make_rtl ( cmd.target_dir, cmd.target_bin, cmd.boot_package, 'trial-tmp', cmd.debug);
-    cmd.build_plugins ?? build_plugins(cmd.target_dir, cmd.target_bin);
+    cmd.build_toolchain_plugins ?? build_toolchain_plugins(cmd.target_dir, cmd.target_bin);
     cmd.build_flx ?? build_flx(cmd.target_dir, cmd.target_bin);
+    cmd.build_web_plugins ?? build_web_plugins(cmd.target_dir, cmd.target_bin);
     cmd.build_tools ?? build_exes(cmd.target_dir, cmd.target_bin);
     println$ "Build Complete";
   }
@@ -568,8 +548,9 @@ class FlxCoreBuild
     println$ "# compilation options";
     println$ "";
     println$ "  --build-rtl                 C++ compile the run time library";
-    println$ "  --build-plugins             Felix compile the plugins";
+    println$ "  --build-toolchain-plugins   Felix compile the toolchain plugins";
     println$ "  --build-flx                 Felix compile flx";
+    println$ "  --build-web-plugins         Felix compile the webserver plugins";
     println$ "  --build-tools               Felix compile standard tools";
     println$ "";
     println$ "  --debug                     do stuff verbosely";
@@ -617,7 +598,8 @@ class FlxCoreBuild
        copy_library=false,
 
        build_rtl=false,
-       build_plugins=false,
+       build_web_plugins=false,
+       build_toolchain_plugins=false,
        build_flx=false,
        build_tools=false,
        debug = false
@@ -665,8 +647,10 @@ class FlxCoreBuild
        // operation options: compilation
        elif arg == "--build-rtl" do
          &cmd.build_rtl <- true;
-       elif arg == "--build-plugins" do
-         &cmd.build_plugins<- true;
+       elif arg == "--build-web-plugins" do
+         &cmd.build_web_plugins<- true;
+       elif arg == "--build-toolchain-plugins" do
+         &cmd.build_toolchain_plugins<- true;
        elif arg == "--build-flx" do
          &cmd.build_flx <- true;
        elif arg == "--build-tools" do

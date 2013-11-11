@@ -47,7 +47,7 @@ help:
 	#   FBUILD_PARAMS: parameters to fbuild, default none
 	#     fbuild/fbuild-light --help for options 
 
-build: user-build flxg copy lib rtl flx plugins tools
+build: user-build flxg copy lib rtl toolchain-plugins flx web-plugins tools
 
 dev-build: fbuild gendoc
 
@@ -316,12 +316,19 @@ fallback-rtl:
 		--target-bin=host \
 		--build-rtl
 
-fallback-plugins:
+fallback-web-plugins:
 	# rebuild plugins
 	build/release/host/bin/flx_build_rtl \
 		--target-dir=build/release \
 		--target-bin=host \
-		--build-plugins
+		--build-web-plugins
+
+fallback-toolchain-plugins:
+	# rebuild plugins
+	build/release/host/bin/flx_build_rtl \
+		--target-dir=build/release \
+		--target-bin=host \
+		--build-toolchain-plugins
 
 fallback-tools:
 	# rebuild tools
@@ -371,14 +378,23 @@ rtl:
 		--target-bin=host \
 		--build-rtl
 
-plugins:
+web-plugins:
 	# =========================================================
-	# rebuild plugins
+	# rebuild web plugins
 	# =========================================================
 	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl \
 		--target-dir=build/release \
 		--target-bin=host \
-		--build-plugins
+		--build-web-plugins
+
+toolchain-plugins:
+	# =========================================================
+	# rebuild toolchain plugins
+	# =========================================================
+	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl \
+		--target-dir=build/release \
+		--target-bin=host \
+		--build-toolchain-plugins
 
 tools:
 	# =========================================================
@@ -427,8 +443,9 @@ bootstrap:
 		--copy-version \
 		--copy-library \
 		--build-rtl \
-		--build-plugins \
+		--build-toolchain-plugins \
 		--build-flx \
+		--build-web-plugins \
 		--build-tools
 	build/trial/host/bin/flx --test=build/trial --clean
 	build/trial/host/bin/flx --test=build/trial --expect --usage=prototype --indir=test/regress/rt --regex='.*\.flx'
@@ -450,8 +467,9 @@ fast-bootstrap:
 		--copy-version \
 		--copy-library \
 		--build-rtl \
-		--build-plugins \
+		--build-toolchain-plugins \
 		--build-flx \
+		--build-web-plugins \
 		--build-tools
 	build/release/host/bin/flx --test=build/release --expect --usage=prototype --indir=test/regress/rt --regex='.*\.flx'
 
@@ -469,8 +487,9 @@ hosttools:
 		--pkg=build_flx_rtl_gcc_osx \
 		--copy-repo \
 		--copy-library \
-		--build-plugins \
+		--build-toolchain-plugins \
 		--build-flx \
+		--build-web-plugins \
 		--build-tools
 
 gccosxtarget:
@@ -494,8 +513,9 @@ gccosxtarget:
 		--copy-config-headers \
 		--copy-version \
 		--build-rtl \
-		--build-plugins \
+		--build-toolchain-plugins \
 		--build-flx \
+		--build-web-plugins \
 		--build-tools
 	build/release/gccosx/bin/flx --test=build/release --target=gccosx --clean
 	build/release/gccosx/bin/flx --test=build/release --target=gccosx  --expect --usage=prototype --indir=test/regress/rt --regex='.*\.flx'
@@ -530,5 +550,5 @@ weblink:
 .PHONY : build32-debug build64-debug build-debug test32-debug test64-debug test-debug 
 .PHONY : doc install websites-linux  release install-bin 
 .PHONY : copy-doc gen-doc check-tut gendoc fbuild speed tarball
-.PHONY : weblink flx tools plugins rtl copy lib
+.PHONY : weblink flx tools web-plugins toolchain-plugins rtl copy lib
 .PHONY : sdltest
