@@ -433,6 +433,8 @@ object processing_env(
   
   gen check_uptodate () : bool =
   {
+    fun maxf (t:double) (f:string) => max (t, dfiletime (f, #past_time));
+
     debugln "Check uptodate";
     if control.RECOMPILE == 1 do 
       debugln$ "dependency checking skipped due to switch RECOMPILE=1: forced not uptodate";
