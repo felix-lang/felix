@@ -67,8 +67,8 @@ proc print_help() {
   println "-O3                  : add switch to compiler command";
   println "--cflags=flags       : addd flags to compiler command";
   println "-Dmac                : add macro def to C++ compiler command";
-  println "-DFLX_ENABLE_TRACE       : enable compilation of trace generators (defaults off)";
-  println "-DFLX_CGOTO              : use gcc indirect gotos and use assembler hack for long jumps (default on if config detects support)";
+  println "-DFLX_ENABLE_TRACE   : enable compilation of trace generators (defaults off)";
+  println "-DFLX_CGOTO          : use gcc indirect gotos and use assembler hack for long jumps (default on if config detects support)";
   println "";
   println "*.c *.cc *.cpp *.cxx ";
   println "                     : add files to C++ compilation (and linker) steps";
@@ -78,9 +78,26 @@ proc print_help() {
   println "";
   println "Environment variables";
   println "---------------------";
-  println "";
-  println "FLX_SHELL_ECHO=1     : show shell callouts (system,popen)";
-  println "FLX_DEBUG_FLX=1      : debug flx (as if --debug-flx set)";
+  println "Flx build tool";
+  println "  FLX_INSTALL_DIR=dir     : overrides default installation directory (as if --test=dir)";
+  println "  FLX_SHELL_ECHO=1        : show shell callouts (system,popen)";
+  println "  FLX_DEBUG_FLX=1         : debug flx (as if --debug-flx set)";
+  println "Flxg compiler";
+  println "  FLX_DEBUG_PARSER=1      : emit debug info from the Felix parser";
+  println "Run time system (affects flx as well as any binary run)";
+  println "  FLX_DEBUG               : enable debugging traces (default off)";
+  println "  FLX_DEBUG_ALLOCATIONS   : enable debugging allocator (default FLX_DEBUG)";
+  println "  FLX_DEBUG_COLLECTIONS   : enable debugging collector (default FLX_DEBUG)";
+  println "  FLX_REPORT_COLLECTIONS  : report collections (default FLX_DEBUG)";
+  println "  FLX_DEBUG_THREADS       : enable debugging collector (default FLX_DEBUG)";
+  println "  FLX_DEBUG_DRIVER        : enable debugging driver (default FLX_DEBUG)";
+  println "Run time GC tuning (affects flx as well as any binary run)";
+  println "  FLX_FINALISE            : whether to cleanup on termination (default NO)";
+  println "  FLX_GC_FREQ=n           : how often to call garbage collector (default 1000)";
+  println "  FLX_MIN_MEM=n           : initial memory pool n Meg (default 10)";
+  println "  FLX_MAX_MEM=n           : maximum memory n Meg (default -1 = infinite)";
+  println "  FLX_FREE_FACTOR=n.m     : reset FLX_MIN_MEM to actual usage by n.m after gc (default 1.1)";
+  println "  FLX_ALLOW_COLLECTION_ANYWHERE # (default yes)";
 
 }
 
@@ -245,6 +262,11 @@ noinline proc handle_switch
   elif arg == "--time" do
     debugln "Time program execution and print after running";
     control.TIME <- 1;
+
+  elif arg == "--compile-time" do
+    debugln "Print time of Felix compiler phases";
+    control.COMPILER_TIME <- 1;
+
 
   elif prefix(arg,"--output_dir=") do
     debugln "Set the directory for compiler generated C++ files";

@@ -159,7 +159,7 @@ class CxxCompiler
     spec.debugln$ "Link command="+CMD;
     var result=System::system(CMD);
     if result != 0 do
-      spec.debugln$ "Link command="+CMD+ " FAILED";
+      eprintln$ "Link command="+CMD+ " FAILED";
     done 
     return result;
   }
@@ -186,7 +186,7 @@ class CxxCompiler
     spec.debugln$ "Library archive command="+CMD;
     var result=System::system(CMD);
     if result != 0 do
-      spec.debugln$ "Library archive command="+CMD+ " FAILED";
+      eprintln$ "Library archive command="+CMD+ " FAILED";
     done 
     return result;
   }

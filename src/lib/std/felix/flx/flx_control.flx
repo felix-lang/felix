@@ -14,6 +14,7 @@ proc print_options(control:control_type) {
     println$ "cpps               = "+str control.cpps;
     println$ "cppos              = "+str control.cppos;
     println$ "TIME               = "+str control.TIME;
+    println$ "COMPILER_TIME      = "+str control.COMPILER_TIME;
     println$ "OUTPUT_DIR         = "+str control.OUTPUT_DIR;
     println$ "BUNDLE_DIR         = "+str control.BUNDLE_DIR;
     println$ "CACHE_DIR          = "+str control.CACHE_DIR;
@@ -68,6 +69,7 @@ fun dflt_control (config:config_type, profile:profile_type) =>
     var DEBUG_COMPILER=0;
     var COMPILER_PHASE="";
     var INLINE=25;
+    var COMPILER_TIME=0;
     var TIME=0;
     var NOOPTIMISE=0;
     var DOREDUCE=1;

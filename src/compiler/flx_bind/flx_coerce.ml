@@ -365,6 +365,7 @@ print_endline ("Coercion from int expression result is " ^ sbe bsym_table r);
 
     | _ ->
       (* clierr sr *)
+      (*
       print_endline ("WARNING: " ^
       (
         "Wrong type in coercion src value \n" ^
@@ -372,6 +373,7 @@ print_endline ("Coercion from int expression result is " ^ sbe bsym_table r);
         "\ncoercion to " ^ sbt bsym_table t'' ^ " not supported"
       )
       );
+      *)
       bexpr_coerce (x',t'')
     end
 

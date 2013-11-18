@@ -15,6 +15,7 @@ Flx_version_hook.set_version ()
 let generate_dep_file state =
   Flxg_file.output_string state.dep_file (String.concat "\n" (!(state.syms.include_files)) ^ "\n");
   Flxg_file.close_out state.dep_file
+  (* ; print_endline ("Written dependency file " ^ Flxg_file.filename state.dep_file) *)
  
 (* -------------------------------------------------------------------------- *)
 let generate_static_link_thunk state module_name =
@@ -83,7 +84,6 @@ print_endline "Flxg.HANDLE ASSEMBLY";
 
   (* update the global include file list *)
   state.syms.include_files := !deps;
-  generate_dep_file state;
 
 (*
 print_endline "Flxg.HANDLE ASSEMBLY DONE";
@@ -214,6 +214,11 @@ let handle_codegen state main_prog module_name =
     root_proc
   ;
   generate_static_link_thunk state module_name;
+  (* this HAS to be done last, in case the compiler is interrupted by, say,
+     a Ctrl-C. We need the dep file to remain invalid until all the C++
+     is emitted.
+  *)
+  generate_dep_file state;
   if state.syms.compiler_options.showtime  then
   showtime "codegen" t0
 

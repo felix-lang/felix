@@ -8,21 +8,21 @@ user command line interface {flx}.
 Command line compiler and execution harness.
 to use a single, integrated tool: {flx}.
 
-@h2 <a href=tools_flxg>flxg</a>
+@h3 <a href=tools_flxg.fdoc>flxg</a>
 The Felix language compiler. Translates Felix code
 into C++.
 
-@h2 <a href=tools_flx_pkgconfig>flx_pkgconfig</a>
+@h3 <a href=tools_flx_pkgconfig.fdoc>flx_pkgconfig</a>
 Configuration database query tool. Similar to
 <code>pkgconfig</code> except general purpose
 and well principled.
 
-@h2 <a href=tools_file>File management</a>
+@h2 <a href=tools_file.fdoc>File management</a>
 A set of basic file handling tools using regular 
 expressions instead of glob.
 
 
-@h2 High performance programmers <a href=tools_webserver>webserver</a>
+@h2 High performance programmers <a href=tools_webserver.fdoc>webserver</a>
 A plugin based webserver that can highlight and hyperlink Felix and 
 C++ programs and documentation files, as well as serving general HTML.
 

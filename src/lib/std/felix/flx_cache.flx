@@ -56,47 +56,6 @@ fun dfiletime(var f:string, dflt:double)=
   return x;
 }
 
-fun cal_dep_time(debugln:string -> 0, OUTPUT_DIR:string, f:string)= {
-  fun cal_time_from_dep (df: string):double=
-  {
-    fun maxf (x: double) (f:string) =
-    {
-      if f == "" do return x; done
-      var ext = Filename::get_extension f;
-      var ft = if ext != "" then dfiletime (f,#past_time) else
-        max (dfiletime (f+".fdoc", #past_time), dfiletime (f+".flx",#past_time))
-      ;
-      debugln$ ("Time "+f+" = "+ strfiletime ft);
-      ft = if ft == #past_time then #future_time else ft; // missing dependency
-      return max (x,ft);
-    }
-
-    fun cal_files_time (fs: list[string])=> fold_left maxf #past_time fs;
-
-    var deptext = load df;
-    var lines = split (deptext, "\n"); 
-    debugln$ "Deps=" + str(lines);
-    var deptime = 
-      let ?ft = cal_files_time lines in 
-      if ft == #past_time then #future_time else ft endif
-    ;
-    debugln$ "Deptime=" + strfiletime(deptime);
-    return deptime;
-  }
-
-  val depfilename = cache_join (OUTPUT_DIR, f+".dep");
-  debugln$ "Dependency file name = " + depfilename;
-  var depfiletime = dfiletime (depfilename, #future_time);
-  if depfiletime == #future_time do 
-    debugln$ "Dependency file doesn't exist";
-    return depfiletime;
-  done
-
-  val deptime = cal_time_from_dep (depfilename);
-  debugln$ "dep time = " + strfiletime deptime;
-  return max (deptime, depfiletime);
-}
-
 // FLX_INSTALL_DIR: root for finding standard grammar
 // STDGRAMMAR: root standard grammar key, within FLX_INSTALL_DIR
 //      usually "@grammar/grammar.files"

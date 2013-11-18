@@ -423,6 +423,21 @@ lib: copy
 		--target-bin=host \
 		--copy-library
 
+felix:
+	# =========================================================
+	# Everything except flxg and the rtl
+	# =========================================================
+	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl \
+		--target-dir=build/release \
+		--target-bin=host \
+		--copy-repo \
+		--copy-library \
+		--build-toolchain-plugins \
+		--build-flx \
+		--build-web-plugins \
+		--build-tools
+
+
 bootstrap:
 	rm -rf tmp-dir
 	build/release/host/bin/flx --test=build/release src/tools/flx_build_flxg

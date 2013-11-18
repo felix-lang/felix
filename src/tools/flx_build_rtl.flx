@@ -458,7 +458,6 @@ class FlxCoreBuild
 
     var exes = 
     (
-      ('dflx', 'tools'/'dflx'),
       ('flx_pkgconfig', 'tools'/'flx_pkgconfig'),
       //  ('scoop', 'tools'/'scoop'),
       ('flx_build_rtl', 'tools'/'flx_build_rtl'),
@@ -690,7 +689,7 @@ class FlxCoreBuild
       System::exit(1);
     done
     var cmd = parse_args (tail xargs);
-    println$ "flx_build_rtl";
+    println$ "flx_build_rtl v1.1";
     println$ "  repository    = " + cmd.repo;
     println$ "  build_package = " + cmd.boot_package;
     println$ "  target_dir    = " + cmd.target_dir;

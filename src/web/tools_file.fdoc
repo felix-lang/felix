@@ -1,3 +1,207 @@
 @h2 Regular expression based file management
-TODO
+@h3 Why?
+The basic tools on Unix platforms are very badly designed.
+They have way too many switches and do not recurse into
+subdirectories in a consistent way. Windows is no better.
 
+Although it is always possible to program complex <code>bash</code>
+scripts to do what you want, its very hard to get them right,
+and very hard to test them since they modify the file system.
+
+We need simple tools that act consistently across platforms
+and can handle subdirectories in a consistent way.
+
+@h3 Operation
+These are a set of basic tools designed to replace
+core OS tools with platform independent, regular
+expresion based, safe alternatives.
+
+These tools search for files in a given directory based
+on a regular expression. The search directory is viewed as
+flat, meaning subdirectories are not considered to exist.
+Instead, all searches are effectively recursive.
+
+All regular expressions require an exact match.
+Be sure to use single quotes around regular expressions 
+when invoking from a bash shell on Unix like platforms!
+If you want to search instead of an exact match, wrap your
+regexp R like <code>.*R.*</code>.
+
+Felix uses the <a href="http://code.google.com/p/re2/">Google RE2 search engine</a>, which implements
+a <a href="http://code.google.com/p/re2/wiki/Syntax">subset of Perl regular expressions</a>.
+
+To obtain consistent behaviour across all platforms, symbolic
+links are ignored. Do not use symbolic links!
+
+All of these tools are programmed as stubs calling into the
+library, so they can all be invoked under program control
+without any need for shell callouts.
+
+@h3 Trashing
+Not implemented yet. Trashing is a two stage deletion concept
+as used on may systems. Deleting a file actually copies it
+into the Trash instead of physically deleting it. The Trash
+can then be emptied later, possibly securely. On OSX the users
+HOME directory contains a file named {.Trash} for this purpose
+and OSX provides a secure empty function. It is an ordinary
+directory, however and can be cleaned up by the {rm} command.
+
+When a file is put in Trash the absolute filename should be
+used relative to the trash bin.
+
+Trashing is usually implemented by a fast operation that
+creates a link to the file then unlinks the old directory
+entry (rather than actually copying anything).
+
+Along with moving entries to trash, we need some kind of log
+to implement an undo function. Whilst time stamps can provide
+some information, they're not very convenient if lots of files
+are trashed often.
+
+@h2 Bugs
+Operations like {flx_cp} should really check permissions
+before working, as well as disk space availability.
+
+Otherwise half a copy might be done followed by a failure.
+However some source files might be deleted during the operation
+anyhow so there are no guarantees unless all operations use
+a central service.
+
+Whilst we claim our operations are platform independent,
+all these programs currently require native filenames;
+that is, use path separator / on Unix and \ on Windows.
+
+
+@h3 <code>flx_ls</code>
+A simple replacement for unix <code>ls</code>.
+Just lists matching filenames.
+
+Format:
+@pre
+flx_ls dir regex
+@
+Examples:
+@pre
+flx_ls src '.*\.flx' # all the flx files in src
+@
+@h3 <code>flx_cp</code>
+A safe and much more powerful replacement for unix <code>cp</code>.
+
+Format:
+@pre
+flx_cp [switches] dir regexp target
+@
+Search the given directory for files matching the regexp.
+Copy each match file to the target modified by replacing
+each replacement expression of the form
+@pre
+${999}
+@
+where 999 can be any integer literal, with the corresponding
+subgroup match of the regular expression. Group 0 is the whole
+match.
+
+Before any copying is done, the potential copy operation is checked
+to makes sure the source and target ranges do not overlap and the copy
+is one to one, thus ensuring a faithful copy is performed and files
+in the source set remain unchanged. [The current implementation is
+quadratic so large copies will be unreasonably slow. This needs to be
+fixed.]
+
+Felix automatically creates any directories needed when copying the file.
+
+The copied file has the same modification time as the original.
+
+There are two options:
+@pre
+--verbose -v
+--test
+@
+The verbose switch prints progress reports.
+These are in the form of bash commands which, if executed
+would perform the same operation.
+
+The test switch can be used for testing: it omits the actual
+copy operation and so can be used to check if a copy would
+be safe.
+
+If both the test and verbose switches are set, standard output
+can be saved to a file which, when executed, will perform
+the copying using the <code>cp</code> command.
+
+flx_cp returns 0 if the copy is (or would be) successful,
+otherwise it returns 1.
+
+Examples:
+@pre
+flx_cp --test src '([^/]*/)*([^/]*)\.flx' '${2}'
+@
+This command checks if all the files with extension <code>.flx</code>
+in directory <code>src</code> or any of its descendants have unique
+basenames. It does this because if this were not the case then
+the copy operation would copy two distinct files to the same target.
+
+Note that the search is for any prefix followed by a sequence of characters
+other than the unix path separator /, then the extension .flx, and the
+basename part without the extension is subgroup number 1.
+
+The actual output is:
+@pre
+Duplicate target __init__
+@
+
+@h3 <code>flx_mv</code>
+Not written yet. Will be equivalent to flx_cp followed by
+moving the sources to Trash, however will use linking and unlinking
+directory entries rather than actually copying the files (if available).
+
+@h3 <code>flx_rm</code>
+Not written yet. Will me equivalent to moving the sources
+to Trash using linking and unlinking directory entries.
+
+@h3 <code>flx_grep</code>
+Similar to grep, but uses regexp to match the files
+and regexps to find strings.
+
+Format:
+@pre
+flx_grep dir fregexp lregexp
+@
+For each file in dir matching fregexp, print each line matching lregexp
+prefixed by the filename (relative to dir).
+
+Examples:
+@pre
+flx_grep src '([^/]*/)*([^/]*)\.flx' '(.* )?var * [A-Z]+ *=.*'
+@p
+For all flx files in src, show all initialised definitions
+of variables with names exclusively upper case letters.
+The output looks something like this:
+@pre
+lib/std/felix/flx/flx_depvars.flx:214:     var VERBOSE = VERBOSE;
+lib/std/felix/flx/flx_profile.flx:3:   var HOME=
+lib/std/felix/flx/flx_run.flx:398:     var CMD = catmap ' ' Shell::quote_arg xargs;
+lib/std/felix/flx/flx_run.flx:410:     var CMD =
+lib/std/felix/flx_cxx.flx:22:     var CMD = catmap ' ' Shell::quote_arg cmd + ' ' +
+@
+
+@h3 <code>flx_replace</code>
+A simple regexp based text file translator. 
+
+Format:
+@pre
+flx_replace filename regexp replacement
+@
+
+Copies file to standard output, replacing matching lines with replacement
+lines. No rescanning! Pipe commands together for rescanning.
+
+The replacement text uses <code>\999</code> for subgroup matches.
+[Inconsistent with flx_cp!]
+
+Example:
+@pre
+flx_replace aa.flx '(.*)var(.*)' '\1VAR\2'
+@
+Replaces the last occurence of var on a line with VAR.
+The last occurrence is replaced because regexps are greedy.
