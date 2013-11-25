@@ -166,6 +166,45 @@ object processing_env(
     return 0;
   }
 
+  gen depcheck (tc: toolchain_t, src:string, dst:string) : bool = 
+  {
+    fun == (a:list[string], b:list[string]) =
+    { 
+      match a,b with
+      | Empty,Empty => /* println$ "EQUAL LISTS"; */ return true;
+      | Cons (?h1,?t1), Cons (?h2,?t2) => 
+         if h1 != h2 do
+           /* println$ h1 + " != " + h2; */
+           return false;
+         done
+         /* println$ h1 + " = " + h2; */
+         return t1 == t2; // tail call
+      | _ => /* println$ "LISTS NOT EQUAL"; */ return false;
+      endmatch;
+    }
+
+    fun maxf (t:double) (f:string) => max (t, dfiletime (f, #future_time));
+
+    //println$ "[flx] GENERATING DEPENDENCIES";
+    var result, deps = tc.cxx_dependency_generator (src=src);
+    // println$ "[flx] DEPENDENCIES GENERATED, result="+str result;
+    var newdeps = tc.dependency_parser deps;
+    // println$ "[flx] NEW DEPENDENCIES="+str newdeps;
+    var depfile = dst + ".d";
+    var olddeptxt = load depfile;
+    var olddeps = filter (fun (s:string)=> s != "") (split (olddeptxt,"\n"));
+    // println$ "[flx] OLD DEPENDENCIES="+str olddeps;
+    var samedeps = newdeps == olddeps;
+    // println$ "SAME DEPS = " + samedeps.str;
+    save$ depfile, newdeps;
+    // println$ "[flx] SAVED NEW DEPENDENCIES to " + depfile;
+    var fresh = samedeps and #{
+      var t = fold_left maxf #past_time newdeps;
+      return t < dfiletime (dst, #past_time);
+    };
+    println$ "[flx] Output " + dst + " is " + if fresh then "FRESH" else "STALE" endif;
+    return fresh;
+  }
 
   gen cxx_compile_dynamic1(src:string, dst:string) : int =
   {
@@ -181,10 +220,13 @@ object processing_env(
       )
       end
     ;
-
-    var result = tc.cxx_dynamic_object_compiler (dst=dst,src=src);
-    showtime("Dynamic c++  : "+src, t0);
-    return result;
+    if control.RECOMPILE==1 or not depcheck (tc,src,dst) do
+      var result = tc.cxx_dynamic_object_compiler (dst=dst,src=src);
+      showtime("Dynamic c++  : "+src, t0);
+      return result;
+    else
+      return 0;
+    done
   }
 
   gen cxx_compile_dynamic () : int =
@@ -241,6 +283,7 @@ object processing_env(
 
   gen cxx_compile_static1 (src: string, dst: string) : int = 
   {
+//println$ "cxx_compile_static1: " + src " -> " + dst;
     var t0 = #Time::time;
     var tc = toolchain  
       extend dflt_clang_config with 
@@ -252,13 +295,16 @@ object processing_env(
       )
       end
     ;
-    var result = tc.cxx_static_object_compiler (dst=dst,src=src); 
-    showtime("Static c++   : "+src,t0);
-
-    if result != 0 do
-      eprintln$ "[flx] C++ compilation "+src+" failed";
+    if control.RECOMPILE==1 or not depcheck (tc,src,dst) do
+      var result = tc.cxx_static_object_compiler (dst=dst,src=src); 
+      showtime("Static c++   : "+src,t0);
+      if result != 0 do
+        eprintln$ "[flx] C++ compilation "+src+" failed";
+      done
+      return result;
+    else
+      return 0;
     done
-    return result;
 
   }
 
@@ -267,12 +313,14 @@ object processing_env(
     // we only need the thunk if we're linking OR -o switch was NOT specified
     // i.e. skip compiling the thunk the output name was specified and 
     // represents an object file (or library archive?)
+//println$ "cxx_compile_static";
     var EXT_STATIC_OBJ = #((toolchain dflt_clang_config).static_object_extension);
     if 
       control.LINKIT == 1 or 
       control.OUTPUT_FILENAME_SPECIFIED == 0 and
       control.OUTPUT_FILENAME_WITHOUT_EXTENSION_SPECIFIED == 0
     do
+//println$ "Compiling thunk";
       var result = cxx_compile_static1
       (
         dvars.cpp_filebase+"_static_link_thunk.cpp",
@@ -283,18 +331,18 @@ object processing_env(
 
     for src in control.cpps do
       var dst = Filename::strip_extension src +EXT_STATIC_OBJ;
-      if control.RECOMPILE == 1 or dfiletime(src,#past_time) > dfiletime (dst, #future_time) do
-        result = cxx_compile_static1 (src,dst);
-        if result != 0 return result;
-      done
+      result = cxx_compile_static1 (src,dst);
+      if result != 0 return result;
       *&control.cppos += dst;
     done
    
     if control.LINKIT == 0 do
+//println$ "Compile only " + control.LINKER_OUTPUT_FILENAME;
       // compile only
       return cxx_compile_static1 (dvars.cpp_filebase+".cpp",control.LINKER_OUTPUT_FILENAME);
     else 
       // compile and link
+//println$ "Compile and link " + dvars.cpp_filebase+EXT_STATIC_OBJ;
       return cxx_compile_static1 (dvars.cpp_filebase+".cpp",dvars.cpp_filebase+EXT_STATIC_OBJ);
     done
 
@@ -497,8 +545,6 @@ object processing_env(
  
   gen check_cxx_uptodate () : bool =
   {
-    fun maxf (t:double) (f:string) => max (t, dfiletime (f, #past_time));
-
     debugln "Check Felix->C++ uptodate";
     if control.RECOMPILE == 1 do 
       debugln$ "Felix->C++ dependency checking skipped due to switch RECOMPILE=1: forced not uptodate";
@@ -516,7 +562,7 @@ object processing_env(
   // Assumes command line C++ file includes older than the argument (fixme!)
   gen check_binary_uptodate () : bool =
   {
-    fun maxf (t:double) (f:string) => max (t, dfiletime (f, #past_time));
+    fun maxf (t:double) (f:string) => max (t, dfiletime (f, #future_time));
 
     debugln "Check C++->binary uptodate";
     if control.RECOMPILE == 1 do 

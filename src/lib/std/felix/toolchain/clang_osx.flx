@@ -38,40 +38,42 @@ object toolchain_clang_osx (config:clang_config_t) implements toolchain_t =
 
 // Boilerplate 
 
-  method gen c_dependency_generator (spec:(src:string, dst:string)) =
+  method gen c_dependency_generator (spec:(src:string)) : int * string =
   {
-     var result = 
+     var result, data = 
        CxxCompiler::generic_cxx_gen_deps 
        (
           CCDEP=c_compiler,
-          CCFLAGS = "-M" ! config.ccflags,
+          CCFLAGS = "-MM" ! config.ccflags,
           INCLUDE_DIRS=config.header_search_dirs,
           MACROS=config.macros,
-          SPEC_DEP_FILENAME = "-MF",
           debugln = config.debugln
        )
-       (spec.src, spec.dst)
+       (spec.src)
      ;
-     return result;
+     return result,  data;
   }
 
-  method gen cxx_dependency_generator (spec:(src:string, dst:string)) =
+  method gen cxx_dependency_generator (spec:(src:string)) : int * string =
   {
-     var result = 
+     var result, data = 
        CxxCompiler::generic_cxx_gen_deps 
        (
           CCDEP=cxx_compiler,
-          CCFLAGS = "-M" ! config.ccflags,
+          CCFLAGS = "-MM" ! config.ccflags,
           INCLUDE_DIRS=config.header_search_dirs,
           MACROS=config.macros,
-          SPEC_DEP_FILENAME = "-MF",
           debugln = config.debugln
        )
-       (spec.src, spec.dst)
+       (spec.src)
      ;
-     return result;
+     return result, data;
   }
 
+  method gen dependency_parser (data:string) : list[string] =>
+     CxxCompiler::generic_dependency_parser data
+  ;
+  
   method gen c_static_object_compiler (spec:(dst:string, src:string)) : int = 
   {
     var result = 

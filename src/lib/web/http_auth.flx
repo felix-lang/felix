@@ -1,3 +1,5 @@
+include "web/__init__";
+
 publish """ Implements Basic HTTP Authentication
 """
 class HTTPBasicAuth {

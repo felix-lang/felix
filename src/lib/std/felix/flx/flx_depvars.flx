@@ -172,7 +172,7 @@ gen cal_depvars(
     "-I"+Filename::join(config.FLX_INSTALL_DIR,config.FLX_TARGET_SUBDIR,"lib"),
     "-I"+Filename::join(config.FLX_INSTALL_DIR,"share","lib")
   );
-  var STDLIB=list[string]("std","web");
+  var STDLIB=list[string]("std");
   if control*.NOSTDLIB == 1 do
     FLXLIBS=Empty[string];
     STDLIB=Empty[string];

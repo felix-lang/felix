@@ -1,3 +1,5 @@
+include "web/__init__";
+
 publish """
 Use make_<response type> to wrap html in an apropriate response
 """

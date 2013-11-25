@@ -1,3 +1,5 @@
+include "web/__init__";
+
 publish """
 Implements default handlers for static content and error pages.
 Defines container http_hadler for use in constructing custom handlers

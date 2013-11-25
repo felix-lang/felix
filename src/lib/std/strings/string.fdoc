@@ -396,7 +396,7 @@ like variant which uses an {option} type.
     union mode_t = | copying | skipping | quote | dquote | escape-copying | escape-quote | escape-dquote;
     typedef state_t = (mode:mode_t, current:string, parsed: list[string] );
 
-    fun respectful_parse (action:action_t) (var state:state_t) (s:string) : state_t = 
+    noinline fun respectful_parse (action:action_t) (var state:state_t) (var s:string) : state_t = 
     {
       var mode = state.mode;
       var current = state.current;
@@ -439,6 +439,7 @@ like variant which uses an {option} type.
           mode = skipping;
         else
           current += ch;
+          mode = copying;
         done
       }
 

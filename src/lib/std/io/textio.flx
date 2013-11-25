@@ -53,6 +53,23 @@ class Output_text_file[output_text_file]
   //$ Flush the buffers.
   virtual proc fflush: output_text_file;
 
+  //$ Save string to file
+  proc save (fn:string, d:string) 
+  {
+    var f = fopen_output fn;
+    write$ f,d;
+    fclose f;
+  }
+
+  // save list of strings to file
+  // adds a newline to each string in list
+  proc save (fn:string, lines:list[string]) 
+  {
+    var f = fopen_output fn;
+    iter (proc (s:string) { writeln$ f,s; }) lines;
+    fclose f;
+  }
+
   //$ Write a space.
   proc space (s:output_text_file) { write (s, " "); };
 

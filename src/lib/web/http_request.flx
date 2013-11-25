@@ -1,3 +1,6 @@
+include "web/__init__";
+include "io/__init__";
+
 publish """
 Defines types and container for http_request.
 Main entry points are get_param (helper to extract params from http_request)

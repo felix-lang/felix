@@ -1,3 +1,5 @@
+include "web/__init__";
+
 publish """
 Container for server config and socket_t
 """

@@ -1,0 +1,301 @@
+include "std/felix/toolchain_clang_config";
+include "std/felix/toolchain_interface";
+include "std/felix/flx_cp";
+include "std/felix/flx_pkgconfig";
+include "std/felix/flx_pkg"; // only for "fix2word_flags"
+include "std/felix/flx/flx";
+
+class FlxCoreBuild
+{
+
+  fun / (x:string,y:string) => Filename::join(x,y);
+
+  proc build_plugins(target_dir:string, target_bin:string, plugins:list[string])
+  {
+    for plugin in plugins do
+      println$ "Building plugin " + plugin;
+      var result = Flx::runflx$ list ('[flx]','--test='+target_dir, 
+        '-c', '-ox',target_dir/target_bin/'lib'/'rtl'/plugin, 
+        target_dir/'share'/'lib'/'plugins'/plugin);
+      if result != 0 do 
+        println$ "plugin (dynamic) build failed";
+        System::exit 1; 
+      done
+
+      result = Flx::runflx$ list ('[flx]','--test='+target_dir, 
+        '-c', '--nolink','-ox', target_dir/target_bin/'lib'/'rtl'/plugin, 
+        target_dir/'share'/'lib'/'plugins'/plugin);
+      if result != 0 do 
+        println$ "plugin (dynamic obj) build failed";
+        System::exit 1; 
+      done
+
+      result = Flx::runflx$ list ('[flx]','--test='+target_dir, 
+        '--static','-c', '--nolink','-ox', target_dir/target_bin/'lib'/'rtl'/plugin, 
+        target_dir/'share'/'lib'/'plugins'/plugin);
+      if result != 0 do 
+        println$ "plugin (static obj) build failed";
+        System::exit 1; 
+      done
+    done
+   
+  }
+
+  proc build_web_plugins (target_dir:string, target_bin:string)
+  {
+    var plugins = list (
+      'cpp2html',
+      'fdoc2html',
+      'fdoc_button',
+      'fdoc_fileseq',
+      'fdoc_heading',
+      'fdoc_paragraph',
+      'fdoc_scanner',
+      'fdoc_slideshow',
+      'fdoc_frame',
+      'flx2html',
+      'fpc2html',
+      'ocaml2html',
+      'py2html'
+    );
+    build_plugins (target_dir, target_bin, plugins);
+  }
+
+  proc build_toolchain_plugins (target_dir:string, target_bin:string)
+  {
+    var plugins = list (
+      'toolchain_clang_linux',
+      'toolchain_clang_osx',
+      'toolchain_gcc_linux',
+      'toolchain_gcc_osx'
+    );
+    build_plugins (target_dir, target_bin, plugins);
+  }
+
+
+  proc build_exes(target_dir:string, target_bin:string)
+  {
+    var exes = 
+    (
+      ('flx_cp', 'tools'/'flx_cp'),
+      ('flx_ls', 'tools'/'flx_ls'),
+      ('flx_grep', 'tools'/'flx_grep'),
+      ('flx_replace', 'tools'/'flx_replace'),
+      ('flx_tangle', 'tools'/'flx_tangle'),
+      ('flx_perror', 'tools'/'flx_perror'),
+      ('flx_gramdoc', 'tools'/'flx_gramdoc'),
+      ('flx_libindex', 'tools'/'flx_libindex'),
+      ('flx_libcontents', 'tools'/'flx_libcontents'),
+      ('flx_mktutindex', 'tools'/'flx_mktutindex'),
+      ('webserver', 'tools'/'webserver') // dynamically loads plugins
+    );
+    println$ "build exes";
+    match ?exe,?src in exes do
+      println$ src + " -> " + exe;
+      var result = Flx::runflx$ list ('[flx]','--test='+target_dir, '--static','-c',
+        '-ox', target_dir/target_bin/'bin'/exe, target_dir/'share'/'src'/src);
+      if result != 0 do 
+        println$ "exe build failed";
+        System::exit 1; 
+      done
+    done
+  }
+
+  proc build_flx (target_dir:string, target_bin:string)
+  {
+
+    var exes = 
+    (
+      ('flx_pkgconfig', 'tools'/'flx_pkgconfig'),
+      //  ('scoop', 'tools'/'scoop'),
+      ('flx_build_prep', 'tools'/'flx_build_prep'),
+      ('flx_build_rtl', 'tools'/'flx_build_rtl'),
+      ('flx_build_boot', 'tools'/'flx_build_boot'),
+      ('flx_build_flxg', 'tools'/'flx_build_flxg')
+    );
+    println$ "build flx";
+    match ?exe,?src in exes do
+      println$ src + " -> " + exe;
+      var result = Flx::runflx$ list ('[flx]','--test='+target_dir, '--static','-c',
+        '-ox', target_dir/target_bin/'bin'/exe, target_dir/'share'/'src'/src);
+      if result != 0 do 
+        println$ "exe build failed";
+        System::exit 1; 
+      done
+    done
+    begin
+      var obj_extn = ".o"; // HACK!!!!!!!! 
+      println$ "dflx  -> dflx object file";
+      var result = Flx::runflx$ list ('[flx]','--test='+target_dir, '--static','-c','--nolink',
+        '-o', target_dir/target_bin/'lib'/'rtl'/'dflx'+obj_extn, target_dir/'share'/'src'/'tools'/'dflx');
+      if result != 0 do 
+        println$ "dflx build failed";
+        System::exit 1; 
+      done
+
+	    println$ "flx  -> flx";
+      result = Flx::runflx$ list ('[flx]','--test='+target_dir, '--static','-c',
+        '-ox', target_dir/target_bin/'bin'/'flx', 
+        target_dir/target_bin/'lib'/'rtl'/'toolchain_clang_osx' + obj_extn, 
+        target_dir/target_bin/'lib'/'rtl'/'toolchain_gcc_osx' + obj_extn, 
+        target_dir/target_bin/'lib'/'rtl'/'toolchain_clang_linux' + obj_extn, 
+        target_dir/target_bin/'lib'/'rtl'/'toolchain_gcc_linux' + obj_extn, 
+        target_dir/target_bin/'lib'/'rtl'/'dflx' + obj_extn, 
+        target_dir/'share'/'src'/'tools'/'flx.flx'
+      );
+      if result != 0 do 
+        println$ "exe build failed";
+        System::exit 1; 
+      done
+    end
+  }
+
+  proc flx_build(cmd: cmd_type)
+  {
+    // at this point, the build proceeds using host tools, but only target sources.
+    cmd.build_toolchain_plugins ?? build_toolchain_plugins(cmd.target_dir, cmd.target_bin);
+    cmd.build_flx ?? build_flx(cmd.target_dir, cmd.target_bin);
+    cmd.build_web_plugins ?? build_web_plugins(cmd.target_dir, cmd.target_bin);
+    cmd.build_tools ?? build_exes(cmd.target_dir, cmd.target_bin);
+    println$ "Build Complete";
+  }
+
+  proc print_help()
+  {
+    println$ "Usage: flx_build_boot ";
+    println$ "";
+    println$ "# locations";
+    println$ "";
+    println$ "  --pkg=bootpkg";
+    println$ "  --target-dir=target_dir     default: build/trial";
+    println$ "  --target-bin=target_bin     default: host";
+    println$ "  --source-dir=source_dir     default: build/release";
+    println$ "  --source-bin=source_bin     default: host";
+    println$ "";
+    println$ "";
+    println$ "# compilation options";
+    println$ "";
+    println$ "  --build-toolchain-plugins   Felix compile the toolchain plugins";
+    println$ "  --build-flx                 Felix compile flx";
+    println$ "  --build-web-plugins         Felix compile the webserver plugins";
+    println$ "  --build-tools               Felix compile standard tools";
+    println$ "";
+    println$ "  --debug                     do stuff verbosely";
+    println$ "";
+    println$ "# Environment variables";
+    println$ "";
+    println$ "FLX_SHELL_ECHO=1              echo all shell callouts (system, popen)";
+    println$ "FLX_DEBUG_FLX=1               make 'flx' explain its processing decisions";
+    println$ "";
+    println$ "Purpose: Build new Felix target";
+    println$ "";
+    println$ "Requires repository directory $repo contain subdirectory 'src'";
+    println$ "Requires directory $source_dir contain subdirectory $source_bin which contains program 'flxg'";
+    println$ "Ensures target_dir contains:";
+    println$ "";
+    println$ "  (a) Repository source in $target_dir/share/src";
+    println$ "  (b) Share library in $target_dir/share/lib";
+    println$ "  (c) config db, C++ headers, libraries and executables in $target_dir/$target_bin/*";
+    println$ "";
+    println$ "Copies version, flxg, config db, and C++ headers from $source_dir if required";
+    println$ "Compiles all C++ sources to libraries and executables";
+  }
+
+  typedef cmd_type = typeof (parse_args Empty[string]);
+
+  noinline fun parse_args (args: list[string]) = 
+  {
+     var cmd = (
+       repo = '.',
+       boot_package="",
+       target_dir="build"/"trial",
+       target_bin="host",
+       source_dir="build"/"release",
+       source_bin="host",
+
+       build_web_plugins=false,
+       build_toolchain_plugins=false,
+       build_flx=false,
+       build_tools=false,
+       debug = false
+     );
+
+     for arg in args do
+       // location options
+       if prefix(arg,"--repo=") do
+         &cmd.repo <- arg.[7 to];
+       elif prefix(arg,"--pkg=") do
+         &cmd.boot_package <- arg.[6 to];
+       elif prefix(arg,"--target-dir=") do
+         &cmd.target_dir <- arg.[13 to];
+       elif prefix(arg,"--target-bin=") do
+         &cmd.target_bin <- arg.[13 to];
+       elif prefix(arg,"--source-dir=") do
+         &cmd.source_dir <- arg.[13 to];
+       elif prefix(arg,"--source-bin=") do
+         &cmd.source_bin <- arg.[13 to];
+       elif arg == "--debug" do
+         &cmd.debug <- true;
+
+       // operation options: compilation
+       elif arg == "--build-web-plugins" do
+         &cmd.build_web_plugins<- true;
+       elif arg == "--build-toolchain-plugins" do
+         &cmd.build_toolchain_plugins<- true;
+       elif arg == "--build-flx" do
+         &cmd.build_flx <- true;
+       elif arg == "--build-tools" do
+         &cmd.build_tools<- true;
+       elif arg == "--help" do
+         print_help();
+         System::exit(0);
+       else
+         println$ "Unknown switch " + arg;
+         print_help();
+         System::exit(1);
+       done 
+     done
+
+     // if no boot package is specified guess using shell command uname.
+     if cmd.boot_package == "" do
+       var res, os = Shell::get_stdout("uname");
+       &os <- os.strip;
+       match os with
+       | "" => &cmd.boot_package <- "build_flx_rtl_mscv_win32";
+       | "Linux" => &cmd.boot_package <- "build_flx_rtl_gcc_linux";
+       | "Darwin" => &cmd.boot_package <- "build_flx_rtl_clang_osx";
+       | ?x => 
+         println$ "No build package specified and uname returns unknown OS: '" +x+'"';
+         System::exit(1);
+       endmatch;
+       println$ "Guess --pkg="+cmd.boot_package;
+     done
+
+     return cmd;
+  }
+
+  noinline proc build_felix (xargs:list[string])
+  {
+    if xargs.len.int < 2 do 
+      print_help();
+      System::exit(1);
+    done
+    var cmd = parse_args (tail xargs);
+    println$ "flx_build_rtl v1.1";
+    println$ "  repository    = " + cmd.repo;
+    println$ "  build_package = " + cmd.boot_package;
+    println$ "  target_dir    = " + cmd.target_dir;
+    println$ "  target_bin    = " + cmd.target_bin;
+    println$ "  source_dir    = " + cmd.source_dir;
+    println$ "  source_bin    = " + cmd.source_bin;
+
+    flx_build (cmd);
+  }
+
+}
+
+FlxCoreBuild::build_felix (#System::args);
+
+System::exit (0);
+
+

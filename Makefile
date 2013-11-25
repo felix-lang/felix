@@ -253,7 +253,7 @@ post-tarball:
 
 #--------------------------------------------------
 # FALLBACK BUILD: use already built binary versions
-# of the tools, flx_build_flxg and flx_build_rtl
+# of the tools, flx_build_flxg and flx_build_boot
 # located in build/release/host/bin
 #
 # Use these when you managed to clear the cache and
@@ -289,7 +289,7 @@ recovery-fallback-flxg:
 
 recovery-fallback-copy:
 	# copying ./src to build/release/share/src
-	/usr/local/lib/felix/felix-latest/host/bin/flx_build_rtl \
+	/usr/local/lib/felix/felix-latest/host/bin/flx_build_prep \
 		--repo=.\
 		--target-dir=build/release \
 		--target-bin=host \
@@ -302,7 +302,7 @@ fallback-flxg:
 
 fallback-copy:
 	# copying ./src to build/release/src
-	build/release/host/bin/flx_build_rtl \
+	build/release/host/bin/flx_build_prep \
 		--repo=.\
 		--target-dir=build/release \
 		--target-bin=host \
@@ -311,43 +311,41 @@ fallback-copy:
 fallback-rtl:
 	# rebuild rtl
 	build/release/host/bin/flx_build_rtl \
-		--repo=.\
 		--target-dir=build/release \
-		--target-bin=host \
-		--build-rtl
+		--target-bin=host
 
 fallback-web-plugins:
 	# rebuild plugins
-	build/release/host/bin/flx_build_rtl \
+	build/release/host/bin/flx_build_boot \
 		--target-dir=build/release \
 		--target-bin=host \
 		--build-web-plugins
 
 fallback-toolchain-plugins:
 	# rebuild plugins
-	build/release/host/bin/flx_build_rtl \
+	build/release/host/bin/flx_build_boot \
 		--target-dir=build/release \
 		--target-bin=host \
 		--build-toolchain-plugins
 
 fallback-tools:
 	# rebuild tools
-	build/release/host/bin/flx_build_rtl \
+	build/release/host/bin/flx_build_boot \
 		--target-dir=build/release \
 		--target-bin=host \
 		--build-tools
 
 fallback-flx:
 	# rebuild flx
-	build/release/host/bin/flx_build_rtl \
+	build/release/host/bin/flx_build_boot \
 		--target-dir=build/release \
 		--target-bin=host \
 		--build-flx
 
 fallback-lib: fallback-copy
 	# copy files from src to lib
-	build/release/host/bin/flx_build_rtl \
-		--target-dir=build/release \
+	build/release/host/bin/flx_build_prep \
+		--target-dir=build/release 
 		--target-bin=host \
 		--copy-library
 
@@ -362,7 +360,7 @@ copy:
 	# =========================================================
 	# copying ./src to build/release/src
 	# =========================================================
-	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl \
+	build/release/host/bin/flx --test=build/release  src/tools/flx_build_prep \
 		--repo=.\
 		--target-dir=build/release \
 		--target-bin=host \
@@ -373,16 +371,14 @@ rtl:
 	# rebuild rtl
 	# =========================================================
 	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl \
-		--repo=.\
 		--target-dir=build/release \
-		--target-bin=host \
-		--build-rtl
+		--target-bin=host
 
 web-plugins:
 	# =========================================================
 	# rebuild web plugins
 	# =========================================================
-	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl \
+	build/release/host/bin/flx --test=build/release  src/tools/flx_build_boot \
 		--target-dir=build/release \
 		--target-bin=host \
 		--build-web-plugins
@@ -391,7 +387,7 @@ toolchain-plugins:
 	# =========================================================
 	# rebuild toolchain plugins
 	# =========================================================
-	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl \
+	build/release/host/bin/flx --test=build/release  src/tools/flx_build_boot \
 		--target-dir=build/release \
 		--target-bin=host \
 		--build-toolchain-plugins
@@ -400,7 +396,7 @@ tools:
 	# =========================================================
 	# rebuild tools
 	# =========================================================
-	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl \
+	build/release/host/bin/flx --test=build/release  src/tools/flx_build_boot \
 		--target-dir=build/release \
 		--target-bin=host \
 		--build-tools
@@ -409,7 +405,7 @@ flx:
 	# =========================================================
 	# rebuild flx
 	# =========================================================
-	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl \
+	build/release/host/bin/flx --test=build/release  src/tools/flx_build_boot \
 		--target-dir=build/release \
 		--target-bin=host \
 		--build-flx
@@ -418,25 +414,34 @@ lib: copy
 	# =========================================================
 	# copy files from src to lib
 	# =========================================================
-	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl \
+	build/release/host/bin/flx --test=build/release  src/tools/flx_build_prep \
 		--target-dir=build/release \
 		--target-bin=host \
 		--copy-library
 
-felix:
+rebuild:
 	# =========================================================
-	# Everything except flxg and the rtl
+	# rebuild everything in-place except the compiler
 	# =========================================================
-	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl \
+	build/release/host/bin/flx --test=build/release  src/tools/flx_build_prep \
+		--repo=.\
+		--source-dir=build/release \
+		--source-bin=host \
 		--target-dir=build/release \
 		--target-bin=host \
 		--copy-repo \
-		--copy-library \
+		--copy-library 
+	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl \
+		--target-dir=build/release \
+		--target-bin=host 
+	build/release/host/bin/flx --test=build/release  src/tools/flx_build_boot \
+		--target-dir=build/release \
+		--target-bin=host \
 		--build-toolchain-plugins \
 		--build-flx \
 		--build-web-plugins \
 		--build-tools
-
+	build/release/host/bin/flx --test=build/release --expect --usage=prototype --indir=test/regress/rt --regex='.*\.flx'
 
 bootstrap:
 	rm -rf tmp-dir
@@ -446,7 +451,7 @@ bootstrap:
 	mkdir build/trial/host
 	mkdir build/trial/host/bin
 	cp tmp-dir/flxg build/trial/host/bin
-	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl \
+	build/release/host/bin/flx --test=build/release  src/tools/flx_build_prep \
 		--repo=.\
 		--target-dir=build/trial \
 		--target-bin=host \
@@ -456,8 +461,17 @@ bootstrap:
 		--copy-pkg-db \
 		--copy-config-headers \
 		--copy-version \
-		--copy-library \
-		--build-rtl \
+		--copy-library 
+	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl \
+		--target-dir=build/trial \
+		--target-bin=host \
+		--source-dir=build/release \
+		--source-bin=host
+	build/release/host/bin/flx --test=build/release  src/tools/flx_build_boot \
+		--target-dir=build/trial \
+		--target-bin=host \
+		--source-dir=build/release \
+		--source-bin=host \
 		--build-toolchain-plugins \
 		--build-flx \
 		--build-web-plugins \
@@ -466,74 +480,6 @@ bootstrap:
 	build/trial/host/bin/flx --test=build/trial --expect --usage=prototype --indir=test/regress/rt --regex='.*\.flx'
 	rm -rf build/release
 	mv build/trial build/release
-
-fast-bootstrap:
-	rm -rf tmp-dir
-	build/release/host/bin/flx_build_flxg
-	DYLD_LIBRARY_PATH=build/release/host/lib/rtl build/release/host/bin/flx_build_rtl \
-		--repo=.\
-		--target-dir=build/release \
-		--target-bin=host \
-		--source-dir=build/release \
-		--source-bin=host \
-		--copy-repo \
-		--copy-pkg-db \
-		--copy-config-headers \
-		--copy-version \
-		--copy-library \
-		--build-rtl \
-		--build-toolchain-plugins \
-		--build-flx \
-		--build-web-plugins \
-		--build-tools
-	build/release/host/bin/flx --test=build/release --expect --usage=prototype --indir=test/regress/rt --regex='.*\.flx'
-
-hosttools:
-	# rebuild Felix code executables and plugins "in place"
-	# switch from clang to gcc just so we can check it all works
-	# This target should handle all changes to Felix code
-	# in the repository.
-	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl \
-		--repo=. \
-		--target-dir=build/release \
-		--target-bin=host \
-		--source-dir=build/release \
-		--source-bin=host \
-		--pkg=build_flx_rtl_gcc_osx \
-		--copy-repo \
-		--copy-library \
-		--build-toolchain-plugins \
-		--build-flx \
-		--build-web-plugins \
-		--build-tools
-
-gccosxtarget:
-	# This Make target is used to make a Felix target 'gccosx'
-	# in the build/release directory. It's a target for OSX
-	# which uses gcc instead of the default clang used by 'host'
-	#
-	# Because this is a target OF build/release we can use the
-	# existing share directory, so no need to copy the repo src
-	# or the library. However we have to copy flxg.
-	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl \
-		--repo=build/release/share \
-		--target-dir=build/release \
-		--target-bin=gccosx \
-		--source-dir=build/release \
-		--source-bin=host \
-		--pkg=build_flx_rtl_gcc_osx \
-		--clean-target-bin-dir \
-		--copy-compiler \
-		--copy-pkg-db \
-		--copy-config-headers \
-		--copy-version \
-		--build-rtl \
-		--build-toolchain-plugins \
-		--build-flx \
-		--build-web-plugins \
-		--build-tools
-	build/release/gccosx/bin/flx --test=build/release --target=gccosx --clean
-	build/release/gccosx/bin/flx --test=build/release --target=gccosx  --expect --usage=prototype --indir=test/regress/rt --regex='.*\.flx'
 
 sdltest:
 	build/release/host/bin/flx --test=build/release --force -c -od demos/sdl demos/sdl/edit_buffer
