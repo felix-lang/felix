@@ -281,7 +281,7 @@ class FlxCoreBuild
       System::exit(1);
     done
     var cmd = parse_args (tail xargs);
-    println$ "flx_build_rtl v1.1";
+    println$ "flx_build_boot v1.2";
     println$ "  repository    = " + cmd.repo;
     println$ "  build_package = " + cmd.boot_package;
     println$ "  target_dir    = " + cmd.target_dir;

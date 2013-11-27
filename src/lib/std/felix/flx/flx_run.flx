@@ -202,7 +202,7 @@ object processing_env(
       var t = fold_left maxf #past_time newdeps;
       return t < dfiletime (dst, #past_time);
     };
-    println$ "[flx] Output " + dst + " is " + if fresh then "FRESH" else "STALE" endif;
+    //println$ "[flx] Output " + dst + " is " + if fresh then "FRESH" else "STALE" endif;
     return fresh;
   }
 
