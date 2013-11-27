@@ -101,9 +101,8 @@ class FlxCoreBuild
     done
   }
 
-  proc build_flx (target_dir:string, target_bin:string)
+  proc build_flx_tools (target_dir:string, target_bin:string)
   {
-
     var exes = 
     (
       ('flx_pkgconfig', 'tools'/'flx_pkgconfig'),
@@ -113,7 +112,7 @@ class FlxCoreBuild
       ('flx_build_boot', 'tools'/'flx_build_boot'),
       ('flx_build_flxg', 'tools'/'flx_build_flxg')
     );
-    println$ "build flx";
+    println$ "build flx build tools";
     match ?exe,?src in exes do
       println$ src + " -> " + exe;
       var result = Flx::runflx$ list ('[flx]','--test='+target_dir, '--static','-c',
@@ -123,31 +122,34 @@ class FlxCoreBuild
         System::exit 1; 
       done
     done
-    begin
-      var obj_extn = ".o"; // HACK!!!!!!!! 
-      println$ "dflx  -> dflx object file";
-      var result = Flx::runflx$ list ('[flx]','--test='+target_dir, '--static','-c','--nolink',
-        '-o', target_dir/target_bin/'lib'/'rtl'/'dflx'+obj_extn, target_dir/'share'/'src'/'tools'/'dflx');
-      if result != 0 do 
-        println$ "dflx build failed";
-        System::exit 1; 
-      done
+  }
 
-	    println$ "flx  -> flx";
-      result = Flx::runflx$ list ('[flx]','--test='+target_dir, '--static','-c',
-        '-ox', target_dir/target_bin/'bin'/'flx', 
-        target_dir/target_bin/'lib'/'rtl'/'toolchain_clang_osx' + obj_extn, 
-        target_dir/target_bin/'lib'/'rtl'/'toolchain_gcc_osx' + obj_extn, 
-        target_dir/target_bin/'lib'/'rtl'/'toolchain_clang_linux' + obj_extn, 
-        target_dir/target_bin/'lib'/'rtl'/'toolchain_gcc_linux' + obj_extn, 
-        target_dir/target_bin/'lib'/'rtl'/'dflx' + obj_extn, 
-        target_dir/'share'/'src'/'tools'/'flx.flx'
-      );
-      if result != 0 do 
-        println$ "exe build failed";
-        System::exit 1; 
-      done
-    end
+  proc build_flx (target_dir:string, target_bin:string)
+  {
+    var obj_extn = ".o"; // HACK!!!!!!!! 
+    println$ "dflx  -> dflx object file";
+    var result = Flx::runflx$ list ('[flx]','--test='+target_dir, '--static','-c','--nolink',
+      '-o', target_dir/target_bin/'lib'/'rtl'/'dflx'+obj_extn, target_dir/'share'/'src'/'tools'/'dflx');
+    if result != 0 do 
+      println$ "dflx build failed";
+      System::exit 1; 
+    done
+
+    println$ "Build flx. Note: requires --build-toolchain-plugins";
+    println$ "flx  -> flx";
+    result = Flx::runflx$ list ('[flx]','--test='+target_dir, '--static','-c',
+      '-ox', target_dir/target_bin/'bin'/'flx', 
+      target_dir/target_bin/'lib'/'rtl'/'toolchain_clang_osx' + obj_extn, 
+      target_dir/target_bin/'lib'/'rtl'/'toolchain_gcc_osx' + obj_extn, 
+      target_dir/target_bin/'lib'/'rtl'/'toolchain_clang_linux' + obj_extn, 
+      target_dir/target_bin/'lib'/'rtl'/'toolchain_gcc_linux' + obj_extn, 
+      target_dir/target_bin/'lib'/'rtl'/'dflx' + obj_extn, 
+      target_dir/'share'/'src'/'tools'/'flx.flx'
+    );
+    if result != 0 do 
+      println$ "exe build failed";
+      System::exit 1; 
+    done
   }
 
   proc flx_build(cmd: cmd_type)
@@ -155,6 +157,7 @@ class FlxCoreBuild
     // at this point, the build proceeds using host tools, but only target sources.
     cmd.build_toolchain_plugins ?? build_toolchain_plugins(cmd.target_dir, cmd.target_bin);
     cmd.build_flx ?? build_flx(cmd.target_dir, cmd.target_bin);
+    cmd.build_flx_tools ?? build_flx_tools(cmd.target_dir, cmd.target_bin);
     cmd.build_web_plugins ?? build_web_plugins(cmd.target_dir, cmd.target_bin);
     cmd.build_tools ?? build_exes(cmd.target_dir, cmd.target_bin);
     println$ "Build Complete";
@@ -177,6 +180,7 @@ class FlxCoreBuild
     println$ "";
     println$ "  --build-toolchain-plugins   Felix compile the toolchain plugins";
     println$ "  --build-flx                 Felix compile flx";
+    println$ "  --build-flx-tools           Felix compile flx build tools";
     println$ "  --build-web-plugins         Felix compile the webserver plugins";
     println$ "  --build-tools               Felix compile standard tools";
     println$ "";
@@ -216,6 +220,7 @@ class FlxCoreBuild
        build_web_plugins=false,
        build_toolchain_plugins=false,
        build_flx=false,
+       build_flx_tools=false,
        build_tools=false,
        debug = false
      );
@@ -244,6 +249,8 @@ class FlxCoreBuild
          &cmd.build_toolchain_plugins<- true;
        elif arg == "--build-flx" do
          &cmd.build_flx <- true;
+       elif arg == "--build-flx-tools" do
+         &cmd.build_flx_tools <- true;
        elif arg == "--build-tools" do
          &cmd.build_tools<- true;
        elif arg == "--help" do
@@ -281,7 +288,7 @@ class FlxCoreBuild
       System::exit(1);
     done
     var cmd = parse_args (tail xargs);
-    println$ "flx_build_boot v1.2";
+    println$ "flx_build_boot v1.3";
     println$ "  repository    = " + cmd.repo;
     println$ "  build_package = " + cmd.boot_package;
     println$ "  target_dir    = " + cmd.target_dir;

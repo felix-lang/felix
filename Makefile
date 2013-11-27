@@ -27,6 +27,10 @@ else
 SUDO=sudo
 endif
 
+# Choose one: Linux or OSX
+#LPATH = LD_LIBRARY_PATH
+LPATH = DYLD_LIBRARY_PATH
+
 help:
 	# Makefile help
 	# FELIX VERSION  ${VERSION}
@@ -179,9 +183,9 @@ gen-doc:
 	${BUILDROOT}/host/bin/flx_mktutindex uparse "Universal Parser" uparse.fdoc
 	${BUILDROOT}/host/bin/flx_mktutindex nutut/intro/intro "Ground Up" ../../tutorial.fdoc
 	# Build reference docs. Note this requires plugins.
-	DYLD_LIBRARY_PATH=${BUILDROOT}/host/lib/rtl ${BUILDROOT}/host/bin/flx_libcontents --html > src/web/flx_libcontents.html
-	DYLD_LIBRARY_PATH=${BUILDROOT}/host/lib/rtl ${BUILDROOT}/host/bin/flx_libindex --html > src/web/flx_libindex.html
-	DYLD_LIBRARY_PATH=${BUILDROOT}/host/lib/rtl ${BUILDROOT}/host/bin/flx_gramdoc --html > src/web/flx_gramdoc.html
+	${LPATH}=${BUILDROOT}/host/lib/rtl ${BUILDROOT}/host/bin/flx_libcontents --html > src/web/flx_libcontents.html
+	${LPATH}=${BUILDROOT}/host/lib/rtl ${BUILDROOT}/host/bin/flx_libindex --html > src/web/flx_libindex.html
+	${LPATH}=${BUILDROOT}/host/lib/rtl ${BUILDROOT}/host/bin/flx_gramdoc --html > src/web/flx_gramdoc.html
 
 
 # Checks correctness of tutorial in release image
@@ -251,105 +255,8 @@ post-tarball:
 # NEW BUILD ROUTINES
 #--------------------------------------------------
 
-#--------------------------------------------------
-# FALLBACK BUILD: use already built binary versions
-# of the tools, flx_build_flxg and flx_build_boot
-# located in build/release/host/bin
 #
-# Use these when you managed to clear the cache and
-# the build screws up rebuilding the build tools.
-#
-# Normally only fallack-copy and fallback-flxg will
-# be needed, due to screwing up the flxg compiler,
-# and then needing it to build the tool that builds
-# that compiler.
-#
-# There's an extra fallback for that: you can fallback
-# to the *installed* tools as well.
-#
-# If NONE of that works you'll have to fallback all the
-# way to the boostrap Python build (make build)
-#--------------------------------------------------
-
-dflx:
-	build/release/host/bin/flx --test=build/release -c --nolink --static -ox build/release/host/lib/rtl/dflx src/tools/dflx.flx
-	build/release/host/bin/flx --test=build/release -c --static -ox build/release/host/bin/sflx \
-		build/release/host/lib/rtl/toolchain_clang_osx.o \
-		build/release/host/lib/rtl/toolchain_clang_linux.o \
-		build/release/host/lib/rtl/toolchain_gcc_osx.o \
-		build/release/host/lib/rtl/toolchain_gcc_linux.o \
-		build/release/host/lib/rtl/dflx.o \
-		src/tools/flx.flx
-
- 
-recovery-fallback-flxg:
-	# building flxg
-	/usr/local/lib/felix/felix-latest/host/bin/flx_build_flxg
-	cp tmp-dir/flxg build/release/host/bin
-
-recovery-fallback-copy:
-	# copying ./src to build/release/share/src
-	/usr/local/lib/felix/felix-latest/host/bin/flx_build_prep \
-		--repo=.\
-		--target-dir=build/release \
-		--target-bin=host \
-		--copy-repo 
-
-fallback-flxg:
-	# building flxg
-	build/release/host/bin/flx_build_flxg
-	cp tmp-dir/flxg build/release/host/bin
-
-fallback-copy:
-	# copying ./src to build/release/src
-	build/release/host/bin/flx_build_prep \
-		--repo=.\
-		--target-dir=build/release \
-		--target-bin=host \
-		--copy-repo 
-
-fallback-rtl:
-	# rebuild rtl
-	build/release/host/bin/flx_build_rtl \
-		--target-dir=build/release \
-		--target-bin=host
-
-fallback-web-plugins:
-	# rebuild plugins
-	build/release/host/bin/flx_build_boot \
-		--target-dir=build/release \
-		--target-bin=host \
-		--build-web-plugins
-
-fallback-toolchain-plugins:
-	# rebuild plugins
-	build/release/host/bin/flx_build_boot \
-		--target-dir=build/release \
-		--target-bin=host \
-		--build-toolchain-plugins
-
-fallback-tools:
-	# rebuild tools
-	build/release/host/bin/flx_build_boot \
-		--target-dir=build/release \
-		--target-bin=host \
-		--build-tools
-
-fallback-flx:
-	# rebuild flx
-	build/release/host/bin/flx_build_boot \
-		--target-dir=build/release \
-		--target-bin=host \
-		--build-flx
-
-fallback-lib: fallback-copy
-	# copy files from src to lib
-	build/release/host/bin/flx_build_prep \
-		--target-dir=build/release 
-		--target-bin=host \
-		--copy-library
-
-flxg:
+#flxg:
 	# =========================================================
 	# building flxg
 	# =========================================================
@@ -410,6 +317,15 @@ flx:
 		--target-bin=host \
 		--build-flx
 
+build-tools:
+	# =========================================================
+	# rebuild flx build tools
+	# =========================================================
+	build/release/host/bin/flx --test=build/release  src/tools/flx_build_boot \
+		--target-dir=build/release \
+		--target-bin=host \
+		--build-flx-tools
+
 lib: copy
 	# =========================================================
 	# copy files from src to lib
@@ -438,9 +354,17 @@ rebuild:
 		--target-dir=build/release \
 		--target-bin=host \
 		--build-toolchain-plugins \
+		--build-flx-tools
+	# Copy flx, because this step rebuilds it!
+	# Some OS won't allow copying over running executable.
+	cp build/release/host/bin/flx flx
+	./flx --test=build/release  src/tools/flx_build_boot \
+		--target-dir=build/release \
+		--target-bin=host \
 		--build-flx \
 		--build-web-plugins \
 		--build-tools
+	rm flx
 	build/release/host/bin/flx --test=build/release --expect --usage=prototype --indir=test/regress/rt --regex='.*\.flx'
 
 bootstrap:
@@ -485,7 +409,7 @@ sdltest:
 	build/release/host/bin/flx --test=build/release --force -c -od demos/sdl demos/sdl/edit_buffer
 	build/release/host/bin/flx --test=build/release --force -c -od demos/sdl demos/sdl/edit_display
 	build/release/host/bin/flx --test=build/release --force -c -od demos/sdl demos/sdl/edit_controller
-	DYLD_LIBRARY_PATH=demos/sdl build/release/host/bin/flx --test=build/release --force -od demos/sdl demos/sdl/sdltest
+	${LPATH}=demos/sdl build/release/host/bin/flx --test=build/release --force -od demos/sdl demos/sdl/sdltest
 
 
 weblink:

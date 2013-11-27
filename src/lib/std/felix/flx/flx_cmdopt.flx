@@ -22,7 +22,7 @@ proc print_help() {
   println "--nofelix            : do not run felix translator, leave C++ outputs alone";
   println "--nocc               : do not C/C++ compiler; implies --nolink";
   println "--nolink             : do not link object files to an executable";
-  println "--run                : run program without dependency checking";
+  println "--run-only           : run program without dependency checking or linking";
   println "--options            : show option set";
   println "--config             : show configuration";
   println "--version            : show felix version";
@@ -334,7 +334,7 @@ noinline proc handle_switch
     debugln "Do not link object code to an executable, just generate and compile the C++ source code; implies -c";
     control.LINKIT <- 0;
 
-  elif arg == "--run" do
+  elif arg == "--run-only" do
     debugln "Run the binary executable without any compilation. Must exist!";
     control.FELIX <-0;
     control.CCOMPILEIT <- 0;
@@ -342,6 +342,7 @@ noinline proc handle_switch
     control.RUNIT <- 1;
     control.VALIDATE_CACHE <- 0;
     control.CHECK_DEPENDENCIES <- 0;
+    control.RUNONLY <- 1;
 
   elif prefix(arg,"-l") or prefix(arg,"-L") do
     debugln "Set extra switched for linker";

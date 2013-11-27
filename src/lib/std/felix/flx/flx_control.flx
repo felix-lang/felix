@@ -21,6 +21,7 @@ proc print_options(control:control_type) {
     println$ "RUNIT              = "+str control.RUNIT;
     println$ "CCOMPILEIT         = "+str control.CCOMPILEIT;
     println$ "LINKIT             = "+str control.LINKIT;
+    println$ "RUNONLY            = "+str control.RUNONLY;
     println$ "INCLUDE_DIRS       = "+str control.STANDARD_INCLUDE_DIRS;
     println$ "FELIX              = "+str control.FELIX;
     println$ "LINKER_SWITCHES    = "+str control.LINKER_SWITCHES;
@@ -55,6 +56,7 @@ fun dflt_control (config:config_type, profile:profile_type) =>
     var CCOMPILEIT=1;
     var LINKIT=1;
     var FELIX=1;
+    var RUNONLY=0;
     var ECHO=0;
     var DEBUG_FLX=false;
     var VALIDATE_CACHE=1;
