@@ -316,9 +316,10 @@ object processing_env(
 //println$ "cxx_compile_static";
     var EXT_STATIC_OBJ = #((toolchain dflt_clang_config).static_object_extension);
     if 
+      control.CXXONLY == 0 and (
       control.LINKIT == 1 or 
       control.OUTPUT_FILENAME_SPECIFIED == 0 and
-      control.OUTPUT_FILENAME_WITHOUT_EXTENSION_SPECIFIED == 0
+      control.OUTPUT_FILENAME_WITHOUT_EXTENSION_SPECIFIED == 0)
     do
 //println$ "Compiling thunk";
       var result = cxx_compile_static1
@@ -336,16 +337,19 @@ object processing_env(
       *&control.cppos += dst;
     done
    
-    if control.LINKIT == 0 do
-//println$ "Compile only " + control.LINKER_OUTPUT_FILENAME;
-      // compile only
-      return cxx_compile_static1 (dvars.cpp_filebase+".cpp",control.LINKER_OUTPUT_FILENAME);
-    else 
-      // compile and link
-//println$ "Compile and link " + dvars.cpp_filebase+EXT_STATIC_OBJ;
-      return cxx_compile_static1 (dvars.cpp_filebase+".cpp",dvars.cpp_filebase+EXT_STATIC_OBJ);
+    if control.CXXONLY == 0 do
+      if control.LINKIT == 0 do
+  //println$ "Compile only " + control.LINKER_OUTPUT_FILENAME;
+        // compile only
+        return cxx_compile_static1 (dvars.cpp_filebase+".cpp",control.LINKER_OUTPUT_FILENAME);
+      else 
+        // compile and link
+  //println$ "Compile and link " + dvars.cpp_filebase+EXT_STATIC_OBJ;
+        return cxx_compile_static1 (dvars.cpp_filebase+".cpp",dvars.cpp_filebase+EXT_STATIC_OBJ);
+      done
+    else
+      return 0;
     done
-
   }
 
   gen cxx_link_static () : int = 
@@ -361,16 +365,26 @@ object processing_env(
       end
     ;
     var EXT_STATIC_OBJ = #(tc.static_object_extension);
-    var result = tc.executable_linker
-      (
-        dst=control.LINKER_OUTPUT_FILENAME,
-        srcs= 
-          control.DRIVER_OBJS +
-          control.cppos + 
-          (dvars.cpp_filebase+"_static_link_thunk"+EXT_STATIC_OBJ) + 
-          (dvars.cpp_filebase+EXT_STATIC_OBJ)
-      )
-    ;
+    if control.CXXONLY == 0 do
+      var result = tc.executable_linker
+        (
+          dst=control.LINKER_OUTPUT_FILENAME,
+          srcs= 
+            control.DRIVER_OBJS +
+            control.cppos + 
+            (dvars.cpp_filebase+"_static_link_thunk"+EXT_STATIC_OBJ) + 
+            (dvars.cpp_filebase+EXT_STATIC_OBJ)
+        )
+      ;
+    else
+      result = tc.executable_linker
+        (
+          dst=control.LINKER_OUTPUT_FILENAME,
+          srcs= 
+            control.cppos 
+        )
+      ;
+    done
     showtime("Static executable link  : "+control.LINKER_OUTPUT_FILENAME,t0);
     if result != 0 do
       eprintln$ "[flx] C++ static executable link "+control.LINKER_OUTPUT_FILENAME+" failed";

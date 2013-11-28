@@ -23,6 +23,7 @@ proc print_help() {
   println "--nocc               : do not C/C++ compiler; implies --nolink";
   println "--nolink             : do not link object files to an executable";
   println "--run-only           : run program without dependency checking or linking";
+  println "--c++                : Pure C++ build, no Felix code";
   println "--options            : show option set";
   println "--config             : show configuration";
   println "--version            : show felix version";
@@ -383,6 +384,11 @@ noinline proc handle_switch
     control.INREGEX  <-  arg.[8 to];
     debugln$ "Set input regex to " + control*.INREGEX;
 
+  elif arg == "--c++" do
+    control.CXXONLY <- 1;
+    control.FELIX <- 0;
+    debugln$ "C++ only, no Felix";
+   
 // the main filename -- subsequent args are args to flx_run
   else
     eprintln$ "Unknown switch '" + arg+"'";
@@ -465,9 +471,13 @@ grabbing_args: while ploopctl*.grab == 1 and ploopctl*.argno < vargs.len.int do
     SET_LINKER_OUTPUT_DIRECTORY=true;
 
 
+  elif arg == "--" do
+    ploopctl.grab <- 0;
 
   elif not (prefix (arg,"-")) do
     ploopctl.progname <- arg;
+    ploopctl*.path,ploopctl*.ext = Filename::split_extension(arg);
+    ploopctl*.dir,ploopctl*.base = Filename::split1(ploopctl*.path);
 
     match check_ext $ Filename::get_extension arg with
     | "compile" => 
@@ -476,18 +486,10 @@ grabbing_args: while ploopctl*.grab == 1 and ploopctl*.argno < vargs.len.int do
     | "link" =>
        control.cppos <- control*.cppos + arg;
 
-    | "felix" =>
-      ploopctl.progname <- arg;
-      ploopctl*.path,ploopctl*.ext = Filename::split_extension(arg);
-      ploopctl*.dir,ploopctl*.base = Filename::split1(ploopctl*.path);
-      debugln$ "path="+ploopctl*.path+", ext="+ploopctl*.ext+",dir="+ploopctl*.dir+",base="+ploopctl*.base;
+    | "felix" => 
       ploopctl.grab <- 0;
 
-    | "none" =>
-      ploopctl.progname <- arg;
-      ploopctl*.path,ploopctl*.ext = Filename::split_extension(arg);
-      ploopctl*.dir,ploopctl*.base = Filename::split1(ploopctl*.path);
-      debugln$ "path="+ploopctl*.path+", ext="+ploopctl*.ext+",dir="+ploopctl*.dir+",base="+ploopctl*.base;
+    | "none" => 
       ploopctl.grab <- 0;
 
     | "unknown" =>
@@ -496,8 +498,8 @@ grabbing_args: while ploopctl*.grab == 1 and ploopctl*.argno < vargs.len.int do
 
     | _ => assert false;
     endmatch
-  ;
-   
+    ;
+
   else
   handle_switch(config,control,arg);
 
