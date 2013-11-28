@@ -232,12 +232,14 @@ object processing_env(
   gen cxx_compile_dynamic () : int =
   {
     var EXT_SHARED_OBJ = #((toolchain dflt_clang_config).dynamic_object_extension);
-    if control.LINKIT == 0 do
-      var result = cxx_compile_dynamic1 (dvars.cpp_filebase+".cpp", control.LINKER_OUTPUT_FILENAME);
-      if result != 0 return result;
-    else
-      result = cxx_compile_dynamic1 (dvars.cpp_filebase+".cpp", dvars.cpp_filebase+EXT_SHARED_OBJ);
-      if result != 0 return result;
+    if control.CXXONLY == 0 do
+      if control.LINKIT == 0 do
+        var result = cxx_compile_dynamic1 (dvars.cpp_filebase+".cpp", control.LINKER_OUTPUT_FILENAME);
+        if result != 0 return result;
+      else
+        result = cxx_compile_dynamic1 (dvars.cpp_filebase+".cpp", dvars.cpp_filebase+EXT_SHARED_OBJ);
+        if result != 0 return result;
+      done
     done
 
     for src in control.cpps do
@@ -262,12 +264,22 @@ object processing_env(
       end
     ;
     var EXT_SHARED_OBJ = #(tc.dynamic_object_extension);
-    var result = tc.dynamic_library_linker
-      (
-        dst=control.LINKER_OUTPUT_FILENAME,
-        srcs= control.cppos + (dvars.cpp_filebase+EXT_SHARED_OBJ)
-      )
-    ;
+    if control.CXXONLY == 0 do
+      var result = tc.dynamic_library_linker
+        (
+          dst=control.LINKER_OUTPUT_FILENAME,
+          srcs= control.cppos + (dvars.cpp_filebase+EXT_SHARED_OBJ)
+        )
+      ;
+    else
+      result = tc.dynamic_library_linker
+        (
+          dst=control.LINKER_OUTPUT_FILENAME,
+          srcs= control.cppos 
+        )
+      ;
+    done
+
     showtime("Dynamic link : "+control.LINKER_OUTPUT_FILENAME,t0);
     if result != 0 do
       eprintln$ "[flx] C++ clink "+control.LINKER_OUTPUT_FILENAME+" failed";
@@ -410,12 +422,21 @@ object processing_env(
       end
     ;
     var EXT_STATIC_OBJ = #(tc.static_object_extension);
-    var result = tc . static_library_linker 
-      (
-        srcs=control.cppos + (dvars.cpp_filebase+EXT_STATIC_OBJ) ,
-        dst=control.LINKER_OUTPUT_FILENAME
-      )
-    ;
+    if control.CXXONLY == 0 do
+      var result = tc . static_library_linker 
+        (
+          srcs=control.cppos + (dvars.cpp_filebase+EXT_STATIC_OBJ) ,
+          dst=control.LINKER_OUTPUT_FILENAME
+        )
+      ;
+    else
+      result = tc . static_library_linker 
+        (
+          srcs=control.cppos,
+          dst=control.LINKER_OUTPUT_FILENAME
+        )
+      ;
+    done
     showtime("Static lib   : "+control.LINKER_OUTPUT_FILENAME,t0);
     if result != 0 do
       eprintln$ "[flx] C++ static library link "+control.LINKER_OUTPUT_FILENAME+" failed";
@@ -450,21 +471,26 @@ object processing_env(
 
   gen run_program_dynamic () : int =
   {
-    var xargs =
-      control.FLXRUN +
-      control.DRIVER_EXE +
-      dvars.DEBUGSWITCH +
-      control.LINKER_OUTPUT_FILENAME +
-      dvars.args
-    ;
-    var CMD = catmap ' ' Shell::quote_arg xargs;
-    if control.STDOUT != "" do CMD=CMD+" > " +Shell::quote_arg(control.STDOUT); done
-    debugln$ "Run command="+CMD;
-    var t0 = #Time::time;
-    var result = system(CMD);
-    showtime("Dynamic Run : "+control.LINKER_OUTPUT_FILENAME,t0);
-    if result != 0 return result;
-    return #check_output;
+    if control.CXXONLY == 0 do
+      var xargs =
+        control.FLXRUN +
+        control.DRIVER_EXE +
+        dvars.DEBUGSWITCH +
+        control.LINKER_OUTPUT_FILENAME +
+        dvars.args
+      ;
+      var CMD = catmap ' ' Shell::quote_arg xargs;
+      if control.STDOUT != "" do CMD=CMD+" > " +Shell::quote_arg(control.STDOUT); done
+      debugln$ "Run command="+CMD;
+      var t0 = #Time::time;
+      var result = system(CMD);
+      showtime("Dynamic Run : "+control.LINKER_OUTPUT_FILENAME,t0);
+      if result != 0 return result;
+      return #check_output;
+    else
+      println$ "Cannot run C++ dynamic library " + control.LINKER_OUTPUT_FILENAME;
+      return 0;
+    done
   }
 
   gen run_program_static () : int = 
