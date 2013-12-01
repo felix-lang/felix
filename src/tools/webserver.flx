@@ -870,6 +870,7 @@ force_close:>
   fprint$ cerr,"fthread "+str k+" terminating!\n";
 };
 
+spawn_fthread { while true do Faio::sleep(clock, 60.0); collect(); done };
 forever {
   var s: socket_t;
   dbg$ "Waiting for connection\n";

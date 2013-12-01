@@ -265,7 +265,8 @@ void flx_collector_t::unlink(void *fp)
   gc_shape_t const *shape = get_shape(fp);
   unsigned long n_objects = get_count(fp);
   unsigned long nobj = shape -> count * n_objects;
- ::std::size_t size = shape->amt * nobj;
+  ::std::size_t size = shape->amt * nobj;
+  if (size & 1) ++size;
   //fprintf(stderr, "Uncounting %ld bytes\n", long(size));
   allocation_amt -= size;
 

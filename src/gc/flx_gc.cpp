@@ -64,7 +64,14 @@ unsigned long gc_profile_t::actually_collect() {
     (unsigned long) (free_factor * (double)allocated))
   ;
   if(debug_collections || report_collections)
-    fprintf(stderr, "actually collected %ld objects, still allocated %ld bytes\n",collected, allocated);
+  {
+    unsigned long objs = collector->get_allocation_count();
+    unsigned long roots = collector->get_root_count();
+    fprintf(stderr, 
+      "actually collected %ld objects, still allocated: %ld roots, %ld objects, %ld bytes\n",
+      collected, roots, objs, allocated
+    );
+  }
   return collected;
 }
 
