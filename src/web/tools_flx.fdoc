@@ -32,8 +32,8 @@ dispatch stub written in Felix.
 
 See:
 <ul>
-<li>Flx <a href=tools_flx_cli>command line interface</a></li>
-<li><a href=tools_flx_howto>perform various tasks</a></li>
+<li>Flx <a href="tools_flx_cli.fdoc">command line interface</a></li>
+<li><a href="tools_flx_howto.fdoc">perform various tasks</a></li>
 </ul>
 
 @h3 Package management.
