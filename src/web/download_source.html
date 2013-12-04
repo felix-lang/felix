@@ -1,0 +1,170 @@
+<html>
+<head>
+    <title>Felix</title>
+</head>
+<body>
+<h1>Building from Github</h1>
+
+<h2>Requirements</h2>
+<h3>Python</h3>
+<p>The full bootstrapping build requires Python 3.2 or better.
+Python 3.1 won't work due to a critial API change.</p>
+
+<h3>Ocaml</h3>
+You will need Ocaml 3.11 or better native code compiler.
+Felix currently will not work with the bytecode compiler.
+</p>
+
+<h3>C++</h3>
+<p>On linux you will require gcc for the bootstrap. 
+On OSX you will need clang.
+On Windows, MSVC++. 
+</p>
+
+<h3>C++ language level</h3>
+Felix tries to build with clang <code>-std=c++11</code>,
+and gcc using <code>-std=c++0x</code>. Felix itself currently
+does not use any features beyond ISO C++90, i.e. the original
+C++ Standard. However Google RE2 seems to require either
+<code>tr1/unordered_set</code> (from TR1, present in C++0x),
+or <code>unordered_set</code> (from ISO C++11).
+
+
+<p>Other C++ compilation systems can be used once you have
+a bootstrapped host system, for example gcc 4.2 on OSX should
+work fine. It may be possible to override these defaults earlier,
+but you will have to join mailing list and ask.
+</p>
+
+<h3>Operating System Tools</h3>
+Felix requires a couple of standard bin utils including
+things like <code>cp</code> and of course <code>make</code>.
+These are also available on Windows so you should obtain these
+utilities and install them permanently in a Windows development
+environment, they're handy in general.
+
+<h3>Operating System API</h3>
+On Unix and OSX based systems Felix requires Posix API.
+On Windows, the standard C library emulations are usually
+used for convenience instead of the native Windows APIs.
+
+<h3>Asynchronous I/O</h3>
+Felix does asynchronous socket I/O using one of these event
+notification services:
+<ul>
+<li>Linux: epoll</li>
+<li>OSX: kqueue</li>
+<li>Most Unices: poll</li>
+<li>All Unices: select</li>
+<li>Windows: Win32 I/O completion ports</li>
+<li>Solaris: Solaris I/O completion ports</li>
+</ul>
+
+
+<h1>Building from Source</h1>
+<p>The source build is available if you require the latest code
+and meet more stringent requirements. It is the only way to get
+a Windows build at this time, you will need to join the mailing list
+and get help to get the build to work.</p>
+
+<p>Felix builds on Linux, BSD and OSX. It builds on Windows using MSVC++ as
+well. For Windows specific build instructions see <a href="./win.fdoc">here</a>.
+For BSD specific build instructions see the &quot;Installing Felix: POSIX (BSD)&quot; 
+section of the INSTALL File located in the top level of the felix source distrobution.</p>
+
+
+<h1>Install location</h1>
+<p>Felix can be used after the build is complete without installation.
+Installing simply saves longer command names and the need to set
+environment variables.</p>
+
+<p>You can put a Felix installation anywhere you like. Just copy 
+the <code>build/release</code> directory.<p>
+
+<p>The Unix install location is:
+<pre>
+/usr/local/lib/felix/felix-&lt;version&gt;
+</pre>
+where version is the current version. A link should be created:
+<pre>
+/usr/local/lib/felix/felix-latest
+</pre>
+by the install process. On windows the install location is:
+<pre>
+C:\usr\local\lib\felix\felix-&lt;versio&gt;
+</pre>
+that is, the same as on Unix.<p>
+<p>There is a reason the install location is fixed: it makes it easier
+to provide support.</p>
+
+
+<h2>Initial download</h2>
+Then issue these
+commands: For registered developers, using SSH:
+<pre>
+git clone git@github.com:felix-lang/felix.git
+</pre>
+For everyone else:
+<pre>
+git clone https://github.com/felix-lang/felix.git
+</pre>
+then
+<pre>
+cd felix
+make build
+make rebuild
+</pre></p>
+<p>Now to install Felix:
+<pre>
+make install           # sudo password required
+</pre>
+Felix should now be installed in <pre>/usr/local/lib/felix/felix-1.1.9dev</pre>
+the core binaries in <pre>/usr/local/bin</pre> and the webserver should
+be running on port 1116 (clearly, change details depending on version!).
+</p>
+<p>
+All versions of Felix are installed concurrently. If you're finished
+using a version you should delete the installation directory.
+The binary <code>/usr/local/bin/flx</code> is a copy of the <code>host/bin/flx</code>
+in the last install directory.
+</p>
+<h2>Updating Felix</h2>
+To update felix do this:
+<pre>
+cd felix
+git pull
+make rebuild 
+</pre>
+Now you can install as before.  If the build doesn't work properly,
+you can clean up with
+<pre>
+rm -rf build
+make build
+make rebuild
+</pre>
+This is even more drastic:
+</pre>
+git clean -dfx
+</pre>
+
+<p>Normally, Felix can rebuild itself. However if the structure 
+changes enough, the build tools won't be able to rebuild
+the system. This also happens if you're editing code and create
+a bug which stops the build tools being built. The makefile
+recompiles the build tools using <code>flx</code> in order to
+build the system, rather than use the pre-built build tools,
+since this is necessary when the build tools themselves are
+being upgraded. However this can lead to situation where
+a bug breaks the bootstrap process and the only recovery
+is to rebuild from scratch.<p>
+
+ 
+<h2>Alternate rebuild</h2>
+<p>There's a second way to rebuild Felix that creates the entire
+new system and tests it in directory <code>build-trial</code>
+instead of overwriting the system in <code>build</code> as it goes.
+<pre>
+make bootstrap
+</pre>
+</body>
+</html>

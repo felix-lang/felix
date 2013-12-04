@@ -19,10 +19,10 @@ void *malloc_free::allocate(::std::size_t amt)
 {
   void *p = malloc(amt);
   if(debug)
-    fprintf(stderr,"Malloc %ld bytes, address = %p\n",amt,p);
+    fprintf(stderr,"[gc] Malloc %ld bytes, address = %p\n",amt,p);
   if(p)return p;
   else {
-    fprintf(stderr,"Felix: Malloc out of memory, blk=%ld\n",long(amt));
+    fprintf(stderr,"[gc] Felix: Malloc out of memory, blk=%ld\n",long(amt));
     throw flx::rtl::flx_out_of_memory_t();
   }
 }
@@ -30,7 +30,7 @@ void *malloc_free::allocate(::std::size_t amt)
 void malloc_free::deallocate(void *p)
 {
   if(debug)
-    fprintf(stderr,"Free %p\n",p);
+    fprintf(stderr,"[gc] Free %p\n",p);
   free(p);
 }
 
@@ -109,7 +109,7 @@ flx::pthread::thread_control_t *flx_collector_t::get_thread_control()const
 
 void flx_collector_t::judyerror(char const *loc)
 {
-  fprintf(stderr, "JUDY ERROR %d in %s\n",je.je_Errno,loc);
+  fprintf(stderr, "[gc] JUDY ERROR %d in %s\n",je.je_Errno,loc);
   abort();
 }
 
@@ -126,7 +126,7 @@ void * flx_collector_t::impl_allocate(gc_shape_t const *shape, unsigned long nob
   assert(fp); // Got some memory!
 
   if(debug)
-    fprintf(stderr,"Allocated %p, shape=%p = new %s\n", fp,shape,shape->cname);
+    fprintf(stderr,"[gc] Allocated %p, shape=%p = new %s\n", fp,shape,shape->cname);
 
   Word_t *p = (Word_t*)(void*)JudyLIns(&j_shape,(Word_t)fp,&je);
   *p = ((Word_t)(void*)shape) | (parity & 1);
@@ -300,8 +300,8 @@ unsigned long flx_collector_t::reap ()
   }
   Judy1FreeArray(&j_tmp,&je);
   if(debug) {
-    fprintf(stderr,"Reaped %lu objects\n",count);
-    fprintf(stderr,"Still allocated %lu objects occupying %lu bytes\n", get_allocation_count(), get_allocation_amt());
+    fprintf(stderr,"[gc] Reaped %lu objects\n",count);
+    fprintf(stderr,"[gc] Still allocated %lu objects occupying %lu bytes\n", get_allocation_count(), get_allocation_amt());
   }
   return count;
 }
@@ -313,7 +313,7 @@ void flx_collector_t::mark(pthread::memory_ranges_t *px)
 {
   int reclimit = 64;
   if(debug)
-    fprintf(stderr,"Collector: Running mark\n");
+    fprintf(stderr,"[gc] Collector: Running mark\n");
   assert (root_count == roots.size());
   assert(j_tmp == 0);
 
@@ -330,23 +330,23 @@ void flx_collector_t::mark(pthread::memory_ranges_t *px)
       if(debug)
       {
         unsigned long n = (char*)range.e - (char*)range.b;
-        fprintf(stderr, "Conservate scan of memory %p->%p, %ld bytes\n",range.b, range.e, n);
+        fprintf(stderr, "[gc] Conservate scan of memory %p->%p, %ld bytes\n",range.b, range.e, n);
       }
       //VALGRIND_MAKE_MEM_DEFINED(range.b, (char*)range.e-(char*)range.b);
       void *end = range.e;
       for ( void *i = range.b; i != end; i = (void*)((void**)i+1))
       {
         if(debug)
-          fprintf(stderr, "Check if *%p=%p is a pointer\n",i,*(void**)i);
+          fprintf(stderr, "[gc] Check if *%p=%p is a pointer\n",i,*(void**)i);
         scan_object(*(void**)i, reclimit);
       }
       if(debug)
-        fprintf(stderr, "DONE: Conservate scan of memory %p->%p\n",range.b, range.e);
+        fprintf(stderr, "[gc] DONE: Conservate scan of memory %p->%p\n",range.b, range.e);
     }
   }
 
   if(debug)
-    fprintf(stderr, "Scanning roots\n");
+    fprintf(stderr, "[gc] Scanning roots\n");
   rootmap_t::iterator const end = roots.end();
   for(
     rootmap_t::iterator i = roots.begin();
@@ -355,7 +355,7 @@ void flx_collector_t::mark(pthread::memory_ranges_t *px)
   )
   {
     if (debug)
-      fprintf(stderr, "Scanning root %p\n", (*i).first);
+      fprintf(stderr, "[gc] Scanning root %p\n", (*i).first);
     scan_object((*i).first, reclimit);
   }
   // Now, scan the temporary list until it is empty
@@ -370,7 +370,7 @@ void flx_collector_t::mark(pthread::memory_ranges_t *px)
   assert(j_tmp == 0);                  
 
   if(debug)
-    fprintf(stderr, "Done Scanning roots\n");
+    fprintf(stderr, "[gc] Done Scanning roots\n");
 }
 
 
@@ -378,7 +378,7 @@ void flx_collector_t::mark(pthread::memory_ranges_t *px)
 unsigned long flx_collector_t::sweep()
 {
   if(debug)
-    fprintf(stderr,"Collector: Sweep, garbage bit value=%d\n",(int)parity);
+    fprintf(stderr,"[gc] Collector: Sweep, garbage bit value=%d\n",(int)parity);
   unsigned long sweeped = 0;
   void *current = NULL;
   Word_t *pshape = (Word_t*)JudyLFirst(j_shape,(Word_t*)&current,&je);
@@ -389,7 +389,7 @@ unsigned long flx_collector_t::sweep()
     if((*pshape & 1) == (parity & 1UL))
     {
       if(debug)
-        fprintf(stderr,"Garbage %p=%s\n",current,((gc_shape_t const *)(*pshape & ~1UL))->cname);
+        fprintf(stderr,"[gc] Garbage %p=%s\n",current,((gc_shape_t const *)(*pshape & ~1UL))->cname);
       ++ sweeped;
       //fprintf(stderr,"Unlinking ..\n");
       unlink(current);
@@ -399,7 +399,7 @@ unsigned long flx_collector_t::sweep()
     }
     else
       if(debug)
-        fprintf(stderr,"Reachable %p=%s\n",current,((gc_shape_t const *)(*pshape & ~1UL))->cname);
+        fprintf(stderr,"[gc] Reachable %p=%s\n",current,((gc_shape_t const *)(*pshape & ~1UL))->cname);
 
     //fprintf(stderr,"Calling Judy for next object\n");
     pshape = (Word_t*)JudyLNext(j_shape,(Word_t*)(void*)&current,&je);
@@ -408,7 +408,7 @@ unsigned long flx_collector_t::sweep()
 
   parity = !parity;
   if(debug)
-    fprintf(stderr,"Sweeped %ld\n",sweeped);
+    fprintf(stderr,"[gc] Sweeped %ld\n",sweeped);
   return reap();
 }
 
@@ -416,18 +416,21 @@ void flx_collector_t::impl_add_root(void *memory)
 {
   if(!memory)
   {
-    fprintf(stderr, "GC ERROR: ADD NULL ROOT\n");
+    fprintf(stderr, "[gc] GC ERROR: ADD NULL ROOT\n");
     abort();
   }
   rootmap_t::iterator iter = roots.find(memory);
   if(iter == roots.end())
   {
     std::pair<void *const, unsigned long> entry(memory,1UL);
+    if(debug) fprintf(stderr,"[gc] Add root %p=%s\n", memory,get_shape(memory)->cname);
     roots.insert (entry);
     root_count++;
   }
-  else
+  else {
+    if(debug) fprintf(stderr,"[gc] Increment root %p to \n", memory, (*iter).second+1);
     ++(*iter).second;
+  }
 }
 
 void flx_collector_t::impl_remove_root(void *memory)
@@ -435,16 +438,19 @@ void flx_collector_t::impl_remove_root(void *memory)
   rootmap_t::iterator iter = roots.find(memory);
   if(iter == roots.end())
   {
-    fprintf(stderr, "GC ERROR: REMOVE ROOT WHICH IS NOT ROOT\n");
+    fprintf(stderr, "[gc] GC ERROR: REMOVE ROOT WHICH IS NOT ROOT\n");
     abort();
   }
   if((*iter).second == 1UL)
   {
+    if(debug) fprintf(stderr,"[gc] Remove root %p\n", memory);
     roots.erase(iter);
     root_count--;
   }
-  else
+  else {
+    if(debug) fprintf(stderr,"[gc] Decrement root %p to \n", memory, (*iter).second-1);
     --(*iter).second;
+  }
 }
 
 void flx_collector_t::register_pointer(void *q, int reclimit)
@@ -484,7 +490,7 @@ void flx_collector_t::scan_object(void *p, int reclimit)
   Word_t reachable = (parity & 1UL) ^ 1UL;
 again:
   if(debug)
-    fprintf(stderr,"Scan object %p, reachable bit value = %d\n",p,(int)reachable);
+    fprintf(stderr,"[gc] Scan object %p, reachable bit value = %d\n",p,(int)reachable);
   Word_t cand = (Word_t)p;
   Word_t head=cand;
   Word_t *ppshape = (Word_t*)JudyLLast(j_shape,&head,&je);
@@ -503,7 +509,7 @@ again:
   unsigned long n = get_count((void*)head) * pshape->count * pshape->amt;
   if(cand >= (Word_t)(void*)((unsigned char*)(void*)head+n)) return; // not interior
   if(debug)
-    fprintf(stderr,"MARKING object %p, shape %p, type=%s\n",(void*)head,pshape,pshape->cname);
+    fprintf(stderr,"[gc] MARKING object %p, shape %p, type=%s\n",(void*)head,pshape,pshape->cname);
 
   *ppshape = (*ppshape & ~1uL) | reachable;
 
@@ -541,23 +547,23 @@ again:
 unsigned long flx_collector_t::impl_collect()
 {
   if(debug)
-    fprintf(stderr,"Request to collect, thread %lx\n", (unsigned long)flx::pthread::get_current_native_thread());
+    fprintf(stderr,"[gc] Request to collect, thread %lx\n", (unsigned long)flx::pthread::get_current_native_thread());
   if (thread_control == NULL || thread_control->world_stop())
   {
     if(debug)
-      fprintf(stderr,"Collecting, thread %lx\n", (unsigned long)flx::pthread::get_current_native_thread());
+      fprintf(stderr,"[gc] Collecting, thread %lx\n", (unsigned long)flx::pthread::get_current_native_thread());
     pthread::memory_ranges_t * mr = thread_control? thread_control -> get_block_list() : NULL;
     mark(mr);
     delete mr;
     unsigned long collected = sweep();
     if(thread_control) thread_control->world_start();
     if(debug)
-      fprintf(stderr,"FINISHED collect, thread %lx\n", (unsigned long)flx::pthread::get_current_native_thread());
+      fprintf(stderr,"[gc] FINISHED collect, thread %lx\n", (unsigned long)flx::pthread::get_current_native_thread());
     return collected;
   }
   else {
     if(debug)
-      fprintf(stderr,"RACE: someone else is collecting, just yield\n");
+      fprintf(stderr,"[gc] RACE: someone else is collecting, just yield\n");
     thread_control->yield();
     return 0ul;
   }

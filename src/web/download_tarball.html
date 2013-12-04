@@ -1,0 +1,141 @@
+
+<html>
+<head>
+    <title>Felix</title>
+</head>
+<body>
+
+
+<h2>Requirements</h2>
+<p>On linux you will require gcc. On OSX you will require clang.
+On Windows, MSVC++.
+
+<h2>Tarball</h2>
+<p>Please download a tarball from the directory below.
+Tarballs for OSX and Linux are posted occasionally.
+As we currently do not have a Windows developer there
+is no Windows tarball.</p>
+
+<a href="http://felix-lang.org/$/usr/local/lib/felix/tarballs">tarballs</a> 
+
+
+<h2>Unpack</h2>
+<p>Create an empty directory, say <code>/home/myaccount/myfelix</code> and 
+<code>cd</code> into it.</p>
+
+<p>Unpack the tarball into that directory.
+The unpacked tarball is an <em>uninstalled</em> Felix. 
+It is a complete Felix system ready to use.
+<pre>
+mkdir /home/myaccount/myfelix
+cd /home/myaccount/myfelix
+tar -zxvf /home/myaccount/felix_1.1.9dev_Linux_tarball.tar.gz
+cd ..
+</pre></p>
+
+<h2>Use uninstalled Felix</h2>
+<p>Felix can be used immediately.
+<pre>
+mkdir mytest
+echo 'println$ "Hello World";' &gt; hello.flx
+/home/myaccount/myfelix/build/release/host/bin/flx --test=/home/myaccount/myfelix/build/release hello.flx
+</pre></p>
+
+<p>You can simplify the command if you put the directory
+containing the executable in your <code>PATH</code>:
+<pre>
+export PATH=/home/myaccount/myfelix/build/release/host/bin:$PATH
+flx --test=/home/myaccount/build/release/myfelix hello.flx
+</pre></p>
+
+<h2>Cache directory</h2>
+<p>Felix uses a cache to improve performance and store
+certain personal preferences. The default cache is located in
+the directory
+<pre>
+$HOME/.felix
+</pre>
+on OSX and Unix systems. On Windows the cache is located in
+<pre>
+$USERPROFILE\.felix
+</pre>
+if the environment variable <code>HOME</code> doesn't exist.
+</p>
+
+<h2>Testing Felix</h2>
+Felix comes with some regression tests. The easiest way to run these is:
+<pre>
+cd /home/myaccount/myfelix
+make test
+</pre>
+This will create an a subdirectory <code>test</code> of the current directory
+and run some tests. To avoid spoiling the source directory you can do this instead:
+<pre>
+BUILDROOT=/home/myaccount/myfelix make -f /home/myaccount/myfelix/Makefile test
+</pre>
+
+
+<h2>Installing Felix on OSX or Unix</h2>
+<p>To remove the need to specify the Felix directory 
+with the <code>--test=</code> parameter, you can install
+Felix. On Linux and OSX the install directory will be
+<pre>
+/usr/local/lib/felix/felix-1.1.9dev/
+</pre>
+(where the actual version number will appear)
+and a symlink will be created:
+<pre>
+/usr/local/lib/felix/felix-latest
+</pre>
+</p>
+<p>
+To install you will need to be a member of <code>sudo</code> group
+with permission to create the above directories. Type
+<pre>
+make install
+</pre>
+and enter your sudo password when prompted. Do NOT install as root
+or invoke the install under sudo or you will not be able to access
+the cache.
+</p>
+<p>
+The <code>flx</code> executable will also be copied to
+<pre>
+/usr/local/bin
+</pre>
+which must be on your <code>$PATH</code>.
+
+<h2>Installing Felix on Windows</h2>
+Unlike most Windows programs, Felix installs in the same locations
+on Windows as on OSX or Unix, on drive <code>C:</code>. Of course
+the filenames use \ instead of / as a separator.
+
+<h2>Generic Install Structure</h2>
+<p>In general, Felix does not need to be installed.
+We recommend installation simply because it reduces the need
+to specify long pathnames to <code>flx</code> and other
+executable tools, and removes the need for the <code>--test=dir</code>
+parameter which locates the Felix install directory. </p>
+<p>The general recommended install structure is:
+<pre>
+/usr/local/lib/felix-version # some installed version
+/usr/local/lib/felix-latest  # symlink to production version
+</pre>
+for each version, so multiple versions can be installed.
+That is further subdivided into shared an non-shareable parts:
+<pre>
+# read only universal source text
+/usr/local/lib/felix-latest/share 
+
+# platform dependent configuration and binaries
+/usr/local/lib/felix-latest/host  
+</pre>
+In addition to the default target <code>host</code> any number
+of other target directories can be built. In this way the whole
+install can be shared on a server for multiple platforms,
+providing a single source and a target for each architecture.
+</p>
+
+
+</body>
+</html>
