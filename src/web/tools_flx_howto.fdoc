@@ -148,4 +148,233 @@ Ok, well so far so good, but it is all very unsafe. What happens if the
 functions do nasty stuff that requires the garbage collector?
 Or even worse, refers to a global variable?
 
+@h3 How to build a static linked executable
+By default, felix makes shared libraries. If you wish,
+you can make a static linked executable instead by
+using the <code>--static</code> switch on the flx command line.
+For example:
+@pre
+flx --static -c fred.flx
+@
+will make a static link executable. On Unix and OSX it will have no extension.
+On Windows it will have a <code>.exe</code> extension. With just the line
+above, the executable will be put in the Felix cache as:
+@pre
+$HOME/.felix/cache/binary/pathtofred/fred
+@
+where <code>pathtofred</code> is the absolute pathname
+of the directory containing {fred.flx} without the leading
+{/} of course. On Windows the filename would instead be:
+@pre
+$HOME\.felix\cache\binary\c\pathtofred\fre.exe
+@
+or
+@pre
+$USERPROFILE\.felix\cache\binary\c\pathtofred\fre.exe
+@
+if environment variable {HOME} is not set.
+
+You can change the location to the current directory like this:
+@pre
+flx --static -c -od . fred.flx
+@
+
+Static linking this way will use object files from archives
+of the Felix standard library prepared for static linking.
+On some architectures, including x86_64, these are more 
+efficient than using dynamic linkage because the position
+independent code mechanism specified by the ABI requires
+additional instructions to find an address in a dynamic
+link library.
+
+In addition, static linkage avoids the need to search 
+for these libraries at program startup time, and so makes
+it easier to ship the executable and to bind fixed versions
+of the libraries.
+
+Usually, static linking will NOT static link system libraries
+such as the standard C library. However on Windows you can
+do this, however it is very strongly discouraged. Indeed,
+despite so-called DLL hell, dynamic linking is strongly
+prefered on Windows.
+
+Static linking also prevents upgrading libraries, independently
+and would require a recompile to incorporate upgrades.
+
+@h3 How to add C++ files to a program
+Apart from embedding C++ code in Felix files, which is an
+important feature of Felix, you can include C++ files
+directly into programs and libraries. All you need to do
+to effect this is add the C++ file names to the command line
+before the Felix filename. 
+
+Felix recognises these extensions as C++:
+@pre
+.cxx
+.cpp
+.cc
+.c
+@
+
+For example:
+@pre
+flx your.cpp joe.cpp fred.flx
+@
+The Felix convention for C++ is that extension {.cpp} is for
+library files and {.cxx} is for programs, however this is not
+enforced.
+
+Note that even files ending in extension {.c} will be passed as
+named to the C++ compiler. So they will be compiled as C if
+and only if the C++ compiler compiles them as C.
+
+@h3 How to add source search directories
+If you need to add any search directories you can use the
+{-I} switch. For example:
+@pre
+flx -Idir your.cpp fred.flx
+@
+will add dir to the search paths for C++ headers
+and for Felix includes. The C++ searches are for
+{your.cpp} and also for the C++ generated from fred.flx.
+
+In other words Felix uses a unified search path for
+both Felix and C++ so that you can put Felix files
+any place you would put C++.
+
+
+@h3 How to add object files to a program
+You can add object files directly to your program.
+Just add them to the command line before the Felix filename.
+For example:
+@pre
+flx --static your.o fred.flx
+flx your.os fred.flx
+@
+Felix recognises these extensions as object files:
+@pre
+.o
+.os
+.obj
+@
+It is your responsibility to ensure these are compiled
+with the right switches for linking. If you are building
+a shared library, which is the default, you will need to
+compile with {-fPIC} with gcc or clang on some platforms.
+
+Felix also recognises these extensions as static archives
+(collections of object files):
+@pre
+.a
+.lib
+@
+and will pass them to the linker. Gcc and Clang will link
+the whole library in, they will not search for modules
+containing symbols.
+
+@h3 How to add libraries to a program
+You can add standard system libraries, both static and
+dynamic to your link steps. Just pass switches the usual way:
+@pre
+flx -L/usr/local/lib/SDL -lsdl guiapp.flx
+@
+
+Note that this is NOT the recommended way to add such library
+support. The proper way to do this is as follows.
+
+First, you will need to create a binding for the library.
+Lets say we want to add SDL2 support. We'll make a file
+with a binding for SDL and it should say near the top:
+@pre
+requires package "sdl2";
+@
+Now you need to add a file to the configuration directory,
+by default the full filename on a unix system would be:
+@pre
+/usr/local/lib/felix/felix-latest/host/config/sdl2.fpc
+@
+Note that at present, if you upgrade Felix you will probably
+lose this file, so keep a copy elsewhere! A good place to keep
+it is
+@pre
+$HOME/.felix/config/sdl2.fpc
+@
+because all such files will be copied during clean Python build
+process.
+
+This file should look like this on OSX:
+@pre
+Name: SDL2
+Description: Simple Direct Media Layer 2.0
+cflags: -I/usr/local/include/SDL2
+includes: '"SDL.h"'
+provides_dlib: -L/usr/local/lib -lSDL2
+provides_slib: -L/usr/local/lib -lSDL2
+requires_dlibs: ---framework=OpenGL
+requires_slibs: ---framework=OpenGL
+@
+As you can see this file contains all the information
+required to find the C header file for SDL and to
+link the dynamic and static libraries.
+
+If you do all this, you do not need any switches on the
+command line, Felix wll add them for you based on the package
+requirement in the Felix source file.
+
+@h3 How to pass additional options to the C++ compiler or linker
+Felix recognises these options and pass them to the
+C++ compiler or linker as indicated:
+@pre
+-Idir                : add dir to search path for both felix and C++ includes"
+-Ldir                : add dir to linker search path
+-llib                : add dir lib to linker command
+-foption             : add switch to compiler command
+-Woption             : add switch to compiler command
+-O1                  : add switch to compiler command
+-O2                  : add switch to compiler command
+-O3                  : add switch to compiler command
+--cflags=flags       : addd flags to compiler command
+-Dmac                : add macro def to C++ compiler command
+@
+
+@h3 How to make a static archive library
+Just use the {--staticlib} switch. This is mainly
+useful in conjunction with the {--c++} switch,
+however it can be used to build Felix based libraries
+as well. In that case, however, the library will 
+consist of a single object file, unless you add
+extra object files or C++ files to the command line.
+
+@h3 How to compile C++ only
+You can also use the {flx} tool as a C++ compiler. 
+The main advantage of this is that the command works
+the same way on all platforms with all compilers
+(provided you don't try to pass compiler specific options).
+
+To do this you just add the switch {--c++} to the command.
+If you're running the program as well, you may also need
+to add a {--} switch to indicate the end of argument to
+the {flx} and the start of arguments to the program.
+
+For example:
+@pre
+flx --static --c++ hello.cpp -- john
+@
+will compile link and run {hello.cpp} passing argument {john}
+to it. If you're linking a program, you must use the {--static}
+option because there is no way to run a C++ shared library.
+In this case at least one file must contain a {main()} function.
+Note that the executable will go in the cache! 
+
+[There is a bug in the current implementation: the object files
+go next to the cpp files instead of in the cache!]
+
+You can use the {--c++} switch to compile C++ to object files,
+combine object files into a static archive library, link
+a shared library, or make executables. If you make an
+executable it will also be run by default unless you
+specify the {-c} switch. Therefore, you can run simple
+C++ source files as if they were script (without invoking
+the compiler or linker explicitly).
+
 
