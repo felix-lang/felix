@@ -245,7 +245,8 @@ install-scoop: ${BUILDROOT}/host/bin/scoop
 tarball:
 	tar -vzcf felix_${VERSION}_`uname`_tarball.tar.gz Makefile  \
 		${BUILDROOT}/host \
-		${BUILDROOT}/share
+		${BUILDROOT}/share \
+		src
 
 post-tarball:
 	scp felix_${VERSION}_`uname`_tarball.tar.gz \
