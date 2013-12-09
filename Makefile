@@ -369,6 +369,7 @@ rebuild:
 
 bootstrap:
 	rm -rf tmp-dir
+	build/release/host/bin/flx --clean
 	build/release/host/bin/flx --test=build/release src/tools/flx_build_flxg
 	rm -rf build/trial
 	mkdir build/trial
