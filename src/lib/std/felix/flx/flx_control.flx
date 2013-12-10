@@ -63,6 +63,7 @@ fun dflt_control (config:config_type, profile:profile_type) =>
     var DEBUG_FLX=false;
     var VALIDATE_CACHE=1;
     var CHECK_DEPENDENCIES=1;
+    var FLX_TOOLCHAIN="";
 
     // --------------------------------------------------
     // processing options

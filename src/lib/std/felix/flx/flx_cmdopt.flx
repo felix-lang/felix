@@ -7,6 +7,7 @@ proc print_help() {
   println "--test               : use felix installation in current directory";
   println "--test=dir           : use felix installation in dir";
   println "--target=dir         : subdir of install dir containing target configuration (default 'host')";
+  println "--toolchain=toolchain: pick a non-default C++ compiler toolchain";
   println "--where              : print location of felix installation";
   println "--show               : print the felix program to stdout";
   println "-c                   : compile only, do not run";
@@ -134,6 +135,9 @@ noinline proc handle_switch
     debugln "Set target configuration subdirectory";
     config.FLX_TARGET_SUBDIR <- arg.[9 to];
 
+  elif prefix(arg,"--toolchain=") do
+    debugln "Set target configuration subdirectory";
+    control.FLX_TOOLCHAIN<- arg.[12 to];
 
   elif arg=="--test" do
     debugln "Set test directory";
