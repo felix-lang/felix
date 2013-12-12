@@ -338,12 +338,12 @@ class Compiler(fbuild.db.PersistentObject):
         self.cc = cc
         self.suffix = suffix
         flags = tuple(flags)
-        noaggro = ("-fno-aggressive-loop-optimization",)
+        noaggro = ("-fno-aggressive-loop-optimizations",)
         if cc.check_flags (noaggro):
-             print("FLAG -fno-aggressive-loop-optimization supported and applied")
+             print("FLAG -fno-aggressive-loop-optimizations supported and applied")
              flags = flags + noaggro
         else:
-             print("FLAG -fno-aggressive-loop-optimization NOT supported")
+             print("FLAG -fno-aggressive-loop-optimizations NOT supported")
         if flags and not cc.check_flags(flags):
             raise fbuild.ConfigFailed('%s does not support %s flags' %
                 (cc, flags))
