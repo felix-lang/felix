@@ -186,7 +186,7 @@ def make_c_builder(ctx, *args, includes=[], libpaths=[], flags=[], **kwargs):
             'optimize_flags': ['-O2', '-fomit-frame-pointer']}),
         ({'posix'},
             {'warnings': ['all', 'fatal-errors'],
-            'flags': ['-fno-common'] + flags,
+            'flags': ['-fno-common', '-fno-strict-aliasing'] + flags,
             'optimize_flags': ['-O2', '-fomit-frame-pointer']}),
         ({'windows'}, {
             'flags': ['/GR', '/MD', '/EHs', '/wd4291'] + flags,
