@@ -218,7 +218,7 @@ class FlxPrepBuild
        match os with
        | "" => &cmd.boot_package <- "build_flx_rtl_mscv_win32";
        | "Linux" => 
-         res = Shell::get_stdout("gcc-4.8 --version");
+         res, os = Shell::get_stdout("gcc-4.8 --version");
          if res == 0 do
            &cmd.boot_package <- "build_flx_rtl_gcc48_linux";
          else
