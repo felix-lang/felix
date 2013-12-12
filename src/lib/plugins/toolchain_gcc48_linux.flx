@@ -1,7 +1,7 @@
 
 include "src/lib/std/felix/toolchain/gcc48_linux";
 
-export fun toolchain_gcc_linux of (clang_config_t) as "toolchain_gcc48_linux";
+export fun toolchain_gcc48_linux of (clang_config_t) as "toolchain_gcc48_linux";
 
 fun setup(config_data:string) = {
    C_hack::ignore (config_data); // due to bug in Felix
