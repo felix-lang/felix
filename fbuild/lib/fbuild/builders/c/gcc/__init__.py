@@ -336,12 +336,15 @@ class Compiler(fbuild.db.PersistentObject):
         super().__init__(ctx)
 
         self.cc = cc
-        self.flags = tuple(flags)
         self.suffix = suffix
-
+        flags = tuple(flags)
+        noaggro = ("-fno-aggressive-loop-optimization",)
+        if cc.check_flags (noaggro):
+             flags = flags + noaggro
         if flags and not cc.check_flags(flags):
             raise fbuild.ConfigFailed('%s does not support %s flags' %
                 (cc, flags))
+        self.flags = tuple(flags)
 
     def __call__(self, src, dst=None, *,
             suffix=None,
