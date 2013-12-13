@@ -369,10 +369,9 @@ rebuild:
 	build/release/host/bin/flx --test=build/release --expect --usage=prototype --indir=test/regress/rt --regex='.*\.flx'
 
 bootstrap:
-	rm -rf tmp-dir
+	rm -rf tmp-dir trial-tmp build/trial
 	build/release/host/bin/flx --clean
 	build/release/host/bin/flx --test=build/release src/tools/flx_build_flxg
-	rm -rf build/trial
 	mkdir build/trial
 	mkdir build/trial/host
 	mkdir build/trial/host/bin
