@@ -74,6 +74,14 @@ user level error checking as well.
   //$ Constructor for dynamic linkage exception.
   ctor flx_link_failure_t : string * string * string = "::flx::rtl::flx_link_failure_t($1,$2,$3)";
 
+  //$ Extractors.
+  fun filename : flx_link_failure_t -> string = "$1.filename";
+  fun operation : flx_link_failure_t -> string = "$1.operation";
+  fun what : flx_link_failure_t -> string = "$1.what";
+
+  //$ Delete returned exception.
+  proc delete : cptr[flx_link_failure_t] = "delete $1;";
+
 @h2 Library handle <code>flx_library</code>
 A platform independent handle which can refer to a dynamic
 link library object. Operations in this category are universal
@@ -97,22 +105,40 @@ on the load status of any associated dll. Guru use only.
 @felix
   //$ Delete a DLL object.
   proc delete_library_handle: flx_library =
-    "delete $1;";
+    "delete $1;"
+  ;
 
 @h3 Load a library <code>dlopen</code>
 This procedure associates a library handle with a particular
 file name and also attempts to load the library.
 @felix
   //$ Link a DLL using given filename.
-  proc dlopen:flx_library * string = "$1->link($2);";
+  //$ May throw flx_link_failure_t.
+  proc dlopen:flx_library * string = "$1->dynamic_link($2);";
 
+  //$ Link a DLL using given filename.
+  //$ Returns NULL on success or pointer to exception on failure.
+  gen nothrow_dlopen:flx_library * string -> cptr[flx_link_failure_t] = 
+    "$1->nothrow_dynamic_link($2)"
+  ;
 
   //$ Link a DLL using given filename and modulename.
-  proc modopen:flx_library * string * string = "$1->link($2, $3);";
+  //$ May throw flx_link_failure_t.
+  proc modopen:flx_library * string * string = 
+    "$1->dynamic_link_with_modulename($2, $3);"
+   ;
+
+  //$ Link a DLL using given filename and modulename.
+  //$ Returns NULL on success or pointer to exception on failure.
+  //$ Caller owns result and must delete.
+  gen nothrow_modopen:flx_library * string * string -> cptr[flx_link_failure_t] = 
+    "$1->nothrow_dynamic_link_with_modulename($2, $3)"
+  ;
 
   //$ Link static 
   proc set_entry_points : flx_library * string * address * address =
-    "$1->link($2,(::flx::rtl::thread_frame_creator_t)$3, (::flx::rtl::start_t)$4, NULL);";
+    "$1->static_link($2,(::flx::rtl::thread_frame_creator_t)$3, (::flx::rtl::start_t)$4, NULL);"
+  ;
 
 @h3 Load a library from registry <code>regopen</code>
 Given a registry, simulate dynamic linkage.

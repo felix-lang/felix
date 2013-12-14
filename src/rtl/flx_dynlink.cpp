@@ -133,7 +133,7 @@ flx_dynlink_t::flx_dynlink_t(
     throw flx_link_failure_t("<static link>","dlsym","flx_start");
 }
 
-void flx_dynlink_t::link (
+void flx_dynlink_t::static_link (
   ::std::string modulename,
   thread_frame_creator_t thread_frame_creator,
   start_t start_sym,
@@ -147,7 +147,7 @@ void flx_dynlink_t::link (
 }
 
 
-void flx_dynlink_t::link(const ::std::string& filename_a, const ::std::string& modulename_a) throw(flx_link_failure_t)
+void flx_dynlink_t::dynamic_link_with_modulename(const ::std::string& filename_a, const ::std::string& modulename_a) throw(flx_link_failure_t)
 {
   filename = filename_a;
   modulename = modulename_a;
@@ -185,10 +185,23 @@ void flx_dynlink_t::link(const ::std::string& filename_a, const ::std::string& m
   }
 }
 
-void flx_dynlink_t::link(const ::std::string& filename_a) throw(flx_link_failure_t)
+flx_link_failure_t *flx_dynlink_t::nothrow_dynamic_link_with_modulename(
+  const ::std::string& filename_a, const ::std::string& modulename_a)
+{
+  try { dynamic_link_with_modulename (filename_a, modulename_a); return NULL; }
+  catch (flx_link_failure_t const &x) { return new flx_link_failure_t(x); }
+}
+
+void flx_dynlink_t::dynamic_link(const ::std::string& filename_a) throw(flx_link_failure_t)
 {
   string mname = ::flx::rtl::strutil::filename_to_modulename (filename_a);
-  link(filename_a,mname);
+  dynamic_link_with_modulename(filename_a,mname);
+}
+
+flx_link_failure_t *flx_dynlink_t::nothrow_dynamic_link(const ::std::string& filename_a)
+{
+  try { dynamic_link(filename_a); return NULL; }
+  catch (flx_link_failure_t const &x) { return new flx_link_failure_t(x); }
 }
 
 void flx_dynlink_t::unlink()
