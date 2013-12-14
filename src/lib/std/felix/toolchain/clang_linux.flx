@@ -27,6 +27,15 @@ object toolchain_clang_linux (config:clang_config_t) implements toolchain_t =
   var linker = "clang++";
   var ccflags_for_dynamic_link = list[string] ("-shared");
 
+  var base_cxx_compile_flags =  
+     "-std=c++11"! "-g"! "-c" ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! (cxx_compile_warning_flags+config.ccflags)
+  ;
+
+  var base_c_compile_flags =  
+     "-g"! "-c" ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! (c_compile_warning_flags+config.ccflags)
+  ;
+
+
   method fun whatami () => "toolchain_clang_linux";
   method fun host_os () => "LINUX";
   method fun target_os () => "LINUX";
@@ -40,6 +49,8 @@ object toolchain_clang_linux (config:clang_config_t) implements toolchain_t =
   method fun dynamic_library_extension () => ".so";
   method fun pathname_separator () => "/";
   method fun debug_flags () => list[string] "-g";
+  method fun get_base_c_compile_flags () => base_c_compile_flags;
+  method fun get_base_cxx_compile_flags () => base_cxx_compile_flags;
 
 // Boilerplate 
 
@@ -85,7 +96,7 @@ object toolchain_clang_linux (config:clang_config_t) implements toolchain_t =
       CxxCompiler::generic_cxx_compile_for_static
       (
         CCOBJ_STATIC_LIB = c_compiler, 
-        CCFLAGS = "-g"! "-c" ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! (c_compile_warning_flags+config.ccflags),
+        CCFLAGS = base_c_compile_flags,
         INCLUDE_DIRS = config.header_search_dirs,
         MACROS = config.macros,
         SPEC_OBJ_FILENAME = "-o ",
@@ -102,7 +113,7 @@ object toolchain_clang_linux (config:clang_config_t) implements toolchain_t =
       CxxCompiler::generic_cxx_compile_for_dynamic 
       (
         CCOBJ_DLLIB = c_compiler, 
-        CCFLAGS = "-g"! "-fPIC" ! "-O1" !  "-c"! "-fno-common"! "-fno-strict-aliasing" ! (c_compile_warning_flags+config.ccflags),
+        CCFLAGS = "-fPIC" ! base_c_compile_flags,
         INCLUDE_DIRS = config.header_search_dirs,
         MACROS = config.macros,
         SPEC_OBJ_FILENAME = "-o ",
@@ -120,7 +131,7 @@ object toolchain_clang_linux (config:clang_config_t) implements toolchain_t =
       CxxCompiler::generic_cxx_compile_for_static
       (
         CCOBJ_STATIC_LIB = cxx_compiler, 
-        CCFLAGS = "-g"! "-c" ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! "-std=c++11" ! (cxx_compile_warning_flags+config.ccflags),
+        CCFLAGS = base_cxx_compile_flags,
         INCLUDE_DIRS = config.header_search_dirs,
         MACROS = config.macros,
         SPEC_OBJ_FILENAME = "-o ",
@@ -137,7 +148,7 @@ object toolchain_clang_linux (config:clang_config_t) implements toolchain_t =
       CxxCompiler::generic_cxx_compile_for_static
       (
         CCOBJ_STATIC_LIB = cxx_compiler, 
-        CCFLAGS = "-g"! "-c" ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! "-std=c++11" ! (cxx_compile_warning_flags+config.ccflags),
+        CCFLAGS = base_cxx_compile_flags,
         INCLUDE_DIRS = config.header_search_dirs,
         MACROS = "-DFLX_STATIC_LINK" + config.macros,
         SPEC_OBJ_FILENAME = "-o ",
@@ -155,7 +166,7 @@ object toolchain_clang_linux (config:clang_config_t) implements toolchain_t =
       CxxCompiler::generic_cxx_compile_for_dynamic 
       (
         CCOBJ_DLLIB = linker, 
-        CCFLAGS = "-g"! "-fPIC" ! "-O1" !  "-c"! "-fno-common"! "-fno-strict-aliasing" ! "-std=c++11" ! (cxx_compile_warning_flags+config.ccflags),
+        CCFLAGS = "-fPIC" ! base_cxx_compile_flags,
         INCLUDE_DIRS = config.header_search_dirs,
         MACROS = config.macros,
         SPEC_OBJ_FILENAME = "-o ",

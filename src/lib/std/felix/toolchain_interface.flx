@@ -26,6 +26,8 @@ interface toolchain_t {
   static_library_extension: 1 -> string;
   dynamic_library_extension: 1 -> string;
   pathname_separator : 1 -> string;
+  get_base_c_compile_flags: 1 -> list[string];
+  get_base_cxx_compile_flags: 1 -> list[string];
 
   cxx_dependency_generator : (src:string) -> int * string;
   c_dependency_generator : (src:string) -> int * string;
