@@ -1,4 +1,4 @@
-
+include "std/felix/flx/flx_depchk";
 
 gen dxqt(DBG:bool) (cmd:string) = {
   DBG ?? fprintln (cerr, "cmd="+cmd);
