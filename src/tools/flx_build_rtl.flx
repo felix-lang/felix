@@ -4,82 +4,12 @@ include "std/felix/flx_pkgconfig";
 include "std/felix/flx_pkg"; // only for "fix2word_flags"
 include "std/felix/flx/flx";
 include "std/felix/flx_cp";
+include "std/felix/flx/flx_depchk";
 
 class FlxRtlBuild
 {
 
   fun / (x:string,y:string) => Filename::join(x,y);
-
-  gen cxx_depcheck (tc: toolchain_t, src:string, dst:string) : bool = 
-  {
-    fun == (a:list[string], b:list[string]) =
-    { 
-      match a,b with
-      | Empty,Empty => return true;
-      | Cons (?h1,?t1), Cons (?h2,?t2) => 
-         if h1 != h2 do
-           return false;
-         done
-         return t1 == t2; // tail call
-      | _ =>return false;
-      endmatch;
-    }
-
-    fun maxf (t:double) (f:string) => max (t, dfiletime (f, #future_time));
-
-    var result, deps = tc.cxx_dependency_generator (src=src);
-    var newdeps = tc.dependency_parser deps;
-    var depfile = dst + ".d";
-    var olddeptxt = load depfile;
-    var olddeps = filter (fun (s:string)=> s != "") (split (olddeptxt,"\n"));
-    var samedeps = newdeps == olddeps;
-    //if not samedeps do
-    //  println$ "DEPS CHANGED"; 
-    //  println$ "Old deps = " + olddeps.str;
-    //  println$ "New deps = " + newdeps.str;
-    //done
-    save$ depfile, newdeps;
-    var fresh = samedeps and #{
-      var t = fold_left maxf #past_time newdeps;
-      return t < dfiletime (dst, #past_time);
-    };
-    //println$ "[flx] Output " + dst + " is " + if fresh then "FRESH" else "STALE" endif;
-    return fresh;
-  }
-
-  gen c_depcheck (tc: toolchain_t, src:string, dst:string) : bool = 
-  {
-    fun == (a:list[string], b:list[string]) =
-    { 
-      match a,b with
-      | Empty,Empty =>  return true;
-      | Cons (?h1,?t1), Cons (?h2,?t2) => 
-         if h1 != h2 do
-           return false;
-         done
-         return t1 == t2; // tail call
-      | _ => return false;
-      endmatch;
-    }
-
-    fun maxf (t:double) (f:string) =>
-      max(t, dfiletime (f, #future_time))
-    ;
-
-    var result, deps = tc.c_dependency_generator (src=src);
-    var newdeps = tc.dependency_parser deps;
-    var depfile = dst + ".d";
-    var olddeptxt = load depfile;
-    var olddeps = filter (fun (s:string)=> s != "") (split (olddeptxt,"\n"));
-    var samedeps = newdeps == olddeps;
-    save$ depfile, newdeps;
-    var fresh = samedeps and #{
-      var t = fold_left maxf #past_time newdeps;
-      return t < dfiletime (dst, #past_time);
-    };
-    //println$ "[flx] Output " + dst + " is " + if fresh then "FRESH" else "STALE" endif;
-    return fresh;
-  }
 
 
 
