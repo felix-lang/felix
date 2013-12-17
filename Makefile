@@ -336,6 +336,32 @@ lib: copy
 		--target-bin=host \
 		--copy-library
 
+fast-rebuild:
+	# =========================================================
+	# rebuild everything in-place except the compiler
+	# =========================================================
+	${LPATH}=build/release/host/lib/rtl build/release/host/bin/flx_build_prep \
+		--repo=.\
+		--source-dir=build/release \
+		--source-bin=host \
+		--target-dir=build/release \
+		--target-bin=host \
+		--copy-repo \
+		--copy-library 
+	${LPATH}=build/release/host/lib/rtl build/release/host/bin/flx_build_rtl \
+		--target-dir=build/release \
+		--target-bin=host 
+	cp build/release/host/bin/flx_build_boot flx_build_boot
+	${LPATH}=build/release/host/lib/rtl ./flx_build_boot \
+		--target-dir=build/release \
+		--target-bin=host \
+		--build-toolchain-plugins \
+		--build-flx-tools
+		--build-web-plugins \
+		--build-tools
+	rm flx_build_boot
+	build/release/host/bin/flx --test=build/release --expect --usage=prototype --indir=test/regress/rt --regex='.*\.flx'
+
 rebuild:
 	# =========================================================
 	# rebuild everything in-place except the compiler
