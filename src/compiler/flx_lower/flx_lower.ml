@@ -88,10 +88,11 @@ let lower_bsym_table state bsym_table root_proc =
           then props := `Heap_closure :: !props
         end;
 
+(* This seems like utter crap!
         (* Make sure the procedure will get a stack frame. *)
         if not (List.mem `Requires_ptf !props)
         then props := `Requires_ptf :: !props;
-
+*)
         (* Update the procedure with the new properties. *)
         Flx_bsym_table.update_bbdcl bsym_table i
           (Flx_bbdcl.bbdcl_fun (

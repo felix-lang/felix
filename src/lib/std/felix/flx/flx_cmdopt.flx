@@ -1,7 +1,11 @@
 // NOTE: below the string "host" is used to help find files eg flxg.
 // This is a temporary hack to get Felix working after filesystem reorgnisation.
 
-proc print_help() {
+include "std/felix/flx/flx_config";
+
+class FlxCmdOpt
+{
+private proc print_help() {
   println "Usage: flx [options] filename[.flx] [args ..]";
   println "options:";
   println "--test               : use felix installation in current directory";
@@ -103,12 +107,10 @@ proc print_help() {
 
 }
 
-typedef config_type = typeof (#Config::config);
-
-noinline proc handle_switch
+private noinline proc handle_switch
 (
-  config:&config_type,
-  control:&control_type, 
+  config:&Config::config_type,
+  control:&FlxControl::control_type, 
   arg:string
 )
 {
@@ -252,11 +254,11 @@ noinline proc handle_switch
     System::exit(0);
 
   elif arg == "--config" do
-    print_config(*config);
+    FlxConfig::print_config(*config);
     System::exit(0);
 
   elif arg == "--options" do
-    print_options(*control);
+    FlxControl::print_options(*control);
     System::exit(0);
 
   elif arg == "--where" do
@@ -405,7 +407,7 @@ noinline proc handle_switch
 // --------------------------------------------------
 
 // utility to classify extensions.
-fun exts () = {
+private fun exts () = {
   var compile_exts = list ('.cpp','.cxx','.c','.cc');
   var link_exts =  list ('.o','.obj','.lib','.dll','.a','.so');
   var felix_exts = list (".flx",".fdoc");
@@ -418,16 +420,16 @@ fun exts () = {
   return exts;
 }
 
-fun check_ext (s:string) => match find #exts s with
+private fun check_ext (s:string) => match find #exts s with
   | Some ?tag => tag
   | None => "unknown"
 ;
 
-noinline proc xparse_cmd_line 
+private noinline proc xparse_cmd_line 
 (
-  config:&config_type, 
-  control:&control_type, 
-  ploopctl:&loopctl_type,
+  config:&Config::config_type, 
+  control:&FlxControl::control_type, 
+  ploopctl:&FlxControl::loopctl_type,
   vargs: varray[string]
 )
 {
@@ -515,9 +517,9 @@ done
 
 noinline proc processing_stage1
 (
-  config:&config_type, 
-  control:&control_type, 
-  xloopctl:&loopctl_type,
+  config:&Config::config_type, 
+  control:&FlxControl::control_type, 
+  xloopctl:&FlxControl::loopctl_type,
   vargs:varray[string]
 ) 
 {
@@ -614,5 +616,6 @@ noinline proc processing_stage1
     else "."
     endif
   ;
+}
 }
 

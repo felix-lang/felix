@@ -1,4 +1,7 @@
+include "std/felix/flx/flx_profile";
 
+class FlxControl
+{
 proc print_options(control:control_type) {
     println$ "NOOPTIMISE         = "+str control.NOOPTIMISE;
     println$ "STATIC             = "+str control.STATIC;
@@ -46,7 +49,7 @@ fun init_loopctl () => struct {
 };
 typedef loopctl_type = typeof (#init_loopctl);
 
-fun dflt_control (config:config_type, profile:profile_type) =>
+fun dflt_control (config:Config::config_type, profile:FlxProfile::profile_type) =>
   struct {
 
     var PRINT_HELP=0;
@@ -134,5 +137,6 @@ fun dflt_control (config:config_type, profile:profile_type) =>
   }
 ;
 
-typedef control_type = typeof (dflt_control(#Config::config,#dflt_profile));
+typedef control_type = typeof (dflt_control(#Config::config,#FlxProfile::dflt_profile));
+}
  

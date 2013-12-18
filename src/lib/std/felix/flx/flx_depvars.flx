@@ -1,3 +1,7 @@
+include "std/felix/flx/flx_control";
+
+class FlxDepvars
+{
 typedef dvars_type = (
     filebase:string,
     cpp_filebase:string,
@@ -13,9 +17,9 @@ typedef dvars_type = (
 
 gen cal_depvars(
   toolchain: clang_config_t -> toolchain_t, 
-  config:config_type,
-  control:&control_type, 
-  loopctl:loopctl_type) 
+  config:Config::config_type,
+  control:&FlxControl::control_type, 
+  loopctl:FlxControl::loopctl_type) 
   : dvars_type 
   = 
 {
@@ -214,5 +218,6 @@ gen cal_depvars(
     var VERBOSE = VERBOSE;
   };
 
+}
 }
 

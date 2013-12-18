@@ -336,9 +336,37 @@ lib: copy
 		--target-bin=host \
 		--copy-library
 
+really-fast-rebuild:
+	# =========================================================
+	# rebuild everything from installed Felix except compiler
+	# [Note: requires LPATH variable be set in Makefile!]
+	# [Note: requires Felix be installed already!]
+	# =========================================================
+	${LPATH}=${INSTALLDIR}/host/lib/rtl ${INSTALLDIR}/host/bin/flx_build_prep \
+		--repo=.\
+		--source-dir=build/release \
+		--source-bin=host \
+		--target-dir=build/release \
+		--target-bin=host \
+		--copy-repo \
+		--copy-library 
+	${LPATH}=${INSTALLDIR}/host/lib/rtl ${INSTALLDIR}/host/bin/flx_build_rtl \
+		--target-dir=build/release \
+		--target-bin=host 
+	${LPATH}=${INSTALLDIR}/host/lib/rtl ${INSTALLDIR}/host/bin/flx_build_boot \
+		--target-dir=build/release \
+		--target-bin=host \
+		--build-toolchain-plugins \
+		--build-flx \
+		--build-flx-tools \
+		--build-web-plugins \
+		--build-tools
+	build/release/host/bin/flx --test=build/release --expect --usage=prototype --indir=test/regress/rt --regex='.*\.flx'
+
 fast-rebuild:
 	# =========================================================
 	# rebuild everything in-place except the compiler
+	# [Note: requires LPATH variable be set in Makefile!]
 	# =========================================================
 	${LPATH}=build/release/host/lib/rtl build/release/host/bin/flx_build_prep \
 		--repo=.\
@@ -356,7 +384,8 @@ fast-rebuild:
 		--target-dir=build/release \
 		--target-bin=host \
 		--build-toolchain-plugins \
-		--build-flx-tools
+		--build-flx \
+		--build-flx-tools \
 		--build-web-plugins \
 		--build-tools
 	rm flx_build_boot
@@ -365,6 +394,8 @@ fast-rebuild:
 rebuild:
 	# =========================================================
 	# rebuild everything in-place except the compiler
+	# [Note: Slow and messy. Requires "flx" be built in build/release]
+	# [Builds build tools from repository using flx]
 	# =========================================================
 	build/release/host/bin/flx --test=build/release  src/tools/flx_build_prep \
 		--repo=.\
@@ -395,6 +426,13 @@ rebuild:
 	build/release/host/bin/flx --test=build/release --expect --usage=prototype --indir=test/regress/rt --regex='.*\.flx'
 
 bootstrap:
+	# =========================================================
+	# Clean rebuild into separate directory build/trial 
+	# followed by overwrite of build/release if all tests pass.
+	# [VERY SLOW!]
+	# [Requires Ocaml]
+	# [Requires flx already build in build/release]
+	# =========================================================
 	rm -rf tmp-dir trial-tmp build/trial
 	build/release/host/bin/flx --clean
 	build/release/host/bin/flx --test=build/release src/tools/flx_build_flxg

@@ -1,3 +1,5 @@
+class FlxProfile
+{
 fun dflt_profile () = 
 {
   var HOME= 
@@ -31,4 +33,5 @@ fun dflt_profile () =
 }
 
 typedef profile_type = typeof (#dflt_profile);
+}
 

@@ -38,6 +38,8 @@ fun config() =>
   )
 ;
 
+typedef config_type = typeof (#config);
+
 fun link_strings(FLX_INSTALL_DIR:string): string * string =
 {
 @if pyconfig.HAVE_MSVC:

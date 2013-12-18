@@ -1,5 +1,8 @@
+include "plat/config";
 
-proc print_config(config:config_type) {
+class FlxConfig
+{
+proc print_config(config:Config::config_type) {
   println$ "INSTALL_ROOT_TOPDIR= "+config.INSTALL_ROOT_TOPDIR;
   println$ "INSTALL_ROOT       = "+config.INSTALL_ROOT;
   println$ "FLX_INSTALL_DIR    = "+config.FLX_INSTALL_DIR;
@@ -14,5 +17,5 @@ proc print_config(config:config_type) {
   println$ "HAVE_MSVC          = "+str config.HAVE_MSVC;
 
 }
-
+}
 

@@ -377,8 +377,13 @@ let codegen_bsyms
     "FLX_FRAME_WRAPPERS(::flxusr::" ^ mname ^","^mname ^ ")");
 
   begin if List.mem `Pure topclass_props then
+    if List.mem `Requires_ptf topclass_props then
     plb (
-      "FLX_C_START_WRAPPER(::flxusr::" ^ 
+      "FLX_C_START_WRAPPER_PTF(::flxusr::" ^ 
+      mname ^ ","^mname^"," ^ top_class ^ ")")
+    else
+    plb (
+      "FLX_C_START_WRAPPER_NOPTF(::flxusr::" ^ 
       mname ^ ","^mname^"," ^ top_class ^ ")")
   else if List.mem `Stackable topclass_props then
     plb (

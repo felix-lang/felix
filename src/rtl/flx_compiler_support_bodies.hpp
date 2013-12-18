@@ -164,7 +164,7 @@ extern "C" FLX_EXPORT ::flx::rtl::con_t *name##_flx_start(\
   return 0;\
 }
 
-#define FLX_C_START_WRAPPER(mname,name,x)\
+#define FLX_C_START_WRAPPER_PTF(mname,name,x)\
 extern "C" FLX_EXPORT ::flx::rtl::con_t *name##_flx_start(\
   mname::thread_frame_t *__ptf,\
   int argc,\
@@ -181,5 +181,19 @@ extern "C" FLX_EXPORT ::flx::rtl::con_t *name##_flx_start(\
   mname::x(__ptf);\
   return 0;\
 }
+
+#define FLX_C_START_WRAPPER_NOPTF(mname,name,x)\
+extern "C" FLX_EXPORT ::flx::rtl::con_t *name##_flx_start(\
+  mname::thread_frame_t *__ptf,\
+  int argc,\
+  char **argv,\
+  FILE *stdin_,\
+  FILE *stdout_,\
+  FILE *stderr_\
+) {\
+  mname::x();\
+  return 0;\
+}
+
 
 #endif
