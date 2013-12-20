@@ -81,6 +81,14 @@ syntax functions {
 
   //$ Specifies a method, in an object definition only.
   sadjective := "method" =># "'Method";
+
+  //$ Specifies function is to be exported under its Felix name.
+  //$ Function must be top level and non-polymorphic.
+  //$ Top level means the global space or a non-polymorphic class
+  //$ nested in a top level space (recursively).
+  sadjective := "export" =># "'Export";
+  sadjective := "export" sstring =># "`(NamedExport ,_2)";
+
   sadjectives := sadjective* =># "_1";
 
   slambda_fun_arg := "(" sparameter_comma_list "when" sexpr ")" =># "`(,_2 (some ,_4))";
@@ -163,7 +171,7 @@ syntax functions {
   sfunction := sadjectives sfun_kind sdeclname sfun_arg* fun_return_type "=>" sexpr ";" =>#
     """
       (let ((body `((ast_fun_return ,_sr ,_7))))
-      `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 ,_5 ,(cal_funkind _1 _2) ,body)
+      `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 ,_5 ,(cal_funkind _1 _2) ,_1 ,body)
       )
     """;
 
@@ -171,19 +179,19 @@ syntax functions {
   //$ inline fun f (x:int when x>0) (y:long when y>0l) : long expect result > 0l { return x.long + y; }
   sfunction := sadjectives sfun_kind sdeclname sfun_arg* fun_return_type "=" scompound =>#
     """
-      `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 ,_5 ,(cal_funkind _1 _2) ,_7)
+      `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 ,_5 ,(cal_funkind _1 _2) ,_1 ,_7)
     """;
 
   //$ Object factory definition with interface type.
   sfunction := "object" sdeclname sfun_arg* "implements" object_return_type "=" scompound =>#
     """
-      `(ast_curry ,_sr ,(first _2) ,(second _2) ,_3 ,_5 Object ,_7)
+      `(ast_curry ,_sr ,(first _2) ,(second _2) ,_3 ,_5 Object () ,_7)
     """;
 
   //$ Object factory definition without interface type.
   sfunction := "object" sdeclname sfun_arg*  "=" scompound =>#
     """
-      `(ast_curry ,_sr ,(first _2) ,(second _2) ,_3 (,(noi 'typ_none) none) Object ,_5)
+      `(ast_curry ,_sr ,(first _2) ,(second _2) ,_3 (,(noi 'typ_none) none) Object () ,_5)
     """;
 
   //$ Object factory definition with inherited methods and
@@ -202,7 +210,7 @@ syntax functions {
        (retst `(ast_fun_return ,_sr ,x))
        (body `(,retst))
      )
-     `(ast_curry ,_sr ,(first _2) ,(second _2) ,_3 ,_7 Function ,body)
+     `(ast_curry ,_sr ,(first _2) ,(second _2) ,_3 ,_7 Function () ,body)
     )
     """;
 
@@ -218,7 +226,7 @@ syntax functions {
        (retst `(ast_fun_return ,_sr ,x))
        (body `(,retst))
      )
-     `(ast_curry ,_sr ,(first _2) ,(second _2) ,_3 ,noretype Function ,body)
+     `(ast_curry ,_sr ,(first _2) ,(second _2) ,_3 ,noretype Function () ,body)
     )
     """;
 
@@ -251,7 +259,7 @@ syntax functions {
               (((PVal _a ,argt none)) none)
             )
             (,ret ,traint)
-            ,(cal_funkind _1 _2) ,body)
+            ,(cal_funkind _1 _2) ,_1 ,body)
         )
         'ERROR
        )
@@ -291,7 +299,7 @@ syntax functions {
         (body _6)
         (args _4)
       )
-      `(ast_curry ,_sr ,name ,vs ,args (,ret ,traint) Function ,body))
+      `(ast_curry ,_sr ,name ,vs ,args (,ret ,traint) Function () ,body))
     """;
 
   //$ Short form constructor function.
@@ -308,19 +316,19 @@ syntax functions {
         (body `((ast_fun_return ,_sr ,_7)))
         (args _4)
       )
-      `(ast_curry ,_sr ,name ,vs ,args (,ret ,traint) Function ,body))
+      `(ast_curry ,_sr ,name ,vs ,args (,ret ,traint) Function () ,body))
     """;
 
   //$ Procedure definition, general form.
   sfunction := sadjectives sproc_kind sdeclname sfun_arg* sopt_traint_eq scompound =>#
     """
-      `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 ((ast_void ,_sr) ,_5) ,(cal_funkind _1 _2) ,_6)
+      `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 ((ast_void ,_sr) ,_5) ,(cal_funkind _1 _2) ,_1 ,_6)
     """;
 
   //$ Procedure definition, short form (one statement).
   sfunction := sadjectives sproc_kind sdeclname sfun_arg* "=>" stmt =>#
     """
-      `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 ((ast_void ,_sr) none) ,(cal_funkind _1 _2) (,_6))
+      `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 ((ast_void ,_sr) none) ,(cal_funkind _1 _2) ,_1 (,_6))
     """;
 }
 

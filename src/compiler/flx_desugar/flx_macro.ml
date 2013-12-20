@@ -778,11 +778,11 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     let post = meopt post in
     tack(STMT_function (sr, mi sr id, vs, mpsp sr psp, (mt sr t, post), props, msp sr pr sts ))
 
-  | STMT_curry (sr,id,vs,pss,(ret,post),kind,sts) ->
+  | STMT_curry (sr,id,vs,pss,(ret,post),kind,adjs,sts) ->
     let pr = List.map (fun(x,y,z,d)->y) (List.concat (List.map fst pss)) in
     let post = match post with | None -> None | Some x -> Some (me x) in
     let pss = List.map (fun psp -> mpsp sr psp) pss in
-    tack(STMT_curry(sr, mi sr id, vs, pss, (ret,post),kind, msp sr pr sts ))
+    tack(STMT_curry(sr, mi sr id, vs, pss, (ret,post),kind, adjs, msp sr pr sts ))
 
   | STMT_val_decl (sr, id, vs, optt, opte) ->
     let opte = match opte with

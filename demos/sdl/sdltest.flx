@@ -396,12 +396,12 @@ object window_controller () implements window_controller_interface =
           if drag_divider >= 0 do
             var r = #(editors.drag_divider.get_display).get_display_rect();
             var deltay = y - (r.y  + r.h);
-            r.h += deltay;
+            r.h = r.h + deltay;
             #(editors.drag_divider.get_display).set_display_rect r;
             if drag_divider < editors.len.int - 1 do
               r = #(editors.(drag_divider+1).get_display).get_display_rect();
-              r.y += deltay;
-              r.h -= deltay;
+              r.y = r.y + deltay;
+              r.h = r.h - deltay;
               #(editors.(drag_divider+1).get_display).set_display_rect r;
             done
             clear_window;

@@ -26,7 +26,8 @@
                (t4 (list-ref lst 4)) ; args
                (t5 (list-ref lst 5)) ; return type
                (t6 (list-ref lst 6)) ; fun kind
-               (t7 (list-ref lst 7)) ; body
+               (t7 (list-ref lst 7)) ; adjective properties
+               (t8 (list-ref lst 8)) ; body
                (polyvars (first polyspec))
                (polyaux (second polyspec))
                (outpolyvars `(,(append struct-polyvars polyvars) ,polyaux))
@@ -37,7 +38,7 @@
                (self-args `((,self-arg) none))
                (args (cons self-args t4))
              ) 
-             `(,t0 ,t1 ,t2 ,outpolyvars ,args, t5 ,t6 ,t7)
+             `(,t0 ,t1 ,t2 ,outpolyvars ,args, t5 ,t6 ,t7 ,t8)
            )) funs)
          )
          
@@ -152,7 +153,8 @@ syntax type_decls {
                (t4 (list-ref lst 4)) ; args
                (t5 (list-ref lst 5)) ; return type
                (t6 (list-ref lst 6)) ; fun kind
-               (t7 (list-ref lst 7)) ; body
+               (t7 (list-ref lst 7)) ; adjective properties
+               (t8 (list-ref lst 8)) ; body
                (polyvars (first polyspec))
                (polyaux (second polyspec))
                (outpolyvars `(,(append struct-polyvars polyvars) ,polyaux))
@@ -163,7 +165,7 @@ syntax type_decls {
                (self-args `((,self-arg) none))
                (args (cons self-args t4))
              ) 
-             `(,t0 ,t1 ,t2 ,outpolyvars ,args, t5 ,t6 ,t7)
+             `(,t0 ,t1 ,t2 ,outpolyvars ,args, t5 ,t6 ,t7 ,t8)
            )) funs)
          )
          (sts (cons struct mfuns))

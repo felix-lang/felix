@@ -284,6 +284,8 @@ and property_t = [
   | `Uses_gc             (* requires gc locally *)
   | `Virtual             (* interface in a typeclass *)
   | `Tag of string       (* whatever *)
+  | `Export
+  | `NamedExport of string
 ]
 
 and type_qual_t = [
@@ -388,6 +390,7 @@ and statement_t =
       params_t list *
       (typecode_t * expr_t option) *
       funkind_t *
+      property_t list *
       statement_t list
 
   (* macros *)
@@ -727,7 +730,7 @@ let src_of_stmt (e : statement_t) = match e with
   | STMT_reduce (s,_,_,_,_,_)
   | STMT_axiom (s,_,_,_,_)
   | STMT_lemma (s,_,_,_,_)
-  | STMT_curry (s,_,_,_,_,_,_)
+  | STMT_curry (s,_,_,_,_,_,_,_)
   | STMT_macro_val (s,_,_)
   | STMT_macro_forall (s,_,_,_)
   | STMT_val_decl (s,_,_,_,_)

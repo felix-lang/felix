@@ -946,6 +946,8 @@ and string_of_property = function
 | `Cfun -> "cfun"
 | `Lvalue -> "lvalue"
 | `Tag s -> "Tag " ^ s
+| `Export -> "export"
+| `NamedExport s -> "export "^ string_of_string s
 
 and string_of_properties ps =
   match ps with
@@ -1300,8 +1302,8 @@ and string_of_statement level s =
     | _ -> "\n" ^ string_of_compound level ss
     end
 
-  | STMT_curry (_,name, vs, pss, (res,traint) , kind, ss) ->
-    spaces level ^ string_of_funkind kind ^ " "
+  | STMT_curry (_,name, vs, pss, (res,traint) , kind, props, ss) ->
+    spaces level ^ string_of_properties props ^ string_of_funkind kind ^ " "
     ^
     string_of_id name ^ string_of_vs vs ^
     catmap " "

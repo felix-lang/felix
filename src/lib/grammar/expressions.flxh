@@ -48,7 +48,7 @@ syntax expressions {
     (let* 
       (
         (body `((ast_fun_return ,_sr ,_7)))
-        (fun_decl `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 ,_5 Function ,body))
+        (fun_decl `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 ,_5 Function () ,body))
         (final_return `(ast_fun_return ,_sr ,_9))
       )
       (block_expr `(,fun_decl ,final_return))

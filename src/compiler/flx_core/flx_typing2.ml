@@ -45,7 +45,7 @@ let type_of_list = function
   | [x] -> x
   | x -> TYP_tuple x
 
-let paramtype params =
+let paramtype (params : parameter_t list) =
   let typlist params =
     map
     (fun (k,_,t,_) ->

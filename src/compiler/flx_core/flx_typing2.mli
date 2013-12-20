@@ -7,7 +7,7 @@ val type_of_list:
   typecode_t list -> typecode_t
 
 val paramtype:
-  (param_kind_t * string * typecode_t * expr_t option) list -> typecode_t
+  parameter_t list -> typecode_t
 
 val qualified_name_of_expr:
   expr_t -> qualified_name_t option

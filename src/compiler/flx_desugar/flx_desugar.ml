@@ -245,8 +245,48 @@ let rec rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t lis
   | STMT_inherit (sr,name,vs,qn) -> [Dcl (sr,name,None,access,vs,DCL_inherit qn)]
   | STMT_inherit_fun (sr,name,vs,qn) -> [Dcl (sr,name,None,access,vs,DCL_inherit_fun qn)]
 
-  | STMT_curry (sr,name',vs,pps,ret,kind,sts) ->
-    rst state name access parent_vs (Flx_desugar_expr.mkcurry seq sr name' vs pps ret kind sts [])
+  | STMT_curry (sr,name',vs,pps,ret,kind,adjs,sts) ->
+    let fdef = rst state name access parent_vs 
+      (Flx_desugar_expr.mkcurry seq sr name' vs pps ret kind sts adjs) 
+    in
+    let export_name = ref name' in
+    let doexport = ref false in
+    List.iter 
+      (
+        function 
+        | `Export -> doexport := true 
+        | `NamedExport s -> doexport := true; export_name := s 
+        | _ -> ()
+      )
+      adjs
+    ;
+    if (!doexport) then
+      let domain = 
+        match pps with
+        | (ps,_)::_ -> paramtype ps
+        | [] -> TYP_tuple []
+      in
+      let qn = `AST_name (sr,name',[]) in
+      let sname = `AST_suffix (sr,(qn,domain)) in
+      match kind with
+      | `Function
+      | `GeneratedInlineProcedure
+      | `GeneratedInlineFunction
+      | `InlineFunction
+      | `NoInlineFunction
+      | `Virtual
+      | `Ctor
+      | `Generator
+      | `GeneratorMethod
+      | `Method
+      | `Object ->
+        print_endline ("Export fun " ^ string_of_suffixed_name sname ^ " as '" ^ (!export_name) ^ "'");
+        Iface (sr, IFACE_export_fun (sname, name')) :: fdef
+      | `CFunction ->
+        print_endline ("Export cfun " ^ string_of_suffixed_name sname ^ " as '" ^ (!export_name)  ^ "'");
+        Iface (sr, IFACE_export_cfun (sname, name')) :: fdef
+    else fdef
+    
 
   (* functions *)
   | STMT_reduce (sr,name,vs,params, rsrc,rdst) ->

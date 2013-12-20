@@ -56,19 +56,26 @@ let fix_params sr seq (ps:params_t):plain_vs_list_t * params_t =
   let vs,ps = aux ps in
   vs,(ps,traint)
 
-let cal_props = function
-  | `CFunction -> `Cfun::[]
-  | `InlineFunction -> `Inline::[]
-  | `GeneratedInlineProcedure-> `GeneratedInline::[]
-  | `GeneratedInlineFunction -> `GeneratedInline::[]
-  | `NoInlineFunction -> `NoInline::[]
-  | `Ctor -> `Ctor::[]
-  | `Generator -> (* `NoInline:: *) `Generator::[]
-  | `GeneratorMethod -> (* `NoInline:: *) `Generator::[]
-  | `Virtual -> `Virtual::[]
+let cal_props kind props = match kind with
+  | `CFunction -> `Cfun::props
+  | `InlineFunction -> if not (List.mem `Inline props) then `Inline::props else props
+  | `GeneratedInlineProcedure-> `GeneratedInline::props
+  | `GeneratedInlineFunction -> `GeneratedInline::props
+  | `NoInlineFunction -> if not (List.mem `NoInline props) then `NoInline::props else props
+  | `Ctor -> `Ctor::props
+  | `Generator -> (* `NoInline:: *) `Generator::props
+  | `GeneratorMethod -> (* `NoInline:: *) `Generator::props
+  | `Virtual -> if not (List.mem `Virtual props) then `Virtual::props else props
   | _ -> []
 
 let mkcurry seq sr (name:string) (vs:vs_list_t) (args:params_t list) return_type (kind:funkind_t) body props =
+  if List.mem `Lvalue props then
+    clierr sr "Felix function cannot return lvalue"
+  ;
+  if List.mem `Pure props && match return_type with  | TYP_void _,_ -> true | _ -> false then
+    clierr sr "Felix procedure cannot be pure"
+  ;
+
   let vs, tcon = vs in
   let return_type, postcondition = return_type in
   let vss',(args:params_t list)= List.split (List.map (fix_params sr seq) args) in
@@ -135,7 +142,7 @@ let mkcurry seq sr (name:string) (vs:vs_list_t) (args:params_t list) return_type
           match st with
           | STMT_fun_return _ -> clierr sr "FOUND function RETURN in Object";
           | STMT_proc_return _ -> clierr sr "FOUND procedure RETURN in Object";
-          | STMT_curry (_,name, vs, pss, (res,traint) , kind, ss) when kind = `Method || kind = `GeneratorMethod->
+          | STMT_curry (_,name, vs, pss, (res,traint) , kind, adjectives, ss) when kind = `Method || kind = `GeneratorMethod->
                methods := name :: !methods;
           | _ -> ()
         )
@@ -186,7 +193,7 @@ let mkcurry seq sr (name:string) (vs:vs_list_t) (args:params_t list) return_type
         ]
       in
         STMT_function (sr, synthname m, vs, h, (rettype t,None), `Generated "curry"::props, body)
-   in aux args vs (cal_props kind @ props)
+   in aux args vs (cal_props kind props)
 
 (* split lambdas out. Each lambda is replaced by a
    reference to a synthesised name in the original

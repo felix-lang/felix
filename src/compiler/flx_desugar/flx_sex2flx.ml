@@ -1,5 +1,5 @@
 
-   open Flx_ast
+open Flx_ast
 open Sex_types
 open Flx_typing2
 open List
@@ -409,6 +409,22 @@ and xfunkind_t sr x : funkind_t =
   | Id "Object" -> `Object
   | x -> err x "funkind_t"
 
+and xadjective_t x : property_t =
+  match x with
+  | Id "InlineFunction" -> `Inline
+  | Id "NoInlineFunction" -> `NoInline
+  | Id "Virtual" -> `Virtual 
+  | Id "Lvalue"  -> `Lvalue
+  | Id "Impure"  -> `ImPure
+  | Id "Pure"  -> `Pure
+  | Id "Partial"  -> `Partial
+  | Id "Method"  -> `Tag "method"
+  | Id "Total"  -> `Total
+  | Id "Export" -> `Export
+  | Lst [Id "NamedExport"; Str name]  -> `NamedExport name
+  | x -> err x "xadjective_t"
+
+ 
 and xcode_spec_t sr x : Flx_code_spec.t =
   let module CS = Flx_code_spec in
   match x with
@@ -552,7 +568,7 @@ and xstatement_t sr x : statement_t =
       xps `PVal sr ps,
       xam sr axm)
 
-  | Lst [Id "ast_curry"; sr; id; vs; Lst pss; ret; fk; sts] -> let sr = xsr sr in 
+  | Lst [Id "ast_curry"; sr; id; vs; Lst pss; ret; fk; Lst props; sts] -> let sr = xsr sr in 
     let fret = xret sr ret in
     let rett, _ = fret in 
     let pdef = match rett with TYP_void _ -> `PVar | _ -> `PVal in
@@ -563,6 +579,7 @@ and xstatement_t sr x : statement_t =
       map (xps pdef sr) pss,
       fret,
       xfk sr fk,
+      map xadjective_t props,
       xsts sr sts)
 
   | Lst [Id "ast_macro_val"; sr; ids; v] -> let sr = xsr sr in 
