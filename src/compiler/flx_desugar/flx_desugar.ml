@@ -281,10 +281,10 @@ let rec rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t lis
       | `Method
       | `Object ->
         print_endline ("Export fun " ^ string_of_suffixed_name sname ^ " as '" ^ (!export_name) ^ "'");
-        Iface (sr, IFACE_export_fun (sname, name')) :: fdef
+        Iface (sr, IFACE_export_fun (sname, (!export_name))) :: fdef
       | `CFunction ->
         print_endline ("Export cfun " ^ string_of_suffixed_name sname ^ " as '" ^ (!export_name)  ^ "'");
-        Iface (sr, IFACE_export_cfun (sname, name')) :: fdef
+        Iface (sr, IFACE_export_cfun (sname, (!export_name))) :: fdef
     else fdef
     
 

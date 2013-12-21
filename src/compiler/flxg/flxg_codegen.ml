@@ -53,11 +53,13 @@ let codegen_bsyms
   let psb s = Flxg_file.output_string state.body_file s in
   let psp s = Flxg_file.output_string state.package_file s in
   let psr s = Flxg_file.output_string state.rtti_file s in
+  let psi s = Flxg_file.output_string state.felix_interface_file s in
 
   let plh s = psh s; psh "\n" in
   let plb s = psb s; psb "\n" in
   let plr s = psr s; psr "\n" in
   let plp s = psp s; psp "\n" in
+  let pli s = psi s; psi "\n" in
 
   if state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
   print_endline "//GENERATING Package Requirements";
@@ -419,6 +421,13 @@ let codegen_bsyms
       state.syms
       bsym_table
       state.syms.bifaces);
+
+    pli (Flx_gen_biface.gen_biface_felix
+      state.syms
+      bsym_table
+      state.syms.bifaces 
+      state.module_name);
+
   end;
 
   let gen_uint_array name values =
@@ -462,6 +471,7 @@ let codegen_bsyms
   Flxg_file.close_out state.header_file;
   Flxg_file.close_out state.body_file;
   Flxg_file.close_out state.ctors_file;
+  Flxg_file.close_out state.felix_interface_file;
 
   if Hashtbl.length state.syms.array_sum_offset_table > 0 then
   begin

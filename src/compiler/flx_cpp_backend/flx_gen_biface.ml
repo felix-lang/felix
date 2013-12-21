@@ -279,10 +279,100 @@ let gen_biface_body syms bsym_table biface = match biface with
 
   | BIFACE_export_type _ -> ""
 
+let gen_felix_binding syms bsym_table kind index export_name =
+    let bsym =
+      try Flx_bsym_table.find bsym_table index with Not_found ->
+        failwith ("[gen_biface_header] Can't find index " ^ string_of_bid index)
+    in
+    begin match Flx_bsym.bbdcl bsym with
+    | BBDCL_fun (props,vs,(ps,traint),ret,_) ->
+      let display = get_display_list bsym_table index in
+      if length display <> 0
+      then clierr (Flx_bsym.sr bsym) ("Can't export nested function " ^ export_name);
+
+      (* THIS BIT FOR DOCO ONLY *)
+      let arglist =
+        List.map
+        (fun {ptyp=t} -> cpp_typename syms bsym_table t)
+        ps
+      in
+      let arglist = 
+        match kind with 
+        | `Fun ->
+           (if length ps = 0 then "void *"
+           else "void *, " ^ cat ", " arglist
+           )
+        | `Cfun -> cat ", " arglist
+      in
+      let fkind, rettypename =
+        match ret with
+        | BTYP_void -> "proc", "::flx::rtl::con_t * "
+        | _ -> "fun", cpp_typename syms bsym_table ret
+      in
+      let fkind = match kind with `Fun -> fkind | `Cfun -> "c" ^ fkind in
+      (* THIS IS THE FELIX INTERFACE *)
+      let fname = Flx_bsym.id bsym in
+      let farglist = 
+        List.map (fun {ptyp=t} -> sbt bsym_table t) ps
+      in
+      let n = List.length ps in
+      let carglist = ref [] in
+      let nargs = for i = 1 to n do carglist := ("$" ^ string_of_int i) :: (!carglist) done in
+      let carglist = String.concat "," (!carglist) in
+      let carglist = 
+        match kind with
+        | `Cfun -> carglist
+        | `Fun -> "ptf" ^ if n = 0 then "" else ","^carglist
+      in
+      let flx_binding =
+        match ret with
+        | BTYP_void -> "  proc " ^ export_name ^ " : " ^ String.concat " * " farglist ^ " = " ^
+          "\"" ^export_name ^ "(" ^carglist^ ");\"" 
+        | _ -> "  fun " ^ export_name ^ " : " ^ String.concat " * " farglist ^ " -> " ^ sbt bsym_table ret ^ " = " ^
+          "\"" ^ export_name ^ "("^carglist^")\"" 
+      in
+      (* output .. *)
+      "  // binding for export " ^ fkind ^ " " ^ cpp_instance_name syms bsym_table index [] ^
+      " as " ^ export_name ^ "\n" ^
+      flx_binding ^ "\n" ^
+      "    requires\n" ^
+      (if kind == `Fun then "      property \"needs_ptf\",\n" else "") ^
+      "      header\n" ^
+      "       \"\"\"\n"^
+      "       extern \"C\" FLX_IMPORT " ^ rettypename ^ " " ^
+              export_name ^ "(" ^ arglist ^ ");\n" ^
+      "       \"\"\"\n" ^
+      "  ;\n\n"
+
+    | _ -> failwith "Not implemented: export non-function/procedure"
+    end
+
+
+let gen_biface_felix syms bsym_table biface = match biface with
+  | BIFACE_export_python_fun (sr,index, export_name) ->
+    "  // PYTHON FUNCTION " ^ export_name ^ "\n"
+
+  | BIFACE_export_fun (sr,index, export_name) ->
+     "  // FELIX FUNCTION " ^ export_name ^ "\n" ^
+    gen_felix_binding syms bsym_table `Fun index export_name
+
+
+  | BIFACE_export_cfun (sr,index, export_name) ->
+    "  // FELIX C FUNCTION " ^ export_name ^ "\n" ^
+    gen_felix_binding syms bsym_table `Cfun index export_name
+
+  | BIFACE_export_type (sr, typ, export_name) ->
+     "  // TYPE " ^ export_name ^ "\n"
+
+
 let gen_biface_headers syms bsym_table bifaces =
   cat "" (List.map (gen_biface_header syms bsym_table) bifaces)
 
 let gen_biface_bodies syms bsym_table bifaces =
   cat "" (List.map (gen_biface_body syms bsym_table) bifaces)
 
+let gen_biface_felix syms bsym_table bifaces modulename =
+  "class " ^ modulename ^ "_interface {\n" ^
+  cat "" (List.map (gen_biface_felix syms bsym_table) bifaces) ^
+  "}\n"
 

@@ -14,6 +14,7 @@ type t = {
   ctors_file: Flxg_file.t;
   package_file: Flxg_file.t;
   rtti_file: Flxg_file.t;
+  felix_interface_file: Flxg_file.t;
   report_file: Flxg_file.t;
   why_file: Flxg_file.t;
   dep_file: Flxg_file.t;
@@ -80,6 +81,7 @@ print_endline ("Module name = " ^ module_name);
     ctors_file = Flxg_file.make (outbase ^ ".ctors_cpp");
     package_file = Flxg_file.make (outbase ^ ".resh");
     rtti_file = Flxg_file.make (outbase ^ ".rtti");
+    felix_interface_file = Flxg_file.make (outbase ^ "_interface.flx");
     report_file = Flxg_file.make (outbase ^ ".xref");
     why_file = Flxg_file.make (outbase ^ ".why");
     dep_file = Flxg_file.make (outbase ^ ".dep");
