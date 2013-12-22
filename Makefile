@@ -434,7 +434,7 @@ bootstrap:
 	# [Requires flx already build in build/release]
 	# =========================================================
 	rm -rf tmp-dir trial-tmp build/trial
-	build/release/host/bin/flx --clean
+	build/release/host/bin/flx --test=build/release --clean
 	build/release/host/bin/flx --test=build/release src/tools/flx_build_flxg
 	mkdir build/trial
 	mkdir build/trial/host

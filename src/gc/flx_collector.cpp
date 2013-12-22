@@ -428,7 +428,7 @@ void flx_collector_t::impl_add_root(void *memory)
     root_count++;
   }
   else {
-    if(debug) fprintf(stderr,"[gc] Increment root %p to \n", memory, (*iter).second+1);
+    if(debug) fprintf(stderr,"[gc] Increment root %p to %ld\n", memory, (*iter).second+1);
     ++(*iter).second;
   }
 }
@@ -448,7 +448,7 @@ void flx_collector_t::impl_remove_root(void *memory)
     root_count--;
   }
   else {
-    if(debug) fprintf(stderr,"[gc] Decrement root %p to \n", memory, (*iter).second-1);
+    if(debug) fprintf(stderr,"[gc] Decrement root %p to %ld\n", memory, (*iter).second-1);
     --(*iter).second;
   }
 }
