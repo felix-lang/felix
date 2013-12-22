@@ -38,6 +38,8 @@ done
       return "OK"; 
     else
       var b:array[char,1000];
+      var bad = "[strerror_r] Failed to find text for error number " + e.int.str;
+      strncpy (carray (&b),bad._unsafe_cstr,1000.size); // safe because bad is a variable
       strerror_r(e,carray (&b), b.len.size);
       return string( carray (&b));
     done

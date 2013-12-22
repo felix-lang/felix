@@ -13,7 +13,7 @@ all: build test
 # default build
 #
 
-VERSION = 1.1.9dev
+VERSION = 1.1.10
 DISTDIR ?= ./build/dist
 INSTALLDIR ?= /usr/local/lib/felix/felix-$(VERSION)
 FBUILDROOT ?= build
