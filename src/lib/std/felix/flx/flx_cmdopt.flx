@@ -409,7 +409,7 @@ private noinline proc handle_switch
 // utility to classify extensions.
 private fun exts () = {
   var compile_exts = list ('.cpp','.cxx','.c','.cc');
-  var link_exts =  list ('.o','.obj','.lib','.dll','.a','.so');
+  var link_exts =  list ('.o','.obj','.lib','.dll','.a','.so','.dylib','.os');
   var felix_exts = list (".flx",".fdoc");
   var exts =
     map (fun (s:string) => s,"compile") compile_exts +
