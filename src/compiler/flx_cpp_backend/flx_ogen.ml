@@ -391,10 +391,11 @@ print_debug syms ("Handle type " ^ sbt bsym_table btyp ^ " instance " ^ si index
             string_of_bid i)
       in
       begin match Flx_bsym.bbdcl bsym with
-      | BBDCL_external_type (vs,bquals,_,_) ->
+      | BBDCL_external_type (vs,bquals,_,breqs) ->
         (*
         print_endline ("abstract type "^Flx_bsym.id bsym ^ "["^catmap "," (sbt bsym_table) ts^"]");
         print_endline ("  properties: " ^ string_of_bquals bsym_table bquals);
+        print_endline ("  requirements: " ^ string_of_breqs bsym_table breqs);
         *)
         let handle_qual bqual = match bqual with
         | `Bound_needs_shape t ->

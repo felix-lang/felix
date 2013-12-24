@@ -356,11 +356,7 @@ really-fast-rebuild:
 	${LPATH}=${INSTALLDIR}/host/lib/rtl ${INSTALLDIR}/host/bin/flx_build_boot \
 		--target-dir=build/release \
 		--target-bin=host \
-		--build-toolchain-plugins \
-		--build-flx \
-		--build-flx-tools \
-		--build-web-plugins \
-		--build-tools
+		--build-all
 	build/release/host/bin/flx --test=build/release --expect --usage=prototype --indir=test/regress/rt --regex='.*\.flx'
 
 fast-rebuild:
@@ -383,11 +379,7 @@ fast-rebuild:
 	${LPATH}=build/release/host/lib/rtl ./flx_build_boot \
 		--target-dir=build/release \
 		--target-bin=host \
-		--build-toolchain-plugins \
-		--build-flx \
-		--build-flx-tools \
-		--build-web-plugins \
-		--build-tools
+		--build-all
 	rm flx_build_boot
 	build/release/host/bin/flx --test=build/release --expect --usage=prototype --indir=test/regress/rt --regex='.*\.flx'
 
@@ -408,20 +400,11 @@ rebuild:
 	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl \
 		--target-dir=build/release \
 		--target-bin=host 
-	build/release/host/bin/flx --test=build/release  src/tools/flx_build_boot \
-		--target-dir=build/release \
-		--target-bin=host \
-		--build-toolchain-plugins \
-		--build-flx-tools
-	# Copy flx, because this step rebuilds it!
-	# Some OS won't allow copying over running executable.
 	cp build/release/host/bin/flx flx
-	./flx --test=build/release  src/tools/flx_build_boot \
+	flx --test=build/release  src/tools/flx_build_boot \
 		--target-dir=build/release \
 		--target-bin=host \
-		--build-flx \
-		--build-web-plugins \
-		--build-tools
+		--build-all
 	rm flx
 	build/release/host/bin/flx --test=build/release --expect --usage=prototype --indir=test/regress/rt --regex='.*\.flx'
 
@@ -461,10 +444,7 @@ bootstrap:
 		--target-bin=host \
 		--source-dir=build/release \
 		--source-bin=host \
-		--build-toolchain-plugins \
-		--build-flx \
-		--build-web-plugins \
-		--build-tools
+		--build-all
 	build/trial/host/bin/flx --test=build/trial --clean
 	build/trial/host/bin/flx --test=build/trial --expect --usage=prototype --indir=test/regress/rt --regex='.*\.flx'
 	rm -rf build/release

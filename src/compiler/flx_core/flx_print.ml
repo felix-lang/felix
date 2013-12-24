@@ -2169,7 +2169,12 @@ and string_of_dir level s =
     spaces level ^ "inherit " ^ string_of_ivs vs ^ sqn qn ^ ";"
 
 and string_of_breq bsym_table (i,ts) =
-  "rq<" ^ string_of_bid i ^ ">" ^ string_of_inst bsym_table ts
+  let rqname =
+     try Flx_bsym_table.find_id bsym_table i
+     with Not_found -> "missing!"
+  in
+  rqname ^ "<" ^ string_of_bid i ^ ">" ^ string_of_inst bsym_table ts
+
 and string_of_breqs bsym_table reqs = catmap ", " (string_of_breq bsym_table) reqs
 and string_of_production p = catmap " " string_of_glr_entry p
 and string_of_reduced_production p = catmap " " string_of_reduced_glr_entry p

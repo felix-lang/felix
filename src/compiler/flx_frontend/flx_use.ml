@@ -11,20 +11,7 @@ open Flx_set
 open Flx_mtypes2
 open Flx_typing
 open Flx_unify
-open Flx_maps
 open Flx_exceptions
-
-(* THIS CODE IS NOW WRONG! Because projections can be written as applications now! *)
-let rec is_proj (e,t) =
-  match e with
-  | BEXPR_name _-> true
-  | BEXPR_prj _ -> true
-  | _ -> false
-
-let rec get_var (e,t) =
-  match e with
-  | BEXPR_name (i,ts) -> i
-  | _ -> assert false
 
 (* These routines find the absolute use closure of a symbol,
 in particular they include variables which are initialised
@@ -49,7 +36,7 @@ changing the data structures.
 let rec uses_btype add bsym_table count_inits t =
   let f_btype t = uses_btype add bsym_table count_inits t in
  
-  (* We only care about inits. *)
+  (* We only care about insts. *)
   match t with
   | BTYP_inst (i,ts) ->
       add i;

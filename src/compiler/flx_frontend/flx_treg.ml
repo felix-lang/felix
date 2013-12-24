@@ -170,25 +170,11 @@ print_endline ("Register type r " ^ sbt bsym_table t);
 
     | BBDCL_cstruct (vs,cs,_)
     | BBDCL_struct (vs,cs) ->
+      ui i ts;
       let cts = map snd cs in
       let cts = map (tsubst vs ts) cts in
       iter rr cts;
-
-      (* HACKERY HERE... We should NOT need to register
-        constructors, etc, unless they're actually used
-      *)
-      (*
-      if length cts > 1 then rnr (BTYP_tuple cts);
-      *)
-
-      (*
-      let argt = btyp_tuple cts in
-      rnr argt;                             (* argument tuple *)
-      *)
-      rnr t;
-      (*
-      rnr (BTYP_function (argt,t))         (* constructor as function *)
-      *)
+      rnr t
 
     | BBDCL_external_type (vs,bquals,_,_)  -> 
      (* instantiate the type too *)
