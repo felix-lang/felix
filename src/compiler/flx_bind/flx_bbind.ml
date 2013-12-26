@@ -947,4 +947,20 @@ let bind_interface (state:bbind_state_t) bsym_table = function
       else
         BIFACE_export_type (sr, t, cpp_name)
 
+  | sr, IFACE_export_struct (name), parent ->
+      let env = Flx_lookup.build_env state.lookup_state bsym_table parent in
+      let entry_set  = Flx_lookup.lookup_name_in_env state.lookup_state bsym_table env sr name in
+      begin match entry_set with
+      | FunctionEntry _ -> assert false
+      | NonFunctionEntry  {base_sym = index; spec_vs = vs; sub_ts = ts} ->
+        begin match  vs, ts with [],[] -> () | _ -> assert false end;
+        let bbdcl = Flx_bsym_table.find_bbdcl bsym_table index in
+        begin match bbdcl with
+        | BBDCL_struct _ -> BIFACE_export_struct (sr,index)
+        | _ ->
+          clierr sr ("Attempt to export struct "^name^
+          " which isn't a non-polymorphic struct, got entry : " ^ 
+          Flx_print.string_of_bbdcl bsym_table bbdcl index)
+        end
+     end
 

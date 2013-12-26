@@ -130,7 +130,7 @@ print_endline "Cannot find instance";
   in
   "_i" ^ cid_of_bid inst ^ cpp_name bsym_table index
 
-let is_export syms id =
+let is_export syms bsym_table id =
   let bifaces = syms.bifaces in
   try
     List.iter
@@ -140,6 +140,8 @@ let is_export syms id =
       | BIFACE_export_python_fun (_,_,s)
       | BIFACE_export_type (_,_,s) ->
         if id = s then raise Not_found
+      | BIFACE_export_struct (_,idx) -> if 
+        Flx_bsym_table.mem bsym_table idx then raise Not_found
      )
      bifaces;
      false
@@ -162,7 +164,7 @@ let cpp_instance_name syms bsym_table index ts =
         index,ts
     in
       if (index,ts) <> inst then long_name else
-      if is_export syms id then long_name else id
+      if is_export syms bsym_table id then long_name else id
   end
   else long_name
 

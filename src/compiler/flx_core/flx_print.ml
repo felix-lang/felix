@@ -1127,6 +1127,10 @@ and string_of_statement level s =
     string_of_typecode flx_type ^
     ") as \"" ^ cpp_name ^ "\";"
 
+  | STMT_export_struct (_,name) ->
+    spaces level ^
+    "export struct " ^ name ^ ";"
+
   | STMT_label (_,s) -> string_of_id s ^ ":"
   | STMT_goto (_,s) -> spaces level ^ "goto " ^ string_of_id s ^ ";"
 
@@ -1503,6 +1507,9 @@ and string_of_iface level s =
     spc ^ "export type (" ^ string_of_typecode flx_type ^
     ") as \"" ^ cpp_name ^ "\";"
 
+  | IFACE_export_struct (name) ->
+    spc ^ "export struct " ^ name ^":"
+
 and string_of_symdef entry name vs =
   let se e = string_of_expr e in
   let st t = string_of_typecode t in
@@ -1871,6 +1878,10 @@ and string_of_biface bsym_table level s =
   | BIFACE_export_type (_,btyp,cpp_name) ->
     spc ^ "export type (" ^ string_of_btypecode (Some bsym_table) btyp ^
     ") as \"" ^ cpp_name ^ "\";"
+
+  | BIFACE_export_struct (_,index) ->
+    spc ^ "export struct " ^ qualified_name_of_bindex bsym_table index ^ ";"
+
 
 and sbx bsym_table s =  string_of_bexe bsym_table 0 s
 

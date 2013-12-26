@@ -67,6 +67,7 @@ type biface_t =
   | BIFACE_export_cfun of Flx_srcref.t * bid_t * string
   | BIFACE_export_python_fun of Flx_srcref.t * bid_t * string
   | BIFACE_export_type of Flx_srcref.t * t * string
+  | BIFACE_export_struct of Flx_srcref.t * bid_t
 
 (* -------------------------------------------------------------------------- *)
 

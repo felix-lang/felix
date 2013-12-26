@@ -27,7 +27,8 @@ open Flx_unify
 open Flx_util
 open Flx_gen_helper
 
-let gen_fun_header syms bsym_table kind index export_name =
+let gen_fun_header syms bsym_table kind index export_name modulename =
+    let mname = Flx_name.cid_of_flxid modulename in
     let bsym =
       try Flx_bsym_table.find bsym_table index with Not_found ->
         failwith ("[gen_biface_header] Can't find index " ^ string_of_bid index)
@@ -45,7 +46,7 @@ let gen_fun_header syms bsym_table kind index export_name =
       in
       let arglist = "  " ^
         match kind with 
-        | `Fun ->
+        | `Fun -> 
            (if length ps = 0 then "FLX_FPAR_DECL_ONLY"
            else "FLX_FPAR_DECL\n" ^ cat ",\n  " arglist
            )
@@ -59,28 +60,38 @@ let gen_fun_header syms bsym_table kind index export_name =
 
       "//EXPORT " ^ name ^ " " ^ cpp_instance_name syms bsym_table index [] ^
       " as " ^ export_name ^ "\n" ^
-      "extern \"C\" FLX_EXPORT " ^ rettypename ^ " " ^
-      export_name ^ "(\n" ^ arglist ^ "\n);\n"
+      "extern \"C\" {\n" ^
+      "  using namespace ::flxusr::" ^ mname ^";\n" ^
+      "  FLX_EXTERN_"^modulename ^ " " ^rettypename ^ " " ^
+      export_name ^ "(\n" ^ arglist ^ "\n);\n}\n"
 
     | _ -> failwith "Not implemented: export non-function/procedure"
     end
 
 
-let gen_biface_header syms bsym_table biface = match biface with
+let gen_biface_header syms bsym_table modulename biface = match biface with
   | BIFACE_export_python_fun (sr,index, export_name) ->
      "// PYTHON FUNCTION " ^ export_name ^ " header to go here??\n"
 
   | BIFACE_export_fun (sr,index, export_name) ->
-    gen_fun_header syms bsym_table `Fun index export_name
+    gen_fun_header syms bsym_table `Fun index export_name modulename
 
   | BIFACE_export_cfun (sr,index, export_name) ->
-    gen_fun_header syms bsym_table `Cfun index export_name
+    gen_fun_header syms bsym_table `Cfun index export_name modulename
 
   | BIFACE_export_type (sr, typ, export_name) ->
     "//EXPORT type " ^ sbt bsym_table typ ^ " as " ^ export_name  ^ "\n" ^
     "typedef " ^ cpp_type_classname syms bsym_table typ ^ " " ^ export_name ^ "_class;\n" ^
     "typedef " ^ cpp_typename syms bsym_table typ ^ " " ^ export_name ^ ";\n"
 
+  | BIFACE_export_struct (sr,idx) ->
+    let bsym = Flx_bsym_table.find bsym_table idx in
+    let sname = Flx_bsym.id bsym in
+    let bbdcl = Flx_bsym.bbdcl bsym in
+    let typ = Flx_btype.btyp_inst (idx,[]) in
+    let classname = cpp_type_classname syms bsym_table typ in
+    "//EXPORT struct " ^ sname ^ "\n" ^
+    "typedef ::flxusr::" ^ modulename ^ "::" ^ classname ^ " " ^ sname ^ ";\n"
 
 let gen_fun_body syms bsym_table kind index export_name =
     let bsym =
@@ -279,7 +290,9 @@ let gen_biface_body syms bsym_table biface = match biface with
 
   | BIFACE_export_type _ -> ""
 
-let gen_felix_binding syms bsym_table kind index export_name =
+  | BIFACE_export_struct _ -> ""
+
+let gen_felix_binding syms bsym_table kind index export_name modulename =
     let bsym =
       try Flx_bsym_table.find bsym_table index with Not_found ->
         failwith ("[gen_biface_header] Can't find index " ^ string_of_bid index)
@@ -322,7 +335,13 @@ let gen_felix_binding syms bsym_table kind index export_name =
       let carglist = 
         match kind with
         | `Cfun -> carglist
-        | `Fun -> "ptf" ^ if n = 0 then "" else ","^carglist
+        | `Fun -> 
+          (* HACK to cast client thread frame pointer to this library, will NOT
+             work if the library has any state i.e. variables, but is enough to 
+             pass over the GC, provided the call is made in a suitable context.
+           *)
+
+          "(::flxusr::"^modulename^"::thread_frame_t*)(void*)ptf" ^ if n = 0 then "" else ","^carglist
       in
       let flx_binding =
         match ret with
@@ -332,47 +351,62 @@ let gen_felix_binding syms bsym_table kind index export_name =
           "\"" ^ export_name ^ "("^carglist^")\"" 
       in
       (* output .. *)
+      (*
       "  // binding for export " ^ fkind ^ " " ^ cpp_instance_name syms bsym_table index [] ^
       " as " ^ export_name ^ "\n" ^
-      flx_binding ^ "\n" ^
-      "    requires\n" ^
-      (if kind == `Fun then "      property \"needs_ptf\",\n" else "") ^
-      "      header\n" ^
-      "       \"\"\"\n"^
-      "       extern \"C\" FLX_IMPORT " ^ rettypename ^ " " ^
-              export_name ^ "(" ^ arglist ^ ");\n" ^
-      "       \"\"\"\n" ^
-      "  ;\n\n"
+      *)
+      flx_binding ^ 
+      " requires " ^
+      (if kind == `Fun then "property \"needs_ptf\", " else "") ^ modulename^"_hpp; "^
+         "// "^fkind ^ " " ^ cpp_instance_name syms bsym_table index []^"\n"
 
     | _ -> failwith "Not implemented: export non-function/procedure"
     end
 
+let gen_felix_struct_export syms bsym_table idx modulename =
+  let bsym = Flx_bsym_table.find bsym_table idx in
+  let sname = Flx_bsym.id bsym in
+  let bbdcl = Flx_bsym.bbdcl bsym in
+  let fields = match bbdcl with 
+    | BBDCL_struct ([],fields) -> fields
+    | _ -> assert false
+  in
+  let mkmem (id,t) = "      " ^ id ^ ": "^ sbt bsym_table t ^ ";\n" in
+  let mems = catmap "" mkmem fields in
+  "  cstruct " ^ sname ^ "{\n" ^
+  mems ^
+  "  };\n"
 
-let gen_biface_felix syms bsym_table biface = match biface with
+let gen_biface_felix syms bsym_table modulename biface = match biface with
   | BIFACE_export_python_fun (sr,index, export_name) ->
     "  // PYTHON FUNCTION " ^ export_name ^ "\n"
 
   | BIFACE_export_fun (sr,index, export_name) ->
-     "  // FELIX FUNCTION " ^ export_name ^ "\n" ^
-    gen_felix_binding syms bsym_table `Fun index export_name
+    gen_felix_binding syms bsym_table `Fun index export_name modulename
 
 
   | BIFACE_export_cfun (sr,index, export_name) ->
-    "  // FELIX C FUNCTION " ^ export_name ^ "\n" ^
-    gen_felix_binding syms bsym_table `Cfun index export_name
+    gen_felix_binding syms bsym_table `Cfun index export_name modulename
 
   | BIFACE_export_type (sr, typ, export_name) ->
      "  // TYPE " ^ export_name ^ "\n"
 
+  | BIFACE_export_struct (sr,idx) ->
+    gen_felix_struct_export syms bsym_table idx modulename
 
-let gen_biface_headers syms bsym_table bifaces =
-  cat "" (List.map (gen_biface_header syms bsym_table) bifaces)
+
+let gen_biface_headers syms bsym_table bifaces modulename =
+  cat "" (List.map (gen_biface_header syms bsym_table modulename) bifaces)
 
 let gen_biface_bodies syms bsym_table bifaces =
   cat "" (List.map (gen_biface_body syms bsym_table) bifaces)
 
 let gen_biface_felix syms bsym_table bifaces modulename =
   "class " ^ modulename ^ "_interface {\n" ^
-  cat "" (List.map (gen_biface_felix syms bsym_table) bifaces) ^
+  "  header " ^ modulename ^ "_hpp = '''\n" ^
+  "    #define FLX_EXTERN_" ^ modulename ^ " FLX_IMPORT\n" ^
+  "    #include \""^modulename^".hpp\"\n" ^
+  "  ''';\n" ^
+  cat "" (List.map (gen_biface_felix syms bsym_table modulename) bifaces) ^
   "}\n"
 
