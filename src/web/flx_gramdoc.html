@@ -524,93 +524,93 @@
            Use in conditionals, e.g. if unlikely(x) do ...
 0243:    <a href="/share/lib/grammar/expressions.flxh#0243">x[scoercion_pri] := x[scoercion_pri] ":>>" x[sfactor_pri]</a>
            Suffixed coercion.
-0244:    <a href="/share/lib/grammar/expressions.flxh#0244">x[scoercion_pri] := ssuffixed_name</a>
-0246:    <a href="/share/lib/grammar/expressions.flxh#0246">x[sfactor_pri] := sthe_name</a>
-0251:    <a href="/share/lib/grammar/expressions.flxh#0251">x[sfactor_pri] := x[sfactor_pri] "." "[" sexpr "]"</a>
+0245:    <a href="/share/lib/grammar/expressions.flxh#0245">x[scoercion_pri] := ssuffixed_name</a>
+0247:    <a href="/share/lib/grammar/expressions.flxh#0247">x[sfactor_pri] := sthe_name</a>
+0252:    <a href="/share/lib/grammar/expressions.flxh#0252">x[sfactor_pri] := x[sfactor_pri] "." "[" sexpr "]"</a>
            String subscript.
-0254:    <a href="/share/lib/grammar/expressions.flxh#0254">x[sfactor_pri] := x[sfactor_pri] "." "[" sexpr "to" sexpr "]"</a>
+0255:    <a href="/share/lib/grammar/expressions.flxh#0255">x[sfactor_pri] := x[sfactor_pri] "." "[" sexpr "to" sexpr "]"</a>
            String substring.
-0257:    <a href="/share/lib/grammar/expressions.flxh#0257">x[sfactor_pri] := x[sfactor_pri] "." "[" sexpr "to" "]"</a>
+0258:    <a href="/share/lib/grammar/expressions.flxh#0258">x[sfactor_pri] := x[sfactor_pri] "." "[" sexpr "to" "]"</a>
            String substring, to end of string.
-0260:    <a href="/share/lib/grammar/expressions.flxh#0260">x[sfactor_pri] := x[sfactor_pri] "." "[" "to" sexpr "]"</a>
+0261:    <a href="/share/lib/grammar/expressions.flxh#0261">x[sfactor_pri] := x[sfactor_pri] "." "[" "to" sexpr "]"</a>
            String substring, from start of string.
-0263:    <a href="/share/lib/grammar/expressions.flxh#0263">x[sfactor_pri] := x[sfactor_pri] "." sthe_name</a>
+0264:    <a href="/share/lib/grammar/expressions.flxh#0264">x[sfactor_pri] := x[sfactor_pri] "." sthe_name</a>
            Reverse application.
-0267:    <a href="/share/lib/grammar/expressions.flxh#0267">x[sfactor_pri] := x[sfactor_pri] "*." sthe_name</a>
+0268:    <a href="/share/lib/grammar/expressions.flxh#0268">x[sfactor_pri] := x[sfactor_pri] "*." sthe_name</a>
            Reverse application with dereference.
            a *. b same as (*a) . b, like C  a -> b.
-0271:    <a href="/share/lib/grammar/expressions.flxh#0271">x[sfactor_pri] := x[sfactor_pri] "&." sthe_name</a>
+0272:    <a href="/share/lib/grammar/expressions.flxh#0272">x[sfactor_pri] := x[sfactor_pri] "&." sthe_name</a>
            a &. b is similar to &a . b for an array, but can be overloaded
            for abstract arrays: like a + b in C. Returns pointer.
-0274:    <a href="/share/lib/grammar/expressions.flxh#0274">sbasic_name_comma_list:= sname ("," sname)*</a>
-0277:    <a href="/share/lib/grammar/expressions.flxh#0277">sthe_name := "#" sthe_name</a>
+0275:    <a href="/share/lib/grammar/expressions.flxh#0275">sbasic_name_comma_list:= sname ("," sname)*</a>
+0278:    <a href="/share/lib/grammar/expressions.flxh#0278">sthe_name := "#" sthe_name</a>
            High precedence unit application. #f = f ().
-0280:    <a href="/share/lib/grammar/expressions.flxh#0280">sthe_name := "&" sthe_name</a>
+0281:    <a href="/share/lib/grammar/expressions.flxh#0281">sthe_name := "&" sthe_name</a>
            Felix pointer type and address of operator.
-0283:    <a href="/share/lib/grammar/expressions.flxh#0283">sthe_name :=  "@" sthe_name</a>
+0284:    <a href="/share/lib/grammar/expressions.flxh#0284">sthe_name :=  "@" sthe_name</a>
            C pointer type.
-0286:    <a href="/share/lib/grammar/expressions.flxh#0286">sthe_name := "noexpand" squalified_name</a>
+0287:    <a href="/share/lib/grammar/expressions.flxh#0287">sthe_name := "noexpand" squalified_name</a>
            macro expansion freezer.
-0289:    <a href="/share/lib/grammar/expressions.flxh#0289">sthe_name := "?" sname</a>
+0290:    <a href="/share/lib/grammar/expressions.flxh#0290">sthe_name := "?" sname</a>
            pattern variable.
-0292:    <a href="/share/lib/grammar/expressions.flxh#0292">sthe_name := "?" sinteger</a>
+0293:    <a href="/share/lib/grammar/expressions.flxh#0293">sthe_name := "?" sinteger</a>
            Template replacement index.
-0294:    <a href="/share/lib/grammar/expressions.flxh#0294">sthe_name := squalified_name</a>
-0295:    <a href="/share/lib/grammar/expressions.flxh#0295">sthe_name := satom</a>
-0298:    <a href="/share/lib/grammar/expressions.flxh#0298">sreally_qualified_name := squalified_name "::" ssimple_name_parts</a>
+0295:    <a href="/share/lib/grammar/expressions.flxh#0295">sthe_name := squalified_name</a>
+0296:    <a href="/share/lib/grammar/expressions.flxh#0296">sthe_name := satom</a>
+0299:    <a href="/share/lib/grammar/expressions.flxh#0299">sreally_qualified_name := squalified_name "::" ssimple_name_parts</a>
            Qualified name.
-0301:    <a href="/share/lib/grammar/expressions.flxh#0301">squalified_name := sreally_qualified_name</a>
-0303:    <a href="/share/lib/grammar/expressions.flxh#0303">squalified_name := ssimple_name_parts</a>
-0306:    <a href="/share/lib/grammar/expressions.flxh#0306">ssimple_name_parts := sname</a>
-0307:    <a href="/share/lib/grammar/expressions.flxh#0307">ssimple_name_parts := sname "[" sexpr "]"</a>
-0310:    <a href="/share/lib/grammar/expressions.flxh#0310">ssuffixed_name := squalified_name "of" x[sfactor_pri]</a>
+0302:    <a href="/share/lib/grammar/expressions.flxh#0302">squalified_name := sreally_qualified_name</a>
+0304:    <a href="/share/lib/grammar/expressions.flxh#0304">squalified_name := ssimple_name_parts</a>
+0307:    <a href="/share/lib/grammar/expressions.flxh#0307">ssimple_name_parts := sname</a>
+0308:    <a href="/share/lib/grammar/expressions.flxh#0308">ssimple_name_parts := sname "[" sexpr "]"</a>
+0311:    <a href="/share/lib/grammar/expressions.flxh#0311">ssuffixed_name := squalified_name "of" x[sfactor_pri]</a>
            Suffixed name (to name functions).
-0314:    <a href="/share/lib/grammar/expressions.flxh#0314">satom := "(" rassign ("," rassign )* ")"</a>
+0315:    <a href="/share/lib/grammar/expressions.flxh#0315">satom := "(" rassign ("," rassign )* ")"</a>
            record value (comma separated).
-0317:    <a href="/share/lib/grammar/expressions.flxh#0317">rassign := sname "=" x[sor_condition_pri]</a>
-0322:    <a href="/share/lib/grammar/expressions.flxh#0322">satom := "struct" "{" vassign+ "}"</a>
+0318:    <a href="/share/lib/grammar/expressions.flxh#0318">rassign := sname "=" x[sor_condition_pri]</a>
+0323:    <a href="/share/lib/grammar/expressions.flxh#0323">satom := "struct" "{" vassign+ "}"</a>
            record value, statement list.
            this variant is useful for encapsulating
            a series of var x = y; style statements.
-0325:    <a href="/share/lib/grammar/expressions.flxh#0325">vassign := "var" sname "=" sexpr ";"</a>
-0329:    <a href="/share/lib/grammar/expressions.flxh#0329">satom := sliteral</a>
+0326:    <a href="/share/lib/grammar/expressions.flxh#0326">vassign := "var" sname "=" sexpr ";"</a>
+0330:    <a href="/share/lib/grammar/expressions.flxh#0330">satom := sliteral</a>
            scalar literals (numbers, strings).
-0332:    <a href="/share/lib/grammar/expressions.flxh#0332">satom := _</a>
+0333:    <a href="/share/lib/grammar/expressions.flxh#0333">satom := _</a>
            Wildcard pattern.
-0335:    <a href="/share/lib/grammar/expressions.flxh#0335">satom := "..."</a>
+0336:    <a href="/share/lib/grammar/expressions.flxh#0336">satom := "..."</a>
            Ellipsis (for binding C varags functions).
-0338:    <a href="/share/lib/grammar/expressions.flxh#0338">satom := "false"</a>
+0339:    <a href="/share/lib/grammar/expressions.flxh#0339">satom := "false"</a>
            Boolean false.
-0341:    <a href="/share/lib/grammar/expressions.flxh#0341">satom := "true"</a>
+0342:    <a href="/share/lib/grammar/expressions.flxh#0342">satom := "true"</a>
            Boolean true.
-0344:    <a href="/share/lib/grammar/expressions.flxh#0344">satom := "callback" "[" sexpr "]"</a>
+0345:    <a href="/share/lib/grammar/expressions.flxh#0345">satom := "callback" "[" sexpr "]"</a>
            Callback expression.
-0347:    <a href="/share/lib/grammar/expressions.flxh#0347">satom := "[|" sexpr "|]"</a>
+0348:    <a href="/share/lib/grammar/expressions.flxh#0348">satom := "[|" sexpr "|]"</a>
            Array expression (deprecated).
-0350:    <a href="/share/lib/grammar/expressions.flxh#0350">satom := "{" sexpr "}"</a>
+0351:    <a href="/share/lib/grammar/expressions.flxh#0351">satom := "{" sexpr "}"</a>
            Short form anonymous function closure.
-0353:    <a href="/share/lib/grammar/expressions.flxh#0353">satom := scompound</a>
+0354:    <a href="/share/lib/grammar/expressions.flxh#0354">satom := scompound</a>
            Short form anonymous procedure closure.
-0357:    <a href="/share/lib/grammar/expressions.flxh#0357">satom := "(" stmt+ sexpr ")"</a>
+0358:    <a href="/share/lib/grammar/expressions.flxh#0358">satom := "(" stmt+ sexpr ")"</a>
            Short form sequence operator.
            ( stmt; expr ) means the same as #{stmt; return expr; }
-0373:    <a href="/share/lib/grammar/expressions.flxh#0373">satom := "(" "var" sexpr ")"</a>
+0374:    <a href="/share/lib/grammar/expressions.flxh#0374">satom := "(" "var" sexpr ")"</a>
            special anonymous variable forces eager eval.
-0386:    <a href="/share/lib/grammar/expressions.flxh#0386">satom := "(" sexpr ")"</a>
+0387:    <a href="/share/lib/grammar/expressions.flxh#0387">satom := "(" sexpr ")"</a>
            Grouping.
-0389:    <a href="/share/lib/grammar/expressions.flxh#0389">satom := "(" ")"</a>
+0390:    <a href="/share/lib/grammar/expressions.flxh#0390">satom := "(" ")"</a>
            Empty tuple (unit tuple).
-0392:    <a href="/share/lib/grammar/expressions.flxh#0392">satom := "extend" stypelist "with" sexpr "end"</a>
+0393:    <a href="/share/lib/grammar/expressions.flxh#0393">satom := "extend" stypelist "with" sexpr "end"</a>
            Object extension.
-0395:    <a href="/share/lib/grammar/expressions.flxh#0395">satom := sconditional "endif"</a>
+0396:    <a href="/share/lib/grammar/expressions.flxh#0396">satom := sconditional "endif"</a>
            Conditional expression.
-0398:    <a href="/share/lib/grammar/expressions.flxh#0398">sconditional := "if" sexpr "then" sexpr selse_part</a>
+0399:    <a href="/share/lib/grammar/expressions.flxh#0399">sconditional := "if" sexpr "then" sexpr selse_part</a>
            Conditional expression (prefix).
-0401:    <a href="/share/lib/grammar/expressions.flxh#0401">selif := "elif" sexpr "then" sexpr</a>
-0403:    <a href="/share/lib/grammar/expressions.flxh#0403">selifs := selif</a>
-0404:    <a href="/share/lib/grammar/expressions.flxh#0404">selifs := selifs selif</a>
-0406:    <a href="/share/lib/grammar/expressions.flxh#0406">selse_part:= "else" sexpr</a>
-0407:    <a href="/share/lib/grammar/expressions.flxh#0407">selse_part:= selifs "else" sexpr</a>
+0402:    <a href="/share/lib/grammar/expressions.flxh#0402">selif := "elif" sexpr "then" sexpr</a>
+0404:    <a href="/share/lib/grammar/expressions.flxh#0404">selifs := selif</a>
+0405:    <a href="/share/lib/grammar/expressions.flxh#0405">selifs := selifs selif</a>
+0407:    <a href="/share/lib/grammar/expressions.flxh#0407">selse_part:= "else" sexpr</a>
+0408:    <a href="/share/lib/grammar/expressions.flxh#0408">selse_part:= selifs "else" sexpr</a>
 <hr/><a href="/share/lib/grammar/felix.flxh">felix.flxh</a>
 
 0001:  <a href="/share/lib/grammar/felix.flxh#0001">syntax felix</a>
@@ -658,103 +658,109 @@
            Equivalent to a function with a non-tautologous but unknown pre-condition.
 0083:    <a href="/share/lib/grammar/functions.flxh#0083">sadjective := "method"</a>
            Specifies a method, in an object definition only.
-0084:    <a href="/share/lib/grammar/functions.flxh#0084">sadjectives := sadjective*</a>
-0086:    <a href="/share/lib/grammar/functions.flxh#0086">slambda_fun_arg := "(" sparameter_comma_list "when" sexpr ")"</a>
-0087:    <a href="/share/lib/grammar/functions.flxh#0087">slambda_fun_arg := "(" sparameter_comma_list ")"</a>
-0088:    <a href="/share/lib/grammar/functions.flxh#0088">slambda_fun_args := slambda_fun_arg+</a>
-0091:    <a href="/share/lib/grammar/functions.flxh#0091">fun_return_type := ":" stypeexpr "expect" sexpr</a>
+0089:    <a href="/share/lib/grammar/functions.flxh#0089">sadjective := "export"</a>
+           Specifies function is to be exported under its Felix name.
+           Function must be top level and non-polymorphic.
+           Top level means the global space or a non-polymorphic class
+           nested in a top level space (recursively).
+0090:    <a href="/share/lib/grammar/functions.flxh#0090">sadjective := "export" sstring</a>
+0092:    <a href="/share/lib/grammar/functions.flxh#0092">sadjectives := sadjective*</a>
+0094:    <a href="/share/lib/grammar/functions.flxh#0094">slambda_fun_arg := "(" sparameter_comma_list "when" sexpr ")"</a>
+0095:    <a href="/share/lib/grammar/functions.flxh#0095">slambda_fun_arg := "(" sparameter_comma_list ")"</a>
+0096:    <a href="/share/lib/grammar/functions.flxh#0096">slambda_fun_args := slambda_fun_arg+</a>
+0099:    <a href="/share/lib/grammar/functions.flxh#0099">fun_return_type := ":" stypeexpr "expect" sexpr</a>
            Function return type specification with post-condition.
-0094:    <a href="/share/lib/grammar/functions.flxh#0094">fun_return_type := ":" stypeexpr</a>
+0102:    <a href="/share/lib/grammar/functions.flxh#0102">fun_return_type := ":" stypeexpr</a>
            Function return type specification without post-condition.
-0097:    <a href="/share/lib/grammar/functions.flxh#0097">fun_return_type := "expect" sexpr</a>
+0105:    <a href="/share/lib/grammar/functions.flxh#0105">fun_return_type := "expect" sexpr</a>
            Function return postcondition without type.
-0100:    <a href="/share/lib/grammar/functions.flxh#0100">fun_return_type := sepsilon</a>
+0108:    <a href="/share/lib/grammar/functions.flxh#0108">fun_return_type := sepsilon</a>
            No return type.
-0103:    <a href="/share/lib/grammar/functions.flxh#0103">object_return_type := stypeexpr</a>
+0111:    <a href="/share/lib/grammar/functions.flxh#0111">object_return_type := stypeexpr</a>
            Object factory return type.
-0106:    <a href="/share/lib/grammar/functions.flxh#0106">sparameter := sparam_qual sname ":" x[sarrow_pri] "=" x[sor_condition_pri]</a>
+0114:    <a href="/share/lib/grammar/functions.flxh#0114">sparameter := sparam_qual sname ":" x[sarrow_pri] "=" x[sor_condition_pri]</a>
            Function parameter with type and default value.
-0109:    <a href="/share/lib/grammar/functions.flxh#0109">sparameter := sparam_qual sname ":" x[sarrow_pri]</a>
+0117:    <a href="/share/lib/grammar/functions.flxh#0117">sparameter := sparam_qual sname ":" x[sarrow_pri]</a>
            Function parameter with type.
-0113:    <a href="/share/lib/grammar/functions.flxh#0113">sparameter := sparam_qual sname</a>
+0121:    <a href="/share/lib/grammar/functions.flxh#0121">sparameter := sparam_qual sname</a>
            Function parameter without type.
            Defaults to polymorphic in unnamed type variable.
-0116:    <a href="/share/lib/grammar/functions.flxh#0116">sparameter_comma_list := sepsilon</a>
+0124:    <a href="/share/lib/grammar/functions.flxh#0124">sparameter_comma_list := sepsilon</a>
            Empty parameter tuple.
-0119:    <a href="/share/lib/grammar/functions.flxh#0119">sparameter_comma_list := sparameter ("," sparameter)*</a>
+0127:    <a href="/share/lib/grammar/functions.flxh#0127">sparameter_comma_list := sparameter ("," sparameter)*</a>
            Populated parameter tuple.
-0122:    <a href="/share/lib/grammar/functions.flxh#0122">sparam_qual := "val"</a>
+0130:    <a href="/share/lib/grammar/functions.flxh#0130">sparam_qual := "val"</a>
            Parameter qualifier: val.
-0125:    <a href="/share/lib/grammar/functions.flxh#0125">sparam_qual := "var"</a>
+0133:    <a href="/share/lib/grammar/functions.flxh#0133">sparam_qual := "var"</a>
            Parameter qualifier: var.
-0128:    <a href="/share/lib/grammar/functions.flxh#0128">sparam_qual := "ref"</a>
+0136:    <a href="/share/lib/grammar/functions.flxh#0136">sparam_qual := "ref"</a>
            Parameter qualifier: ref.
-0131:    <a href="/share/lib/grammar/functions.flxh#0131">sparam_qual := "fun"</a>
+0139:    <a href="/share/lib/grammar/functions.flxh#0139">sparam_qual := "fun"</a>
            Parameter qualifier: fun.
-0134:    <a href="/share/lib/grammar/functions.flxh#0134">sparam_qual := sepsilon</a>
+0142:    <a href="/share/lib/grammar/functions.flxh#0142">sparam_qual := sepsilon</a>
            Default parameter qualifier is val.
-0137:    <a href="/share/lib/grammar/functions.flxh#0137">sfun_arg :=  "(" sparameter_comma_list "when" sexpr ")"</a>
+0145:    <a href="/share/lib/grammar/functions.flxh#0145">sfun_arg :=  "(" sparameter_comma_list "when" sexpr ")"</a>
            Function tuple parameter with pre-condition.
-0140:    <a href="/share/lib/grammar/functions.flxh#0140">sfun_arg :=  "(" sparameter_comma_list ")"</a>
+0148:    <a href="/share/lib/grammar/functions.flxh#0148">sfun_arg :=  "(" sparameter_comma_list ")"</a>
            Function tuple parameter without pre-condition.
-0143:    <a href="/share/lib/grammar/functions.flxh#0143">sfun_arg :=  sname</a>
-           Sort form function parameter single polymorphic variable.
-0147:    <a href="/share/lib/grammar/functions.flxh#0147">sfun_kind := "cfun"</a>
+0151:    <a href="/share/lib/grammar/functions.flxh#0151">sfun_arg :=  sname</a>
+           Short form function parameter single polymorphic variable.
+0155:    <a href="/share/lib/grammar/functions.flxh#0155">sfun_kind := "cfun"</a>
            Function binder: C function.
            A function with C function type.
-0151:    <a href="/share/lib/grammar/functions.flxh#0151">sfun_kind := "gen"</a>
+0159:    <a href="/share/lib/grammar/functions.flxh#0159">sfun_kind := "gen"</a>
            Function binder: Generator.
            A function with side effects.
-0155:    <a href="/share/lib/grammar/functions.flxh#0155">sfun_kind := "fun"</a>
+0163:    <a href="/share/lib/grammar/functions.flxh#0163">sfun_kind := "fun"</a>
            Function binder: Function.
            A function without side-effects.
-0157:    <a href="/share/lib/grammar/functions.flxh#0157">stmt := sfunction</a>
-0163:    <a href="/share/lib/grammar/functions.flxh#0163">sfunction := sadjectives sfun_kind sdeclname sfun_arg* fun_return_type "=>" sexpr ";"</a>
+0165:    <a href="/share/lib/grammar/functions.flxh#0165">stmt := sfunction</a>
+0171:    <a href="/share/lib/grammar/functions.flxh#0171">sfunction := sadjectives sfun_kind sdeclname sfun_arg* fun_return_type "=>" sexpr ";"</a>
            General function definition. Multiple tuple arguments, body is expression.
            Example:
            
            inline fun f (x:int when x>0) (y:long when y>0l) : long expect result > 0l => x.long + y;
-0172:    <a href="/share/lib/grammar/functions.flxh#0172">sfunction := sadjectives sfun_kind sdeclname sfun_arg* fun_return_type "=" scompound</a>
+0180:    <a href="/share/lib/grammar/functions.flxh#0180">sfunction := sadjectives sfun_kind sdeclname sfun_arg* fun_return_type "=" scompound</a>
            General function definition. Multiple tuple arguments, body of statements.
            inline fun f (x:int when x>0) (y:long when y>0l) : long expect result > 0l { return x.long + y; }
-0178:    <a href="/share/lib/grammar/functions.flxh#0178">sfunction := "object" sdeclname sfun_arg* "implements" object_return_type "=" scompound</a>
+0186:    <a href="/share/lib/grammar/functions.flxh#0186">sfunction := "object" sdeclname sfun_arg* "implements" object_return_type "=" scompound</a>
            Object factory definition with interface type.
-0184:    <a href="/share/lib/grammar/functions.flxh#0184">sfunction := "object" sdeclname sfun_arg*  "=" scompound</a>
+0192:    <a href="/share/lib/grammar/functions.flxh#0192">sfunction := "object" sdeclname sfun_arg*  "=" scompound</a>
            Object factory definition without interface type.
-0210:    <a href="/share/lib/grammar/functions.flxh#0210">sfunction := "object" sdeclname sfun_arg*  "extends" stypeexpr_comma_list "=" scompound</a>
+0218:    <a href="/share/lib/grammar/functions.flxh#0218">sfunction := "object" sdeclname sfun_arg*  "extends" stypeexpr_comma_list "=" scompound</a>
            Object factory definition with inherited methods and
            interface type.
            Object factory definition with inherited methods.
-0225:    <a href="/share/lib/grammar/functions.flxh#0225">stypeexpr_comma_list := stypeexpr ("," stypeexpr)*</a>
-0228:    <a href="/share/lib/grammar/functions.flxh#0228">sopt_cstring := "=" scode_spec</a>
-0229:    <a href="/share/lib/grammar/functions.flxh#0229">sopt_cstring := sepsilon</a>
-0234:    <a href="/share/lib/grammar/functions.flxh#0234">sfunction := sadjectives sfun_kind sdeclname fun_return_type "=" smatching+ ";"</a>
+0233:    <a href="/share/lib/grammar/functions.flxh#0233">stypeexpr_comma_list := stypeexpr ("," stypeexpr)*</a>
+0236:    <a href="/share/lib/grammar/functions.flxh#0236">sopt_cstring := "=" scode_spec</a>
+0237:    <a href="/share/lib/grammar/functions.flxh#0237">sopt_cstring := sepsilon</a>
+0242:    <a href="/share/lib/grammar/functions.flxh#0242">sfunction := sadjectives sfun_kind sdeclname fun_return_type "=" smatching+ ";"</a>
            Short form function definition. Example:
            fun f : int -> int = | 0 => 0 | _ => 1;
-0263:    <a href="/share/lib/grammar/functions.flxh#0263">sproc_kind := "proc"</a>
+0271:    <a href="/share/lib/grammar/functions.flxh#0271">sproc_kind := "proc"</a>
            Procedure binder.
-0267:    <a href="/share/lib/grammar/functions.flxh#0267">sproc_kind := "cproc"</a>
+0275:    <a href="/share/lib/grammar/functions.flxh#0275">sproc_kind := "cproc"</a>
            C procedure binder.
            Procedure has C function type (with void result type).
-0269:    <a href="/share/lib/grammar/functions.flxh#0269">sopt_traint_eq:= "expect" sexpr "="</a>
-0270:    <a href="/share/lib/grammar/functions.flxh#0270">sopt_traint_eq:= "="</a>
-0271:    <a href="/share/lib/grammar/functions.flxh#0271">sopt_traint_eq:= sepsilon</a>
-0273:    <a href="/share/lib/grammar/functions.flxh#0273">sopt_traint:= "expect" sexpr</a>
-0274:    <a href="/share/lib/grammar/functions.flxh#0274">sopt_traint:= sepsilon</a>
-0276:    <a href="/share/lib/grammar/functions.flxh#0276">sctor_init := sname "(" sexpr ")"</a>
-0277:    <a href="/share/lib/grammar/functions.flxh#0277">sctor_inits := ":" sctor_init ("," sctor_init)*</a>
-0278:    <a href="/share/lib/grammar/functions.flxh#0278">sctor_inits := sepsilon</a>
-0283:    <a href="/share/lib/grammar/functions.flxh#0283">sfunction := "ctor" stvarlist squalified_name sfun_arg+ sopt_traint_eq scompound</a>
+0277:    <a href="/share/lib/grammar/functions.flxh#0277">sopt_traint_eq:= "expect" sexpr "="</a>
+0278:    <a href="/share/lib/grammar/functions.flxh#0278">sopt_traint_eq:= "="</a>
+0279:    <a href="/share/lib/grammar/functions.flxh#0279">sopt_traint_eq:= sepsilon</a>
+0281:    <a href="/share/lib/grammar/functions.flxh#0281">sopt_traint:= "expect" sexpr</a>
+0282:    <a href="/share/lib/grammar/functions.flxh#0282">sopt_traint:= sepsilon</a>
+0284:    <a href="/share/lib/grammar/functions.flxh#0284">sctor_init := sname "(" sexpr ")"</a>
+0285:    <a href="/share/lib/grammar/functions.flxh#0285">sctor_inits := ":" sctor_init ("," sctor_init)*</a>
+0286:    <a href="/share/lib/grammar/functions.flxh#0286">sctor_inits := sepsilon</a>
+0291:    <a href="/share/lib/grammar/functions.flxh#0291">sfunction := "ctor" stvarlist squalified_name sfun_arg+ sopt_traint_eq scompound</a>
            Short form constructor function.
            The name of the function must be a type name.
            The return type is taken as the type with the name of the function.
-0300:    <a href="/share/lib/grammar/functions.flxh#0300">sfunction := "ctor" stvarlist squalified_name sfun_arg+ sopt_traint "=>" sexpr ";"</a>
+0308:    <a href="/share/lib/grammar/functions.flxh#0308">sfunction := "ctor" stvarlist squalified_name sfun_arg+ sopt_traint "=>" sexpr ";"</a>
            Short form constructor function.
            The name of the function must be a type name.
            The return type is taken as the type with the name of the function.
-0315:    <a href="/share/lib/grammar/functions.flxh#0315">sfunction := sadjectives sproc_kind sdeclname sfun_arg* sopt_traint_eq scompound</a>
+0323:    <a href="/share/lib/grammar/functions.flxh#0323">sfunction := sadjectives sproc_kind sdeclname sfun_arg* sopt_traint_eq scompound</a>
            Procedure definition, general form.
-0321:    <a href="/share/lib/grammar/functions.flxh#0321">sfunction := sadjectives sproc_kind sdeclname sfun_arg* "=>" stmt</a>
+0329:    <a href="/share/lib/grammar/functions.flxh#0329">sfunction := sadjectives sproc_kind sdeclname sfun_arg* "=>" stmt</a>
            Procedure definition, short form (one statement).
 <hr/><a href="/share/lib/grammar/grammar_float_lexer.flxh">grammar_float_lexer.flxh</a>
 
@@ -1774,28 +1780,28 @@
 0376:    <a href="/share/lib/grammar/texsyms.flxh#0376">satom := "\lfloor" sexpr "\rfloor"</a>
 <hr/><a href="/share/lib/grammar/type_decls.flxh">type_decls.flxh</a>
 
-0064:  <a href="/share/lib/grammar/type_decls.flxh#0064">syntax type_decls</a>
+0065:  <a href="/share/lib/grammar/type_decls.flxh#0065">syntax type_decls</a>
            Stuff for defining types.
            Felix type expressions use the same syntax as value expressions.
-0067:    <a href="/share/lib/grammar/type_decls.flxh#0067">satom := stypematch</a>
-0070:    <a href="/share/lib/grammar/type_decls.flxh#0070">stmt := "typedef" sdeclname "=" sexpr ";"</a>
+0068:    <a href="/share/lib/grammar/type_decls.flxh#0068">satom := stypematch</a>
+0071:    <a href="/share/lib/grammar/type_decls.flxh#0071">stmt := "typedef" sdeclname "=" sexpr ";"</a>
            Typedef creates an alias for a type.
-0078:    <a href="/share/lib/grammar/type_decls.flxh#0078">stmt := "typedef" "fun" sdeclname stypefun_args ":" stypeexpr "=>" sexpr ";"</a>
+0079:    <a href="/share/lib/grammar/type_decls.flxh#0079">stmt := "typedef" "fun" sdeclname stypefun_args ":" stypeexpr "=>" sexpr ";"</a>
            Typedef fun create a type function or functor.
            It maps some types to another type.
            This is the simple expression form.
-0086:    <a href="/share/lib/grammar/type_decls.flxh#0086">stmt := "typedef" "fun" sdeclname ":" stypeexpr "=" stype_matching+ ";"</a>
+0087:    <a href="/share/lib/grammar/type_decls.flxh#0087">stmt := "typedef" "fun" sdeclname ":" stypeexpr "=" stype_matching+ ";"</a>
            Typedef fun create a type function or functor.
            It maps some types to another type.
            This is the simple matching form.
-0100:    <a href="/share/lib/grammar/type_decls.flxh#0100">stype_matching := "|" sexpr "=>" sexpr</a>
-0107:    <a href="/share/lib/grammar/type_decls.flxh#0107">stypematch := "typematch" sexpr "with" stype_matching+ "endmatch"</a>
+0101:    <a href="/share/lib/grammar/type_decls.flxh#0101">stype_matching := "|" sexpr "=>" sexpr</a>
+0108:    <a href="/share/lib/grammar/type_decls.flxh#0108">stypematch := "typematch" sexpr "with" stype_matching+ "endmatch"</a>
            A typematch expression computes a type based on a pattern match.
            The matching process never rejects a type variable which
            mighht later match after substitution.
            It also never accepts a match which might later fail to match
            after substitution.
-0131:    <a href="/share/lib/grammar/type_decls.flxh#0131">stmt := "struct" sdeclname "=" ? "{" sstruct_mem_decl * "}"</a>
+0132:    <a href="/share/lib/grammar/type_decls.flxh#0132">sexport := "export"</a>
            A struct is a nominally type product type similar to a C struct.
            A struct may be polymorphic.  Felix generates a constructor for
            the struct from a tuple of the types of the fields of te struct,
@@ -1814,22 +1820,24 @@
            println$ X 1 . f 2;
            // f is equivalent to
            fun f (self:X) (b:int) => self.a + b;
-0174:    <a href="/share/lib/grammar/type_decls.flxh#0174">sstruct_mem_decl := stypeexpr sname ";"</a>
-0175:    <a href="/share/lib/grammar/type_decls.flxh#0175">sstruct_mem_decl := sname ":" stypeexpr ";"</a>
-0176:    <a href="/share/lib/grammar/type_decls.flxh#0176">sstruct_mem_decl := sfunction</a>
-0185:    <a href="/share/lib/grammar/type_decls.flxh#0185">stmt := "cstruct" sdeclname "=" ? "{" sstruct_mem_decl * "}" srequires_clause ";"</a>
+0133:    <a href="/share/lib/grammar/type_decls.flxh#0133">sexport := sepsilon</a>
+0134:    <a href="/share/lib/grammar/type_decls.flxh#0134">stmt := sexport "struct" sdeclname "=" ? "{" sstruct_mem_decl * "}"</a>
+0185:    <a href="/share/lib/grammar/type_decls.flxh#0185">sstruct_mem_decl := stypeexpr sname ";"</a>
+0186:    <a href="/share/lib/grammar/type_decls.flxh#0186">sstruct_mem_decl := sname ":" stypeexpr ";"</a>
+0187:    <a href="/share/lib/grammar/type_decls.flxh#0187">sstruct_mem_decl := sfunction</a>
+0196:    <a href="/share/lib/grammar/type_decls.flxh#0196">stmt := "cstruct" sdeclname "=" ? "{" sstruct_mem_decl * "}" srequires_clause ";"</a>
            A ctruct provides a model of a C structure.
            This is the same as a struct except the structure is not emitted.
            Instead, it is assumed to be already defined in C.
            CAVEAT: A C struct constructor should not be used
            unless the cstruct definition is a complete model of the C struct.
-0190:    <a href="/share/lib/grammar/type_decls.flxh#0190">stmt := "typedef" "struct" "{" sstruct_mem_decl * "}" sdeclname srequires_clause ";"</a>
+0201:    <a href="/share/lib/grammar/type_decls.flxh#0201">stmt := "typedef" "struct" "{" sstruct_mem_decl * "}" sdeclname srequires_clause ";"</a>
            A hack to help with cut and paste from C headers into Felix
-0195:    <a href="/share/lib/grammar/type_decls.flxh#0195">stmt := "typedef" "struct" sdeclname "{" sstruct_mem_decl * "}" sdeclname srequires_clause ";"</a>
+0206:    <a href="/share/lib/grammar/type_decls.flxh#0206">stmt := "typedef" "struct" sdeclname "{" sstruct_mem_decl * "}" sdeclname srequires_clause ";"</a>
            A hack to help with cut and paste from C headers into Felix
-0199:    <a href="/share/lib/grammar/type_decls.flxh#0199">sopt_name := sname</a>
-0200:    <a href="/share/lib/grammar/type_decls.flxh#0200">sopt_name := sepsilon</a>
-0216:    <a href="/share/lib/grammar/type_decls.flxh#0216">stmt := "union" sdeclname "=" stype_sum_items2 ";"</a>
+0210:    <a href="/share/lib/grammar/type_decls.flxh#0210">sopt_name := sname</a>
+0211:    <a href="/share/lib/grammar/type_decls.flxh#0211">sopt_name := sepsilon</a>
+0227:    <a href="/share/lib/grammar/type_decls.flxh#0227">stmt := "union" sdeclname "=" stype_sum_items2 ";"</a>
            A union is a model of a discriminated union or variant.
            Such unions have a discriminant tag that determines
            at run time which component is populated.
@@ -1842,29 +1850,29 @@
            
            Unions provide a safe way to "unify" heterogenous data
            into a single data type.
-0222:    <a href="/share/lib/grammar/type_decls.flxh#0222">stmt := "union" sdeclname "{" stype_sum_item1* "}"</a>
+0233:    <a href="/share/lib/grammar/type_decls.flxh#0233">stmt := "union" sdeclname "{" stype_sum_item1* "}"</a>
            Deprecated C like syntax for unionx.
-0227:    <a href="/share/lib/grammar/type_decls.flxh#0227">stmt := senum_decl</a>
-0232:    <a href="/share/lib/grammar/type_decls.flxh#0232">stmt := "enum" sdeclname "{" senum_items "}"</a>
+0238:    <a href="/share/lib/grammar/type_decls.flxh#0238">stmt := senum_decl</a>
+0243:    <a href="/share/lib/grammar/type_decls.flxh#0243">stmt := "enum" sdeclname "{" senum_items "}"</a>
            Short for for declaring an enumeration,
            which is a union all of whose fields are constant constructors.
            Deprecated syntax.
-0239:    <a href="/share/lib/grammar/type_decls.flxh#0239">stmt := "enum" sdeclname "=" senum_items ";"</a>
+0250:    <a href="/share/lib/grammar/type_decls.flxh#0250">stmt := "enum" sdeclname "=" senum_items ";"</a>
            Short for for declaring an enumeration,
            which is a union all of whose fields are constant constructors.
-0244:    <a href="/share/lib/grammar/type_decls.flxh#0244">sopt_value := "=" sinteger</a>
-0245:    <a href="/share/lib/grammar/type_decls.flxh#0245">sopt_value := sepsilon</a>
-0246:    <a href="/share/lib/grammar/type_decls.flxh#0246">senum_item := sname sopt_value</a>
-0247:    <a href="/share/lib/grammar/type_decls.flxh#0247">senum_items := senum_item "," senum_items</a>
-0248:    <a href="/share/lib/grammar/type_decls.flxh#0248">senum_items := senum_item</a>
-0249:    <a href="/share/lib/grammar/type_decls.flxh#0249">senum_items := sepsilon</a>
-0253:    <a href="/share/lib/grammar/type_decls.flxh#0253">stmt := "interface" sdeclname stype_extension "{" srecord_type "}"</a>
+0255:    <a href="/share/lib/grammar/type_decls.flxh#0255">sopt_value := "=" sinteger</a>
+0256:    <a href="/share/lib/grammar/type_decls.flxh#0256">sopt_value := sepsilon</a>
+0257:    <a href="/share/lib/grammar/type_decls.flxh#0257">senum_item := sname sopt_value</a>
+0258:    <a href="/share/lib/grammar/type_decls.flxh#0258">senum_items := senum_item "," senum_items</a>
+0259:    <a href="/share/lib/grammar/type_decls.flxh#0259">senum_items := senum_item</a>
+0260:    <a href="/share/lib/grammar/type_decls.flxh#0260">senum_items := sepsilon</a>
+0264:    <a href="/share/lib/grammar/type_decls.flxh#0264">stmt := "interface" sdeclname stype_extension "{" srecord_type "}"</a>
            Java like interface of an object type.
            Equivalent to a record type.
-0257:    <a href="/share/lib/grammar/type_decls.flxh#0257">srecord_type := srecord_mem_decl (";" srecord_mem_decl)* ";"</a>
-0259:    <a href="/share/lib/grammar/type_decls.flxh#0259">stypelist := stypeexpr ("," stypeexpr)*</a>
-0260:    <a href="/share/lib/grammar/type_decls.flxh#0260">stype_extension := "extends" stypelist</a>
-0261:    <a href="/share/lib/grammar/type_decls.flxh#0261">stype_extension := sepsilon</a>
+0268:    <a href="/share/lib/grammar/type_decls.flxh#0268">srecord_type := srecord_mem_decl (";" srecord_mem_decl)* ";"</a>
+0270:    <a href="/share/lib/grammar/type_decls.flxh#0270">stypelist := stypeexpr ("," stypeexpr)*</a>
+0271:    <a href="/share/lib/grammar/type_decls.flxh#0271">stype_extension := "extends" stypelist</a>
+0272:    <a href="/share/lib/grammar/type_decls.flxh#0272">stype_extension := sepsilon</a>
 <hr/><a href="/share/lib/grammar/variables.flxh">variables.flxh</a>
 
 0002:  <a href="/share/lib/grammar/variables.flxh#0002">syntax variables</a>

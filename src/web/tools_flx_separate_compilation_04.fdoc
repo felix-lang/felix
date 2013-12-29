@@ -1,0 +1,47 @@
+@h2 Understanding Procedures
+In Felix a routine which does not return a result is represented by a procedure construction.
+However there are several quite distinct kinds of procedure!
+
+<ul>
+<li>A subroutine</li>
+<li>A coroutine</li>
+<li>A pthread</li>
+</ul>
+
+A procedure subroutine is the traditional kind, it is called, it modifies
+its environment, and it returns.
+
+A coroutine, on the other hand, is launched not called. Execution may or
+may not be defered. Coroutines synchronise using synchronous channels
+and are used to implement fibres, or cooperative multi-tasking.
+There is only one physical thread of control with a family of
+coroutines, which is exchanged via one or more channels, however each
+coroutine has a distinct separate logical thread of control.
+
+
+A procedure can also be launched as a pthread. Pthreads exchange
+control pre-emptively and asynchronously or may even run
+concurrently if multiple processors are availeble.
+
+@h3 Representation
+The most general representation of a procedures is as a C++ class
+with three functions. The constructor is used to capture the environment.
+The arguments are set with the call method. The procedure is run by
+repeatedly invoking the resume method.
+
+In the subroutine form of a procedure represented by a class,
+the whole of the control flow may be captured with a single
+call to the resume method. In this case, if the procedure has
+no environment to capture other than the thread frame,
+a C function may be used instead of a C++ class for the representation.
+This can be enforced by the {cproc} binder:
+
+@felix
+noinline cproc doit (x:int) { println$ x; }
+doit 42;
+@
+will be represented by a C function like:
+@c++
+void doit (int x) { cout << x << endl;}
+@
+

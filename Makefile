@@ -181,6 +181,7 @@ gen-doc:
 	${BUILDROOT}/host/bin/flx_mktutindex array "Arrays" tutorial.fdoc
 	${BUILDROOT}/host/bin/flx_mktutindex garray "Generalised Arrays" tutorial.fdoc
 	${BUILDROOT}/host/bin/flx_mktutindex uparse "Universal Parser" uparse.fdoc
+	${BUILDROOT}/host/bin/flx_mktutindex  tools_flx_separate_compilation "Separate Compilation" tools_flx.fdoc
 	${BUILDROOT}/host/bin/flx_mktutindex nutut/intro/intro "Ground Up" ../../tutorial.fdoc
 	# Build reference docs. Note this requires plugins.
 	${LPATH}=${BUILDROOT}/host/lib/rtl ${BUILDROOT}/host/bin/flx_libcontents --html > src/web/flx_libcontents.html

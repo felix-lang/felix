@@ -249,7 +249,7 @@ let codegen_bsyms
   plb ("//Timestamp: " ^ state.compile_start_gm_string);
   plb ("//Timestamp: " ^ state.compile_start_local_string);
 
-  plb ("#define FLX_EXTERN_" ^ state.module_name ^ " FLX_EXPORT");
+  plb ("#define FLX_EXTERN_" ^ Flx_name.cid_of_flxid state.module_name ^ " FLX_EXPORT");
   plb ("#include \"" ^ state.module_name ^ ".hpp\"");
   plb "#include <stdio.h>"; (* for diagnostics *)
 

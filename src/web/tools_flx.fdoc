@@ -34,6 +34,7 @@ See:
 <ul>
 <li>Flx <a href="tools_flx_cli.fdoc">command line interface</a></li>
 <li><a href="tools_flx_howto.fdoc">perform various tasks</a></li>
+<li><a href="tools_flx_separate_compilation_index.fdoc">How to do separate compilation.</a></li>
 </ul>
 
 @h3 Package management.
