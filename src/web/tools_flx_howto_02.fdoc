@@ -1,0 +1,54 @@
+@h3 How to build a static linked executable
+By default, felix makes shared libraries. If you wish,
+you can make a static linked executable instead by
+using the <code>--static</code> switch on the flx command line.
+For example:
+@pre
+flx --static -c fred.flx
+@
+will make a static link executable. On Unix and OSX it will have no extension.
+On Windows it will have a <code>.exe</code> extension. With just the line
+above, the executable will be put in the Felix cache as:
+@pre
+$HOME/.felix/cache/binary/pathtofred/fred
+@
+where <code>pathtofred</code> is the absolute pathname
+of the directory containing {fred.flx} without the leading
+{/} of course. On Windows the filename would instead be:
+@pre
+$HOME\.felix\cache\binary\c\pathtofred\fre.exe
+@
+or
+@pre
+$USERPROFILE\.felix\cache\binary\c\pathtofred\fre.exe
+@
+if environment variable {HOME} is not set.
+
+You can change the location to the current directory like this:
+@pre
+flx --static -c -od . fred.flx
+@
+
+Static linking this way will use object files from archives
+of the Felix standard library prepared for static linking.
+On some architectures, including x86_64, these are more 
+efficient than using dynamic linkage because the position
+independent code mechanism specified by the ABI requires
+additional instructions to find an address in a dynamic
+link library.
+
+In addition, static linkage avoids the need to search 
+for these libraries at program startup time, and so makes
+it easier to ship the executable and to bind fixed versions
+of the libraries.
+
+Usually, static linking will NOT static link system libraries
+such as the standard C library. However on Windows you can
+do this, however it is very strongly discouraged. Indeed,
+despite so-called DLL hell, dynamic linking is strongly
+prefered on Windows.
+
+Static linking also prevents upgrading libraries, independently
+and would require a recompile to incorporate upgrades.
+
+

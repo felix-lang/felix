@@ -1,0 +1,50 @@
+@h3 How to add libraries to a program
+You can add standard system libraries, both static and
+dynamic to your link steps. Just pass switches the usual way:
+@pre
+flx -L/usr/local/lib/SDL -lsdl guiapp.flx
+@
+
+Note that this is NOT the recommended way to add such library
+support. The proper way to do this is as follows.
+
+First, you will need to create a binding for the library.
+Lets say we want to add SDL2 support. We'll make a file
+with a binding for SDL and it should say near the top:
+@pre
+requires package "sdl2";
+@
+Now you need to add a file to the configuration directory,
+by default the full filename on a unix system would be:
+@pre
+/usr/local/lib/felix/felix-latest/host/config/sdl2.fpc
+@
+Note that at present, if you upgrade Felix you will probably
+lose this file, so keep a copy elsewhere! A good place to keep
+it is
+@pre
+$HOME/.felix/config/sdl2.fpc
+@
+because all such files will be copied during clean Python build
+process.
+
+This file should look like this on OSX:
+@pre
+Name: SDL2
+Description: Simple Direct Media Layer 2.0
+cflags: -I/usr/local/include/SDL2
+includes: '"SDL.h"'
+provides_dlib: -L/usr/local/lib -lSDL2
+provides_slib: -L/usr/local/lib -lSDL2
+requires_dlibs: ---framework=OpenGL
+requires_slibs: ---framework=OpenGL
+@
+As you can see this file contains all the information
+required to find the C header file for SDL and to
+link the dynamic and static libraries.
+
+If you do all this, you do not need any switches on the
+command line, Felix wll add them for you based on the package
+requirement in the Felix source file.
+
+

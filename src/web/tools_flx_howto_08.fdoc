@@ -1,0 +1,9 @@
+@h3 How to make a static archive library
+Just use the {--staticlib} switch. This is mainly
+useful in conjunction with the {--c++} switch,
+however it can be used to build Felix based libraries
+as well. In that case, however, the library will 
+consist of a single object file, unless you add
+extra object files or C++ files to the command line.
+
+

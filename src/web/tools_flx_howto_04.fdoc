@@ -1,0 +1,15 @@
+@h3 How to add source search directories
+If you need to add any search directories you can use the
+{-I} switch. For example:
+@pre
+flx -Idir your.cpp fred.flx
+@
+will add dir to the search paths for C++ headers
+and for Felix includes. The C++ searches are for
+{your.cpp} and also for the C++ generated from fred.flx.
+
+In other words Felix uses a unified search path for
+both Felix and C++ so that you can put Felix files
+any place you would put C++.
+
+

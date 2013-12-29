@@ -1,0 +1,34 @@
+@h3 How to compile C++ only
+You can also use the {flx} tool as a C++ compiler. 
+The main advantage of this is that the command works
+the same way on all platforms with all compilers
+(provided you don't try to pass compiler specific options).
+
+To do this you just add the switch {--c++} to the command.
+If you're running the program as well, you may also need
+to add a {--} switch to indicate the end of argument to
+the {flx} and the start of arguments to the program.
+
+For example:
+@pre
+flx --static --c++ hello.cpp -- john
+@
+will compile link and run {hello.cpp} passing argument {john}
+to it. If you're linking a program, you must use the {--static}
+option because there is no way to run a C++ shared library.
+In this case at least one file must contain a {main()} function.
+Note that the executable will go in the cache! 
+
+[There is a bug in the current implementation: the object files
+go next to the cpp files instead of in the cache!]
+
+You can use the {--c++} switch to compile C++ to object files,
+combine object files into a static archive library, link
+a shared library, or make executables. If you make an
+executable it will also be run by default unless you
+specify the {-c} switch. Therefore, you can run simple
+C++ source files as if they were script (without invoking
+the compiler or linker explicitly).
+
+
+

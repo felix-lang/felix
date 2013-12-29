@@ -1,72 +1,48 @@
-@h1 How to Browse library code
-The best way to learn Felix and its library .. is to browse
-the library code. Read the code, try to figure what it is doing,
-and try to use it.
-
-Have good look at all the files and get some idea what is in the
-library.
-
-Usually, files {include} other files they need, and modules
-will often {open} modules they need.
-
-However with the standard library, for simplicity and brevity,
-a special file {lib/std/__init__.flx} is used to load all the
-other files, and, most of the modules define are opened
-already. 
-
-Without this code would look a bit like C++: {#include} everything,
-and if it bothered to be modular {using namespace} on each space.
-This is generally the right way because it makes coupling explicit.
-
-For the standard library we encourage you instead to click:
-
-@felix /share/lib/std/__init__.flx
-
-and for the Posix subsystem
-
-@felix /share/lib/std/posix/__init__.flx
-
-@h2 The Felix webserver
-The web server you're using right now is written in Felix and is
-part of the Felix package. It should be installed in {/usr/local/bin}
-right now. If you simply type {webserver} it will run in the console
-foreground and provide web services on port 1234.
-
-The default Felix root is the {/usr/local/lib/felix/felix-version}
-where {felix-version} is the version of Felix the webserver was built
-with.
-
-The webserver can browse Felix documentation files of form {*.fdoc},
-Felix code {*.flx} and {*.flxh}, Felix {flx_pkgconfig} configuration
-database files {*.fpc} and C and C++ files {*.h}, {*.hpp}, {*.c},
-{*.cpp}, {*.cxx}, all with colourisation and
-hyperlinking of inclusions .. so it's good for browsing C and C++
-code too.
-
-Of course it also browses {*.txt}, {*.html}, {*.htm},
-{*.jpg}, {*.png} and few other file kinds too, but these are
-processed in the usual way.
-
-To escape from extreme confusion in the W3C standard regarding
-filename formation, Felix uses a {$} in the URL to separate the
-hostname from the filename. For example
-@pre
-http://locahost:1234/$/usr/include/stddef.h
+@h1 Assignment
+Once you have a pointer to an object, you may be able to modify it.
+If the object type is first class, or otherwise assignable,
+you can put a new value into the object:
+@felix
+var x: int = 0;       // make an object 
+val px = &x;          // find its address
+px <- 1;              // store new value at pointer
+println$ x;           // 1 : the object has been set to a new value
 @
-refers to file {/usr/include/stddef.h}. This is an absolute
-pathname. Felix webserver can browse your whole machine,
-it isn't restricted to the default root.
+Using the heap:
+@felix
+val px = new 0;
+px <- 1;
+println$ x;
+@
 
-If you leave out the {$} separator, the webserver makes a search
-of some paths (currently builtin: a bug to be fixed!) dependent
-on the extension.
+The store operator {&lt;-} has the type:
+@felix
+  &T * T -> void
+@
+Felix also provides the more traditional assignment operator {=}:
+@felix
+var x = 1; 
+x = 2;       // syntactic sugar for &x <- 2
+println$ x;  // 2
+@
+but as you can see it is just syntactic sugar. All mutators work this
+way for example:
+@felix
+  var x = 1;
+  x++;    // syntactic sugar for post_dec (&x)
+  x+=1;   // syntactic sugar for plus_eq (&x,1)
+@
+In particular all operators and functions except {&amp;}
+accept values: there are no reference types. There are no
+operations which modify values directly.
 
-So you can use the webserver, especially with bookmarks, to easily
-browse and code you're writing in C, C++ or Felix, with an easy way
-to examine dependencies (one click .. could it be easier?).
+Some values, when encoded in object store, can be modified
+partially via a pointer to that store. Clearly scalar values
+cannot be partially modified, most aggregates can be.
 
-Of course, your IDE or favourite text editor can probably do all
-this too, but it is hard for the Felix system to provide documentation
-in a format suitable for all these systems, so it comes with its 
-own webserver!
+For Felix types, whether or not this is possible is determined solely by functions
+that manipulate pointers to objects storing those values.
 
+For types defined in C++ and lifted into Felix, the programmer may
+provide mutators.
+ 

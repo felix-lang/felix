@@ -1,2 +1,61 @@
-@h2 The Felix webserver
-TODO
+@h2 The Felix webserver.
+The Felix system comes with a personal webserver, primarily as a standard way
+to view documentation.
+
+It is specifically designed for programmers, and automatically displays
+Felix and C++ code with syntax highlighting and hyperlinking inclusions. 
+It also provides minimal support for {flx_pkgconfig}'s {.fpc} file format, Python,
+Ocaml, and directories.
+
+In addition there is special support for the Felix document format 
+files with {.fdoc} extenions, as well as a slideshows.
+
+Unlike most webservers, the Felix webserver can display any accessible
+file in your file system.
+
+@h3 Starting from command line.
+You can run the webserver like this on Linux:
+@pre
+LD_LIBRARY_PATH=/usr/local/lib/felix/felix-latest/host/lib/rtl \
+  /usr/local/lib/felix/felix-latext/host/bin/webserver \
+  --root=/usr/local/lib/felix/share --port=1234
+@
+and just use DYLD_LIBRARY_PATH on OSX. The default root and
+port are as shown above.
+
+@h3 Starting on system initialisation.
+Alternatively, there are scripts in misc directory of the repository
+which can launch the webserver at startup on Linux and OSX.
+You may need to edit them before installing!
+
+{misc/felixweb.conf} can be used on Linux by editing it and copying
+it into {/init.d}, then you can {sudo stop felixweb} and {sudo start felixweb}.
+
+On OSX you copy after editing {misc/felixweb.plist} into {$HOME/LibraryLaunchAgents}
+and you can then {launchctl stop felixweb} and {launchctl start felixweb}.
+
+@h3 Special characters in URLs.
+The URL you give has two special hacks worth noting. 
+@h4 Absolute Pathnames
+If the pathname
+is of the form {$/usr/local/bin}, starting with a {$} character, 
+the path after the $ is taken as an absolute path. Normally a path
+is relative to the root (if typed in) or the current file 
+(if in the current page). So for example:
+
+@pre
+http://localhost:1234/$/usr/local/lib/felix/felix-latest
+@
+will show the directory of the default install.
+
+@h4 Forced interpretation.
+The other hack is the suffix {?ext} after a filename.
+This tells Felix to load the file but treat it as if it
+had the extension {.ext}.
+
+The Felix webserver is written in Felix. It uses the high performance
+asynchronous I/O subsystem to manage connections. It is also primarily
+based on dynamically loaded plugins (although there is a variant 
+called {weblink} which has the standard plugins preloaded).
+
+
