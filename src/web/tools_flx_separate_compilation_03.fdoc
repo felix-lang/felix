@@ -12,7 +12,7 @@ which uses extern "C" linkage so the symbol is available for
 linkage in an object file or shared library.
 
 The export wrapper here is also certain to be a C function
-acception a pointer to thread frame as the first argument.
+accepting a pointer to thread frame as the first argument.
 
 @h2 Without the thread frame
 You can also export a function so that the interface

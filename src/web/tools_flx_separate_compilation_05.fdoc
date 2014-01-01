@@ -1,0 +1,63 @@
+@h2 Exported procedures
+The rules for exporting procedures are similar to functions.
+In general you have your base procedure which is one of:
+@felix
+proc printint(x:int) {  println$ x; }
+cproc cprintint (x:int) { println$ x; }
+@
+and your export wrappers:
+@felix
+export proc printint of (int) as "printint1";
+export cproc printint of (int) as "printint2";
+export proc cprintint of (int) as "printint3";
+export cproc printint of (int) as "printint4";
+@
+At present both the base functions are OK and all four
+wrappers are also OK.
+
+Because the thread frame isn't required, the base functions
+look like this in C++:
+@pre
+void printit (int x) { .. return; }
+void cprintit (int x) { .. return; }
+@
+The wrappers on the other hand look like this:
+@pre
+//EXPORT PROC printint as printint1
+::flx::rtl::con_t *printint1(
+  FLX_FPAR_DECL
+  int x
+){
+  printint(x);
+  return 0;
+}
+//EXPORT PROC printint as printint2
+::flx::rtl::con_t *printint2(
+  int x
+){
+  printint(x);
+  return 0;
+}
+//EXPORT PROC cprintint as printint3
+::flx::rtl::con_t *printint3(
+  FLX_FPAR_DECL
+  int x
+){
+  cprintint(x);
+  return 0;
+}
+//EXPORT PROC printint as printint4
+::flx::rtl::con_t *printint4(
+  int x
+){
+  printint(x);
+  return 0;
+}
+@
+where the macro {FLX_FPAR_DECL} declares the thread frame pointe {ptf}.
+It isn't used in these cases, however.
+
+Note that all four wrappers return a {con_t*} not void. This is a procedural
+continuation. In all found cases it is {NULL}, meaning there's no 
+continuation.
+

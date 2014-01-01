@@ -159,36 +159,52 @@ let gen_fun_body syms bsym_table kind index export_name =
       (
         if mem `Stack_closure props then
         (
-          if mem `Pure props && not (mem `Heap_closure props) then
+          (* STACKABLE PROCEDURE -- C call protocol *)
           (
-            "  " ^ class_name ^"(" ^
+            if mem `Pure props && not (mem `Heap_closure props) then
             (
-              if mem `Requires_ptf props then
-                begin match kind with
-                | `Fun ->
-                  if length args = 0
-                  then "FLX_APAR_PASS_ONLY "
-                  else "FLX_APAR_PASS "
-                | `Cfun -> 
-                   clierr (Flx_bsym.sr bsym) ("Attempt to export procedure requiring thread frame with C interface: "^ Flx_bsym.id bsym)
-                end
-              else ""
+              (* PURE C FUNCTION *)
+              "  " ^ class_name ^"(" ^
+              (
+                if mem `Requires_ptf props then
+                  begin match kind with
+                  | `Fun ->
+                    if length args = 0
+                    then "FLX_APAR_PASS_ONLY "
+                    else "FLX_APAR_PASS "
+                  | `Cfun -> 
+                     clierr (Flx_bsym.sr bsym) ("Attempt to export procedure requiring thread frame with C interface: "^ Flx_bsym.id bsym)
+                  end
+                else ""
+              )
+              ^
+              cat ", " (Flx_bparameter.get_names args) ^ ");\n"
             )
-            ^
-            cat ", " (Flx_bparameter.get_names args) ^ ");\n"
+            else
+            (
+              (* C++ CLASS CALLED WITH STACK PROTOCOL *)
+              "  " ^ class_name ^ "("^
+              (
+                if mem `Requires_ptf props then
+                  begin match kind with
+                  | `Fun -> "_PTFV"
+                  | `Cfun -> 
+                     clierr (Flx_bsym.sr bsym) ("Attempt to export procedure requiring thread frame with C interface: "^ Flx_bsym.id bsym)
+                  end
+                else ""
+              )^
+              ")\n" ^
+              "    .stack_call(" ^ (catmap ", " (fun {pid=id}->id) args) ^ ");\n"
+            )
           )
-          else
-          (
-            "  " ^ class_name ^ "(_PTFV)\n" ^
-            "    .stack_call(" ^ (catmap ", " (fun {pid=id}->id) args) ^ ");\n"
-          )
+          ^
+          "  return 0;\n"
         )
-        ^
-        "  return 0;\n"
         else
-        "  return (new(*_PTF gcp,"^class_name^"_ptr_map,true)\n" ^
-        "    " ^ class_name ^ "(_PTFV))" ^
-        "\n      ->call(" ^ strargs ^ ");\n"
+          (* GENERAL HEAP CALL RETURNING CONTINUATION *)
+          "  return (new(*_PTF gcp,"^class_name^"_ptr_map,true)\n" ^
+          "    " ^ class_name ^ "(_PTFV))" ^
+          "\n      ->call(" ^ strargs ^ ");\n"
       )
       ^
       "}\n"

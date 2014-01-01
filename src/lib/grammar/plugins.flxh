@@ -12,7 +12,7 @@ SCHEME """
          (address_type (nos "address"))
          (address `(Str ,(string-append "&" sym))) 
          (const `(ast_const_decl ,_sr ,sym ,dfltvs ,address_type ,address ,reqs))
-         (arg `(ast_tuple ,_sr ,(list lib (stringof sym) (nos sym))))
+         (arg `(ast_tuple ,_sr ,(list (stringof lib) (stringof sym) (nos sym))))
          (addsym `(ast_call ,_sr ,(nos "add_symbol")  ,arg))
       )
       `(ast_seq ,_sr ,(list const addsym))
