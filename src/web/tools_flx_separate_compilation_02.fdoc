@@ -66,3 +66,13 @@ Of course the generated C++ code from this program
 doesn't compile because the GC is required, but it isn't
 passed!
 
+A function marked {cfun} has a special type:
+@felix
+cfun f (x:int) => x + 1;
+// type: int --> int
+@
+which is precisly the type of a C function pointer
+@c++
+int (*)(int)
+@
+

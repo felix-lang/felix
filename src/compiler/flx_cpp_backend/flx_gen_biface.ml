@@ -62,14 +62,16 @@ let gen_fun_header syms bsym_table kind index export_name modulename =
       " as " ^ export_name ^ "\n" ^
       "extern \"C\" {\n" ^
       "  using namespace ::flxusr::" ^ mname ^";\n" ^
-      "  FLX_EXTERN_"^modulename ^ " " ^rettypename ^ " " ^
+      "  FLX_EXTERN_"^mname ^ " " ^rettypename ^ " " ^
       export_name ^ "(\n" ^ arglist ^ "\n);\n}\n"
 
     | _ -> failwith "Not implemented: export non-function/procedure"
     end
 
 
-let gen_biface_header syms bsym_table modulename biface = match biface with
+let gen_biface_header syms bsym_table modulename biface = 
+  let mname = Flx_name.cid_of_flxid modulename in
+  match biface with
   | BIFACE_export_python_fun (sr,index, export_name) ->
      "// PYTHON FUNCTION " ^ export_name ^ " header to go here??\n"
 
@@ -91,7 +93,7 @@ let gen_biface_header syms bsym_table modulename biface = match biface with
     let typ = Flx_btype.btyp_inst (idx,[]) in
     let classname = cpp_type_classname syms bsym_table typ in
     "//EXPORT struct " ^ sname ^ "\n" ^
-    "typedef ::flxusr::" ^ modulename ^ "::" ^ classname ^ " " ^ sname ^ ";\n"
+    "typedef ::flxusr::" ^ mname ^ "::" ^ classname ^ " " ^ sname ^ ";\n"
 
 let gen_fun_body syms bsym_table kind index export_name =
     let bsym =
@@ -152,56 +154,59 @@ let gen_fun_body syms bsym_table kind index export_name =
           in
           "0" ^ ", " ^ ge sr a
       in
+      let call_method = 
+         if mem `Cfun props || mem `Pure props && mem `Stackable props then `C_call
+         else if mem `Stackable props then `Stack_call
+         else if mem `Heap_closure props then `Heap_call
+         else 
+           let bug = 
+             "Function exported as " ^ export_name ^ " is neither stackable " ^
+             " nor has a heap closure -- no way to call it" 
+           in clierr sr bug
+      in
+      let requires_ptf = mem `Requires_ptf props in
+
 
       "//EXPORT PROC " ^ cpp_instance_name syms bsym_table index [] ^
       " as " ^ export_name ^ "\n" ^
       "::flx::rtl::con_t *" ^ export_name ^ "(\n" ^ strparams ^ "\n){\n" ^
-      (
-        if mem `Stack_closure props then
-        (
-          (* STACKABLE PROCEDURE -- C call protocol *)
+      ( 
+        match call_method with
+        | `C_call ->
+          "  " ^ class_name ^"(" ^
           (
-            if mem `Pure props && not (mem `Heap_closure props) then
-            (
-              (* PURE C FUNCTION *)
-              "  " ^ class_name ^"(" ^
-              (
-                if mem `Requires_ptf props then
-                  begin match kind with
-                  | `Fun ->
-                    if length args = 0
-                    then "FLX_APAR_PASS_ONLY "
-                    else "FLX_APAR_PASS "
-                  | `Cfun -> 
-                     clierr (Flx_bsym.sr bsym) ("Attempt to export procedure requiring thread frame with C interface: "^ Flx_bsym.id bsym)
-                  end
-                else ""
-              )
-              ^
-              cat ", " (Flx_bparameter.get_names args) ^ ");\n"
-            )
-            else
-            (
-              (* C++ CLASS CALLED WITH STACK PROTOCOL *)
-              "  " ^ class_name ^ "("^
-              (
-                if mem `Requires_ptf props then
-                  begin match kind with
-                  | `Fun -> "_PTFV"
-                  | `Cfun -> 
-                     clierr (Flx_bsym.sr bsym) ("Attempt to export procedure requiring thread frame with C interface: "^ Flx_bsym.id bsym)
-                  end
-                else ""
-              )^
-              ")\n" ^
-              "    .stack_call(" ^ (catmap ", " (fun {pid=id}->id) args) ^ ");\n"
-            )
+            if requires_ptf then
+            begin match kind with
+            | `Fun ->
+              if length args = 0
+              then "FLX_APAR_PASS_ONLY "
+              else "FLX_APAR_PASS "
+            | `Cfun -> 
+              clierr (Flx_bsym.sr bsym) ("Attempt to export procedure requiring thread frame with C interface: "^ Flx_bsym.id bsym)
+            end
+            else ""
           )
           ^
+          cat ", " (Flx_bparameter.get_names args) ^ ");\n" ^
           "  return 0;\n"
-        )
-        else
-          (* GENERAL HEAP CALL RETURNING CONTINUATION *)
+
+        | `Stack_call ->
+          "  " ^ class_name ^ "("^
+          (
+            if requires_ptf then
+            begin match kind with
+            | `Fun -> "_PTFV"
+            | `Cfun -> 
+              clierr (Flx_bsym.sr bsym) ("Attempt to export procedure requiring thread frame with C interface: "^ Flx_bsym.id bsym)
+            end
+            else ""
+          )
+          ^
+          ")" ^
+          ".stack_call(" ^ (catmap ", " (fun {pid=id}->id) args) ^ ");\n"
+          ^
+          "  return 0;\n"
+        | `Heap_call ->
           "  return (new(*_PTF gcp,"^class_name^"_ptr_map,true)\n" ^
           "    " ^ class_name ^ "(_PTFV))" ^
           "\n      ->call(" ^ strargs ^ ");\n"
@@ -309,60 +314,61 @@ let gen_biface_body syms bsym_table biface = match biface with
   | BIFACE_export_struct _ -> ""
 
 let gen_felix_binding syms bsym_table kind index export_name modulename =
-    let bsym =
-      try Flx_bsym_table.find bsym_table index with Not_found ->
-        failwith ("[gen_biface_header] Can't find index " ^ string_of_bid index)
+  let mname = Flx_name.cid_of_flxid modulename in
+  let bsym =
+    try Flx_bsym_table.find bsym_table index with Not_found ->
+      failwith ("[gen_biface_header] Can't find index " ^ string_of_bid index)
+  in
+  begin match Flx_bsym.bbdcl bsym with
+  | BBDCL_fun (props,vs,(ps,traint),ret,_) ->
+    let display = get_display_list bsym_table index in
+    if length display <> 0
+    then clierr (Flx_bsym.sr bsym) ("Can't export nested function " ^ export_name);
+
+    (* THIS BIT FOR DOCO ONLY *)
+    let n = List.length ps in
+    let fkind, rettypename =
+      match ret with
+      | BTYP_void -> "proc", "::flx::rtl::con_t * "
+      | _ -> "fun", cpp_typename syms bsym_table ret
     in
-    begin match Flx_bsym.bbdcl bsym with
-    | BBDCL_fun (props,vs,(ps,traint),ret,_) ->
-      let display = get_display_list bsym_table index in
-      if length display <> 0
-      then clierr (Flx_bsym.sr bsym) ("Can't export nested function " ^ export_name);
+    let fkind = match kind with `Fun -> fkind | `Cfun -> "c" ^ fkind in
+    (* THIS IS THE FELIX INTERFACE *)
+    let fname = Flx_bsym.id bsym in
+    let farglist = 
+      List.map (fun {ptyp=t} -> sbt bsym_table t) ps
+    in
+    let argtype = if n = 0 then "1" else String.concat " * " farglist in
+    let flx_binding =
+      match kind with 
+      | `Cfun -> 
+        begin match ret with
+        | BTYP_void -> "  proc " ^ export_name ^ " : " ^ argtype  ^ ";"
+        | _ -> "  fun " ^ export_name ^ " : " ^ argtype ^ " -> " ^ sbt bsym_table ret ^ ";"
+        end
+      | `Fun -> 
+        let carglist = ref [] in
+        let nargs = for i = 1 to n do carglist := ("$" ^ string_of_int i) :: (!carglist) done in
+        let carglist = String.concat "," (!carglist) in
+        let carglist = 
+            (* HACK to cast client thread frame pointer to this library, will NOT
+               work if the library has any state i.e. variables, but is enough to 
+               pass over the GC, provided the call is made in a suitable context.
+             *)
 
-      (* THIS BIT FOR DOCO ONLY *)
-      let n = List.length ps in
-      let fkind, rettypename =
-        match ret with
-        | BTYP_void -> "proc", "::flx::rtl::con_t * "
-        | _ -> "fun", cpp_typename syms bsym_table ret
-      in
-      let fkind = match kind with `Fun -> fkind | `Cfun -> "c" ^ fkind in
-      (* THIS IS THE FELIX INTERFACE *)
-      let fname = Flx_bsym.id bsym in
-      let farglist = 
-        List.map (fun {ptyp=t} -> sbt bsym_table t) ps
-      in
-      let argtype = if n = 0 then "1" else String.concat " * " farglist in
-      let flx_binding =
-        match kind with 
-        | `Cfun -> 
-          begin match ret with
-          | BTYP_void -> "  proc " ^ export_name ^ " : " ^ argtype  ^ ";"
-          | _ -> "  fun " ^ export_name ^ " : " ^ argtype ^ " -> " ^ sbt bsym_table ret ^ ";"
-          end
-        | `Fun -> 
-          let carglist = ref [] in
-          let nargs = for i = 1 to n do carglist := ("$" ^ string_of_int i) :: (!carglist) done in
-          let carglist = String.concat "," (!carglist) in
-          let carglist = 
-              (* HACK to cast client thread frame pointer to this library, will NOT
-                 work if the library has any state i.e. variables, but is enough to 
-                 pass over the GC, provided the call is made in a suitable context.
-               *)
+            "(::flxusr::"^mname^"::thread_frame_t*)(void*)ptf" ^ if n = 0 then "" else ","^carglist
+        in
+        begin match ret with
+        | BTYP_void -> "  proc " ^ export_name ^ " : " ^ argtype ^ " = " ^
+          "\"" ^export_name ^ "(" ^carglist^ ")\" requires property \"needs_ptf\";" 
+        | _ -> "  fun " ^ export_name ^ " : " ^ argtype ^ " -> " ^ sbt bsym_table ret ^ " = " ^
+          "\"" ^ export_name ^ "("^carglist^");\" requires property \"needs_ptf\";" 
+        end
+    in
+    flx_binding ^ " // "^fkind ^ " " ^ cpp_instance_name syms bsym_table index []^"\n"
 
-              "(::flxusr::"^modulename^"::thread_frame_t*)(void*)ptf" ^ if n = 0 then "" else ","^carglist
-          in
-          begin match ret with
-          | BTYP_void -> "  proc " ^ export_name ^ " : " ^ argtype ^ " = " ^
-            "\"" ^export_name ^ "(" ^carglist^ ")\" requires property \"needs_ptf\";" 
-          | _ -> "  fun " ^ export_name ^ " : " ^ argtype ^ " -> " ^ sbt bsym_table ret ^ " = " ^
-            "\"" ^ export_name ^ "("^carglist^");\" requires property \"needs_ptf\";" 
-          end
-      in
-      flx_binding ^ " // "^fkind ^ " " ^ cpp_instance_name syms bsym_table index []^"\n"
-
-    | _ -> failwith "Not implemented: export non-function/procedure"
-    end
+  | _ -> failwith "Not implemented: export non-function/procedure"
+  end
 
 let gen_felix_struct_export syms bsym_table idx modulename =
   let bsym = Flx_bsym_table.find bsym_table idx in
@@ -403,9 +409,10 @@ let gen_biface_bodies syms bsym_table bifaces =
   cat "" (List.map (gen_biface_body syms bsym_table) bifaces)
 
 let gen_biface_felix syms bsym_table bifaces modulename =
+  let mname = Flx_name.cid_of_flxid modulename in
   "class " ^ modulename ^ "_interface {\n" ^
   "  requires header '''\n" ^
-  "    #define FLX_EXTERN_" ^ modulename ^ " FLX_IMPORT\n" ^
+  "    #define FLX_EXTERN_" ^ mname ^ " FLX_IMPORT\n" ^
   "    #include \""^modulename^".hpp\"\n" ^
   "  ''';\n" ^
   cat "" (List.map (gen_biface_felix1 syms bsym_table modulename) bifaces) ^
