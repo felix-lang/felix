@@ -102,12 +102,8 @@ gen cal_depvars(
     System::exit(1);
   done
 
-  // CHANGE IN SEMANTICS 29/6/2013
-  // 
-  // The new rule is: the generated shared lib or executable
-  // now goes in the cache UNLESS explicitly specified
-  // with -o or -ox. I need to add another option as well,
-  // -od which sets the directory to put it in.
+  control*.FLX_INTERFACE_FILENAME = cache_join (control*.OUTPUT_DIR,filebase+"_interface.flx");
+  control*.CXX_INTERFACE_FILENAME = cache_join (control*.OUTPUT_DIR,filebase+".hpp");
 
   if control*.LINKER_OUTPUT_FILENAME == "" do
     if control*.LINKIT == 1 or control*.RUNONLY == 1 do

@@ -30,6 +30,8 @@ proc print_options(control:control_type) {
     println$ "FELIX              = "+str control.FELIX;
     println$ "LINKER_SWITCHES    = "+str control.LINKER_SWITCHES;
     println$ "LINKER_OUTPUT_FILENAME = "+str control.LINKER_OUTPUT_FILENAME;
+    println$ "FLX_INTERFACE_FILENAME = "+str control.FLX_INTERFACE_FILENAME;
+    println$ "CXX_INTERFACE_FILENAME = "+str control.CXX_INTERFACE_FILENAME;
     println$ "MACROS             = "+str control.MACROS;
     println$ "SHOWCODE           = "+str control.SHOWCODE;
     println$ "USAGE              = "+control.USAGE;
@@ -124,6 +126,8 @@ fun dflt_control (config:Config::config_type, profile:FlxProfile::profile_type) 
     var FLXG = "";
     var FLXRUN = Empty[string];
     var LINKER_OUTPUT_FILENAME = "";
+    var FLX_INTERFACE_FILENAME = "";
+    var CXX_INTERFACE_FILENAME = "";
     var OUTPUT_FILENAME_SPECIFIED = 0;
     var OUTPUT_FILENAME_WITHOUT_EXTENSION_SPECIFIED = 0;
     var OUTPUT_DIRECTORY_SPECIFIED = 0;
