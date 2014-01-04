@@ -36,8 +36,6 @@ We can easily compile our library file as a stand alone shared
 library or static object file:
 @pre
 flx -c -od . mylib.flx 
-flx -c --static --nolink -od . mylib.flx 
-flx -c --static --staticlib -od . mylib.flx
 @
 These produce a shared library {mylib.dll}, object file {mylib.obj} 
 and static archive {mylib.lib} in the current directory on Windows,
@@ -53,23 +51,19 @@ export cfun twice(x:int) => x + x;
 export cfun squared(x:int) => x * x;
 @
 Well now look at using this in an OSX environment. The process
-is the same on other OS, however there's no standard and hence
-no tooling yet how to manage this.
+is the same on other OS.
 @pre
 flx -c -od . mylib.flx
-cp $HOME/.felix/cache/text/`pwd`/mylib.hpp .
-cp $HOME/.felix/cache/text/`pwd`/mylib_interface.flx .
 @
-The first copy grabs the generated C++ header file out of the cache.
-The second copy grabs a new file we've not seen before out of the cache.
-The name suggests it's an interface for {mylib} and it is.
+As well as producing a shared library, we also copy the generated C++ header 
+file out of the cache, and a new file we've not seen before out of the cache:
+the interface file named {mylib_interface.flx}.
+
 Here's a transcript:
 @pre
 ~/felix>flx -c -od . mylib.flx
 Export fun twice of (int) as 'twice'
 Export cfun squared of (int) as 'squared'
-~/felix>cp $HOME/.felix/cache/text/`pwd`/mylib.hpp .
-~/felix>cp $HOME/.felix/cache/text/`pwd`/mylib_interface.flx .
 ~/felix>ls mylib*
 mylib.dylib		mylib.flx		mylib.hpp		mylib_interface.flx
 @
@@ -113,8 +107,6 @@ export cproc printint (x:int) { println$ x; }
 Lets compile it and grab the interface files:
 @pre
 flx -c -od . mylib2.flx
-cp $HOME/.felix/cache/text/`pwd`/mylib2.hpp .
-cp $HOME/.felix/cache/text/`pwd`/mylib2_interface.flx .
 @
 Now we'll make a new client:
 @felix
@@ -164,4 +156,5 @@ If you are just using the library from Felix code,
 you can remove the constraint against heap allocation.
 The result is a <em>GC enabled library</em>.
 
-
+Expanding the set of data types which can transit the separate
+compilation boundaries is a current work in progress.
