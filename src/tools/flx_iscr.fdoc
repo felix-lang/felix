@@ -1,0 +1,186 @@
+
+@h1 Core interscript interpreter.
+Define an equality for lists of strings.
+@felix
+fun streq : list[string] * list[string] -> bool =
+  | Cons (?h1, ?t1), Cons (?h2, ?t2) when h1 == h2 => streq (t1,t2)
+  | Empty, Empty => true
+  | _ => false
+;
+@
+Now define a type to hold a file buffer.
+@felix
+struct file_buffer = 
+{
+  filename : string;
+  buffer : list[string];
+@
+An output routine to add a new line to the buffer.
+@felix
+  proc output_line (line:string) =>
+    self.buffer <- Cons (line, self*.buffer);
+@
+Now the save routine. We only write the buffer to
+the file if the contents differ from the old file.
+This is to preserve the time stamp if things don't change.
+Note if a file is non-existent, and the tangler input
+is empty, the file will not be created.
+@felix
+  proc save (id:string) 
+  {
+    var filename = self*.filename;
+    var data = self*.buffer;
+    var old = tail (rev_split (filename.load, char "\n"));
+    if not streq (old , data) do // note: will NOT create an empty file!
+      Directory::mkdirs (Filename::dirname filename);
+      var f = fopen_output filename;
+      if not valid f do
+        println$ "Can't open output file " + filename;
+        System::exit 1;
+      done
+      println$ "Write     " + id + "->" + self*.filename;
+      for line in rev data do
+        writeln$ f,line;
+      done
+      fclose f;
+    else 
+      println$ "Unchanged " + id + "->" + self*.filename;
+    done
+  }
+};
+@
+We use a string dictionary variable to hold all the tanglers.
+@felix
+var tanglers = strdict[&file_buffer] ();
+@
+Now, define the state of the processor. It's either
+skipping over documentation, or, it's writing code
+out to some file.
+@felix
+union state_t = Doc | Tangling of &file_buffer; 
+var state = Doc;
+@
+Now we define the syntax the processor uses. We're
+using regular definitions for the parser.
+@felix
+open Regdef; // required
+
+// helper definitions
+regdef optwhite = ' '*;
+regdef white = ' '+;
+regdef felt= perl ("[A-Za-z._][A-Za-z0-9_.]*");
+regdef fname = (felt "/")* felt;
+
+// A tangler definition looks like:
+// @tangler name = filename
+regdef tangler_def_regdef = 
+  "@tangler" white group (felt) optwhite "=" 
+  optwhite group (fname) optwhite 
+; 
+
+// To set the output we just use
+// @tangle name
+regdef tangler_use_regdef = 
+  "@tangle" white group (felt) optwhite 
+; 
+@
+Now convert these regular definitions to compiled regexps.
+The render function translates the regular AST tree form
+into a Perl string, and the RE2 constructor compiles it
+using Google RE2.
+@felix
+var tangler_def_re2 = RE2 (Regdef::render tangler_def_regdef);
+var tangler_use_re2 = RE2 (Regdef::render tangler_use_regdef);
+@
+Now define the parser actions. First, a routine
+to add a new tangler (that's just a {file_buffer}).
+@felix
+proc def_tangler (id:string, filename:string)
+{
+  match get tanglers id with
+  | Some _ =>
+    println$ "Duplicate definition of tangler " + id;
+    System::exit 1;
+  | None =>
+    var tangler = file_buffer (filename, Empty[string]);
+    add tanglers id (new tangler);
+  endmatch;
+}
+@
+Now a routine to revert to document mode.
+In document mode we just skip lines.
+@felix
+proc set_doc() =>  state = Doc;
+@
+Now a routine to specify a new current tangler.
+@felix
+proc set_tangler (s:string) 
+{
+   match get tanglers s with
+   | Some ?p => state = Tangling p;
+   | None =>
+      println$ "Can't find tangler " + s;
+      System::exit 1;
+   endmatch;
+}
+@
+Now heres the main processing routine for the input file.
+We check for an @ character at the start of a line.
+If we don't find one we either write the line to the
+current tangler or just skip over it. If we do we have
+to see what command it is: either a command to define
+a new tangler, a command to switch to a different output
+file, or a switch to document mode in which we just skip
+over the lines.
+@felix
+proc process_file (f:ifile)
+{
+  for line in split (f.load, "\n") do
+    if line.[0] == "@" do
+      match Match (tangler_def_re2, line) with
+      | Some ?v =>
+         def_tangler (v.1, v.2);
+      | None => 
+        match Match (tangler_use_re2, line) with
+        | Some ?v =>
+         set_tangler v.1;
+        | None => set_doc;
+        endmatch;
+      endmatch;
+    else 
+      match state with
+      | Doc => ;
+      | Tangling ?b => b.output_line line;
+      endmatch;
+    done 
+  done
+}
+@
+Now for the mainline.
+First check the input file exists.
+@felix
+var iname = 1.System::argv;
+if not FileStat::fileexists iname do
+  println$ "File " + iname + " doesn't exist";
+  System::exit 1;
+done
+@
+Now, process the input file and buffer up the code.
+@felix
+begin 
+  var f = iname.fopen_input;
+  f.process_file;
+  f.fclose;
+end
+@
+Finally just dump the buffers to the associated
+files if the contents of the buffer and file differ.
+Do nothing if the contents are the same to avoid
+spoiling the last modification timestamp.
+@felix
+begin
+  match ?id,?pbuffer in tanglers do 
+    pbuffer.save id;
+  done
+end
+
