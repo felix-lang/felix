@@ -37,7 +37,7 @@ let escape_of_char quote ch =
   else if ch = quote then "\\" ^ (String.make 1 quote)
   else if ch = '\n' then "\\n"
   else if ch < ' '
-  or ch > char_of_int 126
+  || ch > char_of_int 126
   then "\\x" ^ (hex2 (Char.code ch))
   else String.make 1 ch
 
@@ -65,25 +65,25 @@ let bin_char2int s =
 let oct_char2int s =
   let c = Char.code s in
   match s with
-    _ when (s >= '0' & s <= '7') ->
+    _ when (s >= '0' && s <= '7') ->
       c - (Char.code '0')
   | _ -> raise (StringError ("'" ^ (string_of_char s) ^ "' not octal digit"))
 
 let dec_char2int s =
   let c = Char.code s in
   match s with
-    _ when (s >= '0' & s <= '9') ->
+    _ when (s >= '0' && s <= '9') ->
       c - (Char.code '0')
   | _ -> raise (StringError ("'" ^ (string_of_char s) ^ "' not decimal digit"))
 
 let hex_char2int s =
   let c = Char.code s in
   match s with
-    _ when (s >= '0' & s <= '9') ->
+    _ when (s >= '0' && s <= '9') ->
       c - (Char.code '0')
-  | _ when (s >= 'a' & s <= 'f') ->
+  | _ when (s >= 'a' && s <= 'f') ->
       (c - (Char.code 'a')) + 10
-  | _ when (s >= 'A' & s <= 'F') ->
+  | _ when (s >= 'A' && s <= 'F') ->
       (c - (Char.code 'A')) + 10
   | _ -> raise (StringError ("'" ^ (string_of_char s) ^ "' not hexadecimal digit"))
 
