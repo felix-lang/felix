@@ -26,7 +26,7 @@ This is to preserve the time stamp if things don't change.
 Note if a file is non-existent, and the tangler input
 is empty, the file will not be created.
 @felix
-  proc save (id:string) 
+  proc save (id:string)  
   {
     var filename = self*.filename;
     var data = self*.buffer;
@@ -95,14 +95,14 @@ var tangler_use_re2 = RE2 (Regdef::render tangler_use_regdef);
 Now define the parser actions. First, a routine
 to add a new tangler (that's just a {file_buffer}).
 @felix
-proc def_tangler (id:string, filename:string)
+proc def_tangler (id:string, filename:string, odir:string)
 {
   match get tanglers id with
   | Some _ =>
     println$ "Duplicate definition of tangler " + id;
     System::exit 1;
   | None =>
-    var tangler = file_buffer (filename, Empty[string]);
+    var tangler = file_buffer (Filename::join (odir,filename), Empty[string]);
     add tanglers id (new tangler);
   endmatch;
 }
@@ -133,13 +133,13 @@ a new tangler, a command to switch to a different output
 file, or a switch to document mode in which we just skip
 over the lines.
 @felix
-proc process_file (f:ifile)
+proc process_file (f:ifile) (odir:string)
 {
   for line in split (f.load, "\n") do
     if line.[0] == "@" do
       match Match (tangler_def_re2, line) with
       | Some ?v =>
-         def_tangler (v.1, v.2);
+         def_tangler (v.1, v.2, odir);
       | None => 
         match Match (tangler_use_re2, line) with
         | Some ?v =>
@@ -159,28 +159,37 @@ proc process_file (f:ifile)
 Now for the mainline.
 First check the input file exists.
 @felix
-var iname = 1.System::argv;
-if not FileStat::fileexists iname do
-  println$ "File " + iname + " doesn't exist";
-  System::exit 1;
-done
+noinline proc iscr (iname:string) (var odir:string)
+{
+  if not FileStat::fileexists iname do
+    println$ "File " + iname + " doesn't exist";
+    System::exit 1;
+  done
+@
+Now check for optional directory for output.
+@felix
+  odir = 
+    if odir == "" then Directory::getcwd () 
+    else Directory::mk_absolute_filename odir
+  ;
 @
 Now, process the input file and buffer up the code.
 @felix
-begin 
-  var f = iname.fopen_input;
-  f.process_file;
-  f.fclose;
-end
+  begin 
+    var f = iname.fopen_input;
+    f.process_file odir;
+    f.fclose;
+  end
 @
 Finally just dump the buffers to the associated
 files if the contents of the buffer and file differ.
 Do nothing if the contents are the same to avoid
 spoiling the last modification timestamp.
 @felix
-begin
   match ?id,?pbuffer in tanglers do 
     pbuffer.save id;
   done
-end
+}
+
+iscr 1.System::argv 2.System::argv;
 

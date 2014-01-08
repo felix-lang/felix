@@ -229,7 +229,7 @@ and alpha_stmts sr local_prefix seq ps sts =
     (fun x y -> (x,MName y))
     psn psn'
   in
-    let sts = subst_statements 50 local_prefix seq (ref true) remap sts in
+    let sts = subst_statements 500 local_prefix seq (ref true) remap sts in
     let ps = List.combine psn' pst in
     ps,sts
 
@@ -600,6 +600,8 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   (*
   print_endline ("Subst or expand: " ^ string_of_statement 0 st);
   *)
+  (* NOTE: skips increment of recursion limit, only used unpacking if do elif .. chains *)
+  let ms' reachable s = recurse recursion_limit local_prefix seq reachable macros s in
   let recursion_limit = recursion_limit - 1 in
   let mt sr e = expand_type_expr sr recursion_limit local_prefix seq macros e in
   let me e = expand_expr recursion_limit local_prefix seq macros e in
@@ -608,7 +610,6 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   let mpsp sr (ps,pre) = mps sr ps,meopt pre in
   let rqmap req = rqmap me req in
   let ms s = recurse recursion_limit local_prefix seq (ref true) macros s in
-  let ms' reachable s = recurse recursion_limit local_prefix seq reachable macros s in
   let msp sr ps ss =
     let pr = protect sr ps in
     recurse recursion_limit local_prefix seq (ref true) (pr @ macros) ss
