@@ -358,7 +358,7 @@ let unescape s =
           incr i;
           let j = ref 0 and value = ref 0 in
           while
-            (!i < n) &
+            (!i < n) &&
             (!j < hex_limit) &&
             (String.contains "0123456789ABCDEFabcdef" s.[!i]) do
             value := !value * 16 + (hex_char2int s.[!i]);
