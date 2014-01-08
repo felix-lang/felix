@@ -374,8 +374,12 @@ println$ "CMD=@"+b;
         | Some ?x => 
           println$ "Tangler filename=" + x;
           var xtn = Filename::get_extension x;
-          if xtn == ".flx" do inline_felix (#get_text);
-          elif xtn == ".cxx" do inline_cpp (#get_text);
+          if xtn in (".flx",".flxh") do 
+            write_string("<pre class='inclusion'>\n"+x+"</pre>\n");
+            inline_felix (#get_text);
+          elif xtn in (".cxx",".cpp",".hpp",".c",".cc",".h") do 
+            write_string("<pre class='inclusion'>\n"+x+"</pre>\n");
+            inline_cpp (#get_text);
           else inline_pre (#get_text);
           done
         | None => 
