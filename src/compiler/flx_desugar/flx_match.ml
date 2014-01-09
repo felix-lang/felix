@@ -309,7 +309,7 @@ List.iter (fun s -> print_endline (string_of_statement 2 s)) sts;
             | EXE_jump _ 
             | EXE_loop _ 
             | EXE_fun_return _ 
-            | EXE_proc_return _ 
+            | EXE_proc_return
             | EXE_halt _ 
               -> true
             | _ -> false

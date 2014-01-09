@@ -163,7 +163,7 @@ let set_base_ptf_use bsym_table bid bsym  =
       assert false;
     end
     ;
-    if List.mem `Uses_gc props or List.mem `Heap_closure props or List.mem `Uses_global_var props then begin
+    if List.mem `Uses_gc props || List.mem `Heap_closure props || List.mem `Uses_global_var props then begin
       if List.mem `Not_requires_ptf props then begin
         print_endline "Conflicting requirements";
         assert false
@@ -201,7 +201,7 @@ let set_base_ptf_use bsym_table bid bsym  =
     end
     ;
 *)
-    if List.mem `Uses_gc props or List.mem `Heap_closure props then begin
+    if List.mem `Uses_gc props || List.mem `Heap_closure props then begin
       if List.mem `Not_requires_ptf props then begin
         print_endline "Conflicting requirements";
         assert false

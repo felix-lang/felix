@@ -17,7 +17,7 @@ let remove_useless_reductions syms bsym_table reductions =
   (fun (id,bvs,bps,e1,_) ->
     let psi = Flx_bparameter.get_bids bps in
     let ui i =
-      let used = List.mem i psi or Flx_bsym_table.mem bsym_table i in
+      let used = List.mem i psi || Flx_bsym_table.mem bsym_table i in
       if not used then begin
         if syms.compiler_options.print_flag then
         print_endline ("ELIDING USELESS REDUCTION " ^ id ^ " because "

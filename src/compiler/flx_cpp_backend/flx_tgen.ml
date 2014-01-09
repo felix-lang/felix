@@ -352,7 +352,7 @@ let rec gen_type syms bsym_table (index,typ) =
     descr ^
     let name = cn typ
     and argtype = tn a
-    and unitproc = a = btyp_tuple [] or a = btyp_void ()
+    and unitproc = a = btyp_tuple [] || a = btyp_void ()
     in
     "struct " ^ name ^
     ": ::flx::rtl::con_t {\n" ^
@@ -374,7 +374,7 @@ let rec gen_type syms bsym_table (index,typ) =
     let name = cn typ
     and argtype = tn a
     and rettype = tn r
-    and unitfun = a = btyp_tuple [] or a = btyp_void ()
+    and unitfun = a = btyp_tuple [] || a = btyp_void ()
     in
     "struct " ^ name ^ " {\n" ^
     "  typedef " ^ rettype ^ " rettype;\n" ^

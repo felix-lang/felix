@@ -136,7 +136,7 @@ let gen_body syms uses bsym_table id
   let inline_method = match inline_method with
   | `Lazy ->
     if
-      Flx_call.is_recursive uses callee or
+      Flx_call.is_recursive uses callee ||
       is_tailed psis exes
     then `Eager
     else `Lazy

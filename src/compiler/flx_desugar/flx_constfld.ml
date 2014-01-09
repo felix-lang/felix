@@ -217,7 +217,7 @@ let const_fold' e sr name arg =
            EXPR_typed_case (_,x,TYP_unitsum 2);
            EXPR_typed_case (_,y,TYP_unitsum 2)
           ])
-    -> truth sr (x=1 or y=1)
+    -> truth sr (x=1 || y=1)
 
   (* x and y *)
   | "land", EXPR_tuple ( _, [

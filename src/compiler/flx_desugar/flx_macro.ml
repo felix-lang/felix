@@ -900,7 +900,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
       (* alpha convert statements *)
       let branch_reachable = ref start_reachable in
       let sts' = subst_statements 50 local_prefix seq branch_reachable remap sts in
-      case_end_reachable := !branch_reachable or !case_end_reachable;
+      case_end_reachable := !branch_reachable || !case_end_reachable;
       (*
       print_endline ("Statement match, original pattern: " ^ string_of_pattern pat);
       print_endline ("Statement match, original statements: " ^ string_of_statements sts);
@@ -1011,7 +1011,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
       let r2 = ref !reachable in
       List.iter tack (ms' r2 sts2);
       if !r1 then tack (STMT_label (sr,lab2));
-      reachable := !r1 or !r2
+      reachable := !r1 || !r2
     end
 
 

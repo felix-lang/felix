@@ -323,7 +323,7 @@ let rec adj_lambda state bsym_table all_closures sr e =
 
       | BTYP_sum ls ->
           let n = List.length ls in
-          if v < 0 or v >= n
+          if v < 0 || v >= n
           then
             failwith
             (
