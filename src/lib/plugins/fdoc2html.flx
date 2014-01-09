@@ -213,7 +213,7 @@ next:>
   proc inline_pre(b:string)
   {
     sp; 
-    write_string("<pre>"); 
+    write_string('<pre class="prefmtbg">'); 
     write_string(txt2html b); 
     write_string("</pre>"); 
     ep;
@@ -233,7 +233,7 @@ next:>
   {
     sp;
     write_string("<pre class='cppbg'>"); 
-    write_string((xlat_cpp,b,"").1); // no parent!
+    write_string((xlat_cpp(b,"")).1); // no parent!
     write_string("</pre>");
     ep; 
   }
@@ -374,13 +374,19 @@ println$ "CMD=@"+b;
         | Some ?x => 
           println$ "Tangler filename=" + x;
           var xtn = Filename::get_extension x;
+          println$ "Extension=" + xtn;
           if xtn in (".flx",".flxh") do 
             write_string("<pre class='inclusion'>\n"+x+"</pre>\n");
+            println$ "flx ....";
             inline_felix (#get_text);
           elif xtn in (".cxx",".cpp",".hpp",".c",".cc",".h") do 
             write_string("<pre class='inclusion'>\n"+x+"</pre>\n");
+            println$ "cpp ....";
             inline_cpp (#get_text);
-          else inline_pre (#get_text);
+          else 
+            write_string("<pre class='inclusion'>\n"+x+"</pre>\n");
+            println$ "pre ....";
+            inline_pre (#get_text);
           done
         | None => 
           println$ "Can't find tangler '" + s.1+"'";

@@ -7,7 +7,7 @@ struct X[t] {
   c:t;
   fun f (x:int) => self.a + x + x;
   fun g  => self.a;
-  proc s (x:int) => self.a = x;
+  proc s (x:int) => self.a <- x;
   fun cc => self.c,self.c;
   fun cx[u] (q:u) => self.c,q;
 };

@@ -36,7 +36,6 @@ SCHEME """
 syntax lexer {
   requires global_regdefs;
   requires felix_ident_lexer;
-  requires felix_ident_lexer;
   requires felix_int_lexer;
   requires felix_float_lexer;
   requires felix_string_lexer;
