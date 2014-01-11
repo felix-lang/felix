@@ -1,0 +1,25 @@
+
+@h1 Using a timer asynchronously
+
+This tutorial introduces Felix async I/O by showing how to perform an
+asynchronous wait on a timer (well, it's a placeholder right now).
+
+@felix
+include "std/io/faio";
+var clock = #Faio::mk_alarm_clock;
+Faio::sleep (clock, 5.0);
+println$ "Hello world!";
+@
+The build command I'm using for this is,
+<pre>
+build/release/host/bin/flx \
+   --test=build/release src/web/async_02.fdoc \
+   --target-dir=build/release --target-bin=host
+</pre>
+I tried to make an index with
+<pre>
+ build/release/host/bin/flx_mktutindex async Async async.fdoc
+</pre>
+and I see that's created file async_index.fdoc but it hasn't quite
+worked out (there are two bullets corressponding to two pages but the
+bullets are empty).

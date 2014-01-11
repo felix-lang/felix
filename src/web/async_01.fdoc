@@ -1,0 +1,18 @@
+
+@h1 Using a timer synchronously
+
+This tutorial introduces Felix async I/O by showing how to perform a
+blocking wait on a timer.
+
+@felix
+include "std/io/faio";
+var clock = #Faio::mk_alarm_clock;
+Faio::sleep (clock, 5.0);
+println$ "Hello world!";
+@
+The build command I'm using for this is,
+<pre>
+build/release/host/bin/flx \
+   --test=build/release src/web/async_01.fdoc \
+   --target-dir=build/release --target-bin=host
+</pre>
