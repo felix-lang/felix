@@ -29,16 +29,16 @@ endif
 
 # Choose one: Linux or OSX
 # LPATH = LD_LIBRARY_PATH or, LPATH = DYLD_LIBRARY_PATH
-platform := $(shell uname -o)
-$(info $(value platform))
-ifeq ($(platform), GNU/Linux)
+platform := $(shell uname -s)
+ifeq ($(platform), Linux)
 	LPATH = LD_LIBRARY_PATH
 else
-	#What is the output on OSX? Use that to improve this
-	LPATH = DYLD_LIBRARY_PATH
+	ifeq ($(platform), Darwin)
+		LPATH = DYLD_LIBRARY_PATH
+	endif
 endif
 ifndef LPATH
-	$(error Unable to detect how to set LDPATH)
+	$(error Unrecognized kernel name -- Unable to detect setting for LPATH)
 endif
 
 help:
