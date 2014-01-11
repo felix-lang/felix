@@ -4,7 +4,7 @@ of this where argument is passed in using an channel and the return
 value is passed out using a channel too:
 
 @felix
-proc subroutine(argument: ischannel[int], result: oschannel[string)
+proc subroutine(argument: ischannel[int], result: oschannel[string])
 {
   v := read argument;
   s = str v;
