@@ -1,0 +1,17 @@
+@h3 How to pass additional options to the C++ compiler or linker
+Felix recognises these options and pass them to the
+C++ compiler or linker as indicated:
+@pre
+-Idir                : add dir to search path for both felix and C++ includes"
+-Ldir                : add dir to linker search path
+-llib                : add dir lib to linker command
+-foption             : add switch to compiler command
+-Woption             : add switch to compiler command
+-O1                  : add switch to compiler command
+-O2                  : add switch to compiler command
+-O3                  : add switch to compiler command
+--cflags=flags       : addd flags to compiler command
+-Dmac                : add macro def to C++ compiler command
+@
+
+

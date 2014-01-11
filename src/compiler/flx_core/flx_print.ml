@@ -1127,6 +1127,10 @@ and string_of_statement level s =
     string_of_typecode flx_type ^
     ") as \"" ^ cpp_name ^ "\";"
 
+  | STMT_export_struct (_,name) ->
+    spaces level ^
+    "export struct " ^ name ^ ";"
+
   | STMT_label (_,s) -> string_of_id s ^ ":"
   | STMT_goto (_,s) -> spaces level ^ "goto " ^ string_of_id s ^ ";"
 
@@ -1503,6 +1507,9 @@ and string_of_iface level s =
     spc ^ "export type (" ^ string_of_typecode flx_type ^
     ") as \"" ^ cpp_name ^ "\";"
 
+  | IFACE_export_struct (name) ->
+    spc ^ "export struct " ^ name ^":"
+
 and string_of_symdef entry name vs =
   let se e = string_of_expr e in
   let st t = string_of_typecode t in
@@ -1872,6 +1879,10 @@ and string_of_biface bsym_table level s =
     spc ^ "export type (" ^ string_of_btypecode (Some bsym_table) btyp ^
     ") as \"" ^ cpp_name ^ "\";"
 
+  | BIFACE_export_struct (_,index) ->
+    spc ^ "export struct " ^ qualified_name_of_bindex bsym_table index ^ ";"
+
+
 and sbx bsym_table s =  string_of_bexe bsym_table 0 s
 
 and string_of_bexe bsym_table level s =
@@ -2169,7 +2180,12 @@ and string_of_dir level s =
     spaces level ^ "inherit " ^ string_of_ivs vs ^ sqn qn ^ ";"
 
 and string_of_breq bsym_table (i,ts) =
-  "rq<" ^ string_of_bid i ^ ">" ^ string_of_inst bsym_table ts
+  let rqname =
+     try Flx_bsym_table.find_id bsym_table i
+     with Not_found -> "missing!"
+  in
+  rqname ^ "<" ^ string_of_bid i ^ ">" ^ string_of_inst bsym_table ts
+
 and string_of_breqs bsym_table reqs = catmap ", " (string_of_breq bsym_table) reqs
 and string_of_production p = catmap " " string_of_glr_entry p
 and string_of_reduced_production p = catmap " " string_of_reduced_glr_entry p

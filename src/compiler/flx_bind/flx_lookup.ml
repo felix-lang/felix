@@ -1313,8 +1313,8 @@ and bind_type_index state (bsym_table:Flx_bsym_table.t) (rs:recstop) sr index ts
 
             | TYP_typeof _
             | TYP_var _
-            | TYP_none _
-            | TYP_ellipsis _  
+            | TYP_none 
+            | TYP_ellipsis   
             | TYP_isin _ 
 
             | TYP_typeset _
@@ -2264,7 +2264,7 @@ and lookup_qn_with_sig'
     let t = bt sr t in
     begin match unfold t with
     | BTYP_unitsum k  ->
-      if v<0 or v>= k
+      if v<0 || v>= k
       then clierr sra "Case index out of range of sum"
       else
       begin match signs with 
@@ -2283,7 +2283,7 @@ and lookup_qn_with_sig'
       | _ -> clierr sr "Case requires exactly one argument"
       end
     | BTYP_sum ls ->
-      if v<0 or v >= List.length ls
+      if v<0 || v >= List.length ls
       then clierr sra "Case index out of range of sum"
       else let vt = List.nth ls v in
       begin match signs with
@@ -2539,14 +2539,14 @@ print_endline ("Lookup type qn with sig, name = " ^ string_of_qualified_name qn)
     let t = bt sr t in
     begin match unfold t with
     | BTYP_unitsum k ->
-      if v<0 or v>= k
+      if v<0 || v>= k
       then clierr sra "Case index out of range of sum"
       else
         let ct = btyp_function (unit_t,t) in
         ct
 
     | BTYP_sum ls ->
-      if v<0 or v >= List.length ls
+      if v<0 || v >= List.length ls
       then clierr sra "Case index out of range of sum"
       else let vt = List.nth ls v in
       let ct = btyp_function (vt,t) in
@@ -3593,7 +3593,7 @@ print_endline ("Bound tuple head " ^ sbe bsym_table x ^ " has type " ^ sbt bsym_
     let expr,typ = be e' in
     let ctyp,k = match unfold typ with
     | BTYP_array (t,BTYP_unitsum len)  ->
-      if n<0 or n>len-1
+      if n<0 || n>len-1
       then clierr sr
         (
           "[bind_expression] Tuple index " ^
@@ -3606,7 +3606,7 @@ print_endline ("Bound tuple head " ^ sbe bsym_table x ^ " has type " ^ sbt bsym_
     | BTYP_tuple ts
       ->
       let len = List.length ts in
-      if n<0 or n>len-1
+      if n<0 || n>len-1
       then clierr sr
         (
           "[bind_expression] Tuple index " ^
@@ -3706,7 +3706,7 @@ print_endline ("Evaluating EXPPR_typed_case index=" ^ si v ^ " type=" ^ string_o
     ignore (try unfold t with _ -> failwith "AST_typed_case unfold screwd");
     begin match unfold t with
     | BTYP_unitsum k ->
-      if v<0 or v>= k
+      if v<0 || v>= k
       then clierr sr "Case index out of range of sum"
       else begin
 (*
@@ -3715,7 +3715,7 @@ print_endline ("Evaluating EXPPR_typed_case index=" ^ si v ^ " type=" ^ string_o
         bexpr_unitsum_case v k  (* const ctor *)
       end
     | BTYP_sum ls ->
-      if v<0 or v>= List.length ls
+      if v<0 || v>= List.length ls
       then clierr sr "Case index out of range of sum"
       else let vt = List.nth ls v in
       begin match vt with
@@ -4711,14 +4711,14 @@ print_endline ("Bound f = " ^ sbe bsym_table f);
     ignore (try unfold t with _ -> failwith "AST_case_arg unfold screwd");
      begin match unfold t with
      | BTYP_unitsum n ->
-       if v < 0 or v >= n
+       if v < 0 || v >= n
        then clierr sr "Invalid sum index"
        else
          bexpr_case_arg unit_t (v, e')
 
      | BTYP_sum ls ->
        let n = List.length ls in
-       if v<0 or v>=n
+       if v<0 || v>=n
        then clierr sr "Invalid sum index"
        else let t = List.nth ls v in
        bexpr_case_arg t (v, e')

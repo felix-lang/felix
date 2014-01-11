@@ -1,48 +1,67 @@
-@h1 Assignment
-Once you have a pointer to an object, you may be able to modify it.
-If the object type is first class, or otherwise assignable,
-you can put a new value into the object:
-@felix
-var x: int = 0;       // make an object 
-val px = &x;          // find its address
-px <- 1;              // store new value at pointer
-println$ x;           // 1 : the object has been set to a new value
-@
-Using the heap:
-@felix
-val px = new 0;
-px <- 1;
-println$ x;
+@h1 Variables and Pointers
+In Felix, there are two kinds of entities: <em>values</em>
+and <em>objects</em>. 
+
+Most literals are values, all computations yield values, and all parameter
+passing is notionally passing of a value.
+
+@caveat
+Strings are technically mutable objects although they're usually 
+used as values.
 @
 
-The store operator {&lt;-} has the type:
-@felix
-  &T * T -> void
-@
-Felix also provides the more traditional assignment operator {=}:
-@felix
-var x = 1; 
-x = 2;       // syntactic sugar for &x <- 2
-println$ x;  // 2
-@
-but as you can see it is just syntactic sugar. All mutators work this
-way for example:
-@felix
-  var x = 1;
-  x++;    // syntactic sugar for post_dec (&x)
-  x+=1;   // syntactic sugar for plus_eq (&x,1)
-@
-In particular all operators and functions except {&amp;}
-accept values: there are no reference types. There are no
-operations which modify values directly.
+In Felix all value types are first class, meaning they can be 
+default initialised, copy constructed, copy assigned, and destroyed.
+Values are generally immutable.
 
-Some values, when encoded in object store, can be modified
-partially via a pointer to that store. Clearly scalar values
-cannot be partially modified, most aggregates can be.
+Although everything is a value, Felix also has objects.
+Objects are not first class and need not be default initialisable,
+copyable or assignable, although they must be destructible.
 
-For Felix types, whether or not this is possible is determined solely by functions
-that manipulate pointers to objects storing those values.
+Objects types in Felix are always constructed on the heap and represented
+thereafter by a pointer. Pointers are first class values in themselves,
+even though what they represent may not be. If {T} is a type then
+{&amp;T} is the type of a pointer to that type.
 
-For types defined in C++ and lifted into Felix, the programmer may
-provide mutators.
- 
+We have seen you can name values like this:
+@felix
+val x = 1;
+val y = 2;
+val z = y + y;
+@
+
+All values can be used as objects. There are two ways to do this.
+The first way is to copy the value onto the heap using {new}
+and retrieve the value by dereferencing the returned pointer:
+with operator {*}:
+@felix
+val px = new 1;
+val py = new 2;
+val z = *px + *py;
+@
+The second way is to create a <em>variable slot</em> on the
+stack or global store with a {var} definition and find a
+pointer to the variable using the addressing operators {&amp;}:
+@felix
+var x = 1;
+val px = &x;
+val z = *px + *px;
+@
+Note that unlike C and C++ it is safe, although definitely not
+recommended, to take the address of a variable in a function
+and return it:
+@felix
+fun f(x:int) : &int = {
+   var a = x;
+   return &a; // safe!
+}
+@
+if you do this, Felix will allocate the function's stack frame on the heap,
+and the garbage collector will not reap that object until it is unreachable.
+Whilst the pointer to the variable {a} is itself stored in a reachable location,
+the stack frame will remain allocated.
+
+Storing function frames on the heap is inefficient compared to using the stack
+so it is better to avoid this practice.
+
+

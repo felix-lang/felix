@@ -4,7 +4,7 @@ SCHEME """
   (define (static-link-symbol lib sym) 
     (let*
       (
-         (dummy (begin (display "symbol ") (display sym)(display "\n")))
+         (dummy (begin (display "lib ")(display lib)(display ", symbol ") (display sym)(display "\n")))
          (externc (string-append "extern \"C\" void *" sym ";\n"))
          (rcode `(Str ,externc))
          (hreq `(Header_req ,rcode))
@@ -12,7 +12,7 @@ SCHEME """
          (address_type (nos "address"))
          (address `(Str ,(string-append "&" sym))) 
          (const `(ast_const_decl ,_sr ,sym ,dfltvs ,address_type ,address ,reqs))
-         (arg `(ast_tuple ,_sr ,(list lib (stringof sym) (nos sym))))
+         (arg `(ast_tuple ,_sr ,(list (stringof lib) (stringof sym) (nos sym))))
          (addsym `(ast_call ,_sr ,(nos "add_symbol")  ,arg))
       )
       `(ast_seq ,_sr ,(list const addsym))
@@ -40,7 +40,7 @@ SCHEME """
 
 syntax plugins
 {
-  stmt := "static-link-symbol" sname "in" sexpr ";" =># "(static-link-symbol _4 _2)";
+  stmt := "static-link-symbol" sname "in" "plugin" sname ";" =># "(static-link-symbol _5 _2)";
 
   stmt := "static-link-plugin" sname ("," sname)* ";" =>#
   """

@@ -37,7 +37,7 @@ let escape_of_char quote ch =
   else if ch = quote then "\\" ^ (String.make 1 quote)
   else if ch = '\n' then "\\n"
   else if ch < ' '
-  or ch > char_of_int 126
+  || ch > char_of_int 126
   then "\\x" ^ (hex2 (Char.code ch))
   else String.make 1 ch
 
@@ -65,25 +65,25 @@ let bin_char2int s =
 let oct_char2int s =
   let c = Char.code s in
   match s with
-    _ when (s >= '0' & s <= '7') ->
+    _ when (s >= '0' && s <= '7') ->
       c - (Char.code '0')
   | _ -> raise (StringError ("'" ^ (string_of_char s) ^ "' not octal digit"))
 
 let dec_char2int s =
   let c = Char.code s in
   match s with
-    _ when (s >= '0' & s <= '9') ->
+    _ when (s >= '0' && s <= '9') ->
       c - (Char.code '0')
   | _ -> raise (StringError ("'" ^ (string_of_char s) ^ "' not decimal digit"))
 
 let hex_char2int s =
   let c = Char.code s in
   match s with
-    _ when (s >= '0' & s <= '9') ->
+    _ when (s >= '0' && s <= '9') ->
       c - (Char.code '0')
-  | _ when (s >= 'a' & s <= 'f') ->
+  | _ when (s >= 'a' && s <= 'f') ->
       (c - (Char.code 'a')) + 10
-  | _ when (s >= 'A' & s <= 'F') ->
+  | _ when (s >= 'A' && s <= 'F') ->
       (c - (Char.code 'A')) + 10
   | _ -> raise (StringError ("'" ^ (string_of_char s) ^ "' not hexadecimal digit"))
 
@@ -358,8 +358,8 @@ let unescape s =
           incr i;
           let j = ref 0 and value = ref 0 in
           while
-            (!i < n) &
-            (!j < hex_limit) &
+            (!i < n) &&
+            (!j < hex_limit) &&
             (String.contains "0123456789ABCDEFabcdef" s.[!i]) do
             value := !value * 16 + (hex_char2int s.[!i]);
             incr i;
@@ -372,8 +372,8 @@ let unescape s =
           incr i;
           let j = ref 0 and value = ref 0 in
           while
-            (!i < n) &
-            (!j < 4) &
+            (!i < n) &&
+            (!j < 4) &&
             (String.contains "0123456789ABCDEFabcdef" s.[!i]) do
             value := !value * 16 + (hex_char2int s.[!i]);
             incr i;
@@ -386,8 +386,8 @@ let unescape s =
           incr i;
           let j = ref 0 and value = ref 0 in
           while
-            (!i < n) &
-            (!j < 8) &
+            (!i < n) &&
+            (!j < 8) &&
             (String.contains "0123456789ABCDEFabcdef" s.[!i]) do
             value := !value * 16 + (hex_char2int s.[!i]);
             incr i;
@@ -400,8 +400,8 @@ let unescape s =
           incr i;
           let j = ref 0 and value = ref 0 in
           while
-            (!i < n) &
-            (!j < 3) &
+            (!i < n) &&
+            (!j < 3) &&
             (String.contains "0123456789" s.[!i]) do
             value := !value * 10 + (dec_char2int s.[!i]);
             incr i;
@@ -414,8 +414,8 @@ let unescape s =
           incr i;
           let j = ref 0 and value = ref 0 in
           while
-            (!i < n) &
-            (!j < 3) &
+            (!i < n) &&
+            (!j < 3) &&
             (String.contains "01234567" s.[!i]) do
             value := !value * 8 + (oct_char2int s.[!i]);
             incr i;

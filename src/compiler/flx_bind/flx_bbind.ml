@@ -103,9 +103,20 @@ type tmp_req_t =
   | Satisfied of int * Flx_btype.t list 
   | Fail of Flx_ast.qualified_name_t option
 
+let pr_tmp_req_t bsym_table = function
+  | Satisfied (i,ts) -> "Satisfied " ^ si i ^ "[" ^ catmap "," (sbt bsym_table) ts ^ "]"
+  | Fail None -> "Fail Logic"
+  | Fail (Some qn) -> "Fail qn=" ^ string_of_qualified_name qn
+
 let bind_reqs bt state bsym_table env sr reqs =
   let add lst i =
-    if mem i lst then lst else i :: lst
+    if mem i lst then lst else begin 
+      (*
+      if state.print_flag then
+        print_endline ("// Adding requirement " ^ pr_tmp_req_t bsym_table i);
+      *)
+      i :: lst
+    end
   in
   let merge a b = fold_left add a b in
   let rec aux reqs = match reqs with
@@ -762,21 +773,20 @@ print_endline ("Binding callback " ^ sym.Flx_sym.id ^ " index=" ^ string_of_bid 
       `Callback (ts_c,!client_data_pos)))
 
   | SYMDEF_union (cs) ->
-    (*
-    print_endline ("//Binding union " ^ si i ^ " --> " ^ name);
-    *)
+    if state.print_flag then
+      print_endline ("//Binding union " ^ si symbol_index ^ " --> " ^ sym.Flx_sym.id);
     let cs' = List.map (fun (n,v,vs',t) -> n, v,bt t) cs in
     add_bsym None (bbdcl_union (bvs, cs'))
 
   | SYMDEF_struct cs ->
-    (* print_endline ("//Binding struct " ^ si i ^ " --> " ^ name);
-    *)
+    if state.print_flag then 
+      print_endline ("//Binding struct " ^ si symbol_index ^ " --> " ^ sym.Flx_sym.id);
     let cs' = List.map (fun (n,t) -> n, bt t) cs in
     add_bsym None (bbdcl_struct (bvs, cs'))
 
   | SYMDEF_cstruct (cs,reqs) ->
-    (* print_endline ("//Binding struct " ^ si i ^ " --> " ^ name);
-    *)
+    if state.print_flag then 
+      print_endline ("//Binding cstruct " ^ si symbol_index ^ " --> " ^ sym.Flx_sym.id);
     let cs' = List.map (fun (n,t) -> n, bt t) cs in
     let breqs = bind_reqs reqs in 
     add_bsym None (bbdcl_cstruct (bvs, cs', breqs))
@@ -815,6 +825,8 @@ print_endline ("Binding callback " ^ sym.Flx_sym.id ^ " index=" ^ string_of_bid 
   | SYMDEF_inherit_fun _ -> ()
 
   | SYMDEF_abs (quals,ct,reqs)->
+    if state.print_flag then
+      print_endline ("//Binding abstract primitive type " ^ si symbol_index ^ " ->  " ^ sym.Flx_sym.id);
     let reqs = bind_reqs reqs in
     let bquals = bind_quals quals in
     add_bsym None (bbdcl_external_type (bvs, bquals, ct, reqs))
@@ -824,9 +836,10 @@ print_endline ("Binding callback " ^ sym.Flx_sym.id ^ " index=" ^ string_of_bid 
     add_bsym None (bbdcl_newtype (bvs, t))
 
   | SYMDEF_insert (ct,ikind,reqs) ->
-(*
-    print_endline ("//Binding insertion string " ^ si symbol_index ^ " --> " ^ sym.Flx_sym.id^ ":"^ string_of_ikind ikind ^"="^ string_of_code_spec ct);
-*)
+    if state.print_flag then 
+      print_endline ("//Binding insertion string " ^ si symbol_index ^ 
+       " --> " ^ sym.Flx_sym.id^ ":"^ 
+       string_of_ikind ikind ^"="^ string_of_code_spec ct);
     let reqs = bind_reqs reqs in
     add_bsym true_parent (bbdcl_external_code (bvs, ct, ikind, reqs))
   end
@@ -934,4 +947,20 @@ let bind_interface (state:bbind_state_t) bsym_table = function
       else
         BIFACE_export_type (sr, t, cpp_name)
 
+  | sr, IFACE_export_struct (name), parent ->
+      let env = Flx_lookup.build_env state.lookup_state bsym_table parent in
+      let entry_set  = Flx_lookup.lookup_name_in_env state.lookup_state bsym_table env sr name in
+      begin match entry_set with
+      | FunctionEntry _ -> assert false
+      | NonFunctionEntry  {base_sym = index; spec_vs = vs; sub_ts = ts} ->
+        begin match  vs, ts with [],[] -> () | _ -> assert false end;
+        let bbdcl = Flx_bsym_table.find_bbdcl bsym_table index in
+        begin match bbdcl with
+        | BBDCL_struct _ -> BIFACE_export_struct (sr,index)
+        | _ ->
+          clierr sr ("Attempt to export struct "^name^
+          " which isn't a non-polymorphic struct, got entry : " ^ 
+          Flx_print.string_of_bbdcl bsym_table bbdcl index)
+        end
+     end
 

@@ -29,8 +29,8 @@ class WebserverPluginSymbols
       fdoc_button
     ;
     // webserver
-    static-link-symbol webserver_create_thread_frame in "webserver";
-    static-link-symbol webserver_flx_start in "webserver";
+    static-link-symbol webserver_create_thread_frame in plugin webserver;
+    static-link-symbol webserver_flx_start in plugin webserver;
     
   }
 }

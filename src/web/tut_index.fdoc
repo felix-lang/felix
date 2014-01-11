@@ -3,16 +3,17 @@
 <ul>
 <li><a href="tut_01.fdoc">Introductory Hands On</a></li>
 <li><a href="tut_02.fdoc">Variables</a></li>
-<li><a href="tut_03.fdoc">Simple function definitions</a></li>
-<li><a href="tut_04.fdoc">Simple procedure definitions</a></li>
-<li><a href="tut_05.fdoc">Simple generator definition</a></li>
-<li><a href="tut_06.fdoc">Application and call operators</a></li>
-<li><a href="tut_07.fdoc">Basic Data types</a></li>
-<li><a href="tut_08.fdoc">Tuples</a></li>
-<li><a href="tut_09.fdoc">Arrays</a></li>
-<li><a href="tut_10.fdoc">Records</a></li>
-<li><a href="tut_11.fdoc">Structs</a></li>
-<li><a href="tut_12.fdoc">Variables and Pointers</a></li>
-<li><a href="tut_13.fdoc">Assignment</a></li>
-<li><a href="tut_14.fdoc">How to Browse library code</a></li>
+<li><a href="tut_03.fdoc">Procedural control</a></li>
+<li><a href="tut_04.fdoc">Simple function definitions</a></li>
+<li><a href="tut_05.fdoc">Simple procedure definitions</a></li>
+<li><a href="tut_06.fdoc">Simple generator definition</a></li>
+<li><a href="tut_07.fdoc">Application and call operators</a></li>
+<li><a href="tut_08.fdoc">Basic Data types</a></li>
+<li><a href="tut_09.fdoc">Tuples</a></li>
+<li><a href="tut_10.fdoc">Arrays</a></li>
+<li><a href="tut_11.fdoc">Records</a></li>
+<li><a href="tut_12.fdoc">Structs</a></li>
+<li><a href="tut_13.fdoc">Variables and Pointers</a></li>
+<li><a href="tut_14.fdoc">Assignment</a></li>
+<li><a href="tut_15.fdoc">How to Browse library code</a></li>
 </ul>

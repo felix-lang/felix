@@ -78,9 +78,9 @@ let rec is_pure syms bsym_table i =
   | BBDCL_external_const _
   | BBDCL_typeclass _
   | BBDCL_instance _
-  | BBDCL_axiom _
-  | BBDCL_lemma _
-  | BBDCL_reduce _ ->
+  | BBDCL_axiom
+  | BBDCL_lemma 
+  | BBDCL_reduce  ->
     (*
     print_endline (id ^ " is intrinsically pure");
     *)
@@ -637,7 +637,7 @@ let mark_stackable syms bsym_table fn_cache ptr_cache label_map label_usage =
     match Flx_bsym.bbdcl bsym with
     | BBDCL_fun (props,vs,p,BTYP_fix (0,_),exes)
     | BBDCL_fun (props,vs,p,BTYP_void,exes) ->
-        if mem `Stackable props or mem `Unstackable props then () else
+        if mem `Stackable props || mem `Unstackable props then () else
         ignore(check_stackable_proc
           syms
           bsym_table

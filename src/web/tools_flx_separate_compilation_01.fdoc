@@ -1,0 +1,160 @@
+@h2 Simple Examples.
+This article describes how to do separate compilation of Felix code.
+This is work in progress with minimal tooling support.
+Better tooling support will arise when there are more use cases!
+
+@h2 Functions.
+Let us suppose we have a library file with a couple of functions in it.
+I want you to imagine these functions are computationally complex,
+so the overhead of calling them is relatively small, but the cost
+of compiling the code is relatively high.
+@felix
+// mylib.flx
+fun twice(x:int) => x + x;
+fun squared(x:int) => x * x;
+@
+We will have a client like this:
+@felix
+//myclient
+include "mylib";
+println$ twice 2;
+println$ squared 3;
+@
+Here you should imagine there are many clients for the library.
+Compilation times get bogged down recompiling the library
+for each client: both the Felix and C++ compilers will waste
+time recompiling the same thing repeatedly. Of course Felix will
+cache the parse to reduce the overhead, and if the library is
+part of the {std} library the bound code will be cached as well.
+
+Still, the optimisation and code generation phases of the Felix
+code generator take time, and the C++ compiler will take even
+longer, especially with optimisation set to a high level.
+
+@h3 Exporting functions.
+We can easily compile our library file as a stand alone shared 
+library or static object file:
+@pre
+flx -c -od . mylib.flx 
+@
+These produce a shared library {mylib.dll}, object file {mylib.obj} 
+and static archive {mylib.lib} in the current directory on Windows,
+or {mylib.so}, {mylib.o} and {mylib.a} on Linux, respectively.
+
+But these libraries are full of C++ mangled names which are hard
+to use. So the first step in fixing this is to tell Felix to make
+wrappers with {extern "C"} linkage, that is, to use plain old
+C names. To do this we must export the functions:
+@felix
+//mylib.flx
+export cfun twice(x:int) => x + x;
+export cfun squared(x:int) => x * x;
+@
+Well now look at using this in an OSX environment. The process
+is the same on other OS.
+@pre
+flx -c -od . mylib.flx
+@
+As well as producing a shared library, we also copy the generated C++ header 
+file out of the cache, and a new file we've not seen before out of the cache:
+the interface file named {mylib_interface.flx}.
+
+Here's a transcript:
+@pre
+~/felix>flx -c -od . mylib.flx
+Export fun twice of (int) as 'twice'
+Export cfun squared of (int) as 'squared'
+~/felix>ls mylib*
+mylib.dylib		mylib.flx		mylib.hpp		mylib_interface.flx
+@
+So now, we need to look at the interace file:
+@felix
+class mylib_interface {
+  requires header '''
+    #define FLX_EXTERN_mylib FLX_IMPORT
+    #include "mylib.hpp"
+  ''';
+  fun twice : int -> int;// cfun _i41941_f41941_twice
+  fun squared : int -> int;// cfun _i41944_f41944_squared
+}
+@
+As you can see this imports the C++ header file for the library,
+and then defines the exported functions in Felix by binding them
+to the C wrappers generated for the exported functions.
+
+@h3 Using the interface
+Now we have to rewrite our client:
+@felix
+//myclient
+include "./mylib_interface";
+open mylib_interface;
+println$ twice 2;
+println$ squared 3;
+@
+and we can run it by:
+@pre
+~/felix>flx mylib.dylib myclient.flx
+4
+9
+@
+
+@h3 Exporting procedures.
+You can also export procedures. Here's a simple example:
+@felix
+// mylib2.flx
+export cproc printint (x:int) { println$ x; }
+@
+Lets compile it and grab the interface files:
+@pre
+flx -c -od . mylib2.flx
+@
+Now we'll make a new client:
+@felix
+//myclient2
+include "./mylib_interface";
+open mylib_interface;
+include "./mylib2_interface";
+open mylib2_interface;
+println$ twice 2;
+println$ squared 3;
+printint 42;
+@
+Note this client uses the previous library mylib as well.
+So we can test this now:
+@pre
+flx mylib.dylib mylib2.dylib myclient2.flx
+@
+
+@h2 Rules for core C libraries.
+The two libraries we have presented so far are examples
+of what I will call <em>core C libraries</em>.
+A core C library must follow certain rules.
+
+<ul>
+<li>The function arguments and return types must be primitive Felix types
+bound to C/C++ types.</li>
+
+<li>A function must not access global variables or call any
+function directly or indirectly which accesses global variables.
+</li>
+
+<li>A function or procedure must not cause any Felix heap 
+allocation to occur. </li>
+
+<li>A procedure must not issue any service calls, in particular
+communication via schannels is not possible.
+</li>
+</ul>
+
+These rules are roughly sufficent to ensure functions and procedures
+reduce to "plain old C++" and have "plain C interfaces".
+We'll see a a bit later these rules are more restrictive than
+necessary.
+
+@h3 Rules for GC enabled libraries.
+If you are just using the library from Felix code,
+you can remove the constraint against heap allocation.
+The result is a <em>GC enabled library</em>.
+
+Expanding the set of data types which can transit the separate
+compilation boundaries is a current work in progress.

@@ -233,6 +233,21 @@ object processing_env(
         debugln$ "Felix compilation succeeded";
         calpackages;
         FlxPkg::write_include_file(dvars.cpp_filebase, control.EXTRA_INCLUDE_FILES);
+        // Now, if we exported something (other than the standard symbols), 
+        // we copy up the *.hpp and *_interface.flx
+        // files to the same directory as the "linker output filename". 
+        // This is a bit of a HACK! Shouldn't do this if we're making an executable :)
+        if FileStat::fileexists control.FLX_INTERFACE_FILENAME do
+          var dstdir = Filename::dirname control.LINKER_OUTPUT_FILENAME;
+          Directory::mkdirs dstdir;
+          var flxdst=Filename::join (dstdir,Filename::basename control.FLX_INTERFACE_FILENAME);
+          var copied = FileSystem::filecopy (src=control.FLX_INTERFACE_FILENAME,dst=flxdst); 
+          if copied do
+            // only copy the *.hpp file if the *-interface.flx file is copied.
+            var cxxdst=Filename::join (dstdir,Filename::basename control.CXX_INTERFACE_FILENAME);
+            C_hack::ignore (FileSystem::filecopy (src=control.CXX_INTERFACE_FILENAME, dst=cxxdst));
+          done 
+        done
       done
     else
       debugln$ "skipping flxg because output is uptodate";
@@ -736,6 +751,9 @@ object processing_env(
     // (needed after flxg to complete C++ code gen) and link stuff
     // (needed for linkage)
     calpackages;
+    if control.LINKER_OUTPUT_FILENAME != "" do
+       Directory::mkdirs (Filename::dirname control.LINKER_OUTPUT_FILENAME);
+    done
 
     if control.CCOMPILEIT == 1 do
       result = #run_cxx_compiler_if_required;

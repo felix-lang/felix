@@ -31,6 +31,9 @@ let remap_biface offset biface =
   | BIFACE_export_type (sr, btype, name) ->
       BIFACE_export_type (sr, remap_btype offset btype, name)
 
+  | BIFACE_export_struct (sr, index) ->
+      BIFACE_export_struct (sr, remap_bid offset index)
+
 
 (** Remap bound types by adding an offset to the bound index. *)
 let rec remap_tbexpr offset bexpr =

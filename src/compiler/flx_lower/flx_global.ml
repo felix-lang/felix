@@ -158,39 +158,12 @@ let set_local_globals bsym_table index bsym =
 let set_base_ptf_use bsym_table bid bsym  =
   match Flx_bsym.bbdcl bsym with
   | BBDCL_fun (props,vs,ps,rt,exes) ->
-    (*
-    print_endline ("Set base ptf usage of felix fun " ^ Flx_bsym.id bsym ^ "<"^si bid^">");
-    *)
-(*
-    if List.mem `Requires_ptf props then begin
-      print_endline "Set_base_ptf_use found symbol with Requires_ptf use already set!";
-    end
-    ;
-*)
     if List.mem `Not_requires_ptf props then begin
       print_endline "Set_base_ptf_use found symbol with Not_requires_ptf use already set!";
       assert false;
     end
     ;
-(*
-    if List.mem `Uses_gc props then begin
-      print_endline "Set_base_ptf_use found symbol with Uses_gc use already set!";
-    end
-    ;
-*)
-(*
-    if List.mem `Heap_closure props then begin
-      print_endline "Set_base_ptf_use found symbol with Heap_closure use already set!";
-    end
-    ;
-*)
-(*
-    if List.mem `Uses_global_var props then begin
-      print_endline "Set_base_ptf_use found symbol with Uses_global_var set!";
-    end
-    ;
-*)
-    if List.mem `Uses_gc props or List.mem `Heap_closure props or List.mem `Uses_global_var props then begin
+    if List.mem `Uses_gc props || List.mem `Heap_closure props || List.mem `Uses_global_var props then begin
       if List.mem `Not_requires_ptf props then begin
         print_endline "Conflicting requirements";
         assert false
@@ -228,7 +201,7 @@ let set_base_ptf_use bsym_table bid bsym  =
     end
     ;
 *)
-    if List.mem `Uses_gc props or List.mem `Heap_closure props then begin
+    if List.mem `Uses_gc props || List.mem `Heap_closure props then begin
       if List.mem `Not_requires_ptf props then begin
         print_endline "Conflicting requirements";
         assert false

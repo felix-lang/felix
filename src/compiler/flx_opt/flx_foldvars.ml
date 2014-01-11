@@ -200,7 +200,7 @@ let fold_vars syms bsym_table uses i ps exes =
         (* Cannot do anything with variables or multiply assigned values
           so skip to next instruction -- this is a tail-recursive call
         *)
-        if isvar or !setcnt > 1 then begin
+        if isvar || !setcnt > 1 then begin
           (*
           print_endline "IS VAR or SETCNT > 1";
           *)

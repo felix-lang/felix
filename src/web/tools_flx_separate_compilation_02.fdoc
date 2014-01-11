@@ -1,0 +1,78 @@
+@h2 Understanding function code generation.
+To really grok what is going on we need to understand a bit
+about how the Felix code generator works. 
+
+In Felix, a function has several possible representations:
+<ul>
+<li>A C++ class</li>
+<li>A C++ function</li>
+<li>Inlined away</li>
+</ul>
+
+The C++ class representation is most general.  The class 
+captures its environment with the  class constructor, 
+which is separate from calling the routine. 
+This is what allows function values, or closures, to exist.
+
+If Felix decides a function doesn't have much environment, it can be
+represented by a C++ function instead of a class. 
+In that case we can just call the function without forming a closure first.
+
+@h2 C functions.
+There are two variants of C function representations.
+
+<ul>
+<li>A C function with an extra parameter to accept some environment</li>
+<li>A pure C function with precisely the interface suggested by its Felix type</li>
+</ul>
+
+The bottom level environment in Felix is stored in an object 
+called the thread frame. This structure always contains the garbage collector
+as well as certain system arguments, together with any global variables.
+
+The second form of C function can only be generated correctly
+if the function is a "plain C function", that is, it doesn't
+do any Felix heap allocation or use any global variables.
+
+For example:
+@felix
+noinline fun f (x:int) => new x;
+println$ *(f 42);
+@
+
+generates this C++ code (slightly edited):
+@c++
+//C FUNC <41941>: f
+int* f(thread_frame_t *ptf, int x){
+  return (int*)new(*ptf->gcp, int_ptr_map, true) int (x);
+}
+@
+and you can see the thread fram pointer ptf has to be passed so
+the GC pointer gcp contained in it can be accessed. Remember
+Felix always generates reentrant code, it never uses C global
+variables: if you need the GC you have to pass it in an argument!
+
+But you can see, this is an actual C function! It isn't a class.
+
+@h2 Enforcing a pure C function.
+If you want to <em>force</em> Felix to generate C function
+with the exact interface you expect, excluding the thread frame
+pointer, you can write this instead:
+@felix
+noinline cfun f (x:int) => new x;
+println$ *(f 42);
+@
+Of course the generated C++ code from this program
+doesn't compile because the GC is required, but it isn't
+passed!
+
+A function marked {cfun} has a special type:
+@felix
+cfun f (x:int) => x + 1;
+// type: int --> int
+@
+which is precisly the type of a C function pointer
+@c++
+int (*)(int)
+@
+

@@ -1,30 +1,39 @@
-@h1 Tuples
-We can combine several values in a comma separated list to form tuple.
-@felix
-  1,2.9,"Hello"
-@
-The type of this value is:
-@felix
-  int * double * string
-@
-The {*} symbol here means multiply. The type of a tuple
-is sometimes called the Cartesian Product (after Descartes).
-You can retrive a value from a tuple with a integral literal:
-@felix
-  val x = 1,2.9,"Hello";
-  println x.0; // 1
-  println x.1; // 2.9
-  println x.2; // "Hello"
-@
-Note the field numbers are zero origin in keeping with C conventions.
-There are no tuples with one component. 
+@h1 Basic Data types
+To get moving we give some basic data types:
+@pre
+  Type        Example Values        
+  ---------------------------------------
+  void                              void is also called 0, it has no values (empty set)
+  unit        ()                    unit is also called 1, it has 1 value.
+  bool        false, true           bool is also called 2, it has 2 values.
+                                    Named for George Boole.
 
-@h2 Unit
-However, there is a tuple with no components with a single unique value:
-@felix
-  ()
+  int         1234, 0, -24
+  double      12.34,  -2.0e2, 7.6e-2, 0.0
+  string      "hello", 'world'
+  char        char 'x', char 32
 @
-the type of which is called {unit} type and can also
-be designated by {1}.
+Note that there are no {char} literals, instead the {char} constructor takes
+a string and provides the first character (if there is one) or the {nul}
+character if the string is empty.
 
+@h1 Type aliases
+In Felix you can introduce an alias for a type:
+@felix
+typedef myint = int;
+typedef int_pair = int * int;
+@
+@h1 Basic functions
+Some simple functions that are fairly general and quite useful:
+@h2 str and repr
+The {str} function converts many data types into a pleasant
+human readable string. The {repr} function tries to make a string
+a bit more like a literal would look in a program.
+Thus:
+@felix
+val x="Hello";
+println$ str x; // Hello
+println$ repr x; // "Hello"
+@
+The concept is stolen from Python.
 

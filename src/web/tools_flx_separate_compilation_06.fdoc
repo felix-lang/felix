@@ -1,0 +1,28 @@
+@h2 Exporting Structs
+It is possible to export a struct. You can do this:
+@felix
+export struct X { 
+  a:int;
+  z:float;
+  export fun f(b:int) => self.a + b;
+};
+@
+This causes the interface file to contain  
+@felix
+cstruct X { a:int; z:float;};
+@
+which provides access to both the fields and the 
+standard constructor:
+@felix
+  X(1,2.3f);
+@
+This is a C binding to the struct definee in the original
+file, which is exported with a typedef.
+
+Note that the function {f} has to be separately exported because
+functions nested in structs are just sugar for a function, 
+in the example:
+@felix
+fun f(self:X) (b:int) => self.a + b;
+@
+

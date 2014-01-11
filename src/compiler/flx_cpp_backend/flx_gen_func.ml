@@ -171,7 +171,7 @@ let gen_function syms bsym_table props index id sr vs bps ret' ts instance_no =
     (*
     "  //call\n" ^
     *)
-    (if argtype = btyp_tuple [] or argtype = btyp_void ()
+    (if argtype = btyp_tuple [] || argtype = btyp_void ()
     then
       (if stackable then "  void stack_call();\n" else "") ^
       (if heapable then "  ::flx::rtl::con_t *call(::flx::rtl::con_t*);\n" else "")
@@ -225,7 +225,7 @@ let gen_function syms bsym_table props index id sr vs bps ret' ts instance_no =
     *)
     "  "^rettypename^
     " apply(" ^
-    (if argtype = btyp_tuple [] or argtype = btyp_void () then ""
+    (if argtype = btyp_tuple [] || argtype = btyp_void () then ""
     else argtypename^" const &")^
     ");\n"  ^
     "};\n"

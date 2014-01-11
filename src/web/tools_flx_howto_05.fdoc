@@ -1,0 +1,30 @@
+@h3 How to add object files to a program
+You can add object files directly to your program.
+Just add them to the command line before the Felix filename.
+For example:
+@pre
+flx --static your.o fred.flx
+flx your.os fred.flx
+@
+Felix recognises these extensions as object files:
+@pre
+.o
+.os
+.obj
+@
+It is your responsibility to ensure these are compiled
+with the right switches for linking. If you are building
+a shared library, which is the default, you will need to
+compile with {-fPIC} with gcc or clang on some platforms.
+
+Felix also recognises these extensions as static archives
+(collections of object files):
+@pre
+.a
+.lib
+@
+and will pass them to the linker. Gcc and Clang will link
+the whole library in, they will not search for modules
+containing symbols.
+
+

@@ -13,9 +13,9 @@ let munge s =
   for i=0 to String.length s - 1 do
     let ch = s.[i] in
     if 
-      ch >= '0' && ch <= '9' or
-      ch >= 'A' && ch <= 'Z' or
-      ch >= 'a' && ch <= 'z' or
+      ch >= '0' && ch <= '9' ||
+      ch >= 'A' && ch <= 'Z' ||
+      ch >= 'a' && ch <= 'z' ||
       ch = '_' 
     then
       s2 := !s2 ^ String.make 1 ch

@@ -199,7 +199,7 @@ let types_of_cformat_string sr s =
       end
 
       (* sign *)
-      else if ch = '+' or ch = '-' then begin
+      else if ch = '+' || ch = '-' then begin
         if !sign <> ' ' then err i "Extra sign"
         else
           sign := ch;

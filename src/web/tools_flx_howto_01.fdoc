@@ -1,0 +1,151 @@
+@h3 How to build a shared library
+First of all, if you run a command like:
+@pre
+flx hello.flx
+@
+you are in fact already making a shared library! So we will show now how to build
+a C callable shared library from code written in Felix. We will start with
+something really basic. Consider this code:
+@felix
+// file mycode.flx
+fun myfun (a:int, b:int) => a + b + 1;
+fun doubleit (a: double) => 2.0 * a;
+@
+and suppose we want to make a shared library with these functions in it.
+It's easy enough: here's the command:
+@pre
+flx -c -ox libmy mycode.flx
+@
+On OSX this will make a file {libmy.dylib} in the current directory,
+on Linux it will make {libmy.so}, and on Windows {libmy.dll}.
+The {-ox} switch names the output file up to by excluding the extension,
+which is supplied automatically as appropriate for your system.
+
+Felix does this so that the command above will work on any platform.
+You can also say:
+
+@pre
+flx -c -od . mycode.flx
+@
+and that will make a file {mycode.dylib} on OSX, {mycode.so} on Linux
+and {mycode.dll} on Windows, in the current directory {.}.
+
+Felix does this to provide not only platform independent building,
+but also so the basename of the Felix file being compiled can be used
+as the library name, allowing for wildcarding.
+
+Finally, you can say:
+@pre
+flx -c -o libmy.so mycode.flx
+@
+and that will work on all platforms, but doesn't follow the usual
+conventions for naming shared libraries on OSX or Windows.
+
+The {-c} switch means to compile only, do not run.
+Note that this does not mean not to do linkage.
+We need to link a shared library after all!
+
+Alright, so we made a shared library. I'm not going to tell you how
+to link it to your C program! You should know that already.
+
+So how do we call those functions from C? Doesn't Felix generate
+C++ with mangled names?
+
+You cannot call these functions from C. Although it may well be true
+that Felix generates C++ and compiling that leads to mangled names,
+there are two other more serious problems.
+
+The first one is that you don't even know if Felix generated a C function
+for these functions. It could have made a C++ class! And in any case
+Felix invents its own names for functions: they're not just mangled,
+they include an integer unique to the compilation!
+
+Now, if you want to see what this looks like you could examine the
+output in the cache, and you would get a very BIG surprise!!
+
+There's nothing in the generated C++!! The functions have disappeared!!
+There must be a bug in the Felix compiler!
+
+No, there isn't. Those functions never got used. So Felix just gets
+rid of them to speed up compilation and save space.
+
+You can try to fix this by writing some test cases:
+@felix
+// file mycode.flx
+fun myfun (a:int, b:int) => a + b + 1;
+fun doubleit (a: double) => 2.0 * a;
+
+println$ myfun (1,2);
+println$ doubleit 42.0;
+@
+but this probably won't work either. If you run the program by removing
+the {-c} option, it will print the right answers but probably inline
+the functions so they still won't exist!
+
+Here's the right answer:
+
+@felix
+// file mycode.flx
+fun myfun (a:int, b:int) => a + b + 1;
+fun doubleit (a: double) => 2.0 * a;
+
+println$ myfun (1,2);
+println$ doubleit 42.0;
+
+export myfun of (int * int) as "myfun";
+export doubleit of (double) as "doubleit";
+@
+
+What this does is generate  C wrapper functions with the
+quoted name, which then calls the Felix functions.
+On Windows it also ensures these C functions are {dllexport}.
+
+To uses the functions in C program you can write a header file:
+@pre
+extern int myfun (int,int);
+extern double doubleit (double);
+@
+On Windows you will have to do this instead:
+@pre
+extern __declspec(dllimport) int myfun (int,int);
+extern __declspec(dllimport) double doubleit (double);
+@
+
+How does the trick of putting test code in the shared library work?
+Well, Felix automatically defines a couple of C wrapper functions
+in every program, and exports them. These are used to construct
+the {struct} containing any global variables used (the so called
+thread frame) plus a second function used to initialise it, which
+executes any top level code.
+
+So when you think your running a Felix program .. no, you're NOT!
+Felix doesn't have programs!! What you think of as your program is nothing
+more than library initialisation code. Its just that normally, programs
+don't bother to export anything else, other than the thread frame
+constructor and initialiser.
+
+So now, you can understand, you asked the wrong question. The question is not
+how to make a shared library because that's what Felix does! The real
+question is how to trick Felix into acting as if your code were a program!
+
+So, how does one make Felix generate C++ callable functions?
+
+The simple answer to this is: you can't. You can use the C functions,
+but you will have to change your header files:
+@pre
+extern "C" 
+{
+  extern int myfun (int,int);
+  extern double doubleit (double);
+}
+@
+and similarly on Windows. This ensures the function names aren't
+mangled. Note that this also means you can {dlopen} and {dlsym}
+the shared library and symbols or {LoadLibrary} and {GetProcAddress}
+on Windows.
+
+Ok, well so far so good, but it is all very unsafe. What happens if the
+functions do nasty stuff that requires the garbage collector?
+Or even worse, refers to a global variable?
+
+

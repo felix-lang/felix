@@ -22,8 +22,8 @@ class FlxPluginSymbols
       toolchain_gcc48_linux
     ;
     // flx
-    static-link-symbol dflx_create_thread_frame in "dflx";
-    static-link-symbol dflx_flx_start in "dflx";
+    static-link-symbol dflx_create_thread_frame in plugin dflx;
+    static-link-symbol dflx_flx_start in plugin dflx;
     
   }
 }

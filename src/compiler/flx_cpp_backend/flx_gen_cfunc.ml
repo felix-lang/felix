@@ -77,7 +77,7 @@ let gen_C_function syms bsym_table props index id sr vs bps ret' ts instance_no 
       | 1 ->
         let ix = hd params in
         if Hashtbl.mem syms.instances (ix, ts)
-        && not (argtype = btyp_tuple [] or argtype = btyp_void ())
+        && not (argtype = btyp_tuple [] || argtype = btyp_void ())
         then cpp_typename syms bsym_table argtype else ""
       | _ ->
         let counter = ref 0 in
@@ -197,7 +197,7 @@ let gen_C_function_body filename syms bsym_table
           | [] -> ""
           | [{pkind=k; pindex=i; ptyp=t}] ->
             if Hashtbl.mem syms.instances (i, ts)
-            && not (argtype = btyp_tuple [] or argtype = btyp_void ())
+            && not (argtype = btyp_tuple [] || argtype = btyp_void ())
             then
               let t = rt vs t in
               let t = match k with
@@ -330,7 +330,7 @@ let gen_C_procedure_body filename syms bsym_table
           | [] -> ""
           | [{pkind=k; pindex=i; ptyp=t}] ->
             if Hashtbl.mem syms.instances (i, ts)
-            && not (argtype = btyp_tuple [] or argtype = btyp_void ())
+            && not (argtype = btyp_tuple [] || argtype = btyp_void ())
             then
               let t = rt vs t in
               let t = match k with

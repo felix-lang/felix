@@ -88,6 +88,8 @@ class FlxCoreBuild
       ('flx_libindex', 'tools'/'flx_libindex'),
       ('flx_libcontents', 'tools'/'flx_libcontents'),
       ('flx_mktutindex', 'tools'/'flx_mktutindex'),
+      ('flx_renumber', 'tools'/'flx_renumber'),
+      ('flx_iscr', 'tools'/'flx_iscr'),
       ('webserver', 'tools'/'webserver') // dynamically loads plugins
     );
     println$ "build exes";
@@ -254,6 +256,12 @@ class FlxCoreBuild
        elif arg == "--build-flx-tools" do
          &cmd.build_flx_tools <- true;
        elif arg == "--build-tools" do
+         &cmd.build_tools<- true;
+       elif arg == "--build-all" do
+         &cmd.build_web_plugins<- true;
+         &cmd.build_toolchain_plugins<- true;
+         &cmd.build_flx <- true;
+         &cmd.build_flx_tools <- true;
          &cmd.build_tools<- true;
        elif arg == "--help" do
          print_help();

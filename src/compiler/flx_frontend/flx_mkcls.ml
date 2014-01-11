@@ -280,6 +280,14 @@ print_endline ("mlcls: WARNING: NOT replacing use of callback function "^string_
   | BBDCL_nonconst_ctor _ ->
       mkcls state bsym_table all_closures i ts t
 
+  | BBDCL_fun (props,_,_,_,_) when List.mem `Cfun props -> 
+    (* closure of a C function is just a function pointer *)
+    (* NOTE: this is CRAP. BECAUSE we may still need to wrap a cfun
+       if it is passed to a Felix function type, but not if it's a C
+       function type. So we need to look at the call/apply typing.
+    *)
+    bexpr_closure t (i,ts)
+
   | x ->
       all_closures := BidSet.add i !all_closures;
       bexpr_closure t (i,ts)
@@ -315,7 +323,7 @@ let rec adj_lambda state bsym_table all_closures sr e =
 
       | BTYP_sum ls ->
           let n = List.length ls in
-          if v < 0 or v >= n
+          if v < 0 || v >= n
           then
             failwith
             (

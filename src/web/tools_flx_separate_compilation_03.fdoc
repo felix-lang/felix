@@ -1,0 +1,77 @@
+@h2 Understanding exported functions.
+In the following code:
+@felix
+fun f(x:int)=> new x;
+export fun f of (int) as "F";
+@
+we have actually defined two function. The first one, {f} has
+already been explained in the previous section.
+
+The second function "F" is a special wrapper for the first
+which uses extern "C" linkage so the symbol is available for
+linkage in an object file or shared library.
+
+The export wrapper here is also certain to be a C function
+accepting a pointer to thread frame as the first argument.
+
+@h2 Without the thread frame
+You can also export a function so that the interface
+is certain to match the expected signature, eliding the
+pointer to thread frame. For example:
+
+@felix
+fun f(x:int)=> new x;
+export cfun f of (int) as "F";
+@
+will elide the thread frame pointer, but that is required
+by the function {f} so the resulting wrapper function
+will not compile. If instead you write:
+
+@felix
+cfun f(x:int)=> new x;
+export cfun f of (int) as "F";
+@
+
+then the wrapper will certainly compile, and instead
+the Felix function {f} will fail because it doesn't
+accept a thread frame.
+
+If you write:
+@felix
+fun f(x:int)=> x;
+export cfun f of (int) as "F";
+@
+everything will work, because the Felix function {f} clearly
+doesn't require a thread frame. The one passed to {F}
+is simply ignored.
+
+When you write the compact form:
+@felix
+export cfun f(x:int)=> x;
+@
+that is equivalent to
+@felix
+cfun f(x:int)=>x;
+export cfun f of (int) as "F";
+@
+so the wrapper will be sure to compile, although the
+function {f} may not in general in this case it will.
+The construction
+@felix
+export fun (x:int)=>x;
+@
+always compiles and will work if the correct thread frame
+is passed. The type system assures this unless you cheat
+with a cast.
+
+The later point is important now, because Felix interfaces
+do cheat with a cast. In that case it will always work
+provided the function does not use any global variables
+(since the ones it would use would be in a different thread
+frame to the one actually passed).
+
+This problem can easily be avoided: just don't use global variables
+in library code!
+
+
+

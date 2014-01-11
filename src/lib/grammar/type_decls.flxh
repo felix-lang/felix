@@ -129,14 +129,16 @@ syntax type_decls {
   //$ // f is equivalent to
   //$ fun f (self:X) (b:int) => self.a + b;
   //$
-  stmt := "struct" sdeclname "=" ? "{" sstruct_mem_decl * "}" =>#
+  sexport := "export" =># "'export";
+  sexport := sepsilon =># "'noexport";
+  stmt := sexport "struct" sdeclname "=" ? "{" sstruct_mem_decl * "}" =>#
     """
      (let* 
        (
-         (vals (filter_first 'Pval _5))
-         (funs (filter_first 'Pfun _5))
-         (struct-name (first _2))
-         (struct-polyspec (second _2))
+         (vals (filter_first 'Pval _6))
+         (funs (filter_first 'Pfun _6))
+         (struct-name (first _3))
+         (struct-polyspec (second _3))
          (struct-polyvars (first struct-polyspec))
          (struct-pvids (map first struct-polyvars))
          (struct-pvs (map nos struct-pvids))
@@ -158,17 +160,28 @@ syntax type_decls {
                (polyvars (first polyspec))
                (polyaux (second polyspec))
                (outpolyvars `(,(append struct-polyvars polyvars) ,polyaux))
-               (kind (if (equal? (first (first t5)) 'ast_void) 'PRef 'PVal))
                (self-name 'self)
-               (self-type `(ast_name ,_sr ,struct-name ,struct-pvs))
-               (self-arg `(,kind ,self-name ,self-type none)) 
+               (self-type 
+                  (if (equal? (first (first t5)) 'ast_void)
+                    `(ast_ref ,_sr (ast_name ,_sr ,struct-name ,struct-pvs))
+                    `(ast_name ,_sr ,struct-name ,struct-pvs)
+                  )
+               )
+               (self-arg `(PVal ,self-name ,self-type none)) 
                (self-args `((,self-arg) none))
                (args (cons self-args t4))
              ) 
-             `(,t0 ,t1 ,t2 ,outpolyvars ,args, t5 ,t6 ,t7 ,t8)
+             `(,t0 ,t1 ,t2 ,outpolyvars ,args ,t5 ,t6 ,t7 ,t8)
            )) funs)
          )
          (sts (cons struct mfuns))
+         (sts 
+           (if 
+             (equal? _1 'export) 
+             (cons `(ast_export_struct ,_sr ,struct-name) sts)
+             sts
+           )
+         )
        )
        `(ast_seq ,_sr ,sts)
      )

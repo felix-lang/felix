@@ -392,7 +392,7 @@ let gen_function_methods filename syms bsym_table
     let apply =
       rettypename^ " " ^name^
       "::apply("^
-      (if argtype = btyp_tuple [] or argtype = btyp_void ()
+      (if argtype = btyp_tuple [] || argtype = btyp_void ()
       then ""
       else argtypename ^" const &_arg ")^
       "){\n" ^
@@ -408,7 +408,7 @@ let gen_function_methods filename syms bsym_table
         | [] -> ""
         | [{pindex=i}] ->
           if Hashtbl.mem syms.instances (i, ts)
-          && not (argtype = btyp_tuple [] or argtype = btyp_void ())
+          && not (argtype = btyp_tuple [] || argtype = btyp_void ())
           then
             "  " ^ cpp_instance_name syms bsym_table i ts ^ " = _arg;\n"
           else ""
@@ -548,7 +548,7 @@ let gen_procedure_methods filename syms bsym_table
       | [] -> ""
       | [{pindex=i}] ->
           if Hashtbl.mem syms.instances (i,ts)
-          && not (argtype = btyp_tuple [] or argtype = btyp_void ())
+          && not (argtype = btyp_tuple [] || argtype = btyp_void ())
           then
             "  " ^ cpp_instance_name syms bsym_table i ts ^ " = _arg;\n"
           else ""

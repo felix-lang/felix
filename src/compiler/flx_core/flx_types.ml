@@ -102,6 +102,7 @@ and iface_t =
   | IFACE_export_cfun of suffixed_name_t * string
   | IFACE_export_python_fun of suffixed_name_t * string
   | IFACE_export_type of typecode_t * string
+  | IFACE_export_struct of string
 
 and siface_t = Flx_srcref.t * iface_t 
 

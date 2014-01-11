@@ -142,7 +142,7 @@ let passign syms bsym_table (pinits:aentry_t list) ts' sr =
   in
   (* return true if an assignment in inits depends on j *)
   let used j inits =
-    fold_left (fun r (i,_)-> r or depend inits i j) false inits
+    fold_left (fun r (i,_)-> r || depend inits i j) false inits
   in
   let rec aux ((head, middle, tail) as arg) = function
     | [] -> arg

@@ -8,18 +8,18 @@ let fixup_prio sr rhs =
   | [] -> List.rev out
 
   (* Default relation is greater equal *)
-  | NAME s :: LSQB _ :: NAME p :: RSQB _ :: t ->
+  | NAME s :: LSQB :: NAME p :: RSQB :: t ->
     aux t (NONTERMINAL (s,Priority_Greatereq p)::out)
 
-  | NAME s :: LSQB _ :: LESS _ :: NAME p :: RSQB _ :: t ->
+  | NAME s :: LSQB :: LESS :: NAME p :: RSQB :: t ->
     aux t (NONTERMINAL (s,Priority_Less p)::out)
-  | NAME s :: LSQB _ :: LESSEQUAL _ :: NAME p :: RSQB _ :: t ->
+  | NAME s :: LSQB :: LESSEQUAL :: NAME p :: RSQB :: t ->
     aux t (NONTERMINAL (s,Priority_Lesseq p)::out)
-  | NAME s :: LSQB _ :: GREATER _ :: NAME p :: RSQB _ :: t ->
+  | NAME s :: LSQB :: GREATER :: NAME p :: RSQB :: t ->
     aux t (NONTERMINAL (s,Priority_Greater p)::out)
-  | NAME s :: LSQB _ :: GREATEREQUAL _ :: NAME p :: RSQB _ :: t ->
+  | NAME s :: LSQB :: GREATEREQUAL :: NAME p :: RSQB :: t ->
     aux t (NONTERMINAL (s,Priority_Greatereq  p)::out)
-  | NAME s :: LSQB _ :: EQUAL _ :: NAME p :: RSQB _ :: t ->
+  | NAME s :: LSQB :: EQUAL :: NAME p :: RSQB :: t ->
     aux t (NONTERMINAL (s,Priority_Eq p)::out)
    
   | NAME s :: LSQB :: _ ->

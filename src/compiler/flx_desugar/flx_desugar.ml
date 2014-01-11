@@ -105,16 +105,25 @@ let rec rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t lis
 
   (* objects *)
   | STMT_export_python_fun (sr,name,cpp_name) ->
+    print_endline ("Export Python fun " ^ string_of_suffixed_name name ^ " as '" ^ cpp_name^ "'");
     [Iface (sr, IFACE_export_python_fun (name, cpp_name))]
 
   | STMT_export_fun (sr,name,cpp_name) ->
+    print_endline ("Export fun/proc " ^ string_of_suffixed_name name ^ " as '" ^ cpp_name^ "'");
     [Iface (sr, IFACE_export_fun (name, cpp_name))]
 
   | STMT_export_cfun (sr,name,cpp_name) ->
+    print_endline ("Export cfun/cproc " ^ string_of_suffixed_name name ^ " as '" ^ cpp_name^ "'");
     [Iface (sr, IFACE_export_cfun (name, cpp_name))]
 
   | STMT_export_type (sr,typ,cpp_name) ->
+    print_endline ("Export type " ^ string_of_typecode typ ^ " as '" ^ cpp_name^ "'");
     [Iface (sr, IFACE_export_type (typ, cpp_name))]
+
+  | STMT_export_struct (sr,name) ->
+    print_endline ("Export struct " ^ name);
+    [Iface (sr, IFACE_export_struct (name))]
+
 
   | STMT_var_decl (sr,name,vs,typ,expr) ->
     let vs_exprs = List.map (fun (s,_)->TYP_name (sr,s,[])) (fst vs) in

@@ -249,12 +249,17 @@ let codegen_bsyms
   plb ("//Timestamp: " ^ state.compile_start_gm_string);
   plb ("//Timestamp: " ^ state.compile_start_local_string);
 
+  plb ("#define FLX_EXTERN_" ^ Flx_name.cid_of_flxid state.module_name ^ " FLX_EXPORT");
   plb ("#include \"" ^ state.module_name ^ ".hpp\"");
   plb "#include <stdio.h>"; (* for diagnostics *)
 
   plb "#define comma ,";
   plb "\n//-----------------------------------------";
   plb "//EMIT USER BODY CODE";
+  plb (
+    "using namespace ::flxusr::" ^
+    Flx_name.cid_of_flxid state.module_name ^ ";");
+
 
   (* These must be in order: build a list and sort it *)
   instantiate_instances plb `Body;
@@ -374,6 +379,7 @@ let codegen_bsyms
   plb ("}} // namespace flxusr::" ^ Flx_name.cid_of_flxid state.module_name);
 
   let mname = Flx_name.cid_of_flxid state.module_name in
+
   plb "//CREATE STANDARD EXTERNAL INTERFACE";
   plb (
     "FLX_FRAME_WRAPPERS(::flxusr::" ^ mname ^","^mname ^ ")");
@@ -399,16 +405,12 @@ let codegen_bsyms
 
   plb "\n//-----------------------------------------";
 
-  plh (
-    "using namespace ::flxusr::" ^
-    Flx_name.cid_of_flxid state.module_name ^ ";");
-
   if List.length state.syms.bifaces > 0 then begin
     plh "//DECLARE USER EXPORTS";
     plh (Flx_gen_biface.gen_biface_headers
       state.syms
       bsym_table
-      state.syms.bifaces);
+      state.syms.bifaces state.module_name);
 
     plb "//DEFINE EXPORTS";
     plb (Flx_gen_biface.gen_biface_bodies

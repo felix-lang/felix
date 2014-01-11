@@ -780,6 +780,8 @@ and xstatement_t sr x : statement_t =
   | Lst [Id "ast_export_type"; sr; t; Str s] -> let sr = xsr sr in 
     STMT_export_type (sr, ti sr t, s)
 
+  | Lst [Id "ast_export_struct"; sr; Str s] -> let sr = xsr sr in 
+    STMT_export_struct (sr, s)
   
   | Lst [Id "ast_stmt_match";  Lst [sr; e; Lst pss]] -> let sr = xsr sr in 
     let pss = map (function

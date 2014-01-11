@@ -1,0 +1,28 @@
+@h3 How to add C++ files to a program
+Apart from embedding C++ code in Felix files, which is an
+important feature of Felix, you can include C++ files
+directly into programs and libraries. All you need to do
+to effect this is add the C++ file names to the command line
+before the Felix filename. 
+
+Felix recognises these extensions as C++:
+@pre
+.cxx
+.cpp
+.cc
+.c
+@
+
+For example:
+@pre
+flx your.cpp joe.cpp fred.flx
+@
+The Felix convention for C++ is that extension {.cpp} is for
+library files and {.cxx} is for programs, however this is not
+enforced.
+
+Note that even files ending in extension {.c} will be passed as
+named to the C++ compiler. So they will be compiled as C if
+and only if the C++ compiler compiles them as C.
+
+

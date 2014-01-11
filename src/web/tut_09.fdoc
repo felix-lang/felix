@@ -1,79 +1,30 @@
-@h1 Arrays
-@h2 Array Values
-When you write a tuple like this:
+@h1 Tuples
+We can combine several values in a comma separated list to form tuple.
 @felix
-  val x = 1,2,3,4,5;
+  1,2.9,"Hello"
 @
-where all the components have the same type, it is called an 
-<em>array</em> value. A special notation may be used for this array type:
+The type of this value is:
 @felix
-  int^5
+  int * double * string
 @
-that is, int multipled by itself 5 times: this type is exactly
-the same (not equivalent or isomorphic but exactly the same) as:
+The {*} symbol here means multiply. The type of a tuple
+is sometimes called the Cartesian Product (after Descartes).
+You can retrive a value from a tuple with a integral literal:
 @felix
-  int * int * int * int * int
+  val x = 1,2.9,"Hello";
+  println x.0; // 1
+  println x.1; // 2.9
+  println x.2; // "Hello"
 @
-There is also an alias in the library which can be used:
-@felix
-  array[int,5]
-@
+Note the field numbers are zero origin in keeping with C conventions.
+There are no tuples with one component. 
 
-This kind of array is a first class value, it is <em>not an object</em>.
-@h2 Array element
-You can get an element from an array by its position:
+@h2 Unit
+However, there is a tuple with no components with a single unique value:
 @felix
-println$ a.1;
-println$ 1 a;
+  ()
 @
-Note the position, or index, is zero origin in accordance with C 
-conventions. The index can be an expression of any core 
-integral type. The function {1} used here is called an
-<em>array projection function</em>.
+the type of which is called {unit} type and can also
+be designated by {1}.
 
-@h2 Array length
-The length of an array can be found by the {len} function.
-The type of the result is {size}, an integral type used 
-to determine the sizes of things.
-@felix
-println$ a.len;
-@
-@h2 Array member
-You can test if a value is in an array easily:
-@felix
-println$ 2 \in a;
-@
-Note the beautiful infix set membership operator is spelled:
-@felix
-"2 \in a"
-@
-This is one of the standard TeX operators that the webserver
-displays using MathJax.
 
-@h2 Array iterators
-
-Perhaps the most interesting thing you can do with an array 
-is iterate through its elements:
-@felix
-val a = 1,2,3,4;
-
-for var i in 0 upto 3 do
-  println$ "a."+str i+"="+str a.i;
-done
-@
-This is an indexed based loop specialised for arrays.
-Here's another iterator:
-@felix
-for v in a do
-  println$ "element=" + v;
-done
-@
-This form of iterator can be used with any sequence.
-It has the advantage it isn't possible to get an out of
-bounds index. The disadvantage is that you can't access the
-index at all.
-
-There's yet another way to do this:
-@felix
-iter (proc (v:int) {println$ "element=" + str v; }) a;
-@

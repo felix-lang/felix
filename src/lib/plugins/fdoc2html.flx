@@ -1,4 +1,6 @@
 
+open Regdef; // required
+
 include "./plugin_common";
 
 include "./slideshow-interface";
@@ -81,6 +83,27 @@ gen safer_popen(cmd:string)=>
   Process::popen_in(timeout+" -t 15 " + cmd + " 2>&1")
 ;
 
+// helper definitions
+regdef optwhite = ' '*;
+regdef white = ' '+;
+regdef felt= perl ("[A-Za-z._][A-Za-z0-9_.]*");
+regdef fname = (felt "/")* felt;
+
+// A tangler definition looks like:
+// @tangler name = filename
+regdef tangler_def_regdef = 
+  "tangler" white group (felt) optwhite "=" 
+  optwhite group (fname) optwhite 
+; 
+
+// To set the output we just use
+// @tangle name
+regdef tangler_use_regdef = 
+  "tangle" white group (felt) optwhite 
+; 
+var tangler_def_re2 = RE2 (Regdef::render tangler_def_regdef);
+var tangler_use_re2 = RE2 (Regdef::render tangler_use_regdef);
+
 object xlat_fdoc (t:string, filename:string) implements fdoc_t = {
 
   method fun whatami () => "Translator for " + filename;
@@ -121,6 +144,19 @@ object xlat_fdoc (t:string, filename:string) implements fdoc_t = {
     endmatch
   ;
 
+  var tanglers = strdict[string] ();
+
+  proc def_tangler (id:string, filename:string)
+  {
+    match get tanglers id with
+    | Some _ =>
+      println$ "Duplicate definition of tangler " + id;
+    | None =>
+      println$ "Add tangler id=" + id + " filename=" + filename;
+      add tanglers id filename;
+    endmatch;
+  }
+   
   // paragraphs
   proc sp () { paragraph.sp (); }
   proc sp (cls:string) { paragraph.sp-clas cls; }
@@ -177,7 +213,7 @@ next:>
   proc inline_pre(b:string)
   {
     sp; 
-    write_string("<pre>"); 
+    write_string('<pre class="prefmtbg">'); 
     write_string(txt2html b); 
     write_string("</pre>"); 
     ep;
@@ -197,7 +233,7 @@ next:>
   {
     sp;
     write_string("<pre class='cppbg'>"); 
-    write_string((xlat_cpp,b,"").1); // no parent!
+    write_string((xlat_cpp(b,"")).1); // no parent!
     write_string("</pre>");
     ep; 
   }
@@ -325,68 +361,99 @@ next:>
     write_string("</pre>"); 
   }
   
- 
   proc handle_cmd (b:string) 
   {
-    if b == "felix" do inline_felix (#get_text);
-    elif prefix (b,"felix ") do felix_file (strip (b.[6 to]));
-    elif prefix (b,"flx-and-expect ") do flx_and_expect (strip(b.[15 to]));
+println$ "CMD=@"+b;
+    match Match (tangler_def_re2, b) with
+    | Some ?v => def_tangler (v.1, v.2);
+    | None => 
+      match Match (tangler_use_re2, b) with
+      | Some ?s => 
+        println$ "Tangle id=" + s.1;
+        match get tanglers s.1 with
+        | Some ?x => 
+          println$ "Tangler filename=" + x;
+          var xtn = Filename::get_extension x;
+          println$ "Extension=" + xtn;
+          if xtn in (".flx",".flxh") do 
+            write_string("<pre class='inclusion'>\n"+x+"</pre>\n");
+            println$ "flx ....";
+            inline_felix (#get_text);
+          elif xtn in (".cxx",".cpp",".hpp",".c",".cc",".h") do 
+            write_string("<pre class='inclusion'>\n"+x+"</pre>\n");
+            println$ "cpp ....";
+            inline_cpp (#get_text);
+          else 
+            write_string("<pre class='inclusion'>\n"+x+"</pre>\n");
+            println$ "pre ....";
+            inline_pre (#get_text);
+          done
+        | None => 
+          println$ "Can't find tangler '" + s.1+"'";
+          inline_pre (#get_text);
+        endmatch;
+      | None => 
+        if b == "felix" do inline_felix (#get_text);
+        elif prefix (b,"felix ") do felix_file (strip (b.[6 to]));
+        elif prefix (b,"flx-and-expect ") do flx_and_expect (strip(b.[15 to]));
 
-    elif b == "c++" do inline_cpp (#get_text);
-    elif prefix (b,"c++") do extern_cpp ( strip(b.[4 to]));
+        elif b == "c++" do inline_cpp (#get_text);
+        elif prefix (b,"c++") do extern_cpp ( strip(b.[4 to]));
 
-    elif b == "ocaml" do inline_ocaml (#get_text);
-    elif prefix (b,"ocaml") do extern_ocaml( strip(b.[6 to]));
+        elif b == "ocaml" do inline_ocaml (#get_text);
+        elif prefix (b,"ocaml") do extern_ocaml( strip(b.[6 to]));
 
-    elif b == "python" do inline_python(#get_text);
-    elif prefix (b,"python") do extern_python( strip(b.[7 to]));
-
-
-    elif b=="p" do bp; 
-    elif b=="pre" do inline_pre (#get_text);
-    elif b=="expect" do inline_expect (#get_text);
-    elif b=="obsolete" do ep; sp 'obsolete'; write_string("<em>Obsolete</em> ");
-    elif b=="caveat" do ep; sp 'caveat'; write_string("<em>Caveat: </em> ");
-    elif b=="impl" do ep; sp 'implementation_detail'; write_string("<em>Implementation Detail: </em>");
-    elif b=="future" do ep; sp 'future'; write_string("<em>In future: </em>");
-    elif b=="note" do ep; sp 'bug'; write_string("<em>Note: </em>");
-    elif b=="bug" do ep; sp 'bug'; write_string("<em>Bug: </em>");
-    elif b=="fixed" do ep; sp 'fixed'; write_string("<em>Fixed: </em>");
-    elif b=="done" do ep; sp 'done'; write_string("<em>Done: </em>");
-
-    elif prefix(b,"h1") do h(1,b.[3 to]); 
-    elif prefix(b,"h2") do h(2,b.[3 to]); 
-    elif prefix(b,"h3") do h(3,b.[3 to]);
-    elif prefix(b,"h4") do h(4,b.[3 to]);
+        elif b == "python" do inline_python(#get_text);
+        elif prefix (b,"python") do extern_python( strip(b.[7 to]));
 
 
-    // external image
-    elif prefix(b,"image") do 
-      var img = split_first(b.[6 to],"|");
-      write_string("<img src='"+img.(0)+"' style='"+img.(1)+"'></img>");
+        elif b=="p" do bp; 
+        elif b=="pre" do inline_pre (#get_text);
+        elif b=="expect" do inline_expect (#get_text);
+        elif b=="obsolete" do ep; sp 'obsolete'; write_string("<em>Obsolete</em> ");
+        elif b=="caveat" do ep; sp 'caveat'; write_string("<em>Caveat: </em> ");
+        elif b=="impl" do ep; sp 'implementation_detail'; write_string("<em>Implementation Detail: </em>");
+        elif b=="future" do ep; sp 'future'; write_string("<em>In future: </em>");
+        elif b=="note" do ep; sp 'bug'; write_string("<em>Note: </em>");
+        elif b=="bug" do ep; sp 'bug'; write_string("<em>Bug: </em>");
+        elif b=="fixed" do ep; sp 'fixed'; write_string("<em>Fixed: </em>");
+        elif b=="done" do ep; sp 'done'; write_string("<em>Done: </em>");
 
-    // arbitrary shell command
-    elif prefix(b,"sh") do 
-      var cmd = b.[3 to];
-      var fout = safer_popen(cmd);
-      if valid fout do
-        var output = load fout;
-        var result = Process::pclose fout; 
-        println$ "Ran cmd=" + cmd;
-        //println$ "Output = " + output;
-        write_string("<pre>");
-        write_string output;
-        write_string("</pre>");
-      else
-        println$ "Unable to run shell command '" + cmd "'";
-        write_string("Failed cmd: " + b);
-      done
+        elif prefix(b,"h1") do h(1,b.[3 to]); 
+        elif prefix(b,"h2") do h(2,b.[3 to]); 
+        elif prefix(b,"h3") do h(3,b.[3 to]);
+        elif prefix(b,"h4") do h(4,b.[3 to]);
 
-    // slideshow
-    elif slideshow.check-slide-commands b do ;
-    else
-      println$ "Unable to understand @command '"+b+"'";
-    done
+        // external image
+        elif prefix(b,"image") do 
+          var img = split_first(b.[6 to],"|");
+          write_string("<img src='"+img.(0)+"' style='"+img.(1)+"'></img>");
+
+        // arbitrary shell command
+        elif prefix(b,"sh") do 
+          var cmd = b.[3 to];
+          var fout = safer_popen(cmd);
+          if valid fout do
+            var output = load fout;
+            var result = Process::pclose fout; 
+            println$ "Ran cmd=" + cmd;
+            //println$ "Output = " + output;
+            write_string("<pre>");
+            write_string output;
+            write_string("</pre>");
+          else
+            println$ "Unable to run shell command '" + cmd "'";
+            write_string("Failed cmd: " + b);
+          done
+
+        // slideshow
+        elif slideshow.check-slide-commands b do ;
+        elif b == "" do ;
+        else
+          println$ "Unable to understand @command '"+b+"'";
+        done
+      endmatch;
+    endmatch;
   }
 }
 

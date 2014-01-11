@@ -1,0 +1,35 @@
+@h2 Type constraints on parameters
+Exported function and procedure parameters and function return
+types must be either shared primitives or exported structs of exported
+or shared members.
+
+Shared primitive bindings work, because the types in two files 
+bind to the same C type and the export goes via C with a separate
+compilation boundary hiding the fact the Felix types might be distinct.
+
+Export structs are exported as cstructs, and thus the C interface is
+shared.
+
+Unions also work because the representation is universal and untyped.
+For example a list in Felix is represented by {void*} in C.
+
+C functions should also work.
+
+What doesn't work easily are structurally typed entities such
+as tuples and records, and including Felix functions.
+
+This can be fixed with a cast, since these things will always
+be layout compatible (despite the fact this breaks C aliasing rules).
+
+This problem would go away if there were a universal name for
+structurally typed entities in C++, for example one can imagine
+a tuple:
+@c++
+tuple2<int, float>
+@
+Unfortunately Felix supports type recursion and C++ templates do not,
+even in C++11. The C method of handling recursive types is to use
+an incomplete type. Template arguments may not be incomplete types
+so recursion is impossible.
+
+Although there is a workaround for this it is extremely messy.

@@ -1,7 +1,7 @@
-1.1.9dev fdoc2html initialisation
-1.1.9dev flx2html initialisation
-1.1.9dev cpp2html initialisation
-1.1.9dev cpp2html initialisation
+1.1.10 fdoc2html initialisation
+1.1.10 flx2html initialisation
+1.1.10 cpp2html initialisation
+1.1.10 cpp2html initialisation
 ocaml2html initialisation
 Py2html initialisation
 <html><body>
@@ -166,7 +166,7 @@ Py2html initialisation
 
 <pre>0004:  <a href="/share/lib/std/bool.flx#0004">open class Bool</a></pre>
 <div style='font-family:sans-serif; font-size:12pt; margin-left:100; margin-right:100; top:5; color:#406040'><p> Standard operations on boolean type.
- Note bool = 2 defined in std/algebraic.flx.
+ Note bool = 2 defined in std/flx_tclass.flx.
  Literals true and false defined in grammer/expressions.flxh.
 </p></div>
 <pre>0007:    <a href="/share/lib/std/bool.flx#0007">fun land: bool * bool -> bool</a></pre>
@@ -190,10 +190,12 @@ Py2html initialisation
 <pre>0025:    <a href="/share/lib/std/bool.flx#0025">fun implies: bool * bool -> bool</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Logical implication.
 </p></div>
-<pre>0045:    <a href="/share/lib/std/bool.flx#0045">fun str (b:bool) : string</a></pre>
+<pre>0044:    <a href="/share/lib/std/bool.flx#0044">fun zero ()</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Mutating or.
  Mutating and.
- Convert bool to string.
+</p></div>
+<pre>0052:    <a href="/share/lib/std/bool.flx#0052">fun str (b:bool) : string</a></pre>
+<div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Convert bool to string.
 </p></div>
 <hr/><a href="/share/lib/std/c_hack.flx">c_hack.flx</a>
 
@@ -1150,35 +1152,35 @@ Py2html initialisation
 <pre>0023:    <a href="/share/lib/std/datatype/array.flx#0023">fun len (x:&array[t, n]): size</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Pointer to array as value.
 </p></div>
-<pre>0024:    <a href="/share/lib/std/datatype/array.flx#0024">fun unsafe_get: &array[t, n] * size -> &t</a></pre>
-<pre>0034:    <a href="/share/lib/std/datatype/array.flx#0034">proc unsafe_set[t,n]: &array[t,n] * size * t</a></pre>
-<pre>0035:    <a href="/share/lib/std/datatype/array.flx#0035">proc set[t,n, I in ints] (a: &array[t,n], i:I,v:t)</a></pre>
-<pre>0040:    <a href="/share/lib/std/datatype/array.flx#0040">fun stl_begin[t,n]: &array[t,n] -> +t</a></pre>
-<pre>0041:    <a href="/share/lib/std/datatype/array.flx#0041">fun stl_end[t,n] ( x:&array[t,n] ) : +t</a></pre>
-<pre>0044:    <a href="/share/lib/std/datatype/array.flx#0044">fun map[V,N,U] (_f:V->U) (x:array[V,N]):array[U,N]</a></pre>
+<pre>0025:    <a href="/share/lib/std/datatype/array.flx#0025">fun unsafe_get: &array[t, n] * size  -> &t</a></pre>
+<pre>0029:    <a href="/share/lib/std/datatype/array.flx#0029">proc unsafe_set[t,n] (a: &(t^n), i:size, v:t)</a></pre>
+<pre>0030:    <a href="/share/lib/std/datatype/array.flx#0030">proc set[t,n, I in ints] (a: &array[t,n], i:I,v:t)</a></pre>
+<pre>0036:    <a href="/share/lib/std/datatype/array.flx#0036">fun stl_begin[t,n]: &array[t,n] -> +t</a></pre>
+<pre>0037:    <a href="/share/lib/std/datatype/array.flx#0037">fun stl_end[t,n] ( x:&array[t,n] ) : +t</a></pre>
+<pre>0040:    <a href="/share/lib/std/datatype/array.flx#0040">fun map[V,N,U] (_f:V->U) (x:array[V,N]):array[U,N]</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Array map.
 </p></div>
-<pre>0062:    <a href="/share/lib/std/datatype/array.flx#0062">fun join[T, N, M] (x:array[T, N]) (y:array[T, M]):array[T, N + M]</a></pre>
+<pre>0058:    <a href="/share/lib/std/datatype/array.flx#0058">fun join[T, N, M] (x:array[T, N]) (y:array[T, M]):array[T, N + M]</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Join two arrays (functional).
 </p></div>
-<pre>0081:    <a href="/share/lib/std/datatype/array.flx#0081">fun join[T, N] (x:array[T, N]) (y:T):array[T, N + 1]</a></pre>
+<pre>0077:    <a href="/share/lib/std/datatype/array.flx#0077">fun join[T, N] (x:array[T, N]) (y:T):array[T, N + 1]</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Append value to end of an array (functional).
 </p></div>
-<pre>0094:    <a href="/share/lib/std/datatype/array.flx#0094">fun join[T, M] (x:T) (y:array[T, M]):array[T, 1 + M]</a></pre>
+<pre>0090:    <a href="/share/lib/std/datatype/array.flx#0090">fun join[T, M] (x:T) (y:array[T, M]):array[T, 1 + M]</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Prepand value to start of an array (functional).
 </p></div>
-<pre>0115:    <a href="/share/lib/std/datatype/array.flx#0115">fun transpose[T,N,M] (y:array[array[T,M],N]) : array[array[T,N],M]</a></pre>
+<pre>0111:    <a href="/share/lib/std/datatype/array.flx#0111">fun transpose[T,N,M] (y:array[array[T,M],N]) : array[array[T,N],M]</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Join two arrays (functional).
  Transpose and array.
  Subsumes zip.
  Example: transpose ( (1,2,3), (4,5,6) ) = ( (1,4), (2,4), (3,6) ).
 </p></div>
-<pre>0131:    <a href="/share/lib/std/datatype/array.flx#0131">fun rev[T, N] (x:array[T, N]): array[T, N]</a></pre>
+<pre>0127:    <a href="/share/lib/std/datatype/array.flx#0127">fun rev[T, N] (x:array[T, N]): array[T, N]</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Reverse elements of an array.
 </p></div>
-<pre>0142:    <a href="/share/lib/std/datatype/array.flx#0142">fun sort[T,N] (cmp: T * T -> bool) (var x:array[T,N]) : array[T,N]</a></pre>
-<pre>0147:    <a href="/share/lib/std/datatype/array.flx#0147">fun sort[T,N] (var x:array[T,N]) : array[T,N]</a></pre>
-<pre>0155:    <a href="/share/lib/std/datatype/array.flx#0155">fun str (xs:array[T,N])</a></pre>
+<pre>0138:    <a href="/share/lib/std/datatype/array.flx#0138">fun sort[T,N] (cmp: T * T -> bool) (var x:array[T,N]) : array[T,N]</a></pre>
+<pre>0143:    <a href="/share/lib/std/datatype/array.flx#0143">fun sort[T,N] (var x:array[T,N]) : array[T,N]</a></pre>
+<pre>0151:    <a href="/share/lib/std/datatype/array.flx#0151">fun str (xs:array[T,N])</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Display: convert to string like (1,2,3).
 </p></div>
 <hr/><a href="/share/lib/std/datatype/array_class.fdoc">datatype/array_class.fdoc</a>
@@ -1368,7 +1370,18 @@ Py2html initialisation
  Push a value onto the end.
  Same as push_back in C++.
 </p></div>
-<pre>0164:    <a href="/share/lib/std/datatype/darray.fdoc#0164">fun str (x:darray[T])</a></pre>
+<pre>0159:    <a href="/share/lib/std/datatype/darray.fdoc#0159">proc insert[t] (a:darray[t], i:int, v:t)</a></pre>
+<div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> insert
+</p></div>
+<pre>0170:    <a href="/share/lib/std/datatype/darray.fdoc#0170">proc erase[t] (a:darray[t], i:int)</a></pre>
+<div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Erase an element, note doesn't resize the varray,
+ probably should ..
+</p></div>
+<pre>0174:    <a href="/share/lib/std/datatype/darray.fdoc#0174">proc erase[t] (a:darray[t], first:int, last:int)</a></pre>
+<div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Erase multiple elements, note doesn't resize the varray,
+ probably should ..
+</p></div>
+<pre>0182:    <a href="/share/lib/std/datatype/darray.fdoc#0182">fun str (x:darray[T])</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Convert an array to a string,
  provided the element type is convertible.
 </p></div>
@@ -1440,171 +1453,171 @@ Py2html initialisation
 
 <pre>0005:  <a href="/share/lib/std/datatype/list.fdoc#0005">open class List</a></pre>
 <pre>0009:    <a href="/share/lib/std/datatype/list.fdoc#0009">union list[T]</a></pre>
-<pre>0031:    <a href="/share/lib/std/datatype/list.fdoc#0031">proc splice[T] : &list[T] * list[T]</a></pre>
+<pre>0033:    <a href="/share/lib/std/datatype/list.fdoc#0033">proc splice[T] : &list[T] * list[T]</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> The second list is made the tail of the
  list stored at the location pointed at by the first argument.
  If the first list is empty, the variable will point
  at the second list. This operation is DANGEROUS because
  it is a mutator: lists are traditionally purely functional.
 </p></div>
-<pre>0034:    <a href="/share/lib/std/datatype/list.fdoc#0034">struct node_t</a></pre>
-<pre>0047:    <a href="/share/lib/std/datatype/list.fdoc#0047">proc rev[T,PLT</a></pre>
+<pre>0036:    <a href="/share/lib/std/datatype/list.fdoc#0036">struct node_t</a></pre>
+<pre>0049:    <a href="/share/lib/std/datatype/list.fdoc#0049">proc rev[T,PLT</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> In place list reversal: unsafe!
 </p></div>
-<pre>0053:    <a href="/share/lib/std/datatype/list.fdoc#0053">struct node_t</a></pre>
-<pre>0074:    <a href="/share/lib/std/datatype/list.fdoc#0074">proc rev_last[T] : &list[T] * &list[T]</a></pre>
-<pre>0077:    <a href="/share/lib/std/datatype/list.fdoc#0077">struct node_t</a></pre>
-<pre>0099:    <a href="/share/lib/std/datatype/list.fdoc#0099">fun copy[T] (x:list[T]):list[T]</a></pre>
+<pre>0055:    <a href="/share/lib/std/datatype/list.fdoc#0055">struct node_t</a></pre>
+<pre>0076:    <a href="/share/lib/std/datatype/list.fdoc#0076">proc rev_last[T,PLT</a></pre>
+<pre>0082:    <a href="/share/lib/std/datatype/list.fdoc#0082">struct node_t</a></pre>
+<pre>0104:    <a href="/share/lib/std/datatype/list.fdoc#0104">fun copy[T] (x:list[T]):list[T]</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Copy a list.
 </p></div>
-<pre>0110:    <a href="/share/lib/std/datatype/list.fdoc#0110">proc copy_last[T] (inp:list[T], out:&list[T], last:&list[T])</a></pre>
+<pre>0115:    <a href="/share/lib/std/datatype/list.fdoc#0115">proc copy_last[T] (inp:list[T], out:&list[T], last:&list[T])</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Copy a list, and return last element as a list,
  empty if original list was empty.
 </p></div>
-<pre>0119:    <a href="/share/lib/std/datatype/list.fdoc#0119">ctor[T] list[T] ()</a></pre>
+<pre>0124:    <a href="/share/lib/std/datatype/list.fdoc#0124">ctor[T] list[T] ()</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Make an empty list.
 </p></div>
-<pre>0128:    <a href="/share/lib/std/datatype/list.fdoc#0128">ctor[T] list[T] (x:T)</a></pre>
+<pre>0133:    <a href="/share/lib/std/datatype/list.fdoc#0133">ctor[T] list[T] (x:T)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Make a list with one element.
  NOTE: list (1,2) is a list of 2 ints.
  To get a list of one pair use list[int*int] (1,2) instead!
 </p></div>
-<pre>0133:    <a href="/share/lib/std/datatype/list.fdoc#0133">ctor[T,N] list[T] (x:array[T, N])</a></pre>
+<pre>0138:    <a href="/share/lib/std/datatype/list.fdoc#0138">ctor[T,N] list[T] (x:array[T, N])</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Make a list from an array.
 </p></div>
-<pre>0149:    <a href="/share/lib/std/datatype/list.fdoc#0149">fun list_comprehension[T] (f: (1->opt[T]))</a></pre>
+<pre>0154:    <a href="/share/lib/std/datatype/list.fdoc#0154">fun list_comprehension[T] (f: (1->opt[T]))</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> List comprehension:
  Make a list from a stream.
 </p></div>
-<pre>0151:    <a href="/share/lib/std/datatype/list.fdoc#0151">fun aux (l:list[T])</a></pre>
-<pre>0169:    <a href="/share/lib/std/datatype/list.fdoc#0169">ctor[T] list[T](f: (1->opt[T]))</a></pre>
+<pre>0156:    <a href="/share/lib/std/datatype/list.fdoc#0156">fun aux (l:list[T])</a></pre>
+<pre>0174:    <a href="/share/lib/std/datatype/list.fdoc#0174">ctor[T] list[T](f: (1->opt[T]))</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> List comprehension:
  Make a list from a stream.
 </p></div>
-<pre>0179:    <a href="/share/lib/std/datatype/list.fdoc#0179">fun aux (acc:size) (x:list[T])</a></pre>
+<pre>0184:    <a href="/share/lib/std/datatype/list.fdoc#0184">fun aux (acc:size) (x:list[T])</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Contrue a list as an array value
  Return umber of elements in a list.
 </p></div>
-<pre>0198:    <a href="/share/lib/std/datatype/list.fdoc#0198">proc iter (_f:T->void) (x:list[T])</a></pre>
+<pre>0203:    <a href="/share/lib/std/datatype/list.fdoc#0203">proc iter (_f:T->void) (x:list[T])</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> get n'th element
  Apply a procedure to each element of a list.
 </p></div>
-<pre>0209:    <a href="/share/lib/std/datatype/list.fdoc#0209">fun fold_left[U] (_f:U->T->U) (init:U) (x:list[T]):U</a></pre>
+<pre>0214:    <a href="/share/lib/std/datatype/list.fdoc#0214">fun fold_left[U] (_f:U->T->U) (init:U) (x:list[T]):U</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Traditional left fold over list (tail rec).
 </p></div>
-<pre>0211:    <a href="/share/lib/std/datatype/list.fdoc#0211">fun aux (init:U) (x:list[T]):U</a></pre>
-<pre>0223:    <a href="/share/lib/std/datatype/list.fdoc#0223">fun fold_right[U] (_f:T->U->U) (x:list[T]) (init:U):U</a></pre>
+<pre>0216:    <a href="/share/lib/std/datatype/list.fdoc#0216">fun aux (init:U) (x:list[T]):U</a></pre>
+<pre>0228:    <a href="/share/lib/std/datatype/list.fdoc#0228">fun fold_right[U] (_f:T->U->U) (x:list[T]) (init:U):U</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Right fold over list (not tail rec!).
 </p></div>
-<pre>0225:    <a href="/share/lib/std/datatype/list.fdoc#0225">fun aux (x:list[T]) (init:U):U</a></pre>
-<pre>0239:    <a href="/share/lib/std/datatype/list.fdoc#0239">pure fun is_empty[T] : list[T] -> 2</a></pre>
+<pre>0230:    <a href="/share/lib/std/datatype/list.fdoc#0230">fun aux (x:list[T]) (init:U):U</a></pre>
+<pre>0244:    <a href="/share/lib/std/datatype/list.fdoc#0244">pure fun is_empty[T] : list[T] -> 2</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Test if a list is empty.
 </p></div>
-<pre>0247:    <a href="/share/lib/std/datatype/list.fdoc#0247">pure fun tail[T] (x:list[T]) : list[T]</a></pre>
+<pre>0252:    <a href="/share/lib/std/datatype/list.fdoc#0252">pure fun tail[T] (x:list[T]) : list[T]</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Tail of a list, abort with match failure if list is empty.
 </p></div>
-<pre>0256:    <a href="/share/lib/std/datatype/list.fdoc#0256">pure fun head[T] (x:list[T]) : T</a></pre>
+<pre>0261:    <a href="/share/lib/std/datatype/list.fdoc#0261">pure fun head[T] (x:list[T]) : T</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Head of a list, abort with match failure if list is empty.
 </p></div>
-<pre>0266:    <a href="/share/lib/std/datatype/list.fdoc#0266">fun rev_map[T,U] (_f:T->U) (x:list[T]): list[U]</a></pre>
+<pre>0271:    <a href="/share/lib/std/datatype/list.fdoc#0271">fun rev_map[T,U] (_f:T->U) (x:list[T]): list[U]</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> map a list, return mapped list in reverse order (tail rec).
 </p></div>
-<pre>0267:    <a href="/share/lib/std/datatype/list.fdoc#0267">fun aux (inp:list[T]) (out:list[U]) : list[U]</a></pre>
-<pre>0282:    <a href="/share/lib/std/datatype/list.fdoc#0282">fun map[T,U] (_f:T->U) (x:list[T]): list[U]</a></pre>
+<pre>0272:    <a href="/share/lib/std/datatype/list.fdoc#0272">fun aux (inp:list[T]) (out:list[U]) : list[U]</a></pre>
+<pre>0287:    <a href="/share/lib/std/datatype/list.fdoc#0287">fun map[T,U] (_f:T->U) (x:list[T]): list[U]</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> map a list (tail-rec).
 </p></div>
-<pre>0293:    <a href="/share/lib/std/datatype/list.fdoc#0293">pure fun rev[T] (x:list[T]):list[T]</a></pre>
+<pre>0298:    <a href="/share/lib/std/datatype/list.fdoc#0298">pure fun rev[T] (x:list[T]):list[T]</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> reverse a list (tail rec).
 </p></div>
-<pre>0294:    <a href="/share/lib/std/datatype/list.fdoc#0294">fun aux (x:list[T]) (y:list[T]) : list[T]</a></pre>
-<pre>0311:    <a href="/share/lib/std/datatype/list.fdoc#0311">fun zip2[T1,T2] (l1: list[T1]) (l2: list[T2]) : list[T1 * T2]</a></pre>
+<pre>0299:    <a href="/share/lib/std/datatype/list.fdoc#0299">fun aux (x:list[T]) (y:list[T]) : list[T]</a></pre>
+<pre>0316:    <a href="/share/lib/std/datatype/list.fdoc#0316">fun zip2[T1,T2] (l1: list[T1]) (l2: list[T2]) : list[T1 * T2]</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Zip two lists into a list of pairs.
  Zips to length of shortest list.
 </p></div>
-<pre>0313:    <a href="/share/lib/std/datatype/list.fdoc#0313">fun aux (l1: list[T1]) (l2: list[T2]) (acc: list[T1 * T2])</a></pre>
-<pre>0327:    <a href="/share/lib/std/datatype/list.fdoc#0327">fun range (low:int, high:int, step:int)</a></pre>
+<pre>0318:    <a href="/share/lib/std/datatype/list.fdoc#0318">fun aux (l1: list[T1]) (l2: list[T2]) (acc: list[T1 * T2])</a></pre>
+<pre>0332:    <a href="/share/lib/std/datatype/list.fdoc#0332">fun range (low:int, high:int, step:int)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Generate an ordered list of ints between low and high with given step.
  Low included, high not included.
 </p></div>
-<pre>0329:    <a href="/share/lib/std/datatype/list.fdoc#0329">fun inner(low:int, high:int, step:int, values:list[int])</a></pre>
-<pre>0359:    <a href="/share/lib/std/datatype/list.fdoc#0359">fun range (low:int, high:int)</a></pre>
+<pre>0334:    <a href="/share/lib/std/datatype/list.fdoc#0334">fun inner(low:int, high:int, step:int, values:list[int])</a></pre>
+<pre>0364:    <a href="/share/lib/std/datatype/list.fdoc#0364">fun range (low:int, high:int)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Range with step 1.
 </p></div>
-<pre>0365:    <a href="/share/lib/std/datatype/list.fdoc#0365">fun range (num:int)</a></pre>
+<pre>0370:    <a href="/share/lib/std/datatype/list.fdoc#0370">fun range (num:int)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Range from 0 to num (excluded).
 </p></div>
-<pre>0370:    <a href="/share/lib/std/datatype/list.fdoc#0370">fun join[T] (x:list[T]) (y:list[T]):list[T]</a></pre>
+<pre>0375:    <a href="/share/lib/std/datatype/list.fdoc#0375">fun join[T] (x:list[T]) (y:list[T]):list[T]</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Concatenate two lists.
 </p></div>
-<pre>0403:    <a href="/share/lib/std/datatype/list.fdoc#0403">noinline fun cat[T] (x:list[list[T]]):list[T]</a></pre>
+<pre>0408:    <a href="/share/lib/std/datatype/list.fdoc#0408">noinline fun cat[T] (x:list[list[T]]):list[T]</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Concatenate two lists.
  Prepend element to head of list.
  Append element to tail of list (slow!).
  Append element to tail of list (slow!).
  Concatenate all the lists in a list of lists.
 </p></div>
-<pre>0416:    <a href="/share/lib/std/datatype/list.fdoc#0416">pure fun cat (sep:string) (x:list[string]):string</a></pre>
+<pre>0421:    <a href="/share/lib/std/datatype/list.fdoc#0421">pure fun cat (sep:string) (x:list[string]):string</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Concatenate all the strings in a list with given separator.
 </p></div>
-<pre>0429:    <a href="/share/lib/std/datatype/list.fdoc#0429">fun catmap[T] (sep:string) (f:T -> string) (ls: list[T])</a></pre>
-<pre>0433:    <a href="/share/lib/std/datatype/list.fdoc#0433">fun strcat[T with Str[T]]  (sep: string) (ls: list[T])</a></pre>
-<pre>0437:    <a href="/share/lib/std/datatype/list.fdoc#0437">fun strcat[T with Str[T]]  (ls: list[T])</a></pre>
-<pre>0445:    <a href="/share/lib/std/datatype/list.fdoc#0445">fun mem[T] (eq:T -> bool) (xs:list[T]) : bool</a></pre>
+<pre>0434:    <a href="/share/lib/std/datatype/list.fdoc#0434">fun catmap[T] (sep:string) (f:T -> string) (ls: list[T])</a></pre>
+<pre>0438:    <a href="/share/lib/std/datatype/list.fdoc#0438">fun strcat[T with Str[T]]  (sep: string) (ls: list[T])</a></pre>
+<pre>0442:    <a href="/share/lib/std/datatype/list.fdoc#0442">fun strcat[T with Str[T]]  (ls: list[T])</a></pre>
+<pre>0450:    <a href="/share/lib/std/datatype/list.fdoc#0450">fun mem[T] (eq:T -> bool) (xs:list[T]) : bool</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Return true if one value in a list satisfies the predicate.
 </p></div>
-<pre>0455:    <a href="/share/lib/std/datatype/list.fdoc#0455">fun mem[T, U] (eq:T * U -> bool) (xs:list[T]) (e:U) : bool</a></pre>
+<pre>0460:    <a href="/share/lib/std/datatype/list.fdoc#0460">fun mem[T, U] (eq:T * U -> bool) (xs:list[T]) (e:U) : bool</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Return true if one value in the list satisfies the relation 
  in the left slot with 
  the given element on the right slot.
 </p></div>
-<pre>0469:    <a href="/share/lib/std/datatype/list.fdoc#0469">fun find[T] (eq:T -> bool) (xs:list[T]) : opt[T]</a></pre>
+<pre>0474:    <a href="/share/lib/std/datatype/list.fdoc#0474">fun find[T] (eq:T -> bool) (xs:list[T]) : opt[T]</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Construe a list as a set, imbuing it with a membership
  test, provided the element type has an equality operator.
  return option of the first element in a list satisfying the predicate.
 </p></div>
-<pre>0480:    <a href="/share/lib/std/datatype/list.fdoc#0480">fun find[T, U] (eq:T * U -> bool) (xs:list[T]) (e:U) : opt[T]</a></pre>
+<pre>0485:    <a href="/share/lib/std/datatype/list.fdoc#0485">fun find[T, U] (eq:T * U -> bool) (xs:list[T]) (e:U) : opt[T]</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Return option the first value in the list satisfies the relation 
  in the left slot with 
  the given element on the right slot.
 </p></div>
-<pre>0485:    <a href="/share/lib/std/datatype/list.fdoc#0485">noinline fun filter[T] (P:T -> bool) (x:list[T]) : list[T]</a></pre>
+<pre>0490:    <a href="/share/lib/std/datatype/list.fdoc#0490">noinline fun filter[T] (P:T -> bool) (x:list[T]) : list[T]</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Return a sub list with elements satisfying the given predicate.
 </p></div>
-<pre>0487:    <a href="/share/lib/std/datatype/list.fdoc#0487">fun aux (inp:list[T], out: list[T])</a></pre>
-<pre>0501:    <a href="/share/lib/std/datatype/list.fdoc#0501">fun prepend_unique[T] (eq: T * T -> bool) (x:list[T]) (e:T) : list[T]</a></pre>
+<pre>0492:    <a href="/share/lib/std/datatype/list.fdoc#0492">fun aux (inp:list[T], out: list[T])</a></pre>
+<pre>0506:    <a href="/share/lib/std/datatype/list.fdoc#0506">fun prepend_unique[T] (eq: T * T -> bool) (x:list[T]) (e:T) : list[T]</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Push element onto front of list if there isn't one in the
  list already satisfying the relation.
 </p></div>
-<pre>0507:    <a href="/share/lib/std/datatype/list.fdoc#0507">fun insert_unique[T] (eq: T * T -> bool) (x:list[T]) (e:T) : list[T]</a></pre>
+<pre>0512:    <a href="/share/lib/std/datatype/list.fdoc#0512">fun insert_unique[T] (eq: T * T -> bool) (x:list[T]) (e:T) : list[T]</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Attach element to tail of list if there isn't one in the
  list already satisfying the relation.
 </p></div>
-<pre>0512:    <a href="/share/lib/std/datatype/list.fdoc#0512">fun remove[T] (eq: T * T -> bool) (x:list[T]) (e:T) : list[T]</a></pre>
+<pre>0517:    <a href="/share/lib/std/datatype/list.fdoc#0517">fun remove[T] (eq: T * T -> bool) (x:list[T]) (e:T) : list[T]</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Remove all elements from a list satisfying relation.
 </p></div>
-<pre>0518:    <a href="/share/lib/std/datatype/list.fdoc#0518">noinline fun append_unique[T] (eq: T * T -> bool) (x:list[T]) (e:T) : list[T]</a></pre>
+<pre>0523:    <a href="/share/lib/std/datatype/list.fdoc#0523">noinline fun append_unique[T] (eq: T * T -> bool) (x:list[T]) (e:T) : list[T]</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Attach element to tail of list if there isn't one in the
  list already satisfying the relation (tail-rec).
 </p></div>
-<pre>0519:    <a href="/share/lib/std/datatype/list.fdoc#0519">fun aux (inp:list[T], out: list[T])</a></pre>
-<pre>0532:    <a href="/share/lib/std/datatype/list.fdoc#0532">fun take[T] (k:int) (lst:list[T]) : list[T]</a></pre>
+<pre>0524:    <a href="/share/lib/std/datatype/list.fdoc#0524">fun aux (inp:list[T], out: list[T])</a></pre>
+<pre>0537:    <a href="/share/lib/std/datatype/list.fdoc#0537">fun take[T] (k:int) (lst:list[T]) : list[T]</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Take the first k elements from a list.
 </p></div>
-<pre>0544:    <a href="/share/lib/std/datatype/list.fdoc#0544">fun drop[T] (k:int) (lst:list[T]) : list[T]</a></pre>
+<pre>0549:    <a href="/share/lib/std/datatype/list.fdoc#0549">fun drop[T] (k:int) (lst:list[T]) : list[T]</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Drop the first k elements from a list.
 </p></div>
-<pre>0557:    <a href="/share/lib/std/datatype/list.fdoc#0557">fun sort[T] (lt:T*T->bool) (x:list[T])</a></pre>
+<pre>0562:    <a href="/share/lib/std/datatype/list.fdoc#0562">fun sort[T] (lt:T*T->bool) (x:list[T])</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Sort a list with given less than operator, which must be
  total order. Uses varray sort (which uses STL sort).
 </p></div>
-<pre>0572:    <a href="/share/lib/std/datatype/list.fdoc#0572">fun sort[T with Tord[T]](x:list[T])</a></pre>
+<pre>0577:    <a href="/share/lib/std/datatype/list.fdoc#0577">fun sort[T with Tord[T]](x:list[T])</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Sort a list with default total order.
  Uses varray sort (which uses STL sort).
 </p></div>
-<pre>0576:    <a href="/share/lib/std/datatype/list.fdoc#0576">gen iterator (var xs:list[T]) ()</a></pre>
+<pre>0581:    <a href="/share/lib/std/datatype/list.fdoc#0581">gen iterator (var xs:list[T]) ()</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Convert a list to a stream.
 </p></div>
-<pre>0598:    <a href="/share/lib/std/datatype/list.fdoc#0598">noinline fun str (xs:List::list[T])</a></pre>
+<pre>0603:    <a href="/share/lib/std/datatype/list.fdoc#0603">noinline fun str (xs:List::list[T])</a></pre>
 <hr/><a href="/share/lib/std/datatype/option.flx">datatype/option.flx</a>
 <pre>0004:    <a href="/share/lib/std/datatype/option.flx#0004">union opt[T]</a></pre>
 
@@ -1754,7 +1767,7 @@ Py2html initialisation
 <pre>0021:    <a href="/share/lib/std/datatype/strdict.flx#0021">ctor strdict()</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Construct and empty dictionary.
 </p></div>
-<pre>0023:    <a href="/share/lib/std/datatype/strdict.flx#0023">proc add (x:strdict) (var key:string) (var value: T)</a></pre>
+<pre>0023:    <a href="/share/lib/std/datatype/strdict.flx#0023">proc add (x:strdict) (key:string) (value: T)</a></pre>
 <pre>0031:    <a href="/share/lib/std/datatype/strdict.flx#0031">ctor strdict ( kv: list[string * T] )</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Construct a dictionary from a list of pairs.
 </p></div>
@@ -1844,6 +1857,10 @@ Py2html initialisation
 <pre>0101:    <a href="/share/lib/std/datatype/tuple.flx#0101">fun field[n,t,u,v,w,x where n</a></pre>
 <pre>0102:    <a href="/share/lib/std/datatype/tuple.flx#0102">fun field[n,t,u,v,w,x where n</a></pre>
 <pre>0103:    <a href="/share/lib/std/datatype/tuple.flx#0103">fun field[n,t,u,v,w,x where n</a></pre>
+<hr/><a href="/share/lib/std/datatype/unitsum.fdoc">datatype/unitsum.fdoc</a>
+<pre>0005:    <a href="/share/lib/std/datatype/unitsum.fdoc#0005">typedef unitsums</a></pre>
+<pre>0012:    <a href="/share/lib/std/datatype/unitsum.fdoc#0012">fun zero ()</a></pre>
+<pre>0019:    <a href="/share/lib/std/datatype/unitsum.fdoc#0019">fun str(x:T)</a></pre>
 <hr/><a href="/share/lib/std/datatype/varray.flx">datatype/varray.flx</a>
 
 <pre>0003:  <a href="/share/lib/std/datatype/varray.flx#0003">open class Varray</a></pre>
@@ -1911,11 +1928,25 @@ Py2html initialisation
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Pop an element off the end of a varray.
  Aborts if the array is empty.
 </p></div>
-<pre>0145:    <a href="/share/lib/std/datatype/varray.flx#0145">proc erase[v] (a:varray[v], first:int, last:int)</a></pre>
-<pre>0167:    <a href="/share/lib/std/datatype/varray.flx#0167">fun map[T, U] (_f:T->U) (x:varray[T]): varray[U]</a></pre>
+<pre>0148:    <a href="/share/lib/std/datatype/varray.flx#0148">proc erase[v] (a:varray[v], first:int, last:int)</a></pre>
+<div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Erase elements of array between and including first and last.
+ Include first and last, intersect with array span.
+ Cannot fail.
+</p></div>
+<pre>0168:    <a href="/share/lib/std/datatype/varray.flx#0168">proc erase[v] (a:varray[v], i:int)</a></pre>
+<pre>0177:    <a href="/share/lib/std/datatype/varray.flx#0177">proc insert[t] (a:varray[t], i:int, v:t)</a></pre>
+<div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> insert (a,i,v) inserts v in a at position i
+ that is, inserts before element i.
+ If i is negative, position relative to end,
+ that is, -1 is last element, so insert (a,-1,v)
+ inserts before the last element (not after!)
+ If i equals the length, element is appended.
+ If the index is out of range, nothing happens.
+</p></div>
+<pre>0200:    <a href="/share/lib/std/datatype/varray.flx#0200">fun map[T, U] (_f:T->U) (x:varray[T]): varray[U]</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Traditional map varray to varray.
 </p></div>
-<pre>0181:    <a href="/share/lib/std/datatype/varray.flx#0181">fun str (xs:varray[T])</a></pre>
+<pre>0214:    <a href="/share/lib/std/datatype/varray.flx#0214">fun str (xs:varray[T])</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Convert a varray[T] to a string.
  Requires Show[T]
 </p></div>
@@ -2141,48 +2172,67 @@ Unable to understand @command ''
 <pre>0075:    <a href="/share/lib/std/dynlink.fdoc#0075">ctor flx_link_failure_t : string * string * string</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Constructor for dynamic linkage exception.
 </p></div>
-<pre>0084:    <a href="/share/lib/std/dynlink.fdoc#0084">type flx_library</a></pre>
+<pre>0078:    <a href="/share/lib/std/dynlink.fdoc#0078">fun filename : flx_link_failure_t -> string</a></pre>
+<div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Extractors.
+</p></div>
+<pre>0079:    <a href="/share/lib/std/dynlink.fdoc#0079">fun operation : flx_link_failure_t -> string</a></pre>
+<pre>0080:    <a href="/share/lib/std/dynlink.fdoc#0080">fun what : flx_link_failure_t -> string</a></pre>
+<pre>0083:    <a href="/share/lib/std/dynlink.fdoc#0083">proc delete : cptr[flx_link_failure_t]</a></pre>
+<div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Delete returned exception.
+</p></div>
+<pre>0092:    <a href="/share/lib/std/dynlink.fdoc#0092">type flx_library</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Type of a DLL (dynamic link library) object.
 </p></div>
-<pre>0091:    <a href="/share/lib/std/dynlink.fdoc#0091">fun create_library_handle: unit->flx_library</a></pre>
+<pre>0099:    <a href="/share/lib/std/dynlink.fdoc#0099">fun create_library_handle: unit->flx_library</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Create a fresh DLL object.
 </p></div>
-<pre>0099:    <a href="/share/lib/std/dynlink.fdoc#0099">proc delete_library_handle: flx_library</a></pre>
+<pre>0107:    <a href="/share/lib/std/dynlink.fdoc#0107">proc delete_library_handle: flx_library</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Delete a DLL object.
 </p></div>
-<pre>0107:    <a href="/share/lib/std/dynlink.fdoc#0107">proc dlopen:flx_library * string</a></pre>
+<pre>0117:    <a href="/share/lib/std/dynlink.fdoc#0117">proc dlopen:flx_library * string</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Link a DLL using given filename.
+ May throw flx_link_failure_t.
 </p></div>
-<pre>0111:    <a href="/share/lib/std/dynlink.fdoc#0111">proc modopen:flx_library * string * string</a></pre>
+<pre>0121:    <a href="/share/lib/std/dynlink.fdoc#0121">gen nothrow_dlopen:flx_library * string -> cptr[flx_link_failure_t]</a></pre>
+<div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Link a DLL using given filename.
+ Returns NULL on success or pointer to exception on failure.
+</p></div>
+<pre>0127:    <a href="/share/lib/std/dynlink.fdoc#0127">proc modopen:flx_library * string * string</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Link a DLL using given filename and modulename.
+ May throw flx_link_failure_t.
 </p></div>
-<pre>0114:    <a href="/share/lib/std/dynlink.fdoc#0114">proc set_entry_points : flx_library * string * address * address</a></pre>
+<pre>0134:    <a href="/share/lib/std/dynlink.fdoc#0134">gen nothrow_modopen:flx_library * string * string -> cptr[flx_link_failure_t]</a></pre>
+<div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Link a DLL using given filename and modulename.
+ Returns NULL on success or pointer to exception on failure.
+ Caller owns result and must delete.
+</p></div>
+<pre>0139:    <a href="/share/lib/std/dynlink.fdoc#0139">proc set_entry_points : flx_library * string * address * address</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Link static 
 </p></div>
-<pre>0120:    <a href="/share/lib/std/dynlink.fdoc#0120">typedef module_dictionary_t</a></pre>
-<pre>0121:    <a href="/share/lib/std/dynlink.fdoc#0121">typedef registry_t</a></pre>
-<pre>0122:    <a href="/share/lib/std/dynlink.fdoc#0122">fun get_module_registry: 1 -> registry_t</a></pre>
-<pre>0124:    <a href="/share/lib/std/dynlink.fdoc#0124">noinline proc regopen (registry:registry_t) (lib:flx_library, modulename:string)</a></pre>
-<pre>0151:    <a href="/share/lib/std/dynlink.fdoc#0151">fun filename : flx_library -> string</a></pre>
+<pre>0146:    <a href="/share/lib/std/dynlink.fdoc#0146">typedef module_dictionary_t</a></pre>
+<pre>0147:    <a href="/share/lib/std/dynlink.fdoc#0147">typedef registry_t</a></pre>
+<pre>0148:    <a href="/share/lib/std/dynlink.fdoc#0148">fun get_module_registry: 1 -> registry_t</a></pre>
+<pre>0150:    <a href="/share/lib/std/dynlink.fdoc#0150">noinline proc regopen (registry:registry_t) (lib:flx_library, modulename:string)</a></pre>
+<pre>0177:    <a href="/share/lib/std/dynlink.fdoc#0177">fun filename : flx_library -> string</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Get the filename of a DLL.
 </p></div>
-<pre>0154:    <a href="/share/lib/std/dynlink.fdoc#0154">fun modulename : flx_library -> string</a></pre>
+<pre>0180:    <a href="/share/lib/std/dynlink.fdoc#0180">fun modulename : flx_library -> string</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Get the modulename of a DLL.
 </p></div>
-<pre>0157:    <a href="/share/lib/std/dynlink.fdoc#0157">fun get_thread_frame_creator_as_address: flx_library -> address</a></pre>
+<pre>0183:    <a href="/share/lib/std/dynlink.fdoc#0183">fun get_thread_frame_creator_as_address: flx_library -> address</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Get the threadframe creator function
 </p></div>
-<pre>0160:    <a href="/share/lib/std/dynlink.fdoc#0160">fun get_start_as_address: flx_library -> address</a></pre>
+<pre>0186:    <a href="/share/lib/std/dynlink.fdoc#0186">fun get_start_as_address: flx_library -> address</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Get start function
 </p></div>
-<pre>0162:    <a href="/share/lib/std/dynlink.fdoc#0162">noinline proc add_symbol  (modulename:string, symbolname:string, adr:address)</a></pre>
-<pre>0197:    <a href="/share/lib/std/dynlink.fdoc#0197">generation, it is very hard to ensure there are no references</a></pre>
-<pre>0205:    <a href="/share/lib/std/dynlink.fdoc#0205">proc dlclose:flx_library</a></pre>
+<pre>0188:    <a href="/share/lib/std/dynlink.fdoc#0188">noinline proc add_symbol  (modulename:string, symbolname:string, adr:address)</a></pre>
+<pre>0223:    <a href="/share/lib/std/dynlink.fdoc#0223">generation, it is very hard to ensure there are no references</a></pre>
+<pre>0231:    <a href="/share/lib/std/dynlink.fdoc#0231">proc dlclose:flx_library</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Unlink a DLL.
  Unsafe! Use with extreme caution.
  May cause pointers into the DLL code segment to dangle.
 </p></div>
-<pre>0226:    <a href="/share/lib/std/dynlink.fdoc#0226">fun raw_dlsym:flx_library * string->address</a></pre>
+<pre>0252:    <a href="/share/lib/std/dynlink.fdoc#0252">fun raw_dlsym:flx_library * string->address</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Find raw address of a symbol in a DLL.
  This function now ALWAYS does a dlsym
  (or Windows equivalent)
@@ -2190,80 +2240,80 @@ Unable to understand @command ''
  statically linked executables can still
  load DLLs at run time.
 </p></div>
-<pre>0229:    <a href="/share/lib/std/dynlink.fdoc#0229">noinline fun find_sym(lib:flx_library, sym:string) : address</a></pre>
-<pre>0256:    <a href="/share/lib/std/dynlink.fdoc#0256">type flx_instance</a></pre>
+<pre>0255:    <a href="/share/lib/std/dynlink.fdoc#0255">noinline fun find_sym(lib:flx_library, sym:string) : address</a></pre>
+<pre>0282:    <a href="/share/lib/std/dynlink.fdoc#0282">type flx_instance</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Type of a DLL (dynamic link library) instance.
  Conceptually this is a pair consisting of
  a library object and a global data frame object.
 </p></div>
-<pre>0263:    <a href="/share/lib/std/dynlink.fdoc#0263">fun create_instance_handle: unit->flx_instance</a></pre>
+<pre>0289:    <a href="/share/lib/std/dynlink.fdoc#0289">fun create_instance_handle: unit->flx_instance</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Create a fresh DLL instance object.
 </p></div>
-<pre>0272:    <a href="/share/lib/std/dynlink.fdoc#0272">proc delete_instance_handle: flx_instance</a></pre>
+<pre>0298:    <a href="/share/lib/std/dynlink.fdoc#0298">proc delete_instance_handle: flx_instance</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Delete a DLL instance object.
 </p></div>
-<pre>0288:    <a href="/share/lib/std/dynlink.fdoc#0288">proc create: flx_library * flx_instance</a></pre>
+<pre>0314:    <a href="/share/lib/std/dynlink.fdoc#0314">proc create: flx_library * flx_instance</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Create a DLL instance from a DLL.
  This is a procedure, so maybe the caller is too
  which means the thread frame must be available.
 </p></div>
-<pre>0308:    <a href="/share/lib/std/dynlink.fdoc#0308">fun filename : flx_instance -> string</a></pre>
+<pre>0334:    <a href="/share/lib/std/dynlink.fdoc#0334">fun filename : flx_instance -> string</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Get the filename of a DLL from an instance of it.
 </p></div>
-<pre>0323:    <a href="/share/lib/std/dynlink.fdoc#0323">procedure.</a></pre>
-<pre>0334:    <a href="/share/lib/std/dynlink.fdoc#0334">fun get_init: flx_instance -> cont</a></pre>
+<pre>0349:    <a href="/share/lib/std/dynlink.fdoc#0349">procedure.</a></pre>
+<pre>0360:    <a href="/share/lib/std/dynlink.fdoc#0360">fun get_init: flx_instance -> cont</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Get the initialisation continuation of an instance.
 </p></div>
-<pre>0339:    <a href="/share/lib/std/dynlink.fdoc#0339">fun get_library: flx_instance -> flx_library</a></pre>
+<pre>0365:    <a href="/share/lib/std/dynlink.fdoc#0365">fun get_library: flx_instance -> flx_library</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Get the DLL associated with an instance.
 </p></div>
-<pre>0346:    <a href="/share/lib/std/dynlink.fdoc#0346">fun get_thread_frame: flx_instance -> address</a></pre>
+<pre>0372:    <a href="/share/lib/std/dynlink.fdoc#0372">fun get_thread_frame: flx_instance -> address</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Get the thread frame (global data object) of an instance.
 </p></div>
-<pre>0357:    <a href="/share/lib/std/dynlink.fdoc#0357">proc destroy: flx_instance</a></pre>
-<pre>0367:    <a href="/share/lib/std/dynlink.fdoc#0367">noinline gen prepare_lib(modulename:string):flx_instance</a></pre>
+<pre>0383:    <a href="/share/lib/std/dynlink.fdoc#0383">proc destroy: flx_instance</a></pre>
+<pre>0393:    <a href="/share/lib/std/dynlink.fdoc#0393">noinline gen prepare_lib(modulename:string):flx_instance</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Create, link, and prepare a DLL instance from a modulename.
 </p></div>
-<pre>0386:    <a href="/share/lib/std/dynlink.fdoc#0386">noinline gen init_lib(modulename:string):flx_instance</a></pre>
+<pre>0412:    <a href="/share/lib/std/dynlink.fdoc#0412">noinline gen init_lib(modulename:string):flx_instance</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Create, link, and initialise a  DLL instance from a modulename.
 </p></div>
-<pre>0404:    <a href="/share/lib/std/dynlink.fdoc#0404">proc run_lib(modulename:string)</a></pre>
+<pre>0430:    <a href="/share/lib/std/dynlink.fdoc#0430">proc run_lib(modulename:string)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Run a Felix program from a filename.
   WARNING!! All data created by the target
   program must be destroyed
   before the library code is unlinked.
 </p></div>
-<pre>0418:    <a href="/share/lib/std/dynlink.fdoc#0418">noinline proc destroy_lib(linstance:flx_instance)</a></pre>
+<pre>0444:    <a href="/share/lib/std/dynlink.fdoc#0444">noinline proc destroy_lib(linstance:flx_instance)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Destroy a completed Felix program from its DLL instance.
 </p></div>
-<pre>0435:    <a href="/share/lib/std/dynlink.fdoc#0435">noinline fun flx_dlsym[T] (linst: flx_instance, sym:string)</a></pre>
+<pre>0461:    <a href="/share/lib/std/dynlink.fdoc#0461">noinline fun flx_dlsym[T] (linst: flx_instance, sym:string)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Find typed address of a symbol in a DLL.
 </p></div>
-<pre>0471:    <a href="/share/lib/std/dynlink.fdoc#0471">noinline fun func0[R] (linst: flx_instance, sym:string)</a></pre>
+<pre>0497:    <a href="/share/lib/std/dynlink.fdoc#0497">noinline fun func0[R] (linst: flx_instance, sym:string)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Return a closure representing a symbol in a DLL instance
  of a function of no arguments.
 </p></div>
-<pre>0478:    <a href="/share/lib/std/dynlink.fdoc#0478">noinline fun func1[R,A0] (linst: flx_instance, sym:string)</a></pre>
+<pre>0504:    <a href="/share/lib/std/dynlink.fdoc#0504">noinline fun func1[R,A0] (linst: flx_instance, sym:string)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Return a closure representing a symbol in a DLL instance
  of a function of one argument.
 </p></div>
-<pre>0485:    <a href="/share/lib/std/dynlink.fdoc#0485">noinline fun func2[R,A0,A1] (linst: flx_instance, sym:string)</a></pre>
+<pre>0511:    <a href="/share/lib/std/dynlink.fdoc#0511">noinline fun func2[R,A0,A1] (linst: flx_instance, sym:string)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Return a closure representing a symbol in a DLL instance
  of a function of two arguments.
 </p></div>
-<pre>0492:    <a href="/share/lib/std/dynlink.fdoc#0492">noinline fun proc0 (linst: flx_instance, sym:string)</a></pre>
+<pre>0518:    <a href="/share/lib/std/dynlink.fdoc#0518">noinline fun proc0 (linst: flx_instance, sym:string)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Return a closure representing a symbol in a DLL instance
  of a procedure of no arguments.
 </p></div>
-<pre>0499:    <a href="/share/lib/std/dynlink.fdoc#0499">noinline fun proc1[A0] (linst: flx_instance, sym:string)</a></pre>
+<pre>0525:    <a href="/share/lib/std/dynlink.fdoc#0525">noinline fun proc1[A0] (linst: flx_instance, sym:string)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Return a closure representing a symbol in a DLL instance
  of a procedure of one argument.
 </p></div>
-<pre>0506:    <a href="/share/lib/std/dynlink.fdoc#0506">noinline fun proc2[A0,A1] (linst: flx_instance, sym:string)</a></pre>
+<pre>0532:    <a href="/share/lib/std/dynlink.fdoc#0532">noinline fun proc2[A0,A1] (linst: flx_instance, sym:string)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Return a closure representing a symbol in a DLL instance
  of a procedure of two arguments.
 </p></div>
-<pre>0553:    <a href="/share/lib/std/dynlink.fdoc#0553">noinline gen  load-plugin-func0[iftype] (</a></pre>
+<pre>0579:    <a href="/share/lib/std/dynlink.fdoc#0579">noinline gen  load-plugin-func0[iftype] (</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Specialised routine(s) to load stylised plugin.
  Two entry points:
 </p><p> setup: string -> int
@@ -2277,9 +2327,9 @@ Unable to understand @command ''
 </p><p> There are 3 variants where the factory function accepts
  0, 1 and 2 arguments.
 </p></div>
-<pre>0567:    <a href="/share/lib/std/dynlink.fdoc#0567">noinline gen  load-plugin-func1[iftype, arg_t] (</a></pre>
-<pre>0581:    <a href="/share/lib/std/dynlink.fdoc#0581">noinline gen  load-plugin-func2[iftype, arg1_t, arg2_t] (</a></pre>
-<pre>0605:    <a href="/share/lib/std/dynlink.fdoc#0605">fun bind_proc: flx_instance * address * address -> cont</a></pre>
+<pre>0593:    <a href="/share/lib/std/dynlink.fdoc#0593">noinline gen  load-plugin-func1[iftype, arg_t] (</a></pre>
+<pre>0607:    <a href="/share/lib/std/dynlink.fdoc#0607">noinline gen  load-plugin-func2[iftype, arg1_t, arg2_t] (</a></pre>
+<pre>0631:    <a href="/share/lib/std/dynlink.fdoc#0631">fun bind_proc: flx_instance * address * address -> cont</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Execute an address representing a top
  level exported felix procedure's C wrapper,
  this creates a 'read to run' continuation object
@@ -2288,15 +2338,15 @@ Unable to understand @command ''
  it to fix a null return address and an arbitrary
  client data pointer as arguments to the call method.
 </p></div>
-<pre>0610:    <a href="/share/lib/std/dynlink.fdoc#0610">fun dlib_of : flx_library -> address</a></pre>
+<pre>0636:    <a href="/share/lib/std/dynlink.fdoc#0636">fun dlib_of : flx_library -> address</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Get the OS dependent handle representing a loaded DLL.
  Return as an address. 
 </p></div>
-<pre>0614:    <a href="/share/lib/std/dynlink.fdoc#0614">proc dlsym_err:flx_library*string</a></pre>
+<pre>0640:    <a href="/share/lib/std/dynlink.fdoc#0640">proc dlsym_err:flx_library*string</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Throw an exception indicating the failure to 
  find a symbol in a DLL.
 </p></div>
-<pre>0620:    <a href="/share/lib/std/dynlink.fdoc#0620">noinline proc run_proc (linstance:flx_instance, p: string, data: address)</a></pre>
+<pre>0646:    <a href="/share/lib/std/dynlink.fdoc#0646">noinline proc run_proc (linstance:flx_instance, p: string, data: address)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Run a procedure represented by a string name with
  given thread frame.
 </p></div>
@@ -2347,59 +2397,85 @@ Unable to understand @command ''
  Uses all the above hacky stuff.
  Just please use sensible ASCII filenames!
 </p></div>
+<hr/><a href="/share/lib/std/felix/flx/bootflx.flx">felix/flx/bootflx.flx</a>
+
+<pre>0029:  <a href="/share/lib/std/felix/flx/bootflx.flx#0029">class BootFlx</a></pre>
+<pre>0031:    <a href="/share/lib/std/felix/flx/bootflx.flx#0031">gen flx_processing</a></pre>
+<pre>0125:    <a href="/share/lib/std/felix/flx/bootflx.flx#0125">gen runflx(args:list[string]) : int</a></pre>
 <hr/><a href="/share/lib/std/felix/flx/flx.flx">felix/flx/flx.flx</a>
 
-<pre>0025:  <a href="/share/lib/std/felix/flx/flx.flx#0025">class Flx</a></pre>
-<pre>0027:    <a href="/share/lib/std/felix/flx/flx.flx#0027">gen flx_processing</a></pre>
-<pre>0038:    <a href="/share/lib/std/felix/flx/flx.flx#0038">processing_stage1 (config,control,loopctl,profile, varray[string] args)</a></pre>
-<pre>0104:    <a href="/share/lib/std/felix/flx/flx.flx#0104">gen runflx(args:list[string]) : int</a></pre>
+<pre>0028:  <a href="/share/lib/std/felix/flx/flx.flx#0028">class Flx</a></pre>
+<pre>0030:    <a href="/share/lib/std/felix/flx/flx.flx#0030">gen flx_processing</a></pre>
+<pre>0124:    <a href="/share/lib/std/felix/flx/flx.flx#0124">gen runflx(args:list[string]) : int</a></pre>
 <hr/><a href="/share/lib/std/felix/flx/flx_cmdopt.flx">felix/flx/flx_cmdopt.flx</a>
-<pre>0004:    <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0004">proc print_help()</a></pre>
-<pre>0080:    <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0080">typedef config_type</a></pre>
-<pre>0082:    <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0082">noinline proc handle_switch</a></pre>
-<pre>0089:    <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0089">proc debugln[T with Str[T]] (x:T)</a></pre>
-<pre>0368:    <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0368">fun exts ()</a></pre>
-<pre>0381:    <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0381">fun check_ext (s:string)</a></pre>
-<pre>0386:    <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0386">noinline proc xparse_cmd_line</a></pre>
-<pre>0394:    <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0394">proc debugln[T with Str[T]] (x:T)</a></pre>
-<pre>0480:    <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0480">noinline proc processing_stage1</a></pre>
-<pre>0489:    <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0489">proc debugln[T with Str[T]] (x:T)</a></pre>
-<pre>0493:    <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0493">gen xqt(cmd:string)</a></pre>
+
+<pre>0006:  <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0006">class FlxCmdOpt</a></pre>
+<pre>0117:    <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0117">proc debugln[T with Str[T]] (x:T)</a></pre>
+<pre>0436:    <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0436">proc debugln[T with Str[T]] (x:T)</a></pre>
+<pre>0518:    <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0518">noinline proc processing_stage1</a></pre>
+<pre>0526:    <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0526">proc debugln[T with Str[T]] (x:T)</a></pre>
 <hr/><a href="/share/lib/std/felix/flx/flx_config.flx">felix/flx/flx_config.flx</a>
-<pre>0002:    <a href="/share/lib/std/felix/flx/flx_config.flx#0002">proc print_config(config:config_type)</a></pre>
+
+<pre>0003:  <a href="/share/lib/std/felix/flx/flx_config.flx#0003">class FlxConfig</a></pre>
+<pre>0005:    <a href="/share/lib/std/felix/flx/flx_config.flx#0005">proc print_config(config:Config::config_type)</a></pre>
 <hr/><a href="/share/lib/std/felix/flx/flx_control.flx">felix/flx/flx_control.flx</a>
-<pre>0002:    <a href="/share/lib/std/felix/flx/flx_control.flx#0002">proc print_options(control:control_type)</a></pre>
-<pre>0033:    <a href="/share/lib/std/felix/flx/flx_control.flx#0033">fun init_loopctl ()</a></pre>
-<pre>0043:    <a href="/share/lib/std/felix/flx/flx_control.flx#0043">typedef loopctl_type</a></pre>
-<pre>0045:    <a href="/share/lib/std/felix/flx/flx_control.flx#0045">fun dflt_control (config:config_type, profile:profile_type)</a></pre>
-<pre>0124:    <a href="/share/lib/std/felix/flx/flx_control.flx#0124">typedef control_type</a></pre>
+
+<pre>0003:  <a href="/share/lib/std/felix/flx/flx_control.flx#0003">class FlxControl</a></pre>
+<pre>0005:    <a href="/share/lib/std/felix/flx/flx_control.flx#0005">proc print_options(control:control_type)</a></pre>
+<pre>0040:    <a href="/share/lib/std/felix/flx/flx_control.flx#0040">fun init_loopctl ()</a></pre>
+<pre>0050:    <a href="/share/lib/std/felix/flx/flx_control.flx#0050">typedef loopctl_type</a></pre>
+<pre>0052:    <a href="/share/lib/std/felix/flx/flx_control.flx#0052">fun dflt_control (config:Config::config_type, profile:FlxProfile::profile_type)</a></pre>
+<pre>0140:    <a href="/share/lib/std/felix/flx/flx_control.flx#0140">typedef control_type</a></pre>
+<hr/><a href="/share/lib/std/felix/flx/flx_depchk.flx">felix/flx/flx_depchk.flx</a>
+<pre>0002:    <a href="/share/lib/std/felix/flx/flx_depchk.flx#0002">gen cxx_depcheck (tc: toolchain_t, src:string, dst:string) : bool</a></pre>
+<pre>0017:    <a href="/share/lib/std/felix/flx/flx_depchk.flx#0017">fun maxf (t:double) (f:string)</a></pre>
+<pre>0046:    <a href="/share/lib/std/felix/flx/flx_depchk.flx#0046">gen c_depcheck (tc: toolchain_t, src:string, dst:string) : bool</a></pre>
+<pre>0061:    <a href="/share/lib/std/felix/flx/flx_depchk.flx#0061">fun maxf (t:double) (f:string)</a></pre>
 <hr/><a href="/share/lib/std/felix/flx/flx_depvars.flx">felix/flx/flx_depvars.flx</a>
-<pre>0001:    <a href="/share/lib/std/felix/flx/flx_depvars.flx#0001">typedef dvars_type</a></pre>
-<pre>0014:    <a href="/share/lib/std/felix/flx/flx_depvars.flx#0014">gen cal_depvars(</a></pre>
-<pre>0022:    <a href="/share/lib/std/felix/flx/flx_depvars.flx#0022">proc debugln[T with Str[T]] (x:T)</a></pre>
+
+<pre>0003:  <a href="/share/lib/std/felix/flx/flx_depvars.flx#0003">class FlxDepvars</a></pre>
+<pre>0005:    <a href="/share/lib/std/felix/flx/flx_depvars.flx#0005">typedef dvars_type</a></pre>
+<pre>0018:    <a href="/share/lib/std/felix/flx/flx_depvars.flx#0018">gen cal_depvars(</a></pre>
+<pre>0026:    <a href="/share/lib/std/felix/flx/flx_depvars.flx#0026">proc debugln[T with Str[T]] (x:T)</a></pre>
 <hr/><a href="/share/lib/std/felix/flx/flx_profile.flx">felix/flx/flx_profile.flx</a>
-<pre>0001:    <a href="/share/lib/std/felix/flx/flx_profile.flx#0001">fun dflt_profile ()</a></pre>
-<pre>0033:    <a href="/share/lib/std/felix/flx/flx_profile.flx#0033">typedef profile_type</a></pre>
+
+<pre>0001:  <a href="/share/lib/std/felix/flx/flx_profile.flx#0001">class FlxProfile</a></pre>
+<pre>0003:    <a href="/share/lib/std/felix/flx/flx_profile.flx#0003">fun dflt_profile ()</a></pre>
+<pre>0035:    <a href="/share/lib/std/felix/flx/flx_profile.flx#0035">typedef profile_type</a></pre>
 <hr/><a href="/share/lib/std/felix/flx/flx_run.flx">felix/flx/flx_run.flx</a>
-<pre>0007:    <a href="/share/lib/std/felix/flx/flx_run.flx#0007">proc debugln[T with Str[T]] (x:T)</a></pre>
-<pre>0011:    <a href="/share/lib/std/felix/flx/flx_run.flx#0011">proc echoln[T with Str[T]] (x:T)</a></pre>
-<pre>0050:    <a href="/share/lib/std/felix/flx/flx_run.flx#0050">proc calpackages</a></pre>
-<pre>0073:    <a href="/share/lib/std/felix/flx/flx_run.flx#0073">proc showtime(msg:string, t0:double)</a></pre>
-<pre>0083:    <a href="/share/lib/std/felix/flx/flx_run.flx#0083">gen run_felix_compiler_if_required () : int</a></pre>
-<pre>0122:    <a href="/share/lib/std/felix/flx/flx_run.flx#0122">gen cxx_compile_dynamic1(src:string, dst:string) : int</a></pre>
-<pre>0142:    <a href="/share/lib/std/felix/flx/flx_run.flx#0142">gen cxx_compile_dynamic () : int</a></pre>
-<pre>0162:    <a href="/share/lib/std/felix/flx/flx_run.flx#0162">gen cxx_link_dynamic () : int</a></pre>
-<pre>0188:    <a href="/share/lib/std/felix/flx/flx_run.flx#0188">gen cxx_compile_static1 (src: string, dst: string) : int</a></pre>
-<pre>0211:    <a href="/share/lib/std/felix/flx/flx_run.flx#0211">gen cxx_compile_static () : int</a></pre>
-<pre>0249:    <a href="/share/lib/std/felix/flx/flx_run.flx#0249">gen cxx_link_static () : int</a></pre>
-<pre>0279:    <a href="/share/lib/std/felix/flx/flx_run.flx#0279">gen cxx_static_library () : int</a></pre>
-<pre>0304:    <a href="/share/lib/std/felix/flx/flx_run.flx#0304">gen check_output () : int</a></pre>
-<pre>0329:    <a href="/share/lib/std/felix/flx/flx_run.flx#0329">gen run_program_dynamic () : int</a></pre>
-<pre>0348:    <a href="/share/lib/std/felix/flx/flx_run.flx#0348">gen run_program_static () : int</a></pre>
-<pre>0363:    <a href="/share/lib/std/felix/flx/flx_run.flx#0363">gen run_dynamic_with_calpackages () : int</a></pre>
-<pre>0369:    <a href="/share/lib/std/felix/flx/flx_run.flx#0369">gen check_run_if_required_and_uptodate() : bool</a></pre>
-<pre>0404:    <a href="/share/lib/std/felix/flx/flx_run.flx#0404">gen run_with_calpackages () : int</a></pre>
-<pre>0413:    <a href="/share/lib/std/felix/flx/flx_run.flx#0413">gen run_cxx_and_exe_as_required () : int</a></pre>
+<pre>0006:    <a href="/share/lib/std/felix/flx/flx_run.flx#0006">gen dxqt(DBG:bool) (cmd:string)</a></pre>
+<pre>0028:    <a href="/share/lib/std/felix/flx/flx_run.flx#0028">proc xdebugln[T with Str[T]] (d:bool) (x:T)</a></pre>
+<pre>0033:    <a href="/share/lib/std/felix/flx/flx_run.flx#0033">proc check_cache(</a></pre>
+<pre>0062:    <a href="/share/lib/std/felix/flx/flx_run.flx#0062">proc debugln[T with Str[T]] (x:T)</a></pre>
+<pre>0066:    <a href="/share/lib/std/felix/flx/flx_run.flx#0066">proc echoln[T with Str[T]] (x:T)</a></pre>
+<pre>0080:    <a href="/share/lib/std/felix/flx/flx_run.flx#0080">proc showtime(msg:string, t0:double)</a></pre>
+<pre>0110:    <a href="/share/lib/std/felix/flx/flx_run.flx#0110">proc calpackages</a></pre>
+<pre>0141:    <a href="/share/lib/std/felix/flx/flx_run.flx#0141">fun cal_time_from_flxdepfile (debugln: string->0, df: string):double</a></pre>
+<pre>0143:    <a href="/share/lib/std/felix/flx/flx_run.flx#0143">fun maxf (x: double) (f:string)</a></pre>
+<pre>0155:    <a href="/share/lib/std/felix/flx/flx_run.flx#0155">fun cal_files_time (fs: list[string])</a></pre>
+<pre>0168:    <a href="/share/lib/std/felix/flx/flx_run.flx#0168">fun cal_cxx_uptodate(debugln:string -> 0, OUTPUT_DIR:string, f:string)</a></pre>
+<pre>0186:    <a href="/share/lib/std/felix/flx/flx_run.flx#0186">gen check_cxx_uptodate () : bool</a></pre>
+<pre>0201:    <a href="/share/lib/std/felix/flx/flx_run.flx#0201">gen run_felix_compiler_if_required () : int</a></pre>
+<pre>0247:    <a href="/share/lib/std/felix/flx/flx_run.flx#0247">gen cxx_compile_dynamic1(src:string, dst:string) : int</a></pre>
+<pre>0271:    <a href="/share/lib/std/felix/flx/flx_run.flx#0271">gen cxx_compile_dynamic () : int</a></pre>
+<pre>0294:    <a href="/share/lib/std/felix/flx/flx_run.flx#0294">gen cxx_compile_static () : int</a></pre>
+<pre>0339:    <a href="/share/lib/std/felix/flx/flx_run.flx#0339">gen cxx_compile_static1 (src: string, dst: string) : int</a></pre>
+<pre>0367:    <a href="/share/lib/std/felix/flx/flx_run.flx#0367">gen run_cxx_compiler_if_required () : int</a></pre>
+<pre>0381:    <a href="/share/lib/std/felix/flx/flx_run.flx#0381">gen check_run_if_required_and_uptodate() : bool</a></pre>
+<pre>0405:    <a href="/share/lib/std/felix/flx/flx_run.flx#0405">gen run_with_calpackages () : int</a></pre>
+<pre>0419:    <a href="/share/lib/std/felix/flx/flx_run.flx#0419">gen cxx_link_dynamic () : int</a></pre>
+<pre>0455:    <a href="/share/lib/std/felix/flx/flx_run.flx#0455">gen cxx_link_dynamic_with_calpackages () : int</a></pre>
+<pre>0461:    <a href="/share/lib/std/felix/flx/flx_run.flx#0461">gen cxx_link_static () : int</a></pre>
+<pre>0501:    <a href="/share/lib/std/felix/flx/flx_run.flx#0501">gen cxx_link_static_with_calpackages() :  int</a></pre>
+<pre>0507:    <a href="/share/lib/std/felix/flx/flx_run.flx#0507">gen cxx_static_library () : int</a></pre>
+<pre>0545:    <a href="/share/lib/std/felix/flx/flx_run.flx#0545">gen check_binary_uptodate () : bool</a></pre>
+<pre>0547:    <a href="/share/lib/std/felix/flx/flx_run.flx#0547">fun maxf (t:double) (f:string)</a></pre>
+<pre>0586:    <a href="/share/lib/std/felix/flx/flx_run.flx#0586">gen run_linker_if_required() : int</a></pre>
+<pre>0631:    <a href="/share/lib/std/felix/flx/flx_run.flx#0631">gen run_program_dynamic () : int</a></pre>
+<pre>0654:    <a href="/share/lib/std/felix/flx/flx_run.flx#0654">gen run_program_static () : int</a></pre>
+<pre>0670:    <a href="/share/lib/std/felix/flx/flx_run.flx#0670">gen run_dynamic_with_calpackages () : int</a></pre>
+<pre>0676:    <a href="/share/lib/std/felix/flx/flx_run.flx#0676">gen run_program_if_required () : int</a></pre>
+<pre>0694:    <a href="/share/lib/std/felix/flx/flx_run.flx#0694">gen check_output_if_required () : int</a></pre>
 <hr/><a href="/share/lib/std/felix/flx_cache.flx">felix/flx_cache.flx</a>
 
 <pre>0001:  <a href="/share/lib/std/felix/flx_cache.flx#0001">class FlxCache</a></pre>
@@ -2410,13 +2486,9 @@ Unable to understand @command ''
 <pre>0037:    <a href="/share/lib/std/felix/flx_cache.flx#0037">fun strfiletime0 (x:double)</a></pre>
 <pre>0046:    <a href="/share/lib/std/felix/flx_cache.flx#0046">fun strfiletime (x:double)</a></pre>
 <pre>0051:    <a href="/share/lib/std/felix/flx_cache.flx#0051">fun dfiletime(var f:string, dflt:double)</a></pre>
-<pre>0059:    <a href="/share/lib/std/felix/flx_cache.flx#0059">fun maxf (x: double) (f:string)</a></pre>
-<pre>0063:    <a href="/share/lib/std/felix/flx_cache.flx#0063">fun cal_files_time (fs: list[string])</a></pre>
-<pre>0065:    <a href="/share/lib/std/felix/flx_cache.flx#0065">fun cal_dep_time(debugln:string -> 0, OUTPUT_DIR:string, f:string)</a></pre>
-<pre>0066:    <a href="/share/lib/std/felix/flx_cache.flx#0066">fun cal_time_from_dep (df: string):double</a></pre>
-<pre>0105:    <a href="/share/lib/std/felix/flx_cache.flx#0105">typedef cache_validation_spec_t</a></pre>
-<pre>0123:    <a href="/share/lib/std/felix/flx_cache.flx#0123">gen validate_cache  (spec: cache_validation_spec_t) : int * double</a></pre>
-<pre>0239:    <a href="/share/lib/std/felix/flx_cache.flx#0239">fun cache_join (c:string, var f:string)</a></pre>
+<pre>0075:    <a href="/share/lib/std/felix/flx_cache.flx#0075">typedef cache_validation_spec_t</a></pre>
+<pre>0118:    <a href="/share/lib/std/felix/flx_cache.flx#0118">gen validate_cache  (spec: cache_validation_spec_t) : int * double</a></pre>
+<pre>0252:    <a href="/share/lib/std/felix/flx_cache.flx#0252">fun cache_join (c:string, var f:string)</a></pre>
 <hr/><a href="/share/lib/std/felix/flx_cp.flx">felix/flx_cp.flx</a>
 
 <pre>0001:  <a href="/share/lib/std/felix/flx_cp.flx#0001">class CopyFiles</a></pre>
@@ -2426,21 +2498,24 @@ Unable to understand @command ''
 <hr/><a href="/share/lib/std/felix/flx_cxx.flx">felix/flx_cxx.flx</a>
 
 <pre>0001:  <a href="/share/lib/std/felix/flx_cxx.flx#0001">class CxxCompiler</a></pre>
-<pre>0003:    <a href="/share/lib/std/felix/flx_cxx.flx#0003">typedef cxx_dynamic_spec_t</a></pre>
-<pre>0013:    <a href="/share/lib/std/felix/flx_cxx.flx#0013">gen generic_cxx_compile_for_dynamic (spec: cxx_dynamic_spec_t) (src:string, dst:string) : int</a></pre>
-<pre>0034:    <a href="/share/lib/std/felix/flx_cxx.flx#0034">typedef link_dynamic_spec_t</a></pre>
-<pre>0044:    <a href="/share/lib/std/felix/flx_cxx.flx#0044">gen generic_link_dynamic</a></pre>
-<pre>0071:    <a href="/share/lib/std/felix/flx_cxx.flx#0071">typedef cxx_compile_static_t</a></pre>
-<pre>0081:    <a href="/share/lib/std/felix/flx_cxx.flx#0081">gen generic_cxx_compile_for_static</a></pre>
-<pre>0107:    <a href="/share/lib/std/felix/flx_cxx.flx#0107">typedef generic_link_static_t</a></pre>
-<pre>0116:    <a href="/share/lib/std/felix/flx_cxx.flx#0116">gen generic_link_static</a></pre>
-<pre>0136:    <a href="/share/lib/std/felix/flx_cxx.flx#0136">typedef generic_lib_static_t</a></pre>
-<pre>0144:    <a href="/share/lib/std/felix/flx_cxx.flx#0144">gen generic_static_library</a></pre>
+<pre>0003:    <a href="/share/lib/std/felix/flx_cxx.flx#0003">typedef cxx_dep_spec_t</a></pre>
+<pre>0012:    <a href="/share/lib/std/felix/flx_cxx.flx#0012">gen generic_cxx_gen_deps (spec: cxx_dep_spec_t) (src:string) : int * string</a></pre>
+<pre>0032:    <a href="/share/lib/std/felix/flx_cxx.flx#0032">gen generic_dependency_parser (data:string) : list[string]</a></pre>
+<pre>0042:    <a href="/share/lib/std/felix/flx_cxx.flx#0042">typedef cxx_dynamic_spec_t</a></pre>
+<pre>0052:    <a href="/share/lib/std/felix/flx_cxx.flx#0052">gen generic_cxx_compile_for_dynamic (spec: cxx_dynamic_spec_t) (src:string, dst:string) : int</a></pre>
+<pre>0073:    <a href="/share/lib/std/felix/flx_cxx.flx#0073">typedef link_dynamic_spec_t</a></pre>
+<pre>0083:    <a href="/share/lib/std/felix/flx_cxx.flx#0083">gen generic_link_dynamic</a></pre>
+<pre>0110:    <a href="/share/lib/std/felix/flx_cxx.flx#0110">typedef cxx_compile_static_t</a></pre>
+<pre>0120:    <a href="/share/lib/std/felix/flx_cxx.flx#0120">gen generic_cxx_compile_for_static</a></pre>
+<pre>0146:    <a href="/share/lib/std/felix/flx_cxx.flx#0146">typedef generic_link_static_t</a></pre>
+<pre>0155:    <a href="/share/lib/std/felix/flx_cxx.flx#0155">gen generic_link_static</a></pre>
+<pre>0175:    <a href="/share/lib/std/felix/flx_cxx.flx#0175">typedef generic_lib_static_t</a></pre>
+<pre>0183:    <a href="/share/lib/std/felix/flx_cxx.flx#0183">gen generic_static_library</a></pre>
 <hr/><a href="/share/lib/std/felix/flx_flxg.flx">felix/flx_flxg.flx</a>
 
 <pre>0001:  <a href="/share/lib/std/felix/flx_flxg.flx#0001">class Flxg</a></pre>
 <pre>0003:    <a href="/share/lib/std/felix/flx_flxg.flx#0003">typedef flxg_spec_t</a></pre>
-<pre>0026:    <a href="/share/lib/std/felix/flx_flxg.flx#0026">gen run_felix_compiler (spec:flxg_spec_t) : int</a></pre>
+<pre>0027:    <a href="/share/lib/std/felix/flx_flxg.flx#0027">gen run_felix_compiler (spec:flxg_spec_t) : int</a></pre>
 <hr/><a href="/share/lib/std/felix/flx_gc.fdoc">felix/flx_gc.fdoc</a>
 
 <pre>0004:  <a href="/share/lib/std/felix/flx_gc.fdoc#0004">class Collector</a></pre>
@@ -2902,6 +2977,7 @@ Unable to understand @command ''
 </p></div>
 <hr/><a href="/share/lib/std/felix/toolchain/clang_linux.flx">felix/toolchain/clang_linux.flx</a>
 <hr/><a href="/share/lib/std/felix/toolchain/clang_osx.flx">felix/toolchain/clang_osx.flx</a>
+<hr/><a href="/share/lib/std/felix/toolchain/gcc48_linux.flx">felix/toolchain/gcc48_linux.flx</a>
 <hr/><a href="/share/lib/std/felix/toolchain/gcc_linux.flx">felix/toolchain/gcc_linux.flx</a>
 <hr/><a href="/share/lib/std/felix/toolchain/gcc_osx.flx">felix/toolchain/gcc_osx.flx</a>
 <hr/><a href="/share/lib/std/felix/toolchain/msvc_win32.flx">felix/toolchain/msvc_win32.flx</a>
@@ -3536,32 +3612,36 @@ Unable to understand @command ''
 <pre>0054:    <a href="/share/lib/std/io/textio.flx#0054">virtual proc fflush: output_text_file</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Flush the buffers.
 </p></div>
-<pre>0057:    <a href="/share/lib/std/io/textio.flx#0057">proc space (s:output_text_file)</a></pre>
+<pre>0057:    <a href="/share/lib/std/io/textio.flx#0057">proc save (fn:string, d:string)</a></pre>
+<div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Save string to file
+</p></div>
+<pre>0066:    <a href="/share/lib/std/io/textio.flx#0066">proc save (fn:string, lines:list[string])</a></pre>
+<pre>0074:    <a href="/share/lib/std/io/textio.flx#0074">proc space (s:output_text_file)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Write a space.
 </p></div>
-<pre>0060:    <a href="/share/lib/std/io/textio.flx#0060">proc endl (s:output_text_file)</a></pre>
+<pre>0077:    <a href="/share/lib/std/io/textio.flx#0077">proc endl (s:output_text_file)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Write end of line mark.
 </p></div>
-<pre>0063:    <a href="/share/lib/std/io/textio.flx#0063">proc fprint[T with Str[T]] (s:output_text_file, x:T)</a></pre>
+<pre>0080:    <a href="/share/lib/std/io/textio.flx#0080">proc fprint[T with Str[T]] (s:output_text_file, x:T)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Write data with conversion using Str::str.
 </p></div>
-<pre>0066:    <a href="/share/lib/std/io/textio.flx#0066">proc fprintln[T with Str[T]] (s:output_text_file, x:T)</a></pre>
+<pre>0083:    <a href="/share/lib/std/io/textio.flx#0083">proc fprintln[T with Str[T]] (s:output_text_file, x:T)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Write data with conversion using Str::str and end line mark.
 </p></div>
 
-<pre>0070:  <a href="/share/lib/std/io/textio.flx#0070">open class Cstdio</a></pre>
+<pre>0087:  <a href="/share/lib/std/io/textio.flx#0087">open class Cstdio</a></pre>
 <div style='font-family:sans-serif; font-size:12pt; margin-left:100; margin-right:100; top:5; color:#406040'><p> C standard IO with FILE*.
 </p></div>
-<pre>0073:    <a href="/share/lib/std/io/textio.flx#0073">type FILE</a></pre>
+<pre>0090:    <a href="/share/lib/std/io/textio.flx#0090">type FILE</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> C file type.
 </p></div>
-<pre>0075:    <a href="/share/lib/std/io/textio.flx#0075">pod type ifile</a></pre>
-<pre>0076:    <a href="/share/lib/std/io/textio.flx#0076">pod type ofile</a></pre>
-<pre>0080:    <a href="/share/lib/std/io/textio.flx#0080">fun load: string -> string</a></pre>
+<pre>0092:    <a href="/share/lib/std/io/textio.flx#0092">pod type ifile</a></pre>
+<pre>0093:    <a href="/share/lib/std/io/textio.flx#0093">pod type ofile</a></pre>
+<pre>0097:    <a href="/share/lib/std/io/textio.flx#0097">fun load: string -> string</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Load file from filename.
  Note: loaded in binary mode not text mode!
 </p></div>
-<pre>0105:    <a href="/share/lib/std/io/textio.flx#0105">gen fopen_input: string -> ifile</a></pre>
+<pre>0122:    <a href="/share/lib/std/io/textio.flx#0122">gen fopen_input: string -> ifile</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Standard input, can be redirected by flx_run.
  Standard output, can be redirected by flx_run.
  Standard error, can be redirected by flx_run.
@@ -3570,76 +3650,76 @@ Unable to understand @command ''
  Standard error, redirected by shell.
  C standard IO as instance of Input_text_file.
 </p></div>
-<pre>0106:    <a href="/share/lib/std/io/textio.flx#0106">gen valid : ifile -> bool</a></pre>
-<pre>0107:    <a href="/share/lib/std/io/textio.flx#0107">proc fclose: ifile</a></pre>
-<pre>0108:    <a href="/share/lib/std/io/textio.flx#0108">gen load: ifile -> string</a></pre>
-<pre>0109:    <a href="/share/lib/std/io/textio.flx#0109">gen readln: ifile -> string</a></pre>
-<pre>0110:    <a href="/share/lib/std/io/textio.flx#0110">gen feof : ifile -> bool</a></pre>
-<pre>0116:    <a href="/share/lib/std/io/textio.flx#0116">gen fopen_output: string -> ofile</a></pre>
+<pre>0123:    <a href="/share/lib/std/io/textio.flx#0123">gen valid : ifile -> bool</a></pre>
+<pre>0124:    <a href="/share/lib/std/io/textio.flx#0124">proc fclose: ifile</a></pre>
+<pre>0125:    <a href="/share/lib/std/io/textio.flx#0125">gen load: ifile -> string</a></pre>
+<pre>0126:    <a href="/share/lib/std/io/textio.flx#0126">gen readln: ifile -> string</a></pre>
+<pre>0127:    <a href="/share/lib/std/io/textio.flx#0127">gen feof : ifile -> bool</a></pre>
+<pre>0133:    <a href="/share/lib/std/io/textio.flx#0133">gen fopen_output: string -> ofile</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> C standard IO as instance of Output_text_file.
 </p></div>
-<pre>0117:    <a href="/share/lib/std/io/textio.flx#0117">gen valid : ofile -> bool</a></pre>
-<pre>0118:    <a href="/share/lib/std/io/textio.flx#0118">proc fclose: ofile</a></pre>
-<pre>0119:    <a href="/share/lib/std/io/textio.flx#0119">proc writeln : ofile * string</a></pre>
-<pre>0120:    <a href="/share/lib/std/io/textio.flx#0120">proc write : ofile * string</a></pre>
-<pre>0121:    <a href="/share/lib/std/io/textio.flx#0121">proc write : ofile * utiny</a></pre>
-<pre>0122:    <a href="/share/lib/std/io/textio.flx#0122">proc write : ofile * char</a></pre>
-<pre>0123:    <a href="/share/lib/std/io/textio.flx#0123">proc fflush: ofile</a></pre>
+<pre>0134:    <a href="/share/lib/std/io/textio.flx#0134">gen valid : ofile -> bool</a></pre>
+<pre>0135:    <a href="/share/lib/std/io/textio.flx#0135">proc fclose: ofile</a></pre>
+<pre>0136:    <a href="/share/lib/std/io/textio.flx#0136">proc writeln : ofile * string</a></pre>
+<pre>0137:    <a href="/share/lib/std/io/textio.flx#0137">proc write : ofile * string</a></pre>
+<pre>0138:    <a href="/share/lib/std/io/textio.flx#0138">proc write : ofile * utiny</a></pre>
+<pre>0139:    <a href="/share/lib/std/io/textio.flx#0139">proc write : ofile * char</a></pre>
+<pre>0140:    <a href="/share/lib/std/io/textio.flx#0140">proc fflush: ofile</a></pre>
 
-<pre>0131:  <a href="/share/lib/std/io/textio.flx#0131">open class Iostream</a></pre>
-<pre>0134:    <a href="/share/lib/std/io/textio.flx#0134">pod type istream</a></pre>
+<pre>0148:  <a href="/share/lib/std/io/textio.flx#0148">open class Iostream</a></pre>
+<pre>0151:    <a href="/share/lib/std/io/textio.flx#0151">pod type istream</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> istream type.
 </p></div>
-<pre>0137:    <a href="/share/lib/std/io/textio.flx#0137">pod type ostream</a></pre>
+<pre>0154:    <a href="/share/lib/std/io/textio.flx#0154">pod type ostream</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> ostream type.
 </p></div>
-<pre>0154:    <a href="/share/lib/std/io/textio.flx#0154">gen fopen_input: string -> istream</a></pre>
+<pre>0171:    <a href="/share/lib/std/io/textio.flx#0171">gen fopen_input: string -> istream</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Standard input, redirected by shell.
  Standard output, redirected by shell.
  Standard error, redirected by shell.
  Standard log, redirected by shell.
  C++ istream as instance of Input_text_file.
 </p></div>
-<pre>0155:    <a href="/share/lib/std/io/textio.flx#0155">gen valid : istream -> bool</a></pre>
-<pre>0156:    <a href="/share/lib/std/io/textio.flx#0156">proc fclose: istream</a></pre>
-<pre>0157:    <a href="/share/lib/std/io/textio.flx#0157">gen load: istream -> string</a></pre>
-<pre>0158:    <a href="/share/lib/std/io/textio.flx#0158">gen readln: istream -> string</a></pre>
-<pre>0159:    <a href="/share/lib/std/io/textio.flx#0159">gen feof : istream -> bool</a></pre>
-<pre>0165:    <a href="/share/lib/std/io/textio.flx#0165">gen fopen_output: string -> ostream</a></pre>
+<pre>0172:    <a href="/share/lib/std/io/textio.flx#0172">gen valid : istream -> bool</a></pre>
+<pre>0173:    <a href="/share/lib/std/io/textio.flx#0173">proc fclose: istream</a></pre>
+<pre>0174:    <a href="/share/lib/std/io/textio.flx#0174">gen load: istream -> string</a></pre>
+<pre>0175:    <a href="/share/lib/std/io/textio.flx#0175">gen readln: istream -> string</a></pre>
+<pre>0176:    <a href="/share/lib/std/io/textio.flx#0176">gen feof : istream -> bool</a></pre>
+<pre>0182:    <a href="/share/lib/std/io/textio.flx#0182">gen fopen_output: string -> ostream</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> C++ ostream as instance of Output_text_file.
 </p></div>
-<pre>0166:    <a href="/share/lib/std/io/textio.flx#0166">gen valid : ostream -> bool</a></pre>
-<pre>0167:    <a href="/share/lib/std/io/textio.flx#0167">proc fclose: ostream</a></pre>
-<pre>0168:    <a href="/share/lib/std/io/textio.flx#0168">proc writeln : ostream * string</a></pre>
-<pre>0169:    <a href="/share/lib/std/io/textio.flx#0169">proc write : ostream * string</a></pre>
-<pre>0170:    <a href="/share/lib/std/io/textio.flx#0170">proc write : ostream * utiny</a></pre>
-<pre>0171:    <a href="/share/lib/std/io/textio.flx#0171">proc write : ostream * char</a></pre>
-<pre>0172:    <a href="/share/lib/std/io/textio.flx#0172">proc fflush: ostream</a></pre>
-<pre>0181:    <a href="/share/lib/std/io/textio.flx#0181">proc print  [T with Str[T]] (x:T)</a></pre>
+<pre>0183:    <a href="/share/lib/std/io/textio.flx#0183">gen valid : ostream -> bool</a></pre>
+<pre>0184:    <a href="/share/lib/std/io/textio.flx#0184">proc fclose: ostream</a></pre>
+<pre>0185:    <a href="/share/lib/std/io/textio.flx#0185">proc writeln : ostream * string</a></pre>
+<pre>0186:    <a href="/share/lib/std/io/textio.flx#0186">proc write : ostream * string</a></pre>
+<pre>0187:    <a href="/share/lib/std/io/textio.flx#0187">proc write : ostream * utiny</a></pre>
+<pre>0188:    <a href="/share/lib/std/io/textio.flx#0188">proc write : ostream * char</a></pre>
+<pre>0189:    <a href="/share/lib/std/io/textio.flx#0189">proc fflush: ostream</a></pre>
+<pre>0198:    <a href="/share/lib/std/io/textio.flx#0198">proc print  [T with Str[T]] (x:T)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Write string to cout.
 </p></div>
-<pre>0184:    <a href="/share/lib/std/io/textio.flx#0184">proc println[T with Str[T]] (x:T)</a></pre>
+<pre>0201:    <a href="/share/lib/std/io/textio.flx#0201">proc println[T with Str[T]] (x:T)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Write string to cout with end of line.
 </p></div>
-<pre>0187:    <a href="/share/lib/std/io/textio.flx#0187">proc endl()</a></pre>
+<pre>0204:    <a href="/share/lib/std/io/textio.flx#0204">proc endl()</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Write end of line on cout.
 </p></div>
-<pre>0190:    <a href="/share/lib/std/io/textio.flx#0190">proc space()</a></pre>
+<pre>0207:    <a href="/share/lib/std/io/textio.flx#0207">proc space()</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Write space on cout.
 </p></div>
-<pre>0193:    <a href="/share/lib/std/io/textio.flx#0193">proc fflush()</a></pre>
+<pre>0210:    <a href="/share/lib/std/io/textio.flx#0210">proc fflush()</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> flush buffers of cout.
 </p></div>
-<pre>0196:    <a href="/share/lib/std/io/textio.flx#0196">proc eprint  [T with Str[T]] (x:T)</a></pre>
+<pre>0213:    <a href="/share/lib/std/io/textio.flx#0213">proc eprint  [T with Str[T]] (x:T)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Write string to cerr.
 </p></div>
-<pre>0199:    <a href="/share/lib/std/io/textio.flx#0199">proc eprintln[T with Str[T]] (x:T)</a></pre>
+<pre>0216:    <a href="/share/lib/std/io/textio.flx#0216">proc eprintln[T with Str[T]] (x:T)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Write string to cerr with end of line.
 </p></div>
-<pre>0202:    <a href="/share/lib/std/io/textio.flx#0202">proc eendl()</a></pre>
+<pre>0219:    <a href="/share/lib/std/io/textio.flx#0219">proc eendl()</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Write end of line on cerr.
 </p></div>
-<pre>0205:    <a href="/share/lib/std/io/textio.flx#0205">proc espace()</a></pre>
+<pre>0222:    <a href="/share/lib/std/io/textio.flx#0222">proc espace()</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Write space on cerr.
 </p></div>
 <hr/><a href="/share/lib/std/io/zmq.flx">io/zmq.flx</a>
@@ -3802,16 +3882,16 @@ Unable to understand @command ''
 <pre>0028:    <a href="/share/lib/std/posix/errno.flx#0028">proc strerror_r: errno_t *  carray[char] * size</a></pre>
 <pre>0032:    <a href="/share/lib/std/posix/errno.flx#0032">proc strerror_r: errno_t * carray[char] * size</a></pre>
 <pre>0036:    <a href="/share/lib/std/posix/errno.flx#0036">fun strerror(e:errno_t) : string</a></pre>
-<pre>0046:    <a href="/share/lib/std/posix/errno.flx#0046">gen strerror()</a></pre>
+<pre>0048:    <a href="/share/lib/std/posix/errno.flx#0048">gen strerror()</a></pre>
 
-<pre>0052:  <a href="/share/lib/std/posix/errno.flx#0052">class Check[T]</a></pre>
-<pre>0054:    <a href="/share/lib/std/posix/errno.flx#0054">proc int_to_proc (var x:int)</a></pre>
-<pre>0055:    <a href="/share/lib/std/posix/errno.flx#0055">fun int_to_int (var x:int)</a></pre>
-<pre>0056:    <a href="/share/lib/std/posix/errno.flx#0056">fun pointer_to_pointer[U] (var p:&U)</a></pre>
-<pre>0060:    <a href="/share/lib/std/posix/errno.flx#0060">type check_ignore</a></pre>
-<pre>0063:    <a href="/share/lib/std/posix/errno.flx#0063">fun ehandler ():any</a></pre>
-<pre>0065:    <a href="/share/lib/std/posix/errno.flx#0065">type check_throw</a></pre>
-<pre>0068:    <a href="/share/lib/std/posix/errno.flx#0068">fun ehandler ():any</a></pre>
+<pre>0054:  <a href="/share/lib/std/posix/errno.flx#0054">class Check[T]</a></pre>
+<pre>0056:    <a href="/share/lib/std/posix/errno.flx#0056">proc int_to_proc (var x:int)</a></pre>
+<pre>0057:    <a href="/share/lib/std/posix/errno.flx#0057">fun int_to_int (var x:int)</a></pre>
+<pre>0058:    <a href="/share/lib/std/posix/errno.flx#0058">fun pointer_to_pointer[U] (var p:&U)</a></pre>
+<pre>0062:    <a href="/share/lib/std/posix/errno.flx#0062">type check_ignore</a></pre>
+<pre>0065:    <a href="/share/lib/std/posix/errno.flx#0065">fun ehandler ():any</a></pre>
+<pre>0067:    <a href="/share/lib/std/posix/errno.flx#0067">type check_throw</a></pre>
+<pre>0070:    <a href="/share/lib/std/posix/errno.flx#0070">fun ehandler ():any</a></pre>
 <hr/><a href="/share/lib/std/posix/faio_posix.flx">posix/faio_posix.flx</a>
 
 <pre>0001:  <a href="/share/lib/std/posix/faio_posix.flx#0001">class Faio_posix</a></pre>
@@ -4262,40 +4342,39 @@ Unable to understand @command ''
 <pre>0394:    <a href="/share/lib/std/strings/string.fdoc#0394">typedef action_t</a></pre>
 <pre>0396:    <a href="/share/lib/std/strings/string.fdoc#0396">union mode_t</a></pre>
 <pre>0397:    <a href="/share/lib/std/strings/string.fdoc#0397">typedef state_t</a></pre>
-<pre>0399:    <a href="/share/lib/std/strings/string.fdoc#0399">fun respectful_parse (action:action_t) (var state:state_t) (s:string) : state_t</a></pre>
-<pre>0524:    <a href="/share/lib/std/strings/string.fdoc#0524">fun respectful_split (action:RespectfulParser::action_t) (s:string) : list[string]</a></pre>
-<pre>0544:    <a href="/share/lib/std/strings/string.fdoc#0544">fun respectful_split (s:string) : list[string]</a></pre>
-<pre>0566:    <a href="/share/lib/std/strings/string.fdoc#0566">proc erase: &string * int * int</a></pre>
+<pre>0525:    <a href="/share/lib/std/strings/string.fdoc#0525">fun respectful_split (action:RespectfulParser::action_t) (s:string) : list[string]</a></pre>
+<pre>0545:    <a href="/share/lib/std/strings/string.fdoc#0545">fun respectful_split (s:string) : list[string]</a></pre>
+<pre>0567:    <a href="/share/lib/std/strings/string.fdoc#0567">proc erase: &string * int * int</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> mutators
 </p></div>
-<pre>0567:    <a href="/share/lib/std/strings/string.fdoc#0567">proc insert: &string * int * string</a></pre>
-<pre>0568:    <a href="/share/lib/std/strings/string.fdoc#0568">proc replace: &string * int * int * string</a></pre>
-<pre>0571:    <a href="/share/lib/std/strings/string.fdoc#0571">fun erase: string * int * int -> string</a></pre>
+<pre>0568:    <a href="/share/lib/std/strings/string.fdoc#0568">proc insert: &string * int * string</a></pre>
+<pre>0569:    <a href="/share/lib/std/strings/string.fdoc#0569">proc replace: &string * int * int * string</a></pre>
+<pre>0572:    <a href="/share/lib/std/strings/string.fdoc#0572">fun erase: string * int * int -> string</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> functional
 </p></div>
-<pre>0572:    <a href="/share/lib/std/strings/string.fdoc#0572">fun insert: string * int * string -> string</a></pre>
-<pre>0573:    <a href="/share/lib/std/strings/string.fdoc#0573">fun replace: string * int * int * string -> string</a></pre>
-<pre>0579:    <a href="/share/lib/std/strings/string.fdoc#0579">fun search_and_replace (x:string, var spos:size, s:string, r:string) : string</a></pre>
-<pre>0592:    <a href="/share/lib/std/strings/string.fdoc#0592">fun search_and_replace (x:string, s:string, r:string) : string</a></pre>
-<pre>0594:    <a href="/share/lib/std/strings/string.fdoc#0594">fun search_and_replace (vs:list[string * string]) (var v:string)</a></pre>
-<pre>0605:    <a href="/share/lib/std/strings/string.fdoc#0605">fun subst(s:string, v:varray[StringPiece]): string</a></pre>
-<pre>0655:    <a href="/share/lib/std/strings/string.fdoc#0655">fun search_and_replace (x:string, var spos: size, re:Re2::RE2, r:string) : string</a></pre>
-<pre>0673:    <a href="/share/lib/std/strings/string.fdoc#0673">fun atoi: string -> int</a></pre>
-<pre>0674:    <a href="/share/lib/std/strings/string.fdoc#0674">fun atol: string -> long</a></pre>
-<pre>0675:    <a href="/share/lib/std/strings/string.fdoc#0675">fun atoll: string -> long</a></pre>
-<pre>0676:    <a href="/share/lib/std/strings/string.fdoc#0676">fun atof: string -> double</a></pre>
-<pre>0680:    <a href="/share/lib/std/strings/string.fdoc#0680">proc reserve: &string * !ints</a></pre>
-<pre>0685:    <a href="/share/lib/std/strings/string.fdoc#0685">fun _unsafe_cstr: string -> +char</a></pre>
-<pre>0688:    <a href="/share/lib/std/strings/string.fdoc#0688">fun stl_begin: &string -> +char</a></pre>
-<pre>0689:    <a href="/share/lib/std/strings/string.fdoc#0689">fun stl_end: &string -> +char</a></pre>
-<pre>0693:    <a href="/share/lib/std/strings/string.fdoc#0693">fun cstr (x:string) : +char</a></pre>
-<pre>0697:    <a href="/share/lib/std/strings/string.fdoc#0697">fun vsprintf[t]: +char  * t -> string</a></pre>
-<pre>0701:    <a href="/share/lib/std/strings/string.fdoc#0701">fun vsprintf[t]: string * t -> string</a></pre>
-<pre>0708:    <a href="/share/lib/std/strings/string.fdoc#0708">fun toupper(s:string):string</a></pre>
-<pre>0710:    <a href="/share/lib/std/strings/string.fdoc#0710">fun tolower(s:string):string</a></pre>
-<pre>0718:    <a href="/share/lib/std/strings/string.fdoc#0718">fun str (s:string) : string</a></pre>
-<pre>0722:    <a href="/share/lib/std/strings/string.fdoc#0722">fun str: +char -> string</a></pre>
-<pre>0726:    <a href="/share/lib/std/strings/string.fdoc#0726">fun repr (x:string) : string</a></pre>
+<pre>0573:    <a href="/share/lib/std/strings/string.fdoc#0573">fun insert: string * int * string -> string</a></pre>
+<pre>0574:    <a href="/share/lib/std/strings/string.fdoc#0574">fun replace: string * int * int * string -> string</a></pre>
+<pre>0580:    <a href="/share/lib/std/strings/string.fdoc#0580">fun search_and_replace (x:string, var spos:size, s:string, r:string) : string</a></pre>
+<pre>0593:    <a href="/share/lib/std/strings/string.fdoc#0593">fun search_and_replace (x:string, s:string, r:string) : string</a></pre>
+<pre>0595:    <a href="/share/lib/std/strings/string.fdoc#0595">fun search_and_replace (vs:list[string * string]) (var v:string)</a></pre>
+<pre>0606:    <a href="/share/lib/std/strings/string.fdoc#0606">fun subst(s:string, v:varray[StringPiece]): string</a></pre>
+<pre>0656:    <a href="/share/lib/std/strings/string.fdoc#0656">fun search_and_replace (x:string, var spos: size, re:Re2::RE2, r:string) : string</a></pre>
+<pre>0674:    <a href="/share/lib/std/strings/string.fdoc#0674">fun atoi: string -> int</a></pre>
+<pre>0675:    <a href="/share/lib/std/strings/string.fdoc#0675">fun atol: string -> long</a></pre>
+<pre>0676:    <a href="/share/lib/std/strings/string.fdoc#0676">fun atoll: string -> long</a></pre>
+<pre>0677:    <a href="/share/lib/std/strings/string.fdoc#0677">fun atof: string -> double</a></pre>
+<pre>0681:    <a href="/share/lib/std/strings/string.fdoc#0681">proc reserve: &string * !ints</a></pre>
+<pre>0686:    <a href="/share/lib/std/strings/string.fdoc#0686">fun _unsafe_cstr: string -> +char</a></pre>
+<pre>0689:    <a href="/share/lib/std/strings/string.fdoc#0689">fun stl_begin: &string -> +char</a></pre>
+<pre>0690:    <a href="/share/lib/std/strings/string.fdoc#0690">fun stl_end: &string -> +char</a></pre>
+<pre>0694:    <a href="/share/lib/std/strings/string.fdoc#0694">fun cstr (x:string) : +char</a></pre>
+<pre>0698:    <a href="/share/lib/std/strings/string.fdoc#0698">fun vsprintf[t]: +char  * t -> string</a></pre>
+<pre>0702:    <a href="/share/lib/std/strings/string.fdoc#0702">fun vsprintf[t]: string * t -> string</a></pre>
+<pre>0709:    <a href="/share/lib/std/strings/string.fdoc#0709">fun toupper(s:string):string</a></pre>
+<pre>0711:    <a href="/share/lib/std/strings/string.fdoc#0711">fun tolower(s:string):string</a></pre>
+<pre>0719:    <a href="/share/lib/std/strings/string.fdoc#0719">fun str (s:string) : string</a></pre>
+<pre>0723:    <a href="/share/lib/std/strings/string.fdoc#0723">fun str: +char -> string</a></pre>
+<pre>0727:    <a href="/share/lib/std/strings/string.fdoc#0727">fun repr (x:string) : string</a></pre>
 <hr/><a href="/share/lib/std/strings/tre.flx">strings/tre.flx</a>
 
 <pre>0001:  <a href="/share/lib/std/strings/tre.flx#0001">class Tre</a></pre>

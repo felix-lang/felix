@@ -630,6 +630,9 @@ let instantiate syms bsym_table instps (root:bid_t) (bifaces:biface_t list) =
 
     | BIFACE_export_type (sr,t,_) ->
       register_type_r (ui sr) syms bsym_table [] sr t
+
+    | BIFACE_export_struct (sr,idx) -> ui sr idx []
+
   )
   bifaces;
 
