@@ -1,8 +1,7 @@
 
 @h1 fthread-01.flx
 @felix
-//Check fibres
-//Check channels
+include "std/control/schannels";
 
 var y = ();
 proc f() { print "Hello"; endl; }

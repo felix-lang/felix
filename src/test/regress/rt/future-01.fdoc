@@ -1,6 +1,8 @@
 
 @h1 future-01.flx
 @felix
+include "std/control/future";
+
 var x = future { 42 };
 println$ x.get;
 

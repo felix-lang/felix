@@ -385,6 +385,27 @@ fast-rebuild:
 	rm flx_build_boot
 	build/release/host/bin/flx --test=build/release --expect --usage=prototype --indir=test/regress/rt --regex='.*\.flx'
 
+fast-rebuild-nortl:
+	# =========================================================
+	# rebuild everything in-place except the compiler and RTL
+	# [Note: requires LPATH variable be set in Makefile!]
+	# =========================================================
+	${LPATH}=build/release/host/lib/rtl build/release/host/bin/flx_build_prep \
+		--repo=.\
+		--source-dir=build/release \
+		--source-bin=host \
+		--target-dir=build/release \
+		--target-bin=host \
+		--copy-repo \
+		--copy-library 
+	${LPATH}=build/release/host/lib/rtl ./flx_build_boot \
+		--target-dir=build/release \
+		--target-bin=host \
+		--build-all
+	rm flx_build_boot
+	build/release/host/bin/flx --test=build/release --expect --usage=prototype --indir=test/regress/rt --regex='.*\.flx'
+
+
 rebuild:
 	# =========================================================
 	# rebuild everything in-place except the compiler

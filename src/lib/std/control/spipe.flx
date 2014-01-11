@@ -1,4 +1,3 @@
-
 //$ Synchronous Pipe.
 open class Spipe {
 
@@ -51,33 +50,38 @@ open class Spipe {
     }
   ;
 
-  //$ Utility for tee connector.
-  proc run_tee[T] (i:ischannel[T], o1:oschannel[T], o2:oschannel[T])
+  //$ Utility for tee connector: array of outputs
+  proc run_tee[T,N] (i:ischannel[T], oa:oschannel[T]^N)
   {
   again:>
     var d = read i;
-    write (o1, d);
-    write (o2, d);
+    for o in oa do
+      write (o, d);
+    done
     goto again;
   }
 
-  //$ Wire together a source component with two sinks.
+
+  //$ Wire together a source component with an array of sinks.
   //$ Returns a closed pipeline.
-  fun pipe[T] 
+  fun pipe[T,N] 
   (
     var w: oschannel[T] -> 0,
-    var r: (ischannel[T] -> 0) * (ischannel[T] -> 0)
+    var r: (ischannel[T] -> 0) ^ N
   )
     : 1 -> 0
   =>
     {
       var i,o = #mk_ioschannel_pair[T];
-      var chi0,cho0 = #mk_ioschannel_pair[T];
-      var chi1,cho1 = #mk_ioschannel_pair[T];
       spawn_fthread { w o; };
-      spawn_fthread { run_tee (i,cho0, cho1); };
-      spawn_fthread { r.0 chi0; };
-      spawn_fthread { r.1 chi1; };
+      var cho : oschannel[T] ^N;
+      for var j in 0uz upto r.len - 1uz do
+        var inp,out = #mk_ioschannel_pair[T];
+        &cho.j <- out;
+        noinline proc exec (var k:size, chi:ischannel[T]) () { r.k chi; }
+        spawn_fthread$ exec (j,inp);
+      done
+      spawn_fthread { run_tee (i,cho); };
     }
   ;
 
@@ -140,7 +144,7 @@ open class Spipe {
       var i,o = #mk_ioschannel_pair[T];
       var chi0,cho0 = #mk_ioschannel_pair[T];
       var chi1,cho1 = #mk_ioschannel_pair[T];
-      spawn_fthread { run_tee (i,cho0, cho1); };
+      spawn_fthread { run_tee (i,(cho0, cho1)); };
       spawn_fthread { w o; };
       return
         proc (out:oschannel[U0]) { r.0 (chi0,out); },

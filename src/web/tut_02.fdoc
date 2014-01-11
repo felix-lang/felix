@@ -1,3 +1,4 @@
+
 @h1 Variables
 Felix provides three kinds of variables, {var}, {fun} and {val}.
 @felix
@@ -41,10 +42,10 @@ pointer that is dereferenced automatically on every use, saving
 typing at least one {*} and possibly some parentheses. The initialiser
 for a {ref} must be a variable.
 @felix
-var a = 1;
-ref r <- a;
-val pa = &a;
-++a;
-println$ a,r,*pa;
+var b = 1;
+ref r <- b;
+val pb = &b;
+++b;
+println$ b,r,*pb;
 @
 The primary use for {ref} is for function parameters.

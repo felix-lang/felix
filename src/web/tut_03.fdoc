@@ -1,3 +1,4 @@
+
 @h1 Procedural control
 @h2 Conditional
 Basic conditional is like this:
@@ -64,10 +65,10 @@ If you really need to:
 @felix
 proc f(n:int)
 {
-  if x < 0 goto endoff;
+  if n < 0 goto endoff;
   println$ "Positive or Zero";
 endoff:>
-  println$ "Square is " + (x * x).str;
+  println$ "Square is " + (n * n).str;
 }
 @
 

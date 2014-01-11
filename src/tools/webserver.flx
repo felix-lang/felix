@@ -25,6 +25,7 @@ pre.flxbg {background-color:#90EF90; color:black; padding:2px; box-shadow:5px 5p
 pre.cppbg {background-color:#80FF80; color:black; }
 pre.prefmtbg {background-color:#D0D0D0; color:black; }
 pre.expected {background-color:#E0FF80; color:black; }
+pre.input {background-color:#E08080; color:black; }
 pre.inclusion {background-color:#D070D0; color:black; }
 code.inclusion {background-color:#D070D0; color:black; }
 .obsolete { background-color:#FFEFEF; font-size: small; color:black; }

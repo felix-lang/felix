@@ -1,6 +1,9 @@
 
 @h1 array-02.flx
 @felix
+include "std/datatype/sarray";
+include "std/datatype/bsarray";
+
 // All arrays test
 
 //var ca = carray[int,10];

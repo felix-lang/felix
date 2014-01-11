@@ -1,6 +1,7 @@
 
 @h1 fibres-01.flx
 @felix
+include "std/control/schannels";
 include "std/io/faio";
 
 var sys_clock =  #Faio::mk_alarm_clock;

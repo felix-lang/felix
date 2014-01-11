@@ -1,6 +1,9 @@
 
 @h1 pipe-01.flx
 @felix
+include "std/control/schannels";
+include "std/control/spipe";
+
 // Pipe test.
 proc source (cho:oschannel[int]) { 
   for var i in 0 upto 9 do write (cho,i); done 

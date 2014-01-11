@@ -1,6 +1,7 @@
 
 @h1 set-emulation-01.flx
 @felix
+include "std/datatype/sexpr";
 open class Example1
 {
   union SetKind[T] = 

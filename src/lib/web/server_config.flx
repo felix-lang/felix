@@ -1,3 +1,5 @@
+include "web/__init__";
+include "io/__init__";
 
 class ServerConfig {
   open HTTPHandler;
@@ -19,10 +21,12 @@ class ServerConfig {
 
   
 
-  fun _ctor_server_config(handlers:list[http_handler]):server_config => server_config(0.05,8080,".","./html",handlers,
+  ctor server_config(handlers:list[http_handler]) => 
+    server_config(0.05,8080,".","./html",handlers,
     logger(console_logger(INFO)+console_logger(ERROR)),Empty[string*string],"","");
 
-  fun _ctor_server_config(handlers:list[http_handler],app:string):server_config => server_config(0.05,8080,".","./html",handlers,
+  ctor server_config(handlers:list[http_handler],app:string) => 
+    server_config(0.05,8080,".","./html",handlers,
     logger(console_logger(INFO)+console_logger(ERROR)),Empty[string*string],"",app);
 
 

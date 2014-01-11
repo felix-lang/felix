@@ -228,6 +228,16 @@ next:>
     ep;
   }
 
+  proc inline_input(b:string)
+  {
+    sp; 
+    write_string('<pre class="input">'); 
+    write_string(txt2html b); 
+    write_string("</pre>"); 
+    ep;
+  }
+
+
 
   proc inline_cpp (b:string)
   {
@@ -410,6 +420,7 @@ println$ "CMD=@"+b;
         elif b=="p" do bp; 
         elif b=="pre" do inline_pre (#get_text);
         elif b=="expect" do inline_expect (#get_text);
+        elif b=="input" do inline_input(#get_text);
         elif b=="obsolete" do ep; sp 'obsolete'; write_string("<em>Obsolete</em> ");
         elif b=="caveat" do ep; sp 'caveat'; write_string("<em>Caveat: </em> ");
         elif b=="impl" do ep; sp 'implementation_detail'; write_string("<em>Implementation Detail: </em>");

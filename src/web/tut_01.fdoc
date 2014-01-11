@@ -1,3 +1,4 @@
+
 @h1 Introductory Hands On
 Get your hands dirty! You can't learn a programming language just by reading!
 
@@ -71,7 +72,7 @@ in a line including the newline. We can fix this, and remove
 excess spaces at the same time as shown here:
 @felix
 write$ stdout,"Enter your name: "; fflush stdout;
-val name = strip (readln$ stdin));
+name = strip (readln$ stdin);
 writeln$ stdout, "Hello " + name + "!";
 @
 This uses the function {strip} from the  String module

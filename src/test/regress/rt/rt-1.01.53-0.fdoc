@@ -2,6 +2,7 @@
 @h1 rt-1.01.53-0.flx
 @felix
 //Check purely functional
+include "std/datatype/avl";
 open List;
 open Avl;
 

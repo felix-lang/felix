@@ -3,6 +3,8 @@
 @felix
 //Check fibres
 //Check channels
+include "std/control/schannels";
+
 open Control;
 
 var chin,chout = mk_ioschannel_pair[int] ();

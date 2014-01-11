@@ -20,6 +20,8 @@ for the clock tick, thereby allowing an regular display frame rate
 by removing the need to wait for position calculation initiated
 at the point in time we actually wanted to display the frame.
 @felix
+include "std/control/schannels";
+
 open class Future
 {
 
