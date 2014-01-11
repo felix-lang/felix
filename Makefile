@@ -9,7 +9,7 @@ all: build test
 #   if your platform can build it, to check code is portable
 #
 
-# 
+#
 # default build
 #
 
@@ -28,19 +28,29 @@ SUDO=sudo
 endif
 
 # Choose one: Linux or OSX
-#LPATH = LD_LIBRARY_PATH
-LPATH = DYLD_LIBRARY_PATH
+# LPATH = LD_LIBRARY_PATH or, LPATH = DYLD_LIBRARY_PATH
+platform := $(shell uname -o)
+$(info $(value platform))
+ifeq ($(platform), GNU/Linux)
+	LPATH = LD_LIBRARY_PATH
+else
+	#What is the output on OSX? Use that to improve this
+	LPATH = DYLD_LIBRARY_PATH
+endif
+ifndef LPATH
+	$(error Unable to detect how to set LDPATH)
+endif
 
 help:
 	# Makefile help
 	# FELIX VERSION  ${VERSION}
 	# DISTDIR  ${DISTDIR}
 	# BUILDROOT  ${BUILDROOT}
-	# 
+	#
 	# Make Targets, USERS:
 	#   build: primary build default release target ${BUILDROOT}
 	#   test: run regression test suite
-	#   install: install release to install point 
+	#   install: install release to install point
 	#     default install point: /usr/local/lib/felix/felix-version
 	#
 	# Make Targets, DEVELOPERS:
@@ -49,7 +59,7 @@ help:
 	# Params:
 	#   FBUILDROOT: directory to build into, default build
 	#   FBUILD_PARAMS: parameters to fbuild, default none
-	#     fbuild/fbuild-light --help for options 
+	#     fbuild/fbuild-light --help for options
 
 build: user-build flxg copy lib rtl toolchain-plugins flx web-plugins tools
 
@@ -57,26 +67,26 @@ dev-build: fbuild gendoc
 
 user-build: fbuild
 	cp ${BUILDROOT}/host/bin/bootflx ${BUILDROOT}/host/bin/flx
-	
- 
+
+
 #
 # Core integrated build
 #
 fbuild:
 	#
 	# ============================================================
-	# 
+	#
 	# BOOTSTRAPPING FELIX
 	#
 	#   See build/release/fbuild.log for full transcript
 	#
 	# ============================================================
-	# 
+	#
 	$(PYTHON) fbuild/fbuild-light build --buildroot=${FBUILDROOT} $(FBUILD_PARAMS)
 
 #
 # regression test on release image
-# 
+#
 test:
 	mkdir -p test
 	${BUILDROOT}/host/bin/flx_tangle --indir=${BUILDROOT}/share/src/test --outdir=test
@@ -150,17 +160,17 @@ speed:
 #
 # Documentation
 #
-doc: copy-doc 
+doc: copy-doc
 
 # Copy docs from repo src to release image
-copy-doc: 
+copy-doc:
 	${BUILDROOT}/host/bin/flx_cp src/web '(.*\.fdoc)' '${BUILDROOT}/share/web/$${1}'
 	${BUILDROOT}/host/bin/flx_cp src/web '(.*\.(png|jpg|gif))' '${BUILDROOT}/share/web/$${1}'
 	${BUILDROOT}/host/bin/flx_cp src/web '(.*\.html)' '${BUILDROOT}/share/web/$${1}'
 	${BUILDROOT}/host/bin/flx_cp src/ '(index\.html)' '${BUILDROOT}/share/$${1}'
 	${BUILDROOT}/host/bin/flx_cp speed/ '(.*\.(c|ml|cc|flx|ada|hs|svg))' '${BUILDROOT}/share/speed/$${1}'
 	${BUILDROOT}/host/bin/flx_cp speed/ '(.*/expect)' '${BUILDROOT}/share/speed/$${1}'
-	
+
 gendoc: gen-doc copy-doc check-tut
 
 # upgrade tutorial indices in repo src
@@ -229,7 +239,7 @@ ocamldoc:
 		src/compiler/flx_file/*.mli \
 		src/compiler/flx_file/*.ml \
 		src/compiler/flx_misc/*.mli \
-		src/compiler/flx_misc/*.ml 
+		src/compiler/flx_misc/*.ml
 
 ${BUILDROOT}/host/bin/scoop: demos/scoop/bin/scoop.flx ${BUILDROOT}/lib/std/felix/pkgtool_base.flx ${BUILDROOT}/lib/std/felix/pkgtool.flx
 	@${BUILDROOT}/host/bin/flx --inline=1 --test=${BUILDROOT} demos/scoop/setup build  --test=${BUILDROOT} --build-dir=demos/scoop 2> /dev/null
@@ -274,7 +284,7 @@ copy:
 		--repo=.\
 		--target-dir=build/release \
 		--target-bin=host \
-		--copy-repo 
+		--copy-repo
 
 rtl:
 	# =========================================================
@@ -351,10 +361,10 @@ really-fast-rebuild:
 		--target-dir=build/release \
 		--target-bin=host \
 		--copy-repo \
-		--copy-library 
+		--copy-library
 	${LPATH}=${INSTALLDIR}/host/lib/rtl ${INSTALLDIR}/host/bin/flx_build_rtl \
 		--target-dir=build/release \
-		--target-bin=host 
+		--target-bin=host
 	${LPATH}=${INSTALLDIR}/host/lib/rtl ${INSTALLDIR}/host/bin/flx_build_boot \
 		--target-dir=build/release \
 		--target-bin=host \
@@ -373,10 +383,10 @@ fast-rebuild:
 		--target-dir=build/release \
 		--target-bin=host \
 		--copy-repo \
-		--copy-library 
+		--copy-library
 	${LPATH}=build/release/host/lib/rtl build/release/host/bin/flx_build_rtl \
 		--target-dir=build/release \
-		--target-bin=host 
+		--target-bin=host
 	cp build/release/host/bin/flx_build_boot flx_build_boot
 	${LPATH}=build/release/host/lib/rtl ./flx_build_boot \
 		--target-dir=build/release \
@@ -397,7 +407,7 @@ fast-rebuild-nortl:
 		--target-dir=build/release \
 		--target-bin=host \
 		--copy-repo \
-		--copy-library 
+		--copy-library
 	${LPATH}=build/release/host/lib/rtl ./flx_build_boot \
 		--target-dir=build/release \
 		--target-bin=host \
@@ -419,10 +429,10 @@ rebuild:
 		--target-dir=build/release \
 		--target-bin=host \
 		--copy-repo \
-		--copy-library 
+		--copy-library
 	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl \
 		--target-dir=build/release \
-		--target-bin=host 
+		--target-bin=host
 	cp build/release/host/bin/flx flx
 	flx --test=build/release  src/tools/flx_build_boot \
 		--target-dir=build/release \
@@ -433,7 +443,7 @@ rebuild:
 
 bootstrap:
 	# =========================================================
-	# Clean rebuild into separate directory build/trial 
+	# Clean rebuild into separate directory build/trial
 	# followed by overwrite of build/release if all tests pass.
 	# [VERY SLOW!]
 	# [Requires Ocaml]
@@ -456,7 +466,7 @@ bootstrap:
 		--copy-pkg-db \
 		--copy-config-headers \
 		--copy-version \
-		--copy-library 
+		--copy-library
 	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl \
 		--target-dir=build/trial \
 		--target-bin=host \
@@ -481,7 +491,7 @@ sdltest:
 
 
 weblink:
-	build/release/host/bin/flx --test=build/release -c --nolink --static -ox build/release/host/lib/rtl/webserver src/tools/webserver.flx 
+	build/release/host/bin/flx --test=build/release -c --nolink --static -ox build/release/host/lib/rtl/webserver src/tools/webserver.flx
 	build/release/host/bin/flx --test=build/release -c --static -ox build/release/host/bin/weblink \
 		build/release/host/lib/rtl/fdoc_heading.o \
 		build/release/host/lib/rtl/fdoc_button.o \
@@ -499,9 +509,9 @@ weblink:
 		src/tools/weblink.flx
 
 
-.PHONY : build32 build64 build test32 test64 test  
-.PHONY : build32-debug build64-debug build-debug test32-debug test64-debug test-debug 
-.PHONY : doc install websites-linux  release install-bin 
+.PHONY : build32 build64 build test32 test64 test
+.PHONY : build32-debug build64-debug build-debug test32-debug test64-debug test-debug
+.PHONY : doc install websites-linux  release install-bin
 .PHONY : copy-doc gen-doc check-tut gendoc fbuild speed tarball
 .PHONY : weblink flx tools web-plugins toolchain-plugins rtl copy lib
 .PHONY : sdltest
