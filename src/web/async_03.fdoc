@@ -1,0 +1,37 @@
+
+@h1 Binding arguments to a handler
+See <a href="http://www.boost.org/doc/libs/1_55_0/doc/html/boost_asio/tutorial/tuttimer3.html">http://www.boost.org/doc/libs/1_55_0/doc/html/boost_asio/tutorial/tuttimer3.html</a>
+
+@felix
+
+include "std/io/faio";
+
+proc wait_until (
+    clock:(Faio::alarm_clock)
+  , delta:double
+  , p:(Faio::alarm_clock->0))
+{
+  Faio::sleep (clock, delta);
+  p (clock);
+}
+
+proc p (clock:(Faio::alarm_clock), count:&int)
+{
+  if *count < 5 do
+    println$ *count;
+    count <- *count + 1;
+    wait_until (clock, 1.0 , 
+      proc (clk:Faio::alarm_clock) { p (clk, count); });
+  done
+}
+
+var count = 0;
+var clock = #Faio::mk_alarm_clock;
+wait_until (clock, 1.0, proc (clk:(Faio::alarm_clock)) { p (clk, &count); });
+println$ "Final count is " + str (count);
+@
+
+Test with
+<pre>
+build/release/host/bin/flx --test=build/release src/web/async_03.fdoc --target-dir=build/release --target-bin=host
+</pre>

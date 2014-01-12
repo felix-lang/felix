@@ -41,3 +41,4 @@ test/*/*/*.includes
 !src/flx_pkgconfig/flx_pkgconfig.includes
 .project
 .pydevproject
+\#*\#
