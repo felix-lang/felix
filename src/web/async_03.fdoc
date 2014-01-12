@@ -12,7 +12,7 @@ proc wait_until (
   , p:(Faio::alarm_clock->0))
 {
   Faio::sleep (clock, delta);
-  p (clock);
+  p clock;
 }
 
 proc p (clock:(Faio::alarm_clock), count:&int)
@@ -28,7 +28,7 @@ proc p (clock:(Faio::alarm_clock), count:&int)
 var count = 0;
 var clock = #Faio::mk_alarm_clock;
 wait_until (clock, 1.0, proc (clk:(Faio::alarm_clock)) { p (clk, &count); });
-println$ "Final count is " + str (count);
+println$ "Final count is " + (str count);
 @
 
 Test with
