@@ -16,5 +16,9 @@ proc xduce(chi: ischannel[int], cho: oschannel[int]) {
 }
 
 spawn_fthread$  source |-> xduce |-> sink;
-@
+
+@h2 Advanced Example.
+A more advanced example is the program 
+@felix share/src/tools/flx_tangle.flx
+
 
