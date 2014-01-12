@@ -484,10 +484,10 @@ bootstrap:
 	mv build/trial build/release
 
 sdltest:
-	build/release/host/bin/flx --test=build/release --force -c -od demos/sdl demos/sdl/edit_buffer
-	build/release/host/bin/flx --test=build/release --force -c -od demos/sdl demos/sdl/edit_display
-	build/release/host/bin/flx --test=build/release --force -c -od demos/sdl demos/sdl/edit_controller
-	${LPATH}=demos/sdl build/release/host/bin/flx --test=build/release --force -od demos/sdl demos/sdl/sdltest
+	build/release/host/bin/flx --test=build/release --force -c -od sdlbin demos/sdl/edit_buffer
+	build/release/host/bin/flx --test=build/release --force -c -od sdlbin demos/sdl/edit_display
+	build/release/host/bin/flx --test=build/release --force -c -od sdlbin demos/sdl/edit_controller
+	${LPATH}=sdlbin build/release/host/bin/flx --test=build/release --force -od sdlbin demos/sdl/sdltest
 
 
 weblink:
