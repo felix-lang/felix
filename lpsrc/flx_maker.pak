@@ -331,7 +331,6 @@ src: [^/\\]+\.cpp
   tangle('  ctor '+t+': string = "static_cast<'+tmap[t]+'>(::std::atof($1.data()))" requires Cxx_headers::cstdlib;')
   tangle('  ctor[T in reals] '+t+': T = "static_cast<'+tmap[t]+'>($1)";')
   gen_nan(t)
-  tangle('  proc fprint: ostream * '+t+' = "*$1<<$2;" requires Cxx_headers::iostream;')
   tangle("}")
   tangle("")
 

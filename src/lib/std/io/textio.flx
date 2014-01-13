@@ -87,10 +87,10 @@ class Output_text_file[output_text_file]
 open class Cstdio {
 
   //$ C file type.
-  type FILE = "::std::FILE*" requires Cxx_headers::cstdio;
+  type FILE = "FILE*" requires C89_headers::stdio_h;
 
-  pod type ifile = "::std::FILE*" requires Cxx_headers::cstdio;
-  pod type ofile = "::std::FILE*" requires Cxx_headers::cstdio;
+  pod type ifile = "FILE*" requires C89_headers::stdio_h;
+  pod type ofile = "FILE*" requires C89_headers::stdio_h;
 
   //$ Load file from filename.
   //$ Note: loaded in binary mode not text mode!
@@ -108,42 +108,42 @@ open class Cstdio {
   const stderr: ofile = "PTF flx_stderr" requires property "needs_ptf";
 
   //$ Standard input, redirected by shell.
-  const cstdin: ifile = "::std::stdin";
+  const cstdin: ifile = "stdin";
 
   //$ Standard output, redirected by shell.
-  const cstdout: ofile = "::std::stdout";
+  const cstdout: ofile = "stdout";
 
   //$ Standard error, redirected by shell.
-  const cstderr: ofile = "::std::stderr";
+  const cstderr: ofile = "stderr";
 
   //$ C standard IO as instance of Input_text_file.
   instance Input_text_file[ifile] {
     requires package "flx_ioutil";
-    gen fopen_input: string -> ifile = '::std::fopen($1.c_str(),"rt")';
+    gen fopen_input: string -> ifile = 'fopen($1.c_str(),"rt")';
     gen valid : ifile -> bool = "$1!=(FILE*)0";
-    proc fclose: ifile = '(void)::std::fclose($1);';
+    proc fclose: ifile = '(void)fclose($1);';
     gen load: ifile -> string = "::flx::rtl::ioutil::load_file($1)";
     gen readln: ifile -> string ="::flx::rtl::ioutil::readln($1)";
-    gen feof : ifile -> bool = "::std::feof($1)";
+    gen feof : ifile -> bool = "feof($1)";
   }
 
   //$ C standard IO as instance of Output_text_file.
   instance Output_text_file[ofile] {
     requires package "flx_ioutil";
-    gen fopen_output: string -> ofile = '::std::fopen($1.c_str(),"wt")';
+    gen fopen_output: string -> ofile = 'fopen($1.c_str(),"wt")';
     gen valid : ofile -> bool = "$1!=(FILE*)0";
-    proc fclose: ofile = '(void)::std::fclose($1);';
+    proc fclose: ofile = '(void)fclose($1);';
     proc writeln : ofile * string ="::flx::rtl::ioutil::writeln($1,$2);";
     proc write : ofile * string ="::flx::rtl::ioutil::write($1,$2);";
-    proc write : ofile * utiny ="::std::fwrite($2,1,1,$1);";
-    proc write : ofile * char ="::std::fwrite($2,1,1,$1);";
-    proc fflush: ofile = "::std::fflush($1);";
+    proc write : ofile * utiny ="fwrite($2,1,1,$1);";
+    proc write : ofile * char ="fwrite($2,1,1,$1);";
+    proc fflush: ofile = "fflush($1);";
   }
 }
 
 open Input_text_file[Cstdio::ifile];
 open Output_text_file[Cstdio::ofile];
-
+/*
 // C++ I/O streams.
 open class Iostream {
 
@@ -193,31 +193,37 @@ open class Iostream {
 
 open Input_text_file[Iostream::istream];
 open Output_text_file[Iostream::ostream];
+*/
 
-//$ Write string to cout.
-proc print  [T with Str[T]] (x:T) { fprint (cout, x); };
+//$ DEBUG OUTPUT UTILITIES! 
+//$ DO NOT REQUIRE THREAD FRAME.
+//$ NOT REDIRECTABLE BY DRIVER.
+//$ (can be redirected by OS if OS can do it)
 
-//$ Write string to cout with end of line.
-proc println[T with Str[T]] (x:T) { fprintln (cout, x); };
+//$ Write string to output.
+proc print  [T with Str[T]] (x:T) { fprint (cstdout, x); };
 
-//$ Write end of line on cout.
-proc endl() { endl cout; }
+//$ Write string to output with end of line.
+proc println[T with Str[T]] (x:T) { fprintln (cstdout, x); };
+
+//$ Write end of line on output.
+proc endl() { endl cstdout; }
 
 //$ Write space on cout.
-proc space() { space cout; }
+proc space() { space cstdout; }
 
 //$ flush buffers of cout.
-proc fflush() { fflush cout; }
+proc fflush() { fflush cstdout; }
 
 //$ Write string to cerr.
-proc eprint  [T with Str[T]] (x:T) { fprint (cerr, x); };
+proc eprint  [T with Str[T]] (x:T) { fprint (cstderr, x); };
 
 //$ Write string to cerr with end of line.
-proc eprintln[T with Str[T]] (x:T) { fprintln (cerr, x);};
+proc eprintln[T with Str[T]] (x:T) { fprintln (cstderr, x);};
 
 //$ Write end of line on cerr.
-proc eendl() { endl cerr; }
+proc eendl() { endl cstderr; }
 
 //$ Write space on cerr.
-proc espace() { space cerr; }
+proc espace() { space cstderr; }
 

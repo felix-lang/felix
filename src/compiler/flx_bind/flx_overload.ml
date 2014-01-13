@@ -136,9 +136,18 @@ type overload_result =
  (bid_t * Flx_btype.t) list * (* mgu *)
  Flx_btype.t list (* ts *)
 
+let show_overload_result bsym_table (bid,sign,ret,mgu,ts) =
+  string_of_int bid ^ ":" ^ sbt bsym_table sign^ " -> " ^ sbt bsym_table ret ^
+  "\n   mgu=" ^ catmap "," (fun (v,t) -> string_of_int v ^ "<-" ^ sbt bsym_table t) mgu ^
+  "\n  ts=" ^ catmap "," (sbt bsym_table) ts
+
 type result =
   | Unique of overload_result
   | Fail
+
+let show_result bsym_table r = match r with
+  | Unique ovr -> "UNIQUE " ^ show_overload_result bsym_table ovr
+  | Fail -> "FAIL"
 
 let get_data table index =
   try Flx_sym_table.find table index
@@ -808,6 +817,7 @@ let solve_mgu
     *)
 
     let base_ts = List.map (list_subst counter !mgu) entry_kind.sub_ts in
+    let base_ts = List.map (beta_reduce "flx_overload: base_ts" counter bsym_table sr) base_ts in
 
     (*
     print_endline ("Matched candidate " ^ si i ^ "\n" ^
@@ -1066,12 +1076,16 @@ let overload
 :
   overload_result option
 =
-  (*
+(*
+if name = "ff" then begin
   print_endline ("Overload " ^ name);
   print_endline ("Argument sigs are " ^ catmap ", " (sbt bsym_table) sufs);
-  print_endline ("Candidates are " ^ catmap "," (string_of_entry_kind) fs);
+  print_endline (string_of_int (List.length fs) ^ 
+     " initial Candidates are:\n" ^ 
+    catmap ",\n" (full_string_of_entry_kind sym_table bsym_table) fs ^ "\n");
   print_endline ("Input ts = " ^ catmap ", " (sbt bsym_table) ts);
-  *)
+end;
+*)
   let env_traint = btyp_intersect (
     filter_out_units  
     (List.map
@@ -1114,6 +1128,11 @@ let overload
       | Fail -> false
     end fun_defs
   in
+  (*
+  if name = "ff" then
+    print_endline ("First stage: matching Candidates are:\n" ^ 
+      catmap ",\n" (show_result bsym_table) candidates^"\n");
+  *)
     (*
     print_endline "Got matching candidates .. ";
     *)
@@ -1145,7 +1164,7 @@ let overload
   let candidates =
     List.fold_left begin fun oc r ->
       match r with
-      | Unique (j,c,_,_,_) ->
+      | Unique (j,c,jtyp,_,jts) ->
           let rec aux lhs rhs =
             match rhs with
             | [] -> 
@@ -1160,8 +1179,25 @@ let overload
                     lhs @ rhs (* keep whole list, discard c *)
                 | `Equal ->
                     (* same function .. *)
-                    if i = j then aux lhs t else
-                   (* this bit is dubious! *)
+                    if i = j then 
+                      if ts = jts then aux lhs t 
+                      else
+                        let sym =
+                          try Flx_sym_table.find sym_table i with Not_found ->
+                            failwith "ovrload BUGGED"
+                        in
+                        clierrn [call_sr; sym.Flx_sym.sr]
+                        (
+                          "[resolve_overload] Ambiguous call: Not expecting " ^
+                          "equal signatures due to same function" ^
+                          "\n fun " ^ name ^ "<"^string_of_bid i ^ ">:" ^ sbt bsym_table typ ^
+                          "\n but distinct type variable arguments " ^
+                          "\n 1: " ^ catmap "," (sbt bsym_table) jts ^  " returns " ^ sbt bsym_table jtyp ^ 
+                          "\n 2: " ^ catmap "," (sbt bsym_table) ts  ^ " returns " ^ sbt bsym_table rtyp ^
+                          "\n try using explicit type arguments!" 
+                        )
+                    else
+                    (* this bit is dubious! *)
                     let sym1 =
                       try Flx_sym_table.find sym_table i with Not_found ->
                         failwith "ovrload BUGGED"
@@ -1219,6 +1255,11 @@ let overload
     []
     candidates
   in
+  (*
+  if name = "ff" then
+  print_endline ("Second stage: most specialised matching candidates are:\n" ^ 
+    catmap ",\n" (show_result bsym_table ) candidates^"\n");
+  *)
   match candidates with
   | [Unique (i,t,rtyp,mgu,ts)] -> Some (i,t,rtyp,mgu,ts)
   | [] -> None

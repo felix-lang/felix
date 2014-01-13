@@ -56,6 +56,8 @@ private proc print_help() {
   println "--stdout=file        : run program with standard output redirected to file";
   println "--expect=file        : compare stdout with expect file";
   println "--expect             : compare stdout with basename.expect";
+  println "--input=file         : set standard input";
+  println "--input              : set standard input to basename.input";
   println "--indir=dir          : set directory for regexp search, default current directory";
   println "--regex=pattern      : Perl regexp for batch file processing";
   println "--backup             : backup working source tree to dir 'backup'";
@@ -115,7 +117,7 @@ private noinline proc handle_switch
 )
 {
   proc debugln[T with Str[T]] (x:T) {
-    control*.DEBUG_FLX ?? fprintln (cerr, "[flx] " + str x);
+    control*.DEBUG_FLX ?? fprintln (cstderr, "[flx] " + str x);
   }
 
   if arg == "--nostdimport" do
@@ -163,6 +165,20 @@ private noinline proc handle_switch
     // to a file so the test harness can compare it with an .expect file
     control.EXPECT <- arg.[9 to];
     control.CHECK_EXPECT <- 1;
+
+  elif arg == "--input" do
+    debugln "compare stdout with expect file (default name)";
+    // of the Felix program only: used for saving the output
+    // to a file so the test harness can compare it with an .expect file
+    control.SET_STDIN <- 1;
+
+  elif prefix(arg,"--input=") do
+    debugln "compare stdout with expect file";
+    // of the Felix program only: used for saving the output
+    // to a file so the test harness can compare it with an .expect file
+    control.STDIN <- arg.[8 to];
+    control.SET_STDIN <- 1;
+
 
   elif arg=="--show" do
     control.SHOWCODE <- 1;
@@ -434,7 +450,7 @@ private noinline proc xparse_cmd_line
 )
 {
   proc debugln[T with Str[T]] (x:T) {
-    control*.DEBUG_FLX ?? fprintln (cerr, "[flx] " + str x);
+    control*.DEBUG_FLX ?? fprintln (cstderr, "[flx] " + str x);
   }
 
   var SET_LINKER_OUTPUT = false;
@@ -524,7 +540,7 @@ noinline proc processing_stage1
 ) 
 {
   proc debugln[T with Str[T]] (x:T) {
-    control*.DEBUG_FLX ?? fprintln (cerr, "[flx] " + str x);
+    control*.DEBUG_FLX ?? fprintln (cstderr, "[flx] " + str x);
   }
 
   // process environment variables

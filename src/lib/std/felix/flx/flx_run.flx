@@ -4,7 +4,7 @@ include "std/felix/flx/flx_profile";
 include "std/felix/flx/flx_depvars";
 
 gen dxqt(DBG:bool) (cmd:string) = {
-  DBG ?? fprintln (cerr, "cmd="+cmd);
+  DBG ?? fprintln (cstderr, "cmd="+cmd);
   var now = #Time::time;
   var result,output = Shell::get_stdout(cmd);
   if result == 0 do
@@ -16,17 +16,17 @@ gen dxqt(DBG:bool) (cmd:string) = {
     ; 
     output = output.[to n]; // first line excluding newline
     var elapsed = #Time::time - now;
-    DBG ?? fprintln (cerr, "Popen:Elapsed: " + fmt (elapsed, fixed(9,3)) + ", output='"+output+"'");
+    DBG ?? fprintln (cstderr, "Popen:Elapsed: " + fmt (elapsed, fixed(9,3)) + ", output='"+output+"'");
   else
     DBG ?? eprintln "COMMAND FAILED";
-    fprint$ cerr, ("Error "+repr(result)+" executing command " + cmd + "\n");
+    fprint$ cstderr, ("Error "+repr(result)+" executing command " + cmd + "\n");
     System::pexit result;
   done
   return output;
 }
 
 proc xdebugln[T with Str[T]] (d:bool) (x:T) {
-  d ?? fprintln (cerr, "[flx] " + str x);
+  d ?? fprintln (cstderr, "[flx] " + str x);
 }
 
 // CLEAR_CACHE is set to 1 if the cache is reset
@@ -60,11 +60,11 @@ object processing_env(
 =
 {
   proc debugln[T with Str[T]] (x:T) {
-    control.DEBUG_FLX ?? fprintln (cerr, "[flx] " + str x);
+    control.DEBUG_FLX ?? fprintln (cstderr, "[flx] " + str x);
   }
 
   proc echoln[T with Str[T]] (x:T) {
-    control.ECHO == 1 ?? fprintln (cerr, "[flx] " + str x);
+    control.ECHO == 1 ?? fprintln (cstderr, "[flx] " + str x);
   }
 
   var dflt_clang_config = (
@@ -90,11 +90,11 @@ object processing_env(
 
   method gen system(cmd:string):int= {
     var now = #Time::time;
-    if control.ECHO==1 do fprintln$ cerr, cmd; done
+    if control.ECHO==1 do fprintln$ cstderr, cmd; done
     var result = System::system(cmd);
     var elapsed = #Time::time - now;
     if control.ECHO==1 do 
-      fprintln$ cerr, "System:Elapsed: " + fmt (elapsed, fixed (8,3)) + 
+      fprintln$ cstderr, "System:Elapsed: " + fmt (elapsed, fixed (8,3)) + 
         ", Result code " + str(result)
       ; 
     done
@@ -656,6 +656,7 @@ object processing_env(
       ;
       var CMD = catmap ' ' Shell::quote_arg xargs;
       if control.STDOUT != "" do CMD=CMD+" > " +Shell::quote_arg(control.STDOUT); done
+      if control.STDIN != "" do CMD=CMD+" < " +Shell::quote_arg(control.STDIN); done
       debugln$ "Run command="+CMD;
       var t0 = #Time::time;
       result = system(CMD);
@@ -674,6 +675,7 @@ object processing_env(
     ;
 
     if control.STDOUT != "" do CMD=CMD + " > "+Shell::quote_arg(control.STDOUT); done
+    if control.STDIN != "" do CMD=CMD+" < " +Shell::quote_arg(control.STDIN); done
     debugln$ "Run command="+CMD;
     var t0 = #Time::time;
     result=system(CMD);

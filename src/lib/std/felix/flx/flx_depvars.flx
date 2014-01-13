@@ -24,7 +24,7 @@ gen cal_depvars(
   = 
 {
   proc debugln[T with Str[T]] (x:T) {
-    control*.DEBUG_FLX ?? fprintln (cerr, "[flx] " + str x);
+    control*.DEBUG_FLX ?? fprintln (cstderr, "[flx] " + str x);
   }
   fun / (d:string, f:string) => Filename::join (d,f);
 
@@ -86,6 +86,12 @@ gen cal_depvars(
     debugln$ "Set stdout to " + control*.STDOUT;
   done
 
+  if control*.SET_STDIN != 0 and control*.STDIN == "" do
+    control.STDIN <- cache_join (control*.OUTPUT_DIR,filebase + ".input");
+    debugln$ "Set stdin to " + control*.STDIN;
+  done
+
+
   // if we're supposed to check output against an expect file,
   // and no expect file name is given, then use the filebase
   // with extension .expect.
@@ -98,7 +104,7 @@ gen cal_depvars(
   // Find absolute pathname
 
   if loopctl.path == "" do
-    fprint$ cerr, ("No such felix program: "+loopctl.path+"\n");
+    fprint$ cstderr, ("No such felix program: "+loopctl.path+"\n");
     System::exit(1);
   done
 

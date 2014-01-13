@@ -59,7 +59,7 @@ include "web/mime_type";
 include "plugins/plugin_common";
 include "plugins/fdoc-interface";
 
-proc dbg(x:string) { fprint (cerr,x); };
+proc dbg(x:string) { fprint (cstderr,x); };
 
 requires header '#include <stdlib.h>';
 fun strtod: string -> double = "strtod($1.data(),0)";
@@ -832,9 +832,9 @@ noinline proc handler (var k:socket_t) ()
   //Faio_posix::shutdown(s, 1); // disallow further sends.
   //cat(s, DEVNULL);
 
-  fprint$ cerr,"fthread socket "+str k+" close delay ..\n";
+  fprint$ cstderr,"fthread socket "+str k+" close delay ..\n";
   Faio::sleep(clock,DELAY); // give OS time to empty its buffers
-  fprint$ cerr,"fthread socket "+str k+" shutdown now\n";
+  fprint$ cstderr,"fthread socket "+str k+" shutdown now\n";
 
 // try this:
 // Advised by: koettermarkus@gmx.de, MANY THANKS!
@@ -869,7 +869,7 @@ retry:>
 force_close:> 
   Socket::shutdown(k,2);
   ioclose(k);
-  fprint$ cerr,"fthread "+str k+" terminating!\n";
+  fprint$ cstderr,"fthread "+str k+" terminating!\n";
 };
 
 spawn_fthread { while true do Faio::sleep(clock, 60.0); collect(); done };
