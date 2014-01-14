@@ -4,9 +4,24 @@
 #include <iostream>
 #include <cassert>
 
+#ifdef FLX_WIN32
+#include <io.h>
+static int flx_fileno (FILE *f) { return _fileno (f); }
+static int flx_isatty(int fd) { return _isatty (fd); }
+#else
+#include <unistd.h>
+static int flx_fileno (FILE *f) { return fileno (f); }
+static int flx_isatty(int fd) { return isatty (fd); }
+#endif
+static bool flx_isterminal (FILE *f) 
+{
+  return 1 == flx_isatty (flx_fileno (f));
+}
+
 #include "flx_ioutil.hpp"
 namespace flx { namespace rtl { namespace ioutil {
   using namespace std;
+
 
 /* small buffer for testing, should be much large in production version */
 #define MYBUFSIZ 5120
@@ -52,7 +67,7 @@ namespace flx { namespace rtl { namespace ioutil {
 
   // includes newline if present
   // null string indicates end of file
-  string readln (FILE *fi)
+  string raw_readln (FILE *fi)
   {
     if(fi)
     {
@@ -68,6 +83,16 @@ next:
     }
     else return "";
   }
+
+  string echo_readln (FILE *f)
+  {
+    bool interactive = flx_isterminal (f);
+    string result = raw_readln (f);
+    if (!interactive) printf ("%s",result.c_str());
+    return result;
+  }
+
+  string readln (FILE *f) { return echo_readln(f); }
 
   void write (FILE *fi, string s)
   {
