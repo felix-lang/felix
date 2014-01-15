@@ -92,6 +92,12 @@ test:
 	${BUILDROOT}/host/bin/flx_tangle --indir=${BUILDROOT}/share/src/test --outdir=test
 	${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --usage=prototype --expect --indir=test/regress/rt --regex='.*\.flx'
 
+tut-check:
+	mkdir -p web
+	${BUILDROOT}/host/bin/flx_tangle --indir=src/web --outdir=web
+	${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --usage=prototype --expect --input --indir=web --regex='.*\.flx'
+
+
 #
 #
 # Install default build into /usr/local/lib/felix/version/
@@ -193,25 +199,12 @@ gen-doc:
 	${BUILDROOT}/host/bin/flx_mktutindex uparse "Universal Parser" uparse.fdoc
 	${BUILDROOT}/host/bin/flx_mktutindex  tools_flx_separate_compilation "Separate Compilation" tools_flx.fdoc
 	${BUILDROOT}/host/bin/flx_mktutindex  tools_flx_howto "flx Howto" tools_flx.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex nutut/intro/intro "Ground Up" ../../tutorial.fdoc
+	${BUILDROOT}/host/bin/flx_mktutindex intro "Ground Up" tutorial.fdoc
 	# Build reference docs. Note this requires plugins.
-	${LPATH}=${BUILDROOT}/host/lib/rtl ${BUILDROOT}/host/bin/flx_libcontents --html > src/web/flx_libcontents.html
-	${LPATH}=${BUILDROOT}/host/lib/rtl ${BUILDROOT}/host/bin/flx_libindex --html > src/web/flx_libindex.html
-	${LPATH}=${BUILDROOT}/host/lib/rtl ${BUILDROOT}/host/bin/flx_gramdoc --html > src/web/flx_gramdoc.html
+	${LPATH}=${BUILDROOT}/host/lib/rtl ${BUILDROOT}/host/bin/flx_libcontents --html > src/web/ref/flx_libcontents.html
+	${LPATH}=${BUILDROOT}/host/lib/rtl ${BUILDROOT}/host/bin/flx_libindex --html > src/web/ref/flx_libindex.html
+	${LPATH}=${BUILDROOT}/host/lib/rtl ${BUILDROOT}/host/bin/flx_gramdoc --html > src/web/ref/flx_gramdoc.html
 
-
-# Checks correctness of tutorial in release image
-# must be done after copy-doc
-# must be done after primary build
-check-tut:
-	${BUILDROOT}/host/bin/flx_tangle --inoutdir=${BUILDROOT}/share/web/nutut/intro/ '.*'
-	for  i in ${BUILDROOT}/web/nutut/intro/*.flx; \
-	do \
-		j=$$(echo $$i | sed s/.flx//); \
-		echo $$j; \
-		${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --stdout=$$j.output $$j; \
-		diff -N $$j.expect $$j.output; \
-	done
 
 # optional build of compiler docs
 # targets repository
@@ -490,9 +483,9 @@ sdltest:
 	${LPATH}=sdlbin build/release/host/bin/flx --test=build/release --force -od sdlbin demos/sdl/sdltest
 
 
-weblink:
+flx_web:
 	build/release/host/bin/flx --test=build/release -c --nolink --static -ox build/release/host/lib/rtl/webserver src/tools/webserver.flx
-	build/release/host/bin/flx --test=build/release -c --static -ox build/release/host/bin/weblink \
+	build/release/host/bin/flx --test=build/release -c --static -ox build/release/host/bin/flx_web \
 		build/release/host/lib/rtl/fdoc_heading.o \
 		build/release/host/lib/rtl/fdoc_button.o \
 		build/release/host/lib/rtl/fdoc_fileseq.o \
@@ -506,7 +499,7 @@ weblink:
 		build/release/host/lib/rtl/ocaml2html.o \
 		build/release/host/lib/rtl/fpc2html.o \
 		build/release/host/lib/rtl/webserver.o \
-		src/tools/weblink.flx
+		src/tools/flx_web.flx
 
 
 .PHONY : build32 build64 build test32 test64 test

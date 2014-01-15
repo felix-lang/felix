@@ -701,11 +701,11 @@ Py2html initialisation
 <pre>0028:    <a href="/share/lib/std/control/forkjoin.flx#0028">proc concurrently[T with Streamable[T,1->0]] (d:T)</a></pre>
 <hr/><a href="/share/lib/std/control/future.fdoc">control/future.fdoc</a>
 
-<pre>0023:  <a href="/share/lib/std/control/future.fdoc#0023">open class Future</a></pre>
-<pre>0069:    <a href="/share/lib/std/control/future.fdoc#0069">type future[T]</a></pre>
-<pre>0113:    <a href="/share/lib/std/control/future.fdoc#0113">ctor[T] future[T] (e:1->T)</a></pre>
-<pre>0128:    <a href="/share/lib/std/control/future.fdoc#0128">inline gen get[T](fut:future[T]):T</a></pre>
-<pre>0139:    <a href="/share/lib/std/control/future.fdoc#0139">fun apply[T] (x:future[T], a:unit)</a></pre>
+<pre>0025:  <a href="/share/lib/std/control/future.fdoc#0025">open class Future</a></pre>
+<pre>0071:    <a href="/share/lib/std/control/future.fdoc#0071">type future[T]</a></pre>
+<pre>0115:    <a href="/share/lib/std/control/future.fdoc#0115">ctor[T] future[T] (e:1->T)</a></pre>
+<pre>0130:    <a href="/share/lib/std/control/future.fdoc#0130">inline gen get[T](fut:future[T]):T</a></pre>
+<pre>0141:    <a href="/share/lib/std/control/future.fdoc#0141">fun apply[T] (x:future[T], a:unit)</a></pre>
 <hr/><a href="/share/lib/std/control/mutex.flx">control/mutex.flx</a>
 
 <pre>0001:  <a href="/share/lib/std/control/mutex.flx#0001">open class Mutex</a></pre>
@@ -893,64 +893,64 @@ Py2html initialisation
 </p></div>
 <hr/><a href="/share/lib/std/control/spipe.flx">control/spipe.flx</a>
 
-<pre>0003:  <a href="/share/lib/std/control/spipe.flx#0003">open class Spipe</a></pre>
+<pre>0002:  <a href="/share/lib/std/control/spipe.flx#0002">open class Spipe</a></pre>
 <div style='font-family:sans-serif; font-size:12pt; margin-left:100; margin-right:100; top:5; color:#406040'><p> Synchronous Pipe.
 </p></div>
-<pre>0006:    <a href="/share/lib/std/control/spipe.flx#0006">proc source[T] (var it:1 -> T) (out:oschannel[T])</a></pre>
+<pre>0005:    <a href="/share/lib/std/control/spipe.flx#0005">proc source[T] (var it:1 -> T) (out:oschannel[T])</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Send an stream down a channel.
 </p></div>
-<pre>0013:    <a href="/share/lib/std/control/spipe.flx#0013">proc isrc[V,T with Streamable[T,V]] (var dat:T) (out:oschannel[opt[V]])</a></pre>
+<pre>0012:    <a href="/share/lib/std/control/spipe.flx#0012">proc isrc[V,T with Streamable[T,V]] (var dat:T) (out:oschannel[opt[V]])</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> isrc converts a streamable data structure
  such as an array into a source.
 </p></div>
-<pre>0021:    <a href="/share/lib/std/control/spipe.flx#0021">fun pipe[T]</a></pre>
+<pre>0020:    <a href="/share/lib/std/control/spipe.flx#0020">fun pipe[T]</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Wire a source component to a sink.
  Return coupled fibre ready to run.
 </p></div>
-<pre>0036:    <a href="/share/lib/std/control/spipe.flx#0036">fun pipe[T0,T1]</a></pre>
+<pre>0035:    <a href="/share/lib/std/control/spipe.flx#0035">fun pipe[T0,T1]</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Wire two sources to two sinks.
  Returns a SINGLE pipeline!
 </p></div>
-<pre>0055:    <a href="/share/lib/std/control/spipe.flx#0055">proc run_tee[T] (i:ischannel[T], o1:oschannel[T], o2:oschannel[T])</a></pre>
-<div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Utility for tee connector.
+<pre>0054:    <a href="/share/lib/std/control/spipe.flx#0054">proc run_tee[T,N] (i:ischannel[T], oa:oschannel[T]^N)</a></pre>
+<div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Utility for tee connector: array of outputs
 </p></div>
-<pre>0066:    <a href="/share/lib/std/control/spipe.flx#0066">fun pipe[T]</a></pre>
-<div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Wire together a source component with two sinks.
+<pre>0067:    <a href="/share/lib/std/control/spipe.flx#0067">fun pipe[T,N]</a></pre>
+<div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Wire together a source component with an array of sinks.
  Returns a closed pipeline.
 </p></div>
-<pre>0087:    <a href="/share/lib/std/control/spipe.flx#0087">fun pipe[T,U]</a></pre>
+<pre>0091:    <a href="/share/lib/std/control/spipe.flx#0091">fun pipe[T,U]</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Wire a source component to a transducer.
  Return source.
 </p></div>
-<pre>0103:    <a href="/share/lib/std/control/spipe.flx#0103">fun pipe[T0,T1,U0,U1]</a></pre>
+<pre>0107:    <a href="/share/lib/std/control/spipe.flx#0107">fun pipe[T0,T1,U0,U1]</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Wire two source components to two transducers.
  Return two sources.
 </p></div>
-<pre>0131:    <a href="/share/lib/std/control/spipe.flx#0131">fun pipe[T,U0,U1]</a></pre>
+<pre>0135:    <a href="/share/lib/std/control/spipe.flx#0135">fun pipe[T,U0,U1]</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Wire together a source component with two transducers
  Returns two sources.
 </p></div>
-<pre>0155:    <a href="/share/lib/std/control/spipe.flx#0155">fun xpipe[V,T,U with Streamable[T,V]]</a></pre>
+<pre>0159:    <a href="/share/lib/std/control/spipe.flx#0159">fun xpipe[V,T,U with Streamable[T,V]]</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> xpipe connects a streamable data structure
  such as an array directly into a transducer.
 </p></div>
-<pre>0167:    <a href="/share/lib/std/control/spipe.flx#0167">fun pipe[T,U,V]</a></pre>
+<pre>0171:    <a href="/share/lib/std/control/spipe.flx#0171">fun pipe[T,U,V]</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Wire a transducer into a transducer.
  Return another transducer.
 </p></div>
-<pre>0183:    <a href="/share/lib/std/control/spipe.flx#0183">fun pipe[T0,T1,U0,U1,V0,V1]</a></pre>
+<pre>0187:    <a href="/share/lib/std/control/spipe.flx#0187">fun pipe[T0,T1,U0,U1,V0,V1]</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Wire two transducers into two transducers.
  Return two transducers.
 </p></div>
-<pre>0203:    <a href="/share/lib/std/control/spipe.flx#0203">fun pipe[T,U]</a></pre>
+<pre>0207:    <a href="/share/lib/std/control/spipe.flx#0207">fun pipe[T,U]</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Wire a transducer into a sink.
  Return a sink.
 </p></div>
-<pre>0219:    <a href="/share/lib/std/control/spipe.flx#0219">fun pipe[T0,T1,U0,U1]</a></pre>
+<pre>0223:    <a href="/share/lib/std/control/spipe.flx#0223">fun pipe[T0,T1,U0,U1]</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Wire two transducers into two sinks.
  Return two sinks.
 </p></div>
-<pre>0240:    <a href="/share/lib/std/control/spipe.flx#0240">proc sort[T with Tord[T]] (r: ischannel[opt[T]], w: oschannel[opt[T]])</a></pre>
+<pre>0244:    <a href="/share/lib/std/control/spipe.flx#0244">proc sort[T with Tord[T]] (r: ischannel[opt[T]], w: oschannel[opt[T]])</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Stream sort using intermediate darray.
  Requires stream of option type.
 </p></div>
@@ -1955,7 +1955,8 @@ Py2html initialisation
 <hr/><a href="/share/lib/std/db/sqlite3/sqlite3.flx">db/sqlite3/sqlite3.flx</a>
 
 <pre>0039:  <a href="/share/lib/std/db/sqlite3/sqlite3.flx#0039">class Sqlite3</a></pre>
-Unable to understand @command ''
+CMD=@felix
+CMD=@
 <div style='font-family:sans-serif; font-size:12pt; margin-left:100; margin-right:100; top:5; color:#406040'><p> Core Sqlite3 functions and extensions to provide row iterator, simple statement execution, 
  statement preperation and access to sqlite_step statement execution.
 </p><p> Iterator example:
@@ -2410,10 +2411,10 @@ Unable to understand @command ''
 <hr/><a href="/share/lib/std/felix/flx/flx_cmdopt.flx">felix/flx/flx_cmdopt.flx</a>
 
 <pre>0006:  <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0006">class FlxCmdOpt</a></pre>
-<pre>0117:    <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0117">proc debugln[T with Str[T]] (x:T)</a></pre>
-<pre>0436:    <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0436">proc debugln[T with Str[T]] (x:T)</a></pre>
-<pre>0518:    <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0518">noinline proc processing_stage1</a></pre>
-<pre>0526:    <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0526">proc debugln[T with Str[T]] (x:T)</a></pre>
+<pre>0119:    <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0119">proc debugln[T with Str[T]] (x:T)</a></pre>
+<pre>0452:    <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0452">proc debugln[T with Str[T]] (x:T)</a></pre>
+<pre>0534:    <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0534">noinline proc processing_stage1</a></pre>
+<pre>0542:    <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0542">proc debugln[T with Str[T]] (x:T)</a></pre>
 <hr/><a href="/share/lib/std/felix/flx/flx_config.flx">felix/flx/flx_config.flx</a>
 
 <pre>0003:  <a href="/share/lib/std/felix/flx/flx_config.flx#0003">class FlxConfig</a></pre>
@@ -2422,10 +2423,10 @@ Unable to understand @command ''
 
 <pre>0003:  <a href="/share/lib/std/felix/flx/flx_control.flx#0003">class FlxControl</a></pre>
 <pre>0005:    <a href="/share/lib/std/felix/flx/flx_control.flx#0005">proc print_options(control:control_type)</a></pre>
-<pre>0040:    <a href="/share/lib/std/felix/flx/flx_control.flx#0040">fun init_loopctl ()</a></pre>
-<pre>0050:    <a href="/share/lib/std/felix/flx/flx_control.flx#0050">typedef loopctl_type</a></pre>
-<pre>0052:    <a href="/share/lib/std/felix/flx/flx_control.flx#0052">fun dflt_control (config:Config::config_type, profile:FlxProfile::profile_type)</a></pre>
-<pre>0140:    <a href="/share/lib/std/felix/flx/flx_control.flx#0140">typedef control_type</a></pre>
+<pre>0042:    <a href="/share/lib/std/felix/flx/flx_control.flx#0042">fun init_loopctl ()</a></pre>
+<pre>0052:    <a href="/share/lib/std/felix/flx/flx_control.flx#0052">typedef loopctl_type</a></pre>
+<pre>0054:    <a href="/share/lib/std/felix/flx/flx_control.flx#0054">fun dflt_control (config:Config::config_type, profile:FlxProfile::profile_type)</a></pre>
+<pre>0146:    <a href="/share/lib/std/felix/flx/flx_control.flx#0146">typedef control_type</a></pre>
 <hr/><a href="/share/lib/std/felix/flx/flx_depchk.flx">felix/flx/flx_depchk.flx</a>
 <pre>0002:    <a href="/share/lib/std/felix/flx/flx_depchk.flx#0002">gen cxx_depcheck (tc: toolchain_t, src:string, dst:string) : bool</a></pre>
 <pre>0017:    <a href="/share/lib/std/felix/flx/flx_depchk.flx#0017">fun maxf (t:double) (f:string)</a></pre>
@@ -2456,26 +2457,26 @@ Unable to understand @command ''
 <pre>0168:    <a href="/share/lib/std/felix/flx/flx_run.flx#0168">fun cal_cxx_uptodate(debugln:string -> 0, OUTPUT_DIR:string, f:string)</a></pre>
 <pre>0186:    <a href="/share/lib/std/felix/flx/flx_run.flx#0186">gen check_cxx_uptodate () : bool</a></pre>
 <pre>0201:    <a href="/share/lib/std/felix/flx/flx_run.flx#0201">gen run_felix_compiler_if_required () : int</a></pre>
-<pre>0247:    <a href="/share/lib/std/felix/flx/flx_run.flx#0247">gen cxx_compile_dynamic1(src:string, dst:string) : int</a></pre>
-<pre>0271:    <a href="/share/lib/std/felix/flx/flx_run.flx#0271">gen cxx_compile_dynamic () : int</a></pre>
-<pre>0294:    <a href="/share/lib/std/felix/flx/flx_run.flx#0294">gen cxx_compile_static () : int</a></pre>
-<pre>0339:    <a href="/share/lib/std/felix/flx/flx_run.flx#0339">gen cxx_compile_static1 (src: string, dst: string) : int</a></pre>
-<pre>0367:    <a href="/share/lib/std/felix/flx/flx_run.flx#0367">gen run_cxx_compiler_if_required () : int</a></pre>
-<pre>0381:    <a href="/share/lib/std/felix/flx/flx_run.flx#0381">gen check_run_if_required_and_uptodate() : bool</a></pre>
-<pre>0405:    <a href="/share/lib/std/felix/flx/flx_run.flx#0405">gen run_with_calpackages () : int</a></pre>
-<pre>0419:    <a href="/share/lib/std/felix/flx/flx_run.flx#0419">gen cxx_link_dynamic () : int</a></pre>
-<pre>0455:    <a href="/share/lib/std/felix/flx/flx_run.flx#0455">gen cxx_link_dynamic_with_calpackages () : int</a></pre>
-<pre>0461:    <a href="/share/lib/std/felix/flx/flx_run.flx#0461">gen cxx_link_static () : int</a></pre>
-<pre>0501:    <a href="/share/lib/std/felix/flx/flx_run.flx#0501">gen cxx_link_static_with_calpackages() :  int</a></pre>
-<pre>0507:    <a href="/share/lib/std/felix/flx/flx_run.flx#0507">gen cxx_static_library () : int</a></pre>
-<pre>0545:    <a href="/share/lib/std/felix/flx/flx_run.flx#0545">gen check_binary_uptodate () : bool</a></pre>
-<pre>0547:    <a href="/share/lib/std/felix/flx/flx_run.flx#0547">fun maxf (t:double) (f:string)</a></pre>
-<pre>0586:    <a href="/share/lib/std/felix/flx/flx_run.flx#0586">gen run_linker_if_required() : int</a></pre>
-<pre>0631:    <a href="/share/lib/std/felix/flx/flx_run.flx#0631">gen run_program_dynamic () : int</a></pre>
-<pre>0654:    <a href="/share/lib/std/felix/flx/flx_run.flx#0654">gen run_program_static () : int</a></pre>
-<pre>0670:    <a href="/share/lib/std/felix/flx/flx_run.flx#0670">gen run_dynamic_with_calpackages () : int</a></pre>
-<pre>0676:    <a href="/share/lib/std/felix/flx/flx_run.flx#0676">gen run_program_if_required () : int</a></pre>
-<pre>0694:    <a href="/share/lib/std/felix/flx/flx_run.flx#0694">gen check_output_if_required () : int</a></pre>
+<pre>0262:    <a href="/share/lib/std/felix/flx/flx_run.flx#0262">gen cxx_compile_dynamic1(src:string, dst:string) : int</a></pre>
+<pre>0286:    <a href="/share/lib/std/felix/flx/flx_run.flx#0286">gen cxx_compile_dynamic () : int</a></pre>
+<pre>0309:    <a href="/share/lib/std/felix/flx/flx_run.flx#0309">gen cxx_compile_static () : int</a></pre>
+<pre>0354:    <a href="/share/lib/std/felix/flx/flx_run.flx#0354">gen cxx_compile_static1 (src: string, dst: string) : int</a></pre>
+<pre>0382:    <a href="/share/lib/std/felix/flx/flx_run.flx#0382">gen run_cxx_compiler_if_required () : int</a></pre>
+<pre>0396:    <a href="/share/lib/std/felix/flx/flx_run.flx#0396">gen check_run_if_required_and_uptodate() : bool</a></pre>
+<pre>0420:    <a href="/share/lib/std/felix/flx/flx_run.flx#0420">gen run_with_calpackages () : int</a></pre>
+<pre>0434:    <a href="/share/lib/std/felix/flx/flx_run.flx#0434">gen cxx_link_dynamic () : int</a></pre>
+<pre>0470:    <a href="/share/lib/std/felix/flx/flx_run.flx#0470">gen cxx_link_dynamic_with_calpackages () : int</a></pre>
+<pre>0476:    <a href="/share/lib/std/felix/flx/flx_run.flx#0476">gen cxx_link_static () : int</a></pre>
+<pre>0516:    <a href="/share/lib/std/felix/flx/flx_run.flx#0516">gen cxx_link_static_with_calpackages() :  int</a></pre>
+<pre>0522:    <a href="/share/lib/std/felix/flx/flx_run.flx#0522">gen cxx_static_library () : int</a></pre>
+<pre>0560:    <a href="/share/lib/std/felix/flx/flx_run.flx#0560">gen check_binary_uptodate () : bool</a></pre>
+<pre>0562:    <a href="/share/lib/std/felix/flx/flx_run.flx#0562">fun maxf (t:double) (f:string)</a></pre>
+<pre>0601:    <a href="/share/lib/std/felix/flx/flx_run.flx#0601">gen run_linker_if_required() : int</a></pre>
+<pre>0646:    <a href="/share/lib/std/felix/flx/flx_run.flx#0646">gen run_program_dynamic () : int</a></pre>
+<pre>0670:    <a href="/share/lib/std/felix/flx/flx_run.flx#0670">gen run_program_static () : int</a></pre>
+<pre>0687:    <a href="/share/lib/std/felix/flx/flx_run.flx#0687">gen run_dynamic_with_calpackages () : int</a></pre>
+<pre>0693:    <a href="/share/lib/std/felix/flx/flx_run.flx#0693">gen run_program_if_required () : int</a></pre>
+<pre>0711:    <a href="/share/lib/std/felix/flx/flx_run.flx#0711">gen check_output_if_required () : int</a></pre>
 <hr/><a href="/share/lib/std/felix/flx_cache.flx">felix/flx_cache.flx</a>
 
 <pre>0001:  <a href="/share/lib/std/felix/flx_cache.flx#0001">class FlxCache</a></pre>
@@ -3695,31 +3696,35 @@ Unable to understand @command ''
 <pre>0187:    <a href="/share/lib/std/io/textio.flx#0187">proc write : ostream * utiny</a></pre>
 <pre>0188:    <a href="/share/lib/std/io/textio.flx#0188">proc write : ostream * char</a></pre>
 <pre>0189:    <a href="/share/lib/std/io/textio.flx#0189">proc fflush: ostream</a></pre>
-<pre>0198:    <a href="/share/lib/std/io/textio.flx#0198">proc print  [T with Str[T]] (x:T)</a></pre>
-<div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Write string to cout.
+<pre>0204:    <a href="/share/lib/std/io/textio.flx#0204">proc print  [T with Str[T]] (x:T)</a></pre>
+<div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> DEBUG OUTPUT UTILITIES! 
+ DO NOT REQUIRE THREAD FRAME.
+ NOT REDIRECTABLE BY DRIVER.
+ (can be redirected by OS if OS can do it)
+ Write string to output.
 </p></div>
-<pre>0201:    <a href="/share/lib/std/io/textio.flx#0201">proc println[T with Str[T]] (x:T)</a></pre>
-<div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Write string to cout with end of line.
+<pre>0207:    <a href="/share/lib/std/io/textio.flx#0207">proc println[T with Str[T]] (x:T)</a></pre>
+<div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Write string to output with end of line.
 </p></div>
-<pre>0204:    <a href="/share/lib/std/io/textio.flx#0204">proc endl()</a></pre>
-<div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Write end of line on cout.
+<pre>0210:    <a href="/share/lib/std/io/textio.flx#0210">proc endl()</a></pre>
+<div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Write end of line on output.
 </p></div>
-<pre>0207:    <a href="/share/lib/std/io/textio.flx#0207">proc space()</a></pre>
+<pre>0213:    <a href="/share/lib/std/io/textio.flx#0213">proc space()</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Write space on cout.
 </p></div>
-<pre>0210:    <a href="/share/lib/std/io/textio.flx#0210">proc fflush()</a></pre>
+<pre>0216:    <a href="/share/lib/std/io/textio.flx#0216">proc fflush()</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> flush buffers of cout.
 </p></div>
-<pre>0213:    <a href="/share/lib/std/io/textio.flx#0213">proc eprint  [T with Str[T]] (x:T)</a></pre>
+<pre>0219:    <a href="/share/lib/std/io/textio.flx#0219">proc eprint  [T with Str[T]] (x:T)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Write string to cerr.
 </p></div>
-<pre>0216:    <a href="/share/lib/std/io/textio.flx#0216">proc eprintln[T with Str[T]] (x:T)</a></pre>
+<pre>0222:    <a href="/share/lib/std/io/textio.flx#0222">proc eprintln[T with Str[T]] (x:T)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Write string to cerr with end of line.
 </p></div>
-<pre>0219:    <a href="/share/lib/std/io/textio.flx#0219">proc eendl()</a></pre>
+<pre>0225:    <a href="/share/lib/std/io/textio.flx#0225">proc eendl()</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Write end of line on cerr.
 </p></div>
-<pre>0222:    <a href="/share/lib/std/io/textio.flx#0222">proc espace()</a></pre>
+<pre>0228:    <a href="/share/lib/std/io/textio.flx#0228">proc espace()</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Write space on cerr.
 </p></div>
 <hr/><a href="/share/lib/std/io/zmq.flx">io/zmq.flx</a>

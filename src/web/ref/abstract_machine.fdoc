@@ -1,3 +1,4 @@
+
 @h1 The Felix BEXE instruction set
 In this section we exhibit the core executable instructions
 of Felix. We will exhibit the internal term used in the compiler
@@ -373,7 +374,7 @@ linked heap frames, not the machine stack.
 @felix
   try
     primitve x;
-  catch (e:int) =>
+  catch e:int =>
     println$ "Error " + str e + " got thrown from primitive";
     System::exit 1;
   endtry

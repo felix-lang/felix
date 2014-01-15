@@ -26,11 +26,12 @@ class WebserverPluginSymbols
       fdoc_heading,
       fdoc_fileseq,
       fdoc_paragraph,
-      fdoc_button
+      fdoc_button,
+      fdoc_frame
     ;
     // webserver
-    static-link-symbol webserver_create_thread_frame in plugin webserver;
-    static-link-symbol webserver_flx_start in plugin webserver;
+    static-link-symbol dflx_web_create_thread_frame in plugin dflx_web;
+    static-link-symbol dflx_web_flx_start in plugin dflx_web;
     
   }
 }
@@ -40,7 +41,7 @@ WebserverPluginSymbols::addsymbols;
 
 // Now invoke the webserver!
 println$ "Running webserver";
-val linstance =  Dynlink::prepare_lib("webserver");
+val linstance =  Dynlink::prepare_lib("dflx_web");
 println$ "Webserver prepared";
 var init: cont = Dynlink::get_init linstance;
 

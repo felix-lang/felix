@@ -1,11 +1,16 @@
 var prefix = System::argv_dflt 1 "tut";
 var title = System::argv_dflt 2 "Tutorial";
 var master = System::argv_dflt 3 "";
+if prefix == "--help" do
+  println "Usage flx_mktutindex tutname title homepage";
+  println "  Makes src/web/tut/tutname_index.fdoc for files in src/web/tut/tutname_\\d*\\.fdoc";
+  System::exit 0;
+done
 
 re := RE2(prefix+"_\\d*\\.fdoc");
-docs := FileSystem::regfilesin("src/web/", re);
+docs := FileSystem::regfilesin("src/web/tut", re);
 iter println of (string) docs;
-f := fopen_output("src/web/"+prefix+"_index.fdoc");
+f := fopen_output("src/web/tut/"+prefix+"_index.fdoc");
 if master != "" do
   writeln$ f,
    "<p><a href='"+master+"'>Up</a></p>"
@@ -20,7 +25,7 @@ fclose f;
 
 fun mkentry(x:string):string = 
 {
-  f := fopen_input("src/web/"+x);
+  f := fopen_input("src/web/tut/"+x);
   hline := f.readln;
   fclose f;
   title := hline.strip.[4 to];

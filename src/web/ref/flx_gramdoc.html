@@ -1195,7 +1195,7 @@
 <hr/><a href="/share/lib/grammar/plugins.flxh">plugins.flxh</a>
 
 0041:  <a href="/share/lib/grammar/plugins.flxh#0041">syntax plugins</a>
-0043:    <a href="/share/lib/grammar/plugins.flxh#0043">stmt := "static-link-symbol" sname "in" sexpr ";"</a>
+0043:    <a href="/share/lib/grammar/plugins.flxh#0043">stmt := "static-link-symbol" sname "in" "plugin" sname ";"</a>
 0045:    <a href="/share/lib/grammar/plugins.flxh#0045">stmt := "static-link-plugin" sname ("," sname)* ";"</a>
 <hr/><a href="/share/lib/grammar/python_grammar.flxh">python_grammar.flxh</a>
 
@@ -1822,22 +1822,22 @@
            fun f (self:X) (b:int) => self.a + b;
 0133:    <a href="/share/lib/grammar/type_decls.flxh#0133">sexport := sepsilon</a>
 0134:    <a href="/share/lib/grammar/type_decls.flxh#0134">stmt := sexport "struct" sdeclname "=" ? "{" sstruct_mem_decl * "}"</a>
-0185:    <a href="/share/lib/grammar/type_decls.flxh#0185">sstruct_mem_decl := stypeexpr sname ";"</a>
-0186:    <a href="/share/lib/grammar/type_decls.flxh#0186">sstruct_mem_decl := sname ":" stypeexpr ";"</a>
-0187:    <a href="/share/lib/grammar/type_decls.flxh#0187">sstruct_mem_decl := sfunction</a>
-0196:    <a href="/share/lib/grammar/type_decls.flxh#0196">stmt := "cstruct" sdeclname "=" ? "{" sstruct_mem_decl * "}" srequires_clause ";"</a>
+0189:    <a href="/share/lib/grammar/type_decls.flxh#0189">sstruct_mem_decl := stypeexpr sname ";"</a>
+0190:    <a href="/share/lib/grammar/type_decls.flxh#0190">sstruct_mem_decl := sname ":" stypeexpr ";"</a>
+0191:    <a href="/share/lib/grammar/type_decls.flxh#0191">sstruct_mem_decl := sfunction</a>
+0200:    <a href="/share/lib/grammar/type_decls.flxh#0200">stmt := "cstruct" sdeclname "=" ? "{" sstruct_mem_decl * "}" srequires_clause ";"</a>
            A ctruct provides a model of a C structure.
            This is the same as a struct except the structure is not emitted.
            Instead, it is assumed to be already defined in C.
            CAVEAT: A C struct constructor should not be used
            unless the cstruct definition is a complete model of the C struct.
-0201:    <a href="/share/lib/grammar/type_decls.flxh#0201">stmt := "typedef" "struct" "{" sstruct_mem_decl * "}" sdeclname srequires_clause ";"</a>
+0205:    <a href="/share/lib/grammar/type_decls.flxh#0205">stmt := "typedef" "struct" "{" sstruct_mem_decl * "}" sdeclname srequires_clause ";"</a>
            A hack to help with cut and paste from C headers into Felix
-0206:    <a href="/share/lib/grammar/type_decls.flxh#0206">stmt := "typedef" "struct" sdeclname "{" sstruct_mem_decl * "}" sdeclname srequires_clause ";"</a>
+0210:    <a href="/share/lib/grammar/type_decls.flxh#0210">stmt := "typedef" "struct" sdeclname "{" sstruct_mem_decl * "}" sdeclname srequires_clause ";"</a>
            A hack to help with cut and paste from C headers into Felix
-0210:    <a href="/share/lib/grammar/type_decls.flxh#0210">sopt_name := sname</a>
-0211:    <a href="/share/lib/grammar/type_decls.flxh#0211">sopt_name := sepsilon</a>
-0227:    <a href="/share/lib/grammar/type_decls.flxh#0227">stmt := "union" sdeclname "=" stype_sum_items2 ";"</a>
+0214:    <a href="/share/lib/grammar/type_decls.flxh#0214">sopt_name := sname</a>
+0215:    <a href="/share/lib/grammar/type_decls.flxh#0215">sopt_name := sepsilon</a>
+0231:    <a href="/share/lib/grammar/type_decls.flxh#0231">stmt := "union" sdeclname "=" stype_sum_items2 ";"</a>
            A union is a model of a discriminated union or variant.
            Such unions have a discriminant tag that determines
            at run time which component is populated.
@@ -1850,29 +1850,29 @@
            
            Unions provide a safe way to "unify" heterogenous data
            into a single data type.
-0233:    <a href="/share/lib/grammar/type_decls.flxh#0233">stmt := "union" sdeclname "{" stype_sum_item1* "}"</a>
+0237:    <a href="/share/lib/grammar/type_decls.flxh#0237">stmt := "union" sdeclname "{" stype_sum_item1* "}"</a>
            Deprecated C like syntax for unionx.
-0238:    <a href="/share/lib/grammar/type_decls.flxh#0238">stmt := senum_decl</a>
-0243:    <a href="/share/lib/grammar/type_decls.flxh#0243">stmt := "enum" sdeclname "{" senum_items "}"</a>
+0242:    <a href="/share/lib/grammar/type_decls.flxh#0242">stmt := senum_decl</a>
+0247:    <a href="/share/lib/grammar/type_decls.flxh#0247">stmt := "enum" sdeclname "{" senum_items "}"</a>
            Short for for declaring an enumeration,
            which is a union all of whose fields are constant constructors.
            Deprecated syntax.
-0250:    <a href="/share/lib/grammar/type_decls.flxh#0250">stmt := "enum" sdeclname "=" senum_items ";"</a>
+0254:    <a href="/share/lib/grammar/type_decls.flxh#0254">stmt := "enum" sdeclname "=" senum_items ";"</a>
            Short for for declaring an enumeration,
            which is a union all of whose fields are constant constructors.
-0255:    <a href="/share/lib/grammar/type_decls.flxh#0255">sopt_value := "=" sinteger</a>
-0256:    <a href="/share/lib/grammar/type_decls.flxh#0256">sopt_value := sepsilon</a>
-0257:    <a href="/share/lib/grammar/type_decls.flxh#0257">senum_item := sname sopt_value</a>
-0258:    <a href="/share/lib/grammar/type_decls.flxh#0258">senum_items := senum_item "," senum_items</a>
-0259:    <a href="/share/lib/grammar/type_decls.flxh#0259">senum_items := senum_item</a>
-0260:    <a href="/share/lib/grammar/type_decls.flxh#0260">senum_items := sepsilon</a>
-0264:    <a href="/share/lib/grammar/type_decls.flxh#0264">stmt := "interface" sdeclname stype_extension "{" srecord_type "}"</a>
+0259:    <a href="/share/lib/grammar/type_decls.flxh#0259">sopt_value := "=" sinteger</a>
+0260:    <a href="/share/lib/grammar/type_decls.flxh#0260">sopt_value := sepsilon</a>
+0261:    <a href="/share/lib/grammar/type_decls.flxh#0261">senum_item := sname sopt_value</a>
+0262:    <a href="/share/lib/grammar/type_decls.flxh#0262">senum_items := senum_item "," senum_items</a>
+0263:    <a href="/share/lib/grammar/type_decls.flxh#0263">senum_items := senum_item</a>
+0264:    <a href="/share/lib/grammar/type_decls.flxh#0264">senum_items := sepsilon</a>
+0268:    <a href="/share/lib/grammar/type_decls.flxh#0268">stmt := "interface" sdeclname stype_extension "{" srecord_type "}"</a>
            Java like interface of an object type.
            Equivalent to a record type.
-0268:    <a href="/share/lib/grammar/type_decls.flxh#0268">srecord_type := srecord_mem_decl (";" srecord_mem_decl)* ";"</a>
-0270:    <a href="/share/lib/grammar/type_decls.flxh#0270">stypelist := stypeexpr ("," stypeexpr)*</a>
-0271:    <a href="/share/lib/grammar/type_decls.flxh#0271">stype_extension := "extends" stypelist</a>
-0272:    <a href="/share/lib/grammar/type_decls.flxh#0272">stype_extension := sepsilon</a>
+0272:    <a href="/share/lib/grammar/type_decls.flxh#0272">srecord_type := srecord_mem_decl (";" srecord_mem_decl)* ";"</a>
+0274:    <a href="/share/lib/grammar/type_decls.flxh#0274">stypelist := stypeexpr ("," stypeexpr)*</a>
+0275:    <a href="/share/lib/grammar/type_decls.flxh#0275">stype_extension := "extends" stypelist</a>
+0276:    <a href="/share/lib/grammar/type_decls.flxh#0276">stype_extension := sepsilon</a>
 <hr/><a href="/share/lib/grammar/variables.flxh">variables.flxh</a>
 
 0002:  <a href="/share/lib/grammar/variables.flxh#0002">syntax variables</a>
