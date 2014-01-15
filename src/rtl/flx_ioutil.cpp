@@ -3,24 +3,40 @@
 #include <string>
 #include <iostream>
 #include <cassert>
+#include "flx_ioutil.hpp"
 
-#ifdef FLX_WIN32
+#if FLX_WIN32
 #include <io.h>
-static int flx_fileno (FILE *f) { return _fileno (f); }
-static int flx_isatty(int fd) { return _isatty (fd); }
 #else
 #include <unistd.h>
-static int flx_fileno (FILE *f) { return fileno (f); }
-static int flx_isatty(int fd) { return isatty (fd); }
 #endif
-static bool flx_isterminal (FILE *f) 
-{
-  return 1 == flx_isatty (flx_fileno (f));
-}
 
-#include "flx_ioutil.hpp"
 namespace flx { namespace rtl { namespace ioutil {
   using namespace std;
+
+
+#if FLX_WIN32
+  int flx_fileno (FILE *f) { return _fileno (f); }
+  bool flx_isatty(int fd) { return 1 == _isatty (fd); }
+#else
+  int flx_fileno (FILE *f) { return fileno (f); }
+  bool flx_isatty(int fd) { return 1 == isatty (fd); }
+#endif
+
+  bool flx_isatty (FILE *f) 
+  {
+    return 1 == flx_isatty (flx_fileno (f));
+  }
+
+  bool flx_isstdin (FILE *f)
+  {
+    return flx_fileno (f) == 0;
+  }
+
+  bool flx_isconsole (FILE *f)
+  {
+    return flx_isstdin (f) && flx_isatty(f);
+  }
 
 
 /* small buffer for testing, should be much large in production version */
@@ -86,13 +102,18 @@ next:
 
   string echo_readln (FILE *f)
   {
-    bool interactive = flx_isterminal (f);
     string result = raw_readln (f);
-    if (!interactive) printf ("%s",result.c_str());
+    printf ("%s",result.c_str());
     return result;
   }
 
-  string readln (FILE *f) { return echo_readln(f); }
+  string readln (FILE *f) { 
+    bool doecho = flx_isstdin(f) && !flx_isatty (f);
+    if (doecho)
+       return echo_readln(f);
+    else
+       return raw_readln (f);
+  }
 
   void write (FILE *fi, string s)
   {
