@@ -186,20 +186,20 @@ gendoc: gen-doc copy-doc check-tut
 # Shouldn't be required on client build because the results
 # should already have been committed to the repo.
 gen-doc:
-	${BUILDROOT}/host/bin/flx_mktutindex tut Tutorial tutorial.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex fibres Fibres tutorial.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex objects Objects tutorial.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex polymorphism Polymorphism tutorial.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex pattern Patterns tutorial.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex literals Literals tutorial.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex cbind "C Binding" tutorial.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex streams Streams tutorial.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex array "Arrays" tutorial.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex garray "Generalised Arrays" tutorial.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex uparse "Universal Parser" uparse.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex  tools_flx_separate_compilation "Separate Compilation" tools_flx.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex  tools_flx_howto "flx Howto" tools_flx.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex intro "Ground Up" tutorial.fdoc
+	${BUILDROOT}/host/bin/flx_mktutindex tut/tut Tutorial tutorial.fdoc
+	${BUILDROOT}/host/bin/flx_mktutindex tut/fibres Fibres tutorial.fdoc
+	${BUILDROOT}/host/bin/flx_mktutindex tut/objects Objects tutorial.fdoc
+	${BUILDROOT}/host/bin/flx_mktutindex tut/polymorphism Polymorphism tutorial.fdoc
+	${BUILDROOT}/host/bin/flx_mktutindex tut/pattern Patterns tutorial.fdoc
+	${BUILDROOT}/host/bin/flx_mktutindex tut/literals Literals tutorial.fdoc
+	${BUILDROOT}/host/bin/flx_mktutindex tut/cbind "C Binding" tutorial.fdoc
+	${BUILDROOT}/host/bin/flx_mktutindex tut/streams Streams tutorial.fdoc
+	${BUILDROOT}/host/bin/flx_mktutindex tut/array "Arrays" tutorial.fdoc
+	${BUILDROOT}/host/bin/flx_mktutindex tut/garray "Generalised Arrays" tutorial.fdoc
+	${BUILDROOT}/host/bin/flx_mktutindex tut/uparse "Universal Parser" uparse.fdoc
+	${BUILDROOT}/host/bin/flx_mktutindex ref/tools_flx_separate_compilation "Separate Compilation" tools_flx.fdoc
+	${BUILDROOT}/host/bin/flx_mktutindex ref/tools_flx_howto "flx Howto" tools_flx.fdoc
+	${BUILDROOT}/host/bin/flx_mktutindex tut/intro "Ground Up" tutorial.fdoc
 	# Build reference docs. Note this requires plugins.
 	${LPATH}=${BUILDROOT}/host/lib/rtl ${BUILDROOT}/host/bin/flx_libcontents --html > src/web/ref/flx_libcontents.html
 	${LPATH}=${BUILDROOT}/host/lib/rtl ${BUILDROOT}/host/bin/flx_libindex --html > src/web/ref/flx_libindex.html
@@ -481,25 +481,6 @@ sdltest:
 	build/release/host/bin/flx --test=build/release --force -c -od sdlbin demos/sdl/edit_display
 	build/release/host/bin/flx --test=build/release --force -c -od sdlbin demos/sdl/edit_controller
 	${LPATH}=sdlbin build/release/host/bin/flx --test=build/release --force -od sdlbin demos/sdl/sdltest
-
-
-flx_web:
-	build/release/host/bin/flx --test=build/release -c --nolink --static -ox build/release/host/lib/rtl/webserver src/tools/webserver.flx
-	build/release/host/bin/flx --test=build/release -c --static -ox build/release/host/bin/flx_web \
-		build/release/host/lib/rtl/fdoc_heading.o \
-		build/release/host/lib/rtl/fdoc_button.o \
-		build/release/host/lib/rtl/fdoc_fileseq.o \
-		build/release/host/lib/rtl/fdoc_paragraph.o \
-		build/release/host/lib/rtl/fdoc_scanner.o \
-		build/release/host/lib/rtl/fdoc_slideshow.o \
-		build/release/host/lib/rtl/fdoc2html.o \
-		build/release/host/lib/rtl/flx2html.o \
-		build/release/host/lib/rtl/py2html.o \
-		build/release/host/lib/rtl/cpp2html.o \
-		build/release/host/lib/rtl/ocaml2html.o \
-		build/release/host/lib/rtl/fpc2html.o \
-		build/release/host/lib/rtl/webserver.o \
-		src/tools/flx_web.flx
 
 
 .PHONY : build32 build64 build test32 test64 test
