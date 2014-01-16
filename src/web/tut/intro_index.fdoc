@@ -1,5 +1,5 @@
 <p><a href='tutorial.fdoc'>Up</a></p>
-@h1 Ground Up Index
+@h1 intro Index
 <ul>
 <li><a href="intro_00.fdoc">Introduction</a></li>
 <li><a href="intro_01.fdoc">Fundamentals</a></li>
@@ -19,6 +19,6 @@
 <li><a href="intro_15.fdoc">Forcing Eager Evaluation</a></li>
 <li><a href="intro_16.fdoc">Classes</a></li>
 <li><a href="intro_17.fdoc">Chaining requirements</a></li>
-<li><a href="intro_18.fdoc"></a></li>
-<li><a href="intro_19.fdoc"></a></li>
+<li><a href="intro_18.fdoc">C functions</a></li>
+<li><a href="intro_19.fdoc">Callbacks</a></li>
 </ul>

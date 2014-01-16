@@ -1,35 +1,50 @@
-var prefix = System::argv_dflt 1 "tut/tut";
-var title = System::argv_dflt 2 "Tutorial";
-var master = System::argv_dflt 3 "";
-if prefix == "--help" do
-  println "Usage flx_mktutindex tutname title homepage";
+var dirname = System::argv_dflt 1 "src/web/tut";
+var homepage = System::argv_dflt 2 "";
+
+if dirname == "--help" do
+  println "Usage flx_mktutindex directory homepage";
   println "  Makes src/web/tutname_index.fdoc for files in src/web/tutname_\\d*\\.fdoc";
   System::exit 0;
 done
 
-re := RE2(prefix+"_\\d*\\.fdoc");
-docs := FileSystem::regfilesin("src/web/", re);
-iter println of (string) docs;
-f := fopen_output("src/web/"+prefix+"_index.fdoc");
-if master != "" do
-  writeln$ f,
-   "<p><a href='"+master+"'>Up</a></p>"
-  ; 
-done
-
-writeln$ f,"@h1 "+title+" Index";
-writeln$ f,"<ul>";
-iter (proc (x:string) { writeln$ f, mkentry x; }) docs;
-writeln$ f,"</ul>";
-fclose f;
-
-fun mkentry(x:string):string = 
+proc make_index (prefix:string)
 {
-  f := fopen_input("src/web/"+x);
-  hline := f.readln;
+  re := RE2(prefix+"_\\d*\\.fdoc");
+  docs := FileSystem::regfilesin(dirname, re);
+  iter println of (string) docs;
+  f := fopen_output(Filename::join (dirname,prefix+"_index.fdoc"));
+  if homepage != "" do
+    writeln$ f,
+     "<p><a href='"+homepage+"'>Up</a></p>"
+    ; 
+  done
+
+  writeln$ f,"@h1 "+prefix +" Index";
+  writeln$ f,"<ul>";
+  iter (proc (x:string) { writeln$ f, mkentry x; }) docs;
+  writeln$ f,"</ul>";
   fclose f;
-  title := hline.strip.[4 to];
-  html := '<li><a href="' + Filename::basename x + '">' + title + '</a></li>';
-  return html;
+
+  fun mkentry(x:string):string = 
+  {
+    var hline = "\n";
+    begin // find first non-blank line
+      f := fopen_input(Filename::join (dirname,x));
+      while hline == "\n" do
+        hline = f.readln;
+      done
+      fclose f;
+    end
+    title := hline.strip.[6 to];
+    html := '<li><a href="' + Filename::basename x + '">' + title + '</a></li>';
+    return html;
+  }
 }
+
+var re = RE2(".*_01.fdoc");
+var samples = FileSystem::regfilesin(dirname, re);
+for name in samples do
+  var prefix = name.[0 to -8];
+  make_index prefix;
+done
 

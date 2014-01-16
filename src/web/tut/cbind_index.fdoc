@@ -1,5 +1,5 @@
 <p><a href='tutorial.fdoc'>Up</a></p>
-@h1 C Binding Index
+@h1 cbind Index
 <ul>
 <li><a href="cbind_01.fdoc">C Bindings.</a></li>
 <li><a href="cbind_02.fdoc">Fixed Insertions</a></li>

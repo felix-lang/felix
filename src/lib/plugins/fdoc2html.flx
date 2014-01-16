@@ -110,7 +110,8 @@ object xlat_fdoc (t:string, filename:string) implements fdoc_t = {
   method fun mathjax_required () => needs_mathjax;
   method fun html_raw () => out;
   method fun html_page () => page;
-
+  method fun html_title () => title;
+  var title = filename;
   var slideshow = slideshow-maker write_string of (string);
   //eprintln$ "FDOC make slidehow .. " + #(slideshow.whatami);
 
@@ -429,6 +430,8 @@ println$ "CMD=@"+b;
         elif b=="bug" do ep; sp 'bug'; write_string("<em>Bug: </em>");
         elif b=="fixed" do ep; sp 'fixed'; write_string("<em>Fixed: </em>");
         elif b=="done" do ep; sp 'done'; write_string("<em>Done: </em>");
+
+        elif prefix (b,"title") do title = strip(b.[5 to]);
 
         elif prefix(b,"h1") do h(1,b.[3 to]); 
         elif prefix(b,"h2") do h(2,b.[3 to]); 

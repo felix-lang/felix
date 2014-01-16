@@ -179,27 +179,8 @@ copy-doc:
 
 gendoc: gen-doc copy-doc check-tut
 
-# upgrade tutorial indices in repo src
-# must be done prior to copy-doc
-# muut be done after primary build
-# results should be committed to repo.
-# Shouldn't be required on client build because the results
-# should already have been committed to the repo.
 gen-doc:
-	${BUILDROOT}/host/bin/flx_mktutindex tut/tut Tutorial tutorial.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex tut/fibres Fibres tutorial.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex tut/objects Objects tutorial.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex tut/polymorphism Polymorphism tutorial.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex tut/pattern Patterns tutorial.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex tut/literals Literals tutorial.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex tut/cbind "C Binding" tutorial.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex tut/streams Streams tutorial.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex tut/array "Arrays" tutorial.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex tut/garray "Generalised Arrays" tutorial.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex tut/uparse "Universal Parser" uparse.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex ref/tools_flx_separate_compilation "Separate Compilation" tools_flx.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex ref/tools_flx_howto "flx Howto" tools_flx.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex tut/intro "Ground Up" tutorial.fdoc
+	${BUILDROOT}/host/bin/flx_mktutindex src/web/tut tutorial.fdoc
 	# Build reference docs. Note this requires plugins.
 	${LPATH}=${BUILDROOT}/host/lib/rtl ${BUILDROOT}/host/bin/flx_libcontents --html > src/web/ref/flx_libcontents.html
 	${LPATH}=${BUILDROOT}/host/lib/rtl ${BUILDROOT}/host/bin/flx_libindex --html > src/web/ref/flx_libindex.html

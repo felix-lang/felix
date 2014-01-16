@@ -1,3 +1,4 @@
+@title Array Abstraction
 @h1 Arrays
 Felix is using type classes to describe some array properties.
 The classes are in the file

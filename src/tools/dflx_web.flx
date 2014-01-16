@@ -532,9 +532,11 @@ proc serve_fdoc (k:socket_t, fname:string) {
   var result = xlat_fdoc (txt, fname);
   var needs_mathjax = #(result.mathjax_required);
   var html = #(result.html_page);
+  var title = #(result.html_title);
   val data = make_html(
     "<html><head>"+Css4Html::flx_head+
     if needs_mathjax then mathjax else "" endif +
+    if title != "" then "<title>"+title+"</title>" else "" endif +
     "</head><body>"+
     html+
     "</body></html>\n\r",
@@ -551,9 +553,11 @@ println$ "Serve fdoc "+fname+" as xhtml";
   var result = xlat_fdoc (txt, fname);
   var needs_mathjax = #(result.mathjax_required);
   var html = #(result.html_page);
+  var title = #(result.html_title);
   val data = make_html(
     "<head>"+Css4Html::flx_head+
     if needs_mathjax then mathjax else "" endif +
+    if title != "" then "<title>"+title+"</title>" else "" endif +
     "</head>"+
     "<body>"+ html
     "</body></html>\n\r",
