@@ -1,5 +1,5 @@
-<p><a href='tools_flx.fdoc'>Up</a></p>
-@h1 flx Howto Index
+<p><a href='reference.fdoc'>Up</a></p>
+@h1 tools_flx_howto Index
 <ul>
 <li><a href="tools_flx_howto_01.fdoc">How to build a shared library</a></li>
 <li><a href="tools_flx_howto_02.fdoc">How to build a static linked executable</a></li>
