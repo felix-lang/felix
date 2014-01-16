@@ -1,5 +1,7 @@
 <p><a href='tutorial.fdoc'>Up</a></p>
 @h1 tut Index
+<p>Basic introduction to Felix</p>
+
 <ul>
 <li><a href="tut_01.fdoc">Introductory Hands On</a></li>
 <li><a href="tut_02.fdoc">Variables</a></li>
