@@ -1,3 +1,4 @@
+@title Embedding: Floating Insertions.
 @h1 Floating Insertions.
 It is also possible to emit bulk code into either the generated
 header file or generated body file:

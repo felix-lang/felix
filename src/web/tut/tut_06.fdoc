@@ -1,3 +1,4 @@
+@title Generators.
 @h1 Simple generator definition
 A <em>generator</em> is a function that may have side effects.
 Alternatively you can think of it as a procedure that returns a value.

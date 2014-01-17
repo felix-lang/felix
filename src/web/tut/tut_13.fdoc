@@ -1,3 +1,4 @@
+@title Pointers.
 @h1 Variables and Pointers
 In Felix, there are two kinds of entities: <em>values</em>
 and <em>objects</em>. 

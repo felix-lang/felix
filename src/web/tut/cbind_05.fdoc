@@ -1,3 +1,4 @@
+@title Code generation.
 @h1 Output control
 When Felix emits primitive functions, by default it will have to put
 parentheses around every subexpression, since it does not actually

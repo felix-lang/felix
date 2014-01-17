@@ -1,3 +1,4 @@
+@title Basic Embedding.
 @h1 C Bindings.
 Felix is particularly good at allowing you to reuse your favourite
 C and C++ libraries. Mapping C types and functions into Felix is

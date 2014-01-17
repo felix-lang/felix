@@ -1,4 +1,4 @@
-
+@title Procedures.
 @h1 Simple procedure definitions
 It is also possible to defined new commands,
 these are called procedures. Procedures do not return

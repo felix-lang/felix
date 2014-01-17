@@ -1,4 +1,4 @@
-
+@title Variables.
 @h1 Variables
 Felix provides three kinds of variables, {var}, {fun} and {val}.
 @felix

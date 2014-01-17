@@ -1,3 +1,4 @@
+@title Embedding: Fixed Insertions.
 @h1 Fixed Insertions
 It is possible to insert C code directly into your Felix program:
 @felix

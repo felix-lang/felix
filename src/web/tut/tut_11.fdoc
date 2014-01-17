@@ -1,3 +1,4 @@
+@title Record products.
 @h1 Records
 There is another aggregate similar to a tuple except the fields are named:
 @felix

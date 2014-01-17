@@ -1,3 +1,4 @@
+@title Polymorphic Embedding.
 @h1 Polymorphism
 Most C bindings can  be polymorphic, including floating insertions.
 Here's an example:

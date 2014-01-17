@@ -1,3 +1,4 @@
+@title Assignments.
 @h1 Assignment
 Once you have a pointer to an object, you may be able to modify it.
 If the object type is first class, or otherwise assignable,

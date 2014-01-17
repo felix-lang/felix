@@ -1,3 +1,4 @@
+@title Tuple product type.
 @h1 Tuples
 We can combine several values in a comma separated list to form tuple.
 @felix

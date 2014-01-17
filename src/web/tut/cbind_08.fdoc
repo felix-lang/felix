@@ -1,3 +1,4 @@
+@title Specifying dependencies and properties of bindings. 
 @h1 The requires clause
 The requires clause has a number of options. Any number of requirements
 can be specified in a comma separated list.
