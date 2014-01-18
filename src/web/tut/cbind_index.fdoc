@@ -1,0 +1,15 @@
+<p><a href='tutorial.fdoc'>Up</a></p>
+@h1 cbind Index
+<p>Embedding C and C++ in Felix.</p>
+
+<ul>
+<li><a href="cbind_01.fdoc">C Bindings.</a></li>
+<li><a href="cbind_02.fdoc">Fixed Insertions</a></li>
+<li><a href="cbind_03.fdoc">Floating Insertions.</a></li>
+<li><a href="cbind_04.fdoc">Special Magic</a></li>
+<li><a href="cbind_05.fdoc">Output control</a></li>
+<li><a href="cbind_06.fdoc">Polymorphism</a></li>
+<li><a href="cbind_07.fdoc">All the inserion codes</a></li>
+<li><a href="cbind_08.fdoc">The requires clause</a></li>
+<li><a href="cbind_09.fdoc">Resource Management</a></li>
+</ul>

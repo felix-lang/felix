@@ -1,0 +1,31 @@
+@title Tuple product type.
+@h1 Tuples
+We can combine several values in a comma separated list to form tuple.
+@felix
+  1,2.9,"Hello"
+@
+The type of this value is:
+@felix
+  int * double * string
+@
+The {*} symbol here means multiply. The type of a tuple
+is sometimes called the Cartesian Product (after Descartes).
+You can retrive a value from a tuple with a integral literal:
+@felix
+  val x = 1,2.9,"Hello";
+  println x.0; // 1
+  println x.1; // 2.9
+  println x.2; // "Hello"
+@
+Note the field numbers are zero origin in keeping with C conventions.
+There are no tuples with one component. 
+
+@h2 Unit
+However, there is a tuple with no components with a single unique value:
+@felix
+  ()
+@
+the type of which is called {unit} type and can also
+be designated by {1}.
+
+

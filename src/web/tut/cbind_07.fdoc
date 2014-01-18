@@ -1,0 +1,27 @@
+@title Embedding Encoding.
+@h1 All the inserion codes
+Here's a complete list of all the insertion codes.
+@pre
+   $n: n'th component of argument tuple, 1 origin!
+   $a: expands to $1, $2, .. $n
+   $b: expands to $2, .. $n
+   `n: n'th component of argument tuple, reference kind
+
+   #x: expands to #x for all 'x' other than those below
+
+   #n: type of n'th component of argument tuple (1 origin)
+   #0: return type
+   @n: reference to shape object
+
+   $t: pass a tuple argument 'as a tuple'
+   $Tn: pass argument n expanded into an argument list (varargs)
+   #t: the type of the argument tuple
+   @t: the shape of the argument tuple
+   @dn: expands to first n components of display, excluding thread frame
+
+   ??: expands to ?
+   ?n: the n'th generic type argument ..
+   @?n: the n'th generic type argument shape ..
+   ?a: expands to ?1,?2, ...
+@
+

@@ -1,0 +1,10 @@
+<p><a href='tutorial.fdoc'>Up</a></p>
+@h1 objects Index
+<ul>
+<li><a href="objects_01.fdoc">Objects</a></li>
+<li><a href="objects_02.fdoc">Interfaces</a></li>
+<li><a href="objects_03.fdoc">Object Coercions</a></li>
+<li><a href="objects_04.fdoc">Polymorphic Objects</a></li>
+<li><a href="objects_05.fdoc">Modelling Inheritance</a></li>
+<li><a href="objects_06.fdoc">Objects and Plugins</a></li>
+</ul>

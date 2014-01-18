@@ -6,32 +6,46 @@ fun setup (config_data:string) = {
 
 object fdoc_frame (d:fdoc_frame_data_t) implements fdoc_frame_t = 
 {
+  var frame_colour = "#C0C0B0";
+  var page_colour = "#E0E0E0";
+  var text_colour = "#404040";
   method fun whatami () => "fdoc_framer maker";
 
   method fun make_frame (out:string) =>
     #(d.heading.emit-js) + 
     #(d.button-factory.get-jscript) +
     #(d.fileseq.get-jscript) +
-    '<div style="background-color:#E0E0E0; font-family:sans-serif; color:#404040">' +
+    '<div style="background-color:'+page_colour+'; font-family:sans-serif; color:'+text_colour+'">' +
 
     // fixed top nav bar 
-    '<div style="position:fixed; top:10px;  left:10px; right:10px; height:30px; background-color:#FFA500;padding:4px;'+
+    '<div style="position:fixed; top:10px;  left:10px; right:10px; height:30px;' +
+    ' background-color:'+frame_colour+'; padding:4px;'+
     ' border-top-left-radius:10px; border-top-right-radius:10px">' +
     #(d.heading.emit-buttons) + 
     #(d.fileseq.shownav) + 
-    '</div>' +
+    '</div>\n' +
+
+    '<div style="position:fixed; top:40px; bottom:40px; left:10px; width:4px;' +
+      ' background-color:'+ frame_colour+ ';">'+
+    '</div>'+
 
     // body
-    '<div style="position:fixed; top:48px; bottom:48px; left:14px; right:14px; padding:4px; '+
-    ' border:4px;overflow:auto; font-family:sans-serif; color:#404040; background-color:#E0E0E0;">' +
+    '<div style="position:fixed; top:48px; bottom:48px; left:14px; right:14px; padding:8px;'+
+    ' border:4px;overflow:auto; font-family:sans-serif;'+
+    ' color:'+text_colour+'; background-color:'+page_colour+';">' +
     out +
+    '</div>\n'+
+
+    '<div style="position:fixed; top:40px; bottom:40px; right:10px; width:4px;' +
+      ' background-color:'+ frame_colour+ ';">'+
     '</div>'+
 
     // fixed bottom nav bar
-    '<div style="position:fixed; bottom:10px;  left:10px; right:10px; height:30px; background-color:#FFA500;padding:4px;'+
-    ' border-bottom-left-radius:10px; border-bottom-right-radius:10px">' +
+    '<div style="position:fixed; bottom:10px;  left:10px; right:10px; height:30px;' +
+    ' background-color:'+frame_colour+';padding:4px;'+
+    ' border-bottom-left-radius:10px; border-bottom-right-radius:10px"\n>' +
     #(d.fileseq.shownav) + 
-    '</div>' +
+    '</div>\n' +
     '</div>'
   ;
 

@@ -1,0 +1,26 @@
+@title Generators.
+@h1 Simple generator definition
+A <em>generator</em> is a function that may have side effects.
+Alternatively you can think of it as a procedure that returns a value.
+@felix
+gen getnum():int {
+  prompt "Input number : ";
+  var x = readln stdin;
+  var y = int (strip x);
+  return y;
+}
+@
+You may ask, why not use generators all the time,
+instead of functions?
+
+The answer is two-fold. The first is <em>readability</em>.
+When you write a function, the reader knows an application
+shouldn't have side-effects. This makes it possible to write
+cleaner code, and it specifies semantics that can be verified
+by examining the function definition.
+
+The second answer is <em>performance</em>. Generator applications
+are lifted out of expressions to ensure they're only evaluated once,
+and in a determinate order. Lifting purely functional code like this
+is not necessary and interferes with optimisation.
+

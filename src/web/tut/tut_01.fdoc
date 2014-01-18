@@ -1,0 +1,80 @@
+@title Hands On!
+@h1 Introductory Hands On
+Get your hands dirty! You can't learn a programming language just by reading!
+
+@h2 Hello world
+Of course there's no better introduction to a language that the infamous hello world:
+@felix
+println$ "Hello World";
+@
+Assuming you store this in the file {hello.flx} to can run it by
+<pre>
+flx hello
+</pre>
+This will check the code, translate it to C++, compile the C++,
+link it including any libraries required, and then run it.
+Caching and dependency checking will skip over some of these
+steps, or parts thereof: it will be a bit slow the first time
+but subsequent runs will load much faster than any VM.
+
+@h2 Environment variables
+It's a pretty boring program, so lets try an improvement:
+@felix
+println$ "Hello " + Env::getenv "USER";
+@
+<ul><li>The {getenv} function can't fail, it will just return an empty string
+of the environment variable is not set.</li>
+<li> The infix operator {+} you
+see is string concatenation.</li>
+</ul>
+
+@h2 Command line arguments
+Ok, so here's another way:
+@felix
+println$ "Hello " + System::argv 1;
+@
+This reads the first command line argument after the Felix 
+program name, for example if you type:
+<pre>
+flx hello Joachim
+</pre>
+then Joachim will be welcomed.
+<ul>
+<li>The function {System::argv} applied to an integer <em>n</em>
+returns the <em>n'th</em> command line argument if it exists,
+or an empty string otherwise.</li> 
+<li>Arguments are 0-origin and start with
+the executable name: this does not include the {flx} driver.</li>
+</ul>
+
+@h2 Reading and writing standard streams
+Well then, here's another way to get some data in:
+@felix
+write$ stdout,"Enter your name: "; fflush stdout;
+val name = readln$ stdin;
+writeln$ stdout, "Hello " + name;
+@
+Here,
+<ul>
+<li>{stdout} is the usual standard output text stream</li>
+<li>{write} is a command to write a string to a nominated output text stream</li>
+<li>{fflush} is a command to flush any buffered output to the physical device
+associated with a text stream</li>
+<li>{stdin} is the usual standard input text stream</li>
+<li>{readln} reads a string from a nominated input text stream, including the terminating newline if present</li>
+<li>{val} names a value, in this case that returned by the {readln} function</li>
+<li>{writeln} writes a string to a nominated output stream and ends a line</li>
+</ul>
+
+@h2 Stripping leading and trailing spaces from a string
+Unfortunately there's a bug in this program: {readln} reads
+in a line including the newline. We can fix this, and remove
+excess spaces at the same time as shown here:
+@felix
+write$ stdout,"Enter your name: "; fflush stdout;
+name = strip (readln$ stdin);
+writeln$ stdout, "Hello " + name + "!";
+@
+This uses the function {strip} from the  String module
+to remove leading and trailing whitespace, including newlines.
+

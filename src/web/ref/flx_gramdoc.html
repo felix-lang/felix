@@ -1,0 +1,1906 @@
+<html><body>
+<h1>Felix Syntax</h1>
+<pre>
+<hr/><a href="/share/lib/grammar/assertions.flxh">assertions.flxh</a>
+
+0003:  <a href="/share/lib/grammar/assertions.flxh#0003">syntax assertions</a>
+           Assertion statements.
+           See also functions to find pre- and post-conditions.
+0010:    <a href="/share/lib/grammar/assertions.flxh#0010">stmt := "assert" sexpr ";"</a>
+           The usual assert statement.
+           Abort the program if the argument expression evaluates to false
+           when control flows through the assert statement.
+           Cannot be switched off!
+0018:    <a href="/share/lib/grammar/assertions.flxh#0018">stmt  := "axiom" sdeclname sfun_arg ":" sexpr ";"</a>
+           Define an axiom with a general predicate.
+           An axiom is a function which is true for all arguments.
+           Axioms are core assertions about invariants which
+           can be used to specify semantics and form the basis
+           of reasoning about semantics which goes beyond
+           structure.
+0030:    <a href="/share/lib/grammar/assertions.flxh#0030">stmt  := "axiom" sdeclname sfun_arg ":" sexpr "=" sexpr ";"</a>
+           A variant of an axiom which expresses the semantic
+           equality of two expressions. Do not confuse this
+           with an expresion containing run time equality (==).
+           Semantic equality means that one expression could be
+           replaced by the other without any observable difference
+           in behaviour in any program, this can be asserted even
+           if the type does not provide an equality operator (==).
+0038:    <a href="/share/lib/grammar/assertions.flxh#0038">stmt  := "lemma" sdeclname sfun_arg ":" sexpr ";"</a>
+           A lemma is a proposition which it is expected could
+           be proved by a good automatic theorem prover,
+           given the axioms. This is the predicate form.
+0046:    <a href="/share/lib/grammar/assertions.flxh#0046">stmt  := "lemma" sdeclname sfun_arg ":" sexpr "=" sexpr ";"</a>
+           A lemma is a proposition which it is expected could
+           be proved by a good automatic theorem prover,
+           given the axioms. This is the equational form.
+0059:    <a href="/share/lib/grammar/assertions.flxh#0059">stmt  := "theorem" sdeclname sfun_arg ":" sexpr proof? ";"</a>
+           A theorem is a proposition which it is expected could
+           NOT be proved by a good automatic theorem prover,
+           given the axioms.  In the future, we might like to
+           provide a "proof sketch" which a suitable tool could
+           fill in. For the present, you can give a proof as
+           plain text in a string as a hint to the reader.
+           This is the predicative form.
+0073:    <a href="/share/lib/grammar/assertions.flxh#0073">stmt  := "theorem" sdeclname sfun_arg ":" sexpr "=" sexpr proof? ";"</a>
+           A theorem is a proposition which it is expected could
+           NOT be proved by a good automatic theorem prover,
+           given the axioms.  In the future, we might like to
+           provide a "proof sketch" which a suitable tool could
+           fill in. For the present, you can give a proof as
+           plain text in a string as a hint to the reader.
+           This is the equational form.
+0098:    <a href="/share/lib/grammar/assertions.flxh#0098">stmt  := "reduce" sdeclname sreduce_args ":" sexpr "=>" sexpr ";"</a>
+           A reduction is a special kind of proposition of equational
+           form which also directs the compiler to actually replace
+           the LHS expression with the RHS expression when found.
+           Reductions allow powerful high level optimisations,
+           such as eliminating two successive list reversals.
+           The client must take great care that reductions don't
+           lead to infinite loops. Confluence isn't required but
+           is probably desirable.
+           Reductions should be used sparingly because searching
+           for patterns to reduce is applied to every sub-expression
+           of every expression in the whole program, repeatedly
+           after any reduction is applied, and this whole process
+           is done at several different places in the program,
+           to try to effect the reductions. Particularly both
+           before and after inlining, since that can destroy
+           or create candidate patterns.
+0102:    <a href="/share/lib/grammar/assertions.flxh#0102">sreduce_args := "(" stypeparameter_comma_list ")"</a>
+<hr/><a href="/share/lib/grammar/assignment.flxh">assignment.flxh</a>
+
+0002:  <a href="/share/lib/grammar/assignment.flxh#0002">syntax assignment</a>
+           Assignment forms.
+0006:    <a href="/share/lib/grammar/assignment.flxh#0006">sassignexpr := sexpr sassignop sexpr</a>
+           Assignment form.
+0009:    <a href="/share/lib/grammar/assignment.flxh#0009">sassignop:= "="</a>
+           Assignment.
+0012:    <a href="/share/lib/grammar/assignment.flxh#0012">sassignop:= "<-"</a>
+           Store at pointer.
+0015:    <a href="/share/lib/grammar/assignment.flxh#0015">sassignop:= ":="</a>
+           Short form val declaration.
+0018:    <a href="/share/lib/grammar/assignment.flxh#0018">sassignexpr := sexpr srmwop sexpr</a>
+           binary read-modify-write operators.
+0021:    <a href="/share/lib/grammar/assignment.flxh#0021">srmwop:= "+="</a>
+           Increment.
+0023:    <a href="/share/lib/grammar/assignment.flxh#0023">srmwop:= "-="</a>
+           Decrement.
+0025:    <a href="/share/lib/grammar/assignment.flxh#0025">srmwop:= "*="</a>
+           Multiply.
+0027:    <a href="/share/lib/grammar/assignment.flxh#0027">srmwop:= "/="</a>
+           Divide.
+0029:    <a href="/share/lib/grammar/assignment.flxh#0029">srmwop:= "%="</a>
+           C remainder.
+0031:    <a href="/share/lib/grammar/assignment.flxh#0031">srmwop:= "<<="</a>
+           Left shift.
+0033:    <a href="/share/lib/grammar/assignment.flxh#0033">srmwop:= ">>="</a>
+           Right shift.
+0035:    <a href="/share/lib/grammar/assignment.flxh#0035">srmwop:= "^="</a>
+           Bitwise exclusive or.
+0037:    <a href="/share/lib/grammar/assignment.flxh#0037">srmwop:= "|="</a>
+           Bitwise or.
+0039:    <a href="/share/lib/grammar/assignment.flxh#0039">srmwop:= "&="</a>
+           Bitwise and.
+0041:    <a href="/share/lib/grammar/assignment.flxh#0041">srmwop:= "<<="</a>
+           Left shift.
+0043:    <a href="/share/lib/grammar/assignment.flxh#0043">srmwop:= ">>="</a>
+           Right shift.
+0046:    <a href="/share/lib/grammar/assignment.flxh#0046">sassignexpr := sexpr sswapop sexpr</a>
+           Swap operator.
+0048:    <a href="/share/lib/grammar/assignment.flxh#0048">sswapop := "<->"</a>
+           Exchange.
+0052:    <a href="/share/lib/grammar/assignment.flxh#0052">sassignexpr := spreincrop sexpr</a>
+           Prefix read/modify/write.
+0054:    <a href="/share/lib/grammar/assignment.flxh#0054">spreincrop:= "++"</a>
+           Pre-increment.
+0056:    <a href="/share/lib/grammar/assignment.flxh#0056">spreincrop:= "--"</a>
+           Pre-decrement.
+0059:    <a href="/share/lib/grammar/assignment.flxh#0059">sassignexpr := sexpr spostincrop</a>
+           Postfix read/modify/write.
+0061:    <a href="/share/lib/grammar/assignment.flxh#0061">spostincrop:= "++"</a>
+           Post-increment.
+0063:    <a href="/share/lib/grammar/assignment.flxh#0063">spostincrop:= "--"</a>
+           Post-decrement.
+0072:    <a href="/share/lib/grammar/assignment.flxh#0072">sassignexpr := "def" slexpr "=" sexpr</a>
+           Multiple initialisation/assignment form.
+           def x, (var y, val z) = 1,(2,3);
+           allows unpacking a tuple into a pre-existing variable,
+           creating a new variable, and binding a new value,
+           in a single form, with nesting.
+0073:    <a href="/share/lib/grammar/assignment.flxh#0073">slexpr := slexprs</a>
+0074:    <a href="/share/lib/grammar/assignment.flxh#0074">slexprs := stlelement "," slexprs</a>
+0075:    <a href="/share/lib/grammar/assignment.flxh#0075">slexprs := stlelement</a>
+0077:    <a href="/share/lib/grammar/assignment.flxh#0077">slelement := "val" sname</a>
+0078:    <a href="/share/lib/grammar/assignment.flxh#0078">slelement := "var" sname</a>
+0079:    <a href="/share/lib/grammar/assignment.flxh#0079">slelement := sname</a>
+0080:    <a href="/share/lib/grammar/assignment.flxh#0080">slelement := _</a>
+0081:    <a href="/share/lib/grammar/assignment.flxh#0081">slelement := "(" slexprs ")"</a>
+0083:    <a href="/share/lib/grammar/assignment.flxh#0083">stlelement := slelement ":" x[sfactor_pri]</a>
+0084:    <a href="/share/lib/grammar/assignment.flxh#0084">stlelement := slelement</a>
+<hr/><a href="/share/lib/grammar/cbind.flxh">cbind.flxh</a>
+
+0006:  <a href="/share/lib/grammar/cbind.flxh#0006">syntax cbind</a>
+           Technology for binding to C.
+           The forms in this DSSL are used to lift types and functions
+           from C into Felix, and, export Felix types and functions
+           back into C.
+0018:    <a href="/share/lib/grammar/cbind.flxh#0018">stmt := "export" "fun" ssuffixed_name "as" sstring ";"</a>
+           Export a Felix function into C.
+           The function is exported by generating a C wrapper function
+           which has external linkage and the link name
+           given in the "as" phrase.
+           The function must be identified by a suffixed name
+           to choose between overloads. Example:
+           export fun myfun of (int) as "MyFun";
+0022:    <a href="/share/lib/grammar/cbind.flxh#0022">stmt := "export" "cfun" ssuffixed_name "as" sstring ";"</a>
+           Export a Felix function with C type into C.
+0026:    <a href="/share/lib/grammar/cbind.flxh#0026">stmt := "export" "proc" ssuffixed_name "as" sstring ";"</a>
+           Export a Felix procedure into C.
+0030:    <a href="/share/lib/grammar/cbind.flxh#0030">stmt := "export" "cproc" ssuffixed_name "as" sstring ";"</a>
+           Export a Felix procedure with C type into C.
+0036:    <a href="/share/lib/grammar/cbind.flxh#0036">stmt := "export" "type" "(" sexpr ")" "as" sstring ";"</a>
+           Export a type into C.
+           This is done using a typedef that defines the alias
+           specified in the "as" phase to be the type expression.
+0048:    <a href="/share/lib/grammar/cbind.flxh#0048">sopt_prec := "is" sname</a>
+           The optional precedence phase specifies
+           the C++ precedence of an expression, to allow
+           the Felix compiler to minimise generated parentheses.
+           The precedence must be one of:
+           atom, primary, postfix, unary, cast, pm, mult, add, shift, rel, eq,
+           band, bxor, bor, and, xor, or, cond, assign, comma
+           
+0049:    <a href="/share/lib/grammar/cbind.flxh#0049">sopt_prec := sepsilon</a>
+0062:    <a href="/share/lib/grammar/cbind.flxh#0062">stmt := sadjectives sfun_kind sdeclname fun_return_type sopt_cstring sopt_prec srequires_clause ";"</a>
+           Define a function by a C expression.
+           If the optional C string is elided, the function
+           is taken to be bound to a C function of the same name.
+           For example:
+           fun sin : double -> double;
+           is equivalent to
+           fun sin : double -> double = "sin($1)";
+0106:    <a href="/share/lib/grammar/cbind.flxh#0106">stmt := "ctor" stvarlist squalified_name ":" stypeexpr sopt_cstring sopt_prec srequires_clause ";"</a>
+           Define a constructor function by a C expression.
+0128:    <a href="/share/lib/grammar/cbind.flxh#0128">stmt:= stype_qual* "type" sdeclname "=" scode_spec srequires_clause ";"</a>
+           Define a type by a C type expression.
+0135:    <a href="/share/lib/grammar/cbind.flxh#0135">stmt := "callback" "proc" sname ":" stypeexpr srequires_clause ";"</a>
+           Define a special kind of procedure which can be used
+           as a C callback.
+0142:    <a href="/share/lib/grammar/cbind.flxh#0142">stmt := "callback" "fun" sname ":" stypeexpr srequires_clause ";"</a>
+           Define a special kind of function which can be used
+           as a C callback.
+0161:    <a href="/share/lib/grammar/cbind.flxh#0161">stype_qual := "incomplete"</a>
+           The type qualifier incomplete is used to
+           prevent allocation of values of this type.
+           Pointers can still be formed.
+0168:    <a href="/share/lib/grammar/cbind.flxh#0168">stype_qual := "pod"</a>
+           The type qualified pod is used to specify
+           that a type has a trivial destructor.
+           This allows the garbage collector to omit
+           a call to the destructor, which is the default
+           finaliser.
+0172:    <a href="/share/lib/grammar/cbind.flxh#0172">stype_qual := "_gc_pointer"</a>
+           Specify a C types is a garbage collectable
+           pointer type, so it will be tracked by the collector.
+0205:    <a href="/share/lib/grammar/cbind.flxh#0205">stype_qual := "_gc_type" stypeexpr</a>
+           Specify the shape of the type should
+           be taken as the shape of the given type expression.
+           This is required when the type is immobile
+           and represented by a pointer.
+           For example, the C++ RE2 type of Google's RE2 package
+           cannot be used directly as a type because it is not
+           copy assignable. Instead we have to use a pointer.
+           Here is the way this is done:
+           private type RE2_ = "::re2::RE2";
+           _gc_pointer _gc_type RE2_ type RE2 = "::re2::RE2*";
+           gen _ctor_RE2 : string -> RE2 = "new (*PTF gcp, @0, false) RE2($1)";
+           We bind the private type RE2_ to the C type RE2.
+           It's private so the public cannot allocate it.
+           Instead we use the type RE2 which is a pointer, and thus
+           copyable. because it is a pointer we have to specify
+           _gc_pointer.
+           
+           Now, the constructor _ctor_RE2 takes a string and returns
+           a Felix RE2 (C type RE2*) which is a pointer to a heap allocated
+           object of type _RE2 (C type RE2).
+           
+           The constructor does the allocation, so it must provde the
+           shape of the RE2_ object, and this is what the specification
+           _gc_type RE2_ does. This allows the notation @0 to refer to
+           the shape of RE2_ instead of RE2 which it would normally.
+0208:    <a href="/share/lib/grammar/cbind.flxh#0208">stmt:= stype_qual* "ctypes" sbasic_name_comma_list srequires_clause ";"</a>
+           Define a set of types as C types with the same names.
+0212:    <a href="/share/lib/grammar/cbind.flxh#0212">stmt:= "code" scode_spec ";"</a>
+           Embed a C statement into Felix code.
+0219:    <a href="/share/lib/grammar/cbind.flxh#0219">stmt:= "noreturn" "code" scode_spec ";"</a>
+           Embed a C statement which does not return normally
+           into Felix code. For example:
+           noreturn code "exit(0);";
+0221:    <a href="/share/lib/grammar/cbind.flxh#0221">sexpr_code_prefix := "code" "[" stypeexpr "]"</a>
+0229:    <a href="/share/lib/grammar/cbind.flxh#0229">satom := sexpr_code_prefix sstring</a>
+           Embed a C expression into Felix.
+           This required giving the Felix type of the expression.
+           The expression is contained in the string. For example:
+           code [double] "sin(0.7)"
+0235:    <a href="/share/lib/grammar/cbind.flxh#0235">satom := sexpr_code_prefix sname</a>
+           A short form embedding for variables.
+           code [double] M_PI
+0245:    <a href="/share/lib/grammar/cbind.flxh#0245">stmt := sadjectives "const" sdeclname ":" stypeexpr "=" scode_spec srequires_clause ";"</a>
+           Bind a C expression to a name.
+           Note that despite the binding being called "const",
+           the C expression does not have to be constant.
+           For example:
+           const rand : int = "rand()";
+0260:    <a href="/share/lib/grammar/cbind.flxh#0260">stmt := sadjectives "const" sdeclname ":" stypeexpr srequires_clause ";"</a>
+           Short form of const that declares a variable
+           bound to the same name in C.
+           Example:
+           const RAND_MAX: long;
+0269:    <a href="/share/lib/grammar/cbind.flxh#0269">sdeclnames := sdeclname ("," sdeclname )+</a>
+0278:    <a href="/share/lib/grammar/cbind.flxh#0278">stmt := sadjectives "const" sdeclnames ":" stypeexpr srequires_clause ";"</a>
+           Short form of const that declares a list of variables
+           of the same type to be bound to their C names.
+           Useful for lifting enumerations. Example:
+           const a,b,c : int;
+0297:    <a href="/share/lib/grammar/cbind.flxh#0297">stmt := "cenum" sname "=" sbasic_name_comma_list srequires_clause ";"</a>
+           Special form for lifting C enumerations.
+           Specifies the type name and enumeration constants
+           in a single statement. Names bound to the same names in C.
+           This form also defined equality and inequality operators
+           for the type automatically, as an instance of class Eq.
+0322:    <a href="/share/lib/grammar/cbind.flxh#0322">stmt := "cflags" sname "=" sbasic_name_comma_list srequires_clause ";"</a>
+           Specifies the type name and enumeration constants
+           in a single statement. Names bound to the same names in C.
+           This form automatically defines equality as an instance of class Eq.
+           Furthermore it defines all the standard bitwise operators,
+           as an instance of class Bits.
+0349:    <a href="/share/lib/grammar/cbind.flxh#0349">stmt := sadjectives sproc_kind sdeclname ":" stypeexpr sopt_cstring srequires_clause ";"</a>
+           Define a Felix procedures as a binding to a
+           C statement. Only one statement is allowed.
+           But you can use a block of course!
+           If the option C text is elided, the procedure
+           is taken to be bound to a C function returning void
+           of the same name.
+<hr/><a href="/share/lib/grammar/cgram.flxh">cgram.flxh</a>
+
+0004:  <a href="/share/lib/grammar/cgram.flxh#0004">syntax cgram</a>
+           Embed C into Felix using extern "C" { } style.
+           Direct name binding.
+           WORK IN PROGRESS, NOT OPERATIONAL!
+0005:    <a href="/share/lib/grammar/cgram.flxh#0005">stmt := "extern" '"C"' cstatement</a>
+0006:    <a href="/share/lib/grammar/cgram.flxh#0006">stmt := "extern" '"C"' "{" cstatement+ "}"</a>
+0009:    <a href="/share/lib/grammar/cgram.flxh#0009">satom := "extern" '"C"' "(" expression ")"</a>
+<hr/><a href="/share/lib/grammar/conditional.flxh">conditional.flxh</a>
+
+0002:  <a href="/share/lib/grammar/conditional.flxh#0002">syntax conditional</a>
+           Basic conditional statements.
+0005:    <a href="/share/lib/grammar/conditional.flxh#0005">stmt := "if" sexpr "goto" sname ";"</a>
+           Short form conditional goto statement.
+0008:    <a href="/share/lib/grammar/conditional.flxh#0008">stmt := "if" sexpr "return" ";"</a>
+           Short form conditional return statement.
+0009:    <a href="/share/lib/grammar/conditional.flxh#0009">stmt := "if" sexpr "return" sexpr ";"</a>
+0012:    <a href="/share/lib/grammar/conditional.flxh#0012">stmt := "if" sexpr "call" sexpr ";"</a>
+           Short form conditional call statement.
+0016:    <a href="/share/lib/grammar/conditional.flxh#0016">stmt := "if" sexpr "do" sstatements "done"</a>
+           Short form one branch conditional.
+0020:    <a href="/share/lib/grammar/conditional.flxh#0020">stmt := "if" sexpr "begin" sstatements "end"</a>
+           Short form one branch conditional.
+0025:    <a href="/share/lib/grammar/conditional.flxh#0025">stmt := sexpr "??" stmt</a>
+           Perl style conditional.
+0038:    <a href="/share/lib/grammar/conditional.flxh#0038">stmt := "if" sexpr "do" sstatements selse_clause "done"</a>
+           General conditional chain statement.
+           if condition do
+           ..
+           elif condition do
+           .
+           .
+           else
+           ..
+           done
+0041:    <a href="/share/lib/grammar/conditional.flxh#0041">stmt := "if" sexpr "begin" sstatements selse_clause "end"</a>
+0045:    <a href="/share/lib/grammar/conditional.flxh#0045">selif_clause := "elif" sexpr "do" sstatements</a>
+           General elif clause.
+0048:    <a href="/share/lib/grammar/conditional.flxh#0048">selif_clause := "elif" sexpr "return" ";"?</a>
+           Short form elif return clause.
+0049:    <a href="/share/lib/grammar/conditional.flxh#0049">selif_clause := "elif" sexpr "return" sexpr ";"?</a>
+0052:    <a href="/share/lib/grammar/conditional.flxh#0052">selif_clause := "elif" sexpr "goto" sname ";"?</a>
+           Short form elif goto clause.
+0055:    <a href="/share/lib/grammar/conditional.flxh#0055">selif_clauses := selif_clauses selif_clause</a>
+0056:    <a href="/share/lib/grammar/conditional.flxh#0056">selif_clauses := selif_clause</a>
+0057:    <a href="/share/lib/grammar/conditional.flxh#0057">selse_clause := selif_clauses "else" sstatements</a>
+0065:    <a href="/share/lib/grammar/conditional.flxh#0065">selse_clause := "else" sstatements</a>
+0066:    <a href="/share/lib/grammar/conditional.flxh#0066">selse_clause := selif_clauses</a>
+<hr/><a href="/share/lib/grammar/control.flxh">control.flxh</a>
+
+0002:  <a href="/share/lib/grammar/control.flxh#0002">syntax control</a>
+           Core control flow operators.
+0005:    <a href="/share/lib/grammar/control.flxh#0005">stmt := "do" sstatements "done"</a>
+           Just a group of statements.
+0006:    <a href="/share/lib/grammar/control.flxh#0006">stmt := "begin" sstatements "end"</a>
+0009:    <a href="/share/lib/grammar/control.flxh#0009">stmt := "call" sexpr  ";"</a>
+           Call a procedure (verbose).
+0012:    <a href="/share/lib/grammar/control.flxh#0012">stmt := "return" ";"</a>
+           Procedure return.
+0016:    <a href="/share/lib/grammar/control.flxh#0016">stmt := "return" "from" sname ";"</a>
+           Fast procedure return.
+           Returns immediately from enclosing procedure with given name.
+0021:    <a href="/share/lib/grammar/control.flxh#0021">stmt := "jump" sexpr ";"</a>
+           Procedure explicit tail call.
+           Equivalent to a call followed by a return.
+0024:    <a href="/share/lib/grammar/control.flxh#0024">stmt := "return" sexpr ";"</a>
+           Function return with value.
+0030:    <a href="/share/lib/grammar/control.flxh#0030">stmt := "yield" sexpr ";"</a>
+           Generator/iterator exchange with value (restart after yield).
+           Yield is like a return, except that re-entering the generator
+           will continue on after the yield statement rather that starting
+           from the top.
+0033:    <a href="/share/lib/grammar/control.flxh#0033">stmt := "loop" sname sexpr</a>
+           Special short form procedure self-tail call with argument.
+0036:    <a href="/share/lib/grammar/control.flxh#0036">stmt := "loop" sname ";"</a>
+           Special short form procedure self-tail call without argument.
+0039:    <a href="/share/lib/grammar/control.flxh#0039">stmt := "halt" sstring ";"</a>
+           Stop the program with prejudice and a message.
+0043:    <a href="/share/lib/grammar/control.flxh#0043">stmt := sname ":>"</a>
+           Label any statement.
+           Do not confuse with loop labels.
+0046:    <a href="/share/lib/grammar/control.flxh#0046">stmt := "goto" sname ";"</a>
+           Unconditional goto label.
+0060:    <a href="/share/lib/grammar/control.flxh#0060">stmt := "try" stmt+ catches "endtry"</a>
+           Exception handling.
+           try .. catch x : T => handler endtry
+           can be used to execute code which might throw
+           an exception, and catch the exception.
+           This is primarily intended to for wrapping C bindings.
+           Exceptions do not propage properly in Felix across
+           multiple function/procedure layers. If you have to use
+           this construction be sure to keep wrap the try block
+           closely around the throwing code.
+0063:    <a href="/share/lib/grammar/control.flxh#0063">catch := "catch" sname ":" sexpr  "=>" stmt+</a>
+0066:    <a href="/share/lib/grammar/control.flxh#0066">catches := catch+</a>
+<hr/><a href="/share/lib/grammar/executable.flxh">executable.flxh</a>
+
+0002:  <a href="/share/lib/grammar/executable.flxh#0002">syntax executable</a>
+           Special executable forms.
+0006:    <a href="/share/lib/grammar/executable.flxh#0006">stmt := "_svc" sname ";"</a>
+           System service call.
+0009:    <a href="/share/lib/grammar/executable.flxh#0009">stmt := sassignexpr ";"</a>
+           Assignment expression.
+0012:    <a href="/share/lib/grammar/executable.flxh#0012">stmt := "trace" sname sstring ";"</a>
+           Debug trace expression.
+0017:    <a href="/share/lib/grammar/executable.flxh#0017">stmt := sexpr ";"</a>
+           Call expression.
+           Short form of "call f a;" is just "f a;"
+           Short form of "call f ();" is just "f"
+0020:    <a href="/share/lib/grammar/executable.flxh#0020">stmt := "??" sinteger ";"</a>
+           Template replacement index.
+<hr/><a href="/share/lib/grammar/expressions.flxh">expressions.flxh</a>
+
+0001:  <a href="/share/lib/grammar/expressions.flxh#0001">syntax expressions</a>
+0039:    <a href="/share/lib/grammar/expressions.flxh#0039">sexpr := x[let_pri]</a>
+0040:    <a href="/share/lib/grammar/expressions.flxh#0040">stypeexpr:= x[sor_condition_pri]</a>
+0043:    <a href="/share/lib/grammar/expressions.flxh#0043">x[let_pri] := "let" spattern "=" x[let_pri] "in" x[let_pri]</a>
+           Let binding.
+0046:    <a href="/share/lib/grammar/expressions.flxh#0046">x[let_pri] := "let" "fun" sdeclname sfun_arg* fun_return_type "=>" x[let_pri] "in" x[let_pri]</a>
+           Let fun binding.
+0060:    <a href="/share/lib/grammar/expressions.flxh#0060">x[let_pri] := sconditional</a>
+           Conditional expression.
+0063:    <a href="/share/lib/grammar/expressions.flxh#0063">x[let_pri] := pattern_match</a>
+           Pattern matching.
+0067:    <a href="/share/lib/grammar/expressions.flxh#0067">x[sdollar_apply_pri] := x[stuple_pri] "unless" x[let_pri] "then" x[sdollar_apply_pri]</a>
+           Alternate conditional expression.
+0071:    <a href="/share/lib/grammar/expressions.flxh#0071">x[sdollar_apply_pri] := x[stuple_pri] "$" x[sdollar_apply_pri]</a>
+           Low precedence right associative application.
+0074:    <a href="/share/lib/grammar/expressions.flxh#0074">x[stuple_cons_pri] := x[>stuple_cons_pri] ",," x[stuple_cons_pri]</a>
+           Tuple formation by cons: right associative.
+0077:    <a href="/share/lib/grammar/expressions.flxh#0077">x[stuple_pri] := x[>stuple_pri] ( "," x[>stuple_pri])+</a>
+           Tuple formation non-associative.
+0080:    <a href="/share/lib/grammar/expressions.flxh#0080">x[simplies_condition_pri] := x[>simplies_condition_pri] "implies" x[>simplies_condition_pri]</a>
+           Logical implication.
+0083:    <a href="/share/lib/grammar/expressions.flxh#0083">x[sor_condition_pri] := x[>sor_condition_pri] ( "or" x[>sor_condition_pri])+</a>
+           Logical disjunction (or).
+0086:    <a href="/share/lib/grammar/expressions.flxh#0086">x[sand_condition_pri] := x[>sand_condition_pri] ( "and" x[>sand_condition_pri])+</a>
+           Logical conjunction (and).
+0089:    <a href="/share/lib/grammar/expressions.flxh#0089">x[snot_condition_pri] := "not" x[snot_condition_pri]</a>
+           Logical negation (not).
+0092:    <a href="/share/lib/grammar/expressions.flxh#0092">x[scomparison_pri]:= x[>scomparison_pri] "<" x[>scomparison_pri]</a>
+           Compare less.
+0095:    <a href="/share/lib/grammar/expressions.flxh#0095">x[scomparison_pri]:= x[>scomparison_pri] "<=" x[>scomparison_pri]</a>
+           Compare less equal.
+0098:    <a href="/share/lib/grammar/expressions.flxh#0098">x[scomparison_pri]:= x[>scomparison_pri] "==" x[>scomparison_pri]</a>
+           Compare equal.
+0101:    <a href="/share/lib/grammar/expressions.flxh#0101">x[scomparison_pri]:= x[>scomparison_pri] "!=" x[>scomparison_pri]</a>
+           Compare not equal.
+0104:    <a href="/share/lib/grammar/expressions.flxh#0104">x[scomparison_pri]:= x[>scomparison_pri] ">=" x[>scomparison_pri]</a>
+           Compare greater equal.
+0107:    <a href="/share/lib/grammar/expressions.flxh#0107">x[scomparison_pri]:= x[>scomparison_pri] ">" x[>scomparison_pri]</a>
+           Compare greater.
+0111:    <a href="/share/lib/grammar/expressions.flxh#0111">x[scomparison_pri]:= x[>scomparison_pri] "in" x[>scomparison_pri]</a>
+           Set membership.
+0114:    <a href="/share/lib/grammar/expressions.flxh#0114">x[scomparison_pri]:= x[>scomparison_pri] "\in" x[>scomparison_pri]</a>
+           Set membership.
+0117:    <a href="/share/lib/grammar/expressions.flxh#0117">x[sas_expr_pri] := x[sas_expr_pri] "as" sname</a>
+           Named temporary value.
+0120:    <a href="/share/lib/grammar/expressions.flxh#0120">x[sas_expr_pri] := x[sas_expr_pri] "as" "var" sname</a>
+           Named variable.
+0123:    <a href="/share/lib/grammar/expressions.flxh#0123">x[ssetunion_pri] := x[ssetunion_pri] "|->" x[>ssetunion_pri]</a>
+           Left assoc, for schannel pipes.
+0126:    <a href="/share/lib/grammar/expressions.flxh#0126">x[ssetunion_pri] := x[>ssetunion_pri] ">->" x[>ssetunion_pri]</a>
+           Non associative, streaming data structure into transducer.
+0132:    <a href="/share/lib/grammar/expressions.flxh#0132">x[sarrow_pri] := x[scase_literal_pri] "!" x[sarrow_pri]</a>
+           List cons, right associative.
+0135:    <a href="/share/lib/grammar/expressions.flxh#0135">x[sarrow_pri] := x[scase_literal_pri] "->" x[sarrow_pri]</a>
+           Function type, right associative.
+0138:    <a href="/share/lib/grammar/expressions.flxh#0138">x[sarrow_pri] := x[scase_literal_pri] "-->" x[sarrow_pri]</a>
+           C function type, right associative.
+0141:    <a href="/share/lib/grammar/expressions.flxh#0141">x[scase_literal_pri] := "case" sinteger</a>
+           Case tag literal.
+0144:    <a href="/share/lib/grammar/expressions.flxh#0144">x[scase_literal_pri] := "case" sinteger "of" x[ssum_pri]</a>
+           Case value.
+0147:    <a href="/share/lib/grammar/expressions.flxh#0147">x[scase_literal_pri] := "case" sname "of" x[ssum_pri]</a>
+           Variant value.
+0150:    <a href="/share/lib/grammar/expressions.flxh#0150">x[sbor_pri] := x[sbor_pri] "\|" x[>sbor_pri]</a>
+           Bitwise or, left associative.
+0153:    <a href="/share/lib/grammar/expressions.flxh#0153">x[sbxor_pri] := x[sbxor_pri] "\^" x[>sbxor_pri]</a>
+           Bitwise or, left associative.
+0156:    <a href="/share/lib/grammar/expressions.flxh#0156">x[sband_pri] := x[sband_pri] "\&" x[>sband_pri]</a>
+           Bitwise exclusive or, left associative.
+0159:    <a href="/share/lib/grammar/expressions.flxh#0159">x[sshift_pri] := x[sshift_pri] "<<" x[>sshift_pri]</a>
+           Bitwise left shift, left associative.
+0162:    <a href="/share/lib/grammar/expressions.flxh#0162">x[sshift_pri] := x[sshift_pri] ">>" x[>sshift_pri]</a>
+           Bitwise right shift, left associative.
+0165:    <a href="/share/lib/grammar/expressions.flxh#0165">x[ssum_pri] := x[>ssum_pri] ("+" x[>ssum_pri])+</a>
+           Addition: left non-associative.
+0168:    <a href="/share/lib/grammar/expressions.flxh#0168">x[ssubtraction_pri] := x[ssubtraction_pri] "-" x[sproduct_pri]</a>
+           Subtraction: left associative.
+0171:    <a href="/share/lib/grammar/expressions.flxh#0171">x[sproduct_pri] := x[>sproduct_pri] ("*" x[>sproduct_pri])+</a>
+           multiplication: non-associative.
+0174:    <a href="/share/lib/grammar/expressions.flxh#0174">x[s_term_pri] := x[s_term_pri] "/" x[>s_term_pri]</a>
+           division: left associative.
+0177:    <a href="/share/lib/grammar/expressions.flxh#0177">x[s_term_pri] := x[s_term_pri] "%" x[>s_term_pri]</a>
+           remainder: left associative.
+0180:    <a href="/share/lib/grammar/expressions.flxh#0180">x[sprefixed_pri] := "!" x[spower_pri]</a>
+           Prefix exclaim.
+0183:    <a href="/share/lib/grammar/expressions.flxh#0183">x[sprefixed_pri] := "+" x[spower_pri]</a>
+           Prefix plus.
+0186:    <a href="/share/lib/grammar/expressions.flxh#0186">x[sprefixed_pri] := "-" x[spower_pri]</a>
+           Prefix negation.
+0189:    <a href="/share/lib/grammar/expressions.flxh#0189">x[sprefixed_pri] := "~" x[spower_pri]</a>
+           Prefix complement.
+0192:    <a href="/share/lib/grammar/expressions.flxh#0192">x[spower_pri] := x[ssuperscript_pri] "**" x[sprefixed_pri]</a>
+           Fortran power.
+0195:    <a href="/share/lib/grammar/expressions.flxh#0195">x[ssuperscript_pri] := x[ssuperscript_pri] "^" x[srefr_pri]</a>
+           Superscript, exponential.
+0198:    <a href="/share/lib/grammar/expressions.flxh#0198">x[ssuperscript_pri] := x[ssuperscript_pri] "\circ" x[>ssuperscript_pri]</a>
+           composition
+0201:    <a href="/share/lib/grammar/expressions.flxh#0201">x[srefr_pri] := "*" x[srefr_pri]</a>
+           C dereference.
+0204:    <a href="/share/lib/grammar/expressions.flxh#0204">x[srefr_pri] := "_deref" x[srefr_pri]</a>
+           Deref primitive.
+0207:    <a href="/share/lib/grammar/expressions.flxh#0207">x[srefr_pri] := "new" x[srefr_pri]</a>
+           Operator new.
+0210:    <a href="/share/lib/grammar/expressions.flxh#0210">satom := "(" srecord_mem_decl ("," srecord_mem_decl)*  ")"</a>
+           Record type.
+0212:    <a href="/share/lib/grammar/expressions.flxh#0212">srecord_mem_decl := sname ":" stypeexpr</a>
+0215:    <a href="/share/lib/grammar/expressions.flxh#0215">satom := "union" "{" stype_sum_item0* "}"</a>
+           Variant type.
+0216:    <a href="/share/lib/grammar/expressions.flxh#0216">stype_sum_item := sname sopt_value stvarlist "of" sexpr</a>
+0217:    <a href="/share/lib/grammar/expressions.flxh#0217">stype_sum_item := sname sopt_value stvarlist</a>
+0219:    <a href="/share/lib/grammar/expressions.flxh#0219">stype_sum_item0 := sname "of" sexpr</a>
+0220:    <a href="/share/lib/grammar/expressions.flxh#0220">stype_sum_item0 := sname</a>
+0222:    <a href="/share/lib/grammar/expressions.flxh#0222">stype_sum_item1 := stype_sum_item ";"</a>
+0224:    <a href="/share/lib/grammar/expressions.flxh#0224">stype_sum_item2 := "|" stype_sum_item</a>
+0225:    <a href="/share/lib/grammar/expressions.flxh#0225">stype_sum_items2 := stype_sum_item stype_sum_item2*</a>
+0226:    <a href="/share/lib/grammar/expressions.flxh#0226">stype_sum_items2 := stype_sum_item2*</a>
+0229:    <a href="/share/lib/grammar/expressions.flxh#0229">x[sapplication_pri] := x[sapplication_pri] x[scoercion_pri]</a>
+           Operator whitespace: application.
+0232:    <a href="/share/lib/grammar/expressions.flxh#0232">x[sapplication_pri] := "caseno" x[scoercion_pri]</a>
+           Variant index.
+0236:    <a href="/share/lib/grammar/expressions.flxh#0236">x[sapplication_pri] := "likely" x[scoercion_pri]</a>
+           Optimisation hint: likely.
+           Use in conditionals, e.g. if likely(x) do ...
+0240:    <a href="/share/lib/grammar/expressions.flxh#0240">x[sapplication_pri] := "unlikely" x[scoercion_pri]</a>
+           Optimisation hint: unlikely.
+           Use in conditionals, e.g. if unlikely(x) do ...
+0243:    <a href="/share/lib/grammar/expressions.flxh#0243">x[scoercion_pri] := x[scoercion_pri] ":>>" x[sfactor_pri]</a>
+           Suffixed coercion.
+0245:    <a href="/share/lib/grammar/expressions.flxh#0245">x[scoercion_pri] := ssuffixed_name</a>
+0247:    <a href="/share/lib/grammar/expressions.flxh#0247">x[sfactor_pri] := sthe_name</a>
+0252:    <a href="/share/lib/grammar/expressions.flxh#0252">x[sfactor_pri] := x[sfactor_pri] "." "[" sexpr "]"</a>
+           String subscript.
+0255:    <a href="/share/lib/grammar/expressions.flxh#0255">x[sfactor_pri] := x[sfactor_pri] "." "[" sexpr "to" sexpr "]"</a>
+           String substring.
+0258:    <a href="/share/lib/grammar/expressions.flxh#0258">x[sfactor_pri] := x[sfactor_pri] "." "[" sexpr "to" "]"</a>
+           String substring, to end of string.
+0261:    <a href="/share/lib/grammar/expressions.flxh#0261">x[sfactor_pri] := x[sfactor_pri] "." "[" "to" sexpr "]"</a>
+           String substring, from start of string.
+0264:    <a href="/share/lib/grammar/expressions.flxh#0264">x[sfactor_pri] := x[sfactor_pri] "." sthe_name</a>
+           Reverse application.
+0268:    <a href="/share/lib/grammar/expressions.flxh#0268">x[sfactor_pri] := x[sfactor_pri] "*." sthe_name</a>
+           Reverse application with dereference.
+           a *. b same as (*a) . b, like C  a -> b.
+0272:    <a href="/share/lib/grammar/expressions.flxh#0272">x[sfactor_pri] := x[sfactor_pri] "&." sthe_name</a>
+           a &. b is similar to &a . b for an array, but can be overloaded
+           for abstract arrays: like a + b in C. Returns pointer.
+0275:    <a href="/share/lib/grammar/expressions.flxh#0275">sbasic_name_comma_list:= sname ("," sname)*</a>
+0278:    <a href="/share/lib/grammar/expressions.flxh#0278">sthe_name := "#" sthe_name</a>
+           High precedence unit application. #f = f ().
+0281:    <a href="/share/lib/grammar/expressions.flxh#0281">sthe_name := "&" sthe_name</a>
+           Felix pointer type and address of operator.
+0284:    <a href="/share/lib/grammar/expressions.flxh#0284">sthe_name :=  "@" sthe_name</a>
+           C pointer type.
+0287:    <a href="/share/lib/grammar/expressions.flxh#0287">sthe_name := "noexpand" squalified_name</a>
+           macro expansion freezer.
+0290:    <a href="/share/lib/grammar/expressions.flxh#0290">sthe_name := "?" sname</a>
+           pattern variable.
+0293:    <a href="/share/lib/grammar/expressions.flxh#0293">sthe_name := "?" sinteger</a>
+           Template replacement index.
+0295:    <a href="/share/lib/grammar/expressions.flxh#0295">sthe_name := squalified_name</a>
+0296:    <a href="/share/lib/grammar/expressions.flxh#0296">sthe_name := satom</a>
+0299:    <a href="/share/lib/grammar/expressions.flxh#0299">sreally_qualified_name := squalified_name "::" ssimple_name_parts</a>
+           Qualified name.
+0302:    <a href="/share/lib/grammar/expressions.flxh#0302">squalified_name := sreally_qualified_name</a>
+0304:    <a href="/share/lib/grammar/expressions.flxh#0304">squalified_name := ssimple_name_parts</a>
+0307:    <a href="/share/lib/grammar/expressions.flxh#0307">ssimple_name_parts := sname</a>
+0308:    <a href="/share/lib/grammar/expressions.flxh#0308">ssimple_name_parts := sname "[" sexpr "]"</a>
+0311:    <a href="/share/lib/grammar/expressions.flxh#0311">ssuffixed_name := squalified_name "of" x[sfactor_pri]</a>
+           Suffixed name (to name functions).
+0315:    <a href="/share/lib/grammar/expressions.flxh#0315">satom := "(" rassign ("," rassign )* ")"</a>
+           record value (comma separated).
+0318:    <a href="/share/lib/grammar/expressions.flxh#0318">rassign := sname "=" x[sor_condition_pri]</a>
+0323:    <a href="/share/lib/grammar/expressions.flxh#0323">satom := "struct" "{" vassign+ "}"</a>
+           record value, statement list.
+           this variant is useful for encapsulating
+           a series of var x = y; style statements.
+0326:    <a href="/share/lib/grammar/expressions.flxh#0326">vassign := "var" sname "=" sexpr ";"</a>
+0330:    <a href="/share/lib/grammar/expressions.flxh#0330">satom := sliteral</a>
+           scalar literals (numbers, strings).
+0333:    <a href="/share/lib/grammar/expressions.flxh#0333">satom := _</a>
+           Wildcard pattern.
+0336:    <a href="/share/lib/grammar/expressions.flxh#0336">satom := "..."</a>
+           Ellipsis (for binding C varags functions).
+0339:    <a href="/share/lib/grammar/expressions.flxh#0339">satom := "false"</a>
+           Boolean false.
+0342:    <a href="/share/lib/grammar/expressions.flxh#0342">satom := "true"</a>
+           Boolean true.
+0345:    <a href="/share/lib/grammar/expressions.flxh#0345">satom := "callback" "[" sexpr "]"</a>
+           Callback expression.
+0348:    <a href="/share/lib/grammar/expressions.flxh#0348">satom := "[|" sexpr "|]"</a>
+           Array expression (deprecated).
+0351:    <a href="/share/lib/grammar/expressions.flxh#0351">satom := "{" sexpr "}"</a>
+           Short form anonymous function closure.
+0354:    <a href="/share/lib/grammar/expressions.flxh#0354">satom := scompound</a>
+           Short form anonymous procedure closure.
+0358:    <a href="/share/lib/grammar/expressions.flxh#0358">satom := "(" stmt+ sexpr ")"</a>
+           Short form sequence operator.
+           ( stmt; expr ) means the same as #{stmt; return expr; }
+0374:    <a href="/share/lib/grammar/expressions.flxh#0374">satom := "(" "var" sexpr ")"</a>
+           special anonymous variable forces eager eval.
+0387:    <a href="/share/lib/grammar/expressions.flxh#0387">satom := "(" sexpr ")"</a>
+           Grouping.
+0390:    <a href="/share/lib/grammar/expressions.flxh#0390">satom := "(" ")"</a>
+           Empty tuple (unit tuple).
+0393:    <a href="/share/lib/grammar/expressions.flxh#0393">satom := "extend" stypelist "with" sexpr "end"</a>
+           Object extension.
+0396:    <a href="/share/lib/grammar/expressions.flxh#0396">satom := sconditional "endif"</a>
+           Conditional expression.
+0399:    <a href="/share/lib/grammar/expressions.flxh#0399">sconditional := "if" sexpr "then" sexpr selse_part</a>
+           Conditional expression (prefix).
+0402:    <a href="/share/lib/grammar/expressions.flxh#0402">selif := "elif" sexpr "then" sexpr</a>
+0404:    <a href="/share/lib/grammar/expressions.flxh#0404">selifs := selif</a>
+0405:    <a href="/share/lib/grammar/expressions.flxh#0405">selifs := selifs selif</a>
+0407:    <a href="/share/lib/grammar/expressions.flxh#0407">selse_part:= "else" sexpr</a>
+0408:    <a href="/share/lib/grammar/expressions.flxh#0408">selse_part:= selifs "else" sexpr</a>
+<hr/><a href="/share/lib/grammar/felix.flxh">felix.flxh</a>
+
+0001:  <a href="/share/lib/grammar/felix.flxh#0001">syntax felix</a>
+<hr/><a href="/share/lib/grammar/functions.flxh">functions.flxh</a>
+
+0002:  <a href="/share/lib/grammar/functions.flxh#0002">syntax functions</a>
+           General functional forms.
+0006:    <a href="/share/lib/grammar/functions.flxh#0006">satom := sadjectives "fun" stvarlist slambda_fun_args fun_return_type "=" scompound</a>
+           Anonymous function (lamda).
+0012:    <a href="/share/lib/grammar/functions.flxh#0012">x[slambda_pri] := sadjectives "fun" stvarlist slambda_fun_args fun_return_type "=>" sexpr</a>
+           Anonymous function (lamda).
+0018:    <a href="/share/lib/grammar/functions.flxh#0018">satom := sadjectives "gen" stvarlist slambda_fun_args fun_return_type "=" scompound</a>
+           Anonymous generator (lamda).
+0024:    <a href="/share/lib/grammar/functions.flxh#0024">x[slambda_pri] := sadjectives "gen" stvarlist slambda_fun_args fun_return_type "=>" sexpr</a>
+           Anonymous generator (lamda).
+0031:    <a href="/share/lib/grammar/functions.flxh#0031">satom := sadjectives "proc" stvarlist slambda_fun_args scompound</a>
+           Anonymous procedure (lamda).
+0037:    <a href="/share/lib/grammar/functions.flxh#0037">satom  := sadjectives "proc" stvarlist scompound</a>
+           Anonymous procedure (lamda).
+0044:    <a href="/share/lib/grammar/functions.flxh#0044">satom := sadjectives "object" stvarlist slambda_fun_args fun_return_type "=" scompound</a>
+           Anonymous object constructor (lamda).
+           UGLY.
+0050:    <a href="/share/lib/grammar/functions.flxh#0050">sadjective := "inline"</a>
+           Function adjective (prefix property) inline.
+0053:    <a href="/share/lib/grammar/functions.flxh#0053">sadjective := "noinline"</a>
+           Function adjective (prefix property) noinline.
+0057:    <a href="/share/lib/grammar/functions.flxh#0057">sadjective := "extern"</a>
+           Function adjective (prefix property) extern.
+0061:    <a href="/share/lib/grammar/functions.flxh#0061">sadjective := "virtual"</a>
+           Function adjective (prefix property) virtual.
+           In classes only. Specifies an overrideable function.
+0066:    <a href="/share/lib/grammar/functions.flxh#0066">sadjective := "lvalue"</a>
+           Function adjective (prefix property) lvalue.
+           C function bindings only.
+           Allows result of function call to be addressed.
+0070:    <a href="/share/lib/grammar/functions.flxh#0070">sadjective := "pure"</a>
+           Function dependent on its arguments only,
+           not dependent on any variables in its enclosing context.
+0073:    <a href="/share/lib/grammar/functions.flxh#0073">sadjective := "impure"</a>
+           Function may be dependent on variables in its enclosing context.
+0076:    <a href="/share/lib/grammar/functions.flxh#0076">sadjective := "total"</a>
+           Function returns a result for all argument values.
+0080:    <a href="/share/lib/grammar/functions.flxh#0080">sadjective := "partial"</a>
+           Function may fail for some argument values.
+           Equivalent to a function with a non-tautologous but unknown pre-condition.
+0083:    <a href="/share/lib/grammar/functions.flxh#0083">sadjective := "method"</a>
+           Specifies a method, in an object definition only.
+0089:    <a href="/share/lib/grammar/functions.flxh#0089">sadjective := "export"</a>
+           Specifies function is to be exported under its Felix name.
+           Function must be top level and non-polymorphic.
+           Top level means the global space or a non-polymorphic class
+           nested in a top level space (recursively).
+0090:    <a href="/share/lib/grammar/functions.flxh#0090">sadjective := "export" sstring</a>
+0092:    <a href="/share/lib/grammar/functions.flxh#0092">sadjectives := sadjective*</a>
+0094:    <a href="/share/lib/grammar/functions.flxh#0094">slambda_fun_arg := "(" sparameter_comma_list "when" sexpr ")"</a>
+0095:    <a href="/share/lib/grammar/functions.flxh#0095">slambda_fun_arg := "(" sparameter_comma_list ")"</a>
+0096:    <a href="/share/lib/grammar/functions.flxh#0096">slambda_fun_args := slambda_fun_arg+</a>
+0099:    <a href="/share/lib/grammar/functions.flxh#0099">fun_return_type := ":" stypeexpr "expect" sexpr</a>
+           Function return type specification with post-condition.
+0102:    <a href="/share/lib/grammar/functions.flxh#0102">fun_return_type := ":" stypeexpr</a>
+           Function return type specification without post-condition.
+0105:    <a href="/share/lib/grammar/functions.flxh#0105">fun_return_type := "expect" sexpr</a>
+           Function return postcondition without type.
+0108:    <a href="/share/lib/grammar/functions.flxh#0108">fun_return_type := sepsilon</a>
+           No return type.
+0111:    <a href="/share/lib/grammar/functions.flxh#0111">object_return_type := stypeexpr</a>
+           Object factory return type.
+0114:    <a href="/share/lib/grammar/functions.flxh#0114">sparameter := sparam_qual sname ":" x[sarrow_pri] "=" x[sor_condition_pri]</a>
+           Function parameter with type and default value.
+0117:    <a href="/share/lib/grammar/functions.flxh#0117">sparameter := sparam_qual sname ":" x[sarrow_pri]</a>
+           Function parameter with type.
+0121:    <a href="/share/lib/grammar/functions.flxh#0121">sparameter := sparam_qual sname</a>
+           Function parameter without type.
+           Defaults to polymorphic in unnamed type variable.
+0124:    <a href="/share/lib/grammar/functions.flxh#0124">sparameter_comma_list := sepsilon</a>
+           Empty parameter tuple.
+0127:    <a href="/share/lib/grammar/functions.flxh#0127">sparameter_comma_list := sparameter ("," sparameter)*</a>
+           Populated parameter tuple.
+0130:    <a href="/share/lib/grammar/functions.flxh#0130">sparam_qual := "val"</a>
+           Parameter qualifier: val.
+0133:    <a href="/share/lib/grammar/functions.flxh#0133">sparam_qual := "var"</a>
+           Parameter qualifier: var.
+0136:    <a href="/share/lib/grammar/functions.flxh#0136">sparam_qual := "ref"</a>
+           Parameter qualifier: ref.
+0139:    <a href="/share/lib/grammar/functions.flxh#0139">sparam_qual := "fun"</a>
+           Parameter qualifier: fun.
+0142:    <a href="/share/lib/grammar/functions.flxh#0142">sparam_qual := sepsilon</a>
+           Default parameter qualifier is val.
+0145:    <a href="/share/lib/grammar/functions.flxh#0145">sfun_arg :=  "(" sparameter_comma_list "when" sexpr ")"</a>
+           Function tuple parameter with pre-condition.
+0148:    <a href="/share/lib/grammar/functions.flxh#0148">sfun_arg :=  "(" sparameter_comma_list ")"</a>
+           Function tuple parameter without pre-condition.
+0151:    <a href="/share/lib/grammar/functions.flxh#0151">sfun_arg :=  sname</a>
+           Short form function parameter single polymorphic variable.
+0155:    <a href="/share/lib/grammar/functions.flxh#0155">sfun_kind := "cfun"</a>
+           Function binder: C function.
+           A function with C function type.
+0159:    <a href="/share/lib/grammar/functions.flxh#0159">sfun_kind := "gen"</a>
+           Function binder: Generator.
+           A function with side effects.
+0163:    <a href="/share/lib/grammar/functions.flxh#0163">sfun_kind := "fun"</a>
+           Function binder: Function.
+           A function without side-effects.
+0165:    <a href="/share/lib/grammar/functions.flxh#0165">stmt := sfunction</a>
+0171:    <a href="/share/lib/grammar/functions.flxh#0171">sfunction := sadjectives sfun_kind sdeclname sfun_arg* fun_return_type "=>" sexpr ";"</a>
+           General function definition. Multiple tuple arguments, body is expression.
+           Example:
+           
+           inline fun f (x:int when x>0) (y:long when y>0l) : long expect result > 0l => x.long + y;
+0180:    <a href="/share/lib/grammar/functions.flxh#0180">sfunction := sadjectives sfun_kind sdeclname sfun_arg* fun_return_type "=" scompound</a>
+           General function definition. Multiple tuple arguments, body of statements.
+           inline fun f (x:int when x>0) (y:long when y>0l) : long expect result > 0l { return x.long + y; }
+0186:    <a href="/share/lib/grammar/functions.flxh#0186">sfunction := "object" sdeclname sfun_arg* "implements" object_return_type "=" scompound</a>
+           Object factory definition with interface type.
+0192:    <a href="/share/lib/grammar/functions.flxh#0192">sfunction := "object" sdeclname sfun_arg*  "=" scompound</a>
+           Object factory definition without interface type.
+0218:    <a href="/share/lib/grammar/functions.flxh#0218">sfunction := "object" sdeclname sfun_arg*  "extends" stypeexpr_comma_list "=" scompound</a>
+           Object factory definition with inherited methods and
+           interface type.
+           Object factory definition with inherited methods.
+0233:    <a href="/share/lib/grammar/functions.flxh#0233">stypeexpr_comma_list := stypeexpr ("," stypeexpr)*</a>
+0236:    <a href="/share/lib/grammar/functions.flxh#0236">sopt_cstring := "=" scode_spec</a>
+0237:    <a href="/share/lib/grammar/functions.flxh#0237">sopt_cstring := sepsilon</a>
+0242:    <a href="/share/lib/grammar/functions.flxh#0242">sfunction := sadjectives sfun_kind sdeclname fun_return_type "=" smatching+ ";"</a>
+           Short form function definition. Example:
+           fun f : int -> int = | 0 => 0 | _ => 1;
+0271:    <a href="/share/lib/grammar/functions.flxh#0271">sproc_kind := "proc"</a>
+           Procedure binder.
+0275:    <a href="/share/lib/grammar/functions.flxh#0275">sproc_kind := "cproc"</a>
+           C procedure binder.
+           Procedure has C function type (with void result type).
+0277:    <a href="/share/lib/grammar/functions.flxh#0277">sopt_traint_eq:= "expect" sexpr "="</a>
+0278:    <a href="/share/lib/grammar/functions.flxh#0278">sopt_traint_eq:= "="</a>
+0279:    <a href="/share/lib/grammar/functions.flxh#0279">sopt_traint_eq:= sepsilon</a>
+0281:    <a href="/share/lib/grammar/functions.flxh#0281">sopt_traint:= "expect" sexpr</a>
+0282:    <a href="/share/lib/grammar/functions.flxh#0282">sopt_traint:= sepsilon</a>
+0284:    <a href="/share/lib/grammar/functions.flxh#0284">sctor_init := sname "(" sexpr ")"</a>
+0285:    <a href="/share/lib/grammar/functions.flxh#0285">sctor_inits := ":" sctor_init ("," sctor_init)*</a>
+0286:    <a href="/share/lib/grammar/functions.flxh#0286">sctor_inits := sepsilon</a>
+0291:    <a href="/share/lib/grammar/functions.flxh#0291">sfunction := "ctor" stvarlist squalified_name sfun_arg+ sopt_traint_eq scompound</a>
+           Short form constructor function.
+           The name of the function must be a type name.
+           The return type is taken as the type with the name of the function.
+0308:    <a href="/share/lib/grammar/functions.flxh#0308">sfunction := "ctor" stvarlist squalified_name sfun_arg+ sopt_traint "=>" sexpr ";"</a>
+           Short form constructor function.
+           The name of the function must be a type name.
+           The return type is taken as the type with the name of the function.
+0323:    <a href="/share/lib/grammar/functions.flxh#0323">sfunction := sadjectives sproc_kind sdeclname sfun_arg* sopt_traint_eq scompound</a>
+           Procedure definition, general form.
+0329:    <a href="/share/lib/grammar/functions.flxh#0329">sfunction := sadjectives sproc_kind sdeclname sfun_arg* "=>" stmt</a>
+           Procedure definition, short form (one statement).
+<hr/><a href="/share/lib/grammar/grammar_float_lexer.flxh">grammar_float_lexer.flxh</a>
+
+0007:  <a href="/share/lib/grammar/grammar_float_lexer.flxh#0007">syntax felix_float_lexer</a>
+           Floating point literals.
+           Follows ISO C89, except that we allow underscores;
+           AND we require both leading and trailing digits so that
+           x.0 works for tuple projections and 0.f is a function
+           application
+0050:    <a href="/share/lib/grammar/grammar_float_lexer.flxh#0050">strfloat := sfloat</a>
+0053:    <a href="/share/lib/grammar/grammar_float_lexer.flxh#0053">sliteral := sfloat</a>
+<hr/><a href="/share/lib/grammar/grammar_ident_lexer.flxh">grammar_ident_lexer.flxh</a>
+
+0001:  <a href="/share/lib/grammar/grammar_ident_lexer.flxh#0001">syntax felix_ident_lexer</a>
+0028:    <a href="/share/lib/grammar/grammar_ident_lexer.flxh#0028">sname := flx_ident =># "_1" | tex_ident =># "_1" | sym_ident</a>
+<hr/><a href="/share/lib/grammar/grammar_int_lexer.flxh">grammar_int_lexer.flxh</a>
+
+0175:  <a href="/share/lib/grammar/grammar_int_lexer.flxh#0175">syntax felix_int_lexer</a>
+           Integer literals.
+           
+           Felix integer literals consist of an optional radix specifer,
+           a sequence of digits of the radix type, possibly separated
+           by an underscore (_) character, and a trailing type specifier.
+           The radix can be:
+           0b, 0B - binary
+           0o, 0O - octal
+           0d, 0D - decimal
+           0x, 0X - hex
+           The default is decimal.
+           NOTE: unlike C a leading 0 in does NOT denote octal.
+           Underscores are allowed between digits or the radix
+           and the first digit, or between the digits and type specifier.
+           The adaptable signed type specifiers are:
+           
+           t        -- tiny   (char as int)
+           s        -- short
+           i        -- int
+           l        -- long
+           v,ll     -- vlong (long long in C)
+           z        -- ssize (ssize_t in C, a signed variant of size_t)
+           j        -- intmax
+           p        -- intptr
+           d        -- ptrdiff
+           These may be upper of lower case.
+           A "u" or "U" before or after such specifier indicates
+           the correspondin unsigned type.
+           The follingw exact type specifiers can be given:
+           "i8" | "i16" | "i32" | "i64"
+           | "u8" | "u16" | "u32" | "u64"
+           | "I8" | "I16" | "I32" | "I64"
+           | "U8" | "U16" | "U32" | "U64";
+           The default type is "int".
+0213:    <a href="/share/lib/grammar/grammar_int_lexer.flxh#0213">sinteger := int_prefix</a>
+0229:    <a href="/share/lib/grammar/grammar_int_lexer.flxh#0229">sliteral := int_lit</a>
+0232:    <a href="/share/lib/grammar/grammar_int_lexer.flxh#0232">sintegral := int_lit</a>
+0233:    <a href="/share/lib/grammar/grammar_int_lexer.flxh#0233">sintegral := "-" int_lit</a>
+0244:    <a href="/share/lib/grammar/grammar_int_lexer.flxh#0244">strint := sintegral</a>
+<hr/><a href="/share/lib/grammar/grammar_lexer.flxh">grammar_lexer.flxh</a>
+
+0036:  <a href="/share/lib/grammar/grammar_lexer.flxh#0036">syntax lexer</a>
+<hr/><a href="/share/lib/grammar/grammar_regdefs.flxh">grammar_regdefs.flxh</a>
+
+0001:  <a href="/share/lib/grammar/grammar_regdefs.flxh#0001">syntax global_regdefs</a>
+<hr/><a href="/share/lib/grammar/grammar_string_lexer.flxh">grammar_string_lexer.flxh</a>
+
+0181:  <a href="/share/lib/grammar/grammar_string_lexer.flxh#0181">syntax felix_string_lexer</a>
+           String literals.
+           Generaly we follow Python here.
+           Felix allows strings to be delimited by;
+           single quotes '
+           double quotes "
+           triped single quotes '''
+           tripled double quotes """
+           The single quote forms must be on a single line.
+           The triple quoted forms may span lines, and include embedded newline
+           characters.
+           These forms all allows embedded escape codes.
+           These are:
+           \a  -  7 : bell
+           \b  -  8 : backspace
+           \t  -  9 : horizontal tab
+           \n  - 10 : linefeed, newline
+           \r  - 13 : carriage return
+           \v  - 11 : vertical tab
+           \f  - 12 :form feed
+           \e  - 27 : escape
+           \\  - \  : slosh
+           \"  - "  : double quote
+           \'  - '  : single quote
+           \   - 32 : space
+           \xFF - hexadecimal character code
+           \o7 \o77 \o777 -- octal character code (stops on count of 3 or non-octal character)
+           \d9 \d99 \d999 -- decimal character code (stops on count of 3 or non-decimal character)
+           \uFFFF - utf8 encoding of specified hex value
+           \UFFFFFFFF - utf8 encoding of specified hex value
+           A prefix "r" or "R" on a double quoted string
+           or triple double quoted string suppresses escape processing,
+           this is called a raw string literal.
+           NOTE: single quoted string cannot be used!
+           A prefix "w" or "W" specifies a wide character string,
+           of character type wchar. DEPRECATED.
+           A prefix of "u" or "U" specifes a string of uint32.
+           This is a full Unicode string.
+           THIS FEATURE WILL BE DEPRECATED.
+           IT WILL BE REPLACED BY C++11 Unicode compliant strings.
+           A prefix of "c" or "C" specifies a C NTBS (Nul terminated
+           byte string) be generated instead of a C++ string.
+           Such a string has type +char rather than string.
+           
+           A literal prefixed by "q" or "Q" is a Perl interpolation
+           string. Such strings are actually functions.
+           Each occurrence of $(varname) in the string is replaced
+           at run time by the value "str varname". The type of the
+           variable must provide an overload of "str" which returns
+           a C++ string for this to work.
+           A literal prefixed by a "f" or "F" is a C format string.
+           Such strings are actually functions.
+           The string contains code such as "%d" or other supported
+           C format string. Variable field width specifiers "*" are
+           not permitted. The additional format specification %S
+           is supported and requires a C++ string argument.
+           Such functions accept a tuple of values like this:
+           f"%d-$S" (42, "Hello")
+           If vsnprintf is available on the local platform it is used
+           to provide an implementation which cannot overrun.
+           If it is not, vsprintf is used instead with a 1000 character
+           buffer.
+           
+           The argument types and code types are fully checked for type safety.
+           The special literal with a "n" or "N" prefix is a way to encode
+           an arbitrary sequence of characters as an identifer in a context
+           where the parser might interpret it otherwise.
+           It can be used, for example, to define special characters as functions.
+           For example:
+           typedef fun n"@" (T:TYPE) : TYPE => cptr[T];
+0235:    <a href="/share/lib/grammar/grammar_string_lexer.flxh#0235">sname := nstring_literal</a>
+0262:    <a href="/share/lib/grammar/grammar_string_lexer.flxh#0262">sliteral := String</a>
+0276:    <a href="/share/lib/grammar/grammar_string_lexer.flxh#0276">sliteral := Wstring</a>
+0290:    <a href="/share/lib/grammar/grammar_string_lexer.flxh#0290">sliteral := Ustring</a>
+0304:    <a href="/share/lib/grammar/grammar_string_lexer.flxh#0304">sliteral := Cstring</a>
+0308:    <a href="/share/lib/grammar/grammar_string_lexer.flxh#0308">sliteral := Qstring</a>
+0312:    <a href="/share/lib/grammar/grammar_string_lexer.flxh#0312">sliteral := Fstring</a>
+<hr/><a href="/share/lib/grammar/json.flxh">json.flxh</a>
+
+0015:  <a href="/share/lib/grammar/json.flxh#0015">syntax json</a>
+           String grammar for JSON.
+           This DSSL just allows one to construct syntactically valid JSON strings.
+           That is, an expression like:
+           json ( { a:1 ,b:"hello", [1,2,null] } )
+           
+           is equivalent to
+           '{ a:1 ,b:"hello", [1,2,null] }'
+           
+           however, it is validated by the parser.
+0017:    <a href="/share/lib/grammar/json.flxh#0017">x[sapplication_pri] := "json" "(" json_value ")"</a>
+<hr/><a href="/share/lib/grammar/loops.flxh">loops.flxh</a>
+
+0030:  <a href="/share/lib/grammar/loops.flxh#0030">syntax loops</a>
+           Primary looping contructs.
+0034:    <a href="/share/lib/grammar/loops.flxh#0034">stmt := "break" sname</a>
+           Labelled break.
+           Use to exit from the loop with the specified label.
+0036:    <a href="/share/lib/grammar/loops.flxh#0036">stmt_group := "do" sstatements "done"</a>
+0037:    <a href="/share/lib/grammar/loops.flxh#0037">stmt_group := "begin" sstatements "end"</a>
+0041:    <a href="/share/lib/grammar/loops.flxh#0041">stmt := "continue" sname</a>
+           Labelled continue.
+           Use to continue with the next iteration of the loop with the specified label.
+0045:    <a href="/share/lib/grammar/loops.flxh#0045">stmt := "redo" sname</a>
+           Labelled redo.
+           Use to restart this iteration of the loop with the specified label.
+0049:    <a href="/share/lib/grammar/loops.flxh#0049">optlabel := sname ":"</a>
+           Syntax for a loop label.
+           Use just before the loop.
+0052:    <a href="/share/lib/grammar/loops.flxh#0052">optlabel := sepsilon</a>
+           Loop labels aren't required.
+0055:    <a href="/share/lib/grammar/loops.flxh#0055">stmt := optlabel "while" sexpr stmt_group</a>
+           Standard while loop.
+0068:    <a href="/share/lib/grammar/loops.flxh#0068">stmt := optlabel "until" sexpr stmt_group</a>
+           Negated while loop.
+0090:    <a href="/share/lib/grammar/loops.flxh#0090">stmt := optlabel "for" sname "in" sexpr "upto" sexpr stmt_group</a>
+           Numeric upwards for loop, existing control variable.
+           Ranges are inclusive. This is essential in case
+           the loops if over the complete domain of the control variable type.
+           The start and end argument types and the declared control variable type must be the same.
+0118:    <a href="/share/lib/grammar/loops.flxh#0118">stmt := optlabel "for" "var" sname ":" sexpr "in" sexpr "upto" sexpr stmt_group</a>
+           Numeric upwards for loop, also declares the control variable with type.
+           The control variable is local to the enclosing context,
+           NOT the loop, so it can be inspected in code following the loop.
+           Ranges are inclusive. This is essential in case
+           the loops if over the complete domain of the control variable type.
+           The start and end argument types and the declared control variable type must be the same.
+0146:    <a href="/share/lib/grammar/loops.flxh#0146">stmt := optlabel "for" "var" sname "in" sexpr "upto" sexpr stmt_group</a>
+           Numeric upwards for loop, also declares the control variable.
+           The control variable is local to the enclosing context,
+           NOT the loop, so it can be inspected in code following the loop.
+           Ranges are inclusive. This is essential in case
+           the loops if over the complete domain of the control variable type.
+           The start and end argument types must be the same.
+0173:    <a href="/share/lib/grammar/loops.flxh#0173">stmt := optlabel "for" sname "in" sexpr "downto" sexpr stmt_group</a>
+           Numeric downwards for loop, existing control variable.
+           Ranges are inclusive. This is essential in case
+           the loops if over the complete domain of the control variable type.
+           The start and end argument types and the declared control variable type must be the same.
+0201:    <a href="/share/lib/grammar/loops.flxh#0201">stmt := optlabel "for" "var" sname ":" sexpr "in" sexpr "downto" sexpr stmt_group</a>
+           Numeric downwards for loop, also declares the control variable with type.
+           The control variable is local to the enclosing context,
+           NOT the loop, so it can be inspected in code following the loop.
+           Ranges are inclusive. This is essential in case
+           the loops if over the complete domain of the control variable type.
+           The start and end argument types and the declared control variable type must be the same.
+0229:    <a href="/share/lib/grammar/loops.flxh#0229">stmt := optlabel "for" "var" sname "in" sexpr "downto" sexpr stmt_group</a>
+           Numeric downwards for loop, also declares the control variable.
+           The control variable is local to the enclosing context,
+           NOT the loop, so it can be inspected in code following the loop.
+           Ranges are inclusive. This is essential in case
+           the loops if over the complete domain of the control variable type.
+           The start and end argument types and the declared control variable type must be the same.
+0266:    <a href="/share/lib/grammar/loops.flxh#0266">stmt := optlabel "for" sname "in" sexpr stmt_group</a>
+           Basic stream consumer.
+           The second argument must either be a function of type:
+           unit -> opt[T]
+           or any data structure D with a function
+           
+           iterator : D -> unit -> opt[T]
+           1. The iterator function is called.
+           2. If the result is None, the loop exits.
+           3. If the result is Some ?t, then t is assigned to the
+           control variable,
+           4. the loop body is executed, and
+           6. we go back to step 1.
+0308:    <a href="/share/lib/grammar/loops.flxh#0308">stmt := optlabel "match" spattern "in" sexpr stmt_group</a>
+           Upmarket stream consumer.
+           The second argument must either be a function of type:
+           unit -> opt[T]
+           or any data structure D with a function
+           
+           iterator : D -> unit -> opt[T]
+           1. The iterator function is called.
+           2. If the result is None, the loop exits.
+           3. If the result is Some ?t,
+           then t is matched against the pattern.
+           4. If the pattern matches, loop body is executed, and
+           5. we go back to step 1.
+           6. If the pattern does not match,
+           7. we go back to step 1
+           without executing the loop body.
+<hr/><a href="/share/lib/grammar/macros.flxh">macros.flxh</a>
+
+0001:  <a href="/share/lib/grammar/macros.flxh#0001">syntax macros</a>
+0003:    <a href="/share/lib/grammar/macros.flxh#0003">stmt := "macro" "val" sbasic_name_comma_list "=" sexpr ";"</a>
+0006:    <a href="/share/lib/grammar/macros.flxh#0006">stmt := "forall" sname "in" sexpr "do" sstatements "done"</a>
+<hr/><a href="/share/lib/grammar/namespaces.flxh">namespaces.flxh</a>
+
+0002:  <a href="/share/lib/grammar/namespaces.flxh#0002">syntax namespaces</a>
+           Felix namespace control.
+0009:    <a href="/share/lib/grammar/namespaces.flxh#0009">stmt := "rename" sdeclname "=" squalified_name ";"</a>
+           Create a new solo name and bind it to an existing name.
+           NOTE: it doesn't rename anything!
+           Used to inject solo names into a namespace.
+0017:    <a href="/share/lib/grammar/namespaces.flxh#0017">stmt := "rename" "fun" sdeclname "=" squalified_name ";"</a>
+           Create a new name for an existing set of function names.
+           NOTE: it doesn't rename anything!
+           Used to inject an overload set into a namespace.
+0024:    <a href="/share/lib/grammar/namespaces.flxh#0024">stmt := "inherit" stvarlist squalified_name ";"</a>
+           Inject all the public members of a class or module
+           into a namespace.
+0037:    <a href="/share/lib/grammar/namespaces.flxh#0037">stmt := "open" stvarlist squalified_name ";"</a>
+           Inject all the public members of a class or module
+           "just underneath" a namespace. Such names will be
+           hidden by any names actually defined or injected
+           into the actual namespace scope.
+           NOTE: The names are not public members of the namespace.
+           But they're not private members either, they're not
+           members at all.
+           Open makes names available for use in a namespace
+           without making them members for export.
+0041:    <a href="/share/lib/grammar/namespaces.flxh#0041">stmt := "use" sname "=" squalified_name ";"</a>
+           Open a single name to a namespace bound to the given qualified name.
+0045:    <a href="/share/lib/grammar/namespaces.flxh#0045">stmt := "use" squalified_name ";"</a>
+           A short form for opening a single name as the
+           base part of a qualified name.
+0056:    <a href="/share/lib/grammar/namespaces.flxh#0056">stmt := "module" sdeclname "=" ? scompound</a>
+           Define a module.
+           DEPRECATED. Use classes instead.
+0063:    <a href="/share/lib/grammar/namespaces.flxh#0063">stmt := "open" "module" sdeclname "=" ? scompound</a>
+           Define a module and open in it in the current scope.
+           DEPRECATED: Use classes instead.
+0080:    <a href="/share/lib/grammar/namespaces.flxh#0080">stmt := "class" sdeclname "=" ? scompound</a>
+           Define a class.
+           A class is a collection of constants, variables,
+           types, functions, and other entities.
+           
+           A polymorphic class may contain virtual functions, which are
+           functions which can be defined later for particular types.
+           This is equivalent to a specialisation of a template in C++.
+           NOTE: polymorphic classes may not contain variables.
+           Only variables of non-polymorphic classes can be instantiated.
+0086:    <a href="/share/lib/grammar/namespaces.flxh#0086">stmt := "open" "class" sdeclname "=" ? scompound</a>
+           Define a class and open it.
+0103:    <a href="/share/lib/grammar/namespaces.flxh#0103">stmt := "instance" stvarlist squalified_name "=" ? scompound</a>
+           Define an instance of a class.
+           This is a specialisation of the class which may contain
+           overrides of virtual functions for a subset of the possible types.
+           
+           Instances can be defined in any class scope (including and usually
+           at the top level of the program).
+           Members of instances which are not overrides are private
+           to the instance.
+0121:    <a href="/share/lib/grammar/namespaces.flxh#0121">stmt := "with" sstatements "do" sstatements "done"</a>
+           Provide a set of definitions in the with block
+           which are available in the do block but are lost
+           thereafter.
+           Effectively these definitions are private to the
+           do block. The with block is basically an anonymous
+           class which is opened in the do block. Example:
+           
+           var x = 42;
+           with var x = 1 do var y = x; done
+           println$ x; // prints 42 not 1
+<hr/><a href="/share/lib/grammar/patterns.flxh">patterns.flxh</a>
+
+0008:  <a href="/share/lib/grammar/patterns.flxh#0008">syntax patterns</a>
+           Pattern matching.
+           Pattern matching is a way to "take apart" a value according
+           to its structure.
+           Matches operate "inside out".
+0012:    <a href="/share/lib/grammar/patterns.flxh#0012">stmt:= "match" sexpr "with" stmt_matching+ "endmatch" ";"</a>
+           Pattern match statement.
+           At least one branch must match or the program aborts with a match failure.
+0018:    <a href="/share/lib/grammar/patterns.flxh#0018">stmt:= "match" sexpr "with" stmt_matching+ "otherwise" stmt+</a>
+           Short form pattern match statement with
+           implicit handling of trailing wildcard
+           by following statements.
+0035:    <a href="/share/lib/grammar/patterns.flxh#0035">stmt_matching := "|" spattern "=>" stmt+</a>
+           A single branch of a pattern match statement.
+           The match argument expression is compared to the pattern.
+           If it matches any contained pattern variables are assigned
+           the values in the corresponding possition of the expression,
+           and the statements are executed.
+0038:    <a href="/share/lib/grammar/patterns.flxh#0038">satom := pattern_match "endmatch"</a>
+           Pattern match expression with terminator.
+0043:    <a href="/share/lib/grammar/patterns.flxh#0043">pattern_match := "match" sexpr "with" smatching+</a>
+           Pattern match expression without terminator.
+           Match the expression against each of the branches in the matchings.
+           At least one branch must match or the program aborts with a match failure.
+0051:    <a href="/share/lib/grammar/patterns.flxh#0051">smatching := "|" spattern "=>" x[let_pri]</a>
+           The match argument expression is compared to the pattern.
+           If it matches any contained pattern variables are assigned
+           the values in the corresponding possition of the expression,
+           and expression is evaluated and becomes the return value
+           of the whole match.
+0054:    <a href="/share/lib/grammar/patterns.flxh#0054">smatching := "|" "=>" sexpr</a>
+           Match nothing.
+0062:    <a href="/share/lib/grammar/patterns.flxh#0062">spattern := sas_pattern "when" sexpr</a>
+           Match with guard.
+           The LHS pattern is match first.
+           Then the RHS guard expression is evaluated,
+           in a context which includes any extracted match variables.
+           If the guard is true, the whole pattern matches,
+           otherwise the matching fails.
+0063:    <a href="/share/lib/grammar/patterns.flxh#0063">spattern := sas_pattern</a>
+0068:    <a href="/share/lib/grammar/patterns.flxh#0068">sas_pattern := scons_pattern "as" sname</a>
+           Match with naming of subexpression.
+           Matches the pattern against the corresponding subexpression,
+           and gives it a name.
+0069:    <a href="/share/lib/grammar/patterns.flxh#0069">sas_pattern := scons_pattern</a>
+0074:    <a href="/share/lib/grammar/patterns.flxh#0074">scons_pattern := stuple_cons_pattern "!" scons_pattern</a>
+           Match a non-empty list.
+           The LHS is the head of the list and the RHS is the tail.
+           Does not match the empty list.
+0076:    <a href="/share/lib/grammar/patterns.flxh#0076">scons_pattern := stuple_cons_pattern</a>
+0081:    <a href="/share/lib/grammar/patterns.flxh#0081">stuple_cons_pattern := stuple_pattern ",," stuple_cons_pattern</a>
+           Match a tuple of at least 3 elements.
+           The LHS is the first element of the tuple.
+           The RHS is the rest of the tuple.
+0083:    <a href="/share/lib/grammar/patterns.flxh#0083">stuple_cons_pattern := stuple_pattern</a>
+0086:    <a href="/share/lib/grammar/patterns.flxh#0086">stuple_pattern := scoercive_pattern ("," scoercive_pattern )*</a>
+           Match a tuple with 2 or more components.
+0092:    <a href="/share/lib/grammar/patterns.flxh#0092">scoercive_pattern := sapplicative_pattern "|>" x[sarrow_pri]</a>
+           Match a value with a coercion.
+           The subexpression corresponding to the LHS is compared.
+           If it matches the result is coerced to the RHS type expression.
+0094:    <a href="/share/lib/grammar/patterns.flxh#0094">scoercive_pattern := sapplicative_pattern</a>
+0100:    <a href="/share/lib/grammar/patterns.flxh#0100">sapplicative_pattern := sctor_name sargument_pattern</a>
+           Match a non-constant sum type constructor
+           that is, one with an argument.
+           The LHS name must match the constructor used to make the value.
+           The RHS pattern is matched against the argument it was constructed with.
+0103:    <a href="/share/lib/grammar/patterns.flxh#0103">sargument_pattern := satomic_pattern</a>
+0104:    <a href="/share/lib/grammar/patterns.flxh#0104">sargument_pattern := "?" sname</a>
+0105:    <a href="/share/lib/grammar/patterns.flxh#0105">sargument_pattern := "#" sctor_name</a>
+0106:    <a href="/share/lib/grammar/patterns.flxh#0106">sargument_pattern := "case" sinteger</a>
+0108:    <a href="/share/lib/grammar/patterns.flxh#0108">sargument_pattern := sname</a>
+0111:    <a href="/share/lib/grammar/patterns.flxh#0111">sapplicative_pattern := satomic_pattern</a>
+0112:    <a href="/share/lib/grammar/patterns.flxh#0112">sapplicative_pattern := "?" sname</a>
+0113:    <a href="/share/lib/grammar/patterns.flxh#0113">sapplicative_pattern := "#" sctor_name</a>
+0114:    <a href="/share/lib/grammar/patterns.flxh#0114">sapplicative_pattern := "case" sinteger</a>
+0116:    <a href="/share/lib/grammar/patterns.flxh#0116">sapplicative_pattern := sctor_name</a>
+0119:    <a href="/share/lib/grammar/patterns.flxh#0119">sctor_name := sname</a>
+           The sum type constructor can either be a qualified name...
+0122:    <a href="/share/lib/grammar/patterns.flxh#0122">sctor_name := "case" sinteger</a>
+           or it can be a case literal.
+0128:    <a href="/share/lib/grammar/patterns.flxh#0128">satomic_pattern := "true"</a>
+           Match the value true = case 1 of 2.
+0131:    <a href="/share/lib/grammar/patterns.flxh#0131">satomic_pattern := "false"</a>
+           Match the value false = case 0 of 2.
+0134:    <a href="/share/lib/grammar/patterns.flxh#0134">satomic_pattern := "_"</a>
+           Match anything without naming the subexpression.
+0137:    <a href="/share/lib/grammar/patterns.flxh#0137">satomic_pattern := "(" spattern ")"</a>
+           Precedence control.
+0140:    <a href="/share/lib/grammar/patterns.flxh#0140">satomic_pattern := "(" ")"</a>
+           Match the unit tuple.
+0145:    <a href="/share/lib/grammar/patterns.flxh#0145">satomic_pattern :=  "(" spat_assign ("," spat_assign )* ")"</a>
+           Match a record.
+           The record must have fields with the given names.
+           It may have more fields though, these are ignored.
+0148:    <a href="/share/lib/grammar/patterns.flxh#0148">spat_assign := sname "=" spattern</a>
+0155:    <a href="/share/lib/grammar/patterns.flxh#0155">satomic_pattern := "$" "(" sexpr ")"</a>
+           Match an arbitrary expression.
+           Equivalent to
+           ?name when name == expr.
+0161:    <a href="/share/lib/grammar/patterns.flxh#0161">satomic_pattern := sliteral</a>
+           Match against any literal value.
+           This includes integers, strings, whatever.
+           The underlying type must support equality operator (==).
+           Usually it would be instance of class Eq.
+0167:    <a href="/share/lib/grammar/patterns.flxh#0167">satomic_pattern := sliteral ".." sliteral</a>
+           Match against a range specified by two literals.
+           The range is inclusive.
+           The underlying type must support less than operator (<).
+           Usually it would be an instance of class Tord.
+<hr/><a href="/share/lib/grammar/plugins.flxh">plugins.flxh</a>
+
+0041:  <a href="/share/lib/grammar/plugins.flxh#0041">syntax plugins</a>
+0043:    <a href="/share/lib/grammar/plugins.flxh#0043">stmt := "static-link-symbol" sname "in" "plugin" sname ";"</a>
+0045:    <a href="/share/lib/grammar/plugins.flxh#0045">stmt := "static-link-plugin" sname ("," sname)* ";"</a>
+<hr/><a href="/share/lib/grammar/python_grammar.flxh">python_grammar.flxh</a>
+
+0001:  <a href="/share/lib/grammar/python_grammar.flxh#0001">syntax python_grammar</a>
+0002:    <a href="/share/lib/grammar/python_grammar.flxh#0002">stmt := "export" "python" "fun" ssuffixed_name "as" sstring ";"</a>
+<hr/><a href="/share/lib/grammar/regexps.flxh">regexps.flxh</a>
+
+0004:  <a href="/share/lib/grammar/regexps.flxh#0004">syntax regexps</a>
+           Syntax for regular definitions.
+           Binds to library class Regdef,
+           which in turn binds to the binding of Google RE2.
+0017:    <a href="/share/lib/grammar/regexps.flxh#0017">stmt := "regdef" sdeclname "=" sregexp[ralt_pri] ";"</a>
+           Regular definition binder.
+           Statement to name a regular expression.
+           The expression may contain names of previously named regular expressions.
+           Defines the LHS symbol as a value of type Regdef::regex.
+0025:    <a href="/share/lib/grammar/regexps.flxh#0025">x[sapplication_pri] := "regexp" "(" sregexp[ralt_pri] ")"</a>
+           Inline regular expression.
+           Can be used anywhere in Felix code.
+           Returns a a value of type Regdef::regex.
+0028:    <a href="/share/lib/grammar/regexps.flxh#0028">sregexp[ralt_pri] := sregexp[>ralt_pri] ("|" sregexp[>ralt_pri])+</a>
+           Alternatives.
+0033:    <a href="/share/lib/grammar/regexps.flxh#0033">sregexp[rseq_pri] := sregexp[>rseq_pri] (sregexp[>rseq_pri])+</a>
+           Sequential concatenation.
+0040:    <a href="/share/lib/grammar/regexps.flxh#0040">sregexp[rpostfix_pri] := sregexp[rpostfix_pri] "*"</a>
+           Postfix star (*).
+           Kleene closure: zero or more repetitions.
+0046:    <a href="/share/lib/grammar/regexps.flxh#0046">sregexp[rpostfix_pri] := sregexp[rpostfix_pri] "+"</a>
+           Postfix plus (+).
+           One or more repetitions.
+0052:    <a href="/share/lib/grammar/regexps.flxh#0052">sregexp[rpostfix_pri] := sregexp[rpostfix_pri] "?"</a>
+           Postfix question mark (?).
+           Optional. Zero or one repetitions.
+0057:    <a href="/share/lib/grammar/regexps.flxh#0057">sregexp[ratom_pri] := "(" sregexp[ralt_pri] ")"</a>
+           Parenthesis. Non-capturing group.
+0061:    <a href="/share/lib/grammar/regexps.flxh#0061">sregexp[ratom_pri] := "group" "(" sregexp[ralt_pri] ")"</a>
+           Group psuedo function.
+           Capturing group.
+0068:    <a href="/share/lib/grammar/regexps.flxh#0068">sregexp[ratom_pri] := "charset" String</a>
+           The charset prefix operator.
+           Treat the string as a set of characters,
+           that is, one of the contained characters.
+0079:    <a href="/share/lib/grammar/regexps.flxh#0079">sregexp[ratom_pri] := String</a>
+           The string literal.
+           The given sequence of characters.
+           Any valid Felix string can be used here.
+0090:    <a href="/share/lib/grammar/regexps.flxh#0090">sregexp[ratom_pri] := "perl" "(" sexpr ")"</a>
+           The Perl psuedo function.
+           Treat the argument string expression as
+           a Perl regular expression, with constraints
+           as specified for Google RE2.
+0100:    <a href="/share/lib/grammar/regexps.flxh#0100">sregexp[ratom_pri] := "regex" "(" sexpr ")"</a>
+           The regex psuedo function.
+           Treat the argument Felix expression of type Regdef::regex
+           as a regular expression.
+0105:    <a href="/share/lib/grammar/regexps.flxh#0105">sregexp[ratom_pri] := sname</a>
+           Identifier.
+           Must name a previously defined variable of type Regdef:;regex.
+           For example, the LHS of a regdef binder.
+<hr/><a href="/share/lib/grammar/requirements.flxh">requirements.flxh</a>
+
+0042:  <a href="/share/lib/grammar/requirements.flxh#0042">syntax requirements</a>
+           Syntax to express and provide dependencies.
+           Requirements operate as extensions to the usual
+           usage dependencies, to provide the compiler additional
+           information regarding C/C++ contructions used in bindings.
+           A requirement of a C type is
+           activated if, and only if, that type is used
+           in a program (or plugin).
+           Similarly, a requirement of a function is
+           activated if, and only if, the function is used.
+           An unnamed requirement in a class is activated
+           if any C binding in the class is used.
+           Such bindings also propagate to descendent (contained) classes.
+           A named requirement is activated only if an active
+           requirement requires it.
+           Requirements may have "tag names".
+           When a requirement is required by name,
+           all requirements with that name are activated.
+           Circularities in named requirements are permitted and harmless.
+           Floating insertions (header, body) are emitted in order of writting
+           at fixed places in the generated C++ header and implementation files.
+           Floating insertions can themselves have requirements.
+           WARNING: there are two gotchas!
+           Gotcha 1: requirements on names cannot fail, even if no
+           resource is tagged wih that name. This is because requirements
+           activate the set of resources with the given name, and as
+           usual, a set may be empty.
+           Gotcha 2; Just because you put a requires statement in a class
+           doesn't mean it will be activated. requirements are only
+           triggered by the use of C bindings! Using a Felix entity
+           will not trigger the requirement!
+0044:    <a href="/share/lib/grammar/requirements.flxh#0044">srequires_clause := "requires" srequirements</a>
+           General form of required clause.
+0047:    <a href="/share/lib/grammar/requirements.flxh#0047">srequires_clause := sepsilon</a>
+           An empty requirement is deemed satisfied.
+0050:    <a href="/share/lib/grammar/requirements.flxh#0050">srequirement:= squalified_name</a>
+           A requirement on a requirement defined by name elsewhere.
+0054:    <a href="/share/lib/grammar/requirements.flxh#0054">srequirement :=  "property" sstring</a>
+           A generic "catch all" requirement or specification
+           of some property named by a string.
+0086:    <a href="/share/lib/grammar/requirements.flxh#0086">srequirement :=  "package" scode_spec</a>
+           A dependency on an external package with a given name.
+           Also known as a resource abstraction.
+           
+           The package name refers to an entry in an external database
+           usually represented by directory of text files (usually called "config"),
+           each of which usually has extension "fpc".
+           Each file contains a number of fields, which
+           may specify a platform dependent filename for
+           a shared/dynamic link library, static link library,
+           header file, compiler option switch, or other
+           information.
+           The package construction abstracts the platform dependent
+           data required to locate and use a resource.
+           
+           The Felix compiler "flxg" generates a list of required
+           abstract resources.
+           The Felix command line harness "flx" queries the database
+           of resources using the "flx_pkgconfig" tool, and applies
+           the relevant arguments to the relevant steps of the
+           compilation process.
+           This allows fully automatic compilation and execution
+           of Felix programs without the programmer needing to
+           continually worry about build scripts.
+           Instead the system installer is required, once,
+           to provide the resource database.
+0094:    <a href="/share/lib/grammar/requirements.flxh#0094">srequirement :=  "scanner" scode_spec</a>
+           The scanner requirement applies only to a C type binding.
+           It specifies the name of a C function which the garbage
+           collector can called to search a data structure for pointers.
+           By default, if no scanner is specified for a C type,
+           the type is assumed not to contain any Felix pointers.
+0102:    <a href="/share/lib/grammar/requirements.flxh#0102">srequirement :=  "finaliser" scode_spec</a>
+           The finaliser requirement applies only to a C type binding.
+           It specifies the name of a C function which the garbage
+           collector can call to finalise an object prior to freeing up
+           the underlying memory.
+           By default, if no finaliser is specifed, the C++ destructor is called.
+0109:    <a href="/share/lib/grammar/requirements.flxh#0109">srequirement :=  "encoder" scode_spec</a>
+           The encoder requirement applies only to a C type binding.
+           It specifies the name of a C function which can be called
+           to serialise one element of the object.
+           
+           By default, if no encoder is specifed, memcpy is used.
+0116:    <a href="/share/lib/grammar/requirements.flxh#0116">srequirement :=  "decoder" scode_spec</a>
+           The decoder requirement applies only to a C type binding.
+           It specifies the name of a C function which can be called
+           to deserialise one element of the object.
+           
+           By default, if no decoder is specifed, memcpy is used.
+0120:    <a href="/share/lib/grammar/requirements.flxh#0120">srequirement_atom:= srequirement</a>
+           Requirement expressions. Deprecated.
+0123:    <a href="/share/lib/grammar/requirements.flxh#0123">srequirement_atom:= "(" srequirements ")"</a>
+           Requirement expressions. Deprecated.
+0126:    <a href="/share/lib/grammar/requirements.flxh#0126">srequirement_and:= srequirement_and "and" srequirement_atom</a>
+           Requirement expressions. Deprecated.
+0128:    <a href="/share/lib/grammar/requirements.flxh#0128">srequirement_and:= srequirement_atom</a>
+0131:    <a href="/share/lib/grammar/requirements.flxh#0131">srequirement_or:= srequirement_or "or" srequirement_and</a>
+           Requirement expressions. Deprecated.
+0133:    <a href="/share/lib/grammar/requirements.flxh#0133">srequirement_or:= srequirement_and</a>
+0138:    <a href="/share/lib/grammar/requirements.flxh#0138">srequirements:= srequirements "," srequirement_or</a>
+           Requirement expressions: a comma separated list
+           of requirements specified each one of the requirements
+           applies independently.
+0140:    <a href="/share/lib/grammar/requirements.flxh#0140">srequirements:= srequirement_or</a>
+0149:    <a href="/share/lib/grammar/requirements.flxh#0149">srequirement := "body" scode_spec</a>
+           The body requirement is a floating requirement that
+           specifies that the given code
+           string be inserted into the output "near the top"
+           of the generated C++ body (cpp) file.
+           It can be used to emit utiliy functions
+           written in C.
+0159:    <a href="/share/lib/grammar/requirements.flxh#0159">srequirement := "header" scode_spec</a>
+           The header requirement is a floating requirement that
+           specifies that the given code
+           string be inserted into the output "near the top"
+           of the generated C++ header (hpp) file.
+           It is typically used to emit a "#include" directive
+           so that the requiring binding has relevant types
+           and functions available.
+0167:    <a href="/share/lib/grammar/requirements.flxh#0167">scode_spec := sstring</a>
+           A Felix string used as a code specification
+           is treated as a template with special coding
+           internally which can be replaced.
+           This feature supports the fact that Felix code
+           insertions can be polymorphic.
+0171:    <a href="/share/lib/grammar/requirements.flxh#0171">scode_spec := scstring</a>
+           A c-string like c"xxxx" is emitted literally
+           without any substitutions.
+0176:    <a href="/share/lib/grammar/requirements.flxh#0176">scode_spec := "ident"</a>
+           This is a special code to make specific
+           that a binding is an identity which can
+           be optimised away.
+0181:    <a href="/share/lib/grammar/requirements.flxh#0181">stmt := "requires" srequirements ";"</a>
+           The anonymous requires statement specifies requirements which
+           propagates to all C bindings
+           in the same class, or any descendant (enclosed) class.
+0185:    <a href="/share/lib/grammar/requirements.flxh#0185">stmt := sname "requires" srequirements ";"</a>
+           The named requires statement simply names a requirement.
+0191:    <a href="/share/lib/grammar/requirements.flxh#0191">stmt := "header" scode_spec srequires_clause ";"</a>
+           The header statement specifies a header requirement which
+           propagates to all C bindings
+           in the same class, or any descendant (enclosed) class.
+0197:    <a href="/share/lib/grammar/requirements.flxh#0197">stmt := "body" scode_spec srequires_clause ";"</a>
+           The body statement specifies a header requirement which
+           propagates to all C bindings
+           in the same class, or any descendant (enclosed) class.
+0201:    <a href="/share/lib/grammar/requirements.flxh#0201">stmt := "header" sdeclname "=" scode_spec srequires_clause ";"</a>
+           Named header requirement.
+0207:    <a href="/share/lib/grammar/requirements.flxh#0207">stmt := "body" sdeclname "=" scode_spec srequires_clause ";"</a>
+           Named body requirement.
+<hr/><a href="/share/lib/grammar/save.flxh">save.flxh</a>
+<hr/><a href="/share/lib/grammar/statements.flxh">statements.flxh</a>
+
+0003:  <a href="/share/lib/grammar/statements.flxh#0003">syntax statements</a>
+           A grab bag of miscellaneous statements and
+           nonterminals used to construct other statements.
+0007:    <a href="/share/lib/grammar/statements.flxh#0007">stmt := "comment" sstring ";"</a>
+           A comment statement based on a string argument.
+0011:    <a href="/share/lib/grammar/statements.flxh#0011">stmt := "private" stmt</a>
+           Statement qualifier which makes a definition
+           private to the containing module or class.
+0014:    <a href="/share/lib/grammar/statements.flxh#0014">stmt := "publish" sstring stmt</a>
+           Deprecated method of documenting a definition.
+0017:    <a href="/share/lib/grammar/statements.flxh#0017">stmt := ";"</a>
+           An empty statement.
+0027:    <a href="/share/lib/grammar/statements.flxh#0027">stmt := "include" sstring ";"</a>
+           Include file directive.
+           This is similar to C's pre-processor include except that
+           the file is parsed and macro processed first, entirely
+           independently of the including file, and then the
+           resulting AST is inserted into the current AST.
+           Thus the included file also has no influence on
+           the including file either: the two files are parsed
+           entirely independently.
+0032:    <a href="/share/lib/grammar/statements.flxh#0032">sdeclname := sname stvarlist</a>
+           A declarative name consists of an identifier and
+           an (optional) type variable specification.
+0045:    <a href="/share/lib/grammar/statements.flxh#0045">stmt := stype_qual* "type" sdeclname "=" "new" sexpr ";"</a>
+           A way to contruct a new abstract type out of an existing type.
+           Only two operations are available on this new type:
+           _repr_ t: exposes the underlying type
+           make_t  : constructs the type from the underlying type.
+           These operations are only available in the class or module
+           containing the new type definition. This allows the private
+           details of the type to be accessed so as to define operations
+           on it, inside the same space as the definition, but leaves
+           the type abstract externally.
+0053:    <a href="/share/lib/grammar/statements.flxh#0053">stypeclass_constraint_list := stypeclass_constraint ("," stypeclass_constraint )*</a>
+           Type constraint syntax.
+           Type constraints are ways to constrain possible types
+           which type variables may take on.
+0056:    <a href="/share/lib/grammar/statements.flxh#0056">stypeclass_constraint := squalified_name</a>
+0060:    <a href="/share/lib/grammar/statements.flxh#0060">stypeclass_constraint := stypeexpr "is" sname</a>
+           Allow T is Real to mean Real[T].
+0064:    <a href="/share/lib/grammar/statements.flxh#0064">stype_constraint := "with" stypeclass_constraint_list</a>
+           A constraint specifying types require an instance
+           of a particular type class.
+0067:    <a href="/share/lib/grammar/statements.flxh#0067">stype_constraint := "where" sexpr</a>
+           A predicative or equational constraint.
+0070:    <a href="/share/lib/grammar/statements.flxh#0070">stype_constraint := "with" stypeclass_constraint_list "where" sexpr</a>
+           Both types of constraint together.
+0074:    <a href="/share/lib/grammar/statements.flxh#0074">stype_constraint := "where" sexpr "with" stypeclass_constraint_list</a>
+           Both types of constraint together.
+0078:    <a href="/share/lib/grammar/statements.flxh#0078">stype_constraint := sepsilon</a>
+           The constraint is empty if the polymorphism is parametric.
+0081:    <a href="/share/lib/grammar/statements.flxh#0081">seqorin:= "=" stypeexpr</a>
+           Individual type variable equational constraint.
+0084:    <a href="/share/lib/grammar/statements.flxh#0084">seqorin:= "in" stypeexpr</a>
+           Individual type variable membership constraint.
+0087:    <a href="/share/lib/grammar/statements.flxh#0087">seqorin:= sepsilon</a>
+           No constraint!
+0090:    <a href="/share/lib/grammar/statements.flxh#0090">stvar := sname seqorin</a>
+           A type variable, possibly with an individual constraint.
+0094:    <a href="/share/lib/grammar/statements.flxh#0094">stvar := sname ":" stypeexpr seqorin</a>
+           A type variable with an individual constraint.
+           This is usually the same as a predicate.
+0097:    <a href="/share/lib/grammar/statements.flxh#0097">stvar_comma_list := stvar ("," stvar)*</a>
+           A list of type variables with optional individual constraints.
+0098:    <a href="/share/lib/grammar/statements.flxh#0098">stvar_comma_list := sepsilon</a>
+0104:    <a href="/share/lib/grammar/statements.flxh#0104">stvarlist:= sepsilon</a>
+           A type variable specification consists of
+           a possibly empty list of type variables with
+           individual constraints, plus an optional
+           type constraint relating the specified variables.
+0105:    <a href="/share/lib/grammar/statements.flxh#0105">stvarlist:= "[" stvar_comma_list stype_constraint "]"</a>
+0108:    <a href="/share/lib/grammar/statements.flxh#0108">stypeparameter:= sname ":" x[sarrow_pri]</a>
+0109:    <a href="/share/lib/grammar/statements.flxh#0109">stypeparameter:= sname</a>
+0110:    <a href="/share/lib/grammar/statements.flxh#0110">stypeparameter_comma_list := sepsilon</a>
+0111:    <a href="/share/lib/grammar/statements.flxh#0111">stypeparameter_comma_list := stypeparameter ("," stypeparameter)*</a>
+0113:    <a href="/share/lib/grammar/statements.flxh#0113">stypefun_arg := sname</a>
+0114:    <a href="/share/lib/grammar/statements.flxh#0114">stypefun_arg := "(" stypeparameter_comma_list ")"</a>
+0115:    <a href="/share/lib/grammar/statements.flxh#0115">stypefun_args := stypefun_arg+</a>
+0121:    <a href="/share/lib/grammar/statements.flxh#0121">stodo := "todo" sstring ";"</a>
+           The todo no-op is primarily a way to document
+           unfinished code. Currently no action is taken.
+           Felix reserves the right to throw an exception,
+           or emit some diagnostics in future versions.
+0122:    <a href="/share/lib/grammar/statements.flxh#0122">stodo := "todo" ";"</a>
+0128:    <a href="/share/lib/grammar/statements.flxh#0128">scompound := "{" sstatements "}"</a>
+           Compound construction.
+           Note his is NOT a statement.
+           A compound followed by a semi-colon ";" is, however.
+0132:    <a href="/share/lib/grammar/statements.flxh#0132">sname_suffix:= "," sname sname_suffix</a>
+           A suffixed name.
+           Used  to name an overloaded function.
+0133:    <a href="/share/lib/grammar/statements.flxh#0133">sname_suffix:= "," sname</a>
+<hr/><a href="/share/lib/grammar/texsyms.flxh">texsyms.flxh</a>
+
+0010:  <a href="/share/lib/grammar/texsyms.flxh#0010">syntax texsyms</a>
+           This file contains a huge set of operators from TeX, AMSTeX and LaTeX.
+           The precedence classification is currently very crude.
+           Some operators are duplicate semantics with different names.
+           Some are negations, and should be handled properly.
+           Nouns such as Greek letters are not included because they're atoms and don't
+           need any parsing.
+0014:    <a href="/share/lib/grammar/texsyms.flxh#0014">bin := "\amalg"</a>
+0015:    <a href="/share/lib/grammar/texsyms.flxh#0015">cmp := "\approx"</a>
+0016:    <a href="/share/lib/grammar/texsyms.flxh#0016">cmp := "\approxeq"</a>
+0017:    <a href="/share/lib/grammar/texsyms.flxh#0017">cmp := "\Arrowvert"</a>
+0018:    <a href="/share/lib/grammar/texsyms.flxh#0018">cmp := "\arrowvert"</a>
+0019:    <a href="/share/lib/grammar/texsyms.flxh#0019">cmp := "\asymp"</a>
+0023:    <a href="/share/lib/grammar/texsyms.flxh#0023">cmp := "\backsim"</a>
+0024:    <a href="/share/lib/grammar/texsyms.flxh#0024">cmp := "\backsimeq"</a>
+0025:    <a href="/share/lib/grammar/texsyms.flxh#0025">cmp := "\bar"</a>
+0026:    <a href="/share/lib/grammar/texsyms.flxh#0026">cmp := "\barwedge"</a>
+0027:    <a href="/share/lib/grammar/texsyms.flxh#0027">cmp := "\between"</a>
+0028:    <a href="/share/lib/grammar/texsyms.flxh#0028">bin := "\bigcap"</a>
+0029:    <a href="/share/lib/grammar/texsyms.flxh#0029">bin := "\bigcirc"</a>
+0030:    <a href="/share/lib/grammar/texsyms.flxh#0030">bin := "\bigcup"</a>
+0031:    <a href="/share/lib/grammar/texsyms.flxh#0031">bin := "\bigodot"</a>
+0032:    <a href="/share/lib/grammar/texsyms.flxh#0032">bin := "\bigoplus"</a>
+0033:    <a href="/share/lib/grammar/texsyms.flxh#0033">bin := "\bigotimes"</a>
+0034:    <a href="/share/lib/grammar/texsyms.flxh#0034">bin := "\bigsqcup"</a>
+0035:    <a href="/share/lib/grammar/texsyms.flxh#0035">bin := "\bigtriangledown"</a>
+0036:    <a href="/share/lib/grammar/texsyms.flxh#0036">bin := "\bigtriangleup"</a>
+0037:    <a href="/share/lib/grammar/texsyms.flxh#0037">bin := "\biguplus"</a>
+0038:    <a href="/share/lib/grammar/texsyms.flxh#0038">bin := "\bigvee"</a>
+0039:    <a href="/share/lib/grammar/texsyms.flxh#0039">bin := "\bigwedge"</a>
+0040:    <a href="/share/lib/grammar/texsyms.flxh#0040">bin := "\bowtie"</a>
+0041:    <a href="/share/lib/grammar/texsyms.flxh#0041">bin := "\Box"</a>
+0042:    <a href="/share/lib/grammar/texsyms.flxh#0042">bin := "\boxdot"</a>
+0043:    <a href="/share/lib/grammar/texsyms.flxh#0043">bin := "\boxminus"</a>
+0044:    <a href="/share/lib/grammar/texsyms.flxh#0044">bin := "\boxplus"</a>
+0045:    <a href="/share/lib/grammar/texsyms.flxh#0045">bin := "\boxtimes"</a>
+0046:    <a href="/share/lib/grammar/texsyms.flxh#0046">cmp := "\Bumpeq"</a>
+0047:    <a href="/share/lib/grammar/texsyms.flxh#0047">cmp := "\bumpeq"</a>
+0051:    <a href="/share/lib/grammar/texsyms.flxh#0051">bin := "\cap"</a>
+0052:    <a href="/share/lib/grammar/texsyms.flxh#0052">bin := "\Cap"</a>
+0053:    <a href="/share/lib/grammar/texsyms.flxh#0053">bin := "\cdot"</a>
+0054:    <a href="/share/lib/grammar/texsyms.flxh#0054">bin := "\cdotp"</a>
+0055:    <a href="/share/lib/grammar/texsyms.flxh#0055">cmp := "\circeq"</a>
+0056:    <a href="/share/lib/grammar/texsyms.flxh#0056">bin := "\circledast"</a>
+0057:    <a href="/share/lib/grammar/texsyms.flxh#0057">bin := "\circledcirc"</a>
+0058:    <a href="/share/lib/grammar/texsyms.flxh#0058">bin := "\circleddash"</a>
+0059:    <a href="/share/lib/grammar/texsyms.flxh#0059">cmp := "\cong"</a>
+0060:    <a href="/share/lib/grammar/texsyms.flxh#0060">bin := "\coprod"</a>
+0062:    <a href="/share/lib/grammar/texsyms.flxh#0062">bin := "\Cup"</a>
+0063:    <a href="/share/lib/grammar/texsyms.flxh#0063">cmp := "\curlyeqprec"</a>
+0064:    <a href="/share/lib/grammar/texsyms.flxh#0064">cmp := "\curlyeqsucc"</a>
+0065:    <a href="/share/lib/grammar/texsyms.flxh#0065">bin  := "\curlyvee"</a>
+0066:    <a href="/share/lib/grammar/texsyms.flxh#0066">bin:= "\curlywedge"</a>
+0070:    <a href="/share/lib/grammar/texsyms.flxh#0070">arr := "\dashleftarrow"</a>
+0071:    <a href="/share/lib/grammar/texsyms.flxh#0071">arr := "\dashrightarrow"</a>
+0072:    <a href="/share/lib/grammar/texsyms.flxh#0072">bin := "\divideontimes"</a>
+0073:    <a href="/share/lib/grammar/texsyms.flxh#0073">cmp := "\doteq"</a>
+0074:    <a href="/share/lib/grammar/texsyms.flxh#0074">cmp := "\Doteq"</a>
+0075:    <a href="/share/lib/grammar/texsyms.flxh#0075">cmp := "\doteqdot"</a>
+0076:    <a href="/share/lib/grammar/texsyms.flxh#0076">bin := "\dotplus"</a>
+0077:    <a href="/share/lib/grammar/texsyms.flxh#0077">bin := "\doublebarwedge"</a>
+0078:    <a href="/share/lib/grammar/texsyms.flxh#0078">bin := "\doublecap"</a>
+0079:    <a href="/share/lib/grammar/texsyms.flxh#0079">bin := "\doublecup"</a>
+0080:    <a href="/share/lib/grammar/texsyms.flxh#0080">bin := "\Downarrow"</a>
+0081:    <a href="/share/lib/grammar/texsyms.flxh#0081">bin := "\downarrow"</a>
+0082:    <a href="/share/lib/grammar/texsyms.flxh#0082">bin := "\downdownarrows"</a>
+0083:    <a href="/share/lib/grammar/texsyms.flxh#0083">bin := "\downharpoonleft"</a>
+0084:    <a href="/share/lib/grammar/texsyms.flxh#0084">bin := "\downharpoonright"</a>
+0088:    <a href="/share/lib/grammar/texsyms.flxh#0088">cmp := "\eqcirc"</a>
+0089:    <a href="/share/lib/grammar/texsyms.flxh#0089">cmp := "\eqsim"</a>
+0090:    <a href="/share/lib/grammar/texsyms.flxh#0090">cmp := "\eqslantgtr"</a>
+0091:    <a href="/share/lib/grammar/texsyms.flxh#0091">cmp := "\eqslantless"</a>
+0092:    <a href="/share/lib/grammar/texsyms.flxh#0092">cmp := "\equiv"</a>
+0096:    <a href="/share/lib/grammar/texsyms.flxh#0096">bin := "\fallingdotseq"</a>
+0100:    <a href="/share/lib/grammar/texsyms.flxh#0100">cmp := "\ge"</a>
+0101:    <a href="/share/lib/grammar/texsyms.flxh#0101">cmp := "\geq"</a>
+0102:    <a href="/share/lib/grammar/texsyms.flxh#0102">cmp := "\geqq"</a>
+0103:    <a href="/share/lib/grammar/texsyms.flxh#0103">cmp := "\geqslant"</a>
+0104:    <a href="/share/lib/grammar/texsyms.flxh#0104">arr := "\gets"</a>
+0105:    <a href="/share/lib/grammar/texsyms.flxh#0105">cmp := "\gg"</a>
+0106:    <a href="/share/lib/grammar/texsyms.flxh#0106">cmp := "\ggg"</a>
+0107:    <a href="/share/lib/grammar/texsyms.flxh#0107">cmp := "\gggtr"</a>
+0108:    <a href="/share/lib/grammar/texsyms.flxh#0108">cmp := "\gnapprox"</a>
+0109:    <a href="/share/lib/grammar/texsyms.flxh#0109">cmp := "\gneq"</a>
+0110:    <a href="/share/lib/grammar/texsyms.flxh#0110">cmp := "\gneqq"</a>
+0111:    <a href="/share/lib/grammar/texsyms.flxh#0111">cmp := "\gnsim"</a>
+0112:    <a href="/share/lib/grammar/texsyms.flxh#0112">cmp := "\gt"</a>
+0113:    <a href="/share/lib/grammar/texsyms.flxh#0113">cmp := "\gtrapprox"</a>
+0114:    <a href="/share/lib/grammar/texsyms.flxh#0114">cmp := "\gtrdot"</a>
+0115:    <a href="/share/lib/grammar/texsyms.flxh#0115">cmp := "\gtreqless"</a>
+0116:    <a href="/share/lib/grammar/texsyms.flxh#0116">cmp := "\gtreqqless"</a>
+0117:    <a href="/share/lib/grammar/texsyms.flxh#0117">cmp := "\gtrless"</a>
+0118:    <a href="/share/lib/grammar/texsyms.flxh#0118">cmp := "\gtrsim"</a>
+0119:    <a href="/share/lib/grammar/texsyms.flxh#0119">cmp := "\gvertneqq"</a>
+0123:    <a href="/share/lib/grammar/texsyms.flxh#0123">arr := "\hookleftarrow"</a>
+0124:    <a href="/share/lib/grammar/texsyms.flxh#0124">arr := "\hookrightarrow"</a>
+0128:    <a href="/share/lib/grammar/texsyms.flxh#0128">bin := "\iff"</a>
+0129:    <a href="/share/lib/grammar/texsyms.flxh#0129">bin := "\impliedby"</a>
+0135:    <a href="/share/lib/grammar/texsyms.flxh#0135">bin := "\Join"</a>
+0141:    <a href="/share/lib/grammar/texsyms.flxh#0141">cmp := "\le"</a>
+0142:    <a href="/share/lib/grammar/texsyms.flxh#0142">arr := "\leadsto"</a>
+0143:    <a href="/share/lib/grammar/texsyms.flxh#0143">arr := "\Leftarrow"</a>
+0144:    <a href="/share/lib/grammar/texsyms.flxh#0144">arr := "\leftarrow"</a>
+0145:    <a href="/share/lib/grammar/texsyms.flxh#0145">arr := "\leftarrowtail"</a>
+0146:    <a href="/share/lib/grammar/texsyms.flxh#0146">arr := "\leftharpoondown"</a>
+0147:    <a href="/share/lib/grammar/texsyms.flxh#0147">arr := "\leftharpoonup"</a>
+0148:    <a href="/share/lib/grammar/texsyms.flxh#0148">arr := "\leftleftarrows"</a>
+0149:    <a href="/share/lib/grammar/texsyms.flxh#0149">arr := "\Leftrightarrow"</a>
+0150:    <a href="/share/lib/grammar/texsyms.flxh#0150">arr := "\leftrightarrow"</a>
+0151:    <a href="/share/lib/grammar/texsyms.flxh#0151">cmp := "\leftrightarrows"</a>
+0152:    <a href="/share/lib/grammar/texsyms.flxh#0152">cmp := "\leftrightharpoons"</a>
+0153:    <a href="/share/lib/grammar/texsyms.flxh#0153">arr := "\leftrightsquigarrow"</a>
+0154:    <a href="/share/lib/grammar/texsyms.flxh#0154">cmp := "\leq"</a>
+0155:    <a href="/share/lib/grammar/texsyms.flxh#0155">cmp := "\leqq"</a>
+0156:    <a href="/share/lib/grammar/texsyms.flxh#0156">cmp := "\leqslant"</a>
+0157:    <a href="/share/lib/grammar/texsyms.flxh#0157">cmp := "\lessapprox"</a>
+0158:    <a href="/share/lib/grammar/texsyms.flxh#0158">cmp := "\lessdot"</a>
+0159:    <a href="/share/lib/grammar/texsyms.flxh#0159">cmp := "\lesseqgtr"</a>
+0160:    <a href="/share/lib/grammar/texsyms.flxh#0160">cmp := "\lesseqqgtr"</a>
+0161:    <a href="/share/lib/grammar/texsyms.flxh#0161">cmp := "\lessgtr"</a>
+0162:    <a href="/share/lib/grammar/texsyms.flxh#0162">cmp := "\lesssim"</a>
+0163:    <a href="/share/lib/grammar/texsyms.flxh#0163">arr := "\Lleftarrow"</a>
+0164:    <a href="/share/lib/grammar/texsyms.flxh#0164">cmp := "\lll"</a>
+0165:    <a href="/share/lib/grammar/texsyms.flxh#0165">cmp := "\llless"</a>
+0166:    <a href="/share/lib/grammar/texsyms.flxh#0166">cmp := "\lnapprox"</a>
+0167:    <a href="/share/lib/grammar/texsyms.flxh#0167">cmp := "\lneq"</a>
+0168:    <a href="/share/lib/grammar/texsyms.flxh#0168">cmp := "\lneqq"</a>
+0169:    <a href="/share/lib/grammar/texsyms.flxh#0169">cmp := "\lnot"</a>
+0170:    <a href="/share/lib/grammar/texsyms.flxh#0170">cmp := "\lnsim"</a>
+0171:    <a href="/share/lib/grammar/texsyms.flxh#0171">arr := "\Longleftarrow"</a>
+0172:    <a href="/share/lib/grammar/texsyms.flxh#0172">arr := "\longleftarrow"</a>
+0173:    <a href="/share/lib/grammar/texsyms.flxh#0173">arr := "\Longleftrightarrow"</a>
+0174:    <a href="/share/lib/grammar/texsyms.flxh#0174">arr := "\longleftrightarrow"</a>
+0175:    <a href="/share/lib/grammar/texsyms.flxh#0175">arr := "\longmapsto"</a>
+0176:    <a href="/share/lib/grammar/texsyms.flxh#0176">arr := "\Longrightarrow"</a>
+0177:    <a href="/share/lib/grammar/texsyms.flxh#0177">arr := "\longrightarrow"</a>
+0178:    <a href="/share/lib/grammar/texsyms.flxh#0178">cmp := "\lt"</a>
+0179:    <a href="/share/lib/grammar/texsyms.flxh#0179">cmp := "\ltimes"</a>
+0180:    <a href="/share/lib/grammar/texsyms.flxh#0180">cmp := "\lvertneqq"</a>
+0184:    <a href="/share/lib/grammar/texsyms.flxh#0184">arr := "\mapsto"</a>
+0188:    <a href="/share/lib/grammar/texsyms.flxh#0188">cmp := "\ncong"</a>
+0189:    <a href="/share/lib/grammar/texsyms.flxh#0189">cmp := "\ne"</a>
+0190:    <a href="/share/lib/grammar/texsyms.flxh#0190">cmp := "\neq"</a>
+0191:    <a href="/share/lib/grammar/texsyms.flxh#0191">cmp := "\ngeq"</a>
+0192:    <a href="/share/lib/grammar/texsyms.flxh#0192">cmp := "\ngeqq"</a>
+0193:    <a href="/share/lib/grammar/texsyms.flxh#0193">cmp := "\ngeqslant"</a>
+0194:    <a href="/share/lib/grammar/texsyms.flxh#0194">cmp := "\ngtr"</a>
+0195:    <a href="/share/lib/grammar/texsyms.flxh#0195">cmp := "\ni"</a>
+0196:    <a href="/share/lib/grammar/texsyms.flxh#0196">cmp := "\nleq"</a>
+0197:    <a href="/share/lib/grammar/texsyms.flxh#0197">cmp := "\nleqq"</a>
+0198:    <a href="/share/lib/grammar/texsyms.flxh#0198">cmp := "\nleqslant"</a>
+0199:    <a href="/share/lib/grammar/texsyms.flxh#0199">cmp := "\nless"</a>
+0200:    <a href="/share/lib/grammar/texsyms.flxh#0200">cmp := "\notin"</a>
+0201:    <a href="/share/lib/grammar/texsyms.flxh#0201">cmp := "\nparallel"</a>
+0202:    <a href="/share/lib/grammar/texsyms.flxh#0202">cmp := "\nprec"</a>
+0203:    <a href="/share/lib/grammar/texsyms.flxh#0203">cmp := "\npreceq"</a>
+0204:    <a href="/share/lib/grammar/texsyms.flxh#0204">cmp := "\nsim"</a>
+0205:    <a href="/share/lib/grammar/texsyms.flxh#0205">cmp := "\nsubseteq"</a>
+0206:    <a href="/share/lib/grammar/texsyms.flxh#0206">cmp := "\nsubseteqq"</a>
+0207:    <a href="/share/lib/grammar/texsyms.flxh#0207">cmp := "\nsucc"</a>
+0208:    <a href="/share/lib/grammar/texsyms.flxh#0208">cmp := "\nsucceq"</a>
+0209:    <a href="/share/lib/grammar/texsyms.flxh#0209">cmp := "\nsupseteq"</a>
+0210:    <a href="/share/lib/grammar/texsyms.flxh#0210">cmp := "\nsupseteqq"</a>
+0211:    <a href="/share/lib/grammar/texsyms.flxh#0211">cmp := "\ntriangleleft"</a>
+0212:    <a href="/share/lib/grammar/texsyms.flxh#0212">cmp := "\ntrianglelefteq"</a>
+0213:    <a href="/share/lib/grammar/texsyms.flxh#0213">cmp := "\ntriangleright"</a>
+0214:    <a href="/share/lib/grammar/texsyms.flxh#0214">cmp := "\ntrianglerighteq"</a>
+0218:    <a href="/share/lib/grammar/texsyms.flxh#0218">bin := "\odot"</a>
+0219:    <a href="/share/lib/grammar/texsyms.flxh#0219">bin := "\ominus"</a>
+0220:    <a href="/share/lib/grammar/texsyms.flxh#0220">bin := "\oplus"</a>
+0221:    <a href="/share/lib/grammar/texsyms.flxh#0221">bin := "\oslash"</a>
+0222:    <a href="/share/lib/grammar/texsyms.flxh#0222">bin := "\otimes"</a>
+0223:    <a href="/share/lib/grammar/texsyms.flxh#0223">cmp := "\owns"</a>
+0227:    <a href="/share/lib/grammar/texsyms.flxh#0227">cmp := "\perp"</a>
+0228:    <a href="/share/lib/grammar/texsyms.flxh#0228">bin := "\pm"</a>
+0229:    <a href="/share/lib/grammar/texsyms.flxh#0229">cmp := "\prec"</a>
+0230:    <a href="/share/lib/grammar/texsyms.flxh#0230">cmp := "\precapprox"</a>
+0231:    <a href="/share/lib/grammar/texsyms.flxh#0231">cmp := "\preccurlyeq"</a>
+0232:    <a href="/share/lib/grammar/texsyms.flxh#0232">cmp := "\preceq"</a>
+0233:    <a href="/share/lib/grammar/texsyms.flxh#0233">cmp := "\precnapprox"</a>
+0234:    <a href="/share/lib/grammar/texsyms.flxh#0234">cmp := "\precneqq"</a>
+0235:    <a href="/share/lib/grammar/texsyms.flxh#0235">cmp := "\precnsim"</a>
+0236:    <a href="/share/lib/grammar/texsyms.flxh#0236">cmp := "\precsim"</a>
+0237:    <a href="/share/lib/grammar/texsyms.flxh#0237">bin := "\prod"</a>
+0238:    <a href="/share/lib/grammar/texsyms.flxh#0238">cmp := "\propto"</a>
+0244:    <a href="/share/lib/grammar/texsyms.flxh#0244">cmp := "\rhd"</a>
+0245:    <a href="/share/lib/grammar/texsyms.flxh#0245">arr := "\Rightarrow"</a>
+0246:    <a href="/share/lib/grammar/texsyms.flxh#0246">arr := "\rightarrow"</a>
+0247:    <a href="/share/lib/grammar/texsyms.flxh#0247">arr := "\rightarrowtail"</a>
+0248:    <a href="/share/lib/grammar/texsyms.flxh#0248">arr := "\rightharpoondown"</a>
+0249:    <a href="/share/lib/grammar/texsyms.flxh#0249">arr := "\rightharpoonup"</a>
+0250:    <a href="/share/lib/grammar/texsyms.flxh#0250">arr := "\rightleftarrows"</a>
+0251:    <a href="/share/lib/grammar/texsyms.flxh#0251">arr := "\rightleftharpoons"</a>
+0252:    <a href="/share/lib/grammar/texsyms.flxh#0252">arr := "\rightleftharpoons"</a>
+0253:    <a href="/share/lib/grammar/texsyms.flxh#0253">arr := "\rightrightarrows"</a>
+0254:    <a href="/share/lib/grammar/texsyms.flxh#0254">arr := "\rightsquigarrow"</a>
+0255:    <a href="/share/lib/grammar/texsyms.flxh#0255">arr := "\Rrightarrow"</a>
+0256:    <a href="/share/lib/grammar/texsyms.flxh#0256">cmp := "\rtimes"</a>
+0260:    <a href="/share/lib/grammar/texsyms.flxh#0260">bin := "\setminus"</a>
+0261:    <a href="/share/lib/grammar/texsyms.flxh#0261">cmp := "\sim"</a>
+0262:    <a href="/share/lib/grammar/texsyms.flxh#0262">cmp := "\simeq"</a>
+0263:    <a href="/share/lib/grammar/texsyms.flxh#0263">cmp := "\smallsetminus"</a>
+0264:    <a href="/share/lib/grammar/texsyms.flxh#0264">bin := "\sqcap"</a>
+0265:    <a href="/share/lib/grammar/texsyms.flxh#0265">bin := "\sqcup"</a>
+0266:    <a href="/share/lib/grammar/texsyms.flxh#0266">cmp := "\sqsubset"</a>
+0267:    <a href="/share/lib/grammar/texsyms.flxh#0267">cmp := "\sqsubseteq"</a>
+0268:    <a href="/share/lib/grammar/texsyms.flxh#0268">cmp := "\sqsupset"</a>
+0269:    <a href="/share/lib/grammar/texsyms.flxh#0269">cmp := "\sqsupseteq"</a>
+0270:    <a href="/share/lib/grammar/texsyms.flxh#0270">bin := "\square"</a>
+0271:    <a href="/share/lib/grammar/texsyms.flxh#0271">cmp := "\subset"</a>
+0272:    <a href="/share/lib/grammar/texsyms.flxh#0272">cmp := "\Subset"</a>
+0273:    <a href="/share/lib/grammar/texsyms.flxh#0273">cmp := "\subseteq"</a>
+0274:    <a href="/share/lib/grammar/texsyms.flxh#0274">cmp := "\subseteqq"</a>
+0275:    <a href="/share/lib/grammar/texsyms.flxh#0275">cmp := "\subsetneq"</a>
+0276:    <a href="/share/lib/grammar/texsyms.flxh#0276">cmp := "\subsetneqq"</a>
+0277:    <a href="/share/lib/grammar/texsyms.flxh#0277">cmp := "\succ"</a>
+0278:    <a href="/share/lib/grammar/texsyms.flxh#0278">cmp := "\succapprox"</a>
+0279:    <a href="/share/lib/grammar/texsyms.flxh#0279">cmp := "\succcurlyeq"</a>
+0280:    <a href="/share/lib/grammar/texsyms.flxh#0280">cmp := "\succeq"</a>
+0281:    <a href="/share/lib/grammar/texsyms.flxh#0281">cmp := "\succnapprox"</a>
+0282:    <a href="/share/lib/grammar/texsyms.flxh#0282">cmp := "\succneqq"</a>
+0283:    <a href="/share/lib/grammar/texsyms.flxh#0283">cmp := "\succnsim"</a>
+0284:    <a href="/share/lib/grammar/texsyms.flxh#0284">cmp := "\succsim"</a>
+0285:    <a href="/share/lib/grammar/texsyms.flxh#0285">cmp := "\supset"</a>
+0286:    <a href="/share/lib/grammar/texsyms.flxh#0286">cmp := "\Supset"</a>
+0287:    <a href="/share/lib/grammar/texsyms.flxh#0287">cmp := "\supseteq"</a>
+0288:    <a href="/share/lib/grammar/texsyms.flxh#0288">cmp := "\supseteqq"</a>
+0289:    <a href="/share/lib/grammar/texsyms.flxh#0289">cmp := "\supsetneq"</a>
+0290:    <a href="/share/lib/grammar/texsyms.flxh#0290">cmp := "\supsetneqq"</a>
+0294:    <a href="/share/lib/grammar/texsyms.flxh#0294">cmp := "\thickapprox"</a>
+0295:    <a href="/share/lib/grammar/texsyms.flxh#0295">cmp := "\thicksim"</a>
+0296:    <a href="/share/lib/grammar/texsyms.flxh#0296">cmp := "\times"</a>
+0297:    <a href="/share/lib/grammar/texsyms.flxh#0297">arr := "\to"</a>
+0298:    <a href="/share/lib/grammar/texsyms.flxh#0298">bin := "\triangle"</a>
+0299:    <a href="/share/lib/grammar/texsyms.flxh#0299">bin := "\triangledown"</a>
+0300:    <a href="/share/lib/grammar/texsyms.flxh#0300">cmp := "\triangleleft"</a>
+0301:    <a href="/share/lib/grammar/texsyms.flxh#0301">cmp := "\trianglelefteq"</a>
+0302:    <a href="/share/lib/grammar/texsyms.flxh#0302">cmp := "\triangleq"</a>
+0303:    <a href="/share/lib/grammar/texsyms.flxh#0303">cmp := "\triangleright"</a>
+0304:    <a href="/share/lib/grammar/texsyms.flxh#0304">cmp := "\trianglerighteq"</a>
+0305:    <a href="/share/lib/grammar/texsyms.flxh#0305">arr := "\twoheadleftarrow"</a>
+0306:    <a href="/share/lib/grammar/texsyms.flxh#0306">arr := "\twoheadrightarrow"</a>
+0310:    <a href="/share/lib/grammar/texsyms.flxh#0310">cmp := "\unlhd"</a>
+0311:    <a href="/share/lib/grammar/texsyms.flxh#0311">cmp := "\unrhd"</a>
+0312:    <a href="/share/lib/grammar/texsyms.flxh#0312">bin := "\Uparrow"</a>
+0313:    <a href="/share/lib/grammar/texsyms.flxh#0313">bin := "\uparrow"</a>
+0314:    <a href="/share/lib/grammar/texsyms.flxh#0314">bin := "\Updownarrow"</a>
+0315:    <a href="/share/lib/grammar/texsyms.flxh#0315">bin := "\updownarrow"</a>
+0316:    <a href="/share/lib/grammar/texsyms.flxh#0316">bin := "\upharpoonleft"</a>
+0317:    <a href="/share/lib/grammar/texsyms.flxh#0317">bin := "\upharpoonright"</a>
+0318:    <a href="/share/lib/grammar/texsyms.flxh#0318">bin := "\uplus"</a>
+0319:    <a href="/share/lib/grammar/texsyms.flxh#0319">bin := "\upuparrows"</a>
+0323:    <a href="/share/lib/grammar/texsyms.flxh#0323">cmp := "\varsubsetneq"</a>
+0324:    <a href="/share/lib/grammar/texsyms.flxh#0324">cmp := "\varsubsetneqq"</a>
+0325:    <a href="/share/lib/grammar/texsyms.flxh#0325">cmp := "\varsupsetneq"</a>
+0326:    <a href="/share/lib/grammar/texsyms.flxh#0326">cmp := "\varsupsetneqq"</a>
+0327:    <a href="/share/lib/grammar/texsyms.flxh#0327">bin := "\vee"</a>
+0328:    <a href="/share/lib/grammar/texsyms.flxh#0328">cmp := "\veebar"</a>
+0332:    <a href="/share/lib/grammar/texsyms.flxh#0332">bin := "\wedge"</a>
+0336:    <a href="/share/lib/grammar/texsyms.flxh#0336">arr := "\xleftarrow"</a>
+0337:    <a href="/share/lib/grammar/texsyms.flxh#0337">arr := "\xrightarrow"</a>
+0356:    <a href="/share/lib/grammar/texsyms.flxh#0356">x[scomparison_pri]:= x[>scomparison_pri] bin x[>scomparison_pri]</a>
+0357:    <a href="/share/lib/grammar/texsyms.flxh#0357">x[scomparison_pri]:= x[>scomparison_pri] cmp x[>scomparison_pri]</a>
+0360:    <a href="/share/lib/grammar/texsyms.flxh#0360">x[stex_implies_condition_pri] := x[>stex_implies_condition_pri]  "\implies" x[>stex_implies_condition_pri]</a>
+0361:    <a href="/share/lib/grammar/texsyms.flxh#0361">x[stex_or_condition_pri] := x[>stex_or_condition_pri] ( "\lor" x[>stex_or_condition_pri])+</a>
+0362:    <a href="/share/lib/grammar/texsyms.flxh#0362">x[stex_and_condition_pri] := x[>stex_and_condition_pri] ( "\land" x[>stex_and_condition_pri])+</a>
+0363:    <a href="/share/lib/grammar/texsyms.flxh#0363">x[stex_not_condition_pri] := "\lnot" x[stex_not_condition_pri]</a>
+0368:    <a href="/share/lib/grammar/texsyms.flxh#0368">x[ssetunion_pri] := x[ssetunion_pri] "\cup" x[>ssetunion_pri]</a>
+0369:    <a href="/share/lib/grammar/texsyms.flxh#0369">x[ssetintersection_pri] := x[ssetintersection_pri] "\cap" x[>ssetintersection_pri]</a>
+0372:    <a href="/share/lib/grammar/texsyms.flxh#0372">x[sarrow_pri] := x[scase_literal_pri] arr x[sarrow_pri]</a>
+0375:    <a href="/share/lib/grammar/texsyms.flxh#0375">satom := "\lceil" sexpr "\rceil"</a>
+0376:    <a href="/share/lib/grammar/texsyms.flxh#0376">satom := "\lfloor" sexpr "\rfloor"</a>
+<hr/><a href="/share/lib/grammar/type_decls.flxh">type_decls.flxh</a>
+
+0065:  <a href="/share/lib/grammar/type_decls.flxh#0065">syntax type_decls</a>
+           Stuff for defining types.
+           Felix type expressions use the same syntax as value expressions.
+0068:    <a href="/share/lib/grammar/type_decls.flxh#0068">satom := stypematch</a>
+0071:    <a href="/share/lib/grammar/type_decls.flxh#0071">stmt := "typedef" sdeclname "=" sexpr ";"</a>
+           Typedef creates an alias for a type.
+0079:    <a href="/share/lib/grammar/type_decls.flxh#0079">stmt := "typedef" "fun" sdeclname stypefun_args ":" stypeexpr "=>" sexpr ";"</a>
+           Typedef fun create a type function or functor.
+           It maps some types to another type.
+           This is the simple expression form.
+0087:    <a href="/share/lib/grammar/type_decls.flxh#0087">stmt := "typedef" "fun" sdeclname ":" stypeexpr "=" stype_matching+ ";"</a>
+           Typedef fun create a type function or functor.
+           It maps some types to another type.
+           This is the simple matching form.
+0101:    <a href="/share/lib/grammar/type_decls.flxh#0101">stype_matching := "|" sexpr "=>" sexpr</a>
+0108:    <a href="/share/lib/grammar/type_decls.flxh#0108">stypematch := "typematch" sexpr "with" stype_matching+ "endmatch"</a>
+           A typematch expression computes a type based on a pattern match.
+           The matching process never rejects a type variable which
+           mighht later match after substitution.
+           It also never accepts a match which might later fail to match
+           after substitution.
+0132:    <a href="/share/lib/grammar/type_decls.flxh#0132">sexport := "export"</a>
+           A struct is a nominally type product type similar to a C struct.
+           A struct may be polymorphic.  Felix generates a constructor for
+           the struct from a tuple of the types of the fields of te struct,
+           in the order they're written.
+           The syntax allows functions and procedures to be included in a struct,
+           however these are not non-static members.
+           Rather they global functions with an additional
+           argument prefixed of the struct type (for a fun) or pointer
+           to the struct type (for a proc). In such functinos the special
+           identifier "self" must be used to refer to the struct.
+           For example:
+           struct X {
+           a : int;
+           fun f(b: int) => self.a + b;
+           }
+           println$ X 1 . f 2;
+           // f is equivalent to
+           fun f (self:X) (b:int) => self.a + b;
+0133:    <a href="/share/lib/grammar/type_decls.flxh#0133">sexport := sepsilon</a>
+0134:    <a href="/share/lib/grammar/type_decls.flxh#0134">stmt := sexport "struct" sdeclname "=" ? "{" sstruct_mem_decl * "}"</a>
+0189:    <a href="/share/lib/grammar/type_decls.flxh#0189">sstruct_mem_decl := stypeexpr sname ";"</a>
+0190:    <a href="/share/lib/grammar/type_decls.flxh#0190">sstruct_mem_decl := sname ":" stypeexpr ";"</a>
+0191:    <a href="/share/lib/grammar/type_decls.flxh#0191">sstruct_mem_decl := sfunction</a>
+0200:    <a href="/share/lib/grammar/type_decls.flxh#0200">stmt := "cstruct" sdeclname "=" ? "{" sstruct_mem_decl * "}" srequires_clause ";"</a>
+           A ctruct provides a model of a C structure.
+           This is the same as a struct except the structure is not emitted.
+           Instead, it is assumed to be already defined in C.
+           CAVEAT: A C struct constructor should not be used
+           unless the cstruct definition is a complete model of the C struct.
+0205:    <a href="/share/lib/grammar/type_decls.flxh#0205">stmt := "typedef" "struct" "{" sstruct_mem_decl * "}" sdeclname srequires_clause ";"</a>
+           A hack to help with cut and paste from C headers into Felix
+0210:    <a href="/share/lib/grammar/type_decls.flxh#0210">stmt := "typedef" "struct" sdeclname "{" sstruct_mem_decl * "}" sdeclname srequires_clause ";"</a>
+           A hack to help with cut and paste from C headers into Felix
+0214:    <a href="/share/lib/grammar/type_decls.flxh#0214">sopt_name := sname</a>
+0215:    <a href="/share/lib/grammar/type_decls.flxh#0215">sopt_name := sepsilon</a>
+0231:    <a href="/share/lib/grammar/type_decls.flxh#0231">stmt := "union" sdeclname "=" stype_sum_items2 ";"</a>
+           A union is a model of a discriminated union or variant.
+           Such unions have a discriminant tag that determines
+           at run time which component is populated.
+           The only way to access the union field is by using a
+           match which automatically enforces proper access.
+           The fields of a union are called type constructors.
+           A constant type constructor has no arguments.
+           A non-constant type constructor has an argument
+           which can be extracted in a match.
+           
+           Unions provide a safe way to "unify" heterogenous data
+           into a single data type.
+0237:    <a href="/share/lib/grammar/type_decls.flxh#0237">stmt := "union" sdeclname "{" stype_sum_item1* "}"</a>
+           Deprecated C like syntax for unionx.
+0242:    <a href="/share/lib/grammar/type_decls.flxh#0242">stmt := senum_decl</a>
+0247:    <a href="/share/lib/grammar/type_decls.flxh#0247">stmt := "enum" sdeclname "{" senum_items "}"</a>
+           Short for for declaring an enumeration,
+           which is a union all of whose fields are constant constructors.
+           Deprecated syntax.
+0254:    <a href="/share/lib/grammar/type_decls.flxh#0254">stmt := "enum" sdeclname "=" senum_items ";"</a>
+           Short for for declaring an enumeration,
+           which is a union all of whose fields are constant constructors.
+0259:    <a href="/share/lib/grammar/type_decls.flxh#0259">sopt_value := "=" sinteger</a>
+0260:    <a href="/share/lib/grammar/type_decls.flxh#0260">sopt_value := sepsilon</a>
+0261:    <a href="/share/lib/grammar/type_decls.flxh#0261">senum_item := sname sopt_value</a>
+0262:    <a href="/share/lib/grammar/type_decls.flxh#0262">senum_items := senum_item "," senum_items</a>
+0263:    <a href="/share/lib/grammar/type_decls.flxh#0263">senum_items := senum_item</a>
+0264:    <a href="/share/lib/grammar/type_decls.flxh#0264">senum_items := sepsilon</a>
+0268:    <a href="/share/lib/grammar/type_decls.flxh#0268">stmt := "interface" sdeclname stype_extension "{" srecord_type "}"</a>
+           Java like interface of an object type.
+           Equivalent to a record type.
+0272:    <a href="/share/lib/grammar/type_decls.flxh#0272">srecord_type := srecord_mem_decl (";" srecord_mem_decl)* ";"</a>
+0274:    <a href="/share/lib/grammar/type_decls.flxh#0274">stypelist := stypeexpr ("," stypeexpr)*</a>
+0275:    <a href="/share/lib/grammar/type_decls.flxh#0275">stype_extension := "extends" stypelist</a>
+0276:    <a href="/share/lib/grammar/type_decls.flxh#0276">stype_extension := sepsilon</a>
+<hr/><a href="/share/lib/grammar/variables.flxh">variables.flxh</a>
+
+0002:  <a href="/share/lib/grammar/variables.flxh#0002">syntax variables</a>
+           General variable binders.
+0009:    <a href="/share/lib/grammar/variables.flxh#0009">stmt := "val" sname sname_suffix "=" sexpr ";"</a>
+           Value binder: multi declaration. Like:
+           
+           val x,y,z = 1,2,3;
+0038:    <a href="/share/lib/grammar/variables.flxh#0038">stmt := "val" sdeclname "=" sexpr ";"</a>
+           Value binder, single.
+0044:    <a href="/share/lib/grammar/variables.flxh#0044">stmt := "val" sdeclname ":" stypeexpr "=" sexpr ";"</a>
+           Value binder, single, with type.
+0050:    <a href="/share/lib/grammar/variables.flxh#0050">stmt := "ref" sdeclname "<-" sexpr ";"</a>
+           Reference binder.
+0056:    <a href="/share/lib/grammar/variables.flxh#0056">stmt := "ref" sdeclname ":" stypeexpr "<-" sexpr ";"</a>
+           Reference binder with type.
+0064:    <a href="/share/lib/grammar/variables.flxh#0064">stmt := "fun" sdeclname "<-" sexpr ";"</a>
+           Fun binder, for lazy evaluation.
+           A function with no arguments.
+           Uttering the name of the function calls it.
+0070:    <a href="/share/lib/grammar/variables.flxh#0070">stmt := "fun" sdeclname ":" stypeexpr "<-" sexpr ";"</a>
+           Fun binder with type.
+0076:    <a href="/share/lib/grammar/variables.flxh#0076">stmt := "var" sname sname_suffix "=" sexpr ";"</a>
+           Variable binder, multiple.
+0105:    <a href="/share/lib/grammar/variables.flxh#0105">stmt := "var" sdeclname "=" sexpr ";"</a>
+           Variable binder, single.
+0111:    <a href="/share/lib/grammar/variables.flxh#0111">stmt := "var" sdeclname ":" stypeexpr "=" sexpr ";"</a>
+           Variable binder, single, with type.
+0117:    <a href="/share/lib/grammar/variables.flxh#0117">stmt := "var" sdeclname ":" stypeexpr ";"</a>
+           Variable binder, single, with type, no explicit initialiser.
+</pre></body></html>

@@ -1,0 +1,478 @@
+
+@h1 The Felix BEXE instruction set
+In this section we exhibit the core executable instructions
+of Felix. We will exhibit the internal term used in the compiler
+and some example in the standard concrete syntax.
+
+Be aware these instructions do not provide the full abstract
+machine. That requires bindings to the run time library and
+driver code as well. These terms merely represent the instructions
+the compiler recognises. As is usual in any language much
+functionality is provided by the standard library and runtime
+libraries.
+
+@h2 All the instructions
+The key to the types in the instructions below:
+@pre
+  src      -- a Felix source code location (file,lines, columns)
+  string   -- a string
+  expr     -- an expresion
+  expr?    -- an optional expression
+  expr*    -- a list of expressions
+  id       -- an integer representing a bound symbol (function, variable)
+  code     -- arbitrary C++ code possibly with magic holes
+  type     -- a type
+@
+And here are the instructions:
+@pre
+  // comments
+  | BEXE_comment (src,string)               // for documenting generated code
+  | BEXE_nop (src,string)                   // no operation
+  | BEXE_trace (src,string,string)          // trace diagnostic
+
+  // stops
+  | BEXE_halt (src,string)                  // halt processing
+  | BEXE_assert (src,expr)                  // assertion check
+  | BEXE_assert2 (src,src,expr?,expr)       // assertion check
+  | BEXE_axiom_check (src,expr)             // axiom check
+  | BEXE_axiom_check2 (src,src,expr?,expr)  // axiom check
+
+
+  // control transfer
+  | BEXE_label (src,string)                 // target for goto
+  | BEXE_goto (src,string)                  // control transfer 
+  | BEXE_ifgoto (src,expr,string)           // conditional control transfer
+
+  // calls
+  | BEXE_call (src,expr,expr)               // call procedure closure
+  | BEXE_call_direct (src,id,type*,expr)    // call named procedure
+  | BEXE_call_stack (src,id,type*,expr)     // call named procedure on stack
+  | BEXE_call_prim (src,id,type*,expr)      // invoke C++ primitive
+  | BEXE_jump (src,expr,expr)               // tail call closure
+  | BEXE_jump_direct (src,id,type*,expr)    // tail call named procedure
+
+  | BEXE_svc (src,id)                       // service call run time system
+  | BEXE_fun_return (src,expr)              // return value from function 
+  | BEXE_yield (src,expr)                   // yield value from generator
+  | BEXE_proc_return (src)                  // return from procedure
+
+  // assignment
+  | BEXE_assign (src,expr,expr)             // general assignment
+  | BEXE_init (src,id,expr)                 // variable initialisation
+
+  // C++ code inserts
+  | BEXE_code (src,code)                    // arbitrary C++ statements
+  | BEXE_nonreturn_code (src,code)          // arbitrary non-returning C++
+  | BEXE_begin                              // begin C++ block
+  | BEXE_end                                // end C++ block
+  | BEXE_try (src)                          // begin C++ try/catch 
+  | BEXE_endtry (src)                       // end C++ try/catch
+  | BEXE_catch (src,string,type)            // catch C++ exception
+@
+
+@h2 Comments
+There are three comment forms:
+@h3 BEXE_comment
+This form represents a compiler generated comment
+which may aid reading the generated code. The term
+allows comments to accumulate through the various
+phases of the compilation process.
+
+@h3 BEXE_nop
+An instruction to be used when one is required but
+we don't want to give one. Typically used by the compiler,
+for example as the target for a label.
+
+@h3 BEXE_trace
+This is a run time debugging instruction which is logically
+a no-operation, but may write to a log or monitoring channel
+to allow tracing of control flow. The exact implementation
+depends on both compiler switches and run time library setup.
+
+@h2 Stops
+@h3 BEXE_halt
+This instruction terminates processing immediately,
+possibly emitting a message. It is typically generated
+by the compiler to provide definite, recognisable termination.
+User code will generally call a library function such as <code>exit()</code>
+instead.
+
+@h3 BEXE_assert
+A general assertion checking instruction which will check
+that its argument expression evaluates to true, and terminate
+processing if not. Assert accepts a Felix source code location
+and generally emits a message on failure refering to the
+point of failure.
+
+@h3 BEXE_assert2
+A variant of assert that accepts two source locations. 
+
+@h3 BEXE_axiom_check
+This is a special kind of assertion associated with 
+a general axiom, and is invoked by a special axiom
+checking command. It is designed to emit a message
+but may not terminate the program, since the intent
+is to check axioms by providing a range of data.
+
+@h3 BEXE_axiom_check2
+A variant of the axiom checker with two source locations.
+
+@h2 Control transfer
+@h3 BEXE_label
+An instruction with no operation that marks a place
+in the code to which control may be transfered by
+a goto or conditional goto instruction.
+
+There are two kinds of label, dependent on usage:
+local and non-local labels. A local label is one that
+can only be targetted by a local goto, that is, one
+in the same scope. A non-local label can be targetted
+by a non-local goto, that is, one in a child scope.
+Non-local gotos may require stack unwinding.
+
+The compiler decides by analysis which kind a label is.
+A non-local label may become localised by inlining
+all the routines jumping to it. Local labels can never
+become non-local.
+
+@h3 BEXE_goto
+An uncondition jump or control transfer to a target
+position in the code marked by a label.
+
+@h3 BEXE_ifgoto
+A conditional jump. If the condition is not met control
+proceeds to the next instruction.
+
+@h3 BEXE_svc
+A service call. This is a request to the driver or
+abstract operating system for some kind of service.
+It is implemented by returning control with an indicator
+set in the calling procedures frame. Service calls
+cannot be issued from any context in which the 
+machine stack is not empty: since the implementation
+uses a C level return of control, and expects control
+to return to the driver, the machine stack must contain
+a return address in the driver code.
+
+The set of available service calls is documented
+in the Felix library and the run time library source.
+
+
+@h2 Calls
+The call instructions are used to call a procedural subroutine.
+There are six forms of a call. In principle, in the abstract
+machine, the return address of a call is stored in the callee
+procedure frame. In practice certain optimisations can 
+be performed and the machine stack may be used instead
+if this does not change the semantics.
+
+@h3 BEXE_call
+The first form is the most general and allows the procedure to
+be an expression. An example:
+@felix
+  var ps = { call println$ "ZERO"; }, { call println$ "ONE"; };
+  call ps.0 ();
+@
+@h3 BEXE_call_direct
+The second form is a special case in which the
+name of the procedure is used directly. This is known
+as a direct call. In the binding process, direct calls
+are resolved by overloading. The procedure frame
+of a direct call may be allocated on the heap.
+@felix
+  proc f (x:int) { call println$ x; }
+  proc f (x:double) { call println$ x; }
+  call f 1.0;
+@
+@h3 BEXE_call_stack
+This is a direct call in which the procedure frame
+is allocated on the machine stack. The decision as to
+whether a direct call will be stacked or heaped is
+made by the compiler. A call cannot be stacked if a
+pointer to the frame persists beyond the frames
+lifetime, that is, after the procedure returns.
+It also cannot be stacked if the procedure issues
+a service call.
+
+There are two representations of stacked procedures.
+The standard one uses a C++ object with call and
+resume methods, the same as would be allocated on
+the heap. The stack is used to avoid the allocation
+but the consequence is deallocation when the calling
+context itself deallocates.
+
+The second representation is the most efficient,
+namely an ordinary C function returning void.
+This representation cannot be used when a closure
+is required, that is, when a child requires a pointer
+to the procedures frame for context.
+ 
+@h3 BEXE_call_prim
+The form is used to call code fragments lifted from C++
+as procedures. It is basically a macro or template
+which is emitted as written with arguments plugged in.
+@felix
+  proc printme : int = 'fprintf("%d",$1);';
+  call printme 42;
+@
+@h3 BEXE_jump
+This is a tail call which allows the target procedure
+to return control to the calling procedures caller.
+@felix
+  proc f (x:int) { call println$ x; }
+  proc f (x:int) { call f x; jump f (x+1); }
+@
+@h3 BEXE_jump_direct
+A tail call with a direct target.
+
+@h3 Processing calls.
+The Felix compiler replaces jumps with a call
+followed by a return. It also adds a return statement
+at the end of every procedure. It recalculates later
+whether a call is in tail position and the jump
+instruction can be used instead of a call followed
+by a return. 
+
+Felix automatically detects which kind
+of call is being issued by the programmer.
+If a closure is required for a primitive, Felix
+generates a wrapper automatically.
+
+@h3 BEXE_proc_return
+This instruction returns control to the caller of a procedure.
+A procedure return is added at the end of every procedure.
+@felix
+  proc f (x:int) { call println$ x; return; }
+  proc g (x:int) { call println$ x; } // implicit return
+@
+@h3 BEXE_fun_return
+This instruction is used to return a value from
+a function.
+@felix
+  fun f(x:int) = { return x + 1; }
+@
+@h3 BEXE_yield
+This instruction is used in the closure of a generator function to
+temporarily return a value to the caller. When the closure is 
+reinvoked control resumes at the next instruction after the yield.
+
+Yield can only be used in generators, and it only works if
+the generator is converted to a closure stored in a variable.
+The variable ensures the resumption address is retained.
+@felix
+  gen range(first:int, last:int) = 
+  {
+    var current = start;
+    while current < last do
+      yield current;
+      ++current;
+    done
+    return current;
+  }
+@
+
+@h3 Call syntax
+Felix provides three shortcuts for calls. First, the
+word {call} can always be left out. A form like:
+@felix
+  p a;
+@
+is always interpreted as a call. Secondly, if the argument
+is just {()}, that is, the procedure has only a {unit}
+argument, also named {1}, then the {()} can be left out:
+@felix
+  p;
+@
+Finally, you can leave out the {return;} statement at the
+end of a procedure, one is added automatically to catch
+what wold otherwise be a drop though into empty space:
+@felix
+  proc f() { g; } // 'return;' added
+@
+
+@h2 Assignments
+@h3 BEXE_assign
+This is a general form of assignment which is currently
+not strictly checked. The LHS and RHS types must agree,
+but any expression can be used on the LHS. The generated
+code will fail at C++ compile time if the LHS does not
+resolve to an lvalue or does not support a user defined
+assignment operator which works on an rvalue.
+
+This form of assignment is being deprecated. Usual assignments
+in Felix such as:
+@felix
+  var x: int;
+  x = 1;
+@
+may be replaced by this:
+@felix
+  var x: int;
+  &x <- 1;
+@
+which is defined in the library, not the compiler.
+This latter form has the virtual that it is independent
+of the notion of lvalues, save for the idea that whole
+variables are addressable.
+
+@h2 BEXE_init
+This is a special form of assignment which is used to
+initialise a single variable. It will be certainly
+be used in cases such as this:
+@felix
+  var x = 1; // initialisation
+@
+
+
+@h2 C++ inserts
+@h3 BEXE_code
+This is a fragment of C++ code which is simply emitted
+into the generated C++ output. It must be a statement
+or sequence of statements.
+@felix
+  code 'fprintf(stderr, "Debuging");';
+@
+
+@h3 BEXE_nonreturn_code
+A variant of the code instruction which requires that
+the emitted fragment does not return control.
+The compiler can use this information to determine
+if subsequent instructions are reachable.
+@felix
+  noreturn code 'exit(1);';
+@
+
+@h3 BEXE_begin, BEXE_end
+This pair of instructions corresponds to open and close
+braces in C, that is, it demarks a block, for the purpose
+of controlling the scope of C++ local variables.
+It is typically generated by the compiler to allow factoring
+long winded expressions which would otherwise be unreadble
+in the generated code.
+
+@h3 BEXE_try, BEXE_catch, BEXE_entry
+These three instructions are used to implement C++
+try blocks with catch clauses. User level try/catch
+is only supported when wrapping a sequence of one
+or more primitives which may throw an exception.
+
+Because a try block adjust the stack pointer on some
+implementation of C++ it is not possible to call
+the driver from inside a try block, nor resume
+control inside one.
+
+C++ style exception handling is considered several
+broken and is not supported in Felix, except for
+interfacing with C++ code that may throw an exception
+the programmer wishes to translate to an error code.
+
+Note that the library defines a {throw} routine which
+can throw an exception, however exceptions cannot propagate
+up the procedure call stack because it is implemented with
+linked heap frames, not the machine stack.
+
+@felix
+  try
+    primitve x;
+  catch e:int =>
+    println$ "Error " + str e + " got thrown from primitive";
+    System::exit 1;
+  endtry
+@
+
+@h1 The Felix BEXPR expression terms
+Here are the abstract expression terms used in Felix.
+The key is:
+@pre
+  expr              -- an expression (with its type)
+  expr*             -- a list of expressions
+  type              -- a type
+  type*             -- a list of types
+  int               -- an integer
+  id                -- an integer representing a name (function, variable)
+  string            -- a string
+  literal           -- special encoding of literals (ints, strings, floats)
+@
+and here are the terms:
+@pre
+  // constructors
+  | BEXPR_new (expr)                   // pointer to heap copy of value
+  | BEXPR_class_new (type,expr)        // C++ class constructor
+  | BEXPR_literal (literal)            // literal of some kind
+  | BEXPR_name (id,type*)              // variable name
+  | BEXPR_tuple (expr*)                // tuple constructor
+  | BEXPR_record ((string,expr)*)      // record constructor
+  | BEXPR_variant (string,expr)        // variant constructor
+  | BEXPR_ref (id,type*)               // address operator
+  | BEXPR_closure (id,type*)           // subroutine closure
+
+  // operators
+  | BEXPR_not (expr)                   // logical negation
+  | BEXPR_deref (expr)                 // pointer dereference
+  | BEXPR_address (expr)               // address value
+  | BEXPR_compose (expr,expr)          // functional composition
+
+  // optimisation hints
+  | BEXPR_likely (expr)                // optimisation hint expr likely true
+  | BEXPR_unlikely (expr)              // optimisation hint expr likely false
+
+  // application
+  | BEXPR_apply (expr,expr)            // general functional application
+  | BEXPR_apply_prim (id,type*,expr)   // application of C++ primitive
+  | BEXPR_apply_direct (id,type*,expr) // application of named function
+  | BEXPR_apply_stack (id,type*,expr)  // stacked direct application
+  | BEXPR_apply_struct (id,type*,expr) // application of Felix struct constructor
+
+  // destructors (inspectors)
+  | BEXPR_get_n (expr,expr)            // general projection function, index first
+  | BEXPR_case (int,type)              // constant anonymous variant constructor
+  | BEXPR_match_case (int,expr)        // variant index comparison
+  | BEXPR_case_arg (int,expr)          // variant argument value
+  | BEXPR_case_index (expr)            // variant index value
+
+  // misc
+  | BEXPR_expr (string,type)           // C++ expression injection
+  | BEXPR_range_check (expr,expr,expr) // bounds check
+  | BEXPR_coerce (expr,type)           // type coercion (special!)
+
+  // polyadic tuple handling
+  | BEXPR_tuple_tail (expr)            // tuple tail as tuple
+  | BEXPR_tuple_head (expr)            // tuple head element
+  | BEXPR_tuple_cons (expr,expr)       // tuple cons operation
+
+@
+
+@h1 Felix BTYP type terms
+@pre
+  | BTYP_none                                    // we got totally lost type
+  | BTYP_sum (type*)                             // sum type
+  | BTYP_unitsum (int)                           // sum of units
+  | BTYP_intersect (type*)                       // intersection type
+  | BTYP_inst (id,type*)                         // instance of nominal type
+  | BTYP_tuple (type*)                           // tuple type
+  | BTYP_array (type,type)                       // array type
+  | BTYP_record (string,(string,type) list)      // record type
+  | BTYP_variant ((string,type) list)            // variant type
+  | BTYP_pointer (type)                          // pointer type
+  | BTYP_function (type,type)                    // Felix function type
+  | BTYP_cfunction (type,type)                   // C function type
+  | BTYP_void                                    // empty type
+  | BTYP_fix (int,type)                          // recursion fixpoint
+
+  // meta typing
+  | BTYP_type (int)                              // meta typing
+  | BTYP_type_tuple (type*)                      // type tuple
+  | BTYP_type_function ((id,type)*,type,type)    // type function
+  | BTYP_type_var (id,type)                      // type variable
+  | BTYP_type_apply (type,type)                  // application of type function
+  | BTYP_type_match (type,(btpattern_t,type)*)   // type match
+
+  // special form of tuple type represented as list
+  | BTYP_tuple_cons (type,type)                  // tuple type
+
+  // type sets
+  | BTYP_type_set (type*)                        // set of types
+  | BTYP_type_set_union (type*)                  // union of type sets
+  | BTYP_type_set_intersection (type*)           // intersection of type sets
+
+@

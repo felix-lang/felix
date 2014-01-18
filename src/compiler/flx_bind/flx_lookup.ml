@@ -74,12 +74,25 @@ let merge_functions
   (opens:entry_set_t list)
   name
 : entry_kind_t list =
+(*
+if name = "ff" then print_endline "Merging 'ff'"; 
+*)
+  let result =
   List.fold_left
     (fun init x -> match x with
     | FunctionEntry ls ->
+(*
+if name = "ff" then print_endline "Function set ..";
+*)
       List.fold_left
-      (fun init x ->
-        if List.mem x init then init else x :: init
+      (fun init ({base_sym=bid; spec_vs=vs; sub_ts=ts} as x) ->
+(*
+if name = "ff" then print_endline ("Merging view " ^ string_of_entry_kind x^ " len vs = " ^ string_of_int (List.length vs) ^ ", len ts = " ^ string_of_int (List.length ts));
+*)
+        if List.mem x init then 
+          begin (* if name = "ff" then print_endline "Dup"; *) init end 
+        else 
+          begin (* if name = "ff" then print_endline "new";*) x :: init end
       )
       init ls
     | NonFunctionEntry x ->
@@ -91,11 +104,27 @@ let merge_functions
     )
   []
   opens
+  in
+(*
+  if name = "ff" then print_endline ("Merged list length=" ^ string_of_int (List.length opens));
+*)
+  result
+
 
 let lookup_name_in_table_dirs table dirs sr name : entry_set_t option =
+(*
+if name = "ff" then print_endline ("Lookup name in table dirs " ^ name);
+*)
   match lookup_name_in_htab table name with
-  | Some x as y -> y
+  | Some x as y -> 
+(*
+    if name = "ff" then print_endline ("found core entry for ff");
+*)
+    y
   | None ->
+(*
+      if name = "ff" then print_endline ("Did not find core entry for ff, searching dirs .. ");
+*)
       let opens = List.concat (
         List.map begin fun table ->
           match lookup_name_in_htab table name with
@@ -103,8 +132,12 @@ let lookup_name_in_table_dirs table dirs sr name : entry_set_t option =
           | None -> []
         end dirs)
       in
+(*
+      if name = "ff" then print_endline ("Found " ^ string_of_int (List.length opens) ^ " entries for ff in dirs");
+*)
       match opens with
-      | [x] -> Some x
+      | [x] -> 
+        Some x
       | FunctionEntry ls :: rest ->
           Some (FunctionEntry (merge_functions opens name))
 
@@ -5281,13 +5314,13 @@ and review_entry state bsym_table name vs ts {base_sym=i; spec_vs=vs'; sub_ts=ts
       synthesise a new vs/ts pair
       if vs' doesn't have enough variables, just drop the extra ts
    *)
-(*
+    (*
     print_endline ("Review entry " ^ name ^ "<" ^ si i ^">");
     print_endline ("input vs="^catmap "," (fun (s,i)->s^"<"^si i^">") vs^
       ", input ts="^catmap "," (sbt bsym_table) ts);
     print_endline ("old vs="^catmap "," (fun (s,i)->s^"<"^si i^">") vs'^
       ", old ts="^catmap "," (sbt bsym_table) ts');
-*)
+   *)
    let vs = ref (List.rev vs) in
    let vs',ts =
      let rec aux invs ints outvs outts =
@@ -5305,15 +5338,19 @@ and review_entry state bsym_table name vs ts {base_sym=i; spec_vs=vs'; sub_ts=ts
          let h' = let (_,i) = h in btyp_type_var (i, btyp_type 0) in
          *)
          aux t [] (h::outvs) (h'::outts)
-       | _ -> List.rev outvs, List.rev outts
+       | [],h::t -> 
+         (* NOT seem to happen in practice .. *)
+         print_endline ("Extra ts dropped, not enough vs");
+         List.rev outvs, List.rev outts
+       | [],[] -> List.rev outvs, List.rev outts
      in aux vs' ts [] []
    in
    let vs = List.rev !vs in
    let ts' = List.map (tsubst vs' ts) ts' in
-(*
+   (*
    print_endline ("output vs="^catmap "," (fun (s,i)->s^"<"^si i^">") vs^
    ", output ts="^catmap "," (sbt bsym_table) ts');
-*)
+   *)
    {base_sym=i; spec_vs=vs; sub_ts=ts'}
 
 and review_entry_set state bsym_table k v vs ts : entry_set_t = match v with

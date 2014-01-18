@@ -1,9 +1,0 @@
-@h1 Polymorphism
-Most C bindings can  be polymorphic, including floating insertions.
-Here's an example:
-@felix
-type vector[T] = "vector<?1>";
-proc push_back[T] : vector[T] * T = "$1.push_back($2);";
-@
-Here, the notation "?1" means the first type parameter, {T}.
-

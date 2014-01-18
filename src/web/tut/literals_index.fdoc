@@ -1,0 +1,10 @@
+<p><a href='tutorial.fdoc'>Up</a></p>
+@h1 literals Index
+<ul>
+<li><a href="literals_01.fdoc">Integers</a></li>
+<li><a href="literals_02.fdoc">Floating Point Reals</a></li>
+<li><a href="literals_03.fdoc">Floating Point Complex</a></li>
+<li><a href="literals_04.fdoc">String Literals</a></li>
+<li><a href="literals_05.fdoc">Identifiers</a></li>
+<li><a href="literals_06.fdoc">Regexps</a></li>
+</ul>

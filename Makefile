@@ -92,6 +92,12 @@ test:
 	${BUILDROOT}/host/bin/flx_tangle --indir=${BUILDROOT}/share/src/test --outdir=test
 	${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --usage=prototype --expect --indir=test/regress/rt --regex='.*\.flx'
 
+tut-check:
+	mkdir -p web
+	${BUILDROOT}/host/bin/flx_tangle --indir=src/web --outdir=web
+	${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --usage=prototype --expect --input --indir=web --regex='.*\.flx'
+
+
 #
 #
 # Install default build into /usr/local/lib/felix/version/
@@ -173,45 +179,13 @@ copy-doc:
 
 gendoc: gen-doc copy-doc check-tut
 
-# upgrade tutorial indices in repo src
-# must be done prior to copy-doc
-# muut be done after primary build
-# results should be committed to repo.
-# Shouldn't be required on client build because the results
-# should already have been committed to the repo.
 gen-doc:
-	${BUILDROOT}/host/bin/flx_mktutindex tut Tutorial tutorial.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex fibres Fibres tutorial.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex objects Objects tutorial.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex polymorphism Polymorphism tutorial.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex pattern Patterns tutorial.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex literals Literals tutorial.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex cbind "C Binding" tutorial.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex streams Streams tutorial.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex array "Arrays" tutorial.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex garray "Generalised Arrays" tutorial.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex uparse "Universal Parser" uparse.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex  tools_flx_separate_compilation "Separate Compilation" tools_flx.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex  tools_flx_howto "flx Howto" tools_flx.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex nutut/intro/intro "Ground Up" ../../tutorial.fdoc
+	${BUILDROOT}/host/bin/flx_mktutindex src/web/tut tutorial.fdoc
 	# Build reference docs. Note this requires plugins.
-	${LPATH}=${BUILDROOT}/host/lib/rtl ${BUILDROOT}/host/bin/flx_libcontents --html > src/web/flx_libcontents.html
-	${LPATH}=${BUILDROOT}/host/lib/rtl ${BUILDROOT}/host/bin/flx_libindex --html > src/web/flx_libindex.html
-	${LPATH}=${BUILDROOT}/host/lib/rtl ${BUILDROOT}/host/bin/flx_gramdoc --html > src/web/flx_gramdoc.html
+	${LPATH}=${BUILDROOT}/host/lib/rtl ${BUILDROOT}/host/bin/flx_libcontents --html > src/web/ref/flx_libcontents.html
+	${LPATH}=${BUILDROOT}/host/lib/rtl ${BUILDROOT}/host/bin/flx_libindex --html > src/web/ref/flx_libindex.html
+	${LPATH}=${BUILDROOT}/host/lib/rtl ${BUILDROOT}/host/bin/flx_gramdoc --html > src/web/ref/flx_gramdoc.html
 
-
-# Checks correctness of tutorial in release image
-# must be done after copy-doc
-# must be done after primary build
-check-tut:
-	${BUILDROOT}/host/bin/flx_tangle --inoutdir=${BUILDROOT}/share/web/nutut/intro/ '.*'
-	for  i in ${BUILDROOT}/web/nutut/intro/*.flx; \
-	do \
-		j=$$(echo $$i | sed s/.flx//); \
-		echo $$j; \
-		${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --stdout=$$j.output $$j; \
-		diff -N $$j.expect $$j.output; \
-	done
 
 # optional build of compiler docs
 # targets repository
@@ -484,29 +458,10 @@ bootstrap:
 	mv build/trial build/release
 
 sdltest:
-	build/release/host/bin/flx --test=build/release --force -c -od demos/sdl demos/sdl/edit_buffer
-	build/release/host/bin/flx --test=build/release --force -c -od demos/sdl demos/sdl/edit_display
-	build/release/host/bin/flx --test=build/release --force -c -od demos/sdl demos/sdl/edit_controller
-	${LPATH}=demos/sdl build/release/host/bin/flx --test=build/release --force -od demos/sdl demos/sdl/sdltest
-
-
-weblink:
-	build/release/host/bin/flx --test=build/release -c --nolink --static -ox build/release/host/lib/rtl/webserver src/tools/webserver.flx
-	build/release/host/bin/flx --test=build/release -c --static -ox build/release/host/bin/weblink \
-		build/release/host/lib/rtl/fdoc_heading.o \
-		build/release/host/lib/rtl/fdoc_button.o \
-		build/release/host/lib/rtl/fdoc_fileseq.o \
-		build/release/host/lib/rtl/fdoc_paragraph.o \
-		build/release/host/lib/rtl/fdoc_scanner.o \
-		build/release/host/lib/rtl/fdoc_slideshow.o \
-		build/release/host/lib/rtl/fdoc2html.o \
-		build/release/host/lib/rtl/flx2html.o \
-		build/release/host/lib/rtl/py2html.o \
-		build/release/host/lib/rtl/cpp2html.o \
-		build/release/host/lib/rtl/ocaml2html.o \
-		build/release/host/lib/rtl/fpc2html.o \
-		build/release/host/lib/rtl/webserver.o \
-		src/tools/weblink.flx
+	build/release/host/bin/flx --test=build/release --force -c -od sdlbin demos/sdl/edit_buffer
+	build/release/host/bin/flx --test=build/release --force -c -od sdlbin demos/sdl/edit_display
+	build/release/host/bin/flx --test=build/release --force -c -od sdlbin demos/sdl/edit_controller
+	${LPATH}=sdlbin build/release/host/bin/flx --test=build/release --force -od sdlbin demos/sdl/sdltest
 
 
 .PHONY : build32 build64 build test32 test64 test

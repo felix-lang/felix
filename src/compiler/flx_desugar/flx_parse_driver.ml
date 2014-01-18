@@ -97,10 +97,47 @@ let parse_channel ?(name="<channel>") parser_state channel =
 
 let parse_file ?(include_dirs=[]) parser_state name =
   let name = Flx_filesys.find_file ~include_dirs name in
-(*
-print_endline ("    DEBUG: flx_parse_driver.parse_file pcounter="^string_of_int (!(Flx_parse_helper.global_data.pcounter))^", filename input=" ^ name);
-*)
-  Flx_filesys.with_file_in name (parse_channel ~name parser_state)
+  let inf name =
+    let ch = open_in_bin name in
+    let isopen = ref true in
+    let isstart = ref true in
+    let reader s n =
+      if !isopen then 
+      begin
+        if !isstart then 
+        begin
+          s.[0] <- '\n';
+          isstart := false;
+          1
+        end
+        else 
+        begin
+          let count = input ch s 0 n in
+          if count == 0 then 
+          begin
+            isopen := false;
+            close_in ch;
+          end
+          ;
+          count
+        end
+      end
+      else 0
+    in 
+    reader
+  in 
+  let parser_pilot = pp () in
+  let lexbuf = Dyp.from_function parser_pilot (inf name) in
+  Dyp.set_fname lexbuf name;
+  begin (* fudge line count *)
+    let olexbuf = (Dyp.std_lexbuf lexbuf) in 
+    let lcp = olexbuf.lex_curr_p in
+    olexbuf.lex_curr_p <- { lcp with
+    pos_lnum = lcp.pos_lnum - 1;
+  }
+  end
+  ;
+  parse_lexbuf parser_state lexbuf
 
 let parse_string ?(name="<string>") parser_state str =
   let parser_pilot = pp() in

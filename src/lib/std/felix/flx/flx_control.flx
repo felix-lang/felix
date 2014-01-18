@@ -101,6 +101,8 @@ fun dflt_control (config:Config::config_type, profile:FlxProfile::profile_type) 
     var STDOUT="";
     var EXPECT="";
     var CHECK_EXPECT=0;
+    var SET_STDIN=0;
+    var STDIN="";
     var STDGRAMMAR="@grammar/grammar.files";
     var STDIMPORT="--import=plat/flx.flxh";
     var IMPORTS=Empty[string];

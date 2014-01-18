@@ -11,7 +11,7 @@ proc f[k] (z:k, pr:k->void) {
 }
 
 // eta expansion
-proc pr(x:int) { fprint (cout,x); }
+proc pr(x:int) { fprint (cstdout,x); }
 f[int] (1, pr);
 
 @expect

@@ -1,0 +1,13 @@
+<p><a href='reference.fdoc'>Up</a></p>
+@h1 tools_flx_howto Index
+<ul>
+<li><a href="tools_flx_howto_01.fdoc">How to build a shared library</a></li>
+<li><a href="tools_flx_howto_02.fdoc">How to build a static linked executable</a></li>
+<li><a href="tools_flx_howto_03.fdoc">How to add C++ files to a program</a></li>
+<li><a href="tools_flx_howto_04.fdoc">How to add source search directories</a></li>
+<li><a href="tools_flx_howto_05.fdoc">How to add object files to a program</a></li>
+<li><a href="tools_flx_howto_06.fdoc">How to add libraries to a program</a></li>
+<li><a href="tools_flx_howto_07.fdoc">How to pass additional options to the C++ compiler or linker</a></li>
+<li><a href="tools_flx_howto_08.fdoc">How to make a static archive library</a></li>
+<li><a href="tools_flx_howto_09.fdoc">How to compile C++ only</a></li>
+</ul>

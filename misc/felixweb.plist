@@ -6,11 +6,11 @@
   <string>felixweb</string>
 
   <key>Program</key>
-  <string>/usr/local/lib/felix/felix-latest/host/bin/webserver</string>
+  <string>/usr/local/lib/felix/felix-latest/host/bin/flx_web</string>
 
   <key>ProgramArguments</key>
   <array>
-    <string>/usr/local/lib/felix/felix-latest/host/bin/webserver</string>
+    <string>/usr/local/lib/felix/felix-latest/host/bin/flx_web</string>
   </array>
 
   <key>WorkingDirectory</key>

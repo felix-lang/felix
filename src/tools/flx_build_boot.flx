@@ -41,9 +41,7 @@ class FlxCoreBuild
    
   }
 
-  proc build_web_plugins (target_dir:string, target_bin:string)
-  {
-    var plugins = list (
+  var web_plugins = list (
       'cpp2html',
       'fdoc2html',
       'fdoc_button',
@@ -57,8 +55,11 @@ class FlxCoreBuild
       'fpc2html',
       'ocaml2html',
       'py2html'
-    );
-    build_plugins (target_dir, target_bin, plugins);
+  );
+
+  proc build_web_plugins (target_dir:string, target_bin:string)
+  {
+    build_plugins (target_dir, target_bin, web_plugins);
   }
 
   proc build_toolchain_plugins (target_dir:string, target_bin:string)
@@ -89,8 +90,7 @@ class FlxCoreBuild
       ('flx_libcontents', 'tools'/'flx_libcontents'),
       ('flx_mktutindex', 'tools'/'flx_mktutindex'),
       ('flx_renumber', 'tools'/'flx_renumber'),
-      ('flx_iscr', 'tools'/'flx_iscr'),
-      ('webserver', 'tools'/'webserver') // dynamically loads plugins
+      ('flx_iscr', 'tools'/'flx_iscr')
     );
     println$ "build exes";
     match ?exe,?src in exes do
@@ -102,6 +102,7 @@ class FlxCoreBuild
         System::exit 1; 
       done
     done
+    build_flx_web (target_dir, target_bin);
   }
 
   proc build_flx_tools (target_dir:string, target_bin:string)
@@ -124,6 +125,39 @@ class FlxCoreBuild
         println$ "exe build failed";
         System::exit 1; 
       done
+    done
+  }
+
+  proc build_flx_web (target_dir:string, target_bin:string)
+  {
+    var obj_extn = ".o"; // HACK!!!!!!!! 
+    println$ "dflx_web  -> dflx_web object file";
+    var result = Flx::runflx$ list ('[flx]','--test='+target_dir, '--static','-c','--nolink',
+      '-o', target_dir/target_bin/'lib'/'rtl'/'dflx_web'+obj_extn, target_dir/'share'/'src'/'tools'/'dflx_web');
+    if result != 0 do 
+      println$ "dflx_web build failed";
+      System::exit 1; 
+    done
+    var web_plugin_objs = 
+      map 
+        (fun (s:string) => target_dir/target_bin/'lib'/'rtl'/s+obj_extn) 
+        web_plugins
+    ;
+
+    println$ "Build flx_web. Note: requires --build-web-plugins";
+    println$ "flx_web  -> flx_web executable";
+    result = Flx::runflx$ 
+      list (
+        '[flx]','--test='+target_dir, '--static','-c',
+        '-ox', target_dir/target_bin/'bin'/'flx_web') + 
+      web_plugin_objs +
+      list (
+        target_dir/target_bin/'lib'/'rtl'/'dflx_web' + obj_extn, 
+        target_dir/'share'/'src'/'tools'/'flx_web.flx')
+    ;
+    if result != 0 do 
+      println$ "exe build failed";
+      System::exit 1; 
     done
   }
 

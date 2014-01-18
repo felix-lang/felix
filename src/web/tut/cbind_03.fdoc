@@ -1,0 +1,42 @@
+@title Embedding: Floating Insertions.
+@h1 Floating Insertions.
+It is also possible to emit bulk code into either the generated
+header file or generated body file:
+@felix
+header "void f(int);";
+body "void f(int x) { return x + 1; }";
+@
+
+Header and body insertions are said to be floating because they're not emitted
+where they're written, instead they float up to a fixed place at the top
+of the generated file.
+
+@h1 Basic Requirements.
+Floating insertions can be named:
+@felix
+body mystuff = '#include "mystuff.c"';
+type mytype = "mytype" requires mystuff;
+ctor mytype : int = "make($1)";
+ctor int : mytype = "toint($1)";
+println$ int (mytype 42);
+@
+If a floating insertion is given a tag name like this,
+it is not emitted unless it is required. The {println} command here
+must be executed, and that requires the constructor for
+{mytype} which in turn requires the type {mytype} which in turn
+requires the header {mystuff} due to the {requires} clause.
+Therefore the body of the generated Felix program will contain
+{#include "mystuff.h"} which presumably defines the functions 
+{make} and {toint}.
+
+Requires clauses can be added to C bindings (including header and
+body statements).
+
+Felix will only ever add a (monomorphic) floating insertion once. The string
+value of the insertion is checked to ensure this. For this reason cyclic
+requirements are allowed, and will not lead to infinite insertions.
+Instead, the transitive closure of requirements is subject to insertion.
+Note that the closure may be empty and this is not an error: requiring
+a tag name which is not defined it permitted and follows from the
+definition, although the behaviour may seem non-intuitive.
+

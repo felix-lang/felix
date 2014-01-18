@@ -1,0 +1,93 @@
+@title Basic Embedding.
+@h1 C Bindings.
+Felix is particularly good at allowing you to reuse your favourite
+C and C++ libraries. Mapping C types and functions into Felix is
+called <em>binding</em>. 
+
+@h2 Binding types and functions
+Here's a simple example:
+
+@felix
+type Metres = "double";                    // bind the type to C
+ctor Metres: double = "$1";                // constructors
+ctor double: Metres = "$1";
+fun str(x:Metres)=> str (double x) + "m";  // format as string
+
+type SquareMetres = "double";              // bind the type to C
+ctor SquareMetres: double = "$1";          // constructors
+ctor double: SquareMetres = "$1";
+fun str(x:SquareMetres)=> str (double x)+"m^2"; // format as string
+
+fun add: Metres * Metres -> Metres = "$1+$2";
+fun mul: Metres * double -> Metres = "$1*$2";
+fun mul: double * Metres -> Metres = "$1*$2";
+fun mul: Metres * Metres-> SquareMetres = "$1*$2";
+
+val a = 1.2;
+val x = Metres 42.0;
+val y = 3.0.Metres;
+
+println$ str x + "*" + str y + " = " + str (x * y);
+println$ str a + "*" + str x + " = " + str (a * x);
+@
+In the C encoding {$1}, {$2} represent the first and second
+components of the argument tuple, respectively.
+
+There are some shortcuts for special cases where the names agree:
+@felix
+ctypes int, long, double;
+fun f: int -> int;
+@
+This is equivalent to:
+@felix
+type int="int";
+type long="long";
+type double="double";
+fun f: int * int -> int = "f($1,$2)";
+@
+
+@h2 Binding constants
+You can also bind constants and expressions:
+@felix
+const metre : Metre = "1.0";
+const pi2 : double = "PI*PI";
+@
+
+@h2 Binding enumerations
+There's a special shorthand for binding numeric enumerations:
+@felix
+cenum MyEnum = zero, one, two;
+@
+This construction binds the type, the enumeration
+constants, and also provides an equality operator.
+
+@h2 Binding flags
+Another construction is useful binding enumerations
+which are used as flags:
+@felix
+cflags MyFlags = none, bit1, bit2, allbits;
+@
+This construction binds the type, the enumeration
+constants, provides an equality operator, and provides
+bitwise arithmetic operations {\&amp;}, {\|}, {\^}, {~}, {^=},
+{&amp;=}, and {|=}. 
+
+
+@h2 Binding structs
+There is a simple shorthand for binding C structs:
+@felix
+header "struct X {int a; int b; };";
+cstruct X {a:int; b:int; };
+val x = X(1,2);
+println$ x.b;
+@
+Note that a definition of the {cstruct X} is not emitted,
+instead it is used to model an existing C {struct}, 
+in this case we created it in the {header} literally,
+usually you will be modelling structures used in C libraries.
+
+Your model does need to be complete because Felix synthesises
+a constuctor for the structure from a tuple. The names of the
+structure members must match.
+
+

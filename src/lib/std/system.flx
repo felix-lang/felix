@@ -1,4 +1,3 @@
-publish "System Interface"
 class System
 {
   const argc:int = "PTF argc";
@@ -8,6 +7,15 @@ class System
   fun argv_dflt (x:int) (y:string) => match argv x with | "" => y | ?a => a;
 
   fun args () => List::map (argv) (List::range argc);
+
+  proc setargs : + +char * size = "PTF argc=$2; PTF argv=$1;";
+  proc setargs[N] (a:string^N) 
+  {
+    gen myget(i:size)=>a.i.cstr;
+    var x = varray[+char] (a.len,a.len,myget);
+    setargs (x.stl_begin,x.len);
+  }
+
   gen system (cmd:string) : int => Shell::system(cmd);
   gen exit: int -> any = '::std::exit($1)' requires Cxx_headers::cstdlib;
   gen abort: 1 -> any = "::std::abort($1)" requires Cxx_headers::cstdlib;

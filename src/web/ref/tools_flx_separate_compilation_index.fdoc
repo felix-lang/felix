@@ -1,0 +1,11 @@
+<p><a href='reference.fdoc'>Up</a></p>
+@h1 tools_flx_separate_compilation Index
+<ul>
+<li><a href="tools_flx_separate_compilation_01.fdoc">Simple Examples.</a></li>
+<li><a href="tools_flx_separate_compilation_02.fdoc">Understanding function code generation.</a></li>
+<li><a href="tools_flx_separate_compilation_03.fdoc">Understanding exported functions.</a></li>
+<li><a href="tools_flx_separate_compilation_04.fdoc">Understanding Procedures</a></li>
+<li><a href="tools_flx_separate_compilation_05.fdoc">Exported procedures</a></li>
+<li><a href="tools_flx_separate_compilation_06.fdoc">Exporting Structs</a></li>
+<li><a href="tools_flx_separate_compilation_07.fdoc">Type constraints on parameters</a></li>
+</ul>
