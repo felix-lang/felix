@@ -404,7 +404,7 @@ println$ "CMD=@"+b;
           inline_pre (#get_text);
         endmatch;
       | None => 
-        if b == "felix" do inline_felix (#get_text);
+        if b == "felix" or b == "likefelix" do inline_felix (#get_text);
         elif prefix (b,"felix ") do felix_file (strip (b.[6 to]));
         elif prefix (b,"flx-and-expect ") do flx_and_expect (strip(b.[15 to]));
 
@@ -437,6 +437,7 @@ println$ "CMD=@"+b;
         elif prefix(b,"h2") do h(2,b.[3 to]); 
         elif prefix(b,"h3") do h(3,b.[3 to]);
         elif prefix(b,"h4") do h(4,b.[3 to]);
+        elif prefix(b,"h5") do h(5,b.[3 to]);
 
         // external image
         elif prefix(b,"image") do 

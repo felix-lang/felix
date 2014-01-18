@@ -33,15 +33,16 @@ object fdoc_button () implements button-factory_t = {
 
   method fun get-jscript () => jscript;
 
-  val sz = 90,40; // frame size
-  val bz = 80,25; // button size
-  val bp = 5,10; // button pos in frame
+  val sz = 65,30; // frame size
+  val bz = 60,20; // button size
+  val bp = 4,6; // button pos in frame
   val cr = 4,40; // corner radii
-  val st = 3,"black"; // border stroke thickness and colour
-  val fc = "blue",0.7; // fill colour and opacity
-  val hfc = "red",0.7; // hilight colour and opacity
-  val tp = 20,30; // text position in frame
+  val st = 2,"black"; // border stroke thickness and colour
+  val fc = "blue",0.2; // fill colour and opacity
+  val hfc = "red",0.2; // hilight colour and opacity
+  val tp = 13,21; // text position in frame
   val tc = "black"; // text colour
+  val fz = "12px"; // font size
 
   fun rect (bz: int^2, cr:int^2, st: int * string, fc: string * double) (bp:int^2) =>
     '<rect '+
@@ -56,14 +57,15 @@ object fdoc_button () implements button-factory_t = {
      '/>'
   ;
   fun text (tc:string, txt:string) (tp:int^2) =>
-    '<text x="'+tp.0.str+'px" y="'+tp.1+'px" fill="'+tc+'">'+txt+'</text>'
+    '<text x="'+tp.0.str+'px" y="'+tp.1+'px" fill="'+tc+
+    '" style="font-size:'+fz+';">'+txt+'</text>'
   ;
   fun span (id:string) (txt:string) => 
-    '<span id="'+id+'">' + txt + '</span>\n'
+    '<span id="'+id+'">' + txt + '</span>'
   ;
 
   fun span_hide (id:string) (txt:string) => 
-    '<span id="'+id+'" style="display:none">' + txt + '</span>\n'
+    '<span id="'+id+'" style="display:none">' + txt + '</span>'
   ;
 
   fun svg (sz:int^2) (txt:string) =>

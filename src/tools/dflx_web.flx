@@ -7,7 +7,12 @@ done
 class Css4Html {
 flx_head := """
 <style type="text/css">
-body {margin:5%; }
+body {margin:3%; }
+h1 {font-size:130%;}
+h2 {font-size:110%;}
+h3 {font-size:105%;}
+h4 {font-size:100%;}
+h5 {font-size:100%;}
 span.fstring {color:darkblue; font-style:italic; }
 span.comment {font-family:arial; color:blue; font-style:italic; }
 span.doccomment {font-family:arial; color:green; font-style:italic; }
@@ -21,7 +26,7 @@ span.preproc {color:#005500; }
 span.embedded_c{background-color:#DDDDDD; }
 span.fpc_fieldname {color:#DD0000; }
 span.lineno {color:#101010; background-color:#E0E0E0; font-size:80%; font-family:"courier",monospace; font-style:normal; }
-pre.flxbg {background-color:#90EF90; color:black; padding:2px; box-shadow:5px 5px 2px #807080; }
+pre.flxbg {background-color:#A0FFA0; color:black; padding:2px; box-shadow:5px 5px 2px #807080; }
 pre.cppbg {background-color:#80FF80; color:black; }
 pre.prefmtbg {background-color:#D0D0D0; color:black; }
 pre.expected {background-color:#E0FF80; color:black; }
