@@ -1,7 +1,8 @@
-
 @h1 pthread-1.01-0.flx
 @felix
 include "std/io/faio";
+include "std/control/pchannels";
+
 open Pthread;
 
 print "Pthread spawning test"; endl;
