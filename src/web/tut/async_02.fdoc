@@ -25,5 +25,5 @@ wait_until (clock, 5.0, p);
 @
 Test with
 <pre>
-build/release/host/bin/flx --test=build/release src/web/async_02.fdoc --target-dir=build/release --target-bin=host
+build/release/host/bin/flx --test=build/release src/web/async_02.fdoc
 </pre>

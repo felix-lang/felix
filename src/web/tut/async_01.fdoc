@@ -12,5 +12,5 @@ println$ "Hello world!";
 @
 Test with
 <pre>
-build/release/host/bin/flx --test=build/release src/web/async_01.fdoc --target-dir=build/release --target-bin=host
+build/release/host/bin/flx --test=build/release src/web/async_01.fdoc
 </pre>

@@ -33,5 +33,5 @@ println$ "Final count is " + (str count);
 
 Test with
 <pre>
-build/release/host/bin/flx --test=build/release src/web/async_03.fdoc --target-dir=build/release --target-bin=host
+build/release/host/bin/flx --test=build/release src/web/async_03.fdoc
 </pre>
