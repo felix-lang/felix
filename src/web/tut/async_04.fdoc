@@ -1,15 +1,13 @@
 @title Spawning POSIX threads
 @h1 Spawning POSIX threads
 @
-In this example we will use types and functions provided by the type
-classes {class Faio} (Felix asynchronous I/O), {class
-Pthread} and {class Pchannel} (for our purposes a
-kind of bidirectional pipe - unbuffered synchronization points for
-pre-emptive threads). To achieve this our program starts by issuing
-the following compiler include directives.
+In this example we will use types and functions provided by {class
+Pthread} and {class Pchannel} (for our purposes a kind of
+bidirectional pipe - unbuffered synchronization points for pre-emptive
+threads). To achieve this our program starts by issuing the following
+include directive.
 
 @felix
-include "std/io/faio";
 include "std/control/pchannels";
 @
 Next, we lift the types and functions of {class Pthread}
