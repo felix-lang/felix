@@ -1,3 +1,4 @@
+@title Fibres.
 @h1 Fibres and Channels
 Felix supports a powerful new programming paradigm which allows
 millions of lightweight, cooperative threads to exist concurrently
@@ -16,7 +17,12 @@ or just f-threads), and synchronous channels, also called s-channels.
 F-threads exchange control by transfer of the control token along an s-channel,
 possibly along with some data.
 
-Best to show an example of course!
+@h2 The model.
+Here is a simple model:
+<img src='/share/src/web/images/IMG_1287.JPG'>
+
+@h2 A more complex example.
+Best to show a real example of course!
 
 @felix
 open Text_file;
