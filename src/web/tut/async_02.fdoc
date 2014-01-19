@@ -7,9 +7,9 @@ See <a href="http://www.boost.org/doc/libs/1_55_0/doc/html/boost_asio/tutorial/t
 include "std/io/faio";
 
 proc wait_until (
-    clock:(Faio::alarm_clock)
-  , delta:double
-  , p:(Faio::alarm_clock->0) )
+    clock:(Faio::alarm_clock),
+    delta:double,
+    p:(Faio::alarm_clock->0) )
 {
   Faio::sleep (clock, delta);
   p (clock);
