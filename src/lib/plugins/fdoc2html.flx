@@ -70,10 +70,12 @@ fun txt2html (x:string) =
 
 proc boreq(l:&bool, r:bool) { l <- *l or r; } 
 
-val markdown_code = RE2 ("({([^}]*)})");
+val markdown_code1 = RE2 ("({([^}]*)})");
+val markdown_code2 = RE2 ("(\\[([^]]*)\\])");
 fun markdown (s:string):string= {
   var x = s;
-  C_hack::ignore(GlobalReplace(&x, markdown_code, StringPiece ("<code>\\2</code>")));
+  C_hack::ignore(GlobalReplace(&x, markdown_code1, StringPiece ("<code>\\2</code>")));
+  C_hack::ignore(GlobalReplace(&x, markdown_code2, StringPiece ("<a href='/share/src/web/ref/glossary.fdoc#\\2'>\\2</a>")));
   return x;
 }
 
