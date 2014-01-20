@@ -1,16 +1,15 @@
-@title Nonblocking Delayed Operation.
+@title Nonblocking Delayed Operation
 @h1 Using a timer asynchronously.
 
 See <a href="http://www.boost.org/doc/libs/1_55_0/doc/html/boost_asio/tutorial/tuttimer2.html">http://www.boost.org/doc/libs/1_55_0/doc/html/boost_asio/tutorial/tuttimer2.html</a>
 @p
-In Felix, sleeping on a timer is always a blocking operation.
-So how can we invoke a callback after a delay without having
-to wait?
+In Felix, sleeping on a timer is always a blocking operation.  So how
+can we invoke a callback after a delay without having to wait?
 
-The answer is that sleeping only blocks the calling fthread,
-not the mainline pthread. So, what we do is spawn an fthread
-which sleeps before invoking the callback: this blocks that
-fthread, which allows the mainline fthread to continue.
+The answer is that sleeping only blocks the calling fthread, not the
+mainline pthread. So, what we do is spawn an fthread which sleeps
+before invoking the callback: this blocks that fthread, which allows
+the mainline fthread to continue.
 
 @felix
 include "std/io/faio";
@@ -41,25 +40,24 @@ and we expect to see:
 Continuing on!
 Hello world!
 @
-Note that with this technique, the callback will not be executed exactly
-when the time out expires. Felix simply ensures it will not be executed
-until after the specified delay. Whilst some other fthread, including the mainline,
-is busy, it will not be executed at all.
-@o
+Note that with this technique, the callback will not be executed
+exactly when the time out expires. Felix simply ensures it will not be
+executed until after the specified delay. Whilst some other fthread,
+including the mainline, is busy, it will not be executed at all.
+@p
 Fibres interleave a single thread of control between coroutines.
-Asychronous I/O controls the scheduling of these coroutines based
-on external events like alarms and socket readiness notifications.
+Asychronous I/O controls the scheduling of these coroutines based on
+external events like alarms and socket readiness notifications.
 
-However the control exchange only occurs by agreement, it is
-never pre-emptive. If you want pre-emptive scheduling you must
-spawn a pre-emptive thread with {spawn_pthread} instead of a 
-fibre with {spawn_fthread}.
+However the control exchange only occurs by agreement, it is never
+pre-emptive. If you want pre-emptive scheduling you must spawn a
+pre-emptive thread with {spawn_pthread} instead of a fibre with
+{spawn_fthread}.
 
-In that case, since control flow is concurrent,
-the onus is on you to ensure shared resources are
-suitably protected from races, for example by using a mutex,
-condition variable, or semaphore, or instead some suitable
-data structure such as a pchannel, thread safe counter, 
+In that case, since control flow is concurrent, the onus is on you to
+ensure shared resources are suitably protected from races, for example
+by using a mutex, condition variable, or semaphore, or instead some
+suitable data structure such as a pchannel, thread safe counter,
 thread safe queue, etc.
 
 @p
