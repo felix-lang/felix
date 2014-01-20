@@ -17,10 +17,7 @@ open Pthread;
 @
 You may be surprised by the apparent absence of an {include
 "std/control/pthread"} include directive? It's not required
-since {include "std/control/pchannels"} means the
-additional include directives defined in "std/control/__init__.fdoc"
-are implicit which includes the {include
-"std/control/pthread"} diretive.
+because it is loaded automatically.
 @
 Next, we print a little message to saying that our program is starting up and define a thread procedure.
 @felix
@@ -36,7 +33,9 @@ message to the console that includes that number.
 
 @ 
 We move on now to defining the "main" procedure {proc
-flx_main}:
+flx_main}. This is a special procedure like C's {main()} which is
+called automatically, if present, after the surrounding context has
+been inintialised.
 @felix
 proc flx_main
 {
@@ -53,7 +52,7 @@ the thread proc we defined earlier will be exectued.
 
 The channel created by the {mk_pchannel[int]()} step is one on which
 integer values can be read from/written to. At this point we are all
-set at this point to spawn our threads. The {spawn_thread ()} function
+set to spawn our threads. The {spawn_pthread ()} procedure 
 is how this is done.
 
 @felix
@@ -70,20 +69,33 @@ Let's break down what's going on when we say {spawn_pthread { thr 1;
 write (chan,1); }}.
 @
 
-Firstly, {{thr 1; write (chan, 1); }} defines a procedural closure. It
+Firstly, 
+@felix-unchecked 
+  { thr 1; write (chan, 1); }
+@
+defines a procedural closure. It
 will match the argument of a function of type {1 -> 0}. It is
-therefore a syntactic shortcut for the equivalent {proc () {thr 1;
-write (chan 1); }}. So, equivalently we might have written this in the
-more verbose form {spawn_pthread$ proc () { thr 1; write (chan,1); }}
-or alternatively, {spawn_pthread (proc () { thr 1; write (chan,1); })}
-. These different forms are all going to result in the same things. A
+therefore a syntactic shortcut for the equivalent 
+@felix-unchecked
+proc () {thr 1; write (chan 1); }
+@
+So, equivalently we might have written this in the
+more verbose form 
+@felix-unchecked
+spawn_pthread$ proc () { thr 1; write (chan,1); }
+@
+or alternatively, 
+@felix-unchecked
+spawn_pthread (proc () { thr 1; write (chan,1); });
+@
+These different forms are all going to result in the same things. A
 thread will be spawned on which a procedural closure will be executed.
 
 @
 When the closure executes on the spawned thread, it will call the
 thread procedure {thr} with the argument {1} which will result in the
 message {"Thread 1"} being echoed to the console and then will write
-{1} to the global channel variable {chan}. The {write (chan, 1)} will
+{1} to the global channel variable {chan}. The {write (chan, 1);} will
 block the spawned thread until the value written is read from another
 thread (in our case the matching read will be on the main thread - the
 one from which the child threads were spawned - the thread running
@@ -114,7 +126,7 @@ An explanation of this last part is needed.
 export proc flx_main of (1) as "flx_main";
 @
 The output running from this program might look like this:
-<pre>
+@pre
 Pthread spawning test
 Running main
 Thread 1
@@ -133,7 +145,6 @@ joined 6
 Thread 7
 joined 7
 Joined all
-</pre>
 @
 It's important to note however that there is no reason to expect to
 see the print statements in an increasing sequence like that. The OS

@@ -404,7 +404,7 @@ println$ "CMD=@"+b;
           inline_pre (#get_text);
         endmatch;
       | None => 
-        if b == "felix" or b == "likefelix" do inline_felix (#get_text);
+        if b == "felix" or b == "felix-unchecked" do inline_felix (#get_text);
         elif prefix (b,"felix ") do felix_file (strip (b.[6 to]));
         elif prefix (b,"flx-and-expect ") do flx_and_expect (strip(b.[15 to]));
 
