@@ -1,22 +1,22 @@
 @h2 Glossary of terms.
 <dl>
-<dt>callback</dt><dd>A subroutine closure which is passed to a routine which in turn calls it</dd>
-<dt>class</dt><dd>A named collection of related function interfaces</dd>
-<dt>coroutine</dt><dd>A routine standing in a peer-to-peer relation with other routines</dd>
-<dt>fibre</dt><dd>A cooperative thread of control which yields voluntarily, aka fthread</dd>
-<dt>fthread</dt><dd>A cooperative thread of control which yields voluntarily, aka fibre</dd>
-<dt>generator</dt><dd>A subroutine returning a value which may also have side-effects</dd>
-<dt>object</dt><dd>[Low level] A contiguous addressable region of store</dd>
-<dt>object</dt><dd>[Construction] A record of function closures bound to the stack frame of a function</dd>
-<dt>partial</dt><dd>An adjective describing a routine which specifies some arguments of the required type will not be handled correctly</dd>
-<dt>procedure</dt><dd>A subroutine or coroutine which returns no value and is invoked for its side-effects</dd>
-<dt>pthread</dt><dd>A pre-emptive thread of control</dd>
-<dt>pure</dt><dd>An adjective describing a routine whose action is determined entirely by its parameters</dd>
-<dt>routine</dt><dd>A function, procedure, generator, coroutine, thread, or subroutine</dd>
-<dt>subroutine</dt><dd>A routine which stands as the slave of a master which determines when it is run and with what arguments</dd>
-<dt>strict</dt><dd>An adjective describing a routine which ensures arguments can be passed eagerly or lazily</dd>
-<dt>thread frame</dt><dd>An struct which is shared by routines in the same program instance</dd>
-<dt>total</dt><dd>An adjective describing a routine which specifies all arguments of the required type will be handled correctly</dd>
-<dt>variable</dt><dd>A typed object</dd>
-<dt>variable</dt><dd>A mutable typed object</dd>
+<dt id="callback">callback</dt><dd>A subroutine closure which is passed to a routine which in turn calls it</dd>
+<dt id="class">class</dt><dd>A named collection of related function interfaces</dd>
+<dt id="coroutine">coroutine</dt><dd>A routine standing in a peer-to-peer relation with other routines</dd>
+<dt id="fibre">fibre</dt><dd>A cooperative thread of control which yields voluntarily, aka fthread</dd>
+<dt id="fthread">fthread</dt><dd>A cooperative thread of control which yields voluntarily, aka fibre</dd>
+<dt id="generator">generator</dt><dd>A subroutine returning a value which may also have side-effects</dd>
+<dt id="object">object</dt><dd>[Low level] A contiguous addressable region of store</dd>
+<dt id="object">object</dt><dd>[Construction] A record of function closures bound to the stack frame of a function</dd>
+<dt id="partial">partial</dt><dd>An adjective describing a routine which specifies some arguments of the required type will not be handled correctly</dd>
+<dt id="procedure">procedure</dt><dd>A subroutine or coroutine which returns no value and is invoked for its side-effects</dd>
+<dt id="pthread">pthread</dt><dd>A pre-emptive thread of control</dd>
+<dt id="pure">pure</dt><dd>An adjective describing a routine whose action is determined entirely by its parameters</dd>
+<dt id="routine">routine</dt><dd>A function, procedure, generator, coroutine, thread, or subroutine</dd>
+<dt id="">subroutine</dt><dd>A routine which stands as the slave of a master which determines when it is run and with what arguments</dd>
+<dt id="strict">strict</dt><dd>An adjective describing a routine which ensures arguments can be passed eagerly or lazily</dd>
+<dt id="thread frame">thread frame</dt><dd>An struct which is shared by routines in the same program instance</dd>
+<dt id="total">total</dt><dd>An adjective describing a routine which specifies all arguments of the required type will be handled correctly</dd>
+<dt id="variable">variable</dt><dd>A typed object</dd>
+<dt id="variable">variable</dt><dd>A mutable typed object</dd>
 </dl>
