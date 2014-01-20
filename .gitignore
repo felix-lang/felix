@@ -42,3 +42,5 @@ test/*/*/*.includes
 .project
 .pydevproject
 \#*\#
+test
+trial-tmp

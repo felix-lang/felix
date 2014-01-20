@@ -1,4 +1,4 @@
-@title Delayed Procedure with Arguments.
+@title Delayed Procedure with Arguments
 @h1 Binding arguments to a handler
 See <a href="http://www.boost.org/doc/libs/1_55_0/doc/html/boost_asio/tutorial/tuttimer3.html">http://www.boost.org/doc/libs/1_55_0/doc/html/boost_asio/tutorial/tuttimer3.html</a>
 @p
