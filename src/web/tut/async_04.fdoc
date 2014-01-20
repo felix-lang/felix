@@ -65,11 +65,12 @@ is how this is done.
   spawn_pthread { thr 7; write (chan,7); };
   print "Spawned\n";
 @
-Let's break down what's going on when we say {spawn_pthread { thr 1;
-write (chan,1); }}.
+Let's break down what's going on when we say 
+@felix-unchecked
+spawn_pthread { thr 1; write (chan,1); }
 @
-
-Firstly, 
+<div style="margin:20px; padding:10px;  font-size:90%; font-style:italic; background-color:#F0E0F0;">
+Note:
 @felix-unchecked 
   { thr 1; write (chan, 1); }
 @
@@ -90,6 +91,7 @@ spawn_pthread (proc () { thr 1; write (chan,1); });
 @
 These different forms are all going to result in the same things. A
 thread will be spawned on which a procedural closure will be executed.
+</div>
 
 @
 When the closure executes on the spawned thread, it will call the
