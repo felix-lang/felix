@@ -127,7 +127,7 @@ An explanation of this last part is needed.
 @felix
 export proc flx_main of (1) as "flx_main";
 @
-The output running from this program might look like this:
+The output from running this program might look like this:
 @pre
 Pthread spawning test
 Running main
