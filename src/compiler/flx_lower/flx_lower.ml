@@ -61,7 +61,7 @@ let lower_bsym_table state bsym_table root_proc =
   Flx_inst.instantiate
     state.syms
     bsym_table
-    false
+    true (* CHANGE: instantiate parameters! *)
     root_proc
     state.syms.Flx_mtypes2.bifaces;
 
