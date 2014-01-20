@@ -1,37 +1,58 @@
-
+@title Delayed Procedure with Arguments.
 @h1 Binding arguments to a handler
 See <a href="http://www.boost.org/doc/libs/1_55_0/doc/html/boost_asio/tutorial/tuttimer3.html">http://www.boost.org/doc/libs/1_55_0/doc/html/boost_asio/tutorial/tuttimer3.html</a>
-
+@p
+In Felix, this is a no-brainer, we just use currying.
+Just add the extra argument prior to the last one.
+First our baseline wait routine:
 @felix
-
 include "std/io/faio";
 
 proc wait_until (
-    clock:(Faio::alarm_clock),
+    clock:Faio::alarm_clock,
     delta:double,
-    p:(Faio::alarm_clock->0))
+    p:Faio::alarm_clock->0)
 {
   Faio::sleep (clock, delta);
   p clock;
 }
-
-proc p (clock:(Faio::alarm_clock), count:&int)
+@
+Now our client routine has "two arguments" instead of one.
+@felix
+proc p (pcount:&int) (clock:Faio::alarm_clock)
 {
-  if *count < 5 do
-    println$ *count;
-    count <- *count + 1;
-    wait_until (clock, 1.0 , 
-      proc (clk:Faio::alarm_clock) { p (clk, count); });
+  if *pcount < 5 do
+    println$ *pcount;
+    pcount <- *pcount + 1;
+    wait_until (clock, 1.0 , p pcount); 
   done
 }
+@
+A little more explanation is useful. The type of the routine above is:
+@pre
+  &int -> Faio::alarm_clock -> 0
+@
+Because {->} is right associative, this actually means:
+@pre
+  &int -> (Faio::alarm_clock -> 0)
+@
+This means {p} is not actually a procedure! Rather it is a function
+which accepts a pointer to an {int}, and <em>returns</em> a 
+procedure. (Well technically .. a procedure closure).
 
+So here is our invocation:
+@felix
 var count = 0;
 var clock = #Faio::mk_alarm_clock;
-wait_until (clock, 1.0, proc (clk:(Faio::alarm_clock)) { p (clk, &count); });
+wait_until (clock, 1.0,  p &count);
 println$ "Final count is " + (str count);
 @
+Note that the argument {p &count} is a procedure closure. We have
+applied the function {p} to the pointer to {int} value {&count}
+and got back the closure of a procedure accepting the next argument,
+a clock, which has the type required by {wait_until}.
 
 Test with
 <pre>
-build/release/host/bin/flx --test=build/release src/web/async_03.fdoc
+build/release/host/bin/flx --test=build/release src/web/tut/async_03.fdoc
 </pre>

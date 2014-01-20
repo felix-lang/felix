@@ -1,16 +1,39 @@
-
+@title Blocking Delayed Operation.
 @h1 Using a timer synchronously
-See <a href="http://www.boost.org/doc/libs/1_55_0/doc/html/boost_asio/tutorial/tuttimer3.html">http://www.boost.org/doc/libs/1_55_0/doc/html/boost_asio/tutorial/tuttimer1.html</a>
-
-
+See <a href="http://www.boost.org/doc/libs/1_55_0/doc/html/boost_asio/tutorial/tuttimer1.html">http://www.boost.org/doc/libs/1_55_0/doc/html/boost_asio/tutorial/tuttimer1.html</a>
+@p
+In Felix our async I/O service is called Faio, for Felix Asynchronous I/O.
+It provides two core features, a timer service and TCP/IP via sockets.
+To use the timer we need to include the Faio library.
 @felix
 include "std/io/faio";
+@
+Now we need to make an alarm clock. Since the library is packaged
+into a class namespace called {Faio} which is not open by default,
+we need an explicit qualifier.
 
+Recall also that {#p} means the same as {p()} but is terser.
+So here is our clock:
+@felix
 var clock = #Faio::mk_alarm_clock;
+@
+Now we want to go to sleep for 5 seconds. We have to give {Faoi}
+a clock to work with. But lets print a message first so we can
+observe the delay.
+@felix
+println$ "The Big Bang!";
 Faio::sleep (clock, 5.0);
+@
+After the delay, we print a message.
+@felix
 println$ "Hello world!";
+@
+We expect to see this with some delays:
+@expect
+The Big Bang!
+Hello world!
 @
 Test with
 <pre>
-build/release/host/bin/flx --test=build/release src/web/async_01.fdoc
+build/release/host/bin/flx --test=build/release src/web/tut/async_01.fdoc
 </pre>

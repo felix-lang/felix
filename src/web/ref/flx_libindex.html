@@ -147,7 +147,13 @@ FlxDepvars
 FlxPkg
   <a href="/share/lib/std/felix/flx_pkg.flx#0003">felix/flx_pkg.flx:3</a>: class FlxPkg
 FlxPkgConfig
-  <a href="/share/lib/std/felix/flx_pkgconfig.flx#0002">felix/flx_pkgconfig.flx:2</a>: class FlxPkgConfig
+  <a href="/share/lib/std/felix/flx_pkgconfig.flx#0005">felix/flx_pkgconfig.flx:5</a>: class FlxPkgConfig
+FlxPkgConfigQuery_interface
+  <a href="/share/lib/std/felix/flx_pkgconfig_query_interface.flx#0001">felix/flx_pkgconfig_query_interface.flx:1</a>: class FlxPkgConfigQuery_interface
+FlxPkgConfig_core
+  <a href="/share/lib/std/felix/flx_pkgconfig_core.flx#0002">felix/flx_pkgconfig_core.flx:2</a>: class FlxPkgConfig_core
+FlxPkgConfig_query
+  <a href="/share/lib/std/felix/flx_pkgconfig_query.flx#0004">felix/flx_pkgconfig_query.flx:4</a>: class FlxPkgConfig_query
 FlxProfile
   <a href="/share/lib/std/felix/flx/flx_profile.flx#0001">felix/flx/flx_profile.flx:1</a>: class FlxProfile
 Flxg
@@ -426,7 +432,7 @@ StringPiece
 SyncControl
   <a href="/share/lib/std/felix/sync.flx#0001">felix/sync.flx:1</a>: class SyncControl
 System
-  <a href="/share/lib/std/system.flx#0002">system.flx:2</a>: class System
+  <a href="/share/lib/std/system.flx#0001">system.flx:1</a>: class System
 <hr/>
 TerminalIByteStream
   <a href="/share/lib/std/io/stream.flx#0036">io/stream.flx:36</a>: class TerminalIByteStream[T]
@@ -520,7 +526,7 @@ ZeroMQ
   <a href="/share/lib/std/io/zmq.flx#0006">io/zmq.flx:6</a>: class ZeroMQ
 <hr/>
 abort
-  <a href="/share/lib/std/system.flx#0013">system.flx:13</a>: gen abort: 1 -> any
+  <a href="/share/lib/std/system.flx#0021">system.flx:21</a>: gen abort: 1 -> any
 abs
   <a href="/share/lib/std/int.flx#0249">int.flx:249</a>: fun abs: t -> t
   <a href="/share/lib/std/float_math.flx#0076">float_math.flx:76</a>: fun abs: t -> t
@@ -555,7 +561,7 @@ add_pointer
 add_symbol
   <a href="/share/lib/std/dynlink.fdoc#0188">dynlink.fdoc:188</a>: noinline proc add_symbol  (modulename:string, symbolname:string, adr:address)
 add_val
-  <a href="/share/lib/std/felix/flx_pkgconfig.flx#0253">felix/flx_pkgconfig.flx:253</a>: proc add_val(v:string)
+  <a href="/share/lib/std/felix/flx_pkgconfig_core.flx#0253">felix/flx_pkgconfig_core.flx:253</a>: proc add_val(v:string)
 add_worker_task
   <a href="/share/lib/std/control/pthread.flx#0020">control/pthread.flx:20</a>: proc add_worker_task : job_queue  * worker_task
 address
@@ -591,11 +597,11 @@ arg
   <a href="/share/lib/std/float_math.flx#0037">float_math.flx:37</a>: fun arg : complex[t] -> t
   <a href="/share/lib/std/algebraic.flx#0215">algebraic.flx:215</a>: virtual fun arg: t -> r
 args
-  <a href="/share/lib/std/system.flx#0010">system.flx:10</a>: fun args ()
+  <a href="/share/lib/std/system.flx#0009">system.flx:9</a>: fun args ()
 argv
-  <a href="/share/lib/std/system.flx#0007">system.flx:7</a>: fun argv:int -> string
+  <a href="/share/lib/std/system.flx#0006">system.flx:6</a>: fun argv:int -> string
 argv_dflt
-  <a href="/share/lib/std/system.flx#0008">system.flx:8</a>: fun argv_dflt (x:int) (y:string)
+  <a href="/share/lib/std/system.flx#0007">system.flx:7</a>: fun argv_dflt (x:int) (y:string)
 array_alloc
   <a href="/share/lib/std/carray.flx#0030">carray.flx:30</a>: fun array_alloc[T]: !ints -> carray[T]
 array_calloc
@@ -643,7 +649,7 @@ aux
   <a href="/share/lib/std/strings/string.fdoc#0345">strings/string.fdoc:345</a>: fun aux (x:string,y:List::list[string])
   <a href="/share/lib/std/strings/string.fdoc#0333">strings/string.fdoc:333</a>: fun aux (x:string,y:List::list[string])
   <a href="/share/lib/std/filesystem.flx#0017">filesystem.flx:17</a>: proc aux (d:string) (b:string)
-  <a href="/share/lib/std/felix/flx_pkgconfig.flx#0372">felix/flx_pkgconfig.flx:372</a>: fun aux (lst:list[string]) (out:list[string])
+  <a href="/share/lib/std/felix/flx_pkgconfig_query.flx#0013">felix/flx_pkgconfig_query.flx:13</a>: fun aux (lst:list[string]) (out:list[string])
   <a href="/share/lib/std/datatype/list.fdoc#0524">datatype/list.fdoc:524</a>: fun aux (inp:list[T], out: list[T])
   <a href="/share/lib/std/datatype/list.fdoc#0492">datatype/list.fdoc:492</a>: fun aux (inp:list[T], out: list[T])
   <a href="/share/lib/std/datatype/list.fdoc#0318">datatype/list.fdoc:318</a>: fun aux (l1: list[T1]) (l2: list[T2]) (acc: list[T1 * T2])
@@ -670,7 +676,7 @@ bind
   <a href="/share/lib/std/io/zmq.flx#0445">io/zmq.flx:445</a>: proc bind(x:zmq_socket) (a:string)
   <a href="/share/lib/std/flx_tclass.flx#0066">flx_tclass.flx:66</a>: virtual fun bind[a,b]: M a * (a -> M b) -> M b
 bind_proc
-  <a href="/share/lib/std/dynlink.fdoc#0631">dynlink.fdoc:631</a>: fun bind_proc: flx_instance * address * address -> cont
+  <a href="/share/lib/std/dynlink.fdoc#0697">dynlink.fdoc:697</a>: fun bind_proc: flx_instance * address * address -> cont
 blit
   <a href="/share/lib/std/felix/serialise.fdoc#0011">felix/serialise.fdoc:11</a>: fun blit[T] (p: &T)
 blue
@@ -751,7 +757,7 @@ check_cxx_uptodate
 check_dependencies
   <a href="/share/lib/std/felix/pkgtool/pkgtool_base.flx#0714">felix/pkgtool/pkgtool_base.flx:714</a>: noinline  proc check_dependencies()
 check_id
-  <a href="/share/lib/std/felix/flx_pkgconfig.flx#0227">felix/flx_pkgconfig.flx:227</a>: fun check_id (s:string)
+  <a href="/share/lib/std/felix/flx_pkgconfig_core.flx#0227">felix/flx_pkgconfig_core.flx:227</a>: fun check_id (s:string)
 check_output_if_required
   <a href="/share/lib/std/felix/flx/flx_run.flx#0711">felix/flx/flx_run.flx:711</a>: gen check_output_if_required () : int
 check_pkgconfig_path
@@ -869,6 +875,9 @@ create_popen_command
   <a href="/share/lib/std/shell.flx#0028">shell.flx:28</a>: fun create_popen_command (s:list[string]) : string
 create_system_command
   <a href="/share/lib/std/shell.flx#0025">shell.flx:25</a>: fun create_system_command (s:list[string]) : string
+create_with_args
+  <a href="/share/lib/std/dynlink.fdoc#0324">dynlink.fdoc:324</a>: proc create_with_args (lib:flx_library, inst:flx_instance, args:list[string])
+  <a href="/share/lib/std/dynlink.fdoc#0319">dynlink.fdoc:319</a>: proc create_with_args: flx_library * flx_instance * int * + +char
 csc
   <a href="/share/lib/std/algebraic.flx#0151">algebraic.flx:151</a>: virtual fun csc (x:t)
 csch
@@ -968,13 +977,13 @@ deref
   <a href="/share/lib/std/cptr.flx#0030">cptr.flx:30</a>: fun deref[T] (px:cptr[T])
 destroy
   <a href="/share/lib/std/semaphore.flx#0007">semaphore.flx:7</a>: proc destroy : semaphore
-  <a href="/share/lib/std/dynlink.fdoc#0383">dynlink.fdoc:383</a>: proc destroy: flx_instance
+  <a href="/share/lib/std/dynlink.fdoc#0407">dynlink.fdoc:407</a>: proc destroy: flx_instance
   <a href="/share/lib/std/control/ts_counter.flx#0005">control/ts_counter.flx:5</a>: proc destroy : ts_counter
   <a href="/share/lib/std/control/mutex.flx#0010">control/mutex.flx:10</a>: proc destroy: mutex
   <a href="/share/lib/std/condition_variable.flx#0013">condition_variable.flx:13</a>: proc destroy: condition_variable
   <a href="/share/lib/std/c_hack.flx#0097">c_hack.flx:97</a>: proc destroy[T] : &T
 destroy_lib
-  <a href="/share/lib/std/dynlink.fdoc#0444">dynlink.fdoc:444</a>: noinline proc destroy_lib(linstance:flx_instance)
+  <a href="/share/lib/std/dynlink.fdoc#0510">dynlink.fdoc:510</a>: noinline proc destroy_lib(linstance:flx_instance)
 destroy_member
   <a href="/share/lib/std/db/sqlite3/sqlite3_pool.flx#0024">db/sqlite3/sqlite3_pool.flx:24</a>: proc destroy_member (m:sqlite3_db_t)
 dfiletime
@@ -999,11 +1008,11 @@ diveq
 dlclose
   <a href="/share/lib/std/dynlink.fdoc#0231">dynlink.fdoc:231</a>: proc dlclose:flx_library
 dlib_of
-  <a href="/share/lib/std/dynlink.fdoc#0636">dynlink.fdoc:636</a>: fun dlib_of : flx_library -> address
+  <a href="/share/lib/std/dynlink.fdoc#0702">dynlink.fdoc:702</a>: fun dlib_of : flx_library -> address
 dlopen
   <a href="/share/lib/std/dynlink.fdoc#0117">dynlink.fdoc:117</a>: proc dlopen:flx_library * string
 dlsym_err
-  <a href="/share/lib/std/dynlink.fdoc#0640">dynlink.fdoc:640</a>: proc dlsym_err:flx_library*string
+  <a href="/share/lib/std/dynlink.fdoc#0706">dynlink.fdoc:706</a>: proc dlsym_err:flx_library*string
 do_resize
   <a href="/share/lib/std/datatype/darray.fdoc#0081">datatype/darray.fdoc:81</a>: proc do_resize[T] (pd: darray[T], new_size: size)
 drop
@@ -1036,7 +1045,7 @@ echo
 echoln
   <a href="/share/lib/std/felix/flx/flx_run.flx#0066">felix/flx/flx_run.flx:66</a>: proc echoln[T with Str[T]] (x:T)
 edure
-  <a href="/share/lib/std/dynlink.fdoc#0349">dynlink.fdoc:349</a>: procedure.
+  <a href="/share/lib/std/dynlink.fdoc#0373">dynlink.fdoc:373</a>: procedure.
 eendl
   <a href="/share/lib/std/io/textio.flx#0225">io/textio.flx:225</a>: proc eendl()
 ehandler
@@ -1135,7 +1144,7 @@ execvp
   <a href="/share/lib/std/win32/process.flx#0050">win32/process.flx:50</a>: gen execvp:+char *  + +char -> exec_result_t
   <a href="/share/lib/std/posix/process.flx#0048">posix/process.flx:48</a>: gen execvp:+char *  + +char -> exec_result_t
 exit
-  <a href="/share/lib/std/system.flx#0012">system.flx:12</a>: gen exit: int -> any
+  <a href="/share/lib/std/system.flx#0020">system.flx:20</a>: gen exit: int -> any
 exp
   <a href="/share/lib/std/float_math.flx#0069">float_math.flx:69</a>: fun exp: t -> t
   <a href="/share/lib/std/algebraic.flx#0181">algebraic.flx:181</a>: virtual fun exp: t -> t
@@ -1209,7 +1218,7 @@ fileexists
 filename
   <a href="/share/lib/std/win32/directory.flx#0013">win32/directory.flx:13</a>: fun filename : FINDDATA_t -> string
   <a href="/share/lib/std/posix/directory.flx#0011">posix/directory.flx:11</a>: fun filename: dirent_t -> string
-  <a href="/share/lib/std/dynlink.fdoc#0334">dynlink.fdoc:334</a>: fun filename : flx_instance -> string
+  <a href="/share/lib/std/dynlink.fdoc#0358">dynlink.fdoc:358</a>: fun filename : flx_instance -> string
   <a href="/share/lib/std/dynlink.fdoc#0177">dynlink.fdoc:177</a>: fun filename : flx_library -> string
   <a href="/share/lib/std/dynlink.fdoc#0078">dynlink.fdoc:78</a>: fun filename : flx_link_failure_t -> string
   <a href="/share/lib/std/debug.flx#0012">debug.flx:12</a>: fun filename: flx_location_t -> +char
@@ -1300,11 +1309,11 @@ floor
   <a href="/share/lib/std/float_math.flx#0080">float_math.flx:80</a>: fun floor: t -> t
   <a href="/share/lib/std/algebraic.flx#0203">algebraic.flx:203</a>: virtual fun floor: t -> t
 flx_dlsym
-  <a href="/share/lib/std/dynlink.fdoc#0461">dynlink.fdoc:461</a>: noinline fun flx_dlsym[T] (linst: flx_instance, sym:string)
+  <a href="/share/lib/std/dynlink.fdoc#0527">dynlink.fdoc:527</a>: noinline fun flx_dlsym[T] (linst: flx_instance, sym:string)
 flx_link_failure_t
   <a href="/share/lib/std/dynlink.fdoc#0075">dynlink.fdoc:75</a>: ctor flx_link_failure_t : string * string * string
 flx_pkgconfig
-  <a href="/share/lib/std/felix/flx_pkgconfig.flx#0006">felix/flx_pkgconfig.flx:6</a>: gen flx_pkgconfig (args:list[string]) : int * list[string]
+  <a href="/share/lib/std/felix/flx_pkgconfig_core.flx#0006">felix/flx_pkgconfig_core.flx:6</a>: gen flx_pkgconfig (args:list[string]) : int * list[string]
 flx_processing
   <a href="/share/lib/std/felix/flx/flx.flx#0030">felix/flx/flx.flx:30</a>: gen flx_processing
   <a href="/share/lib/std/felix/flx/bootflx.flx#0031">felix/flx/bootflx.flx:31</a>: gen flx_processing
@@ -1363,11 +1372,11 @@ fthread
 fthread_list
   <a href="/share/lib/std/felix/sync.flx#0029">felix/sync.flx:29</a>: ctor fthread_list: 1
 func0
-  <a href="/share/lib/std/dynlink.fdoc#0497">dynlink.fdoc:497</a>: noinline fun func0[R] (linst: flx_instance, sym:string)
+  <a href="/share/lib/std/dynlink.fdoc#0563">dynlink.fdoc:563</a>: noinline fun func0[R] (linst: flx_instance, sym:string)
 func1
-  <a href="/share/lib/std/dynlink.fdoc#0504">dynlink.fdoc:504</a>: noinline fun func1[R,A0] (linst: flx_instance, sym:string)
+  <a href="/share/lib/std/dynlink.fdoc#0570">dynlink.fdoc:570</a>: noinline fun func1[R,A0] (linst: flx_instance, sym:string)
 func2
-  <a href="/share/lib/std/dynlink.fdoc#0511">dynlink.fdoc:511</a>: noinline fun func2[R,A0,A1] (linst: flx_instance, sym:string)
+  <a href="/share/lib/std/dynlink.fdoc#0577">dynlink.fdoc:577</a>: noinline fun func2[R,A0,A1] (linst: flx_instance, sym:string)
 future_time
   <a href="/share/lib/std/felix/flx_cache.flx#0004">felix/flx_cache.flx:4</a>: fun future_time ()
 <hr/>
@@ -1421,19 +1430,19 @@ get_err
 get_extension
   <a href="/share/lib/std/filename.flx#0100">filename.flx:100</a>: fun get_extension (s:string)
 get_field
-  <a href="/share/lib/std/felix/flx_pkgconfig.flx#0233">felix/flx_pkgconfig.flx:233</a>: fun get_field(line:string):string * string
+  <a href="/share/lib/std/felix/flx_pkgconfig_core.flx#0233">felix/flx_pkgconfig_core.flx:233</a>: fun get_field(line:string):string * string
 get_ge
   <a href="/share/lib/std/datatype/strdict.flx#0091">datatype/strdict.flx:91</a>: fun get_ge (x:strdict) (var key: string)
 get_gt
   <a href="/share/lib/std/datatype/strdict.flx#0124">datatype/strdict.flx:124</a>: fun get_gt (x:strdict) (var key: string)
 get_init
-  <a href="/share/lib/std/dynlink.fdoc#0360">dynlink.fdoc:360</a>: fun get_init: flx_instance -> cont
+  <a href="/share/lib/std/dynlink.fdoc#0384">dynlink.fdoc:384</a>: fun get_init: flx_instance -> cont
 get_int_val
   <a href="/share/lib/std/db/sqlite3/sqlite3.flx#0285">db/sqlite3/sqlite3.flx:285</a>: fun get_int_val: column_value->int
 get_le
   <a href="/share/lib/std/datatype/strdict.flx#0157">datatype/strdict.flx:157</a>: fun get_le (x:strdict) (var key: string)
 get_library
-  <a href="/share/lib/std/dynlink.fdoc#0365">dynlink.fdoc:365</a>: fun get_library: flx_instance -> flx_library
+  <a href="/share/lib/std/dynlink.fdoc#0389">dynlink.fdoc:389</a>: fun get_library: flx_instance -> flx_library
 get_line
   <a href="/share/lib/std/io/stream.flx#0289">io/stream.flx:289</a>: noinline proc get_line[istr with IByteStream[istr]] (
 get_lt
@@ -1463,7 +1472,7 @@ get_state
   <a href="/share/lib/std/control/fibres.flx#0071">control/fibres.flx:71</a>: fun get_state : fibre_scheduler -> fibre_scheduler_state
 get_stdout
   <a href="/share/lib/std/win32/shell.flx#0044">win32/shell.flx:44</a>: gen get_stdout(x:string)
-  <a href="/share/lib/std/system.flx#0066">system.flx:66</a>: gen get_stdout(x:string) : int * string
+  <a href="/share/lib/std/system.flx#0074">system.flx:74</a>: gen get_stdout(x:string) : int * string
   <a href="/share/lib/std/shell.flx#0075">shell.flx:75</a>: gen get_stdout[T with Streamable[T,string]] (args:T) : int * string
   <a href="/share/lib/std/shell.flx#0071">shell.flx:71</a>: gen get_stdout (args:list[string]) : int * string
   <a href="/share/lib/std/shell.flx#0048">shell.flx:48</a>: gen get_stdout (cmd:string) : int * string
@@ -1476,11 +1485,11 @@ get_text_val
 get_thread
   <a href="/share/lib/std/io/faio.flx#0012">io/faio.flx:12</a>: proc get_thread(thread: &fthread)
 get_thread_frame
-  <a href="/share/lib/std/dynlink.fdoc#0372">dynlink.fdoc:372</a>: fun get_thread_frame: flx_instance -> address
+  <a href="/share/lib/std/dynlink.fdoc#0396">dynlink.fdoc:396</a>: fun get_thread_frame: flx_instance -> address
 get_thread_frame_creator_as_address
   <a href="/share/lib/std/dynlink.fdoc#0183">dynlink.fdoc:183</a>: fun get_thread_frame_creator_as_address: flx_library -> address
 get_variable
-  <a href="/share/lib/std/felix/flx_pkgconfig.flx#0243">felix/flx_pkgconfig.flx:243</a>: fun get_variable(line:string):string * string
+  <a href="/share/lib/std/felix/flx_pkgconfig_core.flx#0243">felix/flx_pkgconfig_core.flx:243</a>: fun get_variable(line:string):string * string
 getcwd
   <a href="/share/lib/std/win32/directory.flx#0041">win32/directory.flx:41</a>: fun getcwd():string
   <a href="/share/lib/std/posix/directory.flx#0034">posix/directory.flx:34</a>: fun getcwd():string
@@ -1521,7 +1530,7 @@ handle_dependency
 handle_global_options
   <a href="/share/lib/std/felix/pkgtool/pkgtool_base.flx#1225">felix/pkgtool/pkgtool_base.flx:1225</a>: gen handle_global_options(options:list[string])
 handle_pkg
-  <a href="/share/lib/std/felix/flx_pkgconfig.flx#0267">felix/flx_pkgconfig.flx:267</a>: proc handle_pkg (pkg:string, trace:list[string])
+  <a href="/share/lib/std/felix/flx_pkgconfig_core.flx#0267">felix/flx_pkgconfig_core.flx:267</a>: proc handle_pkg (pkg:string, trace:list[string])
 handlecopying
   <a href="/share/lib/std/strings/string.fdoc#0405">strings/string.fdoc:405</a>: noinline proc handlecopying(ch:char)
 haskey
@@ -1555,7 +1564,9 @@ imply
 init
   <a href="/share/lib/std/io/zmq.flx#0385">io/zmq.flx:385</a>: proc init (x:zmq_msg_t)
 init_lib
-  <a href="/share/lib/std/dynlink.fdoc#0412">dynlink.fdoc:412</a>: noinline gen init_lib(modulename:string):flx_instance
+  <a href="/share/lib/std/dynlink.fdoc#0456">dynlink.fdoc:456</a>: noinline gen init_lib(modulename:string):flx_instance
+init_lib_with_args
+  <a href="/share/lib/std/dynlink.fdoc#0464">dynlink.fdoc:464</a>: noinline gen init_lib_with_args(modulename:string, args:list[string]):flx_instance
 init_loopctl
   <a href="/share/lib/std/felix/flx/flx_control.flx#0042">felix/flx/flx_control.flx:42</a>: fun init_loopctl ()
 init_pb
@@ -1644,7 +1655,7 @@ is_installed
 is_nullptr
   <a href="/share/lib/std/cptr.flx#0033">cptr.flx:33</a>: fun is_nullptr[T] (px:cptr[T])
 is_prefix_of
-  <a href="/share/lib/std/felix/flx_pkgconfig.flx#0123">felix/flx_pkgconfig.flx:123</a>: fun is_prefix_of(p:string,w:string)
+  <a href="/share/lib/std/felix/flx_pkgconfig_core.flx#0123">felix/flx_pkgconfig_core.flx:123</a>: fun is_prefix_of(p:string,w:string)
 isalnum
   <a href="/share/lib/std/char.flx#0023">char.flx:23</a>: fun isalnum : char -> bool requires C89_headers::ctype_h
 isalpha
@@ -1730,7 +1741,7 @@ join_list
 k
   <a href="/share/lib/std/quaternion.flx#0009">quaternion.flx:9</a>: fun k(x:q)
 keep_val
-  <a href="/share/lib/std/felix/flx_pkgconfig.flx#0263">felix/flx_pkgconfig.flx:263</a>: proc keep_val (v:string)
+  <a href="/share/lib/std/felix/flx_pkgconfig_core.flx#0263">felix/flx_pkgconfig_core.flx:263</a>: proc keep_val (v:string)
 kill
   <a href="/share/lib/std/win32/process.flx#0142">win32/process.flx:142</a>: gen kill: pid_t * signal_t -> int
   <a href="/share/lib/std/posix/process.flx#0172">posix/process.flx:172</a>: gen kill: pid_t * signal_t -> int
@@ -1754,9 +1765,9 @@ len
   <a href="/share/lib/std/datatype/array.flx#0023">datatype/array.flx:23</a>: fun len (x:&array[t, n]): size
   <a href="/share/lib/std/datatype/array.flx#0016">datatype/array.flx:16</a>: fun len (x:array[t, n]): size
 lexit
-  <a href="/share/lib/std/felix/flx_pkgconfig.flx#0037">felix/flx_pkgconfig.flx:37</a>: fun lexit(ini:lex_iterator, finish:lex_iterator): lex_iterator * string
+  <a href="/share/lib/std/felix/flx_pkgconfig_core.flx#0037">felix/flx_pkgconfig_core.flx:37</a>: fun lexit(ini:lex_iterator, finish:lex_iterator): lex_iterator * string
 lexstr
-  <a href="/share/lib/std/felix/flx_pkgconfig.flx#0082">felix/flx_pkgconfig.flx:82</a>: fun lexstr(s':string): list[string]
+  <a href="/share/lib/std/felix/flx_pkgconfig_core.flx#0082">felix/flx_pkgconfig_core.flx:82</a>: fun lexstr(s':string): list[string]
 link_shape
   <a href="/share/lib/std/felix/rtti.flx#0120">felix/rtti.flx:120</a>: gen link_shape[T]()
 list_comprehension
@@ -1773,11 +1784,11 @@ load
   <a href="/share/lib/std/io/textio.flx#0097">io/textio.flx:97</a>: fun load: string -> string
   <a href="/share/lib/std/io/textio.flx#0019">io/textio.flx:19</a>: virtual gen load: input_text_file -> string
 load-plugin-func0
-  <a href="/share/lib/std/dynlink.fdoc#0579">dynlink.fdoc:579</a>: noinline gen  load-plugin-func0[iftype] (
+  <a href="/share/lib/std/dynlink.fdoc#0645">dynlink.fdoc:645</a>: noinline gen  load-plugin-func0[iftype] (
 load-plugin-func1
-  <a href="/share/lib/std/dynlink.fdoc#0593">dynlink.fdoc:593</a>: noinline gen  load-plugin-func1[iftype, arg_t] (
+  <a href="/share/lib/std/dynlink.fdoc#0659">dynlink.fdoc:659</a>: noinline gen  load-plugin-func1[iftype, arg_t] (
 load-plugin-func2
-  <a href="/share/lib/std/dynlink.fdoc#0607">dynlink.fdoc:607</a>: noinline gen  load-plugin-func2[iftype, arg1_t, arg2_t] (
+  <a href="/share/lib/std/dynlink.fdoc#0673">dynlink.fdoc:673</a>: noinline gen  load-plugin-func2[iftype, arg1_t, arg2_t] (
 lock
   <a href="/share/lib/std/control/mutex.flx#0008">control/mutex.flx:8</a>: proc lock: mutex
 log
@@ -1902,6 +1913,8 @@ mk_null_schannel
   <a href="/share/lib/std/control/schannels.flx#0026">control/schannels.flx:26</a>: gen mk_null_schannel[t]: 1->schannel[t]
 mk_pchannel
   <a href="/share/lib/std/control/pchannels.flx#0021">control/pchannels.flx:21</a>: fun mk_pchannel[t]: 1->pchannel[t]
+mk_pkgconfig_query
+  <a href="/share/lib/std/felix/flx_pkgconfig_export.flx#0015">felix/flx_pkgconfig_export.flx:15</a>: gen mk_pkgconfig_query (a:FlxPkgConfigQuery_struct)
 mk_reuse_socket
   <a href="/share/lib/std/win32/faio_win32.flx#0144">win32/faio_win32.flx:144</a>: fun mk_reuse_socket : demuxer * SOCKET -> wasync_transmit_file
 mk_schannel
@@ -1959,6 +1972,9 @@ mutex
 mux
   <a href="/share/lib/std/control/mux.flx#0028">control/mux.flx:28</a>: fun mux[C,T with Streamable[C,ischannel[T]]] (a:C, out:oschannel[T])
   <a href="/share/lib/std/control/mux.flx#0017">control/mux.flx:17</a>: proc mux[T] (inp:1->opt[ischannel[T]], out:oschannel[T]) ()
+myget
+  <a href="/share/lib/std/system.flx#0014">system.flx:14</a>: gen myget(i:size)
+  <a href="/share/lib/std/dynlink.fdoc#0330">dynlink.fdoc:330</a>: gen myget(i:size)
 <hr/>
 n
   <a href="/share/lib/std/datatype/array_class.fdoc#0293">datatype/array_class.fdoc:293</a>: fun n"&." [I in ints] (x:t, i:I) : &v
@@ -2043,7 +2059,7 @@ parse-key-single-value
 parse-switches
   <a href="/share/lib/std/cmdopt.flx#0106">cmdopt.flx:106</a>: noinline gen parse-switches (switchmap: list[char * string] ) (d:strdict[int]) (x:list[string])
 parse_args
-  <a href="/share/lib/std/felix/flx_pkgconfig.flx#0132">felix/flx_pkgconfig.flx:132</a>: proc parse_args(args:list[string])
+  <a href="/share/lib/std/felix/flx_pkgconfig_core.flx#0132">felix/flx_pkgconfig_core.flx:132</a>: proc parse_args(args:list[string])
 pass
   <a href="/share/lib/std/control/control.flx#0014">control/control.flx:14</a>: proc pass()
 past_time
@@ -2061,8 +2077,8 @@ pclosure
 perl_classes
   <a href="/share/lib/std/strings/re2.flx#0091">strings/re2.flx:91</a>: fun perl_classes: RE2Options -> bool
 pexit
-  <a href="/share/lib/std/system.flx#0046">system.flx:46</a>: proc pexit(e:int)
-  <a href="/share/lib/std/system.flx#0031">system.flx:31</a>: proc pexit(e:int)
+  <a href="/share/lib/std/system.flx#0054">system.flx:54</a>: proc pexit(e:int)
+  <a href="/share/lib/std/system.flx#0039">system.flx:39</a>: proc pexit(e:int)
 phase
   <a href="/share/lib/std/felix/pkgtool/pkgtool_base.flx#0261">felix/pkgtool/pkgtool_base.flx:261</a>: proc phase(label:string,step_p:unit->void)
 pid_touint
@@ -2130,7 +2146,7 @@ pre_decr
 pre_incr
   <a href="/share/lib/std/order.flx#0054">order.flx:54</a>: virtual proc pre_incr: &t
   <a href="/share/lib/std/int.flx#0232">int.flx:232</a>: proc pre_incr: &t
-  <a href="/share/lib/std/felix/flx_pkgconfig.flx#0035">felix/flx_pkgconfig.flx:35</a>: proc pre_incr:&lex_iterator
+  <a href="/share/lib/std/felix/flx_pkgconfig_core.flx#0035">felix/flx_pkgconfig_core.flx:35</a>: proc pre_incr:&lex_iterator
   <a href="/share/lib/std/control/ts_counter.flx#0006">control/ts_counter.flx:6</a>: gen pre_incr: ts_counter -> long
   <a href="/share/lib/std/carray.flx#0070">carray.flx:70</a>: proc pre_incr[T]: &carray[T]
 pred
@@ -2138,9 +2154,11 @@ pred
   <a href="/share/lib/std/int.flx#0237">int.flx:237</a>: fun pred: t -> t
 prefix
   <a href="/share/lib/std/strings/string.fdoc#0229">strings/string.fdoc:229</a>: fun prefix(arg:string,key:string)
-  <a href="/share/lib/std/felix/flx_pkgconfig.flx#0138">felix/flx_pkgconfig.flx:138</a>: fun prefix(x:string)
+  <a href="/share/lib/std/felix/flx_pkgconfig_core.flx#0138">felix/flx_pkgconfig_core.flx:138</a>: fun prefix(x:string)
 prepare_lib
-  <a href="/share/lib/std/dynlink.fdoc#0393">dynlink.fdoc:393</a>: noinline gen prepare_lib(modulename:string):flx_instance
+  <a href="/share/lib/std/dynlink.fdoc#0417">dynlink.fdoc:417</a>: noinline gen prepare_lib(modulename:string):flx_instance
+prepare_lib_with_args
+  <a href="/share/lib/std/dynlink.fdoc#0436">dynlink.fdoc:436</a>: noinline gen prepare_lib_with_args(modulename:string, args:list[string]):flx_instance
 prepend_unique
   <a href="/share/lib/std/datatype/list.fdoc#0506">datatype/list.fdoc:506</a>: fun prepend_unique[T] (eq: T * T -> bool) (x:list[T]) (e:T) : list[T]
 print
@@ -2148,7 +2166,7 @@ print
 print_config
   <a href="/share/lib/std/felix/flx/flx_config.flx#0005">felix/flx/flx_config.flx:5</a>: proc print_config(config:Config::config_type)
 print_help
-  <a href="/share/lib/std/felix/flx_pkgconfig.flx#0008">felix/flx_pkgconfig.flx:8</a>: proc print_help
+  <a href="/share/lib/std/felix/flx_pkgconfig_core.flx#0008">felix/flx_pkgconfig_core.flx:8</a>: proc print_help
 print_options
   <a href="/share/lib/std/felix/flx/flx_control.flx#0005">felix/flx/flx_control.flx:5</a>: proc print_options(control:control_type)
 print_pointer_data
@@ -2160,11 +2178,11 @@ print_pointer_data
 println
   <a href="/share/lib/std/io/textio.flx#0207">io/textio.flx:207</a>: proc println[T with Str[T]] (x:T)
 proc0
-  <a href="/share/lib/std/dynlink.fdoc#0518">dynlink.fdoc:518</a>: noinline fun proc0 (linst: flx_instance, sym:string)
+  <a href="/share/lib/std/dynlink.fdoc#0584">dynlink.fdoc:584</a>: noinline fun proc0 (linst: flx_instance, sym:string)
 proc1
-  <a href="/share/lib/std/dynlink.fdoc#0525">dynlink.fdoc:525</a>: noinline fun proc1[A0] (linst: flx_instance, sym:string)
+  <a href="/share/lib/std/dynlink.fdoc#0591">dynlink.fdoc:591</a>: noinline fun proc1[A0] (linst: flx_instance, sym:string)
 proc2
-  <a href="/share/lib/std/dynlink.fdoc#0532">dynlink.fdoc:532</a>: noinline fun proc2[A0,A1] (linst: flx_instance, sym:string)
+  <a href="/share/lib/std/dynlink.fdoc#0598">dynlink.fdoc:598</a>: noinline fun proc2[A0,A1] (linst: flx_instance, sym:string)
 process_status_t
   <a href="/share/lib/std/win32/process.flx#0013">win32/process.flx:13</a>: ctor process_status_t : intptr
   <a href="/share/lib/std/posix/process.flx#0013">posix/process.flx:13</a>: ctor process_status_t : int
@@ -2272,7 +2290,7 @@ realloc
 realpath
   <a href="/share/lib/std/felix/pkgtool/pkgtool_base.flx#0349">felix/pkgtool/pkgtool_base.flx:349</a>: gen realpath: string->string
 reattach_drive_letters
-  <a href="/share/lib/std/felix/flx_pkgconfig.flx#0211">felix/flx_pkgconfig.flx:211</a>: fun reattach_drive_letters : list[string] -> list[string]
+  <a href="/share/lib/std/felix/flx_pkgconfig_core.flx#0211">felix/flx_pkgconfig_core.flx:211</a>: fun reattach_drive_letters : list[string] -> list[string]
 recip
   <a href="/share/lib/std/algebraic.flx#0081">algebraic.flx:81</a>: fun recip (x:t)
 reciprocal
@@ -2397,12 +2415,14 @@ run_felix_compiler_if_required
 run_flx
   <a href="/share/lib/std/felix/pkgtool/pkgtool_base.flx#0434">felix/pkgtool/pkgtool_base.flx:434</a>: virtual fun run_flx(file:string,on_error:string)
 run_lib
-  <a href="/share/lib/std/dynlink.fdoc#0430">dynlink.fdoc:430</a>: proc run_lib(modulename:string)
+  <a href="/share/lib/std/dynlink.fdoc#0482">dynlink.fdoc:482</a>: proc run_lib(modulename:string)
 run_linker_if_required
   <a href="/share/lib/std/felix/flx/flx_run.flx#0601">felix/flx/flx_run.flx:601</a>: gen run_linker_if_required() : int
 run_proc
   <a href="/share/lib/std/felix/sync.flx#0065">felix/sync.flx:65</a>: proc run_proc (p: 1->0)
-  <a href="/share/lib/std/dynlink.fdoc#0646">dynlink.fdoc:646</a>: noinline proc run_proc (linstance:flx_instance, p: string, data: address)
+  <a href="/share/lib/std/dynlink.fdoc#0712">dynlink.fdoc:712</a>: noinline proc run_proc (linstance:flx_instance, p: string, data: address)
+run_program
+  <a href="/share/lib/std/dynlink.fdoc#0489">dynlink.fdoc:489</a>: proc run_program(args:list[string])
 run_program_dynamic
   <a href="/share/lib/std/felix/flx/flx_run.flx#0646">felix/flx/flx_run.flx:646</a>: gen run_program_dynamic () : int
 run_program_if_required
@@ -2495,6 +2515,9 @@ set_used
   <a href="/share/lib/std/felix/serialise.fdoc#0168">felix/serialise.fdoc:168</a>: proc set_used: address * size
 set_word_boundary
   <a href="/share/lib/std/strings/re2.flx#0095">strings/re2.flx:95</a>: proc set_word_boundary: RE2Options * bool
+setargs
+  <a href="/share/lib/std/system.flx#0012">system.flx:12</a>: proc setargs[N] (a:string^N)
+  <a href="/share/lib/std/system.flx#0011">system.flx:11</a>: proc setargs : + +char * size
 setup_fail
   <a href="/share/lib/std/felix/pkgtool/pkgtool_base.flx#0273">felix/pkgtool/pkgtool_base.flx:273</a>: proc setup_fail(s:string)
 sgn
@@ -2846,13 +2869,13 @@ sys_job_queue_nthreads
 sys_job_queue_qbound
   <a href="/share/lib/std/posix/faio_posix.flx#0013">posix/faio_posix.flx:13</a>: fun sys_job_queue_qbound()
 system
-  <a href="/share/lib/std/system.flx#0011">system.flx:11</a>: gen system (cmd:string) : int
+  <a href="/share/lib/std/system.flx#0019">system.flx:19</a>: gen system (cmd:string) : int
   <a href="/share/lib/std/shell.flx#0060">shell.flx:60</a>: gen system[T with Streamable[T,string]] (args:T) : int
   <a href="/share/lib/std/shell.flx#0056">shell.flx:56</a>: gen system (args:list[string]) : int
   <a href="/share/lib/std/shell.flx#0041">shell.flx:41</a>: gen system (cmd:string)
 <hr/>
 tail_val
-  <a href="/share/lib/std/felix/flx_pkgconfig.flx#0258">felix/flx_pkgconfig.flx:258</a>: proc tail_val(v:string)
+  <a href="/share/lib/std/felix/flx_pkgconfig_core.flx#0258">felix/flx_pkgconfig_core.flx:258</a>: proc tail_val(v:string)
 take
   <a href="/share/lib/std/datatype/list.fdoc#0537">datatype/list.fdoc:537</a>: fun take[T] (k:int) (lst:list[T]) : list[T]
 tan
@@ -3091,7 +3114,7 @@ writeln
 xdebugln
   <a href="/share/lib/std/felix/flx/flx_run.flx#0028">felix/flx/flx_run.flx:28</a>: proc xdebugln[T with Str[T]] (d:bool) (x:T)
 xfind
-  <a href="/share/lib/std/felix/flx_pkgconfig.flx#0125">felix/flx_pkgconfig.flx:125</a>: fun xfind(flags: string, c: string)
+  <a href="/share/lib/std/felix/flx_pkgconfig_core.flx#0125">felix/flx_pkgconfig_core.flx:125</a>: fun xfind(flags: string, c: string)
 xor
   <a href="/share/lib/std/bool.flx#0019">bool.flx:19</a>: fun xor: bool * bool -> bool
 xpipe

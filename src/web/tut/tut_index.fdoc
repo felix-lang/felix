@@ -3,19 +3,19 @@
 <p>Basic introduction to Felix</p>
 
 <ul>
-<li><a href="tut_01.fdoc">Introductory Hands On</a></li>
-<li><a href="tut_02.fdoc">Variables</a></li>
-<li><a href="tut_03.fdoc">Procedural control</a></li>
-<li><a href="tut_04.fdoc">Simple function definitions</a></li>
-<li><a href="tut_05.fdoc">Simple procedure definitions</a></li>
-<li><a href="tut_06.fdoc">Simple generator definition</a></li>
-<li><a href="tut_07.fdoc">Application and call operators</a></li>
-<li><a href="tut_08.fdoc">Basic Data types</a></li>
-<li><a href="tut_09.fdoc">Tuples</a></li>
-<li><a href="tut_10.fdoc">Arrays</a></li>
-<li><a href="tut_11.fdoc">Records</a></li>
-<li><a href="tut_12.fdoc">Structs</a></li>
-<li><a href="tut_13.fdoc">Variables and Pointers</a></li>
-<li><a href="tut_14.fdoc">Assignment</a></li>
-<li><a href="tut_15.fdoc">How to Browse library code</a></li>
+<li><a href="tut_01.fdoc">Hands On!</a></li>
+<li><a href="tut_02.fdoc">Variables.</a></li>
+<li><a href="tut_03.fdoc">Control</a></li>
+<li><a href="tut_04.fdoc">Functions.</a></li>
+<li><a href="tut_05.fdoc">Procedures.</a></li>
+<li><a href="tut_06.fdoc">Generators.</a></li>
+<li><a href="tut_07.fdoc">Calling Subroutines.</a></li>
+<li><a href="tut_08.fdoc">Some basic data types.</a></li>
+<li><a href="tut_09.fdoc">Tuple product type.</a></li>
+<li><a href="tut_10.fdoc">Array products.</a></li>
+<li><a href="tut_11.fdoc">Record products.</a></li>
+<li><a href="tut_12.fdoc">Struct products.</a></li>
+<li><a href="tut_13.fdoc">Pointers.</a></li>
+<li><a href="tut_14.fdoc">Assignments.</a></li>
+<li><a href="tut_15.fdoc">The Standard Library.</a></li>
 </ul>

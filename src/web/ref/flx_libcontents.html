@@ -1961,34 +1961,34 @@ CMD=@
  statement preperation and access to sqlite_step statement execution.
 </p><p> Iterator example:
  
-</p><p><pre class='flxbg'><span class="lineno" id="0001">0001: </span>  <span class="big_keyword" title="Define a mutable variable">var</span> db : sqlite3_db_t;
-<span class="lineno" id="0002">0002: </span>  <span class="big_keyword" title="Define a mutable variable">var</span> stmt:sqlite3_stmt_t;
-<span class="lineno" id="0003">0003: </span>  <span class="big_keyword" title="Define a mutable variable">var</span> err = sqlite3_open(<span class="fstring">"multiple_sa.db"</span>, &amp;db);
-<span class="lineno" id="0004">0004: </span>  <span class="small_keyword" title="conditional">if</span> err != 0 <span class="small_keyword" title="imperative code begins">do</span>
-<span class="lineno" id="0005">0005: </span>    <span class="library" title="Print a string to standard output">print</span> <span class="fstring">"open DB error[abort] "</span>;
-<span class="lineno" id="0006">0006: </span>    <span class="library" title="Print a string to standard output with newline appended">println</span> $ sqlite3_errmsg db;
-<span class="lineno" id="0007">0007: </span>    <span class="small_keyword" title="jump to label">goto</span> finish;
-<span class="lineno" id="0008">0008: </span>  <span class="small_keyword" title="end of body">done</span>;
-<span class="lineno" id="0009">0009: </span>  err = sqlite3_prepare_v2(db, <span class="fstring">"select * from contact"</span>, 21, stmt, <span class="fstring">""</span>);
-<span class="lineno" id="0010">0010: </span>  <span class="small_keyword" title="conditional">if</span> not err == (caseno SQLITE_OK) <span class="small_keyword" title="conditional">then</span>
-<span class="lineno" id="0011">0011: </span>    { <span class="library" title="Print a string to standard output with newline appended">println</span> (<span class="fstring">"sql error "</span>+<span class="library" title="Convert a value to a string">str</span>(err)+<span class="fstring">":"</span>+sqlite3_errmsg(db));<span class="small_keyword" title="jump to label">goto</span> finish; }
-<span class="lineno" id="0012">0012: </span>  <span class="small_keyword" title="conditional">else</span> {
-<span class="lineno" id="0013">0013: </span>    <span class="big_keyword" title="Define a mutable variable">var</span> it = sqlite3_row_iterator (stmt);
-<span class="lineno" id="0014">0014: </span>    <span class="big_keyword" title="Define a mutable variable">var</span> row:ret_val[<span class="library" title="array with unbounded dynamically variable limit">darray</span>[column_value]];
-<span class="lineno" id="0015">0015: </span>    <span class="small_keyword" title="while loop">while</span> (<span class="big_keyword" title="Define a function with no side-effects">fun</span> ():bool = { row = it();
-<span class="lineno" id="0016">0016: </span>               <span class="small_keyword" title="return">return</span> (<span class="small_keyword" title="match statement or expression">match</span> row <span class="small_keyword" title="type-class constraint">with</span> |end_of_results[<span class="library" title="array with unbounded dynamically variable limit">darray</span>[column_value]] =&gt;false |_ =&gt; true
-<span class="lineno" id="0017">0017: </span>               <span class="small_keyword" title="end a match statement or expression">endmatch</span>); }) () <span class="small_keyword" title="imperative code begins">do</span>
-<span class="lineno" id="0018">0018: </span>    <span class="big_keyword" title="Define a mutable variable">var</span> t = <span class="small_keyword" title="match statement or expression">match</span> row <span class="small_keyword" title="type-class constraint">with</span> 
-<span class="lineno" id="0019">0019: </span>      | row ?a =&gt;  ((get_text_val(get(a,0))),(get_text_val(get(a,1))))
-<span class="lineno" id="0020">0020: </span>      | _ =&gt; (<span class="fstring">""</span>,<span class="fstring">""</span>)
-<span class="lineno" id="0021">0021: </span>    <span class="small_keyword" title="end a match statement or expression">endmatch</span>;
-<span class="lineno" id="0022">0022: </span>    <span class="library" title="Print a string to standard output">print</span> t; endl;
-<span class="lineno" id="0023">0023: </span>    <span class="small_keyword" title="end of body">done</span>
-<span class="lineno" id="0024">0024: </span>  }
-<span class="lineno" id="0025">0025: </span>  finish:&gt;
-<span class="lineno" id="0026">0026: </span>    err = sqlite3_finalize(stmt);
-<span class="lineno" id="0027">0027: </span>    <span class="library" title="Print a string to standard output with newline appended">println</span>(<span class="library" title="Convert a value to a string">str</span>(err));
-<span class="lineno" id="0028">0028: </span>    sqlite3_close(db);
+</p><p><pre class='flxbg'>   <span class="big_keyword" title="Define a mutable variable">var</span> db : sqlite3_db_t;
+   <span class="big_keyword" title="Define a mutable variable">var</span> stmt:sqlite3_stmt_t;
+   <span class="big_keyword" title="Define a mutable variable">var</span> err = sqlite3_open(<span class="fstring">"multiple_sa.db"</span>, &amp;db);
+   <span class="small_keyword" title="conditional">if</span> err != 0 <span class="small_keyword" title="imperative code begins">do</span>
+     <span class="library" title="Print a string to standard output">print</span> <span class="fstring">"open DB error[abort] "</span>;
+     <span class="library" title="Print a string to standard output with newline appended">println</span> $ sqlite3_errmsg db;
+     <span class="small_keyword" title="jump to label">goto</span> finish;
+   <span class="small_keyword" title="end of body">done</span>;
+   err = sqlite3_prepare_v2(db, <span class="fstring">"select * from contact"</span>, 21, stmt, <span class="fstring">""</span>);
+   <span class="small_keyword" title="conditional">if</span> not err == (caseno SQLITE_OK) <span class="small_keyword" title="conditional">then</span>
+     { <span class="library" title="Print a string to standard output with newline appended">println</span> (<span class="fstring">"sql error "</span>+<span class="library" title="Convert a value to a string">str</span>(err)+<span class="fstring">":"</span>+sqlite3_errmsg(db));<span class="small_keyword" title="jump to label">goto</span> finish; }
+   <span class="small_keyword" title="conditional">else</span> {
+     <span class="big_keyword" title="Define a mutable variable">var</span> it = sqlite3_row_iterator (stmt);
+     <span class="big_keyword" title="Define a mutable variable">var</span> row:ret_val[<span class="library" title="array with unbounded dynamically variable limit">darray</span>[column_value]];
+     <span class="small_keyword" title="while loop">while</span> (<span class="big_keyword" title="Define a function with no side-effects">fun</span> ():bool = { row = it();
+                <span class="small_keyword" title="return">return</span> (<span class="small_keyword" title="match statement or expression">match</span> row <span class="small_keyword" title="type-class constraint">with</span> |end_of_results[<span class="library" title="array with unbounded dynamically variable limit">darray</span>[column_value]] =&gt;false |_ =&gt; true
+                <span class="small_keyword" title="end a match statement or expression">endmatch</span>); }) () <span class="small_keyword" title="imperative code begins">do</span>
+     <span class="big_keyword" title="Define a mutable variable">var</span> t = <span class="small_keyword" title="match statement or expression">match</span> row <span class="small_keyword" title="type-class constraint">with</span> 
+       | row ?a =&gt;  ((get_text_val(get(a,0))),(get_text_val(get(a,1))))
+       | _ =&gt; (<span class="fstring">""</span>,<span class="fstring">""</span>)
+     <span class="small_keyword" title="end a match statement or expression">endmatch</span>;
+     <span class="library" title="Print a string to standard output">print</span> t; endl;
+     <span class="small_keyword" title="end of body">done</span>
+   }
+   finish:&gt;
+     err = sqlite3_finalize(stmt);
+     <span class="library" title="Print a string to standard output with newline appended">println</span>(<span class="library" title="Convert a value to a string">str</span>(err));
+     sqlite3_close(db);
 </pre></p></div>
 <pre>0043:    <a href="/share/lib/std/db/sqlite3/sqlite3.flx#0043">type sqlite3_db_t</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Type of a database handle.
@@ -2258,63 +2258,73 @@ CMD=@
  This is a procedure, so maybe the caller is too
  which means the thread frame must be available.
 </p></div>
-<pre>0334:    <a href="/share/lib/std/dynlink.fdoc#0334">fun filename : flx_instance -> string</a></pre>
+<pre>0319:    <a href="/share/lib/std/dynlink.fdoc#0319">proc create_with_args: flx_library * flx_instance * int * + +char</a></pre>
+<pre>0324:    <a href="/share/lib/std/dynlink.fdoc#0324">proc create_with_args (lib:flx_library, inst:flx_instance, args:list[string])</a></pre>
+<pre>0330:    <a href="/share/lib/std/dynlink.fdoc#0330">gen myget(i:size)</a></pre>
+<pre>0358:    <a href="/share/lib/std/dynlink.fdoc#0358">fun filename : flx_instance -> string</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Get the filename of a DLL from an instance of it.
 </p></div>
-<pre>0349:    <a href="/share/lib/std/dynlink.fdoc#0349">procedure.</a></pre>
-<pre>0360:    <a href="/share/lib/std/dynlink.fdoc#0360">fun get_init: flx_instance -> cont</a></pre>
+<pre>0373:    <a href="/share/lib/std/dynlink.fdoc#0373">procedure.</a></pre>
+<pre>0384:    <a href="/share/lib/std/dynlink.fdoc#0384">fun get_init: flx_instance -> cont</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Get the initialisation continuation of an instance.
 </p></div>
-<pre>0365:    <a href="/share/lib/std/dynlink.fdoc#0365">fun get_library: flx_instance -> flx_library</a></pre>
+<pre>0389:    <a href="/share/lib/std/dynlink.fdoc#0389">fun get_library: flx_instance -> flx_library</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Get the DLL associated with an instance.
 </p></div>
-<pre>0372:    <a href="/share/lib/std/dynlink.fdoc#0372">fun get_thread_frame: flx_instance -> address</a></pre>
+<pre>0396:    <a href="/share/lib/std/dynlink.fdoc#0396">fun get_thread_frame: flx_instance -> address</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Get the thread frame (global data object) of an instance.
 </p></div>
-<pre>0383:    <a href="/share/lib/std/dynlink.fdoc#0383">proc destroy: flx_instance</a></pre>
-<pre>0393:    <a href="/share/lib/std/dynlink.fdoc#0393">noinline gen prepare_lib(modulename:string):flx_instance</a></pre>
+<pre>0407:    <a href="/share/lib/std/dynlink.fdoc#0407">proc destroy: flx_instance</a></pre>
+<pre>0417:    <a href="/share/lib/std/dynlink.fdoc#0417">noinline gen prepare_lib(modulename:string):flx_instance</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Create, link, and prepare a DLL instance from a modulename.
 </p></div>
-<pre>0412:    <a href="/share/lib/std/dynlink.fdoc#0412">noinline gen init_lib(modulename:string):flx_instance</a></pre>
+<pre>0436:    <a href="/share/lib/std/dynlink.fdoc#0436">noinline gen prepare_lib_with_args(modulename:string, args:list[string]):flx_instance</a></pre>
+<div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Create, link, and prepare a DLL instance from a modulename.
+</p></div>
+<pre>0456:    <a href="/share/lib/std/dynlink.fdoc#0456">noinline gen init_lib(modulename:string):flx_instance</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Create, link, and initialise a  DLL instance from a modulename.
 </p></div>
-<pre>0430:    <a href="/share/lib/std/dynlink.fdoc#0430">proc run_lib(modulename:string)</a></pre>
+<pre>0464:    <a href="/share/lib/std/dynlink.fdoc#0464">noinline gen init_lib_with_args(modulename:string, args:list[string]):flx_instance</a></pre>
+<div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Create, link, and initialise a  DLL instance from a modulename.
+</p></div>
+<pre>0482:    <a href="/share/lib/std/dynlink.fdoc#0482">proc run_lib(modulename:string)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Run a Felix program from a filename.
   WARNING!! All data created by the target
   program must be destroyed
   before the library code is unlinked.
 </p></div>
-<pre>0444:    <a href="/share/lib/std/dynlink.fdoc#0444">noinline proc destroy_lib(linstance:flx_instance)</a></pre>
+<pre>0489:    <a href="/share/lib/std/dynlink.fdoc#0489">proc run_program(args:list[string])</a></pre>
+<pre>0510:    <a href="/share/lib/std/dynlink.fdoc#0510">noinline proc destroy_lib(linstance:flx_instance)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Destroy a completed Felix program from its DLL instance.
 </p></div>
-<pre>0461:    <a href="/share/lib/std/dynlink.fdoc#0461">noinline fun flx_dlsym[T] (linst: flx_instance, sym:string)</a></pre>
+<pre>0527:    <a href="/share/lib/std/dynlink.fdoc#0527">noinline fun flx_dlsym[T] (linst: flx_instance, sym:string)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Find typed address of a symbol in a DLL.
 </p></div>
-<pre>0497:    <a href="/share/lib/std/dynlink.fdoc#0497">noinline fun func0[R] (linst: flx_instance, sym:string)</a></pre>
+<pre>0563:    <a href="/share/lib/std/dynlink.fdoc#0563">noinline fun func0[R] (linst: flx_instance, sym:string)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Return a closure representing a symbol in a DLL instance
  of a function of no arguments.
 </p></div>
-<pre>0504:    <a href="/share/lib/std/dynlink.fdoc#0504">noinline fun func1[R,A0] (linst: flx_instance, sym:string)</a></pre>
+<pre>0570:    <a href="/share/lib/std/dynlink.fdoc#0570">noinline fun func1[R,A0] (linst: flx_instance, sym:string)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Return a closure representing a symbol in a DLL instance
  of a function of one argument.
 </p></div>
-<pre>0511:    <a href="/share/lib/std/dynlink.fdoc#0511">noinline fun func2[R,A0,A1] (linst: flx_instance, sym:string)</a></pre>
+<pre>0577:    <a href="/share/lib/std/dynlink.fdoc#0577">noinline fun func2[R,A0,A1] (linst: flx_instance, sym:string)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Return a closure representing a symbol in a DLL instance
  of a function of two arguments.
 </p></div>
-<pre>0518:    <a href="/share/lib/std/dynlink.fdoc#0518">noinline fun proc0 (linst: flx_instance, sym:string)</a></pre>
+<pre>0584:    <a href="/share/lib/std/dynlink.fdoc#0584">noinline fun proc0 (linst: flx_instance, sym:string)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Return a closure representing a symbol in a DLL instance
  of a procedure of no arguments.
 </p></div>
-<pre>0525:    <a href="/share/lib/std/dynlink.fdoc#0525">noinline fun proc1[A0] (linst: flx_instance, sym:string)</a></pre>
+<pre>0591:    <a href="/share/lib/std/dynlink.fdoc#0591">noinline fun proc1[A0] (linst: flx_instance, sym:string)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Return a closure representing a symbol in a DLL instance
  of a procedure of one argument.
 </p></div>
-<pre>0532:    <a href="/share/lib/std/dynlink.fdoc#0532">noinline fun proc2[A0,A1] (linst: flx_instance, sym:string)</a></pre>
+<pre>0598:    <a href="/share/lib/std/dynlink.fdoc#0598">noinline fun proc2[A0,A1] (linst: flx_instance, sym:string)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Return a closure representing a symbol in a DLL instance
  of a procedure of two arguments.
 </p></div>
-<pre>0579:    <a href="/share/lib/std/dynlink.fdoc#0579">noinline gen  load-plugin-func0[iftype] (</a></pre>
+<pre>0645:    <a href="/share/lib/std/dynlink.fdoc#0645">noinline gen  load-plugin-func0[iftype] (</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Specialised routine(s) to load stylised plugin.
  Two entry points:
 </p><p> setup: string -> int
@@ -2328,9 +2338,9 @@ CMD=@
 </p><p> There are 3 variants where the factory function accepts
  0, 1 and 2 arguments.
 </p></div>
-<pre>0593:    <a href="/share/lib/std/dynlink.fdoc#0593">noinline gen  load-plugin-func1[iftype, arg_t] (</a></pre>
-<pre>0607:    <a href="/share/lib/std/dynlink.fdoc#0607">noinline gen  load-plugin-func2[iftype, arg1_t, arg2_t] (</a></pre>
-<pre>0631:    <a href="/share/lib/std/dynlink.fdoc#0631">fun bind_proc: flx_instance * address * address -> cont</a></pre>
+<pre>0659:    <a href="/share/lib/std/dynlink.fdoc#0659">noinline gen  load-plugin-func1[iftype, arg_t] (</a></pre>
+<pre>0673:    <a href="/share/lib/std/dynlink.fdoc#0673">noinline gen  load-plugin-func2[iftype, arg1_t, arg2_t] (</a></pre>
+<pre>0697:    <a href="/share/lib/std/dynlink.fdoc#0697">fun bind_proc: flx_instance * address * address -> cont</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Execute an address representing a top
  level exported felix procedure's C wrapper,
  this creates a 'read to run' continuation object
@@ -2339,15 +2349,15 @@ CMD=@
  it to fix a null return address and an arbitrary
  client data pointer as arguments to the call method.
 </p></div>
-<pre>0636:    <a href="/share/lib/std/dynlink.fdoc#0636">fun dlib_of : flx_library -> address</a></pre>
+<pre>0702:    <a href="/share/lib/std/dynlink.fdoc#0702">fun dlib_of : flx_library -> address</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Get the OS dependent handle representing a loaded DLL.
  Return as an address. 
 </p></div>
-<pre>0640:    <a href="/share/lib/std/dynlink.fdoc#0640">proc dlsym_err:flx_library*string</a></pre>
+<pre>0706:    <a href="/share/lib/std/dynlink.fdoc#0706">proc dlsym_err:flx_library*string</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Throw an exception indicating the failure to 
  find a symbol in a DLL.
 </p></div>
-<pre>0646:    <a href="/share/lib/std/dynlink.fdoc#0646">noinline proc run_proc (linstance:flx_instance, p: string, data: address)</a></pre>
+<pre>0712:    <a href="/share/lib/std/dynlink.fdoc#0712">noinline proc run_proc (linstance:flx_instance, p: string, data: address)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Run a procedure represented by a string name with
  given thread frame.
 </p></div>
@@ -2548,25 +2558,36 @@ CMD=@
 <pre>0138:    <a href="/share/lib/std/felix/flx_pkg.flx#0138">proc write_include_file(path:string, INCLUDE_FILES:list[string])</a></pre>
 <hr/><a href="/share/lib/std/felix/flx_pkgconfig.flx">felix/flx_pkgconfig.flx</a>
 
-<pre>0002:  <a href="/share/lib/std/felix/flx_pkgconfig.flx#0002">class FlxPkgConfig</a></pre>
-<pre>0006:    <a href="/share/lib/std/felix/flx_pkgconfig.flx#0006">gen flx_pkgconfig (args:list[string]) : int * list[string]</a></pre>
-<pre>0008:    <a href="/share/lib/std/felix/flx_pkgconfig.flx#0008">proc print_help</a></pre>
-<pre>0035:    <a href="/share/lib/std/felix/flx_pkgconfig.flx#0035">proc pre_incr:&lex_iterator</a></pre>
-<pre>0037:    <a href="/share/lib/std/felix/flx_pkgconfig.flx#0037">fun lexit(ini:lex_iterator, finish:lex_iterator): lex_iterator * string</a></pre>
-<pre>0082:    <a href="/share/lib/std/felix/flx_pkgconfig.flx#0082">fun lexstr(s':string): list[string]</a></pre>
-<pre>0123:    <a href="/share/lib/std/felix/flx_pkgconfig.flx#0123">fun is_prefix_of(p:string,w:string)</a></pre>
-<pre>0125:    <a href="/share/lib/std/felix/flx_pkgconfig.flx#0125">fun xfind(flags: string, c: string)</a></pre>
-<pre>0132:    <a href="/share/lib/std/felix/flx_pkgconfig.flx#0132">proc parse_args(args:list[string])</a></pre>
-<pre>0138:    <a href="/share/lib/std/felix/flx_pkgconfig.flx#0138">fun prefix(x:string)</a></pre>
-<pre>0211:    <a href="/share/lib/std/felix/flx_pkgconfig.flx#0211">fun reattach_drive_letters : list[string] -> list[string]</a></pre>
-<pre>0227:    <a href="/share/lib/std/felix/flx_pkgconfig.flx#0227">fun check_id (s:string)</a></pre>
-<pre>0233:    <a href="/share/lib/std/felix/flx_pkgconfig.flx#0233">fun get_field(line:string):string * string</a></pre>
-<pre>0243:    <a href="/share/lib/std/felix/flx_pkgconfig.flx#0243">fun get_variable(line:string):string * string</a></pre>
-<pre>0253:    <a href="/share/lib/std/felix/flx_pkgconfig.flx#0253">proc add_val(v:string)</a></pre>
-<pre>0258:    <a href="/share/lib/std/felix/flx_pkgconfig.flx#0258">proc tail_val(v:string)</a></pre>
-<pre>0263:    <a href="/share/lib/std/felix/flx_pkgconfig.flx#0263">proc keep_val (v:string)</a></pre>
-<pre>0267:    <a href="/share/lib/std/felix/flx_pkgconfig.flx#0267">proc handle_pkg (pkg:string, trace:list[string])</a></pre>
-<pre>0372:    <a href="/share/lib/std/felix/flx_pkgconfig.flx#0372">fun aux (lst:list[string]) (out:list[string])</a></pre>
+<pre>0005:  <a href="/share/lib/std/felix/flx_pkgconfig.flx#0005">class FlxPkgConfig</a></pre>
+<hr/><a href="/share/lib/std/felix/flx_pkgconfig_core.flx">felix/flx_pkgconfig_core.flx</a>
+
+<pre>0002:  <a href="/share/lib/std/felix/flx_pkgconfig_core.flx#0002">class FlxPkgConfig_core</a></pre>
+<pre>0006:    <a href="/share/lib/std/felix/flx_pkgconfig_core.flx#0006">gen flx_pkgconfig (args:list[string]) : int * list[string]</a></pre>
+<pre>0008:    <a href="/share/lib/std/felix/flx_pkgconfig_core.flx#0008">proc print_help</a></pre>
+<pre>0035:    <a href="/share/lib/std/felix/flx_pkgconfig_core.flx#0035">proc pre_incr:&lex_iterator</a></pre>
+<pre>0037:    <a href="/share/lib/std/felix/flx_pkgconfig_core.flx#0037">fun lexit(ini:lex_iterator, finish:lex_iterator): lex_iterator * string</a></pre>
+<pre>0082:    <a href="/share/lib/std/felix/flx_pkgconfig_core.flx#0082">fun lexstr(s':string): list[string]</a></pre>
+<pre>0123:    <a href="/share/lib/std/felix/flx_pkgconfig_core.flx#0123">fun is_prefix_of(p:string,w:string)</a></pre>
+<pre>0125:    <a href="/share/lib/std/felix/flx_pkgconfig_core.flx#0125">fun xfind(flags: string, c: string)</a></pre>
+<pre>0132:    <a href="/share/lib/std/felix/flx_pkgconfig_core.flx#0132">proc parse_args(args:list[string])</a></pre>
+<pre>0138:    <a href="/share/lib/std/felix/flx_pkgconfig_core.flx#0138">fun prefix(x:string)</a></pre>
+<pre>0211:    <a href="/share/lib/std/felix/flx_pkgconfig_core.flx#0211">fun reattach_drive_letters : list[string] -> list[string]</a></pre>
+<pre>0227:    <a href="/share/lib/std/felix/flx_pkgconfig_core.flx#0227">fun check_id (s:string)</a></pre>
+<pre>0233:    <a href="/share/lib/std/felix/flx_pkgconfig_core.flx#0233">fun get_field(line:string):string * string</a></pre>
+<pre>0243:    <a href="/share/lib/std/felix/flx_pkgconfig_core.flx#0243">fun get_variable(line:string):string * string</a></pre>
+<pre>0253:    <a href="/share/lib/std/felix/flx_pkgconfig_core.flx#0253">proc add_val(v:string)</a></pre>
+<pre>0258:    <a href="/share/lib/std/felix/flx_pkgconfig_core.flx#0258">proc tail_val(v:string)</a></pre>
+<pre>0263:    <a href="/share/lib/std/felix/flx_pkgconfig_core.flx#0263">proc keep_val (v:string)</a></pre>
+<pre>0267:    <a href="/share/lib/std/felix/flx_pkgconfig_core.flx#0267">proc handle_pkg (pkg:string, trace:list[string])</a></pre>
+<hr/><a href="/share/lib/std/felix/flx_pkgconfig_export.flx">felix/flx_pkgconfig_export.flx</a>
+<pre>0015:    <a href="/share/lib/std/felix/flx_pkgconfig_export.flx#0015">gen mk_pkgconfig_query (a:FlxPkgConfigQuery_struct)</a></pre>
+<hr/><a href="/share/lib/std/felix/flx_pkgconfig_query.flx">felix/flx_pkgconfig_query.flx</a>
+
+<pre>0004:  <a href="/share/lib/std/felix/flx_pkgconfig_query.flx#0004">class FlxPkgConfig_query</a></pre>
+<pre>0013:    <a href="/share/lib/std/felix/flx_pkgconfig_query.flx#0013">fun aux (lst:list[string]) (out:list[string])</a></pre>
+<hr/><a href="/share/lib/std/felix/flx_pkgconfig_query_interface.flx">felix/flx_pkgconfig_query_interface.flx</a>
+
+<pre>0001:  <a href="/share/lib/std/felix/flx_pkgconfig_query_interface.flx#0001">class FlxPkgConfigQuery_interface</a></pre>
 <hr/><a href="/share/lib/std/felix/pkgtool/pkgtool_base.flx">felix/pkgtool/pkgtool_base.flx</a>
 <pre>0119:    <a href="/share/lib/std/felix/pkgtool/pkgtool_base.flx#0119">union build_behavior</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> pkgtool_base.flx - PkgTool Core
@@ -4392,15 +4413,18 @@ CMD=@
 <pre>0043:    <a href="/share/lib/std/strings/tre.flx#0043">fun tre_regexec (re_in: tre_regex_t) (x:string): int * int * +regmatch_t</a></pre>
 <hr/><a href="/share/lib/std/system.flx">system.flx</a>
 
-<pre>0002:  <a href="/share/lib/std/system.flx#0002">class System</a></pre>
-<pre>0007:    <a href="/share/lib/std/system.flx#0007">fun argv:int -> string</a></pre>
-<pre>0008:    <a href="/share/lib/std/system.flx#0008">fun argv_dflt (x:int) (y:string)</a></pre>
-<pre>0010:    <a href="/share/lib/std/system.flx#0010">fun args ()</a></pre>
-<pre>0011:    <a href="/share/lib/std/system.flx#0011">gen system (cmd:string) : int</a></pre>
-<pre>0012:    <a href="/share/lib/std/system.flx#0012">gen exit: int -> any</a></pre>
-<pre>0013:    <a href="/share/lib/std/system.flx#0013">gen abort: 1 -> any</a></pre>
-<pre>0014:    <a href="/share/lib/std/system.flx#0014">type ptf_t</a></pre>
-<pre>0031:    <a href="/share/lib/std/system.flx#0031">proc pexit(e:int)</a></pre>
+<pre>0001:  <a href="/share/lib/std/system.flx#0001">class System</a></pre>
+<pre>0006:    <a href="/share/lib/std/system.flx#0006">fun argv:int -> string</a></pre>
+<pre>0007:    <a href="/share/lib/std/system.flx#0007">fun argv_dflt (x:int) (y:string)</a></pre>
+<pre>0009:    <a href="/share/lib/std/system.flx#0009">fun args ()</a></pre>
+<pre>0011:    <a href="/share/lib/std/system.flx#0011">proc setargs : + +char * size</a></pre>
+<pre>0012:    <a href="/share/lib/std/system.flx#0012">proc setargs[N] (a:string^N)</a></pre>
+<pre>0014:    <a href="/share/lib/std/system.flx#0014">gen myget(i:size)</a></pre>
+<pre>0019:    <a href="/share/lib/std/system.flx#0019">gen system (cmd:string) : int</a></pre>
+<pre>0020:    <a href="/share/lib/std/system.flx#0020">gen exit: int -> any</a></pre>
+<pre>0021:    <a href="/share/lib/std/system.flx#0021">gen abort: 1 -> any</a></pre>
+<pre>0022:    <a href="/share/lib/std/system.flx#0022">type ptf_t</a></pre>
+<pre>0039:    <a href="/share/lib/std/system.flx#0039">proc pexit(e:int)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> pexit examines the return code from a system call.
  If the code is 0 it exists with 0.
  On Windows:
@@ -4414,8 +4438,8 @@ CMD=@
  In both these cases a non-zero return causes a message
  to be printed on stderr.
 </p></div>
-<pre>0046:    <a href="/share/lib/std/system.flx#0046">proc pexit(e:int)</a></pre>
-<pre>0066:    <a href="/share/lib/std/system.flx#0066">gen get_stdout(x:string) : int * string</a></pre>
+<pre>0054:    <a href="/share/lib/std/system.flx#0054">proc pexit(e:int)</a></pre>
+<pre>0074:    <a href="/share/lib/std/system.flx#0074">gen get_stdout(x:string) : int * string</a></pre>
 <hr/><a href="/share/lib/std/time.flx">time.flx</a>
 
 <pre>0001:  <a href="/share/lib/std/time.flx#0001">class Time_class [os]</a></pre>
