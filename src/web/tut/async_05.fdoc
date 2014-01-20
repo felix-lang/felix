@@ -1,35 +1,27 @@
 @title Sieve of Eratosthenes
 @h1 Sieve of Eratosthenes
 
+The problem here is to find all the prime numbers less than or equal
+to <em>k</em>. We do it with a Felix "circut" made of fibres and
+s-channels. 
+@
+The control token exchanged between F-threads consists of a number and
+a list of candidate primes.
 @felix
-
-fun range (l:int) (u:int) =
-{
-  fun range_aux (acc:list[int]) (x:int) (y:int) =>
-    if x == y then acc
-    else range_aux (acc + list[int](x)) (x + 1) y
-    endif;
-
-  return range_aux (list[int] ()) l u ;
-}
-
-fun filter (test:int->bool) (s:list[int]) =
-{
-  fun f (acc:list[int]) (e:int) =>
-     if not (test e) then acc 
-     else acc + list[int](e)
-     endif;
-
-  return List::fold f (list[int]()) s;
-}
-
 typedef il_t = int * list[int];
+@
+A client filters multiples of the provided number from the current
+candidates to produce a new list and as long as there's a "next"
+filtering to apply, spawns a new client for that.
 
+If there aren't any more filterings to be applied, the client
+transfers control back to the server.
+@felix
 proc client (x:ischannel[il_t], y:oschannel[il_t])
 {
   p, l := read x;
-  var s = filter (fun (e:int) => (e%p != 0 or e/p == 1)) l;
-  var r = filter (fun (e:int) => e > p) s;
+  var s = List::filter (fun (e:int) => (e%p != 0 or e/p == 1)) l;
+  var r = List::filter (fun (e:int) => e > p) s;
   if len r == 0uz do
      write$ y, (0, l); //We're done
   else
@@ -39,19 +31,30 @@ proc client (x:ischannel[il_t], y:oschannel[il_t])
   done
 }
 
-proc launch ()
+@
+The server seeds the computation by generating a range of integers
+from <em>2..(k + 1)</em> and spawns a client to filter those that are
+multiples of <em>2</em>.
+@felix
+proc sieve (k:int)
 {
   inp,out:=#mk_ioschannel_pair[il_t];
   spawn_fthread { client (inp, out); };
 
-  val k = 5000; //Run with FLX_MIN_MEM=500 (MB) for k=5000
-  var l =range 2 (k + 1);
+  var l =List::range (2, (k + 1));
   write$ out, (2, l);
 
   val i, res = read inp;
-  println$ "Primes: " + str k + " are " + str (res);
+  println$ "Primes: " + str (res);
 }
+@
 
-launch;
-
+The whole process begins by calling the server with a value for
+<em>k</em>.
+@felix
+val k = 100; //Run with FLX_MIN_MEM=500 (MB) for k=5000
+sieve k;
+@
+For <em>k = 100</em> you should observe output something like:
+<pre>2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97</pre>
 
