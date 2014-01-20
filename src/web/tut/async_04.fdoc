@@ -1,6 +1,5 @@
-@title Spawning POSIX threads
-@h1 Spawning POSIX threads
-@
+@title Spawning pthreads
+@h1 Spawning pthreads
 In this example we will use types and functions provided by {class
 Pthread} and {class Pchannel} (for our purposes a kind of
 bidirectional pipe - unbuffered synchronization points for pre-emptive
