@@ -1,7 +1,8 @@
 <p><a href='tutorial.fdoc'>Up</a></p>
 @h1 async Index
 <ul>
-<li><a href="async_01.fdoc">Delayed Operation.</a></li>
-<li><a href="async_02.fdoc">Delayed operation</a></li>
-<li><a href="async_03.fdoc">Binding arguments to a handler</a></li>
+<li><a href="async_01.fdoc">Blocking Delayed Operation.</a></li>
+<li><a href="async_02.fdoc">Nonblocking Delayed Operation.</a></li>
+<li><a href="async_03.fdoc">Delayed Procedure with Arguments.</a></li>
+<li><a href="async_04.fdoc">Spawning POSIX threads</a></li>
 </ul>

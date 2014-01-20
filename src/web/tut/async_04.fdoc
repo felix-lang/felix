@@ -1,0 +1,143 @@
+@title Spawning POSIX threads
+@h1 Spawning POSIX threads
+@
+In this example we will use types and functions provided by {class
+Pthread} and {class Pchannel} (for our purposes a kind of
+bidirectional pipe - unbuffered synchronization points for pre-emptive
+threads). To achieve this our program starts by issuing the following
+include directive.
+
+@felix
+include "std/control/pchannels";
+@
+Next, we lift the types and functions of {class Pthread}
+into the current scope (so that they may be referred to without
+qualification).
+@felix
+open Pthread;
+@
+You may be surprised by the apparent absence of an {include
+"std/control/pthread"} include directive? It's not required
+since {include "std/control/pchannels"} means the
+additional include directives defined in "std/control/__init__.fdoc"
+are implicit which includes the {include
+"std/control/pthread"} diretive.
+@
+Next, we print a little message to saying that our program is starting up and define a thread procedure.
+@felix
+print "Pthread spawning test"; endl;
+
+proc thr (x:int) { print "Thread "; print x; endl; }
+@
+The thread procedure {thr ()} takes an integer argument
+which is intended to be provided to the procedure when invoked - this
+number will be used to allow us to disambiguate which thread is
+printing what later. When the procedure is executed it will print a
+message to the console that includes that number.
+
+@ 
+We move on now to defining the "main" procedure {proc
+flx_main}:
+@felix
+proc flx_main
+{
+  print "Running main\n";
+@
+The first order of business is to set up a channel to exchange data
+between the main thread and the threads we are about to spawn on which
+the thread proc we defined earlier will be exectued.
+
+@felix
+  var chan = mk_pchannel[int]();
+  var dummy: int;
+@
+
+The channel created by the {mk_pchannel[int]()} step is one on which
+integer values can be read from/written to. At this point we are all
+set at this point to spawn our threads. The {spawn_thread ()} function
+is how this is done.
+
+@felix
+  spawn_pthread { thr 1; write (chan,1); };
+  spawn_pthread { thr 2; write (chan,2); };
+  spawn_pthread { thr 3; write (chan,3); };
+  spawn_pthread { thr 4; write (chan,4); };
+  spawn_pthread { thr 5; write (chan,5); };
+  spawn_pthread { thr 6; write (chan,6); };
+  spawn_pthread { thr 7; write (chan,7); };
+  print "Spawned\n";
+@
+Let's break down what's going on when we say {spawn_pthread { thr 1;
+write (chan,1); }}.
+@
+
+Firstly, {{thr 1; write (chan, 1); }} defines a procedural closure. It
+will match the argument of a function of type {1 -> 0}. It is
+therefore a syntactic shortcut for the equivalent {proc () {thr 1;
+write (chan 1); }}. So, equivalently we might have written this in the
+more verbose form {spawn_pthread$ proc () { thr 1; write (chan,1); }}
+or alternatively, {spawn_pthread (proc () { thr 1; write (chan,1); })}
+. These different forms are all going to result in the same things. A
+thread will be spawned on which a procedural closure will be executed.
+
+@
+When the closure executes on the spawned thread, it will call the
+thread procedure {thr} with the argument {1} which will result in the
+message {"Thread 1"} being echoed to the console and then will write
+{1} to the global channel variable {chan}. The {write (chan, 1)} will
+block the spawned thread until the value written is read from another
+thread (in our case the matching read will be on the main thread - the
+one from which the child threads were spawned - the thread running
+{flx_main}). When it's been read, the procedure will terminate. In
+this way we can signal from the child thread to the main thread that
+the child thread is done.
+
+@felix
+  dummy = read chan; // 1
+  print "joined "; print dummy; endl;
+  dummy = read chan; // 2
+  print "joined "; print dummy; endl;
+  dummy = read chan; // 3
+  print "joined "; print dummy; endl;
+  dummy = read chan; // 4
+  print "joined "; print dummy; endl;
+  dummy = read chan; // 5
+  print "joined "; print dummy; endl;
+  dummy = read chan; // 6
+  print "joined "; print dummy; endl;
+  dummy = read chan; // 7
+  print "joined "; print dummy; endl;
+  print "Joined all\n";
+}
+@
+An explanation of this last part is needed.
+@felix
+export proc flx_main of (1) as "flx_main";
+@
+The output running from this program might look like this:
+<pre>
+Pthread spawning test
+Running main
+Thread 1
+Thread 2
+Thread 3
+Thread 4
+Thread 5
+Thread 6
+Spawned
+joined 1
+joined 2
+joined 3
+joined 4
+joined 5
+joined 6
+Thread 7
+joined 7
+Joined all
+</pre>
+@
+It's important to note however that there is no reason to expect to
+see the print statements in an increasing sequence like that. The OS
+scheduler can't be relied upon to schedule the spawned threads in any
+deterministic order and so it's possible that we might see the output
+from thread 3 and its subsequent joining before that of thread 2 say.
