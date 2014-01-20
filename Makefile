@@ -343,7 +343,6 @@ really-fast-rebuild:
 		--target-dir=build/release \
 		--target-bin=host \
 		--build-all
-	build/release/host/bin/flx --test=build/release --expect --usage=prototype --indir=test/regress/rt --regex='.*\.flx'
 
 fast-rebuild:
 	# =========================================================
@@ -367,7 +366,6 @@ fast-rebuild:
 		--target-bin=host \
 		--build-all
 	rm flx_build_boot
-	build/release/host/bin/flx --test=build/release --expect --usage=prototype --indir=test/regress/rt --regex='.*\.flx'
 
 fast-rebuild-nortl:
 	# =========================================================
@@ -387,7 +385,6 @@ fast-rebuild-nortl:
 		--target-bin=host \
 		--build-all
 	rm flx_build_boot
-	build/release/host/bin/flx --test=build/release --expect --usage=prototype --indir=test/regress/rt --regex='.*\.flx'
 
 
 rebuild:
@@ -413,7 +410,6 @@ rebuild:
 		--target-bin=host \
 		--build-all
 	rm flx
-	build/release/host/bin/flx --test=build/release --expect --usage=prototype --indir=test/regress/rt --regex='.*\.flx'
 
 bootstrap:
 	# =========================================================
@@ -453,9 +449,12 @@ bootstrap:
 		--source-bin=host \
 		--build-all
 	build/trial/host/bin/flx --test=build/trial --clean
-	build/trial/host/bin/flx --test=build/trial --expect --usage=prototype --indir=test/regress/rt --regex='.*\.flx'
+	mkdir -p trial-test
+	build/trial/host/bin/flx_tangle --indir=build/trial/share/src/test --outdir=trial-test
+	build/trial/host/bin/flx --test=build/trial --usage=prototype --expect --indir=trial-test/regress/rt --regex='.*\.flx'
 	rm -rf build/release
 	mv build/trial build/release
+	rm -rf trial-test
 
 sdltest:
 	build/release/host/bin/flx --test=build/release --force -c -od sdlbin demos/sdl/edit_buffer
