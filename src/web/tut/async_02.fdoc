@@ -1,5 +1,5 @@
 @title Nonblocking Delayed Operation
-@h1 Using a timer asynchronously.
+@h1 Using a timer asynchronously
 
 See <a href="http://www.boost.org/doc/libs/1_55_0/doc/html/boost_asio/tutorial/tuttimer2.html">http://www.boost.org/doc/libs/1_55_0/doc/html/boost_asio/tutorial/tuttimer2.html</a>
 @p
