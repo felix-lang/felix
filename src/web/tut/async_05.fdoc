@@ -2,17 +2,17 @@
 @h1 Sieve of Eratosthenes
 
 The problem here is to find all the prime numbers less than or equal
-to <em>k</em>. We do it with a Felix "circut" made of fibres and
-s-channels. 
+to <em>k</em>. We do it with a Felix "circut" of fibres and
+s-channels.
 @
-The control token exchanged between F-threads consists of a number and
-a list of candidate primes.
+The control token exchanged along the s-channels consists of a number
+and a list of candidate primes.
 @felix
 typedef il_t = int * list[int];
 @
-A client filters multiples of the provided number from the current
-candidates to produce a new list and as long as there's a "next"
-filtering to apply, spawns a new client for that.
+A client filters multiples of a number from a list to produce a new
+list and, as long as there's a "next" filtering to apply, spawns a new
+client for that.
 
 If there aren't any more filterings to be applied, the client
 transfers control back to the server.
@@ -20,17 +20,16 @@ transfers control back to the server.
 proc client (x:ischannel[il_t], y:oschannel[il_t])
 {
   p, l := read x;
-  var s = List::filter (fun (e:int) => (e%p != 0 or e/p == 1)) l;
-  var r = List::filter (fun (e:int) => e > p) s;
-  if len r == 0uz do
-     write$ y, (0, l); //We're done
+  l = List::filter (fun (e:int) => (e%p != 0 or e/p == 1)) l;
+  val r = List::find (fun (e:int) => e > p) l;
+  if Option::is_empty r do
+   write$ y, (0, l); //We're done
   else
-     inp,out:=#mk_ioschannel_pair[il_t];
-     spawn_fthread { client (inp, y); };
-     write$ out, (r.0, s);
+   inp,out:=#mk_ioschannel_pair[il_t];
+   spawn_fthread { client (inp, y); };
+   write$ out, (Option::get r, l);
   done
 }
-
 @
 The server seeds the computation by generating a range of integers
 from <em>2..(k + 1)</em> and spawns a client to filter those that are
@@ -52,7 +51,7 @@ proc sieve (k:int)
 The whole process begins by calling the server with a value for
 <em>k</em>.
 @felix
-val k = 100; //Run with FLX_MIN_MEM=500 (MB) for k=5000
+val k = 1000; //Run with FLX_MIN_MEM=500 (MB) for k=5000
 sieve k;
 @
 For <em>k = 100</em> you should observe output something like:
