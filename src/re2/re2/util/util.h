@@ -42,8 +42,7 @@ using std::sort;
 using std::swap;
 using std::make_pair;
 
-//#if defined(__GNUC__) && !defined(USE_CXX0X) || defined(__APPLE__)
-#if defined(__GNUC__) && !defined(USE_CXX0X)
+#if defined(__GNUC__) && !defined(USE_CXX0X) && !defined(_LIBCPP_ABI_VERSION) && !defined(OS_ANDROID)
 
 #include <tr1/unordered_set>
 using std::tr1::unordered_set;
@@ -51,7 +50,11 @@ using std::tr1::unordered_set;
 #else
 
 #include <unordered_set>
+#if defined(WIN32) || defined(OS_ANDROID)
+using std::tr1::unordered_set;
+#else
 using std::unordered_set;
+#endif
 
 #endif
 
