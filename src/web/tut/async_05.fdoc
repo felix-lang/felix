@@ -10,9 +10,9 @@ and a list of candidate primes.
 @felix
 typedef il_t = int * list[int];
 @
-A client filters multiples of a number from a list to produce a new
-list and, as long as there's a "next" filtering to apply, spawns a new
-client for that.
+A client filters multiples of the number from the list to produce a
+new list and, as long as there's a "next" filtering to apply, spawns a
+new client for that.
 
 If there aren't any more filterings to be applied, the client
 transfers control back to the server.
@@ -40,7 +40,7 @@ proc sieve (k:int)
   inp,out:=#mk_ioschannel_pair[il_t];
   spawn_fthread { client (inp, out); };
 
-  var l =List::range (2, (k + 1));
+  var l = List::range (2, (k + 1));
   write$ out, (2, l);
 
   val i, res = read inp;
