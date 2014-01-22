@@ -22,13 +22,14 @@ proc client (x:ischannel[il_t], y:oschannel[il_t])
   p, l := read x;
   l = List::filter (fun (e:int) => (e%p != 0 or e/p == 1)) l;
   val r = List::find (fun (e:int) => e > p) l;
-  if Option::is_empty r do
-   write$ y, (0, l); //We're done
-  else
-   inp,out:=#mk_ioschannel_pair[il_t];
-   spawn_fthread { client (inp, y); };
-   write$ out, (Option::get r, l);
-  done
+  match r with 
+  | Some ?l => 
+    write$ y, (0, l); //We're done
+  | None => 
+    inp,out:=#mk_ioschannel_pair[il_t];
+    spawn_fthread { client (inp, y); };
+    write$ out, (Option::get r, l);
+  endmatch;
 }
 @
 The server seeds the computation by generating a range of integers

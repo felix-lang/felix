@@ -246,6 +246,10 @@ object processing_env(
             // only copy the *.hpp file if the *-interface.flx file is copied.
             var cxxdst=Filename::join (dstdir,Filename::basename control.CXX_INTERFACE_FILENAME);
             C_hack::ignore (FileSystem::filecopy (src=control.CXX_INTERFACE_FILENAME, dst=cxxdst));
+            // copy the *.includes file we just generated too, its #included in the header
+            var includes_file = dvars.cpp_filebase."includes";
+            cxxdst=Filename::join (dstdir,dvars.cpp_filebase+'.includes');
+            C_hack::ignore (FileSystem::filecopy (src=includes_file, dst=cxxdst));
           done 
         done
       done
