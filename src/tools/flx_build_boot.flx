@@ -3,7 +3,7 @@ include "std/felix/toolchain_interface";
 include "std/felix/flx_cp";
 include "std/felix/flx_pkgconfig";
 include "std/felix/flx_pkg"; // only for "fix2word_flags"
-include "std/felix/flx/flx";
+include "std/felix/flx/flx_plugin_client";
 
 class FlxCoreBuild
 {
@@ -14,7 +14,7 @@ class FlxCoreBuild
   {
     for plugin in plugins do
       println$ "Building plugin " + plugin;
-      var result = Flx::runflx$ list ('[flx]','--test='+target_dir, 
+      var result = Flx_client::runflx$ list ('[flx]','--test='+target_dir, 
         '-c', '-ox',target_dir/target_bin/'lib'/'rtl'/plugin, 
         target_dir/'share'/'lib'/'plugins'/plugin);
       if result != 0 do 
@@ -22,7 +22,7 @@ class FlxCoreBuild
         System::exit 1; 
       done
 
-      result = Flx::runflx$ list ('[flx]','--test='+target_dir, 
+      result = Flx_client::runflx$ list ('[flx]','--test='+target_dir, 
         '-c', '--nolink','-ox', target_dir/target_bin/'lib'/'rtl'/plugin, 
         target_dir/'share'/'lib'/'plugins'/plugin);
       if result != 0 do 
@@ -30,7 +30,7 @@ class FlxCoreBuild
         System::exit 1; 
       done
 
-      result = Flx::runflx$ list ('[flx]','--test='+target_dir, 
+      result = Flx_client::runflx$ list ('[flx]','--test='+target_dir, 
         '--static','-c', '--nolink','-ox', target_dir/target_bin/'lib'/'rtl'/plugin, 
         target_dir/'share'/'lib'/'plugins'/plugin);
       if result != 0 do 
@@ -65,6 +65,7 @@ class FlxCoreBuild
   proc build_toolchain_plugins (target_dir:string, target_bin:string)
   {
     var plugins = list (
+      'flx_plugin',
       'toolchain_clang_linux',
       'toolchain_clang_osx',
       'toolchain_gcc_linux',
@@ -95,7 +96,7 @@ class FlxCoreBuild
     println$ "build exes";
     match ?exe,?src in exes do
       println$ src + " -> " + exe;
-      var result = Flx::runflx$ list ('[flx]','--test='+target_dir, '--static','-c',
+      var result = Flx_client::runflx$ list ('[flx]','--test='+target_dir, '--static','-c',
         '-ox', target_dir/target_bin/'bin'/exe, target_dir/'share'/'src'/src);
       if result != 0 do 
         println$ "exe build failed";
@@ -119,7 +120,7 @@ class FlxCoreBuild
     println$ "build flx build tools";
     match ?exe,?src in exes do
       println$ src + " -> " + exe;
-      var result = Flx::runflx$ list ('[flx]','--test='+target_dir, '--static','-c',
+      var result = Flx_client::runflx$ list ('[flx]','--test='+target_dir, '--static','-c',
         '-ox', target_dir/target_bin/'bin'/exe, target_dir/'share'/'src'/src);
       if result != 0 do 
         println$ "exe build failed";
@@ -132,7 +133,7 @@ class FlxCoreBuild
   {
     var obj_extn = ".o"; // HACK!!!!!!!! 
     println$ "dflx_web  -> dflx_web object file";
-    var result = Flx::runflx$ list ('[flx]','--test='+target_dir, '--static','-c','--nolink',
+    var result = Flx_client::runflx$ list ('[flx]','--test='+target_dir, '--static','-c','--nolink',
       '-o', target_dir/target_bin/'lib'/'rtl'/'dflx_web'+obj_extn, target_dir/'share'/'src'/'tools'/'dflx_web');
     if result != 0 do 
       println$ "dflx_web build failed";
@@ -146,7 +147,7 @@ class FlxCoreBuild
 
     println$ "Build flx_web. Note: requires --build-web-plugins";
     println$ "flx_web  -> flx_web executable";
-    result = Flx::runflx$ 
+    result = Flx_client::runflx$ 
       list (
         '[flx]','--test='+target_dir, '--static','-c',
         '-ox', target_dir/target_bin/'bin'/'flx_web') + 
@@ -165,7 +166,7 @@ class FlxCoreBuild
   {
     var obj_extn = ".o"; // HACK!!!!!!!! 
     println$ "dflx  -> dflx object file";
-    var result = Flx::runflx$ list ('[flx]','--test='+target_dir, '--static','-c','--nolink',
+    var result = Flx_client::runflx$ list ('[flx]','--test='+target_dir, '--static','-c','--nolink',
       '-o', target_dir/target_bin/'lib'/'rtl'/'dflx'+obj_extn, target_dir/'share'/'src'/'tools'/'dflx');
     if result != 0 do 
       println$ "dflx build failed";
@@ -174,7 +175,7 @@ class FlxCoreBuild
 
     println$ "Build flx. Note: requires --build-toolchain-plugins";
     println$ "flx  -> flx";
-    result = Flx::runflx$ list ('[flx]','--test='+target_dir, '--static','-c',
+    result = Flx_client::runflx$ list ('[flx]','--test='+target_dir, '--static','-c',
       '-ox', target_dir/target_bin/'bin'/'flx', 
       target_dir/target_bin/'lib'/'rtl'/'toolchain_clang_osx' + obj_extn, 
       target_dir/target_bin/'lib'/'rtl'/'toolchain_gcc_osx' + obj_extn, 
@@ -351,6 +352,7 @@ class FlxCoreBuild
 
 }
 
+Flx_client::setup;
 FlxCoreBuild::build_felix (#System::args);
 
 System::exit (0);
