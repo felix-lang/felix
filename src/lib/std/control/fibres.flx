@@ -26,11 +26,11 @@ open class Fibres
   proc chain : cont = "return $1;";
 
   //$ The type of a fibre scheduler.
-  type fibre_scheduler = "::flx::run::sync_state_t*";
+  type fibre_scheduler = "::flx::run::sync_state_t*" requires header '#include "flx_sync.hpp"';
 
   //$ Construct a fibre scheduler.
   //$  NOTE: NOT GARBAGE COLLECTED!
-  ctor fibre_scheduler: 1 = """new ::flx::run::sync_state_t(false, PTF pgc, 
+  ctor fibre_scheduler: 1 = """new ::flx::run::sync_state_t(false, PTF gcp, 
     new ::std::list<::flx::rtl::fthread_t*>)""";
   ;
   proc delete_fibre_scheduler : fibre_scheduler = """
