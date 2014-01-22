@@ -67,7 +67,7 @@ dev-build: fbuild gendoc
 
 user-build: fbuild
 	cp ${BUILDROOT}/host/bin/bootflx ${BUILDROOT}/host/bin/flx
-	${BUILDROOT}/host/bin/flx --test=${BUILDROOT} -c -od ${BUILDROOT}/host/lib/rtl src/lib/std/felix/flx/flx_plugin
+	${BUILDROOT}/host/bin/flx --test=${BUILDROOT} -c -od ${BUILDROOT}/host/lib/rtl src/lib/plugins/flx_plugin
 
 #
 # Core integrated build
