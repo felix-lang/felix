@@ -94,6 +94,32 @@ class FileStat_class[OS,stat_t, mode_t]
     ;
   }
 
+  fun past_time () => -1.0;
+  fun future_time () => double(ulong(-1)); // a hacky way to get a big number
+
+  fun strfiletime0 (x:double) = {
+    return
+      if x == #past_time then "BIG BANG"
+      elif x == #future_time then "BIG CRUNCH"
+      else fmt (x, fixed (0,3))
+      endif
+    ;
+  }
+
+  fun strfiletime (x:double) = {
+    assert x != 0.0;
+    return strfiletime0 x;
+  }
+
+  fun dfiletime(var f:string, dflt:double)=
+  {
+    var x = FileStat::filetime (f);
+    x = if x == 0.0 then dflt else x endif;
+    //debugln$ "Time of file '" + f + "' is " + strfiletime x; 
+    return x;
+  }
+
+
 }
 
 //$ Platform dependent operations for host file system.

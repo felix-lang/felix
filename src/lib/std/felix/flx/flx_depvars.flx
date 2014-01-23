@@ -57,8 +57,8 @@ gen cal_depvars(
     // this is a hack! We should resolve the filename first.
   var use_ext = if loopctl.ext != "" then loopctl.ext else
     #{ 
-       var flxt = dfiletime (rel_filebase+".flx",#past_time);
-       var fdoct = dfiletime (rel_filebase+".fdoc",#past_time);
+       var flxt = FileStat::dfiletime (rel_filebase+".flx",#FileStat::past_time);
+       var fdoct = FileStat::dfiletime (rel_filebase+".fdoc",#FileStat::past_time);
        return 
          if flxt > fdoct then ".flx"
          elif fdoct > flxt then ".fdoc"

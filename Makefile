@@ -254,7 +254,7 @@ copy:
 	# =========================================================
 	# copying ./src to build/release/share/src
 	# =========================================================
-	build/release/host/bin/flx --test=build/release  src/tools/flx_build_prep \
+	build/release/host/bin/flx_build_prep \
 		--repo=.\
 		--target-dir=build/release \
 		--target-bin=host \
@@ -317,7 +317,7 @@ lib: copy
 	# =========================================================
 	# copy files from src to lib
 	# =========================================================
-	build/release/host/bin/flx --test=build/release  src/tools/flx_build_prep \
+	build/release/host/bin/flx_build_prep \
 		--target-dir=build/release \
 		--target-bin=host \
 		--copy-library
