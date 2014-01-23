@@ -16,17 +16,7 @@ include "std/cptr";
 include "std/ctypedefs";
 include "plat/float";
 
-include "std/address";
-include "std/bool";
-include "std/int";
-include "std/real";
-include "std/number";
-include "std/char";
-
-include "std/float_format";
-include "std/float_math";
-include "std/quaternion";
-
+include "std/scalar/__init__";
 
 // utility
 include "std/debug";
