@@ -405,7 +405,7 @@ rebuild:
 		--target-dir=build/release \
 		--target-bin=host
 	cp build/release/host/bin/flx flx
-	flx --test=build/release  src/tools/flx_build_boot \
+	./flx --test=build/release  src/tools/flx_build_boot \
 		--target-dir=build/release \
 		--target-bin=host \
 		--build-all

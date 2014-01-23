@@ -80,24 +80,25 @@ class PosixFileSystem
   //------------------------------------------------------------
   gen filecopy(src: string, dst: string) :  bool =
   {
-    //eprintln$ "Copy " + src + " -> " + dst;
-
+    if Env::getenv ("FLX_REPORT_FILECOPY") != "" do
+      eprintln$ "[PosixFileSystem::filecopy] '" + src + "' -> '" + dst+ "'";
+    done 
     val now = Time::time(); // seconds
     var stat_buf: PosixFileStat::stat_t;
     if not PosixFileStat::stat (src, &stat_buf) do
-      eprintln$ "Can't stat source file " + src;
+      eprintln$ "[PosixFileSystem::filecopy] Can't stat source file " + src;
       return false;
     done;
     val permissions = PosixFileStat::file_perm$ PosixFileStat::raw_mode (&stat_buf);
     val last_modification = PosixFileStat::filetime(src);
     var fsrc = open (src,O_RDONLY );
     if not valid fsrc do
-      eprintln$ " Bad src file in Filesystem::filecopy " + src;
+      eprintln$ "[PosixFileSystem::filecopy] Bad src file in Filesystem::filecopy " + src;
       return false; 
     done
     var fdst = open (dst,O_WRONLY \| O_CREAT \| O_TRUNC, permissions);
     if not valid fdst do
-      eprintln$ " Bad dst file in Filesystem::filecopy " + dst + ", Error: " + str errno + "=" + #strerror;
+      eprintln$ "[PosixFileSystem::filecopy] Bad dst file in Filesystem::filecopy " + dst + ", Error: " + str errno + "=" + #strerror;
       return false; 
     done
     bsiz := size (4096 * 1024); // 4 Meg
@@ -108,13 +109,13 @@ class PosixFileSystem
       if bread != bwrite do
         if bwrite.int == -1 do
           eprintln$ 
-            "Dest des = " + str fdst.int+ " "+
+            "[PosixFileSystem::filecopy] Dest des = " + str fdst.int+ " "+
             "Attempt to copy " + str bread + " bytes from " + src + " to " + dst + 
             " failed with errno = " + str errno + ": " + strerror() 
           ;
         else
           eprintln$ 
-            "Attempt to copy " + str bread + " bytes from " + src + " to " + dst + 
+            "[PosixFileSystem::filecopy] Attempt to copy " + str bread + " bytes from " + src + " to " + dst + 
             " failed with " +  str bwrite + " only copied!"
           ;
         done
@@ -123,11 +124,11 @@ class PosixFileSystem
     done
     var res = close fsrc;
     if res != 0 do
-      eprintln$ "In filesystem::filecopy close on src " + src + " failed: " + str errno + "=" + #strerror;
+      eprintln$ "[PosixFileSystem::filecopy] close on src " + src + " failed: " + str errno + "=" + #strerror;
     done
     res = close fdst;
     if res != 0 do
-      eprintln$ "In filesystem::filecopy close on dst " + dst + " failed: " + str errno + "=" + #strerror;
+      eprintln$ "[PosixFileSystem::filecopy] close on dst " + dst + " failed: " + str errno + "=" + #strerror;
     done
     C_hack::ignore(PosixFileStat::utime(dst,now,last_modification));
     C_hack::free(C_hack::cast[address] buffer);
