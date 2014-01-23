@@ -48,10 +48,6 @@ include "std/gc";
 
 // I/O
 include "std/io/__init__";
-include "std/filename";
-include "std/filestat";
-include "std/directory";
-include "std/filesystem";
 include "std/process";
 include "std/signal";
 include "std/time";
