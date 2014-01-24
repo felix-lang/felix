@@ -13,33 +13,24 @@ include "std/algebraic";
 // base scalar types 
 include "std/cptr";
 
-include "std/ctypedefs";
-include "plat/float";
-
 include "std/scalar/__init__";
 
 // utility
 include "std/debug";
 include "std/c_hack";
 include "std/typing";
-include "std/system";
-include "std/shell";
-include "std/dynlink";
-include "std/env";
 include "std/cstdlib";
 include "std/categ";
-include "std/cmdopt";
 
 // control
 include "std/control/__init__";
+include "std/program/__init__";
 
 //memory management
 include "std/gc";
 
 // I/O
 include "std/io/__init__";
-include "std/process";
-include "std/signal";
 include "std/time";
 
 // codecs
