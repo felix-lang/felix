@@ -2,7 +2,8 @@
 @h1 async Index
 <ul>
 <li><a href="async_01.fdoc">Blocking Delayed Operation.</a></li>
-<li><a href="async_02.fdoc">Nonblocking Delayed Operation.</a></li>
-<li><a href="async_03.fdoc">Delayed Procedure with Arguments.</a></li>
-<li><a href="async_04.fdoc">Spawning POSIX threads</a></li>
+<li><a href="async_02.fdoc">Nonblocking Delayed Operation</a></li>
+<li><a href="async_03.fdoc">Delayed Procedure with Arguments</a></li>
+<li><a href="async_04.fdoc">Spawning pthreads</a></li>
+<li><a href="async_05.fdoc">Sieve of Eratosthenes</a></li>
 </ul>

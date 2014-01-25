@@ -1,4 +1,4 @@
-@h2 The Felix webserver.
+@h2 The Felix webserver {flx_web}.
 The Felix system comes with a personal webserver, primarily as a standard way
 to view documentation.
 
@@ -17,7 +17,7 @@ file in your file system.
 You can run the webserver like this on Linux:
 @pre
 LD_LIBRARY_PATH=/usr/local/lib/felix/felix-latest/host/lib/rtl \
-  /usr/local/lib/felix/felix-latext/host/bin/webserver \
+  /usr/local/lib/felix/felix-latext/host/bin/flx_web \
   --root=/usr/local/lib/felix/share --port=1234
 @
 and just use DYLD_LIBRARY_PATH on OSX. The default root and

@@ -3,11 +3,13 @@
 @h2 Language
 <a href="flx_gramdoc.html">Felix Core Syntax</a>
 @p
-<a href="ref/lang/core/index.fdoc">Felix Core Language Topics</a>
+<a href="lang/core/index.fdoc">Felix Core Language Topics</a>
 @h2 Library
-<a href="/config">The Configuration.</a> Actual, installed, complete configuration data.
+<a href="/host/config">The Configuration.</a> Actual, installed, complete configuration data.
 @p
-<a href="../lib">The Library.</a> Actual, installed, complete library.
+<a href="/share/lib">The Library.</a> Actual, installed, complete library libraries.
+@p
+<a href="/share/lib">The Standard Library.</a> Just the library {std}.
 @p
 <a href="flx_libcontents.html">Felix Library Contents by File</a>
 @p
@@ -16,14 +18,14 @@
 @h1 Install Image.
 <a href="/?">Image of the installation.</a>
 @h2 Test Suite.
-<a href="/test">Complete Test Suite</a>
+<a href="/share/src/test">Complete Test Suite</a>
 @p
 @h2 Tools.
-<a href="tools">Utility tools.</a> All the utility tools, including
-the webserver. Doesn't include {flx} or {flx_pkgconfig}.
+<a href="tools.fdoc">Utility tools.</a> All the utility tools, including
+the webserver.
 @p
 @h2 Web Site.
-<a href="web">The website</a>
+<a href="/?">The website</a>
 @p
 @h2 Processing model
 <svg viewBox="43 59 887 340" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">

@@ -4,28 +4,84 @@ Together these tools are design to deliver platform independent
 operation. The core tools are the compiler {flxg} and the 
 user command line interface {flx}.
 
+@h1 Tools source directories.
+<a href=/share/src/tools>The utility tools</src>
+
 @h2 <a href=tools_flx.fdoc>flx</a>
+<pre>
+dflx.flx           # Plugin based CLI IDE for Felix and C++
+flx.flx            # standalone version
+bootflx.flx        # a special version used in bootstrapping
+</pre>
+
 Command line compiler and execution harness.
 to use a single, integrated tool: {flx}.
 
 @h3 <a href=tools_flxg.fdoc>flxg</a>
+<a href='/share/src/compiler'>The compiler flxg</a>.
 The Felix language compiler. Translates Felix code
 into C++.
 
 @h3 <a href=tools_flx_pkgconfig.fdoc>flx_pkgconfig</a>
+<pre>
+flx_pkgconfig.flx
+</pre>
 Configuration database query tool. Similar to
 <code>pkgconfig</code> except general purpose
 and well principled.
 
 @h2 <a href=tools_file.fdoc>File management</a>
+<pre>
+flx_ls.flx         # list files in matching regexp
+flx_cp.flx         # copy files match regexp with replacement
+flx_grep.flx       # search files matching regexp for lines matching regexp
+flx_replace.flx    # global search and replace
+flx_perror.flx     # document OS error codes
+</pre>
 A set of basic file handling tools using regular 
 expressions instead of glob.
 
 
 @h2 High performance programmers <a href=tools_webserver.fdoc>webserver</a>
+<pre>
+dflx_web.flx       # plugin based web server
+flx_web.flx        # standalone version
+</pre>
 A plugin based webserver that can highlight and hyperlink Felix and 
 C++ programs and documentation files, as well as serving general HTML.
 
 
+@h2 Build system.
+<pre>
+flx_build_flxg.flx # builds compiler
+flx_build_prep.flx # build preparation
+flx_build_rtl.flx  # build run time library
+flx_build_boot.flx # build everything else
+</pre>
 
+@h2 Literate programming.
+<pre>
+flx_tangle.flx     # extract felix, expect, and input files from fdoc
+flx_iscr.flx       # extract named files from fdoc
+</pre>
 
+@h2 Documentation tools.
+<pre>
+flx_mktutindex.flx  # make index for tutorial pages
+flx_renumber.flx    # renumber tutorial files
+flx_libcontents.flx # generate table of contents for library
+flx_libindex.flx    # generate index for library
+flx_gramdoc.flx     # generate grammar description
+flx_gengraph.flx    # generate SVG graph for performance tests
+</pre>
+
+@h2 Misc.
+<pre>
+flx_sqlite3.c       # standard sqlite2 CLI utility
+pposix.flx          # generate bindings for all posix functions
+flx_testpack.flx    # utility to pack test files with expects into an fdoc
+mk_daemon.c         # a little program to daemonise its argument on Posix
+timeout-4.11/       # a Posix program to run a process with a timeout
+norK                # a Posx process management tool
+scoop.flx           # A start at a Felix package manager.
+</pre>
