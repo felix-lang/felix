@@ -1,4 +1,4 @@
-include "src/lib/std/felix/toolchain/clang_linux";
+include "std/felix/toolchain/clang_linux";
 
 // varies osx vs linus,  gcc vs clang
 

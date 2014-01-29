@@ -1,5 +1,5 @@
 
-include "src/lib/std/felix/toolchain/gcc_linux";
+include "std/felix/toolchain/gcc_linux";
 
 export fun toolchain_gcc_linux of (clang_config_t) as "toolchain_gcc_linux";
 
