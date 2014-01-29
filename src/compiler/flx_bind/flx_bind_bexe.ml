@@ -284,6 +284,12 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
       state.reachable <- false;
       handle_bexe (bexe_goto (sr,s)) init
 
+  | EXE_cgoto e ->
+      state.reachable <- false;
+      let e = be e in
+      handle_bexe (bexe_cgoto (sr,e)) init
+
+
   | EXE_proc_return_from s ->
     state.reachable <- false;
     state.proc_return_count <- state.proc_return_count + 1;

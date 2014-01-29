@@ -39,7 +39,7 @@ former you'll need to make a dummy variable.
 
 type kind_t = Function | Procedure
 
-let gen_exe filename
+let gen_exe filename cxx_name
   syms
   bsym_table
   (label_map, label_usage_map)
@@ -54,6 +54,7 @@ let gen_exe filename
 =
 (*
 print_endline "---------------------------------------------";
+print_endline ("generating exe in " ^ cxx_name);
 print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
 *)
   let sr = Flx_bexe.get_srcref exe in
@@ -80,8 +81,8 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
     | _ -> false
   in
   let tsub t = beta_reduce "gen_exe" syms.Flx_mtypes2.counter bsym_table sr (tsubst vs ts t) in
-  let ge = gen_expr syms bsym_table this vs ts in
-  let ge' = gen_expr' syms bsym_table this vs ts in
+  let ge = gen_expr syms bsym_table label_map this vs ts in
+  let ge' = gen_expr' syms bsym_table label_map this vs ts in
   let tn t = cpp_typename syms bsym_table (tsub t) in
   let bsym =
     try Flx_bsym_table.find bsym_table this with _ ->
@@ -444,6 +445,14 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
         ;
         clierr sr ("Unconditional Jump to unreachable label " ^ cid_of_flxid s)
       end
+
+    | BEXE_cgoto (sr, e) ->
+      (* Computed goto. Expression e must resolve to a label expression of C++ type jump_address_t *)
+      needs_switch := true;
+      let e = ge sr e in
+      (* temporarily ignore stack unwinding issues .. and other issues too *) 
+      "      FLX_DIRECT_LONG_JUMP(" ^ cxx_name ^", " ^ e ^ ")\n"
+      
 
     | BEXE_ifgoto (sr,e,s) ->
       begin match find_label bsym_table label_map this s with
@@ -1024,7 +1033,7 @@ print_endline ("init " ^ Flx_bsym.id bsym ^"< instno="^si instance_no^",this="^ 
   in gexe exe
 
 let gen_exes
-  filename
+  filename cxx_name
   syms
   bsym_table
   display
@@ -1040,7 +1049,7 @@ let gen_exes
   let needs_switch = ref false in
   let s = cat ""
     (List.map (gen_exe
-      filename
+      filename cxx_name
       syms
       bsym_table
       label_info

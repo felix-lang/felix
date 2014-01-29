@@ -70,6 +70,7 @@ private proc print_help() {
   println "-llib                : add dir lib to linker command";
   println "-foption             : add switch to compiler command";
   println "-Woption             : add switch to compiler command";
+  println "-O0                  : add switch to compiler command";
   println "-O1                  : add switch to compiler command";
   println "-O2                  : add switch to compiler command";
   println "-O3                  : add switch to compiler command";
@@ -375,7 +376,7 @@ private noinline proc handle_switch
     debugln "Set extra macros for C++ compilation";
     control.MACROS <- control*.MACROS + arg;
 
-  elif arg \in ("-O1","-O2","-O3") do
+  elif arg \in ("-O0", "-O1","-O2","-O3") do
     debugln$ "Set C++ compilation optimisation " + arg;
     control.OPTIMISE <-  list[string]$ arg;
 

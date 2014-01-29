@@ -89,6 +89,7 @@ and string_of_expr (e:expr_t) =
   let sme e = string_of_expr e in
   let sqn e = string_of_qualified_name e in
   match e with
+  | EXPR_label (_,s) -> "(&&" ^ s ^ ")"
   | EXPR_not (sr,e) -> "not(" ^ se e ^ ")"
   | EXPR_index (sr,name,idx) -> name ^ "<" ^ string_of_bid idx ^ ">"
   | EXPR_void _ -> "void"
@@ -315,6 +316,7 @@ and st prec tc : string =
     | TYP_tuple_cons (sr, t1, t2) -> 6, st 4 t1 ^ "**" ^ st 4 t2
 
     | TYP_index (sr,name,idx) -> 0, name ^ "<" ^ string_of_bid idx ^ ">"
+    | TYP_label -> 0, "LABEL"
     | TYP_void _ -> 0, "void"
     | TYP_name (_,name,ts) ->
         0, string_of_id name ^
@@ -530,6 +532,7 @@ and sb bsym_table depth fixlist counter prec tc =
   let iprec, term =
     match tc with
     | BTYP_none -> 0,"none"
+    | BTYP_label -> 0,"label"
     | BTYP_tuple_cons (t1,t2) -> 
       5,(sbt 5 t1) ^ " ** " ^ (sbt 5 t2)
 
@@ -1087,6 +1090,7 @@ and string_of_statement level s =
   let se e = string_of_expr e in
   let sqn n = string_of_qualified_name n in
   match s with
+  | STMT_cgoto (_,e) -> spaces level ^ "goto-indirect " ^ se e ^ ";"
   | STMT_try _ -> spaces level ^ "try"
   | STMT_endtry _ -> spaces level ^ "endtry"
   | STMT_catch (_,id,t) -> spaces level ^ "catch "^id ^ " : " ^ string_of_typecode t^" => "
@@ -1131,7 +1135,7 @@ and string_of_statement level s =
     spaces level ^
     "export struct " ^ name ^ ";"
 
-  | STMT_label (_,s) -> string_of_id s ^ ":"
+  | STMT_label (_,s) -> string_of_id s ^ ":>"
   | STMT_goto (_,s) -> spaces level ^ "goto " ^ string_of_id s ^ ";"
 
   | STMT_assert (_,e) -> spaces level ^ "assert " ^ se e ^ ";"
@@ -1688,7 +1692,8 @@ and string_of_exe level s =
   in
   match s with
 
-  | EXE_proc_return_from s -> "return from " ^ s
+  | EXE_cgoto e -> "goto-indirect " ^ se e ^ ";"
+  | EXE_proc_return_from s -> "return from " ^ s ^ ";"
 
   | EXE_try  -> "try"
   | EXE_catch (id,typ)  -> "catch " ^ id ^ " : " ^ string_of_typecode typ ^ " => "
@@ -1700,7 +1705,7 @@ and string_of_exe level s =
   | EXE_ifgoto (e,s) -> spc ^
      "if(" ^ se e ^ ")goto " ^ s ^ ";"
 
-  | EXE_label s -> s ^ ":"
+  | EXE_label s -> s ^ ":>"
 
   | EXE_comment s -> spc ^
     "// " ^ s
@@ -1782,6 +1787,7 @@ and string_of_bound_expression' bsym_table se e =
   let sid n = bound_name_of_bindex bsym_table n in
   match fst e with
 
+  | BEXPR_label s -> "(&&" ^ s ^ ")"
   | BEXPR_tuple_head e -> "tuple_head ("^ se e ^")"
   | BEXPR_tuple_tail e -> "tuple_tail("^ se e ^")"
   | BEXPR_tuple_cons (eh,et) -> "tuple_cons("^ se eh ^"," ^ se et ^")"
@@ -1891,6 +1897,7 @@ and string_of_bexe bsym_table level s =
   let sid n = bound_name_of_bindex bsym_table n in
   match s with
   | BEXE_goto (_,s) -> spc ^ "goto " ^ s ^ ";"
+  | BEXE_cgoto (_,e) -> spc ^ "goto *" ^ se e ^ ";"
 
   | BEXE_assert (_,e) -> spc ^ "assert " ^ se e ^ ";"
   | BEXE_axiom_check2 (_,_,e1,e2) -> spc ^ "axiom_check2 " ^

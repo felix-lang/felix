@@ -280,6 +280,10 @@ syntax expressions {
   //$ Felix pointer type and address of operator.
   sthe_name := "&" sthe_name =># "`(ast_ref ,_sr ,_2)";
 
+  //$ Felix address of operator.
+  sthe_name := "label_address" sname =># "`(ast_label_ref ,_sr ,_2)";
+
+
   //$ C pointer type.
   sthe_name :=  "@" sthe_name =># "(Prefix)";
 

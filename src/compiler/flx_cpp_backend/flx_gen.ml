@@ -345,6 +345,7 @@ let gen_function_methods filename syms bsym_table
       else "[" ^ catmap "," (sbt bsym_table) ts ^ "]"
     )
   );
+  let cxx_name = cid_of_flxid (Flx_bsym.id bsym) in
   match Flx_bsym.bbdcl bsym with
   | BBDCL_fun (props,vs,(bps,traint),ret',exes) ->
     let tailsr = Flx_bsym.sr bsym in
@@ -379,7 +380,7 @@ let gen_function_methods filename syms bsym_table
     let params = Flx_bparameter.get_bids bps in
     let exe_string,needs_switch =
       try
-        Flx_gen_exe.gen_exes filename syms bsym_table display label_info counter index exes vs ts instance_no false
+        Flx_gen_exe.gen_exes filename cxx_name syms bsym_table display label_info counter index exes vs ts instance_no false
       with x ->
         (*
         print_endline (Printexc.to_string x);
@@ -429,7 +430,7 @@ let gen_function_methods filename syms bsym_table
           end "" params
       )^
         (if needs_switch then
-        "  FLX_START_SWITCH\n" else ""
+        "  FLX_START_SWITCH("^name^")\n" else ""
         ) ^
         exe_string ^
         (let f, sl, sc, el, ec = Flx_srcref.to_tuple tailsr in
@@ -490,6 +491,7 @@ let gen_procedure_methods filename syms bsym_table
       else "[" ^ catmap "," (sbt bsym_table) ts ^ "]"
     )
   );
+  let cxx_name = cid_of_flxid (Flx_bsym.id bsym) in
   match Flx_bsym.bbdcl bsym with
   | BBDCL_fun (props,vs,(bps,traint),BTYP_fix (0,_),exes)
   | BBDCL_fun (props,vs,(bps,traint),BTYP_void,exes) ->
@@ -527,7 +529,7 @@ let gen_procedure_methods filename syms bsym_table
     let ps = List.map (fun {pid=id; pindex=ix; ptyp=t} -> id,t) bps in
     let params = Flx_bparameter.get_bids bps in
     let exe_string,needs_switch =
-      Flx_gen_exe.gen_exes filename syms bsym_table display label_info counter index exes vs ts instance_no (stackable && not heapable)
+      Flx_gen_exe.gen_exes filename cxx_name syms bsym_table display label_info counter index exes vs ts instance_no (stackable && not heapable)
 (*
       Flx_gen_exe.gen_exes filename syms bsym_table display label_info counter index exes vs ts instance_no stackable
 *)
@@ -593,7 +595,7 @@ let gen_procedure_methods filename syms bsym_table
       else
         cont^name^"::resume(){\n"^
         (if needs_switch then
-        "  FLX_START_SWITCH\n" else ""
+        "  FLX_START_SWITCH("^name^")\n" else ""
         ) ^
         exe_string ^
         "    FLX_RETURN\n" ^ (* HACK .. should be in exe_string .. *)
@@ -648,6 +650,7 @@ let gen_execute_methods filename syms bsym_table label_info counter bf bf2 =
     try Flx_bsym_table.find bsym_table index with Not_found ->
       failwith ("[gen_execute_methods] Can't find index " ^ string_of_bid index)
   in
+  let cxx_name = cid_of_flxid (Flx_bsym.id bsym) in
 
   begin match Flx_bsym.bbdcl bsym with
   | BBDCL_fun (props,vs,(ps,traint),BTYP_fix (0,_),_)

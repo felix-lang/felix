@@ -500,6 +500,7 @@ let rec can_stack_proc
          raise Unstackable
        end
 
+    | BEXE_ifgoto (_,_,s) 
     | BEXE_goto (_,s) ->
       begin
         match Flx_label.find_label bsym_table label_map i s with
@@ -512,6 +513,8 @@ let rec can_stack_proc
         | `Local _ -> ()
       end
 
+    | BEXE_cgoto _ -> raise Unstackable
+
     | BEXE_yield _
     | BEXE_fun_return _ -> assert is_nonreturn 
 
@@ -523,7 +526,7 @@ let rec can_stack_proc
     | BEXE_halt _
     | BEXE_trace _
     | BEXE_comment _
-    | BEXE_ifgoto _
+
     | BEXE_assert _
     | BEXE_assert2 _
     | BEXE_axiom_check2 _

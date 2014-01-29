@@ -416,6 +416,7 @@ let codegen_bsyms
     plb (Flx_gen_biface.gen_biface_bodies
       state.syms
       bsym_table
+      label_map
       state.syms.bifaces);
 
     plb (Flx_gen_python.gen_python_module

@@ -129,6 +129,7 @@ let isid x =
 let rec gen_expr'
   syms
   bsym_table
+  label_map
   this
   this_vs
   this_ts
@@ -155,8 +156,8 @@ let rec gen_expr'
     )
   end;
 
-  let ge = gen_expr syms bsym_table this this_vs this_ts sr in
-  let ge' = gen_expr' syms bsym_table this this_vs this_ts sr in
+  let ge = gen_expr syms bsym_table label_map this this_vs this_ts sr in
+  let ge' = gen_expr' syms bsym_table label_map this this_vs this_ts sr in
   let tsub t = beta_reduce "flx_egen" syms.Flx_mtypes2.counter bsym_table sr (tsubst this_vs this_ts t) in
   let tn t = cpp_typename syms bsym_table (tsub t) in
   let clt t = islinear_type bsym_table t in
@@ -232,6 +233,40 @@ let rec gen_expr'
      (* ce_atom ("UNIT_ERROR") *)
   | _ ->
   match e with
+  | BEXPR_label (s) -> 
+      begin match Flx_label.find_label bsym_table label_map this s with
+      | `Local pc -> 
+        let target_instance =
+          try Hashtbl.find syms.instances (this, this_ts)
+          with Not_found -> failwith "Woops, bugged code, wrong type arguments for instance?"
+        in
+        let frame_ptr = "this" in
+        let ladr = "FLX_FARTARGET(" ^ cid_of_bid pc ^ "," ^ cid_of_bid target_instance ^ "," ^ s ^ ")" in
+        let label_value = "::flx::rtl::jump_address_t(" ^ frame_ptr ^ "," ^ ladr ^ ")" in
+        ce_atom label_value
+
+ 
+      | `Nonlocal (pc,frame) -> 
+        let target_instance =
+          try Hashtbl.find syms.instances (frame, this_ts)
+          with Not_found -> failwith "Woops, bugged code, wrong type arguments for instance?"
+        in
+        let frame_ptr = "ptr" ^ cpp_instance_name syms bsym_table frame this_ts in
+        let ladr = "FLX_FARTARGET(" ^ cid_of_bid pc ^ "," ^ cid_of_bid target_instance ^ "," ^ s ^ ")" in
+        let label_value = "::flx::rtl::jump_address_t(" ^ frame_ptr ^ "," ^ ladr ^ ")" in
+        ce_atom label_value
+
+      | `Unreachable ->
+        print_endline "LABELS ..";
+        let labels = Hashtbl.find label_map this in
+        Hashtbl.iter (fun lab lno ->
+          print_endline ("Label " ^ lab ^ " -> " ^ string_of_bid lno);
+        )
+        labels
+        ;
+        clierr sr ("Unconditional Jump to unreachable label " ^ cid_of_flxid s)
+      end
+
 
   | BEXPR_case (n,BTYP_sum ts) when clt t ->
     let get_array_sum_offset_values bsym_table ts =
@@ -577,6 +612,7 @@ print_endline "Apply prim";
     gen_apply_prim
       syms
       bsym_table
+      label_map
       this
       sr
       this_vs
@@ -1380,6 +1416,7 @@ print_endline ("Construct tuple, subkind tuple, component x=" ^ x);
 and gen_apply_prim
   syms
   bsym_table
+  label_map
   this
   sr
   this_vs
@@ -1389,7 +1426,7 @@ and gen_apply_prim
   ts
   ((arg,argt) as a)
 =
-  let gen_expr' = gen_expr' syms bsym_table this this_vs this_ts in
+  let gen_expr' = gen_expr' syms bsym_table label_map this this_vs this_ts in
   let beta_reduce calltag vs ts t =
     beta_reduce calltag syms.Flx_mtypes2.counter bsym_table sr (tsubst vs ts t)
   in
@@ -1507,10 +1544,10 @@ and gen_apply_prim
         string_of_bbdcl bsym_table (Flx_bsym.bbdcl bsym) index
       )
 
-and gen_expr syms bsym_table this vs ts sr e : string =
+and gen_expr syms bsym_table label_map this vs ts sr e : string =
   let e = Flx_bexpr.reduce e in
   let s =
-    try gen_expr' syms bsym_table this vs ts sr e
+    try gen_expr' syms bsym_table label_map this vs ts sr e
     with Unknown_prec p -> clierr sr
     ("[gen_expr] Unknown precedence name '"^p^"' in " ^ sbe bsym_table e)
   in

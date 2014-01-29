@@ -88,6 +88,7 @@ let rec subst vars (e:expr_t) mv : expr_t =
   | EXPR_get_tuple_tail _
   | EXPR_get_tuple_head _
   | EXPR_tuple_cons _
+  | EXPR_label _
     ->
       let sr = src_of_expr e in
       clierr sr "[mbind:subst] Not expected in when part of pattern"

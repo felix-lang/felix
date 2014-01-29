@@ -161,7 +161,7 @@ syntax:
 speed:
 	-rm -rf result.tmp
 	sh speed/perf.sh 2>>result.tmp
-	${BUILDROOT}/host/bin/flx_gengraph
+	flx src/tools/flx_gengraph
 
 #
 # Documentation
@@ -247,7 +247,7 @@ flxg:
 	# =========================================================
 	# building flxg
 	# =========================================================
-	build/release/host/bin/flx --test=build/release src/tools/flx_build_flxg
+	build/release/host/bin/flx_build_flxg
 	cp tmp-dir/flxg build/release/host/bin
 
 copy:
@@ -264,7 +264,7 @@ rtl:
 	# =========================================================
 	# rebuild rtl
 	# =========================================================
-	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl \
+	${LPATH}=${BUILDROOT}/host/lib/rtl build/release/host/bin/flx_build_rtl \
 		--target-dir=build/release \
 		--target-bin=host
 

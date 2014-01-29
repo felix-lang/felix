@@ -39,6 +39,7 @@ val specialise_symbol:
 val remap_expr :
   sym_state_t ->
   Flx_bsym_table.t ->
+  (string, string) Hashtbl.t ->     (* relabel *)
   (bid_t, Flx_btype.t) Hashtbl.t ->
   (bid_t, bid_t) Hashtbl.t ->
   Flx_btype.t list ->

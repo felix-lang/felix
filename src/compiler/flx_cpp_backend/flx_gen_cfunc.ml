@@ -155,7 +155,7 @@ let gen_C_function_body filename syms bsym_table
     let params = Flx_bparameter.get_bids bps in
     let exe_string,_ =
       try
-        Flx_gen_exe.gen_exes filename syms bsym_table [] label_info counter index exes vs ts instance_no true
+        Flx_gen_exe.gen_exes filename name syms bsym_table [] label_info counter index exes vs ts instance_no true
       with x ->
         (*
         print_endline (Printexc.to_string x);
@@ -286,7 +286,7 @@ let gen_C_procedure_body filename syms bsym_table
     let params = Flx_bparameter.get_bids bps in
     let exe_string,_ =
       try
-        Flx_gen_exe.gen_exes filename syms bsym_table [] label_info counter index exes vs ts instance_no true
+        Flx_gen_exe.gen_exes filename name syms bsym_table [] label_info counter index exes vs ts instance_no true
       with x ->
         (*
         print_endline (Printexc.to_string x);

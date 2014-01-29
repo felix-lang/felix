@@ -20,6 +20,7 @@ typedef void *void_pointer;
 // ********************************************************
 
 struct RTL_EXTERN con_t;     // continuation
+struct RTL_EXTERN jump_address_t;     // label variable type
 struct RTL_EXTERN fthread_t; // f-thread
 struct RTL_EXTERN _uctor_;   // union constructor
 struct RTL_EXTERN schannel_t;   // synchronous channel type
@@ -58,6 +59,21 @@ struct RTL_EXTERN con_t ///< abstract base for mutable continuations
   virtual ~con_t();
   con_t * _caller;          ///< callers continuation (return address)
 };
+
+
+// MOVE THIS TO RTL AND PROVIDE SUITABLE RTTI SO GC KNOWS ABOUT THE FRAME POINTER
+struct RTL_EXTERN jump_address_t
+{
+  con_t *target_frame;
+  FLX_LOCAL_LABEL_VARIABLE_TYPE local_pc;
+
+  jump_address_t (con_t *tf, FLX_LOCAL_LABEL_VARIABLE_TYPE lpc) : 
+    target_frame (tf), local_pc (lpc) 
+  {}
+  jump_address_t () : target_frame (0), local_pc(0) {}
+  // default copy constructor and assignment
+};
+
 
 // ********************************************************
 /// SLIST. singly linked lists: SHARABLE and COPYABLE

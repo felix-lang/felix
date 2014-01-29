@@ -407,6 +407,9 @@ let rec rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t lis
     ]
 
   (* executable *)
+  | STMT_cgoto (sr,e) -> 
+   let d,x = rex e in d @ [Exe (sr,EXE_cgoto x)]
+
   | STMT_fun_return (sr,e) ->
     let d,x = rex e in d @ [Exe (sr,EXE_fun_return x)]
 

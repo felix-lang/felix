@@ -28,6 +28,7 @@ and t =
   | BTYP_function of t * t
   | BTYP_cfunction of t * t
   | BTYP_void
+  | BTYP_label (* type of a label *)
   | BTYP_fix of int * t (* meta type *)
 
   | BTYP_type of int
@@ -70,6 +71,8 @@ type biface_t =
   | BIFACE_export_struct of Flx_srcref.t * bid_t
 
 (* -------------------------------------------------------------------------- *)
+
+let btyp_label () = BTYP_label
 
 (** The none type. Used when we don't know the type yet. *)
 let btyp_none () =
@@ -261,6 +264,7 @@ let flat_iter
   btype
 =
   match btype with
+  | BTYP_label -> ()
   | BTYP_none -> ()
   | BTYP_sum ts -> List.iter f_btype ts
   | BTYP_unitsum k ->
@@ -316,6 +320,7 @@ let rec iter
 (** Recursively iterate over each bound type and transform it with the
  * function. *)
 let map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
+  | BTYP_label as x -> x
   | BTYP_none as x -> x
   | BTYP_sum ts -> btyp_sum (List.map f_btype ts)
   | BTYP_unitsum k ->

@@ -173,6 +173,7 @@ and xexpr_t sr x =
 
  | Lst [Id "ast_deref"; sr; e] -> EXPR_deref (xsr sr,ex e)
  | Lst [Id "ast_ref"; sr; e] -> EXPR_ref (xsr sr,ex e)
+ | Lst [Id "ast_label_ref"; sr; id] -> EXPR_label (xsr sr,xid id)
  | Lst [Id "ast_new"; sr; e] -> EXPR_new (xsr sr,ex e)
  | Lst [Id "ast_likely"; sr; e] -> EXPR_likely (xsr sr,ex e)
  | Lst [Id "ast_unlikely"; sr; e] -> EXPR_unlikely (xsr sr,ex e)
@@ -676,6 +677,7 @@ and xstatement_t sr x : statement_t =
   | Lst [Id "ast_endtry"; sr] -> let sr = xsr sr in STMT_endtry (sr)
   | Lst [Id "ast_catch"; sr; Str id; t] -> let sr = xsr sr in STMT_catch (sr, id, ti sr t)
 
+  | Lst [Id "ast_goto_indirect"; sr; e] -> let sr = xsr sr in STMT_cgoto (sr, ex sr e)
   | Lst [Id "ast_goto"; sr; id] -> let sr = xsr sr in STMT_goto (sr, xid id)
   | Lst [Id "ast_ifgoto"; sr; e; id] -> let sr = xsr sr in STMT_ifgoto (sr,ex sr e, xid id)
   | Lst [Id "ast_likely_ifgoto"; sr; e; id] -> let sr = xsr sr in 

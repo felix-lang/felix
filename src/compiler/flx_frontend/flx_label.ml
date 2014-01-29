@@ -118,40 +118,45 @@ let cal_usage bsym_table label_map caller exes usage =
 (*
 print_endline ("Scanning exes of procedure " ^ si caller);
 *)
-  iter
-  (function
-    | BEXE_goto (sr,label)
-    | BEXE_ifgoto (sr,_,label) ->
+  let handle_label_use force_far sr label =
 (*
-      print_endline ("goto Label " ^ label ^ " loc= .. ");
+    print_endline ("goto Label " ^ label ^ " loc= .. ");
 *)
-      let label_loc = find_label bsym_table label_map caller label in
-      begin match label_loc with
-      | `Unreachable ->
+    let label_loc = find_label bsym_table label_map caller label in
+    begin match label_loc with
+    | `Unreachable ->
 print_endline "Unreachable or not found";
-        syserr sr ("[flx_label] Caller " ^ string_of_bid caller ^
-          " Jump to unreachable or non-existant label " ^ label ^ "\n" ^
-          (catmap "\n" (string_of_bexe bsym_table 2) exes))
-      | `Local lix ->
+      syserr sr ("[flx_label] Caller " ^ string_of_bid caller ^
+        " Jump to unreachable or non-existant label " ^ label ^ "\n" ^
+        (catmap "\n" (string_of_bexe bsym_table 2) exes))
+    | `Local lix ->
+      if force_far then Hashtbl.replace usage lix `Far else
 (*
 print_endline ("Local label " ^ si lix);
 *)
-        begin match get_label_kind_from_index usage lix with
-        | `Unused -> Hashtbl.replace usage lix `Near
-        | `Near | `Far -> ()
-        end
-      | `Nonlocal (lix,_) ->
+      begin match get_label_kind_from_index usage lix with
+      | `Unused -> Hashtbl.replace usage lix `Near
+      | `Near | `Far -> ()
+      end
+    | `Nonlocal (lix,_) ->
 (*
 print_endline "Non-Local";
 *)
-        begin match get_label_kind_from_index usage lix with
-        | `Unused | `Near -> Hashtbl.replace usage lix `Far
-        | `Far -> ()
-        end
+      begin match get_label_kind_from_index usage lix with
+      | `Unused | `Near -> Hashtbl.replace usage lix `Far
+      | `Far -> ()
       end
-    | _ -> ()
-  )
-  exes
+    end
+  in
+
+  let check exe = 
+    let sr = get_srcref exe in
+    let f_label_use s = handle_label_use false sr s in
+    let f_label s = handle_label_use true sr s in
+    let f_bexpr e = Flx_bexpr.iter ~f_label e in
+    Flx_bexe.iter ~f_label_use ~f_bexpr exe
+  in
+  iter check exes
 
 let update_label_usage bsym_table label_map usage index bsym =
   match Flx_bsym.bbdcl bsym with

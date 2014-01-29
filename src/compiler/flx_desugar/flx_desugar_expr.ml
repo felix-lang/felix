@@ -286,6 +286,7 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
 
   | EXPR_noexpand (_,e) -> rex e
   | EXPR_name (sr,name,_) -> [],e
+  | EXPR_label (sr,name) -> [],e
 
   | EXPR_deref (sr,e) ->
     let l1,x1 = rex e in

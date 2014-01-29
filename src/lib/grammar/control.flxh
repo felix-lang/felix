@@ -45,6 +45,10 @@ syntax control
   //$ Unconditional goto label.
   stmt := "goto" sname ";" =># "`(ast_goto ,_sr ,_2)";
 
+  //$ Unconditional goto expression.
+  stmt := "goto-indirect" sexpr ";" =># "`(ast_goto_indirect ,_sr ,_2)";
+
+
   //$ Exception handling.
   //$
   //$ try .. catch x : T => handler endtry

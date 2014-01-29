@@ -75,6 +75,7 @@ let vsplice caller_vars callee_vs_len ts =
 let remap_expr
   syms
   bsym_table
+  relabel
   varmap        (** varmap is the type variable remapper *)
   revariable    (** revariable remaps indices. *)
   caller_vars
@@ -86,6 +87,7 @@ let remap_expr
   *)
   let ftc i ts = Flx_typeclass.maybe_fixup_typeclass_instance syms bsym_table i ts in
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
+  let relab s = try let r = Hashtbl.find relabel s in (* print_endline ("Relab: " ^ s ^ "->" ^ r); *) r with Not_found -> s in
   let tmap t = match t with
   | BTYP_inst (i,ts) -> btyp_inst (revar i,ts)
   | x -> x
@@ -105,7 +107,7 @@ let remap_expr
     with Not_found -> i,ts
   in
   let rec aux e =
-    match Flx_bexpr.map ~f_btype:auxt ~f_bexpr:aux e with
+    match Flx_bexpr.map ~f_btype:auxt ~f_bexpr:aux ~f_label:relab e with
     | BEXPR_name (i,ts),t ->
         let i,ts = fixup i ts in
         bexpr_name (auxt t) (i,ts)
@@ -154,9 +156,9 @@ let remap_exe
   (*
   print_endline ("remap_exe " ^ string_of_bexe sym_table bsym_table 0 exe);
   *)
-  let ge e = remap_expr syms bsym_table varmap revariable caller_vars callee_vs_len e in
+  let ge e = remap_expr syms bsym_table relabel varmap revariable caller_vars callee_vs_len e in
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
-  let relab s = try Hashtbl.find relabel s with Not_found -> s in
+  let relab s = try let r = Hashtbl.find relabel s in (* print_endline ("Relab: " ^ s ^ "->" ^ r); *) r with Not_found -> s in
   let ftc i ts = Flx_typeclass.maybe_fixup_typeclass_instance syms bsym_table i ts in
 
   let tmap t = match t with
@@ -218,7 +220,7 @@ let remap_exe
   | BEXE_goto (sr,lab) -> bexe_goto (sr,relab lab)
   | BEXE_ifgoto (sr,e,lab) -> bexe_ifgoto (sr,ge e,relab lab)
 
-  | x -> Flx_bexe.map ~f_bid:revar ~f_bexpr:ge x
+  | x -> Flx_bexe.map ~f_bid:revar ~f_bexpr:ge ~f_label_use:relab ~f_label_def:relab x
   in
   (*
   print_endline ("remapped_exe " ^ string_of_bexe sym_table bsym_table 0 exe);
@@ -315,7 +317,7 @@ let reparent1
    in
 
   let rexes xs = remap_exes syms bsym_table relabel varmap revariable caller_vars callee_vs_len xs in
-  let rexpr e = remap_expr syms bsym_table varmap revariable caller_vars callee_vs_len e in
+  let rexpr e = remap_expr syms bsym_table relabel varmap revariable caller_vars callee_vs_len e in
   let rreqs rqs = remap_reqs syms bsym_table varmap revariable caller_vars callee_vs_len rqs in
   let bsym = Flx_bsym_table.find bsym_table index in
   let bsym_parent = Flx_bsym_table.find_parent bsym_table index in

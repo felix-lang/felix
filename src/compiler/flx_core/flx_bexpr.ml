@@ -32,11 +32,13 @@ type bexpr_t =
   | BEXPR_prj of int * Flx_btype.t * Flx_btype.t
   | BEXPR_aprj of t * Flx_btype.t * Flx_btype.t
   | BEXPR_inj of int * Flx_btype.t * Flx_btype.t
+  | BEXPR_label of string
 
 and t = bexpr_t * Flx_btype.t
 
 (* -------------------------------------------------------------------------- *)
 
+let bexpr_label e = BEXPR_label e, Flx_btype.btyp_label ()
 let bexpr_tuple_tail t e = BEXPR_tuple_tail e, t
 let bexpr_tuple_head t e = BEXPR_tuple_head e, t
 
@@ -134,6 +136,7 @@ let rec cmp ((a,_) as xa) ((b,_) as xb) =
    * equal for equal expressions: the value is merely the cached result of a
    * synthetic context independent type calculation *)
   match a,b with
+  | BEXPR_label lab, BEXPR_label lab' -> lab = lab'
   | BEXPR_coerce (e,t),BEXPR_coerce (e',t') ->
     (* not really right .. *)
     cmp e e'
@@ -218,8 +221,10 @@ let flat_iter
   ?(f_bid=fun _ -> ())
   ?(f_btype=fun _ -> ())
   ?(f_bexpr=fun _ -> ())
+  ?(f_label=fun _ -> ())
   ((x,t) as e) =
   match x with
+  | BEXPR_label s -> f_label s
   | BEXPR_not e -> f_bexpr e
   | BEXPR_deref e -> f_bexpr e
   | BEXPR_ref (i,ts) ->
@@ -287,21 +292,24 @@ let rec iter
   ?f_bid
   ?(f_btype=fun _ -> ())
   ?(f_bexpr=fun _ -> ())
+  ?(f_label=fun _ -> ())
   ((x,t) as e)
 =
   f_bexpr e;
   f_btype t;
-  let f_bexpr e = iter ?f_bid ~f_btype ~f_bexpr e in
-  flat_iter ?f_bid ~f_btype ~f_bexpr e
+  let f_bexpr e = iter ?f_bid ~f_btype ~f_bexpr ~f_label e in
+  flat_iter ?f_bid ~f_btype ~f_bexpr ~f_label e
 
 
 let map
   ?(f_bid=fun i -> i)
   ?(f_btype=fun t -> t)
   ?(f_bexpr=fun e -> e)
+  ?(f_label=fun s -> s)
   e
 =
   match e with
+  | BEXPR_label s,t -> BEXPR_label (f_label s),f_btype t
   | BEXPR_not e,t -> BEXPR_not (f_bexpr e), f_btype t
   | BEXPR_deref e,t -> BEXPR_deref (f_bexpr e), f_btype t
   | BEXPR_ref (i,ts),t -> BEXPR_ref (f_bid i, List.map f_btype ts), f_btype t

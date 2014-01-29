@@ -415,6 +415,11 @@ let expand_exe syms bsym_table u exe =
       let e,xs = u sr e in
       bexe_ifgoto (sr,e,lab) :: xs
 
+    | BEXE_cgoto (sr,e) ->
+      let e,xs = u sr e in
+      bexe_cgoto (sr,e) :: xs
+
+
     (* preserve tail call pattern -- used by both
        tail-rec eliminator
        and by call lifter (which converts returns to calls)

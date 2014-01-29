@@ -85,7 +85,7 @@ let lower_bsym_table state bsym_table root_proc =
           (* The procedure isn't stackable, so mark that it needs a heap
            * closure. *)
           if not (List.mem `Heap_closure !props)
-          then props := `Heap_closure :: !props
+          then props := `Requires_ptf :: `Heap_closure :: !props
         end;
 
 (* This seems like utter crap!

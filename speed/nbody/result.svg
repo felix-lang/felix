@@ -1,15 +1,11 @@
   <svg xmlns="http://www.w3.org/2000/svg" version="1.1"
     width="650" height="450" viewBox="0 0 650 450" preserveAspectRatio="none">
-    <rect x="10" y="56" width="50" height="134" style="fill:red;stroke:purple;stroke-width:5;"/>
+    <rect x="10" y="10" width="50" height="180" style="fill:red;stroke:purple;stroke-width:5;"/>
     <text x="10" y="220"  transform="rotate(60 10,220)">Felix: clang -O2</text>
-    <rect x="70" y="66" width="50" height="124" style="fill:red;stroke:purple;stroke-width:5;"/>
+    <rect x="70" y="16" width="50" height="174" style="fill:red;stroke:purple;stroke-width:5;"/>
     <text x="70" y="220"  transform="rotate(60 70,220)">C: clang 3.3 -O2</text>
-    <rect x="130" y="72" width="50" height="118" style="fill:red;stroke:purple;stroke-width:5;"/>
+    <rect x="130" y="24" width="50" height="166" style="fill:red;stroke:purple;stroke-width:5;"/>
     <text x="130" y="220"  transform="rotate(60 130,220)">C: gcc 4.2.1 -O2</text>
-    <rect x="190" y="52" width="50" height="138" style="fill:red;stroke:purple;stroke-width:5;"/>
-    <text x="190" y="220"  transform="rotate(60 190,220)">C++: clang 3.3 -O2</text>
-    <rect x="250" y="71" width="50" height="119" style="fill:red;stroke:purple;stroke-width:5;"/>
-    <text x="250" y="220"  transform="rotate(60 250,220)">C++: g++ 4.2.1 -O2</text>
-    <rect x="310" y="10" width="50" height="180" style="fill:red;stroke:purple;stroke-width:5;"/>
-    <text x="310" y="220"  transform="rotate(60 310,220)">Ocaml 3.11.1</text>
+    <rect x="190" y="13" width="50" height="177" style="fill:red;stroke:purple;stroke-width:5;"/>
+    <text x="190" y="220"  transform="rotate(60 190,220)">Ocaml 3.11.1</text>
   </svg>

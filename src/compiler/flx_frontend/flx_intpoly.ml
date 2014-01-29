@@ -115,6 +115,7 @@ let rec check_abstract_expr syms rls ((x,t) as e) =
   | BEXPR_aprj (ix,_,_) -> fe e
   | BEXPR_prj _ -> ()
   | BEXPR_inj _ -> ()
+  | BEXPR_label _ -> ()
 
   | BEXPR_closure (i,ts) -> fi i
   | BEXPR_name (i,ts) -> fi i

@@ -103,6 +103,8 @@ let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
   ;
   (* CONSIDER DOING THIS WITH A MAP! *)
   begin match e with
+  | BEXPR_label s -> ()
+
   | BEXPR_not e
   | BEXPR_deref e
   | BEXPR_match_case (_,e)
@@ -259,6 +261,7 @@ and process_exe syms bsym_table ref_insts1 ts hvarmap exe =
 
   | BEXE_assert (sr,e)
   | BEXE_ifgoto (sr,e,_)
+  | BEXE_cgoto (sr,e)
   | BEXE_fun_return (sr,e)
   | BEXE_yield (sr,e)
     ->

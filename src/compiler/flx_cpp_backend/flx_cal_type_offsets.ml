@@ -21,6 +21,7 @@ open Flx_maps
 let rec is_pod bsym_table t =
   let is_pod t = is_pod bsym_table t in
   match t with
+  | BTYP_label
   | BTYP_unitsum _ 
   | BTYP_sum _ 
   | BTYP_pointer _
@@ -180,6 +181,7 @@ let rec get_offsets' syms bsym_table typ : string list =
 
   | BTYP_unitsum _ -> []
 
+  | BTYP_label -> ["0"] (* see jump_address_t, target_frame at offset 0 *)
   | BTYP_intersect _
     -> failwith "[ogen] Type intersection has no representation"
 

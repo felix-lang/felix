@@ -381,6 +381,7 @@ let process_exe ue state bsym_table all_closures exe =
   | BEXE_jump (sr,e1,e2) -> bexe_jump (sr,ue sr e1, ue sr e2)
 
   | BEXE_ifgoto (sr,e,l) -> bexe_ifgoto (sr, ue sr e,l)
+  | BEXE_cgoto (sr,e) -> bexe_cgoto (sr, ue sr e)
   | BEXE_fun_return (sr,e) -> bexe_fun_return (sr,ue sr e)
   | BEXE_yield (sr,e) -> bexe_yield (sr,ue sr e)
 

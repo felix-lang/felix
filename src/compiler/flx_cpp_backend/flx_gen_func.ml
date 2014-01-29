@@ -31,6 +31,14 @@ open Flx_gen_helper
 let gen_function syms bsym_table props index id sr vs bps ret' ts instance_no =
   let stackable = mem `Stack_closure props in
   let heapable = mem `Heap_closure props in
+  let requires_ptf = mem `Requires_ptf props in
+  let yields = mem `Yields props in
+  if heapable && (not requires_ptf) then begin
+    print_endline ("The function " ^ id ^ (if requires_ptf then " REQUIRES PTF" else " DOES NOT REQUIRE PTF"));
+    print_endline ("The function " ^ id ^ (if heapable then "HEAPABLE" else " NOT HEAPABLE"));
+    print_endline "CONFLICT! Heapable implies requires ptf!";
+  end
+  ;
   (*
   let strb x y = (if x then " is " else " is not " ) ^ y in
   print_endline ("The function " ^ id ^ strb stackable "stackable");
@@ -40,8 +48,6 @@ let gen_function syms bsym_table props index id sr vs bps ret' ts instance_no =
   let heapable = not stackable or heapable in
   *)
   let rt vs t = beta_reduce "flx_gen_func: gen_function" syms.Flx_mtypes2.counter bsym_table sr (tsubst vs ts t) in
-  let requires_ptf = mem `Requires_ptf props in
-  let yields = mem `Yields props in
 (*
   print_endline ("The function " ^ id ^ (if requires_ptf then " REQUIRES PTF" else " DOES NOT REQUIRE PTF"));
 *)

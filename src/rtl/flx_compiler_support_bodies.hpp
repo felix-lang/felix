@@ -65,7 +65,8 @@ template<typename T> void destroy(T *p){ p->T::~T(); }
     ///< interior program counter
 
 #if FLX_CGOTO
-  #define FLX_START_SWITCH if(pc)goto *pc;
+  #define FLX_START_SWITCH(name) name##_start: if(pc)goto *pc;
+  #define FLX_LOCAL_LABEL_ADDRESS(x) &&case_##x
   #define FLX_SET_PC(x) pc=&&case_##x;
   #define FLX_CASE_LABEL(x) case_##x:;
   #define FLX_DECLARE_LABEL(n,i,x) \
@@ -77,7 +78,8 @@ template<typename T> void destroy(T *p){ p->T::~T(); }
   #define FLX_FARTARGET(n,i,x) (void*)&f##i##_##n##_##x
   #define FLX_END_SWITCH
 #else
-  #define FLX_START_SWITCH switch(pc){case 0:;
+  #define FLX_START_SWITCH(name) name##_start: switch(pc){case 0:;
+  #define FLX_LOCAL_LABEL_ADDRESS(x) x
   #define FLX_SET_PC(x) pc=x;
   #define FLX_CASE_LABEL(x) case x:;
   #define FLX_DECLARE_LABEL(n,i,x)
@@ -85,6 +87,30 @@ template<typename T> void destroy(T *p){ p->T::~T(); }
   #define FLX_FARTARGET(n,i,x) n
   #define FLX_END_SWITCH default: throw ::flx::rtl::flx_switch_failure_t(); }
 #endif
+
+//
+// We do a direct long jump to a target as follows:
+// 
+// If the target frame is just ourself (this) 
+// we set the pc and just goto the start of the procedure,
+// allowing the switch/computed goto there to do the local jump.
+//
+// If the target is foreign, we force the foreign frame pc
+// to the target pc, and then return that frame to the driver
+// so it will resume that procedure, executing the starting switch,
+// which now jumps to the required location.
+//
+#define FLX_DIRECT_LONG_JUMP(self_name,ja) \
+  { \
+    ::flx::rtl::jump_address_t j = ja; \
+    if(j.target_frame == this) { \
+      pc = j.local_pc; \
+      goto self_name##_start; \
+    } else { \
+      j.target_frame->pc = j.local_pc; \
+      return j.target_frame; \
+    } \
+  }
 
 #define FLX_RETURN \
 { \

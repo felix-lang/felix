@@ -191,6 +191,7 @@ let rec cpp_type_classname syms bsym_table t =
   | BTYP_fix (i,_) -> "void" (* failwith "[cpp_type_classname] Can't name type fixpoint" *)
   | BTYP_none -> "none" (* hack needed for null case in pgen *)
   | BTYP_void -> "void" (* failwith "void doesn't have a classname" *)
+  | BTYP_label -> "::flx::rtl::jump_address_t"
   | BTYP_tuple [] -> "::flx::rtl::unit"
   | t when islinear_type bsym_table t -> "int"
 
@@ -295,7 +296,18 @@ let rec cpp_type_classname syms bsym_table t =
     else
       "_poly_" ^ cid_of_bid i ^ "t_" ^ cid_of_bid (tix t)
   end
-  | _ ->
+  | BTYP_intersect _
+
+  | BTYP_type _
+  | BTYP_type_tuple _
+  | BTYP_type_function _
+  | BTYP_type_apply _
+  | BTYP_type_match _
+
+  | BTYP_type_set _
+  | BTYP_type_set_union _
+  | BTYP_type_set_intersection _
+    ->
     failwith
     (
       "[cpp_type_classname] Unexpected type " ^

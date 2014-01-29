@@ -566,6 +566,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | EXPR_typeof (sr,e) -> EXPR_typeof (sr, me e)
   | EXPR_range_check (sr, mi, v, mx) -> EXPR_range_check (sr, me mi, me v, me mx)
   | EXPR_not (sr,e) -> EXPR_not (sr, me e)
+  | EXPR_label (sr,s) -> EXPR_label (sr, mi sr s)
 
 and rqmap me reqs =
   let r req = rqmap me req in
@@ -748,6 +749,10 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
 
   | STMT_goto (sr, id) ->
     ctack (STMT_goto (sr, mi sr id));
+    reachable := false
+
+  | STMT_cgoto (sr, e) ->
+    ctack (STMT_cgoto (sr, me e));
     reachable := false
 
   | STMT_svc (sr, id) ->  ctack (STMT_svc (sr, mi sr id))

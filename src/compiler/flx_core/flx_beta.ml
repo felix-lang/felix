@@ -368,6 +368,7 @@ print_endline "Type list index returned None";
   | BTYP_pointer a -> btyp_pointer (br a)
 (*  | BTYP_lvalue a -> btyp_lvalue (br a) *)
 
+  | BTYP_label -> t
   | BTYP_void -> t
   | BTYP_type _ -> t
   | BTYP_unitsum _ -> t

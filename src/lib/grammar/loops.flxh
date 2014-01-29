@@ -249,14 +249,14 @@ syntax loops
     """;
 
   //$ Basic stream consumer.
-  //$ The second argument must either be a function of type:
+  //$ The second argument must be a value for which there is a generator: 
   //$
-  //$   unit -> opt[T]
-  //$
-  //$ or any data structure D with a function
-  //$ 
   //$   iterator : D -> unit -> opt[T]
   //$
+  //$ Due to a hack in std/datatype/slice.flx:
+  //$    gen iterator[t] (f:1->opt[t]) => f;
+  //$ you can also use an actual iterator.
+  //$ 
   //$ 1. The iterator function is called.
   //$ 2. If the result is None, the loop exits.
   //$ 3. If the result is Some ?t, then t is assigned to the 
@@ -288,13 +288,14 @@ syntax loops
     """;
 
   //$ Upmarket stream consumer.
-  //$ The second argument must either be a function of type:
+  //$ The second argument must be a value for which there is a generator: 
   //$
-  //$   unit -> opt[T]
-  //$
-  //$ or any data structure D with a function
-  //$ 
   //$   iterator : D -> unit -> opt[T]
+  //$
+  //$ Due to a hack in std/datatype/slice.flx:
+  //$    gen iterator[t] (f:1->opt[t]) => f;
+  //$ you can also use an actual iterator.
+  //$ 
   //$
   //$ 1. The iterator function is called.
   //$ 2. If the result is None, the loop exits.

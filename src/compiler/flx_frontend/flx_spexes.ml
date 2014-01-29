@@ -182,8 +182,8 @@ let gen_body syms uses bsym_table id
   in
 
   let caller_vars = map (fun (s,i) -> btyp_type_var (i, btyp_type 0)) vs in
-  let ge e = remap_expr syms bsym_table varmap revariable caller_vars callee_vs_len e in
-  let relab s = try Hashtbl.find relabel s with Not_found -> s in
+  let ge e = remap_expr syms bsym_table relabel varmap revariable caller_vars callee_vs_len e in
+  let relab s = try let r = Hashtbl.find relabel s in (* print_endline ("Relab: " ^ s ^ "->" ^ r); *) r with Not_found -> s in
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
   let end_label_uses = ref 0 in
   let end_label =
@@ -247,6 +247,7 @@ let gen_body syms uses bsym_table id
     [bexe_assert2 (sr, sr2, e1,ge e2)]
 
   | BEXE_ifgoto (sr,e,lab) -> [bexe_ifgoto (sr,ge e, relab lab)]
+  | BEXE_cgoto (sr,e) -> [bexe_cgoto (sr,ge e)]
   | BEXE_fun_return (sr,e) -> [bexe_fun_return (sr, ge e)]
   | BEXE_yield (sr,e) -> [bexe_yield (sr, ge e)]
   | BEXE_assign (sr,e1,e2) -> [bexe_assign (sr, ge e1, ge e2)]

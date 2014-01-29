@@ -7,6 +7,7 @@ type t =
   | BEXE_halt of Flx_srcref.t * string  (* for internal use only *)
   | BEXE_trace of Flx_srcref.t * string * string  (* for internal use only *)
   | BEXE_goto of Flx_srcref.t * string  (* for internal use only *)
+  | BEXE_cgoto of Flx_srcref.t * Flx_bexpr.t (* computed goto *)
   | BEXE_ifgoto of Flx_srcref.t * Flx_bexpr.t * string  (* for internal use only *)
   | BEXE_call of Flx_srcref.t * Flx_bexpr.t * Flx_bexpr.t
   | BEXE_call_direct of Flx_srcref.t * bid_t * Flx_btype.t list * Flx_bexpr.t
@@ -41,6 +42,7 @@ let bexe_comment (sr,s) = BEXE_comment (sr,s)
 let bexe_halt (sr,s) = BEXE_halt (sr,s)
 let bexe_trace (sr,s1,s2) = BEXE_trace (sr,s1,s2)
 let bexe_goto (sr,s) = BEXE_goto (sr,s)
+let bexe_cgoto (sr,e) = BEXE_cgoto (sr,e)
 let bexe_ifgoto (sr,e,s) = BEXE_ifgoto (sr,e,s)
 let bexe_call (sr,e1,e2) = BEXE_call (sr,e1,e2)
 let bexe_call_direct (sr,bid,ts,e) = BEXE_call_direct (sr,bid,ts,e)
@@ -73,6 +75,7 @@ let bexe_catch sr s t  = BEXE_catch (sr,s, t)
 (** Extract the source of the bound executable. *)
 let get_srcref = function
   | BEXE_goto (sr,_)
+  | BEXE_cgoto (sr,_)
   | BEXE_assert (sr,_)
   | BEXE_assert2 (sr,_,_,_)
   | BEXE_axiom_check2 (sr,_,_,_)
@@ -121,6 +124,8 @@ let iter
   ?(f_bid=fun _ -> ())
   ?(f_btype=fun _ -> ())
   ?(f_bexpr=fun _ -> ())
+  ?(f_label_use=fun _ ->())
+  ?(f_label_def=fun _ ->())
   exe
 =
   match exe with
@@ -137,9 +142,11 @@ let iter
       f_bexpr e1;
       f_bexpr e2
   | BEXE_ifgoto (sr,e,lab) ->
+      f_label_use lab;
       f_bexpr e
-  | BEXE_label (sr,lab)
-  | BEXE_goto (sr,lab) -> ()
+  | BEXE_label (sr,lab) -> f_label_def lab
+  | BEXE_goto (sr,lab) -> f_label_use lab
+  | BEXE_cgoto (sr,e) -> f_bexpr e
   | BEXE_fun_return (sr,e) -> f_bexpr e
   | BEXE_yield (sr,e) -> f_bexpr e
   | BEXE_axiom_check (_,e) -> f_bexpr e
@@ -170,6 +177,8 @@ let map
   ?(f_bid=fun i -> i)
   ?(f_btype=fun t -> t)
   ?(f_bexpr=fun e -> e)
+  ?(f_label_use=fun lab -> lab)
+  ?(f_label_def=fun lab -> lab)
   exe
 =
   match exe with
@@ -184,9 +193,10 @@ let map
   | BEXE_assign (sr,e1,e2) -> BEXE_assign (sr,f_bexpr e1,f_bexpr e2)
   | BEXE_call (sr,e1,e2) -> BEXE_call (sr,f_bexpr e1,f_bexpr e2)
   | BEXE_jump (sr,e1,e2) -> BEXE_jump (sr,f_bexpr e1,f_bexpr e2)
-  | BEXE_ifgoto (sr,e,lab) -> BEXE_ifgoto (sr,f_bexpr e,lab)
-  | BEXE_label (sr,lab) -> exe
-  | BEXE_goto (sr,lab) -> exe
+  | BEXE_ifgoto (sr,e,lab) -> BEXE_ifgoto (sr,f_bexpr e,f_label_use lab)
+  | BEXE_label (sr,lab) -> BEXE_label (sr, f_label_def lab)
+  | BEXE_goto (sr,lab) -> BEXE_goto (sr, f_label_use lab)
+  | BEXE_cgoto (sr,e) -> BEXE_cgoto (sr, f_bexpr e)
   | BEXE_fun_return (sr,e) -> BEXE_fun_return (sr,f_bexpr e)
   | BEXE_yield (sr,e) -> BEXE_yield (sr,f_bexpr e)
   | BEXE_assert (sr,e) -> BEXE_assert (sr,f_bexpr e)

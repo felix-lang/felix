@@ -76,6 +76,7 @@ let map_type f (t:typecode_t):typecode_t = match t with
   | TYP_patany _
 
   (* absolute constants *)
+  | TYP_label
   | TYP_void _
   | TYP_ellipsis
   | TYP_type
@@ -84,6 +85,7 @@ let map_type f (t:typecode_t):typecode_t = match t with
 
 
 let map_expr f (e:expr_t):expr_t = match e with
+  | EXPR_label _
   | EXPR_patvar _
   | EXPR_patany _
   | EXPR_interpolate _ 
@@ -161,6 +163,7 @@ let map_expr f (e:expr_t):expr_t = match e with
 let iter_expr f (e:expr_t) =
   f e;
   match e with
+  | EXPR_label _
   | EXPR_patvar _
   | EXPR_patany _
   | EXPR_interpolate _

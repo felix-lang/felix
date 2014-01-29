@@ -17,9 +17,11 @@
 #define FLX_DCL_THREAD_FRAME
 
 #if FLX_CGOTO
+  #define FLX_LOCAL_LABEL_VARIABLE_TYPE void*
   #define FLX_PC_DECL void *pc;
 #else
   #define FLX_PC_DECL int pc;
+  #define FLX_LOCAL_LABEL_VARIABLE_TYPE int
 #endif
 
 #define t typename

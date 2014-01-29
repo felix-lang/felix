@@ -709,6 +709,7 @@ print_endline ("Bind type " ^ string_of_typecode t);
 
   let t =
   match t with
+  | TYP_label -> BTYP_label
   | TYP_patvar _ -> failwith "Not implemented patvar in typecode"
   | TYP_patany _ -> failwith "Not implemented patany in typecode"
 
@@ -1315,6 +1316,7 @@ and bind_type_index state (bsym_table:Flx_bsym_table.t) (rs:recstop) sr index ts
               btyp_function (atyp, c)
 
             (* name like, its a big guess! *)
+            | TYP_label
             | TYP_suffix _
             | TYP_index _
             | TYP_lookup _ 
@@ -3493,6 +3495,8 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
       clierr sr
      ("[bind_expression] Expected expression, got " ^ string_of_expr e)
 
+  | EXPR_label (sr,s) -> bexpr_label s
+
   | EXPR_range_check (sr, mi, v, mx) ->
     let (x,t) as v' = be v in
     bexpr_range_check t (be mi, v', be mx)
@@ -5645,6 +5649,7 @@ and rebind_btype state bsym_table env sr ts t =
   | BTYP_pointer t -> btyp_pointer (rbt t)
   | BTYP_array (t1,t2) -> btyp_array (rbt t1, rbt t2)
 
+  | BTYP_label
   | BTYP_unitsum _
   | BTYP_void
   | BTYP_fix _ -> t

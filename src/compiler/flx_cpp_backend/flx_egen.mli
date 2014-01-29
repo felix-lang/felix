@@ -1,6 +1,7 @@
 val gen_expr:
   Flx_mtypes2.sym_state_t ->
   Flx_bsym_table.t ->
+  Flx_label.label_map_t ->
   Flx_types.bid_t ->
   Flx_types.bvs_t ->
   Flx_btype.t list ->
@@ -11,6 +12,7 @@ val gen_expr:
 val gen_expr':
   Flx_mtypes2.sym_state_t ->
   Flx_bsym_table.t ->
+  Flx_label.label_map_t ->
   Flx_types.bid_t ->
   Flx_types.bvs_t ->
   Flx_btype.t list ->

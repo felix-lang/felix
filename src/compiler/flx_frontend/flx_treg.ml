@@ -21,6 +21,7 @@ print_endline ("Register type nr " ^ sbt bsym_table t);
   if t <> t' then print_endline ("UNREDUCED TYPE! " ^ sbt bsym_table t ^ " <> " ^ sbt bsym_table t');
   *)
   match t with
+  | BTYP_label -> ()
   | BTYP_fix _
   | BTYP_tuple []
     -> ()
@@ -86,6 +87,7 @@ print_endline ("Register type r " ^ sbt bsym_table t);
   print_endline (sp ^ "Unfolded type " ^ sbt sym_table t');
   *)
   match t' with
+  | BTYP_label -> ()
   | BTYP_void -> ()
   | BTYP_fix (0,_) -> ()
   | BTYP_fix (i,_) -> clierr sr ("[register_type_r] Fixpoint "^si i^" encountered")
@@ -210,7 +212,19 @@ print_endline ("Register type r " ^ sbt bsym_table t);
       )
     end
 
-  | _ ->  
+  | BTYP_none
+  | BTYP_intersect _
+
+  | BTYP_type _
+  | BTYP_type_tuple _
+  | BTYP_type_function _
+  | BTYP_type_apply _
+  | BTYP_type_match _
+
+  | BTYP_type_set _
+  | BTYP_type_set_union _
+  | BTYP_type_set_intersection _
+    ->
     clierr sr
     (
       "Unexpected kind in register type: " ^

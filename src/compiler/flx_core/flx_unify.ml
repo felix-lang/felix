@@ -305,6 +305,7 @@ let fix i t =
     | BTYP_variant ts ->
        btyp_variant (List.map (fun (s,t) -> s, aux t) ts)
 
+    | BTYP_label 
     | BTYP_unitsum _
     | BTYP_void
     | BTYP_fix _
@@ -456,6 +457,7 @@ let rec unification bsym_table counter eqns dvars =
         end
         else raise Not_found
 
+      | BTYP_label , BTYP_label -> ()
       | BTYP_type i,BTYP_type j when i = j -> ()
       | BTYP_void,BTYP_void -> ()
 
@@ -662,6 +664,7 @@ let rec type_eq' bsym_table counter ltrail ldepth rtrail rdepth trail t1 t2 =
   in
   *)
   match t1,t2 with
+  | BTYP_label,BTYP_label -> true
   | BTYP_type i, BTYP_type j -> i = j
   | BTYP_inst (i1,ts1),BTYP_inst (i2,ts2) ->
     i1 = i2 &&
@@ -892,6 +895,7 @@ let fold bsym_table counter t =
     | BTYP_pointer a -> ax a
     | BTYP_tuple_cons (a,b) -> ax a; ax b
 
+    | BTYP_label 
     | BTYP_none
     | BTYP_void
     | BTYP_unitsum _
@@ -945,6 +949,7 @@ let var_occurs bsym_table t =
 
     | BTYP_pointer a  -> aux a
 
+    | BTYP_label
     | BTYP_unitsum _
     | BTYP_void
     | BTYP_fix _ -> ()
