@@ -1,0 +1,93 @@
+@title Coroutine Basics
+@felix
+// silly test of computed goto
+proc fred () {
+  println$ "Hello";
+  var x = 5;
+lab1:>
+   println$ "Next " + x.str;
+   --x;
+   var labvar = (label_address lab1);
+   if x > 0 do
+     goto-indirect labvar;
+   done
+   noinline proc joe () {
+      var lv = label_address lab1;
+      x = -2;
+      goto-indirect lv;
+   }
+   if x >= 0 call joe;
+}
+
+fred;
+
+proc branch-and-link (target:&LABEL, save:&LABEL)
+{
+   save <- label_address next;
+   goto-indirect *target;
+   next:>
+}
+
+// Coroutine test!
+//
+// We're going to have two procedures which just
+// oscilate between each other. The tricky bit
+// is initialisation of the variables.
+// We can branch-and-link between labels but
+// the entry point of a procedure isn't a label.
+var p1 : LABEL;
+var p2 : LABEL;
+
+proc co1 () {
+  // start here
+  println$ "ONE";
+
+  // set our restart point
+  &p1 <- label_address entry1;
+  
+  // now call the other coroutine
+  co2;
+
+  // we want it to come back to here
+  entry1:>
+    println$ "THREE";
+
+  // now we can zig-zag
+  branch-and-link (&p2, &p1);
+
+  println$ "FIVE";
+
+  // end properly 
+}
+
+proc co2 () {
+   // here we got started by co1
+   println$ "TWO";
+
+   // since p1 is already set we can just do this now:
+   branch-and-link (&p1, &p2);
+ 
+   // and we're back from co1 again
+   println$ "FOUR";
+
+   // now just jump out
+   goto-indirect p1;
+
+   // no way to ever get here
+}
+
+// run coroutines
+co1;
+@expect
+Hello
+Next 5
+Next 4
+Next 3
+Next 2
+Next 1
+Next -2
+ONE
+TWO
+THREE
+FOUR
+FIVE
