@@ -15,7 +15,8 @@ object toolchain_gcc48_linux (config:clang_config_t) implements toolchain_t =
     "-Wno-unused-function",
     "-Wno-sign-compare",
     "-Wno-missing-braces",
-    "-Wno-unused-label"
+    "-Wno-unused-label",
+    "-Wno-unused-local-typedefs"
   ;
   var c_compile_warning_flags = list$ "-Wall", "-Wfatal-errors";
   var c_compiler = "gcc-4.8";

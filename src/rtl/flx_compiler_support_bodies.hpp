@@ -65,7 +65,11 @@ template<typename T> void destroy(T *p){ p->T::~T(); }
     ///< interior program counter
 
 #if FLX_CGOTO
+  #ifdef __clang__
+  #define FLX_START_SWITCH(name) (&&name##_start); name##_start: if(pc)goto *pc;
+  #else
   #define FLX_START_SWITCH(name) name##_start: if(pc)goto *pc;
+  #endif
   #define FLX_LOCAL_LABEL_ADDRESS(x) &&case_##x
   #define FLX_SET_PC(x) pc=&&case_##x;
   #define FLX_CASE_LABEL(x) case_##x:;
