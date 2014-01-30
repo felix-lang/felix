@@ -78,6 +78,7 @@ proc co2 () {
 
 // run coroutines
 co1;
+
 @expect
 Hello
 Next 5

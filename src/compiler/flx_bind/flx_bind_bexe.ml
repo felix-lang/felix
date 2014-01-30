@@ -285,9 +285,17 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
       handle_bexe (bexe_goto (sr,s)) init
 
   | EXE_cgoto e ->
-      state.reachable <- false;
-      let e = be e in
-      handle_bexe (bexe_cgoto (sr,e)) init
+    state.reachable <- false;
+    let e',t as x = be e in
+    if t == Flx_btype.btyp_label () then
+      handle_bexe (bexe_cgoto (sr,x)) init
+    else
+      clierr (src_of_expr e)
+      (
+        "[bind_exes:ifcgoto] Computed goto require LABEL argument, got " ^
+        sbt bsym_table t
+      )
+
 
 
   | EXE_proc_return_from s ->
