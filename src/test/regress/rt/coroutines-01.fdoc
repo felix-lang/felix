@@ -1,26 +1,5 @@
 @title Coroutine Basics
 @felix
-// silly test of computed goto
-proc fred () {
-  println$ "Hello";
-  var x = 5;
-lab1:>
-   println$ "Next " + x.str;
-   --x;
-   var labvar = (label_address lab1);
-   if x > 0 do
-     goto-indirect labvar;
-   done
-   noinline proc joe () {
-      var lv = label_address lab1;
-      x = -2;
-      goto-indirect lv;
-   }
-   if x >= 0 call joe;
-}
-
-fred;
-
 proc branch-and-link (target:&LABEL, save:&LABEL)
 {
    save <- label_address next;
@@ -80,15 +59,9 @@ proc co2 () {
 co1;
 
 @expect
-Hello
-Next 5
-Next 4
-Next 3
-Next 2
-Next 1
-Next -2
 ONE
 TWO
 THREE
 FOUR
 FIVE
+@

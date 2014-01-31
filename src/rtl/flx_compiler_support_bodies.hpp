@@ -66,9 +66,9 @@ template<typename T> void destroy(T *p){ p->T::~T(); }
 
 #if FLX_CGOTO
   #ifdef __clang__
-  #define FLX_START_SWITCH(name) (&&name##_start); name##_start: if(pc)goto *pc;
+  #define FLX_START_SWITCH (&&_start_switch); _start_switch: if(pc)goto *pc;
   #else
-  #define FLX_START_SWITCH(name) name##_start: if(pc)goto *pc;
+  #define FLX_START_SWITCH _start_switch: if(pc)goto *pc;
   #endif
   #define FLX_LOCAL_LABEL_ADDRESS(x) &&case_##x
   #define FLX_SET_PC(x) pc=&&case_##x;
@@ -82,7 +82,7 @@ template<typename T> void destroy(T *p){ p->T::~T(); }
   #define FLX_FARTARGET(n,i,x) (void*)&f##i##_##n##_##x
   #define FLX_END_SWITCH
 #else
-  #define FLX_START_SWITCH(name) name##_start: switch(pc){case 0:;
+  #define FLX_START_SWITCH _start_switch: switch(pc){case 0:;
   #define FLX_LOCAL_LABEL_ADDRESS(x) x
   #define FLX_SET_PC(x) pc=x;
   #define FLX_CASE_LABEL(x) case x:;
@@ -104,12 +104,12 @@ template<typename T> void destroy(T *p){ p->T::~T(); }
 // so it will resume that procedure, executing the starting switch,
 // which now jumps to the required location.
 //
-#define FLX_DIRECT_LONG_JUMP(self_name,ja) \
+#define FLX_DIRECT_LONG_JUMP(ja) \
   { \
     ::flx::rtl::jump_address_t j = ja; \
     if(j.target_frame == this) { \
       pc = j.local_pc; \
-      goto self_name##_start; \
+      goto _start_switch; \
     } else { \
       j.target_frame->pc = j.local_pc; \
       return j.target_frame; \

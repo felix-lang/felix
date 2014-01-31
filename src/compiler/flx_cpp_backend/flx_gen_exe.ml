@@ -451,7 +451,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
       needs_switch := true;
       let e = ge sr e in
       (* temporarily ignore stack unwinding issues .. and other issues too *) 
-      "      FLX_DIRECT_LONG_JUMP(" ^ cxx_name ^", " ^ e ^ ")\n"
+      "      FLX_DIRECT_LONG_JUMP(" ^ e ^ ")\n"
       
 
     | BEXE_ifgoto (sr,e,s) ->

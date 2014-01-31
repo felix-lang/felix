@@ -287,7 +287,7 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
   | EXE_cgoto e ->
     state.reachable <- false;
     let e',t as x = be e in
-    if t == Flx_btype.btyp_label () then
+    if t = Flx_btype.btyp_label () then
       handle_bexe (bexe_cgoto (sr,x)) init
     else
       clierr (src_of_expr e)

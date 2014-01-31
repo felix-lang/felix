@@ -430,7 +430,7 @@ let gen_function_methods filename syms bsym_table
           end "" params
       )^
         (if needs_switch then
-        "  FLX_START_SWITCH("^name^")\n" else ""
+        "  FLX_START_SWITCH\n" else ""
         ) ^
         exe_string ^
         (let f, sl, sc, el, ec = Flx_srcref.to_tuple tailsr in
@@ -595,7 +595,7 @@ let gen_procedure_methods filename syms bsym_table
       else
         cont^name^"::resume(){\n"^
         (if needs_switch then
-        "  FLX_START_SWITCH("^name^")\n" else ""
+        "  FLX_START_SWITCH\n" else ""
         ) ^
         exe_string ^
         "    FLX_RETURN\n" ^ (* HACK .. should be in exe_string .. *)
