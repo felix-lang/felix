@@ -95,6 +95,92 @@ let parse_channel ?(name="<channel>") parser_state channel =
   Dyp.set_fname lexbuf name;
   parse_lexbuf parser_state lexbuf
 
+let match_hash_include line =
+  let line = line ^ "\n" in (* add terminator *)
+  if String.length line > 12 then
+    if String.sub line 0 9 = "#include " then begin
+      let i = ref 9 in
+      while line.[!i] = ' ' do incr i done; (* skip white *)
+      if line.[!i] <> '"' then "" else begin (* require dquote *)
+        incr i; (* skip dquote *)
+        let j = ref (!i) in
+        while line.[!j] <> '"' && line.[!j] <> '\n' do incr j done; (* scan to end of quote *)
+        if line.[!j] <> '"' then "" else (* require dquote *)
+        let s = String.sub line (!i) (!j - !i) in
+        s
+      end
+    end else ""
+  else ""
+
+let get_hash_include include_dirs line =
+  let include_file = match_hash_include line in
+  if include_file = "" then "" else
+  try
+    let include_file = Flx_filesys.find_file ~include_dirs include_file in
+    let include_file = Flx_filesys.mkabs include_file in
+    include_file
+  with Flx_filesys.Missing_path _ -> ""
+  
+
+let rec load_file include_dirs buffer name =
+  let lineno = ref 0 in
+  let ch = 
+    try open_in_bin name 
+    with _ ->  print_endline ("Can't open file '" ^ name ^ "'"); assert false
+  in
+  let parent_dir = Filename.dirname name in 
+  try
+    while true do 
+      let line = input_line ch in
+      incr lineno;
+      let include_file = get_hash_include (parent_dir :: include_dirs) line in
+      if include_file <> "" then begin
+print_endline ("#include file '" ^ include_file ^ "'");
+        Buffer.add_string buffer ("#line 1 \""^include_file^"\"\n");
+        load_file include_dirs buffer include_file;
+        Buffer.add_string buffer ("#line "^string_of_int (!lineno+1)^" \""^name^"\"\n")
+      end
+      else 
+        Buffer.add_string buffer (line ^ "\n")
+    done
+  with End_of_file ->
+    close_in ch
+
+let feed_buffer buffer = 
+  let start = ref 0 in 
+  let len = Buffer.length buffer in
+  fun s n -> 
+    if n < (len - !start) then begin
+      Buffer.blit buffer (!start) s 0 n;
+      start := (!start) + n;
+      n
+    end else begin
+      let m = len - !start in
+      Buffer.blit buffer (!start) s 0 m;
+      start := len;
+      m
+    end
+
+let parse_file ?(include_dirs=[]) parser_state name =
+  let name = Flx_filesys.find_file ~include_dirs name in
+  let buffer = Buffer.create 10000 in
+  Buffer.add_char buffer '\n';
+  load_file include_dirs buffer name;
+  let parser_pilot = pp () in
+  let lexbuf = Dyp.from_function parser_pilot (feed_buffer buffer) in
+  Dyp.set_fname lexbuf name;
+  begin (* fudge line count *)
+    let olexbuf = (Dyp.std_lexbuf lexbuf) in 
+    let lcp = olexbuf.lex_curr_p in
+    olexbuf.lex_curr_p <- { lcp with
+    pos_lnum = lcp.pos_lnum - 1;
+  }
+  end
+  ;
+  parse_lexbuf parser_state lexbuf
+
+
+(*
 let parse_file ?(include_dirs=[]) parser_state name =
   let name = Flx_filesys.find_file ~include_dirs name in
   let inf name =
@@ -113,7 +199,7 @@ let parse_file ?(include_dirs=[]) parser_state name =
         else 
         begin
           let count = input ch s 0 n in
-          if count == 0 then 
+          if count = 0 then 
           begin
             isopen := false;
             close_in ch;
@@ -138,6 +224,7 @@ let parse_file ?(include_dirs=[]) parser_state name =
   end
   ;
   parse_lexbuf parser_state lexbuf
+*)
 
 let parse_string ?(name="<string>") parser_state str =
   let parser_pilot = pp() in
