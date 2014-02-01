@@ -45,9 +45,10 @@ let get_lines f context l1' l2' c1 c2 = (* first line is line 1 *)
     String.sub s (m-n) n
   in
   try
+    let zlen = l1' = l2' && c1 = c2 in
     let buf = Buffer.create ((l2-l1+4) * 80) in
     let spc () = Buffer.add_char buf ' ' in
-    let star() = Buffer.add_char buf '*' in
+    let star() = Buffer.add_char buf (if zlen then '^' else '*') in
     let nl() = Buffer.add_char buf '\n' in
     let f = open_in f in
     for i = 1 to l1-1 do ignore(input_line f) done;

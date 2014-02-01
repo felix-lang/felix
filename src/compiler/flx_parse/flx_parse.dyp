@@ -320,6 +320,7 @@ stmt:
      let lexbuf = $1 in
      let n = $2 in
      Flx_parse_srcref.set_lineno lexbuf n;
+print_endline ("Setting filename to " ^ $3);
      Dyp.set_fname lexbuf $3;
      Snull
    }
