@@ -83,18 +83,6 @@ let make_parser_state () : Flx_token.local_data_t = Flx_parse_helper.local_data
 let parser_data { rev_stmts_as_scheme = r } = r
 
 (* ---------------------------------------------------------------------------------------- *)
-let parse_compilation_unit old_local_data lexbuf : local_data_t = 
-  Flx_parse.dyphack (Flx_parse.compilation_unit ~local_data:old_local_data ~global_data:Flx_parse_helper.global_data lexbuf)
-
-let parse_lexbuf old_local_data lexbuf : local_data_t =
-  parse_lexbuf_with_parser parse_compilation_unit old_local_data lexbuf
-
-let parse_channel ?(name="<channel>") parser_state channel =
-  let parser_pilot = pp () in
-  let lexbuf = Dyp.from_channel parser_pilot channel in
-  Dyp.set_fname lexbuf name;
-  parse_lexbuf parser_state lexbuf
-
 let match_hash_include line =
   let line = line ^ "\n" in (* add terminator *)
   if String.length line > 12 then
@@ -161,7 +149,7 @@ let feed_buffer buffer =
       m
     end
 
-let parse_file ?(include_dirs=[]) parser_state name =
+let create_file_lexbuf ~include_dirs name = 
   let name = Flx_filesys.find_file ~include_dirs name in
   let buffer = Buffer.create 10000 in
   Buffer.add_char buffer '\n';
@@ -177,83 +165,31 @@ let parse_file ?(include_dirs=[]) parser_state name =
   }
   end
   ;
-  parse_lexbuf parser_state lexbuf
-
-
-(*
-let parse_file ?(include_dirs=[]) parser_state name =
-  let name = Flx_filesys.find_file ~include_dirs name in
-  let inf name =
-    let ch = open_in_bin name in
-    let isopen = ref true in
-    let isstart = ref true in
-    let reader s n =
-      if !isopen then 
-      begin
-        if !isstart then 
-        begin
-          s.[0] <- '\n';
-          isstart := false;
-          1
-        end
-        else 
-        begin
-          let count = input ch s 0 n in
-          if count = 0 then 
-          begin
-            isopen := false;
-            close_in ch;
-          end
-          ;
-          count
-        end
-      end
-      else 0
-    in 
-    reader
-  in 
-  let parser_pilot = pp () in
-  let lexbuf = Dyp.from_function parser_pilot (inf name) in
-  Dyp.set_fname lexbuf name;
-  begin (* fudge line count *)
-    let olexbuf = (Dyp.std_lexbuf lexbuf) in 
-    let lcp = olexbuf.lex_curr_p in
-    olexbuf.lex_curr_p <- { lcp with
-    pos_lnum = lcp.pos_lnum - 1;
-  }
-  end
-  ;
-  parse_lexbuf parser_state lexbuf
-*)
-
-let parse_string ?(name="<string>") parser_state str =
-  let parser_pilot = pp() in
-  let lexbuf = Dyp.from_string parser_pilot str in
-  Dyp.set_fname lexbuf name;
-  parse_lexbuf parser_state lexbuf
-
-let parse_function ?(name="<function>") parser_state f =
-  let parser_pilot = pp () in
-  let lexbuf = Dyp.from_function parser_pilot f in
-  parse_lexbuf parser_state lexbuf
-
+  lexbuf 
 
 (* ---------------------------------------------------------------------------------------- *)
+let parse_compilation_unit local_data lexbuf : local_data_t = 
+  let global_data = Flx_parse_helper.global_data in
+  Flx_parse.dyphack (Flx_parse.compilation_unit ~local_data ~global_data lexbuf)
 
-let parse_syntax_unit old_local_data lexbuf : local_data_t = 
-  Flx_parse.dyphack (Flx_parse.syntax_unit ~local_data:old_local_data ~global_data:Flx_parse_helper.global_data lexbuf)
+let parse_syntax_unit local_data lexbuf : local_data_t = 
+  let global_data = Flx_parse_helper.global_data in
+  Flx_parse.dyphack (Flx_parse.syntax_unit ~local_data ~global_data lexbuf)
 
-let parse_syntax_lexbuf old_local_data lexbuf : local_data_t  =
+(* ---------------------------------------------------------------------------------------- *)
+let parse_lexbuf_with_compilation_unit old_local_data lexbuf : local_data_t =
+  parse_lexbuf_with_parser parse_compilation_unit old_local_data lexbuf
+
+let parse_lexbuf_with_syntax_unit old_local_data lexbuf : local_data_t  =
   parse_lexbuf_with_parser parse_syntax_unit old_local_data lexbuf
 
-let parse_syntax_channel ?(name="<channel>") parser_state channel =
-  let parser_pilot = pp () in
-  let lexbuf = Dyp.from_channel parser_pilot channel in
-  Dyp.set_fname lexbuf name;
-  parse_syntax_lexbuf parser_state lexbuf
+(* ---------------------------------------------------------------------------------------- *)
+(* USER ENTRY POINTS *)
+let parse_file_with_compilation_unit ?(include_dirs=[]) parser_state name =
+  let lexbuf = create_file_lexbuf include_dirs name in
+  parse_lexbuf_with_compilation_unit parser_state lexbuf
 
-let parse_syntax_file ?(include_dirs=[]) parser_state name =
-  let name = Flx_filesys.find_file ~include_dirs name in
-  Flx_filesys.with_file_in name (parse_syntax_channel ~name parser_state)
-
+let parse_file_with_syntax_unit ?(include_dirs=[]) parser_state name =
+  let lexbuf = create_file_lexbuf include_dirs name in
+  parse_lexbuf_with_syntax_unit parser_state lexbuf
 
