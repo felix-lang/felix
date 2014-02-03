@@ -13,7 +13,11 @@ let parse_syntax state =
   in
   (* print_endline ("//Parsing syntax " ^ String.concat ", " synfiles); *)
   let parser_state = List.fold_left
-    (fun state file -> Flx_parse_driver.parse_file_with_syntax_unit ~include_dirs state file)
+    (fun state file -> 
+      let hash_includes, local_data = 
+        Flx_parse_driver.parse_file_with_syntax_unit ~include_dirs state file
+      in local_data
+    )
     (Flx_parse_driver.make_parser_state ())
     (synfiles)
   in
@@ -24,7 +28,11 @@ let parse_syntax state =
   in
 
   let parser_state = List.fold_left
-    (fun state file -> Flx_parse_driver.parse_file_with_compilation_unit ~include_dirs state file)
+    (fun state file -> 
+      let hash_includes, local_data =
+        Flx_parse_driver.parse_file_with_compilation_unit ~include_dirs state file
+      in local_data
+    )
     parser_state
     auto_imports
   in
@@ -93,7 +101,11 @@ print_endline ("DEBUG: flxg_parse.parse_file counter="^string_of_int (!(state.sy
   if state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
   print_endline  ("//Parsing Implementation " ^ file_name);
   if state.syms.compiler_options.print_flag then print_endline ("Parsing " ^ file_name);
-  let parser_state = Flx_parse_driver.parse_file_with_compilation_unit ~include_dirs parser_state file_name in
+  let parser_state = 
+    let hash_includes, local_data = 
+      Flx_parse_driver.parse_file_with_compilation_unit ~include_dirs parser_state file_name 
+    in local_data
+  in
 
 (*
   let stmts = List.rev (Flx_parse.parser_data parser_state) in

@@ -70,6 +70,28 @@ let make_include_entry including_file_dir including_file_base include_string =
 
 *)
 
+(*
+let rec cal_file_time include_dirs time name =
+  let ch = 
+    try open_in_bin name 
+    with _ ->  print_endline ("Can't open file '" ^ name ^ "'"); assert false
+  in
+  let parent_dir = Filename.dirname name in 
+  try
+    while true do 
+      let line = input_line ch in
+      let include_file = Flx_parse_driver.get_hash_include (parent_dir :: include_dirs) line in
+      if include_file <> "" then begin
+print_endline ("  ..  timestamp #include file '" ^ include_file ^ "'");
+        (* the default 0.0 is a don't care because the file has to exist or we crash *)
+        time := max (Flx_filesys.virtual_filetime 0.0 include_file) (!time);
+        cal_file_time include_dirs time include_file;
+      end
+    done
+  with End_of_file ->
+    close_in ch
+*)
+
 let assemble state parser_state exclusions module_name input =
   let fresh_bid () = Flx_mtypes2.fresh_bid state.syms.counter in
   let outputs = ref [] in
@@ -131,11 +153,13 @@ print_endline ("DEBUG: Flxg_assembly.assemble dir=" ^ filedir ^ ", file=" ^ file
       let stmts =
         (* check the felix file modification time *)
         let flx_name = flx_base_name ^ source_file_extension in
-        let flx_time = Flx_filesys.virtual_filetime
+        let flx_time = ref (Flx_filesys.virtual_filetime
           Flx_filesys.big_crunch
-          flx_name
+          flx_name)
         in
-
+        (* 
+        cal_file_time state.syms.compiler_options.include_dirs flx_time flx_name;
+        *)
         let par_name = Flx_filesys.join filedir filename ^ ".par" in
         let par_name = Flx_filesys.mkabs par_name in
         let par_name =
@@ -145,7 +169,7 @@ print_endline ("DEBUG: Flxg_assembly.assemble dir=" ^ filedir ^ ", file=" ^ file
 print_endline ("Parsing or loading file " ^ par_name);
 *)
         let stmts = Flx_filesys.cached_computation "parse" par_name ~outfile:None
-          ~min_time:flx_time
+          ~min_time:(!flx_time)
           (fun () -> Flx_profile.call
             "Flxg_parse.parse_file"
             (Flxg_parse.parse_file state parser_state)

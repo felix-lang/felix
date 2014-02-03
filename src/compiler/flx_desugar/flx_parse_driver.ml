@@ -110,7 +110,7 @@ let get_hash_include include_dirs line =
   with Flx_filesys.Missing_path _ -> ""
   
 
-let rec load_file include_dirs buffer name =
+let rec load_file include_dirs hash_includes buffer name =
   let lineno = ref 0 in
   let ch = 
     try open_in_bin name 
@@ -121,14 +121,17 @@ let rec load_file include_dirs buffer name =
     while true do 
       let line = input_line ch in
       incr lineno;
+(*
       let include_file = get_hash_include (parent_dir :: include_dirs) line in
       if include_file <> "" then begin
 print_endline ("#include file '" ^ include_file ^ "'");
+        hash_includes := Flx_parse_helper.uniq_add include_file (!hash_includes);
         Buffer.add_string buffer ("#line 1 \""^include_file^"\"\n");
-        load_file include_dirs buffer include_file;
+        load_file include_dirs hash_includes buffer include_file;
         Buffer.add_string buffer ("#line "^string_of_int (!lineno+1)^" \""^name^"\"\n")
       end
       else 
+*)
         Buffer.add_string buffer (line ^ "\n")
     done
   with End_of_file ->
@@ -152,8 +155,9 @@ let feed_buffer buffer =
 let create_file_lexbuf ~include_dirs name = 
   let name = Flx_filesys.find_file ~include_dirs name in
   let buffer = Buffer.create 10000 in
+  let hash_includes = ref [] in
   Buffer.add_char buffer '\n';
-  load_file include_dirs buffer name;
+  load_file include_dirs hash_includes buffer name;
   let parser_pilot = pp () in
   let lexbuf = Dyp.from_function parser_pilot (feed_buffer buffer) in
   Dyp.set_fname lexbuf name;
@@ -165,7 +169,7 @@ let create_file_lexbuf ~include_dirs name =
   }
   end
   ;
-  lexbuf 
+  lexbuf, !hash_includes 
 
 (* ---------------------------------------------------------------------------------------- *)
 let parse_compilation_unit local_data lexbuf : local_data_t = 
@@ -186,10 +190,10 @@ let parse_lexbuf_with_syntax_unit old_local_data lexbuf : local_data_t  =
 (* ---------------------------------------------------------------------------------------- *)
 (* USER ENTRY POINTS *)
 let parse_file_with_compilation_unit ?(include_dirs=[]) parser_state name =
-  let lexbuf = create_file_lexbuf include_dirs name in
-  parse_lexbuf_with_compilation_unit parser_state lexbuf
+  let lexbuf,hash_includes = create_file_lexbuf include_dirs name in
+  hash_includes,parse_lexbuf_with_compilation_unit parser_state lexbuf
 
 let parse_file_with_syntax_unit ?(include_dirs=[]) parser_state name =
-  let lexbuf = create_file_lexbuf include_dirs name in
-  parse_lexbuf_with_syntax_unit parser_state lexbuf
+  let lexbuf,hash_includes = create_file_lexbuf include_dirs name in
+  hash_includes,parse_lexbuf_with_syntax_unit parser_state lexbuf
 
