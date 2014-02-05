@@ -69,7 +69,7 @@ fun dflt_control (config:Config::config_type, profile:FlxProfile::profile_type) 
     var VALIDATE_CACHE=1;
     var CHECK_DEPENDENCIES=1;
     var FLX_TOOLCHAIN="";
-
+    var FLX_SHARE_DIR="";
     // --------------------------------------------------
     // processing options
     // --------------------------------------------------

@@ -12,6 +12,7 @@ private proc print_help() {
   println "--test=dir           : use felix installation in dir";
   println "--target=dir         : subdir of install dir containing target configuration (default 'host')";
   println "--toolchain=toolchain: pick a non-default C++ compiler toolchain";
+  println "--felix=file         : get installation details from file";
   println "--where              : print location of felix installation";
   println "--show               : print the felix program to stdout";
   println "-c                   : compile only, do not run";
@@ -110,6 +111,34 @@ private proc print_help() {
 
 }
 
+proc setup-from-file 
+(
+  config:&Config::config_type,
+  control:&FlxControl::control_type, 
+  arg:string
+)
+{
+println$ "Setup file: " + arg;
+  var re = RE2 ("([-a-z]+) *: *(.*)");
+  var lines = split (load arg,char "\n");
+  for line in lines do
+    match Match (re,line) with
+    | Some ?v => 
+      var field = v.1;
+      var data = strip v.2;
+      match field with
+      | "install-dir" => println$ "set install-dir "+data; config.FLX_INSTALL_DIR <- data;
+      | "target-bin" => println$ "set target-bin "+data; config.FLX_TARGET_SUBDIR<- data;
+      | "share-dir" => println$ "set share-dir "+data; control.FLX_SHARE_DIR <- data;
+      | "cache-dir" => println$ "set cache-dir "+data; control.CACHE_DIR <- data;
+      | "output-dir" => println$ "set output-dir "+data; control.OUTPUT_DIR <- data;
+      | _ => println$ "Unknown field " + field;
+      endmatch;
+    | None => ;
+    endmatch;
+  done
+}
+
 private noinline proc handle_switch
 (
   config:&Config::config_type,
@@ -135,6 +164,11 @@ private noinline proc handle_switch
   elif prefix(arg,"--test=") do
     debugln "Set test directory";
     config.FLX_INSTALL_DIR <- arg.[7 to];
+    control.FLX_SHARE_DIR <- Filename::join (config*.FLX_INSTALL_DIR , "share");
+
+  elif prefix(arg,"--felix=") do
+    debugln "Set install details";
+    setup-from-file (config, control, arg.[8 to]);
 
   elif prefix(arg,"--target=") do
     debugln "Set target configuration subdirectory";
@@ -147,6 +181,7 @@ private noinline proc handle_switch
   elif arg=="--test" do
     debugln "Set test directory";
     config.FLX_INSTALL_DIR <- ".";
+    control.FLX_SHARE_DIR <- Filename::join (config*.FLX_INSTALL_DIR , "share");
 
   elif prefix(arg,"--stdout=") do
     debugln "Redirect standard output";
@@ -292,15 +327,15 @@ private noinline proc handle_switch
     control.COMPILER_TIME <- 1;
 
 
-  elif prefix(arg,"--output_dir=") do
+  elif prefix(arg,"--output_dir=") or prefix(arg,"--output-dir=") do
     debugln "Set the directory for compiler generated C++ files";
     control.OUTPUT_DIR <- arg.[13 to];
     
-  elif prefix(arg,"--bundle_dir=") do
+  elif prefix(arg,"--bundle_dir=") or prefix(arg,"--bundle-dir=") do
     debugln "Output files needed for C++ compilation into this folder (directly by basename)";
     control.BUNDLE_DIR <- Some arg.[13 to];
 
-  elif prefix(arg,"--cache_dir=") do
+  elif prefix(arg,"--cache_dir=") or prefix(arg,"--cache-dir=") do
     debugln "Set the directory for compiler generated *.par files";
     control.CACHE_DIR <- arg.[12 to];
 

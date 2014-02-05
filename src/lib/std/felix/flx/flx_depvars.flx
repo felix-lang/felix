@@ -169,14 +169,14 @@ gen cal_depvars(
   debugln$ "Target program args = "+args;
 
   var INCLUDE_DIR= list (
-    ("-I"+Filename::join(config.FLX_INSTALL_DIR,"share","lib","rtl")), // NOTE: this is WRONG
+    ("-I"+Filename::join(control*.FLX_SHARE_DIR,"lib","rtl")), // NOTE: this is WRONG
     ("-I"+Filename::join(config.FLX_INSTALL_DIR,config.FLX_TARGET_SUBDIR,"lib","rtl")))
   ;
   debugln$ "C++ Include directory for Felix library " + str INCLUDE_DIR;
 
   var FLXLIBS=list (
     "-I"+Filename::join(config.FLX_INSTALL_DIR,config.FLX_TARGET_SUBDIR,"lib"),
-    "-I"+Filename::join(config.FLX_INSTALL_DIR,"share","lib")
+    "-I"+Filename::join(control*.FLX_SHARE_DIR,"lib")
   );
   var STDLIB=list[string]("std");
   if control*.NOSTDLIB == 1 do
