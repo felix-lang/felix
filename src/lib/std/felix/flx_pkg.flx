@@ -3,8 +3,7 @@ include "std/felix/flx_pkgconfig";
 class FlxPkg
 {
   typedef pkgconfig_inspec_t = (
-    FLX_INSTALL_DIR:string,
-    FLX_TARGET_SUBDIR:string,
+    FLX_TARGET_DIR:string,
     EXT_EXE: string,
     EXT_STATIC_OBJ: string,
     STATIC: int,
@@ -41,7 +40,7 @@ class FlxPkg
   gen map_package_requirements(spec:pkgconfig_inspec_t) : pkgconfig_outspec_t =
   {
 
-    var PKGCONFIG_PATH="--path+="+Filename::join(spec.FLX_INSTALL_DIR,spec.FLX_TARGET_SUBDIR,"config");
+    var PKGCONFIG_PATH="--path+="+Filename::join(spec.FLX_TARGET_DIR,"config");
     var RESH = "@"+spec.cpp_filebase+".resh";
 
     gen pkgconfl(args:list[string]) : list[string] =
@@ -73,8 +72,7 @@ class FlxPkg
     if spec.STATIC == 0 do
       // dynamic linkage: the driver executable
       var DRIVER_EXE= Filename::join$ list (
-        spec.FLX_INSTALL_DIR,
-        spec.FLX_TARGET_SUBDIR,
+        spec.FLX_TARGET_DIR,
         "bin",
         DRIVER_PKG+spec.EXT_EXE
       )
@@ -83,15 +81,13 @@ class FlxPkg
       // static linkage: the driver object files
       var DRIVER_OBJS =list(
         Filename::join (list (
-          spec.FLX_INSTALL_DIR,
-          spec.FLX_TARGET_SUBDIR,
+          spec.FLX_TARGET_DIR,
           "lib",
           "rtl",
           DRIVER_PKG+"_lib"+
           spec.EXT_STATIC_OBJ)),
         Filename::join (list (
-          spec.FLX_INSTALL_DIR,
-          spec.FLX_TARGET_SUBDIR,
+          spec.FLX_TARGET_DIR,
           "lib",
           "rtl",
           DRIVER_PKG+"_main"+spec.EXT_STATIC_OBJ))

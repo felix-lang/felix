@@ -36,8 +36,7 @@ proc check_cache(
   profile:&FlxProfile::profile_type)
 {
   control*.CLEAR_CACHE, control*.cache_time = validate_cache (
-    FLX_INSTALL_DIR = config*.FLX_INSTALL_DIR,
-    FLX_TARGET_SUBDIR = config*.FLX_TARGET_SUBDIR,
+    FLX_SHARE_DIR = control*.FLX_SHARE_DIR,
     STDGRAMMAR = control*.STDGRAMMAR,
     FLXG = control*.FLXG,
     CACHE_DIR = control*.CACHE_DIR,
@@ -113,8 +112,7 @@ object processing_env(
       var tc = toolchain dflt_clang_config;
       var x = FlxPkg::map_package_requirements 
       (
-         FLX_INSTALL_DIR = config.FLX_INSTALL_DIR,
-         FLX_TARGET_SUBDIR = config.FLX_TARGET_SUBDIR,
+         FLX_TARGET_DIR = control.FLX_TARGET_DIR,
          EXT_EXE = #(tc.executable_extension),
          EXT_STATIC_OBJ = #(tc.static_object_extension),
          STATIC = control.STATIC,

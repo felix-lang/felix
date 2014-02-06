@@ -48,8 +48,7 @@ class FlxCache
 
   typedef cache_validation_spec_t = 
   (
-     FLX_INSTALL_DIR:string, 
-     FLX_TARGET_SUBDIR:string,
+     FLX_SHARE_DIR:string, 
      STDGRAMMAR:string, 
      FLXG:string,    
      CACHE_DIR:string,
@@ -118,15 +117,14 @@ class FlxCache
 
     // Calculate the time of the newest text file defining the grammar
     // these are files in directory share/lib/grammar.
-    var grammar_time = gramtime spec.debugln (Filename::join (spec.FLX_INSTALL_DIR,"share","lib"), spec.STDGRAMMAR);
+    var grammar_time = gramtime spec.debugln (Filename::join (spec.FLX_SHARE_DIR,"lib"), spec.STDGRAMMAR);
     spec.debugln$ "Grammar text time=" + FileStat::strfiletime (grammar_time);
 
     // calculate the name of the compiled grammar automaton in the cache
     var automaton_name = 
       cache_join(spec.CACHE_DIR, 
       Directory::mk_absolute_filename (Filename::join (list( 
-        spec.FLX_INSTALL_DIR,
-        "share",
+        spec.FLX_SHARE_DIR,
         "lib",
         "grammar",
         "syntax.automaton"

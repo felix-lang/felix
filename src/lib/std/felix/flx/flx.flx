@@ -50,11 +50,6 @@ class Flx
       System::exit(0);
     done
 
-    if control*.FLX_SHARE_DIR == "" do
-       control.FLX_SHARE_DIR <- config*.FLX_INSTALL_DIR / "share";
-    done
-
-
     var dbdir = config*.FLX_INSTALL_DIR / config*.FLX_TARGET_SUBDIR / "config";
     var pkgconfig = FlxPkgConfig::FlxPkgConfigQuery$ list[string] dbdir;
     

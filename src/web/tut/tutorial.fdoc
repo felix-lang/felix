@@ -1,19 +1,37 @@
-@h1 Tutorial
+@title Tutorial Tracts
+@h1 Basic Scripting Technology
 
 <a href="tut_index.fdoc">Getting Started: </a>
 an introduction to the basics.
 @p
-<a href="literals_index.fdoc">Scalar Types:  </a>
-a summary of the core scalar types and
-a set of operations on them.
+<a href="func_index.fdoc">Functions: </a>
+A quick summary of functions and procedures.
 @p
-<a href="pattern_index.fdoc">Pattern Matching: </a>
-pattern matching and the discriminated union construction.
+<a href="control_index.fdoc">Basic Control Structures: </a>
+A quick summary of basic control structures.
+@p
+<a href="string_index.fdoc">Strings: </a>
+Core string handling.
+@p
+<a href="regexp_index.fdoc">Regexps: </a>
+Regexps with Google RE2.
 @p
 <a href="polymorphism_index.fdoc">Polymorphism: </a>
 basic parametric polymorphism in Felix.
 
+@h2 Contract Programming Paradigm.
+<a href="typeclass_index.fdoc">Type Classes: </a>
+Using classes to represent concepts.
 @p
+
+@h2 Functional Programming Technology
+<a href="pattern_index.fdoc">Pattern Matching: </a>
+pattern matching and the discriminated union construction.
+@p
+<a href="list_index.fdoc">Lists: </a>
+Using the infamous list data structure.
+
+@h2 Imperative Programming Technology
 <a href="array_index.fdoc">Arrays: </a>
 concepts of arrays and a collection
 of array types.
@@ -26,25 +44,51 @@ sequences into temporal ones.
 a highly dynamic object system loosely
 modelled on Java.
 @p
+<a href="coroutines_index.fdoc">Coroutines: </a>
+a mechanism for ultra-high speed synchronous context switching
+where control is exchanged explicitly.
+@p
 <a href="fibres_index.fdoc">Fibres: </a>
 a mechanism for ultra-high speed synchronous context switching
 where control is exchanged using channels.
 
-@h2 Advanced Topics
+@h2 Concurrent Programming Technology
+<a href="async_index.fdoc">Faio: </a>
+Handling Asynchronous Events.
 @p
-<a href="abstract_machine.fdoc">Felix Abstract Machine</a>
+<a href="pthread_index.fdoc">Pthreads: </a>
+Pre-emptive threading and Concurrency.
 @p
-<a href="nutut/intro/intro_index.fdoc">Library Implementation</a>
-<br/>
-A tutorial introducing the system for library implementors,
-starting from C++ bindings. Introduces the language and its
-features from an implementation viewpoint, rather than
-a semantic one.
+<a href="networking_index.fdoc">Networking: </a>
+A brief introduction to TCP/IP with sockets.
+
+@h2 Meta Programming Technology
+<a href="syntax_index.fdoc">Domain Specific Sub-Languages</a>
+Extending the Felix grammar library.
+
+
+@h2 C++ Integration Technology
+<a href="cbind_index.fdoc">Binding C</a>
+Embedding C and C++ in Felix.
 @p
+<a href="plugin_index.fdoc">Programming with Plugins</a>
+Dynamic Loading stuff.
+
+@p
+<a href="lowlevel_index.fdoc">Raw address manipulation</a>
+Low level programming capabilities.
+
+@p
+<a href="gc_index.fdoc">The Garbage Collector</a>
+Considerations for programming with Garbage Collection.
+
+@h1 Advanced Topics
 Categorical type system: 
 <a href="garray_index.fdoc">Generalised Arrays.</a>
 
+@h2 Appendices
+<a href="literals_index.fdoc">Scalar Types:  </a>
+a summary of the core scalar types and
+a set of operations on them.
 @p
-C Embedding:
-<a href="cbind_index.fdoc">Binding C</a>
 
