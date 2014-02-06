@@ -366,7 +366,9 @@
            Do not confuse with loop labels.
 0046:    <a href="/share/lib/grammar/control.flxh#0046">stmt := "goto" sname ";"</a>
            Unconditional goto label.
-0060:    <a href="/share/lib/grammar/control.flxh#0060">stmt := "try" stmt+ catches "endtry"</a>
+0049:    <a href="/share/lib/grammar/control.flxh#0049">stmt := "goto-indirect" sexpr ";"</a>
+           Unconditional goto expression.
+0064:    <a href="/share/lib/grammar/control.flxh#0064">stmt := "try" stmt+ catches "endtry"</a>
            Exception handling.
            try .. catch x : T => handler endtry
            can be used to execute code which might throw
@@ -376,8 +378,8 @@
            multiple function/procedure layers. If you have to use
            this construction be sure to keep wrap the try block
            closely around the throwing code.
-0063:    <a href="/share/lib/grammar/control.flxh#0063">catch := "catch" sname ":" sexpr  "=>" stmt+</a>
-0066:    <a href="/share/lib/grammar/control.flxh#0066">catches := catch+</a>
+0067:    <a href="/share/lib/grammar/control.flxh#0067">catch := "catch" sname ":" sexpr  "=>" stmt+</a>
+0070:    <a href="/share/lib/grammar/control.flxh#0070">catches := catch+</a>
 <hr/><a href="/share/lib/grammar/executable.flxh">executable.flxh</a>
 
 0002:  <a href="/share/lib/grammar/executable.flxh#0002">syntax executable</a>
@@ -547,70 +549,72 @@
            High precedence unit application. #f = f ().
 0281:    <a href="/share/lib/grammar/expressions.flxh#0281">sthe_name := "&" sthe_name</a>
            Felix pointer type and address of operator.
-0284:    <a href="/share/lib/grammar/expressions.flxh#0284">sthe_name :=  "@" sthe_name</a>
+0284:    <a href="/share/lib/grammar/expressions.flxh#0284">sthe_name := "label_address" sname</a>
+           Felix address of operator.
+0288:    <a href="/share/lib/grammar/expressions.flxh#0288">sthe_name :=  "@" sthe_name</a>
            C pointer type.
-0287:    <a href="/share/lib/grammar/expressions.flxh#0287">sthe_name := "noexpand" squalified_name</a>
+0291:    <a href="/share/lib/grammar/expressions.flxh#0291">sthe_name := "noexpand" squalified_name</a>
            macro expansion freezer.
-0290:    <a href="/share/lib/grammar/expressions.flxh#0290">sthe_name := "?" sname</a>
+0294:    <a href="/share/lib/grammar/expressions.flxh#0294">sthe_name := "?" sname</a>
            pattern variable.
-0293:    <a href="/share/lib/grammar/expressions.flxh#0293">sthe_name := "?" sinteger</a>
+0297:    <a href="/share/lib/grammar/expressions.flxh#0297">sthe_name := "?" sinteger</a>
            Template replacement index.
-0295:    <a href="/share/lib/grammar/expressions.flxh#0295">sthe_name := squalified_name</a>
-0296:    <a href="/share/lib/grammar/expressions.flxh#0296">sthe_name := satom</a>
-0299:    <a href="/share/lib/grammar/expressions.flxh#0299">sreally_qualified_name := squalified_name "::" ssimple_name_parts</a>
+0299:    <a href="/share/lib/grammar/expressions.flxh#0299">sthe_name := squalified_name</a>
+0300:    <a href="/share/lib/grammar/expressions.flxh#0300">sthe_name := satom</a>
+0303:    <a href="/share/lib/grammar/expressions.flxh#0303">sreally_qualified_name := squalified_name "::" ssimple_name_parts</a>
            Qualified name.
-0302:    <a href="/share/lib/grammar/expressions.flxh#0302">squalified_name := sreally_qualified_name</a>
-0304:    <a href="/share/lib/grammar/expressions.flxh#0304">squalified_name := ssimple_name_parts</a>
-0307:    <a href="/share/lib/grammar/expressions.flxh#0307">ssimple_name_parts := sname</a>
-0308:    <a href="/share/lib/grammar/expressions.flxh#0308">ssimple_name_parts := sname "[" sexpr "]"</a>
-0311:    <a href="/share/lib/grammar/expressions.flxh#0311">ssuffixed_name := squalified_name "of" x[sfactor_pri]</a>
+0306:    <a href="/share/lib/grammar/expressions.flxh#0306">squalified_name := sreally_qualified_name</a>
+0308:    <a href="/share/lib/grammar/expressions.flxh#0308">squalified_name := ssimple_name_parts</a>
+0311:    <a href="/share/lib/grammar/expressions.flxh#0311">ssimple_name_parts := sname</a>
+0312:    <a href="/share/lib/grammar/expressions.flxh#0312">ssimple_name_parts := sname "[" sexpr "]"</a>
+0315:    <a href="/share/lib/grammar/expressions.flxh#0315">ssuffixed_name := squalified_name "of" x[sfactor_pri]</a>
            Suffixed name (to name functions).
-0315:    <a href="/share/lib/grammar/expressions.flxh#0315">satom := "(" rassign ("," rassign )* ")"</a>
+0319:    <a href="/share/lib/grammar/expressions.flxh#0319">satom := "(" rassign ("," rassign )* ")"</a>
            record value (comma separated).
-0318:    <a href="/share/lib/grammar/expressions.flxh#0318">rassign := sname "=" x[sor_condition_pri]</a>
-0323:    <a href="/share/lib/grammar/expressions.flxh#0323">satom := "struct" "{" vassign+ "}"</a>
+0322:    <a href="/share/lib/grammar/expressions.flxh#0322">rassign := sname "=" x[sor_condition_pri]</a>
+0327:    <a href="/share/lib/grammar/expressions.flxh#0327">satom := "struct" "{" vassign+ "}"</a>
            record value, statement list.
            this variant is useful for encapsulating
            a series of var x = y; style statements.
-0326:    <a href="/share/lib/grammar/expressions.flxh#0326">vassign := "var" sname "=" sexpr ";"</a>
-0330:    <a href="/share/lib/grammar/expressions.flxh#0330">satom := sliteral</a>
+0330:    <a href="/share/lib/grammar/expressions.flxh#0330">vassign := "var" sname "=" sexpr ";"</a>
+0334:    <a href="/share/lib/grammar/expressions.flxh#0334">satom := sliteral</a>
            scalar literals (numbers, strings).
-0333:    <a href="/share/lib/grammar/expressions.flxh#0333">satom := _</a>
+0337:    <a href="/share/lib/grammar/expressions.flxh#0337">satom := _</a>
            Wildcard pattern.
-0336:    <a href="/share/lib/grammar/expressions.flxh#0336">satom := "..."</a>
+0340:    <a href="/share/lib/grammar/expressions.flxh#0340">satom := "..."</a>
            Ellipsis (for binding C varags functions).
-0339:    <a href="/share/lib/grammar/expressions.flxh#0339">satom := "false"</a>
+0343:    <a href="/share/lib/grammar/expressions.flxh#0343">satom := "false"</a>
            Boolean false.
-0342:    <a href="/share/lib/grammar/expressions.flxh#0342">satom := "true"</a>
+0346:    <a href="/share/lib/grammar/expressions.flxh#0346">satom := "true"</a>
            Boolean true.
-0345:    <a href="/share/lib/grammar/expressions.flxh#0345">satom := "callback" "[" sexpr "]"</a>
+0349:    <a href="/share/lib/grammar/expressions.flxh#0349">satom := "callback" "[" sexpr "]"</a>
            Callback expression.
-0348:    <a href="/share/lib/grammar/expressions.flxh#0348">satom := "[|" sexpr "|]"</a>
+0352:    <a href="/share/lib/grammar/expressions.flxh#0352">satom := "[|" sexpr "|]"</a>
            Array expression (deprecated).
-0351:    <a href="/share/lib/grammar/expressions.flxh#0351">satom := "{" sexpr "}"</a>
+0355:    <a href="/share/lib/grammar/expressions.flxh#0355">satom := "{" sexpr "}"</a>
            Short form anonymous function closure.
-0354:    <a href="/share/lib/grammar/expressions.flxh#0354">satom := scompound</a>
+0358:    <a href="/share/lib/grammar/expressions.flxh#0358">satom := scompound</a>
            Short form anonymous procedure closure.
-0358:    <a href="/share/lib/grammar/expressions.flxh#0358">satom := "(" stmt+ sexpr ")"</a>
+0362:    <a href="/share/lib/grammar/expressions.flxh#0362">satom := "(" stmt+ sexpr ")"</a>
            Short form sequence operator.
            ( stmt; expr ) means the same as #{stmt; return expr; }
-0374:    <a href="/share/lib/grammar/expressions.flxh#0374">satom := "(" "var" sexpr ")"</a>
+0378:    <a href="/share/lib/grammar/expressions.flxh#0378">satom := "(" "var" sexpr ")"</a>
            special anonymous variable forces eager eval.
-0387:    <a href="/share/lib/grammar/expressions.flxh#0387">satom := "(" sexpr ")"</a>
+0391:    <a href="/share/lib/grammar/expressions.flxh#0391">satom := "(" sexpr ")"</a>
            Grouping.
-0390:    <a href="/share/lib/grammar/expressions.flxh#0390">satom := "(" ")"</a>
+0394:    <a href="/share/lib/grammar/expressions.flxh#0394">satom := "(" ")"</a>
            Empty tuple (unit tuple).
-0393:    <a href="/share/lib/grammar/expressions.flxh#0393">satom := "extend" stypelist "with" sexpr "end"</a>
+0397:    <a href="/share/lib/grammar/expressions.flxh#0397">satom := "extend" stypelist "with" sexpr "end"</a>
            Object extension.
-0396:    <a href="/share/lib/grammar/expressions.flxh#0396">satom := sconditional "endif"</a>
+0400:    <a href="/share/lib/grammar/expressions.flxh#0400">satom := sconditional "endif"</a>
            Conditional expression.
-0399:    <a href="/share/lib/grammar/expressions.flxh#0399">sconditional := "if" sexpr "then" sexpr selse_part</a>
+0403:    <a href="/share/lib/grammar/expressions.flxh#0403">sconditional := "if" sexpr "then" sexpr selse_part</a>
            Conditional expression (prefix).
-0402:    <a href="/share/lib/grammar/expressions.flxh#0402">selif := "elif" sexpr "then" sexpr</a>
-0404:    <a href="/share/lib/grammar/expressions.flxh#0404">selifs := selif</a>
-0405:    <a href="/share/lib/grammar/expressions.flxh#0405">selifs := selifs selif</a>
-0407:    <a href="/share/lib/grammar/expressions.flxh#0407">selse_part:= "else" sexpr</a>
-0408:    <a href="/share/lib/grammar/expressions.flxh#0408">selse_part:= selifs "else" sexpr</a>
+0406:    <a href="/share/lib/grammar/expressions.flxh#0406">selif := "elif" sexpr "then" sexpr</a>
+0408:    <a href="/share/lib/grammar/expressions.flxh#0408">selifs := selif</a>
+0409:    <a href="/share/lib/grammar/expressions.flxh#0409">selifs := selifs selif</a>
+0411:    <a href="/share/lib/grammar/expressions.flxh#0411">selse_part:= "else" sexpr</a>
+0412:    <a href="/share/lib/grammar/expressions.flxh#0412">selse_part:= selifs "else" sexpr</a>
 <hr/><a href="/share/lib/grammar/felix.flxh">felix.flxh</a>
 
 0001:  <a href="/share/lib/grammar/felix.flxh#0001">syntax felix</a>
@@ -980,24 +984,26 @@
            The start and end argument types and the declared control variable type must be the same.
 0266:    <a href="/share/lib/grammar/loops.flxh#0266">stmt := optlabel "for" sname "in" sexpr stmt_group</a>
            Basic stream consumer.
-           The second argument must either be a function of type:
-           unit -> opt[T]
-           or any data structure D with a function
-           
+           The second argument must be a value for which there is a generator:
            iterator : D -> unit -> opt[T]
+           Due to a hack in std/datatype/slice.flx:
+           gen iterator[t] (f:1->opt[t]) => f;
+           you can also use an actual iterator.
+           
            1. The iterator function is called.
            2. If the result is None, the loop exits.
            3. If the result is Some ?t, then t is assigned to the
            control variable,
            4. the loop body is executed, and
            6. we go back to step 1.
-0308:    <a href="/share/lib/grammar/loops.flxh#0308">stmt := optlabel "match" spattern "in" sexpr stmt_group</a>
+0309:    <a href="/share/lib/grammar/loops.flxh#0309">stmt := optlabel "match" spattern "in" sexpr stmt_group</a>
            Upmarket stream consumer.
-           The second argument must either be a function of type:
-           unit -> opt[T]
-           or any data structure D with a function
-           
+           The second argument must be a value for which there is a generator:
            iterator : D -> unit -> opt[T]
+           Due to a hack in std/datatype/slice.flx:
+           gen iterator[t] (f:1->opt[t]) => f;
+           you can also use an actual iterator.
+           
            1. The iterator function is called.
            2. If the result is None, the loop exits.
            3. If the result is Some ?t,

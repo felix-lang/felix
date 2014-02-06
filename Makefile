@@ -61,7 +61,7 @@ help:
 	#   FBUILD_PARAMS: parameters to fbuild, default none
 	#     fbuild/fbuild-light --help for options
 
-build: user-build flxg copy lib rtl toolchain-plugins flx web-plugins tools
+build: user-build slow-flxg rebuild
 
 dev-build: fbuild gendoc
 
@@ -243,6 +243,13 @@ post-tarball:
 #--------------------------------------------------
 
 #
+slow-flxg:
+	# =========================================================
+	# building flxg
+	# =========================================================
+	build/release/host/bin/flx --test=build/release src/tools/flx_build_flxg
+	cp tmp-dir/flxg build/release/host/bin
+
 flxg:
 	# =========================================================
 	# building flxg
