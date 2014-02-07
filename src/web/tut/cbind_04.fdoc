@@ -9,7 +9,7 @@ to specify the type. Here is some more magic:
 @h2 Plain Old Datatype
 If you define a type which is roughly an ordinary old C datatype,
 you should add an annotation:
-@felix
+@felix-unchecked
 pod type Int = "int";
 @
 This actually tells Felix that the data type does not have a
@@ -28,7 +28,7 @@ typically leading memory leaks.
 @h2 Incomplete type
 You can define a type which is cannot be constructed. This is useful
 when you only want to deal with pointer to that type. For example:
-@felix
+@felix-unchecked
 incomplete type Void = "void";
 incomplete type mutex_rep = "mutex_t";
 typedef mutex = &mutex_rep;
@@ -45,7 +45,7 @@ will.
 
 @h2 _gc_pointer, _gc_type
 The annotation shown here:
-@felix
+@felix-unchecked
 _gc_pointer type fred = "fred*";
 @
 tells Felix that the type is a pointer which the garbage
@@ -56,7 +56,7 @@ on the Felix heap.
 This annotation is rarely useful by itself, unless you're
 binding a system type. Here is how we bind Google's RE2 type,
 which is an immobile object:
-@felix
+@felix-unchecked
 private type RE2_ = "::re2::RE2";
 _gc_pointer _gc_type RE2_ type RE2 = "::re2::RE2*";
 ctor RE2 : string -> RE2 = "new (*PTF gcp, @0, false) RE2($1)";

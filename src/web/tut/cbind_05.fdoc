@@ -7,7 +7,7 @@ than C++!
 @h2 Specifying precedence
 You can specify the precedence to avoid gratuitous parentheses like this:
 @felix
-fun add: int * int -> int = "$1:add + $2:mult" is add";
+fun add: int * int -> int = "$1:add + $2:mult" is add;
 @
 The precedences are named, from tightest binding to loosest binding:
 @pre

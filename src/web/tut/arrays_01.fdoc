@@ -16,12 +16,12 @@ Their properties can be classified as follows.
 @h2 Array Value
 An array value is a readonly indexable store with amortised O(1) access times.
 It has two defining properties:
-@felix
+@felix-unchecked
 len: A -> size
 unsafe_get: A * size -> T
 @
 and several derived properties:
-@felix
+@felix-unchecked
   //$  Checked common indexing.
   fun apply [I in ints] (i:I, x:t) => get (x,i.size);
 
@@ -75,7 +75,7 @@ type. For example
 val a = 1,2,3,4;
 @
 has type
-@felix
+@felix-unchecked
 int^4 = array[int,4]
 @
 A component of an array can be fetched using an value of the
@@ -83,10 +83,14 @@ index type as a projection function. Such indexes cannot
 exceed array bounds.  Unlike tuples, the projection index can be an 
 expression.
 @felix
-println$ (case 1 of 4) x;
-println$ x . (case 1 of 4);
+println$ (case 1 of 4) a;
+println$ a . (case 1 of 4);
 val k = case 1 of 4;
-println$ x . k;
+println$ a . k;
+@expect
+2
+2
+2
 @
 For your convenience you may also index an array with 
 any integer type. The value is converted to the array's
@@ -95,9 +99,12 @@ however the conversion may fail.
 @felix
 println$ a . 1;  // converted to case 1 of 4
 println$ a . 1uz;  // converted to case 1 of 4
-println$ a . 22; // fails at compile time
+//println$ a . 22; // fails at compile time
 var one = 1;
-printn$ a . (one + 22); // assertion failure at run time
+//printn$ a . (one + 22); // assertion failure at run time
+@expect
+2
+2
 @
 If you use an integral literal or simple constant expression
 and the value is out of bounds, Felix may trap the error
@@ -113,13 +120,17 @@ Therefore instead of this code:
 @felix
 val a1 = 1,2,3,4;
 val a2 = 5,6,7,8;
-val i = 1;
-println$ a1 . i, a2 . i;
+var j = 1;
+println$ a1 . j, a2 . j;
+@expect
+(2, 6)
 @
 it is better to write:
 @felix
 val i : 4 = 1 :>> 4;
 println$ a1 . i, a2 . i;
+@expect
+(2, 6)
 @
 to reduce the number of checked conversions from 2 to 1. 
 
@@ -127,12 +138,16 @@ The length of an array may be obtained at run time with
 the {len} method:
 @felix
 println$ a.len;
+@expect
+4
 @
 which returns a value of type {size}.
 
 Felix also provides the method {get} and {unsafe_get}:
 @felix
 println$ unsafe_get (a, 1.size), get (a, 1.size);
+@expect
+(2, 2)
 @
 which are standard for all arrays. The {get} method
 does a bounds check then calls the {unsafe_get} method.

@@ -8,7 +8,7 @@ To store something, you need an ArrayObject.
 i am NOT going to explain it. Here is the definition in the library,
 you should be able to read the code!
 
-@felix
+@felix-unchecked
 //$ Array as Object (mutable).
 class ArrayObject[t,v]
 {
@@ -27,7 +27,7 @@ class ArrayObject[t,v]
 @h2 Contiguous Array Object: Array as sequence.
 Now, there is one more useful class in the file:
 
-@felix
+@felix-unchecked
 //$ Array as Contiguous STL Object.
 //$ Provides STL iterators type +v
 class ContiguousArrayObject[t,v]
@@ -50,7 +50,7 @@ class ContiguousArrayObject[t,v]
 
 This is an ArrayObject which also provides two methods:
 
-@felix
+@felix-unchecked
   stl_begin
   stl_end
 @
@@ -62,7 +62,7 @@ however here these are assured to be actual pointers.
 @h2 Carray
 The type:
 
-@felix
+@felix-unchecked
   +v
 @
 
@@ -70,13 +70,13 @@ is a pointer to v which can be incremented. Now, if a pointer can
 be incremented, it must point into an array! This has an alias
 in the library
   
-@felix
+@felix-unchecked
   carray[v]
 @
 
 and properties described in the class
 
-@felix
+@felix-unchecked
   Carray
 @
 
@@ -89,7 +89,7 @@ determine the length.
 
 It is instructive to look at the class. In particular look at this:
 
-@felix
+@felix-unchecked
 //$ A carray[T] = +T is an incrementable, non-NULL, pointer.
 open class Carray
 {
@@ -124,34 +124,34 @@ for our definitions (but these are NOT exported by opening Carray!)
 
 Ok, so, the definition:
 
-@felix
+@felix-unchecked
   type carray[T] = new &T;
 @
 
 makes a new abstract type carray[T] which is *implemented* by a pointer
 to a T.  Then, this bit:
 
-@felix
+@felix-unchecked
   //$ Define prefix + notation.
   typedef fun +(T:TYPE) : TYPE => carray[T]; 
 @
 
 says that + is a type function, which maps
 
-@felix
+@felix-unchecked
   +T to carray[T]
 @
 
 so you can just use +int for a carray of ints. The next bit:
 
-@felix
+@felix-unchecked
   //$ Unsafe conversion of Felix pointer to carray.
   fun +[T]:&T -> carray[T] = "$1"; // unsafe
 @
 says that if you have an object pointer p, you can
 promote it, unsafely, to an array pointer:
 
-@felix
+@felix-unchecked
   var x = 1; // an object of type int
   var px : &int = &x; // a pointer to an int
   var ipx = +px; // an incrementable pointer
@@ -161,7 +161,7 @@ The conversion is obviously unsafe as you can see from
 the example! You can also go back, to get an ordinary
 pointer from an incrementable one:
 
-@felix
+@felix-unchecked
   var px' : &int = -ipx;
 @
 
@@ -186,7 +186,7 @@ which is easy to use and which doesn't have a performance hit]
 
 An example is easily given:
 
-@felix
+@felix-unchecked
   proc sort[T] : +T * +T = "::std::sort($1, $2)";
 @
 

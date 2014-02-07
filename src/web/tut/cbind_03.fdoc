@@ -1,24 +1,29 @@
 @title Embedding: Floating Insertions.
 @h1 Floating Insertions.
 It is also possible to emit bulk code into either the generated
-header file or generated body file:
-@felix
-header "void f(int);";
-body "void f(int x) { return x + 1; }";
-@
+header file or generated body file.
 
 Header and body insertions are said to be floating because they're not emitted
 where they're written, instead they float up to a fixed place at the top
 of the generated file.
 
+Floating insertions are only emitted if they're required.
+
 @h1 Basic Requirements.
 Floating insertions can be named:
 @felix
-body mystuff = '#include "mystuff.c"';
+body mystuff = '''
+  struct mytype { 
+    int data; 
+    mytype(int x) : data(x) {} 
+  };
+''';
 type mytype = "mytype" requires mystuff;
-ctor mytype : int = "make($1)";
-ctor int : mytype = "toint($1)";
+ctor mytype : int = "mytype($1)";
+ctor int : mytype = "$1.data";
 println$ int (mytype 42);
+@expect
+42
 @
 If a floating insertion is given a tag name like this,
 it is not emitted unless it is required. The {println} command here

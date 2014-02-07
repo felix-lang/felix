@@ -2,32 +2,32 @@
 @h1 The requires clause
 The requires clause has a number of options. Any number of requirements
 can be specified in a comma separated list.
-@felix
+@felix-unchecked
 requires header "stuff";
 requires body "stuff";
 @
 These are just literal floating insertions.
-@felix
+@felix-unchecked
 requires tagname;
 @
 These are floating insertions identified by name.
-@felix
+@felix-unchecked
 requires package "name";
 @
 The requirements are to be found in the file {config/name.fpc}.
 This not only specifies floating insertion of header files,
 but also linking of libraries and dependencies.
-@felix
+@felix-unchecked
 type mytype = "mytype*" requires finaliser "fred";
 @
 This specifies that the C function {fred} is to be called
 on a value by the garbage collector for finalisation.
 instead of the default call which is 
-@felix
+@cpp
 pointer->mytype::~mytype()
 @
 that is, a call to the destructor.
-@felix
+@felix-unchecked
 requires scanner "myscanner";
 @
 This annotation specifies a scanner for the object.
@@ -41,7 +41,7 @@ be implemented in a later version. The existing code is sufficient,
 though not efficient, in handling Judy arrays.)
 
 At this time, the function must be declared like:
-@felix
+@cpp
 void *myscanner(
   collector_t *collector, 
   gc_shape_t *shape, 
@@ -51,13 +51,13 @@ void *myscanner(
 )
 @
 
-@felix
+@felix-unchecked
 requires property "fred";
 @
 This annotation adds a string property to a symbol.
 These are primarily for internal use.
 These properties are currently recognized:
-@felix
+@pre
     "needs_gc"   // a function needs the garbage collector
     "needs_ptf"  // a function needs a pointer to the thread frame
     "pure"       // a function is pure and does not access global variables
@@ -73,7 +73,7 @@ to a function if the function uses any of those types. The annotations
 are required because Felix can't see into your C code.
 
 An example of use from the library:
-@felix
+@felix-unchecked
  private body mkjudy =
     """
       void **_mkjudy(FLX_APAR_DECL ::flx::gc::generic::gc_shape_t *jptr_map){

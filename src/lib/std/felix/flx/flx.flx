@@ -96,6 +96,7 @@ class Flx
           control.LINKER_OUTPUT_FILENAME <- "";
           control.STDOUT <- "";
           control.EXPECT <- "";
+          control.STDIN <- "";
           var dvars = FlxDepvars::cal_depvars(toolchain,*config,control,*loopctl);
           println$ f"Processing [%02d/%02d]: %S" (i, n, file);
           var pe = processing_env(toolchain,*config,*control,dvars, *profile);

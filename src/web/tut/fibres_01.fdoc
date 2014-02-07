@@ -25,23 +25,17 @@ Here is a simple model:
 Best to show a real example of course!
 
 @felix
-open Text_file;
-
 proc client(x:ischannel[string]) {
   while true do
     line := read x;
-    print line;
+    println line;
   done
 }
 
 proc server(x:oschannel[string]) {
-  f := fopen_input "xyz.flx";
-  var line = readln f;
-  while line != "" do
-    write$ x,line;
-    line = readln f;
+  for var i in 0 upto 9 do
+    write$ x,i.str;
   done;
-  fclose f;
 }
 
 proc launch() {

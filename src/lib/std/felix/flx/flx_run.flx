@@ -780,7 +780,7 @@ object processing_env(
       debugln "Running program skipped by switch";
     done
 
-    if control.CHECK_EXPECT == 1 do
+    if control.EXPECT != "" do
       result = #check_output_if_required;
       if result != 0 return result;
     done

@@ -15,7 +15,7 @@ and libraries when linking. Felix does all of that automatically.
 The key to this system is a database maintained in the {config}
 directory of your Felix installation. A quick list of some of the
 files shows something like this:
-@felix
+@pre
 ~/felix>ls build/release/config
 __init__.py             flx_executil.fpc        glu.fpc                 sdl.fpc
 __init__.pyc            flx_gc.fpc              glut.fpc                sqlite3.fpc
@@ -32,7 +32,7 @@ flx_exceptions.fpc      glext.fpc               re2.fpc
 All those {*.fpc} files are entries in the configuration database which specify
 a package. {fpc} stands for Felix Package Config. The associated processor
 is written in Felix and is called {flx_pkgconfig}. Here's one of them:
-@felix
+@pre
 ~/felix>less build/release/config/flx_gc.fpc
 Name: flx_gc
 Platform: Unix 
@@ -50,7 +50,7 @@ namely {judy}.
 
 Here's an {fpc} file for the C++ binding of GNU's Multiple Precision Arithmetic
 library:
-@felix
+@pre
 requires_slibs: -L/usr/local/lib -lgmp
 requires_dlibs: -L/usr/local/lib -lgmp
 provides_dlib: -L/usr/local/lib -lgmpxx
@@ -62,7 +62,7 @@ These database files contain platform dependent information.
 It is put there so you do <em>not</em> need to do so in your 
 program! Instead you just write:
 
-@felix
+@felix-unchecked
 requires package "flx_gc", package "gmpxx";
 @
 

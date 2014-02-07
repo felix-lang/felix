@@ -18,25 +18,29 @@ You can find the bound with the "maxlen" method. you can make an empty
 varray like this:
 
 @felix
-  var a = varray[int](20); // bound 20 elements
+  var a = varray[int](20.size); // bound 20 elements
 @
 
 and append elements with
 
 @felix
   a += 1; a += 2;
+  println$ a;
+@expect
+varray(1, 2)
 @
-
 or with
 
 @felix
   push_back (a, 3);
+  println$ a;
+@expect
+varray(1, 2, 3)
 @
-
 [BUG: you cannot do  a . push_back 3, I think this wold
 be better, it is easy enough to implement by:
 
-@felix
+@felix-unchecked
   proc push_back (a: varray[T]) ( v:T) => push_back (a, v);
 @
 
@@ -46,13 +50,18 @@ lead to an ambiguity (famous last words ..)]
 You can also pop values off the end of the array:
 
 @felix
-  println$ a. pop();
+  a.pop;
+  println$ a;
+@expect
+varray(1, 2)
 @
-
 You can also make a varray from an array:
 
 @felix
   var x = varray (1,2,3,4);
+  println$ x;
+@expect
+varray(1, 2, 3, 4)
 @
 
 [This is a bit risky, because varray (10,20) is an varray of 

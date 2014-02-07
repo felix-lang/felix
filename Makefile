@@ -95,7 +95,7 @@ test:
 tut-check:
 	mkdir -p web
 	${BUILDROOT}/host/bin/flx_tangle --indir=src/web/tut --outdir=tut
-	${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --usage=prototype --expect --input --indir=tut --regex='.*\.flx' --nonstop
+	${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --usage=prototype --expect --input --indir=tut --regex='.*\.flx' 
 
 
 #

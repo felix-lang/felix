@@ -87,7 +87,12 @@ gen cal_depvars(
   done
 
   if control*.SET_STDIN != 0 and control*.STDIN == "" do
-    control.STDIN <- cache_join (control*.OUTPUT_DIR,filebase + ".input");
+    var stdin_name = filebase + ".input"; 
+    if FileStat::fileexists stdin_name  do
+      control.STDIN <- stdin_name;
+    elif control*.INREGEX != "" do
+      println$ "WARNING: computed input file " + stdin_name + " doesn't exist!";
+    done
     debugln$ "Set stdin to " + control*.STDIN;
   done
 
@@ -96,7 +101,12 @@ gen cal_depvars(
   // and no expect file name is given, then use the filebase
   // with extension .expect.
   if control*.CHECK_EXPECT != 0 and control*.EXPECT == "" do
-    control.EXPECT <- filebase + ".expect";
+    var expect_name = filebase + ".expect";
+    if FileStat::fileexists expect_name do
+      control.EXPECT <- expect_name;
+    elif control*.INREGEX == "" do
+      println$ "WARNING: computed expect file " + expect_name + " doesn't exist!";
+    done
     debugln$ "Set expect to " + control*.EXPECT;
   done
 
