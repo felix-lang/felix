@@ -4,6 +4,15 @@
 # exclude patterns (uncomment them if you want to use them):
 # *.[oa]
 *~
+/*.*
+/sandbox
+/tmp-dir
+/tut
+/test
+/trial-tmp
+*.cmi
+*.cmx
+*.tmp
 *.pyc
 *.pyo
 *.swp
@@ -43,5 +52,3 @@ automaton.syntax
 .project
 .pydevproject
 \#*\#
-/test
-/trial-tmp
