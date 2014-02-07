@@ -61,6 +61,7 @@ private proc print_help() {
   println "--input              : set standard input to basename.input";
   println "--indir=dir          : set directory for regexp search, default current directory";
   println "--regex=pattern      : Perl regexp for batch file processing";
+  println "--nonstop            : don't stop on error in batch processing";
   println "--backup             : backup working source tree to dir 'backup'";
   println "--import=file        : add an import which is prefixed to all files being translated";
   println "--import=@file       : add all the files listed in file as imports (recursive on @)";
@@ -443,6 +444,10 @@ private noinline proc handle_switch
   elif prefix (arg,"--regex=") do
     control.INREGEX  <-  arg.[8 to];
     debugln$ "Set input regex to " + control*.INREGEX;
+
+  elif arg == "--nonstop" do
+    control.NONSTOP <- 1;
+    debugln$ "Set batch processing mode to nonstop " + control*.NONSTOP;
 
   elif arg == "--c++" do
     control.CXXONLY <- 1;

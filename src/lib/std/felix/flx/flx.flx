@@ -85,6 +85,8 @@ class Flx
         var n = files.len.int;
         println$ "Processing " + files.len.str + " files";
         var i = 1;
+        var pass = 0;
+        var fail = 0;
         for file in files do
           var arg = Filename::join (control*.INDIR, file);
           loopctl*.path,loopctl*.ext = Filename::split_extension(arg);
@@ -98,9 +100,11 @@ class Flx
           println$ f"Processing [%02d/%02d]: %S" (i, n, file);
           var pe = processing_env(toolchain,*config,*control,dvars, *profile);
           result = pe.runit();
-          if result != 0 goto endoff;
+          if result == 0 do ++pass; else ++fail; done
+          if control*.NONSTOP==0 and  result != 0 goto endoff;
           ++i;
         done 
+        println$ f"Batch result (%02d OK + %02d FAIL)/%2d" (pass, fail,n);
       end
     else 
       begin

@@ -140,6 +140,7 @@ fun dflt_control (config:Config::config_type, profile:FlxProfile::profile_type) 
     var cache_time = 0.0;
     var INDIR = "";
     var INREGEX = "";
+    var NONSTOP = 0;
     var OPTIMISE = list[string]$ "-O1";
   }
 ;
