@@ -62,7 +62,7 @@ which is a pair (tuple with two components).
 
 @h2 Function types
 A function value has a type:
-@felix
+@felix-unchecked
   int -> int       // type of square
   int -> void      // type of ps
   int * int -> int // type of addup
@@ -85,13 +85,17 @@ be evaluated first. The serialisation of generator application is deterministic
 and based on the structure of the expression being evaluated <em>after</em>
 syntactic sugar is removed. For example
 @felix
-  var r = (g1 1).(g2 2)
+  begin
+    var r = (g1 1).(g2 2);
+  end
 @
 will be evaluated as:
 @felix
-  val a2 = g2 2;
-  val a1 = g1 1;
-  val r = a2 a1;
+  begin
+    val a2 = g2 2;
+    val a1 = g1 1;
+    val r = a2 a1;
+  end
 @
 because reverse application is just sugar for a swapped forward application.
 
@@ -107,12 +111,12 @@ cfun f(x:int) => x;
 cproc p(x:int) { println x; }
 @
 have types
-@felix
+@felix-unchecked
    int --> int
    int --> void
 @
 respectively, which are the types of classic C funcions:
-@felix
+@cpp
   int (*)(int)
   void (*)(int)
 @
@@ -173,7 +177,7 @@ Note that in:
 proc h(x:int) (y:long) { println$ x.long + y; }
 @
 {h} is a function, not a procedure: it has type
-@felix
+@felix-unchecked
 int -> (long -> void)
 @
 so that rather, {h} is a function returning a procedure.
@@ -221,17 +225,17 @@ val three = (fun (x:int)=> x + 1) 2;
 @
 There is a special short hand for procedures of unit argument:
 @felix
-{ println "Hello"; }
+val hello1 = { println "Hello"; };
 @
 This is an expression equivalent to
 @felix
-proc () { println "Hello"; }
+val hello2 = proc () { println "Hello"; };
 @
 
 There's a similar shorthand for function or unit argument:
 @felix
 val y = 1;
-{ val x = y + 1; return x; }
+val add1 = { val x = y + 1; return x; };
 @
 distinguished from the procedure case by ending with
 a return statement.

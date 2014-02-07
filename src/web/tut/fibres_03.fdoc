@@ -42,7 +42,7 @@ gen broadcaster() :
       news_line := read inews;
       if len clients > 0uz do
         for var i in 0uz upto len clients - 1uz do
-          write$ clients.[i], news_line;
+          write$ clients.i, news_line;
         done
       done
     done
@@ -75,16 +75,13 @@ spawn_fthread { commuter 2; };
 // (this is a hack just to make the demo work)
 svc$ svc_yield;
 
-// create a reporter that just sends a file as news
+// create a reporter that just sends numbers as news
 spawn_fthread {
-  f := Text_file::fopen_input "br.flx";
-  var line = Text_file::readln f;
-  while line != "" do
-    print$ "Reporting : " + line;
+  for var i in 0 upto 9 do
+    var line = i.str + "\n";
+    println$ "Reporting : " + line;
     write$ news, line;
-    line = Text_file::readln f;
   done
-  Text_file::fclose f;
 };
 
 println$ "Demo started";

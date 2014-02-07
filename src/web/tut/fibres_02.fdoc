@@ -7,18 +7,20 @@ value is passed out using a channel too:
 proc subroutine(argument: ischannel[int], result: oschannel[string])
 {
   v := read argument;
-  s = str v;
+  s := str v;
   write$ result, s;
 }
 
 {
-  iarg,oarg := mk_ioschannel_pair[int];
-  ires,ores := mk_ioschannel_pair[string];
-  spawn_fthread { subroutine (iarg, ores); }
+  iarg,oarg := #mk_ioschannel_pair[int];
+  ires,ores := #mk_ioschannel_pair[string];
+  spawn_fthread { subroutine (iarg, ores); };
   write$ oarg, 42;
   s := read ires;
   println$ "42 as a string is " + s;
 };
+@expect
+42 as a string is 42
 @
 
 In other words, the fibres and channels model subsumes the function
@@ -69,7 +71,7 @@ serviced at once so there's no reason for concurrency unless
 you want to shared the load between several CPUs.
 
 As noted before, consider what would happen if we wrote by mistake:
-@felix
+@felix-unchecked
   s := read ires;
   write$ oarg, 42;
 @

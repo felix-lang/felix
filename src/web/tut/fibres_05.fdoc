@@ -2,6 +2,8 @@
 Felix uses fibres and channels to provide a synchronous unbuffered
 version of a pipeline.
 @felix
+include "std/control/spipe";
+
 proc source (cho:oschannel[int]) { 
   for var i in 0 upto 9 do write (cho,i); done 
 }
