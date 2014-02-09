@@ -31,13 +31,13 @@ val cmdspec : cmdspec_t =
     split-key-value-spec= Empty[string * string],
     multi-valued-keys-spec= Empty[string], 
     single-valued-keys-spec= list("--inoutdir","--indir","--outdir"),
-    switches-spec= list("--help"), 
+    switches-spec= list("--help","--linenos"), 
     short-switch-map-spec = Empty[char * string]
   )
 ;
 
 proc print_help =>
-  println$ "Usage: flx_tangle [--indir=indir] [--outdir=outdir] [--inoutdir=inoutdir] [regexp1 ...]"
+  println$ "Usage: flx_tangle [--indir=indir] [--outdir=outdir] [--inoutdir=inoutdir] [--linenos] [regexp1 ...]"
 ;
 
 val inargs = #System::args;
@@ -73,6 +73,7 @@ var patterns =
 
 var indir = keys.get_dflt ("--indir", keys.get_dflt ("--inoutdir", ".") );
 var outdir = keys.get_dflt ("--outdir",  keys.get_dflt ("--inoutdir", "."));
+var linenos = "--linenos" in outargs.switches;
 
 // --- FILE SCAN --------------------------------
 for base in patterns do
@@ -95,15 +96,21 @@ proc filesrc (file:string) (o:oschannel[string])
 }
 
 // Tangling transducer.
-proc tangle (tag:string) (i:ischannel[string], o:oschannel[string]) 
+proc tangle (filename:string) (tag:string) (i:ischannel[string], o:oschannel[string]) 
 {
+  var lineno=0;
 moredoc:>
   var x = read i;
+  ++lineno;
   if x == "" goto finish;
   if strip x != "@"+tag goto moredoc;
 
+  if tag == "felix" and linenos do
+    write(o,"#line " + lineno.str+ " " + '"'+filename+'"\n');
+  done
 morefelix:>
   x = read i;
+  ++lineno;
   if x == "" goto finish;
   if x.[0] == char "@" goto moredoc;
   write(o,x);
@@ -144,9 +151,9 @@ proc save_tangle (infile:string, outbase:string)
     var iinput,oinput = #mk_ioschannel_pair[string];
     spawn_fthread$ filesrc infile |-> 
       (
-        (tangle "felix" |-> grab oflx), 
-        (tangle "expect" |-> grab oxpect),
-        (tangle "input" |-> grab oinput)
+        (tangle infile "felix" |-> grab oflx), 
+        (tangle infile "expect" |-> grab oxpect),
+        (tangle infile "input" |-> grab oinput)
       )
     ;
     var flx-result  = read iflx;

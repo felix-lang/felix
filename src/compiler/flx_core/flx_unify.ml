@@ -350,6 +350,7 @@ let rec unification bsym_table counter eqns dvars =
     | h :: t ->
       eqns := t;
       let s = ref None in
+      let lhs,rhs = h in 
       begin match h with
       | (BTYP_type_var (i,mi) as ti), (BTYP_type_var (j,mj) as tj)->
         (*
@@ -537,10 +538,24 @@ print_endline ("Weird array thing " ^ Flx_print.sbt bsym_table lhs ^ " <--> " ^ 
       (* structural, not functional, equality of lambdas by alpha equivalence *)
       | BTYP_type_function (p1,r1,b1), BTYP_type_function (p2,r2,b2)
         when List.length p1 = List.length p2 ->
-print_endline "Trying to unify type function";
+print_endline "Trying to unify type functions";
+(*
+print_endline (sbt bsym_table lhs);
+print_endline (sbt bsym_table rhs);
+*)
+        (* This is overly ambitious! Maybe should just do a plain type equality test *)
+        let meta_type_equations = List.map2 (fun (_,t1) (_,t2) -> (t1,t2)) p1 p2 in
+        let meta_type_equations = (r1,r2) :: meta_type_equations in
+
         let vs = List.map2 (fun (i1,_) (i2,t) -> i1,btyp_type_var (i2,t))  p1 p2 in
+(*
+print_endline ("vs=" ^ catmap "," (fun (i,t) -> string_of_int i^":"^sbt bsym_table t) vs);
+*)
         let b1 = list_subst counter vs b1 in
-        eqns := (b1, b2):: !eqns;
+(*
+print_endline ("Converted LHS body=" ^ sbt bsym_table b1);
+*)
+        eqns := (b1, b2):: meta_type_equations @ (!eqns);
         s := None
 
       | BTYP_type_apply (f1,a1), BTYP_type_apply (f2,a2)  ->

@@ -5,7 +5,7 @@ behavior but broad enough to allow most computational processes to be
 expressed as a monad."
 <em>--http://c2.com/cgi/wiki?MonadicProgramming"</em>
 
-<h2>The maybe monad</h2>
+@h2 The maybe monad
 
 If <code>a</code> is a type variable and <code>M a</code> is a type,
 then the characteristic property of <code>M</code> if it is a monad,
@@ -78,7 +78,7 @@ spelled out in the introduction!)</em>
   fun bind[a, b] (x:Fallible a, f: a -> Fallible b):Fallible b =>
     match x with
       | Success ?a => f a
-      | Failure[a] ?s => Failure[b] s
+      | Failure ?s => Failure[b] s
     endmatch
     ;
 @
@@ -134,7 +134,7 @@ fun mdiv (x:int) (y:int) : success[int] =>
     ;
 @
 Hopefully the syntax of the functions
-@felix
+@felix--unchecked
 fun madd (x:int) (y:int) : success[int] => 
   //...
   ;
@@ -210,12 +210,12 @@ to understand. As you will see, Felix type notations make it not that
 much harder than the maybe monad and help deepen one's understanding
 considerably!
 
-<h2>The state monad</h2>
+@h2 The state monad
 
 Revenge of the monads is coming. Only the code for the example is here
 right now now... Check back soon!
 
-@felix
+@felix-unchecked
 
 //State monad.
 

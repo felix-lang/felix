@@ -42,13 +42,17 @@ choices: {false} or {true}.
 For structurally typed enumerations, we just use an integer constant
 to denote the type:
 @felix
-var f : 2 = case 0 of 2; // aka false
-var t : 2 = case 1 of 2; // aka true
+begin
+  var f : 2 = case 0 of 2; // aka false
+  var t : 2 = case 1 of 2; // aka true
+end
 @
 which is identical to the more familiar:
 @felix
-var f : bool = false; // aka false
-var t : bool = true; // aka true
+begin
+  var f : bool = false; // aka false
+  var t : bool = true; // aka true
+end
 @
 The {case} notation is a bit ugly, and it seems unnatural
 to number cases from 0 upto {n-1} with zero origin notation,
@@ -66,7 +70,7 @@ proc p(x: string + int + double) {
   | case 0 ?x => println$ x+" world";
   | case 1 ?x => println$ x+1;
   | case 2 ?x => println$ x+2.2;
-  endmatch
+  endmatch;
 }
 
 p s;

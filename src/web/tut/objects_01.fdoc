@@ -2,13 +2,13 @@
 Felix provides a highly dynamic but statically typed object protocol.
 You can make an object like this:
 @felix
-var person = object (name:string, var age: int) = {
+var aperson = object (name:string, var age: int) = {
   method fun get_name () => name; 
   method fun get_age () => age; 
   method proc set_age (x:int) { age = x; }
 };
 
-var john = person ("john", 42);
+var john = aperson ("john", 42);
 
 println$ john.get_name () + ","+ john.get_age ()+".";
 john.set_age (43);

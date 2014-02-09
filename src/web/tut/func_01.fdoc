@@ -5,6 +5,10 @@ When you see code like this:
 println$ "Square of " + str 1 + " is " + str (1 * 1);
 println$ "Square of " + str 2 + " is " + str (2 * 2);
 println$ "Sguare of " + str 3 + " is " + str (3 * 1);
+@expect
+Square of 1 is 1
+Square of 2 is 4
+Sguare of 3 is 3
 @
 You know you need a function (notice the typos on the last line?)
 Basic Felix functions are easy:
@@ -12,7 +16,11 @@ Basic Felix functions are easy:
 fun square(x:int)=>x * x;  // define a function
 println$ "Square of " + str 1 + " is " + str (square 1);
 println$ "Square of " + str 2 + " is " + str 2.square;
-println$ "Sguare of " + str 3 + " is " + str$ square 3;
+println$ "Sguare of " + str 3 + " is " + (str$ square 3);
+@expect
+Square of 1 is 1
+Square of 2 is 4
+Sguare of 3 is 9
 @
 We fixed the bug in the calculation of the square of 3, and 
 we're also showing the three ways to apply a function: 
@@ -25,7 +33,7 @@ using operator dollar, which has lower precedence than whitespace.
 
 There's a longer way to write a function:
 @felix
-fun square(x:int):int = {
+fun long-winded-square(x:int):int = {
   val s = x * x;
   return x;
 }
@@ -39,11 +47,14 @@ Functions are not allowed to have side effects.
 Still, there must be a way to repeat the print: there is,
 by using a procedure.
 @felix
-fun square(x:int)=>x * x;  // define a function
 proc ps(x:int) {
   println$ "Square of " + str x + " is " + str x.square;
 }
 ps 1; ps 2; ps 3;
+@expect
+Square of 1 is 1
+Square of 2 is 4
+Square of 3 is 9
 @
 A procedure is like a function, except it returns no value,
 and it may and indeed should have side effects.
@@ -56,6 +67,9 @@ fun addup (x:int, y:int) => x + y;
 println$ addup (1,2); // 3
 val pair = 1,2;
 println$ addup pair; // 3
+@expect
+3
+3
 @
 The last line shows clearly that {addup} takes a single argument
 which is a pair (tuple with two components).
@@ -76,6 +90,8 @@ a generator:
 var x =0;
 gen incx():int = { val tmp = x; ++x; return tmp; }
 println$ incx(), incx();
+@expect
+(0, 1)
 @
 When an expression contains one or more generator application, the applications
 are lifted out and evaluated in pre-order: this is basically left to right
@@ -85,23 +101,28 @@ be evaluated first. The serialisation of generator application is deterministic
 and based on the structure of the expression being evaluated <em>after</em>
 syntactic sugar is removed. For example
 @felix
-  begin
-    var r = (g1 1).(g2 2);
-  end
+gen g1 (y:int) = { ++x; return y + x; } 
+gen g2 (y:int) = { ++x; return y + 2 * x; } 
+x = 0;
+var r1 = (g1 1).g2;
+println$ r1;
+@expect
+6
 @
-will be evaluated as:
+{r} will be evaluated as:
 @felix
-  begin
-    val a2 = g2 2;
-    val a1 = g1 1;
-    val r = a2 a1;
-  end
+x = 0;
+var a1 = g1 1;  // 2 (x=1) 
+var r2 = g2 a1; // 6 (x=2)
+println$ r2;
+@expect
+6
 @
-because reverse application is just sugar for a swapped forward application.
+noting reverse application is just sugar for a swapped forward application.
 
 @caveat
-Generators have the same type as a function. This is a design fault
-in the current version of Felix.
+Generators have the same type as a function. This is a design compromise 
+in Felix.
 @
 
 @h2 C functions
@@ -184,9 +205,11 @@ so that rather, {h} is a function returning a procedure.
 
 It is possible to partially apply a higher order function.
 @felix
-fun f(x:int) (y:long) => x.long + y;
-val g = f 1;
+fun f2(x:int) (y:long) => x.long + y;
+val g = f2 1;
 println$ g 2l;
+@expect
+3
 @
 Here {g} is just the value returned by {f} when applied
 to 1, which is a function accepting a {long} and returning

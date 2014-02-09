@@ -34,7 +34,7 @@ println
 """;
 
 println '''Tripled single quotes are 
-allowed too";
+allowed too''';
 @
 With preformatted text the initial newline is kept too.
 
@@ -136,7 +136,7 @@ which already contain a lot of sloshes.
 
 So, following Python you can have raw strings by using an {r} or {R} prefix:
 @felix
-  r"\(.*\)" // easier than '\\(.*\\)'
+  var r = r"\(.*\)"; // easier than '\\(.*\\)'
 @
 Note only double quoted strings, or triple double or single quoted strings
 can be raw due to a lexical conflict with identifier {r'}.

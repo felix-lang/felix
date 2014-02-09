@@ -47,14 +47,14 @@ Complex numbers do not have literals, instead they have constructors.
 A complex number of any type can be constructed from one real of any type,
 or two reals of the same type, this being the Cartesian form.
 @felix
-val z = dcomplex (1,0,2.0);
+val z = dcomplex (1.0,2.0);
 @
  
 @h3 Complex functions
 
 In addition to the base and trigonometric functions, complex numbers support these functions:
 
-@felix
+@pre
   // destructors
   real: t -> r;
   imag: t -> r;

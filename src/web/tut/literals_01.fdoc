@@ -37,7 +37,7 @@ The following aliases for exact integers are also provided:
   uint16      uint16_t   u16
   int32       int32_t    i32
   uint32      uint32_t   u32
-  int64       int64_t    i64
+  int64       int64_t    i64/Users/johnskaller/felix/tut/func_01.expect
   uint64      uint64_t   u64
 </pre>
 
@@ -101,7 +101,7 @@ Two underscores in a row are not permitted, one is allowed
 between digits, or a digit and the prefix or suffix.
 
 @h2 Exact rule for literals
-@felix
+@ocaml
 let bindigit = ['0'-'1']
 let octdigit = ['0'-'7']
 let digit = ['0'-'9']
@@ -209,7 +209,7 @@ In the table below the most tightly binding operation
 groups are given first (with one exception, power).
 Please note that all operator expressions are transformed
 by the parser into function calls.
-<pre>
+@pre
   operator parsing function     meaning
   ------------------------------------------------------------------
                    abs i        absolute value         (signed only)
@@ -251,7 +251,7 @@ by the parser into function calls.
   i&gt;j              gt (i,j)     greater than          (returns bool)
   i==j             eq (i,j)     equal                 (returns bool)
   i!=j             neq (i,j)    not equal             (returns bool)
-</pre>
+@
 There two very important and unusual things to note.
 The first is the weird special grammar of the power operator.
 Whilst {- a**b} means {-(a**b)}, weirdly {a**-b} means 
@@ -283,7 +283,7 @@ open the MixedInt module.
 
 @h2 Procedures
 Felix supports the following procedures on integers:
-<pre>
+@pre
   operator     procedure
   -----------------------------
   ++i;         pre_incr (&amp;i)
@@ -298,7 +298,7 @@ Felix supports the following procedures on integers:
   i|=j;        bor_eq (&amp;i,j)
   i^=j;        bxor_eq (&amp;i,j)
   i&amp;=j;        band_eq (&amp;i,j)
-</pre>
+@
 Note that the first argument of the procedure is a pointer to the store to
 be modified.
 

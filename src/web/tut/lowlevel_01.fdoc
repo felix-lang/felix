@@ -55,7 +55,7 @@ you, the programmer, to ensure the address actually pointers to
 store containing a value of that type.
 
 The type
-@felix
+@pre
   &byte
 @
 supports the same operations as an address except it can be dereferenced.

@@ -19,7 +19,7 @@ which include a decimal point, must include at least one digit
 before and after the decimal point.
  
 @h3 Exact rule for literals
-@felix
+@ocaml
   let decimal_string = digit (underscore? digit) *
   let hexadecimal_string = hexdigit (underscore? hexdigit) *
 
