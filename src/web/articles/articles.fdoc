@@ -1,0 +1,26 @@
+@title Articles About Felix
+@h1 Some Artcles
+This section contains some articles about Felix which
+you might read to gain understanding of both concepts and
+details. It's a collection of ad-hoc, unordered tracts
+which don't fit into the classification as either reference
+material or tutorial material.
+
+@h2 Literate Felix
+Literate programming is a fundamental paradigm shift in the very
+base concept of programming and documentation, invented by
+Donald E. Knuth. 
+
+In traditional programming, you define requirements in documents, 
+design algorithms on the back of a postage stamp, implement
+code in some programming language, provide test cases, implement
+test procedures, and finally document the code.
+
+With literate programming, these diverse technologies are
+integrated into a single system in which the document
+is primal. Code is not documented, rather documents are
+enhanced with working code.
+
+Read how <a href="literate_felix.fdoc">Literate Felix</a>
+provides literate programming and why you should use it!
+

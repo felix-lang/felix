@@ -1,0 +1,26 @@
+@title Literate Felix
+@h1 What is Literate Programming?
+Literate Programming is a technology which turns the traditional
+method of developing software and documentation on its head.
+It was invented by Donald E. Knuth when he found that implementing
+his famous TeX typesetting system in Pascal was fraught with difficulties
+of comprehension leading to numerous bugs.
+
+Knuth wanted to explain what the code did, but traditional commentary
+was inadequate because it failed to provide a rich enough typesetting 
+environment to be easily readable, or sufficient structure for modularity.
+
+So instead of using comments embedded in code, Knuth decided instead
+to use code embedded in comments!
+
+Program modules would be documents which contained an explanation
+of purpose, function and context which would be readble well
+formatted text, which contains the code being explained.
+
+Localising the code inside the documented removed the serious
+problem of tracking code changes in documents. The documentation
+contains the code so changing the documentation to match the
+code is easy: it's right there in the same window in your
+text editor!
+
+

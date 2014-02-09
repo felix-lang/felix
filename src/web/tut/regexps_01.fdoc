@@ -14,7 +14,7 @@ var groups : array[StringPiece,2];
 var nmatch = 2;
 val res = Match(re,StringPiece(s),0,ANCHOR_BOTH,carray (&groups),nmatch);
 if res do
-  println$ "Matched " + s + ", n="+ str groups.[1];
+  println$ "Matched " + s + ", n="+ str groups.1;
 else
   println$ "No match " + s;
 done
@@ -27,7 +27,7 @@ println$ s in re;
 {RE2} uses Perl regexp without back references. To avoid
 having to write {\\} all the time you can use Python style
 raw strings:
-@felix
+@felix-unchecked
 r"x(\d)" == "x(\\d)"
 @
 
@@ -44,7 +44,7 @@ and syntactic sugar for them as
 
 @h3 Functional combinators
 This method allows you to build a tree using the type and function:
-@felix
+@felix-unchecked
 
   union regex =
   | Alts of list[regex]
@@ -80,10 +80,10 @@ Regular definitions make it even easier:
 @felix
 var digit = regexp( charset "0123456789" );
 regdef digits = digit+;
-var letter = regexp ( perl "[A-Za-z]" );
-var us = regexp "_";
+var letter = regexp ( perl ("[A-Za-z]") );
+var us = regexp ("_");
 regdef id = (us|letter)(letter|digit|us)*;
-regdef pid = regexp (perl("[a-zA-Z][a-zA-Z_0-9]*"));
+regdef pid = regex (Perl("[a-zA-Z][a-zA-Z_0-9]*"));
 var r = RE2 (render id);
 @
 All the symbols here have type {regex} except the 
