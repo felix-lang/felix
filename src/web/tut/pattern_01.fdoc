@@ -73,7 +73,7 @@ fun fst (a:int * long) =>
   endmatch
 ;
 
-fun xaxis (a:(x:double; y:double;))=> 
+fun xaxis (a:(x:double, y:double))=> 
   match a with
   | (x=?xval) => xval
   endmatch
@@ -87,7 +87,7 @@ Here the {_} is a wildcard that matches anything.
 You can also match against literals and ranges of
 integers floats and strings:
 @felix
-fun (x:int) => match x with
+fun matcher (x:int) => match x with
   | 1 => "one"
   | 2..10 => "two to ten"
   | _ => "other"
@@ -105,11 +105,13 @@ Felix has C++ style {enum}s.
 @felix
 enum colour {red, green, blue};
 
-fun str: colour = 
-  | red => "red"
-  | blue => "blue"
-  | green => "green"
-;
+instance Str[colour] {
+  fun str: colour -> string = 
+    | red => "red"
+    | blue => "blue"
+    | green => "green"
+  ;
+}
 
 println$ red;
 @
@@ -135,10 +137,10 @@ fun \vee :flagset * flags -> flagset = "$1|$2";
 fun \cup :flagset * flagset -> flagset = "$1|$2";
 fun \in : flags * flagset -> bool = "($1&$2)!=0";
 
-fun eq: flagset * flagset -> bool = "$1==$2";
-fun ne: flagset * flagset -> bool = "$1!=$2";
+fun ==: flagset * flagset -> bool = "$1==$2";
+fun !=: flagset * flagset -> bool = "$1!=$2";
 fun \subseteq : flagset * flagset -> bool = "($1&~$2)==0";
-fun \subset (x:flagset,y:flagset)=> x \subset y and not x == y;
+fun \subset (x:flagset,y:flagset)=> x \subseteq y and not x == y;
 fun \supset (x:flagset,y:flagset)=> not x \subseteq y;
 fun \supseteq (x:flagset,y:flagset)=> not x \subset y;
 

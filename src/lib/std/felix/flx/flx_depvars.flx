@@ -90,8 +90,8 @@ gen cal_depvars(
     var stdin_name = filebase + ".input"; 
     if FileStat::fileexists stdin_name  do
       control.STDIN <- stdin_name;
-    elif control*.INREGEX != "" do
-      println$ "WARNING: computed input file " + stdin_name + " doesn't exist!";
+    elif control*.INREGEX == "" do
+      eprintln$ "WARNING: computed input file " + stdin_name + " doesn't exist!";
     done
     debugln$ "Set stdin to " + control*.STDIN;
   done
@@ -105,7 +105,7 @@ gen cal_depvars(
     if FileStat::fileexists expect_name do
       control.EXPECT <- expect_name;
     elif control*.INREGEX == "" do
-      println$ "WARNING: computed expect file " + expect_name + " doesn't exist!";
+      eprintln$ "WARNING: computed expect file " + expect_name + " doesn't exist!";
     done
     debugln$ "Set expect to " + control*.EXPECT;
   done

@@ -18,6 +18,7 @@ and the anti-discrimination laws won't allow age to
 be considered in the work place. Here's how we chuck
 out the age: we use a <em>coercion</em>:
 @felix
+include "./objects_01";
 print_occupation (working_john :>> employment);
 @
 The coercion is really simple: it throws out all but

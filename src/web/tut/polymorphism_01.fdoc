@@ -11,7 +11,7 @@ println$ a, diag a, diag (diag a);
 C bindings can be polymorphic too:
 @felix
 type vector[T] = "::std::vector<?1>";
-fun push_back[T]: vector[T] * T = "$1.push_back($2)";
+proc push_back[T]: vector[T] * T = "$1.push_back($2)";
 @
 In the C code {?1}, {?2} represent the
 first and second type variables.
@@ -42,8 +42,8 @@ Felix type system has several advanced features.
 @h2 Type functions
 In Felix you can specify a function which accepts and returns types:
 @felix
-typedef fun diag1 (x:TYPE) => x * x;
-var a: diag1 int = 1,2; // OK
+typedef fun diag1 (x:TYPE) : TYPE => x * x;
+var b: diag1 int = 1,2; // OK
 @
 
 Here the name {TYPE} is a meta-type or kind representing all types.
@@ -73,7 +73,7 @@ val x :
   | int => int * int  
   | _ => long 
   endmatch 
-  = 1
+  = 1,2
 ;
 @
 
@@ -108,8 +108,8 @@ The type function {integral_promotion} defines how each C type is promoted
 according to ISO C rules.
 
 Now why would we want that? Well consider, we would like to write this code:
-@felix
-fun add[T in ints, U in ints] T * U -> arithmax (T,U) = "$1+$2";
+@felix-unchecked
+fun add[T in ints, U in ints]: T * U -> arithmax (T,U) = "$1+$2";
 @
 which can add up any Felix integers the same way as C does,
 arithmetic promotions and all .. but what is the return type?

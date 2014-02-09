@@ -2,9 +2,9 @@
 Felix also supports pre-emptive threads with channels.
 The syntax is similar to that used for fibres and channels:
 
-@felix
-open Text_file;
-
+@felix-unchecked
+include "std/control/pchannels";
+ 
 proc client(x:ipchannel[opt[string]]) {
   var finished = false;
   while not finished do
@@ -15,11 +15,11 @@ proc client(x:ipchannel[opt[string]]) {
   done
 }
 
-proc server(x:opchannel[string]) {
+proc server(x:opchannel[opt[string]]) {
   f := fopen_input "xyz.flx";
   var line = readln f;
   while line != "" do
-    write$ x,line;
+    write$ x,Some line;
     line = readln f;
   done;
   fclose f;
@@ -27,7 +27,7 @@ proc server(x:opchannel[string]) {
 }
 
 proc launch() {
-  inp,out:= mk_iopchannel_pair[string]();
+  inp,out:= mk_iopchannel_pair[opt[string]]();
   spawn_pthread { client(inp); };
   spawn_pthread { server (out); };
 }
@@ -39,7 +39,7 @@ println$ "Launched!";
 @h2 Broadcast example
 Here is the broadcast code using pthreads:
 
-@felix
+@felix-unchecked
 gen broadcaster() : 
   opchannel[opt[opchannel[string]]] * // subscription channel
   opchannel[string]                   // news reporting channel
@@ -83,7 +83,7 @@ gen broadcaster() :
     while true do 
       if len clients > 0uz do
         for var i in 0uz upto len clients - 1uz do
-          write$ clients.[i], news_line;
+          write$ clients.i, news_line;
         done
       done
       if news_line == "END OF NEWS\n" do 
@@ -120,15 +120,13 @@ spawn_pthread { commuter 2; };
 
 // create a reporter that just sends a file as news
 spawn_pthread {
-  f := Text_file::fopen_input "br.flx";
-  var line = Text_file::readln f;
-  while line != "" do
-    print$ "Reporting : " + line;
-    write$ news, line;
-    line = Text_file::readln f;
+  var i = 1;
+  while i < 10 do
+    print$ "Reporting : " + i.str;
+    write$ news, i.str+"\n";
+    ++i;
   done
   write$ news, "END OF NEWS\n";
-  Text_file::fclose f;
   write$ subscribe, None[opchannel[string]];
   println "Done reporting news";
 };

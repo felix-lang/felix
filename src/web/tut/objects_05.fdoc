@@ -42,17 +42,17 @@ Here's a more conventional class-like
 way to do it, with only a single state variable:
 
 @felix
-interface B[T] extends A[T] { pprint: 1 -> 0; }
+interface C[T] extends A[T] { pprint: 1 -> 0; }
 
-object joe[T] (x:list[T]) extends fred x as var y implements B[T] = {
+object joe[T] (x:list[T]) extends fred x as var y implements C[T] = {
   method proc pprint () { print "Hello "; y.print(); }
   method proc print () { print "OVERRIDE "; y.print(); }
 }
 
-var b = joe lst;
-b.print();
-b.pprint();
-println$ b.get();
+var c = joe lst;
+c.print();
+c.pprint();
+println$ c.get();
 @
 This is quite different because the {fred} object we're extending
 is created by the {joe} constructor, in fact we have to use

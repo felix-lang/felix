@@ -538,8 +538,8 @@ print_endline ("Weird array thing " ^ Flx_print.sbt bsym_table lhs ^ " <--> " ^ 
       (* structural, not functional, equality of lambdas by alpha equivalence *)
       | BTYP_type_function (p1,r1,b1), BTYP_type_function (p2,r2,b2)
         when List.length p1 = List.length p2 ->
-print_endline "Trying to unify type functions";
 (*
+print_endline "Trying to unify type functions";
 print_endline (sbt bsym_table lhs);
 print_endline (sbt bsym_table rhs);
 *)

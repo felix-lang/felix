@@ -16,7 +16,7 @@ instance X[int] {
 
 open X[int];
 
-println$ g x;
+println$ g 1;
 @
 
 In this code {virtual} functions are ones which may be overridden in 
@@ -63,7 +63,7 @@ The principal difference between Felix and C++ is that the C++
 type system cannot support type recursion and hence is effectively
 useless: you cannot make a combinatorial definition of a polymorphic
 linked list in C++, in Felix it is a one liner:
-@felix
+@felix-unchecked
 union list[T] = | Empty | Cons of T * list[T];
 @
 using Felix's built in tuple and union constructors.

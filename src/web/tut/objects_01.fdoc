@@ -53,7 +53,7 @@ all functions, named object constructor function can be overloaded.
 @p
 It is good to avoid confusion, and remember that whilst {person}
 is a constructor, it is the same as in Java or C++ that
-@felix
+@felix-unchecked
    person ("fred", 22)
 @p
 is an object.

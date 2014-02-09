@@ -17,7 +17,7 @@ println$ a.get();
 Naturally interfaces can also be polymorphic because records can:
 @felix
 interface A[T] { print : 1 -> 0; get: 1 -> list[T]; }
-object fred[T] (x:list[T]) implements A[T] = 
+object joe[T] (x:list[T]) implements A[T] = 
 {
   method proc print () { println$ x; }
   method fun get () => x;

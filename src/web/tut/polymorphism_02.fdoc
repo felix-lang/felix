@@ -2,17 +2,24 @@
 Felix provides a simple system of type constraints.
 The need for type constraints arose when binding C:
 @felix
-type int = "int";
-type long = "long";
-fun add: int * int -> int = "$1+$2";
-fun add: long * long -> long = "$1+$2";
+class Constraints {
+type Int = "int";
+type Long = "long";
+ctor Int : int = "$1";
+ctor Long: long= "$1";
+ctor int : Int = "$1";
+ctor long: Long= "$1";
+fun add: Int * Int -> Int = "$1+$2";
+fun add: Long * Long -> Long = "$1+$2";
+instance Str[Int] { fun str(x:Int) => str (int x); }
+instance Str[Long] { fun str(x:Long) => str (long x); }
 @
 C has a lot of integer types and writing out all the operators
 for all the types is boring, error prone, and slows down compilation.
 If you also wanted to allow mixed operators you'd need to add:
 @felix
-fun add: int * long -> long = "$1+$2";
-fun add: long * int -> long = "$1+$2";
+fun add: Int * Long -> Long = "$1+$2";
+fun add: Long * Int -> Long = "$1+$2";
 @
 and you can see we would rapidly get into an untenable combinatorial
 explosion.
@@ -21,7 +28,7 @@ To solve the problem we use type constraints.
 
 First we introduce a construction to make a set of types:
 @felix
-typedef integers = typesetof(int, long);
+typedef integers = typesetof(Int, Long);
 @
 Now we write polymorphic functions with type constraints:
 @felix
@@ -30,7 +37,7 @@ fun add[I in integers]: I * I -> I = "$1+$2";
 Here the type variable {I} may only be {int} or {long}.
 If you wanted to support mixed addition:
 @felix
-fun add[I in Integers, J in Integers]: I * J -> arithmax (I,J) = "$1+$2";
+fun add[I in integers, J in integers]: I * J -> I = "(?1)($1+$2)";
 @
 Note carefully the difference between these two functions:
 in the first function {I} is set to either {int} or {long}
@@ -49,8 +56,8 @@ but note the downside: lacking names for the type variables we must
 return a fixed type. This notation, however, if exceptionally useful
 when binding external C libraries:
 @felix
-header "int f(int, int);";
-fun f: !ints * !ints -> int" = "f($1, $2)";
+header myf = "int f(int, int);";
+fun f: !integers * !integers -> int = "f($1, $2)" requires myf;
 @
 
 The reason this is <em>so</em> useful is that if we just lifted the
@@ -69,17 +76,18 @@ were able to bind to any type.
 Then, the type constraints are checked and candidates failing to meet 
 the constraints are rejected. For example:
 @felix
-fun f[T in ints]: T -> T = "$1+1";
+fun f[T in integers]: T -> T = "$1+1";
 fun f[T in floats]: T -> T = "$1+2";
-println$ (f 1.2), f 1;
+println$ (f 1.2), f (Int 1);
 @
 Type sets also support the set union operator:
 @felix
-typedef sints = fast_sints || exact_sints;
+typedef mynumbers = integers \cup floats;
+} // end class Constraints
 @
 Note that the typesets {ints} and {floats}, along with some other
 basic type sets, are defined in the standard library: 
 
-@felix ../lib/std/ctypesets.flx
+@felix /share/lib/std/scalar/ctypesets.flx
 
 

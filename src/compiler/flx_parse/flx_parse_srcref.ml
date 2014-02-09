@@ -25,7 +25,7 @@ let si x = string_of_int x in
 end;
 *)
   if s.pos_fname <> e.pos_fname then begin
-    print_endline "MULTIFILE REDUCTION";
+    (* print_endline "MULTIFILE REDUCTION"; *)
     Flx_srcref.make (
       e.pos_fname,
       e.pos_lnum,

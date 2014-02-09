@@ -2,7 +2,7 @@
 Objects work well with plugins.
 We'll look at a simple example, the paragraph control object
 used by the fdoc processor in the webserver.
-@felix
+@felix-unchecked
 // file doc_paragraph.flx
 interface paragraph-control_t {
   whatami: 1 -> string;
@@ -21,7 +21,7 @@ can modify the formatting.
 Then there's an end paragraph method and a method to
 break paragraphs, that is, end one and start a new one.
 Now lets look at the implementation:
-@felix
+@felix-unchecked
 // file fdoc_paragraph.flx
 include "./paragraph-interface";
 
@@ -70,14 +70,14 @@ the plugin DLL (shared library).
 @p
 To use this stuff we do as follows in another plugin
 or mainline.
-@felix
+@felix-unchecked
 include "./paragraph-interface";
 var paragraph-maker : (string->0) -> paragraph-control_t;
 @
 We haul in the file containing the interface, and create
 an uninitialised global variable to hold the factory 
 function. Next, in the {setup} phase of the caller:
-@felix
+@felix-unchecked
   paragraph-maker = 
     Dynlink::load-plugin-func1 
      [paragraph-control_t, (string->0)] 
@@ -93,11 +93,11 @@ in the {paragraph-maker} variable.
 @p
 This isn't a paragraph control object yet.
 To make one of those we call:
-@felix
+@felix-unchecked
   var paragraph = paragraph-maker write_string of (string);
 @
 and now we can use the object:
-@felix
+@felix-unchecked
   paragraph.sp ();
   write_string "Hello";
   paragraph.ep();

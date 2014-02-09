@@ -98,7 +98,7 @@ proc filesrc (file:string) (o:oschannel[string])
 // Tangling transducer.
 proc tangle (filename:string) (tag:string) (i:ischannel[string], o:oschannel[string]) 
 {
-  var lineno=0;
+  var lineno=1;
 moredoc:>
   var x = read i;
   ++lineno;
