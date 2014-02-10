@@ -3,11 +3,11 @@
 
 @h2 Operator whitespace 
 You may have noticed that you can write:
-@felix
+@felix-unchecked
 fflush stdout;
 @
 which is equivalent to
-@felix
+@felix-unchecked
 fflush (stdout);
 @
 Parentheses are not required for function application or procedure
@@ -16,26 +16,26 @@ It's fun to call juxtaposition "operator whitspace".
 
 @h2 Operator dot
 Those with an OO background may find this more pleasing:
-@felix
+@felix-unchecked
 val name = stdin.readln.strip;
 @
 It means exactly the same as before, the operator {.} is nothing
 more than reverse application. Postfix application binds more tightly
 than prefix application so
-@felix
+@felix-unchecked
 f x.g
 @
 means to apply {g} to {x} first, then {f} to the result.
 
 @h2 Operator dollar
 And those with a Haskell background will readily understand that in
-@felix
+@felix-unchecked
 val name = strip $ readln $ stdin;
 @
 the {$} is just a low precedence forward application, so 
 it is also the same as before. It is typically used for
 procedural commands to save writing brackets around arguments:
-@felix
+@felix-unchecked
 println$ "Hello "+name; // println ("Hello"+name)
 @
 because whitespace application has a higher precedence than 
@@ -44,7 +44,7 @@ infix {+}.
 @h2 Operator hash 
 Finally if a function takes only the unit argument {()}:
 you can use the high precedence prefix {#} operator to call it:
-@felix
+@felix-unchecked
 fun pi() => 22.0/7.0;
 println$ "Pi=" + str #pi;
 @
@@ -53,7 +53,7 @@ println$ "Pi=" + str #pi;
 
 @h2 Implied procedure call 
 And there's a special case for procedures with no arguments:
-@felix
+@felix-unchecked
 proc doit() { println "Done"; }
 doit;
 @

@@ -14,6 +14,11 @@ val cleaned_result = strip result;
 val v = int cleaned_result;
 val v2 = square v;
 println$ "Square of " + str v + " is " + str v2;
+@input
+42
+@expect
+Input number: 42
+Square of 42 is 1764
 @
 Here:
 <ul>

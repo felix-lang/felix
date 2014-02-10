@@ -7,16 +7,16 @@ When you write a tuple like this:
 @
 where all the components have the same type, it is called an 
 <em>array</em> value. A special notation may be used for this array type:
-@felix
+@felix-unchecked
   int^5
 @
 that is, int multipled by itself 5 times: this type is exactly
 the same (not equivalent or isomorphic but exactly the same) as:
-@felix
+@felix-unchecked
   int * int * int * int * int
 @
 There is also an alias in the library which can be used:
-@felix
+@felix-unchecked
   array[int,5]
 @
 
@@ -45,7 +45,7 @@ You can test if a value is in an array easily:
 println$ 2 \in a;
 @
 Note the beautiful infix set membership operator is spelled:
-@felix
+@felix-unchecked
 "2 \in a"
 @
 This is one of the standard TeX operators that the webserver
@@ -78,3 +78,4 @@ There's yet another way to do this:
 @felix
 iter (proc (v:int) {println$ "element=" + str v; }) a;
 @
+

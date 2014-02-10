@@ -6,6 +6,8 @@ Get your hands dirty! You can't learn a programming language just by reading!
 Of course there's no better introduction to a language that the infamous hello world:
 @felix
 println$ "Hello World";
+@expect
+Hello World
 @
 Assuming you store this in the file {hello.flx} to can run it by
 <pre>
@@ -19,7 +21,7 @@ but subsequent runs will load much faster than any VM.
 
 @h2 Environment variables
 It's a pretty boring program, so lets try an improvement:
-@felix
+@felix-unchecked
 println$ "Hello " + Env::getenv "USER";
 @
 <ul><li>The {getenv} function can't fail, it will just return an empty string
@@ -30,7 +32,7 @@ see is string concatenation.</li>
 
 @h2 Command line arguments
 Ok, so here's another way:
-@felix
+@felix-unchecked
 println$ "Hello " + System::argv 1;
 @
 This reads the first command line argument after the Felix 
@@ -53,6 +55,12 @@ Well then, here's another way to get some data in:
 write$ stdout,"Enter your name: "; fflush stdout;
 val name = readln$ stdin;
 writeln$ stdout, "Hello " + name;
+@input
+Felix the Cat
+@expect
+Enter your name: Felix the Cat
+Hello Felix the Cat
+
 @
 Here,
 <ul>
@@ -74,6 +82,11 @@ excess spaces at the same time as shown here:
 write$ stdout,"Enter your name: "; fflush stdout;
 name = strip (readln$ stdin);
 writeln$ stdout, "Hello " + name + "!";
+@input
+Bugs Bunny
+@expect
+Enter your name: Bugs Bunny
+Hello Bugs Bunny!
 @
 This uses the function {strip} from the  String module
 to remove leading and trailing whitespace, including newlines.

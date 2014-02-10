@@ -3,7 +3,12 @@
 A <em>generator</em> is a function that may have side effects.
 Alternatively you can think of it as a procedure that returns a value.
 @felix
-gen getnum():int {
+proc prompt (x:string) {
+  write$ stdout, x; 
+  fflush stdout;
+}
+
+gen getnum():int = {
   prompt "Input number : ";
   var x = readln stdin;
   var y = int (strip x);

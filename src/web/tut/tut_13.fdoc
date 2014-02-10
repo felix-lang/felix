@@ -26,9 +26,11 @@ even though what they represent may not be. If {T} is a type then
 
 We have seen you can name values like this:
 @felix
-val x = 1;
-val y = 2;
-val z = y + y;
+begin
+  val x = 1;
+  val y = 2;
+  val z = y + y;
+end
 @
 
 All values can be used as objects. There are two ways to do this.
@@ -36,17 +38,21 @@ The first way is to copy the value onto the heap using {new}
 and retrieve the value by dereferencing the returned pointer:
 with operator {*}:
 @felix
-val px = new 1;
-val py = new 2;
-val z = *px + *py;
+begin
+  val px = new 1;
+  val py = new 2;
+  val z = *px + *py;
+end
 @
 The second way is to create a <em>variable slot</em> on the
 stack or global store with a {var} definition and find a
 pointer to the variable using the addressing operators {&amp;}:
 @felix
-var x = 1;
-val px = &x;
-val z = *px + *px;
+begin
+  var x = 1;
+  val px = &x;
+  val z = *px + *px;
+end
 @
 Note that unlike C and C++ it is safe, although definitely not
 recommended, to take the address of a variable in a function

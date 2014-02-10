@@ -10,8 +10,14 @@ proc prompt (x:string) {
   fflush stdout;
 }
 
-prompt "Input string:";
+prompt "Input string: ";
 println$ readln$ stdin;
+@input
+Road Runner beats Coyote!
+@expect
+Input string: Road Runner beats Coyote!
+Road Runner beats Coyote!
+
 @
 Here:
 <ul>

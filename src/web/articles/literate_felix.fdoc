@@ -1,6 +1,6 @@
 @title Literate Felix
 @h1 What is Literate Programming?
-Literate Programming is a technology which turns the traditional
+Literate Programming (LP) is a technology which turns the traditional
 method of developing software and documentation on its head.
 It was invented by Donald E. Knuth when he found that implementing
 his famous TeX typesetting system in Pascal was fraught with difficulties
@@ -14,7 +14,7 @@ So instead of using comments embedded in code, Knuth decided instead
 to use code embedded in comments!
 
 Program modules would be documents which contained an explanation
-of purpose, function and context which would be readble well
+of purpose, function and context which would be readable well
 formatted text, which contains the code being explained.
 
 Localising the code inside the documented removed the serious
@@ -22,5 +22,146 @@ problem of tracking code changes in documents. The documentation
 contains the code so changing the documentation to match the
 code is easy: it's right there in the same window in your
 text editor!
+
+@h1 What does it look like?
+Well you may wonder what LP look like. There doesn't seem to be
+anything special if I show you some Felix code now:
+@felix
+println$ "Hello World";
+@expect
+Hello World
+@
+Hopefully you can see a small program there with the expected
+output.
+
+So what's the big deal? 
+
+The big deal is that that green coloured text isn't the program.
+This whole page your reading is the program! The machine readable
+code is embedded in this document, so the explanation of the 
+purpose of the code, in this case pedagogical, surrounds the code.
+
+Furthermore, for simple programs we can aid comprehension by
+displaying the expected output, and our technology can actually
+run the program and check the actual output agrees with that
+displayed.
+
+@h1 The tradition: Tangling and Weaving.
+Knuth called his Literate Programming system "Web". This was
+because the documentation and program were woven together
+in a single entity. Traditionally, LP tools have names
+based on Knuth's, sometime humourously related to spiders.
+
+Processing of LP documents has three methods. The human
+reads and edits the document in raw form in a text editor.
+Two programs are then used to complete the process.
+
+The tangler is used to extract code tangled up in the document.
+It basically forgets the documentation. The output, or product, 
+of the tangler process is then plain program code which is fed
+into your compiler.
+
+Weaving is the process which is used to interpret the documentation
+markup and format the code parts of the document for display.
+Knuths weaver, of course, produced TeX documents, which typeset
+any code he was writing .. including of course, the {web} program
+itself, as well as the {TeX} program!
+
+
+@h1 Literate Felix.
+The Felix system is a bit different to Knuths.
+One of the downsides of LP is the need to run the weaver
+to generate TeX code, run the TeX processor over that to
+produce some printable format, and then print it.
+
+This is a serious pain and kills many trees. Today we
+have a different kind of web available: the World Wide Web.
+We use browsers to display documents.
+
+So Felix threw out the offline typesetting stage.
+Instead we use a special webserver {flx_web} which
+typesets literate programs <em>on the fly</em>,
+providing colourisation and hyperlinking for your
+code automatcally, and basically delegating the typesetting
+of the documentation to your browser by using HTML
+as the text markup language.
+
+So what does it look like? You're looking at it now!
+
+Let be clear that being able to just put your programs
+on a web site without any extra work is a major advantage.
+Your code doesn't just look good at no extra cost,
+it can be downloaded and used using the web.
+
+Ok, so Felix <em>weaves</em> your code automatically. 
+No extra work. But what about <em>tangling</em>.
+Running the tangler every time to extract your program
+is a pain, right?
+
+Yes, it is. So we did something interesting. We modified the
+Felix parser so it would treat the literate markup as comments.
+So Felix can actually <em>execute</em> documents directly:
+the tangling process is automatic, at least for simple scripts.
+
+So now, we have a format that is simultaneously a document
+for reading, requires no offline weaver, and is also a program
+to execute, requiring no offline tangler.
+
+@h1 Disadvantages.
+Every system has disadvantages and Literate Programming
+is no exception. A general purpose LP tool can extract
+files of many kinds from a document without special handling.
+Basic typesetting can default to a simple monospaced font,
+however more advanced colourisation and hyperlinking require
+special processors.
+
+However the biggest disadvantage is the difficulty of handling
+multiple formats in a text editor or IDE. Editing tools can
+be quite advanced and tend to be specialised for a particular
+language or set of languages. Although most support plugins
+for extensions, few can easily handle multiple formats
+in a single file.
+ 
+Worse, errors in extracted code refer to the extract file,
+not the orginal source.
+
+For languages supporting {#line} directives both these
+problems can be reduced. Emitting these directives fixed
+the compiler error issues because this technology was designed
+precisely to support generated code. Working on separate files
+and remerging them into a single LP document can also work
+with some limitations, primarily that the {#line} directives
+be respected.
+
+@h1 Felix technique.
+As the designer of Felix, I have the unique luxury of
+making the LP system fit in with the language. Felix
+has traditional documentation comments:
+@felix-unchecked
+//$ The function f is for show only.
+// But this comment is for coders not users.
+fun f(x:int)=>x;
+@
+
+However there is a very special hack in the parse that
+also recognizes {@} followed by anything other than
+the word {felix} and a newline, up to and include
+a {@} followed by the word {felix} and a newline,
+as a comment.
+
+In other words in an {fdoc} document, provided you start with
+some {@} command such as a heading or title, the Felix parser
+will skip over everything except lines between {@felix} and
+any line starting with {@}. So the bulk of the documentation
+is just treated as a comment.
+
+So the Felix parser treats {flx} and {fdoc} files the same way.
+The webserver {flx_web} on the other hand colourises and hyperlinks
+a whole {flx} file as Felix, whereas for an {fdoc} file its 
+a document and only snippets in {@felix} format are typeset
+as Felix.
+
+
+
 
 

@@ -4,12 +4,12 @@ There is another aggregate similar to a tuple except the fields are named:
 @felix
   val x = (a=1, b=2.9, c="Hello");
   val y = x;
-  println x.a + y.a;
-  println x.b + y.b;
-  println x.c + y.c;
+  println$ x.a + y.a;
+  println$ x.b + y.b;
+  println$ x.c + y.c;
 @
 The type of these records are given by:
-@felix
+@felix-unchecked
   (a:int, b:double, c:string)
 @
 Records can have a any number of components, including 1 and 0.

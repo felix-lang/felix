@@ -1,11 +1,11 @@
 @title Tuple product type.
 @h1 Tuples
 We can combine several values in a comma separated list to form tuple.
-@felix
+@felix-unchecked
   1,2.9,"Hello"
 @
 The type of this value is:
-@felix
+@felix-unchecked
   int * double * string
 @
 The {*} symbol here means multiply. The type of a tuple
@@ -16,13 +16,17 @@ You can retrive a value from a tuple with a integral literal:
   println x.0; // 1
   println x.1; // 2.9
   println x.2; // "Hello"
+@expect
+1
+2.9
+Hello
 @
 Note the field numbers are zero origin in keeping with C conventions.
 There are no tuples with one component. 
 
 @h2 Unit
 However, there is a tuple with no components with a single unique value:
-@felix
+@felix-unchecked
   ()
 @
 the type of which is called {unit} type and can also
