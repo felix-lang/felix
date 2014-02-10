@@ -27,6 +27,7 @@ span.embedded_c{background-color:#DDDDDD; }
 span.fpc_fieldname {color:#DD0000; }
 span.lineno {color:#101010; background-color:#E0E0E0; font-size:80%; font-family:"courier",monospace; font-style:normal; }
 pre.flxbg {background-color:#A0FFA0; color:black; padding:2px; box-shadow:5px 5px 2px #807080; }
+pre.uncheckedflxbg {background-color:#D0D0D0; color:black; padding:2px; box-shadow:5px 5px 2px #807080; }
 pre.cppbg {background-color:#80FF80; color:black; }
 pre.prefmtbg {background-color:#D0D0D0; color:black; }
 pre.expected {background-color:#E0FF80; color:black; }
@@ -194,7 +195,7 @@ C_PATH+= INSTALL_ROOT+"/"+TARGET+"/lib/rtl";
 C_PATH+= INSTALL_ROOT+"/share/lib/rtl";
 FLX_PATH+=INSTALL_ROOT+"/share/lib";
 FLX_PATH+=INSTALL_ROOT+"/"+TARGET+"/lib";
-FDOC_PATH+=INSTALL_ROOT+"/share/doc";
+FDOC_PATH+=INSTALL_ROOT;
 FLX_PKGCONFIG_PATH+=INSTALL_ROOT+"/"+TARGET+"/config";
 FLX_WEBSERVER_PLUGIN_PATH+=INSTALL_ROOT+"/"+TARGET+"/lib";
 

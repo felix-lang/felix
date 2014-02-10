@@ -1,3 +1,7 @@
 @title String Handling Library
-@h1 Strings.
+@h1 Reference.
+See <a href="/share/lib/std/strings/string.fdoc">string</a> module.
 
+@h1 Concept.
+
+Felix uses a binding to the C++ string datatype {::std::basic_string&lt;char&gt;}.

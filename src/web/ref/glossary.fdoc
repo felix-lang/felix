@@ -1,9 +1,14 @@
 @h2 Glossary of terms.
 <dl>
-<dt id="callback">callback</dt><dd>A subroutine closure which is passed to a routine which in turn calls it</dd>
+<dt id="callback">callback</dt><dd>A subroutine closure which is passed to a routine which in turn calls it.<br>
+See also Wikipedia <a href="http://en.wikipedia.org/wiki/Callback_%28computer_programming%29">Callback</a>
+</dd>
 <dt id="class">class</dt><dd>A named collection of related function interfaces</dd>
-<dt id="coroutine">coroutine</dt><dd>A routine standing in a peer-to-peer relation with other routines</dd>
-<dt id="fibre">fibre</dt><dd>A cooperative thread of control which yields voluntarily, aka fthread</dd>
+<dt id="coroutine">coroutine</dt><dd>A routine standing in a peer-to-peer relation with other routines.<br>
+See also Wikipedia <a href="http://en.wikipedia.org/wiki/Coroutine"">Coroutine</a>
+</dd>
+<dt id="fibre">fibre</dt><dd>A cooperative thread of control which yields voluntarily, aka fthread<br>
+See also Wikipedia <a href="http://en.wikipedia.org/wiki/Fiber_%28computer_science%29">Fibre</a></dd>
 <dt id="fthread">fthread</dt><dd>A cooperative thread of control which yields voluntarily, aka fibre</dd>
 <dt id="generator">generator</dt><dd>A subroutine returning a value which may also have side-effects</dd>
 <dt id="object">object</dt><dd>[Low level] A contiguous addressable region of store</dd>
