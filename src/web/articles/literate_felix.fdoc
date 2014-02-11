@@ -34,10 +34,24 @@ Hello World
 Hopefully you can see a small program there with the expected
 output.
 
+Here's the fdoc encoding of the above section:
+<pre style="background:#C0C0C0; margin:10px;padding:10px;">
+  @h1 What does it look like?
+  Well you may wonder what LP look like. There doesn't seem to be
+  anything special if I show you some Felix code now:
+  @felix
+  println$ "Hello World";
+  @expect
+  Hello World
+  @
+  Hopefully you can see a small program there with the expected
+  output.
+</pre>
+
 So what's the big deal? 
 
 The big deal is that that green coloured text isn't the program.
-This whole page your reading is the program! The machine readable
+This whole page you're reading is the program! The machine readable
 code is embedded in this document, so the explanation of the 
 purpose of the code, in this case pedagogical, surrounds the code.
 
@@ -148,6 +162,22 @@ also recognizes {@} followed by anything other than
 the word {felix} and a newline, up to and include
 a {@} followed by the word {felix} and a newline,
 as a comment.
+
+Lets look again at this encoding, but now understand all
+the grey stuff is just a big Felix comment, the executable
+script is marked in green:
+<pre style="background:#C0C0C0; margin:10px;padding:10px;">
+  @h1 What does it look like?
+  Well you may wonder what LP look like. There doesn't seem to be
+  anything special if I show you some Felix code now:
+  @felix
+  <code style="background:#70B070;";>println$ "Hello World";</code>
+  @expect
+  Hello World
+  @
+  Hopefully you can see a small program there with the expected
+  output.
+</pre>
 
 In other words in an {fdoc} document, provided you start with
 some {@} command such as a heading or title, the Felix parser

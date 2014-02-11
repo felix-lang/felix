@@ -24,3 +24,7 @@ enhanced with working code.
 Read how <a href="literate_felix.fdoc">Literate Felix</a>
 provides literate programming and why you should use it!
 
+@h2 Is Felix a Scripting Language?
+A question debated on the mailing list. Exactly what
+is a scripting language?
+

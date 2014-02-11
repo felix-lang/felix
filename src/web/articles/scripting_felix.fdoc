@@ -1,0 +1,205 @@
+@title Felix as a Scripting Language
+@h1 Is Felix a Scripting Language?
+There has been debate on the Felix language mailing
+list as to whether Felix is a scripting language.
+In part this arises from the claim on the website
+that Felix is <em>the fastest scripting language on Earth</em>.
+
+Some users think Felix is a high performance compiled language.
+Indeed the slogan <em>hyperlight speed</em> suggests performance
+better than C (the speed of light, our benchmark).
+
+However the startup speed for one off programs is slow because
+the Felix code is first translated to C++ by the Felix compiler
+and then to machine binaries by your C++ compiler.
+
+And there's no REPL. So it can't be a scripting language!
+
+@h2 What makes a scripting language?
+In the old days, scripting languages such as Perl
+were interpreted. They ran slow, but they ran immediately.
+They were dynamically typed, or just had one or two types,
+usually string and integer, with a dictionary (hash)
+and array thrown in.
+
+However all modern scripting languages are based on true compilers.
+They compile to byte code and run on some kind of VM. Python works
+this way, and even TCL switched to bytecode compilation.
+
+One only has to look at Ocaml to see the fallacy of the distinction.
+Ocaml has a bytecode compiler {ocamlc}, and it runs a REPL {ocaml}
+but it also has a high performance native code compiler {ocamlopt}
+which is so fast its doubtful for a small program you could
+even notice the compilation delay.
+
+Furthermore, compilation systems, even slow ones, typically use
+dependency checking and caching at various stages to improve
+turn around, and Felix is no exception.
+
+On the other hand few people would claim Java is a scripting
+language, but Java compilers typically emit bytecode.
+
+So really, whilst the slow startup time of fresh Felix programs
+is a concern, it isn't a categorical discriminating factor.
+Run a Felix script a second time and it runs immediately!
+
+@h2 Dynamic Typing
+Many so called scripting languages are dynamically typed.
+Felix uses strong static typing, so it can't be a scripting
+language, right?
+
+Well it isn't that clear to me! People usually associate
+the lack of type annotations with scripting languages,
+rather than the fact that the type system will detect
+type errors early. But Ocaml has type inference and
+programs can be written without mentioning any types.
+That's a cool counter example: static typing but no annotations.
+
+On the other hand many people working with Python and Javascript
+are crying out static typing. Experiments have been done adding
+optional static typing to these systems, or writing a compiler
+translating a slightly better structured language down to the
+base language. This has been done in many experiments for
+Javascript .. even Ocaml can be translated to Javascript.
+
+What's more, most people would agree syntax errors at startup
+type make sense even for dynamic languages, and it isn't 
+clear that static typing checks are a lot more than an
+extension of parsing.
+
+On the other hand, almost all languages are dynamic and involve
+dynamic typing, even languages like Ocaml and Haskell. Every time
+your code interprets data and makes choices based on that,
+you have dynamic typing. The simple fact is that there's no
+hard and fast distinction between type information and data:
+constraints on data, such as the format of a stream of text,
+are type constraints which are beyond the static type system
+to check, so the checks are done dynamically at run time
+by your code, and that's dynamic typing!
+
+So whilst it is common, dynamic typing can't be a pre-requisite
+for classing a language as a scripting language.
+
+@h2 Deployment simplicity.
+In my opinion one of the key properties of a scripting language
+is not to be found in the language itself, but rather the
+tools that are used to deploy it. Traditionally a script
+in Perl or Python can just be run, without explicitly
+invoking a complex compilation and linkage script.
+
+Since Felix tools can simply run Felix script, exactly
+the same way as Python can:
+@pre
+flx filename.flx
+@
+and do compilation, caching, and dependency checking in
+the background to speed up the compilation proces,
+Felix makes good claim to be a scripting language.
+It can be used the same way as other scripting languages!
+
+@h2 Eval
+A more serious <em>language based</em> property of scripting
+languages is the ability of the language to generate code
+in that language at run time and then execute it. Perl and
+Python can do the generation with considerable difficulty,
+but they can run code prepared in a file manually more
+easily with an {eval} or {exec} command. 
+
+Still, in Python at least most programmers do not use
+such dangerous features and many would like to disable
+it just to improve the security of their programs.
+
+Of course, the language in which this property is paramount,
+and intrinsic to the design, is of course Scheme. Scheme
+data is lists, represented as S-expressions, and so are
+Scheme programs.
+
+However, eval like features are a serious impediment and
+don't even work properly in modern Python. Its compiler
+does optimisations which are seriously compromised by
+sticking with dynamic lookup of symbols in a table,
+so it doesn't, and consequently eval only works in
+suitably prepared environments.
+
+On the other hand, Felix can invoke its own compiler
+just as any programming language can, and it can translated
+Felix code to a shared library which can then be dynamically
+loaded. So Felix can do eval too!
+
+In all these cases, especially Felix, sharing data between
+the host and client scripts is the key issue. It's easier
+with dynamic lookup in a symbol table, and lets face it
+that's how {dlopen()}/{dlsym()} actually work! The fact
+is that even C can do eval, and you can always devise
+encodings which provide enough run time type information
+to perform whatever calculations you like.
+
+Now you can argue the run time type information is not
+naturally present in compiled languages, but this is not
+really true: even C++ has RTTI.
+
+So really, eval is a strong indicator, but it isn't quite
+enough for a categorical denial!
+
+@h2 Core data types.
+Scripting languages, probably due to weak dynamic typing,
+typically only support a few data types: integers, floats,
+and strings together with arrays, dictionaries, and possibly
+some kind of class or structure.
+
+Some more modern ones like Javascript also provide functional
+values (closures).
+
+It is, I believe, a key feature of scripting languages that
+they have the eval like property that they have good string
+handling. Files are strings, and program script is also a string.
+Regexps are strings and do string pattern matching. Shell commands
+are also strings.
+
+So in my view we can knock Ocaml out of the scripting language
+category because it has terrible string handling! Of course
+you can write a more comprehensive library but it doesn't
+come out of the box.
+
+Felix on the other hand has awesome string handling!
+It is even better than Perl.
+
+@h2 Separate Interfaces.
+Perhaps the single most important property of scripting
+languages, as opposed to compiled languages, is the 
+ability to devise and use library code, and build whole
+programns, without separate compilation or separate 
+interfaces. Compiled languages usually separate the implementation
+code from the interface, either requiring separate specifications
+for the interfaces and build scripts to support separate compilation
+and linkage.
+
+Whilst Felix does support separate compilation, at its heart
+it is a whole program analyser and for simple scripts, no
+separate compilation is required and there is no need for
+separate interfaces.
+
+Separate interfaces do provide many advantages, apart from
+the ability to do separate compilation. The most crucial
+of these is the elimination of the need to provide dependencies
+of the implementation in the interface: typically only type
+related dependencies are required.
+
+When working with Felix, the ease of prototyping without
+needing separate interfaces is balanced against the 
+need to provide all the dependencies of the implementation.
+This drags in seemingly unrelated code implicity, at least
+exposing class names unexpectedly. If the class is open
+by default, its public contents are also exposed, opening
+the door for hijacking.
+
+Never the less this speaks most loudly for the fact that
+current Felix really is a scripting language. You not
+only don't need to declare function prototypes, you can't.
+
+It is perhaps this aspect of scripting languages that makes
+them less suitable for programming in the large. Even systems
+like Python which require explicit local importation of modules
+fail to properly isolate implementation details. Felix classes
+has similar capabilities, whilst include files do not.
+
