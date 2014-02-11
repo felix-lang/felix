@@ -6,6 +6,8 @@
 <a href="lang/core/index.fdoc">Felix Core Language Topics</a>
 @p
 <a href="abstract_machine.fdoc">Felix Abstract Machine</a>
+@p
+<a href="tex_symbols.fdoc">Special TeX Symbols</a>
 @h2 Library
 <a href="/host/config">The Configuration.</a> Actual, installed, complete configuration data.
 @p

@@ -1,0 +1,371 @@
+@title TeX Symbols
+@felix
+var x = \lceil 25 \rceil;
+@h1 A
+@felix
+  bin    \amalg       "\amalg"     
+  cmp    \approx       "\approx"     
+  cmp    \approxeq       "\approxeq"     
+  cmp    \Arrowvert       "\Arrowvert"     
+  cmp    \arrowvert       "\arrowvert"     
+  cmp    \asymp       "\asymp"     
+
+@h1 B
+@felix
+  cmp    \backsim       "\backsim"     
+  cmp    \backsimeq       "\backsimeq"     
+  cmp    \bar       "\bar"     
+  cmp    \barwedge       "\barwedge"     
+  cmp    \between       "\between"     
+  bin    \bigcap       "\bigcap"     
+  bin    \bigcirc       "\bigcirc"     
+  bin    \bigcup       "\bigcup"     
+  bin    \bigodot       "\bigodot"     
+  bin    \bigoplus       "\bigoplus"     
+  bin    \bigotimes       "\bigotimes"     
+  bin    \bigsqcup       "\bigsqcup"     
+  bin    \bigtriangledown       "\bigtriangledown"     
+  bin    \bigtriangleup       "\bigtriangleup"     
+  bin    \biguplus       "\biguplus"     
+  bin    \bigvee       "\bigvee"     
+  bin    \bigwedge       "\bigwedge"     
+  bin    \bowtie       "\bowtie"     
+  bin    \Box       "\Box"     
+  bin    \boxdot       "\boxdot"     
+  bin    \boxminus       "\boxminus"     
+  bin    \boxplus       "\boxplus"     
+  bin    \boxtimes       "\boxtimes"     
+  cmp    \Bumpeq       "\Bumpeq"     
+  cmp    \bumpeq       "\bumpeq"     
+
+@h1 C
+@felix
+  bin    \cap       "\cap"     
+  bin    \Cap       "\Cap"     
+  bin    \cdot       "\cdot"     
+  bin    \cdotp       "\cdotp"     
+  cmp    \circeq       "\circeq"     
+  bin    \circledast       "\circledast"     
+  bin    \circledcirc       "\circledcirc"     
+  bin    \circleddash       "\circleddash"     
+  cmp    \cong       "\cong"     
+  bin    \coprod       "\coprod"     
+  //bin := "\cup" 
+  bin    \Cup       "\Cup"     
+  cmp    \curlyeqprec       "\curlyeqprec"     
+  cmp    \curlyeqsucc       "\curlyeqsucc"     
+  bin    \curlyvee       "\curlyvee" 
+  bin    \curlywedge       "\curlywedge" 
+
+@h1 D
+@felix
+  arr    \dashleftarrow       "\dashleftarrow"     
+  arr    \dashrightarrow       "\dashrightarrow"     
+  bin    \divideontimes       "\divideontimes"     
+  cmp    \doteq       "\doteq"     
+  cmp    \Doteq       "\Doteq"     
+  cmp    \doteqdot       "\doteqdot"     
+  bin    \dotplus       "\dotplus"     
+  bin    \doublebarwedge       "\doublebarwedge"     
+  bin    \doublecap       "\doublecap"     
+  bin    \doublecup       "\doublecup"     
+  bin    \Downarrow       "\Downarrow"     
+  bin    \downarrow       "\downarrow"     
+  bin    \downdownarrows       "\downdownarrows"     
+  bin    \downharpoonleft       "\downharpoonleft"     
+  bin    \downharpoonright       "\downharpoonright"     
+
+@h1 E
+@felix
+  cmp    \eqcirc       "\eqcirc"     
+  cmp    \eqsim       "\eqsim"     
+  cmp    \eqslantgtr       "\eqslantgtr"     
+  cmp    \eqslantless       "\eqslantless"     
+  cmp    \equiv       "\equiv"     
+
+@h1 F
+@felix
+  bin    \fallingdotseq       "\fallingdotseq"     
+
+@h1 G
+@felix
+  cmp    \ge       "\ge"     
+  cmp    \geq       "\geq"     
+  cmp    \geqq       "\geqq"     
+  cmp    \geqslant       "\geqslant"     
+  arr    \gets       "\gets"     
+  cmp    \gg       "\gg"     
+  cmp    \ggg       "\ggg"     
+  cmp    \gggtr       "\gggtr"     
+  cmp    \gnapprox       "\gnapprox"     
+  cmp    \gneq       "\gneq"     
+  cmp    \gneqq       "\gneqq"     
+  cmp    \gnsim       "\gnsim"     
+  cmp    \gt       "\gt"     
+  cmp    \gtrapprox       "\gtrapprox"     
+  cmp    \gtrdot       "\gtrdot"     
+  cmp    \gtreqless       "\gtreqless"     
+  cmp    \gtreqqless       "\gtreqqless"     
+  cmp    \gtrless       "\gtrless"     
+  cmp    \gtrsim       "\gtrsim"     
+  cmp    \gvertneqq       "\gvertneqq"     
+
+@h1 H
+@felix
+  arr    \hookleftarrow       "\hookleftarrow"     
+  arr    \hookrightarrow       "\hookrightarrow"     
+
+@h1 I
+@felix
+  bin    \iff       "\iff"     
+  bin    \impliedby       "\impliedby"     
+  //bin := "\implies" 
+  //cmp := "\in" 
+
+@h1 J
+@felix
+  bin    \Join       "\Join"     
+
+@h1 K
+@felix
+@h1 L
+@felix
+  cmp    \le       "\le"     
+  arr    \leadsto       "\leadsto"     
+  arr    \Leftarrow       "\Leftarrow"     
+  arr    \leftarrow       "\leftarrow"     
+  arr    \leftarrowtail       "\leftarrowtail"     
+  arr    \leftharpoondown       "\leftharpoondown"     
+  arr    \leftharpoonup       "\leftharpoonup"     
+  arr    \leftleftarrows       "\leftleftarrows"     
+  arr    \Leftrightarrow       "\Leftrightarrow"     
+  arr    \leftrightarrow       "\leftrightarrow"     
+  cmp    \leftrightarrows       "\leftrightarrows"     
+  cmp    \leftrightharpoons       "\leftrightharpoons"     
+  arr    \leftrightsquigarrow       "\leftrightsquigarrow"     
+  cmp    \leq       "\leq"     
+  cmp    \leqq       "\leqq"     
+  cmp    \leqslant       "\leqslant"     
+  cmp    \lessapprox       "\lessapprox"     
+  cmp    \lessdot       "\lessdot"     
+  cmp    \lesseqgtr       "\lesseqgtr"     
+  cmp    \lesseqqgtr       "\lesseqqgtr"     
+  cmp    \lessgtr       "\lessgtr"     
+  cmp    \lesssim       "\lesssim"     
+  arr    \Lleftarrow       "\Lleftarrow"     
+  cmp    \lll       "\lll"     
+  cmp    \llless       "\llless"     
+  cmp    \lnapprox       "\lnapprox"     
+  cmp    \lneq       "\lneq"     
+  cmp    \lneqq       "\lneqq"     
+  cmp    \lnot       "\lnot"     
+  cmp    \lnsim       "\lnsim"     
+  arr    \Longleftarrow       "\Longleftarrow"     
+  arr    \longleftarrow       "\longleftarrow"     
+  arr    \Longleftrightarrow       "\Longleftrightarrow"     
+  arr    \longleftrightarrow       "\longleftrightarrow"     
+  arr    \longmapsto       "\longmapsto"     
+  arr    \Longrightarrow       "\Longrightarrow"     
+  arr    \longrightarrow       "\longrightarrow"     
+  cmp    \lt       "\lt"     
+  cmp    \ltimes       "\ltimes"     
+  cmp    \lvertneqq       "\lvertneqq"     
+
+@h1 M
+@felix
+  arr    \mapsto       "\mapsto"     
+
+@h1 N
+@felix
+  cmp    \ncong       "\ncong"     
+  cmp    \ne       "\ne"     
+  cmp    \neq       "\neq"     
+  cmp    \ngeq       "\ngeq"     
+  cmp    \ngeqq       "\ngeqq"     
+  cmp    \ngeqslant       "\ngeqslant"     
+  cmp    \ngtr       "\ngtr"     
+  cmp    \ni       "\ni"     
+  cmp    \nleq       "\nleq"     
+  cmp    \nleqq       "\nleqq"     
+  cmp    \nleqslant       "\nleqslant"     
+  cmp    \nless       "\nless"     
+  cmp    \notin       "\notin"     
+  cmp    \nparallel       "\nparallel"     
+  cmp    \nprec       "\nprec"     
+  cmp    \npreceq       "\npreceq"     
+  cmp    \nsim       "\nsim"     
+  cmp    \nsubseteq       "\nsubseteq"     
+  cmp    \nsubseteqq       "\nsubseteqq"     
+  cmp    \nsucc       "\nsucc"     
+  cmp    \nsucceq       "\nsucceq"     
+  cmp    \nsupseteq       "\nsupseteq"     
+  cmp    \nsupseteqq       "\nsupseteqq"     
+  cmp    \ntriangleleft       "\ntriangleleft"     
+  cmp    \ntrianglelefteq       "\ntrianglelefteq"     
+  cmp    \ntriangleright       "\ntriangleright"     
+  cmp    \ntrianglerighteq       "\ntrianglerighteq"     
+
+@h1 O
+@felix
+  bin    \odot       "\odot"     
+  bin    \ominus       "\ominus"     
+  bin    \oplus       "\oplus"     
+  bin    \oslash       "\oslash"     
+  bin    \otimes       "\otimes"     
+  cmp    \owns       "\owns"     
+
+@h1 P
+@felix
+  cmp    \perp       "\perp"     
+  bin    \pm       "\pm"     
+  cmp    \prec       "\prec"     
+  cmp    \precapprox       "\precapprox"     
+  cmp    \preccurlyeq       "\preccurlyeq"     
+  cmp    \preceq       "\preceq"     
+  cmp    \precnapprox       "\precnapprox"     
+  cmp    \precneqq       "\precneqq"     
+  cmp    \precnsim       "\precnsim"     
+  cmp    \precsim       "\precsim"     
+  bin    \prod       "\prod"     
+  cmp    \propto       "\propto"     
+
+@h1 Q
+@felix
+@h1 R
+@felix
+  cmp    \rhd       "\rhd"     
+  arr    \Rightarrow       "\Rightarrow"     
+  arr    \rightarrow       "\rightarrow"     
+  arr    \rightarrowtail       "\rightarrowtail"     
+  arr    \rightharpoondown       "\rightharpoondown"     
+  arr    \rightharpoonup       "\rightharpoonup"     
+  arr    \rightleftarrows       "\rightleftarrows"     
+  arr    \rightleftharpoons       "\rightleftharpoons"     
+  arr    \rightleftharpoons       "\rightleftharpoons"     
+  arr    \rightrightarrows       "\rightrightarrows"     
+  arr    \rightsquigarrow       "\rightsquigarrow"     
+  arr    \Rrightarrow       "\Rrightarrow"     
+  cmp    \rtimes       "\rtimes"     
+
+@h1 S
+@felix
+  bin    \setminus       "\setminus"     
+  cmp    \sim       "\sim"     
+  cmp    \simeq       "\simeq"     
+  cmp    \smallsetminus       "\smallsetminus"     
+  bin    \sqcap       "\sqcap"     
+  bin    \sqcup       "\sqcup"     
+  cmp    \sqsubset       "\sqsubset"     
+  cmp    \sqsubseteq       "\sqsubseteq"     
+  cmp    \sqsupset       "\sqsupset"     
+  cmp    \sqsupseteq       "\sqsupseteq"     
+  bin    \square       "\square"     
+  cmp    \subset       "\subset"     
+  cmp    \Subset       "\Subset"     
+  cmp    \subseteq       "\subseteq"     
+  cmp    \subseteqq       "\subseteqq"     
+  cmp    \subsetneq       "\subsetneq"     
+  cmp    \subsetneqq       "\subsetneqq"     
+  cmp    \succ       "\succ"     
+  cmp    \succapprox       "\succapprox"     
+  cmp    \succcurlyeq       "\succcurlyeq"     
+  cmp    \succeq       "\succeq"     
+  cmp    \succnapprox       "\succnapprox"     
+  cmp    \succneqq       "\succneqq"     
+  cmp    \succnsim       "\succnsim"     
+  cmp    \succsim       "\succsim"     
+  cmp    \supset       "\supset"     
+  cmp    \Supset       "\Supset"     
+  cmp    \supseteq       "\supseteq"     
+  cmp    \supseteqq       "\supseteqq"     
+  cmp    \supsetneq       "\supsetneq"     
+  cmp    \supsetneqq       "\supsetneqq"     
+
+@h1 T
+@felix
+  cmp    \thickapprox       "\thickapprox"     
+  cmp    \thicksim       "\thicksim"     
+  cmp    \times       "\times"     
+  arr    \to       "\to"     
+  bin    \triangle       "\triangle"     
+  bin    \triangledown       "\triangledown"     
+  cmp    \triangleleft       "\triangleleft"     
+  cmp    \trianglelefteq       "\trianglelefteq"     
+  cmp    \triangleq       "\triangleq"     
+  cmp    \triangleright       "\triangleright"     
+  cmp    \trianglerighteq       "\trianglerighteq"     
+  arr    \twoheadleftarrow       "\twoheadleftarrow"     
+  arr    \twoheadrightarrow       "\twoheadrightarrow"     
+
+@h1 U
+@felix
+  cmp    \unlhd       "\unlhd"     
+  cmp    \unrhd       "\unrhd"     
+  bin    \Uparrow       "\Uparrow"     
+  bin    \uparrow       "\uparrow"     
+  bin    \Updownarrow       "\Updownarrow"     
+  bin    \updownarrow       "\updownarrow"     
+  bin    \upharpoonleft       "\upharpoonleft"     
+  bin    \upharpoonright       "\upharpoonright"     
+  bin    \uplus       "\uplus"     
+  bin    \upuparrows       "\upuparrows"     
+
+@h1 V
+@felix
+  cmp    \varsubsetneq       "\varsubsetneq"     
+  cmp    \varsubsetneqq       "\varsubsetneqq"     
+  cmp    \varsupsetneq       "\varsupsetneq"     
+  cmp    \varsupsetneqq       "\varsupsetneqq"     
+  bin    \vee       "\vee"     
+  cmp    \veebar       "\veebar"     
+
+@h1 W
+@felix
+  bin    \wedge       "\wedge"     
+
+@h1 X
+@felix
+  arr    \xleftarrow       "\xleftarrow"     
+  arr    \xrightarrow       "\xrightarrow"     
+
+@h1 Y
+@felix
+
+@h1 Z
+@felix
+
+
+// The precedences here are a hack: so many operators.
+// The general effect is: except for keyword logic connectives,
+// these operations are all done AFTER any ASCII art ops
+// and, only one is allowed per sub-expression: you must use parens
+// if you use more than one. We'll fix this for some key operations later,
+// particularly the setwise and logic connectors. However, the comparisons
+// are at the right precedence.
+// (fact is, I don't know what half the operators are for anyhow .. )
+
+
+  x[scomparison_pri]:= x[>scomparison_pri] bin x[>scomparison_pri] =># "`(ast_apply ,_sr (,_2 (,_1 ,_3)))";
+  x[scomparison_pri]:= x[>scomparison_pri] cmp x[>scomparison_pri] =># "`(ast_apply ,_sr (,_2 (,_1 ,_3)))";
+
+  // tex logic operators
+  x[stex_implies_condition_pri] := x[>stex_implies_condition_pri]  "\implies" x[>stex_implies_condition_pri] =># "(infix 'implies)";
+  x[stex_or_condition_pri] := x[>stex_or_condition_pri] ( "\lor" x[>stex_or_condition_pri])+ =># "(chain 'ast_orlist _1 _2)" note "lor";
+  x[stex_and_condition_pri] := x[>stex_and_condition_pri] ( "\land" x[>stex_and_condition_pri])+ =># "(chain 'ast_andlist _1 _2)" note "land";
+  x[stex_not_condition_pri] := "\lnot" x[stex_not_condition_pri]  =># "(prefix 'lnot)";
+
+  // set ops (note: no setminus, its a standard binop at the moment ;)
+  // note: no \Cap or other variants .. would interfere with chain 
+  // there's no reason at all to chain these anyhow, they're standard left assoc operators 
+  x[ssetunion_pri] := x[ssetunion_pri] "\cup" x[>ssetunion_pri] =># "(infix 'setunion)" note "setunion";
+  x[ssetintersection_pri] := x[ssetintersection_pri] "\cap" x[>ssetintersection_pri] =># "(infix 'setintersection)" note "setintersection";
+
+  // All arrows are right associative .. hmm ..
+  x[sarrow_pri] := x[scase_literal_pri] arr x[sarrow_pri] =># "`(ast_apply ,_sr (,_2 (,_1 ,_3)))"; 
+
+  // atomic
+  satom := "\lceil" sexpr "\rceil" =># "`(ast_apply ,_sr (,(noi 'ceil) (,_2)))";
+  satom := "\lfloor" sexpr "\rfloor" =># "`(ast_apply ,_sr (,(noi 'floor) (,_2)))";
+
+}
+

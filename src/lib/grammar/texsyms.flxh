@@ -62,8 +62,8 @@ syntax texsyms {
   bin := "\Cup" =># '(nos _1)'; 
   cmp := "\curlyeqprec" =># '(nos _1)'; 
   cmp := "\curlyeqsucc" =># '(nos _1)'; 
-  bin  := "\curlyvee" =># '(nos _1)'; 
-  bin:= "\curlywedge" =># '(nos _1)'; 
+  bin := "\curlyvee" =># '(nos _1)'; 
+  bin := "\curlywedge" =># '(nos _1)'; 
 
 // D
 
