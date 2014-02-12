@@ -471,8 +471,6 @@ int do_final_cleanup(
 class run_felix_state {
 public:
 
-  doflx_data *dfd;
-
   run_felix_state(
     bool debug_driver,
     flx_libinit_t *instance,
@@ -500,11 +498,6 @@ run_felix_state::run_felix_state(
   int flx_argc,
   char **flx_argv
 ) {
-  dfd = new doflx_data(
-    debug_driver,
-    gcp,
-    run_felix_pthread_ctor(gcp, instance),
-    thread_control); // deletes active for us!
 }
 
 int run_felix_state::explicit_dtor(
@@ -515,7 +508,6 @@ int run_felix_state::explicit_dtor(
 )
 {
   flx_dynlink_t *library = instance->lib;
-  delete dfd;
 
   run_felix_pthread_dtor(debug_driver, gcp, thread_control, library, instance);
 
@@ -571,6 +563,8 @@ class flx_world {
   run_felix_state *fs;
   flx_dynlink_t *library;
   flx_libinit_t instance;
+
+  doflx_data *dfd;
 
 public:
   int setup(int argc, char **argv);
@@ -773,12 +767,20 @@ int flx_world::setup(int argc, char **argv) {
     fprintf(stderr, "main continuation at %p\n", instance.main_proc);
   }
 
+  dfd = new doflx_data(
+    debug_driver,
+    gcp,
+    run_felix_pthread_ctor(gcp, &instance),
+    thread_control); // deletes active for us!
+
   fs = new run_felix_state(debug_driver, &instance, gcp, thread_control, filename, flx_argc, flx_argv);
 
   return 0;
 }
 
 int flx_world::teardown() {
+  delete dfd;
+
   int error_exit_code = fs->explicit_dtor(debug_driver, &instance, gcp, thread_control);
   delete library;
 
@@ -822,7 +824,7 @@ bool flx_world::run_until_blocked() {
   // when we exit, main thread is not running so pthreads can garbage collect without waiting for us
   thread_control->add_thread(get_stack_pointer());
 
-  bool    res = fs->dfd->doflx();
+  bool    res = dfd->doflx();
 
   thread_control->remove_thread();
 
