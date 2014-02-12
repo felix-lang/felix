@@ -611,19 +611,6 @@ int flx_world::setup(int argc, char **argv) {
   if (debug)
     fprintf(stderr, "[FLX_ALLOW_COLLECTION_ANYWHERE] %s\n", allow_collection_anywhere ? "True" : "False");
 
-// RF: disabled because I've broken this
-#if 0&&FLX_HAVE_GNU
-  if (debug) fprintf(stderr, "Compiled by g++\n");
-
-  static void *init_sp = sp;
-  static void *init_fframe FLX_UNUSED = __builtin_frame_address(0);
-  static void *init_ret = __builtin_return_address(0);
-
-  if (debug)
-    fprintf(stderr, "Stack pointer = %p, frame=%p, return=%p\n",
-      sp, init_fframe, init_ret);
-#endif
-
   if (debug) {
     for (int i=0; i<flx_argc; ++i)
       fprintf(stderr, "flx_argv[%d]->%s\n", i, flx_argv[i]);
@@ -737,28 +724,6 @@ int flx_world::teardown() {
   delete collector;
   delete allocator;
 
-// RF: disabled stack stuff for now, because I've surely broken it
-#if 0 && FLX_HAVE_GNU
-    // check the frame pointer isn't corrupted
-    static void *fin_sp = sp;
-    static void *fin_fframe FLX_UNUSED = __builtin_frame_address(0);
-    static void *fin_ret = __builtin_return_address(0);
-    if (init_sp != fin_sp ) {
-      fprintf(stderr, "g++: STACK POINTER ERROR %p != %p\n", init_sp, fin_sp);
-    }
-// I have to comment this out, because it only applies if the
-// gcc compiler is using the frame pointer.. it doesn't if you
-// say -fomit-frame-pointer, for example .. I don't know if there
-// is a way to tell inside the code ..
-#if 0
-    if (init_fframe != fin_fframe) {
-      fprintf(stderr, "g++: FRAME POINTER ERROR %p != %p\n", init_fframe, fin_fframe);
-    }
-#endif
-    else if (init_ret != fin_ret) {
-      fprintf(stderr, "g++: RETURN ADDRESS ERROR %p != %p\n", init_ret, fin_ret);
-    }
-#endif
   if (debug) fprintf(stderr, "flx_run driver ends code=%d\n", error_exit_code);
 
   delete thread_control;  // RF: cautiously delete here
