@@ -44,6 +44,9 @@ static void *sp = 0;
   flx::demux::winsock_initer wsinit;
 #endif
 
+static
+create_async_hooker_t *ptr_create_async_hooker = NULL;
+
 // Actually on Cygwin it might be cygflx_async_dynamic .. not sure
 #if FLX_HAVE_MSVC
    #define FLX_ASYNC_DLL_NAME "flx_async_dynamic"
@@ -56,6 +59,59 @@ extern "C" void *flx_main;
 extern void *static_create_thread_frame;
 extern void *static_flx_start;
 #endif
+
+// TODO: make this less weird (sets ptr_create_async_hooker)
+void init_ptr_create_async_hooker(bool debug_driver) {
+#if !FLX_SUPPORT_ASYNC
+  if(debug_driver)
+    fprintf(stderr,"doflx: FLX_SUPPORT_ASYNC FALSE\n");
+  ptr_create_async_hooker = 0;
+#else
+  ptr_create_async_hooker = create_async_hooker;
+  if(debug_driver)
+    fprintf(stderr,"doflx: FLX_SUPPORT_ASYNC TRUE, create_async_hooker = %p\n", create_async_hooker);
+#ifndef FLX_STATIC_LINK
+  // Try to dynamically load the felix asynchronous library
+
+  if(debug_driver)
+    fprintf(stderr,"doflx: dymamic_link: trying to load %s\n",FLX_ASYNC_DLL_NAME);
+
+  LIBHANDLE async_lib = flx_load_module(FLX_ASYNC_DLL_NAME);
+
+  // Error out if we couldn't load the library.
+  if (async_lib == NULL) {
+    fprintf(stderr,
+      "doflx: Unable to find module '%s'\n",FLX_ASYNC_DLL_NAME);
+    exit(1);
+  }
+  // debug only ..
+  else {
+    if (debug_driver)
+      fprintf(stderr, "module '%s' loaded!\n",FLX_ASYNC_DLL_NAME);
+  }
+
+  // Get the hooker function
+  ptr_create_async_hooker =
+    (create_async_hooker_t*)DLSYM(async_lib, create_async_hooker);
+
+  // Error out if we couldn't find the hooker function in the
+  // library.
+  if (ptr_create_async_hooker == NULL) {
+    fprintf(stderr,
+      "doflx: Unable to find symbol 'create_async_hooker' in module "
+      "'%s'\n",FLX_ASYNC_DLL_NAME);
+    exit(1);
+  }
+  // debug only
+  else {
+    if (debug_driver)
+      fprintf(stderr, "found 'create_async_hooker'!\n");
+  }
+#endif
+  if(debug_driver)
+    fprintf(stderr,"doflx: static_link: flx_async_static SHOULD BE LINKED IN\n");
+#endif
+}
 
 int do_final_cleanup(
   bool debug_driver,
@@ -88,9 +144,6 @@ struct doflx_data
 private:
   bool do_async();
 };
-
-static
-create_async_hooker_t *ptr_create_async_hooker = NULL;
 
 static void doflx_pthread_entry(void *data) {
   doflx_data *d = (doflx_data*)data;
@@ -181,55 +234,7 @@ bool doflx_data::doflx() {
             if (ptr_create_async_hooker == NULL) {
               if(debug_driver)
                 fprintf(stderr,"doflx: trying to create async hooker..\n");
-#if !FLX_SUPPORT_ASYNC
-              ptr_create_async_hooker = 0;
-              if(debug_driver)
-                fprintf(stderr,"doflx: FLX_SUPPORT_ASYNC FALSE\n");
-#else
-                ptr_create_async_hooker = create_async_hooker;
-                if(debug_driver)
-                  fprintf(stderr,"doflx: FLX_SUPPORT_ASYNC TRUE, create_async_hooker = %p\n", create_async_hooker);
-#  ifndef FLX_STATIC_LINK
-                // Try to dynamically load the felix asynchronous library
-
-                if(debug_driver)
-                  fprintf(stderr,"doflx: dymamic_link: trying to load %s\n",FLX_ASYNC_DLL_NAME);
-
-                LIBHANDLE async_lib = flx_load_module(FLX_ASYNC_DLL_NAME);
-
-                // Error out if we couldn't load the library.
-                if (async_lib == NULL) {
-                  fprintf(stderr,
-                    "doflx: Unable to find module '%s'\n",FLX_ASYNC_DLL_NAME);
-                  exit(1);
-                }
-                // debug only ..
-                else {
-                  if (debug_driver)
-                    fprintf(stderr, "module '%s' loaded!\n",FLX_ASYNC_DLL_NAME);
-                }
-
-                // Get the hooker function
-                ptr_create_async_hooker =
-                  (create_async_hooker_t*)DLSYM(async_lib, create_async_hooker);
-
-                // Error out if we couldn't find the hooker function in the
-                // library.
-                if (ptr_create_async_hooker == NULL) {
-                  fprintf(stderr,
-                    "doflx: Unable to find symbol 'create_async_hooker' in module "
-                    "'%s'\n",FLX_ASYNC_DLL_NAME);
-                  exit(1);
-                }
-                // debug only
-                else {
-                  if (debug_driver)
-                    fprintf(stderr, "found 'create_async_hooker'!\n");
-                }
-#  endif
-                if(debug_driver)
-                  fprintf(stderr,"doflx: static_link: flx_async_static SHOULD BE LINKED IN\n");
-#endif
+              init_ptr_create_async_hooker(debug_driver);
             }
             // Error out if we don't have the hooker function.
             if (ptr_create_async_hooker == NULL) {
