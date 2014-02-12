@@ -612,7 +612,7 @@ public:
 
   int teardown();
 
-  bool run_step();
+  bool run_until_blocked();
 };
 
 int flx_world::setup(int argc, char **argv) {
@@ -818,7 +818,7 @@ int flx_world::teardown() {
   return error_exit_code;
 }
 
-bool flx_world::run_step() {
+bool flx_world::run_until_blocked() {
   return fs->dfd->doflx();
 }
 
@@ -836,7 +836,7 @@ int FELIX_MAIN (int argc, char** argv)
     // We're all set up, so run felix
 
     // Run the felix usercode.
-    while(world.run_step()) ;
+    while(world.run_until_blocked()) ;
 
     error_exit_code = world.teardown();
   }
