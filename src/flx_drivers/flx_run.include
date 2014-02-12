@@ -3,18 +3,14 @@
 #include <vector>
 #include <list>
 #include <map>
-#include <cstring>
-#include <cassert>
 
 #include <string>
-//#include <unistd.h>
 
 #include "flx_rtl.hpp"
 #include "flx_async.hpp"
 #include "flx_ts_collector.hpp"
 #include "flx_dynlink.hpp"
 #include "flx_sync.hpp"
-#include "pthread_thread.hpp"
 #include "pthread_counter.hpp"
 #include "flx_eh.hpp"
 
@@ -56,10 +52,6 @@ static void *sp = 0;
 #endif
 
 #ifdef FLX_STATIC_LINK
-/*
-extern "C" void *create_thread_frame;
-extern "C" void *flx_start;
-*/
 extern "C" void *flx_main;
 extern void *static_create_thread_frame;
 extern void *static_flx_start;
@@ -476,10 +468,6 @@ static double egetv(char const *name, double dflt)
 }
 
 class flx_world {
- // char *filename;   // probably not needed outside constructor
- // char **flx_argv;  // ditto
- // int flx_argc;     // ditto
-
   bool debug;
   bool debug_driver;
 
