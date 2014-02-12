@@ -516,10 +516,6 @@ run_felix_state::run_felix_state(
   library.dynamic_link(filename);
 #endif
 
-  // BUG: this is not the stack base
-  void *stack_base = get_stack_pointer();
-  thread_control->add_thread(stack_base);
-
   // Create the usercode driver instance
   instance.create(
     &library,
@@ -554,9 +550,6 @@ int run_felix_state::explicit_dtor(
   delete dfd;
 
   run_felix_pthread_dtor(debug_driver, gcp, thread_control, &library, &instance);
-
-  // And we're done, so remove the current thread.
-  thread_control->remove_thread();
 
   if (gcp->finalise)
   {
@@ -758,7 +751,7 @@ int flx_world::setup(int argc, char **argv) {
   // but delete can probably be moved up after collector delete (also used by run_felix_state_dtor)
   thread_control = new flx::pthread::thread_control_t(debug_threads);
 
-  // RF: doesn't need to be ts for !FLX_SUPPORT_ASYNC
+  // NB: !FLX_SUPPORT_ASYNC refers to async IO, hence ts still needed thanks to flx pthreads
   collector = new flx::gc::collector::flx_ts_collector_t(allocator, thread_control);
   collector->set_debug(debug_collections);
 
@@ -819,7 +812,15 @@ int flx_world::teardown() {
 }
 
 bool flx_world::run_until_blocked() {
-  return fs->dfd->doflx();
+  // this may not be called on the same thread, so let thread control know
+  // when we exit, main thread is not running so pthreads can garbage collect without waiting for us
+  thread_control->add_thread(get_stack_pointer());
+
+  bool    res = fs->dfd->doflx();
+
+  thread_control->remove_thread();
+
+  return res;
 }
 
 int FELIX_MAIN (int argc, char** argv)
