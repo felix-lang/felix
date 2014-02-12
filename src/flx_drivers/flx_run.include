@@ -471,7 +471,6 @@ int do_final_cleanup(
 
 class run_felix_state {
 public:
-  flx_dynlink_t *library;
   flx_libinit_t instance;
 
 
@@ -479,6 +478,7 @@ public:
 
   run_felix_state(
     bool debug_driver,
+    flx_dynlink_t *library,
     flx::gc::generic::gc_profile_t *gcp,
     flx::pthread::thread_control_t *thread_control,
     char *filename,
@@ -488,17 +488,15 @@ public:
 
   int explicit_dtor(
     bool debug_driver,
+    flx_dynlink_t *library,
     flx::gc::generic::gc_profile_t *gcp,
     flx::pthread::thread_control_t *thread_control
   );
-
-  ~run_felix_state() {
-    delete library;
-  }
 };
 
 run_felix_state::run_felix_state(
   bool debug_driver,
+  flx_dynlink_t *library,
   flx::gc::generic::gc_profile_t *gcp,
   flx::pthread::thread_control_t *thread_control,
   char *filename,
@@ -507,17 +505,6 @@ run_felix_state::run_felix_state(
 ) {
   if (debug_driver)
     fprintf(stderr, "flx_run driver begins %s\n", flx_argv[0]);
-
-#ifdef FLX_STATIC_LINK
-  library = new flx_dynlink_t(
-      modulenameoffilename(filename),
-      (thread_frame_creator_t)static_create_thread_frame,
-      (start_t)static_flx_start,
-      (main_t)&flx_main);
-#else FLX_STATIC_LINK
-  library = new flx_dynlink_t;
-  library->dynamic_link(filename);
-#endif
 
   // Create the usercode driver instance
   instance.create(
@@ -546,6 +533,7 @@ run_felix_state::run_felix_state(
 
 int run_felix_state::explicit_dtor(
   bool debug_driver,
+  flx_dynlink_t *library,
   flx::gc::generic::gc_profile_t *gcp,
   flx::pthread::thread_control_t *thread_control
 )
@@ -604,6 +592,8 @@ class flx_world {
   flx::pthread::thread_control_t *thread_control;
 
   run_felix_state *fs;
+  flx_dynlink_t *library;
+
 public:
   int setup(int argc, char **argv);
 
@@ -772,13 +762,25 @@ int flx_world::setup(int argc, char **argv) {
     collector
   );
 
-  fs = new run_felix_state(debug_driver, gcp, thread_control, filename, flx_argc, flx_argv);
+#ifdef FLX_STATIC_LINK
+  library = new flx_dynlink_t(
+      modulenameoffilename(filename),
+      (thread_frame_creator_t)static_create_thread_frame,
+      (start_t)static_flx_start,
+      (main_t)&flx_main);
+#else
+  library = new flx_dynlink_t;
+  library->dynamic_link(filename);
+#endif
+
+  fs = new run_felix_state(debug_driver, library, gcp, thread_control, filename, flx_argc, flx_argv);
 
   return 0;
 }
 
 int flx_world::teardown() {
-  int error_exit_code = fs->explicit_dtor(debug_driver, gcp, thread_control);
+  int error_exit_code = fs->explicit_dtor(debug_driver, library, gcp, thread_control);
+  delete library;
 
   delete fs;  // WARNING: can override error_exit_code (if dtor throws, doesn't appear to have one)
 
