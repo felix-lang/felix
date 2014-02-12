@@ -471,7 +471,7 @@ int do_final_cleanup(
 
 class run_felix_state {
 public:
-  flx_dynlink_t library;
+  flx_dynlink_t *library;
   flx_libinit_t instance;
 
 
@@ -491,6 +491,10 @@ public:
     flx::gc::generic::gc_profile_t *gcp,
     flx::pthread::thread_control_t *thread_control
   );
+
+  ~run_felix_state() {
+    delete library;
+  }
 };
 
 run_felix_state::run_felix_state(
@@ -500,27 +504,26 @@ run_felix_state::run_felix_state(
   char *filename,
   int flx_argc,
   char **flx_argv
-)
-#ifdef FLX_STATIC_LINK
-: library(
-      modulenameoffilename(filename),
-      (thread_frame_creator_t)static_create_thread_frame,
-      (start_t)static_flx_start,
-      (main_t)&flx_main)
-#endif
-{
+) {
   if (debug_driver)
     fprintf(stderr, "flx_run driver begins %s\n", flx_argv[0]);
 
-#ifndef FLX_STATIC_LINK
-  library.dynamic_link(filename);
+#ifdef FLX_STATIC_LINK
+  library = new flx_dynlink_t(
+      modulenameoffilename(filename),
+      (thread_frame_creator_t)static_create_thread_frame,
+      (start_t)static_flx_start,
+      (main_t)&flx_main);
+#else FLX_STATIC_LINK
+  library = new flx_dynlink_t;
+  library->dynamic_link(filename);
 #endif
 
   // Create the usercode driver instance
   instance.create(
-    &library,
+    library,
     gcp,
-    library.main_sym,
+    library->main_sym,
     flx_argc,
     flx_argv,
     stdin,
@@ -528,7 +531,7 @@ run_felix_state::run_felix_state(
     stderr);
 
   if (debug_driver) {
-    fprintf(stderr, "loaded library %s at %p\n", filename, library.library);
+    fprintf(stderr, "loaded library %s at %p\n", filename, library->library);
     fprintf(stderr, "thread frame at %p\n", instance.thread_frame);
     fprintf(stderr, "initial continuation at %p\n", instance.start_proc);
     fprintf(stderr, "main continuation at %p\n", instance.main_proc);
@@ -537,7 +540,7 @@ run_felix_state::run_felix_state(
   dfd = new doflx_data(
     debug_driver,
     gcp,
-    run_felix_pthread_ctor(gcp, &library, &instance),
+    run_felix_pthread_ctor(gcp, library, &instance),
     thread_control); // deletes active for us!
 }
 
@@ -549,15 +552,15 @@ int run_felix_state::explicit_dtor(
 {
   delete dfd;
 
-  run_felix_pthread_dtor(debug_driver, gcp, thread_control, &library, &instance);
+  run_felix_pthread_dtor(debug_driver, gcp, thread_control, library, &instance);
 
   if (gcp->finalise)
   {
-    if (library.refcnt > 0)
+    if (library->refcnt > 0)
     {
       fprintf(stderr,
         "flx_run %p library still referenced %ld times?!\n",
-        library.library, library.refcnt);
+        library->library, library->refcnt);
       return 6;
     }
     if (debug_driver)
@@ -573,6 +576,7 @@ int run_felix_state::explicit_dtor(
           "objects\n", a);
     }
   }
+
   return 0;
 }
 
