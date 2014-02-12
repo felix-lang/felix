@@ -338,7 +338,6 @@ static void *get_stack_pointer() { void *x=(void*)&x; return x; }
 
 std::list<fthread_t*>*run_felix_pthread_ctor(
   flx::gc::generic::gc_profile_t *gcp,
-  flx_dynlink_t *library,
   flx_libinit_t *instance)
 {
   //fprintf(stderr, "run_felix_pthread -- the MAIN THREAD\n");
@@ -389,7 +388,7 @@ void run_felix_pthread_dtor(
       gcp->collections, uncollected, roots);
   }
   if (gcp->finalise)
-    do_final_cleanup(debug_driver, gcp, library, instance);
+    (void)do_final_cleanup(debug_driver, gcp, library, instance);
 }
 
 // terminates process!
@@ -527,7 +526,7 @@ run_felix_state::run_felix_state(
   dfd = new doflx_data(
     debug_driver,
     gcp,
-    run_felix_pthread_ctor(gcp, library, &instance),
+    run_felix_pthread_ctor(gcp, &instance),
     thread_control); // deletes active for us!
 }
 
