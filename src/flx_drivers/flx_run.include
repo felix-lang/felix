@@ -468,75 +468,6 @@ int do_final_cleanup(
   return s.substr (i+1,j-i-1);
 }
 
-class run_felix_state {
-public:
-
-  run_felix_state(
-    bool debug_driver,
-    flx_libinit_t *instance,
-    flx::gc::generic::gc_profile_t *gcp,
-    flx::pthread::thread_control_t *thread_control,
-    char *filename,
-    int flx_argc,
-    char **flx_argv
-  );
-
-  int explicit_dtor(
-    bool debug_driver,
-    flx_libinit_t *instance,
-    flx::gc::generic::gc_profile_t *gcp,
-    flx::pthread::thread_control_t *thread_control
-  );
-};
-
-run_felix_state::run_felix_state(
-  bool debug_driver,
-  flx_libinit_t *instance,
-  flx::gc::generic::gc_profile_t *gcp,
-  flx::pthread::thread_control_t *thread_control,
-  char *filename,
-  int flx_argc,
-  char **flx_argv
-) {
-}
-
-int run_felix_state::explicit_dtor(
-  bool debug_driver,
-  flx_libinit_t *instance,
-  flx::gc::generic::gc_profile_t *gcp,
-  flx::pthread::thread_control_t *thread_control
-)
-{
-  flx_dynlink_t *library = instance->lib;
-
-  run_felix_pthread_dtor(debug_driver, gcp, thread_control, library, instance);
-
-  if (gcp->finalise)
-  {
-    if (library->refcnt > 0)
-    {
-      fprintf(stderr,
-        "flx_run %p library still referenced %ld times?!\n",
-        library->library, library->refcnt);
-      return 6;
-    }
-    if (debug_driver)
-      fprintf(stderr, "flx_run driver ends with finalisation complete\n");
-  }
-  else
-  {
-    if (debug_driver || gcp->debug_collections)
-    {
-      unsigned long a = gcp->collector->get_allocation_count();
-      fprintf(stderr,
-        "flx_run driver ends with finalisation skipped, %ld uncollected "
-          "objects\n", a);
-    }
-  }
-
-  return 0;
-}
-
 static double egetv(char const *name, double dflt)
 {
   char *env = std::getenv(name);
@@ -560,12 +491,12 @@ class flx_world {
 
   flx::pthread::thread_control_t *thread_control;
 
-  run_felix_state *fs;
   flx_dynlink_t *library;
   flx_libinit_t instance;
 
   doflx_data *dfd;
 
+  int explicit_dtor();
 public:
   int setup(int argc, char **argv);
 
@@ -714,7 +645,7 @@ int flx_world::setup(int argc, char **argv) {
   allocator->set_debug(debug_allocations);
 
   // previous direct ctor scope ended at closing brace of FLX_MAIN
-  // but delete can probably be moved up after collector delete (also used by run_felix_state_dtor)
+  // but delete can probably be moved up after collector delete (also used by explicit_dtor)
   thread_control = new flx::pthread::thread_control_t(debug_threads);
 
   // NB: !FLX_SUPPORT_ASYNC refers to async IO, hence ts still needed thanks to flx pthreads
@@ -773,7 +704,35 @@ int flx_world::setup(int argc, char **argv) {
     run_felix_pthread_ctor(gcp, &instance),
     thread_control); // deletes active for us!
 
-  fs = new run_felix_state(debug_driver, &instance, gcp, thread_control, filename, flx_argc, flx_argv);
+  return 0;
+}
+
+int flx_world::explicit_dtor()
+{
+  run_felix_pthread_dtor(debug_driver, gcp, thread_control, library, &instance);
+
+  if (gcp->finalise)
+  {
+    if (library->refcnt > 0)
+    {
+      fprintf(stderr,
+        "flx_run %p library still referenced %ld times?!\n",
+        library->library, library->refcnt);
+      return 6;
+    }
+    if (debug_driver)
+      fprintf(stderr, "flx_run driver ends with finalisation complete\n");
+  }
+  else
+  {
+    if (debug_driver || gcp->debug_collections)
+    {
+      unsigned long a = gcp->collector->get_allocation_count();
+      fprintf(stderr,
+        "flx_run driver ends with finalisation skipped, %ld uncollected "
+          "objects\n", a);
+    }
+  }
 
   return 0;
 }
@@ -781,10 +740,9 @@ int flx_world::setup(int argc, char **argv) {
 int flx_world::teardown() {
   delete dfd;
 
-  int error_exit_code = fs->explicit_dtor(debug_driver, &instance, gcp, thread_control);
+  // could this override error_exit_code if something throws?
+  int error_exit_code = explicit_dtor();
   delete library;
-
-  delete fs;  // WARNING: can override error_exit_code (if dtor throws, doesn't appear to have one)
 
   // And we're done, so start cleaning up.
   delete gcp;
