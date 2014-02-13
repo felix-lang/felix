@@ -498,7 +498,36 @@ public:
   bool run_until_blocked();
 };
 
-int flx_world::setup(int argc, char **argv) {
+class flx_config {
+public:
+  bool  debug;
+
+  bool debug_threads;
+  bool debug_allocations;
+  bool debug_collections;
+  bool report_collections;
+
+  bool debug_driver;
+  bool finalise;
+
+  unsigned long gc_freq;
+  unsigned long min_mem;
+  unsigned long max_mem;
+
+  double free_factor;
+
+  bool allow_collection_anywhere;
+
+  char *filename; // expected to live forever
+  char **flx_argv;
+  int flx_argc;
+
+  // TODO: fn up in macro area
+  int init(int argc, char **argv);
+};
+
+int
+flx_config::init(int argc, char **argv) {
 #ifndef FLX_STATIC_LINK
   bool static_link = false;
   if (argc<2)
@@ -519,9 +548,9 @@ int flx_world::setup(int argc, char **argv) {
     printf("  FLX_ALLOW_COLLECTION_ANYWHERE # (default yes)\n");
     return 1;
   }
-  char *filename = argv[1];
-  char **flx_argv = argv+1;
-  int flx_argc = argc-1;
+  filename = argv[1];
+  flx_argv = argv+1;
+  flx_argc = argc-1;
   debug = (argc > 1) && (strcmp(argv[1], "--debug")==0);
   if (debug)
   {
@@ -536,9 +565,9 @@ int flx_world::setup(int argc, char **argv) {
   }
 #else
   bool static_link = true;
-  char *filename = argv[0];
-  char **flx_argv = argv;
-  int flx_argc = argc;
+  filename = argv[0];
+  flx_argv = argv;
+  flx_argc = argc;
   debug = false;
 
 //  printf("Statically linked Felix program running\n");
@@ -550,23 +579,23 @@ int flx_world::setup(int argc, char **argv) {
       static_link ? "static" : "dynamic");
   }
 
-  bool debug_threads = (bool)egetv("FLX_DEBUG_THREADS", debug);
+  debug_threads = (bool)egetv("FLX_DEBUG_THREADS", debug);
   if (debug_threads) {
     fprintf(stderr, "[FLX_DEBUG_THREADS] Threads debug enabled\n");
   }
 
-  bool debug_allocations = (bool)egetv("FLX_DEBUG_ALLOCATIONS", debug);
+  debug_allocations = (bool)egetv("FLX_DEBUG_ALLOCATIONS", debug);
   if (debug_allocations) {
     fprintf(stderr, "[FLX_DEBUG_ALLOCATIONS] Allocation debug enabled\n");
   }
 
-  bool debug_collections = (bool)egetv("FLX_DEBUG_COLLECTIONS", debug);
+  debug_collections = (bool)egetv("FLX_DEBUG_COLLECTIONS", debug);
   if (debug_collections)
   {
     fprintf(stderr, "[FLX_DEBUG_COLLECTIONS] Collection debug enabled\n");
   }
 
-  bool report_collections = (bool)egetv("FLX_REPORT_COLLECTIONS", debug);
+  report_collections = (bool)egetv("FLX_REPORT_COLLECTIONS", debug);
   if (report_collections)
   {
     fprintf(stderr, "[FLX_REPORT_COLLECTIONS] Collection report enabled\n");
@@ -579,30 +608,30 @@ int flx_world::setup(int argc, char **argv) {
     fprintf(stderr, "[FLX_DEBUG_DRIVER] Driver debug enabled\n");
   }
 
-  bool finalise = (bool)egetv("FLX_FINALISE", 0);
+  finalise = (bool)egetv("FLX_FINALISE", 0);
   if (debug)
     fprintf(stderr,
       "[FLX_FINALISE] Finalisation %s\n", finalise ? "Enabled" : "Disabled");
 
   // default collection frequency is 1000 interations
-  unsigned long gc_freq = (unsigned long)egetv("FLX_GC_FREQ", 1000);
+  gc_freq = (unsigned long)egetv("FLX_GC_FREQ", 1000);
   if (gc_freq < 1) gc_freq = 1;
   if (debug)
     fprintf(stderr, "[FLX_GC_FREQ] call gc every %lu iterations\n", gc_freq);
 
   // default min mem is 10 Meg
-  unsigned long min_mem = (unsigned long)egetv("FLX_MIN_MEM", 10) * 1000000.0;
+  min_mem = (unsigned long)egetv("FLX_MIN_MEM", 10) * 1000000.0;
   if (debug)
     fprintf(stderr, "[FLX_MIN_MEM] call gc only if more than %lu Meg heap used\n", min_mem/1000000);
 
   // default max mem is unlimited
-  unsigned long max_mem = (unsigned long)egetv("FLX_MAX_MEM", -1) * 1000000.0;
+  max_mem = (unsigned long)egetv("FLX_MAX_MEM", -1) * 1000000.0;
   if (max_mem <= 0) max_mem = (unsigned long)-1;
   if (debug)
     fprintf(stderr, "[FLX_MAX_MEM] terminate if more than %lu Meg heap used\n", max_mem/1000000);
 
   // default free factor is 10%, this is also the minimum allowed
-  double free_factor = egetv("FLX_FREE_FACTOR", 1.1);
+  free_factor = egetv("FLX_FREE_FACTOR", 1.1);
   if (free_factor < 1.1) free_factor = 1.1;
   if (debug)
     fprintf(stderr, "[FLX_FREE_FACTOR] reset gc trigger %4.2f times heap used after collection\n", free_factor);
@@ -612,7 +641,7 @@ int flx_world::setup(int argc, char **argv) {
   // find all the thread stacks, which should be possible
   // with gcc and probably msvc++
 
-  bool allow_collection_anywhere = (bool)egetv("FLX_ALLOW_COLLECTION_ANYWHERE", 1);
+  allow_collection_anywhere = (bool)egetv("FLX_ALLOW_COLLECTION_ANYWHERE", 1);
   if (debug)
     fprintf(stderr, "[FLX_ALLOW_COLLECTION_ANYWHERE] %s\n", allow_collection_anywhere ? "True" : "False");
 
@@ -620,44 +649,52 @@ int flx_world::setup(int argc, char **argv) {
     for (int i=0; i<flx_argc; ++i)
       fprintf(stderr, "flx_argv[%d]->%s\n", i, flx_argv[i]);
   }
+  return 0;
+}
+
+
+int flx_world::setup(int argc, char **argv) {
+  flx_config c;
+  int res;
+  if((res = c.init(argc, argv) != 0)) return res;
 
   allocator = new flx::gc::collector::malloc_free();
-  allocator->set_debug(debug_allocations);
+  allocator->set_debug(c.debug_allocations);
 
   // previous direct ctor scope ended at closing brace of FLX_MAIN
   // but delete can probably be moved up after collector delete (also used by explicit_dtor)
-  thread_control = new flx::pthread::thread_control_t(debug_threads);
+  thread_control = new flx::pthread::thread_control_t(c.debug_threads);
 
   // NB: !FLX_SUPPORT_ASYNC refers to async IO, hence ts still needed thanks to flx pthreads
   collector = new flx::gc::collector::flx_ts_collector_t(allocator, thread_control);
-  collector->set_debug(debug_collections);
+  collector->set_debug(c.debug_collections);
 
   gcp = new flx::gc::generic::gc_profile_t(
-    debug_allocations,
-    debug_collections,
-    report_collections,
-    allow_collection_anywhere,
-    gc_freq,
-    min_mem,
-    max_mem,
-    free_factor,
-    finalise,
+    c.debug_allocations,
+    c.debug_collections,
+    c.report_collections,
+    c.allow_collection_anywhere,
+    c.gc_freq,
+    c.min_mem,
+    c.max_mem,
+    c.free_factor,
+    c.finalise,
     collector
   );
 
 #ifdef FLX_STATIC_LINK
   library = new flx_dynlink_t(
-      modulenameoffilename(filename),
+      modulenameoffilename(c.filename),
       (thread_frame_creator_t)static_create_thread_frame,
       (start_t)static_flx_start,
       (main_t)&flx_main);
 #else
   library = new flx_dynlink_t;
-  library->dynamic_link(filename);
+  library->dynamic_link(c.filename);
 #endif
 
   if (debug_driver)
-    fprintf(stderr, "flx_run driver begins %s\n", flx_argv[0]);
+    fprintf(stderr, "flx_run driver begins %s\n", c.flx_argv[0]);
 
   // Create the usercode driver instance
   // NB: seems to destroy()ed in do_final_cleanup
@@ -665,14 +702,14 @@ int flx_world::setup(int argc, char **argv) {
     library,
     gcp,
     library->main_sym,
-    flx_argc,
-    flx_argv,
+    c.flx_argc,
+    c.flx_argv,
     stdin,
     stdout,
     stderr);
 
   if (debug_driver) {
-    fprintf(stderr, "loaded library %s at %p\n", filename, library->library);
+    fprintf(stderr, "loaded library %s at %p\n", c.filename, library->library);
     fprintf(stderr, "thread frame at %p\n", instance.thread_frame);
     fprintf(stderr, "initial continuation at %p\n", instance.start_proc);
     fprintf(stderr, "main continuation at %p\n", instance.main_proc);
