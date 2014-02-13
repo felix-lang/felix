@@ -679,6 +679,9 @@ int flx_world::setup(int argc, char **argv) {
   int res;
   if((res = c.init(argc, argv) != 0)) return res;
 
+  debug = c.debug;
+  debug_driver = c.debug_driver;
+
   allocator = new flx::gc::collector::malloc_free();
   allocator->set_debug(c.debug_allocations);
 
