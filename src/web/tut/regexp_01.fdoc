@@ -19,7 +19,7 @@ RE2 does not support backreferences.
 @h2 Compiling a regexp.
 A regexp can be compiled with the {RE2} function.
 @felix
-var r = RE2(" *([A-Za-z_][A-Za-z0-9)*.*");
+var r = RE2(" *([A-Za-z_][A-Za-z0-9])*.*");
 @
 @h2 Simple {Match}ing
 Matching is done with the {Match} function:
@@ -35,7 +35,7 @@ The best way to check the result of a {Match} is
 with a <a href="pattern_index.fdoc">pattern match</a>
 as follows:
 @felix
-match maybe_subrougps with
+match maybe_subgroups with
 | None => println$ "No match";
 | Some ?a =>
   println$ "Matched " + a.1;
@@ -47,17 +47,19 @@ See <a href="http://code.google.com/p/re2/wiki/Syntax">RE2 syntax.</a>
 Regular expressions are quoting hell. Luckily Felix provides a
 solution: regular definitions:
 @felix
-regdef lower = charset "abcdefghijklmnopqrstuvwzyz";
-regdef upper = charset "ABCDEFGHIJKLMNOPQRSTUVWZYZ";
-regdef digit = charset "0123456789";
-regdef alpha = upper | lower;
-regdef alphanum = alpha | digit;
-regdef cid0 = alphanum | "_";
-regdef cid1 = cid0 | digit;
-regdef cid = cid0 cid1 *;
-regdef space = " ";
-regdef white = space +;
-regdef integer = digit+;
+open Regdef;
+begin
+  regdef lower = charset "abcdefghijklmnopqrstuvwzyz";
+  regdef upper = charset "ABCDEFGHIJKLMNOPQRSTUVWZYZ";
+  regdef digit = charset "0123456789";
+  regdef alpha = upper | lower;
+  regdef alphanum = alpha | digit;
+  regdef cid0 = alphanum | "_";
+  regdef cid1 = cid0 | digit;
+  regdef cid = cid0 cid1 *;
+  regdef space = " ";
+  regdef white = space +;
+  regdef integer = digit+;
 @
 These are some basic definitions. Note that {regdef} introduces a new
 syntax corresponding with the notation usually used for 
@@ -71,26 +73,27 @@ in user space.
 Now to use these definitions:
 @felix
 // match an assignment statement
-regdef sassign = 
-  white? "var" white? 
-  group (cid) white? "=" white? 
-  (group (cid) | group (integer)) 
-  white? ":" white
-;
+  regdef sassign = 
+    white? "var" white? 
+    group (cid) white? "=" white? 
+    (group (cid) | group (integer)) 
+    white? ":" white
+  ;
 
-var r = RE2 (sassign.render);
-var result = Match (r, " a = b; ");
-match result with
-  | None => 
-    println$ "No match?";
+  var ra = RE2 (sassign.Regdef::render);
+  var result = Match (ra, " a = b; ");
+  match result with
+    | None => 
+      println$ "No match?";
 
-  | Some ?groups => 
-    if groups.2 != "" do
-      println$ "Assigned " + groups.1 + " from variable " + groups.2;
-    else
-      println$ "Assigned " + groups.1 + " from integer" + groups.3;
-    done;
-endmatch;
+    | Some ?groups => 
+      if groups.2 != "" do
+        println$ "Assigned " + groups.1 + " from variable " + groups.2;
+      else
+        println$ "Assigned " + groups.1 + " from integer" + groups.3;
+      done;
+  endmatch;
+end
 @
 Note that the regdef kind of variable must be converted to a 
 Perl regexp in a string form using the {render} function.
