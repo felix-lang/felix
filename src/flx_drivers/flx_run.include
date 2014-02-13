@@ -190,6 +190,28 @@ int get_flx_args_config(int argc, char **argv, flx_config& c) {
   return 0;
 }
 
+::std::string modulenameoffilename(::std::string const &s)
+{
+  ::std::size_t i = s.find_last_of("\\/");
+  ::std::size_t j = s.find_first_of(".",i+1);
+  return s.substr (i+1,j-i-1);
+}
+
+flx_dynlink_t*link_library(flx_config &c) {
+  flx_dynlink_t* library;
+#ifdef FLX_STATIC_LINK
+  library = new flx_dynlink_t(
+      modulenameoffilename(c.filename),
+      (thread_frame_creator_t)static_create_thread_frame,
+      (start_t)static_flx_start,
+      (main_t)&flx_main);
+#else
+  library = new flx_dynlink_t;
+  library->dynamic_link(c.filename);
+#endif
+  return library;
+}
+
 int do_final_cleanup(
   bool debug_driver,
   flx::gc::generic::gc_profile_t *gcp,
@@ -535,13 +557,6 @@ int do_final_cleanup(
   return 0;
 }
 
-::std::string modulenameoffilename(::std::string const &s) 
-{
-  ::std::size_t i = s.find_last_of("\\/");
-  ::std::size_t j = s.find_first_of(".",i+1);
-  return s.substr (i+1,j-i-1);
-}
-
 static double egetv(char const *name, double dflt)
 {
   char *env = std::getenv(name);
@@ -659,7 +674,6 @@ flx_config::init(int argc, char **argv) {
   return 0;
 }
 
-
 int flx_world::setup(int argc, char **argv) {
   flx_config c;
   int res;
@@ -689,16 +703,7 @@ int flx_world::setup(int argc, char **argv) {
     collector
   );
 
-#ifdef FLX_STATIC_LINK
-  library = new flx_dynlink_t(
-      modulenameoffilename(c.filename),
-      (thread_frame_creator_t)static_create_thread_frame,
-      (start_t)static_flx_start,
-      (main_t)&flx_main);
-#else
-  library = new flx_dynlink_t;
-  library->dynamic_link(c.filename);
-#endif
+  library = link_library(c);
 
   if (debug_driver)
     fprintf(stderr, "flx_run driver begins %s\n", c.flx_argv[0]);
