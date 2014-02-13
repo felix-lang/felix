@@ -19,6 +19,35 @@ using namespace flx::rtl;
 using namespace flx::pthread;
 using namespace flx::run;
 
+class flx_config {
+public:
+  bool  debug;
+
+  bool debug_threads;
+  bool debug_allocations;
+  bool debug_collections;
+  bool report_collections;
+
+  bool debug_driver;
+  bool finalise;
+
+  unsigned long gc_freq;
+  unsigned long min_mem;
+  unsigned long max_mem;
+
+  double free_factor;
+
+  bool allow_collection_anywhere;
+
+  bool static_link;
+  char *filename; // expected to live forever
+  char **flx_argv;
+  int flx_argc;
+
+  // TODO: fn up in macro area
+  int init(int argc, char **argv);
+};
+
 #if FLX_HAVE_GNU_X86
 register void *sp __asm__("esp");
 #elif FLX_HAVE_GNU_X86_64
@@ -111,6 +140,54 @@ void init_ptr_create_async_hooker(bool debug_driver) {
   if(debug_driver)
     fprintf(stderr,"doflx: static_link: flx_async_static SHOULD BE LINKED IN\n");
 #endif
+}
+
+int get_flx_args_config(int argc, char **argv, flx_config& c) {
+#ifndef FLX_STATIC_LINK
+  c.static_link = false;
+  if (argc<2)
+  {
+    printf("usage: flx_run [--debug] dll_filename options ..\n");
+    printf("  environment variables (numbers can be decimals):\n");
+    printf("  FLX_DEBUG               # enable debugging traces (default off)\n");
+    printf("  FLX_DEBUG_ALLOCATIONS   # enable debugging allocator (default FLX_DEBUG)\n");
+    printf("  FLX_DEBUG_COLLECTIONS   # enable debugging collector (default FLX_DEBUG)\n");
+    printf("  FLX_REPORT_COLLECTIONS  # report collections (default FLX_DEBUG)\n");
+    printf("  FLX_DEBUG_THREADS       # enable debugging collector (default FLX_DEBUG)\n");
+    printf("  FLX_DEBUG_DRIVER        # enable debugging driver (default FLX_DEBUG)\n");
+    printf("  FLX_FINALISE            # whether to cleanup on termination (default NO)\n");
+    printf("  FLX_GC_FREQ=n           # how often to call garbage collector (default 1000)\n");
+    printf("  FLX_MIN_MEM=n           # initial memory pool n Meg (default 10)\n");
+    printf("  FLX_MAX_MEM=n           # maximum memory n Meg (default -1 = infinite)\n");
+    printf("  FLX_FREE_FACTOR=n.m     # reset FLX_MIN_MEM to actual usage by n.m after gc (default 1.1) \n");
+    printf("  FLX_ALLOW_COLLECTION_ANYWHERE # (default yes)\n");
+    return 1;
+  }
+  c.filename = argv[1];
+  c.flx_argv = argv+1;
+  c.flx_argc = argc-1;
+  c.debug = (argc > 1) && (strcmp(argv[1], "--debug")==0);
+  if (c.debug)
+  {
+    if (argc < 3)
+    {
+      printf("usage: flx_run [--debug] dll_filename options ..\n");
+      return 1;
+    }
+    c.filename = argv[2];
+    --c.flx_argc;
+    ++c.flx_argv;
+  }
+#else
+  c.static_link = true;
+  c.filename = argv[0];
+  c.flx_argv = argv;
+  c.flx_argc = argc;
+  c.debug = false;
+
+//  printf("Statically linked Felix program running\n");
+#endif
+  return 0;
 }
 
 int do_final_cleanup(
@@ -498,80 +575,10 @@ public:
   bool run_until_blocked();
 };
 
-class flx_config {
-public:
-  bool  debug;
-
-  bool debug_threads;
-  bool debug_allocations;
-  bool debug_collections;
-  bool report_collections;
-
-  bool debug_driver;
-  bool finalise;
-
-  unsigned long gc_freq;
-  unsigned long min_mem;
-  unsigned long max_mem;
-
-  double free_factor;
-
-  bool allow_collection_anywhere;
-
-  char *filename; // expected to live forever
-  char **flx_argv;
-  int flx_argc;
-
-  // TODO: fn up in macro area
-  int init(int argc, char **argv);
-};
-
 int
 flx_config::init(int argc, char **argv) {
-#ifndef FLX_STATIC_LINK
-  bool static_link = false;
-  if (argc<2)
-  {
-    printf("usage: flx_run [--debug] dll_filename options ..\n");
-    printf("  environment variables (numbers can be decimals):\n");
-    printf("  FLX_DEBUG               # enable debugging traces (default off)\n");
-    printf("  FLX_DEBUG_ALLOCATIONS   # enable debugging allocator (default FLX_DEBUG)\n");
-    printf("  FLX_DEBUG_COLLECTIONS   # enable debugging collector (default FLX_DEBUG)\n");
-    printf("  FLX_REPORT_COLLECTIONS  # report collections (default FLX_DEBUG)\n");
-    printf("  FLX_DEBUG_THREADS       # enable debugging collector (default FLX_DEBUG)\n");
-    printf("  FLX_DEBUG_DRIVER        # enable debugging driver (default FLX_DEBUG)\n");
-    printf("  FLX_FINALISE            # whether to cleanup on termination (default NO)\n");
-    printf("  FLX_GC_FREQ=n           # how often to call garbage collector (default 1000)\n");
-    printf("  FLX_MIN_MEM=n           # initial memory pool n Meg (default 10)\n");
-    printf("  FLX_MAX_MEM=n           # maximum memory n Meg (default -1 = infinite)\n");
-    printf("  FLX_FREE_FACTOR=n.m     # reset FLX_MIN_MEM to actual usage by n.m after gc (default 1.1) \n");
-    printf("  FLX_ALLOW_COLLECTION_ANYWHERE # (default yes)\n");
-    return 1;
-  }
-  filename = argv[1];
-  flx_argv = argv+1;
-  flx_argc = argc-1;
-  debug = (argc > 1) && (strcmp(argv[1], "--debug")==0);
-  if (debug)
-  {
-    if (argc < 3)
-    {
-      printf("usage: flx_run [--debug] dll_filename options ..\n");
-      return 1;
-    }
-    filename = argv[2];
-    --flx_argc;
-    ++flx_argv;
-  }
-#else
-  bool static_link = true;
-  filename = argv[0];
-  flx_argv = argv;
-  flx_argc = argc;
-  debug = false;
+  if(get_flx_args_config(argc, argv, *this)) return 1;
 
-//  printf("Statically linked Felix program running\n");
-#endif
   debug = (bool)egetv("FLX_DEBUG", debug);
   if (debug) {
     fprintf(stderr,
