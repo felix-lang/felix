@@ -400,6 +400,10 @@ def configure(ctx):
     buildsystem.copy_to(ctx, ctx.buildroot/'host/lib/rtl',
         Path('src/config/target/*.h').glob())
 
+    types = config_call('fbuild.config.c.c99.types',
+        target.platform, target.c.static)
+
+
     # this is a hack: assume we're running on Unix.
     # later when Erick figures out how to fix this
     # we'd copy the win32 subdirectory entries instead
@@ -407,6 +411,15 @@ def configure(ctx):
       print("COPYING POSIX RESOURCE DATABASE")
       buildsystem.copy_to(ctx,
           ctx.buildroot / 'host/config', Path('src/config/unix/*.fpc').glob())
+      if types.voidp.size == 4:
+        print("32 bit Unix")
+        buildsystem.copy_to(ctx,
+          ctx.buildroot / 'host/config', Path('src/config/unix/unix32/*.fpc').glob())
+      else:
+        print("64 bit Unix")
+        buildsystem.copy_to(ctx,
+          ctx.buildroot / 'host/config', Path('src/config/unix/unix64/*.fpc').glob())
+
 
     # enable this on win32 **instead** of the above to copy fpc files 
     if "windows" in target.platform:

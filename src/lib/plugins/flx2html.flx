@@ -123,7 +123,9 @@ private val small_keywords =
   ("typesetof","a set of types"),
   ("code","literal C code insertion"),
   ("extends","extend an object or interface with extra methods"),
-  ("implements","specify what interfaces an object implements")
+  ("implements","specify what interfaces an object implements"), 
+  ("encoder","serialisation encoder"),
+  ("decoder","serialisation decoder")
 ;
 
 private val qualifiers = 
