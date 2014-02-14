@@ -87,7 +87,7 @@ fbuild:
 #
 # regression test on release image
 #
-test:
+regress-check:
 	mkdir -p test
 	${BUILDROOT}/host/bin/flx_tangle --indir=${BUILDROOT}/share/src/test --outdir=test
 	${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --usage=prototype --expect --indir=test/regress/rt --regex='.*\.flx'
@@ -99,6 +99,7 @@ tut-check:
 	${BUILDROOT}/host/bin/flx_iscr src/web/tut tut
 	${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --usage=prototype --expect --input --indir=tut --regex='.*\.flx' 
 
+test: regress-check tut-check
 
 #
 #
