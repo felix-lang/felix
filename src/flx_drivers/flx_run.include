@@ -711,6 +711,9 @@ int flx_world::setup(int argc, char **argv) {
   if (debug_driver)
     fprintf(stderr, "flx_run driver begins %s\n", c.flx_argv[0]);
 
+  // flx_libinit_t::create can run code, so add thread to avoid world_stop abort
+  thread_control->add_thread(get_stack_pointer());
+
   // Create the usercode driver instance
   // NB: seems to destroy()ed in do_final_cleanup
   instance.create(
@@ -722,6 +725,8 @@ int flx_world::setup(int argc, char **argv) {
     stdin,
     stdout,
     stderr);
+
+  thread_control->remove_thread();
 
   if (debug_driver) {
     fprintf(stderr, "loaded library %s at %p\n", c.filename, library->library);
