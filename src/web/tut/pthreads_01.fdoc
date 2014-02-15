@@ -1,8 +1,11 @@
 @h1 Pthreads and Channels 
 Felix also supports pre-emptive threads with channels.
 The syntax is similar to that used for fibres and channels:
-
-@felix-unchecked
+@tangler data = pthreads_01_data.data
+@tangle data
+Some test data.
+For pthreads_01.fdoc.
+@felix
 include "std/control/pchannels";
  
 proc client(x:ipchannel[opt[string]]) {
@@ -16,7 +19,9 @@ proc client(x:ipchannel[opt[string]]) {
 }
 
 proc server(x:opchannel[opt[string]]) {
-  f := fopen_input "xyz.flx";
+  var directory = System::argv 1;
+  var filename = Filename::join (directory,"pthreads_01_data.data");
+  f := fopen_input filename;
   var line = readln f;
   while line != "" do
     write$ x,Some line;
@@ -33,7 +38,9 @@ proc launch() {
 }
 
 launch;
-println$ "Launched!";
+@expect
+Some test data.
+For pthreads_01.fdoc.
 @
 
 @h2 Broadcast example

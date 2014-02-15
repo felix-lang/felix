@@ -529,7 +529,7 @@ and build_table_for_dcl
       let ips = add_parameters pubtab privtab (Some symbol_index) ps in
 
       (* Add the symbols to the sym_table. *)
-      add_symbol ~pubtab ~privtab
+      add_symbol ~pubtab ~privtab ~dirs
         symbol_index id (SYMDEF_function ((ips, pre), t, props, exes));
 
       (* Possibly add the function to the public symbol table. *)

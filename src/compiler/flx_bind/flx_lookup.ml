@@ -5420,7 +5420,7 @@ and mk_bare_env state bsym_table index =
   | None -> []
   | Some index -> mk_bare_env state bsym_table index
 
-and merge_directives state bsym_table rs env dirs typeclasses =
+and merge_directives state bsym_table rs env name dirs typeclasses =
   let env = ref env in
   let add table =
    env :=
@@ -5466,8 +5466,8 @@ and merge_directives state bsym_table rs env dirs typeclasses =
     end
 
   | DIR_open (vs,qn) -> add_qn (vs,qn)
- )
- dirs;
+  )
+  dirs;
 
  (* these should probably be done first not last, because this is
  the stuff passed through the function interface .. the other
@@ -5479,6 +5479,7 @@ and merge_directives state bsym_table rs env dirs typeclasses =
  List.iter add_qn typeclasses;
  !env
 
+(* UNUSED .. HMM .. 
 and merge_opens state bsym_table env rs (typeclasses,opens,includes,uses) =
   let use_map = Hashtbl.create 97 in
   List.iter
@@ -5536,6 +5537,7 @@ and merge_opens state bsym_table env rs (typeclasses,opens,includes,uses) =
      so they can be used for clash resolution
   *)
   use_map::tables
+*)
 
 and build_env'' state bsym_table rs index : env_t =
   let parent, sym = Flx_sym_table.find_with_parent state.sym_table index in
@@ -5543,7 +5545,7 @@ and build_env'' state bsym_table rs index : env_t =
 
   let rs = { rs with idx_fixlist = index :: rs.idx_fixlist } in
   let env = inner_build_env state bsym_table rs parent in
-
+  
   (* Build temporary bare innermost environment with a full parent env. *)
   let typeclasses, constraints =
     let _, { raw_type_constraint=con; raw_typeclass_reqs=rtcr } =
@@ -5571,7 +5573,7 @@ and build_env'' state bsym_table rs index : env_t =
 (*
   print_endline ("MERGE DIRECTIVES for " ^  sym.Flx_sym.id);
 *)
-  let env = merge_directives state bsym_table rs env sym.Flx_sym.dirs typeclasses in
+  let env = merge_directives state bsym_table rs env sym.Flx_sym.id sym.Flx_sym.dirs typeclasses in
 (*
   print_endline "Build_env'' complete, DIRECTIVES MERGED";
 *)

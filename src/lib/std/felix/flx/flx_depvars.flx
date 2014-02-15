@@ -176,7 +176,7 @@ gen cal_depvars(
   control.LINKER_OUTPUT_FILENAME <-  Directory::mk_absolute_filename control*.LINKER_OUTPUT_FILENAME; 
 
   val args = control*.USER_ARGS;
-  debugln$ "Target program args = "+args;
+  debugln$ "Target program args = "+args.str;
 
   var INCLUDE_DIR= list (
     ("-I"+Filename::join(control*.FLX_SHARE_DIR,"lib","rtl")), // NOTE: this is WRONG

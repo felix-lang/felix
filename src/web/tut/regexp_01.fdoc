@@ -19,7 +19,7 @@ RE2 does not support backreferences.
 @h2 Compiling a regexp.
 A regexp can be compiled with the {RE2} function.
 @felix
-var r = RE2(" *([A-Za-z_][A-Za-z0-9])*.*");
+var r = RE2(" *([A-Za-z_][A-Za-z0-9]*).*");
 @
 @h2 Simple {Match}ing
 Matching is done with the {Match} function:
@@ -40,6 +40,8 @@ match maybe_subgroups with
 | Some ?a =>
   println$ "Matched " + a.1;
 endmatch;
+@expect
+Matched Hello
 @
 @h2 Supported Syntax.
 See <a href="http://code.google.com/p/re2/wiki/Syntax">RE2 syntax.</a>
@@ -47,14 +49,12 @@ See <a href="http://code.google.com/p/re2/wiki/Syntax">RE2 syntax.</a>
 Regular expressions are quoting hell. Luckily Felix provides a
 solution: regular definitions:
 @felix
-open Regdef;
 begin
-  regdef lower = charset "abcdefghijklmnopqrstuvwzyz";
-  regdef upper = charset "ABCDEFGHIJKLMNOPQRSTUVWZYZ";
+  regdef lower = charset "abcdefghijklmnopqrstuvwxyz";
+  regdef upper = charset "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   regdef digit = charset "0123456789";
   regdef alpha = upper | lower;
-  regdef alphanum = alpha | digit;
-  regdef cid0 = alphanum | "_";
+  regdef cid0 = alpha | "_";
   regdef cid1 = cid0 | digit;
   regdef cid = cid0 cid1 *;
   regdef space = " ";
@@ -77,11 +77,12 @@ Now to use these definitions:
     white? "var" white? 
     group (cid) white? "=" white? 
     (group (cid) | group (integer)) 
-    white? ":" white
+    white? ";" white?
   ;
 
-  var ra = RE2 (sassign.Regdef::render);
-  var result = Match (ra, " a = b; ");
+  var rstr : string = sassign.Regdef::render;
+  var ra = RE2 rstr;
+  var result = Match (ra, " var a = b; ");
   match result with
     | None => 
       println$ "No match?";
@@ -94,6 +95,8 @@ Now to use these definitions:
       done;
   endmatch;
 end
+@expect
+Assigned a from variable b
 @
 Note that the regdef kind of variable must be converted to a 
 Perl regexp in a string form using the {render} function.

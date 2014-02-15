@@ -73,7 +73,12 @@ class Flx
     if control*.INREGEX != "" do 
 
       begin
-        control.USER_ARGS <- Shell::quote_arg(loopctl*.progname) + ' ' + control*.USER_ARGS;
+        //control.USER_ARGS <- Shell::quote_arg(loopctl*.progname) + ' ' + control*.USER_ARGS;
+        // this is a hack because -- argument translates to empty program name ..
+        // and also if there is no name in that slot ..
+        if loopctl*.progname != "" do 
+          control.USER_ARGS <- loopctl*.progname ! control*.USER_ARGS;
+        done
         if control*.INDIR == "" do control.INDIR <- "."; done
         var regex = RE2 control*.INREGEX;
         if not regex.ok do
