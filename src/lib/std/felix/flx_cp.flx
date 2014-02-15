@@ -19,11 +19,11 @@ class CopyFiles {
           done
           dst := search_and_replace replacements tpat;
 
-          println$ "Copy " + src + " -> " + dst;
+          //println$ "Copy " + src + " -> " + dst;
           sd.add src dst;
 
           if ds.haskey dst do
-            println$ "Duplicate target " + dst;
+            eprintln$ "Duplicate target " + dst;
             System::exit(1);
           done
           ds.add dst src;
@@ -64,7 +64,7 @@ class CopyFiles {
      // Check that no source file is clobbered
      match ?src, ?dst in sd.iterator do
        if sd.haskey dst do
-         println$ "Target clobbers src: " + dst;
+         eprintln$ "Target clobbers src: " + dst;
          System::exit(1);
        done
      done
@@ -76,7 +76,7 @@ class CopyFiles {
          err:=Directory::mkdir(dir);
          if err !=0 do
            if errno != EEXIST do
-             println$ "Mkdir, err=" + strerror() + " .. ignoring";
+             eprintln$ "Mkdir, err=" + strerror() + " .. ignoring";
            done
          done
        done
@@ -89,7 +89,7 @@ class CopyFiles {
          if FileSystem::filecopy(src, dst) do
            if verbose do println " #done"; done
          else
-           println "COPY FAILED";
+           eprintln "COPY FAILED";
            System::exit 1;
          done
        else

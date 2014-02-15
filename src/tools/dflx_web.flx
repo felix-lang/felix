@@ -722,7 +722,12 @@ proc serve_file(s: socket_t, infname: string)
   // not only foo.com/ -> index.html, but foo.com/images/ -> images/index.html
   var fname = if "" == infname then "share/src/web/index.html" else infname endif;
 
-  fname = if fname.[0] == char "$" then fname.[1 to] else fname endif;
+  fname = 
+    if fname.[0] == char "$" then fname.[1 to] 
+    elif fname.[0 to 3] == "%24" then fname.[3 to]  
+    else fname 
+    endif
+  ;
 
   // set mime type depending on extension...
   // serve a "not found page" for that case (check for recursion)
