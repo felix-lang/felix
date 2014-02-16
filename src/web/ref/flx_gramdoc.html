@@ -1209,55 +1209,55 @@
 0002:    <a href="/share/lib/grammar/python_grammar.flxh#0002">stmt := "export" "python" "fun" ssuffixed_name "as" sstring ";"</a>
 <hr/><a href="/share/lib/grammar/regexps.flxh">regexps.flxh</a>
 
-0004:  <a href="/share/lib/grammar/regexps.flxh#0004">syntax regexps</a>
+0006:  <a href="/share/lib/grammar/regexps.flxh#0006">syntax regexps</a>
            Syntax for regular definitions.
            Binds to library class Regdef,
            which in turn binds to the binding of Google RE2.
-0017:    <a href="/share/lib/grammar/regexps.flxh#0017">stmt := "regdef" sdeclname "=" sregexp[ralt_pri] ";"</a>
+0019:    <a href="/share/lib/grammar/regexps.flxh#0019">stmt := "regdef" sdeclname "=" sregexp[ralt_pri] ";"</a>
            Regular definition binder.
            Statement to name a regular expression.
            The expression may contain names of previously named regular expressions.
            Defines the LHS symbol as a value of type Regdef::regex.
-0025:    <a href="/share/lib/grammar/regexps.flxh#0025">x[sapplication_pri] := "regexp" "(" sregexp[ralt_pri] ")"</a>
+0027:    <a href="/share/lib/grammar/regexps.flxh#0027">x[sapplication_pri] := "regexp" "(" sregexp[ralt_pri] ")"</a>
            Inline regular expression.
            Can be used anywhere in Felix code.
            Returns a a value of type Regdef::regex.
-0028:    <a href="/share/lib/grammar/regexps.flxh#0028">sregexp[ralt_pri] := sregexp[>ralt_pri] ("|" sregexp[>ralt_pri])+</a>
+0030:    <a href="/share/lib/grammar/regexps.flxh#0030">sregexp[ralt_pri] := sregexp[>ralt_pri] ("|" sregexp[>ralt_pri])+</a>
            Alternatives.
-0033:    <a href="/share/lib/grammar/regexps.flxh#0033">sregexp[rseq_pri] := sregexp[>rseq_pri] (sregexp[>rseq_pri])+</a>
+0037:    <a href="/share/lib/grammar/regexps.flxh#0037">sregexp[rseq_pri] := sregexp[>rseq_pri] (sregexp[>rseq_pri])+</a>
            Sequential concatenation.
-0040:    <a href="/share/lib/grammar/regexps.flxh#0040">sregexp[rpostfix_pri] := sregexp[rpostfix_pri] "*"</a>
+0046:    <a href="/share/lib/grammar/regexps.flxh#0046">sregexp[rpostfix_pri] := sregexp[rpostfix_pri] "*"</a>
            Postfix star (*).
            Kleene closure: zero or more repetitions.
-0046:    <a href="/share/lib/grammar/regexps.flxh#0046">sregexp[rpostfix_pri] := sregexp[rpostfix_pri] "+"</a>
+0052:    <a href="/share/lib/grammar/regexps.flxh#0052">sregexp[rpostfix_pri] := sregexp[rpostfix_pri] "+"</a>
            Postfix plus (+).
            One or more repetitions.
-0052:    <a href="/share/lib/grammar/regexps.flxh#0052">sregexp[rpostfix_pri] := sregexp[rpostfix_pri] "?"</a>
+0058:    <a href="/share/lib/grammar/regexps.flxh#0058">sregexp[rpostfix_pri] := sregexp[rpostfix_pri] "?"</a>
            Postfix question mark (?).
            Optional. Zero or one repetitions.
-0057:    <a href="/share/lib/grammar/regexps.flxh#0057">sregexp[ratom_pri] := "(" sregexp[ralt_pri] ")"</a>
+0063:    <a href="/share/lib/grammar/regexps.flxh#0063">sregexp[ratom_pri] := "(" sregexp[ralt_pri] ")"</a>
            Parenthesis. Non-capturing group.
-0061:    <a href="/share/lib/grammar/regexps.flxh#0061">sregexp[ratom_pri] := "group" "(" sregexp[ralt_pri] ")"</a>
+0067:    <a href="/share/lib/grammar/regexps.flxh#0067">sregexp[ratom_pri] := "group" "(" sregexp[ralt_pri] ")"</a>
            Group psuedo function.
            Capturing group.
-0068:    <a href="/share/lib/grammar/regexps.flxh#0068">sregexp[ratom_pri] := "charset" String</a>
+0074:    <a href="/share/lib/grammar/regexps.flxh#0074">sregexp[ratom_pri] := "charset" String</a>
            The charset prefix operator.
            Treat the string as a set of characters,
            that is, one of the contained characters.
-0079:    <a href="/share/lib/grammar/regexps.flxh#0079">sregexp[ratom_pri] := String</a>
+0081:    <a href="/share/lib/grammar/regexps.flxh#0081">sregexp[ratom_pri] := String</a>
            The string literal.
            The given sequence of characters.
            Any valid Felix string can be used here.
-0090:    <a href="/share/lib/grammar/regexps.flxh#0090">sregexp[ratom_pri] := "perl" "(" sexpr ")"</a>
+0089:    <a href="/share/lib/grammar/regexps.flxh#0089">sregexp[ratom_pri] := "perl" "(" sexpr ")"</a>
            The Perl psuedo function.
            Treat the argument string expression as
            a Perl regular expression, with constraints
            as specified for Google RE2.
-0100:    <a href="/share/lib/grammar/regexps.flxh#0100">sregexp[ratom_pri] := "regex" "(" sexpr ")"</a>
+0096:    <a href="/share/lib/grammar/regexps.flxh#0096">sregexp[ratom_pri] := "regex" "(" sexpr ")"</a>
            The regex psuedo function.
            Treat the argument Felix expression of type Regdef::regex
            as a regular expression.
-0105:    <a href="/share/lib/grammar/regexps.flxh#0105">sregexp[ratom_pri] := sname</a>
+0101:    <a href="/share/lib/grammar/regexps.flxh#0101">sregexp[ratom_pri] := sname</a>
            Identifier.
            Must name a previously defined variable of type Regdef:;regex.
            For example, the LHS of a regdef binder.
@@ -1563,8 +1563,8 @@
 0062:    <a href="/share/lib/grammar/texsyms.flxh#0062">bin := "\Cup"</a>
 0063:    <a href="/share/lib/grammar/texsyms.flxh#0063">cmp := "\curlyeqprec"</a>
 0064:    <a href="/share/lib/grammar/texsyms.flxh#0064">cmp := "\curlyeqsucc"</a>
-0065:    <a href="/share/lib/grammar/texsyms.flxh#0065">bin  := "\curlyvee"</a>
-0066:    <a href="/share/lib/grammar/texsyms.flxh#0066">bin:= "\curlywedge"</a>
+0065:    <a href="/share/lib/grammar/texsyms.flxh#0065">bin := "\curlyvee"</a>
+0066:    <a href="/share/lib/grammar/texsyms.flxh#0066">bin := "\curlywedge"</a>
 0070:    <a href="/share/lib/grammar/texsyms.flxh#0070">arr := "\dashleftarrow"</a>
 0071:    <a href="/share/lib/grammar/texsyms.flxh#0071">arr := "\dashrightarrow"</a>
 0072:    <a href="/share/lib/grammar/texsyms.flxh#0072">bin := "\divideontimes"</a>
