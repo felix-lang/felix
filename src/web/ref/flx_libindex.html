@@ -566,6 +566,8 @@ add_val
   <a href="/share/lib/std/felix/flx_pkgconfig_core.flx#0253">felix/flx_pkgconfig_core.flx:253</a>: proc add_val(v:string)
 add_worker_task
   <a href="/share/lib/std/control/pthread.flx#0020">control/pthread.flx:20</a>: proc add_worker_task : job_queue  * worker_task
+addfile
+  <a href="/share/lib/std/felix/flx_cp.flx#0011">felix/flx_cp.flx:11</a>: proc addfile(f:string)
 address
   <a href="/share/lib/std/datatype/judy.flx#0021">datatype/judy.flx:21</a>: ctor address: word
 adjust_all_pointers
@@ -836,8 +838,8 @@ copy
 copy_last
   <a href="/share/lib/std/datatype/list.fdoc#0115">datatype/list.fdoc:115</a>: proc copy_last[T] (inp:list[T], out:&list[T], last:&list[T])
 copyfiles
-  <a href="/share/lib/std/felix/flx_cp.flx#0136">felix/flx_cp.flx:136</a>: proc copyfiles(dname:string, re:string , tpat:string, live:bool, verbose:bool)
-  <a href="/share/lib/std/felix/flx_cp.flx#0003">felix/flx_cp.flx:3</a>: proc copyfiles(dname:string, re:RE2, tpat:string, live:bool, verbose:bool)
+  <a href="/share/lib/std/felix/flx_cp.flx#0101">felix/flx_cp.flx:101</a>: proc copyfiles(basedir:string, re:string, tpat:string, live:bool, verbose:bool)
+  <a href="/share/lib/std/felix/flx_cp.flx#0002">felix/flx_cp.flx:2</a>: proc copyfiles(basedir:string, re:RE2, tpat:string, live:bool, verbose:bool)
 copyfrom
   <a href="/share/lib/std/strings/string.fdoc#0089">strings/string.fdoc:89</a>: fun copyfrom: string * !ints -> string
 copyto
@@ -2376,7 +2378,7 @@ rewrite_history
   <a href="/share/lib/std/felix/pkgtool/pkgtool_base.flx#0919">felix/pkgtool/pkgtool_base.flx:919</a>: noinline  proc rewrite_history (prior_knowledge:strdict[string])
 rfi
   <a href="/share/lib/std/io/filesystem.flx#0077">io/filesystem.flx:77</a>: proc rfi(dname2: string)
-  <a href="/share/lib/std/felix/flx_cp.flx#0015">felix/flx_cp.flx:15</a>: proc rfi(dname2: string)
+  <a href="/share/lib/std/felix/flx_cp.flx#0038">felix/flx_cp.flx:38</a>: proc rfi(dir: string)
 rfind
   <a href="/share/lib/std/strings/string.fdoc#0152">strings/string.fdoc:152</a>: fun rfind (s:string, e:char, i:int) : opt[int]
   <a href="/share/lib/std/strings/string.fdoc#0151">strings/string.fdoc:151</a>: fun rfind (s:string, e:char) : opt[int]
@@ -2440,7 +2442,7 @@ run_test
 run_with_calpackages
   <a href="/share/lib/std/felix/flx/flx_run.flx#0422">felix/flx/flx_run.flx:422</a>: gen run_with_calpackages () : int
 runflx
-  <a href="/share/lib/std/felix/flx/flx.flx#0128">felix/flx/flx.flx:128</a>: gen runflx(args:list[string]) : int
+  <a href="/share/lib/std/felix/flx/flx.flx#0133">felix/flx/flx.flx:133</a>: gen runflx(args:list[string]) : int
   <a href="/share/lib/std/felix/flx/bootflx.flx#0125">felix/flx/bootflx.flx:125</a>: gen runflx(args:list[string]) : int
 rwopen
   <a href="/share/lib/std/win32/filesystem.flx#0038">win32/filesystem.flx:38</a>: gen rwopen: string -> posix_file
