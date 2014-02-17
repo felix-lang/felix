@@ -90,7 +90,7 @@ fbuild:
 test-dir:
 	mkdir -p test
 	${BUILDROOT}/host/bin/flx_tangle --indir=${BUILDROOT}/share/src/test --outdir=test
-	for file in src/test/*.fdoc; do ${BUILDROOT}/host/bin/flx_iscr $$file test; done
+	for file in src/test/regress/rt/*.fdoc; do ${BUILDROOT}/host/bin/flx_iscr $$file test; done
 
 tutopt-dir:
 	mkdir -p tutopt
