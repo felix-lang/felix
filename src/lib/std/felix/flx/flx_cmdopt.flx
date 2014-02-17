@@ -35,10 +35,10 @@ private proc print_help() {
   println "--version            : show felix version";
   println "--force              : force run Felix compiler";
   println "--force-compiler     : force Felix compiler to rebuild everything";
-  println "--cache_dir=dir      : directory cache output from parser (*.par files), autocreated, default $HOME/.felix/cache";
-  println "--output_dir=dir     : directory to hold C++ output from translator, autocreated, default $HOME/.felix/cache";
+  println "--cache-dir=dir      : directory cache output from parser (*.par files), autocreated, default $HOME/.felix/cache";
+  println "--output-dir=dir     : directory to hold C++ output from translator, autocreated, default $HOME/.felix/cache";
   println "                       Felix stored by absolute pathname within directory (tree directory).";
-  println "--bundle_dir=dir     : directory to hold C++ output from translator, autocreated.";
+  println "--bundle-dir=dir     : directory to hold C++ output from translator, autocreated.";
   println "                       Files directly in directory by basename (flat directory).";
   println "--clean              : delete the caches first";
   println "--help               : show this help";

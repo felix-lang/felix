@@ -96,6 +96,7 @@ private val small_keywords =
   ("do","imperative code begins"), 
   ("done","end of body"),
   ("extend","define an object interface"),
+  ("begin","end of extension"),
   ("end","end of extension"),
   ("in", "membership operator, function mem"),
   ("for", "for loop"),
@@ -202,7 +203,14 @@ private val library =
   ("println", "Print a string to standard output with newline appended"),
   ("write", "Print a string to a stream"),
   ("write", "Print a string to a stream with newline appended"),
-  ("readln", "Read a string from a stream including trailing newline")
+  ("readln", "Read a string from a stream including trailing newline"),
+
+  ("iter", "call procedure on each element of data structure"),
+  ("map", "return data structure with function applied to each value"),
+  ("fold_left", "accumulated values of data structure from left into initial value using function"),
+  ("fold_right", "accumulated values of data structure from right into initial value using function"),
+  ("rev", "return data structure with elements reversed"),
+  ("len", "number of elements in data structure"),
 ;
 
 private val hack = "C_hack","C_hack"; // to make it an array we need 2 components

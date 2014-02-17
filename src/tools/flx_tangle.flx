@@ -31,13 +31,13 @@ val cmdspec : cmdspec_t =
     split-key-value-spec= Empty[string * string],
     multi-valued-keys-spec= Empty[string], 
     single-valued-keys-spec= list("--inoutdir","--indir","--outdir"),
-    switches-spec= list("--help","--linenos"), 
-    short-switch-map-spec = Empty[char * string]
+    switches-spec= list("--help","--linenos","--verbose"), 
+    short-switch-map-spec = list [char * string] (char "v","--verbose")
   )
 ;
 
 proc print_help =>
-  println$ "Usage: flx_tangle [--indir=indir] [--outdir=outdir] [--inoutdir=inoutdir] [--linenos] [regexp1 ...]"
+  println$ "Usage: flx_tangle [-v] [--indir=indir] [--outdir=outdir] [--inoutdir=inoutdir] [--linenos] [regexp1 ...]"
 ;
 
 val inargs = #System::args;
@@ -63,6 +63,8 @@ if "--help" in outargs.switches do
   print_help;
   System::exit 0;
 done
+
+var verbose = "--verbose" in outargs.switches;
 
 // ----- SETUP CONTROL ARGUMENTS ------------------------
 var patterns = 
@@ -162,7 +164,8 @@ proc save_tangle (infile:string, outbase:string)
 
     // If there's a non-trivial result, generate output file.
     if flx-result != "" or xpect-result != "" or input-result != "" do
-      println$ "Tangle      : " + infile + " -> " +outbase+ "(.flx,.expect,.input)";
+      if verbose call
+         println$ "Tangle      : " + infile + " -> " +outbase+ "(.flx,.expect,.input)";
 
       // Make sure the directories in the path exist.
       Directory::mkdirs$ Filename::dirname outbase;
@@ -185,10 +188,12 @@ proc save_tangle (infile:string, outbase:string)
         fclose ofile;
       done
     else
-      println$ "No Code    : " + infile;
+      if verbose call 
+        println$ "No Code    : " + infile;
     done
   else
-    println$   "Up-to-date : " + infile + " -> " +outbase +"(.flx,.expect,.input)";
+    if verbose call 
+      println$   "Up-to-date : " + infile + " -> " +outbase +"(.flx,.expect,.input)";
   done 
 }
 

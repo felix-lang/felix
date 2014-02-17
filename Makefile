@@ -90,6 +90,12 @@ fbuild:
 test-dir:
 	mkdir -p test
 	${BUILDROOT}/host/bin/flx_tangle --indir=${BUILDROOT}/share/src/test --outdir=test
+	for file in src/test/*.fdoc; do ${BUILDROOT}/host/bin/flx_iscr $$file test; done
+
+tutopt-dir:
+	mkdir -p tutopt
+	${BUILDROOT}/host/bin/flx_tangle --indir=${BUILDROOT}/share/src/web/tutopt --outdir=tutopt
+	for file in src/web/tutopt/*.fdoc; do ${BUILDROOT}/host/bin/flx_iscr $$file tutopt; done
 
 tut-dir:
 	mkdir -p web
@@ -97,12 +103,16 @@ tut-dir:
 	for file in src/web/tut/*.fdoc; do ${BUILDROOT}/host/bin/flx_iscr $$file tut; done
 
 regress-check: test-dir
-	${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --usage=prototype --expect --indir=test/regress/rt --regex='.*\.flx' test
+	${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --usage=prototype --expect --nonstop --indir=test/regress/rt --regex='.*\.flx' test
 
 tut-check: tut-dir
-	${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --usage=prototype --expect --input --indir=tut --regex='.*\.flx' tut
+	${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --usage=prototype --expect --input --nonstop --indir=tut --regex='.*\.flx' tut
 
-test: regress-check tut-check
+tutopt-check: tutopt-dir
+	${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --usage=prototype --expect --input --nonstop --indir=tutopt --regex='.*\.flx' tutopt
+
+
+test: regress-check tut-check tutopt-check
 
 #
 #
@@ -183,10 +193,11 @@ copy-doc:
 	${BUILDROOT}/host/bin/flx_cp speed/ '(.*\.(c|ml|cc|flx|ada|hs|svg))' '${BUILDROOT}/share/speed/$${1}'
 	${BUILDROOT}/host/bin/flx_cp speed/ '(.*/expect)' '${BUILDROOT}/share/speed/$${1}'
 
-gendoc: gen-doc copy-doc check-tut
+gendoc: gen-doc copy-doc 
 
 gen-doc:
 	${BUILDROOT}/host/bin/flx_mktutindex src/web/tut tutorial.fdoc
+	${BUILDROOT}/host/bin/flx_mktutindex src/web/tutopt tutopt.fdoc
 	# Build reference docs. Note this requires plugins.
 	${LPATH}=${BUILDROOT}/host/lib/rtl ${BUILDROOT}/host/bin/flx_libcontents --html > src/web/ref/flx_libcontents.html
 	${LPATH}=${BUILDROOT}/host/lib/rtl ${BUILDROOT}/host/bin/flx_libindex --html > src/web/ref/flx_libindex.html
@@ -479,6 +490,6 @@ sdltest:
 .PHONY : build32 build64 build test32 test64 test
 .PHONY : build32-debug build64-debug build-debug test32-debug test64-debug test-debug
 .PHONY : doc install websites-linux  release install-bin
-.PHONY : copy-doc gen-doc check-tut gendoc fbuild speed tarball
+.PHONY : copy-doc gen-doc gendoc fbuild speed tarball
 .PHONY : weblink flx tools web-plugins toolchain-plugins rtl copy lib
 .PHONY : sdltest

@@ -2727,77 +2727,77 @@ CMD=@
 </p></div>
 <pre>0047:    <a href="/share/lib/std/io/filename.flx#0047">fun join(p:string, b:string)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Join two pathnames into a single pathname.
- split and join are inverses, however join is not
+ split and join are logical inverses, however join is not
  not associative: join("x", join("","y")) = "x/y"
  whereas join(join("x",""),"y") = "x//y"
  since split pulls components off from the RHS we have to
  fold them back from the left
 </p></div>
-<pre>0055:    <a href="/share/lib/std/io/filename.flx#0055">fun basename(s:string)</a></pre>
+<pre>0056:    <a href="/share/lib/std/io/filename.flx#0056">fun basename(s:string)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Get the basename of a path (last component).
 </p></div>
-<pre>0058:    <a href="/share/lib/std/io/filename.flx#0058">fun dirname(s:string)</a></pre>
+<pre>0059:    <a href="/share/lib/std/io/filename.flx#0059">fun dirname(s:string)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Get the directory name of a path (all but the last component).
 </p></div>
-<pre>0062:    <a href="/share/lib/std/io/filename.flx#0062">fun directories (s:string) : list[string]</a></pre>
+<pre>0063:    <a href="/share/lib/std/io/filename.flx#0063">fun directories (s:string) : list[string]</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Return a list of all the directory names in a path.
  For example a/b/c gives "a", "a/b"
 </p></div>
-<pre>0070:    <a href="/share/lib/std/io/filename.flx#0070">fun join(a:string, b:string, c:string)</a></pre>
+<pre>0071:    <a href="/share/lib/std/io/filename.flx#0071">fun join(a:string, b:string, c:string)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Join 3 and 4 strings into a pathname.
 </p></div>
-<pre>0071:    <a href="/share/lib/std/io/filename.flx#0071">fun join(a:string, b:string, c:string,d:string)</a></pre>
-<pre>0074:    <a href="/share/lib/std/io/filename.flx#0074">fun join(x:string) (y:string)</a></pre>
+<pre>0072:    <a href="/share/lib/std/io/filename.flx#0072">fun join(a:string, b:string, c:string,d:string)</a></pre>
+<pre>0075:    <a href="/share/lib/std/io/filename.flx#0075">fun join(x:string) (y:string)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Join 2 strings into a pathname (curried form).
 </p></div>
-<pre>0077:    <a href="/share/lib/std/io/filename.flx#0077">fun join(ps: List::list[string])</a></pre>
+<pre>0078:    <a href="/share/lib/std/io/filename.flx#0078">fun join(ps: List::list[string])</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Join all the strings in a list into a pathname.
 </p></div>
-<pre>0084:    <a href="/share/lib/std/io/filename.flx#0084">fun split_extension (s:string): string * string</a></pre>
+<pre>0085:    <a href="/share/lib/std/io/filename.flx#0085">fun split_extension (s:string): string * string</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Split off extension. Includes the dot. 
  Invariant: input = basename + extension.
  Works backwards until it hits a dot, path separator,
  or end of data. If a dot, strip it and the tail of the string,
  otherwise return the original string.
 </p></div>
-<pre>0097:    <a href="/share/lib/std/io/filename.flx#0097">fun strip_extension (s:string)</a></pre>
+<pre>0098:    <a href="/share/lib/std/io/filename.flx#0098">fun strip_extension (s:string)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Remove an extension from a filename if there is one.
 </p></div>
-<pre>0100:    <a href="/share/lib/std/io/filename.flx#0100">fun get_extension (s:string)</a></pre>
+<pre>0101:    <a href="/share/lib/std/io/filename.flx#0101">fun get_extension (s:string)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Get extension if there is one. Includes the dot.
 </p></div>
 
-<pre>0105:  <a href="/share/lib/std/io/filename.flx#0105">class Win32Filename</a></pre>
+<pre>0106:  <a href="/share/lib/std/io/filename.flx#0106">class Win32Filename</a></pre>
 <div style='font-family:sans-serif; font-size:12pt; margin-left:100; margin-right:100; top:5; color:#406040'><p> Windows Filenames
 </p></div>
-<pre>0109:    <a href="/share/lib/std/io/filename.flx#0109">fun sep()</a></pre>
-<pre>0110:    <a href="/share/lib/std/io/filename.flx#0110">fun executable_extension ()</a></pre>
-<pre>0111:    <a href="/share/lib/std/io/filename.flx#0111">fun static_object_extension()</a></pre>
-<pre>0112:    <a href="/share/lib/std/io/filename.flx#0112">fun dynamic_object_extension()</a></pre>
-<pre>0113:    <a href="/share/lib/std/io/filename.flx#0113">fun static_library_extension()</a></pre>
-<pre>0114:    <a href="/share/lib/std/io/filename.flx#0114">fun dynamic_library_extension()</a></pre>
+<pre>0110:    <a href="/share/lib/std/io/filename.flx#0110">fun sep()</a></pre>
+<pre>0111:    <a href="/share/lib/std/io/filename.flx#0111">fun executable_extension ()</a></pre>
+<pre>0112:    <a href="/share/lib/std/io/filename.flx#0112">fun static_object_extension()</a></pre>
+<pre>0113:    <a href="/share/lib/std/io/filename.flx#0113">fun dynamic_object_extension()</a></pre>
+<pre>0114:    <a href="/share/lib/std/io/filename.flx#0114">fun static_library_extension()</a></pre>
+<pre>0115:    <a href="/share/lib/std/io/filename.flx#0115">fun dynamic_library_extension()</a></pre>
 
-<pre>0120:  <a href="/share/lib/std/io/filename.flx#0120">class OsxFilename</a></pre>
+<pre>0121:  <a href="/share/lib/std/io/filename.flx#0121">class OsxFilename</a></pre>
 <div style='font-family:sans-serif; font-size:12pt; margin-left:100; margin-right:100; top:5; color:#406040'><p> OSX Filenames
 </p></div>
-<pre>0124:    <a href="/share/lib/std/io/filename.flx#0124">fun sep()</a></pre>
-<pre>0125:    <a href="/share/lib/std/io/filename.flx#0125">fun executable_extension ()</a></pre>
-<pre>0126:    <a href="/share/lib/std/io/filename.flx#0126">fun static_object_extension()</a></pre>
-<pre>0127:    <a href="/share/lib/std/io/filename.flx#0127">fun dynamic_object_extension()</a></pre>
-<pre>0128:    <a href="/share/lib/std/io/filename.flx#0128">fun static_library_extension()</a></pre>
-<pre>0129:    <a href="/share/lib/std/io/filename.flx#0129">fun dynamic_library_extension()</a></pre>
+<pre>0125:    <a href="/share/lib/std/io/filename.flx#0125">fun sep()</a></pre>
+<pre>0126:    <a href="/share/lib/std/io/filename.flx#0126">fun executable_extension ()</a></pre>
+<pre>0127:    <a href="/share/lib/std/io/filename.flx#0127">fun static_object_extension()</a></pre>
+<pre>0128:    <a href="/share/lib/std/io/filename.flx#0128">fun dynamic_object_extension()</a></pre>
+<pre>0129:    <a href="/share/lib/std/io/filename.flx#0129">fun static_library_extension()</a></pre>
+<pre>0130:    <a href="/share/lib/std/io/filename.flx#0130">fun dynamic_library_extension()</a></pre>
 
-<pre>0135:  <a href="/share/lib/std/io/filename.flx#0135">class PosixFilename</a></pre>
+<pre>0136:  <a href="/share/lib/std/io/filename.flx#0136">class PosixFilename</a></pre>
 <div style='font-family:sans-serif; font-size:12pt; margin-left:100; margin-right:100; top:5; color:#406040'><p> Posix Filenames
 </p></div>
-<pre>0139:    <a href="/share/lib/std/io/filename.flx#0139">fun sep()</a></pre>
-<pre>0140:    <a href="/share/lib/std/io/filename.flx#0140">fun executable_extension ()</a></pre>
-<pre>0141:    <a href="/share/lib/std/io/filename.flx#0141">fun static_object_extension()</a></pre>
-<pre>0142:    <a href="/share/lib/std/io/filename.flx#0142">fun dynamic_object_extension()</a></pre>
-<pre>0143:    <a href="/share/lib/std/io/filename.flx#0143">fun static_library_extension()</a></pre>
-<pre>0144:    <a href="/share/lib/std/io/filename.flx#0144">fun dynamic_library_extension()</a></pre>
+<pre>0140:    <a href="/share/lib/std/io/filename.flx#0140">fun sep()</a></pre>
+<pre>0141:    <a href="/share/lib/std/io/filename.flx#0141">fun executable_extension ()</a></pre>
+<pre>0142:    <a href="/share/lib/std/io/filename.flx#0142">fun static_object_extension()</a></pre>
+<pre>0143:    <a href="/share/lib/std/io/filename.flx#0143">fun dynamic_object_extension()</a></pre>
+<pre>0144:    <a href="/share/lib/std/io/filename.flx#0144">fun static_library_extension()</a></pre>
+<pre>0145:    <a href="/share/lib/std/io/filename.flx#0145">fun dynamic_library_extension()</a></pre>
 
-<pre>0149:  <a href="/share/lib/std/io/filename.flx#0149">class Filename</a></pre>
+<pre>0150:  <a href="/share/lib/std/io/filename.flx#0150">class Filename</a></pre>
 <div style='font-family:sans-serif; font-size:12pt; margin-left:100; margin-right:100; top:5; color:#406040'><p> Host Filenames.
 </p></div>
 <hr/><a href="/share/lib/std/io/filestat.flx">io/filestat.flx</a>

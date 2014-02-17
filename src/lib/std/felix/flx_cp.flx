@@ -84,7 +84,7 @@ class CopyFiles {
 
      // And finally, do the actual copying
      match ?src, ?dst in sd.iterator do
-       if verbose do println$ "cp " + src + "  " + dst; done
+       if verbose do print$ "cp " + src + "  " + dst; done
        if live do
          if FileSystem::filecopy(src, dst) do
            if verbose do println " #done"; done

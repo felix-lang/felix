@@ -38,7 +38,7 @@ class Filename_class[os] {
   fun split(s:string)=> split (s, List::Empty[string]);
 
   //$ Join two pathnames into a single pathname.
-  //$ split and join are inverses, however join is not
+  //$ split and join are logical inverses, however join is not
   //$ not associative: join("x", join("","y")) = "x/y"
   //$ whereas join(join("x",""),"y") = "x//y"
   //$ since split pulls components off from the RHS we have to
@@ -46,7 +46,8 @@ class Filename_class[os] {
 
   fun join(p:string, b:string)=> 
     if p == "" then b
-    elif p== #sep then p+b 
+    elif p == #sep then p+b 
+    elif p.[-1] == #sep.[0] then p+b 
     else p+#sep+b 
     endif
   ; 
