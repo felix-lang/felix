@@ -92,7 +92,7 @@ class Flx
         var i = 1;
         var pass = 0;
         var fail = 0;
-        file = sort files;
+        files = sort files;
         for file in files do
           var arg = Filename::join (control*.INDIR, file);
           loopctl*.path,loopctl*.ext = Filename::split_extension(arg);
