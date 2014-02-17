@@ -1,5 +1,5 @@
-
-@h1 sqlite-1-0.flx
+@title Sqlite3
+@h1 sqlite3
 @felix
 open Sqlite3;
 

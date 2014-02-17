@@ -2,4 +2,7 @@
 @h1 pthread Index
 <ul>
 <li><a href="pthread_01.fdoc">pthread</a></li>
+<li><a href="pthread_02.fdoc">Pthreads and Channels</a></li>
+<li><a href="pthread_03.fdoc">pthread-1.01-0.flx</a></li>
+<li><a href="pthread_04.fdoc">pthread-1.02-0.flx</a></li>
 </ul>
