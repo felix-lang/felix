@@ -103,12 +103,32 @@ tut-dir:
 	for file in src/web/tut/*.fdoc; do ${BUILDROOT}/host/bin/flx_iscr $$file tut; done
 
 regress-check: test-dir
+	# ============================================================
+	#
+	# RUNNING REGRESSION TESTS
+	#
+	# ============================================================
 	${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --usage=prototype --expect --nonstop --indir=test/regress/rt --regex='.*\.flx' test
 
 tut-check: tut-dir
+	# ============================================================
+	#
+	# CHECKING CORRECTNESS OF TUTORIAL EXAMPLES
+	#
+	# ============================================================
 	${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --usage=prototype --expect --input --nonstop --indir=tut --regex='.*\.flx' tut
 
 tutopt-check: tutopt-dir
+	#
+	# ============================================================
+	#
+	# TESTING OPTIONAL COMPONENTS
+	#
+	# Tests are expected to fail if the relevant third party
+	# support is not available or Felix is not properly configured
+	# to use it.
+	# ============================================================
+	#
 	${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --usage=prototype --expect --input --nonstop --indir=tutopt --regex='.*\.flx' tutopt
 
 

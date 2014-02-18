@@ -1,57 +1,81 @@
-@title Assignments.
-@h1 Assignment
-Once you have a pointer to an object, you may be able to modify it.
-If the object type is first class, or otherwise assignable,
-you can put a new value into the object:
+@title Array products.
+@h1 Arrays
+@h2 Array Values
+When you write a tuple like this:
 @felix
-begin
-  var x: int = 0;       // make an object 
-  val px = &x;          // find its address
-  px <- 1;              // store new value at pointer
-  println$ x;           // 1 : the object has been set to a new value
-end
+  val x = 1,2,3,4,5;
 @
-Using the heap:
-@felix
-begin
-  val px = new 0;
-  px <- 1;
-  println$ *px;
-end
-@
-
-The store operator {&lt;-} has the type:
+where all the components have the same type, it is called an 
+<em>array</em> value. A special notation may be used for this array type:
 @felix-unchecked
-  &T * T -> void
+  int^5
 @
-Felix also provides the more traditional assignment operator {=}:
+that is, int multipled by itself 5 times: this type is exactly
+the same (not equivalent or isomorphic but exactly the same) as:
+@felix-unchecked
+  int * int * int * int * int
+@
+There is also an alias in the library which can be used:
+@felix-unchecked
+  array[int,5]
+@
+
+This kind of array is a first class value, it is <em>not an object</em>.
+@h2 Array element
+You can get an element from an array by its position:
 @felix
-begin
-  var x = 1; 
-  x = 2;       // syntactic sugar for &x <- 2
-  println$ x;  // 2
-end
+println$ a.1;
+println$ 1 a;
 @
-but as you can see it is just syntactic sugar. All mutators work this
-way for example:
+Note the position, or index, is zero origin in accordance with C 
+conventions. The index can be an expression of any core 
+integral type. The function {1} used here is called an
+<em>array projection function</em>.
+
+@h2 Array length
+The length of an array can be found by the {len} function.
+The type of the result is {size}, an integral type used 
+to determine the sizes of things.
 @felix
-begin
-  var x = 1;
-  x++;    // syntactic sugar for post_dec (&x)
-  x+=1;   // syntactic sugar for plus_eq (&x,1)
-end
+println$ a.len;
 @
-In particular all operators and functions except {&amp;}
-accept values: there are no reference types. There are no
-operations which modify values directly.
+@h2 Array member
+You can test if a value is in an array easily:
+@felix
+println$ 2 \in a;
+@
+Note the beautiful infix set membership operator is spelled:
+@felix-unchecked
+"2 \in a"
+@
+This is one of the standard TeX operators that the webserver
+displays using MathJax.
 
-Some values, when encoded in object store, can be modified
-partially via a pointer to that store. Clearly scalar values
-cannot be partially modified, most aggregates can be.
+@h2 Array iterators
 
-For Felix types, whether or not this is possible is determined solely by functions
-that manipulate pointers to objects storing those values.
+Perhaps the most interesting thing you can do with an array 
+is iterate through its elements:
+@felix
+val a = 1,2,3,4;
 
-For types defined in C++ and lifted into Felix, the programmer may
-provide mutators.
- 
+for var i in 0 upto 3 do
+  println$ "a."+str i+"="+str a.i;
+done
+@
+This is an indexed based loop specialised for arrays.
+Here's another iterator:
+@felix
+for v in a do
+  println$ "element=" + v;
+done
+@
+This form of iterator can be used with any sequence.
+It has the advantage it isn't possible to get an out of
+bounds index. The disadvantage is that you can't access the
+index at all.
+
+There's yet another way to do this:
+@felix
+iter (proc (v:int) {println$ "element=" + str v; }) a;
+@
+
