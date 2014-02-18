@@ -1,74 +1,19 @@
-@title Control
-@h1 Procedural control
-@h2 Conditional
-Basic conditional is like this:
-
-@felix
-proc f(x:int) 
-{
-  if x < 0 do
-    println$ "Negative";
-  elif x == 0 do
-    println$ "Zero";
-  else
-    println$ "Positive";
-  done
-}
+@title Program Arguments
+@h1 Command line arguments
+Ok, so here's another way:
+@felix-unchecked
+println$ "Hello " + System::argv 1;
 @
-The elif and else clauses are optional.
-
-@h2 While loop
-And here's a standard while loop:
-@felix
-proc f(x:int) 
-{
-  while x > 0 do
-    println$ x;
-    x = x - 1;
-  done
-}  
-@
-
-@h2 For loop
-Felix for loop uses an inclusive range:
-
-@felix
-proc f (n:int)
-{
-  for var i in 0 upto n - 1 do
-    println$ i;
-  done
-  println$ i;
-}
-@
-Note the control variable is available outside the loop.
-You must leave out the {var} if the variable is defined elsewhere
-in the same scope.
-
-@h2 Return
-Return from a procedure. A procedure returns automatically
-if control drops through the end.
-@felix
-proc f(n:int)
-{
-  if n < 0 return;
-  if n == 0 do
-    println$ "Zero";
-    return;
-  done
-  println$ "Positive";
-  return;
-}
-
-@h3 Goto
-If you really need to:
-@felix
-proc f(n:int)
-{
-  if n < 0 goto endoff;
-  println$ "Positive or Zero";
-endoff:>
-  println$ "Square is " + (n * n).str;
-}
-@
-
+This reads the first command line argument after the Felix 
+program name, for example if you type:
+<pre>
+flx hello Joachim
+</pre>
+then Joachim will be welcomed.
+<ul>
+<li>The function {System::argv} applied to an integer <em>n</em>
+returns the <em>n'th</em> command line argument if it exists,
+or an empty string otherwise.</li> 
+<li>Arguments are 0-origin and start with
+the executable name: this does not include the {flx} driver.</li>
+</ul>

@@ -1,35 +1,31 @@
-@title Tuple product type.
-@h1 Tuples
-We can combine several values in a comma separated list to form tuple.
-@felix-unchecked
-  1,2.9,"Hello"
-@
-The type of this value is:
-@felix-unchecked
-  int * double * string
-@
-The {*} symbol here means multiply. The type of a tuple
-is sometimes called the Cartesian Product (after Descartes).
-You can retrive a value from a tuple with a integral literal:
+@title Procedures.
+@h1 Simple procedure definitions
+It is also possible to defined new commands,
+these are called procedures. Procedures do not return
+a value, and may and generally should have side-effects.
+Here is a simple example:
 @felix
-  val x = 1,2.9,"Hello";
-  println x.0; // 1
-  println x.1; // 2.9
-  println x.2; // "Hello"
-@expect
-1
-2.9
-Hello
-@
-Note the field numbers are zero origin in keeping with C conventions.
-There are no tuples with one component. 
+proc prompt (x:string) {
+  write$ stdout, x; 
+  fflush stdout;
+}
 
-@h2 Unit
-However, there is a tuple with no components with a single unique value:
-@felix-unchecked
-  ()
+prompt "Input string: ";
+println$ readln$ stdin;
+@input
+Road Runner beats Coyote!
+@expect
+Input string: Road Runner beats Coyote!
+Road Runner beats Coyote!
+
 @
-the type of which is called {unit} type and can also
-be designated by {1}.
+Here:
+<ul>
+<li> The {proc} binder introduces a procedure.</li>
+<li> The procedure {prompt} issues a prompt on {stdout} with
+a {fflush} to force the output to the device.</li>
+<li> Procedures have side effects, here it is I/O.</li>
+<li> Procedures cannot return values </li>
+</ul>
 
 
