@@ -6,10 +6,9 @@
 
 #include <string>
 
-#include "flx_rtl.hpp"
+#include "flx_world.h"
 #include "flx_async.hpp"
 #include "flx_ts_collector.hpp"
-#include "flx_dynlink.hpp"
 #include "flx_sync.hpp"
 #include "pthread_counter.hpp"
 #include "flx_eh.hpp"
@@ -219,30 +218,7 @@ int do_final_cleanup(
   flx_libinit_t *instance
 );
 
-struct doflx_data
-{
-  bool debug_driver;
-  flx::gc::generic::gc_profile_t *gcp;
-  std::list<fthread_t*> *active;
-  flx::pthread::thread_control_t *thread_control;
 
-  unsigned long async_count;
-  async_hooker* async;
-  sync_state_t ss;  // (d, gcp, active), (ft, request), (pc, fs)
-
-  doflx_data(bool d, flx::gc::generic::gc_profile_t *g, std::list<fthread_t*> *a, flx::pthread::thread_control_t *tc)
-  : debug_driver(d), gcp(g), active(a), thread_control(tc),
-  async_count(0),
-  async(NULL),
-  ss(debug_driver, gcp, active)
-  {}
-
-  ~doflx_data();
-
-  bool doflx();
-private:
-  bool do_async();
-};
 
 static void doflx_pthread_entry(void *data) {
   doflx_data *d = (doflx_data*)data;
@@ -563,32 +539,6 @@ static double egetv(char const *name, double dflt)
   double val = env?atof(env):dflt;
   return val;
 }
-
-class flx_world {
-  bool debug;
-  bool debug_driver;
-
-  flx::gc::generic::allocator_t *allocator;
-
-  flx::gc::collector::flx_collector_t *collector;
-
-  flx::gc::generic::gc_profile_t *gcp;
-
-  flx::pthread::thread_control_t *thread_control;
-
-  flx_dynlink_t *library;
-  flx_libinit_t instance;
-
-  doflx_data *dfd;
-
-  int explicit_dtor();
-public:
-  int setup(int argc, char **argv);
-
-  int teardown();
-
-  bool run_until_blocked();
-};
 
 int
 flx_config::init(int argc, char **argv) {
