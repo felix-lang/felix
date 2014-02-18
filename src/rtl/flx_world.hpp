@@ -12,6 +12,36 @@
 
 namespace flx { namespace rtl {
 
+// TODO: move to own file
+class flx_config {
+public:
+  bool  debug;
+
+  bool debug_threads;
+  bool debug_allocations;
+  bool debug_collections;
+  bool report_collections;
+
+  bool debug_driver;
+  bool finalise;
+
+  unsigned long gc_freq;
+  unsigned long min_mem;
+  unsigned long max_mem;
+
+  double free_factor;
+
+  bool allow_collection_anywhere;
+
+  bool static_link;
+  char *filename; // expected to live forever
+  char **flx_argv;
+  int flx_argc;
+
+  // TODO: fn up in macro area
+  int init(int argc, char **argv);
+};
+
 // don't want this here, but can't figure out how to predeclare
 struct doflx_data
 {
@@ -64,5 +94,11 @@ public:
   bool run_until_blocked();
 };
 
-}} // namespaces
+// interface for drivers. there's more, create_frame, etc
+extern create_async_hooker_t *ptr_create_async_hooker;
+void init_ptr_create_async_hooker(bool debug_driver);
+int get_flx_args_config(int argc, char **argv, flx_config& c);
+flx_dynlink_t *link_library(flx_config &c);
+
+  }} // namespaces
 #endif //__flx_world_H_
