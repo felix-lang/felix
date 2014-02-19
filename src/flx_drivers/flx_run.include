@@ -1,19 +1,14 @@
 #include <cstdlib>
 #include <stdio.h>
-#include <vector>
-#include <list>
-#include <map>
 
 #include <string>
 
 #include "flx_world.hpp"
 #include "flx_ts_collector.hpp"
-#include "pthread_counter.hpp"
 #include "flx_eh.hpp"
 
 using namespace std;
 using namespace flx::rtl;
-using namespace flx::pthread;
 using namespace flx::run;
 
 #if FLX_HAVE_GNU_X86
@@ -58,13 +53,13 @@ extern void *static_flx_start;
 namespace flx { namespace rtl {
 
 // TODO: make this less weird (sets ptr_create_async_hooker)
-void init_ptr_create_async_hooker(bool debug_driver) {
+void init_ptr_create_async_hooker(flx_config *c, bool debug_driver) {
 #if !FLX_SUPPORT_ASYNC
   if(debug_driver)
     fprintf(stderr,"doflx: FLX_SUPPORT_ASYNC FALSE\n");
-  ptr_create_async_hooker = 0;
+  c->ptr_create_async_hooker = 0;
 #else
-  ptr_create_async_hooker = create_async_hooker;
+  c->ptr_create_async_hooker = create_async_hooker;
   if(debug_driver)
     fprintf(stderr,"doflx: FLX_SUPPORT_ASYNC TRUE, create_async_hooker = %p\n", create_async_hooker);
 #ifndef FLX_STATIC_LINK
@@ -88,12 +83,12 @@ void init_ptr_create_async_hooker(bool debug_driver) {
   }
 
   // Get the hooker function
-  ptr_create_async_hooker =
+  c->ptr_create_async_hooker =
     (create_async_hooker_t*)DLSYM(async_lib, create_async_hooker);
 
   // Error out if we couldn't find the hooker function in the
   // library.
-  if (ptr_create_async_hooker == NULL) {
+  if (c->ptr_create_async_hooker == NULL) {
     fprintf(stderr,
       "doflx: Unable to find symbol 'create_async_hooker' in module "
       "'%s'\n",FLX_ASYNC_DLL_NAME);
@@ -110,9 +105,9 @@ void init_ptr_create_async_hooker(bool debug_driver) {
 #endif
 }
 
-int get_flx_args_config(int argc, char **argv, flx_config& c) {
+int get_flx_args_config(int argc, char **argv, flx_config *c) {
 #ifndef FLX_STATIC_LINK
-  c.static_link = false;
+  c->static_link = false;
   if (argc<2)
   {
     printf("usage: flx_run [--debug] dll_filename options ..\n");
@@ -131,27 +126,27 @@ int get_flx_args_config(int argc, char **argv, flx_config& c) {
     printf("  FLX_ALLOW_COLLECTION_ANYWHERE # (default yes)\n");
     return 1;
   }
-  c.filename = argv[1];
-  c.flx_argv = argv+1;
-  c.flx_argc = argc-1;
-  c.debug = (argc > 1) && (strcmp(argv[1], "--debug")==0);
-  if (c.debug)
+  c->filename = argv[1];
+  c->flx_argv = argv+1;
+  c->flx_argc = argc-1;
+  c->debug = (argc > 1) && (strcmp(argv[1], "--debug")==0);
+  if (c->debug)
   {
     if (argc < 3)
     {
       printf("usage: flx_run [--debug] dll_filename options ..\n");
       return 1;
     }
-    c.filename = argv[2];
-    --c.flx_argc;
-    ++c.flx_argv;
+    c->filename = argv[2];
+    --c->flx_argc;
+    ++c->flx_argv;
   }
 #else
-  c.static_link = true;
-  c.filename = argv[0];
-  c.flx_argv = argv;
-  c.flx_argc = argc;
-  c.debug = false;
+  c->static_link = true;
+  c->filename = argv[0];
+  c->flx_argv = argv;
+  c->flx_argc = argc;
+  c->debug = false;
 
 //  printf("Statically linked Felix program running\n");
 #endif
@@ -165,17 +160,17 @@ int get_flx_args_config(int argc, char **argv, flx_config& c) {
   return s.substr (i+1,j-i-1);
 }
 
-flx_dynlink_t*link_library(flx_config &c) {
+flx_dynlink_t *link_library(flx_config *c) {
   flx_dynlink_t* library;
 #ifdef FLX_STATIC_LINK
   library = new flx_dynlink_t(
-      modulenameoffilename(c.filename),
+      modulenameoffilename(c->filename),
       (thread_frame_creator_t)static_create_thread_frame,
       (start_t)static_flx_start,
       (main_t)&flx_main);
 #else
   library = new flx_dynlink_t;
-  library->dynamic_link(c.filename);
+  library->dynamic_link(c->filename);
 #endif
   return library;
 }
@@ -184,9 +179,11 @@ flx_dynlink_t*link_library(flx_config &c) {
 
 int FELIX_MAIN (int argc, char** argv)
 {
-  flx_world world;
+  // NOTE: TODO: Figure out how to delete these suckers properly
+  flx_config *c = new flx_config(link_library, init_ptr_create_async_hooker, get_flx_args_config);
+  flx_world *world=new flx_world(c);
 
-  int error_exit_code = world.setup(argc, argv);
+  int error_exit_code = world->setup(argc, argv);
 
   if(0 != error_exit_code) return error_exit_code;
 
@@ -196,9 +193,9 @@ int FELIX_MAIN (int argc, char** argv)
     // We're all set up, so run felix
 
     // Run the felix usercode.
-    while(world.run_until_blocked()) ;
+    while(world->run_until_blocked()) ;
 
-    error_exit_code = world.teardown();
+    error_exit_code = world->teardown();
   }
   catch (flx_exception_t &x) { error_exit_code = flx_exception_handler(&x); }
   catch (std::exception &x) { error_exit_code = std_exception_handler (&x); }
@@ -207,6 +204,8 @@ int FELIX_MAIN (int argc, char** argv)
     fprintf(stderr, "flx_run driver ends with unknown EXCEPTION\n");
     error_exit_code = 4;
   }
+  delete world;
+  delete c;
 
   return error_exit_code;
 }

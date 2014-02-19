@@ -3,7 +3,9 @@ Description: Felix core runtime support
 provides_dlib: -lflx_dynamic
 provides_slib: -lflx_static
 cflags: -Ilib/rtl
-Requires: flx_gc flx_exceptions dl
+// Had to dadd flx_pthread for RF's driver support only.
+// Fix with separate driver library later.
+Requires: flx_gc flx_exceptions dl flx_pthread
 library: rtl
 includes:  '"flx_rtl.hpp"'  <iostream> <cstdio> <cstddef> <cassert> <climits> <string>
 srcdir: src/rtl

@@ -40,33 +40,24 @@ public:
 
   // TODO: fn up in macro area
   int init(int argc, char **argv);
+
+// interface for drivers. there's more, create_frame, etc
+  create_async_hooker_t *ptr_create_async_hooker;
+
+  typedef flx_dynlink_t *(*link_library_t)(flx_config *c);
+  typedef void (*init_ptr_create_async_hooker_t)(flx_config *, bool debug_driver);
+  typedef int (*get_flx_args_config_t)(int argc, char **argv, flx_config* c);
+
+  link_library_t link_library;
+  init_ptr_create_async_hooker_t init_ptr_create_async_hooker;
+  get_flx_args_config_t get_flx_args_config;
+
+  flx_config (link_library_t, init_ptr_create_async_hooker_t, get_flx_args_config_t); 
+
+
 };
 
-// don't want this here, but can't figure out how to predeclare
-struct doflx_data
-{
-  bool debug_driver;
-  flx::gc::generic::gc_profile_t *gcp;
-  std::list<fthread_t*> *active;
-  flx::pthread::thread_control_t *thread_control;
-
-  unsigned long async_count;
-  async_hooker* async;
-  run::sync_state_t ss;  // (d, gcp, active), (ft, request), (pc, fs)
-
-  doflx_data(bool d, flx::gc::generic::gc_profile_t *g, std::list<fthread_t*> *a, flx::pthread::thread_control_t *tc)
-  : debug_driver(d), gcp(g), active(a), thread_control(tc),
-  async_count(0),
-  async(NULL),
-  ss(debug_driver, gcp, active)
-  {}
-
-  ~doflx_data();
-
-  bool doflx();
-private:
-  bool do_async();
-};
+struct doflx_data;
 
 class flx_world {
   bool debug;
@@ -87,6 +78,8 @@ class flx_world {
 
   int explicit_dtor();
 public:
+  flx_config *c;
+  flx_world(flx_config *); 
   int setup(int argc, char **argv);
 
   int teardown();
@@ -94,11 +87,34 @@ public:
   bool run_until_blocked();
 };
 
-// interface for drivers. there's more, create_frame, etc
-extern create_async_hooker_t *ptr_create_async_hooker;
-void init_ptr_create_async_hooker(bool debug_driver);
-int get_flx_args_config(int argc, char **argv, flx_config& c);
-flx_dynlink_t *link_library(flx_config &c);
+
+// don't want this here, but can't figure out how to predeclare
+struct doflx_data
+{
+  flx_world *world;
+  bool debug_driver;
+  flx::gc::generic::gc_profile_t *gcp;
+  std::list<fthread_t*> *active;
+  flx::pthread::thread_control_t *thread_control;
+
+  unsigned long async_count;
+  async_hooker* async;
+  run::sync_state_t ss;  // (d, gcp, active), (ft, request), (pc, fs)
+
+  doflx_data(flx_world *world_arg, bool d, flx::gc::generic::gc_profile_t *g, std::list<fthread_t*> *a, flx::pthread::thread_control_t *tc)
+  : world(world_arg), debug_driver(d), gcp(g), active(a), thread_control(tc),
+  async_count(0),
+  async(NULL),
+  ss(debug_driver, gcp, active)
+  {}
+
+  ~doflx_data();
+
+  bool doflx();
+private:
+  bool do_async();
+};
+
 
   }} // namespaces
 #endif //__flx_world_H_

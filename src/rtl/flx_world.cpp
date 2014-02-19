@@ -9,8 +9,6 @@ using namespace flx::run;
 
 namespace flx { namespace rtl {
 
-create_async_hooker_t *ptr_create_async_hooker = NULL;
-
 int do_final_cleanup(
   bool debug_driver,
   flx::gc::generic::gc_profile_t *gcp,
@@ -60,7 +58,7 @@ bool doflx_data::doflx() {
           gcp->collector->add_root(ftx);
           std::list<fthread_t*> *pactive = new std::list<fthread_t*>;
           pactive->push_front(ftx);
-          void *data = new doflx_data(debug_driver, gcp, pactive, thread_control);
+          void *data = new doflx_data(world,debug_driver, gcp, pactive, thread_control);
           flx_detached_thread_t dummy;
 
           if (debug_driver)
@@ -99,24 +97,24 @@ bool doflx_data::doflx() {
             fprintf(stderr, "doflx: svc_general from fthread=%p\n", ss.ft);
 
           if(debug_driver)
-            fprintf(stderr, "doflx: async=%p, ptr_create_async_hooker=%p\n", async,ptr_create_async_hooker);
+            fprintf(stderr, "doflx: async=%p, ptr_create_async_hooker=%p\n", async,world->c->ptr_create_async_hooker);
           if (!async) {
             if(debug_driver)
               fprintf(stderr,"doflx: trying to create async system..\n");
 
-            if (ptr_create_async_hooker == NULL) {
+            if (world->c->ptr_create_async_hooker == NULL) {
               if(debug_driver)
                 fprintf(stderr,"doflx: trying to create async hooker..\n");
-              init_ptr_create_async_hooker(debug_driver);
+              world->c->init_ptr_create_async_hooker(world->c,debug_driver);
             }
             // Error out if we don't have the hooker function.
-            if (ptr_create_async_hooker == NULL) {
+            if (world->c->ptr_create_async_hooker == NULL) {
               fprintf(stderr,
                 "doflx: Unable to initialise async I/O system: terminating\n");
               exit(1);
             }
 
-            async = (*ptr_create_async_hooker)(
+            async = (*world->c->ptr_create_async_hooker)(
               20000, // bound on resumable thread queue
               50,    // bound on general input job queue
               2,     // number of threads in job pool
@@ -338,9 +336,20 @@ static double egetv(char const *name, double dflt)
   return val;
 }
 
+flx_config::flx_config 
+(
+  link_library_t link_library_arg,
+  init_ptr_create_async_hooker_t init_ptr_create_async_hooker_arg,
+  get_flx_args_config_t get_flx_args_config_arg
+) :
+  link_library(link_library_arg),
+  init_ptr_create_async_hooker(init_ptr_create_async_hooker_arg),
+  get_flx_args_config(get_flx_args_config_arg)
+{}
+
 int
 flx_config::init(int argc, char **argv) {
-  if(get_flx_args_config(argc, argv, *this)) return 1;
+  if(get_flx_args_config(argc, argv, this)) return 1;
 
   debug = (bool)egetv("FLX_DEBUG", debug);
   if (debug) {
@@ -422,42 +431,44 @@ flx_config::init(int argc, char **argv) {
   return 0;
 }
 
-int flx_world::setup(int argc, char **argv) {
-  flx_config c;
-  int res;
-  if((res = c.init(argc, argv) != 0)) return res;
+// construct from flx_config pointer
+flx_world::flx_world(flx_config *c_arg) : c(c_arg) {}
 
-  debug = c.debug;
-  debug_driver = c.debug_driver;
+int flx_world::setup(int argc, char **argv) {
+  int res;
+  if((res = c->init(argc, argv) != 0)) return res;
+
+  debug = c->debug;
+  debug_driver = c->debug_driver;
 
   allocator = new flx::gc::collector::malloc_free();
-  allocator->set_debug(c.debug_allocations);
+  allocator->set_debug(c->debug_allocations);
 
   // previous direct ctor scope ended at closing brace of FLX_MAIN
   // but delete can probably be moved up after collector delete (also used by explicit_dtor)
-  thread_control = new flx::pthread::thread_control_t(c.debug_threads);
+  thread_control = new flx::pthread::thread_control_t(c->debug_threads);
 
   // NB: !FLX_SUPPORT_ASYNC refers to async IO, hence ts still needed thanks to flx pthreads
   collector = new flx::gc::collector::flx_ts_collector_t(allocator, thread_control);
-  collector->set_debug(c.debug_collections);
+  collector->set_debug(c->debug_collections);
 
   gcp = new flx::gc::generic::gc_profile_t(
-    c.debug_allocations,
-    c.debug_collections,
-    c.report_collections,
-    c.allow_collection_anywhere,
-    c.gc_freq,
-    c.min_mem,
-    c.max_mem,
-    c.free_factor,
-    c.finalise,
+    c->debug_allocations,
+    c->debug_collections,
+    c->report_collections,
+    c->allow_collection_anywhere,
+    c->gc_freq,
+    c->min_mem,
+    c->max_mem,
+    c->free_factor,
+    c->finalise,
     collector
   );
 
-  library = link_library(c);
+  library = c->link_library(c);
 
   if (debug_driver)
-    fprintf(stderr, "flx_run driver begins %s\n", c.flx_argv[0]);
+    fprintf(stderr, "flx_run driver begins %s\n", c->flx_argv[0]);
 
   // flx_libinit_t::create can run code, so add thread to avoid world_stop abort
   thread_control->add_thread(get_stack_pointer());
@@ -468,8 +479,8 @@ int flx_world::setup(int argc, char **argv) {
     library,
     gcp,
     library->main_sym,
-    c.flx_argc,
-    c.flx_argv,
+    c->flx_argc,
+    c->flx_argv,
     stdin,
     stdout,
     stderr);
@@ -477,13 +488,14 @@ int flx_world::setup(int argc, char **argv) {
   thread_control->remove_thread();
 
   if (debug_driver) {
-    fprintf(stderr, "loaded library %s at %p\n", c.filename, library->library);
+    fprintf(stderr, "loaded library %s at %p\n", c->filename, library->library);
     fprintf(stderr, "thread frame at %p\n", instance.thread_frame);
     fprintf(stderr, "initial continuation at %p\n", instance.start_proc);
     fprintf(stderr, "main continuation at %p\n", instance.main_proc);
   }
 
   dfd = new doflx_data(
+    this,
     debug_driver,
     gcp,
     run_felix_pthread_ctor(gcp, &instance),
