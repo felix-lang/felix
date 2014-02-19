@@ -1,0 +1,57 @@
+@title Assignments.
+@h1 Assignment
+Once you have a pointer to an object, you may be able to modify it.
+If the object type is first class, or otherwise assignable,
+you can put a new value into the object:
+@felix
+begin
+  var x: int = 0;       // make an object 
+  val px = &x;          // find its address
+  px <- 1;              // store new value at pointer
+  println$ x;           // 1 : the object has been set to a new value
+end
+@
+Using the heap:
+@felix
+begin
+  val px = new 0;
+  px <- 1;
+  println$ *px;
+end
+@
+
+The store operator {&lt;-} has the type:
+@felix-unchecked
+  &T * T -> void
+@
+Felix also provides the more traditional assignment operator {=}:
+@felix
+begin
+  var x = 1; 
+  x = 2;       // syntactic sugar for &x <- 2
+  println$ x;  // 2
+end
+@
+but as you can see it is just syntactic sugar. All mutators work this
+way for example:
+@felix
+begin
+  var x = 1;
+  x++;    // syntactic sugar for post_dec (&x)
+  x+=1;   // syntactic sugar for plus_eq (&x,1)
+end
+@
+In particular all operators and functions except {&amp;}
+accept values: there are no reference types. There are no
+operations which modify values directly.
+
+Some values, when encoded in object store, can be modified
+partially via a pointer to that store. Clearly scalar values
+cannot be partially modified, most aggregates can be.
+
+For Felix types, whether or not this is possible is determined solely by functions
+that manipulate pointers to objects storing those values.
+
+For types defined in C++ and lifted into Felix, the programmer may
+provide mutators.
+ 
