@@ -1,7 +1,7 @@
 include "std/felix/toolchain_clang_config";
 include "std/felix/toolchain_interface";
 include "std/felix/flx_cp";
-include "std/felix/flx_pkgconfig";
+//include "std/felix/flx_pkgconfig";
 include "std/felix/flx_pkg"; // only for "fix2word_flags"
 include "std/felix/flx/flx_plugin_client";
 
@@ -44,6 +44,7 @@ class FlxCoreBuild
   var web_plugins = list (
       'cpp2html',
       'fdoc2html',
+      'fdoc_edit',
       'fdoc_button',
       'fdoc_fileseq',
       'fdoc_heading',

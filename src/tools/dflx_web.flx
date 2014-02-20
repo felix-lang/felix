@@ -64,6 +64,7 @@ include "web/mime_type";
 
 include "plugins/plugin_common";
 include "plugins/fdoc-interface";
+include "plugins/edit-interface";
 
 proc dbg(x:string) { fprint (cstderr,x); };
 
@@ -267,6 +268,9 @@ var  xlat_cpp = Dynlink::load-plugin-func2 [bool * string, string, string] (
     dll-name="cpp2html", setup-str=config, entry-point="cpp2html"
   );
 
+var editor_maker = Dynlink::load-plugin-func1 [edit-interface_t, 1] (
+  dll-name="fdoc_edit", setup-str=config, entry-point="fdoc_edit"
+  );
 
 fun getline_to_url (get:string) =>
   if not startswith get "GET " then
@@ -561,7 +565,7 @@ println$ "Serve fdoc "+fname+" as xhtml";
   var html = #(result.html_page);
   var title = #(result.html_title);
   val data = make_html(
-    "<head>"+Css4Html::flx_head+
+    "<html><head>"+Css4Html::flx_head+
     if needs_mathjax then mathjax else "" endif +
     if title != "" then "<title>"+title+"</title>" else "" endif +
     "</head>"+
@@ -572,6 +576,20 @@ println$ "Serve fdoc "+fname+" as xhtml";
   write_string(k,data,&eof_flag);
 }
 
+proc serve_edit(k:socket_t, fname:string) {
+  var editor = editor_maker ();
+  var eof_flag = false;
+  var text = load fname;
+  var data = make_html(
+    '<html><head>'+
+    '</head>'+
+    editor.get_header (fname) +
+    '<body>' +
+    editor.get_body (fname, text) +
+    '</body></html>\n\r'
+  ); 
+  write_string (k, data, &eof_flag);
+}
 
 proc serve_raw (k:socket_t, fname:string, suffix:string) {
   var eof_flag = false;
@@ -755,7 +773,9 @@ proc serve_file(s: socket_t, infname: string)
 
   //print "suffix is "; print suffix; endl;
 
-  if suffix \in list ("flx","flxh") do 
+  if suffix \in list ("edit") do
+   serve_edit (s,fname);
+  elif suffix \in list ("flx","flxh") do 
     serve_felix(s, fname);
   elif suffix \in list ("py") do 
     serve_py(s, fname);
