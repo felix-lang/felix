@@ -30,7 +30,7 @@ class FlxPrepBuild
       if cmd.repo != cmd.target_dir/'share' do
         println$ "Copy repository "+cmd.repo/'src -> ' + cmd.target_dir/'share'/'src';
         CopyFiles::copyfiles(cmd.repo/'src', 
-         '(.*\.(h|hpp|ml|c|cpp|cxx|cc|flx|flxh|fdoc|js|html|svg|png|gif|jpg|files|include))', 
+         '(.*\.(h|hpp|ml|mli|c|cpp|cxx|cc|flx|flxh|fdoc|js|html|css|svg|png|gif|jpg|files|include))', 
          cmd.target_dir/'share'/'src'/'${1}',true,cmd.debug);
       else
         println$ "Cannot copy repo because source = target";
