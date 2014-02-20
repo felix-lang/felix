@@ -1,26 +1,14 @@
 #include <cstdlib>
 #include <stdio.h>
-#include <vector>
-#include <list>
-#include <map>
-#include <cstring>
-#include <cassert>
 
 #include <string>
-//#include <unistd.h>
 
-#include "flx_rtl.hpp"
-#include "flx_async.hpp"
+#include "flx_world.hpp"
 #include "flx_ts_collector.hpp"
-#include "flx_dynlink.hpp"
-#include "flx_sync.hpp"
-#include "pthread_thread.hpp"
-#include "pthread_counter.hpp"
 #include "flx_eh.hpp"
 
 using namespace std;
 using namespace flx::rtl;
-using namespace flx::pthread;
 using namespace flx::run;
 
 #if FLX_HAVE_GNU_X86
@@ -56,510 +44,70 @@ static void *sp = 0;
 #endif
 
 #ifdef FLX_STATIC_LINK
-/*
-extern "C" void *create_thread_frame;
-extern "C" void *flx_start;
-*/
 extern "C" void *flx_main;
 extern void *static_create_thread_frame;
 extern void *static_flx_start;
 #endif
 
-int do_final_cleanup(
-  bool debug_driver,
-  flx::gc::generic::gc_profile_t *gcp,
-  flx_dynlink_t *library,
-  flx_libinit_t *instance
-);
+// these are part of the rtl, I don't think there's a driver namespace
+namespace flx { namespace rtl {
 
-struct doflx_data
-{
-  bool debug_driver;
-  flx::gc::generic::gc_profile_t *gcp;
-  std::list<fthread_t*> *active;
-  flx::pthread::thread_control_t *thread_control;
-  doflx_data(bool d, flx::gc::generic::gc_profile_t *g, std::list<fthread_t*> *a, flx::pthread::thread_control_t *tc)
-   : debug_driver(d), gcp(g), active(a), thread_control(tc) {}
-};
-
-static
-create_async_hooker_t *ptr_create_async_hooker = NULL;
-
-void doflx(void *data) {
-  doflx_data *d = (doflx_data*)data;
-  bool debug_driver = d->debug_driver;
-  flx::gc::generic::gc_profile_t *gcp = d-> gcp;
-  std::list<fthread_t*> *active = d->active;
-  flx::pthread::thread_control_t *thread_control = d->thread_control;
-  delete d;
-
-  unsigned long async_count = 0;
-  async_hooker* async = NULL;
-
-  try
-  {
-    sync_state_t ss(debug_driver, gcp, active);
-
-  process_active:
-    if (debug_driver) 
-     fprintf(stderr, "doflx: Process active ..");
-
-    if (debug_driver)
-      fprintf(stderr, "dofx: Before running: Sync state is %s/%s\n",
-        get_fstate_desc(ss.fs), get_fpc_desc(ss.pc));
-
-    ss.frun();
-
-    if (debug_driver)
-      fprintf(stderr, "doflx: After running: Sync state is %s/%s\n",
-        get_fstate_desc(ss.fs), get_fpc_desc(ss.pc));
-
-    //fprintf(stderr, "Thread yielding ..");
-    //thread_control->yield();
-    //fprintf(stderr, "..Thread resuming!\n");
-
-    if (FLX_LIKELY(ss.fs == delegated)) {
-      switch (ss.request->variant) {
-        case svc_collect:
-          {
-            gcp->actually_collect();
-          }
-          goto process_active;
-
-        case svc_spawn_pthread:
-          {
-            fthread_t *ftx = *(fthread_t**)ss.request->data;
-            if (debug_driver) 
-               fprintf(stderr, "doflx: Spawn pthread %p\n", ftx);
-            gcp->collector->add_root(ftx);
-            std::list<fthread_t*> *pactive = new std::list<fthread_t*>;
-            pactive->push_front(ftx);
-            void *data = new doflx_data(debug_driver, gcp, pactive, thread_control);
-            flx_detached_thread_t dummy;
-
-            if (debug_driver)
-              fprintf(stderr, "doflx: Starting new pthread, thread counter= %d\n",
-                thread_control->thread_count());
-
-            {
-              flx_mutex_t spawner_lock;
-              flx_condv_t spawner_cond;
-              bool spawner_flag = false;
-              flx_mutex_locker_t locktite(spawner_lock);
-              dummy.init( doflx, data, thread_control,
-                &spawner_lock, &spawner_cond,
-                &spawner_flag
-              );
-
-              if (debug_driver)
-                fprintf(stderr,
-                  "Thread %p waiting for spawned thread to register itself\n",
-                  (void*)get_current_native_thread());
-
-              while (!spawner_flag)
-                spawner_cond.wait(&spawner_lock);
-
-              if (debug_driver)
-                fprintf(stderr,
-                  "Thread %p notes spawned thread has registered itself\n",
-                  (void*)get_current_native_thread());
-            }
-          }
-          goto process_active;
-
-        case svc_general:
-          {
-            if (debug_driver)
-              fprintf(stderr, "doflx: svc_general from fthread=%p\n", ss.ft);
-
-            if(debug_driver)
-              fprintf(stderr, "doflx: async=%p, ptr_create_async_hooker=%p\n", async,ptr_create_async_hooker);
-            if (!async) {
-              if(debug_driver)
-                fprintf(stderr,"doflx: trying to create async system..\n");
-
-              if (ptr_create_async_hooker == NULL) {
-                if(debug_driver)
-                  fprintf(stderr,"doflx: trying to create async hooker..\n");
+// TODO: make this less weird (sets ptr_create_async_hooker)
+void init_ptr_create_async_hooker(flx_config *c, bool debug_driver) {
 #if !FLX_SUPPORT_ASYNC
-                ptr_create_async_hooker = 0;
-                if(debug_driver)
-                  fprintf(stderr,"doflx: FLX_SUPPORT_ASYNC FALSE\n");
+  if(debug_driver)
+    fprintf(stderr,"doflx: FLX_SUPPORT_ASYNC FALSE\n");
+  c->ptr_create_async_hooker = 0;
 #else
-                ptr_create_async_hooker = create_async_hooker;
-                if(debug_driver)
-                  fprintf(stderr,"doflx: FLX_SUPPORT_ASYNC TRUE, create_async_hooker = %p\n", create_async_hooker);
-#  ifndef FLX_STATIC_LINK
-                // Try to dynamically load the felix asynchronous library
-                
-                if(debug_driver)
-                  fprintf(stderr,"doflx: dymamic_link: trying to load %s\n",FLX_ASYNC_DLL_NAME);
-
-                LIBHANDLE async_lib = flx_load_module(FLX_ASYNC_DLL_NAME);
-
-                // Error out if we couldn't load the library.
-                if (async_lib == NULL) {
-                  fprintf(stderr,
-                    "doflx: Unable to find module '%s'\n",FLX_ASYNC_DLL_NAME);
-                  exit(1);
-                }
-                // debug only ..
-                else {
-                  if (debug_driver)
-                    fprintf(stderr, "module '%s' loaded!\n",FLX_ASYNC_DLL_NAME);
-                }
-
-                // Get the hooker function
-                ptr_create_async_hooker =
-                  (create_async_hooker_t*)DLSYM(async_lib, create_async_hooker);
-
-                // Error out if we couldn't find the hooker function in the
-                // library.
-                if (ptr_create_async_hooker == NULL) {
-                  fprintf(stderr,
-                    "doflx: Unable to find symbol 'create_async_hooker' in module "
-                    "'%s'\n",FLX_ASYNC_DLL_NAME);
-                  exit(1);
-                }
-                // debug only
-                else {
-                  if (debug_driver)
-                    fprintf(stderr, "found 'create_async_hooker'!\n");
-                }
-#  endif
-                if(debug_driver)
-                  fprintf(stderr,"doflx: static_link: flx_async_static SHOULD BE LINKED IN\n");
-#endif
-              }
-              // Error out if we don't have the hooker function.
-              if (ptr_create_async_hooker == NULL) {
-                fprintf(stderr,
-                  "doflx: Unable to initialise async I/O system: terminating\n");
-                exit(1);
-              }
-
-              async = (*ptr_create_async_hooker)(
-                20000, // bound on resumable thread queue
-                50,    // bound on general input job queue
-                2,     // number of threads in job pool
-                50,    // bound on async fileio job queue
-                1      // number of threads doing async fileio
-              );
-            }
-            ++async_count;
-            // CHANGED TO USE NEW UNION LAYOUT RULES
-            // One less level of indirection for pointers
-            // void *dreq =  *(void**)ss.request->data;
-            void *dreq =  (void*)ss.request->data;
-
-            // requests are now ALWAYS considered asynchronous
-            // even if the request handler reschedules them immediately
-            async->handle_request(dreq, ss.ft);
-            ss.pc = next_fthread_pos;
-          }
-          goto process_active;
-
-        default:
-          fprintf(stderr,
-            "doflx: Unknown service request code 0x%4x\n", ss.request->variant);
-          abort();
-      }
-    }
-
-    if (ss.fs == blocked) goto do_async;
-    if (ss.fs == terminated) goto cleanup;
-
-    fprintf(stderr, "doflx: Unknown frun return status 0x%4x\n", ss.fs);
-    abort();
-
-  do_async:
-    // ran out of active threads - are there any in the async queue?
-    if (debug_driver) {
-      fprintf(stderr,
-        "doflx: out of active synchronous threads, trying async, count=%ld\n", async_count);
-    }
-
-    if (async && async_count > 0) {
-      // STILL A ROOT
-      fthread_t* ftp = async->dequeue();
-
-      if (debug_driver)
-        fprintf(stderr, "doflx: Async Retrieving fthread %p\n", ftp);
-
-      active->push_front(ftp);
-      --async_count;
-      ss.pc = next_fthread_pos;
-      goto process_active;
-    }
-
-    if (debug_driver) 
-      fprintf(stderr, "doflx: Out of jobs\n");
-  cleanup:;
-  }
-  catch (flx_exception_t &x) { flx_exception_handler (&x); }
-  catch (std::exception &x) { std_exception_handler (&x); }
-  catch (int &x) { fprintf (stderr, "Exception type int: %d\n", x); }
-  catch (::std::string &x) { fprintf (stderr, "Exception type string : %s\n", x.c_str()); }
-  catch (...) { fprintf(stderr, "Unknown exception in thread!\n"); }
-
-  try
-  {
-    if (debug_driver) 
-      fprintf(stderr, "doflx: Terminating Felix subsystem\n");
-    delete async;
-    delete active;
-  }
-  catch (...) { fprintf(stderr, "Unknown exception deleting async!\n"); }
-
-}
-
-// RUN A FELIX INSTANCE IN THE CURRENT PTHREAD
-//
-// CURRENTLY ONLY CALLED ONCE IN MAIN THREAD
-
-static void *get_stack_pointer() { void *x=(void*)&x; return x; }
-
-void run_felix_pthread(
-  bool debug_driver,
-  flx::gc::generic::gc_profile_t *gcp,
-  flx::pthread::thread_control_t *thread_control,
-  flx_dynlink_t *library,
-  flx_libinit_t *instance
-)
-{
-  //fprintf(stderr, "run_felix_pthread -- the MAIN THREAD\n");
-  flx::gc::generic::collector_t *collector = gcp->collector;
-  std::list<fthread_t*> *active = new std::list<fthread_t*>;
-
-  {
-    con_t *top = instance->main_proc;
-    if (top)
-    {
-      fthread_t *flx_main = new (*gcp, _fthread_ptr_map, false) fthread_t(top);
-      collector->add_root(flx_main);
-      active->push_front(flx_main);
-    }
-  }
-
-  {
-    con_t *top = instance->start_proc;
-    fthread_t *ft = new (*gcp, _fthread_ptr_map, false) fthread_t(top);
-    collector->add_root(ft);
-    active->push_front(ft);
-  }
-
-  {
-    doflx(new doflx_data(
-      debug_driver,
-      gcp,
-      active,
-      thread_control)); // deletes active for us!
-
-    if (debug_driver)
-      fprintf(stderr, "MAIN THREAD FINISHED: waiting for other threads\n");
-
-    thread_control->join_all();
-
-    if (debug_driver) fprintf(stderr, "ALL THREADS DEAD: mainline cleanup!\n");
-
-    if (debug_driver) {
-      unsigned long uncollected = collector->get_allocation_count();
-      unsigned long roots = collector->get_root_count();
-      fprintf(stderr,
-        "program finished, %ld collections, %ld uncollected objects, roots %ld\n",
-        gcp->collections, uncollected, roots);
-    }
-  }
-
-  if (gcp->finalise)
-    do_final_cleanup(debug_driver, gcp, library, instance);
-}
-
-// terminates process!
-// Not called by default (let the OS clean up)
-//
-// NEEDS TO BE SPLIT UP so that destroying
-// a program instance is separated from unloading
-// the library
-
-int do_final_cleanup(
-  bool debug_driver,
-  flx::gc::generic::gc_profile_t *gcp,
-  flx_dynlink_t *library,
-  flx_libinit_t *instance
-)
-{
-  flx::gc::generic::collector_t *collector = gcp->collector;
-
-  // garbage collect application objects
-  {
-    if (debug_driver || gcp->debug_collections)
-      fprintf(stderr, "Finalisation: pass 1 Data collection starts ..\n");
-
-    unsigned long n = collector->collect();
-    unsigned long a = collector->get_allocation_count();
-
-    if (debug_driver || gcp->debug_collections)
-      fprintf(stderr, "flx_run collected %ld objects, %ld left\n", n, a);
-  }
-
-  // Destroy program instance/ thread frame object
-
-  if (debug_driver) fprintf(stderr, "Destroying program instance\n");
-  instance->destroy();
-
-  // garbage collect system objects
-  {
-    if (debug_driver || gcp->debug_collections)
-      fprintf(stderr, "Finalisation: pass 2 Final collection starts ..\n");
-
-    collector->free_all_mem();
-    unsigned long a = collector->get_allocation_count();
-
-    if (debug_driver || gcp->debug_collections)
-      fprintf(stderr, "Remaining %ld objects (should be 0)\n", a);
-
-    if (a != 0){
-      fprintf(stderr, "flx_run %ld uncollected objects, should be zero!!\n", a);
-      return 5;
-    }
-  }
-
-  // dump the DLL
-
-  if (debug_driver)
-    fprintf(stderr, "Libref cnt = %ld\n", library->refcnt);
-
-  if (library->refcnt > 0)
-  {
-    if (debug_driver)
-      fprintf(stderr,
-        "flx_run %p library still referenced %ld times\n",
-        library->library, library->refcnt);
-  }
-
-  if (debug_driver)
-    fprintf(stderr, "Unlinking library ..\n");
-
-  library->unlink();
-  return 0;
-}
-
-::std::string modulenameoffilename(::std::string const &s) 
-{
-  ::std::size_t i = s.find_last_of("\\/");
-  ::std::size_t j = s.find_first_of(".",i+1);
-  return s.substr (i+1,j-i-1);
-}
-
-// MAINLINE, ONLY DONE ONCE
-int run_felix(
-  bool debug_driver,
-  flx::gc::generic::gc_profile_t *gcp,
-  flx::pthread::thread_control_t *thread_control,
-  char *filename,
-  int flx_argc,
-  char **flx_argv
-)
-{
-  try
-  {
-    if (debug_driver)
-      fprintf(stderr, "flx_run driver begins %s\n", flx_argv[0]);
-
-    flx_libinit_t instance;
-
-#ifdef FLX_STATIC_LINK
-/*
-    flx_dynlink_t library(
-      (thread_frame_creator_t)&create_thread_frame,
-      (start_t)&flx_start,
-      (main_t)&flx_main);
-*/
-    flx_dynlink_t library(
-      modulenameoffilename(filename),
-      (thread_frame_creator_t)static_create_thread_frame,
-      (start_t)static_flx_start,
-      (main_t)&flx_main);
-#else
-    flx_dynlink_t library;
-    library.dynamic_link(filename);
-#endif
-
-    flx::gc::generic::collector_t *collector = gcp->collector;
-
-    void *stack_base = get_stack_pointer();
-    thread_control->add_thread(stack_base);
-
-    // Create the usercode driver instance
-    instance.create(
-      &library,
-      gcp,
-      library.main_sym,
-      flx_argc,
-      flx_argv,
-      stdin,
-      stdout,
-      stderr);
-
-    if (debug_driver) {
-      fprintf(stderr, "loaded library %s at %p\n", filename, library.library);
-      fprintf(stderr, "thread frame at %p\n", instance.thread_frame);
-      fprintf(stderr, "initial continuation at %p\n", instance.start_proc);
-      fprintf(stderr, "main continuation at %p\n", instance.main_proc);
-    }
-
-    // Run the felix usercode.
-    run_felix_pthread(debug_driver, gcp, thread_control, &library, &instance);
-
-    // And we're done, so remove the current thread.
-    thread_control->remove_thread();
-
-    if (gcp->finalise)
-    {
-      if (library.refcnt > 0)
-      {
-        fprintf(stderr,
-          "flx_run %p library still referenced %ld times?!\n",
-          library.library, library.refcnt);
-        return 6;
-      }
-      if (debug_driver)
-        fprintf(stderr, "flx_run driver ends with finalisation complete\n");
-    }
-    else
-    {
-      if (debug_driver || gcp->debug_collections)
-      {
-        unsigned long a = collector->get_allocation_count();
-        fprintf(stderr,
-          "flx_run driver ends with finalisation skipped, %ld uncollected "
-          "objects\n", a);
-      }
-    }
-  }
-  catch (flx_exception_t &x) { return flx_exception_handler(&x); }
-  catch (std::exception &x) { return std_exception_handler (&x); }
-  catch (...)
-  {
-    fprintf(stderr, "flx_run driver ends with unknown EXCEPTION\n");
-    return 4;
-  }
-  return 0;
-}
-
-static double egetv(char const *name, double dflt)
-{
-  char *env = std::getenv(name);
-  double val = env?atof(env):dflt;
-  return val;
-}
-
-int FELIX_MAIN (int argc, char** argv)
-{
-  int error_exit_code = 0;
+  c->ptr_create_async_hooker = create_async_hooker;
+  if(debug_driver)
+    fprintf(stderr,"doflx: FLX_SUPPORT_ASYNC TRUE, create_async_hooker = %p\n", create_async_hooker);
 #ifndef FLX_STATIC_LINK
-  bool static_link = false;
+  // Try to dynamically load the felix asynchronous library
+
+  if(debug_driver)
+    fprintf(stderr,"doflx: dymamic_link: trying to load %s\n",FLX_ASYNC_DLL_NAME);
+
+  LIBHANDLE async_lib = flx_load_module(FLX_ASYNC_DLL_NAME);
+
+  // Error out if we couldn't load the library.
+  if (async_lib == NULL) {
+    fprintf(stderr,
+      "doflx: Unable to find module '%s'\n",FLX_ASYNC_DLL_NAME);
+    exit(1);
+  }
+  // debug only ..
+  else {
+    if (debug_driver)
+      fprintf(stderr, "module '%s' loaded!\n",FLX_ASYNC_DLL_NAME);
+  }
+
+  // Get the hooker function
+  c->ptr_create_async_hooker =
+    (create_async_hooker_t*)DLSYM(async_lib, create_async_hooker);
+
+  // Error out if we couldn't find the hooker function in the
+  // library.
+  if (c->ptr_create_async_hooker == NULL) {
+    fprintf(stderr,
+      "doflx: Unable to find symbol 'create_async_hooker' in module "
+      "'%s'\n",FLX_ASYNC_DLL_NAME);
+    exit(1);
+  }
+  // debug only
+  else {
+    if (debug_driver)
+      fprintf(stderr, "found 'create_async_hooker'!\n");
+  }
+#endif
+  if(debug_driver)
+    fprintf(stderr,"doflx: static_link: flx_async_static SHOULD BE LINKED IN\n");
+#endif
+}
+
+int get_flx_args_config(int argc, char **argv, flx_config *c) {
+#ifndef FLX_STATIC_LINK
+  c->static_link = false;
   if (argc<2)
   {
     printf("usage: flx_run [--debug] dll_filename options ..\n");
@@ -578,179 +126,86 @@ int FELIX_MAIN (int argc, char** argv)
     printf("  FLX_ALLOW_COLLECTION_ANYWHERE # (default yes)\n");
     return 1;
   }
-  char *filename = argv[1];
-  char **flx_argv = argv+1;
-  int flx_argc = argc-1;
-  bool debug = (argc > 1) && (strcmp(argv[1], "--debug")==0);
-  if (debug)
+  c->filename = argv[1];
+  c->flx_argv = argv+1;
+  c->flx_argc = argc-1;
+  c->debug = (argc > 1) && (strcmp(argv[1], "--debug")==0);
+  if (c->debug)
   {
     if (argc < 3)
     {
       printf("usage: flx_run [--debug] dll_filename options ..\n");
       return 1;
     }
-    filename = argv[2];
-    --flx_argc;
-    ++flx_argv;
+    c->filename = argv[2];
+    --c->flx_argc;
+    ++c->flx_argv;
   }
 #else
-  bool static_link = true;
-  char *filename = argv[0];
-  char **flx_argv = argv;
-  int flx_argc = argc;
-  bool debug = false;
+  c->static_link = true;
+  c->filename = argv[0];
+  c->flx_argv = argv;
+  c->flx_argc = argc;
+  c->debug = false;
 
 //  printf("Statically linked Felix program running\n");
 #endif
-  debug = (bool)egetv("FLX_DEBUG", debug);
-  if (debug) {
-    fprintf(stderr,
-      "[FLX_DEBUG] Debug enabled for %s link program\n",
-      static_link ? "static" : "dynamic");
-  }
+  return 0;
+}
 
-  bool debug_threads = (bool)egetv("FLX_DEBUG_THREADS", debug);
-  if (debug_threads) {
-    fprintf(stderr, "[FLX_DEBUG_THREADS] Threads debug enabled\n");
-  }
+::std::string modulenameoffilename(::std::string const &s)
+{
+  ::std::size_t i = s.find_last_of("\\/");
+  ::std::size_t j = s.find_first_of(".",i+1);
+  return s.substr (i+1,j-i-1);
+}
 
-  bool debug_allocations = (bool)egetv("FLX_DEBUG_ALLOCATIONS", debug);
-  if (debug_allocations) {
-    fprintf(stderr, "[FLX_DEBUG_ALLOCATIONS] Allocation debug enabled\n");
-  }
-
-  bool debug_collections = (bool)egetv("FLX_DEBUG_COLLECTIONS", debug);
-  if (debug_collections)
-  {
-    fprintf(stderr, "[FLX_DEBUG_COLLECTIONS] Collection debug enabled\n");
-  }
-
-  bool report_collections = (bool)egetv("FLX_REPORT_COLLECTIONS", debug);
-  if (report_collections)
-  {
-    fprintf(stderr, "[FLX_REPORT_COLLECTIONS] Collection report enabled\n");
-  }
-
-
-  bool debug_driver = (bool)egetv("FLX_DEBUG_DRIVER", debug);
-  if (debug_driver)
-  {
-    fprintf(stderr, "[FLX_DEBUG_DRIVER] Driver debug enabled\n");
-  }
-
-  bool finalise = (bool)egetv("FLX_FINALISE", 0);
-  if (debug)
-    fprintf(stderr,
-      "[FLX_FINALISE] Finalisation %s\n", finalise ? "Enabled" : "Disabled");
-
-  // default collection frequency is 1000 interations
-  unsigned long gc_freq = (unsigned long)egetv("FLX_GC_FREQ", 1000);
-  if (gc_freq < 1) gc_freq = 1;
-  if (debug)
-    fprintf(stderr, "[FLX_GC_FREQ] call gc every %lu iterations\n", gc_freq);
-
-  // default min mem is 10 Meg
-  unsigned long min_mem = (unsigned long)egetv("FLX_MIN_MEM", 10) * 1000000.0;
-  if (debug)
-    fprintf(stderr, "[FLX_MIN_MEM] call gc only if more than %lu Meg heap used\n", min_mem/1000000);
-
-  // default max mem is unlimited
-  unsigned long max_mem = (unsigned long)egetv("FLX_MAX_MEM", -1) * 1000000.0;
-  if (max_mem <= 0) max_mem = (unsigned long)-1;
-  if (debug)
-    fprintf(stderr, "[FLX_MAX_MEM] terminate if more than %lu Meg heap used\n", max_mem/1000000);
-
-  // default free factor is 10%, this is also the minimum allowed
-  double free_factor = egetv("FLX_FREE_FACTOR", 1.1);
-  if (free_factor < 1.1) free_factor = 1.1;
-  if (debug)
-    fprintf(stderr, "[FLX_FREE_FACTOR] reset gc trigger %4.2f times heap used after collection\n", free_factor);
-
-  // experimental flag to allow collection anywhere
-  // later, we default this one to true if we can
-  // find all the thread stacks, which should be possible
-  // with gcc and probably msvc++
-
-  bool allow_collection_anywhere = (bool)egetv("FLX_ALLOW_COLLECTION_ANYWHERE", 1);
-  if (debug)
-    fprintf(stderr, "[FLX_ALLOW_COLLECTION_ANYWHERE] %s\n", allow_collection_anywhere ? "True" : "False");
-
-
-#if FLX_HAVE_GNU
-    if (debug) fprintf(stderr, "Compiled by g++\n");
-
-    static void *init_sp = sp;
-    static void *init_fframe FLX_UNUSED = __builtin_frame_address(0);
-    static void *init_ret = __builtin_return_address(0);
-
-    if (debug)
-      fprintf(stderr, "Stack pointer = %p, frame=%p, return=%p\n",
-        sp, init_fframe, init_ret);
+flx_dynlink_t *link_library(flx_config *c) {
+  flx_dynlink_t* library;
+#ifdef FLX_STATIC_LINK
+  library = new flx_dynlink_t(
+      modulenameoffilename(c->filename),
+      (thread_frame_creator_t)static_create_thread_frame,
+      (start_t)static_flx_start,
+      (main_t)&flx_main);
+#else
+  library = new flx_dynlink_t;
+  library->dynamic_link(c->filename);
 #endif
+  return library;
+}
 
-  if (debug) {
-    for (int i=0; i<flx_argc; ++i)
-      fprintf(stderr, "flx_argv[%d]->%s\n", i, flx_argv[i]);
+}} // namespaces
+
+int FELIX_MAIN (int argc, char** argv)
+{
+  // NOTE: TODO: Figure out how to delete these suckers properly
+  flx_config *c = new flx_config(link_library, init_ptr_create_async_hooker, get_flx_args_config);
+  flx_world *world=new flx_world(c);
+
+  int error_exit_code = world->setup(argc, argv);
+
+  if(0 != error_exit_code) return error_exit_code;
+
+  // MAINLINE, ONLY DONE ONCE
+  // TODO: simply return error_exit_code
+  try {
+    // We're all set up, so run felix
+
+    // Run the felix usercode.
+    while(world->run_until_blocked()) ;
+
+    error_exit_code = world->teardown();
   }
-
-  flx::gc::generic::allocator_t *allocator =
-    new flx::gc::collector::malloc_free();
-  allocator->set_debug(debug_allocations);
-
-  flx::pthread::thread_control_t thread_control(debug_threads);
-
-  flx::gc::collector::flx_collector_t *collector =
-    new flx::gc::collector::flx_ts_collector_t(allocator, &thread_control);
-  collector->set_debug(debug_collections);
-
-  flx::gc::generic::gc_profile_t *gcp = new flx::gc::generic::gc_profile_t(
-    debug_allocations,
-    debug_collections,
-    report_collections,
-    allow_collection_anywhere,
-    gc_freq,
-    min_mem,
-    max_mem,
-    free_factor,
-    finalise,
-    collector
-  );
-
-  // We're all set up, so run felix
-  error_exit_code = run_felix(
-    debug_driver,
-    gcp,
-    &thread_control,
-    filename, flx_argc, flx_argv
-  );
-
-  // And we're done, so start cleaning up.
-  delete gcp;
-  delete collector;
-  delete allocator;
-
-#if FLX_HAVE_GNU
-    // check the frame pointer isn't corrupted
-    static void *fin_sp = sp;
-    static void *fin_fframe FLX_UNUSED = __builtin_frame_address(0);
-    static void *fin_ret = __builtin_return_address(0);
-    if (init_sp != fin_sp ) {
-      fprintf(stderr, "g++: STACK POINTER ERROR %p != %p\n", init_sp, fin_sp);
-    }
-// I have to comment this out, because it only applies if the
-// gcc compiler is using the frame pointer.. it doesn't if you
-// say -fomit-frame-pointer, for example .. I don't know if there
-// is a way to tell inside the code ..
-#if 0
-    if (init_fframe != fin_fframe) {
-      fprintf(stderr, "g++: FRAME POINTER ERROR %p != %p\n", init_fframe, fin_fframe);
-    }
-#endif
-    else if (init_ret != fin_ret) {
-      fprintf(stderr, "g++: RETURN ADDRESS ERROR %p != %p\n", init_ret, fin_ret);
-    }
-#endif
-  if (debug) fprintf(stderr, "flx_run driver ends code=%d\n", error_exit_code);
+  catch (flx_exception_t &x) { error_exit_code = flx_exception_handler(&x); }
+  catch (std::exception &x) { error_exit_code = std_exception_handler (&x); }
+  catch (...)
+  {
+    fprintf(stderr, "flx_run driver ends with unknown EXCEPTION\n");
+    error_exit_code = 4;
+  }
+  delete world;
+  delete c;
 
   return error_exit_code;
 }
