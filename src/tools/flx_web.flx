@@ -27,7 +27,8 @@ class WebserverPluginSymbols
       fdoc_fileseq,
       fdoc_paragraph,
       fdoc_button,
-      fdoc_frame
+      fdoc_frame,
+      fdoc_edit
     ;
     // webserver
     static-link-symbol dflx_web_create_thread_frame in plugin dflx_web;
