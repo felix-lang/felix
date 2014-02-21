@@ -582,8 +582,8 @@ proc serve_edit(k:socket_t, fname:string) {
   var text = load fname;
   var data = make_html(
     '<html><head>'+
-    '</head>'+
     editor.get_header (fname) +
+    '</head>'+
     '<body>' +
     editor.get_body (fname, text) +
     '</body></html>\n\r'
