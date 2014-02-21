@@ -580,6 +580,8 @@ proc serve_edit(k:socket_t, fname:string) {
   var editor = editor_maker ();
   var eof_flag = false;
   var text = load fname;
+println$ "server loading file " + fname + " got:";
+print text;
   var data = make_html(
     '<html><head>'+
     editor.get_header (fname) +
