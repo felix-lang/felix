@@ -317,8 +317,6 @@ web-plugins:
 	# rebuild web plugins
 	# =========================================================
 	build/release/host/bin/flx --test=build/release  src/tools/flx_build_boot \
-		--target-dir=build/release \
-		--target-bin=host \
 		--build-web-plugins
 
 toolchain-plugins:
@@ -326,8 +324,6 @@ toolchain-plugins:
 	# rebuild toolchain plugins
 	# =========================================================
 	build/release/host/bin/flx --test=build/release  src/tools/flx_build_boot \
-		--target-dir=build/release \
-		--target-bin=host \
 		--build-toolchain-plugins
 
 tools:
@@ -335,8 +331,6 @@ tools:
 	# rebuild tools
 	# =========================================================
 	build/release/host/bin/flx --test=build/release  src/tools/flx_build_boot \
-		--target-dir=build/release \
-		--target-bin=host \
 		--build-tools
 
 flx:
@@ -344,8 +338,6 @@ flx:
 	# rebuild flx
 	# =========================================================
 	build/release/host/bin/flx --test=build/release  src/tools/flx_build_boot \
-		--target-dir=build/release \
-		--target-bin=host \
 		--build-flx
 
 build-tools:
@@ -353,8 +345,6 @@ build-tools:
 	# rebuild flx build tools
 	# =========================================================
 	build/release/host/bin/flx --test=build/release  src/tools/flx_build_boot \
-		--target-dir=build/release \
-		--target-bin=host \
 		--build-flx-tools
 
 lib: copy
@@ -384,8 +374,6 @@ really-fast-rebuild:
 		--target-dir=build/release \
 		--target-bin=host
 	${LPATH}=${INSTALLDIR}/host/lib/rtl ${INSTALLDIR}/host/bin/flx_build_boot \
-		--target-dir=build/release \
-		--target-bin=host \
 		--build-all
 
 fast-rebuild:
@@ -406,8 +394,6 @@ fast-rebuild:
 		--target-bin=host
 	cp build/release/host/bin/flx_build_boot flx_build_boot
 	${LPATH}=build/release/host/lib/rtl ./flx_build_boot \
-		--target-dir=build/release \
-		--target-bin=host \
 		--build-all
 	rm flx_build_boot
 
@@ -425,8 +411,6 @@ fast-rebuild-nortl:
 		--copy-repo \
 		--copy-library
 	${LPATH}=build/release/host/lib/rtl build/release/host/bin/flx_build_boot \
-		--target-dir=build/release \
-		--target-bin=host \
 		--build-all
 	rm flx_build_boot
 
@@ -450,8 +434,6 @@ rebuild:
 		--target-bin=host
 	cp build/release/host/bin/flx flx
 	./flx --test=build/release  src/tools/flx_build_boot \
-		--target-dir=build/release \
-		--target-bin=host \
 		--build-all
 	rm flx
 
@@ -489,8 +471,6 @@ bootstrap:
 	build/release/host/bin/flx --test=build/release  src/tools/flx_build_boot \
 		--target-dir=build/trial \
 		--target-bin=host \
-		--source-dir=build/release \
-		--source-bin=host \
 		--build-all
 	build/trial/host/bin/flx --test=build/trial --clean
 	mkdir -p trial-test

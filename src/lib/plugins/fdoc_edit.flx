@@ -12,7 +12,7 @@ object fdoc_edit () implements edit-interface_t = {
     """
     <link rel="stylesheet" href="/share/src/wiki/html/CodeMirror/lib/codemirror.css">
     <script src="/share/src/wiki/html/CodeMirror/lib/codemirror.js"></script>
-    <script src="/share/src/wiki/html/CodeMirror/mode/clike.js"></script>
+    <script src="/share/src/wiki/html/CodeMirror/mode/felix/felix.js"></script>
     <style>.CodeMirror {border: 2px inset #dee;}</style>
     """
   ;
@@ -25,7 +25,8 @@ object fdoc_edit () implements edit-interface_t = {
       var editor = CodeMirror.fromTextArea(document.getElementById("'''+id+'''"), {
         lineNumbers: true,
         matchBrackets: true,
-        mode: "text/x-csrc"
+        mode: "text/x-felix",
+        smartIndent: false
       });
     </script>
     '''

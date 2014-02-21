@@ -180,7 +180,7 @@ CodeMirror.defineMode("felix", function(config, parserConfig) {
   }
 
    CodeMirror.defineMIME("text/x-felix", {
-    name: "clike",
+    name: "felix",
     keywords: words("while for try catch endtry match with endmatch if else elif endif " + 
                     "union type struct cstruct typedef class module instance " +
                     "fun proc gen object interface extends implements " +
