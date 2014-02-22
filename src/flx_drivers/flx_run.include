@@ -191,9 +191,12 @@ int FELIX_MAIN (int argc, char** argv)
   // TODO: simply return error_exit_code
   try {
     // We're all set up, so run felix
+	world->begin_flx_code();
 
     // Run the felix usercode.
     while(world->run_until_blocked()) ;
+
+	world->end_flx_code();
 
     error_exit_code = world->teardown();
   }

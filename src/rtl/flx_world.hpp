@@ -84,6 +84,10 @@ public:
 
   int teardown();
 
+  // add/remove (current pthread, stack pointer) for garbage collection
+  void begin_flx_code();
+  void end_flx_code();
+
   bool run_until_blocked();
 
   void* ptf() { return instance.thread_frame; }	// for creating con_t

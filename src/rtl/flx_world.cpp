@@ -552,16 +552,19 @@ int flx_world::teardown() {
   return error_exit_code;
 }
 
+void flx_world::begin_flx_code() {
+  thread_control->add_thread(get_stack_pointer());
+}
+
+void flx_world::end_flx_code() {
+  thread_control->remove_thread();
+}
+
 bool flx_world::run_until_blocked() {
   // this may not be called on the same thread, so let thread control know
   // when we exit, main thread is not running so pthreads can garbage collect without waiting for us
-  thread_control->add_thread(get_stack_pointer());
 
-  bool    res = dfd->doflx();
-
-  thread_control->remove_thread();
-
-  return res;
+  return dfd->doflx();
 }
 
 // TODO: factor into doflx_data. run_felix_pthread_ctor does this twice
