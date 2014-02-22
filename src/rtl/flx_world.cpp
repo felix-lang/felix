@@ -564,4 +564,11 @@ bool flx_world::run_until_blocked() {
   return res;
 }
 
+// TODO: factor into doflx_data. run_felix_pthread_ctor does this twice
+void flx_world::spawn_fthread(con_t *top) {
+	fthread_t *ft = new (*gcp, _fthread_ptr_map, false) fthread_t(top);
+	collector->add_root(ft);
+	dfd->active->push_front(ft);
+}
+
 }} // namespaces

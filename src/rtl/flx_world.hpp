@@ -85,6 +85,9 @@ public:
   int teardown();
 
   bool run_until_blocked();
+
+  void* ptf() { return instance.thread_frame; }	// for creating con_t
+  void spawn_fthread(con_t *top);
 };
 
 
