@@ -5,7 +5,7 @@ in a line including the newline. We can fix this, and remove
 excess spaces at the same time as shown here:
 @felix
 write$ stdout,"Enter your name: "; fflush stdout;
-name = strip (readln$ stdin);
+var name = strip (readln$ stdin);
 writeln$ stdout, "Hello " + name + "!";
 @input
 Bugs Bunny
