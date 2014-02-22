@@ -10,9 +10,9 @@ object fdoc_edit () implements edit-interface_t = {
   method fun get_header (filename:string) =>
     "<title>"+filename+"</title>" +
     """
-    <link rel="stylesheet" href="/share/src/wiki/html/CodeMirror/lib/codemirror.css">
-    <script src="/share/src/wiki/html/CodeMirror/lib/codemirror.js"></script>
-    <script src="/share/src/wiki/html/CodeMirror/mode/felix/felix.js"></script>
+    <link rel="stylesheet" href="/share/src/flx_codemirror/lib/codemirror.css">
+    <script src="/share/src/flx_codemirror/lib/codemirror.js"></script>
+    <script src="/share/src/flx_codemirror/mode/felix/felix.js"></script>
     <style>.CodeMirror {border: 2px inset #dee;}</style>
     """
   ;
