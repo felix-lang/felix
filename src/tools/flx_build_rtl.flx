@@ -335,8 +335,6 @@ class FlxRtlBuild
     println$ "  --pkg=bootpkg";
     println$ "  --target-dir=target_dir     default: build/trial";
     println$ "  --target-bin=target_bin     default: host";
-    println$ "  --source-dir=source_dir     default: build/release";
-    println$ "  --source-bin=source_bin     default: host";
     println$ "";
     println$ "  --debug                     do stuff verbosely";
     println$ "";
@@ -347,15 +345,12 @@ class FlxRtlBuild
     println$ "";
     println$ "Purpose: Build new Felix target";
     println$ "";
-    println$ "Requires repository directory $repo contain subdirectory 'src'";
-    println$ "Requires directory $source_dir contain subdirectory $source_bin which contains program 'flxg'";
     println$ "Ensures target_dir contains:";
     println$ "";
     println$ "  (a) Repository source in $target_dir/share/src";
     println$ "  (b) Share library in $target_dir/share/lib";
     println$ "  (c) config db, C++ headers, libraries and executables in $target_dir/$target_bin/*";
     println$ "";
-    println$ "Copies version, flxg, config db, and C++ headers from $source_dir if required";
     println$ "Compiles all C++ sources to libraries and executables";
   }
 
@@ -367,8 +362,6 @@ class FlxRtlBuild
        boot_package="",
        target_dir="build"/"trial",
        target_bin="host",
-       source_dir="build"/"release",
-       source_bin="host",
        debug = false
      );
 
@@ -380,10 +373,6 @@ class FlxRtlBuild
          &cmd.target_dir <- arg.[13 to];
        elif prefix(arg,"--target-bin=") do
          &cmd.target_bin <- arg.[13 to];
-       elif prefix(arg,"--source-dir=") do
-         &cmd.source_dir <- arg.[13 to];
-       elif prefix(arg,"--source-bin=") do
-         &cmd.source_bin <- arg.[13 to];
        elif arg == "--debug" do
          &cmd.debug <- true;
 
@@ -432,8 +421,6 @@ class FlxRtlBuild
     println$ "  build_package = " + cmd.boot_package;
     println$ "  target_dir    = " + cmd.target_dir;
     println$ "  target_bin    = " + cmd.target_bin;
-    println$ "  source_dir    = " + cmd.source_dir;
-    println$ "  source_bin    = " + cmd.source_bin;
 
     flx_build (cmd);
   }
