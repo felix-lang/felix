@@ -17,7 +17,9 @@ object fdoc_edit () implements edit-interface_t = {
     """
   ;
   method fun get_body (id:string, text:string) =>
-   '<form><textarea id="'+id+'">'+
+   '<form action="?doedit" method="post" enctype="text/plain">'+
+   '<input type="submit" value="Save"><br>'+
+   '<textarea id="'+id+'" name="code">'+
    text +
    '</textarea></form>' +
     '''
@@ -26,7 +28,7 @@ object fdoc_edit () implements edit-interface_t = {
         lineNumbers: true,
         matchBrackets: true,
         mode: "text/x-felix",
-        smartIndent: false
+        smartIndent: false,
       });
     </script>
     '''

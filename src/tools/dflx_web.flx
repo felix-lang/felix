@@ -272,6 +272,8 @@ var editor_maker = Dynlink::load-plugin-func1 [edit-interface_t, 1] (
   dll-name="fdoc_edit", setup-str=config, entry-point="fdoc_edit"
   );
 
+// MOVE THIS ELSEWHERE!
+
 fun getline_to_url (get:string) =>
   if not startswith get "GET " then
     ""
@@ -282,6 +284,18 @@ fun getline_to_url (get:string) =>
     endmatch
   endif
 ;
+
+fun postline_to_url (get:string) =>
+  if not startswith get "POST " then
+    ""
+  else
+    match find (get, ' ', 5) with
+    | None => ""
+    | Some ?pos => get.[5 to pos]
+    endmatch
+  endif
+;
+
 
 // strip off the leading http:// then split on the next /
 fun split_url (inurl:string) = {
@@ -305,6 +319,12 @@ fun split_url (inurl:string) = {
 fun parse_get_line (get:string) =>
   split_url$ getline_to_url get
 ;
+
+// parse balance of HTTP GET request (after gthe GET keyword)
+fun parse_post_line (get:string) =>
+  split_url$ postline_to_url get
+;
+
 
 // fixup text by replacing < > and & characters
 fun txt2html (x:string) =
@@ -348,6 +368,13 @@ proc serve_not_found (k:socket_t, fname:string) {
    val data = make_not_found(fname);
    write_string(k,data,&eof_flag);
 }
+
+proc serve_not_implemented (k:socket_t, fname:string) {
+   var eof_flag = false;
+   val data = make_not_implemented(fname);
+   write_string(k,data,&eof_flag);
+}
+
 
 proc serve_forbidden (k:socket_t, fname:string) {
    var eof_flag = false;
@@ -856,17 +883,45 @@ noinline proc handler (var k:socket_t) ()
   // now I need to parse the GET line, get a file name out of its url
   // (e.g. unqualfied -> index.html and name/flx.jpg -> flx.jpg
   match parse_get_line line with
-  | None => {
-      println$ "BAD get line: '"+line+"', using homepage";
-      serve_file(k,"");
-    }
-  | Some (?base, ?file) => {
-      print "well formed get...\n";
+  | None => 
+    match parse_post_line line with 
+    | Some (?base,?file) =>
+      println$ "well formed POST ...";
+      println$ "base=" + base;
+      println$ "file=" + file;
+      println$ "Rest of the POST message ..";
+      var content-len = 0;
+      var finished = false;
+      while not finished do
+println$ "Fetching line ... ";
+        get_line (k,&line);
+println$ "Got the line length .. "+line.len.str;
+        println line;
+        if prefix(line, "Content-Length: ") do
+          var lstr = line.[16 to];
+          println$ "Content length string says " + lstr;
+          content-len  = lstr.int;
+          println$ "Content length is " + content-len.str;
+          finished = true;
+        done
+      done;
+      var nbytes : int = content-len;
+      var error =false;
+      var buffer = C_hack::malloc (nbytes);
+      read (k,&nbytes, buffer, &error);
+      var content = string (C_hack::cast[+char] buffer, nbytes);
+      C_hack::free buffer; 
+      println$ "Content (nbytes=" + nbytes.str+") = " + content;
+      serve_not_implemented(k, file);
+ 
+    | None => println$ "BAD request line: '"+line+"'";
+    endmatch;
+
+  | Some (?base, ?file) => 
+      print "well formed GET ...\n";
       print "base="; print base; endl;
       print "file="; print file; endl;
-
       serve_file(k,file);
-    }
   endmatch;
 
   // we've only read the GET line, so let's flush out the rest of
