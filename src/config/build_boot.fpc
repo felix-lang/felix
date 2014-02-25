@@ -15,6 +15,7 @@ web_plugin:      py2html
 toolchain_plugin:     flx_plugin
 toolchain_plugin:      toolchain_clang_linux
 toolchain_plugin:      toolchain_clang_osx
+toolchain_plugin:      toolchain_clang_iphoneos
 toolchain_plugin:      toolchain_gcc_linux
 toolchain_plugin:      toolchain_gcc48_linux
 toolchain_plugin:      toolchain_gcc_osx

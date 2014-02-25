@@ -328,7 +328,11 @@ class FlxRtlBuild
 
   proc flx_build(cmd: cmd_type)
   {
+<<<<<<< HEAD
     make_rtl ( cmd.target_dir, cmd.target_bin, cmd.boot_package, cmd.tmp_dir, cmd.static_only, cmd.debug);
+=======
+    make_rtl ( cmd.target_dir, cmd.target_bin, cmd.boot_package, 'trial-tmp', cmd.static_only, cmd.debug);
+>>>>>>> 1a29a1bf764fa308ec061b24a7d961b997b45d2f
     println$ "Build Complete";
   }
 
@@ -341,7 +345,10 @@ class FlxRtlBuild
     println$ "  --pkg=bootpkg";
     println$ "  --target-dir=target_dir     default: build/trial";
     println$ "  --target-bin=target_bin     default: host";
+<<<<<<< HEAD
     println$ "  --tmp-dir=tmp               default: ./trial-tmp";
+=======
+>>>>>>> 1a29a1bf764fa308ec061b24a7d961b997b45d2f
     println$ "  --static                    static link libraries only";
     println$ "";
     println$ "  --debug                     do stuff verbosely";
@@ -437,7 +444,6 @@ class FlxRtlBuild
     println$ "  target-bin    = " + cmd.target_bin;
     println$ "  target-bin    = " + cmd.tmp_dir;
     println$ "  tmp-dir    = " + cmd.target_bin;
-
     flx_build (cmd);
   }
 
