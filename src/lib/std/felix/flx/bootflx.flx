@@ -14,6 +14,7 @@ include "std/felix/toolchain_interface";
 
 
 include "std/felix/toolchain/clang_osx";
+include "std/felix/toolchain/clang_iphoneos";
 include "std/felix/toolchain/clang_linux";
 include "std/felix/toolchain/gcc_osx";
 include "std/felix/toolchain/gcc_linux";
@@ -64,6 +65,7 @@ class BootFlx
        match toolchain_name with
       
        | "toolchain_clang_osx" => toolchain_clang_osx 
+       | "toolchain_clang_iphoneos" => toolchain_clang_iphoneos 
        | "toolchain_clang_linux" => toolchain_clang_linux
        | "toolchain_gcc_osx" => toolchain_gcc_osx
        | "toolchain_gcc_linux" => toolchain_gcc_linux
