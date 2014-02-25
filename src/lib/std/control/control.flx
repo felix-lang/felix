@@ -107,6 +107,7 @@ open class Control
   /*8*/ | svc_swrite              of _schannel * &gcaddress
   /*9*/ | svc_kill                of fthread
   /*10*/ | svc_collect
+  /*11*/ | svc_multi_swrite       of _schannel * &gcaddress 
   ;
 
   //$ Procedure to perform a supervisor call. 
