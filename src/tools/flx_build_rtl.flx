@@ -328,7 +328,7 @@ class FlxRtlBuild
 
   proc flx_build(cmd: cmd_type)
   {
-    make_rtl ( cmd.target_dir, cmd.target_bin, cmd.boot_package, 'trial-tmp', cmd.static_only, cmd.debug);
+    make_rtl ( cmd.target_dir, cmd.target_bin, cmd.boot_package, cmd.tmp_dir, cmd.static_only, cmd.debug);
     println$ "Build Complete";
   }
 
@@ -341,6 +341,7 @@ class FlxRtlBuild
     println$ "  --pkg=bootpkg";
     println$ "  --target-dir=target_dir     default: build/trial";
     println$ "  --target-bin=target_bin     default: host";
+    println$ "  --tmp-dir=tmp               default: ./trial-tmp";
     println$ "  --static                    static link libraries only";
     println$ "";
     println$ "  --debug                     do stuff verbosely";
@@ -369,6 +370,7 @@ class FlxRtlBuild
        boot_package="",
        target_dir="build"/"trial",
        target_bin="host",
+       tmp_dir="trial-tmp",
        static_only=false,
        debug = false
      );
@@ -381,6 +383,8 @@ class FlxRtlBuild
          &cmd.target_dir <- arg.[13 to];
        elif prefix(arg,"--target-bin=") do
          &cmd.target_bin <- arg.[13 to];
+       elif prefix(arg,"--tmp-dir=") do
+         &cmd.tmp_dir <- arg.[10 to];
        elif arg == "--static" do
          &cmd.static_only <- true;
        elif arg == "--debug" do
@@ -428,9 +432,11 @@ class FlxRtlBuild
     done
     var cmd = parse_args (tail xargs);
     println$ "flx_build_rtl v1.2";
-    println$ "  build_package = " + cmd.boot_package;
-    println$ "  target_dir    = " + cmd.target_dir;
-    println$ "  target_bin    = " + cmd.target_bin;
+    println$ "  build-package = " + cmd.boot_package;
+    println$ "  target-dir    = " + cmd.target_dir;
+    println$ "  target-bin    = " + cmd.target_bin;
+    println$ "  target-bin    = " + cmd.tmp_dir;
+    println$ "  tmp-dir    = " + cmd.target_bin;
 
     flx_build (cmd);
   }
