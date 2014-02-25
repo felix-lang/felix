@@ -1,0 +1,42 @@
+include "./edit-interface";
+
+fun setup(config_data:string) = {
+  eprintln$ "Setup fdoc_edit " + config_data;
+  return 0;
+}
+
+object fdoc_edit () implements edit-interface_t = {
+  method fun whatami () => "fdoc edit";
+  method fun get_header (filename:string) =>
+    "<title>"+filename+"</title>" +
+    """
+    <link rel="stylesheet" href="/share/src/flx_codemirror/lib/codemirror.css">
+    <script src="/share/src/flx_codemirror/lib/codemirror.js"></script>
+    <script src="/share/src/flx_codemirror/mode/felix/felix.js"></script>
+    <style>.CodeMirror {border: 2px inset #dee;}</style>
+    """
+  ;
+  method fun get_body (id:string, text:string) =>
+   '<form action="?doedit" method="post" enctype="text/plain">'+
+   '<input type="submit" value="Save"><br>'+
+   '<textarea id="'+id+'" name="code">'+
+   text +
+   '</textarea></form>' +
+    '''
+    <script>
+      var editor = CodeMirror.fromTextArea(document.getElementById("'''+id+'''"), {
+        lineNumbers: true,
+        matchBrackets: true,
+        mode: "text/x-felix",
+        smartIndent: false,
+      });
+    </script>
+    '''
+  ;
+
+}
+
+export fun setup of (string) as "fdoc_edit_setup";
+export fun fdoc_edit of () as "fdoc_edit";
+
+

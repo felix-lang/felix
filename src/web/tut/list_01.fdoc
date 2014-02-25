@@ -2,3 +2,161 @@
 @h1 Reference.
 See <a href="/share/lib/std/datatype/list.fdoc">List</a> standard library code.
 
+
+
+@h1 List constructors.
+@felix
+//Check List::_ctor_list
+begin
+  fun str (x:list[int]) =>
+    match x with
+    | Empty => "()"
+    | Cons (?h, ?t) => "(" + (str h) + ", " + (str t) + ")"
+    endmatch
+  ;
+  print$ str$ list[int](); endl;
+  print$ str$ list(4); endl;
+  print$ str$ list(4, 5); endl;
+  print$ str$ list(4, 5, 6); endl;
+  print$ str$ list(4, 5, 6, 7); endl;
+end
+@expect
+()
+(4, ())
+(4, (5, ()))
+(4, (5, (6, ())))
+(4, (5, (6, (7, ()))))
+@
+
+
+
+
+@h1 List length {len}.
+@felix
+//Check List::len
+begin
+  print$ len$ list[int](); endl;
+  print$ len$ list(2); endl;
+  print$ len$ list(3, 4); endl;
+  print$ len$ list(5, 6, 7); endl;
+  print$ len$ list(8, 9, 10, 11); endl;
+end
+@expect
+0
+1
+2
+3
+4
+@
+
+
+
+
+@h1 List HOF iterator {iter}.
+@felix
+//Check List::iter
+begin
+  val f = proc (i:int) { print i; };
+  iter f$ list[int](); endl;
+  iter f$ list(4); endl;
+  iter f$ list(4, 5); endl;
+  iter f$ list(4, 5, 6); endl;
+  iter f$ list(4, 5, 6, 7); endl;
+end
+@expect
+
+4
+45
+456
+4567
+@
+
+
+
+
+@h1 List {map}.
+@felix
+//Check List::map
+begin
+  val f = proc (i:int) { print i; };
+  val g = fun (i:int) => i - 1;
+  iter f$ map g$ list[int](); endl;
+  iter f$ map g$ list(4); endl;
+  iter f$ map g$ list(4, 5); endl;
+  iter f$ map g$ list(4, 5, 6); endl;
+  iter f$ map g$ list(4, 5, 6, 7); endl;
+end
+@expect
+
+3
+34
+345
+3456
+@
+
+
+
+@h1 List {fold_left}.
+@felix
+//Check List::fold_left
+begin
+  val f = fun (x:int) (y:int) => x - y;
+  print$ fold_left f 3$ list[int](); endl;
+  print$ fold_left f 3$ list(4); endl;
+  print$ fold_left f 3$ list(4, 5); endl;
+  print$ fold_left f 3$ list(4, 5, 6); endl;
+  print$ fold_left f 3$ list(4, 5, 6, 7); endl;
+end
+@expect
+3
+-1
+-6
+-12
+-19
+@
+
+
+
+
+@h1 List {fold_right}.
+@felix
+//Check List::fold_right
+begin
+  val f = fun (x:int) (y:int) => x + y;
+  print$ fold_right f (list[int]()) 4; endl;
+  print$ fold_right f (list(4)) 5; endl;
+  print$ fold_right f (list(4, 5)) 6; endl;
+  print$ fold_right f (list(4, 5, 6)) 7; endl;
+  print$ fold_right f (list(4, 5, 6, 7)) 8; endl;
+end
+@expect
+4
+9
+15
+22
+30
+@
+
+
+
+@h1 List reverse {rev}.
+@felix
+//Check List::rev
+begin
+  val f = proc (i:int) { print i; };
+  iter f$ rev$ list[int](); endl;
+  iter f$ rev$ list(4); endl;
+  iter f$ rev$ list(4, 5); endl;
+  iter f$ rev$ list(4, 5, 6); endl;
+  iter f$ rev$ list(4, 5, 6, 7); endl;
+end
+@expect
+
+4
+54
+654
+7654
+@
+
+
+

@@ -64,6 +64,7 @@ include "web/mime_type";
 
 include "plugins/plugin_common";
 include "plugins/fdoc-interface";
+include "plugins/edit-interface";
 
 proc dbg(x:string) { fprint (cstderr,x); };
 
@@ -267,6 +268,11 @@ var  xlat_cpp = Dynlink::load-plugin-func2 [bool * string, string, string] (
     dll-name="cpp2html", setup-str=config, entry-point="cpp2html"
   );
 
+var editor_maker = Dynlink::load-plugin-func1 [edit-interface_t, 1] (
+  dll-name="fdoc_edit", setup-str=config, entry-point="fdoc_edit"
+  );
+
+// MOVE THIS ELSEWHERE!
 
 fun getline_to_url (get:string) =>
   if not startswith get "GET " then
@@ -278,6 +284,18 @@ fun getline_to_url (get:string) =>
     endmatch
   endif
 ;
+
+fun postline_to_url (get:string) =>
+  if not startswith get "POST " then
+    ""
+  else
+    match find (get, ' ', 5) with
+    | None => ""
+    | Some ?pos => get.[5 to pos]
+    endmatch
+  endif
+;
+
 
 // strip off the leading http:// then split on the next /
 fun split_url (inurl:string) = {
@@ -301,6 +319,12 @@ fun split_url (inurl:string) = {
 fun parse_get_line (get:string) =>
   split_url$ getline_to_url get
 ;
+
+// parse balance of HTTP GET request (after gthe GET keyword)
+fun parse_post_line (get:string) =>
+  split_url$ postline_to_url get
+;
+
 
 // fixup text by replacing < > and & characters
 fun txt2html (x:string) =
@@ -345,19 +369,28 @@ proc serve_not_found (k:socket_t, fname:string) {
    write_string(k,data,&eof_flag);
 }
 
+proc serve_not_implemented (k:socket_t, fname:string) {
+   var eof_flag = false;
+   val data = make_not_implemented(fname);
+   write_string(k,data,&eof_flag);
+}
+
+
 proc serve_forbidden (k:socket_t, fname:string) {
    var eof_flag = false;
    val data = make_forbidden(fname);
    write_string(k,data,&eof_flag);
 }
 
+var edit_flag = false; // HACK!!!!!!!!
 
 proc serve_felix (k:socket_t, fname:string) {
   var eof_flag = false;
 
   match get_file(fname,INSTALL_ROOT,FLX_PATH) with
   | Some ?path =>
-    {
+    if edit_flag do serve_edit (k,path, "text/x-felix");
+    else
       val text = load path;
       println$ "Loaded felix file " + fname+", len="+str (text.len.int);
       val dirname = Filename::dirname path;
@@ -370,13 +403,10 @@ proc serve_felix (k:socket_t, fname:string) {
         list[string*string](("Cache-control","max-age=86400"))
       ;
       write_string(k,data,&eof_flag);
-    }
+    done 
   | None =>
-    {
       serve_not_found (k,fname);
-    }
   endmatch;
-
 }
 
 proc serve_fpc (k:socket_t, fname:string) {
@@ -384,7 +414,8 @@ proc serve_fpc (k:socket_t, fname:string) {
 
   match get_file (fname, INSTALL_ROOT,FLX_PKGCONFIG_PATH) with
   | Some ?path =>
-    {
+    if edit_flag do serve_edit (k,path, "text/x-felix");
+    else 
       val text=load path;
       println$ "Loaded fpc file " + fname+", len="+str (text.len.int);
       val dirname = Filename::dirname path;
@@ -395,11 +426,9 @@ proc serve_fpc (k:socket_t, fname:string) {
         list[string*string]("Cache-control","max-age=86400")
       ;
       write_string(k,data,&eof_flag);
-    }
+    done 
   | None =>
-    {
       serve_not_found (k,fname);
-    }
   endmatch;
 
 }
@@ -453,11 +482,10 @@ proc serve_ocaml (k:socket_t, fname:string) {
 
 proc serve_cpp (k:socket_t, fname:string) {
   var eof_flag = false;
-  var text: string;
-
   match get_file(fname,INSTALL_ROOT,C_PATH) with
   | Some ?path =>
-    {
+    if edit_flag do serve_edit (k,path, "text/x-felix");
+    else 
       val text=load path;
   println$ f"Loaded C++ file %S, len=%d" (fname, text.len.int);
       val dirname = Filename::dirname path;
@@ -468,11 +496,9 @@ proc serve_cpp (k:socket_t, fname:string) {
         list[string*string](("Cache-control","max-age=86400"))
       ;
       write_string (k, data, &eof_flag);
-    }
+    done 
   | None =>
-    {
       serve_not_found (k,fname);
-    }
   endmatch;
 }
 
@@ -485,26 +511,31 @@ val text_suffices = (
 
 proc serve_text (k:socket_t, fname:string) {
   var eof_flag = false;
-  var txt = load(fname);
-  println$ f"Loaded text file %S, len=%d" (fname, txt.len.int);
-  val data = make_html$
-    "<html><head></head><body><pre>"+
-    txt
-    +"</pre></body></html>\n\r",
-    list[string*string](("Cache-control","max-age=86400"))
-  ;
-  write_string (k, data, &eof_flag);
+  if edit_flag do serve_edit (k,fname, "text/x-felix");
+  else
+    var txt = load(fname);
+    println$ f"Loaded text file %S, len=%d" (fname, txt.len.int);
+    val data = make_html$
+      "<html><head></head><body><pre>"+
+      txt
+      +"</pre></body></html>\n\r",
+      list[string*string](("Cache-control","max-age=86400"))
+    ;
+    write_string (k, data, &eof_flag);
+  done
 }
 
 proc serve_html (k:socket_t, fname:string) {
   var eof_flag = false;
-  var txt = load fname;
-  println$ f"Loaded html file %S, len=%d" (fname, txt.len.int);
-  val data = make_html$ txt,
-    list[string*string](("Cache-control","max-age=86400"))
-  ;
-
-  write_string (k, data, &eof_flag);
+  if edit_flag do serve_edit (k,fname, "text/x-felix");
+  else
+    var txt = load fname;
+    println$ f"Loaded html file %S, len=%d" (fname, txt.len.int);
+    val data = make_html$ txt,
+      list[string*string](("Cache-control","max-age=86400"))
+    ;
+    write_string (k, data, &eof_flag);
+  done
 }
 
 proc serve_xhtml (k:socket_t, fname:string) {
@@ -514,64 +545,81 @@ proc serve_xhtml (k:socket_t, fname:string) {
   val data = make_xhtml$ txt,
     list[string*string](("Cache-control","max-age=86400"))
   ;
-
   write_string (k, data, &eof_flag);
 }
 
 
-fun get_fdoc (fname:string):string = {
-  var flx =
-    match get_file(fname,INSTALL_ROOT,FDOC_PATH) with
-    | Some ?name => load(name)
-    | None => f"NO FILE %S FOUND IN %S" (fname, str FDOC_PATH)
-    endmatch
-  ;
-
-  println$ f"Loaded fdoc file %S, len=%d" (fname, flx.len.int);
-  return flx;
-}
-
 proc serve_fdoc (k:socket_t, fname:string) {
   var eof_flag = false;
-  var txt = get_fdoc(fname);
-  //println$ "Contents=" + flx;
-  var result = xlat_fdoc (txt, fname);
-  var needs_mathjax = #(result.mathjax_required);
-  var html = #(result.html_page);
-  var title = #(result.html_title);
-  val data = make_html(
-    "<html><head>"+Css4Html::flx_head+
-    if needs_mathjax then mathjax else "" endif +
-    if title != "" then "<title>"+title+"</title>" else "" endif +
-    "</head><body>"+
-    html+
-    "</body></html>\n\r",
-    list[string*string](("Cache-control","max-age=86400"))
-  );
-  write_string(k,data,&eof_flag);
+  match get_file(fname,INSTALL_ROOT,FDOC_PATH) with
+  | Some ?path=> 
+    if edit_flag do serve_edit (k,path, "text/x-felix");
+    else
+      var txt = load(path);
+      //println$ "Contents=" + flx;
+      var result = xlat_fdoc (txt, fname);
+      var needs_mathjax = #(result.mathjax_required);
+      var html = #(result.html_page);
+      var title = #(result.html_title);
+      val data = make_html(
+        "<html><head>"+Css4Html::flx_head+
+        if needs_mathjax then mathjax else "" endif +
+        if title != "" then "<title>"+title+"</title>" else "" endif +
+        "</head><body>"+
+        html+
+        "</body></html>\n\r",
+        list[string*string](("Cache-control","max-age=86400"))
+      );
+      write_string(k,data,&eof_flag);
+    done
+  | None => serve_not_found(k,fname); 
+  endmatch;
 }
 
 proc serve_xfdoc (k:socket_t, fname:string) {
   var eof_flag = false;
-  var txt = get_fdoc(fname);
-println$ "Serve fdoc "+fname+" as xhtml";
-  //println$ "Contents=" + flx;
-  var result = xlat_fdoc (txt, fname);
-  var needs_mathjax = #(result.mathjax_required);
-  var html = #(result.html_page);
-  var title = #(result.html_title);
-  val data = make_html(
-    "<head>"+Css4Html::flx_head+
-    if needs_mathjax then mathjax else "" endif +
-    if title != "" then "<title>"+title+"</title>" else "" endif +
-    "</head>"+
-    "<body>"+ html
-    "</body></html>\n\r",
-    list[string*string](("Cache-control","max-age=86400"))
-  );
-  write_string(k,data,&eof_flag);
+  match get_file(fname,INSTALL_ROOT,FDOC_PATH) with
+  | Some ?path=> 
+    if edit_flag do serve_edit (k,path, "text/x-felix");
+    else
+      var txt = load(path);
+      println$ "Serve fdoc "+fname+" as xhtml";
+      //println$ "Contents=" + flx;
+      var result = xlat_fdoc (txt, fname);
+      var needs_mathjax = #(result.mathjax_required);
+      var html = #(result.html_page);
+      var title = #(result.html_title);
+      val data = make_html(
+        "<html><head>"+Css4Html::flx_head+
+        if needs_mathjax then mathjax else "" endif +
+        if title != "" then "<title>"+title+"</title>" else "" endif +
+        "</head>"+
+        "<body>"+ html
+        "</body></html>\n\r",
+        list[string*string](("Cache-control","max-age=86400"))
+      );
+      write_string(k,data,&eof_flag);
+    done
+  | None => serve_not_found(k,fname); 
+  endmatch;
 }
 
+proc serve_edit(k:socket_t, fname:string, mime:string) {
+  var editor = editor_maker ();
+  var eof_flag = false;
+  var text = load fname;
+println$ "server loading file " + fname + " got:";
+print text;
+  var data = make_html(
+    '<html><head>'+
+    editor.get_header (fname) +
+    '</head>'+
+    '<body>' +
+    editor.get_body (fname, text) +
+    '</body></html>\n\r'
+  ); 
+  write_string (k, data, &eof_flag);
+}
 
 proc serve_raw (k:socket_t, fname:string, suffix:string) {
   var eof_flag = false;
@@ -742,18 +790,25 @@ proc serve_file(s: socket_t, infname: string)
   // the suffix.
 
   var suffix = "";
-  match rfind (fname, "?") with
-  | Some ?pos => { suffix = fname.[pos + 1 to]; fname=fname.[0 to pos]; }
-  | None =>
-    {
-      match rfind (fname, ".") with
-      | None => {}
-      | Some ?pos => { suffix = fname.[pos + 1 to]; }
-      endmatch; 
-    }
-  endmatch;
-
-  //print "suffix is "; print suffix; endl;
+  fun split_suffix (fname:string) =>
+    match rfind (fname, "?") with
+    | Some ?pos => fname.[pos + 1 to], fname.[0 to pos]
+    | None =>
+        match rfind (fname, ".") with
+        | None => "",fname
+        | Some ?pos => fname.[pos + 1 to], fname
+        endmatch
+    endmatch
+  ;
+  suffix,fname = split_suffix fname;
+  // we have to do this crap because we can't just load
+  // the file, it has to be searched for. Besides we will
+  // later need the MIME type for the codemirror mode.
+  edit_flag = false;
+  if suffix \in list ("edit") do
+     edit_flag = true;
+     suffix,fname = split_suffix fname;
+  done 
 
   if suffix \in list ("flx","flxh") do 
     serve_felix(s, fname);
@@ -828,17 +883,45 @@ noinline proc handler (var k:socket_t) ()
   // now I need to parse the GET line, get a file name out of its url
   // (e.g. unqualfied -> index.html and name/flx.jpg -> flx.jpg
   match parse_get_line line with
-  | None => {
-      println$ "BAD get line: '"+line+"', using homepage";
-      serve_file(k,"");
-    }
-  | Some (?base, ?file) => {
-      print "well formed get...\n";
+  | None => 
+    match parse_post_line line with 
+    | Some (?base,?file) =>
+      println$ "well formed POST ...";
+      println$ "base=" + base;
+      println$ "file=" + file;
+      println$ "Rest of the POST message ..";
+      var content-len = 0;
+      var finished = false;
+      while not finished do
+println$ "Fetching line ... ";
+        get_line (k,&line);
+println$ "Got the line length .. "+line.len.str;
+        println line;
+        if prefix(line, "Content-Length: ") do
+          var lstr = line.[16 to];
+          println$ "Content length string says " + lstr;
+          content-len  = lstr.int;
+          println$ "Content length is " + content-len.str;
+          finished = true;
+        done
+      done;
+      var nbytes : int = content-len;
+      var error =false;
+      var buffer = C_hack::malloc (nbytes);
+      read (k,&nbytes, buffer, &error);
+      var content = string (C_hack::cast[+char] buffer, nbytes);
+      C_hack::free buffer; 
+      println$ "Content (nbytes=" + nbytes.str+") = " + content;
+      serve_not_implemented(k, file);
+ 
+    | None => println$ "BAD request line: '"+line+"'";
+    endmatch;
+
+  | Some (?base, ?file) => 
+      print "well formed GET ...\n";
       print "base="; print base; endl;
       print "file="; print file; endl;
-
       serve_file(k,file);
-    }
   endmatch;
 
   // we've only read the GET line, so let's flush out the rest of

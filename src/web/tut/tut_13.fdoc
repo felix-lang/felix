@@ -1,74 +1,35 @@
-@title Pointers.
-@h1 Variables and Pointers
-In Felix, there are two kinds of entities: <em>values</em>
-and <em>objects</em>. 
-
-Most literals are values, all computations yield values, and all parameter
-passing is notionally passing of a value.
-
-@caveat
-Strings are technically mutable objects although they're usually 
-used as values.
+@title Tuple product type.
+@h1 Tuples
+We can combine several values in a comma separated list to form tuple.
+@felix-unchecked
+  1,2.9,"Hello"
 @
-
-In Felix all value types are first class, meaning they can be 
-default initialised, copy constructed, copy assigned, and destroyed.
-Values are generally immutable.
-
-Although everything is a value, Felix also has objects.
-Objects are not first class and need not be default initialisable,
-copyable or assignable, although they must be destructible.
-
-Objects types in Felix are always constructed on the heap and represented
-thereafter by a pointer. Pointers are first class values in themselves,
-even though what they represent may not be. If {T} is a type then
-{&amp;T} is the type of a pointer to that type.
-
-We have seen you can name values like this:
+The type of this value is:
+@felix-unchecked
+  int * double * string
+@
+The {*} symbol here means multiply. The type of a tuple
+is sometimes called the Cartesian Product (after Descartes).
+You can retrive a value from a tuple with a integral literal:
 @felix
-begin
-  val x = 1;
-  val y = 2;
-  val z = y + y;
-end
+  val x = 1,2.9,"Hello";
+  println x.0; // 1
+  println x.1; // 2.9
+  println x.2; // "Hello"
+@expect
+1
+2.9
+Hello
 @
+Note the field numbers are zero origin in keeping with C conventions.
+There are no tuples with one component. 
 
-All values can be used as objects. There are two ways to do this.
-The first way is to copy the value onto the heap using {new}
-and retrieve the value by dereferencing the returned pointer:
-with operator {*}:
-@felix
-begin
-  val px = new 1;
-  val py = new 2;
-  val z = *px + *py;
-end
+@h2 Unit
+However, there is a tuple with no components with a single unique value:
+@felix-unchecked
+  ()
 @
-The second way is to create a <em>variable slot</em> on the
-stack or global store with a {var} definition and find a
-pointer to the variable using the addressing operators {&amp;}:
-@felix
-begin
-  var x = 1;
-  val px = &x;
-  val z = *px + *px;
-end
-@
-Note that unlike C and C++ it is safe, although definitely not
-recommended, to take the address of a variable in a function
-and return it:
-@felix
-fun f(x:int) : &int = {
-   var a = x;
-   return &a; // safe!
-}
-@
-if you do this, Felix will allocate the function's stack frame on the heap,
-and the garbage collector will not reap that object until it is unreachable.
-Whilst the pointer to the variable {a} is itself stored in a reachable location,
-the stack frame will remain allocated.
-
-Storing function frames on the heap is inefficient compared to using the stack
-so it is better to avoid this practice.
+the type of which is called {unit} type and can also
+be designated by {1}.
 
 

@@ -1,31 +1,18 @@
-@title Procedures.
-@h1 Simple procedure definitions
-It is also possible to defined new commands,
-these are called procedures. Procedures do not return
-a value, and may and generally should have side-effects.
-Here is a simple example:
+@title Hands On!
+@h2 Stripping leading and trailing spaces from a string
+Unfortunately there's a bug in this program: {readln} reads
+in a line including the newline. We can fix this, and remove
+excess spaces at the same time as shown here:
 @felix
-proc prompt (x:string) {
-  write$ stdout, x; 
-  fflush stdout;
-}
-
-prompt "Input string: ";
-println$ readln$ stdin;
+write$ stdout,"Enter your name: "; fflush stdout;
+var name = strip (readln$ stdin);
+writeln$ stdout, "Hello " + name + "!";
 @input
-Road Runner beats Coyote!
+Bugs Bunny
 @expect
-Input string: Road Runner beats Coyote!
-Road Runner beats Coyote!
-
+Enter your name: Bugs Bunny
+Hello Bugs Bunny!
 @
-Here:
-<ul>
-<li> The {proc} binder introduces a procedure.</li>
-<li> The procedure {prompt} issues a prompt on {stdout} with
-a {fflush} to force the output to the device.</li>
-<li> Procedures have side effects, here it is I/O.</li>
-<li> Procedures cannot return values </li>
-</ul>
-
+This uses the function {strip} from the  String module
+to remove leading and trailing whitespace, including newlines.
 

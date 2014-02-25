@@ -1,45 +1,26 @@
-@title Functions.
-@h1 Simple function definitions
-You can define simple calculations easily. We'll
-use a classic example:
+@title Hands On!
+@h2 Reading standard streams
+Well then, here's another way to get some data in:
 @felix
-fun square (x:int) => x * x;
-@
-The function {square} just multiplies its argument {x} by itself.
-We can use it now:
-@felix
-write$ stdout, "Input number: "; fflush stdout;
-val result = readln$ stdin;
-val cleaned_result = strip result;
-val v = int cleaned_result;
-val v2 = square v;
-println$ "Square of " + str v + " is " + str v2;
+write$ stdout,"Enter your name: "; fflush stdout;
+val name = readln$ stdin;
+writeln$ stdout, "Hello " + name;
 @input
-42
+Felix the Cat
 @expect
-Input number: 42
-Square of 42 is 1764
+Enter your name: Felix the Cat
+Hello Felix the Cat
+
 @
-Here:
+Here,
 <ul>
-<li> The {fun} binder introduces the function {square}.</li>
-<li> {square} accepts a single argument of type {int}.</li>
-<li> The operator {*} is used for multiplication.</li>
-<li> {square} returns the product of its argument with itself.</li>
-<li> The type of value returned by {square} is deduced by the compiler, 
-that type will be {int} because multiplying an {int} by another {int}
-yields an {int}. </li>
-<li> The type {int} can also be used as a function to convert a {string} 
-containing only digits to an {int}.</li>
-<li>The function {str} can be used to convert an {int} to a string.</li>
+<li>{stdout} is the usual standard output text stream</li>
+<li>{write} is a command to write a string to a nominated output text stream</li>
+<li>{fflush} is a command to flush any buffered output to the physical device
+associated with a text stream</li>
+<li>{stdin} is the usual standard input text stream</li>
+<li>{readln} reads a string from a nominated input text stream, including the terminating newline if present</li>
+<li>{val} names a value, in this case that returned by the {readln} function</li>
+<li>{writeln} writes a string to a nominated output stream and ends a line</li>
 </ul>
-
-There is a rule for functions: 
-<blockquote><em>
-A function introduced by
-a {fun} binder is not allowed to have any side effects.
-</em></blockquote>
-
-The compiler does not enforce this rule, but it does take
-advantage of it when optimising your code. 
 

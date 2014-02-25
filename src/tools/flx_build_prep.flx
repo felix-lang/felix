@@ -30,7 +30,7 @@ class FlxPrepBuild
       if cmd.repo != cmd.target_dir/'share' do
         println$ "Copy repository "+cmd.repo/'src -> ' + cmd.target_dir/'share'/'src';
         CopyFiles::copyfiles(cmd.repo/'src', 
-         '(.*\.(h|hpp|ml|c|cpp|cxx|cc|flx|flxh|fdoc|js|html|svg|png|gif|jpg|files|include))', 
+         '(.*\.(h|hpp|ml|mli|c|cpp|cxx|cc|flx|flxh|fdoc|js|html|css|svg|png|gif|jpg|files|include))', 
          cmd.target_dir/'share'/'src'/'${1}',true,cmd.debug);
       else
         println$ "Cannot copy repo because source = target";
@@ -95,7 +95,6 @@ class FlxPrepBuild
     println$ "# locations";
     println$ "";
     println$ "  --repo=repo                 default: src";
-    println$ "  --pkg=bootpkg";
     println$ "  --target-dir=target_dir     default: build/trial";
     println$ "  --target-bin=target_bin     default: host";
     println$ "  --source-dir=source_dir     default: build/release";
@@ -123,18 +122,16 @@ class FlxPrepBuild
     println$ "FLX_SHELL_ECHO=1              echo all shell callouts (system, popen)";
     println$ "FLX_DEBUG_FLX=1               make 'flx' explain its processing decisions";
     println$ "";
-    println$ "Purpose: Build new Felix target";
+    println$ "Purpose: setup new Felix target";
     println$ "";
     println$ "Requires repository directory $repo contain subdirectory 'src'";
     println$ "Requires directory $source_dir contain subdirectory $source_bin which contains program 'flxg'";
     println$ "Ensures target_dir contains:";
     println$ "";
     println$ "  (a) Repository source in $target_dir/share/src";
-    println$ "  (b) Share library in $target_dir/share/lib";
-    println$ "  (c) config db, C++ headers, libraries and executables in $target_dir/$target_bin/*";
+    println$ "  (b) config db, C++ headers, libraries in $target_dir/$target_bin/*";
     println$ "";
     println$ "Copies version, flxg, config db, and C++ headers from $source_dir if required";
-    println$ "Compiles all C++ sources to libraries and executables";
   }
 
   typedef cmd_type = typeof (parse_args Empty[string]);
@@ -143,7 +140,6 @@ class FlxPrepBuild
   {
      var cmd = (
        repo = '.',
-       boot_package="",
        target_dir="build"/"trial",
        target_bin="host",
        source_dir="build"/"release",
@@ -167,8 +163,6 @@ class FlxPrepBuild
        // location options
        if prefix(arg,"--repo=") do
          &cmd.repo <- arg.[7 to];
-       elif prefix(arg,"--pkg=") do
-         &cmd.boot_package <- arg.[6 to];
        elif prefix(arg,"--target-dir=") do
          &cmd.target_dir <- arg.[13 to];
        elif prefix(arg,"--target-bin=") do
@@ -211,27 +205,7 @@ class FlxPrepBuild
        done 
      done
 
-     // if no boot package is specified guess using shell command uname.
-     if cmd.boot_package == "" do
-       var res, os = Shell::get_stdout("uname");
-       &os <- os.strip;
-       match os with
-       | "" => &cmd.boot_package <- "build_flx_rtl_mscv_win32";
-       | "Linux" => 
-         res, os = Shell::get_stdout("gcc-4.8 --version");
-         if res == 0 do
-           &cmd.boot_package <- "build_flx_rtl_gcc48_linux";
-         else
-           &cmd.boot_package <- "build_flx_rtl_gcc_linux";
-         done
-       | "Darwin" => &cmd.boot_package <- "build_flx_rtl_clang_osx";
-       | ?x => 
-         println$ "No build package specified and uname returns unknown OS: '" +x+'"';
-         System::exit(1);
-       endmatch;
-       println$ "Guess --pkg="+cmd.boot_package;
-     done
-
+ 
      return cmd;
   }
 
@@ -244,7 +218,6 @@ class FlxPrepBuild
     var cmd = parse_args (tail xargs);
     println$ "flx_build_prep v1.2";
     println$ "  repository    = " + cmd.repo;
-    println$ "  build_package = " + cmd.boot_package;
     println$ "  target_dir    = " + cmd.target_dir;
     println$ "  target_bin    = " + cmd.target_bin;
     println$ "  source_dir    = " + cmd.source_dir;

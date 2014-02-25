@@ -13,7 +13,7 @@ all: build test
 # default build
 #
 
-VERSION = 1.1.10
+VERSION = 1.1.11
 DISTDIR ?= ./build/dist
 INSTALLDIR ?= /usr/local/lib/felix/felix-$(VERSION)
 FBUILDROOT ?= build
@@ -87,19 +87,52 @@ fbuild:
 #
 # regression test on release image
 #
-regress-check:
+test-dir:
 	mkdir -p test
 	${BUILDROOT}/host/bin/flx_tangle --indir=${BUILDROOT}/share/src/test --outdir=test
-	${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --usage=prototype --expect --indir=test/regress/rt --regex='.*\.flx' test
+	for file in src/test/regress/rt/*.fdoc; do ${BUILDROOT}/host/bin/flx_iscr $$file test; done
 
-tut-check:
+tutopt-dir:
+	mkdir -p tutopt
+	${BUILDROOT}/host/bin/flx_tangle --indir=${BUILDROOT}/share/src/web/tutopt --outdir=tutopt
+	for file in src/web/tutopt/*.fdoc; do ${BUILDROOT}/host/bin/flx_iscr $$file tutopt; done
+
+tut-dir:
 	mkdir -p web
 	${BUILDROOT}/host/bin/flx_tangle --linenos --indir=src/web/tut --outdir=tut
 	for file in src/web/tut/*.fdoc; do ${BUILDROOT}/host/bin/flx_iscr $$file tut; done
-	${BUILDROOT}/host/bin/flx_iscr src/web/tut tut
-	${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --usage=prototype --expect --input --indir=tut --regex='.*\.flx' tut
 
-test: regress-check tut-check
+regress-check: test-dir
+	# ============================================================
+	#
+	# RUNNING REGRESSION TESTS
+	#
+	# ============================================================
+	${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --usage=prototype --expect --nonstop --indir=test/regress/rt --regex='.*\.flx' test
+
+tut-check: tut-dir
+	# ============================================================
+	#
+	# CHECKING CORRECTNESS OF TUTORIAL EXAMPLES
+	#
+	# ============================================================
+	${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --usage=prototype --expect --input --nonstop --indir=tut --regex='.*\.flx' tut
+
+tutopt-check: tutopt-dir
+	#
+	# ============================================================
+	#
+	# TESTING OPTIONAL COMPONENTS
+	#
+	# Tests are expected to fail if the relevant third party
+	# support is not available or Felix is not properly configured
+	# to use it.
+	# ============================================================
+	#
+	${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --usage=prototype --expect --input --nonstop --indir=tutopt --regex='.*\.flx' tutopt
+
+
+test: regress-check tut-check tutopt-check
 
 #
 #
@@ -180,10 +213,11 @@ copy-doc:
 	${BUILDROOT}/host/bin/flx_cp speed/ '(.*\.(c|ml|cc|flx|ada|hs|svg))' '${BUILDROOT}/share/speed/$${1}'
 	${BUILDROOT}/host/bin/flx_cp speed/ '(.*/expect)' '${BUILDROOT}/share/speed/$${1}'
 
-gendoc: gen-doc copy-doc check-tut
+gendoc: gen-doc copy-doc 
 
 gen-doc:
 	${BUILDROOT}/host/bin/flx_mktutindex src/web/tut tutorial.fdoc
+	${BUILDROOT}/host/bin/flx_mktutindex src/web/tutopt tutopt.fdoc
 	# Build reference docs. Note this requires plugins.
 	${LPATH}=${BUILDROOT}/host/lib/rtl ${BUILDROOT}/host/bin/flx_libcontents --html > src/web/ref/flx_libcontents.html
 	${LPATH}=${BUILDROOT}/host/lib/rtl ${BUILDROOT}/host/bin/flx_libindex --html > src/web/ref/flx_libindex.html
@@ -283,8 +317,6 @@ web-plugins:
 	# rebuild web plugins
 	# =========================================================
 	build/release/host/bin/flx --test=build/release  src/tools/flx_build_boot \
-		--target-dir=build/release \
-		--target-bin=host \
 		--build-web-plugins
 
 toolchain-plugins:
@@ -292,8 +324,6 @@ toolchain-plugins:
 	# rebuild toolchain plugins
 	# =========================================================
 	build/release/host/bin/flx --test=build/release  src/tools/flx_build_boot \
-		--target-dir=build/release \
-		--target-bin=host \
 		--build-toolchain-plugins
 
 tools:
@@ -301,8 +331,6 @@ tools:
 	# rebuild tools
 	# =========================================================
 	build/release/host/bin/flx --test=build/release  src/tools/flx_build_boot \
-		--target-dir=build/release \
-		--target-bin=host \
 		--build-tools
 
 flx:
@@ -310,8 +338,6 @@ flx:
 	# rebuild flx
 	# =========================================================
 	build/release/host/bin/flx --test=build/release  src/tools/flx_build_boot \
-		--target-dir=build/release \
-		--target-bin=host \
 		--build-flx
 
 build-tools:
@@ -319,8 +345,6 @@ build-tools:
 	# rebuild flx build tools
 	# =========================================================
 	build/release/host/bin/flx --test=build/release  src/tools/flx_build_boot \
-		--target-dir=build/release \
-		--target-bin=host \
 		--build-flx-tools
 
 lib: copy
@@ -350,8 +374,6 @@ really-fast-rebuild:
 		--target-dir=build/release \
 		--target-bin=host
 	${LPATH}=${INSTALLDIR}/host/lib/rtl ${INSTALLDIR}/host/bin/flx_build_boot \
-		--target-dir=build/release \
-		--target-bin=host \
 		--build-all
 
 fast-rebuild:
@@ -372,8 +394,6 @@ fast-rebuild:
 		--target-bin=host
 	cp build/release/host/bin/flx_build_boot flx_build_boot
 	${LPATH}=build/release/host/lib/rtl ./flx_build_boot \
-		--target-dir=build/release \
-		--target-bin=host \
 		--build-all
 	rm flx_build_boot
 
@@ -391,8 +411,6 @@ fast-rebuild-nortl:
 		--copy-repo \
 		--copy-library
 	${LPATH}=build/release/host/lib/rtl build/release/host/bin/flx_build_boot \
-		--target-dir=build/release \
-		--target-bin=host \
 		--build-all
 	rm flx_build_boot
 
@@ -416,8 +434,6 @@ rebuild:
 		--target-bin=host
 	cp build/release/host/bin/flx flx
 	./flx --test=build/release  src/tools/flx_build_boot \
-		--target-dir=build/release \
-		--target-bin=host \
 		--build-all
 	rm flx
 
@@ -455,8 +471,6 @@ bootstrap:
 	build/release/host/bin/flx --test=build/release  src/tools/flx_build_boot \
 		--target-dir=build/trial \
 		--target-bin=host \
-		--source-dir=build/release \
-		--source-bin=host \
 		--build-all
 	build/trial/host/bin/flx --test=build/trial --clean
 	mkdir -p trial-test
@@ -476,6 +490,6 @@ sdltest:
 .PHONY : build32 build64 build test32 test64 test
 .PHONY : build32-debug build64-debug build-debug test32-debug test64-debug test-debug
 .PHONY : doc install websites-linux  release install-bin
-.PHONY : copy-doc gen-doc check-tut gendoc fbuild speed tarball
+.PHONY : copy-doc gen-doc gendoc fbuild speed tarball
 .PHONY : weblink flx tools web-plugins toolchain-plugins rtl copy lib
 .PHONY : sdltest

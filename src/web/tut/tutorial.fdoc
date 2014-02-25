@@ -28,14 +28,13 @@ Using classes to represent concepts.
 <a href="pattern_index.fdoc">Pattern Matching: </a>
 pattern matching and the discriminated union construction.
 @p
+<a href="Array_index.fdoc">Arrays: </a>
+Core array handling.
+@p
 <a href="list_index.fdoc">Lists: </a>
 Using the infamous list data structure.
 
 @h2 Imperative Programming Technology
-<a href="array_index.fdoc">Arrays: </a>
-concepts of arrays and a collection
-of array types.
-@p
 <a href="streams_index.fdoc">Streams: </a>
 a powerful construction translating spatial
 sequences into temporal ones.
