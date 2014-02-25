@@ -20,6 +20,7 @@ class FlxRtlBuild
     target:string, 
     pkg:string, 
     tmpdir:string,
+    static_only:bool,
     debug: bool
   )
   {
@@ -75,55 +76,59 @@ class FlxRtlBuild
   //println$ "Finding Sources in "+srcpath;
     var files = FileSystem::regfilesin (srcpath,pat);
   //println$ "Sources = " + str files;
-    if not cmd.static_only do begin
-      fun objname (file:string) => let 
-          ?dstobj = file.Filename::strip_extension + #(toolchain.dynamic_object_extension) in
-          tmpdir/ dstobj
-      ;
-
-      for file in files do
-        var srcfile = srcpath/ file;
-        var dst = objname file;
-        Directory::mkdirs (Filename::dirname dst);
-        match Filename::get_extension srcfile with
-        | ?x when x == ".cc" or x == ".cpp" =>
-          var fresh = cxx_depcheck (toolchain, srcfile, dst);
-          if fresh do
-            println$ "C++: Up to date [dynamic] " + file " -> " + objname file;
-            result = 0;
-          else
-            println$ "C++: Compiling  [dynamic] " + file " -> " + objname file;
-            result = toolchain.cxx_dynamic_object_compiler (src=srcfile, dst=dst);
-          done
-        | ".c" =>
-          fresh = c_depcheck (toolchain, srcfile, dst);
-          if fresh do
-            println$ "C:   Up to date [dynamic] " + file " -> " + objname file;
-            result = 0;
-          else
-            println$ "C:   Compiling  [dynamic] " + file " -> " + objname file;
-            result = toolchain.c_dynamic_object_compiler (src=srcfile, dst=dst) ;
-          done
-
-        | ?x => println$ "Unknown extension " + x; System::exit(1);
-        endmatch
+    if not static_only 
+    do 
+      begin
+        fun objname (file:string) => let 
+            ?dstobj = file.Filename::strip_extension + #(toolchain.dynamic_object_extension) in
+            tmpdir/ dstobj
         ;
+
+        for file in files do
+          var srcfile = srcpath/ file;
+          var dst = objname file;
+          Directory::mkdirs (Filename::dirname dst);
+          match Filename::get_extension srcfile with
+          | ?x when x == ".cc" or x == ".cpp" =>
+            var fresh = cxx_depcheck (toolchain, srcfile, dst);
+            if fresh do
+              println$ "C++: Up to date [dynamic] " + file " -> " + objname file;
+              result = 0;
+            else
+              println$ "C++: Compiling  [dynamic] " + file " -> " + objname file;
+              result = toolchain.cxx_dynamic_object_compiler (src=srcfile, dst=dst);
+            done
+          | ".c" =>
+            fresh = c_depcheck (toolchain, srcfile, dst);
+            if fresh do
+              println$ "C:   Up to date [dynamic] " + file " -> " + objname file;
+              result = 0;
+            else
+              println$ "C:   Compiling  [dynamic] " + file " -> " + objname file;
+              result = toolchain.c_dynamic_object_compiler (src=srcfile, dst=dst) ;
+            done
+
+          | ?x => println$ "Unknown extension " + x; System::exit(1);
+          endmatch
+          ;
+          if result != 0 do
+            println$ "Compiler result " + str result;
+            System::exit(1);
+          done
+        done
+
+        var objs = map objname files;
+        var libname = "lib" + (db.getpkgfield1(pkg,"provides_dlib")).[2 to] +#(toolchain.dynamic_library_extension);
+        var dstlib = build/target/'lib'/'rtl'/libname;
+        println$ "Dynamic Linking library " + dstlib;
+        result = toolchain.dynamic_library_linker(srcs=objs, dst=dstlib);
         if result != 0 do
-          println$ "Compiler result " + str result;
+          println$ "Linker result " + str result;
           System::exit(1);
         done
-      done
+      end 
+    done
 
-      var objs = map objname files;
-      var libname = "lib" + (db.getpkgfield1(pkg,"provides_dlib")).[2 to] +#(toolchain.dynamic_library_extension);
-      var dstlib = build/target/'lib'/'rtl'/libname;
-      println$ "Dynamic Linking library " + dstlib;
-      result = toolchain.dynamic_library_linker(srcs=objs, dst=dstlib);
-      if result != 0 do
-        println$ "Linker result " + str result;
-        System::exit(1);
-      done
-    done end
     begin
       fun objname (file:string) => let 
           ?dstobj = file.Filename::strip_extension + #(toolchain.static_object_extension) in
@@ -178,6 +183,7 @@ class FlxRtlBuild
     build:string, target:string,
     boot_package:string, 
     tmpdir:string,
+    static_only:bool,
     debug: bool
   )
   {
@@ -243,7 +249,7 @@ class FlxRtlBuild
           println$ "Package error, package " + pkg + " library " + library + " No src files specified";
           System::exit(1);
         done
-        make_lib (db,toolchain-maker, build, target, pkg,tmpdir, debug);
+        make_lib (db,toolchain-maker, build, target, pkg,tmpdir, static_only, debug);
       else 
         println$ "------------";
         println$ "External package " + pkg;
@@ -322,7 +328,7 @@ class FlxRtlBuild
 
   proc flx_build(cmd: cmd_type)
   {
-    make_rtl ( cmd.target_dir, cmd.target_bin, cmd.boot_package, 'trial-tmp', cmd.debug);
+    make_rtl ( cmd.target_dir, cmd.target_bin, cmd.boot_package, 'trial-tmp', cmd.static_only, cmd.debug);
     println$ "Build Complete";
   }
 
