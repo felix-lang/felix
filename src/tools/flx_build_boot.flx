@@ -120,6 +120,7 @@ class FlxCoreBuild
     result = Flx_client::runflx$ list ('[flx]','--test='+target_dir, '--static','-c',
       '-ox', target_dir/target_bin/'bin'/'flx', 
       target_dir/target_bin/'lib'/'rtl'/'toolchain_clang_osx' + obj_extn, 
+      target_dir/target_bin/'lib'/'rtl'/'toolchain_clang_iphoneos' + obj_extn, 
       target_dir/target_bin/'lib'/'rtl'/'toolchain_gcc_osx' + obj_extn, 
       target_dir/target_bin/'lib'/'rtl'/'toolchain_clang_linux' + obj_extn, 
       target_dir/target_bin/'lib'/'rtl'/'toolchain_gcc_linux' + obj_extn, 
