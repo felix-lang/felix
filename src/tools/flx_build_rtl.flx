@@ -75,7 +75,7 @@ class FlxRtlBuild
   //println$ "Finding Sources in "+srcpath;
     var files = FileSystem::regfilesin (srcpath,pat);
   //println$ "Sources = " + str files;
-    {
+    if not cmd.static_only do begin
       fun objname (file:string) => let 
           ?dstobj = file.Filename::strip_extension + #(toolchain.dynamic_object_extension) in
           tmpdir/ dstobj
@@ -123,8 +123,8 @@ class FlxRtlBuild
         println$ "Linker result " + str result;
         System::exit(1);
       done
-    };
-    {
+    done end
+    begin
       fun objname (file:string) => let 
           ?dstobj = file.Filename::strip_extension + #(toolchain.static_object_extension) in
           tmpdir/ dstobj
@@ -171,7 +171,7 @@ class FlxRtlBuild
         println$ "Linker result " + str result;
         System::exit(1);
       done
-    };
+    end 
   }
 
   proc make_rtl (
@@ -335,6 +335,7 @@ class FlxRtlBuild
     println$ "  --pkg=bootpkg";
     println$ "  --target-dir=target_dir     default: build/trial";
     println$ "  --target-bin=target_bin     default: host";
+    println$ "  --static                    static link libraries only";
     println$ "";
     println$ "  --debug                     do stuff verbosely";
     println$ "";
@@ -362,6 +363,7 @@ class FlxRtlBuild
        boot_package="",
        target_dir="build"/"trial",
        target_bin="host",
+       static_only=false,
        debug = false
      );
 
@@ -373,6 +375,8 @@ class FlxRtlBuild
          &cmd.target_dir <- arg.[13 to];
        elif prefix(arg,"--target-bin=") do
          &cmd.target_bin <- arg.[13 to];
+       elif arg == "--static" do
+         &cmd.static_only <- true;
        elif arg == "--debug" do
          &cmd.debug <- true;
 
