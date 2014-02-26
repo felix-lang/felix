@@ -76,6 +76,32 @@ class FlxPrepBuild
       done
     done
 
+    if cmd.setup_pkg != "" do
+      var setupdata = load cmd.setup_pkg;
+      var commands = split(setupdata,"\n");
+      var lineno = 0;
+      for command in commands do
+        //println$ "Command=" + command;
+        ++lineno;
+        var hsrc, hdst = "","";
+        match split (command, ">") with
+        | #Empty => ;
+        | Cons (?h,#Empty) => hsrc = strip h;
+        | Cons (?h,Cons (?d,#Empty)) => hsrc = strip h; hdst = strip d;
+        | _ => 
+           println$ "[flx_build_prep:setup-pkg] file too many > characters file: "+
+           cmd.setup_pkg +"["+lineno.str+"] " + command;
+        endmatch;
+
+        if hsrc != "" do
+          if hdst == "" do hdst = "${0}"; done
+          println$ "Copying files " + hsrc + " > " + hdst;
+          //println$ "From source directory " + cmd.source_dir;
+          //println$ "To target directory " + cmd.target_dir/cmd.target_bin;
+          CopyFiles::copyfiles (cmd.source_dir, hsrc,cmd.target_dir/cmd.target_bin/hdst,true, true);
+        done
+      done
+    done
   }
 
   proc flx_build(cmd: cmd_type)
@@ -115,6 +141,8 @@ class FlxPrepBuild
     println$ "  --copy-version              copy Felix version file";
     println$ "  --copy-library              copy Felix library";
     println$ "";
+    println$ "# selective setup of pkg-db";
+    println$ "  --setup=pkg                 setup using file";
     println$ "  --debug                     do stuff verbosely";
     println$ "";
     println$ "# Environment variables";
@@ -155,7 +183,7 @@ class FlxPrepBuild
        copy_config_headers=false,
        copy_version=false,
        copy_library=false,
-
+       setup_pkg="",
        debug = false
      );
 
@@ -195,6 +223,12 @@ class FlxPrepBuild
          &cmd.copy_version <- true;
        elif arg == "--copy-library" do
          &cmd.copy_library <- true;
+ 
+       // special configuration package
+       elif prefix(arg,"--setup=") do
+         &cmd.setup_pkg <- arg.[8 to];
+
+       // help
        elif arg == "--help" do
          print_help();
          System::exit(0);
@@ -216,13 +250,13 @@ class FlxPrepBuild
       System::exit(1);
     done
     var cmd = parse_args (tail xargs);
-    println$ "flx_build_prep v1.2";
+    println$ "flx_build_prep v1.4";
     println$ "  repository    = " + cmd.repo;
-    println$ "  target_dir    = " + cmd.target_dir;
-    println$ "  target_bin    = " + cmd.target_bin;
-    println$ "  source_dir    = " + cmd.source_dir;
-    println$ "  source_bin    = " + cmd.source_bin;
-
+    println$ "  target-dir    = " + cmd.target_dir;
+    println$ "  target-bin    = " + cmd.target_bin;
+    println$ "  source-dir    = " + cmd.source_dir;
+    println$ "  source-bin    = " + cmd.source_bin;
+    println$ "  setup-pkg     = " + cmd.setup_pkg;
     flx_build (cmd);
   }
 
