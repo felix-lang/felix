@@ -605,10 +605,10 @@ println$ "server loading file " + fname + " got:";
 print text;
   var data = make_html(
     '<html><head>'+
-    editor.get_header (fname) +
+    editor.get_header (fname,mime) +
     '</head>'+
     '<body>' +
-    editor.get_body (fname, text) +
+    editor.get_body (fname, mime,text) +
     '</body></html>\n\r'
   ); 
   write_string (k, data, &eof_flag);

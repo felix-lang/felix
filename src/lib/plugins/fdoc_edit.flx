@@ -5,18 +5,40 @@ fun setup(config_data:string) = {
   return 0;
 }
 
+var mime-to-file = 
+  list (
+    ("text/x-felix", "flx_codemirror/mode/felix/felix.js"),
+    ("text/x-ocaml", "codemirror/mode/mllike/mllike.js"),
+    ("text/x-csrc", "codemirror/mode/clike/clike.js"),
+    ("text/x-c++src", "codemirror/mode/clike/clike.js"),
+    ("text/x-python", "codemirror/mode/python/python.js"),
+    ("text/html", "codemirror/mode/htmlmixed/htmlmixed.js"),
+    ("application/xml", "codemirror/mode/xml/xml.js"),
+    ("text/s-tex", "codemirror/mode/stex/stex.js"),
+    ("text/css", "codemirror/mode/css/css.js")
+  )
+;
+
 object fdoc_edit () implements edit-interface_t = {
   method fun whatami () => "fdoc edit";
-  method fun get_header (filename:string) =>
+  method fun get_header (filename:string, mimetype:string) =>
+    let ?modefile = 
+       match Assoc_list::find mime-to-file mimetype with
+       | Some ?f => f
+       | None => "flx_codemirror/felix/felix.js"
+       endmatch
+    in
+
     "<title>"+filename+"</title>" +
-    """
-    <link rel="stylesheet" href="/share/src/flx_codemirror/lib/codemirror.css">
-    <script src="/share/src/flx_codemirror/lib/codemirror.js"></script>
-    <script src="/share/src/flx_codemirror/mode/felix/felix.js"></script>
-    <style>.CodeMirror {border: 2px inset #dee;}</style>
-    """
+    ''' 
+    <link rel="stylesheet" href="/share/src/codemirror/lib/codemirror.css">
+    <script src="/share/src/codemirror/lib/codemirror.js"></script>
+    <script src="/share/src/'''+modefile+'''"></script>
+    <style>.CodeMirror {border: 2px inset #dee; height:auto; }</style>
+    <style>.CodeMirror-scroll {overflow-x: hidden; overflow-y:auto; }</style>
+    '''
   ;
-  method fun get_body (id:string, text:string) =>
+  method fun get_body (id:string, mime:string, text:string) =>
    '<form action="?doedit" method="post" enctype="text/plain">'+
    '<input type="submit" value="Save"><br>'+
    '<textarea id="'+id+'" name="code">'+
@@ -27,8 +49,9 @@ object fdoc_edit () implements edit-interface_t = {
       var editor = CodeMirror.fromTextArea(document.getElementById("'''+id+'''"), {
         lineNumbers: true,
         matchBrackets: true,
-        mode: "text/x-felix",
+        mode: "'''+mime+'''",
         smartIndent: false,
+        viewportMargin: Infinity
       });
     </script>
     '''
