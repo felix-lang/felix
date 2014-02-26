@@ -17,18 +17,19 @@ object toolchain_clang_iphoneos (config:clang_config_t) implements toolchain_t =
     "-Wno-array-bounds"
   ;
 
-  var sdk = "/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS7.0.sdk";
+  var sdk = Env::getenv "SDK";
+  var arch = Env::getenv "ARCH";
   var c_compiler = "clang";
   var cxx_compiler = "clang++";
   var linker = "clang++";
 
-  var ccflags_for_dynamic_link = list[string]("-dynamiclib", "-arch", "armv7s", "-isysroot", sdk);
+  var ccflags_for_dynamic_link = list[string]("-dynamiclib", "-arch", arch, "-isysroot", sdk);
   // should be $(xcrun --sdk iphoneos --show-sdk-path). how to choose other SDK?
   var base_c_compile_flags = 
-    "-g"! "-c" ! "-arch" ! "armv7s" ! "-isysroot" ! sdk ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! (c_compile_warning_flags+config.ccflags)
+    "-g"! "-c" ! "-arch" ! arch ! "-isysroot" ! sdk ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! (c_compile_warning_flags+config.ccflags)
   ;
   var base_cxx_compile_flags = 
-    "-g"! "-c" ! "-arch" ! "armv7s" ! "-isysroot" ! sdk ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! "-std=c++11" !  (cxx_compile_warning_flags+config.ccflags)
+    "-g"! "-c" ! "-arch" ! arch ! "-isysroot" ! sdk ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! "-std=c++11" !  (cxx_compile_warning_flags+config.ccflags)
   ;
 
   method fun whatami () => "toolchain_clang_iphoneos";
