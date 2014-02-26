@@ -161,6 +161,7 @@ enum svc_t               // what the dispatch should do
   svc_swrite=8,          // synchronous write
   svc_kill=9,           // kill fthread
   svc_collect=10,        // run collector
+  svc_multi_swrite=11,   // multi-write
   svc_end
 };
 

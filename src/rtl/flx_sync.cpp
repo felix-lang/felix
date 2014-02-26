@@ -112,27 +112,24 @@ check_collect:
         fthread_t *writer= chan->pop_writer();
         if(writer == 0) goto svc_read_none;       // no writers
         if(writer->cc == 0) goto svc_read_next;   // killed
-        {
-          readreq_t * pr = (readreq_t*)request->data;
-          readreq_t * pw = (readreq_t*)writer->get_svc()->data;
-          if(debug_driver)fprintf(stderr,"Writer @%p=%p, read into %p\n", pw->variable,*(void**)pw->variable, pr->variable);
-          *(void**)pr->variable = *(void**)pw->variable;
-          active->push_front(writer);
-          collector->add_root(writer);
-        }
+        readreq_t * pw = (readreq_t*)writer->get_svc()->data;
+        if(debug_driver)fprintf(stderr,"Writer @%p=%p, read into %p\n", pw->variable,*(void**)pw->variable, pr->variable);
+        *(void**)pr->variable = *(void**)pw->variable;
+        active->push_front(writer);
+        collector->add_root(writer);
+        goto next_request;
       }
-      goto next_request;
 
     svc_read_none:
       if(debug_driver)fprintf(stderr,"No writers on channel %p: BLOCKING\n",chan);
       chan->push_reader(ft);
+      goto forget_fthread;
     }
-    goto forget_fthread;
 
     case svc_swrite:
     {
-      readreq_t * pr = (readreq_t*)request->data;
-      schannel_t *chan = pr->chan;
+      readreq_t * pw = (readreq_t*)request->data;
+      schannel_t *chan = pw->chan;
       if(debug_driver)fprintf(stderr,"Request to write on channel %p\n",chan);
       if(chan==NULL)goto svc_write_none;
     svc_write_next:
@@ -140,24 +137,44 @@ check_collect:
         fthread_t *reader= chan->pop_reader();
         if(reader == 0) goto svc_write_none;     // no readers
         if(reader->cc == 0) goto svc_write_next; // killed
-        {
-          readreq_t * pw = (readreq_t*)request->data;
-          readreq_t * pr = (readreq_t*)reader->get_svc()->data;
-          if(debug_driver)fprintf(stderr,"Writer @%p=%p, read into %p\n", pw->variable,*(void**)pw->variable, pr->variable);
-          *(void**)pr->variable = *(void**)pw->variable;
-          // NEW: ESSENTIAL! Reader must continue on, not writer!
-          active->push_front(ft);
-          collector->add_root(reader);
-          ft=reader;
-        }
+        readreq_t * pr = (readreq_t*)reader->get_svc()->data;
+        if(debug_driver)fprintf(stderr,"Writer @%p=%p, read into %p\n", pw->variable,*(void**)pw->variable, pr->variable);
+        *(void**)pr->variable = *(void**)pw->variable;
+        // NEW: ESSENTIAL! Reader must continue on, not writer!
+        active->push_front(ft);
+        collector->add_root(reader);
+        ft=reader;
+        goto next_request;
       }
-      goto next_request;
 
     svc_write_none:
       if(debug_driver)fprintf(stderr,"No readers on channel %p: BLOCKING\n",chan);
       chan->push_writer(ft);
+      goto forget_fthread;
     }
-    goto forget_fthread;
+
+    case svc_multi_swrite:
+    {
+      readreq_t * pw = (readreq_t*)request->data;
+      schannel_t *chan = pw->chan;
+      if(debug_driver)fprintf(stderr,"Request to write on channel %p\n",chan);
+      if(chan==NULL)goto next_request;
+    svc_multi_write_next:
+      fthread_t *reader= chan->pop_reader();
+      if(reader == 0) goto next_request;     // no readers left
+      if(reader->cc == 0) goto svc_multi_write_next; // killed
+      {
+        readreq_t * pr = (readreq_t*)reader->get_svc()->data;
+        if(debug_driver)fprintf(stderr,"Writer @%p=%p, read into %p\n", pw->variable,*(void**)pw->variable, pr->variable);
+        *(void**)pr->variable = *(void**)pw->variable;
+        // NEW: ESSENTIAL! Reader must continue on, not writer!
+        active->push_front(ft);
+        collector->add_root(reader);
+        ft=reader;
+      }
+      goto svc_multi_write_next;
+    }
+
 
     case svc_kill:
     {

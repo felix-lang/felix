@@ -535,6 +535,7 @@ int flx_world::explicit_dtor()
 }
 
 int flx_world::teardown() {
+  thread_control -> add_thread(get_stack_pointer());
   delete dfd;
 
   // could this override error_exit_code if something throws?
