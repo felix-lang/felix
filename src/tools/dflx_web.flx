@@ -433,51 +433,44 @@ proc serve_fpc (k:socket_t, fname:string) {
 
 }
 
-fun get_py (fname:string) = {
-  var flx =
-    match get_file(fname,INSTALL_ROOT,FLX_PATH) with
-    | Some ?name => load(name)
-    | None => f"NO FILE %S FOUND IN %S" (fname, str FLX_PATH)
-    endmatch;
-
-  println$ f"Loaded Python file %S, len=%d" (fname, flx.len.int);
-  return flx;
-}
-
 proc serve_py (k:socket_t, fname:string) {
   var eof_flag = false;
-  var flx = get_py fname;
-  val data = make_html$
-    "<html><head>"+Css4Html::flx_head+"</head><body><pre>"+ 
-    (xlat_py (flx,"")).1 +"</pre></body></html>\n\r",
-     list[string*string](("Cache-control","max-age=86400"))
-  ;
-  write_string (k, data, &eof_flag);
-}
-
-fun get_ocaml (fname:string) = {
-  var flx =
-    match get_file (fname, INSTALL_ROOT,FLX_PATH) with
-    | Some ?name => load name
-    | None => f"NO FILE %S FOUND IN %S" (fname, str FLX_PATH)
-    endmatch
-  ;
-
-  println$ f"Loaded Ocaml file %S, len=%d" (fname, flx.len.int);
-  return flx;
+  match get_file(fname,INSTALL_ROOT,FLX_PATH) with
+  | Some ?path =>
+    if edit_flag do serve_edit (k,path,"text/x-felix");
+    else
+      var flx = load path;
+      val data = make_html$
+        "<html><head>"+Css4Html::flx_head+"</head><body><pre>"+ 
+        (xlat_py (flx,"")).1 +"</pre></body></html>\n\r",
+         list[string*string](("Cache-control","max-age=86400"))
+      ;
+      write_string (k, data, &eof_flag);
+    done
+  | None =>
+    serve_not_found (k,fname);
+  endmatch;
 }
 
 proc serve_ocaml (k:socket_t, fname:string) {
   var eof_flag = false;
-  var flx = get_ocaml fname;
-  println$ f"Loaded Ocaml file %S, len=%d" (fname, flx.len.int);
-  val data = make_html$
-    "<html><head>"+ Css4Html::flx_head +"</head><body><pre>"+
-    (xlat_ocaml (flx,"")).1
-    +"</pre></body></html>\n\r",
-    list[string*string](("Cache-control","max-age=86400"))
-  ;
-  write_string (k, data, &eof_flag);
+  match get_file (fname, INSTALL_ROOT,FLX_PATH) with
+  | Some ?path =>
+    if edit_flag do serve_edit (k,path,"text/x-felix");
+    else
+      var flx = load path;
+      println$ f"Loaded Ocaml file %S, len=%d" (fname, flx.len.int);
+      val data = make_html$
+        "<html><head>"+ Css4Html::flx_head +"</head><body><pre>"+
+        (xlat_ocaml (flx,"")).1
+        +"</pre></body></html>\n\r",
+        list[string*string](("Cache-control","max-age=86400"))
+      ;
+      write_string (k, data, &eof_flag);
+    done
+  | None =>
+    serve_not_found (k,fname);
+  endmatch;
 }
 
 proc serve_cpp (k:socket_t, fname:string) {
@@ -642,6 +635,10 @@ proc serve_image (k:socket_t, fname:string, suffix:string) {
   write_string (k, data, &eof_flag);
 }
 
+// NOTE: TRICKY! serving css to be used in a page
+// is quite different to serving a css file to be
+// used by some program! In the first case it has to
+// to be sent verbatim. In the second it is colourised.
 proc serve_css(k:socket_t, fname:string, suffix:string) {
   var eof_flag = false;
   var txt = load fname;
