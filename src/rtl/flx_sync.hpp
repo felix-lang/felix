@@ -16,7 +16,7 @@ RTL_EXTERN char const * get_fpc_desc(fpc_t);
 
 struct RTL_EXTERN sync_state_t {
   bool debug_driver;
-  ::flx::gc::generic::gc_profile_t *gcp;
+  ::flx::gc::generic::collector_t *collector;
   ::std::list<flx::rtl::fthread_t*> *active;
   ::flx::rtl::fthread_t *ft;
   ::flx::rtl::_uctor_ *request;
@@ -28,6 +28,12 @@ struct RTL_EXTERN sync_state_t {
     ::std::list<flx::rtl::fthread_t*> *active_
   );
   void frun();
+  void do_yield();
+  void do_spawn_detached();
+  void do_sread();
+  void do_swrite();
+  void do_multi_swrite();
+  void do_kill();
 };
 
 }}
