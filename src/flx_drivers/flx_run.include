@@ -1,3 +1,27 @@
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// +
+// + This file contains FOUR separate sets of four callback functions
+// + and a mainline. These are conditioned by two boolean macros:
+// + 
+// + FLX_STATIC_LINK:
+// +   if defined, we're static linking
+// +   if not defined, we're dynamic linking
+// + 
+// + FLX_SUPPORT_ASYNC:
+// +   if defined 0, async support is not provided
+// +   if defined non-zero, async support is provided
+// +   this macro must be defined
+// +
+// + In addition we notice these macros too:
+// +
+// + FLX_WIN32:
+// +   if defined non-zero, we're running Win32
+// +
+// + FLX_HAVE_MSVC:
+// +   if defined non-zero we're using MSVC++ compiler and SDK
+// +   used to decide the name of the async library dll
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 #include <cstdlib>
 #include <stdio.h>
 #include <string.h>
@@ -50,10 +74,55 @@ extern void *static_create_thread_frame;
 extern void *static_flx_start;
 #endif
 
-// these are part of the rtl, I don't think there's a driver namespace
-namespace flx { namespace rtl {
+namespace flx { namespace run {
 
-// TODO: make this less weird (sets ptr_create_async_hooker)
+// ========================================================
+// CALLBACK #1 init_ptr_create_async_hooker
+//
+// This is a really ugly piece of hackery!
+//
+// General Felix provides async I/O which is loaded
+// and initialised on demand, i.e. on the first use.
+//
+// This is done so programs not doing socket or timer I/O
+// don't spawn an extra thread, and programs which do 
+// do not spawn it prematurely.
+//
+// Therefore the asynchronous I/O subsystem is initially
+// represented by a NULL pointer. When its services are 
+// required, the shared library providing them is dynamically
+// loaded by name, and the service started.
+//
+// However if static linkage is being used, the code is linked
+// in statically instead. In this case, the load step can
+// be skipped, but the service must still be started on demand.
+//
+// Furthermore, Felix provides two drivers, flx_run and flx_arun.
+// The former driver does not permit any asynchronous I/O.
+// This is useful on a platform where we cannot provide these
+// services, and it's also useful if we want to physically
+// guarantee that such services cannot be run.
+//
+// We represent these options by using two pointers.
+// One pointer contains a function will initialises the other.
+// The first pointer represents the service creator,
+// and the second the actual service.
+//
+// If the creator is NULL, the service can never be started.
+// This is the variable ptr_create_async_hooker in the config.
+// It is set to zero if async support is disabled by conditional
+// compilation of this driver code, used to produce flx_run,
+// the restricted version of Felix.
+//
+// If async is to be supported, then if we're static linking
+// we set the pointer to the service initialiser create_async_hooker
+// which has to have been statically linked in.
+//
+// If we're dynamic linking, we load the shared library FLX_ASYNC_DLL_NAME
+// dynamically, and use dlsym() or GetProcAddress() to fetch
+// the service creator function from its string name. 
+// ========================================================
+
 void init_ptr_create_async_hooker(flx_config *c, bool debug_driver) {
 #if !FLX_SUPPORT_ASYNC
   if(debug_driver)
@@ -106,6 +175,22 @@ void init_ptr_create_async_hooker(flx_config *c, bool debug_driver) {
 #endif
 }
 
+// ========================================================
+// CALLBACK #2: get_flx_args_config
+//
+// Purpose: grabs program arguments.
+// Prints help if statically linked.
+// 
+// Static and dynamic linked programs have arguments 
+// in different slots of argv because the mainline for
+// dynamic linkage is actually flx_run executable whereas
+// for static linkage this is the executable.
+// 
+// So dynamic linked programs have an extra argument
+// which has to be skipped for compatibility of static
+// and dynamic linkage.
+// ========================================================
+
 int get_flx_args_config(int argc, char **argv, flx_config *c) {
 #ifndef FLX_STATIC_LINK
   c->static_link = false;
@@ -154,12 +239,53 @@ int get_flx_args_config(int argc, char **argv, flx_config *c) {
   return 0;
 }
 
+// ========================================================
+// A helper routine for finding the module name when
+// static linking.
+//
+// Static link executables get their full pathname in argv[0].
+// This has to be parsed to get the module name which is then
+// set into the library linkage object.
+//
+// For dynamic link programs the library name is passed to
+// the library linkage loader function, which does the parsing
+// itself.
+//
+// This is a hack. It should be done in the library linkage class.
+// ========================================================
+#ifdef FLX_STATIC_LINK
 ::std::string modulenameoffilename(::std::string const &s)
 {
   ::std::size_t i = s.find_last_of("\\/");
   ::std::size_t j = s.find_first_of(".",i+1);
   return s.substr (i+1,j-i-1);
 }
+#endif
+#
+// ========================================================
+// CALLBACK #3: link_library
+//
+// This function sets up the entry points for either
+// a static or dynamic link program. 
+//
+// For static link,
+// we provide the addresses of the compiler generated
+// static link thunks. These are variables containing
+// the actual entry points.
+//
+// For dynamic link, we actually load the library and
+// then use dlsym() or GetProcAddress() to find the
+// entry points.
+//
+// Once this routine is done, the flx_dynlink_t object is
+// in the same state irrespective of linkage model.
+//
+// Note the asymmetric encoding: static link uses a dedicated
+// static link only constructor form. The dynamic link uses
+// a default constructor and then an initialisation method.
+// There's no good reason for this now because I added a
+// static_link() method (although it doesn't check for NULLs).
+// ========================================================
 
 flx_dynlink_t *link_library(flx_config *c) {
   flx_dynlink_t* library;
@@ -178,9 +304,13 @@ flx_dynlink_t *link_library(flx_config *c) {
 
 }} // namespaces
 
+
+// ========================================================
+// MAINLINE
+// ========================================================
+
 int FELIX_MAIN (int argc, char** argv)
 {
-  // NOTE: TODO: Figure out how to delete these suckers properly
   flx_config *c = new flx_config(link_library, init_ptr_create_async_hooker, get_flx_args_config);
   flx_world *world=new flx_world(c);
 
@@ -192,12 +322,12 @@ int FELIX_MAIN (int argc, char** argv)
   // TODO: simply return error_exit_code
   try {
     // We're all set up, so run felix
-	world->begin_flx_code();
+    world->begin_flx_code();
 
     // Run the felix usercode.
     while(world->run_until_blocked()) ;
 
-	world->end_flx_code();
+    world->end_flx_code();
 
     error_exit_code = world->teardown();
   }

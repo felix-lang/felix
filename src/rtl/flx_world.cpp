@@ -1,13 +1,14 @@
 #include "flx_world.hpp"
 #include "flx_eh.hpp"
 #include "flx_ts_collector.hpp"
+#include "flx_rtl.hpp"
 
-using namespace std;
-using namespace flx::rtl;
-using namespace flx::pthread;
-using namespace flx::run;
+using namespace ::std;
+using namespace ::flx::rtl;
+using namespace ::flx::pthread;
+using namespace ::flx::run;
 
-namespace flx { namespace rtl {
+namespace flx { namespace run {
 
 int do_final_cleanup(
   bool debug_driver,
@@ -30,25 +31,25 @@ bool doflx_data::doflx() {
 
     if (debug_driver)
       fprintf(stderr, "dofx: Before running: Sync state is %s/%s\n",
-        get_fstate_desc(ss.fs), get_fpc_desc(ss.pc));
+        ss.get_fstate_desc(), ss.get_fpc_desc());
 
     ss.frun();
 
     if (debug_driver)
       fprintf(stderr, "doflx: After running: Sync state is %s/%s\n",
-        get_fstate_desc(ss.fs), get_fpc_desc(ss.pc));
+        ss.get_fstate_desc(), ss.get_fpc_desc());
 
     //fprintf(stderr, "Thread yielding ..");
     //thread_control->yield();
     //fprintf(stderr, "..Thread resuming!\n");
 
-    if (FLX_LIKELY(ss.fs == delegated)) {
+    if (FLX_LIKELY(ss.fs == sync_state_t::delegated)) {
       switch (ss.request->variant) {
         case svc_collect:
         {
           gcp->actually_collect();
         }
-          return true;
+        return true;
 
         case svc_spawn_pthread:
         {
@@ -89,7 +90,7 @@ bool doflx_data::doflx() {
                 (void*)get_current_native_thread());
           }
         }
-          return true;
+        return true;
 
         case svc_general:
         {
@@ -131,7 +132,7 @@ bool doflx_data::doflx() {
           // requests are now ALWAYS considered asynchronous
           // even if the request handler reschedules them immediately
           async->handle_request(dreq, ss.ft);
-          ss.pc = next_fthread_pos;
+          ss.pc = sync_state_t::next_fthread_pos;
         }
           return true;
 
@@ -143,11 +144,11 @@ bool doflx_data::doflx() {
     }
 
     switch(ss.fs) {
-      case blocked: // ran out of active threads - are there any in the async queue?
+      case sync_state_t::blocked: // ran out of active threads - are there any in the async queue?
         if(do_async())
           return true;
         break;
-      case terminated:
+      case sync_state_t::terminated:
         break;
       default:
         fprintf(stderr, "doflx: Unknown frun return status 0x%4x\n", ss.fs);
@@ -181,7 +182,7 @@ bool doflx_data::do_async() {
 
     active->push_front(ftp);
     --async_count;
-    ss.pc = next_fthread_pos;
+    ss.pc = sync_state_t::next_fthread_pos;
     return true;
   }
   return false;

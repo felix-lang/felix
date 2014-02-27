@@ -6,7 +6,7 @@ using namespace flx::rtl;
 
 namespace flx { namespace run {
 
-RTL_EXTERN char const *get_fstate_desc(fstate_t fs)
+char const *sync_state_t::get_fstate_desc()
 {
   switch(fs)
   {
@@ -17,9 +17,9 @@ RTL_EXTERN char const *get_fstate_desc(fstate_t fs)
   }
 }
 
-RTL_EXTERN char const *get_fpc_desc(fpc_t fpc)
+char const *sync_state_t::get_fpc_desc()
 {
-  switch(fpc)
+  switch(pc)
   {
     case next_fthread_pos: return "Next fthread pos";
     case next_request_pos: return "Next request pos";
@@ -30,11 +30,11 @@ RTL_EXTERN char const *get_fpc_desc(fpc_t fpc)
 
 sync_state_t::sync_state_t (
   bool debug_driver_,
-  flx::gc::generic::gc_profile_t *gcp,
+  flx::gc::generic::gc_profile_t *gcp_,
   std::list<fthread_t*> *active_
 ) :
   debug_driver(debug_driver_),
-  collector(gcp->collector),
+  collector(gcp_->collector),
   active(active_),
   pc(next_fthread_pos)
 {}
@@ -165,7 +165,7 @@ next_request:
   request = ft->run();
   if(request != 0) goto check_collect;
 
-forget_fthread:
+//forget_fthread:
   if(debug_driver)fprintf(stderr,"unrooting fthread %p\n",ft);
   collector->remove_root(ft);
   goto next_fthread;

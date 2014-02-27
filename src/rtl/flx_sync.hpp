@@ -8,19 +8,19 @@
 
 namespace flx { namespace run {
 
-enum fstate_t { terminated, blocked, delegated };
-enum fpc_t { next_fthread_pos, next_request_pos };
-
-RTL_EXTERN char const * get_fstate_desc(fstate_t);
-RTL_EXTERN char const * get_fpc_desc(fpc_t);
-
+// This class handles synchronous channel I/O and fthreads
 struct RTL_EXTERN sync_state_t {
+  enum fpc_t { next_fthread_pos, next_request_pos };
   bool debug_driver;
   ::flx::gc::generic::collector_t *collector;
   ::std::list<flx::rtl::fthread_t*> *active;
   ::flx::rtl::fthread_t *ft;
   ::flx::rtl::_uctor_ *request;
   fpc_t pc;
+  enum fstate_t { terminated, blocked, delegated };
+  char const * get_fstate_desc();
+  char const * get_fpc_desc();
+
   fstate_t fs;
   sync_state_t (
     bool debug_driver_,
