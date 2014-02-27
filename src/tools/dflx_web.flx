@@ -437,7 +437,7 @@ proc serve_py (k:socket_t, fname:string) {
   var eof_flag = false;
   match get_file(fname,INSTALL_ROOT,FLX_PATH) with
   | Some ?path =>
-    if edit_flag do serve_edit (k,path,"text/x-felix");
+    if edit_flag do serve_edit (k,path,"text/x-python");
     else
       var flx = load path;
       val data = make_html$
@@ -456,7 +456,7 @@ proc serve_ocaml (k:socket_t, fname:string) {
   var eof_flag = false;
   match get_file (fname, INSTALL_ROOT,FLX_PATH) with
   | Some ?path =>
-    if edit_flag do serve_edit (k,path,"text/x-felix");
+    if edit_flag do serve_edit (k,path,"text/x-ocaml");
     else
       var flx = load path;
       println$ f"Loaded Ocaml file %S, len=%d" (fname, flx.len.int);
@@ -477,7 +477,7 @@ proc serve_cpp (k:socket_t, fname:string) {
   var eof_flag = false;
   match get_file(fname,INSTALL_ROOT,C_PATH) with
   | Some ?path =>
-    if edit_flag do serve_edit (k,path, "text/x-felix");
+    if edit_flag do serve_edit (k,path, "text/x-c++src");
     else 
       val text=load path;
   println$ f"Loaded C++ file %S, len=%d" (fname, text.len.int);
@@ -520,7 +520,7 @@ proc serve_text (k:socket_t, fname:string) {
 
 proc serve_html (k:socket_t, fname:string) {
   var eof_flag = false;
-  if edit_flag do serve_edit (k,fname, "text/x-felix");
+  if edit_flag do serve_edit (k,fname, "text/html");
   else
     var txt = load fname;
     println$ f"Loaded html file %S, len=%d" (fname, txt.len.int);
@@ -604,7 +604,7 @@ proc serve_edit(k:socket_t, fname:string, mime:string) {
 println$ "server loading file " + fname + " got:";
 print text;
   var data = make_html(
-    '<html><head>'+
+    '<!doctype html>\r\n'+'<html><head>'+
     editor.get_header (fname,mime) +
     '</head>'+
     '<body>' +

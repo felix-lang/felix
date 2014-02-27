@@ -1,0 +1,307 @@
+@title Embedding Felix
+@h1 Purpose.
+This document describes how to embed Felix in C++ code.
+
+The primary use of doing this is to be able to use Felix
+in a foreign event loop as a coroutine. 
+
+Normally, event loops invoke callbacks via a user 
+supplied function pointer, calling the function with
+a user supplied client data pointer together with some
+event specific data.
+
+The Felix system provides a way to map Felix functions
+into callbacks by generating a wrapper based on the
+required C function signature which casts the client
+data pointer to the corresponding Felix function and
+invokes that.
+
+Such wrappers are invariant: you only need one per
+function type. However the Felix function which is 
+invoked runs in isolation: there is no means to
+communicate with other Felix code.
+
+In this article we will describe how to run a Felix
+program which interfaces to event loop callbacks.
+
+@h1 General Principles.
+The general principle of operation is to first create
+a Felix world. A world contains a garbage collector,
+a scheduler, and asynchronous event handler, and of course
+your Felix program.
+
+At the end, if you have one, you may cleanup the world,
+removing any resources Felix has allocated. This step
+is usually omitted at the end of the program since
+it involves garbage collecting all the allocated memory,
+which would be freed at program termination anyhow.
+
+In between, we will conspire to run some Felix code
+with each callback. Other non-Felix callbacks in your
+event loop may communicate with the Felix program
+using shared memory. You will have to design this
+mechanism yourself.
+
+The successive invocations of Felix, on the other hand,
+will operate transparently, and will typically communicate
+and synchronise with your event loop using synchronous channels.
+
+Each invocation of your Felix system will call a specific function
+on your Felix world {run_until_blocked()}. This call will invoke
+a Felix scheduler to run all the scheduled fibres until there are
+none left to run. Then it returns.
+
+In order for this to work, some callback must put fibres on
+the scheduler before the Felix world is invoked. There are many
+ways to do this so we will consider just one design first.
+
+@h1 Using Felix async I/O.
+This is the easiest method so we will deal with it first.
+
+@h2 Real time Scheduling.
+By far the simplest design we can consider for our
+Felix world is to use real time scheduling. This design
+is the simplest .. because there is nothing to do. 
+It works out of the box!
+
+With this method you block Felix fibres with calls to the
+Felix asynchronous I/O system {faio} using an alarm clock.
+All you need to do is create a clock and sleep for some
+period.
+
+When your fibre goes to sleep it is removed from the synchronous
+scheduler list and added to a list of fibres waiting on an 
+external event. When that event occurs the event notification
+system puts the fibre back on the scheduler queue. 
+
+For the sleep operation the notification system is {demux}.
+It tells {faio} to reschedule a fibre when its sleep timeout
+has expired. This happens in a separate {pthread} by placing
+the fibre on a special queue of fibres waiting to be rescheduled.
+
+When the synchronous scheduler runs out of fibres to run, it checks
+the ready queue and if it is not empty, pulls off the waiting fibres
+and puts them on its scheduler list. It then starts scheduling
+them.
+
+In stand alone mode, Felix locks up on the waiting on fibres
+to be put on the ready queue, provided there are in fact
+fibres waiting for asynchronous events. If there are no
+waiting fibres, your program is finished and will terminate.
+
+In embedded mode, Felix does not terminate but simply returns.
+This is the return from {run_until_blocked}. A bit later
+when you call it again, some fibres may have been woken from
+their sleep, and they will be rescheduled.
+
+In your event loop, you would normally run Felix inside the
+event loop's idle-tasks callback. Take care to ensure in 
+the real-time programming case the loop does not spin
+in idle-tasks without a delay. Some event loops will provide
+a delay or a way to specify one, others will require you
+to insert the delay yourself. A delay of between 
+0.1 and 10 milliseconds is reasonable on many platforms. 
+It allows other pthreads with affinity to the loops CPU
+to work efficiently without too much pre-emption.
+
+You should note careully that this model works by polling.
+Your event loop polls Felix for activity using the idle-tasks
+callback. Polling is very general and a good method, but
+it is not the only way. Felix network I/O and timer operation
+usually does not work by polling, but instead is interrupt
+driven by the readiness notification system provided by
+the underlying OS.
+
+@h2 Network scheduling.
+You can use the same method as above for scheduling
+based on availability of data on sockets. Again, this
+is built into Felix and does not require any special
+coding.
+
+@h2 Spawning Pthreads.
+Felix can spawn pthreads (pre-emptive threads) and you may
+wonder how this fits in with our model. The answer is,
+it works!
+
+If you want to do a whole lot of stuff independently of your 
+mainline event loop, you can just launch
+a pthread from Felix code using the {spawn_pthread} procedure.
+
+However you must take care you do not block the main event
+loop. You can use critical sections with a mutex and shared
+memory to communicate. You should <em>not</em> use Felix
+{pchannel}s because these block client pthreads.
+
+@h1 Using manually driven schannels.
+The method described here leverages how Felix synchronous
+channels interact with the scheduler.
+
+What normally happens is that an Felix fibre will try to do
+a read operation on an schannel. Since there is no data there,
+the fibre is attached to the schannel as a reader, and removed
+from the scheduler.
+
+Now the scheduler runs another fibre which writes to that
+schannel. The writer notices that there is a reader waiting.
+It puts the data where the reader wants it, adds itself
+to the scheduler list, and then makes the reader the current
+fibre. The scheduler then resumes the reader where it left
+off, only now the reader has the data it was waiting for.
+
+Later, the writer can continue too, when the reader blocks
+again, or otherwise terminates.
+
+A similar process occurs if the writer goes first. Noticing there
+is no reader, it deschedules itself and hangs itself on the schannel.
+Later, a reader comes along and notices there's a writer waiting,
+so it grabs the data, reschedules the writer, and continues on.
+
+@h2 Clocking with an emulated write.
+A simple way to organise your fibres is to have them each
+do some work and read an integer from an schannel we will
+call the trigger. A single Felix fthread reads from
+another channel we will call the clock, and writes to the
+trigger channel with a mult-write. This will reschedule
+all those fibres.
+
+So we have reduced the problem to emulating a write.
+This is particularly easy! All you have to do is store the
+integer data where it is supposed to go, as indicated
+by the reader on the schannel, and then schedule the
+fibre. Since the writer isn't a fibre you don't have to worry
+about scheduling it. You do, however, have to make sure the schannel
+is reachable by adding it as a GC root.
+
+@h2 Using Event channels.
+The clocking method we described above is a special case
+of a more general mechanism in which a system with
+N classes of events, such as mouse movement events,
+screen size change events, keyboard events, or whatever,
+can be mapped onto schannels.
+
+It is not always possible to do this, but I will first
+show how it works then discuss the caveats.
+
+When you get an event specific callback, you can
+handle it trivially by writing the data on a corresponding 
+event specific schannel. For example a keypress can simply
+be written to an schannel using the emulation technique.
+
+Your Felix program then simply spawns a fibre to handle
+key presses by reading the channel. How you dispatch or
+deal with them may not be simple, but you can now do it
+all in Felix. You have leveraged the ability of Felix
+to control invert the callback providing the event
+into a read operation which allows state to be preserved.
+
+This method is very simple and easy to set up. But there
+is a caveat. Don't forget, the Felix program is running
+in your loops idle-tasks callback so no action will occur
+until the event loop triggers it.
+
+Unfortunately, some callbacks require an answer. That is,
+they're functions, not procedures. This is typical in
+windowing systems, where, for example, you're using some
+notion of subclassing and you have to tell the window manager
+whether you have handled an event, or whether it should be
+passed on to a parent (or both!).
+
+Since we have to return a code from the callback, we cannot
+wait for Felix to start up in the idle-tasks callback.
+
+@h2 Solving the return code problem.
+The solution to this problem is .. well its obvious!!
+
+Since we can't wait for the idle-tasks callback to resume
+Felix .. we don't. We resume it immediately!
+
+After all, a callback is a callback! As long as you have
+a client data pointer to the Felix world, you can resume
+Felix.
+
+The biggest problem here is how to get a response <em>out</em>
+of your Felix program.
+
+Well .. is the answer not obvious??
+
+Recall, we used an schannel write emulation to reschedule
+Felix fibres based on some external event.
+
+So a bright light dawns and we appy the principle
+of duality, and consider reading the return code from
+an schannel using an emulation!
+
+Note it is of course important that we don't try to
+read that return code from a channel until
+after we have {run_until_blocked}. Obviously there can't
+be any return code there until after the Felix handler
+fibre has run!
+
+@h2 Caveats with schannels.
+Although the principles of schannel operation are quite simple
+they are not quite as easy to use as you might think.
+
+<em>It is vital you forget the idea that a channel is a pipe
+down which you send data.</em>
+
+<em>Channels are not message passing.</em>
+
+The sending of data along a channel is a convenient side
+effect, just as passing parameters to a subroutine is
+a convenient side effect. The real purpose and fundamental
+operation in both cases has nothing to do with data.
+
+<em>Channels are about passing control.</em>
+
+Just like a subroutine, channel operations are fundamentally
+control structures. So what this means is that you cannot just
+randomly read and write channels and expect things to work.
+Channels are not buffered and they do not carry any data.
+Rather, they mediate data transmission by synchronising data
+access.
+
+In practice what this means is that you must ensure
+reads and writes on channels match up temporaly.
+If one fibre writes to channel A then B, and another
+reads from channel B then A, we have a deadlock.
+If the channel is unknown by other fibres deadlocks
+lead to suicides -- the fibres simply cease to exist,
+causing the deadlock to evaporate, since neither fibre
+is reachable except by an unreachable channel.
+
+So you must carefully plan the order of schannel operations
+for each fibre to synchronise will all the others. Fibres
+form an anarchy. They work by cooperation based on a set
+of individual agreements. There are no police to enforce policy.
+Those who fail to agree and abide by agreements simply disappear
+from the community.
+
+
+@h1 Using service code {svc_general}.
+There is another way to organise ourselves. Instead of using
+schannels or the builtin asynchronous I/O support in Felix,
+we provide a way to leverage the way Felix already does
+asynchronous I/O, using the service call {svc_general}.
+
+This uses special C++ objects to organise suspending
+of the calling fibre until an asynchronous external
+event tells us the encoded request is satisfied,
+then puts the fibre on ready queue to be rescheduled.
+
+This is the most complex mechanism, and you will have to
+create both the request and service objects to leverage it,
+including a conforming C++ implementation and a Felix binding.
+
+The result will be that function calls in the Felix library
+will allow a fibre to suspend itself until some arbitrary
+event occurs. 
+
+With this mechanism we emulate the asynchronous event management
+by doing the required operations inside your main event loop
+callback for that event.
+
+The primary advantage of this method is that data communication
+is not limited to the simple message passing model and control
+exchange schannels provide.
+
+

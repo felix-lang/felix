@@ -1,7 +1,7 @@
-1.1.10 fdoc2html initialisation
-1.1.10 flx2html initialisation
-1.1.10 cpp2html initialisation
-1.1.10 cpp2html initialisation
+1.1.11 fdoc2html initialisation
+1.1.11 flx2html initialisation
+1.1.11 cpp2html initialisation
+1.1.11 cpp2html initialisation
 ocaml2html initialisation
 Py2html initialisation
 <html><body>
@@ -490,7 +490,7 @@ Py2html initialisation
  and also needed in schannels to do the svc call.
  Felix-OS service call codes.
 </p></div>
-<pre>0116:    <a href="/share/lib/std/control/control.flx#0116">noinline proc svc(x:svc_req_t)</a></pre>
+<pre>0117:    <a href="/share/lib/std/control/control.flx#0117">noinline proc svc(x:svc_req_t)</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> Procedure to perform a supervisor call. 
  this interface just gets rid of the horrible requirement
  the request be in a variable so it is addressable.
@@ -1930,14 +1930,14 @@ CMD=@
 </p></div>
 <hr/><a href="/share/lib/std/felix/flx/bootflx.flx">felix/flx/bootflx.flx</a>
 
-<pre>0029:  <a href="/share/lib/std/felix/flx/bootflx.flx#0029">class BootFlx</a></pre>
-<pre>0031:    <a href="/share/lib/std/felix/flx/bootflx.flx#0031">gen flx_processing</a></pre>
-<pre>0125:    <a href="/share/lib/std/felix/flx/bootflx.flx#0125">gen runflx(args:list[string]) : int</a></pre>
+<pre>0030:  <a href="/share/lib/std/felix/flx/bootflx.flx#0030">class BootFlx</a></pre>
+<pre>0032:    <a href="/share/lib/std/felix/flx/bootflx.flx#0032">gen flx_processing</a></pre>
+<pre>0127:    <a href="/share/lib/std/felix/flx/bootflx.flx#0127">gen runflx(args:list[string]) : int</a></pre>
 <hr/><a href="/share/lib/std/felix/flx/flx.flx">felix/flx/flx.flx</a>
 
-<pre>0028:  <a href="/share/lib/std/felix/flx/flx.flx#0028">class Flx</a></pre>
-<pre>0030:    <a href="/share/lib/std/felix/flx/flx.flx#0030">gen flx_processing</a></pre>
-<pre>0134:    <a href="/share/lib/std/felix/flx/flx.flx#0134">gen runflx(args:list[string]) : int</a></pre>
+<pre>0021:  <a href="/share/lib/std/felix/flx/flx.flx#0021">class Flx</a></pre>
+<pre>0023:    <a href="/share/lib/std/felix/flx/flx.flx#0023">gen flx_processing</a></pre>
+<pre>0121:    <a href="/share/lib/std/felix/flx/flx.flx#0121">gen runflx(args:list[string]) : int</a></pre>
 <hr/><a href="/share/lib/std/felix/flx/flx_cmdopt.flx">felix/flx/flx_cmdopt.flx</a>
 
 <pre>0006:  <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0006">class FlxCmdOpt</a></pre>
@@ -2518,6 +2518,7 @@ CMD=@
  queue is empty. This call cannot handle async I/O,
  so any attempt to do it will cause the program to abort.
 </p></div>
+<hr/><a href="/share/lib/std/felix/toolchain/clang_iphoneos.flx">felix/toolchain/clang_iphoneos.flx</a>
 <hr/><a href="/share/lib/std/felix/toolchain/clang_linux.flx">felix/toolchain/clang_linux.flx</a>
 <hr/><a href="/share/lib/std/felix/toolchain/clang_osx.flx">felix/toolchain/clang_osx.flx</a>
 <hr/><a href="/share/lib/std/felix/toolchain/gcc48_linux.flx">felix/toolchain/gcc48_linux.flx</a>

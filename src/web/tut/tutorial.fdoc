@@ -81,6 +81,10 @@ Low level programming capabilities.
 <a href="gc_index.fdoc">The Garbage Collector</a>
 Considerations for programming with Garbage Collection.
 
+@p
+<a href="embedding_felix_index.fdoc">Embedding Felix</a>.
+How to embed Felix, particularly in foreign event loops.
+
 @h1 Advanced Topics
 Categorical type system: 
 <a href="garray_index.fdoc">Generalised Arrays.</a>

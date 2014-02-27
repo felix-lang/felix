@@ -32,8 +32,14 @@ object fdoc_edit () implements edit-interface_t = {
     "<title>"+filename+"</title>" +
     ''' 
     <link rel="stylesheet" href="/share/src/codemirror/lib/codemirror.css">
+    <link rel="stylesheet" href="/share/src/codemirror/addon/fold/foldgutter.css">
     <script src="/share/src/codemirror/lib/codemirror.js"></script>
     <script src="/share/src/'''+modefile+'''"></script>
+    <script src="/share/src/codemirror/addon/edit/matchbrackets.js"></script>
+    <script src="/share/src/codemirror/addon/fold/foldcode.js"></script>
+    <script src="/share/src/codemirror/addon/fold/foldgutter.js"></script>
+    <script src="/share/src/codemirror/addon/fold/brace-fold.js"></script>
+    <script src="/share/src/codemirror/addon/fold/comment-fold.js"></script>
     <style>.CodeMirror {border: 2px inset #dee; height:auto; }</style>
     <style>.CodeMirror-scroll {overflow-x: hidden; overflow-y:auto; }</style>
     '''
@@ -48,10 +54,14 @@ object fdoc_edit () implements edit-interface_t = {
     <script>
       var editor = CodeMirror.fromTextArea(document.getElementById("'''+id+'''"), {
         lineNumbers: true,
+        lineWrapping: true,
         matchBrackets: true,
-        mode: "'''+mime+'''",
         smartIndent: false,
-        viewportMargin: Infinity
+        viewportMargin: Infinity,
+        extraKeys: {"Ctrl-Q": function(cm){ cm.foldCode(cm.getCursor()); }},
+        foldGutter:true,
+        gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
+        mode: "'''+mime+'''"
       });
     </script>
     '''
