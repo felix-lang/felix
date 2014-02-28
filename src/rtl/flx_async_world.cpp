@@ -8,7 +8,7 @@ namespace flx { namespace run {
 
 static void prun_pthread_entry(void *data) {
   async_sched *d = (async_sched*)data;
-  while(d->prun(async_sched::block)) ;
+  d->prun(async_sched::block);
   delete d;
 }
 

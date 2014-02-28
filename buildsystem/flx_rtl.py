@@ -22,10 +22,16 @@ def build_runtime(host_phase, target_phase):
         path / 'flx_strutil.hpp',
         path / 'flx_executil.hpp',
         path / 'flx_sync.hpp',
+        path / 'flx_world.hpp',
+        path / 'flx_async_world.hpp',
+        path / 'flx_world_config.hpp',
         path / 'plat_linux.hpp',
     )
 
-    dst = 'host/lib/rtl/flx'
+    for f in Path.glob(path/"*.hpp"):
+      print("Copying " + f + " --> " +target_phase.ctx.buildroot/f )
+      copy(ctx=target_phase.ctx, src=f,dst=target_phase.ctx.buildroot/f)
+
     srcs = [copy(ctx=target_phase.ctx, src=f, dst=target_phase.ctx.buildroot / f) for f in Path.glob(path / '*.cpp')]
     includes = [
         target_phase.ctx.buildroot / 'host/lib/rtl',
@@ -48,6 +54,7 @@ def build_runtime(host_phase, target_phase):
     else:
         external_libs = []
 
+    dst = 'host/lib/rtl/flx'
     return Record(
         static=buildsystem.build_cxx_static_lib(target_phase, dst, srcs,
             includes=includes,
