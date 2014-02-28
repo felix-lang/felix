@@ -41,12 +41,12 @@ class SyncControl
   ctor fthread: cont = "new (*PTF gcp, ::flx::rtl::_fthread_ptr_map, false) ::flx::rtl::fthread_t($1)";
 
   //$ Type of a synchronous scheduler.
-  type scheduler = "::flx::run::sync_state_t*" requires header '#include "flx_sync.hpp"';
+  type scheduler = "::flx::run::sync_sched*" requires header '#include "flx_sync.hpp"';
 
   //$ Constructor for a synchronous scheduler.
   //$ Accepts a list of fthreads to run.
   //$ Uses the callers garbage collector.
-  ctor scheduler : fthread_list = "new ::flx::run::sync_state_t(false, PTF gcp, $1)";
+  ctor scheduler : fthread_list = "new ::flx::run::sync_sched(false, PTF gcp, $1)";
   proc delete: scheduler = "delete $1;";
 
   //$ Invoke the scheduler and run until one of two

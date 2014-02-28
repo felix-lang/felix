@@ -34,8 +34,10 @@ public:
   ~bound_queue_t();
   void enqueue(void*);
   void* dequeue();
+  void* maybe_dequeue();
   void resize(size_t);
   void wait_until_empty();
+  size_t len();
 };
 
 GC_EXTERN ::flx::gc::generic::scanner_t bound_queue_scanner;

@@ -58,9 +58,14 @@ public:
     //fprintf(stderr,"Deleting proto async\n");
   }
   bound_queue_t *get_ready_queue() { return &async_ready; }
+
   fthread_t* dequeue()
   {
     return (fthread_t*)async_ready.dequeue();
+  }
+  fthread_t* maybe_dequeue()
+  {
+    return (fthread_t*)async_ready.maybe_dequeue();
   }
 };
 

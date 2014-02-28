@@ -21,6 +21,13 @@ bound_queue_t::~bound_queue_t()
   delete ELTQ;
 }
 
+// get the number of element in the queue
+// (NOT the bound!)
+size_t bound_queue_t::len() {
+  flx_mutex_locker_t   l(member_lock);
+  return ELTQ->size();
+}
+
 void bound_queue_t::wait_until_empty() {
   flx_mutex_locker_t   l(member_lock);
   while(!ELTQ->empty())
@@ -48,6 +55,21 @@ bound_queue_t::dequeue()
   size_changed.broadcast();
   return elt;
 }
+
+void*
+bound_queue_t::maybe_dequeue()
+{
+  flx_mutex_locker_t   l(member_lock);
+  void *elt = NULL;
+  if (ELTQ->size() > 0)
+  {
+    elt = ELTQ->front();
+    ELTQ->pop_front();
+    size_changed.broadcast();
+  }
+  return elt;
+}
+
 
 void
 bound_queue_t::resize(size_t n)

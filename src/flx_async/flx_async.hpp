@@ -15,6 +15,7 @@
 class ASYNC_EXTERN async_hooker {
 public:
   virtual flx::rtl::fthread_t *dequeue()=0;
+  virtual flx::rtl::fthread_t *maybe_dequeue()=0;
   virtual void handle_request(void *data, flx::rtl::fthread_t *ss)=0;
   virtual ~async_hooker();
 };

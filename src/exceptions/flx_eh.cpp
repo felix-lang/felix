@@ -24,7 +24,7 @@ int ::flx::rtl::flx_exception_handler (flx_exception_t const *e)
     fprintf(stderr,"filename: %s\n",x->filename.data());
     fprintf(stderr,"operation: %s\n",x->operation.data());
     fprintf(stderr,"what: %s\n",x->what.data());
-    return 2;
+    return 3;
   }
   else
   if (flx_exec_failure_t const *x = dynamic_cast<flx_exec_failure_t const*>(e))

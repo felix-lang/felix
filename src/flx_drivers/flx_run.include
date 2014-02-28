@@ -1,7 +1,12 @@
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // +
 // + This file contains FOUR separate sets of four callback functions
-// + and a mainline. These are conditioned by two boolean macros:
+// + and a mainline. 
+// +
+// + It is designed to be included in four stub files which set the
+// + four combinations, so common code can be shared.
+// +
+// + These are conditioned by two boolean macros:
 // + 
 // + FLX_STATIC_LINK:
 // +   if defined, we're static linking
@@ -29,6 +34,7 @@
 #include <string>
 
 #include "flx_world.hpp"
+#include "flx_async_world.hpp"
 #include "flx_ts_collector.hpp"
 #include "flx_eh.hpp"
 
@@ -126,24 +132,24 @@ namespace flx { namespace run {
 void init_ptr_create_async_hooker(flx_config *c, bool debug_driver) {
 #if !FLX_SUPPORT_ASYNC
   if(debug_driver)
-    fprintf(stderr,"doflx: FLX_SUPPORT_ASYNC FALSE\n");
+    fprintf(stderr,"[flx_run.include]: FLX_SUPPORT_ASYNC FALSE\n");
   c->ptr_create_async_hooker = 0;
 #else
   c->ptr_create_async_hooker = create_async_hooker;
   if(debug_driver)
-    fprintf(stderr,"doflx: FLX_SUPPORT_ASYNC TRUE, create_async_hooker = %p\n", create_async_hooker);
+    fprintf(stderr,"[flx_run.include]: FLX_SUPPORT_ASYNC TRUE, create_async_hooker = %p\n", create_async_hooker);
 #ifndef FLX_STATIC_LINK
   // Try to dynamically load the felix asynchronous library
 
   if(debug_driver)
-    fprintf(stderr,"doflx: dymamic_link: trying to load %s\n",FLX_ASYNC_DLL_NAME);
+    fprintf(stderr,"[flx_run.include]: dymamic_link: trying to load %s\n",FLX_ASYNC_DLL_NAME);
 
   LIBHANDLE async_lib = flx_load_module(FLX_ASYNC_DLL_NAME);
 
   // Error out if we couldn't load the library.
   if (async_lib == NULL) {
     fprintf(stderr,
-      "doflx: Unable to find module '%s'\n",FLX_ASYNC_DLL_NAME);
+      "[flx_run.include]: Unable to find module '%s'\n",FLX_ASYNC_DLL_NAME);
     exit(1);
   }
   // debug only ..
@@ -160,7 +166,7 @@ void init_ptr_create_async_hooker(flx_config *c, bool debug_driver) {
   // library.
   if (c->ptr_create_async_hooker == NULL) {
     fprintf(stderr,
-      "doflx: Unable to find symbol 'create_async_hooker' in module "
+      "[flx_run.include]: Unable to find symbol 'create_async_hooker' in module "
       "'%s'\n",FLX_ASYNC_DLL_NAME);
     exit(1);
   }
@@ -171,7 +177,7 @@ void init_ptr_create_async_hooker(flx_config *c, bool debug_driver) {
   }
 #endif
   if(debug_driver)
-    fprintf(stderr,"doflx: static_link: flx_async_static SHOULD BE LINKED IN\n");
+    fprintf(stderr,"[flx_run.include]: static_link: flx_async_static SHOULD BE LINKED IN\n");
 #endif
 }
 
@@ -325,7 +331,7 @@ int FELIX_MAIN (int argc, char** argv)
     world->begin_flx_code();
 
     // Run the felix usercode.
-    while(world->run_until_blocked()) ;
+    world->run_until_complete();
 
     world->end_flx_code();
 

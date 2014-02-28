@@ -6,18 +6,17 @@ using namespace flx::rtl;
 
 namespace flx { namespace run {
 
-char const *sync_state_t::get_fstate_desc()
+char const *sync_sched::get_fstate_desc()
 {
   switch(fs)
   {
-    case terminated: return "terminated";
     case blocked: return "blocked";
     case delegated: return "delegated";
     default: return "Illegal fstate_t";
   }
 }
 
-char const *sync_state_t::get_fpc_desc()
+char const *sync_sched::get_fpc_desc()
 {
   switch(pc)
   {
@@ -28,7 +27,7 @@ char const *sync_state_t::get_fpc_desc()
 }
 
 
-sync_state_t::sync_state_t (
+sync_sched::sync_sched (
   bool debug_driver_,
   flx::gc::generic::gc_profile_t *gcp_,
   std::list<fthread_t*> *active_
@@ -39,14 +38,14 @@ sync_state_t::sync_state_t (
   pc(next_fthread_pos)
 {}
 
-void sync_state_t::do_yield()
+void sync_sched::do_yield()
     {
       if(debug_driver)fprintf(stderr,"yield");
       active->push_back(ft);
       pc=next_fthread_pos;
     }
 
-void sync_state_t::do_spawn_detached()
+void sync_sched::do_spawn_detached()
     {
       fthread_t *ftx = *(fthread_t**)request->data;
       if(debug_driver)fprintf(stderr,"Spawn thread %p\n",ftx);
@@ -55,7 +54,7 @@ void sync_state_t::do_spawn_detached()
       pc=next_request_pos;
     }
 
-void sync_state_t::do_sread()
+void sync_sched::do_sread()
     {
       readreq_t * pr = (readreq_t*)request->data;
       schannel_t *chan = pr->chan;
@@ -83,7 +82,7 @@ void sync_state_t::do_sread()
       pc=next_fthread_pos; return;
     }
 
-void sync_state_t::do_swrite()
+void sync_sched::do_swrite()
     {
       readreq_t * pw = (readreq_t*)request->data;
       schannel_t *chan = pw->chan;
@@ -112,7 +111,7 @@ void sync_state_t::do_swrite()
       pc=next_fthread_pos; return;
     }
 
-void sync_state_t::do_multi_swrite()
+void sync_sched::do_multi_swrite()
     {
       readreq_t * pw = (readreq_t*)request->data;
       schannel_t *chan = pw->chan;
@@ -134,7 +133,7 @@ void sync_state_t::do_multi_swrite()
       goto svc_multi_write_next;
     }
 
-void sync_state_t::do_kill()
+void sync_sched::do_kill()
     {
       fthread_t *ftx = *(fthread_t**)request->data;
       if(debug_driver)fprintf(stderr,"Request to kill fthread %p\n",ftx);
@@ -143,7 +142,7 @@ void sync_state_t::do_kill()
     }
 
 
-void sync_state_t::frun()
+void sync_sched::frun()
 {
 dispatch:
   // dispatch
@@ -192,8 +191,6 @@ check_collect:
 
     default:  goto delegate;
   }
-  fprintf(stderr,"BUG unreachable code executed\n");
-  abort();
 }
 
 }}
