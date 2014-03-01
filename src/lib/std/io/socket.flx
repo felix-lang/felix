@@ -39,12 +39,12 @@ class Socket {
   done;
   }
 
-  proc connect(s: &socket_t, addr: +char, port: int)
+  proc connect(s: &socket_t, addr: +char, port: int, err: &int)
   {
   if PLAT_POSIX do
-      Faio_posix::connect(s, addr, port);
+      Faio_posix::connect(s, addr, port, err);
   else
-      Faio_win32::Connect(s, addr, port);
+      Faio_win32::Connect(s, addr, port, err);
   done;
   }
 
