@@ -26,7 +26,7 @@ void async_sched::do_spawn_pthread()
 {
   fthread_t *ftx = *(fthread_t**)ss.request->data;
   if (debug_driver)
-    fprintf(stderr, "prun: Spawn pthread %p\n", ftx);
+    fprintf(stderr, "[prun: spawn_pthread] Spawn pthread %p\n", ftx);
   gcp->collector->add_root(ftx);
   std::list<fthread_t*> *pactive = new std::list<fthread_t*>;
   pactive->push_front(ftx);
@@ -34,7 +34,7 @@ void async_sched::do_spawn_pthread()
   flx_detached_thread_t dummy;
 
   if (debug_driver)
-    fprintf(stderr, "prun: Starting new pthread, thread counter= %d\n",
+    fprintf(stderr, "[prun: spawn_pthread] Starting new pthread, thread counter= %d\n",
       thread_control->thread_count());
 
   {
@@ -49,7 +49,7 @@ void async_sched::do_spawn_pthread()
 
     if (debug_driver)
       fprintf(stderr,
-        "Thread %p waiting for spawned thread to register itself\n",
+        "[prun: spawn_pthread] Thread %p waiting for spawned thread to register itself\n",
         (void*)get_current_native_thread());
 
     while (!spawner_flag)
@@ -57,7 +57,7 @@ void async_sched::do_spawn_pthread()
 
     if (debug_driver)
       fprintf(stderr,
-        "Thread %p notes spawned thread has registered itself\n",
+        "[prun: spawn_pthread] Thread %p notes spawned thread has registered itself\n",
         (void*)get_current_native_thread());
   }
 }
@@ -99,14 +99,23 @@ void async_sched::do_general()
     );
   }
   ++async_count;
+  if (debug_driver)
+    fprintf(stderr,
+       "[prun: svc_general] Async system created: %p, count %ld\n",async,async_count);
   // CHANGED TO USE NEW UNION LAYOUT RULES
   // One less level of indirection for pointers
   // void *dreq =  *(void**)ss.request->data;
   void *dreq =  (void*)ss.request->data;
+  if (debug_driver)
+    fprintf(stderr, "[prun: svc_general] Request object %p\n", dreq);
 
   // requests are now ALWAYS considered asynchronous
   // even if the request handler reschedules them immediately
   async->handle_request(dreq, ss.ft);
+  if (debug_driver)
+    fprintf(stderr, "[prun: svc_general] Request object %p captured fthread %e \n", dreq, ss.ft);
+  if (debug_driver)
+    fprintf(stderr, "[prun: svc_general] Request object %p\n", dreq);
   ss.ft = 0; // drop current without unrooting
   if(debug_driver)
     fprintf(stderr,"[prun: svc_general] request dispatched..\n");
