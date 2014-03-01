@@ -78,8 +78,7 @@ proc Connect(s: SOCKET, addr: +char, port: int, err: &int)
 proc Connect(s: &SOCKET, addr: +char, port: int, err: &int)
 {
     mk_socket s;            // error handling?
-    var success: bool;
-    Connect(&success, *s, addr, port, err);
+    Connect(*s, addr, port, err);
     // print "CONNECT success: "; print success; endl;
     // error handling?
 }
