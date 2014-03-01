@@ -79,8 +79,6 @@ proc Connect(s: &SOCKET, addr: +char, port: int, err: &int)
 {
     mk_socket s;            // error handling?
     Connect(*s, addr, port, err);
-    // print "CONNECT success: "; print success; endl;
-    // error handling?
 }
 
 // listens on all interfaces, I guess
