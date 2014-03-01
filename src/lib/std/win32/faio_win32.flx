@@ -71,7 +71,7 @@ proc Connect(s: SOCKET, addr: +char, port: int, err: &int)
 {
     var con = mk_connect_ex(sys_demux,s, addr, port);
     faio_req$ &con;    // causes ConnectEx to be called
-    success = get_success(con);
+    var success = get_success(con);
     err <- if success then 0 else -1 endif;
 }
 
