@@ -57,17 +57,18 @@ spawn_fthread
   var err = 0;
   connect(&c, c"127.0.0.1", port, &err); // connect to localhost
   if err != 0 do
-  println$ "fthread's socket is " + str c;
-  var st: string;
+    println$ "fthread's socket is " + str c;
+    var st: string;
 
-  get_line(c, &st);
-  print "connector got "; print st; endl;
-  write_string(c, "thanks\n", &eof);         // newline important
+    get_line(c, &st);
+    print "connector got "; print st; endl;
+    write_string(c, "thanks\n", &eof);         // newline important
 
-  ioclose(c);  // finished with this
-  //println$ "fthread closed " + str c;
+    ioclose(c);  // finished with this
+    //println$ "fthread closed " + str c;
   else
    println$ "Connect error " + err.str;
+  done
 };
 
 print "waiting for job to complete\n";
