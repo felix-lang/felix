@@ -113,7 +113,7 @@ void async_sched::do_general()
   // even if the request handler reschedules them immediately
   async->handle_request(dreq, ss.ft);
   if (debug_driver)
-    fprintf(stderr, "[prun: svc_general] Request object %p captured fthread %e \n", dreq, ss.ft);
+    fprintf(stderr, "[prun: svc_general] Request object %p captured fthread %p \n", dreq, ss.ft);
   if (debug_driver)
     fprintf(stderr, "[prun: svc_general] Request object %p\n", dreq);
   ss.ft = 0; // drop current without unrooting

@@ -18,7 +18,7 @@ struct async_sched
   struct flx_world *world;
   bool debug_driver;
   ::flx::gc::generic::gc_profile_t *gcp;
-  ::std::list<::flx::rtl::fthread_t*> *active;
+  ::std::list< ::flx::rtl::fthread_t*> *active;
   ::flx::pthread::thread_control_t *thread_control;
 
   unsigned long async_count;
@@ -29,7 +29,7 @@ struct async_sched
     flx_world *world_arg, 
     bool d, 
     ::flx::gc::generic::gc_profile_t *g, 
-    ::std::list<::flx::rtl::fthread_t*> *a, 
+    ::std::list< ::flx::rtl::fthread_t*> *a, 
     ::flx::pthread::thread_control_t *tc
   ) : 
     world(world_arg), 
