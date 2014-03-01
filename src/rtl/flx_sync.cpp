@@ -18,40 +18,71 @@ char const *sync_sched::get_fstate_desc()
 
 char const *sync_sched::get_fpc_desc()
 {
-  switch(pc)
+  if (ft)
+    return "Next request pos";
+  else
   {
-    case next_fthread_pos: return "Next fthread pos";
-    case next_request_pos: return "Next request pos";
-    default: return "Illegal fpc_t";
+    if (active->size() > 0) return "Next fthread pos";
+    else return "Out of active threads";
   }
 }
 
 
 sync_sched::sync_sched (
   bool debug_driver_,
-  flx::gc::generic::gc_profile_t *gcp_,
-  std::list<fthread_t*> *active_
+  ::flx::gc::generic::gc_profile_t *gcp_,
+  ::std::list<fthread_t*> *active_
 ) :
   debug_driver(debug_driver_),
   collector(gcp_->collector),
   active(active_),
-  pc(next_fthread_pos)
+  ft(0)
 {}
+
+void sync_sched::forget_current()
+  {
+     if(ft) 
+     {
+       collector->remove_root(ft);
+       pop_current();
+    }
+  }
+
+void sync_sched::pop_current()
+  {
+     if(active->size() > 0) 
+     {
+       ft = active->front();
+       active->pop_front();
+     }
+     else
+       ft = 0;
+  }
+
+void sync_sched::push_new(fthread_t *f)
+  {
+    collector->add_root(f);
+    push_old(f);
+  }
+
+void sync_sched::push_old(fthread_t *f)
+  {
+    if(ft) active->push_front(ft);
+    ft = f;
+  }
 
 void sync_sched::do_yield()
     {
       if(debug_driver)fprintf(stderr,"yield");
       active->push_back(ft);
-      pc=next_fthread_pos;
+      pop_current();
     }
 
 void sync_sched::do_spawn_detached()
     {
       fthread_t *ftx = *(fthread_t**)request->data;
-      if(debug_driver)fprintf(stderr,"Spawn thread %p\n",ftx);
-      collector->add_root(ftx);
-      active->push_front(ftx);
-      pc=next_request_pos;
+      if(debug_driver)fprintf(stderr,"Spawn fthread %p\n",ftx);
+      push_new(ftx);
     }
 
 void sync_sched::do_sread()
@@ -68,18 +99,17 @@ void sync_sched::do_sread()
         readreq_t * pw = (readreq_t*)writer->get_svc()->data;
         if(debug_driver)fprintf(stderr,"Writer @%p=%p, read into %p\n", pw->variable,*(void**)pw->variable, pr->variable);
         *(void**)pr->variable = *(void**)pw->variable;
+        // reader goes first!
         active->push_front(writer);
         collector->add_root(writer);
-         pc=next_request_pos; return;
+        return;
       }
 
     svc_read_none:
       if(debug_driver)fprintf(stderr,"No writers on channel %p: BLOCKING\n",chan);
       chan->push_reader(ft);
-      // forget_fthread
-      if(debug_driver)fprintf(stderr,"unrooting fthread %p\n",ft);
-      collector->remove_root(ft);
-      pc=next_fthread_pos; return;
+      forget_current();
+      return;
     }
 
 void sync_sched::do_swrite()
@@ -96,19 +126,14 @@ void sync_sched::do_swrite()
         readreq_t * pr = (readreq_t*)reader->get_svc()->data;
         if(debug_driver)fprintf(stderr,"Writer @%p=%p, read into %p\n", pw->variable,*(void**)pw->variable, pr->variable);
         *(void**)pr->variable = *(void**)pw->variable;
-        // NEW: ESSENTIAL! Reader must continue on, not writer!
-        active->push_front(ft);
-        collector->add_root(reader);
-        ft=reader;
-        pc=next_request_pos; return;
+        push_new (reader);
+        return;
       }
     svc_write_none:
       if(debug_driver)fprintf(stderr,"No readers on channel %p: BLOCKING\n",chan);
       chan->push_writer(ft);
-      // forget_fthread
-      if(debug_driver)fprintf(stderr,"unrooting fthread %p\n",ft);
-      collector->remove_root(ft);
-      pc=next_fthread_pos; return;
+      forget_current();
+      return;
     }
 
 void sync_sched::do_multi_swrite()
@@ -116,19 +141,17 @@ void sync_sched::do_multi_swrite()
       readreq_t * pw = (readreq_t*)request->data;
       schannel_t *chan = pw->chan;
       if(debug_driver)fprintf(stderr,"Request to write on channel %p\n",chan);
-      if(chan==NULL) { pc=next_request_pos; return; }
+      if(chan==NULL) return;
     svc_multi_write_next:
       fthread_t *reader= chan->pop_reader();
-      if(reader == 0)  { pc=next_request_pos; return; }    // no readers left
+      if(reader == 0)  return;    // no readers left
       if(reader->cc == 0) goto svc_multi_write_next; // killed
       {
         readreq_t * pr = (readreq_t*)reader->get_svc()->data;
         if(debug_driver)fprintf(stderr,"Writer @%p=%p, read into %p\n", pw->variable,*(void**)pw->variable, pr->variable);
         *(void**)pr->variable = *(void**)pw->variable;
         // NEW: ESSENTIAL! Reader must continue on, not writer!
-        active->push_front(ft);
-        collector->add_root(reader);
-        ft=reader;
+        push_new(reader);
       }
       goto svc_multi_write_next;
     }
@@ -138,43 +161,35 @@ void sync_sched::do_kill()
       fthread_t *ftx = *(fthread_t**)request->data;
       if(debug_driver)fprintf(stderr,"Request to kill fthread %p\n",ftx);
       ftx -> kill();
-      pc=next_request_pos; return;
+      return;
     }
 
 
 void sync_sched::frun()
 {
+  if (debug_driver)
+     fprintf(stderr,"frun: entry ft=%p, active size=%ld\n", ft,active->size());
 dispatch:
-  // dispatch
-  if (pc == next_request_pos) goto next_request;
-  if (pc == next_fthread_pos) goto next_fthread;
-  fprintf(stderr,"BUG -- unreachable code in frun\n");
-  abort();
-
-next_fthread:
-  if (active->size() == 0) {
-    fs = blocked;
-    pc = next_fthread_pos;
-    return;
+  if (ft == 0) 
+  {
+    if (active->size() == 0)  // out of active fthreads
+    {
+      fs = blocked;
+      return;
+    }
+    ft = active->front();     // grab next fthread
+    active->pop_front();
   }
-  ft = active->front();
-  active->pop_front();
+  request = ft->run();        // run fthread to get request
+  if(request == 0)            // euthenasia request
+  {
+    if(debug_driver)
+      fprintf(stderr,"unrooting fthread %p\n",ft);
+    collector->remove_root(ft);
+    ft = 0;
+    goto dispatch;
+  }
 
-next_request:
-  request = ft->run();
-  if(request != 0) goto check_collect;
-
-//forget_fthread:
-  if(debug_driver)fprintf(stderr,"unrooting fthread %p\n",ft);
-  collector->remove_root(ft);
-  goto next_fthread;
-
-delegate:
-  pc = next_request_pos;
-  fs = delegated;
-  return;
-
-check_collect:
   switch(request->variant)
   {
     case svc_yield: do_yield(); goto dispatch;
@@ -189,7 +204,9 @@ check_collect:
 
     case svc_kill: do_kill(); goto dispatch;
 
-    default:  goto delegate;
+    default:  
+      fs = delegated;
+      return;
   }
 }
 

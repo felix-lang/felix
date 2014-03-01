@@ -149,13 +149,13 @@ void init_ptr_create_async_hooker(flx_config *c, bool debug_driver) {
   // Error out if we couldn't load the library.
   if (async_lib == NULL) {
     fprintf(stderr,
-      "[flx_run.include]: Unable to find module '%s'\n",FLX_ASYNC_DLL_NAME);
+      "[flx_run.include]: dynamic_link: Unable to find module '%s'\n",FLX_ASYNC_DLL_NAME);
     exit(1);
   }
   // debug only ..
   else {
     if (debug_driver)
-      fprintf(stderr, "module '%s' loaded!\n",FLX_ASYNC_DLL_NAME);
+      fprintf(stderr, "[flx_run.include]: dynamic_link: module '%s' loaded!\n",FLX_ASYNC_DLL_NAME);
   }
 
   // Get the hooker function
@@ -166,18 +166,19 @@ void init_ptr_create_async_hooker(flx_config *c, bool debug_driver) {
   // library.
   if (c->ptr_create_async_hooker == NULL) {
     fprintf(stderr,
-      "[flx_run.include]: Unable to find symbol 'create_async_hooker' in module "
+      "[flx_run.include]: dynamic_link: Unable to find symbol 'create_async_hooker' in module "
       "'%s'\n",FLX_ASYNC_DLL_NAME);
     exit(1);
   }
   // debug only
   else {
     if (debug_driver)
-      fprintf(stderr, "found 'create_async_hooker'!\n");
+      fprintf(stderr, "[flx_run.include]: dynamic_link: found 'create_async_hooker'!\n");
   }
-#endif
+#else
   if(debug_driver)
-    fprintf(stderr,"[flx_run.include]: static_link: flx_async_static SHOULD BE LINKED IN\n");
+    fprintf(stderr,"[flx_run.include]: static_link: 'create_async_hooker' SHOULD BE LINKED IN\n");
+#endif
 #endif
 }
 

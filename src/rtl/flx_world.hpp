@@ -29,7 +29,7 @@ class flx_world {
   ::flx::rtl::flx_dynlink_t *library;
   ::flx::rtl::flx_libinit_t instance;
 
-  struct async_sched *async_handler;
+  struct async_sched *async_scheduler;
 
   int explicit_dtor();
 public:

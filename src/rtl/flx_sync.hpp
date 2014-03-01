@@ -10,14 +10,12 @@ namespace flx { namespace run {
 
 // This class handles synchronous channel I/O and fthreads
 struct RTL_EXTERN sync_sched {
-  enum fpc_t { next_fthread_pos, next_request_pos };
   bool debug_driver;
   ::flx::gc::generic::collector_t *collector;
   ::std::list<flx::rtl::fthread_t*> *active;
   ::flx::rtl::fthread_t *ft;
   ::flx::rtl::_uctor_ *request;
-  fpc_t pc;
-  enum fstate_t { /* terminated, */ blocked, delegated };
+  enum fstate_t { blocked, delegated };
   char const * get_fstate_desc();
   char const * get_fpc_desc();
 
@@ -27,6 +25,11 @@ struct RTL_EXTERN sync_sched {
     ::flx::gc::generic::gc_profile_t *gcp_,
     ::std::list<flx::rtl::fthread_t*> *active_
   );
+  void forget_current();
+  void pop_current();
+  void push_new(::flx::rtl::fthread_t*);
+  void push_old(::flx::rtl::fthread_t*);
+
   void frun();
   void do_yield();
   void do_spawn_detached();

@@ -65,26 +65,26 @@ void async_sched::do_spawn_pthread()
 void async_sched::do_general()
 {
   if (debug_driver)
-    fprintf(stderr, "prun: svc_general from fthread=%p\n", ss.ft);
+    fprintf(stderr, "[prun: svc_general] from fthread=%p\n", ss.ft);
 
   if(debug_driver)
-    fprintf(stderr, "prun: async=%p, ptr_create_async_hooker=%p\n", 
+    fprintf(stderr, "[prun: svc_general] async=%p, ptr_create_async_hooker=%p\n", 
       async,
       world->c->ptr_create_async_hooker)
     ;
   if (!async) {
     if(debug_driver)
-      fprintf(stderr,"prun: trying to create async system..\n");
+      fprintf(stderr,"[prun: svc_general] trying to create async system..\n");
 
     if (world->c->ptr_create_async_hooker == NULL) {
       if(debug_driver)
-        fprintf(stderr,"prun: trying to create async hooker..\n");
+        fprintf(stderr,"[prun: svc_general] trying to create async hooker..\n");
       world->c->init_ptr_create_async_hooker(world->c,debug_driver);
     }
     // Error out if we don't have the hooker function.
     if (world->c->ptr_create_async_hooker == NULL) {
       fprintf(stderr,
-        "prun: Unable to initialise async I/O system: terminating\n");
+        "[prun: svc_general] Unable to initialise async I/O system: terminating\n");
       exit(1);
     }
 
@@ -107,7 +107,9 @@ void async_sched::do_general()
   // requests are now ALWAYS considered asynchronous
   // even if the request handler reschedules them immediately
   async->handle_request(dreq, ss.ft);
-  ss.pc = sync_sched::next_fthread_pos;
+  ss.ft = 0; // drop current without unrooting
+  if(debug_driver)
+    fprintf(stderr,"[prun: svc_general] request dispatched..\n");
 }
 
 
@@ -115,7 +117,7 @@ int async_sched::prun(block_flag_t block_flag) {
 sync_run:
     // RUN SYNCHRONOUS SCHEDULER
     if (debug_driver)
-      fprintf(stderr, "prun: Process active ..");
+      fprintf(stderr, "prun: sync_run\n");
 
     if (debug_driver)
       fprintf(stderr, "prun: Before running: Sync state is %s/%s\n",
@@ -175,9 +177,8 @@ bool async_sched::schedule_queued_fthreads(block_flag_t block_flag) {
         if (debug_driver)
           fprintf(stderr, "prun: Async Retrieving fthread %p\n", ftp);
 
-        active->push_front(ftp);
+        ss.push_old(ftp);
         --async_count;
-        ss.pc = sync_sched::next_fthread_pos;
         scheduled_some = true;
       }
     }
@@ -188,9 +189,8 @@ bool async_sched::schedule_queued_fthreads(block_flag_t block_flag) {
         if (debug_driver)
           fprintf(stderr, "prun: Async Retrieving fthread %p\n", ftp);
 
-        active->push_front(ftp);
+        ss.push_old(ftp);
         --async_count;
-        ss.pc = sync_sched::next_fthread_pos;
         scheduled_some = true;
         fthread_t* ftp = async->maybe_dequeue();
       }

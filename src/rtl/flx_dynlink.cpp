@@ -230,7 +230,8 @@ flx_libinit_t::flx_libinit_t() :
   start_proc (NULL),
   main_proc (NULL),
   lib (NULL),
-  gcp(NULL)
+  gcp(NULL),
+  debug(false)
 {}
 
 flx_libinit_t::flx_libinit_t(flx_libinit_t const&){}
@@ -245,23 +246,34 @@ void flx_libinit_t::create
   char **argv,
   FILE *stdin_,
   FILE *stdout_,
-  FILE *stderr_
+  FILE *stderr_,
+  bool debug_
 )
 {
   lib = lib_a;
   gcp = gcp_a;
-  //fprintf(stderr, "Creating thread frame\n");
+  debug = debug_;
+  if (debug)
+    fprintf(stderr, "[libinit:create] Creating thread frame\n");
   thread_frame = lib->thread_frame_creator( gcp);
-  //fprintf(stderr, "thread frame CREATED\n");
-  //fprintf(stderr,"Incrementing refcnt\n");
+  if (debug)
+    fprintf(stderr, "[libinit:create] thread frame CREATED\n");
+  if (debug)
+    fprintf(stderr,"[libinit:create] Incrementing refcnt\n");
   ++lib->refcnt;
+  if (debug)
+    fprintf(stderr,"[libinit:create] rooting thread frame\n");
   gcp->collector->add_root(thread_frame);
-  //fprintf(stderr, "CREATING start_proc\n");
+  if (debug)
+    fprintf(stderr, "[libinit:create] CREATING start_proc by running start_sym %p\n", lib->start_sym);
   start_proc = lib->start_sym(thread_frame, argc, argv, stdin_,stdout_,stderr_);
-  //fprintf(stderr, "start_proc CREATED\n");
-  //fprintf(stderr, "CREATING main_proc\n");
+  if (debug)
+    fprintf(stderr, "[libinit:create] start_proc CREATED %p\n", start_proc);
+  if (debug)
+    fprintf(stderr, "[libinit:create] CREATING main_proc by running main_sym %p\n", main_sym);
   main_proc = main_sym?main_sym(thread_frame):0;
-  //fprintf(stderr, "main_proc CREATED\n");
+  if (debug)
+    fprintf(stderr, "[libinit:create] main_proc CREATED %p\n", main_proc);
   usr_create();
 }
 

@@ -239,6 +239,8 @@ struct RTL_EXTERN flx_libinit_t
   con_t *main_proc;
   flx_dynlink_t *lib;
   ::flx::gc::generic::gc_profile_t *gcp;
+  bool debug;
+
   void create
   (
     flx_dynlink_t *lib_a,
@@ -248,7 +250,8 @@ struct RTL_EXTERN flx_libinit_t
     char **argv,
     FILE *stdin_,
     FILE *stdout_,
-    FILE *stderr_
+    FILE *stderr_,
+    bool debug_
   );
 
   void destroy ();

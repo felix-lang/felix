@@ -28,9 +28,9 @@ print "Done"; endl;
 
 @expect
 Hello
-Done
-W1
 R1
+W1
 R2
 W2
+Done
 @

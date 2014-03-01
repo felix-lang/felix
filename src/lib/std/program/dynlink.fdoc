@@ -312,12 +312,12 @@ to prevent the garbage collector deleting it prematurely.
   //$ This is a procedure, so maybe the caller is too
   //$ which means the thread frame must be available.
   proc create: flx_library * flx_instance =
-    "$2->create($1,PTF gcp,$1->main_sym,PTF argc,PTF argv,PTF flx_stdin, PTF flx_stdout, PTF flx_stderr);" 
+    "$2->create($1,PTF gcp,$1->main_sym,PTF argc,PTF argv,PTF flx_stdin, PTF flx_stdout, PTF flx_stderr, false);" 
     requires property "needs_gc"
   ;
 
   proc create_with_args: flx_library * flx_instance * int * + +char=
-    "$2->create($1,PTF gcp,$1->main_sym,$3,$4,PTF flx_stdin, PTF flx_stdout, PTF flx_stderr);" 
+    "$2->create($1,PTF gcp,$1->main_sym,$3,$4,PTF flx_stdin, PTF flx_stdout, PTF flx_stderr, false);" 
     requires property "needs_gc"
   ;
 

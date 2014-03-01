@@ -107,9 +107,12 @@ run_felix_pthread_ctor(
 
   {
     con_t *top = instance->start_proc;
-    fthread_t *ft = new (*gcp, _fthread_ptr_map, false) fthread_t(top);
-    collector->add_root(ft);
-    active->push_front(ft);
+    if (top)
+    {
+      fthread_t *ft = new (*gcp, _fthread_ptr_map, false) fthread_t(top);
+      collector->add_root(ft);
+      active->push_front(ft);
+    }
   }
   return active;
 }
@@ -179,7 +182,7 @@ int flx_world::setup(int argc, char **argv) {
   library = c->link_library(c);
 
   if (debug_driver)
-    fprintf(stderr, "flx_run driver begins %s\n", c->flx_argv[0]);
+    fprintf(stderr, "[flx_world:setup] flx_run driver begins %s\n", c->flx_argv[0]);
 
   // flx_libinit_t::create can run code, so add thread to avoid world_stop abort
   thread_control->add_thread(get_stack_pointer());
@@ -194,18 +197,20 @@ int flx_world::setup(int argc, char **argv) {
     c->flx_argv,
     stdin,
     stdout,
-    stderr);
+    stderr,
+    debug_driver);
 
   thread_control->remove_thread();
 
   if (debug_driver) {
-    fprintf(stderr, "loaded library %s at %p\n", c->filename, library->library);
-    fprintf(stderr, "thread frame at %p\n", instance.thread_frame);
-    fprintf(stderr, "initial continuation at %p\n", instance.start_proc);
-    fprintf(stderr, "main continuation at %p\n", instance.main_proc);
+    fprintf(stderr, "[flx_world:setup] loaded library %s at %p\n", c->filename, library->library);
+    fprintf(stderr, "[flx_world:setup] thread frame at %p\n", instance.thread_frame);
+    fprintf(stderr, "[flx_world:setup] initial continuation at %p\n", instance.start_proc);
+    fprintf(stderr, "[flx_world:setup] main continuation at %p\n", instance.main_proc);
+    fprintf(stderr, "[flx_world:setup] creating async scheduler\n");
   }
 
-  async_handler = new async_sched(
+  async_scheduler = new async_sched(
     this,
     debug_driver,
     gcp,
@@ -247,7 +252,7 @@ int flx_world::explicit_dtor()
 
 int flx_world::teardown() {
   thread_control -> add_thread(get_stack_pointer());
-  delete async_handler;
+  delete async_scheduler;
 
   // could this override error_exit_code if something throws?
   int error_exit_code = explicit_dtor();
@@ -281,7 +286,7 @@ int flx_world::run_until_blocked() {
   // when we exit, main thread is not running so pthreads can garbage collect without waiting for us
 
   try {
-    return async_handler->prun(async_sched::ret);
+    return async_scheduler->prun(async_sched::ret);
   }
   catch (flx_exception_t &x) { return - flx_exception_handler (&x); }
   catch (std::exception &x) { return - std_exception_handler (&x); }
@@ -295,7 +300,7 @@ int flx_world::run_until_complete () {
   // when we exit, main thread is not running so pthreads can garbage collect without waiting for us
 
   try {
-    return async_handler->prun(async_sched::block);
+    return async_scheduler->prun(async_sched::block);
   }
   catch (flx_exception_t &x) { return - flx_exception_handler (&x); }
   catch (std::exception &x) { return - std_exception_handler (&x); }
@@ -309,7 +314,7 @@ int flx_world::run_until_complete () {
 void flx_world::spawn_fthread(con_t *top) {
 	fthread_t *ft = new (*gcp, _fthread_ptr_map, false) fthread_t(top);
 	collector->add_root(ft);
-	async_handler->active->push_front(ft);
+	async_scheduler->active->push_front(ft);
 }
 
 }} // namespaces
