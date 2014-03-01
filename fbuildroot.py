@@ -183,11 +183,11 @@ def make_c_builder(ctx, *args, includes=[], libpaths=[], flags=[], **kwargs):
                 'no-array-bounds',
                 ],
             'flags': ['-fno-common'] + flags,
-            'optimize_flags': ['-O2', '-fomit-frame-pointer']}),
+            'optimize_flags': ['-fomit-frame-pointer']}),
         ({'posix'},
             {'warnings': ['all', 'fatal-errors'],
             'flags': ['-fno-common', '-fno-strict-aliasing'] + flags,
-            'optimize_flags': ['-O2', '-fomit-frame-pointer']}),
+            'optimize_flags': ['-fomit-frame-pointer']}),
         ({'windows'}, {
             'flags': ['/GR', '/MD', '/EHs', '/wd4291'] + flags,
             'optimize_flags': ['/Ox']}),
@@ -221,11 +221,11 @@ def make_cxx_builder(ctx, *args, includes=[], libpaths=[], flags=[], **kwargs):
                 'no-return-type-c-linkage',
                 ],
             'flags': ['-w','-fno-common', '-fno-strict-aliasing', '-std=c++11'] + flags,
-            'optimize_flags': ['-O1', '-fomit-frame-pointer']}),
+            'optimize_flags': ['-fomit-frame-pointer']}),
         ({'posix'}, {
             'warnings': ['fatal-errors', 'no-invalid-offsetof','no-parentheses'],
             'flags': ['-w','-fno-common', '-fno-strict-aliasing'] + flags,
-            'optimize_flags': ['-O2', '-fomit-frame-pointer']}),
+            'optimize_flags': ['-fomit-frame-pointer']}),
         ({'windows'}, {
             'flags': ['/GR', '/MD', '/EHs', '/wd4291'] + flags,
             'optimize_flags': ['/Ox']}),

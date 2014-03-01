@@ -86,10 +86,11 @@ fun get_socket: async_connect -> socket_t = '$1.s';
 fun get_err: async_connect -> int = '$1.socket_err';
 
 // could do multi connects for capable drivers
-proc connect(s: &socket_t, addr: +char, port: int)
+proc connect(s: &socket_t, addr: +char, port: int, &err: int)
 {
     var ac = mk_async_connect(sys_demux,addr, port);
     faio_req$ &ac;
+    *err = ac.get_err;
     *s = ac.get_socket;
 }
 

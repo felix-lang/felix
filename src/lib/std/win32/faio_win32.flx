@@ -67,18 +67,19 @@ fun mk_connect_ex: demuxer * SOCKET*+char*int -> connect_ex = 'flx::faio::connec
 
 // for use on sockets you make yourself, who knows, maybe you want to
 // reuse them
-proc Connect(success: &bool, s: SOCKET, addr: +char, port: int)
+proc Connect(s: SOCKET, addr: +char, port: int, err: &int)
 {
     var con = mk_connect_ex(sys_demux,s, addr, port);
-     faio_req$ &con;    // causes ConnectEx to be called
-    *success = get_success(con);
+    faio_req$ &con;    // causes ConnectEx to be called
+    success = get_success(con);
+    err <- if success then 0 else -1 endif;
 }
 
-proc Connect(s: &SOCKET, addr: +char, port: int)
+proc Connect(s: &SOCKET, addr: +char, port: int, err: &int)
 {
     mk_socket s;            // error handling?
     var success: bool;
-    Connect(&success, *s, addr, port);
+    Connect(&success, *s, addr, port. err);
     // print "CONNECT success: "; print success; endl;
     // error handling?
 }
