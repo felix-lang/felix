@@ -93,6 +93,7 @@ void sync_sched::do_schedule_detached()
       if(debug_driver)
         fprintf(stderr,"[sync: svc_schedule_detached] Schedule fthread %p\n",ftx);
       collector->add_root(ftx);
+      active->push_back(ftx);
     }
 
 void sync_sched::do_sread()
