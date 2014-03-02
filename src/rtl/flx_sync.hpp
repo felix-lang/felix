@@ -33,6 +33,7 @@ struct RTL_EXTERN sync_sched {
   void frun();
   void do_yield();
   void do_spawn_detached();
+  void do_schedule_detached();
   void do_sread();
   void do_swrite();
   void do_multi_swrite();

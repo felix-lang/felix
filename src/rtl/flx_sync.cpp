@@ -73,7 +73,8 @@ void sync_sched::push_old(fthread_t *f)
 
 void sync_sched::do_yield()
     {
-      if(debug_driver)fprintf(stderr,"yield");
+      if(debug_driver)
+         fprintf(stderr,"[sync: svc_yield] yield");
       active->push_back(ft);
       pop_current();
     }
@@ -81,15 +82,25 @@ void sync_sched::do_yield()
 void sync_sched::do_spawn_detached()
     {
       fthread_t *ftx = *(fthread_t**)request->data;
-      if(debug_driver)fprintf(stderr,"Spawn fthread %p\n",ftx);
+      if(debug_driver)
+        fprintf(stderr,"[sync: svc_spawn_detached] Spawn fthread %p\n",ftx);
       push_new(ftx);
+    }
+
+void sync_sched::do_schedule_detached()
+    {
+      fthread_t *ftx = *(fthread_t**)request->data;
+      if(debug_driver)
+        fprintf(stderr,"[sync: svc_schedule_detached] Schedule fthread %p\n",ftx);
+      collector->add_root(ftx);
     }
 
 void sync_sched::do_sread()
     {
       readreq_t * pr = (readreq_t*)request->data;
       schannel_t *chan = pr->chan;
-      if(debug_driver)fprintf(stderr,"Request to read on channel %p\n",chan);
+      if(debug_driver)
+        fprintf(stderr,"[sync: svc_read] Request to read on channel %p\n",chan);
       if(chan==NULL) goto svc_read_none;
     svc_read_next:
       {
@@ -97,7 +108,9 @@ void sync_sched::do_sread()
         if(writer == 0) goto svc_read_none;       // no writers
         if(writer->cc == 0) goto svc_read_next;   // killed
         readreq_t * pw = (readreq_t*)writer->get_svc()->data;
-        if(debug_driver)fprintf(stderr,"Writer @%p=%p, read into %p\n", pw->variable,*(void**)pw->variable, pr->variable);
+        if(debug_driver)
+          fprintf(stderr,"[sync: svc_read] Writer @%p=%p, read into %p\n", 
+            pw->variable,*(void**)pw->variable, pr->variable);
         *(void**)pr->variable = *(void**)pw->variable;
         // reader goes first!
         active->push_front(writer);
@@ -106,7 +119,8 @@ void sync_sched::do_sread()
       }
 
     svc_read_none:
-      if(debug_driver)fprintf(stderr,"No writers on channel %p: BLOCKING\n",chan);
+      if(debug_driver)
+        fprintf(stderr,"[sync: svc_read] No writers on channel %p: BLOCKING\n",chan);
       chan->push_reader(ft);
       forget_current();
       return;
@@ -116,7 +130,8 @@ void sync_sched::do_swrite()
     {
       readreq_t * pw = (readreq_t*)request->data;
       schannel_t *chan = pw->chan;
-      if(debug_driver)fprintf(stderr,"Request to write on channel %p\n",chan);
+      if(debug_driver)
+         fprintf(stderr,"[sync: svc_write] Request to write on channel %p\n",chan);
       if(chan==NULL)goto svc_write_none;
     svc_write_next:
       {
@@ -124,13 +139,16 @@ void sync_sched::do_swrite()
         if(reader == 0) goto svc_write_none;     // no readers
         if(reader->cc == 0) goto svc_write_next; // killed
         readreq_t * pr = (readreq_t*)reader->get_svc()->data;
-        if(debug_driver)fprintf(stderr,"Writer @%p=%p, read into %p\n", pw->variable,*(void**)pw->variable, pr->variable);
+        if(debug_driver)
+          fprintf(stderr,"[sync: svc_write] Writer @%p=%p, read into %p\n", 
+            pw->variable,*(void**)pw->variable, pr->variable);
         *(void**)pr->variable = *(void**)pw->variable;
         push_new (reader);
         return;
       }
     svc_write_none:
-      if(debug_driver)fprintf(stderr,"No readers on channel %p: BLOCKING\n",chan);
+      if(debug_driver)
+        fprintf(stderr,"[sync: svc_write] No readers on channel %p: BLOCKING\n",chan);
       chan->push_writer(ft);
       forget_current();
       return;
@@ -140,7 +158,8 @@ void sync_sched::do_multi_swrite()
     {
       readreq_t * pw = (readreq_t*)request->data;
       schannel_t *chan = pw->chan;
-      if(debug_driver)fprintf(stderr,"Request to write on channel %p\n",chan);
+      if(debug_driver)
+        fprintf(stderr,"[sync: svc_multi_write] Request to write on channel %p\n",chan);
       if(chan==NULL) return;
     svc_multi_write_next:
       fthread_t *reader= chan->pop_reader();
@@ -148,7 +167,9 @@ void sync_sched::do_multi_swrite()
       if(reader->cc == 0) goto svc_multi_write_next; // killed
       {
         readreq_t * pr = (readreq_t*)reader->get_svc()->data;
-        if(debug_driver)fprintf(stderr,"Writer @%p=%p, read into %p\n", pw->variable,*(void**)pw->variable, pr->variable);
+        if(debug_driver)
+           fprintf(stderr,"[sync: svc_multi_write] Writer @%p=%p, read into %p\n", 
+             pw->variable,*(void**)pw->variable, pr->variable);
         *(void**)pr->variable = *(void**)pw->variable;
         // NEW: ESSENTIAL! Reader must continue on, not writer!
         push_new(reader);
@@ -159,7 +180,7 @@ void sync_sched::do_multi_swrite()
 void sync_sched::do_kill()
     {
       fthread_t *ftx = *(fthread_t**)request->data;
-      if(debug_driver)fprintf(stderr,"Request to kill fthread %p\n",ftx);
+      if(debug_driver)fprintf(stderr,"[sync: svc_kill] Request to kill fthread %p\n",ftx);
       ftx -> kill();
       return;
     }
@@ -168,7 +189,7 @@ void sync_sched::do_kill()
 void sync_sched::frun()
 {
   if (debug_driver)
-     fprintf(stderr,"frun: entry ft=%p, active size=%ld\n", ft,active->size());
+     fprintf(stderr,"[sync] frun: entry ft=%p, active size=%ld\n", ft,active->size());
 dispatch:
   if (ft == 0) 
   {

@@ -20,57 +20,68 @@ open Socket;
 open Stream::TerminalIOByteStream[Socket::socket_t];
 
 // announce the program
-print "flx tcp stream test\n";
+print "NETWORKING_01: MAINLINE: flx tcp stream test\n";
 
 // make a listening socket for our server
 var listener: socket_t;
 var port = 0;  // you choose
 mk_listener(&listener, &port, 1);
-println$ "Got port: "; print port; endl;
-println$ "listeneing on socket " + str listener;
+println$ "NETWORKING_01: MAINLINE 01: Got port: " + port.str; 
+println$ "NETWORKING_01: MAINLINE 02: listener created on socket " + str listener;
 
-print "spawning server\n";
+print "NETWORKING_01: MAINLINE 03: spawning server\n";
 spawn_fthread
 {
   var s: socket_t;
+  println$ "NETWORKING_01: SERVER 01: listening on socket " + str listener;
   accept(listener, &s);
-  println$ "Mainline accepted connection on socket " + str s;
+  println$ "NETWORKING_01: SERVER 02: Server accepted connection on socket " + str s;
   ioclose(listener);  // not needed anymore
 
   var eof = false;
-  print "got connection\n";
-  write_string(s, "server says hi\n", &eof);     // newline important here
+  println$ "NETWORKING_01: SERVER 03: Attempting write";
+  write_string(s, "NETWORKING_01: SERVER to CLIENT: server says hi\n", &eof);     // newline important here
+  println$ "NETWORKING_01: SERVER 04: write complete";
 
   var st: string;
+  println$ "NETWORKING_01: SERVER 05: Attempting read";
   get_line(s, &st);
+  println$ "NETWORKING_01: SERVER 06: read complete";
 
-  print "server got "; print st; endl;
+  println$ "NETWORKING_01: SERVER 07: server got " + st.str;
   ioclose(s);
-  //println$ "mainline closed socket " + str s;
+  println$ "NETWORKING_01: SERVER 08: closed socket " + str s;
 };
 
-print "spawning client\n";
+print "NETWORKING_01: MAINLINE 04: spawning client\n";
 spawn_fthread
 {
   var eof = false;
   var c: socket_t;
   var err = 0;
-  connect(&c, c"127.0.0.1", port, &err); // connect to localhost
-  if err != 0 do
-    println$ "fthread's socket is " + str c;
+  println$ "NETWORKING_01: CLIENT 01: trying to connected to server";
+  connect(&c, C_hack::cast[+char]c"127.0.0.1", port, &err); // connect to localhost
+  if err == 0 do
+    println$ "NETWORKING_01: CLIENT 02: connected to server on socket is " + str c;
     var st: string;
 
+    println "NETWORKING_01: CLIENT 03: Attempting read";
     get_line(c, &st);
-    print "connector got "; print st; endl;
-    write_string(c, "thanks\n", &eof);         // newline important
+    println$ "NETWORKING_01: CLIENT 04: read complete";
 
-    ioclose(c);  // finished with this
-    //println$ "fthread closed " + str c;
+    println$ "NETWORKING_01: CLIENT 05: connector got "+ st.str;
+
+    println$ "NETWORKING_01: CLIENT 06: Attempting write";
+    write_string(c, "CLIENT to SERVER: thanks\n", &eof);         // newline important
+    println$ "NETWORKING_01: CLIENT 07: write complete";
+
+    ioclose(c);  
+    println$ "NETWORKING_1: CLIENT 08: closed socket " + str c;
   else
-   println$ "Connect error " + err.str;
+   println$ "NETWORKING_01: CLIENT ERR: Connect error " + err.str;
   done
 };
 
-print "waiting for job to complete\n";
+println$ "NETWORKING_01: MAINLINE 05: waiting for job to complete";
 @
 

@@ -174,38 +174,37 @@ sync_run:
 bool async_sched::schedule_queued_fthreads(block_flag_t block_flag) {
   if (debug_driver) {
     fprintf(stderr,
-      "prun: out of active synchronous threads, trying async, count=%ld\n", async_count);
+      "prun: out of active synchronous threads, trying async, pending=%ld\n", async_count);
   }
-  bool scheduled_some = false;
-  if (async) {
+  int scheduled_some = 0;
+  if (async && async_count > 0) {
     if (block_flag==block)
     {
-      while (async_count)
-      {
-        fthread_t* ftp = async->dequeue();
-        if (debug_driver)
-          fprintf(stderr, "prun: Async Retrieving fthread %p\n", ftp);
+      fthread_t* ftp = async->dequeue();
+      if (debug_driver)
+        fprintf(stderr, "prun: block mode: Async Retrieving fthread %p\n", ftp);
 
-        ss.push_old(ftp);
-        --async_count;
-        scheduled_some = true;
-      }
+      ss.push_old(ftp);
+      --async_count;
+      ++scheduled_some;
     }
     else
     {
       fthread_t* ftp = async->maybe_dequeue();
       while (ftp) {
         if (debug_driver)
-          fprintf(stderr, "prun: Async Retrieving fthread %p\n", ftp);
+          fprintf(stderr, "prun:ret mode: Async Retrieving fthread %p\n", ftp);
 
         ss.push_old(ftp);
         --async_count;
-        scheduled_some = true;
+        ++scheduled_some;
         fthread_t* ftp = async->maybe_dequeue();
       }
     }
   }
-  return scheduled_some;
+  if (debug_driver)
+    fprintf(stderr, "prun: Async returning: scheduled %d, pending=%ld\n", scheduled_some, async_count);
+  return scheduled_some != 0;
 }
 
 async_sched::~async_sched() {

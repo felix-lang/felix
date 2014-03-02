@@ -23,6 +23,14 @@ open class Fibres
       svc$ svc_spawn_detached fthr;
   }
 
+  proc schedule_fthread(p:1->0)
+  {
+      var con = start p;              // get continuation of p
+      var fthr = mk_thread con;
+      svc$ svc_schedule_detached fthr;
+  }
+
+
   proc chain : cont = "return $1;";
 
   //$ The type of a fibre scheduler.
