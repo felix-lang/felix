@@ -51,6 +51,8 @@ public:
 
   void* ptf() { return instance.thread_frame; }	// for creating con_t
   void spawn_fthread(::flx::rtl::con_t *top);
+
+  void external_multi_swrite (::flx::rtl::schannel_t *chan, void *data);
 };
 
 

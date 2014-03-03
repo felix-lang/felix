@@ -207,6 +207,11 @@ bool async_sched::schedule_queued_fthreads(block_flag_t block_flag) {
   return scheduled_some != 0;
 }
 
+void async_sched::external_multi_swrite(::flx::rtl::schannel_t *chan, void *data)
+  {
+    ss.external_multi_swrite (chan,data);
+  }
+
 async_sched::~async_sched() {
   try
   {

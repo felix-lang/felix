@@ -317,4 +317,9 @@ void flx_world::spawn_fthread(con_t *top) {
 	async_scheduler->active->push_front(ft);
 }
 
+void flx_world::external_multi_swrite (schannel_t *chan, void *data) 
+{
+  async_scheduler->external_multi_swrite (chan,data);
+} 
+
 }} // namespaces

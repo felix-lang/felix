@@ -155,12 +155,8 @@ void sync_sched::do_swrite()
       return;
     }
 
-void sync_sched::do_multi_swrite()
+void sync_sched::external_multi_swrite (schannel_t *chan, void *data)
     {
-      readreq_t * pw = (readreq_t*)request->data;
-      schannel_t *chan = pw->chan;
-      if(debug_driver)
-        fprintf(stderr,"[sync: svc_multi_write] Request to write on channel %p\n",chan);
       if(chan==NULL) return;
     svc_multi_write_next:
       fthread_t *reader= chan->pop_reader();
@@ -169,13 +165,22 @@ void sync_sched::do_multi_swrite()
       {
         readreq_t * pr = (readreq_t*)reader->get_svc()->data;
         if(debug_driver)
-           fprintf(stderr,"[sync: svc_multi_write] Writer @%p=%p, read into %p\n", 
-             pw->variable,*(void**)pw->variable, pr->variable);
-        *(void**)pr->variable = *(void**)pw->variable;
-        // NEW: ESSENTIAL! Reader must continue on, not writer!
+           fprintf(stderr,"[sync: svc_multi_write] Write data %p, read into %p\n", 
+             data, pr->variable);
+        *(void**)pr->variable = data;
         push_new(reader);
       }
       goto svc_multi_write_next;
+    }
+
+void sync_sched::do_multi_swrite()
+    {
+      readreq_t * pw = (readreq_t*)request->data;
+      void *data = *(void**)pw->variable;
+      schannel_t *chan = pw->chan;
+      if(debug_driver)
+        fprintf(stderr,"[sync: svc_multi_write] Request to write on channel %p\n",chan);
+      external_multi_swrite (chan, data);
     }
 
 void sync_sched::do_kill()

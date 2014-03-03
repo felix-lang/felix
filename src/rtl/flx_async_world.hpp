@@ -49,6 +49,7 @@ struct async_sched
   void do_spawn_pthread();
   void do_general();
 
+  void external_multi_swrite(::flx::rtl::schannel_t *, void *data);
 private:
   bool schedule_queued_fthreads(block_flag_t);
 };

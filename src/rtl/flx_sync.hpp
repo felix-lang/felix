@@ -31,6 +31,8 @@ struct RTL_EXTERN sync_sched {
   void push_old(::flx::rtl::fthread_t*);
 
   void frun();
+  void external_multi_swrite(::flx::rtl::schannel_t*, void*);
+
   void do_yield();
   void do_spawn_detached();
   void do_schedule_detached();

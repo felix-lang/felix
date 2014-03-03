@@ -26,6 +26,7 @@ static void init_ptr_create_async_hooker(flx::run::flx_config *c, bool debug_dri
 // Felix entry points
 extern "C" void *felix_evtdemo_create_thread_frame();
 extern "C" flx::rtl::con_t *felix_evtdemo_flx_start();
+extern "C" ::flx::rtl::schannel_t *get_kb_chan (void *);
 
 // library module constructor
 static flx::rtl::flx_dynlink_t *link_library(flx::run::flx_config *c) {
@@ -48,6 +49,8 @@ int main(int argc, char **argv)
    get_flx_args_config
   );
 
+  cfg->init(argc,argv);
+
   // create world from configuration
   auto world = new flx::run::flx_world(cfg);
 
@@ -68,14 +71,20 @@ int main(int argc, char **argv)
    SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
   SDL_PumpEvents();
   SDL_Event e;
-
   printf("SDL world initialised, running SDL main loop\n");
+
+  // start Felix now
+  world->run_until_blocked();
+  auto Kchan = get_kb_chan (world->ptf());
+  printf("Got kb chan %p\n",Kchan);
+
   while (1) {
     // SDL Polling Loop
     while(SDL_PollEvent (&e))
     {
       printf("got an event\n");
       if (e.type == SDL_QUIT) goto exit_point;
+      world->external_multi_swrite (Kchan, &e);
       world->run_until_blocked();
     }
   }
