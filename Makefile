@@ -486,6 +486,27 @@ sdltest:
 	build/release/host/bin/flx --test=build/release --force -c -od sdlbin demos/sdl/edit_controller
 	${LPATH}=sdlbin build/release/host/bin/flx --test=build/release --force -od sdlbin demos/sdl/sdltest
 
+evtdemo:
+	# compile Felix
+	build/release/host/bin/flx --test=build/release -c --static --nolink \
+		-od demos/embed demos/embed/felix_evtdemo.flx
+	# compile C++
+	clang++ -c --std=c++11 -o demos/embed/evtdemo.o \
+    -Ibuild/release/share/lib/rtl -Ibuild/release/host/lib/rtl \
+		-I/usr/local/include \
+		demos/embed/evtdemo.cxx 
+	# link
+	clang++ -o demos/embed/evtdemo \
+	-L/usr/local/lib -Lbuild/release/host/lib/rtl \
+	-framework OpenGL \
+ 	-lSDL2 -lSDL2_ttf -lfreetype \
+	-ldemux_static -lfaio_static -lflx_async_static \
+	-lflx_exceptions_static -lflx_gc_static -lflx_pthread_static \
+	-lflx_static -ljudy_static \
+	demos/embed/felix_evtdemo.o \
+	demos/embed/evtdemo.o
+	# run
+	demos/embed/evtdemo
 
 .PHONY : build32 build64 build test32 test64 test
 .PHONY : build32-debug build64-debug build-debug test32-debug test64-debug test-debug

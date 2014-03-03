@@ -198,7 +198,7 @@ bool async_sched::schedule_queued_fthreads(block_flag_t block_flag) {
         ss.push_old(ftp);
         --async_count;
         ++scheduled_some;
-        fthread_t* ftp = async->maybe_dequeue();
+        ftp = async->maybe_dequeue();
       }
     }
   }

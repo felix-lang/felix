@@ -1,0 +1,13 @@
+include "std/io/faio";
+
+println$ "This is felix evtdemo";
+
+var clock = Faio::mk_alarm_clock();
+
+spawn_fthread {
+  while true do
+     Faio::sleep(clock,5.0);
+     println "FELIX IS BORED .. ";
+  done
+};
+
