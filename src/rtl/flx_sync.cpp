@@ -6,7 +6,7 @@ using namespace flx::rtl;
 
 namespace flx { namespace run {
 
-char const *sync_sched::get_fstate_desc()
+char const *sync_sched::get_fstate_desc(fstate_t fs)
 {
   switch(fs)
   {
@@ -192,7 +192,7 @@ void sync_sched::do_kill()
     }
 
 
-void sync_sched::frun()
+sync_sched::fstate_t sync_sched::frun()
 {
   if (debug_driver)
      fprintf(stderr,"[sync] frun: entry ft=%p, active size=%ld\n", ft,active->size());
@@ -201,8 +201,7 @@ dispatch:
   {
     if (active->size() == 0)  // out of active fthreads
     {
-      fs = blocked;
-      return;
+      return blocked;
     }
     ft = active->front();     // grab next fthread
     active->pop_front();
@@ -232,8 +231,7 @@ dispatch:
     case svc_kill: do_kill(); goto dispatch;
 
     default:  
-      fs = delegated;
-      return;
+      return delegated;
   }
 }
 

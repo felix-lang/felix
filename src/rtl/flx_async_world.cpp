@@ -1,5 +1,6 @@
 #include "flx_world.hpp"
 #include "flx_async_world.hpp"
+#include "flx_sync.hpp"
 
 using namespace ::flx::rtl;
 using namespace ::flx::pthread;
@@ -129,16 +130,16 @@ sync_run:
       fprintf(stderr, "prun: sync_run\n");
 
     if (debug_driver)
-      fprintf(stderr, "prun: Before running: Sync state is %s/%s\n",
-        ss.get_fstate_desc(), ss.get_fpc_desc());
+      fprintf(stderr, "prun: Before running: Sync state is %s\n",
+        ss.get_fpc_desc());
 
-    ss.frun();
+    sync_sched::fstate_t fs = ss.frun();
 
     if (debug_driver)
       fprintf(stderr, "prun: After running: Sync state is %s/%s\n",
-        ss.get_fstate_desc(), ss.get_fpc_desc());
+        ss.get_fstate_desc(fs), ss.get_fpc_desc());
 
-    switch(ss.fs)
+    switch(fs)
     {
       // HANDLE DELEGATED SERVICE REQUESTS
       case sync_sched::delegated:
@@ -161,7 +162,7 @@ sync_run:
         if(schedule_queued_fthreads(block_flag)) goto sync_run;
         break;
       default:
-        fprintf(stderr, "prun: Unknown frun return status 0x%4x\n", ss.fs);
+        fprintf(stderr, "prun: Unknown frun return status 0x%4x\n", fs);
         abort();
     }
 

@@ -49,10 +49,14 @@ public:
   int run_until_blocked();
   int run_until_complete();
 
-  void* ptf() { return instance.thread_frame; }	// for creating con_t
+  void* ptf()const { return instance.thread_frame; }	// for creating con_t
+
   void spawn_fthread(::flx::rtl::con_t *top);
 
   void external_multi_swrite (::flx::rtl::schannel_t *chan, void *data);
+
+  async_sched *get_async_scheduler()const { return async_scheduler; }
+  sync_sched *get_sync_scheduler()const { return &async_scheduler->ss; }
 };
 
 

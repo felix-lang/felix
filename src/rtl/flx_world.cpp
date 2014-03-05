@@ -313,8 +313,7 @@ int flx_world::run_until_complete () {
 // TODO: factor into async_sched. run_felix_pthread_ctor does this twice
 void flx_world::spawn_fthread(con_t *top) {
 	fthread_t *ft = new (*gcp, _fthread_ptr_map, false) fthread_t(top);
-	collector->add_root(ft);
-	async_scheduler->active->push_front(ft);
+  get_sync_scheduler()->push_new(ft);
 }
 
 void flx_world::external_multi_swrite (schannel_t *chan, void *data) 

@@ -16,10 +16,9 @@ struct RTL_EXTERN sync_sched {
   ::flx::rtl::fthread_t *ft;
   ::flx::rtl::_uctor_ *request;
   enum fstate_t { blocked, delegated };
-  char const * get_fstate_desc();
+  static char const * get_fstate_desc(fstate_t);
   char const * get_fpc_desc();
 
-  fstate_t fs;
   sync_sched (
     bool debug_driver_,
     ::flx::gc::generic::gc_profile_t *gcp_,
@@ -30,7 +29,7 @@ struct RTL_EXTERN sync_sched {
   void push_new(::flx::rtl::fthread_t*);
   void push_old(::flx::rtl::fthread_t*);
 
-  void frun();
+  fstate_t frun();
   void external_multi_swrite(::flx::rtl::schannel_t*, void*);
 
   void do_yield();
