@@ -73,7 +73,8 @@ void async_sched::do_general()
       async,
       world->c->ptr_create_async_hooker)
     ;
-  if (!async) {
+  if (!async) 
+  {
     if(debug_driver)
       fprintf(stderr,"[prun: svc_general] trying to create async system..\n");
 

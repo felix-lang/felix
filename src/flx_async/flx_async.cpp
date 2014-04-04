@@ -8,42 +8,39 @@ using namespace ::flx::rtl;
 using namespace ::flx::pthread;
 using namespace ::flx::async;
 
-async_hooker::~async_hooker(){
- //fprintf(stderr,"Deleted async_hooker\n");
-}
+async_hooker::~async_hooker(){ }
 
 namespace flx { namespace async {
 
+// FINISHED NOTIFIER
 finote_t::~finote_t(){}
-wakeup_fthread_t::wakeup_fthread_t(::flx::pthread::bound_queue_t *q_a, ::flx::rtl::fthread_t *f_a) : f(f_a), q(q_a) {}
 
+// DERIVED NOTIFIER WHICH DOES FTHREAD WAKEUP
+// BY ENQUEUING THE FTHREAD INTO THE READY QUEUE 
+wakeup_fthread_t::wakeup_fthread_t(
+  ::flx::pthread::bound_queue_t *q_a, 
+  ::flx::rtl::fthread_t *f_a) 
+: f(f_a), q(q_a) {}
+
+// ASYNC HOOKER IMPLEMENTATION STAGE 1
+// Introduces new virtual get_ready_queue().
 class async_hooker_impl : public async_hooker {
 public:
-  void handle_request(void *data,fthread_t *ss);
   virtual bound_queue_t *get_ready_queue()=0;
-  ~async_hooker_impl();
+  ~async_hooker_impl() {}
+  void handle_request(void *data,fthread_t *ss)
+  {
+    flx::async::flx_driver_request_base* dreq =
+          (flx::async::flx_driver_request_base*)data
+    ;
+    finote_t *fn = new wakeup_fthread_t(get_ready_queue(),ss);
+    dreq->start_async_op(fn);
+  }
 };
 
 
-async_hooker_impl::~async_hooker_impl(){
-  //fprintf(stderr,"Deleted async_hooker_impl\n");
-}
-
-void async_hooker_impl::handle_request(void *data,fthread_t *ft)
-{
-  flx::async::flx_driver_request_base* dreq =
-        (flx::async::flx_driver_request_base*)data
-  ;
-
-  //fprintf(stderr,"Request object at %p\n",dreq);
-  // RF hates the flag this function returns .. might
-  // mask a race condition, get rid of it
-
-  finote_t *fn = new wakeup_fthread_t(get_ready_queue(),ft);
-  //fprintf(stderr,"async hooker dispatching request %p, fn = %p\n",dreq,fn);
-  dreq->start_async_op(fn);
-}
-
+// ASYNC HOOKER IMPLEMENTATION STAGE 2
+// Provides the ready queue and the dequeuing operations
 class proto_async : public async_hooker_impl
 {
     bound_queue_t async_ready;
@@ -51,12 +48,10 @@ class proto_async : public async_hooker_impl
 public:
    proto_async(int n0, int n1, int m1, int n2, int m2) :
      async_ready(n0)
-   {
-   }
+   {}
 
-  ~proto_async(){
-    //fprintf(stderr,"Deleting proto async\n");
-  }
+  ~proto_async(){}
+
   bound_queue_t *get_ready_queue() { return &async_ready; }
 
   fthread_t* dequeue()
@@ -69,6 +64,11 @@ public:
   }
 };
 
+
+// DRIVER REQUEST BASE
+// THIS IS USED TO BUILD REQUESTS
+// PROVIDES DEFAULT NOTIFY_FINISHED ROUTINE WHICH USE FINOTE SIGNAL
+// DO ASYNC OP JUST CALLS DRIVED CLASS DO_ASYNC_OP_IMPL
 flx_driver_request_base::flx_driver_request_base() : fn(0) {}
 flx_driver_request_base::~flx_driver_request_base() {}       // so destructors work
 
