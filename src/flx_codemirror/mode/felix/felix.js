@@ -150,7 +150,11 @@ CodeMirror.defineMode("felix", function(config, parserConfig) {
       else return ctx.indented + (closing ? 0 : indentUnit);
     },
 
-    electricChars: "{}"
+    electricChars: "{}",
+    blockCommentStart: "/*",
+    blockCommentEnd: "*/",
+    lineComment: "//",
+    fold: "brace"
   };
 });
 
