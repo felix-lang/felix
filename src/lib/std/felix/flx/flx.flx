@@ -97,7 +97,7 @@ class Flx
           if result == 0 do ++pass; else ++fail; done
           if control*.NONSTOP==0 and  result != 0 goto endoff;
           ++i;
-         collect();
+          collect();
         done 
         println$ f"Batch result (%02d OK + %02d FAIL)/%2d" (pass, fail,n);
       end

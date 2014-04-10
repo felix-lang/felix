@@ -4,7 +4,12 @@
 open class Gc
 {
   //$ Invoke the garbage collector.
-  proc collect() { svc svc_collect; }
+  proc collect() { 
+    if Env::getenv "FLX_REPORT_COLLECTIONS" != "" do 
+      eprintln "[Gc::collect] Program requests collection"; 
+    done
+    svc svc_collect; 
+  }
 
   //$ Get the total number of bytes currently allocated.
   fun gc_get_allocation_amt : unit -> ulong = "PTF gcp->collector->get_allocation_amt()"
