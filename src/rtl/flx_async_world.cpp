@@ -13,11 +13,6 @@ static void prun_pthread_entry(void *data) {
   delete d;
 }
 
-void async_sched::do_collect()
-{
-  gcp->actually_collect();
-}
-
 // SPAWNING A NEW FELIX PTHREAD
 // CREATES ITS OWN PRIVATE ASYNC SCHEDULER 
 // CREATES ITS OWN PRIVATE SYNC SCHEDULER
@@ -144,10 +139,10 @@ sync_run:
     {
       // HANDLE DELEGATED SERVICE REQUESTS
       case sync_sched::delegated:
+        if (debug_driver)
+          fprintf(stderr, "sync_sched:delegated request %d\n", ss.request->variant);
         switch (ss.request->variant) 
         {
-          case svc_collect: do_collect(); goto sync_run;
-
           case svc_spawn_pthread: do_spawn_pthread(); goto sync_run;
 
           case svc_general: do_general(); goto sync_run;

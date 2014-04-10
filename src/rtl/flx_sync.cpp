@@ -216,6 +216,8 @@ dispatch:
     goto dispatch;
   }
 
+  if (debug_driver)
+    fprintf(stderr,"[flx_sync:sync_sched] dispatching service request %d\n", request->variant);
   switch(request->variant)
   {
     case svc_yield: do_yield(); goto dispatch;

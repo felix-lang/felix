@@ -154,13 +154,13 @@ enum svc_t               // what the dispatch should do
   svc_get_fthread=1,
   svc_read=2,
   svc_general=3,               // temporary hack by RF
-  svc_reserved=4,
+  svc_reserved1=4,
   svc_spawn_pthread=5,
   svc_spawn_detached=6,        // schedule fthread and invoke
   svc_sread=7,                 // synchronous read
   svc_swrite=8,                // synchronous write
   svc_kill=9,                  // kill fthread
-  svc_collect=10,              // run collector
+  svc_reserved2 =10,          
   svc_multi_swrite=11,         // multi-write
   svc_schedule_detached=12,    // schedule fthread (continue)
   svc_end

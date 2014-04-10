@@ -55,7 +55,8 @@ unsigned long gc_profile_t::maybe_collect() {
 }
 
 unsigned long gc_profile_t::actually_collect() {
-  if(debug_collections || report_collections) fprintf(stderr,"[flx_gc:gc_profile_t] actually_collect\n");
+  if(debug_collections || report_collections) 
+    fprintf(stderr,"[flx_gc:gc_profile_t] actually_collect\n");
   gc_counter = 0;
   unsigned long collected = collector->collect();
   unsigned long allocated = collector->get_allocation_amt();

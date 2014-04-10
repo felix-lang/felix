@@ -45,7 +45,6 @@ struct async_sched
   ~async_sched();
 
   int prun(block_flag_t);
-  void do_collect();
   void do_spawn_pthread();
   void do_general();
 

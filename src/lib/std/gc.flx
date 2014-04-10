@@ -3,12 +3,18 @@
 //$ that is, one that is independent of the GC representation.
 open class Gc
 {
+  fun _collect: unit -> ulong = "PTF gcp->actually_collect()"
+    requires property "needs_gc";
+
   //$ Invoke the garbage collector.
   proc collect() { 
     if Env::getenv "FLX_REPORT_COLLECTIONS" != "" do 
       eprintln "[Gc::collect] Program requests collection"; 
+      var collected = _collect();
+      eprintln$ "[Gc::collect] Collector collected " + collected.str + " objects";
+    else
+      C_hack::ignore(_collect());
     done
-    svc svc_collect; 
   }
 
   //$ Get the total number of bytes currently allocated.
