@@ -309,16 +309,59 @@ unsigned long flx_collector_t::reap ()
 
 //#include <valgrind/memcheck.h>
 
+/* This is the top level mark routine
+ * Its job is to mark all objects that are reachable
+ * so a subsequent reaping phase can delete all
+ * the objects that are NOT marked
+ *
+ * This mark bit is the low bit of the RTTI shape object pointer
+ * stored in the j_shape Judy1Array.
+ *
+ * The meaning of this bit alternates between calls to the collector.
+ * Initially all objects are considered garbage and the flag is toggled
+ * to indicate the object is reachable.
+ *
+ * On the next pass the reachable value is reconsidered to mean
+ * garbage and the flag toggled again. This saves a pass over
+ * all objects marking them garbage before then tracing roots
+ * to find which ones are not.
+ */
+
 void flx_collector_t::mark(pthread::memory_ranges_t *px)
 {
+  // The recursion limit is a stopper so recursions
+  // won't blow the machine stack and also wipe out the cache
+  // regularly. Our overall routine is iterative with limited
+  // recursion. The recursions are faster but the iteration
+  // can handle data type like lists of millions of elements
+  // which would otherwise recurse millions of times.
+  //
   int reclimit = 64;
   if(debug)
     fprintf(stderr,"[gc] Collector: Running mark\n");
+
+  // sanity check
   assert (root_count == roots.size());
+
+  // the j_tmp Judy1 array is just a set of pointers which
+  // we have not yet examined. When we find pointers we stash
+  // them in this set rather than examining them immediately.
+  // Later we come back and examine them. This buffers the recursion
+  // a bit. The set has to be empty initially.
   assert(j_tmp == 0);
 
+  // px is a set of memory ranges representing the stacks
+  // of all pthreads including this one at the point the
+  // collector got invoked. All the other threads than this
+  // one must be stopped. The stack are found by recording the
+  // base stack value when launching the thread, and using
+  // the value when a thread stops to allow collection as the
+  // high value. The stack contains all the machine registers
+  // at this point too, since we used a long_jmp into a local
+  // variable to put the registers on the stack.
   if(px)
   {
+    // for all pthreads
     std::vector<pthread::memory_range_t>::iterator end = (*px).end();
     for(
       std::vector<pthread::memory_range_t>::iterator i = (*px).begin();
@@ -326,6 +369,7 @@ void flx_collector_t::mark(pthread::memory_ranges_t *px)
       ++i
     )
     {
+      // get the stack extent for one pthread
       pthread::memory_range_t range = *i;
       if(debug)
       {
@@ -334,10 +378,14 @@ void flx_collector_t::mark(pthread::memory_ranges_t *px)
       }
       //VALGRIND_MAKE_MEM_DEFINED(range.b, (char*)range.e-(char*)range.b);
       void *end = range.e;
+      // for all machine words on the stack
+      // this WILL FAIL if the stack isn't an exact multiple
+      // of the size of a machine word
       for ( void *i = range.b; i != end; i = (void*)((void**)i+1))
       {
         if(debug)
           fprintf(stderr, "[gc] Check if *%p=%p is a pointer\n",i,*(void**)i);
+        // conservative scan of every word on every stack
         scan_object(*(void**)i, reclimit);
       }
       if(debug)
@@ -345,6 +393,7 @@ void flx_collector_t::mark(pthread::memory_ranges_t *px)
     }
   }
 
+  // Now scan all the registered roots
   if(debug)
     fprintf(stderr, "[gc] Scanning roots\n");
   rootmap_t::iterator const end = roots.end();
@@ -358,12 +407,21 @@ void flx_collector_t::mark(pthread::memory_ranges_t *px)
       fprintf(stderr, "[gc] Scanning root %p\n", (*i).first);
     scan_object((*i).first, reclimit);
   }
-  // Now, scan the temporary list until it is empty
+
+  // Now, scan the temporary set in j_tmp  until it is empty
+  // When we're processing an object with scan_object
+  // if its an actual Felix object we mark it reachable
+  // and then scan all the pointers in it: usually those pointers
+  // are not scanned immediately by scan object but simply put
+  // into the set j_tmp to schedule them for scanning.
+  //
+  // Note: Judy1First finds the first key greater than or equal to the given one,
+  // it returns 0 if there is no such key.
   Word_t toscan = 0ul;
   int res = Judy1First(j_tmp,&toscan,&je); // get one object scheduled for scanning
   while(res) {
     Judy1Unset(&j_tmp,toscan,&je);         // remove it immediately
-    scan_object((void*)toscan, reclimit);            // scan it, it will either be marked or discarded
+    scan_object((void*)toscan, reclimit);  // scan it, it will either be marked or discarded
     toscan = 0ul;
     res = Judy1First(j_tmp,&toscan,&je); 
   }                                     
@@ -453,6 +511,22 @@ void flx_collector_t::impl_remove_root(void *memory)
   }
 }
 
+/* This is the fun bit!
+ * Register pointer is called by scan object, indirectly
+ * via the custom scanner.
+ * It then recursively calls scan_object on that pointer,
+ * providing a standard recursive descent.
+ *
+ * HOWEVER if the recursion limit is reached during this process,
+ * instead of recursing it just stashes the pointer in the
+ * j_tmp collection for later processing.
+ *
+ * So recursions over small tree structures proceed as normal,
+ * but when you get a long list or array to handle the recursion
+ * is stopped before it blows the stack, and the data is just stashed
+ * for later processing by the top level iterative loop
+ */
+
 void flx_collector_t::register_pointer(void *q, int reclimit)
 {
   if(reclimit==0)Judy1Set(&j_tmp,(Word_t)q,&je);
@@ -485,16 +559,41 @@ void flx_collector_t::register_pointer(void *q, int reclimit)
   return pdat;
 }
 
+/* Given some word siuze value p, we have to decide what it is.
+ * If its a pointer into an allocated object, since we got here
+ * that object is reachable so we ensure that object is marked
+ * reachable so it won't be reaped
+ */
+
 void flx_collector_t::scan_object(void *p, int reclimit)
 {
+
+  // CAN p be NULL?? If so a fast exit could be done
+  // no point if it can't be null though
+
+  // The reachability flag is the low bit object type pointer.
+  // The sense of the flag alternative between 0 and 1 meaning
+  // reachable on successive collections. This is an optimisation
+  // which saves marking all object unreachable first, then marking
+  // the reachable ones reachable. We just use the previous reachable
+  // marking to mean unreachable next time, then flip the bit for each
+  // reachable object. The value parity records the sense and is flipped
+  // at the start of each GC pass.
   Word_t reachable = (parity & 1UL) ^ 1UL;
 again:
   if(debug)
     fprintf(stderr,"[gc] Scan object %p, reachable bit value = %d\n",p,(int)reachable);
+
+  // Now find the shape of the object into which the pointer points,
+  // if it is a Felix allocated object. First, we use JudyLLast
+  // which finds the value less than or equal to the given key.
   Word_t cand = (Word_t)p;
   Word_t head=cand;
   Word_t *ppshape = (Word_t*)JudyLLast(j_shape,&head,&je);
   if(ppshape==(Word_t*)PPJERR)judyerror("scan_object");
+
+  // if the pointer returned by Judy is NULL, there is no
+  // allocated object at or lower then the given address so exit
   if(ppshape == NULL) return; // no lower object
   /*
   if(debug)
@@ -503,16 +602,35 @@ again:
     fprintf(stderr," .. type=%s!\n",((gc_shape_t*)(*w & ~1UL))->cname);
   }
   */
+
+  // if the object lower then the given pointer is already
+  // marked reachable, there's nothing to do (all the pointers
+  // it reaches should also be marked) so just exit.
   if( (*ppshape & 1UL) == reachable) return;   // already handled
 
+  // get the actual shape of the candidate object
+  // don't forget to mask out the low bit which is the reachability flag
   gc_shape_t const *pshape = (gc_shape_t const *)(*ppshape & ~1UL);
+
+  // calculate the length of the candidate object in bytes
   unsigned long n = get_count((void*)head) * pshape->count * pshape->amt;
+
+  // if our pointer is greater than or equal to the "one past the end"
+  // pointer of the object, it is not a pointer interior to that object
+  // but a foreign pointer and must be ignored
   if(cand >= (Word_t)(void*)((unsigned char*)(void*)head+n)) return; // not interior
   if(debug)
     fprintf(stderr,"[gc] MARKING object %p, shape %p, type=%s\n",(void*)head,pshape,pshape->cname);
 
+  // otherwise we have an iterior or head pointer to the object
+  // so set the reachable flag in the judy shape array
   *ppshape = (*ppshape & ~1uL) | reachable;
 
+
+  // Now we have to look for pointers contained in the object
+ 
+  // The first branch here is not used at the moment,
+  // and is a hard coded way to do a conservative scan on the object
 
   if(pshape->flags & gc_flags_conservative)
   {
@@ -532,12 +650,30 @@ again:
         scan_object(*i,reclimit -1);
     }
   }
+
+  // This is the normal processing.
   else
   {
+    // Calculate the dynamic count of used elements in the object.
+    // All Felix objects are varrays which have an allocated and used
+    // element count. The RTTI object always describes one element.
     unsigned long dyncount = get_used((void*)head);
+
+    // if don't have a scanner for the object it is atomic,
+    // that is it contains no pointers.
+    // Otherwise call the scanner.
     if(pshape->scanner) {
       void *r = pshape->scanner(this, pshape, (void*)head,dyncount,reclimit);
+      // If the scanner returns a non-zero value it is the sole pointer
+      // in the object. So reset our argument and jump to the start of
+      // this routine: self-tail-recursion optimisation.
       if (r) { p = r; goto again; }
+      // Otherwise the scanner has registered the pointers it found that
+      // need further examination. We do not do that examination here
+      // recursively, or inside the scanner, because it might blow the stack.
+      // Instead we just return, so a flat iteration loop can grab things
+      // out of the registered pointer buffer and drive the process
+      // with a flat loop.
     }
   }
 }

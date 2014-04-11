@@ -100,14 +100,35 @@ void *gc_profile_t::allocate(
     return collector -> allocate(shape,count);
 }
 
+/*
+ *  This is the default scanner for compiler generated RTTI objects.
+ *  It uses an array of offsets into the object to tell where the pointers are.
+ *  We must pass this routine the collector, the RTTI shape of the object,
+ *  a pointer to the head (lowest byte) of the object, a count of the number
+ *  of copies of the object are present consecutively, and a recursion limit.
+ *
+ *  The count is there because all Felix heap objects are varrays, even if they're
+ *  merely length 1. Note that this dynamic array count is the number of used
+ *  slots in the varray not the allocated length. Note also the elements of the
+ *  varray can themselves be arrays with static lengths. The actual RTTI object
+ *  describes a single element of the inner static length array, so we have to
+ *  multiply the RTTI static length by the dynamic length.
+ */
 void *scan_by_offsets(collector_t *collector, gc_shape_t const *shape, void *p, unsigned long dyncount, int reclimit)
 {
   Word_t fp = (Word_t)p;
+
+  // calculate the absolute number of used array slots
   unsigned long n_used = dyncount  * shape->count;
 
+  // find the array of offsets
   offset_data_t const *data = (offset_data_t const *)shape->private_data;
   ::std::size_t n_offsets = data->n_offsets;
   ::std::size_t const *offsets = data->offsets;
+
+  // if the number of used slots is one and there is only one offset
+  // then there is only one possible pointer in the object at the specified offset
+  // so just return the value stored at that offset immediately
   if (n_used * n_offsets == 1) // tail rec optimisation
   {
       void **pq = (void**)(void*)((unsigned char*)fp + offsets[0]);
@@ -115,19 +136,23 @@ void *scan_by_offsets(collector_t *collector, gc_shape_t const *shape, void *p, 
       if(q) return q; // tail rec optimisation
   }
   else
+  // otherwise we have to scan through all the offsets in every array element
   for(unsigned long j=0; j<n_used; ++j)
   {
     for(unsigned int i=0; i<n_offsets; ++i)
     {
       void **pq = (void**)(void*)((unsigned char*)fp + offsets[i]);
       void *q = *pq;
+      // instead of returning the pointer, register it for later processing
       if(q)
       {
         collector->register_pointer(q, reclimit);
       }
     }
+    // on to the next array element
     fp=(Word_t)(void*)((unsigned char*)fp+shape->amt);
   }
+  // return 0 to indicate we registered pointers, instead of returning just one.
   return 0;
 }
 
