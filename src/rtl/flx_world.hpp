@@ -27,7 +27,7 @@ class flx_world {
   ::flx::pthread::thread_control_t *thread_control;
 
   ::flx::rtl::flx_dynlink_t *library;
-  ::flx::rtl::flx_libinit_t instance;
+  ::flx::rtl::flx_libinst_t instance;
 
   struct async_sched *async_scheduler;
 

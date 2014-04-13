@@ -21,7 +21,7 @@ static int do_final_cleanup(
   bool debug_driver,
   flx::gc::generic::gc_profile_t *gcp,
   flx_dynlink_t *library,
-  flx_libinit_t *instance
+  flx_libinst_t *instance
 )
 {
   flx::gc::generic::collector_t *collector = gcp->collector;
@@ -89,7 +89,7 @@ static void *get_stack_pointer() { void *x=(void*)&x; return x; }
 std::list<fthread_t*>*
 run_felix_pthread_ctor(
   flx::gc::generic::gc_profile_t *gcp,
-  flx_libinit_t *instance)
+  flx_libinst_t *instance)
 {
   //fprintf(stderr, "run_felix_pthread -- the MAIN THREAD\n");
   flx::gc::generic::collector_t *collector = gcp->collector;
@@ -122,7 +122,7 @@ void run_felix_pthread_dtor(
   flx::gc::generic::gc_profile_t *gcp,
   flx::pthread::thread_control_t *thread_control,
   flx_dynlink_t *library,
-  flx_libinit_t *instance
+  flx_libinst_t *instance
 )
 {
   if (debug_driver)
@@ -184,7 +184,7 @@ int flx_world::setup(int argc, char **argv) {
   if (debug_driver)
     fprintf(stderr, "[flx_world:setup] flx_run driver begins %s\n", c->flx_argv[0]);
 
-  // flx_libinit_t::create can run code, so add thread to avoid world_stop abort
+  // flx_libinst_t::create can run code, so add thread to avoid world_stop abort
   thread_control->add_thread(get_stack_pointer());
 
   // Create the usercode driver instance

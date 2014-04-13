@@ -224,8 +224,8 @@ void flx_dynlink_t::unlink()
 
 void flx_dynlink_t::usr_link(){}
 
-flx_libinit_t::~flx_libinit_t(){}
-flx_libinit_t::flx_libinit_t() :
+flx_libinst_t::~flx_libinst_t(){}
+flx_libinst_t::flx_libinst_t() :
   thread_frame (NULL),
   start_proc (NULL),
   main_proc (NULL),
@@ -234,10 +234,10 @@ flx_libinit_t::flx_libinit_t() :
   debug(false)
 {}
 
-flx_libinit_t::flx_libinit_t(flx_libinit_t const&){}
-void flx_libinit_t::operator=(flx_libinit_t const&){}
+flx_libinst_t::flx_libinst_t(flx_libinst_t const&){}
+void flx_libinst_t::operator=(flx_libinst_t const&){}
 
-void flx_libinit_t::create
+void flx_libinst_t::create
 (
   flx_dynlink_t *lib_a,
   flx::gc::generic::gc_profile_t *gcp_a,
@@ -254,46 +254,46 @@ void flx_libinit_t::create
   gcp = gcp_a;
   debug = debug_;
   if (debug)
-    fprintf(stderr, "[libinit:create] Creating thread frame\n");
+    fprintf(stderr, "[libinst:create] Creating thread frame\n");
   thread_frame = lib->thread_frame_creator( gcp);
   if (debug)
-    fprintf(stderr, "[libinit:create] thread frame CREATED\n");
+    fprintf(stderr, "[libinst:create] thread frame CREATED\n");
   if (debug)
-    fprintf(stderr,"[libinit:create] Incrementing refcnt\n");
+    fprintf(stderr,"[libinst:create] Incrementing refcnt\n");
   ++lib->refcnt;
   if (debug)
-    fprintf(stderr,"[libinit:create] rooting thread frame\n");
+    fprintf(stderr,"[libinst:create] rooting thread frame\n");
   gcp->collector->add_root(thread_frame);
   if (debug)
-    fprintf(stderr, "[libinit:create] CREATING start_proc by running start_sym %p\n", lib->start_sym);
+    fprintf(stderr, "[libinst:create] CREATING start_proc by running start_sym %p\n", lib->start_sym);
   start_proc = lib->start_sym(thread_frame, argc, argv, stdin_,stdout_,stderr_);
   if (debug)
-    fprintf(stderr, "[libinit:create] start_proc CREATED %p\n", start_proc);
+    fprintf(stderr, "[libinst:create] start_proc CREATED %p\n", start_proc);
   if (debug)
-    fprintf(stderr, "[libinit:create] CREATING main_proc by running main_sym %p\n", main_sym);
+    fprintf(stderr, "[libinst:create] CREATING main_proc by running main_sym %p\n", main_sym);
   main_proc = main_sym?main_sym(thread_frame):0;
   if (debug)
-    fprintf(stderr, "[libinit:create] main_proc CREATED %p\n", main_proc);
+    fprintf(stderr, "[libinst:create] main_proc CREATED %p\n", main_proc);
   usr_create();
 }
 
-void flx_libinit_t::usr_create(){
-  //fprintf(stderr,"libinit done\n");
+void flx_libinst_t::usr_create(){
+  //fprintf(stderr,"libinst done\n");
 }
 
-void flx_libinit_t::destroy () {
+void flx_libinst_t::destroy () {
   usr_destroy();
   gcp->collector->remove_root(thread_frame);
-  //fprintf(stderr,"[flx_libinit::destroy()] Removed thread frame %p as root\n", thread_frame);
+  //fprintf(stderr,"[flx_libinst::destroy()] Removed thread frame %p as root\n", thread_frame);
   //fprintf(stderr,"Decrementing refcnt\n");
   //fprintf(stderr,"Start        Ref cnt=%ld\n",lib->refcnt);
   --lib->refcnt;
   //fprintf(stderr,"After decr:  Ref cnt=%ld\n",lib->refcnt);
 }
 
-void flx_libinit_t::usr_destroy (){}
+void flx_libinst_t::usr_destroy (){}
 
-con_t *flx_libinit_t::bind_proc(void *fn, void *data) {
+con_t *flx_libinst_t::bind_proc(void *fn, void *data) {
   typedef con_t *(*binder_t)(void *,void*);
   return ((binder_t)fn)(thread_frame,data);
 }

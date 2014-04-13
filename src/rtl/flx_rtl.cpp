@@ -1,4 +1,6 @@
 #include "flx_rtl.hpp"
+#include "flx_rtl_shapes.hpp"
+
 #include <cstdio>
 #include <cassert>
 #include <cstddef>
@@ -30,32 +32,6 @@ con_t::~con_t(){
 // slist implementation
 // ********************************************************
 
-// PRIVATE to the slist_t class!
-struct slist_node_t {
-  slist_node_t *next;
-  void *data;
-  slist_node_t(slist_node_t *n, void *d) : next(n), data(d) {}
-};
-
-//OFFSETS for slist_node_t
-static const std::size_t slist_node_offsets[2]={
-    offsetof(slist_node_t,next),
-    offsetof(slist_node_t,data)
-};
-
-static ::flx::gc::collector::offset_data_t const slist_node_offset_data = { 2, slist_node_offsets };
-::flx::gc::generic::gc_shape_t const slist_node_ptr_map = {
-  NULL,
-  "slist_node_t",
-  1,sizeof(slist_node_t),
-  0, // no finaliser,
-  &slist_node_offset_data,
-  ::flx::gc::generic::scan_by_offsets,
-  ::flx::gc::generic::tblit<slist_node_t>,::flx::gc::generic::tunblit<slist_node_t>, 
-  ::flx::gc::generic::gc_flags_default
-};
-
-
 slist_t::slist_t(::flx::gc::generic::gc_profile_t *_gcp) : gcp (_gcp), head(0) {}
 slist_t::slist_t(slist_t const &r) : gcp (r.gcp), head(r.head) {}
 
@@ -76,24 +52,6 @@ void *slist_t::pop()
   }
   else return 0;
 }
-
-//OFFSETS for slist_t
-static const std::size_t slist_offsets[1]={
-    offsetof(slist_t,head)
-};
-static ::flx::gc::collector::offset_data_t const slist_offset_data = { 1, slist_offsets };
-
-::flx::gc::generic::gc_shape_t const slist_ptr_map = {
-  &slist_node_ptr_map,
-  "slist_t",
-  1,sizeof(slist_t),
-  0, // no finaliser
-  &slist_offset_data,
-  ::flx::gc::generic::scan_by_offsets,
-  ::flx::gc::generic::tblit<slist_t>,::flx::gc::generic::tunblit<slist_t>, 
-  ::flx::gc::generic::gc_flags_default
-};
-
 // ********************************************************
 // fthread_t implementation
 // ********************************************************
@@ -106,6 +64,10 @@ fthread_t::fthread_t(fthread_t const&){ assert(false); }
 void fthread_t::operator=(fthread_t const&){ assert(false); }
 
 void fthread_t::kill() { cc = 0; }
+//
+// ********************************************************
+// _uctor_t implementation
+// ********************************************************
 
 _uctor_ *fthread_t::get_svc()const { return cc?cc->p_svc:0; }
 
@@ -144,25 +106,6 @@ step:
   goto step;
 }
 
-
-//OFFSETS for fthread_t
-static const std::size_t _fthread_offsets[1]={
-    offsetof(fthread_t,cc)
-};
-
-static ::flx::gc::collector::offset_data_t const _fthread_offset_data = { 1, _fthread_offsets };
-
-::flx::gc::generic::gc_shape_t const _fthread_ptr_map = {
-  &slist_ptr_map,
-  "fthread_t",
-  1,sizeof(fthread_t),
-  0,
-  &_fthread_offset_data,
-  ::flx::gc::generic::scan_by_offsets,
-  ::flx::gc::generic::tblit<fthread_t>,::flx::gc::generic::tunblit<fthread_t>, 
-  gc::generic::gc_flags_immobile
-};
-
 // ********************************************************
 // schannel_t implementation
 // ********************************************************
@@ -197,113 +140,6 @@ fthread_t *schannel_t::pop_writer()
 {
   return (fthread_t*)waiting_to_write->pop();
 }
-
-//OFFSETS for schannel_t
-static const std::size_t schannel_offsets[2]={
-    offsetof(schannel_t,waiting_to_read),
-    offsetof(schannel_t,waiting_to_write)
-};
-
-static ::flx::gc::collector::offset_data_t const schannel_offset_data = { 2, schannel_offsets };
-
-::flx::gc::generic::gc_shape_t const schannel_ptr_map = {
-  &_fthread_ptr_map,
-  "schannel_t",
-  1,sizeof(schannel_t),
-  0, // no finaliser
-  &schannel_offset_data,
-  ::flx::gc::generic::scan_by_offsets,
-  ::flx::gc::generic::tblit<schannel_t>,::flx::gc::generic::tunblit<schannel_t>, 
-  gc::generic::gc_flags_default
-};
-
-// ********************************************************
-// _uctor_ implementation
-// ********************************************************
-
-//OFFSETS for _uctor_
-static const std::size_t _uctor_offsets[1]= {
-  offsetof(_uctor_,data)
-};
-
-static ::flx::gc::collector::offset_data_t const _uctor_offset_data = { 1, _uctor_offsets };
-
-::flx::gc::generic::gc_shape_t const _uctor_ptr_map = {
-  &schannel_ptr_map,
-  "_uctor_",
-  1,
-  sizeof(_uctor_),
-  0,
-  &_uctor_offset_data,
-  ::flx::gc::generic::scan_by_offsets,
-  ::flx::gc::generic::tblit<_uctor_>,::flx::gc::generic::tunblit<_uctor_>, 
-  gc::generic::gc_flags_default
-};
-
-// ********************************************************
-// int implementation
-// ********************************************************
-
-
-::flx::gc::generic::gc_shape_t const _int_ptr_map = {
-  &_uctor_ptr_map,
-  "int",
-  1,
-  sizeof(int),
-  0,
-  0,
-  0,
-  ::flx::gc::generic::tblit<int>,::flx::gc::generic::tunblit<int>, 
-  gc::generic::gc_flags_default
-};
-
-// ********************************************************
-// pointer implementation
-// ********************************************************
-
-//OFFSETS for address
-static const std::size_t _address_offsets[1]={ 0 };
-static ::flx::gc::collector::offset_data_t const _address_offset_data = { 1, _address_offsets };
-
-static ::std::string address_encoder (void *p) { 
-  return ::flx::gc::generic::blit (p,sizeof (void*));
-}
-
-static size_t address_decoder (void *p, char *s, size_t i) { 
-  return ::flx::gc::generic::unblit (p,sizeof (void*),s,i);
-}
-
-
-::flx::gc::generic::gc_shape_t const _address_ptr_map = {
-  &_int_ptr_map,
-  "address",
-  1,
-  sizeof(void*),
-  0,
-  &_address_offset_data,
-  ::flx::gc::generic::scan_by_offsets,
-  ::flx::gc::generic::tblit<void*>,::flx::gc::generic::tunblit<void*>, 
-  gc::generic::gc_flags_default
-};
-
-
-// ********************************************************
-// unit implementation : MUST BE LAST because the compiler
-// uses "unit_pre_map" as the back link for generated shape tables
-// ********************************************************
-
-::flx::gc::generic::gc_shape_t const unit_ptr_map = {
-  &_address_ptr_map,
-  "unit",
-  1,
-  sizeof(unit),
-  0,
-  0,
-  0,
-  ::flx::gc::generic::tblit<unit>,::flx::gc::generic::tunblit<unit>, 
-  gc::generic::gc_flags_default
-};
-
 // ********************************************************
 // trace feature
 // ********************************************************

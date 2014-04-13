@@ -34,7 +34,7 @@ to thread frame.</em>
 A Felix generated shared library requires an instance to be 
 created which is a closure: a pair consisting of the library code
 and a {thread_frame_t} object which is allocated on the heap.
-The closure object has the type {flx_libinit_t} in C++ and
+The closure object has the type {flx_libinst_t} in C++ and
 {flx_instance} in Felix.
 
 Instances require a fixed protocol which involves
@@ -279,7 +279,7 @@ only work with Felix generated library objects.
   //$ Type of a DLL (dynamic link library) instance.
   //$ Conceptually this is a pair consisting of
   //$ a library object and a global data frame object.
-  type flx_instance = "::flx::rtl::flx_libinit_t*";
+  type flx_instance = "::flx::rtl::flx_libinst_t*";
 
 @h3 Library instance constructor <code>create_instance_handle</code>
 Create a new library instance handle unassociated with any
@@ -287,7 +287,7 @@ library or thread frame.
 @felix
   //$ Create a fresh DLL instance object.
   fun create_instance_handle: unit->flx_instance=
-    "new ::flx::rtl::flx_libinit_t()";
+    "new ::flx::rtl::flx_libinst_t()";
 
 @h3 Library instance destructor<code>delete_instance_handle</code>
 Delete a library instance. If associated with a library handle,
@@ -340,7 +340,7 @@ to prevent the garbage collector deleting it prematurely.
     static void _create
     (
       ::flx::rtl::flx_dynlink_t *library,
-      ::flx::rtl::flx_libinit_t *instance,
+      ::flx::rtl::flx_libinst_t *instance,
       flx::gc::generic::gc_profile_t *gcp,
       ::flx::rtl::main_t main_sym,
       int argc, char **argv,

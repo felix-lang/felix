@@ -99,7 +99,7 @@ using namespace std;
 // The user may derive from this class to add
 // linkage for extra symbols
 //
-// We provide a class flx_libinit_t which
+// We provide a class flx_libinst_t which
 // initialises and terminates a Felix module
 // The user may derive from this class to add
 // extra initialisation or termination processing.
@@ -114,7 +114,7 @@ using namespace std;
 namespace flx { namespace rtl {
 
 struct RTL_EXTERN flx_dynlink_t;
-struct RTL_EXTERN flx_libinit_t;
+struct RTL_EXTERN flx_libinst_t;
 
 /// Dynamic linkage failure.
 
@@ -232,7 +232,7 @@ private:
 
 /// Thread Frame Initialisation.
 
-struct RTL_EXTERN flx_libinit_t
+struct RTL_EXTERN flx_libinst_t
 {
   void *thread_frame;
   con_t *start_proc;
@@ -257,12 +257,12 @@ struct RTL_EXTERN flx_libinit_t
   void destroy ();
 
   con_t *bind_proc(void *fn, void *data);
-  virtual ~flx_libinit_t();
-  flx_libinit_t();
+  virtual ~flx_libinst_t();
+  flx_libinst_t();
 
 private:
-  flx_libinit_t(flx_libinit_t const&);
-  void operator=(flx_libinit_t const&);
+  flx_libinst_t(flx_libinst_t const&);
+  void operator=(flx_libinst_t const&);
   // the user can override these procedures
   // to perform any additional initialisation
   // and termination required.
