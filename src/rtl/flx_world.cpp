@@ -25,31 +25,34 @@ static int do_final_cleanup(
   // garbage collect application objects
   {
     if (debug_driver || gcp->debug_collections)
-      fprintf(stderr, "Finalisation: pass 1 Data collection starts ..\n");
+      fprintf(stderr, "[do_final_cleanup] Finalisation: pass 1 Data collection starts ..\n");
 
     unsigned long n = collector->collect();
     unsigned long a = collector->get_allocation_count();
 
     if (debug_driver || gcp->debug_collections)
-      fprintf(stderr, "flx_run collected %ld objects, %ld left\n", n, a);
+      fprintf(stderr, "[do_final_cleanup] flx_run collected %ld objects, %ld left\n", n, a);
   }
 
   // garbage collect system objects
   {
     if (debug_driver || gcp->debug_collections)
-      fprintf(stderr, "Finalisation: pass 2 Final collection starts ..\n");
+      fprintf(stderr, "[do_final_cleanup] Finalisation: pass 2 Final collection starts ..\n");
 
     collector->free_all_mem();
     unsigned long a = collector->get_allocation_count();
 
     if (debug_driver || gcp->debug_collections)
-      fprintf(stderr, "Remaining %ld objects (should be 0)\n", a);
+      fprintf(stderr, "[do_final_cleanup] Remaining %ld objects (should be 0)\n", a);
 
     if (a != 0){
-      fprintf(stderr, "flx_run %ld uncollected objects, should be zero!!\n", a);
+      fprintf(stderr, "[do_final_cleanup] flx_run %ld uncollected objects, should be zero!! return code 5\n", a);
       return 5;
     }
   }
+
+  if (debug_driver)
+    fprintf(stderr, "[do_final_cleanup] exit 0\n");
 
   return 0;
 }
@@ -100,11 +103,12 @@ void run_felix_pthread_dtor(
 )
 {
   if (debug_driver)
-    fprintf(stderr, "MAIN THREAD FINISHED: waiting for other threads\n");
+    fprintf(stderr, "[run_felix_pthread_dtor] MAIN THREAD FINISHED: waiting for other threads\n");
 
   thread_control->join_all();
 
-  if (debug_driver) fprintf(stderr, "ALL THREADS DEAD: mainline cleanup!\n");
+  if (debug_driver) 
+    fprintf(stderr, "[run_felix_pthread_dtor] ALL THREADS DEAD: mainline cleanup!\n");
 
   if (debug_driver) {
     flx::gc::generic::collector_t *collector = gcp->collector;
@@ -112,12 +116,17 @@ void run_felix_pthread_dtor(
     unsigned long uncollected = collector->get_allocation_count();
     unsigned long roots = collector->get_root_count();
     fprintf(stderr,
-      "program finished, %ld collections, %ld uncollected objects, roots %ld\n",
+      "[run_felix_pthread_dtor] program finished, %ld collections, %ld uncollected objects, roots %ld\n",
       gcp->collections, uncollected, roots);
   }
   gcp->collector->remove_root(instance);
+
   if (gcp->finalise)
     (void)do_final_cleanup(debug_driver, gcp, library, instance);
+
+  if (debug_driver) 
+    fprintf(stderr, "[run_felix_pthread_dtor] mainline cleanup complete, exit\n");
+   
 }
 
 // construct from flx_config pointer
@@ -199,12 +208,15 @@ int flx_world::setup(int argc, char **argv) {
 
 int flx_world::explicit_dtor()
 {
+  if (debug_driver)
+    fprintf(stderr, "[explicit_dtor] entry\n");
+
   run_felix_pthread_dtor(debug_driver, gcp, thread_control, library, instance);
 
   if (gcp->finalise)
   {
     if (debug_driver)
-      fprintf(stderr, "flx_run driver ends with finalisation complete\n");
+      fprintf(stderr, "[explicit_dtor] flx_run driver ends with finalisation complete\n");
   }
   else
   {
@@ -212,30 +224,56 @@ int flx_world::explicit_dtor()
     {
       unsigned long a = gcp->collector->get_allocation_count();
       fprintf(stderr,
-        "flx_run driver ends with finalisation skipped, %ld uncollected "
+        "[explicit_dtor] flx_run driver ends with finalisation skipped, %ld uncollected "
           "objects\n", a);
     }
   }
+
+  if (debug_driver)
+    fprintf(stderr, "[explicit_dtor] exit 0\n");
 
   return 0;
 }
 
 int flx_world::teardown() {
+  if (debug_driver)
+    fprintf(stderr, "[teardown] entry\n");
+
   thread_control -> add_thread(get_stack_pointer());
+
   delete async_scheduler;
+
+  if (debug_driver)
+    fprintf(stderr, "[teardown] deleted async_scheduler\n");
+
 
   // could this override error_exit_code if something throws?
   int error_exit_code = explicit_dtor();
-  delete library;
+  if (debug_driver)
+    fprintf(stderr,"[teardown] explicit dtor run code %d\n", error_exit_code);
+
+  instance=0;
+  library=0;
+  if (debug_driver)
+    fprintf(stderr,"[teardown] library & instance NULLED\n");
 
   // And we're done, so start cleaning up.
   delete gcp;
-  delete collector;
-  delete allocator;
 
-  if (debug) fprintf(stderr, "flx_run driver ends code=%d\n", error_exit_code);
+  delete collector;
+  if (debug_driver) 
+    fprintf(stderr,"[teardown] collector deleted\n");
+
+  delete allocator;
+  if (debug_driver) 
+    fprintf(stderr,"[teardown] allocator deleted\n");
+
+  if (debug_driver) 
+    fprintf(stderr, "[teardown] flx_run driver ends code=%d\n", error_exit_code);
 
   delete thread_control;  // RF: cautiously delete here
+  if (debug_driver) 
+    fprintf(stderr,"[teardown] thread control deleted\n");
   return error_exit_code;
 }
 
