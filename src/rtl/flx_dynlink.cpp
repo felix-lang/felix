@@ -99,7 +99,6 @@ flx_load_module(const std::string& filename)
   return flx_load_library(filename + FLX_LIB_EXTENSION);
 }
 
-flx_dynlink_t::~flx_dynlink_t() {}
 flx_dynlink_t::flx_dynlink_t(flx_dynlink_t const&) {} // no copy hack
 void flx_dynlink_t::operator=(flx_dynlink_t const&) {} // no copy hack
 
@@ -109,8 +108,7 @@ flx_dynlink_t::flx_dynlink_t():
   library(0),
   thread_frame_creator(NULL),
   start_sym(NULL),
-  main_sym(NULL),
-  refcnt(0)
+  main_sym(NULL)
 {}
 
 flx_dynlink_t::flx_dynlink_t(
@@ -123,8 +121,7 @@ flx_dynlink_t::flx_dynlink_t(
   library(0),
   thread_frame_creator(thread_frame_creator),
   start_sym(start_sym),
-  main_sym(main_sym),
-  refcnt(0)
+  main_sym(main_sym)
 {
   if(!thread_frame_creator)
     throw flx_link_failure_t("<static link>","dlsym","create_thread_frame");
@@ -170,19 +167,6 @@ void flx_dynlink_t::dynamic_link_with_modulename(const ::std::string& filename_a
   //fprintf(stderr,"Start symbol found at %p\n",start_sym);
   //fprintf(stderr,"main symbol found at %p\n",main_sym);
 
-  refcnt = 1L;
-
-  //fprintf(stderr,"Set refcnt to 1\n");
-  try { usr_link(); }
-  catch (flx_link_failure_t &) { throw; }
-  catch (...) {
-    throw flx_link_failure_t
-    (
-      filename,
-      "usr_link()",
-      "Unknown user exception"
-    );
-  }
 }
 
 flx_link_failure_t *flx_dynlink_t::nothrow_dynamic_link_with_modulename(
@@ -204,10 +188,12 @@ flx_link_failure_t *flx_dynlink_t::nothrow_dynamic_link(const ::std::string& fil
   catch (flx_link_failure_t const &x) { return new flx_link_failure_t(x); }
 }
 
+// dont actually unload libraries
+// it doesn't work right in C/C++
+// can leave dangling references
+// impossible to manage properly
 void flx_dynlink_t::unlink()
 {
-  --refcnt;
-  if(refcnt == 0) {
     //fprintf(stderr,"closing library\n");
 //#if FLX_WIN32 || FLX_CYGWIN
 #if FLX_WIN32
@@ -219,10 +205,13 @@ void flx_dynlink_t::unlink()
     //dlclose(library);
   #endif
 #endif
-  }
 }
 
-void flx_dynlink_t::usr_link(){}
+flx_dynlink_t::~flx_dynlink_t() { }
+
+// ************************************************
+// libinst
+// ************************************************
 
 flx_libinst_t::~flx_libinst_t(){}
 flx_libinst_t::flx_libinst_t() :
@@ -259,12 +248,6 @@ void flx_libinst_t::create
   if (debug)
     fprintf(stderr, "[libinst:create] thread frame CREATED\n");
   if (debug)
-    fprintf(stderr,"[libinst:create] Incrementing refcnt\n");
-  ++lib->refcnt;
-  if (debug)
-    fprintf(stderr,"[libinst:create] rooting thread frame\n");
-  gcp->collector->add_root(thread_frame);
-  if (debug)
     fprintf(stderr, "[libinst:create] CREATING start_proc by running start_sym %p\n", lib->start_sym);
   start_proc = lib->start_sym(thread_frame, argc, argv, stdin_,stdout_,stderr_);
   if (debug)
@@ -274,24 +257,7 @@ void flx_libinst_t::create
   main_proc = main_sym?main_sym(thread_frame):0;
   if (debug)
     fprintf(stderr, "[libinst:create] main_proc CREATED %p\n", main_proc);
-  usr_create();
 }
-
-void flx_libinst_t::usr_create(){
-  //fprintf(stderr,"libinst done\n");
-}
-
-void flx_libinst_t::destroy () {
-  usr_destroy();
-  gcp->collector->remove_root(thread_frame);
-  //fprintf(stderr,"[flx_libinst::destroy()] Removed thread frame %p as root\n", thread_frame);
-  //fprintf(stderr,"Decrementing refcnt\n");
-  //fprintf(stderr,"Start        Ref cnt=%ld\n",lib->refcnt);
-  --lib->refcnt;
-  //fprintf(stderr,"After decr:  Ref cnt=%ld\n",lib->refcnt);
-}
-
-void flx_libinst_t::usr_destroy (){}
 
 con_t *flx_libinst_t::bind_proc(void *fn, void *data) {
   typedef con_t *(*binder_t)(void *,void*);

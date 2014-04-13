@@ -44,7 +44,7 @@ public:
 // interface for drivers. there's more, create_frame, etc
   create_async_hooker_t *ptr_create_async_hooker;
 
-  typedef ::flx::rtl::flx_dynlink_t *(*link_library_t)(flx_config *c);
+  typedef ::flx::rtl::flx_dynlink_t *(*link_library_t)(flx_config *c, ::flx::gc::generic::gc_profile_t*);
   typedef void (*init_ptr_create_async_hooker_t)(flx_config *, bool debug_driver);
   typedef int (*get_flx_args_config_t)(int argc, char **argv, flx_config* c);
 

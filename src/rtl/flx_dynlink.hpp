@@ -179,10 +179,6 @@ struct RTL_EXTERN flx_dynlink_t
   // Intended to be called after the start routine has completed.
   main_t main_sym;
 
-  // a count of the number of instances (thread frames) active
-  // for this library.
-  long refcnt;
-
   // Allow a default initialised default object refering to no library.
   flx_dynlink_t();
 
@@ -214,20 +210,12 @@ struct RTL_EXTERN flx_dynlink_t
   // nothrow variant returns pointer to heap allocated exception or NULL
   flx_link_failure_t *nothrow_dynamic_link(const ::std::string& filename);
 
-  void unlink();
   virtual ~flx_dynlink_t();
 
 private:
-  // the user should override this procedure to
-  // link any extra symbols.
-  // on error, throw a flx_link_failure_t,
-  // otherwise your exception will be dishonoured
-  // and a generic link_failure_t thrown anyhow
-
+  void unlink(); // implementation of destructor only
   flx_dynlink_t(flx_dynlink_t const&); // uncopyable
   void operator=(flx_dynlink_t const&); // uncopyable
-  virtual void usr_link();
-    // called after mandatory symbols are linked
 };
 
 /// Thread Frame Initialisation.
@@ -263,15 +251,6 @@ struct RTL_EXTERN flx_libinst_t
 private:
   flx_libinst_t(flx_libinst_t const&);
   void operator=(flx_libinst_t const&);
-  // the user can override these procedures
-  // to perform any additional initialisation
-  // and termination required.
-
-  virtual void usr_create();
-    // called after standard init completes
-
-  virtual void usr_destroy();
-    // called before standard destroy starts
 };
 
 #if FLX_MACOSX_NODLCOMPAT

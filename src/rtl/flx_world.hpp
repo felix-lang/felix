@@ -27,7 +27,7 @@ class flx_world {
   ::flx::pthread::thread_control_t *thread_control;
 
   ::flx::rtl::flx_dynlink_t *library;
-  ::flx::rtl::flx_libinst_t instance;
+  ::flx::rtl::flx_libinst_t *instance;
 
   struct async_sched *async_scheduler;
 
@@ -49,7 +49,7 @@ public:
   int run_until_blocked();
   int run_until_complete();
 
-  void* ptf()const { return instance.thread_frame; }	// for creating con_t
+  void* ptf()const { return instance->thread_frame; }	// for creating con_t
 
   void spawn_fthread(::flx::rtl::con_t *top);
 

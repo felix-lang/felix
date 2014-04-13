@@ -294,16 +294,16 @@ int get_flx_args_config(int argc, char **argv, flx_config *c) {
 // static_link() method (although it doesn't check for NULLs).
 // ========================================================
 
-flx_dynlink_t *link_library(flx_config *c) {
+flx_dynlink_t *link_library(flx_config *c, ::flx::gc::collector::gc_profile_t *gcp) {
   flx_dynlink_t* library;
 #ifdef FLX_STATIC_LINK
-  library = new flx_dynlink_t(
+  library = new (*gcp, flx_dynlink_ptr_map, false) flx_dynlink_t(
       modulenameoffilename(c->filename),
       (thread_frame_creator_t)static_create_thread_frame,
       (start_t)static_flx_start,
       (main_t)&flx_main);
 #else
-  library = new flx_dynlink_t;
+  library = new (*gcp, flx_dynlink_ptr_map, false) flx_dynlink_t;
   library->dynamic_link(c->filename);
 #endif
   return library;

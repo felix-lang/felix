@@ -20,7 +20,7 @@ RTL_EXTERN extern ::flx::gc::generic::gc_shape_t const _caddress_ptr_map;
 RTL_EXTERN extern ::flx::gc::generic::gc_shape_t const unit_ptr_map;
 RTL_EXTERN extern ::flx::gc::generic::gc_shape_t const slist_node_ptr_map;
 RTL_EXTERN extern ::flx::gc::generic::gc_shape_t const slist_ptr_map;
-RTL_EXTERN extern ::flx::gc::generic::gc_shape_t const flx_dylink_ptr_map;
+RTL_EXTERN extern ::flx::gc::generic::gc_shape_t const flx_dynlink_ptr_map;
 RTL_EXTERN extern ::flx::gc::generic::gc_shape_t const flx_libinst_ptr_map;
 
 }}

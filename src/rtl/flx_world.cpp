@@ -12,10 +12,6 @@ namespace flx { namespace run {
 
 // terminates process!
 // Not called by default (let the OS clean up)
-//
-// NEEDS TO BE SPLIT UP so that destroying
-// a program instance is separated from unloading
-// the library
 
 static int do_final_cleanup(
   bool debug_driver,
@@ -38,11 +34,6 @@ static int do_final_cleanup(
       fprintf(stderr, "flx_run collected %ld objects, %ld left\n", n, a);
   }
 
-  // Destroy program instance/ thread frame object
-
-  if (debug_driver) fprintf(stderr, "Destroying program instance\n");
-  instance->destroy();
-
   // garbage collect system objects
   {
     if (debug_driver || gcp->debug_collections)
@@ -60,23 +51,6 @@ static int do_final_cleanup(
     }
   }
 
-  // dump the DLL
-
-  if (debug_driver)
-    fprintf(stderr, "Libref cnt = %ld\n", library->refcnt);
-
-  if (library->refcnt > 0)
-  {
-    if (debug_driver)
-      fprintf(stderr,
-        "flx_run %p library still referenced %ld times\n",
-        library->library, library->refcnt);
-  }
-
-  if (debug_driver)
-    fprintf(stderr, "Unlinking library ..\n");
-
-  library->unlink();
   return 0;
 }
 
@@ -141,6 +115,7 @@ void run_felix_pthread_dtor(
       "program finished, %ld collections, %ld uncollected objects, roots %ld\n",
       gcp->collections, uncollected, roots);
   }
+  gcp->collector->remove_root(instance);
   if (gcp->finalise)
     (void)do_final_cleanup(debug_driver, gcp, library, instance);
 }
@@ -179,7 +154,7 @@ int flx_world::setup(int argc, char **argv) {
     collector
   );
 
-  library = c->link_library(c);
+  library = c->link_library(c,gcp);
 
   if (debug_driver)
     fprintf(stderr, "[flx_world:setup] flx_run driver begins %s\n", c->flx_argv[0]);
@@ -189,7 +164,9 @@ int flx_world::setup(int argc, char **argv) {
 
   // Create the usercode driver instance
   // NB: seems to destroy()ed in do_final_cleanup
-  instance.create(
+  instance = new (*gcp, flx_libinst_ptr_map, false) flx_libinst_t();
+  collector->add_root(instance);
+  instance->create(
     library,
     gcp,
     library->main_sym,
@@ -204,9 +181,9 @@ int flx_world::setup(int argc, char **argv) {
 
   if (debug_driver) {
     fprintf(stderr, "[flx_world:setup] loaded library %s at %p\n", c->filename, library->library);
-    fprintf(stderr, "[flx_world:setup] thread frame at %p\n", instance.thread_frame);
-    fprintf(stderr, "[flx_world:setup] initial continuation at %p\n", instance.start_proc);
-    fprintf(stderr, "[flx_world:setup] main continuation at %p\n", instance.main_proc);
+    fprintf(stderr, "[flx_world:setup] thread frame at %p\n", instance->thread_frame);
+    fprintf(stderr, "[flx_world:setup] initial continuation at %p\n", instance->start_proc);
+    fprintf(stderr, "[flx_world:setup] main continuation at %p\n", instance->main_proc);
     fprintf(stderr, "[flx_world:setup] creating async scheduler\n");
   }
 
@@ -214,7 +191,7 @@ int flx_world::setup(int argc, char **argv) {
     this,
     debug_driver,
     gcp,
-    run_felix_pthread_ctor(gcp, &instance),
+    run_felix_pthread_ctor(gcp, instance),
     thread_control); // deletes active for us!
 
   return 0;
@@ -222,17 +199,10 @@ int flx_world::setup(int argc, char **argv) {
 
 int flx_world::explicit_dtor()
 {
-  run_felix_pthread_dtor(debug_driver, gcp, thread_control, library, &instance);
+  run_felix_pthread_dtor(debug_driver, gcp, thread_control, library, instance);
 
   if (gcp->finalise)
   {
-    if (library->refcnt > 0)
-    {
-      fprintf(stderr,
-        "flx_run %p library still referenced %ld times?!\n",
-        library->library, library->refcnt);
-      return 6;
-    }
     if (debug_driver)
       fprintf(stderr, "flx_run driver ends with finalisation complete\n");
   }
