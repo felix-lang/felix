@@ -14,6 +14,7 @@ def build_runtime(host_phase, target_phase):
 
     buildsystem.copy_hpps_to_rtl(target_phase.ctx,
         path / 'flx_rtl.hpp',
+        path / 'flx_rtl_shapes.hpp',
         path / 'flx_compiler_support_headers.hpp',
         path / 'flx_compiler_support_bodies.hpp',
         path / 'flx_dynlink.hpp',
