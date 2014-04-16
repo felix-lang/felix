@@ -28,5 +28,12 @@ open class Gc
   //$ Get the total number of roots.
   fun gc_get_root_count : unit -> ulong = "PTF gcp->collector->get_root_count()"
     requires property "needs_gc";
+
+  proc add_root: address  = "PTF gcp->collector->add_root ($1);"
+    requires property "needs_gc";
+
+  proc remove_root: address  = "PTF gcp->collector->remove_root ($1);"
+    requires property "needs_gc";
+
 }
 

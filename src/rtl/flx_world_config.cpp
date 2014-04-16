@@ -80,13 +80,13 @@ flx_config::init(int argc, char **argv) {
     fprintf(stderr, "[FLX_GC_FREQ] call gc every %lu iterations\n", gc_freq);
 
   // default min mem is 10 Meg
-  min_mem = (unsigned long)egetv("FLX_MIN_MEM", 10) * 1000000.0;
+  min_mem = (unsigned long)(egetv("FLX_MIN_MEM", 10) * 1000000.0);
   if (debug)
     fprintf(stderr, "[FLX_MIN_MEM] call gc only if more than %lu Meg heap used\n", min_mem/1000000);
 
   // default max mem is unlimited
-  max_mem = (unsigned long)egetv("FLX_MAX_MEM", -1) * 1000000.0;
-  if (max_mem <= 0) max_mem = (unsigned long)-1;
+  max_mem = (unsigned long)(egetv("FLX_MAX_MEM", 0) * 1000000.0);
+  if (max_mem == 0) max_mem = (unsigned long)-1;
   if (debug)
     fprintf(stderr, "[FLX_MAX_MEM] terminate if more than %lu Meg heap used\n", max_mem/1000000);
 

@@ -145,7 +145,23 @@ Given a registry, simulate dynamic linkage.
 @felix
   typedef module_dictionary_t = StrDict::strdict[address];
   typedef registry_t = StrDict::strdict[module_dictionary_t];
-  fun get_module_registry: 1 -> registry_t = "&(PTF gcp->collector->module_registry)";
+  fun get_module_registry_address_address: 1 -> &&registry_t = 
+    "(void****)(void*)&(PTF gcp->collector->module_registry)"
+    requires property "needs_gc";
+
+  // severe hackery: if the registry isn't initialised,
+  // create one, store its address in the GC object, and make
+  // it a root so the GC scans it
+  gen get_module_registry  () :registry_t = {
+    var ppregistry : &&registry_t = #get_module_registry_address_address;
+    var pregistry : &registry_t = *ppregistry;
+    if C_hack::isNULL (pregistry) do
+      pregistry = new (StrDict::strdict[module_dictionary_t] ());
+      ppregistry <- pregistry;
+      Gc::add_root (C_hack::cast[address] (pregistry));
+    done
+    return *pregistry;
+  }
 
   noinline proc regopen (registry:registry_t) (lib:flx_library, modulename:string)
   {

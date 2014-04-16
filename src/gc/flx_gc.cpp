@@ -82,22 +82,53 @@ void *gc_profile_t::allocate(
   bool allow_gc
 )
 {
-  //fprintf(stderr,"gc_profile_t::allocate(): allow_collection_anywhere=%s, allow_gc=%s\n",
-  //  (allow_collection_anywhere?"True":"False"), (allow_gc?"True":"false")
-  //);
-  if (allow_collection_anywhere && allow_gc)
+  void *p = 0;
+  ::std::size_t amt = count * shape->amt * shape->count;
+  bool tried_collection = false;
+
+  // if we would exceed the threshhold and collection is allowed, do it
+  if (amt + collector->get_allocation_amt() > threshhold && allow_collection_anywhere && allow_gc)
   {
-    maybe_collect();
-    try {
-      return collector -> allocate(shape,count);
-    }
-    catch (flx::rtl::flx_out_of_memory_t&) {
+    if (report_collections)
+      fprintf(stderr,"[flx_gc:gc_profile_t] Threshhold %ld would be exceeded, collecting\n", threshhold);
+    actually_collect();
+    if (report_collections)
+      fprintf(stderr,"[flx_gc:gc_profile_t] New Threshhold %ld\n", threshhold);
+    tried_collection = true;
+  }
+
+  // now try the allocation
+  try {
+    p = collector -> allocate(shape,count);
+  }
+  // if we ran out of physical memory
+  catch (flx::rtl::flx_out_of_memory_t& exn) 
+  { 
+    if (debug_allocations || debug_collections || report_collections)
+      fprintf(stderr,"[flx_gc:gc_profile_t] Out of physical memory\n");
+
+    if (allow_collection_anywhere && allow_gc && !tried_collection)
+    {
       actually_collect();
-      return collector -> allocate(shape,count);
+      tried_collection = true;
+      try {
+        p = collector -> allocate(shape,count);
+      }
+      catch (flx::rtl::flx_out_of_memory_t& exn) // fatal error
+      {
+         fprintf(stderr,"[flx_gc:gc_profile_t] Allocation failed [after forced collection]\n");
+         throw exn;
+      }
+    }
+    else 
+    {
+      fprintf(stderr,"[flx_gc:gc_profile_t] Allocation failed [collection not allowed or already tried]\n");
+      throw exn; // fatal error
     }
   }
-  else
-    return collector -> allocate(shape,count);
+
+  assert (p);
+  return p;
 }
 
 /*
