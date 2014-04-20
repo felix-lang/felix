@@ -19,7 +19,7 @@ class System
   gen system (cmd:string) : int => Shell::system(cmd);
   gen exit: int -> any = '::std::exit($1)' requires Cxx_headers::cstdlib;
   gen abort: 1 -> any = "::std::abort($1)" requires Cxx_headers::cstdlib;
-  type ptf_t = "thread_frame_t*";
+  _gc_pointer type ptf_t = "thread_frame_t*";
   const ptf:ptf_t = "FLX_POINTER_TO_THEAD_FRAME";
 
   //$ pexit examines the return code from a system call.
