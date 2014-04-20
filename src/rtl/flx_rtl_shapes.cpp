@@ -2,6 +2,7 @@
 #include "flx_rtl.hpp"
 //#include "flx_collector.hpp"
 #include "flx_dynlink.hpp"
+#include <stddef.h>
 
 namespace flx { namespace rtl {
 // ********************************************************
