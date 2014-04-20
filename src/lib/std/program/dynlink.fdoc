@@ -171,8 +171,8 @@ Given a registry, simulate dynamic linkage.
      | #None => 
        //println$ "Not in registry, using dlopen for " + modulename;
        modopen$ lib, modulename+#Filename::dynamic_library_extension, modulename;
-     | Some dict =>
-       //println$ "Found module "+modulename+" in registry"; 
+     | Some ?dict =>
+       println$ "Found module "+modulename+" in registry"; 
        var tfc = dict.get_dflt (modulename+"_create_thread_frame", NULL);
        //println$ "Thread frame creator = " + str tfc;
        if tfc == NULL do
@@ -211,7 +211,7 @@ Given a registry, simulate dynamic linkage.
           var mod = #strdict[address];
           add registry modulename mod;
           return mod;
-       | Some dict => return dict;
+       | Some ?dict => return dict;
        endmatch;
      };
      mod.add symbolname adr;
@@ -274,10 +274,10 @@ is itself a pointer.
       var reg = #get_module_registry;
       match reg.get lib.modulename with
       | #None => return NULL;
-      | Some dict =>
+      | Some ?dict =>
         match dict.get sym with
         | #None => return NULL;
-        | Some sym => return sym;
+        | Some ?sym => return sym;
         endmatch;
       endmatch; 
     else 

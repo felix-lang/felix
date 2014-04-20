@@ -11,12 +11,15 @@ namespace flx { namespace rtl {
 // we provide a shape for C 'int' type as well
 // ********************************************************
 
+// special: just the offset data for a pointer
+RTL_EXTERN extern ::flx::gc::generic::offset_data_t const _address_offset_data;
+
 RTL_EXTERN extern ::flx::gc::generic::gc_shape_t const _fthread_ptr_map;
 RTL_EXTERN extern ::flx::gc::generic::gc_shape_t const schannel_ptr_map;
 RTL_EXTERN extern ::flx::gc::generic::gc_shape_t const _uctor_ptr_map;
 RTL_EXTERN extern ::flx::gc::generic::gc_shape_t const _int_ptr_map;
 RTL_EXTERN extern ::flx::gc::generic::gc_shape_t const _address_ptr_map;
-RTL_EXTERN extern ::flx::gc::generic::gc_shape_t const _caddress_ptr_map;
+//RTL_EXTERN extern ::flx::gc::generic::gc_shape_t const _caddress_ptr_map;
 RTL_EXTERN extern ::flx::gc::generic::gc_shape_t const unit_ptr_map;
 RTL_EXTERN extern ::flx::gc::generic::gc_shape_t const slist_node_ptr_map;
 RTL_EXTERN extern ::flx::gc::generic::gc_shape_t const slist_ptr_map;

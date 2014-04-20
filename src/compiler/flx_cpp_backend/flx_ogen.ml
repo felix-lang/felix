@@ -171,6 +171,7 @@ let rec gen_type_shape s syms bsym_table need_int last_ptr_map primitive_shapes 
       | BBDCL_external_type (_,quals,_,_) ->
         let complete = not (mem `Incomplete quals) in
         let is_pod = mem `Pod quals in
+        let gc_pointer = mem `GC_pointer quals in 
         let scanner = 
            try 
             List.iter (fun q-> match q with | `Scanner cs -> raise (Scanner cs) | _ -> () ) quals; 
@@ -178,6 +179,7 @@ let rec gen_type_shape s syms bsym_table need_int last_ptr_map primitive_shapes 
           with Scanner cs -> Some cs 
         in
         let scanner = 
+          if gc_pointer then "&::flx::gc::generic::scan_by_offsets" else
           match scanner with 
           | None -> "0" 
           | Some (CS.Str s) -> s
@@ -214,7 +216,7 @@ let rec gen_type_shape s syms bsym_table need_int last_ptr_map primitive_shapes 
             let decoder_name = gen_decoder () in
             Hashtbl.add primitive_shapes name true;
             bcat s ("\n//OFFSETS for complete abstract "^(if is_pod then "pod " else "finalisable ")^
-              "type " ^ name ^ " instance "^
+              (if gc_pointer then "GC pointer " else "") ^ "type " ^ name ^ "="^sbt bsym_table btyp' ^ " instance "^
               (if scanner="0" then "" else "with custom scanner ")^
               (if is_pod || gen_dflt_finaliser then "" else "with custom finaliser ")^
               " \n"
@@ -230,7 +232,11 @@ let rec gen_type_shape s syms bsym_table need_int last_ptr_map primitive_shapes 
             bcat s ("  \"" ^ name ^ "\",\n");
             bcat s ("  1,sizeof("^name^"),\n");
             bcat s ("  "^finaliser^","^(if is_pod then " // no finaliser" else "")^"\n");
-            bcat s ("  0, // no client data\n");
+            begin if gc_pointer then 
+              bcat s ("  &::flx::rtl::_address_offset_data, // gc_pointer\n")
+            else
+              bcat s ("  0, // no client data\n")
+            end;
             bcat s ("  "^scanner^", // scanner\n");
             bcat s ("  "^encoder_name^", // encoder\n");
             bcat s ("  "^decoder_name^", //decoder\n");

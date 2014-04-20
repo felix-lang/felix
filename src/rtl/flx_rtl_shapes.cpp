@@ -1,6 +1,6 @@
 #include "flx_rtl_shapes.hpp"
 #include "flx_rtl.hpp"
-#include "flx_collector.hpp"
+//#include "flx_collector.hpp"
 #include "flx_dynlink.hpp"
 
 namespace flx { namespace rtl {
@@ -30,7 +30,7 @@ static const std::size_t flx_libinst_offsets[4]={
     offsetof(flx_libinst_t,lib)
 };
 
-static ::flx::gc::collector::offset_data_t const flx_libinst_offset_data = { 4, flx_libinst_offsets };
+static ::flx::gc::generic::offset_data_t const flx_libinst_offset_data = { 4, flx_libinst_offsets };
 ::flx::gc::generic::gc_shape_t const flx_libinst_ptr_map = {
   &flx_dynlink_ptr_map,
   "flx_libinst",
@@ -52,7 +52,7 @@ static const std::size_t slist_node_offsets[2]={
     offsetof(slist_node_t,data)
 };
 
-static ::flx::gc::collector::offset_data_t const slist_node_offset_data = { 2, slist_node_offsets };
+static ::flx::gc::generic::offset_data_t const slist_node_offset_data = { 2, slist_node_offsets };
 ::flx::gc::generic::gc_shape_t const slist_node_ptr_map = {
   &flx_libinst_ptr_map,
   "slist_node_t",
@@ -71,7 +71,7 @@ static ::flx::gc::collector::offset_data_t const slist_node_offset_data = { 2, s
 static const std::size_t slist_offsets[1]={
     offsetof(slist_t,head)
 };
-static ::flx::gc::collector::offset_data_t const slist_offset_data = { 1, slist_offsets };
+static ::flx::gc::generic::offset_data_t const slist_offset_data = { 1, slist_offsets };
 
 ::flx::gc::generic::gc_shape_t const slist_ptr_map = {
   &slist_node_ptr_map,
@@ -92,7 +92,7 @@ static const std::size_t _fthread_offsets[1]={
     offsetof(fthread_t,cc)
 };
 
-static ::flx::gc::collector::offset_data_t const _fthread_offset_data = { 1, _fthread_offsets };
+static ::flx::gc::generic::offset_data_t const _fthread_offset_data = { 1, _fthread_offsets };
 
 ::flx::gc::generic::gc_shape_t const _fthread_ptr_map = {
   &slist_ptr_map,
@@ -114,7 +114,7 @@ static const std::size_t schannel_offsets[2]={
     offsetof(schannel_t,waiting_to_write)
 };
 
-static ::flx::gc::collector::offset_data_t const schannel_offset_data = { 2, schannel_offsets };
+static ::flx::gc::generic::offset_data_t const schannel_offset_data = { 2, schannel_offsets };
 
 ::flx::gc::generic::gc_shape_t const schannel_ptr_map = {
   &_fthread_ptr_map,
@@ -135,7 +135,7 @@ static const std::size_t _uctor_offsets[1]= {
   offsetof(_uctor_,data)
 };
 
-static ::flx::gc::collector::offset_data_t const _uctor_offset_data = { 1, _uctor_offsets };
+static ::flx::gc::generic::offset_data_t const _uctor_offset_data = { 1, _uctor_offsets };
 
 ::flx::gc::generic::gc_shape_t const _uctor_ptr_map = {
   &schannel_ptr_map,
@@ -172,7 +172,7 @@ static ::flx::gc::collector::offset_data_t const _uctor_offset_data = { 1, _ucto
 
 //OFFSETS for address
 static const std::size_t _address_offsets[1]={ 0 };
-static ::flx::gc::collector::offset_data_t const _address_offset_data = { 1, _address_offsets };
+::flx::gc::generic::offset_data_t const _address_offset_data = { 1, _address_offsets };
 
 static ::std::string address_encoder (void *p) { 
   return ::flx::gc::generic::blit (p,sizeof (void*));
