@@ -4,7 +4,7 @@ class Rtti {
   type collector_t = "::flx::gc::generic::collector_t*";
 
   //$ The type of an RTTI record.
-  type gc_shape_t = "::flx::gc::generic::gc_shape_t const *";
+  type gc_shape_t = "::flx::gc::generic::gc_shape_t*";
   fun isNULL: gc_shape_t -> bool = "$1==0";
   typedef gc_shape_flags_t = uint;
     val gc_flags_default = 0;
