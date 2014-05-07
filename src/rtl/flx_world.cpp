@@ -137,20 +137,29 @@ int flx_world::setup(int argc, char **argv) {
   if((res = c->init(argc, argv) != 0)) return res;
 
   debug = c->debug;
+  if(debug)
+    fprintf(stderr, "[flx_world: setup]\n");
   debug_driver = c->debug_driver;
 
+  if(debug)
+    fprintf(stderr, "[flx_world: setup] Created allocator\n");
   allocator = new flx::gc::collector::malloc_free();
   allocator->set_debug(c->debug_allocations);
 
   // previous direct ctor scope ended at closing brace of FLX_MAIN
   // but delete can probably be moved up after collector delete (also used by explicit_dtor)
   thread_control = new flx::pthread::thread_control_t(c->debug_threads);
+  if(debug)
+    fprintf(stderr, "[flx_world: setup] Created thread control object\n");
 
   // NB: !FLX_SUPPORT_ASYNC refers to async IO, hence ts still needed thanks to flx pthreads
   collector = new flx::gc::collector::flx_ts_collector_t(allocator, thread_control);
   collector->set_debug(c->debug_collections);
+  if(debug)
+    fprintf(stderr, "[flx_world: setup] Created ts collector\n");
 
   gcp = new flx::gc::generic::gc_profile_t(
+    c->debug_driver,
     c->debug_allocations,
     c->debug_collections,
     c->report_collections,
@@ -163,7 +172,14 @@ int flx_world::setup(int argc, char **argv) {
     collector
   );
 
+  if(debug)
+    fprintf(stderr, "[flx_world: setup] Created gc profile object\n");
+
   library = c->link_library(c,gcp);
+  collector->add_root (library);
+
+  if(debug)
+    fprintf(stderr, "[flx_world: setup] Created library object\n");
 
   if (debug_driver)
     fprintf(stderr, "[flx_world:setup] flx_run driver begins %s\n", c->flx_argv[0]);
@@ -173,12 +189,11 @@ int flx_world::setup(int argc, char **argv) {
 
   // Create the usercode driver instance
   // NB: seems to destroy()ed in do_final_cleanup
-  instance = new (*gcp, flx_libinst_ptr_map, false) flx_libinst_t();
+  instance = new (*gcp, flx_libinst_ptr_map, false) flx_libinst_t(debug_driver);
   collector->add_root(instance);
   instance->create(
     library,
     gcp,
-    library->main_sym,
     c->flx_argc,
     c->flx_argv,
     stdin,

@@ -82,6 +82,9 @@ user level error checking as well.
   //$ Delete returned exception.
   proc delete : cptr[flx_link_failure_t] = "delete $1;";
 
+  //$ This doesn't belong here but it will do for now
+  fun get_debug_driver_flag : 1 -> bool = "PTF gcp->debug_driver" requires property "needs_gc"; 
+
 @h2 Library handle <code>flx_library</code>
 A platform independent handle which can refer to a dynamic
 link library object. Operations in this category are universal
@@ -96,17 +99,8 @@ The constructor makes an unpopulated library handle
 not associated with any particular DLL.
 @felix
   //$ Create a fresh DLL object.
-  fun create_library_handle: unit->flx_library=
-    "new(*PTF gcp, ::flx::rtl::flx_dynlink_ptr_map, false) ::flx::rtl::flx_dynlink_t()";
-
-@h3 Destructor for <copde>flx_library</code>: <code>delete_library_handle</code>.
-This operation forcibly deletes a library handle. It has no effect
-on the load status of any associated dll. Guru use only.
-@felix
-  //$ Delete a DLL object.
-  //proc delete_library_handle: flx_library =
-  //  "delete $1;"
-  //;
+  fun create_library_handle: bool ->flx_library=
+    "new(*PTF gcp, ::flx::rtl::flx_dynlink_ptr_map, false) ::flx::rtl::flx_dynlink_t($1)";
 
 @h3 Load a library <code>dlopen</code>
 This procedure associates a library handle with a particular
@@ -116,26 +110,13 @@ file name and also attempts to load the library.
   //$ May throw flx_link_failure_t.
   proc dlopen:flx_library * string = "$1->dynamic_link($2);";
 
-  //$ Link a DLL using given filename.
-  //$ Returns NULL on success or pointer to exception on failure.
-  gen nothrow_dlopen:flx_library * string -> cptr[flx_link_failure_t] = 
-    "$1->nothrow_dynamic_link($2)"
-  ;
-
   //$ Link a DLL using given filename and modulename.
   //$ May throw flx_link_failure_t.
   proc modopen:flx_library * string * string = 
     "$1->dynamic_link_with_modulename($2, $3);"
-   ;
-
-  //$ Link a DLL using given filename and modulename.
-  //$ Returns NULL on success or pointer to exception on failure.
-  //$ Caller owns result and must delete.
-  gen nothrow_modopen:flx_library * string * string -> cptr[flx_link_failure_t] = 
-    "$1->nothrow_dynamic_link_with_modulename($2, $3)"
   ;
 
-  //$ Link static 
+   //$ Link static 
   proc set_entry_points : flx_library * string * address * address =
     "$1->static_link($2,(::flx::rtl::thread_frame_creator_t)$3, (::flx::rtl::start_t)$4, NULL);"
   ;
@@ -302,8 +283,8 @@ Create a new library instance handle unassociated with any
 library or thread frame.
 @felix
   //$ Create a fresh DLL instance object.
-  fun create_instance_handle: unit->flx_instance=
-    "new(*PTF gcp, ::flx::rtl::flx_libinst_ptr_map, false) ::flx::rtl::flx_libinst_t()";
+  fun create_instance_handle: bool->flx_instance=
+    "new(*PTF gcp, ::flx::rtl::flx_libinst_ptr_map, false) ::flx::rtl::flx_libinst_t($1)";
 
 @h3 Create a library instance from a library: <code>create</code>
 This procedure creates a thread frame from a library,
@@ -316,12 +297,12 @@ or thread frame.
   //$ This is a procedure, so maybe the caller is too
   //$ which means the thread frame must be available.
   proc create: flx_library * flx_instance =
-    "$2->create($1,PTF gcp,$1->main_sym,PTF argc,PTF argv,PTF flx_stdin, PTF flx_stdout, PTF flx_stderr, false);" 
+    "$2->create($1,PTF gcp,PTF argc,PTF argv,PTF flx_stdin, PTF flx_stdout, PTF flx_stderr, false);" 
     requires property "needs_gc"
   ;
 
   proc create_with_args: flx_library * flx_instance * int * + +char=
-    "$2->create($1,PTF gcp,$1->main_sym,$3,$4,PTF flx_stdin, PTF flx_stdout, PTF flx_stderr, false);" 
+    "$2->create($1,PTF gcp,$3,$4,PTF flx_stdin, PTF flx_stdout, PTF flx_stderr, false);" 
     requires property "needs_gc"
   ;
 
@@ -389,38 +370,20 @@ Finally the instance is returned.
 
   //$ Create, link, and prepare a DLL instance from a modulename.
   noinline gen prepare_lib(modulename:string):flx_instance = {
-    var library = create_library_handle();
-    var linstance =  create_instance_handle();
-    // Can't call procedure inside try/catch GRRR
-    //try
-      regopen #get_module_registry (library,modulename);
-      // var tfc = Dynlink::get_thread_frame_creator_as_address library;
-      // var star = Dynlink::get_start_as_address library;
-      // println$ "regopen: creator " + str tfc;
-      // println$ "regopen: start " + str star;
-    //catch exn: flx_link_failure_t =>
-    //  eprintln$ "Dynamic linkage error opening DLL " + modulename;
-    //  raise exn;
-    //endtry
+    var library = create_library_handle(get_debug_driver_flag());
+    Gc::add_root (C_hack::cast[address] library);
+    var linstance =  create_instance_handle(get_debug_driver_flag());
+    regopen #get_module_registry (library,modulename);
     create (library,linstance);
     return linstance;
   }
 
   //$ Create, link, and prepare a DLL instance from a modulename.
   noinline gen prepare_lib_with_args(modulename:string, args:list[string]):flx_instance = {
-    var library = create_library_handle();
-    var linstance =  create_instance_handle();
-    // Can't call procedure inside try/catch GRRR
-    //try
-      regopen #get_module_registry (library,modulename);
-      // var tfc = Dynlink::get_thread_frame_creator_as_address library;
-      // var star = Dynlink::get_start_as_address library;
-      // println$ "regopen: creator " + str tfc;
-      // println$ "regopen: start " + str star;
-    //catch exn: flx_link_failure_t =>
-    //  eprintln$ "Dynamic linkage error opening DLL " + modulename;
-    //  raise exn;
-    //endtry
+    var library = create_library_handle(get_debug_driver_flag());
+    Gc::add_root (C_hack::cast[address] library);
+    var linstance =  create_instance_handle(get_debug_driver_flag());
+    regopen #get_module_registry (library,modulename);
     create_with_args (library,linstance,args);
     return linstance;
   }

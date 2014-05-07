@@ -8,12 +8,19 @@
 #include "flx_collector.hpp"
 #include "flx_exceptions.hpp"
 
+#include <stdint.h>
+#define lobit(p) (p & (uintptr_t)1u)
+#define hibits(p) (p & ~(uintptr_t)1u)
+#define SHAPE(p) ((gc_shape_t *)hibits(p))
+
 //#include "flx_rtl.hpp"
 namespace flx {
 namespace gc {
 namespace collector {
 
 static int mcount FLX_UNUSED = 0;
+
+malloc_free::~malloc_free(){}
 
 void *malloc_free::allocate(::std::size_t amt)
 {
@@ -34,7 +41,7 @@ void malloc_free::deallocate(void *p)
   free(p);
 }
 
-void *flx_collector_t::v_allocate(gc_shape_t const *ptr_map, unsigned long x) {
+void *flx_collector_t::v_allocate(gc_shape_t *ptr_map, unsigned long x) {
   return impl_allocate(ptr_map, x);
 }
 
@@ -113,7 +120,7 @@ void flx_collector_t::judyerror(char const *loc)
   abort();
 }
 
-void * flx_collector_t::impl_allocate(gc_shape_t const *shape, unsigned long nobj)
+void * flx_collector_t::impl_allocate(gc_shape_t *shape, unsigned long nobj)
 {
   // calculate how much memory to request
   ::std::size_t amt = nobj * shape->amt * shape->count;
@@ -125,8 +132,10 @@ void * flx_collector_t::impl_allocate(gc_shape_t const *shape, unsigned long nob
   void *fp = (void *)allocator->allocate(amt);
   assert(fp); // Got some memory!
 
+  ++shape->allocations;
   if(debug)
-    fprintf(stderr,"[gc] Allocated %p, shape=%p = new %s\n", fp,shape,shape->cname);
+    fprintf(stderr,"[gc] Allocated %p, shape=%s[%ld][%ld][#a=%ld,#d=%ld]\n", 
+      fp,shape->cname,shape->count,nobj,shape->allocations,shape->deallocations);
 
   Word_t *p = (Word_t*)(void*)JudyLIns(&j_shape,(Word_t)fp,&je);
   *p = ((Word_t)(void*)shape) | (parity & 1);
@@ -207,18 +216,19 @@ unsigned long flx_collector_t::get_count(void *memory)
   return z;
 }
 
-gc_shape_t const *flx_collector_t::get_shape(void *memory)
+// REQUIRES memory to be head pointer (not interior)
+gc_shape_t *flx_collector_t::get_shape(void *memory)
 {
   assert(memory);
   //fprintf(stderr, "Get shape of %p\n",memory);
   Word_t *pshape= (Word_t*)JudyLGet(j_shape,(Word_t)memory,&je);
   if(pshape==(Word_t*)PPJERR)judyerror("get_shape");
   if(pshape==NULL) abort();
-  return (gc_shape_t const *)(*pshape & (~1ul));
+  return (gc_shape_t *)(*pshape & (~1ul));
 }
 
 void *flx_collector_t::create_empty_array(
-  flx::gc::generic::gc_shape_t const *shape,
+  flx::gc::generic::gc_shape_t *shape,
   unsigned long count
 )
 {
@@ -234,7 +244,7 @@ void flx_collector_t::impl_finalise(void *fp)
 {
   assert(fp!=NULL);
   //fprintf(stderr, "Finaliser for %p\n", fp);
-  gc_shape_t const *shape = get_shape(fp); // inefficient, since we already know the shape!
+  gc_shape_t *shape = get_shape(fp); // inefficient, since we already know the shape!
   //fprintf(stderr, "Got shape %p=%s\n", shape,shape->cname);
   void (*finaliser)(collector_t*, void*) = shape->finaliser;
   //fprintf(stderr, "Got finaliser %p\n", finaliser);
@@ -258,11 +268,11 @@ void flx_collector_t::unlink(void *fp)
   assert(fp!=NULL);
 
   // call the finaliser if there is one
-  //fprintf(stderr,"Calling finaliser\n");
+  //fprintf(stderr,"Unlink: Calling finaliser for %p\n",fp);
   impl_finalise(fp);
 
   allocation_count--;
-  gc_shape_t const *shape = get_shape(fp);
+  gc_shape_t *shape = get_shape(fp);
   unsigned long n_objects = get_count(fp);
   unsigned long nobj = shape -> count * n_objects;
   ::std::size_t size = shape->amt * nobj;
@@ -299,7 +309,8 @@ unsigned long flx_collector_t::reap ()
     res = Judy1Next(j_tmp,&next,&je);
   }
   Judy1FreeArray(&j_tmp,&je);
-  if(debug) {
+  if(debug) 
+  {
     fprintf(stderr,"[gc] Reaped %lu objects\n",count);
     fprintf(stderr,"[gc] Still allocated %lu objects occupying %lu bytes\n", get_allocation_count(), get_allocation_amt());
   }
@@ -383,8 +394,8 @@ void flx_collector_t::mark(pthread::memory_ranges_t *px)
       // of the size of a machine word
       for ( void *i = range.b; i != end; i = (void*)((void**)i+1))
       {
-        if(debug)
-          fprintf(stderr, "[gc] Check if *%p=%p is a pointer\n",i,*(void**)i);
+        //if(debug)
+        // fprintf(stderr, "[gc] Check if *%p=%p is a pointer\n",i,*(void**)i);
         // conservative scan of every word on every stack
         scan_object(*(void**)i, reclimit);
       }
@@ -403,7 +414,7 @@ void flx_collector_t::mark(pthread::memory_ranges_t *px)
     ++i
   )
   {
-    if (debug)
+    if(debug)
       fprintf(stderr, "[gc] Scanning root %p\n", (*i).first);
     scan_object((*i).first, reclimit);
   }
@@ -439,7 +450,7 @@ unsigned long flx_collector_t::sweep()
     fprintf(stderr,"[gc] Collector: Sweep, garbage bit value=%d\n",(int)parity);
   unsigned long sweeped = 0;
   void *current = NULL;
-  Word_t *pshape = (Word_t*)JudyLFirst(j_shape,(Word_t*)&current,&je);
+  Word_t *pshape = (Word_t*)JudyLFirst(j_shape,(Word_t*)&current,&je); // GE
   if(pshape==(Word_t*)PPJERR)judyerror("sweep");
 
   while(pshape!=NULL)
@@ -447,8 +458,18 @@ unsigned long flx_collector_t::sweep()
     if((*pshape & 1) == (parity & 1UL))
     {
       if(debug)
-        fprintf(stderr,"[gc] Garbage %p=%s\n",current,((gc_shape_t const *)(*pshape & ~1UL))->cname);
+        fprintf(stderr,"[gc] Garbage   %p=%s[%ld][%ld/%ld] [#a=%ld,#d=%ld]\n",
+          current,
+          SHAPE(*pshape)->cname,
+          SHAPE(*pshape)->count,
+          get_used(current), 
+          get_count(current),
+          SHAPE(*pshape)->allocations,
+          SHAPE(*pshape)->deallocations
+        );
       ++ sweeped;
+      //fprintf(stderr,"Incr deallocation count ..\n");
+      ++((gc_shape_t *)(*pshape & ~1UL))->deallocations;
       //fprintf(stderr,"Unlinking ..\n");
       unlink(current);
       //fprintf(stderr,"Posting delete ..\n");
@@ -456,11 +477,21 @@ unsigned long flx_collector_t::sweep()
       //fprintf(stderr,"Reaping done\n");
     }
     else
+    {
       if(debug)
-        fprintf(stderr,"[gc] Reachable %p=%s\n",current,((gc_shape_t const *)(*pshape & ~1UL))->cname);
+        fprintf(stderr,"[gc] Reachable %p=%s[%ld][%ld/%ld] [#a=%ld,#d=%ld]\n",
+          current,
+          SHAPE(*pshape)->cname,
+          SHAPE(*pshape)->count,
+          get_used(current), 
+          get_count(current),
+          SHAPE(*pshape)->allocations,
+          SHAPE(*pshape)->deallocations
+        );
+    }
 
     //fprintf(stderr,"Calling Judy for next object\n");
-    pshape = (Word_t*)JudyLNext(j_shape,(Word_t*)(void*)&current,&je);
+    pshape = (Word_t*)JudyLNext(j_shape,(Word_t*)(void*)&current,&je); // GT
     //fprintf(stderr,"Judy got next object %p\n",pshape);
   }
 
@@ -481,12 +512,14 @@ void flx_collector_t::impl_add_root(void *memory)
   if(iter == roots.end())
   {
     std::pair<void *const, unsigned long> entry(memory,1UL);
-    if(debug) fprintf(stderr,"[gc] Add root %p=%s\n", memory,get_shape(memory)->cname);
+    if(debug) 
+      fprintf(stderr,"[gc] Add root %p=%s\n", memory,get_shape(memory)->cname);
     roots.insert (entry);
     root_count++;
   }
   else {
-    if(debug) fprintf(stderr,"[gc] Increment root %p to %ld\n", memory, (*iter).second+1);
+    if(debug) 
+      fprintf(stderr,"[gc] Increment root %p to %ld\n", memory, (*iter).second+1);
     ++(*iter).second;
   }
 }
@@ -501,12 +534,14 @@ void flx_collector_t::impl_remove_root(void *memory)
   }
   if((*iter).second == 1UL)
   {
-    if(debug) fprintf(stderr,"[gc] Remove root %p\n", memory);
+    if(debug) 
+      fprintf(stderr,"[gc] Remove root %p\n", memory);
     roots.erase(iter);
     root_count--;
   }
   else {
-    if(debug) fprintf(stderr,"[gc] Decrement root %p to %ld\n", memory, (*iter).second-1);
+    if(debug) 
+      fprintf(stderr,"[gc] Decrement root %p to %ld\n", memory, (*iter).second-1);
     --(*iter).second;
   }
 }
@@ -547,7 +582,7 @@ void flx_collector_t::register_pointer(void *q, int reclimit)
   Word_t *ppshape = (Word_t*)JudyLLast(j_shape,&head, &je);
   if(ppshape==(Word_t*)PPJERR)judyerror("get_pointer_data");
   if(ppshape == NULL) return pdat; // no lower object
-  gc_shape_t const *pshape = (gc_shape_t const *)(*ppshape & ~1UL);
+  gc_shape_t *pshape = SHAPE(*ppshape);
   unsigned long max_slots = get_count((void*)head);
   unsigned long used_slots = get_used((void*)head);
   unsigned long n = max_slots * pshape->count * pshape->amt;
@@ -581,8 +616,8 @@ void flx_collector_t::scan_object(void *p, int reclimit)
   // at the start of each GC pass.
   Word_t reachable = (parity & 1UL) ^ 1UL;
 again:
-  if(debug)
-    fprintf(stderr,"[gc] Scan object %p, reachable bit value = %d\n",p,(int)reachable);
+  //if(debug)
+  //  fprintf(stderr,"[gc] Scan object %p, reachable bit value = %d\n",p,(int)reachable);
 
   // Now find the shape of the object into which the pointer points,
   // if it is a Felix allocated object. First, we use JudyLLast
@@ -610,7 +645,7 @@ again:
 
   // get the actual shape of the candidate object
   // don't forget to mask out the low bit which is the reachability flag
-  gc_shape_t const *pshape = (gc_shape_t const *)(*ppshape & ~1UL);
+  gc_shape_t *pshape = SHAPE(*ppshape);
 
   // calculate the length of the candidate object in bytes
   unsigned long n = get_count((void*)head) * pshape->count * pshape->amt;
@@ -642,7 +677,7 @@ again:
     );
     for ( void **i = (void**)head; i != end; i = i+1)
     {
-      //if(debug)
+      if(debug)
       //  fprintf(stderr, "Check if *%p=%p is a pointer\n",i,*(void**)i);
       if(reclimit==0)
         Judy1Set(&j_tmp,(Word_t)*i,&je);
@@ -683,7 +718,11 @@ again:
 unsigned long flx_collector_t::impl_collect()
 {
   if(debug)
-    fprintf(stderr,"[gc] Request to collect, thread %lx\n", (unsigned long)flx::pthread::get_current_native_thread());
+    fprintf(stderr,"[gc] Request to collect, thread_control = %p, thread %lx\n", thread_control, (unsigned long)flx::pthread::get_current_native_thread());
+  // THIS IS A BIT OF A HACK
+  // but world_stop() is bugged!!
+  // This is a temporary fix.
+  FLX_SAVE_REGS;
   if (thread_control == NULL || thread_control->world_stop())
   {
     if(debug)

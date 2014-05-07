@@ -9,15 +9,16 @@ namespace flx { namespace rtl {
 // OFFSETS for flx_dynlink_t
 // ********************************************************
 
-::flx::gc::generic::gc_shape_t const flx_dynlink_ptr_map = {
+::flx::gc::generic::gc_shape_t flx_dynlink_ptr_map = {
   NULL,
-  "flx_dynlink_t",
+  "rtl::flx_dynlink_t",
   1,sizeof(flx_dynlink_t),
   0, // no finaliser,
   0,
   0,
   ::flx::gc::generic::tblit<flx_dynlink_t>,::flx::gc::generic::tunblit<flx_dynlink_t>, 
-  ::flx::gc::generic::gc_flags_default
+  ::flx::gc::generic::gc_flags_default,
+  0UL, 0UL
 };
 
 
@@ -32,15 +33,16 @@ static const std::size_t flx_libinst_offsets[4]={
 };
 
 static ::flx::gc::generic::offset_data_t const flx_libinst_offset_data = { 4, flx_libinst_offsets };
-::flx::gc::generic::gc_shape_t const flx_libinst_ptr_map = {
+::flx::gc::generic::gc_shape_t flx_libinst_ptr_map = {
   &flx_dynlink_ptr_map,
-  "flx_libinst",
+  "rtl::flx_libinst",
   1,sizeof(flx_libinst_t),
   0, // no finaliser,
   &flx_libinst_offset_data,
   ::flx::gc::generic::scan_by_offsets,
   ::flx::gc::generic::tblit<flx_libinst_t>,::flx::gc::generic::tunblit<flx_libinst_t>, 
-  ::flx::gc::generic::gc_flags_default
+  ::flx::gc::generic::gc_flags_default,
+  0UL, 0UL
 };
 
 
@@ -54,15 +56,16 @@ static const std::size_t slist_node_offsets[2]={
 };
 
 static ::flx::gc::generic::offset_data_t const slist_node_offset_data = { 2, slist_node_offsets };
-::flx::gc::generic::gc_shape_t const slist_node_ptr_map = {
+::flx::gc::generic::gc_shape_t slist_node_ptr_map = {
   &flx_libinst_ptr_map,
-  "slist_node_t",
+  "rtl::slist_node_t",
   1,sizeof(slist_node_t),
   0, // no finaliser,
   &slist_node_offset_data,
   ::flx::gc::generic::scan_by_offsets,
   ::flx::gc::generic::tblit<slist_node_t>,::flx::gc::generic::tunblit<slist_node_t>, 
-  ::flx::gc::generic::gc_flags_default
+  ::flx::gc::generic::gc_flags_default,
+  0UL, 0UL
 };
 
 
@@ -74,15 +77,16 @@ static const std::size_t slist_offsets[1]={
 };
 static ::flx::gc::generic::offset_data_t const slist_offset_data = { 1, slist_offsets };
 
-::flx::gc::generic::gc_shape_t const slist_ptr_map = {
+::flx::gc::generic::gc_shape_t slist_ptr_map = {
   &slist_node_ptr_map,
-  "slist_t",
+  "rtl::slist_t",
   1,sizeof(slist_t),
   0, // no finaliser
   &slist_offset_data,
   ::flx::gc::generic::scan_by_offsets,
   ::flx::gc::generic::tblit<slist_t>,::flx::gc::generic::tunblit<slist_t>, 
-  ::flx::gc::generic::gc_flags_default
+  ::flx::gc::generic::gc_flags_default,
+  0UL, 0UL
 };
 
 
@@ -95,15 +99,16 @@ static const std::size_t _fthread_offsets[1]={
 
 static ::flx::gc::generic::offset_data_t const _fthread_offset_data = { 1, _fthread_offsets };
 
-::flx::gc::generic::gc_shape_t const _fthread_ptr_map = {
+::flx::gc::generic::gc_shape_t _fthread_ptr_map = {
   &slist_ptr_map,
-  "fthread_t",
+  "rtl::fthread_t",
   1,sizeof(fthread_t),
   0,
   &_fthread_offset_data,
   ::flx::gc::generic::scan_by_offsets,
   ::flx::gc::generic::tblit<fthread_t>,::flx::gc::generic::tunblit<fthread_t>, 
-  gc::generic::gc_flags_immobile
+  gc::generic::gc_flags_immobile,
+  0UL, 0UL
 };
 
 
@@ -117,15 +122,16 @@ static const std::size_t schannel_offsets[2]={
 
 static ::flx::gc::generic::offset_data_t const schannel_offset_data = { 2, schannel_offsets };
 
-::flx::gc::generic::gc_shape_t const schannel_ptr_map = {
+::flx::gc::generic::gc_shape_t schannel_ptr_map = {
   &_fthread_ptr_map,
-  "schannel_t",
+  "rtl::schannel_t",
   1,sizeof(schannel_t),
   0, // no finaliser
   &schannel_offset_data,
   ::flx::gc::generic::scan_by_offsets,
   ::flx::gc::generic::tblit<schannel_t>,::flx::gc::generic::tunblit<schannel_t>, 
-  gc::generic::gc_flags_default
+  gc::generic::gc_flags_default,
+  0UL, 0UL
 };
 
 // ********************************************************
@@ -138,9 +144,9 @@ static const std::size_t _uctor_offsets[1]= {
 
 static ::flx::gc::generic::offset_data_t const _uctor_offset_data = { 1, _uctor_offsets };
 
-::flx::gc::generic::gc_shape_t const _uctor_ptr_map = {
+::flx::gc::generic::gc_shape_t _uctor_ptr_map = {
   &schannel_ptr_map,
-  "_uctor_",
+  "rtl::_uctor_",
   1,
   sizeof(_uctor_),
   0,
@@ -155,16 +161,17 @@ static ::flx::gc::generic::offset_data_t const _uctor_offset_data = { 1, _uctor_
 // ********************************************************
 
 
-::flx::gc::generic::gc_shape_t const _int_ptr_map = {
+::flx::gc::generic::gc_shape_t _int_ptr_map = {
   &_uctor_ptr_map,
-  "int",
+  "rtl::int",
   1,
   sizeof(int),
   0,
   0,
   0,
   ::flx::gc::generic::tblit<int>,::flx::gc::generic::tunblit<int>, 
-  gc::generic::gc_flags_default
+  gc::generic::gc_flags_default,
+  0UL, 0UL
 };
 
 // ********************************************************
@@ -184,16 +191,17 @@ static size_t address_decoder (void *p, char *s, size_t i) {
 }
 
 
-::flx::gc::generic::gc_shape_t const _address_ptr_map = {
+::flx::gc::generic::gc_shape_t _address_ptr_map = {
   &_int_ptr_map,
-  "address",
+  "rtl::address",
   1,
   sizeof(void*),
   0,
   &_address_offset_data,
   ::flx::gc::generic::scan_by_offsets,
   ::flx::gc::generic::tblit<void*>,::flx::gc::generic::tunblit<void*>, 
-  gc::generic::gc_flags_default
+  gc::generic::gc_flags_default,
+  0UL, 0UL
 };
 
 
@@ -202,16 +210,17 @@ static size_t address_decoder (void *p, char *s, size_t i) {
 // uses "unit_pre_map" as the back link for generated shape tables
 // ********************************************************
 
-::flx::gc::generic::gc_shape_t const unit_ptr_map = {
+::flx::gc::generic::gc_shape_t unit_ptr_map = {
   &_address_ptr_map,
-  "unit",
+  "rtl::unit",
   1,
   sizeof(unit),
   0,
   0,
   0,
   ::flx::gc::generic::tblit<unit>,::flx::gc::generic::tunblit<unit>, 
-  gc::generic::gc_flags_default
+  gc::generic::gc_flags_default,
+  0UL, 0UL
 };
 
 }}

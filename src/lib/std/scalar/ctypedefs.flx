@@ -1,5 +1,7 @@
 pod type byte = "unsigned char";
-pod type address = "void *";
+
+// _gc_pointer is temporary hack, to see if this causing GC bug
+_gc_pointer type address = "void *";
 pod type char = "char";
 
 pod type tiny = "signed char";

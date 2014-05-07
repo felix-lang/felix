@@ -11,7 +11,7 @@ flx_ts_collector_t::flx_ts_collector_t(allocator_t *a, flx::pthread::thread_cont
 
 flx_ts_collector_t::~flx_ts_collector_t(){}
 
-void *flx_ts_collector_t::v_allocate(gc_shape_t const *ptr_map, unsigned long x) {
+void *flx_ts_collector_t::v_allocate(gc_shape_t *ptr_map, unsigned long x) {
   flx::pthread::flx_mutex_locker_t l(mut);
   return impl_allocate(ptr_map,x);
 }

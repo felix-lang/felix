@@ -8,5 +8,6 @@ cflags: -Ilib/rtl
 Requires: flx_gc flx_exceptions dl flx_pthread
 library: rtl
 includes:  '"flx_rtl.hpp"'  <iostream> <cstdio> <cstddef> <cassert> <climits> <string>
+macros: BUILD_RTL
 srcdir: src/rtl
 src: .*\.cpp

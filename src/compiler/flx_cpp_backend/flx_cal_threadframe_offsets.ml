@@ -18,7 +18,7 @@ open Flx_gen_shape
 open Flx_findvars
 
 
-let gen_thread_frame_offsets s syms bsym_table last_ptr_map =
+let gen_thread_frame_offsets module_name s syms bsym_table last_ptr_map =
   let vars = find_thread_vars_with_type bsym_table in
   let ts = [] in
   let name = "thread_frame_t" in
@@ -43,7 +43,7 @@ let gen_thread_frame_offsets s syms bsym_table last_ptr_map =
   (
     "\n//OFFSETS for "^ name ^ "\n"
   );
-  gen_offset_data s n name offsets 
+  gen_offset_data module_name s n name offsets 
     false false [] (Some "::flx::gc::generic::gc_flags_immobile") 
     last_ptr_map "0" "0"
 

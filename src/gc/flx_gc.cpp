@@ -14,9 +14,13 @@ namespace flx {
 namespace gc {
 namespace generic {
 
+allocator_t::~allocator_t(){}
+collector_t::~collector_t(){}
+
 collector_t::collector_t() : debug(false), module_registry(0){}
 
 gc_profile_t::gc_profile_t (
+  bool debug_driver_,
   bool debug_allocations_,
   bool debug_collections_,
   bool report_collections_,
@@ -28,6 +32,7 @@ gc_profile_t::gc_profile_t (
   bool finalise_,
   flx::gc::generic::collector_t *collector_
 ) :
+  debug_driver(debug_driver_),
   debug_allocations(debug_allocations_),
   debug_collections(debug_collections_),
   report_collections(report_collections_),
@@ -77,7 +82,7 @@ unsigned long gc_profile_t::actually_collect() {
 }
 
 void *gc_profile_t::allocate(
-  flx::gc::generic::gc_shape_t const *shape,
+  flx::gc::generic::gc_shape_t *shape,
   unsigned long count,
   bool allow_gc
 )
@@ -145,7 +150,7 @@ void *gc_profile_t::allocate(
  *  describes a single element of the inner static length array, so we have to
  *  multiply the RTTI static length by the dynamic length.
  */
-void *scan_by_offsets(collector_t *collector, gc_shape_t const *shape, void *p, unsigned long dyncount, int reclimit)
+void *scan_by_offsets(collector_t *collector, gc_shape_t *shape, void *p, unsigned long dyncount, int reclimit)
 {
   Word_t fp = (Word_t)p;
 
@@ -157,6 +162,7 @@ void *scan_by_offsets(collector_t *collector, gc_shape_t const *shape, void *p, 
   ::std::size_t n_offsets = data->n_offsets;
   ::std::size_t const *offsets = data->offsets;
 
+  //fprintf(stderr, "scan by offsets: shape %s has %d offsets\n", shape->cname, (int)n_offsets);
   // if the number of used slots is one and there is only one offset
   // then there is only one possible pointer in the object at the specified offset
   // so just return the value stored at that offset immediately
@@ -174,6 +180,8 @@ void *scan_by_offsets(collector_t *collector, gc_shape_t const *shape, void *p, 
     {
       void **pq = (void**)(void*)((unsigned char*)fp + offsets[i]);
       void *q = *pq;
+      //fprintf(stderr, "scan by offsets %s, #%d, offset %ld, address %p, value %p\n", 
+      //  shape->cname, i, offsets[i], pq, q);
       // instead of returning the pointer, register it for later processing
       if(q)
       {
@@ -200,7 +208,7 @@ void *scan_by_offsets(collector_t *collector, gc_shape_t const *shape, void *p, 
 void *operator new(
   std::size_t amt,
   flx::gc::generic::gc_profile_t &gcp,
-  flx::gc::generic::gc_shape_t const &shape,
+  flx::gc::generic::gc_shape_t &shape,
   bool allow_gc
 )
 {
@@ -217,7 +225,7 @@ void *operator new(
 void operator delete(
   void*,
   flx::gc::generic::gc_profile_t &,
-  flx::gc::generic::gc_shape_t const &,
+  flx::gc::generic::gc_shape_t &,
   bool
 )
 {

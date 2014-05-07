@@ -26,7 +26,7 @@ struct GC_EXTERN pointer_data_t
   void *head;                         //< head object
   unsigned long max_elements;         //< allocated slots
   unsigned long used_elements;        //< used slots
-  gc_shape_t const *shape;            //< shape
+  gc_shape_t *shape;            //< shape
 };
 
 enum gc_shape_flags_t {
@@ -38,13 +38,13 @@ enum gc_shape_flags_t {
 
 /// Describes runtime object shape.
 typedef void finaliser_t (collector_t*, void*); 
-typedef void *scanner_t(collector_t*, gc_shape_t const *, void *, unsigned long, int);
+typedef void *scanner_t(collector_t*, gc_shape_t *, void *, unsigned long, int);
 typedef ::std::string encoder_t (void *);
 typedef ::std::size_t decoder_t(void *, char *, ::std::size_t);
 
 struct GC_EXTERN gc_shape_t
 {
-  gc_shape_t const *next_shape;   ///< pointer to next shape in list or NULL
+  gc_shape_t *next_shape;   ///< pointer to next shape in list or NULL
   char const *cname;              ///< C++ typename
   ::std::size_t count;              ///< static array element count
   ::std::size_t amt;                ///< bytes allocated
@@ -54,6 +54,8 @@ struct GC_EXTERN gc_shape_t
   encoder_t *encoder;             ///< encoder function 
   decoder_t *decoder;             ///< encoder function 
   gc_shape_flags_t flags;         ///< flags
+  unsigned long allocations;
+  unsigned long deallocations;
 };
 
 struct GC_EXTERN offset_data_t
@@ -98,7 +100,7 @@ struct allocator_t {
   allocator_t():debug(false){}
   virtual void *allocate(::std::size_t)=0;
   virtual void deallocate(void *)=0;
-  virtual ~allocator_t(){};
+  virtual ~allocator_t();
   void set_debug(bool d){debug=d;}
 };
 
@@ -109,7 +111,7 @@ struct GC_EXTERN collector_t
   void *module_registry; 
   void set_debug(bool d){debug=d;}
   collector_t();
-  virtual ~collector_t(){}
+  virtual ~collector_t();
   virtual ::flx::pthread::thread_control_t *get_thread_control()const =0;
   virtual void register_pointer(void *q, int reclimit)=0;
 
@@ -128,7 +130,7 @@ struct GC_EXTERN collector_t
 
   // Hooks for the supplied allocator, which operate in
   // terms of shape objects rather than raw memory amounts.
-  void *allocate(gc_shape_t const *shape, unsigned long x) {
+  void *allocate(gc_shape_t *shape, unsigned long x) {
     return v_allocate(shape,x);
   }
 
@@ -164,14 +166,14 @@ struct GC_EXTERN collector_t
   virtual void incr_used(void *memory, unsigned long)=0;
   virtual unsigned long get_used(void *memory)=0;
   virtual unsigned long get_count(void *memory)=0;
-  virtual void *create_empty_array( gc_shape_t const *shape, unsigned long count)=0;
+  virtual void *create_empty_array( gc_shape_t *shape, unsigned long count)=0;
 
   virtual pointer_data_t get_pointer_data(void *)=0;
 private:
   virtual unsigned long v_get_allocation_count()const=0;
   virtual unsigned long v_get_root_count()const=0;
   virtual unsigned long v_get_allocation_amt()const=0;
-  virtual void *v_allocate(gc_shape_t const *shape, unsigned long)=0;
+  virtual void *v_allocate(gc_shape_t *shape, unsigned long)=0;
   virtual void v_finalise(void *fp)=0;
   virtual unsigned long v_collect()=0;
   virtual void v_add_root(void *memory)=0;
@@ -186,6 +188,7 @@ private:
 
 // The gc_profile_t is a grab bag of controls related to the collector.
 struct GC_EXTERN gc_profile_t {
+  bool debug_driver;
   bool debug_allocations;     ///< allocator debug on/off
   bool debug_collections;     ///< collector debug on/off
   bool report_collections;     ///< collector debug on/off
@@ -208,12 +211,13 @@ struct GC_EXTERN gc_profile_t {
   unsigned long actually_collect(); ///< function which actually collects
 
   void *allocate(
-    flx::gc::generic::gc_shape_t const *shape,
+    flx::gc::generic::gc_shape_t *shape,
     unsigned long count,
     bool allow_gc
   );
 
   gc_profile_t (
+    bool debug_driver_,
     bool debug_allocations_,
     bool debug_collections_,
     bool report_collections_,
@@ -243,7 +247,7 @@ GC_EXTERN void *operator new
 (
   ::std::size_t,
   flx::gc::generic::gc_profile_t &,
-  flx::gc::generic::gc_shape_t const &,
+  flx::gc::generic::gc_shape_t &,
   bool
 );
 
@@ -253,7 +257,7 @@ GC_EXTERN void *operator new
 GC_EXTERN void operator delete(
   void*,
   flx::gc::generic::gc_profile_t &,
-  flx::gc::generic::gc_shape_t const &,
+  flx::gc::generic::gc_shape_t &,
   bool
 );
 

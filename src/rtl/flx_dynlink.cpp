@@ -102,26 +102,30 @@ flx_load_module(const std::string& filename)
 flx_dynlink_t::flx_dynlink_t(flx_dynlink_t const&) {} // no copy hack
 void flx_dynlink_t::operator=(flx_dynlink_t const&) {} // no copy hack
 
-flx_dynlink_t::flx_dynlink_t():
+flx_dynlink_t::flx_dynlink_t(bool debug_):
   filename(""),
   modulename(""),
   library(0),
   thread_frame_creator(NULL),
   start_sym(NULL),
-  main_sym(NULL)
+  main_sym(NULL),
+  debug(debug_)
 {}
 
 flx_dynlink_t::flx_dynlink_t(
   ::std::string modulename_a,
   thread_frame_creator_t thread_frame_creator,
   start_t start_sym,
-  main_t main_sym) throw(flx_link_failure_t)
+  main_t main_sym, 
+  bool debug_
+  ) throw(flx_link_failure_t)
 :
   modulename (modulename_a),
   library(0),
   thread_frame_creator(thread_frame_creator),
   start_sym(start_sym),
-  main_sym(main_sym)
+  main_sym(main_sym),
+  debug(debug_)
 {
   if(!thread_frame_creator)
     throw flx_link_failure_t("<static link>","dlsym","create_thread_frame");
@@ -156,36 +160,26 @@ void flx_dynlink_t::dynamic_link_with_modulename(const ::std::string& filename_a
   if(!thread_frame_creator)
     throw flx_link_failure_t(filename,"dlsym",modulename+"_create_thread_frame");
 
-  //fprintf(stderr,"Thread frame creator found at %p\n",thread_frame_creator);
+  if (debug)
+    fprintf(stderr,"[dynlink:dynamic_link] Thread frame creator found at %p\n",thread_frame_creator);
 
   start_sym = (start_t)FLX_SDLSYM(library,(modulename+"_flx_start").c_str());
+  if (debug)
+    fprintf(stderr,"[dynlink:dynamic_link] Start symbol = %p\n",start_sym);
   if(!start_sym)
     throw flx_link_failure_t(filename,"dlsym",modulename+"_flx_start");
 
   main_sym = (main_t)FLX_DLSYM(library,flx_main);
 
-  //fprintf(stderr,"Start symbol found at %p\n",start_sym);
-  //fprintf(stderr,"main symbol found at %p\n",main_sym);
+  if(debug) 
+    fprintf(stderr,"[dynlink:dynamic_link] main symbol = %p\n",main_sym);
 
-}
-
-flx_link_failure_t *flx_dynlink_t::nothrow_dynamic_link_with_modulename(
-  const ::std::string& filename_a, const ::std::string& modulename_a)
-{
-  try { dynamic_link_with_modulename (filename_a, modulename_a); return NULL; }
-  catch (flx_link_failure_t const &x) { return new flx_link_failure_t(x); }
 }
 
 void flx_dynlink_t::dynamic_link(const ::std::string& filename_a) throw(flx_link_failure_t)
 {
   string mname = ::flx::rtl::strutil::filename_to_modulename (filename_a);
   dynamic_link_with_modulename(filename_a,mname);
-}
-
-flx_link_failure_t *flx_dynlink_t::nothrow_dynamic_link(const ::std::string& filename_a)
-{
-  try { dynamic_link(filename_a); return NULL; }
-  catch (flx_link_failure_t const &x) { return new flx_link_failure_t(x); }
 }
 
 // dont actually unload libraries
@@ -213,14 +207,14 @@ flx_dynlink_t::~flx_dynlink_t() { }
 // libinst
 // ************************************************
 
-flx_libinst_t::~flx_libinst_t(){}
-flx_libinst_t::flx_libinst_t() :
+flx_libinst_t::~flx_libinst_t() {}
+flx_libinst_t::flx_libinst_t(bool debug_) :
   thread_frame (NULL),
   start_proc (NULL),
   main_proc (NULL),
   lib (NULL),
   gcp(NULL),
-  debug(false)
+  debug(debug_)
 {}
 
 flx_libinst_t::flx_libinst_t(flx_libinst_t const&){}
@@ -230,7 +224,6 @@ void flx_libinst_t::create
 (
   flx_dynlink_t *lib_a,
   flx::gc::generic::gc_profile_t *gcp_a,
-  main_t main_sym,
   int argc,
   char **argv,
   FILE *stdin_,
@@ -243,18 +236,20 @@ void flx_libinst_t::create
   gcp = gcp_a;
   debug = debug_;
   if (debug)
+    fprintf(stderr,"[libinst:create] Creating instance for library %p->'%s'\n",lib, lib->filename.c_str());
+  if (debug)
     fprintf(stderr, "[libinst:create] Creating thread frame\n");
   thread_frame = lib->thread_frame_creator( gcp);
   if (debug)
-    fprintf(stderr, "[libinst:create] thread frame CREATED\n");
+    fprintf(stderr, "[libinst:create] thread frame CREATED %p\n", thread_frame);
   if (debug)
     fprintf(stderr, "[libinst:create] CREATING start_proc by running start_sym %p\n", lib->start_sym);
   start_proc = lib->start_sym(thread_frame, argc, argv, stdin_,stdout_,stderr_);
   if (debug)
     fprintf(stderr, "[libinst:create] start_proc CREATED %p\n", start_proc);
   if (debug)
-    fprintf(stderr, "[libinst:create] CREATING main_proc by running main_sym %p\n", main_sym);
-  main_proc = main_sym?main_sym(thread_frame):0;
+    fprintf(stderr, "[libinst:create] CREATING main_proc by running main_sym %p\n", lib->main_sym);
+  main_proc = lib->main_sym?lib->main_sym(thread_frame):0;
   if (debug)
     fprintf(stderr, "[libinst:create] main_proc CREATED %p\n", main_proc);
 }

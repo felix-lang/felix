@@ -180,7 +180,7 @@ struct RTL_EXTERN flx_dynlink_t
   main_t main_sym;
 
   // Allow a default initialised default object refering to no library.
-  flx_dynlink_t();
+  flx_dynlink_t(bool debug);
 
   // set static link data into an empty dynlink object.
   void static_link(
@@ -196,21 +196,22 @@ struct RTL_EXTERN flx_dynlink_t
     ::std::string modulename,
     thread_frame_creator_t thread_frame_creator,
     start_t start_sym,
-    main_t main_sym) throw(flx_link_failure_t);
+    main_t main_sym,
+    bool debug
+  ) throw(flx_link_failure_t);
 
   // dynamic link library from filename and module name
   void dynamic_link_with_modulename(
      const ::std::string& filename, 
      const ::std::string& modulename) throw(flx_link_failure_t);
-  // nothrow variant returns pointer to heap allocated exception or NULL
-  flx_link_failure_t *nothrow_dynamic_link_with_modulename(const ::std::string& filename, const ::std::string& modulename);
 
   // With this variant the module name is calculated from the filename.
   void dynamic_link(const ::std::string& filename) throw(flx_link_failure_t);
-  // nothrow variant returns pointer to heap allocated exception or NULL
-  flx_link_failure_t *nothrow_dynamic_link(const ::std::string& filename);
 
   virtual ~flx_dynlink_t();
+
+  bool debug;
+
 
 private:
   void unlink(); // implementation of destructor only
@@ -233,7 +234,6 @@ struct RTL_EXTERN flx_libinst_t
   (
     flx_dynlink_t *lib_a,
     ::flx::gc::generic::gc_profile_t *gcp_a,
-    main_t main_sym,
     int argc,
     char **argv,
     FILE *stdin_,
@@ -246,7 +246,7 @@ struct RTL_EXTERN flx_libinst_t
 
   con_t *bind_proc(void *fn, void *data);
   virtual ~flx_libinst_t();
-  flx_libinst_t();
+  flx_libinst_t(bool debug);
 
 private:
   flx_libinst_t(flx_libinst_t const&);

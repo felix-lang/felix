@@ -17,7 +17,7 @@ struct GC_EXTERN flx_ts_collector_t :
 
 private:
   /// allocator
-  void *v_allocate(gc_shape_t const *ptr_map, unsigned long);
+  void *v_allocate(gc_shape_t *ptr_map, unsigned long);
 
   /// collector (returns number of objects collected)
   unsigned long v_collect();

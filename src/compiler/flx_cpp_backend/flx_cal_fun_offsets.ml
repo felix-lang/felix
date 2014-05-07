@@ -24,7 +24,7 @@ open Flx_findvars
 
 let is_instantiated syms i ts = Hashtbl.mem syms.instances (i,ts)
 
-let gen_fun_offsets s syms bsym_table index vs ps ret ts instance props last_ptr_map : unit =
+let gen_fun_offsets module_name s syms bsym_table index vs ps ret ts instance props last_ptr_map : unit =
   print_debug syms ("Gen fun offsets fun=" ^ si index^ " inst = " ^ si instance);
   let vars =  (find_references syms bsym_table index ts) in
   let vars = filter (fun (i, _) -> is_instantiated syms i ts) vars in
@@ -70,9 +70,9 @@ let gen_fun_offsets s syms bsym_table index vs ps ret ts instance props last_ptr
     (match ret with BTYP_void -> "procedure " | _ -> "function ") ^
     name ^ "\n"
   );
-  gen_offset_data s n name offsets true false props None last_ptr_map "0" "0"
+  gen_offset_data module_name s n name offsets true false props None last_ptr_map "0" "0"
 
-let gen_all_fun_shapes scan s syms bsym_table last_ptr_map =
+let gen_all_fun_shapes module_name scan s syms bsym_table last_ptr_map =
   print_debug syms "gen all fun shapes ...";
   (* Make a shape for every non-C style function with the property `Heap_closure *)
   (* print_endline "Function and procedure offsets"; *)
@@ -94,7 +94,7 @@ print_string ("Checking to see if we need RTTI for function " ^ Flx_bsym.id bsym
         if mem `Cfun props then begin (* print_endline " No, cfun"; *) () end else
         if mem `Heap_closure props then begin
           (* print_endline " Yes"; *)
-          gen_fun_offsets
+          gen_fun_offsets module_name
             s
             syms
             bsym_table

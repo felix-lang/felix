@@ -3,7 +3,7 @@
 
 namespace flx { namespace gc { namespace generic {
 
-void *Judy1_scanner(collector_t *collector, gc_shape_t const *shape, void *pp, unsigned long dyncount, int reclimit)
+void *Judy1_scanner(collector_t *collector, gc_shape_t *shape, void *pp, unsigned long dyncount, int reclimit)
 {
   void *p = *(void**)pp;
   //printf("Scanning judy1 array %p->%p\n", pp, p);
@@ -18,7 +18,7 @@ void *Judy1_scanner(collector_t *collector, gc_shape_t const *shape, void *pp, u
   return 0;
 }
 
-void *JudyL_scanner(collector_t *collector, gc_shape_t const *shape, void *pp, unsigned long dyncount, int reclimit)
+void *JudyL_scanner(collector_t *collector, gc_shape_t *shape, void *pp, unsigned long dyncount, int reclimit)
 {
   void *p = *(void**)pp;
   //printf("Scanning judyL array %p->%p\n", pp, p);
@@ -36,7 +36,7 @@ void *JudyL_scanner(collector_t *collector, gc_shape_t const *shape, void *pp, u
   return 0;
 }
 
-void *JudySL_scanner(collector_t *collector, gc_shape_t const *shape, void *pp, unsigned long dyncount, int reclimit)
+void *JudySL_scanner(collector_t *collector, gc_shape_t *shape, void *pp, unsigned long dyncount, int reclimit)
 {
   void *p = *(void**)pp;
 //  printf("Scanning judySL array %p->%p\n", pp, p);
