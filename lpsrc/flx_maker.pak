@@ -110,7 +110,7 @@ fun link_strings(FLX_INSTALL_DIR:string): string * string =
  else:
   tangle("#define FLX_USE_REGPARM3 0")
 
-@if pyconfig.TARGET_CXX.options.HAVE_ASM_LABELS:
+@if pyconfig.TARGET_CXX.options.HAVE_ASM_LABELS and not pyconfig.MACOSX:
   tangle("#define FLX_HAVE_ASM_LABELS 1")
  else:
   tangle("#define FLX_HAVE_ASM_LABELS 0")
