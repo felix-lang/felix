@@ -151,7 +151,7 @@ class FlxCoreBuild
     cmd.build_flx_tools ?? build_flx_tools(cmd.target_dir, cmd.target_bin, flx_tools);
     cmd.build_web_plugins ?? build_plugins(cmd.target_dir, cmd.target_bin, web_plugins);
     cmd.build_tools ?? build_exes(cmd.target_dir, cmd.target_bin, tools);
-    cmd.build_tools ?? build_flx_web (cmd.target_dir, cmd.target_bin, web_plugins);
+    cmd.build_flx_web ?? build_flx_web (cmd.target_dir, cmd.target_bin, web_plugins);
     println$ "Build Complete";
   }
 
@@ -173,6 +173,7 @@ class FlxCoreBuild
     println$ "  --build-flx-tools           Felix compile flx build tools";
     println$ "  --build-web-plugins         Felix compile the webserver plugins";
     println$ "  --build-tools               Felix compile standard tools";
+    println$ "  --build-flx-web             Felix compile web server executable";
     println$ "";
     println$ "  --debug                     do stuff verbosely";
     println$ "";
@@ -205,6 +206,7 @@ class FlxCoreBuild
        build_flx=false,
        build_flx_tools=false,
        build_tools=false,
+       build_flx_web=false,
        debug = false
      );
 
@@ -230,10 +232,13 @@ class FlxCoreBuild
          &cmd.build_flx_tools <- true;
        elif arg == "--build-tools" do
          &cmd.build_tools<- true;
+       elif arg == "--build-flx-web" do
+         &cmd.build_flx_web <- true;
        elif arg == "--build-all" do
          &cmd.build_web_plugins<- true;
          &cmd.build_toolchain_plugins<- true;
          &cmd.build_flx <- true;
+         &cmd.build_flx_web <- true;
          &cmd.build_flx_tools <- true;
          &cmd.build_tools<- true;
        elif arg == "--help" do

@@ -47,7 +47,7 @@ fun get_flx (fname:string) = {
     | None => f"NO FILE %S FOUND IN %S" (fname, str FLX_PATH)
     endmatch
   ;
-  println$ "Loaded felix file " + fname+", len="+str (flx.len.int);
+  //println$ "Loaded felix file " + fname+", len="+str (flx.len.int);
   return flx;
 }
 
@@ -388,7 +388,7 @@ next:>
   
   proc handle_cmd (b:string) 
   {
-println$ "CMD=@"+b;
+//println$ "CMD=@"+b;
     match Match (tangler_def_re2, b) with
     | Some ?v => def_tangler (v.1, v.2);
     | None => 

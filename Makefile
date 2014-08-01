@@ -319,6 +319,13 @@ web-plugins:
 	build/release/host/bin/flx --test=build/release  src/tools/flx_build_boot \
 		--build-web-plugins
 
+flx-web:
+	# =========================================================
+	# rebuild web plugins
+	# =========================================================
+	build/release/host/bin/flx --test=build/release  src/tools/flx_build_boot \
+		--build-flx-web
+
 toolchain-plugins:
 	# =========================================================
 	# rebuild toolchain plugins

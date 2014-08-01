@@ -868,14 +868,14 @@ var clock = Faio::mk_alarm_clock();
 // being duplicated as it must be [a bug in Felix]
 noinline proc handler (var k:socket_t) ()
 {
-   dbg$ "Spawned fthread running for socket "+str k+"\n";
+  //dbg$ "Spawned fthread running for socket "+str k+"\n";
   // should spawn fthread here to allow for more io overlap
 
   var line: string;
   get_line(k, &line);  // should be the GET line.
   //cat(s, DEVNULL);
 
-  print$ "got line from socket "+str k+": "; print line; endl;
+  print$ "IP "+Faio_posix::getpeername k+": got line from socket "+str k+": "; print line; endl;
 
   // now I need to parse the GET line, get a file name out of its url
   // (e.g. unqualfied -> index.html and name/flx.jpg -> flx.jpg
@@ -915,8 +915,8 @@ println$ "Got the line length .. "+line.len.str;
     endmatch;
 
   | Some (?base, ?file) => 
-      print "well formed GET ...\n";
-      print "base="; print base; endl;
+      //print "well formed GET ...\n";
+      //print "base="; print base; endl;
       print "file="; print file; endl;
       serve_file(k,file);
   endmatch;
@@ -927,9 +927,9 @@ println$ "Got the line length .. "+line.len.str;
   //Faio_posix::shutdown(s, 1); // disallow further sends.
   //cat(s, DEVNULL);
 
-  fprint$ cstderr,"fthread socket "+str k+" close delay ..\n";
+  //fprint$ cstderr,"fthread socket "+str k+" close delay ..\n";
   Faio::sleep(clock,DELAY); // give OS time to empty its buffers
-  fprint$ cstderr,"fthread socket "+str k+" shutdown now\n";
+  //fprint$ cstderr,"fthread socket "+str k+" shutdown now\n";
 
 // try this:
 // Advised by: koettermarkus@gmx.de, MANY THANKS!
@@ -964,18 +964,18 @@ retry:>
 force_close:> 
   Socket::shutdown(k,2);
   ioclose(k);
-  fprint$ cstderr,"fthread "+str k+" terminating!\n";
+  //fprint$ cstderr,"fthread "+str k+" terminating!\n";
 };
 
 spawn_fthread { while true do Faio::sleep(clock, 60.0); collect(); done };
 forever {
   var s: socket_t;
-  dbg$ "Waiting for connection\n";
+  //dbg$ "Waiting for connection\n";
   accept(listener, &s);  // blocking
-  dbg$ "got connection "+str s + "\n";  // error check here
+  //dbg$ "got connection "+str s + "\n";  // error check here
 
   // hmm - spawning an fthread is blocking the web server. don't know why
-  print$ "spawning fthread to handle connection "+str s+"\n";
+  //dbg$ "spawning fthread to handle connection "+str s+"\n";
   var h = handler s;
   spawn_fthread  h;
  //collect(); // this hangs everything, no idea why!
