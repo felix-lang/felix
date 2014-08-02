@@ -807,7 +807,9 @@ proc serve_file(s: socket_t, infname: string)
      suffix,fname = split_suffix fname;
   done 
 
-  if suffix \in list ("flx","flxh") do 
+  if fname == "robots.txt" do
+    serve_raw (s,INSTALL_ROOT + "/robots.txt","txt");
+  elif suffix \in list ("flx","flxh") do 
     serve_felix(s, fname);
   elif suffix \in list ("py") do 
     serve_py(s, fname);
@@ -826,9 +828,9 @@ proc serve_file(s: socket_t, infname: string)
     fname = if fname.[0] == char "/" then fname else INSTALL_ROOT+"/"+fname endif;
     serve_xhtml(s,fname);
   elif suffix \in text_suffices do
+    fname = if fname.[0] == char "/" then fname else INSTALL_ROOT+"/"+fname endif;
     serve_text(s,fname);
   elif suffix \in ("gif","png","jpg","svg") do
-    // path lookup for images
     fname = if fname.[0] == char "/" then fname else INSTALL_ROOT+"/"+fname endif;
     serve_image(s,fname,suffix);
   elif suffix == "css" do
