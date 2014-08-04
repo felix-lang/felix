@@ -359,8 +359,8 @@ mathjax := '''
 
 
 // functions to make responses
-fun make_image_from_suffix (suffix:string, contents:string) =>
-  make_image(MIMEType::mime_type_from_extension suffix,contents)
+fun make_image_from_suffix (suffix:string, contents:string, headers:headers_t) =>
+  make_image(MIMEType::mime_type_from_extension suffix,contents, headers)
 ;
 
 proc serve_not_found (k:socket_t, fname:string) {
@@ -631,7 +631,9 @@ proc serve_image (k:socket_t, fname:string, suffix:string) {
   var txt = load fname;
   println$ f"Loaded image file %S, len=%d" (fname, txt.len.int);
   //println$ "Contents=" + flx;
-  val data = make_image_from_suffix (suffix,txt);
+  val data = make_image_from_suffix (suffix,txt,
+    list[string*string](("Cache-control","max-age=86400"))
+  );
   write_string (k, data, &eof_flag);
 }
 

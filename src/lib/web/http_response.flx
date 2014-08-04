@@ -36,6 +36,10 @@ Content-Length: """ + str (len response.content) + """\r
     http_header(http_response(SC_OK,localtime(#time_t),mime,#no_headers,content)) +
       content; 
 
+  fun make_image(mime:mime_type, content:string, headers:headers_t) => 
+    http_header(http_response(SC_OK,localtime(#time_t),mime,headers,content)) +
+      content; 
+
   fun make_css (content:string) =>
     http_header(http_response(SC_OK,localtime(#time_t),text css,#no_headers,content)) +
       content; 
