@@ -1,6 +1,6 @@
 @h1 Modelling Inheritance
 In felix, objects are defined dynamically by constructor
-functions. And we can combine objects with the {extend}
+functions. And we can combine objects with the @{extend}
 combinator. Lets see how we can model inheritance with
 this mechanism!
 @felix
@@ -34,7 +34,7 @@ b.pprint();
 println$ b.get();
 @
 Here we have inherited from an object! 
-The two objects, {a} and {b}, encapsulate two distinct state variables,
+The two objects, @{a} and @{b}, encapsulate two distinct state variables,
 and can be modified independently.
 @p
 This is basically prototype based OO.
@@ -54,19 +54,19 @@ c.print();
 c.pprint();
 println$ c.get();
 @
-This is quite different because the {fred} object we're extending
-is created by the {joe} constructor, in fact we have to use
-the "as var y" notation to give it a name. {fred} is very similar
+This is quite different because the @{fred} object we're extending
+is created by the @{joe} constructor, in fact we have to use
+the "as var y" notation to give it a name. @{fred} is very similar
 to a C++ base class here, except we don't make the mistake of
 C++ and refer to the base by its type: instead we name
 the subobject (which is what C++ should have done).
 @p
 In this example
-you can also observe overriding the {print} method. 
+you can also observe overriding the @{print} method. 
 This works because during extension if two record fields
 have the same name, only the later one is kept. Since
-methods are record fields, the {print} method of {fred}
-is discarded in favour of the {print} method of {joe}.
+methods are record fields, the @{print} method of @{fred}
+is discarded in favour of the @{print} method of @{joe}.
 @p
 I hope you can see that this system is very powerful.
 It can do both prototype based OO as well as class based OO,

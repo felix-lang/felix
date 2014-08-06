@@ -17,21 +17,21 @@ RE2 does not support backreferences.
 </ul>
 
 @h2 Compiling a regexp.
-A regexp can be compiled with the {RE2} function.
+A regexp can be compiled with the @{RE2} function.
 @felix
 var r = RE2(" *([A-Za-z_][A-Za-z0-9]*).*");
 @
-@h2 Simple {Match}ing
-Matching is done with the {Match} function:
+@h2 Simple @{Match}ing
+Matching is done with the @{Match} function:
 @felix
 var line = "Hello World";
 var maybe_subgroups = Match (r, line);
 @
-Please note, {Match} only supports a complete match.
+Please note, @{Match} only supports a complete match.
 There's no searching or partial matching. Instead,
 just use repeated wildcards as shown.
-@h2 Checking {Match} results.
-The best way to check the result of a {Match} is
+@h2 Checking @{Match} results.
+The best way to check the result of a @{Match} is
 with a <a href="pattern_index.fdoc">pattern match</a>
 as follows:
 @felix
@@ -61,7 +61,7 @@ begin
   regdef white = space +;
   regdef integer = digit+;
 @
-These are some basic definitions. Note that {regdef} introduces a new
+These are some basic definitions. Note that @{regdef} introduces a new
 syntax corresponding with the notation usually used for 
 regular expressions.
 
@@ -99,5 +99,5 @@ end
 Assigned a from variable b
 @
 Note that the regdef kind of variable must be converted to a 
-Perl regexp in a string form using the {render} function.
+Perl regexp in a string form using the @{render} function.
 

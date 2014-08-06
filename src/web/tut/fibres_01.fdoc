@@ -55,13 +55,13 @@ and server code are entirely decoupled statically: they're linked only
 by a dynamically passed synchronous channel. 
 
 The client and server are ordinary procedures. The library function
-{spawn_fthread} launches its argument as a new fibre, 
+@{spawn_fthread} launches its argument as a new fibre, 
 which must be a procedure accepting no arguments: that's the 
 bit in the braces (which in turn calls the server or client).
 
 The client and server run <em>alternately</em> and <em>not concurrently</em>.
 Control is <em>exchanged</em> between the client and server by reading or
-writing to an {schannel}.
+writing to an @{schannel}.
 
 The way this works is: both the client and server are added to a list of
 fibres waiting to be resumed at their entry point. When the mainline

@@ -19,7 +19,7 @@ print your type? What if you had a C struct you imported
 into Felix that didn't have an {operator <<} defined?
 
 Again, your Felix code would compile because you told it the
-C++ code would work for all type {T}, but you lied, and the
+C++ code would work for all type @{T}, but you lied, and the
 C++ compiler will find you out!
 
 Before I show you the solution, I want to give another motivating
@@ -86,7 +86,7 @@ printit$ xd;
 @
 
 This is known as <em>constrained polymorphism</em>. 
-The entities {myints}, {myuints}, {myfloats}, and {mynumbers}
+The entities @{myints}, @{myuints}, @{myfloats}, and @{mynumbers}
 are finite sets of concrete types. The setunion operator here
 is the TeX symbol spelled {\cup}.
 

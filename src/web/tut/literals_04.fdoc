@@ -1,11 +1,11 @@
 @h1 String Literals
-Felix provides 2 kinds of strings: {string}, and {ustring}.
-The most commonly used string is {string}, it is an 8 bit clean string
+Felix provides 2 kinds of strings: @{string}, and @{ustring}.
+The most commonly used string is @{string}, it is an 8 bit clean string
 implement by the C++ {::std::basic_string&lt;char&gt;}.
 
-The {ustring} type is based on ISO10646/Unicode character set with
-code points represented by type {uint32}. As this type currently
-has limited functionality we will focus on the {string} type.
+The @{ustring} type is based on ISO10646/Unicode character set with
+code points represented by type @{uint32}. As this type currently
+has limited functionality we will focus on the @{string} type.
 
 @h2 String literals
 Felix provides string literals modelled on Python's system.
@@ -115,7 +115,7 @@ The rules are a bit tricky. All these escapes scan for between
 0 and N characters, as indicated in the scan column. The scan
 never exceeds the maximum number of characters. It is also stopped
 when a character is not in the indicated character set, for example
-{\xx} will emit a code {0} or {nul} character followed by an {x}.
+{\xx} will emit a code @{0} or @{nul} character followed by an @{x}.
 
 The unicode escapes emit a stream of characters, namely the
 decoded code point encoded by {utf-8}. Thus, if you consider
@@ -127,14 +127,14 @@ being the {utf-8} representation of code point 255.
 
 @h3 Other escapes
 All other escapes are left intact, that is, including the
-slosh, for example {\c} translates to {\c} and not just {c}.
+slosh, for example {\c} translates to {\c} and not just @{c}.
 
 @h2 Raw strings: escaping escapes
 It's sometimes annoying to have to quote or escape escapes.
 This is particularly true with regular expression strings
 which already contain a lot of sloshes.
 
-So, following Python you can have raw strings by using an {r} or {R} prefix:
+So, following Python you can have raw strings by using an @{r} or @{R} prefix:
 @felix
   var r = r"\(.*\)"; // easier than '\\(.*\\)'
 @

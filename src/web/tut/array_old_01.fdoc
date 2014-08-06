@@ -5,8 +5,8 @@ The classes are in the file
 
   lib/std/array_class.flx
 
-The most basic class is {ArrayValue[t,v]} where {t} is the array  
-type and {v} is the element value type. {ArrayValue} is the concept of an array
+The most basic class is {ArrayValue[t,v]} where @{t} is the array  
+type and @{v} is the element value type. @{ArrayValue} is the concept of an array
 as a value. It has two virtual functions:
 
 @felix-unchecked
@@ -17,7 +17,7 @@ as a value. It has two virtual functions:
   virtual fun unsafe_get: t * size -> v; 
 @
 
-Any type which wants to be considered as an {ArrayValue} simply
+Any type which wants to be considered as an @{ArrayValue} simply
 instantiates these functions, and it automatically gets all the
 rest. These other derived methods are:
 
@@ -72,7 +72,7 @@ The apply function is interesting. When you write:
   f a
 @
 
-where {a} has type {A}, and {f} has type {A -> X}, then {f a} is
+where @{a} has type @{A}, and @{f} has type {A -> X}, then {f a} is
 a function application. But suppose we want
 
 @felix-unchecked
@@ -81,7 +81,7 @@ a function application. But suppose we want
 that is, we want to apply an integer to an array as an index,
 which indeed we do want. When a value is syntactically applied
 to another value, and the type of the first value is NOT a function
-type, Felix tries to find an function named {apply} with a tuple
+type, Felix tries to find an function named @{apply} with a tuple
 argument consisting of the type of the applicator and the applicatee.
 In this case it tries to find a function that matches the name and
 signature
@@ -120,7 +120,7 @@ because Felix compiler has another piece of magic: when it sees:
   a . f
 @
 
-and {a} isn't a struct or record or pointer thereto, it consider the operator
+and @{a} isn't a struct or record or pointer thereto, it consider the operator
 to mean "reverse application" and replaces it with
 
 @felix-unchecked
@@ -130,7 +130,7 @@ to mean "reverse application" and replaces it with
 This is how Felix gets "OO like method calls" without any OO involved.
 
 @h2 Iteration
-Next we have {iter} and {iiter}. These are your usual higher order functions
+Next we have @{iter} and @{iiter}. These are your usual higher order functions
 which take a callback procedure as an argument and call it for every
 entry in the array. The iter function is called with each array value
 in sequence, the iiter function also gets the index.
@@ -172,8 +172,8 @@ although usually its done in a loop. Here is how you do it in a loop:
   done
 @
 
-This loop sets {v} to the argument of the Some value the generator produces
-until it gets a {None}, which signals the end of the stream.  Felix also allows you
+This loop sets @{v} to the argument of the Some value the generator produces
+until it gets a @{None}, which signals the end of the stream.  Felix also allows you
 to write it like this:
 
 @felix-unchecked

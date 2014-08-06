@@ -20,7 +20,7 @@ but also linking of libraries and dependencies.
 @felix-unchecked
 type mytype = "mytype*" requires finaliser "fred";
 @
-This specifies that the C function {fred} is to be called
+This specifies that the C function @{fred} is to be called
 on a value by the garbage collector for finalisation.
 instead of the default call which is 
 @cpp
@@ -64,11 +64,11 @@ These properties are currently recognized:
     "generator"  // a function is a generator and has side effects
     "virtual"    // the function is a virtual member of a typeclass
 @
-The property {needs_gc} implies the property {needs_ptf} since the
+The property @{needs_gc} implies the property @{needs_ptf} since the
 pointer to the garbage collector is stored in the thread frame.
 The thread frame is the "global store" of your program (but we use
-a class object and not C static storage!) However {needs_ptf} is a property
-of a function whereas {needs_gc} is a property of a type, which propagates
+a class object and not C static storage!) However @{needs_ptf} is a property
+of a function whereas @{needs_gc} is a property of a type, which propagates
 to a function if the function uses any of those types. The annotations
 are required because Felix can't see into your C code.
 
@@ -110,7 +110,7 @@ An example of use from the library:
   ;
 @
 
-The property {needs_ptf} tells Felix a function must accept an extra argument
+The property @{needs_ptf} tells Felix a function must accept an extra argument
 which is a pointer to the thread frame (and to pass it when the function
 is called). Passing this pointer around is expensive. Many simple C like
 functions do not require any data from the thread frame. By default therefore,
@@ -120,12 +120,12 @@ need the thread frame pointer. The requirement is forced on the function
 if any of the functions it calls require it (since it has to have a copy
 of the pointer to pass it to them).
 
-A function with the {pure} property is one which does not access
+A function with the @{pure} property is one which does not access
 any variables outside itself. Accessing constants (that is, actually
 unchanging values) is OK. Code which calls pure functions can safely be
 moved about within the scope for which their arguments are invariant,
 since the returned value is invariant in that scope since the function
-only depends on its arguments. The {pure} property may also be passed
+only depends on its arguments. The @{pure} property may also be passed
 on to the C++ compiler (gcc at least has such an annotation, although it
 is not known if it is effectively used). Purity is primarily intended to
 enable code motion optimisations.

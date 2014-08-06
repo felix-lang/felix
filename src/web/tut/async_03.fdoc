@@ -36,8 +36,8 @@ Because {->} is right associative, this actually means:
 @pre
   &int -> (Faio::alarm_clock -> 0)
 @
-This means {p} is not actually a procedure! Rather it is a function
-which accepts a pointer to an {int}, and <em>returns</em> a 
+This means @{p} is not actually a procedure! Rather it is a function
+which accepts a pointer to an @{int}, and <em>returns</em> a 
 procedure. (Well technically .. a procedure closure).
 
 So here is our invocation:
@@ -48,9 +48,9 @@ wait_until (clock, 1.0,  p &count);
 println$ "Final count is " + (str count);
 @
 Note that the argument {p &count} is a procedure closure. We have
-applied the function {p} to the pointer to {int} value {&count}
+applied the function @{p} to the pointer to @{int} value {&count}
 and got back the closure of a procedure accepting the next argument,
-a clock, which has the type required by {wait_until}.
+a clock, which has the type required by @{wait_until}.
 
 Test with
 <pre>

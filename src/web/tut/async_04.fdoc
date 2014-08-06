@@ -95,13 +95,13 @@ thread will be spawned on which a procedural closure will be executed.
 
 @
 When the closure executes on the spawned thread, it will call the
-thread procedure {thr} with the argument {1} which will result in the
+thread procedure @{thr} with the argument @{1} which will result in the
 message {"Thread 1"} being echoed to the console and then will write
-{1} to the global channel variable {chan}. The {write (chan, 1);} will
+@{1} to the global channel variable @{chan}. The {write (chan, 1);} will
 block the spawned thread until the value written is read from another
 thread (in our case the matching read will be on the main thread - the
 one from which the child threads were spawned - the thread running
-{flx_main}). When it's been read, the procedure will terminate. In
+@{flx_main}). When it's been read, the procedure will terminate. In
 this way we can signal from the child thread to the main thread that
 the child thread is done.
 

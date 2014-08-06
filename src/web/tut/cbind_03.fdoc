@@ -26,13 +26,13 @@ println$ int (mytype 42);
 42
 @
 If a floating insertion is given a tag name like this,
-it is not emitted unless it is required. The {println} command here
+it is not emitted unless it is required. The @{println} command here
 must be executed, and that requires the constructor for
-{mytype} which in turn requires the type {mytype} which in turn
-requires the header {mystuff} due to the {requires} clause.
+@{mytype} which in turn requires the type @{mytype} which in turn
+requires the header @{mystuff} due to the @{requires} clause.
 Therefore the body of the generated Felix program will contain
 {#include "mystuff.h"} which presumably defines the functions 
-{make} and {toint}.
+@{make} and @{toint}.
 
 Requires clauses can be added to C bindings (including header and
 body statements).

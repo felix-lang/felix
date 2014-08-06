@@ -29,12 +29,12 @@ println$ 1 a;
 @
 Note the position, or index, is zero origin in accordance with C 
 conventions. The index can be an expression of any core 
-integral type. The function {1} used here is called an
+integral type. The function @{1} used here is called an
 <em>array projection function</em>.
 
 @h2 Array length
-The length of an array can be found by the {len} function.
-The type of the result is {size}, an integral type used 
+The length of an array can be found by the @{len} function.
+The type of the result is @{size}, an integral type used 
 to determine the sizes of things.
 @felix
 println$ a.len;

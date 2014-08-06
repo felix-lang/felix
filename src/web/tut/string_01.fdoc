@@ -27,7 +27,7 @@ lo ho
 
 
 
-@h1 Left trim {ltrim}.
+@h1 Left trim @{ltrim}.
 @felix
 //Check String::ltrim
 print$ ltrim "hello how are you" "hello"; endl;
@@ -41,7 +41,7 @@ hello how are you
 
 
 
-@h1 Right trim {rtrim}.
+@h1 Right trim @{rtrim}.
 @felix
 //Check String::rtrim
 print$ rtrim "hello how are you" "you"; endl;
@@ -56,7 +56,7 @@ hello how are you
 
 
 
-@h1 Trim both ends {trim}.
+@h1 Trim both ends @{trim}.
 @felix
 //Check String::trim
 print$ trim "hello how are you" "me"; endl;
@@ -77,7 +77,7 @@ hello how are hello
 
 
 
-@h1 Left strip {lstrip}.
+@h1 Left strip @{lstrip}.
 @felix
 //Check String::lstrip
 print$ lstrip "  a b c  "; endl;
@@ -91,7 +91,7 @@ a b c
 
 
 
-@h1 Right strip {rstrip}.
+@h1 Right strip @{rstrip}.
 @felix
 //Check String::rstrip
 print$ rstrip "  a b c  "; endl;
@@ -105,7 +105,7 @@ print$ rstrip "  a b c"; endl;
 
 
 
-@h1 Strip both ends {strip}.
+@h1 Strip both ends @{strip}.
 @felix
 //Check String::strip
 print$ strip "  a b c  "; endl;

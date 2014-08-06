@@ -1,6 +1,6 @@
 @h1 Floating Point Complex 
-There are 3 floating point complex types: {fcomplex}, {dcomplex} and {lcomplex}
-corresponding to {float}, {double}, and {long double}
+There are 3 floating point complex types: @{fcomplex}, @{dcomplex} and @{lcomplex}
+corresponding to @{float}, @{double}, and {long double}
 real numbers.  The mapping is to these C++ types:
 
 @pre
@@ -72,5 +72,5 @@ In addition to the base and trigonometric functions, complex numbers support the
   div : r * t -> t;
 @
 
-where {r} is the real type corresponding to the complex type {t}.
+where @{r} is the real type corresponding to the complex type @{t}.
 

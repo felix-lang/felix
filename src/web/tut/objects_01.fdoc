@@ -14,9 +14,9 @@ println$ john.get_name () + ","+ john.get_age ()+".";
 john.set_age (43);
 println$ john.get_name () + ","+ john.get_age ()+".";
 @p
-Clearly, {john} is an object, so what is {person}?
-The answer is that {person} is an <em>object factory</em>
-which can be called upon to make objects such as {john}.
+Clearly, @{john} is an object, so what is @{person}?
+The answer is that @{person} is an <em>object factory</em>
+which can be called upon to make objects such as @{john}.
 This plays a similar role to a class in Python
 or a constructor in C++, however in Felix, object
 constructors are alive.
@@ -24,7 +24,7 @@ constructors are alive.
 <em>An object factory is in fact nothing more than an ordinary
 function with some specialised syntax, which returns
 a record of closures of the functions and procedures
-marked as {method}s.</em>
+marked as @{method}s.</em>
 @p
 You will of course note that, as will all functions,
 the local variables, including parameters, are not
@@ -47,11 +47,11 @@ object person (name:string, var age:int) = {
   method proc set_age (x:int) { age = x; }
 }
 @p
-This is not equivalent because now {person} is a named object
+This is not equivalent because now @{person} is a named object
 constructor function, not a variable. In particular, like
 all functions, named object constructor function can be overloaded.
 @p
-It is good to avoid confusion, and remember that whilst {person}
+It is good to avoid confusion, and remember that whilst @{person}
 is a constructor, it is the same as in Java or C++ that
 @felix-unchecked
    person ("fred", 22)
@@ -60,13 +60,13 @@ is an object.
 
 @h1 Extending Objects
 It is easy to make an extended object. Lets suppose we want to
-give {john} an {occupation} then we first do this:
+give @{john} an @{occupation} then we first do this:
 @felix
 var occupation  = object (title:string) = {
   method fun get_job()=>title; 
 };
 @
-Now we can make an {occupation}:
+Now we can make an @{occupation}:
 @felix
 var programmer = occupation ("programmer");
 @
@@ -90,8 +90,8 @@ Now observe:
 moonlighting_john.set_age (44);
 println$ john.get_name () + ","+ john.get_age ()+".";
 @
-will tell that john is 44: {john}, {working_john}
-and  {moonlighting_john} all have the same age.
+will tell that john is 44: @{john}, @{working_john}
+and  @{moonlighting_john} all have the same age.
 @p
 In many languages you derive new classes from old ones
 by inheritance. In Felix you can derive new objects

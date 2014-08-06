@@ -40,9 +40,9 @@ syntax mystatements
   stmt := "say" sexpr ";" =># { myprint ?2; myendl(); };
 }
 @
-The non-terminal {stmt} must be used to add new statements.
-The non-terminal {sexpr} can be used for expressions.
-We define our {say} command to print the expression
+The non-terminal @{stmt} must be used to add new statements.
+The non-terminal @{sexpr} can be used for expressions.
+We define our @{say} command to print the expression
 denoted by {?2} which is the second symbol on the RHS of the
 {:=} sign, and then do an end of line.
 
@@ -93,7 +93,7 @@ syntax myexpressions
 
 }
 @
-Here, the predefined non-terminal {sexpr} is defined as {myrel}
+Here, the predefined non-terminal @{sexpr} is defined as @{myrel}
 so we don't interfere with the existing grammar.
 
 We've written the grammar
@@ -107,10 +107,10 @@ There is some magic in the last two lines.
 When the RHS after the {=>#} symbol is a string,
 Felix interprets it as Scheme code. In the Scheme
 code the non-terminals of the production are denoted
-by  {_1}, {_2} etc instead of {?1}, {?2} etc.
+by  @{_1}, @{_2} etc instead of {?1}, {?2} etc.
 
-The Scheme function {nos} here converts the string designated
-by an {sname} into a Felix identifier term. {nos} stands
+The Scheme function @{nos} here converts the string designated
+by an @{sname} into a Felix identifier term. @{nos} stands
 for Name Of String.
 
 We introduced statement and expression template actions

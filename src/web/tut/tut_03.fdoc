@@ -15,5 +15,5 @@ then Joachim will be welcomed.
 returns the <em>n'th</em> command line argument if it exists,
 or an empty string otherwise.</li> 
 <li>Arguments are 0-origin and start with
-the executable name: this does not include the {flx} driver.</li>
+the executable name: this does not include the @{flx} driver.</li>
 </ul>

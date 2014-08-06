@@ -3,7 +3,7 @@ In many languages we can organise groups of definitions into
 some kind of namespace. In C++ we can use namespaces or classes.
 
 @h2 Basic class and reference
-In Felix, our namespace construction is called {class}.
+In Felix, our namespace construction is called @{class}.
 Here is an example:
 @felix
 class A
@@ -38,7 +38,7 @@ var x3 = B::C::k (1);
 var x3a = root::glo (1);
 @
 
-Note the outermost scope is designated by the special name {root}.
+Note the outermost scope is designated by the special name @{root}.
 The usual C++ syntax of an initial {::} is not permitted.
 
 @h2 Derived classes
@@ -60,10 +60,10 @@ var x4 = Base::f (1);
 var x5 = Derived::g (1);
 var x6 = Derived:: f(1);
 @
-It is important to understand that the injection of the symbol {f}
-defined in {Base} into {Derived} allows lookup to find {f} in
-{Derived} with qualified lookup syntax {Derived::f} but it does
-not make the function entity a member of {Derived}. 
+It is important to understand that the injection of the symbol @{f}
+defined in @{Base} into @{Derived} allows lookup to find @{f} in
+@{Derived} with qualified lookup syntax {Derived::f} but it does
+not make the function entity a member of @{Derived}. 
 
 Instead you should think of inheritance creating a pointer
 to the original symbol. I will show why you must take this view
@@ -71,21 +71,21 @@ shortly.
 
 @h2 Opening classes
 You can avoid qualified access by opening a class.
-This can be done with the {open} directive:
+This can be done with the @{open} directive:
 @felix
 open Base;
 open Derived;
 var x7 = f(1);
 var x8 = g(1);
 @
-Now, you may wonder whether that {f} is the one from
-class {Base} of the one from class {Derived}. If you are wondering
+Now, you may wonder whether that @{f} is the one from
+class @{Base} of the one from class @{Derived}. If you are wondering
 you didn't read the previous comment!
 
-There are two access paths to the function {f}, namely {Base::f}
+There are two access paths to the function @{f}, namely {Base::f}
 and {Derived::f}, but there's only one function. Opening the two
-classes makes both paths implicit so there are two ways to find {f}.
-But there is still only one {f} so there is no ambiguity applying it.
+classes makes both paths implicit so there are two ways to find @{f}.
+But there is still only one @{f} so there is no ambiguity applying it.
 
 If you open a class inside another, the additional search paths
 are only available inside the class and any nested scopes.
@@ -100,7 +100,7 @@ class Another
 @
 
 @h2 Hiding exposed symbols
-A symbol exposed through an {open} directive
+A symbol exposed through an @{open} directive
 will be hidden by a definition or injection from
 an inherit directive of the same name (for non-functions)
 or same name and signature (for functions).

@@ -19,12 +19,12 @@ else
   println$ "No match " + s;
 done
 @
-but a bit longwinded. {StringPiece} is a view of part of a {string}. 
+but a bit longwinded. @{StringPiece} is a view of part of a @{string}. 
 A quick way to just check for a match:
 @felix
 println$ s in re;
 @
-{RE2} uses Perl regexp without back references. To avoid
+@{RE2} uses Perl regexp without back references. To avoid
 having to write {\\} all the time you can use Python style
 raw strings:
 @felix-unchecked
@@ -72,7 +72,7 @@ open Regdef;
   println$ render id;
 };
 @
-Note the {Regdef::String} is used because {String} is also the name
+Note the {Regdef::String} is used because @{String} is also the name
 of a library module.
 
 @h3 Regular Definitions
@@ -86,22 +86,22 @@ regdef id = (us|letter)(letter|digit|us)*;
 regdef pid = regex (Perl("[a-zA-Z][a-zA-Z_0-9]*"));
 var r = RE2 (render id);
 @
-All the symbols here have type {regex} except the 
-final {r}.
+All the symbols here have type @{regex} except the 
+final @{r}.
 
-The {regdef} statement announces the assignment of a {regexp}
+The @{regdef} statement announces the assignment of a @{regexp}
 variable using the usual syntax for regexp formation without
 requiring ugly quotation stuff. Of course you can also do calculations
 using any Felix functional operations. 
 
-The operator {perl} and function {render}
-are basically opposites: {perl} converts a string with Perl style
-regex code into a {regex} whereas {render} converts a {regex} into
+The operator @{perl} and function @{render}
+are basically opposites: @{perl} converts a string with Perl style
+regex code into a @{regex} whereas @{render} converts a @{regex} into
 a Perl string.
 
-The {regexp} symbol is a <em>keyword</em> of ordinary Felix grammar,
+The @{regexp} symbol is a <em>keyword</em> of ordinary Felix grammar,
 which can be used in any ordinary Felix expression to switch 
 syntax from Felix normal syntax into regular expression syntax. 
 
-The {regex} symbol does the opposite: it is used in any regex grammar
+The @{regex} symbol does the opposite: it is used in any regex grammar
 expression to switch to Felix syntax.

@@ -21,9 +21,9 @@ Road Runner beats Coyote!
 @
 Here:
 <ul>
-<li> The {proc} binder introduces a procedure.</li>
-<li> The procedure {prompt} issues a prompt on {stdout} with
-a {fflush} to force the output to the device.</li>
+<li> The @{proc} binder introduces a procedure.</li>
+<li> The procedure @{prompt} issues a prompt on @{stdout} with
+a @{fflush} to force the output to the device.</li>
 <li> Procedures have side effects, here it is I/O.</li>
 <li> Procedures cannot return values </li>
 </ul>

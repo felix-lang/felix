@@ -15,10 +15,10 @@ println ( sum (1,neg 2) );
 @expect
 -1
 @
-The parens around the {sum} argument are required.
-Hey, that's a typo you say! {sum} has two arguments!
+The parens around the @{sum} argument are required.
+Hey, that's a typo you say! @{sum} has two arguments!
 
-No it doesn't. {sum} has a single argument which
+No it doesn't. @{sum} has a single argument which
 is of the type of a cartesian product {int * int}.
 The parens are only required because operator
 whitespace, which is used for application, has
@@ -87,7 +87,7 @@ call println 1;
 @expect
 1
 @
-However the operator {call} can be left out. Felix then sees
+However the operator @{call} can be left out. Felix then sees
 application syntax. However Felix does not allow you to discard
 values the way C does. So if it sees a whitespace application which would
 discard a value if the LHS term of the application were a function,

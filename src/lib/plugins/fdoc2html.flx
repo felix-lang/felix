@@ -70,7 +70,7 @@ fun txt2html (x:string) =
 
 proc boreq(l:&bool, r:bool) { l <- *l or r; } 
 
-val markdown_code1 = RE2 ("({([^}]*)})");
+val markdown_code1 = RE2 ("(@{([^}]*)})");
 val markdown_code2 = RE2 (r"(@glossary\(([^)]*)\))");
 fun markdown (s:string):string= {
   var x = s;

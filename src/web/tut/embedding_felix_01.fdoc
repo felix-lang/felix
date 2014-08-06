@@ -65,7 +65,7 @@ is the simplest .. because there is nothing to do.
 It works out of the box!
 
 With this method you block Felix fibres with calls to the
-Felix asynchronous I/O system {faio} using an alarm clock.
+Felix asynchronous I/O system @{faio} using an alarm clock.
 All you need to do is create a clock and sleep for some
 period.
 
@@ -74,9 +74,9 @@ scheduler list and added to a list of fibres waiting on an
 external event. When that event occurs the event notification
 system puts the fibre back on the scheduler queue. 
 
-For the sleep operation the notification system is {demux}.
-It tells {faio} to reschedule a fibre when its sleep timeout
-has expired. This happens in a separate {pthread} by placing
+For the sleep operation the notification system is @{demux}.
+It tells @{faio} to reschedule a fibre when its sleep timeout
+has expired. This happens in a separate @{pthread} by placing
 the fibre on a special queue of fibres waiting to be rescheduled.
 
 When the synchronous scheduler runs out of fibres to run, it checks
@@ -90,7 +90,7 @@ fibres waiting for asynchronous events. If there are no
 waiting fibres, your program is finished and will terminate.
 
 In embedded mode, Felix does not terminate but simply returns.
-This is the return from {run_until_blocked}. A bit later
+This is the return from @{run_until_blocked}. A bit later
 when you call it again, some fibres may have been woken from
 their sleep, and they will be rescheduled.
 
@@ -125,12 +125,12 @@ it works!
 
 If you want to do a whole lot of stuff independently of your 
 mainline event loop, you can just launch
-a pthread from Felix code using the {spawn_pthread} procedure.
+a pthread from Felix code using the @{spawn_pthread} procedure.
 
 However you must take care you do not block the main event
 loop. You can use critical sections with a mutex and shared
 memory to communicate. You should <em>not</em> use Felix
-{pchannel}s because these block client pthreads.
+@{pchannel}s because these block client pthreads.
 
 @h1 Using manually driven schannels.
 The method described here leverages how Felix synchronous
@@ -233,7 +233,7 @@ an schannel using an emulation!
 
 Note it is of course important that we don't try to
 read that return code from a channel until
-after we have {run_until_blocked}. Obviously there can't
+after we have @{run_until_blocked}. Obviously there can't
 be any return code there until after the Felix handler
 fibre has run!
 
@@ -277,11 +277,11 @@ Those who fail to agree and abide by agreements simply disappear
 from the community.
 
 
-@h1 Using service code {svc_general}.
+@h1 Using service code @{svc_general}.
 There is another way to organise ourselves. Instead of using
 schannels or the builtin asynchronous I/O support in Felix,
 we provide a way to leverage the way Felix already does
-asynchronous I/O, using the service call {svc_general}.
+asynchronous I/O, using the service call @{svc_general}.
 
 This uses special C++ objects to organise suspending
 of the calling fibre until an asynchronous external

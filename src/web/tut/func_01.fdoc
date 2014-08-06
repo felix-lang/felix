@@ -28,7 +28,7 @@ high precedence application using operator whitespace
 which needs surrounding parentheses for correct grouping,
 reverse application using operator dot, which is even higher
 precedence than whitespace, and so does not, and finally we're
-applying the {str} function to a whitespace application
+applying the @{str} function to a whitespace application
 using operator dollar, which has lower precedence than whitespace.
 
 There's a longer way to write a function:
@@ -71,7 +71,7 @@ println$ addup pair; // 3
 3
 3
 @
-The last line shows clearly that {addup} takes a single argument
+The last line shows clearly that @{addup} takes a single argument
 which is a pair (tuple with two components).
 
 @h2 Function types
@@ -109,7 +109,7 @@ println$ r1;
 @expect
 6
 @
-{r} will be evaluated as:
+@{r} will be evaluated as:
 @felix
 x = 0;
 var a1 = g1 1;  // 2 (x=1) 
@@ -160,17 +160,17 @@ be reduced to C functions by the optimiser, but this
 form enforces the use of C interface.
 
 @note
-It seems unfortunate that <em>whilst</em> a {cfun} or {cproc} has a C interface it
-is defined in Felix, <em>whereas</em> a {cstruct} is a Felix interface to a
-struct defined in C, and {cenum} and {cflag} provide Felix models of enumerations
+It seems unfortunate that <em>whilst</em> a @{cfun} or @{cproc} has a C interface it
+is defined in Felix, <em>whereas</em> a @{cstruct} is a Felix interface to a
+struct defined in C, and @{cenum} and @{cflag} provide Felix models of enumerations
 or sets of integer constants defined in C.  The role reversal here seems confusing, 
-especially as Felix functions and types can be defined in C using {fun}, {proc} and {type}
-keywords and C code given as a string, and {ctypes} provides a shorthand form for
-multiple instances of {type} eliding the strings. In turn {cenum} may be considered
-a shorthand for a {type} binding and a list of {const} definitions. Also, a shorthand
-for lifting C functions from libraries using a {fun} or {proc} without a 
+especially as Felix functions and types can be defined in C using @{fun}, @{proc} and @{type}
+keywords and C code given as a string, and @{ctypes} provides a shorthand form for
+multiple instances of @{type} eliding the strings. In turn @{cenum} may be considered
+a shorthand for a @{type} binding and a list of @{const} definitions. Also, a shorthand
+for lifting C functions from libraries using a @{fun} or @{proc} without a 
 defining string can be used. The situation is further complicated by the
-{callback} feature.
+@{callback} feature.
 
 
 
@@ -182,14 +182,14 @@ fun f(x:int) = {
    return g;
 }
 @
-The function {f} here has type {int -> (long -> long)}. This type is 
+The function @{f} here has type {int -> (long -> long)}. This type is 
 the same as {int -> long -> long} since the arrow operator is right
-associative. There's a simpler way to write the function {f}:
+associative. There's a simpler way to write the function @{f}:
 @felix
 fun f(x:int) (y:long) => x.long + y;
 @
-Here one says {f} has arity 2. Note it still has only
-one argument, namely {x} of type {int}. A function with arity
+Here one says @{f} has arity 2. Note it still has only
+one argument, namely @{x} of type @{int}. A function with arity
 2 or greater is called a <em>higher order function</em>
 or Hof for short.
 
@@ -197,11 +197,11 @@ Note that in:
 @felix
 proc h(x:int) (y:long) { println$ x.long + y; }
 @
-{h} is a function, not a procedure: it has type
+@{h} is a function, not a procedure: it has type
 @felix-unchecked
 int -> (long -> void)
 @
-so that rather, {h} is a function returning a procedure.
+so that rather, @{h} is a function returning a procedure.
 
 It is possible to partially apply a higher order function.
 @felix
@@ -211,9 +211,9 @@ println$ g 2l;
 @expect
 3
 @
-Here {g} is just the value returned by {f} when applied
-to 1, which is a function accepting a {long} and returning
-a {long}.
+Here @{g} is just the value returned by @{f} when applied
+to 1, which is a function accepting a @{long} and returning
+a @{long}.
 
 @h2 A style issue
 Many functions of "two" arguments can be written either accepting
@@ -223,7 +223,7 @@ tuples are faster, but they cannot be partially applied.
 However, the higher order form does not permit the "arguments" 
 to be "compressed" into a single value which the tuple form does.
 
-However, Felix is pretty good at optimisation and both version of {f}
+However, Felix is pretty good at optimisation and both version of @{f}
 given above will likely reduce to a simple addition after inlining.
 
 Therefore the question really is: are you most likely to aggregate
@@ -234,10 +234,10 @@ Of course, you should chose the form of a function which itself has
 the type required for it to be an argument of a higher order function
 such as an iteration, map or fold of some data structure.
 
-The library module {categ} defines a way to convert between these styles
-for 2 or 3 "arguments". The function {curry} takes a function accepting
+The library module @{categ} defines a way to convert between these styles
+for 2 or 3 "arguments". The function @{curry} takes a function accepting
 a tuple of 2 or 3 components and makes it into a higher order function
-with arity 2 or 3. The functions {uncurry2} and {uncurry3} reverse
+with arity 2 or 3. The functions @{uncurry2} and @{uncurry3} reverse
 this transformation and convert a higher order function of arity 2 or 3,
 into a function accepting a tuple of 2 or 3 components, respectively.
 

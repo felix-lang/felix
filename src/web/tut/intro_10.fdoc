@@ -14,7 +14,7 @@ type vector[T] = "::std::vector<?1>"
 
 Well that was pretty easy! The {?1} notation here
 simply means the first type argument. Note that the
-parameter has the name {T} but the name isn't used.
+parameter has the name @{T} but the name isn't used.
 
 @h2 Polymorphic functions
 It doesn't take much imagination to guess now:
@@ -62,10 +62,10 @@ with it:
 2
 @
 If you know C++ and you're beginning to grok Felix binding mechanism
-you will probably spot the problem: C++ {push_back} requires the
-{vector} argument to be an lvalue. So our example above works,
+you will probably spot the problem: C++ @{push_back} requires the
+@{vector} argument to be an lvalue. So our example above works,
 but only because we use it where we happen to know that
-{y} will be an lvalue in the generated C++ code.
+@{y} will be an lvalue in the generated C++ code.
 
 If we used an rvalue argument Felix would not complain,
 but the C++ compiler would. So we might write this code

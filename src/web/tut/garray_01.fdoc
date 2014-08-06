@@ -26,7 +26,7 @@ called <em>fields</em>.
  
 Such types are said to be structural because they do not
 have a specified unique name but are identified by their shape:
-Felix also has a nominally typed product, the usual C {struct}.
+Felix also has a nominally typed product, the usual C @{struct}.
 The theory is simpler with structural typing so we will stick
 to that here.
 
@@ -36,8 +36,8 @@ a sum type is "pick one of these things". It is the type of choices,
 conditionals, and switched control flow.
 
 The best known sum type is the humble enumeration, and the best
-understood enumeration is called {bool}. It is a type of two
-choices: {false} or {true}.
+understood enumeration is called @{bool}. It is a type of two
+choices: @{false} or @{true}.
 
 For structurally typed enumerations, we just use an integer constant
 to denote the type:
@@ -54,7 +54,7 @@ begin
   var t : bool = true; // aka true
 end
 @
-The {case} notation is a bit ugly, and it seems unnatural
+The @{case} notation is a bit ugly, and it seems unnatural
 to number cases from 0 upto {n-1} with zero origin notation,
 but we have chosen that for consistency with tuple notation
 and C.

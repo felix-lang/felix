@@ -43,8 +43,8 @@ out. On the other hand, if you write this:
 val tmp2 = myrand();
 var x4 = mytwice (tmp2);
 @
-Felix semantics actually allow the compiler to replace {tmp2}
-with {myrand()}, because unlike {var} a {val} can be considered
+Felix semantics actually allow the compiler to replace @{tmp2}
+with {myrand()}, because unlike @{var} a @{val} can be considered
 either as a variable or as a macro. Of the two usual evaluation
 strategies, substitution is lazy evaluation, whilst assignment
 to a parameter is eager evaluation, and as you can see in this

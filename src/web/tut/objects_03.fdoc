@@ -12,7 +12,7 @@ proc print_occupation (p: employment) {
 println$ p.get_name() + " is a " + p.get_job();
 }
 @
-But how do we call this function on {working_john}?
+But how do we call this function on @{working_john}?
 It has the wrong interface because it tells the age,
 and the anti-discrimination laws won't allow age to
 be considered in the work place. Here's how we chuck

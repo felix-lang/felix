@@ -7,8 +7,8 @@ and try to use it.
 Have good look at all the files and get some idea what is in the
 library.
 
-Usually, files {include} other files they need, and modules
-will often {open} modules they need.
+Usually, files @{include} other files they need, and modules
+will often @{open} modules they need.
 
 However with the standard library, for simplicity and brevity,
 a special file {lib/std/__init__.flx} is used to load all the
@@ -30,7 +30,7 @@ and for the Posix subsystem
 @h2 The Felix webserver
 The web server you're using right now is written in Felix and is
 part of the Felix package. It should be installed in {/usr/local/bin}
-right now. If you simply type {webserver} it will run in the console
+right now. If you simply type @{webserver} it will run in the console
 foreground and provide web services on port 1234.
 
 The default Felix root is the {/usr/local/lib/felix/felix-version}
@@ -38,7 +38,7 @@ where {felix-version} is the version of Felix the webserver was built
 with.
 
 The webserver can browse Felix documentation files of form {*.fdoc},
-Felix code {*.flx} and {*.flxh}, Felix {flx_pkgconfig} configuration
+Felix code {*.flx} and {*.flxh}, Felix @{flx_pkgconfig} configuration
 database files {*.fpc} and C and C++ files {*.h}, {*.hpp}, {*.c},
 {*.cpp}, {*.cxx}, all with colourisation and
 hyperlinking of inclusions .. so it's good for browsing C and C++

@@ -71,7 +71,7 @@ integer aliases. It is best to use a literal with a long enough type
 and cast it as required.
 
 Note also that unlike modern C and C++ very long integers without
-a suffix are still type {int}. This is because Felix has no idea
+a suffix are still type @{int}. This is because Felix has no idea
 of the limits of integer types.
 
 @h2 Integer literal radix
@@ -91,8 +91,8 @@ The prefix denotes the radix as in the table below:
 </pre>
 
 Hexadecimal digits which are letters may also be capitalised.
-Please note that unlike C {077} is decimal 77, it is not octal,
-you must use {0o77} to get octal!
+Please note that unlike C @{077} is decimal 77, it is not octal,
+you must use @{0o77} to get octal!
 
 @h2 Underscore separators
 The numeric form consists of digits from the table above,

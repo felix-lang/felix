@@ -9,7 +9,7 @@ To use the timer we need to include the Faio library.
 include "std/io/faio";
 @
 Now we need to make an alarm clock. Since the library is packaged
-into a class namespace called {Faio} which is not open by default,
+into a class namespace called @{Faio} which is not open by default,
 we need an explicit qualifier.
 
 Recall also that {#p} means the same as {p()} but is terser.
@@ -17,7 +17,7 @@ So here is our clock:
 @felix
 var clock = #Faio::mk_alarm_clock;
 @
-Now we want to go to sleep for 5 seconds. We have to give {Faoi}
+Now we want to go to sleep for 5 seconds. We have to give @{Faoi}
 a clock to work with. But lets print a message first so we can
 observe the delay.
 @felix

@@ -30,20 +30,20 @@ type mystring = "::std::string"
 ;
 @
 In the first two cases we're defining the Felix
-types {mybool} and {myint} to be the C++ types {bool} and {int}
+types @{mybool} and @{myint} to be the C++ types @{bool} and @{int}
 respectively. That's pretty easy!
 
 In the third case we're defining the Felix
-type {mystring} to be the C++ string 
+type @{mystring} to be the C++ string 
 type {::std::string}. However to make sure
-that {string} is defined in the generated C++
+that @{string} is defined in the generated C++
 code we have to emit
 @pre
 #include <string>
 @
-in the header file Felix generates. The {requires}
+in the header file Felix generates. The @{requires}
 clause given with the type says to do this if,
-and only if, the {mystring} type is actually used.
+and only if, the @{mystring} type is actually used.
 If it's used we need the header, if it isn't we don't
 want to slow the C++ compilation down by making
 it process a header that's not needed.
@@ -91,7 +91,7 @@ the result type of the function. A specification like:
 @pre
   f: R * R -> R
 @
-is standard mathematics except that we use {*} instead of {x}
+is standard mathematics except that we use {*} instead of @{x}
 for cartesian products.
 @h2 Defining commands
 It's ok to do calculations but we need to have some 
@@ -113,15 +113,15 @@ Procedure bindings don't specify a return
 type like functions because procedures don't
 return any values.
 
-There is one piece of magic here: {myendl}
-appears to accept an argument of type {1}.
+There is one piece of magic here: @{myendl}
+appears to accept an argument of type @{1}.
 This type is also called <em>unit</em> and
 is built in to Felix. There is only one value
 of this type:
 @pre
   ()
 @
-which is why the type is called {1}.
+which is why the type is called @{1}.
 In Felix, all functions and procedures
 have one argument, and {()} is the argument
 we have to use where the corresponding C++
@@ -139,11 +139,11 @@ proc myprint : mybool= '::std::cout<<($1??"mytrue":"myfalse");'
   requires header "#include <iostream>"
 ;
 @
-Here, we defined two more overloads of {myprint} so we can now
-print values of type {mybool}, {myint} and {mystring} with
+Here, we defined two more overloads of @{myprint} so we can now
+print values of type @{mybool}, @{myint} and @{mystring} with
 the same command.
 
-You will also note that the {requires} clause is used here
+You will also note that the @{requires} clause is used here
 on these commands to ensure that we get the include file
 required to define {::std::cout} and {::std::endl} as well
 as {::std::operator <<}.

@@ -51,8 +51,8 @@ external events like alarms and socket readiness notifications.
 
 However the control exchange only occurs by agreement, it is never
 pre-emptive. If you want pre-emptive scheduling you must spawn a
-pre-emptive thread with {spawn_pthread} instead of a fibre with
-{spawn_fthread}.
+pre-emptive thread with @{spawn_pthread} instead of a fibre with
+@{spawn_fthread}.
 
 In that case, since control flow is concurrent, the onus is on you to
 ensure shared resources are suitably protected from races, for example

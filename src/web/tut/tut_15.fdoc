@@ -14,6 +14,6 @@ The type of these records are given by:
 @
 Records can have a any number of components, including 1 and 0.
 The record type with zero components is identified with the tuple
-with no components, namely {unit}.
+with no components, namely @{unit}.
 
 

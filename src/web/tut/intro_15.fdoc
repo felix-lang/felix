@@ -22,7 +22,7 @@ We have seen we could fix this problem by:
 @felix
 fun mytwice2 (var x:int) => mytwice(x);
 @
-which uses a Felix function with a {var} parameter to force
+which uses a Felix function with a @{var} parameter to force
 eager evaluation of the argument, or we could instead
 make a generator:
 @felix
@@ -31,7 +31,7 @@ gen myrand2: 1 -> int = "rand()"
 ;
 @
 which causes Felix to create and initialise a temporary
-whether the {twice} function has a var parameter or not.
+whether the @{twice} function has a var parameter or not.
 
 @h2 Inline named variables
 There are two other ways to achieve this result.
@@ -69,16 +69,16 @@ which creates an unnamed temporary variable initialied by the following
 sub-expression.
 
 From these examples I hope you will begin to picture
-a Felix {var} like a traditional variable in C
+a Felix @{var} like a traditional variable in C
 and associate the notation with eager evaluation.
 
-We will see in more depth later that a {var} is an object
+We will see in more depth later that a @{var} is an object
 which is a storage location which can contain a value.
-In particular, a {var} has an address which can  be captured
+In particular, a @{var} has an address which can  be captured
 as a pointer value.
 
 In turn such a pointer allows the value stored in a variable
-to be modified or replaced. So {var} is associated with three
+to be modified or replaced. So @{var} is associated with three
 concepts: eager evaluation, addressability, and mutability
 which rolled together form a strong concept of an <em>object</em>.
 

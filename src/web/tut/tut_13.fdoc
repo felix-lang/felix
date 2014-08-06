@@ -29,7 +29,7 @@ However, there is a tuple with no components with a single unique value:
 @felix-unchecked
   ()
 @
-the type of which is called {unit} type and can also
-be designated by {1}.
+the type of which is called @{unit} type and can also
+be designated by @{1}.
 
 

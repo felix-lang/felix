@@ -10,11 +10,11 @@ Hello world
 @
 
 
-If you write a plain {code} as in the first line, it is parsed as a
+If you write a plain @{code} as in the first line, it is parsed as a
 statement and the given string emitted as written. If you write
-{code[T]} instead, it is considered an expression of type {T}.
+{code[T]} instead, it is considered an expression of type @{T}.
 
-You can also write {noreturn code} instead of {code} 
+You can also write {noreturn code} instead of @{code} 
 if your code does not return. This may be necessary
 to tell the Felix compiler to complain about subsequent code being
 unreachable, and, not to complain if a function or procedure appears
