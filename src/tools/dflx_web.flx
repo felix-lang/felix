@@ -879,7 +879,8 @@ noinline proc handler (var k:socket_t) ()
   get_line(k, &line);  // should be the GET line.
   //cat(s, DEVNULL);
 
-  print$ "IP "+Faio_posix::getpeername k+": got line from socket "+str k+": "; print line; endl;
+  var peerIP = Faio_posix::getpeername k;
+  print$ "IP "+peerIP +": got line from socket "+str k+": "; print line; endl;
 
   // now I need to parse the GET line, get a file name out of its url
   // (e.g. unqualfied -> index.html and name/flx.jpg -> flx.jpg
@@ -897,6 +898,11 @@ noinline proc handler (var k:socket_t) ()
 println$ "Fetching line ... ";
         get_line (k,&line);
 println$ "Got the line length .. "+line.len.str;
+        if line.len == 0uz do
+          println$ "BAD POST REQUEST from IP "+peerIP+
+            ", end of header before Content-Length specified: connection closed";
+          goto broken;
+        done 
         println line;
         if prefix(line, "Content-Length: ") do
           var lstr = line.[16 to];
@@ -924,6 +930,8 @@ println$ "Got the line length .. "+line.len.str;
       print "file="; print file; endl;
       serve_file(k,file);
   endmatch;
+
+broken:>
 
   // we've only read the GET line, so let's flush out the rest of
   // the http request so we don't get connection reset errors when
