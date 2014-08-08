@@ -52,7 +52,7 @@ and @{prj1} are encodings of suitable projections.
 However in C, one observes an expression like
 @c++
 p.t_0
-@gzip: /var/log/upstart/felixweb.log.1.gz: unexpected end of file
+@
 is really the application of a projection, and consequently
 it is usually to think of the field @{t_0} of the structure
 as the projection.

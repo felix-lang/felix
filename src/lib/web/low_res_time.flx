@@ -78,24 +78,18 @@ class LowResTime
     }
   """;
 
-/*
-    struct tm * strptime_helper(const char *s, const char *fmt) {
-      struct tm *t = (struct tm *) malloc(sizeof(struct tm));
-      char *ret = strptime(s,fmt,t);
-      if (ret != NULL) {
-         return t;
-      } else {
-        free(t);
-        return NULL;
-      }
-    }
-  """;
-*/
 
   publish """strftime returns formatted string date defined my format string and tm struct.
 See C manpage for strftime for format codes"""
 
-  gen strftime: string*&tm -> string = "strftime_helper(($1.c_str()),$2)";
+  gen strftime_helper: string * &tm -> +char = "strftime_helper(($1.c_str()),$2)";
+  gen strftime(x:string, y: &tm) : string = 
+  {
+    var r = strftime_helper (x, y);
+    var s = string r;
+    free (r);
+    return s;
+  }
 
 /*
   publish """Parses string date in first arg with format codes in second arg and 
