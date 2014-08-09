@@ -1,110 +1,36 @@
+@title Functors
 @mathjax
-\(\DeclareMathOperator{\inj}{inj}\)
-@h1 Sums
-In a category, given two objects \(T_0\) and \(T_1\) a sum is an
-object \(S\) together with two arrows:
-\[\inj_{S,0}: T_0 \rightarrow S\]
-\[\inj_{S,1}: T_1 \rightarrow S\]
-called injections , satisfying the condition that for any object \(Z\) and arrows
-\(f_0:T_0\rightarrow Z\) and \(f_1:T_1\rightarrow Z\) then
-there exists a unique arrow \(\alpha: S\rightarrow Z\) such that
+\(\DeclareMathOperator{\obj}{obj}\
+\DeclareMathOperator{\arr}{arr}\
+\DeclareMathOperator{\dom}{dom}\
+\DeclareMathOperator{\cod}{cod}\)
+@h1 Functors
+A functor \(F\)is a mapping from a category \(D\) to another category \(C\) which 
+consists of a function \(\obj F\) from objects to objects and 
+function \(arr F\) from arrows to arrows which preserves structure in the
+following sense:
+<ol>
+<li>If \(c = \obj F d\) then \(1_c =  \arr 1_d\) </li>
+<li>If \(f: A \rightarrow B\) and \(g: B \rightarrow C\) then
 \[
-\inj_{S,0} \cdot \alpha = f_0
+\arr F (f\cdot g) = \arr F (f) \cdot \arr F (g)
 \]
-and
-\[
-\inj_{S,1} \cdot \alpha = f_1
-\]
+</li>
+</ol>
+In other words, identities and composition are preserved.
 
-It can be shown sum are unique up to isomorphism.
-When there is a unique sum , or there is a canonical
-sum , we sometimes use the notation
-\[ T_0 + T_1 \]
-to denote it.
+@h2 Example: polymorphic types
+A polymorphic type @{F}, such as a C++ class template, can be considered
+as a functor from \(\bf Type \) to \( Type \). Given any type @{t},
+a new type @{F&lt;t&gt;} is constructed.
 
-@h2 Example: Sets
-In \(\bf Sets\) the sum is the disjoint union. It is sometimes
-modelled by colouring or tagging elements:
-\[
-T_0 + T_1 = T_0 \uplus T_1
- = \lbrace (t_0, 0) \mid t_0 \in T_0 \rbrace \cup 
-\lbrace (t_1, 1) \mid t_1 \in T_1 \rbrace
-\]
-where the injections are the maps 
-\[ t_0 \mapsto (t_0,0) \]
-and
-\[ t_1 \mapsto (t_1,1) \]
+For example then @{vector} is a functor. Here the structure
+is preserved by defining \(\arr @{vector} (f)\) the action of a \(f\) on
+a vector as the action on its elements. This operation is commonly
+called a map.
 
-The tags 0 and 1 are just added to ensure the elements of the
-disjoint union are unique, in case the argument sets overlap.
-
-@h2 Example: C
-In C there is no native sum type, but we can model one:
-@c++
-enum tag {tag0, tag1};
-struct V0 { tag v; T_0 t_0; };
-struct V1 { tag v; T_1 t_1; };
-union S { V0 v0; V1 v1; };
-S make0 (T_0 t_0} { S s; S.v0.v = tag0; S.v0.t_0 = t_0; return s; }
-S make1 (T_1 t_1} { S s; S.v1.v = tag0; S.v1.t_1 = t_1; return s; }
-@
-with the understanding that the variant tag @{v} is set to @{tag0} or @{tag1}
-depending on whether a @{T_0} or @{T_1} is stored. This is common when
-modelling variant messages, in, for example X-Windows. The injection
-functions are shown.
-
-@h2 Example : Felix
-Felix has native anonymous sum types.
-They're not used much because the notation is awkward.
-@felix
-var x : int + long = case 0 of (int + long) 42;
-var y : int + long = case 1 of (int + long) 23L;
-
-match u with
-  | case 0 (?i) => println$ "int " + str i;
-  | case 1 (?l) => println$ "long " + str l;
-endmatch;
-@
-Here, @{case 0 of (int + long)} is the first injection function,
-and @{case 1 of (int + long)} is the second injection function.
-The match shows how to decode the sum to extract the argument
-based on the discriminant index 0 or 1.
-
-@h2 Example: Felix
-Felix also has a nominally typed sum which is more
-commonly used:
-@felix
-union Number = Int of int | Long of long;
-var x = Int 42;
-var y = Long 23L;
-match u with
-  | Int (?i) => println$ "int " + str i;
-  | Long (?l) => println$ "long " + str l;
-endmatch;
-@
-The implementation is the same, but we have names for
-the tags now.
-
-Injections are not normally considered functions, rather
-they're called type constructors because they construct
-the sum type from an argument.
-
-@h1 N-ary Sums
-Sum types can clearly be extended to more than 2 components.
-It is possible to identify a 1-ary sum with the component type.
-However Felix does not do this.
-
-@h1 Initial object
-We have to ask what the sum of nothing is. It is called the
-an initial object. In \(\bf Sets\) the empty is set is initial.
-Initial objects are characterised by the fact that for any object
-\(Z\) there is a unique arrow from the initial object to that object.
-In \(\bf Sets\) the function from the empty set to any other set
-is unique because it maps no elements, since there are none to map!
-Note that such functions certainly exist, if you consider a function
-modelled as a set of ordered pairs, such a function is simply the
-empty set.
-
-In Felix type system, the initial object is the type 
-called @{void} or @{0}.  There are no values of this type!
+@h2 Meta programming
+We can make a category whose objects are other categories,
+and whose arrows are functors. So category theory has the nice
+property that it can describe itself.
 

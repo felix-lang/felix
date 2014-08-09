@@ -28,3 +28,8 @@ provides literate programming and why you should use it!
 A question debated on the mailing list. Exactly what
 is a <a href="scripting_felix.fdoc">scripting language?</a>
 
+@h2 Category Theory and Polynormial types
+A <a href="category_theory_index.fdoc">category theory primer</a>
+and discussion of polynomial
+types and how they're represented in Felix.
+

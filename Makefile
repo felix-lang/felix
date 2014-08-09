@@ -218,6 +218,7 @@ gendoc: gen-doc copy-doc
 gen-doc:
 	${BUILDROOT}/host/bin/flx_mktutindex src/web/tut tutorial.fdoc
 	${BUILDROOT}/host/bin/flx_mktutindex src/web/tutopt tutopt.fdoc
+	${BUILDROOT}/host/bin/flx_mktutindex src/web/articles articles.fdoc
 	# Build reference docs. Note this requires plugins.
 	${LPATH}=${BUILDROOT}/host/lib/rtl ${BUILDROOT}/host/bin/flx_libcontents --html > src/web/ref/flx_libcontents.html
 	${LPATH}=${BUILDROOT}/host/lib/rtl ${BUILDROOT}/host/bin/flx_libindex --html > src/web/ref/flx_libindex.html
