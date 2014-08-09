@@ -1,0 +1,48 @@
+@title Arrays
+@mathjax
+\(\DeclareMathOperator{\prj}{prj}\)
+\(\DeclareMathOperator{\aprj}{aprj}\)
+\(\DeclareMathOperator{\tprj}{tprj}\)
+\(\DeclareMathOperator{\gprj}{gprj}\)
+@h1 Arrays
+An array \(A\) of length \(n\) is just a tuple of \(n\) components
+of the same type \(T\):
+\[
+A = T^n = \underbrace{T \times T \times T \times \ldots \times T}_\text{n times}
+\]
+A special property of arrays is that all the projection functions have 
+the same type:
+\[
+  A\rightarrow T
+\]
+This means we can have a generalised projection function called an array projection
+instead:
+\[
+\aprj_A : {\Bbb Z}_n \rightarrow (A \rightarrow T)
+\]
+where
+\[
+i \mapsto \prj_{A,i}
+\]
+
+However, even more general is a generalised tuple projection
+shown here for a pair:
+\[
+\tprj_{T_0\times T_1} : {\Bbb Z}_2 \rightarrow (T_0 \times T_1 \rightarrow T_0 + T_1)
+\]
+which suggests a more general form for an individual projection:
+\[
+\gprj_{T_0\times T_1,i}:T_0 \times T_1 \rightarrow T_0 + T_1 
+\]
+for \(i \in \lbrace 0,1\rbrace\). In simple terms, the generalised
+projection returns the tuple index along with the value.
+
+We also have the codiagonal function. For a sum:
+\[
+S = \underbrace{T + T + T + \ldots + T}_\text{n times}
+\]
+
+\[
+\nabla_S : S \rightarrow T
+\]
+which simply forgets the case index.
