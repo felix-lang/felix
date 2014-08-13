@@ -1,35 +1,3 @@
-// NOTE: strptime isn't available on Windows so
-// it's been comments out of the code 
-// it's not used anywhere and probably shouldn't be:
-// parsing a text string to extract a date/time can't
-// be a reliable thing.
-publish """
-Main attractions are wrappers for strptime ( date/time parsing fn ) and
-strftime ( date/time formatting fn ) and rfc1123_date (used in construction HTTP responses
-
-Example:
- open LowResTime;
-  var time_epoch_seconds = time_t();
-  val tm_struct =  gmtime(time_epoch_seconds);
-  println (str(tm_struct.tm_year + 1900)+"-"+str(tm_struct.tm_mon + 1)+"-"+str(tm_struct.tm_mday));
-  println ("asctime: "+asctime(tm_struct));
-  val fmt = "%a, %d %b %Y %H:%M:%S GMT";
-  val formatted_datetime = strftime(fmt,tm_struct);
-  println$ ("RFC 1123 Date Format w/strftime: "+formatted_datetime);
-  match strptime(formatted_datetime,fmt) with
-    | Some(?t) => {val new_val = strftime(fmt,t);
-      	       	   println ("RFC 1123 Date Format w/strptime->strftime: "+new_val);
-		  }();
-    | _        => println$ "Error parsing time:";
-  endmatch;
-  match strptime("Not a date","%M") with
-    |Some(?s) => println("Good Time");
-    | _      => println("Bad Time");
-  endmatch; 
-"""  
-/*
-TODO: Add date/time utility functions (date time delta calulations, etc.) 
-*/
 class LowResTime
 {
   open C_hack;
@@ -37,16 +5,22 @@ class LowResTime
   requires C89_headers::time_h;
 
   type time_t = "time_t";
+  fun +: time_t*time_t -> time_t = "$1+$2";
+  fun +: time_t*int -> time_t = "$1+(time_t)$2";
 
+  //$ Current time
   proc time: &time_t = "time($1);";
 
+  //$ Current time
   ctor time_t () = {
     var time_v:time_t;
     time(&time_v);
     return time_v;
   }
  
-  fun time_t_of_uint:  uint -> time_t = "(time_t)$1:cast" is cast;
+
+  // cast integer (in second since epoch) to time
+  ctor time_t: !ints = "(time_t)$1:cast" is cast;
 
   cstruct tm {
     tm_sec:int;         /* seconds */
@@ -61,65 +35,76 @@ class LowResTime
   };
 
   
-  fun localtime:time_t -> &tm = "localtime(&$1)";
-  fun gmtime:time_t -> &tm = "gmtime(&$1)";
-  fun asctime:&tm -> string = "asctime($1)";
+  private proc gmtime:&time_t * &tm = "gmtime_r($1,$2);";
+  fun gmtime (var t:time_t) :tm =
+  {
+    var atm : tm; gmtime (&t, &atm);
+    return atm;
+  }
+
+  private proc localtime:&time_t * &tm = "localtime_r($1,$2);";
+  fun localtime (var t:time_t) :tm =
+  {
+    var atm : tm; localtime (&t, &atm);
+    return atm;
+  }
 
   header """
-    char* strftime_helper(const char *pat,    const struct tm * ti);
+    string asctime_helper(struct tm const * ti);
   """;
 
   body """
-    char* strftime_helper(const char *pat,    const struct tm * ti) {
+    string asctime_helper(struct tm const * ti) {
+      int len = 64;
+      char *fmted = (char*) malloc(sizeof(char)*64);
+      asctime_r(ti,fmted);
+      string s = string(fmted);
+      free(fmted);
+      return s;
+    }
+  """;
+  private fun asctime:&tm -> string = "asctime_helper($1)";
+  fun asctime (var t:tm) : string => asctime (&t);
+
+  header """
+    string strftime_helper(const char *pat,    const struct tm * ti);
+  """;
+
+  body """
+    string strftime_helper(const char *pat,    const struct tm * ti) {
       int len = 64;
       char *fmted = (char*) malloc(sizeof(char)*64);
       strftime(fmted,len,pat,ti);
-      return fmted;
+      string s = string(fmted);
+      free(fmted);
+      return s;
     }
   """;
 
-
-  publish """strftime returns formatted string date defined my format string and tm struct.
-See C manpage for strftime for format codes"""
-
-  gen strftime_helper: string * &tm -> +char = "strftime_helper(($1.c_str()),$2)";
-  gen strftime(x:string, y: &tm) : string = 
+  private fun strftime: string * &tm -> string = "strftime_helper(($1.c_str()),$2)";
+  fun strftime (fmt: string, var t: tm ) :string = 
   {
-    var r = strftime_helper (x, y);
-    var s = string r;
-    free (r);
-    return s;
+     return strftime (fmt, &t); 
   }
 
-/*
-  publish """Parses string date in first arg with format codes in second arg and 
-returns pointer to tm structure if successful or NULL if unsucessful """
-
-  gen raw_strptime: string*string -> &tm = "strptime_helper ($1.c_str(), $2.c_str())";
-*/ 
-  fun +: time_t*time_t -> time_t = "$1+$2";
-  fun +: time_t*int -> time_t = "$1+(time_t)$2";
-/*
-  publish """"Parses string date in first arg with format codes in second arg and 
-returns pointer to tm structure wrapped in opt."""
-
-  fun strptime (s:string,fmt:string):opt[&tm]  => let ?r = raw_strptime(s,fmt) in 
-      if isNULL(r) then None[&tm] else Some(r) endif;
-*/
- fun rfc1123_date (dt:&tm) => strftime("%a, %d %b %Y %H:%M:%S %Z",dt);
+  fun rfc1123_date (dt:&tm) => strftime("%a, %d %b %Y %H:%M:%S %Z",dt);
+  fun rfc1123_date (dt:tm) => strftime("%a, %d %b %Y %H:%M:%S %Z",dt);
 
   fun rfc1123_date () = {
     var time_epoch_seconds = time_t();
-    val tm_struct =  gmtime(time_epoch_seconds);
-    return rfc1123_date(tm_struct);
+    var tm_struct : tm;
+    gmtime(&time_epoch_seconds, &tm_struct);
+    return rfc1123_date(&tm_struct);
   }
 
- fun hour() => 3600;
+  fun hour() => 3600;
 
- fun day() => 86400;
- fun expires_seconds_from_now(seconds:int) ={ 
-   var time_epoch_seconds = time_t() +seconds;
-   return rfc1123_date (gmtime(time_epoch_seconds));
+  fun day() => 86400;
+  fun expires_seconds_from_now(seconds:int) ={ 
+    var time_epoch_seconds = time_t() +seconds;
+    var tm_struct : tm;
+    gmtime(&time_epoch_seconds, &tm_struct);
+   return rfc1123_date (&tm_struct);
  }
 
 }

@@ -11,7 +11,7 @@ class HTTPResponse {
   open Assoc_list;
   struct http_response {
     status_code:status_code;
-    last_modified:&tm;
+    last_modified:tm;
     content_type:mime_type;
     headers:assoc_list[string,string];
     content:string;
