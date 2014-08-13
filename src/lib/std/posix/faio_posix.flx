@@ -271,7 +271,9 @@ proc faio_rw(q:job_queue, fd: FileSystem::posix_file, len: &int, buf: address, e
 proc faio_read(fd: FileSystem::posix_file, len: &int, buf: address,
     eof: &bool)
 {
+println$ "faio_posix::faio_read " + str (*len);
     faio_rw(sys_job_queue, fd, len, buf, eof, true);       // read
+println$ "faio_posix::faio_read, len="+str (*len) + ", eof=" + str (*eof);
 }
 
 proc faio_write(fd: FileSystem::posix_file, len: &int, buf: address, eof: &bool)

@@ -35,6 +35,8 @@ open class String
 @felix
   fun == (s:string, c:char) => len s == 1uz and s.[0] == c;
   fun == (c:char, s:string) => len s == 1uz and s.[0] == c;
+  fun != (s:string, c:char) => len s != 1uz or s.[0] != c;
+  fun != (c:char, s:string) => len s != 1uz or s.[0] != c;
 
 @h2 Append to {string} object
 @felix
