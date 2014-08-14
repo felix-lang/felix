@@ -132,7 +132,8 @@ Given a registry, simulate dynamic linkage.
 
   // severe hackery: if the registry isn't initialised,
   // create one, store its address in the GC object, and make
-  // it a root so the GC scans it
+  // it a root so the GC scans it: the GC isn't owned by itself,
+  // but the registry is owned by the GC.
   gen get_module_registry  () :registry_t = {
     var ppregistry : &&registry_t = #get_module_registry_address_address;
     var pregistry : &registry_t = *ppregistry;
@@ -369,9 +370,13 @@ Finally the instance is returned.
 @felix
 
   //$ Create, link, and prepare a DLL instance from a modulename.
+  //$ NOTE: libraries created here do not need to be roots
+  // The code is never deleted (due to design issues with C).
+  // If the library isn't reachable, you can't create an instance.
+  // If an instance is created, it reaches the library.
   noinline gen prepare_lib(modulename:string):flx_instance = {
     var library = create_library_handle(get_debug_driver_flag());
-    Gc::add_root (C_hack::cast[address] library);
+    //Gc::add_root (C_hack::cast[address] library);
     var linstance =  create_instance_handle(get_debug_driver_flag());
     regopen #get_module_registry (library,modulename);
     create (library,linstance);
@@ -381,7 +386,7 @@ Finally the instance is returned.
   //$ Create, link, and prepare a DLL instance from a modulename.
   noinline gen prepare_lib_with_args(modulename:string, args:list[string]):flx_instance = {
     var library = create_library_handle(get_debug_driver_flag());
-    Gc::add_root (C_hack::cast[address] library);
+    //Gc::add_root (C_hack::cast[address] library);
     var linstance =  create_instance_handle(get_debug_driver_flag());
     regopen #get_module_registry (library,modulename);
     create_with_args (library,linstance,args);

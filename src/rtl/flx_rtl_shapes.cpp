@@ -8,12 +8,12 @@ namespace flx { namespace rtl {
 // ********************************************************
 // OFFSETS for flx_dynlink_t
 // ********************************************************
-
+FLX_FINALISER(flx_dynlink_t)
 ::flx::gc::generic::gc_shape_t flx_dynlink_ptr_map = {
   NULL,
   "rtl::flx_dynlink_t",
   1,sizeof(flx_dynlink_t),
-  0, // no finaliser,
+  flx_dynlink_t_finaliser, 
   0,
   0,
   ::flx::gc::generic::tblit<flx_dynlink_t>,::flx::gc::generic::tunblit<flx_dynlink_t>, 
@@ -31,13 +31,13 @@ static const std::size_t flx_libinst_offsets[4]={
     offsetof(flx_libinst_t,main_proc),
     offsetof(flx_libinst_t,lib)
 };
-
+FLX_FINALISER(flx_libinst_t)
 static ::flx::gc::generic::offset_data_t const flx_libinst_offset_data = { 4, flx_libinst_offsets };
 ::flx::gc::generic::gc_shape_t flx_libinst_ptr_map = {
   &flx_dynlink_ptr_map,
   "rtl::flx_libinst",
   1,sizeof(flx_libinst_t),
-  0, // no finaliser,
+  flx_libinst_t_finaliser, 
   &flx_libinst_offset_data,
   ::flx::gc::generic::scan_by_offsets,
   ::flx::gc::generic::tblit<flx_libinst_t>,::flx::gc::generic::tunblit<flx_libinst_t>, 
