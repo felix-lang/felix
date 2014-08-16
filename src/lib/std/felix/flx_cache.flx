@@ -1,10 +1,16 @@
 class FlxCache
 {
+  fun is_absolute (f:string) => f.[0] == #Filename::sep; // HACK!
+
   fun gramtime(debugln: string -> 0) (path:string, s:string) : double = {
     //println$ "Path=" + path + " file = " + s;
     fun maxtime (x:double) (s:string) => max (x, gramtime debugln (path, s));
     if s.[0]=="@".char do
-      var file = Filename::join$ path, s.[1 to].strip;
+      var file = 
+        let ?f = s.[1 to].strip in
+        if is_absolute f then f 
+        else Directory::mk_absolute_filename (Filename::join$ path, f)
+      ;
       var filetime = FileStat::dfiletime(file,0.0);
       if filetime == 0.0 do
         println$ "Grammar include file '" + file "' doesn't exist, exiting";
@@ -119,6 +125,7 @@ class FlxCache
 
     // Calculate the time of the newest text file defining the grammar
     // these are files in directory share/lib/grammar.
+println$ "GRAMMER_DIR=" + spec.GRAMMAR_DIR;
     var grammar_time = gramtime spec.debugln (spec.GRAMMAR_DIR, "@"+spec.STDGRAMMAR);
     spec.debugln$ "Grammar text time=" + FileStat::strfiletime (grammar_time);
 

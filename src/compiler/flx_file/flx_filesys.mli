@@ -69,12 +69,22 @@ val mk_cache_name:
   string ->                    (** native filename *)
   string                       (** full pathname *)
 
+(** check if a native filename is an absolute filename *)
+val is_abs: string -> bool 
+
+(** Same as find_path except expects a native filename not a Unix one *)
+val find_native_path:
+  ?include_dirs:string list ->  (** Optional directories to search. *)
+  string ->                     (** The file name. *)
+  string
+
 (** Look in the filesystem for the path. Raises Missing_path if not found or is
  * not a file. *)
 val find_file:
   ?include_dirs:string list ->  (** Optional directories to search. *)
   string ->                     (** The file name. *)
   string
+
 
 (** Look in the filesystem for the path. Raises Missing_path if not found or is
  * not a directory. *)

@@ -38,10 +38,23 @@ let ocs2flx r =
  * multiple files, which I can't do with #include, since I 
  * can't do that with Dypgen at the moment..
  *)
+
+(* Assumes native filenames *)
+let xlocate_file ?(include_dirs=[]) f =
+  if Flx_filesys.is_abs f then 
+    if Sys.file_exists f then f else raise (Flx_filesys.Missing_path f)
+  else Flx_filesys.find_native_path ~include_dirs f
+ 
+
+let locate_file ?(include_dirs=[]) f =
+  let p = xlocate_file ~include_dirs f in
+  if Sys.is_directory p then raise (Flx_filesys.Missing_path p) else p
+
+(* Native filenames, respect absolute filename *)
 let rec render path f = 
   if String.length f < 1 then failwith "Empty --import filename";
   if String.sub f 0 1 = "@" then
-    let f = Flx_filesys.find_file ~include_dirs:path (String.sub f 1 (String.length f - 1))in
+    let f = locate_file ~include_dirs:path (String.sub f 1 (String.length f - 1)) in
     let f = open_in f in
     let res = ref [] in
     try

@@ -726,11 +726,15 @@ noinline proc processing_stage1
     endmatch
   ;
 
-  var dflt_grammar = "grammar/grammar.files";
+  var dflt_grammar = Directory::mk_absolute_filename 
+    (Filename::join (control*.GRAMMAR_DIR,"grammar/grammar.files"))
+  ;
   control.STDGRAMMAR <- 
     match control*.STDGRAMMAR with 
     | "" => dflt_grammar 
-    | ?x => Directory::mk_absolute_filename x // ???  
+    | ?x => 
+      if Filename::is_absolute_filename x then x 
+      else Filename::join (control*.GRAMMAR_DIR, x) 
     endmatch
   ;
 
