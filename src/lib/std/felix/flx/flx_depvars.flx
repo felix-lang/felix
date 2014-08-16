@@ -10,6 +10,9 @@ typedef dvars_type = (
     INCLUDE_DIR: list[string],
     STDLIB:list[string],
     FLXLIBS: list[string],
+    GRAMMAR_DIR: string,
+    STDGRAMMAR: string,
+    AUTOMATON: string,
     DEBUGSWITCH:list[string],
     STATIC_ENV:list[string],
     VERBOSE: list[string]
@@ -178,21 +181,34 @@ gen cal_depvars(
   val args = control*.USER_ARGS;
   debugln$ "Target program args = "+args.str;
 
-  var INCLUDE_DIR= list (
-    ("-I"+Filename::join(control*.FLX_SHARE_DIR,"lib","rtl")), // NOTE: this is WRONG
-    ("-I"+Filename::join(config.FLX_INSTALL_DIR,config.FLX_TARGET_SUBDIR,"lib","rtl")))
+  var INCLUDE_DIR= 
+    match control*.RTL_INCLUDE_DIRS with 
+    | Empty => list (
+      ("-I"+Filename::join(control*.FLX_SHARE_DIR,"lib","rtl")), // NOTE: this is WRONG
+      ("-I"+Filename::join(config.FLX_INSTALL_DIR,config.FLX_TARGET_SUBDIR,"lib","rtl")))
+    | _ => control*.RTL_INCLUDE_DIRS
+    endmatch
   ;
-  debugln$ "C++ Include directory for Felix library " + str INCLUDE_DIR;
+  debugln$ "C++ Include directory for Felix RTL " + str INCLUDE_DIR;
 
-  var FLXLIBS=list (
-    "-I"+Filename::join(config.FLX_INSTALL_DIR,config.FLX_TARGET_SUBDIR,"lib"),
-    "-I"+Filename::join(control*.FLX_SHARE_DIR,"lib")
-  );
+  var FLXLIBS=
+    match control*.FLX_LIB_DIRS with
+    | Empty => list (
+      "-I"+Filename::join(config.FLX_INSTALL_DIR,config.FLX_TARGET_SUBDIR,"lib"),
+      "-I"+Filename::join(control*.FLX_SHARE_DIR,"lib"))
+    | _ => control*.FLX_LIB_DIRS
+    endmatch
+  ;
+  debugln$ "Felix Include directory for Felix RTL " + str FLXLIBS;
   var STDLIB=list[string]("std");
   if control*.NOSTDLIB == 1 do
     FLXLIBS=Empty[string];
     STDLIB=Empty[string];
   done
+
+  var STDGRAMMAR = Directory::mk_absolute_filename control*.STDGRAMMAR;
+  var GRAMMAR_DIR = Directory::mk_absolute_filename control*.GRAMMAR_DIR;
+  var AUTOMATON = Directory::mk_absolute_filename control*.AUTOMATON;
 
   var DEBUGSWITCH=Empty[string];
   if control*.DEBUG_COMPILER == 1 do DEBUGSWITCH=list[string]$ "--debug"; done
@@ -225,6 +241,9 @@ gen cal_depvars(
     var INCLUDE_DIR=INCLUDE_DIR;
     var STDLIB=STDLIB;
     var FLXLIBS=FLXLIBS;
+    var AUTOMATON=AUTOMATON;
+    var GRAMMAR_DIR=GRAMMAR_DIR;
+    var STDGRAMMAR=STDGRAMMAR;
     var DEBUGSWITCH=DEBUGSWITCH;
     var STATIC_ENV=STATIC_ENV;
     var VERBOSE = VERBOSE;

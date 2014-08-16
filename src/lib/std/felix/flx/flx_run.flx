@@ -37,6 +37,8 @@ proc check_cache(
 {
   control*.CLEAR_CACHE, control*.cache_time = validate_cache (
     FLX_SHARE_DIR = control*.FLX_SHARE_DIR,
+    AUTOMATON = control*.AUTOMATON,
+    GRAMMAR_DIR = control*.GRAMMAR_DIR,
     STDGRAMMAR = control*.STDGRAMMAR,
     FLXG = control*.FLXG,
     CACHE_DIR = control*.CACHE_DIR,
@@ -215,7 +217,9 @@ object processing_env(
         STDLIB = dvars.STDLIB,
         FLXG = control.FLXG,
         VERBOSE = dvars.VERBOSE,
-        STDGRAMMAR = control.STDGRAMMAR,
+        // NOTE: BUG: Not passing grammar directory to compiler!
+        // flxg expects file in standard library
+        STDGRAMMAR = "@"+control.STDGRAMMAR, 
         STDIMPORT = control.STDIMPORT,
         IMPORTS = control.IMPORTS,
         FLXLIBS = dvars.FLXLIBS,

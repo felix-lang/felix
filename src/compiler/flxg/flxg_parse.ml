@@ -66,8 +66,8 @@ let load_syntax state =
   if state.syms.compiler_options.force_recompile then
     Flx_profile.call "Flxg_parse.parse_syntax" parse_syntax state
   else
+  let filename = state.syms.compiler_options.automaton_filename in
   try
-     let filename = state.syms.compiler_options.automaton_filename in
 (* print_endline ("Trying to load automaton " ^ filename); *)
      let oc = open_in_bin filename in
      let local_data = Marshal.from_channel oc in
@@ -80,7 +80,7 @@ let load_syntax state =
      Flx_parse_helper.global_data.Flx_token.parsing_device := parsing_device;
      local_data
   with _ ->
-    print_endline "Can't load automaton from disk: building!";
+    print_endline ("Can't load automaton '"^filename^"'from disk: building!");
 
     Flx_profile.call "Flxg_parse.parse_syntax" parse_syntax state
 
