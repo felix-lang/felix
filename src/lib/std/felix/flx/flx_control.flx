@@ -110,7 +110,7 @@ fun dflt_control (config:Config::config_type, profile:FlxProfile::profile_type) 
     var STDIN="";
     var GRAMMAR_DIR="";
     var STDGRAMMAR="";
-    var STDIMPORT="=plat/flx.flxh";
+    var STDIMPORT="plat/flx.flxh";
     var AUTOMATON="";
     var IMPORTS=Empty[string];
     var USAGE = "production";
