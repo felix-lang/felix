@@ -221,8 +221,7 @@ object processing_env(
         // flxg expects file in standard library
         STDGRAMMAR = "@"+control.STDGRAMMAR, 
         AUTOMATON = control.AUTOMATON,
-        STDIMPORT = control.STDIMPORT,
-        IMPORTS = control.IMPORTS,
+        IMPORTS = control.STDIMPORT + control.IMPORTS,
         FLXLIBS = dvars.FLXLIBS,
         INCLUDE_DIRS = control.STANDARD_INCLUDE_DIRS,
         filebase = dvars.filebase,

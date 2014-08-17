@@ -186,7 +186,7 @@ gen cal_depvars(
     | Empty => list (
       ("-I"+Filename::join(control*.FLX_SHARE_DIR,"lib","rtl")), // NOTE: this is WRONG
       ("-I"+Filename::join(config.FLX_INSTALL_DIR,config.FLX_TARGET_SUBDIR,"lib","rtl")))
-    | _ => control*.RTL_INCLUDE_DIRS
+    | _ => map (fun (s:string) => "-I" + s) control*.RTL_INCLUDE_DIRS
     endmatch
   ;
   debugln$ "C++ Include directory for Felix RTL " + str INCLUDE_DIR;
