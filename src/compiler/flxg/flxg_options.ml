@@ -148,8 +148,8 @@ let print_options () =
   print_endline "  --force : force recompilation";
   print_endline "  --with-comments : generate code with comments";
   print_endline "  --mangle-names : generate code with fully mangled names";
-  print_endline "  --time : show processing time for each stage"
-  print_endline "  --automaton=syntax.automaton: parser automaton"
+  print_endline "  --time : show processing time for each stage";
+  print_endline "  --automaton=syntax.automaton: parser automaton";
 
 
 (* Parse the felix arguments and do some option parsing while we're at it. *)
