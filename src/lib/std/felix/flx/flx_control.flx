@@ -101,6 +101,7 @@ fun dflt_control (config:Config::config_type, profile:FlxProfile::profile_type) 
     var STANDARD_INCLUDE_FILES=Empty[string];
     var EXTRA_INCLUDE_DIRS=Empty[string];
     var EXTRA_INCLUDE_FILES=Empty[string];
+    var FLX_STD_LIBS=Empty[string];
     var NOSTDLIB=0;
     var STDOUT="";
     var EXPECT="";

@@ -220,6 +220,7 @@ object processing_env(
         // NOTE: BUG: Not passing grammar directory to compiler!
         // flxg expects file in standard library
         STDGRAMMAR = "@"+control.STDGRAMMAR, 
+        AUTOMATON = control.AUTOMATON,
         STDIMPORT = control.STDIMPORT,
         IMPORTS = control.IMPORTS,
         FLXLIBS = dvars.FLXLIBS,

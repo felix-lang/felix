@@ -104,6 +104,7 @@ class FlxCache
 
     // get the OS timestamp of the flxg compiler, +inf if not found
     var flxg_time = FileStat::dfiletime(spec.FLXG, #FileStat::future_time);
+    spec.debugln$ "Flxg=" + spec.FLXG;
     spec.debugln$ "Flxg_time=" + FileStat::strfiletime(flxg_time);
 
     // get the OS timestamp of the file flxg_time.stamp
@@ -140,7 +141,7 @@ println$ "GRAMMER_DIR=" + spec.GRAMMAR_DIR;
     // to the current compiler time stamp, then the cache is stale 
     // and should be deleted.
     if cache_time != #FileStat::future_time and flxg_stamp_time != flxg_time do
-      println$ "Cache may be out of date due to compiler upgrade!";
+      println$ "Cache may be out of date due to compiler change!";
       println$ "Flxg compiler time stamp=" + FileStat::strfiletime(flxg_time);
       println$ "Cache time stamp        =" + FileStat::strfiletime(cache_time);
 

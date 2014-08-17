@@ -196,15 +196,21 @@ gen cal_depvars(
     | Empty => list (
       "-I"+Filename::join(config.FLX_INSTALL_DIR,config.FLX_TARGET_SUBDIR,"lib"),
       "-I"+Filename::join(control*.FLX_SHARE_DIR,"lib"))
-    | _ => control*.FLX_LIB_DIRS
+    | _ => map (fun (s:string) => "-I" + s) control*.FLX_LIB_DIRS
     endmatch
   ;
-  debugln$ "Felix Include directory for Felix RTL " + str FLXLIBS;
-  var STDLIB=list[string]("std");
+  debugln$ "Felix Include directores for Felix Library " + str FLXLIBS;
+
   if control*.NOSTDLIB == 1 do
     FLXLIBS=Empty[string];
-    STDLIB=Empty[string];
+    var STDLIB=Empty[string];
+  else
+    match control*.FLX_STD_LIBS with
+    | Empty => STDLIB = list[string] ("std");
+    | ?x => STDLIB = x;
+    endmatch;
   done
+  debugln$ "Felix standard (cached) libraries: " + str STDLIB;
 
   var STDGRAMMAR = Directory::mk_absolute_filename control*.STDGRAMMAR;
   var GRAMMAR_DIR = Directory::mk_absolute_filename control*.GRAMMAR_DIR;
@@ -249,6 +255,6 @@ gen cal_depvars(
     var VERBOSE = VERBOSE;
   };
 
-}
-}
+} // fun cal_depvars
+} // class FlxDepvars
 

@@ -135,6 +135,7 @@ println$ "Setup file: " + arg;
       | "share-dir" => println$ "set share-dir "+data; control.FLX_SHARE_DIR <- data;
       | "cache-dir" => println$ "set cache-dir "+data; control.CACHE_DIR <- data;
       | "output-dir" => println$ "set output-dir "+data; control.OUTPUT_DIR <- data;
+      | "felix-compiler" => println$ "set flxg " + data; control.FLXG <-data;
       | "toolchain" => println$ "set toolchain "+data; control.FLX_TOOLCHAIN <- data;
       | "linker-switch" => println$ "add linker switch "+data; 
           control.LINKER_SWITCHES <- control*.LINKER_SWITCHES + data;
@@ -165,6 +166,8 @@ println$ "Setup file: " + arg;
           control.cpps <- control*.cpps + data;
       | "extra-obj" => println$ "set Felix extra object file "+data; 
           control.cppos <- control*.cppos + data;
+      | "flx-std-lib" => println$ "add Felix standard (cached) library "+data; 
+          control.FLX_STD_LIBS <- control*.FLX_STD_LIBS+ data;
       | _ => println$ "Unknown field " + field;
       endmatch;
     | None => ;
@@ -739,13 +742,11 @@ noinline proc processing_stage1
   ;
 
   var dflt_automaton = 
-    cache_join(control*.CACHE_DIR, 
-      Directory::mk_absolute_filename (Filename::join (list( 
-        control*.FLX_SHARE_DIR,
-        "lib",
-        "grammar",
-        "syntax.automaton"
-      ))))
+    cache_join
+    (
+      control*.CACHE_DIR, 
+      Filename::join (control*.STDGRAMMAR, "syntax.automaton")
+    )
   ;
   control.AUTOMATON <- 
     match control*.AUTOMATON with 
