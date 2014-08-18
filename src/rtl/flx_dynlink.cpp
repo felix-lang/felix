@@ -202,9 +202,9 @@ void flx_dynlink_t::unlink()
 }
 
 flx_dynlink_t::~flx_dynlink_t() { 
-  fprintf(stderr, "Library %p of module '%s' file '%s' destroyed\n", this, 
-   modulename.c_str(), filename.c_str()
-  ); 
+  // fprintf(stderr, "Library %p of module '%s' file '%s' destroyed\n", this, 
+  // modulename.c_str(), filename.c_str()
+  // ); 
 }
 
 // ************************************************
@@ -212,7 +212,7 @@ flx_dynlink_t::~flx_dynlink_t() {
 // ************************************************
 
 flx_libinst_t::~flx_libinst_t() {
-  fprintf(stderr, "Library instance %p of library %p destroyed\n",this,lib);
+  // fprintf(stderr, "Library instance %p of library %p destroyed\n",this,lib);
 }
 flx_libinst_t::flx_libinst_t(bool debug_) :
   thread_frame (NULL),

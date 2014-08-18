@@ -126,7 +126,6 @@ class FlxCache
 
     // Calculate the time of the newest text file defining the grammar
     // these are files in directory share/lib/grammar.
-println$ "GRAMMER_DIR=" + spec.GRAMMAR_DIR;
     var grammar_time = gramtime spec.debugln (spec.GRAMMAR_DIR, "@"+spec.STDGRAMMAR);
     spec.debugln$ "Grammar text time=" + FileStat::strfiletime (grammar_time);
 
