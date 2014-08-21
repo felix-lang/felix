@@ -8,7 +8,10 @@ FlxGui::init();
 
 // get a font, and the recommended vertical 
 // spacing between lines
-var font : font_t = get_font(OSX_dflt_font());
+var font_name = System::argv 1;
+if font_name == "" do font_name = OSX_dflt_font(); done
+
+var font : font_t = get_font(font_name);
 var lineskip = get_lineskip font;
 
 // create some colours and clear the window
