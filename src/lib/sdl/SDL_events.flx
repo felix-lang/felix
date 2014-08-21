@@ -136,7 +136,7 @@ open class SDL_events_h
       | $(SDL_CLIPBOARDUPDATE) => "SDL_CLIPBOARDUPDATE"
       | $(SDL_DROPFILE) => "SDL_DROPFILE"
       | $(SDL_USEREVENT) => "SDL_USEREVENT"
-      | _ => "UNKNOWN_EVENT"
+      | ?x => "UNKNOWN_EVENT #"+x.uint32.str
     ;
   }
 
@@ -146,6 +146,7 @@ open class SDL_events_h
   cenum SDL_WindowEventID =
     SDL_WINDOWEVENT_NONE,
     SDL_WINDOWEVENT_SHOWN,
+    SDL_WINDOWEVENT_HIDDEN,
     SDL_WINDOWEVENT_EXPOSED,
     SDL_WINDOWEVENT_MOVED,
     SDL_WINDOWEVENT_RESIZED,
@@ -163,6 +164,7 @@ open class SDL_events_h
     fun str : SDL_WindowEventID -> string =
     | $(SDL_WINDOWEVENT_NONE) => "none"
     | $(SDL_WINDOWEVENT_SHOWN) => "shown"
+    | $(SDL_WINDOWEVENT_HIDDEN) => "hidden"
     | $(SDL_WINDOWEVENT_EXPOSED) => "exposed"
     | $(SDL_WINDOWEVENT_MOVED) => "moved"
     | $(SDL_WINDOWEVENT_RESIZED) => "resized"
@@ -175,6 +177,7 @@ open class SDL_events_h
     | $(SDL_WINDOWEVENT_FOCUS_GAINED) => "focus_gained"
     | $(SDL_WINDOWEVENT_FOCUS_LOST) => "focus_lost"
     | $(SDL_WINDOWEVENT_CLOSE) => "close"
+    | ?x => "UnknownWindowEvent #"+x.uint8.str
     ;
   }
   ctor uint8 : SDL_WindowEventID = "(uint8_t)$1";

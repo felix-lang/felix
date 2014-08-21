@@ -82,7 +82,7 @@ typedef surface_t = SDL_Surface;
 typedef event_t = SDL_Event;
 
 fun RGB (r:int, g:int, b:int) => 
-  SDL_Color (r.uint8, g.uint8, b.uint8, 0u8)
+  SDL_Color (r.uint8, g.uint8, b.uint8, 255u8)
 ;
  
 ctor window_t  (title:string, xpos:int, ypos:int, width:int,height:int) =
@@ -98,7 +98,24 @@ ctor window_t  (title:string, xpos:int, ypos:int, width:int,height:int) =
 
 proc destroy (w:window_t) { SDL_DestroyWindow w; }
 
-fun get_lineskip (f: font_t) => TTF_FontHeight(font) + 1;
+fun get_lineskip (f: font_t) => TTF_FontLineSkip(font) + 1;
+
+fun get_textsize (f: font_t, s:string) = 
+{
+  var w: int; var h: int;
+  var result = TTF_SizeText (f,s,&w, &h);
+  return w,h;
+}
+
+fun bounding_box (f:font_t, x:int, y:int, s:string) : rect_t =
+{
+  var fh = TTF_FontHeight f;
+  var th, tw = get_textsize(f,s);
+  var h = max (fh,th)+2;
+  var w = tw + 2;
+  return SDL_Rect (x,y,w,h);
+}
+
 
 proc write(w:window_t) (x:int, y:int, font:font_t, c: colour_t, s:string)
 {
@@ -127,6 +144,16 @@ proc clear(w:window_t) (c: colour_t)
   C_hack::ignore$ SDL_FillSurface (surf, bgpixels);
 }
 
+proc fill (w:window_t) (var r:rect_t, c:colour_t)
+{
+  var surf = SDL_GetWindowSurface w;
+  var pixelformat : &SDL_PixelFormat  = surf*.format;
+  var bgpixels = SDL_MapRGB(pixelformat,c.r,c.g,c.b);
+  C_hack::ignore$ SDL_SetClipRect (surf, &r);
+  C_hack::ignore$ SDL_FillSurface (surf, bgpixels);
+  SDL_ClearClipRect (surf);
+}
+
 proc draw_line (w:window_t)  (c:color_t, x0:int, y0:int, x1:int, y1:int)
 {
    var s: &SDL_Surface = SDL_GetWindowSurface w;
@@ -144,6 +171,47 @@ proc update(w:window_t)
     System::exit 1;
   done
 }
+
+interface line_buffer_interface 
+{
+  get: 1 -> string;
+  get_pos: 1 -> int;
+
+  // movement
+  mv_left : 1 -> 0;
+  mv_right : 1 -> 0;
+  mv_start : 1 -> 0;
+  mv_end : 1 -> 0;
+
+  // insert
+  ins: char -> 0;
+
+  // delete
+  del_left: 1 -> 0;
+  del_right: 1 -> 0;
+  clear : 1 ->0;
+  clear_right : 1 -> 0;
+  clear_left : 1 -> 0;
+}
+
+proc display_line_buffer 
+(
+  w:window_t, f:font_t, c:colour_t, bg:colour_t,
+  x: int, y:int, b:line_buffer_interface
+) 
+()
+{
+  var nullRect = C_hack::null[SDL_Rect];
+  var s = #(b.get);
+println$ "Edit box = '" + s + "'";
+  var text_rendered = TTF_RenderText_Solid(f,s,c);
+  var window_surface: &SDL_Surface = SDL_GetWindowSurface w;
+  var viewport = bounding_box (f,x,y,s);
+  w.fill (viewport,green);
+  C_hack::ignore$ SDL_BlitSurface (text_rendered, nullRect, window_surface, &viewport); 
+  SDL_FreeSurface text_rendered;
+  C_hack::ignore$ SDL_UpdateWindowSurface w;
+} 
 
 object line_buffer (n:int, var b:string) =
 {
@@ -189,6 +257,45 @@ object line_buffer (n:int, var b:string) =
     b = substring (b, pos, n - pos);
   }
 }
+
+proc line_edit (b:line_buffer_interface) (display:1->0) (ec:ischannel[event_t]) ()
+{
+  println$ "Line buffer running";
+  display();
+  var run = true;
+  var e : event_t = read ec;
+  while run do
+    println$ "Event read";
+    match e.type.SDL_EventType with
+    | $(SDL_KEYDOWN) =>
+      var vkey = e.key.keysym.sym;
+      match vkey with
+      | $(SDLK_LEFT) => b.mv_left (); display();
+      | $(SDLK_RIGHT) => b.mv_right (); display();
+      | $(SDLK_HOME) => b.mv_start (); display();
+      | $(SDLK_END) => b.mv_end (); display();
+      | $(SDLK_DELETE) => b.del_right(); display();
+      | $(SDLK_BACKSPACE) => b.del_left(); display();
+      | $(SDLK_RETURN) => ;
+      | _ => ;
+      endmatch;
+    | $(SDL_TEXTINPUT) =>
+      var text_buffer : +char = e.text.text;
+      var ch = text_buffer . 0;
+      b.ins ch; 
+      display();
+
+    // NOTE: not an actual SDL_QUIT!
+    // We just need something to terminate.
+    // Should be sent on window close actually.
+    | $(SDL_QUIT) =>  
+      run = false;
+    | _ => ;
+    endmatch;
+    e = read ec;
+  done
+}
+
 
 // ------------------------------------------------------------------
 // Window controller is responsible for all the work
@@ -256,7 +363,12 @@ object window_manager () =
   {
     match find_window_index wid with
     | None => ;
-    | Some ?i => windows.i.destroy_window; erase (windows, i);
+    | Some ?i => 
+      println$ "delete window found index " + i.str;
+      windows.i.destroy_window; 
+      println$ "SDL destroyed";
+      erase (windows, i);
+      println$ "Window erased";
     endmatch;
   }
 
@@ -277,6 +389,8 @@ object window_manager () =
         SDL_PumpEvents;
         C_hack::ignore$ SDL_WaitEvent$ &e;
       done
+      println$ "SDL_QUIT seen!";
+      write$ omsgs, e;
       return;
     }
     spawn_fthread driver;
@@ -297,11 +411,26 @@ object window_manager () =
           e.window.event.SDL_WindowEventID == SDL_WINDOWEVENT_CLOSE 
         do
           #(wobj.get_window_id).delete_window;
+          println$ "dispatch: window deleted!";
         done
         | None => println$ "Can't find window ID = " + str wid;
         endmatch;
       | None => println$ "No window for message: Event type " + e.type.SDL_EventType.str;
       endmatch;
+  }
+
+  method proc delete_all() 
+  {
+    println$ "Delete all";
+    var e : SDL_Event;
+    e.type = SDL_WINDOWEVENT.uint32;
+    e.window.event = SDL_WINDOWEVENT_CLOSE.uint8;
+    for wobj in windows do 
+      var omsgs = #(wobj.get_oschannel);
+      e.window.windowID = #(wobj.get_window_id);
+      //write (omsgs, e);
+    done
+    // note: not bothering to delete the darray :)
   }
 }
 
