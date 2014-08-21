@@ -1,0 +1,125 @@
+include "gui/__init__";
+open FlxGui;
+
+var clock = Faio::mk_alarm_clock();
+
+// Initialise the SDL system (SDL + TTF + IMAGE)
+FlxGui::init();
+
+// get a font, and the recommended vertical 
+// spacing between lines
+var font : font_t = get_font(OSX_dflt_font());
+var lineskip = get_lineskip font;
+
+// create some colours and clear the window
+var red = RGB(255,0,0);
+var green = RGB (0,255,0);
+
+inline gen mk_field 
+(
+  window:window_t, x:int, y:int, 
+  font:font_t, colour: colour_t, bgcolour:colour_t, 
+  dflt:string
+) 
+: oschannel[event_t] =
+{
+  println$ "mk_field ("+x.str +"," + y.str+")="+dflt;
+  var editor = line_buffer (dflt.len.int, dflt);
+  var display = display_line_buffer (window,font,colour,bgcolour,x,y,editor);
+  display();
+  var ich,och = #(mk_ioschannel_pair[event_t]);
+  var controller = line_edit editor display ich;
+  spawn_fthread controller; 
+  println$ "mkfield: controller spawned";
+  return och;
+}
+
+// Make a window
+inline gen mkwin(x:int, y:int) : window_t * varray[oschannel[event_t]] =
+{
+  var w = window_t("My Window",x,y,400,400);
+
+  w.clear green;
+
+  // write some text and some lines
+  w.write (100,100,font,red,"HELLO");
+  w.write (100,100+lineskip,font,red,"WORLD " + w.SDL_GetWindowID.str);
+  w.draw_line (RGB(0,0,255), 100,100,200,200);
+
+  // update the window with the stuff we drew
+  w.update;
+
+  var ch1 = mk_field (w, 50, 20, font, red, green, "EDITFIELD ONE");
+  var ch2 = mk_field (w, 50, 80, font, red, green, "EDITFIELD TWO");
+  var ch3 = mk_field (w, 50, 120, font,red, green, "EDITFIELD THR");
+  w.update;
+  var fields = varray[oschannel[event_t]] (ch1, ch2, ch3);
+  return w,fields;
+}
+
+// create a window manager
+var wm = window_manager();
+
+begin
+  var w1,flds1 = mkwin(150,150);
+  var w2,flds2 = mkwin(200,200);
+  var w3,flds3 = mkwin(250,250);
+
+  // make an event handler for our window
+  proc ehandler (fields: varray[oschannel[event_t]]) (input:ischannel[event_t])  () 
+  {
+    println$ "Window event handler running";
+    var selected_field = 0;
+    var run = true;
+    while run do
+      var ev: event_t = read input;
+      if ev.type.SDL_EventType != SDL_MOUSEMOTION do
+        println$ "  WINDOW specific EVENT: " + ev.window.event.SDL_WindowEventID.str;
+      done
+      write$ fields.selected_field, ev;
+      println$ "Event written to field " + selected_field.str;
+      run = ev.window.event.SDL_WindowEventID != SDL_WINDOWEVENT_CLOSE ;
+    done
+    println$ "Terminating window event processing loop";
+  }
+
+  // make a controller for the window using our event handler
+  var wc1 = window_controller (w1, ehandler flds1);
+  var wc2 = window_controller (w2, ehandler flds2);
+  var wc3 = window_controller (w3, ehandler flds3);
+
+  // place the controller under the window manager
+  var i = wm.add_window wc1;
+  i = wm.add_window wc2;
+  i = wm.add_window wc3;
+  // report the index number of the window
+  println$ "Last Window index " + i.str;
+end
+
+begin
+  // get the channel to read events from
+  var input = wm.get_event_source();
+
+  // get a first event from the window manager
+  var e: event_t = read input;
+
+  // while the event isn't a quit event ..
+  while e.type.SDL_EventType != SDL_QUIT do
+    // print a diagnostic
+    if e.type.SDL_EventType == SDL_WINDOWEVENT do
+      println$ e.type.SDL_EventType.str + ": " + e.window.event.SDL_WindowEventID.str + " wid=" + e.window.windowID.str;
+    elif e.type.SDL_EventType != SDL_MOUSEMOTION do
+      println$ e.type.SDL_EventType.str;
+    done
+    // dispatch the event to the window it is associated with
+    wm.dispatch_window_event e;
+    // get another event
+    e= read input;
+  done
+
+  // we must have got a quit ..
+  println$ "QUIT EVENT";
+  wm.delete_all();
+  println$ "Windows deleted, quitting";
+end
+ 
