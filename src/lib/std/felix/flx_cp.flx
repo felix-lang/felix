@@ -1,5 +1,7 @@
 class CopyFiles {
-  proc copyfiles(basedir:string, re:RE2, tpat:string, live:bool, verbose:bool)
+  proc processfiles 
+    (var process: string * string -> bool) 
+    (basedir:string, re:RE2, tpat:string, live:bool, verbose:bool)
   {
      var ds = StrDict::strdict[string] ();
      var sd = StrDict::strdict[string] ();
@@ -86,7 +88,7 @@ class CopyFiles {
      match ?src, ?dst in sd.iterator do
        if verbose do print$ "cp " + src + "  " + dst; done
        if live do
-         if FileSystem::filecopy(src, dst) do
+         if process(src, dst) do
            if verbose do println " #done"; done
          else
            eprintln "COPY FAILED";
@@ -97,6 +99,10 @@ class CopyFiles {
        done
      done
   }
+
+  proc copyfiles(basedir:string, re:RE2, tpat:string, live:bool, verbose:bool) =>
+    processfiles (FileSystem::filecopy) (basedir, re, tpat, live, verbose)
+  ;
 
   proc copyfiles(basedir:string, re:string, tpat:string, live:bool, verbose:bool) =>
     copyfiles(basedir, RE2 re, tpat, live, verbose)

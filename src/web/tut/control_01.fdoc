@@ -43,7 +43,7 @@ proc f (n:int)
 }
 @
 Note the control variable is available outside the loop.
-You must leave out the {var} if the variable is defined elsewhere
+You must leave out the @{var} if the variable is defined elsewhere
 in the same scope.
 
 @h2 Return

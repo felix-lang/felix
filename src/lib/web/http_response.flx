@@ -11,7 +11,7 @@ class HTTPResponse {
   open Assoc_list;
   struct http_response {
     status_code:status_code;
-    last_modified:&tm;
+    last_modified:tm;
     content_type:mime_type;
     headers:assoc_list[string,string];
     content:string;
@@ -34,6 +34,10 @@ Content-Length: """ + str (len response.content) + """\r
   
   fun make_image(mime:mime_type, content:string) => 
     http_header(http_response(SC_OK,localtime(#time_t),mime,#no_headers,content)) +
+      content; 
+
+  fun make_image(mime:mime_type, content:string, headers:headers_t) => 
+    http_header(http_response(SC_OK,localtime(#time_t),mime,headers,content)) +
       content; 
 
   fun make_css (content:string) =>

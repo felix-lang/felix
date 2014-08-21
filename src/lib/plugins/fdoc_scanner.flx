@@ -14,8 +14,8 @@ object fdoc_scanner () implements fdocscanner-control_t = {
     var out = "";
     String::reserve (&out,inp.len);
     for line in lines do
-      if line.[0]=='@' do
-        if out !="" do
+      if line.[0]=='@' and line.[1] != "{" do
+        if out !=""  do
            yield Some (Text out);
            out = "";
         done

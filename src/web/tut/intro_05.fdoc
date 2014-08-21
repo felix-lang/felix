@@ -1,5 +1,5 @@
 @h1 Variables
-Felix provides a way to create variables using the {var} binder.
+Felix provides a way to create variables using the @{var} binder.
 Again using the bindings from the first and second chapters:
 @felix 
 include './intro_02';
@@ -14,7 +14,7 @@ Note that since {intro_02.flx} includes {intro_01.flx} both get
 included by {include './intro_02';}.
 
 @h2 The <code>var</code> binder
-We will now show you the {var} binder.
+We will now show you the @{var} binder.
 We'll repeat the code, using variables:
 @felix
 var hello-world = mycat (mycat (hello, white), world); 
@@ -52,7 +52,7 @@ myprintln (x);
 2
 @
 
-The {var} binder requires either a type or an initialiser
+The @{var} binder requires either a type or an initialiser
 or both. Here's an example:
 @felix
 var y : myint = two;
@@ -63,14 +63,14 @@ myprintln (u);
 @expect
 4
 @
-The first line shows a variable initialised by {two}
-and the type {myint} given. This serves and an extra
+The first line shows a variable initialised by @{two}
+and the type @{myint} given. This serves and an extra
 check on the type.
 
 On the second line we allow the type of the RHS expression
 to determine the variable type.
 
 On the third line, we have an uninitialised variable
-of type {myint}. Use of variables before a value is stored
+of type @{myint}. Use of variables before a value is stored
 in them may have unpredictable results.
 

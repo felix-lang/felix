@@ -6,6 +6,7 @@ open C_hack;        // cast, address
 open Faio;
 open Pthread;
 open Demux;
+open Posix_headers;
 
 header sockety_h = '#include "demux_sockety.hpp"';  // my socket utils
 header '#include "faio_posixio.hpp"';
@@ -16,7 +17,85 @@ val sys_job_queue = Pthread::mk_job_queue(#sys_job_queue_qbound,#sys_job_queue_n
 
 // ------------ core file and socket definitions ----------------
 typedef fd_t = PosixFileSystem::posix_file;
+
+// type of a socket
 type socket_t = "int";
+
+// a size type for use in some socket functions
+// stupid confused Unix standard!
+type socklen_t="socklen_t" requires sockety_h;
+ctor socklen_t : int = "$1";
+ctor int : socklen_t = "$1";
+
+// A socket address consists of 
+// 1. a port number
+// 2. an address family indicator
+// 3. the encoded address, dependent on the family
+//
+// We deal only with Internet addresses IPv4 and IPv6,
+// indicator AF_INET and AF_INET6
+//
+// type of socket address protocol family
+type sa_family_t = "sa_family_t" requires sys_socket_h;
+fun ==: sa_family_t * sa_family_t -> bool = "$1==$2";
+
+type in_port_t = "in_port_t" requires netinet_in_h;
+
+const AF_INET : sa_family_t;
+const AF_INET6 : sa_family_t;
+
+// type to allocate on stack to hold any socket address for any protocol
+// required for stack allocations
+type sockaddr_storage_t = "struct sockaddr_storage" requires sockety_h;
+fun ss_family : &sockaddr_storage_t -> sa_family_t = "$1->ss_family";
+
+// type of a socket address
+type sockaddr_t = "struct sockaddr" requires sockety_h;
+fun sa_family : &sockaddr_t -> sa_family_t = "$1->sa_family";
+
+// cast socket address storage object pointer to socket address pointer
+fun sockaddr_p : &sockaddr_storage_t -> &sockaddr_t = "(struct sockaddr*)$1";
+axiom inet_family(ss: &sockaddr_storage_t) : ss_family ss == sa_family (sockaddr_p ss);
+
+// --------------------------------------------------------------
+// IPv4
+// type containing IPv4 internet address
+type in_addr_t = "in_addr_t" requires netinet_in_h; // an integer
+type struct_in_addr = "struct in_addr";
+fun s_addr: struct_in_addr -> in_addr_t = "$1.s_addr";
+
+// type containing encoded port and IPv4 address
+type sockaddr_in_t = "struct sockaddr_in" requires sockety_h;
+fun sin_family: sockaddr_in_t -> sa_family_t= "$1.sin_family";
+fun sin_port : sockaddr_in_t -> in_port_t= "$1.sin_port";
+fun sin_addr : sockaddr_in_t -> struct_in_addr = "$1.sin_addr";
+fun sin_addr : &sockaddr_in_t -> &struct_in_addr = "&($1->sin_addr)";
+
+
+// --------------------------------------------------------------
+// IPv6
+// type containing IPv6 internet address
+type struct_in6_addr = "struct in6_addr";
+typedef ipv6_addr = uint8^16;
+fun s6_addr: struct_in6_addr -> &ipv6_addr = "$1.s6_addr";
+
+// type containing encoded socket address for IPv6
+type sockaddr_in6_t = "struct sockaddr_in6" requires sockety_h;
+fun sin6_family: sockaddr_in6_t -> sa_family_t= "$1.sin6_family";
+fun sin6_port : sockaddr_in6_t -> in_port_t = "$1.sin6_port";
+fun sin6_addr : sockaddr_in6_t -> struct_in6_addr = "$1.sin6_addr";
+fun sin6_addr : &sockaddr_in6_t -> &struct_in6_addr = "&($1->sin6_addr)";
+
+
+// convert Internet address to display format.
+// $1: Address family
+// $2: pointer to the address
+// $3: pointer to output buffer
+// $4: length of output buffer
+fun inet_ntop: sa_family_t * address * +char * socklen_t -> +char requires arpa_inet_h;;
+const INET_ADDRSTRLEN : socklen_t requires arpa_inet_h;
+const INET6_ADDRSTRLEN : socklen_t requires arpa_inet_h;
+
 // --------------------------------------------------------------
 
 instance Str[FileSystem::posix_file] {
@@ -25,6 +104,70 @@ instance Str[FileSystem::posix_file] {
 
 instance Str[socket_t] {
   fun str: socket_t -> string = "::flx::rtl::strutil::str<int>($1)" requires package "flx_strutil";
+}
+
+fun getpeername: socket_t * &sockaddr_t * &socklen_t -> int;
+
+fun getpeername (s: socket_t) : string = 
+{
+  // store for encoded IP address
+  var sa:sockaddr_storage_t;
+  var paddr : &sockaddr_t = sockaddr_p &sa; // cast
+
+  // length of encoded IP address
+  var nsa = C_hack::cast[socklen_t] sizeof[sockaddr_storage_t];
+
+  // get encoded peer address
+  var res = getpeername (s,  paddr, &nsa);
+  if res == -1 return "";
+
+  var p = C_hack::cast[+char] null[char]; 
+  var ips = "";
+  var family = ss_family &sa;
+  match family with
+  | $(AF_INET) =>
+    begin
+      var buffer = C_hack::cast[+char] (C_hack::malloc INET_ADDRSTRLEN.int);
+      // cast to IPv4 socket address
+      var inet_sockaddr = C_hack::cast[&sockaddr_in_t] paddr;
+      // extract pointer to IPv4 internet address
+      var p_ipnumber : &struct_in_addr = inet_sockaddr.sin_addr;
+      p = inet_ntop
+        (
+          family, 
+          C_hack::cast[address] p_ipnumber, 
+          buffer, 
+          INET_ADDRSTRLEN
+        )
+      ;
+      if not p.isNULL do ips = str p; done
+      C_hack::free (C_hack::cast[address] buffer);
+    end
+
+  | $(AF_INET6) =>
+    begin
+      var buffer = C_hack::cast[+char] (C_hack::malloc INET6_ADDRSTRLEN.int);
+      // cast to IPv6 socket address
+      var inet6_sockaddr = C_hack::cast[&sockaddr_in6_t] paddr;
+      // extract IPv6 internet address (address of a byte array)
+      var p_ip6number : &struct_in6_addr = inet6_sockaddr.sin6_addr;
+      p = inet_ntop
+        (
+          family, 
+          C_hack::cast[address] p_ip6number,
+          buffer, 
+          INET6_ADDRSTRLEN
+        )
+      ;
+      if not p.isNULL do ips = str p; done
+      C_hack::free (C_hack::cast[address] buffer);
+    end
+
+  | _ => ;
+  endmatch
+  ;
+  return ips;
+
 }
 
 proc close: socket_t = 'close($1);' requires Posix_headers::unistd_h;
@@ -128,7 +271,9 @@ proc faio_rw(q:job_queue, fd: FileSystem::posix_file, len: &int, buf: address, e
 proc faio_read(fd: FileSystem::posix_file, len: &int, buf: address,
     eof: &bool)
 {
+println$ "faio_posix::faio_read " + str (*len);
     faio_rw(sys_job_queue, fd, len, buf, eof, true);       // read
+println$ "faio_posix::faio_read, len="+str (*len) + ", eof=" + str (*eof);
 }
 
 proc faio_write(fd: FileSystem::posix_file, len: &int, buf: address, eof: &bool)

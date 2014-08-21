@@ -1,0 +1,102 @@
+@title Products
+@mathjax
+\(\DeclareMathOperator{\prj}{prj}\)
+@h1 Products
+In a category, given two objects \(T_0\) and \(T_1\) a product is an
+object \(P\) together with two arrows:
+\[\prj_{P,0}: P \rightarrow T_0\]
+\[\prj_{P,1}: P \rightarrow T_1\]
+called projections, satisfying the condition that for any object \(Z\) and arrows
+\(f_0:Z\rightarrow T_0\) and \(f_1:Z\rightarrow T_1\) then
+there exists a unique arrow \(\alpha: Z\rightarrow P\) such that
+\[
+\alpha \cdot \prj_{P,0} = f_0
+\]
+and
+\[
+\alpha \cdot \prj_{P,1} = f_1
+\]
+
+It can be shown products are unique up to isomorphism.
+When there is a unique product, or there is a canonical
+product, we sometimes use the notation
+\[ T_0 \times T_1 \]
+to denote it.
+
+@h2 Example: sets.
+In \(\bf Set\) the usual Cartesian product of two sets \(T_0\) and \(T_1\)\
+denoted by \(T_0 \times T_1\) consisting of pairs of values \((t_0, t_1)\) where
+\(t_0 \in T_0\) and \(t_1 \in T_1\) with projections
+\[
+\prj_{T_0 \times T_1, 0} (t_0, t_1) = t_0
+\]
+and
+\[
+\prj_{T_0 \times T_1, 1} (t_0, t_1)  = t_1
+\]
+is a product.
+
+@h2 Example: C structs.
+In the category of C types and function semantics,
+@c++
+struct P 
+{ 
+  T_0 t_0; 
+  T_1 t_1; 
+};
+
+T_0 prj0 (P p) { return p.t_0; }
+T_1 prj1 (P p) { return p.t_1; }
+@
+the structure @{P} is a product object and @{prj0}
+and @{prj1} are encodings of suitable projections.
+However in C, one observes an expression like
+@c++
+p.t_0
+@
+is really the application of a projection, and consequently
+it is usually to think of the field @{t_0} of the structure
+as the projection.
+
+@h2 Example: Felix tuples
+In Felix a tuple is the canonical product.
+@felix
+var x : int * long = 1, 2L;
+var a : int = x . 0;
+var b : long = x . 1;
+@
+Here, the field numbers 0 and 1 are used as projections.
+The comma operator is used to construct a product from values,
+and the asterisk operator is used to denote the tuple product
+of two types.
+
+@h1 N-ary products
+So far we have defined the product of two objects. Clearly,
+we can generalise to finite \(n \ge 2 \).
+
+For the singleton case \(n = 1\) we can identify the product of one
+object with the object itself, and with the identity function
+taken as the projection.
+
+@h1 Terminal object
+That leaves the empty product, which is called a terminal object.
+An object \(I\) is called terminal if for any object \(Z\)
+there is a unique arrow \(Z\rightarrow I\).
+
+@h2 Example: Felix
+In Felix, the value @{()} denotes an empty tuple,
+it has the type @{unit} also written @{1}.
+It is terminal because any function to type @{unit} maps
+all values of the domain to @{()} because there's no where
+else to map to.
+
+@h2 Elements
+Conversely, any function from a terminal object can only pick
+out one value of the codomain. Therefore such an arrow can be
+identified with a value of the codomain. The set of all such 
+functions, then, corresponds to the set of values.
+
+However, the expression of the concept of elements is entirely
+abstract; that is, expressed entirely in terms of functions.
+
+

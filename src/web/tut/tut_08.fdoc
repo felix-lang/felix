@@ -5,7 +5,7 @@ use a classic example:
 @felix
 fun square (x:int) => x * x;
 @
-The function {square} just multiplies its argument {x} by itself.
+The function @{square} just multiplies its argument @{x} by itself.
 We can use it now:
 @felix
 write$ stdout, "Input number: "; fflush stdout;
@@ -22,22 +22,22 @@ Square of 42 is 1764
 @
 Here:
 <ul>
-<li> The {fun} binder introduces the function {square}.</li>
-<li> {square} accepts a single argument of type {int}.</li>
+<li> The @{fun} binder introduces the function @{square}.</li>
+<li> @{square} accepts a single argument of type @{int}.</li>
 <li> The operator {*} is used for multiplication.</li>
-<li> {square} returns the product of its argument with itself.</li>
-<li> The type of value returned by {square} is deduced by the compiler, 
-that type will be {int} because multiplying an {int} by another {int}
-yields an {int}. </li>
-<li> The type {int} can also be used as a function to convert a {string} 
-containing only digits to an {int}.</li>
-<li>The function {str} can be used to convert an {int} to a string.</li>
+<li> @{square} returns the product of its argument with itself.</li>
+<li> The type of value returned by @{square} is deduced by the compiler, 
+that type will be @{int} because multiplying an @{int} by another @{int}
+yields an @{int}. </li>
+<li> The type @{int} can also be used as a function to convert a @{string} 
+containing only digits to an @{int}.</li>
+<li>The function @{str} can be used to convert an @{int} to a string.</li>
 </ul>
 
 There is a rule for functions: 
 <blockquote><em>
 A function introduced by
-a {fun} binder is not allowed to have any side effects.
+a @{fun} binder is not allowed to have any side effects.
 </em></blockquote>
 
 The compiler does not enforce this rule, but it does take

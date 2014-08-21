@@ -370,8 +370,8 @@ syn match       felixNumber     display contained "0b_\=\([01]\+_\)*\([01]\)\+u\
 syn case match
 
 " comments
-syn region      fdocCommand     start="@" end="$" contained 
-syn region      fdocComment     start="@" end="@felix" contains=fdocCommand keepend
+syn region      fdocCommand     start="^@" end="$" contained 
+syn region      fdocComment     start="^@" end="^@felix" contains=fdocCommand keepend
 syn region      felixComment    start="/\*" end="\*/" contains=felixComment,felixTodo
 syn region      felixCommentL   start="//" skip="\\$" end="$" keepend contains=felixComment,felixTodo
 syn keyword     felixTodo       contained TODO FIXME XXX NOTE KLUDGE HACK

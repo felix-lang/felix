@@ -71,6 +71,9 @@ fun dflt_control (config:Config::config_type, profile:FlxProfile::profile_type) 
     var FLX_TOOLCHAIN="";
     var FLX_SHARE_DIR="";
     var FLX_TARGET_DIR="";
+    var FPC_DIR = "";
+    var RTL_INCLUDE_DIRS = Empty[string];
+    var FLX_LIB_DIRS = Empty[string];
     // --------------------------------------------------
     // processing options
     // --------------------------------------------------
@@ -98,14 +101,17 @@ fun dflt_control (config:Config::config_type, profile:FlxProfile::profile_type) 
     var STANDARD_INCLUDE_FILES=Empty[string];
     var EXTRA_INCLUDE_DIRS=Empty[string];
     var EXTRA_INCLUDE_FILES=Empty[string];
+    var FLX_STD_LIBS=Empty[string];
     var NOSTDLIB=0;
     var STDOUT="";
     var EXPECT="";
     var CHECK_EXPECT=0;
     var SET_STDIN=0;
     var STDIN="";
-    var STDGRAMMAR="@grammar/grammar.files";
-    var STDIMPORT="--import=plat/flx.flxh";
+    var GRAMMAR_DIR="";
+    var STDGRAMMAR="";
+    var STDIMPORT="plat/flx.flxh";
+    var AUTOMATON="";
     var IMPORTS=Empty[string];
     var USAGE = "production";
     var CLEAR_CACHE=0;

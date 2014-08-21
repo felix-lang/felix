@@ -1,13 +1,13 @@
 @h1 Networking
 Felix provides builtin support for asynchronous socket I/O. This is supported
 by platform dependent event notification services, using the best of
-{select}, {poll}, {epoll}, {kqueue}, Solaris I/O completion ports and
+@{select}, @{poll}, @{epoll}, @{kqueue}, Solaris I/O completion ports and
 Windows I/O completion ports. A single pre-emptive thread monitors
 the events and does all data transfers on behalf of the client
 fibres. The client fibres block, but the thread running them does not.
-The subsystem performing the event management is called {demux}
+The subsystem performing the event management is called @{demux}
 and that performing the data transfers and fibre scheduling
-is called {faio}.
+is called @{faio}.
 
 @felix
 

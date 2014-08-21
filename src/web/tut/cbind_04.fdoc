@@ -16,11 +16,11 @@ This actually tells Felix that the data type does not have a
 useful C++ destructor, and so Felix does not have to schedule
 execution of a finaliser for the data type when the garbage collector
 reaps an object of that type. This effect propagates, for example
-a tuple of {pod}s is also a {pod}. Felix does not know if a C++
+a tuple of @{pod}s is also a @{pod}. Felix does not know if a C++
 destructor is trivial or not, so it will always ensure garbage collected
 values are finalised unless told otherwise.
 
-It is always safe to leave out the {pod} annotation as it is only 
+It is always safe to leave out the @{pod} annotation as it is only 
 an optimisation. It is <em>not</em> safe to specify it if it isn't
 correct, as this may lead to the failure to invoke destructors,
 typically leading memory leaks.
@@ -67,12 +67,12 @@ with pointers to a heap allocated object of that type.
 The third line shows how to write a constructor.
 
 The _gc_type annotation tells Felix it must generate an RTTI 
-(shape) record for the type {RE2_} but also it tricks the compiler
+(shape) record for the type @{RE2_} but also it tricks the compiler
 into using that type in the code where {@0} is written,
-instead of the type {RE2}. The {@0} annotation usually
-generates the shape of the function return type {RE2}: however in
+instead of the type @{RE2}. The {@0} annotation usually
+generates the shape of the function return type @{RE2}: however in
 this case it is fooled into generate shape information for
-{RE2_} instead, which in C is {::re2::RE2}.
+@{RE2_} instead, which in C is {::re2::RE2}.
 
 The shape is required for the Felix allocation function underlying
 the special overload of C++ {operator new} used by Felix above,

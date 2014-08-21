@@ -14,13 +14,13 @@ Hello Felix the Cat
 @
 Here,
 <ul>
-<li>{stdout} is the usual standard output text stream</li>
-<li>{write} is a command to write a string to a nominated output text stream</li>
-<li>{fflush} is a command to flush any buffered output to the physical device
+<li>@{stdout} is the usual standard output text stream</li>
+<li>@{write} is a command to write a string to a nominated output text stream</li>
+<li>@{fflush} is a command to flush any buffered output to the physical device
 associated with a text stream</li>
-<li>{stdin} is the usual standard input text stream</li>
-<li>{readln} reads a string from a nominated input text stream, including the terminating newline if present</li>
-<li>{val} names a value, in this case that returned by the {readln} function</li>
-<li>{writeln} writes a string to a nominated output stream and ends a line</li>
+<li>@{stdin} is the usual standard input text stream</li>
+<li>@{readln} reads a string from a nominated input text stream, including the terminating newline if present</li>
+<li>@{val} names a value, in this case that returned by the @{readln} function</li>
+<li>@{writeln} writes a string to a nominated output stream and ends a line</li>
 </ul>
 

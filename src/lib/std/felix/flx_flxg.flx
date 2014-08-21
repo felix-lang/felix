@@ -12,7 +12,7 @@ class Flxg
     FLXG:string,
     VERBOSE:list[string],
     STDGRAMMAR:string,
-    STDIMPORT:string,
+    AUTOMATON:string,
     IMPORTS:list[string],
     FLXLIBS:list[string],
     INCLUDE_DIRS:list[string],
@@ -56,9 +56,9 @@ class Flxg
       FLXFLAGS + 
       spec.FLXLIBS +
       spec.INCLUDE_DIRS + 
-      ("--syntax="+spec.STDGRAMMAR) + 
-      spec.STDIMPORT + 
-      spec.IMPORTS +
+      ("--syntax="+spec.STDGRAMMAR) +
+      ("--automaton="+spec.AUTOMATON) + 
+      map (fun (s:string) => "--import="+s) spec.IMPORTS +
       spec.STDLIB +
       (spec.filebase + spec.use_ext)
     ;

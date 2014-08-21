@@ -71,6 +71,7 @@ socketio_request::start_async_op_impl()
 void
 socketio_wakeup::wakeup(posix_demuxer& demux)
 {
+  //fprintf(stderr, "Wakeup, socket = %d\n",s); 
   // handle read/write, return true if not finished.
   // otherwise wakeup return false.
   bool  connection_closed;
@@ -94,7 +95,7 @@ socketio_wakeup::wakeup(posix_demuxer& demux)
   else if(wakeup_flags & PDEMUX_EOF)
   {
     connection_closed = true;
-    //fprintf(stderr,"posix faio wakeup PDEMUX_EOF, connection closed = %d\n", connection_closed);
+    fprintf(stderr,"posix faio wakeup PDEMUX_EOF, connection closed = %d\n", connection_closed);
     //pb.bytes_written=0;
   }
 
@@ -133,6 +134,7 @@ socketio_wakeup::wakeup(posix_demuxer& demux)
   }
 
   // fprintf(stderr,"not schedding %p\n", this);
+  fprintf(stderr, "Incomplete request on %d, waiting for more I/O\n",s);
   if(demux.add_socket_wakeup(this, sio_flags) == -1)
   fprintf(stderr,"failed to re-add_socket_wakeup\n");
 }
@@ -195,6 +197,7 @@ accept_request::wakeup(posix_demuxer& demux)
 {
   // does the leg work.
   accept_control_block::wakeup(demux);
+  //'fprintf(stderr, "faio_posix::accept_request::wakeup\n");
 
   if(accepted == -1)
   {

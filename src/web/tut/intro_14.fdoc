@@ -15,17 +15,17 @@ var tmp = myrand();
 var x = mytwice (tmp);
 @
 but this is a  bit messy. This is certain to work, because
-in Felix the initialisers of a {var} are always evaluated
+in Felix the initialisers of a @{var} are always evaluated
 immediately control passes through them, and the result
-stored in an object. So using a {var} is a method for
+stored in an object. So using a @{var} is a method for
 forcing eager evaluation. I want you to consider
 the following Felix function:
 @felix
 fun mytwice2 (var x: int) => x + x;
 @
-When you call {mytwice2} Felix guarantees to eagerly
-evaluate the argument and assign it to the parameter {x}.
-If you do not specifically use a {var} parameter there is
+When you call @{mytwice2} Felix guarantees to eagerly
+evaluate the argument and assign it to the parameter @{x}.
+If you do not specifically use a @{var} parameter there is
 no such assurance.
 
 Although this solves the problem in this case,
@@ -52,7 +52,7 @@ gen myrand_gen: 1 -> int = "rand()"
 var x2 = mytwice (myrand_gen());
 @
 
-Here the binder {gen} specifies a generator.
+Here the binder @{gen} specifies a generator.
 A generator is a function with side effects.
 Any function that gives different results on different
 calls and/or depends on any persistent state which it

@@ -325,7 +325,16 @@ fun parse_post_line (get:string) =>
   split_url$ postline_to_url get
 ;
 
+union request_type = reqGET | reqPOST | reqHEAD | reqERROR;
 
+fun parse_request_type (r:string) =>
+  if startswith r "GET" then reqGET
+  elif startswith r "HEAD" then reqHEAD
+  elif startswith r "POST" then reqPOST
+  else reqERROR
+  endif
+;
+  
 // fixup text by replacing < > and & characters
 fun txt2html (x:string) =
 {
@@ -359,11 +368,11 @@ mathjax := '''
 
 
 // functions to make responses
-fun make_image_from_suffix (suffix:string, contents:string) =>
-  make_image(MIMEType::mime_type_from_extension suffix,contents)
+fun make_image_from_suffix (suffix:string, contents:string, headers:headers_t) =>
+  make_image(MIMEType::mime_type_from_extension suffix,contents, headers)
 ;
 
-proc serve_not_found (k:socket_t, fname:string) {
+proc serve_not_found (k:socket_t, fname:string, get:bool) {
    var eof_flag = false;
    val data = make_not_found(fname);
    write_string(k,data,&eof_flag);
@@ -376,7 +385,7 @@ proc serve_not_implemented (k:socket_t, fname:string) {
 }
 
 
-proc serve_forbidden (k:socket_t, fname:string) {
+proc serve_forbidden (k:socket_t, fname:string, get:bool) {
    var eof_flag = false;
    val data = make_forbidden(fname);
    write_string(k,data,&eof_flag);
@@ -384,12 +393,12 @@ proc serve_forbidden (k:socket_t, fname:string) {
 
 var edit_flag = false; // HACK!!!!!!!!
 
-proc serve_felix (k:socket_t, fname:string) {
+proc serve_felix (k:socket_t, fname:string, get:bool) {
   var eof_flag = false;
 
   match get_file(fname,INSTALL_ROOT,FLX_PATH) with
   | Some ?path =>
-    if edit_flag do serve_edit (k,path, "text/x-felix");
+    if edit_flag do serve_edit (k,path, "text/x-felix", get);
     else
       val text = load path;
       println$ "Loaded felix file " + fname+", len="+str (text.len.int);
@@ -405,16 +414,16 @@ proc serve_felix (k:socket_t, fname:string) {
       write_string(k,data,&eof_flag);
     done 
   | None =>
-      serve_not_found (k,fname);
+      serve_not_found (k,fname,get);
   endmatch;
 }
 
-proc serve_fpc (k:socket_t, fname:string) {
+proc serve_fpc (k:socket_t, fname:string, get:bool) {
   var eof_flag = false;
 
   match get_file (fname, INSTALL_ROOT,FLX_PKGCONFIG_PATH) with
   | Some ?path =>
-    if edit_flag do serve_edit (k,path, "text/x-felix");
+    if edit_flag do serve_edit (k,path, "text/x-felix", get);
     else 
       val text=load path;
       println$ "Loaded fpc file " + fname+", len="+str (text.len.int);
@@ -428,16 +437,16 @@ proc serve_fpc (k:socket_t, fname:string) {
       write_string(k,data,&eof_flag);
     done 
   | None =>
-      serve_not_found (k,fname);
+      serve_not_found (k,fname,get);
   endmatch;
 
 }
 
-proc serve_py (k:socket_t, fname:string) {
+proc serve_py (k:socket_t, fname:string, get:bool) {
   var eof_flag = false;
   match get_file(fname,INSTALL_ROOT,FLX_PATH) with
   | Some ?path =>
-    if edit_flag do serve_edit (k,path,"text/x-python");
+    if edit_flag do serve_edit (k,path,"text/x-python", get);
     else
       var flx = load path;
       val data = make_html$
@@ -448,15 +457,15 @@ proc serve_py (k:socket_t, fname:string) {
       write_string (k, data, &eof_flag);
     done
   | None =>
-    serve_not_found (k,fname);
+    serve_not_found (k,fname,get);
   endmatch;
 }
 
-proc serve_ocaml (k:socket_t, fname:string) {
+proc serve_ocaml (k:socket_t, fname:string, get:bool) {
   var eof_flag = false;
   match get_file (fname, INSTALL_ROOT,FLX_PATH) with
   | Some ?path =>
-    if edit_flag do serve_edit (k,path,"text/x-ocaml");
+    if edit_flag do serve_edit (k,path,"text/x-ocaml", get);
     else
       var flx = load path;
       println$ f"Loaded Ocaml file %S, len=%d" (fname, flx.len.int);
@@ -469,15 +478,15 @@ proc serve_ocaml (k:socket_t, fname:string) {
       write_string (k, data, &eof_flag);
     done
   | None =>
-    serve_not_found (k,fname);
+    serve_not_found (k,fname,get);
   endmatch;
 }
 
-proc serve_cpp (k:socket_t, fname:string) {
+proc serve_cpp (k:socket_t, fname:string, get:bool) {
   var eof_flag = false;
   match get_file(fname,INSTALL_ROOT,C_PATH) with
   | Some ?path =>
-    if edit_flag do serve_edit (k,path, "text/x-c++src");
+    if edit_flag do serve_edit (k,path, "text/x-c++src", get);
     else 
       val text=load path;
   println$ f"Loaded C++ file %S, len=%d" (fname, text.len.int);
@@ -491,7 +500,7 @@ proc serve_cpp (k:socket_t, fname:string) {
       write_string (k, data, &eof_flag);
     done 
   | None =>
-      serve_not_found (k,fname);
+      serve_not_found (k,fname,get);
   endmatch;
 }
 
@@ -502,9 +511,9 @@ val text_suffices = (
   "dep","stdout","expect"
 );
 
-proc serve_text (k:socket_t, fname:string) {
+proc serve_text (k:socket_t, fname:string, get:bool) {
   var eof_flag = false;
-  if edit_flag do serve_edit (k,fname, "text/x-felix");
+  if edit_flag do serve_edit (k,fname, "text/x-felix",get);
   else
     var txt = load(fname);
     println$ f"Loaded text file %S, len=%d" (fname, txt.len.int);
@@ -518,9 +527,9 @@ proc serve_text (k:socket_t, fname:string) {
   done
 }
 
-proc serve_html (k:socket_t, fname:string) {
+proc serve_html (k:socket_t, fname:string, get:bool) {
   var eof_flag = false;
-  if edit_flag do serve_edit (k,fname, "text/html");
+  if edit_flag do serve_edit (k,fname, "text/html",get);
   else
     var txt = load fname;
     println$ f"Loaded html file %S, len=%d" (fname, txt.len.int);
@@ -531,7 +540,7 @@ proc serve_html (k:socket_t, fname:string) {
   done
 }
 
-proc serve_xhtml (k:socket_t, fname:string) {
+proc serve_xhtml (k:socket_t, fname:string, get:bool) {
   var eof_flag = false;
   var txt = load fname;
   println$ f"Loaded xhtml file %S, len=%d" (fname, txt.len.int);
@@ -542,11 +551,11 @@ proc serve_xhtml (k:socket_t, fname:string) {
 }
 
 
-proc serve_fdoc (k:socket_t, fname:string) {
+proc serve_fdoc (k:socket_t, fname:string, get:bool) {
   var eof_flag = false;
   match get_file(fname,INSTALL_ROOT,FDOC_PATH) with
   | Some ?path=> 
-    if edit_flag do serve_edit (k,path, "text/x-felix");
+    if edit_flag do serve_edit (k,path, "text/x-felix",get);
     else
       var txt = load(path);
       //println$ "Contents=" + flx;
@@ -565,15 +574,15 @@ proc serve_fdoc (k:socket_t, fname:string) {
       );
       write_string(k,data,&eof_flag);
     done
-  | None => serve_not_found(k,fname); 
+  | None => serve_not_found(k,fname,get); 
   endmatch;
 }
 
-proc serve_xfdoc (k:socket_t, fname:string) {
+proc serve_xfdoc (k:socket_t, fname:string, get:bool) {
   var eof_flag = false;
   match get_file(fname,INSTALL_ROOT,FDOC_PATH) with
   | Some ?path=> 
-    if edit_flag do serve_edit (k,path, "text/x-felix");
+    if edit_flag do serve_edit (k,path, "text/x-felix",get);
     else
       var txt = load(path);
       println$ "Serve fdoc "+fname+" as xhtml";
@@ -593,11 +602,11 @@ proc serve_xfdoc (k:socket_t, fname:string) {
       );
       write_string(k,data,&eof_flag);
     done
-  | None => serve_not_found(k,fname); 
+  | None => serve_not_found(k,fname,get); 
   endmatch;
 }
 
-proc serve_edit(k:socket_t, fname:string, mime:string) {
+proc serve_edit(k:socket_t, fname:string, mime:string, get:bool) {
   var editor = editor_maker ();
   var eof_flag = false;
   var text = load fname;
@@ -614,7 +623,7 @@ print text;
   write_string (k, data, &eof_flag);
 }
 
-proc serve_raw (k:socket_t, fname:string, suffix:string) {
+proc serve_raw (k:socket_t, fname:string, suffix:string, get:bool) {
   var eof_flag = false;
   var txt = load fname;
   println$ f"Loaded raw file %S, len=%d" (fname, txt.len.int);
@@ -626,12 +635,14 @@ proc serve_raw (k:socket_t, fname:string, suffix:string) {
   write_string (k, data, &eof_flag);
 }
 
-proc serve_image (k:socket_t, fname:string, suffix:string) {
+proc serve_image (k:socket_t, fname:string, suffix:string, get:bool) {
   var eof_flag = false;
   var txt = load fname;
   println$ f"Loaded image file %S, len=%d" (fname, txt.len.int);
   //println$ "Contents=" + flx;
-  val data = make_image_from_suffix (suffix,txt);
+  val data = make_image_from_suffix (suffix,txt,
+    list[string*string](("Cache-control","max-age=86400"))
+  );
   write_string (k, data, &eof_flag);
 }
 
@@ -639,7 +650,7 @@ proc serve_image (k:socket_t, fname:string, suffix:string) {
 // is quite different to serving a css file to be
 // used by some program! In the first case it has to
 // to be sent verbatim. In the second it is colourised.
-proc serve_css(k:socket_t, fname:string, suffix:string) {
+proc serve_css(k:socket_t, fname:string, suffix:string, get:bool) {
   var eof_flag = false;
   var txt = load fname;
   println$ f"Loaded css file %S, len=%d" (fname, txt.len.int);
@@ -724,7 +735,7 @@ fin:>
   return s;
 }
 
-proc serve_directory (k:socket_t, fname:string) {
+proc serve_directory (k:socket_t, fname:string, get:bool) {
   var dirname = Filename::basename fname;
   var eof_flag = false;
   val top = "A DIRECTORY " + fname + "\r\n";
@@ -759,7 +770,10 @@ proc serve_directory (k:socket_t, fname:string) {
 }
 
 
-proc serve_file(s: socket_t, infname: string)
+proc serve_file(s: socket_t, infname: string) => serve (s, infname, true);
+proc serve_head(s: socket_t, infname: string) => serve (s,infname,false);
+
+proc serve(s: socket_t, infname: string, get:bool)
 {
   var eof_flag = false;
   // if empty string, serve index.html
@@ -807,52 +821,57 @@ proc serve_file(s: socket_t, infname: string)
      suffix,fname = split_suffix fname;
   done 
 
-  if suffix \in list ("flx","flxh") do 
-    serve_felix(s, fname);
+  if fname == "STOP" do
+    run = false;
+    println$ "STOP DETECTED";
+  elif fname == "robots.txt" do
+    serve_raw (s,INSTALL_ROOT + "/robots.txt","txt", get);
+  elif suffix \in list ("flx","flxh") do 
+    serve_felix(s, fname, get);
   elif suffix \in list ("py") do 
-    serve_py(s, fname);
+    serve_py(s, fname, get);
   elif suffix \in list ("ml","mli") do 
-    serve_ocaml(s, fname);
+    serve_ocaml(s, fname, get);
   elif suffix \in list("cpp","hpp","h","c","cc","i","cxx","rtti","includes","ctors_cpp") do 
-    serve_cpp(s, fname);
+    serve_cpp(s, fname, get);
   elif suffix == "fpc" do 
-    serve_fpc(s, fname);
+    serve_fpc(s, fname, get);
   elif suffix == "fdoc" do 
-    serve_xfdoc(s, fname);
+    serve_xfdoc(s, fname, get);
   elif suffix \in ("html","htm") do
     fname = if fname.[0] == char "/" then fname else INSTALL_ROOT+"/"+fname endif;
-    serve_html(s,fname);
+    serve_html(s,fname, get);
   elif suffix == "xhtml" do
     fname = if fname.[0] == char "/" then fname else INSTALL_ROOT+"/"+fname endif;
-    serve_xhtml(s,fname);
+    serve_xhtml(s,fname, get);
   elif suffix \in text_suffices do
-    serve_text(s,fname);
-  elif suffix \in ("gif","png","jpg","svg") do
-    // path lookup for images
     fname = if fname.[0] == char "/" then fname else INSTALL_ROOT+"/"+fname endif;
-    serve_image(s,fname,suffix);
+    serve_text(s,fname, get);
+  elif suffix \in ("gif","png","jpg","svg") do
+    fname = if fname.[0] == char "/" then fname else INSTALL_ROOT+"/"+fname endif;
+    serve_image(s,fname,suffix, get);
   elif suffix == "css" do
     // path lookup for css files
     fname = if fname.[0] == char "/" then fname else INSTALL_ROOT+"/"+fname endif;
-    serve_css(s,fname,suffix);
+    serve_css(s,fname,suffix, get);
   else
     match get_file(fname, INSTALL_ROOT,Empty[string]) with
-    | None => { serve_not_found(s,fname); }
+    | None => serve_not_found(s,fname, get);
     | Some ?f =>
-      {
-        if prefix(fname,"/etc") do serve_forbidden(s,fname);
+        if prefix(fname,"/etc") do serve_forbidden(s,fname, get);
         else
         match FileStat::filetype f with
-        | REGULAR => { serve_raw(s,f,suffix); }
-        | DIRECTORY => { serve_directory (s,f); }
-        | _ => { serve_not_found(s,f); }
+        | REGULAR => serve_raw(s,f,suffix, get);
+        | DIRECTORY => serve_directory (s,f, get);
+        | _ => serve_not_found(s,f, get); 
         endmatch;
         done
-      }
     endmatch;
   done
 }
 val webby_port = PORT;
+Signal::trap_ctrl_c;
+var run = true;
 
 print "FLX WEB!!! listening on port "; print webby_port; endl;
 
@@ -868,19 +887,24 @@ var clock = Faio::mk_alarm_clock();
 // being duplicated as it must be [a bug in Felix]
 noinline proc handler (var k:socket_t) ()
 {
-   dbg$ "Spawned fthread running for socket "+str k+"\n";
+  //dbg$ "Spawned fthread running for socket "+str k+"\n";
   // should spawn fthread here to allow for more io overlap
+  //dbg$ "here we go .. read a line\n";
 
   var line: string;
   get_line(k, &line);  // should be the GET line.
+  //dbg$ "Got a line from socket " + str k + "\n";
   //cat(s, DEVNULL);
 
-  print$ "got line from socket "+str k+": "; print line; endl;
+  var peerIP = Faio_posix::getpeername k;
+  print$ "IP "+peerIP +": got line from socket "+str k+": "; print line; endl;
 
   // now I need to parse the GET line, get a file name out of its url
   // (e.g. unqualfied -> index.html and name/flx.jpg -> flx.jpg
-  match parse_get_line line with
-  | None => 
+  var req = parse_request_type line;
+
+  match req with
+  | reqPOST => 
     match parse_post_line line with 
     | Some (?base,?file) =>
       println$ "well formed POST ...";
@@ -893,6 +917,11 @@ noinline proc handler (var k:socket_t) ()
 println$ "Fetching line ... ";
         get_line (k,&line);
 println$ "Got the line length .. "+line.len.str;
+        if line.len == 0uz do
+          println$ "BAD POST REQUEST from IP "+peerIP+
+            ", end of header before Content-Length specified: connection closed";
+          goto broken;
+        done 
         println line;
         if prefix(line, "Content-Length: ") do
           var lstr = line.[16 to];
@@ -911,15 +940,27 @@ println$ "Got the line length .. "+line.len.str;
       println$ "Content (nbytes=" + nbytes.str+") = " + content;
       serve_not_implemented(k, file);
  
-    | None => println$ "BAD request line: '"+line+"'";
+    | None => println$ "BAD POST line: '"+line+"'";
     endmatch;
-
-  | Some (?base, ?file) => 
-      print "well formed GET ...\n";
-      print "base="; print base; endl;
+  | reqGET =>
+    match parse_get_line line with
+    | Some (?base, ?file) => 
       print "file="; print file; endl;
       serve_file(k,file);
+    | None => println$ "BAD GET line: '"+line+"'";
+    endmatch;
+  | reqHEAD=>
+    match parse_get_line line with
+    | Some (?base, ?file) => 
+      print "file="; print file; endl;
+      serve_head(k,file);
+    | None => println$ "BAD HEAD line: '"+line+"'";
+    endmatch;
+  | reqERROR =>
+    println$ "BAD request line: '"+line+"'";
   endmatch;
+
+broken:>
 
   // we've only read the GET line, so let's flush out the rest of
   // the http request so we don't get connection reset errors when
@@ -927,9 +968,9 @@ println$ "Got the line length .. "+line.len.str;
   //Faio_posix::shutdown(s, 1); // disallow further sends.
   //cat(s, DEVNULL);
 
-  fprint$ cstderr,"fthread socket "+str k+" close delay ..\n";
+  //fprint$ cstderr,"fthread socket "+str k+" close delay ..\n";
   Faio::sleep(clock,DELAY); // give OS time to empty its buffers
-  fprint$ cstderr,"fthread socket "+str k+" shutdown now\n";
+  //fprint$ cstderr,"fthread socket "+str k+" shutdown now\n";
 
 // try this:
 // Advised by: koettermarkus@gmx.de, MANY THANKS!
@@ -964,22 +1005,25 @@ retry:>
 force_close:> 
   Socket::shutdown(k,2);
   ioclose(k);
-  fprint$ cstderr,"fthread "+str k+" terminating!\n";
+  //fprint$ stderr,"fthread "+str k+" terminating!\n";
 };
 
-spawn_fthread { while true do Faio::sleep(clock, 60.0); collect(); done };
-forever {
+spawn_fthread { while run do Faio::sleep(clock, 60.0); collect(); done };
+while run do
   var s: socket_t;
-  dbg$ "Waiting for connection\n";
+  //dbg$ "Waiting for connection\n";
   accept(listener, &s);  // blocking
-  dbg$ "got connection "+str s + "\n";  // error check here
+  //dbg$ "got connection "+str s + "\n";  // error check here
 
   // hmm - spawning an fthread is blocking the web server. don't know why
-  print$ "spawning fthread to handle connection "+str s+"\n";
+  //dbg$ "spawning fthread to handle connection "+str s+"\n";
   var h = handler s;
   spawn_fthread  h;
  //collect(); // this hangs everything, no idea why!
-};
+  run = not #Signal::get_ctrl_c_flag;
+  if not run do println "Ctrl-C detected"; done
+done
 
 println "WEB SERVER FINNISHED?";
+println$ "Closing listener socket " + str listener;
 iclose (listener);

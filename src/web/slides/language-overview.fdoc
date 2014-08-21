@@ -6,7 +6,7 @@
 Simple printing.
 <hr/>
 @section
-The {println} command prints some data to standard output followed by a newline.
+The @{println} command prints some data to standard output followed by a newline.
 @felix
 println$ 21;
 println$ "Hi There";
@@ -24,7 +24,7 @@ println$ "Hello " + "World";
 @pre
 Hello World
 @section
-And you can use the {str} function to convert most
+And you can use the @{str} function to convert most
 data to a string:
 @felix
 println$ "Hello " + str 42;
@@ -115,7 +115,7 @@ println$ *px;      // get value stored at px
 43
 43
 @section
-If the original variable had type {T} then
+If the original variable had type @{T} then
 a pointer to a variable of that type has type {&T},
 pronounced "pointer to T".
 @felix
@@ -123,8 +123,8 @@ var x = 42;
 var px : &int = &x;
 println$ *px;
 @section
-Assignment to a variable {x} 
-is equivalent to storing at the address of {x}:
+Assignment to a variable @{x} 
+is equivalent to storing at the address of @{x}:
 @felix
 var x = 42;           // initial value
 x = 43;               // assignment to x
@@ -236,7 +236,7 @@ var c: array[int,4] = 1,2,3,4;
 @section
 The symbol {^} represents exponentiation.
 @section
-So an array of 4 {int}s is just {int} raised
+So an array of 4 @{int}s is just @{int} raised
 to the power of 4. 
 @section
 This is just your usual index law!
@@ -301,11 +301,11 @@ println$ f a;
 @section
 This example shows a function type {int*int->int}, 
 and also an  anonymous function, sometimes called 
-a <em>lambda</em>, which is assigned to the variable {f}.
+a <em>lambda</em>, which is assigned to the variable @{f}.
 @section
-Then, the closure {f} is applied to the argument {a} which
+Then, the closure @{f} is applied to the argument @{a} which
 is a tuple of type {int*int}. Of course the result is 
-of type {int}.
+of type @{int}.
 @section
 @section
 @slide

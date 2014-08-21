@@ -4,7 +4,7 @@ move on to arrays. Consider:
 @felix
 var a1 : int * int * int = 1,2,3;
 @
-Here {a} is a tuple with the components which
+Here @{a} is a tuple with the components which
 are all integers. Its very boring to write this
 out so we will allow a more compact notation:
 @felix

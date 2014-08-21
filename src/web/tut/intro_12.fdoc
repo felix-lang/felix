@@ -83,8 +83,8 @@ fun someand : mybool * mybool -> mybool =
 ;
 @
 Here, we have provided a grammar production by specifying the
-nonterminal for argument 1 as {band}, for argument 2 as {bor}
-and the whole expression as {band}. This is like writing:
+nonterminal for argument 1 as @{band}, for argument 2 as @{bor}
+and the whole expression as @{band}. This is like writing:
 @pre
   band = band "&&" bor
 @
@@ -175,12 +175,12 @@ There's also a rather lame micro parser that checks for function applications li
 @pre
 "func(...)"
 @
-where {func} is an identifier, and gives such an expression 
-the {postfix} precedence, and the most trivial case:
+where @{func} is an identifier, and gives such an expression 
+the @{postfix} precedence, and the most trivial case:
 @pre
 "identifier"
 @
-is known to be an {atom}.
+is known to be an @{atom}.
 
 The micro parser might do extra work in future, but for now, if you are not
 sure that Felix recognizes your binding expression you have two choices:

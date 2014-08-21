@@ -23,6 +23,7 @@ tool:      flx_cp
 tool:      flx_ls
 tool:      flx_grep
 tool:      flx_replace
+tool:      flx_batch_replace
 tool:      flx_tangle
 tool:      flx_perror
 tool:      flx_gramdoc

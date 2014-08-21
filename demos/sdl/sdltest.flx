@@ -41,76 +41,14 @@ include "sdl/SDL_image";
 include "./edit_buffer_interface";
 include "./edit_display_interface";
 include "./edit_controller_interface";
+include "gui/__init__.flx";
 
-proc init()
-{
-  if SDL_Init(SDL_INIT_AUDIO \| SDL_INIT_VIDEO) < 0  do
-    eprintln$ f"Unable to init SDL: %S\n" #SDL_GetError;
-    System::exit(1);
-  done
-  println$ "SDL_init OK";
-  if TTF_Init() < 0 do 
-    eprintln$ f"Unable to init TTF: %S\n" #TTF_GetError;
-    System::exit(1);
-  done
-  println$ "TTF_init OK";
-  if IMG_Init(IMG_INIT_PNG) < 0 do 
-    eprintln$ f"Unable to init IMG with PNG: %S\n" #IMG_GetError;
-    System::exit(1);
-  done
-  println$ "IMG_init OK";
-}
-
-proc versions ()
-{
-  begin
-    var compiled = #SDL_Compiled_Version;
-    var linked = #SDL_Linked_Version;
-    println$ f"We compiled against SDL version %d.%d.%d ..."
-      (compiled.major.int, compiled.minor.int, compiled.patch.int);
-    println$ f"But we are linking against SDL version %d.%d.%d."
-      (linked.major.int, linked.minor.int, linked.patch.int);
-  end 
-
-  begin
-    var compiled = #TTF_Compiled_Version;
-    var linked = #TTF_Linked_Version;
-    println$ f"We compiled against TTF version %d.%d.%d ..."
-      (compiled.major.int, compiled.minor.int, compiled.patch.int);
-    println$ f"But we are linking against TTF version %d.%d.%d."
-      (linked.major.int, linked.minor.int, linked.patch.int);
-  end 
-
-  begin
-    var compiled = #IMG_Compiled_Version;
-    var linked = #IMG_Linked_Version;
-    println$ f"We compiled against IMG version %d.%d.%d ..."
-      (compiled.major.int, compiled.minor.int, compiled.patch.int);
-    println$ f"But we are linking against IMG version %d.%d.%d."
-      (linked.major.int, linked.minor.int, linked.patch.int);
-  end 
-
-} 
-
-fun choose_font () = {
-  var font_file = "/Library/Fonts/Courier New Bold.ttf";
-  var font = TTF_OpenFont (font_file,12);
-  if not (TTF_ValidFont font) do
-    eprintln$ f"Unable to open TTF font %S\n" font_file;
-    System::exit 1;
-  done
-  TTF_SetFontKerning (font,0);
-  var isfixed = TTF_FontFaceIsFixedWidth (font);
-  println$ "Opened Font " + font_file + 
-    " Facename: " + TTF_FontFaceFamilyName font + 
-    (if isfixed>0 then " MONOSPACED" else " VARIABLE WIDTH");
-  return font;
-}
+fun choose_font () = FlxGui::get_font(FlxGui::get_font (OSX_dflt_font());
 
 proc mainline ()
 {
-  init;
-  versions;
+  FlxGui::init;
+  FlxGui::versions;
 
   // This will never work on OSX because it requires a real
   // Apple "Application" thing with an info.plist to enable it.

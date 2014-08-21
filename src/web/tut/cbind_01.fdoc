@@ -86,8 +86,8 @@ val z = X(1,2);
 println$ z.b;
 @
 Note that a definition of the {cstruct X} is not emitted,
-instead it is used to model an existing C {struct}, 
-in this case we created it in the {header} literally,
+instead it is used to model an existing C @{struct}, 
+in this case we created it in the @{header} literally,
 usually you will be modelling structures used in C libraries.
 
 Your model does need to be complete because Felix synthesises

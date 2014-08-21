@@ -112,6 +112,8 @@ private proc print_help() {
 
 }
 
+// TODO: change the names of everything to match exactly the command line
+// switches so this can be used as a response file
 proc setup-from-file 
 (
   config:&Config::config_type,
@@ -133,6 +135,39 @@ println$ "Setup file: " + arg;
       | "share-dir" => println$ "set share-dir "+data; control.FLX_SHARE_DIR <- data;
       | "cache-dir" => println$ "set cache-dir "+data; control.CACHE_DIR <- data;
       | "output-dir" => println$ "set output-dir "+data; control.OUTPUT_DIR <- data;
+      | "felix-compiler" => println$ "set flxg " + data; control.FLXG <-data;
+      | "toolchain" => println$ "set toolchain "+data; control.FLX_TOOLCHAIN <- data;
+      | "linker-switch" => println$ "add linker switch "+data; 
+          control.LINKER_SWITCHES <- control*.LINKER_SWITCHES + data;
+      | "macro-switch" => println$ "addt macro switches "+data; 
+          control.MACROS <- control*.MACROS + data;
+      | "optimisation-switch" => println$ "set C++ optimisation level "+data; 
+          control.OPTIMISE <- control*.OPTIMISE + data;
+      // American spelling
+      | "optimization-switch" => println$ "set C++ optimization level "+data; 
+          control.OPTIMISE <- control*.OPTIMISE + data;
+      | "cflag" => println$ "add C++ cflag "+data; 
+          control.EXTRA_CCFLAGS <- control*.EXTRA_CCFLAGS + data;
+      | "include-dir" => println$ "add Felix and C++ include dir "+data; 
+          control.STANDARD_INCLUDE_DIRS <- control*.STANDARD_INCLUDE_DIRS + data;
+      | "rtl-include-dir" => println$ "add Felix and C++ rtl include dir "+data; 
+          control.RTL_INCLUDE_DIRS <- control*.RTL_INCLUDE_DIRS + data;
+      | "flx-lib-dir" => println$ "add Felix include dir "+data; 
+          control.FLX_LIB_DIRS <- control*.FLX_LIB_DIRS + data;
+      | "grammar-dir" => println$ "set Felix grammar directory "+data; 
+          control.GRAMMAR_DIR <- data;
+      | "grammar" => println$ "set Felix grammar (in stdlib) "+data; 
+          control.STDGRAMMAR <- data;
+      | "std-import" => println$ "set Felix standard import (in stdlib) "+data; 
+          control.STDIMPORT <- data;
+      | "extra-import" => println$ "set Felix extra import (in stdlib) "+data; 
+          control.IMPORTS <- control*.IMPORTS + data;
+      | "extra-cpp" => println$ "set Felix extra C++ file "+data; 
+          control.cpps <- control*.cpps + data;
+      | "extra-obj" => println$ "set Felix extra object file "+data; 
+          control.cppos <- control*.cppos + data;
+      | "flx-std-lib" => println$ "add Felix standard (cached) library "+data; 
+          control.FLX_STD_LIBS <- control*.FLX_STD_LIBS+ data;
       | _ => println$ "Unknown field " + field;
       endmatch;
     | None => ;
@@ -646,19 +681,32 @@ noinline proc processing_stage1
   // The one in "host" is good enough for flxg, however the
   // library location MUST be changed for cross compilation.
   // FIXME!
+  
   if config*.HAVE_WIN32 do
-    control.FLXG <- Filename::join(control*.FLX_TARGET_DIR, 'bin', 'flxg.exe');
-    control.FLXRUN <- list$ "set", "PATH="+(Directory::mk_absolute_filename control*.FLX_TARGET_DIR)+"\\lib\\rtl;"+"%PATH%&&";
-    //println$ "FLXRUN=" + FLXRUN;
+    var dflt_flxg = Filename::join(control*.FLX_TARGET_DIR, 'bin', 'flxg.exe');
+    var dflt_flx_run = list$ "set", "PATH="+(Directory::mk_absolute_filename control*.FLX_TARGET_DIR)+"\\lib\\rtl;"+"%PATH%&&";
   else
-    control.FLXG <- control*.FLX_TARGET_DIR+"/bin/flxg";
+    dflt_flxg = control*.FLX_TARGET_DIR+"/bin/flxg";
     // the mac uses DYLD_LIBRARY_PATH instead of LD_LIBRARY_PATH
     if config*.HAVE_MACOSX do
-      control.FLXRUN <- list$ "env","DYLD_LIBRARY_PATH="+control*.FLX_TARGET_DIR+"/lib/rtl:$DYLD_LIBRARY_PATH";
+      dflt_flx_run = list$ "env","DYLD_LIBRARY_PATH="+control*.FLX_TARGET_DIR+"/lib/rtl:$DYLD_LIBRARY_PATH";
     else
-      control.FLXRUN <- list$ "env", "LD_LIBRARY_PATH="+control*.FLX_TARGET_DIR+"/lib/rtl:$LD_LIBRARY_PATH";
+      dflt_flx_run = list$ "env", "LD_LIBRARY_PATH="+control*.FLX_TARGET_DIR+"/lib/rtl:$LD_LIBRARY_PATH";
     done
   done
+  control.FLXG <- 
+    match control*.FLXG with
+    | "" => dflt_flxg
+    | ?x => x
+    endmatch
+  ;
+  control.FLXRUN <- 
+    match control*.FLXRUN with
+    | Empty => dflt_flx_run
+    | ?x => x
+    endmatch
+  ;
+
 
   // Get linker names.
   var d,s = Config::link_strings(config*.FLX_INSTALL_DIR);
@@ -667,6 +715,46 @@ noinline proc processing_stage1
 
   // Get location of flx_pkgconfig's config directory.
   control.CONFIG_DIR <- Filename::join(control*.FLX_TARGET_DIR,'config');
+
+  var dflt_grammar_dir = 
+      Directory::mk_absolute_filename (Filename::join (list( 
+        control*.FLX_SHARE_DIR,
+        "lib"
+      )))
+  ;
+  control.GRAMMAR_DIR <-
+    match control*.GRAMMAR_DIR with 
+    | "" => dflt_grammar_dir 
+    | ?x => Directory::mk_absolute_filename x 
+    endmatch
+  ;
+
+  var dflt_grammar = Directory::mk_absolute_filename 
+    (Filename::join (control*.GRAMMAR_DIR,"grammar/grammar.files"))
+  ;
+  control.STDGRAMMAR <- 
+    match control*.STDGRAMMAR with 
+    | "" => dflt_grammar 
+    | ?x => 
+      if Filename::is_absolute_filename x then x 
+      else Filename::join (control*.GRAMMAR_DIR, x) 
+    endmatch
+  ;
+
+  var dflt_automaton = 
+    cache_join
+    (
+      control*.CACHE_DIR, 
+      Filename::join (control*.STDGRAMMAR, "syntax.automaton")
+    )
+  ;
+  control.AUTOMATON <- 
+    match control*.AUTOMATON with 
+    | "" => dflt_automaton 
+    | ?x => x 
+    endmatch
+  ;
+
 
   // this hack forces a directory name, because executing "prog"
   // can fail if the currect directory is not on the PATH, 

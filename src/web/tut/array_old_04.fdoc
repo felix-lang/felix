@@ -135,25 +135,25 @@ println$ a1 . i, a2 . i;
 to reduce the number of checked conversions from 2 to 1. 
 
 The length of an array may be obtained at run time with
-the {len} method:
+the @{len} method:
 @felix
 println$ a.len;
 @expect
 4
 @
-which returns a value of type {size}.
+which returns a value of type @{size}.
 
-Felix also provides the method {get} and {unsafe_get}:
+Felix also provides the method @{get} and @{unsafe_get}:
 @felix
 println$ unsafe_get (a, 1.size), get (a, 1.size);
 @expect
 (2, 2)
 @
-which are standard for all arrays. The {get} method
-does a bounds check then calls the {unsafe_get} method.
-Integer indexing maps to the {get} method. 
+which are standard for all arrays. The @{get} method
+does a bounds check then calls the @{unsafe_get} method.
+Integer indexing maps to the @{get} method. 
 
-Caveat: Unfortunately the {unsafe_get} method does a conversion to the 
+Caveat: Unfortunately the @{unsafe_get} method does a conversion to the 
 proper index type which is also checked, so bounds checks are performed twice.
 The conversion cannot be avoided by using a C primitive because builtin fixed
 array type supports multi-indices of compact linear type.

@@ -25,7 +25,7 @@ than prefix application so
 @felix-unchecked
 f x.g
 @
-means to apply {g} to {x} first, then {f} to the result.
+means to apply @{g} to @{x} first, then @{f} to the result.
 
 @h2 Operator dollar
 And those with a Haskell background will readily understand that in
@@ -49,7 +49,7 @@ fun pi() => 22.0/7.0;
 println$ "Pi=" + str #pi;
 @
 
-[See next chapter for explanation of {unit} type]
+[See next chapter for explanation of @{unit} type]
 
 @h2 Implied procedure call 
 And there's a special case for procedures with no arguments:
@@ -60,7 +60,7 @@ doit;
 allowing you to omit the unit argument. This is an example
 of <em>type based syntactic sugar</em> which is used a quite
 a bit in Felix to provide shortcuts. A statement which is an
-expression of a type other than {void} is not normally allowed.
+expression of a type other than @{void} is not normally allowed.
 In this special case, however, if the type is {unit->void} 
 then the compiler translates it into an application
 of the expression to {()}.

@@ -1,5 +1,5 @@
 @h1 Floating Point Reals 
-There are 3 floating point real types: {float}, {double}, and {long double}
+There are 3 floating point real types: @{float}, @{double}, and {long double}
 real and complex numbers.  All support these base functions:
 Felix provides 3 floating point types.
 @pre
@@ -10,9 +10,9 @@ Felix provides 3 floating point types.
   ldouble       long double   l
 @
 Floating literals roughly follow ISO C99, except underscores are allowed between digits.
-The mantissa radix can either be decimal (default) or hexadecimal with a {0x} or {0X} prefix.
-The exponent is always decimal radix but can either be a power of 10 with an {E} or {e} separator
-or binary, with a {P} or {p} separator.
+The mantissa radix can either be decimal (default) or hexadecimal with a @{0x} or @{0X} prefix.
+The exponent is always decimal radix but can either be a power of 10 with an @{E} or @{e} separator
+or binary, with a @{P} or @{p} separator.
 
 There is also an additional constraint: decimal radix floating literals
 which include a decimal point, must include at least one digit

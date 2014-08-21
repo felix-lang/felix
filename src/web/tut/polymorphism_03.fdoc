@@ -1,5 +1,5 @@
 @h1 Type classes
-The {class} and {instance} is the primary organisation tool for Felix
+The @{class} and @{instance} is the primary organisation tool for Felix
 libraries that allow easy use and extension. The notion is taken
 from Haskell, generalised to support multiple type variables as in GHC.
 
@@ -19,15 +19,15 @@ open X[int];
 println$ g 1;
 @
 
-In this code {virtual} functions are ones which may be overridden in 
-instances. {virtual} functions may have definitions, which are used
+In this code @{virtual} functions are ones which may be overridden in 
+instances. @{virtual} functions may have definitions, which are used
 in any instance which does not define an override. Non-virtual
 functions cannot be overriden: instead they're dependent on the
 virtual functions only.
 
-We define an instance of {X} for type {int} and then call the
-non-virtual function {g} for specialisation {T -> int}, which 
-in turn calls {f} for that specialisation too.
+We define an instance of @{X} for type @{int} and then call the
+non-virtual function @{g} for specialisation {T -> int}, which 
+in turn calls @{f} for that specialisation too.
 
 Finally we open the typeclass for the specialisation {T -> int}.
 In effect this just makes {f of (int)} and {g of (int)} available.
@@ -45,7 +45,7 @@ for example we see equality must be an equivalence relation
 (reflexive, symmetric and transitive).
 
 Also we note that the total order concept is derived from equality
-concept. When you open a {Tord} you get the methods of {Eq} as well.
+concept. When you open a @{Tord} you get the methods of @{Eq} as well.
 
 @h2 Relation to C++
 Type classes actually exist in much the same form in C++.

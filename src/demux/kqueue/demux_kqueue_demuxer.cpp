@@ -58,7 +58,10 @@ kqueue_demuxer::~kqueue_demuxer()
 int
 kqueue_demuxer::add_socket_wakeup(socket_wakeup* sv, int flags)
 {
- //fprintf(stderr,"Add socket wakeup\n");
+  //fprintf(stderr,
+  //  "Add socket wakeup: socket: %d Operation: %s\n",
+  //  sv->s, flags==PDEMUX_READ ? "Read" : "Write"
+  //);
   // we only know these flags
   if((flags & ~(PDEMUX_READ | PDEMUX_WRITE))) return -1;
 
@@ -200,12 +203,13 @@ kqueue_demuxer::get_evts(bool poll)
   // fprintf(stderr,"kqueue wakeup!\n");
   //fprintf(stderr,"Kqueue got %d events\n",nevts);
   socket_wakeup*  sv = (socket_wakeup*)ev.udata;
-
+  //fprintf(stderr, "Socket Event: socket: %d\n", sv->s);
   // The filters are not bit fields, hence they must come in serially.
   // this means you're never going to get both read and write on
   // a kqueue_demuxer wake up. No worries.
   if(ev.filter == EVFILT_READ)
   {
+    // fprintf(stderr, "Socket READ: socket: %d\n", sv->s); 
   // this capability is lost for the moment, as we have no way
   // of explaining it to felix. the event stuff isn't so good right now
 /*
@@ -219,7 +223,7 @@ kqueue_demuxer::get_evts(bool poll)
     else
 */
     // If a socket wakeup were a control block, you'd set the err here.
-    if(0 && ev.flags & EV_EOF)
+    if(ev.flags & EV_EOF)
     {
       // errno in fflags!
       fprintf(stderr,
@@ -234,6 +238,7 @@ kqueue_demuxer::get_evts(bool poll)
   }
   else if(ev.filter == EVFILT_WRITE)
   {
+    //fprintf(stderr, "Socket WRITE: socket: %d\n", sv->s); 
     // fprintf(stderr,"EVFILT_WRITE: can write (?) %i bytes\n", (int)ev.data);
 
     // using oneshot mode now.

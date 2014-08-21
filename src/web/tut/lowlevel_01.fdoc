@@ -2,7 +2,7 @@
 Felix provides some types which are used to manipulate
 machine addresses and memory at a low level.
 
-The type {address} is basically a C {void*}.
+The type @{address} is basically a C {void*}.
 However, you can add or subtract an integer from an address,
 as if it were actually a C {unsigned char*}, and of course
 you can also just increment or decrement an addess.
@@ -16,7 +16,7 @@ however addition is not confluent with comparisons:
 x > y does not imply x + 1 > y + 1
 @
 
-You can also subtract two addresses, the result is of type {ptrdiff}.
+You can also subtract two addresses, the result is of type @{ptrdiff}.
 This is a signed integer type with the same number of values as
 there are addresses. If the addresses are close and the first address
 is larger than the second the result is positive, negative if they're
@@ -32,16 +32,16 @@ comparisons, that is,
 @pre
 x &lt; y does not imply y - x &gt; 0
 @
-In particular if {x} is very small, and {y} is very big then 
-whilst mathematically {y-x &gt; 0}, the {ptrdiff} will instead be a
+In particular if @{x} is very small, and @{y} is very big then 
+whilst mathematically {y-x &gt; 0}, the @{ptrdiff} will instead be a
 small negative value.
 
 To solve this problem Felix also provides two more types: 
-{intptr} and {uintptr} which support the same number of values
-as an address: {intptr} is identical to {ptrdiff} whereas
-{uintptr} is unsigned.
+@{intptr} and @{uintptr} which support the same number of values
+as an address: @{intptr} is identical to @{ptrdiff} whereas
+@{uintptr} is unsigned.
 
-Casting a pointer difference to {uintptr} is confluent with comparisons.
+Casting a pointer difference to @{uintptr} is confluent with comparisons.
 If {y &gt; x} then {(y-x).uintptr} is precisely the mathematical value
 of the difference. If the pointers are reversed the value is the mathematical
 result (which is negative) added to the number of values (one more than the

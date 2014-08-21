@@ -12,9 +12,9 @@ interface paragraph-control_t {
   bp : 1 -> 0;
 }
 @p
-The interface has a {whatami} method to specify the kind
+The interface has a @{whatami} method to specify the kind
 of object in a human readable format. Then it provides
-method {sp} to start a paragraph, {sp-clas} to start 
+method @{sp} to start a paragraph, {sp-clas} to start 
 a paragraph with a given HTML class attribute, so CSS
 can modify the formatting.
 @p
@@ -48,22 +48,22 @@ object fdoc_paragraph (write_string: string -> 0) implements paragraph-control_t
 export fun setup of (string) as "setup";
 export fun fdoc_paragraph of (string->0) as "fdoc_paragraph";
 @p
-The {include} directive includes the file containing the interface
+The @{include} directive includes the file containing the interface
 given above.
 @p
-The {setup} function here doesn't do anything, its required by
+The @{setup} function here doesn't do anything, its required by
 the plugin loader. In more complex plugins it can parse a configuration
 string to extract any relevant data.
 @p
 Now you can see the methods implemented, and note that the
-object closure contains local variable {pstate} which records
+object closure contains local variable @{pstate} which records
 the current state: if true, we're in a paragraph, if false
 then we're not.
 @p
-The procedures not marked as {method} are private
+The procedures not marked as @{method} are private
 helpers.
 @p
-Finally, we have to export the {setup} and {fdoc_paragraph}
+Finally, we have to export the @{setup} and @{fdoc_paragraph}
 functions so they get {extern "C"} linkage, so we can
 use {dlsym()} or {GetProcAddress()} on them when we load
 the plugin DLL (shared library).
@@ -76,7 +76,7 @@ var paragraph-maker : (string->0) -> paragraph-control_t;
 @
 We haul in the file containing the interface, and create
 an uninitialised global variable to hold the factory 
-function. Next, in the {setup} phase of the caller:
+function. Next, in the @{setup} phase of the caller:
 @felix-unchecked
   paragraph-maker = 
     Dynlink::load-plugin-func1 
@@ -87,7 +87,7 @@ function. Next, in the {setup} phase of the caller:
 we assign the factory function loaded from the plugin
 to the variable. The {load-plugin-func1} function actually
 loads the DLL, creates a data frame for its global variables,
-calls the {setup} function, and returns a closure of the
+calls the @{setup} function, and returns a closure of the
 factory function bound to the data frame which we store
 in the {paragraph-maker} variable.
 @p
@@ -105,7 +105,7 @@ and now we can use the object:
 
 Although this seems complicated you should note what is happening:
 there are two levels of binding. The first level creates the 
-global of the factory function, which is modified by the {setup}
+global of the factory function, which is modified by the @{setup}
 function. That environment is subsequently shared by all objects.
 Each object is created by a second level of binding which passes
 an argument to the factory function. You can use this to process

@@ -20,12 +20,12 @@ void register_mouse_click_handler (long window, mouse_click_handler_t * handler,
 }
 """;
 @
-In this example we have a C function {register_mouse_click_handler}
-which accepts a pointer to a handler function {handler} of 
-type {mouse_click_handler_t) and some arbitrary {client_data} 
+In this example we have a C function @{register_mouse_click_handler}
+which accepts a pointer to a handler function @{handler} of 
+type {mouse_click_handler_t) and some arbitrary @{client_data} 
 which is passed to the handler.
 
-Normally, we'd be accepting a handler for each {window} 
+Normally, we'd be accepting a handler for each @{window} 
 and calling the function registered for that window
 when the user clicks the mouse in it, however for purpose
 of this demo the registration function will just call
@@ -34,7 +34,7 @@ the callback immediately.
 Now, whilst we could write a callback handler in C, it is more
 fun to write one in Felix. To do this, we will create a wrapper
 function to use as the callback, and then pass it the Felix
-function as the {client_data}. The wrapper function then casts
+function as the @{client_data}. The wrapper function then casts
 it back to a Felix function and invokes it.
 
 Here's how we generate the wrapper function:
@@ -44,10 +44,10 @@ callback proc mouse_click_handler_wrapper:
  mouse_click_handler_wrapper 
 ;
 @
-In this code the function name {mouse_click_handler_wrapper}
+In this code the function name @{mouse_click_handler_wrapper}
 is used in its own type to indicate the position of the
-{client_data} pointer. Clearly this mechanism will not work
-on callbacks that do not accept a {client_data} pointer.
+@{client_data} pointer. Clearly this mechanism will not work
+on callbacks that do not accept a @{client_data} pointer.
 
 The effect of the function is to take the first three
 arguments and a Felix function which accepts the same
@@ -68,7 +68,7 @@ proc myClickHandler (x:int, y:int, w:long)
 @
 This function must have the same type as the callback,
 except its a Felix function (or procedure), and the
-{client_data} argument is dropped (because this function
+@{client_data} argument is dropped (because this function
 actually <em>is</em> the client data!
 
 Now we specify the type of the C handler for convenience:
@@ -80,12 +80,12 @@ function we're going to call:
 @felix
 proc register_mouse_click_handler: long * c_handler_t * address requires demo;
 @
-Notice the type of the {client_data} is given as {address} which is the
+Notice the type of the @{client_data} is given as @{address} which is the
 Felix way of spelling {void*}.
 
 Now all we need to do is call the registration function with
-our wrapper {mouse_click_handler_wrapper} as the callback
-and the Felix function {myClickHandler} as the {client_data}:
+our wrapper @{mouse_click_handler_wrapper} as the callback
+and the Felix function @{myClickHandler} as the @{client_data}:
 @felix
 register_mouse_click_handler (99l,
  C_hack::cast[c_handler_t] mouse_click_handler_wrapper,
@@ -93,12 +93,12 @@ register_mouse_click_handler (99l,
 );
 @
 Notice the casts. The wrapper function has the correct type
-for the Felix function as the {client_data} but C just uses
+for the Felix function as the @{client_data} but C just uses
 a {void*} so we have to cast the wrapper to the type expected
 in C. 
 
-Similarly, we have to cast our Felix function to an {address}
-because that's what C expects for the {client_data}.
+Similarly, we have to cast our Felix function to an @{address}
+because that's what C expects for the @{client_data}.
 
 @expect
 User clicked in Window 99 at (42, 38)

@@ -16,7 +16,7 @@ We're not ready to examine the codes or the exact rules,
 so we'll just present examples.
 
 @h2 Type <code>int</code>
-This type is bound to the underlying C++ {int} type.
+This type is bound to the underlying C++ @{int} type.
 It is a signed type with most of the operators C provides
 <em>except</em> for bit masking operations, which are
 representation dependent.
@@ -37,7 +37,7 @@ as in C.
 
 @h2 Type <code>uint</code>
 This is an unsigned integer type bound to {unsigned int}.
-It provides the same operators as {int} an by fixing the
+It provides the same operators as @{int} an by fixing the
 representation to the usual power series we also define
 bitwise and {\&}, bitwise or {\|} bitwise exclusive or {\^}
 and complement {~}.

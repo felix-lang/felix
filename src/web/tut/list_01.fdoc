@@ -31,7 +31,7 @@ end
 
 
 
-@h1 List length {len}.
+@h1 List length @{len}.
 @felix
 //Check List::len
 begin
@@ -52,7 +52,7 @@ end
 
 
 
-@h1 List HOF iterator {iter}.
+@h1 List HOF iterator @{iter}.
 @felix
 //Check List::iter
 begin
@@ -74,7 +74,7 @@ end
 
 
 
-@h1 List {map}.
+@h1 List @{map}.
 @felix
 //Check List::map
 begin
@@ -96,7 +96,7 @@ end
 
 
 
-@h1 List {fold_left}.
+@h1 List @{fold_left}.
 @felix
 //Check List::fold_left
 begin
@@ -118,7 +118,7 @@ end
 
 
 
-@h1 List {fold_right}.
+@h1 List @{fold_right}.
 @felix
 //Check List::fold_right
 begin
@@ -139,7 +139,7 @@ end
 
 
 
-@h1 List reverse {rev}.
+@h1 List reverse @{rev}.
 @felix
 //Check List::rev
 begin

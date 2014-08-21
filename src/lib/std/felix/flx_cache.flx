@@ -1,16 +1,22 @@
 class FlxCache
 {
+  fun is_absolute (f:string) => f.[0] == #Filename::sep; // HACK!
+
   fun gramtime(debugln: string -> 0) (path:string, s:string) : double = {
     //println$ "Path=" + path + " file = " + s;
     fun maxtime (x:double) (s:string) => max (x, gramtime debugln (path, s));
     if s.[0]=="@".char do
-      var file = Filename::join$ path, s.[1 to].strip;
+      var file = 
+        let ?f = s.[1 to].strip in
+        if is_absolute f then f 
+        else Directory::mk_absolute_filename (Filename::join$ path, f)
+      ;
       var filetime = FileStat::dfiletime(file,0.0);
       if filetime == 0.0 do
-        println$ "Grammar include file " + file " doesn't exist, exiting";
+        println$ "Grammar include file '" + file "' doesn't exist, exiting";
         System::exit 1;
       done
-      debugln$ "Grammar include file " + file + " time=" + FileStat::strfiletime(filetime);
+      debugln$ "Grammar include file '" + file + "' time=" + FileStat::strfiletime(filetime);
       var filetext = load file;
       var files = split (filetext, "\n");
       files = map strip of (string) files;
@@ -32,7 +38,7 @@ class FlxCache
 
   // FLX_INSTALL_DIR: root for finding standard grammar
   // STDGRAMMAR: root standard grammar key, within FLX_INSTALL_DIR
-  //      usually "@grammar/grammar.files"
+  //      usually "grammar/grammar.files"
   // FLXG: absolute filename of felix compiler executable
 
   // CACHE_DIR: absolute filename of binary cache
@@ -49,6 +55,7 @@ class FlxCache
   typedef cache_validation_spec_t = 
   (
      FLX_SHARE_DIR:string, 
+     GRAMMAR_DIR:string, 
      STDGRAMMAR:string, 
      FLXG:string,    
      CACHE_DIR:string,
@@ -56,6 +63,7 @@ class FlxCache
      DEFAULT_CACHE_DIR: string,
      DEFAULT_OUTPUT_DIR: string,
      CLEAR_CACHE: int,
+     AUTOMATON: string,
      debugln : string -> 0,
      xqt: string -> string,
      quote: string -> string
@@ -96,6 +104,7 @@ class FlxCache
 
     // get the OS timestamp of the flxg compiler, +inf if not found
     var flxg_time = FileStat::dfiletime(spec.FLXG, #FileStat::future_time);
+    spec.debugln$ "Flxg=" + spec.FLXG;
     spec.debugln$ "Flxg_time=" + FileStat::strfiletime(flxg_time);
 
     // get the OS timestamp of the file flxg_time.stamp
@@ -117,19 +126,11 @@ class FlxCache
 
     // Calculate the time of the newest text file defining the grammar
     // these are files in directory share/lib/grammar.
-    var grammar_time = gramtime spec.debugln (Filename::join (spec.FLX_SHARE_DIR,"lib"), spec.STDGRAMMAR);
+    var grammar_time = gramtime spec.debugln (spec.GRAMMAR_DIR, "@"+spec.STDGRAMMAR);
     spec.debugln$ "Grammar text time=" + FileStat::strfiletime (grammar_time);
 
     // calculate the name of the compiled grammar automaton in the cache
-    var automaton_name = 
-      cache_join(spec.CACHE_DIR, 
-      Directory::mk_absolute_filename (Filename::join (list( 
-        spec.FLX_SHARE_DIR,
-        "lib",
-        "grammar",
-        "syntax.automaton"
-      ))))
-    ;
+    var automaton_name = spec.AUTOMATON; 
 
     // Get the timestamp of the grammar automaton or -inf if it doesn't exist.
     var automaton_time = FileStat::dfiletime(automaton_name,#FileStat::past_time);
@@ -139,7 +140,7 @@ class FlxCache
     // to the current compiler time stamp, then the cache is stale 
     // and should be deleted.
     if cache_time != #FileStat::future_time and flxg_stamp_time != flxg_time do
-      println$ "Cache may be out of date due to compiler upgrade!";
+      println$ "Cache may be out of date due to compiler change!";
       println$ "Flxg compiler time stamp=" + FileStat::strfiletime(flxg_time);
       println$ "Cache time stamp        =" + FileStat::strfiletime(cache_time);
 

@@ -76,24 +76,20 @@ let fcat fs =
 let unix2native f = if f = "" then "" else fcat (split_unix f)
 
 (** Check if the native path is an absolute path. *)
-let is_abs =
+let is_abs s : bool =
   match Sys.os_type with
   | "Win32" ->
     (* A path is native on windows if it starts with '\' or '[A-Z]:\'. *)
-    (fun s ->
       let n = String.length s in
       if n = 0 then false else
       if s.[0] = '\\' then true else
       if n > 2 then (s.[1]=':') && (s.[2]='\\') else
       false
-    )
   | _ ->
     (* A path is native on unix if it starts with '/'. *)
-    (fun s ->
       let n = String.length s in
       if n = 0 then false else
       s.[0] = '/'
-    )
 
 (* This code removes leading / (on unix) or C:\ (on Windows
   so the result can be added to the end of another pathname
@@ -133,8 +129,7 @@ let join dir file =
 
 
 (** Look in the filesystem for the path. Raises Missing_path if not found. *)
-let find_path ?(include_dirs=[]) path =
-  let path = unix2native path in
+let find_native_path ?(include_dirs=[]) path =
   try
     (* Check first if the path can be found directly. *)
     if Sys.file_exists path then raise (Found_path path);
@@ -148,6 +143,11 @@ let find_path ?(include_dirs=[]) path =
     (* We still didn't find it? Then error out. *)
     raise (Missing_path path)
   with Found_path path -> path
+
+let find_path ?(include_dirs=[]) path =
+  let path = unix2native path in
+  find_native_path ~include_dirs path
+
 
 (** Look in file system for file, returns the directory in which it is contained,
    if found directly that will be "". This is the same as find_path, except that

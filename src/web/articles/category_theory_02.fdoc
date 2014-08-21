@@ -1,0 +1,70 @@
+@title More Categories
+@mathjax
+\(\DeclareMathOperator{\obj}{obj}\
+\DeclareMathOperator{\arr}{arr}\
+\DeclareMathOperator{\dom}{dom}\
+\DeclareMathOperator{\cod}{cod}\)
+@title Theory of Polynomial Types
+@h1 More Categories
+@h2 Dual Category
+Take any category and turn the arrows around, you have another
+category called the dual category. For a category \(A\) the dual or
+opposite category is denoted \(A^{op}\).
+
+@h2 Generators and relations
+This presentation is a nice trick. Give all the objects 
+and some arrows, and some equations between the arrows.
+For example given object x and arrow \(e: x \rightarrow x\)
+and relation \(e^4 = 1_x\) the category has arrows \(1_x, e, e^2, e^3\).
+
+@h2 Special arrows
+Arrows of a category can have special properties.
+@h2 Monic
+An arrow \(m:A\rightarrow B\) is <em>monic</em> if for any
+pair of arrows \(f_1, f_2: D \rightarrow A\) then
+\[
+ f_1 \cdot m = f_2 \cdot m \implies f_1 = f_2
+\]
+in other words, \(m\) can be cancelled in post position.
+In \(\bf Sets\) injections (one to one functions) 
+are monic.
+
+@h2 Epi
+An arrow \(e:A\rightarrow B\) is <em>epi</em> if for any
+pair of arrows \(g_1, b_2: B \rightarrow C\) then
+\[
+e \cdot g_1 = e \cdot g_2 \implies g_1 = g_2
+\]
+in other words, \(m\) can be cancelled in pre position.
+in \(\bf Sets\) surjections (onto functions) 
+are epi
+
+@h2 Invertible
+An arrow \(f:A\rightarrow B) is invertible if there is an
+arrow \(f^{-1}: B\rightarrow A) called the inverse such that 
+\[
+f\cdot f^{-1} = 1_A
+\]
+and
+\[
+f^{-1} \cdot f = 1_B
+\]
+In this case the inverse is unique and obviously also invertible,
+both arrows are called isomorphisms, and \(A\) and \(B\) are said
+to be isomorphic.
+
+@h2 Universal Algebra
+As you can see a lot of information about the structure of
+a system can be modelled purely with functions. Any model
+using functions alone is said to be abstract. Category theory is
+the algebra of functions and thus the theory of abstraction.
+
+Many laws of category theory contains qualifications
+and read \(P\) is unqie, <em>up to isomorphism</em>.
+This means it isn't unique at all, but all the things
+satisfying the condition are isomorphic.
+
+This lack of precision is one of the most difficult things
+to handle when building programming models: it means
+we have many choices of representation and theory leaves
+it open which ones to choose. 

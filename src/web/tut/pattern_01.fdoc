@@ -4,9 +4,9 @@ a union has "one of logic". Each-of logic demands treating each of the component
 in sequence whereas one-of logic demand selecting one of the components.
 
 Unions therefore represent alternatives. We use pattern matching with
-the {match} construction to discover which alternative is encoded
-and handle it in a typesafe manner. A {match} is an advanced form
-of a {switch}: {union}s are an advanced form of an {enum}eration.
+the @{match} construction to discover which alternative is encoded
+and handle it in a typesafe manner. A @{match} is an advanced form
+of a @{switch}: @{union}s are an advanced form of an @{enum}eration.
 
 @felix
 union boolean = 
@@ -26,9 +26,9 @@ proc f(b:boolean)  {
 println$ match b with | True => "True" | False => "False" endmatch;
 @
 
-This code demonstrates a simple union of two cases: {True} and {False}
-and shows a procedural {match} whose case handlers are {println}
-statements, and a function {match} whose handlers are expressions.
+This code demonstrates a simple union of two cases: @{True} and @{False}
+and shows a procedural @{match} whose case handlers are @{println}
+statements, and a function @{match} whose handlers are expressions.
 
 A more sophisticated example:
 
@@ -45,9 +45,9 @@ fun str (z:Z) => match z with
 ;
 @
 
-The identifiers {Cart} and {Polar} here are called <em>type constructors</em>
+The identifiers @{Cart} and @{Polar} here are called <em>type constructors</em>
 or just plain constructors, note here the arguments of the constructors
-are both the same: a pair of {double}. 
+are both the same: a pair of @{double}. 
 
 The question mark {?} here is used to introduce a parameter to
 represent the argument.
@@ -82,7 +82,7 @@ fun xaxis (a:(x:double, y:double))=>
 println$ fst (41,99l);
 println$ xaxis (x=1.2,y=2.2);
 @
-Here the {_} is a wildcard that matches anything.
+Here the @{_} is a wildcard that matches anything.
 
 You can also match against literals and ranges of
 integers floats and strings:
@@ -100,7 +100,7 @@ seen that in the first example which combines are match against constructors
 and tuples.
 
 @h2 Enumerations
-Felix has C++ style {enum}s.
+Felix has C++ style @{enum}s.
 @h3 Linear enumeration
 @felix
 enum colour {red, green, blue};
@@ -154,13 +154,13 @@ println$ x \subset b1.flagset;  // false
 
 @
 You can find the index
-of any constructor as an {int} with the {caseno} operator. 
+of any constructor as an @{int} with the @{caseno} operator. 
 In the example note that although the constructor with index
 0 and 3 is not named, it is still a value of the type.
 
 You cannot directly perform mathematical or bitwise operations
 on constructors, not even enumeration constants. Note that that includes
-comparison for equality! Use the {caseno} operator to get around this,
+comparison for equality! Use the @{caseno} operator to get around this,
 or bind into C as shown in the example.
 
 

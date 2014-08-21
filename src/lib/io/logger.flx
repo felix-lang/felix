@@ -137,7 +137,7 @@ class Logger {
   fun to_str (m:log_message):string  =>
        str(m.(0))+"\t"+m.(1);
 
-  fun log_date_fmt (dt:&tm) => strftime("%d/%b/%Y:%H:%M:%S %Z",dt);
+  fun log_date_fmt (dt:tm) => strftime("%d/%b/%Y:%H:%M:%S %Z",dt);
 
   fun log_date () = {
     var time_epoch_seconds = time_t();

@@ -47,7 +47,7 @@ fun get_flx (fname:string) = {
     | None => f"NO FILE %S FOUND IN %S" (fname, str FLX_PATH)
     endmatch
   ;
-  println$ "Loaded felix file " + fname+", len="+str (flx.len.int);
+  //println$ "Loaded felix file " + fname+", len="+str (flx.len.int);
   return flx;
 }
 
@@ -70,8 +70,8 @@ fun txt2html (x:string) =
 
 proc boreq(l:&bool, r:bool) { l <- *l or r; } 
 
-val markdown_code1 = RE2 ("({([^}]*)})");
-val markdown_code2 = RE2 ("(\\[([^]]*)\\])");
+val markdown_code1 = RE2 ("(@{([^}]*)})");
+val markdown_code2 = RE2 (r"(@glossary\(([^)]*)\))");
 fun markdown (s:string):string= {
   var x = s;
   C_hack::ignore(GlobalReplace(&x, markdown_code1, StringPiece ("<code>\\2</code>")));
@@ -388,7 +388,7 @@ next:>
   
   proc handle_cmd (b:string) 
   {
-println$ "CMD=@"+b;
+//println$ "CMD=@"+b;
     match Match (tangler_def_re2, b) with
     | Some ?v => def_tangler (v.1, v.2);
     | None => 
@@ -445,6 +445,7 @@ println$ "CMD=@"+b;
         elif b=="bug" do ep; sp 'bug'; write_string("<em>Bug: </em>");
         elif b=="fixed" do ep; sp 'fixed'; write_string("<em>Fixed: </em>");
         elif b=="done" do ep; sp 'done'; write_string("<em>Done: </em>");
+        elif b=="mathjax" do needs_mathjax = true;
 
         elif prefix (b,"title") do title = strip(b.[5 to]);
 

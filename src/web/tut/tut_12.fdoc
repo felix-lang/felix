@@ -14,8 +14,8 @@ To get moving we give some basic data types:
   string      "hello", 'world'
   char        char 'x', char 32
 @
-Note that there are no {char} literals, instead the {char} constructor takes
-a string and provides the first character (if there is one) or the {nul}
+Note that there are no @{char} literals, instead the @{char} constructor takes
+a string and provides the first character (if there is one) or the @{nul}
 character if the string is empty.
 
 @h1 Type aliases
@@ -27,8 +27,8 @@ typedef int_pair = int * int;
 @h1 Basic functions
 Some simple functions that are fairly general and quite useful:
 @h2 str and repr
-The {str} function converts many data types into a pleasant
-human readable string. The {repr} function tries to make a string
+The @{str} function converts many data types into a pleasant
+human readable string. The @{repr} function tries to make a string
 a bit more like a literal would look in a program.
 Thus:
 @felix

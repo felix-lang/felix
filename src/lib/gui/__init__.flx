@@ -1,0 +1,310 @@
+include "sdl/SDL2";
+include "sdl/SDL_ttf";
+include "sdl/SDL_image";
+
+class FlxGui 
+{
+
+proc init()
+{
+  if SDL_Init(SDL_INIT_AUDIO \| SDL_INIT_VIDEO) < 0  do
+    eprintln$ f"Unable to init SDL: %S\n" #SDL_GetError;
+    System::exit(1);
+  done
+  println$ "SDL_init OK";
+  if TTF_Init() < 0 do 
+    eprintln$ f"Unable to init TTF: %S\n" #TTF_GetError;
+    System::exit(1);
+  done
+  println$ "TTF_init OK";
+  if IMG_Init(IMG_INIT_PNG) < 0 do 
+    eprintln$ f"Unable to init IMG with PNG: %S\n" #IMG_GetError;
+    System::exit(1);
+  done
+  println$ "IMG_init OK";
+}
+
+proc versions ()
+{
+  begin
+    var compiled = #SDL_Compiled_Version;
+    var linked = #SDL_Linked_Version;
+    println$ f"We compiled against SDL version %d.%d.%d ..."
+      (compiled.major.int, compiled.minor.int, compiled.patch.int);
+    println$ f"But we are linking against SDL version %d.%d.%d."
+      (linked.major.int, linked.minor.int, linked.patch.int);
+  end 
+
+  begin
+    var compiled = #TTF_Compiled_Version;
+    var linked = #TTF_Linked_Version;
+    println$ f"We compiled against TTF version %d.%d.%d ..."
+      (compiled.major.int, compiled.minor.int, compiled.patch.int);
+    println$ f"But we are linking against TTF version %d.%d.%d."
+      (linked.major.int, linked.minor.int, linked.patch.int);
+  end 
+
+  begin
+    var compiled = #IMG_Compiled_Version;
+    var linked = #IMG_Linked_Version;
+    println$ f"We compiled against IMG version %d.%d.%d ..."
+      (compiled.major.int, compiled.minor.int, compiled.patch.int);
+    println$ f"But we are linking against IMG version %d.%d.%d."
+      (linked.major.int, linked.minor.int, linked.patch.int);
+  end 
+
+} 
+
+fun OSX_dflt_font() => "/Library/Fonts/Courier New Bold.ttf";  
+
+gen get_font (font_file:string) = {
+  var font = TTF_OpenFont (font_file,12);
+  if not (TTF_ValidFont font) do
+    eprintln$ f"Unable to open TTF font %S\n" font_file;
+    System::exit 1;
+  done
+  TTF_SetFontKerning (font,0);
+  var isfixed = TTF_FontFaceIsFixedWidth (font);
+  println$ "Opened Font " + font_file + 
+    " Facename: " + TTF_FontFaceFamilyName font + 
+    (if isfixed>0 then " MONOSPACED" else " VARIABLE WIDTH");
+  return font;
+}
+
+typedef window_t = SDL_Window;
+typedef font_t = TTF_Font;
+typedef drawing_surface_t = SDL_Surface;
+typedef colour_t = SDL_Color;
+typedef color_t = colour_t; // dang yanks ..
+typedef point_t = SDL_Point;
+typedef rect_t = SDL_Rect;
+typedef surface_t = SDL_Surface;
+typedef event_t = SDL_Event;
+
+fun RGB (r:int, g:int, b:int) => 
+  SDL_Color (r.uint8, g.uint8, b.uint8, 0u8)
+;
+ 
+ctor window_t  (title:string, xpos:int, ypos:int, width:int,height:int) =
+{
+  var window = SDL_CreateWindow(
+    title,
+    xpos,ypos,
+    width, height,
+    SDL_WINDOW_SHOWN \| SDL_WINDOW_RESIZABLE
+  );
+  return window;
+}
+
+proc destroy (w:window_t) { SDL_DestroyWindow w; }
+
+fun get_lineskip (f: font_t) => TTF_FontHeight(font) + 1;
+
+proc write(w:window_t) (x:int, y:int, font:font_t, c: colour_t, s:string)
+{
+    var rendered = TTF_RenderText_Solid (font,s,c);
+    var rect : SDL_Rect;
+    rect.x = x;
+    rect.y = y; // w,h are don't care
+    var nullRect = C_hack::null[SDL_Rect];
+    var window_surface = SDL_GetWindowSurface w;
+
+    var result = SDL_BlitSurface (rendered, nullRect, window_surface, &rect); 
+    if result != 0 do
+      eprintln$ "Unable to blit text to window surface";
+      System::exit 1;
+    done
+    SDL_FreeSurface rendered;
+}
+
+// clear whole window
+proc clear(w:window_t) (c: colour_t)
+{
+  var surf = SDL_GetWindowSurface w;
+  var pixelformat : &SDL_PixelFormat  = surf*.format;
+  var bgpixels = SDL_MapRGB(pixelformat,c.r,c.g,c.b);
+  SDL_ClearClipRect (surf);
+  C_hack::ignore$ SDL_FillSurface (surf, bgpixels);
+}
+
+proc draw_line (w:window_t)  (c:color_t, x0:int, y0:int, x1:int, y1:int)
+{
+   var s: &SDL_Surface = SDL_GetWindowSurface w;
+   var r: SDL_Renderer = SDL_CreateSoftwareRenderer s;
+   C_hack::ignore$ SDL_SetRenderDrawColor (r, c.r, c.g, c.b, c.a);
+   C_hack::ignore$ SDL_RenderDrawLine (r, x0, y0, x1, y1);
+   SDL_DestroyRenderer r;
+}
+
+proc update(w:window_t)
+{
+  var result = SDL_UpdateWindowSurface w;
+  if result != 0 do
+    eprintln$ "Unable to update window";
+    System::exit 1;
+  done
+}
+
+object line_buffer (n:int, var b:string) =
+{
+  b = substring (b+ ' ' *n,0,n); //clip and pad to n chars
+  var pos = 0;
+  method fun get() => b;
+  method fun get_pos () => pos;
+
+  // movement
+  method proc mv_left () => pos = max (0,pos - 1);
+  method proc mv_right () => pos = min (n - 1, pos + 1);
+  method proc mv_start () => pos = 0;
+  method proc mv_end () => pos = n - 1;
+
+  // insert and move right
+  method proc ins (ch:char) 
+  {
+    b = substring (b, 0, pos) + ch + substring (b, pos, n - pos - 1);
+    pos = max (pos + 1, n - 1);
+  }
+  // delete to the left
+  method proc del_left ()
+  {
+    b = substring (b, 0, pos - 1) + substring (b, pos, n - pos - 1);
+    pos = min (0, pos - 1);
+  }
+  // delete to the right
+  method proc del_right ()
+  {
+    b = substring (b, 0, pos) + substring (b, pos + 1, n - pos - 1);
+  }
+  // clear all
+  method proc clear () 
+  {
+    b = ' ' *n; pos = 0;
+  }
+  method proc clear_right ()
+  {
+    b = substring (b, 0, pos) + ' ' * (n - pos);
+  }
+  method proc clear_left ()
+  {
+    b = substring (b, pos, n - pos);
+  }
+}
+
+// ------------------------------------------------------------------
+// Window controller is responsible for all the work
+// being done on a window. It requires support for
+// dispatching events on its event channel.
+interface window_controller_interface {
+  get_window_id : 1 -> uint32;
+  get_oschannel : 1 -> oschannel[event_t];
+  destroy_window : 1 -> 0;
+}
+
+object window_controller 
+(
+  w:window_t, 
+  p:ischannel[event_t] -> 1->0
+) 
+  implements window_controller_interface = 
+{
+  var imsgs,omsgs = #mk_ioschannel_pair[event_t]; 
+  
+  method fun get_window_id () => SDL_GetWindowID w;
+  method proc destroy_window () => SDL_DestroyWindow w;
+  method fun get_oschannel () => omsgs;
+  spawn_fthread (p imsgs);
+}
+ 
+// Window Manager is responsible for a set of windows,
+// and dispatching events specific to a particular
+// window to that window.
+
+// ------------------------------------------------------------------
+object window_manager () = 
+{
+  var windows = darray[window_controller_interface]();
+
+  method fun get_n_windows () => windows.len.int;
+
+  // add a new window to the controlled set
+  // return its current index
+  method gen add_window (w:window_controller_interface) : int = 
+  { 
+    windows += w; 
+    return windows.len.int - 1; 
+  }
+
+  fun find_window(wid: uint32) : opt[window_controller_interface] =
+  {
+    for wobj in windows do
+      if wid == #(wobj.get_window_id) return Some wobj;
+    done
+    return None[window_controller_interface];
+  }
+
+  fun find_window_index (wid: uint32) : opt[int] =
+  {
+    for var i in 0 upto windows.len.int - 1 do
+      if wid == #(windows.i.get_window_id) return Some i;
+    done
+    return None[int];
+  }
+
+  method fun get_window_controller_from_index (i:int) => windows.i;
+
+  method proc delete_window (wid: uint32)
+  {
+    match find_window_index wid with
+    | None => ;
+    | Some ?i => windows.i.destroy_window; erase (windows, i);
+    endmatch;
+  }
+
+  // this is a global source for all events
+  gen create_event_source () : ischannel[event_t]  =
+  {
+    var imsgs,omsgs = #mk_ioschannel_pair[SDL_Event]; 
+    proc driver ()
+    {
+      var e : SDL_Event;
+      // dummy first event
+      e.type = SDL_FIRSTEVENT.uint32;
+      write$ omsgs,e;
+      SDL_PumpEvents;
+      C_hack::ignore$ SDL_WaitEvent$ &e;
+      while e.type.SDL_EventType != SDL_QUIT do
+        write$ omsgs, e;
+        SDL_PumpEvents;
+        C_hack::ignore$ SDL_WaitEvent$ &e;
+      done
+      return;
+    }
+    spawn_fthread driver;
+    return imsgs;
+  }
+
+  var imsgs = create_event_source ();
+  method fun get_event_source () => imsgs;
+  method proc dispatch_window_event (e:event_t) 
+  {
+    match SDL_GetWindowID e with
+    | Some ?wid =>
+      match find_window wid with
+      | Some ?wobj =>
+        var omsgs = #(wobj.get_oschannel);
+        write (omsgs, e);
+        if e.type.SDL_EventType == SDL_WINDOWEVENT and 
+          e.window.event.SDL_WindowEventID == SDL_WINDOWEVENT_CLOSE 
+        do
+          #(wobj.get_window_id).delete_window;
+        done
+        | None => println$ "Can't find window ID = " + str wid;
+        endmatch;
+      | None => println$ "No window for message: Event type " + e.type.SDL_EventType.str;
+      endmatch;
+  }
+}
+
+ 
+} // class FlxGui
+

@@ -290,6 +290,7 @@ class Stream {
     istream: istr,
     s: &string)
   {
+//println$ "get_line starts";
     var c: char;
     val ac = address (&c);
     var st: string="";
@@ -299,8 +300,10 @@ class Stream {
       var len = 1;
       var eof: bool;
 
+//println$ "read 1 byte";
       read(istream, &len, ac, &eof);
-
+//println$ if eof then "EOF" else "not EOF" endif;
+//println$ "Char = " + str(ord c) + "='"+str c+"'";
       if eof or c == char '\n' do
         finished = true;
       else

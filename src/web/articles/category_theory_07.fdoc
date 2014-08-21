@@ -1,0 +1,51 @@
+@mathjax
+@h1 Category Extensions
+@h2 Free extension
+Let us have some category \(C\) wth sums, products,
+and exponentials (i.e. a cartesian closed distributive category),
+and suppose we wish to extend it. One way to do this is
+to add some extra objects and some arrows.
+
+To make a new category we throw in identities
+for the new arrows and then throw in all the
+paths formed from the combined set of arrows.
+
+However we do more than that: we also throw in all
+sums, products and exponentials as well.
+
+Each such path always has at least one of the new
+arrows in it.
+
+Note: this is an informal description.
+The application should make it obvious!
+
+@h2 Application: Felix class
+We will given an example:
+@felix
+class New {
+  type T = "T";
+  type U = "U";
+  fun f: T -> T;
+  fun g: T -> U;
+}
+@
+This is a graph, which extends its context. That means it
+implies that there may functions of type
+@felix
+  int * T -> U
+@
+for example. Remember, the text defining a function is
+an encoding, equality is defined by the semantics,
+not the representation. When we say a function exists,
+we mean the semantics can be encoded, not that the programmer
+has actually done so.
+
+We have needed quite a lot of machinery here to just if the use
+of the word @{class}, which is just a synonym for the word
+category. What we write in a class isn't a category as such,
+but a graph that generates an extension to a category.
+
+The implication is that the system throws in sums, products and
+exponentials for you: this is called structural typing.
+The functions in Felix are usually encoded with applicative
+and not compositional syntax.

@@ -30,8 +30,8 @@ In Felix you can bind a C enumeration like:
 @felix
 cenum myenum = one,two,three;
 @
-This defines the type {myenum}, and also constants
-{one}, {two}, {three} equal to their C values.
+This defines the type @{myenum}, and also constants
+@{one}, @{two}, @{three} equal to their C values.
 The type is also equipped with equality and inequality
 comparisons automatically.
 

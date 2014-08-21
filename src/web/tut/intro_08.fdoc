@@ -1,5 +1,5 @@
 @h1 Constructors
-When we're introducing a new type such as {myint}, we often need to provide
+When we're introducing a new type such as @{myint}, we often need to provide
 a way to convert to and from other types. We can do this as so:
 
 @felix
@@ -11,7 +11,7 @@ println$ make_int(x);
 @expect
 42
 @
-Since {int} and {myint} share the same C++ representation, the
+Since @{int} and @{myint} share the same C++ representation, the
 conversions are the identity in this case. However it's a bit hard to remember
 the names of the constructors. 
 
@@ -40,11 +40,11 @@ println$ int(z);
 @expect
 42
 @
-This removes the duplication with the {_ctor_} notation but
+This removes the duplication with the @{_ctor_} notation but
 it equivalent.
 
 When Felix is looking up a function and it finds a type
-name T, it will try to find the function {_ctor_T} instead.
+name T, it will try to find the function @{_ctor_T} instead.
 You know you can overload constructors because they're just ordinary
 function bindings.
 

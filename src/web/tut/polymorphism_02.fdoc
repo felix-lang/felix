@@ -34,17 +34,17 @@ Now we write polymorphic functions with type constraints:
 @felix
 fun add[I in integers]: I * I -> I = "$1+$2";
 @
-Here the type variable {I} may only be {int} or {long}.
+Here the type variable @{I} may only be @{int} or @{long}.
 If you wanted to support mixed addition:
 @felix
 fun add[I in integers, J in integers]: I * J -> I = "(?1)($1+$2)";
 @
 Note carefully the difference between these two functions:
-in the first function {I} is set to either {int} or {long}
-and so only two {int}s or two {long}s can be added.
+in the first function @{I} is set to either @{int} or @{long}
+and so only two @{int}s or two @{long}s can be added.
 
-In the second case, {I} and {J} are set independently
-to either {int} or {long} which allows any combination 
+In the second case, @{I} and @{J} are set independently
+to either @{int} or @{long} which allows any combination 
 to be added.
 
 There is a shorthand for the second formulation:
@@ -61,7 +61,7 @@ fun f: !integers * !integers -> int = "f($1, $2)" requires myf;
 @
 
 The reason this is <em>so</em> useful is that if we just lifted the
-signature of {f} from C, we'd be ignoring the fact that the C programmer
+signature of @{f} from C, we'd be ignoring the fact that the C programmer
 has automatic conversions and can call {f(42L, 23u)}, which would
 fail in Felix because it has no automatic conversions. The user
 would have to cast every argument to exactly the right type which is
@@ -85,7 +85,7 @@ Type sets also support the set union operator:
 typedef mynumbers = integers \cup floats;
 } // end class Constraints
 @
-Note that the typesets {ints} and {floats}, along with some other
+Note that the typesets @{ints} and @{floats}, along with some other
 basic type sets, are defined in the standard library: 
 
 @felix /share/lib/std/scalar/ctypesets.flx
