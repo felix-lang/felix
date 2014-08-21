@@ -103,16 +103,17 @@ fun get_lineskip (f: font_t) => TTF_FontLineSkip(font) + 1;
 fun get_textsize (f: font_t, s:string) = 
 {
   var w: int; var h: int;
-  var result = TTF_SizeText (f,s,&w, &h);
+  C_hack::ignore$ TTF_SizeText (f,s,&w, &h);
   return w,h;
 }
 
 fun bounding_box (f:font_t, x:int, y:int, s:string) : rect_t =
 {
   var fh = TTF_FontHeight f;
-  var th, tw = get_textsize(f,s);
+  var tw, th = get_textsize(f,s);
   var h = max (fh,th)+2;
   var w = tw + 2;
+println$ "Bounding Box (x="+x.str+",y="+y.str+",w="+w.str+",h="+h.str+")";
   return SDL_Rect (x,y,w,h);
 }
 
@@ -183,8 +184,9 @@ interface line_buffer_interface
   mv_start : 1 -> 0;
   mv_end : 1 -> 0;
 
-  // insert
+  // insert and overwrite
   ins: char -> 0;
+  ovr: char -> 0;
 
   // delete
   del_left: 1 -> 0;
@@ -207,54 +209,81 @@ println$ "Edit box = '" + s + "'";
   var text_rendered = TTF_RenderText_Solid(f,s,c);
   var window_surface: &SDL_Surface = SDL_GetWindowSurface w;
   var viewport = bounding_box (f,x,y,s);
-  w.fill (viewport,green);
+  //w.fill (viewport,bg);
+  w.fill (viewport,blue); // debug hack
+  w.update;
   C_hack::ignore$ SDL_BlitSurface (text_rendered, nullRect, window_surface, &viewport); 
   SDL_FreeSurface text_rendered;
-  C_hack::ignore$ SDL_UpdateWindowSurface w;
+  w.update;
 } 
 
 object line_buffer (n:int, var b:string) =
 {
   b = substring (b+ ' ' *n,0,n); //clip and pad to n chars
-  var pos = 0;
+  assert b.len.int == n;
+
+  // caret position: can range between 0 and n inclusive!
+  // its the position *between* two characters!!
+  var pos = 0; 
   method fun get() => b;
   method fun get_pos () => pos;
 
   // movement
   method proc mv_left () => pos = max (0,pos - 1);
-  method proc mv_right () => pos = min (n - 1, pos + 1);
+  method proc mv_right () => pos = min (n, pos + 1);
   method proc mv_start () => pos = 0;
-  method proc mv_end () => pos = n - 1;
+  method proc mv_end () => pos = n;
 
   // insert and move right
   method proc ins (ch:char) 
   {
-    b = substring (b, 0, pos) + ch + substring (b, pos, n - pos - 1);
-    pos = max (pos + 1, n - 1);
+    b = substring (b, 0, pos) + ch + substring (b, pos, n);
+    pos = min (pos + 1, n);
+    assert b.len.int == n;
+  }
+  // overwrite and move right
+  method proc ovr (ch:char) 
+  {
+    if pos < n do
+      b = substring (b, 0, pos) + ch + substring (b, pos+1, n);
+      pos = min (pos + 1, n);
+    done
+    assert b.len.int == n;
   }
   // delete to the left
   method proc del_left ()
   {
-    b = substring (b, 0, pos - 1) + substring (b, pos, n - pos - 1);
-    pos = min (0, pos - 1);
+    if pos > 0 do
+      b = substring (b, 0, pos - 1) + substring (b, pos, n) + ' ';
+      pos = max (0, pos - 1);
+    done
+    assert b.len.int == n;
   }
   // delete to the right
   method proc del_right ()
   {
-    b = substring (b, 0, pos) + substring (b, pos + 1, n - pos - 1);
+    if pos < n do
+      b = substring (b, 0, pos) + substring (b, pos + 1, n) + ' ';
+    done
+    assert b.len.int == n;
   }
   // clear all
   method proc clear () 
   {
-    b = ' ' *n; pos = 0;
+    b = ' ' *n; 
+    pos = 0;
+    assert b.len.int == n;
   }
   method proc clear_right ()
   {
     b = substring (b, 0, pos) + ' ' * (n - pos);
+    assert b.len.int == n;
   }
   method proc clear_left ()
   {
-    b = substring (b, pos, n - pos);
+    b = substring (b, pos, n) + ' ' * pos;
+    pos = 0;
+    assert b.len.int == n;
   }
 }
 
@@ -276,13 +305,14 @@ proc line_edit (b:line_buffer_interface) (display:1->0) (ec:ischannel[event_t]) 
       | $(SDLK_END) => b.mv_end (); display();
       | $(SDLK_DELETE) => b.del_right(); display();
       | $(SDLK_BACKSPACE) => b.del_left(); display();
-      | $(SDLK_RETURN) => ;
+      | $(SDLK_RETURN) => b.mv_start(); display();
+      | $(SDLK_TAB) => b.mv_start(); display();
       | _ => ;
       endmatch;
     | $(SDL_TEXTINPUT) =>
       var text_buffer : +char = e.text.text;
       var ch = text_buffer . 0;
-      b.ins ch; 
+      b.ovr ch; 
       display();
 
     // NOTE: not an actual SDL_QUIT!

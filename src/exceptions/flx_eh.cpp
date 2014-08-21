@@ -86,7 +86,7 @@ int ::flx::rtl::flx_exception_handler (flx_exception_t const *e)
   }
   else
   {
-    fprintf(stderr,"Unknown EXCEPTION!\n");
+    fprintf(stderr,"Unknown Felix EXCEPTION!\n");
     return 5;
   }
 }

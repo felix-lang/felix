@@ -17,14 +17,15 @@ var lineskip = get_lineskip font;
 // create some colours and clear the window
 var red = RGB(255,0,0);
 var green = RGB (0,255,0);
+var blue = RGB (0,0,255);
 
-inline gen mk_field 
+proc mk_field 
 (
   window:window_t, x:int, y:int, 
   font:font_t, colour: colour_t, bgcolour:colour_t, 
-  dflt:string
+  dflt:string,
+  o:&oschannel[event_t]
 ) 
-: oschannel[event_t] =
 {
   println$ "mk_field ("+x.str +"," + y.str+")="+dflt;
   var editor = line_buffer (dflt.len.int, dflt);
@@ -34,11 +35,11 @@ inline gen mk_field
   var controller = line_edit editor display ich;
   spawn_fthread controller; 
   println$ "mkfield: controller spawned";
-  return och;
+  o <- och;
 }
 
 // Make a window
-inline gen mkwin(x:int, y:int) : window_t * varray[oschannel[event_t]] =
+proc mkwin(x:int, y:int, pw: &window_t, pf: &varray[oschannel[event_t]])
 {
   var w = window_t("My Window",x,y,400,400);
 
@@ -52,21 +53,21 @@ inline gen mkwin(x:int, y:int) : window_t * varray[oschannel[event_t]] =
   // update the window with the stuff we drew
   w.update;
 
-  var ch1 = mk_field (w, 50, 20, font, red, green, "EDITFIELD ONE");
-  var ch2 = mk_field (w, 50, 80, font, red, green, "EDITFIELD TWO");
-  var ch3 = mk_field (w, 50, 120, font,red, green, "EDITFIELD THR");
+  var ch1: oschannel[event_t]; mk_field (w, 50, 20, font, red, green, "EDITFIELD ONE", &ch1);
+  var ch2: oschannel[event_t]; mk_field (w, 50, 80, font, red, green, "EDITFIELD TWO", &ch2);
+  var ch3: oschannel[event_t]; mk_field (w, 50, 120, font, red, green, "EDITFIELD THREE", &ch3);
   w.update;
   var fields = varray[oschannel[event_t]] (ch1, ch2, ch3);
-  return w,fields;
+  pw <- w; pf <- fields;
 }
 
 // create a window manager
 var wm = window_manager();
 
 begin
-  var w1,flds1 = mkwin(150,150);
-  var w2,flds2 = mkwin(200,200);
-  var w3,flds3 = mkwin(250,250);
+  var w1: window_t; var flds1: varray[oschannel[event_t]]; mkwin(150,150, &w1, &flds1);
+  var w2: window_t; var flds2: varray[oschannel[event_t]]; mkwin(200,200, &w2, &flds2);
+  var w3: window_t; var flds3: varray[oschannel[event_t]]; mkwin(250,250, &w3, &flds3);
 
   // make an event handler for our window
   proc ehandler (fields: varray[oschannel[event_t]]) (input:ischannel[event_t])  () 
@@ -79,8 +80,13 @@ begin
       if ev.type.SDL_EventType != SDL_MOUSEMOTION do
         println$ "  WINDOW specific EVENT: " + ev.window.event.SDL_WindowEventID.str;
       done
+      if 
+        ev.type.SDL_EventType == SDL_KEYDOWN and 
+        ev.key.keysym.sym \in (SDLK_TAB, SDLK_RETURN) 
+      do
+        selected_field = (selected_field + 1) % fields.len.int;
+      done
       write$ fields.selected_field, ev;
-      println$ "Event written to field " + selected_field.str;
       run = ev.window.event.SDL_WindowEventID != SDL_WINDOWEVENT_CLOSE ;
     done
     println$ "Terminating window event processing loop";
