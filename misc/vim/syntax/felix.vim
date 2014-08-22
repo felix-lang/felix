@@ -247,6 +247,8 @@ syn keyword felixRepeat for
 syn keyword felixRepeat do done downto
 syn keyword felixRepeat until upto
 syn keyword felixRepeat while 
+syn keyword felixRepeat next 
+syn keyword felixRepeat perform
 
 " standard library types
 syn keyword felixType unit

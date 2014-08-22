@@ -154,7 +154,7 @@ Given a registry, simulate dynamic linkage.
        //println$ "Not in registry, using dlopen for " + modulename;
        modopen$ lib, modulename+#Filename::dynamic_library_extension, modulename;
      | Some ?dict =>
-       println$ "Found module "+modulename+" in registry"; 
+       //println$ "Found module "+modulename+" in registry"; 
        var tfc = dict.get_dflt (modulename+"_create_thread_frame", NULL);
        //println$ "Thread frame creator = " + str tfc;
        if tfc == NULL do

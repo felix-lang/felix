@@ -35,6 +35,7 @@ syntax loops
 
   stmt_group := "do" sstatements "done" =># "_2";
   stmt_group := "begin" sstatements "end" =># "(list (block _2))";
+  stmt_group := "perform" stmt =># "`(,_2)"; 
 
   //$ Labelled continue.
   //$ Use to continue with the next iteration of the loop with the specified label.
@@ -76,6 +77,61 @@ syntax loops
         `(( ast_label ,_sr ,(string-append "break_" _1)))
     ))
     """;
+
+  stmt := optlabel "for" "(" stmt sexpr ";" stmt ")" stmt =>#
+  """
+  (begin 
+    `(ast_seq ,_sr
+      ,(append 
+        `(,_4)
+        `((ast_label ,_sr ,(string-append "redo_" _1)))
+        `((ast_unlikely_ifnotgoto ,_sr ,_5 ,(string-append "break_" _1)))
+        `(,_9)
+        `((ast_label ,_sr ,(string-append "continue_" _1)))
+        `(,_7)
+        `((ast_goto ,_sr ,(string-append "redo_" _1)))
+        `((ast_label ,_sr ,(string-append "break_" _1)))
+      )
+    )
+  )
+  """;
+
+  stmt := optlabel "for" stmt "while" sexpr ";" "next" stmt stmt_group =>#
+  """
+  (begin 
+    `(ast_seq ,_sr
+      ,(append 
+        `(,_3)
+        `((ast_label ,_sr ,(string-append "redo_" _1)))
+        `((ast_unlikely_ifnotgoto ,_sr ,_5 ,(string-append "break_" _1)))
+        _9
+        `((ast_label ,_sr ,(string-append "continue_" _1)))
+        `(,_8)
+        `((ast_goto ,_sr ,(string-append "redo_" _1)))
+        `((ast_label ,_sr ,(string-append "break_" _1)))
+      )
+    )
+  )
+  """;
+
+
+  stmt := optlabel "for" stmt "until" sexpr ";" "next" stmt stmt_group =>#
+  """
+  (begin 
+    `(ast_seq ,_sr
+      ,(append 
+        `(,_3)
+        `((ast_label ,_sr ,(string-append "redo_" _1)))
+        `((ast_unlikely_ifgoto ,_sr ,_5 ,(string-append "break_" _1)))
+        _9
+        `((ast_label ,_sr ,(string-append "continue_" _1)))
+        `(,_8)
+        `((ast_goto ,_sr ,(string-append "redo_" _1)))
+        `((ast_label ,_sr ,(string-append "break_" _1)))
+      )
+    )
+  )
+  """;
 
   //$ Numeric upwards for loop, existing control variable.
   //$ Ranges are inclusive. This is essential in case

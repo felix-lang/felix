@@ -11,13 +11,20 @@ FlxGui::init();
 var font_name = System::argv 1;
 if font_name == "" do font_name = OSX_dflt_font(); done
 
-var font : font_t = get_font(font_name);
+var font : font_t = get_font(font_name, 12);
 var lineskip = get_lineskip font;
 
 // create some colours and clear the window
+var white = RGB (255,255,255);
+var black = RGB (0,0,0);
+var lightgrey = RGB (180,180,180);
+var darkgrey = RGB (60,60,60);
 var red = RGB(255,0,0);
 var green = RGB (0,255,0);
 var blue = RGB (0,0,255);
+var purple = RGB (255,0,255);
+var yellow = RGB (255,255,0);
+var orange = RGB (100,255,100);
 
 proc mk_field 
 (
@@ -43,7 +50,7 @@ proc mkwin(x:int, y:int, pw: &window_t, pf: &varray[oschannel[event_t]])
 {
   var w = window_t("My Window",x,y,400,400);
 
-  w.clear green;
+  w.clear lightgrey;
 
   // write some text and some lines
   w.write (100,100,font,red,"HELLO");
@@ -53,9 +60,9 @@ proc mkwin(x:int, y:int, pw: &window_t, pf: &varray[oschannel[event_t]])
   // update the window with the stuff we drew
   w.update;
 
-  var ch1: oschannel[event_t]; mk_field (w, 50, 20, font, red, green, "EDITFIELD ONE", &ch1);
-  var ch2: oschannel[event_t]; mk_field (w, 50, 80, font, red, green, "EDITFIELD TWO", &ch2);
-  var ch3: oschannel[event_t]; mk_field (w, 50, 120, font, red, green, "EDITFIELD THREE", &ch3);
+  var ch1: oschannel[event_t]; mk_field (w, 50, 20, font, black, white, "EDITFIELD ONE", &ch1);
+  var ch2: oschannel[event_t]; mk_field (w, 50, 80, font, black, white, "EDITFIELD TWO", &ch2);
+  var ch3: oschannel[event_t]; mk_field (w, 50, 120, font, black, white, "EDITFIELD THREE", &ch3);
   w.update;
   var fields = varray[oschannel[event_t]] (ch1, ch2, ch3);
   pw <- w; pf <- fields;

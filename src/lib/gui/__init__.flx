@@ -55,10 +55,10 @@ proc versions ()
 
 } 
 
-fun OSX_dflt_font() => "/Library/Fonts/Courier New Bold.ttf";  
+fun OSX_dflt_font() => "/Library/Fonts/Courier New.ttf";  
 
-gen get_font (font_file:string) = {
-  var font = TTF_OpenFont (font_file,12);
+gen get_font (font_file:string, ptsize:int) = {
+  var font = TTF_OpenFont (font_file,ptsize);
   if not (TTF_ValidFont font) do
     eprintln$ f"Unable to open TTF font %S\n" font_file;
     System::exit 1;
@@ -68,6 +68,7 @@ gen get_font (font_file:string) = {
   println$ "Opened Font " + font_file + 
     " Facename: " + TTF_FontFaceFamilyName font + 
     (if isfixed>0 then " MONOSPACED" else " VARIABLE WIDTH");
+  TTF_SetFontHinting (font,TTF_HINTING_MONO); // guess...
   return font;
 }
 
@@ -107,23 +108,40 @@ fun get_textsize (f: font_t, s:string) =
   return w,h;
 }
 
+// x,y is the origin  of the first character
+// The bounding box is 2 pixels up from the highest char
+// 2 pixies down from the lowest char
+// 2 pixies to the left of the first character's orgin
+// and 2 pix right from the origin of the last char + the notional advance
+// this ONLY works right for a monospaced font!
 fun bounding_box (f:font_t, x:int, y:int, s:string) : rect_t =
 {
-  var fh = TTF_FontHeight f;
-  var tw, th = get_textsize(f,s);
-  var h = max (fh,th)+2;
-  var w = tw + 2;
-println$ "Bounding Box (x="+x.str+",y="+y.str+",w="+w.str+",h="+h.str+")";
-  return SDL_Rect (x,y,w,h);
+  var n = s.len.int;
+  var w = 
+    #{ 
+      var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
+      C_hack::ignore$ TTF_GlyphMetrics(f,"m".char.ord.uint16,&minx, &maxx, &miny, &maxy, &advance);
+      return advance;
+    }
+  ;
+  var a = f.TTF_FontAscent;
+  var d = f.TTF_FontDescent;
+  return SDL_Rect (x - 2,y - a - 2, w * n +4, a - d + 4);
 }
 
 
+// x,y is the origin position of the the first char
+// the first pixels may actually be to the left of this!
 proc write(w:window_t) (x:int, y:int, font:font_t, c: colour_t, s:string)
 {
     var rendered = TTF_RenderText_Solid (font,s,c);
     var rect : SDL_Rect;
-    rect.x = x;
-    rect.y = y; // w,h are don't care
+
+    var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
+    C_hack::ignore$ TTF_GlyphMetrics(font,"m".char.ord.uint16,&minx, &maxx, &miny, &maxy, &advance);
+    
+    rect.x = x + minx;
+    rect.y = y - maxy;
     var nullRect = C_hack::null[SDL_Rect];
     var window_surface = SDL_GetWindowSurface w;
 
@@ -208,10 +226,14 @@ proc display_line_buffer
 println$ "Edit box = '" + s + "'";
   var text_rendered = TTF_RenderText_Solid(f,s,c);
   var window_surface: &SDL_Surface = SDL_GetWindowSurface w;
-  var viewport = bounding_box (f,x,y,s);
-  //w.fill (viewport,bg);
-  w.fill (viewport,blue); // debug hack
-  w.update;
+  var bbox = bounding_box (f,x,y,s);
+  w.fill (bbox,bg);
+  var viewport: SDL_Rect;
+  var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
+  C_hack::ignore$ TTF_GlyphMetrics(f,"m".char.ord.uint16,&minx, &maxx, &miny, &maxy, &advance);
+    
+  viewport.x = x + minx + 2; 
+  viewport.y = y - maxy - 2;
   C_hack::ignore$ SDL_BlitSurface (text_rendered, nullRect, window_surface, &viewport); 
   SDL_FreeSurface text_rendered;
   w.update;
@@ -294,7 +316,6 @@ proc line_edit (b:line_buffer_interface) (display:1->0) (ec:ischannel[event_t]) 
   var run = true;
   var e : event_t = read ec;
   while run do
-    println$ "Event read";
     match e.type.SDL_EventType with
     | $(SDL_KEYDOWN) =>
       var vkey = e.key.keysym.sym;
