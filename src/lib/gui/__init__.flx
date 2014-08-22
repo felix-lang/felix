@@ -85,6 +85,19 @@ typedef event_t = SDL_Event;
 fun RGB (r:int, g:int, b:int) => 
   SDL_Color (r.uint8, g.uint8, b.uint8, 255u8)
 ;
+
+// create some colours and clear the window
+var white = RGB (255,255,255);
+var black = RGB (0,0,0);
+var lightgrey = RGB (180,180,180);
+var darkgrey = RGB (60,60,60);
+var red = RGB(255,0,0);
+var green = RGB (0,255,0);
+var blue = RGB (0,0,255);
+var purple = RGB (255,0,255);
+var yellow = RGB (255,255,0);
+var orange = RGB (100,255,100);
+
  
 ctor window_t  (title:string, xpos:int, ypos:int, width:int,height:int) =
 {
@@ -236,6 +249,15 @@ println$ "Edit box = '" + s + "'";
   viewport.y = y - maxy - 2;
   C_hack::ignore$ SDL_BlitSurface (text_rendered, nullRect, window_surface, &viewport); 
   SDL_FreeSurface text_rendered;
+  var charwidth = 
+    #{ 
+      var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
+      C_hack::ignore$ TTF_GlyphMetrics(f,"m".char.ord.uint16,&minx, &maxx, &miny, &maxy, &advance);
+      return advance;
+    }
+  ;
+  var curpos = x + charwidth * #(b.get_pos);
+  w.draw_line(red,curpos,viewport.y - 1,curpos,viewport.y + viewport.h - 2);
   w.update;
 } 
 
