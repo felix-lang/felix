@@ -80,6 +80,7 @@ begin
         ev.key.keysym.sym \in (SDLK_TAB, SDLK_RETURN) 
       do
         var sel :SDL_Event;
+        &sel.type <- SDL_WINDOWEVENT.uint32;
         sel.window.event = SDL_WINDOWEVENT_FOCUS_LOST.uint8;
         write$ fields.selected_field,sel;
         selected_field = (selected_field + 1) % fields.len.int;

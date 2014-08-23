@@ -262,7 +262,7 @@ println$ "Bounding box for ("+x.str+","+y.str+")=("+bbox.x.str+","+bbox.y.str+",
     C_hack::ignore$ TTF_GlyphMetrics(f,"m".char.ord.uint16,&minx, &maxx, &miny, &maxy, &advance);
       
     viewport.x = bbox.x + min(minx,0) + 2; 
-    viewport.y = bbox.y + 2;
+    viewport.y = bbox.y + 2; // actually y + font.ascent + 2
 println$ "Viewpos for ("+x.str+","+y.str+")=("+viewport.x.str+","+viewport.y.str;
     C_hack::ignore$ SDL_BlitSurface (text_rendered, nullRect, window_surface, &viewport); 
     SDL_FreeSurface text_rendered;
@@ -372,8 +372,8 @@ proc line_edit
     match e.type.SDL_EventType with
     | $(SDL_WINDOWEVENT) =>
       match e.window.event.SDL_WindowEventID with
-      | $(SDL_WINDOWEVENT_FOCUS_GAINED) => d.set_focus_gained ();
-      | $(SDL_WINDOWEVENT_FOCUS_LOST) => d.set_focus_lost ();
+      | $(SDL_WINDOWEVENT_FOCUS_GAINED) => d.set_focus_gained (); d.display();
+      | $(SDL_WINDOWEVENT_FOCUS_LOST) => d.set_focus_lost (); d.display();
       | _ => ;
       endmatch;
 
