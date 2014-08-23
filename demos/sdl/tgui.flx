@@ -14,18 +14,6 @@ if font_name == "" do font_name = OSX_dflt_font(); done
 var font : font_t = get_font(font_name, 12);
 var lineskip = get_lineskip font;
 
-// create some colours and clear the window
-var white = RGB (255,255,255);
-var black = RGB (0,0,0);
-var lightgrey = RGB (180,180,180);
-var darkgrey = RGB (60,60,60);
-var red = RGB(255,0,0);
-var green = RGB (0,255,0);
-var blue = RGB (0,0,255);
-var purple = RGB (255,0,255);
-var yellow = RGB (255,255,0);
-var orange = RGB (100,255,100);
-
 proc mk_field 
 (
   window:window_t, x:int, y:int, 
@@ -36,10 +24,10 @@ proc mk_field
 {
   println$ "mk_field ("+x.str +"," + y.str+")="+dflt;
   var editor = line_buffer (dflt.len.int, dflt);
-  var display = display_line_buffer (window,font,colour,bgcolour,x,y,editor);
-  display();
+  var dc = line_buffer_display_controller (window,font,colour,bgcolour,x,y,editor);
+  dc.display();
   var ich,och = #(mk_ioschannel_pair[event_t]);
-  var controller = line_edit editor display ich;
+  var controller = line_edit editor dc ich;
   spawn_fthread controller; 
   println$ "mkfield: controller spawned";
   o <- och;
@@ -60,9 +48,9 @@ proc mkwin(x:int, y:int, pw: &window_t, pf: &varray[oschannel[event_t]])
   // update the window with the stuff we drew
   w.update;
 
-  var ch1: oschannel[event_t]; mk_field (w, 50, 20, font, black, white, "EDITFIELD ONE", &ch1);
-  var ch2: oschannel[event_t]; mk_field (w, 50, 80, font, black, white, "EDITFIELD TWO", &ch2);
-  var ch3: oschannel[event_t]; mk_field (w, 50, 120, font, black, white, "EDITFIELD THREE", &ch3);
+  var ch1: oschannel[event_t]; mk_field (w, 50, 60, font, black, white, "EDITFIELD ONE", &ch1);
+  var ch2: oschannel[event_t]; mk_field (w, 50, 120, font, black, white, "EDITFIELD TWO", &ch2);
+  var ch3: oschannel[event_t]; mk_field (w, 50, 180, font, black, white, "EDITFIELD THREE", &ch3);
   w.update;
   var fields = varray[oschannel[event_t]] (ch1, ch2, ch3);
   pw <- w; pf <- fields;
@@ -91,7 +79,12 @@ begin
         ev.type.SDL_EventType == SDL_KEYDOWN and 
         ev.key.keysym.sym \in (SDLK_TAB, SDLK_RETURN) 
       do
+        var sel :SDL_Event;
+        sel.window.event = SDL_WINDOWEVENT_FOCUS_LOST.uint8;
+        write$ fields.selected_field,sel;
         selected_field = (selected_field + 1) % fields.len.int;
+        sel.window.event = SDL_WINDOWEVENT_FOCUS_GAINED.uint8;
+        write$ fields.selected_field,sel;
       done
       write$ fields.selected_field, ev;
       run = ev.window.event.SDL_WindowEventID != SDL_WINDOWEVENT_CLOSE ;

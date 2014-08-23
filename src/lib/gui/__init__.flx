@@ -67,7 +67,12 @@ gen get_font (font_file:string, ptsize:int) = {
   var isfixed = TTF_FontFaceIsFixedWidth (font);
   println$ "Opened Font " + font_file + 
     " Facename: " + TTF_FontFaceFamilyName font + 
-    (if isfixed>0 then " MONOSPACED" else " VARIABLE WIDTH");
+    (if isfixed>0 then " MONOSPACED "+ isfixed.str else " VARIABLE WIDTH");
+  println$ "Metrics: Height "+font.TTF_FontHeight.str + 
+    ", Ascent "+ font.TTF_FontAscent.str +
+    ", Descent "+ font.TTF_FontDescent.str +
+    ", Lineskip"+ font.TTF_FontLineSkip.str
+  ;
   TTF_SetFontHinting (font,TTF_HINTING_MONO); // guess...
   return font;
 }
@@ -139,7 +144,10 @@ fun bounding_box (f:font_t, x:int, y:int, s:string) : rect_t =
   ;
   var a = f.TTF_FontAscent;
   var d = f.TTF_FontDescent;
-  return SDL_Rect (x - 2,y - a - 2, w * n +4, a - d + 4);
+  // the 5 = 4 + 1 is due to what looks like a BUG in SDL or TTF:
+  // for at least one font, height = ascent - descent + 1
+  // even though lineskip = ascent - descent
+  return SDL_Rect (x - 2,y - a - 2, w * n +4, a - d + 5);
 }
 
 
@@ -153,7 +161,7 @@ proc write(w:window_t) (x:int, y:int, font:font_t, c: colour_t, s:string)
     var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
     C_hack::ignore$ TTF_GlyphMetrics(font,"m".char.ord.uint16,&minx, &maxx, &miny, &maxy, &advance);
     
-    rect.x = x + minx;
+    rect.x = x + (min (minx,0));
     rect.y = y - maxy;
     var nullRect = C_hack::null[SDL_Rect];
     var window_surface = SDL_GetWindowSurface w;
@@ -227,39 +235,51 @@ interface line_buffer_interface
   clear_left : 1 -> 0;
 }
 
-proc display_line_buffer 
+object line_buffer_display_controller
 (
   w:window_t, f:font_t, c:colour_t, bg:colour_t,
   x: int, y:int, b:line_buffer_interface
 ) 
-()
+implements line_buffer_display_controller_interface =
 {
-  var nullRect = C_hack::null[SDL_Rect];
-  var s = #(b.get);
-println$ "Edit box = '" + s + "'";
-  var text_rendered = TTF_RenderText_Solid(f,s,c);
-  var window_surface: &SDL_Surface = SDL_GetWindowSurface w;
-  var bbox = bounding_box (f,x,y,s);
-  w.fill (bbox,bg);
-  var viewport: SDL_Rect;
-  var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
-  C_hack::ignore$ TTF_GlyphMetrics(f,"m".char.ord.uint16,&minx, &maxx, &miny, &maxy, &advance);
-    
-  viewport.x = x + minx + 2; 
-  viewport.y = y - maxy - 2;
-  C_hack::ignore$ SDL_BlitSurface (text_rendered, nullRect, window_surface, &viewport); 
-  SDL_FreeSurface text_rendered;
-  var charwidth = 
-    #{ 
-      var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
-      C_hack::ignore$ TTF_GlyphMetrics(f,"m".char.ord.uint16,&minx, &maxx, &miny, &maxy, &advance);
-      return advance;
-    }
-  ;
-  var curpos = x + charwidth * #(b.get_pos);
-  w.draw_line(red,curpos,viewport.y - 1,curpos,viewport.y + viewport.h - 2);
-  w.update;
-} 
+  var has_focus = false;
+
+  method proc set_focus_gained () => has_focus = true;
+  method proc set_focus_lost () => has_focus = false;
+
+  method proc display ()
+  {
+    var nullRect = C_hack::null[SDL_Rect];
+    var s = #(b.get);
+  println$ "Edit box = '" + s + "'";
+    var text_rendered = TTF_RenderText_Solid(f,s,c);
+    var window_surface: &SDL_Surface = SDL_GetWindowSurface w;
+    var bbox = bounding_box (f,x,y,s);
+println$ "Bounding box for ("+x.str+","+y.str+")=("+bbox.x.str+","+bbox.y.str+","+bbox.w.str+","+bbox.h.str+")";
+    w.fill (bbox,bg);
+    var viewport: SDL_Rect;
+    var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
+    C_hack::ignore$ TTF_GlyphMetrics(f,"m".char.ord.uint16,&minx, &maxx, &miny, &maxy, &advance);
+      
+    viewport.x = bbox.x + min(minx,0) + 2; 
+    viewport.y = bbox.y + 2;
+println$ "Viewpos for ("+x.str+","+y.str+")=("+viewport.x.str+","+viewport.y.str;
+    C_hack::ignore$ SDL_BlitSurface (text_rendered, nullRect, window_surface, &viewport); 
+    SDL_FreeSurface text_rendered;
+    if has_focus do
+      var charwidth = 
+        #{ 
+          var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
+          C_hack::ignore$ TTF_GlyphMetrics(f,"m".char.ord.uint16,&minx, &maxx, &miny, &maxy, &advance);
+          return advance;
+        }
+      ;
+      var curpos = x + charwidth * #(b.get_pos);
+      w.draw_line(red,curpos,viewport.y - 1,curpos,viewport.y + viewport.h - 2);
+    done
+    w.update;
+  } 
+}
 
 object line_buffer (n:int, var b:string) =
 {
@@ -331,32 +351,50 @@ object line_buffer (n:int, var b:string) =
   }
 }
 
-proc line_edit (b:line_buffer_interface) (display:1->0) (ec:ischannel[event_t]) ()
+interface line_buffer_display_controller_interface
+{
+  display : 1 -> 0;
+  set_focus_gained: 1 -> 0; // 
+  set_focus_lost: 1 -> 0;
+}
+
+proc line_edit 
+  (b:line_buffer_interface) 
+  (d:line_buffer_display_controller_interface) 
+  (ec:ischannel[event_t]) 
+  ()
 {
   println$ "Line buffer running";
-  display();
+  d.display();
   var run = true;
   var e : event_t = read ec;
   while run do
     match e.type.SDL_EventType with
+    | $(SDL_WINDOWEVENT) =>
+      match e.window.event.SDL_WindowEventID with
+      | $(SDL_WINDOWEVENT_FOCUS_GAINED) => d.set_focus_gained ();
+      | $(SDL_WINDOWEVENT_FOCUS_LOST) => d.set_focus_lost ();
+      | _ => ;
+      endmatch;
+
     | $(SDL_KEYDOWN) =>
       var vkey = e.key.keysym.sym;
       match vkey with
-      | $(SDLK_LEFT) => b.mv_left (); display();
-      | $(SDLK_RIGHT) => b.mv_right (); display();
-      | $(SDLK_HOME) => b.mv_start (); display();
-      | $(SDLK_END) => b.mv_end (); display();
-      | $(SDLK_DELETE) => b.del_right(); display();
-      | $(SDLK_BACKSPACE) => b.del_left(); display();
-      | $(SDLK_RETURN) => b.mv_start(); display();
-      | $(SDLK_TAB) => b.mv_start(); display();
+      | $(SDLK_LEFT) => b.mv_left (); d.display();
+      | $(SDLK_RIGHT) => b.mv_right (); d.display();
+      | $(SDLK_HOME) => b.mv_start (); d.display();
+      | $(SDLK_END) => b.mv_end (); d.display();
+      | $(SDLK_DELETE) => b.del_right(); d.display();
+      | $(SDLK_BACKSPACE) => b.del_left(); d.display();
+      | $(SDLK_RETURN) => b.mv_start(); d.display();
+      | $(SDLK_TAB) => b.mv_start(); d.display();
       | _ => ;
       endmatch;
     | $(SDL_TEXTINPUT) =>
       var text_buffer : +char = e.text.text;
       var ch = text_buffer . 0;
       b.ovr ch; 
-      display();
+      d.display();
 
     // NOTE: not an actual SDL_QUIT!
     // We just need something to terminate.

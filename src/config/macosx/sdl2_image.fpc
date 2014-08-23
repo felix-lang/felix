@@ -4,6 +4,4 @@ cflags: -I/usr/local/include/SDL2
 includes: '"SDL_image.h"'
 provides_dlib: -L/usr/local/lib -lSDL2_image
 provides_slib: -L/usr/local/lib -lSDL2_image
-requires_dlibs: -L/opt/local/lib -ljpeg -ltiff -L/usr/local/lib -lpng
-requires_slibs: -L/opt/local/lib -ljpeg -ltiff -L/usr/local/lib -lpng
 
