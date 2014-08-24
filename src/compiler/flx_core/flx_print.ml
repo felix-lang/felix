@@ -1439,6 +1439,10 @@ and string_of_statement level s =
     spaces level ^
     "if("^string_of_expr e^")return;"
 
+  | STMT_invariant (_, e) ->
+    spaces level ^
+      "invariant("^string_of_expr e^");"
+
   | STMT_ifdo (_,e,ss1,ss2) ->
     spaces level ^
     "if("^string_of_expr e^")do\n" ^
