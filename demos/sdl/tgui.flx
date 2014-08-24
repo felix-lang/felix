@@ -56,6 +56,24 @@ proc mkwin(x:int, y:int, pw: &window_t, pf: &varray[oschannel[event_t]])
   pw <- w; pf <- fields;
 }
 
+var bsup = (label_colour=red, bg_colour=blue,top_colour=lightgrey,
+  left_colour=lightgrey, bottom_colour=darkgrey,right_colour=darkgrey);
+
+var bsdown = (label_colour=red, bg_colour=blue,top_colour=darkgrey,
+  left_colour=darkgrey, bottom_colour=lightgrey,right_colour=lightgrey);
+
+var bsdis = (label_colour=red, bg_colour=black,top_colour=lightgrey,
+  left_colour=lightgrey, bottom_colour=darkgrey,right_colour=darkgrey);
+
+
+proc mkbutton (w:window_t, x:int, y:int, label:string, font:font_t)
+{
+  var bm = ButtonModel (Up);
+  bar bd = ButtonDisplay (bm) (w, blue, font, bsup, bsdown, bsdis, 
+    x,y, x+20,y+100,x+5,y+10);
+
+}
+
 // create a window manager
 var wm = window_manager();
 
