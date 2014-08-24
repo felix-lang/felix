@@ -702,6 +702,8 @@ and xstatement_t sr x : statement_t =
         xid id)
 
   | Lst [Id "ast_ifreturn"; sr; e] -> let sr = xsr sr in STMT_ifreturn (sr,ex sr e)
+  | Lst [Id "ast_invariant"; sr; e] -> let sr = xsr sr in STMT_invariant (sr,ex sr e)
+
   | Lst [Id "ast_ifdo"; sr; e; sts1; sts2] -> let sr = xsr sr in STMT_ifdo (sr,ex sr e, xsts sr sts1, xsts sr sts2)
   | Lst [Id "ast_call"; sr; f; a] -> let sr = xsr sr in STMT_call (sr,ex sr f,ex sr a)
   | Lst [Id "ast_assign"; sr; id; tlv; a] -> let sr = xsr sr in 

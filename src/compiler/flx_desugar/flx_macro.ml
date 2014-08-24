@@ -973,6 +973,8 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
       ctack (STMT_label (sr,lab))
     end
 
+  | STMT_invariant (sr, e) -> ctack (STMT_invariant (sr, me e))
+
   | STMT_ifdo (sr, e, sts1, sts2) ->
     let e = me e in
     let e = cf e in

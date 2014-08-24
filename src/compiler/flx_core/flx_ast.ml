@@ -487,6 +487,7 @@ and statement_t =
   | STMT_goto of Flx_srcref.t * Flx_id.t
   | STMT_ifgoto of Flx_srcref.t * expr_t *Flx_id.t
   | STMT_ifreturn of Flx_srcref.t * expr_t
+  | STMT_invariant of Flx_srcref.t * expr_t
   | STMT_ifdo of Flx_srcref.t * expr_t * statement_t list * statement_t list
   | STMT_call of Flx_srcref.t * expr_t * expr_t
   | STMT_assign of Flx_srcref.t * Flx_id.t * tlvalue_t * expr_t
@@ -763,6 +764,7 @@ let src_of_stmt (e : statement_t) = match e with
   | STMT_trace (s,_,_)
   | STMT_ifgoto (s,_,_)
   | STMT_ifreturn (s,_)
+  | STMT_invariant (s,_)
   | STMT_ifdo (s,_,_,_)
   (*
   | STMT_whilst (s,_,_)

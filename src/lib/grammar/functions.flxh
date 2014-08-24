@@ -110,6 +110,9 @@ syntax functions {
   //$ Object factory return type.
   object_return_type := stypeexpr =># "`(,_1 none)";
 
+  //$ Object invariant
+  sfunction := "invariant" sexpr ";" =># "`(ast_invariant, _sr, _2)";
+
   //$ Function parameter with type and default value.
   sparameter := sparam_qual sname ":" x[sarrow_pri] "=" x[sor_condition_pri] =># "`(,_1 ,_2 ,_4 (some ,_6))";
 
