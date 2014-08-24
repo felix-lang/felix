@@ -535,7 +535,7 @@ let rec rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t lis
   | STMT_scheme_string _
     -> assert false
 
-  | STMT_invariant _ -> failwith "'invariant' syntax not implemented yet"
+  | STMT_invariant (sr, _) -> clierr sr "'invariant' not valid outside an object definition"
 
 (** Desugar all the statements in a compilation unit. *)
 let rec desugar_stmts state curpath stmts =

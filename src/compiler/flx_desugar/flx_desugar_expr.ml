@@ -135,6 +135,7 @@ let mkcurry seq sr (name:string) (vs:vs_list_t) (args:params_t list) return_type
         print_endline "Found an object, scanning for methods and bogus returns";
         *)
         let methods = ref [] in
+        let invariants = ref [] in
         List.iter (fun st ->
           (*
           print_endline ("Statement " ^ Flx_print.string_of_statement 2 st);
@@ -142,8 +143,8 @@ let mkcurry seq sr (name:string) (vs:vs_list_t) (args:params_t list) return_type
           match st with
           | STMT_fun_return _ -> clierr sr "FOUND function RETURN in Object";
           | STMT_proc_return _ -> clierr sr "FOUND procedure RETURN in Object";
-          | STMT_curry (_,name, vs, pss, (res,traint) , kind, adjectives, ss) when kind = `Method || kind = `GeneratorMethod->
-               methods := name :: !methods;
+          | STMT_curry (_,name, vs, pss, (res,traint) , kind, adjectives, ss) when kind = `Method || kind = `GeneratorMethod -> methods := name :: !methods
+          | STMT_invariant (_, e)  as invariant -> invariants := invariant :: !invariants
           | _ -> ()
         )
         body
@@ -155,7 +156,7 @@ let mkcurry seq sr (name:string) (vs:vs_list_t) (args:params_t list) return_type
         STMT_function (sr, synthname n, vs, h, (return_type,postcondition), props, object_body)
       end else 
         let body = 
-          match return_type with 
+          match return_type with
           | TYP_void _  ->
 (*
             print_endline ("(args) Name = " ^ name ^ "synthname n = " ^ synthname n);
