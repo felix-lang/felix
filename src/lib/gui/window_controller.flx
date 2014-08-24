@@ -1,0 +1,21 @@
+
+class FlxGuiWindowController
+{
+
+object window_controller 
+(
+  w:window_t, 
+  p:ischannel[event_t] -> 1->0
+) 
+  implements window_controller_interface = 
+{
+  var imsgs,omsgs = #mk_ioschannel_pair[event_t]; 
+  
+  method fun get_window_id () => SDL_GetWindowID w;
+  method proc destroy_window () => SDL_DestroyWindow w;
+  method fun get_oschannel () => omsgs;
+  spawn_fthread (p imsgs);
+}
+ 
+}
+

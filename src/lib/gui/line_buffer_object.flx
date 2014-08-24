@@ -1,0 +1,75 @@
+include "gui/line_buffer_interface";
+
+class FlxGuiLineBuffer
+{
+object line_buffer (n:int, var b:string) implements line_buffer_interface =
+{
+  b = substring (b+ ' ' *n,0,n); //clip and pad to n chars
+  assert b.len.int == n;
+
+  // caret position: can range between 0 and n inclusive!
+  // its the position *between* two characters!!
+  var pos = 0; 
+  method fun get() => b;
+  method fun get_pos () => pos;
+
+  // movement
+  method proc mv_left () => pos = max (0,pos - 1);
+  method proc mv_right () => pos = min (n, pos + 1);
+  method proc mv_start () => pos = 0;
+  method proc mv_end () => pos = n;
+
+  // insert and move right
+  method proc ins (ch:char) 
+  {
+    b = substring (b, 0, pos) + ch + substring (b, pos, n);
+    pos = min (pos + 1, n);
+    assert b.len.int == n;
+  }
+  // overwrite and move right
+  method proc ovr (ch:char) 
+  {
+    if pos < n do
+      b = substring (b, 0, pos) + ch + substring (b, pos+1, n);
+      pos = min (pos + 1, n);
+    done
+    assert b.len.int == n;
+  }
+  // delete to the left
+  method proc del_left ()
+  {
+    if pos > 0 do
+      b = substring (b, 0, pos - 1) + substring (b, pos, n) + ' ';
+      pos = max (0, pos - 1);
+    done
+    assert b.len.int == n;
+  }
+  // delete to the right
+  method proc del_right ()
+  {
+    if pos < n do
+      b = substring (b, 0, pos) + substring (b, pos + 1, n) + ' ';
+    done
+    assert b.len.int == n;
+  }
+  // clear all
+  method proc clear () 
+  {
+    b = ' ' *n; 
+    pos = 0;
+    assert b.len.int == n;
+  }
+  method proc clear_right ()
+  {
+    b = substring (b, 0, pos) + ' ' * (n - pos);
+    assert b.len.int == n;
+  }
+  method proc clear_left ()
+  {
+    b = substring (b, pos, n) + ' ' * pos;
+    pos = 0;
+    assert b.len.int == n;
+  }
+}
+
+}

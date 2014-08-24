@@ -1,0 +1,15 @@
+class FlxGuiWindowControllerInterface
+{
+
+// ------------------------------------------------------------------
+// Window controller is responsible for all the work
+// being done on a window. It requires support for
+// dispatching events on its event channel.
+interface window_controller_interface {
+  get_window_id : 1 -> uint32;
+  get_oschannel : 1 -> oschannel[event_t];
+  destroy_window : 1 -> 0;
+}
+
+}
+

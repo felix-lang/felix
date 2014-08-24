@@ -1,0 +1,14 @@
+class FlxGuiTypes
+{
+  typedef window_t = SDL_Window;
+  typedef font_t = TTF_Font;
+  typedef drawing_surface_t = SDL_Surface;
+  typedef colour_t = SDL_Color;
+  typedef color_t = colour_t; // dang yanks ..
+  typedef point_t = SDL_Point;
+  typedef rect_t = SDL_Rect;
+  typedef surface_t = SDL_Surface;
+  typedef event_t = SDL_Event;
+}
+
+

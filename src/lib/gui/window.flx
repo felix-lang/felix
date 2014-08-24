@@ -1,0 +1,77 @@
+class FlxGuiWindow
+{
+ctor window_t  (title:string, xpos:int, ypos:int, width:int,height:int) =
+{
+  var window = SDL_CreateWindow(
+    title,
+    xpos,ypos,
+    width, height,
+    SDL_WINDOW_SHOWN \| SDL_WINDOW_RESIZABLE
+  );
+  return window;
+}
+
+proc destroy (w:window_t) { SDL_DestroyWindow w; }
+// x,y is the origin position of the the first char
+// the first pixels may actually be to the left of this!
+proc write(w:window_t) (x:int, y:int, font:font_t, c: colour_t, s:string)
+{
+    var rendered = TTF_RenderText_Solid (font,s,c);
+    var rect : SDL_Rect;
+
+    var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
+    C_hack::ignore$ TTF_GlyphMetrics(font,"m".char.ord.uint16,&minx, &maxx, &miny, &maxy, &advance);
+    
+    rect.x = x + (min (minx,0));
+    rect.y = y - maxy;
+    var nullRect = C_hack::null[SDL_Rect];
+    var window_surface = SDL_GetWindowSurface w;
+
+    var result = SDL_BlitSurface (rendered, nullRect, window_surface, &rect); 
+    if result != 0 do
+      eprintln$ "Unable to blit text to window surface";
+      System::exit 1;
+    done
+    SDL_FreeSurface rendered;
+}
+
+// clear whole window
+proc clear(w:window_t) (c: colour_t)
+{
+  var surf = SDL_GetWindowSurface w;
+  var pixelformat : &SDL_PixelFormat  = surf*.format;
+  var bgpixels = SDL_MapRGB(pixelformat,c.r,c.g,c.b);
+  SDL_ClearClipRect (surf);
+  C_hack::ignore$ SDL_FillSurface (surf, bgpixels);
+}
+
+proc fill (w:window_t) (var r:rect_t, c:colour_t)
+{
+  var surf = SDL_GetWindowSurface w;
+  var pixelformat : &SDL_PixelFormat  = surf*.format;
+  var bgpixels = SDL_MapRGB(pixelformat,c.r,c.g,c.b);
+  C_hack::ignore$ SDL_SetClipRect (surf, &r);
+  C_hack::ignore$ SDL_FillSurface (surf, bgpixels);
+  SDL_ClearClipRect (surf);
+}
+
+proc draw_line (w:window_t)  (c:color_t, x0:int, y0:int, x1:int, y1:int)
+{
+   var s: &SDL_Surface = SDL_GetWindowSurface w;
+   var r: SDL_Renderer = SDL_CreateSoftwareRenderer s;
+   C_hack::ignore$ SDL_SetRenderDrawColor (r, c.r, c.g, c.b, c.a);
+   C_hack::ignore$ SDL_RenderDrawLine (r, x0, y0, x1, y1);
+   SDL_DestroyRenderer r;
+}
+
+proc update(w:window_t)
+{
+  var result = SDL_UpdateWindowSurface w;
+  if result != 0 do
+    eprintln$ "Unable to update window";
+    System::exit 1;
+  done
+}
+
+}
+

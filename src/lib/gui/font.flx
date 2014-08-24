@@ -1,0 +1,60 @@
+class FlxGuiFont
+{
+fun OSX_dflt_font() => "/Library/Fonts/Courier New.ttf";  
+
+gen get_font (font_file:string, ptsize:int) = {
+  var font = TTF_OpenFont (font_file,ptsize);
+  if not (TTF_ValidFont font) do
+    eprintln$ f"Unable to open TTF font %S\n" font_file;
+    System::exit 1;
+  done
+  TTF_SetFontKerning (font,0);
+  var isfixed = TTF_FontFaceIsFixedWidth (font);
+  println$ "Opened Font " + font_file + 
+    " Facename: " + TTF_FontFaceFamilyName font + 
+    (if isfixed>0 then " MONOSPACED "+ isfixed.str else " VARIABLE WIDTH");
+  println$ "Metrics: Height "+font.TTF_FontHeight.str + 
+    ", Ascent "+ font.TTF_FontAscent.str +
+    ", Descent "+ font.TTF_FontDescent.str +
+    ", Lineskip"+ font.TTF_FontLineSkip.str
+  ;
+  TTF_SetFontHinting (font,TTF_HINTING_MONO); // guess...
+  return font;
+}
+
+fun get_lineskip (f: font_t) => TTF_FontLineSkip(font) + 1;
+
+fun get_textsize (f: font_t, s:string) = 
+{
+  var w: int; var h: int;
+  C_hack::ignore$ TTF_SizeText (f,s,&w, &h);
+  return w,h;
+}
+
+// x,y is the origin  of the first character
+// The bounding box is 2 pixels up from the highest char
+// 2 pixies down from the lowest char
+// 2 pixies to the left of the first character's orgin
+// and 2 pix right from the origin of the last char + the notional advance
+// this ONLY works right for a monospaced font!
+fun bounding_box (f:font_t, x:int, y:int, s:string) : rect_t =
+{
+  var n = s.len.int;
+  var w = 
+    #{ 
+      var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
+      C_hack::ignore$ TTF_GlyphMetrics(f,"m".char.ord.uint16,&minx, &maxx, &miny, &maxy, &advance);
+      return advance;
+    }
+  ;
+  var a = f.TTF_FontAscent;
+  var d = f.TTF_FontDescent;
+  // the 5 = 4 + 1 is due to what looks like a BUG in SDL or TTF:
+  // for at least one font, height = ascent - descent + 1
+  // even though lineskip = ascent - descent
+  return SDL_Rect (x - 2,y - a - 2, w * n +4, a - d + 5);
+}
+
+
+}
+

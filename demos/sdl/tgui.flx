@@ -72,9 +72,9 @@ begin
     var run = true;
     while run do
       var ev: event_t = read input;
-      if ev.type.SDL_EventType != SDL_MOUSEMOTION do
-        println$ "  WINDOW specific EVENT: " + ev.window.event.SDL_WindowEventID.str;
-      done
+      //if ev.type.SDL_EventType != SDL_MOUSEMOTION do
+      //  println$ "  WINDOW specific EVENT: " + ev.window.event.SDL_WindowEventID.str;
+      //done
       if 
         ev.type.SDL_EventType == SDL_KEYDOWN and 
         ev.key.keysym.sym \in (SDLK_TAB, SDLK_RETURN) 
@@ -116,11 +116,11 @@ begin
   // while the event isn't a quit event ..
   while e.type.SDL_EventType != SDL_QUIT do
     // print a diagnostic
-    if e.type.SDL_EventType == SDL_WINDOWEVENT do
-      println$ e.type.SDL_EventType.str + ": " + e.window.event.SDL_WindowEventID.str + " wid=" + e.window.windowID.str;
-    elif e.type.SDL_EventType != SDL_MOUSEMOTION do
-      println$ e.type.SDL_EventType.str;
-    done
+    //if e.type.SDL_EventType == SDL_WINDOWEVENT do
+    //  println$ e.type.SDL_EventType.str + ": " + e.window.event.SDL_WindowEventID.str + " wid=" + e.window.windowID.str;
+    //elif e.type.SDL_EventType != SDL_MOUSEMOTION do
+    //  println$ e.type.SDL_EventType.str;
+    //done
     // dispatch the event to the window it is associated with
     wm.dispatch_window_event e;
     // get another event
