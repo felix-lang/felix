@@ -4,6 +4,7 @@ class FlxGuiButton
     | Up       // ready
     | Down     // being clicked
     | Disabled // inactive
+    | Mouseover // read and mouse is over
   ;
 
   interface button_model_t 
@@ -30,7 +31,7 @@ class FlxGuiButton
   );
 
   interface button_display_t {
-    draw: 1 -> 0;
+    display: 1 -> 0;
     get_client_rect: 1 -> rect_t;
     get_label : 1 -> string;
   }
@@ -43,20 +44,27 @@ class FlxGuiButton
     up_colour: button_colour_scheme_t,
     down_colour: button_colour_scheme_t,
     disabled_colour: button_colour_scheme_t,
+    mouseover_colour: button_colour_scheme_t,
     left_x:int, top_y:int, right_x:int, bottom_y:int,
     origin_x:int, origin_y:int
    ) 
    implements button_display_t =
    {
-     method fun get_client_rect () => SDL_Rect (left_x, top_y, right_x - left_x + 1, bottom_y - top_y + 1);
+     method fun get_client_rect () => 
+       SDL_Rect 
+       (
+         left_x, top_y, right_x - left_x + 1, bottom_y - top_y + 1
+       )
+     ;
      method fun get_label () => label;
-     method proc draw()
+     method proc display()
      {
       var state = b.get_state ();
       var scheme = match state with
         | Up => up_colour
         | Down => down_colour
         | Disabled => disabled_colour
+        | Mouseover => mouseover_colour
         endmatch
       ;
       // top
@@ -74,7 +82,8 @@ class FlxGuiButton
 
       w.fill(SDL_Rect (left_x, top_y, right_x - left_x + 1, bottom_y - top_y + 1), scheme.bg_colour);
       w.write (origin_x, origin_y, font, scheme.label_colour, label);
+      w.update();
     } // draw
-    draw();
+    display();
   } //button
 } // class

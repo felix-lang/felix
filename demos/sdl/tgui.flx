@@ -43,42 +43,9 @@ var bsdown = (label_colour=red, bg_colour=blue,top_colour=darkgrey,
 var bsdis = (label_colour=red, bg_colour=black,top_colour=lightgrey,
   left_colour=lightgrey, bottom_colour=darkgrey,right_colour=darkgrey);
 
-proc button_controller 
-(
-  bm: button_model_t, 
-  bd: button_display_t, 
-  ec:ischannel[event_t]
-) () =
-{
-  bd.draw();
-  var run = true;
-  var e = read ec;
-  while run do
-    match e.type.SDL_EventType with
-    | $(SDL_MOUSEMOTION) =>
-      var x,y = e.motion.x,e.motion.y; //int32
-      if SDL_Point (x.int,y.int) \in bd.get_client_rect () do
-        println$ "Motion in client rect of button " + bd.get_label();
-      done
- 
-    | $(SDL_MOUSEBUTTONDOWN) => 
-      x,y = e.button.x,e.button.y; //int32
-      if SDL_Point (x.int,y.int) \in bd.get_client_rect () do
-        println$ "Button down in client rect of button " + bd.get_label();
-      done
- 
-    | $(SDL_MOUSEBUTTONUP) => 
-      x,y = e.button.x,e.button.y; //int32
-      if SDL_Point (x.int,y.int) \in bd.get_client_rect () do
-        println$ "Button up in client rect of button " + bd.get_label();
-      done
- 
-    | _ => ; 
-    endmatch;
-    e = read ec;
-  done
+var bsmover = (label_colour=red, bg_colour=yellow,top_colour=blue,
+  left_colour=blue, bottom_colour=red,right_colour=red);
 
-}
 
 proc mkbutton (w:window_t, x:int, y:int, label:string, font:font_t, 
   pbd: &button_display_t,
@@ -86,7 +53,7 @@ proc mkbutton (w:window_t, x:int, y:int, label:string, font:font_t,
 )
 {
   var bm = ButtonModel (Up);
-  var bd = ButtonDisplay (bm) (w, font, label, bsup, bsdown, bsdis, 
+  var bd = ButtonDisplay (bm) (w, font, label, bsup, bsdown, bsdis, bsmover,
     x,y, x+100,y+20,x+5,y+15);
   var ich,och = mk_ioschannel_pair[event_t]();
   spawn_fthread$ button_controller (bm, bd, ich); 
