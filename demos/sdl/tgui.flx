@@ -33,6 +33,26 @@ proc mk_field
   o <- och;
 }
 
+
+var bsup = (label_colour=red, bg_colour=white,top_colour=blue,
+  left_colour=blue, bottom_colour=red,right_colour=red);
+
+var bsdown = (label_colour=red, bg_colour=blue,top_colour=darkgrey,
+  left_colour=darkgrey, bottom_colour=lightgrey,right_colour=lightgrey);
+
+var bsdis = (label_colour=red, bg_colour=black,top_colour=lightgrey,
+  left_colour=lightgrey, bottom_colour=darkgrey,right_colour=darkgrey);
+
+
+proc mkbutton (w:window_t, x:int, y:int, label:string, font:font_t, pbd: &button_display_t)
+{
+  var bm = ButtonModel (Up);
+  var bd = ButtonDisplay (bm) (w, font, label, bsup, bsdown, bsdis, 
+    x,y, x+100,y+20,x+5,y+15);
+  pbd <- bd ;
+}
+
+
 // Make a window
 proc mkwin(x:int, y:int, pw: &window_t, pf: &varray[oschannel[event_t]])
 {
@@ -51,11 +71,11 @@ proc mkwin(x:int, y:int, pw: &window_t, pf: &varray[oschannel[event_t]])
   var ch1: oschannel[event_t]; mk_field (w, 50, 60, font, black, white, "EDITFIELD ONE", &ch1);
   var ch2: oschannel[event_t]; mk_field (w, 50, 120, font, black, white, "EDITFIELD TWO", &ch2);
   var ch3: oschannel[event_t]; mk_field (w, 50, 180, font, black, white, "EDITFIELD THREE", &ch3);
+  var b1 : button_display_t; mkbutton (w,50,250,"hello",font,&b1); 
   w.update;
   var fields = varray[oschannel[event_t]] (ch1, ch2, ch3);
   pw <- w; pf <- fields;
 }
-
 // create a window manager
 var wm = window_manager();
 
