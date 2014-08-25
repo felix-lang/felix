@@ -12,7 +12,7 @@ class FlxGuiButton
     set_state: button_state_t -> 0;
   }
 
-  object ButtonModel (init_state:button_state) =
+  object ButtonModel (init_state:button_state_t) =
   {
     var state = init_state;
     method fun get_state() => state;
@@ -29,6 +29,9 @@ class FlxGuiButton
     right_colour: colour_t
   );
 
+  interface button_display_t {
+    draw: 1 -> 0;
+  }
   object ButtonDisplay (b:button_model_t) 
   (
     w:window_t, // change to surface later
@@ -38,32 +41,35 @@ class FlxGuiButton
     down_colour: button_colour_scheme_t,
     disabled_colour: button_colour_scheme_t,
     left_x:int, top_y:int, right_x:int, bottom_y:int,
-    origin_x:int, origin_y:int,
-   ) =
+    origin_x:int, origin_y:int
+   ) 
+   implements button_display_t =
    {
      method proc draw()
      {
-       var state = b.get_state ();
-       var scheme = match state with
-         | Up => up_colour
-         | Down => down_colour
-         | Disabled => disabled_colour
-       ;
-       // top
-       w.draw_line (scheme.top_colour, left_x - 2,top_y - 2,right_x - 2, top_y + 2); 
-       w.draw_line (scheme.top_colour, left_x - 1,top_y - 1,right_x - 1, top_y + 1); 
-       // left
-       w.draw_line (scheme.left_colour, left_x - 2,top_y - 2,left_x - 2, bottom_y + 2); 
-       w.draw_line (scheme.left_colour, left_x - 1,top_y - 1,left_x - 1, bottom_y + 1); 
-       // right
-       w.draw_line (scheme.right_colour, right_x - 2,top_y - 2,right_x - 2, bottom_y + 2); 
-       w.draw_line (scheme.right_colour, right_x - 1,top_y - 1,right_x - 1, bottom_y + 1); 
-       // bottom
-       w.draw_line (scheme.bottom_colour, left_x - 2,bottom_y - 2,right_x - 2, bottom_y + 2); 
-       w.draw_line (scheme.bottom_colour, left_x - 1,bottom_y - 1,right_x - 1, bottom_y + 1); 
+      var state = b.get_state ();
+      var scheme = match state with
+        | Up => up_colour
+        | Down => down_colour
+        | Disabled => disabled_colour
+        endmatch
+      ;
+      // top
+      w.draw_line (scheme.top_colour, left_x - 2,top_y - 2,right_x + 2, top_y - 2); 
+      w.draw_line (scheme.top_colour, left_x - 1,top_y - 1,right_x + 1, top_y - 1); 
+      // left
+      w.draw_line (scheme.left_colour, left_x - 2,top_y - 2,left_x - 2, bottom_y + 2); 
+      w.draw_line (scheme.left_colour, left_x - 1,top_y - 1,left_x - 1, bottom_y + 1); 
+      // right
+      w.draw_line (scheme.right_colour, right_x + 2,top_y - 2,right_x + 2, bottom_y + 2); 
+      w.draw_line (scheme.right_colour, right_x + 1,top_y - 1,right_x + 1, bottom_y + 1); 
+      // bottom
+      w.draw_line (scheme.bottom_colour, left_x - 1,bottom_y + 1,right_x + 1, bottom_y + 1); 
+      w.draw_line (scheme.bottom_colour, left_x - 2,bottom_y + 2,right_x + 2, bottom_y + 2); 
 
-       w.fill(rect_t (left_x, top_y, right_x - left_x + 1, bottom_y - top_y + 1), scheme.bg_colour);
-       w.write (origin.x, origin.y, font, scheme.label_colour, label);
-     }
-   }
-}
+      w.fill(SDL_Rect (left_x, top_y, right_x - left_x + 1, bottom_y - top_y + 1), scheme.bg_colour);
+      w.write (origin_x, origin_y, font, scheme.label_colour, label);
+    } // draw
+    draw();
+  } //button
+} // class

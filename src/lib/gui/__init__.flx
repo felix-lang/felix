@@ -6,6 +6,8 @@ include "gui/types";
 include "gui/font";
 include "gui/color";
 include "gui/window";
+include "gui/button";
+
 include "gui/line_buffer_interface";
 include "gui/line_buffer_object";
 include "gui/line_buffer_display_controller_interface";
@@ -27,6 +29,7 @@ class FlxGui
  inherit FlxGuiWindowControllerInterface;
  inherit FlxGuiWindowManager;
 
+ inherit FlxGuiButton;
 
  // text field editor
  inherit FlxGuiLineBufferInterface;
