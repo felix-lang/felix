@@ -43,18 +43,65 @@ var bsdown = (label_colour=red, bg_colour=blue,top_colour=darkgrey,
 var bsdis = (label_colour=red, bg_colour=black,top_colour=lightgrey,
   left_colour=lightgrey, bottom_colour=darkgrey,right_colour=darkgrey);
 
+proc button_controller 
+(
+  bm: button_model_t, 
+  bd: button_display_t, 
+  ec:ischannel[event_t]
+) () =
+{
+  bd.draw();
+  var run = true;
+  var e = read ec;
+  while run do
+    match e.type.SDL_EventType with
+    | $(SDL_MOUSEMOTION) =>
+      var x,y = e.motion.x,e.motion.y; //int32
+      if SDL_Point (x.int,y.int) \in bd.get_client_rect () do
+        println$ "Motion in client rect of button " + bd.get_label();
+      done
+ 
+    | $(SDL_MOUSEBUTTONDOWN) => 
+      x,y = e.button.x,e.button.y; //int32
+      if SDL_Point (x.int,y.int) \in bd.get_client_rect () do
+        println$ "Button down in client rect of button " + bd.get_label();
+      done
+ 
+    | $(SDL_MOUSEBUTTONUP) => 
+      x,y = e.button.x,e.button.y; //int32
+      if SDL_Point (x.int,y.int) \in bd.get_client_rect () do
+        println$ "Button up in client rect of button " + bd.get_label();
+      done
+ 
+    | _ => ; 
+    endmatch;
+    e = read ec;
+  done
 
-proc mkbutton (w:window_t, x:int, y:int, label:string, font:font_t, pbd: &button_display_t)
+}
+
+proc mkbutton (w:window_t, x:int, y:int, label:string, font:font_t, 
+  pbd: &button_display_t,
+  pos: &oschannel[event_t]
+)
 {
   var bm = ButtonModel (Up);
   var bd = ButtonDisplay (bm) (w, font, label, bsup, bsdown, bsdis, 
     x,y, x+100,y+20,x+5,y+15);
+  var ich,och = mk_ioschannel_pair[event_t]();
+  spawn_fthread$ button_controller (bm, bd, ich); 
   pbd <- bd ;
+  pos <- och;
 }
 
 
 // Make a window
-proc mkwin(x:int, y:int, pw: &window_t, pf: &varray[oschannel[event_t]])
+proc mkwin
+(
+  x:int, y:int, pw: &window_t, 
+  pf: &varray[oschannel[event_t]],
+  pbuttons: &varray[oschannel[event_t]]
+)
 {
   var w = window_t("My Window",x,y,400,400);
 
@@ -71,21 +118,40 @@ proc mkwin(x:int, y:int, pw: &window_t, pf: &varray[oschannel[event_t]])
   var ch1: oschannel[event_t]; mk_field (w, 50, 60, font, black, white, "EDITFIELD ONE", &ch1);
   var ch2: oschannel[event_t]; mk_field (w, 50, 120, font, black, white, "EDITFIELD TWO", &ch2);
   var ch3: oschannel[event_t]; mk_field (w, 50, 180, font, black, white, "EDITFIELD THREE", &ch3);
-  var b1 : button_display_t; mkbutton (w,50,250,"hello",font,&b1); 
+  var b1 : button_display_t; var bch1: oschannel[event_t]; mkbutton (w,50,250,"hello",font,&b1, &bch1); 
+  var b2 : button_display_t; var bch2: oschannel[event_t]; mkbutton (w,50,300,"hello2",font,&b2, &bch2); 
   w.update;
   var fields = varray[oschannel[event_t]] (ch1, ch2, ch3);
   pw <- w; pf <- fields;
+  var buttons = varray[oschannel[event_t]] (bch1, bch2);
+  pbuttons <- buttons;
 }
 // create a window manager
 var wm = window_manager();
 
 begin
-  var w1: window_t; var flds1: varray[oschannel[event_t]]; mkwin(150,150, &w1, &flds1);
-  var w2: window_t; var flds2: varray[oschannel[event_t]]; mkwin(200,200, &w2, &flds2);
-  var w3: window_t; var flds3: varray[oschannel[event_t]]; mkwin(250,250, &w3, &flds3);
+  var w1: window_t; 
+  var flds1: varray[oschannel[event_t]]; 
+  var buts1: varray[oschannel[event_t]]; 
+  mkwin(150,150, &w1, &flds1, &buts1);
+  
+  var w2: window_t; 
+  var flds2: varray[oschannel[event_t]]; 
+  var buts2: varray[oschannel[event_t]]; 
+  mkwin(200,200, &w2, &flds2, &buts2);
+  
+  var w3: window_t; 
+  var flds3: varray[oschannel[event_t]]; 
+  var buts3: varray[oschannel[event_t]]; 
+  mkwin(250,250, &w3, &flds3, &buts3);
 
   // make an event handler for our window
-  proc ehandler (fields: varray[oschannel[event_t]]) (input:ischannel[event_t])  () 
+  proc ehandler 
+  (
+    fields: varray[oschannel[event_t]], 
+    buts: varray[oschannel[event_t]]
+  ) 
+  (input:ischannel[event_t])  () 
   {
     println$ "Window event handler running";
     var selected_field = 0;
@@ -108,15 +174,18 @@ begin
         write$ fields.selected_field,sel;
       done
       write$ fields.selected_field, ev;
+      for but in buts do
+        write$ but,ev;
+      done
       run = ev.window.event.SDL_WindowEventID != SDL_WINDOWEVENT_CLOSE ;
     done
     println$ "Terminating window event processing loop";
   }
 
   // make a controller for the window using our event handler
-  var wc1 = window_controller (w1, ehandler flds1);
-  var wc2 = window_controller (w2, ehandler flds2);
-  var wc3 = window_controller (w3, ehandler flds3);
+  var wc1 = window_controller (w1, ehandler (flds1,buts1));
+  var wc2 = window_controller (w2, ehandler (flds2,buts2));
+  var wc3 = window_controller (w3, ehandler (flds3,buts3));
 
   // place the controller under the window manager
   var i = wm.add_window wc1;
