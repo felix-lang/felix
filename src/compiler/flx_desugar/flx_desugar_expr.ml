@@ -134,6 +134,16 @@ let mkcurry seq sr (name:string) (vs:vs_list_t) (args:params_t list) return_type
         (*
         print_endline "Found an object, scanning for methods and bogus returns";
         *)
+
+        let newstatements = ref [] in
+        List.iter (fun st ->
+          match st with
+          | STMT_invariant (_, _) -> ()
+          | _ -> newstatements := st :: !newstatements
+        )
+          body
+        ;
+
         let methods = ref [] in
         let invariants = ref [] in
         List.iter (fun st ->
@@ -144,16 +154,35 @@ let mkcurry seq sr (name:string) (vs:vs_list_t) (args:params_t list) return_type
           | STMT_fun_return _ -> clierr sr "FOUND function RETURN in Object";
           | STMT_proc_return _ -> clierr sr "FOUND procedure RETURN in Object";
           | STMT_curry (_,name, vs, pss, (res,traint) , kind, adjectives, ss) when kind = `Method || kind = `GeneratorMethod -> methods := name :: !methods
-          | STMT_invariant (_, e)  as invariant -> invariants := invariant :: !invariants
+          | STMT_invariant (_, _)  as invariant -> invariants := invariant :: !invariants
           | _ -> ()
         )
         body
         ;
+
         let mkfield s = s,EXPR_name (sr,s,[]) in
         let record = EXPR_record (sr, List.map mkfield (!methods)) in
         let retstatement = STMT_fun_return (sr, record) in
-        let object_body = List.rev (retstatement :: List.rev body) in
-        STMT_function (sr, synthname n, vs, h, (return_type,postcondition), props, object_body)
+        let object_body = List.rev (retstatement :: List.rev !newstatements) in
+
+        let conjunction =
+          List.fold_left 
+            (fun x y -> 
+              match y with
+              | STMT_invariant (sr, e) ->
+                EXPR_apply (sr, (EXPR_name (sr, "land", []), EXPR_tuple (sr, [x; e])))
+              | _ -> failwith "Unexpected statement type found processing invariants"
+            ) 
+            (EXPR_typed_case (sr, 1, TYP_unitsum 2)) 
+            !invariants
+        in
+        let invariant_func = 
+          STMT_function (sr, "invariant", dfltvs, ([], None), (TYP_unitsum 2, None), [], [STMT_fun_return (sr, conjunction)]) 
+        in
+
+        let object_body = invariant_func :: object_body in
+        STMT_function (sr, synthname n, vs, h, (return_type, postcondition), props, object_body)
+
       end else 
         let body = 
           match return_type with
