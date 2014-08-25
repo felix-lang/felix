@@ -86,4 +86,61 @@ class FlxGuiButton
     } // draw
     display();
   } //button
+
+proc button_controller 
+(
+  bm: button_model_t, 
+  bd: button_display_t, 
+  ec:ischannel[event_t]
+) () =
+{
+  bd.display();
+  var run = true;
+  var e = read ec;
+  while run do
+    match e.type.SDL_EventType with
+    | $(SDL_MOUSEMOTION) =>
+      var x,y = e.motion.x,e.motion.y; //int32
+      if SDL_Point (x.int,y.int) \in bd.get_client_rect () do
+        //println$ "Motion in client rect of button " + bd.get_label();
+        match bm.get_state () with
+        | Up => bm.set_state Mouseover; bd.display(); // Enter
+        | _ => ;
+        endmatch;
+      else
+        match bm.get_state () with
+        | Mouseover => bm.set_state Up; bd.display(); // Leave
+        | Down => bm.set_state Up; bd.display(); // Leave
+        | _ => ;
+        endmatch;
+      done
+ 
+    | $(SDL_MOUSEBUTTONDOWN) => 
+      x,y = e.button.x,e.button.y; //int32
+      if SDL_Point (x.int,y.int) \in bd.get_client_rect () do
+        //println$ "Button down in client rect of button " + bd.get_label();
+        bm.set_state Down; bd.display();
+      done
+ 
+    | $(SDL_MOUSEBUTTONUP) => 
+      x,y = e.button.x,e.button.y; //int32
+      if SDL_Point (x.int,y.int) \in bd.get_client_rect () do
+        //println$ "Button up in client rect of button " + bd.get_label();
+        bm.set_state Mouseover; bd.display();
+      else
+        bm.set_state Up; bd.display();
+      done
+    | $(SDL_WINDOWEVENT) when e.window.event == SDL_WINDOWEVENT_LEAVE.uint8  =>
+      bm.set_state Up; bd.display();
+
+    | _ => ; 
+    endmatch;
+    e = read ec;
+  done
+
+}
+
+
+
+
 } // class
