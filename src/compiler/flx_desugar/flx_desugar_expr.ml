@@ -135,35 +135,39 @@ let mkcurry seq sr (name:string) (vs:vs_list_t) (args:params_t list) return_type
         print_endline "Found an object, scanning for methods and bogus returns";
         *)
 
-        let newstatements = ref [] in
-        List.iter (fun st ->
-          match st with
-          | STMT_invariant (_, _) -> ()
-          | _ -> newstatements := st :: !newstatements
-        )
-          body
-        ;
-
         let methods = ref [] in
         let invariants = ref [] in
-        List.iter (fun st ->
-          (*
-          print_endline ("Statement " ^ Flx_print.string_of_statement 2 st);
-          *)
-          match st with
-          | STMT_fun_return _ -> clierr sr "FOUND function RETURN in Object";
-          | STMT_proc_return _ -> clierr sr "FOUND procedure RETURN in Object";
-          | STMT_curry (_,name, vs, pss, (res,traint) , kind, adjectives, ss) when kind = `Method || kind = `GeneratorMethod -> methods := name :: !methods
-          | STMT_invariant (_, _)  as invariant -> invariants := invariant :: !invariants
-          | _ -> ()
-        )
-        body
-        ;
+
+        let revbody = 
+          let newstatements = ref [] in
+          List.iter (fun st ->
+            match st with
+            | STMT_invariant (_, _) -> ()
+            | _ -> newstatements := st :: !newstatements
+          )
+            body
+          ;
+
+          List.iter (fun st ->
+            (*
+            print_endline ("Statement " ^ Flx_print.string_of_statement 2 st);
+            *)
+            match st with
+            | STMT_fun_return _ -> clierr sr "FOUND function RETURN in Object";
+            | STMT_proc_return _ -> clierr sr "FOUND procedure RETURN in Object";
+            | STMT_curry (_,name, vs, pss, (res,traint) , kind, adjectives, ss) when kind = `Method || kind = `GeneratorMethod -> methods := name :: !methods
+            | STMT_invariant (_, _)  as invariant -> invariants := invariant :: !invariants
+            | _ -> ()
+          )
+          body
+          ;
+          !newstatements
+        in
 
         let mkfield s = s,EXPR_name (sr,s,[]) in
         let record = EXPR_record (sr, List.map mkfield (!methods)) in
         let retstatement = STMT_fun_return (sr, record) in
-        let object_body = List.rev (retstatement :: List.rev !newstatements) in
+        let revbody = retstatement :: revbody in
 
         let conjunction =
           List.fold_left 
@@ -180,8 +184,8 @@ let mkcurry seq sr (name:string) (vs:vs_list_t) (args:params_t list) return_type
           STMT_function (sr, "invariant", dfltvs, ([], None), (TYP_unitsum 2, None), [], [STMT_fun_return (sr, conjunction)]) 
         in
 
-        let object_body = invariant_func :: object_body in
-        STMT_function (sr, synthname n, vs, h, (return_type, postcondition), props, object_body)
+        let body = List.rev (invariant_func :: revbody) in
+        STMT_function (sr, synthname n, vs, h, (return_type, postcondition), props, body)
 
       end else 
         let body = 
