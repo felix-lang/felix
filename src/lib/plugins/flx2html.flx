@@ -77,6 +77,8 @@ private val big_keywords =
   ("axiom", "Specify core semantics"),
   ("open", "Open a module or class"),
   ("inherit","Inherit symbols into a module or typeclass"),
+  ("rename","create a new name for a symbol"),
+  ("use","put the basename of a qualified name in the current scope"),
   ("SCHEME","Define Scheme symbols"),
   ("syntax","define domain specific sublanguage module"),
   ("regdef","define named regular expression"),

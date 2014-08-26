@@ -84,7 +84,6 @@ syn keyword felixStatement enum
 syn keyword felixStatement cenum
 syn keyword felixStatement cflags
 syn keyword felixStatement expect
-syn keyword felixStatement export
 syn keyword felixStatement extern
 syn keyword felixStatement for
 syn keyword felixStatement forget
@@ -118,7 +117,6 @@ syn keyword felixStatement noinline
 syn keyword felixStatement nonterm
 syn keyword felixStatement noreturn
 syn keyword felixStatement not
-syn keyword felixStatement open
 syn keyword felixStatement package
 syn keyword felixStatement pod
 syn keyword felixStatement private
@@ -200,7 +198,7 @@ syn keyword felixDefine self
 syn keyword felixStatement all as attempt
 syn keyword felixStatement call case caseno code const class ctypes
 syn keyword felixStatement def
-syn keyword felixStatement endattempt except exceptions export
+syn keyword felixStatement endattempt except exceptions 
 syn keyword felixStatement finally fork functor fun cfun
 syn keyword felixStatement goto
 syn keyword felixStatement interface inf method object extends implements extend
