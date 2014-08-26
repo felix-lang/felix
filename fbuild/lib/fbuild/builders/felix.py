@@ -21,8 +21,8 @@ class Flx(fbuild.db.PersistentObject):
         self.debug = debug
         self.flags = flags
 
-        //if not self.check_flags(['--debug-flx']):
-        //    raise fbuild.ConfigFailed('%s failed to compile an exe' % self)
+        #if not self.check_flags(['--debug-flx']):
+        #    raise fbuild.ConfigFailed('%s failed to compile an exe' % self)
 
     def __call__(self, src, *args,
             includes=[],
