@@ -12,6 +12,9 @@ units unspecified.
 A parse unit is a file augmented by prefixing specified import
 files to the front. These consist of a suite of grammar files
 defining the syntax and other files defining macros.
+
+By convention import files have the extension @{.flxh}.
+
 With this augmentation all parse units in a program
 are independently parsed to produce an list of statements
 represented as abstract syntax, denoted an AST (even
@@ -37,24 +40,13 @@ The resulting S-expressions are translated to
 an intermediate form and then into an internal
 AST structure.
 
-@h2 Include Directive
-An include directive has the syntax:
-@felix
-include "filename";
-@
-where the filename is a Unix relative filename,
-may not have an extension, and may not begin with or 
-contain @{..} (two dots).
+The parser is a scannerless GLR parser with significant
+extensions.
 
-If the filename begins with @{./} then the balance of the name
-is relative, a sibling of the including file, otherwise the name
-is searched for on an include path. 
-
-In either case, a search succeeds when it finds a file with
-the appropriate base path in the search directory with
-extension @{.flx} or {.fdoc}. If both files exist the
-most recently changed one is used. If the time stamps are
-the same the choice is unspecified.
+@h2 Grammar syntax
+Not written yet. Browse the 
+<a href=/share/lib/grammar>grammar directory</a> 
+for examples.
 
 @h2 Modules
 Every Felix program is encapsulated in a module with
@@ -83,47 +75,28 @@ an include directive being present.
 
 @h2 Lexicology
 All Felix files are considered to be UTF-8 encoded Unicode.
-
-@h1 Macros
-Felix provides a basic syntax macro facility which
-post-processes the parse AST.
-
-@h2 Macro val
-The @{macro val} macro specifies a name is to be replaced
-by an expression wherever it occurs in an executable
-expression, type expression, or pattern, for example
+@h2 Include Directive
+An include directive has the syntax:
 @felix
-macro val LINUX = true;
+include "filename";
 @
-causes each occurrence of the identifier @{LINUX}
-to be replaced by @{true}.
+where the filename is a Unix relative filename,
+may not have an extension, and may not begin with or 
+contain @{..} (two dots).
 
-The primary purpose of this statement is to define
-manifest constants to be used in pattern matches.
+If the filename begins with @{./} then the balance of the name
+is relative, a sibling of the including file, otherwise the name
+is searched for on an include path. 
 
-@h2 Macro for loop
-The macro for loop can be used to generate a list of
-statements repeatedly with a sequence of substitutions.
-@felix
-var a = 1;
-var b = 2;
-var c = 3;
-macro for name in a,b,c do
-  println$ name;
-done
-@
-is equivalent to
-@felix
-var a = 1;
-var b = 2;
-var c = 3;
-println$ a;
-println$ b;
-println$ c;
-@
+In either case, a search succeeds when it finds a file with
+the appropriate base path in the search directory with
+extension @{.flx} or {.fdoc}. If both files exist the
+most recently changed one is used. If the time stamps are
+the same the choice is unspecified.
 
-Note that arbitrary processing can be performed in the grammar
-using the Scheme action code.
+
+@h1 Macro val
+@h1 Macro for
 
 @h1 General lookup
 By default Felix looks up symbols in nested scopes, 
@@ -187,6 +160,8 @@ for the top level module:
 var x = 1;
 class A { var x = root::x; }
 @
+@h1 Lookup control directives
+
 @h2 Open directive
 The simple @{open} directive may be used to make the symbols
 defined in a class visible in the scope containing the @{open} directive.
@@ -306,7 +281,8 @@ generator, or procedure definition. If the string
 is omitted is taken as the symbol name. The effect
 is the same as if an export statement has been written.
 
-@h1 Definitions
+
+@h1 Variable Definitions
 A definition is a statement which defines a name, but does
 no cause any observable behavior, or, a class statement, or, 
 a var or val statement. The latter two exceptions define a name
@@ -442,6 +418,8 @@ val c,d = m;
 With this syntax, no type annotation may be given.
 
 
+
+@h1 Executable statements
 @h2 The @{goto} statement and label prefix
 Felix statements may be prefixed by a label
 to which control may be transfered by a @{goto}
@@ -484,6 +462,7 @@ This is a valid way to handle errors.
 the code is correct because @{outer} is active
 at the time that @{handler} performs the
 control transfer.
+
 
 @h1 Functions
 A felix function definition takes one of three basic forms:

@@ -291,9 +291,9 @@ print_endline ("Parent " ^ str_parent sym_parent ^ " mapped to true parent " ^ s
       t
   in
   let bt = wrap_btype_uses bt' in
-  let type_of_index = wrap_btype_uses (Flx_lookup.type_of_index
+  let type_of_index idx = wrap_btype_uses (Flx_lookup.type_of_index
     state.lookup_state
-    bsym_table)
+    bsym_table sym.Flx_sym.sr) idx
   in
 
   (* this is the full vs list *)

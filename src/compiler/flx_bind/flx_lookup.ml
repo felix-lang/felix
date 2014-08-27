@@ -1494,11 +1494,11 @@ and type_of_literal state bsym_table env sr v =
 
 (** Wrapper around inner_type_of_index that tries to cache the calculated type
  * for this index. *)
-and type_of_index' state bsym_table rs bid =
+and type_of_index' state bsym_table rs sr bid =
   try
     Hashtbl.find state.ticache bid
   with Not_found ->
-    let t = inner_type_of_index state bsym_table rs bid in
+    let t = inner_type_of_index state bsym_table sr rs bid in
 
     (* Unfold any fixpoints. *)
     let t = unfold t in
@@ -1518,7 +1518,7 @@ and type_of_index' state bsym_table rs bid =
 (** Wrapper around inner_type_of_index that tries to cache the calculated type
  * for this index, and then substitutes any type variables. *)
 and type_of_index_with_ts' state bsym_table rs sr bid ts =
-  let t = type_of_index' state bsym_table rs bid in
+  let t = type_of_index' state bsym_table rs sr bid in
 
   (* Make sure that we got the right number of type variables. *)
   let pvs,vs,_ = find_split_vs state.sym_table bsym_table bid in
@@ -1689,7 +1689,7 @@ and cal_ret_type state bsym_table (rs:recstop) index args =
 (* -------------------------------------------------------------------------- *)
 
 (** Find the type of a bound symbol. *)
-and btype_of_bsym state bsym_table bt bid bsym =
+and btype_of_bsym state bsym_table sr bt bid bsym =
   (* Helper function to convert function parameters to a type. *)
   let type_of_params params =
     btyp_tuple (Flx_bparameter.get_btypes params)
@@ -1704,7 +1704,7 @@ and btype_of_bsym state bsym_table bt bid bsym =
       btyp_function (type_of_params params, return_type)
   | BBDCL_val (_,t,_) -> t
   | BBDCL_newtype (_,t) -> t
-  | BBDCL_external_type _ -> clierr (Flx_bsym.sr bsym) ("Use type as if variable: " ^ Flx_bsym.id bsym)
+  | BBDCL_external_type _ -> clierr2 sr (Flx_bsym.sr bsym) ("Use type as if variable: " ^ Flx_bsym.id bsym)
   | BBDCL_external_const (_,_,t,_,_) -> t
   | BBDCL_external_fun (_,_,params,return_type,_,_,_) ->
       btyp_function (btyp_tuple params, return_type)
@@ -1744,7 +1744,7 @@ and btype_of_bsym state bsym_table bt bid bsym =
 
 (** This routine is called to find the type of a function or variable.
  * .. so there's no type_alias_fixlist .. *)
-and inner_type_of_index state bsym_table rs index =
+and inner_type_of_index state bsym_table sr rs index =
   (* Check if we've already cached this index. *)
   try Hashtbl.find state.ticache index with Not_found ->
 
@@ -1771,7 +1771,7 @@ print_endline "inner_typeof+index returning fixpoint";
   match
     try Some (Flx_bsym_table.find bsym_table index) with Not_found -> None
   with
-  | Some bsym -> btype_of_bsym state bsym_table bt index bsym
+  | Some bsym -> btype_of_bsym state bsym_table sr bt index bsym
   | None ->
 
   let sym = get_data state.sym_table index in
@@ -2417,7 +2417,7 @@ and lookup_qn_with_sig'
         (fst vs)
       in
       let x = bexpr_closure
-        (inner_type_of_index state bsym_table rs index)
+        (inner_type_of_index state bsym_table sr rs index)
         (index,ts)
       in
       x
@@ -2622,7 +2622,7 @@ print_endline ("Lookup type qn with sig, name = " ^ string_of_qualified_name qn)
         (fun (_,i,_) -> btyp_type_var (i, btyp_type 0))
         (fst vs)
       in
-      inner_type_of_index state bsym_table rs index
+      inner_type_of_index state bsym_table sr rs index
 
     | _ ->
       (*
@@ -5887,9 +5887,9 @@ let bind_expression state bsym_table env e  =
   inner_bind_expression state bsym_table env rsground e
   with Not_found -> failwith "xxxx bind expression raised Not_found [BUG]"
 
-let type_of_index state bsym_table bid =
+let type_of_index state bsym_table sr bid =
   try
-  type_of_index' state bsym_table rsground bid
+  type_of_index' state bsym_table rsground sr bid
   with Not_found -> failwith "type of index raised Not_found [BUG]"
 
 let type_of_index_with_ts state bsym_table sr bid ts =
