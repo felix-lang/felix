@@ -73,8 +73,85 @@ which are then considered as if included, but without
 an include directive being present.
 
 
-@h2 Lexicology
+@h1 Lexicology
 All Felix files are considered to be UTF-8 encoded Unicode.
+
+Felix uses a scannerless parser, there are no keywords.
+
+@h2 Identifiers
+A plain identifier starts with a letter or underscore,
+then consists of a sequence of letters, digits, apostrophy, has no more
+than one apostrophy or dash in a row, except at the end no dash is
+allowed, and any number of apostrophies.
+@felix
+Ab_cd1  a' b-x
+@
+Identifies starting with underscore are reserved for the implementation.
+
+A letter may be any Unicode character designated for use in an identifier
+by the ISO C++ standard. In practice, all high bit set octets are allowed.
+
+A TeX identifier starts with a slosh and is followed by a sequence
+of letters. 
+@
+@h2 Integer Literals
+An plain integer literal consists of a sequence of digits,
+optionally separated by underscores. Each separating
+underscore must be between digits.
+
+A prefixed integer literal is a plain integer literal
+or a plain integer literal prefixed by a radix specifier.
+The radix specifier is a zero followed by one of
+the letters @{bBoOdDxX} for binary, octal, decimal or hex.
+
+An underscore is permitted after the prefix.
+
+The radix is the one specified by the prefix or decimal
+by default.
+
+The digits of an integer consist of those permitted
+by the radix: @{01 for binary}, @{01234567}
+for octal, @{0123456789} for decimal, @{0123456789abcdefABCDEF}
+for hex.
+
+Note there are no negative integer literals.
+
+A type suffix may be added to the end of a prefixed
+integer to designate a literal of a particular integer type,
+it has the form of an upper or lower case letter or pair of
+letters usually combined with a prefix or suffix @{u} or @{U}
+to designate an unsigned variant of the type. A table
+of suffices and the types they signify follows in lower case:
+@pre
+i8
+i16
+i32
+i64
+u8
+u16
+u32
+u64
+
+t
+s
+l
+ll
+ut tu
+us su
+ul lu
+ull llu
+
+z uz
+...
+@ 
+
+@h2 Floating point Literals
+TBD
+@h2 String literals
+TBD
+@h2 Format literals
+TBD
+ 
 @h2 Include Directive
 An include directive has the syntax:
 @felix
@@ -96,8 +173,11 @@ the same the choice is unspecified.
 
 
 @h1 Macro val
+TBD
 @h1 Macro for
-
+TBD
+@h1 Conatsnt folding and conditional comopilation
+TBD
 @h1 General lookup
 By default Felix looks up symbols in nested scopes, 
 starting with all symbols in the current scope
@@ -419,51 +499,6 @@ With this syntax, no type annotation may be given.
 
 
 
-@h1 Executable statements
-@h2 The @{goto} statement and label prefix
-Felix statements may be prefixed by a label
-to which control may be transfered by a @{goto}
-statement:
-@felix
-alabel:>
-  dosomething;
-  goto alabel;
-@
-The label must be visible from the goto statement.
-
-There are two kinds of gotos. A local goto is a jump
-to a label in the same scope as the goto statement.
-
-A non-local goto is a jump to any other visible label.
-
-Non-local transfers of control may cross procedure
-boundaries. They may not cross function or generator 
-boundaries.
-
-The procedure or function containing the label 
-must be active at the time of the control transfer.
-
-A non-local goto may be wrapped in a procedure closure
-and passed to a procedure from which the goto target
-is not visible.
-
-@felix
-proc doit (err: 1 -> 0) { e; }
-
-proc outer () {
-  proc handler () { goto error; }
-  doit (handler);
-  return;
-
-  error:> println$ error;
-}
-@
-This is a valid way to handle errors.
-the code is correct because @{outer} is active
-at the time that @{handler} performs the
-control transfer.
-
-
 @h1 Functions
 A felix function definition takes one of three basic forms:
 @felix
@@ -610,4 +645,184 @@ proc f () =>  show 1;
 f; // equivalent to
 f ();
 @
+
+@h2 Generators
+TBD
+
+@h1 Types
+@h2 Primitives
+TBD
+@h3 cenum
+TBD
+@h3 cstruct
+TBD
+@h3 ctypes
+TBD
+@h3 cflags
+TBD
+@h2 Tuples
+TBD
+@h2 Records
+TBD
+@h2 Structs
+TBD
+@h2 Sums
+TBD
+@h3 union
+TBD
+@h2 enum
+TBD
+@h2 variant
+TBD
+@h2 Array
+TBD
+@h2 typedef
+TBD
+@h3 typedef fun
+TBD
+@h2 typematch
+TBD
+@h2 type sets
+TBD
+
+@h2 Abstract types
+TBD
+
+@h1 Expressions
+TBD
+
+@h1 Executable statements
+@h2 Assignment
+TBD
+
+@h2 The @{goto} statement and label prefix
+Felix statements may be prefixed by a label
+to which control may be transfered by a @{goto}
+statement:
+@felix
+alabel:>
+  dosomething;
+  goto alabel;
+@
+The label must be visible from the goto statement.
+
+There are two kinds of gotos. A local goto is a jump
+to a label in the same scope as the goto statement.
+
+A non-local goto is a jump to any other visible label.
+
+Non-local transfers of control may cross procedure
+boundaries. They may not cross function or generator 
+boundaries.
+
+The procedure or function containing the label 
+must be active at the time of the control transfer.
+
+A non-local goto may be wrapped in a procedure closure
+and passed to a procedure from which the goto target
+is not visible.
+
+@felix
+proc doit (err: 1 -> 0) { e; }
+
+proc outer () {
+  proc handler () { goto error; }
+  doit (handler);
+  return;
+
+  error:> println$ error;
+}
+@
+This is a valid way to handle errors.
+the code is correct because @{outer} is active
+at the time that @{handler} performs the
+control transfer.
+
+@h3 goto-indirect
+TBD
+@h3 Exchange of control
+TBD
+@h2 match/endmatch
+TBD
+@h2 if/goto
+TBD
+@h2 if/do/elif/else/done
+TBD
+
+@h2 call
+TBD
+@h2 procedure return
+TBD
+@h3 return from
+TBD 
+@h3 jump 
+TBD 
+@h2 function return
+TBD
+@h3 yield
+TBD
+@h2 spawn_fthread
+TBD
+@h3 read/write schannel
+TBD
+@h2 spawn_pthread
+TBD
+@h3 read/write pchannel
+TBD
+@h3 exchange
+
+@h1 loops
+@h2 redo
+TBD
+@h2 break
+TBD
+@h2 continue
+
+@h2 for/in/do/done
+TBD
+@h2 for/match/done
+TBD
+@h2 while/do/done
+TBD
+@h2 repeat/until
+TBD
+@h2 loop
+TBD
+@h2 assert
+TBD
+@h2 axiom
+TBD
+@h2 lemma
+TBD
+@h2 theorem
+TBD
+@h2 reduce
+TBD
+@h2 invariant
+TBD
+@h2 code
+TBD
+@h3 noreturn code
+TBD
+@h2 Service call
+TBD
+
+
+@h2 with/do/done
+TBD
+@h2 do/done
+TDB
+@h2 begin/end
+TDB
+@h1 C bindings
+TBD
+@h1 Domain Specific Sublanguages
+@h2 Regexps
+TBD
+@h2 Pipelines
+TBD
+
+
+
+
 
