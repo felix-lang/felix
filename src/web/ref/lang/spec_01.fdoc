@@ -378,6 +378,15 @@ A variable is said to name an object, not a value.
 This basically means it is associated with the address of a typed
 storage location.
 
+@h3 Multiple variables
+Multipls variables can be defined at once:
+@felix
+var m = 1,2;
+var a,b = 1,2;
+var c,d = m;
+@
+With this syntax, no type annotation may be given.
+
 @h2 The @{val} statement.
 A @{val} statement defines a name for an expression.
 @felix
@@ -423,6 +432,16 @@ this case there is no assurance @{x} will change after @{i}
 is incremented because the compiler is free to replace
 any @{val} definition with a @{var} definition.
 
+@h3 Multiple values
+Multipls values can be defined at once:
+@felix
+val m = 1,2;
+val a,b = 1,2;
+val c,d = m;
+@
+With this syntax, no type annotation may be given.
+
+
 @h2 The @{goto} statement and label prefix
 Felix statements may be prefixed by a label
 to which control may be transfered by a @{goto}
@@ -466,4 +485,150 @@ the code is correct because @{outer} is active
 at the time that @{handler} performs the
 control transfer.
 
+@h1 Functions
+A felix function definition takes one of three basic forms:
+@felix
+fun f (x:int) = { var y = x + x; return y + 1; }
+fun g (x:int) => x + x + 1;
+fun h : int -> int = | ?x => x + x + 1;
+@
+The first form is the most general, the body 
+of the function contains executable statements
+and the result is returned by a return statement.
+
+The second form is equivalent to a function in the first
+form whose body returns the RHS expression.
+
+The third form specifies the function type then the
+body of a pattern match. It is equivalent to
+@felix
+fun h (a:int) = { return match a with | ?x => x + x + 1 endmatch; }
+@
+The first two forms also allow the return type to be
+specified:
+@felix
+fun f (x:int) : int = { var y = x + x; return y + 1; }
+fun g (x:int) :int => x + x + 1;
+@
+
+Functions may not have side effects.
+
+All these function have a type:
+@felix
+D -> C
+@
+where D is the domain and C is the codomain: both would
+be @[int} in the examples.
+
+A function can be applied by the normal forward
+notation using juxtaposition or what is whimsically
+known as operator whitespace, or in reverse notation
+using operator dot:
+@felix
+f x
+x.f
+@
+Such applications are equivalent.  Both operators are left
+associative. Operator dot binds more
+tightly than whitespace so that
+@felix
+f x.g    // means
+f (g x)
+@
+
+A special notation is used for application to the unit tuple:
+@felix
+#zero // means
+zero ()
+@
+The intention is intended to suggest a constant since a pure
+function with unit argument must always return the
+same value. 
+
+This hash operator binds more tightly than operator dot so
+@felix
+#a.b // means
+(#a).b
+@
+
+
+@h2 Pre- and post-conditions
+A function using one of the first two forms
+may have pre-conditions, post-conditions, or both:
+@felix
+fun f1 (x:int when x > 0) => x + x + 1;
+fun f2 (x:int) expect result > 1 => x + x + 1;
+fun f3 (x:int when x > 0) expect result > 1 => x + x + 1;
+@
+Pre- and pos-conditions are usually treated as boolean assertions
+which are checked at run time. The compiler may occasionally be able
+to prove a pre- or post-condition must hold and elide it.
+
+The special identifier @{result} is used to indicate the return
+value of the function.
+
+@h2 Higher order functions
+A function may be written like
+@felix
+fun hof (x:int) (y:int) : int = { return x + y; }
+fun hof (x:int) (y:int) => x + y;
+@
+These are called higher order functions of arity 2.
+They have the type
+@felix
+int -> int -> int   // or equivalently
+int -> (int -> int) //since -> is right associative.
+@
+They are equivalent to
+@felix
+fun hof (x:int) : int -> int = 
+{
+  fun inner (y:int) : int => x + y;
+  return inner;
+}
+@
+that is, a function which returns another function.
+
+Such a function can be applied like
+@felix
+hof 1 2 // or equivalently
+(hof 1) 2
+@
+since whitespace application is left associative.
+
+@h2 Procedures
+A function which returns control but no value is called a procedure.
+Procedures may have side effects.
+@felix
+fun show (x:int) : 0 = { println x; }
+proc show (x:int) { println x; }
+proc show (x:int) => println x;
+@
+The second form is a more convenient notation.
+The type 0 is also called @{void} and denotes
+a type with no values.
+
+A procedure may return with a simple return statement:
+@felix
+proc show (x:int) { println x; return; }
+@
+however one is assumed at the end of the procedure
+body .
+
+Procedures can also have pre- and post-conditions.
+
+A procedure may be called like an application,
+however it must be a whole statement since
+expressions of type void may not occur interior
+to an expression.
+@felix
+show 1;
+1.show;
+@
+If a procedure accepts the unit argument, it may be elided:
+@felix
+proc f () =>  show 1;
+f; // equivalent to
+f ();
+@
 
