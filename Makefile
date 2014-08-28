@@ -150,7 +150,7 @@ install:
 	${BUILDROOT}/host/bin/flx_cp ${BUILDROOT}/host/bin '(flx)' ${EXECPREFIX}'/$${1}'
 	${BUILDROOT}/host/bin/flx_cp src/ '(.*\.(c|cxx|cpp|h|hpp|flx|flxh|fdoc|fpc|ml|mli))' ${INSTALLDIR}'/share/src/$${1}'
 	rm -f ${INSTALLROOT}/felix-latest
-	ln -s ${INSTALLDIR} ${INSTALLROOT}/felix-latest
+	ln -s felix-${VERSION} ${INSTALLROOT}/felix-latest
 
 make-cache:
 	rm -rf $(HOME)/.felix/cache
