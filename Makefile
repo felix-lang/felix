@@ -15,7 +15,10 @@ all: build test
 
 VERSION = 1.1.12
 DISTDIR ?= ./build/dist
-INSTALLDIR ?= /usr/local/lib/felix/felix-$(VERSION)
+PREFIX ?= /usr/local/
+INSTALLDIR = ${PREFIX}/lib/felix/felix-$(VERSION)
+INSTALLSYMLINK = ${PREFIX}/lib/felix/felix-latest
+INSTALLBINDIR = ${PREFIX}/bin
 FBUILDROOT ?= build
 BUILDROOT ?= ${FBUILDROOT}/release
 DEBUGBUILDROOT ?= ${FBUILDROOT}/debug
@@ -136,23 +139,22 @@ test: regress-check tut-check tutopt-check
 
 #
 #
-# Install default build into /usr/local/lib/felix/version/
+# Install default build into $INSTALLDIR
 #
 
 install:
-	${SUDO} rm -rf /usr/local/lib/felix/felix-${VERSION}
-	${SUDO} ${BUILDROOT}/host/bin/flx_cp ${BUILDROOT}/host '(.*)' '/usr/local/lib/felix/felix-${VERSION}/host/$${1}'
-	${SUDO} ${BUILDROOT}/host/bin/flx_cp ${BUILDROOT}/share '(.*)' '/usr/local/lib/felix/felix-${VERSION}/share/$${1}'
-	${SUDO} ${BUILDROOT}/host/bin/flx_cp ${BUILDROOT} '(VERSION)' '/usr/local/lib/felix/felix-${VERSION}/$${1}'
-	${SUDO} ${BUILDROOT}/host/bin/flx_cp ${BUILDROOT}/host/bin '(flx)' '/usr/local/bin/$${1}'
-	${SUDO} ${BUILDROOT}/host/bin/flx_cp src/ '(.*\.(c|cxx|cpp|h|hpp|flx|flxh|fdoc|fpc|ml|mli))' '/usr/local/lib/felix/felix-${VERSION}/share/src/$${1}'
-	${SUDO} rm -rf $(HOME)/.felix/cache
-	${SUDO} rm -f /usr/local/lib/felix/felix-latest
-	${SUDO} ln -s /usr/local/lib/felix/felix-$(VERSION) /usr/local/lib/felix/felix-latest
+	rm -rf ${INSTALLDIR}
+	${BUILDROOT}/host/bin/flx_cp ${BUILDROOT}/host '(.*)' '${INSTALLDIR}/host/$${1}'
+	${BUILDROOT}/host/bin/flx_cp ${BUILDROOT}/share '(.*)' '${INSTALLDIR}/share/$${1}'
+	${BUILDROOT}/host/bin/flx_cp ${BUILDROOT} '(VERSION)'  '${INSTALLDIR}/$${1}'
+	${BUILDROOT}/host/bin/flx_cp ${BUILDROOT}/host/bin '(flx)' '${INSTALLBINDIR}/$${1}'
+	${BUILDROOT}/host/bin/flx_cp src/ '(.*\.(c|cxx|cpp|h|hpp|flx|flxh|fdoc|fpc|ml|mli))' '${INSTALLDIR}/share/src/$${1}'
+	chmod a+rx ${INSTALLBINDIR}/flx
+	rm -f ${INSTALLSYMLINK}
+	ln -s ${INSTALLDIR} ${INSTALLSYMLINK}
 	echo 'println ("installed "+ Version::felix_version);' > install-done.flx
 	flx --clean install-done
 	rm install-done.*
-	${SUDO} chown $(USER) $(HOME)/.felix
 
 #
 # Install binaries on felix-lang.org
@@ -172,7 +174,6 @@ make-dist:
 	rm -rf $(DISTDIR)
 	./${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --dist=$(DISTDIR)
 	./${BUILDROOT}/host/bin/flx_cp ${BUILDROOT}/speed '(.*)' '${DISTDIR}/speed/$${1}'
-	rm -rf $(HOME)/.felix/cache
 	echo 'println ("installed "+ Version::felix_version);' > $(DISTDIR)/install-done.flx
 	./${BUILDROOT}/host/bin/flx --clean --test=$(DISTDIR)/lib/felix/felix-$(VERSION) $(DISTDIR)/install-done.flx
 	rm -f $(DISTDIR)/install-done.flx  $(DISTDIR)/install-done.so
