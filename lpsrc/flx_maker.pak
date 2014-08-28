@@ -7,11 +7,7 @@
  elif pyconfig.HAVE_MSVC:
     tangle("toolchain: toolchain_msvc_win32")
  else:
-    result = os.system("gcc-4.8 --version")
-    if result == 0:
-      tangle("toolchain: toolchain_gcc48_linux")
-    else:
-      tangle("toolchain: toolchain_gcc_linux")
+    tangle("toolchain: toolchain_gcc_linux")
 
 
 @select(tangler('host/lib/plat/config.flx','data'))
