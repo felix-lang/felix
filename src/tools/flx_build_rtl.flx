@@ -406,13 +406,7 @@ class FlxRtlBuild
        &os <- os.strip;
        match os with
        | "" => &cmd.boot_package <- "build_flx_rtl_mscv_win32";
-       | "Linux" => 
-         res, os = Shell::get_stdout("gcc-4.8 --version");
-         if res == 0 do
-           &cmd.boot_package <- "build_flx_rtl_gcc48_linux";
-         else
-           &cmd.boot_package <- "build_flx_rtl_gcc_linux";
-         done
+       | "Linux" => &cmd.boot_package <- "build_flx_rtl_gcc_linux";
        | "Darwin" => &cmd.boot_package <- "build_flx_rtl_clang_osx";
        | ?x => 
          println$ "No build package specified and uname returns unknown OS: '" +x+'"';
