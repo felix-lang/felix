@@ -48,7 +48,7 @@ Not written yet. Browse the
 <a href=/share/lib/grammar>grammar directory</a> 
 for examples.
 
-@h2 Modules
+@h1 Modules
 Every Felix program is encapsulated in a module with
 the name being a mangle of the basename of the root unit.
 The mangling replaces characters in the filename with
@@ -120,30 +120,69 @@ A type suffix may be added to the end of a prefixed
 integer to designate a literal of a particular integer type,
 it has the form of an upper or lower case letter or pair of
 letters usually combined with a prefix or suffix @{u} or @{U}
-to designate an unsigned variant of the type. A table
-of suffices and the types they signify follows in lower case:
+to designate an unsigned variant of the type. 
+
+Signed integers are expected to be two's complement with one
+more negative value that positive value. Bitwise and,
+or, exclusive or, and complement operations do not apply
+with signed types.
+
+The effect of overflow on signed types is unspecified.
+
+Unsigned types use the standard representation. 
+Bitwise operations may be applied to unsigned types.
+Basic arithmetic operations on unsigned types are
+all well defined as the result of the operation
+mathematically modulo the maximum value of the type
+plus one.
+
+The maximum value of an unsigned type is one less than
+two raised to the power of the number of bits in the type.
+The number of bits is 8, 16, 32, or 64 or 128 for all unsigned types.
+
+Note that integers starting with 0 are decimal not octal as in C.
+
+A table
+of suffices and the types they signify follows in lower case.
 @pre
-i8
-i16
-i32
-i64
-u8
-u16
-u32
-u64
+Suffix  Type      C type              Description
+-------------------------------------------------------------------
+i8      int8      int8_t              8 bit signed integer
+i16     int16     int16_t             16 bit signed integer
+i32     int32     int32_t             32 bit signed integer
+i64     int64     int64_t             64 bit signed integer
 
-t
-s
-l
-ll
-ut tu
-us su
-ul lu
-ull llu
+u8      uint8     uint8_t             8 bit unsigned integer
+u16     uint16    uint16_t            16 bit unsigned integer
+u32     uint32    uint32_t            32 bit unsigned integer
+u64     uint64    uint64_t            64 bit unsigned integer
 
-z uz
-...
+t       tiny      signed char         C++ signed char used an integer
+s       short     short               C short
+i       int       int                 C int
+l       long      long                C long
+ll v    vlong     long long           very long: C long long
+
+
+ut tu   utiny     unsigned char       unsigned tiny: C++ unsigned char used as an integer
+us su   ushort    unsigned short      C unsigned short
+u       uint      unsigned            C unsigned int
+ul lu   ulong     unsigned long       C unsigned long
+ull uv  uvlong    unsigned long long  C unsigned longlong
+
+uz zu   size      size_t              array size
+j       intmax    intmax_t            largest integer type
+uj ju   uintmax   uintmax_t           largest unsigned integer type
+p       intptr    intptr_t            pointer considered as an integer
+up pu   uintptr   uintptr_t           pointer considered as an unsigned integer
+d       ptrdiff   ptrdiff_t           signed distance between pointers 
+ud      uptrdiff  uptrdiff_t          unsigned distance between pointers
 @ 
+Note that all these types are distinct unlike C and C++.
+The types designated are not the complete set of available
+integer like types since not all have literal representations.
+
+Note the suffices do not entirely agree with C.
 
 @h2 Floating point Literals
 TBD

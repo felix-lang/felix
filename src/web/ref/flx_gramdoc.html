@@ -682,89 +682,91 @@
            No return type.
 0111:    <a href="/share/lib/grammar/functions.flxh#0111">object_return_type := stypeexpr</a>
            Object factory return type.
-0114:    <a href="/share/lib/grammar/functions.flxh#0114">sparameter := sparam_qual sname ":" x[sarrow_pri] "=" x[sor_condition_pri]</a>
+0114:    <a href="/share/lib/grammar/functions.flxh#0114">sfunction := "invariant" sexpr ";"</a>
+           Object invariant
+0117:    <a href="/share/lib/grammar/functions.flxh#0117">sparameter := sparam_qual sname ":" x[sarrow_pri] "=" x[sor_condition_pri]</a>
            Function parameter with type and default value.
-0117:    <a href="/share/lib/grammar/functions.flxh#0117">sparameter := sparam_qual sname ":" x[sarrow_pri]</a>
+0120:    <a href="/share/lib/grammar/functions.flxh#0120">sparameter := sparam_qual sname ":" x[sarrow_pri]</a>
            Function parameter with type.
-0121:    <a href="/share/lib/grammar/functions.flxh#0121">sparameter := sparam_qual sname</a>
+0124:    <a href="/share/lib/grammar/functions.flxh#0124">sparameter := sparam_qual sname</a>
            Function parameter without type.
            Defaults to polymorphic in unnamed type variable.
-0124:    <a href="/share/lib/grammar/functions.flxh#0124">sparameter_comma_list := sepsilon</a>
+0127:    <a href="/share/lib/grammar/functions.flxh#0127">sparameter_comma_list := sepsilon</a>
            Empty parameter tuple.
-0127:    <a href="/share/lib/grammar/functions.flxh#0127">sparameter_comma_list := sparameter ("," sparameter)*</a>
+0130:    <a href="/share/lib/grammar/functions.flxh#0130">sparameter_comma_list := sparameter ("," sparameter)*</a>
            Populated parameter tuple.
-0130:    <a href="/share/lib/grammar/functions.flxh#0130">sparam_qual := "val"</a>
+0133:    <a href="/share/lib/grammar/functions.flxh#0133">sparam_qual := "val"</a>
            Parameter qualifier: val.
-0133:    <a href="/share/lib/grammar/functions.flxh#0133">sparam_qual := "var"</a>
+0136:    <a href="/share/lib/grammar/functions.flxh#0136">sparam_qual := "var"</a>
            Parameter qualifier: var.
-0136:    <a href="/share/lib/grammar/functions.flxh#0136">sparam_qual := "ref"</a>
+0139:    <a href="/share/lib/grammar/functions.flxh#0139">sparam_qual := "ref"</a>
            Parameter qualifier: ref.
-0139:    <a href="/share/lib/grammar/functions.flxh#0139">sparam_qual := "fun"</a>
+0142:    <a href="/share/lib/grammar/functions.flxh#0142">sparam_qual := "fun"</a>
            Parameter qualifier: fun.
-0142:    <a href="/share/lib/grammar/functions.flxh#0142">sparam_qual := sepsilon</a>
+0145:    <a href="/share/lib/grammar/functions.flxh#0145">sparam_qual := sepsilon</a>
            Default parameter qualifier is val.
-0145:    <a href="/share/lib/grammar/functions.flxh#0145">sfun_arg :=  "(" sparameter_comma_list "when" sexpr ")"</a>
+0148:    <a href="/share/lib/grammar/functions.flxh#0148">sfun_arg :=  "(" sparameter_comma_list "when" sexpr ")"</a>
            Function tuple parameter with pre-condition.
-0148:    <a href="/share/lib/grammar/functions.flxh#0148">sfun_arg :=  "(" sparameter_comma_list ")"</a>
+0151:    <a href="/share/lib/grammar/functions.flxh#0151">sfun_arg :=  "(" sparameter_comma_list ")"</a>
            Function tuple parameter without pre-condition.
-0151:    <a href="/share/lib/grammar/functions.flxh#0151">sfun_arg :=  sname</a>
+0154:    <a href="/share/lib/grammar/functions.flxh#0154">sfun_arg :=  sname</a>
            Short form function parameter single polymorphic variable.
-0155:    <a href="/share/lib/grammar/functions.flxh#0155">sfun_kind := "cfun"</a>
+0158:    <a href="/share/lib/grammar/functions.flxh#0158">sfun_kind := "cfun"</a>
            Function binder: C function.
            A function with C function type.
-0159:    <a href="/share/lib/grammar/functions.flxh#0159">sfun_kind := "gen"</a>
+0162:    <a href="/share/lib/grammar/functions.flxh#0162">sfun_kind := "gen"</a>
            Function binder: Generator.
            A function with side effects.
-0163:    <a href="/share/lib/grammar/functions.flxh#0163">sfun_kind := "fun"</a>
+0166:    <a href="/share/lib/grammar/functions.flxh#0166">sfun_kind := "fun"</a>
            Function binder: Function.
            A function without side-effects.
-0165:    <a href="/share/lib/grammar/functions.flxh#0165">stmt := sfunction</a>
-0171:    <a href="/share/lib/grammar/functions.flxh#0171">sfunction := sadjectives sfun_kind sdeclname sfun_arg* fun_return_type "=>" sexpr ";"</a>
+0168:    <a href="/share/lib/grammar/functions.flxh#0168">stmt := sfunction</a>
+0174:    <a href="/share/lib/grammar/functions.flxh#0174">sfunction := sadjectives sfun_kind sdeclname sfun_arg* fun_return_type "=>" sexpr ";"</a>
            General function definition. Multiple tuple arguments, body is expression.
            Example:
            
            inline fun f (x:int when x>0) (y:long when y>0l) : long expect result > 0l => x.long + y;
-0180:    <a href="/share/lib/grammar/functions.flxh#0180">sfunction := sadjectives sfun_kind sdeclname sfun_arg* fun_return_type "=" scompound</a>
+0183:    <a href="/share/lib/grammar/functions.flxh#0183">sfunction := sadjectives sfun_kind sdeclname sfun_arg* fun_return_type "=" scompound</a>
            General function definition. Multiple tuple arguments, body of statements.
            inline fun f (x:int when x>0) (y:long when y>0l) : long expect result > 0l { return x.long + y; }
-0186:    <a href="/share/lib/grammar/functions.flxh#0186">sfunction := "object" sdeclname sfun_arg* "implements" object_return_type "=" scompound</a>
+0189:    <a href="/share/lib/grammar/functions.flxh#0189">sfunction := "object" sdeclname sfun_arg* "implements" object_return_type "=" scompound</a>
            Object factory definition with interface type.
-0192:    <a href="/share/lib/grammar/functions.flxh#0192">sfunction := "object" sdeclname sfun_arg*  "=" scompound</a>
+0195:    <a href="/share/lib/grammar/functions.flxh#0195">sfunction := "object" sdeclname sfun_arg*  "=" scompound</a>
            Object factory definition without interface type.
-0218:    <a href="/share/lib/grammar/functions.flxh#0218">sfunction := "object" sdeclname sfun_arg*  "extends" stypeexpr_comma_list "=" scompound</a>
+0221:    <a href="/share/lib/grammar/functions.flxh#0221">sfunction := "object" sdeclname sfun_arg*  "extends" stypeexpr_comma_list "=" scompound</a>
            Object factory definition with inherited methods and
            interface type.
            Object factory definition with inherited methods.
-0233:    <a href="/share/lib/grammar/functions.flxh#0233">stypeexpr_comma_list := stypeexpr ("," stypeexpr)*</a>
-0236:    <a href="/share/lib/grammar/functions.flxh#0236">sopt_cstring := "=" scode_spec</a>
-0237:    <a href="/share/lib/grammar/functions.flxh#0237">sopt_cstring := sepsilon</a>
-0242:    <a href="/share/lib/grammar/functions.flxh#0242">sfunction := sadjectives sfun_kind sdeclname fun_return_type "=" smatching+ ";"</a>
+0236:    <a href="/share/lib/grammar/functions.flxh#0236">stypeexpr_comma_list := stypeexpr ("," stypeexpr)*</a>
+0239:    <a href="/share/lib/grammar/functions.flxh#0239">sopt_cstring := "=" scode_spec</a>
+0240:    <a href="/share/lib/grammar/functions.flxh#0240">sopt_cstring := sepsilon</a>
+0245:    <a href="/share/lib/grammar/functions.flxh#0245">sfunction := sadjectives sfun_kind sdeclname fun_return_type "=" smatching+ ";"</a>
            Short form function definition. Example:
            fun f : int -> int = | 0 => 0 | _ => 1;
-0271:    <a href="/share/lib/grammar/functions.flxh#0271">sproc_kind := "proc"</a>
+0274:    <a href="/share/lib/grammar/functions.flxh#0274">sproc_kind := "proc"</a>
            Procedure binder.
-0275:    <a href="/share/lib/grammar/functions.flxh#0275">sproc_kind := "cproc"</a>
+0278:    <a href="/share/lib/grammar/functions.flxh#0278">sproc_kind := "cproc"</a>
            C procedure binder.
            Procedure has C function type (with void result type).
-0277:    <a href="/share/lib/grammar/functions.flxh#0277">sopt_traint_eq:= "expect" sexpr "="</a>
-0278:    <a href="/share/lib/grammar/functions.flxh#0278">sopt_traint_eq:= "="</a>
-0279:    <a href="/share/lib/grammar/functions.flxh#0279">sopt_traint_eq:= sepsilon</a>
-0281:    <a href="/share/lib/grammar/functions.flxh#0281">sopt_traint:= "expect" sexpr</a>
-0282:    <a href="/share/lib/grammar/functions.flxh#0282">sopt_traint:= sepsilon</a>
-0284:    <a href="/share/lib/grammar/functions.flxh#0284">sctor_init := sname "(" sexpr ")"</a>
-0285:    <a href="/share/lib/grammar/functions.flxh#0285">sctor_inits := ":" sctor_init ("," sctor_init)*</a>
-0286:    <a href="/share/lib/grammar/functions.flxh#0286">sctor_inits := sepsilon</a>
-0291:    <a href="/share/lib/grammar/functions.flxh#0291">sfunction := "ctor" stvarlist squalified_name sfun_arg+ sopt_traint_eq scompound</a>
+0280:    <a href="/share/lib/grammar/functions.flxh#0280">sopt_traint_eq:= "expect" sexpr "="</a>
+0281:    <a href="/share/lib/grammar/functions.flxh#0281">sopt_traint_eq:= "="</a>
+0282:    <a href="/share/lib/grammar/functions.flxh#0282">sopt_traint_eq:= sepsilon</a>
+0284:    <a href="/share/lib/grammar/functions.flxh#0284">sopt_traint:= "expect" sexpr</a>
+0285:    <a href="/share/lib/grammar/functions.flxh#0285">sopt_traint:= sepsilon</a>
+0287:    <a href="/share/lib/grammar/functions.flxh#0287">sctor_init := sname "(" sexpr ")"</a>
+0288:    <a href="/share/lib/grammar/functions.flxh#0288">sctor_inits := ":" sctor_init ("," sctor_init)*</a>
+0289:    <a href="/share/lib/grammar/functions.flxh#0289">sctor_inits := sepsilon</a>
+0294:    <a href="/share/lib/grammar/functions.flxh#0294">sfunction := "ctor" stvarlist squalified_name sfun_arg+ sopt_traint_eq scompound</a>
            Short form constructor function.
            The name of the function must be a type name.
            The return type is taken as the type with the name of the function.
-0308:    <a href="/share/lib/grammar/functions.flxh#0308">sfunction := "ctor" stvarlist squalified_name sfun_arg+ sopt_traint "=>" sexpr ";"</a>
+0311:    <a href="/share/lib/grammar/functions.flxh#0311">sfunction := "ctor" stvarlist squalified_name sfun_arg+ sopt_traint "=>" sexpr ";"</a>
            Short form constructor function.
            The name of the function must be a type name.
            The return type is taken as the type with the name of the function.
-0323:    <a href="/share/lib/grammar/functions.flxh#0323">sfunction := sadjectives sproc_kind sdeclname sfun_arg* sopt_traint_eq scompound</a>
+0326:    <a href="/share/lib/grammar/functions.flxh#0326">sfunction := sadjectives sproc_kind sdeclname sfun_arg* sopt_traint_eq scompound</a>
            Procedure definition, general form.
-0329:    <a href="/share/lib/grammar/functions.flxh#0329">sfunction := sadjectives sproc_kind sdeclname sfun_arg* "=>" stmt</a>
+0332:    <a href="/share/lib/grammar/functions.flxh#0332">sfunction := sadjectives sproc_kind sdeclname sfun_arg* "=>" stmt</a>
            Procedure definition, short form (one statement).
 <hr/><a href="/share/lib/grammar/grammar_float_lexer.flxh">grammar_float_lexer.flxh</a>
 
@@ -929,60 +931,64 @@
            Use to exit from the loop with the specified label.
 0036:    <a href="/share/lib/grammar/loops.flxh#0036">stmt_group := "do" sstatements "done"</a>
 0037:    <a href="/share/lib/grammar/loops.flxh#0037">stmt_group := "begin" sstatements "end"</a>
-0041:    <a href="/share/lib/grammar/loops.flxh#0041">stmt := "continue" sname</a>
+0038:    <a href="/share/lib/grammar/loops.flxh#0038">stmt_group := "perform" stmt</a>
+0042:    <a href="/share/lib/grammar/loops.flxh#0042">stmt := "continue" sname</a>
            Labelled continue.
            Use to continue with the next iteration of the loop with the specified label.
-0045:    <a href="/share/lib/grammar/loops.flxh#0045">stmt := "redo" sname</a>
+0046:    <a href="/share/lib/grammar/loops.flxh#0046">stmt := "redo" sname</a>
            Labelled redo.
            Use to restart this iteration of the loop with the specified label.
-0049:    <a href="/share/lib/grammar/loops.flxh#0049">optlabel := sname ":"</a>
+0050:    <a href="/share/lib/grammar/loops.flxh#0050">optlabel := sname ":"</a>
            Syntax for a loop label.
            Use just before the loop.
-0052:    <a href="/share/lib/grammar/loops.flxh#0052">optlabel := sepsilon</a>
+0053:    <a href="/share/lib/grammar/loops.flxh#0053">optlabel := sepsilon</a>
            Loop labels aren't required.
-0055:    <a href="/share/lib/grammar/loops.flxh#0055">stmt := optlabel "while" sexpr stmt_group</a>
+0056:    <a href="/share/lib/grammar/loops.flxh#0056">stmt := optlabel "while" sexpr stmt_group</a>
            Standard while loop.
-0068:    <a href="/share/lib/grammar/loops.flxh#0068">stmt := optlabel "until" sexpr stmt_group</a>
+0069:    <a href="/share/lib/grammar/loops.flxh#0069">stmt := optlabel "until" sexpr stmt_group</a>
            Negated while loop.
-0090:    <a href="/share/lib/grammar/loops.flxh#0090">stmt := optlabel "for" sname "in" sexpr "upto" sexpr stmt_group</a>
+0081:    <a href="/share/lib/grammar/loops.flxh#0081">stmt := optlabel "for" "(" stmt sexpr ";" stmt ")" stmt</a>
+0099:    <a href="/share/lib/grammar/loops.flxh#0099">stmt := optlabel "for" stmt "while" sexpr ";" "next" stmt stmt_group</a>
+0118:    <a href="/share/lib/grammar/loops.flxh#0118">stmt := optlabel "for" stmt "until" sexpr ";" "next" stmt stmt_group</a>
+0146:    <a href="/share/lib/grammar/loops.flxh#0146">stmt := optlabel "for" sname "in" sexpr "upto" sexpr stmt_group</a>
            Numeric upwards for loop, existing control variable.
            Ranges are inclusive. This is essential in case
            the loops if over the complete domain of the control variable type.
            The start and end argument types and the declared control variable type must be the same.
-0118:    <a href="/share/lib/grammar/loops.flxh#0118">stmt := optlabel "for" "var" sname ":" sexpr "in" sexpr "upto" sexpr stmt_group</a>
+0174:    <a href="/share/lib/grammar/loops.flxh#0174">stmt := optlabel "for" "var" sname ":" sexpr "in" sexpr "upto" sexpr stmt_group</a>
            Numeric upwards for loop, also declares the control variable with type.
            The control variable is local to the enclosing context,
            NOT the loop, so it can be inspected in code following the loop.
            Ranges are inclusive. This is essential in case
            the loops if over the complete domain of the control variable type.
            The start and end argument types and the declared control variable type must be the same.
-0146:    <a href="/share/lib/grammar/loops.flxh#0146">stmt := optlabel "for" "var" sname "in" sexpr "upto" sexpr stmt_group</a>
+0202:    <a href="/share/lib/grammar/loops.flxh#0202">stmt := optlabel "for" "var" sname "in" sexpr "upto" sexpr stmt_group</a>
            Numeric upwards for loop, also declares the control variable.
            The control variable is local to the enclosing context,
            NOT the loop, so it can be inspected in code following the loop.
            Ranges are inclusive. This is essential in case
            the loops if over the complete domain of the control variable type.
            The start and end argument types must be the same.
-0173:    <a href="/share/lib/grammar/loops.flxh#0173">stmt := optlabel "for" sname "in" sexpr "downto" sexpr stmt_group</a>
+0229:    <a href="/share/lib/grammar/loops.flxh#0229">stmt := optlabel "for" sname "in" sexpr "downto" sexpr stmt_group</a>
            Numeric downwards for loop, existing control variable.
            Ranges are inclusive. This is essential in case
            the loops if over the complete domain of the control variable type.
            The start and end argument types and the declared control variable type must be the same.
-0201:    <a href="/share/lib/grammar/loops.flxh#0201">stmt := optlabel "for" "var" sname ":" sexpr "in" sexpr "downto" sexpr stmt_group</a>
+0257:    <a href="/share/lib/grammar/loops.flxh#0257">stmt := optlabel "for" "var" sname ":" sexpr "in" sexpr "downto" sexpr stmt_group</a>
            Numeric downwards for loop, also declares the control variable with type.
            The control variable is local to the enclosing context,
            NOT the loop, so it can be inspected in code following the loop.
            Ranges are inclusive. This is essential in case
            the loops if over the complete domain of the control variable type.
            The start and end argument types and the declared control variable type must be the same.
-0229:    <a href="/share/lib/grammar/loops.flxh#0229">stmt := optlabel "for" "var" sname "in" sexpr "downto" sexpr stmt_group</a>
+0285:    <a href="/share/lib/grammar/loops.flxh#0285">stmt := optlabel "for" "var" sname "in" sexpr "downto" sexpr stmt_group</a>
            Numeric downwards for loop, also declares the control variable.
            The control variable is local to the enclosing context,
            NOT the loop, so it can be inspected in code following the loop.
            Ranges are inclusive. This is essential in case
            the loops if over the complete domain of the control variable type.
            The start and end argument types and the declared control variable type must be the same.
-0266:    <a href="/share/lib/grammar/loops.flxh#0266">stmt := optlabel "for" sname "in" sexpr stmt_group</a>
+0322:    <a href="/share/lib/grammar/loops.flxh#0322">stmt := optlabel "for" sname "in" sexpr stmt_group</a>
            Basic stream consumer.
            The second argument must be a value for which there is a generator:
            iterator : D -> unit -> opt[T]
@@ -996,7 +1002,7 @@
            control variable,
            4. the loop body is executed, and
            6. we go back to step 1.
-0309:    <a href="/share/lib/grammar/loops.flxh#0309">stmt := optlabel "match" spattern "in" sexpr stmt_group</a>
+0365:    <a href="/share/lib/grammar/loops.flxh#0365">stmt := optlabel "match" spattern "in" sexpr stmt_group</a>
            Upmarket stream consumer.
            The second argument must be a value for which there is a generator:
            iterator : D -> unit -> opt[T]

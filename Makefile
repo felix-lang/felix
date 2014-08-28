@@ -15,7 +15,10 @@ all: build test
 
 VERSION = 1.1.12
 DISTDIR ?= ./build/dist
-INSTALLDIR ?= /usr/local/lib/felix/felix-$(VERSION)
+PREFIX = ?= /usr/local
+EXECPREFIX = ?= ${PREFIX}/bin
+INSTALLROOT ?= ${PREFIX}/lib/felix
+INSTALLDIR ?= ${INSTALLROOT}/felix-$(VERSION)
 FBUILDROOT ?= build
 BUILDROOT ?= ${FBUILDROOT}/release
 DEBUGBUILDROOT ?= ${FBUILDROOT}/debug
@@ -140,19 +143,20 @@ test: regress-check tut-check tutopt-check
 #
 
 install:
-	${SUDO} rm -rf /usr/local/lib/felix/felix-${VERSION}
-	${SUDO} ${BUILDROOT}/host/bin/flx_cp ${BUILDROOT}/host '(.*)' '/usr/local/lib/felix/felix-${VERSION}/host/$${1}'
-	${SUDO} ${BUILDROOT}/host/bin/flx_cp ${BUILDROOT}/share '(.*)' '/usr/local/lib/felix/felix-${VERSION}/share/$${1}'
-	${SUDO} ${BUILDROOT}/host/bin/flx_cp ${BUILDROOT} '(VERSION)' '/usr/local/lib/felix/felix-${VERSION}/$${1}'
-	${SUDO} ${BUILDROOT}/host/bin/flx_cp ${BUILDROOT}/host/bin '(flx)' '/usr/local/bin/$${1}'
-	${SUDO} ${BUILDROOT}/host/bin/flx_cp src/ '(.*\.(c|cxx|cpp|h|hpp|flx|flxh|fdoc|fpc|ml|mli))' '/usr/local/lib/felix/felix-${VERSION}/share/src/$${1}'
-	${SUDO} rm -rf $(HOME)/.felix/cache
-	${SUDO} rm -f /usr/local/lib/felix/felix-latest
-	${SUDO} ln -s /usr/local/lib/felix/felix-$(VERSION) /usr/local/lib/felix/felix-latest
+	rm -rf ${INSTALLDIR}
+	${BUILDROOT}/host/bin/flx_cp ${BUILDROOT}/host '(.*)' ${INSTALLDIR}'/host/$${1}'
+	${BUILDROOT}/host/bin/flx_cp ${BUILDROOT}/share '(.*)' ${INSTALLDIR}'/share/$${1}'
+	${BUILDROOT}/host/bin/flx_cp ${BUILDROOT} '(VERSION)' ${INSTALLDIR}'/$${1}'
+	${BUILDROOT}/host/bin/flx_cp ${BUILDROOT}/host/bin '(flx)' ${EXECPREFIX}'/$${1}'
+	${BUILDROOT}/host/bin/flx_cp src/ '(.*\.(c|cxx|cpp|h|hpp|flx|flxh|fdoc|fpc|ml|mli))' ${INSTALLDIR}'/share/src/$${1}'
+	rm -f ${INSTALLROOT}/felix-latest
+	ln -s ${INSTALLDIR} ${INSTALLROOT}/felix-latest
+
+make-cache:
+	rm -rf $(HOME)/.felix/cache
 	echo 'println ("installed "+ Version::felix_version);' > install-done.flx
 	flx --clean install-done
 	rm install-done.*
-	${SUDO} chown $(USER) $(HOME)/.felix
 
 #
 # Install binaries on felix-lang.org
@@ -219,6 +223,7 @@ gen-doc:
 	${BUILDROOT}/host/bin/flx_mktutindex src/web/tut tutorial.fdoc
 	${BUILDROOT}/host/bin/flx_mktutindex src/web/tutopt tutopt.fdoc
 	${BUILDROOT}/host/bin/flx_mktutindex src/web/articles articles.fdoc
+	${BUILDROOT}/host/bin/flx_mktutindex src/web/ref reference.fdoc
 	# Build reference docs. Note this requires plugins.
 	${LPATH}=${BUILDROOT}/host/lib/rtl ${BUILDROOT}/host/bin/flx_libcontents --html > src/web/ref/flx_libcontents.html
 	${LPATH}=${BUILDROOT}/host/lib/rtl ${BUILDROOT}/host/bin/flx_libindex --html > src/web/ref/flx_libindex.html

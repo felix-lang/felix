@@ -1,26 +1,18 @@
 <title>Felix System Reference</title>
 @h1 Felix System Reference
 @h2 Language
-<a href="flx_gramdoc.html">Felix Core Syntax</a>
+<a href="spec_index.fdoc">Language Specification</a>
 @p
-<a href="lang/core/index.fdoc">Felix Core Language Topics</a>
-@p
-<a href="abstract_machine.fdoc">Felix Abstract Machine</a>
+<a href="abstract_machine.fdoc">Abstract Machine</a>
 @p
 <a href="tex_symbols.fdoc">Special TeX Symbols</a>
 @h2 Library
-<a href="/host/config">The Configuration.</a> Actual, installed, complete configuration data.
+<a href="flx_gramdoc.html">Grammar</a>
 @p
-<a href="/share/lib">The Library.</a> Actual, installed, complete library libraries.
+<a href="flx_libcontents.html">Standard Library by Category.</a> 
 @p
-<a href="/share/lib">The Standard Library.</a> Just the library {std}.
+<a href="flx_libindex.html">Standard Library in Alphabetical Order</a>
 @p
-<a href="flx_libcontents.html">Felix Library Contents by File</a>
-@p
-<a href="flx_libindex.html">Felix Library Alphabetical Symbol Index</a>
-@p
-@h1 Install Image.
-<a href="/?">Image of the installation.</a>
 @h2 Test Suite.
 <a href="/share/src/test">Complete Test Suite</a>
 @p
@@ -28,8 +20,27 @@
 <a href="tools.fdoc">Utility tools.</a> All the utility tools, including
 the webserver.
 @p
-@h2 Web Site.
-<a href="/?">The website</a>
+@h2 Live Installation.
+These links are to the Felix installation of the webserver you're using 
+to view this page. They may vary from installation to installation.
+@p
+<a href="/?">Live installation root</a> The top level directory of the web server Felix installation.
+@p
+<a href="/share/lib">The Library.</a> The complete library, live.
+@p
+<a href="/share/lib/std">The Standard Library.</a> The standard library, live.
+@p
+<a href="/share/lib/stl">Bindings to the C++ Standard Template Library STL.</a> STL bindings, live.
+@p
+<a href="/share/lib/web">The Web Library.</a> The web library, live.
+@p
+<a href="/share/lib/sdl">The SDL Library.</a> The Simple Direct Media binding, live.
+@p
+<a href="/share/lib/gui">The GUI Library.</a> Work in Progress: The GUI library, live.
+@p
+<a href="/host/lib">The platform dependent Felix library code.</a> For the web server host installation.
+@p
+<a href="/host/config">The Configuration.</a> Configuration data for the web server host installation.
 @p
 @h2 Processing model
 <svg viewBox="43 59 887 340" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
