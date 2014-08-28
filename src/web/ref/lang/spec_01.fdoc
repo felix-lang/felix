@@ -737,33 +737,230 @@ This is a valid way to handle errors.
 the code is correct because @{outer} is active
 at the time that @{handler} performs the
 control transfer.
+@h3 halt
+Stops the program with a diagnostic.
+@felix
+halt "Program complete";
+@
 
-@h3 goto-indirect
-TBD
+@h3 try/catch/entry
+The try/catch construction may only be user to wrap
+calls to C++ primitives, so as to catch exceptions.
+@felix
+proc mythrow 1 = "throw 0;";
+try
+   mythrow;
+catch (x:int) =>
+   println$ "Caughht integer " + x.str;
+endtry
+@
+
+@h3 goto-indirect/label_address
+The @{label-address} operator captures the address
+of code at a nominated label. 
+
+The address has type @{LABEL} and can be stored in a variable.
+
+Provided the activation record of the procedure containing
+the label remains live, a subsequent @{goto-indirect) can
+be used to jump to that location.
+
+@felix
+proc demo (selector:int) {
+  var pos : LABEL = 
+    if selector == 1 
+    then label_address lab1
+    else label_address lab2
+    endif
+  ;
+  goto-indirect selector;
+lab1:>
+  println$ "Lab1"; return;
+lab2:>
+  println$ "Lab2"; return;
+}
+@
+
 @h3 Exchange of control
 TBD
 @h2 match/endmatch
 TBD
 @h2 if/goto
-TBD
+The conditional goto is an abbreviation for 
+the more verbose conditional:
+@felix
+if c goto lab; // equivalent to
+if c do goto lab; done
+@
+
+@h3 if/return
+The conditional return is an abbreviation for
+the more verbose conditional:
+@felix
+if c return; // equivalent to
+if c do return; done
+@
+
+@h3 if/call
+The conditional call is an abbreviation for
+the more verbose conditional:
+@felix
+if c call f x; // equivalent to
+if c do call f x; done
+@
+
+
 @h2 if/do/elif/else/done
-TBD
+The procedural conditional branch is used to select
+a control path based on a boolean expression.
+
+The @{else} and @{elif} clauses are optional.
+@felix
+if c1 do 
+  stmt1;
+  stmt2;
+elif c2 do
+  stmt3;
+  stmt4;
+else
+  stmt5;
+  stmt6;
+done
+@
+
+The @{elif} clause saves writing a nested conditional.
+The above is equivalent to:
+@felix
+if c1 do 
+  stmt1;
+  stmt2;
+else 
+  if c2 do
+    stmt3;
+    stmt4;
+  else
+    stmt5;
+    stmt6;
+  done
+done
+@
+One or more statements may be givn in the selected control path.
+
+A simple conditional is an abbreviation for a statement match:
+@felix
+if c do stmt1; stmt2; else stmt3; stmt4; done
+// is equivalent to
+match c with
+| true => stmt1; stmt2; 
+| false => stmt3; stmt4;
+endmatch;
+@
 
 @h2 call
-TBD
+The @{call} statement is used to invoke a procedure.
+@felix
+proc p(x:int) { println$ x; }
+call p 1;
+@
+The word @{call} may be elided in a simple call:
+@felix
+p 1;
+@
+If the argument is of unit type; that is, it is the
+empty tuple, then the tuple may also be elided in
+a simple call:
+@felix
+proc f() { println$ "Hi"; }
+call f (); // is equivalent to
+f(); // is equivalent to
+f;
+@
+
 @h2 procedure return
-TBD
+The procedural return is used to return control
+from a procedure to its caller.
+
+A return is not required at the end of a procedure
+where control would otherwise appear to drop through,
+a return is assumed:
+@felix
+proc f() { println$ 1; }
+// equivalent to
+proc f() { println$ 1; return; }
+@
+
 @h3 return from
-TBD 
+The return from statement allows control to be
+returned from an enclosing procedure, provided that
+procedure is active.
+@felix
+proc outer () {
+  proc inner () {
+     println$ "Inner";
+     return from outer;
+  }
+  inner;
+  println$ "Never executed";
+}
+@
+
 @h3 jump 
-TBD 
+The procedural jump is an abbreviation for 
+the more verbose sequence:
+@felix
+jump procedure arg; // is equivalent to
+call procedure arg;
+return;
+@
+
 @h2 function return
-TBD
+The functional return statement returns a value from
+a function.
+@felix
+fun f () : int = {
+  return 1;
+}
+@
+Control may not fall through the end of a function.
+
 @h3 yield
-TBD
+The yield statement returns a value from a generator
+whilst retaining the current location so that execution
+may be resumed at the point after the yield.
+
+For this to work a closure of the generator must be stored
+in a variable which is subsequently applied.
+@felix
+gen counter () = { 
+  var x = 0;
+next_integer:>
+  yield x;
+  ++x;
+  goto next_integer;
+}
+
+var counter1 = counter;
+var zero = counter1 ();
+var one = counter1 ();
+println$ zero, one;
+@
+
+
 @h2 spawn_fthread
-TBD
-@h3 read/write schannel
+The @{spawn_fthread} library function invokes the corresponding
+service call to schedule the initial continuation of a procedure 
+taking a unit argument as an fthread (fibre). 
+
+The spawned fthread begins executing immediately.
+If coutrol returns before yielding by a synchronous
+channel operation, the action is equivalent to calling
+the procedure.
+
+Otherwise the spawned fthread is suspended when the first
+write, or the first unmatched read operation occurs.
+
+
+@h3 read/write/broadcast schannel
 TBD
 @h2 spawn_pthread
 TBD
@@ -772,19 +969,88 @@ TBD
 @h3 exchange
 
 @h1 loops
-@h2 redo
-TBD
-@h2 break
-TBD
-@h2 continue
+Felix has some low level and high level loop constructions.
 
-@h2 for/in/do/done
-TBD
-@h2 for/match/done
-TBD
+The low level for, while, and repeat loops are equivalent
+to loops implemented with gotos.
+
+The bodies of do loops do not constitute a scope,
+therefore any symbol defined in such a body is also visible
+in the surrounding code.
+
+Low level loops may be labelled with a loop label
+which is used to allow break, continue, and redo
+statements to exit from any containing loop.
+
+@felix
+outer:for var i in 0 upto 9 do
+   inner: for var j in 0 upto 9 do
+     println$ i,j;
+     if i == j do break inner; done
+     if i * j > 60 do break outer; done
+   done
+done
+@
+
+@h2 redo
+The redo statement causes control to jump to the start
+of the specified loop without incrementing the control variable.
+
+@h2 break
+The break statement causes control to jump past the end of
+the specified loop, terminating iteration.
+
+@h2 continue
+The continue statement causes the control variable to
+be incremented and tests and the next iteration commenced
+or the loop terminated.
+
+@h2 for/in/upto/downto/do/done
+A basic loop with an inclusive range.
+@felix
+// up
+for var ti:int in 0 upto 9 do println$ ti; done
+for var i in 0 upto 9 do println$ i; done
+for i in  0 upto 9 do println$ i; done
+
+// down
+for var tj:int in 9 downto 0 do println$ j; done
+for var j in 9 downto 0 do println$ j; done
+for j in  0 upto 9 do println$ j; done
+@
+The start and end expressions must be of the same type.
+
+If the control variable is defined in the loop with a type
+annotation, that type must agree with the control variable.
+
+The type must support comparison with the equality operator @{==}
+the less than or equals operator @{<=} and increment with 
+the pre increment procedure @{++}.
+
+For loops over unsigned types cannot handle the empty case.
+For loops over signed types cannot span the whole range of the type.
+
+The loop logic takes care to ensure the control variable is not
+incremented (resp. decremented) past the end (resp.start) value.
+
 @h2 while/do/done
-TBD
-@h2 repeat/until
+The while loop executes the body repeatedly whilst the control
+condition is true at the start of the loop body.
+@felix
+var i = 0;
+while i < 10 do println$ i; ++i; done
+@
+
+@h2 until loop
+The until loop executes the loop body repeatedly
+until the control condition is false at the start of the loop,
+it is equivalent o a while loop with a negated condition.
+@felix
+var i = 0;
+until i == 9 do println$ i; ++i; done
+@
+
+@h2 for/match/done
 TBD
 @h2 loop
 TBD
