@@ -46,6 +46,7 @@ fun lc (x:string) = {
 // Felix
 module Flx2Html {
 private val big_keywords = 
+  ("export",'generate extern "C" wrapper'),
   ("macro","prefix for macro definitions"),
   ("module","Define a module namespace"),
   ("cfun","Define a C function"),
@@ -117,7 +118,7 @@ private val small_keywords =
   ("jump","tail call of function"),
   ("loop","self-tail call"),
   ("package","specifies an abstract package name"),
-  ("when", "predicative type constraint"),
+  ("when", "predicative type constraint or precondition"),
   ("result","value of function return used in post condition"),
   ("expect","post condition"),
   ("for","for loop"),

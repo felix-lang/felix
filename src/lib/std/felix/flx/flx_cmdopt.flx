@@ -682,13 +682,15 @@ noinline proc processing_stage1
   // library location MUST be changed for cross compilation.
   // FIXME!
   
-  if config*.HAVE_WIN32 do
-    var dflt_flxg = Filename::join(control*.FLX_TARGET_DIR, 'bin', 'flxg.exe');
-    var dflt_flx_run = list$ "set", "PATH="+(Directory::mk_absolute_filename control*.FLX_TARGET_DIR)+"\\lib\\rtl;"+"%PATH%&&";
+  var dflt_flxg = "";
+  var dflt_flx_run = Empty[string];
+  if PLAT_WIN32 do
+    dflt_flxg = Filename::join(control*.FLX_TARGET_DIR, 'bin', 'flxg.exe');
+    dflt_flx_run = list$ "set", "PATH="+(Directory::mk_absolute_filename control*.FLX_TARGET_DIR)+"\\lib\\rtl;"+"%PATH%&&";
   else
     dflt_flxg = control*.FLX_TARGET_DIR+"/bin/flxg";
     // the mac uses DYLD_LIBRARY_PATH instead of LD_LIBRARY_PATH
-    if config*.HAVE_MACOSX do
+    if PLAT_MACOSX do
       dflt_flx_run = list$ "env","DYLD_LIBRARY_PATH="+control*.FLX_TARGET_DIR+"/lib/rtl:$DYLD_LIBRARY_PATH";
     else
       dflt_flx_run = list$ "env", "LD_LIBRARY_PATH="+control*.FLX_TARGET_DIR+"/lib/rtl:$LD_LIBRARY_PATH";
@@ -708,8 +710,27 @@ noinline proc processing_stage1
   ;
 
 
+  // TEMPORARY HACK: use the right stuff from the felix.fpc file
+  // a bit later .. for now the OS selection macros will do ..
+  fun link_strings (install_dir:string) = {
+    var DLINK_STRING = "";
+    var SLINK_STRING = "";
+    if PLAT_WIN32 do // MSVC
+      DLINK_STRING = "/link /DLL /LIBPATH:"+install_dir+r"\host\lib\rtl";
+      SLINK_STRING = "/link /LIBPATH:"+install_dir+r"\host\lib\rtl";
+    elif PLAT_CYGWIN do // gcc on Windows
+      DLINK_STRING = "-L"+install_dir+"/host/bin";
+      SLINK_STRING = "-L"+install_dir+"/host/lib/rtl";
+    else // Unix: gcc or clang
+      DLINK_STRING = "-L"+install_dir+"/host/lib/rtl";
+      SLINK_STRING = "-L"+install_dir+"/host/lib/rtl";
+    done;
+    return DLINK_STRING, SLINK_STRING;
+  }
+
+
   // Get linker names.
-  var d,s = Config::link_strings(config*.FLX_INSTALL_DIR);
+  var d,s = link_strings(config*.FLX_INSTALL_DIR);
   control.DLINK_STRINGS <-  Shell::parse d;
   control.SLINK_STRINGS <-  Shell::parse s;
 

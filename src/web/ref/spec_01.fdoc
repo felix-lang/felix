@@ -95,6 +95,9 @@ A TeX identifier starts with a slosh and is followed by a sequence
 of letters. 
 @
 @h2 Integer Literals
+
+<a href="/share/lib/grammar/grammar_int_lexer.flxh">Reference</a>
+
 An plain integer literal consists of a sequence of digits,
 optionally separated by underscores. Each separating
 underscore must be between digits.
@@ -185,12 +188,121 @@ integer like types since not all have literal representations.
 Note the suffices do not entirely agree with C.
 
 @h2 Floating point Literals
-TBD
+<a href="/share/lib/grammar/grammar_float_lexer.flxh">Reference</a>
+
+Floating point literals follow ISO C89, except that underscores
+are allowed between digits, and a a digit is required both before
+and after the decimal point if it is present.
+
+The mantissa may be decimal, or hex, a hex mantissa uses a
+leading 0x or 0X prefix optionally followed by an underscore.
+
+The exponent may designate a power of 10 using E or e,
+or a power of 2, using P or p.
+
+A suffix may be F,f,D,d, L or l, designating floating type,
+double precision floating type, or long double precision floating 
+type.
+
+@felix
+123.4
+123_456.78
+12.6E-5L
+0xAf.bE6f
+12.7p35
+@
+
 @h2 String literals
-TBD
-@h2 Format literals
-TBD
- 
+
+<a href="/share/lib/grammar/grammar_string_lexer.flxh">Reference</a>
+
+Generaly we follow Python here.
+Felix allows strings to be delimited by;
+single quotes ',
+double quotes ",
+triped single quotes ''' or
+tripled double quotes """.
+
+The single quote forms must be on a single line.
+
+The triple quoted forms may span lines, and include embedded newline
+characters.
+
+These forms all allows embedded escape codes.
+These are:
+@pre
+\a  -  7 : bell
+\b  -  8 : backspace
+\t  -  9 : horizontal tab
+\n  - 10 : linefeed, newline
+\r  - 13 : carriage return
+\v  - 11 : vertical tab
+\f  - 12 :form feed
+\e  - 27 : escape
+\\  - \  : slosh
+\"  - "  : double quote
+\'  - '  : single quote
+\   - 32 : space
+\xFF - hexadecimal character code
+\o7 \o77 \o777 -- octal character code (stops on count of 3 or non-octal character)
+\d9 \d99 \d999 -- decimal character code (stops on count of 3 or non-decimal character)
+\uFFFF - utf8 encoding of specified hex value
+\UFFFFFFFF - utf8 encoding of specified hex value
+@
+@h3 Raw strings
+A prefix "r" or "R" on a double quoted string
+or triple double quoted string suppresses escape processing,
+
+this is called a raw string literal.
+NOTE: single quoted string cannot be used!
+
+@h3 Null terminated strings
+A prefix of "c" or "C" specifies a C NTBS (Nul terminated
+byte string) be generated instead of a C++ string.
+Such a string has type +char rather than string.
+
+@h3 Perl interpolation strings
+A literal prefixed by "q" or "Q" is a Perl interpolation
+string. Such strings are actually functions.
+Each occurrence of $(varname) in the string is replaced
+at run time by the value "str varname". The type of the
+variable must provide an overload of "str" which returns
+a C++ string for this to work.
+
+@h3 C format strings
+A literal prefixed by a "f" or "F" is a C format string.
+
+Such strings are actually functions.
+
+The string contains code such as "%d" or other supported
+C format specifiers. 
+
+Variable field width specifiers "*" are not permitted. 
+
+The additional format specification %S
+is supported and requires a Felix string argument.
+
+Such functions accept a tuple of values like this:
+@felix
+f"%d-%S" (42, "Hello")
+@
+If @{vsnprintf} is available on the local platform it is used
+to provide an implementation which cannot overrun.
+If it is not, @{vsprintf} is used instead with a 1000 character
+buffer.
+
+The argument types and code types are fully checked for type safety.
+
+@h3 Special identifiers
+The special literal with a "n" or "N" prefix is a way to encode
+an arbitrary sequence of characters as an identifer in a context
+where the parser might interpret it otherwise.
+It can be used, for example, to define special characters as functions.
+For example:
+@felix
+typedef fun n"@" (T:TYPE) : TYPE => cptr[T];
+@
+
 @h2 Include Directive
 An include directive has the syntax:
 @felix
@@ -210,13 +322,59 @@ extension @{.flx} or {.fdoc}. If both files exist the
 most recently changed one is used. If the time stamps are
 the same the choice is unspecified.
 
+@h1 Macro processing
+<a href="/share/lib/grammar/macros.flxh">Syntax</a>
 
-@h1 Macro val
-TBD
-@h1 Macro for
-TBD
-@h1 Conatsnt folding and conditional comopilation
-TBD
+<a href="/share/src/compiler/flx_desugar/flx_macro.ml">Semantics</a>
+@h2 Macro val
+The macro val statement is used to specify an identifier should
+be replaced by the defining expression wherever it occurs in an
+expression, type expression, or pattern.
+@felix
+macro val WIN32 = true;
+macro val hitchhiker;
+macro val a,b,c = 1,2,3;
+@
+
+@h2 Macro for
+This statement allows a list of statements to be repeated
+with a sequence of replacements.
+@felix
+forall name in 1,2,3 do
+  println$ name;
+done
+@
+
+@h2 Constant folding and conditional compilation
+<a href="/share/src/compiler/flx_desugar/flx_constfld.ml">Reference</a>
+
+Felix provides two core kinds of constant folding:
+folding of arithmetic, boolean, and string values, and 
+deletion of code, either statements or expressions,
+which would become unreachable due to certain
+value of conditionals.
+
+Basic operations on integer literals, namely 
+addition, subtraction, negation, multiplication,
+division, and remainder are folded.
+
+Strings are concatenated.
+
+Boolean and, or, exclusive or, and negation,
+are evaluated.
+
+False branches of if/then/else/endif expression
+and match expressions are eliminated.
+
+False branches of if/do/elif/else/done 
+are also eliminated.
+
+By this mechanism of constant folding and
+elimination, Felix provides conditional
+compilation without the need for special
+constructions.
+
+
 @h1 General lookup
 By default Felix looks up symbols in nested scopes, 
 starting with all symbols in the current scope
@@ -240,6 +398,8 @@ the next outermost scope.
 All other cases are in error.
 
 @h1 Classes
+<a href="/share/lib/grammar/namespaces.flxh">Syntax</a>
+
 The top level Felix module can contain submodules 
 which are specified by a non-polymorphic class
 statement:
@@ -402,6 +562,8 @@ is the same as if an export statement has been written.
 
 
 @h1 Variable Definitions
+<a href="/share/lib/grammar/variables.flxh">Syntax</a>
+
 A definition is a statement which defines a name, but does
 no cause any observable behavior, or, a class statement, or, 
 a var or val statement. The latter two exceptions define a name
@@ -539,6 +701,8 @@ With this syntax, no type annotation may be given.
 
 
 @h1 Functions
+<a href="/share/lib/grammar/functions.flxh">Syntax</a>
+
 A felix function definition takes one of three basic forms:
 @felix
 fun f (x:int) = { var y = x + x; return y + 1; }
@@ -689,8 +853,8 @@ f ();
 TBD
 
 @h1 Types
-@h2 Primitives
-TBD
+<a href="/share/lib/grammar/type_decls.flxh">Syntax</a>
+
 @h3 cenum
 TBD
 @h3 cstruct
@@ -728,11 +892,87 @@ TBD
 TBD
 
 @h1 Expressions
+<a href="/share/lib/grammar/expressions.flxh">Syntax</a>
+@h3 cenum
 TBD
+@h3 cstruct
+TBD
+@h3 ctypes
+TBD
+@h3 cflags
+TBD
+@h2 Tuples
+TBD
+@h2 Records
+TBD
+@h2 Structs
+TBD
+@h2 Sums
+TBD
+@h3 union
+TBD
+@h2 enum
+TBD
+@h2 variant
+TBD
+@h2 Array
+TBD
+@h2 typedef
+TBD
+@h3 typedef fun
+TBD
+@h2 typematch
+TBD
+@h2 type sets
+TBD
+
+@h2 Abstract types
+TBD
+
+@h1 Expressions
+<a href="/share/lib/grammar/expressions.flxh">Syntax</
+@h3 cenum
+TBD
+@h3 cstruct
+TBD
+@h3 ctypes
+TBD
+@h3 cflags
+TBD
+@h2 Tuples
+TBD
+@h2 Records
+TBD
+@h2 Structs
+TBD
+@h2 Sums
+TBD
+@h3 union
+TBD
+@h2 enum
+TBD
+@h2 variant
+TBD
+@h2 Array
+TBD
+@h2 typedef
+TBD
+@h3 typedef fun
+TBD
+@h2 typematch
+TBD
+@h2 type sets
+TBD
+
+@h2 Abstract types
+TBD
+
+@h1 Expressions
+<a href="/share/lib/grammar/expressions.flxh">Syntax</a>
 
 @h1 Executable statements
 @h2 Assignment
-TBD
+<a href="/share/lib/grammar/assignment.flxh">Syntax</a>
 
 @h2 The @{goto} statement and label prefix
 Felix statements may be prefixed by a label
@@ -986,6 +1226,8 @@ println$ zero, one;
 
 
 @h2 spawn_fthread
+<a href="/share/lib/std/control/fibres.flx">Reference</a>
+
 The @{spawn_fthread} library function invokes the corresponding
 service call to schedule the initial continuation of a procedure 
 taking a unit argument as an fthread (fibre). 
@@ -1000,14 +1242,19 @@ write, or the first unmatched read operation occurs.
 
 
 @h3 read/write/broadcast schannel
-TBD
+<a href="/share/lib/std/control/schannels.flx">Reference</a>
+
 @h2 spawn_pthread
-TBD
+<a href="/share/lib/std/control/pthread.flx">Reference</a>
+
 @h3 read/write pchannel
-TBD
+<a href="/share/lib/std/control/pchannels.flx">Reference</a>
+
 @h3 exchange
 
 @h1 loops
+<a href="/share/lib/grammar/loops.flxh">Reference</a>
+
 Felix has some low level and high level loop constructions.
 
 The low level for, while, and repeat loops are equivalent
@@ -1093,18 +1340,21 @@ until i == 9 do println$ i; ++i; done
 TBD
 @h2 loop
 TBD
+@h2 Assertions
+<a href="/share/lib/grammar/assertions.flxh">Reference</a>
 @h2 assert
 TBD
-@h2 axiom
+@h3 axiom
 TBD
-@h2 lemma
+@h3 lemma
 TBD
-@h2 theorem
+@h3 theorem
 TBD
-@h2 reduce
+@h3 reduce
 TBD
-@h2 invariant
+@h3 invariant
 TBD
+
 @h2 code
 TBD
 @h3 noreturn code
@@ -1123,11 +1373,22 @@ TDB
 TBD
 @h1 Domain Specific Sublanguages
 @h2 Regexps
-TBD
+<a href="/share/lib/grammar/regexps.flxh">Syntax</a>
+
+<a href="/share/lib/std/strings/regdef.flx">Combinators</a>
+
+<a href="/share/lib/std/strings/re2.flx">Google Re2 Binding</a>
+
 @h2 Pipelines
+@h3 Synchronouse pipelines
+<a href="/share/lib/std/control/spipe.flx">Library</a>
+@h3 Asynchronouse pipelines
+<a href="/share/lib/std/control/ppipe.flx">Library</a>
+
+@h3 Json
 TBD
-
-
+@h3 Sqlite3
+TBD
 
 
 

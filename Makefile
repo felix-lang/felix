@@ -164,7 +164,7 @@ make-cache:
 #
 install-felix-lang.org:
 	-sudo stop felixweb
-	make install
+	sudo make install
 	sudo start felixweb
 
 #
