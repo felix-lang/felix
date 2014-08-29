@@ -7,7 +7,7 @@ class Config {
     var install_line = RE2("FLX_INSTALL_DIR: (.*)");
 
     // global defaults
-    var PREFIX = Filename::join ("usr","local","lib");
+    var PREFIX = Filename::join ("/usr","local","lib");
     var INSTALL_ROOT_TOPDIR= Filename::join (PREFIX,"felix");
     var INSTALL_ROOT = Filename::join (INSTALL_ROOT_TOPDIR, "felix-"+Version::felix_version);
     var FLX_INSTALL_DIR = INSTALL_ROOT;
