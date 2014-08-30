@@ -15,8 +15,8 @@ all: build test
 
 VERSION = 1.1.12
 DISTDIR ?= ./build/dist
-PREFIX = ?= /usr/local
-EXECPREFIX = ?= ${PREFIX}/bin
+PREFIX ?= /usr/local
+EXECPREFIX ?= ${PREFIX}/bin
 INSTALLROOT ?= ${PREFIX}/lib/felix
 INSTALLDIR ?= ${INSTALLROOT}/felix-$(VERSION)
 FBUILDROOT ?= build
