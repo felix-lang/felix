@@ -320,16 +320,17 @@ flx_dynlink_t *link_library(flx_config *c, ::flx::gc::collector::gc_profile_t *g
 
 int FELIX_MAIN (int argc, char** argv)
 {
+  int error_exit_code = 0;
   flx_config *c = new flx_config(link_library, init_ptr_create_async_hooker, get_flx_args_config);
   flx_world *world=new flx_world(c);
+  try {
 
-  int error_exit_code = world->setup(argc, argv);
+    error_exit_code = world->setup(argc, argv);
 
-  if(0 != error_exit_code) return error_exit_code;
+    if(0 != error_exit_code) return error_exit_code;
 
   // MAINLINE, ONLY DONE ONCE
   // TODO: simply return error_exit_code
-  try {
     // We're all set up, so run felix
     world->begin_flx_code();
 
