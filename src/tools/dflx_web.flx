@@ -67,6 +67,7 @@ include "plugins/fdoc-interface";
 include "plugins/edit-interface";
 
 proc dbg(x:string) { fprint (cstderr,x); };
+fun / (x:string, y:string) => Filename::join (x,y);
 
 requires header '#include <stdlib.h>';
 fun strtod: string -> double = "strtod($1.data(),0)";
