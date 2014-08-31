@@ -78,7 +78,7 @@ fun atoi: string -> int = "atoi($1.data())";
 // Setup the fixed defaults.
 var arg = "";
 var argno = 1;
-var SHARE = #Config::config.FLX_INSTALL_DIR;
+var SHARE = #Config::config.FLX_SHARE_DIR;
 var TARGET = #Config::config.FLX_TARGET_DIR;
 var INSTALL_ROOT = SHARE.[to -6]; // cut off the /share suffix
  
