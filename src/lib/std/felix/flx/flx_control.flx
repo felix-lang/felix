@@ -54,6 +54,7 @@ typedef loopctl_type = typeof (#init_loopctl);
 fun dflt_control (config:Config::config_type, profile:FlxProfile::profile_type) =>
   struct {
 
+    var FLX_INSTALL_DIR= ""; // now a temporary!
     var PRINT_HELP=0;
 
     var FLXG_FORCE=0;

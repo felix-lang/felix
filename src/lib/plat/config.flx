@@ -15,6 +15,7 @@ class Config {
     var INSTALL_ROOT_TOPDIR= Filename::join (PREFIX,"felix");
     var INSTALL_ROOT = Filename::join (INSTALL_ROOT_TOPDIR, "felix-"+Version::felix_version);
     var FLX_INSTALL_DIR = INSTALL_ROOT;
+    var FLX_SHARE_DIR = FLX_INSTALL_DIR/"share";
     var FLX_TARGET_SUBDIR = "host";
     var FLX_TARGET_DIR = FLX_INSTALL_DIR / FLX_TARGET_SUBDIR;
 
@@ -37,11 +38,13 @@ class Config {
         var p = v.1;
         var a = strip v.2;
         match p with
-        | "FLX_INSTALL_DIR" => 
-          FLX_INSTALL_DIR = a;
-        | "FLX_TARGET_SUBDIR" => 
-          FLX_TARGET_SUBDIR = a; 
+        | "FLX_INSTALL_DIR" => FLX_INSTALL_DIR = a; 
+
+        | "FLX_TARGET_SUBDIR" => FLX_TARGET_SUBDIR = a; 
           FLX_TARGET_DIR = FLX_INSTALL_DIR / FLX_TARGET_SUBDIR;
+
+        | "FLX_SHARE_DIR" => FLX_SHARE_DIR = a; 
+        | "FLX_TARGET_DIR" => FLX_TARGET_DIR = a; 
         endmatch;
       | None => ;
       endmatch;
@@ -57,7 +60,7 @@ class Config {
     // final result can still be overriden by command line switch
     //println$ "FLX_INSTALL_DIR='" + FLX_INSTALL_DIR+"'";
     //println$ "FLX_TARGET_DIR='" + FLX_TARGET_DIR+"'";
-    return (FLX_INSTALL_DIR=FLX_INSTALL_DIR, FLX_TARGET_DIR=FLX_TARGET_DIR);
+    return (FLX_SHARE_DIR=FLX_SHARE_DIR, FLX_TARGET_DIR=FLX_TARGET_DIR);
   }
 
   typedef config_type = typeof (#config);

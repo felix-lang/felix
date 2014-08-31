@@ -131,9 +131,16 @@ println$ "Setup file: " + arg;
       var field = v.1;
       var data = strip v.2;
       match field with
-      | "FLX_INSTALL_DIR" => println$ "set FLX_INSTALL_DIR "+data; config.FLX_INSTALL_DIR <- data;
+      | "FLX_INSTALL_DIR" => println$ "set FLX_INSTALL_DIR "+data; 
+        control.FLX_INSTALL_DIR <- data;
+        config.FLX_SHARE_DIR <- data/"share";
+
+      | "FLX_SHARE_DIR" => println$ "set FLX_SHAREL_DIR "+data; config.FLX_SHARE_DIR <- data;
       | "FLX_TARGET_DIR" => println$ "set FLX_TARGET_DIR "+data; config.FLX_TARGET_DIR<- data;
-      | "FLX_TARGET_SUBDIR" => println$ "set FLX_TARGET_DIR "+data; config.FLX_TARGET_DIR<- config*.FLX_INSTALL_DIR / data;
+
+      | "FLX_TARGET_SUBDIR" => // May only be used after setting FLX_INSTALL_DIR
+         println$ "set FLX_TARGET_DIR "+data; 
+         config.FLX_TARGET_DIR<- control*.FLX_INSTALL_DIR / data;
 
       | "share-dir" => println$ "set share-dir "+data; control.FLX_SHARE_DIR <- data;
       | "cache-dir" => println$ "set cache-dir "+data; control.CACHE_DIR <- data;
@@ -202,10 +209,10 @@ private noinline proc handle_switch
 
   elif prefix(arg,"--test=") do
     debugln "Set test directory";
-    config.FLX_INSTALL_DIR <- arg.[7 to];
-    control.FLX_SHARE_DIR <- Filename::join (config*.FLX_INSTALL_DIR , "share");
+    control.FLX_INSTALL_DIR <- arg.[7 to];
+    control.FLX_SHARE_DIR <- Filename::join (control*.FLX_INSTALL_DIR , "share");
     control.FLX_TARGET_SUBDIR <- "host";
-    config.FLX_TARGET_DIR <- Filename::join (config*.FLX_INSTALL_DIR , control*.FLX_TARGET_SUBDIR);
+    config.FLX_TARGET_DIR <- Filename::join (control*.FLX_INSTALL_DIR , control*.FLX_TARGET_SUBDIR);
 
   elif prefix(arg,"--felix=") do
     debugln "Set install details";
@@ -214,7 +221,7 @@ private noinline proc handle_switch
   elif prefix(arg,"--target-subdir=") do
     debugln "Set target configuration subdirectory";
     control.FLX_TARGET_SUBDIR <- arg.[16 to];
-    config.FLX_TARGET_DIR <- Filename::join (config*.FLX_INSTALL_DIR, control*.FLX_TARGET_SUBDIR);
+    config.FLX_TARGET_DIR <- Filename::join (control*.FLX_INSTALL_DIR, control*.FLX_TARGET_SUBDIR);
 
   elif prefix(arg,"--target-dir=") do
     debugln "Set target configuration directory";
@@ -227,9 +234,9 @@ private noinline proc handle_switch
 
   elif arg=="--test" do
     debugln "Set test directory";
-    config.FLX_INSTALL_DIR <- ".";
-    control.FLX_SHARE_DIR <- Filename::join (config*.FLX_INSTALL_DIR , "share");
-    config.FLX_TARGET_DIR <- Filename::join (config*.FLX_INSTALL_DIR , control*.FLX_TARGET_SUBDIR);
+    control.FLX_INSTALL_DIR <- ".";
+    control.FLX_SHARE_DIR <- Filename::join (control*.FLX_INSTALL_DIR , "share");
+    config.FLX_TARGET_DIR <- Filename::join (control*.FLX_INSTALL_DIR , control*.FLX_TARGET_SUBDIR);
 
   elif prefix(arg,"--stdout=") do
     debugln "Redirect standard output";
@@ -363,7 +370,7 @@ private noinline proc handle_switch
 
   elif arg == "--where" do
     debugln "Print location of install directory and exit";
-    println(config*.FLX_INSTALL_DIR);
+    println(control*.FLX_INSTALL_DIR);
     System::exit(0);
 
   elif arg == "--time" do
@@ -679,8 +686,8 @@ noinline proc processing_stage1
   // off optimisations previously introduced (order matters)
   control.CCFLAGS <- control*.CCFLAGS + control*.EXTRA_CCFLAGS;
 
-  if control*.FLX_SHARE_DIR == "" do
-    control.FLX_SHARE_DIR <- Filename::join (config*.FLX_INSTALL_DIR, "share");
+  if config*.FLX_SHARE_DIR == "" do
+    config.FLX_SHARE_DIR <- Filename::join (control*.FLX_INSTALL_DIR, "share");
   done
 
   if control*.FLX_TARGET_SUBDIR == "" do
@@ -688,7 +695,7 @@ noinline proc processing_stage1
   done
 
   if config*.FLX_TARGET_DIR=="" do
-    config.FLX_TARGET_DIR <- Filename::join(config*.FLX_INSTALL_DIR, control*.FLX_TARGET_SUBDIR);
+    config.FLX_TARGET_DIR <- Filename::join(control*.FLX_INSTALL_DIR, control*.FLX_TARGET_SUBDIR);
   done
 
   // Establish name of Felix compiler and run time library.
@@ -744,7 +751,7 @@ noinline proc processing_stage1
 
 
   // Get linker names.
-  var d,s = link_strings(config*.FLX_INSTALL_DIR);
+  var d,s = link_strings(control*.FLX_INSTALL_DIR);
   control.DLINK_STRINGS <-  Shell::parse d;
   control.SLINK_STRINGS <-  Shell::parse s;
 
