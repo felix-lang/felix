@@ -78,8 +78,9 @@ fun atoi: string -> int = "atoi($1.data())";
 // Setup the fixed defaults.
 var arg = "";
 var argno = 1;
-var INSTALL_ROOT = #Config::config.FLX_INSTALL_DIR;
+var SHARE = #Config::config.FLX_INSTALL_DIR;
 var TARGET = #Config::config.FLX_TARGET_DIR;
+var INSTALL_ROOT = SHARE.[to -6]; // cut off the /share suffix
  
 var DELAY = 0.1;
 var PORT=1234;
@@ -177,6 +178,9 @@ while argno<System::argc do
   println$ "ARG=" + arg;
   if prefix(arg,"--root=") do
     INSTALL_ROOT=arg.[7 to];
+    SHARE = INSTALL_ROOT/"share";
+    TARGET = INSTALL_ROOT/"host";
+
   elif prefix(arg,"--close-delay=") do
     DELAY=strtod arg.[14 to];
   elif prefix(arg,"--port=") do
@@ -192,7 +196,7 @@ done
 // -------------------------------------------------------------------------
 // Now, use the INSTALL_ROOT to augment
 // the search paths.
-C_PATH+= INSTALL_ROOT+"/"+TARGET+"/lib/rtl";
+C_PATH+= TARGET+"/lib/rtl";
 C_PATH+= INSTALL_ROOT+"/share/lib/rtl";
 FLX_PATH+=INSTALL_ROOT+"/share/lib";
 FLX_PATH+= TARGET+"/lib";

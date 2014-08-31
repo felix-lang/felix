@@ -124,7 +124,6 @@ class FlxCoreBuild
       target_dir/target_bin/'lib'/'rtl'/'toolchain_gcc_osx' + obj_extn, 
       target_dir/target_bin/'lib'/'rtl'/'toolchain_clang_linux' + obj_extn, 
       target_dir/target_bin/'lib'/'rtl'/'toolchain_gcc_linux' + obj_extn, 
-      target_dir/target_bin/'lib'/'rtl'/'toolchain_gcc48_linux' + obj_extn, 
       target_dir/target_bin/'lib'/'rtl'/'dflx' + obj_extn, 
       target_dir/'share'/'src'/'tools'/'flx.flx'
     );

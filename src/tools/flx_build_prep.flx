@@ -250,7 +250,7 @@ class FlxPrepBuild
       System::exit(1);
     done
     var cmd = parse_args (tail xargs);
-    println$ "flx_build_prep v1.4";
+    println$ "flx_build_prep v1.5";
     println$ "  repository    = " + cmd.repo;
     println$ "  target-dir    = " + cmd.target_dir;
     println$ "  target-bin    = " + cmd.target_bin;
