@@ -12,6 +12,7 @@ int ::flx::rtl::std_exception_handler (::std::exception const *e)
 
 int ::flx::rtl::flx_exception_handler (flx_exception_t const *e)
 {
+fprintf(stderr, "Felix exception handler\n");
   if (flx_halt_t const *x = dynamic_cast<flx_halt_t const*>(e))
   {
     fprintf(stderr,"Halt: %s \n",x->reason.data());

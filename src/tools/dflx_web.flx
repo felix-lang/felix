@@ -79,7 +79,7 @@ fun atoi: string -> int = "atoi($1.data())";
 var arg = "";
 var argno = 1;
 var INSTALL_ROOT = #Config::config.FLX_INSTALL_DIR;
-var TARGET = #Config::config.FLX_TARGET_SUBDIR;
+var TARGET = #Config::config.FLX_TARGET_DIR;
  
 var DELAY = 0.1;
 var PORT=1234;
@@ -195,10 +195,10 @@ done
 C_PATH+= INSTALL_ROOT+"/"+TARGET+"/lib/rtl";
 C_PATH+= INSTALL_ROOT+"/share/lib/rtl";
 FLX_PATH+=INSTALL_ROOT+"/share/lib";
-FLX_PATH+=INSTALL_ROOT+"/"+TARGET+"/lib";
+FLX_PATH+= TARGET+"/lib";
 FDOC_PATH+=INSTALL_ROOT;
-FLX_PKGCONFIG_PATH+=INSTALL_ROOT+"/"+TARGET+"/config";
-FLX_WEBSERVER_PLUGIN_PATH+=INSTALL_ROOT+"/"+TARGET+"/lib";
+FLX_PKGCONFIG_PATH+= TARGET+"/config";
+FLX_WEBSERVER_PLUGIN_PATH+= TARGET+"/lib";
 
 // -------------------------------------------------------------------------
 // Print the configuation.

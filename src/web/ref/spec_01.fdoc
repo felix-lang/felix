@@ -855,18 +855,65 @@ TBD
 @h1 Types
 <a href="/share/lib/grammar/type_decls.flxh">Syntax</a>
 
-@h3 cenum
-TBD
-@h3 cstruct
-TBD
-@h3 ctypes
-TBD
-@h3 cflags
-TBD
 @h2 Tuples
-TBD
+Tuple types are well known: a tuple is just a Cartesian Product
+with components identified by position, starting at 0. 
+The n-ary type combinator is infix @{*} and the n-ary value
+constructor is infix @{,}:
+@felix
+val tup : int * string * double = 1, "Hello", 4.2;
+@
+The 0-ary tuple type is denoted @{1} or @{unit}
+with sole value @{()}:
+@felix
+val u : unit = ();
+@
+There 1-array tuple of type @{T} component value @{v} is identified
+with the type @{T} and has value @{v}.
+
+The individual components of a tuple may be accessed by a projection
+function. Felix uses an integer literal to denote this function.
+@felix
+var x = 1,"Hello";
+assert 0 x == 1; assert x.0 == 1;
+assert 1 x == "Hello"; assert x.1 == "Hello";
+@
+
+[There should be a way to name this function without application to
+a tuple!]
+
+A pointer to a tuple is also in itself a tuple, namely the
+tuple of pointers to the individual components. This means
+if a tuple is addressable, so are the components.
+@felix
+var x = 1, "Hello";
+val px = &x;
+val pi = px.0; pi <-42;
+val ps = px.1; ps <-"World";
+assert x.0 == 42;
+assert x.1 == "World";
+@
+
+In particular note:
+@felix
+var x = 1, "Hello";
+&x.0 <- 42;
+@
+
+because the precedences make the grouping @{(&x).0}.
+
+You cannot take the address of a tuple component because
+a projection of a value is a value.
+
+Assignment to components of tuples stored in variables is supported
+but only to one level, for general access you must take a pointer
+and use the store-at-addres operator @{<-}.
+
 @h2 Records
-TBD
+A record is similar to a tuple except the components are 
+named and considered unordered.
+
+
 @h2 Structs
 TBD
 @h2 Sums
@@ -893,82 +940,7 @@ TBD
 
 @h1 Expressions
 <a href="/share/lib/grammar/expressions.flxh">Syntax</a>
-@h3 cenum
 TBD
-@h3 cstruct
-TBD
-@h3 ctypes
-TBD
-@h3 cflags
-TBD
-@h2 Tuples
-TBD
-@h2 Records
-TBD
-@h2 Structs
-TBD
-@h2 Sums
-TBD
-@h3 union
-TBD
-@h2 enum
-TBD
-@h2 variant
-TBD
-@h2 Array
-TBD
-@h2 typedef
-TBD
-@h3 typedef fun
-TBD
-@h2 typematch
-TBD
-@h2 type sets
-TBD
-
-@h2 Abstract types
-TBD
-
-@h1 Expressions
-<a href="/share/lib/grammar/expressions.flxh">Syntax</
-@h3 cenum
-TBD
-@h3 cstruct
-TBD
-@h3 ctypes
-TBD
-@h3 cflags
-TBD
-@h2 Tuples
-TBD
-@h2 Records
-TBD
-@h2 Structs
-TBD
-@h2 Sums
-TBD
-@h3 union
-TBD
-@h2 enum
-TBD
-@h2 variant
-TBD
-@h2 Array
-TBD
-@h2 typedef
-TBD
-@h3 typedef fun
-TBD
-@h2 typematch
-TBD
-@h2 type sets
-TBD
-
-@h2 Abstract types
-TBD
-
-@h1 Expressions
-<a href="/share/lib/grammar/expressions.flxh">Syntax</a>
 
 @h1 Executable statements
 @h2 Assignment
@@ -1343,34 +1315,230 @@ TBD
 @h2 Assertions
 <a href="/share/lib/grammar/assertions.flxh">Reference</a>
 @h2 assert
-TBD
+Ad hoc assertion throws an assertion exception if its argument
+is false. 
+@felix
+assert x > 0;
+@
+
 @h3 axiom
-TBD
+An axiom is a relationship between functions, typically
+polymorphic, which is required to hold.
+@felix
+axiom squares (x:double) => x * x >= 0;
+class addition[T]
+{
+  virtual add : T * T -> T;
+  virtual == : T * T -> bool;
+
+  axiom assoc (x:T, y:T, z:T) : 
+    add (add (x,y),z) == add (x, add (y,z))
+  ;
+}
+@
+In a class, an axiom is a specification constraining
+implementations of virtual function in instances.
+
+Axioms are restricted to first order logic, that is, they
+may be polymorphic, but the universal quantification implied
+is always at the head.
+
+Existential quantification can be provided in a constructive
+logic by actually constructing the requisite variable.
+
+Second order logic, with quantifiers internal to the 
+logic term, are not supported.
+
 @h3 lemma
-TBD
+A lemma is similar to an axiom, except that is it
+easily derivable from axioms; in particular,
+a reasonable automatic theorem prover should
+be able to derived it.
+
 @h3 theorem
-TBD
+A theorem is similar to a lemma, except that it is 
+too hard to expect an automatic theorem prover
+to be able to derive it without hints or assistance.
+
+There is currently no standard way to prove such hints.
+
 @h3 reduce
-TBD
+A reduce statement specifies a term reduction and is logically
+equivalent to an axiom, lemma, or theorem, however it acts
+as an instruction to the compiler to attempt to actually 
+apply the axiom.
+
+The compiler may apply the axiom, but it may miss opportunities
+for application.
+
+The set of reductions must be coherent and terminal, 
+that is, after a finite number of reductions the final
+term must be unique and irreducible. 
+
+Application of reduction is extremely expensive and they
+should be used lightly.
+@felix
+reduce revrev[T] (x: list[T]) : rev (rev x) => x;
+@
+
+
 @h3 invariant
-TBD
+An invariant is an assertion which must hold on the state variables
+of an object, at the point after construction of the state
+is completed by the constructor function and just before the
+record of method closures is returned, and, at the start and
+end of every method invocation.
+
+The invariant need not hold during execution of a method.
+
+Felix inserts the a check on the invariant into the constructor function
+and into the post conditions of every procedure or generator
+method.
+
+@felix
+object f(var x:int, var y:int) =
+{
+   invariant y >= 0;
+   method proc set_y (newy: int) => y = newy;
+}
+@
 
 @h2 code
-TBD
-@h3 noreturn code
-TBD
-@h2 Service call
-TBD
+The code statement inserts C++ code literally into the current
+Felix code.
 
+The code must be one or more C++ statements.
+
+@felix
+code 'cout << "hello";';
+@ 
+
+@h3 noreturn code
+Similar to code, however noreturn code never returns.
+@felix
+noreturn code "throw 1;";
+@
+
+@h2 Service call
+The service call statement calls the Felix system kernel
+to perform a specified operation.
+
+It is equivalent to an OS kernel call.
+
+The available operations include:
+@felix
+  union svc_req_t =
+  /*0*/ | svc_yield
+  /*1*/ | svc_get_fthread         of &fthread    // CHANGED LAYOUT
+  /*2*/ | svc_read                of address
+  /*3*/ | svc_general             of &address    // CHANGED LAYOUT
+  /*4*/ | svc_reserved1
+  /*5*/ | svc_spawn_pthread       of fthread
+  /*6*/ | svc_spawn_detached      of fthread
+  /*7*/ | svc_sread               of _schannel * &gcaddress
+  /*8*/ | svc_swrite              of _schannel * &gcaddress
+  /*9*/ | svc_kill                of fthread
+  /*10*/ | svc_reserved2
+  /*11*/ | svc_multi_swrite       of _schannel * &gcaddress 
+  /*12*/ | svc_schedule_detached  of fthread
+  ;
+@
+
+These operations are typically related to coroutine or thread scheduling.
+However @{svc_general} is an unspecified operation, which is typically
+used to invoke the asynchronous I/O subsystem.
+
+Service calls can only be issued from flat code, that is,
+from procedures, since they call the system by returning
+control, the system must reside exactly one return address
+up the machine stack at the point a service call is executed.
 
 @h2 with/do/done
-TBD
+The with/do/done statement is use to define temporary variables
+which are accessible only in the do/done body of the statement.
+
+It is the statement equivalent of the let expression.
+@felix
+var x = 1;
+with var x = 2; do println$ x; done
+assert x == 1;
+@
+
 @h2 do/done
-TDB
+The do/done statement has no semantics and merely acts as a
+way to make a sequence of statements appear as a single
+statement to the parser.
+
+Jumps into do/done groups are therefore allowed, and
+any labels defined in a do/done group are visible in
+the enclosing context.
+
+Any variables, functions, or other symbols defined in a do/done
+group are visible in the enclosing context.
+@felix
+do something; done
+@
+
 @h2 begin/end
-TDB
+The begin/end statement creates an anonymous procedure
+and then calls it. It therefore appears as a single statement
+to the parser, but it simulates a block as would be used in C.
+It is exactly equivalent to a brace enclosed procedure called
+by a terminating semi-colon.
+@felix
+begin
+  var x = 1;
+end
+// equivalent to
+{
+  var x = 1;
+};
+@
+
+
 @h1 C bindings
+Felix is specifically designed to provide almost seamless integration
+with C and C++.
+
+In particular, Felix and C++ can share types and functions,
+typically without executable glue.
+
+However Felix has a stronger and stricter type system than C++
+and a much better syntax, so binding specifications which lift
+C++ entities into Felix typically require some static glue.
+
+@h2 Type bindings
+In general, Felix requires all primitive types to be first class,
+that is, they must be default initialisable, copy constructible,
+assignable, and destructible. Assignment to a default initialised
+variable must have the same semantics as copy construction.
+
+It is recommended C++ objects provide move constructors as
+Felix generated code uses pass by value extensively.
+
+The Felix type system does not support C++ references in general,
+you should use pointers instead. 
+
+However, there is a special lvalue annotation for C++ functions
+returning lvalues that allows them to appear on the LHS of
+an assignment. Only primitives can be marked lvalue.
+
+The Felix type system does not support either const or volatile.
+This has no impact when passing arguments to C++ functions.
+However it may be necessary to cast a pointer returned from
+a primitive function in order for the generated code to type check.
+
+
+
+@h2 Expression bindings
 TBD
+@h2 Function bindings
+TBD
+@h2 Floating insertions
+TBD
+@h2 Package requirements
+TBD
+
 @h1 Domain Specific Sublanguages
 @h2 Regexps
 <a href="/share/lib/grammar/regexps.flxh">Syntax</a>

@@ -70,7 +70,7 @@ fun dflt_control (config:Config::config_type, profile:FlxProfile::profile_type) 
     var CHECK_DEPENDENCIES=1;
     var FLX_TOOLCHAIN="";
     var FLX_SHARE_DIR="";
-    var FLX_TARGET_DIR="";
+    var FLX_TARGET_SUBDIR="";
     var FPC_DIR = "";
     var RTL_INCLUDE_DIRS = Empty[string];
     var FLX_LIB_DIRS = Empty[string];

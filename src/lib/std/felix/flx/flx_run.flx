@@ -114,7 +114,7 @@ object processing_env(
       var tc = toolchain dflt_clang_config;
       var x = FlxPkg::map_package_requirements 
       (
-         FLX_TARGET_DIR = control.FLX_TARGET_DIR,
+         FLX_TARGET_DIR = config.FLX_TARGET_DIR,
          EXT_EXE = #(tc.executable_extension),
          EXT_STATIC_OBJ = #(tc.static_object_extension),
          STATIC = control.STATIC,

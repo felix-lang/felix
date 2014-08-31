@@ -122,6 +122,7 @@ proc setup-from-file
 )
 {
 println$ "Setup file: " + arg;
+  fun / (a:string, b:string) => Filename::join (a,b);
   var re = RE2 ("([-a-z]+) *: *(.*)");
   var lines = split (load arg,char "\n");
   for line in lines do
@@ -130,8 +131,10 @@ println$ "Setup file: " + arg;
       var field = v.1;
       var data = strip v.2;
       match field with
-      | "install-dir" => println$ "set install-dir "+data; config.FLX_INSTALL_DIR <- data;
-      | "target-bin" => println$ "set target-bin "+data; config.FLX_TARGET_SUBDIR<- data;
+      | "FLX_INSTALL_DIR" => println$ "set FLX_INSTALL_DIR "+data; config.FLX_INSTALL_DIR <- data;
+      | "FLX_TARGET_DIR" => println$ "set FLX_TARGET_DIR "+data; config.FLX_TARGET_DIR<- data;
+      | "FLX_TARGET_SUBDIR" => println$ "set FLX_TARGET_DIR "+data; config.FLX_TARGET_DIR<- config*.FLX_INSTALL_DIR / data;
+
       | "share-dir" => println$ "set share-dir "+data; control.FLX_SHARE_DIR <- data;
       | "cache-dir" => println$ "set cache-dir "+data; control.CACHE_DIR <- data;
       | "output-dir" => println$ "set output-dir "+data; control.OUTPUT_DIR <- data;
@@ -201,15 +204,22 @@ private noinline proc handle_switch
     debugln "Set test directory";
     config.FLX_INSTALL_DIR <- arg.[7 to];
     control.FLX_SHARE_DIR <- Filename::join (config*.FLX_INSTALL_DIR , "share");
+    control.FLX_TARGET_SUBDIR <- "host";
+    config.FLX_TARGET_DIR <- Filename::join (config*.FLX_INSTALL_DIR , control*.FLX_TARGET_SUBDIR);
 
   elif prefix(arg,"--felix=") do
     debugln "Set install details";
     setup-from-file (config, control, arg.[8 to]);
 
-  elif prefix(arg,"--target=") do
+  elif prefix(arg,"--target-subdir=") do
     debugln "Set target configuration subdirectory";
-    config.FLX_TARGET_SUBDIR <- arg.[9 to];
-    control.FLX_TARGET_DIR <- Filename::join (config*.FLX_INSTALL_DIR, config*.FLX_TARGET_SUBDIR);
+    control.FLX_TARGET_SUBDIR <- arg.[16 to];
+    config.FLX_TARGET_DIR <- Filename::join (config*.FLX_INSTALL_DIR, control*.FLX_TARGET_SUBDIR);
+
+  elif prefix(arg,"--target-dir=") do
+    debugln "Set target configuration directory";
+    config.FLX_TARGET_DIR <- arg.[13 to];
+
 
   elif prefix(arg,"--toolchain=") do
     debugln "Set target configuration subdirectory";
@@ -219,7 +229,7 @@ private noinline proc handle_switch
     debugln "Set test directory";
     config.FLX_INSTALL_DIR <- ".";
     control.FLX_SHARE_DIR <- Filename::join (config*.FLX_INSTALL_DIR , "share");
-    control.FLX_TARGET_DIR <- Filename::join (config*.FLX_INSTALL_DIR , config*.FLX_TARGET_SUBDIR);
+    config.FLX_TARGET_DIR <- Filename::join (config*.FLX_INSTALL_DIR , control*.FLX_TARGET_SUBDIR);
 
   elif prefix(arg,"--stdout=") do
     debugln "Redirect standard output";
@@ -673,8 +683,12 @@ noinline proc processing_stage1
     control.FLX_SHARE_DIR <- Filename::join (config*.FLX_INSTALL_DIR, "share");
   done
 
-  if control*.FLX_TARGET_DIR=="" do
-    control.FLX_TARGET_DIR <- Filename::join(config*.FLX_INSTALL_DIR, config*.FLX_TARGET_SUBDIR);
+  if control*.FLX_TARGET_SUBDIR == "" do
+    control.FLX_TARGET_SUBDIR <- "host";
+  done
+
+  if config*.FLX_TARGET_DIR=="" do
+    config.FLX_TARGET_DIR <- Filename::join(config*.FLX_INSTALL_DIR, control*.FLX_TARGET_SUBDIR);
   done
 
   // Establish name of Felix compiler and run time library.
@@ -685,15 +699,15 @@ noinline proc processing_stage1
   var dflt_flxg = "";
   var dflt_flx_run = Empty[string];
   if PLAT_WIN32 do
-    dflt_flxg = Filename::join(control*.FLX_TARGET_DIR, 'bin', 'flxg.exe');
-    dflt_flx_run = list$ "set", "PATH="+(Directory::mk_absolute_filename control*.FLX_TARGET_DIR)+"\\lib\\rtl;"+"%PATH%&&";
+    dflt_flxg = Filename::join(config*.FLX_TARGET_DIR, 'bin', 'flxg.exe');
+    dflt_flx_run = list$ "set", "PATH="+(Directory::mk_absolute_filename config*.FLX_TARGET_DIR)+"\\lib\\rtl;"+"%PATH%&&";
   else
-    dflt_flxg = control*.FLX_TARGET_DIR+"/bin/flxg";
+    dflt_flxg = config*.FLX_TARGET_DIR+"/bin/flxg";
     // the mac uses DYLD_LIBRARY_PATH instead of LD_LIBRARY_PATH
     if PLAT_MACOSX do
-      dflt_flx_run = list$ "env","DYLD_LIBRARY_PATH="+control*.FLX_TARGET_DIR+"/lib/rtl:$DYLD_LIBRARY_PATH";
+      dflt_flx_run = list$ "env","DYLD_LIBRARY_PATH="+config*.FLX_TARGET_DIR+"/lib/rtl:$DYLD_LIBRARY_PATH";
     else
-      dflt_flx_run = list$ "env", "LD_LIBRARY_PATH="+control*.FLX_TARGET_DIR+"/lib/rtl:$LD_LIBRARY_PATH";
+      dflt_flx_run = list$ "env", "LD_LIBRARY_PATH="+config*.FLX_TARGET_DIR+"/lib/rtl:$LD_LIBRARY_PATH";
     done
   done
   control.FLXG <- 
@@ -735,7 +749,7 @@ noinline proc processing_stage1
   control.SLINK_STRINGS <-  Shell::parse s;
 
   // Get location of flx_pkgconfig's config directory.
-  control.CONFIG_DIR <- Filename::join(control*.FLX_TARGET_DIR,'config');
+  control.CONFIG_DIR <- Filename::join(config*.FLX_TARGET_DIR,'config');
 
   var dflt_grammar_dir = 
       Directory::mk_absolute_filename (Filename::join (list( 

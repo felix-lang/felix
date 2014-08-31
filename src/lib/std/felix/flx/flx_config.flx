@@ -4,7 +4,7 @@ class FlxConfig
 {
 proc print_config(config:Config::config_type) {
   println$ "FLX_INSTALL_DIR    = "+config.FLX_INSTALL_DIR;
-  println$ "FLX_TARGET_SUBDIR  = "+config.FLX_TARGET_SUBDIR;
+  println$ "FLX_TARGET_DIR  = "+config.FLX_TARGET_DIR;
   println$ "";
 }
 }

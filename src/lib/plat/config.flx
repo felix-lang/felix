@@ -4,17 +4,24 @@ class Config {
 
   fun config () = 
   {
-    var install_line = RE2("FLX_INSTALL_DIR: (.*)");
+    fun / (x:string, y:string) => Filename::join (x,y);
+
+    var re = RE2 ("([-a-zA-Z]+) *: *(.*)");
 
     // global defaults
     var PREFIX = Filename::join ("/usr","local","lib");
+    var HOME = Env::getenv("HOME");
+
     var INSTALL_ROOT_TOPDIR= Filename::join (PREFIX,"felix");
     var INSTALL_ROOT = Filename::join (INSTALL_ROOT_TOPDIR, "felix-"+Version::felix_version);
     var FLX_INSTALL_DIR = INSTALL_ROOT;
     var FLX_TARGET_SUBDIR = "host";
+    var FLX_TARGET_DIR = FLX_INSTALL_DIR / FLX_TARGET_SUBDIR;
 
     // try HOME/.felix/config/felix.fpc
-    var HOME = Env::getenv("HOME");
+
+    var CACHE_DIR = HOME/"felix"/"cache"/"binary";
+
     var felix_dir = Filename::join (HOME, ".felix");
     var config_dir = Filename::join (felix_dir, "config");
     var control_file = Filename::join (config_dir, "felix.fpc");
@@ -24,11 +31,18 @@ class Config {
     done
     var lines = split (text, char "\n");
     for line in lines do
-      var found = Match (install_line, line);
+      var found = Match (re, line);
       match found with
-      | Some ?v when v.len.int == 2 => 
-        println$ "Setting FLX_INSTALL_DIR from " + control_file;
-        FLX_INSTALL_DIR = strip (v.1);
+      | Some ?v when v.len.int == 3 => 
+        var p = v.1;
+        var a = strip v.2;
+        match p with
+        | "FLX_INSTALL_DIR" => 
+          FLX_INSTALL_DIR = a;
+        | "FLX_TARGET_SUBDIR" => 
+          FLX_TARGET_SUBDIR = a; 
+          FLX_TARGET_DIR = FLX_INSTALL_DIR / FLX_TARGET_SUBDIR;
+        endmatch;
       | None => ;
       endmatch;
     done
@@ -37,12 +51,13 @@ class Config {
     var env_flx_install_dir = Env::getenv ("FLX_INSTALL_DIR");
     if env_flx_install_dir != "" do
       FLX_INSTALL_DIR = env_flx_install_dir;
-      println$ "Resetting FLX_INSTALL_DIR from env to '" + FLX_INSTALL_DIR+"'";
+      //println$ "Resetting FLX_INSTALL_DIR from env to '" + FLX_INSTALL_DIR+"'";
     done
 
     // final result can still be overriden by command line switch
-    println$ "FLX_INSTALL_DIR='" + FLX_INSTALL_DIR+"'";
-    return (FLX_INSTALL_DIR=FLX_INSTALL_DIR, FLX_TARGET_SUBDIR=FLX_TARGET_SUBDIR);
+    //println$ "FLX_INSTALL_DIR='" + FLX_INSTALL_DIR+"'";
+    //println$ "FLX_TARGET_DIR='" + FLX_TARGET_DIR+"'";
+    return (FLX_INSTALL_DIR=FLX_INSTALL_DIR, FLX_TARGET_DIR=FLX_TARGET_DIR);
   }
 
   typedef config_type = typeof (#config);

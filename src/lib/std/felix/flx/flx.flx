@@ -44,7 +44,7 @@ class Flx
     done
 
     if control*.FPC_DIR == "" do
-      control.FPC_DIR <- config*.FLX_INSTALL_DIR / config*.FLX_TARGET_SUBDIR / "config";
+      control.FPC_DIR <- config*.FLX_TARGET_DIR / "config";
     done
     var pkgconfig = FlxPkgConfig::FlxPkgConfigQuery$ list[string] control*.FPC_DIR;
     
