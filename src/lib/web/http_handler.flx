@@ -22,6 +22,8 @@ class HTTPHandler {
   publish """ return option of the first element in a list mapped to type V satisfying 
   the combined transformer and predicate xf """
 
+ fun / (x:string, y:string) => Filename::join (x,y);
+
 fun find_and_map[T,V] (xf:T -> opt[V]) (xs:list[T]) : opt[V] =>
     match xs with
     | Empty => None[V]
@@ -39,7 +41,7 @@ fun get_fs_path (config:server_config,request:http_request) =>
         else
           None[string]
         endif)) (list(config.document_root,
-          Filename::join(Filename::join(Filename::join(#Config::config.FLX_INSTALL_DIR,"lib"),"web"),"html")))
+          Filename::join(Filename::join(Filename::join(#Config::config.FLX_SHARE_DIR,"lib"),"web"),"html")))
       | _ => None[string]
     endmatch;
 
