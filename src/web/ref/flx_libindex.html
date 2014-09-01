@@ -30,7 +30,7 @@ Bidirectional
 Bits
   <a href="/share/lib/std/algebraic.flx#0095">algebraic.flx:95</a>: class Bits[t]
 BootFlx
-  <a href="/share/lib/std/felix/flx/bootflx.flx#0030">felix/flx/bootflx.flx:30</a>: class BootFlx
+  <a href="/share/lib/std/felix/flx/bootflx.flx#0031">felix/flx/bootflx.flx:31</a>: class BootFlx
 <hr/>
 C89_headers
   <a href="/share/lib/std/c_headers.flx#0004">c_headers.flx:4</a>: class C89_headers
@@ -64,6 +64,8 @@ Collector
   <a href="/share/lib/std/felix/flx_gc.fdoc#0004">felix/flx_gc.fdoc:4</a>: class Collector
 Complex
   <a href="/share/lib/std/algebraic.flx#0208">algebraic.flx:208</a>: class Complex[t,r]
+Config
+  <a href="/share/lib/std/felix/config.flx#0003">felix/config.flx:3</a>: class Config
 Connect
   <a href="/share/lib/std/win32/faio_win32.flx#0078">win32/faio_win32.flx:78</a>: proc Connect(s: &SOCKET, addr: +char, port: int, err: &int)
   <a href="/share/lib/std/win32/faio_win32.flx#0070">win32/faio_win32.flx:70</a>: proc Connect(s: SOCKET, addr: +char, port: int, err: &int)
@@ -711,7 +713,7 @@ bytes_per_element
 c_depcheck
   <a href="/share/lib/std/felix/flx/flx_depchk.flx#0047">felix/flx/flx_depchk.flx:47</a>: gen c_depcheck (tc: toolchain_t, src:string, dst:string) : bool
 cache_join
-  <a href="/share/lib/std/felix/flx_cache.flx#0225">felix/flx_cache.flx:225</a>: fun cache_join (c:string, var f:string)
+  <a href="/share/lib/std/felix/flx_cache.flx#0223">felix/flx_cache.flx:223</a>: fun cache_join (c:string, var f:string)
 cal_cxx_uptodate
   <a href="/share/lib/std/felix/flx/flx_run.flx#0168">felix/flx/flx_run.flx:168</a>: fun cal_cxx_uptodate(debugln:string -> 0, OUTPUT_DIR:string, f:string)
 cal_depvars
@@ -825,6 +827,8 @@ concurrently_by_iterator
   <a href="/share/lib/std/control/forkjoin.flx#0006">control/forkjoin.flx:6</a>: proc concurrently_by_iterator (var it:1 -> opt[1->0])
 condition_variable
   <a href="/share/lib/std/control/condition_variable.flx#0010">control/condition_variable.flx:10</a>: ctor condition_variable: 1
+config
+  <a href="/share/lib/std/felix/config.flx#0005">felix/config.flx:5</a>: fun config ()
 conj
   <a href="/share/lib/std/scalar/quaternion.flx#0026">scalar/quaternion.flx:26</a>: fun conj (a:q):q
 connect
@@ -937,9 +941,9 @@ data
 debugln
   <a href="/share/lib/std/felix/flx/flx_run.flx#0063">felix/flx/flx_run.flx:63</a>: proc debugln[T with Str[T]] (x:T)
   <a href="/share/lib/std/felix/flx/flx_depvars.flx#0029">felix/flx/flx_depvars.flx:29</a>: proc debugln[T with Str[T]] (x:T)
-  <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0620">felix/flx/flx_cmdopt.flx:620</a>: proc debugln[T with Str[T]] (x:T)
-  <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0530">felix/flx/flx_cmdopt.flx:530</a>: proc debugln[T with Str[T]] (x:T)
-  <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0185">felix/flx/flx_cmdopt.flx:185</a>: proc debugln[T with Str[T]] (x:T)
+  <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0639">felix/flx/flx_cmdopt.flx:639</a>: proc debugln[T with Str[T]] (x:T)
+  <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0547">felix/flx/flx_cmdopt.flx:547</a>: proc debugln[T with Str[T]] (x:T)
+  <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0195">felix/flx/flx_cmdopt.flx:195</a>: proc debugln[T with Str[T]] (x:T)
 decode
   <a href="/share/lib/std/codec/base64.flx#0083">codec/base64.flx:83</a>: fun decode(enc_str:string)
 decode_pointer_closure
@@ -1228,8 +1232,8 @@ filename
 filename_to_modulename
   <a href="/share/lib/std/felix/cident.flx#0025">felix/cident.flx:25</a>: fun filename_to_modulename : string -> string
 filesin
-  <a href="/share/lib/std/win32/directory.flx#0063">win32/directory.flx:63</a>: fun filesin(dname:string): opt[list[string]]
-  <a href="/share/lib/std/posix/directory.flx#0044">posix/directory.flx:44</a>: fun filesin(dname:string): opt[List::list[string]]
+  <a href="/share/lib/std/win32/directory.flx#0062">win32/directory.flx:62</a>: fun filesin(dname:string): opt[list[string]]
+  <a href="/share/lib/std/posix/directory.flx#0043">posix/directory.flx:43</a>: fun filesin(dname:string): opt[List::list[string]]
   <a href="/share/lib/std/io/directory.flx#0023">io/directory.flx:23</a>: virtual fun filesin:string -> opt[List::list[string]]
 filetime
   <a href="/share/lib/std/io/filestat.flx#0060">io/filestat.flx:60</a>: fun filetime(f:string):double
@@ -1319,7 +1323,7 @@ flx_pkgconfig
   <a href="/share/lib/std/felix/flx_pkgconfig_core.flx#0006">felix/flx_pkgconfig_core.flx:6</a>: gen flx_pkgconfig (args:list[string]) : int * list[string]
 flx_processing
   <a href="/share/lib/std/felix/flx/flx.flx#0023">felix/flx/flx.flx:23</a>: gen flx_processing
-  <a href="/share/lib/std/felix/flx/bootflx.flx#0032">felix/flx/bootflx.flx:32</a>: gen flx_processing
+  <a href="/share/lib/std/felix/flx/bootflx.flx#0033">felix/flx/bootflx.flx:33</a>: gen flx_processing
 flxid_to_cid
   <a href="/share/lib/std/felix/cident.flx#0020">felix/cident.flx:20</a>: fun flxid_to_cid : string -> string
 fmt
@@ -1523,7 +1527,7 @@ glob
 globfree
   <a href="/share/lib/std/glob.flx#0019">glob.flx:19</a>: proc globfree: &glob_t
 gramtime
-  <a href="/share/lib/std/felix/flx_cache.flx#0005">felix/flx_cache.flx:5</a>: fun gramtime(debugln: string -> 0) (path:string, s:string) : double
+  <a href="/share/lib/std/felix/flx_cache.flx#0003">felix/flx_cache.flx:3</a>: fun gramtime(debugln: string -> 0) (path:string, s:string) : double
 green
   <a href="/share/lib/std/io/ansi_terminal.flx#0029">io/ansi_terminal.flx:29</a>: proc green(s:string)
   <a href="/share/lib/std/io/ansi_terminal.flx#0028">io/ansi_terminal.flx:28</a>: proc green()
@@ -1656,11 +1660,7 @@ isNULL
   <a href="/share/lib/std/c_hack.flx#0063">c_hack.flx:63</a>: fun isNULL[t]: gcptr[t] -> bool
   <a href="/share/lib/std/c_hack.flx#0059">c_hack.flx:59</a>: fun isNULL[t]: +t -> bool
   <a href="/share/lib/std/c_hack.flx#0055">c_hack.flx:55</a>: fun isNULL[t]: &t -> bool
-is_absolute
-  <a href="/share/lib/std/felix/flx_cache.flx#0003">felix/flx_cache.flx:3</a>: fun is_absolute (f:string)
 is_absolute_filename
-  <a href="/share/lib/std/win32/directory.flx#0050">win32/directory.flx:50</a>: fun is_absolute_filename (s:string)
-  <a href="/share/lib/std/posix/directory.flx#0039">posix/directory.flx:39</a>: fun is_absolute_filename (s:string)
   <a href="/share/lib/std/io/filename.flx#0152">io/filename.flx:152</a>: fun is_absolute_filename (f:string)
   <a href="/share/lib/std/io/filename.flx#0136">io/filename.flx:136</a>: fun is_absolute_filename (f:string)
   <a href="/share/lib/std/io/filename.flx#0117">io/filename.flx:117</a>: fun is_absolute_filename (f:string)
@@ -1789,6 +1789,8 @@ lexstr
   <a href="/share/lib/std/felix/flx_pkgconfig_core.flx#0082">felix/flx_pkgconfig_core.flx:82</a>: fun lexstr(s':string): list[string]
 link_shape
   <a href="/share/lib/std/felix/rtti.flx#0120">felix/rtti.flx:120</a>: gen link_shape[T]()
+link_strings
+  <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0743">felix/flx/flx_cmdopt.flx:743</a>: fun link_strings ()
 list_comprehension
   <a href="/share/lib/std/datatype/list.fdoc#0154">datatype/list.fdoc:154</a>: fun list_comprehension[T] (f: (1->opt[T]))
 literal
@@ -1866,7 +1868,7 @@ maxf
 maxlen
   <a href="/share/lib/std/datatype/varray.flx#0110">datatype/varray.flx:110</a>: fun maxlen[t]: varray[t] -> size
 maxtime
-  <a href="/share/lib/std/felix/flx_cache.flx#0007">felix/flx_cache.flx:7</a>: fun maxtime (x:double) (s:string)
+  <a href="/share/lib/std/felix/flx_cache.flx#0005">felix/flx_cache.flx:5</a>: fun maxtime (x:double) (s:string)
 maybe_exit
   <a href="/share/lib/std/posix/errno.flx#0023">posix/errno.flx:23</a>: proc maybe_exit()
   <a href="/share/lib/std/posix/errno.flx#0022">posix/errno.flx:22</a>: proc maybe_exit(var n:errno_t)
@@ -1896,8 +1898,8 @@ min_whitespace
 minuseq
   <a href="/share/lib/std/algebraic.flx#0025">algebraic.flx:25</a>: proc  minuseq(px:&t, y:t)
 mk_absolute_filename
-  <a href="/share/lib/std/win32/directory.flx#0056">win32/directory.flx:56</a>: fun mk_absolute_filename(s:string)
-  <a href="/share/lib/std/posix/directory.flx#0040">posix/directory.flx:40</a>: fun mk_absolute_filename(s:string)
+  <a href="/share/lib/std/win32/directory.flx#0055">win32/directory.flx:55</a>: fun mk_absolute_filename(s:string)
+  <a href="/share/lib/std/posix/directory.flx#0039">posix/directory.flx:39</a>: fun mk_absolute_filename(s:string)
   <a href="/share/lib/std/io/directory.flx#0029">io/directory.flx:29</a>: virtual fun mk_absolute_filename: string -> string
 mk_accept
   <a href="/share/lib/std/win32/faio_win32.flx#0048">win32/faio_win32.flx:48</a>: fun mk_accept: demuxer *  SOCKET*SOCKET -> wasync_accept
@@ -1966,6 +1968,8 @@ mkdirs
   <a href="/share/lib/std/win32/directory.flx#0030">win32/directory.flx:30</a>: proc mkdirs (s:string)
   <a href="/share/lib/std/posix/directory.flx#0021">posix/directory.flx:21</a>: proc mkdirs (s:string)
   <a href="/share/lib/std/io/directory.flx#0015">io/directory.flx:15</a>: virtual proc mkdirs: string
+mkrel
+  <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0769">felix/flx/flx_cmdopt.flx:769</a>: fun mkrel (d:string, f:string)
 mmap
   <a href="/share/lib/std/posix/mmap.flx#0073">posix/mmap.flx:73</a>: fun mmap:
 mod
@@ -2204,7 +2208,7 @@ process_status_t
 processfiles
   <a href="/share/lib/std/felix/flx_cp.flx#0002">felix/flx_cp.flx:2</a>: proc processfiles
 processing_stage1
-  <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0612">felix/flx/flx_cmdopt.flx:612</a>: noinline proc processing_stage1
+  <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0629">felix/flx/flx_cmdopt.flx:629</a>: noinline proc processing_stage1
 proj1
   <a href="/share/lib/std/categ.flx#0028">categ.flx:28</a>: fun proj1[u1,u2,r1,r2] (f:u1*u2->r1*r2) : u1 * u2 -> r1
 proj2
@@ -2458,7 +2462,7 @@ run_with_calpackages
   <a href="/share/lib/std/felix/flx/flx_run.flx#0426">felix/flx/flx_run.flx:426</a>: gen run_with_calpackages () : int
 runflx
   <a href="/share/lib/std/felix/flx/flx.flx#0124">felix/flx/flx.flx:124</a>: gen runflx(args:list[string]) : int
-  <a href="/share/lib/std/felix/flx/bootflx.flx#0127">felix/flx/bootflx.flx:127</a>: gen runflx(args:list[string]) : int
+  <a href="/share/lib/std/felix/flx/bootflx.flx#0128">felix/flx/bootflx.flx:128</a>: gen runflx(args:list[string]) : int
 rwopen
   <a href="/share/lib/std/win32/filesystem.flx#0038">win32/filesystem.flx:38</a>: gen rwopen: string -> posix_file
   <a href="/share/lib/std/posix/filesystem.flx#0038">posix/filesystem.flx:38</a>: gen rwopen: string -> posix_file
@@ -3096,7 +3100,7 @@ valid
   <a href="/share/lib/std/io/textio.flx#0036">io/textio.flx:36</a>: virtual gen valid : output_text_file -> bool
   <a href="/share/lib/std/io/textio.flx#0013">io/textio.flx:13</a>: virtual gen valid : input_text_file -> bool
 validate_cache
-  <a href="/share/lib/std/felix/flx_cache.flx#0099">felix/flx_cache.flx:99</a>: gen validate_cache  (spec: cache_validation_spec_t) : int * double
+  <a href="/share/lib/std/felix/flx_cache.flx#0097">felix/flx_cache.flx:97</a>: gen validate_cache  (spec: cache_validation_spec_t) : int * double
 varray
   <a href="/share/lib/std/datatype/varray.flx#0066">datatype/varray.flx:66</a>: ctor varray[char] (var x:string)
 vlong
