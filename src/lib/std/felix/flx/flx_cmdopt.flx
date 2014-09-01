@@ -758,7 +758,7 @@ noinline proc processing_stage1
 
 
   // Get linker names.
-  var d,s = link_strings(control*.FLX_INSTALL_DIR);
+  var d,s = link_strings();
   control.DLINK_STRINGS <-  Shell::parse d;
   control.SLINK_STRINGS <-  Shell::parse s;
 
