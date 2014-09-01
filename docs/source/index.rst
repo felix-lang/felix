@@ -13,18 +13,15 @@ Stuff
   var x = 1;
 
 
-Felix
-=====
+Language
+========
 
 Contents:
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    language
-   library
-   tools
-   download
 
 Indices and tables
 ==================
