@@ -58,8 +58,8 @@ class Config {
     done
 
     // final result can still be overriden by command line switch
-    //println$ "FLX_INSTALL_DIR='" + FLX_INSTALL_DIR+"'";
-    //println$ "FLX_TARGET_DIR='" + FLX_TARGET_DIR+"'";
+    //println$ "[config] FLX_SHARE_DIR='" + FLX_SHARE_DIR+"'";
+    //println$ "[config] FLX_TARGET_DIR='" + FLX_TARGET_DIR+"'";
     return (FLX_SHARE_DIR=FLX_SHARE_DIR, FLX_TARGET_DIR=FLX_TARGET_DIR);
   }
 

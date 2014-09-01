@@ -1,6 +1,3 @@
-// platform dependent stuff
-include "plat/config";
-
 // ISO C++99 standard header tags
 include "std/cxx_headers";
 include "std/c_headers";

@@ -36,9 +36,8 @@ class PosixDirectory
       var p = getcwd((&b).stl_begin,size 1024);
       return if C_hack::isNULL p then "" else string p endif; 
     }
-    fun is_absolute_filename (s:string) => s.[0]=="/".char;
     fun mk_absolute_filename(s:string) => 
-       if is_absolute_filename s then s else
+       if PosixFilename::is_absolute_filename s then s else
        #getcwd + "/" + s
     ;
     fun filesin(dname:string): opt[List::list[string]] = {

@@ -36,7 +36,7 @@ proc check_cache(
   profile:&FlxProfile::profile_type)
 {
   control*.CLEAR_CACHE, control*.cache_time = validate_cache (
-    FLX_SHARE_DIR = control*.FLX_SHARE_DIR,
+    FLX_SHARE_DIR = config*.FLX_SHARE_DIR,
     AUTOMATON = control*.AUTOMATON,
     GRAMMAR_DIR = control*.GRAMMAR_DIR,
     STDGRAMMAR = control*.STDGRAMMAR,

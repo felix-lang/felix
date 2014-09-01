@@ -1,14 +1,12 @@
 class FlxCache
 {
-  fun is_absolute (f:string) => f.[0] == #Filename::sep; // HACK!
-
   fun gramtime(debugln: string -> 0) (path:string, s:string) : double = {
     //println$ "Path=" + path + " file = " + s;
     fun maxtime (x:double) (s:string) => max (x, gramtime debugln (path, s));
     if s.[0]=="@".char do
       var file = 
         let ?f = s.[1 to].strip in
-        if is_absolute f then f 
+        if Filename::is_absolute_filename f then f 
         else Directory::mk_absolute_filename (Filename::join$ path, f)
       ;
       var filetime = FileStat::dfiletime(file,0.0);

@@ -184,7 +184,7 @@ gen cal_depvars(
   var INCLUDE_DIR= 
     match control*.RTL_INCLUDE_DIRS with 
     | Empty => list (
-      ("-I"+Filename::join(control*.FLX_SHARE_DIR,"lib","rtl")), // NOTE: this is WRONG
+      ("-I"+Filename::join(config.FLX_SHARE_DIR,"lib","rtl")), // NOTE: this is WRONG
       ("-I"+Filename::join (config.FLX_TARGET_DIR,"lib","rtl")))
     | _ => map (fun (s:string) => "-I" + s) control*.RTL_INCLUDE_DIRS
     endmatch
@@ -195,7 +195,7 @@ gen cal_depvars(
     match control*.FLX_LIB_DIRS with
     | Empty => list (
       "-I"+config.FLX_TARGET_DIR/"lib",
-      "-I"+control*.FLX_SHARE_DIR/"lib")
+      "-I"+config.FLX_SHARE_DIR/"lib")
     | _ => map (fun (s:string) => "-I" + s) control*.FLX_LIB_DIRS
     endmatch
   ;

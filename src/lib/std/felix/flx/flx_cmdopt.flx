@@ -142,7 +142,7 @@ println$ "Setup file: " + arg;
          println$ "set FLX_TARGET_DIR "+data; 
          config.FLX_TARGET_DIR<- control*.FLX_INSTALL_DIR / data;
 
-      | "share-dir" => println$ "set share-dir "+data; control.FLX_SHARE_DIR <- data;
+      | "share-dir" => println$ "set share-dir "+data; config.FLX_SHARE_DIR <- data;
       | "cache-dir" => println$ "set cache-dir "+data; control.CACHE_DIR <- data;
       | "output-dir" => println$ "set output-dir "+data; control.OUTPUT_DIR <- data;
       | "felix-compiler" => println$ "set flxg " + data; control.FLXG <-data;
@@ -210,7 +210,7 @@ private noinline proc handle_switch
   elif prefix(arg,"--test=") do
     debugln "Set test directory";
     control.FLX_INSTALL_DIR <- arg.[7 to];
-    control.FLX_SHARE_DIR <- Filename::join (control*.FLX_INSTALL_DIR , "share");
+    config.FLX_SHARE_DIR <- Filename::join (control*.FLX_INSTALL_DIR , "share");
     control.FLX_TARGET_SUBDIR <- "host";
     config.FLX_TARGET_DIR <- Filename::join (control*.FLX_INSTALL_DIR , control*.FLX_TARGET_SUBDIR);
 
@@ -235,7 +235,7 @@ private noinline proc handle_switch
   elif arg=="--test" do
     debugln "Set test directory";
     control.FLX_INSTALL_DIR <- ".";
-    control.FLX_SHARE_DIR <- Filename::join (control*.FLX_INSTALL_DIR , "share");
+    config.FLX_SHARE_DIR <- Filename::join (control*.FLX_INSTALL_DIR , "share");
     config.FLX_TARGET_DIR <- Filename::join (control*.FLX_INSTALL_DIR , control*.FLX_TARGET_SUBDIR);
 
   elif prefix(arg,"--stdout=") do
@@ -634,6 +634,8 @@ noinline proc processing_stage1
   vargs:varray[string]
 ) 
 {
+  fun / (x:string, y:string) => Filename::join (x,y);
+
   proc debugln[T with Str[T]] (x:T) {
     control*.DEBUG_FLX ?? fprintln (cstderr, "[flx] " + str x);
   }
@@ -685,10 +687,12 @@ noinline proc processing_stage1
   // Note we have to do it this way so the -f switches turn
   // off optimisations previously introduced (order matters)
   control.CCFLAGS <- control*.CCFLAGS + control*.EXTRA_CCFLAGS;
+  debugln$ "CCFLAGS =" + str control*.CCFLAGS;
 
   if config*.FLX_SHARE_DIR == "" do
     config.FLX_SHARE_DIR <- Filename::join (control*.FLX_INSTALL_DIR, "share");
   done
+  debugln$ "FLX_SHARE_DIR = " + config*.FLX_SHARE_DIR;
 
   if control*.FLX_TARGET_SUBDIR == "" do
     control.FLX_TARGET_SUBDIR <- "host";
@@ -697,6 +701,7 @@ noinline proc processing_stage1
   if config*.FLX_TARGET_DIR=="" do
     config.FLX_TARGET_DIR <- Filename::join(control*.FLX_INSTALL_DIR, control*.FLX_TARGET_SUBDIR);
   done
+  debugln$ "FLX_TARGET_DIR = " + config*.FLX_TARGET_DIR;
 
   // Establish name of Felix compiler and run time library.
   // The one in "host" is good enough for flxg, however the
@@ -723,12 +728,14 @@ noinline proc processing_stage1
     | ?x => x
     endmatch
   ;
+  debugln$ "FLXG = " + control*.FLXG;
   control.FLXRUN <- 
     match control*.FLXRUN with
     | Empty => dflt_flx_run
     | ?x => x
     endmatch
   ;
+  debugln$ "FLXRUN = " + control*.FLXRUN;
 
 
   // TEMPORARY HACK: use the right stuff from the felix.fpc file
@@ -756,20 +763,22 @@ noinline proc processing_stage1
   control.SLINK_STRINGS <-  Shell::parse s;
 
   // Get location of flx_pkgconfig's config directory.
-  control.CONFIG_DIR <- Filename::join(config*.FLX_TARGET_DIR,'config');
+  control.CONFIG_DIR <- config*.FLX_TARGET_DIR/'config';
+  debugln$ "CONFIG_DIR = " + control*.CONFIG_DIR;
 
-  var dflt_grammar_dir = 
-      Directory::mk_absolute_filename (Filename::join (list( 
-        control*.FLX_SHARE_DIR,
-        "lib"
-      )))
+  fun mkrel (d:string, f:string) => 
+    if Filename::is_absolute_filename f then f else d / f endif
   ;
+
+  var dflt_grammar_dir = config*.FLX_SHARE_DIR/"lib";
+
   control.GRAMMAR_DIR <-
     match control*.GRAMMAR_DIR with 
     | "" => dflt_grammar_dir 
     | ?x => Directory::mk_absolute_filename x 
     endmatch
   ;
+  debugln$ "GRAMMAR_DIR = " + control*.GRAMMAR_DIR;
 
   var dflt_grammar = Directory::mk_absolute_filename 
     (Filename::join (control*.GRAMMAR_DIR,"grammar/grammar.files"))
@@ -782,6 +791,7 @@ noinline proc processing_stage1
       else Filename::join (control*.GRAMMAR_DIR, x) 
     endmatch
   ;
+  debugln$ "STDGRAMMAR = " + control*.STDGRAMMAR;
 
   var dflt_automaton = 
     cache_join
@@ -796,6 +806,7 @@ noinline proc processing_stage1
     | ?x => x 
     endmatch
   ;
+  debugln$ "AUTOMATON = " + control*.AUTOMATON;
 
 
   // this hack forces a directory name, because executing "prog"
