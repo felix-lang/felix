@@ -740,18 +740,18 @@ noinline proc processing_stage1
 
   // TEMPORARY HACK: use the right stuff from the felix.fpc file
   // a bit later .. for now the OS selection macros will do ..
-  fun link_strings (install_dir:string) = {
+  fun link_strings () = {
     var DLINK_STRING = "";
     var SLINK_STRING = "";
     if PLAT_WIN32 do // MSVC
-      DLINK_STRING = "/link /DLL /LIBPATH:"+install_dir+r"\host\lib\rtl";
-      SLINK_STRING = "/link /LIBPATH:"+install_dir+r"\host\lib\rtl";
+      DLINK_STRING = "/link /DLL /LIBPATH:"+config*.FLX_TARGET_DIR+r"\lib\rtl";
+      SLINK_STRING = "/link /LIBPATH:"+config*.FLX_TARGET_DIR+r"\lib\rtl";
     elif PLAT_CYGWIN do // gcc on Windows
-      DLINK_STRING = "-L"+install_dir+"/host/bin";
-      SLINK_STRING = "-L"+install_dir+"/host/lib/rtl";
+      DLINK_STRING = "-L"+config*.FLX_TARGET_DIR+"/bin";
+      SLINK_STRING = "-L"+config*.FLX_TARGET_DIR+"/lib/rtl";
     else // Unix: gcc or clang
-      DLINK_STRING = "-L"+install_dir+"/host/lib/rtl";
-      SLINK_STRING = "-L"+install_dir+"/host/lib/rtl";
+      DLINK_STRING = "-L"+config*.FLX_TARGET_DIR+"/lib/rtl";
+      SLINK_STRING = "-L"+config*.FLX_TARGET_DIR+"/lib/rtl";
     done;
     return DLINK_STRING, SLINK_STRING;
   }
