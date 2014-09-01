@@ -9,7 +9,9 @@ initialisation code in each unit, performed in sequence
 within a given unit, with the order of action between
 units unspecified.
 
-@h2 Parse Unit
+Parse Unit
+------
+
 A parse unit is a file augmented by prefixing specified import
 files to the front. These consist of a suite of grammar files
 defining the syntax and other files defining macros.
@@ -21,7 +23,9 @@ are independently parsed to produce an list of statements
 represented as abstract syntax, denoted an AST (even
 though it is a list of trees, not a single tree).
 
-@h2 AST
+AST
+------
+
 The program consists of the concatenation of the ASTs
 of each parse unit, resulting in a single AST, which
 is then translated to a C++ translation unit by the
@@ -46,7 +50,9 @@ AST structure.
 The parser is a scannerless GLR parser with significant
 extensions.
 
-@h2 Grammar syntax
+Grammar syntax
+------
+
 Not written yet. Browse the 
 <a href=/share/lib/grammar>grammar directory</a> 
 for examples.
@@ -60,7 +66,9 @@ The mangling replaces characters in the filename with
 other characters so that the module name is a valid
 ISO C identifier.
 
-@h2 Special procedure @{flx_main}
+Special procedure @{flx_main}
+------
+
 A program module may contain at most one top level
 procedure named @{flx_main}. After initialisation 
 code suspends or terminates, this procedure is invoked
@@ -68,7 +76,9 @@ if it exists. It is the analogue of @{main} in C++
 however it is rarely used: side-effects of the
 root units initialisation code are typically used instead.
 
-@h2 Libraries
+Libraries
+------
+
 In Felix a library is a root unit together with its
 transitive closure with respect to inclusion,
 which does not contain a top level @{flx_main}.
@@ -85,7 +95,9 @@ All Felix files are considered to be UTF-8 encoded Unicode.
 
 Felix uses a scannerless parser, there are no keywords.
 
-@h2 Identifiers
+Identifiers
+------
+
 A plain identifier starts with a letter or underscore,
 then consists of a sequence of letters, digits, apostrophy, has no more
 than one apostrophy or dash in a row, except at the end no dash is
@@ -101,7 +113,9 @@ by the ISO C++ standard. In practice, all high bit set octets are allowed.
 A TeX identifier starts with a slosh and is followed by a sequence
 of letters. 
 @
-@h2 Integer Literals
+Integer Literals
+------
+
 
 <a href="/share/lib/grammar/grammar_int_lexer.flxh">Reference</a>
 
@@ -194,7 +208,9 @@ integer like types since not all have literal representations.
 
 Note the suffices do not entirely agree with C.
 
-@h2 Floating point Literals
+Floating point Literals
+------
+
 <a href="/share/lib/grammar/grammar_float_lexer.flxh">Reference</a>
 
 Floating point literals follow ISO C89, except that underscores
@@ -219,7 +235,9 @@ type.
 12.7p35
 @
 
-@h2 String literals
+String literals
+------
+
 
 <a href="/share/lib/grammar/grammar_string_lexer.flxh">Reference</a>
 
@@ -256,19 +274,25 @@ These are:
 \uFFFF - utf8 encoding of specified hex value
 \UFFFFFFFF - utf8 encoding of specified hex value
 @
-@h3 Raw strings
+Raw strings
+^^^^^^^
+
 A prefix "r" or "R" on a double quoted string
 or triple double quoted string suppresses escape processing,
 
 this is called a raw string literal.
 NOTE: single quoted string cannot be used!
 
-@h3 Null terminated strings
+Null terminated strings
+^^^^^^^
+
 A prefix of "c" or "C" specifies a C NTBS (Nul terminated
 byte string) be generated instead of a C++ string.
 Such a string has type +char rather than string.
 
-@h3 Perl interpolation strings
+Perl interpolation strings
+^^^^^^^
+
 A literal prefixed by "q" or "Q" is a Perl interpolation
 string. Such strings are actually functions.
 Each occurrence of $(varname) in the string is replaced
@@ -276,7 +300,9 @@ at run time by the value "str varname". The type of the
 variable must provide an overload of "str" which returns
 a C++ string for this to work.
 
-@h3 C format strings
+C format strings
+^^^^^^^
+
 A literal prefixed by a "f" or "F" is a C format string.
 
 Such strings are actually functions.
@@ -300,7 +326,9 @@ buffer.
 
 The argument types and code types are fully checked for type safety.
 
-@h3 Special identifiers
+Special identifiers
+^^^^^^^
+
 The special literal with a "n" or "N" prefix is a way to encode
 an arbitrary sequence of characters as an identifer in a context
 where the parser might interpret it otherwise.
@@ -310,7 +338,9 @@ For example:
 typedef fun n"@" (T:TYPE) : TYPE => cptr[T];
 @
 
-@h2 Include Directive
+Include Directive
+------
+
 An include directive has the syntax:
 @felix
 include "filename";
@@ -335,7 +365,9 @@ Macro processing
 <a href="/share/lib/grammar/macros.flxh">Syntax</a>
 
 <a href="/share/src/compiler/flx_desugar/flx_macro.ml">Semantics</a>
-@h2 Macro val
+Macro val
+------
+
 The macro val statement is used to specify an identifier should
 be replaced by the defining expression wherever it occurs in an
 expression, type expression, or pattern.
@@ -345,7 +377,9 @@ macro val hitchhiker;
 macro val a,b,c = 1,2,3;
 @
 
-@h2 Macro for
+Macro for
+------
+
 This statement allows a list of statements to be repeated
 with a sequence of replacements.
 @felix
@@ -354,7 +388,9 @@ forall name in 1,2,3 do
 done
 @
 
-@h2 Constant folding and conditional compilation
+Constant folding and conditional compilation
+------
+
 <a href="/share/src/compiler/flx_desugar/flx_constfld.ml">Reference</a>
 
 Felix provides two core kinds of constant folding:
@@ -456,7 +492,9 @@ Lookup control directives
 ======
 
 
-@h2 Open directive
+Open directive
+------
+
 The simple @{open} directive may be used to make the symbols
 defined in a class visible in the scope containing the @{open} directive.
 @felix
@@ -480,7 +518,9 @@ The open directive is not transitive.
 The names it makes visible are only visible
 in the scope in which the open directive is written.
 
-@h2 Inherit directive
+Inherit directive
+------
+
 The inherit directive allows all of the public symbols
 of a class to be included in another scope as if they
 were defined in that scope. This means such names
@@ -497,7 +537,9 @@ class B { inherit A; }
 println$ B::a;
 @
 
-@h2 Rename directive
+Rename directive
+------
+
 This directive is can be used to inherit a single
 symbol into a scope, possibly with a new name,
 and also to add an alias for a name in the current
@@ -523,7 +565,9 @@ The new name injected by a rename may be polymorphic:
 class A { proc f[T] () {} }
 class B { rename g[T] = A::f[T]; } 
 
-@h2 Use directive
+Use directive
+------
+
 This is a short form of the rename directive:
 @felix
 class A { var a = 1; }
@@ -537,7 +581,9 @@ use a = A::a;
 Unlike the rename directive the new name cannot be polymorphic
 and is limited to a simple identifier.
 
-@h2 Export directives
+Export directives
+------
+
 The @{export} directives make the exported symbol a root
 of the symbol graph. 
 
@@ -586,7 +632,9 @@ no cause any observable behavior, or, a class statement, or,
 a var or val statement. The latter two exceptions define a name
 but may also have associated behaviour.
 
-@h2 The @{var} statement
+The @{var} statement
+------
+
 The @{var} statement is used to introduce a variable name
 and potential executable behaviour. It has one of three 
 basic forms:
@@ -652,7 +700,9 @@ A variable is said to name an object, not a value.
 This basically means it is associated with the address of a typed
 storage location.
 
-@h3 Multiple variables
+Multiple variables
+^^^^^^^
+
 Multipls variables can be defined at once:
 @felix
 var m = 1,2;
@@ -661,7 +711,9 @@ var c,d = m;
 @
 With this syntax, no type annotation may be given.
 
-@h2 The @{val} statement.
+The @{val} statement.
+------
+
 A @{val} statement defines a name for an expression.
 @felix
 val x : int = 1;
@@ -706,7 +758,9 @@ this case there is no assurance @{x} will change after @{i}
 is incremented because the compiler is free to replace
 any @{val} definition with a @{var} definition.
 
-@h3 Multiple values
+Multiple values
+^^^^^^^
+
 Multipls values can be defined at once:
 @felix
 val m = 1,2;
@@ -788,7 +842,9 @@ This hash operator binds more tightly than operator dot so
 @
 
 
-@h2 Pre- and post-conditions
+Pre- and post-conditions
+------
+
 A function using one of the first two forms
 may have pre-conditions, post-conditions, or both:
 @felix
@@ -803,7 +859,9 @@ to prove a pre- or post-condition must hold and elide it.
 The special identifier @{result} is used to indicate the return
 value of the function.
 
-@h2 Higher order functions
+Higher order functions
+------
+
 A function may be written like
 @felix
 fun hof (x:int) (y:int) : int = { return x + y; }
@@ -832,7 +890,9 @@ hof 1 2 // or equivalently
 @
 since whitespace application is left associative.
 
-@h2 Procedures
+Procedures
+------
+
 A function which returns control but no value is called a procedure.
 Procedures may have side effects.
 @felix
@@ -868,7 +928,9 @@ f; // equivalent to
 f ();
 @
 
-@h2 Generators
+Generators
+------
+
 TBD
 
 Types
@@ -876,7 +938,9 @@ Types
 
 <a href="/share/lib/grammar/type_decls.flxh">Syntax</a>
 
-@h2 Tuples
+Tuples
+------
+
 Tuple types are well known: a tuple is just a Cartesian Product
 with components identified by position, starting at 0. 
 The n-ary type combinator is infix @{*} and the n-ary value
@@ -930,33 +994,57 @@ Assignment to components of tuples stored in variables is supported
 but only to one level, for general access you must take a pointer
 and use the store-at-addres operator @{<-}.
 
-@h2 Records
+Records
+------
+
 A record is similar to a tuple except the components are 
 named and considered unordered.
 
 
-@h2 Structs
+Structs
+------
+
 TBD
-@h2 Sums
+Sums
+------
+
 TBD
-@h3 union
+union
+^^^^^^^
+
 TBD
-@h2 enum
+enum
+------
+
 TBD
-@h2 variant
+variant
+------
+
 TBD
-@h2 Array
+Array
+------
+
 TBD
-@h2 typedef
+typedef
+------
+
 TBD
-@h3 typedef fun
+typedef fun
+^^^^^^^
+
 TBD
-@h2 typematch
+typematch
+------
+
 TBD
-@h2 type sets
+type sets
+------
+
 TBD
 
-@h2 Abstract types
+Abstract types
+------
+
 TBD
 
 Expressions
@@ -968,10 +1056,14 @@ TBD
 Executable statements
 ======
 
-@h2 Assignment
+Assignment
+------
+
 <a href="/share/lib/grammar/assignment.flxh">Syntax</a>
 
-@h2 The @{goto} statement and label prefix
+The @{goto} statement and label prefix
+------
+
 Felix statements may be prefixed by a label
 to which control may be transfered by a @{goto}
 statement:
@@ -1013,13 +1105,17 @@ This is a valid way to handle errors.
 the code is correct because @{outer} is active
 at the time that @{handler} performs the
 control transfer.
-@h3 halt
+halt
+^^^^^^^
+
 Stops the program with a diagnostic.
 @felix
 halt "Program complete";
 @
 
-@h3 try/catch/entry
+try/catch/entry
+^^^^^^^
+
 The try/catch construction may only be user to wrap
 calls to C++ primitives, so as to catch exceptions.
 @felix
@@ -1031,7 +1127,9 @@ catch (x:int) =>
 endtry
 @
 
-@h3 goto-indirect/label_address
+goto-indirect/label_address
+^^^^^^^
+
 The @{label-address} operator captures the address
 of code at a nominated label. 
 
@@ -1057,11 +1155,17 @@ lab2:>
 }
 @
 
-@h3 Exchange of control
+Exchange of control
+^^^^^^^
+
 TBD
-@h2 match/endmatch
+match/endmatch
+------
+
 TBD
-@h2 if/goto
+if/goto
+------
+
 The conditional goto is an abbreviation for 
 the more verbose conditional:
 @felix
@@ -1069,7 +1173,9 @@ if c goto lab; // equivalent to
 if c do goto lab; done
 @
 
-@h3 if/return
+if/return
+^^^^^^^
+
 The conditional return is an abbreviation for
 the more verbose conditional:
 @felix
@@ -1077,7 +1183,9 @@ if c return; // equivalent to
 if c do return; done
 @
 
-@h3 if/call
+if/call
+^^^^^^^
+
 The conditional call is an abbreviation for
 the more verbose conditional:
 @felix
@@ -1086,7 +1194,9 @@ if c do call f x; done
 @
 
 
-@h2 if/do/elif/else/done
+if/do/elif/else/done
+------
+
 The procedural conditional branch is used to select
 a control path based on a boolean expression.
 
@@ -1132,7 +1242,9 @@ match c with
 endmatch;
 @
 
-@h2 call
+call
+------
+
 The @{call} statement is used to invoke a procedure.
 @felix
 proc p(x:int) { println$ x; }
@@ -1152,7 +1264,9 @@ f(); // is equivalent to
 f;
 @
 
-@h2 procedure return
+procedure return
+------
+
 The procedural return is used to return control
 from a procedure to its caller.
 
@@ -1165,7 +1279,9 @@ proc f() { println$ 1; }
 proc f() { println$ 1; return; }
 @
 
-@h3 return from
+return from
+^^^^^^^
+
 The return from statement allows control to be
 returned from an enclosing procedure, provided that
 procedure is active.
@@ -1180,7 +1296,9 @@ proc outer () {
 }
 @
 
-@h3 jump 
+jump 
+^^^^^^^
+
 The procedural jump is an abbreviation for 
 the more verbose sequence:
 @felix
@@ -1189,7 +1307,9 @@ call procedure arg;
 return;
 @
 
-@h2 function return
+function return
+------
+
 The functional return statement returns a value from
 a function.
 @felix
@@ -1199,7 +1319,9 @@ fun f () : int = {
 @
 Control may not fall through the end of a function.
 
-@h3 yield
+yield
+^^^^^^^
+
 The yield statement returns a value from a generator
 whilst retaining the current location so that execution
 may be resumed at the point after the yield.
@@ -1222,7 +1344,9 @@ println$ zero, one;
 @
 
 
-@h2 spawn_fthread
+spawn_fthread
+------
+
 <a href="/share/lib/std/control/fibres.flx">Reference</a>
 
 The @{spawn_fthread} library function invokes the corresponding
@@ -1238,16 +1362,24 @@ Otherwise the spawned fthread is suspended when the first
 write, or the first unmatched read operation occurs.
 
 
-@h3 read/write/broadcast schannel
+read/write/broadcast schannel
+^^^^^^^
+
 <a href="/share/lib/std/control/schannels.flx">Reference</a>
 
-@h2 spawn_pthread
+spawn_pthread
+------
+
 <a href="/share/lib/std/control/pthread.flx">Reference</a>
 
-@h3 read/write pchannel
+read/write pchannel
+^^^^^^^
+
 <a href="/share/lib/std/control/pchannels.flx">Reference</a>
 
-@h3 exchange
+exchange
+^^^^^^^
+
 
 loops
 ======
@@ -1277,20 +1409,28 @@ outer:for var i in 0 upto 9 do
 done
 @
 
-@h2 redo
+redo
+------
+
 The redo statement causes control to jump to the start
 of the specified loop without incrementing the control variable.
 
-@h2 break
+break
+------
+
 The break statement causes control to jump past the end of
 the specified loop, terminating iteration.
 
-@h2 continue
+continue
+------
+
 The continue statement causes the control variable to
 be incremented and tests and the next iteration commenced
 or the loop terminated.
 
-@h2 for/in/upto/downto/do/done
+for/in/upto/downto/do/done
+------
+
 A basic loop with an inclusive range.
 @felix
 // up
@@ -1318,7 +1458,9 @@ For loops over signed types cannot span the whole range of the type.
 The loop logic takes care to ensure the control variable is not
 incremented (resp. decremented) past the end (resp.start) value.
 
-@h2 while/do/done
+while/do/done
+------
+
 The while loop executes the body repeatedly whilst the control
 condition is true at the start of the loop body.
 @felix
@@ -1326,7 +1468,9 @@ var i = 0;
 while i < 10 do println$ i; ++i; done
 @
 
-@h2 until loop
+until loop
+------
+
 The until loop executes the loop body repeatedly
 until the control condition is false at the start of the loop,
 it is equivalent o a while loop with a negated condition.
@@ -1335,20 +1479,30 @@ var i = 0;
 until i == 9 do println$ i; ++i; done
 @
 
-@h2 for/match/done
+for/match/done
+------
+
 TBD
-@h2 loop
+loop
+------
+
 TBD
-@h2 Assertions
+Assertions
+------
+
 <a href="/share/lib/grammar/assertions.flxh">Reference</a>
-@h2 assert
+assert
+------
+
 Ad hoc assertion throws an assertion exception if its argument
 is false. 
 @felix
 assert x > 0;
 @
 
-@h3 axiom
+axiom
+^^^^^^^
+
 An axiom is a relationship between functions, typically
 polymorphic, which is required to hold.
 @felix
@@ -1376,20 +1530,26 @@ logic by actually constructing the requisite variable.
 Second order logic, with quantifiers internal to the 
 logic term, are not supported.
 
-@h3 lemma
+lemma
+^^^^^^^
+
 A lemma is similar to an axiom, except that is it
 easily derivable from axioms; in particular,
 a reasonable automatic theorem prover should
 be able to derived it.
 
-@h3 theorem
+theorem
+^^^^^^^
+
 A theorem is similar to a lemma, except that it is 
 too hard to expect an automatic theorem prover
 to be able to derive it without hints or assistance.
 
 There is currently no standard way to prove such hints.
 
-@h3 reduce
+reduce
+^^^^^^^
+
 A reduce statement specifies a term reduction and is logically
 equivalent to an axiom, lemma, or theorem, however it acts
 as an instruction to the compiler to attempt to actually 
@@ -1409,7 +1569,9 @@ reduce revrev[T] (x: list[T]) : rev (rev x) => x;
 @
 
 
-@h3 invariant
+invariant
+^^^^^^^
+
 An invariant is an assertion which must hold on the state variables
 of an object, at the point after construction of the state
 is completed by the constructor function and just before the
@@ -1430,7 +1592,9 @@ object f(var x:int, var y:int) =
 }
 @
 
-@h2 code
+code
+------
+
 The code statement inserts C++ code literally into the current
 Felix code.
 
@@ -1440,13 +1604,17 @@ The code must be one or more C++ statements.
 code 'cout << "hello";';
 @ 
 
-@h3 noreturn code
+noreturn code
+^^^^^^^
+
 Similar to code, however noreturn code never returns.
 @felix
 noreturn code "throw 1;";
 @
 
-@h2 Service call
+Service call
+------
+
 The service call statement calls the Felix system kernel
 to perform a specified operation.
 
@@ -1480,7 +1648,9 @@ from procedures, since they call the system by returning
 control, the system must reside exactly one return address
 up the machine stack at the point a service call is executed.
 
-@h2 with/do/done
+with/do/done
+------
+
 The with/do/done statement is use to define temporary variables
 which are accessible only in the do/done body of the statement.
 
@@ -1491,7 +1661,9 @@ with var x = 2; do println$ x; done
 assert x == 1;
 @
 
-@h2 do/done
+do/done
+------
+
 The do/done statement has no semantics and merely acts as a
 way to make a sequence of statements appear as a single
 statement to the parser.
@@ -1506,7 +1678,9 @@ group are visible in the enclosing context.
 do something; done
 @
 
-@h2 begin/end
+begin/end
+------
+
 The begin/end statement creates an anonymous procedure
 and then calls it. It therefore appears as a single statement
 to the parser, but it simulates a block as would be used in C.
@@ -1536,7 +1710,9 @@ However Felix has a stronger and stricter type system than C++
 and a much better syntax, so binding specifications which lift
 C++ entities into Felix typically require some static glue.
 
-@h2 Type bindings
+Type bindings
+------
+
 In general, Felix requires all primitive types to be first class,
 that is, they must be default initialisable, copy constructible,
 assignable, and destructible. Assignment to a default initialised
@@ -1559,34 +1735,54 @@ a primitive function in order for the generated code to type check.
 
 
 
-@h2 Expression bindings
+Expression bindings
+------
+
 TBD
-@h2 Function bindings
+Function bindings
+------
+
 TBD
-@h2 Floating insertions
+Floating insertions
+------
+
 TBD
-@h2 Package requirements
+Package requirements
+------
+
 TBD
 
 Domain Specific Sublanguages
 ======
 
-@h2 Regexps
+Regexps
+------
+
 <a href="/share/lib/grammar/regexps.flxh">Syntax</a>
 
 <a href="/share/lib/std/strings/regdef.flx">Combinators</a>
 
 <a href="/share/lib/std/strings/re2.flx">Google Re2 Binding</a>
 
-@h2 Pipelines
-@h3 Synchronouse pipelines
+Pipelines
+------
+
+Synchronouse pipelines
+^^^^^^^
+
 <a href="/share/lib/std/control/spipe.flx">Library</a>
-@h3 Asynchronouse pipelines
+Asynchronouse pipelines
+^^^^^^^
+
 <a href="/share/lib/std/control/ppipe.flx">Library</a>
 
-@h3 Json
+Json
+^^^^^^^
+
 TBD
-@h3 Sqlite3
+Sqlite3
+^^^^^^^
+
 TBD
 
 
