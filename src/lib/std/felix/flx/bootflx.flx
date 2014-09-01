@@ -55,7 +55,7 @@ class BootFlx
     done
 
 
-    var dbdir = config*.FLX_INSTALL_DIR / config*.FLX_TARGET_SUBDIR / "config";
+    var dbdir = config*.FLX_TARGET_DIR / "config";
     var pkgconfig = FlxPkgConfig::FlxPkgConfigQuery$ list[string] dbdir;
     var toolchain_name = 
       if control*.FLX_TOOLCHAIN == "" then pkgconfig.getpkgfield1 ("toolchain", "toolchain")
