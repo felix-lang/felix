@@ -292,7 +292,7 @@ def config_host(ctx, build):
         debug=ctx.options.debug or ctx.options.host_ocaml_debug,
         ocamlc=ctx.options.host_ocamlc,
         ocamlopt=ctx.options.host_ocamlopt,
-        flags=['-w', 'yzex', '-warn-error', 'FDPSU'],
+        flags=['-w', 'yzex', '-warn-error', 'FPSU'],
         requires_at_least_version=(3, 11))
 
     phase.ocamllex = call('fbuild.builders.ocaml.Ocamllex', ctx,

@@ -228,7 +228,7 @@ class BuildFlxg
                "-I",tmpdir/dir, 
                "-I", entmp (Filename::dirname file)) + 
                include_flags +
-               list("-c", "-w",'yzex','-warn-error',"FDPSU",
+               list("-c", "-w",'yzex','-warn-error',"FPSU",
                '-o',entmp (Filename::strip_extension file) + ".cmi",
                file)
             ;
@@ -246,7 +246,7 @@ class BuildFlxg
                "-I",tmpdir/dir, 
                "-I", entmp (Filename::dirname file)) +
                include_flags +
-               list("-c", "-w",'yzex','-warn-error',"FDPSU",
+               list("-c", "-w",'yzex','-warn-error',"FPSU",
                '-o',entmp (Filename::strip_extension file) + ".cmx",
                file)
             ;
@@ -266,7 +266,7 @@ class BuildFlxg
           println$ "Linking library " + tmpdir/lib + ".cmxa";
           sorted_libs = sorted_libs + (tmpdir/lib+ ".cmxa");
           var result = Shell::system$ "ocamlopt.opt" + list(
-            "-a", "-w",'yzex','-warn-error',"FDPSU",
+            "-a", "-w",'yzex','-warn-error',"FPSU",
             '-o',tmpdir/lib + ".cmxa") +
             map 
               (fun (s:string) => entmp (Filename::strip_extension s) + ".cmx") 
@@ -282,7 +282,7 @@ class BuildFlxg
           // link files into executable
           println$ "Linking executable " + tmpdir/lib;
           var result = Shell::system$ "ocamlopt.opt" + list(
-             "-w",'yzex','-warn-error',"FDPSU",
+             "-w",'yzex','-warn-error',"FPSU",
             '-o',tmpdir/lib ) + spec.external_libs + sorted_libs +
             map 
               (fun (s:string) => entmp (Filename::strip_extension s) + ".cmx") 
