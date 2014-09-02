@@ -21,7 +21,7 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-   language
+   test.rst
 
 Indices and tables
 ==================
