@@ -16,7 +16,7 @@ A parse unit is a file augmented by prefixing specified import
 files to the front. These consist of a suite of grammar files
 defining the syntax and other files defining macros.
 
-By convention import files have the extension ``.flxh``.
+By convention import files have the extension ``.flxh``_.
 
 With this augmentation all parse units in a program
 are independently parsed to produce an list of statements
@@ -54,7 +54,7 @@ Grammar syntax
 --------------
 
 Not written yet. Browse the 
-`grammar directory <http://felix-lang.org/share/lib/grammar>`
+`grammar directory <http://felix-lang.org/share/lib/grammar>`_
 for examples.
 
 Modules
@@ -66,13 +66,13 @@ The mangling replaces characters in the filename with
 other characters so that the module name is a valid
 ISO C identifier.
 
-Special procedure ``flx_main``
+Special procedure ``flx_main``_
 ------------------------------
 
 A program module may contain at most one top level
-procedure named ``flx_main``. After initialisation 
+procedure named ``flx_main``_. After initialisation 
 code suspends or terminates, this procedure is invoked
-if it exists. It is the analogue of ``main`` in C++
+if it exists. It is the analogue of ``main``_ in C++
 however it is rarely used: side-effects of the
 root units initialisation code are typically used instead.
 
@@ -81,7 +81,7 @@ Libraries
 
 In Felix a library is a root unit together with its
 transitive closure with respect to inclusion,
-which does not contain a top level ``flx_main``.
+which does not contain a top level ``flx_main``_.
 
 A program unit can be augmented by a set of libraries
 which are then considered as if included, but without
@@ -119,7 +119,7 @@ Integer Literals
 ----------------
 
 
-`Reference <http://felix-lang.org/share/lib/grammar/grammar_int_lexer.flxh>`
+`Reference <http://felix-lang.org/share/lib/grammar/grammar_int_lexer.flxh>`_
 
 An plain integer literal consists of a sequence of digits,
 optionally separated by underscores. Each separating
@@ -128,7 +128,7 @@ underscore must be between digits.
 A prefixed integer literal is a plain integer literal
 or a plain integer literal prefixed by a radix specifier.
 The radix specifier is a zero followed by one of
-the letters ``bBoOdDxX`` for binary, octal, decimal or hex.
+the letters ``bBoOdDxX``_ for binary, octal, decimal or hex.
 
 An underscore is permitted after the prefix.
 
@@ -136,8 +136,8 @@ The radix is the one specified by the prefix or decimal
 by default.
 
 The digits of an integer consist of those permitted
-by the radix: ``01`` for binary, ``01234567``
-for octal, ``0123456789`` for decimal, ``0123456789abcdefABCDEF``
+by the radix: ``01`` for binary, ``01234567``_
+for octal, ``0123456789`` for decimal, ``0123456789abcdefABCDEF``_
 for hex.
 
 Note there are no negative integer literals.
@@ -145,7 +145,7 @@ Note there are no negative integer literals.
 A type suffix may be added to the end of a prefixed
 integer to designate a literal of a particular integer type,
 it has the form of an upper or lower case letter or pair of
-letters usually combined with a prefix or suffix ``u`` or ``U``
+letters usually combined with a prefix or suffix ``u`` or ``U``_
 to designate an unsigned variant of the type. 
 
 Signed integers are expected to be two's complement with one
@@ -215,7 +215,7 @@ Note the suffices do not entirely agree with C.
 Floating point Literals
 -----------------------
 
-`Reference <http://felix-lang.org/share/lib/grammar/grammar_float_lexer.flxh>`
+`Reference <http://felix-lang.org/share/lib/grammar/grammar_float_lexer.flxh>`_
 
 Floating point literals follow ISO C89, except that underscores
 are allowed between digits, and a a digit is required both before
@@ -244,7 +244,7 @@ String literals
 ---------------
 
 
-`Reference <http://felix-lang.org/share/lib/grammar/grammar_string_lexer.flxh>`
+`Reference <http://felix-lang.org/share/lib/grammar/grammar_string_lexer.flxh>`_
 
 Generaly we follow Python here.
 Felix allows strings to be delimited by: 
@@ -307,9 +307,9 @@ Such functions accept a tuple of values like this:
    
    f"%d-%S" (42, "Hello")
 
-If ``vsnprintf`` is available on the local platform it is used
+If ``vsnprintf``_ is available on the local platform it is used
 to provide an implementation which cannot overrun.
-If it is not, ``vsprintf`` is used instead with a 1000 character
+If it is not, ``vsprintf``_ is used instead with a 1000 character
 buffer.
 
 The argument types and code types are fully checked for type safety.
@@ -338,24 +338,24 @@ An include directive has the syntax:
 
 where the filename is a Unix relative filename,
 may not have an extension, and may not begin with or 
-contain ``..`` (two dots).
+contain ``..``_ (two dots).
 
-If the filename begins with ``./`` then the balance of the name
+If the filename begins with ``./``_ then the balance of the name
 is relative, a sibling of the including file, otherwise the name
 is searched for on an include path. 
 
 In either case, a search succeeds when it finds a file with
 the appropriate base path in the search directory with
-extension ``.flx`` or ``.fdoc``. If both files exist the
+extension ``.flx`` or ``.fdoc``_. If both files exist the
 most recently changed one is used. If the time stamps are
 the same the choice is unspecified.
 
 Macro processing
 ================
 
-`Syntax <http://felix-lang.org/share/lib/grammar/macros.flxh>`
+`Syntax <http://felix-lang.org/share/lib/grammar/macros.flxh>`_
 
-`Semnantics <http://felix-lang.org/share/src/compiler/flx_desugar/flx_macro.ml>`
+`Semnantics <http://felix-lang.org/share/src/compiler/flx_desugar/flx_macro.ml>`_
 
 Macro val
 ---------
@@ -387,7 +387,7 @@ done
 Constant folding and conditional compilation
 --------------------------------------------
 
-`Reference <http://felix-lang.org/share/src/compiler/flx_desugar/flx_constfld.ml>`
+`Reference <http://felix-lang.org/share/src/compiler/flx_desugar/flx_constfld.ml>`_
 
 Felix provides two core kinds of constant folding:
 folding of arithmetic, boolean, and string values, and 
@@ -443,7 +443,7 @@ All other cases are in error.
 Classes
 =======
 
-`Syntax <http://felix-lang.org/share/lib/grammar/namespaces.flxh>`
+`Syntax <http://felix-lang.org/share/lib/grammar/namespaces.flxh>`_
 
 The top level Felix module can contain submodules 
 which are specified by a non-polymorphic class
@@ -484,7 +484,7 @@ The body of a class forms a nested scope. Within
 a class all symbols defined in the class are visible,
 along with all those visible in the enclosing context.
 
-The reserved name ``root`` may be used as a prefix
+The reserved name ``root``_ may be used as a prefix
 for the top level module:
 
 .. code:: felix
@@ -499,8 +499,8 @@ Lookup control directives
 Open directive
 --------------
 
-The simple ``open`` directive may be used to make the symbols
-defined in a class visible in the scope containing the ``open`` directive.
+The simple ``open``_ directive may be used to make the symbols
+defined in a class visible in the scope containing the ``open``_ directive.
 
 .. code:: felix
    
@@ -599,11 +599,11 @@ and is limited to a simple identifier.
 Export directives
 -----------------
 
-The ``export`` directives make the exported symbol a root
+The ``export``_ directives make the exported symbol a root
 of the symbol graph. 
 
 The functional export and forces it to be place in the
-generated code as an ``extern "C"`` symbol with the
+generated code as an ``extern "C"``_ symbol with the
 given name:
 
 .. code:: felix
@@ -614,10 +614,10 @@ given name:
    export cproc f of (int) as "myf";
 
 Functions are exported by generating a wrapper around
-the Felix function. If the function is exported as ``fun``
-or ``proc`` the C function generated requires a pointer
+the Felix function. If the function is exported as ``fun``_
+or ``proc``_ the C function generated requires a pointer
 to the thread frame as the first argument,
-if the ``cfun`` or ``cproc`` forms are used, the wrapper
+if the ``cfun`` or ``cproc``_ forms are used, the wrapper
 will not require the thread frame. 
 
 In the latter case, the Felix function must not
@@ -630,11 +630,11 @@ A type may also be exported:
    export type ( mystruct ) as "MyStruct";
 
 This causes a C typedef to be emitted making 
-the name ``MyStruct`` an alias to the Felix type.
+the name ``MyStruct``_ an alias to the Felix type.
 This is useful because Felix types can have unpredictable
 mangled names.
 
-The word ``export`` optionally followed by a string
+The word ``export``_ optionally followed by a string
 may also be used as a prefix for any Felix function,
 generator, or procedure definition. If the string
 is omitted is taken as the symbol name. The effect
@@ -644,17 +644,17 @@ is the same as if an export statement has been written.
 Variable Definitions
 ====================
 
-`Syntax <http://felix-lang.org/share/lib/grammar/variables.flxh>`
+`Syntax <http://felix-lang.org/share/lib/grammar/variables.flxh>`_
 
 A definition is a statement which defines a name, but does
 no cause any observable behavior, or, a class statement, or, 
 a var or val statement. The latter two exceptions define a name
 but may also have associated behaviour.
 
-The ``var`` statement
+The ``var``_ statement
 ---------------------
 
-The ``var`` statement is used to introduce a variable name
+The ``var``_ statement is used to introduce a variable name
 and potential executable behaviour. It has one of three 
 basic forms:
 
@@ -679,7 +679,7 @@ from the initialiser.
 If the initialiser has observable behaviour it will be observed
 if at all, when control passes through the variable statement.
 
-If the variable introduced by the ``var`` statement is not used,
+If the variable introduced by the ``var``_ statement is not used,
 the variable and its initaliser will be elided and any observable
 behaviour will be lost.
 
@@ -692,7 +692,7 @@ through which control passes.
 In other words, the variable is used if the behaviour of
 the program appears to depend on its value or its address.
 
-The library procedure ``C_hack::ignore`` ensures the compiler
+The library procedure ``C_hack::ignore``_ ensures the compiler
 believes a variable is used:
 
 .. code:: felix
@@ -739,17 +739,17 @@ Multipls variables can be defined at once:
 
 With this syntax, no type annotation may be given.
 
-The ``val`` statement.
+The ``val``_ statement.
 ----------------------
 
-A ``val`` statement defines a name for an expression.
+A ``val``_ statement defines a name for an expression.
 
 .. code:: felix
    
    val x : int = 1;
    val z = 1;
 
-The value associated with a ``val`` symbol may be computed
+The value associated with a ``val``_ symbol may be computed
 at any time between its definition and its use, and may
 differ between uses, if the initialising expression depends
 on variable state, such as a variable or call to a generator.
@@ -760,9 +760,9 @@ not be significant.
 
 Nevertheless the user must be warned to take care
 with the indeterminate evaluation time and use
-a ``var`` when there is any doubt.
+a ``var``_ when there is any doubt.
 
-Since a ``val`` simply names an expression, it is associated
+Since a ``val``_ simply names an expression, it is associated
 with a value not an object and cannot be addressed
 or assigned to. However this does NOT mean its value cannot
 change:
@@ -788,9 +788,9 @@ most obvious case: a less obvious one:
 
 which is clearly just an expansion of the the first two
 iteration of the previously given for loop. However in
-this case there is no assurance ``x`` will change after ``i``
+this case there is no assurance ``x`` will change after ``i``_
 is incremented because the compiler is free to replace
-any ``val`` definition with a ``var`` definition.
+any ``val`` definition with a ``var``_ definition.
 
 Multiple values
 ^^^^^^^^^^^^^^^
@@ -810,7 +810,7 @@ With this syntax, no type annotation may be given.
 Functions
 =========
 
-`Syntax <http://felix-lang.org/share/lib/grammar/functions.flxh>`
+`Syntax <http://felix-lang.org/share/lib/grammar/functions.flxh>`_
 
 A felix function definition takes one of three basic forms:
 
@@ -851,7 +851,7 @@ All these function have a type:
    D -> C
 
 where D is the domain and C is the codomain: both would
-be ``int`` in the examples.
+be ``int``_ in the examples.
 
 A function can be applied by the normal forward
 notation using juxtaposition or what is whimsically
@@ -907,7 +907,7 @@ Pre- and pos-conditions are usually treated as boolean assertions
 which are checked at run time. The compiler may occasionally be able
 to prove a pre- or post-condition must hold and elide it.
 
-The special identifier ``result`` is used to indicate the return
+The special identifier ``result``_ is used to indicate the return
 value of the function.
 
 Higher order functions
@@ -962,7 +962,7 @@ Procedures may have side effects.
    proc show (x:int) => println x;
 
 The second form is a more convenient notation.
-The type 0 is also called ``void`` and denotes
+The type 0 is also called ``void``_ and denotes
 a type with no values.
 
 A procedure may return with a simple return statement:
@@ -1002,29 +1002,29 @@ TBD
 Types
 =====
 
-`Syntax <http://felix-lang.org/share/lib/grammar/type_decls.flxh>`
+`Syntax <http://felix-lang.org/share/lib/grammar/type_decls.flxh>`_
 
 Tuples
 ------
 
 Tuple types are well known: a tuple is just a Cartesian Product
 with components identified by position, starting at 0. 
-The n-ary type combinator is infix ``*`` and the n-ary value
-constructor is infix ``,``:
+The n-ary type combinator is infix ``*``_ and the n-ary value
+constructor is infix ``,``_:
 
 .. code:: felix
    
    val tup : int * string * double = 1, "Hello", 4.2;
 
-The 0-ary tuple type is denoted ``1`` or ``unit``
-with sole value ``()``:
+The 0-ary tuple type is denoted ``1`` or ``unit``_
+with sole value ``()``_:
 
 .. code:: felix
    
    val u : unit = ();
 
-There 1-array tuple of type ``T`` component value ``v`` is identified
-with the type ``T`` and has value ``v``.
+There 1-array tuple of type ``T`` component value ``v``_ is identified
+with the type ``T`` and has value ``v``_.
 
 The individual components of a tuple may be accessed by a projection
 function. Felix uses an integer literal to denote this function.
@@ -1058,14 +1058,14 @@ In particular note:
    var x = 1, "Hello";
    &x.0 <- 42;
 
-because the precedences make the grouping ``(&x).0``.
+because the precedences make the grouping ``(&x).0``_.
 
 You cannot take the address of a tuple component because
 a projection of a value is a value.
 
 Assignment to components of tuples stored in variables is supported
 but only to one level, for general access you must take a pointer
-and use the store-at-addres operator ``<-``.
+and use the store-at-addres operator ``<-``_.
 
 Records
 -------
@@ -1131,7 +1131,7 @@ TBD
 Expressions
 ===========
 
-`Syntax <http://felix-lang.org/share/lib/grammar/expressions.flxh>`
+`Syntax <http://felix-lang.org/share/lib/grammar/expressions.flxh>`_
 
 TBD
 
@@ -1141,9 +1141,9 @@ Executable statements
 Assignment
 ----------
 
-`Syntax <http://felix-lang.org/share/lib/grammar/assignment.flxh>`
+`Syntax <http://felix-lang.org/share/lib/grammar/assignment.flxh>`_
 
-The ``goto`` statement and label prefix
+The ``goto``_ statement and label prefix
 ---------------------------------------
 
 Felix statements may be prefixed by a label
@@ -1187,8 +1187,8 @@ is not visible.
    }
 
 This is a valid way to handle errors.
-the code is correct because ``outer`` is active
-at the time that ``handler`` performs the
+the code is correct because ``outer``_ is active
+at the time that ``handler``_ performs the
 control transfer.
 
 halt
@@ -1218,13 +1218,13 @@ calls to C++ primitives, so as to catch exceptions.
 goto-indirect/label_address
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The ``label-address`` operator captures the address
+The ``label-address``_ operator captures the address
 of code at a nominated label. 
 
-The address has type ``LABEL`` and can be stored in a variable.
+The address has type ``LABEL``_ and can be stored in a variable.
 
 Provided the activation record of the procedure containing
-the label remains live, a subsequent ``goto-indirect`` can
+the label remains live, a subsequent ``goto-indirect``_ can
 be used to jump to that location.
 
 .. code:: felix
@@ -1293,7 +1293,7 @@ if/do/elif/else/done
 The procedural conditional branch is used to select
 a control path based on a boolean expression.
 
-The ``else`` and ``elif`` clauses are optional.
+The ``else`` and ``elif``_ clauses are optional.
 
 .. code:: felix
 
@@ -1308,7 +1308,7 @@ The ``else`` and ``elif`` clauses are optional.
      stmt6;
    done
 
-The ``elif`` clause saves writing a nested conditional.
+The ``elif``_ clause saves writing a nested conditional.
 The above is equivalent to:
 
 .. code:: felix
@@ -1342,14 +1342,14 @@ A simple conditional is an abbreviation for a statement match:
 call
 ----
 
-The ``call`` statement is used to invoke a procedure.
+The ``call``_ statement is used to invoke a procedure.
 
 .. code:: felix
    
    proc p(x:int) { println$ x; }
    call p 1;
 
-The word ``call`` may be elided in a simple call:
+The word ``call``_ may be elided in a simple call:
 
 .. code:: felix
    
@@ -1455,9 +1455,9 @@ in a variable which is subsequently applied.
 spawn_fthread
 -------------
 
-`Reference <http://felix-lang.org/share/lib/std/control/fibres.flx>`
+`Reference <http://felix-lang.org/share/lib/std/control/fibres.flx>`_
 
-The ``spawn_fthread`` library function invokes the corresponding
+The ``spawn_fthread``_ library function invokes the corresponding
 service call to schedule the initial continuation of a procedure 
 taking a unit argument as an fthread (fibre). 
 
@@ -1473,17 +1473,17 @@ write, or the first unmatched read operation occurs.
 read/write/broadcast schannel
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-`Reference <http://felix-lang.org/share/lib/std/control/schannels.flx>`
+`Reference <http://felix-lang.org/share/lib/std/control/schannels.flx>`_
 
 spawn_pthread
 -------------
 
-`Reference <http://felix-lang.org/share/lib/std/control/pthread.flx>`
+`Reference <http://felix-lang.org/share/lib/std/control/pthread.flx>`_
 
 read/write pchannel
 ^^^^^^^^^^^^^^^^^^^
 
-`Reference <http://felix-lang.org/share/lib/std/control/pchannels.flx>`
+`Reference <http://felix-lang.org/share/lib/std/control/pchannels.flx>`_
 
 exchange
 ^^^^^^^^
@@ -1492,7 +1492,7 @@ exchange
 loops
 =====
 
-`Reference <http://felix-lang.org/share/lib/grammar/loops.flxh>`
+`Reference <http://felix-lang.org/share/lib/grammar/loops.flxh>`_
 
 Felix has some low level and high level loop constructions.
 
@@ -1559,9 +1559,9 @@ The start and end expressions must be of the same type.
 If the control variable is defined in the loop with a type
 annotation, that type must agree with the control variable.
 
-The type must support comparison with the equality operator ``==``
-the less than or equals operator ``<=`` and increment with 
-the pre increment procedure ``++``.
+The type must support comparison with the equality operator ``==``_
+the less than or equals operator ``<=``_ and increment with 
+the pre increment procedure ``++``_.
 
 For loops over unsigned types cannot handle the empty case.
 For loops over signed types cannot span the whole range of the type.
@@ -1605,7 +1605,7 @@ TBD
 Assertions
 ----------
 
-`Reference <http://felix-lang.org/share/lib/grammar/assertions.flxh>`
+`Reference <http://felix-lang.org/share/lib/grammar/assertions.flxh>`_
 
 assert
 ------
@@ -1764,7 +1764,7 @@ The available operations include:
      ;
 
 These operations are typically related to coroutine or thread scheduling.
-However ``svc_general`` is an unspecified operation, which is typically
+However ``svc_general``_ is an unspecified operation, which is typically
 used to invoke the asynchronous I/O subsystem.
 
 Service calls can only be issued from flat code, that is,
@@ -1888,11 +1888,11 @@ Domain Specific Sublanguages
 Regexps
 -------
 
-`Syntax <http://felix-lang.org/share/lib/grammar/regexps.flxh>`
+`Syntax <http://felix-lang.org/share/lib/grammar/regexps.flxh>`_
 
-`Combinators <http://felix-lang.org/share/lib/std/strings/regdef.flx>`
+`Combinators <http://felix-lang.org/share/lib/std/strings/regdef.flx>`_
 
-`Google Re2 Binding <http://felix-lang.org/share/lib/std/strings/re2.flx>`
+`Google Re2 Binding <http://felix-lang.org/share/lib/std/strings/re2.flx>`_
 
 Pipelines
 ---------
@@ -1900,12 +1900,12 @@ Pipelines
 Synchronouse pipelines
 ^^^^^^^^^^^^^^^^^^^^^^
 
-`Library <http://felix-lang.org/share/lib/std/control/spipe.flx>`
+`Library <http://felix-lang.org/share/lib/std/control/spipe.flx>`_
 
 Asynchronouse pipelines
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-`Library <http://felix-lang.org/share/lib/std/control/ppipe.flx>`
+`Library <http://felix-lang.org/share/lib/std/control/ppipe.flx>`_
 
 Json
 ^^^^
