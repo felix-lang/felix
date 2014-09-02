@@ -3,6 +3,14 @@ Head1
 
 Some stuff.
 
+:math:`x = 2^3`
+
+.. code-block:: felix
+
+  println$ "Felix code?";
+  var x = 1;
+
+
 SubHead1.1
 ----------
 
