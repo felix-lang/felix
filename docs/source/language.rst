@@ -54,7 +54,7 @@ Grammar syntax
 --------------
 
 Not written yet. Browse the 
-`grammar directory </share/lib/grammar>`
+`grammar directory <http://felix-lang.org/share/lib/grammar>`
 for examples.
 
 Modules
@@ -119,7 +119,7 @@ Integer Literals
 ----------------
 
 
-`Reference </share/lib/grammar/grammar_int_lexer.flxh>`
+`Reference <http://felix-lang.org/share/lib/grammar/grammar_int_lexer.flxh>`
 
 An plain integer literal consists of a sequence of digits,
 optionally separated by underscores. Each separating
@@ -215,7 +215,7 @@ Note the suffices do not entirely agree with C.
 Floating point Literals
 -----------------------
 
-`Reference </share/lib/grammar/grammar_float_lexer.flxh>`
+`Reference <http://felix-lang.org/share/lib/grammar/grammar_float_lexer.flxh>`
 
 Floating point literals follow ISO C89, except that underscores
 are allowed between digits, and a a digit is required both before
@@ -244,7 +244,7 @@ String literals
 ---------------
 
 
-`Reference </share/lib/grammar/grammar_string_lexer.flxh>`
+`Reference <http://felix-lang.org/share/lib/grammar/grammar_string_lexer.flxh>`
 
 Generaly we follow Python here.
 Felix allows strings to be delimited by: 
@@ -353,9 +353,9 @@ the same the choice is unspecified.
 Macro processing
 ================
 
-`Syntax </share/lib/grammar/macros.flxh>`
+`Syntax <http://felix-lang.org/share/lib/grammar/macros.flxh>`
 
-`Semnantics </share/src/compiler/flx_desugar/flx_macro.ml>`
+`Semnantics <http://felix-lang.org/share/src/compiler/flx_desugar/flx_macro.ml>`
 
 Macro val
 ---------
@@ -387,7 +387,7 @@ done
 Constant folding and conditional compilation
 --------------------------------------------
 
-`Reference </share/src/compiler/flx_desugar/flx_constfld.ml>`
+`Reference <http://felix-lang.org/share/src/compiler/flx_desugar/flx_constfld.ml>`
 
 Felix provides two core kinds of constant folding:
 folding of arithmetic, boolean, and string values, and 
@@ -443,7 +443,7 @@ All other cases are in error.
 Classes
 =======
 
-`Syntax </share/lib/grammar/namespaces.flxh>`
+`Syntax <http://felix-lang.org/share/lib/grammar/namespaces.flxh>`
 
 The top level Felix module can contain submodules 
 which are specified by a non-polymorphic class
@@ -644,7 +644,7 @@ is the same as if an export statement has been written.
 Variable Definitions
 ====================
 
-`Syntax </share/lib/grammar/variables.flxh>`
+`Syntax <http://felix-lang.org/share/lib/grammar/variables.flxh>`
 
 A definition is a statement which defines a name, but does
 no cause any observable behavior, or, a class statement, or, 
@@ -810,7 +810,7 @@ With this syntax, no type annotation may be given.
 Functions
 =========
 
-`Syntax </share/lib/grammar/functions.flxh>`
+`Syntax <http://felix-lang.org/share/lib/grammar/functions.flxh>`
 
 A felix function definition takes one of three basic forms:
 
@@ -1002,7 +1002,7 @@ TBD
 Types
 =====
 
-`Syntax </share/lib/grammar/type_decls.flxh>`
+`Syntax <http://felix-lang.org/share/lib/grammar/type_decls.flxh>`
 
 Tuples
 ------
@@ -1131,7 +1131,7 @@ TBD
 Expressions
 ===========
 
-`Syntax </share/lib/grammar/expressions.flxh>`
+`Syntax <http://felix-lang.org/share/lib/grammar/expressions.flxh>`
 
 TBD
 
@@ -1141,7 +1141,7 @@ Executable statements
 Assignment
 ----------
 
-`Syntax </share/lib/grammar/assignment.flxh>`
+`Syntax <http://felix-lang.org/share/lib/grammar/assignment.flxh>`
 
 The ``goto`` statement and label prefix
 ---------------------------------------
@@ -1455,7 +1455,7 @@ in a variable which is subsequently applied.
 spawn_fthread
 -------------
 
-`Reference </share/lib/std/control/fibres.flx>`
+`Reference <http://felix-lang.org/share/lib/std/control/fibres.flx>`
 
 The ``spawn_fthread`` library function invokes the corresponding
 service call to schedule the initial continuation of a procedure 
@@ -1473,17 +1473,17 @@ write, or the first unmatched read operation occurs.
 read/write/broadcast schannel
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-`Reference </share/lib/std/control/schannels.flx>`
+`Reference <http://felix-lang.org/share/lib/std/control/schannels.flx>`
 
 spawn_pthread
 -------------
 
-`Reference </share/lib/std/control/pthread.flx>`
+`Reference <http://felix-lang.org/share/lib/std/control/pthread.flx>`
 
 read/write pchannel
 ^^^^^^^^^^^^^^^^^^^
 
-`Reference </share/lib/std/control/pchannels.flx>`
+`Reference <http://felix-lang.org/share/lib/std/control/pchannels.flx>`
 
 exchange
 ^^^^^^^^
@@ -1492,7 +1492,7 @@ exchange
 loops
 =====
 
-`Reference </share/lib/grammar/loops.flxh>`
+`Reference <http://felix-lang.org/share/lib/grammar/loops.flxh>`
 
 Felix has some low level and high level loop constructions.
 
@@ -1605,7 +1605,7 @@ TBD
 Assertions
 ----------
 
-`Reference </share/lib/grammar/assertions.flxh>`
+`Reference <http://felix-lang.org/share/lib/grammar/assertions.flxh>`
 
 assert
 ------
@@ -1888,11 +1888,11 @@ Domain Specific Sublanguages
 Regexps
 -------
 
-`Syntax </share/lib/grammar/regexps.flxh>`
+`Syntax <http://felix-lang.org/share/lib/grammar/regexps.flxh>`
 
-`Combinators </share/lib/std/strings/regdef.flx>`
+`Combinators <http://felix-lang.org/share/lib/std/strings/regdef.flx>`
 
-`Google Re2 Binding </share/lib/std/strings/re2.flx>`
+`Google Re2 Binding <http://felix-lang.org/share/lib/std/strings/re2.flx>`
 
 Pipelines
 ---------
@@ -1900,12 +1900,12 @@ Pipelines
 Synchronouse pipelines
 ^^^^^^^^^^^^^^^^^^^^^^
 
-`Library </share/lib/std/control/spipe.flx>`
+`Library <http://felix-lang.org/share/lib/std/control/spipe.flx>`
 
 Asynchronouse pipelines
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-`Library </share/lib/std/control/ppipe.flx>`
+`Library <http://felix-lang.org/share/lib/std/control/ppipe.flx>`
 
 Json
 ^^^^
