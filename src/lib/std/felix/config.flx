@@ -1,35 +1,57 @@
 include "std/version";
+include "std/felix/flx_profile";
+
+
 
 class Config {
+  typedef config_type = (
+    FLX_SHARE_DIR: string,
+    FLX_TARGET_DIR: string,
+    FLX_HOME_DIR: string,
+    FLX_PROFILE_DIR: string,
+    FLX_CONFIG_DIR: string,
+    FLX_CACHE_DIR: string,
+    FLX_OUTPUT_DIR: string
+  );
 
-  fun config () = 
+  fun empty_config() :config_type => (
+    FLX_SHARE_DIR="",
+    FLX_TARGET_DIR="",
+    FLX_HOME_DIR="",
+    FLX_PROFILE_DIR="",
+    FLX_CONFIG_DIR="",
+    FLX_CACHE_DIR="",
+    FLX_OUTPUT_DIR=""
+  );
+
+  private fun / (x:string, y:string) => Filename::join (x,y);
+    
+  proc cascade_FLX_INSTALL_DIR (x: &config_type)  (y: string) = {
+    cascade_FLX_TARGET_DIR x (y/"host");
+    cascade_FLX_SHARE_DIR x (y/"share");
+  }
+
+  proc cascade_FLX_TARGET_DIR (x: &config_type)  (y: string) = {
+    x.FLX_TARGET_DIR <- y;
+    x.FLX_CONFIG_DIR <- y/"config";
+  }
+
+  proc cascade_FLX_SHARE_DIR (x: &config_type)  (y: string) = {
+    x.FLX_SHARE_DIR <- y;
+  }
+
+  proc cascade_FLX_HOME_DIR (x: &config_type)  (y: string) = {
+    x.FLX_HOME_DIR <- y;
+    x.FLX_PROFILE_DIR <- y/"config";
+    x.FLX_CACHE_DIR <- y/"cache"/"binary";
+    x.FLX_OUTPUT_DIR <- y/"cache"/"text";
+  }
+
+  proc process_config_text (cfg:&config_type) (text:string)
   {
-    fun / (x:string, y:string) => Filename::join (x,y);
-
     var re = RE2 ("([-a-zA-Z]+) *: *(.*)");
+    var FLX_INSTALL_DIR = "";
 
-    // global defaults
-    var PREFIX = Filename::join ("/usr","local","lib");
-    var HOME = Env::getenv("HOME");
-
-    var INSTALL_ROOT_TOPDIR= Filename::join (PREFIX,"felix");
-    var INSTALL_ROOT = Filename::join (INSTALL_ROOT_TOPDIR, "felix-"+Version::felix_version);
-    var FLX_INSTALL_DIR = INSTALL_ROOT;
-    var FLX_SHARE_DIR = FLX_INSTALL_DIR/"share";
-    var FLX_TARGET_SUBDIR = "host";
-    var FLX_TARGET_DIR = FLX_INSTALL_DIR / FLX_TARGET_SUBDIR;
-
-    // try HOME/.felix/config/felix.fpc
-
-    var CACHE_DIR = HOME/"felix"/"cache"/"binary";
-
-    var felix_dir = Filename::join (HOME, ".felix");
-    var config_dir = Filename::join (felix_dir, "config");
-    var control_file = Filename::join (config_dir, "felix.fpc");
-    var text = load control_file;
-    if text == "" do
-      println$ "config::WARNING: No $HOME/.felix/config/felix.fpc file!";
-    done
     var lines = split (text, char "\n");
     for line in lines do
       var found = Match (re, line);
@@ -38,31 +60,78 @@ class Config {
         var p = v.1;
         var a = strip v.2;
         match p with
-        | "FLX_INSTALL_DIR" => FLX_INSTALL_DIR = a; 
+        | "FLX_INSTALL_DIR" => 
+          FLX_INSTALL_DIR = a;
+          cascade_FLX_INSTALL_DIR cfg a; 
 
-        | "FLX_TARGET_SUBDIR" => FLX_TARGET_SUBDIR = a; 
-          FLX_TARGET_DIR = FLX_INSTALL_DIR / FLX_TARGET_SUBDIR;
+        | "FLX_TARGET_SUBDIR" => 
+          if FLX_INSTALL_DIR != "" do
+            cascade_FLX_TARGET_DIR cfg (FLX_INSTALL_DIR / a);
+          else
+            eprintln$ "Cannot set FLX_TARGET_SUBDIR without setting FLX_INSTALL_DIR";
+            System::exit 1;
+          done
 
-        | "FLX_SHARE_DIR" => FLX_SHARE_DIR = a; 
-        | "FLX_TARGET_DIR" => FLX_TARGET_DIR = a; 
+        | "FLX_SHARE_DIR" => cascade_FLX_SHARE_DIR cfg a; 
+        | "FLX_TARGET_DIR" => cascade_FLX_TARGET_DIR cfg a; 
+        | "FLX_HOME_DIR" => cascade_FLX_HOME_DIR cfg a; 
+        | "FLX_PROFILE_DIR" => cfg.FLX_PROFILE_DIR <- a; 
+        | "FLX_CONFIG_DIR" => cfg.FLX_CONFIG_DIR <- a; 
+        | "FLX_CACHE_DIR" => cfg.FLX_CACHE_DIR <- a; 
+        | "FLX_OUTPUT_DIR" => cfg.FLX_OUTPUT_DIR <- a; 
         endmatch;
       | None => ;
       endmatch;
     done
+  }
 
-    // try environment
-    var env_flx_install_dir = Env::getenv ("FLX_INSTALL_DIR");
-    if env_flx_install_dir != "" do
-      FLX_INSTALL_DIR = env_flx_install_dir;
-      //println$ "Resetting FLX_INSTALL_DIR from env to '" + FLX_INSTALL_DIR+"'";
+
+  fun config () = 
+  {
+    var profile = FlxProfile::dflt_profile();
+    var cfg = empty_config();
+
+
+    // global defaults
+    var PREFIX = Filename::join ("/usr","local","lib");
+
+    var INSTALL_ROOT_TOPDIR= Filename::join (PREFIX,"felix");
+    var INSTALL_ROOT = Filename::join (INSTALL_ROOT_TOPDIR, "felix-"+Version::felix_version);
+    cascade_FLX_INSTALL_DIR &cfg INSTALL_ROOT;
+
+    cascade_FLX_SHARE_DIR &cfg (Env::getenv ("FLX_SHARE_DIR",cfg.FLX_SHARE_DIR));
+    cascade_FLX_TARGET_DIR &cfg (INSTALL_ROOT/Env::getenv ("FLX_TARGET_SUBDIR","host"));
+
+    cascade_FLX_TARGET_DIR &cfg (Env::getenv ("FLX_TARGET_DIR",cfg.FLX_TARGET_DIR));
+    &cfg.FLX_CONFIG_DIR <- Env::getenv("FLX_CONFIG_DIR",cfg.FLX_CONFIG_DIR); // fpc database
+
+    // profile function should have set this up right
+    &cfg.FLX_HOME_DIR <- profile.FLX_HOME_DIR;
+    &cfg.FLX_PROFILE_DIR <- profile.FLX_PROFILE_DIR;
+    &cfg.FLX_CACHE_DIR <- profile.FLX_CACHE_DIR;
+    &cfg.FLX_OUTPUT_DIR <- profile.FLX_OUTPUT_DIR;
+
+    // handle modification in $HOME/.felix/config/felix.fpc
+    var control_file = cfg.FLX_PROFILE_DIR / "felix.fpc";
+    var text = load control_file;
+    if text == "" do
+      println$ "config::WARNING: No $HOME/.felix/config/felix.fpc file!";
+    else
+      process_config_text &cfg text;
+    done
+
+    // handle modification in /usr/local/lib/felix/felix-latest/host/config/felix.fpc
+    if cfg.FLX_PROFILE_DIR != cfg.FLX_CONFIG_DIR do
+      control_file = cfg.FLX_CONFIG_DIR/"felix.fpc";
+      text = load control_file;
+      process_config_text &cfg text;
     done
 
     // final result can still be overriden by command line switch
     //println$ "[config] FLX_SHARE_DIR='" + FLX_SHARE_DIR+"'";
     //println$ "[config] FLX_TARGET_DIR='" + FLX_TARGET_DIR+"'";
-    return (FLX_SHARE_DIR=FLX_SHARE_DIR, FLX_TARGET_DIR=FLX_TARGET_DIR);
+    return cfg; 
   }
 
-  typedef config_type = typeof (#config);
 }
 

@@ -1,5 +1,3 @@
-include "std/felix/flx/flx_profile";
-
 class FlxControl
 {
 proc print_options(control:control_type) {
@@ -51,7 +49,7 @@ fun init_loopctl () => struct {
 };
 typedef loopctl_type = typeof (#init_loopctl);
 
-fun dflt_control (config:Config::config_type, profile:FlxProfile::profile_type) =>
+fun dflt_control (config:Config::config_type) =>
   struct {
 
     var FLX_INSTALL_DIR= ""; // now a temporary!
@@ -117,11 +115,11 @@ fun dflt_control (config:Config::config_type, profile:FlxProfile::profile_type) 
     var CLEAR_CACHE=0;
     var CACHE_DIR=
       let ?x = Env::getenv "FLX_CACHE_DIR" in 
-      if x != "" then x else profile.DEFAULT_CACHE_DIR
+      if x != "" then x else config.FLX_CACHE_DIR
     ;
     var OUTPUT_DIR=
       let ?x = Env::getenv "FLX_OUTPUT_DIR" in 
-      if x != "" then x else profile.DEFAULT_OUTPUT_DIR
+      if x != "" then x else config.FLX_OUTPUT_DIR
     ;
     var BUNDLE_DIR = match Env::getenv("FLX_BUNDLE_DIR") with | "" => None[string] | ?dir => Some dir endmatch;
 
@@ -151,6 +149,6 @@ fun dflt_control (config:Config::config_type, profile:FlxProfile::profile_type) 
   }
 ;
 
-typedef control_type = typeof (dflt_control(#Config::config,#FlxProfile::dflt_profile));
+typedef control_type = typeof (dflt_control(#Config::config));
 }
  

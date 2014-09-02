@@ -1,5 +1,6 @@
 // config
 include "std/felix/config";
+include "std/felix/flx_profile";
 
 // Synchronous fibres and channels scheduler.
 include "std/felix/sync";

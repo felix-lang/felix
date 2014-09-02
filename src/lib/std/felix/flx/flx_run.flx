@@ -1,6 +1,5 @@
 include "std/felix/flx/flx_depchk";
 include "std/felix/flx/flx_control";
-include "std/felix/flx/flx_profile";
 include "std/felix/flx/flx_depvars";
 
 gen dxqt(DBG:bool) (cmd:string) = {
@@ -32,8 +31,7 @@ proc xdebugln[T with Str[T]] (d:bool) (x:T) {
 // CLEAR_CACHE is set to 1 if the cache is reset
 proc check_cache(
   config:&Config::config_type, 
-  control:&FlxControl::control_type,
-  profile:&FlxProfile::profile_type)
+  control:&FlxControl::control_type)
 {
   control*.CLEAR_CACHE, control*.cache_time = validate_cache (
     FLX_SHARE_DIR = config*.FLX_SHARE_DIR,
@@ -43,8 +41,8 @@ proc check_cache(
     FLXG = control*.FLXG,
     CACHE_DIR = control*.CACHE_DIR,
     OUTPUT_DIR = control*.OUTPUT_DIR,
-    DEFAULT_CACHE_DIR = profile*.DEFAULT_CACHE_DIR,
-    DEFAULT_OUTPUT_DIR = profile*.DEFAULT_OUTPUT_DIR,
+    DEFAULT_CACHE_DIR = config*.FLX_CACHE_DIR,
+    DEFAULT_OUTPUT_DIR = config*.FLX_OUTPUT_DIR,
     CLEAR_CACHE= control*.CLEAR_CACHE,
     debugln = xdebugln[string] (control*.DEBUG_FLX),
     xqt = dxqt (control*.ECHO == 1 or control*.DEBUG_FLX),
@@ -56,8 +54,7 @@ object processing_env(
   toolchain: clang_config_t -> toolchain_t,
   config:Config::config_type, 
   var control:FlxControl::control_type,
-  dvars:FlxDepvars::dvars_type, 
-  profile:FlxProfile::profile_type)  
+  dvars:FlxDepvars::dvars_type)
 =
 {
   proc debugln[T with Str[T]] (x:T) {

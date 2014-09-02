@@ -1,11 +1,11 @@
 include "std/felix/config";
+
 include "std/felix/flx_cache";
 include "std/felix/flx_pkg";
 include "std/felix/flx_flxg";
 include "std/felix/flx_cxx";
 
 include "std/felix/flx/flx_control";
-include "std/felix/flx/flx_profile";
 include "std/felix/flx/flx_cmdopt";
 include "std/felix/flx/flx_depvars";
 include "std/felix/flx/flx_run";
@@ -25,7 +25,6 @@ class Flx
     config:&Config::config_type, 
     control:&FlxControl::control_type,
     loopctl:&FlxControl::loopctl_type,
-    profile:&FlxProfile::profile_type,
     args:list[string]
   ) : int =
   {
@@ -33,7 +32,7 @@ class Flx
     fun / (a:string, b:string) => Filename::join (a,b);
     FlxCmdOpt::processing_stage1 (config,control,loopctl,varray[string] args);
     if control*.VALIDATE_CACHE == 1 do
-      check_cache(config, control,profile);
+      check_cache(config, control);
     done
     if loopctl*.base == "" and control*.INREGEX == "" do
       if control*.CLEAR_CACHE != 1 do
@@ -94,7 +93,7 @@ class Flx
           control.STDIN <- "";
           var dvars = FlxDepvars::cal_depvars(toolchain,*config,control,*loopctl);
           println$ f"Processing [%02d/%02d]: %S" (i, n, file);
-          var pe = processing_env(toolchain,*config,*control,dvars, *profile);
+          var pe = processing_env(toolchain,*config,*control,dvars);
           result = pe.runit();
           if result == 0 do ++pass; else ++fail; done
           if control*.NONSTOP==0 and  result != 0 goto endoff;
@@ -113,7 +112,7 @@ class Flx
             print prg;
         done
         var dvars = FlxDepvars::cal_depvars(toolchain,*config,control, *loopctl);
-        var pe = processing_env(toolchain,*config,*control,dvars, *profile);
+        var pe = processing_env(toolchain,*config,*control,dvars);
         result = pe.runit();
       end 
     done
@@ -124,10 +123,9 @@ endoff:>
   gen runflx(args:list[string]) : int = 
   {
     var config = #Config::config;
-    var profile = #FlxProfile::dflt_profile;
-    var control = FlxControl::dflt_control(config,profile);
+    var control = FlxControl::dflt_control(config);
     var loopctl = #FlxControl::init_loopctl;
-    return flx_processing(&config, &control, &loopctl, &profile, args);
+    return flx_processing(&config, &control, &loopctl, args);
   }
 }
 
