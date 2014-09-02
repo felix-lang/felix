@@ -171,9 +171,9 @@ Note that integers starting with 0 are decimal not octal as in C.
 A table
 of suffices and the types they signify follows in lower case.
 
-=========================================================================================
+====== ==================================================================================
 Suffix  Type      C type              Description
-=========================================================================================
+====== ==================================================================================
 i8      int8      int8_t              8 bit signed integer
 i16     int16     int16_t             16 bit signed integer
 i32     int32     int32_t             32 bit signed integer
@@ -204,7 +204,7 @@ p       intptr    intptr_t            pointer considered as an integer
 up pu   uintptr   uintptr_t           pointer considered as an unsigned integer
 d       ptrdiff   ptrdiff_t           signed distance between pointers 
 ud      uptrdiff  uptrdiff_t          unsigned distance between pointers
-=========================================================================================
+====== ==================================================================================
 
 Note that all these types are distinct unlike C and C++.
 The types designated are not the complete set of available
@@ -259,26 +259,6 @@ The triple quoted forms may span lines, and include embedded newline
 characters.
 
 These forms all allows embedded escape codes.
-These are:
-
-
-|\a  -  7 : bell
-|\b  -  8 : backspace
-|\t  -  9 : horizontal tab
-|\n  - 10 : linefeed, newline
-|\r  - 13 : carriage return
-|\v  - 11 : vertical tab
-|\f  - 12 :form feed
-|\e  - 27 : escape
-|\\  - \  : slosh
-|\"  - "  : double quote
-|\'  - '  : single quote
-|\   - 32 : space
-|\xFF - hexadecimal character code
-|\o7 \o77 \o777 -- octal character code (stops on count of 3 or non-octal character)
-|\d9 \d99 \d999 -- decimal character code (stops on count of 3 or non-decimal character)
-|\uFFFF - utf8 encoding of specified hex value
-|\UFFFFFFFF - utf8 encoding of specified hex value
 
 Raw strings
 ^^^^^^^^^^^
@@ -470,12 +450,14 @@ which are specified by a non-polymorphic class
 statement:
 
 .. code:: felix
+
    class classname { ... }
 
 The effect is to produce a qualified name to be used
 outside the class:
 
 .. code:: felix
+
    class classname { proc f () {} }
    classname::f (); 
    
@@ -484,6 +466,7 @@ Classes may be nested.
 A class may contain private definitions:
 
 .. code:: felix
+
    class X {
      private var a = 1;
    }
@@ -505,6 +488,7 @@ The reserved name ``root`` may be used as a prefix
 for the top level module:
 
 .. code:: felix
+
    var x = 1;
    class A { var x = root::x; }
 
@@ -555,6 +539,7 @@ Inheriting is transtitive.
 If a name is inherited it will clash with a local definition.
 
 .. code:: felix
+
    class A { var a = 1; }
    class B { inherit A; }
    println$ B::a;
@@ -587,6 +572,7 @@ that name are renamed.
 The new name injected by a rename may be polymorphic:
 
 .. code:: felix
+
    class A { proc f[T] () {} }
    class B { rename g[T] = A::f[T]; } 
 
@@ -731,6 +717,7 @@ A variable may have its address taken:
 it may be assigned a new value directly or indirectly:
 
 .. code:: felix
+
    x = 2;
    px <- 3;
    *px = 4;
@@ -872,6 +859,7 @@ known as operator whitespace, or in reverse notation
 using operator dot:
 
 .. code:: felix
+
    f x
    x.f
 
@@ -1308,6 +1296,7 @@ a control path based on a boolean expression.
 The ``else`` and ``elif`` clauses are optional.
 
 .. code:: felix
+
    if c1 do 
      stmt1;
      stmt2;
