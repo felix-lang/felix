@@ -113,14 +113,8 @@ fun dflt_control (config:Config::config_type) =>
     var IMPORTS=Empty[string];
     var USAGE = "production";
     var CLEAR_CACHE=0;
-    var CACHE_DIR=
-      let ?x = Env::getenv "FLX_CACHE_DIR" in 
-      if x != "" then x else config.FLX_CACHE_DIR
-    ;
-    var OUTPUT_DIR=
-      let ?x = Env::getenv "FLX_OUTPUT_DIR" in 
-      if x != "" then x else config.FLX_OUTPUT_DIR
-    ;
+    var CACHE_DIR=config.FLX_CACHE_DIR;
+    var OUTPUT_DIR=config.FLX_OUTPUT_DIR;
     var BUNDLE_DIR = match Env::getenv("FLX_BUNDLE_DIR") with | "" => None[string] | ?dir => Some dir endmatch;
 
     var DRIVER_EXE = ""; // dynamic linkage only 
@@ -129,7 +123,7 @@ fun dflt_control (config:Config::config_type) =>
 
     var pkgs="";
 
-    var CONFIG_DIR = "";
+    var CONFIG_DIR = config.FLX_CONFIG_DIR;
     var FLXG = "";
     var FLXRUN = Empty[string];
     var LINKER_OUTPUT_FILENAME = "";

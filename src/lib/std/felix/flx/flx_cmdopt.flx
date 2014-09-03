@@ -121,7 +121,12 @@ proc setup-from-file
   arg:string
 )
 {
-println$ "Setup file: " + arg;
+  println$ "Setup file: " + arg;
+  var text = load arg;
+  println$ "Setup text=" + text;
+  Config::process_config_text config (text);
+  print$ "Config[after setupfile "+arg+"] =\n" + str (*config);
+/*
   fun / (a:string, b:string) => Filename::join (a,b);
   var re = RE2 ("([-a-z]+) *: *(.*)");
   var lines = split (load arg,char "\n");
@@ -183,6 +188,7 @@ println$ "Setup file: " + arg;
     | None => ;
     endmatch;
   done
+*/
 }
 
 private noinline proc handle_switch
@@ -688,7 +694,7 @@ noinline proc processing_stage1
   // off optimisations previously introduced (order matters)
   control.CCFLAGS <- control*.CCFLAGS + control*.EXTRA_CCFLAGS;
   debugln$ "CCFLAGS =" + str control*.CCFLAGS;
-
+/*
   if config*.FLX_SHARE_DIR == "" do
     config.FLX_SHARE_DIR <- Filename::join (control*.FLX_INSTALL_DIR, "share");
   done
@@ -702,7 +708,7 @@ noinline proc processing_stage1
     config.FLX_TARGET_DIR <- Filename::join(control*.FLX_INSTALL_DIR, control*.FLX_TARGET_SUBDIR);
   done
   debugln$ "FLX_TARGET_DIR = " + config*.FLX_TARGET_DIR;
-
+*/
   // Establish name of Felix compiler and run time library.
   // The one in "host" is good enough for flxg, however the
   // library location MUST be changed for cross compilation.
@@ -761,10 +767,6 @@ noinline proc processing_stage1
   var d,s = link_strings();
   control.DLINK_STRINGS <-  Shell::parse d;
   control.SLINK_STRINGS <-  Shell::parse s;
-
-  // Get location of flx_pkgconfig's config directory.
-  control.CONFIG_DIR <- config*.FLX_TARGET_DIR/'config';
-  debugln$ "CONFIG_DIR = " + control*.CONFIG_DIR;
 
   fun mkrel (d:string, f:string) => 
     if Filename::is_absolute_filename f then f else d / f endif

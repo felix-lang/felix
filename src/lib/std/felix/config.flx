@@ -14,6 +14,18 @@ class Config {
     FLX_OUTPUT_DIR: string
   );
 
+  instance Str[config_type] {
+    fun str (x:config_type) => 
+      "(FLX_SHARE_DIR="+ x.FLX_SHARE_DIR+",\n"+
+      "FLX_TARGET_DIR="+ x.FLX_TARGET_DIR+",\n"+
+      "FLX_HOME_DIR="+ x.FLX_HOME_DIR+",\n"+
+      "FLX_PROFILE_DIR="+ x.FLX_PROFILE_DIR+",\n"+
+      "FLX_CONFIG_DIR="+ x.FLX_CONFIG_DIR+",\n"+
+      "FLX_CACHE_DIR="+ x.FLX_CACHE_DIR+",\n"+
+      "FLX_OUTPUT_DIR="+ x.FLX_OUTPUT_DIR+")\n"
+    ;
+  }
+
   fun empty_config() :config_type => (
     FLX_SHARE_DIR="",
     FLX_TARGET_DIR="",
@@ -49,14 +61,16 @@ class Config {
 
   proc process_config_text (cfg:&config_type) (text:string)
   {
-    var re = RE2 ("([-a-zA-Z]+) *: *(.*)");
+    var re = RE2 ("([-a-zA-Z_]+) *: *(.*)");
     var FLX_INSTALL_DIR = "";
 
     var lines = split (text, char "\n");
     for line in lines do
+println$ "Config line " + line;
       var found = Match (re, line);
       match found with
       | Some ?v when v.len.int == 3 => 
+println$ "MATCH " + str v;
         var p = v.1;
         var a = strip v.2;
         match p with
