@@ -49,7 +49,7 @@ gen cal_depvars(
   var DEBUG_FLAGS = #(tc.debug_flags);
 
 
-  debugln$ "Felix package manager config directory is "+control*.CONFIG_DIR;
+  debugln$ "Felix package manager config directory is "+config.FLX_CONFIG_DIR;
   // make a list of any *.cpp files (or other g++ options ..)
 
   debugln$ "FileDir= " + loopctl.dir;
@@ -75,8 +75,8 @@ gen cal_depvars(
   var cpp_filebase =
     match control*.BUNDLE_DIR with
     | Some ?dir => Filename::join(dir,Filename::basename filebase)
-    | None =>if control*.OUTPUT_DIR=="" then filebase 
-             else cache_join(control*.OUTPUT_DIR,filebase) 
+    | None =>if config.FLX_OUTPUT_DIR=="" then filebase 
+             else cache_join(config.FLX_OUTPUT_DIR,filebase) 
              endif
     endmatch;         
   debugln$ "C++ file base is " + cpp_filebase;
@@ -85,7 +85,7 @@ gen cal_depvars(
   // and no stdout file name is given, then direct output
   // into the cache.
   if control*.CHECK_EXPECT != 0 and control*.STDOUT == "" do
-    control.STDOUT <- cache_join (control*.OUTPUT_DIR,filebase + ".stdout");
+    control.STDOUT <- cache_join (config.FLX_OUTPUT_DIR,filebase + ".stdout");
     debugln$ "Set stdout to " + control*.STDOUT;
   done
 
@@ -121,8 +121,8 @@ gen cal_depvars(
     System::exit(1);
   done
 
-  control*.FLX_INTERFACE_FILENAME = cache_join (control*.OUTPUT_DIR,filebase+"_interface.flx");
-  control*.CXX_INTERFACE_FILENAME = cache_join (control*.OUTPUT_DIR,filebase+".hpp");
+  control*.FLX_INTERFACE_FILENAME = cache_join (config.FLX_OUTPUT_DIR,filebase+"_interface.flx");
+  control*.CXX_INTERFACE_FILENAME = cache_join (config.FLX_OUTPUT_DIR,filebase+".hpp");
 
   if control*.LINKER_OUTPUT_FILENAME == "" do
     if control*.LINKIT == 1 or control*.RUNONLY == 1 do
@@ -140,7 +140,7 @@ gen cal_depvars(
         f = filebase+EXT_SHARED_OBJ;
       done
     done
-    control*.LINKER_OUTPUT_FILENAME = cache_join (control*.CACHE_DIR,f);
+    control*.LINKER_OUTPUT_FILENAME = cache_join (config.FLX_CACHE_DIR,f);
     debugln$ "Felx writing output binary to " + control*.LINKER_OUTPUT_FILENAME;
   elif control*.OUTPUT_FILENAME_WITHOUT_EXTENSION_SPECIFIED == 1 do
     if control*.LINKIT == 1 or control*.RUNONLY == 1 do

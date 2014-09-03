@@ -16,9 +16,7 @@ proc print_options(control:control_type) {
     println$ "cppos              = "+str control.cppos;
     println$ "TIME               = "+str control.TIME;
     println$ "COMPILER_TIME      = "+str control.COMPILER_TIME;
-    println$ "OUTPUT_DIR         = "+str control.OUTPUT_DIR;
     println$ "BUNDLE_DIR         = "+str control.BUNDLE_DIR;
-    println$ "CACHE_DIR          = "+str control.CACHE_DIR;
     println$ "RUNIT              = "+str control.RUNIT;
     println$ "CCOMPILEIT         = "+str control.CCOMPILEIT;
     println$ "LINKIT             = "+str control.LINKIT;
@@ -113,8 +111,6 @@ fun dflt_control (config:Config::config_type) =>
     var IMPORTS=Empty[string];
     var USAGE = "production";
     var CLEAR_CACHE=0;
-    var CACHE_DIR=config.FLX_CACHE_DIR;
-    var OUTPUT_DIR=config.FLX_OUTPUT_DIR;
     var BUNDLE_DIR = match Env::getenv("FLX_BUNDLE_DIR") with | "" => None[string] | ?dir => Some dir endmatch;
 
     var DRIVER_EXE = ""; // dynamic linkage only 
@@ -123,7 +119,6 @@ fun dflt_control (config:Config::config_type) =>
 
     var pkgs="";
 
-    var CONFIG_DIR = config.FLX_CONFIG_DIR;
     var FLXG = "";
     var FLXRUN = Empty[string];
     var LINKER_OUTPUT_FILENAME = "";

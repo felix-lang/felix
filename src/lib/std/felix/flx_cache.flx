@@ -58,8 +58,6 @@ class FlxCache
      FLXG:string,    
      CACHE_DIR:string,
      OUTPUT_DIR:string,
-     DEFAULT_CACHE_DIR: string,
-     DEFAULT_OUTPUT_DIR: string,
      CLEAR_CACHE: int,
      AUTOMATON: string,
      debugln : string -> 0,
@@ -173,49 +171,27 @@ class FlxCache
         System::exit(1);
       done
 
-      // if the cache is default $HOME one, which cannot be ""
-      // due to previous check, then delete without question
-      if 
-        spec.OUTPUT_DIR == spec.DEFAULT_OUTPUT_DIR and 
-        spec.CACHE_DIR == spec.DEFAULT_CACHE_DIR 
-      do 
-        var answer = "Y\n";
+      println$ "Delete cache " + spec.OUTPUT_DIR;
+      if PLAT_WIN32 do
+          C_hack::ignore$ spec.xqt("rd /Q /S " + spec.quote(spec.OUTPUT_DIR));
       else
-        // otherwise prompt for confirmation
-        println$ "Would delete cache " + spec.OUTPUT_DIR;
-        println$ "Would delete cache " + spec.CACHE_DIR;
-        print "Are you SURE? (Y/n) "; fflush stdout;
-        answer = readln stdin;
+          C_hack::ignore$ spec.xqt("rm -rf " + spec.quote(spec.OUTPUT_DIR));
+      done
+      println$ "Delete cache " + spec.CACHE_DIR;
+
+      if PLAT_WIN32 do
+          C_hack::ignore$ spec.xqt("rd /Q /S " + spec.quote(spec.CACHE_DIR));
+      else
+          C_hack::ignore$ spec.xqt("rm -rf " + spec.quote(spec.CACHE_DIR));
       done
 
-      if answer == "Y\n" or answer == "y\n" do
-        // delete the caches loudly
-        println$ "Delete cache " + spec.OUTPUT_DIR;
-        if PLAT_WIN32 do
-            C_hack::ignore$ spec.xqt("rd /Q /S " + spec.quote(spec.OUTPUT_DIR));
-        else
-            C_hack::ignore$ spec.xqt("rm -rf " + spec.quote(spec.OUTPUT_DIR));
-        done
-        println$ "Delete cache " + spec.CACHE_DIR;
+      // Make a new cache.
+      Directory::mkdirs(spec.CACHE_DIR);
 
-        if PLAT_WIN32 do
-            C_hack::ignore$ spec.xqt("rd /Q /S " + spec.quote(spec.CACHE_DIR));
-        else
-            C_hack::ignore$ spec.xqt("rm -rf " + spec.quote(spec.CACHE_DIR));
-        done
-
-        // Make a new cache.
-        Directory::mkdirs(spec.CACHE_DIR);
-
-        // make the stamp file with the time of the current compiler.
-        var f = fopen_output flxg_stamp;
-        write(f, fmt(flxg_time, fixed (0,3)));
-        f.fclose;
-      else
-        // otherwise exit with an error
-        println "Not deleting cache, exiting with error 1";
-        System::exit(1);
-      done
+      // make the stamp file with the time of the current compiler.
+      var f = fopen_output flxg_stamp;
+      write(f, fmt(flxg_time, fixed (0,3)));
+      f.fclose;
     done
     return spec.CLEAR_CACHE, cache_time;
   }

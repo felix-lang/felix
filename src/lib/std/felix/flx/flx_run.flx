@@ -39,10 +39,8 @@ proc check_cache(
     GRAMMAR_DIR = control*.GRAMMAR_DIR,
     STDGRAMMAR = control*.STDGRAMMAR,
     FLXG = control*.FLXG,
-    CACHE_DIR = control*.CACHE_DIR,
-    OUTPUT_DIR = control*.OUTPUT_DIR,
-    DEFAULT_CACHE_DIR = config*.FLX_CACHE_DIR,
-    DEFAULT_OUTPUT_DIR = config*.FLX_OUTPUT_DIR,
+    CACHE_DIR = config*.FLX_CACHE_DIR,
+    OUTPUT_DIR = config*.FLX_OUTPUT_DIR,
     CLEAR_CACHE= control*.CLEAR_CACHE,
     debugln = xdebugln[string] (control*.DEBUG_FLX),
     xqt = dxqt (control*.ECHO == 1 or control*.DEBUG_FLX),
@@ -188,7 +186,7 @@ object processing_env(
       return false;
     elif control.CHECK_DEPENDENCIES == 1 do
       debugln "Checking Felix->C++ dependencies since CHECK_DEPENDENCIES=1 to see if the cxx is uptodate";
-      return cal_cxx_uptodate (debugln[string], control.OUTPUT_DIR, dvars.filebase);
+      return cal_cxx_uptodate (debugln[string], config.FLX_OUTPUT_DIR, dvars.filebase);
     else
       debugln$ "Felix->C++ dependency checking skipped due to switch CHECK_DEPENDENCIES=0: forced uptodate";
       return true;
@@ -206,9 +204,9 @@ object processing_env(
       result = Flxg::run_felix_compiler
       (
         INLINE=control.INLINE,
-        OUTPUT_DIR=control.OUTPUT_DIR,
+        OUTPUT_DIR=config.FLX_OUTPUT_DIR,
         BUNDLE_DIR=control.BUNDLE_DIR,
-        CACHE_DIR=control.CACHE_DIR,
+        CACHE_DIR=config.FLX_CACHE_DIR,
         COMPILER_PHASE= control.COMPILER_PHASE,
         DOREDUCE=control.DOREDUCE,
         STDLIB = dvars.STDLIB,
@@ -572,7 +570,7 @@ object processing_env(
       debugln "Checking C++->binary dependencies since CHECK_DEPENDENCIES=1 to see if the output is uptodate";
 
       var xtime = FileStat::dfiletime(control.LINKER_OUTPUT_FILENAME,#FileStat::past_time);
-      val depfilename = cache_join (control.OUTPUT_DIR, dvars.filebase+".dep");
+      val depfilename = cache_join (config.FLX_OUTPUT_DIR, dvars.filebase+".dep");
       var flx_srctime = FileStat::dfiletime (depfilename,#FileStat::future_time);
       var cpp_srctime = fold_left maxf #FileStat::past_time control.cpps;
       var obj_srctime = fold_left maxf #FileStat::past_time control.cppos;

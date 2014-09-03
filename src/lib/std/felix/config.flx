@@ -66,11 +66,9 @@ class Config {
 
     var lines = split (text, char "\n");
     for line in lines do
-println$ "Config line " + line;
       var found = Match (re, line);
       match found with
       | Some ?v when v.len.int == 3 => 
-println$ "MATCH " + str v;
         var p = v.1;
         var a = strip v.2;
         match p with
