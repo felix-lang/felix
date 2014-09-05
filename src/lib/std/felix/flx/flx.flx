@@ -42,10 +42,7 @@ class Flx
       System::exit(0);
     done
 
-    if control*.FPC_DIR == "" do
-      control.FPC_DIR <- config*.FLX_TARGET_DIR / "config";
-    done
-    var pkgconfig = FlxPkgConfig::FlxPkgConfigQuery$ list[string] control*.FPC_DIR;
+    var pkgconfig = FlxPkgConfig::FlxPkgConfigQuery$ config*.FLX_CONFIG_DIRS;
     
     var toolchain_name = 
       if control*.FLX_TOOLCHAIN == "" then pkgconfig.getpkgfield1 ("toolchain", "toolchain")

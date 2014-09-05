@@ -9,20 +9,24 @@ class Config {
     FLX_TARGET_DIR: string,
     FLX_HOME_DIR: string,
     FLX_PROFILE_DIR: string,
-    FLX_CONFIG_DIR: string,
     FLX_CACHE_DIR: string,
-    FLX_OUTPUT_DIR: string
+    FLX_OUTPUT_DIR: string,
+    FLX_CONFIG_DIRS: list[string],
+    FLX_LIB_DIRS: list[string],
+    FLX_RTL_DIRS: list[string]
   );
 
   instance Str[config_type] {
-    fun str (x:config_type) => 
+    fun str (x:config_type) : string => 
       "(FLX_SHARE_DIR="+ x.FLX_SHARE_DIR+",\n"+
       "FLX_TARGET_DIR="+ x.FLX_TARGET_DIR+",\n"+
       "FLX_HOME_DIR="+ x.FLX_HOME_DIR+",\n"+
       "FLX_PROFILE_DIR="+ x.FLX_PROFILE_DIR+",\n"+
-      "FLX_CONFIG_DIR="+ x.FLX_CONFIG_DIR+",\n"+
       "FLX_CACHE_DIR="+ x.FLX_CACHE_DIR+",\n"+
-      "FLX_OUTPUT_DIR="+ x.FLX_OUTPUT_DIR+")\n"
+      "FLX_OUTPUT_DIR="+ x.FLX_OUTPUT_DIR+",\n"
+      "FLX_LIB_DIRS="+ x.FLX_LIB_DIRS.str+",\n"
+      "FLX_CONFIG_DIRS="+ x.FLX_CONFIG_DIRS.str+",\n"+
+      "FLX_RTL_DIRS="+ x.FLX_RTL_DIRS.str+")\n"
     ;
   }
 
@@ -31,9 +35,11 @@ class Config {
     FLX_TARGET_DIR="",
     FLX_HOME_DIR="",
     FLX_PROFILE_DIR="",
-    FLX_CONFIG_DIR="",
     FLX_CACHE_DIR="",
-    FLX_OUTPUT_DIR=""
+    FLX_OUTPUT_DIR="",
+    FLX_CONFIG_DIRS=Empty[string],
+    FLX_LIB_DIRS=Empty[string],
+    FLX_RTL_DIRS=Empty[string]
   );
 
   private fun / (x:string, y:string) => Filename::join (x,y);
@@ -45,7 +51,7 @@ class Config {
 
   proc cascade_FLX_TARGET_DIR (x: &config_type)  (y: string) = {
     x.FLX_TARGET_DIR <- y;
-    x.FLX_CONFIG_DIR <- y/"config";
+    x.FLX_CONFIG_DIRS <- list[string] (y/"config");
   }
 
   proc cascade_FLX_SHARE_DIR (x: &config_type)  (y: string) = {
@@ -61,6 +67,7 @@ class Config {
 
   proc process_config_text (cfg:&config_type) (text:string)
   {
+
     var re = RE2 ("([-a-zA-Z_]+) *: *(.*)");
     var FLX_INSTALL_DIR = "";
 
@@ -88,9 +95,11 @@ class Config {
         | "FLX_TARGET_DIR" => cascade_FLX_TARGET_DIR cfg a; 
         | "FLX_HOME_DIR" => cascade_FLX_HOME_DIR cfg a; 
         | "FLX_PROFILE_DIR" => cfg.FLX_PROFILE_DIR <- a; 
-        | "FLX_CONFIG_DIR" => cfg.FLX_CONFIG_DIR <- a; 
+        | "FLX_CONFIG_DIRS" => cfg.FLX_CONFIG_DIRS <- respectful_split a; 
         | "FLX_CACHE_DIR" => cfg.FLX_CACHE_DIR <- a; 
         | "FLX_OUTPUT_DIR" => cfg.FLX_OUTPUT_DIR <- a; 
+        | "FLX_LIB_DIRS" => cfg.FLX_LIB_DIRS <-  respectful_split a; 
+        | "FLX_RTL_DIRS" => cfg.FLX_RTL_DIRS <- respectful_split a; 
         endmatch;
       | None => ;
       endmatch;
@@ -98,7 +107,7 @@ class Config {
   }
 
 
-  fun config () = 
+  fun config () : config_type = 
   {
     var profile = FlxProfile::dflt_profile();
     var cfg = empty_config();
@@ -115,7 +124,14 @@ class Config {
     cascade_FLX_TARGET_DIR &cfg (INSTALL_ROOT/Env::getenv ("FLX_TARGET_SUBDIR","host"));
 
     cascade_FLX_TARGET_DIR &cfg (Env::getenv ("FLX_TARGET_DIR",cfg.FLX_TARGET_DIR));
-    &cfg.FLX_CONFIG_DIR <- Env::getenv("FLX_CONFIG_DIR",cfg.FLX_CONFIG_DIR); // fpc database
+    &cfg.FLX_CONFIG_DIRS <- 
+      let ?e = Env::getenv("FLX_CONFIG_DIRS") in
+      if e != "" then respectful_split e else cfg.FLX_CONFIG_DIRS endif; // fpc database
+
+    &cfg.FLX_RTL_DIRS <- 
+      let ?e = Env::getenv("FLX_RTL_DIRS") in
+      if e != "" then respectful_split e else cfg.FLX_RTL_DIRS endif; // C++ RTL
+
 
     // profile function should have set this up right
     &cfg.FLX_HOME_DIR <- profile.FLX_HOME_DIR;
@@ -129,13 +145,6 @@ class Config {
     if text == "" do
       println$ "config::WARNING: No $HOME/.felix/config/felix.fpc file!";
     else
-      process_config_text &cfg text;
-    done
-
-    // handle modification in /usr/local/lib/felix/felix-latest/host/config/felix.fpc
-    if cfg.FLX_PROFILE_DIR != cfg.FLX_CONFIG_DIR do
-      control_file = cfg.FLX_CONFIG_DIR/"felix.fpc";
-      text = load control_file;
       process_config_text &cfg text;
     done
 

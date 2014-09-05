@@ -3,6 +3,7 @@ include "std/felix/flx_pkgconfig";
 class FlxPkg
 {
   typedef pkgconfig_inspec_t = (
+    FLX_CONFIG_DIRS: list[string],
     FLX_TARGET_DIR:string,
     EXT_EXE: string,
     EXT_STATIC_OBJ: string,
@@ -40,7 +41,10 @@ class FlxPkg
   gen map_package_requirements(spec:pkgconfig_inspec_t) : pkgconfig_outspec_t =
   {
 
-    var PKGCONFIG_PATH="--path+="+Filename::join(spec.FLX_TARGET_DIR,"config");
+    var PKGCONFIG_PATH=map 
+       (fun (s:string) => "--path+="+s) 
+       spec.FLX_CONFIG_DIRS
+    ;
     var RESH = "@"+spec.cpp_filebase+".resh";
 
     gen pkgconfl(args:list[string]) : list[string] =

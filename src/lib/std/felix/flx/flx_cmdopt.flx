@@ -114,21 +114,20 @@ private proc print_help() {
 
 // TODO: change the names of everything to match exactly the command line
 // switches so this can be used as a response file
-proc setup-from-file 
+proc setup-from-file (debugln: string -> 0) 
 (
   config:&Config::config_type,
   control:&FlxControl::control_type, 
   arg:string
 )
 {
-  println$ "Setup file: " + arg;
+  debugln$ "Setup file: " + arg;
   var text = load arg;
   //println$ "Setup text=" + text;
   Config::process_config_text config (text);
   //print$ "Config[after setupfile "+arg+"] =\n" + str (*config);
-/*
   fun / (a:string, b:string) => Filename::join (a,b);
-  var re = RE2 ("([-a-z]+) *: *(.*)");
+  var re = RE2 ("([-_a-zA-Z0-9]+) *: *(.*)");
   var lines = split (load arg,char "\n");
   for line in lines do
     match Match (re,line) with
@@ -136,59 +135,44 @@ proc setup-from-file
       var field = v.1;
       var data = strip v.2;
       match field with
-      | "FLX_INSTALL_DIR" => println$ "set FLX_INSTALL_DIR "+data; 
-        control.FLX_INSTALL_DIR <- data;
-        config.FLX_SHARE_DIR <- data/"share";
-
-      | "FLX_SHARE_DIR" => println$ "set FLX_SHAREL_DIR "+data; config.FLX_SHARE_DIR <- data;
-      | "FLX_TARGET_DIR" => println$ "set FLX_TARGET_DIR "+data; config.FLX_TARGET_DIR<- data;
-
-      | "FLX_TARGET_SUBDIR" => // May only be used after setting FLX_INSTALL_DIR
-         println$ "set FLX_TARGET_DIR "+data; 
-         config.FLX_TARGET_DIR<- control*.FLX_INSTALL_DIR / data;
-
-      | "share-dir" => println$ "set share-dir "+data; config.FLX_SHARE_DIR <- data;
-      | "cache-dir" => println$ "set cache-dir "+data; control.CACHE_DIR <- data;
-      | "output-dir" => println$ "set output-dir "+data; control.OUTPUT_DIR <- data;
-      | "felix-compiler" => println$ "set flxg " + data; control.FLXG <-data;
-      | "toolchain" => println$ "set toolchain "+data; control.FLX_TOOLCHAIN <- data;
-      | "linker-switch" => println$ "add linker switch "+data; 
+      | "STANDARD_INCLUDE_DIR" => debugln$ "add Felix and C++ include dir "+data; 
+          control.STANDARD_INCLUDE_DIRS <- control*.STANDARD_INCLUDE_DIRS + data;
+      | "felix-compiler" => debugln$ "set flxg " + data; control.FLXG <-data;
+      | "toolchain" => debugln$ "set toolchain "+data; control.FLX_TOOLCHAIN <- data;
+      | "linker-switch" => debugln$ "add linker switch "+data; 
           control.LINKER_SWITCHES <- control*.LINKER_SWITCHES + data;
-      | "macro-switch" => println$ "addt macro switches "+data; 
+      | "macro-switch" => debugln$ "add macro switches "+data; 
           control.MACROS <- control*.MACROS + data;
-      | "optimisation-switch" => println$ "set C++ optimisation level "+data; 
+      | "optimisation-switch" => debugln$ "set C++ optimisation level "+data; 
           control.OPTIMISE <- control*.OPTIMISE + data;
       // American spelling
-      | "optimization-switch" => println$ "set C++ optimization level "+data; 
+      | "optimization-switch" => debugln$ "set C++ optimization level "+data; 
           control.OPTIMISE <- control*.OPTIMISE + data;
-      | "cflag" => println$ "add C++ cflag "+data; 
+      | "cflag" => debugln$ "add C++ cflag "+data; 
           control.EXTRA_CCFLAGS <- control*.EXTRA_CCFLAGS + data;
-      | "include-dir" => println$ "add Felix and C++ include dir "+data; 
+      | "include-dir" => debugln$ "add Felix and C++ include dir "+data; 
           control.STANDARD_INCLUDE_DIRS <- control*.STANDARD_INCLUDE_DIRS + data;
-      | "rtl-include-dir" => println$ "add Felix and C++ rtl include dir "+data; 
-          control.RTL_INCLUDE_DIRS <- control*.RTL_INCLUDE_DIRS + data;
-      | "flx-lib-dir" => println$ "add Felix include dir "+data; 
-          control.FLX_LIB_DIRS <- control*.FLX_LIB_DIRS + data;
-      | "grammar-dir" => println$ "set Felix grammar directory "+data; 
+      | "rtl-include-dir" => debugln$ "add Felix and C++ rtl include dir "+data; 
+          config.FLX_RTL_DIRS <- config*.FLX_RTL_DIRS + data;
+      | "grammar-dir" => debugln$ "set Felix grammar directory "+data; 
           control.GRAMMAR_DIR <- data;
-      | "grammar" => println$ "set Felix grammar (in stdlib) "+data; 
+      | "grammar" => debugln$ "set Felix grammar (in stdlib) "+data; 
           control.STDGRAMMAR <- data;
-      | "std-import" => println$ "set Felix standard import (in stdlib) "+data; 
+      | "std-import" => debugln$ "set Felix standard import (in stdlib) "+data; 
           control.STDIMPORT <- data;
-      | "extra-import" => println$ "set Felix extra import (in stdlib) "+data; 
+      | "extra-import" => debugln$ "set Felix extra import (in stdlib) "+data; 
           control.IMPORTS <- control*.IMPORTS + data;
-      | "extra-cpp" => println$ "set Felix extra C++ file "+data; 
+      | "extra-cpp" => debugln$ "set Felix extra C++ file "+data; 
           control.cpps <- control*.cpps + data;
-      | "extra-obj" => println$ "set Felix extra object file "+data; 
+      | "extra-obj" => debugln$ "set Felix extra object file "+data; 
           control.cppos <- control*.cppos + data;
-      | "flx-std-lib" => println$ "add Felix standard (cached) library "+data; 
+      | "flx-std-lib" => debugln$ "add Felix standard (cached) library "+data; 
           control.FLX_STD_LIBS <- control*.FLX_STD_LIBS+ data;
-      | _ => println$ "Unknown field " + field;
+      | _ => debugln$ "Unknown field " + field;
       endmatch;
     | None => ;
     endmatch;
   done
-*/
 }
 
 private noinline proc handle_switch
@@ -224,7 +208,7 @@ private noinline proc handle_switch
 
   elif prefix(arg,"--felix=") do
     debugln "Set install details";
-    setup-from-file (config, control, arg.[8 to]);
+    setup-from-file debugln[string] (config, control, arg.[8 to]);
 
   elif prefix(arg,"--target-subdir=") do
     begin    
@@ -689,6 +673,8 @@ noinline proc processing_stage1
     ++*xloopctl.argno; 
   done
   debugln$ "USER_ARGS=" + str control*.USER_ARGS;
+
+  debugln$ "config=" + str (*config);
 
   // Establish C++ optimisation switches.
   if control*.NOOPTIMISE == 0 do

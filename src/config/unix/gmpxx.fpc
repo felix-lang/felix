@@ -1,5 +1,0 @@
-requires_slibs: -lgmp
-requires_dlibs: -lgmp
-provides_dlib: -lgmpxx
-provides_slib: -lgmpxx
-
