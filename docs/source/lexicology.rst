@@ -38,7 +38,7 @@ underscore must be between digits.
 A prefixed integer literal is a plain integer literal
 or a plain integer literal prefixed by a radix specifier.
 The radix specifier is a zero followed by one of
-the letters ``bBoOdDxX``_ for binary, octal, decimal or hex.
+the letters ``bBoOdDxX`` for binary, octal, decimal or hex.
 
 An underscore is permitted after the prefix.
 
@@ -46,8 +46,8 @@ The radix is the one specified by the prefix or decimal
 by default.
 
 The digits of an integer consist of those permitted
-by the radix: ``01`` for binary, ``01234567``_
-for octal, ``0123456789`` for decimal, ``0123456789abcdefABCDEF``_
+by the radix: ``01`` for binary, ``01234567``
+for octal, ``0123456789`` for decimal, ``0123456789abcdefABCDEF``
 for hex.
 
 Note there are no negative integer literals.
@@ -55,7 +55,7 @@ Note there are no negative integer literals.
 A type suffix may be added to the end of a prefixed
 integer to designate a literal of a particular integer type,
 it has the form of an upper or lower case letter or pair of
-letters usually combined with a prefix or suffix ``u`` or ``U``_
+letters usually combined with a prefix or suffix ``u`` or ``U``
 to designate an unsigned variant of the type. 
 
 Signed integers are expected to be two's complement with one
@@ -217,9 +217,9 @@ Such functions accept a tuple of values like this:
    
    f"%d-%S" (42, "Hello")
 
-If ``vsnprintf``_ is available on the local platform it is used
+If ``vsnprintf`` is available on the local platform it is used
 to provide an implementation which cannot overrun.
-If it is not, ``vsprintf``_ is used instead with a 1000 character
+If it is not, ``vsprintf`` is used instead with a 1000 character
 buffer.
 
 The argument types and code types are fully checked for type safety.
@@ -248,15 +248,15 @@ An include directive has the syntax:
 
 where the filename is a Unix relative filename,
 may not have an extension, and may not begin with or 
-contain ``..``_ (two dots).
+contain ``..`` (two dots).
 
-If the filename begins with ``./``_ then the balance of the name
+If the filename begins with ``./`` then the balance of the name
 is relative, a sibling of the including file, otherwise the name
 is searched for on an include path. 
 
 In either case, a search succeeds when it finds a file with
 the appropriate base path in the search directory with
-extension ``.flx`` or ``.fdoc``_. If both files exist the
+extension ``.flx`` or ``.fdoc``. If both files exist the
 most recently changed one is used. If the time stamps are
 the same the choice is unspecified.
 
