@@ -31,14 +31,14 @@ The top level Felix module can contain submodules
 which are specified by a non-polymorphic class
 statement:
 
-.. code:: felix
+.. code-block:: felix
 
    class classname { ... }
 
 The effect is to produce a qualified name to be used
 outside the class:
 
-.. code:: felix
+.. code-block:: felix
 
    class classname { proc f () {} }
    classname::f (); 
@@ -47,7 +47,7 @@ Classes may be nested.
 
 A class may contain private definitions:
 
-.. code:: felix
+.. code-block:: felix
 
    class X {
      private var a = 1;
@@ -66,10 +66,10 @@ The body of a class forms a nested scope. Within
 a class all symbols defined in the class are visible,
 along with all those visible in the enclosing context.
 
-The reserved name ``root``_ may be used as a prefix
+The reserved name ``root`` may be used as a prefix
 for the top level module:
 
-.. code:: felix
+.. code-block:: felix
 
    var x = 1;
    class A { var x = root::x; }
@@ -82,10 +82,10 @@ Lookup control directives
 Open directive
 --------------
 
-The simple ``open``_ directive may be used to make the symbols
-defined in a class visible in the scope containing the ``open``_ directive.
+The simple ``open`` directive may be used to make the symbols
+defined in a class visible in the scope containing the ``open`` directive.
 
-.. code:: felix
+.. code-block:: felix
    
    class X { var x = 1; }
    open X;
@@ -96,7 +96,7 @@ live in a weak scope under the current scope.
 Names in the weak scope may be hidden by definitions
 in the current scope without error.
 
-.. code:: felix
+.. code-block:: felix
    
    class X { var x = 1; }
    open X;
@@ -121,7 +121,7 @@ Inheriting is transtitive.
 
 If a name is inherited it will clash with a local definition.
 
-.. code:: felix
+.. code-block:: felix
 
    class A { var a = 1; }
    class B { inherit A; }
@@ -139,7 +139,7 @@ scope.
 When applied to a function name all functions with
 that name are renamed.
 
-.. code:: felix
+.. code-block:: felix
     
    class A { 
      var a = 1; 
@@ -154,7 +154,7 @@ that name are renamed.
 
 The new name injected by a rename may be polymorphic:
 
-.. code:: felix
+.. code-block:: felix
 
    class A { proc f[T] () {} }
    class B { rename g[T] = A::f[T]; } 
@@ -164,7 +164,7 @@ Use directive
 
 This is a short form of the rename directive:
 
-.. code:: felix
+.. code-block:: felix
    
    class A { var a = 1; }
    class B { use A::a; use b = A::a; }
@@ -172,7 +172,7 @@ This is a short form of the rename directive:
 It cannot be applied to functions. The first
 form is equivalent to
 
-.. code:: felix
+.. code-block:: felix
    
    use a = A::a;
 
@@ -182,14 +182,14 @@ and is limited to a simple identifier.
 Export directives
 -----------------
 
-The ``export``_ directives make the exported symbol a root
+The ``export`` directives make the exported symbol a root
 of the symbol graph. 
 
 The functional export and forces it to be place in the
-generated code as an ``extern "C"``_ symbol with the
+generated code as an ``extern "C"`` symbol with the
 given name:
 
-.. code:: felix
+.. code-block:: felix
    
    export fun f of (int) as "myf";
    export cfun f of (int) as "myf";
@@ -197,10 +197,10 @@ given name:
    export cproc f of (int) as "myf";
 
 Functions are exported by generating a wrapper around
-the Felix function. If the function is exported as ``fun``_
-or ``proc``_ the C function generated requires a pointer
+the Felix function. If the function is exported as ``fun``
+or ``proc`` the C function generated requires a pointer
 to the thread frame as the first argument,
-if the ``cfun`` or ``cproc``_ forms are used, the wrapper
+if the ``cfun`` or ``cproc`` forms are used, the wrapper
 will not require the thread frame. 
 
 In the latter case, the Felix function must not
@@ -208,16 +208,16 @@ require the thread frame.
 
 A type may also be exported:
 
-.. code:: felix
+.. code-block:: felix
    
    export type ( mystruct ) as "MyStruct";
 
 This causes a C typedef to be emitted making 
-the name ``MyStruct``_ an alias to the Felix type.
+the name ``MyStruct`` an alias to the Felix type.
 This is useful because Felix types can have unpredictable
 mangled names.
 
-The word ``export``_ optionally followed by a string
+The word ``export`` optionally followed by a string
 may also be used as a prefix for any Felix function,
 generator, or procedure definition. If the string
 is omitted is taken as the symbol name. The effect

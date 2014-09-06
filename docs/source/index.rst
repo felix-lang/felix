@@ -6,6 +6,11 @@
 Language
 ========
 
+.. code-block:: felix
+
+    println$ "Hello World"
+    var x = 1;
+
 Contents:
 
 .. toctree::

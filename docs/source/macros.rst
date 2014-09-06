@@ -12,7 +12,7 @@ The macro val statement is used to specify an identifier should
 be replaced by the defining expression wherever it occurs in an
 expression, type expression, or pattern.
 
-.. code:: felix
+.. code-block:: felix
    
    macro val WIN32 = true;
    macro val hitchhiker;
@@ -25,12 +25,11 @@ Macro for
 This statement allows a list of statements to be repeated
 with a sequence of replacements.
 
-.. code:: felix
+.. code-block:: felix
    
-forall name in 1,2,3 do
-  println$ name;
-done
-@
+   forall name in 1,2,3 do
+     println$ name;
+   done
 
 Constant folding and conditional compilation
 --------------------------------------------

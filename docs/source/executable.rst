@@ -13,7 +13,7 @@ Felix statements may be prefixed by a label
 to which control may be transfered by a @{goto}
 statement:
 
-.. code:: felix
+.. code-block:: felix
    
    alabel:>
      dosomething;
@@ -37,7 +37,7 @@ A non-local goto may be wrapped in a procedure closure
 and passed to a procedure from which the goto target
 is not visible.
 
-.. code:: felix
+.. code-block:: felix
    
    proc doit (err: 1 -> 0) { e; }
    
@@ -59,7 +59,7 @@ halt
 
 Stops the program with a diagnostic.
 
-.. code:: felix
+.. code-block:: felix
    
    halt "Program complete";
 
@@ -69,7 +69,7 @@ try/catch/entry
 The try/catch construction may only be user to wrap
 calls to C++ primitives, so as to catch exceptions.
 
-.. code:: felix
+.. code-block:: felix
    
    proc mythrow 1 = "throw 0;";
    try
@@ -90,7 +90,7 @@ Provided the activation record of the procedure containing
 the label remains live, a subsequent ``goto-indirect`` can
 be used to jump to that location.
 
-.. code:: felix
+.. code-block:: felix
    
    proc demo (selector:int) {
      var pos : LABEL = 
@@ -122,7 +122,7 @@ if/goto
 The conditional goto is an abbreviation for 
 the more verbose conditional:
 
-.. code:: felix
+.. code-block:: felix
    
    if c goto lab; // equivalent to
    if c do goto lab; done
@@ -133,7 +133,7 @@ if/return
 The conditional return is an abbreviation for
 the more verbose conditional:
 
-.. code:: felix
+.. code-block:: felix
    
    if c return; // equivalent to
    if c do return; done
@@ -144,7 +144,7 @@ if/call
 The conditional call is an abbreviation for
 the more verbose conditional:
 
-.. code:: felix
+.. code-block:: felix
    
    if c call f x; // equivalent to
    if c do call f x; done
@@ -158,7 +158,7 @@ a control path based on a boolean expression.
 
 The ``else`` and ``elif`` clauses are optional.
 
-.. code:: felix
+.. code-block:: felix
 
    if c1 do 
      stmt1;
@@ -174,7 +174,7 @@ The ``else`` and ``elif`` clauses are optional.
 The ``elif`` clause saves writing a nested conditional.
 The above is equivalent to:
 
-.. code:: felix
+.. code-block:: felix
    
    if c1 do 
      stmt1;
@@ -193,7 +193,7 @@ One or more statements may be givn in the selected control path.
 
 A simple conditional is an abbreviation for a statement match:
 
-.. code:: felix
+.. code-block:: felix
    
    if c do stmt1; stmt2; else stmt3; stmt4; done
    // is equivalent to
@@ -207,14 +207,14 @@ call
 
 The ``call`` statement is used to invoke a procedure.
 
-.. code:: felix
+.. code-block:: felix
    
    proc p(x:int) { println$ x; }
    call p 1;
 
 The word ``call`` may be elided in a simple call:
 
-.. code:: felix
+.. code-block:: felix
    
 p 1;
 
@@ -222,7 +222,7 @@ If the argument is of unit type; that is, it is the
 empty tuple, then the tuple may also be elided in
 a simple call:
 
-.. code:: felix
+.. code-block:: felix
    
    proc f() { println$ "Hi"; }
    call f (); // is equivalent to
@@ -239,7 +239,7 @@ A return is not required at the end of a procedure
 where control would otherwise appear to drop through,
 a return is assumed:
 
-.. code:: felix
+.. code-block:: felix
    
    proc f() { println$ 1; }
    // equivalent to
@@ -252,7 +252,7 @@ The return from statement allows control to be
 returned from an enclosing procedure, provided that
 procedure is active.
 
-.. code:: felix
+.. code-block:: felix
    
    proc outer () {
      proc inner () {
@@ -269,7 +269,7 @@ jump
 The procedural jump is an abbreviation for 
 the more verbose sequence:
 
-.. code:: felix
+.. code-block:: felix
    
    jump procedure arg; // is equivalent to
    call procedure arg;
@@ -281,7 +281,7 @@ function return
 The functional return statement returns a value from
 a function.
 
-.. code:: felix
+.. code-block:: felix
    
    fun f () : int = {
      return 1;
@@ -299,7 +299,7 @@ may be resumed at the point after the yield.
 For this to work a closure of the generator must be stored
 in a variable which is subsequently applied.
 
-.. code:: felix
+.. code-block:: felix
    
    gen counter () = { 
      var x = 0;
@@ -372,7 +372,7 @@ Low level loops may be labelled with a loop label
 which is used to allow break, continue, and redo
 statements to exit from any containing loop.
 
-.. code:: felix
+.. code-block:: felix
    
    outer:for var i in 0 upto 9 do
       inner: for var j in 0 upto 9 do
@@ -407,7 +407,7 @@ for/in/upto/downto/do/done
 
 A basic loop with an inclusive range.
 
-.. code:: felix
+.. code-block:: felix
    
    // up
    for var ti:int in 0 upto 9 do println$ ti; done
@@ -440,7 +440,7 @@ while/do/done
 The while loop executes the body repeatedly whilst the control
 condition is true at the start of the loop body.
 
-.. code:: felix
+.. code-block:: felix
    
    var i = 0;
    while i < 10 do println$ i; ++i; done
@@ -452,7 +452,7 @@ The until loop executes the loop body repeatedly
 until the control condition is false at the start of the loop,
 it is equivalent o a while loop with a negated condition.
 
-.. code:: felix
+.. code-block:: felix
    
    var i = 0;
    until i == 9 do println$ i; ++i; done
@@ -478,7 +478,7 @@ assert
 Ad hoc assertion throws an assertion exception if its argument
 is false. 
 
-.. code:: felix
+.. code-block:: felix
    
    assert x > 0;
 
@@ -488,7 +488,7 @@ axiom
 An axiom is a relationship between functions, typically
 polymorphic, which is required to hold.
 
-.. code:: felix
+.. code-block:: felix
    
    axiom squares (x:double) => x * x >= 0;
    class addition[T]
@@ -549,7 +549,7 @@ term must be unique and irreducible.
 Application of reduction is extremely expensive and they
 should be used lightly.
 
-.. code:: felix
+.. code-block:: felix
    
    reduce revrev[T] (x: list[T]) : rev (rev x) => x;
 
@@ -570,7 +570,7 @@ Felix inserts the a check on the invariant into the constructor function
 and into the post conditions of every procedure or generator
 method.
 
-.. code:: felix
+.. code-block:: felix
    
    object f(var x:int, var y:int) =
    {
@@ -587,7 +587,7 @@ Felix code.
 
 The code must be one or more C++ statements.
 
-.. code:: felix
+.. code-block:: felix
    
    code 'cout << "hello";';
 
@@ -596,7 +596,7 @@ noreturn code
 
 Similar to code, however noreturn code never returns.
 
-.. code:: felix
+.. code-block:: felix
    
    noreturn code "throw 1;";
 
@@ -610,7 +610,7 @@ It is equivalent to an OS kernel call.
 
 The available operations include:
 
-.. code:: felix
+.. code-block:: felix
    
      union svc_req_t =
      /*0*/ | svc_yield
@@ -645,7 +645,7 @@ which are accessible only in the do/done body of the statement.
 
 It is the statement equivalent of the let expression.
 
-.. code:: felix
+.. code-block:: felix
    
    var x = 1;
    with var x = 2; do println$ x; done
@@ -665,7 +665,7 @@ the enclosing context.
 Any variables, functions, or other symbols defined in a do/done
 group are visible in the enclosing context.
 
-.. code:: felix
+.. code-block:: felix
    
    do something; done
 
@@ -678,7 +678,7 @@ to the parser, but it simulates a block as would be used in C.
 It is exactly equivalent to a brace enclosed procedure called
 by a terminating semi-colon.
 
-.. code:: felix
+.. code-block:: felix
    
    begin
      var x = 1;
