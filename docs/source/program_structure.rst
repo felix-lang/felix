@@ -16,7 +16,7 @@ A parse unit is a file augmented by prefixing specified import
 files to the front. These consist of a suite of grammar files
 defining the syntax and other files defining macros.
 
-By convention import files have the extension ``.flxh``_.
+By convention import files have the extension ``.flxh``.
 
 With this augmentation all parse units in a program
 are independently parsed to produce an list of statements
@@ -66,13 +66,13 @@ The mangling replaces characters in the filename with
 other characters so that the module name is a valid
 ISO C identifier.
 
-Special procedure ``flx_main``_
+Special procedure ``flx_main``
 ------------------------------
 
 A program module may contain at most one top level
-procedure named ``flx_main``_. After initialisation 
+procedure named ``flx_main``. After initialisation 
 code suspends or terminates, this procedure is invoked
-if it exists. It is the analogue of ``main``_ in C++
+if it exists. It is the analogue of ``main`` in C++
 however it is rarely used: side-effects of the
 root units initialisation code are typically used instead.
 
@@ -81,7 +81,7 @@ Libraries
 
 In Felix a library is a root unit together with its
 transitive closure with respect to inclusion,
-which does not contain a top level ``flx_main``_.
+which does not contain a top level ``flx_main``.
 
 A program unit can be augmented by a set of libraries
 which are then considered as if included, but without

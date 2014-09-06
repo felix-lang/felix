@@ -8,10 +8,10 @@ no cause any observable behavior, or, a class statement, or,
 a var or val statement. The latter two exceptions define a name
 but may also have associated behaviour.
 
-The ``var``_ statement
+The ``var`` statement
 ---------------------
 
-The ``var``_ statement is used to introduce a variable name
+The ``var`` statement is used to introduce a variable name
 and potential executable behaviour. It has one of three 
 basic forms:
 
@@ -36,7 +36,7 @@ from the initialiser.
 If the initialiser has observable behaviour it will be observed
 if at all, when control passes through the variable statement.
 
-If the variable introduced by the ``var``_ statement is not used,
+If the variable introduced by the ``var`` statement is not used,
 the variable and its initaliser will be elided and any observable
 behaviour will be lost.
 
@@ -49,7 +49,7 @@ through which control passes.
 In other words, the variable is used if the behaviour of
 the program appears to depend on its value or its address.
 
-The library procedure ``C_hack::ignore``_ ensures the compiler
+The library procedure ``C_hack::ignore`` ensures the compiler
 believes a variable is used:
 
 .. code:: felix
@@ -96,17 +96,17 @@ Multipls variables can be defined at once:
 
 With this syntax, no type annotation may be given.
 
-The ``val``_ statement.
+The ``val`` statement.
 ----------------------
 
-A ``val``_ statement defines a name for an expression.
+A ``val`` statement defines a name for an expression.
 
 .. code:: felix
    
    val x : int = 1;
    val z = 1;
 
-The value associated with a ``val``_ symbol may be computed
+The value associated with a ``val`` symbol may be computed
 at any time between its definition and its use, and may
 differ between uses, if the initialising expression depends
 on variable state, such as a variable or call to a generator.
@@ -117,9 +117,9 @@ not be significant.
 
 Nevertheless the user must be warned to take care
 with the indeterminate evaluation time and use
-a ``var``_ when there is any doubt.
+a ``var`` when there is any doubt.
 
-Since a ``val``_ simply names an expression, it is associated
+Since a ``val`` simply names an expression, it is associated
 with a value not an object and cannot be addressed
 or assigned to. However this does NOT mean its value cannot
 change:
@@ -145,9 +145,9 @@ most obvious case: a less obvious one:
 
 which is clearly just an expansion of the the first two
 iteration of the previously given for loop. However in
-this case there is no assurance ``x`` will change after ``i``_
+this case there is no assurance ``x`` will change after ``i``
 is incremented because the compiler is free to replace
-any ``val`` definition with a ``var``_ definition.
+any ``val`` definition with a ``var`` definition.
 
 Multiple values
 ^^^^^^^^^^^^^^^

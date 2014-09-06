@@ -6,7 +6,7 @@ Assignment
 
 `Syntax <http://felix-lang.org/share/lib/grammar/assignment.flxh>`_
 
-The ``goto``_ statement and label prefix
+The ``goto`` statement and label prefix
 ---------------------------------------
 
 Felix statements may be prefixed by a label
@@ -50,8 +50,8 @@ is not visible.
    }
 
 This is a valid way to handle errors.
-the code is correct because ``outer``_ is active
-at the time that ``handler``_ performs the
+the code is correct because ``outer`` is active
+at the time that ``handler`` performs the
 control transfer.
 
 halt
@@ -81,13 +81,13 @@ calls to C++ primitives, so as to catch exceptions.
 goto-indirect/label_address
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The ``label-address``_ operator captures the address
+The ``label-address`` operator captures the address
 of code at a nominated label. 
 
-The address has type ``LABEL``_ and can be stored in a variable.
+The address has type ``LABEL`` and can be stored in a variable.
 
 Provided the activation record of the procedure containing
-the label remains live, a subsequent ``goto-indirect``_ can
+the label remains live, a subsequent ``goto-indirect`` can
 be used to jump to that location.
 
 .. code:: felix
@@ -156,7 +156,7 @@ if/do/elif/else/done
 The procedural conditional branch is used to select
 a control path based on a boolean expression.
 
-The ``else`` and ``elif``_ clauses are optional.
+The ``else`` and ``elif`` clauses are optional.
 
 .. code:: felix
 
@@ -171,7 +171,7 @@ The ``else`` and ``elif``_ clauses are optional.
      stmt6;
    done
 
-The ``elif``_ clause saves writing a nested conditional.
+The ``elif`` clause saves writing a nested conditional.
 The above is equivalent to:
 
 .. code:: felix
@@ -205,14 +205,14 @@ A simple conditional is an abbreviation for a statement match:
 call
 ----
 
-The ``call``_ statement is used to invoke a procedure.
+The ``call`` statement is used to invoke a procedure.
 
 .. code:: felix
    
    proc p(x:int) { println$ x; }
    call p 1;
 
-The word ``call``_ may be elided in a simple call:
+The word ``call`` may be elided in a simple call:
 
 .. code:: felix
    
@@ -320,7 +320,7 @@ spawn_fthread
 
 `Reference <http://felix-lang.org/share/lib/std/control/fibres.flx>`_
 
-The ``spawn_fthread``_ library function invokes the corresponding
+The ``spawn_fthread`` library function invokes the corresponding
 service call to schedule the initial continuation of a procedure 
 taking a unit argument as an fthread (fibre). 
 
@@ -351,9 +351,11 @@ read/write pchannel
 exchange
 ^^^^^^^^
 
+TBD
+
 
 loops
-=====
+-----
 
 `Reference <http://felix-lang.org/share/lib/grammar/loops.flxh>`_
 
@@ -422,9 +424,9 @@ The start and end expressions must be of the same type.
 If the control variable is defined in the loop with a type
 annotation, that type must agree with the control variable.
 
-The type must support comparison with the equality operator ``==``_
-the less than or equals operator ``<=``_ and increment with 
-the pre increment procedure ``++``_.
+The type must support comparison with the equality operator ``==``
+the less than or equals operator ``<=`` and increment with 
+the pre increment procedure ``++``.
 
 For loops over unsigned types cannot handle the empty case.
 For loops over signed types cannot span the whole range of the type.
@@ -627,7 +629,7 @@ The available operations include:
      ;
 
 These operations are typically related to coroutine or thread scheduling.
-However ``svc_general``_ is an unspecified operation, which is typically
+However ``svc_general`` is an unspecified operation, which is typically
 used to invoke the asynchronous I/O subsystem.
 
 Service calls can only be issued from flat code, that is,
