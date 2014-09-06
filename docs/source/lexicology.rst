@@ -53,6 +53,8 @@ of letters.
 TeX Symbols
 -----------
 
+`Tex Symbol Reference<http://felix-lang.org/share/src/web/ref/tex_symbols.fdoc>`_
+
 Most mathematical operator symbols in TeX, LaTeX, and AMSTeX may also be 
 used in Felix. These are spelled in Unicode with a leading slosh character
 followed by a sequence of upper or lower case letters. They are rendered
@@ -62,7 +64,7 @@ Integer Literals
 ----------------
 
 
-`Reference <http://felix-lang.org/share/lib/grammar/grammar_int_lexer.flxh>`_
+`Integer Literal Grammar <http://felix-lang.org/share/lib/grammar/grammar_int_lexer.flxh>`_
 
 An plain integer literal consists of a sequence of digits,
 optionally separated by underscores. Each separating
@@ -114,9 +116,9 @@ Note that integers starting with 0 are decimal not octal as in C.
 A table
 of suffices and the types they signify follows in lower case.
 
-====== ==================================================================================
+====== ========== =================== ===================================================
 Suffix  Type      C type              Description
-====== ==================================================================================
+====== ========== =================== ===================================================
 i8      int8      int8_t              8 bit signed integer
 i16     int16     int16_t             16 bit signed integer
 i32     int32     int32_t             32 bit signed integer
@@ -147,7 +149,7 @@ p       intptr    intptr_t            pointer considered as an integer
 up pu   uintptr   uintptr_t           pointer considered as an unsigned integer
 d       ptrdiff   ptrdiff_t           signed distance between pointers 
 ud      uptrdiff  uptrdiff_t          unsigned distance between pointers
-====== ==================================================================================
+====== ========== =================== ===================================================
 
 Note that all these types are distinct unlike C and C++.
 The types designated are not the complete set of available
