@@ -43,7 +43,7 @@ All these function have a type:
    D -> C
 
 where D is the domain and C is the codomain: both would
-be ``int``_ in the examples.
+be ``int`` in the examples.
 
 A function can be applied by the normal forward
 notation using juxtaposition or what is whimsically
@@ -99,7 +99,7 @@ Pre- and pos-conditions are usually treated as boolean assertions
 which are checked at run time. The compiler may occasionally be able
 to prove a pre- or post-condition must hold and elide it.
 
-The special identifier ``result``_ is used to indicate the return
+The special identifier ``result`` is used to indicate the return
 value of the function.
 
 Higher order functions
@@ -154,7 +154,7 @@ Procedures may have side effects.
    proc show (x:int) => println x;
 
 The second form is a more convenient notation.
-The type 0 is also called ``void``_ and denotes
+The type 0 is also called ``void`` and denotes
 a type with no values.
 
 A procedure may return with a simple return statement:
@@ -189,6 +189,93 @@ If a procedure accepts the unit argument, it may be elided:
 Generators
 ----------
 
-TBD
+A generator is a function which may have side effects.
+
+.. code-block:: felix
+
+   gen rand() => C_rand();
+
+A generator may also return a value using the ``yield``
+statement.
+
+If a closure of a generator is stored in a variable,
+internal state of the generator is preserved between
+calls through the variable.
+
+In particular if a ``yield`` is used to return a value
+the next invocation of the generator through the variable
+will continue execution after the ``yield`` which suspended it.
+
+.. code-block:: felix
+
+  gen seq () = {
+    var i = 1;
+  next:>>
+    yield i;
+    ++i;
+    goto next;
+  }
+
+  var fresh = seq;
+  assert fresh() == 1;
+  assert fresh() == 2;
 
 
+Objects
+-------
+
+An object statment specifies a special kind of function
+which returns a record of closures.
+
+The body of the function contains functions, generators
+or procedures some of which are prefixed by the adjective ``method``.
+
+The function must not have a return statement, instead
+at the end of the function a record of closures of the 
+methods is returned, where the field name of each
+method is the name used in the function.
+
+.. code-block:: felix
+
+  object person (lastname: string, firstname:string) = {
+    method fun get_firstname () => firstname;
+    method fun get_lastname () => lastname;
+    method fun get_name () => firstname + " " + lastname;
+  }
+
+  var joe = person ("sweet", "joseph");
+  println$ joe.get_name ();
+
+The type of the value returned by the object constructor
+function can be conveniently specified in an ``interface``
+statement:
+
+.. code-block:: felix
+
+   interface person_type {
+     get_firstname : 1 -> string;
+     get_lastname : 1 -> string;
+     get_name : 1 -> string;
+   }
+
+This is just syntact sugar for
+
+.. code-block:: felix
+
+  typedef person_type = (
+     get_firstname : 1 -> string,
+     get_lastname : 1 -> string,
+     get_name : 1 -> string
+  )
+
+An object can be specified to implement an interface:
+
+.. code-block:: felix
+
+  object person (lastname: string, firstname:string) 
+    implements person_type = 
+  { ... }
+
+   
+
+TBD: interface and object extensions.

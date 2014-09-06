@@ -6,7 +6,8 @@ Types
 Tuples
 ------
 
-Tuple types are well known: a tuple is just a Cartesian Product
+Tuple types are a well known structural type: 
+a tuple is just a Cartesian Product
 with components identified by position, starting at 0. 
 The n-ary type combinator is infix ``*`` and the n-ary value
 constructor is infix ``,``:
@@ -37,9 +38,10 @@ function. Felix uses an integer literal to denote this function.
 [There should be a way to name this function without application to
 a tuple!]
 
-A pointer to a tuple is also in itself a tuple, namely the
-tuple of pointers to the individual components. This means
-if a tuple is addressable, so are the components.
+Integer literals can be used as projections with pointers
+to tuples, the result is a pointer to the subcomponent.
+
+This means if a tuple is addressable, so are the components.
 
 .. code-block:: felix
    
@@ -70,8 +72,29 @@ Records
 -------
 
 A record is similar to a tuple except the components are 
-named and considered unordered.
+named and considered unordered. 
 
+Records are structurally typed analogous to anonymous structs.
+
+A record type specified by enlosing comma separated list of 
+record type component specifiers in parentheses.
+
+A record type component specifier consists of an identifier
+followed by a colon ``:`` followed by a type (of higher precedence
+that comma ``,``).
+
+A record value is specified by enclosing a comma separated list of
+record component specifiers.
+
+A record component specifier consists of an identifier followed by
+an equal sign ``=`` followed by an expression (of higher precedence
+than comman ``,``).
+
+.. code-block:: felix
+
+   var r : (a:int, b:string) = (a=1, b="hello"); 
+
+A record type may be s
 
 Structs
 -------
