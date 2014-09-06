@@ -56,3 +56,40 @@ Package requirements
 
 TBD
 
+code
+----
+
+The code statement inserts C++ code literally into the current
+Felix code.
+
+The code must be one or more C++ statements.
+
+.. code-block:: felix
+   
+   code 'cout << "hello";';
+
+noreturn code
+^^^^^^^^^^^^^
+
+Similar to code, however noreturn code never returns.
+
+.. code-block:: felix
+   
+   noreturn code "throw 1;";
+
+try/catch/entry
+^^^^^^^^^^^^^^^
+
+The try/catch construction may only be user to wrap
+calls to C++ primitives, so as to catch exceptions.
+
+.. code-block:: felix
+   
+   proc mythrow 1 = "throw 0;";
+   try
+      mythrow;
+   catch (x:int) =>
+      println$ "Caughht integer " + x.str;
+   endtry
+
+

@@ -1,13 +1,128 @@
 Executable Statements
 =====================
 
+Assertions
+----------
+
+`Reference <http://felix-lang.org/share/lib/grammar/assertions.flxh>`_
+
+assert
+^^^^^^
+
+Ad hoc assertion throws an assertion exception if its argument
+is false. 
+
+.. code-block:: felix
+   
+   assert x > 0;
+
+axiom
+^^^^^
+
+An axiom is a relationship between functions, typically
+polymorphic, which is required to hold.
+
+.. code-block:: felix
+   
+   axiom squares (x:double) => x * x >= 0;
+   class addition[T]
+   {
+     virtual fun add : T * T -> T;
+     virtual fun == : T * T -> bool;
+   
+     axiom assoc (x:T, y:T, z:T) : 
+       add (add (x,y),z) == add (x, add (y,z))
+     ;
+   }
+
+In a class, an axiom is a specification constraining
+implementations of virtual function in instances.
+
+Axioms are restricted to first order logic, that is, they
+may be polymorphic, but the universal quantification implied
+is always at the head.
+
+Existential quantification can be provided in a constructive
+logic by actually constructing the requisite variable.
+
+Second order logic, with quantifiers internal to the 
+logic term, are not supported.
+
+lemma
+^^^^^
+
+A lemma is similar to an axiom, except that is it
+easily derivable from axioms; in particular,
+a reasonable automatic theorem prover should
+be able to derived it.
+
+theorem
+^^^^^^^
+
+A theorem is similar to a lemma, except that it is 
+too hard to expect an automatic theorem prover
+to be able to derive it without hints or assistance.
+
+There is currently no standard way to prove such hints.
+
+reduce
+^^^^^^
+
+A reduce statement specifies a term reduction and is logically
+equivalent to an axiom, lemma, or theorem, however it acts
+as an instruction to the compiler to attempt to actually 
+apply the axiom.
+
+The compiler may apply the axiom, but it may miss opportunities
+for application.
+
+The set of reductions must be coherent and terminal, 
+that is, after a finite number of reductions the final
+term must be unique and irreducible. 
+
+Application of reduction is extremely expensive and they
+should be used lightly.
+
+.. code-block:: felix
+   
+   reduce revrev[T] (x: list[T]) : rev (rev x) => x;
+
+
+
+invariant
+^^^^^^^^^
+
+An invariant is an assertion which must hold on the state variables
+of an object, at the point after construction of the state
+is completed by the constructor function and just before the
+record of method closures is returned, and, at the start and
+end of every method invocation.
+
+The invariant need not hold during execution of a method.
+
+Felix inserts the a check on the invariant into the constructor function
+and into the post conditions of every procedure or generator
+method.
+
+.. code-block:: felix
+   
+   object f(var x:int, var y:int) =
+   {
+      invariant y >= 0;
+      method proc set_y (newy: int) => y = newy;
+   }
+
+
 Assignment
 ----------
 
 `Syntax <http://felix-lang.org/share/lib/grammar/assignment.flxh>`_
 
+Jumps
+-----
+
 The ``goto`` statement and label prefix
----------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Felix statements may be prefixed by a label
 to which control may be transfered by a @{goto}
@@ -54,30 +169,6 @@ the code is correct because ``outer`` is active
 at the time that ``handler`` performs the
 control transfer.
 
-halt
-^^^^
-
-Stops the program with a diagnostic.
-
-.. code-block:: felix
-   
-   halt "Program complete";
-
-try/catch/entry
-^^^^^^^^^^^^^^^
-
-The try/catch construction may only be user to wrap
-calls to C++ primitives, so as to catch exceptions.
-
-.. code-block:: felix
-   
-   proc mythrow 1 = "throw 0;";
-   try
-      mythrow;
-   catch (x:int) =>
-      println$ "Caughht integer " + x.str;
-   endtry
-
 goto-indirect/label_address
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -106,101 +197,24 @@ be used to jump to that location.
      println$ "Lab2"; return;
    }
 
+
+
 Exchange of control
 ^^^^^^^^^^^^^^^^^^^
 
 TBD
 
-match/endmatch
---------------
+halt
+^^^^
 
-TBD
-
-if/goto
--------
-
-The conditional goto is an abbreviation for 
-the more verbose conditional:
+Stops the program with a diagnostic.
 
 .. code-block:: felix
    
-   if c goto lab; // equivalent to
-   if c do goto lab; done
+   halt "Program complete";
 
-if/return
-^^^^^^^^^
-
-The conditional return is an abbreviation for
-the more verbose conditional:
-
-.. code-block:: felix
-   
-   if c return; // equivalent to
-   if c do return; done
-
-if/call
-^^^^^^^
-
-The conditional call is an abbreviation for
-the more verbose conditional:
-
-.. code-block:: felix
-   
-   if c call f x; // equivalent to
-   if c do call f x; done
-
-
-if/do/elif/else/done
---------------------
-
-The procedural conditional branch is used to select
-a control path based on a boolean expression.
-
-The ``else`` and ``elif`` clauses are optional.
-
-.. code-block:: felix
-
-   if c1 do 
-     stmt1;
-     stmt2;
-   elif c2 do
-     stmt3;
-     stmt4;
-   else
-     stmt5;
-     stmt6;
-   done
-
-The ``elif`` clause saves writing a nested conditional.
-The above is equivalent to:
-
-.. code-block:: felix
-   
-   if c1 do 
-     stmt1;
-     stmt2;
-   else 
-     if c2 do
-       stmt3;
-       stmt4;
-     else
-       stmt5;
-       stmt6;
-     done
-   done
-
-One or more statements may be givn in the selected control path.
-
-A simple conditional is an abbreviation for a statement match:
-
-.. code-block:: felix
-   
-   if c do stmt1; stmt2; else stmt3; stmt4; done
-   // is equivalent to
-   match c with
-   | true => stmt1; stmt2; 
-   | false => stmt3; stmt4;
-   endmatch;
+Calls
+-----
 
 call
 ----
@@ -315,46 +329,235 @@ in a variable which is subsequently applied.
    println$ zero, one;
 
 
-spawn_fthread
--------------
+Conditional Branches
+--------------------
 
-`Reference <http://felix-lang.org/share/lib/std/control/fibres.flx>`_
+match/endmatch
+^^^^^^^^^^^^^^
 
-The ``spawn_fthread`` library function invokes the corresponding
-service call to schedule the initial continuation of a procedure 
-taking a unit argument as an fthread (fibre). 
+`Reference <http://felix-lang.org/share/lib/grammar/patterns.flxh>`_
 
-The spawned fthread begins executing immediately.
-If coutrol returns before yielding by a synchronous
-channel operation, the action is equivalent to calling
-the procedure.
+The match statement is used to match a value against
+one or more structural patterns in sequence and perform
+the handler code for the first matching pattern.
 
-Otherwise the spawned fthread is suspended when the first
-write, or the first unmatched read operation occurs.
+Patterns may specify pattern variables which are set
+to the corresponding subpart of the value.
+
+Patterns can match any type with a literal value
+and equality operator, tuples, records, sum types
+or union constructors.
+
+A boolean subcomponent may be matched against
+the special pattern words ``true`` and ``false``.
+
+Patterns match recursively, drilling down into
+the subcomponents of a term.  A subpart of a match
+succeeds when a comparison with a literal for equality
+returns true or the pattern has a variable or wildcard.
+
+It fails when a comparison with a literal for equality
+returns false, or a union or sum constructor does
+not agree with the runtime value of the variant.
+
+A record will match a pattern denoting a record
+with a subset of the fields.
+
+For polymorphic union the type variables
+are not required, since they can be deduced.
+
+For sum matches, the sum type is not required
+as it can be deduced.
+
+If none of the patterns in a match succeeds an
+exception is thrown and the program terminates.
+
+Pattern variables are identifiers preceded by a ``?``
+mark. 
+
+At most one occurence of a particular variable is allowed
+in a pattern.
+
+Plain identifiers must be union constructor
+names.
+
+The underscore symbol ``_`` is a wildcard match,
+it is equivalent to a fresh pattern variable which is 
+never used.
+
+Disjunctions of patterns (alternatives) can be formed
+with the ``|`` combinator.
+
+A pattern may be suffixed by a ``when`` clause the
+argument of which must be a boolean expression which
+acts as a guard, and must evaluate true for the
+pattern as a whole to match. The clause may contain
+pattern variables which are in scope.
+
+An expression in parentheses preceded by a ``$`` sign
+is a short hand for a fresh pattern variable followed
+by a when clause containing the term inside the parentheses.
+
+If a type has both equality and a less than operator ``<``
+it can be matched against an inclusive range specified by
+two literals separated by ``..``.
+
+A subpart of a match can be assigned to a pattern variable
+with an ``as`` suffix.
+
+.. code-block:: felix
+
+   // integer match
+   match a with
+   | 0 => println$ "zero";
+   | 1 => println$ "one";
+   | ?x => println$ "Other: " + x.str;
+   endmatch;
+
+   // integer range match
+   match a with
+   | 0 .. 20 => println$ "Young";
+   | _ => println$ "old";
+   endmatch;
+
+   // tuple match
+   match a with
+   | ?n,0 => println$ "Divide by zero";
+   | 0,?d => println "zero"
+   | ?n,?d => println "Quotient " + (n/d).str
+   endmatch;
+
+   // union match
+   match a with
+   | Some ?x => println$ "Got " + x.str;
+   | None => println$ "Got nothing";
+   endmatch; 
+
+   // Sum match
+   match case 0 of (int + string)  with
+   | case 0 ?x => println "Int " + x.str;
+   | case 1 ?x => println "String " + x;
+   endmatch;
+
+   // record match
+   match (a=1, b=2, c=3) with
+   | (b=42) => println$ "b is 42";
+   | (a=?x, c=?z) => println$ "a,b=" + x.str + "," + y.str;
+   endmatch;
+
+  // when clause
+  match 42 with
+  | ?x when x < 20 => println$ x.str is " a teenie";
+  | _ => println$ "Old hat";
+  endmatch;
+
+  var hitch = 42;
+  match 42 with
+  | $(hitch) => println$ "The Answer";
+  | _ => println$ "Unknown";
+  endmatch;
+
+  // match with alternatives
+  match a with
+  | (1|2) => println$ "Buckle my shoe";
+  | _ => println$ "open the door";
+  endmatch;
+
+ 
+  // match with as clause
+  match a with
+  | ((1,?x) as y),?z => println$ y.str;
+  endmatch;
 
 
-read/write/broadcast schannel
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+if/goto
+^^^^^^^
 
-`Reference <http://felix-lang.org/share/lib/std/control/schannels.flx>`_
+The conditional goto is an abbreviation for 
+the more verbose conditional:
 
-spawn_pthread
--------------
+.. code-block:: felix
+   
+   if c goto lab; // equivalent to
+   if c do goto lab; done
 
-`Reference <http://felix-lang.org/share/lib/std/control/pthread.flx>`_
+if/return
+^^^^^^^^^
 
-read/write pchannel
-^^^^^^^^^^^^^^^^^^^
+The conditional return is an abbreviation for
+the more verbose conditional:
 
-`Reference <http://felix-lang.org/share/lib/std/control/pchannels.flx>`_
+.. code-block:: felix
+   
+   if c return; // equivalent to
+   if c do return; done
 
-exchange
-^^^^^^^^
+if/call
+^^^^^^^
 
-TBD
+The conditional call is an abbreviation for
+the more verbose conditional:
+
+.. code-block:: felix
+   
+   if c call f x; // equivalent to
+   if c do call f x; done
 
 
-loops
+if/do/elif/else/done
+--------------------
+
+The procedural conditional branch is used to select
+a control path based on a boolean expression.
+
+The ``else`` and ``elif`` clauses are optional.
+
+.. code-block:: felix
+
+   if c1 do 
+     stmt1;
+     stmt2;
+   elif c2 do
+     stmt3;
+     stmt4;
+   else
+     stmt5;
+     stmt6;
+   done
+
+The ``elif`` clause saves writing a nested conditional.
+The above is equivalent to:
+
+.. code-block:: felix
+   
+   if c1 do 
+     stmt1;
+     stmt2;
+   else 
+     if c2 do
+       stmt3;
+       stmt4;
+     else
+       stmt5;
+       stmt6;
+     done
+   done
+
+One or more statements may be givn in the selected control path.
+
+A simple conditional is an abbreviation for a statement match:
+
+.. code-block:: felix
+   
+   if c do stmt1; stmt2; else stmt3; stmt4; done
+   // is equivalent to
+   match c with
+   | true => stmt1; stmt2; 
+   | false => stmt3; stmt4;
+   endmatch;
+
+
+Loops
 -----
 
 `Reference <http://felix-lang.org/share/lib/grammar/loops.flxh>`_
@@ -384,26 +587,26 @@ statements to exit from any containing loop.
 
 
 redo
-----
+^^^^
 
 The redo statement causes control to jump to the start
 of the specified loop without incrementing the control variable.
 
 break
------
+^^^^^
 
 The break statement causes control to jump past the end of
 the specified loop, terminating iteration.
 
 continue
---------
+^^^^^^^^
 
 The continue statement causes the control variable to
 be incremented and tests and the next iteration commenced
 or the loop terminated.
 
 for/in/upto/downto/do/done
---------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 A basic loop with an inclusive range.
 
@@ -435,7 +638,7 @@ The loop logic takes care to ensure the control variable is not
 incremented (resp. decremented) past the end (resp.start) value.
 
 while/do/done
--------------
+^^^^^^^^^^^^^
 
 The while loop executes the body repeatedly whilst the control
 condition is true at the start of the loop body.
@@ -446,7 +649,7 @@ condition is true at the start of the loop body.
    while i < 10 do println$ i; ++i; done
 
 until loop
-----------
+^^^^^^^^^^
 
 The until loop executes the loop body repeatedly
 until the control condition is false at the start of the loop,
@@ -458,147 +661,49 @@ it is equivalent o a while loop with a negated condition.
    until i == 9 do println$ i; ++i; done
 
 for/match/done
---------------
+^^^^^^^^^^^^^^
 
 TBD
 
-loop
-----
-
-TBD
-
-Assertions
-----------
-
-`Reference <http://felix-lang.org/share/lib/grammar/assertions.flxh>`_
-
-assert
+Fibres
 ------
 
-Ad hoc assertion throws an assertion exception if its argument
-is false. 
-
-.. code-block:: felix
-   
-   assert x > 0;
-
-axiom
-^^^^^
-
-An axiom is a relationship between functions, typically
-polymorphic, which is required to hold.
-
-.. code-block:: felix
-   
-   axiom squares (x:double) => x * x >= 0;
-   class addition[T]
-   {
-     virtual add : T * T -> T;
-     virtual == : T * T -> bool;
-   
-     axiom assoc (x:T, y:T, z:T) : 
-       add (add (x,y),z) == add (x, add (y,z))
-     ;
-   }
-
-In a class, an axiom is a specification constraining
-implementations of virtual function in instances.
-
-Axioms are restricted to first order logic, that is, they
-may be polymorphic, but the universal quantification implied
-is always at the head.
-
-Existential quantification can be provided in a constructive
-logic by actually constructing the requisite variable.
-
-Second order logic, with quantifiers internal to the 
-logic term, are not supported.
-
-lemma
-^^^^^
-
-A lemma is similar to an axiom, except that is it
-easily derivable from axioms; in particular,
-a reasonable automatic theorem prover should
-be able to derived it.
-
-theorem
-^^^^^^^
-
-A theorem is similar to a lemma, except that it is 
-too hard to expect an automatic theorem prover
-to be able to derive it without hints or assistance.
-
-There is currently no standard way to prove such hints.
-
-reduce
-^^^^^^
-
-A reduce statement specifies a term reduction and is logically
-equivalent to an axiom, lemma, or theorem, however it acts
-as an instruction to the compiler to attempt to actually 
-apply the axiom.
-
-The compiler may apply the axiom, but it may miss opportunities
-for application.
-
-The set of reductions must be coherent and terminal, 
-that is, after a finite number of reductions the final
-term must be unique and irreducible. 
-
-Application of reduction is extremely expensive and they
-should be used lightly.
-
-.. code-block:: felix
-   
-   reduce revrev[T] (x: list[T]) : rev (rev x) => x;
-
-
-
-invariant
-^^^^^^^^^
-
-An invariant is an assertion which must hold on the state variables
-of an object, at the point after construction of the state
-is completed by the constructor function and just before the
-record of method closures is returned, and, at the start and
-end of every method invocation.
-
-The invariant need not hold during execution of a method.
-
-Felix inserts the a check on the invariant into the constructor function
-and into the post conditions of every procedure or generator
-method.
-
-.. code-block:: felix
-   
-   object f(var x:int, var y:int) =
-   {
-      invariant y >= 0;
-      method proc set_y (newy: int) => y = newy;
-   }
-
-
-code
-----
-
-The code statement inserts C++ code literally into the current
-Felix code.
-
-The code must be one or more C++ statements.
-
-.. code-block:: felix
-   
-   code 'cout << "hello";';
-
-noreturn code
+spawn_fthread
 ^^^^^^^^^^^^^
 
-Similar to code, however noreturn code never returns.
+`Reference <http://felix-lang.org/share/lib/std/control/fibres.flx>`_
 
-.. code-block:: felix
-   
-   noreturn code "throw 1;";
+The ``spawn_fthread`` library function invokes the corresponding
+service call to schedule the initial continuation of a procedure 
+taking a unit argument as an fthread (fibre). 
+
+The spawned fthread begins executing immediately.
+If coutrol returns before yielding by a synchronous
+channel operation, the action is equivalent to calling
+the procedure.
+
+Otherwise the spawned fthread is suspended when the first
+write, or the first unmatched read operation occurs.
+
+
+read/write/broadcast schannel
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+`Reference <http://felix-lang.org/share/lib/std/control/schannels.flx>`_
+
+Pthread
+-------
+
+spawn_pthread
+^^^^^^^^^^^^^
+
+`Reference <http://felix-lang.org/share/lib/std/control/pthread.flx>`_
+
+read/write pchannel
+^^^^^^^^^^^^^^^^^^^
+
+`Reference <http://felix-lang.org/share/lib/std/control/pchannels.flx>`_
+
 
 Service call
 ------------
