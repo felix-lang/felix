@@ -4,6 +4,31 @@ Lexicology
 All Felix files are considered to be UTF-8 encoded Unicode.
 
 Felix uses a scannerless parser, there are no keywords.
+Whitespace is generally not significant in Felix, except
+of course in strings and where required to separate lexemes.
+
+Comments
+--------
+
+Felix provides four kinds of comments.
+
+C style comments using `/*` and `*/` delimiters can be nested.
+
+C++ style comments using `//` run to the end of the line.
+
+C++ style comments using `//$` are comments intended for
+user documentation.
+
+In an `fdoc` file, processing begins in document mode,
+which includes special documentation markup: the layout
+is a minor extension of HTML with some conveniences
+for program documentation. Processing switches to Felix
+code mode using the `@felix` directive and returns to document
+mode with the first subsequent line starting with `@`.
+
+In particular note `fdoc` files can be translated to HTML
+by the Felix webserver, and also parsed by the Felix compiler.
+
 
 Identifiers
 -----------
@@ -24,6 +49,14 @@ by the ISO C++ standard. In practice, all high bit set octets are allowed.
 
 A TeX identifier starts with a slosh and is followed by a sequence
 of letters. 
+
+TeX Symbols
+-----------
+
+Most mathematical operator symbols in TeX, LaTeX, and AMSTeX may also be 
+used in Felix. These are spelled in Unicode with a leading slosh character
+followed by a sequence of upper or lower case letters. They are rendered
+in HTML documents using the MathJax package.
 
 Integer Literals
 ----------------

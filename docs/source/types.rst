@@ -22,7 +22,7 @@ with sole value ``()``:
    
    val u : unit = ();
 
-There 1-array tuple of type ``T`` component value ``v`` is identified
+The 1-array tuple of type ``T`` component value ``v`` is identified
 with the type ``T`` and has value ``v``.
 
 The individual components of a tuple may be accessed by a projection

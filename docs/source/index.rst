@@ -17,6 +17,7 @@ Contents:
    :maxdepth: 2
 
    program_structure.rst
+   grammar.rst
    lexicology.rst
    macros.rst
    types.rst
@@ -25,11 +26,13 @@ Contents:
    variables.rst
    functions.rst
    executable.rst
+   polymorphism.rst
    dssl_regexp.rst
    dssl_pipeline.rst
    dssl_json.rst
    dssl_sqlite3.rst
    cbinding.rst
+   embedding.rst
    library.rst
    tools.rst
  

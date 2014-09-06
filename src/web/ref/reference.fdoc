@@ -1,7 +1,7 @@
 <title>Felix System Reference</title>
 @h1 Felix System Reference
 @h2 Language
-<a href="spec_index.fdoc">Language Specification</a>
+<a href="http://felix.readthedocs.org">Language Specification</a>
 @p
 <a href="abstract_machine.fdoc">Abstract Machine</a>
 @p

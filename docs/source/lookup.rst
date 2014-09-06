@@ -185,7 +185,7 @@ Export directives
 The ``export`` directives make the exported symbol a root
 of the symbol graph. 
 
-The functional export and forces it to be place in the
+The functional export forces it to be place in the
 generated code as an ``extern "C"`` symbol with the
 given name:
 
