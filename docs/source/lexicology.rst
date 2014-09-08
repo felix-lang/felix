@@ -53,7 +53,7 @@ of letters.
 TeX Symbols
 -----------
 
-`Tex Symbol Reference<http://felix-lang.org/share/src/web/ref/tex_symbols.fdoc>`_
+`Tex Symbol Reference <http://felix-lang.org/share/src/web/ref/tex_symbols.fdoc>`_
 
 Most mathematical operator symbols in TeX, LaTeX, and AMSTeX may also be 
 used in Felix. These are spelled in Unicode with a leading slosh character
@@ -64,7 +64,7 @@ Integer Literals
 ----------------
 
 
-`Integer Literal Grammar <http://felix-lang.org/share/lib/grammar/grammar_int_lexer.flxh>`_
+`Integer Literal Reference <http://felix-lang.org/share/lib/grammar/grammar_int_lexer.flxh>`_
 
 An plain integer literal consists of a sequence of digits,
 optionally separated by underscores. Each separating

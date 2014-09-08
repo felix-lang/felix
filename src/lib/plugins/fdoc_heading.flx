@@ -78,6 +78,9 @@ object fdoc_heading (paragraph: paragraph-control_t, write_string: string -> 0) 
   var hstack = 0; // number of open <div>s
   var hnums = varray[int] (size 5,1); 
   var all_buttons = "";
+  var htree = Empty[int * string];
+
+  method fun get_headings () => rev htree;
 
   method fun emit-buttons() => 
    button.make-button(id="expand", text="Expand", onclick="expand_all") +
@@ -122,7 +125,8 @@ object fdoc_heading (paragraph: paragraph-control_t, write_string: string -> 0) 
     add_button txt;
     tb:=tree_button(txt,txt+"_d");
     ++hstack;
-    write_string("<h"+str n+">"+tb+" "+docnum+hnum()+" "+ txt+"</h"+str n+">" +
+    htree = Cons ( (n,txt), htree);
+    write_string("<h"+str n+" id='"+txt+"_h'>"+tb+" "+docnum+hnum()+" "+ txt+"</h"+str n+">" +
      "<div id='"+txt+"_d' style='display:block'>\n"); 
   }
 

@@ -1,53 +1,205 @@
 include "./fdoc-frame-interface";
 fun setup (config_data:string) = {
-  eprintln$ "Setup fdoc_frame " + config_data;
+  eprintln$ "Setup fdoc_frame v1.3 " + config_data;
   return 0;
 }
+
+var menu_js = """
+<script type="text/javascript">
+
+function mexpand(id)
+{
+  var n = document.getElementById(id).style;
+  n.display = "block";
+}
+
+function mcollapse(id)
+{
+  var n = document.getElementById(id).style;
+  n.display = "none";
+}
+
+var counter_max = 0;
+function mshow(id)
+{
+  var i;
+  for(i=1; i<=counter_max; ++i) 
+    mcollapse("menu"+String(i));
+  mexpand(id);
+}
+
+function hilite(obj)
+{
+  obj.style.backgroundColor = "white";
+}
+
+function leave1(obj)
+{
+  obj.style.backgroundColor = "#70C000";
+}
+function leave2(obj)
+{
+  obj.style.backgroundColor = "#70C070";
+}
+</script>
+""";
+
+var menu_style = """
+<style>
+div.m {
+    margin: 0px;
+    padding:0px;
+    border-width:2px;
+    border-color: green;
+}
+
+div.m1 {
+    position:relative;
+    top:2px;
+    background-color: #70C000;
+    padding-left: 10px;
+    border-style:solid;
+    border-color:red;
+    border-width:2px;
+    
+}
+
+div.m2 {
+    position:relative;
+    top:2px;
+    background-color: #70C070;
+    padding-left:15px;
+    border-style:solid;
+    border-color:green;
+    border-width:2px;
+}
+
+
+</style>
+""";
+
 
 object fdoc_frame (d:fdoc_frame_data_t) implements fdoc_frame_t = 
 {
   var frame_colour = "#C0C0B0";
   var page_colour = "#E0E0E0";
   var text_colour = "#404040";
-  method fun whatami () => "fdoc_framer maker";
 
-  method fun make_frame (out:string) =>
-    #(d.heading.emit-js) + 
-    #(d.button-factory.get-jscript) +
-    #(d.fileseq.get-jscript) +
-    '<div style="background-color:'+page_colour+'; font-family:sans-serif; color:'+text_colour+'">' +
+  var toc_width = 200; // should be 0, temporary hack for testing!
 
+  method fun whatami () => "fdoc_frame maker";
+
+  method proc set_toc_width (tw: int) => toc_width = tw;
+
+  method fun make_frame (out:string) :string = {
+    var o = "";
+    reserve(&o,10000+out.len.int);
+    var h = #(d.heading.get_headings);
+
+    o+=menu_js;
+    o+=menu_style;
+    o+=#(d.heading.emit-js);
+    o+=#(d.button-factory.get-jscript);
+    o+=#(d.fileseq.get-jscript);
+
+    // Whole page defaults and background
+    o+='<div style="background-color:'+page_colour+'; font-family:sans-serif; color:'+text_colour+'">';
+
+    // LEFT MARGIN
     // fixed top nav bar 
-    '<div style="position:fixed; top:10px;  left:10px; right:10px; height:30px;' +
+    o+='<div style="position:fixed; top:10px;  left:10px; width:'+
+    (toc_width - 10).str+'px; height:30px;' +
     ' background-color:'+frame_colour+'; padding:4px;'+
-    ' border-top-left-radius:10px; border-top-right-radius:10px">' +
-    #(d.heading.emit-buttons) + 
-    #(d.fileseq.shownav) + 
-    '</div>\n' +
+    ' border-top-left-radius:10px; border-top-right-radius:10px">';
+    o+='</div>\n';
 
-    '<div style="position:fixed; top:40px; bottom:40px; left:10px; width:4px;' +
-      ' background-color:'+ frame_colour+ ';">'+
-    '</div>'+
+    // left border
+    o+='<div style="position:fixed; top:40px; bottom:40px; left:10px; width:4px;' +
+      ' background-color:'+ frame_colour+ ';">';
+    o+='</div>\n';
 
-    // body
-    '<div style="position:fixed; top:48px; bottom:48px; left:14px; right:14px; padding:8px;'+
-    ' border:4px;overflow:auto; font-family:sans-serif;'+
-    ' color:'+text_colour+'; background-color:'+page_colour+';">' +
-    out +
-    '</div>\n'+
-
-    '<div style="position:fixed; top:40px; bottom:40px; right:10px; width:4px;' +
-      ' background-color:'+ frame_colour+ ';">'+
-    '</div>'+
+    // Contents body
+    o+='<div style="position:fixed; top:48px; bottom:48px; left:14px; right:14px;'+
+       '  width:'+(toc_width - 26).str+'px;'+
+       ' padding:8px; border:4px;overflow:auto;'+
+       ' font-family:sans-serif; color:#404040; background-color:#70E0E0;">\n';
+   
+    proc head1(s:string,i:int) { 
+      o+= """<div class=m1 onclick="mshow('menu"""+
+        counter.str+"""')" onmouseover="hilite(this)" onmouseout="leave1(this)" >"""+
+        """<a href='#"""+s+"""_h'>"""+
+        s+"""</a></div>\n""";
+      o+= """<div class=sm id=menu"""+counter.str+""">\n""";
+    }
+    proc foot1() { o+="</div>\n"; } 
+    proc break1(s:string,i:int) {foot1(); ++counter; head1(s,i); }
+  
+    var counter = 0;
+    iter proc (i:int,s:string) 
+      { 
+        println$ i,s;
+        if i == 1 do
+          if counter == 0 do ++counter; head1 (s,i); 
+          else break1 (s,i); 
+          done
+        elif i == 2 do
+          o+="<div class=m2 onmouseover='hilite(this)' onmouseout='leave2(this)'><a href='#"+s+"_h'>"+s+"</a></div>\n";
+        done
+      } 
+      h
+    ;
+    if counter > 1 do  foot1; done;
+    o+="<script>counter_max="+counter.str+";</script>\n";
+     // right border
+    o+='<div style="position:fixed; top:40px; bottom:40px; left:'+(toc_width + 4).str+'px; width:4px;' +
+      ' background-color:'+ frame_colour+ ';">';
+    o+='</div>';
 
     // fixed bottom nav bar
-    '<div style="position:fixed; bottom:10px;  left:10px; right:10px; height:30px;' +
+    o+='<div style="position:fixed; bottom:10px;  left:10' +
+      'px; width:'+(toc_width - 10).str+'px; height:30px;' +
     ' background-color:'+frame_colour+';padding:4px;'+
-    ' border-bottom-left-radius:10px; border-bottom-right-radius:10px"\n>' +
-    #(d.fileseq.shownav) + 
-    '</div>\n' +
-    '</div>'
-  ;
+    ' border-bottom-left-radius:10px; border-bottom-right-radius:10px"\n>';
+    o+='</div>\n';
+
+    // MAIN CONTENT
+    // fixed top nav bar 
+    o+='<div style="position:fixed; top:10px;  left:'+(toc_width+10).str+'px; right:10px; height:30px;' +
+    ' background-color:'+frame_colour+'; padding:4px;'+
+    ' border-top-left-radius:10px; border-top-right-radius:10px">';
+    o+=#(d.heading.emit-buttons);
+    o+=#(d.fileseq.shownav);
+    o+='</div>\n';
+
+    // left border
+    o+='<div style="position:fixed; top:40px; bottom:40px; left:'+(toc_width+10).str+'px; width:4px;' +
+      ' background-color:'+ frame_colour+ ';">';
+    o+='</div>';
+
+    // body
+    o+='<div style="position:fixed; top:48px; bottom:48px; left:'+(toc_width+14).str+
+       'px; right:14px; padding:8px;'+
+    ' border:4px;overflow:auto; font-family:sans-serif;'+
+    ' color:'+text_colour+'; background-color:'+page_colour+';">';
+    o+=out;
+    o+='</div>\n';
+
+     // right border
+    o+='<div style="position:fixed; top:40px; bottom:40px; right:10px; width:4px;' +
+      ' background-color:'+ frame_colour+ ';">';
+    o+='</div>';
+
+    // fixed bottom nav bar
+    o+='<div style="position:fixed; bottom:10px;  left:'+(toc_width+10).str+
+      'px; right:10px; height:30px;' +
+    ' background-color:'+frame_colour+';padding:4px;'+
+    ' border-bottom-left-radius:10px; border-bottom-right-radius:10px"\n>';
+    o+=#(d.fileseq.shownav);
+    o+='</div>\n';
+
+    o+='</div>'; // whole page end
+    return o;
+  }
 
 }
 export fun setup of (string) as "fdoc_frame_setup";
