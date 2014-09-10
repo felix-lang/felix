@@ -227,7 +227,7 @@ class Judy
     """
       if (::std::strlen($2) >= JUDY_SL_MAXLEN) throw "JudySLIns strlen>10000";
       *(Word_t**)$4=(Word_t*)JudySLIns($1,(unsigned char*)$2,$3);
-    """;
+    """ requires Cxx_headers::cstring;
 
   proc JudySLDel: JSLArray * +char * &JError_t * &int =
     "*$4=JudySLDel($1,(unsigned char*)$2,$3);";
