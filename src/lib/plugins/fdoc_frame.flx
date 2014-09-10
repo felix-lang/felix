@@ -1,6 +1,6 @@
 include "./fdoc-frame-interface";
 fun setup (config_data:string) = {
-  eprintln$ "Setup fdoc_frame v1.3 " + config_data;
+  eprintln$ "Setup fdoc_frame v1.4 " + config_data;
   return 0;
 }
 
@@ -20,12 +20,13 @@ function mcollapse(id)
 }
 
 var counter_max = 0;
-function mshow(id)
+function mshow(id,loc)
 {
   var i;
   for(i=1; i<=counter_max; ++i) 
     mcollapse("menu"+String(i));
   mexpand(id);
+  window.location.replace(loc);
 }
 
 function hilite(obj)
@@ -58,7 +59,7 @@ div.m1 {
     top:2px;
     background-color: #70C000;
     padding-left: 10px;
-    border-style:solid;
+    border-style:outset;
     border-color:red;
     border-width:2px;
     
@@ -69,7 +70,7 @@ div.m2 {
     top:2px;
     background-color: #70C070;
     padding-left:15px;
-    border-style:solid;
+    border-style:outset;
     border-color:green;
     border-width:2px;
 }
@@ -125,10 +126,9 @@ object fdoc_frame (d:fdoc_frame_data_t) implements fdoc_frame_t =
        ' font-family:sans-serif; color:#404040; background-color:#70E0E0;">\n';
    
     proc head1(s:string,i:int) { 
-      o+= """<div class=m1 onclick="mshow('menu"""+
-        counter.str+"""')" onmouseover="hilite(this)" onmouseout="leave1(this)" >"""+
-        """<a href='#"""+s+"""_h'>"""+
-        s+"""</a></div>\n""";
+      o+= """<div class=m1 onclick="mshow('menu"""+ counter.str+"""','#"""+s+"""_h')" """;
+      o+=" onmouseover='hilite(this)' onmouseout='leave1(this)' >";
+      o+= s+"</div>\n";
       o+= """<div class=sm id=menu"""+counter.str+""">\n""";
     }
     proc foot1() { o+="</div>\n"; } 
@@ -143,7 +143,9 @@ object fdoc_frame (d:fdoc_frame_data_t) implements fdoc_frame_t =
           else break1 (s,i); 
           done
         elif i == 2 do
-          o+="<div class=m2 onmouseover='hilite(this)' onmouseout='leave2(this)'><a href='#"+s+"_h'>"+s+"</a></div>\n";
+          o+="<div class=m2 onmouseover='hilite(this)'";
+          o+=" onmouseout='leave2(this)'";
+          o+=""" onclick='window.location.replace("#"""+s+"""_h")'>"""+s+"""</div>\n""";
         done
       } 
       h

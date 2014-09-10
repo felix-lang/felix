@@ -1933,41 +1933,49 @@ Py2html initialisation
 </p></div>
 <hr/><a href="/share/lib/std/felix/config.flx">felix/config.flx</a>
 
-<pre>0003:  <a href="/share/lib/std/felix/config.flx#0003">class Config</a></pre>
-<pre>0005:    <a href="/share/lib/std/felix/config.flx#0005">fun config ()</a></pre>
-<pre>0066:    <a href="/share/lib/std/felix/config.flx#0066">typedef config_type</a></pre>
+<pre>0006:  <a href="/share/lib/std/felix/config.flx#0006">class Config</a></pre>
+<pre>0007:    <a href="/share/lib/std/felix/config.flx#0007">typedef config_type</a></pre>
+<pre>0020:    <a href="/share/lib/std/felix/config.flx#0020">fun str (x:config_type) : string</a></pre>
+<pre>0033:    <a href="/share/lib/std/felix/config.flx#0033">fun empty_config() :config_type</a></pre>
+<pre>0047:    <a href="/share/lib/std/felix/config.flx#0047">proc cascade_FLX_INSTALL_DIR (x: &config_type)  (y: string)</a></pre>
+<pre>0052:    <a href="/share/lib/std/felix/config.flx#0052">proc cascade_FLX_TARGET_DIR (x: &config_type)  (y: string)</a></pre>
+<pre>0057:    <a href="/share/lib/std/felix/config.flx#0057">proc cascade_FLX_SHARE_DIR (x: &config_type)  (y: string)</a></pre>
+<pre>0061:    <a href="/share/lib/std/felix/config.flx#0061">proc cascade_FLX_HOME_DIR (x: &config_type)  (y: string)</a></pre>
+<pre>0068:    <a href="/share/lib/std/felix/config.flx#0068">proc process_config_text (cfg:&config_type) (text:string)</a></pre>
+<pre>0110:    <a href="/share/lib/std/felix/config.flx#0110">fun config () : config_type</a></pre>
+<pre>0148:    <a href="/share/lib/std/felix/config.flx#0148">process_config_text &cfg text</a></pre>
 <hr/><a href="/share/lib/std/felix/flx/bootflx.flx">felix/flx/bootflx.flx</a>
 
-<pre>0031:  <a href="/share/lib/std/felix/flx/bootflx.flx#0031">class BootFlx</a></pre>
-<pre>0033:    <a href="/share/lib/std/felix/flx/bootflx.flx#0033">gen flx_processing</a></pre>
-<pre>0128:    <a href="/share/lib/std/felix/flx/bootflx.flx#0128">gen runflx(args:list[string]) : int</a></pre>
+<pre>0029:  <a href="/share/lib/std/felix/flx/bootflx.flx#0029">class BootFlx</a></pre>
+<pre>0031:    <a href="/share/lib/std/felix/flx/bootflx.flx#0031">gen flx_processing</a></pre>
+<pre>0124:    <a href="/share/lib/std/felix/flx/bootflx.flx#0124">gen runflx(args:list[string]) : int</a></pre>
 <hr/><a href="/share/lib/std/felix/flx/flx.flx">felix/flx/flx.flx</a>
 
 <pre>0021:  <a href="/share/lib/std/felix/flx/flx.flx#0021">class Flx</a></pre>
 <pre>0023:    <a href="/share/lib/std/felix/flx/flx.flx#0023">gen flx_processing</a></pre>
-<pre>0124:    <a href="/share/lib/std/felix/flx/flx.flx#0124">gen runflx(args:list[string]) : int</a></pre>
+<pre>0120:    <a href="/share/lib/std/felix/flx/flx.flx#0120">gen runflx(args:list[string]) : int</a></pre>
 <hr/><a href="/share/lib/std/felix/flx/flx_cmdopt.flx">felix/flx/flx_cmdopt.flx</a>
 
 <pre>0006:  <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0006">class FlxCmdOpt</a></pre>
-<pre>0117:    <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0117">proc setup-from-file</a></pre>
-<pre>0195:    <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0195">proc debugln[T with Str[T]] (x:T)</a></pre>
-<pre>0547:    <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0547">proc debugln[T with Str[T]] (x:T)</a></pre>
-<pre>0629:    <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0629">noinline proc processing_stage1</a></pre>
-<pre>0639:    <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0639">proc debugln[T with Str[T]] (x:T)</a></pre>
-<pre>0743:    <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0743">fun link_strings ()</a></pre>
-<pre>0769:    <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0769">fun mkrel (d:string, f:string)</a></pre>
+<pre>0117:    <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0117">proc setup-from-file (debugln: string -> 0)</a></pre>
+<pre>0185:    <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0185">proc debugln[T with Str[T]] (x:T)</a></pre>
+<pre>0544:    <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0544">proc debugln[T with Str[T]] (x:T)</a></pre>
+<pre>0626:    <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0626">noinline proc processing_stage1</a></pre>
+<pre>0636:    <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0636">proc debugln[T with Str[T]] (x:T)</a></pre>
+<pre>0728:    <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0728">fun link_strings ()</a></pre>
+<pre>0750:    <a href="/share/lib/std/felix/flx/flx_cmdopt.flx#0750">fun mkrel (d:string, f:string)</a></pre>
 <hr/><a href="/share/lib/std/felix/flx/flx_config.flx">felix/flx/flx_config.flx</a>
 
 <pre>0003:  <a href="/share/lib/std/felix/flx/flx_config.flx#0003">class FlxConfig</a></pre>
 <pre>0005:    <a href="/share/lib/std/felix/flx/flx_config.flx#0005">proc print_config(config:Config::config_type)</a></pre>
 <hr/><a href="/share/lib/std/felix/flx/flx_control.flx">felix/flx/flx_control.flx</a>
 
-<pre>0003:  <a href="/share/lib/std/felix/flx/flx_control.flx#0003">class FlxControl</a></pre>
-<pre>0005:    <a href="/share/lib/std/felix/flx/flx_control.flx#0005">proc print_options(control:control_type)</a></pre>
-<pre>0042:    <a href="/share/lib/std/felix/flx/flx_control.flx#0042">fun init_loopctl ()</a></pre>
-<pre>0052:    <a href="/share/lib/std/felix/flx/flx_control.flx#0052">typedef loopctl_type</a></pre>
-<pre>0054:    <a href="/share/lib/std/felix/flx/flx_control.flx#0054">fun dflt_control (config:Config::config_type, profile:FlxProfile::profile_type)</a></pre>
-<pre>0154:    <a href="/share/lib/std/felix/flx/flx_control.flx#0154">typedef control_type</a></pre>
+<pre>0001:  <a href="/share/lib/std/felix/flx/flx_control.flx#0001">class FlxControl</a></pre>
+<pre>0003:    <a href="/share/lib/std/felix/flx/flx_control.flx#0003">proc print_options(control:control_type)</a></pre>
+<pre>0038:    <a href="/share/lib/std/felix/flx/flx_control.flx#0038">fun init_loopctl ()</a></pre>
+<pre>0048:    <a href="/share/lib/std/felix/flx/flx_control.flx#0048">typedef loopctl_type</a></pre>
+<pre>0050:    <a href="/share/lib/std/felix/flx/flx_control.flx#0050">fun dflt_control (config:Config::config_type)</a></pre>
+<pre>0138:    <a href="/share/lib/std/felix/flx/flx_control.flx#0138">typedef control_type</a></pre>
 <hr/><a href="/share/lib/std/felix/flx/flx_depchk.flx">felix/flx/flx_depchk.flx</a>
 <pre>0003:    <a href="/share/lib/std/felix/flx/flx_depchk.flx#0003">gen cxx_depcheck (tc: toolchain_t, src:string, dst:string) : bool</a></pre>
 <pre>0018:    <a href="/share/lib/std/felix/flx/flx_depchk.flx#0018">fun maxf (t:double) (f:string)</a></pre>
@@ -1983,53 +1991,48 @@ Py2html initialisation
 
 <pre>0001:  <a href="/share/lib/std/felix/flx/flx_plugin_client.flx#0001">class Flx_client</a></pre>
 <pre>0003:    <a href="/share/lib/std/felix/flx/flx_plugin_client.flx#0003">proc setup ()</a></pre>
-<hr/><a href="/share/lib/std/felix/flx/flx_profile.flx">felix/flx/flx_profile.flx</a>
-
-<pre>0001:  <a href="/share/lib/std/felix/flx/flx_profile.flx#0001">class FlxProfile</a></pre>
-<pre>0003:    <a href="/share/lib/std/felix/flx/flx_profile.flx#0003">fun dflt_profile ()</a></pre>
-<pre>0035:    <a href="/share/lib/std/felix/flx/flx_profile.flx#0035">typedef profile_type</a></pre>
 <hr/><a href="/share/lib/std/felix/flx/flx_run.flx">felix/flx/flx_run.flx</a>
-<pre>0006:    <a href="/share/lib/std/felix/flx/flx_run.flx#0006">gen dxqt(DBG:bool) (cmd:string)</a></pre>
-<pre>0028:    <a href="/share/lib/std/felix/flx/flx_run.flx#0028">proc xdebugln[T with Str[T]] (d:bool) (x:T)</a></pre>
-<pre>0033:    <a href="/share/lib/std/felix/flx/flx_run.flx#0033">proc check_cache(</a></pre>
-<pre>0063:    <a href="/share/lib/std/felix/flx/flx_run.flx#0063">proc debugln[T with Str[T]] (x:T)</a></pre>
-<pre>0067:    <a href="/share/lib/std/felix/flx/flx_run.flx#0067">proc echoln[T with Str[T]] (x:T)</a></pre>
-<pre>0081:    <a href="/share/lib/std/felix/flx/flx_run.flx#0081">proc showtime(msg:string, t0:double)</a></pre>
-<pre>0111:    <a href="/share/lib/std/felix/flx/flx_run.flx#0111">proc calpackages</a></pre>
-<pre>0141:    <a href="/share/lib/std/felix/flx/flx_run.flx#0141">fun cal_time_from_flxdepfile (debugln: string->0, df: string):double</a></pre>
-<pre>0143:    <a href="/share/lib/std/felix/flx/flx_run.flx#0143">fun maxf (x: double) (f:string)</a></pre>
-<pre>0155:    <a href="/share/lib/std/felix/flx/flx_run.flx#0155">fun cal_files_time (fs: list[string])</a></pre>
-<pre>0168:    <a href="/share/lib/std/felix/flx/flx_run.flx#0168">fun cal_cxx_uptodate(debugln:string -> 0, OUTPUT_DIR:string, f:string)</a></pre>
-<pre>0186:    <a href="/share/lib/std/felix/flx/flx_run.flx#0186">gen check_cxx_uptodate () : bool</a></pre>
-<pre>0201:    <a href="/share/lib/std/felix/flx/flx_run.flx#0201">gen run_felix_compiler_if_required () : int</a></pre>
-<pre>0268:    <a href="/share/lib/std/felix/flx/flx_run.flx#0268">gen cxx_compile_dynamic1(src:string, dst:string) : int</a></pre>
-<pre>0292:    <a href="/share/lib/std/felix/flx/flx_run.flx#0292">gen cxx_compile_dynamic () : int</a></pre>
-<pre>0315:    <a href="/share/lib/std/felix/flx/flx_run.flx#0315">gen cxx_compile_static () : int</a></pre>
-<pre>0360:    <a href="/share/lib/std/felix/flx/flx_run.flx#0360">gen cxx_compile_static1 (src: string, dst: string) : int</a></pre>
-<pre>0388:    <a href="/share/lib/std/felix/flx/flx_run.flx#0388">gen run_cxx_compiler_if_required () : int</a></pre>
-<pre>0402:    <a href="/share/lib/std/felix/flx/flx_run.flx#0402">gen check_run_if_required_and_uptodate() : bool</a></pre>
-<pre>0426:    <a href="/share/lib/std/felix/flx/flx_run.flx#0426">gen run_with_calpackages () : int</a></pre>
-<pre>0440:    <a href="/share/lib/std/felix/flx/flx_run.flx#0440">gen cxx_link_dynamic () : int</a></pre>
-<pre>0476:    <a href="/share/lib/std/felix/flx/flx_run.flx#0476">gen cxx_link_dynamic_with_calpackages () : int</a></pre>
-<pre>0482:    <a href="/share/lib/std/felix/flx/flx_run.flx#0482">gen cxx_link_static () : int</a></pre>
-<pre>0522:    <a href="/share/lib/std/felix/flx/flx_run.flx#0522">gen cxx_link_static_with_calpackages() :  int</a></pre>
-<pre>0528:    <a href="/share/lib/std/felix/flx/flx_run.flx#0528">gen cxx_static_library () : int</a></pre>
-<pre>0566:    <a href="/share/lib/std/felix/flx/flx_run.flx#0566">gen check_binary_uptodate () : bool</a></pre>
-<pre>0568:    <a href="/share/lib/std/felix/flx/flx_run.flx#0568">fun maxf (t:double) (f:string)</a></pre>
-<pre>0607:    <a href="/share/lib/std/felix/flx/flx_run.flx#0607">gen run_linker_if_required() : int</a></pre>
-<pre>0652:    <a href="/share/lib/std/felix/flx/flx_run.flx#0652">gen run_program_dynamic () : int</a></pre>
-<pre>0676:    <a href="/share/lib/std/felix/flx/flx_run.flx#0676">gen run_program_static () : int</a></pre>
-<pre>0693:    <a href="/share/lib/std/felix/flx/flx_run.flx#0693">gen run_dynamic_with_calpackages () : int</a></pre>
-<pre>0699:    <a href="/share/lib/std/felix/flx/flx_run.flx#0699">gen run_program_if_required () : int</a></pre>
-<pre>0717:    <a href="/share/lib/std/felix/flx/flx_run.flx#0717">gen check_output_if_required () : int</a></pre>
+<pre>0005:    <a href="/share/lib/std/felix/flx/flx_run.flx#0005">gen dxqt(DBG:bool) (cmd:string)</a></pre>
+<pre>0027:    <a href="/share/lib/std/felix/flx/flx_run.flx#0027">proc xdebugln[T with Str[T]] (d:bool) (x:T)</a></pre>
+<pre>0032:    <a href="/share/lib/std/felix/flx/flx_run.flx#0032">proc check_cache(</a></pre>
+<pre>0058:    <a href="/share/lib/std/felix/flx/flx_run.flx#0058">proc debugln[T with Str[T]] (x:T)</a></pre>
+<pre>0062:    <a href="/share/lib/std/felix/flx/flx_run.flx#0062">proc echoln[T with Str[T]] (x:T)</a></pre>
+<pre>0076:    <a href="/share/lib/std/felix/flx/flx_run.flx#0076">proc showtime(msg:string, t0:double)</a></pre>
+<pre>0106:    <a href="/share/lib/std/felix/flx/flx_run.flx#0106">proc calpackages</a></pre>
+<pre>0137:    <a href="/share/lib/std/felix/flx/flx_run.flx#0137">fun cal_time_from_flxdepfile (debugln: string->0, df: string):double</a></pre>
+<pre>0139:    <a href="/share/lib/std/felix/flx/flx_run.flx#0139">fun maxf (x: double) (f:string)</a></pre>
+<pre>0151:    <a href="/share/lib/std/felix/flx/flx_run.flx#0151">fun cal_files_time (fs: list[string])</a></pre>
+<pre>0164:    <a href="/share/lib/std/felix/flx/flx_run.flx#0164">fun cal_cxx_uptodate(debugln:string -> 0, OUTPUT_DIR:string, f:string)</a></pre>
+<pre>0182:    <a href="/share/lib/std/felix/flx/flx_run.flx#0182">gen check_cxx_uptodate () : bool</a></pre>
+<pre>0197:    <a href="/share/lib/std/felix/flx/flx_run.flx#0197">gen run_felix_compiler_if_required () : int</a></pre>
+<pre>0264:    <a href="/share/lib/std/felix/flx/flx_run.flx#0264">gen cxx_compile_dynamic1(src:string, dst:string) : int</a></pre>
+<pre>0288:    <a href="/share/lib/std/felix/flx/flx_run.flx#0288">gen cxx_compile_dynamic () : int</a></pre>
+<pre>0311:    <a href="/share/lib/std/felix/flx/flx_run.flx#0311">gen cxx_compile_static () : int</a></pre>
+<pre>0356:    <a href="/share/lib/std/felix/flx/flx_run.flx#0356">gen cxx_compile_static1 (src: string, dst: string) : int</a></pre>
+<pre>0384:    <a href="/share/lib/std/felix/flx/flx_run.flx#0384">gen run_cxx_compiler_if_required () : int</a></pre>
+<pre>0398:    <a href="/share/lib/std/felix/flx/flx_run.flx#0398">gen check_run_if_required_and_uptodate() : bool</a></pre>
+<pre>0422:    <a href="/share/lib/std/felix/flx/flx_run.flx#0422">gen run_with_calpackages () : int</a></pre>
+<pre>0436:    <a href="/share/lib/std/felix/flx/flx_run.flx#0436">gen cxx_link_dynamic () : int</a></pre>
+<pre>0472:    <a href="/share/lib/std/felix/flx/flx_run.flx#0472">gen cxx_link_dynamic_with_calpackages () : int</a></pre>
+<pre>0478:    <a href="/share/lib/std/felix/flx/flx_run.flx#0478">gen cxx_link_static () : int</a></pre>
+<pre>0518:    <a href="/share/lib/std/felix/flx/flx_run.flx#0518">gen cxx_link_static_with_calpackages() :  int</a></pre>
+<pre>0524:    <a href="/share/lib/std/felix/flx/flx_run.flx#0524">gen cxx_static_library () : int</a></pre>
+<pre>0562:    <a href="/share/lib/std/felix/flx/flx_run.flx#0562">gen check_binary_uptodate () : bool</a></pre>
+<pre>0564:    <a href="/share/lib/std/felix/flx/flx_run.flx#0564">fun maxf (t:double) (f:string)</a></pre>
+<pre>0603:    <a href="/share/lib/std/felix/flx/flx_run.flx#0603">gen run_linker_if_required() : int</a></pre>
+<pre>0648:    <a href="/share/lib/std/felix/flx/flx_run.flx#0648">gen run_program_dynamic () : int</a></pre>
+<pre>0672:    <a href="/share/lib/std/felix/flx/flx_run.flx#0672">gen run_program_static () : int</a></pre>
+<pre>0689:    <a href="/share/lib/std/felix/flx/flx_run.flx#0689">gen run_dynamic_with_calpackages () : int</a></pre>
+<pre>0695:    <a href="/share/lib/std/felix/flx/flx_run.flx#0695">gen run_program_if_required () : int</a></pre>
+<pre>0713:    <a href="/share/lib/std/felix/flx/flx_run.flx#0713">gen check_output_if_required () : int</a></pre>
 <hr/><a href="/share/lib/std/felix/flx_cache.flx">felix/flx_cache.flx</a>
 
 <pre>0001:  <a href="/share/lib/std/felix/flx_cache.flx#0001">class FlxCache</a></pre>
 <pre>0003:    <a href="/share/lib/std/felix/flx_cache.flx#0003">fun gramtime(debugln: string -> 0) (path:string, s:string) : double</a></pre>
 <pre>0005:    <a href="/share/lib/std/felix/flx_cache.flx#0005">fun maxtime (x:double) (s:string)</a></pre>
 <pre>0053:    <a href="/share/lib/std/felix/flx_cache.flx#0053">typedef cache_validation_spec_t</a></pre>
-<pre>0097:    <a href="/share/lib/std/felix/flx_cache.flx#0097">gen validate_cache  (spec: cache_validation_spec_t) : int * double</a></pre>
-<pre>0223:    <a href="/share/lib/std/felix/flx_cache.flx#0223">fun cache_join (c:string, var f:string)</a></pre>
+<pre>0095:    <a href="/share/lib/std/felix/flx_cache.flx#0095">gen validate_cache  (spec: cache_validation_spec_t) : int * double</a></pre>
+<pre>0199:    <a href="/share/lib/std/felix/flx_cache.flx#0199">fun cache_join (c:string, var f:string)</a></pre>
 <hr/><a href="/share/lib/std/felix/flx_cp.flx">felix/flx_cp.flx</a>
 
 <pre>0001:  <a href="/share/lib/std/felix/flx_cp.flx#0001">class CopyFiles</a></pre>
@@ -2083,12 +2086,12 @@ Py2html initialisation
 
 <pre>0003:  <a href="/share/lib/std/felix/flx_pkg.flx#0003">class FlxPkg</a></pre>
 <pre>0005:    <a href="/share/lib/std/felix/flx_pkg.flx#0005">typedef pkgconfig_inspec_t</a></pre>
-<pre>0016:    <a href="/share/lib/std/felix/flx_pkg.flx#0016">typedef pkgconfig_outspec_t</a></pre>
-<pre>0024:    <a href="/share/lib/std/felix/flx_pkg.flx#0024">fun fix2word_flags (fs: list[string])</a></pre>
-<pre>0040:    <a href="/share/lib/std/felix/flx_pkg.flx#0040">gen map_package_requirements(spec:pkgconfig_inspec_t) : pkgconfig_outspec_t</a></pre>
-<pre>0046:    <a href="/share/lib/std/felix/flx_pkg.flx#0046">gen pkgconfl(args:list[string]) : list[string]</a></pre>
-<pre>0056:    <a href="/share/lib/std/felix/flx_pkg.flx#0056">gen pkgconfs(args:list[string]) : string</a></pre>
-<pre>0134:    <a href="/share/lib/std/felix/flx_pkg.flx#0134">proc write_include_file(path:string, INCLUDE_FILES:list[string])</a></pre>
+<pre>0017:    <a href="/share/lib/std/felix/flx_pkg.flx#0017">typedef pkgconfig_outspec_t</a></pre>
+<pre>0025:    <a href="/share/lib/std/felix/flx_pkg.flx#0025">fun fix2word_flags (fs: list[string])</a></pre>
+<pre>0041:    <a href="/share/lib/std/felix/flx_pkg.flx#0041">gen map_package_requirements(spec:pkgconfig_inspec_t) : pkgconfig_outspec_t</a></pre>
+<pre>0050:    <a href="/share/lib/std/felix/flx_pkg.flx#0050">gen pkgconfl(args:list[string]) : list[string]</a></pre>
+<pre>0060:    <a href="/share/lib/std/felix/flx_pkg.flx#0060">gen pkgconfs(args:list[string]) : string</a></pre>
+<pre>0138:    <a href="/share/lib/std/felix/flx_pkg.flx#0138">proc write_include_file(path:string, INCLUDE_FILES:list[string])</a></pre>
 <hr/><a href="/share/lib/std/felix/flx_pkgconfig.flx">felix/flx_pkgconfig.flx</a>
 
 <pre>0005:  <a href="/share/lib/std/felix/flx_pkgconfig.flx#0005">class FlxPkgConfig</a></pre>
@@ -2121,6 +2124,11 @@ Py2html initialisation
 <hr/><a href="/share/lib/std/felix/flx_pkgconfig_query_interface.flx">felix/flx_pkgconfig_query_interface.flx</a>
 
 <pre>0001:  <a href="/share/lib/std/felix/flx_pkgconfig_query_interface.flx#0001">class FlxPkgConfigQuery_interface</a></pre>
+<hr/><a href="/share/lib/std/felix/flx_profile.flx">felix/flx_profile.flx</a>
+
+<pre>0001:  <a href="/share/lib/std/felix/flx_profile.flx#0001">class FlxProfile</a></pre>
+<pre>0003:    <a href="/share/lib/std/felix/flx_profile.flx#0003">fun dflt_profile ()</a></pre>
+<pre>0035:    <a href="/share/lib/std/felix/flx_profile.flx#0035">typedef profile_type</a></pre>
 <hr/><a href="/share/lib/std/felix/pkgtool/pkgtool_base.flx">felix/pkgtool/pkgtool_base.flx</a>
 <pre>0119:    <a href="/share/lib/std/felix/pkgtool/pkgtool_base.flx#0119">union build_behavior</a></pre>
 <div style='font-family:sans-serif; font-size:10pt; margin-left:100; margin-right:100; top:2; color:#404040; '><p> pkgtool_base.flx - PkgTool Core
@@ -2533,7 +2541,6 @@ Py2html initialisation
 <hr/><a href="/share/lib/std/felix/toolchain/clang_iphoneos.flx">felix/toolchain/clang_iphoneos.flx</a>
 <hr/><a href="/share/lib/std/felix/toolchain/clang_linux.flx">felix/toolchain/clang_linux.flx</a>
 <hr/><a href="/share/lib/std/felix/toolchain/clang_osx.flx">felix/toolchain/clang_osx.flx</a>
-<hr/><a href="/share/lib/std/felix/toolchain/gcc48_linux.flx">felix/toolchain/gcc48_linux.flx</a>
 <hr/><a href="/share/lib/std/felix/toolchain/gcc_linux.flx">felix/toolchain/gcc_linux.flx</a>
 <hr/><a href="/share/lib/std/felix/toolchain/gcc_osx.flx">felix/toolchain/gcc_osx.flx</a>
 <hr/><a href="/share/lib/std/felix/toolchain/msvc_win32.flx">felix/toolchain/msvc_win32.flx</a>

@@ -875,7 +875,6 @@ proc serve(s: socket_t, infname: string, get:bool)
   done
 }
 val webby_port = PORT;
-Signal::trap_ctrl_c;
 var run = true;
 
 print "FLX WEB!!! listening on port "; print webby_port; endl;
@@ -1025,8 +1024,6 @@ while run do
   var h = handler s;
   spawn_fthread  h;
  //collect(); // this hangs everything, no idea why!
-  run = not #Signal::get_ctrl_c_flag;
-  if not run do println "Ctrl-C detected"; done
 done
 
 println "WEB SERVER FINNISHED?";

@@ -1,9 +1,9 @@
 
 @h1 Strings
-We have three string like things.
-{cstring} is just an alias for a NTBS (Null Terminated Byte String).
-The workhorse {string} type based on C++ string.
-A {ustring} is a unicode representation using a 32 bit unsigned integer as
+We have three string like things. @{cstring} is just 
+an alias for a NTBS (Null Terminated Byte String).
+The workhorse @{string} type based on C++ string.
+A @{ustring} is a unicode representation using a 32 bit unsigned integer as
 the character base.
 This type is deprecated, to be repalced by C++11 unicode string type.
 @felix
