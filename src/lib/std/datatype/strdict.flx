@@ -20,10 +20,10 @@ class StrDict[T] {
    //$ Construct and empty dictionary.
    ctor strdict() => _make_strdict$ JSLArray ();
 
-   proc add (x:strdict) (key:string) (value: T) { 
+   proc add (x:strdict) (var key:string) (value: T) { 
      var err: JError_t;
      var slot : && T; 
-     JudySLIns (_repr_ x, key.cstr, &err, C_hack::cast[&&word] (&slot));
+     JudySLIns (_repr_ x, &key.stl_begin, &err, C_hack::cast[&&word] (&slot));
      slot <- new value;
    }
 
@@ -36,19 +36,19 @@ class StrDict[T] {
 
    
    //$ Fetch a value optionally using the given key.
-   fun get (x:strdict) (key: string) : opt[T] = {
+   fun get (x:strdict) (var key: string) : opt[T] = {
      var err: JError_t;
      var slot : && T; 
-     JudySLGet (_repr_ x, key.cstr, &err, C_hack::cast[&&word] (&slot));
+     JudySLGet (_repr_ x, &key.stl_begin, &err, C_hack::cast[&&word] (&slot));
      return if C_hack::isNULL slot then None[T] else Some (**slot);
    }
 
    //$ Check if value is in the dictionary.
-   fun haskey (x:strdict) (key: string) : bool = 
+   fun haskey (x:strdict) (var key: string) : bool = 
    {
      var err: JError_t;
      var slot : && T; 
-     JudySLGet (_repr_ x, key.cstr, &err, C_hack::cast[&&word] (&slot));
+     JudySLGet (_repr_ x, &key.stl_begin, &err, C_hack::cast[&&word] (&slot));
      return slot.C_hack::isNULL.lnot;
    }
 

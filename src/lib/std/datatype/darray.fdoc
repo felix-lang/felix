@@ -1,12 +1,12 @@
 
 @h1 <code>darray</code>: an array with dynamic, unbounded length.
-A {darray} is a contiguous store of variable, unbounded length.
-It is implemented by a pointer to a {varray}. When the {varray} becomes
+A @{darray} is a contiguous store of variable, unbounded length.
+It is implemented by a pointer to a @{varray}. When the @{varray} becomes
 full, a new one with a large bound is created, the contents of
 the old array copied over, and the old array forgotten.
 
-Similarly when the {varray} is not sufficiently full,
-a new {varray} of smaller extent is allocated and the contents
+Similarly when the @{varray} is not sufficiently full,
+a new @{varray} of smaller extent is allocated and the contents
 of the old array copied over, and the old array is forgotten.
 
 A user specifiable function is used to control the threshholds
@@ -19,10 +19,10 @@ O(1) speed is obtained at the cost of a lot of memory wastage.
 open class Darray
 {
 @h2 Representation
-We use a control block {darray_ctl} to store the data
-required to access a {darray}, it contains a
-varray and a {resize} function.
-The resize function takes two arguments: the current {varray}
+We use a control block @{darray_ctl} to store the data
+required to access a @{darray}, it contains a
+varray and a @{resize} function.
+The resize function takes two arguments: the current @{varray}
 bound and the requested amount of store. It returns a
 recommended amount of store.
 @felix
@@ -57,9 +57,9 @@ case the array is empty, when the size is set to 0.
     return old_max;
   }
 
-@h2 {darray} type.
-We define {darray} as a pointer to a darray control block {darray_ctl}.
-This means, in particular, that {darray} is passed by reference.
+@h2 @{darray} type.
+We define @{darray} as a pointer to a darray control block @{darray_ctl}.
+This means, in particular, that @{darray} is passed by reference.
 The definition is abstract, so the client us not able to fiddle with
 the underlying control block.
 @felix
@@ -71,10 +71,10 @@ This procedure forcibly resizes a darray to a new bound.
 The number of use elements is the maximum of the old 
 number of elements and the new bound.
 
-This procedure is analogous to the C++ string {reserve} function,
+This procedure is analogous to the C++ string @{reserve} function,
 however it is primarily intended for internal use. If this function
 is called the new bound will be adjusted on the next size changing
-operation such as a {push_back} or {pop}.
+operation such as a @{push_back} or @{pop}.
 @felix
   //$ Force a resize.
   //$ Similar to C++ vector reserve function.
@@ -127,9 +127,9 @@ operation such as a {push_back} or {pop}.
   }
 
 @h2 Size changing mutators.
-The function {pop} should have been called {pop_back}.
-There's no {push_front} but there should be.
-There's no {insert} operator.
+The function @{pop} should have been called @{pop_back}.
+There's no @{push_front} but there should be.
+There's no @{insert} operator.
 Generally, this class is very incomplete.
 @felix
   //$ Pop a value from the end.

@@ -14,19 +14,19 @@ Many routines can be written using only these two functions.
 class ArrayValue[t,v]
 {
 @h3 Core methods.
-@h4 Array length {len}.
+@h4 Array length @{len}.
 The length of the array.
 @felix
   //$ Length.
   virtual fun len: t -> size;
 
-@h4 Get element by index {unsafe_get}.
+@h4 Get element by index @{unsafe_get}.
 Performance routine to fetch the n'th element
 of an array without any bounds checking.
 @felix
   //$ Unchecked common indexing.
   virtual fun unsafe_get: t * size -> v;
-@h4 Get element by index with bound check: {get}.
+@h4 Get element by index with bound check: @{get}.
 @felix
   //$ Checked common indexing.
   fun get[I in ints] (x:t, i:I) = { 
@@ -42,7 +42,7 @@ can be replaced by a more efficient implemention
 for some particular types.
 @h4 Projection function wrapper.
 We use the special lookup rules for provided by
-the {apply} function so that an application of
+the @{apply} function so that an application of
 an integer to an array is translated into a 
 call on the get method:
 @pre
@@ -56,7 +56,7 @@ operator dot {.} is also made available this way.
   //$  Checked common indexing.
   fun apply [I in ints] (i:I, x:t) => get (x,i.size);
 
-@h4 Callback based value iterator {iter}.
+@h4 Callback based value iterator @{iter}.
 @felix
   //$ Callback based value iterator.
   virtual proc iter (_f:v->void) (x:t) {
@@ -68,7 +68,7 @@ operator dot {.} is also made available this way.
     done
   }
 
-@h4 Callback based index and value iterator {iiter}.
+@h4 Callback based index and value iterator @{iiter}.
 @felix
   //$ Callback based index and value iterator.
   //$ Callback f index value.
@@ -81,17 +81,17 @@ operator dot {.} is also made available this way.
     done
   }
 
-@h4 Streaming iterator {iterator}.
-Class {Streamable} provides a set of functions based
-on a generated named {iterator} which returns an
+@h4 Streaming iterator @{iterator}.
+Class @{Streamable} provides a set of functions based
+on a generated named @{iterator} which returns an
 infinite stream of option values. Loops based on such
-streams work with any {Streamable} data type, including 
-{ArrayValue}.
+streams work with any @{Streamable} data type, including 
+@{ArrayValue}.
 
 Such loops operate by providing the loop body with the
-argument of the {Some} constructor of the option type
-obtained by a call to a closure of the {iterator} generator.
-When that object finally returns {None} to signal the end
+argument of the @{Some} constructor of the option type
+obtained by a call to a closure of the @{iterator} generator.
+When that object finally returns @{None} to signal the end
 of data, the loop terminates.
 @felix
   instance Streamable[t,v] {
@@ -108,7 +108,7 @@ of data, the loop terminates.
   }
 
   inherit Streamable[t,v];
-@h4 Callback based left fold {fold_left}.
+@h4 Callback based left fold @{fold_left}.
 This HOF folds the values in an array into an accumulator
 using the supplied function. The scan is left to right.
 @felix
@@ -124,7 +124,7 @@ using the supplied function. The scan is left to right.
     return o;
   }
 
-@h4 Callback based right fold {fold_right}.
+@h4 Callback based right fold @{fold_right}.
 This HOF folds the values in an array into an accumulator
 using the supplied function. The scan is right to left.
 @felix
@@ -140,7 +140,7 @@ using the supplied function. The scan is right to left.
     return o;
   }
 
-@h4 Callback base fold {fold}
+@h4 Callback base fold @{fold}
 This HOF folds array array into an accumulator
 using an associative user supplied function.
 Associative here means that the order in which
@@ -152,7 +152,7 @@ by another more efficient ordering in an overriding function.
   virtual fun fold[u] (_f:u->v->u) (init:u) (x:t): u => 
     fold_left _f init x
   ;
-@h4 Value search by predicate {mem}.
+@h4 Value search by predicate @{mem}.
 This function searches an array for a value that satifies
 the given predicate and returns a boolean value
 indicating whether one exists.
@@ -170,9 +170,9 @@ indicating whether one exists.
     return false;
   }
 
-@h4 Value search by relation to given value {mem}.
-This function searches an array for a value {i} that stands
-in the specified relation {rel} to a given value {v},
+@h4 Value search by relation to given value @{mem}.
+This function searches an array for a value @{i} that stands
+in the specified relation @{rel} to a given value @{v},
 where the relation is applied in that order: {rel(i,v)}.
 The usual relation to use is equality.
 @felix
@@ -181,7 +181,7 @@ The usual relation to use is equality.
     mem (fun (i:v) => rel(i, e)) x
   ;
 
-@h4 Value search by default equality {in}.
+@h4 Value search by default equality @{in}.
 This function uses the default equality operator {Eq[v]::==} for
 the array value type t to perform a search.
 @felix
@@ -193,8 +193,8 @@ the array value type t to perform a search.
   inherit[t,v with Eq[v]] Set[t,v];
 
 
-@h4 Value find and return using predicate {find}
-Same as our {mem} function except it returns the located value
+@h4 Value find and return using predicate @{find}
+Same as our @{mem} function except it returns the located value
 as an option type.
 @felix
   //$ Searching for value satisfying predicate.
@@ -210,8 +210,8 @@ as an option type.
     return None[v];
   }
 
-@h4 Value find and return using relation {find}
-Same as our {mem} function except it returns the located value
+@h4 Value find and return using relation @{find}
+Same as our @{mem} function except it returns the located value
 as an option type.
 @felix 
   //$ Searching for value satisfying relation to given value.
@@ -264,14 +264,14 @@ class ArrayObject[t,v]
 {
   inherit ArrayValue[t,v];
 
-@h3 Storing a value with {unsafe_set}.
+@h3 Storing a value with @{unsafe_set}.
 Modify an array object at a given index position
 by assigning a new value without a bounds check.
 @felix
   // Unsafe store value into array by common index.
   virtual proc unsafe_set: t * size * v;
 
-@h3 Fatching a pointer to an element with {unsafe_get_ref}.
+@h3 Fatching a pointer to an element with @{unsafe_get_ref}.
 Note this is problematic as it forces a value to
 addressabe be stored as an object. A bitarray
 will not satisfy this requirement. Do we need
@@ -279,7 +279,7 @@ another abstraction?
 @felix
   virtual fun unsafe_get_ref : t * size -> &v;
 
-@h3 Storing a value with {set}.
+@h3 Storing a value with @{set}.
 Modify an array object by assigning a new value
 to the slot at a given index position. Bounds checked.
 @felix
@@ -312,11 +312,11 @@ A contiguous array is one for which the store is
 certain to be contiguous and admits scanning
 the array directly using a pointer.
 
-Two methods, {stl_begin} and {stl_end} provide
+Two methods, @{stl_begin} and @{stl_end} provide
 pointers to the first element and one past the
 location of the last element, for traditional
 STL like array operations. These pointers have type
-{+v} where {v} is the element type. The named
+{+v} where @{v} is the element type. The named
 type {carray[v]} is an alias for {+v}. 
 @felix
 //$ Array as Contiguous STL Object.
@@ -343,7 +343,7 @@ an incrementable pointer to that element.
      return pa.stl_begin + i.size; 
   }
 
-@h3 Sort method using supplied comparator {sort}.
+@h3 Sort method using supplied comparator @{sort}.
 In place sort the contents of a contiuous array using STL
 sort and a supplied comparator, which must be a
 total order.
@@ -356,7 +356,7 @@ total order.
     Sort::stl_sort (z,first,last);
   }
 
-@h3 Sort method using default comparator {sort}.
+@h3 Sort method using default comparator @{sort}.
 Inplace sort using default comparator.
 @felix
   //$ In place sort using STL sort with default comparison.

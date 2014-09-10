@@ -56,23 +56,24 @@ div.m {
 
 div.m1 {
     position:relative;
-    top:2px;
     background-color: #70C000;
+    padding-top:2px;
     padding-left: 10px;
     border-style:outset;
     border-color:red;
     border-width:2px;
-    
+    font-size:90%;
 }
 
 div.m2 {
     position:relative;
-    top:2px;
     background-color: #70C070;
     padding-left:15px;
+    padding-top:2px;
     border-style:outset;
     border-color:green;
     border-width:2px;
+    font-size:80%;
 }
 
 
@@ -120,9 +121,9 @@ object fdoc_frame (d:fdoc_frame_data_t) implements fdoc_frame_t =
     o+='</div>\n';
 
     // Contents body
-    o+='<div style="position:fixed; top:48px; bottom:48px; left:14px; right:14px;'+
-       '  width:'+(toc_width - 26).str+'px;'+
-       ' padding:8px; border:4px;overflow:auto;'+
+    o+='<div style="position:fixed; top:48px; bottom:48px; left:14px; '+
+       '  width:'+(toc_width - 10).str+'px;'+
+       ' border:4px;overflow:auto;'+
        ' font-family:sans-serif; color:#404040; background-color:#70E0E0;">\n';
    
     proc head1(s:string,i:int) { 
@@ -137,7 +138,7 @@ object fdoc_frame (d:fdoc_frame_data_t) implements fdoc_frame_t =
     var counter = 0;
     iter proc (i:int,s:string) 
       { 
-        println$ i,s;
+        //println$ i,s;
         if i == 1 do
           if counter == 0 do ++counter; head1 (s,i); 
           else break1 (s,i); 

@@ -41,7 +41,7 @@ is just a variable with an initialiser with
 indeterminate evaluation semantics.
 
 Although these semantics are standard in Felix for
-the {val} binder, the indeterminacy doesn't
+the @{val} binder, the indeterminacy doesn't
 extent fibres: the compiler understands service
 calls in general but not details of what they do.
 
@@ -52,10 +52,10 @@ better performance and also relieves the programmer
 of the need to schedule calculations precisely.
 
 @h2 Implementation: private interface.
-We make an object with 3 methods. The {doget} method just
+We make an object with 3 methods. The @{doget} method just
 returns the cached value and must not be called until it
-is evaluated. The {fetched} method determines if the
-value has been calculated. The {fetch} method actually
+is evaluated. The @{fetched} method determines if the
+value has been calculated. The @{fetch} method actually
 evaluates and caches the value.
 @felix
   private interface future_private_t[T] { 
@@ -80,10 +80,10 @@ future computation down the channel.
     var ch = mk_schannel[T]();
     spawn_fthread { write (ch,#e); };
 @h3 Implementation: object state.
-We have two variables: a variable {x} to cache the result
-and a {flag} to say if the variable has been set or not.
-The {fetched} method just retuns the {flag}, and 
-the {doget} method just returns the variable {x}. 
+We have two variables: a variable @{x} to cache the result
+and a @{flag} to say if the variable has been set or not.
+The @{fetched} method just retuns the @{flag}, and 
+the @{doget} method just returns the variable @{x}. 
 @felix
     var x:T;
     var flag = false;
@@ -94,9 +94,9 @@ The fetch method reads the channel down which
 the fibre spawned by the constructor is scheduled
 to write the value, thereby forcing that computation
 to complete before continuing. Once the value is 
-acquired the result is stored in the cache variable {x}
-and the {flag} set to indicate it is available. 
-The schannel {ch} is no longer required so it is nulled
+acquired the result is stored in the cache variable @{x}
+and the @{flag} set to indicate it is available. 
+The schannel @{ch} is no longer required so it is nulled
 out to enable it, and the fibre hanging on it, to be
 reaped by the garbage collector.
 @felix
@@ -110,22 +110,22 @@ reaped by the garbage collector.
 
 @h2 Constructor.
 A future is created by {var fut = future expr;} where
-{expr} is a function of unit argument returning a value of type {T}.
+@{expr} is a function of unit argument returning a value of type @{T}.
 @felix
   ctor[T] future[T] (e:1->T) => _make_future (future_impl e);
  
 @h2 Accessor.
-The future accessor {get} ensure the computation is completed,
+The future accessor @{get} ensure the computation is completed,
 then fetches the resulting value. The value is cached so
 the computation is only performed once, no matter how many
-times {get} is called.
+times @{get} is called.
 
 Due to the restrictions on the use of schannel I/O in 
-Felix, the {get} function cannot work unless it is inlined
+Felix, the @{get} function cannot work unless it is inlined
 into a procedure controlled by a fibre scheduler.
-The {inline} annotation below is therefore mandatory.
+The @{inline} annotation below is therefore mandatory.
 Futures will not work if the Felix compiler fails
-to inline the {get} function.
+to inline the @{get} function.
 @felix
   inline gen get[T](fut:future[T]):T = { 
     if not #((_repr_ fut).fetched) call (_repr_ fut).fetch; 
@@ -134,7 +134,7 @@ to inline the {get} function.
 
 @h2 A more convenient accessor.
 To make use of futures more transparent we map an application
-of a future to the unit value {()} as a {get}. In turn,
+of a future to the unit value {()} as a @{get}. In turn,
 this allows the notation {#fut} to be used, giving the future
 the appearance of a constant.
 @felix

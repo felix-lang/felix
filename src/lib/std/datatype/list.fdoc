@@ -4,7 +4,7 @@ The core data type for most functional programming languages.
 @felix
 open class List
 {
-@h2 The {list} type.
+@h2 The @{list} type.
 @felix
   union list[T] = | Empty | Cons of T * list[T];
 
@@ -96,7 +96,7 @@ Another variant of the unsafe reversal.
     """
   ;
 
-@h2 List {copy}
+@h2 List @{copy}
 Make an entirely new copy of a list.
 Primarily a helper.
 @felix
@@ -107,7 +107,7 @@ Primarily a helper.
     return y;
   }
 
-@h2 Copy and return last {copy_last}
+@h2 Copy and return last @{copy_last}
 Yet another helper.
 @felix
   //$ Copy a list, and return last element as a list,
@@ -177,7 +177,7 @@ Constructor variant.
 @felix
   //$ Contrue a list as an array value
   instance[T] ArrayValue[list[T],T] {
-@h3 Core routine {len}
+@h3 Core routine @{len}
 @felix
     //$ Return umber of elements in a list.
     pure fun len (x:list[T]) = {
@@ -189,7 +189,7 @@ Constructor variant.
       ;
       return aux 0uz x;
     }
-@h3 Core routine {unsafe_get}
+@h3 Core routine @{unsafe_get}
 @felix
     //$ get n'th element
     pure fun unsafe_get: list[T] * size -> T =
@@ -197,7 +197,7 @@ Constructor variant.
       | Cons (_,?t), ?i => unsafe_get (t, i - 1uz)
     ;
 
-@h3 Default performance override {iter}
+@h3 Default performance override @{iter}
 @felix
     //$ Apply a procedure to each element of a list.
     proc iter (_f:T->void) (x:list[T]) {
@@ -208,7 +208,7 @@ Constructor variant.
       ;
     }
 
-@h3 Default performance override {fold_left}
+@h3 Default performance override @{fold_left}
 @felix
     //$ Traditional left fold over list (tail rec).
     fun fold_left[U] (_f:U->T->U) (init:U) (x:list[T]):U =
@@ -222,7 +222,7 @@ Constructor variant.
       return aux init x;
     }
 
-@h3 Default performance override {fold_right}
+@h3 Default performance override @{fold_right}
 @felix
     //$ Right fold over list (not tail rec!).
     fun fold_right[U] (_f:T->U->U) (x:list[T]) (init:U):U =
@@ -238,7 +238,7 @@ Constructor variant.
 
   }
 
-@h2 Test for empty list {is_empty}
+@h2 Test for empty list @{is_empty}
 @felix
   //$ Test if a list is empty.
   pure fun is_empty[T] : list[T] -> 2 =
@@ -246,7 +246,7 @@ Constructor variant.
     | _ => false
   ;
 
-@h2 Tail of a list {tail}
+@h2 Tail of a list @{tail}
 @felix
   //$ Tail of a list, abort with match failure if list is empty.
   pure fun tail[T] (x:list[T]) : list[T] = {
@@ -255,7 +255,7 @@ Constructor variant.
     endmatch;
   }
 
-@h2 Head of a list {head}
+@h2 Head of a list @{head}
 @felix
   //$ Head of a list, abort with match failure if list is empty.
   pure fun head[T] (x:list[T]) : T = {
@@ -264,7 +264,7 @@ Constructor variant.
     endmatch;
   }
 
-@h2 Reverse map a list {rev_map}
+@h2 Reverse map a list @{rev_map}
 Tail recursive.
 @felix
   //$ map a list, return mapped list in reverse order (tail rec).
@@ -278,7 +278,7 @@ Tail recursive.
     return aux x Empty[U];
   }
 
-@h2 Map a list {map}
+@h2 Map a list @{map}
 Tail recursive. Uses rev_map and then inplace revseral.
 This is safe because we enforce linearity by abstraction.
 @felix
@@ -291,7 +291,7 @@ This is safe because we enforce linearity by abstraction.
     return r;
   }
 
-@h2 Reverse a list {rev}.
+@h2 Reverse a list @{rev}.
 Tail recursive.
 @felix
   //$ reverse a list (tail rec).
@@ -308,7 +308,7 @@ Tail recursive.
     return aux x Empty[T];
   }
 
-@h2 Zip a pair of lists to a list of pairs {zip2}
+@h2 Zip a pair of lists to a list of pairs @{zip2}
 Returns a list the length of the shortest argument.
 @felix
   //$ Zip two lists into a list of pairs.
@@ -324,8 +324,8 @@ Returns a list the length of the shortest argument.
     return aux l1 l2 Empty[T1 * T2];
   }
 
-@h2 A list of integers {range}.
-From {low} to {high} exclusive with given {step}.
+@h2 A list of integers @{range}.
+From @{low} to @{high} exclusive with given @{step}.
 @felix
   //$ Generate an ordered list of ints between low and high with given step.
   //$ Low included, high not included.
@@ -358,18 +358,18 @@ From {low} to {high} exclusive with given {step}.
     ;
   }
 
-@h2 Consecutive integers {range}
+@h2 Consecutive integers @{range}
 @felix
   //$ Range with step 1.
   fun range (low:int, high:int) => range(low, high, 1);
 
-@h2 Non-negative integers to limit {range}
-{num} integers 0 to {num-1}.
+@h2 Non-negative integers to limit @{range}
+@{num} integers 0 to {num-1}.
 @felix
   //$ Range from 0 to num (excluded).
   fun range (num:int) => range(0, num, 1);
 
-@h2 Concatenate two lists {join}.
+@h2 Concatenate two lists @{join}.
 @felix
   //$ Concatenate two lists.
   fun join[T] (x:list[T]) (y:list[T]):list[T] =
@@ -402,7 +402,7 @@ O(N) slow.
   //$ Append element to tail of list (slow!).
   proc += [T] (x:&list[T], y:T) { x <- *x + y; }
 
-@h2 Concatenate a list of lists {cat}
+@h2 Concatenate a list of lists @{cat}
 @felix
   //$ Concatenate all the lists in a list of lists.
   noinline fun cat[T] (x:list[list[T]]):list[T] =
@@ -415,7 +415,7 @@ O(N) slow.
      ;
    }
 
-@h2 Pack list of strings into a string with separator {cat}
+@h2 Pack list of strings into a string with separator @{cat}
 @felix
   //$ Concatenate all the strings in a list with given separator.
   pure fun cat (sep:string) (x:list[string]):string =
@@ -429,7 +429,7 @@ O(N) slow.
     ;
   }
 
-@h2 Map a list to a list of strings and cat with separator {catmap}
+@h2 Map a list to a list of strings and cat with separator @{catmap}
 @felix
   fun catmap[T] (sep:string) (f:T -> string) (ls: list[T]) =>
     cat sep (map f ls)
@@ -467,7 +467,7 @@ O(N) slow.
     fun \in (x:T, a:list[T]) => mem[T,T] eq of (T * T) a x;
   }
 
-@h2 Value Find by relation {find}
+@h2 Value Find by relation @{find}
 Returns option.
 @felix
   //$ return option of the first element in a list satisfying the predicate.
