@@ -396,6 +396,271 @@ proc serve_forbidden (k:socket_t, fname:string, get:bool) {
    write_string(k,data,&eof_flag);
 }
 
+fun find_defs (lines:string) : darray[int * int * string] =
+{
+
+  var fregex = ".*\\.(flx|fdoc)";
+  open Regdef;
+  regdef anychar = perl (".");
+
+  regdef letter = charset "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  regdef digit = charset "0123456789";
+  regdef id1 = letter | "_";
+  regdef id2 = id1 | digit | "-" | "'";
+  regdef id = id1 id2*;
+
+  regdef tex = "\\" letter*;
+  regdef symbol1 = "+-*/%^";
+  regdef symbol = symbol1 | symbol1 symbol1 | symbol1 symbol1 symbol1;
+  regdef name = id | symbol;
+  regdef spaces = " "*;
+  regdef vlist =  "[" spaces id (spaces "," spaces id)* spaces "]";
+   
+  regdef adjective = "pure" | "inline" | "noinline" | "pod" | "open" | "virtual";
+  regdef binder = "fun" | "proc" | "gen" | "class" | "union" | "struct" | "type" | "typedef" | "ctor" (spaces vlist)?;
+
+  regdef indent2 = "  ";
+
+  regdef classbind= group ("class" | "open class");
+  regdef otherbind= indent2? group (adjective* spaces binder);
+
+  // Group 1 = class
+  // Group 2 = other 
+  // group 3 = identifier
+  regdef decl = (classbind | otherbind) spaces group (name) anychar*;
+
+  var emptystring = "";
+  var emptystringpiece = StringPiece emptystring;
+
+  var lregex = decl . render;
+  var lgrep = RE2 lregex;
+  var n = NumberOfCapturingGroups(lgrep)+1;
+  var v = varray[StringPiece] (n.size,emptystringpiece);
+
+  var extract = RE2 " *([^={]*) *(=|{|;).*";
+  var n2 = NumberOfCapturingGroups(extract)+1;
+  var v2 = varray[StringPiece] (n2.size,emptystringpiece);
+
+  var scomment = RE2 " *//[$](.*)";
+  var vcomment = varray[StringPiece] (2.size, emptystringpiece);
+  var count = 0;
+  var comments = Empty[string];
+
+  var h = darray[int * int * string] ();
+  var lno = 1;
+  for line in split (lines,char "\n") do
+    ++count;
+    var spl = StringPiece line;
+
+    match lgrep line with
+    | Some ?v =>
+      var sym = v.3;
+      var dfn = "";
+      var m2 = Match (extract, spl, 0, ANCHOR_BOTH, v2.stl_begin, n2);
+      if m2 do
+        dfn = v2 . 1 . string . strip;
+      else
+        dfn = line . strip;
+      done
+      //println$ "DEFN: " + dfn;
+      var level = if line.[0] == " " then 2 else 1 endif;
+      push_back (h, (level, lno, dfn));
+
+    | None => ;
+    endmatch; //d grexp
+    ++lno;
+  done // line
+  return h;
+}
+
+var menu_js = """
+<script type="text/javascript">
+
+function mexpand(id)
+{
+  var n = document.getElementById(id).style;
+  n.display = "block";
+}
+
+function mcollapse(id)
+{
+  var n = document.getElementById(id).style;
+  n.display = "none";
+}
+
+var counter_max = 0;
+function mshow(id,loc)
+{
+  var i;
+  for(i=1; i<=counter_max; ++i) 
+    mcollapse("menu"+String(i));
+  mexpand(id);
+  window.location.replace(loc);
+}
+
+function hilite(obj)
+{
+  obj.style.backgroundColor = "white";
+}
+
+function leave1(obj)
+{
+  obj.style.backgroundColor = "#70C000";
+}
+function leave2(obj)
+{
+  obj.style.backgroundColor = "#70C070";
+}
+</script>
+""";
+
+var menu_style = """
+<style>
+div.m {
+    margin: 0px;
+    padding:0px;
+    border-width:2px;
+    border-color: green;
+}
+
+div.m1 {
+    position:relative;
+    background-color: #70C000;
+    padding-top:2px;
+    padding-left: 10px;
+    border-style:outset;
+    border-color:red;
+    border-width:2px;
+    font-size:90%;
+}
+
+div.m2 {
+    position:relative;
+    background-color: #70C070;
+    padding-left:15px;
+    padding-top:2px;
+    border-style:outset;
+    border-color:green;
+    border-width:2px;
+    font-size:80%;
+}
+
+
+</style>
+""";
+
+
+noinline fun wrap_html (h:darray[int * int * string], out:string) :string = {
+
+  var frame_colour = "#C0C0B0";
+  var page_colour = "#E0E0E0";
+  var text_colour = "#404040";
+  var toc_width = 200; // should be 0, temporary hack for testing!
+
+  var o = "";
+  reserve(&o,10000+out.len.int);
+  o+=menu_js;
+  o+=menu_style;
+
+  // Whole page defaults and background
+  o+='<div style="background-color:'+page_colour+'; font-family:sans-serif; color:'+text_colour+'">';
+
+  // LEFT MARGIN
+  // fixed top nav bar 
+  o+='<div style="position:fixed; top:10px;  left:10px; width:'+
+  (toc_width - 10).str+'px; height:30px;' +
+  ' background-color:'+frame_colour+'; padding:4px;'+
+  ' border-top-left-radius:10px; border-top-right-radius:10px">';
+  o+='</div>\n';
+
+  // left border
+  o+='<div style="position:fixed; top:40px; bottom:40px; left:10px; width:4px;' +
+    ' background-color:'+ frame_colour+ ';">';
+  o+='</div>\n';
+
+  // Contents body
+  o+='<div style="position:fixed; top:48px; bottom:48px; left:14px; '+
+     '  width:'+(toc_width - 10).str+'px;'+
+     ' border:4px;overflow:auto;'+
+     ' font-family:sans-serif; color:#404040; background-color:#70E0E0;">\n';
+ 
+  proc head1(s:string,lno:int) { 
+    o+= """<div class=m1 onclick="mshow('menu"""+ counter.str+"""','#line"""+lno.str+"""')" """;
+    o+=" onmouseover='hilite(this)' onmouseout='leave1(this)' >";
+    o+= s+"</div>\n";
+    o+= """<div class=sm id=menu"""+counter.str+""">\n""";
+  }
+  proc foot1() { o+="</div>\n"; } 
+  proc break1(s:string,i:int) {foot1(); ++counter; head1(s,i); }
+
+  var counter = 0;
+  iter proc (level:int,lno:int, s:string) 
+    { 
+      //println$ i,s;
+      if level == 1 do
+        if counter == 0 do ++counter; head1 (s,lno); 
+        else break1 (s,lno); 
+        done
+      elif level == 2 do
+        o+="<div class=m2 onmouseover='hilite(this)'";
+        o+=" onmouseout='leave2(this)'";
+        o+=""" onclick='window.location.replace("#line"""+lno.str+"""")'>"""+s+"""</div>\n""";
+      done
+    } 
+    h
+  ;
+  if counter > 1 do  foot1; done;
+  o+="<script>counter_max="+counter.str+";</script>\n";
+
+   // right border
+  o+='<div style="position:fixed; top:40px; bottom:40px; left:'+(toc_width + 4).str+'px; width:4px;' +
+    ' background-color:'+ frame_colour+ ';">';
+  o+='</div>';
+
+  // fixed bottom nav bar
+  o+='<div style="position:fixed; bottom:10px;  left:10' +
+    'px; width:'+(toc_width - 10).str+'px; height:30px;' +
+  ' background-color:'+frame_colour+';padding:4px;'+
+  ' border-bottom-left-radius:10px; border-bottom-right-radius:10px"\n>';
+  o+='</div>\n';
+
+  // MAIN CONTENT
+  // fixed top nav bar 
+  o+='<div style="position:fixed; top:10px;  left:'+(toc_width+10).str+'px; right:10px; height:30px;' +
+  ' background-color:'+frame_colour+'; padding:4px;'+
+  ' border-top-left-radius:10px; border-top-right-radius:10px">';
+  o+='</div>\n';
+
+  // left border
+  o+='<div style="position:fixed; top:40px; bottom:40px; left:'+(toc_width+10).str+'px; width:4px;' +
+    ' background-color:'+ frame_colour+ ';">';
+  o+='</div>';
+
+  // body
+  o+='<div style="position:fixed; top:48px; bottom:48px; left:'+(toc_width+14).str+
+     'px; right:14px; padding:8px;'+
+  ' border:4px;overflow:auto; font-family:sans-serif;'+
+  ' color:'+text_colour+'; background-color:'+page_colour+';">';
+  o+=out;
+  o+='</div>\n';
+
+   // right border
+  o+='<div style="position:fixed; top:40px; bottom:40px; right:10px; width:4px;' +
+    ' background-color:'+ frame_colour+ ';">';
+  o+='</div>';
+
+  // fixed bottom nav bar
+  o+='<div style="position:fixed; bottom:10px;  left:'+(toc_width+10).str+
+    'px; right:10px; height:30px;' +
+  ' background-color:'+frame_colour+';padding:4px;'+
+  ' border-bottom-left-radius:10px; border-bottom-right-radius:10px"\n>';
+  o+='</div>\n';
+
+  o+='</div>'; // whole page end
+  return o;
+}
+
+
 var edit_flag = false; // HACK!!!!!!!!
 
 proc serve_felix (k:socket_t, fname:string, get:bool) {
@@ -407,13 +672,15 @@ proc serve_felix (k:socket_t, fname:string, get:bool) {
     else
       val text = load path;
       println$ "Loaded felix file " + fname+", len="+str (text.len.int);
+      var h =find_defs (text); 
       val dirname = Filename::dirname path;
       def val needs_mathjax, val html = xlat_felix(text,dirname);
+      var wrapped_html = wrap_html (h,"<pre>"+html+"</pre>");
       val data = make_html$
         "<html><head>"+Css4Html::flx_head+
          if needs_mathjax then mathjax else "" endif +
-        "</head><body><pre>"+ html +
-        "</pre></body></html>\n\r",
+        "</head><body>"+ wrapped_html +
+        "</body></html>\n\r",
         list[string*string](("Cache-control","max-age=86400"))
       ;
       write_string(k,data,&eof_flag);

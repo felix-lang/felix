@@ -37,7 +37,7 @@ fun lc (x:string) = {
   var count = 0;
   for line in lines do
     ++count;
-    //result += f"<span class=\"lineno\" id=\"%04d\">%04d: </span> %S\n" (count,count,line);
+    result += '<span class="lineno" id=line'+count.str+'></span>';
     result += '  ' +line+'\n';
   done
   return result;

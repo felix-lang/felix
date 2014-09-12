@@ -251,7 +251,7 @@ void flx_collector_t::impl_finalise(void *fp)
   if (finaliser)
   {
     unsigned char *cp = (unsigned char*)fp;
-    unsigned long n_used = get_count(fp) * shape->count;
+    unsigned long n_used = get_used(fp) * shape->count;
     unsigned long eltsize = shape->amt;
     //fprintf(stderr, "Finalising at %p for type %s %ld objects each size %ld\n", cp, shape->cname, n_used, eltsize);
     for(unsigned long j = 0; j<n_used; ++j)
