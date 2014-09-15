@@ -346,7 +346,7 @@ like variant which uses an {option} type.
   fun rev_split (x:string, d:string): List::list[string] = {
     fun aux (pos:int,y:List::list[string]) =>
       match stl_find_first_of (x, d, pos) with
-      | $(stl_npos.int) => y
+      | $(stl_npos.int) => List::Cons (x.[pos to],y)
       | ?n => aux$ (n+1), List::Cons (x.[pos to n],y)
       endmatch
     ;
