@@ -1,6 +1,5 @@
 // ISO C++99 standard header tags
-include "std/cxx_headers";
-include "std/c_headers";
+include "std/c/__init__";
 
 // core type classes
 include "std/flx_tclass";
@@ -8,15 +7,12 @@ include "std/order";
 include "std/algebraic";
 
 // base scalar types 
-include "std/cptr";
 
 include "std/scalar/__init__";
 
 // utility
 include "std/debug";
-include "std/c_hack";
 include "std/typing";
-include "std/cstdlib";
 include "std/categ";
 
 // control
@@ -36,7 +32,6 @@ include "std/codec/__init__";
 // base data types
 include "std/datatype/__init__";
 include "std/strings/__init__";
-include "std/carray";
 
 // database
 include "std/db/__init__";

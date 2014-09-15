@@ -315,7 +315,8 @@ int flx_world::run_until_blocked() {
   catch (std::exception &x) { return - std_exception_handler (&x); }
   catch (int &x) { fprintf (stderr, "Exception type int: %d\n", x); return -x; }
   catch (::std::string &x) { fprintf (stderr, "Exception type string : %s\n", x.c_str()); return -1; }
-  catch (...) { fprintf(stderr, "Unknown exception in thread!\n"); return -5; }
+  catch (::flx::rtl::con_t &x) { fprintf (stderr, "Rogue continuatiuon caught\n"); return -6; }
+  catch (...) { fprintf(stderr, "[flx_world:run_until_blocked] Unknown exception in thread!\n"); return -5; }
 }
 
 int flx_world::run_until_complete () {
@@ -329,7 +330,8 @@ int flx_world::run_until_complete () {
   catch (std::exception &x) { return - std_exception_handler (&x); }
   catch (int &x) { fprintf (stderr, "Exception type int: %d\n", x); return -x; }
   catch (::std::string &x) { fprintf (stderr, "Exception type string : %s\n", x.c_str()); return -1; }
-  catch (...) { fprintf(stderr, "Unknown exception in thread!\n"); return -5; }
+  catch (::flx::rtl::con_t &x) { fprintf (stderr, "Rogue continuatiuon caught\n"); return -6; }
+  catch (...) { fprintf(stderr, "[flx_world:run_until_complete] Unknown exception in thread!\n"); return -5; }
 }
 
 

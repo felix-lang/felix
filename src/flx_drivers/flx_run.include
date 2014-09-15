@@ -335,7 +335,8 @@ int FELIX_MAIN (int argc, char** argv)
     world->begin_flx_code();
 
     // Run the felix usercode.
-    world->run_until_complete();
+    error_exit_code = world->run_until_complete();
+    if(0 != error_exit_code) return error_exit_code;
 
     world->end_flx_code();
 

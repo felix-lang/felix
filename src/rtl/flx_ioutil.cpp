@@ -40,7 +40,7 @@ namespace flx { namespace rtl { namespace ioutil {
 
 
 /* small buffer for testing, should be much large in production version */
-#define MYBUFSIZ 5120
+#define MYBUFSIZ 51200
 
   string load_file (string f)
   {
@@ -54,7 +54,7 @@ namespace flx { namespace rtl { namespace ioutil {
       char buffer[MYBUFSIZ];
       while (!feof(fi)) {
         int n = fread(buffer,1,MYBUFSIZ,fi);
-        if(n>0) x = x + string(buffer,n);
+        if(n>0) x += string(buffer,n);
         else break;
       }
       fclose(fi);
@@ -93,7 +93,7 @@ namespace flx { namespace rtl { namespace ioutil {
 next:
       bool eof = fgets(buffer, MYBUFSIZ, fi) == 0;
       if(eof) return x;
-      x = x + string(buffer);
+      x += string(buffer);
       if(x[x.size()-1]=='\n') return x;
       goto next;
     }
