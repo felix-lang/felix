@@ -4713,15 +4713,24 @@ print_endline ("Bound f = " ^ sbe bsym_table f);
           *)
           let vidx =
             let rec scan = function
-            | [] -> failwith ("EXPR_match_ctor: Can't find union variant " ^ name)
-            | (vn,vidx,vs',vat)::_ when vn = name -> vidx
+            | [] -> None
+            | (vn,vidx,vs',vat)::_ when vn = name -> Some vidx
             | _:: t -> scan t
             in scan ls
           in
-          (*
-          print_endline ("Index is " ^ si vidx);
-          *)
-          bexpr_match_case flx_bbool (vidx,ue)
+          begin match vidx with
+          | Some vidx ->
+            (*
+            print_endline ("Index is " ^ si vidx);
+            *)
+            bexpr_match_case flx_bbool (vidx,ue)
+
+          | None->
+            let fname = EXPR_name (sr,"_match_ctor_" ^ name,ts) in
+            be (EXPR_apply ( sr, (fname,e)))
+
+            (* failwith ("EXPR_match_ctor: Can't find union variant " ^ name) *)
+          end
 
         (* this handles the case of a C type we want to model
         as a union by provding _match_ctor_name style function
@@ -4731,9 +4740,21 @@ print_endline ("Bound f = " ^ sbe bsym_table f);
           let fname = EXPR_name (sr,"_match_ctor_" ^ name,ts) in
           be (EXPR_apply ( sr, (fname,e)))
 
-        | _ -> clierr sr ("expected union of abstract type, got" ^ sbt bsym_table ut)
+        (* experimental!! Allow for any nominal type other than union *)
+        | _ ->
+          let fname = EXPR_name (sr,"_match_ctor_" ^ name,ts) in
+          be (EXPR_apply ( sr, (fname,e)))
+
+        (* | _ ->  clierr sr ("expected union of abstract type, got" ^ sbt bsym_table ut) *)
         end
-      | _ -> clierr sr ("expected nominal type, got" ^ sbt bsym_table ut)
+
+      (* experimental!! Allow for any type other than union *)
+      | _ -> 
+        let fname = EXPR_name (sr,"_match_ctor_" ^ name,ts) in
+        be (EXPR_apply ( sr, (fname,e)))
+
+ 
+      (* | _ -> clierr sr ("expected nominal type, got" ^ sbt bsym_table ut) *)
       end
 
     | `AST_typed_case (sr,v,_)
@@ -4786,35 +4807,43 @@ print_endline ("Bound f = " ^ sbe bsym_table f);
 (* print_endline ("Constructor to extract " ^ name ^ " should agree with encoded constuctor " ^ id); *)
 (* print_endline ("Union parent vs = " ^ catmap "," (fun (s,_,_) -> s) parent_vs ^ " local vs = " ^ catmap "," (fun (s,_,_) -> si i) vs''); *)
 
-          let vidx,vs', vt =
+          let result =
             let rec scan = function
-            | [] -> failwith ("EXPR_ctor_arg: Can't find union variant " ^ name);
-            | (vn,vidx,vs',vt)::_ when vn = name -> vidx,vs',vt
+            | [] -> None
+            | (vn,vidx,vs',vt)::_ when vn = name -> Some (vidx,vs',vt)
             | _:: t -> scan t
             in scan ls
           in
+          begin match result with
+          | None ->
+            let fname = EXPR_name (sr,"_ctor_arg_" ^ name,ts) in
+            be (EXPR_apply ( sr, (fname,e)))
+            (* failwith ("EXPR_ctor_arg: Can't find union variant " ^ name); *)
+
+          | Some ( vidx,vs', vt) ->
+
 (*          print_endline ("Constructor Index is " ^ si vidx ^ " vs'=" ^ catmap "," fst (fst vs')); *)
-          let vt =
-            let bvs = List.map
-              (fun (n,i,_) -> n, btyp_type_var (i, btyp_type 0))
-              vs
-            in
+            let vt =
+              let bvs = List.map
+                (fun (n,i,_) -> n, btyp_type_var (i, btyp_type 0))
+                vs
+              in
 (*            print_endline ("Binding ctor arg type = " ^ string_of_typecode vt); *)
-            let env' = build_env state bsym_table (Some i) in
-            bind_type' state bsym_table env' rsground sr vt bvs mkenv
-          in
+              let env' = build_env state bsym_table (Some i) in
+              bind_type' state bsym_table env' rsground sr vt bvs mkenv
+            in
 (*          print_endline ("Bound polymorphic arg type = " ^ sbt bsym_table vt); *)
-          let vs' = List.map (fun (s,i,tp) -> s,i) vs in
+            let vs' = List.map (fun (s,i,tp) -> s,i) vs in
 (*          print_endline ("vs in union type = " ^ catmap "," (fun (s,i) -> s ^ "<" ^ si i ^ ">") vs'); *)
 (*          print_endline ("ts' to bind to them = " ^ catmap "," (sbt bsym_table) ts'); *)
 (*
           let ts' = adjust_ts state.sym_table bsym_table sr i ts' in
           print_endline ("ts' to bind to them after adjust = " ^ catmap "," (sbt bsym_table) ts');
 *)
-          let vt = tsubst vs' ts' vt in
+            let vt = tsubst vs' ts' vt in
 (*          print_endline ("Instantiated type = " ^ sbt bsym_table vt); *)
-          bexpr_case_arg vt (vidx,ue)
-
+            bexpr_case_arg vt (vidx,ue)
+          end
         (* this handles the case of a C type we want to model
         as a union by provding _ctor_arg style function
         as C primitives ..
@@ -4823,9 +4852,19 @@ print_endline ("Bound f = " ^ sbe bsym_table f);
           let fname = EXPR_name (sr,"_ctor_arg_" ^ name,ts) in
           be (EXPR_apply ( sr, (fname,e)))
 
-        | _ -> failwith "Woooops expected union or abstract type"
+        (* experimental allow for any nominal type other than union *)
+        | _ ->
+          let fname = EXPR_name (sr,"_ctor_arg_" ^ name,ts) in
+          be (EXPR_apply ( sr, (fname,e)))
+
+        (* | _ -> failwith "Woooops expected union or abstract type" *)
         end
-      | _ -> failwith "Woops, expected nominal type"
+      (* experimental allow for any type other than union *)
+      | _ ->
+        let fname = EXPR_name (sr,"_ctor_arg_" ^ name,ts) in
+        be (EXPR_apply ( sr, (fname,e)))
+
+      (* | _ -> failwith "Woops, expected nominal type" *)
       end
 
 
