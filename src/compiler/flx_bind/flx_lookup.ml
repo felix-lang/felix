@@ -4726,10 +4726,14 @@ print_endline ("Bound f = " ^ sbe bsym_table f);
             bexpr_match_case flx_bbool (vidx,ue)
 
           | None->
-            let fname = EXPR_name (sr,"_match_ctor_" ^ name,ts) in
-            be (EXPR_apply ( sr, (fname,e)))
-
-            (* failwith ("EXPR_match_ctor: Can't find union variant " ^ name) *)
+            begin try
+              let fname = EXPR_name (sr,"_match_ctor_" ^ name,ts) in
+              be (EXPR_apply ( sr, (fname,e)))
+            with _ -> 
+              clierr sr ("[flx_lookup: EXPR_match_ctor]: Can't find union variant " ^ name ^ 
+                 " or bind user function _match_ctor_" ^ name ^ " to arg " ^ 
+                 string_of_expr e)
+            end
           end
 
         (* this handles the case of a C type we want to model
@@ -4816,9 +4820,15 @@ print_endline ("Bound f = " ^ sbe bsym_table f);
           in
           begin match result with
           | None ->
-            let fname = EXPR_name (sr,"_ctor_arg_" ^ name,ts) in
-            be (EXPR_apply ( sr, (fname,e)))
-            (* failwith ("EXPR_ctor_arg: Can't find union variant " ^ name); *)
+            begin try
+              let fname = EXPR_name (sr,"_ctor_arg_" ^ name,ts) in
+              be (EXPR_apply ( sr, (fname,e)))
+            with _ ->
+              clierr sr ("[flx_lookup: EXPR_ctor_arg]: Can't find union variant " ^ name ^ 
+                 " or bind user function _ctor_arg_" ^ name ^ " to arg " ^ 
+                 string_of_expr e)
+            end
+(* failwith ("EXPR_ctor_arg: Can't find union variant " ^ name); *)
 
           | Some ( vidx,vs', vt) ->
 
