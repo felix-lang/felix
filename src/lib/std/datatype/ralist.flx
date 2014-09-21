@@ -80,6 +80,19 @@ class Ralist
     endmatch;
   }
 
+  //$ User define pattern matching support
+  fun _match_ctor_Cons[T] (x:ralist[T]) =>not ( ralist_empty x);
+  fun _match_ctor_Empty[T] (x:ralist[T]) => ralist_empty x;
+
+  fun _ctor_arg_Cons[T] (x:ralist[T]) : T * ralist[T] =
+  {
+    var elt : T;
+    var tail : ralist[T];
+    ralist_uncons (x, &elt, &tail);
+    return elt,tail;
+  }
+
+
   //$ Head element of a non-empty ralist.
   fun ralist_head[a] (xs: ralist[a]) : a =
   {
