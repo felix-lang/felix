@@ -357,7 +357,7 @@ let resolve sym_table bsym_table base_sym bt be arg_types =
    * the order of binding the compiler happens to pick! FIX IT!
    *)
   match opt_bsym with
-  | Some {Flx_bsym.id=id;sr=sr;vs=view_bvs;bbdcl=Flx_bbdcl.BBDCL_fun (props,base_bvs,ps,rt,_)} ->
+  | Some {Flx_bsym.id=id;sr=sr;bbdcl=Flx_bbdcl.BBDCL_fun (props,base_bvs,ps,rt,_)} ->
 (*
     print_endline ("Found function binding for " ^ id);
 *)

@@ -149,14 +149,3 @@ type symbol_definition_t =
 
 (* -------------------------------------------------------------------------- *)
 
-(*
-let print_bid = pp_print_int
-
-(** Prints out a bvs_t to a formatter. *)
-let print_bvs f xs =
-  Flx_list.print begin fun f (name, bid) ->
-    Flx_format.print_tuple2 f
-      Flx_format.print_string name
-      print_bid bid
-  end f xs
-*)

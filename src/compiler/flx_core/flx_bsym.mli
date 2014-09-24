@@ -2,7 +2,6 @@
 type t = {
   id:Flx_id.t;
   sr:Flx_srcref.t;
-  vs:Flx_types.ivs_list_t;
   bbdcl:Flx_bbdcl.t;
 }
 
@@ -10,7 +9,6 @@ type t = {
 (** Constructs a bound symbol value. *)
 val create:
   ?sr:Flx_srcref.t ->
-  ?vs:Flx_types.ivs_list_t ->
   Flx_id.t -> Flx_bbdcl.t ->
   t
 
@@ -23,7 +21,6 @@ val replace_bbdcl: t -> Flx_bbdcl.t -> t
 
 val id: t -> Flx_id.t
 val sr: t -> Flx_srcref.t
-val vs: t -> Flx_types.ivs_list_t
 val bbdcl: t -> Flx_bbdcl.t
 
 (** Return if the bound symbol is an identity function. *)

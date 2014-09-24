@@ -331,7 +331,6 @@ let copy_used1 syms bsym_table =
           let bbdcl = Flx_bbdcl.bbdcl_fun  (prop, bvs, ps, res, exes) in
           Flx_bsym.create 
             ~sr:(bsym.Flx_bsym.sr) 
-            ~vs:(bsym.Flx_bsym.vs) 
             bsym.Flx_bsym.id  
             bbdcl
         | _ -> bsym

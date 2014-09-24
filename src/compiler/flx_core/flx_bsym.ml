@@ -2,31 +2,26 @@
 type t = {
   id:Flx_id.t;
   sr:Flx_srcref.t;
-  vs:Flx_types.ivs_list_t;
   bbdcl:Flx_bbdcl.t;
 }
 
 let create
   ?(sr=Flx_srcref.dummy_sr)
-  ?(vs=Flx_ast.dfltvs)
   id bbdcl
 =
   { id=id;
     sr=sr;
-    vs=vs;
     bbdcl=bbdcl }
 
 let of_sym sym bbdcl =
   { id=sym.Flx_sym.id;
     sr=sym.Flx_sym.sr;
-    vs=sym.Flx_sym.vs;
     bbdcl=bbdcl }
 
 let replace_bbdcl bsym bbdcl = { bsym with bbdcl=bbdcl }
 
 let id bsym = bsym.id
 let sr bsym = bsym.sr
-let vs bsym = bsym.vs
 let bbdcl bsym = bsym.bbdcl
 
 (** Return if the bound symbol is an identity function. *)
