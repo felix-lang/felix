@@ -199,7 +199,8 @@ let optimize_bsym_table' syms bsym_table root_proc clean_bsym_table =
   (* Find the root and exported functions and types. *)
   Flx_use.find_roots syms bsym_table root_proc syms.Flx_mtypes2.bifaces;
 
-  let _= Flx_numono.monomorphise2 true syms bsym_table in
+  (* comment out for production until it works *)
+  (* let bsym_table = Flx_numono.monomorphise2 true syms bsym_table in *)
 
 
   (* Clean up the symbol table. *)
