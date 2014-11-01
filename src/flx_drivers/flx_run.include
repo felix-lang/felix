@@ -42,14 +42,6 @@ using namespace std;
 using namespace flx::rtl;
 using namespace flx::run;
 
-#if FLX_HAVE_GNU_X86
-register void *sp __asm__("esp");
-#elif FLX_HAVE_GNU_X86_64
-register void *sp __asm__("rsp");
-#else
-static void *sp = 0;
-#endif
-
 // non async drivers don't depend on faio<-demux<-winsock
 // and so aren't linked with mswsock and ws2_32
 #if FLX_WIN32 && FLX_SUPPORT_ASYNC
