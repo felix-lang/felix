@@ -2274,7 +2274,9 @@ and string_of_bbdcl bsym_table bbdcl index : string =
   | BBDCL_external_type (vs,quals,code,reqs) ->
     (match quals with [] ->"" | _ -> string_of_bquals bsym_table quals ^ " ") ^
     "type " ^ name ^  string_of_bvs vs ^
-    " = " ^ string_of_code_spec code ^ ";"
+    " = " ^ string_of_code_spec code ^ 
+    string_of_breqs bsym_table reqs ^
+    ";"
 
   | BBDCL_external_const (props, vs,ty,code,reqs) ->
     string_of_properties props ^
@@ -2309,7 +2311,8 @@ and string_of_bbdcl bsym_table bbdcl index : string =
      ) ^
     name^  string_of_bvs vs ^
     " "^ string_of_code_spec s ^
-    string_of_breqs bsym_table reqs
+    string_of_breqs bsym_table reqs ^ 
+    ":"
 
   | BBDCL_union (vs,cs) ->
     let string_of_union_component (name,v,ty) =
@@ -2352,12 +2355,12 @@ and string_of_bbdcl bsym_table bbdcl index : string =
 
   | BBDCL_const_ctor (vs,uidx,ut,ctor_idx, evs, etraint) ->
     "uctor<" ^ name ^ ">" ^ string_of_bvs vs ^
-    " : " ^ sobt ut ^
+    " : " ^ sobt ut ^ "<" ^ si uidx ^ ">" ^
     ";"
 
   | BBDCL_nonconst_ctor (vs,uidx,ut,ctor_idx, ctor_argt, evs, etraint) ->
     "uctor<" ^ name ^ ">" ^ string_of_bvs vs ^
-    " : " ^ sobt ut ^
+    " : " ^ sobt ut ^ "<" ^ si uidx ^ ">" ^
     " of " ^ sobt ctor_argt ^
     ";"
 
@@ -2498,6 +2501,7 @@ let print_functions bsym_table =
 
 let print_symbols bsym_table =
   Flx_bsym_table.iter begin fun i _ bsym ->
+    let id = Flx_bsym.id bsym in
     match Flx_bsym.bbdcl bsym with
     | BBDCL_fun (_,bvs,ps,_,exes) ->
         print_function_body
@@ -2521,7 +2525,25 @@ let print_symbols bsym_table =
           (string_of_bid i)
           (catmap "," (fun (s,i) -> s ^ "<" ^ string_of_bid i ^ ">") bvs)
           (sbt bsym_table t)
-    | _ -> ()
+    | BBDCL_invalid -> print_endline (("INVALID  " ^ id) ^ id)
+    | BBDCL_module -> print_endline ("MODULE " ^ id)
+    | BBDCL_newtype _ -> print_endline ("NEWTYPE " ^ id)
+    | BBDCL_external_type _ -> print_endline ("EXTERNAL_TYPE " ^ id)
+    | BBDCL_external_const _ -> print_endline ("EXTERNAL_CONST " ^ id)
+    | BBDCL_external_fun _ -> print_endline ("EXTERNAL_FUN " ^ id)
+    | BBDCL_external_code _ -> print_endline ("EXTERNAL_CODE " ^ id)
+    | BBDCL_union _ -> print_endline ("UNION " ^ id)
+    | BBDCL_struct _ -> print_endline ("STRUCT " ^ id)
+    | BBDCL_cstruct _ -> print_endline ("CSTRUCT " ^ id)
+    | BBDCL_typeclass _ -> print_endline ("TYPECLASS " ^ id)
+    | BBDCL_instance _ -> print_endline ("INSTANCE " ^ id)
+    | BBDCL_const_ctor _ -> print_endline ("CONST_CTOR " ^ id)
+    | BBDCL_nonconst_ctor _ -> print_endline ("NONCONST_CTOR " ^ id)
+    | BBDCL_axiom -> print_endline ("AXIOM " ^ id)
+    | BBDCL_lemma -> print_endline ("LEMMA " ^ id)
+    | BBDCL_reduce -> print_endline ("REDUCE " ^ id)
+
+
   end bsym_table
 
 let string_of_name_map name_map =

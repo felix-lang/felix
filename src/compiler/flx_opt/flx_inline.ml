@@ -707,7 +707,7 @@ let virtual_check syms bsym_table sr i ts =
     let parent =
       match Flx_bsym_table.find_parent bsym_table i with
       | Some p -> p
-      | None -> syserr sr ("can't find parent of " ^ Flx_bsym.id bsym ^" " ^ si i ^ " but is it " ^ match parent with | Some k -> si k | None -> "None");
+      | None -> syserr sr ("can't find parent of virtual " ^ Flx_bsym.id bsym ^" " ^ si i ^ " but is it " ^ match parent with | Some k -> si k | None -> "None");
         assert false
     in
     let tcvslen =
