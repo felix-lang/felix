@@ -72,7 +72,9 @@ let check_mono_vars bsym_table vars t =
     assert false
 
 let mono_type syms bsym_table vars t = 
+(*
 print_endline (" ** begin mono_type " ^ sbt bsym_table t);
+*)
   let t = Flx_unify.list_subst syms.counter vars t in
   let t = Flx_beta.beta_reduce "mono_type"
     syms.Flx_mtypes2.counter
@@ -81,23 +83,33 @@ print_endline (" ** begin mono_type " ^ sbt bsym_table t);
     t
   in 
   begin try check_mono bsym_table t with _ -> assert false end;
+(*
 print_endline (" ** end Mono_type " ^ sbt bsym_table t);
+*)
   t
 
 let rec mono_expr syms bsym_table vars e =
+(*
 print_endline (" ** begin mono_expr " ^ sbe bsym_table e);
+*)
   let f_btype t = mono_type syms bsym_table vars t in
   let f_bexpr e = mono_expr syms bsym_table vars e in
   let e = Flx_bexpr.map ~f_btype ~f_bexpr e in
+(*
 print_endline (" ** end mono_expr " ^ sbe bsym_table e);
+*)
   e
 
 let rec mono_exe syms bsym_table vars exe =
+(*
 print_endline (" ** begin mono_exe " ^ string_of_bexe bsym_table 0 exe);
+*)
   let f_btype t = mono_type syms bsym_table vars t in
   let f_bexpr e = mono_expr syms bsym_table vars e in
   let exe = Flx_bexe.map ~f_btype ~f_bexpr exe in
+(*
 print_endline (" ** end mono_exe " ^ string_of_bexe bsym_table 0 exe);
+*)
   exe
 
 (* ----------------------------------------------------------- *)
@@ -350,7 +362,9 @@ let fixup_exes syms bsym_table vars virtualinst polyinst parent_ts exes =
  let mt t = mono_type syms bsym_table vars t in
 
  (* monomorphise the code by eliminating type variables *)
+(*
   print_endline ("To fixup exes:\n" ^ show_exes bsym_table exes);
+*)
   let exes = List.map (mono_exe syms bsym_table vars) exes in
 (*
   print_endline ("Monomorphised:\n" ^ show_exes bsym_table exes);
@@ -418,13 +432,15 @@ let find_felix_inst syms bsym_table processed to_process nubids i ts : int =
     to_process := MonoMap.add (i,ts) target !to_process;
     (*
     if i <> k then
-    *)
       print_endline ("Add inst to process: " ^ showts bsym_table i ts ^ " --> "^si k);
+    *)
     k
   | Some (k) -> k
 
 let mono_bbdcl syms bsym_table processed to_process nubids virtualinst polyinst ts bsym =
+(*
   print_endline ("[mono_bbdcl] " ^ Flx_bsym.id bsym);
+*)
   begin try List.iter (check_mono bsym_table) ts with _ -> assert false end;
 
   let mt vars t = fixup_type syms bsym_table vars bsym virtualinst polyinst t in
@@ -447,10 +463,15 @@ let mono_bbdcl syms bsym_table processed to_process nubids virtualinst polyinst 
           print_endline ("Ret=" ^ sbt bsym_table ret); 
           assert false 
       in
-      let ps = try print_endline ("+++processing parameters of " ^ Flx_bsym.id bsym);
-         let ps = List.map (fun {pkind=pk; pid=s;pindex=i; ptyp=t} ->
+      let ps = try
+        (*
+        print_endline ("+++processing parameters of " ^ Flx_bsym.id bsym);
+        *)
+        let ps = List.map (fun {pkind=pk; pid=s;pindex=i; ptyp=t} ->
         {pkind=pk;pid=s;pindex=fst (polyinst i ts);ptyp=mt vars t}) ps in
+        (*
         print_endline ("+++parameters processed: " ^ Flx_bsym.id bsym);
+        *)
         ps
         with Not_found -> print_endline ("Not Found FIXING parameters"); assert false
       in

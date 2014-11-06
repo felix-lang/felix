@@ -484,12 +484,9 @@ def _print_gcc_extensions(platform, lang, p):
 
     have_gnu_x86 = gcc.named_registers_x86 and not gcc.named_registers_x86_64
 
-    p('HAVE_GNU_X86',            have_gnu_x86)
-    p('HAVE_GNU_X86_64',         gcc.named_registers_x86_64)
     p('HAVE_CGOTO',              gcc.computed_gotos)
     p('HAVE_ASM_LABELS',         gcc.asm_labels)
     p('HAVE_GNU_BUILTIN_EXPECT', bool(gcc.builtin_expect))
-    p('USE_REGPARM3',            have_gnu_x86)
 
     hash_map = config_call('fbuild.config.cxx.gnu.gcc_cxx_hash_map',
         platform, lang.static)

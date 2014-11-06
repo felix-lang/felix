@@ -130,12 +130,6 @@ static void x##_finaliser(::flx::gc::generic::collector_t *, void *__p){\
   ((x*)__p)->~x();\
 }
 
-#if FLX_USE_REGPARM3 && FLX_HAVE_GNU_X86
-#define FLX_REGPARM __attribute__((regparm(3)))
-#else
-#define FLX_REGPARM
-#endif
-
 
 #define FLX_FMEM_INIT_ONLY : ptf(_ptf)
 #define FLX_FMEM_INIT : ptf(_ptf),

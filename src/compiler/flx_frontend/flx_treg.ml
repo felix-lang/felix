@@ -147,7 +147,7 @@ print_endline ("Register type r " ^ sbt bsym_table t);
      WRONG! What if have a varray of pointers?
    *)
 
-  | BTYP_pointer t' -> rnr t; rr t'
+  | BTYP_pointer t' -> rr t'; rnr t
 
   | BTYP_inst (i,ts)->
     iter rr ts;

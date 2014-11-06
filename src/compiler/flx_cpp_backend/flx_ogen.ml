@@ -460,7 +460,8 @@ print_debug syms ("Handle type " ^ sbt bsym_table btyp ^ " instance " ^ si index
   ;
   let need_int = ref false in
   Hashtbl.iter
-  (fun btyp index -> gen_type_shape module_name s syms bsym_table need_int last_ptr_map primitive_shapes btyp index 
+  (fun btyp index -> 
+     gen_type_shape module_name s syms bsym_table need_int last_ptr_map primitive_shapes btyp index 
   )
   allocable_types
   ;

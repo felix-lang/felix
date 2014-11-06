@@ -35,7 +35,10 @@ let rec is_pod bsym_table t =
   begin match Flx_bsym_table.find_bbdcl bsym_table k with
     | BBDCL_union _ -> true
     | BBDCL_external_type (_,quals,_,_) -> mem `Pod quals
-    | BBDCL_struct (vs,cps) -> fold_left (fun acc (_,t) -> acc && is_pod t) true cps
+    | BBDCL_struct (vs,idts) -> 
+      let varmap = mk_varmap vs ts in
+      let idts = map (fun (s,t) -> s,varmap_subst varmap t) idts in
+      fold_left (fun acc (_,t) -> acc && is_pod t) true idts
     | BBDCL_cstruct _ -> false
     | _ -> failwith ("[flx_cal_type_offsets: is_pod] Unexpected nominal type " ^ sbt bsym_table t)
   end
@@ -98,8 +101,8 @@ let rec get_offsets' syms bsym_table typ : string list =
 
     | BBDCL_struct (vs,idts) ->
       let varmap = mk_varmap vs ts in
+      let idts = map (fun (s,t) -> s,varmap_subst varmap t) idts in
       let n = ref 0 in
-      let cpts = map (fun (s,t) -> s,varmap_subst varmap t) idts in
       let lst = ref [] in
       iter
       (fun (s,t) ->
@@ -110,7 +113,7 @@ let rec get_offsets' syms bsym_table typ : string list =
         (fun s -> lst := !lst @ [prefix ^ s])
         (get_offsets' syms bsym_table t)
       )
-      cpts
+      idts
       ;
       !lst
 
@@ -230,15 +233,15 @@ let rec get_encoder' syms bsym_table p typ : string list =
 
     | BBDCL_struct (vs,idts) ->
       let varmap = mk_varmap vs ts in
+      let idts = map (fun (s,t) -> s,varmap_subst varmap t) idts in
       let n = ref 0 in
-      let cpts = map (fun (s,t) -> s,varmap_subst varmap t) idts in
       "//Struct" ::
       List.concat ( List.map 
       (fun (fld,t) ->
         let s= "offsetof("^tname^","^cid_of_flxid fld^")" in
         (get_encoder' syms bsym_table (p^"+"^s) t)
       )
-      cpts
+      idts
       )
 
     | BBDCL_external_type (_,quals,_,_) ->
@@ -320,15 +323,15 @@ let rec get_decoder' syms bsym_table p typ : string list =
 
     | BBDCL_struct (vs,idts) ->
       let varmap = mk_varmap vs ts in
+      let idts = map (fun (s,t) -> s,varmap_subst varmap t) idts in
       let n = ref 0 in
-      let cpts = map (fun (s,t) -> s,varmap_subst varmap t) idts in
       "//Struct" ::
       List.concat ( List.map 
       (fun (fld,t) ->
         let s= "offsetof("^tname^","^cid_of_flxid fld^")" in
         (get_decoder' syms bsym_table (p^"+"^s) t)
       )
-      cpts
+      idts
       )
 
     | BBDCL_external_type (_,quals,_,_) ->

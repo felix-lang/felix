@@ -203,7 +203,6 @@ let optimize_bsym_table' syms bsym_table root_proc clean_bsym_table =
 (*
   let bsym_table = Flx_numono.monomorphise2 true syms bsym_table in
 *)
-
   (* Clean up the symbol table. *)
   let bsym_table =
     if clean_bsym_table

@@ -27,35 +27,10 @@
  else:
   tangle('#define FLX_HAVE_VSNPRINTF 0')
 
-@if pyconfig.TARGET_CXX.options.HAVE_BOOL:
-  tangle('#define FLX_HAVE_BOOL 1')
- else:
-  tangle('#define FLX_HAVE_BOOL 0')
-
-@if pyconfig.TARGET_CXX.options.HAVE_LONGLONG:
-  tangle('#define FLX_HAVE_LONGLONG 1')
- else:
-  tangle('#define FLX_HAVE_LONGLONG 0')
-
-@if pyconfig.TARGET_CXX.options.HAVE_LONGDOUBLE:
-  tangle('#define FLX_HAVE_LONGDOUBLE 1')
- else:
-  tangle('#define FLX_HAVE_LONGDOUBLE 0')
-
 @if pyconfig.HAVE_GNU:
   tangle('#define FLX_HAVE_GNU 1')
  else:
   tangle('#define FLX_HAVE_GNU 0')
-
-@if pyconfig.TARGET_CXX.options.HAVE_GNU_X86:
-  tangle('#define FLX_HAVE_GNU_X86 1')
- else:
-  tangle('#define FLX_HAVE_GNU_X86 0')
-
-@if pyconfig.TARGET_CXX.options.HAVE_GNU_X86_64:
-  tangle('#define FLX_HAVE_GNU_X86_64 1')
- else:
-  tangle('#define FLX_HAVE_GNU_X86_64 0')
 
 @if pyconfig.TARGET_CXX.options.HAVE_GNU_BUILTIN_EXPECT:
   tangle("#define FLX_HAVE_GNU_BUILTIN_EXPECT 1")
@@ -66,11 +41,6 @@
   tangle("#define FLX_HAVE_CGOTO 1")
  else:
   tangle("#define FLX_HAVE_CGOTO 0")
-
-@if pyconfig.TARGET_CXX.options.USE_REGPARM3:
-  tangle("#define FLX_USE_REGPARM3 1")
- else:
-  tangle("#define FLX_USE_REGPARM3 0")
 
 @if pyconfig.TARGET_CXX.options.HAVE_ASM_LABELS and not pyconfig.MACOSX:
   tangle("#define FLX_HAVE_ASM_LABELS 1")

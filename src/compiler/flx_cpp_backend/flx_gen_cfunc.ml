@@ -68,7 +68,6 @@ let gen_C_function syms bsym_table props index id sr vs bps ret' ts instance_no 
   let name = cpp_instance_name syms bsym_table index ts in
   let rettypename = cpp_typename syms bsym_table ret in
   rettypename ^ " " ^
-  (if mem `Cfun props then "" else "FLX_REGPARM ")^
   name ^ "(" ^
   (
     let s =
@@ -189,7 +188,6 @@ let gen_C_function_body filename syms bsym_table
       "" kids
     in
       rettypename ^ " " ^
-      (if mem `Cfun props then "" else "FLX_REGPARM ")^
       name ^ "(" ^
       (
         let s =
@@ -322,7 +320,6 @@ let gen_C_procedure_body filename syms bsym_table
     let output =
       "//C PROC <" ^ string_of_bid index ^ ">: " ^ name ^ "\n" ^
       "void " ^
-      (if mem `Cfun props then "" else "FLX_REGPARM ")^
       name ^ "(" ^
       (
         let s =
