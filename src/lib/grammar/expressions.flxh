@@ -2,6 +2,7 @@ syntax expressions {
   priority 
     let_pri < 
     slambda_pri <
+    spipe_apply_pri <
     sdollar_apply_pri < 
     stuple_cons_pri <
     stuple_pri <
@@ -69,6 +70,9 @@ syntax expressions {
 
   //$ Low precedence right associative application.
   x[sdollar_apply_pri] := x[stuple_pri] "$" x[sdollar_apply_pri] =># "`(ast_apply ,_sr (,_1 ,_3))";
+
+  //$ Low precedence left associative application.
+  x[spipe_apply_pri] := x[spipe_apply_pri] "|>" x[stuple_pri] =># "`(ast_apply ,_sr (,_3 ,_1))";
 
   //$ Tuple formation by cons: right associative.
   x[stuple_cons_pri] := x[>stuple_cons_pri] ",," x[stuple_cons_pri] =># "`(ast_tuple_cons ,_sr ,_1 ,_3)";
