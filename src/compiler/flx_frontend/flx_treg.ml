@@ -64,7 +64,7 @@ let register_tuple syms bsym_table t =
     end
 
   | _ ->
-print_endline ("Trye to register tuple " ^ sbt bsym_table t);
+print_endline ("flx_treg: Try to register tuple " ^ sbt bsym_table t);
     assert false
 
 let rec register_type_r ui syms bsym_table exclude sr t =
@@ -115,6 +115,9 @@ print_endline ("Register type r " ^ sbt bsym_table t);
     rnr t
 
   | BTYP_array (ps,ret) ->
+(*
+print_endline ("Array type " ^ sbt bsym_table t ^ " base type " ^ sbt bsym_table ps ^ " index type " ^ sbt bsym_table ret);
+*)
     begin match ret with
     | BTYP_unitsum 0 | BTYP_void -> syserr sr "Unexpected array length 0"
 (*
@@ -150,6 +153,9 @@ print_endline ("Register type r " ^ sbt bsym_table t);
   | BTYP_pointer t' -> rr t'; rnr t
 
   | BTYP_inst (i,ts)->
+(*
+print_endline ("Instance type, registering argument ts=" ^ catmap "," (sbt bsym_table) ts);
+*)
     iter rr ts;
 
     let bsym =
@@ -180,6 +186,10 @@ print_endline ("Register type r " ^ sbt bsym_table t);
 
     | BBDCL_external_type (vs,bquals,_,_)  -> 
      (* instantiate the type too *)
+(*
+print_endline ("External primitive instance, registering base " ^ si i);
+print_endline ("External primitive instance, registering whole type " ^ sbt bsym_table t);
+*)
       ui i ts; rnr t;
       begin (* if there is an associated shape required, we have to register the type *)
        let handle_qual bqual = match bqual with

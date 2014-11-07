@@ -19,34 +19,22 @@ type strabs_state_t = unit
 
 let make_strabs_state () = ()
 
-let check_inst bsym_table i ts =
-(*
-print_endline ("Check inst " ^ string_of_int i);
-*)
-  let entry = 
-    try Flx_bsym_table.find_bbdcl bsym_table i 
-    with Not_found -> failwith ("can't find entry " ^ string_of_int i ^ " in bsym table")
-  in
-  match entry with
-  | BBDCL_newtype (vs,t) -> 
-    let t' = tsubst vs ts t in 
-(*
-    print_endline ("Downgrading abstract type " ^ string_of_int i ^ 
-    "[vs=" ^ catmap "," (fun (s,i)-> s^"<"^string_of_int i^">") vs ^ "]-->" ^ sbt bsym_table t ^ "/" ^
-    "[ts=" ^ catmap "," (Flx_print.sbt bsym_table) ts ^ "]" ^
-    " to " ^ Flx_print.sbt bsym_table t');
-*)
-    t'
-  | _ -> btyp_inst (i,ts)
-
 let fixtype bsym_table t =
-  let chk i ts = check_inst bsym_table i ts in
   let rec f_btype t =
-    match Flx_btype.map ~f_btype t with
-    | BTYP_inst (i,ts) ->
-        let ts = map f_btype ts in
-        chk i ts
-    | x -> x
+    let t = Flx_btype.map ~f_btype t in
+    match t with 
+    | BTYP_inst (i,ts) ->  (* ts already upgraded by the Flx_btype.map *)
+      let entry = 
+        try Flx_bsym_table.find_bbdcl bsym_table i 
+        with Not_found -> failwith ("can't find entry " ^ string_of_int i ^ " in bsym table")
+      in
+      begin match entry with
+      | BBDCL_newtype (vs,t) -> 
+        let t = tsubst vs ts t in 
+        f_btype t (* rescan replacement type *)
+      | _ -> t
+      end 
+    | _ -> t
   in
   f_btype t
 

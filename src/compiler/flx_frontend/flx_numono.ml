@@ -61,7 +61,8 @@ let check_mono bsym_table t =
   | BTYP_type_set_union _
   | BTYP_type_set_intersection _
     -> 
-    print_endline ("[flx_numono:check_mono]: Unexpected type expression" ^ sbt bsym_table t);
+    (* print_endline ("[flx_numono:check_mono]: Unexpected type expression" ^ sbt bsym_table t); *)
+     ()
   | _ -> ()
 
   
