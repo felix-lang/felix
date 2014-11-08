@@ -169,11 +169,9 @@ print_endline ("Instance type, registering argument ts=" ^ catmap "," (sbt bsym_
       rnr t
 
     | BBDCL_union (vs,cs) ->
-      (*
-      let cts = map snd cs in
+      let cts = map (fun (_,_,t) -> t) cs in
       let cts = map (tsubst vs ts) cts in
       iter rr cts;
-      *)
       rnr t
 
     | BBDCL_cstruct (vs,cs,_)
