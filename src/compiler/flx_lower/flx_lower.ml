@@ -57,7 +57,6 @@ let lower_bsym_table state bsym_table root_proc =
   (* Instantiate type classes. *)
   print_debug state "//instantiating";
 
-  Flx_intpoly.cal_polyvars state.syms bsym_table;
   Flx_inst.instantiate
     state.syms
     bsym_table

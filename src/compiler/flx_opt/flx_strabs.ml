@@ -8,16 +8,10 @@ open Flx_print
 open Flx_set
 open Flx_mtypes2
 open Flx_typing
-open Flx_mbind
 open List
 open Flx_unify
-open Flx_generic
 open Flx_maps
 open Flx_exceptions
-
-type strabs_state_t = unit
-
-let make_strabs_state () = ()
 
 let fixtype bsym_table t =
   let rec f_btype t =
@@ -62,30 +56,31 @@ let fixps bsym_table (ps,traint) =
   | Some t -> Some (fixexpr bsym_table t)
   )
 
-let strabs_symbol state bsym_table index bsym =
+let strabs_symbol bsym_table index parent bsym bsym_table' =
   let ft t = fixtype bsym_table t in
   let fts ts = map (fixtype bsym_table) ts in
   let fe e = fixexpr bsym_table e in
   let fxs xs = fixbexes bsym_table xs in
   let fp bps = fixps bsym_table bps in
 
-  let h bbdcl = Flx_bsym_table.update_bbdcl bsym_table index bbdcl in
+  let h bbdcl = Flx_bsym_table.add bsym_table' index parent { bsym with Flx_bsym.bbdcl= bbdcl } in
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_invalid ->
-      assert false
+  | BBDCL_invalid
+  | BBDCL_module
+  | BBDCL_typeclass _
+  | BBDCL_instance _
+  | BBDCL_axiom 
+  | BBDCL_lemma 
+  | BBDCL_reduce 
+    -> assert false
 
-  | BBDCL_module ->
-      h (bbdcl_module ())
+  | BBDCL_newtype (bvs, t) -> ()
 
   | BBDCL_fun (props, bvs, bps, ret, bexes) ->
       h (bbdcl_fun (props, bvs, fp bps, ft ret, fxs bexes))
 
   | BBDCL_val (bvs, t, kind) ->
       h (bbdcl_val (bvs, ft t, kind))
-
-  | BBDCL_newtype (bvs, t) ->
-      (* Can't downgrade this newtype yet. *)
-      ()
 
   | BBDCL_external_type (bvs, btqs, c, breqs) ->
       h (bbdcl_external_type (bvs, btqs, c, breqs))
@@ -117,44 +112,23 @@ let strabs_symbol state bsym_table index bsym =
   | BBDCL_cstruct (bvs, cts, breqs) ->
       let cts = map (fun (s,t) -> s,ft t) cts in
       h (bbdcl_cstruct (bvs, cts, breqs))
-
-  | BBDCL_typeclass (props, bvs) ->
-      h (bbdcl_typeclass (props, bvs))
-
-  | BBDCL_instance (props, bvs, t, j, ts) ->
-      h (bbdcl_instance (props, bvs, ft t, j, fts ts))
-
   | BBDCL_const_ctor (bvs, j, t1, k, evs, etraint) ->
       h (bbdcl_const_ctor (bvs, j, ft t1, k, evs, ft etraint))
 
   | BBDCL_nonconst_ctor (bvs, j, t1, k,t2, evs, etraint) ->
       h (bbdcl_nonconst_ctor (bvs, j, ft t1, k, ft t2, evs, ft etraint))
 
-  | BBDCL_axiom ->
-      h (bbdcl_axiom ())
-
-  | BBDCL_lemma ->
-      h (bbdcl_lemma ())
-
-  | BBDCL_reduce ->
-      h (bbdcl_reduce ())
-
-let strabs state bsym_table =
-  (* Copy the bsym_table since we're going to directly modify it. *)
-  let bsym_table' = Flx_bsym_table.copy bsym_table in
+let strabs bsym_table =
+  let bsym_table' : Flx_bsym_table.t = Flx_bsym_table.create () in
   Flx_bsym_table.iter
-    (fun bid _ sym -> 
-        (*
-        print_endline ("Strabs on " ^ string_of_int bid ^ " " ^ sym.Flx_bsym.id);
-        *)
-        begin try
-          strabs_symbol state bsym_table bid sym
-        with Not_found ->
-          failwith ("Strabs chucked not found processing " ^ string_of_int bid)
-        end
-(*
-        ;
-        print_endline ("Strabs on " ^ string_of_int bid ^ " done")
-*)
+    (fun bid parent sym -> 
+      try
+        strabs_symbol bsym_table bid parent sym bsym_table'
+      with Not_found ->
+        failwith ("Strabs chucked not found processing " ^ string_of_int bid)
     )
-    bsym_table'
+    bsym_table
+  ;
+  bsym_table'
+
+

@@ -189,9 +189,6 @@ let handle_lower state main_prog module_name =
 
   let t0 = Unix.gettimeofday () in
 
-  (* Downgrade abstract types now. *)
-  Flx_strabs.strabs (Flx_strabs.make_strabs_state ()) bsym_table;
-
   (* Lower the bound symbols for the backend. *)
   let bsym_table = Flx_profile.call
     "Flxg_lower.lower"

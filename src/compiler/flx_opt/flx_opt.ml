@@ -35,6 +35,7 @@ let inline_functions syms bsym_table root_proc clean_bsym_table =
     Flx_print.print_symbols bsym_table
   end;
 
+(*
   (* Remove unused reductions. *)
   syms.Flx_mtypes2.reductions := Flx_reduce.remove_useless_reductions
     syms
@@ -49,6 +50,7 @@ let inline_functions syms bsym_table root_proc clean_bsym_table =
     then Flx_use.copy_used syms bsym_table
     else bsym_table
   in
+*)
 
   (* lets see if this works, make closure before inlining *)
   Flx_mkcls.premake_closures syms bsym_table;
@@ -79,8 +81,6 @@ let inline_functions syms bsym_table root_proc clean_bsym_table =
     Flx_prop.rem_prop bsym_table `Inlining_complete i
   end bsym_table;
 
-  Flx_intpoly.cal_polyvars syms bsym_table;
-
   Flx_inst.instantiate
     syms
     bsym_table
@@ -93,6 +93,7 @@ let inline_functions syms bsym_table root_proc clean_bsym_table =
     This will do nothing, because they're not
     actually instantiated!
   *)
+(*
   print_debug syms "//MONOMORPHISING";
   Flx_mono.monomorphise syms bsym_table;
   print_debug syms "//MONOMORPHISING DONE";
@@ -103,7 +104,7 @@ let inline_functions syms bsym_table root_proc clean_bsym_table =
     then Flx_use.copy_used syms bsym_table
     else bsym_table
   in
-
+*)
   if syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then begin
     print_endline "";
     print_endline "---------------------------";
@@ -112,7 +113,6 @@ let inline_functions syms bsym_table root_proc clean_bsym_table =
     print_endline "";
     Flx_print.print_symbols bsym_table
   end;
-
   (* Remove any newly unused reductions. *)
   print_debug syms "//Removing useless reductions";
   syms.Flx_mtypes2.reductions := Flx_reduce.remove_useless_reductions
@@ -132,7 +132,6 @@ let inline_functions syms bsym_table root_proc clean_bsym_table =
   in
 
   Flx_inline.heavy_inlining syms bsym_table;
-
   (*
   print_endline "INLINING DONE: RESULT:";
   print_symbols bsym_table;
@@ -199,14 +198,46 @@ let optimize_bsym_table' syms bsym_table root_proc clean_bsym_table =
   (* Find the root and exported functions and types. *)
   Flx_use.find_roots syms bsym_table root_proc syms.Flx_mtypes2.bifaces;
 
-  (* comment out for production until it works *)
+  (* monomorphise *)
   let bsym_table = Flx_numono.monomorphise2 true syms bsym_table in
+
+  (* check no typeclasses are left *)
+  Flx_bsym_table.iter
+  (fun id pa sym -> 
+     match sym.Flx_bsym.bbdcl with 
+     | Flx_bbdcl.BBDCL_axiom
+     | Flx_bbdcl.BBDCL_lemma
+     | Flx_bbdcl.BBDCL_reduce
+     | Flx_bbdcl.BBDCL_invalid  
+     | Flx_bbdcl.BBDCL_module _ 
+     | Flx_bbdcl.BBDCL_instance _ 
+     | Flx_bbdcl.BBDCL_typeclass _ 
+       -> assert false 
+     | _ -> () 
+  )
+  bsym_table
+  ;
+
+
+  (* Downgrade abstract types now. *)
+  let bsym_table = Flx_strabs.strabs bsym_table in
+
   (* Clean up the symbol table. *)
   let bsym_table =
     if clean_bsym_table
     then Flx_use.copy_used syms bsym_table
     else bsym_table
   in
+
+  (* check no abstract types are left *)
+  Flx_bsym_table.iter
+  (fun id pa sym -> 
+     match sym.Flx_bsym.bbdcl with 
+     | Flx_bbdcl.BBDCL_newtype _ -> assert false 
+     | _ -> () 
+  )
+  bsym_table
+  ;
 
   (* Uncurry curried functions. *)
   let bsym_table = uncurry_functions syms bsym_table clean_bsym_table in
