@@ -1,0 +1,75 @@
+
+The |> operator is borrowed from the F# language, of which the language
+designers likely borrowed it from somewhere else (e.g. OCaml). The usage is
+simple, but it allows the programmer to avoid needless variable declarations,
+which can make programs complicated and increase the surface area of a change.
+
+We already understand simple function application like f(g(x)). Likewise the
+Felix dollar-sign operator makes life easier by eliminating some parenthesis.
+Anything to the right of the dollar-sign is inside a paren. Thus, "f $ g $ x"
+is really just f(g(x)). 
+
+With the |> pipe, we get the same thing but with paren nesting on the left
+side. 
+<pre>x |> g |> f</pre> 
+is the same as
+<pre>f $ g $ x</pre>
+or 
+<pre>f(g(x))</pre>
+
+@felix
+
+// single value
+5 |> println;
+
+// multiple values
+range(0,5) |> println ;
+
+// lambda
+range(0,5) |> map (fun (x:int) => x + 1) |> println ;
+
+// launch sequence
+fun addOne(x:int):int => x + 1;
+fun sayNumber(x:int) = { println$ "T-Minus " + x; }
+List::range(0,5)       // generate a series of numberes
+  |> List::rev         // reverse list 
+  |> map addOne        // modify the intermediate result
+  |> iter sayNumber    // output something for each number
+;
+println$ "Blastoff!";
+
+// string manipulation
+"The horrible conclusion which had been gradually obtruding itself upon my confused and reluctant mind was now an awful certainty."
+    |> (fun (x:string) => search_and_replace(x, "horrible", "pleasant"))
+    |> (fun (x:string) => search_and_replace(x, "obtruding itself upon", "growing in"))
+    |> (fun (x:string) => search_and_replace(x, "confused", "focused"))
+    |> (fun (x:string) => search_and_replace(x, "reluctant", "open"))
+    |> (fun (x:string) => search_and_replace(x, "awful", "brilliant"))
+    |> println ;
+
+
+// match test
+list(Some(1), None[int], Some(3), Some(1))
+    |> map (fun (x:opt[int]) => match x with 
+               | Some ?n => n 
+               | None    => 0
+            endmatch)
+    |> fold_left (fun (x:int)(y:int) => x + y) 0
+    |> println
+;
+
+@
+
+@expect
+5
+list(0, 1, 2, 3, 4)
+list(1, 2, 3, 4, 5)
+T-Minus 5
+T-Minus 4
+T-Minus 3
+T-Minus 2
+T-Minus 1
+Blastoff!
+The pleasant conclusion which had been gradually growing in my focused and open mind was now an brilliant certainty.
+5
+@
