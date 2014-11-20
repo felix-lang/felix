@@ -216,7 +216,7 @@ bad:>
     done
     ++i;
     i = skip_white s i;
-    return i, Good (Jdictionary(rev elts));
+    return i, Good (Jdictionary elts);
   }
 
   private fun parse_array (s:string) (var i:int) = {
@@ -239,7 +239,7 @@ bad:>
     done
     ++i;
     i = skip_white s i;
-    return i, Good (Jarray (rev elts));
+    return i, Good (Jarray elts);
   }
 }
 
