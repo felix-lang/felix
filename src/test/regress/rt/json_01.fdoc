@@ -34,7 +34,7 @@ for s in bad do check s; done
 
 @expect
 [12,"Hello", {"e": null, "f": true, "jhg": ["hello"]}]
-[{"jhg": ["hello"], "f": true, "e": null}, "Hello", 12]
+[12, "Hello", {"e": null, "f": true, "jhg": ["hello"]}]
 123
 123
 123.4

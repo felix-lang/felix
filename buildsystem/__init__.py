@@ -1,4 +1,4 @@
-import os
+import os, shutil
 from itertools import chain
 
 import fbuild
@@ -17,7 +17,10 @@ def copy_to(ctx, dstdir, srcs:fbuild.db.SRCS) -> fbuild.db.DSTS:
         src = Path(src)
         dst = dstdir / src.name
         ctx.logger.check(' * copy', '%s -> %s' % (src, dst), color='yellow')
-        src.copy(dst)
+        try:
+            src.copy(dst)
+        except shutil.SameFileError:
+            pass
         dsts.append(dst)
 
     return dsts
@@ -37,7 +40,10 @@ def copy_dir_to(ctx, dstdir, srcdir, *, pattern=None) -> fbuild.db.DSTS:
         dsts.append(dst)
 
         ctx.logger.check(' * copy', '%s -> %s' % (src, dst), color='yellow')
-        src.copy(dst)
+        try:
+            src.copy(dst)
+        except shutil.SameFileError:
+            pass
 
     ctx.db.add_external_dependencies_to_call(srcs=srcs)
 
