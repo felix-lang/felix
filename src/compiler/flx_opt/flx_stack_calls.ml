@@ -437,7 +437,7 @@ let rec can_stack_proc
 
     (* assignments to a local variable are safe *)
     | BEXE_init (_,j,_)
-    | BEXE_assign (_,(BEXPR_name (j,_),_),_)
+    | BEXE_assign (_,(BEXPR_varname (j,_),_),_)
       when BidSet.mem j children -> ()
 
     (* assignments not involving pointers or functions are safe *)

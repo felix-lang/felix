@@ -800,7 +800,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
 
       let rec split e trail = 
         match e with
-        | BEXPR_name _,t
+        | BEXPR_varname _,t
         | BEXPR_deref _,t ->
           let t' = snd e in ge' sr e, t', trail
 

@@ -89,7 +89,7 @@ let idt t = t
 let rec rpl syms argmap x =
   match Flx_bexpr.map ~f_bexpr:(rpl syms argmap) x with
   (* No need to check ts or type here *)
-  | (BEXPR_name (i,_),_) as x ->
+  | (BEXPR_varname (i,_),_) as x ->
     (try
       let x' = Hashtbl.find argmap i in
       (*
@@ -369,7 +369,7 @@ let gen_body syms uses bsym_table id
         (* unpack argument *)
         if length ps > 1 then
         let ts = map (fun (_,i) -> btyp_type_var (i, btyp_type 0)) vs in
-        let p = BEXPR_name (parameter,ts),paramtype in
+        let p = BEXPR_varname (parameter,ts),paramtype in
         let n = ref 0 in
         iter
         (fun {pid=vid;pindex=ix; ptyp=prjt} ->

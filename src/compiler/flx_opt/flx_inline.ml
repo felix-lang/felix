@@ -812,7 +812,7 @@ let rec special_inline syms uses bsym_table caller_vs caller hic excludes sr e =
             (fun (_,i)-> btyp_type_var (i,btyp_type 0))
             caller_vs
           in
-          bexpr_name t (urv,ts)
+          bexpr_varname t (urv,ts)
 
         | BBDCL_fun (props,vs,(ps,traint),ret,exes) ->
           (* TEMPORARY FIX! *)
@@ -833,7 +833,7 @@ let rec special_inline syms uses bsym_table caller_vs caller hic excludes sr e =
 
           (* replace application with the variable *)
           let ts = List.map (fun (_,i)-> btyp_type_var (i,btyp_type 0)) caller_vs in
-          BEXPR_name (urv,ts),t
+          BEXPR_varname (urv,ts),t
           *)
 
 
@@ -935,7 +935,7 @@ let rec special_inline syms uses bsym_table caller_vs caller hic excludes sr e =
                       (fun (_,i)-> btyp_type_var (i,btyp_type 0))
                       caller_vs
                     in
-                    bexpr_name t (urv,ts)
+                    bexpr_varname t (urv,ts)
                 end
                 else
                 begin

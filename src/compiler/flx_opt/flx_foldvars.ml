@@ -125,7 +125,7 @@ let fold_vars syms bsym_table uses i ps exes =
       | [] -> rev outexes
       | ((
         BEXE_init (_,j,y)
-        | BEXE_assign (_, (BEXPR_name (j,_),_),y)
+        | BEXE_assign (_, (BEXPR_varname (j,_),_),y)
       ) as x) :: t  when BidSet.mem j locls ->
 
         (*
@@ -230,7 +230,7 @@ let fold_vars syms bsym_table uses i ps exes =
             *)
             let rec subi j ys e =
               match Flx_bexpr.map ~f_bexpr:(subi j ys) e with
-              | BEXPR_apply ((BEXPR_prj (k,_,_),_), (BEXPR_name(i,_),_) ),_
+              | BEXPR_apply ((BEXPR_prj (k,_,_),_), (BEXPR_varname(i,_),_) ),_
                 when j = i ->
                 if syms.compiler_options.print_flag then
                 print_endline ("[flx_fold_vars: tuple init] Replacing " ^ sbe bsym_table e ^
@@ -242,7 +242,7 @@ let fold_vars syms bsym_table uses i ps exes =
           | _ ->
             let rec subi j y e =
               match Flx_bexpr.map ~f_bexpr:(subi j y) e with
-              | BEXPR_name (i,_),_ when j = i -> incr rplcnt; y
+              | BEXPR_varname (i,_),_ when j = i -> incr rplcnt; y
               | x -> x
             in subi j y, 2 (* take init into account *)
         in
@@ -279,7 +279,7 @@ let fold_vars syms bsym_table uses i ps exes =
 
           (* conditional, check if y depends on init (tail rec) *)
 
-          | BEXE_assign (_,(BEXPR_name (k,_),_),_)
+          | BEXE_assign (_,(BEXPR_varname (k,_),_),_)
           | BEXE_svc (_,k)
           | BEXE_init (_,k,_) ->
              (* an assignment a,b=b,a is turned into

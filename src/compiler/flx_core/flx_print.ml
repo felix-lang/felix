@@ -30,7 +30,11 @@ let string_of_bidset bidset =
     (String.concat ";" (List.map string_of_bid bidlist))
 
 let string_of_literal {Flx_literal.felix_type=t; internal_value=v; c_value=c} = 
-  "literal["^t^"]("^v^")"
+  match t with
+  | "string" -> "\"" ^ v ^ "\""
+  | "int" -> v
+  | _ -> 
+  "literal["^t^"](\""^v^"\")"
 
 let rec string_of_qualified_name (n:qualified_name_t) =
   let se e = string_of_expr e in
@@ -1801,7 +1805,7 @@ and string_of_bound_expression' bsym_table se e =
 
   | BEXPR_not e -> "not("^ se e ^ ")"
   | BEXPR_deref e -> "*("^ se e ^ ")"
-  | BEXPR_name (i,ts) -> sid i ^ string_of_inst bsym_table ts
+  | BEXPR_varname (i,ts) -> sid i ^ string_of_inst bsym_table ts
   | BEXPR_closure (i,ts) -> sid i ^ string_of_inst bsym_table ts
   | BEXPR_ref (i,ts) -> "&" ^ sid i ^ string_of_inst bsym_table ts
   | BEXPR_new e -> "new " ^ se e

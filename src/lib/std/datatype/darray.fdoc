@@ -81,7 +81,7 @@ operation such as a @{push_back} or @{pop}.
   proc do_resize[T] (pd: darray[T], new_size: size)
   {
     var old = (_repr_ pd)*.a;
-    (_repr_ pd)*.a = varray[T] (new_size, (len old), (fun(i:size)=>old.i));
+    (_repr_ pd).a <- varray[T] (new_size, (len old), (fun(i:size)=>old.i));
   }
 
 @h2 Constructors.

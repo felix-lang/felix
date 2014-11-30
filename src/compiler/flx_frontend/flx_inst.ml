@@ -200,7 +200,7 @@ let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
   | BEXPR_inj (_,d,c) -> ut (vs (BTYP_function (d,c)))
 
   | BEXPR_ref (i,ts)
-  | BEXPR_name (i,ts)
+  | BEXPR_varname (i,ts)
   | BEXPR_closure (i,ts)
     ->
     (* substitute out display variables *)

@@ -6,7 +6,7 @@ let print_debug syms msg =
 
 (* Convert curried functions to uncurried functions so they can ba applied
  * directly instead of requiring closures. *)
-let uncurry_functions syms bsym_table clean_bsym_table =
+let uncurry_functions syms bsym_table =
   let bsym_table = ref bsym_table in
   let counter = ref 0 in
 
@@ -15,139 +15,14 @@ let uncurry_functions syms bsym_table clean_bsym_table =
     if !counter > 10 then failwith "uncurry exceeded 10 passes";
 
     (* Remove unused symbols. *)
-    bsym_table :=
-      if clean_bsym_table
-      then Flx_use.copy_used syms !bsym_table
-      else !bsym_table
+    bsym_table := Flx_use.copy_used syms !bsym_table
   done;
 
   !bsym_table
 
-
-(* Recursively inline functions. *)
-let inline_functions syms bsym_table root_proc clean_bsym_table =
-  if syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then begin
-    print_endline "";
-    print_endline "---------------------------";
-    print_endline "INPUT TO OPTIMISATION PASS";
-    print_endline "---------------------------";
-    print_endline "";
-    Flx_print.print_symbols bsym_table
-  end;
-
-(*
-  (* Remove unused reductions. *)
-  syms.Flx_mtypes2.reductions := Flx_reduce.remove_useless_reductions
-    syms
-    bsym_table
-    !(syms.Flx_mtypes2.reductions);
-
-  Flx_typeclass.fixup_typeclass_instances syms bsym_table;
-
+let mkproc syms bsym_table =
   (* Clean up the symbol table. *)
-  let bsym_table =
-    if clean_bsym_table
-    then Flx_use.copy_used syms bsym_table
-    else bsym_table
-  in
-*)
-
-  (* lets see if this works, make closure before inlining *)
-  Flx_mkcls.premake_closures syms bsym_table;
-
-  (* Perform the inlining. *)
-  Flx_inline.heavy_inlining syms bsym_table;
-
-  (* Clean up the symbol table. *)
-  let bsym_table =
-    if clean_bsym_table
-    then Flx_use.copy_used syms bsym_table
-    else bsym_table
-  in
-
-  print_debug syms "PHASE 1 INLINING COMPLETE";
-  if syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then begin
-    print_endline "";
-    print_endline "---------------------------";
-    print_endline "POST PHASE 1 FUNCTION SET";
-    print_endline "---------------------------";
-    print_endline "";
-    Flx_print.print_symbols bsym_table
-  end;
-
-  (* Clean up the inlining symbol properties. *)
-  Flx_bsym_table.iter begin fun i _ _ ->
-    Flx_prop.rem_prop bsym_table `Inlining_started i;
-    Flx_prop.rem_prop bsym_table `Inlining_complete i
-  end bsym_table;
-
-  Flx_inst.instantiate
-    syms
-    bsym_table
-    true
-    root_proc
-    syms.Flx_mtypes2.bifaces;
-
-  (* EXPERIMENTAL!
-    Adds monomorphic versions of all symbols.
-    This will do nothing, because they're not
-    actually instantiated!
-  *)
-(*
-  print_debug syms "//MONOMORPHISING";
-  Flx_mono.monomorphise syms bsym_table;
-  print_debug syms "//MONOMORPHISING DONE";
-
-  (* Clean up the symbol table. *)
-  let bsym_table =
-    if clean_bsym_table
-    then Flx_use.copy_used syms bsym_table
-    else bsym_table
-  in
-*)
-  if syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then begin
-    print_endline "";
-    print_endline "---------------------------";
-    print_endline "POST MONOMORPHISATION FUNCTION SET";
-    print_endline "---------------------------";
-    print_endline "";
-    Flx_print.print_symbols bsym_table
-  end;
-  (* Remove any newly unused reductions. *)
-  print_debug syms "//Removing useless reductions";
-  syms.Flx_mtypes2.reductions := Flx_reduce.remove_useless_reductions
-    syms
-    bsym_table
-    !(syms.Flx_mtypes2.reductions);
-
-  (* Do another inlining pass. *)
-  print_debug syms "//INLINING";
-  Flx_typeclass.fixup_typeclass_instances syms bsym_table;
-
-  (* Clean up the symbol table. *)
-  let bsym_table =
-    if clean_bsym_table
-    then Flx_use.copy_used syms bsym_table
-    else bsym_table
-  in
-
-  Flx_inline.heavy_inlining syms bsym_table;
-  (*
-  print_endline "INLINING DONE: RESULT:";
-  print_symbols bsym_table;
-  *)
-
-  (* Remove unused symbols. *)
-  bsym_table
-
-
-let mkproc syms bsym_table clean_bsym_table =
-  (* Clean up the symbol table. *)
-  let bsym_table =
-    if clean_bsym_table
-    then Flx_use.copy_used syms bsym_table
-    else bsym_table
-  in
+  let bsym_table = Flx_use.copy_used syms bsym_table in
 
   (* XXX: What does mkproc do? *)
   (* see below, it turns functions into procedures, by assigning
@@ -160,10 +35,7 @@ let mkproc syms bsym_table clean_bsym_table =
     if !counter > 10 then failwith "mkproc exceeded 10 passes";
 
     (* Clean up the symbol table. *)
-    bsym_table :=
-      if clean_bsym_table
-      then Flx_use.copy_used syms !bsym_table
-      else !bsym_table
+    bsym_table := Flx_use.copy_used syms !bsym_table;
   done;
 
   !bsym_table
@@ -171,8 +43,6 @@ let mkproc syms bsym_table clean_bsym_table =
 
 (* Convert functions into stack calls. *)
 let stack_calls syms bsym_table =
-  (* Convert functions into stack calls. *)
-  Flx_typeclass.fixup_typeclass_instances syms bsym_table;
   print_debug syms "//Calculating stackable calls";
 
   let label_map = Flx_label.create_label_map
@@ -192,15 +62,18 @@ let stack_calls syms bsym_table =
 
 
 (* Do some platform independent optimizations of the code. *)
-let optimize_bsym_table' syms bsym_table root_proc clean_bsym_table =
+let optimize_bsym_table' syms bsym_table root_proc =
   print_debug syms "//OPTIMISING";
 
+print_endline "[flx_opt]; Finding roots";
   (* Find the root and exported functions and types. *)
   Flx_use.find_roots syms bsym_table root_proc syms.Flx_mtypes2.bifaces;
 
+print_endline "[flx_opt]; Monomorphising";
   (* monomorphise *)
   let bsym_table = Flx_numono.monomorphise2 true syms bsym_table in
 
+print_endline "[flx_opt]; Verifying typeclass elimination";
   (* check no typeclasses are left *)
   Flx_bsym_table.iter
   (fun id pa sym -> 
@@ -209,7 +82,7 @@ let optimize_bsym_table' syms bsym_table root_proc clean_bsym_table =
      | Flx_bbdcl.BBDCL_lemma
      | Flx_bbdcl.BBDCL_reduce
      | Flx_bbdcl.BBDCL_invalid  
-     | Flx_bbdcl.BBDCL_module _ 
+     | Flx_bbdcl.BBDCL_module 
      | Flx_bbdcl.BBDCL_instance _ 
      | Flx_bbdcl.BBDCL_typeclass _ 
        -> assert false 
@@ -219,16 +92,11 @@ let optimize_bsym_table' syms bsym_table root_proc clean_bsym_table =
   ;
 
 
+print_endline "[flx_opt]; Downgrading abstract types to representations";
   (* Downgrade abstract types now. *)
   let bsym_table = Flx_strabs.strabs bsym_table in
 
-  (* Clean up the symbol table. *)
-  let bsym_table =
-    if clean_bsym_table
-    then Flx_use.copy_used syms bsym_table
-    else bsym_table
-  in
-
+print_endline "[flx_opt]; Verifying abstract type elimination";
   (* check no abstract types are left *)
   Flx_bsym_table.iter
   (fun id pa sym -> 
@@ -239,37 +107,43 @@ let optimize_bsym_table' syms bsym_table root_proc clean_bsym_table =
   bsym_table
   ;
 
+print_endline "[flx_opt]; Removing unused symbols";
+  (* Clean up the symbol table. *)
+  let bsym_table = Flx_use.copy_used syms bsym_table in
+
+print_endline "[flx_opt]; Uncurrying curried function";
   (* Uncurry curried functions. *)
-  let bsym_table = uncurry_functions syms bsym_table clean_bsym_table in
+  let bsym_table = uncurry_functions syms bsym_table in
 
-  (* Inline functions. *)
-  let bsym_table =
-    let compiler_options = syms.Flx_mtypes2.compiler_options in
+print_endline "[flx_opt]; Converting functions to procedures";
+  (* convert functions to procedures *)
+  let bsym_table = mkproc syms bsym_table in
 
-    (* Exit early if we don't want to do any inlining. *)
-    if compiler_options.Flx_options.max_inline_length <= 0
-    then bsym_table
-    else inline_functions syms bsym_table root_proc clean_bsym_table
-  in
+print_endline "[flx_opt]; Inlining";
+  (* Perform the inlining. *)
+  Flx_inline.heavy_inlining syms bsym_table;
 
-  (* XXX: Not sure what this does. *)
-  (* JS: it turns some functions into procedures, eg if
-   * you have y = f (x); then you could do instead f' (&y,x);
-   * As procedures .. you can spawn fthreads etc and expect
-   * it to work, you can't do that with functions.
-   * *)
-  let bsym_table = mkproc syms bsym_table clean_bsym_table in
+print_endline "[flx_opt]; Generating wrappers (new)";
+  (* make wrappers for non-function functional values *)
+  let bsym_table = Flx_mkcls2.make_wrappers syms bsym_table in
 
+print_endline "[flx_opt]; Remove unused symbols";
+  (* Clean up the symbol table. *)
+  let bsym_table = Flx_use.copy_used syms bsym_table in
+
+print_endline "[flx_opt]; Eliminate dead code";
   (* Eliminate dead code. *)
   let elim_state = Flx_elim.make_elim_state syms bsym_table in
   Flx_elim.eliminate_unused elim_state;
 
+print_endline "[flx_opt]; Do stack call optimisation";
   (* Convert functions into stack calls. *)
   let bsym_table = stack_calls syms bsym_table in
 
+print_endline "[flx_opt]; optimisation pass complete";
   bsym_table
 
 
 let optimize_bsym_table syms bsym_table root_proc =
-  optimize_bsym_table' syms bsym_table root_proc true
+  optimize_bsym_table' syms bsym_table root_proc
 

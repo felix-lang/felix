@@ -108,9 +108,9 @@ let remap_expr
   in
   let rec aux e =
     match Flx_bexpr.map ~f_btype:auxt ~f_bexpr:aux ~f_label:relab e with
-    | BEXPR_name (i,ts),t ->
+    | BEXPR_varname (i,ts),t ->
         let i,ts = fixup i ts in
-        bexpr_name (auxt t) (i,ts)
+        bexpr_varname (auxt t) (i,ts)
 
     | BEXPR_ref (i,ts) as x,t ->
         let i,ts = fixup i ts in

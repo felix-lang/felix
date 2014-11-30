@@ -719,10 +719,10 @@ let fixup_expr syms bsym_table e =
         *)
         bexpr_apply_direct t (j,ts,a)
 
-    | BEXPR_name (i,ts),t ->
+    | BEXPR_varname (i,ts),t ->
         let j,ts = (* print_endline ("Check apply prim " ^ si i^ "[" ^ catmap "," (sbt bsym_table) ts ^ "]"); *)
         tcsubst syms bsym_table true i ts in
-        bexpr_name t (j,ts)
+        bexpr_varname t (j,ts)
 
     | x -> x
   in

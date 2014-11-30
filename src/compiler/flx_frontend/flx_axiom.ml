@@ -53,9 +53,9 @@ let verify syms bsym_table csr e =
     *)
     let param = match bpl with
       | [] -> bexpr_tuple (btyp_tuple []) []
-      | [{pindex=i;ptyp=t}] -> bexpr_name t (i,[])
+      | [{pindex=i;ptyp=t}] -> bexpr_varname t (i,[])
       | ls ->
-        let xs = map (fun { pindex=i; ptyp=t } -> bexpr_name t (i,[])) ls in
+        let xs = map (fun { pindex=i; ptyp=t } -> bexpr_varname t (i,[])) ls in
         let ts = map snd xs in
         bexpr_tuple (btyp_tuple ts) xs
     in

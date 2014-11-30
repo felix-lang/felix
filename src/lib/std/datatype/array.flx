@@ -26,7 +26,8 @@ open class Farray
   }
 
   // this one should
-  proc unsafe_set[t,n] (a: &(t^n), i:size, v:t) { a *. (i.int) = v; }
+  proc unsafe_set[t,n] (a: &(t^n), i:size, v:t) { a . (i.int) <- v; }
+
   proc set[t,n, I in ints] (a: &array[t,n], i:I,v:t) {
     assert i.size < (*a).len;
     unsafe_set (a,i.size,v);

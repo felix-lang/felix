@@ -70,7 +70,7 @@ let make_inner_function state bsym_table closure_bid sr vs ps =
   in
 
   (* Make the argument that we'll pass to our wrapped function. *)
-  let arg = bexpr_name closed_type (closed_bid, ts) in
+  let arg = bexpr_varname closed_type (closed_bid, ts) in
 
   (* Return a couple parameters *)
   ts, param, arg
@@ -97,7 +97,7 @@ let gen_case_closure_entry state bsym_table sr f at rt =
   in
 
   (* Make the argument that we'll pass to our wrapped function. *)
-  let arg = bexpr_name at (p_bid, []) in
+  let arg = bexpr_varname at (p_bid, []) in
 
   (* the instructions of the function *)
   let exes =
@@ -147,7 +147,7 @@ let gen_composite_closure_entry state bsym_table sr (f1,t1) (f2,t2) =
   in
 
   (* Make the argument that we'll pass to our wrapped function. *)
-  let arg = bexpr_name a1t (p_bid, []) in
+  let arg = bexpr_varname a1t (p_bid, []) in
 
   (* the instructions of the function *)
   let exes =
@@ -183,7 +183,7 @@ let gen_closure state bsym_table bid t =
   let closure_bid = fresh_bid state.syms.counter in
 
 (*
-print_endline ("Generating closure "^ string_of_int closure_bid ^ " for " ^ string_of_int bid);
+print_endline ("Generating closure "^ string_of_int closure_bid ^ " for " ^ string_of_int bid ^ "=" ^ Flx_bsym.id bsym);
 *)
   (* Add the closure wrapper to symbol table. We'll replace it later with the
    * real values. *)
@@ -198,7 +198,6 @@ print_endline ("Generating closure "^ string_of_int closure_bid ^ " for " ^ stri
     closure_bid
     (Flx_bsym.sr bsym)
   in
-
   let bbdcl =
     match Flx_bsym.bbdcl bsym with
     | BBDCL_external_fun (_,vs,ps,ret,_,_,_) ->
@@ -208,9 +207,15 @@ print_endline ("Generating closure "^ string_of_int closure_bid ^ " for " ^ stri
         let exes =
           match ret with
           | BTYP_void ->
+(*
+print_endline "Closure of primitive procedure";
+*)
               [ bexe_call_prim (Flx_bsym.sr bsym, bid, ts, arg);
                 bexe_proc_return (Flx_bsym.sr bsym) ]
           | _ ->
+(*
+print_endline "Closure of primitive function";
+*)
               let e = bexpr_apply_prim ret (bid, ts, arg) in
               [ bexe_fun_return (Flx_bsym.sr bsym, e) ]
         in
@@ -219,6 +224,9 @@ print_endline ("Generating closure "^ string_of_int closure_bid ^ " for " ^ stri
 
     | BBDCL_struct (vs,ps)
     | BBDCL_cstruct (vs,ps,_) ->
+(*
+print_endline "Closure of struct or cstruct constructor ";
+*)
         let ts, param, arg = make_inner_function vs (List.map snd ps) in
 
         (* Generate a call to the wrapped function. *)
@@ -228,6 +236,9 @@ print_endline ("Generating closure "^ string_of_int closure_bid ^ " for " ^ stri
         bbdcl_fun ([],vs,([param],None),btyp_inst (bid,[]),exes)
 
     | BBDCL_nonconst_ctor (vs,_,ret,_,p,_,_) as foo ->
+(*
+print_endline "Closure of nonconst ctor";
+*)
         let ts, param, arg = make_inner_function vs [p] in
 
         (* Generate a call to the wrapped function. *)
@@ -274,10 +285,11 @@ print_endline ("mlcls: WARNING: NOT replacing use of callback function "^string_
     cls
 *)
 
-  | BBDCL_external_fun _
-  | BBDCL_struct _
-  | BBDCL_cstruct _
-  | BBDCL_nonconst_ctor _ ->
+  | BBDCL_external_fun _ -> assert false
+  | BBDCL_struct _ -> assert false
+  | BBDCL_cstruct _ -> assert false
+  | BBDCL_nonconst_ctor _ -> assert false;
+print_endline ("OLD CLOSURE MAKER: closure of index " ^ si i);
       mkcls state bsym_table all_closures i ts t
 
   | BBDCL_fun (props,_,_,_,_) when List.mem `Cfun props -> 
@@ -296,16 +308,21 @@ print_endline ("mlcls: WARNING: NOT replacing use of callback function "^string_
 (* processes closures *)
 let rec adj_cls state bsym_table all_closures sr e =
   let adj e = adj_cls state bsym_table all_closures sr e in
-  match Flx_bexpr.map ~f_bexpr:adj e with
+  let e = Flx_bexpr.map ~f_bexpr:adj e in
+  match e with
   | BEXPR_closure (i,ts),t ->
-      check_prim state bsym_table all_closures i ts t
+   check_prim state bsym_table all_closures i ts t
 
   | BEXPR_apply_direct (i,ts,a),t as x ->
-      (* Direct calls to non-stacked functions require heap but not a clone. *)
-      all_closures := BidSet.add i !all_closures;
-      x
+   (* Direct calls to non-stacked functions require heap but not a clone. *)
+   all_closures := BidSet.add i !all_closures;
+   x
 
-  | x -> x
+  | BEXPR_varname (i,ts),t ->
+   e
+
+  | x ->
+    x
 
 (* processes explicit lambda terms *)
 let rec adj_lambda state bsym_table all_closures sr e =
@@ -439,6 +456,7 @@ let process_entry ue state bsym_table all_closures i =
 let set_closure bsym_table i = add_prop bsym_table `Heap_closure i
 
 let make_closures state bsym_table =
+print_endline "RUNNING OLD CLOSURE MAKER";
   let ue = adj_cls in
   let all_closures = ref BidSet.empty in
   let used = full_use_closure state.syms bsym_table in
@@ -451,6 +469,7 @@ let make_closures state bsym_table =
  * expensive, since we do this for functions that never get called
  *)
 let premake_closures (syms:Flx_mtypes2.sym_state_t) bsym_table =
+print_endline "RUNNING OLD CLOSURE PREMAKER";
   let ue = adj_lambda in
   let state = make_closure_state syms in
   let all_closures = ref BidSet.empty in
