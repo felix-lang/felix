@@ -6016,6 +6016,7 @@ let lookup_sn_in_env
   env
   sn
 =
+print_endline ("Lookup suffixed name " ^ string_of_suffixed_name sn);
   let sr = src_of_suffixed_name sn in
   let bt t = inner_bind_type state bsym_table env sr rsground t in
   match sn with
