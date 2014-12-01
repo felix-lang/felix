@@ -174,130 +174,18 @@ let gen_composite_closure_entry state bsym_table sr (f1,t1) (f2,t2) =
   closure_bid,ts
  
 
-(** This generates closures for calling external functions. It does this by
- * generating a new function that contains part of the closed values. *)
-let gen_closure state bsym_table bid t =
-  let bsym_parent, bsym = Flx_bsym_table.find_with_parent bsym_table bid in
-
-  (* Make a bid for our closure wrapper function. *)
-  let closure_bid = fresh_bid state.syms.counter in
-
-(*
-print_endline ("Generating closure "^ string_of_int closure_bid ^ " for " ^ string_of_int bid ^ "=" ^ Flx_bsym.id bsym);
-*)
-  (* Add the closure wrapper to symbol table. We'll replace it later with the
-   * real values. *)
-  Flx_bsym_table.add bsym_table closure_bid bsym_parent (Flx_bsym.create
-    ~sr:(Flx_bsym.sr bsym)
-    ("_a" ^ string_of_int closure_bid ^ "_" ^ Flx_bsym.id bsym)
-    (bbdcl_invalid ()));
-
-  let make_inner_function = make_inner_function
-    state
-    bsym_table
-    closure_bid
-    (Flx_bsym.sr bsym)
-  in
-  let bbdcl =
-    match Flx_bsym.bbdcl bsym with
-    | BBDCL_external_fun (_,vs,ps,ret,_,_,_) ->
-        let ts, param, arg = make_inner_function vs ps in
-
-        (* Generate a call to the wrapped function. *)
-        let exes =
-          match ret with
-          | BTYP_void ->
-(*
-print_endline "Closure of primitive procedure";
-*)
-              [ bexe_call_prim (Flx_bsym.sr bsym, bid, ts, arg);
-                bexe_proc_return (Flx_bsym.sr bsym) ]
-          | _ ->
-(*
-print_endline "Closure of primitive function";
-*)
-              let e = bexpr_apply_prim ret (bid, ts, arg) in
-              [ bexe_fun_return (Flx_bsym.sr bsym, e) ]
-        in
-
-        bbdcl_fun ([],vs,([param],None),ret,exes)
-
-    | BBDCL_struct (vs,ps)
-    | BBDCL_cstruct (vs,ps,_) ->
-(*
-print_endline "Closure of struct or cstruct constructor ";
-*)
-        let ts, param, arg = make_inner_function vs (List.map snd ps) in
-
-        (* Generate a call to the wrapped function. *)
-        let e = bexpr_apply_struct t (bid, ts, arg) in
-        let exes = [bexe_fun_return (Flx_bsym.sr bsym, e)] in
-
-        bbdcl_fun ([],vs,([param],None),btyp_inst (bid,[]),exes)
-
-    | BBDCL_nonconst_ctor (vs,_,ret,_,p,_,_) as foo ->
-(*
-print_endline "Closure of nonconst ctor";
-*)
-        let ts, param, arg = make_inner_function vs [p] in
-
-        (* Generate a call to the wrapped function. *)
-        let e = bexpr_apply_struct ret (bid, ts, arg) in
-        let exes = [bexe_fun_return (Flx_bsym.sr bsym, e)] in
-
-        bbdcl_fun ([],vs,([param],None),ret,exes)
-
-    | _ -> assert false
-  in
-
-  (* Finally, replace our wrapper temp bbdcl with our new bbdcl. *)
-  Flx_bsym_table.update_bbdcl bsym_table closure_bid bbdcl;
-
-  (* Return the wrapper. *)
-  closure_bid
-
-let mkcls state bsym_table all_closures i ts t =
-  let j =
-    try Hashtbl.find state.wrappers i
-    with Not_found ->
-      let j = gen_closure state bsym_table i t in
-      Hashtbl.add state.wrappers i j;
-      j
-  in
-    all_closures := BidSet.add j !all_closures;
-    bexpr_closure t (j,ts)
-
 let check_prim state bsym_table all_closures i ts t =
   match Flx_bsym_table.find_bbdcl bsym_table i with
   | BBDCL_external_fun (_,_,_,_,_,_,`Callback _) ->
-(*
-print_endline ("mlcls: WARNING: NOT replacing use of callback function "^string_of_int i^" with wrapper ");
-*)
    bexpr_closure t (i,ts)
-(*
-    let cls = mkcls state bsym_table all_closures i ts t in
-    begin match cls with
-    | BEXPR_closure (j,ts2),_ ->
-print_endline ("mlcls: WARNING: NOT replacing use of callback function "^string_of_int i^" with wrapper " ^ string_of_int j);
-    | _ -> assert false
-    end
-    ;
-    cls
-*)
+
 
   | BBDCL_external_fun _ -> assert false
   | BBDCL_struct _ -> assert false
   | BBDCL_cstruct _ -> assert false
   | BBDCL_nonconst_ctor _ -> assert false;
-print_endline ("OLD CLOSURE MAKER: closure of index " ^ si i);
-      mkcls state bsym_table all_closures i ts t
 
   | BBDCL_fun (props,_,_,_,_) when List.mem `Cfun props -> 
-    (* closure of a C function is just a function pointer *)
-    (* NOTE: this is CRAP. BECAUSE we may still need to wrap a cfun
-       if it is passed to a Felix function type, but not if it's a C
-       function type. So we need to look at the call/apply typing.
-    *)
     bexpr_closure t (i,ts)
 
   | x ->
@@ -456,7 +344,9 @@ let process_entry ue state bsym_table all_closures i =
 let set_closure bsym_table i = add_prop bsym_table `Heap_closure i
 
 let make_closures state bsym_table =
+(*
 print_endline "RUNNING OLD CLOSURE MAKER";
+*)
   let ue = adj_cls in
   let all_closures = ref BidSet.empty in
   let used = full_use_closure state.syms bsym_table in

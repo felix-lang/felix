@@ -65,15 +65,15 @@ let stack_calls syms bsym_table =
 let optimize_bsym_table' syms bsym_table root_proc =
   print_debug syms "//OPTIMISING";
 
-print_endline "[flx_opt]; Finding roots";
+print_debug syms "[flx_opt]; Finding roots";
   (* Find the root and exported functions and types. *)
   Flx_use.find_roots syms bsym_table root_proc syms.Flx_mtypes2.bifaces;
 
-print_endline "[flx_opt]; Monomorphising";
+print_debug syms "[flx_opt]; Monomorphising";
   (* monomorphise *)
   let bsym_table = Flx_numono.monomorphise2 true syms bsym_table in
 
-print_endline "[flx_opt]; Verifying typeclass elimination";
+print_debug syms "[flx_opt]; Verifying typeclass elimination";
   (* check no typeclasses are left *)
   Flx_bsym_table.iter
   (fun id pa sym -> 
@@ -92,11 +92,11 @@ print_endline "[flx_opt]; Verifying typeclass elimination";
   ;
 
 
-print_endline "[flx_opt]; Downgrading abstract types to representations";
+print_debug syms "[flx_opt]; Downgrading abstract types to representations";
   (* Downgrade abstract types now. *)
   let bsym_table = Flx_strabs.strabs bsym_table in
 
-print_endline "[flx_opt]; Verifying abstract type elimination";
+print_debug syms "[flx_opt]; Verifying abstract type elimination";
   (* check no abstract types are left *)
   Flx_bsym_table.iter
   (fun id pa sym -> 
@@ -107,40 +107,40 @@ print_endline "[flx_opt]; Verifying abstract type elimination";
   bsym_table
   ;
 
-print_endline "[flx_opt]; Removing unused symbols";
+print_debug syms "[flx_opt]; Removing unused symbols";
   (* Clean up the symbol table. *)
   let bsym_table = Flx_use.copy_used syms bsym_table in
 
-print_endline "[flx_opt]; Uncurrying curried function";
+print_debug syms "[flx_opt]; Uncurrying curried function";
   (* Uncurry curried functions. *)
   let bsym_table = uncurry_functions syms bsym_table in
 
-print_endline "[flx_opt]; Converting functions to procedures";
+print_debug syms "[flx_opt]; Converting functions to procedures";
   (* convert functions to procedures *)
   let bsym_table = mkproc syms bsym_table in
 
-print_endline "[flx_opt]; Inlining";
+print_debug syms "[flx_opt]; Inlining";
   (* Perform the inlining. *)
   Flx_inline.heavy_inlining syms bsym_table;
 
-print_endline "[flx_opt]; Generating wrappers (new)";
+print_debug syms "[flx_opt]; Generating wrappers (new)";
   (* make wrappers for non-function functional values *)
   let bsym_table = Flx_mkcls2.make_wrappers syms bsym_table in
 
-print_endline "[flx_opt]; Remove unused symbols";
+print_debug syms "[flx_opt]; Remove unused symbols";
   (* Clean up the symbol table. *)
   let bsym_table = Flx_use.copy_used syms bsym_table in
 
-print_endline "[flx_opt]; Eliminate dead code";
+print_debug syms "[flx_opt]; Eliminate dead code";
   (* Eliminate dead code. *)
   let elim_state = Flx_elim.make_elim_state syms bsym_table in
   Flx_elim.eliminate_unused elim_state;
 
-print_endline "[flx_opt]; Do stack call optimisation";
+print_debug syms "[flx_opt]; Do stack call optimisation";
   (* Convert functions into stack calls. *)
   let bsym_table = stack_calls syms bsym_table in
 
-print_endline "[flx_opt]; optimisation pass complete";
+print_debug syms "[flx_opt]; optimisation pass complete";
   bsym_table
 
 

@@ -10,6 +10,7 @@ val list_last: 'a list -> 'a
 (** position in list of value *)
 val list_index: 'a list -> 'a -> int option
 val list_assoc_index: ('a * 'b) list -> 'a -> int option
+val list_assoc_index_with_assoc: ('a * 'b) list -> 'a -> (int * 'b) option
 
 (** forward order map *)
 val list_omap: ('a -> 'b) -> 'a list -> 'b list

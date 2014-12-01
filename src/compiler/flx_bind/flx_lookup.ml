@@ -2349,6 +2349,9 @@ print_endline ("LOOKUP 1: varname " ^ si index);
     end
 
   | `AST_name (sr,name,ts) ->
+(*
+print_endline ("lookup_qn_with_sig' [AST_name] " ^ name ^ ", sigs=" ^ catmap "," (sbt bsym_table) signs);
+*)
     (* HACKERY TO SUPPORT _ctor_type lookup -- this is really gross,
        since the error could be anything ..  the retry here should
        only be used if the lookup failed because sig_of_symdef found
@@ -2734,11 +2737,11 @@ and lookup_name_with_sig'
   ts
   t2
 =
-  (*
-  print_endline ("[lookup_name_with_sig] " ^ name ^
+(*
+  print_endline ("[lookup_name_with_sig'] " ^ name ^
     " of " ^ catmap "," (sbt bsym_table) t2)
   ;
-  *)
+*)
   match env with
   | [] ->
     clierr srn
@@ -2776,6 +2779,81 @@ and lookup_name_with_sig
   ts
   t2
 =
+(*
+  print_endline ("[lookup_name_with_sig] " ^ name ^
+    " of " ^ catmap "," (sbt bsym_table) t2)
+  ;
+*)
+ let projection = 
+   match t2 with
+   | [BTYP_inst (j,ts') as d] ->
+     let bsym = try Some (Flx_bsym_table.find bsym_table j) with Not_found -> None in
+     begin match bsym with
+     | Some bsym ->
+(*
+       print_endline ("Found nominal type "^si j ^" in bound symbol table");
+*)
+       begin match Flx_bsym.bbdcl bsym with
+       | BBDCL_struct (vs,fields) 
+       | BBDCL_cstruct (vs, fields,_) ->
+         begin match
+            Flx_list.list_assoc_index_with_assoc fields name
+         with
+         | Some (k,ft) ->
+           (*
+           print_endline ("FOUND STRUCT FIELD " ^ name ^ " in bound table");
+           *)
+           let ft = 
+             try tsubst vs ts' ft 
+             with _ -> print_endline "[lookup_name_with_sig] Hassle replacing vs with ts??"; assert false
+           in
+           Some (bexpr_prj k d ft) 
+         | None -> None
+         end
+       | _ -> None
+       end
+     | None -> 
+(*
+       print_endline ("Can't find nominal type " ^ si j ^ " in bound symbol table .. trying unbound table");
+*)
+       begin try
+         match hfind "lookup" state.sym_table j with
+         | { Flx_sym.symdef=SYMDEF_struct fields; vs=vs } 
+         | { Flx_sym.symdef=SYMDEF_cstruct (fields,_); vs=vs } ->
+           begin match
+              Flx_list.list_assoc_index_with_assoc fields name
+           with
+           | Some _ ->
+             print_endline ("FOUND STRUCT FIELD " ^ name ^ " in unbound table: FIXME!!");
+             assert false;
+             None
+           | None -> None
+           end
+         | _ -> None
+       with _ ->
+         print_endline ("Can't find nominal type " ^ si j ^ " in unbound symbol table????");
+         assert false
+       end
+     end
+   | [BTYP_record (_,fields) as d] ->
+     (* this sort shouldn't be necessary because the constructor does it anyhow *)
+     let rcmp (s1,_) (s2,_) = compare s1 s2 in
+     let fields = List.sort rcmp fields in
+     begin match
+       Flx_list.list_assoc_index_with_assoc fields name
+     with
+     | Some (k,ft) ->
+       (*
+       print_endline ("FOUND RECORD FIELD " ^ name);
+       *)
+       Some (bexpr_prj k d ft)
+     | None -> None
+     end
+   | _ -> None
+ in
+ match projection with
+ | Some p -> p
+ | None ->
  try
  let result = 
   lookup_name_with_sig'
@@ -3749,6 +3827,29 @@ assert false; (* shouldn't happen now! *)
   | EXPR_variant (sr,(s,e)) ->
     let (_,t) as e = be e in
     bexpr_variant (btyp_variant [s,t]) (s,e)
+
+  | EXPR_projection (sr,v,t) -> 
+    let t = bt sr t in
+    begin match t with
+    | BTYP_tuple ts ->
+      let n = List.length ts in
+      if v < 0 || v >= n then
+        clierr sr ("[Flx_lookup.bind_expression] projection index " ^ si v ^ 
+          " negative or >= " ^ si n ^ "for tuple type " ^ sbt bsym_table t)
+      else
+        let c = List.nth ts v in
+        bexpr_prj v t c
+ 
+    | BTYP_array (BTYP_unitsum n,base) ->
+      if v < 0 || v >= n then
+        clierr sr ("[Flx_lookup.bind_expression] projection index " ^ si v ^ 
+          " negative or >= " ^ si n ^ "for array type " ^ sbt bsym_table t)
+      else
+        bexpr_prj v t base
+
+    | _ ->
+      clierr sr ("[Flx_lookup.bind_expression] projection requires tuple or array type, got " ^ sbt bsym_table t);
+    end
 
   | EXPR_typed_case (sr,v,t) ->
 (*

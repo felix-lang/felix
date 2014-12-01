@@ -108,6 +108,10 @@ and string_of_expr (e:expr_t) =
     "(case " ^ si v ^
     " of " ^ string_of_typecode t ^ ")"
 
+  | EXPR_projection (_,v,t) ->
+    "(proj " ^ si v ^
+    " of " ^ string_of_typecode t ^ ")"
+
   | EXPR_lookup (_, (e, name, ts)) ->
       "(" ^ se e ^ ")::" ^ string_of_id name ^
       (
@@ -261,21 +265,6 @@ and string_of_expr (e:expr_t) =
     ps
     ^
     " endmatch"
-
-(*
-  | EXPR_type_match (_,(e, ps)) ->
-    "typematch " ^ string_of_typecode e ^ " with " ^
-    catmap "\n"
-    (fun (p,e')->
-      " | " ^
-      string_of_tpattern p ^
-      " => " ^
-      string_of_typecode e'
-    )
-    ps
-    ^
-    " endmatch"
-*)
 
   | EXPR_type_match (_,(e, ps)) ->
     "typematch " ^ string_of_typecode e ^ " with " ^

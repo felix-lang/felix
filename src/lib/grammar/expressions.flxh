@@ -147,6 +147,9 @@ syntax expressions {
   //$ Case value.
   x[scase_literal_pri] := "case" sinteger "of" x[ssum_pri] =># "`(ast_typed_case ,_2 ,_4)";
 
+  //$ Tuple projection function.
+  x[scase_literal_pri] := "proj" sinteger "of" x[ssum_pri] =># "`(ast_projection ,_2 ,_4)";
+
   //$ Variant value.
   x[scase_literal_pri] := "case" sname "of" x[ssum_pri] =># "`(ast_variant (,_2 ,_4))";
 
