@@ -1,0 +1,607 @@
+
+(*
+This module is responsible for generating functional wrappers for 
+constructions which are used as function values requiring
+a closure, but which are not functions. For example union constructors
+are not functions, but Felix allows them to be used as fuctions
+because they take arguments. They can be converted to functions
+on demand by simply wrapping them inside a function. In effect
+this is lambda lifting done late.
+
+Certain other terms represent functions but are not in the right
+form to make a closure, in particular the series composition 
+operator is intended to represent a function but needs a wrapper
+to effect this.
+
+This module generates wrappers as required and replaces cases of
+closures of non-function entities with closures over the generated
+wrappers.
+*)
+open Flx_util
+open Flx_ast
+open Flx_types
+open Flx_btype
+open Flx_bexpr
+open Flx_bexe
+open Flx_bparameter
+open Flx_bbdcl
+open Flx_set
+open Flx_mtypes2
+open Flx_print
+open Flx_typing
+open Flx_unify
+open Flx_exceptions
+open Flx_use
+open Flx_prop
+
+type closure_state_t = {
+  syms: Flx_mtypes2.sym_state_t;
+  wrappers : (Flx_types.bid_t, Flx_types.bid_t) Hashtbl.t;
+}
+
+
+let make_closure_state syms =
+  {
+    syms = syms;
+    wrappers = Hashtbl.create 97;
+  }
+
+
+let make_inner_function state bsym_table closure_bid sr vs ps =
+  (* Make the type of the closed value. *)
+  let closed_type = match ps with [t] -> t | ts -> btyp_tuple ts in
+
+  (* Make the closed value that's hidden inside our wrapper function. *)
+  let closed_bid = fresh_bid state.syms.counter in
+  let closed_name = "_a" ^ string_of_bid closed_bid in
+  let closed_val = bbdcl_val (vs,closed_type,`Val) in
+
+  Flx_bsym_table.add bsym_table closed_bid (Some closure_bid)
+    (Flx_bsym.create ~sr closed_name closed_val);
+
+  (* Make the type variables of the inner call. *)
+  let ts = List.map (fun (_,i) -> btyp_type_var (i,btyp_type 0)) vs in
+
+  (* Make the parameters for the wrapper function. *)
+  let param =
+    { pkind=`PVal;
+      pid=closed_name;
+      pindex=closed_bid;
+      ptyp=closed_type }
+  in
+
+  (* Make the argument that we'll pass to our wrapped function. *)
+  let arg = bexpr_varname closed_type (closed_bid, ts) in
+
+  (* Return a couple parameters *)
+  ts, param, arg
+
+
+(*
+let gen_case_closure_entry state bsym_table sr f at rt =
+  let vs = [] in (* HACK, temporary, WRONG *)
+  let ts = [] in (* HACK, temporary, WRONG *)
+  (* Make a bid for our closure wrapper function. *)
+  let closure_bid = fresh_bid state.syms.counter in
+
+  (* Make the wrapper function parameter variable. *)
+  let p_bid = fresh_bid state.syms.counter in
+  let p_name = "_a" ^ string_of_bid p_bid in
+  let p_val = bbdcl_val (vs,at,`Val) in
+
+  (* Make the parameters for the wrapper function. *)
+  let param =
+    { pkind=`PVal;
+      pid=p_name;
+      pindex=p_bid;
+      ptyp=at}
+  in
+
+  (* Make the argument that we'll pass to our wrapped function. *)
+  let arg = bexpr_varname at (p_bid, []) in
+
+  (* the instructions of the function *)
+  let exes =
+    let e1 = bexpr_apply rt (f, arg) in
+    [ bexe_fun_return (sr, e1) ]
+  in
+
+  (* the function record *)
+  let bbdcl = bbdcl_fun ([],vs,([param],None),rt,exes) in
+
+  (* the complete symbol *)
+  let bsym = Flx_bsym.create ~sr:sr ("_a" ^ string_of_int closure_bid ) (bbdcl) in
+
+  (* now add it to the table *)
+  Flx_bsym_table.add bsym_table closure_bid None bsym;
+
+  (* add the parameter afterwards so its parent exists *)
+  Flx_bsym_table.add bsym_table p_bid (Some closure_bid)
+    (Flx_bsym.create ~sr p_name p_val)
+  ;
+
+(* return the index of the wrapper generated *)
+  closure_bid,ts
+ 
+
+let gen_composite_closure_entry state bsym_table sr (f1,t1) (f2,t2) =
+  let vs = [] in (* HACK, temporary, WRONG *)
+  let ts = [] in (* HACK, temporary, WRONG *)
+  let a1t,r1t,a2t,r2t = match t1, t2 with
+  | BTYP_function (a1t,r1t), BTYP_function (a2t,r2t) -> a1t,r1t,a2t,r2t
+  | _ -> assert false
+  in
+  (* Make a bid for our closure wrapper function. *)
+  let closure_bid = fresh_bid state.syms.counter in
+
+  (* Make the wrapper function parameter variable. *)
+  let p_bid = fresh_bid state.syms.counter in
+  let p_name = "_a" ^ string_of_bid p_bid in
+  let p_val = bbdcl_val (vs,a1t,`Val) in
+
+  (* Make the parameters for the wrapper function. *)
+  let param =
+    { pkind=`PVal;
+      pid=p_name;
+      pindex=p_bid;
+      ptyp=a1t}
+  in
+
+  (* Make the argument that we'll pass to our wrapped function. *)
+  let arg = bexpr_varname a1t (p_bid, []) in
+
+  (* the instructions of the function *)
+  let exes =
+    let e1 = bexpr_apply r1t ((f1,t1), arg) in
+    let e2 = bexpr_apply r2t ((f2,t2), e1) in
+    [ bexe_fun_return (sr, e2) ]
+  in
+
+  (* the function record *)
+  let bbdcl = bbdcl_fun ([],vs,([param],None),r2t,exes) in
+
+  (* the complete symbol *)
+  let bsym = Flx_bsym.create ~sr:sr ("_a" ^ string_of_int closure_bid ) (bbdcl) in
+
+  (* now add it to the table *)
+  Flx_bsym_table.add bsym_table closure_bid None bsym;
+
+  (* add the parameter afterwards so its parent exists *)
+  Flx_bsym_table.add bsym_table p_bid (Some closure_bid)
+    (Flx_bsym.create ~sr p_name p_val)
+  ;
+
+(* return the index of the wrapper generated *)
+  closure_bid,ts
+ 
+
+(** This generates closures for calling external functions. It does this by
+ * generating a new function that contains part of the closed values. *)
+let gen_closure state bsym_table bid t =
+  let bsym_parent, bsym = Flx_bsym_table.find_with_parent bsym_table bid in
+
+  (* Make a bid for our closure wrapper function. *)
+  let closure_bid = fresh_bid state.syms.counter in
+
+(*
+print_endline ("Generating closure "^ string_of_int closure_bid ^ " for " ^ string_of_int bid);
+*)
+  (* Add the closure wrapper to symbol table. We'll replace it later with the
+   * real values. *)
+  Flx_bsym_table.add bsym_table closure_bid bsym_parent (Flx_bsym.create
+    ~sr:(Flx_bsym.sr bsym)
+    ("_a" ^ string_of_int closure_bid ^ "_" ^ Flx_bsym.id bsym)
+    (bbdcl_invalid ()));
+
+  let make_inner_function = make_inner_function
+    state
+    bsym_table
+    closure_bid
+    (Flx_bsym.sr bsym)
+  in
+
+  let bbdcl =
+    match Flx_bsym.bbdcl bsym with
+    | BBDCL_external_fun (_,vs,ps,ret,_,_,_) ->
+        let ts, param, arg = make_inner_function vs ps in
+
+        (* Generate a call to the wrapped function. *)
+        let exes =
+          match ret with
+          | BTYP_void ->
+              [ bexe_call_prim (Flx_bsym.sr bsym, bid, ts, arg);
+                bexe_proc_return (Flx_bsym.sr bsym) ]
+          | _ ->
+              let e = bexpr_apply_prim ret (bid, ts, arg) in
+              [ bexe_fun_return (Flx_bsym.sr bsym, e) ]
+        in
+
+        bbdcl_fun ([],vs,([param],None),ret,exes)
+
+    | BBDCL_struct (vs,ps)
+    | BBDCL_cstruct (vs,ps,_) ->
+        let ts, param, arg = make_inner_function vs (List.map snd ps) in
+
+        (* Generate a call to the wrapped function. *)
+        let e = bexpr_apply_struct t (bid, ts, arg) in
+        let exes = [bexe_fun_return (Flx_bsym.sr bsym, e)] in
+
+        bbdcl_fun ([],vs,([param],None),btyp_inst (bid,[]),exes)
+
+    | BBDCL_nonconst_ctor (vs,_,ret,_,p,_,_) as foo ->
+        let ts, param, arg = make_inner_function vs [p] in
+
+        (* Generate a call to the wrapped function. *)
+        let e = bexpr_apply_struct ret (bid, ts, arg) in
+        let exes = [bexe_fun_return (Flx_bsym.sr bsym, e)] in
+
+        bbdcl_fun ([],vs,([param],None),ret,exes)
+
+    | _ -> assert false
+  in
+
+  (* Finally, replace our wrapper temp bbdcl with our new bbdcl. *)
+  Flx_bsym_table.update_bbdcl bsym_table closure_bid bbdcl;
+
+  (* Return the wrapper. *)
+  closure_bid
+
+let mkcls state bsym_table nutab i ts t =
+  let j =
+    try Hashtbl.find state.wrappers i
+    with Not_found ->
+      let j = gen_closure state bsym_table nutab i t in
+      Hashtbl.add state.wrappers i j;
+      j
+  in
+    bexpr_closure t (j,ts)
+
+*)
+
+let rec chk_expr state bsym_table nutab sr exe e : Flx_bexpr.t = 
+(* print_endline ("Check expr " ^ sbe bsym_table e); *)
+  let sbx exe = string_of_bexe bsym_table 0 exe in
+  let ce e = chk_expr state bsym_table nutab sr exe e in 
+  match e with
+  | BEXPR_apply ((BEXPR_closure (i,ts),ft),e),rt ->
+    begin
+      let bsym = Flx_bsym_table.find bsym_table i in
+      match Flx_bsym.bbdcl bsym with
+      | BBDCL_external_fun _ -> bexpr_apply_prim rt (i,ts,ce e)
+      | BBDCL_struct _  -> bexpr_apply_struct rt (i,ts,ce e)
+      | BBDCL_cstruct  _  -> bexpr_apply_struct rt (i,ts,ce e)
+      | BBDCL_nonconst_ctor  _  -> bexpr_apply_struct rt (i,ts,ce e)
+      | BBDCL_fun _ -> bexpr_apply_direct rt (i,ts,ce e)
+      | _ -> assert false 
+    end
+
+  | BEXPR_apply ((BEXPR_inj (n,d,c),ft) as f,e),rt ->
+    bexpr_apply rt (f,ce e)
+
+  | BEXPR_apply ((BEXPR_prj (n,d,c),ft) as f,e),rt ->
+    bexpr_apply rt (f,ce e)
+
+  | BEXPR_apply ((BEXPR_aprj (ix,d,c),ft),e),rt ->
+    let ix = ce ix in
+    bexpr_apply rt (bexpr_aprj ix d c,ce e)
+
+
+  | BEXPR_apply (f,e),t -> 
+    bexpr_apply t (ce f, ce e)
+
+  | BEXPR_closure (i,ts),t ->
+    begin
+      let bsym = Flx_bsym_table.find bsym_table i in
+      let fsr = Flx_bsym.sr bsym in 
+      match Flx_bsym.bbdcl bsym with
+      | BBDCL_external_fun (_,_,_,_,_,_,`Callback _) ->
+        print_endline ("in exe=" ^ sbx exe ^ " \nCallback passed as argument [not allowed?] " ^ sbe bsym_table e);
+        e
+
+      | BBDCL_fun (props,_,_,_,_) when List.mem `Cfun props -> 
+(*
+        print_endline ("in exe=" ^ sbx exe ^ "\nCfun function pointer passed as argument? " ^ sbe bsym_table e);
+*)
+        e
+
+      | BBDCL_external_fun (_,vs,ps,ret,_,_,_) ->
+        print_endline ("in exe=" ^ sbx exe ^ "\nPrimitive function passed as argument " ^ sbe bsym_table e);
+        assert (ts = []);
+        let closure_bid = fresh_bid state.syms.counter in
+        let closure_name = ("_a" ^ string_of_int closure_bid ^ "_" ^ Flx_bsym.id bsym) in
+        Flx_bsym_table.add nutab closure_bid None 
+          (Flx_bsym.create ~sr:fsr closure_name (bbdcl_invalid ()))
+        ;
+        let ts,param, arg = make_inner_function state nutab closure_bid fsr vs ps in
+
+        (* Generate a call to the wrapped function. *)
+        let exes =
+          match ret with
+          | BTYP_void ->
+              [ bexe_call_prim (fsr, i, ts, arg);
+                bexe_proc_return fsr ]
+          | _ ->
+              let e = bexpr_apply_prim ret (i, ts, arg) in
+              [ bexe_fun_return (fsr, e) ]
+        in
+
+        let bbdcl = bbdcl_fun ([],[],([param],None),ret,exes) in
+        Flx_bsym_table.update_bbdcl nutab closure_bid bbdcl;
+        bexpr_closure t (closure_bid, [])
+
+      | BBDCL_struct (vs,ps) ->
+(*
+        print_endline ("in exe=" ^ sbx exe ^ "\nStruct passed as argument " ^ sbe bsym_table e);
+*)
+        assert (ts = []);
+        let closure_bid = fresh_bid state.syms.counter in
+        let closure_name = ("_a" ^ string_of_int closure_bid ^ "_" ^ Flx_bsym.id bsym) in
+        Flx_bsym_table.add nutab closure_bid None 
+          (Flx_bsym.create ~sr:fsr closure_name (bbdcl_invalid ()))
+        ;
+        let ts,param, arg = make_inner_function state nutab closure_bid fsr vs (List.map snd ps) in
+
+        (* Generate a call to the wrapped function. *)
+        let exes =
+           let e = bexpr_apply_struct t (i, ts, arg) in
+           [ bexe_fun_return (fsr, e) ]
+        in
+        let ret = btyp_inst (i,ts) in 
+        let bbdcl = bbdcl_fun ([],[],([param],None),ret,exes) in
+        Flx_bsym_table.update_bbdcl nutab closure_bid bbdcl;
+        bexpr_closure t (closure_bid, [])
+
+      | BBDCL_cstruct (vs,ps,_) ->
+(*
+        print_endline ("in exe=" ^ sbx exe ^ "\nCstruct passed as argument " ^ sbe bsym_table e);
+*)
+        assert (ts = []);
+        let closure_bid = fresh_bid state.syms.counter in
+        let closure_name = ("_a" ^ string_of_int closure_bid ^ "_" ^ Flx_bsym.id bsym) in
+        Flx_bsym_table.add nutab closure_bid None 
+          (Flx_bsym.create ~sr:fsr closure_name (bbdcl_invalid ()))
+        ;
+        let ts,param, arg = make_inner_function state nutab closure_bid fsr vs (List.map snd ps) in
+
+        (* Generate a call to the wrapped function. *)
+        let exes =
+           let e = bexpr_apply_struct t (i, ts, arg) in
+           [ bexe_fun_return (fsr, e) ]
+        in
+
+        let ret = btyp_inst (i,ts) in 
+        let bbdcl = bbdcl_fun ([],[],([param],None),ret,exes) in
+        Flx_bsym_table.update_bbdcl nutab closure_bid bbdcl;
+        bexpr_closure t (closure_bid, [])
+
+      | BBDCL_nonconst_ctor (vs,_,ret,_,p,_,_) as foo ->
+(*
+        print_endline ("in exe=" ^ sbx exe ^ "\nNon-const union constructor passed as argument" ^ sbe bsym_table e);
+*)
+        assert (ts = []);
+        let closure_bid = fresh_bid state.syms.counter in
+        let closure_name = ("_a" ^ string_of_int closure_bid ^ "_" ^ Flx_bsym.id bsym) in
+        Flx_bsym_table.add nutab closure_bid None 
+          (Flx_bsym.create ~sr:fsr closure_name (bbdcl_invalid ()))
+        ;
+        let ts,param, arg = make_inner_function state nutab closure_bid fsr vs [p] in
+
+        (* Generate a call to the wrapped function. *)
+        let exes =
+           let e = bexpr_apply_struct ret (i, ts, arg) in
+           [ bexe_fun_return (fsr, e) ]
+        in
+
+        let bbdcl = bbdcl_fun ([],[],([param],None),ret,exes) in
+        Flx_bsym_table.update_bbdcl nutab closure_bid bbdcl;
+        bexpr_closure t (closure_bid, [])
+
+
+      | _ -> e
+    end 
+
+  (* represents f1 (f2 x) i.e. second function applied first *)
+  | BEXPR_compose (f1,f2),t ->
+    print_endline ("in exe=" ^ sbx exe ^ "\nComposition passed as argument " ^ sbe bsym_table e);
+    let f1 = ce f1 in
+    let f2 = ce f2 in
+    let closure_bid = fresh_bid state.syms.counter in
+    let closure_name = ("_a" ^ string_of_int closure_bid ^ "_strtyp") in
+    Flx_bsym_table.add nutab closure_bid None 
+      (Flx_bsym.create ~sr:sr closure_name (bbdcl_invalid ()))
+    ;
+    let dom2,cod2= 
+      match f2 with 
+      | _,BTYP_function (d,c) -> d,c
+      | _ -> assert false 
+    in
+    let dom1,cod1 = 
+      match f1 with
+      | _,BTYP_function (d,c) -> d,c
+      | _ -> assert false
+    in
+    assert (cod2 = dom1); (* should use type_eq here .. *)
+    assert (cod1 = t);
+    let ts,param, arg = make_inner_function state nutab closure_bid sr [] [dom2] in
+
+    (* Generate a call to the wrapped function. *)
+    let exes =
+       let e = bexpr_apply cod2 (f2, arg) in
+       let e = bexpr_apply t (f1, e) in
+       [ bexe_fun_return (sr, e) ]
+    in
+
+    let bbdcl = bbdcl_fun ([],[],([param],None),cod1,exes) in
+    Flx_bsym_table.update_bbdcl nutab closure_bid bbdcl;
+    bexpr_closure t (closure_bid, [])
+
+  | BEXPR_prj (n,d,c),t as x ->
+    print_endline ("in exe=" ^ sbx exe ^ "\nProjection passed as argument " ^ sbe bsym_table e);
+    let closure_bid = fresh_bid state.syms.counter in
+    let closure_name = ("_a" ^ string_of_int closure_bid ^ "_strtyp") in
+    Flx_bsym_table.add nutab closure_bid None 
+      (Flx_bsym.create ~sr:sr closure_name (bbdcl_invalid ()))
+    ;
+    let ts,param, arg = make_inner_function state nutab closure_bid sr [] [d] in
+
+    (* Generate a call to the wrapped function. *)
+    let exes =
+       let e = bexpr_apply c (x, arg) in
+       [ bexe_fun_return (sr, e) ]
+    in
+
+    let bbdcl = bbdcl_fun ([],[],([param],None),c,exes) in
+    Flx_bsym_table.update_bbdcl nutab closure_bid bbdcl;
+    bexpr_closure t (closure_bid, [])
+
+
+  | BEXPR_inj (n,d,c),t as x ->
+    print_endline ("in exe=" ^ sbx exe ^ "\nInjection passed as argument " ^ sbe bsym_table e);
+    let closure_bid = fresh_bid state.syms.counter in
+    let closure_name = ("_a" ^ string_of_int closure_bid ^ "_strtyp") in
+    Flx_bsym_table.add nutab closure_bid None 
+      (Flx_bsym.create ~sr:sr closure_name (bbdcl_invalid ()))
+    ;
+    let ts,param, arg = make_inner_function state nutab closure_bid sr [] [d] in
+
+    (* Generate a call to the wrapped function. *)
+    let exes =
+       let e = bexpr_apply c (x, arg) in
+       [ bexe_fun_return (sr, e) ]
+    in
+
+    let bbdcl = bbdcl_fun ([],[],([param],None),c,exes) in
+    Flx_bsym_table.update_bbdcl nutab closure_bid bbdcl;
+    bexpr_closure t (closure_bid, [])
+
+  | BEXPR_aprj (idx,d,c),t as x->
+    print_endline ("in exe=" ^ sbx exe ^ "\nArray projection passed as argument " ^ sbe bsym_table e);
+    let idx = ce idx in
+    let closure_bid = fresh_bid state.syms.counter in
+    let closure_name = ("_a" ^ string_of_int closure_bid ^ "_strtyp") in
+    Flx_bsym_table.add nutab closure_bid None 
+      (Flx_bsym.create ~sr:sr closure_name (bbdcl_invalid ()))
+    ;
+    let ts,param, arg = make_inner_function state nutab closure_bid sr [] [d] in
+
+    (* Generate a call to the wrapped function. *)
+    let exes =
+       let p = bexpr_aprj idx d c in
+       let e = bexpr_apply c (p, arg) in
+       [ bexe_fun_return (sr, e) ]
+    in
+
+    let bbdcl = bbdcl_fun ([],[],([param],None),c,exes) in
+    Flx_bsym_table.update_bbdcl nutab closure_bid bbdcl;
+    bexpr_closure t (closure_bid, [])
+
+
+  | e -> 
+    let e = Flx_bexpr.map ~f_bexpr:ce e in
+    e
+
+let chk_exe state bsym_table nutab exe =
+  let ce sr e = chk_expr state bsym_table nutab sr exe e in
+  match exe with
+  | BEXE_call (sr,(BEXPR_closure (i,ts),t),e2) -> 
+    begin
+      let bsym = Flx_bsym_table.find bsym_table i in
+      match Flx_bsym.bbdcl bsym with
+      | BBDCL_external_fun _ -> bexe_call_prim (sr,i,ts,ce sr e2) 
+      | BBDCL_fun _  -> bexe_call_direct (sr,i,ts, ce sr e2)
+      | _ -> assert false
+    end
+  | BEXE_call (sr,e1,e2) -> 
+    bexe_call (sr, ce sr e1, ce sr e2)
+
+  | BEXE_jump (sr,(BEXPR_closure (i,ts),t),e2) -> 
+    begin
+      let bsym = Flx_bsym_table.find bsym_table i in
+      match Flx_bsym.bbdcl bsym with
+      (* tail call optimisation for a non-returning function
+         can't be applied to a primitive
+      *)
+      | BBDCL_external_fun _ -> bexe_call_prim (sr,i,ts,ce sr e2) 
+      | BBDCL_fun _  -> bexe_jump_direct (sr,i,ts, ce sr e2)
+      | _ -> assert false
+    end
+  | BEXE_jump (sr,e1,e2) -> 
+    bexe_jump (sr, ce sr e1, ce sr e2)
+
+
+  | BEXE_ifgoto (sr,e,l) -> bexe_ifgoto (sr, ce sr e,l)
+  | BEXE_cgoto (sr,e) -> bexe_cgoto (sr, ce sr e)
+  | BEXE_fun_return (sr,e) -> bexe_fun_return (sr,ce sr e)
+
+  | BEXE_yield (sr,e) -> bexe_yield (sr,ce sr e)
+
+  | BEXE_init (sr,i,e) -> bexe_init (sr,i,ce sr e)
+  | BEXE_assign (sr,e1,e2) -> bexe_assign (sr, ce sr e1, ce sr e2)
+  | BEXE_assert (sr,e) -> bexe_assert (sr, ce sr e)
+  | BEXE_axiom_check2 (sr,sr2,e1,e2) ->
+    let e1 = match e1 with Some e -> Some (ce sr e) | None -> None in
+    bexe_axiom_check2 (sr, sr2,e1,ce sr e2)
+  | BEXE_assert2 (sr,sr2,e1,e2) ->
+    let e1 = match e1 with Some e -> Some (ce sr e) | None -> None in
+    bexe_assert2 (sr, sr2,e1,ce sr e2)
+
+  | BEXE_svc (sr,i) -> exe
+
+  | BEXE_catch _ 
+  | BEXE_try _
+  | BEXE_endtry  _
+  | BEXE_label _
+  | BEXE_halt _
+  | BEXE_trace _
+  | BEXE_goto _
+  | BEXE_code _
+  | BEXE_nonreturn_code _
+  | BEXE_comment _
+  | BEXE_nop _
+  | BEXE_proc_return _
+  | BEXE_begin
+  | BEXE_end -> exe
+
+  | BEXE_axiom_check _  -> assert false
+  | BEXE_call_prim _  -> assert false
+  | BEXE_call_direct _  -> assert false
+
+  | BEXE_jump_direct _  -> assert false
+  | BEXE_call_stack _  -> assert false
+
+
+let process_exes state bsym_table nutab exes =
+  List.map (chk_exe state bsym_table nutab ) exes
+
+let process_entry state bsym_table nutab i parent bsym =
+  match Flx_bsym.bbdcl bsym with
+  | BBDCL_fun (props,vs,ps,ret,exes) ->
+    let exes = process_exes state bsym_table nutab exes in
+    let bbdcl = bbdcl_fun (props,vs,ps,ret,exes) in
+    let bsym = (Flx_bsym.replace_bbdcl bsym bbdcl) in
+    Flx_bsym_table.add nutab i parent bsym
+
+  | _ -> Flx_bsym_table.add nutab i parent bsym
+
+(* This routine lifts lambda terms and creates function wrappers for
+   non-function terms passed as arguments or returned as values
+
+  These terms are: 
+    compositions
+    primitive functions
+    injections
+    non-const union constructors
+    projections
+    array projections
+    structs
+    cstructs 
+    c function pointers
+*)
+ 
+let make_wrappers syms bsym_table =
+  let nutab = Flx_bsym_table.create () in
+  let state = make_closure_state syms in 
+  Flx_bsym_table.iter (process_entry state bsym_table nutab) bsym_table;
+  nutab
+
+

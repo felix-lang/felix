@@ -38,8 +38,9 @@ let remove_module_parents bsym_table =
 
 (* Prep the bsym_table for the backend by lowering and simplifying symbols. *)
 let lower_bsym_table state bsym_table root_proc =
+(*
 print_endline "RUNNING OLD LOWER PROCESS";
-
+*)
   (* We have to remove module parents before we can do code generation. *)
   remove_module_parents bsym_table;
 
@@ -56,7 +57,12 @@ print_endline "RUNNING OLD LOWER PROCESS";
   (* Mark all the global functions and values. *)
   Flx_global.set_globals bsym_table;
 
-  (* Instantiate type classes. *)
+  (* Instantiate polymorphic entities . *)
+
+  (* NOTE: with the new setup, everything is monomorphic.
+    However this routine is still required to sequence generated
+    code in dependency order
+  *)
   print_debug state "//instantiating";
 
   Flx_inst.instantiate
