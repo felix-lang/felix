@@ -243,8 +243,6 @@ let fixup_function
     let bbdcl = match pk with
     | `PVal -> bbdcl_val (vs,t,`Val)
     | `PVar -> bbdcl_val (vs,t,`Var)
-    | `PRef -> bbdcl_val (vs,t,`Ref)
-    | _ -> failwith "Unimplemented curried fun param not var or val"
     in
 
     if syms.compiler_options.print_flag then 

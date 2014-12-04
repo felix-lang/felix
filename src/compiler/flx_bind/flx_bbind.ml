@@ -335,7 +335,6 @@ print_endline ("Parent " ^ str_parent sym_parent ^ " mapped to true parent " ^ s
       let t =
         let t = bt t in
         match k with
-        | `PRef -> btyp_pointer t
         | _ -> t
       in
       { pid=s; pindex=i; pkind=k; ptyp=t }
@@ -488,8 +487,6 @@ print_endline ("Parent " ^ str_parent sym_parent ^ " mapped to true parent " ^ s
         let bbdcl = match k with
         | `PVal -> bbdcl_val (bvs,t,`Val)
         | `PVar -> bbdcl_val (bvs,t,`Var)
-        | `PRef -> bbdcl_val (bvs,t,`Ref)
-        | `PFun -> bbdcl_val (bvs, btyp_function (btyp_void (),t),`Val)
         in
         Hashtbl.add state.varmap symbol_index t;
 

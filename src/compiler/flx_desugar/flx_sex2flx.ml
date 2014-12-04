@@ -370,8 +370,6 @@ and xparam_kind_t def_val sr x : param_kind_t =
   match x with
   | Id "PVal" -> `PVal
   | Id "PVar" -> `PVar
-  | Id "PFun" -> `PFun
-  | Id "PRef" -> `PRef
   | Id "PDef" -> def_val
   | x -> err x "param_kind_t"
 

@@ -46,32 +46,6 @@ syntax variables {
     `(ast_val_decl ,_sr ,(first _2) ,(second _2) (some ,_4) (some ,_6))
      """;
 
-  //$ Reference binder.
-  stmt := "ref" sdeclname "<-" sexpr ";" =>#
-    """
-    `(ast_ref_decl ,_sr ,(first _2) ,(second _2) none (some ,_4))
-     """;
-
-  //$ Reference binder with type.
-  stmt := "ref" sdeclname ":" stypeexpr "<-" sexpr ";" =>#
-    """
-    `(ast_ref_decl ,_sr ,(first _2) ,(second _2) (some ,_4) (some ,_6))
-     """;
-
-  //$ Fun binder, for lazy evaluation.
-  //$ A function with no arguments.
-  //$ Uttering the name of the function calls it.
-  stmt := "fun" sdeclname "<-" sexpr ";" =>#
-    """
-    `(ast_lazy_decl ,_sr ,(first _2) ,(second _2) none (some ,_4))
-     """;
-
-  //$ Fun binder with type.
-  stmt := "fun" sdeclname ":" stypeexpr "<-" sexpr ";" =>#
-    """
-    `(ast_lazy_decl ,_sr ,(first _2) ,(second _2) (some ,_4) (some ,_6))
-     """;
-
   //$ Variable binder, multiple.
   stmt := "var" sname sname_suffix "=" sexpr ";" =>#
     """

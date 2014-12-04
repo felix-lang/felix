@@ -10,7 +10,12 @@ typedef void mouse_click_handler_t
  void *client_data
 );
 
-void register_mouse_click_handler (long window, mouse_click_handler_t * handler, void * client_data)
+void register_mouse_click_handler 
+(
+  long window, 
+  mouse_click_handler_t * handler, 
+  void * client_data
+)
 {
  // demo registration function will just call the callback
  // with some test data
@@ -45,8 +50,8 @@ callback proc mouse_click_handler_wrapper:
 ;
 @
 In this code the function name @{mouse_click_handler_wrapper}
-is used in its own type to indicate the position of the
-@{client_data} pointer. Clearly this mechanism will not work
+is used in its own type to indicate the position of 
+the @{client_data} pointer. Clearly this mechanism will not work
 on callbacks that do not accept a @{client_data} pointer.
 
 The effect of the function is to take the first three

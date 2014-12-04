@@ -198,11 +198,6 @@ let gen_C_function_body filename syms bsym_table
             && not (argtype = btyp_tuple [] || argtype = btyp_void ())
             then
               let t = rt vs t in
-              let t = match k with
-(*                | `PRef -> btyp_pointer t *)
-                | `PFun -> btyp_function (btyp_void (),t)
-                | _ -> t
-              in
               cpp_typename syms bsym_table t ^ " " ^
               cpp_instance_name syms bsym_table i ts
             else ""
@@ -211,11 +206,6 @@ let gen_C_function_body filename syms bsym_table
               fold_left
               (fun s {pkind=k; pindex=i; ptyp=t} ->
                 let t = rt vs t in
-                let t = match k with
-(*                  | `PRef -> btyp_pointer t *)
-                  | `PFun -> btyp_function (btyp_void (),t)
-                  | _ -> t
-                in
                 let n = fresh_bid counter in
                 if Hashtbl.mem syms.instances (i,ts) && not (t = btyp_tuple [])
                 then s ^
@@ -330,13 +320,6 @@ let gen_C_procedure_body filename syms bsym_table
             && not (argtype = btyp_tuple [] || argtype = btyp_void ())
             then
               let t = rt vs t in
-              let t = match k with
-                (*
-                | `PRef -> btyp_pointer t
-                *)
-                | `PFun -> btyp_function (btyp_void (),t)
-                | _ -> t
-              in
               cpp_typename syms bsym_table t ^ " " ^
               cpp_instance_name syms bsym_table i ts
             else ""
@@ -345,10 +328,6 @@ let gen_C_procedure_body filename syms bsym_table
               fold_left
               (fun s {pkind=k; pindex=i; ptyp=t} ->
                 let t = rt vs t in
-                let t = match k with
-                  | `PFun -> btyp_function (btyp_void (),t)
-                  | _ -> t
-                in
                 let n = !counter in incr counter;
                 if Hashtbl.mem syms.instances (i,ts) && not (t = btyp_tuple [])
                 then s ^

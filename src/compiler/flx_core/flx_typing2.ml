@@ -47,14 +47,7 @@ let type_of_list = function
 
 let paramtype (params : parameter_t list) =
   let typlist params =
-    map
-    (fun (k,_,t,_) ->
-      match k with
-      | `PRef -> TYP_pointer t
-      | `PFun -> TYP_function (TYP_tuple [],t)
-      | _ -> t
-    )
-    params
+    map (fun (k,_,t,_) -> t) params
   in
   type_of_list (typlist params)
 

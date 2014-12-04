@@ -228,7 +228,7 @@ and pattern_t =
 (** {7 Statements}
  *
  * Statements; that is, the procedural sequence control system. *)
-and param_kind_t = [`PVal | `PVar | `PFun | `PRef ]
+and param_kind_t = [`PVal | `PVar ]
 and simple_parameter_t = Flx_id.t * typecode_t
 and parameter_t = param_kind_t * Flx_id.t * typecode_t * expr_t option
 and lvalue_t = [

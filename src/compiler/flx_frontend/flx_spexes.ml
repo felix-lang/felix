@@ -307,28 +307,10 @@ let gen_body syms uses bsym_table id
          prolog := x :: !prolog
       in
       match kind with
-      | `PFun ->
-        let argt = match argument with
-        | _,BTYP_function (BTYP_void,t)
-        | _,BTYP_function (BTYP_tuple [],t) -> t
-        | _,t -> failwith ("Expected argument to be function void->t, got " ^ sbt bsym_table t)
-        in
-        let un = bexpr_tuple (btyp_tuple []) [] in
-        let apl = bexpr_apply argt (argument, un) in
-        Hashtbl.add argmap index apl
-
       | `PVal ->
           if inline_method = `Lazy 
           then Hashtbl.add argmap index argument
           else eagerly ()
-
-      | `PRef ->
-        begin match argument with
-        | BEXPR_ref (i,ts),BTYP_pointer t ->
-          Hashtbl.add argmap index argument
-        | _ -> eagerly ()
-        end
-
 
       | `PVar -> eagerly ()
 

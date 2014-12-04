@@ -1835,9 +1835,7 @@ print_endline ("** END **** Calculating Function type for function " ^ sym.Flx_s
   | SYMDEF_lazy (t,x) -> bt sym.Flx_sym.sr t
 
   | SYMDEF_parameter (`PVal,t)
-  | SYMDEF_parameter (`PFun,t)
   | SYMDEF_parameter (`PVar,t) -> bt sym.Flx_sym.sr t
-  | SYMDEF_parameter (`PRef,t) -> btyp_pointer (bt sym.Flx_sym.sr t)
 
   | SYMDEF_const_ctor (_,t,_,_) -> bt sym.Flx_sym.sr t
   | SYMDEF_nonconst_ctor (_,ut,_,_,argt) ->
@@ -3988,6 +3986,11 @@ print_endline ("LOOKUP 4: varname " ^ si index);
 print_endline ("LOOKUP 5: varname " ^ si index);
 *)
             bexpr_varname t (index, ts)
+          | BBDCL_fun _ 
+            ->
+            clierr sr ("Flx_lookup: bind_expression: EXPR_name] Nonfunction entry: Expected name "^name^ 
+            " of struct, cstruct, constructor, const, or variable, got function!")
+ 
           | _ ->
             clierr sr ("Flx_lookup: bind_expression: EXPR_name] Nonfunction entry: Expected name "^name^ 
             " of struct, cstruct, constructor, const, or variable")
@@ -3997,7 +4000,6 @@ print_endline ("LOOKUP 5: varname " ^ si index);
           (* We haven't bound this symbol yet. We need to specially handle
            * reference types, as I mentioned above. *)
           begin match hfind "lookup:ref-check" state.sym_table index with
-          | { Flx_sym.symdef=SYMDEF_parameter (`PRef,_) }
           | { Flx_sym.symdef=SYMDEF_ref _ } ->
               (* We've got a reference, so make sure the type is a pointer. *)
               let t' = 

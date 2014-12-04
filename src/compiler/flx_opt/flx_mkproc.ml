@@ -289,7 +289,6 @@ let mkproc_gen syms bsym_table =
             let bbdcl = match pk with
             | `PVal -> bbdcl_val (vs,t,`Val)
             | `PVar -> bbdcl_val (vs,t,`Var)
-            | _ -> failwith "Unimplemented mkproc fun param not var or val (fixme!)"
             in
             if syms.compiler_options.print_flag then
             print_endline ("New param " ^ s ^ " " ^ string_of_bid n ^ " <-- " ^

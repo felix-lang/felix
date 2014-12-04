@@ -15,11 +15,6 @@ let get_bids ps =
 
 (** Returns the bound types from a list of bparameters. *)
 let get_btypes ps =
-  List.map begin fun p ->
-    match p.pkind with
-    | `PFun ->
-        Flx_btype.btyp_function (Flx_btype.btyp_tuple [], p.ptyp)
-    | _ -> p.ptyp
-  end ps
+  List.map begin fun p -> p.ptyp end ps
 
 

@@ -699,8 +699,6 @@ and string_of_basic_parameters (ps: simple_parameter_t list) =
 and string_of_param_kind = function
   | `PVal -> "val"
   | `PVar -> "var"
-  | `PRef -> "ref"
-  | `PFun -> "fun"
 
 and string_of_parameters (ps:params_t) =
   let ps, traint = ps in
