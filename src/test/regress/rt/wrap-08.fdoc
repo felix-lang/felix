@@ -15,4 +15,4 @@ exec (x of (X),z);
 Wrapper for record projection
 42
 Record field x = 42
-
+@

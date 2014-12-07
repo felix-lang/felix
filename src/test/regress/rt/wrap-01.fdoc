@@ -11,4 +11,4 @@ exec (fred, 42);
 @expect
 Wrapper for primitive procedure
 Wrapper shows 42
-
+@

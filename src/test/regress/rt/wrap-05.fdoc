@@ -16,3 +16,4 @@ noinline proc exec (f: int -> X, x:int) {
 exec (First,42);
 @expect
 First 42
+@

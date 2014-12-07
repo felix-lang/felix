@@ -18,4 +18,4 @@ var u4 = f1 43; print u4;
 @expect
 int 42
 int 43
-
+@

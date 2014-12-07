@@ -14,4 +14,4 @@ exec (X, 42, 100);
 @expect
 Wrapper for struct ctor
 Struct (42,100)
-
+@

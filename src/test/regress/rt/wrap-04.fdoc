@@ -15,4 +15,4 @@ exec (X, 42, 100);
 @expect
 Wrapper for cstruct ctor
 CStruct (42,100)
-
+@

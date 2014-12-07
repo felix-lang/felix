@@ -311,7 +311,9 @@ let rec chk_expr state bsym_table nutab sr exe e : Flx_bexpr.t =
     bexpr_closure t (closure_bid, [])
 
   | BEXPR_prj (n,d,c),t as x ->
+(*
     print_endline ("in exe=" ^ sbx exe ^ "\nProjection passed as argument " ^ sbe bsym_table e);
+*)
     let closure_bid = fresh_bid state.syms.counter in
     let closure_name = ("_a" ^ string_of_int closure_bid ^ "_strtyp") in
     Flx_bsym_table.add nutab closure_bid None 
