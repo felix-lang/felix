@@ -1,0 +1,18 @@
+
+@felix
+// Nonconst ctor wrapper
+union X = 
+  | First of int
+  | Second of string
+;
+
+noinline proc exec (f: int -> X, x:int) { 
+  match f x with
+  | First ?i => println$ "First " + str i;
+  | Second ?s => println$ "Second " + s;
+  endmatch;
+}
+
+exec (First,42);
+@expect
+First 42

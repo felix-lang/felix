@@ -1,0 +1,21 @@
+
+@felix
+// Injection wrapper
+typedef U = 1 + int;
+proc print (u:U) {
+  println$
+    match u with
+    | case 0 => "1"
+    | case 1 ?b => f"int %d" b
+    endmatch;
+}
+fun exec (p:int -> U, x:int) => p x;
+
+print (exec (case 1 of U, 42));
+var f1 = case 1 of U; 
+var u4 = f1 43; print u4;
+
+@expect
+int 42
+int 43
+
