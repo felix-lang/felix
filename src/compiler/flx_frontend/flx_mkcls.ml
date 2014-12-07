@@ -124,6 +124,7 @@ let gen_case_closure_entry state bsym_table sr f at rt =
  
 
 let gen_composite_closure_entry state bsym_table sr (f1,t1) (f2,t2) =
+print_endline "Mkcls: composition...???";
   let vs = [] in (* HACK, temporary, WRONG *)
   let ts = [] in (* HACK, temporary, WRONG *)
   let a1t,r1t,a2t,r2t = match t1, t2 with
@@ -222,7 +223,7 @@ let rec adj_lambda state bsym_table all_closures sr e =
       Flx_bexpr.bexpr_closure t (i,ts)
 
   (* THIS SHOULDN'T HAPPEN NOW *)
-  | BEXPR_case (v,d),ft as x ->
+  | BEXPR_case (v,d),ft as x -> assert false;
       begin match unfold d with
       | t when Flx_btype.islinear_type bsym_table t -> x (* ??? *)
 
@@ -256,10 +257,12 @@ let rec adj_lambda state bsym_table all_closures sr e =
   | (BEXPR_prj (_,d,c),t as x)
   | (BEXPR_aprj (_,d,c),t as x)
      ->
-      let i,ts = gen_case_closure_entry state bsym_table sr x d c in
+(*
       all_closures := BidSet.add i !all_closures;
+      let i,ts = gen_case_closure_entry state bsym_table sr x d c in
       Flx_bexpr.bexpr_closure t (i,ts)
-
+*)
+   x
 
   | x -> x
 

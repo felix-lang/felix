@@ -1,16 +1,19 @@
-
 @felix
-// record pointer field projection
-println "Wrapper for record pointer projection";
-typedef X = ( x : int );
-noinline proc exec (f: &X -> &int, pX:&X, y:int) {
+// Cstruct pointer projection wrapper
+
+println$ "Wrapper for cstruct pointer projection";
+header X_struct = "struct X { int x; int y; };";
+cstruct X { x:int; y:int; } requires X_struct;
+
+noinline proc exec (f: &X -> &int, pX: &X, y:int)
+{
   f pX <- y;
 }
 
-var z = (x=42);
-exec (x of (&X),&z, 55);
+var z = X(42, 100);
+exec (x of (&X), &z, 55);
 println$ z.x;
 @expect
-Wrapper for record pointer projection
+Wrapper for cstruct pointer projection
 55
 @
