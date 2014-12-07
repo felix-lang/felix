@@ -1,0 +1,17 @@
+@felix
+// struct pointer field projection
+println$ "Wrapper for struct pointer projection";
+
+struct X { x : int; };
+noinline proc exec (f: &X -> &int, pX:&X, y:int) {
+  f pX <- y;
+}
+
+var z = X (42);
+exec (x of (&X),&z, 55);
+
+println$ z.x;
+@expect
+Wrapper for struct pointer projection
+55
+@
