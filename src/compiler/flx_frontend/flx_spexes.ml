@@ -182,7 +182,16 @@ let gen_body syms uses bsym_table id
   in
 
   let caller_vars = map (fun (s,i) -> btyp_type_var (i, btyp_type 0)) vs in
-  let ge e = remap_expr syms bsym_table relabel varmap revariable caller_vars callee_vs_len e in
+  let ge e = 
+(*
+     print_endline ("Remap expr " ^ sbe bsym_table e);
+*)
+     let result = remap_expr syms bsym_table relabel varmap revariable caller_vars callee_vs_len e  in
+(*
+     print_endline ("Remap DONE result " ^ sbe bsym_table result);
+*)
+     result
+  in
   let relab s = try let r = Hashtbl.find relabel s in (* print_endline ("Relab: " ^ s ^ "->" ^ r); *) r with Not_found -> s in
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
   let end_label_uses = ref 0 in
@@ -193,10 +202,13 @@ let gen_body syms uses bsym_table id
 
 
   let remap exe =
+(*
+  print_endline ("Remap exe " ^ string_of_bexe bsym_table 0 exe);
+*)
+  let result = 
   match exe with
   | BEXE_axiom_check _ -> assert false
-  | BEXE_call_prim (sr,i,ts,e2)  ->  assert false
-    (*
+  | BEXE_call_prim (sr,i,ts,e2)  ->  
     let fixup i ts =
       let auxt t = varmap_subst varmap t in
       let ts = map auxt ts in
@@ -206,11 +218,9 @@ let gen_body syms uses bsym_table id
       with Not_found -> i,ts
     in
     let i,ts = fixup i ts in
-    [BEXE_call_prim (sr,i,ts, ge e2)]
-    *)
+    [bexe_call_prim (sr,i,ts, ge e2)]
 
-  | BEXE_call_direct (sr,i,ts,e2)  ->  assert false
-    (*
+  | BEXE_call_direct (sr,i,ts,e2)  -> 
     let fixup i ts =
       let auxt t = varmap_subst varmap t in
       let ts = map auxt ts in
@@ -220,8 +230,7 @@ let gen_body syms uses bsym_table id
       with Not_found -> i,ts
     in
     let i,ts = fixup i ts in
-    [BEXE_call_direct (sr,i,ts, ge e2)]
-    *)
+    [bexe_call_direct (sr,i,ts, ge e2)]
 
   | BEXE_jump_direct (sr,i,ts,e2)  ->
     let fixup i ts =
@@ -274,6 +283,11 @@ let gen_body syms uses bsym_table id
   | BEXE_catch _ as x -> [x]
   | BEXE_try _ as x -> [x]
   | BEXE_endtry _ as x -> [x]
+  in
+(*
+  print_endline ("Remap exe result = " ^ catmap "\n" (string_of_bexe bsym_table 0) result);
+*)
+  result
   in
     let kind = match inline_method with
       | `Lazy -> "Lazy "
@@ -494,9 +508,9 @@ let gen_body syms uses bsym_table id
     if !end_label_uses > 0 then
       b := (bexe_label (sr,end_label)) :: !b
     ;
-    (*
+    if syms.compiler_options.Flx_options.print_flag then begin
     print_endline ("INLINING " ^ id ^ " into " ^ si caller ^ " .. OUTPUT:");
-    iter (fun x -> print_endline (string_of_bexe sym_table 0 x)) (rev !b);
-    print_endline ("END OUTPUT for " ^ id);
-    *)
+    iter (fun x -> print_endline (string_of_bexe bsym_table 0 x)) (rev !b);
+    print_endline ("END OUTPUT for " ^ id)
+    end;
     !b

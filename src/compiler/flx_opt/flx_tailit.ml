@@ -426,9 +426,9 @@ let tailit syms bsym_table uses id this sr ps vs exes =
         cal_par' i t ls h tail 
     in
     match inp with
-    | (BEXE_call_direct (sr,i,ts,a)) as x :: tail  -> assert false
+    | (BEXE_call (sr,(BEXPR_closure(i,ts),_),a)) as x :: tail -> assert false
+    | (BEXE_call_direct (sr,i,ts,a)) as x :: tail  
 
-    | (BEXE_call (sr,(BEXPR_closure(i,ts),_),a)) as x :: tail
       when (i,ts)=(this,ts') && Flx_cflow.tailable exes [] tail
       ->
       if can_loop ()
@@ -446,9 +446,10 @@ let tailit syms bsym_table uses id this sr ps vs exes =
         aux tail (x::res)
       end
 
-    | BEXE_fun_return (sr,(BEXPR_apply_direct(i,ts,a),_)) :: tail -> assert false
+    | BEXE_fun_return (sr,(BEXPR_apply((BEXPR_closure (i,ts),_),a),_)) :: tail -> assert false
 
-    | BEXE_fun_return (sr,(BEXPR_apply((BEXPR_closure (i,ts),_),a),_)) :: tail
+    | BEXE_fun_return (sr,(BEXPR_apply_direct(i,ts,a),_)) :: tail 
+
       when (i,ts)=(this,ts')
       ->
        (*
@@ -458,8 +459,7 @@ let tailit syms bsym_table uses id this sr ps vs exes =
        let res = cal_tail_call a @ res
        in aux tail res
 
-    | BEXE_fun_return (sr,(BEXPR_apply((BEXPR_closure (i,ts),_),a),_)) as x :: tail
-      ->
+    | BEXE_fun_return (sr,(BEXPR_apply_direct(i,ts,a),_)) as x :: tail -> 
       (*
       print_endline ("--> NONSELF? Tail rec apply " ^ si i);
       print_endline ("This = " ^ si this);
@@ -467,7 +467,7 @@ let tailit syms bsym_table uses id this sr ps vs exes =
       aux tail (x::res)
 
 
-    | (BEXE_call(sr,(BEXPR_closure (i,ts),_),a)) as x :: tail  ->
+    | (BEXE_call_direct (sr,i,ts,a)) as x :: tail  -> 
       (*
       print_endline ("Untailed call " ^ si i ^ "["^catmap "," (sbt bsym_table) ts^"]");
       print_endline ("This = " ^ si this);

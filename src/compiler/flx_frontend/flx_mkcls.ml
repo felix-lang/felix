@@ -15,6 +15,7 @@ open Flx_unify
 open Flx_exceptions
 open Flx_use
 open Flx_prop
+open Flx_bsym
 
 (* processes closures *)
 let cls syms bsym_table all_closures sr e =

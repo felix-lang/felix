@@ -3,6 +3,15 @@ let print_debug syms msg =
   if syms.Flx_mtypes2.compiler_options.Flx_options.print_flag
   then print_endline msg
 
+let print_time syms msg f =
+  let t0 = Unix.gettimeofday () in
+  let result = f () in
+  let elapsed = Unix.gettimeofday () -. t0 in
+  if syms.Flx_mtypes2.compiler_options.Flx_options.showtime
+  then print_endline (String.sub (msg ^ "                                        ") 0 40
+        ^ string_of_int (int_of_float elapsed) ^ "s");
+  result
+
 
 (* Convert curried functions to uncurried functions so they can ba applied
  * directly instead of requiring closures. *)
@@ -65,15 +74,17 @@ let stack_calls syms bsym_table =
 let optimize_bsym_table' syms bsym_table root_proc =
   print_debug syms "//OPTIMISING";
 
-print_debug syms "[flx_opt]; Finding roots";
+  print_time syms "[flx_opt]; Finding roots" begin fun () ->
   (* Find the root and exported functions and types. *)
-  Flx_use.find_roots syms bsym_table root_proc syms.Flx_mtypes2.bifaces;
+  Flx_use.find_roots syms bsym_table root_proc syms.Flx_mtypes2.bifaces end;
 
-print_debug syms "[flx_opt]; Monomorphising";
+  let bsym_table = 
+   print_time syms "[flx_opt]; Monomorphising" begin fun () ->
   (* monomorphise *)
-  let bsym_table = Flx_numono.monomorphise2 true syms bsym_table in
+  Flx_numono.monomorphise2 true syms bsym_table end
+  in
 
-print_debug syms "[flx_opt]; Verifying typeclass elimination";
+  print_time syms "[flx_opt]; Verifying typeclass elimination" begin fun () ->
   (* check no typeclasses are left *)
   Flx_bsym_table.iter
   (fun id pa sym -> 
@@ -89,14 +100,16 @@ print_debug syms "[flx_opt]; Verifying typeclass elimination";
      | _ -> () 
   )
   bsym_table
-  ;
+  end;
 
 
-print_debug syms "[flx_opt]; Downgrading abstract types to representations";
+  let bsym_table = 
+  print_time syms "[flx_opt]; Downgrading abstract types to representations" begin fun () ->
   (* Downgrade abstract types now. *)
-  let bsym_table = Flx_strabs.strabs bsym_table in
+  Flx_strabs.strabs bsym_table end 
+  in
 
-print_debug syms "[flx_opt]; Verifying abstract type elimination";
+  print_time syms "[flx_opt]; Verifying abstract type elimination" begin fun () -> 
   (* check no abstract types are left *)
   Flx_bsym_table.iter
   (fun id pa sym -> 
@@ -105,45 +118,51 @@ print_debug syms "[flx_opt]; Verifying abstract type elimination";
      | _ -> () 
   )
   bsym_table
-  ;
+  end ;
 
-print_debug syms "[flx_opt]; Removing unused symbols";
+  let bsym_table = print_time syms "[flx_opt]; Removing unused symbols" begin fun () ->
   (* Clean up the symbol table. *)
-  let bsym_table = Flx_use.copy_used syms bsym_table in
+  Flx_use.copy_used syms bsym_table end
+  in
 
-print_debug syms "[flx_opt]; Uncurrying curried function";
+  let bsym_table = print_time syms "[flx_opt]; Uncurrying curried function" begin fun () -> 
   (* Uncurry curried functions. *)
-  let bsym_table = uncurry_functions syms bsym_table in
+  uncurry_functions syms bsym_table end
+  in
 
-print_debug syms "[flx_opt]; Converting functions to procedures";
+  let bsym_table = print_time syms "[flx_opt]; Converting functions to procedures" begin fun () ->
   (* convert functions to procedures *)
-  let bsym_table = mkproc syms bsym_table in
+  mkproc syms bsym_table end
+  in
 
-print_debug syms "[flx_opt]; Inlining";
-  (* Perform the inlining. *)
-  Flx_inline.heavy_inlining syms bsym_table;
-
-print_debug syms "[flx_opt]; Generating wrappers (new)";
+  let bsym_table = print_time syms "[flx_opt]; Generating wrappers (new)" begin fun () ->
   (* make wrappers for non-function functional values *)
-  let bsym_table = Flx_mkcls2.make_wrappers syms bsym_table in
+  Flx_mkcls2.make_wrappers syms bsym_table end
+  in
 
-print_debug syms "[flx_opt]; Remove unused symbols";
+  print_time syms "[flx_opt]; Inlining" begin fun () -> 
+  (* Perform the inlining. *)
+  Flx_inline.heavy_inlining syms bsym_table end;
+
+  let bsym_table = print_time syms "[flx_opt]; Remove unused symbols" begin fun () -> 
   (* Clean up the symbol table. *)
-  let bsym_table = Flx_use.copy_used syms bsym_table in
+  Flx_use.copy_used syms bsym_table end
+  in
 
-print_debug syms "[flx_opt]; Eliminate dead code";
+  print_time syms "[flx_opt]; Eliminate dead code" begin fun () ->
   (* Eliminate dead code. *)
   let elim_state = Flx_elim.make_elim_state syms bsym_table in
-  Flx_elim.eliminate_unused elim_state;
+  Flx_elim.eliminate_unused elim_state end;
 
-print_debug syms "[flx_opt]; Do stack call optimisation";
+  let bsym_table = print_time syms "[flx_opt]; Do stack call optimisation" begin fun () ->
   (* Convert functions into stack calls. *)
-  let bsym_table = stack_calls syms bsym_table in
+  stack_calls syms bsym_table end
+  in
 
-print_debug syms "[flx_opt]; optimisation pass complete";
   bsym_table
 
 
 let optimize_bsym_table syms bsym_table root_proc =
-  optimize_bsym_table' syms bsym_table root_proc
+  print_time syms "[flx_opt]; optimisation pass complete" begin fun () -> 
+  optimize_bsym_table' syms bsym_table root_proc end
 

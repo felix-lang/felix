@@ -53,7 +53,7 @@ let mk_remap counter d =
   m
 
 (* replace callee type variables with callers *)
-let vsplice caller_vars callee_vs_len ts =
+let vsplice caller_vs callee_vs_len ts =
   if not (callee_vs_len <= length ts)
   then failwith
   (
@@ -61,15 +61,15 @@ let vsplice caller_vars callee_vs_len ts =
     si callee_vs_len ^
     ", len vs/ts= " ^
     si (length ts) ^
-    ", length caller_vars = " ^
-    si (length caller_vars)
+    ", length caller_vs = " ^
+    si (length caller_vs)
   )
   ;
   let rec aux lst n =  (* elide first n elements *)
     if n = 0 then lst
     else aux (tl lst) (n-1)
   in
-  caller_vars @ aux ts callee_vs_len
+  caller_vs @ aux ts callee_vs_len
 
 
 let remap_expr
@@ -78,14 +78,19 @@ let remap_expr
   relabel
   varmap        (** varmap is the type variable remapper *)
   revariable    (** revariable remaps indices. *)
-  caller_vars
+  caller_vs
   callee_vs_len
   e
 =
+  assert (caller_vs = []);
+  assert (Hashtbl.length varmap = 0);
+  assert (callee_vs_len = 0);
+(*
+  print_endline ("Remapping expression " ^ sbe bsym_table e);
+*)
   (*
-  print_endline ("Remapping expression " ^ sbe sym_table bsym_table e);
-  *)
   let ftc i ts = Flx_typeclass.maybe_fixup_typeclass_instance syms bsym_table i ts in
+  *)
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
   let relab s = try let r = Hashtbl.find relabel s in (* print_endline ("Relab: " ^ s ^ "->" ^ r); *) r with Not_found -> s in
   let tmap t = match t with
@@ -103,11 +108,11 @@ let remap_expr
     let ts = map auxt ts in
     try
       let j= Hashtbl.find revariable i in
-      j, vsplice caller_vars callee_vs_len ts
+      j, vsplice caller_vs callee_vs_len ts
     with Not_found -> i,ts
   in
   let rec aux e =
-    match Flx_bexpr.map ~f_btype:auxt ~f_bexpr:aux ~f_label:relab e with
+    match e with
     | BEXPR_varname (i,ts),t ->
         let i,ts = fixup i ts in
         bexpr_varname (auxt t) (i,ts)
@@ -124,7 +129,7 @@ let remap_expr
         let i,ts = fixup i ts in
 
         (* attempt to fixup typeclass virtual *)
-        let i,ts = ftc i ts in
+        (* let i,ts = ftc i ts in *)
         bexpr_apply_direct (auxt t) (i,ts,aux e)
 
     | BEXPR_apply_stack (i,ts,e),t ->
@@ -135,12 +140,13 @@ let remap_expr
         let i,ts = fixup i ts in
         bexpr_apply_prim (auxt t) (i,ts,aux e)
 
-    | x,t -> x, auxt t
+    | _ -> 
+      Flx_bexpr.map ~f_btype:auxt ~f_bexpr:aux ~f_label:relab e
   in
   let a = aux e in
-  (*
-  print_endline ("replace " ^ sbe sym_table e ^ "-->" ^ sbe sym_table a);
-  *)
+(*
+  print_endline ("replace " ^ sbe bsym_table e ^ "-->" ^ sbe bsym_table a);
+*)
   a
 
 let remap_exe
@@ -149,17 +155,19 @@ let remap_exe
   relabel
   varmap        (** varmap is the type variable remapper *)
   revariable    (** revariable remaps indices. *)
-  caller_vars
+  caller_vs
   callee_vs_len
   exe
 =
-  (*
-  print_endline ("remap_exe " ^ string_of_bexe sym_table bsym_table 0 exe);
-  *)
-  let ge e = remap_expr syms bsym_table relabel varmap revariable caller_vars callee_vs_len e in
+(*
+  print_endline ("remap_exe " ^ string_of_bexe bsym_table 0 exe);
+*)
+  let ge e = remap_expr syms bsym_table relabel varmap revariable caller_vs callee_vs_len e in
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
   let relab s = try let r = Hashtbl.find relabel s in (* print_endline ("Relab: " ^ s ^ "->" ^ r); *) r with Not_found -> s in
+  (*
   let ftc i ts = Flx_typeclass.maybe_fixup_typeclass_instance syms bsym_table i ts in
+  *)
 
   let tmap t = match t with
   | BTYP_inst (i,ts) -> btyp_inst (revar i,ts)
@@ -175,34 +183,31 @@ let remap_exe
   let exe =
   match exe with
   | BEXE_axiom_check _ -> assert false
-  | BEXE_call_prim (sr,i,ts,e2) -> assert false
-    (*
+  | BEXE_call_prim (sr,i,ts,e2) -> 
     let fixup i ts =
       let ts = map auxt ts in
       try
         let j= Hashtbl.find revariable i in
-        j, vsplice caller_vars callee_vs_len ts
+        j, vsplice caller_vs callee_vs_len ts
       with Not_found -> i,ts
     in
-    let i,ts = fixup i ts in
-    BEXE_call_prim (sr,i,ts, ge e2)
-    *)
+    let j,ts2 = fixup i ts in
+    assert (i = j && ts = ts2);
+    bexe_call_prim (sr,i,ts, ge e2)
 
-  | BEXE_call_direct (sr,i,ts,e2) -> assert false
-    (*
+  | BEXE_call_direct (sr,i,ts,e2) -> 
     let fixup i ts =
       let ts = map auxt ts in
       try
         let j= Hashtbl.find revariable i in
-        j, vsplice caller_vars callee_vs_len ts
+        j, vsplice caller_vs callee_vs_len ts
       with Not_found -> i,ts
     in
     let i,ts = fixup i ts in
 
     (* attempt to instantiate typeclass virtual *)
-    let i,ts = ftc i ts in
-    BEXE_call_direct (sr,i,ts, ge e2)
-    *)
+    (* let i,ts = ftc i ts in *)
+    bexe_call_direct (sr,i,ts, ge e2)
 
   | BEXE_call_stack (sr,i,ts,e2) -> assert false
     (*
@@ -210,7 +215,7 @@ let remap_exe
       let ts = map auxt ts in
       try
         let j= Hashtbl.find revariable i in
-        j, vsplice caller_vars callee_vs_len ts
+        j, vsplice caller_vs callee_vs_len ts
       with Not_found -> i,ts
     in
     let i,ts = fixup i ts in
@@ -222,16 +227,22 @@ let remap_exe
 
   | x -> Flx_bexe.map ~f_bid:revar ~f_bexpr:ge ~f_label_use:relab ~f_label_def:relab x
   in
-  (*
-  print_endline ("remapped_exe " ^ string_of_bexe sym_table bsym_table 0 exe);
-  *)
+(*
+  print_endline ("remapped_exe " ^ string_of_bexe bsym_table 0 exe);
+*)
   exe
 
 
-let remap_exes syms bsym_table relabel varmap revariable caller_vars callee_vs_len exes =
-  map (remap_exe syms bsym_table relabel varmap revariable caller_vars callee_vs_len) exes
+let remap_exes syms bsym_table relabel varmap revariable caller_vs callee_vs_len exes =
+  assert (caller_vs = []);
+  assert (Hashtbl.length varmap = 0);
+  assert (callee_vs_len = 0);
+  map (remap_exe syms bsym_table relabel varmap revariable caller_vs callee_vs_len) exes
 
-let remap_reqs syms bsym_table varmap revariable caller_vars callee_vs_len reqs : breqs_t =
+let remap_reqs syms bsym_table varmap revariable caller_vs callee_vs_len reqs : breqs_t =
+  assert (caller_vs = []);
+  assert (Hashtbl.length varmap = 0);
+  assert (callee_vs_len = 0);
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
   let tmap t = match t with
   | BTYP_inst (i,ts) -> btyp_inst (revar i,ts)
@@ -248,7 +259,7 @@ let remap_reqs syms bsym_table varmap revariable caller_vars callee_vs_len reqs 
     let ts = map auxt ts in
     try
       let j= Hashtbl.find revariable i in
-      j, vsplice caller_vars callee_vs_len ts
+      j, vsplice caller_vs callee_vs_len ts
     with Not_found -> i,ts
   in
   map fixup reqs
@@ -287,21 +298,25 @@ let reparent1
   k             (** New index, perhaps the caller. *)
   rescan_flag   (** Allow rescan of cloned stuff? *)
 =
+  assert (caller_vs = []);
+  assert (Hashtbl.length varmap = 0);
+  assert (callee_vs_len = 0);
   let splice vs = (* replace callee type variables with callers *)
+    assert (vs = []);
     vsplice caller_vs callee_vs_len vs
   in
   let sop = function
     | None -> "NONE?"
     | Some i -> string_of_bid i
   in
-  let caller_vars = map
+  let caller_vs = map
     (fun (s,i) -> btyp_type_var (i, btyp_type 0))
     caller_vs
   in
 
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
   let tmap t = match t with
-  | BTYP_inst (i,ts) -> btyp_inst (revar i,ts)
+  | BTYP_inst (i,ts) -> assert (revar i = i); btyp_inst (revar i,ts)
   | x -> x
   in
   let auxt t =
@@ -316,9 +331,9 @@ let reparent1
      ps
    in
 
-  let rexes xs = remap_exes syms bsym_table relabel varmap revariable caller_vars callee_vs_len xs in
-  let rexpr e = remap_expr syms bsym_table relabel varmap revariable caller_vars callee_vs_len e in
-  let rreqs rqs = remap_reqs syms bsym_table varmap revariable caller_vars callee_vs_len rqs in
+  let rexes xs = remap_exes syms bsym_table relabel varmap revariable caller_vs callee_vs_len xs in
+  let rexpr e = remap_expr syms bsym_table relabel varmap revariable caller_vs callee_vs_len e in
+  let rreqs rqs = remap_reqs syms bsym_table varmap revariable caller_vs callee_vs_len rqs in
   let bsym = Flx_bsym_table.find bsym_table index in
   let bsym_parent = Flx_bsym_table.find_parent bsym_table index in
   if syms.compiler_options.Flx_options.print_flag then
@@ -509,11 +524,11 @@ let specialise_symbol syms uses bsym_table
       relabel varmap revariable
       caller_vs callee_vs_len index parent k rescan_flag;
 
-    let caller_vars = map
+    let caller_vs = map
       (fun (s,i) -> btyp_type_var (i, btyp_type 0))
       caller_vs
     in
 
-    let ts' = vsplice caller_vars callee_vs_len ts in
+    let ts' = vsplice caller_vs callee_vs_len ts in
     Hashtbl.add syms.transient_specialisation_cache (index,ts) (k,ts');
     k,ts'
