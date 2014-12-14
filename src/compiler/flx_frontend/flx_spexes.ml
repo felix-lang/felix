@@ -104,8 +104,8 @@ let subarg syms bsym_table argmap exe =
 
 (* NOTE: result is in reversed order *)
 let gen_body syms uses bsym_table id
-  varmap ps relabel revariable exes argument
-  sr caller callee vs callee_vs_len inline_method props
+  ps relabel revariable exes argument
+  sr caller callee inline_method props
 =
   if syms.compiler_options.Flx_options.print_flag then
   print_endline ("Gen body caller = " ^ string_of_bid caller ^
@@ -178,15 +178,14 @@ let gen_body syms uses bsym_table id
       | [x] -> x
       | x -> btyp_tuple x
     in
-      varmap_subst varmap pt
+      pt
   in
 
-  let caller_vars = map (fun (s,i) -> btyp_type_var (i, btyp_type 0)) vs in
   let ge e = 
 (*
      print_endline ("Remap expr " ^ sbe bsym_table e);
 *)
-     let result = remap_expr syms bsym_table relabel varmap revariable caller_vars callee_vs_len e  in
+     let result = remap_expr syms bsym_table relabel revariable e  in
 (*
      print_endline ("Remap DONE result " ^ sbe bsym_table result);
 *)
@@ -210,11 +209,9 @@ let gen_body syms uses bsym_table id
   | BEXE_axiom_check _ -> assert false
   | BEXE_call_prim (sr,i,ts,e2)  ->  
     let fixup i ts =
-      let auxt t = varmap_subst varmap t in
-      let ts = map auxt ts in
       try
         let j= Hashtbl.find revariable i in
-        j, vsplice caller_vars callee_vs_len ts
+        j, ts
       with Not_found -> i,ts
     in
     let i,ts = fixup i ts in
@@ -222,11 +219,9 @@ let gen_body syms uses bsym_table id
 
   | BEXE_call_direct (sr,i,ts,e2)  -> 
     let fixup i ts =
-      let auxt t = varmap_subst varmap t in
-      let ts = map auxt ts in
       try
         let j= Hashtbl.find revariable i in
-        j, vsplice caller_vars callee_vs_len ts
+        j, ts
       with Not_found -> i,ts
     in
     let i,ts = fixup i ts in
@@ -234,11 +229,9 @@ let gen_body syms uses bsym_table id
 
   | BEXE_jump_direct (sr,i,ts,e2)  ->
     let fixup i ts =
-      let auxt t = varmap_subst varmap t in
-      let ts = map auxt ts in
       try
         let j= Hashtbl.find revariable i in
-        j, vsplice caller_vars callee_vs_len ts
+        j, ts
       with Not_found -> i,ts
     in
     let i,ts = fixup i ts in
@@ -369,7 +362,6 @@ let gen_body syms uses bsym_table id
         let n = ref 0 in
         iter
         (fun {pid=vid;pindex=ix; ptyp=prjt} ->
-          let prjt = varmap_subst varmap prjt in
           let pj =
             match argument with
             (* THIS CASE MAY NOT WORK WITH TAIL REC OPT! *)
@@ -417,12 +409,10 @@ let gen_body syms uses bsym_table id
       print_endline ("Parameter assigned index " ^ si parameter);
       *)
 
-      let ts = map (fun (_,i) -> btyp_type_var (i, btyp_type 0)) vs in
       let n = ref 0 in
       let k = List.length ps in
       iter
       (fun {pkind=kind; pid=vid; pindex=ix; ptyp=prjt} ->
-        let prjt = varmap_subst varmap prjt in
         let pj =
           match argument with
           (* THIS CASE MAY NOT WORK WITH TAIL REC OPT! *)
@@ -430,7 +420,7 @@ let gen_body syms uses bsym_table id
             begin try nth ls (!n)
             with _ ->
                 failwith (
-                  "[gen_body2] Woops, prj "^si (!n) ^" tuple wrong length? " ^ si (length ts)
+                  "[gen_body2] Woops, prj "^si (!n) ^" tuple wrong length? " ^ si (length ls)
                 )
             end
           | p -> bexpr_get_n prjt (!n) p

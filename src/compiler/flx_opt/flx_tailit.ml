@@ -122,14 +122,13 @@ let check_proj_wrap_closure syms bsym_table descend usage n i e =
   let u = expr_uses_unrestricted syms descend usage e in
   BidSet.iter (check_proj_wrap_entry syms bsym_table n i) u
 
-let tailit syms bsym_table uses id this sr ps vs exes =
+let tailit syms bsym_table uses id this sr ps exes =
   (*
   print_endline ("======= Tailing " ^ id ^ "<" ^ si this ^ "> exes=====");
   List.iter (fun x -> print_endline (string_of_bexe 0 x)) exes;
   print_endline "======== END BODY ========";
   *)
 
-  let ts' = List.map (fun (_,i) -> btyp_type_var (i,btyp_type 0)) vs in
   let pset = List.fold_left
     (fun s {pindex=i} -> BidSet.add i s)
     BidSet.empty
@@ -223,7 +222,7 @@ let tailit syms bsym_table uses id this sr ps vs exes =
           )
           ps ls
         in
-        let tmps,exes = Flx_passign.passign syms bsym_table pinits ts' sr in
+        let tmps,exes = Flx_passign.passign syms bsym_table pinits sr in
         parameters := tmps @ !parameters;
         let result = ref exes in
         result := bexe_goto (sr,start_label) :: !result;
@@ -243,7 +242,7 @@ let tailit syms bsym_table uses id this sr ps vs exes =
             parameters := (t,pix) :: !parameters;
             pix
         in
-        let p = bexpr_varname t (pix,ts') in
+        let p = bexpr_varname t (pix,[]) in
         let n = ref 0 in
         let k = List.length ps in
         let param_decode =
@@ -286,7 +285,7 @@ let tailit syms bsym_table uses id this sr ps vs exes =
       )
       pas
     in
-      let tmps,exes = Flx_passign.passign syms bsym_table asgns ts' sr in
+      let tmps,exes = Flx_passign.passign syms bsym_table asgns sr in
       parameters := tmps @ !parameters;
       if syms.compiler_options.print_flag then begin
         print_endline "CALCULATED ACTUAL PARALLEL ASSIGNMENTS!";
@@ -307,7 +306,7 @@ let tailit syms bsym_table uses id this sr ps vs exes =
       bexe_assign
       (
         sr,
-        (bexpr_get_n t' j (bexpr_varname t (i,ts'))),
+        (bexpr_get_n t' j (bexpr_varname t (i,[]))),
         x
       )
     )
@@ -429,8 +428,9 @@ let tailit syms bsym_table uses id this sr ps vs exes =
     | (BEXE_call (sr,(BEXPR_closure(i,ts),_),a)) as x :: tail -> assert false
     | (BEXE_call_direct (sr,i,ts,a)) as x :: tail  
 
-      when (i,ts)=(this,ts') && Flx_cflow.tailable exes [] tail
+      when (i)=(this) && Flx_cflow.tailable exes [] tail
       ->
+      assert (ts=[]);
       if can_loop ()
       then begin
         (*
@@ -450,8 +450,9 @@ let tailit syms bsym_table uses id this sr ps vs exes =
 
     | BEXE_fun_return (sr,(BEXPR_apply_direct(i,ts,a),_)) :: tail 
 
-      when (i,ts)=(this,ts')
+      when (i)=(this)
       ->
+       assert (ts=[]);
        (*
        print_endline ("--> Tail rec apply " ^ si this);
        *)
@@ -476,6 +477,7 @@ let tailit syms bsym_table uses id this sr ps vs exes =
       List.iter (fun x -> print_endline (string_of_bexe 0 x)) tail;
       print_endline "-- end of tail --";
       *)
+      assert (ts=[]);
       aux tail (x::res)
 
     | [] -> rev res (* forward order *)
@@ -552,7 +554,7 @@ let tailit syms bsym_table uses id this sr ps vs exes =
         )
         (nlist n)
         in
-        let tmps,exes = Flx_passign.passign syms bsym_table asgns ts' sr in
+        let tmps,exes = Flx_passign.passign syms bsym_table asgns sr in
         parameters := tmps @ !parameters;
         if syms.compiler_options.print_flag then
         begin
@@ -596,7 +598,7 @@ let tailit syms bsym_table uses id this sr ps vs exes =
       List.iter begin fun (paramtype, parameter) ->
         let id = "_trp_" ^ string_of_bid parameter in
         Flx_bsym_table.add bsym_table parameter (Some this)
-          (Flx_bsym.create ~sr id (bbdcl_val (vs, paramtype, `Tmp)))
+          (Flx_bsym.create ~sr id (bbdcl_val ([], paramtype, `Tmp)))
       end !parameters;
 
       (* return with posssible label at start *)

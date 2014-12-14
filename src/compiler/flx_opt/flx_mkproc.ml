@@ -135,7 +135,6 @@ let proc_exes syms bsym_table k exes = List.concat (List.map (proc_exe k) exes)
 
 let mkproc_gen syms bsym_table =
   let ut = Hashtbl.create 97 in (* dummy usage table *)
-  let vm = Hashtbl.create 97 in (* dummy varmap *)
   let rl = Hashtbl.create 97 in (* dummy relabel *)
   let mkproc_map = Hashtbl.create 97 in
 
@@ -261,8 +260,7 @@ let mkproc_gen syms bsym_table =
         let revariable =
           Flx_reparent.reparent_children syms
           ut bsym_table
-          vs (length vs)
-          i (Some k) rl vm true bids
+          i (Some k) rl true bids
         in
         let revar i = try Hashtbl.find revariable i with Not_found -> i in
         begin
