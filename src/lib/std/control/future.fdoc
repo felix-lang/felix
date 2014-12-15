@@ -42,7 +42,7 @@ indeterminate evaluation semantics.
 
 Although these semantics are standard in Felix for
 the @{val} binder, the indeterminacy doesn't
-extent fibres: the compiler understands service
+extend to fibres: the compiler understands service
 calls in general but not details of what they do.
 
 Futures extend the indeterminate semantics into
@@ -109,8 +109,9 @@ reaped by the garbage collector.
   };
 
 @h2 Constructor.
-A future is created by {var fut = future expr;} where
-@{expr} is a function of unit argument returning a value of type @{T}.
+A future is created by @{var fut = future expr;} 
+where @{expr} is a function of unit argument 
+returning a value of type @{T}.
 @felix
   ctor[T] future[T] (e:1->T) => _make_future (future_impl e);
  

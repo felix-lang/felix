@@ -177,7 +177,7 @@ let rec chk_expr state bsym_table nutab sr exe e : Flx_bexpr.t =
 *)
         e
 
-      | BBDCL_external_fun (_,vs,ps,ret,_,_,_) ->
+      | BBDCL_external_fun (props,vs,ps,ret,_,_,_) ->
 (*
         print_endline ("in exe=" ^ sbx exe ^ "\nPrimitive function passed as argument " ^ sbe bsym_table e);
 *)
@@ -200,7 +200,8 @@ let rec chk_expr state bsym_table nutab sr exe e : Flx_bexpr.t =
               [ bexe_fun_return (fsr, e) ]
         in
 
-        let bbdcl = bbdcl_fun ([],[],([param],None),ret,exes) in
+        let props = if List.mem `Generator props then [`Generator] else [] in
+        let bbdcl = bbdcl_fun (props,[],([param],None),ret,exes) in
         Flx_bsym_table.update_bbdcl nutab closure_bid bbdcl;
         bexpr_closure t (closure_bid, [])
 

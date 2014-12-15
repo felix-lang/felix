@@ -735,6 +735,30 @@ let rec special_inline syms uses bsym_table caller hic excludes sr e =
   | ((BEXPR_apply_stack (callee,ts,a),t) as e)
     -> assert false
 
+  | ((BEXPR_apply_prim (callee,ts,a),t) as e) ->
+    let bsym = Flx_bsym_table.find bsym_table callee in
+    begin match Flx_bsym.bbdcl bsym with
+    | BBDCL_external_fun (props,_,_,_,_,_,_) ->
+      if mem `Generator props then begin
+        (* create a new variable *)
+        let urv = fresh_bid syms.counter in
+        let urvid = "_genout_urv" ^ string_of_bid urv in
+        add_use uses caller urv sr;
+        Flx_bsym_table.add bsym_table urv (Some caller)
+          (Flx_bsym.create ~sr urvid (bbdcl_val ([],t,`Var)));
+
+        (* set variable to function appliction *)
+        let cll = bexe_init (sr,urv,e) in
+        exes' := cll :: !exes';
+
+
+        (* replace application with the variable *)
+        bexpr_varname t (urv,[])
+
+      end else e
+    | _ -> assert false
+    end
+
   | (((BEXPR_apply(  (BEXPR_closure (callee,ts),_) ,a)),t) as e)
   | ((BEXPR_apply_direct (callee,ts,a),t) as e) 
     ->
