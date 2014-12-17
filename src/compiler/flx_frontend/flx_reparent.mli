@@ -25,7 +25,7 @@ val specialise_symbol:
   bid_t option ->                   (* parent *)
   (string, string) Hashtbl.t ->     (* relabel *)
   bool ->                           (* rescan flag *)
-  bid_t * Flx_btype.t list          (* result instance *)
+  bid_t                             (* result instance *)
 
 val remap_expr :
   sym_state_t ->

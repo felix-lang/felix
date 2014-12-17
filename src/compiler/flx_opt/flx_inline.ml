@@ -30,9 +30,6 @@ let print_time syms msg f =
   result
 
 
-let string_of_vs vs =
-  "[" ^ catmap "," (fun (s,i)->s^"<"^si i^">") vs ^ "]"
-
 (* 
  revariable remaps indices
 *)
@@ -477,17 +474,9 @@ let heavy_inline_call syms uses bsym_table
 =
   (*
   print_endline ("INLINING CALL to " ^ id ^"<"^ si callee^">("^sbe bsym_table argument^")");
-  print_endline ("In procedure " ^ si caller ^ " with vs=" ^ string_of_vs caller_vs);
-  print_endline ("Callee is " ^ id ^ "<"^si callee ^ "> with ts = " ^ catmap "," (sbt bsym_table) ts);
-  print_endline ("Callee vs=" ^ string_of_vs vs);
+  print_endline ("In procedure " ^ si caller );
+  print_endline ("Callee is " ^ id ^ "<"^si callee ^ ">" );
   *)
-  (*
-  print_endline ("In the callee and its children,");
-  print_endline ("The callee vs are elided and replaced by the caller vs");
-  print_endline ("ELIDE: first " ^ si callee_vs_len ^ ", PREPEND " ^ si caller_vs_len);
-  print_endline ("This works by instantiating the callee vs with the calls ts");
-  *)
-
   (*
   print_endline ("Found procedure "^id^": Inline it!");
   *)
@@ -517,30 +506,22 @@ let make_specialisation syms uses bsym_table
   caller callee id sr parent props exes rescan_flag
 =
   (*
-  print_endline ("Specialising call " ^ id ^ "<"^si callee ^ ">[" ^ catmap "," (sbt bsym_table) ts ^"]");
-  print_endline ("In procedure " ^ si caller ^ " with vs=" ^ string_of_vs caller_vs);
-  print_endline ("Callee vs=" ^ string_of_vs vs);
+  print_endline ("Specialising call " ^ id ^ "<"^si callee ^ ">");
+  print_endline ("In procedure " ^ si caller );
   *)
-  (*
-  print_endline ("In the callee and its children,");
-  print_endline ("The callee vs are elided and replaced by the caller vs");
-  print_endline ("ELIDE: first " ^ si callee_vs_len ^ ", PREPEND " ^ si caller_vs_len);
-  print_endline ("This works by instantiating the callee vs with the calls ts");
-  *)
-
   (*
   print_endline ("Found procedure "^id^": Inline it!");
   *)
   let relabel = mk_label_map syms exes in
-  let k,ts' =
+  let k=
     specialise_symbol
       syms uses bsym_table
       callee parent relabel rescan_flag
    in
    (*
-   print_endline ("Specialised to " ^ id ^ "<"^si k ^ "> with ts = " ^ catmap "," (sbt bsym_table) ts');
+   print_endline ("Specialised to " ^ id ^ "<"^si k ^ ">" );
    *)
-   k,ts'
+   k
 
 (* Dependency analyser. This should be generalised,
 but for now we only use it in tail calls.
@@ -598,19 +579,6 @@ let inlining_complete bsym_table i =
   | BBDCL_external_fun _ -> true
 
   | _ -> assert false
-
-(* As at 14.11.09 input to inliner is free of type classes *)
-let yield_check syms bsym_table sr i =
-  let parent, bsym = Flx_bsym_table.find_with_parent bsym_table i in
-  let name : string = Flx_bsym.id bsym in
-  match Flx_bsym.bbdcl bsym with
-  | BBDCL_fun (_,_,_,_,exes) ->
-    let chk_yield acc exe = match exe with BEXE_yield _ -> false | _ -> acc in
-    let can_inline = fold_left chk_yield true exes in
-    can_inline,i
-    
-
-  | _ -> (* print_endline (id ^ " -- Not yielding ") *) true,i
 
 (* This function currently checks if it is possible to inline
    a function or procedure, and it also checks if the inline/noinline
@@ -763,13 +731,12 @@ let rec special_inline syms uses bsym_table caller hic excludes sr e =
   | ((BEXPR_apply_direct (callee,ts,a),t) as e) 
     ->
       assert (ts=[]);
-      let can_inline,callee = yield_check syms bsym_table sr callee in
       if not (mem callee excludes) then begin
         heavily_inline_bbdcl syms uses bsym_table (callee::excludes) callee;
         let bsym = Flx_bsym_table.find bsym_table callee in
         begin match Flx_bsym.bbdcl bsym with
         | BBDCL_fun (props,_,_,_,_)  
-          when mem `Generator props
+          when mem `Generator props && not (mem `Inline props)
           ->
           (*
           print_endline ("Unravel generator " ^ id);
@@ -839,7 +806,7 @@ let rec special_inline syms uses bsym_table caller hic excludes sr e =
           ;
           *)
           let inline_choice =
-            can_inline && inline_check syms bsym_table uses sr caller callee props exes 
+            inline_check syms bsym_table uses sr caller callee props exes 
           in
           (*
           print_endline ("  Inline decision: " ^
@@ -1017,7 +984,6 @@ and heavy_inline_calls
       when not (mem callee excludes)
       ->
       assert (ts=[]);
-      let can_inline,callee = yield_check syms bsym_table sr callee in
       heavily_inline_bbdcl syms uses bsym_table (callee::excludes) callee;
       let bsym = Flx_bsym_table.find bsym_table callee in
       (*
@@ -1026,7 +992,7 @@ and heavy_inline_calls
       begin match Flx_bsym.bbdcl bsym with
       | BBDCL_fun (props,vs,(ps,traint),BTYP_void,exes) ->
         assert (vs = []);
-        if can_inline && inline_check syms bsym_table uses sr caller callee props exes then
+        if inline_check syms bsym_table uses sr caller callee props exes then
         begin
           if syms.compiler_options.print_flag then
           print_endline ("inlining direct call: " ^ string_of_bexe bsym_table 0 exe);
@@ -1065,13 +1031,12 @@ and heavy_inline_calls
       print_endline ("handling call lift: " ^ string_of_bexe bsym_table 0 exe);
       print_endline ("Callee is " ^ si callee ^ " with ts = " ^ catmap "," (sbt bsym_table) ts);
       *)
-      let can_inline,callee = yield_check syms bsym_table sr callee in
       heavily_inline_bbdcl syms uses bsym_table (callee::excludes) callee;
       let bsym = Flx_bsym_table.find bsym_table callee in
       begin match Flx_bsym.bbdcl bsym with
       | BBDCL_fun (props,vs,(ps,traint),ret,exes) ->
         assert (vs=[]);
-        if can_inline && inline_check syms bsym_table uses sr caller callee props exes then
+        if inline_check syms bsym_table uses sr caller callee props exes then
         begin
           if syms.compiler_options.print_flag then
           print_endline ("Inline call lift: " ^ string_of_bexe bsym_table 0 exe);
@@ -1092,12 +1057,11 @@ and heavy_inline_calls
     | BEXE_init (sr,i,(BEXPR_apply_direct (callee,ts,a),_))
       when not (mem callee excludes)  ->
       assert (ts=[]);
-      let can_inline,callee = yield_check syms bsym_table sr callee in
       heavily_inline_bbdcl syms uses bsym_table (callee::excludes) callee;
       let bsym = Flx_bsym_table.find bsym_table callee in
       begin match Flx_bsym.bbdcl bsym with
       | BBDCL_fun (props,vs,(ps,traint),ret,exes) ->
-        if can_inline && inline_check syms bsym_table uses sr caller callee props exes then
+        if inline_check syms bsym_table uses sr caller callee props exes then
           begin
             let bsymv = Flx_bsym_table.find bsym_table i in
             begin match Flx_bsym.bbdcl bsymv with
@@ -1131,13 +1095,12 @@ and heavy_inline_calls
     | BEXE_fun_return (sr,(BEXPR_apply_direct (callee,ts,a),_))
       when not (mem callee excludes)  ->
       assert (ts=[]);
-      let can_inline,callee = yield_check syms bsym_table sr callee in
       heavily_inline_bbdcl syms uses bsym_table (callee::excludes) callee;
       let bsym = Flx_bsym_table.find bsym_table callee in
       begin match Flx_bsym.bbdcl bsym with
       | BBDCL_fun (props,vs,(ps,traint),ret,exes) ->
         assert (vs=[]);
-        if can_inline && inline_check syms bsym_table uses sr caller callee props exes then
+        if inline_check syms bsym_table uses sr caller callee props exes then
         begin
           if inlining_complete bsym_table callee then
           begin

@@ -397,4 +397,4 @@ let specialise_symbol syms uses bsym_table
       index parent k rescan_flag;
 
     Hashtbl.add syms.transient_specialisation_cache (index,[]) (k,[]);
-    k,[]
+    k
