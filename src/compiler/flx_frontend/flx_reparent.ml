@@ -377,7 +377,7 @@ let reparent_children syms uses bsym_table
 let specialise_symbol syms uses bsym_table
   index parent relabel rescan_flag
  =
-  try Hashtbl.find syms.transient_specialisation_cache (index,[])
+  try Hashtbl.find syms.transient_specialisation_cache index
   with Not_found ->
     let k = fresh_bid syms.counter in
 
@@ -396,5 +396,5 @@ let specialise_symbol syms uses bsym_table
       relabel revariable
       index parent k rescan_flag;
 
-    Hashtbl.add syms.transient_specialisation_cache (index,[]) (k,[]);
-    k,[]
+    Hashtbl.add syms.transient_specialisation_cache index k;
+    k

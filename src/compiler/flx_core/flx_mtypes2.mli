@@ -65,7 +65,7 @@ type sym_state_t =
   variant_map: (Flx_btype.t * Flx_btype.t, Flx_types.bid_t) Hashtbl.t;
   mutable virtual_to_instances: (Flx_types.bid_t, (Flx_types.bvs_t * Flx_btype.t * Flx_btype.t list * Flx_types.bid_t) list) Hashtbl.t;
   mutable instances_of_typeclass: (Flx_types.bid_t, (Flx_types.bid_t * (Flx_types.bvs_t * Flx_btype.t * Flx_btype.t list)) list) Hashtbl.t;
-  transient_specialisation_cache: (Flx_types.bid_t * Flx_btype.t list, Flx_types.bid_t * Flx_btype.t list) Hashtbl.t;
+  transient_specialisation_cache: (Flx_types.bid_t , Flx_types.bid_t ) Hashtbl.t;
   array_sum_offset_table: array_sum_offset_table_t;
   power_table: power_table_t;
 }
