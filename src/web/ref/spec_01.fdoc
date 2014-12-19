@@ -735,7 +735,7 @@ All these function have a type:
 D -> C
 @
 where D is the domain and C is the codomain: both would
-be @[int} in the examples.
+be @{int} in the examples.
 
 A function can be applied by the normal forward
 notation using juxtaposition or what is whimsically
@@ -776,6 +776,7 @@ may have pre-conditions, post-conditions, or both:
 fun f1 (x:int when x > 0) => x + x + 1;
 fun f2 (x:int) expect result > 1 => x + x + 1;
 fun f3 (x:int when x > 0) expect result > 1 => x + x + 1;
+fun f4 (x:int when x > 0) : int expect result > 1 => x + x + 1;
 @
 Pre- and pos-conditions are usually treated as boolean assertions
 which are checked at run time. The compiler may occasionally be able
@@ -850,7 +851,75 @@ f ();
 @
 
 @h2 Generators
-TBD
+A generator is a special kind of function which is allowed
+to have side effects. It is defined similarly to a function,
+but using the binder @{gen} instead of @{fun}:
+@felix
+var seqno = 1;
+gen seq () { var result = seqno; ++seqno; return result; }
+@
+When a generator is directly applied in an expression, the application
+is replaced by a fresh variable and the generator application
+is lifted out and assigned to the variable. For example:
+@felix
+fun twice (x:int) => x + x;
+println$ twice #seq;
+@
+will always print an even number because it is equivalent to
+@felix
+var tmp = #seq;
+println$ twice tmp;
+@
+Therefore even if twice is inlined we end up with the argument
+to @{println} being @{tmp+tmp} and not @{#seq+#seq} which would
+print an odd number.
+
+@h3 Yielding Generators
+A generator may contain a @{yield} statement:
+@felix
+gen fresh() {
+  var x = 1;
+  while x < 10 do
+    yield x;
+    ++x;
+  done
+  return x;
+}
+@
+In order to use such a yielding generator, a closure of the generator
+must be stored in a variable. Then the generator may be called repeatedly.
+@felix
+var g = fresh;
+for i in 1 upto 20 do 
+  println$ i,#g;
+done
+@
+This will print pairs (1,1), (2,2) up to (10,10) then print
+(11,10), (12,10) up to (20,10).
+
+The yield statement returns a value such that a subsequent call
+to a closure of the generator will resume execution after the yield
+statement. Therefore @{yield} is a kind of cross between a return
+and a subroutine call.
+
+If a generator executes a return statement, that is equivalent
+to yielding a value and setting the resume point back to the return
+statement, in other words @{return expr;} is equivalent to
+@felix
+while true do yield expr; done
+@
+
+Yielding generators should not be called directly because they
+will always start at the beginning with a fresh copy of any
+local variables used to maintain state.
+
+Function closures differ from generator closures in that
+the closures is cloned before every application to ensure
+that the initial state is fresh.
+
+Yielding generators are primarily intended to implement iterators,
+that is, to provide lazy lists or streams.
+
 
 @h1 Types
 <a href="/share/lib/grammar/type_decls.flxh">Syntax</a>
@@ -868,7 +937,7 @@ with sole value @{()}:
 @felix
 val u : unit = ();
 @
-There 1-array tuple of type @{T} component value @{v} is identified
+The 1-ary tuple of type @{T} component value @{v} is identified
 with the type @{T} and has value @{v}.
 
 The individual components of a tuple may be accessed by a projection
@@ -912,7 +981,11 @@ and use the store-at-addres operator @{<-}.
 @h2 Records
 A record is similar to a tuple except the components are 
 named and considered unordered.
-
+@felix
+typedef xy = (x:int, y:int);
+var r : xy = (x=1,y=2);
+println$ r.x, r.y;
+@
 
 @h2 Structs
 TBD
