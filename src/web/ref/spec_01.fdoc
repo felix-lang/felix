@@ -976,7 +976,7 @@ a projection of a value is a value.
 
 Assignment to components of tuples stored in variables is supported
 but only to one level, for general access you must take a pointer
-and use the store-at-addres operator @{<-}.
+and use the store-at-address operator @{<-}.
 
 @h2 Records
 A record is similar to a tuple except the components are 
