@@ -5,43 +5,15 @@ done
 
 
 class Css4Html {
-flx_head := """
-<style type="text/css">
-body {margin:3%; }
-h1 {font-size:130%;}
-h2 {font-size:110%;}
-h3 {font-size:105%;}
-h4 {font-size:100%;}
-h5 {font-size:100%;}
-span.fstring {color:darkblue; font-style:italic; }
-span.comment {font-family:arial; color:blue; font-style:italic; }
-span.doccomment {font-family:arial; color:green; font-style:italic; }
-span.big_keyword {color:#FF1010; }
-span.small_keyword {color:#802040; }
-span.qualifier {color:#A02020; }
-span.library {color:#A02000; }
-span.ctor {color:#406020; }
-span.hack {color:#66DD00; }
-span.preproc {color:#005500; }
-span.embedded_c{background-color:#DDDDDD; }
-span.fpc_fieldname {color:#DD0000; }
-span.lineno {color:#101010; background-color:#E0E0E0; font-size:80%; font-family:"courier",monospace; font-style:normal; }
-pre.flxbg {background-color:#A0FFA0; color:black; padding:2px; box-shadow:5px 5px 2px #807080; }
-pre.uncheckedflxbg {background-color:#D0D0D0; color:black; padding:2px; box-shadow:5px 5px 2px #807080; }
-pre.cppbg {background-color:#80FF80; color:black; }
-pre.prefmtbg {background-color:#D0D0D0; color:black; }
-pre.expected {background-color:#E0FF80; color:black; }
-pre.input {background-color:#E08080; color:black; }
-pre.inclusion {background-color:#D070D0; color:black; }
-code.inclusion {background-color:#D070D0; color:black; }
-.obsolete { background-color:#FFEFEF; font-size: small; color:black; }
-.future { background-color:#FF8080; font-size: small; color:black; }
-.implementation_detail { background-color:#E0E0E0; font-size: small; color:black;  }
-.bug { background-color:#FFE0E0; font-size: small; color:black; }
-.fixed{ background-color:#FFE0E0; font-size: small; color:black; }
-.done { background-color:#FFE0E0; font-size: small; color:black; }
-.caveat { background-color:#FF8080; color:black; }
-</style>
+flx_head := """<!DOCTYPE html><html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link href="/share/src/web/css/bootstrap.min.css" rel="stylesheet">
+<link href="/share/src/web/css/custom.css" rel="stylesheet">
+
 """;
 }
 
@@ -473,188 +445,53 @@ fun find_defs (lines:string) : darray[int * int * string] =
   return h;
 }
 
-var menu_js = """
-<script type="text/javascript">
 
-function mexpand(id)
-{
-  var n = document.getElementById(id).style;
-  n.display = "block";
-}
+noinline fun wrap_html (headers:darray[int * int * string], out:string) :string = {
 
-function mcollapse(id)
-{
-  var n = document.getElementById(id).style;
-  n.display = "none";
-}
-
-var counter_max = 0;
-function mshow(id,loc)
-{
-  var i;
-  for(i=1; i<=counter_max; ++i) 
-    mcollapse("menu"+String(i));
-  mexpand(id);
-  window.location.replace(loc);
-}
-
-function hilite(obj)
-{
-  obj.style.backgroundColor = "white";
-}
-
-function leave1(obj)
-{
-  obj.style.backgroundColor = "#70C000";
-}
-function leave2(obj)
-{
-  obj.style.backgroundColor = "#70C070";
-}
-</script>
-""";
-
-var menu_style = """
-<style>
-div.m {
-    margin: 0px;
-    padding:0px;
-    border-width:2px;
-    border-color: green;
-}
-
-div.m1 {
-    position:relative;
-    background-color: #70C000;
-    padding-top:2px;
-    padding-left: 10px;
-    border-style:outset;
-    border-color:red;
-    border-width:2px;
-    font-size:90%;
-}
-
-div.m2 {
-    position:relative;
-    background-color: #70C070;
-    padding-left:15px;
-    padding-top:2px;
-    border-style:outset;
-    border-color:green;
-    border-width:2px;
-    font-size:80%;
-}
-
-
-</style>
-""";
-
-
-noinline fun wrap_html (h:darray[int * int * string], out:string) :string = {
-
-  var frame_colour = "#C0C0B0";
-  var page_colour = "#E0E0E0";
-  var text_colour = "#404040";
   var toc_width = 200; // should be 0, temporary hack for testing!
 
   var o = "";
   reserve(&o,10000+out.len.int);
-  o+=menu_js;
-  o+=menu_style;
 
   // Whole page defaults and background
-  o+='<div style="background-color:'+page_colour+'; font-family:sans-serif; color:'+text_colour+'">';
+  o+='<div>';
 
-  // LEFT MARGIN
-  // fixed top nav bar 
-  o+='<div style="position:fixed; top:10px;  left:10px; width:'+
-  (toc_width - 10).str+'px; height:30px;' +
-  ' background-color:'+frame_colour+'; padding:4px;'+
-  ' border-top-left-radius:10px; border-top-right-radius:10px">';
-  o+='</div>\n';
+  // frame header
+  o+='<div class="code_frame">\n';
 
-  // left border
-  o+='<div style="position:fixed; top:40px; bottom:40px; left:10px; width:4px;' +
-    ' background-color:'+ frame_colour+ ';">';
-  o+='</div>\n';
+  o+='''<script>
 
-  // Contents body
-  o+='<div style="position:fixed; top:48px; bottom:48px; left:14px; '+
-     '  width:'+(toc_width - 10).str+'px;'+
-     ' border:4px;overflow:auto;'+
-     ' font-family:sans-serif; color:#404040; background-color:#70E0E0;">\n';
- 
-  proc head1(s:string,lno:int) { 
-    o+= """<div class=m1 onclick="mshow('menu"""+ counter.str+"""','#line"""+lno.str+"""')" """;
-    o+=" onmouseover='hilite(this)' onmouseout='leave1(this)' >";
-    o+= s+"</div>\n";
-    o+= """<div class=sm id=menu"""+counter.str+""">\n""";
-  }
-  proc foot1() { o+="</div>\n"; } 
-  proc break1(s:string,i:int) {foot1(); ++counter; head1(s,i); }
+    function deselectAll() {
+      var els = document.getElementsByClassName("lineno");
+      for (var i=0; i < els.length; i++) {
+        els[i].classList =  ["lineno"];
+      }
+    }
 
-  var counter = 0;
-  iter proc (level:int,lno:int, s:string) 
-    { 
-      //println$ i,s;
-      if level == 1 do
-        if counter == 0 do ++counter; head1 (s,lno); 
-        else break1 (s,lno); 
-        done
-      elif level == 2 do
-        o+="<div class=m2 onmouseover='hilite(this)'";
-        o+=" onmouseout='leave2(this)'";
-        o+=""" onclick='window.location.replace("#line"""+lno.str+"""")'>"""+s+"""</div>\n""";
-      done
-    } 
-    h
-  ;
-  if counter > 1 do  foot1; done;
-  o+="<script>counter_max="+counter.str+";</script>\n";
+    function jump() {
+      deselectAll();
+      var id = document.forms.header.jump_to.value;
+      var el = document.getElementById( id.replace('#','') );
+      el.classList =  ["lineno","selected"];
 
-   // right border
-  o+='<div style="position:fixed; top:40px; bottom:40px; left:'+(toc_width + 4).str+'px; width:4px;' +
-    ' background-color:'+ frame_colour+ ';">';
-  o+='</div>';
+      // send the user to the id
+      window.location = id;
+      return true;
+    }
+  </script>''';
 
-  // fixed bottom nav bar
-  o+='<div style="position:fixed; bottom:10px;  left:10' +
-    'px; width:'+(toc_width - 10).str+'px; height:30px;' +
-  ' background-color:'+frame_colour+';padding:4px;'+
-  ' border-bottom-left-radius:10px; border-bottom-right-radius:10px"\n>';
-  o+='</div>\n';
+  o+='<form name="header"><select name="jump_to" onchange="return jump();">';
+  iter proc (level:int,lno:int, s:string) { 
+        o+="<option value='#line"+lno.str+"'>"+s+"</option>\n";
+  } headers;
+  o+='</select></form>';
+
+  o+="</div>"; // end of frame header
 
   // MAIN CONTENT
-  // fixed top nav bar 
-  o+='<div style="position:fixed; top:10px;  left:'+(toc_width+10).str+'px; right:10px; height:30px;' +
-  ' background-color:'+frame_colour+'; padding:4px;'+
-  ' border-top-left-radius:10px; border-top-right-radius:10px">';
-  o+='</div>\n';
-
-  // left border
-  o+='<div style="position:fixed; top:40px; bottom:40px; left:'+(toc_width+10).str+'px; width:4px;' +
-    ' background-color:'+ frame_colour+ ';">';
-  o+='</div>';
 
   // body
-  o+='<div style="position:fixed; top:48px; bottom:48px; left:'+(toc_width+14).str+
-     'px; right:14px; padding:8px;'+
-  ' border:4px;overflow:auto; font-family:sans-serif;'+
-  ' color:'+text_colour+'; background-color:'+page_colour+';">';
-  o+=out;
-  o+='</div>\n';
-
-   // right border
-  o+='<div style="position:fixed; top:40px; bottom:40px; right:10px; width:4px;' +
-    ' background-color:'+ frame_colour+ ';">';
-  o+='</div>';
-
-  // fixed bottom nav bar
-  o+='<div style="position:fixed; bottom:10px;  left:'+(toc_width+10).str+
-    'px; right:10px; height:30px;' +
-  ' background-color:'+frame_colour+';padding:4px;'+
-  ' border-bottom-left-radius:10px; border-bottom-right-radius:10px"\n>';
-  o+='</div>\n';
+  o+='<div class="code_frame_content">' + out + '</div>\n';
 
   o+='</div>'; // whole page end
   return o;
@@ -677,9 +514,9 @@ proc serve_felix (k:socket_t, fname:string, get:bool) {
       def val needs_mathjax, val html = xlat_felix(text,dirname);
       var wrapped_html = wrap_html (h,"<pre>"+html+"</pre>");
       val data = make_html$
-        "<html><head>"+Css4Html::flx_head+
-         if needs_mathjax then mathjax else "" endif +
-        "</head><body>"+ wrapped_html +
+        Css4Html::flx_head+
+        if needs_mathjax then mathjax else "" endif +
+        "</head><body style='padding:0'>"+ wrapped_html +
         "</body></html>\n\r",
         list[string*string](("Cache-control","max-age=86400"))
       ;
@@ -701,7 +538,7 @@ proc serve_fpc (k:socket_t, fname:string, get:bool) {
       println$ "Loaded fpc file " + fname+", len="+str (text.len.int);
       val dirname = Filename::dirname path;
       val data = make_html$
-        "<html><head>"+Css4Html::flx_head+"</head><body><pre>"+
+        Css4Html::flx_head+"</head><body><pre>"+
         (xlat_fpc (text, dirname)).1
         +"</pre></body></html>\n\r",
         list[string*string]("Cache-control","max-age=86400")
@@ -722,7 +559,7 @@ proc serve_py (k:socket_t, fname:string, get:bool) {
     else
       var flx = load path;
       val data = make_html$
-        "<html><head>"+Css4Html::flx_head+"</head><body><pre>"+ 
+        Css4Html::flx_head+"</head><body><pre>"+ 
         (xlat_py (flx,"")).1 +"</pre></body></html>\n\r",
          list[string*string](("Cache-control","max-age=86400"))
       ;
@@ -742,7 +579,7 @@ proc serve_ocaml (k:socket_t, fname:string, get:bool) {
       var flx = load path;
       println$ f"Loaded Ocaml file %S, len=%d" (fname, flx.len.int);
       val data = make_html$
-        "<html><head>"+ Css4Html::flx_head +"</head><body><pre>"+
+        Css4Html::flx_head +"</head><body><pre>"+
         (xlat_ocaml (flx,"")).1
         +"</pre></body></html>\n\r",
         list[string*string](("Cache-control","max-age=86400"))
@@ -764,7 +601,7 @@ proc serve_cpp (k:socket_t, fname:string, get:bool) {
   println$ f"Loaded C++ file %S, len=%d" (fname, text.len.int);
       val dirname = Filename::dirname path;
       val data = make_html$
-        "<html><head>"+ Css4Html::flx_head +"</head><body><pre>"+
+        Css4Html::flx_head +"</head><body><pre>"+
         (xlat_cpp (text, dirname)).1
         +"</pre></body></html>\n\r",
         list[string*string](("Cache-control","max-age=86400"))
@@ -790,7 +627,7 @@ proc serve_text (k:socket_t, fname:string, get:bool) {
     var txt = load(fname);
     println$ f"Loaded text file %S, len=%d" (fname, txt.len.int);
     val data = make_html$
-      "<html><head></head><body><pre>"+
+      Css4Html::flx_head+"</head><body><pre>"+
       txt
       +"</pre></body></html>\n\r",
       list[string*string](("Cache-control","max-age=86400"))
@@ -836,7 +673,7 @@ proc serve_fdoc (k:socket_t, fname:string, get:bool) {
       var html = #(result.html_page);
       var title = #(result.html_title);
       val data = make_html(
-        "<html><head>"+Css4Html::flx_head+
+        Css4Html::flx_head+
         if needs_mathjax then mathjax else "" endif +
         if title != "" then "<title>"+title+"</title>" else "" endif +
         "</head><body>"+
@@ -864,7 +701,7 @@ proc serve_xfdoc (k:socket_t, fname:string, get:bool) {
       var html = #(result.html_page);
       var title = #(result.html_title);
       val data = make_html(
-        "<html><head>"+Css4Html::flx_head+
+        Css4Html::flx_head+
         if needs_mathjax then mathjax else "" endif +
         if title != "" then "<title>"+title+"</title>" else "" endif +
         "</head>"+
