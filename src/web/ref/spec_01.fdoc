@@ -1923,6 +1923,97 @@ This is the same as C++ except we use @[]} instead of @{<>}
 for template argument types.
 
 @h2 Atoms
+@h3 Record expression
+@felix
+var x = (name="Hello", age=42);
+@
+
+@h3 Alternate record expression
+@felix
+var x = 
+  struct {
+    var name = "Hello";
+    var age = 42;
+  }
+;
+@
+
+@h3 Variant type
+Denotes a variant type.
+@felix
+var x : 
+  union {
+    Cart of double * double;
+    Polar of double * double;
+  }
+;
+@
+
+@h3 Wildcard pattern
+Used in a pattern match, matches anything.
+@felix
+  var x = match a with _ => "anything";
+@
+
+@h3 Ellipsis
+Used only in C bindings to denote varags.
+@felix
+  fun f: int * ... -> int;
+@
+
+@h3 Truth constants
+@felix
+  false // alias for case 0 of 2
+  true  // alias for case 1 of 2
+@
+
+@h3 callback expression
+??
+@felix
+callback [ x ]
+@
+
+@h2 Lazy expression
+Function of unit.
+@felix
+var f = { expr };
+var x = f ();
+@
+
+@h3 Sequencing
+Function dependent on final expression.
+@felix
+var f = { var y = 1; var z = y + y; z + 1 }; // equivalent to
+var f = { var y = 1; var z = y + y; return z + 1; };
+var x = f (); 
+@
+
+@h3 Procedure of unit.
+@felix
+var p = { println$ "Hello"; } // procedure
+p ();
+
+var f = { var y = 1; return y + y; }; // function
+var x = f ();
+@
+
+@h3 Grouping
+Parentheses are used for grouping.
+@felix
+var x = (1 + 2) * 3;
+@
+
+@h3 Object extension
+@felix
+var x = extend a,b with c end;
+@
+
+@3 Conditional expression
+@felix
+var x =
+  if c1 then a elif c2 then b else c endif
+;
+@
 
 @h1 Executable statements
 @h2 Assignment
@@ -2206,7 +2297,7 @@ write, or the first unmatched read operation occurs.
 
 @h3 exchange
 
-@h1 loops
+@h2 loops
 <a href="/share/lib/grammar/loops.flxh">Reference</a>
 
 Felix has some low level and high level loop constructions.
@@ -2232,20 +2323,20 @@ outer:for var i in 0 upto 9 do
 done
 @
 
-@h2 redo
+@h3 redo
 The redo statement causes control to jump to the start
 of the specified loop without incrementing the control variable.
 
-@h2 break
+@h3 break
 The break statement causes control to jump past the end of
 the specified loop, terminating iteration.
 
-@h2 continue
+@h3 continue
 The continue statement causes the control variable to
 be incremented and tests and the next iteration commenced
 or the loop terminated.
 
-@h2 for/in/upto/downto/do/done
+@h3 for/in/upto/downto/do/done
 A basic loop with an inclusive range.
 @felix
 // up
@@ -2273,7 +2364,7 @@ For loops over signed types cannot span the whole range of the type.
 The loop logic takes care to ensure the control variable is not
 incremented (resp. decremented) past the end (resp.start) value.
 
-@h2 while/do/done
+@h3 while/do/done
 The while loop executes the body repeatedly whilst the control
 condition is true at the start of the loop body.
 @felix
@@ -2281,7 +2372,7 @@ var i = 0;
 while i < 10 do println$ i; ++i; done
 @
 
-@h2 until loop
+@h3 until loop
 The until loop executes the loop body repeatedly
 until the control condition is false at the start of the loop,
 it is equivalent o a while loop with a negated condition.
@@ -2290,9 +2381,9 @@ var i = 0;
 until i == 9 do println$ i; ++i; done
 @
 
-@h2 for/match/done
+@h3 for/match/done
 TBD
-@h2 loop
+@h3 loop
 TBD
 @h2 Assertions
 <a href="/share/lib/grammar/assertions.flxh">Reference</a>
