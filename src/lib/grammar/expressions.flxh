@@ -56,6 +56,8 @@ syntax expressions {
     )
     """;
 
+  //$ Unterminated match
+  x[let_pri] := "let" pattern_match =># "_2"; 
 
   //$ Conditional expression.
   x[let_pri] := sconditional =># '_1';
@@ -71,7 +73,7 @@ syntax expressions {
   //$ Low precedence right associative application.
   x[sdollar_apply_pri] := x[stuple_pri] "$" x[sdollar_apply_pri] =># "`(ast_apply ,_sr (,_1 ,_3))";
 
-  //$ Low precedence left associative application.
+  //$ Low precedence left associative reverse application.
   x[spipe_apply_pri] := x[spipe_apply_pri] "|>" x[stuple_pri] =># "`(ast_apply ,_sr (,_3 ,_1))";
 
   //$ Tuple formation by cons: right associative.
@@ -156,10 +158,10 @@ syntax expressions {
   //$ Bitwise or, left associative.
   x[sbor_pri] := x[sbor_pri] "\|" x[>sbor_pri] =># "(Infix)";
 
-  //$ Bitwise or, left associative.
+  //$ Bitwise xor, left associative.
   x[sbxor_pri] := x[sbxor_pri] "\^" x[>sbxor_pri] =># "(Infix)";
 
-  //$ Bitwise exclusive or, left associative.
+  //$ Bitwise exclusive and, left associative.
   x[sband_pri] := x[sband_pri] "\&" x[>sband_pri] =># "(Infix)";
 
   //$ Bitwise left shift, left associative.
@@ -213,25 +215,6 @@ syntax expressions {
   //$ Operator new.
   x[srefr_pri] := "new" x[srefr_pri] =># "`(ast_new ,_sr ,_2)";
 
-  //$ Record type.
-  satom := "(" srecord_mem_decl ("," srecord_mem_decl)*  ")" =># 
-   "`(ast_record_type ,(cons _2 (map second _3)))";
-    srecord_mem_decl := sname ":" stypeexpr =># "`(,_1 ,_3)";
-
-  //$ Variant type.
-  satom := "union" "{" stype_sum_item0* "}" =># "`(ast_variant_type ,_3)";
-    stype_sum_item := sname sopt_value stvarlist "of" sexpr =># "`(,_1 ,_2 ,_3 ,_5)";
-    stype_sum_item := sname sopt_value stvarlist =># "`(,_1 ,_2 ,_3 (ast_void ,_sr))";
-
-    stype_sum_item0 := sname "of" sexpr =># "`(,_1 none ,_3)";
-    stype_sum_item0 := sname =># "`(,_1 none (ast_void ,_sr))";
-
-    stype_sum_item1 := stype_sum_item ";" =># "_1";
-
-    stype_sum_item2 := "|" stype_sum_item =># "_2";
-    stype_sum_items2 := stype_sum_item stype_sum_item2* =># "(cons _1 _2)";
-    stype_sum_items2 := stype_sum_item2* =># "_1";
-
   //$ Operator whitespace: application.
   x[sapplication_pri] := x[sapplication_pri] x[scoercion_pri] =># "`(ast_apply ,_sr (,_1 ,_2))" note "apply";
 
@@ -248,7 +231,7 @@ syntax expressions {
 
   //$ Suffixed coercion.
   x[scoercion_pri] := x[scoercion_pri] ":>>" x[sfactor_pri] =># "`(ast_coercion ,_sr (,_1 ,_3))";
-  //x[scoercion_pri] := x[scoercion_pri] ":" sinteger =># "`(ast_typed_case ,_1 ,_3)";
+
   x[scoercion_pri] := ssuffixed_name =># "_1";
 
   x[sfactor_pri] := sthe_name =># "_1";
@@ -335,6 +318,25 @@ syntax expressions {
     "`(ast_record ,_sr ,_3 )"
   ;
     vassign := "var" sname "=" sexpr ";" =># "`(,_2 ,_4)";
+
+  //$ Record type.
+  satom := "(" srecord_mem_decl ("," srecord_mem_decl)*  ")" =># 
+   "`(ast_record_type ,(cons _2 (map second _3)))";
+    srecord_mem_decl := sname ":" stypeexpr =># "`(,_1 ,_3)";
+
+  //$ Variant type.
+  satom := "union" "{" stype_sum_item0* "}" =># "`(ast_variant_type ,_3)";
+    stype_sum_item := sname sopt_value stvarlist "of" sexpr =># "`(,_1 ,_2 ,_3 ,_5)";
+    stype_sum_item := sname sopt_value stvarlist =># "`(,_1 ,_2 ,_3 (ast_void ,_sr))";
+
+    stype_sum_item0 := sname "of" sexpr =># "`(,_1 none ,_3)";
+    stype_sum_item0 := sname =># "`(,_1 none (ast_void ,_sr))";
+
+    stype_sum_item1 := stype_sum_item ";" =># "_1";
+
+    stype_sum_item2 := "|" stype_sum_item =># "_2";
+    stype_sum_items2 := stype_sum_item stype_sum_item2* =># "(cons _1 _2)";
+    stype_sum_items2 := stype_sum_item2* =># "_1";
 
 
   //$ scalar literals (numbers, strings).
