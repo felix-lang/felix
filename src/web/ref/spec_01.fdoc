@@ -924,6 +924,13 @@ that is, to provide lazy lists or streams.
 @h1 Types
 <a href="/share/lib/grammar/type_decls.flxh">Syntax</a>
 
+@h2 typedef
+The typedef statement is used to define an alias for a type.
+It does not create a new type.
+@felix
+typedef Int = int;
+@
+
 @h2 Tuples
 Tuple types are well known: a tuple is just a Cartesian Product
 with components identified by position, starting at 0. 
@@ -978,6 +985,16 @@ Assignment to components of tuples stored in variables is supported
 but only to one level, for general access you must take a pointer
 and use the store-at-address operator @{<-}.
 
+@3 Tuple projections
+The projections of a tuple can also be written in an expanded form
+so that they may stand alone as functions:
+@felix
+var first = proj 0 of (int * string);
+var a = 1, "Hello";
+var one = a . first; 
+var two = a . proj 1 of (int * string);
+@
+
 @h2 Records
 A record is similar to a tuple except the components are 
 named and considered unordered.
@@ -985,26 +1002,360 @@ named and considered unordered.
 typedef xy = (x:int, y:int);
 var r : xy = (x=1,y=2);
 println$ r.x, r.y;
+var px = &r.x; // means (&r).x
+px <- 42;
+println$ r.x, r.y; // r.x == 42 now
+@
+The field names are projection functions and can be applied
+to a record value to extract the nominated component,
+or applied to a pointer to a record to find a pointer to the
+nominated component.
+
+The notation (may be changed soon)
+@felix
+var prjx = x of (xy);
+var prjpx = x of (&xy);
+@
+can be used to refer to a projection in isolation, and a pointer
+projection in isolation, that is, as unapplied first class functions.
+@h2 Structs
+A struct is a a nominally typed record, that is, it must be defined,
+and each definition specifies a distinct type.
+@felix
+struct S { x:int; y:int; };
+var s : S = S (1,2);
+println$ s.x,s.y;
+@
+A struct value can be constructued using the structure name as a function
+and passing a tuple of values corresponding by position to the fields
+of the struct.
+
+A struct constructor can be used a first class function.
+
+The field names are projection functions and can be applied
+to a struct value to extract the nominated component,
+or applied to a pointer to a struct to find a pointer to the
+nominated component.
+
+The notation (may be changed soon)
+@felix
+var prjx = x of (S);
+var prjpx = x of (&S);
+@
+can be used to refer to a projection in isolation, and a pointer
+projection in isolation, that is, as unapplied first class functions.
+
+A struct may also contain function and procedure definitions:
+@felix
+struct A { 
+  x:int;
+  y:int;
+  fun get2x => 2 * self.x;
+  fun get2y () => 2 * self.y;
+  proc diag (d:int) { self.x <- d; self.y <-d; }
+};
+@
+These functions are precisely equivalent to:
+@felix
+fun get2x (self:A) => 2 * self.x;
+proc diag (self: &A) (d:int) { self.x <-d; self.y <-d; }
+@
+Note that for a function @{self} is a value, for a procedure @{self}
+is a pointer.
+
+Because of these definitions, we can form object closures over a struct:
+@felix
+var a = A(1,2);
+var g2y = a. get2y;
+var di = a . diag;
+@
+Note we can't form a closure for @{get2x} without an explicit wrapper,
+i.e. eta-expansion.
+
+@h2 Sums
+Sum types are the dual of tuples. They represent a sequence
+of possible cases, potentially with arguments. Case indicies
+are 0 origin. Sum variables are decode with a match which
+may also extract an argument value:
+@felix
+typedef num = int + long + double;
+var x = (case 1 of num) 53L;
+println$ 
+  match x with
+  | case 0 (?i) => "int " + i.str
+  | case 1 (?l) => "long" + l.str
+  | case 2 (?d) => "double " + d.str
+  endmatch
+;
 @
 
-@h2 Structs
-TBD
-@h2 Sums
-TBD
-@h3 union
-TBD
-@h2 enum
-TBD
+@h3 Unit sum
+There is a family of special sum types equivalent to:
+@felix
+  2 = 1 + 1
+  3 = 1 + 1 + 1
+  4 = 1 + 1 + 1
+@
+Recall type 1, or unit, is the type of the empty tuple.
+The type 2 is also known as bool, and represents two cases
+where @{false} is an alias for @{case 0 of 2} and @[true}
+is an alias for @{case 1 of 2}.
+
+The type 0 or void, is the type of no values.
+
+These types are called unit sums because they're a sum
+of a certain number of units.
+
+Note carefully that:
+@felix
+  x + (y + z), (x + y) + z, x + y + z
+@
+are three distinct types because operator + is not associative.
+
+@h2 union
+A union is the dual of a struct. It is a nominally typed version
+of a sum. Here for example is a list of integers:
+@felix
+union intlist {
+  iEmpty ;
+  iCons of int * intlist;
+};
+@
+
+This alternative syntax is more commonly used
+and comes from ML family:
+@felix
+;union intlist = 
+  | iEmpty 
+  | iCons of int * intlist
+;
+@
+
+The fields of a union type are injections or type constructors.
+In effect they cast their argument to the type of the union, thus
+unifying heterogenous types into a single type.
+
+Pattern matches are used to decode unions.
+@felix
+var x = iEmpty;
+x = iCons (1, x);
+x = iCons (2, x); // list of two integers
+
+fun istr (x:intlist) =>
+  match x with
+  | iEmpty => "end"
+  | iCons (?i, ?tail) => i.str + "," + istr tail
+  endmatch
+;
+@
+
+The first variant represents an empty list. The second variant
+says that a pair consisting of an int and a list can be considered
+as a list by applying the type constructor iCons to it.
+
+Unlike product types, a sum may directly contain itself.
+This is because sum types are represented by pointers.
+
+@h3 enum
+A restricted kind of union, being a nominally typed version
+of a unit sum.
+@felix
+enum colour { red, green, blue }; // same as
+enum colour = red, green, blue; // same as
+union colour = red | green | blue;
+@
+
+The tag value of an enum can be set:
+@felix
+enum wsize = w8=8, w16=16, w32=32, w64=64;
+@
+
+@h3 caseno operator
+The caseno operator can find the tag value of any sum type,
+the anonymous sum, union, enum or variant as an integer.
+@felix
+assert caseno w16 == 16;
+assert caseno (case 1 of 2) == 1;
+@
+
 @h2 variant
-TBD
+Wariants the sum type which are the dual of records.
+They used named injections like unions but are structurally typed.
+@felix
+typedef vars = union { Int of int ; Float of float; };
+@
+
 @h2 Array
-TBD
-@h2 typedef
-TBD
+Felix has various kinds of array. The term is abused and sometimes
+refers to the abstract concept, and sometimes the statically
+typed fixed length array described here.
+
+An array is nothing but a tuple all of whose elements have the
+same type. It is convenient to use an exponential operator with
+a  unit sum index to provide a compact notation:
+@felix
+int ^ 3 // array of 3 integers equivalent to
+int * int * int
+@
+Therefore the value:
+@felix
+var a3 = 1,2,3;
+@
+is, in fact, an array. As for tuples an integer literal applied
+to an array value returns a component, however for arrays,
+an expression may be used as well:
+@felix
+var i = 1;
+var y = a3 . i;
+var z = a3 . proj i of (int^3);
+@
+The last form is equivalent to
+@felix
+var z = a . 
+  match i with
+  | 0 => proj 0 of (int^3)
+  | 1 => proj 1 of (int^3)
+  | 2 => proj 2 of (int^3)
+  | _ => throw error
+  endmatch
+;
+@
+in other words there is a run time array bounds check equivalent to a match failure.
+Note that of course the actual generated code is optimised!
+
+A run time check can be avoided by using the correct type of index:
+@felix
+var i = case 1 of 3;
+var z = a . i; // no run time check
+@
+
+@h3 Multi-arrays
+Whilst we introduced the exponential notation
+@felix
+  B ^ J
+@
+as a mere shorthand, where J is a unit sum, in fact Felix allows
+the index to be any compact linear type.
+
+A compact linear type is any combination of sums, products,
+and exponentials of unit sums. The type
+@felix
+ 3 * 4 * 5
+@
+for example is compact linear, and therefore Felix allows the array type
+@felix
+typedef matrix = double ^ (3 * 4 * 5)
+@
+Although this looks like the type
+@felix
+typedef array3 = double  ^ 3 ^ 4 ^ 5
+@
+as suggested by the usual index laws, the latter is an array size 5 of
+arrays size 4 of arrays size 3 which can be used like:
+@felix
+var a : array3;
+var z = a . case 1 of 5 . case 1 of 4 . case 1 of 3;
+@
+where you will note that the projections are applied in the reverse
+order to the indices. On the other hand to use the first form we have
+instead:
+@felix
+var m : matrix;
+var z = a . (case 1 of 3, case 1 of 4, case 1 of 5);
+@
+The exponent here is a value of a compact linear type.
+It is a single tuple value! It is called a multi-index
+when applied to an array.
+
+The advantage of this type is that there is an obvious
+encoding of the values shown in this psuedo code:
+@felix
+  i * 3 * 4 + j * 3 + k
+@
+which is nothing more than a positional number notation where the
+base varies with position. That encoding clearly associates
+with the compact linear value as integer in the range 0 to 59,
+or, alternatively, an value of type 60. In other words the type
+is linear and compact.
+
+Since clearly, given an integer in range 0 through 59 and this type
+we can decode the integer into a tuple, being the positional representation
+of the integer in this weird coding scheme, the type is clearly
+isomorphic to the subrange of integer.
+
+Therefore Felix allows you to coerce an integer to a compact linear
+type with a run time check, and convert a compact linear type
+to an integer or a unitsum:
+@felix
+var i : int = ((case 1 of 3, case 1 of 4, case 1 of 5) :>> int);
+var j : 60 = ((case 1 of 3, case 1 of 4, case 1 of 5) :>> 60);
+var clt : 3 * 4 * 5 = (16 :>> 3 * 4 * 5);
+@
+Because we can do this we can now write a loop over a matrix
+with a single iterator:
+@felix
+for i in 60 do
+  println$ m . (i :>> 3 * 4 * 5);
+done
+@
+This is an advanced topic which will require an extensive explanation
+beyond the scope of this summary. However we will not that this
+facility provides a very high level feature known as polyadic array
+programming. In short this means that one may write routines which
+work on matrices of arbitrary dimension. You can of course do this
+in C by doing your own index calculations at run time and using
+casts, however Felix does these calculations for you based on the
+type so they're always correct.
+
+
+@h1 Meta-typing
+Felix provides some facilities for meta-typing.
+
 @h3 typedef fun
-TBD
+The notation
+@felix
+typedef fun diag (T:TYPE):TYPE=> T * T;
+var x: diag int = 1,2;
+@
+defines a type function (or functor). Given a type T,
+this function returns the type for a pair of T's.
+The identifier @{TYPE} denotes the kind which is a category 
+of all types.
+
+Applications of type functions must be resolved during binding, since
+the result may influence overloading.
+
 @h2 typematch
-TBD
+Felix has a facility to inspect and decode types at compile time.
+@felix
+typedef T = int * long;
+var x: 
+  typematch T with
+  | A * B => A
+  | _ => int
+  endmatch
+  = 1
+;
+@
+As with type functions, type matches must be resolved during binding.
+If a type match fails, an error is issued a compilation halted.
+The wildcard type pattern @{_} matches any type.
+
+The real power of the type match comes when combined with a type function:
+@felix
+typedef fun promote (T:TYPE): TYPE =>
+  typematch T with
+  | tiny => int
+  | short => int
+  | int => int
+  | long => long
+  | vlong => vlong
+  endmatch
+;
+@
+This functor does integral promotions of signed integer types 
+corresponding to ISO C rules.
+
 @h2 type sets
 TBD
 
