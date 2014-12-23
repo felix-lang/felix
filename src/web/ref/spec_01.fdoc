@@ -965,6 +965,47 @@ fun apply (x:string, y:string) => x + y; // concat
 var x = "hello " "world"; // apply a string to a string
 @
 
+@h2 Objects
+Felix provides an object system with syntax based on Java,
+and technology based on CLOS.
+
+An object is a record of function closures, closed over the local
+scope of a constructor function that returns the record.
+
+@felix
+interface person_t {
+  get_name: 1 -> string; 
+  set_age: int -> 0; 
+  set_job : string -> 0;
+  get_job : 1 -> string;
+}
+
+object person (name:string, var age:int) implements person_t =
+{
+  var job = "unknown";
+  method fun get_name () => name;
+  method proc set_age (x:int) { age = x; }
+  method fun get_job () => job;
+  method proc set_job (x:string) {  job = x; }
+}
+
+var john = person ("John", 42);
+println$ #(john.name) + " is " + #(john.age).str;
+@
+The entity @{person} is a function which when called with
+its argument of name and age returns a record of type
+person_t consisting of closures of the functions and procedures
+marked as method in its definition.
+
+Since functions hide their local variables the object state
+is hidden and can only be accessed using the methods.
+
+The @{implements} clause is optional.
+
+Objects provide an excellent way for a dynamically loaded
+shared library to export a set of functions, only the object
+function needs to be exported so it has a C name which
+can be linked to with @{dlopen}.
 
 @h1 Type constructors
 <a href="/share/lib/grammar/type_decls.flxh">Syntax</a>
@@ -1063,6 +1104,22 @@ var prjpx = x of (&xy);
 @
 can be used to refer to a projection in isolation, and a pointer
 projection in isolation, that is, as unapplied first class functions.
+
+@h3 Interfaces
+An interface is a special notation for a record type
+all of whose fields are functions or procedures.
+@felix
+interface fred {
+  f: int -> int;
+  g: int -> 0; // procedure
+}
+
+// equivalent to
+typedef fred = (f: int -> int, g: int -> 0);
+@
+The primary use is for specifying the type of a Java like
+object.
+
 @h2 Structs
 A struct is a a nominally typed record, that is, it must be defined,
 and each definition specifies a distinct type.
@@ -1433,6 +1490,9 @@ and the operator @{_repr_} casts the abstract value to its implementation.
 
 These casts cannot be used outside the class, thereby hiding the implementation
 outside the class.
+
+@h1 Polymorphism
+TBD
 
 @h1 Expressions
 <a href="/share/lib/grammar/expressions.flxh">Syntax</a>
@@ -1883,7 +1943,7 @@ proc f (a: int) {
     elif a > 0 then label_address pos
     else label_address zer
   ;
-  goto *target;
+  goto-indirect target;
   pos:> println$ "pos"; return;
   neg:> println$ "neg"; return;
   zer:> println$ "zer"; return;
@@ -1922,13 +1982,13 @@ where the qualifiers and/or type list may be elided.
 This is the same as C++ except we use @[]} instead of @{<>}
 for template argument types.
 
-@h2 Atoms
-@h3 Record expression
+@h1 Atoms
+@h2 Record expression
 @felix
 var x = (name="Hello", age=42);
 @
 
-@h3 Alternate record expression
+@h2 Alternate record expression
 @felix
 var x = 
   struct {
@@ -1938,7 +1998,7 @@ var x =
 ;
 @
 
-@h3 Variant type
+@h2 Variant type
 Denotes a variant type.
 @felix
 var x : 
@@ -1949,25 +2009,25 @@ var x :
 ;
 @
 
-@h3 Wildcard pattern
+@h2 Wildcard pattern
 Used in a pattern match, matches anything.
 @felix
   var x = match a with _ => "anything";
 @
 
-@h3 Ellipsis
+@h2 Ellipsis
 Used only in C bindings to denote varags.
 @felix
   fun f: int * ... -> int;
 @
 
-@h3 Truth constants
+@h2 Truth constants
 @felix
   false // alias for case 0 of 2
   true  // alias for case 1 of 2
 @
 
-@h3 callback expression
+@h2 callback expression
 ??
 @felix
 callback [ x ]
@@ -1980,7 +2040,7 @@ var f = { expr };
 var x = f ();
 @
 
-@h3 Sequencing
+@h2 Sequencing
 Function dependent on final expression.
 @felix
 var f = { var y = 1; var z = y + y; z + 1 }; // equivalent to
@@ -1988,7 +2048,7 @@ var f = { var y = 1; var z = y + y; return z + 1; };
 var x = f (); 
 @
 
-@h3 Procedure of unit.
+@h2 Procedure of unit.
 @felix
 var p = { println$ "Hello"; } // procedure
 p ();
@@ -1997,18 +2057,18 @@ var f = { var y = 1; return y + y; }; // function
 var x = f ();
 @
 
-@h3 Grouping
+@h2 Grouping
 Parentheses are used for grouping.
 @felix
 var x = (1 + 2) * 3;
 @
 
-@h3 Object extension
+@h2 Object extension
 @felix
 var x = extend a,b with c end;
 @
 
-@3 Conditional expression
+@h2 Conditional expression
 @felix
 var x =
   if c1 then a elif c2 then b else c endif

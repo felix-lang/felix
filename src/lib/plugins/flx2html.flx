@@ -76,6 +76,7 @@ private val big_keywords =
   ("spawn_pthread","Spawn a pre-emptive thread"),
   ("reduce", "Specify a reduction"),
   ("axiom", "Specify core semantics"),
+  ("assert", "Run time assertion"),
   ("open", "Open a module or class"),
   ("inherit","Inherit symbols into a module or typeclass"),
   ("rename","create a new name for a symbol"),
@@ -129,7 +130,12 @@ private val small_keywords =
   ("extends","extend an object or interface with extra methods"),
   ("implements","specify what interfaces an object implements"), 
   ("encoder","serialisation encoder"),
-  ("decoder","serialisation decoder")
+  ("decoder","serialisation decoder"),
+  ("caseno","Integer index of value of a sum type"),
+  ("case","Sum type selector"),
+  ("proj","Product projection"),
+  ("let","let binder"),
+  ("label_address","code address at a label"),
 ;
 
 private val qualifiers = 
