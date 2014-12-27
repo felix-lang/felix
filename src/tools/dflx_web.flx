@@ -462,17 +462,27 @@ noinline fun wrap_html (headers:darray[int * int * string], out:string) :string 
   o+='''<script>
 
     function deselectAll() {
-      var els = document.getElementsByClassName("lineno");
+      var els = document.getElementsByClassName("selected");
       for (var i=0; i < els.length; i++) {
-        els[i].classList =  ["lineno"];
+        els[i].classList.remove("selected");
       }
+    }
+
+    function nearestParent(elm, tag) {
+      elm = elm.parentNode;
+      while (elm && elm.nodeName != tag) {
+        elm = elm.parentNode;
+      }
+      return elm;
     }
 
     function jump() {
       deselectAll();
       var id = document.forms.header.jump_to.value;
-      var el = document.getElementById( id.replace('#','') );
-      el.classList =  ["lineno","selected"];
+      var linex =  document.getElementById( id.replace('#','') )
+      var el = nearestParent(linex, 'SPAN');
+
+      el.classList.add("selected");
 
       // send the user to the id
       window.location = id;
@@ -491,7 +501,7 @@ noinline fun wrap_html (headers:darray[int * int * string], out:string) :string 
   // MAIN CONTENT
 
   // body
-  o+='<div class="code_frame_content">' + out + '</div>\n';
+  o+='<div class="code_frame_content"><br><br>' + out + '</div>\n';
 
   o+='</div>'; // whole page end
   return o;

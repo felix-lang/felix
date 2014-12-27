@@ -90,13 +90,13 @@ span.doccomment { color:green; font-style:italic; }
 span.big_keyword { color:#0010FF; }
 span.small_keyword { color:#008AFF; }
 span.qualifier { color:#A02020; }
-span.library { color:#008AFF; }
+span.library { color:#005EA0; }
 span.ctor { color:#406020; }
 span.hack { color:#66DD00; }
 span.preproc { color:#005500; }
 span.embedded_c { background-color:#DDDDDD; }
 span.fpc_fieldname { color:#DD0000; }
-span.lineno { color:#101010; background-color:#E0E0E0; }
+span.lineno { color:#101010; }
 pre.flxbg { padding:2px; }
 pre.uncheckedflxbg { color:#555; padding:2px; }
 pre.cppbg { background-color:#80FF80; color:#555; }
@@ -113,9 +113,11 @@ code.inclusion { background-color:#D070D0; color:#555; }
 .done { background-color:#FFE0E0; color:#555; }
 .caveat { background-color:#FF8080; color:#555; }
 
-.code_frame { top:0; position:fixed; height: 40px; background:#fff; width:100%; padding:1em;  }
+.code_frame { top:0; position:fixed; height: 40px; background:#fff; width:100%; padding:10px; border-bottom: 1px solid #ccc; }
     .code_frame a { display: block; border-top: 1px solid #eee; } 
-.code_frame_content { margin-top: 50px; }
-.code_frame_content span[class=lineno] { margin-top: -55px; padding-top: 55px; display: inline-block; }
+.code_frame_content { }
+.code_frame_content pre { background-color: hsla(216, 78%, 95%, 0.5); }
+.code_frame_content .lineno .inner { margin-top: -55px; padding-top: 55px; display: inline-block; }
+.code_frame_content .selected { background-color: rgba(0, 255, 156, 0.22); padding: 5px 0; }
 
 svg { max-width: 100%; }
