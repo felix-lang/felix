@@ -134,7 +134,7 @@ private val small_keywords =
   ("case","Sum type selector"),
   ("proj","Product projection"),
   ("let","let binder"),
-  ("label_address","code address at a label"),
+  ("label_address","code address at a label")
 ;
 
 private val qualifiers = 
