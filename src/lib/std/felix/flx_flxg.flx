@@ -8,7 +8,6 @@ class Flxg
     CACHE_DIR:string,
     COMPILER_PHASE:string,
     DOREDUCE:int,
-    STDLIB:list[string],
     FLXG:string,
     VERBOSE:list[string],
     STDGRAMMAR:string,
@@ -54,12 +53,11 @@ class Flxg
       spec.FLXG ! 
       spec.VERBOSE +
       FLXFLAGS + 
-      spec.FLXLIBS +
       spec.INCLUDE_DIRS + 
       ("--syntax="+spec.STDGRAMMAR) +
       ("--automaton="+spec.AUTOMATON) + 
       map (fun (s:string) => "--import="+s) spec.IMPORTS +
-      spec.STDLIB +
+      spec.FLXLIBS +
       (spec.filebase + spec.use_ext)
     ;
 

@@ -88,7 +88,11 @@ private val big_keywords =
   ("priority","Define order of syntactic priority symbols"),
   ("requires","specify requirements"),
   ("object","define an object factory"),
-  ("interface","define an object interface")
+  ("interface","define an object interface"),
+  ("try","try block"),
+  ("catch","catch handler"),
+  ("endtry","end of try block"),
+  ("halt", "terminate program with message")
 ;
 
 private val small_keywords =
@@ -115,6 +119,8 @@ private val small_keywords =
   ("return","return"),
   ("yield","return a value saving the current location for future resumption"),
   ("goto","jump to label"),
+  ("goto-indirect","jump to code address"),
+  ("branch-and-link","low level exchange of control"),
   ("call","call a procedure"),
   ("jump","tail call of function"),
   ("loop","self-tail call"),
@@ -136,6 +142,12 @@ private val small_keywords =
   ("proj","Product projection"),
   ("let","let binder"),
   ("label_address","code address at a label"),
+  ("and","logical conjunction"),
+  ("or","logical disjunction"),
+  ("not","logical negation"),
+  ("implies","logical implication"),
+  ("until","loop until condition is met"),
+  ("invariant","establish invariant for object methods")
 ;
 
 private val qualifiers = 
@@ -152,7 +164,8 @@ private val qualifiers =
   ("_gc_type","Type of object pointed to"),
   ("scanner","names C routine which scans a data structure for pointers"),
   ("finaliser","names C routine which finalises an object"),
-  ("_repr_","Refer to the representation of a Felix abstract type")
+  ("_repr_","Refer to the representation of a Felix abstract type"),
+  ("noreturn","specify C code doesn't return")
 ;
 
 private val library = 
@@ -219,7 +232,9 @@ private val library =
   ("fold_left", "accumulated values of data structure from left into initial value using function"),
   ("fold_right", "accumulated values of data structure from right into initial value using function"),
   ("rev", "return data structure with elements reversed"),
-  ("len", "number of elements in data structure")
+  ("len", "number of elements in data structure"),
+  ("true", "truth value"),
+  ("false", "false value")
 ;
 
 private val hack = "C_hack","C_hack"; // to make it an array we need 2 components

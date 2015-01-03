@@ -1227,7 +1227,7 @@ union intlist {
 This alternative syntax is more commonly used
 and comes from ML family:
 @felix
-;union intlist = 
+union intlist = 
   | iEmpty 
   | iCons of int * intlist
 ;
@@ -2166,9 +2166,71 @@ lab2:>
 @
 
 @h3 Exchange of control
-TBD
+Built on top of label adressing and indirect gotos,
+the @{branch-and-link} instruction is conceptually
+the most fundamental control instruction. The library
+implementation is in 
+@felix
+inline proc branch-and-link (target:&LABEL, save:&LABEL)
+{
+  save <- label_address next;
+  goto-indirect *target;
+  next:>
+}
+@
+A good example is <a href="/share/src/test/regress/rt/coroutines-01.fdoc">here</a>,
+which shows an example of coroutines.
+
 @h2 match/endmatch
-TBD
+The form:
+@felix
+match expr with
+| pattern1 => stmts1
+| pattern2 => stmts2
+...
+endmatch
+@
+is an extension of the C switch statement. The patterns
+are composed of these forms:
+@felix
+(?v1, ?v2, ... )          // tuple match
+?h!?t                     // list match
+?h,,?t                    // tuple cons
+Ctor                      // const union or variant match
+Ctor ?v                   // nonconst union or variant match
+(fld1=?f1, fld2=f2, ...)  // record match
+pat as ?v                 // assign variable to matched subexpression
+pat when expr             // guarded match
+pat1 | pat2               // match either pattern
+999                       // integer match
+"str"                     // string match 
+lit1 .. lit2              // range match
+_                         // wildcard match
+@
+
+The guarded match only matches the pattern if the guard expression is true.
+@felix
+match x with
+| (?x,?y) when y != 0 => ...
+endmatch
+@
+
+The tuple as list cons match is a form of row polymorphism
+where the first element of a tuple and the remaining elements
+considered as a tuple are matched.
+
+A good example of this is found in the library <a href="/share/lib/std/datatype/tuple.flx">here</a>
+which allows printing a tuple of arbitrary number of components, indeed,
+this facility was implemented precisely to allow this definition in the library.
+
+Record matches succeed with any record containing a superset
+of the specified fields.
+
+As well as integer and string matches, a literal of any type with an
+equality and inequality operator can be matched. In addition,
+if there is a less than or equal operator @{<=} an inclusive
+range match can be specified.
+
 @h2 if/goto
 The conditional goto is an abbreviation for 
 the more verbose conditional:

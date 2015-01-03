@@ -210,7 +210,6 @@ object processing_env(
         CACHE_DIR=config.FLX_CACHE_DIR,
         COMPILER_PHASE= control.COMPILER_PHASE,
         DOREDUCE=control.DOREDUCE,
-        STDLIB = dvars.STDLIB,
         FLXG = control.FLXG,
         VERBOSE = dvars.VERBOSE,
         // NOTE: BUG: Not passing grammar directory to compiler!
@@ -218,8 +217,8 @@ object processing_env(
         STDGRAMMAR = "@"+control.STDGRAMMAR, 
         AUTOMATON = control.AUTOMATON,
         IMPORTS = control.STDIMPORT + control.IMPORTS,
-        FLXLIBS = dvars.FLXLIBS,
-        INCLUDE_DIRS = control.STANDARD_INCLUDE_DIRS,
+        FLXLIBS = dvars.FLX_STD_LIBS,
+        INCLUDE_DIRS = map (fun (x:string) => "-I"+x) dvars.FLX_LIB_DIRS,
         filebase = dvars.filebase,
         use_ext = dvars.use_ext,
         TIME = control.COMPILER_TIME,
@@ -269,7 +268,7 @@ object processing_env(
       extend dflt_clang_config with 
       (
         ccflags = /* ccflags + */ control.CCFLAGS,
-        header_search_dirs = dvars.INCLUDE_DIR + control.STANDARD_INCLUDE_DIRS+control.EXTRA_INCLUDE_DIRS,
+        header_search_dirs = map (fun (x:string) => "-I"+x) (dvars.FLX_RTL_DIRS+control.EXTRA_INCLUDE_DIRS),
         macros = control.MACROS,
         debugln = if control.ECHO==1 then echoln[string] else debugln[string] endif
       )
@@ -361,7 +360,7 @@ object processing_env(
       extend dflt_clang_config with 
       (
         ccflags = /*ccflags + */ control.CCFLAGS,
-        header_search_dirs = dvars.INCLUDE_DIR + control.STANDARD_INCLUDE_DIRS+control.EXTRA_INCLUDE_DIRS,
+        header_search_dirs = map (fun (x:string) => "-I"+x) (dvars.FLX_RTL_DIRS+control.EXTRA_INCLUDE_DIRS),
         macros = control.MACROS,
         debugln = if control.ECHO==1 then echoln[string] else debugln[string] endif
       )

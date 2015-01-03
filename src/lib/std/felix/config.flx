@@ -124,6 +124,7 @@ class Config {
     cascade_FLX_TARGET_DIR &cfg (INSTALL_ROOT/Env::getenv ("FLX_TARGET_SUBDIR","host"));
 
     cascade_FLX_TARGET_DIR &cfg (Env::getenv ("FLX_TARGET_DIR",cfg.FLX_TARGET_DIR));
+
     &cfg.FLX_CONFIG_DIRS <- 
       let ?e = Env::getenv("FLX_CONFIG_DIRS") in
       if e != "" then respectful_split e else cfg.FLX_CONFIG_DIRS endif; // fpc database
@@ -131,6 +132,10 @@ class Config {
     &cfg.FLX_RTL_DIRS <- 
       let ?e = Env::getenv("FLX_RTL_DIRS") in
       if e != "" then respectful_split e else cfg.FLX_RTL_DIRS endif; // C++ RTL
+
+    &cfg.FLX_LIB_DIRS <- 
+      let ?e = Env::getenv("FLX_LIB_DIRS") in
+      if e != "" then respectful_split e else cfg.FLX_LIB_DIRS endif; // Felix lib 
 
 
     // profile function should have set this up right
