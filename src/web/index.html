@@ -1,94 +1,25 @@
-<!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="">
-    <meta name="author" content="">
-
     <title>Felix</title>
-    <link href="/share/src/web/css/bootstrap.min.css" rel="stylesheet"> 
-    <link href="/share/src/web/css/custom.css" rel="stylesheet"> 
-
-    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
-    <!--[if lt IE 9]>
-    <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
-    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-    <![endif]-->
-
 </head>
-
 <body>
-<div class='container col-lg-7' style="margin-left:auto; float: none">
+<h1 style="text-align:center">The Felix Programming Language</h1>
+<p style="text-align:center">The fastest scripting language on Earth.</p>
+<p style="text-align:center"><img style="align:center;" src=/share/src/web/images/200px-Felix_the_cat.svg.png></p>
+<p style="text-align:center">
+  <a href=/share/src/web/download.html>Download</a> |
+  <a href="/share/src/web/articles/articles.fdoc">Articles</a> |
+  <a href=/share/src/web/ref/tools.fdoc>Tools</a> |
+  <a href="/share/src/web/tut_slides.fdoc">Overview: Slideshow</a> |
+  <a href="/share/src/web/tut/tutorial.fdoc">Tutorial</a> |
+  <a href="/share/src/web/ref/reference.fdoc">Reference</a> |
+  <a href="/share/src/web/ref/glossary.fdoc">Glossary</a> |
+  <a href="/share/src/web/community.html">Community</a> 
+</p>
+<hr />
 
-<div class="header">
-    <ul class="nav nav-pills" role="tablist">
-      <li role="presentation" class="active"><a href="#">Home</a></li>
-      <li role="presentation"><a href="/share/src/web/download.html">Download</a></li>
-      <li role="presentation"><a href="/share/src/web/documentation.html">Documentation</a></li>
-      <li role="presentation"><a href="/share/src/web/community.html">Community</a></li>
-    </ul>
-    <h3 class="text-muted">Felix</h3>
-</div>
-
-<div class="text-center">
-    <h1>The Felix Programming Language</h1>
-    <p>The fastest scripting language on Earth.</p>
-
-    <p><img style="align:center;" src=/share/src/web/images/200px-Felix_the_cat.svg.png></p>
-
-    <br><br>
-    <a href='/share/src/web/download.html' class="btn btn-primary">Download</a>
-    <a href='/share/src/web/tut/tut_index.fdoc' class="btn btn-default">Learn More</a><br>
-    <!-- <small><small>Available for Windows, Mac OSX, and Linux.</small></small> -->
-    <br><br>
-</div>
-
-<div class='content'>
-
-<p>Felix is a highly performant, scalable, and safe 
-<a href="/share/src/web/articles/scripting_felix.fdoc">scripting language</a>
-suitable for rapid development of software systems. It runs on the three
-main operating systems including: 
-<a href="/share/src/web/download_tarball.html">Windows, Mac OS X, Linux</a>, 
-and can potentially run on others</p>
-
-<P>It gets its speed from its C++ code generator which also provides
-compatibility and <a href="/share/src/web/tut/cbind_index.fdoc">easy
-interopability with existing C and C++</a> code bases. The native C++ compiler
-does the hard work of low level optimisation whilst Felix does high level
-optimisations and type-checking. The resulting code is very fast, sometimes
-<em>"faster than the speed of light (C)"</em>, but can be platform independent
-and is simple to deploy: just distribute the source files and run them, like a
-scripting language.</p>
-
-<p>Felix's type system is based on a combination of OCaml and Haskell. Like
-OCaml, it provides strong support for <a
-href="/share/src/web/tut/tutorial.fdoc#Functional Programming
-Technology_h">functional programming</a>, whilst also supporting <a
-href="/share/src/web/tut/tutorial.fdoc#Imperative Programming
-Technology_h">imperative programming</a>.  The type system is strict and
-includes <a href="/share/src/web/tut/polymorphism_index.fdoc">first-order
-polymorphism</a> at its core; not bolted-on as in Java (i.e. generics) and C++
-(i.e. templates). Felix supports <a
-href="/share/src/web/tut/polymorphism_01.fdoc#Overloading_h">open
-overloading</a> like C++, but only allows exact matches. It also provides <a
-href="/share/src/web/tut/polymorphism_03.fdoc#Type classes_h">Haskell style
-type classes</a> as an alternative way to obtain genericity.</p>
-
-<p>Felix supports user defined macros and syntactic improvements.
-This extensibility allows a developer to easily write domain specific
-sub-languages (DSLs) with ease. The parser is GLR and the user actions are
-written in R5RS Scheme.</p>
-
-<p>A rich set of shortcuts makes programming a breeze. <a href="/share/src/web/tut/regexp_01.fdoc">Built-in
-regular expression support</a> and other features provide string handling on par
-with Perl. Web programming is enabled by built-in <a href="/share/src/web/tut/async_index.fdoc">asynchronous
-socket I/O</a> combined with <a href="#">cooperatively multi-tasked fibres</a>
-that would support millions of HTTP clients if only the server could supply
-enough sockets. Context switching is achieved by a pointer swap, and state is
-maintained by a spaghetti stack.</p>
+<h3>Why do we need a new programming language?</h3>
+<p>Existing languages have too many faults to support modern requirements. </p>
 
 <h3>Goals.</h3>
 <p><ul>
@@ -100,26 +31,33 @@ maintained by a spaghetti stack.</p>
 <li>platform independence</li>
 </ul>
 </p>
+<h4>Performance</h4>
+<p>
+The ability to obtain high performance in a wide variety
+of domains is fundamental. Light-speed behaviour was a
+primary goal of C++ and it is for Felix too. In fact,
+we aim for hyper-light performance: faster than C.</p>
 
-<h3>Performance</h3>
+<p>Network performance matters too. This means 
+we need platform independent asynchronous
+I/O.  To support a large number of clients, we need
+lightweight threads with fast context switching.</p>
 
-<p>The ability to obtain high performance in a wide variety of domains is
-fundamental. Light-speed behaviour was a primary goal of C++ and it is for
-Felix too. In fact, we aim for hyper-light performance: faster than C.</p>
+<h4>Rapid Prototyping and scripting harness</h4>
+<p>C++ is typically very hard to build. Make files,
+macros, compiler and OS feature tests, switches,
+paths and a huge
+array of poorly integrated non-portable tools
+make development a nightmare compared with the easy
+of deploying Python or Perl scripts. IDEs fix these
+problems in a clean way, but only handle boilerplate
+workflows.
+</p>
 
-<p>Network performance matters too. This means we need platform independent
-asynchronous I/O.  To support a large number of clients, we need lightweight
-threads with fast context switching.</p>
-
-<b>Rapid Prototyping and scripting harness</b> <p>C++ is typically very hard to
-build. Make files, macros, compiler and OS feature tests, switches, paths and a
-huge array of poorly integrated non-portable tools make development a nightmare
-compared with the easy of deploying Python or Perl scripts. IDEs fix these
-problems in a clean way, but only handle boilerplate workflows.  </p>
-
-<h3>Correctness</h3>
-<p>Unfortunately dynamic typing is not amenable to reasoning about program
-correctness, and traditional imperative programming also presents obstacles.
+<h4>Correctness</h4>
+<p>Unfortunately dynamic typing is not amenable to 
+reasoning about program correctness, and traditional
+imperative programming also presents obstacles.
 </p>
 
 <p>We need:
@@ -145,8 +83,42 @@ correctness, and traditional imperative programming also presents obstacles.
 </ul>
 which quite a demanding list!
 </p>
+<h3>How Felix meets these goals.</h3>
+<p>Felix is designed to address all these issues. It is
+a C++ code generator and thereby can provide compatibility
+with existing C and C++ code bases. We let the native
+C++ compiler do the hard work of low level optimisation
+whilst Felix does high level optimisations. The resulting
+code is very fast, sometimes "faster than the speed of light (C)",
+but can be platform independent and is simply to deploy: 
+just distribute the source files and run them, 
+like a scripting language.</p>
 
-</div> <!-- .content -->
-</div> <!-- .container -->
+<p>However Felix has its own type system based on a combination of
+Ocaml and Haskell. Like Ocaml it provides strong support for functional
+programming, whilst also supporting imperative programming. The type system
+is strict.</p>
+
+<p>First order polymorphism is core, not a bolt-on as in Java and C++.
+Felix also provides open overloading like C++, but only allows
+exact matches. It also provides Haskell style type classes
+as an alternative way to obtain genericity.</p>
+
+<p>To overcome syntactic impedence mismatching with the
+wide number of application domains, the Felix grammar
+is defined in user space. It can be extended by the
+end user to provide a suitable Domain Specific Sub-Language.
+The parser is GLR and the user actions are written in R5RS Scheme.</p>
+
+<p>A rich set of shortcuts makes programming a breeze.
+Built-in regular expression support and other features
+provide string handling on par with Perl. Web programming
+is enabled by built-in asynchronous socket I/O
+combined with cooperatively multi-tasked fibres that would
+support millions of http clients if only the server could
+supply enough sockets. Context switching is achieved
+by a pointer swap, and state is maintained by a spaghetti
+stack.</p>
+
 </body>
 </html>

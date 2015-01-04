@@ -20,11 +20,11 @@ proc make_index (prefix:string)
     ; 
   done
 
+  writeln$ f,"@h1 "+prefix +" Index";
   var abstract = load (Filename::join (dirname, prefix + "_abstract.html"));
   if abstract != "" do
     writeln$ f,abstract;
   done
-
   writeln$ f,"<ul>";
   iter (proc (x:string) { writeln$ f, mkentry x; }) docs;
   writeln$ f,"</ul>";

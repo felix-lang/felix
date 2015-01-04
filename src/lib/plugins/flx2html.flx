@@ -37,7 +37,8 @@ fun lc (x:string) = {
   var count = 0;
   for line in lines do
     ++count;
-    result += '<span class=lineno ><span class=inner id=line'+count.str+'></span>'+line+'</span>\n';
+    result += '<span class="lineno" id=line'+count.str+'></span>';
+    result += '  ' +line+'\n';
   done
   return result;
 }

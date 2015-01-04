@@ -90,7 +90,9 @@ object fdoc_heading (paragraph: paragraph-control_t, write_string: string -> 0) 
   method fun emit-js() => js1 + all_buttons + js2;
 
   // bid is the button id, cid is the stuff which is controlled by it
-  method fun tree_button(bid:string, cid:string)=> "";
+  method fun tree_button(bid:string, cid:string)=>
+    "<img src='/share/src/web/images/minus.gif' id='"+bid+"' onclick='toggle(this,\""+cid+"\")' alt='+'/>"
+  ;
 
   method proc add_button (fname: string) {
     all_buttons = if all_buttons != "" then all_buttons + ',\n' else '' endif + '"' + fname + '"';
@@ -125,7 +127,7 @@ object fdoc_heading (paragraph: paragraph-control_t, write_string: string -> 0) 
     ++hstack;
     htree = Cons ( (n,txt), htree);
     write_string("<h"+str n+" id='"+txt+"_h'>"+tb+" "+docnum+hnum()+" "+ txt+"</h"+str n+">" +
-     "<div id='"+txt+"_d'>\n"); 
+     "<div id='"+txt+"_d' style='display:block'>\n"); 
   }
 
   method proc finalise () {
