@@ -1,38 +1,26 @@
-@h1 Futures.
-Felix uses fibres and channels to provide futures.
+@h1 Pipes.
+Felix uses fibres and channels to provide a synchronous unbuffered
+version of a pipeline.
 @felix
-include "std/control/future";
+include "std/control/spipe";
 
-var x = future { 42 };
-println$ x.get;
+proc source (cho:oschannel[int]) { 
+  for var i in 0 upto 9 do write (cho,i); done 
+}
 
-// More nasty test.
+proc sink (chi:ischannel[int]) { 
+  while true do var x= read chi; println x; done 
+}
 
-var ch = mk_schannel[int]();
-var y = future { var k = read ch; return k; };
-spawn_fthread { write (ch, 77); };
-println$ y.get;
+proc xduce(chi: ischannel[int], cho: oschannel[int]) {
+  write (cho, 99);
+  while true do var x = read chi; write (cho, x); write (cho, 2 * x); done
+}
 
-println$ #x, #y;
-@
-The argument of a future is function accepting unit argument.
-The function calculates the value of the future.
-The evaluation may occur any time between the construction
-of the future and its first use. If the future hasn't been
-calculated, or the calculation is incomplete, the program
-stalls at the use point until the future is evaluated.
+spawn_fthread$  source |-> xduce |-> sink;
 
-The value of a future is cached, so the evaluation is never
-performed more than once.
+@h2 Advanced Example.
+A more advanced example is the program 
+@felix share/src/tools/flx_tangle.flx
 
-Futures allow a program to request an asynchronous I/O transfer
-and then continue on concurrently with the transfer, until
-the results are required.
-
-You can use either the {#x} or {x.get} notation to fetch
-the value of a future.
-
-The function to be evaluated is scheduled as a fibre
-which writes its result into a hidden variable and
-sets a flag signalling completion.
 

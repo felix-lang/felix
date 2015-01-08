@@ -19,7 +19,20 @@ open Flx_use
   and variant constructors
 *)
 
-let throw_on_gc bsym_table e : unit = match e with
+let throw_on_heap_type bsym_table t =
+    begin match t with
+    | BTYP_sum args when not (all_units args) -> raise Not_found
+    | BTYP_inst (i,ts) ->
+      begin match Flx_bsym_table.find_bbdcl bsym_table i with
+      | BBDCL_union (vs,idts) when not
+          (all_voids (List.map (fun (_,_,t)->t) idts)) -> raise Not_found
+      | _ -> ()
+      end
+    | _ -> ()
+    end
+
+let throw_on_gc bsym_table e : unit = 
+  match e with
   | BEXPR_new _,_
   | BEXPR_class_new _,_ -> raise Not_found
 
@@ -37,24 +50,17 @@ let throw_on_gc bsym_table e : unit = match e with
     | _ -> ()
     end
 
-  | BEXPR_case (_,t),_ ->
-    begin match t with
-    | BTYP_sum args when not (all_units args) -> raise Not_found
-    | BTYP_inst (i,ts) ->
-      begin match Flx_bsym_table.find_bbdcl bsym_table i with
-      | BBDCL_union (vs,idts) when not
-          (all_voids (List.map (fun (_,_,t)->t) idts)) -> raise Not_found
-      | _ -> ()
-      end
-    | _ -> ()
-    end
+  | BEXPR_inj (_,d,c),_ -> throw_on_heap_type bsym_table c
+
+  | BEXPR_case (_,t),_ -> throw_on_heap_type bsym_table t
   | _ -> ()
 
 let expr_uses_gc bsym_table e =
   Flx_bexpr.iter ~f_bexpr:(throw_on_gc bsym_table) e
 
 let exe_uses_gc bsym_table exe =
-  match exe with
+try
+  begin match exe with
   | BEXE_jump_direct _
   | BEXE_call_direct _ -> raise Not_found
 
@@ -78,6 +84,10 @@ let exe_uses_gc bsym_table exe =
 
   | _ ->
       Flx_bexe.iter ~f_bexpr:(expr_uses_gc bsym_table) exe
+  end;
+  
+with
+  | Not_found ->  raise Not_found
 
 let exes_use_gc bsym_table exes =
   try

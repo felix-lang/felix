@@ -173,6 +173,10 @@ let cal_call state bsym_table sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
     end
   in
   match unfold t1 with
+
+  (* special handling of non-returning function. Instead of returning
+     void we return type any, 
+  *)
   | BTYP_cfunction (t, BTYP_fix (0,_))
   | BTYP_function (t, BTYP_fix (0,_)) 
     ->

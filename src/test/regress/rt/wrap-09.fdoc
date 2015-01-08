@@ -1,0 +1,20 @@
+
+@felix
+// tuple field projection
+println "Wrapper for tuple projection";
+typedef X = int * long;
+noinline proc exec (f: X -> int, x:X) {
+  var z = f x;
+  println$ "Tuple field 0 = " + z;
+}
+
+var z = 42 , 100L;
+println$ z;
+println$ (proj 0 of (X)) z;
+exec (proj 0 of (X),z);
+@expect
+Wrapper for tuple projection
+(42, 100)
+42
+Tuple field 0 = 42
+@

@@ -89,7 +89,7 @@ let idt t = t
 let rec rpl syms argmap x =
   match Flx_bexpr.map ~f_bexpr:(rpl syms argmap) x with
   (* No need to check ts or type here *)
-  | (BEXPR_name (i,_),_) as x ->
+  | (BEXPR_varname (i,_),_) as x ->
     (try
       let x' = Hashtbl.find argmap i in
       (*
@@ -104,8 +104,8 @@ let subarg syms bsym_table argmap exe =
 
 (* NOTE: result is in reversed order *)
 let gen_body syms uses bsym_table id
-  varmap ps relabel revariable exes argument
-  sr caller callee vs callee_vs_len inline_method props
+  ps relabel revariable exes argument
+  sr caller callee inline_method props
 =
   if syms.compiler_options.Flx_options.print_flag then
   print_endline ("Gen body caller = " ^ string_of_bid caller ^
@@ -178,11 +178,19 @@ let gen_body syms uses bsym_table id
       | [x] -> x
       | x -> btyp_tuple x
     in
-      varmap_subst varmap pt
+      pt
   in
 
-  let caller_vars = map (fun (s,i) -> btyp_type_var (i, btyp_type 0)) vs in
-  let ge e = remap_expr syms bsym_table relabel varmap revariable caller_vars callee_vs_len e in
+  let ge e = 
+(*
+     print_endline ("Remap expr " ^ sbe bsym_table e);
+*)
+     let result = remap_expr syms bsym_table relabel revariable e  in
+(*
+     print_endline ("Remap DONE result " ^ sbe bsym_table result);
+*)
+     result
+  in
   let relab s = try let r = Hashtbl.find relabel s in (* print_endline ("Relab: " ^ s ^ "->" ^ r); *) r with Not_found -> s in
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
   let end_label_uses = ref 0 in
@@ -193,43 +201,37 @@ let gen_body syms uses bsym_table id
 
 
   let remap exe =
+(*
+  print_endline ("Remap exe " ^ string_of_bexe bsym_table 0 exe);
+*)
+  let result = 
   match exe with
   | BEXE_axiom_check _ -> assert false
-  | BEXE_call_prim (sr,i,ts,e2)  ->  assert false
-    (*
+  | BEXE_call_prim (sr,i,ts,e2)  ->  
     let fixup i ts =
-      let auxt t = varmap_subst varmap t in
-      let ts = map auxt ts in
       try
         let j= Hashtbl.find revariable i in
-        j, vsplice caller_vars callee_vs_len ts
+        j, ts
       with Not_found -> i,ts
     in
     let i,ts = fixup i ts in
-    [BEXE_call_prim (sr,i,ts, ge e2)]
-    *)
+    [bexe_call_prim (sr,i,ts, ge e2)]
 
-  | BEXE_call_direct (sr,i,ts,e2)  ->  assert false
-    (*
+  | BEXE_call_direct (sr,i,ts,e2)  -> 
     let fixup i ts =
-      let auxt t = varmap_subst varmap t in
-      let ts = map auxt ts in
       try
         let j= Hashtbl.find revariable i in
-        j, vsplice caller_vars callee_vs_len ts
+        j, ts
       with Not_found -> i,ts
     in
     let i,ts = fixup i ts in
-    [BEXE_call_direct (sr,i,ts, ge e2)]
-    *)
+    [bexe_call_direct (sr,i,ts, ge e2)]
 
   | BEXE_jump_direct (sr,i,ts,e2)  ->
     let fixup i ts =
-      let auxt t = varmap_subst varmap t in
-      let ts = map auxt ts in
       try
         let j= Hashtbl.find revariable i in
-        j, vsplice caller_vars callee_vs_len ts
+        j, ts
       with Not_found -> i,ts
     in
     let i,ts = fixup i ts in
@@ -275,6 +277,11 @@ let gen_body syms uses bsym_table id
   | BEXE_try _ as x -> [x]
   | BEXE_endtry _ as x -> [x]
   in
+(*
+  print_endline ("Remap exe result = " ^ catmap "\n" (string_of_bexe bsym_table 0) result);
+*)
+  result
+  in
     let kind = match inline_method with
       | `Lazy -> "Lazy "
       | `Eager -> "Eager "
@@ -307,28 +314,10 @@ let gen_body syms uses bsym_table id
          prolog := x :: !prolog
       in
       match kind with
-      | `PFun ->
-        let argt = match argument with
-        | _,BTYP_function (BTYP_void,t)
-        | _,BTYP_function (BTYP_tuple [],t) -> t
-        | _,t -> failwith ("Expected argument to be function void->t, got " ^ sbt bsym_table t)
-        in
-        let un = bexpr_tuple (btyp_tuple []) [] in
-        let apl = bexpr_apply argt (argument, un) in
-        Hashtbl.add argmap index apl
-
       | `PVal ->
           if inline_method = `Lazy 
           then Hashtbl.add argmap index argument
           else eagerly ()
-
-      | `PRef ->
-        begin match argument with
-        | BEXPR_ref (i,ts),BTYP_pointer t ->
-          Hashtbl.add argmap index argument
-        | _ -> eagerly ()
-        end
-
 
       | `PVar -> eagerly ()
 
@@ -369,11 +358,10 @@ let gen_body syms uses bsym_table id
         (* unpack argument *)
         if length ps > 1 then
         let ts = map (fun (_,i) -> btyp_type_var (i, btyp_type 0)) vs in
-        let p = BEXPR_name (parameter,ts),paramtype in
+        let p = BEXPR_varname (parameter,ts),paramtype in
         let n = ref 0 in
         iter
         (fun {pid=vid;pindex=ix; ptyp=prjt} ->
-          let prjt = varmap_subst varmap prjt in
           let pj =
             match argument with
             (* THIS CASE MAY NOT WORK WITH TAIL REC OPT! *)
@@ -421,12 +409,10 @@ let gen_body syms uses bsym_table id
       print_endline ("Parameter assigned index " ^ si parameter);
       *)
 
-      let ts = map (fun (_,i) -> btyp_type_var (i, btyp_type 0)) vs in
       let n = ref 0 in
       let k = List.length ps in
       iter
       (fun {pkind=kind; pid=vid; pindex=ix; ptyp=prjt} ->
-        let prjt = varmap_subst varmap prjt in
         let pj =
           match argument with
           (* THIS CASE MAY NOT WORK WITH TAIL REC OPT! *)
@@ -434,7 +420,7 @@ let gen_body syms uses bsym_table id
             begin try nth ls (!n)
             with _ ->
                 failwith (
-                  "[gen_body2] Woops, prj "^si (!n) ^" tuple wrong length? " ^ si (length ts)
+                  "[gen_body2] Woops, prj "^si (!n) ^" tuple wrong length? " ^ si (length ls)
                 )
             end
           | p -> bexpr_get_n prjt (!n) p
@@ -512,9 +498,9 @@ let gen_body syms uses bsym_table id
     if !end_label_uses > 0 then
       b := (bexe_label (sr,end_label)) :: !b
     ;
-    (*
+    if syms.compiler_options.Flx_options.print_flag then begin
     print_endline ("INLINING " ^ id ^ " into " ^ si caller ^ " .. OUTPUT:");
-    iter (fun x -> print_endline (string_of_bexe sym_table 0 x)) (rev !b);
-    print_endline ("END OUTPUT for " ^ id);
-    *)
+    iter (fun x -> print_endline (string_of_bexe bsym_table 0 x)) (rev !b);
+    print_endline ("END OUTPUT for " ^ id)
+    end;
     !b

@@ -923,7 +923,7 @@ print_endline ("Normalised expression " ^ sbe bsym_table e);
     *)
 
   | BEXPR_deref ((BEXPR_ref (index,ts)),BTYP_pointer t) ->
-    ge' (bexpr_name t (index,ts))
+    ge' (bexpr_varname t (index,ts))
 
   | BEXPR_address e -> ce_prefix "&" (ge' e)
 
@@ -1052,7 +1052,7 @@ end
     end
 *)
 
-  | BEXPR_name (index,ts') ->
+  | BEXPR_varname (index,ts') ->
     let bsym_parent, bsym =
       try Flx_bsym_table.find_with_parent bsym_table index
       with Not_found ->

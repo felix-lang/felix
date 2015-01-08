@@ -1,7 +1,7 @@
 type bexpr_t =
   | BEXPR_not of t
   | BEXPR_deref of t
-  | BEXPR_name of Flx_types.bid_t * Flx_btype.t list
+  | BEXPR_varname of Flx_types.bid_t * Flx_btype.t list
   | BEXPR_ref of Flx_types.bid_t * Flx_btype.t list
   | BEXPR_likely of t
   | BEXPR_unlikely of t
@@ -48,7 +48,11 @@ let bexpr_deref t e : t = BEXPR_deref e, t
 
 let bexpr_not (e,t) : t = BEXPR_not (e,t), t
 
-let bexpr_name t (bid, ts) = BEXPR_name (bid, ts), t
+let bexpr_varname t (bid, ts) = 
+(*
+  print_endline ("Creating varname term " ^ string_of_int bid);
+*)
+  BEXPR_varname (bid, ts), t
 
 let bexpr_ref t (bid, ts) = BEXPR_ref (bid, ts), t
 
@@ -91,7 +95,11 @@ let bexpr_inj n d c = BEXPR_inj (n,d,c),Flx_btype.BTYP_function (d,c)
 let bexpr_get_n c n (e,d) =  BEXPR_apply ( bexpr_prj n d c, (e,d) ), c
 
 
-let bexpr_closure t (bid, ts) = BEXPR_closure (bid, ts), t
+let bexpr_closure t (bid, ts) = 
+(*
+  print_endline ("Creating closure term " ^ string_of_int bid);
+*)
+  BEXPR_closure (bid, ts), t
 
 let bexpr_const_case (i, t) = BEXPR_case (i, t), t
 
@@ -120,7 +128,7 @@ let bexpr_unitsum_case i j =
 (** Extract the type arguments of a bound expression. *)
 let get_ts (e,_) =
   match e with
-  | BEXPR_name (_, ts)
+  | BEXPR_varname (_, ts)
   | BEXPR_closure (_, ts)
   | BEXPR_ref (_, ts)
   | BEXPR_apply_prim (_, ts, _)
@@ -153,7 +161,7 @@ let rec cmp ((a,_) as xa) ((b,_) as xb) =
   | BEXPR_not (e),BEXPR_not (e') 
   | BEXPR_deref e,BEXPR_deref e' -> cmp e e'
 
-  | BEXPR_name (i,ts),BEXPR_name (i',ts')
+  | BEXPR_varname (i,ts),BEXPR_varname (i',ts')
   | BEXPR_ref (i,ts),BEXPR_ref (i',ts')
   | BEXPR_closure (i,ts),BEXPR_closure (i',ts') ->
      i = i' && List.fold_left2 (fun r a b -> r && a = b) true ts ts'
@@ -263,7 +271,7 @@ let flat_iter
   | BEXPR_closure (i,ts) ->
       f_bid i;
       List.iter f_btype ts
-  | BEXPR_name (i,ts) ->
+  | BEXPR_varname (i,ts) ->
       f_bid i;
       List.iter f_btype ts
   | BEXPR_case (i,t') -> f_btype t'
@@ -334,7 +342,7 @@ let map
   | BEXPR_variant (s,e),t -> BEXPR_variant (s, f_bexpr e),f_btype t
   | BEXPR_closure (i,ts),t ->
       BEXPR_closure (f_bid i, List.map f_btype ts),f_btype t
-  | BEXPR_name (i,ts),t -> BEXPR_name (f_bid i, List.map f_btype ts), f_btype t
+  | BEXPR_varname (i,ts),t -> BEXPR_varname (f_bid i, List.map f_btype ts), f_btype t
   | BEXPR_case (i,t'),t -> BEXPR_case (i, f_btype t'),f_btype t
   | BEXPR_match_case (i,e),t -> BEXPR_match_case (i, f_bexpr e),f_btype t
   | BEXPR_case_arg (i,e),t -> BEXPR_case_arg (i, f_bexpr e),f_btype t
@@ -364,7 +372,7 @@ let rec reduce e =
     *)
     | BEXPR_not (BEXPR_not (e,t1),t2),t3 when t1 = t2 && t2 = t3 -> e,t1 (* had better be bool! *)
     | BEXPR_apply ((BEXPR_prj (n, _,_),_),((BEXPR_tuple ls),_)),_ -> List.nth ls n
-    | BEXPR_deref (BEXPR_ref (i,ts),_),t -> BEXPR_name (i,ts),t
+    | BEXPR_deref (BEXPR_ref (i,ts),_),t -> BEXPR_varname (i,ts),t
     | BEXPR_deref (BEXPR_address (e,t),_),_ -> (e,t)
     | BEXPR_address (BEXPR_deref (e,t),_),_ -> (e,t)
     | BEXPR_apply 

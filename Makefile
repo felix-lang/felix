@@ -13,7 +13,7 @@ all: build test
 # default build
 #
 
-VERSION = 1.1.12
+VERSION = 14.12.13
 DISTDIR ?= ./build/dist
 PREFIX ?= /usr/local
 EXECPREFIX ?= ${PREFIX}/bin
@@ -111,7 +111,7 @@ regress-check: test-dir
 	# RUNNING REGRESSION TESTS
 	#
 	# ============================================================
-	${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --usage=prototype --expect --nonstop --indir=test/regress/rt --regex='.*\.flx' test
+	-${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --usage=prototype --expect --nonstop --indir=test/regress/rt --regex='.*\.flx' test
 
 tut-check: tut-dir
 	# ============================================================
@@ -119,7 +119,7 @@ tut-check: tut-dir
 	# CHECKING CORRECTNESS OF TUTORIAL EXAMPLES
 	#
 	# ============================================================
-	${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --usage=prototype --expect --input --nonstop --indir=tut --regex='.*\.flx' tut
+	-${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --usage=prototype --expect --input --nonstop --indir=tut --regex='.*\.flx' tut
 
 tutopt-check: tutopt-dir
 	#
@@ -132,7 +132,7 @@ tutopt-check: tutopt-dir
 	# to use it.
 	# ============================================================
 	#
-	${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --usage=prototype --expect --input --nonstop --indir=tutopt --regex='.*\.flx' tutopt
+	-${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --usage=prototype --expect --input --nonstop --indir=tutopt --regex='.*\.flx' tutopt
 
 
 test: regress-check tut-check tutopt-check
@@ -321,6 +321,21 @@ rtl:
 web-plugins:
 	# =========================================================
 	# rebuild web plugins
+	# includes the following plugins:
+	#  - cpp2html
+	#  - fdoc2html
+	#  - fdoc_edit
+	#  - fdoc_button
+	#  - fdoc_fileseq
+	#  - fdoc_heading
+	#  - fdoc_paragraph
+	#  - fdoc_scanner
+	#  - fdoc_slideshow
+	#  - fdoc_frame
+	#  - flx2html
+	#  - fpc2html
+	#  - ocaml2html
+	#  - py2html
 	# =========================================================
 	build/release/host/bin/flx --test=build/release  src/tools/flx_build_boot \
 		--build-web-plugins
@@ -328,6 +343,8 @@ web-plugins:
 flx-web:
 	# =========================================================
 	# rebuild web plugins
+	# includes the following plugins:
+	#  - dflx_web
 	# =========================================================
 	build/release/host/bin/flx --test=build/release  src/tools/flx_build_boot \
 		--build-flx-web
@@ -335,6 +352,13 @@ flx-web:
 toolchain-plugins:
 	# =========================================================
 	# rebuild toolchain plugins
+	# includes the following plugins: 
+	#  - flx_plugin
+	#  - toolchain_clang_linux
+	#  - toolchain_clang_osx
+	#  - toolchain_clang_iphoneos
+	#  - toolchain_gcc_linux
+	#  - toolchain_gcc_osx
 	# =========================================================
 	build/release/host/bin/flx --test=build/release  src/tools/flx_build_boot \
 		--build-toolchain-plugins
@@ -342,6 +366,20 @@ toolchain-plugins:
 tools:
 	# =========================================================
 	# rebuild tools
+	# includes the following tools:
+	#  - flx_cp
+	#  - flx_ls
+	#  - flx_grep
+	#  - flx_replace
+	#  - flx_batch_replace
+	#  - flx_tangle
+	#  - flx_perror
+	#  - flx_gramdoc
+	#  - flx_libindex
+	#  - flx_libcontents
+	#  - flx_mktutindex
+	#  - flx_renumber
+	#  - flx_iscr
 	# =========================================================
 	build/release/host/bin/flx --test=build/release  src/tools/flx_build_boot \
 		--build-tools
@@ -356,6 +394,12 @@ flx:
 build-tools:
 	# =========================================================
 	# rebuild flx build tools
+	# includes the following tools: 
+	#  - flx_pkgconfig
+	#  - flx_build_prep
+	#  - flx_build_rtl
+	#  - flx_build_boot
+	#  - flx_build_flxg
 	# =========================================================
 	build/release/host/bin/flx --test=build/release  src/tools/flx_build_boot \
 		--build-flx-tools

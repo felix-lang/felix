@@ -135,12 +135,6 @@ syntax functions {
   //$ Parameter qualifier: var.
   sparam_qual := "var" =># "'PVar";
 
-  //$ Parameter qualifier: ref.
-  sparam_qual := "ref" =># "'PRef";
-
-  //$ Parameter qualifier: fun.
-  sparam_qual := "fun" =># "'PFun";
-
   //$ Default parameter qualifier is val.
   sparam_qual := sepsilon =># "'PDef";
 

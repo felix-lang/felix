@@ -38,6 +38,16 @@ let rec list_assoc_index l x =
     else aux t (i+1)
   in aux l 0
 
+let rec list_assoc_index_with_assoc l x =
+ let rec aux l i =
+   match l with
+   | [] -> None
+   | (h,v)::t ->
+    if x = h then Some (i,v)
+    else aux t (i+1)
+  in aux l 0
+
+
 let list_omap f ls =
   rev (rev_map f ls)
 

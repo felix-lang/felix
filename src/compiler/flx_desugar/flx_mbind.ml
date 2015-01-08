@@ -72,6 +72,7 @@ let rec subst vars (e:expr_t) mv : expr_t =
   | EXPR_andlist _
   | EXPR_orlist _
   | EXPR_typed_case _
+  | EXPR_projection _
   | EXPR_case_arg _
   | EXPR_arrow _
   | EXPR_longarrow _

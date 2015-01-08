@@ -13,7 +13,7 @@ println$ "(*px).a = " + (*px).a.str;
 println$ "*(px.a) = " + (*(px.a)).str;
 println$ "*(px.a) = " + px.a*.str;
 
-x.a = 2;
+&x.a <- 2;
 
 println$ "px*.a   = " + px*.a.str;
 println$ "(*px).a = " + (*px).a.str;
@@ -32,7 +32,7 @@ var y = Y(X(1));
 
 println$ "y.b.a = " + y.b.a.str;
 
-y.b.a = 5;
+&y.b.a <- 5;
 println$ "y.b.a = " + y.b.a.str;
 
 // check functions accepting pointers still work

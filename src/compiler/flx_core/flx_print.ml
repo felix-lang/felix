@@ -30,7 +30,11 @@ let string_of_bidset bidset =
     (String.concat ";" (List.map string_of_bid bidlist))
 
 let string_of_literal {Flx_literal.felix_type=t; internal_value=v; c_value=c} = 
-  "literal["^t^"]("^v^")"
+  match t with
+  | "string" -> "\"" ^ v ^ "\""
+  | "int" -> v
+  | _ -> 
+  "literal["^t^"](\""^v^"\")"
 
 let rec string_of_qualified_name (n:qualified_name_t) =
   let se e = string_of_expr e in
@@ -102,6 +106,10 @@ and string_of_expr (e:expr_t) =
   | EXPR_case_tag (_,v) -> "case " ^ si v
   | EXPR_typed_case (_,v,t) ->
     "(case " ^ si v ^
+    " of " ^ string_of_typecode t ^ ")"
+
+  | EXPR_projection (_,v,t) ->
+    "(proj " ^ si v ^
     " of " ^ string_of_typecode t ^ ")"
 
   | EXPR_lookup (_, (e, name, ts)) ->
@@ -192,16 +200,16 @@ and string_of_expr (e:expr_t) =
   | EXPR_tuple_cons (_,eh, et) -> "tuple_cons (" ^ se eh ^ "," ^ se et ^ ")"
 
   | EXPR_record (_,ts) ->
-      "struct {" ^
-      catmap " " (fun (s,e) -> string_of_id s ^ "=" ^ sme e ^ ";") ts ^
-      "}"
+      "(" ^
+      catmap " " (fun (s,e) -> string_of_id s ^ "=" ^ sme e ^ ",") ts ^
+      ")"
 
   | EXPR_record_type (_,ts) ->
-      "struct {" ^
+      "(" ^
       catmap " "
-        (fun (s,t) -> string_of_id s ^ ":" ^ string_of_typecode t ^ ";")
+        (fun (s,t) -> string_of_id s ^ ":" ^ string_of_typecode t ^ ",")
         ts ^
-      "}"
+      ")"
 
   | EXPR_variant (_, (s, e)) -> "case " ^ string_of_id s ^ " of (" ^ se e ^ ")"
 
@@ -257,21 +265,6 @@ and string_of_expr (e:expr_t) =
     ps
     ^
     " endmatch"
-
-(*
-  | EXPR_type_match (_,(e, ps)) ->
-    "typematch " ^ string_of_typecode e ^ " with " ^
-    catmap "\n"
-    (fun (p,e')->
-      " | " ^
-      string_of_tpattern p ^
-      " => " ^
-      string_of_typecode e'
-    )
-    ps
-    ^
-    " endmatch"
-*)
 
   | EXPR_type_match (_,(e, ps)) ->
     "typematch " ^ string_of_typecode e ^ " with " ^
@@ -376,9 +369,9 @@ and st prec tc : string =
       begin match ls with
       | [] -> 0,"unit"
       | _ ->
-          0, "struct {" ^
-          catmap "" (fun (s,t) -> string_of_id s ^ ":" ^ st 0 t ^ "; ") ls ^
-          "}"
+          0, "(" ^
+          catmap "" (fun (s,t) -> string_of_id s ^ ":" ^ st 0 t ^ ", ") ls ^
+          ")"
       end
 
     | TYP_variant ls ->
@@ -582,7 +575,7 @@ and sb bsym_table depth fixlist counter prec tc =
     | BTYP_record (n,ls) ->
       begin match ls with
       | [] -> 0,"record_unit"
-      | _ -> 0,"struct "^n^" {"^catmap "" (fun (s,t)->s^":"^sbt 0 t^";") ls ^"}"
+      | _ -> 0,"{"^catmap "" (fun (s,t)->s^":"^sbt 0 t^",") ls ^")"
       end
 
     | BTYP_variant ls ->
@@ -706,8 +699,6 @@ and string_of_basic_parameters (ps: simple_parameter_t list) =
 and string_of_param_kind = function
   | `PVal -> "val"
   | `PVar -> "var"
-  | `PRef -> "ref"
-  | `PFun -> "fun"
 
 and string_of_parameters (ps:params_t) =
   let ps, traint = ps in
@@ -786,8 +777,8 @@ and string_of_pattern p =
     end
   | PAT_when (_,p,e) -> "(" ^ string_of_pattern p ^ " when " ^ se e ^ ")"
   | PAT_record (_,ps) ->
-     "struct { " ^ catmap "; " (fun (s,p) ->
-       string_of_id s ^ "=" ^ string_of_pattern p) ps ^ "; }"
+     "( " ^ catmap ", " (fun (s,p) ->
+       string_of_id s ^ "=" ^ string_of_pattern p) ps ^ ")"
   | PAT_expr (_,e) -> "$(" ^ string_of_expr e ^ ")"
 
 and string_of_letpat p =
@@ -800,7 +791,7 @@ and string_of_letpat p =
   | PAT_nonconst_ctor (_,s,p)-> "|" ^ string_of_qualified_name s ^ " " ^ string_of_letpat p
   | PAT_as (_,p,n) -> "(" ^ string_of_pattern p ^ " as " ^ string_of_id n ^ ")"
   | PAT_record (_,ps) ->
-     "struct { " ^ catmap "; " (fun (s,p) -> string_of_id s ^ "="^string_of_pattern p) ps ^"; }"
+     "( " ^ catmap ", " (fun (s,p) -> string_of_id s ^ "="^string_of_pattern p) ps ^")"
 
   | _ -> failwith "unexpected pattern kind in let/in pattern"
 
@@ -1801,7 +1792,7 @@ and string_of_bound_expression' bsym_table se e =
 
   | BEXPR_not e -> "not("^ se e ^ ")"
   | BEXPR_deref e -> "*("^ se e ^ ")"
-  | BEXPR_name (i,ts) -> sid i ^ string_of_inst bsym_table ts
+  | BEXPR_varname (i,ts) -> sid i ^ string_of_inst bsym_table ts
   | BEXPR_closure (i,ts) -> sid i ^ string_of_inst bsym_table ts
   | BEXPR_ref (i,ts) -> "&" ^ sid i ^ string_of_inst bsym_table ts
   | BEXPR_new e -> "new " ^ se e
@@ -1843,8 +1834,8 @@ and string_of_bound_expression' bsym_table se e =
 
   | BEXPR_tuple t -> "(" ^ catmap ", " se t ^ ")"
 
-  | BEXPR_record ts -> "struct { " ^
-      catmap "" (fun (s,e)-> s^":"^ se e ^"; ") ts ^ "}"
+  | BEXPR_record ts -> "( " ^
+      catmap "" (fun (s,e)-> s^":"^ se e ^", ") ts ^ ")"
 
   | BEXPR_variant (s,e) -> "case " ^ s ^ " of (" ^ se e ^ ")"
 

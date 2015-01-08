@@ -476,6 +476,15 @@ let rec rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t lis
       | `Name (sr,n) ->
         let n = EXPR_name(sr,n,[]) in
           [assign sr fid n r]
+
+      (* singleton case *)
+      | `List [`Val (sr,name),t] ->
+         [STMT_val_decl (sr,name,dfltvs,t,Some r)]
+
+      (* singleton case *)
+      | `List [`Var (sr,name),t] ->
+         [STMT_var_decl (sr,name,dfltvs,t,Some r)]
+
       | `List ls ->
           let n = seq() in
           let vn = "_ds2_" ^ string_of_bid n in

@@ -97,6 +97,7 @@ let map_expr f (e:expr_t):expr_t = match e with
   | EXPR_index _ -> e
   | EXPR_case_tag _ -> e
   | EXPR_typed_case _ -> e
+  | EXPR_projection _ -> e
   | EXPR_lookup (sr,(x,s,ts)) -> EXPR_lookup (sr,(f x, s, ts))
   | EXPR_apply (sr,(a,b)) -> EXPR_apply (sr,(f a, f b))
   | EXPR_tuple (sr,es) -> EXPR_tuple (sr, List.map f es)
@@ -173,6 +174,7 @@ let iter_expr f (e:expr_t) =
   | EXPR_index _
   | EXPR_case_tag _
   | EXPR_typed_case _
+  | EXPR_projection _
   | EXPR_record_type _
   | EXPR_variant_type _
   | EXPR_void _

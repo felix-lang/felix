@@ -1,0 +1,124 @@
+/* Space out content a bit */
+body { padding-top: 20px; padding-bottom: 20px; font-family: "Droid Sans", Helvetica, Arial, sans-serif; font-size: 14px; }
+
+/* Everything but the jumbotron gets side spacing for mobile first views */
+.header,
+.marketing,
+.footer { padding-right: 15px; padding-left: 15px; }
+
+/* Custom page header */
+.header { border-bottom: 1px solid #e5e5e5; }
+
+/* Make the masthead heading the same height as the navigation */
+.header h3 { padding-bottom: 19px; margin-top: 0; margin-bottom: 0; line-height: 40px; }
+
+/* Custom page footer */
+.footer { padding-top: 19px; color: #777; border-top: 1px solid #e5e5e5; }
+
+.container { width: 100%; }
+.container-narrow > hr { margin: 30px 0; }
+
+
+/* Main marketing message and sign up button */
+.jumbotron { text-align: center; border-bottom: 1px solid #e5e5e5; }
+    .jumbotron .btn { padding: 14px 24px; font-size: 21px; }
+
+/* Supporting marketing content */
+.marketing { margin: 40px 0; }
+    .marketing p + h4 { margin-top: 28px; }
+
+/* Responsive: Portrait tablets and up */
+@media screen and (min-width: 768px) {
+
+    /* Remove the padding we set earlier */
+    .header,
+    .marketing,
+    .footer { padding-right: 0; padding-left: 0; }
+
+    /* Space out the masthead */
+    .header { margin-bottom: 30px; }
+
+    /* Remove the bottom border on the jumbotron for visual effect */
+    .jumbotron { border-bottom: 0; }
+
+}
+
+pre { border: none; border-radius: 0px; background: #fff; font-size:0.9em;  }
+p { margin: 15px 0; }
+
+
+.introduction { font-size: 1.3em; }
+
+.nav input[type=text] { width: 100%; }
+
+@media (min-width: 601px) { 
+    .header .nav { float: right; }
+}
+@media (max-width: 600px) { .header .nav-pills>li { display:block; float:none } }
+
+.toc { border: 1px solid #ccc; background: #fafafa; padding: 1em; font-size:0.8em; }
+.toc #search { margin-bottom: 10px; }
+
+.toc ul { list-style: none; padding-left:1.5em; }
+.toc ul ul { list-style: disc; }
+.toc > ul { padding-left: 0; }
+.toc ul b { font-size: 1.1em; }
+.depth1 { font-weight: bold; }
+
+h1, h2, h3, h4, h5 { font-family: Georgia;  }
+h3 { margin-top: 28px; margin-bottom: 28px; }
+
+.content { clear:right; }
+.content h2, 
+.content h3, 
+.content h4, 
+.content h5 { border-bottom: 2px solid #ccc; }
+
+h1 { font-size: 2.1em; }
+.content h1 { font-size: 1.7em; overflow: hidden; }
+.content h2 { font-size: 1.5em; overflow: hidden; }
+.content h3 { font-size: 1.3em; overflow: hidden; }
+.content h4 { font-size: 1.2em; overflow: hidden; }
+.content h5 { font-size: 1.0em; overflow: hidden; }
+
+h1 code, h2 code, h3 code, h4 code, h5 code { background: none; }
+
+pre { background-color: hsl(216, 78%, 95%); overflow:visible; }
+span.fstring { color: rgb(59, 150, 49); font-style:italic; }
+span.comment { color: #aaa; font-style:italic; }
+span.doccomment { color:green; font-style:italic; }
+span.big_keyword { color:#0010FF; }
+span.small_keyword { color:#008AFF; }
+span.qualifier { color:#A02020; }
+span.library { color:#005EA0; }
+span.ctor { color:#406020; }
+span.hack { color:#66DD00; }
+span.preproc { color:#005500; }
+span.embedded_c { background-color:#DDDDDD; }
+span.fpc_fieldname { color:#DD0000; }
+span.lineno { color:#101010; }
+pre.flxbg { padding:2px; }
+pre.uncheckedflxbg { color:#555; padding:2px; }
+pre.cppbg { background-color:#80FF80; color:#555; }
+pre.prefmtbg { color:#555; }
+pre.expected { background-color:#FFFCCE; color:#555; }
+pre.input { background-color:#EFEFEF; color:#555; }
+pre.inclusion { background-color:#D070D0; color:#555; }
+code.inclusion { background-color:#D070D0; color:#555; }
+.obsolete { background-color:#FFEFEF; color:#555; }
+.future { background-color:#FF8080; color:#555; }
+.implementation_detail { background-color:#E0E0E0; color:#555;  }
+.bug { background-color:#FFE0E0; color:#555; }
+.fixed{ background-color:#FFE0E0; color:#555; }
+.done { background-color:#FFE0E0; color:#555; }
+.caveat { background-color:#FF8080; color:#555; }
+
+.code_frame { top:0; position:fixed; height: 40px; background:#fff; width:100%; padding:10px; border-bottom: 1px solid #ccc; }
+    .code_frame a { display: block; border-top: 1px solid #eee; } 
+.code_frame_content { }
+.code_frame_content pre { background-color: hsla(216, 78%, 95%, 0.5); }
+.code_frame_content .lineno .inner { margin-top: -55px; padding-top: 55px; display: inline-block; }
+.code_frame_content .selected { background-color: rgba(0, 255, 156, 0.22); padding: 5px 0; }
+
+svg { max-width: 100%; }
+

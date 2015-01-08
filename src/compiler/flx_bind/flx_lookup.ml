@@ -1835,9 +1835,7 @@ print_endline ("** END **** Calculating Function type for function " ^ sym.Flx_s
   | SYMDEF_lazy (t,x) -> bt sym.Flx_sym.sr t
 
   | SYMDEF_parameter (`PVal,t)
-  | SYMDEF_parameter (`PFun,t)
   | SYMDEF_parameter (`PVar,t) -> bt sym.Flx_sym.sr t
-  | SYMDEF_parameter (`PRef,t) -> btyp_pointer (bt sym.Flx_sym.sr t)
 
   | SYMDEF_const_ctor (_,t,_,_) -> bt sym.Flx_sym.sr t
   | SYMDEF_nonconst_ctor (_,ut,_,_,argt) ->
@@ -2244,9 +2242,12 @@ and lookup_qn_with_sig'
             ", got function type:\n" ^
             sbt bsym_table t
           )
-          else
-            bexpr_name t (index, ts)
-
+          else begin
+(*
+print_endline ("LOOKUP 1: varname " ^ si index);
+*)
+            bexpr_varname t (index, ts)
+          end
         | _ ->
           clierr srn
           (
@@ -2346,6 +2347,9 @@ and lookup_qn_with_sig'
     end
 
   | `AST_name (sr,name,ts) ->
+(*
+print_endline ("lookup_qn_with_sig' [AST_name] " ^ name ^ ", sigs=" ^ catmap "," (sbt bsym_table) signs);
+*)
     (* HACKERY TO SUPPORT _ctor_type lookup -- this is really gross,
        since the error could be anything ..  the retry here should
        only be used if the lookup failed because sig_of_symdef found
@@ -2731,11 +2735,11 @@ and lookup_name_with_sig'
   ts
   t2
 =
-  (*
-  print_endline ("[lookup_name_with_sig] " ^ name ^
+(*
+  print_endline ("[lookup_name_with_sig'] " ^ name ^
     " of " ^ catmap "," (sbt bsym_table) t2)
   ;
-  *)
+*)
   match env with
   | [] ->
     clierr srn
@@ -2773,6 +2777,148 @@ and lookup_name_with_sig
   ts
   t2
 =
+(*
+  print_endline ("[lookup_name_with_sig] " ^ name ^
+    " of " ^ catmap "," (sbt bsym_table) t2)
+  ;
+*)
+ let projection = 
+   match t2 with
+   | [BTYP_inst (j,ts') as d] ->
+     let bsym = try Some (Flx_bsym_table.find bsym_table j) with Not_found -> None in
+     begin match bsym with
+     | Some bsym ->
+(*
+       print_endline ("Found nominal type "^si j ^" in bound symbol table");
+*)
+       begin match Flx_bsym.bbdcl bsym with
+       | BBDCL_struct (vs,fields) 
+       | BBDCL_cstruct (vs, fields,_) ->
+         begin match
+            Flx_list.list_assoc_index_with_assoc fields name
+         with
+         | Some (k,ft) ->
+           (*
+           print_endline ("FOUND STRUCT FIELD " ^ name ^ " in bound table");
+           *)
+           let ft = 
+             try tsubst vs ts' ft 
+             with _ -> print_endline "[lookup_name_with_sig] Hassle replacing vs with ts??"; assert false
+           in
+           Some (bexpr_prj k d ft) 
+         | None -> None
+         end
+       | _ -> None
+       end
+     | None -> 
+(*
+       print_endline ("Can't find nominal type " ^ si j ^ " in bound symbol table .. trying unbound table");
+*)
+       begin try
+         match hfind "lookup" state.sym_table j with
+         | { Flx_sym.symdef=SYMDEF_struct fields; vs=vs } 
+         | { Flx_sym.symdef=SYMDEF_cstruct (fields,_); vs=vs } ->
+           begin match
+              Flx_list.list_assoc_index_with_assoc fields name
+           with
+           | Some _ ->
+             print_endline ("FOUND STRUCT FIELD " ^ name ^ " in unbound table: FIXME!!");
+             assert false;
+             None
+           | None -> None
+           end
+         | _ -> None
+       with _ ->
+         print_endline ("Can't find nominal type " ^ si j ^ " in unbound symbol table????");
+         assert false
+       end
+     end
+
+   | [BTYP_pointer (BTYP_inst (j,ts')) as d] ->
+     let bsym = try Some (Flx_bsym_table.find bsym_table j) with Not_found -> None in
+     begin match bsym with
+     | Some bsym ->
+(*
+       print_endline ("Found nominal type "^si j ^" in bound symbol table");
+*)
+       begin match Flx_bsym.bbdcl bsym with
+       | BBDCL_struct (vs,fields) 
+       | BBDCL_cstruct (vs, fields,_) ->
+         begin match
+            Flx_list.list_assoc_index_with_assoc fields name
+         with
+         | Some (k,ft) ->
+           (*
+           print_endline ("FOUND STRUCT FIELD " ^ name ^ " in bound table");
+           *)
+           let ft = 
+             try tsubst vs ts' ft 
+             with _ -> print_endline "[lookup_name_with_sig] Hassle replacing vs with ts??"; assert false
+           in
+           Some (bexpr_prj k d (BTYP_pointer ft)) 
+         | None -> None
+         end
+       | _ -> None
+       end
+     | None -> 
+(*
+       print_endline ("Can't find nominal type " ^ si j ^ " in bound symbol table .. trying unbound table");
+*)
+       begin try
+         match hfind "lookup" state.sym_table j with
+         | { Flx_sym.symdef=SYMDEF_struct fields; vs=vs } 
+         | { Flx_sym.symdef=SYMDEF_cstruct (fields,_); vs=vs } ->
+           begin match
+              Flx_list.list_assoc_index_with_assoc fields name
+           with
+           | Some _ ->
+             print_endline ("FOUND STRUCT FIELD " ^ name ^ " in unbound table: FIXME!!");
+             assert false;
+             None
+           | None -> None
+           end
+         | _ -> None
+       with _ ->
+         print_endline ("Can't find nominal type " ^ si j ^ " in unbound symbol table????");
+         assert false
+       end
+     end
+
+
+   | [BTYP_record (_,fields) as d] ->
+     (* this sort shouldn't be necessary because the constructor does it anyhow *)
+     let rcmp (s1,_) (s2,_) = compare s1 s2 in
+     let fields = List.sort rcmp fields in
+     begin match
+       Flx_list.list_assoc_index_with_assoc fields name
+     with
+     | Some (k,ft) ->
+       (*
+       print_endline ("FOUND RECORD FIELD " ^ name);
+       *)
+       Some (bexpr_prj k d ft)
+     | None -> None
+     end
+
+   | [BTYP_pointer (BTYP_record (_,fields)) as d] ->
+     (* this sort shouldn't be necessary because the constructor does it anyhow *)
+     let rcmp (s1,_) (s2,_) = compare s1 s2 in
+     let fields = List.sort rcmp fields in
+     begin match
+       Flx_list.list_assoc_index_with_assoc fields name
+     with
+     | Some (k,ft) ->
+       (*
+       print_endline ("FOUND RECORD FIELD " ^ name);
+       *)
+       Some (bexpr_prj k d (BTYP_pointer ft))
+     | None -> None
+     end
+   | _ -> None
+ in
+ match projection with
+ | Some p -> p
+ | None ->
  try
  let result = 
   lookup_name_with_sig'
@@ -2915,12 +3061,19 @@ and handle_variable state bsym_table env rs index id sr ts t t2 =
   let vs = find_vs state.sym_table bsym_table index in
   let bvs = List.map (fun (s,i,tp) -> s,i) (fst vs) in
   let t = beta_reduce "flx_lookup: handle_variabe" state.counter bsym_table sr (tsubst bvs ts t) in
-
+(*
+print_endline ("Handle variable " ^ si index ^ "=" ^ id);
+*)
   match t with
   | BTYP_cfunction (d,c)
   | BTYP_function (d,c) ->
       if type_match bsym_table state.counter d t2 then
-        Some (bexpr_name t (index, ts))
+      begin
+(*
+print_endline ("LOOKUP 2: varname " ^ si index);
+*)
+        Some (bexpr_varname t (index, ts))
+      end
       else
         clierr sr
         (
@@ -2935,7 +3088,11 @@ and handle_variable state bsym_table env rs index id sr ts t t2 =
     (* anything other than function type, dont check the sig,
        just return it..
     *)
-  | _ -> Some (bexpr_name t (index, ts))
+  | _ -> 
+(*
+print_endline ("LOOKUP 3: varname " ^ si index);
+*)
+    Some (bexpr_varname t (index, ts))
 
 (* -------------------------------------------------------------------------- *)
 
@@ -3045,6 +3202,7 @@ and lookup_name_in_table_dirs_with_sig
       ->
       let sign = try List.hd t2 with _ -> assert false in
       handle_variable state bsym_table env rs (sye index) id srn ts t sign
+
     | _
       ->
         clierr sra
@@ -3735,6 +3893,29 @@ assert false; (* shouldn't happen now! *)
     let (_,t) as e = be e in
     bexpr_variant (btyp_variant [s,t]) (s,e)
 
+  | EXPR_projection (sr,v,t) -> 
+    let t = bt sr t in
+    begin match t with
+    | BTYP_tuple ts ->
+      let n = List.length ts in
+      if v < 0 || v >= n then
+        clierr sr ("[Flx_lookup.bind_expression] projection index " ^ si v ^ 
+          " negative or >= " ^ si n ^ "for tuple type " ^ sbt bsym_table t)
+      else
+        let c = List.nth ts v in
+        bexpr_prj v t c
+ 
+    | BTYP_array (BTYP_unitsum n,base) ->
+      if v < 0 || v >= n then
+        clierr sr ("[Flx_lookup.bind_expression] projection index " ^ si v ^ 
+          " negative or >= " ^ si n ^ "for array type " ^ sbt bsym_table t)
+      else
+        bexpr_prj v t base
+
+    | _ ->
+      clierr sr ("[Flx_lookup.bind_expression] projection requires tuple or array type, got " ^ sbt bsym_table t);
+    end
+
   | EXPR_typed_case (sr,v,t) ->
 (*
 print_endline ("Evaluating EXPPR_typed_case index=" ^ si v ^ " type=" ^ string_of_typecode t);
@@ -3853,15 +4034,39 @@ print_endline ("Evaluating EXPPR_typed_case index=" ^ si v ^ " type=" ^ string_o
                   failwith ("[lookup, AST_name] expected ref " ^ name ^
                   " to have pointer type")
               in
-              bexpr_deref t' (bexpr_name t (index, ts))
+(*
+print_endline ("LOOKUP 4: varname " ^ si index);
+*)
+              bexpr_deref t' (bexpr_varname t (index, ts))
 
-          | _ -> bexpr_name t (index, ts)
+          | BBDCL_struct _
+          | BBDCL_cstruct _
+          | BBDCL_nonconst_ctor _
+            ->
+            bexpr_closure t (index, ts)
+
+          | BBDCL_external_const _ 
+          | BBDCL_val _ 
+          | BBDCL_const_ctor _ 
+            -> 
+(*
+print_endline ("LOOKUP 5: varname " ^ si index);
+*)
+            bexpr_varname t (index, ts)
+          | BBDCL_fun _ 
+            ->
+            clierr sr ("Flx_lookup: bind_expression: EXPR_name] Nonfunction entry: Expected name "^name^ 
+            " of struct, cstruct, constructor, const, or variable, got function!")
+ 
+          | _ ->
+            clierr sr ("Flx_lookup: bind_expression: EXPR_name] Nonfunction entry: Expected name "^name^ 
+            " of struct, cstruct, constructor, const, or variable")
+ 
           end
       | None ->
           (* We haven't bound this symbol yet. We need to specially handle
            * reference types, as I mentioned above. *)
           begin match hfind "lookup:ref-check" state.sym_table index with
-          | { Flx_sym.symdef=SYMDEF_parameter (`PRef,_) }
           | { Flx_sym.symdef=SYMDEF_ref _ } ->
               (* We've got a reference, so make sure the type is a pointer. *)
               let t' = 
@@ -3871,10 +4076,41 @@ print_endline ("Evaluating EXPPR_typed_case index=" ^ si v ^ " type=" ^ string_o
                 failwith ("[lookup, AST_name] expected ref " ^ name ^
                   " to have pointer type")
               in
-              bexpr_deref t' (bexpr_name t (index, ts))
+(*
+print_endline ("LOOKUP 6: varname " ^ si index);
+*)
+              bexpr_deref t' (bexpr_varname t (index, ts))
+
+          (* these should have function entries *)
+          | { Flx_sym.symdef=SYMDEF_fun _ }
+          | { Flx_sym.symdef=SYMDEF_function _ } -> assert false
+
+          | { Flx_sym.symdef=SYMDEF_struct _ }
+          | { Flx_sym.symdef=SYMDEF_cstruct _ }
+          | { Flx_sym.symdef=SYMDEF_nonconst_ctor _ }
+          | { Flx_sym.symdef=SYMDEF_match_check _ }
+            ->
+            (*
+            print_endline ("Indexed name: Binding " ^ name ^ "<"^si index^">"^ " to closure");
+            *)
+            bexpr_closure t (index,ts)
+          | { Flx_sym.symdef=SYMDEF_const  _ }
+          | { Flx_sym.symdef=SYMDEF_const_ctor  _ }
+          | { Flx_sym.symdef=SYMDEF_var _ }
+          | { Flx_sym.symdef=SYMDEF_val _ }
+          | { Flx_sym.symdef=SYMDEF_parameter _ }
+            ->
+            (*
+            print_endline ("Indexed name: Binding " ^ name ^ "<"^si index^">"^ " to variable");
+            *)
+(*
+print_endline ("LOOKUP 7: varname " ^ si index);
+*)
+            bexpr_varname t (index,ts)
 
           | _ -> 
-            bexpr_name t (index,ts)
+            clierr sr ("[Flx_lookup.bind_expression: EXPR_name]: Nonfunction entry: Binding " ^ 
+              name ^ "<"^si index^">"^ " requires closure or variable")
           end
       end
 
@@ -3949,16 +4185,35 @@ print_endline ("Evaluating EXPPR_typed_case index=" ^ si v ^ " type=" ^ string_o
     begin match hfind "lookup" state.sym_table index with
     | { Flx_sym.symdef=SYMDEF_fun _ }
     | { Flx_sym.symdef=SYMDEF_function _ }
-    ->
-    (*
-    print_endline ("Indexed name: Binding " ^ name ^ "<"^si index^">"^ " to closure");
-    *)
+    | { Flx_sym.symdef=SYMDEF_struct _ }
+    | { Flx_sym.symdef=SYMDEF_cstruct _ }
+    | { Flx_sym.symdef=SYMDEF_nonconst_ctor _ }
+    | { Flx_sym.symdef=SYMDEF_match_check _ }
+      ->
+      (*
+      print_endline ("Indexed name: Binding " ^ name ^ "<"^si index^">"^ " to closure");
+      *)
       bexpr_closure t (index,ts)
+    | { Flx_sym.symdef=SYMDEF_const  _ }
+    | { Flx_sym.symdef=SYMDEF_const_ctor  _ }
+    | { Flx_sym.symdef=SYMDEF_var _ }
+    | { Flx_sym.symdef=SYMDEF_val _ }
+    | { Flx_sym.symdef=SYMDEF_parameter _ }
+      ->
+      (*
+      print_endline ("Indexed name: Binding " ^ name ^ "<"^si index^">"^ " to variable");
+      *)
+(*
+print_endline ("LOOKUP 8: varname " ^ si index);
+*)
+      bexpr_varname t (index,ts)
+
     | _ ->
-    (*
-    print_endline ("Indexed name: Binding " ^ name ^ "<"^si index^">"^ " to variable");
-    *)
-      bexpr_name t (index,ts)
+      clierr sr ("[Flx_lookup.bind_expression: EXPR_index]: Indexed name: Binding " ^ 
+        name ^ "<"^si index^">"^ " requires closure or variable")
+      (* 
+      bexpr_varname t (index,ts)
+      *)
     end
 
   | (EXPR_lookup (sr,(e,name,ts))) as qn ->
@@ -3987,10 +4242,37 @@ print_endline ("Evaluating EXPPR_typed_case index=" ^ si v ^ " type=" ^ string_o
         | NonFunctionEntry (i) ->
           let i = sye i in
           begin match hfind "lookup" state.sym_table i with
-          | { Flx_sym.sr=srn; symdef=SYMDEF_inherit qn} -> be (expr_of_qualified_name qn)
-          | _ ->
+          | { Flx_sym.sr=srn; symdef=SYMDEF_inherit qn} 
+            -> 
+            be (expr_of_qualified_name qn)
+
+          (* these should have function entries *)
+          | { Flx_sym.symdef=SYMDEF_fun _ }
+          | { Flx_sym.symdef=SYMDEF_function _ } -> assert false
+
+
+          | { Flx_sym.sr=srn; symdef=SYMDEF_struct _ } 
+          | { Flx_sym.sr=srn; symdef=SYMDEF_cstruct _ } 
+          | { Flx_sym.sr=srn; symdef=SYMDEF_nonconst_ctor  _ } 
+            ->
             let ts = adjust_ts state.sym_table bsym_table sr i ts in
-            bexpr_name (ti sr i ts) (i,ts)
+            bexpr_closure (ti sr i ts) (i,ts)
+
+          | { Flx_sym.sr=srn; symdef=SYMDEF_var _} 
+          | { Flx_sym.sr=srn; symdef=SYMDEF_val _} 
+          | { Flx_sym.sr=srn; symdef=SYMDEF_parameter _} 
+          | { Flx_sym.sr=srn; symdef=SYMDEF_const_ctor _} 
+          | { Flx_sym.sr=srn; symdef=SYMDEF_const _} 
+            ->
+            let ts = adjust_ts state.sym_table bsym_table sr i ts in
+(*
+print_endline ("LOOKUP 9: varname " ^ si i);
+*)
+            bexpr_varname (ti sr i ts) (i,ts)
+          | _ ->
+            clierr sr ("[Flx_lookup.bind_expression: EXPR_lookup] Non function entry "^name^
+            " must be const, struct, cstruct, constructor or variable  ")
+
           end
 
         | FunctionEntry [f] when args = []  ->
@@ -4079,7 +4361,7 @@ print_endline ("Evaluating EXPPR_typed_case index=" ^ si v ^ " type=" ^ string_o
       begin match e with
       | BEXPR_deref e,_ -> e
 
-      | BEXPR_name (index,ts),_ ->
+      | BEXPR_varname (index,ts),_ ->
           (* Look up the type of the name, and make sure it's addressable. *)
           begin match
             try Some (Flx_bsym_table.find bsym_table index)
@@ -5904,6 +6186,9 @@ let lookup_sn_in_env
   env
   sn
 =
+(*
+print_endline ("Lookup suffixed name " ^ string_of_suffixed_name sn);
+*)
   let sr = src_of_suffixed_name sn in
   let bt t = inner_bind_type state bsym_table env sr rsground t in
   match sn with
@@ -5920,7 +6205,7 @@ let lookup_sn_in_env
     let (be,t) =
       lookup_qn_with_sig' state bsym_table sr sr env rsground qn [bsuf]
     in match be with
-    | BEXPR_name (index,ts) ->
+    | BEXPR_varname (index,ts) ->
       index,ts
     | BEXPR_closure (index,ts) -> index,ts
 

@@ -700,9 +700,10 @@ With this syntax, no type annotation may be given.
 
 
 
-@h1 Functions
+@h1 Functions 
 <a href="/share/lib/grammar/functions.flxh">Syntax</a>
 
+@h2 Functions 
 A felix function definition takes one of three basic forms:
 @felix
 fun f (x:int) = { var y = x + x; return y + 1; }
@@ -735,7 +736,7 @@ All these function have a type:
 D -> C
 @
 where D is the domain and C is the codomain: both would
-be @[int} in the examples.
+be @{int} in the examples.
 
 A function can be applied by the normal forward
 notation using juxtaposition or what is whimsically
@@ -776,6 +777,7 @@ may have pre-conditions, post-conditions, or both:
 fun f1 (x:int when x > 0) => x + x + 1;
 fun f2 (x:int) expect result > 1 => x + x + 1;
 fun f3 (x:int when x > 0) expect result > 1 => x + x + 1;
+fun f4 (x:int when x > 0) : int expect result > 1 => x + x + 1;
 @
 Pre- and pos-conditions are usually treated as boolean assertions
 which are checked at run time. The compiler may occasionally be able
@@ -850,10 +852,170 @@ f ();
 @
 
 @h2 Generators
-TBD
+A generator is a special kind of function which is allowed
+to have side effects. It is defined similarly to a function,
+but using the binder @{gen} instead of @{fun}:
+@felix
+var seqno = 1;
+gen seq () { var result = seqno; ++seqno; return result; }
+@
+When a generator is directly applied in an expression, the application
+is replaced by a fresh variable and the generator application
+is lifted out and assigned to the variable. For example:
+@felix
+fun twice (x:int) => x + x;
+println$ twice #seq;
+@
+will always print an even number because it is equivalent to
+@felix
+var tmp = #seq;
+println$ twice tmp;
+@
+Therefore even if twice is inlined we end up with the argument
+to @{println} being @{tmp+tmp} and not @{#seq+#seq} which would
+print an odd number.
 
-@h1 Types
+@h3 Yielding Generators
+A generator may contain a @{yield} statement:
+@felix
+gen fresh() {
+  var x = 1;
+  while x < 10 do
+    yield x;
+    ++x;
+  done
+  return x;
+}
+@
+In order to use such a yielding generator, a closure of the generator
+must be stored in a variable. Then the generator may be called repeatedly.
+@felix
+var g = fresh;
+for i in 1 upto 20 do 
+  println$ i,#g;
+done
+@
+This will print pairs (1,1), (2,2) up to (10,10) then print
+(11,10), (12,10) up to (20,10).
+
+The yield statement returns a value such that a subsequent call
+to a closure of the generator will resume execution after the yield
+statement. Therefore @{yield} is a kind of cross between a return
+and a subroutine call.
+
+If a generator executes a return statement, that is equivalent
+to yielding a value and setting the resume point back to the return
+statement, in other words @{return expr;} is equivalent to
+@felix
+while true do yield expr; done
+@
+
+Yielding generators should not be called directly because they
+will always start at the beginning with a fresh copy of any
+local variables used to maintain state.
+
+Function closures differ from generator closures in that
+the closures is cloned before every application to ensure
+that the initial state is fresh.
+
+Yielding generators are primarily intended to implement iterators,
+that is, to provide lazy lists or streams.
+
+@h2 Constructors
+Felix provides a special notation which allows an identifier
+naming a type to return a value of that type:
+@felix
+typedef cart = dcomplex;
+typedef polar = dcomplex;
+ctor cart (x:double, y:double) => dcomplex (x,y);
+ctor polar (r: double, theta: double) => 
+  dcomplex (r * sin theta, r * cos theta)
+;
+var z = cart (20.0,15.0) + polar (25.8, 0.7 * pi);
+@
+The constructions are equivalent to
+@felix
+fun _ctor_cart (x:double, y:double) : cart => dcomplex (x,y);
+fun _ctor_polar (r: double, theta: double): polar => 
+  dcomplex (r * sin theta, r * cos theta)
+;
+@
+When a type with a simple name is applied to a value,
+Felix tries to find a function with that name prefixed by  @{_ctor_}
+instead.
+
+Note that Felix generates a constructor for struct and cstruct types
+automatically with argument type the product of the types of the
+structure fields.
+
+@h2 Special function @{apply}
+When Felix finds and application
+@felix
+  f a
+@
+where @{f} is a value of type F which is not
+a function (or C function) type, Felix looks instead 
+for a function named apply with argument of type:
+@felix
+F * A
+@
+where A is the type of a. For example
+@felix
+fun apply (x:string, y:string) => x + y; // concat
+var x = "hello " "world"; // apply a string to a string
+@
+
+@h2 Objects
+Felix provides an object system with syntax based on Java,
+and technology based on CLOS.
+
+An object is a record of function closures, closed over the local
+scope of a constructor function that returns the record.
+
+@felix
+interface person_t {
+  get_name: 1 -> string; 
+  set_age: int -> 0; 
+  set_job : string -> 0;
+  get_job : 1 -> string;
+}
+
+object person (name:string, var age:int) implements person_t =
+{
+  var job = "unknown";
+  method fun get_name () => name;
+  method proc set_age (x:int) { age = x; }
+  method fun get_job () => job;
+  method proc set_job (x:string) {  job = x; }
+}
+
+var john = person ("John", 42);
+println$ #(john.name) + " is " + #(john.age).str;
+@
+The entity @{person} is a function which when called with
+its argument of name and age returns a record of type
+person_t consisting of closures of the functions and procedures
+marked as method in its definition.
+
+Since functions hide their local variables the object state
+is hidden and can only be accessed using the methods.
+
+The @{implements} clause is optional.
+
+Objects provide an excellent way for a dynamically loaded
+shared library to export a set of functions, only the object
+function needs to be exported so it has a C name which
+can be linked to with @{dlopen}.
+
+@h1 Type constructors
 <a href="/share/lib/grammar/type_decls.flxh">Syntax</a>
+
+@h2 typedef
+The typedef statement is used to define an alias for a type.
+It does not create a new type.
+@felix
+typedef Int = int;
+@
 
 @h2 Tuples
 Tuple types are well known: a tuple is just a Cartesian Product
@@ -868,7 +1030,7 @@ with sole value @{()}:
 @felix
 val u : unit = ();
 @
-There 1-array tuple of type @{T} component value @{v} is identified
+The 1-ary tuple of type @{T} component value @{v} is identified
 with the type @{T} and has value @{v}.
 
 The individual components of a tuple may be accessed by a projection
@@ -907,40 +1069,1011 @@ a projection of a value is a value.
 
 Assignment to components of tuples stored in variables is supported
 but only to one level, for general access you must take a pointer
-and use the store-at-addres operator @{<-}.
+and use the store-at-address operator @{<-}.
+
+@3 Tuple projections
+The projections of a tuple can also be written in an expanded form
+so that they may stand alone as functions:
+@felix
+var first = proj 0 of (int * string);
+var a = 1, "Hello";
+var one = a . first; 
+var two = a . proj 1 of (int * string);
+@
 
 @h2 Records
 A record is similar to a tuple except the components are 
 named and considered unordered.
+@felix
+typedef xy = (x:int, y:int);
+var r : xy = (x=1,y=2);
+println$ r.x, r.y;
+var px = &r.x; // means (&r).x
+px <- 42;
+println$ r.x, r.y; // r.x == 42 now
+@
+The field names are projection functions and can be applied
+to a record value to extract the nominated component,
+or applied to a pointer to a record to find a pointer to the
+nominated component.
 
+The notation (may be changed soon)
+@felix
+var prjx = x of (xy);
+var prjpx = x of (&xy);
+@
+can be used to refer to a projection in isolation, and a pointer
+projection in isolation, that is, as unapplied first class functions.
+
+@h3 Interfaces
+An interface is a special notation for a record type
+all of whose fields are functions or procedures.
+@felix
+interface fred {
+  f: int -> int;
+  g: int -> 0; // procedure
+}
+
+// equivalent to
+typedef fred = (f: int -> int, g: int -> 0);
+@
+The primary use is for specifying the type of a Java like
+object.
 
 @h2 Structs
-TBD
+A struct is a a nominally typed record, that is, it must be defined,
+and each definition specifies a distinct type.
+@felix
+struct S { x:int; y:int; };
+var s : S = S (1,2);
+println$ s.x,s.y;
+@
+A struct value can be constructued using the structure name as a function
+and passing a tuple of values corresponding by position to the fields
+of the struct.
+
+A struct constructor can be used a first class function.
+
+The field names are projection functions and can be applied
+to a struct value to extract the nominated component,
+or applied to a pointer to a struct to find a pointer to the
+nominated component.
+
+The notation (may be changed soon)
+@felix
+var prjx = x of (S);
+var prjpx = x of (&S);
+@
+can be used to refer to a projection in isolation, and a pointer
+projection in isolation, that is, as unapplied first class functions.
+
+A struct may also contain function and procedure definitions:
+@felix
+struct A { 
+  x:int;
+  y:int;
+  fun get2x => 2 * self.x;
+  fun get2y () => 2 * self.y;
+  proc diag (d:int) { self.x <- d; self.y <-d; }
+};
+@
+These functions are precisely equivalent to:
+@felix
+fun get2x (self:A) => 2 * self.x;
+proc diag (self: &A) (d:int) { self.x <-d; self.y <-d; }
+@
+Note that for a function @{self} is a value, for a procedure @{self}
+is a pointer.
+
+Because of these definitions, we can form object closures over a struct:
+@felix
+var a = A(1,2);
+var g2y = a. get2y;
+var di = a . diag;
+@
+Note we can't form a closure for @{get2x} without an explicit wrapper,
+i.e. eta-expansion.
+
 @h2 Sums
-TBD
-@h3 union
-TBD
-@h2 enum
-TBD
+Sum types are the dual of tuples. They represent a sequence
+of possible cases, potentially with arguments. Case indicies
+are 0 origin. Sum variables are decode with a match which
+may also extract an argument value:
+@felix
+typedef num = int + long + double;
+var x = (case 1 of num) 53L;
+println$ 
+  match x with
+  | case 0 (?i) => "int " + i.str
+  | case 1 (?l) => "long" + l.str
+  | case 2 (?d) => "double " + d.str
+  endmatch
+;
+@
+
+@h3 Unit sum
+There is a family of special sum types equivalent to:
+@felix
+  2 = 1 + 1
+  3 = 1 + 1 + 1
+  4 = 1 + 1 + 1
+@
+Recall type 1, or unit, is the type of the empty tuple.
+The type 2 is also known as bool, and represents two cases
+where @{false} is an alias for @{case 0 of 2} and @[true}
+is an alias for @{case 1 of 2}.
+
+The type 0 or void, is the type of no values.
+
+These types are called unit sums because they're a sum
+of a certain number of units.
+
+Note carefully that:
+@felix
+  x + (y + z), (x + y) + z, x + y + z
+@
+are three distinct types because operator + is not associative.
+
+@h2 union
+A union is the dual of a struct. It is a nominally typed version
+of a sum. Here for example is a list of integers:
+@felix
+union intlist {
+  iEmpty ;
+  iCons of int * intlist;
+};
+@
+
+This alternative syntax is more commonly used
+and comes from ML family:
+@felix
+union intlist = 
+  | iEmpty 
+  | iCons of int * intlist
+;
+@
+
+The fields of a union type are injections or type constructors.
+In effect they cast their argument to the type of the union, thus
+unifying heterogenous types into a single type.
+
+Pattern matches are used to decode unions.
+@felix
+var x = iEmpty;
+x = iCons (1, x);
+x = iCons (2, x); // list of two integers
+
+fun istr (x:intlist) =>
+  match x with
+  | iEmpty => "end"
+  | iCons (?i, ?tail) => i.str + "," + istr tail
+  endmatch
+;
+@
+
+The first variant represents an empty list. The second variant
+says that a pair consisting of an int and a list can be considered
+as a list by applying the type constructor iCons to it.
+
+Unlike product types, a sum may directly contain itself.
+This is because sum types are represented by pointers.
+
+@h3 enum
+A restricted kind of union, being a nominally typed version
+of a unit sum.
+@felix
+enum colour { red, green, blue }; // same as
+enum colour = red, green, blue; // same as
+union colour = red | green | blue;
+@
+
+The tag value of an enum can be set:
+@felix
+enum wsize = w8=8, w16=16, w32=32, w64=64;
+@
+
+@h3 caseno operator
+The caseno operator can find the tag value of any sum type,
+the anonymous sum, union, enum or variant as an integer.
+@felix
+assert caseno w16 == 16;
+assert caseno (case 1 of 2) == 1;
+@
+
 @h2 variant
-TBD
+Wariants the sum type which are the dual of records.
+They used named injections like unions but are structurally typed.
+@felix
+typedef vars = union { Int of int ; Float of float; };
+@
+
 @h2 Array
-TBD
-@h2 typedef
-TBD
+Felix has various kinds of array. The term is abused and sometimes
+refers to the abstract concept, and sometimes the statically
+typed fixed length array described here.
+
+An array is nothing but a tuple all of whose elements have the
+same type. It is convenient to use an exponential operator with
+a  unit sum index to provide a compact notation:
+@felix
+int ^ 3 // array of 3 integers equivalent to
+int * int * int
+@
+Therefore the value:
+@felix
+var a3 = 1,2,3;
+@
+is, in fact, an array. As for tuples an integer literal applied
+to an array value returns a component, however for arrays,
+an expression may be used as well:
+@felix
+var i = 1;
+var y = a3 . i;
+var z = a3 . proj i of (int^3);
+@
+The last form is equivalent to
+@felix
+var z = a . 
+  match i with
+  | 0 => proj 0 of (int^3)
+  | 1 => proj 1 of (int^3)
+  | 2 => proj 2 of (int^3)
+  | _ => throw error
+  endmatch
+;
+@
+in other words there is a run time array bounds check equivalent to a match failure.
+Note that of course the actual generated code is optimised!
+
+A run time check can be avoided by using the correct type of index:
+@felix
+var i = case 1 of 3;
+var z = a . i; // no run time check
+@
+
+@h3 Multi-arrays
+Whilst we introduced the exponential notation
+@felix
+  B ^ J
+@
+as a mere shorthand, where J is a unit sum, in fact Felix allows
+the index to be any compact linear type.
+
+A compact linear type is any combination of sums, products,
+and exponentials of unit sums. The type
+@felix
+ 3 * 4 * 5
+@
+for example is compact linear, and therefore Felix allows the array type
+@felix
+typedef matrix = double ^ (3 * 4 * 5)
+@
+Although this looks like the type
+@felix
+typedef array3 = double  ^ 3 ^ 4 ^ 5
+@
+as suggested by the usual index laws, the latter is an array size 5 of
+arrays size 4 of arrays size 3 which can be used like:
+@felix
+var a : array3;
+var z = a . case 1 of 5 . case 1 of 4 . case 1 of 3;
+@
+where you will note that the projections are applied in the reverse
+order to the indices. On the other hand to use the first form we have
+instead:
+@felix
+var m : matrix;
+var z = a . (case 1 of 3, case 1 of 4, case 1 of 5);
+@
+The exponent here is a value of a compact linear type.
+It is a single tuple value! It is called a multi-index
+when applied to an array.
+
+The advantage of this type is that there is an obvious
+encoding of the values shown in this psuedo code:
+@felix
+  i * 3 * 4 + j * 3 + k
+@
+which is nothing more than a positional number notation where the
+base varies with position. That encoding clearly associates
+with the compact linear value as integer in the range 0 to 59,
+or, alternatively, an value of type 60. In other words the type
+is linear and compact.
+
+Since clearly, given an integer in range 0 through 59 and this type
+we can decode the integer into a tuple, being the positional representation
+of the integer in this weird coding scheme, the type is clearly
+isomorphic to the subrange of integer.
+
+Therefore Felix allows you to coerce an integer to a compact linear
+type with a run time check, and convert a compact linear type
+to an integer or a unitsum:
+@felix
+var i : int = ((case 1 of 3, case 1 of 4, case 1 of 5) :>> int);
+var j : 60 = ((case 1 of 3, case 1 of 4, case 1 of 5) :>> 60);
+var clt : 3 * 4 * 5 = (16 :>> 3 * 4 * 5);
+@
+Because we can do this we can now write a loop over a matrix
+with a single iterator:
+@felix
+for i in 60 do
+  println$ m . (i :>> 3 * 4 * 5);
+done
+@
+This is an advanced topic which will require an extensive explanation
+beyond the scope of this summary. However we will not that this
+facility provides a very high level feature known as polyadic array
+programming. In short this means that one may write routines which
+work on matrices of arbitrary dimension. You can of course do this
+in C by doing your own index calculations at run time and using
+casts, however Felix does these calculations for you based on the
+type so they're always correct.
+
+
+@h1 Meta-typing
+Felix provides some facilities for meta-typing.
+
 @h3 typedef fun
-TBD
+The notation
+@felix
+typedef fun diag (T:TYPE):TYPE=> T * T;
+var x: diag int = 1,2;
+@
+defines a type function (or functor). Given a type T,
+this function returns the type for a pair of T's.
+The identifier @{TYPE} denotes the kind which is a category 
+of all types.
+
+Applications of type functions must be resolved during binding, since
+the result may influence overloading.
+
 @h2 typematch
-TBD
+Felix has a facility to inspect and decode types at compile time.
+@felix
+typedef T = int * long;
+var x: 
+  typematch T with
+  | A * B => A
+  | _ => int
+  endmatch
+  = 1
+;
+@
+As with type functions, type matches must be resolved during binding.
+If a type match fails, an error is issued a compilation halted.
+The wildcard type pattern @{_} matches any type.
+
+The real power of the type match comes when combined with a type function:
+@felix
+typedef fun promote (T:TYPE): TYPE =>
+  typematch T with
+  | tiny => int
+  | short => int
+  | int => int
+  | long => long
+  | vlong => vlong
+  endmatch
+;
+@
+This functor does integral promotions of signed integer types 
+corresponding to ISO C rules.
+
 @h2 type sets
 TBD
 
-@h2 Abstract types
+@h1 Abstract types
+Felix provides abstract types as demonstrated in this example.
+@felix
+class Rat {
+  type rat = new (num:int, den:int);
+  ctor rat (x:int, y:int) =>  
+    let d = gcd (x,y) in
+    _make_rat (num=x/d, den-y/d)
+  ;
+
+  fun + (a:rat, b:rat) => 
+    let ?a = _repr_ a in
+    let ?b = _repr_ b in
+    _make_rat ( 
+      a.num * b.den + b.num * a.den,
+      a.den * b.den
+    )
+  ;
+}
+@
+Here, the abstract type @{rat} is represented by a record of
+two integers, @{num} and @{den}, but this type is hidden.
+
+Inside the class @{Rat} the operator @{_make_rat} 
+casts the implementation value to an abstract value,
+and the operator @{_repr_} casts the abstract value to its implementation.
+
+These casts cannot be used outside the class, thereby hiding the implementation
+outside the class.
+
+@h1 Polymorphism
 TBD
 
 @h1 Expressions
 <a href="/share/lib/grammar/expressions.flxh">Syntax</a>
-TBD
+
+Expressions are listed in approximate order of precedence,
+starting with the weakest binding.
+
+We will often exhibit expressions in the form
+@felix
+var x = expr;
+@
+so as to present a complete statement. The @{x} is of no significance.
+@h2 Chain forms
+@h3 Pattern let
+The traditional let binding of ML.
+The syntax is 
+@felix
+var x = let pattern = expr1 in expr2; // equivalent to
+var x = match expr1 with pattern => expr2 endmatch
+@felix
+var x = let ?a = 1 in a + 1; // equivalent to
+var x = match 1 with ?a => a + 1 endmatch
+@
+
+@h3 Function let
+A let form which makes a function available in the
+expression
+@felix
+var x = 
+  let fun f(y:int)=> y + 1 in 
+  f 42
+;
+@3 Match chain
+A variant on the terminated match which allows a second
+match to be chained onto the last branch without any endmatch.
+@felix
+var y = list (1,2);
+var x = 
+  match y with
+  | Empty => "Empty"
+  | _ =>
+  match y with 
+  | ?h ! Empty => h.str
+  | _ =>
+  match y with 
+  | ?h1 ! ?h2 ! Empty => h1.str + "," + h2.str
+;
+
+println$ x;
+
+@h3 conditional chain
+A variant on the terminated if/then/elif/else allowing chaining.
+@felix
+var x = 
+  if c1 then r1 
+  elif c2 then r2 else
+  if c3 then r3 else
+  r4
+;
+@ 
+
+
+@h2 Alternate conditional chain
+@felix
+var x = n / d unless d == 0 then 0;
+@
+
+@h2 Dollar application
+A right associative low precedence forward apply operator taken
+from Haskell.
+@felix
+var x =  str$ rev$ list$ 1,2,3;
+@
+
+
+@h2 Pipe application
+A left associative low precedence reverse apply operator taken
+from C#.
+@felix
+var x =  1,2,3 |> list |> rev |> str;
+@
+
+@h2 Tuple cons constructor
+A right associative cons operator for tuples. Allows concatenating
+an element to the head/front/left end of a tuple. Can also be used
+in a pattern match to recursively decode a tuple like a list.
+@felix
+var x =  3,4;
+var y = 1 ,, 2 ,, x; // 1,2,3,4
+@
+
+@h2 N-ary tuple constructor
+The is a non-associative n-ary tuple constructor
+consists of a sequence of expressions separated by commas.
+@felix
+var x = 1,2,3,4;
+@
+
+@h2 Logical implication
+An operator for function @{implies}.
+@felix
+var x = false implies true;
+@
+
+@h2 Logical disjunction
+A chaining operator for function @{lor}.
+@felix
+var x = true or false;
+@
+ 
+@h2 Logical conjunction
+A chaining operator for function @{land}.
+@felix
+var x = true and false;
+@
+
+@h2 Logical negation
+A bool operator for function @{lnot}.
+
+@h2 Comparisons
+Non-associative.
+@felix
+var x =
+  a < b or 
+  a > b or
+  a <= b or
+  a >= b or
+  a == b or
+  a != b or
+  1 in list(1,2,3)
+  1 \in list (1,2,3)
+;
+@
+
+@h2 Name temporary
+Allows a subexpression to be named as a @{val} by default
+or a @{var}.
+@felix
+var x = a +  (f y as z) + z; // equivalent to
+val z = f y; var x = a + z + z;
+
+var x = a +  (f y as var k) + k; // equivalent to
+var k = f y; var x = a + k + k;
+@
+Note that the @{var} for ensures the subexpression is eagerly
+evaluated, before the containing expression.
+
+@h2 Schannel pipe operators
+Used to flow data through schannels from the source on the 
+left to the sink on the right via processing units in between.
+@felix
+spawn_fthread$ source |-> filter |-> enhancer |-> sink;
+@
+
+This variant uses an iterator to stream data out of a data structure:
+@felix
+spawn_fthread$ list (1,2,3) >-> sink;
+@
+
+@h2 Right Arrows
+Right associative arrow operators.
+
+List cons operator.
+@felix
+var x = 1 ! 2 ! list (3,4);
+@
+
+Function types (type language only):
+@felix
+  D -> C // Felix function
+  D --> C // C function pointer
+@
+
+@h2 Case literals
+
+The case tag is only used in pattern matches.
+The sum or union type isn't required because it can be deduced
+from the match argument.
+@felix
+var a = match a with Some ?v  => v | None => 0;
+@
+
+The case constructor with integer caseno has two uses. 
+
+It creates a value of
+a sum type with no arguments:
+@felix
+var x = case 1 of 2; // aka true
+@
+or it is a function for a sum type variant with an argument:
+@felix
+var x = (case 1 of int + double) 4.2;
+@
+
+A case literal with a name instead of an integer constructs
+a variant instead:
+@felix
+typedef maybe = union { No; Yes of int; };
+var x = (case Yes of maybe) 42;
+@
+
+The tuple projection function names a tuple projection:
+@felix
+typedef triple = int * long * string;
+var snd = proj 1 of triple;
+var y: int = snd (1, 2L, "3");
+@
+
+@h2 Bitwise or
+Left associative.
+@felix
+var x = q \| b;
+@
+
+@h2 Bitwise exclusive or
+Left associative.
+@felix
+var x = q \^ b;
+@
+
+@h2 Bitwise and
+Left associative.
+@felix
+var x = q \& b;
+@
+
+@h2 Bitwise shifts
+Left associative.
+@felix
+var x = a << b; // left shift
+var x = a >> b; // right shift
+@
+
+@h2 Addition
+Chain operator. Non-associative for types. 
+Left associative for expressions.
+@felix
+var x = a + b + c;
+@
+
+@h2 Subtraction
+Left associative.
+@felix
+var x = a - b;
+@
+
+@h2 Multiplication
+Chain operator. Non-associative for types.
+Left associative for expressions.
+@felix
+var x = a * b;
+@
+
+@h2 Division operators
+Left associative. Not carefully: higher precedence
+that multiplication, unlike C!!
+@felix
+var x = a * b / c * d; // means
+var x = a * (b / c) * d;
+
+var x = a * b % c * d; // means
+var x = a * (b % c) * d;
+@
+
+@h2 Prefix operators
+@felix
+var x = !a;
+var x = -a; // negation
+var x = ~a; // bitwise complement
+@ 
+
+@h2 Fortran exponentiation
+Infix @{**} is special syntax for function @{pow}. 
+The left operand binds more tightly than @{**}
+but the right operand binds as for prefixed operators
+or more tightly. Observe than that:
+
+@felix
+var x = -a**-b;  // means
+var x = -(a**(-b));
+@
+preserving the usual mathematical syntax. 
+
+@h2 Felix exponentiation
+Left associative. The right operand binds as deref operator
+or more tightly. Used for array notation in the type language.
+@felix
+var x = a ^ ix;
+@
+
+@h2 Function composition
+Standard math notation. Left associative. Same precedence as
+exponentiation. Spelled @{\}@{circ}.
+@felix
+var x = f \circ g;
+@
+
+@h2 Dereference
+For function @{deref}.
+@felix
+var x = *p;
+@
+
+For builtin dereference operator:
+@felix
+var x = _deref p;
+@
+
+Note these usually have the same meaning however
+the function @{deref} can be overloaded. If the overloaded
+definition is not to be circular it may use @{_deref}
+when dereferencing pointers.
+
+@h3 Operator new
+Copies a value onto the heap and returns a pointer.
+@felix
+var px = new 42;
+@
+
+@h2 Whitespace application
+Operator whitespace is used for applications.
+@h3 General
+@felix
+var x = sin y;
+@
+
+@h3 Caseno operator
+Returns the integer tag value of the value of an anonymous sum, 
+union, or variant  type.
+@felix
+var x = caseno true; // 1
+var x = caseno (Some 43); // 1
+@
+
+@h3 Likelyhood
+Indicaties if a bool valued expression is likely
+or unlikely to be true. Used to generate the corresponding
+gcc optimisation hints, if available.
+@felix
+if likely (c) goto restart;
+if unlikely (d) goto loopend;
+@
+
+@h2 Coercion operator
+left associative. The right operand is a type.
+@felix
+var x = 1L :>> int; // cast
+@
+
+@h2 Suffixed name
+The most general form of a name:
+@felix
+var x = qualified::name of int;
+@
+Used to name functions, with the right operand specifying
+the function argument type.
+
+@h2 Factors
+@h3 Subscript
+Used for array and string subscripting. Calls function @{subscript}.
+For strings, returns a character. If the subscript is out of range
+after adjustment of negative index, returns @{char 0} and thus
+cannot fail.
+@felix
+var x = a . [ i ]; // i'th element
+@
+
+@h3 Subsstring
+Calls function @{substring}. Negative indices may be used to
+offset from end, i.e. -1 is the index of the last element.
+Out of range indices (past the end or before the start, after
+adjustment of negative indices) are clipped back to the end
+or start respectively.
+@felix
+var x = a . [ first to past]; 
+  // past is one past the last element refered to
+@
+
+@h3 Copyfrom
+Calls function @{copyfrom}. Copies from designated index to end.
+Supports negative indices and range clipping for strings.
+@felix
+var x = a . [to past]; // from the first
+@
+
+@h3 Copyto
+Calls function @{copyto}. Supports negative indices and
+range clipping for strings.
+@felix
+var x = a . [to past]; // from the first
+@
+
+@h3 Reverse application
+Left associative.
+@felix
+var x = y .f; // means
+var x = f y;
+@
+
+@h3 Reverse application with deref
+Left associative
+@felix
+var x = p *. k; // means
+var x = (*p) . k;
+@
+
+@h3 Reverse application with addressing
+Left associative
+@felix
+var x = v &. k; // means
+var x = (&v) . k;
+@
+
+@h3 Unit application
+Prefix operator applies argument to empty tuple.
+@felix
+var x = #f; // means
+var x = f ();
+@
+
+@h3 Addressing
+Finds the pointer address of a variable.
+Means pointer to in type language.
+@felix
+var x : int = 1;
+var px : &int = &x; 
+  // address of x
+  // type pointer to int
+@
+
+@h3 C pointer
+Used in type language for pointer to type or NULL.
+@felix
+var px : @char =  malloc (42);
+@
+
+Note that this symbol is also used in fdoc as a markup
+indicator. Please keep out of column 1, do not follow
+with a left brace.
+
+@h3 Label address
+Used to find the machine address in the code text of
+a label. Used with computed goto instruction.
+@felix
+proc f (a: int) {
+  var target: LABEL = 
+    if a < 0 then label_address neg
+    elif a > 0 then label_address pos
+    else label_address zer
+  ;
+  goto-indirect target;
+  pos:> println$ "pos"; return;
+  neg:> println$ "neg"; return;
+  zer:> println$ "zer"; return;
+}
+@
+
+@h3 Macro freezer
+Used to disable macro expansion of a symbol.
+@felix
+macro val fred = joe;
+var x = fred + noexpand fred; // means
+var x = joe + fred;
+@
+
+@h3 Pattern variable
+Notation @{?v} Used in patterns to designate a val variable
+to be bound in the pattern matching.
+@felix
+var x = 
+  match y with 
+  | Some ?v => "Some " + v.str 
+  | None => "None";
+;
+@
+
+@h3 Parser argument
+Notation @{?n} for some integer @{n}. In user defined syntax designates
+the n'th term of a syntax production.
+
+@h2 Qualified name
+A name in Felix has the form:
+@felix
+  class1 :: nested1 :: ... :: identifier [ type1, type2, ... ]
+@
+where the qualifiers and/or type list may be elided. 
+This is the same as C++ except we use @[]} instead of @{<>}
+for template argument types.
+
+@h1 Atoms
+@h2 Record expression
+@felix
+var x = (name="Hello", age=42);
+@
+
+@h2 Alternate record expression
+@felix
+var x = 
+  struct {
+    var name = "Hello";
+    var age = 42;
+  }
+;
+@
+
+@h2 Variant type
+Denotes a variant type.
+@felix
+var x : 
+  union {
+    Cart of double * double;
+    Polar of double * double;
+  }
+;
+@
+
+@h2 Wildcard pattern
+Used in a pattern match, matches anything.
+@felix
+  var x = match a with _ => "anything";
+@
+
+@h2 Ellipsis
+Used only in C bindings to denote varags.
+@felix
+  fun f: int * ... -> int;
+@
+
+@h2 Truth constants
+@felix
+  false // alias for case 0 of 2
+  true  // alias for case 1 of 2
+@
+
+@h2 callback expression
+??
+@felix
+callback [ x ]
+@
+
+@h2 Lazy expression
+Function of unit.
+@felix
+var f = { expr };
+var x = f ();
+@
+
+@h2 Sequencing
+Function dependent on final expression.
+@felix
+var f = { var y = 1; var z = y + y; z + 1 }; // equivalent to
+var f = { var y = 1; var z = y + y; return z + 1; };
+var x = f (); 
+@
+
+@h2 Procedure of unit.
+@felix
+var p = { println$ "Hello"; } // procedure
+p ();
+
+var f = { var y = 1; return y + y; }; // function
+var x = f ();
+@
+
+@h2 Grouping
+Parentheses are used for grouping.
+@felix
+var x = (1 + 2) * 3;
+@
+
+@h2 Object extension
+@felix
+var x = extend a,b with c end;
+@
+
+@h2 Conditional expression
+@felix
+var x =
+  if c1 then a elif c2 then b else c endif
+;
+@
 
 @h1 Executable statements
 @h2 Assignment
@@ -1033,9 +2166,71 @@ lab2:>
 @
 
 @h3 Exchange of control
-TBD
+Built on top of label adressing and indirect gotos,
+the @{branch-and-link} instruction is conceptually
+the most fundamental control instruction. The library
+implementation is in 
+@felix
+inline proc branch-and-link (target:&LABEL, save:&LABEL)
+{
+  save <- label_address next;
+  goto-indirect *target;
+  next:>
+}
+@
+A good example is <a href="/share/src/test/regress/rt/coroutines-01.fdoc">here</a>,
+which shows an example of coroutines.
+
 @h2 match/endmatch
-TBD
+The form:
+@felix
+match expr with
+| pattern1 => stmts1
+| pattern2 => stmts2
+...
+endmatch
+@
+is an extension of the C switch statement. The patterns
+are composed of these forms:
+@felix
+(?v1, ?v2, ... )          // tuple match
+?h!?t                     // list match
+?h,,?t                    // tuple cons
+Ctor                      // const union or variant match
+Ctor ?v                   // nonconst union or variant match
+(fld1=?f1, fld2=f2, ...)  // record match
+pat as ?v                 // assign variable to matched subexpression
+pat when expr             // guarded match
+pat1 | pat2               // match either pattern
+999                       // integer match
+"str"                     // string match 
+lit1 .. lit2              // range match
+_                         // wildcard match
+@
+
+The guarded match only matches the pattern if the guard expression is true.
+@felix
+match x with
+| (?x,?y) when y != 0 => ...
+endmatch
+@
+
+The tuple as list cons match is a form of row polymorphism
+where the first element of a tuple and the remaining elements
+considered as a tuple are matched.
+
+A good example of this is found in the library <a href="/share/lib/std/datatype/tuple.flx">here</a>
+which allows printing a tuple of arbitrary number of components, indeed,
+this facility was implemented precisely to allow this definition in the library.
+
+Record matches succeed with any record containing a superset
+of the specified fields.
+
+As well as integer and string matches, a literal of any type with an
+equality and inequality operator can be matched. In addition,
+if there is a less than or equal operator @{<=} an inclusive
+range match can be specified.
+
 @h2 if/goto
 The conditional goto is an abbreviation for 
 the more verbose conditional:
@@ -1224,7 +2419,7 @@ write, or the first unmatched read operation occurs.
 
 @h3 exchange
 
-@h1 loops
+@h2 loops
 <a href="/share/lib/grammar/loops.flxh">Reference</a>
 
 Felix has some low level and high level loop constructions.
@@ -1250,20 +2445,20 @@ outer:for var i in 0 upto 9 do
 done
 @
 
-@h2 redo
+@h3 redo
 The redo statement causes control to jump to the start
 of the specified loop without incrementing the control variable.
 
-@h2 break
+@h3 break
 The break statement causes control to jump past the end of
 the specified loop, terminating iteration.
 
-@h2 continue
+@h3 continue
 The continue statement causes the control variable to
 be incremented and tests and the next iteration commenced
 or the loop terminated.
 
-@h2 for/in/upto/downto/do/done
+@h3 for/in/upto/downto/do/done
 A basic loop with an inclusive range.
 @felix
 // up
@@ -1291,7 +2486,7 @@ For loops over signed types cannot span the whole range of the type.
 The loop logic takes care to ensure the control variable is not
 incremented (resp. decremented) past the end (resp.start) value.
 
-@h2 while/do/done
+@h3 while/do/done
 The while loop executes the body repeatedly whilst the control
 condition is true at the start of the loop body.
 @felix
@@ -1299,7 +2494,7 @@ var i = 0;
 while i < 10 do println$ i; ++i; done
 @
 
-@h2 until loop
+@h3 until loop
 The until loop executes the loop body repeatedly
 until the control condition is false at the start of the loop,
 it is equivalent o a while loop with a negated condition.
@@ -1308,9 +2503,9 @@ var i = 0;
 until i == 9 do println$ i; ++i; done
 @
 
-@h2 for/match/done
+@h3 for/match/done
 TBD
-@h2 loop
+@h3 loop
 TBD
 @h2 Assertions
 <a href="/share/lib/grammar/assertions.flxh">Reference</a>

@@ -1,0 +1,14 @@
+@felix
+// Primitive procedure wrapper
+
+println$ "Wrapper for primitive procedure";
+body fred_def = 'void fred (int x) { printf("Wrapper shows %d\\n", x); }';
+proc fred : int = "fred($1);" requires fred_def;
+
+noinline proc exec (f: int -> 0, x:int) { f x; }
+
+exec (fred, 42);
+@expect
+Wrapper for primitive procedure
+Wrapper shows 42
+@

@@ -1,0 +1,18 @@
+
+@felix
+// Cstruct function wrapper
+
+println$ "Wrapper for cstruct ctor";
+header X_struct = "struct X { int x; int y; };";
+cstruct X { x:int; y:int; } requires X_struct;
+
+noinline proc exec (f: int * int -> X , x:int, y:int) { 
+ var z = f (x,y); 
+ println$ "CStruct (" + str z.x + "," + str z.y + ")";
+}
+
+exec (X, 42, 100);
+@expect
+Wrapper for cstruct ctor
+CStruct (42,100)
+@

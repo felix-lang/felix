@@ -217,13 +217,6 @@ let sig_of_symdef symdef sr name i = match symdef with
   | SYMDEF_function (ps,r,_,_) ->
     let p = fst ps in
     begin match p,r with
-    (*
-    | (`PRef,_, r)::tail,`AST_void _
-    (* | (`PVal,_,TYP_pointer r)::tail,`AST_void _ *) ->
-      print_endline "Mangled Procedure Overload";
-      paramtype tail,r
-    *)
-
     | _ ->
       paramtype p,r,Some (List.map (fun (_,name,_,d)->name,d) p)
     end

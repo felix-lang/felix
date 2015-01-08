@@ -84,7 +84,7 @@ let mkproc_expr syms bsym_table sr this mkproc_map vs e =
       exes := call :: !exes;
 
       (* replace the original expression with the variable *)
-      bexpr_name ret (k,ts')
+      bexpr_varname ret (k,ts')
     in e
   | x -> x
   in
@@ -135,7 +135,6 @@ let proc_exes syms bsym_table k exes = List.concat (List.map (proc_exe k) exes)
 
 let mkproc_gen syms bsym_table =
   let ut = Hashtbl.create 97 in (* dummy usage table *)
-  let vm = Hashtbl.create 97 in (* dummy varmap *)
   let rl = Hashtbl.create 97 in (* dummy relabel *)
   let mkproc_map = Hashtbl.create 97 in
 
@@ -261,8 +260,7 @@ let mkproc_gen syms bsym_table =
         let revariable =
           Flx_reparent.reparent_children syms
           ut bsym_table
-          vs (length vs)
-          i (Some k) rl vm true bids
+          i (Some k) rl true bids
         in
         let revar i = try Hashtbl.find revariable i with Not_found -> i in
         begin
@@ -289,7 +287,6 @@ let mkproc_gen syms bsym_table =
             let bbdcl = match pk with
             | `PVal -> bbdcl_val (vs,t,`Val)
             | `PVar -> bbdcl_val (vs,t,`Var)
-            | _ -> failwith "Unimplemented mkproc fun param not var or val (fixme!)"
             in
             if syms.compiler_options.print_flag then
             print_endline ("New param " ^ s ^ " " ^ string_of_bid n ^ " <-- " ^
@@ -325,8 +322,8 @@ let mkproc_gen syms bsym_table =
 
       (* and actually convert it *)
       let ts = List.map (fun (_,i) -> btyp_type_var (i,btyp_type 0)) vs in
-      (* let dv = BEXPR_deref (BEXPR_name (vix,ts),btyp_pointer * ret),btyp_lvalue ret in *)
-      let dv = bexpr_deref ret (bexpr_name (btyp_pointer ret) (vix,ts)) in
+      (* let dv = BEXPR_deref (BEXPR_varname (vix,ts),btyp_pointer * ret),btyp_lvalue ret in *)
+      let dv = bexpr_deref ret (bexpr_varname (btyp_pointer ret) (vix,ts)) in
       let exes = proc_exes syms bsym_table dv exes in
 
       (* save the new procedure *)

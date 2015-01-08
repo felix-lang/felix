@@ -12,7 +12,6 @@ val gen_body :
   sym_state_t ->
   usage_table_t -> Flx_bsym_table.t ->
   string ->                         (* name *)
-  (bid_t, Flx_btype.t) Hashtbl.t -> (* varmap *)
   Flx_bparameter.t list ->          (* parameters *)
   (string, string) Hashtbl.t ->     (* relabel *)
   (bid_t, bid_t) Hashtbl.t ->       (* revariable *)
@@ -21,8 +20,6 @@ val gen_body :
   Flx_srcref.t ->                   (* srcref *)
   bid_t ->                          (* caller *)
   bid_t ->                          (* callee *)
-  bvs_t ->                          (* caller vs *)
-  int ->                            (* callee vs len *)
   submode_t ->                      (* default arg passing mode *)
   property_t list ->                (* properties *)
   Flx_bexe.t list

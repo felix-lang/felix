@@ -20,10 +20,17 @@ open Flx_unify
 open Flx_use
 open Flx_util
 
-let string_of_vs vs =
-  "[" ^ catmap "," (fun (s,i)->s^"<"^si i^">") vs ^ "]"
+let print_time syms msg f =
+  let t0 = Unix.gettimeofday () in
+  let result = f () in
+  let elapsed = Unix.gettimeofday () -. t0 in
+  if syms.Flx_mtypes2.compiler_options.Flx_options.showtime
+  then print_endline (String.sub (msg ^ "                                        ") 0 40
+        ^ string_of_int (int_of_float elapsed) ^ "s");
+  result
 
-(* varmap is the *typevariable* remapper,
+
+(* 
  revariable remaps indices
 *)
 let ident x = x
@@ -109,35 +116,27 @@ let is_simple_expr syms bsym_table e =
 
 *)
 
-let call_lifting syms uses bsym_table caller caller_vs callee ts a argument =
+let call_lifting syms uses bsym_table caller callee a argument =
   (*
   print_endline "DOING CALL LIFTING";
   *)
   let bsym = Flx_bsym_table.find bsym_table callee in
   match Flx_bsym.bbdcl bsym with
   | BBDCL_fun (props,vs,(ps,traint),ret,exes) ->
+    assert (vs=[]);
     (*
     print_endline ("Found procedure "^id^": Inline it!");
     *)
     let relabel = mk_label_map syms exes in
-    let varmap =
-      try mk_varmap vs ts
-      with Failure x ->
-        print_endline "[call_lifting] FAIL mk_varmap";
-        raise (Failure x)
-    in
-    let callee_vs_len = length vs in
-
     let revariable = reparent_children
       syms uses bsym_table
-      caller_vs callee_vs_len callee (Some caller) relabel varmap false []
+      callee (Some caller) relabel false []
     in
     (* use the inliner to handle the heavy work *)
     let body = gen_body
       syms
       uses bsym_table
       (Flx_bsym.id bsym)
-      varmap
       ps
       relabel
       revariable
@@ -146,8 +145,6 @@ let call_lifting syms uses bsym_table caller caller_vs callee ts a argument =
       (Flx_bsym.sr bsym)
       caller
       callee
-      caller_vs
-      callee_vs_len
       `Lazy
       props
     in
@@ -163,12 +160,11 @@ let call_lifting syms uses bsym_table caller caller_vs callee ts a argument =
         (* NOTE REVERSED ORDER *)
         let call_instr =
           (
-          (*
           match e with
           | BEXPR_closure (i,ts),_ ->
+            assert (ts=[]);
             bexe_call_direct (sr,i,ts,argument)
           | _ ->
-          *)
             bexe_call (sr,e,argument)
           )
         in
@@ -190,12 +186,13 @@ let call_lifting syms uses bsym_table caller caller_vs callee ts a argument =
 
   | _ -> assert false
 
-let inline_tail_apply syms uses bsym_table caller caller_vs callee ts a =
+let inline_tail_apply syms uses bsym_table caller callee a =
   (* TEMPORARY .. this should be allowed for unrolling but we do not do that yet *)
   assert (callee <> caller);
   let bsym = Flx_bsym_table.find bsym_table callee in
   match Flx_bsym.bbdcl bsym with
   | BBDCL_fun (props,vs,(ps,traint),ret,exes) ->
+    assert (vs=[]);
     (*
     let id2,_,_,_ = hfind "inline-tail[function]" bsym_table caller in
     print_endline
@@ -206,17 +203,10 @@ let inline_tail_apply syms uses bsym_table caller caller_vs callee ts a =
     );
     *)
     let relabel = mk_label_map syms exes in
-    let varmap =
-      try mk_varmap vs ts
-      with Failure x ->
-        print_endline "[inline_tail_apply] FAIL mk_varmap";
-        raise (Failure x)
-    in
-    let callee_vs_len = length vs in
 
     let revariable = reparent_children
       syms uses bsym_table
-      caller_vs callee_vs_len callee (Some caller) relabel varmap false []
+      callee (Some caller) relabel false []
     in
 
     (* use the inliner to handle the heavy work *)
@@ -224,7 +214,6 @@ let inline_tail_apply syms uses bsym_table caller caller_vs callee ts a =
       syms
       uses bsym_table
       (Flx_bsym.id bsym)
-      varmap
       ps
       relabel
       revariable
@@ -233,8 +222,6 @@ let inline_tail_apply syms uses bsym_table caller caller_vs callee ts a =
       (Flx_bsym.sr bsym)
       caller
       callee
-      caller_vs
-      callee_vs_len
       `Lazy
       props
     in
@@ -242,7 +229,7 @@ let inline_tail_apply syms uses bsym_table caller caller_vs callee ts a =
 
   | _ -> assert false
 
-let inline_function syms uses bsym_table caller caller_vs callee ts a varindex =
+let inline_function syms uses bsym_table caller callee a varindex =
   (*
   print_endline ("Inline function: init var index " ^ si varindex);
   *)
@@ -260,17 +247,9 @@ let inline_function syms uses bsym_table caller caller_vs callee ts a varindex =
     );
     *)
     let relabel = mk_label_map syms exes in
-    let varmap =
-      try mk_varmap vs ts
-      with Failure x ->
-        print_endline "[inline_function] FAIL mk_varmap";
-        raise (Failure x)
-    in
-    let callee_vs_len = length vs in
-
     let revariable = reparent_children
       syms uses bsym_table
-      caller_vs callee_vs_len callee (Some caller) relabel varmap false []
+      callee (Some caller) relabel false []
     in
 
     (* use the inliner to handle the heavy work *)
@@ -278,7 +257,6 @@ let inline_function syms uses bsym_table caller caller_vs callee ts a varindex =
       syms
       uses bsym_table
       (Flx_bsym.id bsym)
-      varmap
       ps
       relabel
       revariable
@@ -287,8 +265,6 @@ let inline_function syms uses bsym_table caller caller_vs callee ts a varindex =
       (Flx_bsym.sr bsym)
       caller
       callee
-      caller_vs
-      callee_vs_len
       `Lazy
       props
     in
@@ -348,25 +324,19 @@ let expand_exe syms bsym_table u exe =
     *)
     match exe with
     | BEXE_axiom_check _ -> assert false
-    | BEXE_call_prim (sr,i,ts,e2) -> assert false
-      (*
+    | BEXE_call_prim (sr,i,ts,e2) -> 
       let e,xs = u sr e2 in
       bexe_call_prim (sr,i,ts,e) :: xs
-      *)
 
     | BEXE_call_stack (sr,i,ts,e2) -> assert false
 
-    | BEXE_call_direct (sr,i,ts,e2) -> assert false
-      (*
+    | BEXE_call_direct (sr,i,ts,e2) -> 
       let e,xs = u sr e2 in
       bexe_call_direct (sr,i,ts,e) :: xs
-      *)
 
-    | BEXE_jump_direct (sr,i,ts,e2) -> assert false
-      (*
+    | BEXE_jump_direct (sr,i,ts,e2) -> 
       let e,xs = u sr e2 in
       bexe_jump_direct (sr,i,ts,e) :: xs
-      *)
 
     | BEXE_assign (sr,e1,e2) ->
       let e1,xs1 = u sr e1 in
@@ -394,11 +364,13 @@ let expand_exe syms bsym_table u exe =
       bexe_axiom_check2 (sr,sr2,e1,e2) :: xs2 @ xs1
 
     (* preserve call lift pattern ??*)
-    | BEXE_call (sr,(BEXPR_apply((BEXPR_closure(i,ts),t'),e1),t),e2) ->
+    | BEXE_call (sr,(BEXPR_apply((BEXPR_closure(i,ts),_),e1),t),e2) 
+    | BEXE_call (sr,(BEXPR_apply_direct(i,ts,e1),t),e2) ->
+      assert (ts=[]);
       let e1,xs1 = u sr e1 in
       let e2,xs2 = u sr e2 in
       bexe_call (sr,
-        (bexpr_apply t ((bexpr_closure t' (i,ts)),e1)),
+        (bexpr_apply_direct t (i,ts,e1)),
         e2) :: xs2 @ xs1
 
     | BEXE_call (sr,e1,e2) ->
@@ -424,10 +396,12 @@ let expand_exe syms bsym_table u exe =
        tail-rec eliminator
        and by call lifter (which converts returns to calls)
     *)
-    | BEXE_fun_return (sr,(BEXPR_apply((BEXPR_closure(i,ts),t'),e),t)) ->
+    | BEXE_fun_return (sr,(BEXPR_apply((BEXPR_closure(i,ts),_),e),t)) 
+    | BEXE_fun_return (sr,(BEXPR_apply_direct(i,ts,e),t)) ->
+      assert (ts=[]);
       let e,xs = u sr e in
       bexe_fun_return (sr,
-        (bexpr_apply t ((bexpr_closure t' (i,ts)),e))) :: xs
+        (bexpr_apply_direct t (i,ts,e))) :: xs
 
     | BEXE_fun_return (sr,e) ->
       let e,xs = u sr e in
@@ -452,14 +426,16 @@ let expand_exe syms bsym_table u exe =
        a duplicate of this check elsewhere ..
     *)
 
-    | BEXE_init (sr,i,(BEXPR_apply((BEXPR_closure (j,ts),t'),e),t))
+    | BEXE_init (sr,i,(BEXPR_apply((BEXPR_closure (j,ts),_),e),t))
+    | BEXE_init (sr,i,(BEXPR_apply_direct (j,ts,e),t))
       (*
       when is_generator bsym_table j
       *)
       ->
+      assert (ts=[]);
       let e,xs = u sr e in
       bexe_init (sr, i,
-        (bexpr_apply t ((bexpr_closure t' (j,ts)),e))) :: xs
+        (bexpr_apply_direct t (j,ts,e))) :: xs
 
     | BEXE_init (sr,i,e) ->
       let e,xs = u sr e in
@@ -494,43 +470,25 @@ let check_reductions syms bsym_table exes =
   exes
 
 let heavy_inline_call syms uses bsym_table
-  caller caller_vs callee ts argument id sr (props, vs, (ps,traint), exes)
+  caller callee argument id sr (props, vs, (ps,traint), exes)
 =
   (*
   print_endline ("INLINING CALL to " ^ id ^"<"^ si callee^">("^sbe bsym_table argument^")");
-  print_endline ("In procedure " ^ si caller ^ " with vs=" ^ string_of_vs caller_vs);
-  print_endline ("Callee is " ^ id ^ "<"^si callee ^ "> with ts = " ^ catmap "," (sbt bsym_table) ts);
-  print_endline ("Callee vs=" ^ string_of_vs vs);
+  print_endline ("In procedure " ^ si caller );
+  print_endline ("Callee is " ^ id ^ "<"^si callee ^ ">" );
   *)
-  let caller_vs_len = length caller_vs in
-  let callee_vs_len = length vs in
-  (*
-  print_endline ("In the callee and its children,");
-  print_endline ("The callee vs are elided and replaced by the caller vs");
-  print_endline ("ELIDE: first " ^ si callee_vs_len ^ ", PREPEND " ^ si caller_vs_len);
-  print_endline ("This works by instantiating the callee vs with the calls ts");
-  *)
-  assert(length vs = length ts);
-
   (*
   print_endline ("Found procedure "^id^": Inline it!");
   *)
   let relabel = mk_label_map syms exes in
-  let varmap =
-    try mk_varmap vs ts
-    with Failure x ->
-      print_endline "[heavy_inline_call] FAIL mk_varmap";
-      raise (Failure x)
-  in
   let revariable = reparent_children
     syms uses bsym_table
-    caller_vs callee_vs_len callee (Some caller) relabel varmap false []
+    callee (Some caller) relabel false []
   in
   let xs = gen_body
     syms
     uses bsym_table
     id
-    varmap
     ps
     relabel
     revariable
@@ -539,51 +497,31 @@ let heavy_inline_call syms uses bsym_table
     sr
     caller
     callee
-    caller_vs
-    callee_vs_len
     `Lazy
     props
   in
     revariable,rev xs (* forward order *)
 
 let make_specialisation syms uses bsym_table
-  caller caller_vs callee ts id sr parent props vs exes rescan_flag
+  caller callee id sr parent props exes rescan_flag
 =
   (*
-  print_endline ("Specialising call " ^ id ^ "<"^si callee ^ ">[" ^ catmap "," (sbt bsym_table) ts ^"]");
-  print_endline ("In procedure " ^ si caller ^ " with vs=" ^ string_of_vs caller_vs);
-  print_endline ("Callee vs=" ^ string_of_vs vs);
+  print_endline ("Specialising call " ^ id ^ "<"^si callee ^ ">");
+  print_endline ("In procedure " ^ si caller );
   *)
-  let caller_vs_len = length caller_vs in
-  let callee_vs_len = length vs in
-
-  (*
-  print_endline ("In the callee and its children,");
-  print_endline ("The callee vs are elided and replaced by the caller vs");
-  print_endline ("ELIDE: first " ^ si callee_vs_len ^ ", PREPEND " ^ si caller_vs_len);
-  print_endline ("This works by instantiating the callee vs with the calls ts");
-  *)
-  assert(length vs = length ts);
-
   (*
   print_endline ("Found procedure "^id^": Inline it!");
   *)
   let relabel = mk_label_map syms exes in
-  let varmap =
-    try mk_varmap vs ts
-    with Failure x ->
-      print_endline "[make_specialisation] FAIL mk_varmap";
-      raise (Failure x)
-  in
-  let k,ts' =
+  let k=
     specialise_symbol
       syms uses bsym_table
-      caller_vs callee_vs_len callee ts parent relabel varmap rescan_flag
+      callee parent relabel rescan_flag
    in
    (*
-   print_endline ("Specialised to " ^ id ^ "<"^si k ^ "> with ts = " ^ catmap "," (sbt bsym_table) ts');
+   print_endline ("Specialised to " ^ id ^ "<"^si k ^ ">" );
    *)
-   k,ts'
+   k
 
 (* Dependency analyser. This should be generalised,
 but for now we only use it in tail calls.
@@ -642,178 +580,6 @@ let inlining_complete bsym_table i =
 
   | _ -> assert false
 
-
-(*
-
-
-See post in felix-language. The problem is knowing
-when to inline a function: typeclass virtual function
-default methods can only be inlined if there is an instance
-of the typeclass AND the virtual is not overridden in the
-instance.
-
-Proposed algorithm.
-
-1. Check if the function is virtual.
-
-2. If so, find its parent, which is the typeclass
-
-3. strip the tail off the instantiating ts so it
-   matches the length of the typeclass vs list
-   (in case the function is polymorphic, the function's
-    private type arguments will be the remaining ones)
-
-3. Using a table of pairs:
-
-	(typeclass, (instance, (vs,ts)))
-
-discover if there is an instance. This is actually hard:
-the check actually requires seeing if the given ts specialises
-one of the ts in the above table for the given typeclass.
-The instantiation's vs is required too, since the ts of the
-typeclass have to be mapped to the instance view.
-
-4. IF there is a match:
-
-4a. try to find an instance  of the virtual function.
-
-4b. If none is found, then inline the virtual function
-    default body
-
-4c.  otherwise inline the instance.
-
-5. otherwise (no instance) leave the call alone.
-
-IF we know the code is fully monorphised then 5 becomes
-instead an error.
-
-Note that Felix currently DOES NOT detect this error.
-If the function has a default, it will be used even
-if there is no instance. This will result in either
-an infinite recursion at run time OR lead to another
-virtual that has no body, resulting in an error diagnostic.
-
-But the infinite recursion is also possible even if there
-is an instance .. so nothing is lost here.. :)
-
-*)
-
-let virtual_check syms bsym_table sr i ts =
-  let parent, bsym = Flx_bsym_table.find_with_parent bsym_table i in
-  let name : string = Flx_bsym.id bsym in
-  match Flx_bsym.bbdcl bsym with
-  | BBDCL_external_fun (props,_,_,_,_,_,_)
-  | BBDCL_fun (props,_,_,_,_) when mem `Virtual props ->
-    let parent =
-      match Flx_bsym_table.find_parent bsym_table i with
-      | Some p -> p
-      | None -> syserr sr ("can't find parent of virtual " ^ Flx_bsym.id bsym ^" " ^ si i ^ " but is it " ^ match parent with | Some k -> si k | None -> "None");
-        assert false
-    in
-    let tcvslen =
-      try
-        match Flx_bsym_table.find_bbdcl bsym_table parent with
-        | BBDCL_typeclass (_, vs) ->
-          (*
-          print_endline ("Found parent " ^ pid ^ "<" ^ si i ^ ">");
-          *)
-          List.length vs
-        | _ ->
-          print_endline "Woops, parent isn't typeclass?";
-          assert false
-      with Not_found ->
-        print_endline ("Parent typeclass " ^ string_of_bid parent ^
-          " not found!");
-        assert false
-    in
-    let tslen = List.length ts in
-    (*
-    print_endline ("Vs len of parent = " ^ si tcvslen);
-    print_endline ("ts len           = " ^ si tslen);
-    *)
-    if tcvslen > tslen then
-      clierr sr "Not enough type arguments for typeclass"
-    ;
-    let fts = rev (list_prefix (rev ts) (tslen - tcvslen)) in
-    let ts = list_prefix ts tcvslen in
-(*
-    let instances =
-      try Hashtbl.find syms.instances_of_typeclass parent
-      with Not_found ->
-        (*
-        print_endline "No instances of typeclass?";
-        *)
-        (*
-        assert false
-        *)
-        []
-    in
-    (*
-    print_endline "Found some instances!";
-    print_endline ("ts = " ^ catmap "," (sbt bsym_table) ts);
-    *)
-    let matches = ref [] in
-    List.iter (fun (j,(jvs,jcon,jts)) ->
-      (*
-      print_endline ("instance[" ^
-        catmap "," (fun (s,i) -> s^ "<"^si i^">") jvs ^ "] " ^
-        si j ^ "[" ^
-        catmap "," (sbt bsym_table) jts ^ "]"
-      );
-      *)
-      (* check if the call specialises the instance. *)
-      let ok =
-        Flx_typeclass.tcinst_chk syms bsym_table true i ts sr
-          (jvs, jcon,jts, j)
-      in
-      begin match ok with
-      | `MatchesNow,_,_ -> matches := j :: !matches
-
-      | _ -> (* print_endline "Doesn't match"; *)  ()
-      end
-    )
-    instances
-    ;
-    begin match !matches with
-    | [_] ->
-*)
-      begin let res = Flx_typeclass.fixup_typeclass_instance' syms bsym_table true i ts in
-      match res with
-      | `MatchesNow,j,ts' -> (* print_endline (name ^ " Matches now, inline " ^ si j); *) true,j,ts' @ fts (* inline matching function *)
-      | `MaybeMatchesLater,_,_ -> (* print_endline (name ^ " May match later, deref " ^ si i); *) false,i,ts@fts (* wait *)
-      | `CannotMatch,_,_ -> (* print_endline (name ^ " No match use default " ^ si i); *) true,i,ts@fts (* inline default if any *)
-      end
-(*
-      let i',ts' =
-        Flx_typeclass.maybe_fixup_typeclass_instance syms bsym_table i ts
-      in
-      if i = i' then begin
-        (*
-        print_endline (id ^ " -- Dispatch to default");
-        *)
-        true,i',ts' @ fts
-      end else begin
-        (*
-        print_endline (id ^ " -- Dispatch to instance");
-        *)
-        true,i',ts' @ fts
-      end
-    | _ ->
-      (*
-      print_endline (id ^ " -- Dispatch unknown");
-      *)
-      false,i,ts @ fts
-    end
-*)
-
-  | BBDCL_fun (_,_,_,_,exes) ->
-    let chk_yield acc exe = match exe with BEXE_yield _ -> false | _ -> acc in
-    let can_inline = fold_left chk_yield true exes in
-    can_inline,i,ts
-    
-
-  | _ -> (* print_endline (id ^ " -- Not virtual") *) true,i,ts
-
 (* This function currently checks if it is possible to inline
    a function or procedure, and it also checks if the inline/noinline
    attributes are consistent with the function, however it does
@@ -826,7 +592,6 @@ let virtual_check syms bsym_table sr i ts =
    tags (since they more or less just copy the property list instead of
    properly analysing things).
 
-  This routine has to be called on an actual function, not a virtual.
 *)
 
 let inline_check syms bsym_table uses srcall caller callee props exes =
@@ -902,7 +667,7 @@ let inline_check syms bsym_table uses srcall caller callee props exes =
     )
   in result
 
-let rec special_inline syms uses bsym_table caller_vs caller hic excludes sr e =
+let rec special_inline syms uses bsym_table caller hic excludes sr e =
   (*
   print_endline ("Special inline " ^ sbe bsym_table e);
   *)
@@ -922,7 +687,7 @@ let rec special_inline syms uses bsym_table caller_vs caller hic excludes sr e =
   (* get_n on a struct apply to an explicit tuple .. *)
   | BEXPR_apply (
       (BEXPR_prj (n,_,_),_),
-      (BEXPR_apply ((BEXPR_closure (bid,ts),_),(BEXPR_tuple ls,_)),_)
+      (BEXPR_apply_struct (bid,ts,(BEXPR_tuple ls,_)),_)
     ),_ -> 
     let bbdcl = Flx_bsym_table.find_bbdcl bsym_table bid in
     begin match bbdcl with 
@@ -935,20 +700,43 @@ let rec special_inline syms uses bsym_table caller_vs caller hic excludes sr e =
       heavily_inline_bbdcl syms uses bsym_table (callee::excludes) callee;
       x
 
-  | ((BEXPR_apply_prim (callee,ts,a),t) as e)
   | ((BEXPR_apply_stack (callee,ts,a),t) as e)
-  | ((BEXPR_apply_direct (callee,ts,a),t) as e) -> assert false
+    -> assert false
+
+  | ((BEXPR_apply_prim (callee,ts,a),t) as e) ->
+    let bsym = Flx_bsym_table.find bsym_table callee in
+    begin match Flx_bsym.bbdcl bsym with
+    | BBDCL_external_fun (props,_,_,_,_,_,_) ->
+      if mem `Generator props then begin
+        (* create a new variable *)
+        let urv = fresh_bid syms.counter in
+        let urvid = "_genout_urv" ^ string_of_bid urv in
+        add_use uses caller urv sr;
+        Flx_bsym_table.add bsym_table urv (Some caller)
+          (Flx_bsym.create ~sr urvid (bbdcl_val ([],t,`Var)));
+
+        (* set variable to function appliction *)
+        let cll = bexe_init (sr,urv,e) in
+        exes' := cll :: !exes';
+
+
+        (* replace application with the variable *)
+        bexpr_varname t (urv,[])
+
+      end else e
+    | _ -> assert false
+    end
 
   | (((BEXPR_apply(  (BEXPR_closure (callee,ts),_) ,a)),t) as e)
+  | ((BEXPR_apply_direct (callee,ts,a),t) as e) 
     ->
-      let can_inline,callee,ts = virtual_check syms bsym_table sr callee ts in
+      assert (ts=[]);
       if not (mem callee excludes) then begin
         heavily_inline_bbdcl syms uses bsym_table (callee::excludes) callee;
         let bsym = Flx_bsym_table.find bsym_table callee in
         begin match Flx_bsym.bbdcl bsym with
-        | BBDCL_external_fun (props,_,_,_,_,_,_)
         | BBDCL_fun (props,_,_,_,_)  
-          when mem `Generator props
+          when mem `Generator props && not (mem `Inline props)
           ->
           (*
           print_endline ("Unravel generator " ^ id);
@@ -959,7 +747,7 @@ let rec special_inline syms uses bsym_table caller_vs caller hic excludes sr e =
           let urvid = "_genout_urv" ^ string_of_bid urv in
           add_use uses caller urv sr;
           Flx_bsym_table.add bsym_table urv (Some caller)
-            (Flx_bsym.create ~sr urvid (bbdcl_val (caller_vs,t,`Var)));
+            (Flx_bsym.create ~sr urvid (bbdcl_val ([],t,`Var)));
 
           (* set variable to function appliction *)
           let cll = bexe_init (sr,urv,e) in
@@ -967,11 +755,7 @@ let rec special_inline syms uses bsym_table caller_vs caller hic excludes sr e =
 
 
           (* replace application with the variable *)
-          let ts = List.map
-            (fun (_,i)-> btyp_type_var (i,btyp_type 0))
-            caller_vs
-          in
-          bexpr_name t (urv,ts)
+          bexpr_varname t (urv,[])
 
         | BBDCL_fun (props,vs,(ps,traint),ret,exes) ->
           (* TEMPORARY FIX! *)
@@ -992,7 +776,7 @@ let rec special_inline syms uses bsym_table caller_vs caller hic excludes sr e =
 
           (* replace application with the variable *)
           let ts = List.map (fun (_,i)-> btyp_type_var (i,btyp_type 0)) caller_vs in
-          BEXPR_name (urv,ts),t
+          BEXPR_varname (urv,ts),t
           *)
 
 
@@ -1022,7 +806,7 @@ let rec special_inline syms uses bsym_table caller_vs caller hic excludes sr e =
           ;
           *)
           let inline_choice =
-            can_inline && inline_check syms bsym_table uses sr caller callee props exes 
+            inline_check syms bsym_table uses sr caller callee props exes 
           in
           (*
           print_endline ("  Inline decision: " ^
@@ -1046,7 +830,7 @@ let rec special_inline syms uses bsym_table caller_vs caller hic excludes sr e =
                   let urv = fresh_bid syms.counter in
                   (* inline the code, replacing returns with variable inits *)
                   let revariable,xs =
-                     inline_function syms uses bsym_table caller caller_vs callee ts a urv
+                     inline_function syms uses bsym_table caller callee a urv
                   in
                   match rev xs with
                   (* SPECIAL CASE DETECTOR: if the inlined function
@@ -1086,15 +870,11 @@ let rec special_inline syms uses bsym_table caller_vs caller hic excludes sr e =
                     let urvid = "_urv" ^ string_of_bid urv in
                     add_use uses caller urv sr;
                     Flx_bsym_table.add bsym_table urv (Some caller)
-                      (Flx_bsym.create ~sr urvid (bbdcl_val (caller_vs,t,`Val)));
+                      (Flx_bsym.create ~sr urvid (bbdcl_val ([],t,`Val)));
 
                     let rxs = hic revariable callee xs in
                     exes' := rev rxs @ !exes';
-                    let ts = List.map
-                      (fun (_,i)-> btyp_type_var (i,btyp_type 0))
-                      caller_vs
-                    in
-                    bexpr_name t (urv,ts)
+                    bexpr_varname t (urv,[])
                 end
                 else
                 begin
@@ -1111,7 +891,7 @@ let rec special_inline syms uses bsym_table caller_vs caller hic excludes sr e =
             *)
             e
           end
-        | _ -> e
+        | _ -> assert false (* e *)
         end
       end else e
 
@@ -1124,7 +904,6 @@ and heavy_inline_calls
   syms
   bsym_table
   uses
-  caller_vs
   caller
   excludes
   exes
@@ -1132,7 +911,7 @@ and heavy_inline_calls
   (*
   print_endline ("HIC: Input excludes = " ^ catmap "," si excludes);
   *)
-  let specialise_check caller callee ts props exes = false
+  let specialise_check caller callee props exes = false
     (*
     (* for the moment, don't specialise recursive calls *)
     ts <> [] &&
@@ -1154,7 +933,6 @@ and heavy_inline_calls
       syms
       bsym_table
       uses
-      caller_vs
       caller
       excludes
       exes
@@ -1165,7 +943,7 @@ and heavy_inline_calls
     (that is, inside out).
   *)
 
-  let sinl sr e = special_inline syms uses bsym_table caller_vs caller hic (caller::excludes) sr e in
+  let sinl sr e = special_inline syms uses bsym_table caller hic (caller::excludes) sr e in
 
   let ee exe = expand_exe syms bsym_table sinl exe in
   let exes' = ref [] in (* reverse order *)
@@ -1201,13 +979,11 @@ and heavy_inline_calls
     *)
     List.iter (fun exe ->
     match exe with
-    | BEXE_call (sr,(BEXPR_closure(callee,ts),clt),argument)
-    (*
+    | BEXE_call (sr,(BEXPR_closure(callee,ts),_),argument)
     | BEXE_call_direct (sr,callee,ts,argument)
-    *)
       when not (mem callee excludes)
       ->
-      let can_inline,callee,ts = virtual_check syms bsym_table sr callee ts in
+      assert (ts=[]);
       heavily_inline_bbdcl syms uses bsym_table (callee::excludes) callee;
       let bsym = Flx_bsym_table.find bsym_table callee in
       (*
@@ -1215,7 +991,8 @@ and heavy_inline_calls
       *)
       begin match Flx_bsym.bbdcl bsym with
       | BBDCL_fun (props,vs,(ps,traint),BTYP_void,exes) ->
-        if can_inline && inline_check syms bsym_table uses sr caller callee props exes then
+        assert (vs = []);
+        if inline_check syms bsym_table uses sr caller callee props exes then
         begin
           if syms.compiler_options.print_flag then
           print_endline ("inlining direct call: " ^ string_of_bexe bsym_table 0 exe);
@@ -1223,9 +1000,7 @@ and heavy_inline_calls
             syms
             uses bsym_table
             caller
-            caller_vs
             callee
-            ts
             argument
             (Flx_bsym.id bsym)
             sr
@@ -1237,17 +1012,17 @@ and heavy_inline_calls
         else
           exes' := exe :: !exes'
 
-      | _ ->  exes' := exe :: !exes'
+      | _ ->  assert false (* exes' := exe :: !exes' *)
       end
 
     | BEXE_call (sr,(BEXPR_apply_stack (callee,ts,a),_),argument)
-    | BEXE_call (sr,(BEXPR_apply_prim (callee,ts,a),_),argument)
-    | BEXE_call (sr,(BEXPR_apply_direct (callee,ts,a),_),argument)
       -> assert false
 
     | BEXE_call (sr,(BEXPR_apply((BEXPR_closure (callee,ts),_),a),_),argument)
+    | BEXE_call (sr,(BEXPR_apply_direct (callee,ts,a),_),argument)
       when not (mem callee excludes)
       ->
+      assert (ts=[]);
       (*
       print_endline "DETECTED CANDIDATE FOR CALL LIFTING ";
       print_endline ("In procedure " ^ si caller ^ " with vs=" ^ string_of_vs caller_vs);
@@ -1256,83 +1031,83 @@ and heavy_inline_calls
       print_endline ("handling call lift: " ^ string_of_bexe bsym_table 0 exe);
       print_endline ("Callee is " ^ si callee ^ " with ts = " ^ catmap "," (sbt bsym_table) ts);
       *)
-      let can_inline,callee,ts = virtual_check syms bsym_table sr callee ts in
       heavily_inline_bbdcl syms uses bsym_table (callee::excludes) callee;
       let bsym = Flx_bsym_table.find bsym_table callee in
       begin match Flx_bsym.bbdcl bsym with
       | BBDCL_fun (props,vs,(ps,traint),ret,exes) ->
-        if can_inline && inline_check syms bsym_table uses sr caller callee props exes then
+        assert (vs=[]);
+        if inline_check syms bsym_table uses sr caller callee props exes then
         begin
           if syms.compiler_options.print_flag then
           print_endline ("Inline call lift: " ^ string_of_bexe bsym_table 0 exe);
           let revariable,xs =
-            call_lifting syms uses bsym_table caller caller_vs callee ts a argument
+            call_lifting syms uses bsym_table caller callee a argument
           in
           let xs = hic revariable callee xs in
           exes' := rev xs @ !exes'
         end else
           exes' := exe :: !exes'
-      | _ -> exes' := exe :: !exes'
+      | _ -> assert false (* exes' := exe :: !exes' *)
       end
 
     | BEXE_init (sr,i,(BEXPR_apply_stack (callee,ts,a),_))
-    | BEXE_init (sr,i,(BEXPR_apply_prim (callee,ts,a),_))
-    | BEXE_init (sr,i,(BEXPR_apply_direct (callee,ts,a),_))
       -> assert false
 
     | BEXE_init (sr,i,(BEXPR_apply ((BEXPR_closure(callee,ts),_),a),_))
+    | BEXE_init (sr,i,(BEXPR_apply_direct (callee,ts,a),_))
       when not (mem callee excludes)  ->
-      let can_inline,callee,ts = virtual_check syms bsym_table sr callee ts in
+      assert (ts=[]);
       heavily_inline_bbdcl syms uses bsym_table (callee::excludes) callee;
       let bsym = Flx_bsym_table.find bsym_table callee in
       begin match Flx_bsym.bbdcl bsym with
       | BBDCL_fun (props,vs,(ps,traint),ret,exes) ->
-        if can_inline && inline_check syms bsym_table uses sr caller callee props exes then
+        if inline_check syms bsym_table uses sr caller callee props exes then
           begin
             let bsymv = Flx_bsym_table.find bsym_table i in
             begin match Flx_bsym.bbdcl bsymv with
             | BBDCL_val (vs,t,`Tmp) ->
+                assert (vs=[]);
                 (* Downgrading temporary *)
                 (* should this be a VAR or a VAL? *)
                 Flx_bsym_table.update_bbdcl
                   bsym_table
                   i
-                  (bbdcl_val (vs,t,`Var))
+                  (bbdcl_val ([],t,`Var))
             | _ -> ()
             end;
             if syms.compiler_options.print_flag then
             print_endline ("Inline init: " ^ string_of_bexe bsym_table 0 exe);
             let revariable,xs =
-              inline_function syms uses bsym_table caller caller_vs callee ts a i
+              inline_function syms uses bsym_table caller callee a i
             in
             let xs = hic revariable callee xs in
             exes' := rev xs @ !exes'
           end
         else
           exes' := exe :: !exes'
-      | _ -> exes' := exe :: !exes'
+      | _ -> assert false (* exes' := exe :: !exes' *)
       end
 
-    | BEXE_fun_return (sr,(BEXPR_apply_direct (callee,ts,a),_))
     | BEXE_fun_return (sr,(BEXPR_apply_stack (callee,ts,a),_))
-    | BEXE_fun_return (sr,(BEXPR_apply_prim (callee,ts,a),_))
      -> assert false
 
     | BEXE_fun_return (sr,(BEXPR_apply((BEXPR_closure(callee,ts),_),a),_))
+    | BEXE_fun_return (sr,(BEXPR_apply_direct (callee,ts,a),_))
       when not (mem callee excludes)  ->
-      let can_inline,callee,ts = virtual_check syms bsym_table sr callee ts in
+      assert (ts=[]);
       heavily_inline_bbdcl syms uses bsym_table (callee::excludes) callee;
       let bsym = Flx_bsym_table.find bsym_table callee in
       begin match Flx_bsym.bbdcl bsym with
       | BBDCL_fun (props,vs,(ps,traint),ret,exes) ->
-        if can_inline && inline_check syms bsym_table uses sr caller callee props exes then
+        assert (vs=[]);
+        if inline_check syms bsym_table uses sr caller callee props exes then
         begin
           if inlining_complete bsym_table callee then
           begin
             if syms.compiler_options.print_flag then
             print_endline ("Inline tail apply : " ^ string_of_bexe bsym_table 0 exe);
             let revariable,xs =
-              inline_tail_apply syms uses bsym_table caller caller_vs callee ts a
+              inline_tail_apply syms uses bsym_table caller callee a
             in
             let xs = hic revariable callee xs in
             exes' := rev xs @ !exes'
@@ -1340,8 +1115,7 @@ and heavy_inline_calls
             exes' := exe :: !exes'
         end else
           exes' := exe :: !exes'
-      | _ ->
-        exes' := exe :: !exes'
+      | _ -> assert false (* exes' := exe :: !exes' *)
       end
     | _ -> exes' := exe :: !exes'
     )
@@ -1393,14 +1167,17 @@ and heavily_inline_bbdcl syms uses bsym_table excludes i =
   match bsym with None -> () | Some bsym ->
   match Flx_bsym.bbdcl bsym with
   | BBDCL_fun (props,vs,(ps,traint),ret,exes) ->
+    assert (vs=[]);
     if not (mem `Inlining_started props) then begin
       let props = `Inlining_started :: props in
-      let bbdcl = bbdcl_fun (props,vs,(ps,traint),ret,exes) in
+      let bbdcl = bbdcl_fun (props,[],(ps,traint),ret,exes) in
       Flx_bsym_table.update_bbdcl bsym_table i bbdcl;
       (* inline into all children first *)
       let children = Flx_bsym_table.find_children bsym_table i in
       BidSet.iter (fun i-> heavily_inline_bbdcl syms uses bsym_table excludes i) children;
+(*
       let exes = check_reductions syms bsym_table exes in (* user reductions *)
+*)
       let xcls = Flx_tailit.exes_get_xclosures syms exes in
       BidSet.iter (fun i-> heavily_inline_bbdcl syms uses bsym_table excludes i) xcls;
 
@@ -1411,14 +1188,14 @@ and heavily_inline_bbdcl syms uses bsym_table excludes i =
       let exes = List.map Flx_bexe.reduce exes in (* term reduction *)
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
       let exes = fold_vars syms bsym_table uses i ps exes in
+(*
       let exes = check_reductions syms bsym_table exes in (* user reductions *)
-
+*)
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
       let exes = heavy_inline_calls
         syms
         bsym_table
         uses
-        vs
         i
         excludes
         exes
@@ -1433,19 +1210,26 @@ and heavily_inline_bbdcl syms uses bsym_table excludes i =
         i
         (Flx_bsym.sr bsym)
         ps
-        vs
         exes
       in
+(*
       let exes = check_reductions syms bsym_table exes in (* user reductions *)
+*)
       let exes = List.map Flx_bexe.reduce exes in (* term reduction *)
+(*
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
+*)
       let exes = fold_vars syms bsym_table uses i ps exes in
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
+(*
       let exes = check_reductions syms bsym_table exes in (* user reductions *)
+*)
       let exes = Flx_cflow.chain_gotos syms exes in
+(*
       let exes = List.map Flx_bexe.reduce exes in
+*)
       let props = `Inlining_complete :: props in
-      let bbdcl = bbdcl_fun (props,vs,(ps,traint),ret,exes) in
+      let bbdcl = bbdcl_fun (props,[],(ps,traint),ret,exes) in
       Flx_bsym_table.update_bbdcl bsym_table i bbdcl;
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
       remove_unused_children syms uses bsym_table i;

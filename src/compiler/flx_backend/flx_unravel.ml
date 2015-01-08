@@ -25,7 +25,7 @@ let unravel syms bsym_table e =
   let e' =
     let rec aux e =
       match e with
-      | BEXPR_apply ((BEXPR_name _,_) as f, b), t ->
+      | BEXPR_apply ((BEXPR_varname _,_) as f, b), t ->
         refer (bexpr_apply t (f, aux b))
 
       (*
@@ -48,7 +48,7 @@ let unravel syms bsym_table e =
       | BEXPR_apply ((BEXPR_aprj _,_) as f,b),t -> bexpr_apply t (f, aux b)
       | BEXPR_apply (f, b), t -> refer (bexpr_apply t (aux f, aux b))
       | BEXPR_tuple ls, t -> (bexpr_tuple t (List.map aux ls))
-      | (BEXPR_name _, t) as x -> x
+      | (BEXPR_varname _, t) as x -> x
       | (BEXPR_literal  _, t) as x -> x
       | x -> refer x
     in

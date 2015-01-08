@@ -992,7 +992,7 @@ let ident x = x
 let expr_term_subst e1 i e2 =
   let rec f_bexpr e =
     match Flx_bexpr.map ~f_bexpr e with
-    | BEXPR_name (j,_),_ when i = j -> e2
+    | BEXPR_varname (j,_),_ when i = j -> e2
     | e -> e
   in
   f_bexpr e1
@@ -1030,7 +1030,7 @@ let rec expr_unification bsym_table counter
          be computed directly from the term.
       *)
       begin match (lhse,rhse) with
-      | (BEXPR_name (i,[]) as ei), (BEXPR_name (j,[]) as ej) ->
+      | (BEXPR_varname (i,[]) as ei), (BEXPR_varname (j,[]) as ej) ->
         (*
         print_endline ("Equated variables " ^ si i ^ " <-> " ^ si j);
         *)
@@ -1042,11 +1042,11 @@ let rec expr_unification bsym_table counter
             s := Some (j,(ei,lhst))
           else raise Not_found
 
-      | BEXPR_name (i,_),x ->
+      | BEXPR_varname (i,_),x ->
         if not (BidSet.mem i edvars) then raise Not_found;
         s := Some (i,(x,rhst))
 
-      | x, BEXPR_name (i,_) ->
+      | x, BEXPR_varname (i,_) ->
         if not (BidSet.mem i edvars) then raise Not_found;
         s := Some (i,(x,lhst))
 

@@ -486,6 +486,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
 
   | EXPR_case_tag (sr, i) -> e
   | EXPR_typed_case (sr, i, t) -> e
+  | EXPR_projection (sr, i, t) -> e
   | EXPR_case_index (sr,e) -> EXPR_case_index (sr,me e)
 
   | EXPR_tuple (sr, es) -> EXPR_tuple (sr, List.map me es)

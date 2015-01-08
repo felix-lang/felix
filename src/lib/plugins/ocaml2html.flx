@@ -63,26 +63,22 @@ fun xlat_ocaml(t:string, dir:string) : bool * string =
   proc w() { 
     //println$ "Token["+str s+"]="+b; 
     match s with 
-    | dq => { ws; }
-    | ccomment=> { write_string('<span class=comment>'+b+"</span>"); }
+    | dq => ws; 
+    | ccomment=> write_string('<span class=comment>'+b+"</span>");
     | id => 
-      { 
         last_id = b;
         if b in big_keywords do write_string('<span class=big_keyword>'+b+"</span>"); 
         elif b in small_keywords do write_string('<span class=small_keyword>'+b+"</span>"); 
         elif b in qualifiers do write_string('<span class=qualifier>'+b+"</span>"); 
         elif isupper b.[0] do write_string('<span class=ctor>'+b+"</span>"); 
         else write_string(b); done
-      }
     | _ =>
-      { 
         last_op=b; 
         if b == "<" do b = "&lt;";
         elif b == ">" do b = "&gt;";
         elif b == "&" do b = "&amp;";
         done;
         write_string(b);  
-      }
     endmatch;
     b = "";  
   }
@@ -114,7 +110,6 @@ thisch:> // same char, reconsider it
   if isnull ch goto fin; // out of data
   match s with 
   | sot =>
-    { 
       if isidstart ch do s = id; goto contin;
       elif isdigit ch do s = num; goto contin;
       elif isdq ch do s = dq; goto contin;
@@ -124,40 +119,31 @@ thisch:> // same char, reconsider it
         done 
       else cp; w; goto nextt;
       done
-    }
 
   | id => 
-    {
       if iscamlidcont ch do goto contin;
       else goto overrun;
       done
-    }
   | num => 
-    {
       if isnumeric ch do goto contin;
       else goto overrun; 
       done
-    } 
   | dq =>
-    {
       if isdq ch do goto lastch;
       elif ch== char "<" do b+="&lt;"; goto nextch;
       elif ch== char ">" do b+="&gt;"; goto nextch;
       elif ch== char "&" do b+="&amp;"; goto nextch;
       else goto contin;
       done
-    }
    // comments
   | ccomment => // doesn't handle nested comments yet
-    {
       if ch == char "*" and ahead(1) == char ")" do 
         cp; 
         goto lastch;
       else goto contin;
       done
-    }
   endmatch
-  ; // execute selected function
+  ; 
   println$ "Unexpected drop thru";
 
 fin:>

@@ -363,6 +363,7 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
 
   | EXPR_case_tag _ -> [],e
   | EXPR_typed_case _ -> [],e
+  | EXPR_projection _ -> [],e
   | EXPR_literal _ -> [],e
 
   | EXPR_expr _ -> [],e

@@ -1,0 +1,91 @@
+@h1 Callbacks
+@h2 The Requirement
+@h3 The C code
+Here's how callbacks work. Suppose in C, we have callback function type:
+@felix
+  header cback_h = 
+  """
+  typedef void cb_t(int x, void *client_data);
+  """;
+@
+It is registered by a function like this:
+@felix
+  body cback_h =
+  """
+  void register_callback(int x, void (*cb)(int, void*), void *client_data)
+  {
+    cb (x, client_data);
+  }
+  """;
+@
+which, for pedagogical purpose will actually call the callback.
+
+@h3 The Felix code
+Now, what we want to do here is use a felix function for the callback:
+@felix
+proc flx_cb(x:int){ println$ "Called back with " + str x; }
+@
+
+@h2 Attempting the solution
+To do this we would like to generate a C function:
+@felix
+  body cback_wrapper = 
+  """
+  void wrap_flx_cb(int x, void *client_data)
+  {
+    // cast client data to Felix function base type
+    flx_cb_t p = (flx_cb_t)client_data;
+
+    // set the caller address and argument 
+    p->call(0,x);
+
+    // run the procedure
+    while(p) p = p->resume();
+  }
+  """ requires cback_h;
+@
+This casts the @{client_data} to a pointer to the C++ class
+type of the Felix function, @{flx_cb_t}, 
+then calls it with the proper arguments.
+
+This technique exploits the fact that Felix functions and
+procedures are C++ classes derived from a virtual public
+abstract base representing their type and in which the apply
+or call method is a pure virtual. Therefore we do not
+need to know the class of the function or procedure
+itself, only the base representing its type. In turn this
+means that the same wrapper function can be used for
+all callbacks of the same type.
+
+The 0 in the call is the "return address" for the procedure.
+
+Now, to register it, something like this:
+@felix
+// bind the registration function
+proc register_callback: int * (int * address --> void) * address
+  requires cback_h;
+
+// bind to our wrapper
+const wrap_flx_cb: int * address --> void
+  requires cback_wrapper;
+
+// do a test call
+register_callback(42, wrap_flx_cb, C_hack::cast[address] flx_cb);
+@
+
+Of course we expect the result
+@expect
+Called back with 42
+@
+
+@h2 The problem 
+Unfortunately there's a bug! We have not specified the C
+function type @{flx_cb_t} of the Felix function type @{int ->void}.
+
+There's a way to do this:
+@felix
+export type (int -> void) as "flx_cb_t";
+@
+
+The type export will go into the C++ header file as a typedef.
+

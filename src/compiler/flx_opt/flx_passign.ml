@@ -102,14 +102,14 @@ Output:
 
 *)
 
-let passign syms bsym_table (pinits:aentry_t list) ts' sr =
+let passign syms bsym_table (pinits:aentry_t list) sr =
   let parameters = ref [] in
   (* strip trivial assignments like x = x *)
   let pinits =
     filter
     (fun (i,(name,t,e,u)) ->
       match e with
-      | BEXPR_name (j,_),_ when i = j -> false
+      | BEXPR_varname (j,_),_ when i = j -> false
       | _ -> true
     )
     pinits
@@ -206,7 +206,7 @@ let passign syms bsym_table (pinits:aentry_t list) ts' sr =
       parameters := (ty,k) :: !parameters;
       tmplist := k :: !tmplist;
       let h' = k,(name2,ty,e,BidSet.empty) in
-      let e' = bexpr_name ty (k,ts') in
+      let e' = bexpr_varname ty (k,[]) in
       let t' = i,(name,ty,e',BidSet.empty) in
       aux3 (h' :: h, ta, t' :: t)
   in

@@ -154,7 +154,7 @@ print_endline ("Final index is " ^ print_index bsym_table ix);
     `Int i
 
 
-  | (BEXPR_name _,_),_ -> 
+  | (BEXPR_varname _,_),_ -> 
     expr idx 
 
   | e, BTYP_unitsum _ -> 

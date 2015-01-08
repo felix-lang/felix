@@ -131,7 +131,7 @@ let fixup_expr' syms bsym_table fi mt (e,t) =
     let i,ts = fi i ts in
     bexpr_ref t (i,ts)
 
-  | BEXPR_name (i',ts') ->
+  | BEXPR_varname (i',ts') ->
     let i,ts = fi i' ts' in
     (*
     print_endline (
@@ -139,7 +139,7 @@ let fixup_expr' syms bsym_table fi mt (e,t) =
       " mapped to " ^ si i ^ "[" ^ catmap "," (sbt bsym_table) ts ^"]"
     );
     *)
-    bexpr_name t (i,ts)
+    bexpr_varname t (i,ts)
 
   | BEXPR_closure (i,ts) ->
     let i,ts = fi i ts in

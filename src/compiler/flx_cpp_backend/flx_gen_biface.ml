@@ -83,8 +83,8 @@ let gen_biface_header syms bsym_table modulename biface =
 
   | BIFACE_export_type (sr, typ, export_name) ->
     "//EXPORT type " ^ sbt bsym_table typ ^ " as " ^ export_name  ^ "\n" ^
-    "typedef " ^ cpp_type_classname syms bsym_table typ ^ " " ^ export_name ^ "_class;\n" ^
-    "typedef " ^ cpp_typename syms bsym_table typ ^ " " ^ export_name ^ ";\n"
+    "typedef ::flxusr::" ^ mname ^ "::" ^ cpp_type_classname syms bsym_table typ ^ " " ^ export_name ^ "_class;\n" ^
+    "typedef ::flxusr::" ^  mname ^ "::" ^ cpp_typename syms bsym_table typ ^ " " ^ export_name ^ ";\n"
 
   | BIFACE_export_struct (sr,idx) ->
     let bsym = Flx_bsym_table.find bsym_table idx in

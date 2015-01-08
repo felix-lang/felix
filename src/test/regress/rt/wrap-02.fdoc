@@ -1,0 +1,15 @@
+
+@felix
+// Primitive function wrapper
+
+println$ "Wrapper for primitive function";
+body fred_def = 'int fred (int x) { return x+1; }';
+fun fred : int -> int = "fred($1)" requires fred_def;
+
+noinline proc exec (f: int -> int, x:int) { println$ f x; }
+
+exec (fred, 42);
+@expect
+Wrapper for primitive function
+43
+@

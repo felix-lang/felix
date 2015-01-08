@@ -141,9 +141,9 @@ let flat_typeclass_fixup_expr syms bsym_table polyinst (e,t) =
     let i,ts = polyinst i ts in
     bexpr_ref t (i,ts)
 
-  | BEXPR_name (i',ts') ->
+  | BEXPR_varname (i',ts') ->
     let i,ts = polyinst i' ts' in
-    bexpr_name t (i,ts)
+    bexpr_varname t (i,ts)
 
   | BEXPR_closure (i,ts) ->
     let i,ts = polyinst i ts in
@@ -221,9 +221,9 @@ let flat_poly_fixup_expr syms bsym_table polyinst (e,t) =
     let i,ts = polyinst i ts in
     bexpr_ref t (i,ts)
 
-  | BEXPR_name (i',ts') ->
+  | BEXPR_varname (i',ts') ->
     let i,ts = polyinst i' ts' in
-    bexpr_name t (i,ts)
+    bexpr_varname t (i,ts)
 
   | BEXPR_closure (i,ts) ->
     let i,ts = polyinst i ts in

@@ -83,7 +83,7 @@ open class Sarray
     var m : word;
     Judy1FreeArray(r*.free,&e,&m);
     //println$ m.ulong.str + " bytes freed --> counted "+n.ulong.str;
-    r*.a = darray x;
+    r.a <- darray x;
   }
 }
 

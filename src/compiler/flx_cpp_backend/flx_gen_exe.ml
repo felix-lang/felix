@@ -243,8 +243,10 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
     begin
     match Flx_bsym.bbdcl bsym with
     | BBDCL_external_fun (_,vs,_,BTYP_fix (0,_),_,_,`Code code) ->
-      assert (is_jump); (* Should be a jump since doesn't return *)
 
+      (* there is no jump_prim so an assertion this should be "is_jump"
+        will fail
+      *)
       if length vs <> length ts then
       clierr sr "[gen_prim_call] Wrong number of type arguments"
       ;
@@ -800,7 +802,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
 
       let rec split e trail = 
         match e with
-        | BEXPR_name _,t
+        | BEXPR_varname _,t
         | BEXPR_deref _,t ->
           let t' = snd e in ge' sr e, t', trail
 
@@ -1047,21 +1049,14 @@ let gen_exes
   stackable
 =
   let needs_switch = ref false in
-  let s = cat ""
-    (List.map (gen_exe
-      filename cxx_name
-      syms
-      bsym_table
-      label_info
-      counter
-      index
-      vs
-      ts
-      instance_no
-      needs_switch
-      stackable)
-    exes)
-  in
-  s,!needs_switch
+  let b = Buffer.create (200 * List.length exes) in 
+  List.iter 
+   (fun exe -> Buffer.add_string b 
+    (gen_exe filename cxx_name syms bsym_table
+    label_info counter index vs
+    ts instance_no needs_switch stackable exe))
+  exes
+  ;
+  Buffer.contents b,!needs_switch
 
 

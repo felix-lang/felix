@@ -135,8 +135,6 @@ proc setup-from-file (debugln: string -> 0)
       var field = v.1;
       var data = strip v.2;
       match field with
-      | "STANDARD_INCLUDE_DIR" => debugln$ "add Felix and C++ include dir "+data; 
-          control.STANDARD_INCLUDE_DIRS <- control*.STANDARD_INCLUDE_DIRS + data;
       | "felix-compiler" => debugln$ "set flxg " + data; control.FLXG <-data;
       | "toolchain" => debugln$ "set toolchain "+data; control.FLX_TOOLCHAIN <- data;
       | "linker-switch" => debugln$ "add linker switch "+data; 
@@ -150,8 +148,8 @@ proc setup-from-file (debugln: string -> 0)
           control.OPTIMISE <- control*.OPTIMISE + data;
       | "cflag" => debugln$ "add C++ cflag "+data; 
           control.EXTRA_CCFLAGS <- control*.EXTRA_CCFLAGS + data;
-      | "include-dir" => debugln$ "add Felix and C++ include dir "+data; 
-          control.STANDARD_INCLUDE_DIRS <- control*.STANDARD_INCLUDE_DIRS + data;
+      | "flx-include-dir" => debugln$ "add Felix include dir "+data; 
+          control.FLX_LIB_DIRS <- control*.FLX_LIB_DIRS + data;
       | "rtl-include-dir" => debugln$ "add Felix and C++ rtl include dir "+data; 
           config.FLX_RTL_DIRS <- config*.FLX_RTL_DIRS + data;
       | "grammar-dir" => debugln$ "set Felix grammar directory "+data; 
@@ -431,7 +429,8 @@ private noinline proc handle_switch
 
   elif prefix(arg,"-I") do
     debugln "Set include directories for both Felix and C/C++";
-    control.STANDARD_INCLUDE_DIRS <- control*.STANDARD_INCLUDE_DIRS + arg;
+    control.FLX_LIB_DIRS<- control*.FLX_LIB_DIRS + arg.[2 to];
+    control.FLX_RTL_DIRS<- control*.FLX_RTL_DIRS + arg.[2 to];
 
   elif arg== "--nofelix" do
     debugln "Do not translate Felix code, just compile generated C++ (used to debug at C++ level)";

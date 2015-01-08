@@ -90,7 +90,7 @@ let gen_make_const_ctor bsym_table e : cexpr_t =
   let v,ut' = 
     match x with 
     | Flx_bexpr.BEXPR_case (v,ut) -> v,ut 
-    | Flx_bexpr.BEXPR_name (i,ts) ->
+    | Flx_bexpr.BEXPR_varname (i,ts) ->
       begin 
         try 
           let bsym = Flx_bsym_table.find bsym_table i in

@@ -1,12 +1,5 @@
 @title Coroutine Basics
 @felix
-proc branch-and-link (target:&LABEL, save:&LABEL)
-{
-   save <- label_address next;
-   goto-indirect *target;
-   next:>
-}
-
 // Coroutine test!
 //
 // We're going to have two procedures which just

@@ -12,7 +12,6 @@ val passign:
   sym_state_t ->
   Flx_bsym_table.t ->
   aentry_t list ->                (* list of assignments to fix *)
-  Flx_btype.t list ->             (* ts to use when creating temporaries *)
   Flx_srcref.t ->                 (* source ref *)
   (Flx_btype.t * bid_t) list *
   Flx_bexe.t list

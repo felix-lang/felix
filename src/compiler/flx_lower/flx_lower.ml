@@ -1,13 +1,11 @@
 type lower_state_t = {
   syms: Flx_mtypes2.sym_state_t;
-  closure_state: Flx_mkcls.closure_state_t;
   use: Flx_call.usage_table_t;
 }
 
 
 let make_lower_state syms = {
   syms=syms;
-  closure_state=Flx_mkcls.make_closure_state syms;
   use=Hashtbl.create 97;
 }
 
@@ -38,12 +36,15 @@ let remove_module_parents bsym_table =
 
 (* Prep the bsym_table for the backend by lowering and simplifying symbols. *)
 let lower_bsym_table state bsym_table root_proc =
+(*
+print_endline "RUNNING OLD LOWER PROCESS";
+*)
   (* We have to remove module parents before we can do code generation. *)
-  remove_module_parents bsym_table;
+  (* remove_module_parents bsym_table; *)
 
   (* Wrap closures. *)
   print_debug state "//Generating primitive wrapper closures";
-  Flx_mkcls.make_closures state.closure_state bsym_table;
+  Flx_mkcls.mark_heap_closures state.syms bsym_table;
 
   (* Mark which functions are using global state. *)
   print_debug state "//Finding which functions use globals";
@@ -54,10 +55,14 @@ let lower_bsym_table state bsym_table root_proc =
   (* Mark all the global functions and values. *)
   Flx_global.set_globals bsym_table;
 
-  (* Instantiate type classes. *)
+  (* Instantiate polymorphic entities . *)
+
+  (* NOTE: with the new setup, everything is monomorphic.
+    However this routine is still required to sequence generated
+    code in dependency order
+  *)
   print_debug state "//instantiating";
 
-  Flx_intpoly.cal_polyvars state.syms bsym_table;
   Flx_inst.instantiate
     state.syms
     bsym_table
@@ -88,11 +93,6 @@ let lower_bsym_table state bsym_table root_proc =
           then props := `Requires_ptf :: `Heap_closure :: !props
         end;
 
-(* This seems like utter crap!
-        (* Make sure the procedure will get a stack frame. *)
-        if not (List.mem `Requires_ptf !props)
-        then props := `Requires_ptf :: !props;
-*)
         (* Update the procedure with the new properties. *)
         Flx_bsym_table.update_bbdcl bsym_table i
           (Flx_bbdcl.bbdcl_fun (

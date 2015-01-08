@@ -29,6 +29,13 @@ open class Control
     finish:>
   }
 
+  proc branch-and-link (target:&LABEL, save:&LABEL)
+  {
+     save <- label_address next;
+     goto-indirect *target;
+     next:>
+  }
+
   //$ throw[ret, exn] throw exception of type exn
   //$ in a context expecting type ret. It can only be
   //$ used in an expecting context such as the argument

@@ -1,0 +1,17 @@
+
+@felix
+// Struct wrapper
+
+println$ "Wrapper for struct ctor";
+struct X { x: int; y:int; };
+
+noinline proc exec (f: int * int -> X , x:int, y:int) { 
+ var z = f (x,y); 
+ println$ "Struct (" + str z.x + "," + str z.y + ")";
+}
+
+exec (X, 42, 100);
+@expect
+Wrapper for struct ctor
+Struct (42,100)
+@

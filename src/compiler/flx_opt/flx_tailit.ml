@@ -70,9 +70,9 @@ let rec check_ahead i n ls res =
   if n = 0 then rev res else match ls with
   | [] -> []
   | h :: t ->  match h with
-  | BEXE_init (_,k, ( BEXPR_apply ((BEXPR_prj (p,_,_),_),(BEXPR_name (j,[]),_)),typ))
+  | BEXE_init (_,k, ( BEXPR_apply ((BEXPR_prj (p,_,_),_),(BEXPR_varname (j,[]),_)),typ))
 
-  | BEXE_assign (_,(BEXPR_name (k,[]),_), ( BEXPR_apply ((BEXPR_prj (p,_,_),_),(BEXPR_name (j,[]),_)),typ))
+  | BEXE_assign (_,(BEXPR_varname (k,[]),_), ( BEXPR_apply ((BEXPR_prj (p,_,_),_),(BEXPR_varname (j,[]),_)),typ))
     when i = j -> check_ahead i (n-1) t ((k,p,typ)::res)
 
   | _ -> []
@@ -86,8 +86,8 @@ let rec drop n ls =
 (* This routine checks the only use of i is to get its n'th projection *)
 exception BadUse
 let rec check_proj_wrap_expr n i e = match e with
-  | BEXPR_name (i',_),_ when i = i' -> raise BadUse
-  | BEXPR_apply ((BEXPR_prj (n',_,_),_), (BEXPR_name (i',_),_)),_
+  | BEXPR_varname (i',_),_ when i = i' -> raise BadUse
+  | BEXPR_apply ((BEXPR_prj (n',_,_),_), (BEXPR_varname (i',_),_)),_
      when i = i' && n = n' ->  ()
 
   | x -> Flx_bexpr.flat_iter ~f_bexpr:(check_proj_wrap_expr n i) x
@@ -122,14 +122,13 @@ let check_proj_wrap_closure syms bsym_table descend usage n i e =
   let u = expr_uses_unrestricted syms descend usage e in
   BidSet.iter (check_proj_wrap_entry syms bsym_table n i) u
 
-let tailit syms bsym_table uses id this sr ps vs exes =
+let tailit syms bsym_table uses id this sr ps exes =
   (*
   print_endline ("======= Tailing " ^ id ^ "<" ^ si this ^ "> exes=====");
   List.iter (fun x -> print_endline (string_of_bexe 0 x)) exes;
   print_endline "======== END BODY ========";
   *)
 
-  let ts' = List.map (fun (_,i) -> btyp_type_var (i,btyp_type 0)) vs in
   let pset = List.fold_left
     (fun s {pindex=i} -> BidSet.add i s)
     BidSet.empty
@@ -223,7 +222,7 @@ let tailit syms bsym_table uses id this sr ps vs exes =
           )
           ps ls
         in
-        let tmps,exes = Flx_passign.passign syms bsym_table pinits ts' sr in
+        let tmps,exes = Flx_passign.passign syms bsym_table pinits sr in
         parameters := tmps @ !parameters;
         let result = ref exes in
         result := bexe_goto (sr,start_label) :: !result;
@@ -243,7 +242,7 @@ let tailit syms bsym_table uses id this sr ps vs exes =
             parameters := (t,pix) :: !parameters;
             pix
         in
-        let p = bexpr_name t (pix,ts') in
+        let p = bexpr_varname t (pix,[]) in
         let n = ref 0 in
         let k = List.length ps in
         let param_decode =
@@ -286,7 +285,7 @@ let tailit syms bsym_table uses id this sr ps vs exes =
       )
       pas
     in
-      let tmps,exes = Flx_passign.passign syms bsym_table asgns ts' sr in
+      let tmps,exes = Flx_passign.passign syms bsym_table asgns sr in
       parameters := tmps @ !parameters;
       if syms.compiler_options.print_flag then begin
         print_endline "CALCULATED ACTUAL PARALLEL ASSIGNMENTS!";
@@ -307,7 +306,7 @@ let tailit syms bsym_table uses id this sr ps vs exes =
       bexe_assign
       (
         sr,
-        (bexpr_get_n t' j (bexpr_name t (i,ts'))),
+        (bexpr_get_n t' j (bexpr_varname t (i,[]))),
         x
       )
     )
@@ -426,11 +425,12 @@ let tailit syms bsym_table uses id this sr ps vs exes =
         cal_par' i t ls h tail 
     in
     match inp with
-    | (BEXE_call_direct (sr,i,ts,a)) as x :: tail  -> assert false
+    | (BEXE_call (sr,(BEXPR_closure(i,ts),_),a)) as x :: tail -> assert false
+    | (BEXE_call_direct (sr,i,ts,a)) as x :: tail  
 
-    | (BEXE_call (sr,(BEXPR_closure(i,ts),_),a)) as x :: tail
-      when (i,ts)=(this,ts') && Flx_cflow.tailable exes [] tail
+      when (i)=(this) && Flx_cflow.tailable exes [] tail
       ->
+      assert (ts=[]);
       if can_loop ()
       then begin
         (*
@@ -446,11 +446,13 @@ let tailit syms bsym_table uses id this sr ps vs exes =
         aux tail (x::res)
       end
 
-    | BEXE_fun_return (sr,(BEXPR_apply_direct(i,ts,a),_)) :: tail -> assert false
+    | BEXE_fun_return (sr,(BEXPR_apply((BEXPR_closure (i,ts),_),a),_)) :: tail -> assert false
 
-    | BEXE_fun_return (sr,(BEXPR_apply((BEXPR_closure (i,ts),_),a),_)) :: tail
-      when (i,ts)=(this,ts')
+    | BEXE_fun_return (sr,(BEXPR_apply_direct(i,ts,a),_)) :: tail 
+
+      when (i)=(this)
       ->
+       assert (ts=[]);
        (*
        print_endline ("--> Tail rec apply " ^ si this);
        *)
@@ -458,8 +460,7 @@ let tailit syms bsym_table uses id this sr ps vs exes =
        let res = cal_tail_call a @ res
        in aux tail res
 
-    | BEXE_fun_return (sr,(BEXPR_apply((BEXPR_closure (i,ts),_),a),_)) as x :: tail
-      ->
+    | BEXE_fun_return (sr,(BEXPR_apply_direct(i,ts,a),_)) as x :: tail -> 
       (*
       print_endline ("--> NONSELF? Tail rec apply " ^ si i);
       print_endline ("This = " ^ si this);
@@ -467,7 +468,7 @@ let tailit syms bsym_table uses id this sr ps vs exes =
       aux tail (x::res)
 
 
-    | (BEXE_call(sr,(BEXPR_closure (i,ts),_),a)) as x :: tail  ->
+    | (BEXE_call_direct (sr,i,ts,a)) as x :: tail  -> 
       (*
       print_endline ("Untailed call " ^ si i ^ "["^catmap "," (sbt bsym_table) ts^"]");
       print_endline ("This = " ^ si this);
@@ -476,6 +477,7 @@ let tailit syms bsym_table uses id this sr ps vs exes =
       List.iter (fun x -> print_endline (string_of_bexe 0 x)) tail;
       print_endline "-- end of tail --";
       *)
+      assert (ts=[]);
       aux tail (x::res)
 
     | [] -> rev res (* forward order *)
@@ -483,7 +485,7 @@ let tailit syms bsym_table uses id this sr ps vs exes =
       ->
         cal_par i t ls h tail
 
-    | (BEXE_assign (sr,(BEXPR_name (i,[]),_),(BEXPR_tuple ls,t)) as h) :: tail
+    | (BEXE_assign (sr,(BEXPR_varname (i,[]),_),(BEXPR_tuple ls,t)) as h) :: tail
       ->
        cal_par i t ls h tail
 
@@ -507,9 +509,9 @@ let tailit syms bsym_table uses id this sr ps vs exes =
         | _ -> assert false
       in
       let rec repl e = match Flx_bexpr.map ~f_bexpr:repl e with
-        | x when me x -> bexpr_name t (i,[])
-        | BEXPR_apply  ((BEXPR_prj (k,_,_),_),(BEXPR_name (j,[]),t)),t' when i = j->
-          bexpr_name t' (pbase+k,[])
+        | x when me x -> bexpr_varname t (i,[])
+        | BEXPR_apply  ((BEXPR_prj (k,_,_),_),(BEXPR_varname (j,[]),t)),t' when i = j->
+          bexpr_varname t' (pbase+k,[])
         | x -> x
       in
       let check = me x in
@@ -552,7 +554,7 @@ let tailit syms bsym_table uses id this sr ps vs exes =
         )
         (nlist n)
         in
-        let tmps,exes = Flx_passign.passign syms bsym_table asgns ts' sr in
+        let tmps,exes = Flx_passign.passign syms bsym_table asgns sr in
         parameters := tmps @ !parameters;
         if syms.compiler_options.print_flag then
         begin
@@ -562,8 +564,8 @@ let tailit syms bsym_table uses id this sr ps vs exes =
             (rev exes)
         end;
         let rec undo_expr e = match Flx_bexpr.map ~f_bexpr:undo_expr e with
-        | BEXPR_name (j,[]),t when i = j  -> x
-        | BEXPR_name (j,[]),t when j >= pbase && j < pbase + n-> bexpr_get_n t (j-pbase) x
+        | BEXPR_varname (j,[]),t when i = j  -> x
+        | BEXPR_varname (j,[]),t when j >= pbase && j < pbase + n-> bexpr_get_n t (j-pbase) x
         | x -> x
         in
         let undo_st st = match st with
@@ -596,7 +598,7 @@ let tailit syms bsym_table uses id this sr ps vs exes =
       List.iter begin fun (paramtype, parameter) ->
         let id = "_trp_" ^ string_of_bid parameter in
         Flx_bsym_table.add bsym_table parameter (Some this)
-          (Flx_bsym.create ~sr id (bbdcl_val (vs, paramtype, `Tmp)))
+          (Flx_bsym.create ~sr id (bbdcl_val ([], paramtype, `Tmp)))
       end !parameters;
 
       (* return with posssible label at start *)

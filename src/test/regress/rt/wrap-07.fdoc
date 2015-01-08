@@ -1,0 +1,19 @@
+
+@felix
+// struct field projection
+println$ "Wrapper for struct projection";
+
+struct X { x : int; };
+noinline proc exec (f: X -> int, x:X) {
+  var z = f x;
+  println$ "Struct field x = " + z;
+}
+
+var z = X (42);
+println$ x of (X) z;
+exec (x of (X),z);
+@expect
+Wrapper for struct projection
+42
+Struct field x = 42
+@
