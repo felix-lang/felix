@@ -1,0 +1,225 @@
+// /home/fletch/project/felix.git/build/release/host/bin/flx --force --echo --test=build/release arith.flx
+//
+//To understand segfaults you do this:
+//  (a) Run flx with --force and --echo
+//        This tells you the name of the C++ file in the cache
+//        Now edit the C++ file with your text editor to put printf()
+//        statements in various places.
+//
+//  (b) Run flx again with --nofelix option
+//        That stops the flxg compiler running so it doesn't clobber
+//        your edits to the C++ file.
+//
+//You can then put Felix prints between the steps, this prints debug
+//stuff to show progress AND it put the prints in the C++ so you can
+//more easily find where you're up to.
+
+//Result of a parse
+union parsed[A, B] = 
+  | Returns of B * list[A] 
+  | Parse_failed
+  ;
+
+//Type of a parser
+typedef parser[A, B] = list[A] -> parsed[A, B];
+
+//Emtpy string parser
+fun empty[A, B] (v:B)(toks:list[A]):parsed[A, B] => 
+  Returns (v, toks)
+  ;
+
+//Given a predicate, produce a parser
+fun token[A, B](test:A->opt[B]):parser[A,B] =>
+  fun (l:list[A]):parsed[A, B] => 
+    match l with
+    | Cons (?t, ?ts) =>
+        match test t with
+        | Some ?r => Returns[A, B] (r, ts)
+        | None => Parse_failed[A, B]
+        endmatch
+    | Empty => Parse_failed[A, B]
+    endmatch
+  ;
+
+//Parser of a specific token
+fun char_[A with Eq[A]] (ch:A):parser[A, A] =>
+  token (
+  fun (tok:A):opt[A] =>
+    match tok with
+      | ?c when (c == ch) => Some ch
+      | _ => None[A]
+    endmatch
+  )
+  ;
+
+//Parser disjunction
+fun orelse[A, B] (p1:parser[A, B], p2:parser[A, B]):parser[A, B] =>
+  fun (toks:list[A]):parsed[A, B] =>
+      match p1 toks with
+        | Parse_failed => p2 toks
+        | ?res => res
+      endmatch
+  ;
+
+//Parser conjunction
+fun andalso[A, B, C] (p1:parser[A, B],p2:parser[A, C]):parser[A, (B * C)] =>
+  fun (toks:list[A]) : parsed[A, (B * C)]=>
+    match p1 toks with
+      | Returns (?r1, ?toks1) =>
+          match p2 toks1 with
+            | Returns (?r2, ?toks2) => Returns ((r1, r2), toks2)
+            | _ => Parse_failed[A, (B * C)]
+          endmatch
+      | _ => Parse_failed[A, (B * C)]
+    endmatch
+  ;
+
+//Transform the result of a parse
+fun gives[A, B, C] (p:parser[A, B], f:B ->C):parser[A, C] =>
+  fun (toks:list[A]):parsed[A, C] =>
+    match p toks with
+      | Returns (?v, ?toks1) => Returns (f v, toks1)
+      | _ => Parse_failed[A, C]
+   endmatch
+  ;
+
+//Infix operators
+syntax infix_c
+{
+  //orelse
+  x[ssetunion_pri] := 
+   x[ssetunion_pri] "|~" x[>ssetunion_pri] =># 
+    '''`(ast_apply ,_sr (,(nos "orelse") (,_1 ,_3)))'''
+  ;
+
+  //andalso
+  x[ssetintersection_pri] := 
+   x[ssetintersection_pri] "&~" x[>ssetintersection_pri] =># 
+    '''`(ast_apply ,_sr (,(nos "andalso") (,_1 ,_3)))'''
+  ;
+
+  //gives
+  x[scomparison_pri]:= 
+   x[>scomparison_pri] ">=~" x[>scomparison_pri] =># 
+    '''`(ast_apply ,_sr (,(nos "gives") (,_1 ,_3)))'''
+  ;
+}
+
+open syntax infix_c;
+
+//Kleene '*'
+fun zero_or_more[A, B] (p:parser[A, B]): parser[A, list[B]] =>
+  fun (toks:list[A]) : parsed[A, list[B]] =>
+    ((p &~ zero_or_more p >=~ 
+     (fun (res:(B * list[B])) : list[B] => Cons (res.0, res.1))
+    ) |~ (empty[A, list[B]] (list[B]()))) toks
+  ;
+
+syntax prefix_c
+{
+  //zero_or_more
+  x[srefr_pri] := "*" x[srefr_pri] =># "(prefix 'zero_or_more)";
+}
+
+open syntax prefix_c;
+
+//Check if a character is a member of one of the provided ranges
+fun char_range (c:char)(l:list[char*char]):bool =>
+  match l with
+    | Empty => false
+    | Cons ((?c1, ?c2), ?tl) =>	
+       (ord c1 <= ord c and ord c <= ord c2) or char_range c tl
+  endmatch
+  ;
+
+//Digit parser
+var digit : parser[char, char] = 
+  token (fun (c:char) : opt[char] => if isdigit c then Some c else None[char])
+  ;
+
+//Parser of a sequence of digit
+var digits : parser[char, list[char]] = 
+  (digit &~ *digit) >=~ 
+    (fun (p:char*list[char]):list[char] => Cons (p.0,p.1))
+  ;
+
+//Tokens
+union token_t  =
+  | T_num of double
+  | T_ident of string
+  | T_lparen | T_rparen
+  | T_plus | T_minus | T_star | T_slash
+  ;
+
+//Arithmetic expressions
+union ast_t =
+  | E_const of double
+  | E_var of string
+  | E_add of ast_t * ast_t
+  | E_sub of ast_t * ast_t
+  | E_mul of ast_t * ast_t
+  | E_div of ast_t * ast_t
+  ;
+
+//Constants
+val num:parser[token_t, ast_t] =
+  token (
+    fun (t:token_t):opt[ast_t] =>
+      match t with
+        | T_num ?n => Some (E_const n)
+        | _ => None[ast_t]
+      endmatch
+  );
+
+//Identifiers
+val ident:parser[token_t, ast_t] =
+  token (
+    fun (t:token_t):opt[ast_t] =>
+      match t with
+        | T_ident s => Some (E_var s)
+	| _ => None[ast_t]
+  );
+
+//Addition, subtraction operators
+val addop:parser[token_t, ast_t -> ast_t -> ast_t] =
+  token (
+    fun (t:token_t):opt[ast_t -> ast_t -> ast_t] =>
+      match t with
+        | T_plus => Some (fun (e1:ast_t)(e2:ast_t):ast_t => E_add (e1, e2))
+        | T_minus => Some (fun (e1:ast_t)(e2:ast_t):ast_t => E_sub (e1, e2))
+        | _ => None[ast_t -> ast_t -> ast_t]
+	endmatch
+  );
+
+//Multiplication, division operators
+val mulop:parser[token_t, ast_t -> ast_t -> ast_t] =
+  token (
+    fun (t:token_t):opt[ast_t -> ast_t -> ast_t] =>
+      match t with
+        | T_star => Some (fun (e1:ast_t)(e2:ast_t):ast_t => E_mul (e1, e2))
+        | T_slash => Some (fun (e1:ast_t)(e2:ast_t):ast_t => E_div (e1, e2))
+        | _ => None[ast_t -> ast_t -> ast_t]
+	endmatch
+  );
+
+//Explode a string into a list of char
+fun explode (s:string):list[char] =
+{
+  val n:size = len s;
+  fun loop (acc:list[char]) (i:size) : list[char] =>
+    if (i == n) then rev acc
+    else loop (Cons (s.[i], acc)) (i + 1)
+  ;
+
+  return loop (list[char]()) 0uz;
+};
+
+var p:parser[char,char] = char_ (char 'a');
+var q:parser[char,char] = char_ (char 'b');
+
+match *p $ explode "aab" with
+ | Returns (?v, ?remains)
+     => println$ "Parse succeeded : v = \"" + str v + "\", remains = " + str remains;
+ | _ => println $ "Parse failed";
+endmatch
+;
