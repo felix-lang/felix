@@ -123,8 +123,8 @@ endoff:>
 
   gen runflx(args:list[string]) : int = 
   {
-    var config = #Config::config;
-    var control = FlxControl::dflt_control(config);
+    var config = #Config::std_config;
+    var control = #FlxControl::dflt_control;
     var loopctl = #FlxControl::init_loopctl;
     return flx_processing(&config, &control, &loopctl, args);
   }
