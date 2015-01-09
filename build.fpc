@@ -1,0 +1,3 @@
+FLX_INSTALL_DIR: build/release
+FLX_LIB_DIRS: build/release/share/lib build/release/host/lib /usr/local/lib/felix/packages/share/lib
+FLX_CONFIG_DIRS: build/release/host/config /usr/local/lib/felix/packages/host/config   

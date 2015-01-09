@@ -1,8 +1,6 @@
 // NOTE: below the string "host" is used to help find files eg flxg.
 // This is a temporary hack to get Felix working after filesystem reorgnisation.
 
-include "std/felix/flx/flx_config";
-
 class FlxCmdOpt
 {
 private proc print_help() {
@@ -123,9 +121,11 @@ proc setup-from-file (debugln: string -> 0)
 {
   debugln$ "Setup file: " + arg;
   var text = load arg;
-  //println$ "Setup text=" + text;
   Config::process_config_text config (text);
-  //print$ "Config[after setupfile "+arg+"] =\n" + str (*config);
+  debugln$ "Config[after setupfile "+arg+"] =\n" + str (*config);
+  control <- FlxControl::dflt_control();
+  if control*.DEBUG_FLX call FlxControl::print_options(*control);
+
   fun / (a:string, b:string) => Filename::join (a,b);
   var re = RE2 ("([-_a-zA-Z0-9]+) *: *(.*)");
   var lines = split (load arg,char "\n");
@@ -149,7 +149,7 @@ proc setup-from-file (debugln: string -> 0)
       | "cflag" => debugln$ "add C++ cflag "+data; 
           control.EXTRA_CCFLAGS <- control*.EXTRA_CCFLAGS + data;
       | "flx-include-dir" => debugln$ "add Felix include dir "+data; 
-          control.FLX_LIB_DIRS <- control*.FLX_LIB_DIRS + data;
+          config.FLX_LIB_DIRS <- config*.FLX_LIB_DIRS + data;
       | "rtl-include-dir" => debugln$ "add Felix and C++ rtl include dir "+data; 
           config.FLX_RTL_DIRS <- config*.FLX_RTL_DIRS + data;
       | "grammar-dir" => debugln$ "set Felix grammar directory "+data; 
@@ -195,15 +195,6 @@ private noinline proc handle_switch
    debugln "Add import";
    control.IMPORTS <- control*.IMPORTS + arg.[9 to];
 
-  elif prefix(arg,"--test=") do
-    begin
-      debugln "Set test directory";
-      var a = arg.[7 to];
-      Config::cascade_FLX_INSTALL_DIR config a;
-      control.FLX_INSTALL_DIR <- a;
-      control.FLX_TARGET_SUBDIR <- "host";
-    end
-
   elif prefix(arg,"--felix=") do
     debugln "Set install details";
     setup-from-file debugln[string] (config, control, arg.[8 to]);
@@ -224,10 +215,17 @@ private noinline proc handle_switch
     debugln "Set target configuration subdirectory";
     control.FLX_TOOLCHAIN<- arg.[12 to];
 
+  elif prefix(arg,"--test=") do
+    var a = arg.[7 to];
+    debugln "Set test directory";
+    Config::cascade_FLX_INSTALL_DIR config a;
+    control.FLX_INSTALL_DIR <- a;
+    control.FLX_TARGET_SUBDIR <- "host";
+
   elif arg=="--test" do
     begin
       debugln "Set test directory";
-      var a = ".";
+      a = ".";
       Config::cascade_FLX_INSTALL_DIR config a;
       control.FLX_INSTALL_DIR <- a;
       control.FLX_TARGET_SUBDIR <- "host";
@@ -356,7 +354,7 @@ private noinline proc handle_switch
     System::exit(0);
 
   elif arg == "--config" do
-    FlxConfig::print_config(*config);
+    println (*config);
     System::exit(0);
 
   elif arg == "--options" do
@@ -429,8 +427,8 @@ private noinline proc handle_switch
 
   elif prefix(arg,"-I") do
     debugln "Set include directories for both Felix and C/C++";
-    control.FLX_LIB_DIRS<- control*.FLX_LIB_DIRS + arg.[2 to];
-    control.FLX_RTL_DIRS<- control*.FLX_RTL_DIRS + arg.[2 to];
+    config.FLX_LIB_DIRS<- config*.FLX_LIB_DIRS + arg.[2 to];
+    config.FLX_RTL_DIRS<- config*.FLX_RTL_DIRS + arg.[2 to];
 
   elif arg== "--nofelix" do
     debugln "Do not translate Felix code, just compile generated C++ (used to debug at C++ level)";

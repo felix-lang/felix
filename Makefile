@@ -70,7 +70,7 @@ dev-build: fbuild gendoc
 
 user-build: fbuild
 	cp ${BUILDROOT}/host/bin/bootflx ${BUILDROOT}/host/bin/flx
-	${BUILDROOT}/host/bin/flx --test=${BUILDROOT} -c -od ${BUILDROOT}/host/lib/rtl src/lib/plugins/flx_plugin
+	${BUILDROOT}/host/bin/flx --felix=build.fpc -c -od ${BUILDROOT}/host/lib/rtl src/lib/plugins/flx_plugin
 
 #
 # Core integrated build
@@ -111,7 +111,7 @@ regress-check: test-dir
 	# RUNNING REGRESSION TESTS
 	#
 	# ============================================================
-	-${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --usage=prototype --expect --nonstop --indir=test/regress/rt --regex='.*\.flx' test
+	-${BUILDROOT}/host/bin/flx --felix=build.fpc --usage=prototype --expect --nonstop --indir=test/regress/rt --regex='.*\.flx' test
 
 tut-check: tut-dir
 	# ============================================================
@@ -119,7 +119,7 @@ tut-check: tut-dir
 	# CHECKING CORRECTNESS OF TUTORIAL EXAMPLES
 	#
 	# ============================================================
-	-${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --usage=prototype --expect --input --nonstop --indir=tut --regex='.*\.flx' tut
+	-${BUILDROOT}/host/bin/flx --felix=build.fpc --usage=prototype --expect --input --nonstop --indir=tut --regex='.*\.flx' tut
 
 tutopt-check: tutopt-dir
 	#
@@ -132,7 +132,7 @@ tutopt-check: tutopt-dir
 	# to use it.
 	# ============================================================
 	#
-	-${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --usage=prototype --expect --input --nonstop --indir=tutopt --regex='.*\.flx' tutopt
+	-${BUILDROOT}/host/bin/flx --felix=build.fpc --usage=prototype --expect --input --nonstop --indir=tutopt --regex='.*\.flx' tutopt
 
 
 test: regress-check tut-check tutopt-check
@@ -148,7 +148,7 @@ install:
 	${BUILDROOT}/host/bin/flx_cp ${BUILDROOT}/share '(.*)' ${INSTALLDIR}'/share/$${1}'
 	${BUILDROOT}/host/bin/flx_cp ${BUILDROOT} '(VERSION)' ${INSTALLDIR}'/$${1}'
 	${BUILDROOT}/host/bin/flx_cp ${BUILDROOT}/host/bin '(flx)' ${EXECPREFIX}'/$${1}'
-	${BUILDROOT}/host/bin/flx_cp src/ '(.*\.(c|cxx|cpp|h|hpp|flx|flxh|fdoc|fpc|ml|mli))' ${INSTALLDIR}'/share/src/$${1}'
+	${BUILDROOT}/host/bin/flx_cp src/ '(.*\.(c|cxx|cpp|h|hpp|flx|flxh|fdoc|fsyn|fpc|ml|mli))' ${INSTALLDIR}'/share/src/$${1}'
 	rm -f ${INSTALLROOT}/felix-latest
 	ln -s felix-${VERSION} ${INSTALLROOT}/felix-latest
 
@@ -174,7 +174,7 @@ install-felix-lang.org:
 ## FIXME: needs to conform to new layout
 make-dist:
 	rm -rf $(DISTDIR)
-	./${BUILDROOT}/host/bin/flx --test=${BUILDROOT} --dist=$(DISTDIR)
+	./${BUILDROOT}/host/bin/flx --felix=build.fpc --dist=$(DISTDIR)
 	./${BUILDROOT}/host/bin/flx_cp ${BUILDROOT}/speed '(.*)' '${DISTDIR}/speed/$${1}'
 	rm -rf $(HOME)/.felix/cache
 	echo 'println ("installed "+ Version::felix_version);' > $(DISTDIR)/install-done.flx
@@ -259,9 +259,9 @@ ocamldoc:
 		src/compiler/flx_misc/*.ml
 
 ${BUILDROOT}/host/bin/scoop: demos/scoop/bin/scoop.flx ${BUILDROOT}/lib/std/felix/pkgtool_base.flx ${BUILDROOT}/lib/std/felix/pkgtool.flx
-	@${BUILDROOT}/host/bin/flx --inline=1 --test=${BUILDROOT} demos/scoop/setup build  --test=${BUILDROOT} --build-dir=demos/scoop 2> /dev/null
-	@${BUILDROOT}/host/bin/flx --inline=1 --test=${BUILDROOT} demos/scoop/setup install  --test=${BUILDROOT} --build-dir=demos/scoop 2> /dev/null
-	@${BUILDROOT}/host/bin/flx --inline=1 --test=${BUILDROOT} demos/scoop/setup clean  --test=${BUILDROOT} --build-dir=demos/scoop 2> /dev/null
+	@${BUILDROOT}/host/bin/flx --inline=1 --felix=build.fpc demos/scoop/setup build  --felix=build.fpc --build-dir=demos/scoop 2> /dev/null
+	@${BUILDROOT}/host/bin/flx --inline=1 --felix=build.fpc demos/scoop/setup install  --felix=build.fpc --build-dir=demos/scoop 2> /dev/null
+	@${BUILDROOT}/host/bin/flx --inline=1 --felix=build.fpc demos/scoop/setup clean  --felix=build.fpc --build-dir=demos/scoop 2> /dev/null
 
 scoop: ${BUILDROOT}/host/bin/scoop
 	@echo "Scoop Package Manager"
@@ -290,7 +290,7 @@ slow-flxg:
 	# =========================================================
 	# building flxg
 	# =========================================================
-	build/release/host/bin/flx --test=build/release src/tools/flx_build_flxg
+	build/release/host/bin/flx --felix=build.fpc src/tools/flx_build_flxg
 	cp tmp-dir/flxg build/release/host/bin
 
 flxg:
@@ -337,7 +337,7 @@ web-plugins:
 	#  - ocaml2html
 	#  - py2html
 	# =========================================================
-	build/release/host/bin/flx --test=build/release  src/tools/flx_build_boot \
+	build/release/host/bin/flx --felix=build.fpc  src/tools/flx_build_boot \
 		--build-web-plugins
 
 flx-web:
@@ -346,7 +346,7 @@ flx-web:
 	# includes the following plugins:
 	#  - dflx_web
 	# =========================================================
-	build/release/host/bin/flx --test=build/release  src/tools/flx_build_boot \
+	build/release/host/bin/flx --felix=build.fpc  src/tools/flx_build_boot \
 		--build-flx-web
 
 toolchain-plugins:
@@ -360,7 +360,7 @@ toolchain-plugins:
 	#  - toolchain_gcc_linux
 	#  - toolchain_gcc_osx
 	# =========================================================
-	build/release/host/bin/flx --test=build/release  src/tools/flx_build_boot \
+	build/release/host/bin/flx --felix=build.fpc  src/tools/flx_build_boot \
 		--build-toolchain-plugins
 
 tools:
@@ -381,14 +381,14 @@ tools:
 	#  - flx_renumber
 	#  - flx_iscr
 	# =========================================================
-	build/release/host/bin/flx --test=build/release  src/tools/flx_build_boot \
+	build/release/host/bin/flx --felix=build.fpc  src/tools/flx_build_boot \
 		--build-tools
 
 flx:
 	# =========================================================
 	# rebuild flx
 	# =========================================================
-	build/release/host/bin/flx --test=build/release  src/tools/flx_build_boot \
+	build/release/host/bin/flx --felix=build.fpc  src/tools/flx_build_boot \
 		--build-flx
 
 build-tools:
@@ -401,7 +401,7 @@ build-tools:
 	#  - flx_build_boot
 	#  - flx_build_flxg
 	# =========================================================
-	build/release/host/bin/flx --test=build/release  src/tools/flx_build_boot \
+	build/release/host/bin/flx --felix=build.fpc  src/tools/flx_build_boot \
 		--build-flx-tools
 
 lib: copy
@@ -478,7 +478,7 @@ rebuild:
 	# [Note: Slow and messy. Requires "flx" be built in build/release]
 	# [Builds build tools from repository using flx]
 	# =========================================================
-	build/release/host/bin/flx --test=build/release  src/tools/flx_build_prep \
+	build/release/host/bin/flx --felix=build.fpc  src/tools/flx_build_prep \
 		--repo=.\
 		--source-dir=build/release \
 		--source-bin=host \
@@ -486,11 +486,11 @@ rebuild:
 		--target-bin=host \
 		--copy-repo \
 		--copy-library
-	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl \
+	build/release/host/bin/flx --felix=build.fpc  src/tools/flx_build_rtl \
 		--target-dir=build/release \
 		--target-bin=host
 	cp build/release/host/bin/flx flx
-	./flx --test=build/release  src/tools/flx_build_boot \
+	./flx --felix=build.fpc  src/tools/flx_build_boot \
 		--build-all
 	rm flx
 
@@ -503,13 +503,13 @@ bootstrap:
 	# [Requires flx already build in build/release]
 	# =========================================================
 	rm -rf tmp-dir trial-tmp build/trial
-	build/release/host/bin/flx --test=build/release --clean
-	build/release/host/bin/flx --test=build/release src/tools/flx_build_flxg
+	build/release/host/bin/flx --felix=build.fpc --clean
+	build/release/host/bin/flx --felix=build.fpc src/tools/flx_build_flxg
 	mkdir build/trial
 	mkdir build/trial/host
 	mkdir build/trial/host/bin
 	cp tmp-dir/flxg build/trial/host/bin
-	build/release/host/bin/flx --test=build/release  src/tools/flx_build_prep \
+	build/release/host/bin/flx --felix=build.fpc  src/tools/flx_build_prep \
 		--repo=.\
 		--target-dir=build/trial \
 		--target-bin=host \
@@ -520,12 +520,12 @@ bootstrap:
 		--copy-config-headers \
 		--copy-version \
 		--copy-library
-	build/release/host/bin/flx --test=build/release  src/tools/flx_build_rtl \
+	build/release/host/bin/flx --felix=build.fpc  src/tools/flx_build_rtl \
 		--target-dir=build/trial \
 		--target-bin=host \
 		--source-dir=build/release \
 		--source-bin=host
-	build/release/host/bin/flx --test=build/release  src/tools/flx_build_boot \
+	build/release/host/bin/flx --felix=build.fpc  src/tools/flx_build_boot \
 		--target-dir=build/trial \
 		--target-bin=host \
 		--build-all
@@ -538,14 +538,14 @@ bootstrap:
 	rm -rf trial-test
 
 sdltest:
-	build/release/host/bin/flx --test=build/release --force -c -od sdlbin demos/sdl/edit_buffer
-	build/release/host/bin/flx --test=build/release --force -c -od sdlbin demos/sdl/edit_display
-	build/release/host/bin/flx --test=build/release --force -c -od sdlbin demos/sdl/edit_controller
-	${LPATH}=sdlbin build/release/host/bin/flx --test=build/release --force -od sdlbin demos/sdl/sdltest
+	build/release/host/bin/flx --felix=build.fpc --force -c -od sdlbin demos/sdl/edit_buffer
+	build/release/host/bin/flx --felix=build.fpc --force -c -od sdlbin demos/sdl/edit_display
+	build/release/host/bin/flx --felix=build.fpc --force -c -od sdlbin demos/sdl/edit_controller
+	${LPATH}=sdlbin build/release/host/bin/flx --felix=build.fpc --force -od sdlbin demos/sdl/sdltest
 
 evtdemo:
 	# compile Felix
-	build/release/host/bin/flx --test=build/release -c --static --nolink \
+	build/release/host/bin/flx --felix=build.fpc -c --static --nolink \
 		-od demos/embed demos/embed/felix_evtdemo.flx
 	# compile C++
 	clang++ -c --std=c++11 -o demos/embed/evtdemo.o \

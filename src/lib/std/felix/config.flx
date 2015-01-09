@@ -17,33 +17,31 @@ class Config {
   );
 
   instance Str[config_type] {
-    fun str (x:config_type) : string => 
-      "(FLX_SHARE_DIR="+ x.FLX_SHARE_DIR+",\n"+
-      "FLX_TARGET_DIR="+ x.FLX_TARGET_DIR+",\n"+
-      "FLX_HOME_DIR="+ x.FLX_HOME_DIR+",\n"+
-      "FLX_PROFILE_DIR="+ x.FLX_PROFILE_DIR+",\n"+
-      "FLX_CACHE_DIR="+ x.FLX_CACHE_DIR+",\n"+
-      "FLX_OUTPUT_DIR="+ x.FLX_OUTPUT_DIR+",\n"
-      "FLX_LIB_DIRS="+ x.FLX_LIB_DIRS.str+",\n"
-      "FLX_CONFIG_DIRS="+ x.FLX_CONFIG_DIRS.str+",\n"+
-      "FLX_RTL_DIRS="+ x.FLX_RTL_DIRS.str+")\n"
-    ;
+    fun str (x:config_type) : string =
+    {
+      var s = "";
+      reserve$ &s,1000;
+      s+="(FLX_SHARE_DIR="+ x.FLX_SHARE_DIR+",\n";
+      s+= "FLX_TARGET_DIR="+ x.FLX_TARGET_DIR+",\n";
+      s+="FLX_HOME_DIR="+ x.FLX_HOME_DIR+",\n";
+      s+="FLX_PROFILE_DIR="+ x.FLX_PROFILE_DIR+",\n";
+      s+="FLX_CACHE_DIR="+ x.FLX_CACHE_DIR+",\n";
+      s+="FLX_OUTPUT_DIR="+ x.FLX_OUTPUT_DIR+",\n";
+      s+="FLX_LIB_DIRS="+ x.FLX_LIB_DIRS.str+",\n";
+      s+="FLX_CONFIG_DIRS="+ x.FLX_CONFIG_DIRS.str+",\n";
+      s+="FLX_RTL_DIRS="+ x.FLX_RTL_DIRS.str+")\n";
+      return s;
+    }
   }
-
-  fun empty_config() :config_type => (
-    FLX_SHARE_DIR="",
-    FLX_TARGET_DIR="",
-    FLX_HOME_DIR="",
-    FLX_PROFILE_DIR="",
-    FLX_CACHE_DIR="",
-    FLX_OUTPUT_DIR="",
-    FLX_CONFIG_DIRS=Empty[string],
-    FLX_LIB_DIRS=Empty[string],
-    FLX_RTL_DIRS=Empty[string]
-  );
 
   private fun / (x:string, y:string) => Filename::join (x,y);
     
+  proc set_libs_and_rtls (x: &config_type)
+  {
+    x.FLX_LIB_DIRS <- list (x*.FLX_SHARE_DIR/"lib", x*.FLX_TARGET_DIR/"lib");
+    x.FLX_RTL_DIRS <- list (x*.FLX_SHARE_DIR/"lib"/"rtl", x*.FLX_TARGET_DIR/"lib"/"rtl");
+  }
+
   proc cascade_FLX_INSTALL_DIR (x: &config_type)  (y: string) = {
     cascade_FLX_TARGET_DIR x (y/"host");
     cascade_FLX_SHARE_DIR x (y/"share");
@@ -52,10 +50,12 @@ class Config {
   proc cascade_FLX_TARGET_DIR (x: &config_type)  (y: string) = {
     x.FLX_TARGET_DIR <- y;
     x.FLX_CONFIG_DIRS <- list[string] (y/"config");
+    set_libs_and_rtls x;
   }
 
   proc cascade_FLX_SHARE_DIR (x: &config_type)  (y: string) = {
     x.FLX_SHARE_DIR <- y;
+    set_libs_and_rtls x;
   }
 
   proc cascade_FLX_HOME_DIR (x: &config_type)  (y: string) = {
@@ -63,6 +63,28 @@ class Config {
     x.FLX_PROFILE_DIR <- y/"config";
     x.FLX_CACHE_DIR <- y/"cache"/"binary";
     x.FLX_OUTPUT_DIR <- y/"cache"/"text";
+  }
+
+  proc copy_profile (cfg: &config_type) (profile: FlxProfile::profile_type)
+  {
+    cfg.FLX_HOME_DIR <- profile.FLX_HOME_DIR;
+    cfg.FLX_PROFILE_DIR <- profile.FLX_PROFILE_DIR;
+    cfg.FLX_CACHE_DIR <- profile.FLX_CACHE_DIR;
+    cfg.FLX_OUTPUT_DIR <- profile.FLX_OUTPUT_DIR;
+  }
+
+  fun dflt_config() :config_type = {
+    var profile = FlxProfile::dflt_profile();
+    var cfg : config_type;
+    copy_profile &cfg profile;
+
+    // global defaults
+    var PREFIX = "/usr"/"local"/"lib";
+
+    var INSTALL_ROOT_TOPDIR= PREFIX/"felix";
+    var INSTALL_ROOT = INSTALL_ROOT_TOPDIR/ ("felix-"+Version::felix_version);
+    cascade_FLX_INSTALL_DIR &cfg INSTALL_ROOT;
+    return cfg;
   }
 
   proc process_config_text (cfg:&config_type) (text:string)
@@ -107,55 +129,49 @@ class Config {
   }
 
 
-  fun config () : config_type = 
+  proc config_env_overrides (cfg:&config_type) 
   {
-    var profile = FlxProfile::dflt_profile();
-    var cfg = empty_config();
 
+    match Env::getenv ("FLX_INSTALL_DIR","") with
+    | "" => ;
+    | ?x => cascade_FLX_INSTALL_DIR cfg x;
+    endmatch;
 
-    // global defaults
-    var PREFIX = Filename::join ("/usr","local","lib");
+    match Env::getenv ("FLX_SHARE_DIR","") with
+    | "" => ;
+    | ?x => cascade_FLX_SHARE_DIR cfg x;
+    endmatch;
 
-    var INSTALL_ROOT_TOPDIR= Filename::join (PREFIX,"felix");
-    var INSTALL_ROOT = Filename::join (INSTALL_ROOT_TOPDIR, "felix-"+Version::felix_version);
-    cascade_FLX_INSTALL_DIR &cfg INSTALL_ROOT;
+    match Env::getenv ("FLX_TARGET_DIR","") with
+    | "" => ;
+    | ?x => cascade_FLX_TARGET_DIR cfg x;
+    endmatch;
 
-    cascade_FLX_SHARE_DIR &cfg (Env::getenv ("FLX_SHARE_DIR",cfg.FLX_SHARE_DIR));
-    cascade_FLX_TARGET_DIR &cfg (INSTALL_ROOT/Env::getenv ("FLX_TARGET_SUBDIR","host"));
+    match Env::getenv ("FLX_CONFIG_DIRS","") with
+    | "" => ;
+    | ?x => cfg.FLX_CONFIG_DIRS <- respectful_split x;
+    endmatch;
 
-    cascade_FLX_TARGET_DIR &cfg (Env::getenv ("FLX_TARGET_DIR",cfg.FLX_TARGET_DIR));
+    match Env::getenv ("FLX_LIB_DIRS","") with
+    | "" => ;
+    | ?x => cfg.FLX_LIB_DIRS <- respectful_split x;
+    endmatch;
 
-    &cfg.FLX_CONFIG_DIRS <- 
-      let ?e = Env::getenv("FLX_CONFIG_DIRS") in
-      if e != "" then respectful_split e else cfg.FLX_CONFIG_DIRS endif; // fpc database
+    match Env::getenv ("FLX_RTL_DIRS","") with
+    | "" => ;
+    | ?x => cfg.FLX_RTL_DIRS <- respectful_split x;
+    endmatch;
+  }
 
-    &cfg.FLX_RTL_DIRS <- 
-      let ?e = Env::getenv("FLX_RTL_DIRS") in
-      if e != "" then respectful_split e else cfg.FLX_RTL_DIRS endif; // C++ RTL
+  proc process_config_text_with_env_overrides (cfg:&config_type) (text:string)
+  {
+    process_config_text cfg text;
+    config_env_overrides cfg;
+  }
 
-    &cfg.FLX_LIB_DIRS <- 
-      let ?e = Env::getenv("FLX_LIB_DIRS") in
-      if e != "" then respectful_split e else cfg.FLX_LIB_DIRS endif; // Felix lib 
-
-
-    // profile function should have set this up right
-    &cfg.FLX_HOME_DIR <- profile.FLX_HOME_DIR;
-    &cfg.FLX_PROFILE_DIR <- profile.FLX_PROFILE_DIR;
-    &cfg.FLX_CACHE_DIR <- profile.FLX_CACHE_DIR;
-    &cfg.FLX_OUTPUT_DIR <- profile.FLX_OUTPUT_DIR;
-
-    // handle modification in $HOME/.felix/config/felix.fpc
-    var control_file = cfg.FLX_PROFILE_DIR / "felix.fpc";
-    var text = load control_file;
-    if text == "" do
-      println$ "config::WARNING: No $HOME/.felix/config/felix.fpc file!";
-    else
-      process_config_text &cfg text;
-    done
-
-    // final result can still be overriden by command line switch
-    //println$ "[config] FLX_SHARE_DIR='" + FLX_SHARE_DIR+"'";
-    //println$ "[config] FLX_TARGET_DIR='" + FLX_TARGET_DIR+"'";
+  fun std_config () = {
+    var cfg = #dflt_config; 
+    process_config_text_with_env_overrides &cfg (load (cfg.FLX_PROFILE_DIR / "felix.fpc"));
     return cfg; 
   }
 

@@ -41,7 +41,7 @@ fun get_fs_path (config:server_config,request:http_request) =>
         else
           None[string]
         endif)) (list(config.document_root,
-          Filename::join(Filename::join(Filename::join(#Config::config.FLX_SHARE_DIR,"lib"),"web"),"html")))
+          Filename::join(Filename::join(Filename::join(#Config::std_config.FLX_SHARE_DIR,"lib"),"web"),"html")))
       | _ => None[string]
     endmatch;
 

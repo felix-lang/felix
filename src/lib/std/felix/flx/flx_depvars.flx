@@ -7,8 +7,6 @@ typedef dvars_type = (
     cpp_filebase:string,
     args: list[string],
     use_ext:string,
-    FLX_RTL_DIRS: list[string],
-    FLX_LIB_DIRS: list[string],
     FLX_STD_LIBS: list[string],
     GRAMMAR_DIR: string,
     STDGRAMMAR: string,
@@ -181,24 +179,6 @@ gen cal_depvars(
   val args = control*.USER_ARGS;
   debugln$ "Target program args = "+args.str;
 
-  var FLX_RTL_DIRS= 
-    match control*.FLX_RTL_DIRS with 
-    | Empty => list (
-      (Filename::join(config.FLX_SHARE_DIR,"lib","rtl")), // NOTE: this is WRONG
-      (Filename::join (config.FLX_TARGET_DIR,"lib","rtl")))
-    | _ => control*.FLX_RTL_DIRS
-    endmatch
-  ;
-  debugln$ "C++ Include directory for Felix RTL " + str FLX_RTL_DIRS;
-
-  var FLX_LIB_DIRS = 
-    match control*.FLX_LIB_DIRS with
-    | Empty => list (config.FLX_TARGET_DIR/"lib", config.FLX_SHARE_DIR/"lib")
-    | ?x => control*.FLX_LIB_DIRS
-    endmatch
-  ;
-  debugln$ "Felix Include directores for Felix Library " + str FLX_LIB_DIRS;
-
   if control*.NOSTDLIB == 1 do
     var FLX_STD_LIBS=Empty[string];
   else
@@ -241,8 +221,6 @@ gen cal_depvars(
     var cpp_filebase=cpp_filebase;
     var args = args;
     var use_ext = use_ext;
-    var FLX_RTL_DIRS=FLX_RTL_DIRS;
-    var FLX_LIB_DIRS=FLX_LIB_DIRS;
     var FLX_STD_LIBS=FLX_STD_LIBS;
     var AUTOMATON=AUTOMATON;
     var GRAMMAR_DIR=GRAMMAR_DIR;

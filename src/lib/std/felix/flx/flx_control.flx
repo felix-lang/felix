@@ -22,8 +22,6 @@ proc print_options(control:control_type) {
     println$ "LINKIT             = "+str control.LINKIT;
     println$ "RUNONLY            = "+str control.RUNONLY;
     println$ "CXXONLY            = "+str control.CXXONLY;
-    println$ "FLX_LIB_DIRS       = "+str control.FLX_LIB_DIRS;
-    println$ "FLX_RTL_DIRS       = "+str control.FLX_RTL_DIRS;
     println$ "FELIX              = "+str control.FELIX;
     println$ "LINKER_SWITCHES    = "+str control.LINKER_SWITCHES;
     println$ "LINKER_OUTPUT_FILENAME = "+str control.LINKER_OUTPUT_FILENAME;
@@ -48,7 +46,7 @@ fun init_loopctl () => struct {
 };
 typedef loopctl_type = typeof (#init_loopctl);
 
-fun dflt_control (config:Config::config_type) =>
+fun dflt_control () =>
   struct {
 
     var FLX_INSTALL_DIR= ""; // now a temporary!
@@ -91,8 +89,6 @@ fun dflt_control (config:Config::config_type) =>
     var MACROS=Empty[string];
     var cpps=Empty[string];
     var cppos=Empty[string];
-    var FLX_LIB_DIRS=config.FLX_LIB_DIRS;
-    var FLX_RTL_DIRS=config.FLX_RTL_DIRS;
     var STANDARD_INCLUDE_FILES=Empty[string];
     var EXTRA_INCLUDE_DIRS=Empty[string];
     var EXTRA_INCLUDE_FILES=Empty[string];
@@ -137,6 +133,6 @@ fun dflt_control (config:Config::config_type) =>
   }
 ;
 
-typedef control_type = typeof (dflt_control(#Config::config));
+typedef control_type = typeof (#dflt_control);
 }
  

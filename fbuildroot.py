@@ -480,7 +480,7 @@ def build(ctx):
 
     # copy files into the library
     buildsystem.copy_dir_to(ctx, ctx.buildroot/'share', 'src/lib',
-        pattern='*.{flx,flxh,fdoc,files,html,sql,css,js,py,png}')
+        pattern='*.{flx,flxh,fsyn,fdoc,files,html,sql,css,js,py,png}')
     
     for module in ( 'flx_stdlib',):
         call('buildsystem.' + module + '.build_flx', phases.target)

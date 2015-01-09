@@ -48,7 +48,7 @@ class SimpleConfig {
   
   fun read_config_text(config_text:string):configuration ={
     print$ "[Config Data]\n" + config_text+"[End Config Data]\n";
-    var config = Cons(('INSTALL_ROOT',#Config::config.FLX_SHARE_DIR.[to -6]),
+    var config = Cons(('INSTALL_ROOT',#Config::std_config.FLX_SHARE_DIR.[to -6]),
                       Empty[string^2]);
     iter (proc (line:string) {config = config + parse(line);})  
              (split(str(config_text),"\n"));

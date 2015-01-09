@@ -33,5 +33,13 @@ class FlxProfile
   }
 
   typedef profile_type = typeof (#dflt_profile);
+  instance Str[profile_type] {
+    fun str(x:profile_type) => 
+       "FLX_HOME_DIR="+x.FLX_HOME_DIR+"\n"+
+       "FLX_PROFILE_DIR="+x.FLX_PROFILE_DIR+"\n"+
+       "FLX_CACHE_DIR="+x.FLX_CACHE_DIR+"\n"+
+       "FLX_OUTPUT_DIR="+x.FLX_OUTPUT_DIR+"\n"
+    ;
+  }
 }
 
