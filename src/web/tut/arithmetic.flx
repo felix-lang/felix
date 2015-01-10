@@ -1,4 +1,4 @@
-// /home/fletch/project/felix.git/build/release/host/bin/flx --force --echo --test=build/release arith.flx
+// /home/fletch/project/felix.git/build/release/host/bin/flx --force --echo --test=build/release src/web/tut/arithmetic.flx
 //
 //To understand segfaults you do this:
 //  (a) Run flx with --force and --echo
