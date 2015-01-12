@@ -45,6 +45,7 @@ private proc print_help() {
   println "--inline=999         : set inline cap to 999 'instructions'"; 
   println "--echo               : print shell commands before running them";
   println "--time               : print target program run time after it finishes";
+  println "--compile-time       : print time for compiler phases";
   println "--nostdlib           : don't load the standard library";
   println "--nooptimise         : disable C++ compiler optimisation";
   println "--noreduce           : disable reductions (default for compilation speed)";

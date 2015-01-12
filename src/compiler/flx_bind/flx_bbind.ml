@@ -502,40 +502,6 @@ print_endline ("Parent " ^ str_parent sym_parent ^ " mapped to true parent " ^ s
           "functor parent")
     end
 
-  | SYMDEF_match_check (pat,(mvname,mvindex)) ->
-    let t = type_of_index mvindex in
-    let name_map = Hashtbl.create 97 in
-    let exes =
-      [
-      sym.Flx_sym.sr, EXE_fun_return (
-        gen_match_check pat (EXPR_index (sym.Flx_sym.sr,mvname,mvindex)))
-      ]
-    in
-    let brt,bbexes = bexes exes flx_bbool symbol_index [] in
-
-    if brt <> flx_bbool then
-      failwith ("expected boolean return from match checker " ^ sym.Flx_sym.id ^
-        " in\n" ^ Flx_srcref.short_string_of_src sym.Flx_sym.sr);
-
-    (* Cache the type of the match. *)
-    if not (Hashtbl.mem state.ticache symbol_index) then begin
-      let t = fold bsym_table 
-        state.counter
-        (btyp_function (btyp_tuple [], flx_bbool))
-      in
-      Hashtbl.add state.ticache symbol_index t
-    end;
-
-    if state.print_flag then
-      print_endline ("//bound match check " ^ sym.Flx_sym.id ^ "<" ^
-        string_of_bid symbol_index ^
-        ">" ^ print_bvs bvs ^ ":" ^ sbt bsym_table
-        (btyp_function (btyp_tuple [], flx_bbool)));
-
-    add_bsym true_parent (bbdcl_fun
-      ([`GeneratedInline; `Generated "bbind: match check"], bvs, ([], None),
-      flx_bbool, bbexes))
-
   | SYMDEF_const_ctor (uidx,ut,ctor_idx,vs') ->
     (*
     print_endline ("Binding const ctor " ^ sym.Flx_sym.id);

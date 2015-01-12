@@ -1670,9 +1670,6 @@ and string_of_symdef entry name vs =
     ) ^
     ";"
 
-  | SYMDEF_match_check (pat,(mvname,i))->
-    "match_check " ^ string_of_id name ^ " for " ^ string_of_pattern pat ^ ";"
-
   | SYMDEF_module exes ->
     "module " ^ string_of_id name ^ "{"^catmap ";" (string_of_sexe 2) exes ^"};"
 
@@ -2126,12 +2123,6 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     "("^ (string_of_parameters ps)^"): "^(st res)^"\n" ^
     string_of_asm_compound level ss
 
-
-  | DCL_match_check (pat,(s,i)) ->
-    sl ^
-    "function " ^ string_of_id name ^ seq ^ "() { " ^
-    s ^ "<" ^ string_of_bid i ^ "> matches " ^ string_of_pattern pat ^
-    " }"
 
   | DCL_match_handler (pat,(varname, i), sts) ->
     sl ^

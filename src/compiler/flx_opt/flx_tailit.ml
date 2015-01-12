@@ -123,11 +123,13 @@ let check_proj_wrap_closure syms bsym_table descend usage n i e =
   BidSet.iter (check_proj_wrap_entry syms bsym_table n i) u
 
 let tailit syms bsym_table uses id this sr ps exes =
-  (*
-  print_endline ("======= Tailing " ^ id ^ "<" ^ si this ^ "> exes=====");
-  List.iter (fun x -> print_endline (string_of_bexe 0 x)) exes;
-  print_endline "======== END BODY ========";
-  *)
+  if syms.compiler_options.print_flag then begin
+    print_endline ("======= Tailing " ^ id ^ "<" ^ si this ^ "> exes=====");
+    List.iter (fun x -> print_endline (string_of_bexe bsym_table 0 x)) exes;
+    print_endline "======== END BODY ========";
+  end
+  ;
+
 
   let pset = List.fold_left
     (fun s {pindex=i} -> BidSet.add i s)
@@ -228,7 +230,7 @@ let tailit syms bsym_table uses id this sr ps exes =
         result := bexe_goto (sr,start_label) :: !result;
         (*
           print_endline "Tail opt code is:";
-          List.iter (fun x -> print_endline (string_of_bexe 0 x) ) (rev !result);
+          List.iter (fun x -> print_endline (string_of_bexe bsym_table 0 x) ) (rev !result);
         *)
         !result
 
@@ -607,8 +609,10 @@ let tailit syms bsym_table uses id this sr ps exes =
         then bexe_label (sr,start_label) :: exes
         else exes
       in
-        (*
+      if syms.compiler_options.print_flag then begin
         print_endline ("Tailed exes = ");
-        List.iter (fun exe -> print_endline (string_of_bexe 0 exe)) exes;
-        *)
-        exes
+        List.iter (fun exe -> print_endline (string_of_bexe bsym_table 0 exe)) exes;
+      end
+      ;
+      exes
+

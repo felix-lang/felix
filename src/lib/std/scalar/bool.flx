@@ -3,6 +3,11 @@
 //$ Literals true and false defined in grammer/expressions.flxh.
 open class Bool
 {
+  //$ Short cut and via closure
+  fun andthen (x: bool, y:1->bool) : bool => 
+    if x then #y else false
+  ;
+ 
   //$ Disjunction: logical and.
   fun land: bool * bool -> bool = "$1&&$2";      // x and y
 

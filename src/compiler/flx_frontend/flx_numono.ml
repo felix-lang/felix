@@ -747,14 +747,16 @@ let monomorphise2 debug syms bsym_table =
   Hashtbl.clear syms.virtual_to_instances;
   syms.axioms := [];
   syms.reductions := [];
-(*
+  if syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then 
+  begin
     print_endline "";
     print_endline "---------------------------";
     print_endline "POST NUMONO";
     print_endline "---------------------------";
     print_endline "";
 
-    Flx_print.print_bsym_table nutab;
-*)
+    Flx_print.print_bsym_table nutab
+  end;
+
   nutab
 

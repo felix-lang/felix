@@ -544,22 +544,6 @@ and build_table_for_dcl
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
 
-  | DCL_match_check (pat,(mvname,match_var_index)) ->
-      assert (List.length (fst ivs) = 0);
-
-      (* Add the symbol to sym_table. *)
-      add_symbol ~pubtab ~privtab symbol_index id
-        (SYMDEF_match_check (pat, (mvname, match_var_index)));
-
-      (* Possibly add the function to the public symbol table. *)
-      if access = `Public then add_function pub_name_map id symbol_index;
-
-      (* Add the function to the private symbol table. *)
-      add_function priv_name_map id symbol_index;
-
-      (* Add the type variables to the private symbol table. *)
-      add_tvars privtab
-
   | DCL_match_handler (pat,(mvname,match_var_index),asms) ->
       assert (List.length (fst ivs) = 0);
       let vars = Hashtbl.create 97 in

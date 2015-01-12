@@ -211,6 +211,10 @@ let rec get_pattern_vars
 
   | _ -> ()
 
+let closure sr e =
+  let ret = STMT_fun_return (sr,e) in 
+  EXPR_lambda (sr, (`Function, dfltvs, [[],None], flx_bool, [ret]))
+ 
 let rec gen_match_check pat (arg:expr_t) =
   let apl sr f x =
     EXPR_apply
@@ -320,7 +324,7 @@ let rec gen_match_check pat (arg:expr_t) =
   | PAT_when (sr,pat,expr) ->
     let vars =  Hashtbl.create 97 in
     get_pattern_vars vars pat [];
-    apl2 sr "land" (gen_match_check pat arg) (subst vars expr arg)
+    apl2 sr "andthen" (gen_match_check pat arg) (closure sr (subst vars expr arg))
 
   | PAT_tuple_cons (sr, p1, p2) -> 
     (* Not clear how to check p2 matches the rest of the argument,

@@ -176,9 +176,6 @@ let get_data table index =
  *)
 
 let sig_of_symdef symdef sr name i = match symdef with
-  | SYMDEF_match_check (_)
-    -> TYP_tuple[],TYP_sum [TYP_tuple[];TYP_tuple[]],None (* bool *)
-
   (* primitives *)
   | SYMDEF_fun (_,ps,r,_,_,_)
     -> type_of_list ps,r,None

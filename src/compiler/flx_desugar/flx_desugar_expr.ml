@@ -268,7 +268,6 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
 
   | EXPR_patvar _
   | EXPR_patany _
-  | EXPR_match_ctor _
   | EXPR_match_case _
   | EXPR_case_arg _
   | EXPR_void _
@@ -285,6 +284,9 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
     ->
     clierr sr ("[rex] Unexpected " ^ string_of_expr e)
 
+  | EXPR_match_ctor (sr,(name,arg)) ->
+    let l1,x1 = rex arg in
+    l1, EXPR_match_ctor (sr,(name,x1))
 
   (* This term works like: EXPR_ctor_arg (sr, (Some, Some 1)) -> 1, that is,
    * it returns the argument of the given constructor in the expression,

@@ -71,7 +71,6 @@ type dcl_t =
   | DCL_struct of        (Flx_id.t * typecode_t) list
   | DCL_cstruct of       (Flx_id.t * typecode_t) list * named_req_expr_t
   | DCL_typeclass of     asm_t list
-  | DCL_match_check of   pattern_t * (string * bid_t)
   | DCL_match_handler of pattern_t * (string * bid_t) * asm_t list
 
   (* variables *)
@@ -125,7 +124,6 @@ type symbol_definition_t =
   | SYMDEF_lemma of params_t * axiom_method_t
   | SYMDEF_reduce of parameter_t list * expr_t * expr_t
   | SYMDEF_function of params_t * typecode_t * property_t list * sexe_t list
-  | SYMDEF_match_check of pattern_t * (string * bid_t)
   | SYMDEF_root of sexe_t list
   | SYMDEF_module of sexe_t list
   | SYMDEF_const_ctor of bid_t * typecode_t * int * ivs_list_t

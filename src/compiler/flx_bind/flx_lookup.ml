@@ -1841,8 +1841,6 @@ print_endline ("** END **** Calculating Function type for function " ^ sym.Flx_s
   | SYMDEF_nonconst_ctor (_,ut,_,_,argt) ->
       bt sym.Flx_sym.sr (TYP_function (argt,ut))
 
-  | SYMDEF_match_check _ -> btyp_function (btyp_tuple [], flx_bbool)
-
   | SYMDEF_fun (_,pts,rt,_,_,_) ->
       bt sym.Flx_sym.sr (TYP_function (type_of_list pts,rt))
 
@@ -2413,7 +2411,6 @@ print_endline ("lookup_qn_with_sig' [AST_name] " ^ name ^ ", sigs=" ^ catmap ","
     match entry with
     | SYMDEF_fun _
     | SYMDEF_function _
-    | SYMDEF_match_check _
       ->
       let vs = find_vs state.sym_table bsym_table index in
       let ts = List.map
@@ -2619,7 +2616,6 @@ print_endline ("Lookup type qn with sig, name = " ^ string_of_qualified_name qn)
     match entry with
     | SYMDEF_fun _
     | SYMDEF_function _
-    | SYMDEF_match_check _
       ->
       let vs = find_vs state.sym_table bsym_table index in
       let ts = List.map
@@ -2982,7 +2978,6 @@ and lookup_type_name_with_sig
 and handle_type state bsym_table rs sra srn name ts index =
   let sym = get_data state.sym_table index in
   match sym.Flx_sym.symdef with
-  | SYMDEF_match_check _
   | SYMDEF_function _
   | SYMDEF_fun _
   | SYMDEF_struct _
@@ -3007,7 +3002,6 @@ print_endline ("Handle type " ^ name ^ " ... bound type is " ^ sbt bsym_table t)
 and handle_function state bsym_table rs sra srn name ts index =
   let sym = get_data state.sym_table index in
   match sym.Flx_sym.symdef with
-  | SYMDEF_match_check _
   | SYMDEF_function _
   | SYMDEF_fun _
   | SYMDEF_struct _
@@ -3429,7 +3423,6 @@ and lookup_type_name_in_table_dirs_with_sig
     | SYMDEF_insert _
     | SYMDEF_instance _
     | SYMDEF_lazy _
-    | SYMDEF_match_check _
     | SYMDEF_module _
     | SYMDEF_root _
     | SYMDEF_reduce _
@@ -4088,7 +4081,6 @@ print_endline ("LOOKUP 6: varname " ^ si index);
           | { Flx_sym.symdef=SYMDEF_struct _ }
           | { Flx_sym.symdef=SYMDEF_cstruct _ }
           | { Flx_sym.symdef=SYMDEF_nonconst_ctor _ }
-          | { Flx_sym.symdef=SYMDEF_match_check _ }
             ->
             (*
             print_endline ("Indexed name: Binding " ^ name ^ "<"^si index^">"^ " to closure");
@@ -4188,7 +4180,6 @@ print_endline ("LOOKUP 7: varname " ^ si index);
     | { Flx_sym.symdef=SYMDEF_struct _ }
     | { Flx_sym.symdef=SYMDEF_cstruct _ }
     | { Flx_sym.symdef=SYMDEF_nonconst_ctor _ }
-    | { Flx_sym.symdef=SYMDEF_match_check _ }
       ->
       (*
       print_endline ("Indexed name: Binding " ^ name ^ "<"^si index^">"^ " to closure");

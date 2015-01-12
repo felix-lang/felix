@@ -7,7 +7,16 @@ open Flx_util
  
 let generated = Flx_srcref.make_dummy "[flx_match] generated"
 
+let make_match_check sr rex pat match_var_name match_var_index =
+  let params = [], None in
+  let match_expr = Flx_mbind.gen_match_check pat (EXPR_index (sr,match_var_name, match_var_index)) in
+  let stmts, e = rex match_expr in
+  let asms = stmts @ [Exe (sr,EXE_fun_return e)] in
+  DCL_function (params, Flx_typing.flx_bool,[`Generated "Flx_match.make_match_check"],asms)
+
 let gen_match rex seq name sr e pss =
+(* print_endline ("Generating expr match " ^ name ^ ", expr=" ^ string_of_expr e); *)
+
     if List.length pss = 0 then clierr sr "Empty Pattern";
 
     (* step 1: evaluate e *)
@@ -83,7 +92,7 @@ let gen_match rex seq name sr e pss =
         matches := !matches @
         [
           Dcl (patsrc,match_checker_id,Some mc_idx,`Private,dfltvs,
-          DCL_match_check (pat,(match_var_name,match_var_index)));
+          make_match_check sr rex pat match_var_name match_var_index);
           Dcl
           (
             expr_src,
@@ -219,15 +228,18 @@ let gen_match rex seq name sr e pss =
     )
 
 let gen_stmt_match seq rex rsts name parent_vs access sr e pss =
+(*
+print_endline ("Generating stmt match " ^ name ^ ", expr=" ^ string_of_expr e);
+*)
     if List.length pss = 0 then clierr sr "Empty Pattern";
 
     (* step 1: evaluate e *)
     let d,x = rex e in
-    let match_index : bid_t = seq () in
+    let match_var_index : bid_t = seq () in
 
-    let match_var_name = name^ "_mv_" ^ string_of_bid match_index in
-    let match_id = name^ "_mf_" ^ string_of_bid match_index in
-    let end_match_label = "_em" ^ string_of_bid match_index in
+    let match_var_name = name^ "_mv_" ^ string_of_bid match_var_index in
+    let match_id = name^ "_mf_" ^ string_of_bid match_var_index in
+    let end_match_label = "_em" ^ string_of_bid match_var_index in
 
     let expr_src = src_of_expr e in
 
@@ -239,11 +251,11 @@ let gen_stmt_match seq rex rsts name parent_vs access sr e pss =
         Dcl (
           expr_src,
           match_var_name,
-          Some match_index,
+          Some match_var_index,
           `Private,
           dfltvs,
           DCL_value (TYP_typeof x, `Val));
-        Exe (expr_src,EXE_iinit ((match_var_name,match_index),x))
+        Exe (expr_src,EXE_iinit ((match_var_name,match_var_index),x))
       ]
     in
     let pats,_ = List.split pss in
@@ -273,7 +285,7 @@ List.iter (fun s -> print_endline (string_of_statement 2 s)) sts;
           print_endline "VARIABLES ARE";
           Hashtbl.iter (fun vname (sr,extractor) ->
             let component =
-              Flx_mbind.gen_extractor extractor (EXPR_index (sr,match_var_name,match_index))
+              Flx_mbind.gen_extractor extractor (EXPR_index (sr,match_var_name,match_var_index))
             in
             print_endline ("  " ^ vname ^ " := " ^ string_of_expr component);
           ) vars;
@@ -283,7 +295,7 @@ List.iter (fun s -> print_endline (string_of_statement 2 s)) sts;
           (fun vname (sr,extractor) ->
             let component =
               Flx_mbind.gen_extractor extractor
-              (EXPR_index (sr,match_var_name,match_index))
+              (EXPR_index (sr,match_var_name,match_var_index))
             in
             let dcl = STMT_val_decl (sr,vname,dfltvs,None,Some component) in
             new_sts := dcl :: !new_sts;
@@ -321,7 +333,7 @@ List.iter (fun s -> print_endline (string_of_statement 2 s)) sts;
       matches := !matches @
         [
           Dcl (patsrc,match_checker_id,Some n1,`Private,dfltvs,
-          DCL_match_check (pat,(match_var_name,match_index)));
+          make_match_check sr rex pat match_var_name match_var_index)
         ]
         @
         [

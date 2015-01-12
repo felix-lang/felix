@@ -157,11 +157,12 @@ let mkproc_gen syms bsym_table =
     | BBDCL_fun (props,vs,(ps,traint),ret,exes) ->
         let k = fresh_bid syms.counter in
         Hashtbl.add mkproc_map i (k,0);
+        (*
         if syms.compiler_options.print_flag then
         print_endline ("Detected function to make into a proc? " ^
           Flx_bsym.id bsym ^ "<" ^ string_of_bid i ^ "> synth= " ^
           string_of_bid k)
-
+        *)
     | _ -> ()
   end bsym_table;
 
@@ -174,11 +175,13 @@ let mkproc_gen syms bsym_table =
     | _ -> ()
   end bsym_table;
 
+  (*
   if syms.compiler_options.print_flag then
   Hashtbl.iter begin fun i (k,n) ->
     print_endline ("MAYBE MAKE PROC: Orig " ^ string_of_bid i ^ " synth " ^
       string_of_bid k ^ " count=" ^ si n);
   end mkproc_map;
+  *)
 
   (* make a list of the ones actually applied directly *)
   let to_mkproc = ref [] in

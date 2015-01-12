@@ -3,7 +3,7 @@
 @felix
 //Check gmp
 
-include "gnu/gmp/gmp";
+include "gmp";
 open Gmp;
 
 syntax gmp_syntax {
