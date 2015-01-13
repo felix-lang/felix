@@ -4,7 +4,7 @@
 open class Bool
 {
   //$ Short cut and via closure
-  fun andthen (x: bool, y:1->bool) : bool => 
+  noinline fun andthen (x: bool, y:1->bool) : bool => 
     if x then #y else false
   ;
  
