@@ -106,7 +106,7 @@ instance Str[socket_t] {
   fun str: socket_t -> string = "::flx::rtl::strutil::str<int>($1)" requires package "flx_strutil";
 }
 
-fun getpeername: socket_t * &sockaddr_t * &socklen_t -> int = "::getpeername($a)";
+fun getpeername: socket_t * &sockaddr_t * &socklen_t -> int;
 
 fun getpeername (s: socket_t) : string = 
 {
