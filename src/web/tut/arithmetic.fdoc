@@ -132,6 +132,11 @@ fun char_range (c:char)(l:list[char*char]):bool =>
   endmatch
   ;
 
+//An element of the alphabet
+var letter : parser[char, char] =
+  token (fun (c:char) => if (isalpha c) then Some c else None[char])
+  ;
+
 //Digit parser
 var digit : parser[char, char] = 
   token (fun (c:char) : opt[char] => if isdigit c then Some c else None[char])
@@ -143,12 +148,104 @@ var digits : parser[char, list[char]] =
     (fun (p:char*list[char]):list[char] => Cons (p.0,p.1))
   ;
 
+// '-' | '+' | eps
+var optsign : parser[char, list[char]] =
+  token (fun (c:char):opt[list[char]] =>
+    match c with
+    | ?c when c == char '-' => Some (list[char] (c))
+    | ?c when c == char '+'=> Some (list[char] (c))
+    | _ => None[list[char]]
+   endmatch) |~ empty[char, list[char]] (list[char] ())
+  ;
+
+// '.' digit* | eps
+var optfrac : parser[char, list[char]] =
+  ((char_ (char '.') &~ *digit) >=~ (fun (p:char*list[char]):list[char] => Cons (p.0,p.1)))
+  |~ empty[char, list[char]] (list[char] ())
+  ;
+
+//(('e'|'E') optsign digits)|eps
+var optexp : parser[char, list[char]] =
+  ((((char_ (char 'e') |~ char_ (char 'E')) &~ optsign) 
+    >=~ (fun (p:char*list[char]):list[char] => Cons (p.0,p.1))) &~ digits) 
+    >=~ (fun (x:list[char], y:list[char]) : list[char] => x + y)
+;
+
 //Tokens
 union token_t  =
   | T_num of double
   | T_ident of string
   | T_lparen | T_rparen
   | T_plus | T_minus | T_star | T_slash
+  ;
+
+//Explode a string into a list of char
+fun explode (s:string):list[char] =
+{
+  val n:size = len s;
+  fun loop (acc:list[char]) (i:size) : list[char] =>
+    if (i == n) then rev acc
+    else loop (Cons (s.[i], acc)) (i + 1)
+  ;
+  return loop (list[char]()) 0uz;
+};
+
+//Implode a list of char to a string
+fun implode (xs:list[char]) =>
+  fold_left (fun (a:string) (b:char):string => a + b) "" xs
+  ;
+
+//Number token
+var number:parser[char, token_t] =
+  (digits &~ optfrac &~ optexp) >=~
+    (fun (p:list[char]*list[char], cse:list[char]):token_t =>
+      T_num (atof (implode (p.0 + p.1 + cse))))
+  ;
+
+//Identifier token
+var identifier : parser[char, token_t] =
+  (letter &~ *letter) >=~ 
+    (fun (c:char, cs:list[char]):token_t => 
+       T_ident (implode (Cons (c, cs))))
+  ;
+
+//Operator token
+var operator : parser[char, token_t] =
+  token (fun (ch:char) : opt[token_t] =>
+    match ch with
+    | ?c when c == char '-' => Some T_minus
+    | ?c when c == char '+' => Some T_plus
+    | ?c when c == char '*' => Some T_star
+    | ?c when c == char '/' => Some T_slash
+    | _ => None[token_t]
+    endmatch
+  );
+
+//Parenthesis token
+var paren : parser[char, token_t] =
+  token (fun (ch:char) : opt[token_t] =>
+    match ch with
+    | ?c when c == char '(' => Some T_lparen
+    | ?c when c == char ')' => Some T_rparen
+    | _ => None[token_t]
+    endmatch
+  );
+
+//Parse a whitespace character
+var space_ : parser[char, unit] =
+ token (fun (ch:char) : opt[unit] =>
+   match ch with
+     | ?c when c == char ' ' => Some[unit] ()
+     | ?c when c == char '\t' => Some[unit] ()
+     | ?c when c == char '\n' => Some[unit] ()
+     | ?c when c == char '\r' => Some[unit] ()
+     | _ => None[unit]
+   endmatch
+  );
+
+//Parser of whitespace
+fun spaces (toks : list[char]) : parsed[char, unit] => 
+  ((space_ &~ spaces) >=~ (fun (x:unit, y:unit) : unit => ())) toks
   ;
 
 //Arithmetic expressions
@@ -177,7 +274,7 @@ val ident:parser[token_t, ast_t] =
     fun (t:token_t):opt[ast_t] =>
       match t with
         | T_ident s => Some (E_var s)
-	| _ => None[ast_t]
+        | _ => None[ast_t]
   );
 
 //Addition, subtraction operators
@@ -201,18 +298,6 @@ val mulop:parser[token_t, ast_t -> ast_t -> ast_t] =
         | _ => None[ast_t -> ast_t -> ast_t]
 	endmatch
   );
-
-//Explode a string into a list of char
-fun explode (s:string):list[char] =
-{
-  val n:size = len s;
-  fun loop (acc:list[char]) (i:size) : list[char] =>
-    if (i == n) then rev acc
-    else loop (Cons (s.[i], acc)) (i + 1)
-  ;
-
-  return loop (list[char]()) 0uz;
-};
 
 var p:parser[char,char] = char_ (char 'a');
 var q:parser[char,char] = char_ (char 'b');
