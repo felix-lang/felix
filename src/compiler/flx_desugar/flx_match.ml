@@ -14,6 +14,9 @@ let make_match_check sr rex pat match_var_name match_var_index =
   let asms = stmts @ [Exe (sr,EXE_fun_return e)] in
   DCL_function (params, Flx_typing.flx_bool,[`Generated "Flx_match.make_match_check"],asms)
 
+let make_match_handler sr rex pat match_var_name match_var_index body =
+ assert false (* TO BE DONE *)
+
 let gen_match rex seq name sr e pss =
 (* print_endline ("Generating expr match " ^ name ^ ", expr=" ^ string_of_expr e); *)
 

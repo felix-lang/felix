@@ -366,21 +366,38 @@ let fixup_exes syms bsym_table vars virtualinst polyinst parent_ts exes =
 (*
   print_endline ("To fixup exes:\n" ^ show_exes bsym_table exes);
 *)
-  let exes = List.map (mono_exe syms bsym_table vars) exes in
+  let rexes = List.fold_left 
+    (fun oexes iexe -> 
+      match iexe with
+      | BEXE_call (sr,(BEXPR_closure (f,[]),_),_) ->
+        begin match Flx_bsym_table.find_bbdcl bsym_table f with
+        (* elide calls to empty non-virtual procedures 
+           Inlining does this anyhow, but this cleans up the
+           diagnostic prints and reduces the crap in the symbol
+           table a little earlier.
+        *) 
+        | BBDCL_fun (props,_,_,_,[]) when not (List.mem `Virtual props) -> oexes 
+        | _ -> mono_exe syms bsym_table vars iexe :: oexes
+        end 
+      | _ ->  mono_exe syms bsym_table vars iexe :: oexes
+    ) 
+    [] 
+    exes 
+  in
 (*
-  print_endline ("Monomorphised:\n" ^ show_exes bsym_table exes);
+  print_endline ("Monomorphised:\n" ^ show_exes bsym_table (List.rev rexes));
 *)
 (*
   print_endline ("VARS=" ^ showvars bsym_table vars);
 *)
   (* eliminate virtual calls by mapping to instances *)
   (* order doesn't matter here *)
-  let exes = List.map (fun exe -> Flx_bexe.map ~f_bexpr:(typeclass_fixup_expr syms bsym_table virtualinst) exe) exes in
-  let exes = List.map (fun exe -> flat_typeclass_fixup_exe syms bsym_table virtualinst mt exe) exes in
+  let exes = List.rev_map (fun exe -> Flx_bexe.map ~f_bexpr:(typeclass_fixup_expr syms bsym_table virtualinst) exe) rexes in
+  let rexes = List.rev_map (fun exe -> flat_typeclass_fixup_exe syms bsym_table virtualinst mt exe) exes in
 (*
-  print_endline ("Virtuals Instantiated:\n" ^ show_exes bsym_table exes);
+  print_endline ("Virtuals Instantiated:\n" ^ show_exes bsym_table (List.rev exes));
 *)
-  let exes = List.map (flat_poly_fixup_exe syms bsym_table polyinst parent_ts mt)  exes in
+  let exes = List.rev_map (flat_poly_fixup_exe syms bsym_table polyinst parent_ts mt)  rexes in
 (*
   print_endline ("Special calls monomorphised:\n" ^ show_exes bsym_table exes);
 *)
@@ -412,15 +429,15 @@ module MonoMap = Map.Make (
   end
 )
 
-let find_inst syms processed to_process i ts =
-  try 
-    Some (MonoMap.find (i,ts) !processed)
-  with Not_found ->
-  try
-    Some (MonoMap.find (i,ts) !to_process)
-  with Not_found -> None
-
 let find_felix_inst syms bsym_table processed to_process nubids i ts : int =
+  let find_inst syms processed to_process i ts =
+    try 
+      Some (MonoMap.find (i,ts) !processed)
+    with Not_found ->
+    try
+      Some (MonoMap.find (i,ts) !to_process)
+    with Not_found -> None
+  in
   match find_inst syms processed to_process i ts with
   | None ->
     let k = 
