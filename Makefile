@@ -13,7 +13,7 @@ all: build test
 # default build
 #
 
-VERSION = 14.12.13
+VERSION = 15.01.20
 DISTDIR ?= ./build/dist
 PREFIX ?= /usr/local
 EXECPREFIX ?= ${PREFIX}/bin
