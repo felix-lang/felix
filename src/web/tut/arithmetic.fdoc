@@ -245,7 +245,8 @@ var space_ : parser[char, unit] =
 
 //Parser of whitespace
 fun spaces (toks : list[char]) : parsed[char, unit] => 
-  ((space_ &~ spaces) >=~ (fun (x:unit, y:unit) : unit => ())) toks
+  (((space_ &~ spaces) >=~ (fun (x:unit, y:unit) : unit => ())) |~ 
+  empty[char, unit] ()) toks
   ;
 
 //Arithmetic expressions
