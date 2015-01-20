@@ -699,7 +699,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
         id,
         dfltvs,
         qs,
-        Flx_code_spec.Str id,
+        Flx_code_spec.Str ("::"^id),
         rqmap reqs)
       in
       tack st
