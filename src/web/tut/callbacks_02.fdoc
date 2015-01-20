@@ -1,0 +1,98 @@
+@title Callbacks
+@h1 Callback Magic
+In the previous tutorial we saw how to use a Felix function as a callback
+that C code can invoke, by using a wrapper function that depends only
+on the callback type.
+
+Unfortunately, we had to write some messy C code and also export the Felix
+type to establish a type name we could use in C.
+
+There must be a better way! And of course, there is!
+
+Let's start again with our requirement, the registration function:
+@felix
+  body cback_h =
+  """
+  void register_callback(int x, void (*cb)(int, void*), void *client_data)
+  {
+    cb (x, client_data);
+  }
+  """;
+@
+which, for pedagogical purpose will actually call the callback.
+
+Here is te Felix binding for the function we need to use.
+@felix
+proc register_callback: int * (int * address --> void) * address
+  requires cback_h;
+@
+
+
+Again, what we want to do here is use a felix function for the callback:
+@felix
+proc flx_cb(x:int){ println$ "Called back with " + str x; }
+@
+
+Now, to generate the wrapper we just say this:
+
+@felix
+callback proc wrap_flx_cb: int * wrap_flx_cb;
+@
+
+Note the weird argument type: its a trick! We use the name
+of the wrapper itself in the position of the client data pointer
+argument of the C callback function type. Recall the C type is
+given by
+@pre
+void (*)(int, void*)
+@
+which in Felix is written
+@pre
+int * address --> void
+@
+and so you see the client data pointer is the second argument.
+
+Now we can just do it: here's our test case:
+
+@felix
+register_callback
+  (
+    42, 
+    C_hack::cast[int * address --> void] wrap_flx_cb, 
+    C_hack::cast[address] flx_cb
+  )
+;
+@
+
+
+Of course we expect the result
+@expect
+Called back with 42
+@
+
+as before.
+
+@h2 Why the casts?
+You may wonder, why does the generated wrapper function @{wrap_flx_cb}
+have the wrong type? If the compiler is generating it, why can't
+it have the correct type?
+
+The answer is: Felix rules! The generated wrapper has the correct
+type. It's C that gets the type wrong, as usual!
+
+The type of the wrapper is actually:
+@pre
+int * (int -> void) --> void)
+@
+which means: this is a C procedure, since it has a long arrow to void,
+accepting two arguments, an int and a Felix function of type @{int->void}
+which is just a procedure of accepting an int. To prove this works correctly
+without any casts we do another test, with the registration function
+written in Felix instead of C:
+@felix
+wrap_flx_cb(66, flx_cb);
+@
+and of course we expect:
+@expect
+Called back with 66
+@
