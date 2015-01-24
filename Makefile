@@ -331,6 +331,7 @@ web-plugins:
 	#  - fdoc_paragraph
 	#  - fdoc_scanner
 	#  - fdoc_slideshow
+	#  - toc_menu
 	#  - fdoc_frame
 	#  - flx2html
 	#  - fpc2html

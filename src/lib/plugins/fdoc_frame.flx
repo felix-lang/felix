@@ -1,4 +1,6 @@
 include "./fdoc-frame-interface";
+include "./toc_menu-interface";
+
 fun setup (config_data:string) = {
   eprintln$ "Setup fdoc_frame v1.4 " + config_data;
   return 0;
@@ -91,136 +93,10 @@ var frame_js = """
       };
     </script>
 """;
-var menu_style = """
-<style>
-div.m {
-    margin: 0px;
-    padding:0px;
-    border-width:2px;
-    border-color: green;
-}
 
-div.m1 {
-    background-color: #70C000;
-    padding-top:2px;
-    padding-left: 10px;
-    border-style:outset;
-    border-color:red;
-    border-width:2px;
-    font-size:90%;
-}
-
-div.m2 {
-    background-color: #70C070;
-    padding-left:15px;
-    padding-top:2px;
-    border-style:outset;
-    border-color:green;
-    border-width:2px;
-    font-size:80%;
-}
-
-
-</style>
-""";
-
-
-var menu_js = """
-<script type="text/javascript">
-
-  function mexpand(id)
-  {
-    var n = document.getElementById(id).style;
-    n.display = "block";
-  }
-
-  function mcollapse(id)
-  {
-    var n = document.getElementById(id).style;
-    n.display = "none";
-  }
-
-  var counter_max = 0;
-  function mshow(id,loc)
-  {
-    var i;
-    for(i=1; i<=counter_max; ++i) 
-      mcollapse("menu"+String(i));
-    mexpand(id);
-    window.location.replace(loc);
-  }
-
-  function hilite(obj)
-  {
-    obj.style.backgroundColor = "white";
-  }
-
-  function leave1(obj)
-  {
-    obj.style.backgroundColor = "#70C000";
-  }
-  function leave2(obj)
-  {
-    obj.style.backgroundColor = "#70C070";
-  }
-</script>
-""";
-
-interface toc_menu_interface {
-  whatami: 1 -> string;
-  get_style: 1-> string;
-  get_js: 1-> string;
-  make_menu: 1 -> string;
-}
-
-object toc_menu (h:list[int * string]) implements toc_menu_interface =
-{
-  method fun whatami () => "toc_menu maker";
-  method fun get_style () => menu_style;
-  method fun get_js() => menu_js;
-  method fun make_menu() = 
-  {
-    // LEFT MARGIN
-    var leftcontent ='  <!--Left Margin Toc-->\n';
-      leftcontent +='  <div id="leftmargintoc">\n';
-
-      // Contents body
-        leftcontent+='    <!--Left Margin Toc Main Contents-->\n';
-     
-        proc head1(s:string,i:int) { 
-          leftcontent+= """      <div class=m1 onclick="mshow('menu"""+ counter.str+"""','#"""+s+"""_h')" """;
-          leftcontent+=" onmouseover='hilite(this)' onmouseout='leave1(this)' >";
-          leftcontent+= s+"</div>\n";
-          leftcontent+= """      <div class=sm id=menu"""+counter.str+""">\n""";
-        }
-        proc foot1() { leftcontent+="      </div>\n"; } 
-        proc break1(s:string,i:int) {foot1(); ++counter; head1(s,i); }
-      
-        var counter = 0;
-        iter proc (i:int,s:string) 
-          { 
-            //println$ i,s;
-            if i == 1 do // first level meny entry
-              if counter == 0 do ++counter; head1 (s,i); 
-              else break1 (s,i); 
-              done
-            elif i == 2 do // second level menu entry
-              leftcontent+="      <div class=m2 onmouseover='hilite(this)'";
-              leftcontent+=" onmouseout='leave2(this)'";
-              leftcontent+=""" onclick='window.location.replace("#"""+s+"""_h")'>"""+s+"""</div>\n""";
-            done
-          } 
-          h
-        ;
-        if counter >= 1 do  foot1; done;
-        leftcontent+="    <script>counter_max="+counter.str+";</script>\n";
-
-      leftcontent+='  </div>\n'; // leftmargintoc end
-      leftcontent+='  <!--End Left Margin Toc-->\n';
-    return leftcontent;
-  }
-
-}
+var  toc_menu = Dynlink::load-plugin-func1 [toc_menu_interface, list[int * string * string]] (
+    dll-name="toc_menu", setup-str="loaded-from-fdoc_frame", entry-point="toc_menu"
+  );
 
 
 object fdoc_frame (d:fdoc_frame_data_t) implements fdoc_frame_t = 
@@ -230,8 +106,9 @@ object fdoc_frame (d:fdoc_frame_data_t) implements fdoc_frame_t =
   method fun make_frame (out:string) :string = {
     var o = "";
     reserve(&o,10000+out.len.int);
-    var h = #(d.heading.get_headings);
-    var menu = toc_menu (h);
+    var h2 = #(d.heading.get_headings);
+    var h3 = map (fun (level:int, heading:string) => level, heading, '#'+heading+'_h') h2;
+    var menu = toc_menu (h3);
 
     o+=frame_style;
     o+=#(menu.get_style);
