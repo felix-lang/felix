@@ -571,11 +571,11 @@ typedef code_data_t = int * int * string;
 typedef menu_data_t = int * string * string;
 
 noinline fun wrap_html (h:darray[code_data_t], out:string) :string = {
-  var h3 = ArrayValue[darray[code_data_t],code_data_t]::fold_right[list[menu_data_t]] 
+  var h3 =  fold_right 
     (fun (level:int, lno:int, text:string) (lst:list[menu_data_t]) => 
       (level, text, "#line" + lno.str) + lst
     )
-    h Empty[int * string * string]
+    h Empty[menu_data_t]
   ; 
     var menu = toc_menu (h3);
 
