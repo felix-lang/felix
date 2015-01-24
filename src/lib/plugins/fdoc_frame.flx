@@ -4,47 +4,93 @@ fun setup (config_data:string) = {
   return 0;
 }
 
-var menu_js = """
-<script type="text/javascript">
+var frame_style= """
+    <style>
+      .container {
+        position: fixed;
+        top:0px;
+        left:0px;
+        height : 100%;
+        width: 100%;
+        background-color: grey;
+        margin: 0px;
+        padding: 0px;
+        border-width: 0px;
+        color: #404040;
+      }
+      .maincontent {
+        padding:4px;
+        border:4px;
+        font-family:sans-serif; 
+        color:#404040; background-color:#E0E0E0;
+      }
+      .toppanel {
+        position:absolute; left:0px; top:0px; height:20px; right:0px; 
+        background-color: LightGray;
+      }
+      .bottompanel {
+        position:absolute; left:0px; top:25px; bottom:0px; right:0px; 
+        background-color: LightGray;
+      }
+      .leftpanel {
+        position:absolute; left:0px; top:0px; bottom:0px; width: 300px; 
+        background-color: LightGray; overflow: auto;
+      }
+      .rightpanel {
+        position:absolute; right: 0px; left:310px; top:0px; bottom: 0px; 
+        background-color: LightGray; overflow: auto;
+      }
+      .divider {
+        position:absolute; left: 300px; top:0px; bottom:0px; 
+        background-color: black; width:10px;
+      }
 
-function mexpand(id)
-{
-  var n = document.getElementById(id).style;
-  n.display = "block";
-}
+      #panemover {
+          position:absolute;
+          left: 300px;
+          width : 10px;
+          top: 0px;
+          bottom: 0px;
+          opacity: 0.3;
+          background-color: yellow;
+          cursor:col-resize;
+      }
 
-function mcollapse(id)
-{
-  var n = document.getElementById(id).style;
-  n.display = "none";
-}
-
-var counter_max = 0;
-function mshow(id,loc)
-{
-  var i;
-  for(i=1; i<=counter_max; ++i) 
-    mcollapse("menu"+String(i));
-  mexpand(id);
-  window.location.replace(loc);
-}
-
-function hilite(obj)
-{
-  obj.style.backgroundColor = "white";
-}
-
-function leave1(obj)
-{
-  obj.style.backgroundColor = "#70C000";
-}
-function leave2(obj)
-{
-  obj.style.backgroundColor = "#70C070";
-}
-</script>
+    </style>
 """;
 
+var frame_js = """
+    <script async="true">
+      function dragStart(e, left, right){
+        document.getElementById("panemover").style.width="70%";
+        document.getElementById("panemover").style.left="150px";
+        mousedown = true;
+        x = e.clientX
+        dragOffsetLeft =  
+          document.getElementById(left).getBoundingClientRect().right - 
+          document.getElementById(left).getBoundingClientRect().left - 
+          x 
+        ; 
+        dragOffsetDivider= document.getElementById("divider").getBoundingClientRect().left - x; 
+        dragOffsetRight = document.getElementById(right).getBoundingClientRect().left - x;
+      }
+      function dragRelease(){
+        document.getElementById('panemover').style.width = '10px';
+        document.getElementById('panemover').style.left = document.getElementById('divider').offsetLeft + 'px';
+        mousedown = false;
+      }
+      function drag(e, left, right){
+        if(!mousedown){return}
+        x = e.clientX
+        tmpLeft = dragOffsetLeft + x
+        tmpDivider= dragOffsetDivider + x
+        tmpRight = dragOffsetRight + x
+        document.getElementById(left).style.width= tmpLeft + 'px';
+        document.getElementById("divider").style.left= tmpDivider + 'px';
+        document.getElementById(right).style.left = tmpRight + 'px';
+      };
+    </script>
+""";
 var menu_style = """
 <style>
 div.m {
@@ -55,7 +101,6 @@ div.m {
 }
 
 div.m1 {
-    position:relative;
     background-color: #70C000;
     padding-top:2px;
     padding-left: 10px;
@@ -66,7 +111,6 @@ div.m1 {
 }
 
 div.m2 {
-    position:relative;
     background-color: #70C070;
     padding-left:15px;
     padding-top:2px;
@@ -81,126 +125,171 @@ div.m2 {
 """;
 
 
+var menu_js = """
+<script type="text/javascript">
+
+  function mexpand(id)
+  {
+    var n = document.getElementById(id).style;
+    n.display = "block";
+  }
+
+  function mcollapse(id)
+  {
+    var n = document.getElementById(id).style;
+    n.display = "none";
+  }
+
+  var counter_max = 0;
+  function mshow(id,loc)
+  {
+    var i;
+    for(i=1; i<=counter_max; ++i) 
+      mcollapse("menu"+String(i));
+    mexpand(id);
+    window.location.replace(loc);
+  }
+
+  function hilite(obj)
+  {
+    obj.style.backgroundColor = "white";
+  }
+
+  function leave1(obj)
+  {
+    obj.style.backgroundColor = "#70C000";
+  }
+  function leave2(obj)
+  {
+    obj.style.backgroundColor = "#70C070";
+  }
+</script>
+""";
+
+interface toc_menu_interface {
+  whatami: 1 -> string;
+  get_style: 1-> string;
+  get_js: 1-> string;
+  make_menu: 1 -> string;
+}
+
+object toc_menu (h:list[int * string]) implements toc_menu_interface =
+{
+  method fun whatami () => "toc_menu maker";
+  method fun get_style () => menu_style;
+  method fun get_js() => menu_js;
+  method fun make_menu() = 
+  {
+    // LEFT MARGIN
+    var leftcontent ='  <!--Left Margin Toc-->\n';
+      leftcontent +='  <div id="leftmargintoc">\n';
+
+      // Contents body
+        leftcontent+='    <!--Left Margin Toc Main Contents-->\n';
+     
+        proc head1(s:string,i:int) { 
+          leftcontent+= """      <div class=m1 onclick="mshow('menu"""+ counter.str+"""','#"""+s+"""_h')" """;
+          leftcontent+=" onmouseover='hilite(this)' onmouseout='leave1(this)' >";
+          leftcontent+= s+"</div>\n";
+          leftcontent+= """      <div class=sm id=menu"""+counter.str+""">\n""";
+        }
+        proc foot1() { leftcontent+="      </div>\n"; } 
+        proc break1(s:string,i:int) {foot1(); ++counter; head1(s,i); }
+      
+        var counter = 0;
+        iter proc (i:int,s:string) 
+          { 
+            //println$ i,s;
+            if i == 1 do // first level meny entry
+              if counter == 0 do ++counter; head1 (s,i); 
+              else break1 (s,i); 
+              done
+            elif i == 2 do // second level menu entry
+              leftcontent+="      <div class=m2 onmouseover='hilite(this)'";
+              leftcontent+=" onmouseout='leave2(this)'";
+              leftcontent+=""" onclick='window.location.replace("#"""+s+"""_h")'>"""+s+"""</div>\n""";
+            done
+          } 
+          h
+        ;
+        if counter >= 1 do  foot1; done;
+        leftcontent+="    <script>counter_max="+counter.str+";</script>\n";
+
+      leftcontent+='  </div>\n'; // leftmargintoc end
+      leftcontent+='  <!--End Left Margin Toc-->\n';
+    return leftcontent;
+  }
+
+}
+
+
 object fdoc_frame (d:fdoc_frame_data_t) implements fdoc_frame_t = 
 {
-  var frame_colour = "#C0C0B0";
-  var page_colour = "#E0E0E0";
-  var text_colour = "#404040";
-
-  var toc_width = 200; // should be 0, temporary hack for testing!
-
   method fun whatami () => "fdoc_frame maker";
-
-  method proc set_toc_width (tw: int) => toc_width = tw;
 
   method fun make_frame (out:string) :string = {
     var o = "";
     reserve(&o,10000+out.len.int);
     var h = #(d.heading.get_headings);
+    var menu = toc_menu (h);
 
-    o+=menu_js;
-    o+=menu_style;
+    o+=frame_style;
+    o+=#(menu.get_style);
+    o+=frame_js;
+    o+=#(menu.get_js);
+
     o+=#(d.heading.emit-js);
     o+=#(d.button-factory.get-jscript);
     o+=#(d.fileseq.get-jscript);
 
-    // Whole page defaults and background
-    o+='<div style="background-color:'+page_colour+'; font-family:sans-serif; color:'+text_colour+'">';
-
-    // LEFT MARGIN
-    // fixed top nav bar 
-    o+='<div style="position:fixed; top:10px;  left:10px; width:'+
-    (toc_width - 10).str+'px; height:30px;' +
-    ' background-color:'+frame_colour+'; padding:4px;'+
-    ' border-top-left-radius:10px; border-top-right-radius:10px">';
-    o+='</div>\n';
-
-    // left border
-    o+='<div style="position:fixed; top:40px; bottom:40px; left:10px; width:4px;' +
-      ' background-color:'+ frame_colour+ ';">';
-    o+='</div>\n';
-
-    // Contents body
-    o+='<div style="position:fixed; top:48px; bottom:48px; left:14px; '+
-       '  width:'+(toc_width - 10).str+'px;'+
-       ' border:4px;overflow:auto;'+
-       ' font-family:sans-serif; color:#404040; background-color:#70E0E0;">\n';
-   
-    proc head1(s:string,i:int) { 
-      o+= """<div class=m1 onclick="mshow('menu"""+ counter.str+"""','#"""+s+"""_h')" """;
-      o+=" onmouseover='hilite(this)' onmouseout='leave1(this)' >";
-      o+= s+"</div>\n";
-      o+= """<div class=sm id=menu"""+counter.str+""">\n""";
-    }
-    proc foot1() { o+="</div>\n"; } 
-    proc break1(s:string,i:int) {foot1(); ++counter; head1(s,i); }
-  
-    var counter = 0;
-    iter proc (i:int,s:string) 
-      { 
-        //println$ i,s;
-        if i == 1 do
-          if counter == 0 do ++counter; head1 (s,i); 
-          else break1 (s,i); 
-          done
-        elif i == 2 do
-          o+="<div class=m2 onmouseover='hilite(this)'";
-          o+=" onmouseout='leave2(this)'";
-          o+=""" onclick='window.location.replace("#"""+s+"""_h")'>"""+s+"""</div>\n""";
-        done
-      } 
-      h
-    ;
-    if counter > 1 do  foot1; done;
-    o+="<script>counter_max="+counter.str+";</script>\n";
-     // right border
-    o+='<div style="position:fixed; top:40px; bottom:40px; left:'+(toc_width + 4).str+'px; width:4px;' +
-      ' background-color:'+ frame_colour+ ';">';
-    o+='</div>';
-
-    // fixed bottom nav bar
-    o+='<div style="position:fixed; bottom:10px;  left:10' +
-      'px; width:'+(toc_width - 10).str+'px; height:30px;' +
-    ' background-color:'+frame_colour+';padding:4px;'+
-    ' border-bottom-left-radius:10px; border-bottom-right-radius:10px"\n>';
-    o+='</div>\n';
-
     // MAIN CONTENT
-    // fixed top nav bar 
-    o+='<div style="position:fixed; top:10px;  left:'+(toc_width+10).str+'px; right:10px; height:30px;' +
-    ' background-color:'+frame_colour+'; padding:4px;'+
-    ' border-top-left-radius:10px; border-top-right-radius:10px">';
-    o+=#(d.heading.emit-buttons);
-    o+=#(d.fileseq.shownav);
-    o+='</div>\n';
+    var topcontent =
+      '    <!--Main Content top navbar-->\n'  +
+      #(d.heading.emit-buttons) + 
+      #(d.fileseq.shownav) +
+      '    <!--Main Content top navbar End-->\n'
+    ;
 
-    // left border
-    o+='<div style="position:fixed; top:40px; bottom:40px; left:'+(toc_width+10).str+'px; width:4px;' +
-      ' background-color:'+ frame_colour+ ';">';
-    o+='</div>';
+    var leftcontent = #(menu.make_menu);
 
-    // body
-    o+='<div style="position:fixed; top:48px; bottom:48px; left:'+(toc_width+14).str+
-       'px; right:14px; padding:8px;'+
-    ' border:4px;overflow:auto; font-family:sans-serif;'+
-    ' color:'+text_colour+'; background-color:'+page_colour+';">';
-    o+=out;
-    o+='</div>\n';
+    var rightcontent =
+      '<!--Main Content Body-->\n' + 
+      out +
+      '<!--Main Content Body End-->\n'
+    ;
+ 
+    var html = """
+    <div class="container">
+      <div class="toppanel">
+""" + topcontent + """
+      </div> <!-- toppanel end -->
+      <div class="bottompanel">
+        <span id="left" class="leftpanel" >
+          <div class="menucontent">
+""" + leftcontent + """
+          </div> <!-- leftpanel contents end -->
+        </span> <!-- leftpanel end -->
 
-     // right border
-    o+='<div style="position:fixed; top:40px; bottom:40px; right:10px; width:4px;' +
-      ' background-color:'+ frame_colour+ ';">';
-    o+='</div>';
+        <span id="divider" class="divider"></span>
 
-    // fixed bottom nav bar
-    o+='<div style="position:fixed; bottom:10px;  left:'+(toc_width+10).str+
-      'px; right:10px; height:30px;' +
-    ' background-color:'+frame_colour+';padding:4px;'+
-    ' border-bottom-left-radius:10px; border-bottom-right-radius:10px"\n>';
-    o+=#(d.fileseq.shownav);
-    o+='</div>\n';
+        <span id="right" class="rightpanel">
+          <div class="maincontent">
+""" + rightcontent + """
+          </div> <!-- rightpanel contents end -->
+          <hr>
+        </span> <!-- rightpanel end -->
 
-    o+='</div>'; // whole page end
+        <span id="panemover" style="cursor:col-resize;" 
+         onmousedown="dragStart(event, 'left', 'right'); return false;" 
+         onmousemove="drag(event, 'left', 'right');" 
+         onmouseout="dragRelease();" 
+         onmouseup="dragRelease();"
+        >
+        </span> <!-- panemover end -->
+      </div> <!-- bottom panel end -->
+    </div> <!-- container end -->
+""";
+    o+= html;
     return o;
   }
 
