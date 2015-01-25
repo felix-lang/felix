@@ -1,0 +1,49 @@
+@title Scripting Harness
+@h1 Running Programs
+Suppose we have a felix program @{hello.flx}:
+@felix
+println$ "Hello World";
+@
+which we expect to print
+@expect
+Hello World
+@
+To run this program we just type
+@pre
+flx hello.flx
+@
+That's it. Behind the scenes, it is translated to C++, compiled,
+linked, and executed. 
+
+@h2 Performance
+It's a bit slower than, say, Python doing
+this this first time. 
+@pre
+~/felix>time flx hello
+Hello
+
+real	0m12.408s
+user	0m11.879s
+sys	0m0.412s
+@
+@h2 Dependency Checking
+However if you do it again, it's much faster. 
+That's because Felix automatically checks if the program
+binary is up to date, and if so, just runs it.
+@pre
+~/felix>time flx  hello
+Hello
+
+real	0m0.581s
+user	0m0.476s
+sys	0m0.086s
+@
+
+@h2 Caching
+You may wonder where the binary is. Indeed, you may
+wonder where the generated C++ is. If you look at the
+directory containing the @{hello.flx} file you will not
+see these files.
+
+These files are considered temporaries, and are stored
+in a cache, usually in @{$HOME/.felix/cache} somewhere.

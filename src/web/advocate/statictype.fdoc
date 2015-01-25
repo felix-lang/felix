@@ -1,0 +1,56 @@
+@title Static Typing
+@h1 Static Typing is faster
+Dynamically typed programs are fine if they're
+small. 
+
+However performance suffers due to continual
+run time type checks. But that's not the worst of
+it! Optimisations are very hard to do and strictly
+limited in scope, due to the lack of type information
+at compile time. 
+
+Statically typed programs take longer to compile but
+can run faster.
+
+@h1 Scalability
+When you have a large program, or suite of programs,
+you soon find your system is unreliable. Without
+static type information, the compiler cannot make
+basic correctness checks.
+
+There are some large systems written in dynamically
+typed languages, but they're always beset by bugs
+and require a huge maintenance effort. Eventually
+development stops because dynamically typed code
+bases are unmaintainable.
+
+@h1 Annotations
+Static typing doesn't necessarily require type annotations.
+Many programmers hate writing these annotations: it's time
+consuming, error prone, and it clutters the program making
+it hard to read.
+
+Some systems such as Ocaml use type inference to solve
+this problem: types are infered from usage.
+
+However inference doesn't play well with overloading.
+
+Felix does automatic type deduction but not inference.
+That is, it calculates types automatically from the
+bottom up. This means you have to provide type annotations
+on function arguments, but you don't need to specify the types
+of variables or function returns.
+
+@felix
+var x = 1; 
+  // type 'int' deduced
+
+fun f(x:int)=> x + 1; 
+  // parameter type must be given
+  // return type 'int' deduced
+
+fun f(x:double) => x + 1.0;
+  // overloaded functions
+  // require parameter type to be given
+@
+

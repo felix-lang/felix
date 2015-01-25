@@ -1,0 +1,253 @@
+@title Programming Styles
+@h1 Imperative Style
+Imperative or procedural programming is what most 
+programmers know. Algorithms are constructed as 
+instructions to do something.
+
+@felix
+// Newton Integral
+begin
+  var c0 = 1.0;
+  var c1 = 3.7;
+  var c2 = 0.5;
+
+  var width = 0.01;
+
+  var sum = 0.0;
+  var x = 0.005;
+  while x < 1.0 do
+    var y =  c2 * x * x + c1 * x + c0;
+    sum = sum + y * width;
+    x = x + width;
+  done
+
+  println$ "[procedural] Integral is " + sum.str;
+end
+@
+You will of course note that even this procedural code
+contains expressions!
+
+@h1 Functional Style
+Advanced programming languages provide a rich syntax
+for expressions.
+@felix 
+begin
+println$ "[functonal] Integral is " +
+  (
+    let ?c0 = 1.0 in
+    let ?c1 = 3.7 in
+    let ?c2 = 0.5 in
+    let ?width = 0.01 in
+    let fun integral (x:double) (sum:double) =>
+      if x < 1.0 then 
+        let ?y = c2 * x * x + c1 * x + c0 in
+        integral (x+width) (sum + y* width)
+      else sum
+    in integral 0.005 0.0
+  ).str
+;
+end
+@
+
+@h1 Using a generator
+A variant on the functional method using an 
+procedural iterator @{range} and a list comprehension.
+The iterator is lazy but procedural, the comprehension
+is expands it.
+
+@felix
+begin
+gen range (start:double, bound: double, increment: double) () = {
+  var x = start;
+  next:>
+    yield Some x;
+    x = x + increment;
+    if x < bound goto next;
+  return None[double];
+}
+
+var width = 0.01;
+var xs = range (0.005, 1.0, width);
+
+println$ "[iterator] Integral is " + (
+  let ?c0 = 1.0 in
+  let ?c1 = 3.7 in
+  let ?c2 = 0.5 in
+
+  fold_left 
+  (fun (sum: double) (x: double) => 
+    let ?y = c2 * x * x + c1 * x + c0 in
+    sum + y * width
+  )
+  0.0
+  (list xs)
+).str;
+end
+@
+
+@h1 Using fibres
+Fibres, sometimes called f-threads (felix threads), are cooperatively
+multi-tasked threads which exchange control synchronously using
+s-channels (synchronous channels).
+
+Fibres and schannels can be used in the so called chips-and-wires
+model. This model has a major advantage over other programming styles:
+the components are black boxes, fully isolated and resuable in
+any context.
+
+This is similar to a function, however functions are one-shot wonders.
+Fibres, on the other hand, are active running processes.
+
+@felix
+begin 
+  proc increments 
+    (start:double, increment: double) 
+    (out: oschannel[double])
+    ()
+  {
+    var x = start;
+    while true do
+      write$ out, x;
+      x = x + increment;
+    done
+  }
+
+  proc integral (out: oschannel[double]) ()
+  {
+    var c0 = 1.0;
+    var c1 = 3.7;
+    var c2 = 0.5;
+    var width = 0.01;
+    var inp, out2 = #mk_ioschannel_pair[double];
+    spawn_fthread$ increments (0.005, width) out2;
+    var sum = 0.0;
+    var x = read inp;
+    while x < 1.0 do
+      var y = c2 * x * x + c1 * x + c0;
+      sum = sum + y * width;
+      x = read inp;
+    done
+    write$ out, sum;
+  }
+  begin
+    var inp, out = #mk_ioschannel_pair[double];
+    spawn_fthread$ integral out;
+    var sum = read inp;
+    println$  "[fibres] Integral is " + sum.str;
+  end
+end
+ 
+@h1 Using synchronous pipelines
+This method uses fthreads too, but with special syntax
+for pipelines. Pipelines only allow linear data flow.
+However they have the advantage that schannels are
+not constructed explicitly. This ensures the pipeline
+will collapse when exhausted.
+@felix
+include "std/control/spipe";
+begin
+  // the source
+  proc increments 
+    (start: double, increment: double) 
+    (out: oschannel[double])
+  {
+    var x = start;
+    while true do
+      write$ out, x;
+      x = x + increment;
+    done
+  }
+
+ // the transducer
+  proc running_integral
+  (
+    inp: ischannel[double],
+    out: oschannel[double * double]
+  ) 
+  {
+    var c0 = 1.0;
+    var c1 = 3.7;
+    var c2 = 0.5;
+    var width = 0.01;
+    var sum = 0.0;
+    var x = read inp;
+    while true do
+      var y = c2 * x * x + c1 * x + c0;
+      sum = sum + y * width;
+      write$ out, (x,sum);
+      x = read inp;
+    done
+  }
+
+  // the sink
+  proc bound_integral (inp: ischannel[double * double])
+  {
+    var sum = 0.0;
+    var x,nusum = read inp;
+    while x < 1.0 do
+      sum = nusum;
+      x,nusum = read inp;
+     done
+     println$ "[pipeline] Integral is " + sum.str;
+  }
+ 
+  // connect into a pipeline src |-> transducer |-> sink
+  var pipeline = increments (0.005, 0.01) |-> running_integral |-> bound_integral;
+
+  // run the pipeline
+  pipeline;
+
+end
+@
+
+@h1 Using Coroutines
+Fibres provide a conventient medium level abstraction of coroutines.
+Felix provides low level primitives to implement coroutines as well.
+
+@felix
+begin
+  var c0 = 1.0;
+  var c1 = 3.7;
+  var c2 = 0.5;
+  var width = 0.01;
+
+  var x : double;
+  var sum = 0.0;
+
+  // program counters for the two coutines
+  var psrc: LABEL;
+  var psink: LABEL;
+
+
+  proc src () 
+  {
+    x = 0.005;
+    // set where the first invocation of the
+    // second coroutine will jump to first
+    &psrc <- label_address next_x;
+    // start the second coroutine
+    integrate;
+  next_x:>
+    x = x + width;
+    if x < 1.0 do
+      // exchange control with integrator
+      branch-and-link (&psink, &psrc); 
+      goto next_x;
+    done
+  }
+
+  proc integrate () 
+  {
+  next_sum:>
+    var y = c2 * x * x + c1 * x + c0;
+    sum = sum + y * width;
+    // exchange control with x-source
+    branch-and-link (&psrc, &psink);
+    goto next_sum; 
+  }
+
+  // start the first coroutine
+  src;
+  println$ "[coroutine] Integral is " + sum.str;
+end
+@
