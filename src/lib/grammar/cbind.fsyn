@@ -76,7 +76,7 @@ syntax cbind {
           (if (eq? 'none _5)
             (if (memv 'Virtual _1)
               'Virtual
-               `(StrTemplate ,(string-append "(#0)" name "($a)"))
+               `(StrTemplate ,(string-append "(#0) ::" name "($a)"))
              )
              (second _5))
         )
@@ -113,7 +113,7 @@ syntax cbind {
         (argt _5)
         (ct
           (if (eq? 'none _6)
-            `(StrTemplate ,(string-append (base_of_qualified_name _3) "($a)"))
+            `(StrTemplate ,(string-append "::" (base_of_qualified_name _3) "($a)"))
             (second _6)
           )
         )
@@ -361,7 +361,7 @@ syntax cbind {
           (if (eq? 'none _6)
             (if (memv 'Virtual _1)
               'Virtual
-               `(StrTemplate ,(string-append (first _3) "($a);"))
+               `(StrTemplate ,(string-append "::" (first _3) "($a);"))
              )
              (second _6))
         )

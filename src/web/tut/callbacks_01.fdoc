@@ -1,3 +1,4 @@
+@title Callbacks
 @h1 Callbacks
 @h2 The Requirement
 @h3 The C code
@@ -34,12 +35,13 @@ To do this we would like to generate a C function:
   void wrap_flx_cb(int x, void *client_data)
   {
     // cast client data to Felix function base type
-    flx_cb_t p = (flx_cb_t)client_data;
+    flx_cb_t cb = (flx_cb_t)client_data;
 
     // set the caller address and argument 
-    p->call(0,x);
+    // return a continuation
+    ::flx::rtl::con_t::con_t *p = cb->call(0,x);
 
-    // run the procedure
+    // run the continuation
     while(p) p = p->resume();
   }
   """ requires cback_h;

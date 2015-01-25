@@ -10,7 +10,6 @@ typedef fdoc_frame_data_t = (
 
 interface fdoc_frame_t {
   whatami : 1 -> string;
-  set_toc_width : int -> 0;
   make_frame: string -> string;
 }
 

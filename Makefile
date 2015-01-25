@@ -13,7 +13,7 @@ all: build test
 # default build
 #
 
-VERSION = 14.12.13
+VERSION = 15.01.20
 DISTDIR ?= ./build/dist
 PREFIX ?= /usr/local
 EXECPREFIX ?= ${PREFIX}/bin
@@ -331,6 +331,7 @@ web-plugins:
 	#  - fdoc_paragraph
 	#  - fdoc_scanner
 	#  - fdoc_slideshow
+	#  - toc_menu
 	#  - fdoc_frame
 	#  - flx2html
 	#  - fpc2html
