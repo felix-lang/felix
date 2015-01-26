@@ -1,1 +1,78 @@
-STUB
+@title Rich Data 
+@h1 Primitives
+Felix has a large set of data types lifted from C and C++.
+In general is lifted from C 
+with a type binding in the library like this:
+@felix
+  type int = "int";
+@
+Polymorphic types can be lifted too:
+@felix
+  type vector[T] = "vector<?1>";
+@
+Felix requires all types to be first class, that is, to provide
+a default constructor, copy constructor, destructor, and 
+assignment operator. Second class types can be represented
+by pointers.
+
+@h1 Scalar
+@pre
+  address, bool, char, string
+@
+@h2 Integer
+@pre
+   tiny, short, int, long, vlong
+   utiny, ushort, uint, ulong, uvlong
+   ptrdiff, intmax, intptr
+   size, uintmax , uintptr
+   int8, int16, int32, int64
+   uint8, uint16, uint32, uint64
+@
+
+@h2 Float
+@pre
+  float, double, ldouble
+  complex, dcomplex, lcomplex
+  quaternion
+@
+
+@h2 STL
+Stl data types work with any C data type, or any Felix product thereof.
+They will not work with pointers to the Felix heap or any type containing
+them, since the Garbage Collector cannot see into STL data types.
+@pre
+  stl_list,stl_set,stl_multiset,stl_map,stl_multimap,stl_vector,stl_deque
+@
+@h1 Nominal type constructors
+Specify types by name. Felix provides
+struct and union types. Enum is a special case of a union.
+
+@h1 Structural types
+Anonymous types. Felix provides unit, tuple, array, record, void, sum, variant, pointer,
+function type, and C-function types. 
+
+@h1 Library types
+@h2 Arrays
+Felix provides a structurally typed compile time fixed length array
+type, and the library provides 
+<ul>
+<li>varray (run time bounded variable length array),
+<li>darray (unbounded variable length array), 
+<li>sarray (unbounded sparse array), 
+<li>bsarray (bounded sparse array), and 
+<li>JudyLArray.
+</ul>
+
+We also have carray, a pointer to an indeterminate number of elements.
+
+@h2 Other
+<ul>
+<li>sexpr (a tree structured based on Scheme S-expressions),
+<li>assoc_list (a list of pairs),
+<li>ralist (Okasaki's purely functional random access list),
+<li>strdict (a dictionary with string keys based on JudySLArray),
+<li>json (a tree based on JSON specification)
+</ul>
+
+
+

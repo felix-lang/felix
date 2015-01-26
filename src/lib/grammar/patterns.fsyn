@@ -102,6 +102,7 @@ syntax patterns {
 
   sargument_pattern := satomic_pattern =># "_1";
   sargument_pattern := "?" sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_2)";
+  sargument_pattern := "val" sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_2)";
   sargument_pattern := "#" sctor_name =># "`(pat_const_ctor ,_sr ,_2)";
   sargument_pattern := "case" sinteger =># "`(pat_const_ctor ,_sr (ast_case_tag ,_sr ,_2))";
 
@@ -110,6 +111,7 @@ syntax patterns {
 
   sapplicative_pattern := satomic_pattern =># "_1";
   sapplicative_pattern := "?" sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_2)";
+  sapplicative_pattern := "val" sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_2)";
   sapplicative_pattern := "#" sctor_name =># "`(pat_const_ctor ,_sr ,_2)";
   sapplicative_pattern := "case" sinteger =># "`(pat_const_ctor ,_sr (ast_case_tag ,_sr ,_2))";
 

@@ -34,13 +34,13 @@ for expressions.
 begin
 println$ "[functonal] Integral is " +
   (
-    let ?c0 = 1.0 in
-    let ?c1 = 3.7 in
-    let ?c2 = 0.5 in
-    let ?width = 0.01 in
+    let val c0 = 1.0 in
+    let val c1 = 3.7 in
+    let val c2 = 0.5 in
+    let val width = 0.01 in
     let fun integral (x:double) (sum:double) =>
       if x < 1.0 then 
-        let ?y = c2 * x * x + c1 * x + c0 in
+        let val y = c2 * x * x + c1 * x + c0 in
         integral (x+width) (sum + y* width)
       else sum
     in integral 0.005 0.0
@@ -70,13 +70,13 @@ var width = 0.01;
 var xs = range (0.005, 1.0, width);
 
 println$ "[iterator] Integral is " + (
-  let ?c0 = 1.0 in
-  let ?c1 = 3.7 in
-  let ?c2 = 0.5 in
+  let val c0 = 1.0 in
+  let val c1 = 3.7 in
+  let val c2 = 0.5 in
 
   fold_left 
   (fun (sum: double) (x: double) => 
-    let ?y = c2 * x * x + c1 * x + c0 in
+    let val y = c2 * x * x + c1 * x + c0 in
     sum + y * width
   )
   0.0

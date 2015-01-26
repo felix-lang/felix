@@ -100,13 +100,13 @@ syntax infix_c
 
   //gives
   x[scomparison_pri]:= 
-   x[>scomparison_pri] ">=~" x[>scomparison_pri] =># 
+   x[scomparison_pri] ">=~" x[>scomparison_pri] =># 
     '''`(ast_apply ,_sr (,(nos "gives") (,_1 ,_3)))'''
   ;
 
   //givento
   x[scomparison_pri]:= 
-   x[>scomparison_pri] ">>=~" x[>scomparison_pri] =># 
+   x[scomparison_pri] ">>=~" x[>scomparison_pri] =># 
     '''`(ast_apply ,_sr (,(nos "givento") (,_1 ,_3)))'''
   ;
 
@@ -323,9 +323,7 @@ fun left_assoc[A, B]
 {
   fun sequence (t1:B) : parser [A, B] =
   {
-    //Can't inline this in the expression to follow. Don't know why.
-    var seq:B -> parser[A, B] = sequence;
-    return ((((op &~ term) >=~ (fun (f:B -> B -> B, t2:B) => f t1 t2))) >>=~ seq) |~ (empty[A, B] t1);
+    return (op &~ term >=~ (fun (f:B -> B -> B, t2:B) => f t1 t2) >>=~ sequence of (B)) |~ (empty[A, B] t1);
   }
 
   return (term >>=~ sequence);
