@@ -1,0 +1,26 @@
+include "gui/__init__";
+open FlxGui;
+
+println$ "Basic Line Drawing Test";
+
+var clock = Faio::mk_alarm_clock();
+
+// Initialise the SDL system (SDL + TTF + IMAGE)
+FlxGui::init();
+
+var w = window_t("Felix:gui_03_draw_01",100,100,400,400);
+w.clear lightgrey;
+
+var font_name = OSX_dflt_font(); // temporary HACK!
+var font : font_t = get_font(font_name, 12);
+var lineskip = get_lineskip font;
+w.write (100,100,font,black,"Basic Line Drawing Test");
+w.draw_line (RGB(0,0,255), 100,110,200,110);
+w.draw_line (RGB(0,0,255), 100,210,200,210);
+w.draw_line (RGB(0,0,255), 100,110,100,210);
+w.draw_line (RGB(0,0,255), 200,110,200,210);
+
+w.update;
+
+Faio::sleep(clock,15.0);
+

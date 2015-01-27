@@ -22,7 +22,7 @@ gen get_font (font_file:string, ptsize:int) = {
   return font;
 }
 
-fun get_lineskip (f: font_t) => TTF_FontLineSkip(font) + 1;
+fun get_lineskip (f: font_t) => TTF_FontLineSkip(f) + 1;
 
 fun get_textsize (f: font_t, s:string) = 
 {

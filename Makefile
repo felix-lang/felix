@@ -544,6 +544,10 @@ sdltest:
 	build/release/host/bin/flx --felix=build.fpc --force -c -od sdlbin demos/sdl/edit_controller
 	${LPATH}=sdlbin build/release/host/bin/flx --felix=build.fpc --force -od sdlbin demos/sdl/sdltest
 
+guitest:
+	build/release/host/bin/flx --felix=build.fpc --indir=src/web/tutopt/sdlgui --regex='.*\.flx'
+ 
+
 evtdemo:
 	# compile Felix
 	build/release/host/bin/flx --felix=build.fpc -c --static --nolink \

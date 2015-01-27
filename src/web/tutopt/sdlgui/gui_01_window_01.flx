@@ -1,0 +1,20 @@
+
+include "gui/__init__";
+open FlxGui;
+
+println$ "Basic Window Test";
+
+var clock = Faio::mk_alarm_clock();
+
+// Initialise the SDL system (SDL + TTF + IMAGE)
+FlxGui::init();
+FlxGui::versions();
+
+var w = window_t("Felix:gui_01_window_01",100,100,400,400);
+w.clear lightgrey;
+w.update;
+Faio::sleep(clock,15.0);
+
+
+
+

@@ -7,6 +7,9 @@ class FlxGuiTypes
   typedef color_t = colour_t; // dang yanks ..
   typedef point_t = SDL_Point;
   typedef rect_t = SDL_Rect;
+
+  ctor rect_t (x:int, y:int, w:int, h:int) => SDL_Rect (x,y,w,h);
+
   typedef surface_t = SDL_Surface;
   typedef event_t = SDL_Event;
 }

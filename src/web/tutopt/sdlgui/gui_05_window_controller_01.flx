@@ -1,0 +1,98 @@
+
+include "gui/__init__";
+open FlxGui;
+
+println$ "Basic Window Controller Test";
+
+var clock = Faio::mk_alarm_clock();
+
+// Initialise the SDL system (SDL + TTF + IMAGE)
+FlxGui::init();
+
+var font_name = OSX_dflt_font(); // temporary HACK!
+var font : font_t = get_font(font_name, 12);
+var lineskip = get_lineskip font;
+
+
+var w1 = window_t("Felix:gui_05_window_controller_01",100,100,400,400);
+w1.clear lightgrey;
+w1.write (100,100,font,black,"Basic Window Controller Test");
+w1.update;
+
+var w2 = window_t("WINDOW 2",400,100,400,400);
+w2.clear blue;
+w2.write (100,100,font,black,"Basic Window Controller Test");
+w2.update;
+
+// make an event handler for our window
+proc ehandler 
+  (w:window_t)
+  (input:ischannel[event_t])  () 
+{
+   // get a first event from the window manager
+  var e: event_t = read input;
+
+  // while the event isn't a quit event ..
+  while e.window.event.SDL_WindowEventID != SDL_WINDOWEVENT_CLOSE  do
+    // print a diagnostic
+    var s = 
+      if e.type.SDL_EventType == SDL_WINDOWEVENT then
+        e.type.SDL_EventType.str + ": " + e.window.event.SDL_WindowEventID.str + " wid=" + e.window.windowID.str
+      elif e.type.SDL_EventType != SDL_MOUSEMOTION then
+        e.type.SDL_EventType.str
+      else ""
+    ; 
+    var linepos = 100 + 4 * lineskip;
+    if s != "" do
+      println$ s;
+      var r = rect_t (100,linepos - 2*lineskip,300,4*lineskip);
+      w.fill (r, green);
+      w.write (100,linepos,font,black,"EVENT: "+ s);
+      w.update;
+    done
+
+    // get another event
+    e= read input;
+  done
+
+  // we must have got a quit ..
+  println$ "CLOSE EVENT";
+} 
+
+begin
+  //create a window manager
+  var wm = window_manager();
+
+  // create a window controller for our window
+  var wc1 = window_controller (w1, ehandler w1);
+  var wc2 = window_controller (w2, ehandler w2);
+
+  // attach controller to window manager
+  var wno = wm.add_window wc1;
+  wno = wm.add_window wc2;
+
+  // USE variable wno or Felix will elide the call!
+  println$ "Window number " + wno.str;
+
+  // get the channel to read events from
+  var input = wm.get_event_source();
+    
+  // read an event
+  var e= read input;
+
+  while e.type.SDL_EventType != SDL_QUIT do
+
+    // dispatch the event to the window it is associated with
+    wm.dispatch_window_event e;
+
+    // get another event
+    e= read input;
+  done
+
+  // we must have got a quit ..
+  println$ "QUIT EVENT";
+  wm.delete_all();
+  println$ "Windows deleted, quitting";
+end
+
+

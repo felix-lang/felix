@@ -1,0 +1,63 @@
+
+include "gui/__init__";
+open FlxGui;
+
+println$ "Basic Window Manager Test";
+
+var clock = Faio::mk_alarm_clock();
+
+// Initialise the SDL system (SDL + TTF + IMAGE)
+FlxGui::init();
+
+var w = window_t("Felix:gui_04_wm_01",100,100,400,400);
+w.clear lightgrey;
+
+var font_name = OSX_dflt_font(); // temporary HACK!
+var font : font_t = get_font(font_name, 12);
+var lineskip = get_lineskip font;
+
+w.write (100,100,font,black,"Basic Window Manager Test");
+w.draw_line (RGB(0,0,255), 100,110,200,110);
+w.draw_line (RGB(0,0,255), 100,210,200,210);
+w.draw_line (RGB(0,0,255), 100,110,100,210);
+w.draw_line (RGB(0,0,255), 200,110,200,210);
+
+w.update;
+
+//create a window manager
+var wm = window_manager();
+
+begin
+  // get the channel to read events from
+  var input = wm.get_event_source();
+
+  // get a first event from the window manager
+  var e: event_t = read input;
+
+  // while the event isn't a quit event ..
+  while e.type.SDL_EventType != SDL_QUIT do
+    // print a diagnostic
+    var s = 
+      if e.type.SDL_EventType == SDL_WINDOWEVENT then
+        e.type.SDL_EventType.str + ": " + e.window.event.SDL_WindowEventID.str + " wid=" + e.window.windowID.str
+      elif e.type.SDL_EventType != SDL_MOUSEMOTION then
+        e.type.SDL_EventType.str
+      else ""
+    ; 
+    var linepos = 100 + 4 * lineskip;
+    if s != "" do
+      println$ s;
+      var r = rect_t (100,linepos - 2*lineskip,300,4*lineskip);
+      w.fill (r, green);
+      w.write (100,linepos,font,black,"EVENT: "+ s);
+      w.update;
+    done
+
+    // get another event
+    e= read input;
+  done
+
+  // we must have got a quit ..
+  println$ "QUIT EVENT";
+end
+ 

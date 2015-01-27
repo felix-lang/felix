@@ -1,0 +1,25 @@
+
+include "gui/__init__";
+open FlxGui;
+
+println$ "Basic Font Test";
+
+var clock = Faio::mk_alarm_clock();
+
+// Initialise the SDL system (SDL + TTF + IMAGE)
+FlxGui::init();
+
+var w = window_t("Felix:gu_02_font_01",100,100,400,400);
+w.clear lightgrey;
+
+var font_name = OSX_dflt_font(); // temporary HACK!
+var font : font_t = get_font(font_name, 16);
+var lineskip = get_lineskip font;
+w.write (100,100,font,black,"Felix says: ");
+w.write (100,100+lineskip,font,black,"Hello World");
+w.update;
+Faio::sleep(clock,15.0);
+
+
+
+
