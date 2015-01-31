@@ -3,7 +3,6 @@ include "std/c/__init__";
 
 // core type classes
 include "std/flx_tclass";
-include "std/order";
 include "std/algebra/__init__";
 
 // base scalar types 
