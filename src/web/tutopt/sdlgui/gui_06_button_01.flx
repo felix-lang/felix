@@ -1,0 +1,185 @@
+
+
+include "gui/__init__";
+open FlxGui;
+
+println$ "Basic Button Test";
+
+var clock = Faio::mk_alarm_clock();
+
+// Initialise the SDL system (SDL + TTF + IMAGE)
+FlxGui::init();
+
+var font_name = dflt_sans_serif_font();
+var font : font_t = get_font(font_name, 12);
+var lineskip = get_lineskip font;
+
+// make a line editor objet
+proc mk_field 
+(
+  // window and coords to display
+  window:window_t, x:int, y:int, 
+
+  // text font, text colour, and background colour
+  font:font_t, colour: colour_t, bgcolour:colour_t, 
+
+  // initial value of edit buffer
+  dflt:string,
+
+  // address to put event output channel
+  o:&oschannel[event_t]
+) 
+{
+  println$ "mk_field ("+x.str +"," + y.str+")="+dflt;
+  var editor = line_buffer (dflt.len.int, dflt);
+  var dc = line_buffer_display_controller (window,font,colour,bgcolour,x,y,editor);
+  dc.display();
+  var ich,och = #(mk_ioschannel_pair[event_t]);
+  var controller = line_edit editor dc ich;
+  spawn_fthread controller; 
+  println$ "mkfield: controller spawned";
+  o <- och;
+}
+
+
+// make an event handler for our window
+proc ehandler 
+  (w:window_t)
+  (buts: varray[oschannel[event_t] * ischannel[button_action_t]])
+  (input:ischannel[event_t])  () 
+{
+   // get a first event from the window manager
+  var e: event_t = read input;
+
+  // while the event isn't a quit event ..
+  while e.window.event.SDL_WindowEventID != SDL_WINDOWEVENT_CLOSE  do
+    // print a diagnostic
+    var s = 
+      if e.type.SDL_EventType == SDL_WINDOWEVENT then
+        e.type.SDL_EventType.str + ": " + e.window.event.SDL_WindowEventID.str + " wid=" + e.window.windowID.str
+      elif e.type.SDL_EventType != SDL_MOUSEMOTION then
+        e.type.SDL_EventType.str
+      else ""
+    ; 
+
+    for but in buts do
+      write$ but.0,e;
+      match read but.1 with
+      | NoAction => ;
+      | ClickAction => println$ "Button Clicked";
+      endmatch;
+    done
+
+    // get another event
+    e= read input;
+  done
+
+  // we must have got a quit ..
+  println$ "CLOSE EVENT";
+} 
+
+// Button colours
+var bsup = (label_colour=red, bg_colour=white,top_colour=blue,
+  left_colour=blue, bottom_colour=red,right_colour=red);
+
+var bsdown = (label_colour=red, bg_colour=blue,top_colour=darkgrey,
+  left_colour=darkgrey, bottom_colour=lightgrey,right_colour=lightgrey);
+
+var bsdis = (label_colour=red, bg_colour=black,top_colour=lightgrey,
+  left_colour=lightgrey, bottom_colour=darkgrey,right_colour=darkgrey);
+
+var bsmover = (label_colour=red, bg_colour=yellow,top_colour=blue,
+  left_colour=blue, bottom_colour=red,right_colour=red);
+
+
+proc mkbutton (
+
+  // window to put button on
+  w:window_t, 
+
+  // where to put button in window
+  x:int, y:int, 
+
+  // button label and font 
+  label:string, font:font_t, 
+
+  // channel for button to send action on 
+  oresp: oschannel[button_action_t], 
+
+  // address to store button display object
+  pbd: &button_display_t,
+
+  // address of channel for sending events to button
+  pos: &oschannel[event_t]
+)
+{
+  // button state object
+  var bm = ButtonModel (Up);
+
+  // button display object
+  var bd = ButtonDisplay (bm) (w, font, label, bsup, bsdown, bsdis, bsmover,
+    x,y, x+100,y+20,x+5,y+15);
+
+  // channel for sending events to button
+  var ich,och = mk_ioschannel_pair[event_t]();
+
+  // start the button controller
+  spawn_fthread$ button_controller (bm, bd, ich, oresp); 
+
+  // return button display and event channel
+  pbd <- bd ;
+  pos <- och;
+}
+
+begin
+  //create a window manager
+  var wm = window_manager();
+
+  // create a window
+  var w1 = window_t("Felix:gui_06_button_01",100,100,400,400);
+  w1.clear lightgrey;
+  w1.write (100,100,font,black,"Basic Button Test");
+  w1.update;
+
+  // create three edit fields
+  var ch1: oschannel[event_t]; 
+  mk_field (w, 50, 60, font, black, white, "EDITFIELD ONE", &ch1);
+  
+  var ch2: oschannel[event_t]; 
+  mk_field (w, 50, 120, font, black, white, "EDITFIELD TWO", &ch2);
+
+  var ch3: oschannel[event_t]; 
+  mk_field (w, 50, 180, font, black, white, "EDITFIELD THREE", &ch3);
+
+
+ // create a window controller for our window
+  var wc1 = window_controller (w1, ehandler w1 buts);
+
+  // attach controller to window manager
+  var wno = wm.add_window wc1;
+
+  // USE variable wno or Felix will elide the call!
+  println$ "Window number " + wno.str;
+
+  // get the channel to read events from
+  var input = wm.get_event_source();
+    
+  // read an event
+  var e= read input;
+
+  while e.type.SDL_EventType != SDL_QUIT do
+
+    // dispatch the event to the window it is associated with
+    wm.dispatch_window_event e;
+
+    // get another event
+    e= read input;
+  done
+
+  // we must have got a quit ..
+  println$ "QUIT EVENT";
+  wm.delete_all();
+  println$ "Windows deleted, quitting";
+end
+
+

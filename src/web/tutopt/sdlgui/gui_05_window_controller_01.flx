@@ -9,7 +9,7 @@ var clock = Faio::mk_alarm_clock();
 // Initialise the SDL system (SDL + TTF + IMAGE)
 FlxGui::init();
 
-var font_name = OSX_dflt_font(); // temporary HACK!
+var font_name = dflt_sans_serif_font();
 var font : font_t = get_font(font_name, 12);
 var lineskip = get_lineskip font;
 

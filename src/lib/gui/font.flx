@@ -1,6 +1,10 @@
 class FlxGuiFont
 {
-fun OSX_dflt_font() => "/Library/Fonts/Courier New.ttf";  
+private fun / (s:string, t:string) => Filename::join (s,t);
+
+fun dflt_mono_font() => #Config::std_config.FLX_SHARE_DIR/ "src"/"lib"/"fonts"/ "Courier New.ttf";  
+fun dflt_sans_serif_font() => #Config::std_config.FLX_SHARE_DIR/ "src"/"lib"/"fonts"/ "Arial.ttf";  
+fun dflt_serif_font() => #Config::std_config.FLX_SHARE_DIR/ "src"/"lib"/"fonts"/ "Times New Roman.ttf";  
 
 gen get_font (font_file:string, ptsize:int) = {
   var font = TTF_OpenFont (font_file,ptsize);

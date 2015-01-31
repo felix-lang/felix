@@ -1,4 +1,3 @@
-
 //$ Additive symmetric float-approximate group, symbol +.
 //$ Note: associativity is not assumed.
 class FloatAddgrp[t] {

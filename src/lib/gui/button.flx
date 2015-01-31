@@ -7,6 +7,11 @@ class FlxGuiButton
     | Mouseover // read and mouse is over
   ;
 
+  union button_action_t =
+    | NoAction
+    | ClickAction
+  ;
+
   interface button_model_t 
   {
     get_state: 1 -> button_state_t;
@@ -91,7 +96,8 @@ proc button_controller
 (
   bm: button_model_t, 
   bd: button_display_t, 
-  ec:ischannel[event_t]
+  ec:ischannel[event_t],
+  response:oschannel[button_action_t]
 ) () =
 {
   bd.display();
@@ -114,6 +120,7 @@ proc button_controller
         | _ => ;
         endmatch;
       done
+      write$ response, NoAction;
  
     | $(SDL_MOUSEBUTTONDOWN) => 
       x,y = e.button.x,e.button.y; //int32
@@ -121,26 +128,29 @@ proc button_controller
         //println$ "Button down in client rect of button " + bd.get_label();
         bm.set_state Down; bd.display();
       done
+      write$ response, NoAction;
  
     | $(SDL_MOUSEBUTTONUP) => 
       x,y = e.button.x,e.button.y; //int32
       if SDL_Point (x.int,y.int) \in bd.get_client_rect () do
         //println$ "Button up in client rect of button " + bd.get_label();
         bm.set_state Mouseover; bd.display();
+        write$ response, ClickAction;
       else
         bm.set_state Up; bd.display();
+        write$ response, NoAction;
       done
     | $(SDL_WINDOWEVENT) when e.window.event == SDL_WINDOWEVENT_LEAVE.uint8  =>
       bm.set_state Up; bd.display();
+      write$ response, NoAction;
 
-    | _ => ; 
+    | _ => 
+      write$ response, NoAction;
     endmatch;
     e = read ec;
   done
 
 }
-
-
 
 
 } // class

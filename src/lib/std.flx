@@ -10,7 +10,5 @@ proc _swap[t]: &t * &t =
   "swapper($1,$2);"
   requires swapper[t];
 
-publish "Universal type 'x as x'"
-  typedef any = any;
 
 include "std/__init__";

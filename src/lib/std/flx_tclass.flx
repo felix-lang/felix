@@ -3,6 +3,7 @@
 typedef void = 0;
 typedef unit = 1;
 typedef bool = 2;
+typedef any = any;
 
 // -----------------------------------------------------------------------------
 
