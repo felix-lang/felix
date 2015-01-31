@@ -1,0 +1,13 @@
+// partial order
+class Pord[t]{
+  inherit Eq[t];
+  virtual fun \subset: t * t -> bool;
+  virtual fun \supset(x:t,y:t):bool =>y \subset x;
+  virtual fun \subseteq(x:t,y:t):bool => x \subset y or x == y;
+  virtual fun \supseteq(x:t,y:t):bool => x \supset y or x == y;
+  axiom trans(x:t, y:t, z:t): \subset(x,y) and \subset(y,z) implies \subset(x,z);
+  axiom antisym(x:t, y:t): \subset(x,y) or \subset(y,x) or x == y;
+  axiom reflex(x:t, y:t): \subseteq(x,y) and \subseteq(y,x) implies x == y;
+}
+
+

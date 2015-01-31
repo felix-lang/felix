@@ -1,0 +1,72 @@
+//$ Float-approximate trigonometric functions.
+class Trig[t] {
+  inherit FloatDring[t];
+
+  // NOTE: most of the axioms here WILL FAIL because they require
+  // exact equality, but they're only going to succeed with approximate
+  // equality, whatever that means. This needs to be fixed!
+
+  // circular
+  // ref http://en.wikipedia.org/wiki/Circular_functions 
+  virtual fun sin: t -> t;
+  virtual fun cos: t -> t;
+  virtual fun tan (x:t)=> sin x / cos x;
+
+  virtual fun sec (x:t)=> recip (cos x);
+  virtual fun csc (x:t)=> recip (sin x);
+  virtual fun cot (x:t)=> recip (tan x);
+
+  virtual fun asin: t -> t;
+  virtual fun acos: t -> t;
+  virtual fun atan: t -> t;
+
+  virtual fun asec (x:t) => acos ( recip x);
+  virtual fun acsc (x:t) => asin ( recip x);
+  virtual fun acot (x:t) => atan ( recip x);
+
+  // hyperbolic
+  // ref http://en.wikipedia.org/wiki/Hyperbolic_functions
+  virtual fun sinh: t -> t;
+  virtual fun cosh: t -> t;
+  virtual fun tanh (x:t) => sinh x / cosh x;
+
+  virtual fun sech (x:t) => recip (cosh x);
+  virtual fun csch (x:t) => recip (sinh x);
+  virtual fun coth (x:t) => recip (tanh x); 
+
+  virtual fun asinh: t -> t;
+  virtual fun acosh: t -> t;
+  virtual fun atanh: t -> t;
+
+  virtual fun asech (x:t) => acosh ( recip x);
+  virtual fun acsch (x:t) => asinh ( recip x );
+  virtual fun acoth (x:t) => atanh ( recip x );
+
+  // exponential
+  virtual fun exp: t -> t;
+  virtual fun log: t -> t;
+  virtual fun pow: t * t -> t;
+}
+
+//$ Finance and Statistics.
+class Special[t] {
+  virtual fun erf: t -> t;
+  virtual fun erfc: t -> t;
+}
+
+//$ Float-approximate real numbers.
+class Real[t] {
+  inherit Tord[t];
+  inherit Trig[t];
+  inherit Special[t];
+  virtual fun embed: int -> t;
+
+  virtual fun log10: t -> t;
+  virtual fun abs: t -> t;
+  virtual fun sqrt: t -> t;
+  virtual fun ceil: t -> t;
+  virtual fun floor: t -> t;
+  virtual fun trunc: t -> t;
+}
+
+

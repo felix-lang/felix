@@ -1,0 +1,63 @@
+//$ Additive symmetric float-approximate group, symbol +.
+//$ Note: associativity is not assumed.
+class FloatAddgrp[t] {
+  inherit Eq[t];
+  virtual fun zero: unit -> t;
+  virtual fun + : t * t -> t;
+  virtual fun - : t -> t;
+  virtual fun + : t -> t = "$1";
+  virtual fun - (x:t,y:t):t => x + -y;
+  virtual proc += (px:&t,y:t) { px <- *px + y; }
+  virtual proc -= (px:&t,y:t) { px <- *px - y; }
+
+  reduce id (x:t): x+zero() => x;
+  reduce id (x:t): zero()+x => x;
+  reduce inv(x:t): x - x => zero();
+  reduce inv(x:t): - (-x) => x;
+  axiom sym (x:t,y:t): x+y == y+x;
+
+  fun add(x:t,y:t)=> x + y;
+  fun plus(x:t)=> +x;
+  fun sub(x:t,y:t)=> x - y;
+  fun neg(x:t)=> -x;
+  proc pluseq(px:&t, y:t) {  += (px,y); }
+  proc  minuseq(px:&t, y:t) { -= (px,y); }
+
+}
+
+//$ Additive symmetric group, symbol +.
+class Addgrp[t] {
+  inherit FloatAddgrp[t];
+  axiom assoc (x:t,y:t,z:t): (x + y) + z == x + (y + z);
+  reduce inv(x:t,y:t): x + y - y => x;
+}
+
+//$ Multiplicative symmetric float-approximate semi group with unit symbol *.
+//$ Note: associativity is not assumed.
+class FloatMultSemi1[t] {
+  inherit Eq[t];
+  proc muleq(px:&t, y:t) { *= (px,y); }
+  fun mul(x:t, y:t) => x * y;
+  fun sqr(x:t) => x * x;
+  fun cube(x:t) => x * x * x;
+  virtual fun one: unit -> t;
+  virtual fun * : t * t -> t;
+  virtual proc *= (px:&t, y:t) { px <- *px * y; }
+  reduce id (x:t): x*one() => x;
+  reduce id (x:t): one()*x => x;
+}
+
+//$ Multiplicative semi group with unit.
+class MultSemi1[t] {
+  inherit FloatMultSemi1[t];
+  axiom assoc (x:t,y:t,z:t): (x * y) * z == x * (y * z);
+  reduce cancel (x:t,y:t,z:t): x * z ==  y * z => x == y;
+}
+
+//$ Float-approximate ring.
+class FloatRing[t] {
+  inherit FloatAddgrp[t];
+  inherit FloatMultSemi1[t];
+}
+
+

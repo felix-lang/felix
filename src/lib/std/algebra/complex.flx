@@ -1,0 +1,22 @@
+//$ Float-approximate Complex.
+class Complex[t,r] {
+  inherit Eq[t];
+  inherit Special[t];
+  inherit Trig[t];
+  virtual fun real: t -> r;
+  virtual fun imag: t -> r;
+  virtual fun abs: t -> r;
+  virtual fun arg: t -> r;
+
+  virtual fun + : r * t -> t;
+  virtual fun + : t * r -> t;
+  virtual fun - : r * t -> t;
+  virtual fun - : t * r -> t;
+  virtual fun * : t * r -> t;
+  virtual fun * : r * t -> t;
+  virtual fun / : t * r -> t;
+  virtual fun / : r * t -> t;
+}
+
+
+

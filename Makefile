@@ -545,7 +545,7 @@ sdltest:
 	${LPATH}=sdlbin build/release/host/bin/flx --felix=build.fpc --force -od sdlbin demos/sdl/sdltest
 
 guitest:
-	build/release/host/bin/flx --felix=build.fpc --indir=src/web/tutopt/sdlgui --regex='.*\.flx'
+	FLX_INSTALL_DIR=build/release build/release/host/bin/flx --felix=build.fpc --indir=src/web/tutopt/sdlgui --regex='.*\.flx'
  
 
 evtdemo:

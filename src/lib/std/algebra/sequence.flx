@@ -1,0 +1,14 @@
+class Forward[t] {
+  virtual fun succ: t -> t;
+  virtual proc pre_incr: &t;
+  virtual proc post_incr: &t;
+}
+
+class Bidirectional[t] {
+  inherit Forward[t];
+  virtual fun pred: t -> t;
+  virtual proc pre_decr: &t;
+  virtual proc post_decr: &t;
+}
+
+
