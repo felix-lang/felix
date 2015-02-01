@@ -9,20 +9,24 @@ class FlxGuiButton
 
   union button_action_t =
     | NoAction
-    | ClickAction
+    | ClickAction of string
   ;
 
   interface button_model_t 
   {
     get_state: 1 -> button_state_t;
     set_state: button_state_t -> 0;
+    get_tag: 1 -> string;
+    set_tag: string -> 0;
   }
 
-  object ButtonModel (init_state:button_state_t) =
+  object ButtonModel (var tag: string, init_state:button_state_t) =
   {
     var state = init_state;
     method fun get_state() => state;
     method proc set_state (s:button_state_t) => state = s;
+    method fun get_tag () => tag;
+    method proc set_tag (s:string) => tag = s;
   }
 
   typedef button_colour_scheme_t = 
@@ -135,7 +139,7 @@ proc button_controller
       if SDL_Point (x.int,y.int) \in bd.get_client_rect () do
         //println$ "Button up in client rect of button " + bd.get_label();
         bm.set_state Mouseover; bd.display();
-        write$ response, ClickAction;
+        write$ response, ClickAction #(bm.get_tag);
       else
         bm.set_state Up; bd.display();
         write$ response, NoAction;
