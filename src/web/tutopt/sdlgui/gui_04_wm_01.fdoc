@@ -1,4 +1,5 @@
-
+@title Basic Window Manager Use
+@felix
 include "gui/__init__";
 open FlxGui;
 

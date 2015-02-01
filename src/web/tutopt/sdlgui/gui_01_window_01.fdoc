@@ -1,4 +1,5 @@
-
+@title Basic Window Creation
+@felix
 include "gui/__init__";
 open FlxGui;
 
