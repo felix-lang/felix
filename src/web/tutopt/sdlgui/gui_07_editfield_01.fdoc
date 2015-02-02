@@ -78,6 +78,7 @@ begin
   w1.clear lightgrey;
   w1.write (100,10,font,black,"Basic Field Edit Test");
   w1.update;
+  w1.show;
 
   var ch1: oschannel[event_t]; var ed1: line_buffer_interface;
   mk_field (w1, 50, 60, font, black, white, "EDITFIELD ONE", &ed1, &ch1);

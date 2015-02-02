@@ -11,6 +11,7 @@ include "std/datatype/slice";
 include "std/datatype/list";
 include "std/datatype/assoc_list";
 //include "std/datatype/sexpr";
+//include "std/datatype/lsexpr";
 //include "std/datatype/ralist";
 
 // arrays

@@ -1,0 +1,132 @@
+// interim menu stuff
+// these menus are transient, retaining state only when open
+
+
+include "std/datatype/lsexpr";
+class FlxGuiMenu
+{
+  // A menu entry is either some text or a separator
+  // The text has a visual label and a separate tag 
+  // returned when an entry is selected
+  union menu_entry_active_t = Active | Disabled;
+  typedef menu_text_entry_t = (tag:string, label:string, active:menu_entry_active_t);
+
+  union menu_entry_t = Separator | Text of menu_text_entry_t;
+
+  // A menu is a list of trees with both leaves and nodes labelled
+  typedef menu_item_t = LS_expr::lsexpr[menu_entry_t, menu_entry_t];
+  typedef menu_data_t = list[menu_item_t];
+
+  // A position in the tree is a list of integers
+  // Separators do not count
+  typedef menu_position_t = list[int];
+
+  // A menu is either closed, or open at a particular position
+  union menu_state_t = Closed | Open of menu_position_t;
+
+  union menu_action_t = NoAction | SelectedAction of string;
+
+  interface menu_model_t
+  {
+    get_menu: 1 -> menu_data_t;
+    get_state: 1 -> menu_state_t;
+    set_state: menu_state_t -> 0;
+    get_current_tag: 1 -> string; // empty string if closed
+    get_current_tag_chain: 1 -> list[string]; // from the top
+  }
+
+  object MenuModel (m:menu_data_t) implements menu_model_t =
+  {
+    var state = Closed;
+    method fun get_menu () => m;
+    method fun get_state () => state;
+    method proc set_state (s:menu_state_t) => state = s;
+    method fun get_current_tag () => "get current tag NOT IMPLEMENTED";
+    method fun get_current_tag_chain () => Empty[string];
+  }
+
+  interface menu_display_t 
+  {
+    display: 1 -> 0;
+  }
+
+  object MenuDisplay 
+  (
+    m:menu_model_t,
+    w:window_t,
+    x:int,y:int,
+    font:font_t,
+    text_colour: button_colour_scheme_t,
+    disabled_colour: button_colour_scheme_t,
+    selected_colour: button_colour_scheme_t
+  ) =
+  {
+    var lineskip = get_lineskip font;
+    var border_width = 2;
+    var left_padding = 4;
+    var right_padding = 10;
+    var min_width = 20;
+    var separator_depth = 1;
+    var top_padding = 1;
+    var bottom_padding = 1;
+
+    fun width (s:string) => (FlxGuiFont::get_textsize (font,s)).0;
+    fun width: menu_entry_t -> int =
+      | Separator => left_padding + right_padding + min_width
+      | Text s => left_padding + right_padding + width s.label
+    ;
+    fun depth : menu_entry_t -> int = 
+      | Separator => top_padding + bottom_padding + separator_depth
+      | Text s => top_padding + bottom_padding + lineskip
+    ;
+    fun width : menu_item_t -> int =
+      | Leaf menu_entry => width menu_entry
+      | Tree (?menu_entries ,_) => width menu_entries
+    ;
+
+    fun depth : menu_item_t -> int =
+      | Leaf menu_entry => depth menu_entry
+      | Tree (?menu_entries ,_) => 0 // NOT recursive!
+    ;
+    fun width (ls: menu_data_t) => fold_left 
+      (fun (w:int) (menu_item:menu_item_t) => max (w, width menu_item)) 
+      0 
+      ls
+    ;
+    fun depth (ls: menu_data_t) => fold_left
+      (fun (d:int) (menu_item:menu_item_t) => d + depth menu_item)
+      0
+      ls
+    ;
+    method proc display() 
+    {
+      var left_x = x;
+      var top_y = y;
+      var right_x = left_x + width #(m.get_menu);
+      var bottom_y = top_y + depth #(m.get_menu);
+      var scheme = text_colour;
+
+      // top
+      w.draw_line (scheme.top_colour, left_x - 2,top_y - 2,right_x + 2, top_y - 2); 
+      w.draw_line (scheme.top_colour, left_x - 1,top_y - 1,right_x + 1, top_y - 1); 
+      // left
+      w.draw_line (scheme.left_colour, left_x - 2,top_y - 2,left_x - 2, bottom_y + 2); 
+      w.draw_line (scheme.left_colour, left_x - 1,top_y - 1,left_x - 1, bottom_y + 1); 
+      // right
+      w.draw_line (scheme.right_colour, right_x + 2,top_y - 2,right_x + 2, bottom_y + 2); 
+      w.draw_line (scheme.right_colour, right_x + 1,top_y - 1,right_x + 1, bottom_y + 1); 
+      // bottom
+      w.draw_line (scheme.bottom_colour, left_x - 1,bottom_y + 1,right_x + 1, bottom_y + 1); 
+      w.draw_line (scheme.bottom_colour, left_x - 2,bottom_y + 2,right_x + 2, bottom_y + 2); 
+
+      w.fill(SDL_Rect (left_x, top_y, right_x - left_x + 1, bottom_y - top_y + 1), scheme.bg_colour);
+      w.update; 
+    }  
+  }
+
+
+  object MenuController (mm:menu_model_t, md:menu_display_t) = 
+  {
+  }
+}
+

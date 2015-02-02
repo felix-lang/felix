@@ -113,6 +113,7 @@ begin
   w1.clear lightgrey;
   w1.write (100,100,font,black,"Basic Button Test");
   w1.update;
+  w1.show;
 
   var iresp,oresp = #mk_ioschannel_pair[button_action_t];
 

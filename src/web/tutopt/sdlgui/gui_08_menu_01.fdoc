@@ -1,31 +1,54 @@
-@title Basic Window Controller Use
+@title Basic Menu 
 @felix
 include "gui/__init__";
 open FlxGui;
 
-println$ "Basic Window Controller Test";
+println$ "Basic Menu Test";
 
 var clock = Faio::mk_alarm_clock();
 
 // Initialise the SDL system (SDL + TTF + IMAGE)
 FlxGui::init();
 
-var font_name = dflt_sans_serif_font();
+var font_name = dflt_mono_font();
 var font : font_t = get_font(font_name, 12);
 var lineskip = get_lineskip font;
 
+// Menu colours
+var text_colour = (label_colour=red, bg_colour=white,top_colour=blue,
+  left_colour=blue, bottom_colour=red,right_colour=red);
 
-var w1 = window_t("Felix:gui_05_window_controller_01",100,100,400,400);
-w1.clear lightgrey;
-w1.write (100,100,font,black,"Basic Window Controller Test");
-w1.update;
-w1.show;
+var selected_colour = (label_colour=red, bg_colour=blue,top_colour=darkgrey,
+  left_colour=darkgrey, bottom_colour=lightgrey,right_colour=lightgrey);
 
-var w2 = window_t("WINDOW 2",400,100,400,400);
-w2.clear blue;
-w2.write (100,100,font,black,"Basic Window Controller Test");
-w2.update;
-w2.show;
+var disabled_colour = (label_colour=red, bg_colour=black,top_colour=lightgrey,
+  left_colour=lightgrey, bottom_colour=darkgrey,right_colour=darkgrey);
+
+proc mk_menu
+(
+  w:window_t, x:int, y:int,
+  m:menu_data_t
+) 
+{
+  var mm = MenuModel m;
+  var md = MenuDisplay (mm,w,x,y,font, text_colour,disabled_colour,selected_colour);
+  md.display();
+}
+
+open LS_expr;
+
+fun leaf (x:menu_text_entry_t)=> Leaf[menu_entry_t,menu_entry_t] (Text x);
+
+var menu = list (
+  leaf (tag="m1", label="m1",active=Active),
+  leaf (tag="m2", label="m2 and stuff",active=Active),
+  leaf (tag="m3", label="m3",active=Active),
+  leaf (tag="m4", label="m4",active=Active),
+  leaf (tag="m5", label="m5",active=Active),
+  leaf (tag="m6", label="m6",active=Active),
+  leaf (tag="m7", label="m7",active=Active),
+  leaf (tag="m8", label="m8",active=Active)
+);
 
 // make an event handler for our window
 proc ehandler 
@@ -45,14 +68,6 @@ proc ehandler
         e.type.SDL_EventType.str
       else ""
     ; 
-    var linepos = 100 + 4 * lineskip;
-    if s != "" do
-      println$ s;
-      var r = rect_t (100,linepos - 2*lineskip,300,4*lineskip);
-      w.fill (r, green);
-      w.write (100,linepos,font,black,"EVENT: "+ s);
-      w.update;
-    done
 
     // get another event
     e= read input;
@@ -62,17 +77,25 @@ proc ehandler
   println$ "CLOSE EVENT";
 } 
 
+ 
 begin
   //create a window manager
   var wm = window_manager();
 
+  // create a window
+  var w1 = window_t("Felix:gui_08_menu_01",100,100,400,400);
+  w1.clear lightgrey;
+  w1.write (100,10,font,black,"Basic Menu Test");
+  w1.update;
+  w1.show;
+
+  mk_menu (w1, 50,50, menu);
+
   // create a window controller for our window
   var wc1 = window_controller (w1, ehandler w1);
-  var wc2 = window_controller (w2, ehandler w2);
 
   // attach controller to window manager
   var wno = wm.add_window wc1;
-  wno = wm.add_window wc2;
 
   // USE variable wno or Felix will elide the call!
   println$ "Window number " + wno.str;

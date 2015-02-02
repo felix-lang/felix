@@ -6,10 +6,27 @@ ctor window_t  (title:string, xpos:int, ypos:int, width:int,height:int) =
     title,
     xpos,ypos,
     width, height,
-    SDL_WINDOW_SHOWN \| SDL_WINDOW_RESIZABLE
+    SDL_WINDOW_RESIZABLE
   );
   return window;
 }
+
+typedef fixed_size_window_t = window_t;
+
+ctor fixed_size_window_t  (title:string, xpos:int, ypos:int, width:int,height:int) =
+{
+  var window = SDL_CreateWindow(
+    title,
+    xpos,ypos,
+    width, height,
+    SDL_WINDOW_SHOWN
+  );
+  return window;
+}
+
+proc show (w:window_t) { SDL_ShowWindow w; }
+proc hide (w:window_t) { SDL_HideWindow w; }
+proc raise (w:window_t) { SDL_RaiseWindow w; }
 
 proc destroy (w:window_t) { SDL_DestroyWindow w; }
 // x,y is the origin position of the the first char

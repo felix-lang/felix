@@ -19,6 +19,7 @@ var lineskip = get_lineskip font;
 w.write (100,100,font,black,"Felix says: ");
 w.write (100,100+lineskip,font,black,"Hello World");
 w.update;
+w.show;
 Faio::sleep(clock,15.0);
 
 
