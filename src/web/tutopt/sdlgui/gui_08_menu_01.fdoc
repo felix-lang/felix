@@ -18,7 +18,7 @@ var lineskip = get_lineskip font;
 var text_colour = (label_colour=red, bg_colour=white,top_colour=blue,
   left_colour=blue, bottom_colour=red,right_colour=red);
 
-var selected_colour = (label_colour=red, bg_colour=blue,top_colour=darkgrey,
+var selected_colour = (label_colour=green, bg_colour=blue,top_colour=darkgrey,
   left_colour=darkgrey, bottom_colour=lightgrey,right_colour=lightgrey);
 
 var disabled_colour = (label_colour=red, bg_colour=black,top_colour=lightgrey,
@@ -32,17 +32,20 @@ proc mk_menu
 {
   var mm = MenuModel m;
   var md = MenuDisplay (mm,w,x,y,font, text_colour,disabled_colour,selected_colour);
+  mm.set_state (Open (list (0))); 
   md.display();
 }
 
 open LS_expr;
 
 fun leaf (x:menu_text_entry_t)=> Leaf[menu_entry_t,menu_entry_t] (Text x);
+fun separator () => Leaf[menu_entry_t, menu_entry_t] Separator;
 
 var menu = list (
   leaf (tag="m1", label="m1",active=Active),
   leaf (tag="m2", label="m2 and stuff",active=Active),
   leaf (tag="m3", label="m3",active=Active),
+  #separator, 
   leaf (tag="m4", label="m4",active=Active),
   leaf (tag="m5", label="m5",active=Active),
   leaf (tag="m6", label="m6",active=Active),

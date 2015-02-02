@@ -20,7 +20,10 @@ class FlxGuiButton
     set_tag: string -> 0;
   }
 
-  object ButtonModel (var tag: string, init_state:button_state_t) =
+  object ButtonModel 
+    (var tag: string, init_state:button_state_t) 
+    implements button_model_t 
+  =
   {
     var state = init_state;
     method fun get_state() => state;

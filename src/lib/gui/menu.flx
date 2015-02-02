@@ -62,6 +62,7 @@ class FlxGuiMenu
   ) =
   {
     var lineskip = get_lineskip font;
+    var baseline_offset = font.TTF_FontAscent; 
     var border_width = 2;
     var left_padding = 4;
     var right_padding = 10;
@@ -120,6 +121,36 @@ class FlxGuiMenu
       w.draw_line (scheme.bottom_colour, left_x - 2,bottom_y + 2,right_x + 2, bottom_y + 2); 
 
       w.fill(SDL_Rect (left_x, top_y, right_x - left_x + 1, bottom_y - top_y + 1), scheme.bg_colour);
+
+      var selected = match #(m.get_state) with
+        | Closed => 0 // ignore for the moment
+        | Open (Empty) => 0 // ignore for the moment
+        | Open (Cons (?h,_)) => h
+      ;
+
+      var counter = 0;
+      var ypos = top_y + top_padding;
+      proc show_entry (entry: menu_entry_t) => 
+        match entry with
+        | Separator => 
+          var y = ypos;
+          w.draw_line (RGB(0,0,0), left_x, y, right_x, y); 
+          ypos = ypos + separator_depth + bottom_padding + top_padding;
+
+        | Text (label=?s) =>
+          y = ypos + baseline_offset;
+          var scheme = if counter == selected then selected_colour else text_colour;
+          w.write (left_x+left_padding, y,font,scheme.label_colour,s);
+          ypos = ypos + lineskip + bottom_padding+top_padding;
+          ++counter;
+        endmatch
+      ;
+      for item in #(m.get_menu) do
+        match item with
+        | Leaf entry => show_entry entry;
+        | Tree (?entry, _) => show_entry entry;
+        endmatch;
+      done
       w.update; 
     }  
   }
