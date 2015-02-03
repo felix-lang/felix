@@ -8,6 +8,7 @@ fun RGB (r:int, g:int, b:int) =>
 var white = RGB (255,255,255);
 var black = RGB (0,0,0);
 var lightgrey = RGB (180,180,180);
+var grey = RGB (100,100,100);
 var darkgrey = RGB (60,60,60);
 var red = RGB(255,0,0);
 var green = RGB (0,255,0);

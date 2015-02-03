@@ -50,6 +50,8 @@ class FlxGuiMenu
     display: 1 -> 0;
   }
 
+  typedef submenu_icon_t = (open_icon: &surface_t, closed_icon: &surface_t);
+
   object MenuDisplay 
   (
     m:menu_model_t,
@@ -58,14 +60,16 @@ class FlxGuiMenu
     font:font_t,
     text_colour: button_colour_scheme_t,
     disabled_colour: button_colour_scheme_t,
-    selected_colour: button_colour_scheme_t
+    selected_colour: button_colour_scheme_t,
+    submenu_icons: submenu_icon_t
   ) =
   {
+    var icon_width = max (submenu_icons.open_icon*.w, submenu_icons.closed_icon*.w);
     var lineskip = get_lineskip font;
     var baseline_offset = font.TTF_FontAscent; 
     var border_width = 2;
     var left_padding = 4;
-    var right_padding = 10;
+    var right_padding = 10 + icon_width;
     var min_width = 20;
     var separator_depth = 1;
     var top_padding = 1;
@@ -87,7 +91,7 @@ class FlxGuiMenu
 
     fun depth : menu_item_t -> int =
       | Leaf menu_entry => depth menu_entry
-      | Tree (?menu_entries ,_) => 0 // NOT recursive!
+      | Tree (?menu_entry ,_) => depth menu_entry
     ;
     fun width (ls: menu_data_t) => fold_left 
       (fun (w:int) (menu_item:menu_item_t) => max (w, width menu_item)) 
@@ -99,12 +103,12 @@ class FlxGuiMenu
       0
       ls
     ;
-    method proc display() 
+    proc display_menu(x:int, y:int, menu:menu_data_t) 
     {
       var left_x = x;
       var top_y = y;
-      var right_x = left_x + width #(m.get_menu);
-      var bottom_y = top_y + depth #(m.get_menu);
+      var right_x = left_x + width menu;
+      var bottom_y = top_y + depth menu;
       var scheme = text_colour;
 
       // top
@@ -130,29 +134,48 @@ class FlxGuiMenu
 
       var counter = 0;
       var ypos = top_y + top_padding;
-      proc show_entry (entry: menu_entry_t) => 
+      proc show_entry (entry: menu_entry_t) (submenu:menu_data_t) => 
         match entry with
         | Separator => 
           var y = ypos;
           w.draw_line (RGB(0,0,0), left_x, y, right_x, y); 
           ypos = ypos + separator_depth + bottom_padding + top_padding;
 
-        | Text (label=?s) =>
+        | Text (label=?s,active=?active) =>
           y = ypos + baseline_offset;
-          var scheme = if counter == selected then selected_colour else text_colour;
+          var scheme = match active with
+            | Active => if counter == selected then selected_colour else text_colour 
+            | Disabled => disabled_colour
+          ;
+          var client_area = rect_t (
+            left_x+border_width,
+            ypos+top_padding,
+            right_x - left_x - 2 * border_width, 
+            lineskip
+          );
+          w.fill (client_area, scheme.bg_colour);
           w.write (left_x+left_padding, y,font,scheme.label_colour,s);
+
+          match submenu with
+          | Empty => ;
+          | _ =>
+            var icon = if selected == counter then submenu_icons.open_icon else submenu_icons.closed_icon; 
+            var dst = rect_t (right_x - icon_width - border_width - 1, ypos, 0,0);
+            C_hack::ignore(SDL_BlitSurface (icon, C_hack::null[rect_t], SDL_GetWindowSurface w,&dst));
+          endmatch;
           ypos = ypos + lineskip + bottom_padding+top_padding;
           ++counter;
         endmatch
       ;
-      for item in #(m.get_menu) do
+      for item in menu do
         match item with
-        | Leaf entry => show_entry entry;
-        | Tree (?entry, _) => show_entry entry;
+        | Leaf entry => show_entry entry Empty[lsexpr[menu_entry_t, menu_entry_t]];
+        | Tree (?entry, ?submenu) => show_entry entry submenu;
         endmatch;
       done
       w.update; 
     }  
+    method proc display() => display_menu (x,y,#(m.get_menu));
   }
 
 

@@ -38,7 +38,7 @@ open class SDL_image_h
   proc IMG_Quit: 1;
 
   fun IMG_InvertAlpha: int -> int;
-  fun IMG_Load: &char -> &SDL_Surface;
+  fun IMG_Load: +char -> &SDL_Surface;
   fun IMG_LoadBMP_RW: SDL_RWops -> &SDL_Surface;
   fun IMG_LoadGIF_RW: SDL_RWops -> &SDL_Surface;
   fun IMG_LoadJPG_RW: SDL_RWops -> &SDL_Surface;
