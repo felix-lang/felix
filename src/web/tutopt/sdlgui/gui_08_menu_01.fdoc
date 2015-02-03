@@ -36,12 +36,12 @@ var submenu_icon = (open_icon=open_icon, closed_icon=closed_icon);
 proc mk_menu
 (
   w:window_t, x:int, y:int,
-  m:menu_data_t
+  m:menu_data_t, init: menu_state_t
 ) 
 {
   var mm = MenuModel m;
   var md = MenuDisplay (mm,w,x,y,font, text_colour,disabled_colour,selected_colour, submenu_icon);
-  mm.set_state (Open (list (0))); 
+  mm.set_state init;
   md.display();
 }
 
@@ -73,6 +73,8 @@ var menu = list (
   leaf (tag="m7", label="m7",active=Active),
   leaf (tag="m8", label="m8",active=Active)
 );
+
+var init_state = Open ( list[int] (4,2) );
 
 // make an event handler for our window
 proc ehandler 
@@ -113,7 +115,7 @@ begin
   w1.update;
   w1.show;
 
-  mk_menu (w1, 50,50, menu);
+  mk_menu (w1, 50,50, menu, init_state);
 
   // create a window controller for our window
   var wc1 = window_controller (w1, ehandler w1);

@@ -103,7 +103,7 @@ class FlxGuiMenu
       0
       ls
     ;
-    proc display_menu(x:int, y:int, menu:menu_data_t) 
+    proc display_menu(x:int, y:int, menu:menu_data_t, position:menu_position_t) 
     {
       var left_x = x;
       var top_y = y;
@@ -126,10 +126,9 @@ class FlxGuiMenu
 
       w.fill(SDL_Rect (left_x, top_y, right_x - left_x + 1, bottom_y - top_y + 1), scheme.bg_colour);
 
-      var selected = match #(m.get_state) with
-        | Closed => 0 // ignore for the moment
-        | Open (Empty) => 0 // ignore for the moment
-        | Open (Cons (?h,_)) => h
+      var selected = match position with
+        | Empty => 0 // ignore for the moment
+        | Cons (?h,_) => h
       ;
 
       var counter = 0;
@@ -143,9 +142,9 @@ class FlxGuiMenu
 
         | Text (label=?s,active=?active) =>
           y = ypos + baseline_offset;
-          var scheme = match active with
-            | Active => if counter == selected then selected_colour else text_colour 
-            | Disabled => disabled_colour
+          var scheme, dosub = match active with
+            | Active => if counter == selected then selected_colour, true else text_colour, false
+            | Disabled => disabled_colour, false
           ;
           var client_area = rect_t (
             left_x+border_width,
@@ -162,6 +161,13 @@ class FlxGuiMenu
             var icon = if selected == counter then submenu_icons.open_icon else submenu_icons.closed_icon; 
             var dst = rect_t (right_x - icon_width - border_width - 1, ypos, 0,0);
             C_hack::ignore(SDL_BlitSurface (icon, C_hack::null[rect_t], SDL_GetWindowSurface w,&dst));
+            if dosub do
+              var subpos = match position with 
+                | Cons (_,?tail) => tail
+                | _ => position // empty
+              ;
+              display_menu (right_x+border_width,ypos+border_width,submenu,subpos);
+            done
           endmatch;
           ypos = ypos + lineskip + bottom_padding+top_padding;
           ++counter;
@@ -175,7 +181,13 @@ class FlxGuiMenu
       done
       w.update; 
     }  
-    method proc display() => display_menu (x,y,#(m.get_menu));
+    method proc display() {
+      val position = match #(m.get_state) with
+        | Closed => list (0)
+        | Open p => p
+      ;
+      display_menu (x,y,#(m.get_menu), position);
+    }
   }
 
 
