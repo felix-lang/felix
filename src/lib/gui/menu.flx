@@ -24,7 +24,7 @@ class FlxGuiMenu
   // A menu is either closed, or open at a particular position
   union menu_state_t = Closed | Open of menu_position_t;
 
-  union menu_action_t = NoAction | SelectedAction of string;
+  union menu_action_t = NoAction | ChangedPosition | SelectedAction of string;
 
   interface menu_model_t
   {
@@ -48,6 +48,7 @@ class FlxGuiMenu
   interface menu_display_t 
   {
     display: 1 -> 0;
+    get_hotrects: 1 -> list[rect_t * menu_position_t];
   }
 
   typedef submenu_icon_t = (open_icon: &surface_t, closed_icon: &surface_t);
@@ -188,11 +189,91 @@ class FlxGuiMenu
       ;
       display_menu (x,y,#(m.get_menu), position);
     }
+
+    method fun get_hotrects() : list[rect_t * menu_position_t] =
+    {
+      // FIXME!
+      return Empty[rect_t * menu_position_t];
+    }
+
   }
 
-
-  object MenuController (mm:menu_model_t, md:menu_display_t) = 
+  proc menu_controller 
+  (
+    mm: menu_model_t,
+    md: menu_display_t,
+    ec: ischannel[event_t],
+    response: oschannel[menu_action_t]
+  ) ()
   {
+    md.display();
+    var run = true;
+    var e = read ec;
+    while run do
+      match e.type.SDL_EventType with
+      | $(SDL_WINDOWEVENT) =>
+        match e.window.event.SDL_WindowEventID with
+        | $(SDL_WINDOWEVENT_RESIZED) =>
+          md.display();
+          write$ response, NoAction;
+
+        | _ => write$ response, NoAction;
+        endmatch;
+
+      | $(SDL_MOUSEMOTION) =>
+/*
+        var x,y = e.motion.x,e.motion.y; //int32
+        if SDL_Point (x.int,y.int) \in bd.get_client_rect () do
+          //println$ "Motion in client rect of button " + bd.get_label();
+          match bm.get_state () with
+          | Up => bm.set_state Mouseover; bd.display(); // Enter
+          | _ => ;
+          endmatch;
+        else
+          match bm.get_state () with
+          | Mouseover => bm.set_state Up; bd.display(); // Leave
+          | Down => bm.set_state Up; bd.display(); // Leave
+          | _ => ;
+          endmatch;
+        done
+*/
+        write$ response, NoAction;
+   
+      | $(SDL_MOUSEBUTTONDOWN) => 
+/*
+        x,y = e.button.x,e.button.y; //int32
+        if SDL_Point (x.int,y.int) \in bd.get_client_rect () do
+          //println$ "Button down in client rect of button " + bd.get_label();
+          bm.set_state Down; bd.display();
+        done
+*/
+        write$ response, NoAction;
+/*
+   
+      | $(SDL_MOUSEBUTTONUP) => 
+        x,y = e.button.x,e.button.y; //int32
+        if SDL_Point (x.int,y.int) \in bd.get_client_rect () do
+          //println$ "Button up in client rect of button " + bd.get_label();
+          bm.set_state Mouseover; bd.display();
+          write$ response, ClickAction #(bm.get_tag);
+        else
+          bm.set_state Up; bd.display();
+          write$ response, NoAction;
+        done
+*/
+      | $(SDL_WINDOWEVENT) when e.window.event == SDL_WINDOWEVENT_LEAVE.uint8  =>
+/*
+        bm.set_state Up; bd.display();
+*/
+        write$ response, NoAction;
+
+      | _ => 
+        write$ response, NoAction;
+      endmatch;
+      e = read ec;
+    done
+
   }
+
 }
 

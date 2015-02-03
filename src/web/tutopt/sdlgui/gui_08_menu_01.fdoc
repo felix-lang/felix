@@ -36,13 +36,22 @@ var submenu_icon = (open_icon=open_icon, closed_icon=closed_icon);
 proc mk_menu
 (
   w:window_t, x:int, y:int,
-  m:menu_data_t, init: menu_state_t
+  m:menu_data_t, init: menu_state_t,
+  oresp: oschannel[menu_action_t],
+  pmm: &menu_model_t,
+  pmd: &menu_display_t,
+  poevent: &oschannel[event_t]
 ) 
 {
+  var ievent,oevent = #mk_ioschannel_pair[event_t];
   var mm = MenuModel m;
   var md = MenuDisplay (mm,w,x,y,font, text_colour,disabled_colour,selected_colour, submenu_icon);
   mm.set_state init;
   md.display();
+  spawn_fthread$ menu_controller (mm,md,ievent,oresp);
+  pmm <- mm;
+  pmd <- md;
+  poevent <- oevent;
 }
 
 open LS_expr;
@@ -76,9 +85,18 @@ var menu = list (
 
 var init_state = Open ( list[int] (4,2) );
 
+// Base display routine
+proc display (w:window_t)
+{
+  w.clear lightgrey;
+  w.write (100,10,font,black,"Basic Menu Test");
+  w.update;
+}
+ 
 // make an event handler for our window
 proc ehandler 
   (w:window_t)
+  (menu_out: oschannel[event_t], menu_in:ischannel[menu_action_t])
   (input:ischannel[event_t])  () 
 {
    // get a first event from the window manager
@@ -94,7 +112,21 @@ proc ehandler
         e.type.SDL_EventType.str
       else ""
     ; 
+    write$ menu_out, e;
+    var response = read menu_in;
+    match response with
+    | NoAction => ;
+    | ChangedPosition => 
+      w.display; // redraw whole window base
+      w.update;
+      var resize_event: event_t; // hack, only fill out some fields
+      &resize_event.type <- SDL_WINDOWEVENT.uint32;
+      &resize_event.window.event <- SDL_WINDOWEVENT_RESIZED.uint8;
+      write$ menu_out, resize_event;
+      response = read menu_in; //ignored
 
+    | SelectedAction s => println$ "Menu Selection made: " + s;
+    endmatch; 
     // get another event
     e= read input;
   done
@@ -103,22 +135,24 @@ proc ehandler
   println$ "CLOSE EVENT";
 } 
 
- 
+
 begin
   //create a window manager
   var wm = window_manager();
 
   // create a window
   var w1 = window_t("Felix:gui_08_menu_01",100,100,400,400);
-  w1.clear lightgrey;
-  w1.write (100,10,font,black,"Basic Menu Test");
-  w1.update;
-  w1.show;
+  w1.display;
 
-  mk_menu (w1, 50,50, menu, init_state);
+  var iresp,oresp = #mk_ioschannel_pair[menu_action_t];
+
+  var oevent: oschannel[event_t];
+  var mm: menu_model_t;
+  var md: menu_display_t;
+  mk_menu (w1, 50,50, menu, init_state, oresp, &mm, &md, &oevent);
 
   // create a window controller for our window
-  var wc1 = window_controller (w1, ehandler w1);
+  var wc1 = window_controller (w1, ehandler w1 (oevent, iresp) );
 
   // attach controller to window manager
   var wno = wm.add_window wc1;

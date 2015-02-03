@@ -231,6 +231,7 @@ let rec get_encoder' syms bsym_table p typ : string list =
     | BBDCL_union (vs,idts) ->
       ["b+=::flx::gc::generic::blit("^p^",sizeof("^tname^")); // union"]
 
+    | BBDCL_cstruct (vs, idts,_) (* this is NOT really correct ... *)
     | BBDCL_struct (vs,idts) ->
       let varmap = mk_varmap vs ts in
       let idts = map (fun (s,t) -> s,varmap_subst varmap t) idts in
@@ -259,7 +260,10 @@ let rec get_encoder' syms bsym_table p typ : string list =
         | Some _ -> assert false
       in
       encoder
-     | _ -> assert false
+     | _ -> 
+      print_endline ("get_encoder encountered unexpected instance kind for type: " ^ sbt bsym_table t');
+      print_endline ("Kind is " ^ string_of_bbdcl bsym_table (Flx_bsym.bbdcl bsym) i );
+      assert false
     end
 
   | BTYP_array (t,u) when unitsum bsym_table u = 0 -> []
@@ -321,6 +325,7 @@ let rec get_decoder' syms bsym_table p typ : string list =
     | BBDCL_union (vs,idts) ->
       ["i=::flx::gc::generic::blit("^p^",sizeof("^tname^"),s,i); // union"]
 
+    | BBDCL_cstruct (vs, idts,_) (* this is NOT really correct ... *)
     | BBDCL_struct (vs,idts) ->
       let varmap = mk_varmap vs ts in
       let idts = map (fun (s,t) -> s,varmap_subst varmap t) idts in
