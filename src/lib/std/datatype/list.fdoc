@@ -555,8 +555,22 @@ Returns option.
         | Cons(?x, ?xs) => drop (k - 1) xs
     endif
   ;
-
-
+ 
+  fun list_eq[T with Eq[T]] (a:list[T], b:list[T]): bool =>
+    match a, b with
+    | Empty, Empty => true
+    | Empty, _ => false
+    | _, Empty => false
+    | Cons (?ha,?ta), Cons (?hb,?tb) => 
+      if not (ha == hb) then false
+      else list_eq (ta, tb)
+      endif
+    endmatch
+  ;
+  instance[T with Eq[T]] Eq[list[T]] { 
+    fun ==(a:list[T], b:list[T])=> list_eq(a,b); 
+  } 
+  
   //$ Sort a list with given less than operator, which must be
   //$ total order. Uses varray sort (which uses STL sort).
   fun sort[T] (lt:T*T->bool) (x:list[T])=
@@ -594,6 +608,9 @@ Returns option.
   inherit[T] ArrayValue[list[T],T];
 
 }
+
+open [T with Eq[T]] Eq[list[T]];
+
 //open [T with Str[T]] Str[list[T]];
 //open [T with Eq[T]] Set[list[T],T];
 

@@ -307,7 +307,17 @@ class FlxGuiMenu
           write$ response, NoAction;
         | Some pos =>
           println$ "Position " + pos.str;
-          write$ response, NoAction;
+          match #(mm.get_state) with
+          | Closed =>
+            write$ response, ChangedPosition;
+          | Open oldpos =>
+            if oldpos == pos do
+              write$ response, NoAction;
+            else
+              mm.set_state (Open pos);
+              write$ response, ChangedPosition;
+            done
+          endmatch;
         endmatch;
 /*
           //println$ "Motion in client rect of button " + bd.get_label();
