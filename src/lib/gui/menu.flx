@@ -190,13 +190,90 @@ class FlxGuiMenu
       display_menu (x,y,#(m.get_menu), position);
     }
 
+    proc get_hotrecs(x:int, y:int, menu:menu_data_t, position:menu_position_t) 
+      (revtrail: list[int]) 
+      (photrecs:&list[rect_t * menu_position_t])=
+    {
+//println$ "get_hotrecs, revtrail=" + revtrail.str+", pos=" + position.str;
+      var left_x = x;
+      var top_y = y;
+      var right_x = left_x + width menu;
+      var bottom_y = top_y + depth menu;
+
+      var selected = match position with
+        | Empty => 0 // ignore for the moment
+        | Cons (?h,_) => h
+      ;
+
+      var counter = 0;
+      var ypos = top_y + top_padding;
+      proc hotrecs (entry: menu_entry_t) (submenu:menu_data_t) 
+      {
+        match entry with
+        | Separator => 
+          ypos = ypos + separator_depth + bottom_padding + top_padding;
+//println$ "SEPARATOR : Counter="+counter.str;
+
+        | Text (label=?s,active=?active) =>
+          y = ypos + baseline_offset;
+          var dosub = match active with
+            | Active => counter == selected
+            | Disabled => false
+          ;
+          var client_area = rect_t (
+            left_x+border_width,
+            ypos+top_padding,
+            right_x - left_x - 2 * border_width, 
+            lineskip
+          );
+//println$ "TEXT: Counter="+counter.str+", Rect=" + client_area.str;
+          match active with 
+          | Active => photrecs <- (client_area, rev (counter + revtrail)) + *photrecs;
+          | Disabled => ;
+          endmatch;
+          match submenu with
+          | Empty => ;
+          | _ =>
+            if dosub do
+              var subpos = match position with 
+                | Cons (_,?tail) => tail
+                | _ => position // empty
+              ;
+              get_hotrecs (right_x+border_width,ypos+border_width,submenu,subpos) (counter+revtrail) photrecs;
+            done
+          endmatch;
+          ypos = ypos + lineskip + bottom_padding+top_padding;
+          ++counter;
+        endmatch;
+      }
+      for item in menu do
+        match item with
+        | Leaf entry => hotrecs entry Empty[lsexpr[menu_entry_t, menu_entry_t]];
+        | Tree (?entry, ?submenu) => hotrecs entry submenu;
+        endmatch;
+      done
+    }  
+
     method fun get_hotrects() : list[rect_t * menu_position_t] =
     {
-      // FIXME!
-      return Empty[rect_t * menu_position_t];
+      val position = match #(m.get_state) with
+        | Closed => list (0)
+        | Open p => p
+      ;
+      var hotrecs = Empty[rect_t * menu_position_t];
+      get_hotrecs (x,y,#(m.get_menu),position) Empty[int] &hotrecs;
+      return rev hotrecs;
     }
 
   }
+
+  fun hotpos (point:SDL_Point, hot:list[rect_t * menu_position_t]) : opt[menu_position_t] =>
+    match hot with
+    | Empty => None[menu_position_t]
+    | Cons ((?r,?pos),?tail) =>
+      if point \in r then Some pos else hotpos (point, tail)
+    endmatch
+  ;
 
   proc menu_controller 
   (
@@ -221,9 +298,18 @@ class FlxGuiMenu
         endmatch;
 
       | $(SDL_MOUSEMOTION) =>
-/*
+        var hotrecs = md.get_hotrects();
+        //List::iter proc (r:rect_t, pos:menu_position_t) { println$ "Rect=" + r.str + ", Pos=" + pos.str; } hotrecs; 
+        
         var x,y = e.motion.x,e.motion.y; //int32
-        if SDL_Point (x.int,y.int) \in bd.get_client_rect () do
+        match hotpos ( SDL_Point (x.int,y.int), hotrecs) with
+        | None =>
+          write$ response, NoAction;
+        | Some pos =>
+          println$ "Position " + pos.str;
+          write$ response, NoAction;
+        endmatch;
+/*
           //println$ "Motion in client rect of button " + bd.get_label();
           match bm.get_state () with
           | Up => bm.set_state Mouseover; bd.display(); // Enter
@@ -237,7 +323,6 @@ class FlxGuiMenu
           endmatch;
         done
 */
-        write$ response, NoAction;
    
       | $(SDL_MOUSEBUTTONDOWN) => 
 /*

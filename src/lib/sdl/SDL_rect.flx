@@ -18,4 +18,7 @@ open class SDL_rect_h
 
   fun inRect (x:int, y:int, r:SDL_Rect) => SDL_Point (x,y) in r;
 
+  instance Str[SDL_Rect] { 
+    fun str (r:SDL_Rect)=>"Rect(x="+r.x.str+",y="+r.y.str+",h="+r.h.str+",w="+r.w.str+")"; 
+  } 
 }
