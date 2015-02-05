@@ -3,6 +3,7 @@
 
 
 include "std/datatype/lsexpr";
+
 class FlxGuiMenu
 {
   // A menu entry is either some text or a separator
@@ -176,7 +177,7 @@ class FlxGuiMenu
       ;
       for item in menu do
         match item with
-        | Leaf entry => show_entry entry Empty[lsexpr[menu_entry_t, menu_entry_t]];
+        | Leaf entry => show_entry entry Empty[LS_expr::lsexpr[menu_entry_t, menu_entry_t]];
         | Tree (?entry, ?submenu) => show_entry entry submenu;
         endmatch;
       done
@@ -248,7 +249,7 @@ class FlxGuiMenu
       }
       for item in menu do
         match item with
-        | Leaf entry => hotrecs entry Empty[lsexpr[menu_entry_t, menu_entry_t]];
+        | Leaf entry => hotrecs entry Empty[LS_expr::lsexpr[menu_entry_t, menu_entry_t]];
         | Tree (?entry, ?submenu) => hotrecs entry submenu;
         endmatch;
       done

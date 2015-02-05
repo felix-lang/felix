@@ -90,7 +90,6 @@ proc display (w:window_t)
 {
   w.clear lightgrey;
   w.write (100,10,font,black,"Basic Menu Test");
-  w.update;
 }
  
 // make an event handler for our window
@@ -118,12 +117,12 @@ proc ehandler
     | NoAction => ;
     | ChangedPosition => 
       w.display; // redraw whole window base
-      w.update;
       var resize_event: event_t; // hack, only fill out some fields
       &resize_event.type <- SDL_WINDOWEVENT.uint32;
       &resize_event.window.event <- SDL_WINDOWEVENT_RESIZED.uint8;
       write$ menu_out, resize_event;
       response = read menu_in; //ignored
+      w.update;
 
     | SelectedAction s => println$ "Menu Selection made: " + s;
     endmatch; 
@@ -163,6 +162,8 @@ begin
   // get the channel to read events from
   var input = wm.get_event_source();
     
+  // refresh window now
+  w1.update;
   // read an event
   var e= read input;
 
