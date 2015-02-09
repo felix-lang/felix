@@ -17,6 +17,12 @@ let scheme_eval (c:Ocs_types.code):Ocs_types.sval =
   | None -> failwith "Scheme term not returned!"
   | Some r -> r
 
+let scheme_run_sexpr env (l:Ocs_types.sval):Ocs_types.sval =
+  let c :Ocs_types.code = scheme_compile env l in
+  let r :Ocs_types.sval = scheme_eval c in
+  r
+
+
 let scheme_run sr env (s:string):Ocs_types.sval =
   let l :Ocs_types.sval = scheme_lex sr s in
   let c :Ocs_types.code = scheme_compile env l in

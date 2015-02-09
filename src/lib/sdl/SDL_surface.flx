@@ -33,4 +33,7 @@ open class SDL_surface_h
   gen SDL_FillSurface : &SDL_Surface * uint32 -> int = "SDL_FillRect ($1, NULL, $2)";
   gen SDL_SetClipRect : &SDL_Surface * &SDL_Rect -> bool;
   proc SDL_ClearClipRect : &SDL_Surface = "SDL_SetClipRect($1,NULL);";
+  fun SDL_MUSTLOCK: &SDL_Surface -> bool = "(SDL_MUSTLOCK($1)==SDL_TRUE)";
+  proc SDL_LockSurface : &SDL_Surface = "SDL_LockSurface($1);";
+  proc SDL_UnlockSurface : &SDL_Surface = "SDL_LockSurface($1);";
 }

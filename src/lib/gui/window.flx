@@ -72,7 +72,7 @@ proc fill (w:window_t) (var r:rect_t, c:colour_t)
   SDL_ClearClipRect (surf);
 }
 
-proc draw_line (w:window_t)  (c:color_t, x0:int, y0:int, x1:int, y1:int)
+noinline proc draw_line (w:window_t)  (c:color_t, x0:int, y0:int, x1:int, y1:int)
 {
    var s: &SDL_Surface = SDL_GetWindowSurface w;
    var r: SDL_Renderer = SDL_CreateSoftwareRenderer s;

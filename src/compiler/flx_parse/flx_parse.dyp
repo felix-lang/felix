@@ -90,7 +90,7 @@ let define_syntax dyp name dyprods =
 %constructor Obj_sexpr %for sterm
 
 /* predefined major non-terminals */
-%constructor Obj_sexpr %for sexpr
+%constructor Obj_sexpr %for sexpr schemevar
 %constructor Obj_sexpr %for sstatements stmt 
 
 /* nothing*/
@@ -569,6 +569,27 @@ stmt:
       Snull
     }
 
+schemevar:
+  | NAME
+    @{
+      let sr = Flx_parse_srcref.getsr dyp in
+      let s = $1 in
+      let failwith x = print_endline ("Evaluating " ^ s); failwith x in
+      (*
+      let env = Ocs_env.env_copy dyp.local_data.env in
+      *)
+      let env = dyp.global_data.env in
+      let r =
+        try Flx_ocs_run.scheme_run sr env s
+        with Ocs_error.Error err | Ocs_error.ErrorL (_,err) ->
+          print_endline ("Error "^err^" executing " ^s);
+          failwith "Error executing SCHEME"
+      in
+      print_endline ("NAME=" ^ s ^ ", evaluates to " ^ Ocs_print.string_of_ocs r);
+      let local_data = dyp.local_data in
+      r, [Local_data local_data]
+     }
+  
 stmt:
   | "syntax" NAME "{" dyprods "}"
     @{

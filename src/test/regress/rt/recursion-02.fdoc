@@ -17,7 +17,7 @@ typedef f567 = uncurry f123;
 
 var x: f567 = 1, (2L, 3.0f);
 
-typedef list = 1 + int * list;
+typedef mylist = 1 + int * mylist;
 
 typedef fun lst(t1:TYPE, t2:TYPE ):TYPE=> 1 + t1 * lst (t2,t1);
 
