@@ -609,7 +609,7 @@ Returns option.
 
 }
 
-open [T with Eq[T]] Eq[list[T]];
+open [T with Eq[T]] Eq[List::list[T]];
 
 //open [T with Str[T]] Str[list[T]];
 //open [T with Eq[T]] Set[list[T],T];
