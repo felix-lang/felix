@@ -13,7 +13,7 @@ Hello World
 <img src="/share/src/web/images/IMG_1337.jpg">
 @p
 @h1 Running it.
-Assuming you store this in the file {hello.flx} to can run it by
+Assuming you store this in the file @{hello.flx} to can run it by
 @pre
 flx hello
 @

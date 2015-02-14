@@ -19,7 +19,7 @@ Those with an OO background may find this more pleasing:
 @felix-unchecked
 val name = stdin.readln.strip;
 @
-It means exactly the same as before, the operator {.} is nothing
+It means exactly the same as before, the operator @{.} is nothing
 more than reverse application. Postfix application binds more tightly
 than prefix application so
 @felix-unchecked
@@ -39,11 +39,17 @@ procedural commands to save writing brackets around arguments:
 println$ "Hello "+name; // println ("Hello"+name)
 @
 because whitespace application has a higher precedence than 
-infix {+}.
+infix @{+}.
+
+@h2 Operator pipe
+A low precedence left associative reverse application operator:
+@felix-unchecked
+val name = stdin |> s readkb |> strip;
+@
 
 @h2 Operator hash 
 Finally if a function takes only the unit argument {()}:
-you can use the high precedence prefix {#} operator to call it:
+you can use the very high precedence prefix @{#} operator to call it:
 @felix-unchecked
 fun pi() => 22.0/7.0;
 println$ "Pi=" + str #pi;

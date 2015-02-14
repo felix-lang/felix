@@ -11,7 +11,7 @@ flx hello Joachim
 </pre>
 then Joachim will be welcomed.
 <ul>
-<li>The function {System::argv} applied to an integer <em>n</em>
+<li>The function @{System::argv} applied to an integer <em>n</em>
 returns the <em>n'th</em> command line argument if it exists,
 or an empty string otherwise.</li> 
 <li>Arguments are 0-origin and start with

@@ -2,11 +2,11 @@
 @h1 Variables
 Felix provides two kinds of variables, @{var} and @{val}.
 @felix
-var a = 1;
-val l = a;
-++a;
+var va = 1;
+val vl = va;
+++va;
 
-println$ a,l;
+println$ va,vl;
 @
 A @{var} is a storage location, or <em>object</em> 
 containing a value. A @{var} is addressable and mutable, its value is stored 

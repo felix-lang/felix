@@ -396,6 +396,10 @@ syntax expressions {
     """
   ;
 
+  //$ inline scheme
+  satom := "schemelex" sstring =># "(schemelex _2)";
+  satom := "schemerun" sstring =># "(schemerun _2)";
+
   //$ Grouping.
   satom := "(" sexpr ")" =># "_2";
 

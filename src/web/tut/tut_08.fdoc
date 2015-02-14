@@ -24,7 +24,7 @@ Here:
 <ul>
 <li> The @{fun} binder introduces the function @{square}.</li>
 <li> @{square} accepts a single argument of type @{int}.</li>
-<li> The operator {*} is used for multiplication.</li>
+<li> The operator @{*} is used for multiplication.</li>
 <li> @{square} returns the product of its argument with itself.</li>
 <li> The type of value returned by @{square} is deduced by the compiler, 
 that type will be @{int} because multiplying an @{int} by another @{int}

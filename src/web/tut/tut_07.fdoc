@@ -1,7 +1,7 @@
 @title Control
 @h1 Procedural control
 @h2 Conditional
-Basic conditional is like this:
+The basic conditional is like this:
 
 @felix
 proc f(x:int) 
@@ -44,6 +44,22 @@ proc f (n:int)
 Note the control variable is available outside the loop.
 You must leave out the @{var} if the variable is defined elsewhere
 in the same scope.
+
+This form of for loop requires the upper limit to be greater than
+or equal to the initial value. It is guaranteed to work for all signed
+and unsigned integer types and can span the whole range of these types
+but does not support an empty range with zero iterations.
+
+@h2 C like for loop
+Felix also provides a more flexible basic loop similar to C:
+@felix
+proc f (n:int)
+{
+  for (var i=1; i<10; ++i;) 
+    println$ i; 
+}
+@
+Note the @{;} after the @{++i}.
 
 @h2 Return
 Return from a procedure. A procedure returns automatically

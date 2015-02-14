@@ -35,21 +35,21 @@ var frame_style= """
         background-color: LightGray;
       }
       .leftpanel {
-        position:absolute; left:0px; top:0px; bottom:0px; width: 300px; 
+        position:absolute; left:0px; top:0px; bottom:0px; width: 150px; 
         background-color: LightGray; overflow: auto;
       }
       .rightpanel {
-        position:absolute; right: 0px; left:310px; top:0px; bottom: 0px; 
+        position:absolute; right: 0px; left:160px; top:0px; bottom: 0px; 
         background-color: LightGray; overflow: auto;
       }
       .divider {
-        position:absolute; left: 300px; top:0px; bottom:0px; 
+        position:absolute; left: 150px; top:0px; bottom:0px; 
         background-color: black; width:10px;
       }
 
       #panemover {
           position:absolute;
-          left: 300px;
+          left: 150px;
           width : 10px;
           top: 0px;
           bottom: 0px;
@@ -65,7 +65,7 @@ var frame_js = """
     <script async="true">
       function dragStart(e, left, right){
         document.getElementById("panemover").style.width="70%";
-        document.getElementById("panemover").style.left="150px";
+        document.getElementById("panemover").style.left="50px";
         mousedown = true;
         x = e.clientX
         dragOffsetLeft =  
