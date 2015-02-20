@@ -8,11 +8,11 @@ class Css4Html {
 flx_head := """
 <style type="text/css">
 body {margin:3%; }
-h1 {color:gray; font-size:130%;}
-h2 {color:gray: font-size:110%;}
-h3 {font-size:105%;}
-h4 {font-size:100%;}
-h5 {font-size:100%;}
+h1 {color:gray; font-size:120%;}
+h2 {color:gray; font-size:105%;}
+h3 {font-size:100%;}
+h4 {font-size:95%;}
+h5 {font-size:95%;}
 span.fstring {color:darkblue; font-style:italic; }
 span.comment {font-family:arial; color:blue; font-style:italic; }
 span.doccomment {font-family:arial; color:green; font-style:italic; }
