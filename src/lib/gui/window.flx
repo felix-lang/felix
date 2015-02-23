@@ -65,10 +65,10 @@ proc clear(w:window_t) (c: colour_t)
 proc fill (w:window_t) (var r:rect_t, c:colour_t)
 {
   var surf = SDL_GetWindowSurface w;
+  SDL_ClearClipRect (surf);
   var pixelformat : &SDL_PixelFormat  = surf*.format;
   var bgpixels = SDL_MapRGB(pixelformat,c.r,c.g,c.b);
-  C_hack::ignore$ SDL_SetClipRect (surf, &r);
-  C_hack::ignore$ SDL_FillSurface (surf, bgpixels);
+  C_hack::ignore$ SDL_FillRect (surf, &r, bgpixels);
   SDL_ClearClipRect (surf);
 }
 
