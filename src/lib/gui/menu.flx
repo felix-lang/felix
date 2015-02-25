@@ -42,7 +42,39 @@ class FlxGuiMenu
     method fun get_menu () => m;
     method fun get_state () => state;
     method proc set_state (s:menu_state_t) => state = s;
-    method fun get_current_tag () => "get current tag NOT IMPLEMENTED";
+
+    // find ix'th entry in a menu if it exists,
+    // separators not counted
+    fun find (m:menu_data_t, ix:int) : opt[menu_item_t] =>
+      match m with
+      | Empty => None[menu_item_t]
+      | Cons (?h,?t) => 
+        match h with
+        | Leaf (Separator) => find (t,ix)
+        | ?x => if ix == 0 then Some x else find (t,ix - 1)
+        endmatch
+      endmatch
+    ;
+      
+    fun find_tag (pos: menu_position_t, menu:menu_data_t) : string =>
+      match pos,menu with
+      | Empty, _ => "Empty"
+      | Cons (?i,?t), ?m => 
+        match find (m,i),t with
+        | Some (Leaf (Text (tag=?tag))), Empty => tag
+        | Some (Tree (Text (tag=?tag), _)), Empty => tag
+        | Some (Tree (_, ?subtree)), _=> find_tag (t,subtree)
+        | _ => "Error"
+        endmatch
+      endmatch
+    ; 
+    method fun get_current_tag () => 
+     match state with
+     | Closed => "Closed"
+     | Open pos =>
+        pos.str + ":=" + find_tag (pos,m)
+     endmatch
+   ;
     method fun get_current_tag_chain () => Empty[string];
   }
 
@@ -307,7 +339,7 @@ class FlxGuiMenu
         | None =>
           write$ response, NoAction;
         | Some pos =>
-          println$ "Position " + pos.str;
+          println$ "Mouse Move Position " + pos.str;
           match #(mm.get_state) with
           | Closed =>
             write$ response, ChangedPosition;
@@ -320,47 +352,53 @@ class FlxGuiMenu
             done
           endmatch;
         endmatch;
-/*
-          //println$ "Motion in client rect of button " + bd.get_label();
-          match bm.get_state () with
-          | Up => bm.set_state Mouseover; bd.display(); // Enter
-          | _ => ;
-          endmatch;
-        else
-          match bm.get_state () with
-          | Mouseover => bm.set_state Up; bd.display(); // Leave
-          | Down => bm.set_state Up; bd.display(); // Leave
-          | _ => ;
-          endmatch;
-        done
-*/
    
       | $(SDL_MOUSEBUTTONDOWN) => 
-/*
+        hotrecs = md.get_hotrects();
         x,y = e.button.x,e.button.y; //int32
-        if SDL_Point (x.int,y.int) \in bd.get_client_rect () do
-          //println$ "Button down in client rect of button " + bd.get_label();
-          bm.set_state Down; bd.display();
-        done
-*/
-        write$ response, NoAction;
-/*
-   
-      | $(SDL_MOUSEBUTTONUP) => 
-        x,y = e.button.x,e.button.y; //int32
-        if SDL_Point (x.int,y.int) \in bd.get_client_rect () do
-          //println$ "Button up in client rect of button " + bd.get_label();
-          bm.set_state Mouseover; bd.display();
-          write$ response, ClickAction #(bm.get_tag);
-        else
-          bm.set_state Up; bd.display();
+        match hotpos ( SDL_Point (x.int,y.int), hotrecs) with
+        | None =>
           write$ response, NoAction;
-        done
-*/
+        | Some pos =>
+          println$ "Mouse down Position " + pos.str;
+          match #(mm.get_state) with
+          | Closed =>
+            write$ response, ChangedPosition;
+          | Open oldpos =>
+            if oldpos == pos do
+              write$ response, NoAction;
+            else
+              mm.set_state (Open pos);
+              write$ response, ChangedPosition;
+            done
+          endmatch;
+        endmatch;
+
+      | $(SDL_MOUSEBUTTONUP) => 
+        hotrecs = md.get_hotrects();
+        x,y = e.button.x,e.button.y; //int32
+        match hotpos ( SDL_Point (x.int,y.int), hotrecs) with
+        | None =>
+          write$ response, NoAction;
+        | Some pos =>
+          println$ "Mouse up Position " + pos.str;
+          match #(mm.get_state) with
+          | Closed =>
+            write$ response, ChangedPosition;
+          | Open oldpos =>
+            if oldpos == pos do
+              var selected_tag = #(mm.get_current_tag);
+              write$ response, SelectedAction selected_tag;
+            else
+              mm.set_state (Open pos);
+              write$ response, ChangedPosition;
+            done
+          endmatch;
+        endmatch;
+
+
+
       | $(SDL_WINDOWEVENT) when e.window.event == SDL_WINDOWEVENT_LEAVE.uint8  =>
-/*
-        bm.set_state Up; bd.display();
-*/
         write$ response, NoAction;
 
       | _ => 
