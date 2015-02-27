@@ -1,0 +1,186 @@
+
+@title Basic Menu 
+@felix
+include "sdl/SDL_image";
+include "gui/__init__";
+open FlxGui;
+
+println$ "Basic Menu Test";
+
+var clock = Faio::mk_alarm_clock();
+
+// Initialise the SDL system (SDL + TTF + IMAGE)
+FlxGui::init();
+
+var font_name = dflt_mono_font();
+var font : font_t = get_font(font_name, 12);
+var lineskip = get_lineskip font;
+
+// Menu colours
+var text_colour = (label_colour=black, bg_colour=white,top_colour=blue,
+  left_colour=blue, bottom_colour=red,right_colour=red);
+
+var selected_colour = (label_colour=white, bg_colour=blue,top_colour=darkgrey,
+  left_colour=darkgrey, bottom_colour=lightgrey,right_colour=lightgrey);
+
+var disabled_colour = (label_colour=grey, bg_colour=white,top_colour=lightgrey,
+  left_colour=lightgrey, bottom_colour=darkgrey,right_colour=darkgrey);
+
+fun / (s:string, t:string) => Filename::join (s,t);
+
+var open_icon_file = #Config::std_config.FLX_SHARE_DIR / "src"/"web"/"images"/"minus.gif";
+var open_icon = IMG_Load (open_icon_file.cstr);
+var closed_icon_file = #Config::std_config.FLX_SHARE_DIR / "src"/"web"/"images"/"plus.gif";
+var closed_icon = IMG_Load (closed_icon_file.cstr);
+var submenu_icon = (open_icon=open_icon, closed_icon=closed_icon);
+
+proc mk_menu
+(
+  w:window_t, x:int, y:int,
+  m:menu_data_t, init: menu_state_t,
+  oresp: oschannel[menu_action_t],
+  pmm: &menu_model_t,
+  pmd: &menu_display_t,
+  poevent: &oschannel[event_t]
+) 
+{
+  var ievent,oevent = #mk_ioschannel_pair[event_t];
+  var mm = MenuModel m;
+  var md = MenuBarDisplay (mm,w,x,y,font, text_colour,disabled_colour,selected_colour, submenu_icon);
+  mm.set_state init;
+  md.display();
+  spawn_fthread$ menu_controller (mm,md,ievent,oresp);
+  pmm <- mm;
+  pmd <- md;
+  poevent <- oevent;
+}
+
+open LS_expr;
+
+fun leaf (x:menu_text_entry_t)=> Leaf[menu_entry_t,menu_entry_t] (Text x);
+fun separator () => Leaf[menu_entry_t, menu_entry_t] Separator;
+
+var menu2 = list (
+  leaf (tag="S1", label="S1",active=Active),
+  leaf (tag="S2", label="S2 and stuff",active=Active),
+  leaf (tag="S3", label="S3",active=Active),
+  #separator, 
+  leaf (tag="S4", label="S4",active=Active),
+  leaf (tag="S5", label="S5",active=Active),
+  leaf (tag="S6", label="S6",active=Active),
+  leaf (tag="S7", label="S7",active=Active),
+  leaf (tag="S8", label="S8",active=Active)
+);
+
+var menu = list (
+  leaf (tag="m1", label="m1",active=Active),
+  leaf (tag="m2", label="m2 and stuff",active=Active),
+  leaf (tag="m3", label="disability",active=FlxGuiMenu::Disabled),
+  #separator, 
+  leaf (tag="m4", label="m4",active=Active),
+  Tree (Text(tag="m5", label="m5",active=Active),menu2),
+  leaf (tag="m6", label="m6",active=Active),
+  leaf (tag="m7", label="m7",active=Active),
+  leaf (tag="m8", label="m8",active=Active)
+);
+
+var init_state = Open ( list[int] (4,2) );
+
+// Base display routine
+proc display (w:window_t)
+{
+  w.clear lightgrey;
+  w.write (100,10,font,black,"Basic Menu Test");
+}
+ 
+// make an event handler for our window
+proc ehandler 
+  (w:window_t)
+  (menu_out: oschannel[event_t], menu_in:ischannel[menu_action_t])
+  (input:ischannel[event_t])  () 
+{
+   // get a first event from the window manager
+  var e: event_t = read input;
+
+  // while the event isn't a quit event ..
+  while e.window.event.SDL_WindowEventID != SDL_WINDOWEVENT_CLOSE  do
+    // print a diagnostic
+    var s = 
+      if e.type.SDL_EventType == SDL_WINDOWEVENT then
+        e.type.SDL_EventType.str + ": " + e.window.event.SDL_WindowEventID.str + " wid=" + e.window.windowID.str
+      elif e.type.SDL_EventType != SDL_MOUSEMOTION then
+        e.type.SDL_EventType.str
+      else ""
+    ; 
+    write$ menu_out, e;
+    var response = read menu_in;
+    match response with
+    | NoAction => ;
+    | ChangedPosition => 
+      w.display; // redraw whole window base
+      var resize_event: event_t; // hack, only fill out some fields
+      &resize_event.type <- SDL_WINDOWEVENT.uint32;
+      &resize_event.window.event <- SDL_WINDOWEVENT_RESIZED.uint8;
+      write$ menu_out, resize_event;
+      response = read menu_in; //ignored
+      w.update;
+
+    | SelectedAction s => println$ "Menu Selection made: " + s;
+    endmatch; 
+    // get another event
+    e= read input;
+  done
+
+  // we must have got a quit ..
+  println$ "CLOSE EVENT";
+} 
+
+
+begin
+  //create a window manager
+  var wm = window_manager();
+
+  // create a window
+  var w1 = window_t("Felix:gui_08_menu_01",100,100,400,400);
+  w1.display;
+
+  var iresp,oresp = #mk_ioschannel_pair[menu_action_t];
+
+  var oevent: oschannel[event_t];
+  var mm: menu_model_t;
+  var md: menu_display_t;
+  mk_menu (w1, 50,50, menu, init_state, oresp, &mm, &md, &oevent);
+
+  // create a window controller for our window
+  var wc1 = window_controller (w1, ehandler w1 (oevent, iresp) );
+
+  // attach controller to window manager
+  var wno = wm.add_window wc1;
+
+  // USE variable wno or Felix will elide the call!
+  println$ "Window number " + wno.str;
+
+  // get the channel to read events from
+  var input = wm.get_event_source();
+    
+  // refresh window now
+  w1.update;
+  // read an event
+  var e= read input;
+
+  while e.type.SDL_EventType != SDL_QUIT do
+
+    // dispatch the event to the window it is associated with
+    wm.dispatch_window_event e;
+
+    // get another event
+    e= read input;
+  done
+
+  // we must have got a quit ..
+  println$ "QUIT EVENT";
+  wm.delete_all();
+  println$ "Windows deleted, quitting";
+end
+
+

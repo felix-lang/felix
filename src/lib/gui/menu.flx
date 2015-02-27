@@ -74,7 +74,7 @@ class FlxGuiMenu
      | Open pos =>
         pos.str + ":=" + find_tag (pos,m)
      endmatch
-   ;
+    ;
     method fun get_current_tag_chain () => Empty[string];
   }
 
@@ -96,7 +96,7 @@ class FlxGuiMenu
     disabled_colour: button_colour_scheme_t,
     selected_colour: button_colour_scheme_t,
     submenu_icons: submenu_icon_t
-  ) =
+  ) implements menu_display_t =
   {
     var icon_width = max (submenu_icons.open_icon*.w, submenu_icons.closed_icon*.w);
     var lineskip = get_lineskip font;
@@ -307,6 +307,200 @@ class FlxGuiMenu
       if point \in r then Some pos else hotpos (point, tail)
     endmatch
   ;
+
+  // ===============================================================================
+  object MenuBarDisplay 
+  (
+    m:menu_model_t,
+    w:window_t,
+    x:int,y:int,
+    font:font_t,
+    text_colour: button_colour_scheme_t,
+    disabled_colour: button_colour_scheme_t,
+    selected_colour: button_colour_scheme_t,
+    submenu_icons: submenu_icon_t
+  ) implements menu_display_t =
+  {
+    var icon_width = max (submenu_icons.open_icon*.w, submenu_icons.closed_icon*.w);
+    var lineskip = get_lineskip font;
+    var baseline_offset = font.TTF_FontAscent; 
+    var border_width = 2;
+    var left_padding = 4;
+    var right_padding = 10 + icon_width;
+    var min_width = 20;
+    var separator_width = 1;
+    var top_padding = 1;
+    var bottom_padding = 1;
+    var bar_depth =
+      top_padding + bottom_padding + lineskip
+    ;
+
+    fun width (s:string) => (FlxGuiFont::get_textsize (font,s)).0;
+
+    fun width: menu_entry_t -> int =
+      | Separator => left_padding + right_padding + separator_width
+      | Text s => left_padding + right_padding + max(min_width, width s.label)
+    ;
+
+    fun width : menu_item_t -> int =
+      | Leaf menu_entry => width menu_entry
+      | Tree (?menu_entry,_) => width menu_entry
+    ;
+
+    fun width (ls: menu_data_t) => fold_left 
+      (fun (w:int) (menu_item:menu_item_t) => w + width menu_item)
+      0 
+      ls
+    ;
+
+    proc display_menu(x:int, y:int, menu:menu_data_t, position:menu_position_t) 
+    {
+      var left_x = x;
+      var top_y = y;
+      var right_x = left_x + width menu;
+      var bottom_y = top_y + bar_depth;
+      var scheme = text_colour;
+
+      // top
+      w.draw_line (scheme.top_colour, left_x - 2,top_y - 2,right_x + 2, top_y - 2); 
+      w.draw_line (scheme.top_colour, left_x - 1,top_y - 1,right_x + 1, top_y - 1); 
+      // left
+      w.draw_line (scheme.left_colour, left_x - 2,top_y - 2,left_x - 2, bottom_y + 2); 
+      w.draw_line (scheme.left_colour, left_x - 1,top_y - 1,left_x - 1, bottom_y + 1); 
+      // right
+      w.draw_line (scheme.right_colour, right_x + 2,top_y - 2,right_x + 2, bottom_y + 2); 
+      w.draw_line (scheme.right_colour, right_x + 1,top_y - 1,right_x + 1, bottom_y + 1); 
+      // bottom
+      w.draw_line (scheme.bottom_colour, left_x - 1,bottom_y + 1,right_x + 1, bottom_y + 1); 
+      w.draw_line (scheme.bottom_colour, left_x - 2,bottom_y + 2,right_x + 2, bottom_y + 2); 
+
+      w.fill(SDL_Rect (left_x, top_y, right_x - left_x + 1, bottom_y - top_y + 1), scheme.bg_colour);
+
+      var selected = match position with
+        | Empty => 0 // ignore for the moment
+        | Cons (?h,_) => h
+      ;
+
+      var counter = 0;
+      var xpos = left_x + left_padding;
+
+      proc show_entry (entry: menu_entry_t) (submenu:menu_data_t) => 
+        match entry with
+        | Separator => 
+          w.draw_line (RGB(0,0,0), xpos, top_y, xpos, top_y+bar_depth); 
+          xpos = xpos + separator_width + right_padding + left_padding;
+
+        | Text (label=?s,active=?active) =>
+          var scheme, dosub = match active with
+            | Active => if counter == selected then selected_colour, true else text_colour, false
+            | Disabled => disabled_colour, false
+          ;
+          var item_width =  max (width s, min_width);
+          var client_area = rect_t (
+            xpos+border_width,
+            top_y+top_padding,
+            item_width,
+            lineskip
+          );
+          w.fill (client_area, scheme.bg_colour);
+          w.write (xpos+left_padding, top_y+baseline_offset,font,scheme.label_colour,s);
+
+          match submenu with
+          | Empty => ;
+          | _ => println "SUBMENU SELECTED, NOT IMPLEMENTED YET";
+          endmatch;
+          xpos = xpos + item_width + right_padding+left_padding;
+          ++counter;
+        endmatch
+      ;
+      for item in menu do
+        match item with
+        | Leaf entry => show_entry entry Empty[LS_expr::lsexpr[menu_entry_t, menu_entry_t]];
+        | Tree (?entry, ?submenu) => show_entry entry submenu;
+        endmatch;
+      done
+      w.update; 
+    }  
+
+    method proc display() {
+      val position = match #(m.get_state) with
+        | Closed => list (0)
+        | Open p => p
+      ;
+      display_menu (x,y,#(m.get_menu), position);
+    }
+    proc get_hotrecs(x:int, y:int, menu:menu_data_t, position:menu_position_t) 
+      (revtrail: list[int]) 
+      (photrecs:&list[rect_t * menu_position_t])=
+    {
+//println$ "get_hotrecs, revtrail=" + revtrail.str+", pos=" + position.str;
+      var left_x = x;
+      var top_y = y;
+      var right_x = left_x + width menu;
+      var bottom_y = top_y + bar_depth;
+
+      var selected = match position with
+        | Empty => 0 // ignore for the moment
+        | Cons (?h,_) => h
+      ;
+
+      var counter = 0;
+      var xpos = left_x + left_padding;
+      proc hotrecs (entry: menu_entry_t) (submenu:menu_data_t) 
+      {
+        match entry with
+        | Separator => 
+          xpos = xpos + separator_width + right_padding + left_padding;
+//println$ "SEPARATOR : Counter="+counter.str;
+
+        | Text (label=?s,active=?active) =>
+          var dosub = match active with
+            | Active => counter == selected
+            | Disabled => false
+          ;
+          var item_width = max (width s, min_width);
+          var client_area = rect_t (
+            xpos+border_width,
+            top_y+top_padding,
+            item_width,
+            lineskip
+          );
+//println$ "TEXT: Counter="+counter.str+", Rect=" + client_area.str;
+          match active with 
+          | Active => photrecs <- (client_area, rev (counter + revtrail)) + *photrecs;
+          | Disabled => ;
+          endmatch;
+          match submenu with
+          | Empty => ;
+          | _ => ;
+          endmatch;
+          xpos = xpos + item_width + right_padding +left_padding;
+          ++counter;
+        endmatch;
+      }
+      for item in menu do
+        match item with
+        | Leaf entry => hotrecs entry Empty[LS_expr::lsexpr[menu_entry_t, menu_entry_t]];
+        | Tree (?entry, ?submenu) => hotrecs entry submenu;
+        endmatch;
+      done
+    }  
+
+
+    method fun get_hotrects() : list[rect_t * menu_position_t] =
+    {
+      val position = match #(m.get_state) with
+        | Closed => list (0)
+        | Open p => p
+      ;
+      var hotrecs = Empty[rect_t * menu_position_t];
+      get_hotrecs (x,y,#(m.get_menu),position) Empty[int] &hotrecs;
+      return rev hotrecs;
+    }
+
+  } 
+  // ===============================================================================
+
 
   proc menu_controller 
   (
