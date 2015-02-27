@@ -407,7 +407,26 @@ class FlxGuiMenu
 
           match submenu with
           | Empty => ;
-          | _ => println "SUBMENU SELECTED, NOT IMPLEMENTED YET";
+          | _ => 
+            if dosub do
+              println "SUBMENU SELECTED";
+              var smm = MenuModel ( submenu );
+              var smd = MenuDisplay (
+                smm,
+                w,
+                xpos,bottom_y+border_width,
+                font,
+                text_colour,
+                disabled_colour,
+                selected_colour,
+                submenu_icons
+              );
+              match position with
+              | Cons (_,?tail) => smm.set_state (Open tail);
+              | _ => ;
+              endmatch;
+              smd.display();
+            done
           endmatch;
           xpos = xpos + item_width + right_padding+left_padding;
           ++counter;
@@ -472,7 +491,27 @@ class FlxGuiMenu
           endmatch;
           match submenu with
           | Empty => ;
-          | _ => ;
+          | _ => 
+            if dosub do
+              var smm = MenuModel ( submenu );
+              var smd = MenuDisplay (
+                smm,
+                w,
+                xpos,bottom_y+border_width,
+                font,
+                text_colour,
+                disabled_colour,
+                selected_colour,
+                submenu_icons
+              );
+              match position with
+              | Cons (_,?tail) => smm.set_state (Open tail);
+              | _ => ;
+              endmatch;
+              var shots = smd.get_hotrects();
+              shots = map (fun (h:rect_t,pos:menu_position_t) => (h,Cons(counter,pos) )) shots;
+              photrecs <- *photrecs + shots;
+            done
           endmatch;
           xpos = xpos + item_width + right_padding +left_padding;
           ++counter;
