@@ -72,7 +72,7 @@ class FlxGuiMenu
      match state with
      | Closed => "Closed"
      | Open pos =>
-        pos.str + ":=" + find_tag (pos,m)
+        find_tag (pos,m)
      endmatch
     ;
     method fun get_current_tag_chain () => Empty[string];
@@ -326,7 +326,7 @@ class FlxGuiMenu
     var baseline_offset = font.TTF_FontAscent; 
     var border_width = 2;
     var left_padding = 4;
-    var right_padding = 10 + icon_width;
+    var right_padding = 4; 
     var min_width = 20;
     var separator_width = 1;
     var top_padding = 1;

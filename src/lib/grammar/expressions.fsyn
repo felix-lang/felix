@@ -259,7 +259,8 @@ syntax expressions {
 
   //$ a &. b is similar to &a . b for an array, but can be overloaded
   //$ for abstract arrays: like a + b in C. Returns pointer.
-  x[sfactor_pri] := x[sfactor_pri] "&." sthe_name =># "(Infix)";
+  // x[sfactor_pri] := x[sfactor_pri] "&." sthe_name =># "(Infix)";
+  x[sfactor_pri] := x[sfactor_pri] "&." sthe_name =># "`(ast_apply ,_sr (,_3 (ast_ref ,_sr ,_1)))";
 
   // these are weirdos
   sbasic_name_comma_list:= sname ("," sname)* =># "(cons _1 (map second _2))";

@@ -1,0 +1,276 @@
+@title Configuration Tool
+@felix
+// configuration tool
+include "sdl/SDL_image";
+include "gui/__init__";
+open FlxGui;
+
+println$ "flx_config";
+
+var clock = Faio::mk_alarm_clock();
+
+// Initialise the SDL system (SDL + TTF + IMAGE)
+FlxGui::init();
+
+var font_name = dflt_mono_font();
+var font : font_t = get_font(font_name, 12);
+var lineskip = get_lineskip font;
+
+// Menu colours
+var text_colour = (label_colour=black, bg_colour=white,top_colour=blue,
+  left_colour=blue, bottom_colour=red,right_colour=red);
+
+var selected_colour = (label_colour=white, bg_colour=blue,top_colour=darkgrey,
+  left_colour=darkgrey, bottom_colour=lightgrey,right_colour=lightgrey);
+
+var disabled_colour = (label_colour=grey, bg_colour=white,top_colour=lightgrey,
+  left_colour=lightgrey, bottom_colour=darkgrey,right_colour=darkgrey);
+
+fun / (s:string, t:string) => Filename::join (s,t);
+
+var open_icon_file = #Config::std_config.FLX_SHARE_DIR / "src"/"web"/"images"/"minus.gif";
+var open_icon = IMG_Load (open_icon_file.cstr);
+var closed_icon_file = #Config::std_config.FLX_SHARE_DIR / "src"/"web"/"images"/"plus.gif";
+var closed_icon = IMG_Load (closed_icon_file.cstr);
+var submenu_icon = (open_icon=open_icon, closed_icon=closed_icon);
+
+proc mk_menu
+(
+  w:window_t, x:int, y:int,
+  m:menu_data_t, init: menu_state_t,
+  oresp: oschannel[menu_action_t],
+  pmm: &menu_model_t,
+  pmd: &menu_display_t,
+  poevent: &oschannel[event_t]
+) 
+{
+  var ievent,oevent = #mk_ioschannel_pair[event_t];
+  var mm = MenuModel m;
+  var md = MenuBarDisplay (mm,w,x,y,font, text_colour,disabled_colour,selected_colour, submenu_icon);
+  mm.set_state init;
+  md.display();
+  spawn_fthread$ menu_controller (mm,md,ievent,oresp);
+  pmm <- mm;
+  pmd <- md;
+  poevent <- oevent;
+}
+
+open LS_expr;
+
+fun leaf (x:menu_text_entry_t)=> Leaf[menu_entry_t,menu_entry_t] (Text x);
+fun separator () => Leaf[menu_entry_t, menu_entry_t] Separator;
+
+var osmenu = list (
+  leaf (tag="Linux", label="Linux",active=Active),
+  leaf (tag="OSX", label="OSX",active=Active),
+  leaf (tag="Generic Posix", label="Posix",active=Active),
+  #separator, 
+  leaf (tag="Windows 32 bit", label="Win32",active=Active),
+  leaf (tag="Windows 64 bit", label="Win64",active=Active),
+  #separator, 
+  leaf (tag="Cygwin", label="Cygwin",active=Active)
+);
+
+var compilermenu = list (
+  leaf (tag="gcc", label="gcc",active=Active),
+  leaf (tag="clang", label="clang",active=Active),
+  leaf (tag="MSVC", label="msvc",active=Active)
+);
+
+var maxalignmenu = list (
+  leaf (tag="a4", label="4 bytes",active=Active),
+  leaf (tag="a8", label="8 bytes",active=Active),
+  leaf (tag="a16", label="16 bytes",active=Active),
+  leaf (tag="a32", label="32 bytes",active=Active)
+);
+
+
+var cxxstandardmenu= list (
+  leaf (tag="C++89", label="C++89",active=Active),
+  leaf (tag="C++11", label="C++11",active=Active),
+  leaf (tag="C++14", label="C++14",active=Active)
+);
+
+var socketeventnotifiermenu= list (
+  leaf (tag="select", label="select (posix)",active=Active),
+  leaf (tag="poll", label="poll (posix)",active=Active),
+  leaf (tag="epoll", label="epoll (linux)",active=Active),
+  leaf (tag="kqueue", label="kqueue (bsd,osx)",active=Active),
+  leaf (tag="windows", label="windows",active=Active),
+  leaf (tag="solaris", label="solaris",active=Active)
+);
+
+
+var menu = list (
+  Tree (Text (tag="OS", label="OS",active=Active), osmenu),
+  Tree (Text (tag="Toolchain", label="Toolchain",active=Active), compilermenu),
+  Tree (Text (tag="C++ Standard", label="C++ Standard",active=Active), cxxstandardmenu),
+  Tree (Text (tag="Maxalign", label="Maxalign",active=Active), maxalignmenu),
+  Tree (Text (tag="SocketEventNotifier", label="SocketEventNotifier",active=Active), socketeventnotifiermenu)
+);
+
+var init_state = Open ( list[int] (4,2) );
+
+typedef config_t =
+(
+  OS: string,         // operating system
+  toolchain: string,  // compiler toolchain
+  sourcelang: string, // C++ Standard
+  maxalign: string,   // alignment of long double float
+  notifier: string      // socket event notification service
+);
+
+var config: config_t = (
+  OS="Posix", 
+  toolchain="gcc", 
+  sourcelang="C++89",
+  maxalign="16",
+  notifier="select"
+);
+
+// Base display routine
+proc display (w:window_t) (config:config_t)
+{
+  w.clear lightgrey;
+  var col = 100;
+  var v = 100;
+  w.write (col,v+lineskip,font,black,  "OS:         " + config.OS);
+  w.write (col,v+2*lineskip,font,black,"toolchain:  " + config.toolchain);
+  w.write (col,v+3*lineskip,font,black,"sourcelang: " + config.sourcelang);
+  w.write (col,v+4*lineskip,font,black,"max align : " + config.maxalign);
+  w.write (col,v+5*lineskip,font,black,"notifier:   " + config.notifier);
+}
+ 
+// make an event handler for our window
+proc ehandler 
+  (w:window_t)
+  (menu_out: oschannel[event_t], menu_in:ischannel[menu_action_t])
+  (input:ischannel[event_t])  () 
+{
+   // get a first event from the window manager
+  var e: event_t = read input;
+
+  // hack: force redraw by pretending window is resized
+  proc redraw()
+  {
+    w.display config;
+    var resize_event: event_t; // hack, only fill out some fields
+    &resize_event.type <- SDL_WINDOWEVENT.uint32;
+    &resize_event.window.event <- SDL_WINDOWEVENT_RESIZED.uint8;
+    write$ menu_out, resize_event;
+    response = read menu_in; //ignored
+    w.update;
+  }
+
+  // while the event isn't a quit event ..
+  while e.window.event.SDL_WindowEventID != SDL_WINDOWEVENT_CLOSE  do
+    // print a diagnostic
+    var s = 
+      if e.type.SDL_EventType == SDL_WINDOWEVENT then
+        e.type.SDL_EventType.str + ": " + e.window.event.SDL_WindowEventID.str + " wid=" + e.window.windowID.str
+      elif e.type.SDL_EventType != SDL_MOUSEMOTION then
+        e.type.SDL_EventType.str
+      else ""
+    ; 
+    write$ menu_out, e;
+    var response = read menu_in;
+    match response with
+    | NoAction => ;
+    | ChangedPosition => 
+      redraw();
+
+    | SelectedAction s => 
+      println$ "Menu Selection made: " + s;
+
+      match s with
+      | "Linux" => config&.OS <- s;
+      | "OSX" => config&.OS <- s;
+      | "Win32" => config&.OS <- s;
+      | "Posix" => config&.OS <- s;
+      | "Win64" => config&.OS <- s;
+      | "Cygwin" => config&.OS <- s;
+
+      | "a4" => config&.maxalign <- "4";
+      | "a8" => config&.maxalign <- "8";
+      | "a16" => config&.maxalign <- "16";
+      | "a32" => config&.maxalign <- "32";
+
+      | "gcc" => config&.toolchain <- s;
+      | "clang" => config&.toolchain <- s;
+      | "MSVC" => config&.toolchain <- s;
+
+      | "C++89" => config&.sourcelang<- s;
+      | "C++11" => config&.sourcelang<- s;
+      | "C++14" => config&.sourcelang<- s;
+
+      | "select" => config&.notifier<- s;
+      | "poll" => config&.notifier<- s;
+      | "epoll" => config&.notifier<- s;
+      | "kqueue" => config&.notifier<- s;
+      | "windows" => config&.notifier<- s;
+      | "solaris" => config&.notifier<- s;
+     
+      | _ => ; 
+      endmatch;
+
+      w.display config;
+      redraw();
+
+    endmatch; 
+    // get another event
+    e= read input;
+  done
+
+  // we must have got a quit ..
+  println$ "CLOSE EVENT";
+} 
+
+
+begin
+  //create a window manager
+  var wm = window_manager();
+
+  // create a window
+  var w1 = window_t("flx_config",50,50,800,600);
+  w1.display config;
+
+  var iresp,oresp = #mk_ioschannel_pair[menu_action_t];
+
+  var oevent: oschannel[event_t];
+  var mm: menu_model_t;
+  var md: menu_display_t;
+  mk_menu (w1, 10,10, menu, init_state, oresp, &mm, &md, &oevent);
+
+  // create a window controller for our window
+  var wc1 = window_controller (w1, ehandler w1 (oevent, iresp) );
+
+  // attach controller to window manager
+  var wno = wm.add_window wc1;
+
+  // USE variable wno or Felix will elide the call!
+  println$ "Window number " + wno.str;
+
+  // get the channel to read events from
+  var input = wm.get_event_source();
+    
+  // refresh window now
+  w1.update;
+  // read an event
+  var e= read input;
+
+  while e.type.SDL_EventType != SDL_QUIT do
+
+    // dispatch the event to the window it is associated with
+    wm.dispatch_window_event e;
+
+    // get another event
+    e= read input;
+  done
+
+  // we must have got a quit ..
+  println$ "QUIT EVENT";
+  wm.delete_all();
+  println$ "Windows deleted, quitting";
+end
+
+
