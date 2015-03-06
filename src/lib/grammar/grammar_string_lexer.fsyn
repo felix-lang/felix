@@ -161,7 +161,7 @@ SCHEME """
 //$ is supported and requires a C++ string argument.
 //$ Such functions accept a tuple of values like this:
 //$
-//$ f"%d-$S" (42, "Hello")
+//$ f"%d-%S" (42, "Hello")
 //$
 //$ If vsnprintf is available on the local platform it is used
 //$ to provide an implementation which cannot overrun.
