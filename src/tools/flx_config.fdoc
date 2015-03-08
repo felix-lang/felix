@@ -237,11 +237,84 @@ fun mk_flx_flxh(config:config_t) =
   return s;
 }
 
+proc menu_mod_config (config: &config_t) (s:string) 
+{
+  proc toggle (s:&string) => s <- if *s == "0" then "1" else "0" endif; 
+
+  match s with
+  // OS
+  | "Linux" => config.OS <- s; 
+    if config*.toolchain == "MSVC" do config.toolchain <- "gcc"; done
+
+  | "OSX" => config.OS <- s; 
+    if config*.toolchain == "MSVC" do config.toolchain <- "clang"; done
+    if config*.notifier in ("windows","solaris","epoll") do config.notifier <- "kqueue"; done
+
+  | "BSD" => config.OS <- s; 
+    if config*.toolchain == "MSVC" do config.toolchain <- "clang"; done
+    if config*.notifier in ("windows","solaris","epoll") do config.notifier <- "kqueue"; done
+
+
+  | "Posix" => config.OS <- s;
+    if config*.toolchain == "MSVC" do config.toolchain <- "gcc"; done
+    if config*.notifier in ("windows","epoll") do config.notifier <- "poll"; done
+
+  | "Win32" => config.OS <- s; config.toolchain <- "MSVC"; config.notifier <- "windows";
+  | "Win64" => config.OS <- s; config.toolchain <- "MSVC"; config.notifier <- "windows";
+
+  | "Cygwin" => config.OS <- s;
+
+  | "Solaris" => config.OS <- s;
+    if config*.toolchain == "MSVC" do config.toolchain <- "gcc"; done
+    if config*.notifier in ("kqueue","epoll", "windows") do config.notifier <- "solaris"; done
+
+  // Maxalign
+  | "a4" => config.maxalign <- "4";
+  | "a8" => config.maxalign <- "8";
+  | "a16" => config.maxalign <- "16";
+  | "a32" => config.maxalign <- "32";
+
+  // Toolchain
+  | "gcc" => config.toolchain <- s;
+  | "clang" => config.toolchain <- s;
+
+  | "MSVC" => config.toolchain <- s;
+    if config*.OS in ("Solaris","Linux","OSX","Posix","BSD") do config.OS <- "Win32"; done
+    config.notifier <- "windows";
+  
+  // C++ Standard
+  | "C++89" => config.sourcelang<- s;
+  | "C++11" => config.sourcelang<- s;
+  | "C++14" => config.sourcelang<- s;
+
+  // event notification service
+  | "select" => config.notifier<- s;
+  | "poll" => config.notifier<- s;
+  | "epoll" => config.notifier<- s;
+  | "kqueue" => config.notifier<- s;
+  | "windows" => config.notifier<- s;
+  | "solaris" => config.notifier<- s;
+
+  // compiler extensions
+  | "builtin_expect"  => toggle config.have_builtin_expect;
+  | "computed_goto" => toggle config.have_cgoto;
+  | "assembler_labels"  => toggle config.have_asm_labels;
+  | "OpenMP" => toggle config.have_openmp;
+
+  // library functions
+  | "vsnprintf"  => toggle config.have_vsnprintf;
+  | "dlopen"  => toggle config.have_dlopen;
+  | "socklen_t"  => toggle config.have_socklen_t;
+
+  | _ => ; 
+  endmatch; // SelectAction
+}
 
 // make an event handler for our window
 proc ehandler 
   (w:window_t)
   (menu_out: oschannel[event_t], menu_in:ischannel[menu_action_t])
+  (edit_buffer1: line_buffer_interface, edit_ch1: oschannel[event_t])
   (input:ischannel[event_t])  () 
 {
    // get a first event from the window manager
@@ -251,11 +324,14 @@ proc ehandler
   proc redraw()
   {
     w.display config;
+    w.write (10,15,font, black, "Target Directory");
     var resize_event: event_t; // hack, only fill out some fields
     &resize_event.type <- SDL_WINDOWEVENT.uint32;
     &resize_event.window.event <- SDL_WINDOWEVENT_RESIZED.uint8;
     write$ menu_out, resize_event;
     response = read menu_in; //ignored
+    C_hack::ignore(response);
+    write$ edit_ch1,resize_event;
     w.update;
   }
 
@@ -269,100 +345,39 @@ proc ehandler
         e.type.SDL_EventType.str
       else ""
     ; 
-    write$ menu_out, e;
-    var response = read menu_in;
-    match response with
-    | NoAction => ;
-    | ChangedPosition => 
-      redraw();
+    if e.window.event.SDL_WindowEventID == SDL_WINDOWEVENT_RESIZED do 
+      redraw(); 
+    else
+      write$ edit_ch1, e;
+      write$ menu_out, e;
+      var response = read menu_in;
+      match response with
+      | NoAction => ;
+      | ChangedPosition => 
+        redraw();
 
-    | SelectedAction s => 
-      println$ "Menu Selection made: " + s;
-      proc toggle (s:&string) => s <- if *s == "0" then "1" else "0" endif; 
-      match s with
-      // OS
-      | "Linux" => config&.OS <- s; 
-        if config.toolchain == "MSVC" do config&.toolchain <- "gcc"; done
+      | SelectedAction s => 
+        println$ "Menu Selection made: " + s;
+        menu_mod_config &config s;
+        println$ "Target=" + edit_buffer1.get();
+        println$ "----------------------------------------------------";
+        println$ "build/release/host/lib/rtl/flx_rtl_config_params_hpp";
+        println$ mk_flx_rtl_config_params_hpp config; 
 
-      | "OSX" => config&.OS <- s; 
-        if config.toolchain == "MSVC" do config&.toolchain <- "clang"; done
-        if config.notifier in ("windows","solaris","epoll") do config&.notifier <- "kqueue"; done
+        println$ "----------------------------------------------------";
+        println$ "build/release/host/lib/flx.flxh";
+        println$ mk_flx_flxh config; 
 
-      | "BSD" => config&.OS <- s; 
-        if config.toolchain == "MSVC" do config&.toolchain <- "clang"; done
-        if config.notifier in ("windows","solaris","epoll") do config&.notifier <- "kqueue"; done
+        println$ "----------------------------------------------------";
+        println$ "build/release/host/lib/rtl/demux_sockety_config_hpp";
+        println$ mk_demux_sockety_config_h config; 
+
+        w.display config;
 
 
-      | "Posix" => config&.OS <- s;
-        if config.toolchain == "MSVC" do config&.toolchain <- "gcc"; done
-        if config.notifier in ("windows","epoll") do config&.notifier <- "poll"; done
-
-      | "Win32" => config&.OS <- s; config&.toolchain <- "MSVC"; config&.notifier <- "windows";
-      | "Win64" => config&.OS <- s; config&.toolchain <- "MSVC"; config&.notifier <- "windows";
-
-      | "Cygwin" => config&.OS <- s;
-
-      | "Solaris" => config&.OS <- s;
-        if config.toolchain == "MSVC" do config&.toolchain <- "gcc"; done
-        if config.notifier in ("kqueue","epoll", "windows") do config&.notifier <- "solaris"; done
-
-      // Maxalign
-      | "a4" => config&.maxalign <- "4";
-      | "a8" => config&.maxalign <- "8";
-      | "a16" => config&.maxalign <- "16";
-      | "a32" => config&.maxalign <- "32";
-
-      // Toolchain
-      | "gcc" => config&.toolchain <- s;
-      | "clang" => config&.toolchain <- s;
-
-      | "MSVC" => config&.toolchain <- s;
-        if config.OS in ("Solaris","Linux","OSX","Posix","BSD") do config&.OS <- "Win32"; done
-        config&.notifier <- "windows";
-      
-      // C++ Standard
-      | "C++89" => config&.sourcelang<- s;
-      | "C++11" => config&.sourcelang<- s;
-      | "C++14" => config&.sourcelang<- s;
-
-      // event notification service
-      | "select" => config&.notifier<- s;
-      | "poll" => config&.notifier<- s;
-      | "epoll" => config&.notifier<- s;
-      | "kqueue" => config&.notifier<- s;
-      | "windows" => config&.notifier<- s;
-      | "solaris" => config&.notifier<- s;
-    
-      // compiler extensions
-      | "builtin_expect"  => toggle config&.have_builtin_expect;
-      | "computed_goto" => toggle config&.have_cgoto;
-      | "assembler_labels"  => toggle config&.have_asm_labels;
-      | "OpenMP" => toggle config&.have_openmp;
-
-      // library functions
-      | "vsnprintf"  => toggle config&.have_vsnprintf;
-      | "dlopen"  => toggle config&.have_dlopen;
-      | "socklen_t"  => toggle config&.have_socklen_t;
-
-      | _ => ; 
-      endmatch;
-
-      println$ "----------------------------------------------------";
-      println$ "build/release/host/lib/rtl/flx_rtl_config_params_hpp";
-      println$ mk_flx_rtl_config_params_hpp config; 
-
-      println$ "----------------------------------------------------";
-      println$ "build/release/host/lib/flx.flxh";
-      println$ mk_flx_flxh config; 
-
-      println$ "----------------------------------------------------";
-      println$ "build/release/host/lib/rtl/demux_sockety_config_hpp";
-      println$ mk_demux_sockety_config_h config; 
-
-      w.display config;
-      redraw();
-
-    endmatch; 
+        redraw();
+      endmatch; // Menu response
+    done // Resize event or not
     // get another event
     e= read input;
   done
@@ -370,6 +385,28 @@ proc ehandler
   // we must have got a quit ..
   println$ "CLOSE EVENT";
 } 
+
+proc mk_field 
+(
+  window:window_t, x:int, y:int, 
+  font:font_t, colour: colour_t, bgcolour:colour_t, 
+  dflt:string,
+  ed: &line_buffer_interface,
+  o:&oschannel[event_t]
+) 
+{
+  println$ "mk_field ("+x.str +"," + y.str+")="+dflt;
+  var editor = line_buffer (dflt.len.int, dflt);
+  var dc = line_buffer_display_controller (window,font,colour,bgcolour,x,y,editor);
+  dc.display();
+  var ich,och = #(mk_ioschannel_pair[event_t]);
+  var controller = line_edit editor dc ich;
+  spawn_fthread controller; 
+  println$ "mkfield: controller spawned";
+  ed <- editor;
+  o <- och;
+}
+
 
 
 begin
@@ -385,10 +422,14 @@ begin
   var oevent: oschannel[event_t];
   var mm: menu_model_t;
   var md: menu_display_t;
-  mk_menu (w1, 10,10, menu, init_state, oresp, &mm, &md, &oevent);
+  mk_menu (w1, 10,30, menu, init_state, oresp, &mm, &md, &oevent);
 
+  // create an edit field for the target directory name
+  var edit_ch1: oschannel[event_t]; var edit_buffer1: line_buffer_interface;
+  mk_field (w1, 200, 15, font, black, white, "build/release/host", &edit_buffer1, &edit_ch1);
+  
   // create a window controller for our window
-  var wc1 = window_controller (w1, ehandler w1 (oevent, iresp) );
+  var wc1 = window_controller (w1, ehandler w1 (oevent, iresp) (edit_buffer1,edit_ch1));
 
   // attach controller to window manager
   var wno = wm.add_window wc1;
