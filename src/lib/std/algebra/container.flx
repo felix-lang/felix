@@ -1,0 +1,9 @@
+// roughly, a finite Set
+class Container [c,v]
+{
+  inherit Set[c,v];
+  virtual fun len: c -> size;
+  virtual fun empty(x: c): bool => len x == size(0);
+}
+
+

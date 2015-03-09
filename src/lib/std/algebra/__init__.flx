@@ -1,3 +1,5 @@
+include "std/algebra/set";
+include "std/algebra/container";
 include "std/algebra/equiv";
 include "std/algebra/partialorder";
 include "std/algebra/totalorder";

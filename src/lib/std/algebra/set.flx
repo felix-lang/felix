@@ -1,0 +1,12 @@
+
+// note: eq is not necessarily required for a membership test
+// for example: string member of regexp doesn't require
+// string equality
+// Set need not be finite (example regexp again)
+// A list is a set, despite the duplications
+class Set[c,t] {
+  fun mem (elt:t, container:c):bool => elt \in container;
+  virtual fun \in : t * c-> bool;
+}
+
+

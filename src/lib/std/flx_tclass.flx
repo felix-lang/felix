@@ -42,25 +42,6 @@ class OBuffer [f] {
 }
 
 // -----------------------------------------------------------------------------
-
-// note: eq is not necessarily required for a membership test
-// for example: string member of regexp doesn't require
-// string equality
-// Set need not be finite (example regexp again)
-// A list is a set, despite the duplications
-class Set[c,t] {
-  fun mem (elt:t, container:c):bool => elt \in container;
-  virtual fun \in : t * c-> bool;
-}
-
-// roughly, a finite Set
-class Container [c,v]
-{
-  inherit Set[c,v];
-  virtual fun len: c -> size;
-  virtual fun empty(x: c): bool => len x == size(0);
-}
-
 // -----------------------------------------------------------------------------
 
 class Monad [M: TYPE->TYPE] {
