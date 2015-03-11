@@ -30,11 +30,7 @@ class BinarySearchTree[T with Tord[T]]
 
 @h2 Quick Checks.
 @felix
-  fun empty: bstree_t -> bool =
-    | Empty => true
-    | _ => false
-  ;
- 
+
   fun leaf: bstree_t -> bool =
     | Empty => false
     | Node ?p => 
@@ -107,6 +103,24 @@ in ascending order.
       }
      aux x;
    }
+
+@h2 Fold.
+Easily defined given iter, this should be generalised elsewhere!
+@felix
+  fun fold_left[U] (_f:U->T->U) (init:U) (x:bstree_t): U = {
+    var sum = init;
+    iter proc (elt:T) { sum = _f sum elt; } x;
+    return sum;
+  }
+
+@h2 Map.
+Easily defined given iter. Note the tree structure is NOT preserved.
+@felix
+  fun map[U] (_f:T->U) (x:bstree_t): BinarySearchTree[U]::bstree_t = {
+    var res = BinarySearchTree::Empty[U];
+    iter proc (elt:T) { BinarySearchTree[U]::insert &res elt._f; } x;
+    return res;
+  }
 
 @h2 Constructors.
 @felix 
@@ -210,10 +224,17 @@ Ab interesting routine, related to @{iter}.
       in aux x 0uz
     ;
 
+    // faster than counting then comparing to 0
+    fun empty: bstree_t -> bool =
+      | Empty => true
+      | _ => false
+    ;
+   
   }
   inherit Container[bstree_t,T];
 
 @h2 Delete by value.
+Ensures the tree doesn't contain the specified value.
 @felix 
   // deletes the first copy of the element found
   proc delete_element (p:&bstree_t) (elt:T)

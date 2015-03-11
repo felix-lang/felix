@@ -1,0 +1,36 @@
+@title Binary Search Tree test
+@felix
+include "std/datatype/binary_search_tree";
+open[T] BinarySearchTree[T];
+
+var vals = list (20,30,3,42,98,66,23,22,56);
+var x = bstree_t[int] vals.iterator;
+println$ x;
+
+iter proc (x:int) { print$ x.str + " "; } x;
+println$ "End!";
+
+println$ "Delete 42";
+delete_element &x 42;
+iter proc (x:int) { print$ x.str + " "; } x;
+println$ "End! (iter HOF)";
+
+for elt in x do print$ elt.str + " "; done println "END (iterator)";
+
+println$ 42 in x, 30 in x; // false, true
+println$ "Size="+x.len.str;
+
+var y = map (fun (x:int):double=> x.double.sqrt) x;
+
+for elt in y do print$ elt.str + " "; done println "END (iterator)";
+@expect
+20(3(()) (())) (30(23(22(()) (())) (())) (42(()) (98(66(56(()) (())) (())) (()))))
+3 20 22 23 30 42 56 66 98 End!
+Delete 42
+3 20 22 23 30 56 66 98 End! (iter HOF)
+3 20 22 23 30 56 66 98 END (iterator)
+(false, true)
+Size=8
+1.73205 4.47214 4.69042 4.79583 5.47723 7.48331 8.12404 9.89949 END (iterator)
+@doc
+
