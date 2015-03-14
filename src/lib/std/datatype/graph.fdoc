@@ -1,0 +1,63 @@
+@title Graphs
+@h1 Graphs
+@felix
+// Directed Cyclic graph
+class DiGraph[V,E with Str[V], Str[E]] // V,E labels for graph parts
+{
+  // vertices are stored in an array, so they're identified
+  // by their slot number 0 origin
+  typedef digraph_t = (vertices: darray[vertex_t], nedges: int);
+  ctor digraph_t () => (vertices= #darray[vertex_t], nedges=0);
+
+  // x index implicit, the edge source
+  // y index is the edge destination
+  typedef edge_t = (elabel:E, y:int, weight:int); 
+  typedef vertex_t = (vlabel:V, outedges: list[edge_t]);
+
+  virtual fun default_vlabel: 1 -> V;
+  virtual fun default_elabel: 1 -> E;
+  fun default_vertex () => (vlabel = #default_vlabel, outedges = Empty[edge_t]);
+
+  // Add an isolated vertex
+  // If the vertex is already in the graph,
+  // this routine just replaces the label
+  // this allows adding out of order vertices
+  // and adding vertices implicitly by adding edges
+  proc add_vertex (d:&digraph_t, v:V, x:int) 
+  {
+    while x >= d*.vertices.len.int do push_back (d*.vertices, #default_vertex); done 
+    var pv: &V = (d*.vertices,x.size).unsafe_get_ref.vlabel;
+    pv <- v;
+  }
+
+  proc add_edge (d:&digraph_t, x:int, y:int, elab:E)
+  {
+    while x >= d*.vertices.len.int do add_vertex (d,#default_vlabel,d*.vertices.len.int); done;
+    while y >= d*.vertices.len.int do add_vertex (d,#default_vlabel,d*.vertices.len.int); done;
+    var pedges : &list[edge_t] = (d*.vertices,x.size).unsafe_get_ref.outedges;
+    pedges <- (elabel=elab,y=y,weight=1) ! *pedges;
+    d.nedges.pre_incr;
+  }
+  
+  fun dump_digraph (d:digraph_t) : string = 
+  {
+    var out = "";
+    reserve (&out,10000);
+    var x = 0;
+    for vertex in d.vertices do
+      out += x.str + " " + vertex.vlabel.str + "\n";
+      for edge in vertex.outedges do
+        out += "  " + x.str + "->" + edge.y.str + " " + edge.elabel.str+ "\n";
+      done
+    ++x;
+    done
+    return out;
+  }
+}
+
+instance DiGraph[string, string] 
+{
+  fun default_vlabel () => "Unlabelled Vertex";
+  fun default_elabel () => "Unlabelled Edge";
+}
+

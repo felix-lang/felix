@@ -34,6 +34,10 @@ class MinHeap[T with Tord[T]]
     bubble_up (h,h.len.int - 1);
   }
 
+  // this procedure does nothing if the index p 
+  // is greater than or equal to the limit - 2, 
+  // since the last used slot is lim - 1, 
+  // and that node cannot have any children.
   proc bubble_down_lim (h:minheap_t, p:int, lim:int) {
     var min_index = p;
     var left = p.left_child;
@@ -64,6 +68,9 @@ class MinHeap[T with Tord[T]]
   }
 
   // sorts largest to smallest!!
+  // based on extract_min, except the minimum element
+  // is moved to the position at the end of the heap
+  // which would otherwise be deleted.
   proc heap_sort (h:minheap_t) {
     var tosort = h.len.int;
     while tosort > 1 do
@@ -73,6 +80,11 @@ class MinHeap[T with Tord[T]]
     done
   }
 
-
+  proc heapify (h:minheap_t) {
+    var index = h.len.int - 2;
+    while index >= 0 do  
+      bubble_down (h, index); --index; 
+    done
+  }
 
 }
