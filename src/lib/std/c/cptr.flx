@@ -47,6 +47,6 @@ open[T] Eq[cptr[T]];
 open[T] Tord[cptr[T]];
 
 //$ Special notation @T for  type of a C pointer.
-//typedef fun n"@" (T:TYPE) : TYPE => cptr[T]; 
+typedef fun n"@" (T:TYPE) : TYPE => cptr[T]; 
 
 

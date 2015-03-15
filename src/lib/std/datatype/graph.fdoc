@@ -53,6 +53,9 @@ class DiGraph[V,E with Str[V], Str[E]] // V,E labels for graph parts
     done
     return out;
   }
+
+  union Vstate = Undiscovered | Discovered | Processed;
+
 }
 
 instance DiGraph[string, string] 

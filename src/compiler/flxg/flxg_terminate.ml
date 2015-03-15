@@ -69,6 +69,10 @@ let terminate rrp exc =
     print_endline s;
     exit (if return_parity then 1 else 0)
 
+  | Free_fixpoint t ->
+    flush stdout; print_endline "FREE FIXPOINT ERROR";
+    exit (if return_parity then 1 else 0)
+
   | x ->
     print_endline ("Fatal error: exception " ^ (Printexc.to_string x));
     exit (if return_parity then 1 else 0)
