@@ -1,0 +1,85 @@
+@title Doubly linked mutable list
+@h1 Dlist
+A dlist_t is a doubly linked mutable list.
+It is suitable for use as non-thread-safe queue.
+@felix
+class DList[T]
+{
+  typedef dnode_t=
+  (
+    data: T,
+    next: cptr[dnode_t], // possibly NULL
+    prev: cptr[dnode_t]  // possibly NULL
+  );
+  typedef dlist_t = (first:cptr[dnode_t], last:cptr[dnode_t]);
+    // invariant: if first is null, so is last!
+
+  ctor dlist_t () => (first=nullptr[dnode_t],last=nullptr[dnode_t]);
+@h2 Length @{len}
+@felix
+  fun len (x:dlist_t) = {
+    var n = 0;
+    var first : cptr[dnode_t] = x.first;
+  again:>
+    match first with
+    | nullptr => return n;
+    | Ptr p => ++n; first = p*.next;
+    endmatch;
+    goto again; 
+  }
+
+@h2 Insertion
+@felix
+  proc push_front (dl:&dlist_t, v:T) { 
+    var node = new (data=v, next=dl*.first,prev=nullptr[dnode_t]); 
+    dl.first <- Ptr node;
+  }
+
+  proc push_back (dl:&dlist_t, v:T) {
+    var node = new (data=v, next=nullptr[dnode_t] ,prev=dl*.last); 
+    dl.last <- Ptr node;
+  }
+
+@h2 Deletion 
+@felix
+
+  gen pop_front (dl:&dlist_t): opt[T] = {
+    match dl*.first with
+    | nullptr => return None[T];
+    | Ptr p => 
+      match p*.next with
+      | nullptr =>
+        dl.first <- nullptr[dnode_t];
+        dl.last <- nullptr[dnode_t];
+      | _ =>
+        dl.first <- p*.next;
+      endmatch;
+      return Some p*.data;
+    endmatch;
+  }
+
+  gen pop_back (dl:&dlist_t): opt[T] = {
+    match dl*.last with
+    | nullptr => return None[T];
+    | Ptr p => 
+      match p*.prev with
+      | nullptr =>
+        dl.first <- nullptr[dnode_t];
+        dl.last <- nullptr[dnode_t];
+      | _ =>
+        dl.last <- p*.prev;
+      endmatch;
+      return Some p*.data;
+    endmatch;
+  }
+@h2 Use as a queue
+We can implement enqueue and dequeue at either end, we'll make
+enqueue push_front and dequeue pop_back for no particular reason.
+@felix
+  typedef queue_t = dlist_t;
+  proc enqueue (q:&queue_t) (v:T) => push_front (q,v);
+  gen dequeue (q:&queue_t) :opt[T] => pop_back q;
+  ctor queue_t () => dlist_t ();
+
+}
+
