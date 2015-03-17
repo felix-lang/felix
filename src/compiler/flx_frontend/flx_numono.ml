@@ -183,6 +183,11 @@ let flat_typeclass_fixup_exe syms bsym_table polyinst mt exe =
 (* ----------------------------------------------------------- *)
 
 let flat_poly_fixup_type syms bsym_table polyinst t =
+(*
+  if not (complete_type t) then
+    print_endline ("flat_poly_fixup_type: type isn't complete " ^ sbt bsym_table t);
+*)
+
   match t with
   | BTYP_inst (i,ts) ->
     let i',ts' = polyinst i ts in
@@ -458,6 +463,11 @@ let find_felix_inst syms bsym_table processed to_process nubids i ts : int =
 let mono_bbdcl syms bsym_table processed to_process nubids virtualinst polyinst ts bsym =
 (*
   print_endline ("[mono_bbdcl] " ^ Flx_bsym.id bsym);
+  print_endline ("ts=[" ^ catmap "," (sbt bsym_table) ts ^ "]");
+  List.iter (fun t -> if not (complete_type t) then 
+    print_endline ("Argument not complete!!!!!!!!!!!!!!!!!!!!!!!")
+  )
+  ts;
 *)
   begin try List.iter (check_mono bsym_table) ts with _ -> assert false end;
 

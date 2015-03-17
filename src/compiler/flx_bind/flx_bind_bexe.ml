@@ -172,7 +172,7 @@ let cal_call state bsym_table sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
       in (sr,tbe1,x2)
     end
   in
-  match unfold t1 with
+  match unfold "flx_bind_bexe" t1 with
 
   (* special handling of non-returning function. Instead of returning
      void we return type any, 
@@ -195,7 +195,7 @@ let cal_call state bsym_table sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
     ^"\ntype=" ^ sbt bsym_table t1)
 
 let cal_loop sym_table sr ((p,pt) as tbe1) ((_,argt) as tbe2) this =
-  match unfold pt with
+  match unfold "flx_bind_bexe" pt with
   | BTYP_function (t, BTYP_void) ->
     if t = argt
     then
@@ -575,7 +575,7 @@ print_endline ("Bind EXE_iinit "^s);
         sbt bsym_table lhst^
         "\n of initialisation must have same type as RHS:\n"^
         sbt bsym_table rhst^
-        "\nunfolded LHS = " ^ sbt bsym_table (unfold lhst) ^
+        "\nunfolded LHS = " ^ sbt bsym_table (unfold "flx_bind_bexe" lhst) ^
         "\nenvironment type variables are " ^
         print_vs state.parent_vs
 
@@ -628,7 +628,7 @@ print_endline ("Bind EXE_init "^s);
             sbt bsym_table lhst^
             "\n of initialisation must have same type as RHS:\n"^
             sbt bsym_table rhst^
-            "\nunfolded LHS = " ^ sbt bsym_table (unfold lhst) ^
+            "\nunfolded LHS = " ^ sbt bsym_table (unfold "flx_bind_bexe" lhst) ^
             (if length state.parent_vs > 0 then
             "\nenvironment type variables are " ^
             print_vs state.parent_vs
@@ -637,21 +637,24 @@ print_endline ("Bind EXE_init "^s);
       end
 
   | EXE_assign (l,r) ->
+(*
+print_endline ("BINDING ASSIGNMENT " ^ string_of_exe 0 exe);
+*)
       (* trick to generate diagnostic if l isn't an lvalue *)
       let _,lhst as lx = be l in
       let _,rhst as rx = be r in
-      let lhst = minimise bsym_table state.counter lhst in
 (*
-print_endline ("assign: LHST = " ^ sbt bsym_table lhst);
+print_endline ("assign: LHS=" ^ sbe bsym_table lx ^ ", LHST = " ^ sbt bsym_table lhst);
 *)
+      let lhst = minimise bsym_table state.counter lhst in
       let lhst = Flx_beta.beta_reduce "flx_bind_bexe: EXE_assign lhst" state.counter bsym_table sr lhst in
 (*
 print_endline ("assign after beta-reduction: LHST = " ^ sbt bsym_table lhst);
 *)
-      let rhst = minimise bsym_table state.counter rhst in
 (*
-print_endline ("assign: RHST = " ^ sbt bsym_table rhst);
+print_endline ("assign:  RHS=" ^ sbe bsym_table rx ^ ",RHST = " ^ sbt bsym_table rhst);
 *)
+      let rhst = minimise bsym_table state.counter rhst in
       let rhst = Flx_beta.beta_reduce "flx_bind_bexe: EXE_assign rhst" state.counter bsym_table sr rhst in
 (*
 print_endline ("assign after beta-reduction: RHST = " ^ sbt bsym_table rhst);

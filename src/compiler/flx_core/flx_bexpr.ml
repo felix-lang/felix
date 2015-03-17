@@ -38,86 +38,94 @@ and t = bexpr_t * Flx_btype.t
 
 (* -------------------------------------------------------------------------- *)
 
+let complete_check t = 
+(*
+  if Flx_btype.complete_type t then t else
+  let () = print_endline "WARNING: expression type has free fixpoint" in
+*)
+  t
+let complete_check_list ts = List.map complete_check ts
+
 let bexpr_label e = BEXPR_label e, Flx_btype.btyp_label ()
-let bexpr_tuple_tail t e = BEXPR_tuple_tail e, t
-let bexpr_tuple_head t e = BEXPR_tuple_head e, t
+let bexpr_tuple_tail t e = BEXPR_tuple_tail e, complete_check t
+let bexpr_tuple_head t e = BEXPR_tuple_head e, complete_check t
 
-let bexpr_tuple_cons t (eh,et) = BEXPR_tuple_cons (eh,et), t
+let bexpr_tuple_cons t (eh,et) = BEXPR_tuple_cons (eh,et), complete_check t
 
-let bexpr_deref t e : t = BEXPR_deref e, t
+let bexpr_deref t e : t = BEXPR_deref e, complete_check t
 
-let bexpr_not (e,t) : t = BEXPR_not (e,t), t
+let bexpr_not (e,t) : t = BEXPR_not (e,t), complete_check t
 
 let bexpr_varname t (bid, ts) = 
 (*
   print_endline ("Creating varname term " ^ string_of_int bid);
 *)
-  BEXPR_varname (bid, ts), t
+  BEXPR_varname (bid, complete_check_list ts), complete_check t
 
-let bexpr_ref t (bid, ts) = BEXPR_ref (bid, ts), t
+let bexpr_ref t (bid, ts) = BEXPR_ref (bid, complete_check_list ts), complete_check t
 
-let bexpr_likely ((_,t) as e) = BEXPR_likely e, t
+let bexpr_likely ((_,t) as e) = BEXPR_likely e, complete_check t
 
-let bexpr_unlikely ((_,t) as e) = BEXPR_unlikely e, t
+let bexpr_unlikely ((_,t) as e) = BEXPR_unlikely e, complete_check t
 
-let bexpr_address ((_,t) as e) = BEXPR_address e, (Flx_btype.btyp_pointer t)
+let bexpr_address ((_,t) as e) = BEXPR_address e, complete_check (Flx_btype.btyp_pointer t)
 
-let bexpr_new ((_,t) as e) = BEXPR_new e, (Flx_btype.btyp_pointer t)
+let bexpr_new ((_,t) as e) = BEXPR_new e, complete_check (Flx_btype.btyp_pointer t)
 
-let bexpr_class_new cl e = BEXPR_class_new (cl,e), (Flx_btype.btyp_pointer cl)
+let bexpr_class_new cl e = BEXPR_class_new (cl,e), complete_check (Flx_btype.btyp_pointer cl)
 
-let bexpr_literal t l = BEXPR_literal l, t
+let bexpr_literal t l = BEXPR_literal l, complete_check t
 
-let bexpr_apply t (e1, e2) = BEXPR_apply (e1, e2), t
+let bexpr_apply t (e1, e2) = BEXPR_apply (e1, e2), complete_check t
 
-let bexpr_apply_prim t (bid, ts, e) = BEXPR_apply_prim (bid, ts, e), t
+let bexpr_apply_prim t (bid, ts, e) = BEXPR_apply_prim (bid, complete_check_list ts, e), complete_check t
 
-let bexpr_apply_direct t (bid, ts, e) = BEXPR_apply_direct (bid, ts, e), t
+let bexpr_apply_direct t (bid, ts, e) = BEXPR_apply_direct (bid, complete_check_list ts, e), complete_check t
 
-let bexpr_apply_stack t (bid, ts, e) = BEXPR_apply_stack (bid, ts, e), t
+let bexpr_apply_stack t (bid, ts, e) = BEXPR_apply_stack (bid, complete_check_list ts, e), complete_check t
 
-let bexpr_apply_struct t (bid, ts, e) = BEXPR_apply_struct (bid, ts, e), t
+let bexpr_apply_struct t (bid, ts, e) = BEXPR_apply_struct (bid, complete_check_list ts, e), complete_check t
 
-let bexpr_tuple t es = BEXPR_tuple es, t
+let bexpr_tuple t es = BEXPR_tuple es, complete_check t
 
 let bexpr_record es = 
   let cmp (s1,e1) (s2,e2) = compare s1 s2 in
   let es = List.sort cmp es in
   let ts = List.map (fun (s,(_,t)) -> s,t) es in
-  BEXPR_record es, Flx_btype.btyp_record "" ts
+  BEXPR_record es, complete_check (Flx_btype.btyp_record "" ts)
 
-let bexpr_variant t (n, e) = BEXPR_variant (n, e), t
+let bexpr_variant t (n, e) = BEXPR_variant (n, e), complete_check t
 
 
-let bexpr_aprj ix d c = BEXPR_aprj (ix,d,c),Flx_btype.BTYP_function (d,c)
-let bexpr_prj n d c = BEXPR_prj (n,d,c),Flx_btype.BTYP_function (d,c)
-let bexpr_inj n d c = BEXPR_inj (n,d,c),Flx_btype.BTYP_function (d,c)
-let bexpr_get_n c n (e,d) =  BEXPR_apply ( bexpr_prj n d c, (e,d) ), c
+let bexpr_aprj ix d c = BEXPR_aprj (ix,d,c),complete_check (Flx_btype.BTYP_function (d,c))
+let bexpr_prj n d c = BEXPR_prj (n,d,c),complete_check (Flx_btype.BTYP_function (d,c))
+let bexpr_inj n d c = BEXPR_inj (n,d,c),complete_check (Flx_btype.BTYP_function (d,c))
+let bexpr_get_n c n (e,d) =  BEXPR_apply ( bexpr_prj n d c, (e,d) ), complete_check c
 
 
 let bexpr_closure t (bid, ts) = 
 (*
   print_endline ("Creating closure term " ^ string_of_int bid);
 *)
-  BEXPR_closure (bid, ts), t
+  BEXPR_closure (bid, complete_check_list ts), complete_check t
 
-let bexpr_const_case (i, t) = BEXPR_case (i, t), t
+let bexpr_const_case (i, t) = BEXPR_case (i, t), complete_check t
 
-let bexpr_nonconst_case arg (i, sumt) = BEXPR_inj (i, arg, sumt), Flx_btype.btyp_function (arg,sumt)
+let bexpr_nonconst_case arg (i, sumt) = BEXPR_inj (i, arg, sumt), complete_check (Flx_btype.btyp_function (arg,sumt))
 
-let bexpr_match_case t (i, e) = BEXPR_match_case (i, e), t
+let bexpr_match_case t (i, e) = BEXPR_match_case (i, e), complete_check t
 
-let bexpr_case_arg t (i, e) = BEXPR_case_arg (i, e), t
+let bexpr_case_arg t (i, e) = BEXPR_case_arg (i, e), complete_check t
 
-let bexpr_case_index t e = BEXPR_case_index e, t
+let bexpr_case_index t e = BEXPR_case_index e, complete_check t
 
-let bexpr_expr (s, t) = BEXPR_expr (s, t), t
+let bexpr_expr (s, t) = BEXPR_expr (s, t), complete_check t
 
-let bexpr_range_check t (e1, e2, e3) = BEXPR_range_check (e1, e2, e3), t
+let bexpr_range_check t (e1, e2, e3) = BEXPR_range_check (e1, e2, e3), complete_check t
 
-let bexpr_coerce (e, t) = BEXPR_coerce (e, t), t
+let bexpr_coerce (e, t) = BEXPR_coerce (e, t), complete_check t
 
-let bexpr_compose t (e1, e2) = BEXPR_compose (e1, e2), t
+let bexpr_compose t (e1, e2) = BEXPR_compose (e1, e2), complete_check t
 
 let bexpr_unitsum_case i j =
   let case_type = Flx_btype.btyp_unitsum j in

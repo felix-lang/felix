@@ -854,70 +854,8 @@ let type_eq bsym_table counter t1 t2 = (* print_endline "TYPE EQ";  *)
 let type_match bsym_table counter t1 t2 = (* print_endline "TYPE MATCH"; *)
   type_eq' bsym_table counter [] 0 [] 0 [] t1 t2
 
-(* NOTE: only works on explicit fixpoint operators,
-  i.e. it won't work on typedefs: no name lookup,
-  these should be removed first ..
-  another view: only works on non-generative types.
-*)
-
-let complete_type t =
-  let rec aux depth t' =
-    let uf t = aux (depth + 1) t in
-    match t' with
-    | BTYP_sum ls -> List.iter uf ls
-    | BTYP_tuple ls -> List.iter uf ls
-    | BTYP_record (n,ls) -> List.iter (fun (s,t) -> uf t) ls
-    | BTYP_variant ls -> (List.iter (fun (s,t) -> uf t) ls)
-    | BTYP_array (a,b) -> uf a; uf b
-    | BTYP_function (a,b) -> uf a;uf b
-    | BTYP_cfunction (a,b) -> uf a;uf b
-    | BTYP_pointer a -> uf a
-    | BTYP_fix (i,_) when (-i) = depth -> ()
-    | BTYP_fix (i,_) when (-i) > depth -> raise (Free_fixpoint t')
-    | BTYP_type_apply (a,b) -> uf a;uf b
-    | BTYP_inst (i,ts) -> List.iter uf ts
-    | BTYP_type_function (p,r,b) ->
-        uf b
-  
-    | BTYP_type_match (a,tts) ->
-        uf a;
-        List.iter (fun (p,x) -> uf x) tts
-  
-    | _ -> ()
-  in try aux 0 t; true with | Free_fixpoint _ -> false
-
-let unfold t =
-  let rec aux depth t' =
-    let uf t = aux (depth + 1) t in
-    match t' with
-    | BTYP_sum ls -> btyp_sum (List.map uf ls)
-    | BTYP_tuple ls -> btyp_tuple (List.map uf ls)
-    | BTYP_record (n,ls) -> btyp_record n (List.map (fun (s,t) -> s,uf t) ls)
-    | BTYP_variant ls -> btyp_variant (List.map (fun (s,t) -> s,uf t) ls)
-    | BTYP_array (a,b) -> btyp_array (uf a,uf b)
-    | BTYP_function (a,b) -> btyp_function (uf a,uf b)
-    | BTYP_cfunction (a,b) -> btyp_cfunction (uf a,uf b)
-    | BTYP_pointer a -> btyp_pointer (uf a)
-    | BTYP_fix (i,_) when (-i) = depth -> t
-    | BTYP_fix (i,_) when (-i) > depth -> print_endline "Warning:unfold free fixpoint"; raise (Free_fixpoint t')
-    | BTYP_type_apply (a,b) -> btyp_type_apply (uf a,uf b)
-    | BTYP_inst (i,ts) -> btyp_inst (i,List.map uf ts)
-    | BTYP_type_function (p,r,b) ->
-        btyp_type_function (p,r,uf b)
-  
-    | BTYP_type_match (a,tts) ->
-        let a = uf a in
-        (* don't unfold recursions in patterns yet because we don't know what
-         * they mean *)
-        let tts = List.map (fun (p,x) -> p,uf x) tts in
-        btyp_type_match (a,tts)
-  
-    | _ -> t'
-  in aux 0 t
-
 exception Found of Flx_btype.t
 
-(* this undoes an unfold: it won't minimise an arbitrary type *)
 let fold bsym_table counter t =
   let rec aux trail depth t' =
     let ax t = aux ((depth,t')::trail) (depth+1) t in

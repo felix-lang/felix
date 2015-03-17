@@ -1176,11 +1176,15 @@ print_endline ("reduced application is: " ^ sbt bsym_table r);
     end
   in
 
+(*
+  if not (complete_type t) then
+    print_endline ("-------->>>> *** Warning: bind_type' returns incomplete type " ^ sbt bsym_table t);
+*)
   (*
   print_endline ("Bound type is " ^ sbt bsym_table t);
   *)
   t
-
+(*
 and cal_assoc_type state (bsym_table:Flx_bsym_table.t) sr t =
   let ct t = cal_assoc_type state bsym_table sr t in
   let chk ls =
@@ -1224,6 +1228,7 @@ and cal_assoc_type state (bsym_table:Flx_bsym_table.t) sr t =
     let ls = List.map ct ls in chk ls
 
   | _ -> clierr sr ("Don't know what to make of " ^ sbt bsym_table t)
+*)
 
 and bind_type_index state (bsym_table:Flx_bsym_table.t) (rs:recstop) sr index ts mkenv
 =
@@ -1501,7 +1506,7 @@ and type_of_index' state bsym_table rs sr bid =
     let t = inner_type_of_index state bsym_table sr rs bid in
     if complete_type t then begin
       (* Unfold any fixpoints. *)
-      let t = unfold t in
+      let t = unfold "flx_lookup" t in
 
       (* Beta reduce the type. *)
       let sr =
@@ -1518,14 +1523,14 @@ and type_of_index' state bsym_table rs sr bid =
 
 (** Wrapper around inner_type_of_index that tries to cache the calculated type
  * for this index, and then substitutes any type variables. *)
-and type_of_index_with_ts' state bsym_table rs sr bid ts =
+and inner_type_of_index_with_ts state bsym_table rs sr bid ts =
   let t = type_of_index' state bsym_table rs sr bid in
 
   (* Make sure that we got the right number of type variables. *)
   let pvs,vs,_ = find_split_vs state.sym_table bsym_table bid in
   if (List.length ts != List.length vs + List.length pvs) then
     clierr sr (
-       "type_of_index_with_ts' failed with ts/vs mismatch " ^
+       "inner_type_of_index_with_ts failed with ts/vs mismatch " ^
        Flx_bsym_table.find_id bsym_table bid ^ "<" ^ si bid ^ ">" ^
        "\n parent vs = " ^ string_of_plain_ivs pvs ^ 
        ", vs= " ^ string_of_plain_ivs vs ^
@@ -1538,11 +1543,9 @@ and type_of_index_with_ts' state bsym_table rs sr bid ts =
   let t = varmap_subst varmap t in
 
   (* Beta reduce and return the type. *)
-  beta_reduce "flx_lookup: type_of_index_with_ts'" state.counter bsym_table sr t
+  beta_reduce "flx_lookup: inner_type_of_index_with_ts" state.counter bsym_table sr t
 
 (** Wrapper around inner_type_of_index that substitutes any type variables. *)
-and inner_type_of_index_with_ts state bsym_table rs sr bid ts =
-    type_of_index_with_ts' state bsym_table rs sr bid ts
 
 (* -------------------------------------------------------------------------- *)
 
@@ -1883,7 +1886,7 @@ print_endline ("cal_apply', AFTER NORMALISE, fn = " ^ sbt bsym_table t1 ^ " arg=
   ;
 *)
   let rest,reorder =
-    match unfold t1 with
+    match unfold "flx_lookup" t1 with
     | BTYP_function (argt,rest)
     | BTYP_cfunction (argt,rest) ->
       if type_match bsym_table state.counter argt t2
@@ -2080,7 +2083,7 @@ and koenig_lookup state bsym_table env rs sra id' name_map fn t2 ts =
       print_endline "Overload resolution OK";
       *)
       bexpr_closure
-        (type_of_index_with_ts' state bsym_table rs sra index'' ts)
+        (inner_type_of_index_with_ts state bsym_table rs sra index'' ts)
         (index'',ts)
 
     | None ->
@@ -2281,7 +2284,7 @@ print_endline ("LOOKUP 1: varname " ^ si index);
     print_endline "AST_typed_case";
 *)
     let t = bt sr t in
-    begin match unfold t with
+    begin match unfold "flx_lookup" t with
     | BTYP_unitsum k  ->
       if v<0 || v>= k
       then clierr sra "Case index out of range of sum"
@@ -2454,7 +2457,7 @@ print_endline ("lookup_qn_with_sig' [AST_name] " ^ name ^ ", sigs=" ^ catmap ","
         let ts = adjust_ts state.sym_table sr index ts in
         *)
         bexpr_closure
-          (type_of_index_with_ts' state bsym_table rs sr index ts)
+          (inner_type_of_index_with_ts state bsym_table rs sr index ts)
           (index,ts)
 
       | None ->
@@ -2500,7 +2503,7 @@ print_endline ("Lookup type qn with sig, name = " ^ string_of_qualified_name qn)
       | SYMDEF_cstruct _
       | SYMDEF_struct _ ->
         let sign = try List.hd signs with _ -> assert false in
-        let t = type_of_index_with_ts' state bsym_table rs sr index ts in
+        let t = inner_type_of_index_with_ts state bsym_table rs sr index ts in
         (*
         print_endline ("[lookup_type_qn_with_sig] Struct constructor found, type= " ^ sbt bsym_table t);
         *)
@@ -2558,7 +2561,7 @@ print_endline ("Lookup type qn with sig, name = " ^ string_of_qualified_name qn)
 
   | `AST_typed_case (sr,v,t) ->
     let t = bt sr t in
-    begin match unfold t with
+    begin match unfold "flx_lookup" t with
     | BTYP_unitsum k ->
       if v<0 || v>= k
       then clierr sra "Case index out of range of sum"
@@ -2874,9 +2877,7 @@ and lookup_name_with_sig
        Flx_list.list_assoc_index_with_assoc fields name
      with
      | Some (k,ft) ->
-       (*
-       print_endline ("FOUND RECORD FIELD " ^ name);
-       *)
+       print_endline ("projection: FOUND RECORD FIELD " ^ name);
        Some (bexpr_prj k d ft)
      | None -> None
      end
@@ -2889,9 +2890,7 @@ and lookup_name_with_sig
        Flx_list.list_assoc_index_with_assoc fields name
      with
      | Some (k,ft) ->
-       (*
-       print_endline ("FOUND RECORD FIELD " ^ name);
-       *)
+       print_endline ("projection: FOUND RECORD POINTER FIELD " ^ name);
        Some (bexpr_prj k d (BTYP_pointer ft))
      | None -> None
      end
@@ -3007,7 +3006,7 @@ and handle_function state bsym_table rs sra srn name ts index =
       | BTYP_cfunction _ | BTYP_function _ -> ()
       | BTYP_fix _ -> raise (Free_fixpoint t)
       | _ ->
-          ignore (try unfold t with | _ -> raise (Free_fixpoint t));
+          ignore (try unfold "flx_lookup" t with | _ -> raise (Free_fixpoint t));
           clierr sra
           (
             "[handle_function]: closure operator expected '" ^ name ^
@@ -3764,7 +3763,7 @@ print_endline ("Bound tuple head " ^ sbe bsym_table x ^ " has type " ^ sbt bsym_
 
   | EXPR_get_n (sr,(n,e')) ->
     let expr,typ = be e' in
-    let ctyp,k = match unfold typ with
+    let ctyp,k = match unfold "flx_lookup" typ with
     | BTYP_array (t,BTYP_unitsum len)  ->
       if n<0 || n>len-1
       then clierr sr
@@ -3899,8 +3898,8 @@ assert false; (* shouldn't happen now! *)
 print_endline ("Evaluating EXPPR_typed_case index=" ^ si v ^ " type=" ^ string_of_typecode t);
 *)
     let t = bt sr t in
-    ignore (try unfold t with _ -> failwith "AST_typed_case unfold screwd");
-    begin match unfold t with
+    ignore (try unfold "flx_lookup" t with _ -> failwith "AST_typed_case unfold screwd");
+    begin match unfold "flx_lookup" t with
     | BTYP_unitsum k ->
       if v<0 || v>= k
       then clierr sr "Case index out of range of sum"
@@ -4430,7 +4429,7 @@ print_endline ("LOOKUP 9: varname " ^ si i);
 
   | EXPR_deref (sr,e) ->
     let e,t = be e in
-    begin match unfold t with
+    begin match unfold "flx_lookup" t with
     | BTYP_pointer t' -> bexpr_deref t' (e,t)
     | _ -> clierr sr "[bind_expression'] Dereference non pointer"
     end
@@ -4483,21 +4482,30 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
     print_env env;
     *)
     let (ea,ta) as a = be a' in
+(*
+    if not (complete_type ta) then
+      print_endline ("*************>>>>>>>>> Apply argument type is not complete!!" ^ sbt bsym_table ta);
+*)
     let rt t = beta_reduce "flx_lookup: Expr_apply" state.counter bsym_table sr t in
-    let ttt = rt ta in
+
+    let ta = rt ta in
+(*
+    if not (complete_type ta) then
+      print_endline ("*************>>>>>>>>> reduced Apply argument type is not complete!!" ^ sbt bsym_table ta);
+*)
 (*
     print_endline ("Bound argument " ^ sbe bsym_table a);
 *)
     (* special hack here to handle fieldname of struct type used as function *)
     try 
       let handle_constant_projection n =
-        begin match ttt with
+        begin match unfold "flx_lookup" ta with
         | BTYP_tuple ls ->
           let m = List.length ls in
           if n < 0 || n >= m then
             clierr sr ("AST_dot, tuple index "^ string_of_int n ^ 
             " out of range 0 to " ^ string_of_int (m-1) ^
-            " for type " ^ sbt bsym_table ttt
+            " for type " ^ sbt bsym_table ta
             )
           else
            bexpr_get_n (List.nth ls n) n a
@@ -4506,7 +4514,7 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
           if n < 0 || n >= m then
             clierr sr ("AST_dot, constant array index "^ string_of_int n ^ 
             " out of range 0 to " ^ string_of_int (m-1) ^
-            " for type " ^ sbt bsym_table ttt
+            " for type " ^ sbt bsym_table ta
             )
           else
            bexpr_get_n t n a
@@ -4516,7 +4524,7 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
           if n < 0 || n >= m then
             clierr sr ("AST_dot, tuple index "^ string_of_int n ^ 
             " out of range 0 to " ^ string_of_int (m-1) ^
-            " for type " ^ sbt bsym_table ttt
+            " for type " ^ sbt bsym_table ta
             )
           else
            bexpr_get_n (btyp_pointer (List.nth ls n)) n a
@@ -4525,7 +4533,7 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
           if n < 0 || n >= m then
             clierr sr ("AST_dot, constant array index "^ string_of_int n ^ 
             " out of range 0 to " ^ string_of_int (m-1) ^
-            " for type " ^ sbt bsym_table ttt
+            " for type " ^ sbt bsym_table ta
             )
           else
            bexpr_get_n (btyp_pointer t) n a
@@ -4539,7 +4547,7 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
 print_endline ("Maybe Array projection " ^ sbe bsym_table n);
 *)
         let n = 
-          let ixt = match ttt with
+          let ixt = match unfold "flx_lookup" ta with
             | BTYP_array (_,ixt)
             | BTYP_pointer (BTYP_array (_,ixt)) -> ixt
             | _ -> assert false
@@ -4547,13 +4555,13 @@ print_endline ("Maybe Array projection " ^ sbe bsym_table n);
           if snd n = int_t then bexpr_coerce (n,ixt)
           else n
         in
-        match ttt with
+        match unfold "flx_lookup" ta with
         | BTYP_array (vt,ixt) ->
           assert (snd n = ixt);
 (*
 print_endline ("Actual Array projection " ^ sbe bsym_table n);
 *)
-          bexpr_apply vt (bexpr_aprj n ttt vt, a)
+          bexpr_apply vt (bexpr_aprj n ta vt, a)
 
         | BTYP_pointer (BTYP_array (vt,ixt)) ->
           assert (snd n = ixt);
@@ -4561,7 +4569,7 @@ print_endline ("Actual Array pointer projection " ^ sbe bsym_table n);
 (* NOTE: array pointer projections don't work with compact linear arrays !! 
    However we can't know here, since the base type could be a type variable.
 *)
-          bexpr_apply (BTYP_pointer vt) (bexpr_aprj n ttt vt, a)
+          bexpr_apply (BTYP_pointer vt) (bexpr_aprj n ta vt, a)
         | _ -> assert false
       in
       match f' with
@@ -4588,8 +4596,15 @@ print_endline ("Actual Array pointer projection " ^ sbe bsym_table n);
         handle_constant_projection n
 
       | EXPR_name (sr, name, ts) ->
-        begin match ta with 
+(*
+        if not (complete_type ta) then
+          print_endline ("Apply argument type is not complete!!" ^ sbt bsym_table ta);
+*)
+        begin match unfold "flx_lookup" ta with 
         | BTYP_record ("",es) ->
+(*
+print_endline ("binding apply, RECORD field .. " ^ name ^ ", type=" ^ sbt bsym_table ta);
+*)
           assert (ts = []);
           let k = List.length es in
           let rcmp (s1,_) (s2,_) = compare s1 s2 in
@@ -4601,24 +4616,52 @@ print_endline ("Actual Array pointer projection " ^ sbe bsym_table n);
 (*
             print_endline ("6:get_n arg" ^ sbe bsym_table a);         
 *)
-            bexpr_get_n t n a
-          | None -> raise OverloadResolutionError
-          end
-        | BTYP_pointer (BTYP_record ("",es)) ->
-          assert (ts = []);
-          let k = List.length es in
-          let rcmp (s1,_) (s2,_) = compare s1 s2 in
-          let es = List.sort rcmp es in
-          let field_name = name in
-          begin match list_index (List.map fst es) field_name with
-          | Some n -> 
-            let t = List.assoc field_name es in
+            let t = bexpr_get_n t n a in
 (*
-            print_endline ("6:get_n arg" ^ sbe bsym_table a);         
+print_endline ("*** binding apply RECORD field " ^ name ^ " done");
+print_endline "";
 *)
-            bexpr_get_n (BTYP_pointer t) n a
-          | None -> raise OverloadResolutionError
+            t
+          | None -> 
+(*
+print_endline ("*** binding apply RECORD field " ^ name ^ " not found: OVERLOAD ERROR");
+print_endline "";
+*)
+            raise OverloadResolutionError
           end
+        | BTYP_pointer (BTYP_record _ as r) ->
+(*
+print_endline ("binding apply, RECORD pointer field .. " ^ name ^ ", type=" ^ sbt bsym_table ta);
+*)
+          begin match unfold "flx_lookup" r with
+          | BTYP_record (_,es) ->
+            assert (ts = []);
+            let k = List.length es in
+            let rcmp (s1,_) (s2,_) = compare s1 s2 in
+            let es = List.sort rcmp es in
+            let field_name = name in
+            begin match list_index (List.map fst es) field_name with
+            | Some n -> 
+              let t = List.assoc field_name es in
+  (*
+              print_endline ("6:get_n arg" ^ sbe bsym_table a);         
+  *)
+              let t = bexpr_get_n (BTYP_pointer t) n a in
+(*
+print_endline ("*** binding apply RECORD pointer field " ^ name ^ " done");
+print_endline "";
+*)
+              t
+            | None -> 
+(*
+print_endline ("*** binding apply RECORD pointer field " ^ name ^ " not found: OVERLOAD ERROR");
+print_endline "";
+*)
+              raise OverloadResolutionError
+            end
+          | _ -> assert false
+          end
+
         | BTYP_inst (i,ts') ->
           begin try
           Flx_dot.handle_field_name state bsym_table build_env env rs 
@@ -4626,12 +4669,22 @@ print_endline ("Actual Array pointer projection " ^ sbe bsym_table n);
             sr a' f' name ts i ts' false
           with Not_field -> raise OverloadResolutionError
           end
-        | BTYP_pointer (BTYP_inst (i,ts')) ->
-          begin try
-          Flx_dot.handle_field_name state bsym_table build_env env rs 
-            be bt koenig_lookup cal_apply bind_type' mkenv 
-            sr a' f' name ts i ts' true 
-          with Not_field -> raise OverloadResolutionError
+        | BTYP_pointer (BTYP_inst (i,ts') as r) ->
+(*
+print_endline ("binding apply, Struct pointer field .. " ^ name ^ ", type=" ^ sbt bsym_table ta);
+*)
+(* NOTE: This may not work, unfold doesn't penetrate into a struct!
+  However, if the struct is complete but polymorphic, it should work
+  by unfolding the ts values ..
+ *)
+          begin match unfold "flx_lookup:bind_expression:btyp_inst" r with | BTYP_inst (i,ts') ->
+            begin try
+            Flx_dot.handle_field_name state bsym_table build_env env rs 
+              be bt koenig_lookup cal_apply bind_type' mkenv 
+              sr a' f' name ts i ts' true 
+            with Not_field -> raise OverloadResolutionError
+            end
+          | _ -> assert false
           end
         | _ -> raise OverloadResolutionError 
         end
@@ -4669,15 +4722,24 @@ print_endline ("Bound function " ^ sbe bsym_table f);
        *)
        raise OverloadResolutionError
     with OverloadResolutionError ->
+(*
+print_endline ("Can't interpret apply function "^string_of_expr f'^" as projection, trying as an actual function");
+*)
     let (bf,tf) as f =
       match qualified_name_of_expr f' with
       | Some name ->
+(*
+print_endline ("Found function name " ^ string_of_qualified_name name);
+*)
         let sigs = List.map snd args in
+(*
+print_endline ("Using argument types " ^ catmap "," (sbt bsym_table) sigs);
+*)
         let srn = src_of_qualified_name name in
         begin try
           let r = lookup_qn_with_sig' state bsym_table sr srn env rs name (ta::sigs) in
 (*
-print_endline "Lookup qn with sig succeeded";
+print_endline ("Lookup qn with sig succeeded result=" ^sbe bsym_table r);
 *)
           r
         with Not_found -> failwith "Lookup_qn_with_sig' threw Not_found"
@@ -5028,8 +5090,8 @@ print_endline ("Bound f = " ^ sbe bsym_table f);
 
   | EXPR_case_arg (sr,(v,e)) ->
      let (_,t) as e' = be e in
-    ignore (try unfold t with _ -> failwith "AST_case_arg unfold screwd");
-     begin match unfold t with
+     ignore (try unfold "flx_lookup" t with _ -> failwith "AST_case_arg unfold screwd");
+     begin match unfold "flx_lookup" t with
      | BTYP_unitsum n ->
        if v < 0 || v >= n
        then clierr sr "Invalid sum index"
@@ -6204,5 +6266,5 @@ let type_of_index state bsym_table sr bid =
 
 let type_of_index_with_ts state bsym_table sr bid ts =
   try
-  type_of_index_with_ts' state bsym_table rsground sr bid ts
+  inner_type_of_index_with_ts state bsym_table rsground sr bid ts
   with Not_found -> failwith "type of index with ts raised Not_found [BUG]"

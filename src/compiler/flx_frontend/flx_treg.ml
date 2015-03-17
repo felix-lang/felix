@@ -80,9 +80,10 @@ print_endline ("Register type r " ^ sbt bsym_table t);
   *)
   if not (Hashtbl.mem syms.registry t) then
   if not (mem t exclude) then
+  if complete_type t then
   let rr t' = register_type_r ui syms bsym_table (t :: exclude) sr t' in
   let rnr t = register_type_nr syms bsym_table t in
-  let t' = unfold t in
+  let t' = unfold "flx_treg" t in
   (*
   print_endline (sp ^ "Unfolded type " ^ sbt sym_table t');
   *)
@@ -169,6 +170,11 @@ print_endline ("Instance type, registering argument ts=" ^ catmap "," (sbt bsym_
       rnr t
 
     | BBDCL_union (vs,cs) ->
+(*
+print_endline ("Register type r: union -----------" ^ Flx_bsym.id bsym);
+print_endline ("vs len = " ^ si (List.length vs));
+print_endline ("ts len = " ^ si (List.length ts));
+*)
       let cts = map (fun (_,_,t) -> t) cs in
       let cts = map (tsubst vs ts) cts in
       iter rr cts;

@@ -12,7 +12,6 @@ exception SystemError of Flx_srcref.t * string
 exception Exit of int
 exception Bad_recursion
 exception Expr_recursion of expr_t
-exception Free_fixpoint of Flx_btype.t
 exception Unresolved_return of Flx_srcref.t * string
 
 val clierrn: Flx_srcref.t list -> string -> 'a
