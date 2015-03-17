@@ -15,6 +15,7 @@ class DList[T]
     // invariant: if first is null, so is last!
 
   ctor dlist_t () => (first=nullptr[dnode_t],last=nullptr[dnode_t]);
+
 @h2 Length @{len}
 @felix
   fun len (x:dlist_t) = {
@@ -28,18 +29,42 @@ class DList[T]
     goto again; 
   }
 
+@h2 Inspection
+@felix
+  fun peek_front (dl:dlist_t) : opt[T] => 
+    match dl.first with 
+    | nullptr => None[T]
+    | Ptr p => Some p*.data
+    endmatch
+  ;
+
+  fun peek_back (dl:dlist_t) : opt[T] => 
+    match dl.last with 
+    | nullptr => None[T]
+    | Ptr p => Some p*.data
+    endmatch
+  ;
+
 @h2 Insertion
 @felix
   proc push_front (dl:&dlist_t, v:T) { 
-    var node = new (data=v, next=dl*.first,prev=nullptr[dnode_t]); 
-    // BUGGED: don't forget to insert into old front node too (if there is one!)
+    var oldfirst = dl*.first;
+    var node = new (data=v, next=oldfirst, prev=nullptr[dnode_t]); 
     dl.first <- Ptr node;
+    match oldfirst with
+    | nullptr => dl.last
+    | Ptr p => p.prev 
+    endmatch <- Ptr node; 
   }
 
   proc push_back (dl:&dlist_t, v:T) {
-    var node = new (data=v, next=nullptr[dnode_t] ,prev=dl*.last); 
-    // BUGGED: don't forget to insert into old back node too (if there is one!)
+    var oldlast = dl*.last;
+    var node = new (data=v, next=nullptr[dnode_t], prev=oldlast); 
     dl.last <- Ptr node;
+    match oldlast with
+    | nullptr => dl.first
+    | Ptr p => p.next
+    endmatch <- Ptr node; 
   }
 
 @h2 Deletion 
@@ -74,6 +99,7 @@ class DList[T]
       return Some p*.data;
     endmatch;
   }
+
 @h2 Use as a queue
 We can implement enqueue and dequeue at either end, we'll make
 enqueue push_front and dequeue pop_back for no particular reason.
