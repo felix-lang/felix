@@ -390,7 +390,6 @@ and inner_bind_type state (bsym_table:Flx_bsym_table.t) env sr rs t =
 
     with
       | Free_fixpoint b ->
-        print_endline ("Unable to resolve recursive type " ^ string_of_typecode t);
         clierr sr
         ("Unresolvable recursive type " ^ sbt bsym_table b)
       | Not_found ->
@@ -421,8 +420,6 @@ and inner_bind_expression state bsym_table env rs e  =
      x
     with
      | Free_fixpoint b ->
-       print_endline 
-       ("Circular dependency typing expression " ^ string_of_expr e);
        clierr sr
        ("Circular dependency typing expression " ^ string_of_expr e)
      | SystemError (sr,msg) as x ->
@@ -1271,40 +1268,29 @@ and bind_type_index state (bsym_table:Flx_bsym_table.t) (rs:recstop) sr index ts
         *)
         t
   in
-  (*
-  if ts = [] or rs.type_alias_fixlist = [] then () else begin
+(*
   print_endline
   (
     "BINDING INDEX " ^ string_of_int index ^
     " with ["^ catmap ", " (sbt bsym_table) ts^ "]"
   );
+*)
+  (*
   print_endline ("type alias fixlist is " ^ catmap ","
-    (fun (i,j) -> si i ^ "(depth "^si j^")") rs.type_alias_fixlist
+    (fun (i,j) -> si i ^ "(depth "^si j^")") type_alias_fixlist
   );
-  end;
   *)
   if List.mem_assoc index rs.type_alias_fixlist
   then begin
-    let fixdepth =(List.assoc index rs.type_alias_fixlist)-rs.depth  in
 (*
-    if fixdepth != 0 then begin
-    print_endline
-    (
-      "BINDING INDEX " ^ string_of_int index ^
-      " with ["^ catmap ", " (sbt bsym_table) ts^ "]"
+    print_endline (
+      "Making fixpoint for Recursive type alias " ^
+      (
+        match get_data state.sym_table index with { Flx_sym.id=id;sr=sr}->
+          id ^ " defined at " ^
+          Flx_srcref.short_string_of_src sr
+      )
     );
-    print_endline ("type alias fixlist is " ^ catmap ","
-      (fun (i,j) -> si i ^ "(depth "^si j^")") rs.type_alias_fixlist
-    );
-      print_endline (
-        "At depth=" ^ si rs.depth^ ", Making fixpoint for Recursive type alias " ^
-        (
-          match get_data state.sym_table index with { Flx_sym.id=id;sr=sr}->
-            id ^ " defined at " ^
-            Flx_srcref.short_string_of_src sr
-        ) ^ " index=" ^ si index ^ " depth=" ^si ((List.assoc index rs.type_alias_fixlist)-rs.depth) 
-      );
-    end;
 *)
     let mt = 
       begin try
@@ -1384,11 +1370,10 @@ and bind_type_index state (bsym_table:Flx_bsym_table.t) (rs:recstop) sr index ts
         print_endline "Can't bind type alias"; assert false
       end
     in
-    (*
-    if fixdepth != 0 then
-      print_endline "flx_lookup: bind-type-index returning fixpoint from recursive type alias";
-    *)
-    btyp_fix fixdepth mt
+(*
+print_endline "flx_lookup: bind-type-index returning fixpoint";
+*)
+    btyp_fix ((List.assoc index rs.type_alias_fixlist)-rs.depth) mt
   end
   else begin
   (*
@@ -1514,19 +1499,20 @@ and type_of_index' state bsym_table rs sr bid =
     Hashtbl.find state.ticache bid
   with Not_found ->
     let t = inner_type_of_index state bsym_table sr rs bid in
+    if complete_type t then begin
+      (* Unfold any fixpoints. *)
+      let t = unfold t in
 
-    (* Unfold any fixpoints. *)
-    let t = unfold "flx_lookup1" t in
+      (* Beta reduce the type. *)
+      let sr =
+        try (hfind "lookup" state.sym_table bid).Flx_sym.sr
+        with Not_found -> dummy_sr
+      in
+      let t = beta_reduce "flx_lookup: type_of_index'" state.counter bsym_table sr t in
 
-    (* Beta reduce the type. *)
-    let sr =
-      try (hfind "lookup" state.sym_table bid).Flx_sym.sr
-      with Not_found -> dummy_sr
-    in
-    let t = beta_reduce "flx_lookup: type_of_index'" state.counter bsym_table sr t in
-
-    (* Finally, cache the type. *)
-    Hashtbl.add state.ticache bid t;
+      (* Finally, cache the type. *)
+      Hashtbl.add state.ticache bid t;
+    end;
 
     t
 
@@ -1556,23 +1542,7 @@ and type_of_index_with_ts' state bsym_table rs sr bid ts =
 
 (** Wrapper around inner_type_of_index that substitutes any type variables. *)
 and inner_type_of_index_with_ts state bsym_table rs sr bid ts =
-  try
     type_of_index_with_ts' state bsym_table rs sr bid ts
-  with Free_fixpoint t ->
-    (* We don't care if the type is a free fixpoint, but that means we have to
-     * do all the type substitutions ourselves. *)
-
-    (* Make sure that we got the right number of type variables. *)
-    let pvs,vs,_ = find_split_vs state.sym_table bsym_table bid in
-    if (List.length ts != List.length vs + List.length pvs) then
-       clierr sr "ts/vs mismatch in inner_type_of_index_with_ts"
-    else
-
-    (* Do any type substitutions. *)
-    let varmap = make_varmap state.sym_table bsym_table sr bid ts in
-    let t = varmap_subst varmap t in
-
-    beta_reduce "flx_lookup: inner_type_of_index_with_ts'" state.counter bsym_table sr t
 
 (* -------------------------------------------------------------------------- *)
 
@@ -1767,7 +1737,7 @@ and inner_type_of_index state bsym_table sr rs index =
 (*  HACK: metatype guess *)
   if List.mem index rs.idx_fixlist then begin
 (*
-print_endline ("inner_typeof+index returning fixpoint index=" ^ si index^ " depth=" ^ si rs.depth);
+print_endline "inner_typeof+index returning fixpoint";
 *)
     btyp_fix (-rs.depth) (btyp_type 0) 
   end else
@@ -1913,7 +1883,7 @@ print_endline ("cal_apply', AFTER NORMALISE, fn = " ^ sbt bsym_table t1 ^ " arg=
   ;
 *)
   let rest,reorder =
-    match unfold "flx_lookup2" t1 with
+    match unfold t1 with
     | BTYP_function (argt,rest)
     | BTYP_cfunction (argt,rest) ->
       if type_match bsym_table state.counter argt t2
@@ -1927,7 +1897,7 @@ print_endline ("cal_apply', AFTER NORMALISE, fn = " ^ sbt bsym_table t1 ^ " arg=
       let reorder =
         match be1 with
         | BEXPR_closure (i,ts) ->
-          begin match unfold "flx_lookup3" t2 with
+          begin match t2 with
             (* a bit of a hack .. *)
             | BTYP_record _
             | BTYP_tuple [] ->
@@ -2311,7 +2281,7 @@ print_endline ("LOOKUP 1: varname " ^ si index);
     print_endline "AST_typed_case";
 *)
     let t = bt sr t in
-    begin match unfold "flx_lookup4" t with
+    begin match unfold t with
     | BTYP_unitsum k  ->
       if v<0 || v>= k
       then clierr sra "Case index out of range of sum"
@@ -2377,7 +2347,7 @@ print_endline ("lookup_qn_with_sig' [AST_name] " ^ name ^ ", sigs=" ^ catmap ","
           sra srn
           env env rs name ts signs
       with
-      | Free_fixpoint _ as x -> (* print_endline "Reraising1 free fixpoint"; *) raise x
+      | Free_fixpoint _ as x -> raise x
       | OverloadKindError (sr1,s1) ->
         begin
           try
@@ -2588,7 +2558,7 @@ print_endline ("Lookup type qn with sig, name = " ^ string_of_qualified_name qn)
 
   | `AST_typed_case (sr,v,t) ->
     let t = bt sr t in
-    begin match unfold "flx_lookup5" t with
+    begin match unfold t with
     | BTYP_unitsum k ->
       if v<0 || v>= k
       then clierr sra "Case index out of range of sum"
@@ -2794,7 +2764,7 @@ and lookup_name_with_sig
   ;
 *)
  let projection = 
-   match List.map (unfold "flx_lookup:projection") t2 with
+   match t2 with
    | [BTYP_inst (j,ts') as d] ->
      let bsym = try Some (Flx_bsym_table.find bsym_table j) with Not_found -> None in
      begin match bsym with
@@ -2845,58 +2815,55 @@ and lookup_name_with_sig
        end
      end
 
-   | [BTYP_pointer (BTYP_inst _ as r) as d] ->
-     begin match unfold "flx_lookup7" r with | BTYP_inst (j,ts') ->
-       let bsym = try Some (Flx_bsym_table.find bsym_table j) with Not_found -> None in
-       begin match bsym with
-       | Some bsym ->
-  (*
-         print_endline ("Found nominal type "^si j ^" in bound symbol table");
-  *)
-         begin match Flx_bsym.bbdcl bsym with
-         | BBDCL_struct (vs,fields) 
-         | BBDCL_cstruct (vs, fields,_) ->
+   | [BTYP_pointer (BTYP_inst (j,ts')) as d] ->
+     let bsym = try Some (Flx_bsym_table.find bsym_table j) with Not_found -> None in
+     begin match bsym with
+     | Some bsym ->
+(*
+       print_endline ("Found nominal type "^si j ^" in bound symbol table");
+*)
+       begin match Flx_bsym.bbdcl bsym with
+       | BBDCL_struct (vs,fields) 
+       | BBDCL_cstruct (vs, fields,_) ->
+         begin match
+            Flx_list.list_assoc_index_with_assoc fields name
+         with
+         | Some (k,ft) ->
+           (*
+           print_endline ("FOUND STRUCT FIELD " ^ name ^ " in bound table");
+           *)
+           let ft = 
+             try tsubst vs ts' ft 
+             with _ -> print_endline "[lookup_name_with_sig] Hassle replacing vs with ts??"; assert false
+           in
+           Some (bexpr_prj k d (BTYP_pointer ft)) 
+         | None -> None
+         end
+       | _ -> None
+       end
+     | None -> 
+(*
+       print_endline ("Can't find nominal type " ^ si j ^ " in bound symbol table .. trying unbound table");
+*)
+       begin try
+         match hfind "lookup" state.sym_table j with
+         | { Flx_sym.symdef=SYMDEF_struct fields; vs=vs } 
+         | { Flx_sym.symdef=SYMDEF_cstruct (fields,_); vs=vs } ->
            begin match
               Flx_list.list_assoc_index_with_assoc fields name
            with
-           | Some (k,ft) ->
-             (*
-             print_endline ("FOUND STRUCT FIELD " ^ name ^ " in bound table");
-             *)
-             let ft = 
-               try tsubst vs ts' ft 
-               with _ -> print_endline "[lookup_name_with_sig] Hassle replacing vs with ts??"; assert false
-             in
-             Some (bexpr_prj k d (BTYP_pointer ft)) 
+           | Some _ ->
+             print_endline ("FOUND STRUCT FIELD " ^ name ^ " in unbound table: FIXME!!");
+             assert false;
+             None
            | None -> None
            end
          | _ -> None
-         end
-       | None -> 
-  (*
-         print_endline ("Can't find nominal type " ^ si j ^ " in bound symbol table .. trying unbound table");
-  *)
-         begin try
-           match hfind "lookup" state.sym_table j with
-           | { Flx_sym.symdef=SYMDEF_struct fields; vs=vs } 
-           | { Flx_sym.symdef=SYMDEF_cstruct (fields,_); vs=vs } ->
-             begin match
-                Flx_list.list_assoc_index_with_assoc fields name
-             with
-             | Some _ ->
-               print_endline ("FOUND STRUCT FIELD " ^ name ^ " in unbound table: FIXME!!");
-               assert false;
-               None
-             | None -> None
-             end
-           | _ -> None
-         with _ ->
-           print_endline ("Can't find nominal type " ^ si j ^ " in unbound symbol table????");
-           assert false
-         end (* try *)
-       end (* bsym *)
-       | _ -> assert false
-     end (* unfold "flx_lookup" *)
+       with _ ->
+         print_endline ("Can't find nominal type " ^ si j ^ " in unbound symbol table????");
+         assert false
+       end
+     end
 
 
    | [BTYP_record (_,fields) as d] ->
@@ -2907,28 +2874,26 @@ and lookup_name_with_sig
        Flx_list.list_assoc_index_with_assoc fields name
      with
      | Some (k,ft) ->
+       (*
        print_endline ("FOUND RECORD FIELD " ^ name);
+       *)
        Some (bexpr_prj k d ft)
      | None -> None
      end
 
-   | [BTYP_pointer (BTYP_record (_,_) as r) as d] ->
-(*
-print_endline ("Lookup name with sig, pointer to record" ^ sbt bsym_table d);
-*)
-     begin match unfold "flx_lookup8" r with | BTYP_record (_,fields) ->
-       (* this sort shouldn't be necessary because the constructor does it anyhow *)
-       let rcmp (s1,_) (s2,_) = compare s1 s2 in
-       let fields = List.sort rcmp fields in
-       begin match
-         Flx_list.list_assoc_index_with_assoc fields name
-       with
-       | Some (k,ft) ->
-         print_endline ("FOUND RECORD FIELD " ^ name ^ " type " ^ sbt bsym_table ft);
-         Some (bexpr_prj k d (BTYP_pointer ft))
-       | None -> None
-       end
-       | _ -> assert false
+   | [BTYP_pointer (BTYP_record (_,fields)) as d] ->
+     (* this sort shouldn't be necessary because the constructor does it anyhow *)
+     let rcmp (s1,_) (s2,_) = compare s1 s2 in
+     let fields = List.sort rcmp fields in
+     begin match
+       Flx_list.list_assoc_index_with_assoc fields name
+     with
+     | Some (k,ft) ->
+       (*
+       print_endline ("FOUND RECORD FIELD " ^ name);
+       *)
+       Some (bexpr_prj k d (BTYP_pointer ft))
+     | None -> None
      end
    | _ -> None
  in
@@ -3040,16 +3005,9 @@ and handle_function state bsym_table rs sra srn name ts index =
       (* Make sure we got a function type back. *)
       begin match t with
       | BTYP_cfunction _ | BTYP_function _ -> ()
-      | BTYP_fix _ -> 
-(*
-        print_endline ("Raising free fixpoint(1) " ^ sbt bsym_table t ^ " in handle_function " ^ si index ^ " = " ^ sym.Flx_sym.id  ); 
-*)
-        raise (Free_fixpoint t)
+      | BTYP_fix _ -> raise (Free_fixpoint t)
       | _ ->
-          ignore (try unfold "flx_lookup9" t with | _ -> 
-            print_endline ("Raising free fixpoint(2) " ^ sbt bsym_table t); 
-            raise (Free_fixpoint t)
-          );
+          ignore (try unfold t with | _ -> raise (Free_fixpoint t));
           clierr sra
           (
             "[handle_function]: closure operator expected '" ^ name ^
@@ -3806,7 +3764,7 @@ print_endline ("Bound tuple head " ^ sbe bsym_table x ^ " has type " ^ sbt bsym_
 
   | EXPR_get_n (sr,(n,e')) ->
     let expr,typ = be e' in
-    let ctyp,k = match unfold "flx_lookup10" typ with
+    let ctyp,k = match unfold typ with
     | BTYP_array (t,BTYP_unitsum len)  ->
       if n<0 || n>len-1
       then clierr sr
@@ -3941,8 +3899,8 @@ assert false; (* shouldn't happen now! *)
 print_endline ("Evaluating EXPPR_typed_case index=" ^ si v ^ " type=" ^ string_of_typecode t);
 *)
     let t = bt sr t in
-    ignore (try unfold "flx_lookup11" t with _ -> failwith "AST_typed_case unfold screwd");
-    begin match unfold "flx_lookup12" t with
+    ignore (try unfold t with _ -> failwith "AST_typed_case unfold screwd");
+    begin match unfold t with
     | BTYP_unitsum k ->
       if v<0 || v>= k
       then clierr sr "Case index out of range of sum"
@@ -3979,6 +3937,7 @@ print_endline ("Evaluating EXPPR_typed_case index=" ^ si v ^ " type=" ^ string_o
     end
 
   | EXPR_name (sr,name,ts) ->
+    (* print_endline ("BINDING NAME " ^ name); *)
     if name = "_felix_type_name" then
        let sname = catmap "," string_of_typecode ts in
        let x = EXPR_literal (sr, {Flx_literal.felix_type="string"; internal_value=sname; c_value=Flx_string.c_quote_of_string sname}) in
@@ -4471,7 +4430,7 @@ print_endline ("LOOKUP 9: varname " ^ si i);
 
   | EXPR_deref (sr,e) ->
     let e,t = be e in
-    begin match unfold "flx_lookup13" t with
+    begin match unfold t with
     | BTYP_pointer t' -> bexpr_deref t' (e,t)
     | _ -> clierr sr "[bind_expression'] Dereference non pointer"
     end
@@ -4517,22 +4476,22 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
 
   | EXPR_apply (sr,(f',a')) ->
     begin (* apply *)
-    (*
+(*
     print_endline ("Apply " ^ string_of_expr f' ^ " to " ^  string_of_expr a');
-    *)
+*)
     (* 
     print_env env;
     *)
     let (ea,ta) as a = be a' in
     let rt t = beta_reduce "flx_lookup: Expr_apply" state.counter bsym_table sr t in
     let ttt = rt ta in
-    (*
-    print_endline ("Bound argument " ^ sbe bsym_table a ^ " type " ^ sbt bsym_table ttt);
-    *)
+(*
+    print_endline ("Bound argument " ^ sbe bsym_table a);
+*)
     (* special hack here to handle fieldname of struct type used as function *)
     try 
       let handle_constant_projection n =
-        begin match unfold "flx_lookup14" ttt with
+        begin match ttt with
         | BTYP_tuple ls ->
           let m = List.length ls in
           if n < 0 || n >= m then
@@ -4588,7 +4547,7 @@ print_endline ("Maybe Array projection " ^ sbe bsym_table n);
           if snd n = int_t then bexpr_coerce (n,ixt)
           else n
         in
-        match unfold "flx_lookup15" ttt with
+        match ttt with
         | BTYP_array (vt,ixt) ->
           assert (snd n = ixt);
 (*
@@ -4629,11 +4588,8 @@ print_endline ("Actual Array pointer projection " ^ sbe bsym_table n);
         handle_constant_projection n
 
       | EXPR_name (sr, name, ts) ->
-        begin match unfold "flx_lookup16" ttt with 
+        begin match ta with 
         | BTYP_record ("",es) ->
-(*
-print_endline ("Apply field name " ^ name ^ " to record of type " ^ sbt bsym_table (unfold "flx_lookup" ttt));
-*)
           assert (ts = []);
           let k = List.length es in
           let rcmp (s1,_) (s2,_) = compare s1 s2 in
@@ -4648,29 +4604,20 @@ print_endline ("Apply field name " ^ name ^ " to record of type " ^ sbt bsym_tab
             bexpr_get_n t n a
           | None -> raise OverloadResolutionError
           end
-        | BTYP_pointer (BTYP_record (_,_) as r) ->
-          begin match unfold "flx_lookup17" r with | BTYP_record (_,es) ->
-  (*
-  print_endline ("Apply field name " ^ name ^ " to pointer to record of type " ^ sbt bsym_table (unfold "flx_lookup" ttt));
-  *)
-            assert (ts = []);
-            let k = List.length es in
-            let rcmp (s1,_) (s2,_) = compare s1 s2 in
-            let es = List.sort rcmp es in
-            let field_name = name in
-            begin match list_index (List.map fst es) field_name with
-            | Some n -> 
-              let t = List.assoc field_name es in
-  (*
-  print_endline ("Field type " ^ sbt bsym_table t);
-  *)
-  (*
-              print_endline ("6:get_n arg" ^ sbe bsym_table a);         
-  *)
-              bexpr_get_n (BTYP_pointer t) n a
-            | None -> raise OverloadResolutionError
-            end
-            | _ -> assert false
+        | BTYP_pointer (BTYP_record ("",es)) ->
+          assert (ts = []);
+          let k = List.length es in
+          let rcmp (s1,_) (s2,_) = compare s1 s2 in
+          let es = List.sort rcmp es in
+          let field_name = name in
+          begin match list_index (List.map fst es) field_name with
+          | Some n -> 
+            let t = List.assoc field_name es in
+(*
+            print_endline ("6:get_n arg" ^ sbe bsym_table a);         
+*)
+            bexpr_get_n (BTYP_pointer t) n a
+          | None -> raise OverloadResolutionError
           end
         | BTYP_inst (i,ts') ->
           begin try
@@ -4679,15 +4626,12 @@ print_endline ("Apply field name " ^ name ^ " to record of type " ^ sbt bsym_tab
             sr a' f' name ts i ts' false
           with Not_field -> raise OverloadResolutionError
           end
-        | BTYP_pointer (BTYP_inst (i,ts') as r) ->
-          begin match unfold "flx_lookup18" r with | BTYP_inst (i,ts') -> 
-            begin try
-            Flx_dot.handle_field_name state bsym_table build_env env rs 
-              be bt koenig_lookup cal_apply bind_type' mkenv 
-              sr a' f' name ts i ts' true 
-            with Not_field -> raise OverloadResolutionError
-            end
-          | _ -> assert false
+        | BTYP_pointer (BTYP_inst (i,ts')) ->
+          begin try
+          Flx_dot.handle_field_name state bsym_table build_env env rs 
+            be bt koenig_lookup cal_apply bind_type' mkenv 
+            sr a' f' name ts i ts' true 
+          with Not_field -> raise OverloadResolutionError
           end
         | _ -> raise OverloadResolutionError 
         end
@@ -5084,8 +5028,8 @@ print_endline ("Bound f = " ^ sbe bsym_table f);
 
   | EXPR_case_arg (sr,(v,e)) ->
      let (_,t) as e' = be e in
-    ignore (try unfold "flx_lookup19" t with _ -> failwith "AST_case_arg unfold flx_lookup screwd");
-     begin match unfold "flx_lookup20" t with
+    ignore (try unfold t with _ -> failwith "AST_case_arg unfold screwd");
+     begin match unfold t with
      | BTYP_unitsum n ->
        if v < 0 || v >= n
        then clierr sr "Invalid sum index"
@@ -6112,8 +6056,6 @@ try
     signs
 with
   | Free_fixpoint b ->
-    print_endline
-    ("Recursive dependency resolving name " ^ string_of_qualified_name qn);
     clierr sra
     ("Recursive dependency resolving name " ^ string_of_qualified_name qn)
 

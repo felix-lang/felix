@@ -183,7 +183,7 @@ let rec cpp_type_classname syms bsym_table t =
   let tix t = tix syms bsym_table t in
   let t = fold bsym_table syms.counter t in
   let t = normalise_tuple_cons bsym_table t in
-  let t' = unfold "flx_name1" t in
+  let t' = unfold t in
   try match t' with
   | BTYP_type_var (i,mt) ->
       failwith ("[cpp_type_classname] Can't name type variable " ^
@@ -326,7 +326,7 @@ and cpp_structure_name syms bsym_table t =
   let tix t = tix syms bsym_table t in
   let t = normalise_tuple_cons bsym_table t in
   let t = fold bsym_table syms.counter t in
-  let t' = unfold "flx_name2" t in
+  let t' = unfold t in
   try match t' with
   | BTYP_type_var (i,mt) ->
       failwith ("[cpp_type_classname] Can't name type variable " ^
@@ -421,7 +421,7 @@ and cpp_structure_name syms bsym_table t =
 
 
 and cpp_typename syms bsym_table t =
-  match unfold "flx_name3" t with
+  match unfold t with
   | BTYP_function _ -> cpp_type_classname syms bsym_table t ^ "*"
   | BTYP_cfunction _ -> cpp_type_classname syms bsym_table t ^ "*"
   | BTYP_pointer t -> cpp_typename syms bsym_table t ^ "*"

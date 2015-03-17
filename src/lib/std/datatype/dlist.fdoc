@@ -32,11 +32,13 @@ class DList[T]
 @felix
   proc push_front (dl:&dlist_t, v:T) { 
     var node = new (data=v, next=dl*.first,prev=nullptr[dnode_t]); 
+    // BUGGED: don't forget to insert into old front node too (if there is one!)
     dl.first <- Ptr node;
   }
 
   proc push_back (dl:&dlist_t, v:T) {
     var node = new (data=v, next=nullptr[dnode_t] ,prev=dl*.last); 
+    // BUGGED: don't forget to insert into old back node too (if there is one!)
     dl.last <- Ptr node;
   }
 

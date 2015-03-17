@@ -13,10 +13,10 @@ open Flx_maps
 open Flx_beta
 
 let register_type_nr syms bsym_table t =
+let t = normalise_tuple_cons bsym_table t in
 (*
 print_endline ("Register type nr " ^ sbt bsym_table t);
 *)
-let t = normalise_tuple_cons bsym_table t in
   (*
   if t <> t' then print_endline ("UNREDUCED TYPE! " ^ sbt bsym_table t ^ " <> " ^ sbt bsym_table t');
   *)
@@ -68,10 +68,10 @@ print_endline ("flx_treg: Try to register tuple " ^ sbt bsym_table t);
     assert false
 
 let rec register_type_r ui syms bsym_table exclude sr t =
+let t = normalise_tuple_cons bsym_table t in
 (*
 print_endline ("Register type r " ^ sbt bsym_table t);
 *)
-let t = normalise_tuple_cons bsym_table t in
   let t = beta_reduce "flx_treg: register_type" syms.Flx_mtypes2.counter bsym_table sr t in
   (*
   let sp = String.make (length exclude * 2) ' ' in
@@ -82,9 +82,7 @@ let t = normalise_tuple_cons bsym_table t in
   if not (mem t exclude) then
   let rr t' = register_type_r ui syms bsym_table (t :: exclude) sr t' in
   let rnr t = register_type_nr syms bsym_table t in
-  match try Some (unfold "flx_treg1" t) with Free_fixpoint _ -> None with
-  | None -> ()
-  | Some t' ->
+  let t' = unfold t in
   (*
   print_endline (sp ^ "Unfolded type " ^ sbt sym_table t');
   *)

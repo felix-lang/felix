@@ -74,7 +74,7 @@ let rec gen_type_shape module_name s syms bsym_table need_int last_ptr_map primi
     print_debug syms ("allocable type --> " ^ sbt bsym_table btyp);
     let name = cpp_type_classname syms bsym_table btyp in
     if name = "int" then need_int := true else
-    let btyp' = unfold "flx_ogen1" btyp in 
+    let btyp' = unfold btyp in 
     let gen_encoder () =
       let encoder_name = name ^ "_encoder" in
       let encoder_stmts = get_encoder' syms bsym_table "p" btyp' in
@@ -363,7 +363,7 @@ let gen_offset_tables syms bsym_table module_name first_ptr_map=
   Hashtbl.iter
   (fun btyp index ->
 print_debug syms ("Handle type " ^ sbt bsym_table btyp ^ " instance " ^ si index);
-    match unfold "flx_ogen2" btyp with
+    match unfold btyp with
     | BTYP_sum args ->
       iter begin fun t ->
         match t with

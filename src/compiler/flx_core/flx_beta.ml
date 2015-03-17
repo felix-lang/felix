@@ -457,7 +457,7 @@ print_endline ("Calculated isrec= " ^ if isrec then "true" else "false");
          btyp_fix (j+1) (getmt())
        | _ -> assert false
     else 
-    let t1 = if isrecfun then getrecfun () else unfold ("flx_beta:"^calltag) t1 in
+    let t1 = if isrecfun then getrecfun () else unfold t1 in
 (*
     print_endline ("Function = " ^ sbt bsym_table t1);
     print_endline ("Argument = " ^ sbt bsym_table t2);

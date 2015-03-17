@@ -172,7 +172,7 @@ let cal_call state bsym_table sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
       in (sr,tbe1,x2)
     end
   in
-  match unfold "flx_bind_bexe1" t1 with
+  match unfold t1 with
 
   (* special handling of non-returning function. Instead of returning
      void we return type any, 
@@ -195,7 +195,7 @@ let cal_call state bsym_table sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
     ^"\ntype=" ^ sbt bsym_table t1)
 
 let cal_loop sym_table sr ((p,pt) as tbe1) ((_,argt) as tbe2) this =
-  match unfold "flx_bind_bexe2" pt with
+  match unfold pt with
   | BTYP_function (t, BTYP_void) ->
     if t = argt
     then
@@ -575,7 +575,7 @@ print_endline ("Bind EXE_iinit "^s);
         sbt bsym_table lhst^
         "\n of initialisation must have same type as RHS:\n"^
         sbt bsym_table rhst^
-        "\nunfolded LHS = " ^ sbt bsym_table (unfold "flx_bind_bexe3" lhst) ^
+        "\nunfolded LHS = " ^ sbt bsym_table (unfold lhst) ^
         "\nenvironment type variables are " ^
         print_vs state.parent_vs
 
@@ -628,7 +628,7 @@ print_endline ("Bind EXE_init "^s);
             sbt bsym_table lhst^
             "\n of initialisation must have same type as RHS:\n"^
             sbt bsym_table rhst^
-            "\nunfolded LHS = " ^ sbt bsym_table (unfold "flx_bind_bexe4" lhst) ^
+            "\nunfolded LHS = " ^ sbt bsym_table (unfold lhst) ^
             (if length state.parent_vs > 0 then
             "\nenvironment type variables are " ^
             print_vs state.parent_vs
@@ -665,7 +665,7 @@ print_endline ("assign after beta-reduction: RHST = " ^ sbt bsym_table rhst);
           sbe bsym_table rx^";\n"^
         "LHS type: " ^ sbt bsym_table lhst^
         "\nmust have same type as\n"^
-        "RHS type: " ^ sbt bsym_table rhst ^ (" UNFOLDED: " ^ sbt bsym_table  (unfold "flx_bind_bexe5" rhst))
+        "RHS type: " ^ sbt bsym_table rhst
       )
 
    | EXE_try -> 

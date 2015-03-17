@@ -860,7 +860,33 @@ let type_match bsym_table counter t1 t2 = (* print_endline "TYPE MATCH"; *)
   another view: only works on non-generative types.
 *)
 
-let unfold msg t =
+let complete_type t =
+  let rec aux depth t' =
+    let uf t = aux (depth + 1) t in
+    match t' with
+    | BTYP_sum ls -> List.iter uf ls
+    | BTYP_tuple ls -> List.iter uf ls
+    | BTYP_record (n,ls) -> List.iter (fun (s,t) -> uf t) ls
+    | BTYP_variant ls -> (List.iter (fun (s,t) -> uf t) ls)
+    | BTYP_array (a,b) -> uf a; uf b
+    | BTYP_function (a,b) -> uf a;uf b
+    | BTYP_cfunction (a,b) -> uf a;uf b
+    | BTYP_pointer a -> uf a
+    | BTYP_fix (i,_) when (-i) = depth -> ()
+    | BTYP_fix (i,_) when (-i) > depth -> raise (Free_fixpoint t')
+    | BTYP_type_apply (a,b) -> uf a;uf b
+    | BTYP_inst (i,ts) -> List.iter uf ts
+    | BTYP_type_function (p,r,b) ->
+        uf b
+  
+    | BTYP_type_match (a,tts) ->
+        uf a;
+        List.iter (fun (p,x) -> uf x) tts
+  
+    | _ -> ()
+  in try aux 0 t; true with | Free_fixpoint _ -> false
+
+let unfold t =
   let rec aux depth t' =
     let uf t = aux (depth + 1) t in
     match t' with
@@ -873,9 +899,7 @@ let unfold msg t =
     | BTYP_cfunction (a,b) -> btyp_cfunction (uf a,uf b)
     | BTYP_pointer a -> btyp_pointer (uf a)
     | BTYP_fix (i,_) when (-i) = depth -> t
-    | BTYP_fix (i,_) when (-i) > depth -> 
-      (* print_endline (msg^ ": Unfold sees free fixpoint"); *)
-      raise (Free_fixpoint t')
+    | BTYP_fix (i,_) when (-i) > depth -> print_endline "Warning:unfold free fixpoint"; raise (Free_fixpoint t')
     | BTYP_type_apply (a,b) -> btyp_type_apply (uf a,uf b)
     | BTYP_inst (i,ts) -> btyp_inst (i,List.map uf ts)
     | BTYP_type_function (p,r,b) ->
