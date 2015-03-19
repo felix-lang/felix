@@ -43,7 +43,23 @@ class DiGraph[V,E with Str[V], Str[E]] // V,E labels for graph parts
     pedges <- (elabel=elab,y=y,weight=1) ! *pedges;
     d.nedges.pre_incr;
   }
-  
+ 
+  // add and edge and its reverse edge, distinct labels
+  proc add_edge_pair (d:&digraph_t, x:int, y:int, felab:E, relab:E)
+  {
+    add_edge(d,x,y,felab);
+    add_edge(d,y,x,relab);
+  }
+
+  // add and edge and its reverse edge, same label
+  // use for undirected graph
+  proc add_edge_pair (d:&digraph_t, x:int, y:int, elab:E)
+  {
+    add_edge(d,x,y,elab);
+    add_edge(d,y,x,elab);
+  }
+
+ 
   fun dump_digraph (d:digraph_t) : string = 
   {
     var out = "";
@@ -81,12 +97,29 @@ class DiGraph[V,E with Str[V], Str[E]] // V,E labels for graph parts
 
   proc breadth_first_iter (d:digraph_t) (startv:int) (p:digraph_visitor_processing_t)
   {
-     open DList[int];
-     var q = queue_t();
-     enqueue &q startv;
-     var state = varray[Vstate] (bound=d.len,default=Undiscovered);
-     set (state,startv,Discovered);
-     println$ "BFS DONE";
+    open DList[int];
+    var q = queue_t();
+    var state = varray[Vstate] (bound=d.len,default=Undiscovered);
+    enqueue &q startv;
+    set (state,startv,Discovered);
+    //var parent = -1;
+    for v in &q do // all vertex indices in queue
+      p.process_vertex_early d v;
+      set (state,v,Processed);
+      for edge in d.vertices.v.outedges do
+        var y = edge.y;
+        p.process_edge d (v, y);
+        match state.y with
+        | Undiscovered => 
+          enqueue &q y; 
+          set (state,y,Discovered); 
+          //parent = v;
+        | _ => ;
+        endmatch;
+      done
+      p.process_vertex_late d v;
+    done // vertices
+    println$ "BFS DONE";
   }
 }
 

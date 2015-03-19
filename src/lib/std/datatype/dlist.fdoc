@@ -108,6 +108,9 @@ enqueue push_front and dequeue pop_back for no particular reason.
   proc enqueue (q:&queue_t) (v:T) => push_front (q,v);
   gen dequeue (q:&queue_t) :opt[T] => pop_back q;
   ctor queue_t () => dlist_t ();
-
+@h2 Queue iterator
+Fetch everything from a queue.
+@felix
+  gen iterator (q:&queue_t) () => dequeue q;
 }
 
