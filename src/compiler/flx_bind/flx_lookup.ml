@@ -878,6 +878,9 @@ print_endline ("Bind type " ^ string_of_typecode t);
       handle_typeset state sr elt typeset
 
   | TYP_var i ->
+(*
+print_endline ("Binding TYP_var " ^ si i);
+*)
       (* HACK .. assume variable is type TYPE *)
       btyp_type_var (i, btyp_type 0)
 
@@ -1083,7 +1086,11 @@ print_endline ("reduced application is: " ^ sbt bsym_table r);
     btyp_fix ((List.assoc s rs.as_fixlist) - rs.depth) (btyp_type 0)
 
   | TYP_name (sr,s,[]) when List.mem_assoc s params ->
-    List.assoc s params
+    let t = List.assoc s params in
+(*
+print_endline ("Binding TYP_name " ^s^ " via params to " ^ sbt bsym_table t);
+*)
+    t
 
   | TYP_index (sr,name,index) as x ->
       let sym =
@@ -1120,15 +1127,44 @@ print_endline ("reduced application is: " ^ sbt bsym_table r);
         | Some q -> q
         | None -> assert false
       in
+(*
+if string_of_qualified_name x = "digraph_t" then begin
+print_endline ("Bind type', name = " ^ string_of_qualified_name x);
+end;
+*)
       let sr2 = src_of_qualified_name x in
       let entry_kind, ts = lookup_qn_in_env' state bsym_table env rs x in
+(*
+if string_of_qualified_name x = "digraph_t" then begin
+        print_endline ("bind_type': Type "^string_of_typecode t^"=Qualified name "^string_of_qualified_name x^" lookup finds index " ^
+          string_of_bid entry_kind.Flx_btype.base_sym);
+        print_endline ("Kind=" ^ match t with | TYP_name (_,s,ts) -> "TYP_name ("^s^"["^catmap ","string_of_typecode ts^"])" | _ -> "TYP_*");
+        print_endline ("spec_vs=" ^
+          catmap ","
+            (fun (s,j)-> s ^ "<" ^ string_of_bid j ^ ">")
+            entry_kind.Flx_btype.spec_vs);
+        print_endline ("sub_ts=" ^
+          catmap "," (sbt bsym_table) entry_kind.Flx_btype.sub_ts);
+end;
+*)
       let ts = List.map bt ts in
+(*
+if string_of_qualified_name x = "digraph_t" then begin
+        print_endline ("input_ts=" ^ catmap "," (sbt bsym_table) ts);
+end;
+*)
       let baset = bi
         entry_kind.Flx_btype.base_sym
         entry_kind.Flx_btype.sub_ts
       in
+(*
+if string_of_qualified_name x = "digraph_t" then begin
+      print_endline ("Base type bound with sub_ts replacing type variables " ^ sbt bsym_table baset);
+end;
+*)
       (* SHOULD BE CLIENT ERROR not assertion *)
-      if List.length ts != List.length entry_kind.Flx_btype.spec_vs then begin
+      if List.length ts != List.length entry_kind.Flx_btype.spec_vs then 
+      begin
         print_endline ("bind_type': Type "^string_of_typecode t^"=Qualified name "^string_of_qualified_name x^" lookup finds index " ^
           string_of_bid entry_kind.Flx_btype.base_sym);
         print_endline ("Kind=" ^ match t with | TYP_name (_,s,ts) -> "TYP_name ("^s^"["^catmap ","string_of_typecode ts^"])" | _ -> "TYP_*");
@@ -1158,7 +1194,13 @@ print_endline ("reduced application is: " ^ sbt bsym_table r);
       end;
 
       assert (List.length ts = List.length entry_kind.Flx_btype.spec_vs);
-      tsubst entry_kind.Flx_btype.spec_vs ts baset
+      let t = tsubst entry_kind.Flx_btype.spec_vs ts baset in
+(*
+if string_of_qualified_name x = "digraph_t" then begin
+      print_endline ("Base type bound with input ts replacing spec type variables " ^ sbt bsym_table t);
+end;
+*)
+      t
 
   | TYP_suffix (sr,(qn,t)) ->
       let sign = bt t in
@@ -1232,7 +1274,17 @@ and cal_assoc_type state (bsym_table:Flx_bsym_table.t) sr t =
 
 and bind_type_index state (bsym_table:Flx_bsym_table.t) (rs:recstop) sr index ts mkenv
 =
+(*
+if index = 37335 then 
+  print_endline "**** Bind_type_index, special 37335";
+if index = 37335 then 
+  print_endline (" **** RAW ts =h ["^ catmap ", " (sbt bsym_table) ts^ "]");
+*)
   let ts = adjust_ts state.sym_table bsym_table sr index ts in
+(*
+if index = 37335 then 
+  print_endline (" **** Adjusted ts =h ["^ catmap ", " (sbt bsym_table) ts^ "]");
+*)
   (*
   print_endline ("Adjusted ts =h ["^ catmap ", " (sbt bsym_table) ts^ "]");
   *)
@@ -1241,15 +1293,32 @@ and bind_type_index state (bsym_table:Flx_bsym_table.t) (rs:recstop) sr index ts
       print_endline "Making params .. ";
       *)
       let vs,_ = find_vs state.sym_table bsym_table index in
-      if List.length vs <> List.length ts then begin
+(*
+if index = 37335 then begin
+        print_endline (" **** preparing to bind type " ^ string_of_typecode t);
+        print_endline (" **** making params for call to bind type");
+        print_endline (" **** vs=" ^
+          catmap "," (fun (s,i,_)-> s ^ "<" ^ string_of_bid i ^ ">") vs);
+        print_endline (" **** ts=" ^ catmap "," (sbt bsym_table) ts);
+end;
+*)
+      if List.length vs <> List.length ts then 
+      begin
         print_endline ("vs=" ^
           catmap "," (fun (s,i,_)-> s ^ "<" ^ string_of_bid i ^ ">") vs);
         print_endline ("ts=" ^ catmap "," (sbt bsym_table) ts);
         failwith "len vs != len ts"
       end
       else
-      let params = List.map2 (fun (s,i,_) t -> s,t) vs ts in
-
+      (* I think this is the wrong idea: params is for type function parameters! *)
+      (* let params = List.map2 (fun (s,i,_) t -> s,t) vs ts in *)
+      (* so lets try with out them *)
+      let params = [] in
+(*
+if index = 37335 then begin
+  print_endline (" **** params = " ^ catmap "," (fun (s,t) -> s ^ " --> " ^ sbt bsym_table t) params);
+end;
+*)
       (*
       let params = make_params state.sym_table sr index ts in
       *)
@@ -1262,7 +1331,21 @@ and bind_type_index state (bsym_table:Flx_bsym_table.t) (rs:recstop) sr index ts
         { rs with type_alias_fixlist = (index,rs.depth):: rs.type_alias_fixlist }
         sr t params mkenv
       in
-        (*
+(*
+if index = 37335 then begin
+  print_endline (" **** Bound type is " ^ sbt bsym_table t);
+  print_endline (" **** SHOULD HAVE VARIABLES REPLACED!");
+end;
+*)
+(* DO A HACK NOW, cause params doesn't propagate *)
+     let t = tsubst (List.map (fun (s,i,m) -> s,i) vs) ts t in 
+(*
+if index = 37335 then begin
+  print_endline (" **** AFTER TSUBST Bound type is " ^ sbt bsym_table t);
+  print_endline (" **** SHOULD HAVE VARIABLES REPLACED!");
+end;
+*)
+(*
         print_endline ("Unravelled and bound is " ^ sbt bsym_table t);
         *)
         (*
@@ -1451,10 +1534,16 @@ print_endline "flx_lookup: bind-type-index returning fixpoint";
 
     (* type alias RECURSE *)
     | SYMDEF_type_alias t ->
-      (*
-      print_endline ("Unravelling type alias " ^ id);
-      *)
-      bt t
+(*
+      if id = "digraph_t" then
+      print_endline ("Bind type index: Unravelling type alias " ^ id ^ " index=" ^ si index);
+*)
+      let t = bt t in
+(*
+      if id = "digraph_t" then
+      print_endline ("Bind type index: Alias "^id^"bound = " ^ sbt bsym_table t);
+*)
+      t
 
     | SYMDEF_abs _ ->
       btyp_inst (index,ts)
@@ -1517,7 +1606,9 @@ and type_of_index' state bsym_table rs sr bid =
 
       (* Finally, cache the type. *)
       Hashtbl.add state.ticache bid t;
-    end;
+      t
+    end 
+    else
 
     t
 
@@ -1733,6 +1824,10 @@ and btype_of_bsym state bsym_table sr bt bid bsym =
 (** This routine is called to find the type of a function or variable.
  * .. so there's no type_alias_fixlist .. *)
 and inner_type_of_index state bsym_table sr rs index =
+(*
+  if index = 37461 then
+     print_endline ("Inner type of index " ^ si index ^ "=pve");
+*)
   (* Check if we've already cached this index. *)
   try Hashtbl.find state.ticache index with Not_found ->
 
@@ -1747,7 +1842,9 @@ print_endline "inner_typeof+index returning fixpoint";
 
   let mkenv i = build_env state bsym_table (Some i) in
   let env = mkenv index in
-
+(*
+if index = 37461 then print_env env;
+*)
   (* Helper function that binds and beta reduces a type. *)
   let bt sr t =
     let t = bind_type' state bsym_table env rs sr t [] mkenv in
@@ -1774,6 +1871,9 @@ print_endline "inner_typeof+index returning fixpoint";
       failwith ("Woops inner_type_of_index found inherit fun!! " ^
         string_of_bid index)
   | SYMDEF_type_alias t ->
+(*
+print_endline ("bind_type_index finds: Type alias name " ^ sym.Flx_sym.id);
+*)
       let t = bt sym.Flx_sym.sr t in
       Flx_metatype.metatype state.sym_table bsym_table rs sym.Flx_sym.sr t
 
@@ -2441,8 +2541,11 @@ print_endline ("lookup_qn_with_sig' [AST_name] " ^ name ^ ", sigs=" ^ catmap ","
         "[lookup_qn_with_sig] AST_lookup: Simple_module: Can't find name " ^ name
       )
     | Some entries -> match entries with
-    | NonFunctionEntry (index) ->
-      handle_nonfunction_index (sye index) ts
+    | NonFunctionEntry { base_sym=index; spec_vs=spec_vs; sub_ts=sub_ts } ->
+(*
+      print_endline ("Lookup qn with sig, BASE index= " ^ si index );
+*)
+      handle_nonfunction_index (index) ts
 
     | FunctionEntry fs ->
       match
@@ -3936,7 +4039,6 @@ print_endline ("Evaluating EXPPR_typed_case index=" ^ si v ^ " type=" ^ string_o
     end
 
   | EXPR_name (sr,name,ts) ->
-    (* print_endline ("BINDING NAME " ^ name); *)
     if name = "_felix_type_name" then
        let sname = catmap "," string_of_typecode ts in
        let x = EXPR_literal (sr, {Flx_literal.felix_type="string"; internal_value=sname; c_value=Flx_string.c_quote_of_string sname}) in
@@ -4600,12 +4702,21 @@ print_endline ("Actual Array pointer projection " ^ sbe bsym_table n);
         if not (complete_type ta) then
           print_endline ("Apply argument type is not complete!!" ^ sbt bsym_table ta);
 *)
+        (* NOTE: record fields cannot be polymorphic. Even if you write:
+           
+           typedef R[T] = (field:T);
+           
+           then R[int] is just a synonym for
+
+           (field:int)
+
+        *)
         begin match unfold "flx_lookup" ta with 
         | BTYP_record ("",es) ->
 (*
 print_endline ("binding apply, RECORD field .. " ^ name ^ ", type=" ^ sbt bsym_table ta);
 *)
-          assert (ts = []);
+          if (ts != []) then raise OverloadResolutionError; 
           let k = List.length es in
           let rcmp (s1,_) (s2,_) = compare s1 s2 in
           let es = List.sort rcmp es in
@@ -4635,7 +4746,7 @@ print_endline ("binding apply, RECORD pointer field .. " ^ name ^ ", type=" ^ sb
 *)
           begin match unfold "flx_lookup" r with
           | BTYP_record (_,es) ->
-            assert (ts = []);
+            if (ts != []) then raise OverloadResolutionError; 
             let k = List.length es in
             let rcmp (s1,_) (s2,_) = compare s1 s2 in
             let es = List.sort rcmp es in

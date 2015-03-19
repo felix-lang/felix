@@ -352,8 +352,14 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
     handle_bexe (bexe_axiom_check (sr,be e2)) init
 
   | EXE_call (f',a') ->
+(*
+print_endline ("Binding call f=" ^ string_of_expr f' ^ ",a=" ^ string_of_expr a');
+*)
     begin try
     let (ea,ta) as a = be a' in
+(*
+print_endline ("        >>> Call, bound argument is type " ^ sbt bsym_table ta);
+*)
     (*
     print_endline ("Recursive descent into application " ^ string_of_expr e);
     *)
@@ -362,7 +368,7 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
       | Some name ->
           let srn = src_of_qualified_name name in
           (*
-          print_endline "Lookup qn with sig .. ";
+          print_endline "Lookup using qn with sig .. ";
           *)
           lookup_qn_with_sig
             state.lookup_state
@@ -373,6 +379,9 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
             name
             [ta]
       | None ->
+          (*
+          print_endline "Lookup using bind_expression with args .. ";
+          *)
           bind_expression_with_args
             state.lookup_state
             bsym_table

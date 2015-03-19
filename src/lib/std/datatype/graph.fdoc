@@ -2,6 +2,9 @@
 @h1 Graphs
 @felix
 // Directed Cyclic graph
+
+include "std/datatype/dlist";
+
 class DiGraph[V,E with Str[V], Str[E]] // V,E labels for graph parts
 {
   // vertices are stored in an array, so they're identified
@@ -14,6 +17,8 @@ class DiGraph[V,E with Str[V], Str[E]] // V,E labels for graph parts
   typedef edge_t = (elabel:E, y:int, weight:int); 
   typedef vertex_t = (vlabel:V, outedges: list[edge_t]);
 
+  fun len (d:digraph_t) => d.vertices.len;
+ 
   virtual fun default_vlabel: 1 -> V;
   virtual fun default_elabel: 1 -> E;
   fun default_vertex () => (vlabel = #default_vlabel, outedges = Empty[edge_t]);
@@ -56,6 +61,33 @@ class DiGraph[V,E with Str[V], Str[E]] // V,E labels for graph parts
 
   union Vstate = Undiscovered | Discovered | Processed;
 
+  typedef digraph_visitor_processing_t = 
+  (
+    process_vertex_early: digraph_t -> int -> 0,
+    process_vertex_late: digraph_t -> int -> 0,
+    process_edge: digraph_t -> int * int -> 0
+  );
+
+  proc dflt_pve (g:digraph_t) (x:int) {};
+  proc dflt_pvl (g:digraph_t) (x:int) {};
+  proc dflt_pe (g:digraph_t) (x:int, y:int) {};
+
+  // default visitor does nothing
+  ctor digraph_visitor_processing_t () => (
+    process_vertex_early= dflt_pve,
+    process_vertex_late= dflt_pvl,
+    process_edge= dflt_pe
+  );
+
+  proc breadth_first_iter (d:digraph_t) (startv:int) (p:digraph_visitor_processing_t)
+  {
+     open DList[int];
+     var q = queue_t();
+     enqueue &q startv;
+     var state = varray[Vstate] (bound=d.len,default=Undiscovered);
+     set (state,startv,Discovered);
+     println$ "BFS DONE";
+  }
 }
 
 instance DiGraph[string, string] 

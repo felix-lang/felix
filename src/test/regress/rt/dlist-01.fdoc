@@ -1,0 +1,38 @@
+@title test dlist
+@felix
+include "std/datatype/dlist";
+open DList[int];
+
+//test doubly linked list
+var dl = dlist_t();
+println$ "Len = " + dl.len.str;
+push_front (&dl,1);
+push_front (&dl,0);
+push_front (&dl,-1);
+push_back (&dl, 2);
+push_back (&dl, 3);
+
+println$ "Len = " + dl.len.str;
+var maybe_elt = pop_front &dl;
+again:>
+  match maybe_elt with
+  | Some i => 
+    println$ "Elt=" + i.str; 
+    maybe_elt = pop_front &dl;
+    goto again;
+  | None => println$ "Empty";
+  endmatch;
+
+println$ "Done";
+@expect
+Len = 0
+Len = 5
+Elt=-1
+Elt=0
+Elt=1
+Elt=2
+Elt=3
+Empty
+Done
+@
+
