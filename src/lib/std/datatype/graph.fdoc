@@ -95,15 +95,38 @@ class DiGraph[V,E with Str[V], Str[E]] // V,E labels for graph parts
     process_edge= dflt_pe
   );
 
-  proc breadth_first_iter (d:digraph_t) (startv:int) (p:digraph_visitor_processing_t)
+  interface mutable_collection_t[T] {
+     add: T -> 0;
+     remove: 1 -> opt[T];
+  }
+
+  gen iterator[T] (x:mutable_collection_t[T]) () : opt[T] => x.remove ();
+
+  object gstack_t[T] () implements mutable_collection_t[T] = {
+    open DList[T];
+    var d = dlist_t();
+    method proc add (x:T) => push_back (&d,x);
+    method gen remove () => pop_back (&d);
+  }
+
+  object gqueue_t[T] () implements mutable_collection_t[T] = {
+    open DList[T];
+    var d = dlist_t();
+    method proc add (x:T) => push_back (&d,x);
+    method gen remove () => pop_front (&d);
+  }
+
+  proc iter 
+    (var pending:mutable_collection_t[int]) 
+    (d:digraph_t) (startv:int) 
+    (p:digraph_visitor_processing_t)
   {
     open DList[int];
-    var q = queue_t();
     var state = varray[Vstate] (bound=d.len,default=Undiscovered);
-    enqueue &q startv;
+    pending.add startv;
     set (state,startv,Discovered);
     //var parent = -1;
-    for v in &q do // all vertex indices in queue
+    for v in pending do // all vertex indices in queue
       p.process_vertex_early d v;
       set (state,v,Processed);
       for edge in d.vertices.v.outedges do
@@ -111,7 +134,7 @@ class DiGraph[V,E with Str[V], Str[E]] // V,E labels for graph parts
         p.process_edge d (v, y);
         match state.y with
         | Undiscovered => 
-          enqueue &q y; 
+          pending.add y; 
           set (state,y,Discovered); 
           //parent = v;
         | _ => ;
@@ -119,8 +142,17 @@ class DiGraph[V,E with Str[V], Str[E]] // V,E labels for graph parts
       done
       p.process_vertex_late d v;
     done // vertices
-    println$ "BFS DONE";
   }
+
+  proc breadth_first_iter (d:digraph_t) (startv:int) (p:digraph_visitor_processing_t) =>
+    iter #gqueue_t[int] d startv p
+  ;
+
+  proc depth_first_iter (d:digraph_t) (startv:int) (p:digraph_visitor_processing_t) =>
+    iter #gstack_t[int] d startv p
+  ;
+
+
 }
 
 instance DiGraph[string, string] 
