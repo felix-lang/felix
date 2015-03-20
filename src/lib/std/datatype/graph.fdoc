@@ -121,7 +121,6 @@ class DiGraph[V,E with Str[V], Str[E]] // V,E labels for graph parts
     (d:digraph_t) (startv:int) 
     (p:digraph_visitor_processing_t)
   {
-    open DList[int];
     var state = varray[Vstate] (bound=d.len,default=Undiscovered);
     pending.add startv;
     set (state,startv,Discovered);
@@ -151,6 +150,41 @@ class DiGraph[V,E with Str[V], Str[E]] // V,E labels for graph parts
   proc depth_first_iter (d:digraph_t) (startv:int) (p:digraph_visitor_processing_t) =>
     iter #gstack_t[int] d startv p
   ;
+
+  gen find_path (d:digraph_t) (startv:int, fin:int) : opt[list[int]] = 
+  {
+    open DList[int];
+    var state = varray[Vstate] (bound=d.len,default=Undiscovered);
+    var parents = varray[int] (bound=d.len,default= -1);
+    var q = queue_t();
+    enqueue &q startv;
+    set (state,startv,Discovered);
+    set(parents,startv,-1);
+    for v in &q do // all vertex indices in queue
+      for edge in d.vertices.v.outedges do
+        var y = edge.y;
+        if y == fin do
+          var path = Empty[int];
+          set(parents,y,v);
+          while y != startv do
+            path = Cons (y,path);
+            y = parents.y;
+          done
+          path = Cons (y,path);
+          return Some path;
+        else 
+          match state.y with
+          | Undiscovered => 
+            enqueue &q y; 
+            set (state,y,Discovered); 
+            set(parents,y,v);
+          | _ => ;
+          endmatch;
+        done
+      done
+    done
+    return None[list[int]];
+  }
 
 
 }
