@@ -4,6 +4,7 @@
 // Directed Cyclic graph
 
 include "std/datatype/dlist";
+include "std/datatype/partition";
 
 class DiGraph[V,E with Str[V], Str[E]] // V,E labels for graph parts
 {

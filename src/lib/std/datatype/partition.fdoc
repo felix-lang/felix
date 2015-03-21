@@ -1,0 +1,72 @@
+@title Partition with Union-Find
+@h1 Partition
+Partition range of integers 0 through n-1.
+Features classic union-find data structure.
+@felix
+class Partition
+{
+  // internal array based union find 
+  typedef partition_t = (
+    parents: varray[int],
+    sizes : varray[int],
+    n: int
+  );
+
+  ctor partition_t (nelts:int) => (
+    n=nelts, 
+    parents=varray[int] (bound=nelts.size,used=nelts.size,f=(fun (i:size)=>i.int)),
+    sizes=varray[int] (bound=nelts.size,default=1)
+  );
+
+  // find canonical representative of partition containing element
+  fun find (s:&partition_t, i:int) => 
+    let val p = s*.parents.i in 
+    if p == i then i 
+    else find (s,p) 
+    endif
+  ;
+
+  // merge classes , keeping tree balanced
+  proc merge (s: &partition_t, s1:int, s2:int) {
+    var r1 = find (s,s1);
+    var r2 = find (s,s2);
+    if r1 != r2 do 
+      var m = s*.sizes.r1 + s*.sizes.r2;
+      if s*.sizes.r1 >= s*.sizes.r2 do
+        set (s*.sizes,r1,m);
+        set (s*.parents,r2,r1);
+      else
+        set (s*.sizes,r2,m);
+        set (s*.parents,r1,r2);
+      done
+    done
+  }
+
+  // partition 0:n-1 with equivalence relation
+  gen partition (n:int, equiv:int * int -> bool) =
+  {
+    var p = partition_t n;
+    for var i in 0 upto  n - 1 do
+      for var j in i + 1 upto n - 1 do
+        if equiv (i,j) do merge (&p,i,j); done
+      done
+    done
+    return p;
+  } 
+
+  // return an equivalence relation from a partition
+  gen equiv (s:&partition_t) : int * int -> bool => 
+    fun (x:int, y:int) => find (s,x) == find (s,y)
+  ;
+
+  // create a partition from an equivalence relation
+  // constructor syntax 
+  ctor partition_t (n:int, equiv: int * int -> bool) => partition (n,equiv);
+
+  // create an equivalence relation from a property
+  // assuming the property return type has equality
+  fun mk_equiv[T with Eq[T]] (f:int -> T) => 
+    fun (x:int, y:int) => f x == f y
+  ;  
+}
+

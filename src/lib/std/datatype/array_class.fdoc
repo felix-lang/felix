@@ -271,7 +271,7 @@ by assigning a new value without a bounds check.
   // Unsafe store value into array by common index.
   virtual proc unsafe_set: t * size * v;
 
-@h3 Fatching a pointer to an element with @{unsafe_get_ref}.
+@h3 Fetching a pointer to an element with @{unsafe_get_ref}.
 Note this is problematic as it forces a value to
 addressabe be stored as an object. A bitarray
 will not satisfy this requirement. Do we need
