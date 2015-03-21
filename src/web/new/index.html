@@ -1,0 +1,73 @@
+<html>
+  <head>
+    <title>Felix</title>
+    <meta name="description" conent="A high-performance scripting language"/>
+    <meta name="keywords"
+     content="programming, felix, static, typing, speed, performance, c++"/>
+    <link href="css/style.css" type="text/css" rel="stylesheet"/>
+  </head>
+  <body>
+    <div id="tdiv">
+      <h1>The Felix Programming Language</h1>
+      <ul id="tlist">
+        <li class="tlitem tcitem"><a class="tllink" href="/share/src/web/new/index.html">Home</a></li>
+        <span class="tbar"></span>
+        <li class="tlitem"><a class="tllink" href="/share/src/web/documentation.fdoc">Documentation</a></li>
+        <span class="tbar"></span>
+        <li class="tlitem"><a class="tllink" href="/share/src/web/new/community.html">Community</a></li>
+      </ul>
+    </div>
+    <div id="mdiv">
+      <img class="cat" src="../images/200px-Felix_the_cat.svg.png"
+           alt="Felix the cat"/>
+      <h2>
+        <span id="f">Felix</span> is a
+        <a href="/share/src/web/advocate/statictype.fdoc" id="static">
+          statically-typed</a>,
+        <a href="/share/src/web/advocate/compmodel.fdoc" id="highpf">
+          high-performance</a>
+        <a href="/share/src/web/advocate/scripting.fdoc" id="scripting">
+          scripting</a> language
+        that features both a
+        <a href="/share/src/web/advocate/richdata.fdoc" id="rich">rich</a>
+        type system and a mix of <a href="/share/src/web/advocate/styles.fdoc">
+        <span id="functional">functional</span>,
+        <span id="oop">object-oriented</span>, and
+        <span id="proc">procedural</span></a> coding styles, along with a
+        <a id="fthreads" href="/share/src/web/advocate/fthreads.fdoc">
+          flexible coroutine and threading system</a>,
+        <a id="aio" href="/share/src/web/advocate/async.fdoc">
+          asynchronous I/O</a>,
+        and <a id="ugr" href="/share/src/web/advocate/usergrammar.fdoc">
+          an extensible grammar defined in user-space</a>.
+      </h2>
+      <br/>
+      <sub>Click the colored text to see examples.</sub>
+    </div>
+    <div id="bdiv">
+      <code><pre>
+        // herein lies an RPN calculator, written in Felix
+        var prog = "1 1 + 3 * 2 /";
+        var acc = 0;
+        var st = list[int]();
+
+        for tok in split(prog, ' ') do
+            match tok.str with
+            | "+" =&gt; st = st.tail.head + st.head + st.tail.tail;
+            | "-" =&gt; st = st.tail.head - st.head + st.tail.tail;
+            | "*" =&gt; st = st.tail.head * st.head + st.tail.tail;
+            | "/" =&gt; st = st.tail.head / st.head + st.tail.tail;
+            | ?d =&gt; st = d.atoi + st;
+            endmatch;
+        done;
+
+        st.head.println;
+        // same as println st.head;
+        // ...which is the same as print $ head st;
+      </pre></code>
+      <h3>Get it from <a href="https://github.com/felix-lang/felix">GitHub</a>!
+         <img
+          src="https://assets-cdn.github.com/images/modules/logos_page/GitHub-Mark.png"/></h3>
+    </div>
+  </body>
+</html>
