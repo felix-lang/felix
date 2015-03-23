@@ -116,7 +116,7 @@ class Popen(subprocess.Popen):
             raise Exception("Python version 3.2 or greater required")
 
         def _execute_child(self, args, executable, preexec_fn, close_fds,
-                           pass_fds, cwd, env, universal_newlines, startupinfo,
+                           pass_fds, cwd, env, startupinfo,
                            creationflags, shell,
                            p2cread, p2cwrite,
                            c2pread, c2pwrite,
