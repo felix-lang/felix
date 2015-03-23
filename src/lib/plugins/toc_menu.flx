@@ -24,24 +24,10 @@ var menu_js = """
   function mshow(id,loc)
   {
     var i;
-    for(i=1; i<=counter_max; ++i) 
+    for(i=1; i<=counter_max; ++i)
       mcollapse("menu"+String(i));
     mexpand(id);
     window.location.replace(loc);
-  }
-
-  function hilite(obj)
-  {
-    obj.style.backgroundColor = "white";
-  }
-
-  function leave1(obj)
-  {
-    obj.style.backgroundColor = "#70C000";
-  }
-  function leave2(obj)
-  {
-    obj.style.backgroundColor = "#70C070";
   }
 </script>
 """;
@@ -75,10 +61,13 @@ div.m2 {
     font-size:80%;
 }
 
+div.m1:hover, div.m2:hover {
+    background-color: white;
+}
+
 
 </style>
 """;
-
 
 
 object toc_menu (h:list[int * string * string]) implements toc_menu_interface =
@@ -86,7 +75,7 @@ object toc_menu (h:list[int * string * string]) implements toc_menu_interface =
   method fun whatami () => "toc_menu maker";
   method fun get_style () => menu_style;
   method fun get_js() => menu_js;
-  method fun make_menu() = 
+  method fun make_menu() =
   {
     // LEFT MARGIN
     var leftcontent ='  <!--Left Margin Toc-->\n';
@@ -94,30 +83,28 @@ object toc_menu (h:list[int * string * string]) implements toc_menu_interface =
 
       // Contents body
         leftcontent+='    <!--Left Margin Toc Main Contents-->\n';
-     
-        proc head1(level:int, text:string, link:string) { 
-          leftcontent+= """      <div class=m1 onclick="mshow('menu"""+ counter.str+"""','"""+link+"""')" """;
-          leftcontent+=" onmouseover='hilite(this)' onmouseout='leave1(this)' >";
+
+        proc head1(level:int, text:string, link:string) {
+          leftcontent+= """      <div class=m1 onclick="mshow('menu"""+ counter.str+"""','"""+link+"""')"> """;
           leftcontent+= text + "</div>\n";
           leftcontent+= """      <div class=sm id=menu"""+counter.str+""">\n""";
         }
-        proc foot1() { leftcontent+="      </div>\n"; } 
+        proc foot1() { leftcontent+="      </div>\n"; }
         proc break1(level:int, text:string,link:string) {foot1(); ++counter; head1(level,text,link); }
-      
+
         var counter = 0;
-        iter proc (level:int,text:string, link:string) 
-          { 
+        iter proc (level:int,text:string, link:string)
+          {
             //println$ i,s;
             if level == 1 do // first level meny entry
-              if counter == 0 do ++counter; head1 (level, text, link); 
-              else break1 (level,text,link); 
+              if counter == 0 do ++counter; head1 (level, text, link);
+              else break1 (level,text,link);
               done
             elif level == 2 do // second level menu entry
-              leftcontent+="      <div class=m2 onmouseover='hilite(this)'";
-              leftcontent+=" onmouseout='leave2(this)'";
+              leftcontent+="      <div class=m2";
               leftcontent+=''' onclick='window.location.replace("'''+link+'''")'>'''+text+'''</div>\n''';
             done
-          } 
+          }
           h
         ;
         if counter >= 1 do  foot1; done;
