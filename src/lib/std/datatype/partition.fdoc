@@ -19,17 +19,23 @@ class Partition
   );
 
   // find canonical representative of partition containing element
+  // can't fail, returns -1 if the input i is out of range of the partition
   fun find (s:&partition_t, i:int) => 
-    let val p = s*.parents.i in 
-    if p == i then i 
-    else find (s,p) 
+    if i < 0 or i>= s*.n then -1 else
+      let val p = s*.parents.i in 
+      if p == i then i 
+      else find (s,p) 
+      endif
     endif
   ;
 
   // merge classes , keeping tree balanced
+  // can't fail, does nothing if either s1 or s2 is out of range of the partition
   proc merge (s: &partition_t, s1:int, s2:int) {
     var r1 = find (s,s1);
+    if r1 == -1 return;
     var r2 = find (s,s2);
+    if r2 == -1 return;
     if r1 != r2 do 
       var m = s*.sizes.r1 + s*.sizes.r2;
       if s*.sizes.r1 >= s*.sizes.r2 do

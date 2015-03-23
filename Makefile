@@ -343,9 +343,10 @@ web-plugins:
 
 flx-web:
 	# =========================================================
-	# rebuild web plugins
-	# includes the following plugins:
-	#  - dflx_web
+	# rebuild flx_web 
+	#  user must ensure "make web-plugins" is run first
+	#  - compiles dflx_web.o object file
+	#  - links flx_web executable
 	# =========================================================
 	build/release/host/bin/flx --felix=build.fpc  src/tools/flx_build_boot \
 		--build-flx-web
