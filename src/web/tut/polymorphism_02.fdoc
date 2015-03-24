@@ -88,6 +88,6 @@ typedef mynumbers = integers \cup floats;
 Note that the typesets @{ints} and @{floats}, along with some other
 basic type sets, are defined in the standard library: 
 
-@felix /share/lib/std/scalar/ctypesets.flx
+@felix std/scalar/ctypedefs.flx
 
 
