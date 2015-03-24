@@ -1,0 +1,386 @@
+@title TeX operator
+@h1 General TeX like operators
+Here is a complete list of general operators.
+@h2 A
+@felix
+
+ x \amalg y     bin := "\amalg" =># '(nos _1)'; 
+ x \approx y     cmp := "\approx" =># '(nos _1)'; 
+ x \approxeq y     cmp := "\approxeq" =># '(nos _1)'; 
+ x \Arrowvert y     cmp := "\Arrowvert" =># '(nos _1)'; 
+ x \arrowvert y     cmp := "\arrowvert" =># '(nos _1)'; 
+ x \asymp y     cmp := "\asymp" =># '(nos _1)'; 
+
+@h2 B
+@felix
+
+ x \backsim y     cmp := "\backsim" =># '(nos _1)'; 
+ x \backsimeq y     cmp := "\backsimeq" =># '(nos _1)'; 
+ x \bar y     cmp := "\bar" =># '(nos _1)'; 
+ x \barwedge y     cmp := "\barwedge" =># '(nos _1)'; 
+ x \between y     cmp := "\between" =># '(nos _1)'; 
+ x \bigcap y     bin := "\bigcap" =># '(nos _1)'; 
+ x \bigcirc y     bin := "\bigcirc" =># '(nos _1)'; 
+ x \bigcup y     bin := "\bigcup" =># '(nos _1)'; 
+ x \bigodot y     bin := "\bigodot" =># '(nos _1)'; 
+ x \bigoplus y     bin := "\bigoplus" =># '(nos _1)'; 
+ x \bigotimes y     bin := "\bigotimes" =># '(nos _1)'; 
+ x \bigsqcup y     bin := "\bigsqcup" =># '(nos _1)'; 
+ x \bigtriangledown y     bin := "\bigtriangledown" =># '(nos _1)'; 
+ x \bigtriangleup y     bin := "\bigtriangleup" =># '(nos _1)'; 
+ x \biguplus y     bin := "\biguplus" =># '(nos _1)'; 
+ x \bigvee y     bin := "\bigvee" =># '(nos _1)'; 
+ x \bigwedge y     bin := "\bigwedge" =># '(nos _1)'; 
+ x \bowtie y     bin := "\bowtie" =># '(nos _1)'; 
+ x \Box y     bin := "\Box" =># '(nos _1)'; 
+ x \boxdot y     bin := "\boxdot" =># '(nos _1)'; 
+ x \boxminus y     bin := "\boxminus" =># '(nos _1)'; 
+ x \boxplus y     bin := "\boxplus" =># '(nos _1)'; 
+ x \boxtimes y     bin := "\boxtimes" =># '(nos _1)'; 
+ x \Bumpeq y     cmp := "\Bumpeq" =># '(nos _1)'; 
+ x \bumpeq y     cmp := "\bumpeq" =># '(nos _1)'; 
+
+@h2 C
+@felix
+
+ x \cap y     bin := "\cap" =># '(nos _1)'; 
+ x \Cap y     bin := "\Cap" =># '(nos _1)'; 
+ x \cdot y     bin := "\cdot" =># '(nos _1)'; 
+ x \cdotp y     bin := "\cdotp" =># '(nos _1)'; 
+ x \circeq y     cmp := "\circeq" =># '(nos _1)'; 
+ x \circledast y     bin := "\circledast" =># '(nos _1)'; 
+ x \circledcirc y     bin := "\circledcirc" =># '(nos _1)'; 
+ x \circleddash y     bin := "\circleddash" =># '(nos _1)'; 
+ x \cong y     cmp := "\cong" =># '(nos _1)'; 
+ x \coprod y     bin := "\coprod" =># '(nos _1)'; 
+  //bin := "\cup" =># '(nos _1)'; 
+ x \Cup y     bin := "\Cup" =># '(nos _1)'; 
+ x \curlyeqprec y     cmp := "\curlyeqprec" =># '(nos _1)'; 
+ x \curlyeqsucc y     cmp := "\curlyeqsucc" =># '(nos _1)'; 
+ x \curlyvee y     bin := "\curlyvee" =># '(nos _1)'; 
+ x \curlywedge y     bin := "\curlywedge" =># '(nos _1)'; 
+
+@h2 D
+@felix
+
+ x \dashleftarrow y     arr := "\dashleftarrow" =># '(nos _1)'; 
+ x \dashrightarrow y     arr := "\dashrightarrow" =># '(nos _1)'; 
+ x \divideontimes y     bin := "\divideontimes" =># '(nos _1)'; 
+ x \doteq y     cmp := "\doteq" =># '(nos _1)'; 
+ x \Doteq y     cmp := "\Doteq" =># '(nos _1)'; 
+ x \doteqdot y     cmp := "\doteqdot" =># '(nos _1)'; 
+ x \dotplus y     bin := "\dotplus" =># '(nos _1)'; 
+ x \doublebarwedge y     bin := "\doublebarwedge" =># '(nos _1)'; 
+ x \doublecap y     bin := "\doublecap" =># '(nos _1)'; 
+ x \doublecup y     bin := "\doublecup" =># '(nos _1)'; 
+ x \Downarrow y     bin := "\Downarrow" =># '(nos _1)'; 
+ x \downarrow y     bin := "\downarrow" =># '(nos _1)'; 
+ x \downdownarrows y     bin := "\downdownarrows" =># '(nos _1)'; 
+ x \downharpoonleft y     bin := "\downharpoonleft" =># '(nos _1)'; 
+ x \downharpoonright y     bin := "\downharpoonright" =># '(nos _1)'; 
+
+@h2 E
+@felix
+
+ x \eqcirc y     cmp := "\eqcirc" =># '(nos _1)'; 
+ x \eqsim y     cmp := "\eqsim" =># '(nos _1)'; 
+ x \eqslantgtr y     cmp := "\eqslantgtr" =># '(nos _1)'; 
+ x \eqslantless y     cmp := "\eqslantless" =># '(nos _1)'; 
+ x \equiv y     cmp := "\equiv" =># '(nos _1)'; 
+
+@h2 F
+@felix
+
+ x \fallingdotseq y     bin := "\fallingdotseq" =># '(nos _1)'; 
+
+@h2 G
+@felix
+
+ x \ge y     cmp := "\ge" =># '(nos _1)'; 
+ x \geq y     cmp := "\geq" =># '(nos _1)'; 
+ x \geqq y     cmp := "\geqq" =># '(nos _1)'; 
+ x \geqslant y     cmp := "\geqslant" =># '(nos _1)'; 
+ x \gets y     arr := "\gets" =># '(nos _1)'; 
+ x \gg y     cmp := "\gg" =># '(nos _1)'; 
+ x \ggg y     cmp := "\ggg" =># '(nos _1)'; 
+ x \gggtr y     cmp := "\gggtr" =># '(nos _1)'; 
+ x \gnapprox y     cmp := "\gnapprox" =># '(nos _1)'; 
+ x \gneq y     cmp := "\gneq" =># '(nos _1)'; 
+ x \gneqq y     cmp := "\gneqq" =># '(nos _1)'; 
+ x \gnsim y     cmp := "\gnsim" =># '(nos _1)'; 
+ x \gt y     cmp := "\gt" =># '(nos _1)'; 
+ x \gtrapprox y     cmp := "\gtrapprox" =># '(nos _1)'; 
+ x \gtrdot y     cmp := "\gtrdot" =># '(nos _1)'; 
+ x \gtreqless y     cmp := "\gtreqless" =># '(nos _1)'; 
+ x \gtreqqless y     cmp := "\gtreqqless" =># '(nos _1)'; 
+ x \gtrless y     cmp := "\gtrless" =># '(nos _1)'; 
+ x \gtrsim y     cmp := "\gtrsim" =># '(nos _1)'; 
+ x \gvertneqq y     cmp := "\gvertneqq" =># '(nos _1)'; 
+
+@h2 H
+@felix
+
+ x \hookleftarrow y     arr := "\hookleftarrow" =># '(nos _1)'; 
+ x \hookrightarrow y     arr := "\hookrightarrow" =># '(nos _1)'; 
+
+@h2 I
+@felix
+
+ x \iff y     bin := "\iff" =># '(nos _1)'; 
+ x \impliedby y     bin := "\impliedby" =># '(nos _1)'; 
+  //bin := "\implies" =># '(nos _1)'; 
+  //cmp := "\in" =># '(nos _1)'; 
+
+@h2 J
+@felix
+
+ x \Join y     bin := "\Join" =># '(nos _1)'; 
+
+@h2 K
+@felix
+
+@h2 L
+@felix
+
+ x \le y     cmp := "\le" =># '(nos _1)'; 
+ x \leadsto y     arr := "\leadsto" =># '(nos _1)'; 
+ x \Leftarrow y     arr := "\Leftarrow" =># '(nos _1)'; 
+ x \leftarrow y     arr := "\leftarrow" =># '(nos _1)'; 
+ x \leftarrowtail y     arr := "\leftarrowtail" =># '(nos _1)'; 
+ x \leftharpoondown y     arr := "\leftharpoondown" =># '(nos _1)'; 
+ x \leftharpoonup y     arr := "\leftharpoonup" =># '(nos _1)'; 
+ x \leftleftarrows y     arr := "\leftleftarrows" =># '(nos _1)'; 
+ x \Leftrightarrow y     arr := "\Leftrightarrow" =># '(nos _1)'; 
+ x \leftrightarrow y     arr := "\leftrightarrow" =># '(nos _1)'; 
+ x \leftrightarrows y     cmp := "\leftrightarrows" =># '(nos _1)'; 
+ x \leftrightharpoons y     cmp := "\leftrightharpoons" =># '(nos _1)'; 
+ x \leftrightsquigarrow y     arr := "\leftrightsquigarrow" =># '(nos _1)'; 
+ x \leq y     cmp := "\leq" =># '(nos _1)'; 
+ x \leqq y     cmp := "\leqq" =># '(nos _1)'; 
+ x \leqslant y     cmp := "\leqslant" =># '(nos _1)'; 
+ x \lessapprox y     cmp := "\lessapprox" =># '(nos _1)'; 
+ x \lessdot y     cmp := "\lessdot" =># '(nos _1)'; 
+ x \lesseqgtr y     cmp := "\lesseqgtr" =># '(nos _1)'; 
+ x \lesseqqgtr y     cmp := "\lesseqqgtr" =># '(nos _1)'; 
+ x \lessgtr y     cmp := "\lessgtr" =># '(nos _1)'; 
+ x \lesssim y     cmp := "\lesssim" =># '(nos _1)'; 
+ x \Lleftarrow y     arr := "\Lleftarrow" =># '(nos _1)'; 
+ x \lll y     cmp := "\lll" =># '(nos _1)'; 
+ x \llless y     cmp := "\llless" =># '(nos _1)'; 
+ x \lnapprox y     cmp := "\lnapprox" =># '(nos _1)'; 
+ x \lneq y     cmp := "\lneq" =># '(nos _1)'; 
+ x \lneqq y     cmp := "\lneqq" =># '(nos _1)'; 
+ x \lnot y     cmp := "\lnot" =># '(nos _1)'; 
+ x \lnsim y     cmp := "\lnsim" =># '(nos _1)'; 
+ x \Longleftarrow y     arr := "\Longleftarrow" =># '(nos _1)'; 
+ x \longleftarrow y     arr := "\longleftarrow" =># '(nos _1)'; 
+ x \Longleftrightarrow y     arr := "\Longleftrightarrow" =># '(nos _1)'; 
+ x \longleftrightarrow y     arr := "\longleftrightarrow" =># '(nos _1)'; 
+ x \longmapsto y     arr := "\longmapsto" =># '(nos _1)'; 
+ x \Longrightarrow y     arr := "\Longrightarrow" =># '(nos _1)'; 
+ x \longrightarrow y     arr := "\longrightarrow" =># '(nos _1)'; 
+ x \lt y     cmp := "\lt" =># '(nos _1)'; 
+ x \ltimes y     cmp := "\ltimes" =># '(nos _1)'; 
+ x \lvertneqq y     cmp := "\lvertneqq" =># '(nos _1)'; 
+
+@h2 M
+@felix
+
+ x \mapsto y     arr := "\mapsto" =># '(nos _1)'; 
+
+@h2 N
+@felix
+
+ x \ncong y     cmp := "\ncong" =># '(nos _1)'; 
+ x \ne y     cmp := "\ne" =># '(nos _1)'; 
+ x \neq y     cmp := "\neq" =># '(nos _1)'; 
+ x \ngeq y     cmp := "\ngeq" =># '(nos _1)'; 
+ x \ngeqq y     cmp := "\ngeqq" =># '(nos _1)'; 
+ x \ngeqslant y     cmp := "\ngeqslant" =># '(nos _1)'; 
+ x \ngtr y     cmp := "\ngtr" =># '(nos _1)'; 
+ x \ni y     cmp := "\ni" =># '(nos _1)'; 
+ x \nleq y     cmp := "\nleq" =># '(nos _1)'; 
+ x \nleqq y     cmp := "\nleqq" =># '(nos _1)'; 
+ x \nleqslant y     cmp := "\nleqslant" =># '(nos _1)'; 
+ x \nless y     cmp := "\nless" =># '(nos _1)'; 
+ x \notin y     cmp := "\notin" =># '(nos _1)'; 
+ x \nparallel y     cmp := "\nparallel" =># '(nos _1)'; 
+ x \nprec y     cmp := "\nprec" =># '(nos _1)'; 
+ x \npreceq y     cmp := "\npreceq" =># '(nos _1)'; 
+ x \nsim y     cmp := "\nsim" =># '(nos _1)'; 
+ x \nsubseteq y     cmp := "\nsubseteq" =># '(nos _1)'; 
+ x \nsubseteqq y     cmp := "\nsubseteqq" =># '(nos _1)'; 
+ x \nsucc y     cmp := "\nsucc" =># '(nos _1)'; 
+ x \nsucceq y     cmp := "\nsucceq" =># '(nos _1)'; 
+ x \nsupseteq y     cmp := "\nsupseteq" =># '(nos _1)'; 
+ x \nsupseteqq y     cmp := "\nsupseteqq" =># '(nos _1)'; 
+ x \ntriangleleft y     cmp := "\ntriangleleft" =># '(nos _1)'; 
+ x \ntrianglelefteq y     cmp := "\ntrianglelefteq" =># '(nos _1)'; 
+ x \ntriangleright y     cmp := "\ntriangleright" =># '(nos _1)'; 
+ x \ntrianglerighteq y     cmp := "\ntrianglerighteq" =># '(nos _1)'; 
+
+@h2 O
+@felix
+
+ x \odot y     bin := "\odot" =># '(nos _1)'; 
+ x \ominus y     bin := "\ominus" =># '(nos _1)'; 
+ x \oplus y     bin := "\oplus" =># '(nos _1)'; 
+ x \oslash y     bin := "\oslash" =># '(nos _1)'; 
+ x \otimes y     bin := "\otimes" =># '(nos _1)'; 
+ x \owns y     cmp := "\owns" =># '(nos _1)'; 
+
+@h2 P
+@felix
+
+ x \perp y     cmp := "\perp" =># '(nos _1)'; 
+ x \pm y     bin := "\pm" =># '(nos _1)'; 
+ x \prec y     cmp := "\prec" =># '(nos _1)'; 
+ x \precapprox y     cmp := "\precapprox" =># '(nos _1)'; 
+ x \preccurlyeq y     cmp := "\preccurlyeq" =># '(nos _1)'; 
+ x \preceq y     cmp := "\preceq" =># '(nos _1)'; 
+ x \precnapprox y     cmp := "\precnapprox" =># '(nos _1)'; 
+ x \precneqq y     cmp := "\precneqq" =># '(nos _1)'; 
+ x \precnsim y     cmp := "\precnsim" =># '(nos _1)'; 
+ x \precsim y     cmp := "\precsim" =># '(nos _1)'; 
+ x \prod y     bin := "\prod" =># '(nos _1)'; 
+ x \propto y     cmp := "\propto" =># '(nos _1)'; 
+
+@h2 Q
+@felix
+
+@h2 R
+@felix
+
+ x \rhd y     cmp := "\rhd" =># '(nos _1)'; 
+ x \Rightarrow y     arr := "\Rightarrow" =># '(nos _1)'; 
+ x \rightarrow y     arr := "\rightarrow" =># '(nos _1)'; 
+ x \rightarrowtail y     arr := "\rightarrowtail" =># '(nos _1)'; 
+ x \rightharpoondown y     arr := "\rightharpoondown" =># '(nos _1)'; 
+ x \rightharpoonup y     arr := "\rightharpoonup" =># '(nos _1)'; 
+ x \rightleftarrows y     arr := "\rightleftarrows" =># '(nos _1)'; 
+ x \rightleftharpoons y     arr := "\rightleftharpoons" =># '(nos _1)'; 
+ x \rightleftharpoons y     arr := "\rightleftharpoons" =># '(nos _1)'; 
+ x \rightrightarrows y     arr := "\rightrightarrows" =># '(nos _1)'; 
+ x \rightsquigarrow y     arr := "\rightsquigarrow" =># '(nos _1)'; 
+ x \Rrightarrow y     arr := "\Rrightarrow" =># '(nos _1)'; 
+ x \rtimes y     cmp := "\rtimes" =># '(nos _1)'; 
+
+@h2 S
+@felix
+
+ x \setminus y     bin := "\setminus" =># '(nos _1)'; 
+ x \sim y     cmp := "\sim" =># '(nos _1)'; 
+ x \simeq y     cmp := "\simeq" =># '(nos _1)'; 
+ x \smallsetminus y     cmp := "\smallsetminus" =># '(nos _1)'; 
+ x \sqcap y     bin := "\sqcap" =># '(nos _1)'; 
+ x \sqcup y     bin := "\sqcup" =># '(nos _1)'; 
+ x \sqsubset y     cmp := "\sqsubset" =># '(nos _1)'; 
+ x \sqsubseteq y     cmp := "\sqsubseteq" =># '(nos _1)'; 
+ x \sqsupset y     cmp := "\sqsupset" =># '(nos _1)'; 
+ x \sqsupseteq y     cmp := "\sqsupseteq" =># '(nos _1)'; 
+ x \square y     bin := "\square" =># '(nos _1)'; 
+ x \subset y     cmp := "\subset" =># '(nos _1)'; 
+ x \Subset y     cmp := "\Subset" =># '(nos _1)'; 
+ x \subseteq y     cmp := "\subseteq" =># '(nos _1)'; 
+ x \subseteqq y     cmp := "\subseteqq" =># '(nos _1)'; 
+ x \subsetneq y     cmp := "\subsetneq" =># '(nos _1)'; 
+ x \subsetneqq y     cmp := "\subsetneqq" =># '(nos _1)'; 
+ x \succ y     cmp := "\succ" =># '(nos _1)'; 
+ x \succapprox y     cmp := "\succapprox" =># '(nos _1)'; 
+ x \succcurlyeq y     cmp := "\succcurlyeq" =># '(nos _1)'; 
+ x \succeq y     cmp := "\succeq" =># '(nos _1)'; 
+ x \succnapprox y     cmp := "\succnapprox" =># '(nos _1)'; 
+ x \succneqq y     cmp := "\succneqq" =># '(nos _1)'; 
+ x \succnsim y     cmp := "\succnsim" =># '(nos _1)'; 
+ x \succsim y     cmp := "\succsim" =># '(nos _1)'; 
+ x \supset y     cmp := "\supset" =># '(nos _1)'; 
+ x \Supset y     cmp := "\Supset" =># '(nos _1)'; 
+ x \supseteq y     cmp := "\supseteq" =># '(nos _1)'; 
+ x \supseteqq y     cmp := "\supseteqq" =># '(nos _1)'; 
+ x \supsetneq y     cmp := "\supsetneq" =># '(nos _1)'; 
+ x \supsetneqq y     cmp := "\supsetneqq" =># '(nos _1)'; 
+
+@h2 T
+@felix
+
+ x \thickapprox y     cmp := "\thickapprox" =># '(nos _1)'; 
+ x \thicksim y     cmp := "\thicksim" =># '(nos _1)'; 
+ x \times y     cmp := "\times" =># '(nos _1)'; 
+ x \to y     arr := "\to" =># '(nos _1)'; 
+ x \triangle y     bin := "\triangle" =># '(nos _1)'; 
+ x \triangledown y     bin := "\triangledown" =># '(nos _1)'; 
+ x \triangleleft y     cmp := "\triangleleft" =># '(nos _1)'; 
+ x \trianglelefteq y     cmp := "\trianglelefteq" =># '(nos _1)'; 
+ x \triangleq y     cmp := "\triangleq" =># '(nos _1)'; 
+ x \triangleright y     cmp := "\triangleright" =># '(nos _1)'; 
+ x \trianglerighteq y     cmp := "\trianglerighteq" =># '(nos _1)'; 
+ x \twoheadleftarrow y     arr := "\twoheadleftarrow" =># '(nos _1)'; 
+ x \twoheadrightarrow y     arr := "\twoheadrightarrow" =># '(nos _1)'; 
+
+@h2 U
+@felix
+
+ x \unlhd y     cmp := "\unlhd" =># '(nos _1)'; 
+ x \unrhd y     cmp := "\unrhd" =># '(nos _1)'; 
+ x \Uparrow y     bin := "\Uparrow" =># '(nos _1)'; 
+ x \uparrow y     bin := "\uparrow" =># '(nos _1)'; 
+ x \Updownarrow y     bin := "\Updownarrow" =># '(nos _1)'; 
+ x \updownarrow y     bin := "\updownarrow" =># '(nos _1)'; 
+ x \upharpoonleft y     bin := "\upharpoonleft" =># '(nos _1)'; 
+ x \upharpoonright y     bin := "\upharpoonright" =># '(nos _1)'; 
+ x \uplus y     bin := "\uplus" =># '(nos _1)'; 
+ x \upuparrows y     bin := "\upuparrows" =># '(nos _1)'; 
+
+@h2 V
+@felix
+
+ x \varsubsetneq y     cmp := "\varsubsetneq" =># '(nos _1)'; 
+ x \varsubsetneqq y     cmp := "\varsubsetneqq" =># '(nos _1)'; 
+ x \varsupsetneq y     cmp := "\varsupsetneq" =># '(nos _1)'; 
+ x \varsupsetneqq y     cmp := "\varsupsetneqq" =># '(nos _1)'; 
+ x \vee y     bin := "\vee" =># '(nos _1)'; 
+ x \veebar y     cmp := "\veebar" =># '(nos _1)'; 
+
+@h2 W
+@felix
+
+ x \wedge y     bin := "\wedge" =># '(nos _1)'; 
+
+@h2 X
+@felix
+
+ x \xleftarrow y     arr := "\xleftarrow" =># '(nos _1)'; 
+ x \xrightarrow y     arr := "\xrightarrow" =># '(nos _1)'; 
+
+@h2 Y
+@felix
+
+
+@h2 Z
+@felix
+
+@h1 Grammar
+Precedence rules.
+@felix
+  x[scomparison_pri]:= x[>scomparison_pri] bin x[>scomparison_pri] =># "`(ast_apply ,_sr (,_2 (,_1 ,_3)))";
+  x[scomparison_pri]:= x[>scomparison_pri] cmp x[>scomparison_pri] =># "`(ast_apply ,_sr (,_2 (,_1 ,_3)))";
+
+  // tex logic operators
+  x[stex_implies_condition_pri] := x[>stex_implies_condition_pri]  "\implies" x[>stex_implies_condition_pri] =># "(infix 'implies)";
+  x[stex_or_condition_pri] := x[>stex_or_condition_pri] ( "\lor" x[>stex_or_condition_pri])+ =># "(chain 'ast_orlist _1 _2)" note "lor";
+  x[stex_and_condition_pri] := x[>stex_and_condition_pri] ( "\land" x[>stex_and_condition_pri])+ =># "(chain 'ast_andlist _1 _2)" note "land";
+  x[stex_not_condition_pri] := "\lnot" x[stex_not_condition_pri]  =># "(prefix 'lnot)";
+
+  // set ops (note: no setminus, its a standard binop at the moment ;)
+  // note: no \Cap or other variants .. would interfere with chain 
+  // there's no reason at all to chain these anyhow, they're standard left assoc operators 
+  x[ssetunion_pri] := x[ssetunion_pri] "\cup" x[>ssetunion_pri] =># "(infix 'setunion)" note "setunion";
+  x[ssetintersection_pri] := x[ssetintersection_pri] "\cap" x[>ssetintersection_pri] =># "(infix 'setintersection)" note "setintersection";
+
+  // All arrows are right associative .. hmm ..
+  x[sarrow_pri] := x[scase_literal_pri] arr x[sarrow_pri] =># "`(ast_apply ,_sr (,_2 (,_1 ,_3)))"; 
+
+  // atomic
+  satom := "\lceil" sexpr "\rceil" =># "`(ast_apply ,_sr (,(noi 'ceil) (,_2)))";
+  satom := "\lfloor" sexpr "\rfloor" =># "`(ast_apply ,_sr (,(noi 'floor) (,_2)))";
+

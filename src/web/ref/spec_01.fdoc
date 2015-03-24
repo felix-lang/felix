@@ -15,6 +15,7 @@ defining the syntax and other files defining macros.
 
 By convention import files have the extension @{.flxh}.
 
+
 With this augmentation all parse units in a program
 are independently parsed to produce an list of statements
 represented as abstract syntax, denoted an AST (even
@@ -93,10 +94,12 @@ by the ISO C++ standard. In practice, all high bit set octets are allowed.
 
 A TeX identifier starts with a slosh and is followed by a sequence
 of letters. 
+
+<a href=/share/web/ref/texops.fdoc>TeX Symbols</a> 
 @
 @h2 Integer Literals
 
-<a href="/share/lib/grammar/grammar_int_lexer.flxh">Reference</a>
+<a href="/share/lib/grammar/grammar_int_lexer.fsyn">Reference</a>
 
 An plain integer literal consists of a sequence of digits,
 optionally separated by underscores. Each separating
@@ -188,7 +191,7 @@ integer like types since not all have literal representations.
 Note the suffices do not entirely agree with C.
 
 @h2 Floating point Literals
-<a href="/share/lib/grammar/grammar_float_lexer.flxh">Reference</a>
+<a href="/share/lib/grammar/grammar_float_lexer.fsyn">Reference</a>
 
 Floating point literals follow ISO C89, except that underscores
 are allowed between digits, and a a digit is required both before
@@ -214,7 +217,7 @@ type.
 
 @h2 String literals
 
-<a href="/share/lib/grammar/grammar_string_lexer.flxh">Reference</a>
+<a href="/share/lib/grammar/grammar_string_lexer.fsyn">Reference</a>
 
 Generaly we follow Python here.
 Felix allows strings to be delimited by;
@@ -323,7 +326,7 @@ most recently changed one is used. If the time stamps are
 the same the choice is unspecified.
 
 @h1 Macro processing
-<a href="/share/lib/grammar/macros.flxh">Syntax</a>
+<a href="/share/lib/grammar/macros.fsyn">Syntax</a>
 
 <a href="/share/src/compiler/flx_desugar/flx_macro.ml">Semantics</a>
 @h2 Macro val
@@ -398,7 +401,7 @@ the next outermost scope.
 All other cases are in error.
 
 @h1 Classes
-<a href="/share/lib/grammar/namespaces.flxh">Syntax</a>
+<a href="/share/lib/grammar/namespaces.fsyn">Syntax</a>
 
 The top level Felix module can contain submodules 
 which are specified by a non-polymorphic class
@@ -562,7 +565,7 @@ is the same as if an export statement has been written.
 
 
 @h1 Variable Definitions
-<a href="/share/lib/grammar/variables.flxh">Syntax</a>
+<a href="/share/lib/grammar/variables.fsyn">Syntax</a>
 
 A definition is a statement which defines a name, but does
 no cause any observable behavior, or, a class statement, or, 
@@ -701,7 +704,7 @@ With this syntax, no type annotation may be given.
 
 
 @h1 Functions 
-<a href="/share/lib/grammar/functions.flxh">Syntax</a>
+<a href="/share/lib/grammar/functions.fsyn">Syntax</a>
 
 @h2 Functions 
 A felix function definition takes one of three basic forms:
@@ -1008,7 +1011,7 @@ function needs to be exported so it has a C name which
 can be linked to with @{dlopen}.
 
 @h1 Type constructors
-<a href="/share/lib/grammar/type_decls.flxh">Syntax</a>
+<a href="/share/lib/grammar/type_decls.fsyn">Syntax</a>
 
 @h2 typedef
 The typedef statement is used to define an alias for a type.
@@ -1495,7 +1498,7 @@ outside the class.
 TBD
 
 @h1 Expressions
-<a href="/share/lib/grammar/expressions.flxh">Syntax</a>
+<a href="/share/lib/grammar/expressions.fsyn">Syntax</a>
 
 Expressions are listed in approximate order of precedence,
 starting with the weakest binding.
@@ -2077,7 +2080,7 @@ var x =
 
 @h1 Executable statements
 @h2 Assignment
-<a href="/share/lib/grammar/assignment.flxh">Syntax</a>
+<a href="/share/lib/grammar/assignment.fsyn">Syntax</a>
 
 @h2 The @{goto} statement and label prefix
 Felix statements may be prefixed by a label
@@ -2420,7 +2423,7 @@ write, or the first unmatched read operation occurs.
 @h3 exchange
 
 @h2 loops
-<a href="/share/lib/grammar/loops.flxh">Reference</a>
+<a href="/share/lib/grammar/loops.fsyn">Reference</a>
 
 Felix has some low level and high level loop constructions.
 
@@ -2508,7 +2511,7 @@ TBD
 @h3 loop
 TBD
 @h2 Assertions
-<a href="/share/lib/grammar/assertions.flxh">Reference</a>
+<a href="/share/lib/grammar/assertions.fsyn">Reference</a>
 @h2 assert
 Ad hoc assertion throws an assertion exception if its argument
 is false. 
@@ -2736,7 +2739,7 @@ TBD
 
 @h1 Domain Specific Sublanguages
 @h2 Regexps
-<a href="/share/lib/grammar/regexps.flxh">Syntax</a>
+<a href="/share/lib/grammar/regexps.fsyn">Syntax</a>
 
 <a href="/share/lib/std/strings/regdef.flx">Combinators</a>
 

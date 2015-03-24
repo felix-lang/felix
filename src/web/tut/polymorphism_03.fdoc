@@ -26,16 +26,18 @@ functions cannot be overriden: instead they're dependent on the
 virtual functions only.
 
 We define an instance of @{X} for type @{int} and then call the
-non-virtual function @{g} for specialisation {T -> int}, which 
+non-virtual function @{g} for specialisation @{T -> int}, which 
 in turn calls @{f} for that specialisation too.
 
-Finally we open the typeclass for the specialisation {T -> int}.
-In effect this just makes {f of (int)} and {g of (int)} available.
+Finally we open the typeclass for the specialisation @{T -> int}.
+In effect this just makes @{f of (int)} and @{g of (int)} available.
 
 @h2 Orders
 We will cite one of the most important typeclasses in Felix:
 
-@felix /share/src/lib/std/order.flx
+@felix std/algebra/equiv.flx
+@felix std/algebra/partialorder.flx
+@felix std/algebra/totalorder.flx
 
 This library file defines the concept of equality, total ordering,
 and the core operations of integral kinds: increment and decrement.
@@ -68,5 +70,5 @@ union list[T] = | Empty | Cons of T * list[T];
 @
 using Felix's built in tuple and union constructors.
 The equivalent templates are easy to define in C++:
-the problem is the {list[T]} at the end of the definition.
+the problem is the @{list[T]} at the end of the definition.
 
