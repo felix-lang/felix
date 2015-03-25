@@ -95,7 +95,7 @@ by the ISO C++ standard. In practice, all high bit set octets are allowed.
 A TeX identifier starts with a slosh and is followed by a sequence
 of letters. 
 
-<a href=/share/web/ref/texops.fdoc>TeX Symbols</a> 
+<a href=/share/src/web/ref/texops.fdoc>TeX Symbols</a> 
 @
 @h2 Integer Literals
 

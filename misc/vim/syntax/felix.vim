@@ -311,7 +311,7 @@ syn keyword felixType array
 syn keyword felixType varray
 syn keyword felixType darray
 syn keyword felixType sarray
-syn keyword felixType dsarray
+syn keyword felixType bsarray
 syn keyword felixType carray
 syn keyword felixType list
 

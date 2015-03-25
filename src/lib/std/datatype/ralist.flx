@@ -250,6 +250,8 @@ class Ralist
       return s;
     }
   }
+
+  // TODO: list membership, folds, etc
 }
 
 

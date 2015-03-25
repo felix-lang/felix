@@ -2,6 +2,7 @@
 //$ Basically a sarray with a given bound.
 //$ The bound is ignored for get and set methods.
 //$ The bound is used for membership tests and iteration.
+include "std/datatype/sarray";
 open class Bsarray
 {
   private struct bsarray_ctl[T] { a: sarray[T]; n:size; };

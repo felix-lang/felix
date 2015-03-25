@@ -7,6 +7,62 @@
 class Set[c,t] {
   fun mem (elt:t, container:c):bool => elt \in container;
   virtual fun \in : t * c-> bool;
+  fun \owns (container:c, elt:t) => elt \in container;
+  fun \ni (container:c, elt:t) => elt \in container;
+  fun \notin (elt:t, container:c) => not (elt \in container);
 }
 
+// not all sets allow subset comparisons
+// so we need a separate class for that.
 
+// All data structures with an iterator do though,
+// see class Streamable (in std/control/stream).
+
+// Note that this is just a partial order 
+// with different operator names!
+
+// Note: SetOrd doesn't imply Set, it has no notion
+// of membership of elements.
+
+// Note: you have to define at least \subseteq
+// Optimisations for \cong and \subset can also be provided
+// and should be if possible!
+
+class SetOrd[c] {
+   // core
+   virtual fun \subseteq: c * c -> bool;
+
+   // derived default may be inefficient
+   virtual fun \subset (x:c, y:c) => x \subseteq y and x \ncong y;
+
+   // use congruence operator for equality
+   virtual fun \cong (x:c, y:c) => x \subseteq y and y \subseteq x;
+
+   
+   // variant with two bar equality
+   fun \subseteqq (x:c,y:c) => x \subseteq y;
+
+   // negated equality
+   fun \ncong (x:c, y:c) => not (x \cong y);
+
+   // derived proper relations (strikethough equality bar)
+   fun \subsetneq (x:c,y:c) => x \subset y;
+   fun \subsetneqq (x:c,y:c) => x \subset y;
+   fun \supsetneq (x:c,y:c) => y \subset x;
+   fun \supsetneqq (x:c,y:c) => y \subset x;
+
+   // reversed order
+   fun \supset(x:c,y:c) => y \subset x;
+   fun \supseteq (x:c,y:c) => y \subseteq x;
+   fun \supseteqq (x:c,y:c) => y \subseteq x;
+
+   // negated operators (stikethrough)
+   fun \nsubset(x:c,y:c) => not (x \subset y);
+   fun \nsubseteq(x:c,y:c) => not (x \subseteq y);
+   fun \nsubseteqq(x:c,y:c) => not (x \subseteq y);
+
+   fun \nsupset(x:c,y:c) => not (y \subset x);
+   fun \nsupseteq(x:c,y:c) => not (y \subseteq x);
+   fun \nsupseteqq(x:c,y:c) => not (y \subseteq x);
+
+}

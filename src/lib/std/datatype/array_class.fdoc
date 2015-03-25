@@ -85,8 +85,8 @@ operator dot {.} is also made available this way.
 Class @{Streamable} provides a set of functions based
 on a generated named @{iterator} which returns an
 infinite stream of option values. Loops based on such
-streams work with any @{Streamable} data type, including 
-@{ArrayValue}.
+streams work with any @{Streamable} data type, 
+including @{ArrayValue}.
 
 Such loops operate by providing the loop body with the
 argument of the @{Some} constructor of the option type
@@ -173,7 +173,7 @@ indicating whether one exists.
 @h4 Value search by relation to given value @{mem}.
 This function searches an array for a value @{i} that stands
 in the specified relation @{rel} to a given value @{v},
-where the relation is applied in that order: {rel(i,v)}.
+where the relation is applied in that order: @{rel(i,v)}.
 The usual relation to use is equality.
 @felix
   //$ Membership by relation to given value. 
@@ -182,7 +182,7 @@ The usual relation to use is equality.
   ;
 
 @h4 Value search by default equality @{in}.
-This function uses the default equality operator {Eq[v]::==} for
+This function uses the default equality operator @{Eq[v]::==} for
 the array value type t to perform a search.
 @felix
   //$ Array as Set:
@@ -315,9 +315,9 @@ the array directly using a pointer.
 Two methods, @{stl_begin} and @{stl_end} provide
 pointers to the first element and one past the
 location of the last element, for traditional
-STL like array operations. These pointers have type
-{+v} where @{v} is the element type. The named
-type {carray[v]} is an alias for {+v}. 
+STL like array operations. These pointers have 
+type @{+v} where @{v} is the element type. The named
+type @{carray[v]} is an alias for {+v}. 
 @felix
 //$ Array as Contiguous STL Object.
 //$ Provides STL iterators type +v
