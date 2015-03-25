@@ -50,7 +50,7 @@ call on the get method:
   a. n -> n a -> get (a,n)
 @
 Note that the more usual reverse application using
-operator dot {.} is also made available this way.
+operator dot @{.} is also made available this way.
 @felix
 
   //$  Checked common indexing.
@@ -317,7 +317,7 @@ pointers to the first element and one past the
 location of the last element, for traditional
 STL like array operations. These pointers have 
 type @{+v} where @{v} is the element type. The named
-type @{carray[v]} is an alias for {+v}. 
+type @{carray[v]} is an alias for @{+v}.
 @felix
 //$ Array as Contiguous STL Object.
 //$ Provides STL iterators type +v
@@ -325,7 +325,7 @@ class ContiguousArrayObject[t,v]
 {
   inherit ArrayObject[t,v];
 
-@h3 The {stl_begin</code> and <code>stl_end} methods.
+@h3 The @{stl_begin</code> and <code>stl_end} methods.
 @felix
   //$ Start of array iterator.
   virtual fun stl_begin: t -> +v;
@@ -333,7 +333,7 @@ class ContiguousArrayObject[t,v]
   //$ One past the end of array iterator.
   virtual fun stl_end: t -> +v;
 
-@h3 A pointer to an element by index {+}.
+@h3 A pointer to an element by index @{+}.
 We allow adding an integer to an array object to yield
 an incrementable pointer to that element. 
 @felix

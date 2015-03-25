@@ -31,20 +31,20 @@ open class String
 
   inherit Tord[string];
 
-@h2 Equality of {string} and {char}
+@h2 Equality of @{string} and @{char}
 @felix
   fun == (s:string, c:char) => len s == 1uz and s.[0] == c;
   fun == (c:char, s:string) => len s == 1uz and s.[0] == c;
   fun != (s:string, c:char) => len s != 1uz or s.[0] != c;
   fun != (c:char, s:string) => len s != 1uz or s.[0] != c;
 
-@h2 Append to {string} object
+@h2 Append to @{string} object
 @felix
   proc  += : &string * string = "$1->append($2:assign);";
   proc  += : &string * +char = "$1->append($2:assign);";
   proc  += : &string * char = "*$1 += $2;";
 
-@h2 Length of {string}
+@h2 Length of @{string}
 @felix
   // we need to cast to an int so that c++ won't complain
   fun len: string -> size = "$1.size()";
@@ -63,21 +63,21 @@ open class String
   // is this a string or a list of strings?
   //fun + [T with Str[T]] (x:string, y:T) => x + str y;
 
-@h2 Repetition of {string} or {char}
+@h2 Repetition of @{string} or @{char}
 @felix
   fun * : string * int -> string = "::flx::rtl::strutil::mul($1:assign,$2:assign)" requires package "flx_strutil";
   fun * : char * int -> string = "::std::string($2:assign,$1:assign)";
 
-@h2 Application of {string} to {string} or {int} is concatenation
+@h2 Application of @{string} to @{string} or @{int} is concatenation
 @felix
   fun apply (x:string, y:string):string => x + y;
   fun apply (x:string, y:int):string => x + y;
 
-@h2 Construct a char from first byte of a {string}.
+@h2 Construct a char from first byte of a @{string}.
 Returns nul char (code 0) if the string is empty.
 @felix
   ctor char (x:string) => x.[0];
-@h2 Constructors for {string}
+@h2 Constructors for @{string}
 @felix
   ctor string (c:char) => ""+c;
   ctor string: +char = "::std::string($1:assign)";
@@ -107,7 +107,7 @@ Returns nul char (code 0) if the string is empty.
 
   proc store: &string * !ints * char = "(*$1)[$2] = $3;";
 
-@h2 Map a string {char} by {char}
+@h2 Map a string @{char} by @{char}
 @felix
   fun map (f:char->char) (var x:string): string = {
     if len x > 0uz do
@@ -120,8 +120,8 @@ Returns nul char (code 0) if the string is empty.
 
 @h2 STL string functions
 These come in two flavours: the standard C++ operations
-which return {stl_npos} on failure, and a more Felix
-like variant which uses an {option} type.
+which return @{stl_npos} on failure, and a more Felix
+like variant which uses an @{option} type.
 @felix
   const stl_npos: size = "::std::string::npos";
 
@@ -210,13 +210,13 @@ like variant which uses an {option} type.
   fun find_last_not_of (s:string, e:char, i:int) : opt[int] => match stl_find_last_not_of (s, e, i) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
 
   
-@h2 Construe {string} as set of {char}
+@h2 Construe @{string} as set of @{char}
 @felix
   instance Set[string,char] {
     fun \in (c:char, s:string) => stl_find (s,c) != stl_npos.int;
   }
   
-@h2 Construe {string} as stream of {char}
+@h2 Construe @{string} as stream of @{char}
 @felix
   instance Streamable[string, char] {
     gen iterator(var x:string) () = {

@@ -364,7 +364,7 @@ From @{low} to @{high} exclusive with given @{step}.
   fun range (low:int, high:int) => range(low, high, 1);
 
 @h2 Non-negative integers to limit @{range}
-@{num} integers 0 to {num-1}.
+@{num} integers 0 to @{num-1}.
 @felix
   //$ Range from 0 to num (excluded).
   fun range (num:int) => range(0, num, 1);

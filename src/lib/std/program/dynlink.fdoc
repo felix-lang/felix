@@ -206,7 +206,7 @@ by one, and if it drops to zero unloads the library at the
 OS level.
 
 References counts are increase by one when instances are created.
-The initial {dlopen} sets the reference count to 1.
+The initial @{dlopen} sets the reference count to 1.
 
 Unlinking clears the association of the handle with the filename
 and tells the platform linker to unlink the library.
@@ -231,8 +231,8 @@ even variables.
 @h2 Get the address of an exported symbol: @{dlsym}
 This routine takes a library and a string argument
 and tries to find the value associated with the string
-in the library symbol table, using {GetProcAddress}
-on Windows or {dlsym} on Unix. This action is independent
+in the library symbol table, using @{GetProcAddress}
+on Windows or @{dlsym} on Unix. This action is independent
 of whether the calling program was linked dynamically
 or statically.
 
@@ -343,7 +343,7 @@ For plugin libraries, the initialisation procedure is used
 to construct default values or initialise starting state.
 
 The initialisation procedure is represent by a pointer
-to a continuation object, type {cont}, which has to be run
+to a continuation object, type @{cont}, which has to be run
 by a scheduler after associating it with a fibre:
 the procedure is <em>not</em> a C function.
 @felix 
@@ -412,7 +412,7 @@ Finally the instance is returned.
 
 
 @h2 Convenience to run a program @{run_lib}
-This function does the same as {init_lib}.
+This function does the same as @{init_lib}.
 @felix
   //$ Run a Felix program from a filename.
   proc run_lib(modulename:string)
