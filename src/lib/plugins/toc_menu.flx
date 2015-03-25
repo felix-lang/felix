@@ -65,9 +65,16 @@ div.m1:hover, div.m2:hover {
     background-color: white;
 }
 
+#leftmargintoc a {
+    text-decoration: none;
+    color: #404040;
+}
+
 
 </style>
 """;
+
+fun escape_sp(h: string) => map (fun (c: char) => if c == ' ' then '_'.char else c) h;
 
 
 object toc_menu (h:list[int * string * string]) implements toc_menu_interface =
@@ -86,7 +93,8 @@ object toc_menu (h:list[int * string * string]) implements toc_menu_interface =
 
         proc head1(level:int, text:string, link:string) {
           leftcontent+= """      <div class=m1 onclick="mshow('menu"""+ counter.str+"""','"""+link+"""')"> """;
-          leftcontent+= text + "</div>\n";
+          leftcontent+= '''<a href="'''+escape_sp(link)+'''">''';
+          leftcontent+= text + "</a></div>\n";
           leftcontent+= """      <div class=sm id=menu"""+counter.str+""">\n""";
         }
         proc foot1() { leftcontent+="      </div>\n"; }
@@ -101,8 +109,8 @@ object toc_menu (h:list[int * string * string]) implements toc_menu_interface =
               else break1 (level,text,link);
               done
             elif level == 2 do // second level menu entry
-              leftcontent+="      <div class=m2";
-              leftcontent+=''' onclick='window.location.replace("'''+link+'''")'>'''+text+'''</div>\n''';
+              leftcontent+="      <div class=m2>";
+              leftcontent+='''<a href="'''+escape_sp(link)+'''">'''+text+'''</a></div>\n''';
             done
           }
           h

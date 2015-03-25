@@ -5,7 +5,7 @@ include "./button-interface";
 var button-factory : unit -> button-factory_t;
 
 
-val js1 = 
+val js1 =
 """
 <script type="text/javascript">
 
@@ -63,6 +63,8 @@ function collapse_all(dummy)
 </script>
 """;
 
+fun escape_sp(h: string) => map (fun (c: char) => if c == ' ' then '_'.char else c) h;
+
 fun setup(config_data:string) = {
   button-factory = Dynlink::load-plugin-func0 [button-factory_t] (dll-name="fdoc_button");
   eprintln$ "Setup fdoc_heading " + config_data;
@@ -76,15 +78,15 @@ object fdoc_heading (paragraph: paragraph-control_t, write_string: string -> 0) 
 
   method fun whatami () => "Heading object";
   var hstack = 0; // number of open <div>s
-  var hnums = varray[int] (size 5,1); 
+  var hnums = varray[int] (size 5,1);
   var all_buttons = "";
   var htree = Empty[int * string];
 
   method fun get_headings () => rev htree;
 
-  method fun emit-buttons() => 
+  method fun emit-buttons() =>
    button.make-button(id="expand", text="Expand", onclick="expand_all") +
-   button.make-button(id="collapse", text="Collapse", onclick="collapse_all") 
+   button.make-button(id="collapse", text="Collapse", onclick="collapse_all")
   ;
 
   method fun emit-js() => js1 + all_buttons + js2;
@@ -98,16 +100,16 @@ object fdoc_heading (paragraph: paragraph-control_t, write_string: string -> 0) 
     all_buttons = if all_buttons != "" then all_buttons + ',\n' else '' endif + '"' + fname + '"';
   }
 
-  proc edivs(n:int) { 
-    while hstack > n do 
-      write_string("</div>"); 
+  proc edivs(n:int) {
+    while hstack > n do
+      write_string("</div>");
       --hstack;
       set (hnums,hstack,1);
      done
      if hstack == n do
        --hstack;
-       write_string("</div>"); 
-       set(hnums,hstack,hnums.hstack+1); 
+       write_string("</div>");
+       set(hnums,hstack,hnums.hstack+1);
      done
   }
 
@@ -117,24 +119,24 @@ object fdoc_heading (paragraph: paragraph-control_t, write_string: string -> 0) 
       s+=str(hnums.i) + ".";
     done
     return s + str(hnums.(hstack - 1));
-  } 
+  }
 
-  method proc head(docnum: string, n:int, txt:string) { 
-    #(paragraph.ep); 
-    edivs(n); 
+  method proc head(docnum: string, n:int, txt:string) {
+    #(paragraph.ep);
+    edivs(n);
     add_button txt;
     tb:=tree_button(txt,txt+"_d");
     ++hstack;
     htree = Cons ( (n,txt), htree);
-    write_string("<h"+str n+" id='"+txt+"_h'>"+tb+" "+docnum+hnum()+" "+ txt+"</h"+str n+">" +
-     "<div id='"+txt+"_d' style='display:block'>\n"); 
+    write_string("<h"+str n+" id='"+escape_sp(txt)+"_h'>"+tb+" "+docnum+hnum()+" "+ txt+"</h"+str n+">" +
+     "<div id='"+escape_sp(txt)+"_d' style='display:block'>\n");
   }
 
   method proc finalise () {
    edivs(1);
   }
 }
- 
+
 export fun setup of (string) as "fdoc_heading_setup";
 export fun fdoc_heading of (paragraph-control_t * (string->0)) as "fdoc_heading";
 
