@@ -403,6 +403,9 @@ syntax expressions {
 
   //$ Grouping.
   satom := "(" sexpr ")" =># "_2";
+  satom := "\(" sexpr "\)" =># "_2";
+  satom := "\[" sexpr "\]" =># "_2";
+  satom := "\{" sexpr "\}" =># "_2";
 
   //$ Empty tuple (unit tuple).
   satom := "(" ")" =># "'()";

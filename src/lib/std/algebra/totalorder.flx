@@ -19,6 +19,7 @@ class Tord[t]{
 
   // greater
   fun >(x:t,y:t):bool => y < x;
+  fun gt(x:t,y:t):bool => y < x;
   fun \gt(x:t,y:t):bool => y < x;
   fun \gneq(x:t,y:t):bool => y < x;
   fun \gneqq(x:t,y:t):bool => y < x;
