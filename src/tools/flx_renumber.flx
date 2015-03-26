@@ -28,7 +28,7 @@ var files = varray docs;
 
 // direction: if first < moveto, we're moving up, so we have to start at the end and work down.
 // if first > moveto, we're moving down, so we have to start at the start and work up.
-comparator := if first < moveto then gt of (string * string) else lt of (string * string) endif;
+comparator := if first < moveto then \gt of (string * string) else \lt of (string * string) endif;
 
 sort comparator of (string * string) files;
 println$ "Files = " + str files;
