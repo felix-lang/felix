@@ -1,25 +1,62 @@
 // total order
 class Tord[t]{
   inherit Eq[t];
-  virtual fun < : t * t -> bool;
-
   // defined in terms of <, argument order swap, and boolean negation
-  // note: not using equality, only works for total order
-  virtual fun >(x:t,y:t):bool => y < x;
-  virtual fun <= (x:t,y:t):bool => not (y < x);
-  virtual fun >= (x:t,y:t):bool => not (x < y);
+
+  // less
+  virtual fun < : t * t -> bool;
+  fun lt (x:t,y:t): bool=> x < y;
+  fun \lt (x:t,y:t): bool=> x < y;
+  fun \lneq (x:t,y:t): bool=> x < y;
+  fun \lneqq (x:t,y:t): bool=> x < y;
+
 
   axiom trans(x:t, y:t, z:t): x < y and y < z implies x < z;
   axiom antisym(x:t, y:t): x < y or y < x or x == y;
   axiom reflex(x:t, y:t): x < y and y <= x implies x == y;
   axiom totality(x:t, y:t): x <= y or y <= x;
 
-  fun lt (x:t,y:t): bool=> x < y;
-  fun gt(x:t,y:t):bool => y < x;
+
+  // greater
+  fun >(x:t,y:t):bool => y < x;
+  fun \gt(x:t,y:t):bool => y < x;
+  fun \gneq(x:t,y:t):bool => y < x;
+  fun \gneqq(x:t,y:t):bool => y < x;
+
+  // less equal
+  fun <= (x:t,y:t):bool => not (y < x);
   fun le (x:t,y:t):bool => not (y < x);
+  fun \le (x:t,y:t):bool => not (y < x);
+  fun \leq (x:t,y:t):bool => not (y < x);
+  fun \leqq (x:t,y:t):bool => not (y < x);
+  fun \leqslant (x:t,y:t):bool => not (y < x);
+
+
+  // greater equal
+  fun >= (x:t,y:t):bool => not (x < y);
   fun ge (x:t,y:t):bool => not (x < y);
+  fun \ge (x:t,y:t):bool => not (x < y);
+  fun \geq (x:t,y:t):bool => not (x < y);
+  fun \geqq (x:t,y:t):bool => not (x < y);
+  fun \geqslant (x:t,y:t):bool => not (x < y);
+
+  // negated, strike-through
+  fun \ngtr (x:t,y:t):bool => not (x < y);
+  fun \nless (x:t,y:t):bool => not (x < y);
+
+  fun \ngeq (x:t,y:t):bool => not (x >= y);
+  fun \ngeqq (x:t,y:t):bool => not (x >= y);
+  fun \ngeqslant (x:t,y:t):bool => not (x >= y);
+
+  fun \nleq (x:t,y:t):bool => not (x >= y);
+  fun \nleqq (x:t,y:t):bool => not (x >= y);
+  fun \nleqslant (x:t,y:t):bool => not (x >= y);
+  
+
   fun max(x:t,y:t):t=> if x < y then y else x endif;
   fun min(x:t,y:t):t => if x < y then x else y endif;
+
+
 }
 
 
