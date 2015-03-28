@@ -32,6 +32,9 @@ class Output_text_file[output_text_file]
   //$ Open file for writing.
   virtual gen fopen_output: string -> output_text_file;
 
+  //$ Open file for writing in append-only mode.
+  virtual gen fopen_append: string -> output_text_file;
+
   //$ Check if the file was opened correctly.
   virtual gen valid : output_text_file -> bool;
  
@@ -131,6 +134,7 @@ open class Cstdio {
   instance Output_text_file[ofile] {
     requires package "flx_ioutil";
     gen fopen_output: string -> ofile = 'fopen($1.c_str(),"wt")';
+    gen fopen_append: string -> ofile = 'fopen($1.c_str(),"a")';
     gen valid : ofile -> bool = "$1!=(FILE*)0";
     proc fclose: ofile = '(void)fclose($1);';
     proc writeln : ofile * string ="::flx::rtl::ioutil::writeln($1,$2);";

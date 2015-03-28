@@ -8,6 +8,10 @@
   writeln$ f, "jumped over";
   writeln$ f, "The lazy hog";
   fclose f;
+
+  g := fopen_append "tmp.txt";
+  writeln$ g, "The end.";
+  fclose g;
 };
 
 // cheats, uses fun instead of gen.. may break later
@@ -37,5 +41,5 @@ println$ line_count "tmp.txt";
 
 
 @expect
-4
+5
 @
