@@ -12,3 +12,6 @@ class Set[c,t] {
   fun \notin (elt:t, container:c) => not (elt \in container);
 }
 
+interface set_form[T] { has_elt: T -> bool; }
+fun \in[T] (elt:T, s:set_form[T]) => s.has_elt elt;
+ 
