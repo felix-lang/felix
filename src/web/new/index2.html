@@ -1,0 +1,188 @@
+<html>
+  <head>
+    <title>Felix</title>
+    <meta name="description" conent="A high-performance scripting language"/>
+    <meta name="keywords" content="programming, felix, static, typing, speed, performance, c++"/>
+    <script>
+    </script>
+</head>
+  <body>
+
+    <style>
+    body { font-family: "Arial"; transform-style: preserve-3d; padding: 1em; line-height: 135%}
+    pre { font-family: "Source Code Pro", Monaco, Monospace, "Courier New"; font-size: 0.8em;
+          border: 1px solid #ccc; border-radius: 3px; padding:1em; }
+    a { color:#005AFF; transition: 0.2s; }
+    a:hover { color:#689DFF; }
+
+    h1 { line-height: 1em; }
+
+    header a { color: #555; text-decoration: none; font-size: 0.9em; }
+
+    .horizontal { padding: 0; margin: 1em 0; height: 3em;  }
+    .horizontal li { list-style: none; margin: 0; padding: 0}
+        .horizontal li a { width: 10em; float: left; }
+            .horizontal a:hover { border-color: #ccc; color: #000; background-color: #eee; }
+    .callout { font-size: 1.2em; padding: 0 3em; margin: 0 0 0 8em;}
+        .callout li { line-height: 140%;}
+    .centered { text-align: center; margin: 0 auto; }
+    .clr { clear: both; }
+
+    .button { display: inline-block;
+              margin: 0 0.5em; padding: 8px; text-align: center;
+              border: 1px solid #ddd; border-radius: 3px;
+              transition: 0.2s; position: relative; }
+
+    .chooser { font-size: 1.5em; }
+
+    .cat_wrapper {float:left; height: 250px; margin-right: 3em;}
+
+/* adjustments for small screens */
+@media(max-width:500px) {
+    .horizontal ul { height: auto; }
+    .horizontal li a { width: 90%; display: block; }
+    .cat_wrapper {float:none; height: auto; margin: 1em;}
+    .callout { padding: 0; margin:0; }
+}
+    </style>
+
+    <header class=''>
+      <h1>The Felix Programming Language</h1>
+      <ul class='horizontal'>
+        <li class=current><a class='button' href="#">Home</a></li>
+        <li><a class='button' href="/share/src/web/documentation.fdoc">Documentation</a></li>
+        <li><a class='button' href="/share/src/web/download.fdoc">Download</a></li>
+        <li><a class='button' href="/share/src/web/new/community.html">Community</a></li>
+      </ul>
+      <div class='clr'></div>
+    </header>
+
+    <div class='cat_wrapper' style="">
+        <div ><img id="cat"
+            style="opacity: 0; transition: 0.6s; top: -20px; position:relative; transform: scaleX(-1)"
+            src="../images/200px-Felix_the_cat.svg.png" alt="Felix the cat"/></div>
+            <script>
+                // make felix fade in
+                setTimeout(function() {
+                    document.getElementById("cat").style.opacity =1;
+                    document.getElementById("cat").style.top =0;
+                }, 100)
+            </script>
+    </div>
+    <div class="callout">
+        <ul>
+            <li><a href=/share/src/web/advocate/scripting.fdoc>Run</a> source programs directly.</li>
+            <li><a href=/share/src/web/advocate/compmodel.fdoc>Generates</a> machine binaries via C++ instead of bytecode.</li>
+            <li><a href=/share/src/web/advocate/statictype.fdoc>Statically</a> typed for reliability and scalability.</li>
+            <li><a href=/share/src/web/advocate/styles.fdoc>Supports</a> both ML-like functional and C-like imperative programming styles.</li>
+            <li><a href=/share/src/web/advocate/richdata.fdoc>Rich</a> set of datatypes in standard library</li>
+            <li><a href=/share/src/web/advocate/fthreads.fdoc>Core</a> support for coroutines and lightweight threads.</li>
+            <li><a href=/share/src/web/advocate/async.fdoc>Asynchronous</a> socket I/O integrated.</li>
+            <li><a href=/share/src/web/advocate/usergrammar.fdoc>User defined grammar.</a></li>
+        </ul>
+      <br/>
+    </div>
+
+    <!-- make sure we're below the felix image -->
+    <div class="clr"></div>
+
+    <!-- examples -->
+    <h2>Examples</h2>
+    <script type=text/javascript>
+    function pickExample(e) {
+        // hide all examples
+        var examples = document.getElementById("examples"),
+            pres     = examples.children;
+
+        for(i=0,ii=pres.length; i<ii; i++) {
+            pres[i].style.display = "none";
+        }
+
+        // show the right one
+        var target = pres[e.target.value];
+        target.style.display = "block";
+    }
+    </script>
+    <select class="chooser" onchange="pickExample(event)">
+      <option value=e1 selected=selected>RPN Calculator</option>
+      <option value=e2>Fibonacci</option>
+      <option value=e3>Web Server</option>
+    </select>
+    <div id="examples">
+      <pre id=e1>// herein lies an RPN calculator, written in Felix
+var prog = "1 1 + 3 * 2 /";
+var acc = 0;
+var st = list[int]();
+
+for tok in split(prog, ' ') do
+    match tok.str with
+    | "+" =&gt; st = st.tail.head + st.head + st.tail.tail;
+    | "-" =&gt; st = st.tail.head - st.head + st.tail.tail;
+    | "*" =&gt; st = st.tail.head * st.head + st.tail.tail;
+    | "/" =&gt; st = st.tail.head / st.head + st.tail.tail;
+    | ?d =&gt; st = d.atoi + st;
+    endmatch;
+done;
+
+st.head.println;
+// same as println st.head;
+// ...which is the same as print $ head st;</pre>
+
+    <pre id=e2 style="display:none">
+fibonacci
+    </pre>
+
+    <pre id=e3 style="display:none">
+Web Server!
+    </pre>
+
+    </div>
+
+    <div>
+<h2>More About Felix</h2>
+<p>Felix is a highly performant, scalable, and safe
+<a href="/share/src/web/articles/scripting_felix.fdoc">scripting language</a>
+suitable for rapid development of software systems.</p>
+
+<P>It gets its speed from its C++ code generator which also provides
+compatibility and <a href="/share/src/web/tut/cbind_index.fdoc">easy
+interopability with existing C and C++</a> code bases. The native C++ compiler
+does the hard work of low level optimisation whilst Felix does high level
+optimisations and type-checking. The resulting code is very fast, sometimes
+<em>"faster than the speed of light (C)"</em>, but can be platform independent
+and is simple to deploy&mdash;just distribute the source files and run them, like a
+scripting language.</p>
+
+<p>Felix's type system is based on a combination of OCaml and Haskell. Like
+OCaml, it provides strong support for <a
+href="/share/src/web/tut/tutorial.fdoc#Functional Programming
+Technology_h">functional programming</a>, whilst also supporting <a
+href="/share/src/web/tut/tutorial.fdoc#Imperative Programming
+Technology_h">imperative programming</a>.  The type system is strict and
+includes <a href="/share/src/web/tut/polymorphism_index.fdoc">first-order
+polymorphism</a> at its core; not bolted-on like Java generics or C++
+templates. Felix supports <a
+href="/share/src/web/tut/polymorphism_01.fdoc#Overloading_h">open
+overloading</a> like C++, but only allows exact matches. It also provides <a
+href="/share/src/web/tut/polymorphism_03.fdoc#Type classes_h">Haskell style
+type classes</a> as an alternative way to obtain genericity.</p>
+
+<p>Felix supports user defined macros and syntactic improvements.
+This extensibility allows a developer to easily write domain specific
+sub-languages (DSLs) with ease. The parser is GLR and the user actions are
+written in R5RS Scheme.</p>
+
+<p>A rich set of shortcuts makes programming a breeze. <a href="/share/src/web/tut/regexp_01.fdoc">B
+regular expression support</a> and other features provide string handling on par
+with Perl. Web programming is enabled by built-in <a href="/share/src/web/tut/async_index.fdoc">asyn
+socket I/O</a> combined with <a href="#">cooperatively multi-tasked fibres</a>
+that would support millions of HTTP clients if only the server could supply
+enough sockets. Context switching is achieved by a pointer swap, and state is
+maintained by a spaghetti stack.</p>
+
+</div>
+
+
+
+  </body>
+</html>
