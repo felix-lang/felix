@@ -44,6 +44,13 @@ let gen_extractor
 (* this routine is used to substitute match variables
    in a when expression with their bindings ..
    it needs to be completed!!!
+
+   IT IS ALSO A HACK. THIS IS THE WRONG WAY!
+   THE RIGHT WAY IS TO HANDLE THE PATTERN WITHOUT ANY WHEN CLAUSE,
+   AND THEN USE A CONDITIONAL IN THE HANDLER. UNFORTUNATELY, IF THE
+   WHEN CLAUSE DOESN'T MATCH, WE WOULD NEED TO JUMP OUT TO THE NEXT
+   BRANCH OF THE PATTERN MATCH .. WHICH IS HARD TO ORGANISE AT 
+   THIS POINT IN THE CODE.
 *)
 let rec subst vars (e:expr_t) mv : expr_t =
   let subst e = subst vars e mv in
@@ -62,37 +69,44 @@ let rec subst vars (e:expr_t) mv : expr_t =
   | EXPR_interpolate _
   | EXPR_type_match _
   | EXPR_noexpand _
-  | EXPR_letin _
-  | EXPR_cond _
   | EXPR_expr _
   | EXPR_typeof _
-  | EXPR_product _
   | EXPR_void _
-  | EXPR_sum _
-  | EXPR_andlist _
-  | EXPR_orlist _
   | EXPR_typed_case _
   | EXPR_projection _
   | EXPR_case_arg _
   | EXPR_arrow _
   | EXPR_longarrow _
-  | EXPR_superscript _
-  | EXPR_match _
   | EXPR_ellipsis _
   | EXPR_intersect _
-  | EXPR_isin _
+  | EXPR_isin _ (* only used in type constraints *)
   | EXPR_callback _
   | EXPR_record_type _
   | EXPR_variant_type _
   | EXPR_extension _
-  | EXPR_not _
   | EXPR_get_tuple_tail _
   | EXPR_get_tuple_head _
-  | EXPR_tuple_cons _
   | EXPR_label _
     ->
       let sr = src_of_expr e in
-      clierr sr "[mbind:subst] Not expected in when part of pattern"
+      clierr sr ("[mbind:subst] Not expected in pattern when clause: " ^ string_of_expr e); 
+
+  | EXPR_tuple_cons (sr, eh, et) -> EXPR_tuple_cons (sr, subst eh, subst et)
+  | EXPR_superscript (sr,(e1,e2)) -> EXPR_superscript (sr, (subst e1, subst e2))
+  | EXPR_product (sr,ls) -> EXPR_product (sr,map subst ls)
+  | EXPR_sum (sr,ls) -> EXPR_sum (sr, map subst ls)
+  | EXPR_andlist (sr, ls) -> EXPR_andlist (sr,map subst ls)
+  | EXPR_orlist (sr, ls) -> EXPR_orlist (sr, map subst ls)
+  | EXPR_cond (sr,(e,b1,b2)) -> EXPR_cond (sr, (subst e, subst b1, subst b2))
+  | EXPR_not (sr,e) -> EXPR_not (sr, subst e)
+ 
+  (* NOTE: this is wrong, in the case the letin pattern has a variable
+     which hides our current pattern variable 
+  *)
+  | EXPR_letin (sr, (pat,e1,e2)) -> EXPR_letin (sr, (pat, subst e1, subst e2))
+
+  (* as above, it's wrong .. *)
+  | EXPR_match (sr, (e,ps)) -> EXPR_match (sr, (subst e, map (fun (p,e') -> p,subst e') ps))
 
   | EXPR_case_index _ -> e
   | EXPR_index _  -> e
