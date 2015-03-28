@@ -7,6 +7,7 @@ class Complex[t,r] {
   virtual fun imag: t -> r;
   virtual fun abs: t -> r;
   virtual fun arg: t -> r;
+  virtual fun sqrt: t -> r;
 
   virtual fun + : r * t -> t;
   virtual fun + : t * r -> t;

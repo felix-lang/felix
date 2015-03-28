@@ -250,6 +250,7 @@ fun valof[N](x:array[string * string,N],key:string) =>
 fun xlat_felix(t:string, dir:string): bool * string =
 {
   var needs_mathjax = false;
+  var mathcount = 0;
   var out = "";
   proc write_string(t:string) 
   { 
@@ -386,6 +387,7 @@ println$ "Package file basename is " + n;
         ); 
         needs_mathjax = true; 
       }  // format with MathJax
+    | mathmode => { needs_mathjax = true; ws; }
     | id => 
       { 
         last_id = b;
@@ -453,7 +455,7 @@ thisch:> // same char, reconsider it
       if isidstart ch do s = id; goto contin;
       elif ch == char "\\" and isletter (ahead(1)) do cp; next; s = texid; goto contin; 
       elif ch == char "\\" and ahead(1) in (char "(", char "[")  do 
-        cp; next; s=mathmode; goto contin;
+        cp; next; s=mathmode; ++mathcount; goto contin;
       elif isdigit ch do s = num; goto contin;
       elif issq3() do cp; next; cp; next; s = sq3; goto contin;
       elif isdq3() do cp; next; cp; next; s = dq3; goto contin;
@@ -474,8 +476,38 @@ thisch:> // same char, reconsider it
       done
 
   | mathmode =>
-     if ch == char "\\" and ahead (1) in (char ")", char "]") do
-       cp; next; cp; next; w; goto nextt;
+     if ch == char "\\" do
+       if ahead (1) in (char ")", char "]") do
+         --mathcount;
+         if mathcount == 0 do
+           // EXIT MATH MODE
+           cp; next; cp; w; goto nextt;
+         else
+          cp; next; cp; b+="}"; goto nextch;
+         done
+       elif ahead (1) in (char "(", char "[") do
+          ++mathcount;
+          b+="{";
+          cp; next; cp; goto nextch;
+       elif ahead (1) == (char "{") do
+         b+="{"; cp; next; cp; goto nextch;
+       elif ahead (1)  == (char "}") do
+         cp; next; cp; b+="}"; goto nextch;
+       else 
+         goto contin;
+       done
+     // add {} around () and [] so TeX sees a group
+     elif ch in (char "(", char "[") do
+       b+="{"; cp; goto nextch;
+     elif ch in (char ")", char "]") do
+       cp; b+="}"; goto nextch;
+ 
+     // replace { } by {\{ \}}
+     elif ch == "{" do
+       b+="{\\{"; goto nextch; 
+     elif ch == "}" do
+       b+="\\}}"; goto nextch; 
+
      else
        goto contin;
      done

@@ -9,12 +9,15 @@ class Ring[t] {
 class FloatDring[t] {
   inherit FloatRing[t];
   virtual fun / : t * t -> t; // pre t != 0
+  fun \over (x:t,y:t) => x / y;
+
   virtual proc /= : &t * t;
   virtual fun % : t * t -> t;
   virtual proc %= : &t * t;
 
   fun div(x:t, y:t) => x / y;
   fun mod(x:t, y:t) => x % y;
+  fun \bmod(x:t, y:t) => x % y;
   fun recip (x:t) => #one / x;
 
   proc diveq(px:&t, y:t) { /= (px,y); }
