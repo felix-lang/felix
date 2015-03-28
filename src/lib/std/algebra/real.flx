@@ -8,17 +8,36 @@ class Trig[t] {
 
   // circular
   // ref http://en.wikipedia.org/wiki/Circular_functions 
+
+  // core trig
   virtual fun sin: t -> t;
+  fun \sin (x:t)=> sin x;
+
   virtual fun cos: t -> t;
+  fun \cos (x:t)=> cos x;
+
   virtual fun tan (x:t)=> sin x / cos x;
+  fun \tan (x:t)=> tan x;
 
+  // reciprocals
   virtual fun sec (x:t)=> recip (cos x);
-  virtual fun csc (x:t)=> recip (sin x);
-  virtual fun cot (x:t)=> recip (tan x);
+  fun \sec (x:t)=> sec x;
 
+  virtual fun csc (x:t)=> recip (sin x);
+  fun \csc (x:t)=> csc x;
+
+  virtual fun cot (x:t)=> recip (tan x);
+  fun \cot (x:t)=> cot x;
+
+  // inverses
   virtual fun asin: t -> t;
+  fun \arcsin (x:t) => asin x;
+ 
   virtual fun acos: t -> t;
+  fun \arccos (x:t) => acos x;
+
   virtual fun atan: t -> t;
+  fun \arctan (x:t) => atan x;
 
   virtual fun asec (x:t) => acos ( recip x);
   virtual fun acsc (x:t) => asin ( recip x);
@@ -27,15 +46,29 @@ class Trig[t] {
   // hyperbolic
   // ref http://en.wikipedia.org/wiki/Hyperbolic_functions
   virtual fun sinh: t -> t;
+  fun \sinh (x:t) => sinh x;
+
   virtual fun cosh: t -> t;
+  fun \cosh (x:t) => cosh x;
+
   virtual fun tanh (x:t) => sinh x / cosh x;
+  fun \tanh (x:t) => tanh x;
 
+  // reciprocals
   virtual fun sech (x:t) => recip (cosh x);
-  virtual fun csch (x:t) => recip (sinh x);
-  virtual fun coth (x:t) => recip (tanh x); 
+  fun \sech (x:t) => sech x;
 
+  virtual fun csch (x:t) => recip (sinh x);
+  fun \csch (x:t) => csch x;
+
+  virtual fun coth (x:t) => recip (tanh x); 
+  fun \coth (x:t) => coth x;
+
+  // inverses
   virtual fun asinh: t -> t;
+
   virtual fun acosh: t -> t;
+
   virtual fun atanh: t -> t;
 
   virtual fun asech (x:t) => acosh ( recip x);
@@ -44,8 +77,19 @@ class Trig[t] {
 
   // exponential
   virtual fun exp: t -> t;
+  fun \exp (x:t) => exp x;
+
+  // log
   virtual fun log: t -> t;
+  fun \log (x:t) => log x;
+  fun ln (x:t) => log x;
+  fun \ln (x:t) => log x;
+
+  // power
   virtual fun pow: t * t -> t;
+  fun ^ (x:t,y:t) => pow (x,y);
+
+
 }
 
 //$ Finance and Statistics.
@@ -64,8 +108,13 @@ class Real[t] {
   virtual fun log10: t -> t;
   virtual fun abs: t -> t;
   virtual fun sqrt: t -> t;
+  fun \sqrt (x:t) => sqrt x;
   virtual fun ceil: t -> t;
+    // tex \lceil \rceil defined in grammar
+
   virtual fun floor: t -> t;
+    // tex \lfloor \rfloor defined in grammar
+
   virtual fun trunc: t -> t;
 }
 

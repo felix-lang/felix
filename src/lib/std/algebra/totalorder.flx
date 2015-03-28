@@ -45,17 +45,20 @@ class Tord[t]{
   fun \ngtr (x:t,y:t):bool => not (x < y);
   fun \nless (x:t,y:t):bool => not (x < y);
 
-  fun \ngeq (x:t,y:t):bool => not (x >= y);
-  fun \ngeqq (x:t,y:t):bool => not (x >= y);
-  fun \ngeqslant (x:t,y:t):bool => not (x >= y);
+  fun \ngeq (x:t,y:t):bool => x < y;
+  fun \ngeqq (x:t,y:t):bool => x < y;
+  fun \ngeqslant (x:t,y:t):bool => x < y;
 
-  fun \nleq (x:t,y:t):bool => not (x >= y);
-  fun \nleqq (x:t,y:t):bool => not (x >= y);
-  fun \nleqslant (x:t,y:t):bool => not (x >= y);
+  fun \nleq (x:t,y:t):bool => not (x <= y);
+  fun \nleqq (x:t,y:t):bool => not (x <= y);
+  fun \nleqslant (x:t,y:t):bool => not (x <= y);
   
 
   fun max(x:t,y:t):t=> if x < y then y else x endif;
+  fun \vee(x:t,y:t) => max (x,y);
+
   fun min(x:t,y:t):t => if x < y then x else y endif;
+  fun \wedge(x:t,y:t):t => min (x,y);
 
 
 }
