@@ -38,7 +38,7 @@ proc ehandler
     for but in buts do
       write$ but.0,e;
       match read but.1 with
-      | NoAction => ;
+      | #NoAction => ;
       | ClickAction s => println$ "Button Clicked: " + s;
       endmatch;
     done

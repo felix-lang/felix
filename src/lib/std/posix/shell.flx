@@ -104,7 +104,7 @@ class Bash {
       var mode = skip;
       for ch in s do
         match mode with
-        | skip => 
+        | #skip => 
           if ch == char "\\" do
             mode = escape-copy;
           elif ch == char "'" do
@@ -116,7 +116,7 @@ class Bash {
             mode = copy;
           done
 
-        | copy =>
+        | #copy =>
           if ch == char "\\" do
             mode = escape-copy;
           elif ord ch <= ord (char ' ') do
@@ -131,11 +131,11 @@ class Bash {
             current += ch;
           done
 
-        | escape-copy =>
+        | #escape-copy =>
           current += ch;
           mode = copy;
 
-        | escape-dquote =>
+        | #escape-dquote =>
           mode = dquote;
           if ch in '"\\$`' do
             current += ch;
@@ -144,7 +144,7 @@ class Bash {
             current += "\\" + ch;
           done
   
-        | dquote =>
+        | #dquote =>
           if ch == char '"' do
             mode = copy;
           elif ch == char "\\" do
@@ -152,7 +152,7 @@ class Bash {
           else
             current += ch;
           done
-        | quote =>
+        | #quote =>
           if ch == char "'" do
             mode = copy;
           else
@@ -161,7 +161,7 @@ class Bash {
         endmatch;
       done
       match mode with
-      | skip => ;
+      | #skip => ;
       | _ => args += current;
       endmatch; 
       return args;

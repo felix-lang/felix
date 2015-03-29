@@ -149,7 +149,7 @@ proc process_file (f:ifile) (odir:string)
       endmatch;
     else 
       match state with
-      | Doc => ;
+      | #Doc => ;
       | Tangling ?b => b.output_line line;
       endmatch;
     done 

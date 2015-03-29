@@ -5,7 +5,7 @@
 union U = | A | B of int;
 proc print (u:U) {
   print "union U ";
-  print$ match u with | A => "A" | B ?b => f"B %d" b endmatch;
+  print$ match u with | #A => "A" | B ?b => f"B %d" b endmatch;
 }
 fun exec (p:int -> U, x:int) => p x;
 

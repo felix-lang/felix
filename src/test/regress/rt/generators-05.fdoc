@@ -29,7 +29,7 @@ var example =
 fun sum: tree->int =
   | Leaf ?x => x
   | Node (?l,?r) => sum l + sum r
-  | TEmpty => 0
+  | #TEmpty => 0
 ;
 
 print$ sum example; endl;
@@ -65,7 +65,7 @@ gen visitor(x:tree) () : int =
           v = it();
         done;
         return -1;
-    | TEmpty => return -1; 
+    | #TEmpty => return -1; 
     endmatch
   ;
 }

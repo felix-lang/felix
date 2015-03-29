@@ -272,18 +272,18 @@ fun xlat_felix(t:string, dir:string): bool * string =
     | mathmode // TeX math mode
   ;
   fun str(s:state_t) => match s with
-  | sot => "sot"
-  | id => "id"
-  | texid => "texid"
-  | num => "num"
-  | sq => "sq"
-  | dq => "dq"
-  | sq3 => "sq3"
-  | dq3 => "dq3"
+  | #sot => "sot"
+  | #id => "id"
+  | #texid => "texid"
+  | #num => "num"
+  | #sq => "sq"
+  | #dq => "dq"
+  | #sq3 => "sq3"
+  | #dq3 => "dq3"
   | ccomment ?n => "ccomment_"+ str n
-  | cppcomment => "cppcomment"
-  | cppfdoc => "doccomment"
-  | mathmode => "mathmode"
+  | #cppcomment => "cppcomment"
+  | #cppfdoc => "doccomment"
+  | #mathmode => "mathmode"
   endmatch;
   
   var i = 0; var s:state_t;
@@ -376,19 +376,19 @@ println$ "Package file basename is " + n;
   proc w() { 
     //println$ "Token["+str s+"]="+b; 
     match s with 
-    | dq => { ws; }
-    | sq => { ws; }
-    | sq3 => { ws; }
-    | dq3 => { ws; }
+    | #dq => { ws; }
+    | #sq => { ws; }
+    | #sq3 => { ws; }
+    | #dq3 => { ws; }
     | ccomment _ => { write_string('<span class="comment">'+txt2html b+"</span>"); }
-    | cppcomment=> { write_string('<span class="comment">'+txt2html b.[to -1]+"</span>\n"); }
-    | texid => { write_string (
+    | #cppcomment => { write_string('<span class="comment">'+txt2html b.[to -1]+"</span>\n"); }
+    | #texid => { write_string (
         '<span class="tex_symbol" title="'+b+'">\\(' + txt2html b + '\\)</span>'
         ); 
         needs_mathjax = true; 
       }  // format with MathJax
-    | mathmode => { needs_mathjax = true; ws; }
-    | id => 
+    | #mathmode => { needs_mathjax = true; ws; }
+    | #id => 
       { 
         last_id = b;
         // this is a bit hacky but I can't see another way!
@@ -451,7 +451,7 @@ thisch:> // same char, reconsider it
   //println$ "Considering char " + str(ord(ch));
   if isnull ch goto fin; // out of data
   match s with 
-  | sot =>
+  | #sot =>
       if isidstart ch do s = id; goto contin;
       elif ch == char "\\" and isletter (ahead(1)) do cp; next; s = texid; goto contin; 
       elif ch == char "\\" and ahead(1) in (char "(", char "[")  do 
@@ -475,7 +475,7 @@ thisch:> // same char, reconsider it
       else cp; w; goto nextt;
       done
 
-  | mathmode =>
+  | #mathmode =>
      if ch == char "\\" do
        if ahead (1) in (char ")", char "]") do
          --mathcount;
@@ -512,39 +512,39 @@ thisch:> // same char, reconsider it
        goto contin;
      done
 
-  | texid => 
+  | #texid => 
       if isletter ch do goto contin;
       else goto overrun;
       done
-  | id => 
+  | #id => 
       if isalphanum ch do goto contin;
       else goto overrun;
       done
-  | num => 
+  | #num => 
       if isnumeric ch do goto contin;
       else goto overrun; 
       done
   // single quoted strings
-  | sq =>
+  | #sq =>
       if issq ch do goto lastch; done
       goto contin;
-  | dq =>
+  | #dq =>
       if isdq ch do goto lastch; done
       goto contin;
    // triple quoted strings
-  | sq3 =>
+  | #sq3 =>
       if issq3() do cp; next; cp; next; cp; w; goto nextt; done
       goto contin;
-  | dq3 =>
+  | #dq3 =>
       if isdq3() do cp; next; cp; next; cp; w; goto nextt; done
       goto contin;
    // comments
-  | cppfdoc =>
+  | #cppfdoc =>
      if iseol ch do goto lastfdoc;
      else goto continfdoc;
      done
 
-  | cppcomment =>
+  | #cppcomment =>
       if iseol ch do goto lastch;
       else goto contin;
       done

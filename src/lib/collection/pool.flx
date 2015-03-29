@@ -39,10 +39,10 @@ class Pool[s] {
   };
 
   union pool_type = 
-    |INF  /* Infinte pool provides existing member if available other wise creates new.
+    | INF  /* Infinte pool provides existing member if available other wise creates new.
              Freed members are returned to pool */
-    |CIR  // Circular Pool cycles through members. Members may be handed out multiple times
-    |FIN; /* Finite Pool hands out membebers till supply exahusted.
+    | CIR  // Circular Pool cycles through members. Members may be handed out multiple times
+    | FIN; /* Finite Pool hands out membebers till supply exahusted.
              Freed members are returned to the pool */
 
   fun _ctor_pool (constructor:1->s,sz:size,typ:pool_type):pool = { 
@@ -54,12 +54,12 @@ class Pool[s] {
     gen get_next () : opt[s] = {
        match rotation  with 
           | Cons (?h,?t) =>  rotation = t;return (Some h);
-          | #Empty => match typ with |INF => rotation = Cons(constructor(),
+          | #Empty => match typ with | #INF => rotation = Cons(constructor(),
                                                                      rotation); 
                                                                 members=rotation+members; 
                                                                 return get_next();
-                                             |CIR => rotation = p; return get_next();
-                                             |FIN => return None[s];
+                                             | #CIR => rotation = p; return get_next();
+                                             | #FIN => return None[s];
                               endmatch;
         endmatch;
       done
@@ -68,9 +68,9 @@ class Pool[s] {
 
     proc free(e:s)  {
       match typ with
-        |FIN => rotation = Cons(e,rotation);return;
-        |INF => rotation = Cons(e,rotation);return;
-        |_   => return;
+        | #FIN => rotation = Cons(e,rotation);return;
+        | #INF => rotation = Cons(e,rotation);return;
+        | _   => return;
       endmatch;
     }
 

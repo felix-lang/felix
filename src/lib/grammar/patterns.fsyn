@@ -115,7 +115,9 @@ syntax patterns {
   sapplicative_pattern := "#" sctor_name =># "`(pat_const_ctor ,_sr ,_2)";
   sapplicative_pattern := "case" sinteger =># "`(pat_const_ctor ,_sr (ast_case_tag ,_sr ,_2))";
 
-  sapplicative_pattern := sctor_name =># "`(pat_const_ctor ,_sr ,_1)";
+  // CHANGE PROTOCOL SO A SINGLE NAME IS A VARIABLE NOT A CONST CTOR!!!
+  // sapplicative_pattern := sctor_name =># "`(pat_const_ctor ,_sr ,_1)";
+  sapplicative_pattern := sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_1)";
 
   //$ The sum type constructor can either be a qualified name...
   sctor_name := sname =># "`(ast_name ,_sr ,_1 ())";

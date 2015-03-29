@@ -23,7 +23,7 @@ class DList[T]
     var first : cptr[dnode_t] = x.first;
   again:>
     match first with
-    | nullptr => return n;
+    | #nullptr => return n;
     | Ptr p => ++n; first = p*.next;
     endmatch;
     goto again; 
@@ -33,14 +33,14 @@ class DList[T]
 @felix
   fun peek_front (dl:dlist_t) : opt[T] => 
     match dl.first with 
-    | nullptr => None[T]
+    | #nullptr => None[T]
     | Ptr p => Some p*.data
     endmatch
   ;
 
   fun peek_back (dl:dlist_t) : opt[T] => 
     match dl.last with 
-    | nullptr => None[T]
+    | #nullptr => None[T]
     | Ptr p => Some p*.data
     endmatch
   ;
@@ -52,7 +52,7 @@ class DList[T]
     var node = new (data=v, next=oldfirst, prev=nullptr[dnode_t]); 
     dl.first <- Ptr node;
     match oldfirst with
-    | nullptr => dl.last
+    | #nullptr => dl.last
     | Ptr p => p.prev 
     endmatch <- Ptr node; 
   }
@@ -62,7 +62,7 @@ class DList[T]
     var node = new (data=v, next=nullptr[dnode_t], prev=oldlast); 
     dl.last <- Ptr node;
     match oldlast with
-    | nullptr => dl.first
+    | #nullptr => dl.first
     | Ptr p => p.next
     endmatch <- Ptr node; 
   }
@@ -72,10 +72,10 @@ class DList[T]
 
   gen pop_front (dl:&dlist_t): opt[T] = {
     match dl*.first with
-    | nullptr => return None[T];
+    | #nullptr => return None[T];
     | Ptr p => 
       match p*.next with
-      | nullptr =>
+      | #nullptr =>
         dl.first <- nullptr[dnode_t];
         dl.last <- nullptr[dnode_t];
       | _ =>
@@ -87,10 +87,10 @@ class DList[T]
 
   gen pop_back (dl:&dlist_t): opt[T] = {
     match dl*.last with
-    | nullptr => return None[T];
+    | #nullptr => return None[T];
     | Ptr p => 
       match p*.prev with
-      | nullptr =>
+      | #nullptr =>
         dl.first <- nullptr[dnode_t];
         dl.last <- nullptr[dnode_t];
       | _ =>

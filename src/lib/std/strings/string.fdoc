@@ -97,7 +97,7 @@ Returns nul char (code 0) if the string is empty.
 
   fun subscript (x:string, s:slice[int]):string =>
     match s with
-    | Slice_all => substring (x, 0, x.len.int)
+    | #Slice_all => substring (x, 0, x.len.int)
     | Slice_from (?start) => copyfrom (x, start)
     | Slice_to (?end) => copyto (x, end)
     | Slice_range (?start, ?end) => substring (x, start, end)
@@ -407,32 +407,32 @@ like variant which uses an @{option} type.
       noinline proc handlecopying(ch:char) {
         if ch == char "'" do
           match action.quote with
-          | ignore-quote => 
+          | #ignore-quote => 
             current += ch;
-          | keep-quote =>
+          | #keep-quote =>
             current += ch;
             mode = quote;
-          | drop-quote =>
+          | #drop-quote =>
             mode = quote;
           endmatch;
         elif ch == char '"' do
           match action.dquote with
-          | ignore-dquote => 
+          | #ignore-dquote => 
             current += ch;
-          | keep-dquote =>
+          | #keep-dquote =>
             current += ch;
             mode = dquote;
-          | drop-dquote =>
+          | #drop-dquote =>
             mode = dquote;
           endmatch;
         elif ch == char '\\' do
           match action.escape with
-          | ignore-escape => 
+          | #ignore-escape => 
             current += ch;
-          | keep-escape =>
+          | #keep-escape =>
             current += ch;
             mode = escape-copying;
-          | drop-escape =>
+          | #drop-escape =>
             mode = escape-copying;
           endmatch;
         elif ord ch <= ' '.char.ord  do // can't happen if called from skipping
@@ -447,72 +447,72 @@ like variant which uses an @{option} type.
 
       for ch in s do 
         match mode with
-        | copying => handlecopying ch;
-        | quote =>
+        | #copying => handlecopying ch;
+        | #quote =>
           if ch == char "'" do
             match action.quote with
-            | ignore-quote => 
+            | #ignore-quote => 
               assert false;
               //current += ch;
-            | keep-quote =>
+            | #keep-quote =>
               current += ch;
               mode = copying;
-            | drop-quote =>
+            | #drop-quote =>
               mode = copying;
             endmatch;
           elif ch == char "\\" do
             match action.escape with
-            | ignore-escape => 
+            | #ignore-escape => 
               current += ch;
-            | keep-escape =>
+            | #keep-escape =>
               current += ch;
               mode = escape-quote;
-            | drop-escape =>
+            | #drop-escape =>
               mode = escape-quote;
             endmatch;
           else
             current += ch;
           done 
 
-        | dquote =>
+        | #dquote =>
           if ch == char '"' do
             match action.dquote with
-            | ignore-dquote => 
+            | #ignore-dquote => 
               assert false;
               //current += ch;
-            | keep-dquote =>
+            | #keep-dquote =>
               current += ch;
               mode = copying;
-            | drop-dquote =>
+            | #drop-dquote =>
               mode = copying;
             endmatch;
           elif ch == char "\\" do
             match action.escape with
-            | ignore-escape => 
+            | #ignore-escape => 
               current += ch;
-            | keep-escape =>
+            | #keep-escape =>
               current += ch;
               mode = escape-dquote;
-            | drop-escape =>
+            | #drop-escape =>
               mode = escape-dquote;
             endmatch;
           else
             current += ch;
           done 
 
-        | escape-copying =>
+        | #escape-copying =>
            current += ch;
            mode = copying;
 
-        | escape-quote =>
+        | #escape-quote =>
            current += ch;
            mode = quote;
 
-        | escape-dquote =>
+        | #escape-dquote =>
            current += ch;
            mode = dquote;
 
-        | skipping =>
+        | #skipping =>
           if ord ch > ' '.char.ord  do
             handlecopying ch;
           done
@@ -537,7 +537,7 @@ like variant which uses an @{option} type.
     ;
     // ignore mismatched quotes and backslashes.
     match state.mode with 
-    | skipping => ;
+    | #skipping => ;
     | _ => state.parsed = state.parsed + state.current;
     endmatch;
     return state.parsed;
@@ -615,14 +615,14 @@ Uses Google RE2 engine.
      var count = 0;
      for var i in 0 upto s.len.int - 1 do
        match mode with
-       | cp => 
+       | #cp => 
          if s.[i] == char "\\" do 
            mode = ins; 
            j=0; count = 0; 
          else 
           b += s.[i]; 
          done
-       | ins =>
+       | #ins =>
          if s.[i] in "0123456789" do
            j = j * 10 + ord(s.[i]) - ord (char "0");
            ++count;
@@ -644,8 +644,8 @@ Uses Google RE2 engine.
      done
      // run off end
      match mode with
-     | cp => ;
-     | ins =>
+     | #cp => ;
+     | #ins =>
        if count == 0 do
          b += "\\";
        elif j < v.len.int do

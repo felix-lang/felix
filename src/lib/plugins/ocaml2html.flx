@@ -41,11 +41,11 @@ fun xlat_ocaml(t:string, dir:string) : bool * string =
     | ccomment // a C style comment
   ;
   fun str(s:state_t) => match s with
-  | sot => "sot"
-  | id => "id"
-  | num => "num"
-  | dq => "dq"
-  | ccomment=> "ccomment"
+  | #sot => "sot"
+  | #id => "id"
+  | #num => "num"
+  | #dq => "dq"
+  | #ccomment => "ccomment"
   endmatch;
   
   var i = 0; var s:state_t;
@@ -63,9 +63,9 @@ fun xlat_ocaml(t:string, dir:string) : bool * string =
   proc w() { 
     //println$ "Token["+str s+"]="+b; 
     match s with 
-    | dq => ws; 
-    | ccomment=> write_string('<span class=comment>'+b+"</span>");
-    | id => 
+    | #dq => ws; 
+    | #ccomment => write_string('<span class=comment>'+b+"</span>");
+    | #id => 
         last_id = b;
         if b in big_keywords do write_string('<span class=big_keyword>'+b+"</span>"); 
         elif b in small_keywords do write_string('<span class=small_keyword>'+b+"</span>"); 
@@ -109,7 +109,7 @@ thisch:> // same char, reconsider it
   //println$ "Considering char " + str(ord(ch));
   if isnull ch goto fin; // out of data
   match s with 
-  | sot =>
+  | #sot =>
       if isidstart ch do s = id; goto contin;
       elif isdigit ch do s = num; goto contin;
       elif isdq ch do s = dq; goto contin;
@@ -120,15 +120,15 @@ thisch:> // same char, reconsider it
       else cp; w; goto nextt;
       done
 
-  | id => 
+  | #id => 
       if iscamlidcont ch do goto contin;
       else goto overrun;
       done
-  | num => 
+  | #num => 
       if isnumeric ch do goto contin;
       else goto overrun; 
       done
-  | dq =>
+  | #dq =>
       if isdq ch do goto lastch;
       elif ch== char "<" do b+="&lt;"; goto nextch;
       elif ch== char ">" do b+="&gt;"; goto nextch;
@@ -136,7 +136,7 @@ thisch:> // same char, reconsider it
       else goto contin;
       done
    // comments
-  | ccomment => // doesn't handle nested comments yet
+  | #ccomment => // doesn't handle nested comments yet
       if ch == char "*" and ahead(1) == char ")" do 
         cp; 
         goto lastch;

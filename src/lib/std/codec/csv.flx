@@ -17,18 +17,18 @@ class Csv {
       ch := s.[j];
       if ch == char "," do 
         match state with 
-        | quote => add j;
+        | #quote => add j;
         | _ => break ech;
         endmatch;
       elif ch == char " " do 
         match state with
-        | skip => continue ech;
-        | quote => add j;
-        | collect => state = skip;
+        | #skip => continue ech;
+        | #quote => add j;
+        | #collect => state = skip;
         endmatch;
       elif ch == char '"' do 
         match state with
-        | quote => state = skip;
+        | #quote => state = skip;
         | _ => state = quote;
         endmatch;
       else 

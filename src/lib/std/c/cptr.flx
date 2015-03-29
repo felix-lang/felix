@@ -30,7 +30,7 @@ open class Cptr
   fun deref[T] (px:cptr[T])=> *(px.ptr);
 
   //$ Test if a C pointer is NULL.
-  fun is_nullptr[T] (px:cptr[T])=> match px with | nullptr => true | _ => false endmatch;
+  fun is_nullptr[T] (px:cptr[T])=> match px with | #nullptr => true | _ => false endmatch;
   
   instance[T] Eq[cptr[T]] {
     //$ Equality of C pointers.

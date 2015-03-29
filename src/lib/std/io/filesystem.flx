@@ -19,9 +19,9 @@ done
       if b == "." or b == ".." return;
       var f = if d == "" then b else Filename::join (d,b);
       match FileStat::filetype f with
-      | PIPE  => ;
-      | STREAM => ;
-      | DIRECTORY =>
+      | #PIPE => ;
+      | #STREAM => ;
+      | #DIRECTORY =>
         match Directory::filesin f with
         | #None => ;
         | Some files => 
@@ -30,13 +30,13 @@ done
           done
           C_hack::ignore$ Directory::unlink_empty_dir f;
         endmatch;
-      | BLOCK => ;
-      | REGULAR => C_hack::ignore$ unlink_file f; 
-      | SYMLINK => C_hack::ignore$ unlink_file f;
-      | SOCKET => ;
-      | INDETERMINATE => ;
-      | NONEXISTANT => ;
-      | NOPERMISSION => ;
+      | #BLOCK => ;
+      | #REGULAR => C_hack::ignore$ unlink_file f; 
+      | #SYMLINK => C_hack::ignore$ unlink_file f;
+      | #SOCKET => ;
+      | #INDETERMINATE => ;
+      | #NONEXISTANT => ;
+      | #NOPERMISSION => ;
       endmatch;
     }
     aux "" f;
@@ -89,7 +89,7 @@ done
       //eprintln$ "returned from filesin" ;
 
       match newfiles with
-      | #None  => return;
+      | #None => return;
       | Some files =>
         //eprintln$ "got files in " + newpath;
         for f in files do
@@ -102,14 +102,14 @@ done
             //eprintln$ "fullpath " + fullpath;
             var t = FileStat::filetype fullpath;
             match t with
-              | REGULAR => 
+              | #REGULAR => 
                 //eprintln ("Regular file " + d);
                 var result = d in re;
                 if result do 
 	                //eprintln$ d + " Matches"; 
 		              foundfiles = Cons (d, foundfiles); 
                 done
-              | DIRECTORY => 
+              | #DIRECTORY => 
                 //eprintln ("found directory " + d);
                 rfi (d);
               | _ => ;

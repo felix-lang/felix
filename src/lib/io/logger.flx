@@ -26,13 +26,13 @@ class Logger {
 
   publish """ Log Level definitions """
   union log_level = 
-    |INFO
-    |WARNING
-    |ERROR
-    |ACCESS
-    |DEBUG
-    |CUSTOM1
-    |CUSTOM2;
+    | INFO
+    | WARNING
+    | ERROR
+    | ACCESS
+    | DEBUG
+    | CUSTOM1
+    | CUSTOM2;
 
   publish """ Definition of log_message """
   typedef log_message = log_level*string; 
@@ -120,13 +120,13 @@ class Logger {
 
   instance Str[log_level] {
     fun str : log_level ->string =
-      | INFO => "[INFO]"
-      | WARNING  => "[WARNING]"
-      | ERROR  => "[ERROR]"
-      | ACCESS => "[ACCESS]"
-      | DEBUG => "[DEBUG]"
-      | CUSTOM1 => "[CUSTOM1]"
-      | CUSTOM2 => "[CUSTOM2]";
+      | #INFO => "[INFO]"
+      | #WARNING  => "[WARNING]"
+      | #ERROR  => "[ERROR]"
+      | #ACCESS => "[ACCESS]"
+      | #DEBUG => "[DEBUG]"
+      | #CUSTOM1 => "[CUSTOM1]"
+      | #CUSTOM2 => "[CUSTOM2]";
   }
 
   

@@ -16,12 +16,12 @@ class Avl
   //==============================
 
   private fun height[T] : avl[T]->int =
-    | Nil => 0
+    | #Nil => 0
     | Tree(?H, _, _, _) => H
   ;
 
   private fun slope[T] : avl[T]->int =
-    | Nil => 0
+    | #Nil => 0
     | Tree(_, _, ?left, ?right) => height(left) - height(right)
   ;
 
@@ -77,7 +77,7 @@ class Avl
 
   fun insert[T] (tree : avl[T], y : T, cmp : T*T->int) =>
     match tree with
-      | Nil =>
+      | #Nil =>
         Tree(1, y, Nil[T], Nil[T])
       | Tree(?H, ?x, ?left, ?right) =>
         if cmp(x, y) > 0 then
@@ -98,7 +98,7 @@ class Avl
 
   fun find[T] (tree : avl[T], y : T, cmp : T*T->int) : opt[T] =>
       match tree with
-        | Nil => None[T]
+        | #Nil => None[T]
         | Tree(?H, ?x, ?left, ?right) =>
           if cmp(x, y) > 0 then
             find(left, y, cmp)
@@ -138,15 +138,15 @@ class Avl
 
   fun join[T] (A : avl[T], B : avl[T]) =>
     match A with
-      | Nil => B
+      | #Nil => B
       | ?x => balance(avl(last(A), all_but_last(A), B))
     endmatch
   ;
 
   fun remove[T] (tree : avl[T], y : T, cmp : T*T->int) =>
     match tree with
-      |Nil => Nil[T]
-      |Tree(_, ?x, ?left, ?right) =>
+      | #Nil => Nil[T]
+      | Tree(_, ?x, ?left, ?right) =>
         if cmp(x, y) == 1 then
           balance(avl(x, remove(left, y, cmp), right))
         elif cmp(x, y) == -1 then
@@ -161,7 +161,7 @@ class Avl
 
   fun fold_left[T, U] (f:U->T->U) (accumulated:U) (tree:avl[T]):U =>
     match tree with
-      |Nil => accumulated
+      | #Nil => accumulated
       | Tree (_, ?x, ?left, ?right) =>
         fold_left f  (f (fold_left f accumulated left)  x) right
     endmatch
@@ -169,7 +169,7 @@ class Avl
 
   fun fold_right[T, U] (f:T->U->U) (tree:avl[T]) (accumulated:U) =>
     match tree with
-      | Nil => accumulated
+      | #Nil => accumulated
       | Tree (_, ?x, ?left, ?right) =>
         fold_right f left (f x (fold_right f right accumulated))
     endmatch
@@ -180,7 +180,7 @@ class Avl
   proc iter[T] (f:T->void, tree:avl[T])
   {
     match tree with
-      | Nil => {}
+      | #Nil => {}
       | Tree (?H, ?x, ?left, ?right) => {
         iter(f, left);
         f(x);
@@ -193,7 +193,7 @@ class Avl
   {
     proc aux (depth:int, f:int*T->void, tree:avl[T]) {
       match tree with
-        | Nil => {}
+        | #Nil => {}
         | Tree (?H, ?x, ?left, ?right) => {
           aux(depth + 1, f, left);
           f(depth, x);

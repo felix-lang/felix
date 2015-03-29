@@ -25,9 +25,9 @@ class HTTPRequest {
 
   instance Str[http_method] {
     fun str : http_method ->string =
-      | GET => "GET"
-      | POST => "POST"
-      | BAD => "BAD";
+      | #GET => "GET"
+      | #POST => "POST"
+      | #BAD => "BAD";
    }
 
   instance Eq[http_method] {

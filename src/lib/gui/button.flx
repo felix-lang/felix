@@ -73,10 +73,10 @@ class FlxGuiButton
      {
       var state = b.get_state ();
       var scheme = match state with
-        | Up => up_colour
-        | Down => down_colour
-        | Disabled => disabled_colour
-        | Mouseover => mouseover_colour
+        | #Up => up_colour
+        | #Down => down_colour
+        | #Disabled => disabled_colour
+        | #Mouseover => mouseover_colour
         endmatch
       ;
       // top
@@ -117,13 +117,13 @@ proc button_controller
       if SDL_Point (x.int,y.int) \in bd.get_client_rect () do
         //println$ "Motion in client rect of button " + bd.get_label();
         match bm.get_state () with
-        | Up => bm.set_state Mouseover; bd.display(); // Enter
+        | #Up => bm.set_state Mouseover; bd.display(); // Enter
         | _ => ;
         endmatch;
       else
         match bm.get_state () with
-        | Mouseover => bm.set_state Up; bd.display(); // Leave
-        | Down => bm.set_state Up; bd.display(); // Leave
+        | #Mouseover => bm.set_state Up; bd.display(); // Leave
+        | #Down => bm.set_state Up; bd.display(); // Leave
         | _ => ;
         endmatch;
       done

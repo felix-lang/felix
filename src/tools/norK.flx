@@ -154,7 +154,7 @@ noinline proc launch_managed_process (
     check_pid:>
       var status = checkpid(pid);
       match status with
-      | Running => 
+      | #Running => 
         if Time::time() - start_time > timelimit do
            C_hack::ignore$ Process::kill(pid, PosixSignal::SIGKILL);
            eprintln$  "[" + name + "] "+"KILL: Process "+pid.int.str +" for " + pn + " exceeded time limit " + str timelimit;

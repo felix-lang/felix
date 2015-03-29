@@ -11,8 +11,8 @@ module Foo
 val x = Foo::foo 5;
 
 print$ match x with
-| A => "a"
-| B => "b"
+| #A => "a"
+| #B => "b"
 endmatch;
 endl;
 

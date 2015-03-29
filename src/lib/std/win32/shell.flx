@@ -62,7 +62,7 @@ class CmdExe
       var mode = skip;
       for ch in s do
         match mode with
-        | skip => 
+        | #skip => 
           if ch == char "\\" do
             mode = escape-copy;
           elif ch == char '"' do
@@ -72,7 +72,7 @@ class CmdExe
             mode = copy;
           done
 
-        | copy =>
+        | #copy =>
           if ch == char "\\" do
             mode = escape-copy;
           elif ord ch <= ord (char ' ') do
@@ -85,7 +85,7 @@ class CmdExe
             current += ch;
           done
 
-        | escape-copy =>
+        | #escape-copy =>
           mode = copy;
           if ch == char '"' do
             current += ch;
@@ -93,7 +93,7 @@ class CmdExe
             current += "\\" + ch;
           done 
 
-        | escape-dquote =>
+        | #escape-dquote =>
           mode = dquote;
           if ch == char '"' do
             current += ch;
@@ -101,7 +101,7 @@ class CmdExe
             current += "\\" + ch;
           done
   
-        | dquote =>
+        | #dquote =>
           if ch == char '"' do
             mode = copy;
           elif ch == char "\\" do
@@ -112,7 +112,7 @@ class CmdExe
         endmatch;
       done
       match mode with
-      | skip => ;
+      | #skip => ;
       | _ => args += current;
       endmatch; 
       return args;

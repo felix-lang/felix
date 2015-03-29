@@ -352,8 +352,8 @@ proc ehandler
       write$ menu_out, e;
       var response = read menu_in;
       match response with
-      | NoAction => ;
-      | ChangedPosition => 
+      | #NoAction => ;
+      | #ChangedPosition => 
         redraw();
 
       | SelectedAction s => 

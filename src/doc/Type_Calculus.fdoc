@@ -82,9 +82,9 @@ for type matches. A type match looks like this:
 @felix
 typedef fun integral_promotion (t: TYPE):TYPE =
   typematch t with
-  | tiny => int
-  | utiny => int
-  | short => int
+  | #tiny => int
+  | #utiny => int
+  | #short => int
   endmatch
 ;
 @
@@ -92,9 +92,9 @@ which is the same as a runtime match except the keyword <code>typematch</code>
 is used. As with ordinary functions you can use the shorthand:
 @felix
 typedef fun integral_promotion: TYPE -> TYPE =
-  | tiny => int
-  | utiny => int
-  | short => int
+  | #tiny => int
+  | #utiny => int
+  | #short => int
 ;
 @
 for a function.
@@ -131,7 +131,7 @@ which defines a conjunction for types. We can even define equality:
 @felix
   typedef fun eq(x:TYPE, y:TYPE):TYPE=>
     typematch x with
-    | y => typematch y with | x => 1 | _ => 0 endmatch
+    | #y => typematch y with | #x => 1 | _ => 0 endmatch
     | _ => 0
     endmatch
   ;
@@ -177,16 +177,16 @@ It is very inconvenient to have to write predicates using type matches.
 For example you could write:
 @felix
 typedef fun isintegral: TYPE->TYPE=
-  | tiny => 1
-  | utiny => 1
-  | short => 1
-  | ushort => 1
-  | int => 1
-  | uint => 1
-  | long => 1
-  | ulong => 1
-  | vlong => 1
-  | uvlong => 1
+  | #tiny => 1
+  | #utiny => 1
+  | #short => 1
+  | #ushort => 1
+  | #int => 1
+  | #uint => 1
+  | #long => 1
+  | #ulong => 1
+  | #vlong => 1
+  | #uvlong => 1
   | _ => 0
 ;
 @

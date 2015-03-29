@@ -1,14 +1,14 @@
 typedef fun integral_promotion: TYPE -> TYPE =
-  | tiny => int
-  | utiny => int
-  | short => int
-  | ushort => int
-  | int => int
-  | uint => uint
-  | long => long
-  | ulong => ulong
-  | vlong => vlong
-  | uvlong => uvlong
+  | #tiny => int
+  | #utiny => int
+  | #short => int
+  | #ushort => int
+  | #int => int
+  | #uint => uint
+  | #long => long
+  | #ulong => ulong
+  | #vlong => vlong
+  | #uvlong => uvlong
 ;
 
 open class Tiny

@@ -21,7 +21,7 @@ class Ralist
 
   //$ Length of an ralist.
   fun ralist_length[a] : ralist[a] -> int =
-    | RAnil => 0
+    | #RAnil => 0
     | RAevn ?xxs => 2 * ralist_length xxs
     | RAodd (_,?xxs) => 2 * ralist_length xxs + 1
   ;
@@ -29,7 +29,7 @@ class Ralist
   private fun cons[a] // O(1), amortized
     (x0: pt[a], xs: ralist[a]): ralist [a] =>
     match xs with
-    | RAnil => RAodd (x0, RAnil[a])
+    | #RAnil => RAodd (x0, RAnil[a])
     | RAevn ?xxs => RAodd (x0, xxs)
     | RAodd (?x1, ?xxs) =>
         let ?x0x1 = N2 (x0, x1) in
@@ -43,7 +43,7 @@ class Ralist
 
   //$ Check for an empty list.
   fun ralist_empty[a]: ralist[a] -> bool  =
-  | RAnil => true
+  | #RAnil => true
   | _ => false
   ;
 
@@ -63,7 +63,7 @@ class Ralist
     | RAodd (?x0,?xss) =>
       phd <- x0;
       match xss with
-      | RAnil => ptl <- RAnil[a];
+      | #RAnil => ptl <- RAnil[a];
       | _ => ptl <- RAevn xss;
       endmatch;
     endmatch;
@@ -195,10 +195,10 @@ class Ralist
     | RAodd (?x, ?xxs) =>
       f x;
       match xxs with
-      | RAnil => ;
+      | #RAnil => ;
       | _ => foreach2 (xxs, f);
       endmatch;
-    | RAnil => ;
+    | #RAnil => ;
     endmatch;
   }
 

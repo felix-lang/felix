@@ -59,10 +59,10 @@ object fdoc_fileseq (filename: string) implements fileseq-control_t =
         "<a href='"+sprev+"'>"+button.make-button(id="prev", text="Prev", onclick="nop")+"</a> " + 
         "<a href='"+snext+"'>"+button.make-button(id="next", text="Next", onclick="nop")+"</a> " + 
         "<a href='"+docindex+"'>"+button.make-button(id="index", text="Index", onclick="nop")+"</a> "
-    | _,None, Some ?snext, ?docindex => 
+    | _,#None, Some ?snext, ?docindex => 
        "<a href='"+snext+"'>"+button.make-button(id="next", text="Next", onclick="nop")+"</a> "+
        "<a href='"+docindex+"'>"+button.make-button(id="index", text="Index", onclick="nop")+"</a>" 
-    | _,None, None,_ => ""
+    | _,#None, #None,_ => ""
     endmatch
   ;
 

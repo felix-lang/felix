@@ -96,79 +96,79 @@ TODO: implement more MIME types.
 
   instance Str[application_mime_subtype] {
     fun str : application_mime_subtype ->string =
-      | atom_PLUS_xml => "application/atom+xml" 
-      | ecmascript => "application/ecmascript" 
-      | EDI_DASH_X12 => "application/EDI-X12" 
-      | EDIFACT => "application/EDIFACT" 
-      | json => "application/json" 
-      | javascript => "application/javascript" 
-      | octet_DASH_stream => "application/octet-stream" 
-      | ogg => "application/ogg" 
-      | pdf => "application/pdf" 
-      | postscript => "appliction/postscript" 
-      | rss_PLUS_xml => "application/rss+xml"
-      | soap_PLUS_xml => "application/soap+xml" 
-      | font_DASH_woff => "application/font-woff" 
-      | xhtml_PLUS_xml => "application/xhtml+xml"
-      | xml_DASH_dtd => "application/xml-dtd" 
-      | xop_PLUS_xml => "application/xop+xml" 
-      | zip => "application/zip" 
-      | x_DASH_gzip => "application/x-gzip" 
-      | x_DASH_www_DASH_form_DASH_urlencoded => "application/x-www-form-urlencoded";
+      | #atom_PLUS_xml => "application/atom+xml" 
+      | #ecmascript => "application/ecmascript" 
+      | #EDI_DASH_X12 => "application/EDI-X12" 
+      | #EDIFACT => "application/EDIFACT" 
+      | #json => "application/json" 
+      | #javascript => "application/javascript" 
+      | #octet_DASH_stream => "application/octet-stream" 
+      | #ogg => "application/ogg" 
+      | #pdf => "application/pdf" 
+      | #postscript => "appliction/postscript" 
+      | #rss_PLUS_xml => "application/rss+xml"
+      | #soap_PLUS_xml => "application/soap+xml" 
+      | #font_DASH_woff => "application/font-woff" 
+      | #xhtml_PLUS_xml => "application/xhtml+xml"
+      | #xml_DASH_dtd => "application/xml-dtd" 
+      | #xop_PLUS_xml => "application/xop+xml" 
+      | #zip => "application/zip" 
+      | #x_DASH_gzip => "application/x-gzip" 
+      | #x_DASH_www_DASH_form_DASH_urlencoded => "application/x-www-form-urlencoded";
  }
 
  instance Str[audio_mime_subtype] {
    fun str : audio_mime_subtype ->string =
-     | basic => "audio/basic" 
-     | L24 => "audio/L24" 
-     | mp4 => "audio/mp4"
-     | mpeg => "audio/mpeg"
-     | ogg1 => "audop/ogg"
-     | vorbis => "audio/vorbis"
-     | x_DASH_ms_DASH_wma => "audio/x-ms-wma"
-     | x_DASH_ms_DASH_wax => "audio/x-ms-wax"
-     | vnd_DOT_rn_DASH_realaudio => "audio/vnd.rn-realaudio"
-     | vnd_DOT_wave => "audio/vnd.wave"
-     | webm => "audio/webm";
+     | #basic => "audio/basic" 
+     | #L24 => "audio/L24" 
+     | #mp4 => "audio/mp4"
+     | #mpeg => "audio/mpeg"
+     | #ogg1 => "audop/ogg"
+     | #vorbis => "audio/vorbis"
+     | #x_DASH_ms_DASH_wma => "audio/x-ms-wma"
+     | #x_DASH_ms_DASH_wax => "audio/x-ms-wax"
+     | #vnd_DOT_rn_DASH_realaudio => "audio/vnd.rn-realaudio"
+     | #vnd_DOT_wave => "audio/vnd.wave"
+     | #webm => "audio/webm";
   }
 
   instance Str[image_mime_subtype] {
     fun str : image_mime_subtype ->string =
-      | gif => "image/gif"
-      | jpeg => "image/jpeg"
-      | pjpeg => "image/pjpeg"
-      | png  => "image/png"
-      | svg_PLUS_xml => "image/svg+xml"
-      | tiff => "image/tiff"
-      | vnd_DOT_microsoft_DOT_icon => "image/vnd.microsoft.icon"; 
+      | #gif => "image/gif"
+      | #jpeg => "image/jpeg"
+      | #pjpeg => "image/pjpeg"
+      | #png => "image/png"
+      | #svg_PLUS_xml => "image/svg+xml"
+      | #tiff => "image/tiff"
+      | #vnd_DOT_microsoft_DOT_icon => "image/vnd.microsoft.icon"; 
   }
 
   instance Str[text_mime_subtype] {
     fun str : text_mime_subtype ->string =
-      | cmd => "text/cmd"
-      | css => "text/css"
-      | csv => "text/csv"
-      | html => "text/html"
-      | javascript1 => "text/javascript"
-      | plain => "text/plain"
-      | vcard => "text/vcard"
-      | xml => "text/xml"
-      | x_DASH_felix => "text/x-felix"
-      | x_DASH_fdoc => "text/x-fdoc"
-      | x_DASH_fpc => "text/x-fpc"
-      | x_DASH_c => "text/x-c"
-      | x_DASH_ocaml => "text/x-ocaml"
-      | x_DASH_python => "text/x-python";
+      | #cmd => "text/cmd"
+      | #css => "text/css"
+      | #csv => "text/csv"
+      | #html => "text/html"
+      | #javascript1 => "text/javascript"
+      | #plain => "text/plain"
+      | #vcard => "text/vcard"
+      | #xml => "text/xml"
+      | #x_DASH_felix => "text/x-felix"
+      | #x_DASH_fdoc => "text/x-fdoc"
+      | #x_DASH_fpc => "text/x-fpc"
+      | #x_DASH_c => "text/x-c"
+      | #x_DASH_ocaml => "text/x-ocaml"
+      | #x_DASH_python => "text/x-python";
   }
   
   instance Str[multipart_mime_subtype] {
     fun str : multipart_mime_subtype ->string =
-      | mixed => "multipart/mixed"
-      | alternative => "multipart/alternative"
-      | related => "multipart/related"
-      | form-data => "multipart/form-data"
-      | signed => "multipart/signed"
-      | encrypted => "multipart/encrypted";
+      | #mixed => "multipart/mixed"
+      | #alternative => "multipart/alternative"
+      | #related => "multipart/related"
+      | #form-data => "multipart/form-data"
+      | #signed => "multipart/signed"
+      | #encrypted => "multipart/encrypted";
   }
 
   instance Str[mime_type] {
@@ -249,7 +249,8 @@ TODO: implement more MIME types.
     | "multipart/related" => Some related
     | "multipart/form-data" => Some form-data
     | "multipart/signed" => Some signed
-    | "multipart/encrypted" => Some encrypted;
+    | "multipart/encrypted" => Some encrypted
+  ;
 
   fun from_str (s:string):opt[mime_type] => 
     match application_type_from_str s with
@@ -271,46 +272,46 @@ TODO: implement more MIME types.
   
   fun mime_type_from_file(file:string) =>
     match rev(split(file,'.')) with
-      | Cons(?hd,_) => mime_type_from_extension hd
-      | _ => text plain
+    | Cons(?hd,_) => mime_type_from_extension hd
+    | _ => text plain
     endmatch;
 
   fun mime_type_from_extension: string -> mime_type =
-    | "atom"     => application atom_PLUS_xml 
-    | "ecma"   => application ecmascript 
-    | "json"         => application json 
-    | "js"   => application javascript 
+    | "atom" => application atom_PLUS_xml 
+    | "ecma" => application ecmascript 
+    | "json" => application json 
+    | "js" => application javascript 
     | "application/octet-stream" => application octet_DASH_stream 
-    | "ogg"          => application ogg 
-    | "ogx"          => application ogg 
-    | "pdf"          => application pdf 
-    | "ps"    => application postscript 
-    | "eps"    => application postscript 
-    | "ai"    => application postscript 
-    | "xhtml"    => application xhtml_PLUS_xml 
-    | "xht"    => application xhtml_PLUS_xml 
-    | "dtd"      => application xml_DASH_dtd 
-    | "xop"      => application xop_PLUS_xml 
-    | "zip"          => application zip 
-    | "x-gzip"       => application x_DASH_gzip
-    |  "au" => audio basic
-    |  "snd" => audio basic
-    |  "mp4a" => audio mp4
-    |  "mpega" => audio mpeg
-    |  "mpga" => audio mpeg
-    |  "mp2a" => audio mpeg
-    |  "mp3a" => audio mpeg
-    |  "mp4a" => audio mpeg
-    |  "mp2" => audio mpeg
-    |  "mp3" => audio mpeg
-    |  "ogg" => audio ogg1
-    |  "oga" => audio ogg1
-    |  "spx" => audio ogg1
-    |  "wma" => audio x_DASH_ms_DASH_wma
-    |  "wax" => audio x_DASH_ms_DASH_wax
-    |  "ra" => audio vnd_DOT_rn_DASH_realaudio
-    |  "wav" => audio vnd_DOT_wave
-    |  "webma" => audio webm 
+    | "ogg" => application ogg 
+    | "ogx" => application ogg 
+    | "pdf" => application pdf 
+    | "ps" => application postscript 
+    | "eps" => application postscript 
+    | "ai" => application postscript 
+    | "xhtml" => application xhtml_PLUS_xml 
+    | "xht" => application xhtml_PLUS_xml 
+    | "dtd" => application xml_DASH_dtd 
+    | "xop" => application xop_PLUS_xml 
+    | "zip" => application zip 
+    | "x-gzip" => application x_DASH_gzip
+    | "au" => audio basic
+    | "snd" => audio basic
+    | "mp4a" => audio mp4
+    | "mpega" => audio mpeg
+    | "mpga" => audio mpeg
+    | "mp2a" => audio mpeg
+    | "mp3a" => audio mpeg
+    | "mp4a" => audio mpeg
+    | "mp2" => audio mpeg
+    | "mp3" => audio mpeg
+    | "ogg" => audio ogg1
+    | "oga" => audio ogg1
+    | "spx" => audio ogg1
+    | "wma" => audio x_DASH_ms_DASH_wma
+    | "wax" => audio x_DASH_ms_DASH_wax
+    | "ra" => audio vnd_DOT_rn_DASH_realaudio
+    | "wav" => audio vnd_DOT_wave
+    | "webma" => audio webm 
     | "gif" => image gif 
     | "image/jpeg" => image jpeg 
     | "jpg" => image jpeg 
@@ -334,7 +335,8 @@ TODO: implement more MIME types.
     | "pot" => text plain 
     | "text" => text plain 
     | "txt" => text plain 
-    | _ => text plain;
+    | _ => text plain
+  ;
 
         
 instance Eq[mime_type]  {
@@ -344,12 +346,14 @@ instance Eq[mime_type]  {
 
   fun parse_media_type (s:string):opt[media_type] =>
     match split( s, ";") with
-      |Cons(?h,?t) => match from_str(h) with
-                       |Some ?m => Some (m,parse_attribute_list(t))
-                       |_       => None[media_type]
-                      endmatch 
-      |_            => None[media_type]
-    endmatch;
+    | Cons(?h,?t) => 
+      match from_str(h) with
+      | Some ?m => Some (m,parse_attribute_list(t))
+      | _       => None[media_type]
+      endmatch 
+    | _ => None[media_type]
+    endmatch
+  ;
 
 //instance Tord[test_mime_subtype] {
 //    fun eq: t * t -> bool = "$1==$2";

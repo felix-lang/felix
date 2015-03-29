@@ -49,8 +49,8 @@ class CopyFiles {
                var d = Filename::join (dir,f);
                val t = FileStat::filetype (Filename::join (basedir,d));
                match t with
-                 | REGULAR => addfile d;
-                 | DIRECTORY => rfi d;
+                 | #REGULAR => addfile d;
+                 | #DIRECTORY => rfi d;
                  | _ => ;
                endmatch;
              done

@@ -7,7 +7,7 @@ proc print (u:U) {
   print "union U ";
   print$
     match u with
-    | A => "A"
+    | #A => "A"
     | B (?b, ?c, ?d) => f"B %d %d %d" (b, c, d)
     endmatch;
 }

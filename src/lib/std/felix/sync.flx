@@ -8,9 +8,9 @@ class SyncControl
   enum fstate_t = terminated, blocked, delegated;
   instance Str[fstate_t] {
     fun str: fstate_t -> string = 
-    | terminated => "terminated"
-    | blocked => "blocked"
-    | delegated => "delegated"
+    | #terminated => "terminated"
+    | #blocked => "blocked"
+    | #delegated => "delegated"
     ;
   }
 
@@ -71,10 +71,10 @@ class SyncControl
     run sched;                               // run the scheduler.
     var result = get_scheduler_state sched;  // get return state of scheduler.
     match result with 
-    | terminated => assert false;            // unused.
-    | delegated =>                           // bug out if async I/O attempted.
+    | #terminated => assert false;            // unused.
+    | #delegated =>                           // bug out if async I/O attempted.
       raise "Inner scheduler attemped unavailable service call";
-    | blocked =>                             // this scheduler ran out of threads.
+    | #blocked =>                             // this scheduler ran out of threads.
       delete sched;                          // cleanup: delete the scheduler
       delete lst;                            // and the scheduler list.
     endmatch;

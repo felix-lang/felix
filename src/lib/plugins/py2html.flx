@@ -35,14 +35,14 @@ fun xlat_py(t:string, dir:string) : bool * string =
     | cppcomment // a C++ style comment
   ;
   fun str(s:state_t) => match s with
-  | sot => "sot"
-  | id => "id"
-  | num => "num"
-  | sq => "sq"
-  | dq => "dq"
-  | sq3 => "sq3"
-  | dq3 => "dq3"
-  | cppcomment => "cppcomment"
+  | #sot => "sot"
+  | #id => "id"
+  | #num => "num"
+  | #sq => "sq"
+  | #dq => "dq"
+  | #sq3 => "sq3"
+  | #dq3 => "dq3"
+  | #cppcomment => "cppcomment"
   endmatch;
   
   var i = 0; var s:state_t;
@@ -70,12 +70,12 @@ fun xlat_py(t:string, dir:string) : bool * string =
   proc w() { 
     //println$ "Token["+str s+"]="+b; 
     match s with 
-    | dq =>  ws; 
-    | sq =>  ws; 
-    | sq3 =>  ws; 
-    | dq3 =>  ws; 
-    | cppcomment=> write_string('<span class=comment>'+b+"</span>"); 
-    | id => 
+    | #dq =>  ws; 
+    | #sq =>  ws; 
+    | #sq3 =>  ws; 
+    | #dq3 =>  ws; 
+    | #cppcomment => write_string('<span class=comment>'+b+"</span>"); 
+    | #id => 
         last_id = b;
         if b in big_keywords do write_string('<span class=big_keyword>'+b+"</span>"); 
         elif b in small_keywords do write_string('<span class=small_keyword>'+b+"</span>"); 
@@ -118,7 +118,7 @@ thisch:> // same char, reconsider it
   //println$ "Considering char " + str(ord(ch));
   if isnull ch goto fin; // out of data
   match s with 
-  | sot =>
+  | #sot =>
       if isidstart ch do s = id; goto contin;
       elif isdigit ch do s = num; goto contin;
       elif issq3() do cp; next; cp; next; s = sq3; goto contin;
@@ -129,23 +129,23 @@ thisch:> // same char, reconsider it
       else cp; w; goto nextt;
       done
 
-  | id => 
+  | #id => 
       if isalphanum ch do goto contin;
       else goto overrun;
       done
-  | num => 
+  | #num => 
       if isnumeric ch do goto contin;
       else goto overrun; 
       done
   // single quoted strings
-  | sq =>
+  | #sq =>
       if issq ch do goto lastch; 
       elif ch== char "<" do b+="&lt;"; goto nextch;
       elif ch== char ">" do b+="&gt;"; goto nextch;
       elif ch== char "&" do b+="&amp;"; goto nextch;
       else goto contin;
       done
-  | dq =>
+  | #dq =>
       if isdq ch do goto lastch;
       elif ch== char "<" do b+="&lt;"; goto nextch;
       elif ch== char ">" do b+="&gt;"; goto nextch;
@@ -153,14 +153,14 @@ thisch:> // same char, reconsider it
       else goto contin;
       done
    // triple quoted strings
-  | sq3 =>
+  | #sq3 =>
       if issq3() do cp; next; cp; next; cp; w; goto nextt; 
       elif ch== char "<" do b+="&lt;"; goto nextch;
       elif ch== char ">" do b+="&gt;"; goto nextch;
       elif ch== char "&" do b+="&amp;"; goto nextch;
       else goto contin;
       done
-  | dq3 =>
+  | #dq3 =>
       if isdq3() do cp; next; cp; next; cp; w; goto nextt;
       elif ch== char "<" do b+="&lt;"; goto nextch;
       elif ch== char ">" do b+="&gt;"; goto nextch;
@@ -168,7 +168,7 @@ thisch:> // same char, reconsider it
       else goto contin;
       done
    // comments
-  | cppcomment =>
+  | #cppcomment =>
       if iseol ch do goto lastch;
       else goto contin;
       done

@@ -325,11 +325,12 @@ syntax expressions {
    "`(ast_record_type ,(cons _2 (map second _3)))";
     srecord_mem_decl := sname ":" stypeexpr =># "`(,_1 ,_3)";
 
+  // INCONSISTENT GRAMMAR (no separator between items??
   //$ Variant type.
-  satom := "union" "{" stype_sum_item0* "}" =># "`(ast_variant_type ,_3)";
-    stype_sum_item0 := sname "of" sexpr =># "`(,_1 none ,_3)";
-    stype_sum_item0 := sname =># "`(,_1 none (ast_void ,_sr))";
-    stype_sum_item0 := "#" sname =># "`(,_2 none (ast_void ,_sr))";
+  //satom := "union" "{" stype_sum_item0* "}" =># "`(ast_variant_type ,_3)";
+  //  stype_sum_item0 := sname "of" sexpr =># "`(,_1 none ,_3)";
+  //  stype_sum_item0 := sname =># "`(,_1 none (ast_void ,_sr))";
+  //  stype_sum_item0 := "#" sname =># "`(,_2 none (ast_void ,_sr))";
 
   //$ scalar literals (numbers, strings).
   satom := sliteral =># "_1";

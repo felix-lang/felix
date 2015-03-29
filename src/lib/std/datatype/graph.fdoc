@@ -145,7 +145,7 @@ class DiGraph[V,E with Str[V], Str[E]] // V,E labels for graph parts
         var y = edge.y;
         p.process_edge d (v, y);
         match state.y with
-        | Undiscovered => 
+        | #Undiscovered => 
           pending.add y; 
           set (state,y,Discovered); 
           //parent = v;
@@ -191,7 +191,7 @@ class DiGraph[V,E with Str[V], Str[E]] // V,E labels for graph parts
           return Some path;
         else 
           match state.y with
-          | Undiscovered => 
+          | #Undiscovered => 
             enqueue &q y; 
             set (state,y,Discovered); 
             set(parents,y,v);

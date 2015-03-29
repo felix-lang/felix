@@ -993,8 +993,8 @@ proc serve_directory (k:socket_t, fname:string, get:bool) {
       let ?aux = 
           fun (ls2:list[string] * list[string]) (f:string) =>
           match ls2 with | ?ds,?rs => match FileStat::filetype (Filename::join (fname,f)) with
-            | DIRECTORY => Cons (f,ds), rs
-            | REGULAR => ds, Cons (f,rs)
+            | #DIRECTORY => Cons (f,ds), rs
+            | #REGULAR => ds, Cons (f,rs)
             | _ => ls2
             endmatch
           endmatch
@@ -1109,8 +1109,8 @@ proc serve(s: socket_t, infname: string, get:bool)
         if prefix(fname,"/etc") do serve_forbidden(s,fname, get);
         else
         match FileStat::filetype f with
-        | REGULAR => serve_raw(s,f,suffix, get);
-        | DIRECTORY => serve_directory (s,f, get);
+        | #REGULAR => serve_raw(s,f,suffix, get);
+        | #DIRECTORY => serve_directory (s,f, get);
         | _ => serve_not_found(s,f, get); 
         endmatch;
         done
@@ -1151,7 +1151,7 @@ noinline proc handler (var k:socket_t) ()
   var req = parse_request_type line;
 
   match req with
-  | reqPOST => 
+  | #reqPOST => 
     match parse_post_line line with 
     | Some (?base,?file) =>
       println$ "well formed POST ...";
@@ -1189,21 +1189,21 @@ println$ "Got the line length .. "+line.len.str;
  
     | #None => println$ "BAD POST line: '"+line+"'";
     endmatch;
-  | reqGET =>
+  | #reqGET =>
     match parse_get_line line with
     | Some (?base, ?file) => 
       print "file="; print file; endl;
       serve_file(k,file);
     | #None => println$ "BAD GET line: '"+line+"'";
     endmatch;
-  | reqHEAD=>
+  | #reqHEAD =>
     match parse_get_line line with
     | Some (?base, ?file) => 
       print "file="; print file; endl;
       serve_head(k,file);
     | #None => println$ "BAD HEAD line: '"+line+"'";
     endmatch;
-  | reqERROR =>
+  | #reqERROR =>
     println$ "BAD request line: '"+line+"'";
   endmatch;
 

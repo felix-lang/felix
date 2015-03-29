@@ -18,12 +18,12 @@ var b:boolean = True;
 
 proc f(b:boolean)  {
   match b with
-  | True => println "True";
-  | False => println "False";
+  | #True => println "True";
+  | #False => println "False";
   endmatch;
 }
 
-println$ match b with | True => "True" | False => "False" endmatch;
+println$ match b with | #True => "True" | #False => "False" endmatch;
 @
 
 This code demonstrates a simple union of two cases: @{True} and @{False}
@@ -107,9 +107,9 @@ enum colour {red, green, blue};
 
 instance Str[colour] {
   fun str: colour -> string = 
-    | red => "red"
-    | blue => "blue"
-    | green => "green"
+    | #red => "red"
+    | #blue => "blue"
+    | #green => "green"
   ;
 }
 

@@ -260,7 +260,7 @@ class BuildFlxg
       done
 
       match kind with
-      | Library =>
+      | #Library =>
         begin
           // link files into library
           println$ "Linking library " + tmpdir/lib + ".cmxa";
@@ -277,7 +277,7 @@ class BuildFlxg
             System::exit 1;
           done 
         end
-      | Executable =>
+      | #Executable =>
         begin
           // link files into executable
           println$ "Linking executable " + tmpdir/lib;

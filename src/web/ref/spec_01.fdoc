@@ -1248,7 +1248,7 @@ x = iCons (2, x); // list of two integers
 
 fun istr (x:intlist) =>
   match x with
-  | iEmpty => "end"
+  | #iEmpty => "end"
   | iCons (?i, ?tail) => i.str + "," + istr tail
   endmatch
 ;
@@ -1450,11 +1450,11 @@ The real power of the type match comes when combined with a type function:
 @felix
 typedef fun promote (T:TYPE): TYPE =>
   typematch T with
-  | tiny => int
-  | short => int
-  | int => int
-  | long => long
-  | vlong => vlong
+  | #tiny => int
+  | #short => int
+  | #int => int
+  | #long => long
+  | #vlong => vlong
   endmatch
 ;
 @

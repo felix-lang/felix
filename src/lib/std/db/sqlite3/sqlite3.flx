@@ -239,7 +239,7 @@ class Sqlite3 {
   fun sqlite3_prepare_stmt (db:sqlite3_db_t,query:string):result_code[sqlite3_stmt_t] = {
     var stmt:sqlite3_stmt_t;
     return match to_sqlite3_result_code ( sqlite3_prepare_v2(db, query, int(len query), stmt, "")) with
-      | SQLITE_OK =>  qry_ok stmt
+      | #SQLITE_OK =>  qry_ok stmt
       | ?c     => qry_fail[sqlite3_stmt_t] (c,str(sqlite3_errmsg(db)))
     endmatch;
   }
@@ -251,12 +251,12 @@ class Sqlite3 {
     val results = darray[column_value]( size n,null_val);
     for var i:int in 0 upto n - 1 do
        var v = match to_sqlite3_type( sqlite3_column_type(stmt, i) ) with
-                 |SQLITE_TEXT    => text_val (sqlite3_column_text(stmt, i))
-                 |SQLITE_INTEGER     => int_val (sqlite3_column_int(stmt, i))
-                 |SQLITE_FLOAT   => double_val (sqlite3_column_double(stmt, i))
-                 |SQLITE_BLOB    => byte_val (sqlite3_column_bytes(stmt,i),
+                 | #SQLITE_TEXT    => text_val (sqlite3_column_text(stmt, i))
+                 | #SQLITE_INTEGER     => int_val (sqlite3_column_int(stmt, i))
+                 | #SQLITE_FLOAT   => double_val (sqlite3_column_double(stmt, i))
+                 | #SQLITE_BLOB    => byte_val (sqlite3_column_bytes(stmt,i),
                                               sqlite3_column_blob(stmt, i)) 
-                 |SQLITE_NULL => null_val
+                 | #SQLITE_NULL => null_val
                endmatch;
        set(results,i,v );
     done;
@@ -270,9 +270,9 @@ class Sqlite3 {
       var result_code = to_sqlite3_result_code$ sqlite3_step(stmt);
       if result_code == SQLITE_BUSY do goto again; done;
        match result_code  with
-        |SQLITE_DONE => {val p=sqlite3_finalize(stmt);}(); yield end_of_results[darray[column_value]];
-        |SQLITE_ROW  => yield ( row ( sqlite3_get_columns stmt) );
-      //|SQLITE_BUSY => { Faio::sleep (Faio::sys_clock,0.05); goto again; end_of_results[darray[column_value]];}
+        | #SQLITE_DONE => {val p=sqlite3_finalize(stmt);}(); yield end_of_results[darray[column_value]];
+        | #SQLITE_ROW  => yield ( row ( sqlite3_get_columns stmt) );
+      //| #SQLITE_BUSY => { Faio::sleep (Faio::sys_clock,0.05); goto again; end_of_results[darray[column_value]];}
          | ?v =>  {val p=sqlite3_finalize stmt;}(); yield  end_of_results[darray[column_value]];
       endmatch;
       goto again;
@@ -299,18 +299,18 @@ class Sqlite3 {
   gen get_next ( iter:()->ret_val[darray[column_value]],row:&ret_val[darray[column_value]]):bool = { 
     *row = iter();
      return (match *row with 
-              |end_of_results =>false 
-              |row_fail =>false 
-              |_ => true
+              | #end_of_results =>false 
+              | #row_fail =>false 
+              | _ => true
             endmatch); 
   }
 
   //$ Execute an prepared statement.
   gen sqlite3_execute (stmt:sqlite3_stmt_t) :bool  = {     
       val v= match to_sqlite3_result_code$ sqlite3_step(stmt)  with
-        |SQLITE_BUSY => sqlite3_execute(stmt)
-        |SQLITE_DONE => true
-        |_           => false
+        | #SQLITE_BUSY => sqlite3_execute(stmt)
+        | #SQLITE_DONE => true
+        | _           => false
       endmatch;
       val n = sqlite3_finalize stmt;
       return v;

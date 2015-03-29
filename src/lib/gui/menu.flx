@@ -70,7 +70,7 @@ class FlxGuiMenu
     ; 
     method fun get_current_tag () => 
      match state with
-     | Closed => "Closed"
+     | #Closed => "Closed"
      | Open pos =>
         find_tag (pos,m)
      endmatch
@@ -111,11 +111,11 @@ class FlxGuiMenu
 
     fun width (s:string) => (FlxGuiFont::get_textsize (font,s)).0;
     fun width: menu_entry_t -> int =
-      | Separator => left_padding + right_padding + min_width
+      | #Separator => left_padding + right_padding + min_width
       | Text s => left_padding + right_padding + width s.label
     ;
     fun depth : menu_entry_t -> int = 
-      | Separator => top_padding + bottom_padding + separator_depth
+      | #Separator => top_padding + bottom_padding + separator_depth
       | Text s => top_padding + bottom_padding + lineskip
     ;
     fun width : menu_item_t -> int =
@@ -169,7 +169,7 @@ class FlxGuiMenu
       var ypos = top_y + top_padding;
       proc show_entry (entry: menu_entry_t) (submenu:menu_data_t) => 
         match entry with
-        | Separator => 
+        | #Separator => 
           var y = ypos;
           w.draw_line (RGB(0,0,0), left_x, y, right_x, y); 
           ypos = ypos + separator_depth + bottom_padding + top_padding;
@@ -177,8 +177,8 @@ class FlxGuiMenu
         | Text (label=?s,active=?active) =>
           y = ypos + baseline_offset;
           var scheme, dosub = match active with
-            | Active => if counter == selected then selected_colour, true else text_colour, false
-            | Disabled => disabled_colour, false
+            | #Active => if counter == selected then selected_colour, true else text_colour, false
+            | #Disabled => disabled_colour, false
           ;
           var client_area = rect_t (
             left_x+border_width,
@@ -217,7 +217,7 @@ class FlxGuiMenu
     }  
     method proc display() {
       val position = match #(m.get_state) with
-        | Closed => list (0)
+        | #Closed => list (0)
         | Open p => p
       ;
       display_menu (x,y,#(m.get_menu), position);
@@ -243,15 +243,15 @@ class FlxGuiMenu
       proc hotrecs (entry: menu_entry_t) (submenu:menu_data_t) 
       {
         match entry with
-        | Separator => 
+        | #Separator => 
           ypos = ypos + separator_depth + bottom_padding + top_padding;
 //println$ "SEPARATOR : Counter="+counter.str;
 
         | Text (label=?s,active=?active) =>
           y = ypos + baseline_offset;
           var dosub = match active with
-            | Active => counter == selected
-            | Disabled => false
+            | #Active => counter == selected
+            | #Disabled => false
           ;
           var client_area = rect_t (
             left_x+border_width,
@@ -261,8 +261,8 @@ class FlxGuiMenu
           );
 //println$ "TEXT: Counter="+counter.str+", Rect=" + client_area.str;
           match active with 
-          | Active => photrecs <- (client_area, rev (counter + revtrail)) + *photrecs;
-          | Disabled => ;
+          | #Active => photrecs <- (client_area, rev (counter + revtrail)) + *photrecs;
+          | #Disabled => ;
           endmatch;
           match submenu with
           | #Empty => ;
@@ -290,7 +290,7 @@ class FlxGuiMenu
     method fun get_hotrects() : list[rect_t * menu_position_t] =
     {
       val position = match #(m.get_state) with
-        | Closed => list (0)
+        | #Closed => list (0)
         | Open p => p
       ;
       var hotrecs = Empty[rect_t * menu_position_t];
@@ -338,7 +338,7 @@ class FlxGuiMenu
     fun width (s:string) => (FlxGuiFont::get_textsize (font,s)).0;
 
     fun width: menu_entry_t -> int =
-      | Separator => left_padding + right_padding + separator_width
+      | #Separator => left_padding + right_padding + separator_width
       | Text s => left_padding + right_padding + max(min_width, width s.label)
     ;
 
@@ -386,14 +386,14 @@ class FlxGuiMenu
 
       proc show_entry (entry: menu_entry_t) (submenu:menu_data_t) => 
         match entry with
-        | Separator => 
+        | #Separator => 
           w.draw_line (RGB(0,0,0), xpos, top_y, xpos, top_y+bar_depth); 
           xpos = xpos + separator_width + right_padding + left_padding;
 
         | Text (label=?s,active=?active) =>
           var scheme, dosub = match active with
-            | Active => if counter == selected then selected_colour, true else text_colour, false
-            | Disabled => disabled_colour, false
+            | #Active => if counter == selected then selected_colour, true else text_colour, false
+            | #Disabled => disabled_colour, false
           ;
           var item_width =  max (width s, min_width);
           var client_area = rect_t (
@@ -443,7 +443,7 @@ class FlxGuiMenu
 
     method proc display() {
       val position = match #(m.get_state) with
-        | Closed => list (0)
+        | #Closed => list (0)
         | Open p => p
       ;
       display_menu (x,y,#(m.get_menu), position);
@@ -468,14 +468,14 @@ class FlxGuiMenu
       proc hotrecs (entry: menu_entry_t) (submenu:menu_data_t) 
       {
         match entry with
-        | Separator => 
+        | #Separator => 
           xpos = xpos + separator_width + right_padding + left_padding;
 //println$ "SEPARATOR : Counter="+counter.str;
 
         | Text (label=?s,active=?active) =>
           var dosub = match active with
-            | Active => counter == selected
-            | Disabled => false
+            | #Active => counter == selected
+            | #Disabled => false
           ;
           var item_width = max (width s, min_width);
           var client_area = rect_t (
@@ -486,8 +486,8 @@ class FlxGuiMenu
           );
 //println$ "TEXT: Counter="+counter.str+", Rect=" + client_area.str;
           match active with 
-          | Active => photrecs <- (client_area, rev (counter + revtrail)) + *photrecs;
-          | Disabled => ;
+          | #Active => photrecs <- (client_area, rev (counter + revtrail)) + *photrecs;
+          | #Disabled => ;
           endmatch;
           match submenu with
           | #Empty => ;
@@ -529,7 +529,7 @@ class FlxGuiMenu
     method fun get_hotrects() : list[rect_t * menu_position_t] =
     {
       val position = match #(m.get_state) with
-        | Closed => list (0)
+        | #Closed => list (0)
         | Open p => p
       ;
       var hotrecs = Empty[rect_t * menu_position_t];
@@ -574,7 +574,7 @@ class FlxGuiMenu
         | Some pos =>
           println$ "Mouse Move Position " + pos.str;
           match #(mm.get_state) with
-          | Closed =>
+          | #Closed =>
             write$ response, ChangedPosition;
           | Open oldpos =>
             if oldpos == pos do
@@ -595,7 +595,7 @@ class FlxGuiMenu
         | Some pos =>
           println$ "Mouse down Position " + pos.str;
           match #(mm.get_state) with
-          | Closed =>
+          | #Closed =>
             write$ response, ChangedPosition;
           | Open oldpos =>
             if oldpos == pos do
@@ -616,7 +616,7 @@ class FlxGuiMenu
         | Some pos =>
           println$ "Mouse up Position " + pos.str;
           match #(mm.get_state) with
-          | Closed =>
+          | #Closed =>
             write$ response, ChangedPosition;
           | Open oldpos =>
             if oldpos == pos do

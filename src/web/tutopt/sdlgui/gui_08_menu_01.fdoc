@@ -114,8 +114,8 @@ proc ehandler
     write$ menu_out, e;
     var response = read menu_in;
     match response with
-    | NoAction => ;
-    | ChangedPosition => 
+    | #NoAction => ;
+    | #ChangedPosition => 
       w.display; // redraw whole window base
       var resize_event: event_t; // hack, only fill out some fields
       &resize_event.type <- SDL_WINDOWEVENT.uint32;

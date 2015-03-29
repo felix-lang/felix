@@ -280,9 +280,9 @@ class FlxPkgConfig_core
          if valid file do
            if dolist do
              match keep with
-             | keepleftmost => add_val pkg;
-             | keeprightmost => tail_val pkg;
-             | keepall => keep_val pkg;
+             | #keepleftmost => add_val pkg;
+             | #keeprightmost => tail_val pkg;
+             | #keepall => keep_val pkg;
              endmatch;
            done
            var lines = Empty[string];
@@ -310,9 +310,9 @@ class FlxPkgConfig_core
                values = map (search_and_replace variables) values;
                if mem streq fields key do
                  match keep with
-                 | keepleftmost => { iter add_val values; }
-                 | keeprightmost => { iter tail_val values; }
-                 | keepall => { iter keep_val values; }
+                 | #keepleftmost => { iter add_val values; }
+                 | #keeprightmost => { iter tail_val values; }
+                 | #keepall => { iter keep_val values; }
                  endmatch;
                done;
 
