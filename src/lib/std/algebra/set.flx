@@ -13,5 +13,10 @@ class Set[c,t] {
 }
 
 interface set_form[T] { has_elt: T -> bool; }
-fun \in[T] (elt:T, s:set_form[T]) => s.has_elt elt;
+
+instance[T] Set[set_form[T], T] {
+  fun \in (elt:T, s:set_form[T]) => s.has_elt elt;
+}
+open[T] Set[set_form[T],T];
+
  

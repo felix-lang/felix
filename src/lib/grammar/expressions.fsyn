@@ -413,13 +413,17 @@ syntax expressions {
   //$ Object extension.
   satom := "extend" stypelist "with" sexpr "end" =># "`(ast_extension ,_sr ,_2 ,_4)";
 
-  satom := "\{" spattern ":" stypeexpr "|" sexpr "\}" =>#
+    setbar := "|" =># "_1";
+    setbar := "\|" =># "_1";
+    setbar := "\mid" =># "_1";
+
+  setform := spattern ":" stypeexpr setbar sexpr =>#
     """
     (let* 
       (
-         (argt _4)
+         (argt _3)
          (ret (nos "bool"))
-         (matchings `((,_2 ,_6)((pat_any ,_sr)(ast_typed_case 0 2))))
+         (matchings `((,_1 ,_5)((pat_any ,_sr)(ast_typed_case 0 2))))
          (body `((ast_fun_return ,_sr (ast_match ,_sr (,(noi '_a) ,matchings)))))
          (param `(PVal _a ,argt none)) ;; one parameter
          (params `(,param))            ;; parameter tuple list
@@ -434,6 +438,8 @@ syntax expressions {
       `(ast_apply ,_sr (,object (ast_tuple ,_sr ())))
     )
     """;
+  satom := "{" setform  "}" =># "_2";
+  satom := "\{" setform  "\}" =># "_2";
 
   //$ Conditional expression.
   satom := sconditional "endif" =># "_1";
