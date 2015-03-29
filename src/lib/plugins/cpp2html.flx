@@ -77,14 +77,14 @@ fun xlat_cpp(t:string, dir:string) : bool * string=
       if x.[0] == char "<" do x = "&lt;" + x.[1 to]; done
       if x.[-1] == char ">" do x = x.[to -1] + "&gt;"; done
       match get_file(n,INSTALL_ROOT,Cons(dir,C_PATH)) with
-      | Some ?f => 
+      | Some f => 
           // the $ is so we know we have resolved the filename
           // we can't use just / because it means the server root
           // and we can't use // because firefox thinks it means
           // the website name is empty
           // the trailing ?cpp tells us the filetype is C/C++
           write_string('<a href="/$'+f+'?cpp" >' + x + '</a>'); 
-      | None => write_string('<span class="fstring">'+x+"</span>");
+      | #None => write_string('<span class="fstring">'+x+"</span>");
       endmatch;
     else 
      write_string('<span class="fstring">'+b+"</span>"); 

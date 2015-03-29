@@ -72,8 +72,8 @@ gen cal_depvars(
   debugln$ "User program base is " + filebase;
   var cpp_filebase =
     match control*.BUNDLE_DIR with
-    | Some ?dir => Filename::join(dir,Filename::basename filebase)
-    | None =>if config.FLX_OUTPUT_DIR=="" then filebase 
+    | Some dir => Filename::join(dir,Filename::basename filebase)
+    | #None =>if config.FLX_OUTPUT_DIR=="" then filebase 
              else cache_join(config.FLX_OUTPUT_DIR,filebase) 
              endif
     endmatch;         
@@ -183,7 +183,7 @@ gen cal_depvars(
     var FLX_STD_LIBS=Empty[string];
   else
     match control*.FLX_STD_LIBS with
-    | Empty => FLX_STD_LIBS = list[string] ("std");
+    | #Empty => FLX_STD_LIBS = list[string] ("std");
     | ?x => FLX_STD_LIBS = x;
     endmatch;
   done

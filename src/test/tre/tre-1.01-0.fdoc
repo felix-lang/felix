@@ -13,7 +13,7 @@ print "Done tre compile"; endl;
 print
   match r with
   | Some _ => "Compiled"
-  | None => "failed"
+  | #None => "failed"
   endmatch
 ;
 endl;
@@ -21,8 +21,8 @@ endl;
 
 var re : tre_regex_t =
   match r with
-  | Some ?re => re
-  | None => re // HACK!
+  | Some re => re
+  | #None => re // HACK!
   endmatch
 ;
 

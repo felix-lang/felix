@@ -290,8 +290,8 @@ fun getline_to_url (get:string) =>
     ""
   else
     match find (get, ' ', 4) with
-    | None => ""
-    | Some ?pos => get.[4 to pos]
+    | #None => ""
+    | Some pos => get.[4 to pos]
     endmatch
   endif
 ;
@@ -301,8 +301,8 @@ fun postline_to_url (get:string) =>
     ""
   else
     match find (get, ' ', 5) with
-    | None => ""
-    | Some ?pos => get.[5 to pos]
+    | #None => ""
+    | Some pos => get.[5 to pos]
     endmatch
   endif
 ;
@@ -320,8 +320,8 @@ fun split_url (inurl:string) = {
 
   return
     match find (url, '/') with
-    | None => None[string*string]
-    | Some ?pos => Some$ url.[0 to pos], url.[pos + 1 to]
+    | #None => None[string*string]
+    | Some pos => Some$ url.[0 to pos], url.[pos + 1 to]
     endmatch
   ;
 }
@@ -459,7 +459,7 @@ fun find_defs (lines:string) : darray[int * int * string] =
     var spl = StringPiece line;
 
     match lgrep line with
-    | Some ?v =>
+    | Some v =>
       var sym = v.3;
       var dfn = "";
       var m2 = Match (extract, spl, 0, ANCHOR_BOTH, v2.stl_begin, n2);
@@ -472,7 +472,7 @@ fun find_defs (lines:string) : darray[int * int * string] =
       var level = if line.[0] == " " then 2 else 1 endif;
       push_back (h, (level, lno, dfn));
 
-    | None => ;
+    | #None => ;
     endmatch; //d grexp
     ++lno;
   done // line
@@ -643,7 +643,7 @@ proc serve_felix (k:socket_t, fname:string, get:bool) {
   var eof_flag = false;
 
   match get_file(fname,INSTALL_ROOT,FLX_PATH) with
-  | Some ?path =>
+  | Some path =>
     if edit_flag do serve_edit (k,path, "text/x-felix", get);
     else
       val text = load path;
@@ -661,7 +661,7 @@ proc serve_felix (k:socket_t, fname:string, get:bool) {
       ;
       write_string(k,data,&eof_flag);
     done 
-  | None =>
+  | #None =>
       serve_not_found (k,fname,get);
   endmatch;
 }
@@ -670,7 +670,7 @@ proc serve_fpc (k:socket_t, fname:string, get:bool) {
   var eof_flag = false;
 
   match get_file (fname, INSTALL_ROOT,FLX_PKGCONFIG_PATH) with
-  | Some ?path =>
+  | Some path =>
     if edit_flag do serve_edit (k,path, "text/x-felix", get);
     else 
       val text=load path;
@@ -684,7 +684,7 @@ proc serve_fpc (k:socket_t, fname:string, get:bool) {
       ;
       write_string(k,data,&eof_flag);
     done 
-  | None =>
+  | #None =>
       serve_not_found (k,fname,get);
   endmatch;
 
@@ -693,7 +693,7 @@ proc serve_fpc (k:socket_t, fname:string, get:bool) {
 proc serve_py (k:socket_t, fname:string, get:bool) {
   var eof_flag = false;
   match get_file(fname,INSTALL_ROOT,FLX_PATH) with
-  | Some ?path =>
+  | Some path =>
     if edit_flag do serve_edit (k,path,"text/x-python", get);
     else
       var flx = load path;
@@ -704,7 +704,7 @@ proc serve_py (k:socket_t, fname:string, get:bool) {
       ;
       write_string (k, data, &eof_flag);
     done
-  | None =>
+  | #None =>
     serve_not_found (k,fname,get);
   endmatch;
 }
@@ -712,7 +712,7 @@ proc serve_py (k:socket_t, fname:string, get:bool) {
 proc serve_ocaml (k:socket_t, fname:string, get:bool) {
   var eof_flag = false;
   match get_file (fname, INSTALL_ROOT,FLX_PATH) with
-  | Some ?path =>
+  | Some path =>
     if edit_flag do serve_edit (k,path,"text/x-ocaml", get);
     else
       var flx = load path;
@@ -725,7 +725,7 @@ proc serve_ocaml (k:socket_t, fname:string, get:bool) {
       ;
       write_string (k, data, &eof_flag);
     done
-  | None =>
+  | #None =>
     serve_not_found (k,fname,get);
   endmatch;
 }
@@ -733,7 +733,7 @@ proc serve_ocaml (k:socket_t, fname:string, get:bool) {
 proc serve_cpp (k:socket_t, fname:string, get:bool) {
   var eof_flag = false;
   match get_file(fname,INSTALL_ROOT,C_PATH) with
-  | Some ?path =>
+  | Some path =>
     if edit_flag do serve_edit (k,path, "text/x-c++src", get);
     else 
       val text=load path;
@@ -747,7 +747,7 @@ proc serve_cpp (k:socket_t, fname:string, get:bool) {
       ;
       write_string (k, data, &eof_flag);
     done 
-  | None =>
+  | #None =>
       serve_not_found (k,fname,get);
   endmatch;
 }
@@ -802,7 +802,7 @@ proc serve_xhtml (k:socket_t, fname:string, get:bool) {
 proc serve_fdoc (k:socket_t, fname:string, get:bool) {
   var eof_flag = false;
   match get_file(fname,INSTALL_ROOT,FDOC_PATH) with
-  | Some ?path=> 
+  | Some path=> 
     if edit_flag do serve_edit (k,path, "text/x-felix",get);
     else
       var txt = load(path);
@@ -822,14 +822,14 @@ proc serve_fdoc (k:socket_t, fname:string, get:bool) {
       );
       write_string(k,data,&eof_flag);
     done
-  | None => serve_not_found(k,fname,get); 
+  | #None => serve_not_found(k,fname,get); 
   endmatch;
 }
 
 proc serve_xfdoc (k:socket_t, fname:string, get:bool) {
   var eof_flag = false;
   match get_file(fname,INSTALL_ROOT,FDOC_PATH) with
-  | Some ?path=> 
+  | Some path=> 
     if edit_flag do serve_edit (k,path, "text/x-felix",get);
     else
       var txt = load(path);
@@ -850,7 +850,7 @@ proc serve_xfdoc (k:socket_t, fname:string, get:bool) {
       );
       write_string(k,data,&eof_flag);
     done
-  | None => serve_not_found(k,fname,get); 
+  | #None => serve_not_found(k,fname,get); 
   endmatch;
 }
 
@@ -955,11 +955,11 @@ fun mk_reg_lines (fname:string, files: list[string]) = {
       entry = h; rest = t;
       base,extn =
         match rfind (entry, ".") with
-        | None => entry, "" 
-        | Some ?pos => entry.[to pos], entry.[pos to]
+        | #None => entry, "" 
+        | Some pos => entry.[to pos], entry.[pos to]
         endmatch
       ;
-    | Empty => eof = true;   
+    | #Empty => eof = true;   
     endmatch;
   }
 
@@ -989,7 +989,7 @@ proc serve_directory (k:socket_t, fname:string, get:bool) {
   val top = "A DIRECTORY " + fname + "\r\n";
   val flist = 
     match Directory::filesin fname with
-    | Some ?files =>
+    | Some files =>
       let ?aux = 
           fun (ls2:list[string] * list[string]) (f:string) =>
           match ls2 with | ?ds,?rs => match FileStat::filetype (Filename::join (fname,f)) with
@@ -1008,7 +1008,7 @@ proc serve_directory (k:socket_t, fname:string, get:bool) {
         if dir_lines.len != 0uz then ' Directories: \r\n' + dir_lines else "" endif +
         if reg_lines.len != 0uz then ' Files: \r\n' + reg_lines else "" endif +
         "</pre>"
-    | None => "ERROR ACCESSING DIRECTORY"
+    | #None => "ERROR ACCESSING DIRECTORY"
     endmatch
   ;
   val page = make_html(top + flist,
@@ -1051,11 +1051,11 @@ proc serve(s: socket_t, infname: string, get:bool)
   var suffix = "";
   fun split_suffix (fname:string) =>
     match rfind (fname, "?") with
-    | Some ?pos => fname.[pos + 1 to], fname.[0 to pos]
-    | None =>
+    | Some pos => fname.[pos + 1 to], fname.[0 to pos]
+    | #None =>
         match rfind (fname, ".") with
-        | None => "",fname
-        | Some ?pos => fname.[pos + 1 to], fname
+        | #None => "",fname
+        | Some pos => fname.[pos + 1 to], fname
         endmatch
     endmatch
   ;
@@ -1104,8 +1104,8 @@ proc serve(s: socket_t, infname: string, get:bool)
     serve_css(s,fname,suffix, get);
   else
     match get_file(fname, INSTALL_ROOT,Empty[string]) with
-    | None => serve_not_found(s,fname, get);
-    | Some ?f =>
+    | #None => serve_not_found(s,fname, get);
+    | Some f =>
         if prefix(fname,"/etc") do serve_forbidden(s,fname, get);
         else
         match FileStat::filetype f with
@@ -1187,21 +1187,21 @@ println$ "Got the line length .. "+line.len.str;
       println$ "Content (nbytes=" + nbytes.str+") = " + content;
       serve_not_implemented(k, file);
  
-    | None => println$ "BAD POST line: '"+line+"'";
+    | #None => println$ "BAD POST line: '"+line+"'";
     endmatch;
   | reqGET =>
     match parse_get_line line with
     | Some (?base, ?file) => 
       print "file="; print file; endl;
       serve_file(k,file);
-    | None => println$ "BAD GET line: '"+line+"'";
+    | #None => println$ "BAD GET line: '"+line+"'";
     endmatch;
   | reqHEAD=>
     match parse_get_line line with
     | Some (?base, ?file) => 
       print "file="; print file; endl;
       serve_head(k,file);
-    | None => println$ "BAD HEAD line: '"+line+"'";
+    | #None => println$ "BAD HEAD line: '"+line+"'";
     endmatch;
   | reqERROR =>
     println$ "BAD request line: '"+line+"'";

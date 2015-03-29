@@ -73,7 +73,7 @@ such as <code>rec T. 1 + int * T</code> would have been more conventional.
 
 The actual standard library definition uses a nominal type instead:
 @felix
-union list[T] = | Empty | Cons of T * list[T];
+union list[T] = | #Empty | Cons of T * list[T];
 @
 
 @h2 Type Matches

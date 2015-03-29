@@ -2980,7 +2980,9 @@ and lookup_name_with_sig
        Flx_list.list_assoc_index_with_assoc fields name
      with
      | Some (k,ft) ->
+(*
        print_endline ("projection: FOUND RECORD FIELD " ^ name);
+*)
        Some (bexpr_prj k d ft)
      | None -> None
      end
@@ -2993,7 +2995,9 @@ and lookup_name_with_sig
        Flx_list.list_assoc_index_with_assoc fields name
      with
      | Some (k,ft) ->
+(*
        print_endline ("projection: FOUND RECORD POINTER FIELD " ^ name);
+*)
        Some (bexpr_prj k d (BTYP_pointer ft))
      | None -> None
      end

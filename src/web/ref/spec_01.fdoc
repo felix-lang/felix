@@ -1535,7 +1535,7 @@ match to be chained onto the last branch without any endmatch.
 var y = list (1,2);
 var x = 
   match y with
-  | Empty => "Empty"
+  | #Empty => "Empty"
   | _ =>
   match y with 
   | ?h ! Empty => h.str
@@ -1675,7 +1675,7 @@ The case tag is only used in pattern matches.
 The sum or union type isn't required because it can be deduced
 from the match argument.
 @felix
-var a = match a with Some ?v  => v | None => 0;
+var a = match a with Some ?v  => v | #None => 0;
 @
 
 The case constructor with integer caseno has two uses. 
@@ -1967,8 +1967,8 @@ to be bound in the pattern matching.
 @felix
 var x = 
   match y with 
-  | Some ?v => "Some " + v.str 
-  | None => "None";
+  | Some v => "Some " + v.str 
+  | #None => "None";
 ;
 @
 

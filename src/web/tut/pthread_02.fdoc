@@ -12,8 +12,8 @@ proc client(x:ipchannel[opt[string]]) {
   var finished = false;
   while not finished do
     match read x with
-    | Some ?line => print line;
-    | None => finished = true;
+    | Some line => print line;
+    | #None => finished = true;
     endmatch;
   done
 }
@@ -68,8 +68,8 @@ gen broadcaster() :
     var end_of_news = false;
     while not end_of_news do
       match read iregistry with
-      | None => end_of_news = true;
-      | Some ?chan => 
+      | #None => end_of_news = true;
+      | Some chan => 
         push_back (clients, chan);
         println "Got a subscriber";
       endmatch;

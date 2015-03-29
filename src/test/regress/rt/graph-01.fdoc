@@ -52,7 +52,7 @@ begin // Skiena fig 5.9 page 162
 
   var p = find_shortest_unweighted_path g (2,4);
   match p with
-  | None => println$ "No path from 2 to 4";
+  | #None => println$ "No path from 2 to 4";
   | Some lst => println$ "Path 2->4 is: " + lst.str;
   endmatch;
 

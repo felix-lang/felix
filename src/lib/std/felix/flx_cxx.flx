@@ -31,7 +31,7 @@ class CxxCompiler
   // GIGO: this routine can't fail, but it can return rubbish
   gen generic_dependency_parser (data:string) : list[string] =
   {
-    var pcolon = match find (data ,':') with | Some ?i => i+1 | None => 0;
+    var pcolon = match find (data ,':') with | Some i => i+1 | #None => 0;
     var txt = data.[pcolon to];
     txt = search_and_replace (txt,'\\\n','');
     var files = respectful_split txt;

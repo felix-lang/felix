@@ -40,8 +40,8 @@ object window_manager () =
   method proc delete_window (wid: uint32)
   {
     match find_window_index wid with
-    | None => ;
-    | Some ?i => 
+    | #None => ;
+    | Some i => 
       println$ "delete window found index " + i.str;
       windows.i.destroy_window; 
       println$ "SDL destroyed";
@@ -80,9 +80,9 @@ object window_manager () =
   method proc dispatch_window_event (e:event_t) 
   {
     match SDL_GetWindowID e with
-    | Some ?wid =>
+    | Some wid =>
       match find_window wid with
-      | Some ?wobj =>
+      | Some wobj =>
         var omsgs = #(wobj.get_oschannel);
         write (omsgs, e);
         if e.type.SDL_EventType == SDL_WINDOWEVENT and 
@@ -91,9 +91,9 @@ object window_manager () =
           #(wobj.get_window_id).delete_window;
           println$ "dispatch: window deleted!";
         done
-        | None => println$ "Can't find window ID = " + str wid;
+        | #None => println$ "Can't find window ID = " + str wid;
         endmatch;
-      | None => println$ "No window for message: Event type " + e.type.SDL_EventType.str;
+      | #None => println$ "No window for message: Event type " + e.type.SDL_EventType.str;
       endmatch;
   }
 

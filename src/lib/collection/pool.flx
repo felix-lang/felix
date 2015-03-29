@@ -54,7 +54,7 @@ class Pool[s] {
     gen get_next () : opt[s] = {
        match rotation  with 
           | Cons (?h,?t) =>  rotation = t;return (Some h);
-          | Empty => match typ with |INF => rotation = Cons(constructor(),
+          | #Empty => match typ with |INF => rotation = Cons(constructor(),
                                                                      rotation); 
                                                                 members=rotation+members; 
                                                                 return get_next();

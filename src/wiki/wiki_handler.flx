@@ -275,7 +275,7 @@ mathjax := '''
   proc html (conn:http_connection, request:http_request ) {
     if  has_html_doc(request.path) do
       match get_html_doc(request.path) with
-        | Some ?s => {write(conn,make_html(s.content));}
+        | Some s => {write(conn,make_html(s.content));}
         | _ => { handle_wiki_not_found(conn,request); }
       endmatch;
     elif (handle_css_route(conn.config,request)) do handle_css(conn,request);  
@@ -480,7 +480,7 @@ mathjax := '''
     match FileStat::filetype fspath with
     | DIRECTORY => {
       match Directory::filesin fspath with
-      | Some ?files => { iter (proc (y:string) {
+      | Some files => { iter (proc (y:string) {
         if y != "." and y != ".git" do
       	  if y == ".." do
             if rpath != "/dir" do 
@@ -500,7 +500,7 @@ mathjax := '''
       done
       }) (sort(files));
     }
-    | None => {  }
+    | #None => {  }
     endmatch;
   }
   | REGULAR => {write(conn,make_see_other(q"/wiki/$(path)"));}
@@ -527,7 +527,7 @@ mathjax := '''
     var txt:string;
     if has_doc(fname) do
       txt = match get_doc(fname) with
-               | Some ?s => s.content
+               | Some s => s.content
                | _ => ""
              endmatch;
       write(conn,make_html(txt));
@@ -543,12 +543,12 @@ mathjax := '''
     var fname = fn;
     var suffix = "";
     match rfind (fname, "?") with
-      | Some ?pos => { suffix = fname.[pos + 1 to]; fname=fname.[0 to pos]; }
-      | None[int] =>
+      | Some pos => { suffix = fname.[pos + 1 to]; fname=fname.[0 to pos]; }
+      | #None[int] =>
       {
         match rfind (fname, ".") with
-          | None[int] => {}
-          | Some ?pos => { suffix = fname.[pos + 1 to]; }
+          | #None[int] => {}
+          | Some pos => { suffix = fname.[pos + 1 to]; }
         endmatch; 
       }
     endmatch;

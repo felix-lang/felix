@@ -34,10 +34,10 @@ fun token[A, B](test:A->opt[B]):parser[A,B] =>
     match l with
     | Cons (?t, ?ts) =>
         match test t with
-        | Some ?r => Returns[A, B] (r, ts)
-        | None => Parse_failed[A, B]
+        | Some r => Returns[A, B] (r, ts)
+        | #None => Parse_failed[A, B]
         endmatch
-    | Empty => Parse_failed[A, B]
+    | #Empty => Parse_failed[A, B]
     endmatch
   ;
 
@@ -133,7 +133,7 @@ open syntax prefix_c;
 //Check if a character is a member of one of the provided ranges
 fun char_range (c:char)(l:list[char*char]):bool =>
   match l with
-    | Empty => false
+    | #Empty => false
     | Cons ((?c1, ?c2), ?tl) =>	
        (ord c1 <= ord c and ord c <= ord c2) or char_range c tl
   endmatch

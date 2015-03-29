@@ -41,8 +41,8 @@ class CopyFiles {
      {
        if dir != "." and dir != ".." do
        match Directory::filesin(Filename::join (basedir,dir)) with
-       | None  => ;
-       | Some ?files =>
+       | #None  => ;
+       | Some files =>
          List::iter
            (proc (f:string)
            { if f != "." and f != ".." do

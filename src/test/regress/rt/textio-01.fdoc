@@ -22,8 +22,8 @@ fun fold_file[a,b]
 {
   fun aux (prev_val:b) :b =>
       match read_func () with
-      | Some ?input => aux (elem_func input prev_val)
-      | None => prev_val
+      | Some input => aux (elem_func input prev_val)
+      | #None => prev_val
       endmatch
   ;
   return aux seed;

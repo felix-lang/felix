@@ -23,9 +23,9 @@ proc client (x:ischannel[il_t], y:oschannel[il_t])
   l = List::filter (fun (e:int) => (e%p != 0 or e/p == 1)) l;
   val r = List::find (fun (e:int) => e > p) l;
   match r with 
-  | None => 
+  | #None => 
     write$ y, (0, l); //We're done
-  | Some ?x => 
+  | Some x => 
     inp,out:=#mk_ioschannel_pair[il_t];
     spawn_fthread { client (inp, y); };
     write$ out, (x, l);

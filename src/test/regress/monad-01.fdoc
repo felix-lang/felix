@@ -8,8 +8,8 @@ typedef fun Maybe (t:TYPE):TYPE=>opt[t];
 instance Monad [Maybe] {
   fun bind[a,b] (x:Maybe a, f:a -> Maybe b) =>
     match x with
-    | None[a] => None[b]
-    | Some ?x => f x
+    | #None[a] => None[b]
+    | Some x => f x
     endmatch
   ;
 
@@ -28,8 +28,8 @@ open Monad[Maybe];
 
 proc show(r:Maybe double) {
    match r with
-  | Some ?x => { print x; }
-  | None => { print "divide by zero somewhere"; }
+  | Some x => { print x; }
+  | #None => { print "divide by zero somewhere"; }
   endmatch; endl;
 }
 

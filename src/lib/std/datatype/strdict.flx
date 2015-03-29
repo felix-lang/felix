@@ -58,8 +58,8 @@ class StrDict[T] {
    //$ then return a default value.
   fun get_dflt (x:strdict) (key:string, dflt:T) => 
     match get x key with
-    | Some ?v => v
-    | None => dflt
+    | Some v => v
+    | #None => dflt
     endmatch
   ;
 
@@ -95,11 +95,11 @@ class StrDict[T] {
      strncpy (k,key.cstr, JUDY_SL_MAXLEN);
      var result = charp_get_ge x k;
      match result with
-     | Some ?v =>
+     | Some v =>
        key = k.string;
        free k; 
        return Some (key,v);
-     | None=>
+     | #None=>
        free k;
        return None[string * T];
      endmatch ;
@@ -128,11 +128,11 @@ class StrDict[T] {
      strncpy (k,key.cstr, JUDY_SL_MAXLEN);
      var result = charp_get_gt x k;
      match result with
-     | Some ?v =>
+     | Some v =>
        key = k.string;
        free k; 
        return Some (key,v);
-     | None=>
+     | #None=>
        free k;
        return None[string * T];
      endmatch ;
@@ -161,11 +161,11 @@ class StrDict[T] {
      strncpy (k,key.cstr, JUDY_SL_MAXLEN);
      var result = charp_get_le x k;
      match result with
-     | Some ?v =>
+     | Some v =>
        key = k.string;
        free k; 
        return Some (key,v);
-     | None=>
+     | #None=>
        free k;
        return None[string * T];
      endmatch ;
@@ -194,11 +194,11 @@ class StrDict[T] {
      strncpy (k,key.cstr, JUDY_SL_MAXLEN);
      var result = charp_get_lt x k;
      match result with
-     | Some ?v =>
+     | Some v =>
        key = k.string;
        free k; 
        return Some (key,v);
-     | None=>
+     | #None=>
        free k;
        return None[string * T];
      endmatch ;
@@ -222,8 +222,8 @@ class StrDict[T] {
        var v = charp_first x buffer;
        while true do
          match v with 
-         | Some ?vv => yield Some (string buffer, vv);
-         | None => free buffer; return None[string * T];
+         | Some vv => yield Some (string buffer, vv);
+         | #None => free buffer; return None[string * T];
          endmatch;
          v = charp_get_gt x buffer;
        done

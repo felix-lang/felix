@@ -17,7 +17,7 @@ object fdoc_fileseq (filename: string) implements fileseq-control_t =
 
   fun calnav() = 
   {
-    val relfile = match (filename,'/').split.rev with | Cons(?h,_) => h | Empty => "";
+    val relfile = match (filename,'/').split.rev with | Cons(?h,_) => h | #Empty => "";
     var lpos = relfile.len.int;
     while lpos > 0 and not isdigit(relfile.[lpos - 1]) do 
        --lpos; 
@@ -68,8 +68,8 @@ object fdoc_fileseq (filename: string) implements fileseq-control_t =
 
   method fun docnum()=>
     match calnav() with
-    | None,_,_,_ => ""
-    | Some ?v,_,_,_ => str v + "."
+    | #None,_,_,_ => ""
+    | Some v,_,_,_ => str v + "."
   ; 
 
 }

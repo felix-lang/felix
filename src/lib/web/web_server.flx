@@ -75,7 +75,7 @@ class WebServer {
         content type is application/x-www-form-urlencoded */
       //if str(request.hmethod) == str(POST) do
       match get_header(request,"Content-Type") with
-        | Some ?c => { 
+        | Some c => { 
           match parse_media_type(c) with
             | Some (?m,?a) => {
               if str(m) == str(application x_DASH_www_DASH_form_DASH_urlencoded) do

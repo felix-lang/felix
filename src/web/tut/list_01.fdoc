@@ -10,7 +10,7 @@ See <a href="/share/lib/std/datatype/list.fdoc">List</a> standard library code.
 begin
   fun str (x:list[int]) =>
     match x with
-    | Empty => "()"
+    | #Empty => "()"
     | Cons (?h, ?t) => "(" + (str h) + ", " + (str t) + ")"
     endmatch
   ;

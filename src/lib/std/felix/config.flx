@@ -97,7 +97,7 @@ class Config {
     for line in lines do
       var found = Match (re, line);
       match found with
-      | Some ?v when v.len.int == 3 => 
+      | Some v when v.len.int == 3 => 
         var p = v.1;
         var a = strip v.2;
         match p with
@@ -123,7 +123,7 @@ class Config {
         | "FLX_LIB_DIRS" => cfg.FLX_LIB_DIRS <-  respectful_split a; 
         | "FLX_RTL_DIRS" => cfg.FLX_RTL_DIRS <- respectful_split a; 
         endmatch;
-      | None => ;
+      | #None => ;
       endmatch;
     done
   }

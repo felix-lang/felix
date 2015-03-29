@@ -8,11 +8,11 @@ open class CmdOpt
      var inp = x.iterator;
      for word in inp do
        match keys.find word with
-       | None => out = Cons (word,out);
-       | Some ?prefix => 
+       | #None => out = Cons (word,out);
+       | Some prefix => 
          match inp() with
-         | None => println$ "Error, expected argument to option " + word;
-         | Some ?arg => out = Cons (prefix+"=" + arg, out);
+         | #None => println$ "Error, expected argument to option " + word;
+         | Some arg => out = Cons (prefix+"=" + arg, out);
          endmatch;
        endmatch;
      done
@@ -59,7 +59,7 @@ open class CmdOpt
         if key in keys do
           val value= va . 2 . string ;
           match d.get key with
-          | None => d.add key value;
+          | #None => d.add key value;
           | _ => println$ "Duplicate option '" + opt +"'";
           endmatch;
         else
@@ -112,9 +112,9 @@ open class CmdOpt
         var switches = va . 1 . string . [1 to];
         for switch in switches do
           match switchmap.find switch with
-          | None =>
+          | #None =>
             println$ "Invalid option " + opt + " char '" + str switch+"'";
-          | Some ?key=>
+          | Some key=>
             val nuval = d.get_dflt (key,0) + 1;
             d.add key nuval;
           endmatch;

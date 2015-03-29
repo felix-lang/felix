@@ -66,7 +66,7 @@ type system cannot support type recursion and hence is effectively
 useless: you cannot make a combinatorial definition of a polymorphic
 linked list in C++, in Felix it is a one liner:
 @felix-unchecked
-union list[T] = | Empty | Cons of T * list[T];
+union list[T] = | #Empty | Cons of T * list[T];
 @
 using Felix's built in tuple and union constructors.
 The equivalent templates are easy to define in C++:

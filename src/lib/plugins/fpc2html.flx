@@ -48,8 +48,8 @@ println$ "formatting fpc data";
   }
   proc handle_pkg(s:string) {
     match get_file(s+".fpc",FLX_PKGCONFIG_PATH) with
-    | Some ?path => { out += '<a href="/$' + path + '">' + s + '</a> '; }
-    | None => { out += s + " "; }
+    | Some path => { out += '<a href="/$' + path + '">' + s + '</a> '; }
+    | #None => { out += s + " "; }
     endmatch;
   }
   proc handle_include(s:string) {
@@ -57,8 +57,8 @@ println$ "formatting fpc data";
     while n.[0] in (char '"', char '<', char "'") do n=n.[1 to]; done
     while n.[-1] in (char '"',char '>',char "'") do n=n.[to -1]; done
     match get_file(n,C_PATH) with
-    | Some ?path => { out += '<a href="/$' + path + '?cpp">' + s + '</a> '; }
-    | None => { out += s + " "; }
+    | Some path => { out += '<a href="/$' + path + '?cpp">' + s + '</a> '; }
+    | #None => { out += s + " "; }
     endmatch;
   }
 }

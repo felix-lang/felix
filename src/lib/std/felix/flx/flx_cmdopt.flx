@@ -132,7 +132,7 @@ proc setup-from-file (debugln: string -> 0)
   var lines = split (load arg,char "\n");
   for line in lines do
     match Match (re,line) with
-    | Some ?v => 
+    | Some v => 
       var field = v.1;
       var data = strip v.2;
       match field with
@@ -169,7 +169,7 @@ proc setup-from-file (debugln: string -> 0)
           control.FLX_STD_LIBS <- control*.FLX_STD_LIBS+ data;
       | _ => debugln$ "Unknown field " + field;
       endmatch;
-    | None => ;
+    | #None => ;
     endmatch;
   done
 }
@@ -527,8 +527,8 @@ private fun exts () = {
 }
 
 private fun check_ext (s:string) => match find #exts s with
-  | Some ?tag => tag
-  | None => "unknown"
+  | Some tag => tag
+  | #None => "unknown"
 ;
 
 private noinline proc xparse_cmd_line 
@@ -714,7 +714,7 @@ noinline proc processing_stage1
   debugln$ "FLXG = " + control*.FLXG;
   control.FLXRUN <- 
     match control*.FLXRUN with
-    | Empty => dflt_flx_run
+    | #Empty => dflt_flx_run
     | ?x => x
     endmatch
   ;

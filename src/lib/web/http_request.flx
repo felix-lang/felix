@@ -206,7 +206,7 @@ fun read_bytes(conn:http_connection,olen:int) = {
     
      val cline= Assoc_list::find (fun (a:string,b:string) => eq(a,b)) (request.headers)  ('Cookie');
      val lines = match cline with
-       | Some ?s => (match split(s,';') with
+       | Some s => (match split(s,';') with
                        |Cons (?h,?t) => Cons(h,t)
                        |_            => Empty[string]
                      endmatch)

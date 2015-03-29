@@ -253,16 +253,16 @@ TODO: implement more MIME types.
 
   fun from_str (s:string):opt[mime_type] => 
     match application_type_from_str s with
-      | Some ?t => Some (application t)
-      | None => match audio_type_from_str s with
-        | Some ?t =>  Some (audio t)
-        | None => match image_type_from_str s with
-           | Some ?t => Some (image t)
-           | None => match text_type_from_str s with
-             | Some ?t => Some (text t)
-             | None => match multipart_type_from_str s with
-               | Some ?t => Some (multipart t)
-               | None => None[mime_type]
+      | Some t => Some (application t)
+      | #None => match audio_type_from_str s with
+        | Some t =>  Some (audio t)
+        | #None => match image_type_from_str s with
+           | Some t => Some (image t)
+           | #None => match text_type_from_str s with
+             | Some t => Some (text t)
+             | #None => match multipart_type_from_str s with
+               | Some t => Some (multipart t)
+               | #None => None[mime_type]
              endmatch
            endmatch
          endmatch

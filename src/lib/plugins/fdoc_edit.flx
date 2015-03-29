@@ -24,8 +24,8 @@ object fdoc_edit () implements edit-interface_t = {
   method fun get_header (filename:string, mimetype:string) =>
     let ?modefile = 
        match Assoc_list::find mime-to-file mimetype with
-       | Some ?f => f
-       | None => "flx_codemirror/felix/felix.js"
+       | Some f => f
+       | #None => "flx_codemirror/felix/felix.js"
        endmatch
     in
 

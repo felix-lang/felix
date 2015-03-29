@@ -117,8 +117,8 @@ class SimpleConfig {
   
   private fun split_first (x:string, c:string): opt[string*string] ={
     return match find_first_of (x, c) with
-      | None => None[string*string]
-      | Some ?n => Some(strip(x.[to n]),strip(x.[n+1 to]))
+      | #None => None[string*string]
+      | Some n => Some(strip(x.[to n]),strip(x.[n+1 to]))
       endmatch
     ;
   }

@@ -12,12 +12,12 @@ open class ForkJoin
      var count = 0;
    again:>
      match #it with
-     | Some ?p => 
+     | Some p => 
        ++count; 
        spawn_pthread$ manager p; 
       goto again;
 
-     | None =>
+     | #None =>
        while count > 0 do
          C_hack::ignore (read iterm);
          --count;

@@ -24,7 +24,7 @@ class BinarySearchTree[T with Tord[T]]
     )
   ;
   union bstree_t = 
-    | Empty 
+    | #Empty 
     | Node of &bstree_node_t 
   ;
 
@@ -32,15 +32,15 @@ class BinarySearchTree[T with Tord[T]]
 @felix
 
   fun leaf: bstree_t -> bool =
-    | Empty => false
+    | #Empty => false
     | Node ?p => 
       match p*.left, p*.right with 
-      | Empty, Empty => true 
+      | #Empty, Empty => true 
       | _ => false
   ;
 
   fun leaf_or_empty : bstree_t -> bool =
-    | Empty => true
+    | #Empty => true
     | ?x => leaf x
   ;
 
@@ -48,7 +48,7 @@ class BinarySearchTree[T with Tord[T]]
 @felix
   instance Str[bstree_t] {
     fun str : bstree_t -> string =
-      | Empty => "()"
+      | #Empty => "()"
       | Node ?p =>
         p*.elt.str + "(" + p*.left.str + ") (" + p*.right.str + ")"
     ;
@@ -63,7 +63,7 @@ value, or Empty if not found.
     // saves passing invariant elt
     let fun aux (tree:bstree_t) : bstree_t =>
       match tree with 
-      | Empty => tree
+      | #Empty => tree
       | Node ?p => 
          if p*.elt == elt then tree
          elif elt < p*.elt then aux p*.left
@@ -78,11 +78,11 @@ most bottom leaf.
 @felix
   fun min (x:bstree_t) =>
     match x with 
-    | Empty => x
+    | #Empty => x
     | Node ?p =>
       let fun aux (p:&bstree_node_t) =>
         match *p.left with
-        | Empty => Node p 
+        | #Empty => Node p 
         | Node ?p => aux p
       in aux p
    ; 
@@ -94,7 +94,7 @@ in ascending order.
    {
       proc aux (x:bstree_t) = {
         match x with
-        | Empty => ;
+        | #Empty => ;
         | Node ?p =>
           aux p*.left;
           f p*.elt;
@@ -138,7 +138,7 @@ Easily defined given iter. Note the tree structure is NOT preserved.
   {
     proc aux (p:&bstree_t) (parent:bstree_t) {
       match *p with
-      | Empty => p <- bstree_t (elt,parent);
+      | #Empty => p <- bstree_t (elt,parent);
       | Node ?q =>
         if elt < q*.elt do
           aux q.left (*p);
@@ -159,8 +159,8 @@ Make a tree from an option stream.
     var ff = f;
     proc aux () {
       match #ff with
-      | Some ?y => insert &x y; aux();
-      | None => ;
+      | Some y => insert &x y; aux();
+      | #None => ;
       endmatch;
     }
     aux();
@@ -173,14 +173,14 @@ Ab interesting routine, related to @{iter}.
   gen iterator (x:bstree_t) () : opt[T] =
   {
     match x with
-    | Empty => return None[T];
+    | #Empty => return None[T];
     | Node ?p =>
       var ff = iterator p*.left; // closure for generator
     left:>
       var elt_opt = #ff;
       match elt_opt with
-      | None => ;
-      | Some ?v => 
+      | #None => ;
+      | Some v => 
         yield elt_opt;
         goto left;
       endmatch;
@@ -191,7 +191,7 @@ Ab interesting routine, related to @{iter}.
     right:>
       elt_opt = #ff;
       match elt_opt with
-      | None => return None[T];
+      | #None => return None[T];
       | Some _ => 
         yield elt_opt;
         goto right;
@@ -203,7 +203,7 @@ Ab interesting routine, related to @{iter}.
   instance Set[bstree_t,T] {
     fun \in (elt:T, container:bstree_t) =>
       match find container elt with
-      | Empty => false
+      | #Empty => false
       | _ => true
       endmatch
     ;
@@ -217,7 +217,7 @@ Ab interesting routine, related to @{iter}.
     fun len (x:bstree_t) =>
       let fun aux (x:bstree_t) (sum:size) =>
         match x with 
-        | Empty => sum
+        | #Empty => sum
         | Node ?p =>
           aux p*.left (aux p*.right (sum+1uz)) 
         endmatch
@@ -226,7 +226,7 @@ Ab interesting routine, related to @{iter}.
 
     // faster than counting then comparing to 0
     fun empty: bstree_t -> bool =
-      | Empty => true
+      | #Empty => true
       | _ => false
     ;
    
@@ -241,16 +241,16 @@ Ensures the tree doesn't contain the specified value.
   {
     proc aux (p:&bstree_t) {
       match *p with
-      | Empty => ; // not found, nothing to do
+      | #Empty => ; // not found, nothing to do
       | Node ?q =>
         if elt == q*.elt do // found it
           var par = q*.parent;
           match q*.left, q*.right with
           // no kids
-          | Empty, Empty => p <- Empty;
+          | #Empty, Empty => p <- Empty;
 
           // right kid only
-          | Empty, Node ?child => 
+          | #Empty, Node ?child => 
             p <- q*.right;
             child.parent <-par;
 
@@ -266,7 +266,7 @@ Ensures the tree doesn't contain the specified value.
 
           | _, Node ?child =>
             match min q*.right with
-            | Empty => assert false;
+            | #Empty => assert false;
             | Node ?k => 
               var m = k*.elt;
               q.elt <- m;

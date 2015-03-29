@@ -43,8 +43,8 @@ var PLUGIN_MAP = Empty[string^3];
 fun get_flx (fname:string) = {
   var flx =
     match get_file(fname,INSTALL_ROOT,FLX_PATH) with
-    | Some ?name => load(name)
-    | None => f"NO FILE %S FOUND IN %S" (fname, str FLX_PATH)
+    | Some name => load(name)
+    | #None => f"NO FILE %S FOUND IN %S" (fname, str FLX_PATH)
     endmatch
   ;
   //println$ "Loaded felix file " + fname+", len="+str (flx.len.int);
@@ -142,7 +142,7 @@ object xlat_fdoc (t:string, filename:string) implements fdoc_t = {
 
   fun split_first (x:string, c:string):string*string =>
     match find_first_of (x, c) with
-      | Some ?n => (strip(x.[to n]),strip(x.[n+1 to]))
+      | Some n => (strip(x.[to n]),strip(x.[n+1 to]))
       | _ => (x,"")
     endmatch
   ;
@@ -154,7 +154,7 @@ object xlat_fdoc (t:string, filename:string) implements fdoc_t = {
     match get tanglers id with
     | Some _ =>
       println$ "Duplicate definition of tangler " + id;
-    | None =>
+    | #None =>
       println$ "Add tangler id=" + id + " filename=" + filename;
       add tanglers id filename;
     endmatch;
@@ -192,7 +192,7 @@ next:>
     ep;
     goto next;
 
-  | None => 
+  | #None => 
     ep;
     heading.finalise;
 
@@ -317,13 +317,13 @@ next:>
       var flx = get_flx(fname);
       if matched1 do
         var p1 = match find(flx,v1.2.string) with
-        | Some ?i => i
-        | None => 0
+        | Some i => i
+        | #None => 0
         endmatch;
         flx = flx.[p1 to];
         var p2 = match find(flx,v1.3.string) with
-        | Some ?i => i
-        | None => flx.len.int - 1
+        | Some i => i
+        | #None => flx.len.int - 1
         endmatch;
         flx = flx.[to p2];
       elif matched2 do
@@ -390,13 +390,13 @@ next:>
   {
 //println$ "CMD=@"+b;
     match Match (tangler_def_re2, b) with
-    | Some ?v => def_tangler (v.1, v.2);
-    | None => 
+    | Some v => def_tangler (v.1, v.2);
+    | #None => 
       match Match (tangler_use_re2, b) with
-      | Some ?s => 
+      | Some s => 
         println$ "Tangle id=" + s.1;
         match get tanglers s.1 with
-        | Some ?x => 
+        | Some x => 
           println$ "Tangler filename=" + x;
           var xtn = Filename::get_extension x;
           println$ "Extension=" + xtn;
@@ -413,11 +413,11 @@ next:>
             println$ "pre ....";
             inline_pre (#get_text);
           done
-        | None => 
+        | #None => 
           println$ "Can't find tangler '" + s.1+"'";
           inline_pre (#get_text);
         endmatch;
-      | None => 
+      | #None => 
         if b == "felix" do inline_felix (#get_text);
         elif b == "felix-unchecked" do inline_felix_unchecked (#get_text);
         elif prefix (b,"felix ") do felix_file (strip (b.[6 to]));

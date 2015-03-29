@@ -15,7 +15,7 @@ instance Str2[int] {
 
 fun str2[T with Str[T]] (x:list[T]):string =>
   match x with
-  | Empty => "()"
+  | #Empty => "()"
   | Cons(?h, ?t) => "(" + (str2 h) + ", "  + (str2 t) + ")"
   endmatch
 ;

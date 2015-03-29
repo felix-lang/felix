@@ -11,8 +11,8 @@ open class Option {
   instance[T with Show[T]] Str[opt[T]] {
     fun str (x:opt[T]) =>
       match x with
-      | Some ?x => "Some " + (str x)
-      | None => "None"
+      | Some x => "Some " + (str x)
+      | #None => "None"
       endmatch
     ;
   }
@@ -21,8 +21,8 @@ open class Option {
   // returns the default value provided
   fun or_else[T] (x:opt[T]) (d:T) : T =>
      match x with
-     | Some ?v => v
-     | None => d
+     | Some v => v
+     | #None => d
      endmatch
      ;
   
@@ -31,49 +31,49 @@ open class Option {
   fun or_else[T] (x:opt[T]) (alt:opt[T]) : opt[T] =>
      match x with
      | Some _ => x
-     | None => alt
+     | #None => alt
      endmatch
      ;
   
   // If the option has a value, call the given procedure on it
   proc iter[T] (_f:T->void) (x:opt[T]) =>
     match x with
-    | None => {}
-    | Some ?v => { _f v; }
+    | #None => {}
+    | Some v => { _f v; }
     endmatch
     ;
   
   // Convert an option to a list with either zero or one elements
   ctor[T] list[T] (x:opt[T]) => 
     match x with 
-    | None => list[T]()
-    | Some ?v => list[T](v) 
+    | #None => list[T]()
+    | Some v => list[T](v) 
     endmatch
   ;
   
   // True if this option has no value
   pure fun is_empty[T] : opt[T] -> 2 =
-    | None => true
+    | #None => true
     | _ => false
   ;
   
   // True if this option has a value
   pure fun is_defined[T] : opt[T] -> 2 =
-    | None => false
+    | #None => false
     | _ => true
   ;
   
   // Get the optional value; aborts if no value is available
   fun get[T] : opt[T] -> T =
-    | Some ?v => v
+    | Some v => v
   ;
   
   // If the option has a value, apply the function to it and return a new Some value.
   // If the option has no value, returns None
   fun map[T,U] (_f:T->U) (x:opt[T]): opt[U] => 
     match x with
-    | None => None[U]
-    | Some ?v => Some(_f v) 
+    | #None => None[U]
+    | Some v => Some(_f v) 
     endmatch
   ;
   
@@ -82,8 +82,8 @@ open class Option {
   // None.  Otherwise return the same option object.
   fun filter[T] (P:T -> bool) (x:opt[T]) : opt[T] =>
     match x with
-    | Some ?v => if P(v) then x else None[T] endif
-    | None => x
+    | Some v => if P(v) then x else None[T] endif
+    | #None => x
     endmatch
   ;
   

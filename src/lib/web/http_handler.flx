@@ -26,7 +26,7 @@ class HTTPHandler {
 
 fun find_and_map[T,V] (xf:T -> opt[V]) (xs:list[T]) : opt[V] =>
     match xs with
-    | Empty => None[V]
+    | #Empty => None[V]
     | Cons (?h,?t) => match xf(h) with |Some (?v) => Some(v) |_ => find_and_map xf t endmatch
     endmatch
   ;

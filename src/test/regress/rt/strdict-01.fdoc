@@ -3,13 +3,13 @@
 @felix
 
 fun dflt : opt[string] -> string =
-| Some ?x => x
-| None => "NONE"
+| Some x => x
+| #None => "NONE"
 ;
 
 fun dflt : opt[string * string ] -> string * string =
-| Some ?x => x
-| None => "NONE","NONE"
+| Some x => x
+| #None => "NONE","NONE"
 ;
 
 

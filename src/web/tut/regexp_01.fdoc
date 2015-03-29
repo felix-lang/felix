@@ -36,8 +36,8 @@ with a <a href="pattern_index.fdoc">pattern match</a>
 as follows:
 @felix
 match maybe_subgroups with
-| None => println$ "No match";
-| Some ?a =>
+| #None => println$ "No match";
+| Some a =>
   println$ "Matched " + a.1;
 endmatch;
 @expect
@@ -84,10 +84,10 @@ Now to use these definitions:
   var ra = RE2 rstr;
   var result = Match (ra, " var a = b; ");
   match result with
-    | None => 
+    | #None => 
       println$ "No match?";
 
-    | Some ?groups => 
+    | Some groups => 
       if groups.2 != "" do
         println$ "Assigned " + groups.1 + " from variable " + groups.2;
       else

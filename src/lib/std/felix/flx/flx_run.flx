@@ -9,8 +9,8 @@ gen dxqt(DBG:bool) (cmd:string) = {
   if result == 0 do
     n := 
       match find_first_of (output, char "\n") with
-      | Some ?n => n 
-      | None => output.len.int 
+      | Some n => n 
+      | #None => output.len.int 
       endmatch
     ; 
     output = output.[to n]; // first line excluding newline

@@ -62,7 +62,7 @@ var data = Empty[string * double];
 proc emit () 
 {
   match data with
-  | Empty => ;
+  | #Empty => ;
   | _ => 
     var result = svg(program,data);
     var outfile = fopen_output ("speed/"+program+"/result.svg");
@@ -85,8 +85,8 @@ while line != "" do
     var tsub = Match (tmatch,time);
     // println$ tsub;
     match tsub with
-    | None => println "what?";
-    | Some ?v => 
+    | #None => println "what?";
+    | Some v => 
       var secs = v . 1 . double * 60.0 + v . 2 . double;
       println$ compiler + " " + secs.str; 
       data += compiler,secs;      

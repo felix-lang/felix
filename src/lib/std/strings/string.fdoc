@@ -334,8 +334,8 @@ like variant which uses an @{option} type.
   fun rev_split (x:string, d:char): List::list[string] = {
     fun aux (x:string,y:List::list[string]) =>
       match find (x, d) with
-      | None => Cons (x, y)
-      | Some ?n => aux$ x.[n+1 to], List::Cons (x.[to n],y)
+      | #None => Cons (x, y)
+      | Some n => aux$ x.[n+1 to], List::Cons (x.[to n],y)
       endmatch
     ;
     return aux$ x, List::Empty[string];
@@ -358,8 +358,8 @@ like variant which uses an @{option} type.
   fun rev_split (x:string, d:+char): List::list[string] = {
     fun aux (x:string,y:List::list[string]) =>
       match find_first_of (x, d) with
-      | None => List::Cons (x, y)
-      | Some ?n => aux$ x.[n+1 to], List::Cons (x.[to n],y)
+      | #None => List::Cons (x, y)
+      | Some n => aux$ x.[n+1 to], List::Cons (x.[to n],y)
       endmatch
     ;
     return aux$ x, List::Empty[string];
@@ -367,8 +367,8 @@ like variant which uses an @{option} type.
 
   fun split_first (x:string, d:string): opt[string*string] =>
     match find_first_of (x, d) with
-    | None => None[string*string]
-    | Some ?n => Some (x.[to n],substring(x,n+1,(len x)))
+    | #None => None[string*string]
+    | Some n => Some (x.[to n],substring(x,n+1,(len x)))
     endmatch
   ;
 

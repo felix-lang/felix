@@ -79,7 +79,7 @@ for file in files do
     else
 
       match lgrep line with
-      | Some ?v =>
+      | Some v =>
         var sym = v.3;
         var dfn = "";
         var m2 = Match (extract, spl, 0, ANCHOR_BOTH, v2.stl_begin, n2);
@@ -127,7 +127,7 @@ for file in files do
             comments = Empty[string];
           done
         done
-      | None => ;
+      | #None => ;
       endmatch; //d grexp
     done
   done

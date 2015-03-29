@@ -23,8 +23,8 @@ done
       | STREAM => ;
       | DIRECTORY =>
         match Directory::filesin f with
-        | None => ;
-        | Some ?files => 
+        | #None => ;
+        | Some files => 
           for file in files do
             aux f file;
           done
@@ -47,7 +47,7 @@ done
   //$ Find a file in a list of directories.
   fun find_in_path(x:string, path:list[string]):opt[string]=>
     match path with
-    | Empty => None[string]
+    | #Empty => None[string]
     | Cons (?d,?t) => 
       let ?p =  Filename::join(d,x) in
       match FileStat::fileexists p with
@@ -89,8 +89,8 @@ done
       //eprintln$ "returned from filesin" ;
 
       match newfiles with
-      | None  => return;
-      | Some ?files =>
+      | #None  => return;
+      | Some files =>
         //eprintln$ "got files in " + newpath;
         for f in files do
           if f == "." or f == ".." do ;

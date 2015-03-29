@@ -246,8 +246,8 @@ open class Spipe {
      var x = darray[T]();
      acquire:while true do
        match read r with
-       | Some ?v => x+=v;
-       | None => break acquire;
+       | Some v => x+=v;
+       | #None => break acquire;
        endmatch;
      done
      x.sort;

@@ -228,16 +228,28 @@ syntax type_decls {
   //$ Unions provide a safe way to "unify" heterogenous data
   //$ into a single data type.
 
+  // shared by both union decl forms..
+    stype_sum_item := sname sopt_value stvarlist "of" sexpr =># "`(,_1 ,_2 ,_3 ,_5)";
+    stype_sum_item := sname sopt_value stvarlist =># "`(,_1 ,_2 ,_3 (ast_void ,_sr))";
+    stype_sum_item := "#" sname sopt_value stvarlist =># "`(,_2 ,_3 ,_4 (ast_void ,_sr))";
+
+
   stmt := "union" sdeclname "=" stype_sum_items2 ";" =>#
     """
     `(ast_union ,_sr ,(first _2) ,(second _2) ,_4)
      """;
+    stype_sum_item2 := "|" stype_sum_item =># "_2";
+    stype_sum_items2 := stype_sum_item stype_sum_item2* =># "(cons _1 _2)";
+    stype_sum_items2 := stype_sum_item2* =># "_1";
+
 
   //$ Deprecated C like syntax for unionx.
   stmt := "union" sdeclname "{" stype_sum_item1* "}" =>#
     """
     `(ast_union ,_sr ,(first _2) ,(second _2) ,_4)
      """;
+    stype_sum_item1 := stype_sum_item ";" =># "_1";
+
 
   stmt := senum_decl =># "_1";
 

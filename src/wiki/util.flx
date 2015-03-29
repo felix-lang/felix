@@ -15,8 +15,8 @@ fun get_file (fn:string, path:list[string]) = {
 fun get_flx (fname:string) = {
   var flx =
     match get_file(fname,FLX_PATH) with
-    | Some ?name => load(name)
-    | None => f"NO FILE %S FOUND IN %S" (fname, str FLX_PATH)
+    | Some name => load(name)
+    | #None => f"NO FILE %S FOUND IN %S" (fname, str FLX_PATH)
     endmatch
   ;
   println$ "Loaded felix file " + fname+", len="+str (flx.len.int);
@@ -26,8 +26,8 @@ fun get_flx (fname:string) = {
 fun get_cpp (fname:string) = {
   var flx =
     match get_file(fname,C_PATH) with
-    | Some ?name => load(name)
-    | None => "NO FILE "+fname+" FOUND IN " + str C_PATH
+    | Some name => load(name)
+    | #None => "NO FILE "+fname+" FOUND IN " + str C_PATH
     endmatch
   ;
   println$ "Loaded c++ file " + fname+", len="+str (len flx);
@@ -37,8 +37,8 @@ fun get_cpp (fname:string) = {
 fun get_fdoc (fname:string):string = {
   var flx =
     match get_file(fname,FDOC_PATH) with
-    | Some ?name => load(name)
-    | None => f"NO FILE %S FOUND IN %S" (fname, str FDOC_PATH)
+    | Some name => load(name)
+    | #None => f"NO FILE %S FOUND IN %S" (fname, str FDOC_PATH)
     endmatch
   ;
   
@@ -47,8 +47,8 @@ fun get_fdoc (fname:string):string = {
 
 fun has_fdoc (fname:string):bool =>
     match get_file(fname,FDOC_PATH) with
-    | Some ?name => true
-    | None => false
+    | Some name => true
+    | #None => false
     endmatch
   ;
 

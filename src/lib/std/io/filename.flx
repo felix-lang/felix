@@ -20,10 +20,10 @@ class Filename_class[os] {
   //$ the directory name is the empty string (NOT . !!!)
 
   fun split1(s:string)=> match find_last_of(s,#sep) with
-    | Some ?pos => 
+    | Some pos => 
       if pos==0 then #sep else s.[to pos] endif,
       s.[pos+#sep.len.int to]
-    | None => "",s
+    | #None => "",s
     endmatch
   ;
 

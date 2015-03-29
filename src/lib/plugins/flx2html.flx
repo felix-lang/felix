@@ -243,7 +243,7 @@ private val hack = "C_hack","C_hack"; // to make it an array we need 2 component
 fun valof[N](x:array[string * string,N],key:string) =>
   match find (fun (kv:string * string)=> kv.(0) == key) x with
   | Some (?k,?v) => v
-  | None => ""
+  | #None => ""
   endmatch
 ;
 
@@ -327,8 +327,8 @@ fun xlat_felix(t:string, dir:string): bool * string =
         var resolve_flx = get_file (try_flx, INSTALL_ROOT,FLX_PATH);
         var try_fdoc = n+ ".fdoc"; 
         var resolve_fdoc= get_file (try_fdoc, INSTALL_ROOT,FLX_PATH);
-        var flx_time,flx_file = match resolve_flx with | Some ?f => FileStat::filetime f,f | None => 0.0,"";
-        var fdoc_time,fdoc_file = match resolve_fdoc with | Some ?f => FileStat::filetime f,f | None => 0.0,"";
+        var flx_time,flx_file = match resolve_flx with | Some f => FileStat::filetime f,f | #None => 0.0,"";
+        var fdoc_time,fdoc_file = match resolve_fdoc with | Some f => FileStat::filetime f,f | #None => 0.0,"";
         if flx_time > fdoc_time do 
           write_string('<a href="/$'+flx_file+'" >' + b + '</a>') ;
         elif fdoc_time > flx_time do
@@ -359,8 +359,8 @@ unstring:>
       n+=".fpc";
 println$ "Package file basename is " + n;
       match get_file(n,INSTALL_ROOT,FLX_PKGCONFIG_PATH) with
-      | Some ?f => { write_string('<a href="/$'+f+'" >' + txt2html b + '</a>') ; }
-      | None => { 
+      | Some f => { write_string('<a href="/$'+f+'" >' + txt2html b + '</a>') ; }
+      | #None => { 
           println$ "Can't find "+n+" in path " + str FLX_PKGCONFIG_PATH;   
           write_string('<span class="fstring">'+txt2html b+"</span>"); 
         }

@@ -31,8 +31,8 @@ value is {Some} or {None} and name the {Some} value at the same time:
 
 @felix
 println$ match (fun(s:string)=>s.startswith("foo")).find(split('ghoul,fool,foul',',')) with
-  | Some ?word => word+" starts with foo"
-  | None => "Nothing starts with foo"
+  | Some word => word+" starts with foo"
+  | #None => "Nothing starts with foo"
 endmatch;
 @
 

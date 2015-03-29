@@ -20,7 +20,7 @@ again:>
     println$ "Elt=" + i.str; 
     maybe_elt = pop_front &dl;
     goto again;
-  | None => println$ "Empty";
+  | #None => println$ "Empty";
   endmatch;
 
 println$ "Done";

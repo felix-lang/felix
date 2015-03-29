@@ -47,7 +47,7 @@ class FlxGuiMenu
     // separators not counted
     fun find (m:menu_data_t, ix:int) : opt[menu_item_t] =>
       match m with
-      | Empty => None[menu_item_t]
+      | #Empty => None[menu_item_t]
       | Cons (?h,?t) => 
         match h with
         | Leaf (Separator) => find (t,ix)
@@ -58,7 +58,7 @@ class FlxGuiMenu
       
     fun find_tag (pos: menu_position_t, menu:menu_data_t) : string =>
       match pos,menu with
-      | Empty, _ => "Empty"
+      | #Empty, _ => "Empty"
       | Cons (?i,?t), ?m => 
         match find (m,i),t with
         | Some (Leaf (Text (tag=?tag))), Empty => tag
@@ -161,7 +161,7 @@ class FlxGuiMenu
       w.fill(SDL_Rect (left_x, top_y, right_x - left_x + 1, bottom_y - top_y + 1), scheme.bg_colour);
 
       var selected = match position with
-        | Empty => 0 // ignore for the moment
+        | #Empty => 0 // ignore for the moment
         | Cons (?h,_) => h
       ;
 
@@ -190,7 +190,7 @@ class FlxGuiMenu
           w.write (left_x+left_padding, y,font,scheme.label_colour,s);
 
           match submenu with
-          | Empty => ;
+          | #Empty => ;
           | _ =>
             var icon = if selected == counter then submenu_icons.open_icon else submenu_icons.closed_icon; 
             var dst = rect_t (right_x - icon_width - border_width - 1, ypos, 0,0);
@@ -234,7 +234,7 @@ class FlxGuiMenu
       var bottom_y = top_y + depth menu;
 
       var selected = match position with
-        | Empty => 0 // ignore for the moment
+        | #Empty => 0 // ignore for the moment
         | Cons (?h,_) => h
       ;
 
@@ -265,7 +265,7 @@ class FlxGuiMenu
           | Disabled => ;
           endmatch;
           match submenu with
-          | Empty => ;
+          | #Empty => ;
           | _ =>
             if dosub do
               var subpos = match position with 
@@ -302,7 +302,7 @@ class FlxGuiMenu
 
   fun hotpos (point:SDL_Point, hot:list[rect_t * menu_position_t]) : opt[menu_position_t] =>
     match hot with
-    | Empty => None[menu_position_t]
+    | #Empty => None[menu_position_t]
     | Cons ((?r,?pos),?tail) =>
       if point \in r then Some pos else hotpos (point, tail)
     endmatch
@@ -377,7 +377,7 @@ class FlxGuiMenu
       w.fill(SDL_Rect (left_x, top_y, right_x - left_x + 1, bottom_y - top_y + 1), scheme.bg_colour);
 
       var selected = match position with
-        | Empty => 0 // ignore for the moment
+        | #Empty => 0 // ignore for the moment
         | Cons (?h,_) => h
       ;
 
@@ -406,7 +406,7 @@ class FlxGuiMenu
           w.write (xpos+left_padding, top_y+baseline_offset,font,scheme.label_colour,s);
 
           match submenu with
-          | Empty => ;
+          | #Empty => ;
           | _ => 
             if dosub do
               println "SUBMENU SELECTED";
@@ -459,7 +459,7 @@ class FlxGuiMenu
       var bottom_y = top_y + bar_depth;
 
       var selected = match position with
-        | Empty => 0 // ignore for the moment
+        | #Empty => 0 // ignore for the moment
         | Cons (?h,_) => h
       ;
 
@@ -490,7 +490,7 @@ class FlxGuiMenu
           | Disabled => ;
           endmatch;
           match submenu with
-          | Empty => ;
+          | #Empty => ;
           | _ => 
             if dosub do
               var smm = MenuModel ( submenu );
@@ -569,7 +569,7 @@ class FlxGuiMenu
         
         var x,y = e.motion.x,e.motion.y; //int32
         match hotpos ( SDL_Point (x.int,y.int), hotrecs) with
-        | None =>
+        | #None =>
           write$ response, NoAction;
         | Some pos =>
           println$ "Mouse Move Position " + pos.str;
@@ -590,7 +590,7 @@ class FlxGuiMenu
         hotrecs = md.get_hotrects();
         x,y = e.button.x,e.button.y; //int32
         match hotpos ( SDL_Point (x.int,y.int), hotrecs) with
-        | None =>
+        | #None =>
           write$ response, NoAction;
         | Some pos =>
           println$ "Mouse down Position " + pos.str;
@@ -611,7 +611,7 @@ class FlxGuiMenu
         hotrecs = md.get_hotrects();
         x,y = e.button.x,e.button.y; //int32
         match hotpos ( SDL_Point (x.int,y.int), hotrecs) with
-        | None =>
+        | #None =>
           write$ response, NoAction;
         | Some pos =>
           println$ "Mouse up Position " + pos.str;

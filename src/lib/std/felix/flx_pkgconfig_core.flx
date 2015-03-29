@@ -124,7 +124,7 @@ class FlxPkgConfig_core
 
     fun xfind(flags: string, c: string) =>
      match find(flags, c) with
-     | None => false
+     | #None => false
      | Some _ => true
      endmatch
     ;
@@ -132,7 +132,7 @@ class FlxPkgConfig_core
     proc parse_args(args:list[string])
     {
       match args with
-      | Empty => {}
+      | #Empty => {}
       | Cons (?arg,?tail) =>
         {
           fun prefix(x:string)=>is_prefix_of(x,arg);
@@ -232,8 +232,8 @@ class FlxPkgConfig_core
 
     fun get_field(line:string):string * string =>
         match find (line,char ':') with
-        | None => "",""
-        | Some ?n =>
+        | #None => "",""
+        | Some n =>
             strip line.[to n],
             strip line.[n+1 to]
         endmatch
@@ -242,8 +242,8 @@ class FlxPkgConfig_core
 
     fun get_variable(line:string):string * string =>
         match find (line,char '=') with
-        | None => "",""
-        | Some ?n =>
+        | #None => "",""
+        | Some n =>
             let ?name = strip line.[to n] in 
             let ?value = strip line.[n+1 to] in
             if check_id name then name,value else "",""
@@ -341,7 +341,7 @@ class FlxPkgConfig_core
 
     while not is_empty pkgs do
       match pkgs with
-      | Empty => {}
+      | #Empty => {}
       | Cons (?pkg,?tail) =>
         {
           pkgs = tail;

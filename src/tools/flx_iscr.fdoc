@@ -4,7 +4,7 @@ Define an equality for lists of strings.
 @felix
 fun streq : list[string] * list[string] -> bool =
   | Cons (?h1, ?t1), Cons (?h2, ?t2) when h1 == h2 => streq (t1,t2)
-  | Empty, Empty => true
+  | #Empty, Empty => true
   | _ => false
 ;
 @
@@ -101,7 +101,7 @@ proc def_tangler (id:string, filename:string, odir:string)
   | Some _ =>
     println$ "Duplicate definition of tangler " + id;
     System::exit 1;
-  | None =>
+  | #None =>
     var tangler = file_buffer (Filename::join (odir,filename), Empty[string]);
     add tanglers id (new tangler);
   endmatch;
@@ -117,8 +117,8 @@ Now a routine to specify a new current tangler.
 proc set_tangler (s:string) 
 {
    match get tanglers s with
-   | Some ?p => state = Tangling p;
-   | None =>
+   | Some p => state = Tangling p;
+   | #None =>
       println$ "Can't find tangler " + s;
       System::exit 1;
    endmatch;
@@ -138,13 +138,13 @@ proc process_file (f:ifile) (odir:string)
   for line in split (f.load, "\n") do
     if line.[0] == "@" do
       match Match (tangler_def_re2, line) with
-      | Some ?v =>
+      | Some v =>
          def_tangler (v.1, v.2, odir);
-      | None => 
+      | #None => 
         match Match (tangler_use_re2, line) with
-        | Some ?v =>
+        | Some v =>
          set_tangler v.1;
-        | None => set_doc;
+        | #None => set_doc;
         endmatch;
       endmatch;
     else 

@@ -51,8 +51,8 @@ println$ "Blastoff!";
 // match test
 list(Some(1), None[int], Some(3), Some(1))
     |> map (fun (x:opt[int]) => match x with 
-               | Some ?n => n 
-               | None    => 0
+               | Some n => n 
+               | #None    => 0
             endmatch)
     |> fold_left (fun (x:int)(y:int) => x + y) 0
     |> println

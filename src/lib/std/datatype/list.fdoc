@@ -157,8 +157,8 @@ Named variant.
       var x = ff();
       return 
         match x with 
-       | Some ?elt => aux (Cons (elt,l)) 
-       | None => rev l
+       | Some elt => aux (Cons (elt,l)) 
+       | #None => rev l
        endmatch
       ;
     }
@@ -558,8 +558,8 @@ Returns option.
  
   fun list_eq[T with Eq[T]] (a:list[T], b:list[T]): bool =>
     match a, b with
-    | Empty, Empty => true
-    | Empty, _ => false
+    | #Empty, Empty => true
+    | #Empty, _ => false
     | _, Empty => false
     | Cons (?ha,?ta), Cons (?hb,?tb) => 
       if not (ha == hb) then false
