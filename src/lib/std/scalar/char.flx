@@ -55,10 +55,10 @@ open class Char
   val numeric = digits + ".eEdD_"; // crud hack
 
   // some character classification functions
-  fun isidstart(x:char) => match find$ letters,x with | Some _ => true | None _ => false endmatch;
-  fun iscamlidcont(x:char) => match find$ alphanum+"'",x with | Some _ => true | None _ => false endmatch;
-  fun isidcont(x:char) => match find$ alphanum,x with | Some _ => true | None _ => false endmatch;
-  fun isnumeric(x:char) => match find$ numeric,x with | Some _ => true | None _ => false endmatch;
+  fun isidstart(x:char) => match find$ letters,x with | Some _ => true | None => false endmatch;
+  fun iscamlidcont(x:char) => match find$ alphanum+"'",x with | Some _ => true | None => false endmatch;
+  fun isidcont(x:char) => match find$ alphanum,x with | Some _ => true | None => false endmatch;
+  fun isnumeric(x:char) => match find$ numeric,x with | Some _ => true | None => false endmatch;
   fun isalphanum(x:char) => isidstart x or isdigit x;
   fun isletter (x:char) => match find$ letters, x with | Some _ => true | None => false endmatch;
 
