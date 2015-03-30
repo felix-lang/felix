@@ -183,7 +183,7 @@ fin:>
 }
 }
 
-println$ "Py2html initialisation";
+eprintln$ Version::felix_version+"Py2html initialisation";
 
 fun setup(x:string) = {
   C_hack::ignore(x); // which means, don't ignore it .. :)

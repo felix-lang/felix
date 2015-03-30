@@ -154,7 +154,7 @@ fin:>
 }
 
 
-println$ "ocaml2html initialisation";
+eprintln$ Version::felix_version+"ocaml2html initialisation";
 
 fun setup(x:string) = {
   C_hack::ignore(x); // which means, don't ignore it!

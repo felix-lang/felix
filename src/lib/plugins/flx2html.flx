@@ -575,7 +575,7 @@ fin:>
 }
 
 
-println$ Version::felix_version+" flx2html initialisation";
+eprintln$ Version::felix_version+" flx2html initialisation";
 
 fun setup(config_data:string) = {
   var config_lines = split(config_data, "\n");
