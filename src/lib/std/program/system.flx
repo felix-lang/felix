@@ -5,7 +5,7 @@ class System
 
   fun argv:int -> string = '::std::string($1<0||$1>=PTF argc??"":PTF argv[$1])' 
     requires property "needs_ptf";
-  fun argv_dflt (x:int) (y:string) => match argv x with | "" => y | ?a => a;
+  fun argv_dflt (x:int) (y:string) => match argv x with | "" => y | a => a;
 
   fun args () => List::map (argv) (List::range argc);
 

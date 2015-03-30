@@ -112,7 +112,7 @@ fun pack_args(t:list[string]) = {
 }
 
 fun make_args(p:list[string]) =>
-  let Cons (?pn,_) = p in pn,pack_args p
+  let Cons (pn,_) = p in pn,pack_args p
 ;
 
 open Process;
@@ -133,22 +133,22 @@ noinline proc launch_managed_process (
     result := spawnv(pn, outargs, setup);
     match result with
     // Child, exec failed
-    | BadExec ?e =>
+    | BadExec e =>
       eprintln$ "[" + name + "] "+"[Child] Error executing program " + pn + ": " +strerror e;
       System::exit e.int; // exit child
 
     // Child
-    | BadSetup ?ret =>
+    | BadSetup ret =>
       eprintln$ "[" + name + "] "+"[Child] Setup Failed Code " + ret.str;
       System::exit ret; // exit child
 
     // Parent, fork failed
-    | BadFork ?e =>
+    | BadFork e =>
       eprintln$ "[" + name + "] "+"Fork failed for program " + pn + ": " +strerror e;
       goto finish;
 
     // Parent, child running
-    | ProcessId ?pid =>
+    | ProcessId pid =>
       eprintln$ "[" + name + "] "+"Process " + (str pid) + " created for program " + pn;
 
     check_pid:>
@@ -168,7 +168,7 @@ noinline proc launch_managed_process (
              
         goto check_pid;
 
-      | Stopped ?status =>
+      | Stopped status =>
         eprintln$ "[" + name + "] "+ status.str;
       endmatch;
     endmatch;

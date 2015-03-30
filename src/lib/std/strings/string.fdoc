@@ -98,10 +98,10 @@ Returns nul char (code 0) if the string is empty.
   fun subscript (x:string, s:slice[int]):string =>
     match s with
     | #Slice_all => substring (x, 0, x.len.int)
-    | Slice_from (?start) => copyfrom (x, start)
-    | Slice_to (?end) => copyto (x, end)
-    | Slice_range (?start, ?end) => substring (x, start, end)
-    | Slice_one (?index) => string x.[index]
+    | Slice_from (start) => copyfrom (x, start)
+    | Slice_to (end) => copyto (x, end)
+    | Slice_range (start, end) => substring (x, start, end)
+    | Slice_one (index) => string x.[index]
     endmatch
   ;
 
@@ -132,12 +132,12 @@ like variant which uses an @{option} type.
   fun stl_find: string * char -> int = "(int)$1.find($2)" is cast;
   fun stl_find: string * char * int -> int = "(int)$1.find($2,$3)" is cast;
 
-  fun find (s:string, e:string) : opt[int] => match stl_find (s, e) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find (s:string, e:string, i:int) : opt[int] => match stl_find (s, e, i) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find (s:string, e:+char) : opt[int] => match stl_find (s, e) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find (s:string, e:+char, i:int) : opt[int] => match stl_find (s, e, i) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find (s:string, e:char) : opt[int] => match stl_find (s, e) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find (s:string, e:char, i:int) : opt[int] => match stl_find (s, e, i) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find (s:string, e:string) : opt[int] => match stl_find (s, e) with | i when i.size == stl_npos => None[int] | i => Some i endmatch;
+  fun find (s:string, e:string, i:int) : opt[int] => match stl_find (s, e, i) with | i when i.size == stl_npos => None[int] | i => Some i endmatch;
+  fun find (s:string, e:+char) : opt[int] => match stl_find (s, e) with | i when i.size == stl_npos => None[int] | i => Some i endmatch;
+  fun find (s:string, e:+char, i:int) : opt[int] => match stl_find (s, e, i) with | i when i.size == stl_npos => None[int] | i => Some i endmatch;
+  fun find (s:string, e:char) : opt[int] => match stl_find (s, e) with | i when i.size == stl_npos => None[int] | i => Some i endmatch;
+  fun find (s:string, e:char, i:int) : opt[int] => match stl_find (s, e, i) with | i when i.size == stl_npos => None[int] | i => Some i endmatch;
 
   fun stl_rfind: string * string -> int = "$1.rfind($2)";
   fun stl_rfind: string * string * int -> int = "$1.rfind($2,$3)";
@@ -146,12 +146,12 @@ like variant which uses an @{option} type.
   fun stl_rfind: string * char -> int = "$1.rfind($2)";
   fun stl_rfind: string * char * int -> int = "$1.rfind($2,$3)";
 
-  fun rfind (s:string, e:string) : opt[int] => match stl_rfind (s, e) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
-  fun rfind (s:string, e:string, i:int) : opt[int] => match stl_rfind (s, e, i) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
-  fun rfind (s:string, e:+char) : opt[int] => match stl_rfind (s, e) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
-  fun rfind (s:string, e:+char, i:int) : opt[int] => match stl_rfind (s, e, i) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
-  fun rfind (s:string, e:char) : opt[int] => match stl_rfind (s, e) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
-  fun rfind (s:string, e:char, i:int) : opt[int] => match stl_rfind (s, e, i) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+  fun rfind (s:string, e:string) : opt[int] => match stl_rfind (s, e) with | i when i.size == stl_npos => None[int] | i => Some i endmatch;
+  fun rfind (s:string, e:string, i:int) : opt[int] => match stl_rfind (s, e, i) with | i when i.size == stl_npos => None[int] | i => Some i endmatch;
+  fun rfind (s:string, e:+char) : opt[int] => match stl_rfind (s, e) with | i when i.size == stl_npos => None[int] | i => Some i endmatch;
+  fun rfind (s:string, e:+char, i:int) : opt[int] => match stl_rfind (s, e, i) with | i when i.size == stl_npos => None[int] | i => Some i endmatch;
+  fun rfind (s:string, e:char) : opt[int] => match stl_rfind (s, e) with | i when i.size == stl_npos => None[int] | i => Some i endmatch;
+  fun rfind (s:string, e:char, i:int) : opt[int] => match stl_rfind (s, e, i) with | i when i.size == stl_npos => None[int] | i => Some i endmatch;
 
   fun stl_find_first_of: string * string -> int = "$1.find_first_of($2)";
   fun stl_find_first_of: string * string * int -> int = "$1.find_first_of($2,$3)";
@@ -160,12 +160,12 @@ like variant which uses an @{option} type.
   fun stl_find_first_of: string * char -> int = "$1.find_first_of($2)";
   fun stl_find_first_of: string * char * int -> int = "$1.find_first_of($2,$3)";
 
-  fun find_first_of (s:string, e:string) : opt[int] => match stl_find_first_of (s, e) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find_first_of (s:string, e:string, i:int) : opt[int] => match stl_find_first_of (s, e, i) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find_first_of (s:string, e:+char) : opt[int] => match stl_find_first_of (s, e) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find_first_of (s:string, e:+char, i:int) : opt[int] => match stl_find_first_of (s, e, i) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find_first_of (s:string, e:char) : opt[int] => match stl_find_first_of (s, e) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find_first_of (s:string, e:char, i:int) : opt[int] => match stl_find_first_of (s, e, i) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_first_of (s:string, e:string) : opt[int] => match stl_find_first_of (s, e) with | i when i.size == stl_npos => None[int] | i => Some i endmatch;
+  fun find_first_of (s:string, e:string, i:int) : opt[int] => match stl_find_first_of (s, e, i) with | i when i.size == stl_npos => None[int] | i => Some i endmatch;
+  fun find_first_of (s:string, e:+char) : opt[int] => match stl_find_first_of (s, e) with | i when i.size == stl_npos => None[int] | i => Some i endmatch;
+  fun find_first_of (s:string, e:+char, i:int) : opt[int] => match stl_find_first_of (s, e, i) with | i when i.size == stl_npos => None[int] | i => Some i endmatch;
+  fun find_first_of (s:string, e:char) : opt[int] => match stl_find_first_of (s, e) with | i when i.size == stl_npos => None[int] | i => Some i endmatch;
+  fun find_first_of (s:string, e:char, i:int) : opt[int] => match stl_find_first_of (s, e, i) with | i when i.size == stl_npos => None[int] | i => Some i endmatch;
 
   fun stl_find_first_not_of: string * string -> int = "$1.find_first_not_of($2)";
   fun stl_find_first_not_of: string * string * int -> int = "$1.find_first_not_of($2,$3)";
@@ -174,12 +174,12 @@ like variant which uses an @{option} type.
   fun stl_find_first_not_of: string * char -> int = "$1.find_first_not_of($2)";
   fun stl_find_first_not_of: string * char * int -> int = "$1.find_first_not_of($2,$3)";
 
-  fun find_first_not_of (s:string, e:string) : opt[int] => match stl_find_first_not_of (s, e) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find_first_not_of (s:string, e:string, i:int) : opt[int] => match stl_find_first_not_of (s, e, i) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find_first_not_of (s:string, e:+char) : opt[int] => match stl_find_first_not_of (s, e) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find_first_not_of (s:string, e:+char, i:int) : opt[int] => match stl_find_first_not_of (s, e, i) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find_first_not_of (s:string, e:char) : opt[int] => match stl_find_first_not_of (s, e) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find_first_not_of (s:string, e:char, i:int) : opt[int] => match stl_find_first_not_of (s, e, i) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_first_not_of (s:string, e:string) : opt[int] => match stl_find_first_not_of (s, e) with | i when i.size == stl_npos => None[int] | i => Some i endmatch;
+  fun find_first_not_of (s:string, e:string, i:int) : opt[int] => match stl_find_first_not_of (s, e, i) with | i when i.size == stl_npos => None[int] | i => Some i endmatch;
+  fun find_first_not_of (s:string, e:+char) : opt[int] => match stl_find_first_not_of (s, e) with | i when i.size == stl_npos => None[int] | i => Some i endmatch;
+  fun find_first_not_of (s:string, e:+char, i:int) : opt[int] => match stl_find_first_not_of (s, e, i) with | i when i.size == stl_npos => None[int] | i => Some i endmatch;
+  fun find_first_not_of (s:string, e:char) : opt[int] => match stl_find_first_not_of (s, e) with | i when i.size == stl_npos => None[int] | i => Some i endmatch;
+  fun find_first_not_of (s:string, e:char, i:int) : opt[int] => match stl_find_first_not_of (s, e, i) with | i when i.size == stl_npos => None[int] | i => Some i endmatch;
 
   fun stl_find_last_of: string * string -> int = "$1.find_last_of($2)";
   fun stl_find_last_of: string * string * int -> int = "$1.find_last_of($2,$3)";
@@ -188,12 +188,12 @@ like variant which uses an @{option} type.
   fun stl_find_last_of: string * char -> int = "$1.find_last_of($2)";
   fun stl_find_last_of: string * char * int -> int = "$1.find_last_of($2,$3)";
 
-  fun find_last_of (s:string, e:string) : opt[int] => match stl_find_last_of (s, e) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find_last_of (s:string, e:string, i:int) : opt[int] => match stl_find_last_of (s, e, i) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find_last_of (s:string, e:+char) : opt[int] => match stl_find_last_of (s, e) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find_last_of (s:string, e:+char, i:int) : opt[int] => match stl_find_last_of (s, e, i) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find_last_of (s:string, e:char) : opt[int] => match stl_find_last_of (s, e) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find_last_of (s:string, e:char, i:int) : opt[int] => match stl_find_last_of (s, e, i) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_last_of (s:string, e:string) : opt[int] => match stl_find_last_of (s, e) with | i when i.size == stl_npos => None[int] | i => Some i endmatch;
+  fun find_last_of (s:string, e:string, i:int) : opt[int] => match stl_find_last_of (s, e, i) with | i when i.size == stl_npos => None[int] | i => Some i endmatch;
+  fun find_last_of (s:string, e:+char) : opt[int] => match stl_find_last_of (s, e) with | i when i.size == stl_npos => None[int] | i => Some i endmatch;
+  fun find_last_of (s:string, e:+char, i:int) : opt[int] => match stl_find_last_of (s, e, i) with | i when i.size == stl_npos => None[int] | i => Some i endmatch;
+  fun find_last_of (s:string, e:char) : opt[int] => match stl_find_last_of (s, e) with | i when i.size == stl_npos => None[int] | i => Some i endmatch;
+  fun find_last_of (s:string, e:char, i:int) : opt[int] => match stl_find_last_of (s, e, i) with | i when i.size == stl_npos => None[int] | i => Some i endmatch;
 
   fun stl_find_last_not_of: string * string -> int = "$1.find_last_not_of($2)";
   fun stl_find_last_not_of: string * string * int -> int = "$1.find_last_not_of($2,$3)";
@@ -202,12 +202,12 @@ like variant which uses an @{option} type.
   fun stl_find_last_not_of: string * char -> int = "$1.find_last_not_of($2)";
   fun stl_find_last_not_of: string * char * int -> int = "$1.find_last_not_of($2,$3)";
 
-  fun find_last_not_of (s:string, e:string) : opt[int] => match stl_find_last_not_of (s, e) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find_last_not_of (s:string, e:string, i:int) : opt[int] => match stl_find_last_not_of (s, e, i) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find_last_not_of (s:string, e:+char) : opt[int] => match stl_find_last_not_of (s, e) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find_last_not_of (s:string, e:+char, i:int) : opt[int] => match stl_find_last_not_of (s, e, i) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find_last_not_of (s:string, e:char) : opt[int] => match stl_find_last_not_of (s, e) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find_last_not_of (s:string, e:char, i:int) : opt[int] => match stl_find_last_not_of (s, e, i) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
+  fun find_last_not_of (s:string, e:string) : opt[int] => match stl_find_last_not_of (s, e) with | i when i.size == stl_npos => None[int] | i => Some i endmatch;
+  fun find_last_not_of (s:string, e:string, i:int) : opt[int] => match stl_find_last_not_of (s, e, i) with | i when i.size == stl_npos => None[int] | i => Some i endmatch;
+  fun find_last_not_of (s:string, e:+char) : opt[int] => match stl_find_last_not_of (s, e) with | i when i.size == stl_npos => None[int] | i => Some i endmatch;
+  fun find_last_not_of (s:string, e:+char, i:int) : opt[int] => match stl_find_last_not_of (s, e, i) with | i when i.size == stl_npos => None[int] | i => Some i endmatch;
+  fun find_last_not_of (s:string, e:char) : opt[int] => match stl_find_last_not_of (s, e) with | i when i.size == stl_npos => None[int] | i => Some i endmatch;
+  fun find_last_not_of (s:string, e:char, i:int) : opt[int] => match stl_find_last_not_of (s, e, i) with | i when i.size == stl_npos => None[int] | i => Some i endmatch;
 
   
 @h2 Construe @{string} as set of @{char}
@@ -347,7 +347,7 @@ like variant which uses an @{option} type.
     fun aux (pos:int,y:List::list[string]) =>
       match stl_find_first_of (x, d, pos) with
       | $(stl_npos.int) => List::Cons (x.[pos to],y)
-      | ?n => aux$ (n+1), List::Cons (x.[pos to n],y)
+      | n => aux$ (n+1), List::Cons (x.[pos to n],y)
       endmatch
     ;
     return aux$ 0, List::Empty[string];
@@ -595,7 +595,7 @@ Search and replace by string.
   fun search_and_replace (x:string, s:string, r:string) : string => search_and_replace (x,0uz,s,r);
 
   fun search_and_replace (vs:list[string * string]) (var v:string) = {
-    match ?k,?b in vs do
+    match k,b in vs do
       v = search_and_replace (v,k,b);
     done
     return v;

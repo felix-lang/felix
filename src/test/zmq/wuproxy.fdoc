@@ -23,7 +23,7 @@ frontend.set_opt$ zmq_subscribe "";
 while true do
   var s = frontend.recv_string;
   match frontend.get_opt ZMQ_RCVMORE with
-  | zmq_rcvmore ?b => 
+  | zmq_rcvmore b => 
      backend.if b then send_string_part else send_string endif s;
   | _ => assert false;
   endmatch; 

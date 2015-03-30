@@ -843,7 +843,7 @@ Here is an example:
 @flx-and-expect tut/tutorial/tut-06.02-0
 
 Notice the use of the special pattern '_', which matches
-something without naming it. The ?x designation
+something without naming it. The x designation
 in a pattern introduces a variable.
 
 @h2 Numbered unions
@@ -957,7 +957,7 @@ of a union is by pattern matching. Here is an example:
 
 Notice that the value 'i' in the line
 <pre>
-  | iSome ?i =>
+  | iSome i =>
 </pre>
 can be used in the handler for that case.
 This is how we get the 'int' out of the Some option.

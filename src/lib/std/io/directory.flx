@@ -18,7 +18,7 @@ class Directory_class[os,mode_t]
 
   //$ Return an option list of all the regular files in a given directory.
   //$ Returns None if the directory does not exist or isn't accessible.
-  //$ Returns Some ?files if the directory exists and is accessible.
+  //$ Returns Some files if the directory exists and is accessible.
   //$ If the directory has no regular files, the list is Empty.
   virtual fun filesin:string -> opt[List::list[string]];
 

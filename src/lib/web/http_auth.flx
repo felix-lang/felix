@@ -42,8 +42,8 @@ class HTTPBasicAuth {
 
   gen http_basic_auth (auth_source:(string*string->bool),realm:string,unauth_content:string) (conn:http_connection, request:http_request) =  {
     if match (find (fun(x:string)=>x=="Authorization") request.headers) with
-      |Some ?a => match split(decode(basic(a)),":") with
-                      |Cons(?n,Cons(?p,Empty)) => auth_source(n,p)
+      |Some a => match split(decode(basic(a)),":") with
+                      |Cons(n,Cons(p,Empty)) => auth_source(n,p)
                       |_ => false
                     endmatch
        |_       => false
@@ -86,8 +86,8 @@ to the browser"""
 
   gen authorized_user (conn:http_connection, request:http_request) =>
      match (find (fun(x:string)=>x=="Authorization") request.headers) with
-      |Some ?a => match split(decode(basic(a)),":") with
-                      |Cons(?n,Cons(?p,Empty)) => Some n
+      |Some a => match split(decode(basic(a)),":") with
+                      |Cons(n,Cons(p,Empty)) => Some n
                       |_ => None[string]
                     endmatch
        |_       => None[string]

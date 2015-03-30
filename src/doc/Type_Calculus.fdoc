@@ -106,7 +106,7 @@ ordinary match:
 @felix
   typedef fun dom(t:TYPE):TYPE =>
     typematch t with
-    | ?a -> _ => a
+    | a -> _ => a
     endmatch
   ;
 @

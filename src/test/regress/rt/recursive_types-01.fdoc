@@ -18,7 +18,7 @@ print  z; eol;
 typedef tt = int * &tt;
 var v : tt = (1,&v);
 var u = (1,&u); // this is OK, type is 'tt'
-val xx = match u with |(?x,_) => x endmatch;
+val xx = match u with |(x,_) => x endmatch;
 
 print "OK"; eol;
 
@@ -28,8 +28,8 @@ fun e(i:int) = { return f 1; }
 print (e 10); eol;
 
 match (1,2) with
-| (?x,2) => { print x; }
-| (1,?y) => { print y; }
+| (x,2) => { print x; }
+| (1,y) => { print y; }
 endmatch;
 eol;
 

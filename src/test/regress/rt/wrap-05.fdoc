@@ -8,8 +8,8 @@ union X =
 
 noinline proc exec (f: int -> X, x:int) { 
   match f x with
-  | First ?i => println$ "First " + str i;
-  | Second ?s => println$ "Second " + s;
+  | First i => println$ "First " + str i;
+  | Second s => println$ "Second " + s;
   endmatch;
 }
 

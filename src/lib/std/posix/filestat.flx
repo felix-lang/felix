@@ -72,7 +72,7 @@ class PosixFileStat
     gen umask: mode_t -> mode_t = "umask($1)";
 
     fun file_type (s:&stat_t): file_type_t =>
-      let ?m = file_type$ raw_mode s in
+      let m = file_type$ raw_mode s in
       if m == S_IFIFO then PIPE
       elif m == S_IFCHR then STREAM
       elif m == S_IFDIR then DIRECTORY

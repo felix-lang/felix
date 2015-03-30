@@ -33,7 +33,7 @@ fun line_count (filename:string) : int =
 {
    f := fopen_input filename;
    fun counter (x:string) (count:int)=> count + 1;
-   fun readline () => match readln f with | ""=>None[string] | ?x => Some x endmatch;
+   fun readline () => match readln f with | ""=>None[string] | x => Some x endmatch;
    return fold_file readline counter 0;
 }
 

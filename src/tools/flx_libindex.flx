@@ -60,23 +60,23 @@ if ishtml do
   println$ "<html><body>";
   println$ "<h1>Felix library Index</h1>";
   println$ "<pre>";
-  match ?key,?value in index do
+  match key,value in index do
     var newctrl = char key;
     if ctrl != newctrl do
       println$ "<hr/>";
       ctrl = newctrl;
     done
     println$ key;
-    match  (file=?xfile,line=?xline,dfn=?xdfn) in value do
+    match  (file=xfile,line=xline,dfn=xdfn) in value do
      var href = "/share/lib/std/" + xfile;
      println$ '  <a href="'+href+ "#"+f"%04d" xline + '">' + xfile + ":"+ str xline + "</a>: " + xdfn;
     done
   done 
   println$ "</pre></body></html>";
 else
-  match ?key,?value in index do
+  match key,value in index do
     println$ key;
-    match  (file=?xfile,line=?xline,dfn=?xdfn) in value do
+    match  (file=xfile,line=xline,dfn=xdfn) in value do
      println$ "  " + xfile + ":"+ str xline + ": " + xdfn;
     done
   done 

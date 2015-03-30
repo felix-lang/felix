@@ -20,8 +20,8 @@ Here's a complete list of all the insertion codes.
    @dn: expands to first n components of display, excluding thread frame
 
    ??: expands to ?
-   ?n: the n'th generic type argument ..
-   @?n: the n'th generic type argument shape ..
-   ?a: expands to ?1,?2, ...
+   n: the n'th generic type argument ..
+   @n: the n'th generic type argument shape ..
+   a: expands to ?1,?2, ...
 @
 

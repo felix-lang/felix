@@ -425,7 +425,7 @@ This function does the same as @{init_lib}.
   proc run_program(args:list[string])
   {
     match args with
-    | Cons (?h, ?t) =>
+    | Cons (h, t) =>
       var linstance = prepare_lib_with_args(h,t);
       var init = get_init linstance;
       Fibres::run init;

@@ -48,8 +48,8 @@ done
   fun find_in_path(x:string, path:list[string]):opt[string]=>
     match path with
     | #Empty => None[string]
-    | Cons (?d,?t) => 
-      let ?p =  Filename::join(d,x) in
+    | Cons (d,t) => 
+      let p =  Filename::join(d,x) in
       match FileStat::fileexists p with
       | true => Some p
       | false => find_in_path (x,t)

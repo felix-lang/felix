@@ -20,12 +20,12 @@ class MultipleSA {
     var eof_flag = false;
     
     match  get_param(request,"ip") with
-      | Some(?ip) => {
+      | Some(ip) => {
                        var txt:string;
                        var rows = get_sas_for_ip(ip);
                        val row:string*string*string*string;
                        while (fun ():bool = { match rows() with 
-                         |Some ?v => row = v;return true;
+                         |Some v => row = v;return true;
                          |_ => return false;
                          endmatch;}) () do
 		             txt = "[\""+row.0+"\",\""+row.1+"\",\""+
@@ -44,13 +44,13 @@ class MultipleSA {
     var eof_flag = false;
     
     match  get_param(request,"ip") with
-      | Some(?ip) => match get_param(request,"id") with
-        | Some(?id) =>{if set_sa_for_ip(ip,id) do
+      | Some(ip) => match get_param(request,"id") with
+        | Some(id) =>{if set_sa_for_ip(ip,id) do
                          var txt:string;
                          var rows = get_sas_for_ip(ip);
                          val row:string*string*string*string;
                          while (fun ():bool = { match rows() with 
-                           |Some ?v => row = v;return true;
+                           |Some v => row = v;return true;
                            |_ => return false;
                            endmatch;}) () do
                             txt = "[\""+row.0+"\",\""+row.1+"\",\""+
@@ -76,13 +76,13 @@ class MultipleSA {
     var eof_flag = false;
     println("delete_sa");
     match  get_param(request,"ip") with
-      | Some(?ip) => match get_param(request,"id") with
-        | Some(?id) =>{if unset_sa_for_ip(ip,id) do
+      | Some(ip) => match get_param(request,"id") with
+        | Some(id) =>{if unset_sa_for_ip(ip,id) do
                          var txt:string;
                          var rows = get_sas_for_ip(ip);
                          val row:string*string*string*string;
                          while (fun ():bool = { match rows() with 
-                           |Some ?v => row = v;return true;
+                           |Some v => row = v;return true;
                            |_ => return false;
                            endmatch;}) () do
 		             txt = "[\""+row.0+"\",\""+row.1+"\",\""+
@@ -107,12 +107,12 @@ class MultipleSA {
     var eof_flag = false;
     println("IN:search_sa");
     match  get_param(request,"term") with
-      | Some(?t) => {
+      | Some(t) => {
                        var txt:string;
                        var rows = search_sas_for(t);
                        val row:string*string*string;
                        while (fun ():bool = { match rows() with 
-                         |Some ?v => row = v;return true;
+                         |Some v => row = v;return true;
                          |_ => return false;
                          endmatch;}) () do
 		             txt = txt+to_jquery_autocomplete(row.0,row.1,row.2)+",";
@@ -132,12 +132,12 @@ class MultipleSA {
     var eof_flag = false;
     
     match  get_param(request,"id") with
-      | Some(?id) => {
+      | Some(id) => {
                        var txt:string;
                        var rows = get_sa_detail(id);
                        val row:string^7;
                        while (fun ():bool = { match rows() with 
-                         |Some ?v => row = v;return true;
+                         |Some v => row = v;return true;
                          |_ => return false;
                          endmatch;}) () do
 		             txt = "[\""+row.0+"\",\""+row.1+"\",\""+

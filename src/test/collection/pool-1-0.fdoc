@@ -26,7 +26,7 @@ for var u in 0 upto 7 do
     println(n.get_next());
 done
 println("Freeing first member");
-n.free(let Some ?p = m in p);
+n.free(let Some p = m in p);
 for j in 0 upto 3 do
     println(n.get_next());
 done
@@ -42,7 +42,7 @@ for j in 0 upto 4 do
     println(n.get_next());
 done
 println("Freeing first member");
-n.free(let Some ?p = m in p);
+n.free(let Some p = m in p);
 println(n.get_next());
 println(n.get_next());
 n.destroy();

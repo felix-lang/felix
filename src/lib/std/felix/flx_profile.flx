@@ -4,7 +4,7 @@ class FlxProfile
   {
     fun / (x:string, y:string) => Filename::join (x,y);
     var HOME= 
-      let ?h = Env::getenv "HOME" in
+      let h = Env::getenv "HOME" in
         if h!="" then h 
         elif PLAT_WIN32 then Env::getenv "USERPROFILE"
         else ""

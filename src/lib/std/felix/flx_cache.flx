@@ -5,7 +5,7 @@ class FlxCache
     fun maxtime (x:double) (s:string) => max (x, gramtime debugln (path, s));
     if s.[0]=="@".char do
       var file = 
-        let ?f = s.[1 to].strip in
+        let f = s.[1 to].strip in
         if Filename::is_absolute_filename f then f 
         else Directory::mk_absolute_filename (Filename::join$ path, f)
       ;
@@ -116,7 +116,7 @@ class FlxCache
     // convert the timestamp string to a double, if there is junk
     // there or the string is empty, 0.0 is returned by atof,
     // adjust that to -inf
-    var flxg_stamp_time = match flxg_stamp_data.atof with | 0.0 => #FileStat::past_time | ?x => x;
+    var flxg_stamp_time = match flxg_stamp_data.atof with | 0.0 => #FileStat::past_time | x => x;
 
     spec.debugln$ "Flxg_stamp_data : " + FileStat::strfiletime(flxg_stamp_time);
 

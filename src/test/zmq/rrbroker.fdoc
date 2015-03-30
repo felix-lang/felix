@@ -26,7 +26,7 @@ while true do
       //  Process all parts of the message
       var s = frontend.recv_string;
       match frontend.get_opt ZMQ_RCVMORE with
-      | zmq_rcvmore ?more =>
+      | zmq_rcvmore more =>
         if more do 
           backend.send_string_part s;
         else 
@@ -41,7 +41,7 @@ while true do
       //  Process all parts of the message
       s = frontend.recv_string;
       match frontend.get_opt ZMQ_RCVMORE with
-      | zmq_rcvmore ?more =>
+      | zmq_rcvmore more =>
         if more do 
           frontend.send_string_part s;
         else 

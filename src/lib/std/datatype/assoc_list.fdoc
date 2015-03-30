@@ -29,7 +29,7 @@ open class Assoc_list
   fun find[A,B] (eq:A -> bool) (xs:assoc_list[A,B]) : opt[B] =>
     match xs with
     | #Empty => None[B]
-    | Cons ((?a, ?b), ?t) => if eq(a) then Some b else find eq t endif
+    | Cons ((a, b), t) => if eq(a) then Some b else find eq t endif
     endmatch
   ;
 

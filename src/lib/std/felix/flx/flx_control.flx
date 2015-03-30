@@ -106,7 +106,7 @@ fun dflt_control () =>
     var IMPORTS=Empty[string];
     var USAGE = "production";
     var CLEAR_CACHE=0;
-    var BUNDLE_DIR = match Env::getenv("FLX_BUNDLE_DIR") with | "" => None[string] | ?dir => Some dir endmatch;
+    var BUNDLE_DIR = match Env::getenv("FLX_BUNDLE_DIR") with | "" => None[string] | dir => Some dir endmatch;
 
     var DRIVER_EXE = ""; // dynamic linkage only 
     var DRIVER_OBJS = Empty[string]; // static linkage only

@@ -708,14 +708,14 @@ noinline proc processing_stage1
   control.FLXG <- 
     match control*.FLXG with
     | "" => dflt_flxg
-    | ?x => x
+    | x => x
     endmatch
   ;
   debugln$ "FLXG = " + control*.FLXG;
   control.FLXRUN <- 
     match control*.FLXRUN with
     | #Empty => dflt_flx_run
-    | ?x => x
+    | x => x
     endmatch
   ;
   debugln$ "FLXRUN = " + control*.FLXRUN;
@@ -754,7 +754,7 @@ noinline proc processing_stage1
   control.GRAMMAR_DIR <-
     match control*.GRAMMAR_DIR with 
     | "" => dflt_grammar_dir 
-    | ?x => Directory::mk_absolute_filename x 
+    | x => Directory::mk_absolute_filename x 
     endmatch
   ;
   debugln$ "GRAMMAR_DIR = " + control*.GRAMMAR_DIR;
@@ -765,7 +765,7 @@ noinline proc processing_stage1
   control.STDGRAMMAR <- 
     match control*.STDGRAMMAR with 
     | "" => dflt_grammar 
-    | ?x => 
+    | x => 
       if Filename::is_absolute_filename x then x 
       else Filename::join (control*.GRAMMAR_DIR, x) 
     endmatch
@@ -782,7 +782,7 @@ noinline proc processing_stage1
   control.AUTOMATON <- 
     match control*.AUTOMATON with 
     | "" => dflt_automaton 
-    | ?x => x 
+    | x => x 
     endmatch
   ;
   debugln$ "AUTOMATON = " + control*.AUTOMATON;

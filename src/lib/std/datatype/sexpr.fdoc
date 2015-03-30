@@ -8,21 +8,21 @@ class S_expr
 
   fun fold_left[T,U] (_f:U->T->U) (init:U) (x:sexpr[T]):U =>
     match x with
-    | Leaf ?a => _f init a
-    | Tree ?b => List::fold_left (S_expr::fold_left _f) init b
+    | Leaf a => _f init a
+    | Tree b => List::fold_left (S_expr::fold_left _f) init b
   ;
 
   proc iter[T] (_f:T->void) (x:sexpr[T]) {
     match x with
-    | Leaf ?a => _f a;
-    | Tree ?b => List::iter (S_expr::iter _f) b;
+    | Leaf a => _f a;
+    | Tree b => List::iter (S_expr::iter _f) b;
     endmatch;
   }
 
   fun map[T,U] (_f:T->U) (x:sexpr[T]):sexpr[U] =>
     match x with
-    | Leaf ?a => Leaf (_f a)
-    | Tree ?b => Tree ( List::map (S_expr::map _f) b )
+    | Leaf a => Leaf (_f a)
+    | Tree b => Tree ( List::map (S_expr::map _f) b )
   ;
 
   instance[T with Eq[T]] Set[sexpr[T],T] {
@@ -32,8 +32,8 @@ class S_expr
   instance[T with Str[T]] Str[sexpr[T]] {
     noinline fun str(x:sexpr[T])=>
       match x with 
-      | Leaf ?a => str a
-      | Tree ?b => str b 
+      | Leaf a => str a
+      | Tree b => str b 
     ;
   }
 

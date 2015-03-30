@@ -28,7 +28,7 @@ class Filename_class[os] {
   ;
 
   private fun split(s:string, acc:List::list[string]):List::list[string]=>
-    let ?d,?b = split1 s in
+    let d,b = split1 s in
     if d == "" then List::Cons(b,acc) 
     elif d == #sep then List::Cons(d, List::Cons(b,acc))
     else split (d, List::Cons (b, acc)) 
@@ -54,15 +54,15 @@ class Filename_class[os] {
   ; 
   
   //$ Get the basename of a path (last component).
-  fun basename(s:string)=> match split1(s) with | _,?b => b endmatch;
+  fun basename(s:string)=> match split1(s) with | _,b => b endmatch;
 
   //$ Get the directory name of a path (all but the last component).
-  fun dirname(s:string)=> match split1(s) with | ?d,_ => d endmatch;
+  fun dirname(s:string)=> match split1(s) with | d,_ => d endmatch;
   
   //$ Return a list of all the directory names in a path.
   //$ For example a/b/c gives "a", "a/b"
   fun directories (s:string) : list[string] =>
-     let ?d,?b = split1 s in
+     let d,b = split1 s in
      if d == "" then Empty[string]
      elif d == #sep then Empty[string]
      else directories d + d

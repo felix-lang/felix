@@ -88,7 +88,7 @@ class FlxPkgConfig_core
       var words = Empty[string];
       while current != finish do 
         match lexit(current,finish) with
-        | ?next,?lexeme =>
+        | next,lexeme =>
           {
             current = next;
             if lexeme != "" do words = Cons(lexeme,words); done;
@@ -133,7 +133,7 @@ class FlxPkgConfig_core
     {
       match args with
       | #Empty => {}
-      | Cons (?arg,?tail) =>
+      | Cons (arg,tail) =>
         {
           fun prefix(x:string)=>is_prefix_of(x,arg);
 
@@ -209,13 +209,13 @@ class FlxPkgConfig_core
     //print$ "Packages = " + str pkgs; endl;
 
     fun reattach_drive_letters : list[string] -> list[string] =
-      | Cons (?a, Cons (?b, ?tail)) =>
+      | Cons (a, Cons (b, tail)) =>
           if (len(a) == size 1 and isalpha(a.[0]) and b.startswith('\\')) then 
             Cons (a+':'+b, reattach_drive_letters tail)
           else
             Cons (a, reattach_drive_letters (Cons (b, tail)))
           endif
-      | ?other => other // 1 or 0 elements left
+      | other => other // 1 or 0 elements left
     ;
       
     val dirs=reattach_drive_letters(split(path, char ':'));
@@ -244,8 +244,8 @@ class FlxPkgConfig_core
         match find (line,char '=') with
         | #None => "",""
         | Some n =>
-            let ?name = strip line.[to n] in 
-            let ?value = strip line.[n+1 to] in
+            let name = strip line.[to n] in 
+            let value = strip line.[n+1 to] in
             if check_id name then name,value else "",""
         endmatch
       ;
@@ -342,7 +342,7 @@ class FlxPkgConfig_core
     while not is_empty pkgs do
       match pkgs with
       | #Empty => {}
-      | Cons (?pkg,?tail) =>
+      | Cons (pkg,tail) =>
         {
           pkgs = tail;
           handle_pkg(pkg,Empty[string]);

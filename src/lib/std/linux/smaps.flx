@@ -67,29 +67,29 @@ fun smaps_total(p:Process::pid_t,path:string):smaps_metric ={
   while not (feof file) and not end_of_map do
     val ln = min_whitespace(strip(readln file));
     val cols = split(ln,' ');
-    var spath = let Cons (?h,_) = rev cols in h;
+    var spath = let Cons (h,_) = rev cols in h;
     if not at_map  do
       at_map = match find (ln,path) with |Some _ => true |_ => false endmatch;
     elif (at_map  and (len cols) > 5ui) and not spath == path do
       end_of_map=true;
     else 
-      var kv = let Cons (?k,Cons (?s,_)) = cols in (k,uint(s));
+      var kv = let Cons (k,Cons (s,_)) = cols in (k,uint(s));
       match kv with 
-        |("Size:",?e) => nums.size = nums.size + uint(e);
-	|("Rss:",?e) => nums.rss = nums.rss + uint(e);
-	|("Pss:",?e) => nums.pss = nums.pss + uint(e);
-	|("Shared_Clean:",?e) => nums.shared_clean = nums.shared_clean + uint(e);
-	|("Shared_Dirty:",?e) => nums.shared_dirty = nums.shared_dirty + uint(e);
-	|("Private_Clean:",?e) => nums.private_clean = nums.private_clean + uint(e);
-	|("Private_Dirty:",?e) => nums.private_dirty = nums.private_dirty + uint(e);
-	|("Referenced:",?e) => nums.referenced = nums.referenced + uint(e);
-	|("Anonymous:",?e) => nums.anonymous = nums.anonymous + uint(e);
-	|("AnonHugePages:",?e) => nums.anonhugepages = nums.anonhugepages +  uint(e);
-	|("Swap:",?e) => nums.swap = nums.swap +  uint(e);
-	|("KernelPageSize:",?e) => nums.kernelpagesize = nums.kernelpagesize + uint(e);
-	|("MMUPageSize:",?e) => nums.mmupagesize = nums.mmupagesize + uint(e);
-	|("Locked:",?e) => nums.locked = nums.locked + uint(e);
-        |(?k,?v) => {}();
+        |("Size:",e) => nums.size = nums.size + uint(e);
+	|("Rss:",e) => nums.rss = nums.rss + uint(e);
+	|("Pss:",e) => nums.pss = nums.pss + uint(e);
+	|("Shared_Clean:",e) => nums.shared_clean = nums.shared_clean + uint(e);
+	|("Shared_Dirty:",e) => nums.shared_dirty = nums.shared_dirty + uint(e);
+	|("Private_Clean:",e) => nums.private_clean = nums.private_clean + uint(e);
+	|("Private_Dirty:",e) => nums.private_dirty = nums.private_dirty + uint(e);
+	|("Referenced:",e) => nums.referenced = nums.referenced + uint(e);
+	|("Anonymous:",e) => nums.anonymous = nums.anonymous + uint(e);
+	|("AnonHugePages:",e) => nums.anonhugepages = nums.anonhugepages +  uint(e);
+	|("Swap:",e) => nums.swap = nums.swap +  uint(e);
+	|("KernelPageSize:",e) => nums.kernelpagesize = nums.kernelpagesize + uint(e);
+	|("MMUPageSize:",e) => nums.mmupagesize = nums.mmupagesize + uint(e);
+	|("Locked:",e) => nums.locked = nums.locked + uint(e);
+        |(k,v) => {}();
       endmatch;
     done;
   done;

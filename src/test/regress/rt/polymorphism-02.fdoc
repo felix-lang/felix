@@ -10,7 +10,7 @@ fun fst(x,y)=>x;
 fun index[t] (l:list[t]) = {
   fun f(il:int * list [int * t]) (e: t) =>
     match il with
-    | ?i,?l => i+1, Cons ((i, e),l)
+    | i,l => i+1, Cons ((i, e),l)
     endmatch
   ;
   return

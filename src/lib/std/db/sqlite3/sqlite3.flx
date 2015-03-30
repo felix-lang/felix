@@ -24,7 +24,7 @@
 //$              return (match row with |end_of_results[darray[column_value]] =>false |_ => true
 //$              endmatch); }) () do
 //$   var t = match row with 
-//$     | row ?a =>  ((get_text_val(get(a,0))),(get_text_val(get(a,1))))
+//$     | row a =>  ((get_text_val(get(a,0))),(get_text_val(get(a,1))))
 //$     | _ => ("","")
 //$   endmatch;
 //$   print t; endl;
@@ -240,7 +240,7 @@ class Sqlite3 {
     var stmt:sqlite3_stmt_t;
     return match to_sqlite3_result_code ( sqlite3_prepare_v2(db, query, int(len query), stmt, "")) with
       | #SQLITE_OK =>  qry_ok stmt
-      | ?c     => qry_fail[sqlite3_stmt_t] (c,str(sqlite3_errmsg(db)))
+      | c     => qry_fail[sqlite3_stmt_t] (c,str(sqlite3_errmsg(db)))
     endmatch;
   }
 
@@ -273,7 +273,7 @@ class Sqlite3 {
         | #SQLITE_DONE => {val p=sqlite3_finalize(stmt);}(); yield end_of_results[darray[column_value]];
         | #SQLITE_ROW  => yield ( row ( sqlite3_get_columns stmt) );
       //| #SQLITE_BUSY => { Faio::sleep (Faio::sys_clock,0.05); goto again; end_of_results[darray[column_value]];}
-         | ?v =>  {val p=sqlite3_finalize stmt;}(); yield  end_of_results[darray[column_value]];
+         | v =>  {val p=sqlite3_finalize stmt;}(); yield  end_of_results[darray[column_value]];
       endmatch;
       goto again;
       yield end_of_results[darray[column_value]]; 
@@ -282,18 +282,18 @@ class Sqlite3 {
 
   //$ Get the int value out of a int typed field.
   //$ Throws match failure if the field isn't an int type.
-  fun get_int_val: column_value->int = | int_val ?v => v;
+  fun get_int_val: column_value->int = | int_val v => v;
 
   //$ Get the double value out of a double typed field.
   //$ Throws match failure if the field isn't a double type.
-  fun get_double_val:  column_value->double = | double_val ?v => v;
+  fun get_double_val:  column_value->double = | double_val v => v;
 
   //$ Get the text value out of a text typed field.
   //$ Throws match failure if the field isn't a text type.
-  fun get_text_val:  column_value->string = | text_val ?v => v;
+  fun get_text_val:  column_value->string = | text_val v => v;
 
   //$ Get the statement handle out of a return code.
-  fun get_stmt: result_code[sqlite3_stmt_t]-> sqlite3_stmt_t = | qry_ok ?v => v;
+  fun get_stmt: result_code[sqlite3_stmt_t]-> sqlite3_stmt_t = | qry_ok v => v;
 
   //$ Get the next row from an row iterator.
   gen get_next ( iter:()->ret_val[darray[column_value]],row:&ret_val[darray[column_value]]):bool = { 

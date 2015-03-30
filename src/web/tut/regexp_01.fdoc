@@ -9,7 +9,7 @@ RE2 does not support backreferences.
 <ul>
 <li><a href="https://code.google.com/p/re2/">Google RE2</a></li>
 <li><a href="/share/lib/std/strings/re2.flx">Felix RE2 binding</a></li>
-<li><a href="/share/lib/rtl/re2/re2.h?cpp">Google re2.h header</a></li>
+<li><a href="/share/lib/rtl/re2/re2.hcpp">Google re2.h header</a></li>
 <li><a href="/share/lib/std/strings/regdef.flx">Felix regular definition library</a></li>
 <li><a href="/share/lib/grammar/regdefs.flxh">Felix regular definition grammar</a></li>
 <li><a href="http://xkcd.com/208/">Obligatory XKCD</a></li>

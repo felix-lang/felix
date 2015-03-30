@@ -27,8 +27,8 @@ var example =
 ;
 
 fun sum: tree->int =
-  | Leaf ?x => x
-  | Node (?l,?r) => sum l + sum r
+  | Leaf x => x
+  | Node (l,r) => sum l + sum r
   | #TEmpty => 0
 ;
 
@@ -48,8 +48,8 @@ fun accumulate(it: 1-> int):int=
 gen visitor(x:tree) () : int =
 {
     match x with
-    | Leaf ?a => print "visiting leaf "; print a; endl; yield a; return -1; 
-    | Node (?aa,?bb) =>
+    | Leaf a => print "visiting leaf "; print a; endl; yield a; return -1; 
+    | Node (aa,bb) =>
         print "visiting node: left\n";
         var it = visitor(aa);
         var v = it();

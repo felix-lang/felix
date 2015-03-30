@@ -8,7 +8,7 @@ proc print (u:U) {
   print$
     match u with
     | #A => "A"
-    | B (?b, ?c, ?d) => f"B %d %d %d" (b, c, d)
+    | B (b, c, d) => f"B %d %d %d" (b, c, d)
     endmatch;
 }
 fun exec (p:int * int * int -> U, x:int, y:int, z:int) => p (x, y, z);

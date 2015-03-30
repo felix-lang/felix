@@ -11,7 +11,7 @@ begin
   fun str (x:list[int]) =>
     match x with
     | #Empty => "()"
-    | Cons (?h, ?t) => "(" + (str h) + ", " + (str t) + ")"
+    | Cons (h, t) => "(" + (str h) + ", " + (str t) + ")"
     endmatch
   ;
   print$ str$ list[int](); endl;

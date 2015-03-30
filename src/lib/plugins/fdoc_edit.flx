@@ -22,7 +22,7 @@ var mime-to-file =
 object fdoc_edit () implements edit-interface_t = {
   method fun whatami () => "fdoc edit";
   method fun get_header (filename:string, mimetype:string) =>
-    let ?modefile = 
+    let modefile = 
        match Assoc_list::find mime-to-file mimetype with
        | Some f => f
        | #None => "flx_codemirror/felix/felix.js"
@@ -45,7 +45,7 @@ object fdoc_edit () implements edit-interface_t = {
     '''
   ;
   method fun get_body (id:string, mime:string, text:string) =>
-   '<form action="?doedit" method="post" enctype="text/plain">'+
+   '<form action="doedit" method="post" enctype="text/plain">'+
    '<input type="submit" value="Save"><br>'+
    '<textarea id="'+id+'" name="code">'+
    text +

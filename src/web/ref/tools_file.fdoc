@@ -172,7 +172,7 @@ prefixed by the filename (relative to dir).
 
 Examples:
 @pre
-flx_grep src '([^/]*/)*([^/]*)\.flx' '(.* )?var * [A-Z]+ *=.*'
+flx_grep src '([^/]*/)*([^/]*)\.flx' '(.* )var * [A-Z]+ *=.*'
 @p
 For all flx files in src, show all initialised definitions
 of variables with names exclusively upper case letters.

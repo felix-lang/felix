@@ -176,15 +176,15 @@ object xlat_fdoc (t:string, filename:string) implements fdoc_t = {
   var inp = fdocscanner.fdoc_scan t;
   gen get_text () =>
     match #inp with
-    | Some (Text ?x) => x
+    | Some (Text x) => x
     | _ => ""
     endmatch
   ;
 next:>
   var entry = #inp;
   match entry with
-  | Some (Cmd ?cmdline) => handle_cmd cmdline; goto next;
-  | Some (Text ?x) =>
+  | Some (Cmd cmdline) => handle_cmd cmdline; goto next;
+  | Some (Text x) =>
     for para in fdocscanner.psplit x do 
       bp; 
       write_string(markdown para); 

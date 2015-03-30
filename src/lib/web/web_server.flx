@@ -77,7 +77,7 @@ class WebServer {
       match get_header(request,"Content-Type") with
         | Some c => { 
           match parse_media_type(c) with
-            | Some (?m,?a) => {
+            | Some (m,a) => {
               if str(m) == str(application x_DASH_www_DASH_form_DASH_urlencoded) do
                 HTTPRequest::get_entity_params(conn,&request,a);
               elif str(m) == str(form-data) do

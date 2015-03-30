@@ -184,7 +184,7 @@ gen cal_depvars(
   else
     match control*.FLX_STD_LIBS with
     | #Empty => FLX_STD_LIBS = list[string] ("std");
-    | ?x => FLX_STD_LIBS = x;
+    | x => FLX_STD_LIBS = x;
     endmatch;
   done
   debugln$ "Felix standard (cached) libraries: " + str FLX_STD_LIBS;

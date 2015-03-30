@@ -62,8 +62,8 @@ var x : int + long = case 0 of (int + long) 42;
 var y : int + long = case 1 of (int + long) 23L;
 
 match u with
-  | case 0 (?i) => println$ "int " + str i;
-  | case 1 (?l) => println$ "long " + str l;
+  | case 0 (i) => println$ "int " + str i;
+  | case 1 (l) => println$ "long " + str l;
 endmatch;
 @
 Here, @{case 0 of (int + long)} is the first injection function,
@@ -79,8 +79,8 @@ union Number = Int of int | Long of long;
 var x = Int 42;
 var y = Long 23L;
 match u with
-  | Int (?i) => println$ "int " + str i;
-  | Long (?l) => println$ "long " + str l;
+  | Int (i) => println$ "int " + str i;
+  | Long (l) => println$ "long " + str l;
 endmatch;
 @
 The implementation is the same, but we have names for

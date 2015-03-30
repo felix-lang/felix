@@ -8,7 +8,7 @@ union U =
 proc p0 (x:U)
 {
   match x with
-  | A ?f => {f;}
+  | A f => {f;}
   endmatch;
 }
 

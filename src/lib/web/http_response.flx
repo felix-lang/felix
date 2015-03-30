@@ -53,37 +53,37 @@ Content-Length: """ + str (len response.content) + """\r
       content; 
 
   fun make_not_found (content:string) =>
-    let ?response = http_response(SC_NOT_FOUND,localtime(#time_t),text html,#no_headers,
+    let response = http_response(SC_NOT_FOUND,localtime(#time_t),text html,#no_headers,
 				  content) in
     	http_header(response) + response.content; 
 
   fun make_not_implemented (content:string) =>
-    let ?response = http_response(SC_NOT_IMPLEMENTED,localtime(#time_t),text html,#no_headers,
+    let response = http_response(SC_NOT_IMPLEMENTED,localtime(#time_t),text html,#no_headers,
 				  content) in
     	http_header(response) + response.content; 
   
   
   fun make_see_other (location:string) =>
-    let ?response = http_response(SC_SEE_OTHER,localtime(#time_t),text html,Cons(("Location",location),Empty[string^2]),"") in
+    let response = http_response(SC_SEE_OTHER,localtime(#time_t),text html,Cons(("Location",location),Empty[string^2]),"") in
     	http_header(response) + response.content; 
 
   fun make_forbidden (content:string) =>
-    let ?response = http_response(SC_FORBIDDEN,localtime(#time_t),text html,#no_headers,
+    let response = http_response(SC_FORBIDDEN,localtime(#time_t),text html,#no_headers,
 				  "Forbidden: "+content) in
     	http_header(response) + response.content; 
 
   fun make_unauthorized (headers:headers_t) =>
-    let ?response = http_response(SC_UNAUTHORIZED,localtime(#time_t),text html,headers,
+    let response = http_response(SC_UNAUTHORIZED,localtime(#time_t),text html,headers,
 				  "") in
     	http_header(response) +"\nUnauthorized"; 
 
   fun make_unauthorized (headers:headers_t,content:string) =>
-    let ?response = http_response(SC_UNAUTHORIZED,localtime(#time_t),text html,headers,
+    let response = http_response(SC_UNAUTHORIZED,localtime(#time_t),text html,headers,
 				  "") in
     	http_header(response) +"\n"+content; 
 
   fun make_continue () =>
-    let ?response = http_response(SC_CONTINUE,localtime(#time_t),text html,#no_headers,
+    let response = http_response(SC_CONTINUE,localtime(#time_t),text html,#no_headers,
 				  "") in
     	http_header(response) +"\r";   
 

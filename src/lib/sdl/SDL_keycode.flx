@@ -511,7 +511,7 @@ open class SDL_keycode_h
       | $(SDLK_KBDILLUMUP) => "SDLK_KBDILLUMUP"
       | $(SDLK_EJECT) => "SDLK_EJECT"
       | $(SDLK_SLEEP) => "SDL_EJECT"
-      | ?other => "KEY_"+other.int.str
+      | other => "KEY_"+other.int.str
     ;
   }
   /**

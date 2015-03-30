@@ -134,32 +134,32 @@ class Config {
 
     match Env::getenv ("FLX_INSTALL_DIR","") with
     | "" => ;
-    | ?x => cascade_FLX_INSTALL_DIR cfg x;
+    | x => cascade_FLX_INSTALL_DIR cfg x;
     endmatch;
 
     match Env::getenv ("FLX_SHARE_DIR","") with
     | "" => ;
-    | ?x => cascade_FLX_SHARE_DIR cfg x;
+    | x => cascade_FLX_SHARE_DIR cfg x;
     endmatch;
 
     match Env::getenv ("FLX_TARGET_DIR","") with
     | "" => ;
-    | ?x => cascade_FLX_TARGET_DIR cfg x;
+    | x => cascade_FLX_TARGET_DIR cfg x;
     endmatch;
 
     match Env::getenv ("FLX_CONFIG_DIRS","") with
     | "" => ;
-    | ?x => cfg.FLX_CONFIG_DIRS <- respectful_split x;
+    | x => cfg.FLX_CONFIG_DIRS <- respectful_split x;
     endmatch;
 
     match Env::getenv ("FLX_LIB_DIRS","") with
     | "" => ;
-    | ?x => cfg.FLX_LIB_DIRS <- respectful_split x;
+    | x => cfg.FLX_LIB_DIRS <- respectful_split x;
     endmatch;
 
     match Env::getenv ("FLX_RTL_DIRS","") with
     | "" => ;
-    | ?x => cfg.FLX_RTL_DIRS <- respectful_split x;
+    | x => cfg.FLX_RTL_DIRS <- respectful_split x;
     endmatch;
   }
 

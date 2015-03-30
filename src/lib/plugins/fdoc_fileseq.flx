@@ -17,7 +17,7 @@ object fdoc_fileseq (filename: string) implements fileseq-control_t =
 
   fun calnav() = 
   {
-    val relfile = match (filename,'/').split.rev with | Cons(?h,_) => h | #Empty => "";
+    val relfile = match (filename,'/').split.rev with | Cons(h,_) => h | #Empty => "";
     var lpos = relfile.len.int;
     while lpos > 0 and not isdigit(relfile.[lpos - 1]) do 
        --lpos; 
@@ -55,11 +55,11 @@ object fdoc_fileseq (filename: string) implements fileseq-control_t =
 
   method fun shownav() => 
     match calnav() with
-    | _,Some ?sprev, Some ?snext, ?docindex => 
+    | _,Some sprev, Some snext, docindex => 
         "<a href='"+sprev+"'>"+button.make-button(id="prev", text="Prev", onclick="nop")+"</a> " + 
         "<a href='"+snext+"'>"+button.make-button(id="next", text="Next", onclick="nop")+"</a> " + 
         "<a href='"+docindex+"'>"+button.make-button(id="index", text="Index", onclick="nop")+"</a> "
-    | _,#None, Some ?snext, ?docindex => 
+    | _,#None, Some snext, docindex => 
        "<a href='"+snext+"'>"+button.make-button(id="next", text="Next", onclick="nop")+"</a> "+
        "<a href='"+docindex+"'>"+button.make-button(id="index", text="Index", onclick="nop")+"</a>" 
     | _,#None, #None,_ => ""

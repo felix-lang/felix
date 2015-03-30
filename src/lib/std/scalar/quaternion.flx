@@ -29,7 +29,7 @@ class Quaternion
   fun * (a:q, b: double):q => quaternion (a.r * b, a.i * b, a.j * b, a.k * b);
   fun * (a: double, b:q):q => a * b;
 
-  fun reciprocal (a:q):q => let ?n = norm a in conj a * (1.0/ (n * n));
+  fun reciprocal (a:q):q => let n = norm a in conj a * (1.0/ (n * n));
 
   // add more later, generalise scalar type
   // Later, GET RID of complex and quaternions

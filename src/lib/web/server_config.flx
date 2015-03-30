@@ -34,8 +34,8 @@ class ServerConfig {
     var cfg = server_config(handlers);
     match enhance_with_config_file( 
      enhance_with_command_line_arguments(cfg)) with
-    |Some(?cfg),_ => return cfg;
-    |None,?m => return cfg;
+    |Some(cfg),_ => return cfg;
+    |None,m => return cfg;
     endmatch;
     
   }
@@ -44,8 +44,8 @@ class ServerConfig {
     var config = server_config(handlers,application);
     match enhance_with_config_file( 
       enhance_with_command_line_arguments(config)) with
-    |Some(?cfg),_ => return cfg;
-    |None,?m =>  set_params(&config,read_config_text(default_config));
+    |Some(cfg),_ => return cfg;
+    |None,m =>  set_params(&config,read_config_text(default_config));
                  return config;
     endmatch;
 
@@ -139,19 +139,19 @@ class ServerConfig {
   proc set_params(cfg:&server_config,params:list[string^2]) {
     *cfg.params = params;
     match find (fun (a:string,b:string) => eq(a,b)) params "port" with 
-      |Some ?s => *cfg.port = int(s);
+      |Some s => *cfg.port = int(s);
       |_ => {}();
     endmatch;
     match find (fun (a:string,b:string) => eq(a,b)) params "server_root" with 
-      |Some ?s => *cfg.server_root = s;
+      |Some s => *cfg.server_root = s;
       |_ => {}();
     endmatch;
     match find (fun (a:string,b:string) => eq(a,b)) params "document_root" with 
-      |Some ?s => *cfg.document_root = s;
+      |Some s => *cfg.document_root = s;
       |_ => {}();
     endmatch;
     match find (fun (a:string,b:string) => eq(a,b)) params "delay" with 
-      |Some ?s => *cfg.delay = double(s);
+      |Some s => *cfg.delay = double(s);
       |_ => {}();
     endmatch;
 

@@ -373,7 +373,7 @@ mathjax := '''
   });
 </script> 
 <script type="text/javascript"
-  src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+  src="http://cdn.mathjax.org/mathjax/latest/MathJax.jsconfig=TeX-AMS-MML_HTMLorMML">
 </script>
 ''';
 
@@ -942,7 +942,7 @@ fun mk_reg_lines (fname:string, files: list[string]) = {
       if x == "" then "(none)" else x endif +
       '</a>'
     ;
-    def var extn, var rest = match exts with | Cons(?h,?t)=> h,t endmatch;
+    def var extn, var rest = match exts with | Cons(h,t)=> h,t endmatch;
     s+= '  <a href="/$'+ fname + '/' +old_base+extn +'">'+old_base+extn+'</a>';
     List::iter (proc (x:string){ s+=" "+rf x; }) rest;
   }
@@ -951,7 +951,7 @@ fun mk_reg_lines (fname:string, files: list[string]) = {
   proc cbrk () { cft; twixt; chd; }
   proc nxt() { 
     match rest with 
-    | Cons(?h,?t) => 
+    | Cons(h,t) => 
       entry = h; rest = t;
       base,extn =
         match rfind (entry, ".") with
@@ -990,19 +990,19 @@ proc serve_directory (k:socket_t, fname:string, get:bool) {
   val flist = 
     match Directory::filesin fname with
     | Some files =>
-      let ?aux = 
+      let aux = 
           fun (ls2:list[string] * list[string]) (f:string) =>
-          match ls2 with | ?ds,?rs => match FileStat::filetype (Filename::join (fname,f)) with
+          match ls2 with | ds,rs => match FileStat::filetype (Filename::join (fname,f)) with
             | #DIRECTORY => Cons (f,ds), rs
             | #REGULAR => ds, Cons (f,rs)
             | _ => ls2
             endmatch
           endmatch
       in
-      let ?dirs,?regs = fold_left aux (Empty[string], Empty[string]) files in
-      let ?dirs,?regs = sort dirs, sort regs in
-      let ?dir_lines = mk_dir_lines (fname,dirs) in
-      let ?reg_lines = mk_reg_lines (fname,regs) in
+      let dirs,regs = fold_left aux (Empty[string], Empty[string]) files in
+      let dirs,regs = sort dirs, sort regs in
+      let dir_lines = mk_dir_lines (fname,dirs) in
+      let reg_lines = mk_reg_lines (fname,regs) in
         "<pre>"+ 
         '  <a href="/"><em>home</em></a>\r\n'+
         if dir_lines.len != 0uz then ' Directories: \r\n' + dir_lines else "" endif +
@@ -1041,7 +1041,7 @@ proc serve(s: socket_t, infname: string, get:bool)
   //print "serve file: "; print fname; endl;
 
   // figure out the filetype
-  // we first check if the filename has a suffix like ?cpp
+  // we first check if the filename has a suffix like cpp
   // which is a trick done by us to force the filetype
   // to be "c++" for C++ standard include file names 
   // which have no suffix. If we find that, we strip it
@@ -1153,7 +1153,7 @@ noinline proc handler (var k:socket_t) ()
   match req with
   | #reqPOST => 
     match parse_post_line line with 
-    | Some (?base,?file) =>
+    | Some (base,file) =>
       println$ "well formed POST ...";
       println$ "base=" + base;
       println$ "file=" + file;
@@ -1191,14 +1191,14 @@ println$ "Got the line length .. "+line.len.str;
     endmatch;
   | #reqGET =>
     match parse_get_line line with
-    | Some (?base, ?file) => 
+    | Some (base, file) => 
       print "file="; print file; endl;
       serve_file(k,file);
     | #None => println$ "BAD GET line: '"+line+"'";
     endmatch;
   | #reqHEAD =>
     match parse_get_line line with
-    | Some (?base, ?file) => 
+    | Some (base, file) => 
       print "file="; print file; endl;
       serve_head(k,file);
     | #None => println$ "BAD HEAD line: '"+line+"'";

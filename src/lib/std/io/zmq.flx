@@ -201,29 +201,29 @@ class ZeroMQ {
 
   instance Str[zmq_socket_options] {
     fun str: zmq_socket_options -> string =
-    | zmq_affinity ?x => "affinity " + str x // fix: bit set
-    | zmq_identity ?x => "identity '" + str x+"' socket name"
-    | zmq_subscribe ?x => "subscribe '" + str x+"' message prefix"
-    | zmq_unsubscribe ?x => "unsubscribe '" + str x+"' message prefix"
-    | zmq_rate ?x => "rate " + str x+" kb/sec"
-    | zmq_recovery_ivl ?x => "recovery_ivl " + str x+" ms"
-    | zmq_sndbuf ?x => "sndbuf " + str x+" bytes"
-    | zmq_rcvbuf ?x => "rcvbuf " + str x+" bytes"
-    | zmq_rcvmore ?x => "rcvmore " + str x
-    //| zmq_fd ?x => "fd ?? native file type " // fix, numeric code
-    | zmq_events ?x => "events " + str x
-    | zmq_type ?x => "type " + str x
-    | zmq_linger ?x => "linger " + str x+" ms"
-    | zmq_reconnect_ivl ?x => "reconnect_ivl " + str x+" ms"
-    | zmq_backlog ?x => "backlog " + str x+" connections"
-    | zmq_reconnect_ivl_max ?x => "reconnect_ivl_max " + str x+" ms"
-    | zmq_maxmsgsize ?x => "maxmsgsize " + str x+" bytes"
-    | zmq_sndhwm ?x => "sndhwm " + str x+" messages"
-    | zmq_rcvhwm ?x => "rcvhwm " + str x+" messages"
-    | zmq_multicast_hops ?x => "multicast_hops " + str x+" hops"
-    | zmq_rcvtimeo ?x => "rcvtimeo " + str x+" ms"
-    | zmq_sndtimeo ?x => "sndtimeo " + str x+" ms"
-    | zmq_ipv4only ?x => "ipv4only " + str x
+    | zmq_affinity x => "affinity " + str x // fix: bit set
+    | zmq_identity x => "identity '" + str x+"' socket name"
+    | zmq_subscribe x => "subscribe '" + str x+"' message prefix"
+    | zmq_unsubscribe x => "unsubscribe '" + str x+"' message prefix"
+    | zmq_rate x => "rate " + str x+" kb/sec"
+    | zmq_recovery_ivl x => "recovery_ivl " + str x+" ms"
+    | zmq_sndbuf x => "sndbuf " + str x+" bytes"
+    | zmq_rcvbuf x => "rcvbuf " + str x+" bytes"
+    | zmq_rcvmore x => "rcvmore " + str x
+    //| zmq_fd x => "fd ?? native file type " // fix, numeric code
+    | zmq_events x => "events " + str x
+    | zmq_type x => "type " + str x
+    | zmq_linger x => "linger " + str x+" ms"
+    | zmq_reconnect_ivl x => "reconnect_ivl " + str x+" ms"
+    | zmq_backlog x => "backlog " + str x+" connections"
+    | zmq_reconnect_ivl_max x => "reconnect_ivl_max " + str x+" ms"
+    | zmq_maxmsgsize x => "maxmsgsize " + str x+" bytes"
+    | zmq_sndhwm x => "sndhwm " + str x+" messages"
+    | zmq_rcvhwm x => "rcvhwm " + str x+" messages"
+    | zmq_multicast_hops x => "multicast_hops " + str x+" hops"
+    | zmq_rcvtimeo x => "rcvtimeo " + str x+" ms"
+    | zmq_sndtimeo x => "sndtimeo " + str x+" ms"
+    | zmq_ipv4only x => "ipv4only " + str x
     ;
   }
 
@@ -248,25 +248,25 @@ class ZeroMQ {
  
   gen set_sockopt(s: zmq_socket) (o: zmq_socket_options) =>
     match o with
-    | zmq_affinity ?x          => zset(s, ZMQ_AFFINITY, x) 
-    | zmq_identity ?x          => zset(s, ZMQ_IDENTITY, x) 
-    | zmq_subscribe ?x         => zset(s, ZMQ_SUBSCRIBE, x) 
-    | zmq_unsubscribe ?x       => zset(s, ZMQ_UNSUBSCRIBE, x) 
-    | zmq_rate ?x              => zset(s, ZMQ_RATE, x) 
-    | zmq_recovery_ivl ?x      => zset(s, ZMQ_RECOVERY_IVL, x) 
-    | zmq_sndbuf ?x            => zset(s, ZMQ_SNDBUF, x) 
-    | zmq_rcvbuf ?x            => zset(s, ZMQ_RCVBUF, x) 
-    | zmq_linger ?x            => zset(s, ZMQ_LINGER, x) 
-    | zmq_reconnect_ivl ?x     => zset(s, ZMQ_RECONNECT_IVL, x) 
-    | zmq_backlog ?x           => zset(s, ZMQ_BACKLOG, x) 
-    | zmq_reconnect_ivl_max ?x => zset(s, ZMQ_RECONNECT_IVL_MAX, x) 
-    | zmq_maxmsgsize ?x        => zset(s, ZMQ_MAXMSGSIZE, x) 
-    | zmq_sndhwm ?x            => zset(s, ZMQ_SNDHWM, x) 
-    | zmq_rcvhwm ?x            => zset(s, ZMQ_RCVHWM, x) 
-    | zmq_multicast_hops ?x    => zset(s, ZMQ_MULTICAST_HOPS, x) 
-    | zmq_rcvtimeo ?x          => zset(s, ZMQ_RCVTIMEO, x) 
-    | zmq_sndtimeo ?x          => zset(s, ZMQ_SNDTIMEO, x) 
-    | zmq_ipv4only ?x          => zset(s, ZMQ_IPV4ONLY, x) 
+    | zmq_affinity x          => zset(s, ZMQ_AFFINITY, x) 
+    | zmq_identity x          => zset(s, ZMQ_IDENTITY, x) 
+    | zmq_subscribe x         => zset(s, ZMQ_SUBSCRIBE, x) 
+    | zmq_unsubscribe x       => zset(s, ZMQ_UNSUBSCRIBE, x) 
+    | zmq_rate x              => zset(s, ZMQ_RATE, x) 
+    | zmq_recovery_ivl x      => zset(s, ZMQ_RECOVERY_IVL, x) 
+    | zmq_sndbuf x            => zset(s, ZMQ_SNDBUF, x) 
+    | zmq_rcvbuf x            => zset(s, ZMQ_RCVBUF, x) 
+    | zmq_linger x            => zset(s, ZMQ_LINGER, x) 
+    | zmq_reconnect_ivl x     => zset(s, ZMQ_RECONNECT_IVL, x) 
+    | zmq_backlog x           => zset(s, ZMQ_BACKLOG, x) 
+    | zmq_reconnect_ivl_max x => zset(s, ZMQ_RECONNECT_IVL_MAX, x) 
+    | zmq_maxmsgsize x        => zset(s, ZMQ_MAXMSGSIZE, x) 
+    | zmq_sndhwm x            => zset(s, ZMQ_SNDHWM, x) 
+    | zmq_rcvhwm x            => zset(s, ZMQ_RCVHWM, x) 
+    | zmq_multicast_hops x    => zset(s, ZMQ_MULTICAST_HOPS, x) 
+    | zmq_rcvtimeo x          => zset(s, ZMQ_RCVTIMEO, x) 
+    | zmq_sndtimeo x          => zset(s, ZMQ_SNDTIMEO, x) 
+    | zmq_ipv4only x          => zset(s, ZMQ_IPV4ONLY, x) 
     | _ => Control::fail_fun[int]$ "ZMQ: socket option " + str o + " cannot be set"
   ;
  
@@ -407,7 +407,7 @@ class Checked_ZeroMQ[T] {
 
   fun zmq_more (s:zmq_socket) => 
     match s.get_opt ZMQ_RCVMORE with 
-    | zmq_rcvmore ?x => x 
+    | zmq_rcvmore x => x 
     endmatch 
   ;
 

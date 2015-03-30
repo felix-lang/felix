@@ -14,12 +14,12 @@ open class Example1
   ;
 
   fun \in[T] (elt:T, container:SetKind[T]):bool  => match container with
-    | Varray ?a => elt \in a
-    | Darray ?a => elt \in a
-    | List   ?a => elt \in a
-    | Sexpr  ?a => elt \in a
-    | LSK1   ?a => elt \in a
-    | LSK2   ?a => elt \in a
+    | Varray a => elt \in a
+    | Darray a => elt \in a
+    | List   a => elt \in a
+    | Sexpr  a => elt \in a
+    | LSK1   a => elt \in a
+    | LSK2   a => elt \in a
     endmatch
   ;
 

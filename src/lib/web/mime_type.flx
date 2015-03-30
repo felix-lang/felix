@@ -173,11 +173,11 @@ TODO: implement more MIME types.
 
   instance Str[mime_type] {
     fun str : mime_type ->string =
-      | application  ?a => str a
-      | audio  ?a => str a
-      | image  ?a => str a
-      | text  ?a => str a
-      | multipart  ?a => str a;
+      | application  a => str a
+      | audio  a => str a
+      | image  a => str a
+      | text  a => str a
+      | multipart  a => str a;
   }
 
   fun application_type_from_str : string -> opt[application_mime_subtype] =
@@ -272,7 +272,7 @@ TODO: implement more MIME types.
   
   fun mime_type_from_file(file:string) =>
     match rev(split(file,'.')) with
-    | Cons(?hd,_) => mime_type_from_extension hd
+    | Cons(hd,_) => mime_type_from_extension hd
     | _ => text plain
     endmatch;
 
@@ -346,9 +346,9 @@ instance Eq[mime_type]  {
 
   fun parse_media_type (s:string):opt[media_type] =>
     match split( s, ";") with
-    | Cons(?h,?t) => 
+    | Cons(h,t) => 
       match from_str(h) with
-      | Some ?m => Some (m,parse_attribute_list(t))
+      | Some m => Some (m,parse_attribute_list(t))
       | _       => None[media_type]
       endmatch 
     | _ => None[media_type]

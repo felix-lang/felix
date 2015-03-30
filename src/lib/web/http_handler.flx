@@ -27,14 +27,14 @@ class HTTPHandler {
 fun find_and_map[T,V] (xf:T -> opt[V]) (xs:list[T]) : opt[V] =>
     match xs with
     | #Empty => None[V]
-    | Cons (?h,?t) => match xf(h) with |Some (?v) => Some(v) |_ => find_and_map xf t endmatch
+    | Cons (h,t) => match xf(h) with |Some (v) => Some(v) |_ => find_and_map xf t endmatch
     endmatch
   ;
 
 
 fun get_fs_path (config:server_config,request:http_request) => 
     match get_path_and_fname(request) with
-      | Some(?path,?fname) => find_and_map[string,string] (fun (r:string):opt[string] => (let ?fs_path =
+      | Some(path,fname) => find_and_map[string,string] (fun (r:string):opt[string] => (let fs_path =
         Filename::join(Filename::join(r,path),fname) in
         if (FileStat::fileexists fs_path) then
           Some(fs_path)
@@ -63,7 +63,7 @@ fun get_fs_path (config:server_config,request:http_request) =>
 
    gen handle_not_found(conn:http_connection, request:http_request) =  {
      var txt = "<div style='text-color:red;'>Page "+ 
-       (match get_fname request with | Some(?fname) => fname | _ => "NONE" endmatch)+
+       (match get_fname request with | Some(fname) => fname | _ => "NONE" endmatch)+
        " not found.</div>";
      val data = make_not_found txt;
      write(conn,data);
@@ -78,7 +78,7 @@ fun get_fs_path (config:server_config,request:http_request) =>
 
   gen handle_css(conn:http_connection, request:http_request) = {
     match get_fs_path(conn.config,request) with
-      | Some(?file) => {
+      | Some(file) => {
                        val txt = load (file);
       		       write(conn,(make_css txt));
                        }
@@ -89,13 +89,13 @@ fun get_fs_path (config:server_config,request:http_request) =>
 
   fun handle_css_route (config:server_config, request:http_request) =>
     match (get_path_and_fname request) with
-       | Some (?p,?f) => (match (mime_type_from_file f) with |text css => true | _ => false endmatch)
+       | Some (p,f) => (match (mime_type_from_file f) with |text css => true | _ => false endmatch)
        | _ => false
      endmatch;
 
   gen handle_js(conn:http_connection, request:http_request) = {
     match get_fs_path(conn.config,request) with
-      | Some(?file) => {
+      | Some(file) => {
                        val txt = load (file);
       		       write(conn,(make_js txt));
                        }
@@ -106,14 +106,14 @@ fun get_fs_path (config:server_config,request:http_request) =>
 
   fun handle_js_route (config:server_config, request:http_request) =>
     match (get_path_and_fname request) with
-      | Some (?p,?f) => (match (mime_type_from_file f) with 
+      | Some (p,f) => (match (mime_type_from_file f) with 
         |application javascript => true | _ => false endmatch)
       | _ => false
      endmatch;
 
   gen handle_image(conn:http_connection, request:http_request) = {
     match get_fs_path(conn.config,request) with
-      | Some(?file) => {
+      | Some(file) => {
                        val txt = load (file);
       		       write(conn,make_image((mime_type_from_file file), txt));
                        }
@@ -124,7 +124,7 @@ fun get_fs_path (config:server_config,request:http_request) =>
 
   fun handle_image_route (config:server_config,request:http_request) => 
      match (get_path_and_fname request) with
-       | Some (?p,?f) => (match (mime_type_from_file f) with 
+       | Some (p,f) => (match (mime_type_from_file f) with 
             |image gif => true 
             |image jpeg => true 
             |image png => true 
@@ -139,7 +139,7 @@ fun get_fs_path (config:server_config,request:http_request) =>
       write(conn,(make_html txt));
     else                   
       match get_fs_path(conn.config,request) with
-        | Some(?file) => {
+        | Some(file) => {
                        val txt = load (file);
       		       write(conn,(make_html txt));
                        }
@@ -154,7 +154,7 @@ fun get_fs_path (config:server_config,request:http_request) =>
        true
      else
        match (get_path_and_fname request) with
-         | Some (?p,?f) => (match (mime_type_from_file f) with |text html => true | _ => false endmatch)
+         | Some (p,f) => (match (mime_type_from_file f) with |text html => true | _ => false endmatch)
          | _ => false
        endmatch
      endif;

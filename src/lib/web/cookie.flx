@@ -21,9 +21,9 @@ class Cookie {
 
   instance Str[cookie] {
     fun str (c:cookie) => c.name+"="+c.value+"; "+match c.domain with 
-      |'' => ' ' | ?d => "Domain="+d+"; " endmatch+
-      match c.path with |'' => ' ' |?p => "Path="+p+"; " endmatch+
-      match c.expires with |'' => ' ' |?e => " Expires="+e+"; " endmatch+
+      |'' => ' ' | d => "Domain="+d+"; " endmatch+
+      match c.path with |'' => ' ' |p => "Path="+p+"; " endmatch+
+      match c.expires with |'' => ' ' |e => " Expires="+e+"; " endmatch+
       (if c.secure then "Secure; " else " " endif)+
       (if c.http_only then "HttpOnly;" else "" endif);
   }

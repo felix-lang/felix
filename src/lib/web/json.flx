@@ -12,11 +12,11 @@ open class Json
   fun str (s:Jvalue, v:Jvalue) : string => str s + ': ' + str v;
 
   fun str (v: Jvalue) : string => match v with
-  | Jstring ?s => '"' + s + '"' // hack, ignores quoting rules
-  | Jnumber ?i => i
-  | Jdictionary ?d => "{" + cat ", " (map str of (Jpair) d) + "}"
-  | Jarray ?a => "[" + cat ", " (map str of (Jvalue) a) + "]"
-  | Jname ?a => a
+  | Jstring s => '"' + s + '"' // hack, ignores quoting rules
+  | Jnumber i => i
+  | Jdictionary d => "{" + cat ", " (map str of (Jpair) d) + "}"
+  | Jarray a => "[" + cat ", " (map str of (Jvalue) a) + "]"
+  | Jname a => a
   endmatch
   ;
 
@@ -186,17 +186,17 @@ bad:>
       if s.[i] == '"'.char do
         def i, var ms = parse_string s (i+1);
         match ms with
-        | Good ?sv => 
+        | Good sv => 
           i = skip_white s i;
           if s.[i] == ":".char do
             ++i;
             i = skip_white s i;
             def i, var mv = parse_value s i;
             match mv with 
-            | Good ?v =>
+            | Good v =>
               elts += sv,v;
               i = skip_white s i;
-            | Bad ?j => return i, Bad j;
+            | Bad j => return i, Bad j;
             endmatch;
           else
             return i, Bad i;
@@ -208,7 +208,7 @@ bad:>
           else
             return i, Bad i;
           done 
-        | Bad ?j => return i, Bad j;
+        | Bad j => return i, Bad j;
         endmatch;
       else
         return i, Bad i;
@@ -225,7 +225,7 @@ bad:>
     while s.[i] != "]".char do
       def i, var mv = parse_value s i;
       match mv with
-      | Good ?v => elts += v; 
+      | Good v => elts += v; 
         i = skip_white s i;
         if s.[i] == ",".char do
           ++i; 
@@ -234,7 +234,7 @@ bad:>
         else
           return i, Bad i;
         done 
-      | Bad ?j => return i, Bad j;
+      | Bad j => return i, Bad j;
       endmatch;
     done
     ++i;

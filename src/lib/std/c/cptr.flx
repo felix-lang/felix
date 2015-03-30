@@ -24,7 +24,7 @@ open class Cptr
   //$ Promote a C pointer to a Felix pointer.
   //$ Conversion is checked.
   //$ Aborts with match failure if NULL.
-  ctor[T] ptr[T]( px:cptr[T]) => let Ptr  ?p = px in p; // match failure if null
+  ctor[T] ptr[T]( px:cptr[T]) => let Ptr  p = px in p; // match failure if null
 
   //$ Checked dereference of C pointer.
   fun deref[T] (px:cptr[T])=> *(px.ptr);

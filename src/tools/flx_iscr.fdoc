@@ -3,7 +3,7 @@
 Define an equality for lists of strings.
 @felix
 fun streq : list[string] * list[string] -> bool =
-  | Cons (?h1, ?t1), Cons (?h2, ?t2) when h1 == h2 => streq (t1,t2)
+  | Cons (h1, t1), Cons (h2, t2) when h1 == h2 => streq (t1,t2)
   | #Empty, Empty => true
   | _ => false
 ;
@@ -150,7 +150,7 @@ proc process_file (f:ifile) (odir:string)
     else 
       match state with
       | #Doc => ;
-      | Tangling ?b => b.output_line line;
+      | Tangling b => b.output_line line;
       endmatch;
     done 
   done
@@ -186,7 +186,7 @@ files if the contents of the buffer and file differ.
 Do nothing if the contents are the same to avoid
 spoiling the last modification timestamp.
 @felix
-  match ?id,?pbuffer in tanglers do 
+  match id,pbuffer in tanglers do 
     pbuffer.save id;
   done
 }

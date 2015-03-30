@@ -26,7 +26,7 @@ class Win32Signal {
     | $(SIGINT) =>  "SIGINT" 
     | $(SIGSEGV) =>  "SIGSEGV" 
     | $(SIGTERM) =>  "SIGTERM" 
-    | ?x => "signal " + x.int.str
+    | x => "signal " + x.int.str
     ;
   }
   inherit Str[signal_t];

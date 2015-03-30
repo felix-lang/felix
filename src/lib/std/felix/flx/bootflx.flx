@@ -67,7 +67,7 @@ class BootFlx
        | "toolchain_clang_linux" => toolchain_clang_linux
        | "toolchain_gcc_osx" => toolchain_gcc_osx
        | "toolchain_gcc_linux" => toolchain_gcc_linux
-       | ?x => 
+       | x => 
          Dynlink::load-plugin-func1 [toolchain_t,clang_config_t] ( dll-name=x, setup-str="")
        endmatch
     ;

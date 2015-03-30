@@ -8,12 +8,12 @@ class FlxPkgConfig_query
     var paths = 
       match path with
       | #Empty => Empty[string]
-      | Cons (?h,?t) => 
+      | Cons (h,t) => 
         let 
           fun aux (lst:list[string]) (out:list[string]) => 
           match lst with
           | #Empty => rev out
-          | Cons (?h,?t) => aux t (("--path+="+h)!out) 
+          | Cons (h,t) => aux t (("--path+="+h)!out) 
           endmatch
         in
         ("--path="+h) ! aux t Empty[string]
@@ -40,7 +40,7 @@ class FlxPkgConfig_query
     method gen getpkgfield1 (pkg:string, field:string) : string = {
       var values = getpkgfield (pkg,field);
       match values with
-      | Cons (?h,#Empty) => return h;
+      | Cons (h,#Empty) => return h;
       | #Empty => 
         println$ "Required field " + field + " not found in package "+pkg;
         System::exit(1);
@@ -55,7 +55,7 @@ class FlxPkgConfig_query
     method gen getpkgfieldopt (pkg:string, field:string) : opt[string] = {
       var values = getpkgfield (pkg,field);
       match values with
-      | Cons (?h,#Empty) => return Some h;
+      | Cons (h,#Empty) => return Some h;
       | #Empty => return None[string];
       | _ =>
         println$ "Multiple values for field " + field + " in " + pkg + " not allowed, got" + str values;

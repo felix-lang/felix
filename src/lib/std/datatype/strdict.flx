@@ -30,7 +30,7 @@ class StrDict[T] {
    //$ Construct a dictionary from a list of pairs.
    ctor strdict ( kv: list[string * T] ) = {
      var x = strdict ();
-     match ?k,?v in kv do add x k v; done
+     match k,v in kv do add x k v; done
      return x;
    }
 
@@ -236,7 +236,7 @@ class StrDict[T] {
     fun str(var x:strdict) : string = 
     {
       var s = "{";
-      match ?key,?value in x.iterator do
+      match key,value in x.iterator do
         var entry = key +"=" + str value;
         if s == "{" do s+= entry; else s+= ", "+ entry; done
       done 

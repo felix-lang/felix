@@ -32,7 +32,7 @@ fun empty[A, B] (v:B)(toks:list[A]):parsed[A, B] =>
 fun token[A, B](test:A->opt[B]):parser[A,B] =>
   fun (l:list[A]):parsed[A, B] => 
     match l with
-    | Cons (?t, ?ts) =>
+    | Cons (t, ts) =>
         match test t with
         | Some r => Returns[A, B] (r, ts)
         | #None => Parse_failed[A, B]
@@ -46,7 +46,7 @@ fun char_[A with Eq[A]] (ch:A):parser[A, A] =>
   token (
   fun (tok:A):opt[A] =>
     match tok with
-      | ?c when (c == ch) => Some ch
+      | c when (c == ch) => Some ch
       | _ => None[A]
     endmatch
   )
@@ -57,7 +57,7 @@ fun orelse[A, B] (p1:parser[A, B], p2:parser[A, B]):parser[A, B] =>
   fun (toks:list[A]):parsed[A, B] =>
       match p1 toks with
         | Parse_failed => p2 toks
-        | ?res => res
+        | res => res
       endmatch
   ;
 
@@ -65,9 +65,9 @@ fun orelse[A, B] (p1:parser[A, B], p2:parser[A, B]):parser[A, B] =>
 fun andalso[A, B, C] (p1:parser[A, B],p2:parser[A, C]):parser[A, (B * C)] =>
   fun (toks:list[A]) : parsed[A, (B * C)]=>
     match p1 toks with
-      | Returns (?r1, ?toks1) =>
+      | Returns (r1, toks1) =>
           match p2 toks1 with
-            | Returns (?r2, ?toks2) => Returns ((r1, r2), toks2)
+            | Returns (r2, toks2) => Returns ((r1, r2), toks2)
             | _ => Parse_failed[A, (B * C)]
           endmatch
       | _ => Parse_failed[A, (B * C)]
@@ -78,7 +78,7 @@ fun andalso[A, B, C] (p1:parser[A, B],p2:parser[A, C]):parser[A, (B * C)] =>
 fun gives[A, B, C] (p:parser[A, B], f:B ->C):parser[A, C] =>
   fun (toks:list[A]):parsed[A, C] =>
     match p toks with
-      | Returns (?v, ?toks1) => Returns (f v, toks1)
+      | Returns (v, toks1) => Returns (f v, toks1)
       | _ => Parse_failed[A, C]
    endmatch
   ;
@@ -134,7 +134,7 @@ open syntax prefix_c;
 fun char_range (c:char)(l:list[char*char]):bool =>
   match l with
     | #Empty => false
-    | Cons ((?c1, ?c2), ?tl) =>	
+    | Cons ((c1, c2), tl) =>	
        (ord c1 <= ord c and ord c <= ord c2) or char_range c tl
   endmatch
   ;
@@ -159,8 +159,8 @@ var digits : parser[char, list[char]] =
 var optsign : parser[char, list[char]] =
   token (fun (c:char):opt[list[char]] =>
     match c with
-    | ?c when c == char '-' => Some (list[char] (c))
-    | ?c when c == char '+'=> Some (list[char] (c))
+    | c when c == char '-' => Some (list[char] (c))
+    | c when c == char '+'=> Some (list[char] (c))
     | _ => None[list[char]]
    endmatch) |~ empty[char, list[char]] (list[char] ())
   ;
@@ -220,10 +220,10 @@ var identifier : parser[char, token_t] =
 var operator : parser[char, token_t] =
   token (fun (ch:char) : opt[token_t] =>
     match ch with
-    | ?c when c == char '-' => Some T_minus
-    | ?c when c == char '+' => Some T_plus
-    | ?c when c == char '*' => Some T_star
-    | ?c when c == char '/' => Some T_slash
+    | c when c == char '-' => Some T_minus
+    | c when c == char '+' => Some T_plus
+    | c when c == char '*' => Some T_star
+    | c when c == char '/' => Some T_slash
     | _ => None[token_t]
     endmatch
   );
@@ -232,8 +232,8 @@ var operator : parser[char, token_t] =
 var paren : parser[char, token_t] =
   token (fun (ch:char) : opt[token_t] =>
     match ch with
-    | ?c when c == char '(' => Some T_lparen
-    | ?c when c == char ')' => Some T_rparen
+    | c when c == char '(' => Some T_lparen
+    | c when c == char ')' => Some T_rparen
     | _ => None[token_t]
     endmatch
   );
@@ -242,10 +242,10 @@ var paren : parser[char, token_t] =
 var space_ : parser[char, unit] =
  token (fun (ch:char) : opt[unit] =>
    match ch with
-     | ?c when c == char ' ' => Some[unit] ()
-     | ?c when c == char '\t' => Some[unit] ()
-     | ?c when c == char '\n' => Some[unit] ()
-     | ?c when c == char '\r' => Some[unit] ()
+     | c when c == char ' ' => Some[unit] ()
+     | c when c == char '\t' => Some[unit] ()
+     | c when c == char '\n' => Some[unit] ()
+     | c when c == char '\r' => Some[unit] ()
      | _ => None[unit]
    endmatch
   );
@@ -271,7 +271,7 @@ val num:parser[token_t, ast_t] =
   token (
     fun (t:token_t):opt[ast_t] =>
       match t with
-        | T_num ?n => Some (E_const n)
+        | T_num n => Some (E_const n)
         | _ => None[ast_t]
       endmatch
   );
@@ -311,7 +311,7 @@ val mulop:parser[token_t, ast_t -> ast_t -> ast_t] =
 fun givento[A, B, C] (p1:parser[A, B], p2:B -> parser[A, C]) : parser[A, C] =>
   fun (toks : list[A]) : parsed[A, C] =>
      match p1 toks with
-      | Returns (?r1, ?toks1) => p2 r1 toks1
+      | Returns (r1, toks1) => p2 r1 toks1
       | Parse_failed => Parse_failed[A, C]
      endmatch
     ;
@@ -333,7 +333,7 @@ var p:parser[char,char] = char_ (char 'a');
 var q:parser[char,char] = char_ (char 'b');
 
 match *p $ explode "aab" with
- | Returns (?v, ?remains)
+ | Returns (v, remains)
      => println$ "Parse succeeded : v = \"" + str v + "\", remains = " + str remains;
  | _ => println $ "Parse failed";
 endmatch

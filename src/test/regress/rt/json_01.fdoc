@@ -8,8 +8,8 @@ proc check (s:string) {
   println$ s;
 
   match parse_json s with
-  | Good ?j => println$ str j;
-  | Bad ?i => 
+  | Good j => println$ str j;
+  | Bad i => 
      println$ "Parse Error pos " + str i;
      println$ s;
      println$ "-" * (i - 1) + "^";

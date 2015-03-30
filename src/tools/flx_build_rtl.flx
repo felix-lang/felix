@@ -62,8 +62,8 @@ class FlxRtlBuild
     var hsrc, hdst = "","";
     match split (headers, ">") with
     | #Empty => ;
-    | Cons (?h,#Empty) => hsrc = h;
-    | Cons (?h,Cons (?d,#Empty)) => hsrc = h; hdst = d;
+    | Cons (h,#Empty) => hsrc = h;
+    | Cons (h,Cons (d,#Empty)) => hsrc = h; hdst = d;
     | _ => println$ "Header file too many > characters " + headers;
     endmatch;
 
@@ -80,7 +80,7 @@ class FlxRtlBuild
     do 
       begin
         fun objname (file:string) => let 
-            ?dstobj = file.Filename::strip_extension + #(toolchain.dynamic_object_extension) in
+            dstobj = file.Filename::strip_extension + #(toolchain.dynamic_object_extension) in
             tmpdir/ dstobj
         ;
 
@@ -89,7 +89,7 @@ class FlxRtlBuild
           var dst = objname file;
           Directory::mkdirs (Filename::dirname dst);
           match Filename::get_extension srcfile with
-          | ?x when x == ".cc" or x == ".cpp" =>
+          | x when x == ".cc" or x == ".cpp" =>
             var fresh = cxx_depcheck (toolchain, srcfile, dst);
             if fresh do
               println$ "C++: Up to date [dynamic] " + file " -> " + objname file;
@@ -108,7 +108,7 @@ class FlxRtlBuild
               result = toolchain.c_dynamic_object_compiler (src=srcfile, dst=dst) ;
             done
 
-          | ?x => println$ "Unknown extension " + x; System::exit(1);
+          | x => println$ "Unknown extension " + x; System::exit(1);
           endmatch
           ;
           if result != 0 do
@@ -131,7 +131,7 @@ class FlxRtlBuild
 
     begin
       fun objname (file:string) => let 
-          ?dstobj = file.Filename::strip_extension + #(toolchain.static_object_extension) in
+          dstobj = file.Filename::strip_extension + #(toolchain.static_object_extension) in
           tmpdir/ dstobj
       ;
 
@@ -140,7 +140,7 @@ class FlxRtlBuild
         var dst = objname file;
         Directory::mkdirs (Filename::dirname dst);
         match Filename::get_extension srcfile with
-        | ?x when x == ".cc" or x == ".cpp" =>
+        | x when x == ".cc" or x == ".cpp" =>
           var fresh = cxx_depcheck (toolchain, srcfile, dst);
           if fresh do
             println$ "C++: Up to date [static] " + file " -> " + objname file;
@@ -158,7 +158,7 @@ class FlxRtlBuild
             println$ "C:   Compiling [static] " + file " -> " + objname file;
             result = toolchain.c_static_object_compiler (src=srcfile, dst=dst);
           done
-        | ?x => println$ "Unknown extension " + x; System::exit(1);
+        | x => println$ "Unknown extension " + x; System::exit(1);
         endmatch
         ;
         if result != 0 do
@@ -276,7 +276,7 @@ class FlxRtlBuild
         )
       ;
       fun prgname (file:string) => let 
-          ?dstprg = file.Filename::strip_extension + #(toolchain.executable_extension) in
+          dstprg = file.Filename::strip_extension + #(toolchain.executable_extension) in
           bin / dstprg
       ;
 
@@ -408,7 +408,7 @@ class FlxRtlBuild
        | "" => &cmd.boot_package <- "build_flx_rtl_mscv_win32";
        | "Linux" => &cmd.boot_package <- "build_flx_rtl_gcc_linux";
        | "Darwin" => &cmd.boot_package <- "build_flx_rtl_clang_osx";
-       | ?x => 
+       | x => 
          println$ "No build package specified and uname returns unknown OS: '" +x+'"';
          System::exit(1);
        endmatch;

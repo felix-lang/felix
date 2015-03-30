@@ -27,8 +27,8 @@ var xlat_cpp: string * string -> bool * string;
 fun lc (x:string) = {
   var lines = rev
     match rev_split (x,"\n") with 
-    | Cons ("",?t) => t
-    | ?x => x
+    | Cons ("",t) => t
+    | x => x
     endmatch
   ;
   
@@ -242,7 +242,7 @@ private val hack = "C_hack","C_hack"; // to make it an array we need 2 component
 
 fun valof[N](x:array[string * string,N],key:string) =>
   match find (fun (kv:string * string)=> kv.(0) == key) x with
-  | Some (?k,?v) => v
+  | Some (k,v) => v
   | #None => ""
   endmatch
 ;
@@ -280,7 +280,7 @@ fun xlat_felix(t:string, dir:string): bool * string =
   | #dq => "dq"
   | #sq3 => "sq3"
   | #dq3 => "dq3"
-  | ccomment ?n => "ccomment_"+ str n
+  | ccomment n => "ccomment_"+ str n
   | #cppcomment => "cppcomment"
   | #cppfdoc => "doccomment"
   | #mathmode => "mathmode"
@@ -548,7 +548,7 @@ thisch:> // same char, reconsider it
       if iseol ch do goto lastch;
       else goto contin;
       done
-  | ccomment ?n => 
+  | ccomment n => 
       if ch == char "*" and ahead(1) == char "/" do 
         if n == 1 do 
           cp; next;

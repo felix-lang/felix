@@ -64,7 +64,7 @@ class CopyFiles {
      rfi ("");
 
      // Check that no source file is clobbered
-     match ?src, ?dst in sd.iterator do
+     match src, dst in sd.iterator do
        if sd.haskey dst do
          eprintln$ "Target clobbers src: " + dst;
          System::exit(1);
@@ -72,7 +72,7 @@ class CopyFiles {
      done
 
      // Create target directories
-     match ?dir, _ in dirs.iterator do
+     match dir, _ in dirs.iterator do
        if verbose do println$ "mkdir " + dir; done
        if live do
          err:=Directory::mkdir(dir);
@@ -85,7 +85,7 @@ class CopyFiles {
      done
 
      // And finally, do the actual copying
-     match ?src, ?dst in sd.iterator do
+     match src, dst in sd.iterator do
        if verbose do print$ "cp " + src + "  " + dst; done
        if live do
          if process(src, dst) do

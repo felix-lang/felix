@@ -67,9 +67,9 @@ var s : string + int + double =
 
 proc p(x: string + int + double) {
   match x with
-  | case 0 ?x => println$ x+" world";
-  | case 1 ?x => println$ x+1;
-  | case 2 ?x => println$ x+2.2;
+  | case 0 x => println$ x+" world";
+  | case 1 x => println$ x+1;
+  | case 2 x => println$ x+2.2;
   endmatch;
 }
 

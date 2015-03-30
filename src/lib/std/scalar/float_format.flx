@@ -14,9 +14,9 @@ open class float_format
   //$ Format a real number v with format m.
   fun fmt[t in reals] (v:t, m: mode) =>
     match m with
-    | default (?w,?p) => fmt_default(v,w,p)
-    | fixed (?w,?p) => fmt_fixed(v,w,p)
-    | scientific(?w,?p) => fmt_scientific(v,w,p)
+    | default (w,p) => fmt_default(v,w,p)
+    | fixed (w,p) => fmt_fixed(v,w,p)
+    | scientific(w,p) => fmt_scientific(v,w,p)
     endmatch
   ;
 
@@ -24,9 +24,9 @@ open class float_format
   //$ with format m for x and y.
   fun fmt[t,r with Complex[t,r]] (v:t, m: mode) =>
     match m with
-    | default (?w,?p) => fmt_default(real v,w,p) +"+"+fmt_default(imag v,w,p)+"i"
-    | fixed (?w,?p) => fmt_fixed(real v,w,p)+"+"+fmt_fixed(imag v,w,p)+"i"
-    | scientific(?w,?p) => fmt_scientific(real v,w,p)+"+"+fmt_scientific(imag v,w,p)+"i"
+    | default (w,p) => fmt_default(real v,w,p) +"+"+fmt_default(imag v,w,p)+"i"
+    | fixed (w,p) => fmt_fixed(real v,w,p)+"+"+fmt_fixed(imag v,w,p)+"i"
+    | scientific(w,p) => fmt_scientific(real v,w,p)+"+"+fmt_scientific(imag v,w,p)+"i"
     endmatch
   ;
 

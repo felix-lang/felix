@@ -49,7 +49,7 @@ http://localhost:1234/$/usr/local/lib/felix/felix-latest
 will show the directory of the default install.
 
 @h4 Forced interpretation.
-The other hack is the suffix {?ext} after a filename.
+The other hack is the suffix {ext} after a filename.
 This tells Felix to load the file but treat it as if it
 had the extension {.ext}.
 

@@ -152,7 +152,7 @@ var OSX_INCLUDE_DIRS = list("/Developer/SDKs/MacOSX10.5.sdk/usr/include",
 var INCLUDE_DIRS=list ("/usr/include","/usr/local/include");
 var LIB_DIRS = list ("/lib","/usr/lib","/usr/local/lib");
 var HOME = 
-  let ?h = Env::getenv "HOME" in
+  let h = Env::getenv "HOME" in
     if h!="" then h 
     elif PLAT_WIN32 then Env::getenv "USERPROFILE"
     else ""
@@ -446,7 +446,7 @@ noinline fun prompt(q:string,a:string) = {
     print$ q+"?["+a+"] ";
     var in = (readln(stdin)).[0];
     match find(a,in ) with
-    |Some ?c => if isalpha(a.[c]) or isdigit(a.[c]) do 
+    |Some c => if isalpha(a.[c]) or isdigit(a.[c]) do 
         return Some (str(a.[c])); 
       done
     |_ => if in == "\n" and isupper(a.[0]) do return Some (str(a.[0])); done
@@ -575,7 +575,7 @@ noinline  proc create_config(name:string,includes:list[string],libs:list[string]
         endmatch) "";
       done
       for idir in idirs do
-        c_flags = (let ?k,_ = idir in k) + c_flags; 
+        c_flags = (let k,_ = idir in k) + c_flags; 
       done
        var lib_dirs="";
       for lib in libs do
@@ -584,7 +584,7 @@ noinline  proc create_config(name:string,includes:list[string],libs:list[string]
             if #Config::config.HAVE_MACOSX then OSX_LIB_DIRS else LIB_DIRS endif + 
             EXTRA_LIBDIR)
         with
-        |Some ?path => "-L" + path + " -l" + 
+        |Some path => "-L" + path + " -l" + 
           lib.[if startswith lib "lib" then 3 else 0 endif 
                to len(lib)-len(#Filename::dynamic_library_extension)] + " " 
         |None => (
@@ -638,7 +638,7 @@ noinline  fun is_installed(name:string) = {
      (((DEST_DIR.join("web")).join("packages")).join(name)).join("README.md");
     return 
       match (get cfg "NAME") with
-      |Some ?v => (match (get cfg "VERSION") with |Some ?w => Some (atof(w)) |_ => Some 0.0 endmatch)
+      |Some v => (match (get cfg "VERSION") with |Some w => Some (atof(w)) |_ => Some 0.0 endmatch)
       |_ => None[double]
       endmatch; 
   }  
@@ -653,7 +653,7 @@ noinline  proc handle_dependency(dependency:string) {
     |None => {
       task("Found required dependencies:"+blue_(dependency));
       match prompt(INDENT+"Scoop "+blue_(dependency)+" from litterbox","Yn") with  
-      |Some ?y when toupper(y) == "Y" => 
+      |Some y when toupper(y) == "Y" => 
         if (not System::system((INSTALL_ROOT.join("bin")).join("scoop")+
           " install "+ dependency) == 0) do
           var msg = "Unable to install package(s) "+blue_(dependency)+
@@ -673,7 +673,7 @@ noinline  proc handle_dependency(dependency:string) {
 //$ Request clone or pull from git repo specified in PKG_URL
 noinline  proc git_get(dest:string) {
     match cfg.get 'PKG_URL' with
-    |Some ?url => { git_get(url,dest); }
+    |Some url => { git_get(url,dest); }
     |_ => { setup_fail$ "No PKG_URL defined in package README.md."; }
     endmatch;
   }
@@ -715,7 +715,7 @@ noinline  proc check_dependencies() {
     task("Checking dependencies");
     var cfg = read_cfg(BUILD_DIR.join("README.md"));
     match (get cfg "DEPENDENCIES") with
-    |Some ?dependencies => {
+    |Some dependencies => {
       for dependency in split(dependencies, ",") do
         var d = strip(dependency);
         if not d == "" do handle_dependency(d); done
@@ -732,7 +732,7 @@ noinline  proc default_build() {
     var build_dirs = Empty[string];
     if BUILD_LIKE == App or BUILD_LIKE == Lib do
       match Directory::filesin(BUILD_DIR.join("bin")) with
-      |Some ?files => { 
+      |Some files => { 
         for file in files do
           if not (file.startswith ".") and (file.endswith ".flx") do
             var flx_cmd = redir_err(FLX+" " +
@@ -806,7 +806,7 @@ noinline  proc default_test() {
     C_hack::ignore(FileSystem::unlink_file(test_ok_fn));
     var file="";
     match Directory::filesin(BUILD_DIR.join("test")) with
-    |Some ?files => { for file in sort(files) do
+    |Some files => { for file in sort(files) do
                        if not (file.startswith ".") and (file.endswith ".flx") 
                           and not (file.startswith "C") and 
                           not (file.startswith "D") and
@@ -921,7 +921,7 @@ noinline  proc rewrite_history (prior_knowledge:strdict[string]) {
     if valid(history_book) do 
       for memory in prior_knowledge do
         match memory with
-        |(?event,?description) => {
+        |(event,description) => {
           write(history_book,event+"\t"+description+"\n");
         }
         endmatch;
@@ -935,7 +935,7 @@ noinline  proc rewrite_history (prior_knowledge:strdict[string]) {
 noinline  fun dump_litterbox() = {
     var contents = Empty[string];
     match Directory::filesin(LITTERBOX) with
-    |Some ?files => { 
+    |Some files => { 
       for file in sort(filter (fun (f:string) => not f == "build" and not f.startswith ".") files) do
         var dir_path = LITTERBOX.join(file);
         match filetype(dir_path) with 
@@ -974,14 +974,14 @@ noinline  proc repeat_history() {
       var p = pkg+"-"+INSTALL_ROOT;
       var q = get prior_knowledge p;
       match q with
-      |Some ?pkg_k => {
+      |Some pkg_k => {
         if not match is_installed(pkg) with |Some _ => true |_ => false endmatch do
           noneed = false;
           task(INDENT"Found that "+blue_(pkg)+
             " was installed in the past but is not currently installed");
           match prompt(INDENT+"Would you like to re-install "+blue_(pkg),
                        "Yn") with  
-          |Some ?y when toupper(y) == "Y" => 
+          |Some y when toupper(y) == "Y" => 
             if (not System::system((INSTALL_ROOT.join("bin")).join("scoop")+
               " install "+ pkg) == 0) do
               var msg = "Unable to re-install package "+blue_(pkg);
@@ -1046,21 +1046,21 @@ noinline  proc default_clean() {
       |DIRECTORY => {
         dsply.task_group("Cleaning " + dir); 
         match Directory::filesin(dir_path) with
-        |Some ?files => { 
+        |Some files => { 
           for file in files do
             match file with
-            |?f when endswith f ".OK" => {
+            |f when endswith f ".OK" => {
               assert_true(FileSystem::unlink_file(dir_path.join(f)) == 0,
                           "Deleting " + f);
             }
-            |?f when startswith f "S" => {
+            |f when startswith f "S" => {
               assert_true(FileSystem::unlink_file(dir_path.join(f)) == 0,
                           "Deleting " + f);
             }
-            |?f when (f.endswith ".flx")  => {
+            |f when (f.endswith ".flx")  => {
               clean_flx(file);
             }
-            |?f when (f.endswith ".fdoc") => {
+            |f when (f.endswith ".fdoc") => {
               clean_flx(file);
             }
             |_ => { }
@@ -1132,13 +1132,13 @@ NC();
 
   proc help_command (command:list[string]) {
     match command with
-    |Cons (?cmd,_) when cmd == 'build'   => { println$ """
+    |Cons (cmd,_) when cmd == 'build'   => { println$ """
 Description: Configures and performs build tasks.
 Usage: setup.flx build [cmd opts]
 
 """;
     }
-    |Cons (?cmd,_) when cmd == 'test'    => {
+    |Cons (cmd,_) when cmd == 'test'    => {
       println$ """
 Description: Configures and performs build tasks and executes package tests.
 
@@ -1146,7 +1146,7 @@ Usage: setup.flx test [cmd opts]
 
 """;
       }
-    |Cons (?cmd,_) when cmd == 'install' => {
+    |Cons (cmd,_) when cmd == 'install' => {
       println$ """
 Description: Configures, performs build tasks, package tests and installs
 package to INSTALL_ROOT. If this task is not ran as a user with sufficient
@@ -1156,7 +1156,7 @@ Usage: setup.flx install [cmd opts]
 
 """;
       }
-    |Cons (?cmd,_) when cmd == 'force'   => {
+    |Cons (cmd,_) when cmd == 'force'   => {
       println$ """
 Description: Configures, performs build tasks and installs
 package to INSTALL_ROOT. This command is useful if some package tests fail
@@ -1167,17 +1167,17 @@ Usage: setup.flx install [cmd opts]
 
 """;
       }
-    |Cons (?cmd,_) when cmd == 'clean'    => {
+    |Cons (cmd,_) when cmd == 'clean'    => {
       println$ """
 Description: Removes generated files.
 """;
       }
-    |Cons (?cmd,_) when cmd == 'degitify'    => {
+    |Cons (cmd,_) when cmd == 'degitify'    => {
       println$ """
 Description: Removes git repo information from package dir. Usfull if you want to place package in to your own git repo. Howeer it would be most commonly used with the 'blank' project template.
 """;
       }
-    |?cmd                       => {
+    |cmd                       => {
       dsply.invalid_cmd(join(cmd));
     }
   endmatch;
@@ -1188,7 +1188,7 @@ noinline  fun installed() = {
     var instd = strdict[string]();   
     var inst_base = (INSTALL_ROOT.join("web")).join("packages");
     match Directory::filesin(inst_base) with
-    |Some ?files => {
+    |Some files => {
       for dir in files do
         var pkg_dir = inst_base.join(dir);
         match filetype(pkg_dir) with   
@@ -1227,14 +1227,14 @@ noinline  proc degitify(dir:string) {
     var opts = Empty[string];
     for arg in options do
       match arg with
-      |?option when option.startswith "-L" => { valid_opts++; EXTRA_LIBDIR += " " + arg; }
-      |?option when option.startswith "-I" => { valid_opts++; EXTRA_INCDIR += " " + arg; }
-      |?option when option.startswith "--build-dir=" => {
+      |option when option.startswith "-L" => { valid_opts++; EXTRA_LIBDIR += " " + arg; }
+      |option when option.startswith "-I" => { valid_opts++; EXTRA_INCDIR += " " + arg; }
+      |option when option.startswith "--build-dir=" => {
          valid_opts++; BUILD_DIR = realpath(arg.[12 to]); }
-      |?option when option == "--dry-run" => { valid_opts++; DRY_RUN = true; }
-      |?option when option.startswith "--dest-dir=" => { valid_opts++; DEST_DIR = arg.[11 to]; }
-      |?option when option.startswith "--prefix=" => { valid_opts++; PREFIX = arg.[9 to]; }
-      |?option when option.startswith "--test=" => {
+      |option when option == "--dry-run" => { valid_opts++; DRY_RUN = true; }
+      |option when option.startswith "--dest-dir=" => { valid_opts++; DEST_DIR = arg.[11 to]; }
+      |option when option.startswith "--prefix=" => { valid_opts++; PREFIX = arg.[9 to]; }
+      |option when option.startswith "--test=" => {
          PREFIX = "";
          valid_opts++; FLX_OPTS += " --test=" + realpath(arg.[7 to]); 
          FLX_INSTALL_DIR = realpath(arg.[7 to]);
@@ -1243,7 +1243,7 @@ noinline  proc degitify(dir:string) {
          BUILD_DIR=realpath(BUILD_DIR);
          TEST_MODE = true;
       }
-      |?option => { opts += option; }
+      |option => { opts += option; }
       endmatch;
     done
     return (valid_opts,opts);
@@ -1268,7 +1268,7 @@ noinline  proc run() {
     var opts = Empty[string];
     var valid_opts = 0;
     match tail(System::args()) with
-    |Cons (?command,?options) => {
+    |Cons (command,options) => {
       valid_opts,opts = handle_global_options(options); 
       var build_ok_fn = (BUILD_DIR.join("config")).join("BUILD.OK");
       var test_ok_fn = (BUILD_DIR.join("test")).join("TEST.OK");
@@ -1292,7 +1292,7 @@ noinline  proc run() {
         C_hack::ignore(FileSystem::unlink_file(SETUP_LOG));    
       done
       match command with
-      |?cmd when cmd == "build" => { 
+      |cmd when cmd == "build" => { 
         if FileStat::fileexists(build_ok_fn) do
           C_hack::ignore(FileSystem::unlink_file(build_ok_fn));
         done
@@ -1308,7 +1308,7 @@ noinline  proc run() {
        done
  
         }
-      |?cmd when cmd == "test" => { 
+      |cmd when cmd == "test" => { 
         if (len(options) - valid_opts) > size(0) do
           dsply.invalid_opts(options,command);
         else
@@ -1320,7 +1320,7 @@ noinline  proc run() {
           phase("Test",test);
         done
         }
-      |?cmd when cmd == "install" => { 
+      |cmd when cmd == "install" => { 
         if (len(options) - valid_opts) > size(0) do
           dsply.invalid_opts(options,command);
         else
@@ -1345,7 +1345,7 @@ noinline  proc run() {
           done
         done
         }
-      |?cmd when cmd == "force" => {
+      |cmd when cmd == "force" => {
         if (len(options) - valid_opts) > size(0) do
           dsply.invalid_opts(options,command);
         else
@@ -1361,7 +1361,7 @@ noinline  proc run() {
           done
         done
         }
-       |?cmd when cmd == "dist" => { 
+       |cmd when cmd == "dist" => { 
         CMD = cmd;
         if (len(options) - valid_opts) > size(0) do
           dsply.invalid_opts(options,command);
@@ -1381,7 +1381,7 @@ noinline  proc run() {
           done
         done
         }
-        |?cmd when cmd == "clean" => { 
+        |cmd when cmd == "clean" => { 
         if (len(options) - valid_opts) > size(0) do
           dsply.invalid_opts(options,command);
         else
@@ -1389,10 +1389,10 @@ noinline  proc run() {
           phase("Clean",clean);
         done
         }
-      |?cmd when cmd == "help" => {
+      |cmd when cmd == "help" => {
         help_command(options);
         } 
-      |?cmd when cmd == "info" => {
+      |cmd when cmd == "info" => {
         dsply.banner("Package Info");
         task(q"Name: $(NAME)");
         task(q"VERSION: $(VERSION)");
@@ -1401,17 +1401,17 @@ noinline  proc run() {
         task(q"Description: $(DESCRIPTION)");
         display$ LONG_DESCRIPTION;
         }
-      |?cmd when cmd == "degitify" => { 
+      |cmd when cmd == "degitify" => { 
         if (len(options) - valid_opts) > size(0) do
           dsply.invalid_opts(options,command);
         else
           degitify();
         done
       } 
-      |?cmd => { dsply.invalid_cmd(cmd); }
+      |cmd => { dsply.invalid_cmd(cmd); }
       endmatch; 
       }
-    |?s => { help(); }
+    |s => { help(); }
     endmatch;
   }
 }

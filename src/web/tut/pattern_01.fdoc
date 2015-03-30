@@ -39,8 +39,8 @@ union Z =
 ;
 
 fun str (z:Z) => match z with
-  | Cart (?x,?y) => str x + "+"+str y+"i"
-  | Polar (?r,?theta) => str r + "e^"+str theta+"i"
+  | Cart (x,y) => str x + "+"+str y+"i"
+  | Polar (r,theta) => str r + "e^"+str theta+"i"
   endmatch
 ;
 @
@@ -69,13 +69,13 @@ tuples and records too:
 @felix
 fun fst (a:int * long) => 
   match a with 
-  | ?x,_ => x
+  | x,_ => x
   endmatch
 ;
 
 fun xaxis (a:(x:double, y:double))=> 
   match a with
-  | (x=?xval) => xval
+  | (x=xval) => xval
   endmatch
 ;
 

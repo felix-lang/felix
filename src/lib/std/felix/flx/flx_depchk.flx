@@ -6,7 +6,7 @@ include "std/felix/toolchain_interface";
     { 
       match a,b with
       | #Empty,Empty => return true;
-      | Cons (?h1,?t1), Cons (?h2,?t2) => 
+      | Cons (h1,t1), Cons (h2,t2) => 
          if h1 != h2 do
            return false;
          done
@@ -25,7 +25,7 @@ include "std/felix/toolchain_interface";
     var olddeptxt = load depfile;
     var old_switches, olddeps = 
       match filter (fun (s:string)=> s != "") (split (olddeptxt,"\n")) with
-      | ?h ! ?t => h,t
+      | h ! t => h,t
       | _ => "",Empty[string]
     ;
 
@@ -50,7 +50,7 @@ include "std/felix/toolchain_interface";
     { 
       match a,b with
       | #Empty,Empty =>  return true;
-      | Cons (?h1,?t1), Cons (?h2,?t2) => 
+      | Cons (h1,t1), Cons (h2,t2) => 
          if h1 != h2 do
            return false;
          done
@@ -70,7 +70,7 @@ include "std/felix/toolchain_interface";
     var olddeptxt = load depfile;
     var old_switches, olddeps = 
       match filter (fun (s:string)=> s != "") (split (olddeptxt,"\n")) with
-      | ?h ! ?t => h,t
+      | h ! t => h,t
       | _ => "",Empty[string]
     ;
 

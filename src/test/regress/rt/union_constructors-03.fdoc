@@ -8,7 +8,7 @@ proc print (u:U) {
   print$
     match u with
     | case 0 => "1"
-    | case 1 ?b => f"int %d" b
+    | case 1 b => f"int %d" b
     endmatch;
 }
 fun exec (p:int -> U, x:int) => p x;

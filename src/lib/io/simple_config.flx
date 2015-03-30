@@ -66,7 +66,7 @@ class SimpleConfig {
     return list strings from comma seperated parameter value
   """
   fun get_param_list(params:list[string*string],name:string) =>
-    match get_param(params,name) with |Some ?v => get_csv_values(v) |_ => Empty[string] endmatch;
+    match get_param(params,name) with |Some v => get_csv_values(v) |_ => Empty[string] endmatch;
   
   publish """
      Supports $variables in config files. Uses previously defined paramater keys
@@ -80,7 +80,7 @@ class SimpleConfig {
       kp = k; vp = v; 
       iter (proc (k1:string,v1:string) { 
         kp,vp = match find(vp,k1) with
-          |Some ?p => (kp, substring(vp,0,(p - 1)) + v1 +
+          |Some p => (kp, substring(vp,0,(p - 1)) + v1 +
                           substring(vp,p+int(k1.len),vp.len))
           |_ => (kp,vp)
         endmatch;
@@ -94,7 +94,7 @@ class SimpleConfig {
     vp = v; 
     iter (proc (k1:string,v1:string) { 
       vp = match find(vp,k1) with
-          |Some ?p => substring(vp,0,(p - 1)) + v1 +
+          |Some p => substring(vp,0,(p - 1)) + v1 +
                       substring(vp,p+int(k1.len),vp.len)
           |_ => vp
         endmatch;
@@ -110,7 +110,7 @@ class SimpleConfig {
       Empty[string*string]
     else
       match split_first(line, "=") with 
-        |Some ?s => list[string*string]((strip(s.(0)),strip(s.(1)))) 
+        |Some s => list[string*string]((strip(s.(0)),strip(s.(1)))) 
         |None => Empty[string*string] 
       endmatch 
     endif;

@@ -11,7 +11,7 @@ union state[s, a] =
 
 fun run_state[s, a] (x:state[s, a]):(s->a*s) =>
  match x with
-   | State ?u => u
+   | State u => u
  endmatch
   ;
 

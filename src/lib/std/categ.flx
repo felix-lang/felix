@@ -26,11 +26,11 @@ open class Categ
 
   //$ projection 1 (2 components)
   fun proj1[u1,u2,r1,r2] (f:u1*u2->r1*r2) : u1 * u2 -> r1 => 
-    fun (x:u1*u2) => match f x with | ?a,_ => a endmatch;
+    fun (x:u1*u2) => match f x with | a,_ => a endmatch;
 
   //$ projection 2 (2 components)
   fun proj2[u1,u2,r1,r2] (f:u1*u2->r1*r2) : u1 * u2 -> r2 => 
-    fun (x:u1*u2) => match f x with | _,?b => b endmatch;
+    fun (x:u1*u2) => match f x with | _,b => b endmatch;
  
 
   //$ parallel composition

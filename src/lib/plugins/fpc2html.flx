@@ -29,7 +29,7 @@ println$ "formatting fpc data";
 
   proc handle_line(s:string) {
     match split(s,":") with
-    | Cons(?fn,Cons(?fv,Empty))  =>
+    | Cons(fn,Cons(fv,Empty))  =>
       { 
         out+= "<span class=fpc_fieldname>"+fn+": </span>";
         if fn in ("Requires","flx_requires_driver") do
@@ -43,7 +43,7 @@ println$ "formatting fpc data";
         else out+= fv+"\n"; 
         done;
       }
-    | ?x => { out+=s + "\n"; }
+    | x => { out+=s + "\n"; }
     endmatch;
   }
   proc handle_pkg(s:string) {
@@ -57,7 +57,7 @@ println$ "formatting fpc data";
     while n.[0] in (char '"', char '<', char "'") do n=n.[1 to]; done
     while n.[-1] in (char '"',char '>',char "'") do n=n.[to -1]; done
     match get_file(n,C_PATH) with
-    | Some path => { out += '<a href="/$' + path + '?cpp">' + s + '</a> '; }
+    | Some path => { out += '<a href="/$' + path + 'cpp">' + s + '</a> '; }
     | #None => { out += s + " "; }
     endmatch;
   }

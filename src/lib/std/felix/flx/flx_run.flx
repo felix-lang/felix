@@ -154,7 +154,7 @@ object processing_env(
     var lines = split (deptext, "\n"); 
     debugln$ "Deps=" + str(lines);
     var deptime = 
-      let ?ft = cal_files_time lines in 
+      let ft = cal_files_time lines in 
       if ft == #FileStat::past_time then #FileStat::future_time else ft endif
     ;
     debugln$ "Deptime=" + FileStat::strfiletime(deptime);

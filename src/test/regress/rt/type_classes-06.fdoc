@@ -4,10 +4,10 @@
 open class X[T] {
   union A = V of varray[T];
   proc p(x:A) {
-    match x with | V ?v => println v; endmatch;
+    match x with | V v => println v; endmatch;
   }
 
-  fun doubler (x:A): X[T*T]::A => match x with | V ?v =>
+  fun doubler (x:A): X[T*T]::A => match x with | V v =>
     V (map (fun (a:T)=>a,a) v)
   ;
 

@@ -9,7 +9,7 @@ class Tuple[U] {
 instance[U,V with Str[U], Tuple[V]] Tuple[U ** V] {
   fun tuple_str (x: U ** V) =>
     match x with
-    | ?a ,, ?b => str a +", " + tuple_str b
+    | a ,, b => str a +", " + tuple_str b
     endmatch
   ;
 }
@@ -17,7 +17,7 @@ instance[U,V with Str[U], Tuple[V]] Tuple[U ** V] {
 instance[U,V with Str[U], Str[V]] Tuple[U * V] {
   fun tuple_str (x: U * V) =>
     match x with
-    | ?a , ?b => str a +", " + str b
+    | a , b => str a +", " + str b
     endmatch
   ;
 }
@@ -42,19 +42,19 @@ open[U, V with Str[U], Str[V]] Str [U*V];
 // Class Eq: Equality
 instance [T,U with Eq[T], Eq[U]] Eq[T ** U] {
   fun == : (T ** U) * (T ** U) -> bool =
-  | (?ah ,, ?at) , (?bh ,, ?bt) => ah == bh and at == bt;
+  | (ah ,, at) , (bh ,, bt) => ah == bh and at == bt;
   ;
 }
 
 instance[t,u with Eq[t],Eq[u]] Eq[t*u] {
   fun == : (t * u) * (t * u) -> bool =
-  | (?x1,?y1),(?x2,?y2) => x1==x2 and y1 == y2
+  | (x1,y1),(x2,y2) => x1==x2 and y1 == y2
   ;
 }
 
 instance[t with Eq[t]] Eq[t*t] {
   fun == : (t * t) * (t * t) -> bool =
-  | (?x1,?y1),(?x2,?y2) => x1==x2 and y1 == y2
+  | (x1,y1),(x2,y2) => x1==x2 and y1 == y2
   ;
 }
 
@@ -65,18 +65,18 @@ open[U,V with Eq[U], Eq[V]] Eq[U * V];
 // Class Tord: Total Order
 instance [T,U with Tord[T], Tord[U]] Tord[T ** U] {
   fun < : (T ** U) * (T ** U) -> bool =
-  | (?ah ,, ?at) , (?bh ,, ?bt) => ah < bh or ah == bh and at < bt;
+  | (ah ,, at) , (bh ,, bt) => ah < bh or ah == bh and at < bt;
   ;
 }
 
 instance[t,u with Tord[t],Tord[u]] Tord[t*u] {
   fun < : (t * u) * (t * u) -> bool =
-  | (?x1,?y1),(?x2,?y2) => x1 < x2 or x1 == x2 and y1 < y2
+  | (x1,y1),(x2,y2) => x1 < x2 or x1 == x2 and y1 < y2
   ;
 }
 instance[t with Tord[t]] Tord[t*t] {
   fun < : (t * t) * (t * t) -> bool =
-  | (?x1,?y1),(?x2,?y2) => x1 < x2 or x1 == x2 and y1 < y2
+  | (x1,y1),(x2,y2) => x1 < x2 or x1 == x2 and y1 < y2
   ;
 }
 open [T,U with Tord[T], Tord[U]] Tord[T ** U];

@@ -53,7 +53,7 @@ class Pool[s] {
     var members = p;
     gen get_next () : opt[s] = {
        match rotation  with 
-          | Cons (?h,?t) =>  rotation = t;return (Some h);
+          | Cons (h,t) =>  rotation = t;return (Some h);
           | #Empty => match typ with | #INF => rotation = Cons(constructor(),
                                                                      rotation); 
                                                                 members=rotation+members; 

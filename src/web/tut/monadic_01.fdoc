@@ -3,7 +3,7 @@
 "In plain terms, a monad is a set of rules that enforce regular
 behavior but broad enough to allow most computational processes to be
 expressed as a monad."
-<em>--http://c2.com/cgi/wiki?MonadicProgramming"</em>
+<em>--http://c2.com/cgi/wikiMonadicProgramming"</em>
 
 @h2 The maybe monad
 
@@ -36,7 +36,7 @@ union success[T] =
 
 Instances of <code>success[T]</code> are values. There are two
 possibile patterns against which to match a given value :
-<code>Success ?a</code> and <code>Failure[a] ?s</code> (in the
+<code>Success a</code> and <code>Failure[a] s</code> (in the
 nomenclature of Haskell and Ocaml, <code>Success</code> and
 <code>Failure</code> are "data constructors", <code>success[T]</code>
 is a <em>type constructor</em>.). Consider for example the function
@@ -50,8 +50,8 @@ instance[T with Str[T]] Str[success[T]]
 
   fun str (x:success[T]):string =>
     match x with 
-      | Success ?t => "Success " + (str t)
-      | Failure ?s => "Failure " + s
+      | Success t => "Success " + (str t)
+      | Failure s => "Failure " + s
     endmatch
     ;
 }
@@ -77,8 +77,8 @@ spelled out in the introduction!)</em>
 @felix
   fun bind[a, b] (x:Fallible a, f: a -> Fallible b):Fallible b =>
     match x with
-      | Success ?a => f a
-      | Failure ?s => Failure[b] s
+      | Success a => f a
+      | Failure s => Failure[b] s
     endmatch
     ;
 @
@@ -225,7 +225,7 @@ union state[s, a] =
 
 fun run_state[s, a] (x:state[s, a]):(s->a*s) =>
  match x with
-   | State ?u => u
+   | State u => u
  endmatch
   ;
 

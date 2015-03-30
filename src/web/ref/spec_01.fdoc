@@ -711,7 +711,7 @@ A felix function definition takes one of three basic forms:
 @felix
 fun f (x:int) = { var y = x + x; return y + 1; }
 fun g (x:int) => x + x + 1;
-fun h : int -> int = | ?x => x + x + 1;
+fun h : int -> int = | x => x + x + 1;
 @
 The first form is the most general, the body 
 of the function contains executable statements
@@ -723,7 +723,7 @@ form whose body returns the RHS expression.
 The third form specifies the function type then the
 body of a pattern match. It is equivalent to
 @felix
-fun h (a:int) = { return match a with | ?x => x + x + 1 endmatch; }
+fun h (a:int) = { return match a with | x => x + x + 1 endmatch; }
 @
 The first two forms also allow the return type to be
 specified:
@@ -1187,9 +1187,9 @@ typedef num = int + long + double;
 var x = (case 1 of num) 53L;
 println$ 
   match x with
-  | case 0 (?i) => "int " + i.str
-  | case 1 (?l) => "long" + l.str
-  | case 2 (?d) => "double " + d.str
+  | case 0 (i) => "int " + i.str
+  | case 1 (l) => "long" + l.str
+  | case 2 (d) => "double " + d.str
   endmatch
 ;
 @
@@ -1249,7 +1249,7 @@ x = iCons (2, x); // list of two integers
 fun istr (x:intlist) =>
   match x with
   | #iEmpty => "end"
-  | iCons (?i, ?tail) => i.str + "," + istr tail
+  | iCons (i, tail) => i.str + "," + istr tail
   endmatch
 ;
 @
@@ -1475,8 +1475,8 @@ class Rat {
   ;
 
   fun + (a:rat, b:rat) => 
-    let ?a = _repr_ a in
-    let ?b = _repr_ b in
+    let a = _repr_ a in
+    let b = _repr_ b in
     _make_rat ( 
       a.num * b.den + b.num * a.den,
       a.den * b.den
@@ -1516,8 +1516,8 @@ The syntax is
 var x = let pattern = expr1 in expr2; // equivalent to
 var x = match expr1 with pattern => expr2 endmatch
 @felix
-var x = let ?a = 1 in a + 1; // equivalent to
-var x = match 1 with ?a => a + 1 endmatch
+var x = let a = 1 in a + 1; // equivalent to
+var x = match 1 with a => a + 1 endmatch
 @
 
 @h3 Function let
@@ -1538,10 +1538,10 @@ var x =
   | #Empty => "Empty"
   | _ =>
   match y with 
-  | ?h ! Empty => h.str
+  | h ! Empty => h.str
   | _ =>
   match y with 
-  | ?h1 ! ?h2 ! Empty => h1.str + "," + h2.str
+  | h1 ! h2 ! Empty => h1.str + "," + h2.str
 ;
 
 println$ x;
@@ -1675,7 +1675,7 @@ The case tag is only used in pattern matches.
 The sum or union type isn't required because it can be deduced
 from the match argument.
 @felix
-var a = match a with Some ?v  => v | #None => 0;
+var a = match a with Some v  => v | #None => 0;
 @
 
 The case constructor with integer caseno has two uses. 
@@ -1962,7 +1962,7 @@ var x = joe + fred;
 @
 
 @h3 Pattern variable
-Notation @{?v} Used in patterns to designate a val variable
+Notation @{v} Used in patterns to designate a val variable
 to be bound in the pattern matching.
 @felix
 var x = 
@@ -1973,7 +1973,7 @@ var x =
 @
 
 @h3 Parser argument
-Notation @{?n} for some integer @{n}. In user defined syntax designates
+Notation @{n} for some integer @{n}. In user defined syntax designates
 the n'th term of a syntax production.
 
 @h2 Qualified name
@@ -2196,13 +2196,13 @@ endmatch
 is an extension of the C switch statement. The patterns
 are composed of these forms:
 @felix
-(?v1, ?v2, ... )          // tuple match
-?h!?t                     // list match
-?h,,?t                    // tuple cons
+(v1, v2, ... )          // tuple match
+h!t                     // list match
+h,,t                    // tuple cons
 Ctor                      // const union or variant match
-Ctor ?v                   // nonconst union or variant match
-(fld1=?f1, fld2=f2, ...)  // record match
-pat as ?v                 // assign variable to matched subexpression
+Ctor v                   // nonconst union or variant match
+(fld1=f1, fld2=f2, ...)  // record match
+pat as v                 // assign variable to matched subexpression
 pat when expr             // guarded match
 pat1 | pat2               // match either pattern
 999                       // integer match
@@ -2214,7 +2214,7 @@ _                         // wildcard match
 The guarded match only matches the pattern if the guard expression is true.
 @felix
 match x with
-| (?x,?y) when y != 0 => ...
+| (x,y) when y != 0 => ...
 endmatch
 @
 

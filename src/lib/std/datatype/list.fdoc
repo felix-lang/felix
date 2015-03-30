@@ -184,7 +184,7 @@ Constructor variant.
       fun aux (acc:size) (x:list[T]) =>
         match x with
         | #Empty => acc
-        | Cons (_,?t) => aux (acc + 1uz) t
+        | Cons (_,t) => aux (acc + 1uz) t
         endmatch
       ;
       return aux 0uz x;
@@ -193,8 +193,8 @@ Constructor variant.
 @felix
     //$ get n'th element
     pure fun unsafe_get: list[T] * size -> T =
-      | Cons (?h,_), 0uz => h
-      | Cons (_,?t), ?i => unsafe_get (t, i - 1uz)
+      | Cons (h,_), 0uz => h
+      | Cons (_,t), i => unsafe_get (t, i - 1uz)
     ;
 
 @h3 Default performance override @{iter}
@@ -203,7 +203,7 @@ Constructor variant.
     proc iter (_f:T->void) (x:list[T]) {
       match x with
       | #Empty => {}
-      | Cons (?h,?t) => { _f h; iter _f t; }
+      | Cons (h,t) => { _f h; iter _f t; }
       endmatch
       ;
     }
@@ -216,7 +216,7 @@ Constructor variant.
       fun aux (init:U) (x:list[T]):U =>
         match x with
         | #Empty => init
-        | Cons (?h,?t) => aux (_f init h) t
+        | Cons (h,t) => aux (_f init h) t
         endmatch
       ;
       return aux init x;
@@ -230,7 +230,7 @@ Constructor variant.
       fun aux (x:list[T]) (init:U):U =>
         match x with
         | #Empty => init
-        | Cons (?h,?t) => _f h (aux t init)
+        | Cons (h,t) => _f h (aux t init)
         endmatch
       ;
       return aux x init;
@@ -251,7 +251,7 @@ Constructor variant.
   //$ Tail of a list, abort with match failure if list is empty.
   pure fun tail[T] (x:list[T]) : list[T] = {
     match x with
-    | Cons (_,?t) => return t;
+    | Cons (_,t) => return t;
     endmatch;
   }
 
@@ -260,7 +260,7 @@ Constructor variant.
   //$ Head of a list, abort with match failure if list is empty.
   pure fun head[T] (x:list[T]) : T = {
     match x with
-    | Cons (?h,_) => return h;
+    | Cons (h,_) => return h;
     endmatch;
   }
 
@@ -272,7 +272,7 @@ Tail recursive.
     fun aux (inp:list[T]) (out:list[U]) : list[U] =>
       match inp with
       | #Empty => out
-      | Cons (?h, ?t) => aux t (Cons (_f(h), out))
+      | Cons (h, t) => aux t (Cons (_f(h), out))
       endmatch
     ;
     return aux x Empty[U];
@@ -301,7 +301,7 @@ Tail recursive.
       return
         match x with
         | #Empty => y
-        | Cons (?h, ?t) => aux t (Cons (h, y))
+        | Cons (h, t) => aux t (Cons (h, y))
         endmatch
       ;
     }
@@ -317,7 +317,7 @@ Returns a list the length of the shortest argument.
   {
     fun aux (l1: list[T1]) (l2: list[T2]) (acc: list[T1 * T2]) =>
       match l1, l2 with
-      | Cons(?h1,?t1), Cons (?h2,?t2) => aux t1 t2 (Cons ((h1, h2) , acc))
+      | Cons(h1,t1), Cons (h2,t2) => aux t1 t2 (Cons ((h1, h2) , acc))
       | _ => rev acc
       endmatch 
     ;
@@ -410,7 +410,7 @@ O(N) slow.
      return
        match x with
        | #Empty => Empty[T]
-       | Cons (?h,?t) => fold_left join of (list[T]) h t
+       | Cons (h,t) => fold_left join of (list[T]) h t
        endmatch
      ;
    }
@@ -423,7 +423,7 @@ O(N) slow.
     return
       match x with
       | #Empty => ''
-      | Cons (?h, ?t) =>
+      | Cons (h, t) =>
           fold_left (fun (a:string) (b:string) => a + sep + b) h t
       endmatch
     ;
@@ -450,7 +450,7 @@ O(N) slow.
   fun mem[T] (eq:T -> bool) (xs:list[T]) : bool =>
     match xs with
     | #Empty => false
-    | Cons (?h,?t) => if eq(h) then true else mem eq t endif
+    | Cons (h,t) => if eq(h) then true else mem eq t endif
     endmatch
   ;
 
@@ -474,7 +474,7 @@ Returns option.
   fun find[T] (eq:T -> bool) (xs:list[T]) : opt[T] =>
     match xs with
     | #Empty => None[T]
-    | Cons (?h,?t) => if eq(h) then Some h else find eq t endif
+    | Cons (h,t) => if eq(h) then Some h else find eq t endif
     endmatch
   ;
 
@@ -492,7 +492,7 @@ Returns option.
     fun aux (inp:list[T], out: list[T]) =>
       match inp with
       | #Empty => rev out
-      | Cons(?h,?t) =>
+      | Cons(h,t) =>
         if P(h) then aux(t,Cons(h,out))
         else aux (t,out)
         endif
@@ -524,7 +524,7 @@ Returns option.
     fun aux (inp:list[T], out: list[T]) =>
       match inp with
       | #Empty => rev$ Cons(e,out)
-      | Cons(?h,?t) =>
+      | Cons(h,t) =>
         if not eq (h, e) then aux(t,Cons(h,out))
         else aux (t,out)
         endif
@@ -540,7 +540,7 @@ Returns option.
     else
       match lst with
         | #Empty => list[T] ()
-        | Cons(?x, ?xs) => join (list[T] x) (take[T] (k - 1) xs)
+        | Cons(x, xs) => join (list[T] x) (take[T] (k - 1) xs)
       endmatch
     endif
   ;
@@ -552,7 +552,7 @@ Returns option.
     else
       match lst with
         | #Empty => list[T] ()
-        | Cons(?x, ?xs) => drop (k - 1) xs
+        | Cons(x, xs) => drop (k - 1) xs
     endif
   ;
  
@@ -561,7 +561,7 @@ Returns option.
     | #Empty, Empty => true
     | #Empty, _ => false
     | _, Empty => false
-    | Cons (?ha,?ta), Cons (?hb,?tb) => 
+    | Cons (ha,ta), Cons (hb,tb) => 
       if not (ha == hb) then false
       else list_eq (ta, tb)
       endif
@@ -595,7 +595,7 @@ Returns option.
     gen iterator (var xs:list[T]) () = {
       while true do
         match xs with
-        | Cons (?h,?t) => xs = t; yield Some h;
+        | Cons (h,t) => xs = t; yield Some h;
         | #Empty => return None[T];
         endmatch;
       done
@@ -621,7 +621,7 @@ instance[T with Show[T]] Str[List::list[T]] {
     'list(' +
       match xs with
       | #Empty => ''
-      | Cons(?o, ?os) =>
+      | Cons(o, os) =>
           List::fold_left (
             fun (a:string) (b:T):string => a + ', ' + (repr b)
           ) (repr o) os

@@ -24,13 +24,13 @@ println$ "Found="+ str found;
 
 var y = strdict$ list $ ("A","1"), ("D","2"), ("B","3");
 
-match ?k,?vv in y do
+match k,vv in y do
   println$ k,vv;
 done
 
 y.add "A" "99";
 
-match ?k,?vv in y do
+match k,vv in y do
   println$ k,vv;
 done
 

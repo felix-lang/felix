@@ -48,7 +48,7 @@ class PosixSignal {
     | $(SIGVTALRM) =>  "SIGVTALRM" 
     | $(SIGXCPU) =>  "SIGXCPU" 
     // | $(SIGXSZ) =>  "SIGXSZ" // not in OSX
-    | ?x => "signal " + x.int.str
+    | x => "signal " + x.int.str
     ;
   }
   inherit Str[signal_t];

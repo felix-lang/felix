@@ -86,8 +86,8 @@ class FlxPrepBuild
         var hsrc, hdst = "","";
         match split (command, ">") with
         | #Empty => ;
-        | Cons (?h,#Empty) => hsrc = strip h;
-        | Cons (?h,Cons (?d,#Empty)) => hsrc = strip h; hdst = strip d;
+        | Cons (h,#Empty) => hsrc = strip h;
+        | Cons (h,Cons (d,#Empty)) => hsrc = strip h; hdst = strip d;
         | _ => 
            println$ "[flx_build_prep:setup-pkg] file too many > characters file: "+
            cmd.setup_pkg +"["+lineno.str+"] " + command;

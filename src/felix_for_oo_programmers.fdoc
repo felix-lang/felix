@@ -119,7 +119,7 @@ proc walk(f:xmlnode->unit)(n:xmlnode) = {
   f(n);
   
   children := match n with 
-    | Element ?elt => elt.children
+    | Element elt => elt.children
     | _ => Empty[xmlnode]
   endmatch;
   

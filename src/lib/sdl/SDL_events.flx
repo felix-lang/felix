@@ -136,7 +136,7 @@ open class SDL_events_h
       | $(SDL_CLIPBOARDUPDATE) => "SDL_CLIPBOARDUPDATE"
       | $(SDL_DROPFILE) => "SDL_DROPFILE"
       | $(SDL_USEREVENT) => "SDL_USEREVENT"
-      | ?x => "UNKNOWN_EVENT #"+x.uint32.str
+      | x => "UNKNOWN_EVENT #"+x.uint32.str
     ;
   }
 
@@ -177,7 +177,7 @@ open class SDL_events_h
     | $(SDL_WINDOWEVENT_FOCUS_GAINED) => "focus_gained"
     | $(SDL_WINDOWEVENT_FOCUS_LOST) => "focus_lost"
     | $(SDL_WINDOWEVENT_CLOSE) => "close"
-    | ?x => "UnknownWindowEvent #"+x.uint8.str
+    | x => "UnknownWindowEvent #"+x.uint8.str
     ;
   }
   ctor uint8 : SDL_WindowEventID = "(uint8_t)$1";

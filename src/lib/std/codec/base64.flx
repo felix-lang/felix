@@ -96,7 +96,7 @@ class Base64 {
       if (i == 4) do
         for var ip in  0 upto 3 do
           set(&char_array_4,ip, ( match find(b64_string,char_array_4.(ip)) with 
-            |Some ?v => char(v)
+            |Some v => char(v)
             |_ => char(0)
           endmatch));
         done
@@ -116,7 +116,7 @@ class Base64 {
     done
     for var k in 0 upto 3 do
       set(&char_array_4,k,( match find(b64_string,char_array_4.(k)) with 
-            |Some ?v => char(v)
+            |Some v => char(v)
             |_ => char(0)
           endmatch));
     done

@@ -33,7 +33,7 @@ class BinarySearchTree[T with Tord[T]]
 
   fun leaf: bstree_t -> bool =
     | #Empty => false
-    | Node ?p => 
+    | Node p => 
       match p*.left, p*.right with 
       | #Empty, Empty => true 
       | _ => false
@@ -41,7 +41,7 @@ class BinarySearchTree[T with Tord[T]]
 
   fun leaf_or_empty : bstree_t -> bool =
     | #Empty => true
-    | ?x => leaf x
+    | x => leaf x
   ;
 
 @h2 String representation
@@ -49,7 +49,7 @@ class BinarySearchTree[T with Tord[T]]
   instance Str[bstree_t] {
     fun str : bstree_t -> string =
       | #Empty => "()"
-      | Node ?p =>
+      | Node p =>
         p*.elt.str + "(" + p*.left.str + ") (" + p*.right.str + ")"
     ;
   }
@@ -64,7 +64,7 @@ value, or Empty if not found.
     let fun aux (tree:bstree_t) : bstree_t =>
       match tree with 
       | #Empty => tree
-      | Node ?p => 
+      | Node p => 
          if p*.elt == elt then tree
          elif elt < p*.elt then aux p*.left
          else aux p*.right
@@ -79,11 +79,11 @@ most bottom leaf.
   fun min (x:bstree_t) =>
     match x with 
     | #Empty => x
-    | Node ?p =>
+    | Node p =>
       let fun aux (p:&bstree_node_t) =>
         match *p.left with
         | #Empty => Node p 
-        | Node ?p => aux p
+        | Node p => aux p
       in aux p
    ; 
 @h2 iter.
@@ -95,7 +95,7 @@ in ascending order.
       proc aux (x:bstree_t) = {
         match x with
         | #Empty => ;
-        | Node ?p =>
+        | Node p =>
           aux p*.left;
           f p*.elt;
           aux p*.right;
@@ -139,7 +139,7 @@ Easily defined given iter. Note the tree structure is NOT preserved.
     proc aux (p:&bstree_t) (parent:bstree_t) {
       match *p with
       | #Empty => p <- bstree_t (elt,parent);
-      | Node ?q =>
+      | Node q =>
         if elt < q*.elt do
           aux q.left (*p);
         elif elt > q*.elt do
@@ -174,7 +174,7 @@ Ab interesting routine, related to @{iter}.
   {
     match x with
     | #Empty => return None[T];
-    | Node ?p =>
+    | Node p =>
       var ff = iterator p*.left; // closure for generator
     left:>
       var elt_opt = #ff;
@@ -218,7 +218,7 @@ Ab interesting routine, related to @{iter}.
       let fun aux (x:bstree_t) (sum:size) =>
         match x with 
         | #Empty => sum
-        | Node ?p =>
+        | Node p =>
           aux p*.left (aux p*.right (sum+1uz)) 
         endmatch
       in aux x 0uz
@@ -242,7 +242,7 @@ Ensures the tree doesn't contain the specified value.
     proc aux (p:&bstree_t) {
       match *p with
       | #Empty => ; // not found, nothing to do
-      | Node ?q =>
+      | Node q =>
         if elt == q*.elt do // found it
           var par = q*.parent;
           match q*.left, q*.right with
@@ -250,12 +250,12 @@ Ensures the tree doesn't contain the specified value.
           | #Empty, Empty => p <- Empty;
 
           // right kid only
-          | #Empty, Node ?child => 
+          | #Empty, Node child => 
             p <- q*.right;
             child.parent <-par;
 
           // left kid only
-          | Node (?child) , Empty => 
+          | Node (child) , Empty => 
             p <- q*.left;
             child.parent <- par;
 
@@ -264,10 +264,10 @@ Ensures the tree doesn't contain the specified value.
           // then delete that elt's original node
           // which is the leftmost descendant of the right kid
 
-          | _, Node ?child =>
+          | _, Node child =>
             match min q*.right with
             | #Empty => assert false;
-            | Node ?k => 
+            | Node k => 
               var m = k*.elt;
               q.elt <- m;
               delete_element q.right m; 

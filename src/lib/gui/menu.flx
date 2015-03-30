@@ -48,10 +48,10 @@ class FlxGuiMenu
     fun find (m:menu_data_t, ix:int) : opt[menu_item_t] =>
       match m with
       | #Empty => None[menu_item_t]
-      | Cons (?h,?t) => 
+      | Cons (h,t) => 
         match h with
         | Leaf (Separator) => find (t,ix)
-        | ?x => if ix == 0 then Some x else find (t,ix - 1)
+        | x => if ix == 0 then Some x else find (t,ix - 1)
         endmatch
       endmatch
     ;
@@ -59,11 +59,11 @@ class FlxGuiMenu
     fun find_tag (pos: menu_position_t, menu:menu_data_t) : string =>
       match pos,menu with
       | #Empty, _ => "Empty"
-      | Cons (?i,?t), ?m => 
+      | Cons (i,t), m => 
         match find (m,i),t with
-        | Some (Leaf (Text (tag=?tag))), Empty => tag
-        | Some (Tree (Text (tag=?tag), _)), Empty => tag
-        | Some (Tree (_, ?subtree)), _=> find_tag (t,subtree)
+        | Some (Leaf (Text (tag=tag))), Empty => tag
+        | Some (Tree (Text (tag=tag), _)), Empty => tag
+        | Some (Tree (_, subtree)), _=> find_tag (t,subtree)
         | _ => "Error"
         endmatch
       endmatch
@@ -120,12 +120,12 @@ class FlxGuiMenu
     ;
     fun width : menu_item_t -> int =
       | Leaf menu_entry => width menu_entry
-      | Tree (?menu_entries ,_) => width menu_entries
+      | Tree (menu_entries ,_) => width menu_entries
     ;
 
     fun depth : menu_item_t -> int =
       | Leaf menu_entry => depth menu_entry
-      | Tree (?menu_entry ,_) => depth menu_entry
+      | Tree (menu_entry ,_) => depth menu_entry
     ;
     fun width (ls: menu_data_t) => fold_left 
       (fun (w:int) (menu_item:menu_item_t) => max (w, width menu_item)) 
@@ -162,7 +162,7 @@ class FlxGuiMenu
 
       var selected = match position with
         | #Empty => 0 // ignore for the moment
-        | Cons (?h,_) => h
+        | Cons (h,_) => h
       ;
 
       var counter = 0;
@@ -174,7 +174,7 @@ class FlxGuiMenu
           w.draw_line (RGB(0,0,0), left_x, y, right_x, y); 
           ypos = ypos + separator_depth + bottom_padding + top_padding;
 
-        | Text (label=?s,active=?active) =>
+        | Text (label=s,active=active) =>
           y = ypos + baseline_offset;
           var scheme, dosub = match active with
             | #Active => if counter == selected then selected_colour, true else text_colour, false
@@ -197,7 +197,7 @@ class FlxGuiMenu
             C_hack::ignore(SDL_BlitSurface (icon, C_hack::null[rect_t], SDL_GetWindowSurface w,&dst));
             if dosub do
               var subpos = match position with 
-                | Cons (_,?tail) => tail
+                | Cons (_,tail) => tail
                 | _ => position // empty
               ;
               display_menu (right_x+border_width,ypos+border_width,submenu,subpos);
@@ -210,7 +210,7 @@ class FlxGuiMenu
       for item in menu do
         match item with
         | Leaf entry => show_entry entry Empty[LS_expr::lsexpr[menu_entry_t, menu_entry_t]];
-        | Tree (?entry, ?submenu) => show_entry entry submenu;
+        | Tree (entry, submenu) => show_entry entry submenu;
         endmatch;
       done
       w.update; 
@@ -235,7 +235,7 @@ class FlxGuiMenu
 
       var selected = match position with
         | #Empty => 0 // ignore for the moment
-        | Cons (?h,_) => h
+        | Cons (h,_) => h
       ;
 
       var counter = 0;
@@ -247,7 +247,7 @@ class FlxGuiMenu
           ypos = ypos + separator_depth + bottom_padding + top_padding;
 //println$ "SEPARATOR : Counter="+counter.str;
 
-        | Text (label=?s,active=?active) =>
+        | Text (label=s,active=active) =>
           y = ypos + baseline_offset;
           var dosub = match active with
             | #Active => counter == selected
@@ -269,7 +269,7 @@ class FlxGuiMenu
           | _ =>
             if dosub do
               var subpos = match position with 
-                | Cons (_,?tail) => tail
+                | Cons (_,tail) => tail
                 | _ => position // empty
               ;
               get_hotrecs (right_x+border_width,ypos+border_width,submenu,subpos) (counter+revtrail) photrecs;
@@ -282,7 +282,7 @@ class FlxGuiMenu
       for item in menu do
         match item with
         | Leaf entry => hotrecs entry Empty[LS_expr::lsexpr[menu_entry_t, menu_entry_t]];
-        | Tree (?entry, ?submenu) => hotrecs entry submenu;
+        | Tree (entry, submenu) => hotrecs entry submenu;
         endmatch;
       done
     }  
@@ -303,7 +303,7 @@ class FlxGuiMenu
   fun hotpos (point:SDL_Point, hot:list[rect_t * menu_position_t]) : opt[menu_position_t] =>
     match hot with
     | #Empty => None[menu_position_t]
-    | Cons ((?r,?pos),?tail) =>
+    | Cons ((r,pos),tail) =>
       if point \in r then Some pos else hotpos (point, tail)
     endmatch
   ;
@@ -344,7 +344,7 @@ class FlxGuiMenu
 
     fun width : menu_item_t -> int =
       | Leaf menu_entry => width menu_entry
-      | Tree (?menu_entry,_) => width menu_entry
+      | Tree (menu_entry,_) => width menu_entry
     ;
 
     fun width (ls: menu_data_t) => fold_left 
@@ -378,7 +378,7 @@ class FlxGuiMenu
 
       var selected = match position with
         | #Empty => 0 // ignore for the moment
-        | Cons (?h,_) => h
+        | Cons (h,_) => h
       ;
 
       var counter = 0;
@@ -390,7 +390,7 @@ class FlxGuiMenu
           w.draw_line (RGB(0,0,0), xpos, top_y, xpos, top_y+bar_depth); 
           xpos = xpos + separator_width + right_padding + left_padding;
 
-        | Text (label=?s,active=?active) =>
+        | Text (label=s,active=active) =>
           var scheme, dosub = match active with
             | #Active => if counter == selected then selected_colour, true else text_colour, false
             | #Disabled => disabled_colour, false
@@ -422,7 +422,7 @@ class FlxGuiMenu
                 submenu_icons
               );
               match position with
-              | Cons (_,?tail) => smm.set_state (Open tail);
+              | Cons (_,tail) => smm.set_state (Open tail);
               | _ => ;
               endmatch;
               smd.display();
@@ -435,7 +435,7 @@ class FlxGuiMenu
       for item in menu do
         match item with
         | Leaf entry => show_entry entry Empty[LS_expr::lsexpr[menu_entry_t, menu_entry_t]];
-        | Tree (?entry, ?submenu) => show_entry entry submenu;
+        | Tree (entry, submenu) => show_entry entry submenu;
         endmatch;
       done
       w.update; 
@@ -460,7 +460,7 @@ class FlxGuiMenu
 
       var selected = match position with
         | #Empty => 0 // ignore for the moment
-        | Cons (?h,_) => h
+        | Cons (h,_) => h
       ;
 
       var counter = 0;
@@ -472,7 +472,7 @@ class FlxGuiMenu
           xpos = xpos + separator_width + right_padding + left_padding;
 //println$ "SEPARATOR : Counter="+counter.str;
 
-        | Text (label=?s,active=?active) =>
+        | Text (label=s,active=active) =>
           var dosub = match active with
             | #Active => counter == selected
             | #Disabled => false
@@ -505,7 +505,7 @@ class FlxGuiMenu
                 submenu_icons
               );
               match position with
-              | Cons (_,?tail) => smm.set_state (Open tail);
+              | Cons (_,tail) => smm.set_state (Open tail);
               | _ => ;
               endmatch;
               var shots = smd.get_hotrects();
@@ -520,7 +520,7 @@ class FlxGuiMenu
       for item in menu do
         match item with
         | Leaf entry => hotrecs entry Empty[LS_expr::lsexpr[menu_entry_t, menu_entry_t]];
-        | Tree (?entry, ?submenu) => hotrecs entry submenu;
+        | Tree (entry, submenu) => hotrecs entry submenu;
         endmatch;
       done
     }  

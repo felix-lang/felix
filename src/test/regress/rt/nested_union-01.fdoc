@@ -8,7 +8,7 @@ fun f(x:int) = {
   fun pr(a:x_t): int = {
     return
       match a with
-      | X ?i => i
+      | X i => i
       | _ => 0
       endmatch
     ;
