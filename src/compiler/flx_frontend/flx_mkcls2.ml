@@ -47,20 +47,21 @@ let make_closure_state syms =
   }
 
 
-let make_inner_function state bsym_table closure_bid sr vs ps =
+let make_inner_function state bsym_table closure_bid sr vs ts ps =
+   assert (List.length ts = List.length vs);
   (* Make the type of the closed value. *)
-  let closed_type = match ps with [t] -> t | ts -> btyp_tuple ts in
+  let closed_type = match ps with 
+    | [typ] -> tsubst vs ts typ
+    | typs -> btyp_tuple (List.map (tsubst vs ts) typs) 
+  in
 
   (* Make the closed value that's hidden inside our wrapper function. *)
   let closed_bid = fresh_bid state.syms.counter in
   let closed_name = "_a" ^ string_of_bid closed_bid in
-  let closed_val = bbdcl_val (vs,closed_type,`Val) in
+  let closed_val = bbdcl_val ([],closed_type,`Val) in
 
   Flx_bsym_table.add bsym_table closed_bid (Some closure_bid)
     (Flx_bsym.create ~sr closed_name closed_val);
-
-  (* Make the type variables of the inner call. *)
-  let ts = List.map (fun (_,i) -> btyp_type_var (i,btyp_type 0)) vs in
 
   (* Make the parameters for the wrapper function. *)
   let param =
@@ -71,10 +72,10 @@ let make_inner_function state bsym_table closure_bid sr vs ps =
   in
 
   (* Make the argument that we'll pass to our wrapped function. *)
-  let arg = bexpr_varname closed_type (closed_bid, ts) in
+  let arg = bexpr_varname closed_type (closed_bid, []) in
 
   (* Return a couple parameters *)
-  ts, param, arg
+  param, arg
 
 (*
 let gen_composite_closure_entry state bsym_table sr (f1,t1) (f2,t2) =
@@ -178,16 +179,20 @@ let rec chk_expr state bsym_table nutab sr exe e : Flx_bexpr.t =
         e
 
       | BBDCL_external_fun (props,vs,ps,ret,_,_,_) ->
-(*
+if ts <> [] then begin
         print_endline ("in exe=" ^ sbx exe ^ "\nPrimitive function passed as argument " ^ sbe bsym_table e);
-*)
+       print_endline ("ts=" ^ catmap "," (sbt bsym_table) ts);
+end;
+        
+(*
         assert (ts = []);
+*)
         let closure_bid = fresh_bid state.syms.counter in
         let closure_name = ("_a" ^ string_of_int closure_bid ^ "_" ^ Flx_bsym.id bsym) in
         Flx_bsym_table.add nutab closure_bid None 
           (Flx_bsym.create ~sr:fsr closure_name (bbdcl_invalid ()))
         ;
-        let ts,param, arg = make_inner_function state nutab closure_bid fsr vs ps in
+        let param, arg = make_inner_function state nutab closure_bid fsr vs ts ps in
 
         (* Generate a call to the wrapped function. *)
         let exes =
@@ -209,13 +214,15 @@ let rec chk_expr state bsym_table nutab sr exe e : Flx_bexpr.t =
 (*
         print_endline ("in exe=" ^ sbx exe ^ "\nStruct passed as argument " ^ sbe bsym_table e);
 *)
+(*
         assert (ts = []);
+*)
         let closure_bid = fresh_bid state.syms.counter in
         let closure_name = ("_a" ^ string_of_int closure_bid ^ "_" ^ Flx_bsym.id bsym) in
         Flx_bsym_table.add nutab closure_bid None 
           (Flx_bsym.create ~sr:fsr closure_name (bbdcl_invalid ()))
         ;
-        let ts,param, arg = make_inner_function state nutab closure_bid fsr vs (List.map snd ps) in
+        let param, arg = make_inner_function state nutab closure_bid fsr vs ts (List.map snd ps) in
 
         (* Generate a call to the wrapped function. *)
         let exes =
@@ -231,13 +238,15 @@ let rec chk_expr state bsym_table nutab sr exe e : Flx_bexpr.t =
 (*
         print_endline ("in exe=" ^ sbx exe ^ "\nCstruct passed as argument " ^ sbe bsym_table e);
 *)
+(*
         assert (ts = []);
+*)
         let closure_bid = fresh_bid state.syms.counter in
         let closure_name = ("_a" ^ string_of_int closure_bid ^ "_" ^ Flx_bsym.id bsym) in
         Flx_bsym_table.add nutab closure_bid None 
           (Flx_bsym.create ~sr:fsr closure_name (bbdcl_invalid ()))
         ;
-        let ts,param, arg = make_inner_function state nutab closure_bid fsr vs (List.map snd ps) in
+        let param, arg = make_inner_function state nutab closure_bid fsr vs ts (List.map snd ps) in
 
         (* Generate a call to the wrapped function. *)
         let exes =
@@ -254,13 +263,15 @@ let rec chk_expr state bsym_table nutab sr exe e : Flx_bexpr.t =
 (*
         print_endline ("in exe=" ^ sbx exe ^ "\nNon-const union constructor passed as argument" ^ sbe bsym_table e);
 *)
+(*
         assert (ts = []);
+*)
         let closure_bid = fresh_bid state.syms.counter in
         let closure_name = ("_a" ^ string_of_int closure_bid ^ "_" ^ Flx_bsym.id bsym) in
         Flx_bsym_table.add nutab closure_bid None 
           (Flx_bsym.create ~sr:fsr closure_name (bbdcl_invalid ()))
         ;
-        let ts,param, arg = make_inner_function state nutab closure_bid fsr vs [p] in
+        let param, arg = make_inner_function state nutab closure_bid fsr vs ts [p] in
 
         (* Generate a call to the wrapped function. *)
         let exes =
@@ -298,7 +309,7 @@ let rec chk_expr state bsym_table nutab sr exe e : Flx_bexpr.t =
     in
     assert (cod2 = dom1); (* should use type_eq here .. *)
     assert (cod1 = t);
-    let ts,param, arg = make_inner_function state nutab closure_bid sr [] [dom2] in
+    let param, arg = make_inner_function state nutab closure_bid sr [] [] [dom2] in
 
     (* Generate a call to the wrapped function. *)
     let exes =
@@ -320,7 +331,7 @@ let rec chk_expr state bsym_table nutab sr exe e : Flx_bexpr.t =
     Flx_bsym_table.add nutab closure_bid None 
       (Flx_bsym.create ~sr:sr closure_name (bbdcl_invalid ()))
     ;
-    let ts,param, arg = make_inner_function state nutab closure_bid sr [] [d] in
+    let param, arg = make_inner_function state nutab closure_bid sr [] [] [d] in
 
     (* Generate a call to the wrapped function. *)
     let exes =
@@ -342,7 +353,7 @@ let rec chk_expr state bsym_table nutab sr exe e : Flx_bexpr.t =
     Flx_bsym_table.add nutab closure_bid None 
       (Flx_bsym.create ~sr:sr closure_name (bbdcl_invalid ()))
     ;
-    let ts,param, arg = make_inner_function state nutab closure_bid sr [] [d] in
+    let param, arg = make_inner_function state nutab closure_bid sr [] [] [d] in
 
     (* Generate a call to the wrapped function. *)
     let exes =
@@ -362,7 +373,7 @@ let rec chk_expr state bsym_table nutab sr exe e : Flx_bexpr.t =
     Flx_bsym_table.add nutab closure_bid None 
       (Flx_bsym.create ~sr:sr closure_name (bbdcl_invalid ()))
     ;
-    let ts,param, arg = make_inner_function state nutab closure_bid sr [] [d] in
+    let param, arg = make_inner_function state nutab closure_bid sr [] [] [d] in
 
     (* Generate a call to the wrapped function. *)
     let exes =

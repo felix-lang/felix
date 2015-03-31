@@ -44,7 +44,8 @@ let add_inst syms bsym_table ref_insts1 sr (i,ts) =
     | BTYP_void -> 
       let sym = Flx_bsym_table.find bsym_table i in
       let name = Flx_bsym.id sym in
-      print_debug syms ("In " ^ Flx_srcref.short_string_of_src sr ^ "\nAttempt to register instance " ^ name ^ ": " ^ si i ^ "[" ^
+      print_debug syms ("In " ^ Flx_srcref.short_string_of_src sr ^ 
+        "\nAttempt to register instance " ^ name ^ ": " ^ si i ^ "[" ^
       catmap ", " (sbt bsym_table) ts ^ "]")
 (*
       ; failwith "Attempt to instantiate type variable with type void"

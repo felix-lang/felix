@@ -73,8 +73,10 @@ let gen_match rex seq name sr e pss =
       let n2 = seq() in
       let mh_idx = seq () in
       let mc_idx = seq () in
-      if !iswild then
+      if !iswild then ()
+        (*
         print_endline "WARNING, matches after wildcard ignored"
+        *)
       else begin
         iswild := is_universal pat;
         let patsrc = src_of_pat pat in

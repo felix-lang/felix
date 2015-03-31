@@ -233,7 +233,16 @@ let validate_patterns pats =
   let checker = find_match_type hpat in
   checker pats;
 
+  (*
+  Currently the parser generates matches for set forms.
+  Unfortunately it adds a terminal wildcard branch
+  even if the prior branch is irrefutable because at
+  present there's no code to tell if it is or not.
+  So we have to disable this check.
+  *)
+  (*
   List.iter check_terminal (List.tl (List.rev pats));
+  *)
 
   List.iter begin fun x ->
     match x with

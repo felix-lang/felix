@@ -369,8 +369,8 @@ syntax texsyms {
   // set ops (note: no setminus, its a standard binop at the moment ;)
   // note: no \Cap or other variants .. would interfere with chain 
   // there's no reason at all to chain these anyhow, they're standard left assoc operators 
-  x[ssetunion_pri] := x[ssetunion_pri] "\cup" x[>ssetunion_pri] =># "(infix 'setunion)" note "setunion";
-  x[ssetintersection_pri] := x[ssetintersection_pri] "\cap" x[>ssetintersection_pri] =># "(infix 'setintersection)" note "setintersection";
+  x[ssetunion_pri] := x[ssetunion_pri] "\cup" x[>ssetunion_pri] =># "(Infix)" note "setunion";
+  x[ssetintersection_pri] := x[ssetintersection_pri] "\cap" x[>ssetintersection_pri] =># "(Infix)" note "setintersection";
 
   // All arrows are right associative .. hmm ..
   x[sarrow_pri] := x[scase_literal_pri] arr x[sarrow_pri] =># "`(ast_apply ,_sr (,_2 (,_1 ,_3)))"; 
