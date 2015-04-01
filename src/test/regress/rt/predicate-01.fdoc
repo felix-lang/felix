@@ -1,0 +1,17 @@
+@title Operations on Predicates
+@h1 Predicates
+@felix
+include "std/algebra/predicate";
+var equals = fun (x:int, y:int) => x == y;
+var less = fun (x:int, y:int) => x < y;
+
+var lesseq = equals or less;
+println$ lesseq (1,2);
+
+var lesseq2 = (== of (int*int)) or (< of (int*int));
+println$ lesseq2 (1,2);
+
+@expect
+true
+true
+@

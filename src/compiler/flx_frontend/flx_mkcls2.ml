@@ -179,11 +179,13 @@ let rec chk_expr state bsym_table nutab sr exe e : Flx_bexpr.t =
         e
 
       | BBDCL_external_fun (props,vs,ps,ret,_,_,_) ->
+(*
 if ts <> [] then begin
         print_endline ("in exe=" ^ sbx exe ^ "\nPrimitive function passed as argument " ^ sbe bsym_table e);
        print_endline ("ts=" ^ catmap "," (sbt bsym_table) ts);
 end;
-        
+*)
+ 
 (*
         assert (ts = []);
 *)
