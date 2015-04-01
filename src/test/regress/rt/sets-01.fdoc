@@ -1,0 +1,64 @@
+@title Sets
+@h1 Sets and set forms
+@felix
+var x = (1,2) \cup (9,7);
+for var i in 0 upto 9 do
+  println$ i.str + " -> " (i \in x).str;
+done 
+
+// find all the numbers < 10 whose squares are the sum of two primes
+begin
+  var primes = (2, 3, 5, 7, 11, 13, 17, 19, 
+    23, 29, 31, 37, 41, 43, 47, 
+    53, 59, 61, 67, 71, 73, 79, 
+    83, 89, 97 )
+  ;
+  var squares = (1,4,9,16,25,36,49,64,81,100);
+  var primepairs = {x,y : int * int | x \in primes and y \in primes};
+  //var sumissquare = {i,j: int^2 |  i + j \in squares };
+  fun sum (i:int, j:int) => i + j;
+  var sumissquare = invimg (sum, squares);
+  var square_sum_of_primes = sumissquare \cap primepairs;
+
+  for var i in 1 upto 100 do
+  for var j in i upto 100 do
+     if (i,j) \in square_sum_of_primes do
+       println$ (i+j).str + "="+i.str+"+"+j.str;
+     done 
+  done
+  done
+end
+@expect
+0 -> false
+1 -> true
+2 -> true
+3 -> false
+4 -> false
+5 -> false
+6 -> false
+7 -> true
+8 -> false
+9 -> true
+4=2+2
+9=2+7
+25=2+23
+49=2+47
+81=2+79
+16=3+13
+64=3+61
+100=3+97
+16=5+11
+36=5+31
+64=5+59
+36=7+29
+64=11+53
+100=11+89
+36=13+23
+36=17+19
+64=17+47
+100=17+83
+64=23+41
+100=29+71
+100=41+59
+100=47+53
+@
