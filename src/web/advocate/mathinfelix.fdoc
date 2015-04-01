@@ -1,0 +1,140 @@
+@title Math in Felix 
+@h1 Math in Felix
+Felix provides a set of symbols from \(\TeX\), \(\LaTeX\) and AmSTeX which will
+display nicely with @{flx_web} using the excellent MathJax package
+as written in Felix program code. 
+
+All symbols starting with slosh and followed by alphabetic letters are valid Felix 
+identifiers as well as valid TeX.
+
+Additionally Felix supports some special symbols recognized by both
+the language processor and MathJaX.
+
+Felix also supports both inline and display math 
+using MathJaX @{\}@{( .. \}@{)} and @{\}@{[ .. \}@{]}
+brackets, these work in @{*.flx} files and in both text and code
+in @{*.fdoc} files.
+
+Hover over sole operators shows the Felix source code, with
+math mode, a click will open a new window showing mangled source.
+The @{flx_web} processor adds { and } braces around Felix
+grouping operators in math mode, to ensure MathJaX respects
+Felix grouping.
+
+In math mode, display may fail if explicit grouping is not used
+where TeX expects it.
+
+@h2 Ordinary names
+Any TeX name defined as class ORD in TeX can be used
+in Felix as an identifier. This includes all the usual
+Greek letters.
+@felix
+var \alpha = 1;
+fun \Gamma (x:int)=> x * x;
+println$ \Gamma\alpha;
+@
+
+@h2 Ceil and Floor
+Defined for real floating types. The result is a floating type, not an integer!
+Mapped by the parser to the functions @{ceil} and @{floor}.
+@felix
+println$ \lceil x + 2.3 \rceil + \lfloor 2.3 \rfloor + 0.1;
+
+@h2 Sqrt
+The square root is only available in math mode.
+Unless it's argument is a single symbol, grouping
+operators are required to get the overline in the right place.
+@felix
+var x = 4.0;
+println$ \( \sqrt (x + 2.0 )\);
+
+@h2 Fractions with over
+The parser recognises the @{\}@{over} binary operator with
+a low precedence and maps it to the division function @{/}.
+Correct display requires math mode.
+
+@felix
+println$ \(x + 1.0 \over 2.0\);
+
+@h1 Set operations
+@h2 Membership
+Available for all class @{Set}, which includes all @{Container}.
+Defined for arrays, and most container types including 
+list, varray, darray, bsarray. Defined for strings and regular expressions too.
+[TODO: ralist, sarray]
+
+@felix
+
+println$ mem (2, (1,2,34));      // plain text function name
+println$ 2 in (1,2,3,4);         // plain text binary operator
+println$ 2 \in (1,2,3,4);        // \in
+println$ (1,2,3,4) \ni 2;        // \ni  Note: \in spelled backwards
+println$ (1,2,3,4) \owns 2;      // \owns
+println$ 5 \notin (1,2,3,4);     // \notin
+println$ 2 \in varray (1,2,3,4);
+println$ 2 \in darray (1,2,3,4);
+println$ 2 \in list (1,2,3,4);
+println$ char "2" \in "1234";
+println$ "abaa" \in RE2 "(a|b)*a";
+
+@h2 Set Relations
+Felix defines setlike relations for where the arguments
+are in both @{Streamable} and @{Set}. 
+
+In some cases
+such as the subset or equal, we only require the left
+operand to be in @{Streamable} and the right operand
+to be in @{Set}.
+
+The default implementation of subset or equal streams
+all values of the LHS container and checks if that
+value is in the RHS argument. This implementation
+is inefficient, but it does allow the RHS to be
+infinite, for example a regular expression.
+
+These relations construe containers as sets and so
+ignore duplicates. We use the congruence operator
+to mean equal as sets. Two arrays, for example,
+may be equal as sets because they contain the same
+set of elements, even though the ordering is different
+and different elements may be duplicated, so that
+the arrays are not equal as arrays.
+
+Furthermore note that the operands may be 
+completely different data structures and thus
+different types, however they must support
+the same value type.
+
+@felix
+println$ (varray (1,2)) \subseteq (varray (1,2,3));
+println$ (varray (1,2)) \cong (varray (1,2,3));
+println$ (varray (1,2)) \cong (darray (1,2,2));
+println$ ("aba","ababba") \subseteq RE2 "(a|b)*a";
+
+@h2 Set Operators
+Felix currently provides set operators, but they're
+only define for type sets.
+@felix
+typedef sregints = typesetof (int, long);
+typedef uregints = typesetof (uint, ulong);
+typedef regints = sregints \cup uregints;
+fun f[T:regints] : T -> T = "$1+1";
+println$ f 1, f 1u, f 1uL;
+
+@h2 Total Order
+Members of class @{Tord} provide fancy operators.
+Note that max uses @{\}@{wedge} and min uses @{\}@{vee}
+and these look the same as boolean @{\}@{land} and @{\}{lor}
+but they're NOT.
+@felix
+println$ 1 \le 2;
+println$ 2 \nleq 1;
+println$ 2 \gt 1;
+println$ 2 \geqslant 1;
+println$ 2 \wedge 3, 2 \vee 3;
+
+@h2 Boolean 
+There are some fancy logic operators.
+@felix
+println$ \lnot (true \land true \lor false \implies false);
+

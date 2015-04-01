@@ -1,0 +1,71 @@
+@title Heap
+@h1 Heap data structure
+A minimum heap. And a heap sort.
+@felix
+include "std/datatype/heap";
+open MinHeap[int];
+for var i in 0 upto 10 do
+  println$ "node="+i.str+", parent="+i.parent.str+
+    ", left="+i.left_child.str+", right="+i.right_child.str+
+    " " + (i.left_child.parent == i).str + " " + (i.right_child.parent == i).str
+  ;
+done
+
+var x = minheap_t();
+heap_insert x 42;
+heap_insert x 25;
+heap_insert x 28;
+heap_insert x 26;
+heap_insert x 2;
+heap_insert x 92;
+println$ x;
+
+
+again:while true do
+  var min = x.extract_min;
+  match min with
+  | Some min => print$ min.str + " ";
+  | None => break again;
+  endmatch;
+done
+println$ " End";
+
+x = minheap_t();
+heap_insert x 42;
+heap_insert x 25;
+heap_insert x 28;
+heap_insert x 26;
+heap_insert x 2;
+heap_insert x 92;
+println$ x;
+
+heap_sort x;
+println$ x;
+heapify x;
+println$ x;
+heap_sort x;
+println$ x;
+heapify x;
+println$ x;
+@expect
+node=0, parent=0, left=1, right=2 true true
+node=1, parent=0, left=3, right=4 true true
+node=2, parent=0, left=5, right=6 true true
+node=3, parent=1, left=7, right=8 true true
+node=4, parent=1, left=9, right=10 true true
+node=5, parent=2, left=11, right=12 true true
+node=6, parent=2, left=13, right=14 true true
+node=7, parent=3, left=15, right=16 true true
+node=8, parent=3, left=17, right=18 true true
+node=9, parent=4, left=19, right=20 true true
+node=10, parent=4, left=21, right=22 true true
+varray(2, 25, 28, 42, 26, 92)
+2 25 26 28 42 92  End
+varray(2, 25, 28, 42, 26, 92)
+varray(92, 42, 28, 26, 25, 2)
+varray(2, 25, 28, 26, 42, 92)
+varray(92, 42, 28, 26, 25, 2)
+varray(2, 25, 28, 26, 42, 92)
+@
+
+
