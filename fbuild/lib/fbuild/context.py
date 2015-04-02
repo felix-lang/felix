@@ -2,6 +2,7 @@ import os
 import signal
 import threading
 import time
+import subprocess
 
 import fbuild
 import fbuild.builders.platform
@@ -9,7 +10,6 @@ import fbuild.console
 import fbuild.db.database
 import fbuild.path
 import fbuild.sched
-import fbuild.subprocess.killableprocess
 
 # ------------------------------------------------------------------------------
 
@@ -94,8 +94,8 @@ class Context:
             stderr_quieter=None,
             input=None,
             stdin=None,
-            stdout=fbuild.subprocess.PIPE,
-            stderr=fbuild.subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             timeout=None,
             env=None,
             runtime_libpaths=None,
@@ -177,7 +177,7 @@ class Context:
 
         starttime = time.time()
         try:
-            p = fbuild.subprocess.killableprocess.Popen(cmd,
+            p = subprocess.Popen(cmd,
                 stdin=fbuild.subprocess.PIPE if input else stdin,
                 stdout=stdout,
                 stderr=stderr,

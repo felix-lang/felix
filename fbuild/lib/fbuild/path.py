@@ -31,7 +31,7 @@ class Path(str):
         s = ''
         for path in paths:
             if isinstance(path, str):
-                s = os.path.join(s, path.replace('/', os.sep))
+                s = os.path.join(s, path.replace('/', os.sep)).replace('"','')
             else:
                 s = os.path.join(s, *path)
 
