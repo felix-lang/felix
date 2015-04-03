@@ -106,10 +106,29 @@ different types, however they must support
 the same value type.
 
 @felix
-println$ (varray (1,2)) \subseteq (varray (1,2,3));
 println$ (varray (1,2)) \cong (varray (1,2,3));
 println$ (varray (1,2)) \cong (darray (1,2,2));
 println$ ("aba","ababba") \subseteq RE2 "(a|b)*a";
+
+println$ (1,2) \subset (1,2,3);
+println$ (1,2) \subseteq (varray (1,2,3));
+println$ (1,2) \subseteqq (varray (1,2,3));
+println$ (1,2) \subsetneq (varray (1,2,3));
+println$ (1,2) \subsetneqq (varray (1,2,3));
+
+println$ (1,2,3) \supset (1,2);
+println$ (1,2,3) \supseteq (1,2);
+println$ (1,2,3) \supseteqq (1,2);
+println$ (1,2,3) \supsetneq (1,2);
+println$ (1,2,3) \supsetneqq (1,2);
+
+println$ (1,2,3) \nsubset (1,2);
+println$ (1,2,3) \nsubseteq (1,2);
+println$ (1,2,3) \nsubseteqq (1,2);
+
+println$ (1,2) \nsupset (1,2,3);
+println$ (1,2) \nsupseteq (1,2,3);
+println$ (1,2) \nsupseteqq (1,2,3);
 
 @h2 Set Operators
 Felix currently provides set operators, but they're

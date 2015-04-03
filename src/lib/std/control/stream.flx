@@ -33,7 +33,7 @@ bad:>
 
   // proper subset
   virtual fun \subset [C2 with Set[C2,V], Streamable[C2,V], Set[C1,V]] 
-    (x:C1, y:C2) => x \subseteq x and x \ncong y
+    (x:C1, y:C2) => x \subseteq y and x \ncong y
   ;
 
   // variant proper relations with strke-through on equality bar
@@ -50,7 +50,7 @@ bad:>
   ;
 
   fun \supseteq [C2 with Set[C2,V], Streamable[C2,V]] 
-    (x:C1, y:C2) => y \subseteq y
+    (x:C1, y:C2) => y \subseteq x
   ;
 
   fun \supseteqq [C2 with Set[C2,V], Streamable[C2,V]] 
@@ -58,10 +58,6 @@ bad:>
   ;
 
   // negated operators, strike-through
-  fun \nsubset [C2 with Set[C2,V], Streamable[C2,V], Set[C1,V]] 
-    (x:C1, y:C2) => not (x \subset y)
-  ;
-
   fun \nsubseteq [C2 with Set[C2,V], Streamable[C2,V]] 
     (x:C1, y:C2) => not (x \subseteq y)
   ;
@@ -71,10 +67,6 @@ bad:>
   ;
 
   // negated reversed operators, strike-through
-  fun \nsupset [C2 with Set[C2,V], Streamable[C2,V], Set[C1,V]] 
-    (x:C1, y:C2) => not (x \supset y)
-  ;
-
   fun \nsupseteq [C2 with Set[C2,V], Streamable[C2,V], Set[C1,V]] 
     (x:C1, y:C2) => not (x \supseteq y)
   ;

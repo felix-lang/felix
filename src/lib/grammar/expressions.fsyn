@@ -68,7 +68,7 @@ syntax expressions {
 
   //$ Alternate conditional expression.
   x[sdollar_apply_pri] := x[stuple_pri] "unless" x[let_pri] "then" x[sdollar_apply_pri] =>#
-    "`(ast_cond ,_sr ((ast_apply ,_sr (lnot ,_3)) ,_1 ,_5))";
+    "`(ast_cond ,_sr ((ast_not ,_sr ,_3) ,_1 ,_5))";
 
   //$ Low precedence right associative application.
   x[sdollar_apply_pri] := x[stuple_pri] "$" x[sdollar_apply_pri] =># "`(ast_apply ,_sr (,_1 ,_3))";
@@ -92,32 +92,18 @@ syntax expressions {
   x[sand_condition_pri] := x[>sand_condition_pri] ( "and" x[>sand_condition_pri])+ =># "(chain 'ast_andlist _1 _2)" note "land";
 
   //$ Logical negation (not).
-  x[snot_condition_pri] := "not" x[snot_condition_pri]  =># "(prefix 'lnot)";
+  x[snot_condition_pri] := "not" x[snot_condition_pri]  =># "`(ast_not ,_sr ,_2)";
 
-  //$ Compare less.
-  x[scomparison_pri]:= x[>scomparison_pri] "<" x[>scomparison_pri] =># "(Infix)";
-
-  //$ Compare less equal.
-  x[scomparison_pri]:= x[>scomparison_pri] "<=" x[>scomparison_pri] =># "(Infix)";
-
-  //$ Compare equal.
-  x[scomparison_pri]:= x[>scomparison_pri] "==" x[>scomparison_pri] =># "(Infix)";
-
-  //$ Compare not equal.
-  x[scomparison_pri]:= x[>scomparison_pri] "!=" x[>scomparison_pri] =># "(Infix)";
-
-  //$ Compare greater equal.
-  x[scomparison_pri]:= x[>scomparison_pri] ">=" x[>scomparison_pri] =># "(Infix)";
-
-  //$ Compare greater.
-  x[scomparison_pri]:= x[>scomparison_pri] ">" x[>scomparison_pri] =># "(Infix)";
-
-  // F knows why we need to use BOTH raw strings and double up the \ in these names ..
-  //$ Set membership.
-  x[scomparison_pri]:= x[>scomparison_pri] "in" x[>scomparison_pri] =># '''`(ast_apply ,_sr (,(nos "\\in" ) (,_1 ,_3)))''';
-
-  //$ Set membership.
-  x[scomparison_pri]:= x[>scomparison_pri] "\in" x[>scomparison_pri] =># '''`(ast_apply ,_sr (,(nos "\\in" ) (,_1 ,_3)))'''; 
+  cmp := "<" =># "(nos _1)"; 
+  cmp := "<=" =># "(nos _1)"; 
+  cmp := "==" =># "(nos _1)"; 
+  cmp := "!=" =># "(nos _1)"; 
+  cmp := ">=" =># "(nos _1)"; 
+  cmp := ">" =># "(nos _1)"; 
+  cmp := "in" =># '(nos "\\in")'; 
+  cmp := "\in" =># "(nos _1)"; 
+  x[scomparison_pri]:= x[>scomparison_pri] cmp x[>scomparison_pri] =># "`(ast_apply ,_sr (,_2 (,_1 ,_3)))";
+  x[scomparison_pri]:= x[>scomparison_pri] "not" cmp x[>scomparison_pri] =># "`(ast_not ,_sr (ast_apply ,_sr (,_3 (,_1 ,_4))))";
 
   //$ Named temporary value.
   x[sas_expr_pri] := x[sas_expr_pri] "as" sname =># "`(ast_as ,_sr (,_1 ,_3))";

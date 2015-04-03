@@ -160,6 +160,7 @@ and xexpr_t sr x =
  | Lst [Id "ast_isin"; Lst [a; b]] -> EXPR_isin (sr, (ex a, ex b))
  | Lst [Id "ast_orlist"; sr; Lst es] -> EXPR_orlist (xsr sr, map (xexpr_t (xsr sr)) es)
  | Lst [Id "ast_andlist"; sr; Lst es] -> EXPR_andlist (xsr sr, map (xexpr_t (xsr sr)) es)
+ | Lst [Id "ast_not"; sr; e] -> EXPR_not (xsr sr, ex e)
  | Lst [Id "ast_arrow";  Lst [e1; e2]] -> EXPR_arrow (sr,(ex e1, ex e2))
  | Lst [Id "ast_longarrow";  Lst [e1; e2]] -> EXPR_longarrow (sr,(ex e1, ex e2))
  | Lst [Id "ast_superscript";  Lst [e1; e2]] -> EXPR_superscript (sr,(ex e1, ex e2))
