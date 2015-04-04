@@ -353,6 +353,9 @@ syntax texsyms {
 // (fact is, I don't know what half the operators are for anyhow .. )
 
   x[stuple_pri] := x[>stuple_pri] "\over" x[>stuple_pri] =># "(Infix)";
+  x[stuple_pri] := x[>stuple_pri] "\brace" x[>stuple_pri] =># "(Infix)";
+  x[stuple_pri] := x[>stuple_pri] "\brack" x[>stuple_pri] =># "(Infix)";
+
   //$ remainder: left associative.
   x[s_term_pri] := x[s_term_pri] "\bmod" x[>s_term_pri] =># "(Infix)";
 

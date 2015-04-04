@@ -24,6 +24,11 @@ Felix grouping.
 In math mode, display may fail if explicit grouping is not used
 where TeX expects it.
 
+Please note it is not enough in program code that
+the math forms used should be both correct \TeX as well
+as correct Felix. Just because it looks nice doesn't mean
+it will compile or evaluate correctly.
+
 @h2 Ordinary names
 Any TeX name defined as class ORD in TeX can be used
 in Felix as an identifier. This includes all the usual
@@ -56,6 +61,33 @@ Correct display requires math mode.
 @felix
 println$ \(x + 1.0 \over 2.0\);
 
+@h2 Bracket forms
+The two bracket forms @{\brace} and @{\brack} have the same precedence as @{\over} and map to arbitrary
+binary functions of two arguments. They require mathmode to
+display correctly.
+@felix
+fun \brace (x:int, y:int) => x + 2 * y;
+fun \brack (x:int, y:int) => x + 2 * y;
+println$ \( 2 \brace 3 \) + \( 2 \brack 3 \);
+
+@h2 Negated Comparisons
+Felix provides syntax to negate infix predicate symbols including
+comparison operators. Both @{not} and @{\not} can be used
+and are semantically equivalent, however the @{\not} only
+displays correctly in math mode preceding an operator 
+without a strikethrough.
+
+@felix
+println$ (1,2,3) \subset (1,2);
+println$ (1,2,3) \nsubseteq (1,2);
+println$ \( (1,2,3) \not \subseteq (1,2) \); 
+println$ (1,2,3) not \subseteq (1,2);
+println$ not \( (1,2,3) \subseteq (1,2) \); 
+println$ \( (1,2,3) \not \supset (1,2) \);
+println$ not \subset ((1,2,3),(1,2));
+println$  2 \not< 1;
+
+
 @h1 Set operations
 @h2 Membership
 Available for all class @{Set}, which includes all @{Container}.
@@ -65,17 +97,33 @@ list, varray, darray, bsarray. Defined for strings and regular expressions too.
 
 @felix
 
-println$ mem (2, (1,2,34));      // plain text function name
-println$ 2 in (1,2,3,4);         // plain text binary operator
-println$ 2 \in (1,2,3,4);        // \in
-println$ (1,2,3,4) \ni 2;        // \ni  Note: \in spelled backwards
-println$ (1,2,3,4) \owns 2;      // \owns
-println$ 5 \notin (1,2,3,4);     // \notin
+println$ mem (2, (1,2,34));      
+println$ 2 in (1,2,3,4);         
+println$ 2 \in (1,2,3,4);       
+println$ (1,2,3,4) \ni 2;      
+println$ (1,2,3,4) \owns 2;   
+println$ 5 \notin (1,2,3,4);  
 println$ 2 \in varray (1,2,3,4);
 println$ 2 \in darray (1,2,3,4);
 println$ 2 \in list (1,2,3,4);
 println$ char "2" \in "1234";
 println$ "abaa" \in RE2 "(a|b)*a";
+
+@h2 Set forms
+Felix provides a construction known as a set form
+which defines a set like object based on a predicate.
+The syntax is @{{ pattern : type | boolexpr }} where
+you can also use \{\} brackets and @{\|} or @{\mid}
+for the vertical bar.
+
+Technically a set form is a value of type @{set_form[T]}
+which is an object with a method @{has_elt : T -> bool}.
+We then provide the membership operator for set forms
+so you can write code like this:
+@felix
+var oddints = { x : int | x % 2 == 1 };
+println$ 1 \in oddints;
+println$ \( (3,9) \in  \{ x,y : int * int \mid x * x == y \} \);
 
 @h2 Set Relations
 Felix defines setlike relations for where the arguments
@@ -122,29 +170,38 @@ println$ (1,2,3) \supseteqq (1,2);
 println$ (1,2,3) \supsetneq (1,2);
 println$ (1,2,3) \supsetneqq (1,2);
 
-println$ (1,2,3) \nsubset (1,2);
 println$ (1,2,3) \nsubseteq (1,2);
 println$ (1,2,3) \nsubseteqq (1,2);
 
-println$ (1,2) \nsupset (1,2,3);
 println$ (1,2) \nsupseteq (1,2,3);
 println$ (1,2) \nsupseteqq (1,2,3);
 
 @h2 Set Operators
-Felix currently provides set operators, but they're
-only define for type sets.
+Felix currently provides set operators. They can be used
+with sets of type in the type language as well as with
+set forms. Set operators can also be used with
+data structures of kind @{Set[C,V]}, however the result
+is a set form, not a similar data structure. For example
+the union of two arrays is a set form that tests if an
+element is a member of one array or the other, not an array.
 @felix
 typedef sregints = typesetof (int, long);
 typedef uregints = typesetof (uint, ulong);
 typedef regints = sregints \cup uregints;
 fun f[T:regints] : T -> T = "$1+1";
 println$ f 1, f 1u, f 1uL;
+println$ 10 \in { x : int | 2 <= x } \cap { x : int | x < 20 };
+println$  10 \in (1,2,3) \cup (9,10,11);
 
-@h2 Total Order
+@h1 Total Order
 Members of class @{Tord} provide fancy operators.
-Note that max uses @{\}@{wedge} and min uses @{\}@{vee}
-and these look the same as boolean @{\}@{land} and @{\}{lor}
-but they're NOT.
+Note that max uses @{\}@{vee} and min uses @{\}@{wedge}
+and these look the same as boolean @{\}@{lor} and @{\}@{land}
+but they're not. The nmemonic is to recall that both set intersection
+and logical conjunction make for less cases and hence @{\wedge} is used
+for the minimum. Set union and logical conjunction are fatter and
+more inclusive and so used for the maximum.
+
 @felix
 println$ 1 \le 2;
 println$ 2 \nleq 1;
@@ -152,7 +209,7 @@ println$ 2 \gt 1;
 println$ 2 \geqslant 1;
 println$ 2 \wedge 3, 2 \vee 3;
 
-@h2 Boolean 
+@h1 Boolean 
 There are some fancy logic operators.
 @felix
 println$ \lnot (true \land true \lor false \implies false);

@@ -56,6 +56,14 @@ bad:>
   fun \supseteqq [C2 with Set[C2,V], Streamable[C2,V]] 
     (x:C1, y:C2) => y \subseteq x
   ;
+  // variant proper relations with strke-through on equality bar
+  fun \supsetneq [C2 with Set[C2,V], Streamable[C2,V], Set[C1,V]] 
+    (x:C1, y:C2) => x \supset y
+  ;
+  fun \supsetneqq [C2 with Set[C2,V], Streamable[C2,V], Set[C1,V]] 
+    (x:C1, y:C2) => x \supset y
+  ;
+
 
   // negated operators, strike-through
   fun \nsubseteq [C2 with Set[C2,V], Streamable[C2,V]] 
