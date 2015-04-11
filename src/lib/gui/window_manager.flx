@@ -43,7 +43,7 @@ object window_manager () =
     | #None => ;
     | Some i => 
       println$ "delete window found index " + i.str;
-      windows.i.destroy_window; 
+      windows.i.destroy_window (); 
       println$ "SDL destroyed";
       erase (windows, i);
       println$ "Window erased";
