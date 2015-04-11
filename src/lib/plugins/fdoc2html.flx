@@ -194,9 +194,9 @@ next:>
 
   | #None => 
     ep;
-    heading.finalise;
+    heading.finalise();
 
-    slideshow.finalise;
+    slideshow.finalise();
     if #(slideshow.active) do
       eprintln$ "Slideshow Active";
     else
