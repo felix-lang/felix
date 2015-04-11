@@ -1,5 +1,8 @@
 syntax macros {
   requires expressions, statements;
+  
+  sbasic_name_comma_list:= sname ("," sname)* =># "(cons _1 (map second _2))";
+
   stmt := "macro" "val" sbasic_name_comma_list "=" sexpr ";" =>#
     "`(ast_macro_val ,_sr ,_3 ,_5)";
 

@@ -9,6 +9,8 @@ class Eq[t] {
 
   fun eq(x:t, y:t)=> x == y;
   fun ne(x:t, y:t)=> x != y;
+  fun \ne(x:t, y:t)=> x != y;
+  fun \neq(x:t, y:t)=> x != y;
 }
 
 

@@ -34,7 +34,10 @@ syntax expressions {
     srefr_pri <
     sapplication_pri <
     scoercion_pri <
-    sfactor_pri 
+    sfactor_pri <
+    srcompose_pri <
+    sthename_pri <
+    satomic_pri
   ;
 
   sexpr := x[let_pri] =># "_1";
@@ -171,6 +174,7 @@ syntax expressions {
   //$ remainder: left associative.
   x[s_term_pri] := x[s_term_pri] "%" x[>s_term_pri] =># "(Infix)";
 
+//------------------------------------------------------------------------
   //$ Prefix exclaim.
   x[sprefixed_pri] := "!" x[spower_pri] =># "(Prefix)";
 
@@ -192,6 +196,7 @@ syntax expressions {
   //$ composition
   x[ssuperscript_pri] := x[ssuperscript_pri] "\circ" x[>ssuperscript_pri] =># "(Infix)";
 
+//------------------------------------------------------------------------
   //$ C dereference.
   x[srefr_pri] := "*" x[srefr_pri] =># "(prefix 'deref)";
 
@@ -201,6 +206,7 @@ syntax expressions {
   //$ Operator new.
   x[srefr_pri] := "new" x[srefr_pri] =># "`(ast_new ,_sr ,_2)";
 
+//------------------------------------------------------------------------
   //$ Operator whitespace: application.
   x[sapplication_pri] := x[sapplication_pri] x[scoercion_pri] =># "`(ast_apply ,_sr (,_1 ,_2))" note "apply";
 
@@ -215,13 +221,13 @@ syntax expressions {
   //$ Use in conditionals, e.g. if unlikely(x) do ...
   x[sapplication_pri] := "unlikely" x[scoercion_pri] =># "`(ast_unlikely ,_sr ,_2)";
 
+//------------------------------------------------------------------------
   //$ Suffixed coercion.
   x[scoercion_pri] := x[scoercion_pri] ":>>" x[sfactor_pri] =># "`(ast_coercion ,_sr (,_1 ,_3))";
 
   x[scoercion_pri] := ssuffixed_name =># "_1";
 
-  x[sfactor_pri] := sthe_name =># "_1";
-
+//------------------------------------------------------------------------
   // indexes and slices
 
   //$ String subscript.
@@ -237,44 +243,48 @@ syntax expressions {
   x[sfactor_pri] := x[sfactor_pri] "." "[" "to" sexpr "]" =># "`(ast_apply ,_sr (,(noi 'copyto) (,_1 ,_5)))";
 
   //$ Reverse application.
-  x[sfactor_pri] := x[sfactor_pri] "." sthe_name =># "`(ast_dot ,_sr (,_1 ,_3))";
+  x[sfactor_pri] := x[sfactor_pri] "." x[>sfactor_pri] =># "`(ast_apply ,_sr (,_3 ,_1))";
+
 
   //$ Reverse application with dereference.
   //$ a *. b same as (*a) . b, like C  a -> b.
-  x[sfactor_pri] := x[sfactor_pri] "*." sthe_name =># "`(ast_dot ,_sr ((ast_deref ,_sr ,_1) ,_3))";
+  x[sfactor_pri] := x[sfactor_pri] "*." x[>sfactor_pri] =># "`(ast_apply ,_sr (,_3 (ast_deref ,_sr ,_1)))";
 
   //$ a &. b is similar to &a . b for an array, but can be overloaded
   //$ for abstract arrays: like a + b in C. Returns pointer.
   // x[sfactor_pri] := x[sfactor_pri] "&." sthe_name =># "(Infix)";
-  x[sfactor_pri] := x[sfactor_pri] "&." sthe_name =># "`(ast_apply ,_sr (,_3 (ast_ref ,_sr ,_1)))";
+  x[sfactor_pri] := x[sfactor_pri] "&." x[>sfactor_pri] =># "`(ast_apply ,_sr (,_3 (ast_ref ,_sr ,_1)))";
 
-  // these are weirdos
-  sbasic_name_comma_list:= sname ("," sname)* =># "(cons _1 (map second _2))";
+//------------------------------------------------------------------------
 
+  //$ Reverse composition
+  x[srcompose_pri] := x[srcompose_pri] "\odot" x[>srcompose_pri] =># "(Infix)";
+
+//------------------------------------------------------------------------
   //$ High precedence unit application. #f = f ().
-  sthe_name := "#" sthe_name =># "`(ast_apply ,_sr (,_2 (ast_tuple ,_sr ())))";
+  x[sthename_pri] := "#" x[sthename_pri] =># "`(ast_apply ,_sr (,_2 (ast_tuple ,_sr ())))";
 
   //$ Felix pointer type and address of operator.
-  sthe_name := "&" sthe_name =># "`(ast_ref ,_sr ,_2)";
+  x[sthename_pri] := "&" x[sthename_pri] =># "`(ast_ref ,_sr ,_2)";
 
   //$ Felix address of operator.
-  sthe_name := "label_address" sname =># "`(ast_label_ref ,_sr ,_2)";
+  x[sthename_pri] := "label_address" sname =># "`(ast_label_ref ,_sr ,_2)";
 
 
   //$ C pointer type.
-  sthe_name :=  "@" sthe_name =># "(Prefix)";
+  x[sthename_pri] :=  "@" x[sthename_pri] =># "(Prefix)";
 
   //$ macro expansion freezer.
-  sthe_name := "noexpand" squalified_name =># "`(ast_noexpand ,_sr ,_2)";
+  x[sthename_pri] := "noexpand" squalified_name =># "`(ast_noexpand ,_sr ,_2)";
 
   //$ pattern variable.
-  sthe_name := "?" sname =># "`(ast_patvar ,_sr ,_2)";
+  x[sthename_pri] := "?" sname =># "`(ast_patvar ,_sr ,_2)";
 
   //$ Template replacement index.
-  sthe_name := "?" sinteger =># "`(PARSER_ARGUMENT ,_2)";
+  x[sthename_pri] := "?" sinteger =># "`(PARSER_ARGUMENT ,_2)";
 
-  sthe_name := squalified_name =># "_1";
-  sthe_name := satom =># "_1";
+  x[sthename_pri] := squalified_name =># "_1";
+
 
   //$ Qualified name.
   sreally_qualified_name := squalified_name "::" ssimple_name_parts =>#
@@ -289,8 +299,11 @@ syntax expressions {
   ssimple_name_parts := sname "[" sexpr "]" =># "`(,_1 ,(mkl _3))";
 
   //$ Suffixed name (to name functions).
-  ssuffixed_name := squalified_name "of" x[sfactor_pri] =>#
+  ssuffixed_name := squalified_name "of" x[sthename_pri] =>#
     "`(ast_suffix (,_1 ,_3))";
+
+//------------------------------------------------------------------------
+  x[satomic_pri] := satom =># "_1";
 
   //$ record value (comma separated).
   satom := "(" rassign ("," rassign )* ")" =>#

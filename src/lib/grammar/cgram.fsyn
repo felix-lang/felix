@@ -22,7 +22,7 @@ postfix_expression
 	| postfix_expression '[' expression ']' =># "`(subscript ,_sr ,_1 ,_3)"
 	| postfix_expression '(' ')'            =># "`(apply ,_sr ,_1 ())"
 	| postfix_expression '(' argument_expression_list ')' =># "`(ast_apply ,_sr ,(_1 (reverse _3)))"
-	| postfix_expression '.' sname                        =># "`(ast_dot ,_sr (,_1 ,_3))"
+	| postfix_expression '.' sname                        =># "`(ast_apply ,_sr (,_3 ,_1))"
 	| postfix_expression '->' sname                       =># "`(ast_arrow ,_sr (,_1 ,_3))"
 	| postfix_expression '++'                             =># "`(uop ,_sr 'postincr' ,_1)"
 	| postfix_expression '--'                             =># "`(uop ,_sr 'postdecr' ,_1)"

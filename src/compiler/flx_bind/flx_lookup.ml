@@ -17,10 +17,8 @@ open Flx_beta
 open Flx_generic
 open Flx_overload
 open Flx_tpat
-open Flx_dot
 open Flx_lookup_state
 
-exception OverloadResolutionError
 
 module L = Flx_literal
 
@@ -4602,104 +4600,30 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
 (*
     print_endline ("Bound argument " ^ sbe bsym_table a);
 *)
-    (* special hack here to handle fieldname of struct type used as function *)
-    try 
-      let handle_constant_projection n =
-        begin match unfold "flx_lookup" ta with
-        | BTYP_tuple ls ->
-          let m = List.length ls in
-          if n < 0 || n >= m then
-            clierr sr ("AST_dot, tuple index "^ string_of_int n ^ 
-            " out of range 0 to " ^ string_of_int (m-1) ^
-            " for type " ^ sbt bsym_table ta
-            )
-          else
-           bexpr_get_n (List.nth ls n) n a
-     
-        | BTYP_array (t,BTYP_unitsum m) ->
-          if n < 0 || n >= m then
-            clierr sr ("AST_dot, constant array index "^ string_of_int n ^ 
-            " out of range 0 to " ^ string_of_int (m-1) ^
-            " for type " ^ sbt bsym_table ta
-            )
-          else
-           bexpr_get_n t n a
-      
-        | BTYP_pointer (BTYP_tuple ls) ->
-          let m = List.length ls in
-          if n < 0 || n >= m then
-            clierr sr ("AST_dot, tuple index "^ string_of_int n ^ 
-            " out of range 0 to " ^ string_of_int (m-1) ^
-            " for type " ^ sbt bsym_table ta
-            )
-          else
-           bexpr_get_n (btyp_pointer (List.nth ls n)) n a
-     
-        | BTYP_pointer (BTYP_array (t,BTYP_unitsum m)) -> 
-          if n < 0 || n >= m then
-            clierr sr ("AST_dot, constant array index "^ string_of_int n ^ 
-            " out of range 0 to " ^ string_of_int (m-1) ^
-            " for type " ^ sbt bsym_table ta
-            )
-          else
-           bexpr_get_n (btyp_pointer t) n a
-
-        | _ -> raise OverloadResolutionError
-        end
-      in
+    try
       let int_t = bt sr (TYP_name (sr,"int",[])) in
-      let handle_array_projection n =
-(*
-print_endline ("Maybe Array projection " ^ sbe bsym_table n);
-*)
-        let n = 
-          let ixt = match unfold "flx_lookup" ta with
-            | BTYP_array (_,ixt)
-            | BTYP_pointer (BTYP_array (_,ixt)) -> ixt
-            | _ -> assert false
-          in
-          if snd n = int_t then bexpr_coerce (n,ixt)
-          else n
-        in
-        match unfold "flx_lookup" ta with
-        | BTYP_array (vt,ixt) ->
-          assert (snd n = ixt);
-(*
-print_endline ("Actual Array projection " ^ sbe bsym_table n);
-*)
-          bexpr_apply vt (bexpr_aprj n ta vt, a)
-
-        | BTYP_pointer (BTYP_array (vt,ixt)) ->
-          assert (snd n = ixt);
-print_endline ("Actual Array pointer projection " ^ sbe bsym_table n);
-(* NOTE: array pointer projections don't work with compact linear arrays !! 
-   However we can't know here, since the base type could be a type variable.
-*)
-          bexpr_apply (BTYP_pointer vt) (bexpr_aprj n ta vt, a)
-        | _ -> assert false
-      in
       match f' with
       | EXPR_literal (_, {Flx_literal.felix_type="int"; internal_value=s}) ->
         let n = int_of_string s in
-        handle_constant_projection n
+        Flx_dot.handle_constant_projection bsym_table sr a ta n
       | _ ->
         try 
-          let f = try be f' with _ -> raise OverloadResolutionError in
+          let f = try be f' with _ -> raise Flx_dot.OverloadResolutionError in
           if snd f = int_t then 
           begin
             match ta with
             | BTYP_array _ ->
-              handle_array_projection f
-            | _ -> raise OverloadResolutionError
+              Flx_dot.handle_array_projection bsym_table int_t sr a ta f
+            | _ -> raise Flx_dot.OverloadResolutionError
           end
-          else raise OverloadResolutionError
+          else raise Flx_dot.OverloadResolutionError
         with 
-      | OverloadResolutionError ->  
+      | Flx_dot.OverloadResolutionError ->  
       match f' with
 
       (* a dirty hack .. doesn't check unitsum is right size or type *)
       | EXPR_typed_case (sr,n,sumt) when (match bt sr sumt with | BTYP_unitsum _ -> true | _ -> false)  ->
-        handle_constant_projection n
+        Flx_dot.handle_constant_projection bsym_table sr a ta n
 
       | EXPR_name (sr, name, ts) ->
 (*
@@ -4720,7 +4644,7 @@ print_endline ("Actual Array pointer projection " ^ sbe bsym_table n);
 (*
 print_endline ("binding apply, RECORD field .. " ^ name ^ ", type=" ^ sbt bsym_table ta);
 *)
-          if (ts != []) then raise OverloadResolutionError; 
+          if (ts != []) then raise Flx_dot.OverloadResolutionError; 
           let k = List.length es in
           let rcmp (s1,_) (s2,_) = compare s1 s2 in
           let es = List.sort rcmp es in
@@ -4742,7 +4666,7 @@ print_endline "";
 print_endline ("*** binding apply RECORD field " ^ name ^ " not found: OVERLOAD ERROR");
 print_endline "";
 *)
-            raise OverloadResolutionError
+            raise Flx_dot.OverloadResolutionError
           end
         | BTYP_pointer (BTYP_record _ as r) ->
 (*
@@ -4750,7 +4674,7 @@ print_endline ("binding apply, RECORD pointer field .. " ^ name ^ ", type=" ^ sb
 *)
           begin match unfold "flx_lookup" r with
           | BTYP_record (_,es) ->
-            if (ts != []) then raise OverloadResolutionError; 
+            if (ts != []) then raise Flx_dot.OverloadResolutionError; 
             let k = List.length es in
             let rcmp (s1,_) (s2,_) = compare s1 s2 in
             let es = List.sort rcmp es in
@@ -4772,7 +4696,7 @@ print_endline "";
 print_endline ("*** binding apply RECORD pointer field " ^ name ^ " not found: OVERLOAD ERROR");
 print_endline "";
 *)
-              raise OverloadResolutionError
+              raise Flx_dot.OverloadResolutionError
             end
           | _ -> assert false
           end
@@ -4782,7 +4706,7 @@ print_endline "";
           Flx_dot.handle_field_name state bsym_table build_env env rs 
             be bt koenig_lookup cal_apply bind_type' mkenv 
             sr a' f' name ts i ts' false
-          with Not_field -> raise OverloadResolutionError
+          with Flx_dot.Not_field -> raise Flx_dot.OverloadResolutionError
           end
         | BTYP_pointer (BTYP_inst (i,ts') as r) ->
 (*
@@ -4797,14 +4721,14 @@ print_endline ("binding apply, Struct pointer field .. " ^ name ^ ", type=" ^ sb
             Flx_dot.handle_field_name state bsym_table build_env env rs 
               be bt koenig_lookup cal_apply bind_type' mkenv 
               sr a' f' name ts i ts' true 
-            with Not_field -> raise OverloadResolutionError
+            with Flx_dot.Not_field -> raise Flx_dot.OverloadResolutionError
             end
           | _ -> assert false
           end
-        | _ -> raise OverloadResolutionError 
+        | _ -> raise Flx_dot.OverloadResolutionError 
         end
-      | _ -> raise OverloadResolutionError
-    with OverloadResolutionError ->
+      | _ -> raise Flx_dot.OverloadResolutionError
+    with Flx_dot.OverloadResolutionError ->
     
     (*
     print_endline ("Recursive descent into application " ^ string_of_expr e);
@@ -4816,7 +4740,7 @@ print_endline ("binding apply, Struct pointer field .. " ^ name ^ ", type=" ^ sb
           (*
           print_endline "Cannot bind as value, trying as function";
           *)
-          raise OverloadResolutionError 
+          raise Flx_dot.OverloadResolutionError 
       in
 (*
 print_endline ("Bound function " ^ sbe bsym_table f);
@@ -4835,8 +4759,8 @@ print_endline ("Bound function " ^ sbe bsym_table f);
        (*
        print_endline "Bound value wrong type";
        *)
-       raise OverloadResolutionError
-    with OverloadResolutionError ->
+       raise Flx_dot.OverloadResolutionError
+    with Flx_dot.OverloadResolutionError ->
 (*
 print_endline ("Can't interpret apply function "^string_of_expr f'^" as projection, trying as an actual function");
 *)
