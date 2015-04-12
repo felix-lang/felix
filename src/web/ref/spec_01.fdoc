@@ -557,7 +557,7 @@ the name @{MyStruct} an alias to the Felix type.
 This is useful because Felix types can have unpredictable
 mangled names.
 
-The word @[export} optionally followed by a string
+The word @{export} optionally followed by a string
 may also be used as a prefix for any Felix function,
 generator, or procedure definition. If the string
 is omitted is taken as the symbol name. The effect
@@ -1203,7 +1203,7 @@ There is a family of special sum types equivalent to:
 @
 Recall type 1, or unit, is the type of the empty tuple.
 The type 2 is also known as bool, and represents two cases
-where @{false} is an alias for @{case 0 of 2} and @[true}
+where @{false} is an alias for @{case 0 of 2} and @{true}
 is an alias for @{case 1 of 2}.
 
 The type 0 or void, is the type of no values.
@@ -1982,7 +1982,7 @@ A name in Felix has the form:
   class1 :: nested1 :: ... :: identifier [ type1, type2, ... ]
 @
 where the qualifiers and/or type list may be elided. 
-This is the same as C++ except we use @[]} instead of @{<>}
+This is the same as C++ except we use @{[]} instead of @{<>}
 for template argument types.
 
 @h1 Atoms
