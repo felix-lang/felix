@@ -293,7 +293,7 @@ syntax texsyms {
 
   cmp := "\thickapprox" =># '(nos _1)'; 
   cmp := "\thicksim" =># '(nos _1)'; 
-  cmp := "\times" =># '(nos _1)'; 
+  bin := "\times" =># '(nos _1)'; 
   arr := "\to" =># '(nos _1)'; 
   bin := "\triangle" =># '(nos _1)'; 
   bin := "\triangledown" =># '(nos _1)'; 

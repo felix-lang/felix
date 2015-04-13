@@ -818,10 +818,15 @@ print_endline "Apply struct";
     let ntt = normalise_tuple_cons bsym_table tt' in
     let tts = match ntt with
     | BTYP_tuple tts -> tts
+    | BTYP_array (t,BTYP_unitsum n) -> 
+      let tts = ref [] in
+      for i = 0 to n - 1 do
+        tts := t :: !tts;
+      done;
+      !tts
     | _ -> assert false
     in 
     let n = List.length tts in
-    let counter = ref 0 in
 (* NOTE: this is a hack! Doen't handle arrays. The code generated here
    is ALWAYS correct BUT we may have neglected to create a tuple
    constructor, because the scan for BEXPR_tuple is already done. 
@@ -829,6 +834,7 @@ print_endline "Apply struct";
     let es = match et' with
     | BEXPR_tuple es -> es 
     | _ -> 
+      let counter = ref 0 in
       List.map 
         (fun t-> 
           let i = !counter in incr counter;
@@ -841,6 +847,7 @@ print_endline "Apply struct";
     let e = BEXPR_tuple es, t in
 (*
 print_endline ("Normalised expression " ^ sbe bsym_table e);
+print_endline ("Normalised type " ^ sbt bsym_table t);
 *)
     ge' e
 
@@ -861,8 +868,13 @@ print_endline ("Normalised expression " ^ sbe bsym_table e);
       let n = List.length ts in
       ge' (bexpr_get_n eltt 0 x')
 
+    | BTYP_array (eltt,BTYP_unitsum n) ->
+      assert (n > 0);
+      ge' (bexpr_get_n eltt 0 x')
+ 
     | _ -> 
-      print_endline ("Expected head to be tuple, got " ^ sbt bsym_table t' ^ " ->(normalised)-> " ^ sbt bsym_table t'');
+      print_endline ("Expected head to apply to a tuple, got " ^ 
+        sbt bsym_table t' ^ " ->(normalised)-> " ^ sbt bsym_table t'');
       assert false
     end
 
@@ -876,23 +888,31 @@ print_endline ("Normalised expression " ^ sbe bsym_table e);
     print_endline ("Normalised Type " ^ sbt bsym_table t');
     print_endline ("Tail Type " ^ sbt bsym_table t);
 *)
-    begin match t'' with 
-    | BTYP_tuple ts -> 
-      let n = List.length ts in
-      let counter = ref 0 in
-      let es = 
-        List.map (fun t-> 
-          incr counter; 
-          bexpr_get_n t (!counter) x'
-       ) 
-       (List.tl ts) 
-      in
-      let tail = match es with [x] -> x | es -> bexpr_tuple t es in
-      ge' tail
+    let ts = match t'' with 
+    | BTYP_tuple ts ->  ts
+    | BTYP_array (t, BTYP_unitsum n) -> 
+      let tts = ref [] in
+      for i = 0 to n - 1 do
+        tts := t :: !tts;
+      done;
+      !tts
+
     | _ -> 
-      print_endline ("Expected tail to be tuple, got " ^ sbt bsym_table t' ^ " ->(normalised)-> " ^ sbt bsym_table t'');
+      print_endline ("Expected tail to be tuple, got " ^ 
+        sbt bsym_table t' ^ " ->(normalised)-> " ^ sbt bsym_table t'');
       assert false
-    end
+    in
+    let n = List.length ts in
+    let counter = ref 0 in
+    let es = 
+      List.map (fun t-> 
+        incr counter; 
+        bexpr_get_n t (!counter) x'
+     ) 
+     (List.tl ts) 
+    in
+    let tail = match es with [x] -> x | es -> bexpr_tuple t es in
+    ge' tail
 
   | BEXPR_match_case (n,((e',t') as e)) ->
     let t' = beta_reduce "flx_egen get_n: match_case" syms.Flx_mtypes2.counter bsym_table sr t' in

@@ -16,6 +16,11 @@ open Flx_exceptions
 open Flx_use
 open Flx_beta
 
+let str_of_bidset x = 
+  let elts = ref [] in
+  BidSet.iter (fun i -> elts := i::!elts) x;
+  catmap "," si (!elts)
+
 module CS = Flx_code_spec
 
 let vs2ts vs = map (fun (s,i) -> btyp_type_var (i, btyp_type 0)) vs
@@ -73,10 +78,12 @@ let check_instance
       try Flx_bsym_table.find_children bsym_table inst
       with Not_found -> Flx_types.BidSet.empty
     in
-    (*
-    print_endline ("Typeclass kids " ^ catmap "," si tc_kids);
-    print_endline ("Instance kids " ^ catmap "," si inst_kids);
-    *)
+(*
+if Flx_bsym.id tc_bsym = "Cart" then begin 
+    print_endline ("Typeclass kids " ^ str_of_bidset tc_kids);
+    print_endline ("Instance kids " ^ str_of_bidset inst_kids);
+end;
+*)
     let inst_map =
       Flx_types.BidSet.fold begin fun i acc ->
         let bsym = Flx_bsym_table.find bsym_table i in
@@ -126,12 +133,14 @@ let check_instance
           (tsubst tck_bvs inst_funts tctype)
         in
         let matches =  tct = t in
-        (*
+(*
+if Flx_bsym.id tc_bsym = "Cart" then begin 
         print_endline ("Matches " ^ 
           sbt bsym_table tct ^ " = " ^ sbt bsym_table t ^ " is " ^ 
           (match matches with true->"true" | false -> "false")
         );
-        *)
+end;
+*)
         matches
       in
       let entries = filter (fun (name,(i,(inst_funbvs,t))) -> name = id && sigmatch i inst_funbvs t) inst_map in
@@ -281,9 +290,17 @@ let check_instance
       string_of_bid tc ^ ">, is not a typeclass"
     )
 
-let typeclass_instance_check_symbol syms bsym_table i bsym =
+let build_typeclass_to_instance_table syms bsym_table : unit =
+  Flx_bsym_table.iter begin fun i _ bsym ->
   match Flx_bsym.bbdcl bsym with
   | BBDCL_instance (props, vs, cons, tc, ts) ->
+(*
+if Flx_bsym.id bsym = "Cart" then begin
+print_endline ("processing instance <"^si i^">["^catmap "," (fun (v,i)->v^"<"^si i^">") vs^
+  "] of class " ^ Flx_bsym.id bsym ^ 
+  "<" ^ si tc ^">["^catmap "," (sbt bsym_table) ts^"]");
+end;
+*)
       let iss =
         try Hashtbl.find syms.instances_of_typeclass tc
         with Not_found -> []
@@ -303,21 +320,8 @@ let typeclass_instance_check_symbol syms bsym_table i bsym =
         tc
         ts
   | _ -> ()
-
-let typeclass_instance_check_symbols syms bsym_table bids =
-  (* Check each symbol. *)
-  List.iter begin fun bid ->
-    let bsym = Flx_bsym_table.find bsym_table bid in
-    typeclass_instance_check_symbol syms bsym_table bid bsym
-  end bids;
-
-  (* We don't insert new symbols into the list, so return it directly. *)
-  bids
-
-let typeclass_instance_check syms bsym_table =
-  Flx_bsym_table.iter begin fun bid _ bsym ->
-    typeclass_instance_check_symbol syms bsym_table bid bsym
-  end bsym_table
+  end
+  bsym_table
 
 (* Notes.
 
@@ -355,16 +359,18 @@ let typeclass_instance_check syms bsym_table =
 
 
 let tcinst_chk syms bsym_table allow_fail id i ts sr (inst_vs, inst_constraint, inst_ts, j)  =
-     (*
+(*
+if id = "make_cart" then begin
      print_endline
-     ("virtual " ^ si i ^ "[" ^ catmap "," (sbt bsym_table) ts ^ "]");
+     ("virtual " ^ id^ "<"^si i ^ ">[" ^ catmap "," (sbt bsym_table) ts ^ "]");
+end;
+*)
      if length inst_ts > length ts then
        failwith (
          "Not enough ts given, expected at least " ^
          si (length inst_ts) ^ ", got " ^ si (length ts)
        )
      ;
-     *)
      (* solve for vs' *)
      let vis = List.map (fun _ -> fresh_bid syms.counter) inst_vs in
      let nuvs = map (fun i -> btyp_type_var (i, btyp_type 0)) vis in
@@ -376,9 +382,11 @@ let tcinst_chk syms bsym_table allow_fail id i ts sr (inst_vs, inst_constraint, 
      *)
      let eqns = combine (list_prefix ts (length inst_ts)) inst_ts' in
 (*
+if id = "make_cart" then begin
      print_endline ("Solving equations\n " ^
        catmap "\n" (fun (a,b) -> sbt bsym_table a ^ " = " ^ sbt bsym_table b ) eqns
      );
+end;
 *)
      (* Well, this is a hack, but it may help solve equations containing
       lambdas and type matches which unification can't handle
@@ -416,9 +424,11 @@ let tcinst_chk syms bsym_table allow_fail id i ts sr (inst_vs, inst_constraint, 
        eqns
      in
 (*
+if id = "make_cart" then begin
      print_endline (id ^ " After beta reduction: Solving equations\n " ^
        catmap "\n" (fun (a,b) -> sbt bsym_table a ^ " = " ^ sbt bsym_table b ) eqns
      );
+end;
 *)
      let assignments = map (fun (i,t) -> btyp_type_var (i,btyp_type 0),t) assigns in
      let mgu =
@@ -428,7 +438,9 @@ let tcinst_chk syms bsym_table allow_fail id i ts sr (inst_vs, inst_constraint, 
      begin match mgu with
      | None -> 
 (*
+if id = "make_cart" then begin
 print_endline (id ^ " Match failed, try unification");
+end;
 *)
        begin try 
          let mgu = (maybe_unification bsym_table syms.counter (assignments @ eqns)) in
@@ -454,7 +466,13 @@ print_endline (id ^ " Unified");
            | BTYP_void ->  (* print_endline (id ^ " cannot match - void"); *) `CannotMatch,0,[]
            | _ -> (* print_endline (id ^ " cannot match constraint fail"); *) `CannotMatch,0,[]
            end
-         | None -> (* print_endline (id ^ " cannot match no mgu"); *) `CannotMatch,0,[]
+         | None -> 
+(*
+           if id = "make_cart" then begin 
+             print_endline (id ^ " cannot match no mgu"); 
+           end;
+*)
+           `CannotMatch,0,[]
        with
          Not_found -> (* print_endline (id ^ " cannot match exception Not_found thrown"); *) `CannotMatch,0,[]
        end
@@ -514,6 +532,7 @@ let fixup_typeclass_instance' syms bsym_table allow_fail i ts =
   in
 (*
   if List.length entries > 0 then begin 
+if id = "make_cart" then begin
     print_endline ("Attempt to fixup virtual function " ^ id ^ "<" ^ si i ^ ">" ^ "[" ^ catmap "," (sbt bsym_table) ts ^ "]");
     print_endline ("Found " ^ si (List.length entries) ^ " candidates:");
     List.iter
@@ -522,16 +541,21 @@ let fixup_typeclass_instance' syms bsym_table allow_fail i ts =
         (catmap "*" (sbt bsym_table) args) ^ "->" ^ sbt bsym_table ret) 
       )
     entries
+end
+
   end
   ;
 *)
   let sr = try Flx_bsym_table.find_sr bsym_table i with Not_found ->
     failwith ("fixup_typeclass_instance': Can't find <" ^ string_of_bid i ^ ">")
   in
-  let entries = fold_left (fun acc x -> match tcinst_chk syms bsym_table allow_fail id i ts sr x with
+  let entries = fold_left 
+     (fun acc x -> 
+     match tcinst_chk syms bsym_table allow_fail id i ts sr x with
      | `CannotMatch,_,_ -> acc
      | jts -> (jts,x)::acc
-     ) [] entries
+     ) 
+     [] entries
   in
 (*
 print_endline ("Number of matches left is " ^ string_of_int (List.length entries));
