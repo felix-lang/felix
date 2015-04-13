@@ -129,7 +129,12 @@ st.head.println;
 // ...which is the same as print $ head st;</pre>
 
     <pre id=e2 style="display:none">
-fibonacci
+fun fib (n:int) =>
+    if n < 3 then 1
+    else fiib(n - 1) + fib (n - 2); 
+
+println$ fib 20;
+// => 6765
     </pre>
 
     <pre id=e3 style="display:none">
