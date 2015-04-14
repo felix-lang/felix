@@ -84,6 +84,8 @@
           '(
             ;; automatic
             ("=>" . "⇒")
+            ("<-" . "←")
+            ("->" . "→")
             
             ;; basics symbols
             ("\\circ" . "ˆ")
@@ -185,8 +187,6 @@
             ("\\middot" . "·")
             ("\\iexcl" . "¡")
             ("\\iquest" . "¿")
-            ("--" . "–")
-            ("---" . "—")
             ("\\laquo" . "«")
             ("\\raquo" . "»")
 
@@ -195,7 +195,7 @@
             ("\\pm" . "±")
             ("\\plusmn" . "±")
             ("\\times" . "×")
-            ("\\frasl" . "⁄")
+            ("\\over" . "⁄")
             ("\\colon" . ":")
             ("\\div" . "÷")
             ("\\frac12" . "½")
@@ -330,7 +330,33 @@
             ("\\checkmark" . "✓")
   )))
 
+; bind pretty mode
 (add-hook 'felix-mode-hook 'pretty-felix-symbols)
+
+; only enable pretty symbols if emacs can support it.
 (if (fboundp 'global-prettify-symbols-mode)
     (global-prettify-symbols-mode 1))
+
+
+(defun felix-load-file ()
+  "Insert the full path file name into the current buffer."
+  (interactive)
+  (let ((file-name (buffer-file-name
+                        (window-buffer
+                        (minibuffer-selected-window)))))
+
+    (comint-check-source file-name) ; Check to see if buffer needs
+                                    ; saved first
+
+    (process-buffer                 ; send output to a new buffer
+     (shell-command-to-string       ; capture output
+      (concat "flx " file-name))))) ; build command
+
+; bind keyboard shortcuts 
+(add-hook 'felix-mode-hook
+          ; standard loading of current file
+          (lambda () (local-set-key (kbd "C-c C-l") #'felix-load-file)))
+
+
+
 
