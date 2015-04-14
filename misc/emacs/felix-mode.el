@@ -348,7 +348,7 @@
     (comint-check-source file-name) ; Check to see if buffer needs
                                     ; saved first
 
-    (process-buffer                 ; send output to a new buffer
+    (message                        ; send output to a new buffer
      (shell-command-to-string       ; capture output
       (concat "flx " file-name))))) ; build command
 
