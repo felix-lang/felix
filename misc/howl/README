@@ -1,0 +1,1 @@
+This contains a Howl bundle enabling highlighting of Felix. To install, simply copy the `felix` directory to ~/.howl/bundles, creating it if it does not exist.
