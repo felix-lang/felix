@@ -42,6 +42,7 @@
      "goto"
      "not"
      "while"
+     "bool"
      "true"
      "false"
      "enum "
@@ -86,6 +87,9 @@
             ("=>" . "⇒")
             ("<-" . "←")
             ("->" . "→")
+            ("|>" . "▷")
+            ("|-" . "⊢")
+            ("\vdash" . "⊢")
             
             ;; basics symbols
             ("\\circ" . "ˆ")
@@ -212,6 +216,7 @@
             ("\\macr" . "¯")
             ("\\deg" . "°")
             ("\\prime" . "′")
+            ("\\'" . "′")
             ("\\Prime" . "″")
             ("\\infin" . "∞")
             ("\\infty" . "∞")
@@ -350,12 +355,15 @@
 
     (message                        ; send output to a new buffer
      (shell-command-to-string       ; capture output
-      (concat "flx " file-name))))) ; build command
+      (concat "flx " file-name " 2>/dev/null"))))) ; build command
 
 ; bind keyboard shortcuts 
 (add-hook 'felix-mode-hook
           ; standard loading of current file
-          (lambda () (local-set-key (kbd "C-c C-l") #'felix-load-file)))
+          (lambda () (progn
+                  (modify-syntax-entry ?\[ "-")
+                  (modify-syntax-entry ?\] "-")
+                  (local-set-key (kbd "C-c C-l") #'felix-load-file))))
 
 
 
