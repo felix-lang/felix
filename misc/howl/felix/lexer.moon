@@ -5,10 +5,10 @@ howl.aux.lpeg_lexer ->
   identifer = c 'identifer', ident
 
   keyword = c 'keyword', word {
-    'endtry', 'end', 'try', 'assert', 'axiom', 'body', 'call', 'case', 'proj',
-    'caseno', 'cfun', 'class', 'comment', 'continue', 'const', 'cproc',
-    'cstruct', 'ctor', 'ctypes', 'def', 'done', 'do', 'begin', 'elif', 'else',
-    'otherwise', 'endcase', 'endif', 'endmatch', 'enum', 'cenum', 'cflags',
+    'endtry', 'endmatch', 'end', 'try', 'assert', 'axiom', 'body', 'call',
+    'case', 'proj', 'caseno', 'cfun', 'class', 'comment', 'continue', 'const',
+    'cproc', 'cstruct', 'ctor', 'ctypes', 'def', 'done', 'do', 'begin', 'elif',
+    'else', 'otherwise', 'endcase', 'endif', 'enum', 'cenum', 'cflags',
     'expect', 'extern', 'for', 'forget', 'fork', 'functor', 'fun', 'gen',
     'goto', 'halt', 'header', 'ident', 'include', 'incomplete', 'inf', 'in',
     'instance', 'is', 'inherit', 'inline', 'jump', 'lemma', 'let', 'loop',
