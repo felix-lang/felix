@@ -22,7 +22,7 @@ howl.aux.lpeg_lexer ->
     'true', 'typematch', 'typecase', 'unless'
   }
 
-  types = c 'function', word {
+  types = c 'keyword', word {
     'unit', 'void', 'bool', 'any', 'byte', 'address', 'offset', 'tiny', 'short',
     'int', 'long', 'vlong', 'utiny', 'ushort', 'uint', 'ulong', 'uvlong',
     'int8', 'int16', 'int32', 'int64', 'uint8', 'uint16', 'uint32', 'uint64',
