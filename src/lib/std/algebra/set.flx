@@ -34,11 +34,29 @@ instance[T] Set[set_form[T], T] {
 }
 open[T] Set[set_form[T],T];
 
-  // INVERSE image of a set under a function
-  // For a function f: t -> t2, an element e
-  // is in a restriction of the domain t if its
-  // image in t2 is in the specified set.
-  fun invimg[t,c2,t2 with Set[c2,t2]] 
-    (f:t->t2, x:c2) : set_form[t] =>
-    { e : t | (f e) \in x }
-  ;
+// INVERSE image of a set under a function
+// For a function f: t -> t2, an element e
+// is in a restriction of the domain t if its
+// image in t2 is in the specified set.
+fun invimg[t,c2,t2 with Set[c2,t2]] 
+  (f:t->t2, x:c2) : set_form[t] =>
+  { e : t | (f e) \in x }
+;
+
+fun \times[U,V] (x:set_form[U],y:set_form[V]) => 
+  { u,v : U * V | u \in x and v \in y }
+;
+
+fun \otimes[U,V] (x:set_form[U],y:set_form[V]) => 
+  { u,v : U * V | u \in x and v \in y }
+;
+
+fun \otimes[U,V,W] (head:set_form[U], tail:set_form[V*W]) =>
+  { u,v,w : U * V * W | u \in head and (v,w) \in tail }
+;
+
+fun \otimes[NH,OH,OT] (head:set_form[NH], tail:set_form[OH**OT]) =>
+  { h,,(oh,,ot) : NH ** (OH ** OT) | h \in head and (oh,,ot) \in tail }
+;
+
+

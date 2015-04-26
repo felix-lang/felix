@@ -219,7 +219,7 @@ syntax texsyms {
   bin := "\ominus" =># '(nos _1)'; 
   bin := "\oplus" =># '(nos _1)'; 
   bin := "\oslash" =># '(nos _1)'; 
-  bin := "\otimes" =># '(nos _1)'; 
+  //bin := "\otimes" =># '(nos _1)'; 
   cmp := "\owns" =># '(nos _1)'; 
 
 // P

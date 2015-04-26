@@ -270,6 +270,8 @@ fun xlat_felix(t:string, dir:string): bool * string =
     | cppcomment // a C++ style comment
     | cppfdoc // a documentation comment  //$
     | mathmode // TeX math mode
+    | mathid // TeX math mode, Felix id
+    | mathtexid // TeX math mode, TeX id
   ;
   fun str(s:state_t) => match s with
   | #sot => "sot"
@@ -284,6 +286,8 @@ fun xlat_felix(t:string, dir:string): bool * string =
   | #cppcomment => "cppcomment"
   | #cppfdoc => "doccomment"
   | #mathmode => "mathmode"
+  | #mathid => "mathid"
+  | #mathtexid => "mathid"
   endmatch;
   
   var i = 0; var s:state_t;
@@ -304,6 +308,7 @@ fun xlat_felix(t:string, dir:string): bool * string =
   var b = "";
   var fdocb = "";
   var last_id = "";
+  var last_texop = "";
   var last_op = "";
   var last_key = "";
 
@@ -374,6 +379,7 @@ println$ "Package file basename is " + n;
     fdocb = ""; b="";
   }
   proc w() { 
+    last_texop = ""; 
     //println$ "Token["+str s+"]="+b; 
     match s with 
     | #dq => { ws; }
@@ -387,7 +393,9 @@ println$ "Package file basename is " + n;
         ); 
         needs_mathjax = true; 
       }  // format with MathJax
-    | #mathmode => { needs_mathjax = true; ws; }
+    | #mathmode => { needs_mathjax = true; write_string b; }
+    | #mathid => { needs_mathjax = true; write_string b; }
+    | #mathtexid => { needs_mathjax = true; last_texop = b; write_string b; }
     | #id => 
       { 
         last_id = b;
@@ -493,6 +501,8 @@ thisch:> // same char, reconsider it
          b+="{"; cp; next; cp; goto nextch;
        elif ahead (1)  == (char "}") do
          cp; next; cp; b+="}"; goto nextch;
+       elif isletter (ahead(1)) do
+         cp; s = mathtexid; goto nextch;
        else 
          goto contin;
        done
@@ -502,22 +512,52 @@ thisch:> // same char, reconsider it
      elif ch in (char ")", char "]") do
        cp; b+="}"; goto nextch;
  
-     // replace { } by {\{ \}}
-     elif ch == "{" do
-       b+="{\\{"; goto nextch; 
-     elif ch == "}" do
-       b+="\\}}"; goto nextch; 
-
+     elif isidstart ch do
+       w; 
+       if not (isflxidcont (ahead 1)) do 
+         goto contin; // leave one character identifiers "as is"
+                      // so default typeface is mathit
+       else
+         s = mathid; 
+         var mathfont = 
+           if last_texop in (
+             "\\mathit",   // math italic
+             "\\mathfrak", // fraktur
+             "\\mathcal",  // caligraphic
+             "\\mathrm",   // roman
+             "\\mathbf",   // bold
+             "\\mathscr",  // script
+             "\mathbb",    // blackboard bold
+             "\mathsf",    // sans-serif
+             "\\pmb"       // poor mans bold
+           )
+           then last_texop else "\\mathtt"
+         ;
+         b="{"+mathfont+"{\\text{"; 
+         goto contin;
+       done
      else
        goto contin;
      done
+  | #mathtexid =>
+      if isletter ch goto contin;
+      w;
+      s = mathmode;
+      goto thisch;
+
+  | #mathid =>
+      if isflxidcont ch goto contin;
+      b+="}}}";
+      w; s = mathmode;
+      goto thisch;
 
   | #texid => 
       if isletter ch do goto contin;
-      else goto overrun;
+      else 
+        goto overrun;
       done
   | #id => 
-      if isalphanum ch do goto contin;
+      if isflxidcont ch do goto contin;
       else goto overrun;
       done
   | #num => 

@@ -31,9 +31,21 @@ open class Categ
   //$ projection 2 (2 components)
   fun proj2[u1,u2,r1,r2] (f:u1*u2->r1*r2) : u1 * u2 -> r2 => 
     fun (x:u1*u2) => match f x with | _,b => b endmatch;
- 
+
+  // aka \delta or diagonal function 
+  fun dup[T] (x:T) => x,x;
+
+  //$ unique product (of above projections)
+  // if f: C-> A and g: C -> B there is a unique function
+  // <f,g>: C -> A * B such that f = <f,g> \odot \pi0 and
+  // g = <f,g> \odot pi1
+  // WHAT IS THE FUNCTION CALLED?
+
+  fun prdx[u1,r1,r2] (f1:u1->r1,f2:u1->r2) : u1 -> r1 * r2 => 
+    fun (x1:u1) => f1 x1, f2 x1;
 
   //$ parallel composition
+  // notation: f \times g
   fun ravel[u1,u2,r1,r2] (f1:u1->r1,f2:u2->r2) : u1 * u2 -> r1 * r2 => 
     fun (x1:u1,x2:u2) => f1 x1, f2 x2;
 

@@ -49,15 +49,19 @@ open class Char
   // define some basic character sets
   val upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   val lower = "abcdefghijklmnopqrstuvwxyz";
-  val letters = upper + lower + "_";
+  val letters = upper + lower;
   val digits = "0123456789";
   val alphanum = letters + digits;
+  val cidcont= alphanum+"_";
+  val flxidcont= alphanum+"_-'";
+  val camlidcont= alphanum+"_'";
   val numeric = digits + ".eEdD_"; // crud hack
 
   // some character classification functions
   fun isidstart(x:char) => match find$ letters,x with | Some _ => true | #None => false endmatch;
-  fun iscamlidcont(x:char) => match find$ alphanum+"'",x with | Some _ => true | #None => false endmatch;
-  fun isidcont(x:char) => match find$ alphanum,x with | Some _ => true | #None => false endmatch;
+  fun iscamlidcont(x:char) => match find$ camlidcont,x with | Some _ => true | #None => false endmatch;
+  fun iscidcont(x:char) => match find$ cidcont,x with | Some _ => true | #None => false endmatch;
+  fun isflxidcont(x:char) => match find$ flxidcont,x with | Some _ => true | #None => false endmatch;
   fun isnumeric(x:char) => match find$ numeric,x with | Some _ => true | #None => false endmatch;
   fun isalphanum(x:char) => isidstart x or isdigit x;
   fun isletter (x:char) => match find$ letters, x with | Some _ => true | #None => false endmatch;

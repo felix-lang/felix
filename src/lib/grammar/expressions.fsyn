@@ -168,6 +168,9 @@ syntax expressions {
   //$ multiplication: non-associative.
   x[sproduct_pri] := x[>sproduct_pri] ("*" x[>sproduct_pri])+ =># "(chain 'ast_product _1 _2)" note "mul";
 
+  //$ multiplication: right associative
+  x[sproduct_pri] := x[>sproduct_pri] "\otimes" x[sproduct_pri] =># "(Infix)";
+
   //$ division: left associative.
   x[s_term_pri] := x[s_term_pri] "/" x[>s_term_pri] =># "(Infix)";
 
