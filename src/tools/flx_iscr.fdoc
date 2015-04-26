@@ -4,7 +4,7 @@ Define an equality for lists of strings.
 @felix
 fun streq : list[string] * list[string] -> bool =
   | Cons (h1, t1), Cons (h2, t2) when h1 == h2 => streq (t1,t2)
-  | #Empty, Empty => true
+  | #Empty, #Empty => true
   | _ => false
 ;
 @

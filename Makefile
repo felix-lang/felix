@@ -101,7 +101,7 @@ tutopt-dir:
 	for file in src/web/tutopt/*.fdoc; do ${BUILDROOT}/host/bin/flx_iscr $$file tutopt; done
 
 tut-dir:
-	mkdir -p web
+	mkdir -p tut
 	${BUILDROOT}/host/bin/flx_tangle --linenos --indir=src/web/tut --outdir=tut
 	for file in src/web/tut/*.fdoc; do ${BUILDROOT}/host/bin/flx_iscr $$file tut; done
 
