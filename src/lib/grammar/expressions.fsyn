@@ -121,16 +121,20 @@ syntax expressions {
   x[ssetunion_pri] := x[>ssetunion_pri] ">->" x[>ssetunion_pri] =># "(infix 'xpipe)"; 
 
 
+  x[sarrow_pri] := x[>sarrow_pri] ".." x[>sarrow_pri] =># '''
+    `(ast_apply ,_sr ((ast_apply ,_sr (,(nos "slice_range") ,_1)) ,_3))
+  ''';
+
   // right arrows: RIGHT ASSOCIATIVE!
 
   //$ List cons, right associative.
-  x[sarrow_pri] := x[scase_literal_pri] "!" x[sarrow_pri] =># '''`(ast_apply ,_sr (,(nos "Cons") (,_1 ,_3)))''';
+  x[sarrow_pri] := x[>sarrow_pri] "!" x[sarrow_pri] =># '''`(ast_apply ,_sr (,(nos "Cons") (,_1 ,_3)))''';
 
   //$ Function type, right associative.
-  x[sarrow_pri] := x[scase_literal_pri] "->" x[sarrow_pri] =># "`(ast_arrow (,_1 ,_3))";
+  x[sarrow_pri] := x[>sarrow_pri] "->" x[sarrow_pri] =># "`(ast_arrow (,_1 ,_3))";
 
   //$ C function type, right associative.
-  x[sarrow_pri] := x[scase_literal_pri] "-->" x[sarrow_pri] =># "`(ast_longarrow (,_1 ,_3))";
+  x[sarrow_pri] := x[>sarrow_pri] "-->" x[sarrow_pri] =># "`(ast_longarrow (,_1 ,_3))";
 
   //$ Case tag literal.
   x[scase_literal_pri] := "case" sinteger =># "`(ast_case_tag ,_sr ,_2))";

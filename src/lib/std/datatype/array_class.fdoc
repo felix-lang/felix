@@ -228,6 +228,25 @@ as an option type.
     return None[v];
   }
 
+@h4 Sum
+@felix
+  fun \sum [with FloatAddgrp[v]] (it:t) =
+  {
+    var init = #zero[v];
+    for v in it do init = init + v; done
+    return init;
+  }
+
+@h4 Product
+@felix
+  fun \prod[with FloatMultSemi1[v]] (it:t) =
+  {
+    var init = #one[v];
+    for v in it do init = init * v; done
+    return init;
+  }
+
+
 @h4 Missing.
 Should have a functional update? Find methods should have
 directions. Search method should really be instances of

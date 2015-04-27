@@ -214,3 +214,27 @@ There are some fancy logic operators.
 @felix
 println$ \lnot (true \land true \lor false \implies false);
 
+@h1 Quantifiers
+Sums and products of values of data structures.
+@felix
+
+println$ \( \sum (1,2,3,4) \) ;
+println$ \prod (1,2,3,4);
+
+
+println$ \sum (1,2,3,4).darray;
+println$ \prod (1,2,3,4).darray;
+
+
+println$ \sum (1,2,3,4).list;
+println$ \prod (1,2,3,4).list;
+
+gen odds (x:int, y:int) () = {
+  for var i:int in x upto y do
+    if y % 2 == 1 do yield Some i; done
+  done
+  return None[int];
+}
+
+println$ \sum (odds (1,7));
+
