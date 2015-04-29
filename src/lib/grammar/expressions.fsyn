@@ -124,6 +124,11 @@ syntax expressions {
   x[sarrow_pri] := x[>sarrow_pri] ".." x[>sarrow_pri] =># '''
     `(ast_apply ,_sr ((ast_apply ,_sr (,(nos "slice_range") ,_1)) ,_3))
   ''';
+/*
+  x[sarrow_pri] := x[>sarrow_pri] "|" x[>sarrow_pri] =># '''
+    `(ast_apply ,_sr ((ast_apply ,_sr (,(nos "slice_count") ,_1)) ,_3))
+  ''';
+*/
 
   // right arrows: RIGHT ASSOCIATIVE!
 

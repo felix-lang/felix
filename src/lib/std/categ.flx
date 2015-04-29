@@ -44,11 +44,6 @@ open class Categ
   fun prdx[u1,r1,r2] (f1:u1->r1,f2:u1->r2) : u1 -> r1 * r2 => 
     fun (x1:u1) => f1 x1, f2 x1;
 
-  //$ parallel composition
-  // notation: f \times g
-  fun ravel[u1,u2,r1,r2] (f1:u1->r1,f2:u2->r2) : u1 * u2 -> r1 * r2 => 
-    fun (x1:u1,x2:u2) => f1 x1, f2 x2;
-
   //$ series composition (2 functions)
   fun compose[u,v,w] (f:v->w, g:u->v) : u -> w => 
     fun (x:u) => f (g x)

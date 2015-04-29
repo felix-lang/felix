@@ -17,6 +17,49 @@ T &reinterpret(U const &x) {
 
 template<typename T> void destroy(T *p){ p->T::~T(); }
 
+template<typename T0, typename T1> 
+struct _tt2 {
+  T0 mem_0;
+  T1 mem_1;
+  _tt2() {}
+  _tt2 (T0 _a0, T1 _a1) : mem_0(_a0), mem_1(_a1) {}
+};
+
+template<typename T0, typename T1, typename T2> 
+struct _tt3 {
+  T0 mem_0;
+  T1 mem_1;
+  T2 mem_2;
+  _tt3() {}
+  _tt3 (T0 _a0, T1 _a1, T2 _a2) : 
+    mem_0(_a0), mem_1(_a1),mem_2(_a2) 
+    {}
+};
+
+template<typename T0, typename T1, typename T2, typename T3> 
+struct _tt4 {
+  T0 mem_0;
+  T1 mem_1;
+  T2 mem_2;
+  T3 mem_3;
+  _tt4() {}
+  _tt4 (T0 _a0, T1 _a1, T2 _a2, T3 _a3) : 
+    mem_0(_a0), mem_1(_a1),mem_2(_a2), mem_3(_a3) 
+    {}
+};
+
+template<typename T0, typename T1, typename T2, typename T3, typename T4> 
+struct _tt5 {
+  T0 mem_0;
+  T1 mem_1;
+  T2 mem_2;
+  T3 mem_3;
+  T4 mem_4;
+  _tt5() {}
+  _tt5 (T0 _a0, T1 _a1, T2 _a2, T3 _a3, T4 _a4) : 
+    mem_0(_a0), mem_1(_a1),mem_2(_a2), mem_3(_a3), mem_4(_a4)
+    {}
+};
 
 
 #define FLX_EXEC_FAILURE(f,op,what) \

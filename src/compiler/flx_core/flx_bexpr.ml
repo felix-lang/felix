@@ -34,6 +34,13 @@ type bexpr_t =
   | BEXPR_inj of int * Flx_btype.t * Flx_btype.t
   | BEXPR_label of string
 
+  (* This term is the product of a tuple or array of functions,
+     to be eliminated after monomorphisation because it's a heck
+     of a lot easier to do it then than on binding. It's replaced
+     by an ordinary function application, and the function generated
+  *)
+  | BEXPR_funprod of t
+
 and t = bexpr_t * Flx_btype.t
 
 (* -------------------------------------------------------------------------- *)
@@ -131,6 +138,8 @@ let bexpr_unitsum_case i j =
   let case_type = Flx_btype.btyp_unitsum j in
   bexpr_const_case (i, case_type)
 
+let bexpr_funprod t e = BEXPR_funprod e,t
+
 (* -------------------------------------------------------------------------- *)
 
 (** Extract the type arguments of a bound expression. *)
@@ -226,6 +235,8 @@ let rec cmp ((a,_) as xa) ((b,_) as xb) =
 
   | BEXPR_inj (n,d,c), BEXPR_inj (n',d',c') ->
     d = d' && c = c' && n = n'
+  | BEXPR_funprod e, BEXPR_funprod e' ->
+    cmp e e'
 
   | _ -> false
 
@@ -301,6 +312,7 @@ let flat_iter
   | BEXPR_aprj (ix,d,c) -> f_bexpr ix; f_btype d; f_btype c
   | BEXPR_prj (n,d,c) -> f_btype d; f_btype c
   | BEXPR_inj (n,d,c) -> f_btype d; f_btype c
+  | BEXPR_funprod e -> f_bexpr e
 
 (* this is a self-recursing version of the above routine: the argument to this
  * routine must NOT recursively apply itself! *)
@@ -366,7 +378,7 @@ let map
   | BEXPR_aprj (ix,d,c),t -> BEXPR_aprj (f_bexpr ix, f_btype d, f_btype c), f_btype t
   | BEXPR_prj (n,d,c),t -> BEXPR_prj (n, f_btype d, f_btype c), f_btype t
   | BEXPR_inj (n,d,c),t -> BEXPR_inj (n, f_btype d, f_btype c), f_btype t
-
+  | BEXPR_funprod e, t -> BEXPR_funprod (f_bexpr e), f_btype t
 
 (* -------------------------------------------------------------------------- *)
 

@@ -4600,6 +4600,30 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
 (*
     print_endline ("Bound argument " ^ sbe bsym_table a);
 *)
+    begin (* special case, product of functions *) 
+      try match f' with
+      | EXPR_name (_,"\\prod",[]) ->
+        begin match ta with
+        | BTYP_tuple ts ->
+          let ds = ref [] and cs = ref [] in 
+          List.iter 
+            (fun t -> match t with 
+            | BTYP_function (d,c) -> 
+              ds := d:: !ds; cs := c :: !cs
+            | _ -> raise Flx_dot.OverloadResolutionError
+            )
+            ts
+          ;
+          let t = btyp_function (btyp_tuple (List.rev (!ds)), btyp_tuple (List.rev (!cs))) in
+          bexpr_funprod t a
+        | BTYP_array (BTYP_function (d,c),BTYP_unitsum n) ->
+          let t = btyp_function (btyp_array (d,btyp_unitsum n), btyp_array (c,btyp_unitsum n)) in
+          bexpr_funprod t a
+        | _ -> raise Flx_dot.OverloadResolutionError
+        end
+
+      | _ ->  raise Flx_dot.OverloadResolutionError
+      with Flx_dot.OverloadResolutionError ->
     try
       let int_t = bt sr (TYP_name (sr,"int",[])) in
       match f' with
@@ -4889,9 +4913,9 @@ print_endline ("Bound f = " ^ sbe bsym_table f);
       in
       apl "apply"
     end
-
+    end
     end (* apply *)
-
+    
   | EXPR_arrayof (sr,es) ->
     let bets = List.map be es in
     let _, bts = List.split bets in

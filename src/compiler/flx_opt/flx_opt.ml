@@ -102,6 +102,9 @@ let optimize_bsym_table' syms bsym_table root_proc =
   bsym_table
   end;
 
+  
+  (* eliminate funprods, replace by calls to generated funs *)
+  let bsym_table = Flx_funprod.elim_funprods syms bsym_table in
 
   let bsym_table = 
   print_time syms "[flx_opt]; Downgrading abstract types to representations" begin fun () ->

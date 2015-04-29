@@ -88,6 +88,15 @@ let rec check_recursion t = match t with
 
    | x -> Flx_btype.flat_iter ~f_btype:check_recursion x
 
+let is_recursive_type t = 
+  let rec ir j t = 
+    match t with
+    | BTYP_fix (i,_) when i = j -> raise Not_found (* means yes *)
+    | _ ->
+      let f_btype t = ir (j-1) t in
+      Flx_btype.flat_iter ~f_btype t
+  in try ir 0 t; false with Not_found -> true
+ 
 let var_subst t (i, j) =
   let rec f_btype t =
     match t with

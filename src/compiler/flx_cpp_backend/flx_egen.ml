@@ -233,6 +233,7 @@ let rec gen_expr'
      (* ce_atom ("UNIT_ERROR") *)
   | _ ->
   match e with
+  | BEXPR_funprod _ -> assert false
   | BEXPR_label (s) -> 
       begin match Flx_label.find_label bsym_table label_map this s with
       | `Local pc -> 
