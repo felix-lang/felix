@@ -40,6 +40,7 @@ type bexpr_t =
      by an ordinary function application, and the function generated
   *)
   | BEXPR_funprod of t
+  | BEXPR_funsum of t
 
 and t = bexpr_t * Flx_btype.t
 
@@ -118,9 +119,9 @@ let bexpr_closure t (bid, ts) =
 
 let bexpr_const_case (i, t) = BEXPR_case (i, t), complete_check t
 
-let bexpr_nonconst_case arg (i, sumt) = BEXPR_inj (i, arg, sumt), complete_check (Flx_btype.btyp_function (arg,sumt))
+let bexpr_nonconst_case argt (i, sumt) = BEXPR_inj (i, argt, sumt), complete_check (Flx_btype.btyp_function (argt,sumt))
 
-let bexpr_match_case t (i, e) = BEXPR_match_case (i, e), complete_check t
+let bexpr_match_case (i, e) = BEXPR_match_case (i, e), Flx_btype.btyp_unitsum 2
 
 let bexpr_case_arg t (i, e) = BEXPR_case_arg (i, e), complete_check t
 
@@ -139,6 +140,7 @@ let bexpr_unitsum_case i j =
   bexpr_const_case (i, case_type)
 
 let bexpr_funprod t e = BEXPR_funprod e,t
+let bexpr_funsum t e = BEXPR_funsum e,t
 
 (* -------------------------------------------------------------------------- *)
 
@@ -237,6 +239,8 @@ let rec cmp ((a,_) as xa) ((b,_) as xb) =
     d = d' && c = c' && n = n'
   | BEXPR_funprod e, BEXPR_funprod e' ->
     cmp e e'
+  | BEXPR_funsum e, BEXPR_funsum e' ->
+    cmp e e'
 
   | _ -> false
 
@@ -313,6 +317,7 @@ let flat_iter
   | BEXPR_prj (n,d,c) -> f_btype d; f_btype c
   | BEXPR_inj (n,d,c) -> f_btype d; f_btype c
   | BEXPR_funprod e -> f_bexpr e
+  | BEXPR_funsum e -> f_bexpr e
 
 (* this is a self-recursing version of the above routine: the argument to this
  * routine must NOT recursively apply itself! *)
@@ -379,6 +384,7 @@ let map
   | BEXPR_prj (n,d,c),t -> BEXPR_prj (n, f_btype d, f_btype c), f_btype t
   | BEXPR_inj (n,d,c),t -> BEXPR_inj (n, f_btype d, f_btype c), f_btype t
   | BEXPR_funprod e, t -> BEXPR_funprod (f_bexpr e), f_btype t
+  | BEXPR_funsum e, t -> BEXPR_funsum (f_bexpr e), f_btype t
 
 (* -------------------------------------------------------------------------- *)
 

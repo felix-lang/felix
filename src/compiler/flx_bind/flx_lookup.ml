@@ -4624,6 +4624,31 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
 
       | _ ->  raise Flx_dot.OverloadResolutionError
       with Flx_dot.OverloadResolutionError ->
+
+      try match f' with
+      | EXPR_name (_,"\\sum",[]) ->
+        begin match ta with
+        | BTYP_tuple ts ->
+          let ds = ref [] and cs = ref [] in 
+          List.iter 
+            (fun t -> match t with 
+            | BTYP_function (d,c) -> 
+              ds := d:: !ds; cs := c :: !cs
+            | _ -> raise Flx_dot.OverloadResolutionError
+            )
+            ts
+          ;
+          let t = btyp_function (btyp_sum (List.rev (!ds)), btyp_sum (List.rev (!cs))) in
+          bexpr_funsum t a
+        | BTYP_array (BTYP_function (d,c),BTYP_unitsum n) ->
+          let t = btyp_function (btyp_sum (Flx_list.repeat d n), btyp_sum (Flx_list.repeat c n)) in
+          bexpr_funsum t a
+        | _ -> raise Flx_dot.OverloadResolutionError
+        end
+
+      | _ ->  raise Flx_dot.OverloadResolutionError
+      with Flx_dot.OverloadResolutionError ->
+
     try
       let int_t = bt sr (TYP_name (sr,"int",[])) in
       match f' with
@@ -5071,7 +5096,7 @@ print_endline ("Bound f = " ^ sbe bsym_table f);
 
 
   | EXPR_match_case (sr,(v,e)) ->
-     bexpr_match_case flx_bbool (v,be e)
+     bexpr_match_case (v,be e)
 
   | EXPR_match_ctor (sr,(qn,e)) ->
     begin match qn with
@@ -5106,7 +5131,7 @@ print_endline ("Bound f = " ^ sbe bsym_table f);
             (*
             print_endline ("Index is " ^ si vidx);
             *)
-            bexpr_match_case flx_bbool (vidx,ue)
+            bexpr_match_case (vidx,ue)
 
           | None->
             begin try
