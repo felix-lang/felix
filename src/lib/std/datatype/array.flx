@@ -14,6 +14,7 @@ open class Farray
   //$ Array as value.
   instance[t,n] ArrayValue[array[t,n], t] {
     fun len (x:array[t, n]): size => Typing::arrayindexcount[n];
+
     //fun unsafe_get: array[t, n] * size -> t = "$1.data[$2]";
     fun unsafe_get (var a: array[t, n], j: size): t => a . (j :>> n);
   }

@@ -107,6 +107,7 @@ class Real[t] {
 
   virtual fun log10: t -> t;
   virtual fun abs: t -> t;
+ 
   virtual fun sqrt: t -> t;
   fun \sqrt (x:t) => sqrt x;
   virtual fun ceil: t -> t;

@@ -361,12 +361,6 @@ syntax expressions {
   //$ Callback expression.
   satom := "callback" "[" sexpr "]" =># "`(ast_callback ,_sr ,_3)";
 
-  //$ Array expression (deprecated).
-  satom := "[|" sexpr "|]" =># "`(ast_arrayof ,_sr ,(mkl _2))";
-
-  //$ Short form anonymous function closure.
-  satom := "{" sexpr "}" =># "(lazy `((ast_fun_return ,_sr ,_2)))";
-
   //$ Short form anonymous procedure closure.
   satom := scompound =># "(lazy _1)";
 
@@ -403,13 +397,6 @@ syntax expressions {
   //$ inline scheme
   satom := "schemelex" sstring =># "(schemelex _2)";
   satom := "schemerun" sstring =># "(schemerun _2)";
-
-  //$ Grouping.
-  satom := "(" sexpr ")" =># "_2";
-  satom := "\(" sexpr "\)" =># "_2";
-  satom := "\[" sexpr "\]" =># "_2";
-  satom := "\{" sexpr "\}" =># "_2";
-
   //$ Empty tuple (unit tuple).
   satom := "(" ")" =># "'()";
 

@@ -215,6 +215,8 @@ There are some fancy logic operators.
 println$ \lnot (true \land true \lor false \implies false);
 
 @h1 Quantifiers
+Using the @{\prod} and @{\sum} symbols.
+@h2 Sums and products of data
 Sums and products of values of data structures.
 @felix
 
@@ -237,4 +239,24 @@ gen odds (x:int, y:int) () = {
 }
 
 println$ \sum (odds (1,7));
+
+@h2 Sums and products of functions
+Forms the categorical (parallel) product or sum of a tuple of functions.
+@felix
+fun f (x:int) : int => x + 1;
+fun g (x:int): string  => x.str+"!";
+fun h (x:double) :string => x.str+"!";
+
+var fgx = \prod (f,g,h);
+println$ fgx (1,2,3.1);
+
+
+var fgs = \sum (f,g,h);
+var d1 = (case 1 of (int + int + double)) 42;
+var c1 : int + string + string = fgs d1;
+match c1 with
+| case 0 i => println$ "Case 0 " + i.str;
+| case 1 s => println$ "Case 1 " + s;
+| case 2 s => println$ "Case 2 " + s;
+endmatch;
 

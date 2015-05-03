@@ -6,6 +6,7 @@ grammar/grammar_float_lexer.fsyn
 grammar/grammar_string_lexer.fsyn
 grammar/grammar_lexer.fsyn
 grammar/expressions.fsyn
+grammar/brackets.fsyn
 grammar/texsyms.fsyn
 grammar/patterns.fsyn
 grammar/functions.fsyn

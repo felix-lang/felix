@@ -377,10 +377,5 @@ syntax texsyms {
 
   // All arrows are right associative .. hmm ..
   x[sarrow_pri] := x[scase_literal_pri] arr x[sarrow_pri] =># "`(ast_apply ,_sr (,_2 (,_1 ,_3)))"; 
-
-  // atomic
-  satom := "\lceil" sexpr "\rceil" =># "`(ast_apply ,_sr (,(noi 'ceil) (,_2)))";
-  satom := "\lfloor" sexpr "\rfloor" =># "`(ast_apply ,_sr (,(noi 'floor) (,_2)))";
-
 }
 

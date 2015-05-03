@@ -13,6 +13,7 @@ syntax felix {
     namespaces,
     requirements,
     expressions,
+    brackets,
     texsyms,
     functions,
     patterns,
