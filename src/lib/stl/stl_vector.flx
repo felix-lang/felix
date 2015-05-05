@@ -14,6 +14,7 @@ class Stl_Vector[t]
     fun front : stl_vector -> t = "$1.front()";
     fun front : stl_vector -> t = "$1.front()";
     lvalue fun subscript : stl_vector * size -> t = "$1.at($2)";
+    proc reserve: stl_vector * size -> t = "$1.reserve($2);";
     fun add: stl_vector_iterator * int -> stl_vector_iterator = "$1+$2";
     fun sub: stl_vector_iterator * int -> stl_vector_iterator = "$1-$2";
     proc pluseq: &stl_vector_iterator * int = "*$1+=$2;";
