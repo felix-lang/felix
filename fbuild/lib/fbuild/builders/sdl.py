@@ -13,7 +13,7 @@ class SDLConfig(fbuild.db.PersistentObject):
             requires_at_most_version=None):
         super().__init__(ctx)
 
-        self.exe = fbuild.builders.find_program(ctx, [exe or 'sdl2-config'])
+        self.exe = fbuild.builders.find_program(ctx, [exe or 'sdl-config'])
 
         # Make sure we've got a valid version.
         fbuild.builders.check_version(ctx, self, self.version,
