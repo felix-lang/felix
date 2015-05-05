@@ -13,12 +13,12 @@ class Stl_Vector[t]
     proc push_back : stl_vector *  t  = "$1.push_back($2);";
     fun front : stl_vector -> t = "$1.front()";
     fun front : stl_vector -> t = "$1.front()";
-    fun subscript : stl_vector * int -> t = "$1.at($2)";
+    lvalue fun subscript : stl_vector * size -> t = "$1.at($2)";
     fun add: stl_vector_iterator * int -> stl_vector_iterator = "$1+$2";
     fun sub: stl_vector_iterator * int -> stl_vector_iterator = "$1-$2";
     proc pluseq: &stl_vector_iterator * int = "*$1+=$2;";
     proc minuseq: &stl_vector_iterator * int = "*$1-=$2;";
-    fun subscript: stl_vector_iterator * int -> t = "$1[$2]";
+    lvalue fun subscript: stl_vector_iterator * size -> t = "$1[$2]";
 // Stl_Vector
   instance Eq[stl_vector] {
     fun == : stl_vector * stl_vector -> bool = "$1==$2";
