@@ -4600,7 +4600,10 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
 (*
     print_endline ("Bound argument " ^ sbe bsym_table a);
 *)
-    begin (* special case, product of functions *) 
+    begin 
+      (* ---------------------------------------------------------- *)
+      (* special case, product of functions *) 
+      (* ---------------------------------------------------------- *)
       try match f' with
       | EXPR_name (_,"\\prod",[]) ->
         begin match ta with
@@ -4625,6 +4628,9 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
       | _ ->  raise Flx_dot.OverloadResolutionError
       with Flx_dot.OverloadResolutionError ->
 
+      (* ---------------------------------------------------------- *)
+      (* special case, sum of functions *) 
+      (* ---------------------------------------------------------- *)
       try match f' with
       | EXPR_name (_,"\\sum",[]) ->
         begin match ta with
@@ -4643,6 +4649,45 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
         | BTYP_array (BTYP_function (d,c),BTYP_unitsum n) ->
           let t = btyp_function (btyp_sum (Flx_list.repeat d n), btyp_sum (Flx_list.repeat c n)) in
           bexpr_funsum t a
+        | _ -> raise Flx_dot.OverloadResolutionError
+        end
+
+      | _ ->  raise Flx_dot.OverloadResolutionError
+      with Flx_dot.OverloadResolutionError ->
+
+      (* ---------------------------------------------------------- *)
+      (* special case, mediating morphism of product of functions *) 
+      (* ---------------------------------------------------------- *)
+      try match f' with
+      | EXPR_name (_,"lrangle",[]) ->
+        begin match ta with
+        | BTYP_tuple ts ->
+          let dt = ref None and cs = ref [] in 
+          List.iter 
+            (fun t -> match t with 
+            | BTYP_function (d,c) -> 
+              begin match !dt with
+              | None -> dt := Some d
+              | Some t when Flx_unify.type_eq bsym_table state.counter d t -> ()
+              | _ -> raise Flx_dot.OverloadResolutionError
+              end
+              ;
+              cs := c :: !cs
+            | _ -> raise Flx_dot.OverloadResolutionError
+            )
+            ts
+          ;
+          let t = match !dt with 
+            | Some d -> 
+              btyp_function (d, btyp_tuple (List.rev (!cs))) 
+            | None -> (* dunno what to do with empty case *)
+              raise Flx_dot.OverloadResolutionError  
+          in
+          bexpr_lrangle t a
+
+        | BTYP_array (BTYP_function (d,c),BTYP_unitsum n) ->
+          let t = btyp_function (d, btyp_array (c,btyp_unitsum n)) in
+          bexpr_lrangle t a
         | _ -> raise Flx_dot.OverloadResolutionError
         end
 

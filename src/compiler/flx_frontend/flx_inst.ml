@@ -106,6 +106,7 @@ let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
   begin match e with
   | BEXPR_funprod _ -> assert false
   | BEXPR_funsum _ -> assert false
+  | BEXPR_lrangle _ -> assert false
   | BEXPR_label s -> ()
 
   | BEXPR_not e

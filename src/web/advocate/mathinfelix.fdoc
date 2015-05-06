@@ -40,10 +40,25 @@ println$ \Gamma\alpha;
 @
 
 @h2 Ceil and Floor
-Defined for real floating types. The result is a floating type, not an integer!
-Mapped by the parser to the functions @{ceil} and @{floor}.
+Pair @{\lceil},@{\rceil} and @{\lfloor},@{\rfloor}, 
+mapped by the parser to the functions @{ceil} and @{floor},
+defined for real floating types. The result is a floating type, not an integer!
 @felix
-println$ \lceil x + 2.3 \rceil + \lfloor 2.3 \rfloor + 0.1;
+println$ \(\lceil x + 2.3 \rceil + \lfloor 2.3 \rfloor + 0.1\);
+
+@h2 Abs and norm
+Using @{\lvert},@{\rvert} pair or @{\left\lvert},@{\right\rvert},
+or @{\left|},@{\right|} mapping to function @{abs}, defined for
+integers, reals, and complex numbers. 
+Using @{\lVert},@{\rVert} pair or @{\left\lVert},@{\right\rVert}
+mapping to function @{len}, defined for container and array class
+data structures and strings.
+
+
+@felix
+println$ \( \lvert -2.3 \rvert \);
+println$ \( \lvert "Hello" \rvert \);
+println$ \( \lVert 1,2,3 \rVert \);
 
 @h2 Sqrt
 The square root is only available in math mode.
@@ -199,7 +214,7 @@ Note that max uses @{\}@{vee} and min uses @{\}@{wedge}
 and these look the same as boolean @{\}@{lor} and @{\}@{land}
 but they're not. The nmemonic is to recall that both set intersection
 and logical conjunction make for less cases and hence @{\wedge} is used
-for the minimum. Set union and logical conjunction are fatter and
+for the minimum. Set union and logical disjunction are fatter and
 more inclusive and so used for the maximum.
 
 @felix

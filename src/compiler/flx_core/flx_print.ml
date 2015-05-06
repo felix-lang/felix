@@ -1857,6 +1857,7 @@ and string_of_bound_expression' bsym_table se e =
 
   | BEXPR_funprod e -> "\\prod (" ^ se e ^ ")"
   | BEXPR_funsum e -> "\\sum (" ^ se e ^ ")"
+  | BEXPR_lrangle e -> "\eft<" ^ se e ^ "\right>"
 
 and string_of_biface bsym_table level s =
   let spc = spaces level in
