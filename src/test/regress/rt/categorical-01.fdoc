@@ -1,0 +1,37 @@
+@title Categorical product and sum
+@felix
+fun f (x:int) : int => x + 1;
+fun g (x:int): string  => x.str+"!";
+fun h (x:double) :string => x.str+"!";
+
+var fgx = \prod (f,g,h);
+println$ fgx (1,2,3.1);
+
+
+var fgs = \sum (f,g,h);
+var d1 = (case 1 of (int + int + double)) 42;
+var c1 : int + string + string = fgs d1;
+match c1 with
+| case 0 i => println$ "Case 0 " + i.str;
+| case 1 s => println$ "Case 1 " + s;
+| case 2 s => println$ "Case 2 " + s;
+endmatch;
+
+fun a (x:int) => x + 1;
+fun b (x:int) => x.double + 2.1;
+fun c (x:int) => (x + 3).str+"!";
+var abc = \langle a,b,c \rangle;
+println$ abc 1; // 2,3.0,"4"
+
+fun la (x:int) => x+1;
+fun lb (x:double) => (x+2.0).int;
+fun lc (x:string) => x.len.int + 3;
+var labc = \lbrack la,lb,lc \rbrack;
+var x1 = (case 1 of int + double + string) 42.0;
+println$ labc x1; // 44
+@expect
+(2, 2!, 3.1!)
+Case 1 42!
+(2, 3.1, 4!)
+44
+@
