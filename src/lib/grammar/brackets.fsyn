@@ -25,8 +25,14 @@ syntax brackets
   satom := "\lVert" sexpr "\rVert" =># "`(ast_apply ,_sr (,(noi 'len) (,_2)))";
   satom := "\left" "\Vert" sexpr "\right" "\Vert" =># "`(ast_apply ,_sr (,(noi 'len) (,_3)))";
 
+  // mediating morphism of a product <f,g>
   satom := "\langle" sexpr "\rangle" =># "`(ast_apply ,_sr (,(noi 'lrangle) (,_2)))";
   satom := "\left" "\langle" sexpr "\right" "\rangle" =># "`(ast_apply ,_sr (,(noi 'lrangle) (,_3)))";
+
+  // mediating morphism of a sum [f,g]
+  satom := "\lbrack" sexpr "\rbrack" =># "`(ast_apply ,_sr (,(noi 'lrbrack) (,_2)))";
+  satom := "\left" "\lbrack" sexpr "\right" "\rbrack" =># "`(ast_apply ,_sr (,(noi 'lrbrack) (,_3)))";
+ 
  
 }
 

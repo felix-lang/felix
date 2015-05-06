@@ -236,6 +236,7 @@ let rec gen_expr'
   | BEXPR_funprod _ -> assert false
   | BEXPR_funsum _ -> assert false
   | BEXPR_lrangle _ -> assert false
+  | BEXPR_lrbrack _ -> assert false
   | BEXPR_label (s) -> 
       begin match Flx_label.find_label bsym_table label_map this s with
       | `Local pc -> 

@@ -42,6 +42,7 @@ type bexpr_t =
   | BEXPR_funprod of t
   | BEXPR_funsum of t
   | BEXPR_lrangle of t (* mediating morphism of a product *)
+  | BEXPR_lrbrack of t (* mediating morphism of a sum *)
 
 and t = bexpr_t * Flx_btype.t
 
@@ -143,6 +144,7 @@ let bexpr_unitsum_case i j =
 let bexpr_funprod t e = BEXPR_funprod e,t
 let bexpr_funsum t e = BEXPR_funsum e,t
 let bexpr_lrangle t e = BEXPR_lrangle e,t
+let bexpr_lrbrack t e = BEXPR_lrbrack e,t
 
 (* -------------------------------------------------------------------------- *)
 
@@ -245,6 +247,8 @@ let rec cmp ((a,_) as xa) ((b,_) as xb) =
     cmp e e'
   | BEXPR_lrangle e, BEXPR_lrangle e' ->
     cmp e e'
+  | BEXPR_lrbrack e, BEXPR_lrbrack e' ->
+    cmp e e'
 
   | _ -> false
 
@@ -323,6 +327,7 @@ let flat_iter
   | BEXPR_funprod e -> f_bexpr e
   | BEXPR_funsum e -> f_bexpr e
   | BEXPR_lrangle e -> f_bexpr e
+  | BEXPR_lrbrack e -> f_bexpr e
 
 (* this is a self-recursing version of the above routine: the argument to this
  * routine must NOT recursively apply itself! *)
@@ -391,6 +396,7 @@ let map
   | BEXPR_funprod e, t -> BEXPR_funprod (f_bexpr e), f_btype t
   | BEXPR_funsum e, t -> BEXPR_funsum (f_bexpr e), f_btype t
   | BEXPR_lrangle e, t -> BEXPR_lrangle (f_bexpr e), f_btype t
+  | BEXPR_lrbrack e, t -> BEXPR_lrbrack (f_bexpr e), f_btype t
 
 (* -------------------------------------------------------------------------- *)
 

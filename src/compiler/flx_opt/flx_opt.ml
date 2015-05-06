@@ -109,7 +109,8 @@ let optimize_bsym_table' syms bsym_table root_proc =
   let bsym_table = Flx_funsum.elim_funsums syms bsym_table in
   (* eliminate lrangles, replace by calls to generated funs *)
   let bsym_table = Flx_lrangle.elim_lrangles syms bsym_table in
-
+  (* eliminate lrbracks, replace by calls to generated funs *)
+  let bsym_table = Flx_lrbrack.elim_lrbracks syms bsym_table in
 
 
   let bsym_table = 
