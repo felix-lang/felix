@@ -66,15 +66,18 @@ let extract_syntax to_install dssls =
 (** Create the bindings from all the rules. *)
 let bind_grammar_rules dyp rules =
   let bindings = ref [] in
-  let add_rules = List.map
+  let add_rules = ref [] in
+  List.iter
     begin fun rule ->
-      let rule, action, binding = extend_grammar dyp rule in
-      bindings := binding :: !bindings;
-      rule, action
+      match extend_grammar dyp rule with
+      | Some (rule, action, binding) ->
+        bindings := binding :: !bindings;
+        add_rules := (rule,action) :: !add_rules
+      | None -> ()
     end
     rules
-  in
-  add_rules, !bindings
+  ;
+  !add_rules, !bindings
 
 
 (** Run all the scheme commands for a rule.

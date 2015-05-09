@@ -4,6 +4,7 @@ type anote_t = string
 type priority_level_t = Priority_Default | Priority_Name of string
 
 type priority_relation_t = 
+  | Priority_Var
   | Priority_None
   | Priority_Eq of string 
   | Priority_Less of string
@@ -45,7 +46,14 @@ type token =
   | GREATEREQUAL
   | UNDERSCORE
 
-and rule_t = string * priority_level_t * token list * string * anote_t * Flx_srcref.t
+and rule_t = 
+  string * (* non terminal base name *)
+  priority_level_t *  (* non terminal priority index *)
+  string list * (* variable names *)
+  token list *  (* the RHS production *)
+  string *  (* Scheme action code *)
+  anote_t *  (* comment *)
+  Flx_srcref.t (* source reference *)
 
 and dssl_t = {
   regexps : (string * Dyp.regexp) list;
@@ -61,6 +69,7 @@ and local_data_t = {
   installed_dssls : string list;
   scm : (Flx_srcref.t * string) list;
   rev_stmts_as_scheme: Ocs_types.sval list;
+  instances : ((string * priority_relation_t) * string) list;
 }
 
 and 'obj global_data_t = {

@@ -53,6 +53,7 @@ let define_syntax dyp name dyprods =
     if Drules.mem dssl m.drules then m
     else { m with drules = Drules.add dssl fresh_dssl m.drules }
   in
+  let dyprods = instantiate_rules name dyp.global_data.pcounter dyprods in
   let global_data,local_data = List.fold_left
     (fun (g,l) x -> add_rule g l dssl x)
     (dyp.global_data, m)
@@ -364,6 +365,10 @@ sstatement_star:
     }
   | { [] }
 
+name_list: 
+  | NAME name_list { $1 :: $2 }
+  | { [] }
+
 dyprods:
   | dyprods dyprod 
     @{ 
@@ -393,21 +398,21 @@ dyprod:
       Rule_Nop, open_syntax dyp $3
     }
 
-   | opt_private NAME opt_prio ":=" dyalts ";"
+   | opt_private NAME opt_prio name_list ":=" dyalts ";"
      {
        (*
        print_endline ("RULE " ^ snd $2);
        *)
-       Rule_Scheme_rule ($1, $2, $3, Flx_parse_ebnf.Action_Kind_Sval, $5)
+       Rule_Scheme_rule ($1, $2, $3, $4, Flx_parse_ebnf.Action_Kind_Sval, $6)
      }
 
-   | opt_private NAME opt_prio ":" NAME "=" dyalts ";"
+   | opt_private NAME opt_prio name_list ":" NAME "=" dyalts ";"
      {
-       if $5 <> "string" then raise Giveup;
+       if $6 <> "string" then raise Giveup;
        (*
        print_endline ("STRING RULE " ^ $2);
        *)
-       Rule_Scheme_rule ($1, $2, $3, Flx_parse_ebnf.Action_Kind_String, $7)
+       Rule_Scheme_rule ($1, $2, $3, $4, Flx_parse_ebnf.Action_Kind_String, $8)
      }
 
 
@@ -438,7 +443,7 @@ dyprod:
        print_endline ("Defining literal " ^ name ^ " as " ^ scm);
 *)
        let dyalts = [prod,Flx_parse_srcref.getsr dyp,action,anote] in
-       Rule_Scheme_rule (priv,name,prio,Flx_parse_ebnf.Action_Kind_Sval,dyalts) 
+       Rule_Scheme_rule (priv,name,prio,[],Flx_parse_ebnf.Action_Kind_Sval,dyalts) 
      }
 
   ssre :  ssre(>=ralt_prix) ["|" ssre(>ralt_prix)]+ { RE_Alt ($1::$2) } ralt_prix 

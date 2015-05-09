@@ -5,7 +5,6 @@ open Sex_types
 open Dyp
 open Flx_string
 open Flx_token
-open Flx_parse_ebnf
 open Flx_drules
 
 let munge s = 
@@ -66,7 +65,7 @@ type symbol_t = Grammar_Atom of token | Grammar_Group of dyalt_t list
 and dyalt_t = symbol_t list * Flx_srcref.t * action_t * anote_t
 type privacy_t = Privacy_Public | Privacy_Private
 type grammar_rule_t = 
-  | Rule_Scheme_rule of privacy_t * string * priority_level_t * action_kind_t * dyalt_t list
+  | Rule_Scheme_rule of privacy_t * string * priority_level_t * string list * Flx_parse_ebnf.action_kind_t * dyalt_t list
   | Rule_Requires of string list 
   | Rule_Priorities of string list
   | Rule_Regex of string * Dyp.regexp 
@@ -77,26 +76,27 @@ let lexeme x = Dyp.lexeme x
 let silly_strtoken k = Flx_prelex.string_of_token k
 
 let fresh_dssl = {
-  regexps = [];
-  prios = [];
-  rules = [];
-  deps = [];
-  privacy = Drules.empty;
+  Flx_token.regexps = [];
+  Flx_token.prios = [];
+  Flx_token.rules = [];
+  Flx_token.deps = [];
+  Flx_token.privacy = Drules.empty;
 }
 let debug = try ignore(Sys.getenv "FLX_DEBUG_PARSER"); true with Not_found -> false
 
 let global_data = {
-  pcounter = ref 1;
-  env = Flx_ocs_init.init_env ();
-  pdebug = ref debug;
-  parsing_device = ref None;
+  Flx_token.pcounter = ref 1;
+  Flx_token.env = Flx_ocs_init.init_env ();
+  Flx_token.pdebug = ref debug;
+  Flx_token.parsing_device = ref None;
 }
 
 let local_data = {
-  global_regexps = [];
+  Flx_token.global_regexps = [];
   Flx_token.drules = Drules.empty;
   Flx_token.installed_dssls = [];
   Flx_token.scm = [];
+  Flx_token.instances = [];
 (*
   Flx_token.rev_stmts = [];
 *)
@@ -110,8 +110,9 @@ let xsr sr =
 
 let buffer_add_ocs b r = Ocs_print.print_to_buffer b false r
 
-let cal_priority_relation p =
+let cal_priority_relation (p:priority_relation_t) : string Dyp.nt_prio =
   match p with
+  | Priority_Var -> print_endline "ERROR: uninstantiated variable"; assert false
   | Priority_None -> No_priority
   | Priority_Eq p -> Eq_priority p
   | Priority_Less p -> Less_priority p
@@ -156,6 +157,8 @@ print_endline ("define_scheme " ^ name);
         let re = re_expand global_regexps dssl_record.regexps re in
         Dyp.Regexp re
 
+      | NONTERMINAL (s,Priority_Var) ->  assert false (* variables should have been replaced *)
+
       | NONTERMINAL (s,p) -> (* handle identifiers like sexpr in productions *)
         let nt = mapnt s in
         let ntpri = cal_priority_relation p in
@@ -187,14 +190,14 @@ print_endline ("define_scheme " ^ name);
 
     if !(dyp.global_data.pdebug) then begin
       Buffer.add_string b (
-        "Reducing Rule " ^ string_of_int pr_age ^ " for " ^ name ^ "[" ^
+        "[buffered] Reducing Rule " ^ string_of_int pr_age ^ " for " ^ name ^ "[" ^
         priority ^ "], scm=" ^ scm ^ "\n"
       );
 
       print_endline (
         "Reducing Rule " ^ string_of_int pr_age ^ " for " ^ name ^ "[" ^
-        priority ^ "] := " ^ catmap " " silly_strtoken rhs ^ " #scm=" ^ scm ^
-        "\n"
+        priority ^ "] := " ^ catmap " " silly_strtoken rhs ^ " =>#'" ^ scm ^
+        "'\n"
       );
     end;
 
@@ -269,25 +272,29 @@ print_endline ("sr of reduction is " ^ Flx_srcref.short_string_of_src sr);
   rule,action,Bind_to_cons [(name, "Obj_sexpr")]
 
 (* top routine to add a new production to a dssl *)
-let extend_grammar dyp (dssl,(name,prio,prod,action,anote,sr)) =
+let extend_grammar dyp (dssl,(name,prio,params,prod,action,anote,sr)) =
   let m = dyp.local_data in
   let dssl_record = Drules.find dssl m.drules in
   let global_regexps = m.global_regexps in
-  define_scheme sr dyp global_regexps dssl_record dssl name prio prod action
+  if params = [] then
+    let r = define_scheme sr dyp global_regexps dssl_record dssl name prio prod action in
+    Some r
+  else
+    None
 
 (* ------------------------------------------------------ *)
 let dflt_action kind prod =
   let rn = ref 1 in
   let action =
     match kind with
-    | Action_Kind_Sval ->
+    | Flx_parse_ebnf.Action_Kind_Sval ->
       "`(" ^
       List.fold_left (fun acc _ -> let n = !rn in incr rn;
         (if acc = "" then "" else acc ^ " ") ^ ",_" ^ string_of_int n
       ) "" prod
       ^ ")"
 
-    | Action_Kind_String -> 
+    | Flx_parse_ebnf.Action_Kind_String -> 
       "(strcat `(" ^
       List.fold_left (fun acc _ -> let n = !rn in incr rn;
         (if acc = "" then "" else acc ^ " ") ^ ",_" ^ string_of_int n
@@ -321,35 +328,42 @@ let cal_action kind prod action =
 
   | Action_Scheme scm -> scm
 
-let rec flatten sr pcounter kind rhs =
+type instance_t = (string * priority_relation_t) * string
+type instances_t = instance_t list
+
+let rec flatten sr pcounter kind params rhs =
   let rec aux inp out extras = match inp with
   | [] -> List.rev out,extras
 
   | Grammar_Group dyalts :: t ->
     let x = string_of_int (!pcounter) in incr pcounter;
     let sl = "__grp_" ^ x in
-    let rules = fixup_alternatives pcounter kind sl Priority_Default dyalts in
-    aux t (NONTERMINAL (sl, Priority_None)::out) (rules@extras)
+    let rules = fixup_alternatives pcounter kind sl Priority_Default params dyalts in
+    aux t (NONTERMINAL (sl, Priority_None)::out) (rules@extras) 
 
-  | Grammar_Atom h :: t -> aux t (h::out) extras
-  in aux rhs [] []
+  | Grammar_Atom h :: t -> aux t (h::out) extras 
+  in aux rhs [] [] 
 
-and fixup_rule sr pcounter kind rhs =
-  let rhs,extras = flatten sr pcounter kind rhs in
-  let rhs, extras =
-    fixup_prio sr rhs,
-    List.map (fun (name,prio,prod,action,anote,sr) -> name,prio,fixup_prio sr prod, action,anote,sr) extras
+and fixup_rule sr pcounter kind params rhs =
+  let rhs,extras = flatten sr pcounter kind params rhs in
+  let rhs = Flx_parse_ebnf.fixup_prio sr params rhs in
+  let extras =
+    List.map (fun (name,prio,params',prod,action,anote,sr) -> 
+      assert (params' = []); (* no inner macros *)
+      name,prio,params,Flx_parse_ebnf.fixup_prio sr params prod , action,anote,sr
+    ) 
+    extras
   in
-  let rhs,extras' = fixup_suffix sr pcounter kind rhs in
+  let rhs,extras' = Flx_parse_ebnf.fixup_suffix sr pcounter kind params rhs in
   rhs,extras@extras'
 
-and fixup_alternatives pcounter kind name prio dyalts =
+and fixup_alternatives pcounter kind name prio params dyalts =
   let rules =
     List.fold_left
       (fun rules (rhs,sr,action,anote) ->
-        let prod,extras = fixup_rule sr pcounter kind rhs in
+        let prod,extras = fixup_rule sr pcounter kind params rhs in
         let action : string = cal_action kind prod action in
-        ((name,prio,prod,action,anote,sr) :: extras) @ rules
+        ((name,prio,params,prod,action,anote,sr) :: extras) @ rules
       )
       [] dyalts
   in
@@ -361,9 +375,10 @@ let add_rule global_data local_data dssl rule =
   match rule with
   | Rule_Nop -> global_data,m
 
-  | Rule_Scheme_rule (privacy,name,prio,kind,dyalts) ->
-     let rules = fixup_alternatives global_data.pcounter kind name prio dyalts in
+  | Rule_Scheme_rule (privacy,name,prio,params,kind,dyalts) ->
+     let rules = fixup_alternatives global_data.pcounter kind name prio params dyalts in
      let rules = List.fold_left (fun acc rule -> uniq_add rule acc) d.rules rules in
+     let instances = [] in (* FIXME *)
      let privacy =
        match privacy with
        | Privacy_Private ->
@@ -372,8 +387,8 @@ let add_rule global_data local_data dssl rule =
           Drules.add name secret d.privacy
        | Privacy_Public -> d.privacy
      in
-     let d = { d with rules = rules; privacy = privacy } in
-     let m = { m with drules = Drules.add dssl d m.drules } in
+     let d = { d with rules = rules; privacy = privacy  } in
+     let m = { m with drules = Drules.add dssl d m.drules; instances=instances } in
      global_data,m
 
   | Rule_Requires ls ->
@@ -401,5 +416,168 @@ print_endline ("Add Regex name=" ^ name);
     } 
     in
     global_data, m
+
+(* replace non-terminal variables with non-terminal constants *)
+(* Note: a non-terminal with a priority like x[>p] is still actually
+   a specific non-terminal.
+
+   This routine "monomorphises" a production, provided the 
+   replacement map has a replacement for each parameter.
+*)
+type paramsubst_t = string * (string * priority_relation_t) 
+
+let rec substitute_vars (rpls:paramsubst_t list) (rhs: symbol_t list) =
+  let rec aux inp out =
+    match inp with
+    | [] -> List.rev out
+    | Grammar_Atom (NONTERMINAL (s,Priority_Var)) as h :: t ->
+      let h = 
+        try Grammar_Atom (NONTERMINAL (List.assoc s rpls))
+        with Not_found -> h
+      in
+      aux t (h::out)
+    | Grammar_Atom (NAME s) as h :: t ->
+      let h = 
+        try Grammar_Atom (NONTERMINAL (List.assoc s rpls))
+        with Not_found -> h
+      in
+      aux t (h::out)
+    | Grammar_Group dyalts :: tail ->
+      let h = Grammar_Group (List.map (fun (syms,sr,action,anote) -> substitute_vars rpls syms,sr,action,anote) dyalts) in
+      aux tail (h :: out)
+
+    | h :: t -> aux t (h::out)
+  in aux rhs []
+
+let rec print_symbols (symbols:symbol_t list) = 
+  List.iter (fun sym -> match sym with
+    | Grammar_Atom tok -> print_string (Flx_prelex.name_of_token tok ^ "(" ^Flx_prelex.string_of_token tok ^ ") ")
+    | Grammar_Group grp -> print_string "("; 
+        List.iter (fun (alt,_,_,_)  -> print_string "| "; print_symbols alt; ) grp;
+        print_string ") ";
+    )
+  symbols
+
+let rec inst_dyalt counter instance_map unprocessed macros name prio (symbols, sr, action, anote) =
+(*
+if name = "extn0" then begin 
+  print_endline "Inst a dyalt for extn0"; 
+  print_symbols symbols;
+end;
+*)
+  let rec aux inp out = match inp with
+  | [] -> List.rev out 
+  | Grammar_Atom (NAME s) :: 
+    Grammar_Atom LESS :: 
+    Grammar_Atom ( NAME sa) :: 
+    Grammar_Atom GREATER :: 
+    tail ->
+(*
+print_endline ("FOUND MACRO CALL " ^ s ^ "<" ^ sa ^ ">");
+*)
+    let sp = Priority_None in
+    let maybe_instance = 
+      try Some (Hashtbl.find instance_map (s,sa,sp) ) with Not_found -> None 
+    in
+    let newsym = 
+      match maybe_instance with
+      | None ->
+        (* create a new nonterminal *)
+        let x = string_of_int (!counter) in incr counter;
+        let sl = s ^ "__inst_"^x in
+(* print_endline ("Create new nonterminal " ^ sl); *)
+        let pri = Priority_None in
+        (* add mapping to hash table *)
+        Hashtbl.add instance_map (s,sa,sp) (sl,pri);
+        (* find all the rules for the macro *)
+        let macros = List.filter (fun (name,rule) -> name = s) macros in
+        (* now create a specialised copy of these rules 
+          with the parameter replaced by the argument 
+        *)
+(* print_endline ("Found " ^ string_of_int (List.length macros) ^ " macros productions named " ^ s); *)
+        List.iter (fun (name,rule) -> match rule with
+        | Rule_Scheme_rule (privacy,name,prio,params,kind,dyalts) ->
+(* print_endline ("Found macro " ^ name); *)
+          if List.length params <> 1 then begin
+            print_endline ("wrong number of parameters for macro " ^ name ^ ", one required (at the moment)");
+            assert false
+          end;
+          let param : string = List.hd params in
+          let rpls = [param, (sa,sp)] in
+          let dyalts = List.map 
+            (
+              fun (symbols, sr, action,anote) -> 
+              substitute_vars rpls symbols, sr, action, anote
+            ) 
+            dyalts 
+          in
+          let new_rule = Rule_Scheme_rule (privacy,sl,prio,[],kind,dyalts) in
+(* print_endline ("Added monomorphised rule " ^ sl ^ " := " );  
+List.iter (fun (syms,_,_,_) -> print_symbols syms; print_endline " EOR") dyalts; print_endline "----";
+*)
+          unprocessed := new_rule :: !unprocessed
+        | _ -> assert false
+        )
+        macros
+        ;
+        Grammar_Atom (NONTERMINAL (sl,pri))
+      | Some (s,p) -> Grammar_Atom (NONTERMINAL (s,p))
+    in 
+    aux tail (newsym::out)
+  | Grammar_Group dyalts :: tail ->
+    let newsym =  
+      Grammar_Group (List.map (inst_dyalt counter instance_map unprocessed macros name prio) dyalts) 
+    in
+    aux tail (newsym::out)
+
+  | h :: t -> aux t (h::out)
+  in
+  let symbols = aux symbols [] in 
+(*
+if name = "extn0" then begin 
+  print_endline "Instantiated: a dyalt for extn0"; 
+  print_symbols symbols;
+end;
+*)
+  symbols,sr,action,anote
+
+let inst_rule counter instance_map unprocessed macros rule : grammar_rule_t =
+  match rule with
+  | Rule_Scheme_rule (privacy,name,prio,[],kind,dyalts) ->
+(*
+if name = "extn0" then begin print_endline "Instantiating dyalts for extn0"; end;
+*)
+    let dyalts = List.map (inst_dyalt counter instance_map unprocessed macros name prio) dyalts in
+    Rule_Scheme_rule (privacy,name,prio,[],kind,dyalts) 
+
+  | _ -> print_endline "WOOPS!! Expected mono production"; assert false
+
+let inst_rules counter instance_map macros monos : grammar_rule_t list = 
+  let unprocessed = ref monos in
+  let processed = ref [] in
+  while List.length (!unprocessed) > 0 do
+     let rule = List.hd (!unprocessed) in
+     unprocessed := List.tl (!unprocessed);
+     let new_rule = inst_rule counter instance_map unprocessed macros rule in
+     processed := new_rule :: !processed;
+  done;
+  List.rev (!processed)
+
+let instantiate_rules name counter rules =
+  (* split rules up *)
+  let macros, monos, others = 
+    List.fold_left (fun (macros, monos, others) rule -> match rule with
+     | Rule_Scheme_rule (privacy,name,prio,params,kind,dyalts) ->
+      if params = [] then macros, rule::monos, others
+      else (name,rule) :: macros, monos, others
+
+     | _ -> macros,monos,rule::others
+   ) ([],[],[]) rules
+  in
+  let macros,monos,others = List.rev macros, List.rev monos, List.rev others in
+  let instance_map = Hashtbl.create 97 in
+  let monos = inst_rules counter instance_map macros monos in
+  let result =  others @ monos  in
+  result
 
 

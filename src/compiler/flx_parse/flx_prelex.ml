@@ -3,6 +3,7 @@ open Flx_token
 let string_of_string s = "\"" ^  Flx_string.c_quote_of_string s ^ "\""
 
 let sp p = match p with
+  | Priority_Var -> "[VARIABLE]"
   | Priority_None -> ""
   | Priority_Eq p -> "[="^p^"]"
   | Priority_Less p -> "[<"^p^"]"

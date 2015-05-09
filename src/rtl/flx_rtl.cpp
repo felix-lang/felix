@@ -64,10 +64,6 @@ fthread_t::fthread_t(fthread_t const&){ assert(false); }
 void fthread_t::operator=(fthread_t const&){ assert(false); }
 
 void fthread_t::kill() { cc = 0; }
-//
-// ********************************************************
-// _uctor_t implementation
-// ********************************************************
 
 _uctor_ *fthread_t::get_svc()const { return cc?cc->p_svc:0; }
 
@@ -76,15 +72,16 @@ _uctor_ *fthread_t::run() {
 restep:
   cc->p_svc = 0;
 step:
-  //fprintf(stderr,"cc=%p->",cc);
+  //fprintf(stderr,"[fthread_t::run::step] cc=%p->",cc);
   try { cc = cc->resume(); }
   catch (con_t *x) { cc = x; }
 
-  //fprintf(stderr,"->%p\n",cc);
+  //fprintf(stderr,"[fthread_t::run::step] ->%p\n",cc);
   if(!cc) return 0; // died
 
   if(cc->p_svc)
   {
+    //fprintf(stderr,"[fthread_t::run::service call] ->%d\n",cc->p_svc);
     switch(cc->p_svc->variant)
     {
       case svc_get_fthread:
