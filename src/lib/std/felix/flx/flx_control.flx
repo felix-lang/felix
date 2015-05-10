@@ -130,6 +130,7 @@ fun dflt_control () =>
     var INREGEX = "";
     var NONSTOP = 0;
     var OPTIMISE = list[string]$ "-O1";
+    var FLXG_OPTIMISE= 0;
   }
 ;
 

@@ -223,6 +223,7 @@ object processing_env(
         use_ext = dvars.use_ext,
         TIME = control.COMPILER_TIME,
         FORCE = control.FLXG_FORCE,
+        FLAGS = if control.FLXG_OPTIMISE == 0 then Empty[string] else list[string] "--optimise" endif,
         debugln = if control.ECHO==1 then echoln[string] else debugln[string] endif
       );
       showtime("Felix flxg   : "+dvars.cpp_filebase, t0);

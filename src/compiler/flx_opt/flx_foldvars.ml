@@ -99,14 +99,16 @@ let locals bsym_table uses i =
   BidSet.diff kids u
 
 
-let fold_vars syms bsym_table uses i ps exes = if true then exes else 
+let fold_vars syms bsym_table uses i ps exes : Flx_bexe.t list = 
+  if not syms.compiler_options.optimise then exes else 
   let pset = fold_left (fun s {pindex=i}-> BidSet.add i s) BidSet.empty ps in
   let kids = Flx_bsym_table.find_children bsym_table i in
 
   let bsym = Flx_bsym_table.find bsym_table i in
+(*
   print_endline ("\nFOLDing " ^ Flx_bsym.id bsym ^ "<" ^ si i ^">");
   print_endline ("Kids = " ^ string_of_bidset kids);
-
+*)
   let descend = Flx_bsym_table.find_descendants bsym_table i in
   (*
   print_endline ("Descendants are " ^ string_of_bidset descend);
@@ -371,13 +373,9 @@ let fold_vars syms bsym_table uses i ps exes = if true then exes else
   in
   let exes = elim exes in
 
-  (*
   if syms.compiler_options.print_flag then
-  *)
   if !master_count > 0 then begin
-(*
     if syms.compiler_options.print_flag then
-*)
     print_endline ("Removed " ^ si !master_count ^" variables in " ^ si !iters ^ " passes");
     (*
     print_endline "OUTPUT Code is";
@@ -386,3 +384,4 @@ let fold_vars syms bsym_table uses i ps exes = if true then exes else
   end
   ;
   exes
+

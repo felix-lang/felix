@@ -308,6 +308,9 @@ private noinline proc handle_switch
     debugln "Disable optimisation";
     control.NOOPTIMISE <- 1;
     control.DOREDUCE <- 0;
+  elif arg in ("--compiler-optimise","--compiler-optimize") do
+    debugln "Enable heavy flxg optimisation";
+    control.FLXG_OPTIMISE  <- 1;
 
   elif arg=="--nostdlib" do
     debugln "Do not load standard library";
@@ -396,7 +399,7 @@ private noinline proc handle_switch
     control.DOREDUCE  <-  0;
     control.INLINE <- 5;
 
-  elif arg == "--usage=debugging" do
+  elif arg in ("--usage=debugging","--usage=debug") do
     debugln "Set usage debugging";
     control.USAGE  <-  "debugging";
     control.NOOPTIMISE <- 1;
@@ -411,6 +414,7 @@ private noinline proc handle_switch
     control.DOREDUCE  <-  1;
     control.OPTIMISE  <-   list[string]$"-O2";
     control.INLINE <- 25;
+    control.FLXG_OPTIMISE <- 1;
 
   elif arg == "--usage=hyperlight" do
     debugln "Set usage hyperlight";
@@ -418,6 +422,7 @@ private noinline proc handle_switch
     control.DOREDUCE  <-  1;
     control.OPTIMISE  <-   list[string]$"-O2";
     control.INLINE <- 100;
+    control.FLXG_OPTIMISE <- 1;
 
   elif arg == "--help" do
     control.PRINT_HELP <- 1;

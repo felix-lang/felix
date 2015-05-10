@@ -42,6 +42,7 @@ let get_options raw_options =
         | "parse" -> Phase_parse
         | "desugar" -> Phase_desugar
         | "bind" -> Phase_bind
+        | "optimise" -> Phase_optimize
         | "optimize" -> Phase_optimize
         | "lower" -> Phase_lower
         | "codegen" -> Phase_codegen
@@ -52,7 +53,7 @@ let get_options raw_options =
   let options =
   {
     compiler_phase = compiler_phase;
-    optimise    = check_keys raw_options ["opt"; "optimise"];
+    optimise    = check_keys raw_options ["opt"; "optimise";"optimize"];
     doreductions = not (check_key raw_options "no-reduce");
     debug       = check_key raw_options "debug";
     with_comments = check_key raw_options "with-comments";
@@ -146,6 +147,7 @@ let print_options () =
   print_endline "  --output_dir=<none>: .cpp, .hpp, .why etc directory";
   print_endline "  --bundle_dir=<none>: output files needed for C++ compilation to this folder";
   print_endline "  --force : force recompilation";
+  print_endline "  --optimise: enable some expensive optimisations";
   print_endline "  --with-comments : generate code with comments";
   print_endline "  --mangle-names : generate code with fully mangled names";
   print_endline "  --time : show processing time for each stage";
@@ -197,6 +199,6 @@ let parse_args () =
   let compiler_options = { compiler_options with
     include_dirs = include_dirs }
   in
-
+  if compiler_options.optimise then print_endline "Hyperlight optimisation on";
   compiler_options
 

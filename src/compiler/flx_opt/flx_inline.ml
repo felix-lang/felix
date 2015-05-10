@@ -1188,9 +1188,7 @@ and heavily_inline_bbdcl syms uses bsym_table excludes i =
       
       let exes = List.map Flx_bexe.reduce exes in (* term reduction *)
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
-(*
       let exes = fold_vars syms bsym_table uses i ps exes in
-*)
 (*
       let exes = fold_vars2 syms bsym_table exes in
 *)
@@ -1227,9 +1225,7 @@ and heavily_inline_bbdcl syms uses bsym_table excludes i =
 (*
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
 *)
-(*
       let exes = fold_vars syms bsym_table uses i ps exes in
-*)
 (*
       let exes = fold_vars2 syms bsym_table exes in
 *)

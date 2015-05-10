@@ -182,11 +182,11 @@ and xexpr_t sr x =
  | Lst [Id "ast_callback";  sr; qn] -> EXPR_callback (xsr sr,xq "ast_callback" qn)
  | Lst [Id "ast_lambda";  sr; Lst [vs; Lst pss; t; sts]] -> 
    let rt = ti t in
-   let pdef = match rt with TYP_void _ -> `PVar | _ -> `PVal in 
+   let pdef = (* match rt with TYP_void _ -> `PVar | _ -> *) `PVal in 
    EXPR_lambda  (xsr sr, (`GeneratedInlineFunction,xvs vs, map (xps pdef) pss, rt, xsts sts))
  | Lst [Id "ast_object";  sr; Lst [vs; Lst pss; t; sts]] -> 
    let rt = ti t in
-   let pdef = match rt with TYP_void _ -> `PVar | _ -> `PVal in 
+   let pdef = (* match rt with TYP_void _ -> `PVar | _ -> *) `PVal in 
    EXPR_lambda (xsr sr, (`Object,xvs vs, map (xps pdef) pss, rt, xsts sts))
  | Lst [Id "ast_generator";  sr; Lst [vs; Lst pss; t; sts]] -> 
    let rt = ti t in
@@ -571,7 +571,7 @@ and xstatement_t sr x : statement_t =
   | Lst [Id "ast_curry"; sr; id; vs; Lst pss; ret; fk; Lst props; sts] -> let sr = xsr sr in 
     let fret = xret sr ret in
     let rett, _ = fret in 
-    let pdef = match rett with TYP_void _ -> `PVar | _ -> `PVal in
+    let pdef = (*  match rett with TYP_void _ -> `PVar | _ ->*)  `PVal in
     STMT_curry(
       sr,
       xid id,
