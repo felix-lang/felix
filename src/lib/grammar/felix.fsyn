@@ -20,7 +20,6 @@ syntax felix {
     cbind,
     regexps,
     macros,
-    json,
     plugins
   ;
 }

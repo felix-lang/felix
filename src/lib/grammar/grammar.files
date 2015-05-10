@@ -25,7 +25,6 @@ grammar/assertions.fsyn
 grammar/namespaces.fsyn
 grammar/regexps.fsyn
 grammar/cgram.fsyn
-grammar/json.fsyn
 grammar/plugins.fsyn
 grammar/felix.fsyn
 grammar/save.fsyn

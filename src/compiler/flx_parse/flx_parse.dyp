@@ -53,7 +53,9 @@ let define_syntax dyp name dyprods =
     if Drules.mem dssl m.drules then m
     else { m with drules = Drules.add dssl fresh_dssl m.drules }
   in
+(*
   let dyprods = instantiate_rules name dyp.global_data.pcounter dyprods in
+*)
   let global_data,local_data = List.fold_left
     (fun (g,l) x -> add_rule g l dssl x)
     (dyp.global_data, m)
@@ -403,18 +405,8 @@ dyprod:
        (*
        print_endline ("RULE " ^ snd $2);
        *)
-       Rule_Scheme_rule ($1, $2, $3, $4, Flx_parse_ebnf.Action_Kind_Sval, $6)
+       Rule_Scheme_rule ($1, $2, $3, $4, $6)
      }
-
-   | opt_private NAME opt_prio name_list ":" NAME "=" dyalts ";"
-     {
-       if $6 <> "string" then raise Giveup;
-       (*
-       print_endline ("STRING RULE " ^ $2);
-       *)
-       Rule_Scheme_rule ($1, $2, $3, $4, Flx_parse_ebnf.Action_Kind_String, $8)
-     }
-
 
    | "requires" basic_name_comma_list ";"
      {
@@ -438,12 +430,12 @@ dyprod:
        let scm = $5 in
        let action = Action_Scheme scm in
        let anote = "" in
-       let prod = [Grammar_Atom (REGEX (RE_Name name))] in
+       let prod = [Grammar_Regex (RE_Name name)] in
 (*
        print_endline ("Defining literal " ^ name ^ " as " ^ scm);
 *)
        let dyalts = [prod,Flx_parse_srcref.getsr dyp,action,anote] in
-       Rule_Scheme_rule (priv,name,prio,[],Flx_parse_ebnf.Action_Kind_Sval,dyalts) 
+       Rule_Scheme_rule (priv,name,prio,[],dyalts) 
      }
 
   ssre :  ssre(>=ralt_prix) ["|" ssre(>ralt_prix)]+ { RE_Alt ($1::$2) } ralt_prix 
@@ -515,34 +507,24 @@ dyalts:
    | "|"  dyalt dyaltlist { $2 :: $3 }
 
 rhs:
-  | rhs_term { [$1] }
-  | rhs_term rhs { $1 :: $2 }
+  | symbol { [$1] }
+  | symbol rhs { $1 :: $2 }
 
-rhs_term :
-  | rhs_atom { Grammar_Atom $1 }
+symbol:
+  | NAME { Grammar_Nonterminal ($1, Priority_None) }
+  | STRING { Grammar_String $1 }
   | "(" dyalts ")" { Grammar_Group $2 }
+  | NAME "[" NAME "]" { Grammar_Nonterminal ($1, Priority_Greatereq $3) }
+  | NAME "[" ">" NAME "]" { Grammar_Nonterminal ($1, Priority_Greater $4) }
+  | NAME macro_args  { Grammar_Macro_Call ($1,$2) }
+  | symbol "*" { Grammar_Star $1 }
+  | symbol "+" { Grammar_Plus $1 }
+  | symbol "?" { Grammar_Quest $1 }
 
-rhs_atom:
-  | NAME { NAME $1 } /* arbitrary nonterminal */
-  | STRING { STRING $1 } /* the string as an identifier */
-  | "?"{ QUEST }
-  | "+" { PLUS }
-  | "*" { STAR }
-  | "(" { LPAR }
-  | ")" { RPAR }
-  | "[" { LSQB }
-  | "]" { RSQB }
-  | "{" { LBRACE }
-  | "}" { RBRACE }
-  | "," { COMMA }
-  | "<" { LESS }
-  | ">" { GREATER }
-  | "=" { EQUAL }
-  | "==" { EQEQUAL }
-  | "!=" { NOTEQUAL }
-  | "<=" { LESSEQUAL }
-  | ">=" { GREATEREQUAL }
-  | "_" { UNDERSCORE }
+macro_args:
+  | "<" dyalts ">" { [$2] }
+  | "<" dyalts ">" macro_args { $2 :: $4 }
+
 
 stmt:
   | "SCHEME" STRING ";"
