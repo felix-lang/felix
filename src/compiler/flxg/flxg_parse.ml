@@ -38,7 +38,7 @@ let parse_syntax state =
   in
 
   let parsing_device =
-    !(Flx_parse_helper.global_data.Flx_token.parsing_device)
+    !(Flx_parse_data.global_data.Flx_token.parsing_device)
   in
   if state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
   print_endline "PARSED SYNTAX/IMPORT FILES.";
@@ -74,10 +74,10 @@ let load_syntax state =
      let parsing_device = Marshal.from_channel oc in
      close_in oc;
      (* print_endline "Loaded automaton from disk"; *)
-     let env = Flx_parse_helper.global_data.Flx_token.env in
+     let env = Flx_parse_data.global_data.Flx_token.env in
      let scm = local_data.Flx_token.scm in
      Flx_dssl.load_scheme_defs env scm;
-     Flx_parse_helper.global_data.Flx_token.parsing_device := parsing_device;
+     Flx_parse_data.global_data.Flx_token.parsing_device := parsing_device;
      local_data
   with _ ->
     print_endline ("Can't load automaton '"^filename^"'from disk: building!");

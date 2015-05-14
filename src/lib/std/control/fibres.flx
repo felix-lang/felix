@@ -80,7 +80,7 @@ open class Fibres
 
 
   //$ Core user procedure for launching a fibre.
-  proc spawn_fthread (fs:fibre_scheduler) (p:1->0) => spawn_fibre (fs,p.start.mk_thread);
+  proc spawn_fthread (fs:fibre_scheduler) (p:1->0) { spawn_fibre (fs,p.start.mk_thread); }
 
   //$ Execute a single step of a fibre.
   gen step: cont -> cont = "$1->resume()";

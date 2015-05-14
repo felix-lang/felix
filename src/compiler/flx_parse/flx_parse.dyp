@@ -10,8 +10,11 @@ open Ocs_types
 open Dyp
 open Lexing
 open Flx_string
-open Flx_parse_helper
 open Flx_dssl
+open Flx_parse_data
+open Flx_define_syntax
+
+let lexeme x = Dyp.lexeme x
 
 let dyp_merge_Obj_sexpr ol = keep_all ol
 
@@ -34,9 +37,9 @@ let open_syntax dyp namelist =
 
   let m = dyp.local_data in
 
-  let to_install = tran_cls_dssls m.drules m.installed_dssls dssls in
-  let rules, prios = extract_syntax to_install m.drules in
-  let add_rules, bindings = bind_grammar_rules dyp rules in
+  let to_install = Flx_dssl.tran_cls_dssls m.drules m.installed_dssls dssls in
+  let rules, prios = Flx_dssl.extract_syntax to_install m.drules in
+  let add_rules, bindings = Flx_dssl.bind_grammar_rules dyp rules in
   let local_data = 
   { 
     m with installed_dssls = to_install @ m.installed_dssls
@@ -44,23 +47,16 @@ let open_syntax dyp namelist =
   in
   bindings @ [Add_rules add_rules; Local_data local_data; Relation prios]
 
-let define_syntax dyp name dyprods =
+let define_syntax dyp dssl_name dyprods =
   (* NOTE ORDER!! dyprods is reversed, but the fold reverses it again *)
   let sr = Flx_parse_srcref.getsr dyp in
-  let dssl = name in
-  let m = dyp.local_data in
-  let m =
-    if Drules.mem dssl m.drules then m
-    else { m with drules = Drules.add dssl fresh_dssl m.drules }
+  let local_data = dyp.local_data in
+  let local_data =
+    if Drules.mem dssl_name local_data.drules then local_data 
+    else { local_data with drules = Drules.add dssl_name Flx_parse_data.fresh_dssl local_data.drules }
   in
-(*
-  let dyprods = instantiate_rules name dyp.global_data.pcounter dyprods in
-*)
-  let global_data,local_data = List.fold_left
-    (fun (g,l) x -> add_rule g l dssl x)
-    (dyp.global_data, m)
-    dyprods 
-  in
+  let dyprods = Flx_define_syntax.process_rules dssl_name dyp.global_data.pcounter dyprods in
+  let global_data,local_data = Flx_export_syntax.add_rules dssl_name dyp.global_data local_data  dyprods in
   (* This cal tries to avoid gratutions mods to global/local data
      by checking for physical equality. Note changes to any
      embedded mutable data structure propagate anyhow.
@@ -405,7 +401,7 @@ dyprod:
        (*
        print_endline ("RULE " ^ snd $2);
        *)
-       Rule_Scheme_rule ($1, $2, $3, $4, $6)
+       Rule_Unprocessed_Scheme_rule ($1, $2, $3, $4, $6)
      }
 
    | "requires" basic_name_comma_list ";"
@@ -428,14 +424,14 @@ dyprod:
        let name = $3 in
        let prio = Priority_Default in
        let scm = $5 in
-       let action = Action_Scheme scm in
+       let action = Flx_action.Action_Scheme scm in
        let anote = "" in
        let prod = [Grammar_Regex (RE_Name name)] in
 (*
        print_endline ("Defining literal " ^ name ^ " as " ^ scm);
 *)
        let dyalts = [prod,Flx_parse_srcref.getsr dyp,action,anote] in
-       Rule_Scheme_rule (priv,name,prio,[],dyalts) 
+       Rule_Unprocessed_Scheme_rule (priv,name,prio,[],dyalts) 
      }
 
   ssre :  ssre(>=ralt_prix) ["|" ssre(>ralt_prix)]+ { RE_Alt ($1::$2) } ralt_prix 
@@ -469,9 +465,9 @@ dyprod:
   ssre :  NAME {RE_Name $1 } ratom_prix /* probably won't work! */
  
 action:
-   | STRING { Action_Scheme $1 }
-   | "(" sexpr ")"  { Action_Expr $2 }
-   | "{" sstatements "}" { Action_Statements $2 }
+   | STRING { Flx_action.Action_Scheme $1 }
+   | "(" sexpr ")"  { Flx_action.Action_Expr $2 }
+   | "{" sstatements "}" { Flx_action.Action_Statements $2 }
 
 note:
    | NAME STRING
@@ -487,16 +483,16 @@ dyalt:
        let anote = $4 in
        let prod = $1 in
        let action = $3 in
-       let action : action_t =
+       let action : Flx_action.action_t =
          match action with
-         | Action_Scheme _ as x -> x
-         | Action_Expr _ as x -> x
-         | Action_Statements _ as x -> x
-         | Action_None as x -> x
+         | Flx_action.Action_Scheme _ as x -> x
+         | Flx_action.Action_Expr _ as x -> x
+         | Flx_action.Action_Statements _ as x -> x
+         | Flx_action.Action_None as x -> x
        in
        prod,Flx_parse_srcref.getsr dyp,action,anote
      }
-   | rhs { $1,Flx_parse_srcref.getsr dyp,Action_None,"" }
+   | rhs { $1,Flx_parse_srcref.getsr dyp,Flx_action.Action_None,"" }
 
 dyaltlist:
    | { [] }
@@ -522,8 +518,8 @@ symbol:
   | symbol "?" { Grammar_Quest $1 }
 
 macro_args:
-  | "<" dyalts ">" { [$2] }
-  | "<" dyalts ">" macro_args { $2 :: $4 }
+  | "<" symbol ">" { [$2] }
+  | "<" symbol ">" macro_args { $2 :: $4 }
 
 
 stmt:

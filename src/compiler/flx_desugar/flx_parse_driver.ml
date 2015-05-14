@@ -2,7 +2,6 @@ open Flx_token
 open Ocs_types
 open Dyp
 open Flx_srcref
-open Flx_parse_helper
 open Lexing
 open Flx_parse
 
@@ -28,7 +27,7 @@ let parse_lexbuf_with_parser aparser old_local_data lexbuf : local_data_t =
         Flx_parse_srcref.adjust_lineno lexbuf s; Sunspec
       | _ -> raise (Ocs_error.Error ("adjust-linecount: not a string"))
     in
-    let env = Flx_parse_helper.global_data.Flx_token.env in
+    let env = Flx_parse_data.global_data.Flx_token.env in
     Ocs_env.set_pf1 env adjust_line "adjust-linecount"
   end;
 
@@ -78,7 +77,7 @@ let parse_lexbuf_with_parser aparser old_local_data lexbuf : local_data_t =
   in
   local_data
 
-let make_parser_state () : Flx_token.local_data_t = Flx_parse_helper.local_data
+let make_parser_state () : Flx_token.local_data_t = Flx_parse_data.local_data
 
 let parser_data { rev_stmts_as_scheme = r } = r
 
@@ -173,11 +172,11 @@ let create_file_lexbuf ~include_dirs name =
 
 (* ---------------------------------------------------------------------------------------- *)
 let parse_compilation_unit local_data lexbuf : local_data_t = 
-  let global_data = Flx_parse_helper.global_data in
+  let global_data = Flx_parse_data.global_data in
   Flx_parse.dyphack (Flx_parse.compilation_unit ~local_data ~global_data lexbuf)
 
 let parse_syntax_unit local_data lexbuf : local_data_t = 
-  let global_data = Flx_parse_helper.global_data in
+  let global_data = Flx_parse_data.global_data in
   Flx_parse.dyphack (Flx_parse.syntax_unit ~local_data ~global_data lexbuf)
 
 (* ---------------------------------------------------------------------------------------- *)

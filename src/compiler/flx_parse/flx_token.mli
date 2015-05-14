@@ -2,6 +2,7 @@
 type anote_t = string
 
 type priority_level_t = Priority_Default | Priority_Name of string
+type privacy_t = Privacy_Public | Privacy_Private
 
 type priority_relation_t = 
   | Priority_Var
@@ -47,9 +48,9 @@ type token =
   | UNDERSCORE
 
 and rule_t = 
+  privacy_t * (* scope indicator *)
   string * (* non terminal base name *)
   priority_level_t *  (* non terminal priority index *)
-  string list * (* variable names *)
   token list *  (* the RHS production *)
   string *  (* Scheme action code *)
   anote_t *  (* comment *)
@@ -69,7 +70,6 @@ and local_data_t = {
   installed_dssls : string list;
   scm : (Flx_srcref.t * string) list;
   rev_stmts_as_scheme: Ocs_types.sval list;
-  instances : ((string * priority_relation_t) * string) list;
 }
 
 and 'obj global_data_t = {

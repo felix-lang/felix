@@ -1,7 +1,6 @@
 (** Domain Specific Sub-Language, or DSSL representation *)
 open Flx_drules
 open Flx_token
-open Flx_parse_helper
 
 
 (* move this to elsewhere eventually *)
@@ -64,16 +63,15 @@ let extract_syntax to_install dssls =
 
 
 (** Create the bindings from all the rules. *)
-let bind_grammar_rules dyp rules =
+let bind_grammar_rules dyp (rules:(string * rule_t) list) =
   let bindings = ref [] in
   let add_rules = ref [] in
   List.iter
     begin fun rule ->
-      match extend_grammar dyp rule with
-      | Some (rule, action, binding) ->
+      match Flx_export_syntax.extend_grammar dyp rule with
+      | (rule, action, binding) ->
         bindings := binding :: !bindings;
         add_rules := (rule,action) :: !add_rules
-      | None -> ()
     end
     rules
   ;
