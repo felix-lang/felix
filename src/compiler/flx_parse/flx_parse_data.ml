@@ -2,6 +2,7 @@
 let debug = try ignore(Sys.getenv "FLX_DEBUG_PARSER"); true with Not_found -> false
 
 let fresh_dssl = {
+  Flx_token.macros = [];
   Flx_token.regexps = [];
   Flx_token.prios = [];
   Flx_token.rules = [];

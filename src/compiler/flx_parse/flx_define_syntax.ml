@@ -12,26 +12,6 @@ let catmap sep fn ls = String.concat sep (List.map fn ls)
 let uniq_add elt lst =
   if List.mem elt lst then lst else (elt::lst)
 
-type symbol_t = 
-  | Grammar_Nonterminal of string * priority_relation_t
-  | Grammar_String of string
-  | Grammar_Regex of Dyp.regexp 
-  | Grammar_Group of dyalt_t list
-  | Grammar_Macro_Call of string * symbol_t list
-  | Grammar_Star of symbol_t
-  | Grammar_Plus of symbol_t
-  | Grammar_Quest of symbol_t
-
-and dyalt_t = symbol_t list * Flx_srcref.t * Flx_action.action_t * anote_t
-
-type grammar_rule_t = 
-  | Rule_Unprocessed_Scheme_rule of privacy_t * string * priority_level_t * string list * dyalt_t list
-  | Rule_Processed_Scheme_rule of rule_t
-  | Rule_Requires of string list 
-  | Rule_Priorities of string list
-  | Rule_Regex of string * Dyp.regexp 
-  | Rule_Nop
- 
 
 let silly_strtoken k = Flx_prelex.string_of_token k
 
@@ -78,8 +58,8 @@ let find_macros macros name =
 
 type mapping_t = (string  * token) list
 
-let rec calargs sr pcounter macros mapping processed unprocessed args =
-   List.map (mksingle sr pcounter macros mapping processed unprocessed) args
+let rec calargs sr pcounter dssls macros mapping processed unprocessed args =
+   List.map (mksingle sr pcounter dssls macros mapping processed unprocessed) args
 
 and mapnt mapping (s,p) = 
   try 
@@ -90,10 +70,10 @@ and mapnt mapping (s,p) =
   with Not_found -> NONTERMINAL (s,p)
 
 (* Translate parser symbol into token *)
-and mksingle sr pcounter macros (mapping:mapping_t) processed unprocessed (sym:symbol_t): token =
+and mksingle sr pcounter dssls macros (mapping:mapping_t) processed unprocessed (sym:symbol_t): token =
   let mapnt (s,p) = mapnt mapping (s,p) in
 
-  let mks sym = mksingle sr pcounter macros mapping processed unprocessed sym in
+  let mks sym = mksingle sr pcounter dssls macros mapping processed unprocessed sym in
   match sym with
   | Grammar_Nonterminal (s,p)  -> mapnt (s,p)
   | Grammar_String s  -> STRING s
@@ -102,7 +82,7 @@ and mksingle sr pcounter macros (mapping:mapping_t) processed unprocessed (sym:s
   | Grammar_Group dyalts ->
     let x = string_of_int (!pcounter) in incr pcounter;
     let sl = "__grp_" ^ x in
-    fixup_alternatives pcounter macros Privacy_Private sl Priority_Default mapping processed unprocessed dyalts;
+    fixup_alternatives pcounter dssls macros Privacy_Private sl Priority_Default mapping processed unprocessed dyalts;
     NONTERMINAL (sl, Priority_None)
 
   | Grammar_Star h -> 
@@ -137,7 +117,7 @@ and mksingle sr pcounter macros (mapping:mapping_t) processed unprocessed (sym:s
     NONTERMINAL (sl,Priority_None)
 
  | Grammar_Macro_Call (mac,args) ->
-   let args = calargs sr pcounter macros mapping processed unprocessed args in  
+   let args = calargs sr pcounter dssls macros mapping processed unprocessed args in  
    let nparams, macs = find_macros macros mac in
 (*
    print_endline ("Found " ^ string_of_int (List.length macs) ^ 
@@ -150,7 +130,34 @@ and mksingle sr pcounter macros (mapping:mapping_t) processed unprocessed (sym:s
      | Rule_Unprocessed_Scheme_rule (_,_,prio,params,dyalts) ->
        (* Note: there is only one mapping at a time!  *)
        let new_mapping = List.map2 (fun param arg -> param,arg) params args in
-       fixup_alternatives pcounter macros Privacy_Private sl prio new_mapping processed unprocessed dyalts
+       fixup_alternatives pcounter dssls macros Privacy_Private sl prio new_mapping processed unprocessed dyalts
+     | _ -> assert false
+     )
+     macs
+   ;
+   NONTERMINAL (sl,Priority_None)
+
+ | Grammar_External_Macro_Call (dssl_name,mac,args) ->
+   let args = calargs sr pcounter dssls macros mapping processed unprocessed args in  
+   let dssl = 
+     try Drules.find dssl_name dssls 
+     with Not_found -> 
+       failwith ("DSSL " ^ dssl_name ^ " not found in external macro call in "^Flx_srcref.short_string_of_src sr)
+   in 
+   let macros = dssl.macros in
+   let nparams, macs = find_macros macros mac in
+(*
+   print_endline ("Found " ^ string_of_int (List.length macs) ^ 
+     " macros with " ^ string_of_int nparams ^ " params for " ^ mac); 
+*) 
+   let x = string_of_int (!pcounter) in incr pcounter;
+   let sl = mac^ "_"^x in
+   List.iter (fun rule ->
+     match rule with
+     | Rule_Unprocessed_Scheme_rule (_,_,prio,params,dyalts) ->
+       (* Note: there is only one mapping at a time!  *)
+       let new_mapping = List.map2 (fun param arg -> param,arg) params args in
+       fixup_alternatives pcounter dssls macros Privacy_Private sl prio new_mapping processed unprocessed dyalts
      | _ -> assert false
      )
      macs
@@ -158,38 +165,39 @@ and mksingle sr pcounter macros (mapping:mapping_t) processed unprocessed (sym:s
    NONTERMINAL (sl,Priority_None)
 
 
-and flatten sr pcounter macros mapping processed unprocessed (rhs:symbol_t list) =
+
+and flatten sr pcounter dssls macros mapping processed unprocessed (rhs:symbol_t list) =
   let rec aux inp out = match inp with
   | [] -> List.rev out
   | h::t -> 
-    let tok = mksingle sr pcounter macros mapping processed unprocessed h in
+    let tok = mksingle sr pcounter dssls macros mapping processed unprocessed h in
     aux t (tok::out)
   in aux rhs []  
 
-and fixup_alternatives pcounter macros privacy name prio mapping processed unprocessed dyalts =
+and fixup_alternatives pcounter dssls macros privacy name prio mapping processed unprocessed dyalts =
   List.iter
     (fun (rhs,sr,action,anote) ->
-      let prod = flatten sr pcounter macros mapping processed unprocessed rhs in
+      let prod = flatten sr pcounter dssls macros mapping processed unprocessed rhs in
       let action : string = Flx_action.cal_action prod action in
       processed := Rule_Processed_Scheme_rule (privacy, name,prio,prod,action,anote,sr) :: !processed
     )
     dyalts
 
-let inst_rule counter macros processed unprocessed (rule : grammar_rule_t) =
+let inst_rule counter dssls macros processed unprocessed (rule : grammar_rule_t) =
   let mapping = [] in
   match rule with
   | Rule_Unprocessed_Scheme_rule (privacy,name,prio,[],dyalts) ->
-    fixup_alternatives counter macros privacy name prio mapping processed unprocessed dyalts
+    fixup_alternatives counter dssls macros privacy name prio mapping processed unprocessed dyalts
 
   | _ -> print_endline "WOOPS!! Expected mono production"; assert false
 
-let inst_rules counter macros monos : grammar_rule_t list = 
+let inst_rules counter dssls macros monos : grammar_rule_t list = 
   let unprocessed = ref monos in
   let processed = ref [] in
   while List.length (!unprocessed) > 0 do
      let rule = List.hd (!unprocessed) in
      unprocessed := List.tl (!unprocessed);
-     inst_rule counter macros processed unprocessed rule;
+     inst_rule counter dssls macros processed unprocessed rule;
   done;
   List.rev (!processed)
 
@@ -203,7 +211,7 @@ let addentry rulemap name stuff =
   let rulemap = Drules.add name set rulemap in
   rulemap
 
-let reduce_rules rules = 
+let reduce_rules (rules : grammar_rule_t list) = 
   let rulemap = List.fold_left (fun rulemap rule -> match rule with
     | Rule_Processed_Scheme_rule (priv,name,prio,toks,act,note,sr as stuff) -> 
       addentry rulemap name stuff
@@ -281,7 +289,7 @@ let reduce_rules rules =
   rules2
 
 
-let process_rules name counter rules =
+let process_rules name counter dssls rules : (string * grammar_rule_t) list *  grammar_rule_t list =
   (* split rules up *)
   let macros, monos, others = 
     List.fold_left (fun (macros, monos, others) rule -> match rule with
@@ -293,8 +301,8 @@ let process_rules name counter rules =
    ) ([],[],[]) rules
   in
   let macros,monos,others = List.rev macros, List.rev monos, List.rev others in
-  let monos = inst_rules counter macros monos in
+  let monos = inst_rules counter dssls macros monos in
   let monos = reduce_rules monos in
   let result =  others @ monos  in
-  result
+  macros,result
 
