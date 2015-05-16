@@ -15,6 +15,8 @@ syntax patterns {
   //$ Short form pattern match statement with
   //$ implicit handling of trailing wildcard
   //$ by following statements.
+  //
+  // NOTE: THIS DOES NOT WORK! DANGLING ELSE PROBLEM!
   stmt:= "match" sexpr "with" stmt_matching+ "otherwise" stmt+  =>#
     """
     (let*
@@ -32,7 +34,7 @@ syntax patterns {
   //$ If it matches any contained pattern variables are assigned
   //$ the values in the corresponding possition of the expression,
   //$ and the statements are executed.
-  stmt_matching := "|" spattern "=>" stmt+ =># "`(,_2 ,_4)";
+  private stmt_matching := "|" spattern "=>" stmt+ =># "`(,_2 ,_4)";
 
   //$ Pattern match expression with terminator.
   satom := pattern_match "endmatch" =># "_1";
@@ -65,110 +67,110 @@ syntax patterns {
   //$ Match with naming of subexpression.
   //$ Matches the pattern against the corresponding subexpression,
   //$ and gives it a name. 
-  sas_pattern := scons_pattern "as" sname =># "`(pat_as ,_sr ,_1 ,_3)";
-  sas_pattern := scons_pattern =># "_1";
+  private sas_pattern := scons_pattern "as" sname =># "`(pat_as ,_sr ,_1 ,_3)";
+  private sas_pattern := scons_pattern =># "_1";
 
   //$ Match a non-empty list.
   //$ The LHS is the head of the list and the RHS is the tail.
   //$ Does not match the empty list.
-  scons_pattern := stuple_cons_pattern "!" scons_pattern =>#
+  private scons_pattern := stuple_cons_pattern "!" scons_pattern =>#
     '''`(pat_nonconst_ctor ,_sr ,(nos "Cons") (pat_tuple ,_sr (,_1 ,_3)))''';
-  scons_pattern := stuple_cons_pattern =># "_1";
+  private scons_pattern := stuple_cons_pattern =># "_1";
 
   //$ Match a tuple of at least 3 elements.
   //$ The LHS is the first element of the tuple.
   //$ The RHS is the rest of the tuple.
-  stuple_cons_pattern := stuple_pattern ",," stuple_cons_pattern =>#
+  private stuple_cons_pattern := stuple_pattern ",," stuple_cons_pattern =>#
     "`(pat_tuple_cons ,_sr ,_1 ,_3)";
-  stuple_cons_pattern := stuple_pattern =># "_1";
+  private stuple_cons_pattern := stuple_pattern =># "_1";
 
   //$ Match a tuple with 2 or more components.
-  stuple_pattern := scoercive_pattern ("," scoercive_pattern )* =>#
+  private stuple_pattern := scoercive_pattern ("," scoercive_pattern )* =>#
     "(chain 'pat_tuple _1 _2)";
 
   //$ Match a value with a coercion.
   //$ The subexpression corresponding to the LHS is compared.
   //$ If it matches the result is coerced to the RHS type expression. 
-  scoercive_pattern := sapplicative_pattern "|>" x[sarrow_pri] =>#
+  private scoercive_pattern := sapplicative_pattern "|>" x[sarrow_pri] =>#
     "`(pat_coercion ,_sr ,_1 ,_3)";
-  scoercive_pattern := sapplicative_pattern =># "_1";
+  private scoercive_pattern := sapplicative_pattern =># "_1";
 
   //$ Match a non-constant sum type constructor
   //$ that is, one with an argument.
   //$ The LHS name must match the constructor used to make the value.
   //$ The RHS pattern is matched against the argument it was constructed with.
-  sapplicative_pattern := sctor_name sargument_pattern =>#
+  private sapplicative_pattern := sctor_name sargument_pattern =>#
     "`(pat_nonconst_ctor ,_sr ,_1 ,_2)";
 
-  sargument_pattern := satomic_pattern =># "_1";
-  sargument_pattern := "?" sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_2)";
-  sargument_pattern := "val" sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_2)";
-  sargument_pattern := "#" sctor_name =># "`(pat_const_ctor ,_sr ,_2)";
-  sargument_pattern := "case" sinteger =># "`(pat_const_ctor ,_sr (ast_case_tag ,_sr ,_2))";
+  private sargument_pattern := satomic_pattern =># "_1";
+  private sargument_pattern := "?" sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_2)";
+  private sargument_pattern := "val" sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_2)";
+  private sargument_pattern := "#" sctor_name =># "`(pat_const_ctor ,_sr ,_2)";
+  private sargument_pattern := "case" sinteger =># "`(pat_const_ctor ,_sr (ast_case_tag ,_sr ,_2))";
 
-  sargument_pattern := sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_1)";
+  private sargument_pattern := sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_1)";
 
 
-  sapplicative_pattern := satomic_pattern =># "_1";
-  sapplicative_pattern := "?" sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_2)";
-  sapplicative_pattern := "val" sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_2)";
-  sapplicative_pattern := "#" sctor_name =># "`(pat_const_ctor ,_sr ,_2)";
-  sapplicative_pattern := "case" sinteger =># "`(pat_const_ctor ,_sr (ast_case_tag ,_sr ,_2))";
+  private sapplicative_pattern := satomic_pattern =># "_1";
+  private sapplicative_pattern := "?" sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_2)";
+  private sapplicative_pattern := "val" sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_2)";
+  private sapplicative_pattern := "#" sctor_name =># "`(pat_const_ctor ,_sr ,_2)";
+  private sapplicative_pattern := "case" sinteger =># "`(pat_const_ctor ,_sr (ast_case_tag ,_sr ,_2))";
 
   // CHANGE PROTOCOL SO A SINGLE NAME IS A VARIABLE NOT A CONST CTOR!!!
   // sapplicative_pattern := sctor_name =># "`(pat_const_ctor ,_sr ,_1)";
-  sapplicative_pattern := sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_1)";
+  private sapplicative_pattern := sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_1)";
 
   //$ The sum type constructor can either be a qualified name...
-  sctor_name := sname =># "`(ast_name ,_sr ,_1 ())";
+  private sctor_name := sname =># "`(ast_name ,_sr ,_1 ())";
 
   //$ or it can be a case literal.
-  sctor_name := "case" sinteger =># "`(ast_case_tag ,_sr ,_2)";
+  private sctor_name := "case" sinteger =># "`(ast_case_tag ,_sr ,_2)";
 
   //-----------------------------------------------------------------------
   // atomic pattern excludes name, ?name and qualified names
 
   //$ Match the value true = case 1 of 2.
-  satomic_pattern := "true" =># "`(pat_const_ctor ,_sr (ast_case_tag ,_sr 1))";
+  private satomic_pattern := "true" =># "`(pat_const_ctor ,_sr (ast_case_tag ,_sr 1))";
 
   //$ Match the value false = case 0 of 2.
-  satomic_pattern := "false" =># "`(pat_const_ctor ,_sr (ast_case_tag ,_sr 0))";
+  private satomic_pattern := "false" =># "`(pat_const_ctor ,_sr (ast_case_tag ,_sr 0))";
 
   //$ Match anything without naming the subexpression.
-  satomic_pattern := "_" =># "`(pat_any ,_sr)";
+  private satomic_pattern := "_" =># "`(pat_any ,_sr)";
 
   //$ Precedence control.
-  satomic_pattern := "(" spattern ")" =># "_2";
+  private satomic_pattern := "(" spattern ")" =># "_2";
 
   //$ Match the unit tuple.
-  satomic_pattern := "(" ")" =># "`(pat_tuple ,_sr ())";
+  private satomic_pattern := "(" ")" =># "`(pat_tuple ,_sr ())";
 
   //$ Match a record.
   //$ The record must have fields with the given names.
   //$ It may have more fields though, these are ignored.
-  satomic_pattern :=  "(" spat_assign ("," spat_assign )* ")" =>#
+  private satomic_pattern :=  "(" spat_assign ("," spat_assign )* ")" =>#
     "`(pat_record ,_sr ,(cons _2 (map second _3)))"
   ;
-    spat_assign := sname "=" spattern =># "`(,_1 ,_3)";
+    private spat_assign := sname "=" spattern =># "`(,_1 ,_3)";
 
   //$ Match an arbitrary expression.
   //$ Equivalent to 
   //$
   //$  ?name when name == expr.
   //$
-  satomic_pattern := "$" "(" sexpr ")" =># "`(pat_expr ,_sr ,_3)";
+  private satomic_pattern := "$" "(" sexpr ")" =># "`(pat_expr ,_sr ,_3)";
 
   //$ Match against any literal value.
   //$ This includes integers, strings, whatever.
   //$ The underlying type must support equality operator (==).
   //$ Usually it would be instance of class Eq.
-  satomic_pattern := sliteral =># "`(pat_literal ,_sr ,_1)";
+  private satomic_pattern := sliteral =># "`(pat_literal ,_sr ,_1)";
 
   //$ Match against a range specified by two literals.
   //$ The range is inclusive.
   //$ The underlying type must support less than operator (<).
   //$ Usually it would be an instance of class Tord.
-  satomic_pattern := sliteral ".." sliteral =># "`(pat_range ,_sr ,_1 ,_3)";
+  private satomic_pattern := sliteral ".." sliteral =># "`(pat_range ,_sr ,_1 ,_3)";
 
 }
 

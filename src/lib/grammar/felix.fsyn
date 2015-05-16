@@ -1,5 +1,6 @@
 syntax felix {
   requires
+    list,
     lexer,
     statements,
     type_decls,

@@ -47,11 +47,11 @@ syntax requirements {
   srequires_clause := sepsilon =># "'rreq_true";
 
   //$ A requirement on a requirement defined by name elsewhere.
-  srequirement:= squalified_name =># "`(Named_req ,_1)";
+  private srequirement:= squalified_name =># "`(Named_req ,_1)";
 
   //$ A generic "catch all" requirement or specification
   //$ of some property named by a string.
-  srequirement :=  "property" sstring =># "`(Property_req ,_2)";
+  private srequirement :=  "property" sstring =># "`(Property_req ,_2)";
 
   //$ A dependency on an external package with a given name.
   //$ Also known as a resource abstraction.
@@ -83,7 +83,7 @@ syntax requirements {
   //$
   //$ Instead the system installer is required, once,
   //$ to provide the resource database.
-  srequirement :=  "package" scode_spec =># "`(Package_req ,_2)";
+  private srequirement :=  "package" scode_spec =># "`(Package_req ,_2)";
 
   //$ The scanner requirement applies only to a C type binding.
   //$ It specifies the name of a C function which the garbage
@@ -91,7 +91,7 @@ syntax requirements {
   //$
   //$ By default, if no scanner is specified for a C type,
   //$ the type is assumed not to contain any Felix pointers.
-  srequirement :=  "scanner" scode_spec =># "`(Scanner_req ,_2)";
+  private srequirement :=  "scanner" scode_spec =># "`(Scanner_req ,_2)";
 
   //$ The finaliser requirement applies only to a C type binding.
   //$ It specifies the name of a C function which the garbage
@@ -99,45 +99,45 @@ syntax requirements {
   //$ the underlying memory.
   //$
   //$ By default, if no finaliser is specifed, the C++ destructor is called.
-  srequirement :=  "finaliser" scode_spec =># "`(Finaliser_req ,_2)";
+  private srequirement :=  "finaliser" scode_spec =># "`(Finaliser_req ,_2)";
 
   //$ The encoder requirement applies only to a C type binding.
   //$ It specifies the name of a C function which can be called 
   //$ to serialise one element of the object.
   //$ 
   //$ By default, if no encoder is specifed, memcpy is used.
-  srequirement :=  "encoder" scode_spec =># "`(Encoder_req ,_2)";
+  private srequirement :=  "encoder" scode_spec =># "`(Encoder_req ,_2)";
 
   //$ The decoder requirement applies only to a C type binding.
   //$ It specifies the name of a C function which can be called 
   //$ to deserialise one element of the object.
   //$ 
   //$ By default, if no decoder is specifed, memcpy is used.
-  srequirement :=  "decoder" scode_spec =># "`(Decoder_req ,_2)";
+  private srequirement :=  "decoder" scode_spec =># "`(Decoder_req ,_2)";
 
 
   //$ Requirement expressions. Deprecated.
-  srequirement_atom:= srequirement =># "`(rreq_atom ,_1)";
+  private srequirement_atom:= srequirement =># "`(rreq_atom ,_1)";
 
   //$ Requirement expressions. Deprecated.
-  srequirement_atom:= "(" srequirements ")" =># "_2";
+  private srequirement_atom:= "(" srequirements ")" =># "_2";
 
   //$ Requirement expressions. Deprecated.
-  srequirement_and:= srequirement_and "and" srequirement_atom =>#
+  private srequirement_and:= srequirement_and "and" srequirement_atom =>#
     "`(rreq_and ,_1 ,_3)";
-  srequirement_and:= srequirement_atom =># "_1";
+  private srequirement_and:= srequirement_atom =># "_1";
 
   //$ Requirement expressions. Deprecated.
-  srequirement_or:= srequirement_or "or" srequirement_and =>#
+  private srequirement_or:= srequirement_or "or" srequirement_and =>#
     "`(rreq_or ,_1 ,_3)";
-  srequirement_or:= srequirement_and =># "_1";
+  private srequirement_or:= srequirement_and =># "_1";
 
   //$ Requirement expressions: a comma separated list
   //$ of requirements specified each one of the requirements
   //$ applies independently.
-  srequirements:= srequirements "," srequirement_or =>#
+  private srequirements:= srequirements "," srequirement_or =>#
     "`(rreq_and ,_1 ,_3)";
-  srequirements:= srequirement_or =># "_1";
+  private srequirements:= srequirement_or =># "_1";
 
   //$ The body requirement is a floating requirement that
   //$ specifies that the given code
@@ -146,7 +146,7 @@ syntax requirements {
   //$
   //$ It can be used to emit utiliy functions
   //$ written in C.
-  srequirement := "body" scode_spec =># "`(Body_req ,_2)";
+  private srequirement := "body" scode_spec =># "`(Body_req ,_2)";
 
   //$ The header requirement is a floating requirement that
   //$ specifies that the given code
@@ -156,7 +156,7 @@ syntax requirements {
   //$ It is typically used to emit a "#include" directive
   //$ so that the requiring binding has relevant types
   //$ and functions available.
-  srequirement := "header" scode_spec =># "`(Header_req ,_2)";
+  private srequirement := "header" scode_spec =># "`(Header_req ,_2)";
 
   //$ A Felix string used as a code specification
   //$ is treated as a template with special coding

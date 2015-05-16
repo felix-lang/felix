@@ -3,11 +3,13 @@
 syntax assertions {
   requires statements;
 
+  stmt = assertion_stmt;
+
   //$ The usual assert statement.
   //$ Abort the program if the argument expression evaluates to false
   //$ when control flows through the assert statement.
   //$ Cannot be switched off!
-  stmt := "assert" sexpr ";" =># "`(ast_assert ,_sr ,_2)";
+  private assertion_stmt := "assert" sexpr ";" =># "`(ast_assert ,_sr ,_2)";
 
   //$ Define an axiom with a general predicate.
   //$ An axiom is a function which is true for all arguments.
@@ -15,7 +17,7 @@ syntax assertions {
   //$ can be used to specify semantics and form the basis
   //$ of reasoning about semantics which goes beyond
   //$ structure.
-  stmt  := "axiom" sdeclname sfun_arg ":" sexpr ";" =>#
+  private assertion_stmt  := "axiom" sdeclname sfun_arg ":" sexpr ";" =>#
     """
       `(ast_axiom ,_sr ,(first _2) ,(second _2) ,_3 (Predicate ,_5))
     """;
@@ -27,7 +29,7 @@ syntax assertions {
   //$ replaced by the other without any observable difference
   //$ in behaviour in any program, this can be asserted even
   //$ if the type does not provide an equality operator (==).
-  stmt  := "axiom" sdeclname sfun_arg ":" sexpr "=" sexpr ";" =>#
+  private assertion_stmt  := "axiom" sdeclname sfun_arg ":" sexpr "=" sexpr ";" =>#
     """
       `(ast_axiom ,_sr ,(first _2) ,(second _2) ,_3 (Equation (,_5 ,_7)))
     """;
@@ -35,7 +37,7 @@ syntax assertions {
   //$ A lemma is a proposition which it is expected could
   //$ be proved by a good automatic theorem prover,
   //$ given the axioms. This is the predicate form.
-  stmt  := "lemma" sdeclname sfun_arg ":" sexpr ";" =>#
+  private assertion_stmt  := "lemma" sdeclname sfun_arg ":" sexpr ";" =>#
     """
       `(ast_lemma ,_sr ,(first _2) ,(second _2) ,_3 (Predicate ,_5))
     """;
@@ -43,7 +45,7 @@ syntax assertions {
   //$ A lemma is a proposition which it is expected could
   //$ be proved by a good automatic theorem prover,
   //$ given the axioms. This is the equational form.
-  stmt  := "lemma" sdeclname sfun_arg ":" sexpr "=" sexpr ";" =>#
+  private assertion_stmt  := "lemma" sdeclname sfun_arg ":" sexpr "=" sexpr ";" =>#
     """
       `(ast_lemma ,_sr ,(first _2) ,(second _2) ,_3 (Equation (,_5 ,_7)))
     """;
@@ -56,7 +58,7 @@ syntax assertions {
   //$ plain text in a string as a hint to the reader.
   //$
   //$ This is the predicative form.
-  stmt  := "theorem" sdeclname sfun_arg ":" sexpr proof? ";" =>#
+  private assertion_stmt  := "theorem" sdeclname sfun_arg ":" sexpr proof? ";" =>#
     """
       `(ast_axiom ,_sr ,(first _2) ,(second _2) ,_3 (Predicate ,_5))
     """;
@@ -70,7 +72,7 @@ syntax assertions {
   //$ plain text in a string as a hint to the reader.
   //$
   //$ This is the equational form.
-  stmt  := "theorem" sdeclname sfun_arg ":" sexpr "=" sexpr proof? ";" =>#
+  private assertion_stmt  := "theorem" sdeclname sfun_arg ":" sexpr "=" sexpr proof? ";" =>#
     """
       `(ast_axiom ,_sr ,(first _2) ,(second _2) ,_3 (Equation (,_5 ,_7)))
     """;
@@ -95,7 +97,7 @@ syntax assertions {
   //$ before and after inlining, since that can destroy
   //$ or create candidate patterns.
 
-  stmt  := "reduce" sdeclname sreduce_args ":" sexpr "=>" sexpr ";" =>#
+  private assertion_stmt  := "reduce" sdeclname sreduce_args ":" sexpr "=>" sexpr ";" =>#
     """
       `(ast_reduce ,_sr ,(first _2) ,(second _2) ,_3 ,_5 ,_7)
     """;

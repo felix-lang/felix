@@ -2,11 +2,13 @@
 syntax namespaces {
   requires statements;
 
+  stmt = namespace_stmt;
+
   //$ Create a new solo name and bind it to an existing name.
   //$ NOTE: it doesn't rename anything!
   //$ Used to inject solo names into a namespace.
 
-  stmt := "rename" sdeclname "=" squalified_name ";" =>#
+  private namespace_stmt := "rename" sdeclname "=" squalified_name ";" =>#
     """
     `(ast_inherit ,_sr ,(first _2) ,(second _2) ,_4)
     """;
@@ -14,14 +16,14 @@ syntax namespaces {
   //$ Create a new name for an existing set of function names.
   //$ NOTE: it doesn't rename anything!
   //$ Used to inject an overload set into a namespace.
-  stmt := "rename" "fun" sdeclname "=" squalified_name ";" =>#
+  private namespace_stmt := "rename" "fun" sdeclname "=" squalified_name ";" =>#
     """
     `(ast_inherit_fun ,_sr ,(first _3) ,(second _3) ,_5)
     """;
 
   //$ Inject all the public members of a class or module
   //$ into a namespace.
-  stmt := "inherit" stvarlist squalified_name ";" =># 
+  private namespace_stmt := "inherit" stvarlist squalified_name ";" =># 
     "`(ast_inject_module ,_sr ,_2 ,_3)";
 
   //$ Inject all the public members of a class or module
@@ -34,15 +36,15 @@ syntax namespaces {
   //$
   //$ Open makes names available for use in a namespace
   //$ without making them members for export.
-  stmt := "open" stvarlist squalified_name ";" =>#
+  private namespace_stmt := "open" stvarlist squalified_name ";" =>#
     "`(ast_open ,_sr ,_2 ,_3)";
 
   //$ Open a single name to a namespace bound to the given qualified name.
-  stmt := "use" sname "=" squalified_name ";" =># "`(ast_use ,_sr ,_2 ,_4)";
+  private namespace_stmt := "use" sname "=" squalified_name ";" =># "`(ast_use ,_sr ,_2 ,_4)";
 
   //$ A short form for opening a single name as the
   //$ base part of a qualified name.
-  stmt := "use" squalified_name ";" =>#
+  private namespace_stmt := "use" squalified_name ";" =>#
     """
     (let ((name
       (if (eq? (first _2) 'ast_lookup) (cadadr _2)
@@ -53,14 +55,14 @@ syntax namespaces {
 
   //$ Define a module.
   //$ DEPRECATED. Use classes instead.
-  stmt := "module" sdeclname "=" ? scompound =>#
+  private namespace_stmt := "module" sdeclname "=" ? scompound =>#
     """
     `(ast_untyped_module ,_sr ,(first _2) ,(second _2) ,_4)
      """;
 
   //$ Define a module and open in it in the current scope.
   //$ DEPRECATED: Use classes instead.
-  stmt := "open" "module" sdeclname "=" ? scompound =>#
+  private namespace_stmt := "open" "module" sdeclname "=" ? scompound =>#
     """
     `(ast_seq ,_sr (
       (ast_untyped_module ,_sr ,(first _3) ,(second _3) ,_5)
@@ -77,13 +79,13 @@ syntax namespaces {
   //$
   //$ NOTE: polymorphic classes may not contain variables.
   //$ Only variables of non-polymorphic classes can be instantiated.
-  stmt := "class" sdeclname "=" ? scompound =>#
+  private namespace_stmt := "class" sdeclname "=" ? scompound =>#
     """
     `(ast_typeclass ,_sr ,(first _2) ,(second _2) ,_4)
     """;
 
   //$ Define a class and open it.
-  stmt := "open" "class" sdeclname "=" ? scompound =>#
+  private namespace_stmt := "open" "class" sdeclname "=" ? scompound =>#
     """
     `(ast_seq ,_sr (
       (ast_typeclass ,_sr ,(first _3) ,(second _3) ,_5)
@@ -100,7 +102,7 @@ syntax namespaces {
   //$ Members of instances which are not overrides are private
   //$ to the instance.
   //$
-  stmt := "instance" stvarlist squalified_name "=" ? scompound =>#
+  private namespace_stmt := "instance" stvarlist squalified_name "=" ? scompound =>#
     """
     `(ast_instance ,_sr ,_2 ,_3 ,_5)
     """;
@@ -118,7 +120,8 @@ syntax namespaces {
   //$ with var x = 1 do var y = x; done
   //$ println$ x; // prints 42 not 1
   //$
-  stmt := "with" sstatements "do" sstatements "done" =>#
+  //$ This is the statement form of a let expression ..
+  private namespace_stmt := "with" stmt+ "do" stmt* "done" =>#
   """
   (let* 
     (

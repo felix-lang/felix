@@ -27,14 +27,14 @@ syntax regexps {
   x[sapplication_pri] := "regexp" "(" sregexp[ralt_pri] ")" =># "_3";
 
   //$ Alternatives.
-  sregexp[ralt_pri] := sregexp[>ralt_pri] ("|" sregexp[>ralt_pri])+ =># 
+  private sregexp[ralt_pri] := sregexp[>ralt_pri] ("|" sregexp[>ralt_pri])+ =># 
     """`(ast_apply ,_sr (  
       ,(regdef "Alts")
       (ast_apply ,_sr (,(noi 'list) ,(cons _1 (map second _2))))))"""
   ;
 
   //$ Sequential concatenation.
-  sregexp[rseq_pri] := sregexp[>rseq_pri] (sregexp[>rseq_pri])+ =># 
+  private sregexp[rseq_pri] := sregexp[>rseq_pri] (sregexp[>rseq_pri])+ =># 
     """`(ast_apply ,_sr ( 
       ,(regdef "Seqs")
       (ast_apply ,_sr (,(noi 'list) ,(cons _1 _2)))))"""
@@ -43,42 +43,42 @@ syntax regexps {
 
   //$ Postfix star (*).
   //$ Kleene closure: zero or more repetitions.
-  sregexp[rpostfix_pri] := sregexp[rpostfix_pri] "*" =># 
+  private sregexp[rpostfix_pri] := sregexp[rpostfix_pri] "*" =># 
     """`(ast_apply ,_sr ( ,(regdef "Rpt") (,_1,0,-1)))"""
   ;
 
   //$ Postfix plus (+).
   //$ One or more repetitions.
-  sregexp[rpostfix_pri] := sregexp[rpostfix_pri] "+" =>#
+  private sregexp[rpostfix_pri] := sregexp[rpostfix_pri] "+" =>#
     """`(ast_apply ,_sr ( ,(regdef "Rpt") (,_1,1,-1)))"""
   ;
 
   //$ Postfix question mark (?).
   //$ Optional. Zero or one repetitions.
-  sregexp[rpostfix_pri] := sregexp[rpostfix_pri] "?" =>#
+  private sregexp[rpostfix_pri] := sregexp[rpostfix_pri] "?" =>#
     """`(ast_apply ,_sr (,(regdef "Rpt") (,_1,0,1)))"""
   ;
 
   //$ Parenthesis. Non-capturing group.
-  sregexp[ratom_pri] := "(" sregexp[ralt_pri] ")" =># "_2";
+  private sregexp[ratom_pri] := "(" sregexp[ralt_pri] ")" =># "_2";
 
   //$ Group psuedo function.
   //$ Capturing group.
-  sregexp[ratom_pri] := "group" "(" sregexp[ralt_pri] ")" =># 
+  private sregexp[ratom_pri] := "group" "(" sregexp[ralt_pri] ")" =># 
     """`(ast_apply ,_sr ( ,(regdef "Group") ,_3))"""
   ;
 
   //$ The charset prefix operator.
   //$ Treat the string as a set of characters,
   //$ that is, one of the contained characters.
-  sregexp[ratom_pri] := "charset" String =># 
+  private sregexp[ratom_pri] := "charset" String =># 
     """`(ast_apply ,_sr ( ,(regdef "Charset") ,_2))"""
   ;
 
   //$ The string literal.
   //$ The given sequence of characters.
   //$ Any valid Felix string can be used here.
-  sregexp[ratom_pri] := String =># 
+  private sregexp[ratom_pri] := String =># 
     """`(ast_apply ,_sr ( ,(regdef "String") ,_1)) """
   ;
 
@@ -86,19 +86,19 @@ syntax regexps {
   //$ Treat the argument string expression as
   //$ a Perl regular expression, with constraints
   //$ as specified for Google RE2.
-  sregexp[ratom_pri] := "perl" "(" sexpr ")" =># 
+  private sregexp[ratom_pri] := "perl" "(" sexpr ")" =># 
     """`(ast_apply ,_sr ( ,(regdef "Perl") ,_3)) """
   ;
 
   //$ The regex psuedo function.
   //$ Treat the argument Felix expression of type Regdef::regex
   //$ as a regular expression.
-  sregexp[ratom_pri] := "regex" "(" sexpr ")" =># "_3";
+  private sregexp[ratom_pri] := "regex" "(" sexpr ")" =># "_3";
 
   //$ Identifier.
   //$ Must name a previously defined variable of type Regdef:;regex.
   //$ For example, the LHS of a regdef binder.
-  sregexp[ratom_pri] := sname=># "`(ast_name ,_sr ,_1 ())";
+  private sregexp[ratom_pri] := sname=># "`(ast_name ,_sr ,_1 ())";
  
 }
 

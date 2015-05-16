@@ -14,7 +14,7 @@ push_back (v,2);
 push_back (v,3);
 
 var j = 0; until j==3 do
-  print v.[j]; endl;
+  print v.[j.size]; endl;
   ++j;
 done;
 
@@ -26,7 +26,7 @@ insert(m,1,23);
 insert(m,2,423);
 
 j = 0; until j==3 do
-  print m.[j]; endl;
+  print m.[j.size]; endl;
   ++j;
 done;
 

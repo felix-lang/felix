@@ -114,29 +114,26 @@ syntax functions {
   sfunction := "invariant" sexpr ";" =># "`(ast_invariant, _sr, _2)";
 
   //$ Function parameter with type and default value.
-  sparameter := sparam_qual sname ":" x[sarrow_pri] "=" x[sor_condition_pri] =># "`(,_1 ,_2 ,_4 (some ,_6))";
+  private sparameter := sparam_qual sname ":" x[sarrow_pri] "=" x[sor_condition_pri] =># "`(,_1 ,_2 ,_4 (some ,_6))";
 
   //$ Function parameter with type.
-  sparameter := sparam_qual sname ":" x[sarrow_pri] =># "`(,_1 ,_2 ,_4 none)";
+  private sparameter := sparam_qual sname ":" x[sarrow_pri] =># "`(,_1 ,_2 ,_4 none)";
  
   //$ Function parameter without type.
   //$ Defaults to polymorphic in unnamed type variable.
-  sparameter := sparam_qual sname =># "`(,_1 ,_2 ,(noi 'typ_none) none)";
+  private sparameter := sparam_qual sname =># "`(,_1 ,_2 ,(noi 'typ_none) none)";
 
   //$ Empty parameter tuple.
-  sparameter_comma_list := sepsilon =># "()";
-
-  //$ Populated parameter tuple.
-  sparameter_comma_list := sparameter ("," sparameter)* =># "(cons _1 (map second _2))";
+  private sparameter_comma_list = list::commalist0<sparameter>;
 
   //$ Parameter qualifier: val.
-  sparam_qual := "val" =># "'PVal";
+  private sparam_qual := "val" =># "'PVal";
 
   //$ Parameter qualifier: var.
-  sparam_qual := "var" =># "'PVar";
+  private sparam_qual := "var" =># "'PVar";
 
   //$ Default parameter qualifier is val.
-  sparam_qual := sepsilon =># "'PDef";
+  private sparam_qual := sepsilon =># "'PDef";
 
   //$ Function tuple parameter with pre-condition.
   sfun_arg :=  "(" sparameter_comma_list "when" sexpr ")" =># "`(,_2 (some ,_4))";
@@ -227,7 +224,7 @@ syntax functions {
     )
     """;
 
-    stypeexpr_comma_list := stypeexpr ("," stypeexpr)* =># "(cons _1 (map second _2))";
+    stypeexpr_comma_list = list::commalist1<stypeexpr>;
 
 
   sopt_cstring := "=" scode_spec =># "`(some ,_2)";
@@ -271,16 +268,12 @@ syntax functions {
   //$ Procedure has C function type (with void result type).
   sproc_kind := "cproc" =># "'CFunction";
 
-  sopt_traint_eq:= "expect" sexpr "=" =># "`(some ,_2)";
-  sopt_traint_eq:= "=" =># "'none";
-  sopt_traint_eq:= sepsilon =># "'none";
+  private sopt_traint_eq:= "expect" sexpr "=" =># "`(some ,_2)";
+  private sopt_traint_eq:= "=" =># "'none";
+  private sopt_traint_eq:= sepsilon =># "'none";
 
-  sopt_traint:= "expect" sexpr =># "`(some ,_2)";
-  sopt_traint:= sepsilon =># "'none";
-
-  sctor_init := sname "(" sexpr ")" =># "`(,_1 ,_3)";
-  sctor_inits := ":" sctor_init ("," sctor_init)* =># "(cons _2 _3)";
-  sctor_inits := sepsilon =># "()";
+  private sopt_traint:= "expect" sexpr =># "`(some ,_2)";
+  private sopt_traint:= sepsilon =># "'none";
 
   //$ Short form constructor function.
   //$ The name of the function must be a type name.

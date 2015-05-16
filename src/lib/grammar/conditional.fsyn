@@ -1,28 +1,30 @@
 //$ Basic conditional statements.
 syntax conditional 
 {
+  stmt = if_stmt;
+
   //$ Short form conditional goto statement.
-  stmt := "if" sexpr "goto" sname ";" =># "`(ast_ifgoto ,_sr ,_2 ,_4)";
+  if_stmt := "if" sexpr "goto" sname ";" =># "`(ast_ifgoto ,_sr ,_2 ,_4)";
 
   //$ Short form conditional return statement.
-  stmt := "if" sexpr "return" ";" =># "`(ast_ifreturn ,_sr ,_2)";
-  stmt := "if" sexpr "return" sexpr ";" =># "`(ast_ifdo ,_sr ,_2 ((ast_fun_return ,_sr ,_4)) ())";
+  if_stmt := "if" sexpr "return" ";" =># "`(ast_ifreturn ,_sr ,_2)";
+  if_stmt := "if" sexpr "return" sexpr ";" =># "`(ast_ifdo ,_sr ,_2 ((ast_fun_return ,_sr ,_4)) ())";
 
   //$ Short form conditional call statement.
-  stmt := "if" sexpr "call" sexpr ";" =>#
+  if_stmt := "if" sexpr "call" sexpr ";" =>#
     "`(ast_ifdo ,_sr ,_2 (,(cons 'ast_call (cons _sr (splitapply _4))))())";
 
   //$ Short form one branch conditional.
-  stmt := "if" sexpr "do" sstatements "done" =>#
+  if_stmt := "if" sexpr "do" stmt* "done" =>#
     "`(ast_ifdo ,_sr ,_2 ,_4 ())";
 
   //$ Short form one branch conditional.
-  stmt := "if" sexpr "begin" sstatements "end" =>#
+  if_stmt := "if" sexpr "begin" stmt* "end" =>#
     "(block (list `(ast_ifdo ,_sr ,_2 ,_4 ())))";
 
 
   //$ Perl style conditional.
-  stmt := sexpr "??" stmt =>#
+  if_stmt := sexpr "??" stmt =>#
     "`(ast_ifdo ,_sr ,_1 (,_3) ())";
 
   //$ General conditional chain statement.
@@ -35,26 +37,26 @@ syntax conditional
   //$ else
   //$  ..
   //$ done
-  stmt := "if" sexpr "do" sstatements selse_clause "done" =>#
+  if_stmt := "if" sexpr "do"  stmt* selse_clause "done" =>#
     "`(ast_ifdo ,_sr ,_2 ,_4 ,_5)";
 
-  stmt := "if" sexpr "begin" sstatements selse_clause "end" =>#
+  if_stmt := "if" sexpr "begin" stmt* selse_clause "end" =>#
     "(block (list `(ast_ifdo ,_sr ,_2 ,_4 ,_5)))";
 
   //$ General elif clause.
-  selif_clause := "elif" sexpr "do" sstatements =># "`(,_2 ,_4)";
+  private selif_clause := "elif" sexpr "do" stmt* =># "`(,_2 ,_4)";
 
   //$ Short form elif return clause.
-  selif_clause := "elif" sexpr "return" ";"? =># "`(,_2 ((ast_proc_return ,_sr)))";
-  selif_clause := "elif" sexpr "return" sexpr ";"? =># "`(,_2 ((ast_fun_return ,_sr ,_4)))";
+  private selif_clause := "elif" sexpr "return" ";"? =># "`(,_2 ((ast_proc_return ,_sr)))";
+  private selif_clause := "elif" sexpr "return" sexpr ";"? =># "`(,_2 ((ast_fun_return ,_sr ,_4)))";
 
   //$ Short form elif goto clause.
-  selif_clause := "elif" sexpr "goto" sname ";"? =># "`(,_2 (ast_goto ,_sr ,_4))";
+  private selif_clause := "elif" sexpr "goto" sname ";"? =># "`(,_2 (ast_goto ,_sr ,_4))";
 
 
-  selif_clauses := selif_clauses selif_clause =># "(cons _2 _1)";
-  selif_clauses := selif_clause =># "`(,_1)";
-  selse_clause := selif_clauses "else" sstatements =>#
+  private selif_clauses := selif_clauses selif_clause =># "(cons _2 _1)"; // Reversed!
+  private selif_clauses := selif_clause =># "`(,_1)";
+  private selse_clause := selif_clauses "else" stmt* =>#
     """
         (let ((f (lambda (result condthn)
           (let ((cond (first condthn)) (thn (second condthn)))
@@ -62,8 +64,8 @@ syntax conditional
         (fold_left f _3 _1))
     """;
 
-  selse_clause := "else" sstatements =># "_2";
-  selse_clause := selif_clauses =>#
+  private selse_clause := "else" stmt* =># "_2";
+  private selse_clause := selif_clauses =>#
     """
         (let ((f (lambda (result condthn)
           (let ((cond (first condthn)) (thn (second condthn)))

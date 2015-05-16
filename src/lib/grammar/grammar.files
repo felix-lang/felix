@@ -1,3 +1,4 @@
+grammar/utility.fsyn
 grammar/grammar_scheme_support.fsyn
 grammar/grammar_regdefs.fsyn
 grammar/grammar_ident_lexer.fsyn

@@ -29,31 +29,48 @@
 //$ Primary looping contructs.
 syntax loops
 {
+  // ----------------------------------------------------------------------------------
+  // Synopsis of loop forms
+  // ----------------------------------------------------------------------------------
+  stmt = escape_stmt;
+  stmt = loop_stmt<stmt>;
+
+  // ----------------------------------------------------------------------------------
+  //$ Statement groups controlled by loops
+  // ----------------------------------------------------------------------------------
+  stmt_group stmt := "do" stmt* "done" =># "_2";
+  stmt_group stmt := "begin" stmt* "end" =># "(list (block _2))";
+  stmt_group stmt := "perform" stmt =># "`(,_2)"; 
+
+  // ----------------------------------------------------------------------------------
+  // Escape statements for deviant processing
+  // ----------------------------------------------------------------------------------
   //$ Labelled break.
   //$ Use to exit from the loop with the specified label.
-  stmt := "break" sname =># '`(ast_goto ,_sr ,(string-append "break_" _2))';
-
-  stmt_group := "do" sstatements "done" =># "_2";
-  stmt_group := "begin" sstatements "end" =># "(list (block _2))";
-  stmt_group := "perform" stmt =># "`(,_2)"; 
+  private escape_stmt := "break" sname =># '`(ast_goto ,_sr ,(string-append "break_" _2))';
 
   //$ Labelled continue.
   //$ Use to continue with the next iteration of the loop with the specified label.
-  stmt := "continue" sname =># '`(ast_goto ,_sr ,(string-append "continue_" _2))';
+  private escape_stmt := "continue" sname =># '`(ast_goto ,_sr ,(string-append "continue_" _2))';
 
   //$ Labelled redo.
   //$ Use to restart this iteration of the loop with the specified label.
-  stmt := "redo" sname =># '`(ast_goto ,_sr ,(string-append "redo_" _2))';
+  private escape_stmt := "redo" sname =># '`(ast_goto ,_sr ,(string-append "redo_" _2))';
 
-  //$ Syntax for a loop label.
+  // ----------------------------------------------------------------------------------
+  //$ Syntax for a loop label. Used by escapes to indicate which loop.
+  // ----------------------------------------------------------------------------------
   //$ Use just before the loop.
-  optlabel := sname ":" =># "_1";
+  private optlabel := sname ":" =># "_1";
 
   //$ Loop labels aren't required.
-  optlabel := sepsilon =># '(fresh_name "ll")';
+  private optlabel := sepsilon =># '(fresh_name "ll")';
 
+  // ----------------------------------------------------------------------------------
+  // the loops
+  // ----------------------------------------------------------------------------------
   //$ Standard while loop.
-  stmt := optlabel "while" sexpr stmt_group =>#
+  loop_stmt stmt := optlabel "while" sexpr stmt_group<stmt> =>#
     """ 
     `(ast_seq ,_sr
       ,(append 
@@ -66,7 +83,7 @@ syntax loops
     """;
 
   //$ Negated while loop.
-  stmt := optlabel "until" sexpr stmt_group =>#
+  loop_stmt stmt := optlabel "until" sexpr stmt_group<stmt> =>#
     """
     `(ast_seq ,_sr
       ,(append 
@@ -78,7 +95,7 @@ syntax loops
     ))
     """;
 
-  stmt := optlabel "for" "(" stmt sexpr ";" stmt ")" stmt =>#
+  loop_stmt stmt := optlabel "for" "(" stmt sexpr ";" stmt ")" stmt =>#
   """
   (begin 
     `(ast_seq ,_sr
@@ -96,7 +113,7 @@ syntax loops
   )
   """;
 
-  stmt := optlabel "for" stmt "while" sexpr ";" "next" stmt stmt_group =>#
+  loop_stmt stmt := optlabel "for" stmt "while" sexpr ";" "next" stmt stmt_group<stmt> =>#
   """
   (begin 
     `(ast_seq ,_sr
@@ -115,7 +132,7 @@ syntax loops
   """;
 
 
-  stmt := optlabel "for" stmt "until" sexpr ";" "next" stmt stmt_group =>#
+  loop_stmt stmt := optlabel "for" stmt "until" sexpr ";" "next" stmt stmt_group<stmt> =>#
   """
   (begin 
     `(ast_seq ,_sr
@@ -143,7 +160,7 @@ syntax loops
   // the incr/decr is to be done, this is because it might be the max/min value
   // in the range and the incr/decr would be invalid.
 
-  stmt := optlabel "for" sname "in" sexpr "upto" sexpr stmt_group =>#
+  loop_stmt stmt := optlabel "for" sname "in" sexpr "upto" sexpr stmt_group<stmt> =>#
     """
     `(ast_seq ,_sr
       ,(append 
@@ -171,7 +188,7 @@ syntax loops
   //$ Ranges are inclusive. This is essential in case
   //$ the loops if over the complete domain of the control variable type.
   //$ The start and end argument types and the declared control variable type must be the same.
-  stmt := optlabel "for" "var" sname ":" sexpr "in" sexpr "upto" sexpr stmt_group =>#
+  loop_stmt stmt := optlabel "for" "var" sname ":" sexpr "in" sexpr "upto" sexpr stmt_group<stmt> =>#
     """
     `(ast_seq ,_sr
       ,(append 
@@ -199,7 +216,7 @@ syntax loops
   //$ Ranges are inclusive. This is essential in case
   //$ the loops if over the complete domain of the control variable type.
   //$ The start and end argument types must be the same.
-  stmt := optlabel "for" "var" sname "in" sexpr "upto" sexpr stmt_group =>#
+  loop_stmt stmt := optlabel "for" "var" sname "in" sexpr "upto" sexpr stmt_group<stmt> =>#
     """
     `(ast_seq ,_sr
       ,(append 
@@ -226,7 +243,7 @@ syntax loops
   //$ Ranges are inclusive. This is essential in case
   //$ the loops if over the complete domain of the control variable type.
   //$ The start and end argument types and the declared control variable type must be the same.
-  stmt := optlabel "for" sname "in" sexpr "downto" sexpr stmt_group =>#
+  loop_stmt stmt := optlabel "for" sname "in" sexpr "downto" sexpr stmt_group<stmt> =>#
     """
     `(ast_seq ,_sr
       ,(append 
@@ -254,7 +271,7 @@ syntax loops
   //$ Ranges are inclusive. This is essential in case
   //$ the loops if over the complete domain of the control variable type.
   //$ The start and end argument types and the declared control variable type must be the same.
-  stmt := optlabel "for" "var" sname ":" sexpr "in" sexpr "downto" sexpr stmt_group =>#
+  loop_stmt stmt := optlabel "for" "var" sname ":" sexpr "in" sexpr "downto" sexpr stmt_group<stmt> =>#
     """
     `(ast_seq ,_sr
       ,(append 
@@ -282,7 +299,7 @@ syntax loops
   //$ Ranges are inclusive. This is essential in case
   //$ the loops if over the complete domain of the control variable type.
   //$ The start and end argument types and the declared control variable type must be the same.
-  stmt := optlabel "for" "var" sname "in" sexpr "downto" sexpr stmt_group =>#
+  loop_stmt stmt := optlabel "for" "var" sname "in" sexpr "downto" sexpr stmt_group<stmt> =>#
     """
     `(ast_seq ,_sr
       ,(append 
@@ -319,7 +336,7 @@ syntax loops
   //$    control variable, 
   //$ 4. the loop body is executed, and
   //$ 6. we go back to step 1.
-  stmt := optlabel "for" sname "in" sexpr stmt_group =>#
+  loop_stmt stmt := optlabel "for" sname "in" sexpr stmt_group<stmt> =>#
     """
     (let* (
      (generator_string_name (fresh_name "generator" ))
@@ -362,7 +379,7 @@ syntax loops
   //$ 6. If the pattern does not match,
   //$ 7. we go back to step 1
   //$    without executing the loop body.
-  stmt := optlabel "match" spattern "in" sexpr stmt_group =>#
+  loop_stmt stmt := optlabel "match" spattern "in" sexpr stmt_group<stmt> =>#
     """
     (let* (
      (generator_string_name (fresh_name "generator" ))
