@@ -569,7 +569,7 @@ to require the library name as a prefix. Stay tuned.
     var linst = Dynlink::init_lib(dll-name);
     var sresult = Dynlink::func1[int,string] (linst, dll-name+"_setup") (setup-str);
     C_hack::ignore(sresult);
-    sresult != 0 ?? eprintln$ "[dynlink] Warning: Plugin Library " + dll-name + " set up returned " + str sresult;
+    if sresult != 0 call eprintln$ "[dynlink] Warning: Plugin Library " + dll-name + " set up returned " + str sresult;
     return Dynlink::func0[iftype] (linst, entrypoint);
   }
 
@@ -583,7 +583,7 @@ to require the library name as a prefix. Stay tuned.
     var linst = Dynlink::init_lib(dll-name);
     var sresult = Dynlink::func1[int,string] (linst, dll-name+"_setup") (setup-str);
     C_hack::ignore(sresult);
-    sresult != 0 ?? eprintln$ "[dynlink] Warning: Plugin Library " + dll-name + " set up returned " + str sresult;
+    if sresult != 0 call eprintln$ "[dynlink] Warning: Plugin Library " + dll-name + " set up returned " + str sresult;
     return Dynlink::func1[iftype,arg_t] (linst, entrypoint);
   }
 
@@ -597,7 +597,7 @@ to require the library name as a prefix. Stay tuned.
     var linst = Dynlink::init_lib(dll-name);
     var sresult = Dynlink::func1[int,string] (linst, dll-name+"_setup") (setup-str);
     C_hack::ignore(sresult);
-    sresult != 0 ?? eprintln$ "[dynlink] Warning: Plugin Library " + dll-name + " set up returned " + str sresult;
+    if sresult != 0 call eprintln$ "[dynlink] Warning: Plugin Library " + dll-name + " set up returned " + str sresult;
     return Dynlink::func2[iftype,arg1_t, arg2_t] (linst, entrypoint);
   }
 
@@ -630,7 +630,7 @@ to require the library name as a prefix. Stay tuned.
   {
     var lib = get_library linstance;
     var sym = find_sym(lib, p);
-    if isNULL(sym) do dlsym_err(lib,p); done;
+    if isNULL(sym) call dlsym_err(lib,p);
     var f = bind_proc(linstance, sym, data);
     run f;
   }

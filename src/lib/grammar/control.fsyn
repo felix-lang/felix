@@ -33,7 +33,7 @@ syntax control
   stmt := "loop" sname sexpr =># "`(ast_jump ,_sr (ast_name ,_sr ,_2 ()) ,_3)";
 
   //$ Special short form procedure self-tail call without argument.
-  stmt := "loop" sname ";" =># "`(ast_jump ,_sr (ast_name ,_sr ,_2 ()) (ast_tuple,_sr ()))";
+  stmt := "loop" sname =># "`(ast_jump ,_sr (ast_name ,_sr ,_2 ()) (ast_tuple,_sr ()))";
 
   //$ Stop the program with prejudice and a message.
   stmt := "halt" sstring ";" =># "`(ast_halt ,_sr ,_2)";
@@ -43,7 +43,7 @@ syntax control
   stmt := sname ":>" =># "`(ast_label ,_sr ,_1)";
 
   //$ Unconditional goto label.
-  stmt := "goto" sname ";" =># "`(ast_goto ,_sr ,_2)";
+  stmt := "goto" sname =># "`(ast_goto ,_sr ,_2)";
 
   //$ Unconditional goto expression.
   stmt := "goto-indirect" sexpr ";" =># "`(ast_goto_indirect ,_sr ,_2)";

@@ -26,7 +26,7 @@ insert(m,1,23);
 insert(m,2,423);
 
 j = 0; until j==3 do
-  print m.[j.size]; endl;
+  print m.[j]; endl;
   ++j;
 done;
 

@@ -3,13 +3,13 @@ syntax executable {
   requires statements;
 
   //$ System service call.
-  stmt := "_svc" sname ";" =># "`(ast_svc ,_sr ,_2)";
+  stmt := "_svc" sname =># "`(ast_svc ,_sr ,_2)";
 
   //$ Assignment expression.
   stmt := sassignexpr ";" =># "_1";
 
   //$ Debug trace expression.
-  stmt := "trace" sname sstring ";" =># "`(ast_trace ,_sr ,_2 ,_3)";
+  stmt := "trace" sname sstring =># "`(ast_trace ,_sr ,_2 ,_3)";
 
   //$ Call expression.
   //$ Short form of "call f a;" is just "f a;"

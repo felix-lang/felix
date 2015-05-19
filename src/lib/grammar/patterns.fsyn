@@ -15,24 +15,6 @@ syntax patterns {
   stmt:= "match" sexpr "do" stmt_matching+ "done" =>#
     "`(ast_stmt_match (,_sr ,_2 ,_4))";
 
-
-  //$ Short form pattern match statement with
-  //$ implicit handling of trailing wildcard
-  //$ by following statements.
-  //
-  // NOTE: THIS DOES NOT WORK! DANGLING ELSE PROBLEM!
-  stmt:= "match" sexpr "with" stmt_matching+ "otherwise" stmt+  =>#
-    """
-    (let*
-      (
-        (matches _4)
-        (wildcard `((pat_any ,_sr) ,_6))
-        (wild-matches (append matches `(,wildcard)))
-      )
-     `(ast_stmt_match (,_sr ,_2 ,wild-matches))
-    )
-    """;
-
   //$ A single branch of a pattern match statement.
   //$ The match argument expression is compared to the pattern.
   //$ If it matches any contained pattern variables are assigned
