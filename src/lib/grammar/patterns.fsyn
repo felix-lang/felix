@@ -7,12 +7,14 @@
 
 syntax patterns {
 
+  block = match_stmt;
+
   //$ Pattern match statement.
   //$ At least one branch must match or the program aborts with a match failure.
-  stmt:= "match" sexpr "with" stmt_matching+ "endmatch" ";" =>#
+  match_stmt:= "match" sexpr "with" stmt_matching+ "endmatch" ";" =>#
     "`(ast_stmt_match (,_sr ,_2 ,_4))";
 
-  stmt:= "match" sexpr "do" stmt_matching+ "done" =>#
+  match_stmt:= "match" sexpr "do" stmt_matching+ "done" =>#
     "`(ast_stmt_match (,_sr ,_2 ,_4))";
 
   //$ A single branch of a pattern match statement.

@@ -70,7 +70,7 @@ class FlxPkg
 
     // find the driver package
     var DRIVER_PKG=pkgconfs(e+'--field=flx_requires_driver');
-    DRIVER_PKG == "" ??  DRIVER_PKG="flx_run";
+    if DRIVER_PKG == "" do DRIVER_PKG="flx_run"; done
 
     // find the driver entity
     if spec.STATIC == 0 do

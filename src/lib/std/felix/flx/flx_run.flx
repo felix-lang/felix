@@ -3,7 +3,7 @@ include "std/felix/flx/flx_control";
 include "std/felix/flx/flx_depvars";
 
 gen dxqt(DBG:bool) (cmd:string) = {
-  DBG ?? fprintln (cstderr, "cmd="+cmd);
+  if DBG call fprintln (cstderr, "cmd="+cmd);
   var now = #Time::time;
   var result,output = Shell::get_stdout(cmd);
   if result == 0 do
@@ -15,9 +15,9 @@ gen dxqt(DBG:bool) (cmd:string) = {
     ; 
     output = output.[to n]; // first line excluding newline
     var elapsed = #Time::time - now;
-    DBG ?? fprintln (cstderr, "Popen:Elapsed: " + fmt (elapsed, fixed(9,3)) + ", output='"+output+"'");
+    if DBG call fprintln (cstderr, "Popen:Elapsed: " + fmt (elapsed, fixed(9,3)) + ", output='"+output+"'");
   else
-    DBG ?? eprintln "COMMAND FAILED";
+    if DBG call eprintln "COMMAND FAILED";
     fprint$ cstderr, ("Error "+repr(result)+" executing command " + cmd + "\n");
     System::pexit result;
   done
@@ -25,7 +25,7 @@ gen dxqt(DBG:bool) (cmd:string) = {
 }
 
 proc xdebugln[T with Str[T]] (d:bool) (x:T) {
-  d ?? fprintln (cstderr, "[flx] " + str x);
+  if d call fprintln (cstderr, "[flx] " + str x);
 }
 
 // CLEAR_CACHE is set to 1 if the cache is reset
@@ -56,11 +56,11 @@ object processing_env(
 =
 {
   proc debugln[T with Str[T]] (x:T) {
-    control.DEBUG_FLX ?? fprintln (cstderr, "[flx] " + str x);
+    if control.DEBUG_FLX call fprintln (cstderr, "[flx] " + str x);
   }
 
   proc echoln[T with Str[T]] (x:T) {
-    control.ECHO == 1 ?? fprintln (cstderr, "[flx] " + str x);
+    if control.ECHO == 1 call fprintln (cstderr, "[flx] " + str x);
   }
 
   var dflt_clang_config = (

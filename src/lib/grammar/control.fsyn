@@ -1,52 +1,48 @@
 //$ Core control flow operators.
 syntax control 
 {
-  //$ Just a group of statements.
-  stmt := "do" sstatements "done" =># "`(ast_seq ,_sr ,_2)";
-  stmt := "begin" sstatements "end" =># "(block _2)";
-
   //$ Call a procedure (verbose).
-  stmt := "call" sexpr  ";" =># """(cons 'ast_call (cons _sr (splitapply _2)))""";
+  block := "call" sexpr  ";" =># """(cons 'ast_call (cons _sr (splitapply _2)))""";
 
   //$ Procedure return.
-  stmt := "return" ";" =># "`(ast_proc_return ,_sr)";
+  block := "return" ";" =># "`(ast_proc_return ,_sr)";
 
   //$ Fast procedure return.
   //$ Returns immediately from enclosing procedure with given name.
-  stmt := "return" "from" sname ";" =># "`(ast_proc_return_from ,_sr ,_3)";
+  block := "return" "from" sname ";" =># "`(ast_proc_return_from ,_sr ,_3)";
 
 
   //$ Procedure explicit tail call.
   //$ Equivalent to a call followed by a return.
-  stmt := "jump" sexpr ";" =># """(cons 'ast_jump (cons _sr (splitapply _2)))""";
+  block := "jump" sexpr ";" =># """(cons 'ast_jump (cons _sr (splitapply _2)))""";
 
   //$ Function return with value.
-  stmt := "return" sexpr ";" =># "`(ast_fun_return ,_sr ,_2)";
+  block := "return" sexpr ";" =># "`(ast_fun_return ,_sr ,_2)";
 
   //$ Generator/iterator exchange with value (restart after yield).
   //$ Yield is like a return, except that re-entering the generator
   //$ will continue on after the yield statement rather that starting
   //$ from the top.
-  stmt := "yield" sexpr ";" =># "`(ast_yield ,_sr ,_2)";
+  block := "yield" sexpr ";" =># "`(ast_yield ,_sr ,_2)";
 
   //$ Special short form procedure self-tail call with argument.
-  stmt := "loop" sname sexpr =># "`(ast_jump ,_sr (ast_name ,_sr ,_2 ()) ,_3)";
+  block := "loop" sname sexpr ";" =># "`(ast_jump ,_sr (ast_name ,_sr ,_2 ()) ,_3)";
 
   //$ Special short form procedure self-tail call without argument.
-  stmt := "loop" sname =># "`(ast_jump ,_sr (ast_name ,_sr ,_2 ()) (ast_tuple,_sr ()))";
+  block := "loop" sname ";" =># "`(ast_jump ,_sr (ast_name ,_sr ,_2 ()) (ast_tuple,_sr ()))";
 
   //$ Stop the program with prejudice and a message.
-  stmt := "halt" sstring ";" =># "`(ast_halt ,_sr ,_2)";
+  block := "halt" sstring ";" =># "`(ast_halt ,_sr ,_2)";
 
   //$ Label any statement.
   //$ Do not confuse with loop labels.
   stmt := sname ":>" =># "`(ast_label ,_sr ,_1)";
 
   //$ Unconditional goto label.
-  stmt := "goto" sname =># "`(ast_goto ,_sr ,_2)";
+  stmt := "goto" sname ";" =># "`(ast_goto ,_sr ,_2)";
 
   //$ Unconditional goto expression.
-  stmt := "goto-indirect" sexpr ";" =># "`(ast_goto_indirect ,_sr ,_2)";
+  block := "goto-indirect" sexpr ";" =># "`(ast_goto_indirect ,_sr ,_2)";
 
 
   //$ Exception handling.
@@ -61,7 +57,7 @@ syntax control
   //$ multiple function/procedure layers. If you have to use
   //$ this construction be sure to keep wrap the try block
   //$ closely around the throwing code.
-  stmt := "try" stmt+ catches "endtry" =>#
+  block := "try" stmt+ catches "endtry" =>#
     "`(ast_seq ,_sr ,(append `((ast_try ,_sr)) _2 _3 `((ast_endtry ,_sr))))";
 
   catch := "catch" sname ":" sexpr  "=>" stmt+ =>#

@@ -108,7 +108,7 @@ class FlxPrepBuild
   {
     dirsetup(cmd);
     // copy the compiler 
-    cmd.copy_compiler ?? CopyFiles::copyfiles(cmd.source_dir/cmd.source_bin/'bin', 'flxg', 
+    if cmd.copy_compiler call CopyFiles::copyfiles(cmd.source_dir/cmd.source_bin/'bin', 'flxg', 
       cmd.target_dir/cmd.target_bin/'bin'/'flxg', true, cmd.debug);
 
     println$ "Build Complete";

@@ -33,14 +33,11 @@ syntax loops
   // Synopsis of loop forms
   // ----------------------------------------------------------------------------------
   stmt = escape_stmt;
-  stmt = loop_stmt<stmt>;
+  block = loop_stmt;
 
   // ----------------------------------------------------------------------------------
   //$ Statement groups controlled by loops
   // ----------------------------------------------------------------------------------
-  stmt_group stmt := "do" stmt* "done" =># "_2";
-  stmt_group stmt := "begin" stmt* "end" =># "(list (block _2))";
-  stmt_group stmt := "perform" stmt =># "`(,_2)"; 
 
   // ----------------------------------------------------------------------------------
   // Escape statements for deviant processing
@@ -70,32 +67,32 @@ syntax loops
   // the loops
   // ----------------------------------------------------------------------------------
   //$ Standard while loop.
-  loop_stmt stmt := optlabel "while" sexpr stmt_group<stmt> =>#
+  loop_stmt := optlabel "while" sexpr block =>#
     """ 
     `(ast_seq ,_sr
-      ,(append 
-        `((ast_label ,_sr ,(string-append "continue_" _1)))
-        `((ast_unlikely_ifnotgoto ,_sr ,_3 ,(string-append "break_" _1)))
+      ,(list
+        `(ast_label ,_sr ,(string-append "continue_" _1))
+        `(ast_unlikely_ifnotgoto ,_sr ,_3 ,(string-append "break_" _1))
         _4
-        `((ast_goto ,_sr ,(string-append "continue_" _1)))
-        `((ast_label ,_sr ,(string-append "break_" _1)))
+        `(ast_goto ,_sr ,(string-append "continue_" _1))
+        `(ast_label ,_sr ,(string-append "break_" _1))
     ))
     """;
 
   //$ Negated while loop.
-  loop_stmt stmt := optlabel "until" sexpr stmt_group<stmt> =>#
+  loop_stmt := optlabel "until" sexpr block =>#
     """
     `(ast_seq ,_sr
       ,(append 
         `(( ast_label ,_sr ,(string-append "continue_" _1)))
         `(( ast_unlikely_ifgoto ,_sr ,_3 ,(string-append "break_" _1)))
-        _4
+        `(,_4)
         `(( ast_goto ,_sr ,(string-append "continue_" _1)))
         `(( ast_label ,_sr ,(string-append "break_" _1)))
     ))
     """;
 
-  loop_stmt stmt := optlabel "for" "(" stmt sexpr ";" stmt ")" stmt =>#
+  loop_stmt := optlabel "for" "(" stmt sexpr ";" stmt ")" stmt =>#
   """
   (begin 
     `(ast_seq ,_sr
@@ -113,7 +110,7 @@ syntax loops
   )
   """;
 
-  loop_stmt stmt := optlabel "for" stmt "while" sexpr ";" "next" stmt stmt_group<stmt> =>#
+  loop_stmt := optlabel "for" stmt "while" sexpr ";" "next" stmt block =>#
   """
   (begin 
     `(ast_seq ,_sr
@@ -121,7 +118,7 @@ syntax loops
         `(,_3)
         `((ast_label ,_sr ,(string-append "redo_" _1)))
         `((ast_unlikely_ifnotgoto ,_sr ,_5 ,(string-append "break_" _1)))
-        _9
+        `(,_9)
         `((ast_label ,_sr ,(string-append "continue_" _1)))
         `(,_8)
         `((ast_goto ,_sr ,(string-append "redo_" _1)))
@@ -132,7 +129,7 @@ syntax loops
   """;
 
 
-  loop_stmt stmt := optlabel "for" stmt "until" sexpr ";" "next" stmt stmt_group<stmt> =>#
+  loop_stmt := optlabel "for" stmt "until" sexpr ";" "next" stmt block =>#
   """
   (begin 
     `(ast_seq ,_sr
@@ -140,7 +137,7 @@ syntax loops
         `(,_3)
         `((ast_label ,_sr ,(string-append "redo_" _1)))
         `((ast_unlikely_ifgoto ,_sr ,_5 ,(string-append "break_" _1)))
-        _9
+        `(,_9)
         `((ast_label ,_sr ,(string-append "continue_" _1)))
         `(,_8)
         `((ast_goto ,_sr ,(string-append "redo_" _1)))
@@ -160,7 +157,7 @@ syntax loops
   // the incr/decr is to be done, this is because it might be the max/min value
   // in the range and the incr/decr would be invalid.
 
-  loop_stmt stmt := optlabel "for" sname "in" sexpr "upto" sexpr stmt_group<stmt> =>#
+  loop_stmt := optlabel "for" sname "in" sexpr "upto" sexpr block =>#
     """
     `(ast_seq ,_sr
       ,(append 
@@ -170,7 +167,7 @@ syntax loops
           (ast_apply ,_sr (,(noi '<=) ((ast_name ,_sr ,_3 ()),_7)))
           ,(string-append "break_" _1)
         ))
-        _8
+        `(,_8)
         `((ast_label ,_sr ,(string-append "continue_" _1)))
         `((ast_unlikely_ifgoto ,_sr
           (ast_apply ,_sr (,(noi '==) ((ast_name ,_sr ,_3 ()),_7)))
@@ -188,7 +185,7 @@ syntax loops
   //$ Ranges are inclusive. This is essential in case
   //$ the loops if over the complete domain of the control variable type.
   //$ The start and end argument types and the declared control variable type must be the same.
-  loop_stmt stmt := optlabel "for" "var" sname ":" sexpr "in" sexpr "upto" sexpr stmt_group<stmt> =>#
+  loop_stmt := optlabel "for" "var" sname ":" sexpr "in" sexpr "upto" sexpr block =>#
     """
     `(ast_seq ,_sr
       ,(append 
@@ -198,7 +195,7 @@ syntax loops
           (ast_apply ,_sr (,(noi '<=) ((ast_name ,_sr ,_4 ()),_10)))
           ,(string-append "break_" _1)
         ))
-        _11
+        `(,_11)
         `((ast_label ,_sr ,(string-append "continue_" _1)))
         `((ast_unlikely_ifgoto ,_sr
           (ast_apply ,_sr (,(noi '==) ((ast_name ,_sr ,_4 ()),_10)))
@@ -216,7 +213,7 @@ syntax loops
   //$ Ranges are inclusive. This is essential in case
   //$ the loops if over the complete domain of the control variable type.
   //$ The start and end argument types must be the same.
-  loop_stmt stmt := optlabel "for" "var" sname "in" sexpr "upto" sexpr stmt_group<stmt> =>#
+  loop_stmt := optlabel "for" "var" sname "in" sexpr "upto" sexpr block =>#
     """
     `(ast_seq ,_sr
       ,(append 
@@ -226,7 +223,7 @@ syntax loops
           (ast_apply ,_sr (,(noi '<=) ((ast_name ,_sr ,_4 ()),_8)))
           ,(string-append "break_" _1)
         ))
-        _9
+        `(,_9)
         `((ast_label ,_sr ,(string-append "continue_" _1)))
         `((ast_unlikely_ifgoto ,_sr
           (ast_apply ,_sr (,(noi '==) ((ast_name ,_sr ,_4 ()),_8)))
@@ -243,7 +240,7 @@ syntax loops
   //$ Ranges are inclusive. This is essential in case
   //$ the loops if over the complete domain of the control variable type.
   //$ The start and end argument types and the declared control variable type must be the same.
-  loop_stmt stmt := optlabel "for" sname "in" sexpr "downto" sexpr stmt_group<stmt> =>#
+  loop_stmt := optlabel "for" sname "in" sexpr "downto" sexpr block =>#
     """
     `(ast_seq ,_sr
       ,(append 
@@ -253,7 +250,7 @@ syntax loops
           (ast_apply ,_sr (,(noi '>=) ((ast_name ,_sr ,_3 ()),_7)))
           ,(string-append "break_" _1)
         ))
-        _8
+        `(,_8)
         `((ast_label ,_sr ,(string-append "continue_" _1)))
         `((ast_unlikely_ifgoto ,_sr
           (ast_apply ,_sr (,(noi '==) ((ast_name ,_sr ,_3 ()),_7)))
@@ -271,7 +268,7 @@ syntax loops
   //$ Ranges are inclusive. This is essential in case
   //$ the loops if over the complete domain of the control variable type.
   //$ The start and end argument types and the declared control variable type must be the same.
-  loop_stmt stmt := optlabel "for" "var" sname ":" sexpr "in" sexpr "downto" sexpr stmt_group<stmt> =>#
+  loop_stmt := optlabel "for" "var" sname ":" sexpr "in" sexpr "downto" sexpr block =>#
     """
     `(ast_seq ,_sr
       ,(append 
@@ -281,7 +278,7 @@ syntax loops
           (ast_apply ,_sr (,(noi '>=) ((ast_name ,_sr ,_4 ()),_10)))
           ,(string-append "break_" _1)
         ))
-        _11
+        `(,_11)
         `((ast_label ,_sr ,(string-append "continue_" _1)))
         `((ast_unlikely_ifgoto ,_sr
           (ast_apply ,_sr (,(noi '==) ((ast_name ,_sr ,_4 ()),_10)))
@@ -299,7 +296,7 @@ syntax loops
   //$ Ranges are inclusive. This is essential in case
   //$ the loops if over the complete domain of the control variable type.
   //$ The start and end argument types and the declared control variable type must be the same.
-  loop_stmt stmt := optlabel "for" "var" sname "in" sexpr "downto" sexpr stmt_group<stmt> =>#
+  loop_stmt := optlabel "for" "var" sname "in" sexpr "downto" sexpr block =>#
     """
     `(ast_seq ,_sr
       ,(append 
@@ -309,7 +306,7 @@ syntax loops
           (ast_apply ,_sr (,(noi '>=) ((ast_name ,_sr ,_4 ()),_8)))
           ,(string-append "break_" _1)
         ))
-        _9
+        `(,_9)
         `((ast_label ,_sr ,(string-append "continue_" _1)))
         `((ast_unlikely_ifgoto ,_sr
           (ast_apply ,_sr (,(noi '==) ((ast_name ,_sr ,_4 ()),_8)))
@@ -336,7 +333,7 @@ syntax loops
   //$    control variable, 
   //$ 4. the loop body is executed, and
   //$ 6. we go back to step 1.
-  loop_stmt stmt := optlabel "for" sname "in" sexpr stmt_group<stmt> =>#
+  loop_stmt := optlabel "for" sname "in" sexpr block =>#
     """
     (let* (
      (generator_string_name (fresh_name "generator" ))
@@ -345,7 +342,7 @@ syntax loops
      (generator_call `(ast_apply ,_sr (,generator_call_name ())))
      (some_pattern `(pat_nonconst_ctor ,_sr ,(nos "Some") (pat_as ,_sr (pat_any ,_sr) ,_3) ))
      (some_exit `(ast_goto ,_sr ,(string-append "continue_" _1))) 
-     (some_handler (append _6 `(,some_exit)))
+     (some_handler (append `(,_6) `(,some_exit)))
      (none_pattern `(pat_const_ctor ,_sr ,(nos "None")))
      (none_handler `((ast_nop ,_sr, "drop thru")))
      (some_item `(,some_pattern ,some_handler))
@@ -379,7 +376,7 @@ syntax loops
   //$ 6. If the pattern does not match,
   //$ 7. we go back to step 1
   //$    without executing the loop body.
-  loop_stmt stmt := optlabel "match" spattern "in" sexpr stmt_group<stmt> =>#
+  loop_stmt := optlabel "match" spattern "in" sexpr block =>#
     """
     (let* (
      (generator_string_name (fresh_name "generator" ))
@@ -388,7 +385,7 @@ syntax loops
      (generator_call `(ast_apply ,_sr (,generator_call_name ())))
      (some_pattern `(pat_nonconst_ctor ,_sr ,(nos "Some")  ,_3 ))
      (some_exit `(ast_goto ,_sr ,(string-append "continue_" _1))) 
-     (some_handler (append _6 `(,some_exit)))
+     (some_handler (append `(,_6) `(,some_exit)))
      (some_item `(,some_pattern ,some_handler))
      (other_pattern `(pat_nonconst_ctor ,_sr ,(nos "Some")  (pat_any ,_sr) ))
      (other_handler `(,some_exit))

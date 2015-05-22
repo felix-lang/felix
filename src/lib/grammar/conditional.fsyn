@@ -1,8 +1,17 @@
 //$ Basic conditional statements.
 syntax conditional 
 {
-  stmt = if_stmt;
+  block = if_stmt;
 
+  /* Unfortunately we cannot currently use "if sexpr block"
+    because this makes if c do .. done and if c do .. else .. done
+    ambiguous for some reason i do not fathom, so we have
+    to list all the cases separately
+  */
+  if_stmt := "if" sexpr if_stmt =># '`(ast_ifdo ,_sr ,_2 (,_3) ())';
+  if_stmt := "if" sexpr loop_stmt =># '`(ast_ifdo ,_sr ,_2 (,_3) ())';
+  if_stmt := "if" sexpr match_stmt =># '`(ast_ifdo ,_sr ,_2 (,_3) ())';
+  
   //$ Short form conditional goto statement.
   if_stmt := "if" sexpr "goto" sname =># "`(ast_ifgoto ,_sr ,_2 ,_4)";
 

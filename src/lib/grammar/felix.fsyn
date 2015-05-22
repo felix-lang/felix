@@ -1,6 +1,7 @@
 syntax felix {
   requires
     list,
+    blocks,
     lexer,
     statements,
     type_decls,

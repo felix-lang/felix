@@ -182,7 +182,7 @@ private noinline proc handle_switch
 )
 {
   proc debugln[T with Str[T]] (x:T) {
-    control*.DEBUG_FLX ?? fprintln (cstderr, "[flx] " + str x);
+    if control*.DEBUG_FLX call fprintln (cstderr, "[flx] " + str x);
   }
 
   if arg == "--nostdimport" do
@@ -545,7 +545,7 @@ private noinline proc xparse_cmd_line
 )
 {
   proc debugln[T with Str[T]] (x:T) {
-    control*.DEBUG_FLX ?? fprintln (cstderr, "[flx] " + str x);
+    if control*.DEBUG_FLX call fprintln (cstderr, "[flx] " + str x);
   }
 
   var SET_LINKER_OUTPUT = false;
@@ -637,7 +637,7 @@ noinline proc processing_stage1
   fun / (x:string, y:string) => Filename::join (x,y);
 
   proc debugln[T with Str[T]] (x:T) {
-    control*.DEBUG_FLX ?? fprintln (cstderr, "[flx] " + str x);
+    if control*.DEBUG_FLX call fprintln (cstderr, "[flx] " + str x);
   }
 
   // process environment variables

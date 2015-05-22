@@ -145,12 +145,12 @@ class FlxCoreBuild
     var tools = getbootfields ("tool");
 
     // at this point, the build proceeds using host tools, but only target sources.
-    cmd.build_toolchain_plugins ?? build_plugins(cmd.target_dir, cmd.target_bin, toolchain_plugins);
-    cmd.build_flx ?? build_flx(cmd.target_dir, cmd.target_bin);
-    cmd.build_flx_tools ?? build_flx_tools(cmd.target_dir, cmd.target_bin, flx_tools);
-    cmd.build_web_plugins ?? build_plugins(cmd.target_dir, cmd.target_bin, web_plugins);
-    cmd.build_tools ?? build_exes(cmd.target_dir, cmd.target_bin, tools);
-    cmd.build_flx_web ?? build_flx_web (cmd.target_dir, cmd.target_bin, web_plugins);
+    if cmd.build_toolchain_plugins call build_plugins(cmd.target_dir, cmd.target_bin, toolchain_plugins);
+    if cmd.build_flx call build_flx(cmd.target_dir, cmd.target_bin);
+    if cmd.build_flx_tools call build_flx_tools(cmd.target_dir, cmd.target_bin, flx_tools);
+    if cmd.build_web_plugins call build_plugins(cmd.target_dir, cmd.target_bin, web_plugins);
+    if cmd.build_tools call build_exes(cmd.target_dir, cmd.target_bin, tools);
+    if cmd.build_flx_web call build_flx_web (cmd.target_dir, cmd.target_bin, web_plugins);
     println$ "Build Complete";
   }
 

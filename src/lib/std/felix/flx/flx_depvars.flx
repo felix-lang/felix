@@ -25,7 +25,7 @@ gen cal_depvars(
   = 
 {
   proc debugln[T with Str[T]] (x:T) {
-    control*.DEBUG_FLX ?? fprintln (cstderr, "[flx] " + str x);
+    if control*.DEBUG_FLX call fprintln (cstderr, "[flx] " + str x);
   }
   fun / (d:string, f:string) => Filename::join (d,f);
 

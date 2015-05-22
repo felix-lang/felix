@@ -24,7 +24,7 @@ class FlxRtlBuild
     debug: bool
   )
   {
-    proc dbug (x:string) => debug ?? println$ '[make_lib: '+pkg+']' x;
+    proc dbug (x:string) => if debug call println$ '[make_lib: '+pkg+']' x;
 
     val pkgdir = build / target / 'config';
     val srtl = build / 'share' / 'lib' / 'rtl';
@@ -193,7 +193,7 @@ class FlxRtlBuild
     val bin = build / target / 'bin';
     val repo = build / 'share'; // excludes "src" cause that's in the packages
     
-    proc dbug (x:string) => debug ?? println$ '[make_rtl] ' + x;
+    proc dbug (x:string) => if debug call println$ '[make_rtl] ' + x;
     Directory::mkdirs tmpdir;
     Directory::mkdirs hrtl;
     Directory::mkdirs srtl;
