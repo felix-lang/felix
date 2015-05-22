@@ -50,10 +50,10 @@ case the array is empty, when the size is set to 0.
   {
     // GOTCHA: don't forget that division has a higher precedence than multiplication!
     // sensible minimum size of 20, except if zero length
-    if requested == 0uz do return 0uz; done
-    if requested < 20uz do return 20uz; done;
-    if requested < old_max / 2uz do return (3uz * requested) / 2uz; done 
-    if requested > old_max do return (requested * 3uz) / 2uz;  done
+    if requested == 0uz return 0uz;
+    if requested < 20uz return 20uz; 
+    if requested < old_max / 2uz return (3uz * requested) / 2uz;
+    if requested > old_max return (requested * 3uz) / 2uz;
     return old_max;
   }
 
@@ -87,13 +87,16 @@ operation such as a @{push_back} or @{pop}.
 @h2 Constructors.
 @felix
   //$ Make an empty darray, give it 20 slots for no particular reason.
-  ctor[T] darray[T] () => _make_darray[T]$ new darray_ctl[T](varray[T] 20uz , dflt_resize);
+  ctor[T] darray[T] () => 
+    _make_darray[T]$ new darray_ctl[T](varray[T] 20uz , dflt_resize);
 
   //$ Make a darray from an array
-  ctor[T,N] darray[T] (a:array[T,N]) =>  _make_darray[T]$ new darray_ctl[T]( varray[T] a, dflt_resize);
+  ctor[T,N] darray[T] (a:array[T,N]) =>  
+    _make_darray[T]$ new darray_ctl[T]( varray[T] a, dflt_resize);
 
   //$ Make a darray from a varray
-  ctor[T] darray[T] (a:varray[T]) =>  _make_darray[T]$ new darray_ctl[T]( varray[T] a, dflt_resize);
+  ctor[T] darray[T] (a:varray[T]) =>  
+    _make_darray[T]$ new darray_ctl[T]( varray[T] a, dflt_resize);
 
   //$ Make a darray from a darray (copy)
   ctor[T] darray[T] (a:darray[T]) => darray ((_repr_ a)*.a);
@@ -137,7 +140,7 @@ Generally, this class is very incomplete.
   proc pop[t](a:darray[t]) {
     pop (_repr_ a)*.a;
     newsize := (_repr_ a)*.resize (maxlen (_repr_ a)*.a, len (_repr_ a)*.a);
-    if newsize != maxlen (_repr_ a)*.a do do_resize (a,newsize); done 
+    if newsize != maxlen (_repr_ a)*.a call do_resize (a,newsize);
   }
 
   //$ Push a value onto the end.
@@ -151,7 +154,7 @@ Generally, this class is very incomplete.
   proc push_back[t] (a:darray[t], v:t) {
     r := _repr_ a; 
     newsize := r*.resize (maxlen r*.a, len r*.a + 1uz);
-    if newsize != maxlen r*.a do do_resize(a,newsize); done
+    if newsize != maxlen r*.a call do_resize(a,newsize);
     push_back (r*.a, v); // hack to workaround compiler error Address non variable
   }
 
@@ -160,7 +163,7 @@ Generally, this class is very incomplete.
   {
     var r = _repr_ a; 
     newsize := r*.resize (maxlen r*.a, len r*.a + 1uz);
-    if newsize != maxlen r*.a do do_resize(a,newsize); done
+    if newsize != maxlen r*.a call do_resize(a,newsize);
     r = _repr_ a;
     insert (r*.a,i,v);
   }
@@ -171,7 +174,8 @@ Generally, this class is very incomplete.
 
   //$ Erase multiple elements, note doesn't resize the varray,
   //$ probably should ..
-  proc erase[t] (a:darray[t], first:int, last:int) => erase ((_repr_ a)*.a, first,last);
+  proc erase[t] (a:darray[t], first:int, last:int) => 
+    erase ((_repr_ a)*.a, first,last);
 
 @h2 Convert a darray to a string.
 @felix
@@ -191,9 +195,9 @@ Should be in main class body.
 instance[T with Eq[T]] Set[darray[T],T] {
  //$ element membership test.
  fun \in (x:T, a:darray[T]) : bool = {
-   for var i in 0uz upto len a -1uz do
-     if a.i == x do return true; done
-   done
+   for var i in 0uz upto len a -1uz 
+     if a.i == x return true
+   ; 
    return false;
  } 
 }

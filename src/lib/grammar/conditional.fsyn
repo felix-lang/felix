@@ -12,8 +12,11 @@ syntax conditional
   if_stmt := "if" sexpr loop_stmt =># '`(ast_ifdo ,_sr ,_2 (,_3) ())';
   if_stmt := "if" sexpr match_stmt =># '`(ast_ifdo ,_sr ,_2 (,_3) ())';
   
-  //$ Short form conditional goto statement.
+  //$ Short form conditional goto statements.
   if_stmt := "if" sexpr "goto" sname =># "`(ast_ifgoto ,_sr ,_2 ,_4)";
+  if_stmt := "if" sexpr "break" sname =># '`(ast_ifgoto ,_sr ,_2 ,(string-append "break_" _4))';
+  if_stmt := "if" sexpr "continue" sname =># '`(ast_ifgoto ,_sr ,_2 ,(string-append "continue_" _4))';
+  if_stmt := "if" sexpr "redo" sname =># '`(ast_ifgoto ,_sr ,_2 ,(string-append "redo_" _4))';
 
   //$ Short form conditional return statement.
   if_stmt := "if" sexpr "return" ";" =># "`(ast_ifreturn ,_sr ,_2)";

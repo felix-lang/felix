@@ -42,11 +42,10 @@ open class Farray
   fun map[V,N,U] (_f:V->U) (x:array[V,N]):array[U,N] = {
     var o : array[U,N];
     val n = x.len;
-    if n > 0uz do
-      for var i: size in 0uz upto n - 1uz do
-        set (&o,i, _f x.i);
-      done
-    done
+    if n > 0uz 
+      for var i: size in 0uz upto n - 1uz
+        set (&o,i, _f x.i)
+    ;
     return o;
   }
 
@@ -60,18 +59,15 @@ open class Farray
   fun join[T, N, M] (x:array[T, N]) (y:array[T, M]):array[T, N + M] = {
     var o : array[T, N + M];
 
-    if x.len > 0uz do
-      for var i in 0uz upto len(x) - 1uz do
-        set (&o, i,x.i);
-      done
-    done
+    if x.len > 0uz
+      for var i in 0uz upto len(x) - 1uz
+        set (&o, i,x.i)
+    ;
     i = x.len;
-    if y.len > 0uz do
-      for var k in 0uz upto len(y) - 1uz do
-        set(&o,i + k, y.k);
-      done
-    done
-
+    if y.len > 0uz
+      for var k in 0uz upto len(y) - 1uz
+        set(&o,i + k, y.k)
+    ;
     return o;
   }
 
@@ -93,12 +89,10 @@ open class Farray
     var o : array[T, 1 + M];
 
     set (&o, 0, x);
-    if y.len > 0uz do
-      for var k in 0uz upto len(y) - 1uz do
-        set(&o,1uz + k, y.k);
-      done
-    done
-
+    if y.len > 0uz
+      for var k in 0uz upto len(y) - 1uz
+        set(&o,1uz + k, y.k)
+    ;
     return o;
   }
 
@@ -114,14 +108,13 @@ open class Farray
     var o : array[array[T,N],M];
     var n = len y;
     var m = len y.0;
-    for var i in 0uz upto n - 1uz do
+    for var i in 0uz upto n - 1uz 
       for var j in 0uz upto m - 1uz do
         val pfirst : +array[T,N] = &o.stl_begin;
         val psub: +array[T,N] = pfirst + j;
         val pelt : +T = psub.stl_begin;
         set(pelt,i, y.i.j);
       done
-    done
     return o;
   }
 
@@ -129,11 +122,10 @@ open class Farray
   fun rev[T, N] (x:array[T, N]): array[T, N] = {
     var o : array[T, N];
     var n = len x;
-    if n > 0uz do
-      for var i:size in 0uz upto n - 1uz do
-        set(&o,n - 1uz - i, x.i);
-      done
-    done
+    if n > 0uz
+      for var i:size in 0uz upto n - 1uz
+        set(&o,n - 1uz - i, x.i)
+    ;
     return o;
   }
 
@@ -156,9 +148,9 @@ open class Farray
       if n  > 0uz do
         o += repr xs.0;
 
-        for var i:size in 1uz upto n - 1uz do
-          o += ', ' + repr xs.i;
-        done
+        for var i:size in 1uz upto n - 1uz
+          o += ', ' + repr xs.i
+        ;
       done
       return o + ')';
     }
@@ -172,9 +164,8 @@ open class Farray
       if n == 0uz do
         return true;
       else
-        for var i:size in 0uz upto n - 1uz do
-          if not (xs.i == ys.i) do return false; done
-        done
+        for var i:size in 0uz upto n - 1uz
+          if not (xs.i == ys.i) return false;
       done
       return true;
     }
@@ -185,15 +176,13 @@ open class Farray
   instance[T,N with Tord[T]] Tord[array[T,N]] {
     fun < (xs:array[T,N],ys:array[T,N]) = {
       val n = xs.len;
-      if n == 0uz do return false; done
+      if n == 0uz return false;
       // assert n == ys.len;
       var i:size;
-      ph1:for i in 0uz upto n - 1uz do
-        if not (xs.i < ys.i) do break ph1; done
-      done
-      for i in i upto n - 1uz do
-        if not (xs.i <= ys.i) do return false; done
-      done
+      ph1:for i in 0uz upto n - 1uz
+        if not (xs.i < ys.i) break ph1;
+      for i in i upto n - 1uz
+        if not (xs.i <= ys.i) return false;
       return true;
     }
   }

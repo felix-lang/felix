@@ -52,11 +52,10 @@ class Partition
   gen partition (n:int, equiv:int * int -> bool) =
   {
     var p = partition_t n;
-    for var i in 0 upto  n - 1 do
-      for var j in i + 1 upto n - 1 do
-        if equiv (i,j) do merge (&p,i,j); done
-      done
-    done
+    for var i in 0 upto  n - 1 
+      for var j in i + 1 upto n - 1 
+        if equiv (i,j) call merge (&p,i,j)
+    ;
     return p;
   } 
 

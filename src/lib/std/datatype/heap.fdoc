@@ -42,11 +42,10 @@ class MinHeap[T with Tord[T]]
     var min_index = p;
     var left = p.left_child;
     if left < lim do
-      if h.min_index > h.left do min_index = left; done
+      if h.min_index > h.left perform min_index = left;
       var right = left + 1;
-      if right < lim do
-        if h.min_index > h.right do min_index = right; done
-      done
+      if right < lim
+        if h.min_index > h.right perform min_index = right; 
     done
     if min_index != p do
       heap_swap (h, p, min_index);
@@ -82,7 +81,7 @@ class MinHeap[T with Tord[T]]
 
   proc heapify (h:minheap_t) {
     var index = h.len.int - 2;
-    while index >= 0 do  
+    while index >= 0   
       bubble_down (h, index); --index; 
     done
   }

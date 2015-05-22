@@ -22,10 +22,10 @@ class DList[T]
     var n = 0;
     var first : cptr[dnode_t] = x.first;
   again:>
-    match first with
+    match first do
     | #nullptr => return n;
     | Ptr p => ++n; first = p*.next;
-    endmatch;
+    done
     goto again; 
   }
 
@@ -71,33 +71,33 @@ class DList[T]
 @felix
 
   gen pop_front (dl:&dlist_t): opt[T] = {
-    match dl*.first with
+    match dl*.first do
     | #nullptr => return None[T];
     | Ptr p => 
-      match p*.next with
+      match p*.next do
       | #nullptr =>
         dl.first <- nullptr[dnode_t];
         dl.last <- nullptr[dnode_t];
       | _ =>
         dl.first <- p*.next;
-      endmatch;
+      done
       return Some p*.data;
-    endmatch;
+    done
   }
 
   gen pop_back (dl:&dlist_t): opt[T] = {
-    match dl*.last with
+    match dl*.last do
     | #nullptr => return None[T];
     | Ptr p => 
-      match p*.prev with
+      match p*.prev do
       | #nullptr =>
         dl.first <- nullptr[dnode_t];
         dl.last <- nullptr[dnode_t];
       | _ =>
         dl.last <- p*.prev;
-      endmatch;
+      done
       return Some p*.data;
-    endmatch;
+    done
   }
 
 @h2 Use as a queue
