@@ -372,7 +372,8 @@ syn case match
 
 " comments
 syn region      fdocCommand     start="^@" end="$" contained 
-syn region      fdocComment     start="^@" end="^@felix" contains=fdocCommand keepend
+syn region      fdocComment     start="^@" end="^@tangle " contains=fdocCommand keepend
+" syn region      fdocComment     start="^@" end="^@felix" contains=fdocCommand keepend
 syn region      felixComment    start="/\*" end="\*/" contains=felixComment,felixTodo
 syn region      felixCommentL   start="//" skip="\\$" end="$" keepend contains=felixComment,felixTodo
 syn keyword     felixTodo       contained TODO FIXME XXX NOTE KLUDGE HACK

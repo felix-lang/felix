@@ -1,0 +1,456 @@
+@title Synchronous pipes.
+@tangler spipes.flx=share/lib/std/control/spipes.flx
+@tangler spipes_01.flx=test/regress/rt/spipes_01.flx
+@tangler spipes_01.expect=test/regress/rt/spipes_01.expect
+@tangler spipesex_01.flx=test/regress/rt/spipesex_01.flx
+@tangler spipesex_01.expect=test/regress/rt/spipesex_01.expect
+@h1 Concepts
+Felix provides synchronous fibres (fthreads) and channels (schannels) 
+which can be used to construct active circuits. The simplest case
+of these circuits is a pipeline.
+
+Let us open our class and begin.
+@tangle spipes.flx
+//$ Synchronous Pipes.
+open class Spipe {
+
+@h1 Sources and Sinks.
+@h2 An infinite Source.
+A source is an thread which writes output down a channel.
+We will wrap a generator up to create a source.
+@tangle spipes.flx
+  //$ Send an stream down a channel.
+  proc source_from_stream[S] (var it:1 -> S) (out:oschannel[S]) =>
+    while true call write (out,#it)
+  ;
+
+@h2 A finite Source.
+Here, we use an iterator returning an stream of optional values
+to create a finite source. If there is @{Some value} we return
+the @{value} otherwise we just terminate.
+@tangle spipes.flx
+  //$ source from an iterator
+  proc source_from_iterator[S] (var it:1 -> opt[S]) (out:oschannel[S]) =>
+    match v in it call write$ out,v
+  ;
+
+@h2 An infinite Sink.
+A sink is a procedure which reads from a channel.
+We will wrap up an ordinary procedure into a sink.
+@tangle spipes.flx
+  proc sink_from_procedure[T] (var p:T -> 0) (inp:ischannel[T]) => 
+    while true call p (read inp)
+  ;
+
+@h2 A basic pipeline
+Now we need to connect our source and sink.
+The @{pipe} operator below takes a pair
+of arguments, the sink procedure comes first,
+then the source. The function has an infix ascii art
+operator which can be used conveniently: @{|->}.
+
+@tangle spipes.flx
+  //$ Wire a source component to a sink.
+  //$ Return coupled fibre ready to run.
+  fun pipe[T] 
+    (var w: oschannel[T] -> 0, // source
+    var r: ischannel[T] -> 0)  // sink
+  :
+    1 -> 0
+  => 
+    {
+      var chi,cho = mk_ioschannel_pair[T] ();
+      spawn_fthread { (w cho); };
+      spawn_fthread { (r chi); };
+    }
+  ;
+@
+It is important to note this function does nothing
+but return a procedure closure, it doesn't actually
+start anything running. It creates a single synchronous
+channel with an input and output endpoint shared by
+the source and sink. The closure is essential to hide
+these variables to ensure the source and sink
+suicide together when they become unreachable.
+@h2 A simple example
+Now we will show a simple example.
+@tangle spipesex_01.flx
+include "std/control/spipes";
+
+begin
+  var src = (1,2,3,4,5).iterator.source_from_iterator;
+  var snk = println[int].sink_from_procedure;
+
+  #(src |-> snk);
+end
+
+@tangle spipesex_01.expect
+1
+2
+3
+4
+5
+@
+
+@h1 Transducers.
+A transducer is a procedure which reads from one channel
+and writes to another. The most basic transducers can be
+created from a function. 
+@tangle spipes.flx
+  proc transducer_from_function[O,I] (f:I->O) 
+    (var r: ischannel[I],
+    var w: oschannel[O])
+  =>
+    while true call write$ w, r.read.f;
+  ;
+@
+@h2 Wire transducer to sink.
+In order to use a transducer we have to be able to wire it
+to other components. First, wire one into a sink, producing
+another sink.
+
+@tangle spipes.flx
+  //$ Wire a transducer into a sink.
+  //$ Return a sink.
+  fun pipe[T,U]
+    (var a: ischannel[T] * oschannel[U] -> 0,
+    var b: ischannel[U] -> 0)
+  :
+    ischannel[T]  -> 0 
+  => 
+    proc (inp:ischannel[T])
+    {
+      var chi,cho = mk_ioschannel_pair[U] ();
+      spawn_fthread { a (inp, cho); };
+      spawn_fthread { b (chi); };
+    }
+  ;
+@
+@h2 Wire transducer to source.
+Alternately we can wire a transducer into a source, producing
+another source.
+
+@tangle spipes.flx
+  //$ Wire a source component to a transducer.
+  //$ Return source.
+  fun pipe[T,U]
+    (var w: oschannel[T] -> 0,
+    var t: ischannel[T] * oschannel[U] -> 0)
+  :
+    oschannel[U] -> 0 
+  => 
+    proc (out:oschannel[U])
+    {
+      var chi,cho = mk_ioschannel_pair[T] ();
+      spawn_fthread { (w cho); };
+      spawn_fthread { (t (chi, out)); };
+    }
+  ;
+@
+@h2 Wire transducer to transducer.
+Also we would like to be able to wire two transducers together,
+producing another transducer.
+@tangle spipes.flx
+  //$ Wire a transducer into a transducer.
+  //$ Return another transducer.
+  fun pipe[T,U,V]
+    (var a: ischannel[T] * oschannel[U] -> 0,
+    var b: ischannel[U] * oschannel[V] -> 0)
+  :
+    ischannel[T] * oschannel[V] -> 0 
+  => 
+    proc (inp:ischannel[T], out:oschannel[V])
+    {
+      var chi,cho = mk_ioschannel_pair[U] ();
+      spawn_fthread { a (inp, cho); };
+      spawn_fthread { b (chi, out); };
+    }
+  ;
+@h2 A simple example
+Here is an example:
+
+@tangle spipesex_01.flx
+begin
+  var src = (1,2,3,4,5).iterator.source_from_iterator;
+  var snk = println[int].sink_from_procedure;
+  var inc = transducer_from_function (fun (x:int)=> x + 1);
+  var sqr = transducer_from_function (fun (x:int) => x * x);
+  println$ "--";
+  #(src |-> inc |-> sqr |-> snk);
+  println$ "--";
+  src = (1,2,3,4,5).iterator.source_from_iterator;
+  #((src |-> inc) |-> sqr |-> snk);
+  println$ "--";
+  src = (1,2,3,4,5).iterator.source_from_iterator;
+  #(src |-> (inc |-> sqr) |-> snk);
+  println$ "--";
+  src = (1,2,3,4,5).iterator.source_from_iterator;
+  #(src |-> inc |-> (sqr |-> snk));
+  println$ "--";
+end
+@
+Note the vital feature: the pipe operator is associative!
+@tangle spipesex_01.expect
+4
+9
+16
+25
+36
+--
+4
+9
+16
+25
+36
+--
+4
+9
+16
+25
+36
+--
+4
+9
+16
+25
+36
+--
+@
+@tangle spipes.flx
+/*
+
+ 
+  //$ Wire two sources to two sinks.
+  //$ Returns a SINGLE pipeline!
+  fun pipe[T0,T1]
+    (
+      var w: 
+        (oschannel[T0] -> 0) * 
+        (oschannel[T1] -> 0),
+      var r:
+        (ischannel[T0] -> 0) * 
+        (ischannel[T1] -> 0)
+    )
+  :
+    1 -> 0
+  =>
+    {
+       pipe (w.0,r.0) ();
+       pipe (w.1, r.1) ();
+    }
+  ;
+
+  //$ Utility for tee connector: array of outputs
+  proc run_tee[T,N] (i:ischannel[T], oa:oschannel[T]^N)
+  {
+  again:>
+    var d = read i;
+    for o in oa do
+      write (o, d);
+    done
+    goto again;
+  }
+
+
+  //$ Wire together a source component with an array of sinks.
+  //$ Returns a closed pipeline.
+  fun pipe[T,N] 
+  (
+    var w: oschannel[T] -> 0,
+    var r: (ischannel[T] -> 0) ^ N
+  )
+    : 1 -> 0
+  =>
+    {
+      var i,o = #mk_ioschannel_pair[T];
+      spawn_fthread { w o; };
+      var cho : oschannel[T] ^N;
+      for var j in 0uz upto r.len - 1uz do
+        var inp,out = #mk_ioschannel_pair[T];
+        &cho.j <- out;
+        noinline proc exec (var k:size, chi:ischannel[T]) () { r.k chi; }
+        spawn_fthread$ exec (j,inp);
+      done
+      spawn_fthread { run_tee (i,cho); };
+    }
+  ;
+
+
+  //$ Wire two source components to two transducers.
+  //$ Return two sources.
+  fun pipe[T0,T1,U0,U1]
+    (
+      var w: 
+        (oschannel[T0] -> 0) *
+        (oschannel[T1] -> 0),
+      var t: 
+        (ischannel[T0] * oschannel[U0] -> 0) *
+        (ischannel[T1] * oschannel[U1] -> 0)
+    )
+  :
+    (oschannel[U0] -> 0) *
+    (oschannel[U1] -> 0)
+  => 
+    pipe (w.0,t.0),
+    pipe (w.1,t.1)
+  ;
+
+  //$ Wire together a source component with two transducers
+  //$ Returns two sources.
+  //
+  // WARNING: I do not know why this one works.
+  // It actually starts the threads when called.
+  // This is wrong, but I see no alternative.
+  //
+  // Also, it's a function starting those threads!
+  // Functions cannot run threads at the moment.
+  // Unless they manually construct a scheduler.
+
+  fun pipe[T,U0,U1] 
+  (
+    var w: oschannel[T] -> 0,
+    var r: (ischannel[T] * oschannel[U0] -> 0) * (ischannel[T] * oschannel[U1] -> 0)
+  )
+  :
+    (oschannel[U0] -> 0) * (oschannel[U1] -> 0)
+  =
+  {
+      var i,o = #mk_ioschannel_pair[T];
+      var chi0,cho0 = #mk_ioschannel_pair[T];
+      var chi1,cho1 = #mk_ioschannel_pair[T];
+      spawn_fthread { run_tee (i,(cho0, cho1)); };
+      spawn_fthread { w o; };
+      return
+        proc (out:oschannel[U0]) { r.0 (chi0,out); },
+        proc (out:oschannel[U1]) { r.1 (chi1,out); }
+      ;
+  }
+
+
+
+  //$ isrc converts a streamable data structure
+  //$ such as an array into a source.
+  proc isrc[V,T with Streamable[T,V]] (var dat:T) (out:oschannel[opt[V]])
+  {
+    source[opt[V]] (dat.iterator) out;
+  }
+
+xpipe connects a streamable data structure
+  //$ such as an array directly into a transducer.
+  fun xpipe[V,T,U with Streamable[T,V]] 
+    (
+      a:T,
+      t: ischannel[opt[V]] * oschannel[U] -> 0
+    )
+    : oschannel[U] -> 0 =>
+    pipe (a.isrc[V],t)
+  ;
+
+
+  //$ Wire two transducers into two transducers.
+  //$ Return two transducers.
+  fun pipe[T0,T1,U0,U1,V0,V1]
+    (
+      var a: 
+        (ischannel[T0] * oschannel[U0] -> 0) *
+        (ischannel[T1] * oschannel[U1] -> 0),
+      var b: 
+        (ischannel[U0] * oschannel[V0] -> 0) * 
+        (ischannel[U1] * oschannel[V1] -> 0) 
+    )
+  :
+    (ischannel[T0] * oschannel[V0] -> 0) *
+    (ischannel[T1] * oschannel[V1] -> 0)
+  => 
+     pipe (a.0, b.0),
+     pipe (a.1, b.1)
+  ;
+
+
+  //$ Wire two transducers into two sinks.
+  //$ Return two sinks.
+  fun pipe[T0,T1,U0,U1]
+    (
+      var a: 
+        (ischannel[T0] * oschannel[U0] -> 0) *
+        (ischannel[T1] * oschannel[U1] -> 0),
+      var b: 
+         (ischannel[U0] -> 0) *
+         (ischannel[U1] -> 0)
+    )
+  :
+    (ischannel[T0]  -> 0)  *
+    (ischannel[T1]  -> 0) 
+  => 
+      pipe (a.0, b.0),
+      pipe (a.1, b.1)
+  ;
+
+
+
+  //$ Stream sort using intermediate darray.
+  //$ Requires stream of option type.
+  proc sort[T with Tord[T]] (r: ischannel[opt[T]], w: oschannel[opt[T]])
+  {
+     var x = darray[T]();
+     acquire:while true do
+       match read r with
+       | Some v => x+=v;
+       | #None => break acquire;
+       endmatch;
+     done
+     x.sort;
+     for v in x do
+       write (w, Some v);
+     done
+     write (w,None[T]);
+  }
+*/
+
+} // end class
+
+@
+
+@tangle spipes_01.flx
+include "std/control/schannels";
+include "std/control/spipe";
+
+// Pipe test.
+proc source (cho:oschannel[int]) { 
+  for var i in 0 upto 9 do write (cho,i); done 
+}
+
+proc sink (chi:ischannel[int]) { 
+  while true do var x= read chi; println x; done 
+}
+
+proc xduce(chi: ischannel[int], cho: oschannel[int]) {
+  write (cho, 99);
+  while true do var x = read chi; write (cho, x); write (cho, 2 * x); done
+}
+
+spawn_fthread$  source |-> xduce |-> sink;
+
+@tangle spipes_01.expect
+99
+0
+0
+1
+2
+2
+4
+3
+6
+4
+8
+5
+10
+6
+12
+7
+14
+8
+16
+9
+18
+

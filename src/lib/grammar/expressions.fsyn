@@ -77,7 +77,7 @@ syntax expressions {
   x[sdollar_apply_pri] := x[stuple_pri] "$" x[sdollar_apply_pri] =># "`(ast_apply ,_sr (,_1 ,_3))";
 
   //$ Low precedence left associative reverse application.
-  x[spipe_apply_pri] := x[spipe_apply_pri] "|>" x[stuple_pri] =># "`(ast_apply ,_sr (,_3 ,_1))";
+  x[spipe_apply_pri] := x[spipe_apply_pri] "|>" x[stuple_pri] =># "`(ast_apply ,_sr (,_1 ,_3))";
 
   //$ Tuple formation by cons: right associative.
   x[stuple_cons_pri] := x[>stuple_cons_pri] ",," x[stuple_cons_pri] =># "`(ast_tuple_cons ,_sr ,_1 ,_3)";
@@ -116,6 +116,9 @@ syntax expressions {
 
   //$ Left assoc, for schannel pipes.
   x[ssetunion_pri] := x[ssetunion_pri] "|->" x[>ssetunion_pri] =># "(infix 'pipe)"; 
+
+  //$ Right assoc, for schannel pipes transformers
+  x[ssetunion_pri] := x[>ssetunion_pri] "=>" x[ssetunion_pri] =># "(infix 'trans_type)"; 
 
   //$ Non associative, streaming data structure into transducer.
   x[ssetunion_pri] := x[>ssetunion_pri] ">->" x[>ssetunion_pri] =># "(infix 'xpipe)"; 

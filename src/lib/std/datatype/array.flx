@@ -44,7 +44,7 @@ open class Farray
     val n = x.len;
     if n > 0uz 
       for var i: size in 0uz upto n - 1uz
-        set (&o,i, _f x.i)
+        call set (&o,i, _f x.i)
     ;
     return o;
   }
@@ -61,12 +61,12 @@ open class Farray
 
     if x.len > 0uz
       for var i in 0uz upto len(x) - 1uz
-        set (&o, i,x.i)
+        call set (&o, i,x.i)
     ;
     i = x.len;
     if y.len > 0uz
       for var k in 0uz upto len(y) - 1uz
-        set(&o,i + k, y.k)
+        call set(&o,i + k, y.k)
     ;
     return o;
   }
@@ -75,11 +75,10 @@ open class Farray
   fun join[T, N] (x:array[T, N]) (y:T):array[T, N + 1] = {
     var o : array[T, N + 1];
 
-    if x.len > 0uz do
-      for var i in 0uz upto len(x) - 1uz do
-        set (&o, i,x.i);
-      done
-    done
+    if x.len > 0uz
+      for var i in 0uz upto len(x) - 1uz
+        call set (&o, i,x.i)
+    ;
     set(&o,x.len, y);
     return o;
   }
@@ -91,7 +90,7 @@ open class Farray
     set (&o, 0, x);
     if y.len > 0uz
       for var k in 0uz upto len(y) - 1uz
-        set(&o,1uz + k, y.k)
+        call set(&o,1uz + k, y.k)
     ;
     return o;
   }
@@ -124,7 +123,7 @@ open class Farray
     var n = len x;
     if n > 0uz
       for var i:size in 0uz upto n - 1uz
-        set(&o,n - 1uz - i, x.i)
+        call set(&o,n - 1uz - i, x.i)
     ;
     return o;
   }
@@ -149,7 +148,7 @@ open class Farray
         o += repr xs.0;
 
         for var i:size in 1uz upto n - 1uz
-          o += ', ' + repr xs.i
+          perform o += ', ' + repr xs.i
         ;
       done
       return o + ')';
