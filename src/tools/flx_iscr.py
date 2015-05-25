@@ -4,7 +4,7 @@ import sys, os, re, io, operator, shutil, string
 
 # The regexes that the processor uses.
 class regexes:
-    felt = '[A-Za-z._][A-Za-z0-9_.]*'
+    felt = '[A-Za-z._${}][A-Za-z0-9_.${}]*'
     fname = '(?:%s/)*%s' % (felt, felt)
 
     # A tangler definition looks like:
