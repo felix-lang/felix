@@ -284,6 +284,8 @@ post-tarball:
 #--------------------------------------------------
 # NEW BUILD ROUTINES
 #--------------------------------------------------
+packages:
+	for i in src/packages/*; do python3 src/tools/flx_iscr.py $$i build/release; done
 
 #
 slow-flxg:
