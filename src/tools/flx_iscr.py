@@ -30,11 +30,11 @@ class Tangler(io.StringIO):
     # Note if a file is non-existent, and the tangler input
     # is empty, the file will not be created.
     def save(self):
-        data = self.getvalue().split('\n')
         update = False
+        self.seek(0)
         try:
             with open(self.filename) as old:
-                update = all(map(operator.eq, old, data))
+                update = any(map(operator.ne, old, self))
         except:
             update = True
         if update:
@@ -90,9 +90,8 @@ class Processor:
         '''
         for i, line in enumerate(f, start=1):
             self.lineno = i
-            line = line.strip()
-            if not line: continue
-            if line[0] == '@':
+            line = line.rstrip()
+            if line and line[0] == '@':
                 if line.startswith('@tangler'):
                     m = regexes.tangler_def.match(line)
                     if not m:
