@@ -67,7 +67,7 @@ class Processor:
         filename = string.Template(filename).safe_substitute(os.environ)
         if id in self.tanglers:
             sys.exit('Duplicate definition of tangler %s' % id)
-        self.tanglers[id] = Tangler(filename, id)
+        self.tanglers[id] = Tangler(os.path.join(self.odir, filename), id)
     def set_tangler(self, id):
         'Specify a new current tangler.'
         try:
