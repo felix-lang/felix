@@ -20,10 +20,14 @@ class Tangling(State): pass
 
 # Now define a type to hold a tangler file buffer.
 class Tangler(io.StringIO):
-    def __init__(self, filename, id, quiet):
+    def __init__(self, filename, id, quiet, suppress_linenos):
+        self.basename,self.extension = os.path.splitext(filename)
         self.filename = filename
         self.id = id
         self.quiet = quiet
+        self.emit_linenos = self.extension in (
+            '.flx','.c','.h','.cpp','.cxx','.hpp'
+            ) and not suppress_linenos
         super(Tangler, self).__init__()
     # Now for the save routine. We only write the buffer to
     # the file if the contents differ from the old file.
@@ -63,6 +67,7 @@ class Processor:
         # We use a dictionary variable to hold all the tanglers.
         self.tanglers = {}
         self.lineno = 0
+        self.suppress_linenos = False
     def parse_error(self, msg):
         sys.exit('error at line %d: %s' % (self.lineno, msg))
     # Now define the parser actions.
@@ -78,11 +83,14 @@ class Processor:
             filename = os.path.join(self.odir, filename)
         if id in self.tanglers:
             sys.exit('Duplicate definition of tangler %s' % id)
-        self.tanglers[id] = Tangler(filename, id, self.quiet)
-    def set_tangler(self, id):
+        self.tanglers[id] = Tangler(filename, id, self.quiet, suppress_linenos=self.suppress_linenos)
+    def set_tangler(self, id,lineno):
         'Specify a new current tangler.'
         try:
             tangler = self.tanglers[id]
+            if tangler.emit_linenos:
+                hashline = "#line " + str(lineno+1) + " " + tangler.filename
+                print(hashline,file=tangler)
         except KeyError:
             sys.exit("Can't find tangler %s" % id)
         else:
@@ -114,7 +122,7 @@ class Processor:
                     m = regexes.tangler_use.match(line)
                     if not m:
                         self.parse_error('invalid tangler usage')
-                    self.set_tangler(m.group(1))
+                    self.set_tangler(m.group(1),self.lineno)
                 else:
                     self.state = Doc
             else:
