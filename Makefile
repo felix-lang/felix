@@ -111,7 +111,7 @@ regress-check: test-dir
 	# RUNNING REGRESSION TESTS
 	#
 	# ============================================================
-	-${BUILDROOT}/host/bin/flx --felix=build.fpc --usage=prototype --expect --nonstop --indir=${BUILDROOT}/test/regress/rt --regex='.*\.flx' test
+	-${BUILDROOT}/host/bin/flx --felix=build.fpc --usage=prototype --expect --nonstop --indir=${BUILDROOT}/test/regress/rt --regex='.*\.flx' ${BUILDROOT}/test/test
 
 tut-check: tut-dir
 	# ============================================================
@@ -119,7 +119,7 @@ tut-check: tut-dir
 	# CHECKING CORRECTNESS OF TUTORIAL EXAMPLES
 	#
 	# ============================================================
-	-${BUILDROOT}/host/bin/flx --felix=build.fpc --usage=prototype --expect --input --nonstop --indir=${BUILDROOT}/test/tut --regex='.*\.flx' tut
+	-${BUILDROOT}/host/bin/flx --felix=build.fpc --usage=prototype --expect --input --nonstop --indir=${BUILDROOT}/test/tut --regex='.*\.flx' ${BUILDROOT}/test/tut
 
 tutopt-check: tutopt-dir
 	#
@@ -132,7 +132,7 @@ tutopt-check: tutopt-dir
 	# to use it.
 	# ============================================================
 	#
-	-FLX_INSTALL_DIR=${BUILDROOT} ${BUILDROOT}/host/bin/flx --felix=build.fpc --usage=prototype --expect --input --nonstop --indir=${BUILDROOT}/test/tutopt --regex='.*\.flx' tutopt
+	-FLX_INSTALL_DIR=${BUILDROOT} ${BUILDROOT}/host/bin/flx --felix=build.fpc --usage=prototype --expect --input --nonstop --indir=${BUILDROOT}/test/tutopt --regex='.*\.flx' ${BUILDROOT}/test/tutopt
 
 
 test: regress-check tut-check tutopt-check
