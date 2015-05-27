@@ -20,9 +20,10 @@ class Tangling(State): pass
 
 # Now define a type to hold a tangler file buffer.
 class Tangler(io.StringIO):
-    def __init__(self, filename, id):
+    def __init__(self, filename, id, quiet):
         self.filename = filename
         self.id = id
+        self.quiet = quiet
         super(Tangler, self).__init__()
     # Now for the save routine. We only write the buffer to
     # the file if the contents differ from the old file.
@@ -38,7 +39,8 @@ class Tangler(io.StringIO):
         except:
             update = True
         if update:
-            print('Write     %s -> %s' % (self.id, self.filename))
+            if not self.quiet:
+                print('Write     %s -> %s' % (self.id, self.filename))
             os.makedirs(os.path.dirname(self.filename), exist_ok=True)
             try:
                 f = open(self.filename, 'w')
@@ -48,13 +50,15 @@ class Tangler(io.StringIO):
                 self.seek(0)
                 shutil.copyfileobj(self, f)
         else:
-            print('Unchanged %s -> %s' % (self.id, self.filename))
+            if not self.quiet:
+                print('Unchanged %s -> %s' % (self.id, self.filename))
 
 # The processor class.
 class Processor:
-    def __init__(self, odir):
+    def __init__(self, odir, quiet):
         self.state = Doc
         self.odir = odir
+        self.quiet = quiet
         self.tangler = None
         # We use a dictionary variable to hold all the tanglers.
         self.tanglers = {}
@@ -64,10 +68,17 @@ class Processor:
     # Now define the parser actions.
     def def_tangler(self, id, filename):
         'Add a new tangler.'
+        join = True
+        if filename[0] != '$':
+            join = False
         filename = string.Template(filename).safe_substitute(os.environ)
+        if os.path.isabs(filename):
+            join = False
+        if join:
+            filename = os.path.join(self.odir, filename)
         if id in self.tanglers:
             sys.exit('Duplicate definition of tangler %s' % id)
-        self.tanglers[id] = Tangler(os.path.join(self.odir, filename), id)
+        self.tanglers[id] = Tangler(filename, id, self.quiet)
     def set_tangler(self, id):
         'Specify a new current tangler.'
         try:
@@ -88,6 +99,8 @@ class Processor:
         file, or a switch to document mode in which we just skip
         over the lines.
         '''
+        if not self.quiet:
+            print('PACKAGE   ' + f.name)
         for i, line in enumerate(f, start=1):
             self.lineno = i
             line = line.rstrip()
@@ -115,13 +128,20 @@ class Processor:
 
 def iscr():
     # Parse the arguments.
+    quiet = False
+    if '-h' in sys.argv:
+        print('usage: %s [-q] <interscript file> <output directory>' % sys.argv[0])
+        sys.exit()
+    if '-q' in sys.argv:
+        quiet = True
+        sys.argv.remove('-q')
     try:
         _, iname, odir = sys.argv+([''] if len(sys.argv) == 2 else [])
     except ValueError:
-        sys.exit('invalid number of arguments')
+        sys.exit('invalid number of arguments; use %s -h for help' % sys.argv[0])
     # If odir == '', abspath returns the current directory.
     odir = os.path.abspath(odir)
-    p = Processor(odir)
+    p = Processor(odir, quiet)
     # Process the input file and buffer up the code.
     try:
         f = open(iname)
