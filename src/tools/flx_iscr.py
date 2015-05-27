@@ -69,7 +69,7 @@ class Processor:
     def def_tangler(self, id, filename):
         'Add a new tangler.'
         join = True
-        if filename[0] != '$':
+        if filename[0] == '$':
             join = False
         filename = string.Template(filename).safe_substitute(os.environ)
         if os.path.isabs(filename):

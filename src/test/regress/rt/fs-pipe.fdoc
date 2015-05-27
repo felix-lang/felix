@@ -1,4 +1,4 @@
-
+@title fs-pipe
 The |> operator is borrowed from the F# language, of which the language
 designers likely borrowed it from somewhere else (e.g. OCaml). The usage is
 simple, but it allows the programmer to avoid needless variable declarations,

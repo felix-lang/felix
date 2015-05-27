@@ -81,7 +81,7 @@ class MinHeap[T with Tord[T]]
 
   proc heapify (h:minheap_t) {
     var index = h.len.int - 2;
-    while index >= 0   
+    while index >= 0 do
       bubble_down (h, index); --index; 
     done
   }
