@@ -1,0 +1,32 @@
+// find grammar files
+
+fun / (s:string, r:string) => Filename::join (s,r);
+var arg1 = System::argv 1;
+var dir = if arg1 == "" then "src"/"lib" else arg1 / "share" / "lib";
+println$ "[flx_find_grammar_files] ** Scanning " + dir;
+
+var fsyn = RE2 ".*\\.fsyn";
+var gfiles = FileSystem::regfilesin (dir, fsyn);
+//println$ gfiles;
+
+var oldfile=load (dir/"grammar"/"grammar.files");
+var oldfiles = filter (fun (x:string)=> x!="") (split (oldfile,"\n"));
+
+var same = gfiles \cong oldfiles;
+println$ "Same=" + same.str;
+var extras = "";
+for file in gfiles
+  if file not in oldfiles do 
+    //call println ("EXTRA FILE " + file);
+    extras += file + "\n";
+  done
+
+var extrafilename = dir /"grammar"/"extra.files";
+var oldextras = load extrafilename;
+if extras != oldextras do
+  println$ "[flx_find_grammar_files] ** Writing extra grammar files to "+extrafilename;
+  print extras;
+  save$ extrafilename,extras;
+else
+  println$ "[flx_find_grammar_files] ** Unchanged";
+done

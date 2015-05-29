@@ -28,5 +28,6 @@ grammar/namespaces.fsyn
 grammar/regexps.fsyn
 grammar/cgram.fsyn
 grammar/plugins.fsyn
+@grammar/extra.files
 grammar/felix.fsyn
 grammar/save.fsyn
