@@ -68,7 +68,7 @@ open Regdef; // required
 // helper definitions
 regdef optwhite = ' '*;
 regdef white = ' '+;
-regdef felt= perl ("[A-Za-z._][A-Za-z0-9_.]*");
+regdef felt= perl ("[A-Za-z._][-A-Za-z0-9_.]*");
 regdef fname = (felt "/")* felt;
 
 // A tangler definition looks like:

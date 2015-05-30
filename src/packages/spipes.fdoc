@@ -1,9 +1,9 @@
 @title Synchronous pipes.
 @tangler spipes.flx=share/lib/std/control/spipes.flx
-@tangler spipes_01.flx=test/regress/rt/spipes_01.flx
-@tangler spipes_01.expect=test/regress/rt/spipes_01.expect
-@tangler spipesex_01.flx=test/regress/rt/spipesex_01.flx
-@tangler spipesex_01.expect=test/regress/rt/spipesex_01.expect
+@tangler spipesex-01.flx=test/regress/rt/spipesex-01.flx
+@tangler spipesex-01.expect=test/regress/rt/spipesex-01.expect
+@tangler spipesex-02.flx=test/regress/rt/spipesex-02.flx
+@tangler spipesex-02.expect=test/regress/rt/spipesex-02.expect
 @h1 Concepts
 Felix provides synchronous fibres (fthreads) and channels (schannels) 
 which can be used to construct active circuits. The simplest case
@@ -74,7 +74,7 @@ these variables to ensure the source and sink
 suicide together when they become unreachable.
 @h2 A simple example
 Now we will show a simple example.
-@tangle spipesex_01.flx
+@tangle spipesex-01.flx
 include "std/control/spipes";
 
 begin
@@ -84,7 +84,7 @@ begin
   #(src |-> snk);
 end
 
-@tangle spipesex_01.expect
+@tangle spipesex-01.expect
 1
 2
 3
@@ -169,7 +169,8 @@ producing another transducer.
 @h2 A simple example
 Here is an example:
 
-@tangle spipesex_01.flx
+@tangle spipesex-02.flx
+include "std/control/spipes";
 begin
   var src = (1,2,3,4,5).iterator.source_from_iterator;
   var snk = println[int].sink_from_procedure;
@@ -190,7 +191,7 @@ begin
 end
 @
 Note the vital feature: the pipe operator is associative!
-@tangle spipesex_01.expect
+@tangle spipesex-02.expect
 4
 9
 16
@@ -411,7 +412,7 @@ xpipe connects a streamable data structure
 
 @
 
-@tangle spipes_01.flx
+@tangle spipesex-02.flx
 include "std/control/schannels";
 include "std/control/spipe";
 
@@ -431,7 +432,7 @@ proc xduce(chi: ischannel[int], cho: oschannel[int]) {
 
 spawn_fthread$  source |-> xduce |-> sink;
 
-@tangle spipes_01.expect
+@tangle spipesex-02.expect
 99
 0
 0
@@ -453,4 +454,4 @@ spawn_fthread$  source |-> xduce |-> sink;
 16
 9
 18
-
+@

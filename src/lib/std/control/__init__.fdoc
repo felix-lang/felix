@@ -5,7 +5,6 @@ include "std/control/control";
 include "std/control/stream";
 include "std/control/schannels";
 include "std/control/fibres";
-//include "std/control/spipe";
 //include "std/control/mux";
 
 // pthreads (portable)

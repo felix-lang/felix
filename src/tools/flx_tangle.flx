@@ -22,7 +22,7 @@
 //$
 
 include "std/control/schannels";
-include "std/control/spipe";
+include "std/control/spipes";
 
 // --- COMMAND LINE PROCESSING --------------------------------
 

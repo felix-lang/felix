@@ -64,7 +64,7 @@ help:
 	#   FBUILD_PARAMS: parameters to fbuild, default none
 	#     fbuild/fbuild-light --help for options
 
-build: user-build slow-flxg rebuild
+build: packages user-build slow-flxg rebuild
 
 dev-build: fbuild gendoc
 
@@ -111,7 +111,7 @@ regress-check: test-dir
 	# RUNNING REGRESSION TESTS
 	#
 	# ============================================================
-	-${BUILDROOT}/host/bin/flx --felix=build.fpc --usage=prototype --expect --nonstop --indir=${BUILDROOT}/test/regress/rt --regex='.*\.flx' ${BUILDROOT}/test/test
+	-${BUILDROOT}/host/bin/flx --felix=build.fpc --usage=prototype --expect --nonstop --indir=${BUILDROOT}/test/regress/rt --regex='.*\.flx' ${BUILDROOT}/test
 
 tut-check: tut-dir
 	# ============================================================
@@ -286,6 +286,8 @@ post-tarball:
 #--------------------------------------------------
 packages:
 	for i in src/packages/*; do echo "PACKAGE " $$i; python3 src/tools/flx_iscr.py -q $$i ${BUILDROOT}; done
+
+grammar:
 	-${BUILDROOT}/host/bin/flx src/tools/flx_find_grammar_files ${BUILDROOT}
 
 #
@@ -303,7 +305,7 @@ flxg:
 	build/release/host/bin/flx_build_flxg
 	cp tmp-dir/flxg build/release/host/bin
 
-copy:
+copy: packages
 	# =========================================================
 	# copying ./src to build/release/share/src
 	# =========================================================
@@ -409,7 +411,7 @@ build-tools:
 	build/release/host/bin/flx --felix=build.fpc  src/tools/flx_build_boot \
 		--build-flx-tools
 
-lib: copy
+lib: copy grammar
 	# =========================================================
 	# copy files from src to lib
 	# =========================================================

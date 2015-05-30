@@ -4,7 +4,7 @@ import sys, os, re, io, operator, shutil, string
 
 # The regexes that the processor uses.
 class regexes:
-    felt = '[A-Za-z._${}][A-Za-z0-9_.${}]*'
+    felt = '[A-Za-z._${}][-A-Za-z0-9_.${}]*'
     fname = '(?:%s/)*%s' % (felt, felt)
 
     # A tangler definition looks like:
@@ -89,7 +89,7 @@ class Processor:
         try:
             tangler = self.tanglers[id]
             if tangler.emit_linenos:
-                hashline = "#line " + str(lineno+1) + " " + tangler.filename
+                hashline = "#line " + str(lineno+1) + ' "' + tangler.filename+'"'
                 print(hashline,file=tangler)
         except KeyError:
             sys.exit("Can't find tangler %s" % id)
