@@ -4,6 +4,8 @@
 @tangler spipesex-01.expect=test/regress/rt/spipesex-01.expect
 @tangler spipesex-02.flx=test/regress/rt/spipesex-02.flx
 @tangler spipesex-02.expect=test/regress/rt/spipesex-02.expect
+@tangler spipesex-03.flx=test/regress/rt/spipesex-03.flx
+@tangler spipesex-03.expect=test/regress/rt/spipesex-03.expect
 @h1 Concepts
 Felix provides synchronous fibres (fthreads) and channels (schannels) 
 which can be used to construct active circuits. The simplest case
@@ -83,6 +85,7 @@ begin
 
   #(src |-> snk);
 end
+@
 
 @tangle spipesex-01.expect
 1
@@ -217,8 +220,10 @@ Note the vital feature: the pipe operator is associative!
 36
 --
 @
+@h1 Advanced
+TBD.
+
 @tangle spipes.flx
-/*
 
  
   //$ Wire two sources to two sinks.
@@ -240,7 +245,6 @@ Note the vital feature: the pipe operator is associative!
        pipe (w.1, r.1) ();
     }
   ;
-
   //$ Utility for tee connector: array of outputs
   proc run_tee[T,N] (i:ischannel[T], oa:oschannel[T]^N)
   {
@@ -328,26 +332,6 @@ Note the vital feature: the pipe operator is associative!
   }
 
 
-
-  //$ isrc converts a streamable data structure
-  //$ such as an array into a source.
-  proc isrc[V,T with Streamable[T,V]] (var dat:T) (out:oschannel[opt[V]])
-  {
-    source[opt[V]] (dat.iterator) out;
-  }
-
-xpipe connects a streamable data structure
-  //$ such as an array directly into a transducer.
-  fun xpipe[V,T,U with Streamable[T,V]] 
-    (
-      a:T,
-      t: ischannel[opt[V]] * oschannel[U] -> 0
-    )
-    : oschannel[U] -> 0 =>
-    pipe (a.isrc[V],t)
-  ;
-
-
   //$ Wire two transducers into two transducers.
   //$ Return two transducers.
   fun pipe[T0,T1,U0,U1,V0,V1]
@@ -406,15 +390,14 @@ xpipe connects a streamable data structure
      done
      write (w,None[T]);
   }
-*/
 
 } // end class
 
 @
 
-@tangle spipesex-02.flx
+@tangle spipesex-03.flx
 include "std/control/schannels";
-include "std/control/spipe";
+include "std/control/spipes";
 
 // Pipe test.
 proc source (cho:oschannel[int]) { 
@@ -432,7 +415,7 @@ proc xduce(chi: ischannel[int], cho: oschannel[int]) {
 
 spawn_fthread$  source |-> xduce |-> sink;
 
-@tangle spipesex-02.expect
+@tangle spipesex-03.expect
 99
 0
 0
