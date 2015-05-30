@@ -414,6 +414,7 @@ proc xduce(chi: ischannel[int], cho: oschannel[int]) {
 }
 
 spawn_fthread$  source |-> xduce |-> sink;
+@
 
 @tangle spipesex-03.expect
 99

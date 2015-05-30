@@ -39,7 +39,8 @@ class Tangler(io.StringIO):
         self.seek(0)
         try:
             with open(self.filename) as old:
-                update = any(map(operator.ne, old, self))
+                contents = old.read()
+                update = self.read() != contents
         except:
             update = True
         if update:
