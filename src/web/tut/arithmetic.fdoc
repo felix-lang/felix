@@ -183,7 +183,7 @@ union token_t  =
   | T_num of double
   | T_ident of string
   | T_lparen | T_rparen
-  | T_plus | T_minus | T_star | T_slash
+  | T_plus | T_minus | T_star | T_slash | T_semicolon | T_equal
   ;
 
 //Explode a string into a list of char
@@ -238,6 +238,24 @@ var paren : parser[char, token_t] =
     endmatch
   );
 
+//Equal token
+var equal : parser[char, token_t] =
+  token (fun (ch:char) : opt[token_t] =>
+  match ch with
+  | c when c == '=' => Some T_equal
+    | _ => None[token_t]
+    endmatch
+  );
+
+//Semicolon token
+var semicolon : parser[char, token_t] =
+  token (fun (ch:char) : opt[token_t] =>
+  match ch with
+  | c when c == ';' => Some T_equal
+    | _ => None[token_t]
+    endmatch
+  );
+
 //Parse a whitespace character
 var space_ : parser[char, unit] =
  token (fun (ch:char) : opt[unit] =>
@@ -256,6 +274,13 @@ fun spaces (toks : list[char]) : parsed[char, unit] =>
   |~ empty[char, unit] ()) toks
   ;
 
+//Lexer for the language of arithmetic expressions
+fun lex (toks : list[char]) : parsed [char, list[token_t]] =>
+    (spaces &~ 
+    *(((identifier |~ number |~ operator |~ paren |~ semicolon |~ equal) &~ spaces) >=~ 
+    (fun (tok:token_t, _:unit) : token_t => tok)) >=~ (fun (u:unit, ts:list[token_t]) : list[token_t] => ts)) toks
+  ;
+
 //Arithmetic expressions
 union ast_t =
   | E_const of double
@@ -264,6 +289,7 @@ union ast_t =
   | E_sub of ast_t * ast_t
   | E_mul of ast_t * ast_t
   | E_div of ast_t * ast_t
+  | E_let of (string * ast_t)
   ;
 
 //Constants
@@ -312,7 +338,7 @@ fun givento[A, B, C] (p1:parser[A, B], p2:B -> parser[A, C]) : parser[A, C] =>
   fun (toks : list[A]) : parsed[A, C] =>
      match p1 toks with
       | Returns (r1, toks1) => p2 r1 toks1
-      | Parse_failed => Parse_failed[A, C]
+      | #Parse_failed => Parse_failed[A, C]
      endmatch
     ;
 
@@ -328,6 +354,103 @@ fun left_assoc[A, B]
 
   return (term >>=~ sequence);
 }
+
+//Opening paren
+var open_paren : parser[token_t, unit] =
+  token (fun (tok : token_t) : opt[unit] =>
+  match tok with
+  | #T_lparen => Some (())
+  | _ => None[unit]
+  endmatch)
+  ;
+
+//Closing paren
+var close_paren : parser[token_t, unit] =
+  token (fun (tok : token_t) : opt[unit] =>
+  match tok with
+  | #T_rparen => Some (())
+  | _ => None[unit]
+  endmatch)
+  ;
+
+//Semi-colon
+var semi : parser[token_t, unit] =
+  token (fun (tok : token_t) : opt[unit] =>
+  match tok with
+  | #T_semicolon => Some (())
+  | _ => None[unit]
+  endmatch)
+  ;
+
+//Equals sign
+var equals : parser[token_t, unit] =
+  token (fun (tok : token_t) : opt[unit] =>
+  match tok with
+  | #T_equal => Some (())
+  | _ => None[unit]
+  endmatch)
+  ;
+
+//A language of arithmetic expressions
+/*
+expr_list :=
+  | expr (';' expr)*
+  ;
+expr :=
+  | identifier '=' expr
+  | term (['+'|'-'] term)*
+  ;
+term :=
+  | fact (['*'|'/'] fact)*
+  ;
+fact :=
+  | num
+  | identifier
+  | '( expr ')
+ */
+
+//expr_list := expr (';' expr)*
+var expr_list : parser[token_t, list[ast_t]] =
+  (((expr &~ 
+    zero_or_more(
+       (semi &~ expr) >=~ (fun (p:(unit * ast_t)) : ast_t => p.1))
+   ) >=~  (fun (p:ast_t*list[ast_t]):list[ast_t] => Cons (p.0,p.1))) 
+   |~ empty[token_t, list[ast_t]] (list[ast_t]()))
+  ;
+
+//expr :=
+//| bind
+//| term (['+'|'-'] term)*
+//;
+fun expr (toks : list[token_t]) : parsed[token_t, ast_t] =>
+  (bind |~ left_assoc[token_t, ast_t] term addop) toks
+  ;
+
+//bind := identifier '=' expr
+var bind : parser[token_t, ast_t] =
+   (((ident &~ equals) >=~ (fun (p:ast_t * unit) : ast_t => p.0)) &~ expr) >=~ 
+   (fun (p : ast_t * ast_t) : ast_t => 
+      match p.0 with
+      | E_var e => E_let (e, p.1)
+      endmatch)
+  ;
+
+//term := fact (['*'|'/'] fact)*
+var term : parser[token_t, ast_t] = left_assoc[token_t, ast_t] fact mulop ;
+
+//fact :=
+// | num
+// | identifier
+// | '( expr ')
+// ;
+fun fact (toks : list[token_t]) : parsed[token_t, ast_t] =>
+  (num |~ ident |~ 
+    ((open_paren &~ expr &~ close_paren) >=~ 
+        (fun (p:(unit * ast_t), u:unit) : ast_t => p.1))
+   ) toks
+  ;
+
+//---
 
 var p:parser[char,char] = char_ (char 'a');
 var q:parser[char,char] = char_ (char 'b');
