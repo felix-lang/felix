@@ -195,6 +195,7 @@ end
 @
 Note the vital feature: the pipe operator is associative!
 @tangle spipesex-02.expect
+--
 4
 9
 16
