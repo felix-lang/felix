@@ -493,7 +493,27 @@ fun assoc[A, B with Eq[A]] (x : A) (l : list[(A * B)]) : opt[B] =>
 fun eval (env:&list[(string * double)]) (ast:ast_t): double =>
   match ast with 
     | E_const f => f
-    | E_let (tag, e) => let v = eval env e in v
+    | E_let (tag, e) => 
+      let v = eval env e in ( env <- (tag, v) ! (deref env);  v)
+      //Above is short-form syntax for 
+      //
+      // let v = eval env e in #{ env <- (tag, v) ! (deref env); return v; } 
+      //
+      //and 'deref' is used here since '*' is hidden by the syntax
+      //definition in effect for 'zero_or_more'.
+      //
+      //This can be addressed in the future using the approach taken
+      //by regdefs (see
+      //http://felix-lang.org/$/usr/local/lib/felix/felix-latest/share/lib/grammar/regexps.fsyn
+      //which uses a postfix '*'.
+      //
+      //"If you use a DSSL you can do like regdefs but then you have to
+      //"unquote" to get back to standard notation i.e. you introduce by pcomb
+      //(expr) pcomb switches syntax then you need in that syntax felix (expr)
+      //to switch back eg you can do pcomb ( a b c \ d* ) if you get my drift:
+      //you have a parser combinator language, there's no interaction with any
+      //Felix operators at all."
+
     /*...*/
    endmatch
   ;
