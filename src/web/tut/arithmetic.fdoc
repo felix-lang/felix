@@ -450,6 +450,54 @@ fun fact (toks : list[token_t]) : parsed[token_t, ast_t] =>
    ) toks
   ;
 
+//A function to extract the result of a parse
+fun accept[A, B] (result : parsed[A, B]) : opt[B] =>
+  match result with
+  | Returns (b, #Empty) => Some[B] (b)
+  | #Parse_failed => None[B]
+  endmatch
+  ;
+
+//A function to produce a list of tokens from a string
+fun tokenize (s : string) : opt[list[token_t]] => 
+  accept (lex (explode (s))) 
+  ;
+
+//A function to produce an AST from a list of tokens
+fun parse_expr (s : string) : opt[ast_t] =>
+  match tokenize s with
+    | Some toks => accept (expr toks)
+    | #None => None[ast_t]
+  endmatch
+  ;
+
+//A function to produce a list of ASTs from a list of tokens
+fun parse_expr_list (s : string) : opt[list[ast_t]] =>
+  match tokenize s with
+  | Some toks => accept (expr_list toks)
+  | #None => None[list[ast_t]]
+  endmatch
+  ;
+
+//assoc a l returns the value associated with key a in the list of
+//pairs l.  That is, assoc a [ ...; (a,b); ...] = b if (a,b) is the
+//leftmost binding of a in list l
+fun assoc[A, B with Eq[A]] (x : A) (l : list[(A * B)]) : opt[B] =>
+  match l with
+    | #Empty => None[B]
+    | Cons ((a, b), t) => if a == x then Some b else assoc x t
+  endmatch
+    ;
+
+//Evaluate an expression in an environment
+fun eval (env:&list[(string * double)]) (ast:ast_t): double =>
+  match ast with 
+    | E_const f => f
+    | E_let (tag, e) => let v = eval env e in v
+    /*...*/
+   endmatch
+  ;
+
 //---
 
 var p:parser[char,char] = char_ (char 'a');
