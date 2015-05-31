@@ -122,7 +122,7 @@ fun zero_or_more[A, B] (p:parser[A, B]): parser[A, list[B]] =>
     ) |~ (empty[A, list[B]] (list[B]()))) toks
   ;
 
-syntax prefix_c
+syntax prefix_c 
 {
   //zero_or_more
   x[srefr_pri] := "*" x[srefr_pri] =># "(prefix 'zero_or_more)";
@@ -131,7 +131,7 @@ syntax prefix_c
 open syntax prefix_c;
 
 //Check if a character is a member of one of the provided ranges
-fun char_range (c:char)(l:list[char*char]):bool =>
+fun char_range (c:char)(l:list[char * char]):bool =>
   match l with
     | #Empty => false
     | Cons ((c1, c2), tl) =>	
@@ -174,7 +174,7 @@ var optfrac : parser[char, list[char]] =
 //(('e'|'E') optsign digits)|eps
 var optexp : parser[char, list[char]] =
   ((((char_ (char 'e') |~ char_ (char 'E')) &~ optsign) 
-    >=~ (fun (p:char*list[char]):list[char] => Cons (p.0,p.1))) &~ digits) 
+    >=~ (fun (p:char * list[char]):list[char] => Cons (p.0,p.1))) &~ digits) 
     >=~ (fun (x:list[char], y:list[char]) : list[char] => x + y)
 ;
 
@@ -205,7 +205,7 @@ fun implode (xs:list[char]) =>
 //Number token
 var number:parser[char, token_t] =
   (digits &~ optfrac &~ optexp) >=~
-    (fun (p:list[char]*list[char], cse:list[char]):token_t =>
+    (fun (p:list[char] * list[char], cse:list[char]):token_t =>
       T_num (atof (implode (p.0 + p.1 + cse))))
   ;
 
@@ -414,7 +414,7 @@ var expr_list : parser[token_t, list[ast_t]] =
   (((expr &~ 
     zero_or_more(
        (semi &~ expr) >=~ (fun (p:(unit * ast_t)) : ast_t => p.1))
-   ) >=~  (fun (p:ast_t*list[ast_t]):list[ast_t] => Cons (p.0,p.1))) 
+   ) >=~  (fun (p:ast_t * list[ast_t]):list[ast_t] => Cons (p.0,p.1))) 
    |~ empty[token_t, list[ast_t]] (list[ast_t]()))
   ;
 
