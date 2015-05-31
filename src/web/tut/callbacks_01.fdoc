@@ -39,7 +39,7 @@ To do this we would like to generate a C function:
 
     // set the caller address and argument 
     // return a continuation
-    ::flx::rtl::con_t::con_t *p = cb->call(0,x);
+    ::flx::rtl::con_t *p = cb->call(0,x);
 
     // run the continuation
     while(p) p = p->resume();
