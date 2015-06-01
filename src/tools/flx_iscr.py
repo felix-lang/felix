@@ -60,7 +60,8 @@ class Tangler(io.StringIO):
 
 # The processor class.
 class Processor:
-    def __init__(self, odir, quiet):
+    def __init__(self, iname, odir, quiet):
+        self.iname = iname
         self.state = Doc
         self.odir = odir
         self.quiet = quiet
@@ -90,7 +91,7 @@ class Processor:
         try:
             tangler = self.tanglers[id]
             if tangler.emit_linenos:
-                hashline = "#line " + str(lineno+1) + ' "' + tangler.filename+'"'
+                hashline = "#line " + str(lineno+1) + ' "' + self.iname+'"'
                 print(hashline,file=tangler)
         except KeyError:
             sys.exit("Can't find tangler %s" % id)
@@ -150,7 +151,8 @@ def iscr():
         sys.exit('invalid number of arguments; use %s -h for help' % sys.argv[0])
     # If odir == '', abspath returns the current directory.
     odir = os.path.abspath(odir)
-    p = Processor(odir, quiet)
+    iname = os.path.abspath(iname)
+    p = Processor(iname,odir, quiet)
     # Process the input file and buffer up the code.
     try:
         f = open(iname)

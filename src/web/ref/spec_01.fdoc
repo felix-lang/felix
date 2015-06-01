@@ -2046,15 +2046,14 @@ var x = f ();
 @h2 Sequencing
 Function dependent on final expression.
 @felix
-var f = { var y = 1; var z = y + y; z + 1 }; // equivalent to
-var f = { var y = 1; var z = y + y; return z + 1; };
-var x = f (); 
+var x = ( var y = 1; var z = y + y; z + 1 ); // equivalent to
+var x = #{ var y = 1; var z = y + y; return z + 1; };
 @
 
 @h2 Procedure of unit.
 @felix
 var p = { println$ "Hello"; } // procedure
-p ();
+p (); 
 
 var f = { var y = 1; return y + y; }; // function
 var x = f ();

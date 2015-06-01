@@ -6,6 +6,8 @@
 @tangler spipesex-02.expect=test/regress/rt/spipesex-02.expect
 @tangler spipesex-03.flx=test/regress/rt/spipesex-03.flx
 @tangler spipesex-03.expect=test/regress/rt/spipesex-03.expect
+@tangler spipesex-04.flx=test/regress/rt/spipesex-04.flx
+@tangler spipesex-04.expect=test/regress/rt/spipesex-04.expect
 @h1 Concepts
 Felix provides synchronous fibres (fthreads) and channels (schannels) 
 which can be used to construct active circuits. The simplest case
@@ -221,8 +223,81 @@ Note the vital feature: the pipe operator is associative!
 36
 --
 @
-@h1 Advanced
-TBD.
+@h1 Raw Devices.
+So far we have introduced a simple method for creating three kinds of device,
+with a simple form of operation, and a method for connecting them in a pipeline.
+
+You may wonder what happens if a device in a pipeline simply returns.
+The answer is simple. Nothing happens. The pipeline collapses. Control
+resumes after the statement constructing the pipeline.
+
+In fact we have already seen this behaviour when we connected a
+finite source at the head of a pipeline.
+
+Let us look now at a more complex system. To do this we need to
+construct raw devices. We will make a simple tokeniser.
+First our source emits characters:
+
+@tangle spipesex-03.flx
+include "std/control/spipes";
+proc source(w:oschannel[char])
+{
+  var s = "The quick brown fox jumped over the lazy dog";
+  for ch in s call write (w,ch);
+  write (w,char 0);
+}
+@
+Notice this source simply returns when there is no data left,
+after emitting a terminating nul character.
+
+Now we will do the sink which prints the tokens:
+@tangle spipesex-03.flx
+proc sink (r:ischannel[string])
+{
+  while true call println$ read r;
+}
+@
+This is an infinite loop, but it will stall when it can't
+read any more tokens. Obviously we want the output to be:
+@tangle spipesex-03.expect
+The
+quick
+brown
+fox
+jumped
+over
+the
+lazy
+dog
+@
+
+Finally we will write the tokeniser:
+@tangle spipesex-03.flx
+proc tokenise (i:ischannel[char], o:oschannel[string])
+{
+  var s = "";
+skipwhite:>
+  var ch = read i;
+  if ch == ' ' goto skipwhite;
+gather:>
+  if ch == char 0  goto fin;
+  s += string ch;
+  ch = read i;
+  if ch != ' ' goto gather;
+  write (o,s);
+  s = "";
+  if ch != char 0 goto skipwhite;
+fin:>
+  if s != "" call write (o,s);
+}
+@
+
+What is important to observe here is that there are multiple reads on the
+input, for each output. Finally the pipeline:
+
+@tangle spipesex-03.flx
+#(source |-> tokenise |-> sink);
+@
 
 @tangle spipes.flx
 
@@ -396,7 +471,7 @@ TBD.
 
 @
 
-@tangle spipesex-03.flx
+@tangle spipesex-04.flx
 include "std/control/schannels";
 include "std/control/spipes";
 
@@ -417,7 +492,7 @@ proc xduce(chi: ischannel[int], cho: oschannel[int]) {
 spawn_fthread$  source |-> xduce |-> sink;
 @
 
-@tangle spipesex-03.expect
+@tangle spipesex-04.expect
 99
 0
 0
