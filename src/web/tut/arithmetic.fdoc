@@ -1,4 +1,4 @@
-// /home/fletch/project/felix.git/build/release/host/bin/flx --force --echo --test=build/release src/web/tut/arithmetic.flx
+// /home/fletch/project/felix.git/build/release/host/bin/flx --force --echo --test=build/release src/web/tut/arithmetic.fdoc
 //
 //To understand segfaults you do this:
 //  (a) Run flx with --force and --echo
@@ -13,6 +13,32 @@
 //You can then put Felix prints between the steps, this prints debug
 //stuff to show progress AND it put the prints in the C++ so you can
 //more easily find where you're up to.
+
+//Some more notes:
+
+//Compare this code against the 'E_let' case in 'eval' which uses a
+//"short form syntax"
+//
+// let v = eval env e in #{ env <- (tag, v) ! (deref env); return v; } 
+//
+
+//Notice also 'deref' is used here since '*' is hidden by the syntax
+//definition in effect for 'zero_or_more'.
+//
+//
+//This can be addressed in the future using the approach taken
+//by regdefs (see
+//http://felix-lang.org/$/usr/local/lib/felix/felix-latest/share/lib/grammar/regexps.fsyn
+//which uses a postfix '*'.
+//
+//"If you use a DSSL you can do like regdefs but then you have to
+//"unquote" to get back to standard notation i.e. you introduce by pcomb
+//(expr) pcomb switches syntax then you need in that syntax felix (expr)
+//to switch back eg you can do pcomb ( a b c \ d* ) if you get my drift:
+//you have a parser combinator language, there's no interaction with any
+//Felix operators at all."
+
+// --
 
 //Result of a parse
 union parsed[A, B] = 
@@ -134,7 +160,7 @@ open syntax prefix_c;
 fun char_range (c:char)(l:list[char * char]):bool =>
   match l with
     | #Empty => false
-    | Cons ((c1, c2), tl) =>	
+    | Cons ((c1, c2), tl) =>    
        (ord c1 <= ord c and ord c <= ord c2) or char_range c tl
   endmatch
   ;
@@ -319,7 +345,7 @@ val addop:parser[token_t, ast_t -> ast_t -> ast_t] =
         | T_plus => Some (fun (e1:ast_t)(e2:ast_t):ast_t => E_add (e1, e2))
         | T_minus => Some (fun (e1:ast_t)(e2:ast_t):ast_t => E_sub (e1, e2))
         | _ => None[ast_t -> ast_t -> ast_t]
-	endmatch
+        endmatch
   );
 
 //Multiplication, division operators
@@ -330,7 +356,7 @@ val mulop:parser[token_t, ast_t -> ast_t -> ast_t] =
         | T_star => Some (fun (e1:ast_t)(e2:ast_t):ast_t => E_mul (e1, e2))
         | T_slash => Some (fun (e1:ast_t)(e2:ast_t):ast_t => E_div (e1, e2))
         | _ => None[ast_t -> ast_t -> ast_t]
-	endmatch
+        endmatch
   );
 
 //A parser that feeds its result into another
@@ -490,33 +516,73 @@ fun assoc[A, B with Eq[A]] (x : A) (l : list[(A * B)]) : opt[B] =>
     ;
 
 //Evaluate an expression in an environment
-fun eval (env:&list[(string * double)]) (ast:ast_t): double =>
+fun eval (env:&list[(string * double)]) (ast:ast_t): opt[double] =>
   match ast with 
-    | E_const f => f
+    | E_const f => Some f
     | E_let (tag, e) => 
-      let v = eval env e in ( env <- (tag, v) ! (deref env);  v)
-      //Above is short-form syntax for 
-      //
-      // let v = eval env e in #{ env <- (tag, v) ! (deref env); return v; } 
-      //
-      //and 'deref' is used here since '*' is hidden by the syntax
-      //definition in effect for 'zero_or_more'.
-      //
-      //This can be addressed in the future using the approach taken
-      //by regdefs (see
-      //http://felix-lang.org/$/usr/local/lib/felix/felix-latest/share/lib/grammar/regexps.fsyn
-      //which uses a postfix '*'.
-      //
-      //"If you use a DSSL you can do like regdefs but then you have to
-      //"unquote" to get back to standard notation i.e. you introduce by pcomb
-      //(expr) pcomb switches syntax then you need in that syntax felix (expr)
-      //to switch back eg you can do pcomb ( a b c \ d* ) if you get my drift:
-      //you have a parser combinator language, there's no interaction with any
-      //Felix operators at all."
-
-    /*...*/
+      let v = eval env e in
+      match eval env e with
+      | Some x => ( env <- (tag, x) ! (deref env);  v)
+      | #None => None[double]
+      endmatch
+   | E_var e => assoc e (deref env)
+   | E_add (l, r) => 
+     let (x, y) = (eval env l, eval env r) in
+     match (x, y) with
+       | Some u, Some v => Some (u + v)
+       | _, _ => None[double]
+     endmatch
+    | E_sub (l, r) => 
+      let (x, y) = (eval env l, eval env r) in
+      match (x, y) with
+       | Some u, Some v => Some (u - v)
+       | _, _ => None[double]
+      endmatch
+     | E_mul (l, r) => 
+       let (x, y) = (eval env l, eval env r) in
+       match (x, y) with
+         | Some u, Some v => Some (u * v)
+         | _, _ => None[double]
+       endmatch
+     | E_div (l, r) => 
+       let (x, y) = (eval env l, eval env r) in
+       match (x, y) with
+         | Some u, Some v => Some (u / v)
+         | _, _ => None[double]
+       endmatch
    endmatch
   ;
+
+proc prompt (continuing:bool) {
+  if (not continuing) do
+    write$ stdout, "? ";
+  else
+    write$ stdout, "... ";
+  done;
+  fflush stdout;
+}
+
+gen read (continuing:bool) : string = {
+  prompt (continuing);
+  return readln$ stdin;
+}
+
+proc repl () {
+
+  var env = list [(string * double)]();
+
+  //I need a buffer here, ala OCaml's 'Buffer' module.
+  //Let's suppose it's called 'buf' in what follows.
+
+  while true do
+    val l : string = read (/*lenth (buf) != 0*/ false);
+
+    //Add lines to buffer...
+
+  done
+
+endofrepl:>
+}
 
 //---
 
