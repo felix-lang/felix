@@ -49,6 +49,10 @@ union parsed[A, B] =
 //Type of a parser
 typedef parser[A, B] = list[A] -> parsed[A, B];
 
+fun just_unit[A] ()(toks:list[A]):parsed[A, unit] => 
+  Returns ((), toks) 
+;
+
 //Emtpy string parser
 fun empty[A, B] (v:B)(toks:list[A]):parsed[A, B] => 
   Returns (v, toks)
@@ -80,9 +84,9 @@ fun char_[A with Eq[A]] (ch:A):parser[A, A] =>
 
 //Parser disjunction
 fun orelse[A, B] (p1:parser[A, B], p2:parser[A, B]):parser[A, B] =>
-  fun (toks:list[A]):parsed[A, B] =>
+   fun (toks:list[A]):parsed[A, B] =>
       match p1 toks with
-        | Parse_failed => p2 toks
+        | #Parse_failed => p2 toks
         | res => res
       endmatch
   ;
@@ -143,10 +147,10 @@ open syntax infix_c;
 //Kleene '*'
 fun zero_or_more[A, B] (p:parser[A, B]): parser[A, list[B]] =>
   fun (toks:list[A]) : parsed[A, list[B]] =>
-    ((p &~ zero_or_more p >=~ 
-     (fun (res:(B * list[B])) : list[B] => Cons (res.0, res.1))
-    ) |~ (empty[A, list[B]] (list[B]()))) toks
-  ;
+   (gives (p &~ (zero_or_more p), 
+         (fun (res:(B * list[B])) : list[B] => Cons (res.0, res.1)))
+  |~ (empty[A, list[B]] (list[B]()))) toks
+;
 
 syntax prefix_c 
 {
@@ -167,7 +171,12 @@ fun char_range (c:char)(l:list[char * char]):bool =>
 
 //An element of the alphabet
 var letter : parser[char, char] =
-  token (fun (c:char) => if (isalpha c) then Some c else None[char])
+  token (fun (c:char) => 
+           if char_range c 
+            (list[char*char](
+             (char 'a', char 'z'), 
+            (char 'A', char 'Z'))) 
+           then Some c else None[char])
   ;
 
 //Digit parser
@@ -199,9 +208,10 @@ var optfrac : parser[char, list[char]] =
 
 //(('e'|'E') optsign digits)|eps
 var optexp : parser[char, list[char]] =
-  ((((char_ (char 'e') |~ char_ (char 'E')) &~ optsign) 
+  (((((char_ (char 'e') |~ char_ (char 'E')) &~ optsign) 
     >=~ (fun (p:char * list[char]):list[char] => Cons (p.0,p.1))) &~ digits) 
-    >=~ (fun (x:list[char], y:list[char]) : list[char] => x + y)
+    >=~ (fun (x:list[char], y:list[char]) : list[char] => x + y)) 
+  |~ empty[char, list[char]] (list[char] ())
 ;
 
 //Tokens
@@ -237,7 +247,7 @@ var number:parser[char, token_t] =
 
 //Identifier token
 var identifier : parser[char, token_t] =
-  (letter &~ *letter) >=~ 
+  (letter &~ (zero_or_more letter)) >=~ 
     (fun (c:char, cs:list[char]):token_t => 
        T_ident (implode (Cons (c, cs))))
   ;
@@ -294,10 +304,12 @@ var space_ : parser[char, unit] =
    endmatch
   );
 
+
 //Parser of whitespace
-fun spaces (toks : list[char]) : parsed[char, unit] => 
-  (((space_ &~ spaces) >=~ (fun (x:unit, y:unit) : unit => ())) 
-  |~ empty[char, unit] ()) toks
+fun spaces (toks:list[char]) : parsed[char, unit] =>
+  (((space_ &~ spaces) >=~ (fun (u:unit, v:unit):unit => ()))
+    |~ empty[char, unit](()))
+  toks
   ;
 
 //Lexer for the language of arithmetic expressions
@@ -553,6 +565,25 @@ fun eval (env:&list[(string * double)]) (ast:ast_t): opt[double] =>
    endmatch
   ;
 
+gen parse_eval_exprs 
+  (env:&list[(string*double)]) (s:string) : opt[list[double]] =
+{
+  gen f (x : opt[double]) : double = {
+    if is_defined x do return (get x);
+    else goto gen_end;
+    done;
+  }
+
+  val exprs : opt[list[ast_t]] = parse_expr_list s;
+
+  if (is_defined exprs) do
+    return Some (map f (map (eval env) (get exprs)));
+  done;
+
+gen_end :>
+  return None[list[double]];
+}  
+
 proc prompt (continuing:bool) {
   if (not continuing) do
     write$ stdout, "? ";
@@ -564,34 +595,111 @@ proc prompt (continuing:bool) {
 
 gen read (continuing:bool) : string = {
   prompt (continuing);
-  return readln$ stdin;
+  val l = readln$ stdin;
+  //println$ str (len l) + " bytes read";
+  return l;
 }
 
+//Read-eval-print-loop
 proc repl () {
 
   var env = list [(string * double)]();
 
-  //I need a buffer here, ala OCaml's 'Buffer' module.
-  //Let's suppose it's called 'buf' in what follows.
-
+  //A buffer
+  var buf:string ="";
+  reserve (&buf, 1048); //initial capacity
+  
+repl_loop :> //iz in ur loop!
   while true do
-    val l : string = read (/*lenth (buf) != 0*/ false);
 
-    //Add lines to buffer...
+    val l:string = read (len buf != 0uz);
+    val n:size = len l;
 
-  done
+    if n == 0uz do
+      goto repl_end; //kthxbai!
+    done;
 
-endofrepl:>
+   l = substring (l, 0, n - 2) ; // Strip newline
+
+    if n > 0uz do
+      if (l.[0] == char '%') do //Comment line. Discard
+        goto repl_loop;
+      done;
+
+      if l.[n - 1] == char '\\' do //Line continuation; append and keep reading
+        buf += substring (l, 0, n - 2);
+        goto repl_loop;
+      done;
+
+      if l.[n - 1] == char 7 do //Discard partial statements with ^G
+        buf = "";
+        println$ "Buf has " + str (len buf) + " chars now";
+        goto repl_loop;
+      done;
+
+      //We think we got a phrase. Evaluate
+      buf += l;
+      val res : opt[list[double]] = parse_eval_exprs (&env) buf;
+      buf = ""; //reset buf
+
+      //Uncomment this block 
+
+      if is_empty res do
+         println$ "Error";
+         goto repl_loop;
+       done;
+
+       println$ str (drop (int((len l) - 1)) (get res));
+
+      // to get,
+      // arithmetic.cpp: In member function ‘flx::rtl::_uctor_ flxusr::arithmetic::_lam_63091::apply(const flxusr::arithmetic::_tt76465&)’:
+      // arithmetic.cpp:153:12: error: ‘const struct flxusr::arithmetic::_tt76465’ has no member named ‘mem_1’
+      //    _ = _arg.mem_1;
+      //             ^
+      // compilation terminated due to -Wfatal-errors.
+
+     /* The code involved is this. Apparently relating to the 'lex' function.
+//FUNCTION <63666>: lex::_lam_63091: Apply method
+::flx::rtl::_uctor_ _lam_63091::apply(_tt76465 const &_arg ){
+  tok = _arg.mem_0;
+  _ = _arg.mem_1;
+      return tok;
+    FLX_DROPTHRU_FAILURE("/home/shayne/project/felix.git/src/web/tut/arithmetic.fdoc",307,6,307,47); // HACK! 
+}
+     */
+
+    done;
+  done;//repl_loop
+repl_end :>
 }
 
-//---
+//repl () ;
 
-var p:parser[char,char] = char_ (char 'a');
-var q:parser[char,char] = char_ (char 'b');
+fun str (tok : token_t) : string =>
+  match tok with
+    | T_num f => "T_num " + (str f)
+    | T_ident s => "T_ident " + s
+    | T_lparen => "T_lparen"
+    | T_rparen => "T_rparen"
+    | T_plus => "T_plus"
+    | T_minus => "T_minus"
+    | T_star => "T_star"
+    | T_slash => "T_slash"
+    | T_semicolon => "T_semicolon"
+    | T_equal => "T_equal"
+   endmatch;
 
-match *p $ explode "aab" with
- | Returns (v, remains)
-     => println$ "Parse succeeded : v = \"" + str v + "\", remains = " + str remains;
- | _ => println $ "Parse failed";
-endmatch
+fun test (cs : list[char]) : parsed[char, token_t] =>
+  ((spaces &~ identifier) >=~ 
+    (fun (u:unit, s:token_t) : token_t => s)) 
+   cs
 ;
+
+// match (spaces (explode "    ")) with
+//    | Returns (toks, remains) => println$ "Success" ;
+//    | _ => println$ "Failure";
+//  endmatch
+// ;
+
+println$ str (isalpha (char 'a')) ;
+
