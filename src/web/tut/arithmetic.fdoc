@@ -299,10 +299,10 @@ var semicolon : parser[char, token_t] =
 var space_ : parser[char, myunit_t] =
  token (fun (ch:char) : opt[myunit_t] =>
    match ch with
-     | c when c == char ' ' => Some[myunit_t] myunit_v
-     | c when c == char '\t' => Some[myunit_t] myunit_v
-     | c when c == char '\n' => Some[myunit_t] myunit_v
-     | c when c == char '\r' => Some[myunit_t] myunit_v
+     | c when c == char ' ' => Some myunit_v
+     | c when c == char '\t' => Some myunit_v
+     | c when c == char '\n' => Some myunit_v
+     | c when c == char '\r' => Some myunit_v
      | _ => None[myunit_t]
    endmatch
   );
@@ -386,51 +386,50 @@ fun givento[A, B, C] (p1:parser[A, B], p2:B -> parser[A, C]) : parser[A, C] =>
 //Build left-associative trees e.g. expr := term (op term)*
 fun left_assoc[A, B] 
   (term : parser[A, B]) 
-  (op : parser[A, B -> B-> B]) : parser[A, B] =
-{
-  fun sequence (t1:B) : parser [A, B] =
-  {
-    return (op &~ term >=~ (fun (f:B -> B -> B, t2:B) => f t1 t2) >>=~ sequence of (B)) |~ (empty[A, B] t1);
-  }
-
-  return (term >>=~ sequence);
-}
+  (op : parser[A, B -> B-> B]) : parser[A, B] =>
+  let 
+    fun sequence (t1:B) : parser [A, B] =>
+      let fn = fun (f:B -> B -> B, t2:B) => f t1 t2 in
+      (op &~ term >=~ fn >>=~ sequence of (B)) |~ (empty[A, B] t1)
+  in
+    (term >>=~ sequence)
+;
 
 //Opening paren
 var open_paren : parser[token_t, myunit_t] =
-  token (fun (tok : token_t) : opt[myunit_t] =>
-  match tok with
-  | #T_lparen => Some (myunit_v)
-  | _ => None[myunit_t]
-  endmatch)
-  ;
+  let fun t (tok : token_t) : opt[myunit_t] =>
+    match tok with
+    | #T_lparen => Some myunit_v
+    | _ => None[myunit_t]
+  in token t
+;
 
 //Closing paren
 var close_paren : parser[token_t, myunit_t] =
-  token (fun (tok : token_t) : opt[myunit_t] =>
-  match tok with
-  | #T_rparen => Some (myunit_v)
-  | _ => None[myunit_t]
-  endmatch)
-  ;
+  let fun t (tok : token_t) : opt[myunit_t] =>
+    match tok with
+    | #T_rparen => Some myunit_v
+    | _ => None[myunit_t]
+  in token t
+;
 
 //Semi-colon
 var semi : parser[token_t, myunit_t] =
-  token (fun (tok : token_t) : opt[myunit_t] =>
-  match tok with
-  | #T_semicolon => Some (myunit_v)
-  | _ => None[myunit_t]
-  endmatch)
-  ;
+  let fun t (tok : token_t) : opt[myunit_t] =>
+    match tok with
+    | #T_semicolon => Some myunit_v
+    | _ => None[myunit_t]
+  in token t
+;
 
 //Equals sign
 var equals : parser[token_t, myunit_t] =
-  token (fun (tok : token_t) : opt[myunit_t] =>
-  match tok with
-  | #T_equal => Some (myunit_v)
-  | _ => None[myunit_t]
-  endmatch)
-  ;
+  let fun t (tok : token_t) : opt[myunit_t] =>
+    match tok with
+    | #T_equal => Some myunit_v
+    | _ => None[myunit_t]
+  in token t
+;
 
 //A language of arithmetic expressions
 /*
@@ -615,8 +614,8 @@ proc repl () {
 repl_loop : //iz in ur loop!
   while true do
 
-    val l:string = read (len buf != 0uz);
-    val n:size = len l;
+    var l:string = read (len buf != 0uz);
+    var n:size = len l;
 
     if n == 0uz 
       break repl_loop; //kthxbai!
@@ -640,7 +639,7 @@ repl_loop : //iz in ur loop!
 
       //We think we got a phrase. Evaluate
       buf += l;
-      val res : opt[list[double]] = parse_eval_exprs (&env) buf;
+      var res : opt[list[double]] = parse_eval_exprs (&env) buf;
       buf = ""; //reset buf
 
       //Uncomment this block 
