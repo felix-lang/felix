@@ -4,10 +4,14 @@
 @tangler spipesex-01.expect=test/regress/rt/spipesex-01.expect
 @tangler spipesex-02.flx=test/regress/rt/spipesex-02.flx
 @tangler spipesex-02.expect=test/regress/rt/spipesex-02.expect
+@tangler spipesex-02a.flx=test/regress/rt/spipesex-02a.flx
+@tangler spipesex-02a.expect=test/regress/rt/spipesex-02a.expect
 @tangler spipesex-03.flx=test/regress/rt/spipesex-03.flx
 @tangler spipesex-03.expect=test/regress/rt/spipesex-03.expect
 @tangler spipesex-04.flx=test/regress/rt/spipesex-04.flx
 @tangler spipesex-04.expect=test/regress/rt/spipesex-04.expect
+@tangler spipesex-05.flx=test/regress/rt/spipesex-05.flx
+@tangler spipesex-05.expect=test/regress/rt/spipesex-05.expect
 @h1 Concepts
 Felix provides synchronous fibres (fthreads) and channels (schannels) 
 which can be used to construct active circuits. The simplest case
@@ -171,6 +175,8 @@ producing another transducer.
       spawn_fthread { b (chi, out); };
     }
   ;
+@
+
 @h2 A simple example
 Here is an example:
 
@@ -223,13 +229,97 @@ Note the vital feature: the pipe operator is associative!
 36
 --
 @
+@h1 A more direct overload.
+We can make the pipe operator provide a more direct overloads.
+Note carefully the danger of these impure operators:
+specialisation rules will generally select the right one,
+unless your generator, function, or procedure happens to
+want to send schannels themselves down schannels!
+
+@tangle spipes.flx
+  // source to sink: autobuild both arguments
+  fun pipe[T] (w:1->T,r:T->0) => 
+     w.source_from_stream |-> r.sink_from_procedure;
+
+  fun pipe[T] (w:1->opt[T],r:T->0) => 
+     w.source_from_iterator |-> r.sink_from_procedure;
+
+  // source to sink: autobuild only one argument
+  fun pipe[T] (w:1->T,r:ischannel[T]->0) => 
+     w.source_from_stream |-> r;
+
+  fun pipe[T] (w:1->opt[T],r:ischannel[T]->0) => 
+     w.source_from_iterator |-> r;
+
+  fun pipe[T] (w:oschannel[T]->0,r:T->0) => 
+     w |-> r.sink_from_procedure;
+
+  // source to transducer: autobuild both arguments
+  fun pipe[T0,T1] (w:1->T0,f:T0->T1) => 
+     w.source_from_stream |-> f.transducer_from_function;
+
+  fun pipe[T0,T1] (w:1->opt[T0],f:T0->T1) => 
+     w.source_from_iterator |-> f.transducer_from_function;
+
+  // source to transducer: autobuild one argument
+  fun pipe[T0,T1] (w:oschannel[T0]->0,f:T0->T1) => 
+     w |-> f.transducer_from_function;
+
+  fun pipe[T0,T1] (w:1->T0,f:ischannel[T0]*oschannel[T1]->0) => 
+     w.source_from_stream |-> f;
+
+  fun pipe[T0,T1] (w:1->opt[T0],f:ischannel[T0] *oschannel[T1]->0) => 
+     w.source_from_iterator |-> f;
+
+  // transducer to transducer: autobuild both arguments
+  fun pipe[T0,T1,T2] (f1:T0->T1,f2:T1->T2) => 
+    f1.transducer_from_function |-> f2.transducer_from_function;
+
+  // transducer to transducer: autobuild one argument
+  fun pipe[T0,T1,T2] (f1:T0->T1,f2:ischannel[T1] * oschannel[T2] ->0) => 
+    f1.transducer_from_function |-> f2;
+
+  fun pipe[T0,T1,T2] (f1:ischannel[T0] * oschannel[T1]->0,f2:T1->T2) => 
+    f1 |-> f2.transducer_from_function;
+
+  // transducer to sink: autobuild both arguments
+  fun pipe[T0,T1] (f:T0->T1, r:T1->0) =>
+    f.transducer_from_function |-> r.sink_from_procedure;
+
+  // transducer to sink: autobuild one argument
+  fun pipe[T0,T1] (f:T0->T1, r:ischannel[T1]->0) =>
+    f.transducer_from_function |-> r;
+
+  fun pipe[T0,T1] (f:ischannel[T0] * oschannel[T1]->0, r:T1->0) =>
+    f |-> r.sink_from_procedure;
+
+@
+
+@h2 A simple example
+Here is an example:
+
+@tangle spipesex-02a.flx
+include "std/control/spipes";
+begin
+  #((1,2,3,4,5).iterator |-> (fun (x:int) => x + 1) |-> (fun (x:int) => x * x) |-> println[int]);
+end
+@
+Note the vital feature: the pipe operator is associative!
+@tangle spipesex-02a.expect
+4
+9
+16
+25
+36
+@
+
 @h1 Raw Devices.
 So far we have introduced a simple method for creating three kinds of device,
 with a simple form of operation, and a method for connecting them in a pipeline.
 
 You may wonder what happens if a device in a pipeline simply returns.
-The answer is simple. Nothing happens. The pipeline collapses. Control
-resumes after the statement constructing the pipeline.
+The answer is simple. Nothing happens. The pipeline eventually collapses.
+Control resumes after the statement constructing the pipeline.
 
 In fact we have already seen this behaviour when we connected a
 finite source at the head of a pipeline.
@@ -299,11 +389,18 @@ input, for each output. Finally the pipeline:
 #(source |-> tokenise |-> sink);
 @
 
-@tangle spipes.flx
+@h1 Bi-connectors
+We will now provide some ways to make slightly more
+complex circuits. Bi-connectors work with pairs
+of channels. 
 
+@h2 Wire two sources to two sinks.
+The most basic pipeline.
+
+@tangle spipes.flx
  
   //$ Wire two sources to two sinks.
-  //$ Returns a SINGLE pipeline!
+  //$ Return a bi-pipeline!
   fun pipe[T0,T1]
     (
       var w: 
@@ -321,6 +418,121 @@ input, for each output. Finally the pipeline:
        pipe (w.1, r.1) ();
     }
   ;
+
+
+@h2 Wire two sources to two transducers.
+Construct a pair of sources from a pair of sources and
+a pair of transducers.
+
+@tangle spipes.flx
+  //$ Wire two source components to two transducers.
+  //$ Return two sources.
+  fun pipe[T0,T1,U0,U1]
+    (
+      var w: 
+        (oschannel[T0] -> 0) *
+        (oschannel[T1] -> 0),
+      var t: 
+        (ischannel[T0] * oschannel[U0] -> 0) *
+        (ischannel[T1] * oschannel[U1] -> 0)
+    )
+  :
+    (oschannel[U0] -> 0) *
+    (oschannel[U1] -> 0)
+  => 
+    pipe (w.0,t.0),
+    pipe (w.1,t.1)
+  ;
+
+@h2 Wire two transducers to two sinks.
+Returns a pair of sinks.
+
+@tangle spipes.flx
+  //$ Wire two transducers into two sinks.
+  //$ Return two sinks.
+  fun pipe[T0,T1,U0,U1]
+    (
+      var a: 
+        (ischannel[T0] * oschannel[U0] -> 0) *
+        (ischannel[T1] * oschannel[U1] -> 0),
+      var b: 
+         (ischannel[U0] -> 0) *
+         (ischannel[U1] -> 0)
+    )
+  :
+    (ischannel[T0]  -> 0)  *
+    (ischannel[T1]  -> 0) 
+  => 
+      pipe (a.0, b.0),
+      pipe (a.1, b.1)
+  ;
+
+
+@h2 Wire two transducers to two transducers.
+Returns a pair of transducers.
+
+@tangle spipes.flx
+
+  //$ Wire two transducers into two transducers.
+  //$ Return two transducers.
+  fun pipe[T0,T1,U0,U1,V0,V1]
+    (
+      var a: 
+        (ischannel[T0] * oschannel[U0] -> 0) *
+        (ischannel[T1] * oschannel[U1] -> 0),
+      var b: 
+        (ischannel[U0] * oschannel[V0] -> 0) * 
+        (ischannel[U1] * oschannel[V1] -> 0) 
+    )
+  :
+    (ischannel[T0] * oschannel[V0] -> 0) *
+    (ischannel[T1] * oschannel[V1] -> 0)
+  => 
+     pipe (a.0, b.0),
+     pipe (a.1, b.1)
+  ;
+@
+
+@h2 A simple example.
+@tangle spipesex-04.flx
+include "std/control/spipes";
+
+// sources
+var src1 = (1,2,3,4,5).iterator.source_from_iterator;
+var src2 = (1,2,3,4,5).iterator.source_from_iterator;
+
+// transducers
+var inc = transducer_from_function (fun (x:int)=> x + 1);
+var sqr = transducer_from_function (fun (x:int) => x * x);
+var str1 = Str::str[int].transducer_from_function;
+
+// sinks
+// we will save the results and print them because
+// the order of accepting the data between the
+// two sinks is indeterminate
+var result1 = list[string]();
+var result2 = list[string]();
+proc set1(s:string) => result1 = s ! result1;
+proc set2(s:string) => result2 = s ! result2;
+var snk1 = set1.sink_from_procedure;
+var snk2 = set2.sink_from_procedure;
+
+// pipeline
+#((src1,src2)  |-> (inc,sqr) |-> (str1,str1) |-> (snk1,snk2));
+
+// show results
+println$ result1;
+println$ result2;
+@
+
+@tangle spipesex-04.expect
+list('6', '5', '4', '3', '2')
+list('25', '16', '9', '4', '1')
+@
+
+@h1 Multi-connectors
+@tangle spipes.flx
+ 
   //$ Utility for tee connector: array of outputs
   proc run_tee[T,N] (i:ischannel[T], oa:oschannel[T]^N)
   {
@@ -357,25 +569,6 @@ input, for each output. Finally the pipeline:
   ;
 
 
-  //$ Wire two source components to two transducers.
-  //$ Return two sources.
-  fun pipe[T0,T1,U0,U1]
-    (
-      var w: 
-        (oschannel[T0] -> 0) *
-        (oschannel[T1] -> 0),
-      var t: 
-        (ischannel[T0] * oschannel[U0] -> 0) *
-        (ischannel[T1] * oschannel[U1] -> 0)
-    )
-  :
-    (oschannel[U0] -> 0) *
-    (oschannel[U1] -> 0)
-  => 
-    pipe (w.0,t.0),
-    pipe (w.1,t.1)
-  ;
-
   //$ Wire together a source component with two transducers
   //$ Returns two sources.
   //
@@ -408,46 +601,6 @@ input, for each output. Finally the pipeline:
   }
 
 
-  //$ Wire two transducers into two transducers.
-  //$ Return two transducers.
-  fun pipe[T0,T1,U0,U1,V0,V1]
-    (
-      var a: 
-        (ischannel[T0] * oschannel[U0] -> 0) *
-        (ischannel[T1] * oschannel[U1] -> 0),
-      var b: 
-        (ischannel[U0] * oschannel[V0] -> 0) * 
-        (ischannel[U1] * oschannel[V1] -> 0) 
-    )
-  :
-    (ischannel[T0] * oschannel[V0] -> 0) *
-    (ischannel[T1] * oschannel[V1] -> 0)
-  => 
-     pipe (a.0, b.0),
-     pipe (a.1, b.1)
-  ;
-
-
-  //$ Wire two transducers into two sinks.
-  //$ Return two sinks.
-  fun pipe[T0,T1,U0,U1]
-    (
-      var a: 
-        (ischannel[T0] * oschannel[U0] -> 0) *
-        (ischannel[T1] * oschannel[U1] -> 0),
-      var b: 
-         (ischannel[U0] -> 0) *
-         (ischannel[U1] -> 0)
-    )
-  :
-    (ischannel[T0]  -> 0)  *
-    (ischannel[T1]  -> 0) 
-  => 
-      pipe (a.0, b.0),
-      pipe (a.1, b.1)
-  ;
-
-
 
   //$ Stream sort using intermediate darray.
   //$ Requires stream of option type.
@@ -471,7 +624,7 @@ input, for each output. Finally the pipeline:
 
 @
 
-@tangle spipesex-04.flx
+@tangle spipesex-05.flx
 include "std/control/schannels";
 include "std/control/spipes";
 
@@ -492,7 +645,7 @@ proc xduce(chi: ischannel[int], cho: oschannel[int]) {
 spawn_fthread$  source |-> xduce |-> sink;
 @
 
-@tangle spipesex-04.expect
+@tangle spipesex-05.expect
 99
 0
 0
