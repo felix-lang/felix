@@ -695,11 +695,10 @@ fun test (cs : list[char]) : parsed[char, token_t] =>
    cs
 ;
 
-// match (spaces (explode "    ")) with
-//    | Returns (toks, remains) => println$ "Success" ;
-//    | _ => println$ "Failure";
-//  endmatch
-// ;
+match (spaces (explode "    ")) with
+    | Returns (toks, remains) => println$ "Success" ;
+    | _ => println$ "Failure";
+  endmatch
+ ;
 
-println$ str (isalpha (char 'a')) ;
 
