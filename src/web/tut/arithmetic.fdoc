@@ -46,11 +46,14 @@ union parsed[A, B] =
   | Parse_failed
   ;
 
+struct myunit_t {};
+var myunit_v = myunit_t ();
+
 //Type of a parser
 typedef parser[A, B] = list[A] -> parsed[A, B];
 
-fun just_unit[A] ()(toks:list[A]):parsed[A, unit] => 
-  Returns ((), toks) 
+fun just_unit[A] ()(toks:list[A]):parsed[A, myunit_t] => 
+  Returns (myunit_v, toks) 
 ;
 
 //Emtpy string parser
@@ -293,22 +296,22 @@ var semicolon : parser[char, token_t] =
   );
 
 //Parse a whitespace character
-var space_ : parser[char, unit] =
- token (fun (ch:char) : opt[unit] =>
+var space_ : parser[char, myunit_t] =
+ token (fun (ch:char) : opt[myunit_t] =>
    match ch with
-     | c when c == char ' ' => Some[unit] ()
-     | c when c == char '\t' => Some[unit] ()
-     | c when c == char '\n' => Some[unit] ()
-     | c when c == char '\r' => Some[unit] ()
-     | _ => None[unit]
+     | c when c == char ' ' => Some[myunit_t] myunit_v
+     | c when c == char '\t' => Some[myunit_t] myunit_v
+     | c when c == char '\n' => Some[myunit_t] myunit_v
+     | c when c == char '\r' => Some[myunit_t] myunit_v
+     | _ => None[myunit_t]
    endmatch
   );
 
 
 //Parser of whitespace
-fun spaces (toks:list[char]) : parsed[char, unit] =>
-  (((space_ &~ spaces) >=~ (fun (u:unit, v:unit):unit => ()))
-    |~ empty[char, unit](()))
+fun spaces (toks:list[char]) : parsed[char, myunit_t] =>
+  (((space_ &~ spaces) >=~ (fun (u:myunit_t, v:myunit_t):myunit_t => myunit_v))
+    |~ empty[char, myunit_t](myunit_v))
   toks
   ;
 
@@ -316,7 +319,7 @@ fun spaces (toks:list[char]) : parsed[char, unit] =>
 fun lex (toks : list[char]) : parsed [char, list[token_t]] =>
     (spaces &~ 
     *(((identifier |~ number |~ operator |~ paren |~ semicolon |~ equal) &~ spaces) >=~ 
-    (fun (tok:token_t, _:unit) : token_t => tok)) >=~ (fun (u:unit, ts:list[token_t]) : list[token_t] => ts)) toks
+    (fun (tok:token_t, _:myunit_t) : token_t => tok)) >=~ (fun (u:myunit_t, ts:list[token_t]) : list[token_t] => ts)) toks
   ;
 
 //Arithmetic expressions
@@ -394,38 +397,38 @@ fun left_assoc[A, B]
 }
 
 //Opening paren
-var open_paren : parser[token_t, unit] =
-  token (fun (tok : token_t) : opt[unit] =>
+var open_paren : parser[token_t, myunit_t] =
+  token (fun (tok : token_t) : opt[myunit_t] =>
   match tok with
-  | #T_lparen => Some (())
-  | _ => None[unit]
+  | #T_lparen => Some (myunit_v)
+  | _ => None[myunit_t]
   endmatch)
   ;
 
 //Closing paren
-var close_paren : parser[token_t, unit] =
-  token (fun (tok : token_t) : opt[unit] =>
+var close_paren : parser[token_t, myunit_t] =
+  token (fun (tok : token_t) : opt[myunit_t] =>
   match tok with
-  | #T_rparen => Some (())
-  | _ => None[unit]
+  | #T_rparen => Some (myunit_v)
+  | _ => None[myunit_t]
   endmatch)
   ;
 
 //Semi-colon
-var semi : parser[token_t, unit] =
-  token (fun (tok : token_t) : opt[unit] =>
+var semi : parser[token_t, myunit_t] =
+  token (fun (tok : token_t) : opt[myunit_t] =>
   match tok with
-  | #T_semicolon => Some (())
-  | _ => None[unit]
+  | #T_semicolon => Some (myunit_v)
+  | _ => None[myunit_t]
   endmatch)
   ;
 
 //Equals sign
-var equals : parser[token_t, unit] =
-  token (fun (tok : token_t) : opt[unit] =>
+var equals : parser[token_t, myunit_t] =
+  token (fun (tok : token_t) : opt[myunit_t] =>
   match tok with
-  | #T_equal => Some (())
-  | _ => None[unit]
+  | #T_equal => Some (myunit_v)
+  | _ => None[myunit_t]
   endmatch)
   ;
 
@@ -451,7 +454,7 @@ fact :=
 var expr_list : parser[token_t, list[ast_t]] =
   (((expr &~ 
     zero_or_more(
-       (semi &~ expr) >=~ (fun (p:(unit * ast_t)) : ast_t => p.1))
+       (semi &~ expr) >=~ (fun (p:(myunit_t * ast_t)) : ast_t => p.1))
    ) >=~  (fun (p:ast_t * list[ast_t]):list[ast_t] => Cons (p.0,p.1))) 
    |~ empty[token_t, list[ast_t]] (list[ast_t]()))
   ;
@@ -466,7 +469,7 @@ fun expr (toks : list[token_t]) : parsed[token_t, ast_t] =>
 
 //bind := identifier '=' expr
 var bind : parser[token_t, ast_t] =
-   (((ident &~ equals) >=~ (fun (p:ast_t * unit) : ast_t => p.0)) &~ expr) >=~ 
+   (((ident &~ equals) >=~ (fun (p:ast_t * myunit_t) : ast_t => p.0)) &~ expr) >=~ 
    (fun (p : ast_t * ast_t) : ast_t => 
       match p.0 with
       | E_var e => E_let (e, p.1)
@@ -484,7 +487,7 @@ var term : parser[token_t, ast_t] = left_assoc[token_t, ast_t] fact mulop ;
 fun fact (toks : list[token_t]) : parsed[token_t, ast_t] =>
   (num |~ ident |~ 
     ((open_paren &~ expr &~ close_paren) >=~ 
-        (fun (p:(unit * ast_t), u:unit) : ast_t => p.1))
+        (fun (p:(myunit_t * ast_t), u:myunit_t) : ast_t => p.1))
    ) toks
   ;
 
@@ -691,7 +694,7 @@ fun str (tok : token_t) : string =>
 
 fun test (cs : list[char]) : parsed[char, token_t] =>
   ((spaces &~ identifier) >=~ 
-    (fun (u:unit, s:token_t) : token_t => s)) 
+    (fun (u:myunit_t, s:token_t) : token_t => s)) 
    cs
 ;
 
