@@ -4,6 +4,8 @@
 @tangler spipesex-01.expect=test/regress/rt/spipesex-01.expect
 @tangler spipesex-02.flx=test/regress/rt/spipesex-02.flx
 @tangler spipesex-02.expect=test/regress/rt/spipesex-02.expect
+@tangler spipesex-02a.flx=test/regress/rt/spipesex-02a.flx
+@tangler spipesex-02a.expect=test/regress/rt/spipesex-02a.expect
 @tangler spipesex-03.flx=test/regress/rt/spipesex-03.flx
 @tangler spipesex-03.expect=test/regress/rt/spipesex-03.expect
 @tangler spipesex-04.flx=test/regress/rt/spipesex-04.flx
@@ -227,6 +229,90 @@ Note the vital feature: the pipe operator is associative!
 36
 --
 @
+@h1 A more direct overload.
+We can make the pipe operator provide a more direct overloads.
+Note carefully the danger of these impure operators:
+specialisation rules will generally select the right one,
+unless your generator, function, or procedure happens to
+want to send schannels themselves down schannels!
+
+@tangle spipes.flx
+  // source to sink: autobuild both arguments
+  fun pipe[T] (w:1->T,r:T->0) => 
+     w.source_from_stream |-> r.sink_from_procedure;
+
+  fun pipe[T] (w:1->opt[T],r:T->0) => 
+     w.source_from_iterator |-> r.sink_from_procedure;
+
+  // source to sink: autobuild only one argument
+  fun pipe[T] (w:1->T,r:ischannel[T]->0) => 
+     w.source_from_stream |-> r;
+
+  fun pipe[T] (w:1->opt[T],r:ischannel[T]->0) => 
+     w.source_from_iterator |-> r;
+
+  fun pipe[T] (w:oschannel[T]->0,r:T->0) => 
+     w |-> r.sink_from_procedure;
+
+  // source to transducer: autobuild both arguments
+  fun pipe[T0,T1] (w:1->T0,f:T0->T1) => 
+     w.source_from_stream |-> f.transducer_from_function;
+
+  fun pipe[T0,T1] (w:1->opt[T0],f:T0->T1) => 
+     w.source_from_iterator |-> f.transducer_from_function;
+
+  // source to transducer: autobuild one argument
+  fun pipe[T0,T1] (w:oschannel[T0]->0,f:T0->T1) => 
+     w |-> f.transducer_from_function;
+
+  fun pipe[T0,T1] (w:1->T0,f:ischannel[T0]*oschannel[T1]->0) => 
+     w.source_from_stream |-> f;
+
+  fun pipe[T0,T1] (w:1->opt[T0],f:ischannel[T0] *oschannel[T1]->0) => 
+     w.source_from_iterator |-> f;
+
+  // transducer to transducer: autobuild both arguments
+  fun pipe[T0,T1,T2] (f1:T0->T1,f2:T1->T2) => 
+    f1.transducer_from_function |-> f2.transducer_from_function;
+
+  // transducer to transducer: autobuild one argument
+  fun pipe[T0,T1,T2] (f1:T0->T1,f2:ischannel[T1] * oschannel[T2] ->0) => 
+    f1.transducer_from_function |-> f2;
+
+  fun pipe[T0,T1,T2] (f1:ischannel[T0] * oschannel[T1]->0,f2:T1->T2) => 
+    f1 |-> f2.transducer_from_function;
+
+  // transducer to sink: autobuild both arguments
+  fun pipe[T0,T1] (f:T0->T1, r:T1->0) =>
+    f.transducer_from_function |-> r.sink_from_procedure;
+
+  // transducer to sink: autobuild one argument
+  fun pipe[T0,T1] (f:T0->T1, r:ischannel[T1]->0) =>
+    f.transducer_from_function |-> r;
+
+  fun pipe[T0,T1] (f:ischannel[T0] * oschannel[T1]->0, r:T1->0) =>
+    f |-> r.sink_from_procedure;
+
+@
+
+@h2 A simple example
+Here is an example:
+
+@tangle spipesex-02a.flx
+include "std/control/spipes";
+begin
+  #((1,2,3,4,5).iterator |-> (fun (x:int) => x + 1) |-> (fun (x:int) => x * x) |-> println[int]);
+end
+@
+Note the vital feature: the pipe operator is associative!
+@tangle spipesex-02a.expect
+4
+9
+16
+25
+36
+@
+
 @h1 Raw Devices.
 So far we have introduced a simple method for creating three kinds of device,
 with a simple form of operation, and a method for connecting them in a pipeline.
@@ -418,7 +504,7 @@ var src2 = (1,2,3,4,5).iterator.source_from_iterator;
 // transducers
 var inc = transducer_from_function (fun (x:int)=> x + 1);
 var sqr = transducer_from_function (fun (x:int) => x * x);
-var str = Str::str[int].transducer_from_function;
+var str1 = Str::str[int].transducer_from_function;
 
 // sinks
 // we will save the results and print them because
@@ -432,7 +518,6 @@ var snk1 = set1.sink_from_procedure;
 var snk2 = set2.sink_from_procedure;
 
 // pipeline
-var str = Str::str[int].transducer_from_function;
 #((src1,src2)  |-> (inc,sqr) |-> (str1,str1) |-> (snk1,snk2));
 
 // show results
