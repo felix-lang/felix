@@ -612,33 +612,31 @@ proc repl () {
   var buf:string ="";
   reserve (&buf, 1048); //initial capacity
   
-repl_loop :> //iz in ur loop!
+repl_loop : //iz in ur loop!
   while true do
 
     val l:string = read (len buf != 0uz);
     val n:size = len l;
 
-    if n == 0uz do
-      goto repl_end; //kthxbai!
-    done;
+    if n == 0uz 
+      break repl_loop; //kthxbai!
 
    l = substring (l, 0, n - 2) ; // Strip newline
 
     if n > 0uz do
-      if (l.[0] == char '%') do //Comment line. Discard
-        goto repl_loop;
-      done;
+      if (l.[0] == char '%') //Comment line. Discard
+        continue repl_loop;
 
       if l.[n - 1] == char '\\' do //Line continuation; append and keep reading
         buf += substring (l, 0, n - 2);
-        goto repl_loop;
-      done;
+        continue repl_loop;
+      done
 
       if l.[n - 1] == char 7 do //Discard partial statements with ^G
         buf = "";
         println$ "Buf has " + str (len buf) + " chars now";
-        goto repl_loop;
-      done;
+        continue repl_loop;
+      done
 
       //We think we got a phrase. Evaluate
       buf += l;
@@ -649,8 +647,8 @@ repl_loop :> //iz in ur loop!
 
       if is_empty res do
          println$ "Error";
-         goto repl_loop;
-       done;
+         continue repl_loop;
+       done
 
        println$ str (drop (int((len l) - 1)) (get res));
 
@@ -671,9 +669,8 @@ repl_loop :> //iz in ur loop!
 }
      */
 
-    done;
-  done;//repl_loop
-repl_end :>
+    done
+  done //repl_loop
 }
 
 //repl () ;
