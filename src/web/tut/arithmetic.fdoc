@@ -46,15 +46,11 @@ union parsed[A, B] =
   | Parse_failed
   ;
 
-struct myunit_t {};
-var myunit_v = myunit_t ();
+struct singular_value_t {};
+var singular_value = singular_value_t ();
 
 //Type of a parser
 typedef parser[A, B] = list[A] -> parsed[A, B];
-
-fun just_unit[A] ()(toks:list[A]):parsed[A, myunit_t] => 
-  Returns (myunit_v, toks) 
-;
 
 //Emtpy string parser
 fun empty[A, B] (v:B)(toks:list[A]):parsed[A, B] => 
@@ -270,48 +266,51 @@ var operator : parser[char, token_t] =
 //Parenthesis token
 var paren : parser[char, token_t] =
   token (fun (ch:char) : opt[token_t] =>
+    (//println$ "In paren"; 
     match ch with
     | c when c == char '(' => Some T_lparen
     | c when c == char ')' => Some T_rparen
     | _ => None[token_t]
-    endmatch
+    endmatch)
   );
 
 //Equal token
 var equal : parser[char, token_t] =
-  token (fun (ch:char) : opt[token_t] =>
-  match ch with
-  | c when c == '=' => Some T_equal
-    | _ => None[token_t]
-    endmatch
+  token (
+   fun (ch:char) : opt[token_t] =>
+     (//println$ "In equal"; 
+      match ch with
+      | c when c == '=' => Some T_equal
+      | _ => None[token_t]
+    endmatch)
   );
 
 //Semicolon token
 var semicolon : parser[char, token_t] =
   token (fun (ch:char) : opt[token_t] =>
   match ch with
-  | c when c == ';' => Some T_equal
+    | c when c == ';' => Some T_equal
     | _ => None[token_t]
-    endmatch
+   endmatch
   );
 
 //Parse a whitespace character
-var space_ : parser[char, myunit_t] =
- token (fun (ch:char) : opt[myunit_t] =>
+var space_ : parser[char, singular_value_t] =
+ token (fun (ch:char) : opt[singular_value_t] =>
    match ch with
-     | c when c == char ' ' => Some myunit_v
-     | c when c == char '\t' => Some myunit_v
-     | c when c == char '\n' => Some myunit_v
-     | c when c == char '\r' => Some myunit_v
-     | _ => None[myunit_t]
+     | c when c == char ' ' => Some singular_value
+     | c when c == char '\t' => Some singular_value
+     | c when c == char '\n' => Some singular_value
+     | c when c == char '\r' => Some singular_value
+     | _ => None[singular_value_t]
    endmatch
   );
 
 
 //Parser of whitespace
-fun spaces (toks:list[char]) : parsed[char, myunit_t] =>
-  (((space_ &~ spaces) >=~ (fun (u:myunit_t, v:myunit_t):myunit_t => myunit_v))
-    |~ empty[char, myunit_t](myunit_v))
+fun spaces (toks:list[char]) : parsed[char, singular_value_t] =>
+  (((space_ &~ spaces) >=~ (fun (u:singular_value_t, v:singular_value_t):singular_value_t => singular_value))
+    |~ empty[char, singular_value_t](singular_value))
   toks
   ;
 
@@ -319,7 +318,7 @@ fun spaces (toks:list[char]) : parsed[char, myunit_t] =>
 fun lex (toks : list[char]) : parsed [char, list[token_t]] =>
     (spaces &~ 
     *(((identifier |~ number |~ operator |~ paren |~ semicolon |~ equal) &~ spaces) >=~ 
-    (fun (tok:token_t, _:myunit_t) : token_t => tok)) >=~ (fun (u:myunit_t, ts:list[token_t]) : list[token_t] => ts)) toks
+    (fun (tok:token_t, _:singular_value_t) : token_t => tok)) >=~ (fun (u:singular_value_t, ts:list[token_t]) : list[token_t] => ts)) toks
   ;
 
 //Arithmetic expressions
@@ -357,8 +356,8 @@ val addop:parser[token_t, ast_t -> ast_t -> ast_t] =
   token (
     fun (t:token_t):opt[ast_t -> ast_t -> ast_t] =>
       match t with
-        | T_plus => Some (fun (e1:ast_t)(e2:ast_t):ast_t => E_add (e1, e2))
-        | T_minus => Some (fun (e1:ast_t)(e2:ast_t):ast_t => E_sub (e1, e2))
+        | #T_plus => Some (fun (e1:ast_t)(e2:ast_t):ast_t => E_add (e1, e2))
+        | #T_minus => Some (fun (e1:ast_t)(e2:ast_t):ast_t => E_sub (e1, e2))
         | _ => None[ast_t -> ast_t -> ast_t]
         endmatch
   );
@@ -368,8 +367,8 @@ val mulop:parser[token_t, ast_t -> ast_t -> ast_t] =
   token (
     fun (t:token_t):opt[ast_t -> ast_t -> ast_t] =>
       match t with
-        | T_star => Some (fun (e1:ast_t)(e2:ast_t):ast_t => E_mul (e1, e2))
-        | T_slash => Some (fun (e1:ast_t)(e2:ast_t):ast_t => E_div (e1, e2))
+        | #T_star => Some (fun (e1:ast_t)(e2:ast_t):ast_t => E_mul (e1, e2))
+        | #T_slash => Some (fun (e1:ast_t)(e2:ast_t):ast_t => E_div (e1, e2))
         | _ => None[ast_t -> ast_t -> ast_t]
         endmatch
   );
@@ -396,40 +395,67 @@ fun left_assoc[A, B]
 ;
 
 //Opening paren
-var open_paren : parser[token_t, myunit_t] =
-  let fun t (tok : token_t) : opt[myunit_t] =>
+var open_paren : parser[token_t, singular_value_t] =
+  let fun t (tok : token_t) : opt[singular_value_t] =>
     match tok with
-    | #T_lparen => Some myunit_v
-    | _ => None[myunit_t]
+    | #T_lparen => Some singular_value
+    | _ => None[singular_value_t]
   in token t
 ;
 
 //Closing paren
-var close_paren : parser[token_t, myunit_t] =
-  let fun t (tok : token_t) : opt[myunit_t] =>
+var close_paren : parser[token_t, singular_value_t] =
+  let fun t (tok : token_t) : opt[singular_value_t] =>
     match tok with
-    | #T_rparen => Some myunit_v
-    | _ => None[myunit_t]
+    | #T_rparen => Some singular_value
+    | _ => None[singular_value_t]
   in token t
 ;
 
 //Semi-colon
-var semi : parser[token_t, myunit_t] =
-  let fun t (tok : token_t) : opt[myunit_t] =>
+var semi : parser[token_t, singular_value_t] =
+  let fun t (tok : token_t) : opt[singular_value_t] =>
     match tok with
-    | #T_semicolon => Some myunit_v
-    | _ => None[myunit_t]
+    | #T_semicolon => Some singular_value
+    | _ => None[singular_value_t]
   in token t
 ;
 
 //Equals sign
-var equals : parser[token_t, myunit_t] =
-  let fun t (tok : token_t) : opt[myunit_t] =>
+var equals : parser[token_t, singular_value_t] =
+  let fun t (tok : token_t) : opt[singular_value_t] =>
     match tok with
-    | #T_equal => Some myunit_v
-    | _ => None[myunit_t]
+    | #T_equal => Some singular_value
+    | _ => None[singular_value_t]
   in token t
 ;
+
+fun str (tok : token_t) : string =>
+  match tok with
+    | T_num f => "T_num " + (str f)
+    | T_ident s => "T_ident " + s
+    | #T_lparen => "T_lparen"
+    | #T_rparen => "T_rparen"
+    | #T_plus => "T_plus"
+    | #T_minus => "T_minus"
+    | #T_star => "T_star"
+    | #T_slash => "T_slash"
+    | #T_semicolon => "T_semicolon"
+    | #T_equal => "T_equal"
+  endmatch
+  ;
+
+fun str (ast : ast_t) : string =>
+  match ast with
+    | E_const f => "E_const (" + str f + ")"
+    | E_var s => "E_var (" + s + ")"
+    | E_add (x, y) => "E_add (" + str x + ", " + str y + ")"
+    | E_sub (x, y) => "E_sub (" + str x + ", " + str y + ")"
+    | E_mul (x, y) => "E_mul (" + str x + ", " + str y + ")"
+    | E_div (x, y) => "E_div (" + str x + ", " + str y + ")"
+    | E_let (s, e) => "E_let (" + s + ", " + str e + ")"
+  endmatch
+  ;
 
 //A language of arithmetic expressions
 /*
@@ -453,7 +479,7 @@ fact :=
 var expr_list : parser[token_t, list[ast_t]] =
   (((expr &~ 
     zero_or_more(
-       (semi &~ expr) >=~ (fun (p:(myunit_t * ast_t)) : ast_t => p.1))
+       (semi &~ expr) >=~ (fun (p:(singular_value_t * ast_t)) : ast_t => p.1))
    ) >=~  (fun (p:ast_t * list[ast_t]):list[ast_t] => Cons (p.0,p.1))) 
    |~ empty[token_t, list[ast_t]] (list[ast_t]()))
   ;
@@ -468,7 +494,7 @@ fun expr (toks : list[token_t]) : parsed[token_t, ast_t] =>
 
 //bind := identifier '=' expr
 var bind : parser[token_t, ast_t] =
-   (((ident &~ equals) >=~ (fun (p:ast_t * myunit_t) : ast_t => p.0)) &~ expr) >=~ 
+   (((ident &~ equals) >=~ (fun (p:ast_t * singular_value_t) : ast_t => p.0)) &~ expr) >=~ 
    (fun (p : ast_t * ast_t) : ast_t => 
       match p.0 with
       | E_var e => E_let (e, p.1)
@@ -486,7 +512,7 @@ var term : parser[token_t, ast_t] = left_assoc[token_t, ast_t] fact mulop ;
 fun fact (toks : list[token_t]) : parsed[token_t, ast_t] =>
   (num |~ ident |~ 
     ((open_paren &~ expr &~ close_paren) >=~ 
-        (fun (p:(myunit_t * ast_t), u:myunit_t) : ast_t => p.1))
+        (fun (p:(singular_value_t * ast_t), u:singular_value_t) : ast_t => p.1))
    ) toks
   ;
 
@@ -494,7 +520,8 @@ fun fact (toks : list[token_t]) : parsed[token_t, ast_t] =>
 fun accept[A, B] (result : parsed[A, B]) : opt[B] =>
   match result with
   | Returns (b, #Empty) => Some[B] (b)
-  | #Parse_failed => None[B]
+  | Parse_failed => None[B]
+  | _ => None[B] //meaning, not all chars consumed
   endmatch
   ;
 
@@ -531,6 +558,8 @@ fun assoc[A, B with Eq[A]] (x : A) (l : list[(A * B)]) : opt[B] =>
 
 //Evaluate an expression in an environment
 fun eval (env:&list[(string * double)]) (ast:ast_t): opt[double] =>
+  (
+  //println$ "Evaluating \"" + str ast + "\"";
   match ast with 
     | E_const f => Some f
     | E_let (tag, e) => 
@@ -564,8 +593,27 @@ fun eval (env:&list[(string * double)]) (ast:ast_t): opt[double] =>
          | Some u, Some v => Some (u / v)
          | _, _ => None[double]
        endmatch
-   endmatch
+   endmatch)
   ;
+
+gen parse_eval_expr
+  (env:&list[(string*double)]) (s:string) : opt[double] =
+{
+  gen f (x : opt[double]) : double = {
+    if is_defined x do return (get x);
+    else goto gen_end;
+    done;
+  }
+
+  val expr : opt[ast_t] = parse_expr s;
+
+  if (is_defined expr) do
+    return Some (f (eval env (get expr)));
+  done;
+
+gen_end :>
+  return None[double];
+}
 
 gen parse_eval_exprs 
   (env:&list[(string*double)]) (s:string) : opt[list[double]] =
@@ -598,12 +646,17 @@ proc prompt (continuing:bool) {
 gen read (continuing:bool) : string = {
   prompt (continuing);
   val l = readln$ stdin;
-  //println$ str (len l) + " bytes read";
+
   return l;
 }
 
 //Read-eval-print-loop
 proc repl () {
+
+  //oh hai!
+  println$ "";
+  println$ "Interpreter of arithmetic expressions (with variables)";
+  println$ "Type arithmetic expressions (e.g. 'x = 2 + 3')";
 
   var env = list [(string * double)]();
 
@@ -620,20 +673,20 @@ repl_loop : //iz in ur loop!
     if n == 0uz 
       break repl_loop; //kthxbai!
 
-   l = substring (l, 0, n - 2) ; // Strip newline
+    l = substring (l, 0, n - 1) ; // Strip newline
+    n = n - 1; //update char count
 
     if n > 0uz do
       if (l.[0] == char '%') //Comment line. Discard
         continue repl_loop;
 
       if l.[n - 1] == char '\\' do //Line continuation; append and keep reading
-        buf += substring (l, 0, n - 2);
+        buf += substring (l, 0, n - 1);
         continue repl_loop;
       done
 
       if l.[n - 1] == char 7 do //Discard partial statements with ^G
         buf = "";
-        println$ "Buf has " + str (len buf) + " chars now";
         continue repl_loop;
       done
 
@@ -642,62 +695,18 @@ repl_loop : //iz in ur loop!
       var res : opt[list[double]] = parse_eval_exprs (&env) buf;
       buf = ""; //reset buf
 
-      //Uncomment this block 
-
       if is_empty res do
          println$ "Error";
          continue repl_loop;
        done
 
-       println$ str (drop (int((len l) - 1)) (get res));
-
-      // to get,
-      // arithmetic.cpp: In member function ‘flx::rtl::_uctor_ flxusr::arithmetic::_lam_63091::apply(const flxusr::arithmetic::_tt76465&)’:
-      // arithmetic.cpp:153:12: error: ‘const struct flxusr::arithmetic::_tt76465’ has no member named ‘mem_1’
-      //    _ = _arg.mem_1;
-      //             ^
-      // compilation terminated due to -Wfatal-errors.
-
-     /* The code involved is this. Apparently relating to the 'lex' function.
-//FUNCTION <63666>: lex::_lam_63091: Apply method
-::flx::rtl::_uctor_ _lam_63091::apply(_tt76465 const &_arg ){
-  tok = _arg.mem_0;
-  _ = _arg.mem_1;
-      return tok;
-    FLX_DROPTHRU_FAILURE("/home/shayne/project/felix.git/src/web/tut/arithmetic.fdoc",307,6,307,47); // HACK! 
-}
-     */
+      var k : int = int (len (get res));
+      var ml : list [double] = drop (k - 1) (get res) ;
+      println$ str (head ml) ;
 
     done
   done //repl_loop
 }
 
-//repl () ;
-
-fun str (tok : token_t) : string =>
-  match tok with
-    | T_num f => "T_num " + (str f)
-    | T_ident s => "T_ident " + s
-    | T_lparen => "T_lparen"
-    | T_rparen => "T_rparen"
-    | T_plus => "T_plus"
-    | T_minus => "T_minus"
-    | T_star => "T_star"
-    | T_slash => "T_slash"
-    | T_semicolon => "T_semicolon"
-    | T_equal => "T_equal"
-   endmatch;
-
-fun test (cs : list[char]) : parsed[char, token_t] =>
-  ((spaces &~ identifier) >=~ 
-    (fun (u:myunit_t, s:token_t) : token_t => s)) 
-   cs
-;
-
-match (spaces (explode "    ")) with
-    | Returns (toks, remains) => println$ "Success" ;
-    | _ => println$ "Failure";
-  endmatch
- ;
-
+repl () ;
 
