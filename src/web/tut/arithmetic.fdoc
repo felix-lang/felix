@@ -75,7 +75,7 @@ fun char_[A with Eq[A]] (ch:A):parser[A, A] =>
   token (
   fun (tok:A):opt[A] =>
     match tok with
-      | c when (c == ch) => Some ch
+       | $(ch) => Some ch
       | _ => None[A]
     endmatch
   )
@@ -656,7 +656,7 @@ proc repl () {
   //oh hai!
   println$ "";
   println$ "Interpreter of arithmetic expressions (with variables)";
-  println$ "Type arithmetic expressions (e.g. 'x = 2 + 3')";
+  println$ "Type expressions you want to have evaluated (e.g. 'x = 2 + 3')";
 
   var env = list [(string * double)]();
 
@@ -706,6 +706,7 @@ repl_loop : //iz in ur loop!
 
     done
   done //repl_loop
+  println$ "";
 }
 
 repl () ;
