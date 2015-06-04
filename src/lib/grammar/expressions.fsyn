@@ -59,6 +59,40 @@ syntax expressions {
     )
     """;
 
+  x[let_pri] := "let" "fun" sdeclname fun_return_type "=" smatching+ "in" x[let_pri] =>#
+    """
+    (let* 
+      (
+        (ixname _3)
+        (name (first ixname))
+        (tvars (second ixname))
+        (t (first _4))
+        (traint (second _4))
+        (matching _6)
+        (expr _8)
+      )
+      (if (eq? 'ast_arrow (first t))
+        (let*
+          (
+            (argt (caadr t))
+            (ret (cadadr t))
+            (params `((((PVal _a ,argt none)) none))) ;; parameters
+            (body `((ast_fun_return ,_sr (ast_match ,_sr (,(noi '_a) ,matching)))))
+            (fun_decl `(ast_curry ,_sr ,name ,tvars ,params
+               (,ret ,traint)
+               Function () ,body)
+            )
+            (final_return `(ast_fun_return ,_sr ,expr))
+          )
+          (block_expr `(,fun_decl ,final_return))
+        )
+        'ERROR
+      )
+    )
+    """;
+
+
+
   //$ Unterminated match
   x[let_pri] := "let" pattern_match =># "_2"; 
 
