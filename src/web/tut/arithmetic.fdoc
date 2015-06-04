@@ -289,7 +289,7 @@ var equal : parser[char, token_t] =
 var semicolon : parser[char, token_t] =
   token (fun (ch:char) : opt[token_t] =>
   match ch with
-    | c when c == ';' => Some T_equal
+    | c when c == ';' => Some T_semicolon
     | _ => None[token_t]
    endmatch
   );
@@ -330,6 +330,33 @@ union ast_t =
   | E_mul of ast_t * ast_t
   | E_div of ast_t * ast_t
   | E_let of (string * ast_t)
+  ;
+
+fun str (tok : token_t) : string =>
+  match tok with
+    | T_num f => "T_num " + (str f)
+    | T_ident s => "T_ident " + s
+    | #T_lparen => "T_lparen"
+    | #T_rparen => "T_rparen"
+    | #T_plus => "T_plus"
+    | #T_minus => "T_minus"
+    | #T_star => "T_star"
+    | #T_slash => "T_slash"
+    | #T_semicolon => "T_semicolon"
+    | #T_equal => "T_equal"
+  endmatch
+  ;
+
+fun str (ast : ast_t) : string =>
+  match ast with
+    | E_const f => "E_const (" + str f + ")"
+    | E_var s => "E_var (" + s + ")"
+    | E_add (x, y) => "E_add (" + str x + ", " + str y + ")"
+    | E_sub (x, y) => "E_sub (" + str x + ", " + str y + ")"
+    | E_mul (x, y) => "E_mul (" + str x + ", " + str y + ")"
+    | E_div (x, y) => "E_div (" + str x + ", " + str y + ")"
+    | E_let (s, e) => "E_let (" + s + ", " + str e + ")"
+  endmatch
   ;
 
 //Constants
@@ -430,33 +457,6 @@ var equals : parser[token_t, singular_value_t] =
   in token t
 ;
 
-fun str (tok : token_t) : string =>
-  match tok with
-    | T_num f => "T_num " + (str f)
-    | T_ident s => "T_ident " + s
-    | #T_lparen => "T_lparen"
-    | #T_rparen => "T_rparen"
-    | #T_plus => "T_plus"
-    | #T_minus => "T_minus"
-    | #T_star => "T_star"
-    | #T_slash => "T_slash"
-    | #T_semicolon => "T_semicolon"
-    | #T_equal => "T_equal"
-  endmatch
-  ;
-
-fun str (ast : ast_t) : string =>
-  match ast with
-    | E_const f => "E_const (" + str f + ")"
-    | E_var s => "E_var (" + s + ")"
-    | E_add (x, y) => "E_add (" + str x + ", " + str y + ")"
-    | E_sub (x, y) => "E_sub (" + str x + ", " + str y + ")"
-    | E_mul (x, y) => "E_mul (" + str x + ", " + str y + ")"
-    | E_div (x, y) => "E_div (" + str x + ", " + str y + ")"
-    | E_let (s, e) => "E_let (" + s + ", " + str e + ")"
-  endmatch
-  ;
-
 //A language of arithmetic expressions
 /*
 expr_list :=
@@ -476,12 +476,12 @@ fact :=
  */
 
 //expr_list := expr (';' expr)*
-var expr_list : parser[token_t, list[ast_t]] =
-  (((expr &~ 
-    zero_or_more(
-       (semi &~ expr) >=~ (fun (p:(singular_value_t * ast_t)) : ast_t => p.1))
-   ) >=~  (fun (p:ast_t * list[ast_t]):list[ast_t] => Cons (p.0,p.1))) 
-   |~ empty[token_t, list[ast_t]] (list[ast_t]()))
+var expr_list : parser[token_t, list[ast_t]] = 
+  ((expr &~ 
+     *((semi &~ expr) >=~ 
+         (fun (p:(singular_value_t * ast_t)) : ast_t => p.1)) 
+     >=~ (fun (p:ast_t * list[ast_t]):list[ast_t] => Cons (p.0,p.1)))) 
+   |~empty[token_t, list[ast_t]] (list[ast_t]())
   ;
 
 //expr :=
@@ -546,9 +546,9 @@ fun parse_expr_list (s : string) : opt[list[ast_t]] =>
   endmatch
   ;
 
-//assoc a l returns the value associated with key a in the list of
-//pairs l.  That is, assoc a [ ...; (a,b); ...] = b if (a,b) is the
-//leftmost binding of a in list l
+//'assoc a l' returns the value associated with key 'a in the list of
+//pairs 'l'.  That is, 'assoc a [ ...; (a,b); ...] = b' if '(a,b)' is
+//the leftmost binding of 'a' in list 'l'
 fun assoc[A, B with Eq[A]] (x : A) (l : list[(A * B)]) : opt[B] =>
   match l with
     | #Empty => None[B]
@@ -556,82 +556,131 @@ fun assoc[A, B with Eq[A]] (x : A) (l : list[(A * B)]) : opt[B] =>
   endmatch
     ;
 
+union result[A, B] =  Ok of A | Error of B ;
+
+union error_t =
+  | Syntax_error
+  | Unbound_variable of string
+  | Division_by_zero
+  ;
+
+fun str (err : error_t) : string =>
+  match err with
+    | Unbound_variable s => "Unbound variable '" + s + "'"
+    | #Syntax_error => "Syntax error"
+    | #Division_by_zero => "Attempted division by zero"
+  endmatch
+  ;
+
 //Evaluate an expression in an environment
-fun eval (env:&list[(string * double)]) (ast:ast_t): opt[double] =>
+fun eval 
+   (env:&list[(string * double)]) 
+   (ast:ast_t) 
+   : result[double, error_t] =>
   (
-  //println$ "Evaluating \"" + str ast + "\"";
   match ast with 
-    | E_const f => Some f
+    | E_const f => Ok[double, error_t] f
     | E_let (tag, e) => 
-      let v = eval env e in
-      match eval env e with
-      | Some x => ( env <- (tag, x) ! (deref env);  v)
-      | #None => None[double]
+       let v = eval env e in
+       match v with
+         | Ok f => ( env <- (tag, f) ! (deref env);  v)
+         | _ => v
+       endmatch
+   | E_var s => 
+      let v  = assoc s (deref env) in
+      match v with
+        | Some f => Ok[double, error_t] f
+        | #None => Error[double, error_t] (Unbound_variable s)
       endmatch
-   | E_var e => assoc e (deref env)
    | E_add (l, r) => 
-     let (x, y) = (eval env l, eval env r) in
-     match (x, y) with
-       | Some u, Some v => Some (u + v)
-       | _, _ => None[double]
-     endmatch
-    | E_sub (l, r) => 
-      let (x, y) = (eval env l, eval env r) in
-      match (x, y) with
-       | Some u, Some v => Some (u - v)
-       | _, _ => None[double]
-      endmatch
-     | E_mul (l, r) => 
-       let (x, y) = (eval env l, eval env r) in
-       match (x, y) with
-         | Some u, Some v => Some (u * v)
-         | _, _ => None[double]
-       endmatch
-     | E_div (l, r) => 
-       let (x, y) = (eval env l, eval env r) in
-       match (x, y) with
-         | Some u, Some v => Some (u / v)
-         | _, _ => None[double]
-       endmatch
+     let lhs = eval env l in
+     match lhs with
+        | Ok x =>
+          let rhs = eval env r in
+          match rhs with
+            | Ok y => Ok[double, error_t] (x + y)
+            | _ as error => error
+          endmatch
+        | _ as error => error
+      endmatch          
+   | E_sub (l, r) => 
+     let lhs = eval env l in
+     match lhs with
+        | Ok x =>
+          let rhs = eval env r in
+          match rhs with
+            | Ok y => Ok[double, error_t] (x - y)
+            | _ as error => error
+          endmatch
+        | _ as error => error
+      endmatch          
+   | E_mul (l, r) => 
+     let lhs = eval env l in
+     match lhs with
+        | Ok x =>
+          let rhs = eval env r in
+          match rhs with
+            | Ok y => Ok[double, error_t] (x * y)
+            | _ as error => error
+          endmatch
+        | _ as error => error
+      endmatch          
+   | E_div (l, r) => 
+     let lhs = eval env l in
+     match lhs with
+        | Ok x =>
+          let rhs = eval env r in
+          match rhs with
+            | Ok y => 
+                 if y != 0.0 then 
+                   Ok[double, error_t] (x / y)
+                 else
+                   Error[double, error_t] (Division_by_zero)
+            | _ as error => error
+          endmatch
+        | _ as error => error
+      endmatch          
    endmatch)
   ;
 
 gen parse_eval_expr
-  (env:&list[(string*double)]) (s:string) : opt[double] =
+  (env:&list[(string*double)]) (s:string) : result[double, error_t] =
 {
-  gen f (x : opt[double]) : double = {
-    if is_defined x do return (get x);
-    else goto gen_end;
-    done;
-  }
-
   val expr : opt[ast_t] = parse_expr s;
 
   if (is_defined expr) do
-    return Some (f (eval env (get expr)));
-  done;
+    return eval env (get expr);
+  done
 
-gen_end :>
-  return None[double];
+  return Error[double, error_t](Syntax_error);
 }
 
 gen parse_eval_exprs 
-  (env:&list[(string*double)]) (s:string) : opt[list[double]] =
+  (env:&list[(string*double)]) (s:string) : result[list[double], error_t] =
 {
-  gen f (x : opt[double]) : double = {
-    if is_defined x do return (get x);
-    else goto gen_end;
-    done;
-  }
+  fun f 
+      (acc : result[list[double], error_t]) 
+              (e : result[double, error_t]) : 
+              result[list[double], error_t] =>
+    match acc with
+      | Ok l =>
+          match e with
+            | Ok v => Ok[list[double], error_t] (l + v)//slow
+            | Error error => Error[list[double], error_t](error)
+          endmatch
+      | Error error => Error[list[double], error_t] (error)
+    endmatch
+  ;
 
   val exprs : opt[list[ast_t]] = parse_expr_list s;
 
   if (is_defined exprs) do
-    return Some (map f (map (eval env) (get exprs)));
-  done;
+    return fold_left 
+             f (Ok[list[double], error_t](list[double]())) 
+             (map (eval env) (get exprs));
+  done
 
-gen_end :>
-  return None[list[double]];
+  return Error[list[double], error_t](Syntax_error);
 }  
 
 proc prompt (continuing:bool) {
@@ -656,7 +705,7 @@ proc repl () {
   //oh hai!
   println$ "";
   println$ "Interpreter of arithmetic expressions (with variables)";
-  println$ "Type expressions you want to have evaluated (e.g. 'x = 2 + 3')";
+  println$ "Type ^D to quit.";
 
   var env = list [(string * double)]();
 
@@ -692,17 +741,14 @@ repl_loop : //iz in ur loop!
 
       //We think we got a phrase. Evaluate
       buf += l;
-      var res : opt[list[double]] = parse_eval_exprs (&env) buf;
+      var res : result[list[double], error_t] = parse_eval_exprs (&env) buf;
       buf = ""; //reset buf
-
-      if is_empty res do
-         println$ "Error";
-         continue repl_loop;
-       done
-
-      var k : int = int (len (get res));
-      var ml : list [double] = drop (k - 1) (get res) ;
-      println$ str (head ml) ;
+      var response : string =
+        match res with 
+         | Ok a => str (head (drop (int (len a) - 1) a))
+         | Error err => str err
+       endmatch;
+       println$ response;
 
     done
   done //repl_loop
