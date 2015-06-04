@@ -143,12 +143,16 @@ syntax infix_c
 
 open syntax infix_c;
 
+//These idioms comes up enough to be worth factoring them out
+fun fst[A, B] (p : A * B) : A => p.0 ;
+fun snd[A, B] (p : A * B) : B => p.1 ;
+fun prepend[T] (p : T * list[T]) : list[T] => Cons (p.0, p.1) ;
+
 //Kleene '*'
 fun zero_or_more[A, B] (p:parser[A, B]): parser[A, list[B]] =>
   fun (toks:list[A]) : parsed[A, list[B]] =>
-   (gives (p &~ (zero_or_more p), 
-         (fun (res:(B * list[B])) : list[B] => Cons (res.0, res.1)))
-  |~ (empty[A, list[B]] (list[B]()))) toks
+   ( (p &~ zero_or_more p >=~ prepend[B])
+   |~ (empty[A, list[B]] (list[B]())) ) toks
 ;
 
 syntax prefix_c 
@@ -185,8 +189,7 @@ var digit : parser[char, char] =
 
 //Parser of a sequence of digit
 var digits : parser[char, list[char]] = 
-  (digit &~ *digit) >=~ 
-    (fun (p:char*list[char]):list[char] => Cons (p.0,p.1))
+  (digit &~ *digit) >=~ prepend[char]
   ;
 
 // '-' | '+' | eps
@@ -201,14 +204,14 @@ var optsign : parser[char, list[char]] =
 
 // '.' digit* | eps
 var optfrac : parser[char, list[char]] =
-  ((char_ (char '.') &~ *digit) >=~ (fun (p:char*list[char]):list[char] => Cons (p.0,p.1)))
+  ( char_ (char '.') &~ *digit >=~ prepend[char])
   |~ empty[char, list[char]] (list[char] ())
   ;
 
 //(('e'|'E') optsign digits)|eps
 var optexp : parser[char, list[char]] =
   (((((char_ (char 'e') |~ char_ (char 'E')) &~ optsign) 
-    >=~ (fun (p:char * list[char]):list[char] => Cons (p.0,p.1))) &~ digits) 
+    >=~ prepend[char]) &~ digits) 
     >=~ (fun (x:list[char], y:list[char]) : list[char] => x + y)) 
   |~ empty[char, list[char]] (list[char] ())
 ;
@@ -309,7 +312,8 @@ var space_ : parser[char, singular_value_t] =
 
 //Parser of whitespace
 fun spaces (toks:list[char]) : parsed[char, singular_value_t] =>
-  (((space_ &~ spaces) >=~ (fun (u:singular_value_t, v:singular_value_t):singular_value_t => singular_value))
+  (((space_ &~ spaces) >=~ 
+       fst[singular_value_t, singular_value_t])
     |~ empty[char, singular_value_t](singular_value))
   toks
   ;
@@ -317,8 +321,14 @@ fun spaces (toks:list[char]) : parsed[char, singular_value_t] =>
 //Lexer for the language of arithmetic expressions
 fun lex (toks : list[char]) : parsed [char, list[token_t]] =>
     (spaces &~ 
-    *(((identifier |~ number |~ operator |~ paren |~ semicolon |~ equal) &~ spaces) >=~ 
-    (fun (tok:token_t, _:singular_value_t) : token_t => tok)) >=~ (fun (u:singular_value_t, ts:list[token_t]) : list[token_t] => ts)) toks
+    *((( identifier 
+        |~ number 
+        |~ operator 
+        |~ paren 
+        |~ semicolon 
+        |~ equal) &~ spaces) >=~ 
+    (fst[token_t, singular_value_t])) 
+       >=~ snd[singular_value_t, list[token_t]]) toks
   ;
 
 //Arithmetic expressions
@@ -477,10 +487,8 @@ fact :=
 
 //expr_list := expr (';' expr)*
 var expr_list : parser[token_t, list[ast_t]] = 
-  ((expr &~ 
-     *((semi &~ expr) >=~ 
-         (fun (p:(singular_value_t * ast_t)) : ast_t => p.1)) 
-     >=~ (fun (p:ast_t * list[ast_t]):list[ast_t] => Cons (p.0,p.1)))) 
+  ((expr &~ *((semi &~ expr) >=~ snd[singular_value_t, ast_t])
+     >=~ prepend[ast_t]))
    |~empty[token_t, list[ast_t]] (list[ast_t]())
   ;
 
@@ -494,7 +502,7 @@ fun expr (toks : list[token_t]) : parsed[token_t, ast_t] =>
 
 //bind := identifier '=' expr
 var bind : parser[token_t, ast_t] =
-   (((ident &~ equals) >=~ (fun (p:ast_t * singular_value_t) : ast_t => p.0)) &~ expr) >=~ 
+   (((ident &~ equals) >=~ fst[ast_t, singular_value_t]) &~ expr) >=~ 
    (fun (p : ast_t * ast_t) : ast_t => 
       match p.0 with
       | E_var e => E_let (e, p.1)
