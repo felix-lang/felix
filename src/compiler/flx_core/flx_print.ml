@@ -134,7 +134,7 @@ and string_of_expr (e:expr_t) =
   | EXPR_noexpand (sr,e) -> string_of_expr e
 
   | EXPR_letin (sr,(pat,e1, e2)) ->
-    "let " ^ string_of_letpat pat ^ " = " ^ se e1 ^ " in " ^ se e2
+    "let " ^ string_of_pattern pat ^ " = " ^ se e1 ^ " in " ^ se e2
   | EXPR_coercion (_,(e,t)) ->
     "(" ^ sme e ^ ":" ^
     string_of_typecode t ^ ")"
@@ -767,6 +767,7 @@ and string_of_pattern p =
   | PAT_tuple (_,ps) -> "(" ^ catmap ", "  string_of_pattern ps ^ ")"
   | PAT_tuple_cons (_,a,b) -> string_of_pattern a ^ ",," ^ string_of_pattern b
   | PAT_any _ -> "any"
+  | PAT_setform_any _ -> "setform_any (elidable)"
   | PAT_const_ctor (_,s) -> "|" ^ string_of_qualified_name s
   | PAT_nonconst_ctor (_,s,p)-> "|" ^ string_of_qualified_name s ^ " " ^ string_of_pattern p
   | PAT_as (_,p,n) ->
@@ -780,19 +781,6 @@ and string_of_pattern p =
        string_of_id s ^ "=" ^ string_of_pattern p) ps ^ ")"
   | PAT_expr (_,e) -> "$(" ^ string_of_expr e ^ ")"
 
-and string_of_letpat p =
-  match p with
-  | PAT_name (_,s) -> string_of_id s
-  | PAT_tuple (_,ps) -> "(" ^ catmap ", " string_of_letpat ps ^ ")"
-  | PAT_tuple_cons (_,a,b) -> string_of_pattern a ^ ",," ^ string_of_pattern b
-  | PAT_any _ -> "_"
-  | PAT_const_ctor (_,s) -> "|" ^ string_of_qualified_name s
-  | PAT_nonconst_ctor (_,s,p)-> "|" ^ string_of_qualified_name s ^ " " ^ string_of_letpat p
-  | PAT_as (_,p,n) -> "(" ^ string_of_pattern p ^ " as " ^ string_of_id n ^ ")"
-  | PAT_record (_,ps) ->
-     "( " ^ catmap ", " (fun (s,p) -> string_of_id s ^ "="^string_of_pattern p) ps ^")"
-
-  | _ -> failwith "unexpected pattern kind in let/in pattern"
 
 and string_of_compound level ss =
   spaces level ^ "{\n" ^

@@ -16,6 +16,7 @@ let rec check_match_literal pats =
   let rec check pat =
     match pat with
     | PAT_any _
+    | PAT_setform_any _
     | PAT_literal _
     | PAT_range _
     | PAT_name _ -> ()
@@ -34,6 +35,7 @@ let rec check_match_range pats =
   let rec check pat =
     match pat with
     | PAT_any _
+    | PAT_setform_any _
     | PAT_literal _
     | PAT_range _
     | PAT_name _ -> ()
@@ -54,6 +56,7 @@ and check_match_record pats =
     match pat with
     | PAT_record _
     | PAT_any _
+    | PAT_setform_any _
     | PAT_name _ -> ()
 
     | PAT_as (_,pat,_)
@@ -70,6 +73,7 @@ and check_match_tuple n pats =
   let rec check n pat =
     match pat with
     | PAT_any _
+    | PAT_setform_any _
     | PAT_name _ -> ()
 
     | PAT_tuple (sr,pats) ->
@@ -91,6 +95,7 @@ and check_match_tuple n pats =
   let rec match_split pat =
     match pat with
     | PAT_any _ -> []
+    | PAT_setform_any _ -> []
     | PAT_name _ -> []
     | PAT_coercion (_,pat,_)
     | PAT_as (_,pat,_)
@@ -120,6 +125,7 @@ and check_match_tuple_cons pats =
   let rec check pat =
     match pat with
     | PAT_any _ 
+    | PAT_setform_any _ 
     | PAT_name _ -> ()
     | PAT_tuple_cons (_,p1,p2) -> check p2
     | PAT_as (_,pat,_)
@@ -141,6 +147,7 @@ and check_match_union pats =
   let rec check pat =
     match pat with
     | PAT_any  _
+    | PAT_setform_any  _
     | PAT_nonconst_ctor _
     | PAT_const_ctor _
     | PAT_name _ -> ()
@@ -182,6 +189,7 @@ and find_match_type pat =
   | PAT_tuple (_,pats) -> check_match_tuple (List.length pats)
   | PAT_tuple_cons (_,p1,p2) -> check_match_tuple_cons 
   | PAT_any _ -> renaming
+  | PAT_setform_any _ -> renaming
   | PAT_const_ctor _ -> check_match_union
   | PAT_nonconst_ctor _ -> check_match_union
   | PAT_record (_,_) -> check_match_record
@@ -191,40 +199,42 @@ and find_match_type pat =
   | PAT_when (_,pat,_)
   | PAT_coercion (_,pat,_) -> find_match_type pat
 
-(* This routine is used to check all but the last
-   pattern match isn't a match all
-*)
-
-let rec is_universal pat =
+let rec is_irrefutable pat =
+  let irf pat = is_irrefutable pat in
   match pat with
-  | PAT_any _
-  | PAT_name (_,_) -> true
+  | PAT_none _ -> assert false
+  | PAT_literal _ -> false
 
-  | PAT_as (_,pat,_) -> is_universal pat
-  | PAT_coercion (_,pat,_) -> is_universal pat
-  | PAT_tuple (_,ps) -> fold_left (fun a p -> a && is_universal p) true ps
+  (* ranges *)
+  | PAT_range _ -> false
 
-  | _ -> false
+  (* other *)
+  | PAT_name _ -> true
+  | PAT_tuple (_,pats) -> fold_left (fun acc v -> acc && irf v) true pats
+  | PAT_tuple_cons (_,p1,p2) -> irf p1 && irf p2
+  | PAT_any _ -> true
+  | PAT_setform_any _ -> true
+  | PAT_const_ctor _ -> false
+  | PAT_nonconst_ctor _ -> false
+  | PAT_record (_,rpats) -> fold_left (fun acc (_,p) -> acc && irf p) true rpats
 
-let rec check_terminal pat =
-  match pat with
-  | PAT_any sr ->
-      failwith
-      (
-        "'Any' pattern '_' must be last in match in " ^
-        Flx_srcref.short_string_of_src sr
-      )
+  | PAT_expr _ -> assert false
+  | PAT_as (_,pat,_) -> true
+  | PAT_when (_,pat,_) -> false
+  | PAT_coercion (_,pat,_) -> irf pat
 
-  | PAT_name (sr,x) ->
-      failwith
-      (
-        "'Name' pattern '"^x^"' must be last in match in " ^
-        Flx_srcref.short_string_of_src sr
-      )
+let rec check_ir pats =
+  match pats with
+  | h1 :: PAT_setform_any _ :: [] -> ()
+  | h1 :: h2 :: tail -> if is_irrefutable h1 then
+    begin
+      print_endline ("[flx_pat] WARNING: Irrefutable pattern " ^ string_of_pattern h1 ^ " not last in");
+      print_endline (Flx_srcref.long_string_of_src (src_of_pat h1))
+    end;
+    check_ir (h2 :: tail)
 
-  | PAT_as (_,pat,_) -> check_terminal pat
-  | PAT_coercion (_,pat,_) -> check_terminal pat
-  | _ -> ()
+  | h :: [] -> () 
+  | [] -> ()
 
 let validate_patterns pats =
   if List.length pats = 0 then failwith "Empty pattern list";
@@ -233,19 +243,12 @@ let validate_patterns pats =
   let checker = find_match_type hpat in
   checker pats;
 
-  (*
-  Currently the parser generates matches for set forms.
-  Unfortunately it adds a terminal wildcard branch
-  even if the prior branch is irrefutable because at
-  present there's no code to tell if it is or not.
-  So we have to disable this check.
-  *)
-  (*
-  List.iter check_terminal (List.tl (List.rev pats));
-  *)
+  check_ir pats;
 
   List.iter begin fun x ->
     match x with
     | PAT_none sr -> assert false
     | _ -> ()
   end (List.tl pats)
+
+

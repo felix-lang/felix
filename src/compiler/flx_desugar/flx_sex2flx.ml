@@ -287,6 +287,7 @@ and xpattern_t x =
   | Lst [Id "pat_tuple_cons"; sr; a; b] -> PAT_tuple_cons (xsr sr, xp a, xp b)
 
   | Lst [Id "pat_any"; sr] -> PAT_any (xsr sr)
+  | Lst [Id "pat_setform_any"; sr] -> PAT_setform_any (xsr sr)
   | Lst [Id "pat_const_ctor"; sr; qn] ->
       PAT_const_ctor (xsr sr, xq sr "pat_const_ctor" qn)
   | Lst [Id "pat_nonconst_ctor"; sr; qn; p] ->

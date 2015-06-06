@@ -137,6 +137,7 @@ let fix_pattern counter pat =
 
   | PAT_name _
   | PAT_any _
+  | PAT_setform_any _
   | PAT_const_ctor _ 
     -> p
 

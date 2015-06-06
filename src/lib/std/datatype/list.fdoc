@@ -560,7 +560,7 @@ Returns option.
     match a, b with
     | #Empty, Empty => true
     | #Empty, _ => false
-    | _, Empty => false
+    | _, #Empty => false
     | Cons (ha,ta), Cons (hb,tb) => 
       if not (ha == hb) then false
       else list_eq (ta, tb)

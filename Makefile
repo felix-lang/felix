@@ -287,6 +287,10 @@ post-tarball:
 packages:
 	for i in src/packages/*; do echo "PACKAGE " $$i; python3 src/tools/flx_iscr.py -q $$i ${BUILDROOT}; done
 
+noisy-packages:
+	for i in src/packages/*; do echo "PACKAGE " $$i; python3 src/tools/flx_iscr.py $$i ${BUILDROOT}; done
+
+
 grammar:
 	-${BUILDROOT}/host/bin/flx src/tools/flx_find_grammar_files ${BUILDROOT}
 

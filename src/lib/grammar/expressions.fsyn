@@ -450,7 +450,7 @@ syntax expressions {
       (
          (argt _3)
          (ret (nos "bool"))
-         (matchings `((,_1 ,_5)((pat_any ,_sr)(ast_typed_case 0 2))))
+         (matchings `((,_1 ,_5)((pat_setform_any ,_sr)(ast_typed_case 0 2))))
          (body `((ast_fun_return ,_sr (ast_match ,_sr (,(noi '_a) ,matchings)))))
          (param `(PVal _a ,argt none)) ;; one parameter
          (params `(,param))            ;; parameter tuple list

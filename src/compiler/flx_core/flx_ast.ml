@@ -217,6 +217,7 @@ and pattern_t =
   | PAT_tuple of Flx_srcref.t * pattern_t list
   | PAT_tuple_cons of Flx_srcref.t * pattern_t * pattern_t
   | PAT_any of Flx_srcref.t
+  | PAT_setform_any of Flx_srcref.t
     (* second list is group bindings 1 .. n-1: EXCLUDES 0 cause we can use 'as' for that ?? *)
   | PAT_const_ctor of Flx_srcref.t * qualified_name_t
   | PAT_nonconst_ctor of Flx_srcref.t * qualified_name_t * pattern_t
@@ -811,6 +812,7 @@ let src_of_pat (e : pattern_t) = match e with
   | PAT_tuple (s,_)
   | PAT_tuple_cons (s,_,_)
   | PAT_any s
+  | PAT_setform_any s
   | PAT_const_ctor (s,_)
   | PAT_nonconst_ctor (s,_,_)
   | PAT_as (s,_,_)

@@ -322,6 +322,7 @@ let rec gen_match_check pat (arg:expr_t) =
     (List.tl rpats)
 
   | PAT_any sr -> truth sr
+  | PAT_setform_any sr -> truth sr
   | PAT_const_ctor (sr,name) ->
     EXPR_match_ctor (sr,(name,arg))
 

@@ -78,7 +78,7 @@ let gen_match rex seq name sr e pss =
         print_endline "WARNING, matches after wildcard ignored"
         *)
       else begin
-        iswild := is_universal pat;
+        iswild := is_irrefutable pat;
         let patsrc = src_of_pat pat in
         let expr_src = src_of_expr e in
         let match_checker_id = name ^ "_mc" ^ string_of_bid n1 in
@@ -279,7 +279,7 @@ List.iter (fun s -> print_endline (string_of_statement 2 s)) sts;
 *)
       let n1 = !n2 in (* this case *)
       n2 := seq(); (* the next case *)
-      iswild := is_universal pat;
+      iswild := is_irrefutable pat;
       let patsrc = src_of_pat pat in
       let match_checker_id = name ^ "_mc" ^ string_of_bid n1 in
       let match_checker = EXPR_index (patsrc,match_checker_id,n1) in

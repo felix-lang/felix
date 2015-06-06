@@ -1,8 +1,0 @@
-class Win32_headers {
-  header windows_h = "#include <windows.h>";
-  header io_h = "#include <io.h>";
-  header direct_h = "#include <direct.h>";
-  header sys_timeb_h = "#include <sys/timeb.h>";
-  header sys_utime_h = "#include <sys/utime.h>";
-  header process_h = "#include <process.h>";
-}
