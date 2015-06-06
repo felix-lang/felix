@@ -1,0 +1,11 @@
+@title The Felix Standard Library
+@h1 Building the basics
+<dt><a href=cheaders.fdoc>headers</a></dt>
+<dd>First we require basic C interfaces.</dd>
+<dt><a href=core_scalar_types.fdoc>core scalar types</a></dt>
+<dd>so we can define the core scalar types.</dd>
+</dl>
+
+
+
+
