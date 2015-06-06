@@ -83,7 +83,7 @@ fun xlat_cpp(t:string, dir:string) : bool * string=
           // and we can't use // because firefox thinks it means
           // the website name is empty
           // the trailing cpp tells us the filetype is C/C++
-          write_string('<a href="/$'+f+'cpp" >' + x + '</a>'); 
+          write_string('<a href="/$'+f+'" >' + x + '</a>'); 
       | #None => write_string('<span class="fstring">'+x+"</span>");
       endmatch;
     else 
