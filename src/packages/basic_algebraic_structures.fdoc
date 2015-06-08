@@ -1,14 +1,33 @@
-@tangler equiv.flx=share/lib/std/algebraic/equiv.flx
-@tangler pord.flx=share/lib/std/algebraic/partialorder.flx
-@tangler tord.flx=share/lib/std/algebraic/totalorder.flx
-@tangler group.flx=share/lib/std/algebraic/group.flx
-@tangler ring.flx=share/lib/std/algebraic/ring.flx
-@tangler real.flx=share/lib/std/algebraic/real.flx
-@tangler complex.flx=share/lib/std/algebraic/complex.flx
-@tangler integer.flx=share/lib/std/algebraic/integer.flx
-@tangler bits.flx=share/lib/std/algebraic/bits.flx
-@tangler sequence.flx=share/lib/std/algebraic/sequence.flx
+@tangler init.flx=share/lib/std/algebra/__init__.flx
+@tangler equiv.flx=share/lib/std/algebra/equiv.flx
+@tangler pord.flx=share/lib/std/algebra/partialorder.flx
+@tangler tord.flx=share/lib/std/algebra/totalorder.flx
+@tangler group.flx=share/lib/std/algebra/group.flx
+@tangler ring.flx=share/lib/std/algebra/ring.flx
+@tangler trig.flx=share/lib/std/algebra/trig.flx
+@tangler real.flx=share/lib/std/algebra/real.flx
+@tangler complex.flx=share/lib/std/algebra/complex.flx
+@tangler integer.flx=share/lib/std/algebra/integer.flx
+@tangler bits.flx=share/lib/std/algebra/bits.flx
+@tangler sequence.flx=share/lib/std/algebra/sequence.flx
 @title Core Algebraic Structures.
+@h1 Synopsis.
+
+@tangle init.flx
+include "std/algebra/set";
+include "std/algebra/container";
+include "std/algebra/equiv";
+include "std/algebra/partialorder";
+include "std/algebra/totalorder";
+include "std/algebra/sequence";
+include "std/algebra/group";
+include "std/algebra/ring";
+include "std/algebra/bits";
+include "std/algebra/integer";
+include "std/algebra/trig";
+include "std/algebra/real";
+include "std/algebra/complex";
+
 @h1 Description.
 In this section we provide abstract definitions of some basic
 mathematical stuctures which will be used to specify
@@ -244,7 +263,6 @@ class Bidirectional[t] {
 }
 
 
-
 @h1 Groupoids.
 
 @h2 Approximate Additive Group
@@ -374,7 +392,7 @@ class FloatDring[t] {
   proc modeq(px:&t, y:t) { %= (px,y); }
 }
 
-@h2 Ring
+@h2 Division Ring
 @tangle ring.flx
 //$ Division ring.
 class Dring[t] {
@@ -434,8 +452,10 @@ class Unsigned_integer[t] {
 
 
 @h1 Float kinds
-@h2 Real numbers
-@tangle real.flx
+@h2 Trigonometric Functions.
+Trigonometric functions are shared by
+real and complex numbers.
+@tangle trig.flx
 
 //$ Float-approximate trigonometric functions.
 class Trig[t] {
@@ -537,6 +557,8 @@ class Special[t] {
   virtual fun erfc: t -> t;
 }
 
+@h2 Approximate Reals.
+@tangle real.flx
 //$ Float-approximate real numbers.
 class Real[t] {
   inherit Tord[t];
