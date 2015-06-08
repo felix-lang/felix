@@ -1,11 +1,15 @@
 @title The Felix Standard Library
 @h1 Building the basics
-<dt><a href=cheaders.fdoc>headers</a></dt>
-<dd>First we require basic C interfaces.</dd>
-<dt><a href=core_scalar_types.fdoc>core scalar types</a></dt>
+<dt><a href=cheaders.fdoc>C Headers</a></dt>
+<dd>First we require basic C interfaces...</dd>
+
+<dt><a href=core_scalar_types.fdoc>Core Scalar Types</a></dt>
 <dd>so we can define the core scalar types.</dd>
 </dl>
 
 
+<dt><a href=basic_algebraic_structures.fdoc>Basic Algebraic Structure</a></dt>
+<dd>We define some basic algebraic structures...</dd>
+</dl>
 
 

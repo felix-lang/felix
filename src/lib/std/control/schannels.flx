@@ -62,9 +62,9 @@ open class Schannel
 
   //$ Read an item from a bidirectional channel.
   inline gen read[T] (chan:schannel[T]) = {
-    var loc: root::gcptr[T];
-    svc$ svc_sread$ C_hack::cast[_schannel] chan, C_hack::reinterpret[&root::gcaddress] (&loc);
-    return C_hack::deref loc;
+    var loc: &T;
+    svc$ svc_sread$ C_hack::cast[_schannel] chan, C_hack::reinterpret[&root::address] (&loc);
+    return deref loc;
   }
 
   //$ Read an item from an input channel.
@@ -72,13 +72,13 @@ open class Schannel
 
   //$ Write an item to a bidirectional channel.
   proc write[T] (chan:schannel[T], v:T) {
-    var ps = C_hack::cast[root::gcaddress]$ new v;
+    var ps = C_hack::cast[root::address]$ new v;
     svc$ svc_swrite$ C_hack::cast[_schannel] chan, &ps;
   }
  
   //$ Multi Write an item to a bidirectional channel.
   proc broadcast[T] (chan:schannel[T], v:T) {
-    var ps = C_hack::cast[root::gcaddress]$ new v;
+    var ps = C_hack::cast[root::address]$ new v;
     svc$ svc_multi_swrite$ C_hack::cast[_schannel] chan, &ps;
   }
  

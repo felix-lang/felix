@@ -42,14 +42,6 @@ class C_hack
 
   const sizeof[t]:size = 'sizeof(?1)';
 
-  //$ Equality for gcptr
-  instance[T] Eq[gcptr[T]] {
-    fun eq[T]: gcptr[T] * gcptr[T] -> bool = "$1==$2";
-  }
-
-  //$ Special lvalue deref for gcptr
-  lvalue fun deref[t]: gcptr[t] -> t = "*$1";
-
   //$ Special NULL check for Felix pointers.
   //$ Should never succeed.
   fun isNULL[t]: &t -> bool = "(0==$1)";
@@ -57,10 +49,6 @@ class C_hack
   //$ Special NULL check for carray.
   //$ Should never succeed.
   fun isNULL[t]: +t -> bool = "(0==$1)";
-
-  //$ Special NULL check for gcptr.
-  //$ Might succeed.
-  fun isNULL[t]: gcptr[t] -> bool = "(0==$1)";
 
   //$ Polymorphic null pointer constant
   //$ Values of this type should not exist.
