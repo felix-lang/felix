@@ -8,13 +8,13 @@ open class Carray
   type carray[T] = new &T;
 
   //$ Define prefix + notation.
-  typedef fun +(T:TYPE) : TYPE => carray[T]; 
+  typedef fun prefix_plus(T:TYPE) : TYPE => carray[T]; 
 
   //$ Unsafe conversion of Felix pointer to carray.
-  fun +[T]:&T -> carray[T] = "$1"; // unsafe
+  fun prefix_plus [T]:&T -> carray[T] = "$1"; // unsafe
 
   //$ Demote carray to Felix pointer (safe unless off the end).
-  fun -[T]: carray[T] -> &T = "$1"; // safe (unless we allow +T to be NULL later ..)
+  fun neg [T]: carray[T] -> &T = "$1"; // safe (unless we allow +T to be NULL later ..)
 
   //$ a &. i returns pointer to i'th component of an array.
   fun n"&." [T]: carray[T] * !ints -> &T = "$1+$2"; // safe (unless we allow +T to be NULL later ..)

@@ -9,7 +9,7 @@ class System
 
   fun args () => List::map (argv) (List::range argc);
 
-  proc setargs : + +char * size = "PTF argc=$2; PTF argv=$1;" requires property "needs_ptf";
+  proc setargs : + (+char) * size = "PTF argc=$2; PTF argv=$1;" requires property "needs_ptf";
   proc setargs[N] (a:string^N) 
   {
     gen myget(i:size)=>a.i.cstr;

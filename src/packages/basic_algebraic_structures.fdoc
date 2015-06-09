@@ -122,6 +122,8 @@ As a simple example, consider that the rational numbers
 \(1/2\) and \(2/4\) have distinct encodings but none-the-less
 are semantically equivalent.
 
+An online reference on <a href="http://en.wikibooks.org/wiki/Abstract_Algebra/Equivalence_relations_and_congruence_classes">Wikibooks</a>
+
 @tangle equiv.flx
 // equality: technically, equivalence relation
 class Eq[t] {
@@ -283,8 +285,8 @@ class FloatAddgrp[t] {
   inherit Eq[t];
   virtual fun zero: unit -> t;
   virtual fun + : t * t -> t;
-  virtual fun - : t -> t;
-  virtual fun + : t -> t = "$1";
+  virtual fun neg : t -> t;
+  virtual fun prefix_plus : t -> t = "$1";
   virtual fun - (x:t,y:t):t => x + -y;
   virtual proc += (px:&t,y:t) { px <- *px + y; }
   virtual proc -= (px:&t,y:t) { px <- *px - y; }
@@ -298,7 +300,6 @@ class FloatAddgrp[t] {
   fun add(x:t,y:t)=> x + y;
   fun plus(x:t)=> +x;
   fun sub(x:t,y:t)=> x - y;
-  fun neg(x:t)=> -x;
   proc pluseq(px:&t, y:t) {  += (px,y); }
   proc  minuseq(px:&t, y:t) { -= (px,y); }
 

@@ -161,11 +161,10 @@ syntax expressions {
   x[sarrow_pri] := x[>sarrow_pri] ".." x[>sarrow_pri] =># '''
     `(ast_apply ,_sr ((ast_apply ,_sr (,(nos "slice_range") ,_1)) ,_3))
   ''';
-/*
-  x[sarrow_pri] := x[>sarrow_pri] "|" x[>sarrow_pri] =># '''
-    `(ast_apply ,_sr ((ast_apply ,_sr (,(nos "slice_count") ,_1)) ,_3))
+
+  x[sarrow_pri] := x[>sarrow_pri] "..<" x[>sarrow_pri] =># '''
+    `(ast_apply ,_sr ((ast_apply ,_sr (,(nos "slice_range_excl") ,_1)) ,_3))
   ''';
-*/
 
   // right arrows: RIGHT ASSOCIATIVE!
 
@@ -228,10 +227,10 @@ syntax expressions {
   x[sprefixed_pri] := "!" x[spower_pri] =># "(Prefix)";
 
   //$ Prefix plus.
-  x[sprefixed_pri] := "+" x[spower_pri] =># "(Prefix)";
+  x[sprefixed_pri] := "+" x[spower_pri] =># "(prefix 'prefix_plus)";
 
   //$ Prefix negation.
-  x[sprefixed_pri] := "-" x[spower_pri] =># "(Prefix)";
+  x[sprefixed_pri] := "-" x[spower_pri] =># "(prefix 'neg)";
 
   //$ Prefix complement.
   x[sprefixed_pri] := "~" x[spower_pri] =># "(Prefix)";

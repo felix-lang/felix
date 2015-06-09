@@ -302,7 +302,7 @@ or thread frame.
     requires property "needs_gc"
   ;
 
-  proc create_with_args: flx_library * flx_instance * int * + +char=
+  proc create_with_args: flx_library * flx_instance * int * + (+char) =
     "$2->create($1,PTF gcp,$3,$4,PTF flx_stdin, PTF flx_stdout, PTF flx_stderr, false);" 
     requires property "needs_gc"
   ;

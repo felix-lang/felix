@@ -44,9 +44,9 @@ class PosixProcess {
   const bad_exec: exec_result_t = "-1";
   fun == : exec_result_t * exec_result_t -> bool= "$1==$2";
 
-  gen execv:+char *  + +char -> exec_result_t = "execv($1, $2)" requires Posix_headers::unistd_h;
-  gen execvp:+char *  + +char -> exec_result_t = "execvp($1, $2)" requires Posix_headers::unistd_h;
-  gen execve:+char *  + +char * + +char -> exec_result_t = "execve($1, $2, $3)" requires Posix_headers::unistd_h;
+  gen execv:+char *  + (+char) -> exec_result_t = "execv($1, $2)" requires Posix_headers::unistd_h;
+  gen execvp:+char *  + (+char) -> exec_result_t = "execvp($1, $2)" requires Posix_headers::unistd_h;
+  gen execve:+char *  + (+char) * + (+char) -> exec_result_t = "execve($1, $2, $3)" requires Posix_headers::unistd_h;
 
   // do NOT try to fork Felix programs, it doesn't work
   // because of threads already running. We use fork only
@@ -74,7 +74,7 @@ class PosixProcess {
   | BadSetup of int
   ;
 
-  gen spawnv(file: string, argv:+ +char, setup:1->int) : spawn_result_t = {
+  gen spawnv(file: string, argv:+ (+char), setup:1->int) : spawn_result_t = {
     var x = fork();
     if x == child_process do  // CHILD
       var result = #setup;
@@ -94,7 +94,7 @@ class PosixProcess {
     done
   }
 
-  gen spawnvp(file: string, argv:+ +char, setup:1->int) : spawn_result_t = { 
+  gen spawnvp(file: string, argv:+ (+char), setup:1->int) : spawn_result_t = { 
     var x = fork();
     if x == child_process do // CHILD
       var result = #setup;
@@ -114,7 +114,7 @@ class PosixProcess {
     done
   }
 
-  gen spawnve(file: string, argv:+ +char, env: + +char, setup:1->int) : spawn_result_t = {
+  gen spawnve(file: string, argv:+ (+char), env: + (+char), setup:1->int) : spawn_result_t = {
     var x = fork();
     if x == child_process do // CHILD
       var result = #setup;

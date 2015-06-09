@@ -4,6 +4,7 @@ publish "slice type"
     | Slice_from of T
     | Slice_to of T
     | Slice_range of T * T
+    | Slice_range_excl of T * T
     | Slice_one of T
   ;
 
@@ -19,6 +20,16 @@ gen slice_range[T with Integer[T]] (first:T) (last:T) () = {
   if i == last do yield Some i; done
   return None[T]; 
 }
+
+gen slice_range_excl[T with Integer[T]] (first:T) (limit:T) () = {
+  var i = first;
+  while i < limit do 
+    yield Some i; 
+    i = i + #one[T]; 
+  done 
+  return None[T]; 
+}
+
 
 // Note: guarrantees no overflow if first + count - 1
 // is in range of the type

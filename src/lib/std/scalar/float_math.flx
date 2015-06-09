@@ -35,7 +35,7 @@ instance[t in floats] Complex[complex[t],t] {
   fun imag : complex[t] -> t = "imag($1)";
   fun abs: complex[t] -> t = "abs($1)";
   fun arg : complex[t] -> t = "arg($1)";
-  fun - : complex[t] -> complex[t] = "-$1";
+  fun neg : complex[t] -> complex[t] = "-$1";
   fun + : complex[t] * complex[t] -> complex[t] = "$1+$2";
   fun - : complex[t] * complex[t] -> complex[t] = "$1-$2";
   fun * : complex[t] * complex[t] -> complex[t] = "$1*$2";
