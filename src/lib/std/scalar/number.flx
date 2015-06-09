@@ -2,7 +2,7 @@
 instance[t in numbers] FloatAddgrp[t] {
   fun zero: unit -> t = "(?1)0" ;
   fun + : t * t -> t = "$1+$2" ;
-  fun - : t -> t = "-$1" ;
+  fun neg : t -> t = "-$1" ;
   fun - : t * t -> t = "$1-$2" ;
   proc += : &t * t = "*$1+=$2;";
   proc -= : &t * t = "*$1-=$2;";
