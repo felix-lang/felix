@@ -1,10 +1,10 @@
 @title Strings
-@tangler __init__.flx=src/lib/std/strings/__init__.flx
-@tangler string.flx=src/lib/std/strings/string.flx
-@tangler re2.flx=src/lib/std/strings/re2.flx
-@tangler tre.flx=src/lib/std/strings/tre.flx
-@tangler regdef.flx=src/lib/std/strings/regdef.flx
-@tangler lexer.flx=src/lib/std/strings/lexer.flx
+@tangler __init__.flx=share/lib/std/strings/__init__.flx
+@tangler string.flx=share/lib/std/strings/string.flx
+@tangler re2.flx=share/lib/std/strings/re2.flx
+@tangler tre.flx=share/lib/std/strings/tre.flx
+@tangler regdef.flx=share/lib/std/strings/regdef.flx
+@tangler lexer.flx=share/lib/std/strings/lexer.flx
 @h1 String handling
 @tangle __init__.flx
 include "std/strings/string";
