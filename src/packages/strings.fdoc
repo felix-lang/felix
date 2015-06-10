@@ -1,3 +1,17 @@
+@title Strings
+@tangler __init__.flx=src/lib/std/strings/__init__.flx
+@tangler string.flx=src/lib/std/strings/string.flx
+@tangler re2.flx=src/lib/std/strings/re2.flx
+@tangler tre.flx=src/lib/std/strings/tre.flx
+@tangler regdef.flx=src/lib/std/strings/regdef.flx
+@tangler lexer.flx=src/lib/std/strings/lexer.flx
+@h1 String handling
+@tangle __init__.flx
+include "std/strings/string";
+include "std/strings/re2";
+include "std/strings/tre";
+include "std/strings/regdef";
+include "std/strings/lexer";
 
 @h1 Strings
 We have three string like things. @{cstring} is just 
@@ -6,7 +20,7 @@ The workhorse @{string} type based on C++ string.
 A @{ustring} is a unicode representation using a 32 bit unsigned integer as
 the character base.
 This type is deprecated, to be repalced by C++11 unicode string type.
-@felix
+@tangle string.flx
 typedef cstring = +char;
 type string = "::std::basic_string<char>" 
   requires Cxx_headers::string,
@@ -17,7 +31,7 @@ type string = "::std::basic_string<char>"
 typedef strings = typesetof (string);
 
 @h2 Equality and total ordering
-@felix
+@tangle string.flx
 instance[t in strings] Eq[t] {
   fun == : t * t -> bool = "$1==$2";
 }
@@ -32,25 +46,25 @@ open class String
   inherit Tord[string];
 
 @h2 Equality of @{string} and @{char}
-@felix
+@tangle string.flx
   fun == (s:string, c:char) => len s == 1uz and s.[0] == c;
   fun == (c:char, s:string) => len s == 1uz and s.[0] == c;
   fun != (s:string, c:char) => len s != 1uz or s.[0] != c;
   fun != (c:char, s:string) => len s != 1uz or s.[0] != c;
 
 @h2 Append to @{string} object
-@felix
+@tangle string.flx
   proc  += : &string * string = "$1->append($2:assign);";
   proc  += : &string * +char = "$1->append($2:assign);";
   proc  += : &string * char = "*$1 += $2;";
 
 @h2 Length of @{string}
-@felix
+@tangle string.flx
   // we need to cast to an int so that c++ won't complain
   fun len: string -> size = "$1.size()";
 
 @h2 String concatenation.
-@felix
+@tangle string.flx
   fun + : string * string -> string = "$1+$2";
   fun + : string * carray[char] -> string = "$1+$2";
   fun + : string * char -> string = "$1+$2";
@@ -64,28 +78,28 @@ open class String
   //fun + [T with Str[T]] (x:string, y:T) => x + str y;
 
 @h2 Repetition of @{string} or @{char}
-@felix
+@tangle string.flx
   fun * : string * int -> string = "::flx::rtl::strutil::mul($1:assign,$2:assign)" requires package "flx_strutil";
   fun * : char * int -> string = "::std::string($2:assign,$1:assign)";
 
 @h2 Application of @{string} to @{string} or @{int} is concatenation
-@felix
+@tangle string.flx
   fun apply (x:string, y:string):string => x + y;
   fun apply (x:string, y:int):string => x + y;
 
 @h2 Construct a char from first byte of a @{string}.
 Returns nul char (code 0) if the string is empty.
-@felix
+@tangle string.flx
   ctor char (x:string) => x.[0];
 @h2 Constructors for @{string}
-@felix
+@tangle string.flx
   ctor string (c:char) => ""+c;
   ctor string: +char = "::std::string($1:assign)";
   ctor string: +char  * !ints = "::std::string($1:assign,$2:assign)";
   fun utf8: int -> string = "::flx::rtl::i18n::utf8($1)" requires package "flx_i18n";
 
 @h2 Substrings
-@felix
+@tangle string.flx
   fun subscript: string * !ints -> char =
     "::flx::rtl::strutil::subscript($1:assign,$2:assign)" requires package "flx_strutil";
   fun copyfrom: string * !ints -> string =
@@ -108,7 +122,7 @@ Returns nul char (code 0) if the string is empty.
   proc store: &string * !ints * char = "(*$1)[$2] = $3;";
 
 @h2 Map a string @{char} by @{char}
-@felix
+@tangle string.flx
   fun map (f:char->char) (var x:string): string = {
     if len x > 0uz do
       for var i in 0uz upto (len x) - 1uz do
@@ -122,7 +136,7 @@ Returns nul char (code 0) if the string is empty.
 These come in two flavours: the standard C++ operations
 which return @{stl_npos} on failure, and a more Felix
 like variant which uses an @{option} type.
-@felix
+@tangle string.flx
   const stl_npos: size = "::std::string::npos";
 
   fun stl_find: string * string -> int = "(int)$1.find($2)" is cast;
@@ -211,13 +225,13 @@ like variant which uses an @{option} type.
 
   
 @h2 Construe @{string} as set of @{char}
-@felix
+@tangle string.flx
   instance Set[string,char] {
     fun \in (c:char, s:string) => stl_find (s,c) != stl_npos.int;
   }
   
 @h2 Construe @{string} as stream of @{char}
-@felix
+@tangle string.flx
   instance Streamable[string, char] {
     gen iterator(var x:string) () = {
       for var i in 0 upto x.len.int - 1 do yield Some (x.[i]); done
@@ -227,7 +241,7 @@ like variant which uses an @{option} type.
   inherit Streamable[string,char];
 
 @h2 Test if a string has given prefix or suffix
-@felix
+@tangle string.flx
   fun prefix(arg:string,key:string)=>
     arg.[to len key]==key
   ;
@@ -246,7 +260,7 @@ like variant which uses an @{option} type.
   fun endswith (x:string) (e:char) : bool => x.[-1] == e;
 
 @h2 Trim off specified prefix or suffix or both
-@felix
+@tangle string.flx
   fun ltrim (x:string) (e:string) : string =>
     if startswith x e then
       x.[e.len.int to]
@@ -266,7 +280,7 @@ like variant which uses an @{option} type.
   fun trim (x:string) (e:string) : string => ltrim (rtrim x e) e;
 
 @h2 Strip characters from left, right, or both end of a string.
-@felix
+@tangle string.flx
   fun lstrip (x:string, e:string) : string =
   {
     if len x > 0uz do
@@ -312,7 +326,7 @@ like variant which uses an @{option} type.
   fun strip (x:string) : string => lstrip$ rstrip x;
 
 @h2 Justify string contents
-@felix
+@tangle string.flx
   fun ljust(x:string, width:int) : string =>
     if x.len.int >= width
       then x
@@ -328,7 +342,7 @@ like variant which uses an @{option} type.
   ;
 
 @h2 Split a string into a list on given separator
-@felix
+@tangle string.flx
   fun split (x:string, d:char): List::list[string] => List::rev (rev_split (x,d));
 
   fun rev_split (x:string, d:char): List::list[string] = {
@@ -563,7 +577,7 @@ like variant which uses an @{option} type.
   }
 
 @h2 erase, insert or replace substrings
-@felix
+@tangle string.flx
   // Note: pos, length!
   //$ mutators
   proc erase: &string * int * int = "$1->erase($2,$3);";
@@ -578,7 +592,7 @@ like variant which uses an @{option} type.
 
 @h2 search and replace
 Search and replace by string.
-@felix
+@tangle string.flx
   fun search_and_replace (x:string, var spos:size, s:string, r:string) : string =
   {
     val m = s.len;
@@ -603,7 +617,7 @@ Search and replace by string.
 
 @h2 Regexp search and replace
 Uses Google RE2 engine.
-@felix
+@tangle string.flx
   // Replace \0 \1 \2 etc in s with text from v
   fun subst(s:string, v:varray[StringPiece]): string =
   {
@@ -672,18 +686,18 @@ Uses Google RE2 engine.
     return o;
   }
 @h2 Parse string to numeric type
-@felix
+@tangle string.flx
   fun atoi: string -> int = "::std::atoi($1:postfix.c_str())"  requires Cxx_headers::cstdlib;
   fun atol: string -> long = "::std::atol($1:postfix.c_str())"  requires Cxx_headers::cstdlib;
   fun atoll: string -> long = "::std::atoll($1:postfix.c_str())"  requires Cxx_headers::cstdlib;
   fun atof: string -> double = "::std::atof($1:postfix.c_str())"  requires Cxx_headers::cstdlib;
 
 @h2 Reserve store
-@felix
+@tangle string.flx
   proc reserve: &string * !ints = "$1->reserve($2);";
 
 @h2 Fetch underlying cstring.
-@felix
+@tangle string.flx
   // Entirely unsafe because string could be an rvalue.
   fun _unsafe_cstr: string -> +char = "((char*)$1.c_str())" is atom;
 
@@ -696,7 +710,7 @@ Uses Google RE2 engine.
   fun cstr (x:string) : +char => (varray[char] x).stl_begin;
 
 @h2 Polymorphic vsprintf hack
-@felix
+@tangle string.flx
   fun vsprintf[t]: +char  * t -> string =
     "::flx::rtl::strutil::flx_asprintf($1,$2)" requires package "flx_strutil"
   ;
@@ -706,7 +720,7 @@ Uses Google RE2 engine.
   ;
 
 @h2 Case translation
-@felix
+@tangle string.flx
   // Convert all characters to upper case  
   fun toupper(s:string):string => map (toupper of char) s;
   // Convert all characters to lower case
@@ -715,7 +729,7 @@ Uses Google RE2 engine.
 
 
 @h2 Transation to string
-@felix
+@tangle string.flx
 
 instance Str[string] {
   fun str (s:string) : string => s;
@@ -739,4 +753,368 @@ instance Repr[string] {
 
 open[T in strings] Show[T];
 open Set[string,char];
+
+@h1 RE2 regexps
+@tangle re2.flx
+
+include "stl/stl_map";
+
+//$ Binding of Google RE2 regexp library.
+open class Re2 {
+  requires package "re2";
+
+// This is an almost full binding of Google's re2 package.
+// We do not support conversions of digits strings to integers
+//
+// TODO: we need to check the lvalue handling here
+// The RE2, Options classes aren't copyable, so we may have
+// to use pointers
+//
+// TODO: named group extractor
+
+  // hackery because ::re2::RE2 isn't copyable, so we have to use a pointer
+  // but we need the shape of RE2 to create on the heap
+  private body RE2_serial = """
+  static ::std::string RE2_encoder(void *p) { return ((::re2::RE2*)p)->pattern(); }
+
+  static size_t RE2_decoder (void *p, char *s, size_t i) { 
+    char tmp[sizeof(::std::string)];
+    i = ::flx::gc::generic::string_decoder (&tmp,s,i);
+    new(p) ::re2::RE2 (*(::std::string*)(&tmp));
+    destroy((::std::string*)&tmp);
+    return i;
+  }
+  """; 
+  private type RE2_ = "::re2::RE2" 
+    requires RE2_serial, encoder "RE2_encoder", decoder "RE2_decoder"
+  ;
+  _gc_pointer _gc_type RE2_ type RE2 = "::re2::RE2*";
+  gen _ctor_RE2 : string -> RE2 = "new (*PTF gcp, @0, false) RE2($1)";
+
+
+  type StringPiece = "::re2::StringPiece";
+    ctor StringPiece: string = "::re2::StringPiece($1)";
+    ctor StringPiece: unit = "::re2::StringPiece()";
+    ctor string: StringPiece = "$1.as_string()";
+    fun len: StringPiece -> size = "(size_t)$1.length()";
+    fun data: StringPiece -> +char = "(char*)$1.data()"; // cast away const
+ 
+ 
+    instance Container[StringPiece,char] {
+      fun len: StringPiece -> size = "$1.size()";
+    }
+    instance Eq[StringPiece] {
+      fun == : StringPiece * StringPiece -> bool = "$1==$2";
+    }
+    instance Tord[StringPiece] {
+      fun < : StringPiece * StringPiece -> bool = "$1<$2";
+    }
+    instance Str[StringPiece] {
+      fun str: StringPiece -> string ="$1.as_string()";
+    }
+
+  type Arg = "::re2::Arg";
+
+  type Encoding = "::re2::RE2::Encoding";
+    const EncodingUTF8: Encoding = "::re2::RE2::EncodingUTF8";
+    const EncodingLatin1: Encoding = "::re2::RE2::EncodingLatin1";
+
+  type RE2Options = "::re2::RE2::Options";
+
+    proc Copy: RE2Options * RE2Options = "$1.Copy($2);";
+
+    fun encoding: RE2Options -> Encoding = "$1.encoding()";
+    proc set_encoding: RE2Options * Encoding = "$1.set_encoding($2);";
+    
+    fun posix_syntax: RE2Options -> bool = "$1.posix_syntax()";
+    proc set_posix_syntax: RE2Options * bool = "$1.set_posix_syntax($2);";
+
+    fun longest_match: RE2Options -> bool = "$1.longest_match()";
+    proc set_longest_match: RE2Options * bool = "$1.set_longest_match($2);";
+    
+    fun log_errors: RE2Options -> bool = "$1.log_errors()";
+    proc set_log_errors: RE2Options * bool = "$1.set_log_errors($2);";
+    
+    fun max_mem: RE2Options -> int = "$1.max_mem()";
+    proc set_max_mem: RE2Options * int = "$1.set_max_mem($2);";
+    
+    fun literal: RE2Options -> bool = "$1.literal()";
+    proc set_literal: RE2Options * bool = "$1.set_literal($2);";
+
+    fun never_nl: RE2Options -> bool = "$1.never_nl()";
+    proc set_never_nl: RE2Options * bool = "$1.set_never_nl($2);";
+    
+    fun case_sensitive: RE2Options -> bool = "$1.case_sensitive()";
+    proc set_case_sensitive: RE2Options * bool = "$1.set_case_sensitive($2);";
+    
+    fun perl_classes: RE2Options -> bool = "$1.perl_classes()";
+    proc set_perl_classes: RE2Options * bool = "$1.set_perl_classes($2);";
+    
+    fun word_boundary: RE2Options -> bool = "$1.word_boundary()";
+    proc set_word_boundary: RE2Options * bool = "$1.set_word_boundary($2);";
+    
+    fun one_line: RE2Options -> bool = "$1.one_line()";
+    proc set_one_line: RE2Options * bool = "$1.set_one_line($2);";
+
+    fun ParseFlags: RE2Options -> int = "$1.ParseFlags()";
+   
+  type ErrorCode = "::re2::RE2::ErrorCode";
+    const NoError : ErrorCode = "::re2::RE2::NoError";
+    const ErrorInternal: ErrorCode = "::re2::RE2::ErrorInternal";
+    const ErrorBadEscape : ErrorCode = "::re2::RE2::ErrorBadEscape";
+    const ErrorBadCharClass : ErrorCode = "::re2::RE2::ErrorBadCharClass";
+    const ErrorBadCharRange : ErrorCode = "::re2::RE2::ErrorBadCharRange";
+    const ErrorMissingBracket : ErrorCode = "::re2::RE2::ErrorMissingBracket";
+    const ErrorMissingParen : ErrorCode = "::re2::RE2::ErrorMissingParen";
+    const ErrorTrailingBackslash : ErrorCode = "::re2::RE2::ErrorTrailingBackslash";
+    const ErrorRepeatArgument : ErrorCode = "::re2::RE2::ErrorRepeatArgument";
+    const ErrorRepeatSize : ErrorCode = "::re2::RE2::ErrorRepeatSize";
+    const ErrorRepeatOp: ErrorCode = "::re2::RE2::ErrorRepeatOp";
+    const ErrorBadPerlOp: ErrorCode = "::re2::RE2::ErrprBadPerlOp";
+    const ErrorBadUTF8: ErrorCode = "::re2::RE2::ErrorBadUTF8";
+    const ErrorBadNamedCapture: ErrorCode = "::re2::RE2::ErrorBadNamedCapture";
+    const ErrorPatternTooLarge: ErrorCode = "::re2::RE2::ErrorPatternTooLarge";
+
+  type Anchor = "::re2::RE2::Anchor";
+    const UNANCHORED: Anchor = "::re2::RE2::UNANCHORED";
+    const ANCHOR_START: Anchor = "::re2::RE2::ANCHOR_START";
+    const ANCHOR_BOTH: Anchor = "::re2::RE2::ANCHOR_BOTH";
+
+  fun pattern: RE2 -> string = "$1->pattern()";
+  fun error: RE2 -> string = "$1->error()";
+  fun error_code: RE2 -> ErrorCode = "$1->error_code()";
+  fun error_arg: RE2 -> string = "$1->error_arg()";
+  fun ok: RE2 -> bool = "$1->ok()";
+  fun ProgramSize: RE2 -> int = "$1->ProgramSize()";
+
+  gen GlobalReplace: &string * RE2 * StringPiece -> int = "::re2::RE2::GlobalReplace($1, *$2, $3)";
+  gen Extract: StringPiece * RE2 * StringPiece * &string -> bool = "::re2::RE2::Extract($1, *$2, $3, $4)";
+
+  fun QuoteMeta: StringPiece -> string = "::re2::RE2::QuoteMeta($1)";
+ 
+  fun PossibleMatchRange: RE2 * &string * &string * int -> bool = "$1->PossibleMatchRange($2,$3,$3,$4)";
+  fun NumberOfCapturingGroups: RE2 -> int = "$1->NumberOfCapturingGroups()";
+  fun NamedCapturingGroups: RE2 -> Stl_Map::stl_map[string, int] = "$1->NamedCapturingGroups()";
+
+  // this function is fully general, just needs an anchor
+  gen Match: RE2 * StringPiece * int * Anchor * +StringPiece * int -> bool = 
+    "$1->Match($2, $3, $2.length(),$4, $5, $6)"
+   ;
+
+  noinline gen Match(re:RE2, var s:string) : opt[varray[string]] = {
+    var emptystring = "";
+    var n = NumberOfCapturingGroups re;
+    var v = varray[StringPiece] (n.size+1,StringPiece emptystring);
+    var Match-result = Match (re, StringPiece s, 0, ANCHOR_BOTH, v.stl_begin, n+1);
+    return 
+      if Match-result then
+        Some$ map string of (StringPiece) v
+      else 
+        None[varray[string]]
+    ;
+  }
+
+  gen apply (re:RE2, s:string) => Match (re,s);
+
+  fun CheckRewriteString: RE2 * StringPiece * &string -> bool = "$1->CheckRewriteString($2, $3)";
+
+  instance Set[RE2, string] {
+    fun \in : string * RE2 -> bool =
+      "$2->Match(::re2::StringPiece($1),0, ::re2::StringPiece($1).length(),::re2::RE2::ANCHOR_BOTH, (::re2::StringPiece*)0, 0)"
+    ;
+  }
+
+  gen iterator (re2:string, var target:string) => iterator (RE2 re2, target);
+
+  instance Streamable[RE2 * string, varray[string]] {
+    gen iterator (r:RE2, var target:string) () : opt[varray[string]] = {
+      var emptystring = "";
+      var l = len target;
+      var s = StringPiece target;
+      var p1 = s.data;  
+      var p = 0;
+      var n = NumberOfCapturingGroups(r)+1;
+      var v1 = varray[StringPiece] (n.size,StringPiece emptystring);
+      var v2 = varray[string] (n.size,"");
+    again:>
+      var result = Match(r, s, p, UNANCHORED,v1.stl_begin, n);
+      if not result goto endoff;
+      for var i in 0 upto n - 1 do set(v2, i.size, string(v1.i)); done
+      var p2 = v1.0.data;
+      assert(v1.0.len.int > 0); // prevent infinite loop
+      p = (p2 - p1).int+v1.0.len.int;
+      yield Some v2;
+      goto again;
+    endoff:>
+      return None[varray[string]];
+    }
+  }
+  inherit Streamable[RE2 * string, Varray::varray[string]];
+
+  // Extract Some match array or None if not matching.
+  fun extract (re2:string, target:string) : opt[varray[string]] => iterator (RE2 re2, target) ();
+  fun extract (re2:RE2, target:string) : opt[varray[string]] => iterator (re2, target) ();
+
+}
+
+open Set[RE2, string];
+
+@h1 TRE regexps
+@tangle tre.flx
+
+class Tre
+{
+  open C_hack;
+  requires package 'tre';
+  type tre_regex_t = "regex_t";
+
+  const tre_version: string = "tre_version()";
+
+  private fun _tre_regcomp: &tre_regex_t * string  -> int =
+    "tre_regncomp($1,$2.c_str(),$2.size(),REG_EXTENDED)"
+  ;
+
+  fun tre_regcomp (x:string): opt[tre_regex_t] = {
+    var cr: tre_regex_t;
+    var res = _tre_regcomp(&cr, x);
+    return
+      if res == 0 then Some cr else None[tre_regex_t] endif
+    ;
+  }
+
+  fun nsub: &tre_regex_t -> int = "$1->re_nsub+1";
+
+  ctypes regoff_t;
+  cstruct regmatch_t {
+    rm_so: regoff_t;
+    rm_eo: regoff_t;
+  };
+
+  fun add: +char * regoff_t -> +char = "$1+$2";
+  fun sub: regoff_t * regoff_t -> int = "(int)($1-$2)";
+  ctor int : regoff_t = "int($1)";
+
+  private fun _tre_regexec:
+    &tre_regex_t *     // the compiled regex
+    string *               // string to search
+    int *                  // number of matches to return
+    +regmatch_t        // array to hold matches
+    -> int
+  =
+    "tre_regnexec($1,$2.c_str(),$2.size(),$3,$4,0);"
+  ;
+
+  fun tre_regexec (re_in: tre_regex_t) (x:string): int * int * +regmatch_t =
+  {
+    var re = re_in;
+    val nmatches = nsub$ &re;
+    var matches = Carray::array_alloc[regmatch_t] nmatches;
+    var res = _tre_regexec(&re, x, nmatches, matches);
+    return res,nmatches,matches;
+  }
+}
+@h1 Regular definitions
+@tangle regdef.flx
+
+class Regdef {
+  union regex =
+  | Alts of list[regex]
+  | Seqs of list[regex]
+  | Rpt of regex * int * int
+  | Charset of string
+  | String of string
+  | Group of regex
+  | Perl of string
+  ;
+
+  private fun prec: regex -> int =
+  | Perl _ => 3
+  | Alts _ => 3
+  | Seqs _ => 2
+  | String _ => 2
+  | Rpt _ => 1
+  | Charset _ => 0
+  | Group _ => 0
+  ;
+
+  private fun hex_digit (i:int)=>
+    if i<10 then string (char (ord (char "0") + i)) 
+    else string (char (ord (char "A") + i - 10))
+    endif
+  ;
+  private fun hex2(c:char)=>
+    let i = ord c in
+    "\\x" + hex_digit ( i / 16 ) + hex_digit ( i % 16 )
+  ;
+  private fun charset_quote(c:char)=>
+    if c in "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstvuwxyz" then string c
+    else hex2 c
+    endif
+  ;
+
+  private fun hex(s:string when len s > 0uz)= {
+    var r = ""; 
+    for var i in 0uz upto len s - 1uz do
+      r += charset_quote s.[i];
+    done
+    return r; 
+  }
+
+  fun ngrp (s:string)=> "(?:"+s+")";
+  private fun cngrp (s:string, op: int, ip: int) => if ip > op then ngrp (s) else s endif; 
+
+  fun render: regex -> string =
+  | Alts rs => fold_left 
+   (fun (acc:string) (elt:regex)=> 
+     (if acc == "" then "" else acc + "|" endif) + (render elt)) 
+    "" rs
+  | Seqs rs => fold_left 
+    (fun (acc:string) (elt:regex)=> acc + cngrp(render elt,2,prec elt))
+    "" rs
+  | Rpt (r,i,x) =>
+    if i == 0 and x == -1 then ngrp (render r) + "*"
+    elif i == 1 and x == -1 then ngrp (render r) + "+"
+    elif i == 0 and x == 1 then ngrp (render r) + "?"
+    else
+      cngrp(render r,1,prec r) + "{" + str i + "," + if x < 0 then "" else str x endif + "}"
+    endif
+
+  | String s => hex(s)
+  | Charset s => "[" + hex s + "]"
+  | Group r => "(" + render r + ")"
+  | Perl s => s
+  ;
+}
+@h1 Lexer
+@tangle lexer.flx
+class Lexer
+{
+  pod type lex_iterator = "char const*";
+  fun start_iterator : string -> lex_iterator = "$1.c_str()";
+  fun end_iterator: string -> lex_iterator = "$1.c_str()+$1.size()";
+  fun bounds (x:string): lex_iterator * lex_iterator = {
+    return
+      start_iterator x,
+      end_iterator x
+    ;
+  }
+  fun string_between: lex_iterator * lex_iterator -> string =
+   "::std::string($1,$2)";
+
+  fun + : lex_iterator * int -> lex_iterator = "$1 + $2";
+  fun - : lex_iterator * int -> lex_iterator = "$1 - $2";
+  fun - : lex_iterator * lex_iterator -> int = "$1 - $2";
+  fun deref: lex_iterator -> char = "*$1";
+}
+
+instance Eq[Lexer::lex_iterator] {
+  fun == :Lexer::lex_iterator * Lexer::lex_iterator -> bool = "$1==$2";
+}
+
+instance Tord[Lexer::lex_iterator] {
+  fun < :Lexer::lex_iterator * Lexer::lex_iterator -> bool = "$1<$2";
+}
+
+open Eq[Lexer::lex_iterator];
+
 
