@@ -3,16 +3,22 @@
 <dt><a href=cheaders.fdoc>C Headers</a></dt>
 <dd>First we require basic C interfaces...</dd>
 
-<dt><a href=basic_algebraic_structures.fdoc>Basic Algebraic Structure</a></dt>
-<dd>We define some basic algebraic structures...</dd>
+<dt><a href=core_scalar_types.fdoc>Core Scalar Types</a></dt>
+<dd>So we lift some basic types from C.dd>
 </dl>
 
+
+<dt><a href=basic_algebraic_structures.fdoc>Basic Algebraic Structure</a></dt>
+<dd>Now we have to define some basic algebraic structures...</dd>
+</dl>
+
+
 <dt><a href=numbers.fdoc>Methods of Numbers</a></dt>
-<dd>Functions of numbers</dd>
+<dd>So we can conveniently define functions on numbers...</dd>
 </dl>
 
 <dt><a href=strings.fdoc>Methods of Strings</a></dt>
-<dd>Functions of strings</dd>
+<dd>and functions of strings</dd>
 </dl>
 
 
