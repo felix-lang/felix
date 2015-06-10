@@ -1,6 +1,0 @@
-
-instance[t in reals] Tord[t] {
-  fun < : t * t -> bool = "$1<$2";
-}
-
-

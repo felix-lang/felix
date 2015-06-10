@@ -1,3 +1,43 @@
+@title Operations on numbers.
+@tangler number.flx=share/lib/std/scalar/number.flx
+@tangler real.flx=share/lib/std/scalar/real.flx
+@tangler float_format.flx=share/lib/std/scalar/float_format.flx
+@h1 General Numeric operations.
+@tangle number.flx
+
+
+instance[t in numbers] FloatAddgrp[t] {
+  fun zero: unit -> t = "(?1)0" ;
+  fun + : t * t -> t = "$1+$2" ;
+  fun neg : t -> t = "-$1" ;
+  fun - : t * t -> t = "$1-$2" ;
+  proc += : &t * t = "*$1+=$2;";
+  proc -= : &t * t = "*$1-=$2;";
+}
+
+instance[t in numbers] FloatMultSemi1[t] {
+  fun one: unit -> t = "(?1)1";
+  fun * : t * t -> t = "$1*$2";
+  proc *= : &t * t = "*$1*=$2;";
+}
+
+instance[t in numbers] FloatRing[t] {}
+instance[t in numbers] FloatDring[t] {
+  fun / : t * t -> t = "$1/$2";
+  fun % : t * t -> t = "$1%$2";
+  proc /= : &t * t = "*$1/=$2;";
+  proc %= : &t * t = "*$1%=$2;";
+}
+@
+
+@h1 Real numbers
+@tangle real.flx
+instance[t in reals] Tord[t] {
+  fun < : t * t -> bool = "$1<$2";
+}
+
+@h1 Floating Formats
+@tangle float_format.flx 
 //$ Functions to format floating point numbers.
 open class float_format
 {
@@ -78,5 +118,6 @@ instance Str[ldouble] {
     endif
   ;
 }
+
 
 
