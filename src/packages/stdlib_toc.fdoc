@@ -12,4 +12,17 @@
 <dd>We define some basic algebraic structures...</dd>
 </dl>
 
+<dt><a href=numbers.fdoc>Methods of Numbers</a></dt>
+<dd>Functions shared by all numbers</dd>
+</dl>
+
+
+<dt><a href=reals.fdoc>Methods of Real Numbers</a></dt>
+<dd>Functions of Real Numbers</dd>
+</dl>
+
+<dt><a href=integers.fdoc>Methods of Integers</a></dt>
+<dd>Functions of Integers</dd>
+</dl>
+
 
