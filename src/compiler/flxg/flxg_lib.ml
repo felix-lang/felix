@@ -108,7 +108,7 @@ print_endline ("Force flag = " ^ string_of_bool state.syms.compiler_options.forc
       (Flx_profile.call ("binding library " ^ lib) begin fun () ->
         (* make assembly outputs stuff in reversed order, but this routine
          * reversed it back again *)
-        print_endline ("Binding libary " ^ lib);
+        print_endline ("Binding library " ^ lib);
         let includes, depnames, _, asmss = Flxg_assembly.assemble
           state
           parser_state
