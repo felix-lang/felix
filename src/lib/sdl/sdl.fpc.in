@@ -1,9 +1,0 @@
-Name: SDL
-Description: Simple Direct Media Layer
-Version: @VERSION@
-cflags: @CFLAGS@
-requires_dlibs: @SHARED_LIBS@
-requires_slibs: @STATIC_LIBS@
-flx_requires_driver: flx_arun
-includes: '"SDL.h"' '"SDL_opengl.h"'
-requires: gl glu glut glext

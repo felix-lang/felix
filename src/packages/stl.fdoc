@@ -1,0 +1,729 @@
+
+@title C++ Standard Template Library bindings.
+@tangler stl.flx = share/lib/stl/stl.flx
+@tangler stl_vector.flx = share/lib/stl/stl_vector.flx
+@tangler stl_set.flx = share/lib/stl/stl_set.flx
+@tangler stl_multiset.flx = share/lib/stl/stl_multiset.flx
+@tangler stl_map.flx = share/lib/stl/stl_map.flx
+@tangler stl_multimap.flx = share/lib/stl/stl_multimap.flx
+@tangler stl_list.flx = share/lib/stl/stl_list.flx
+@tangler stl_deque.flx = share/lib/stl/stl_deque.flx
+
+@h1 Stl Iterators 
+@tangle stl.flx
+
+class Iterator[it,t] {
+  virtual fun deref: it -> t;
+}
+
+class Forward_iterator[it,t] {
+  inherit Tord[it];
+  inherit Forward[it];
+  inherit Iterator[it,t];
+}
+
+class Bidirectional_iterator[it,t] {
+  inherit Forward_iterator[it,t];
+  inherit Bidirectional[it];
+}
+
+class Sequence[c,it,v] {
+  inherit Eq[c];
+  inherit Forward_iterator[it,v];
+  inherit Container[c,v];
+  virtual gen begin: c -> it;
+  virtual gen end: c -> it;
+  virtual proc erase: c * it;
+  virtual proc erase_between: c * it * it;
+  virtual proc clear: c;
+  virtual fun fold[i] (f:i->v->i) (var acc:i) (x:c): i = {
+    var s = begin x; var e = end x;
+    while s != e do acc = f acc (*s); ++s; done;
+    return acc;
+  }
+}
+
+class Reversible_Sequence[c,it,rit,v] {
+  inherit Sequence[c,it,v];
+  inherit Bidirectional_iterator[it,v];
+  inherit Bidirectional_iterator[rit,v];
+  virtual gen rbegin: c -> rit;
+  virtual gen rend: c -> rit;
+  virtual fun rfold[i] (f:i->v->i) (var acc:i) (x:c): i = {
+    var s = rbegin x; var e = rend x;
+    while s != e do acc = f acc (*s); ++s; done;
+    return acc;
+  }
+}
+
+
+class Stl
+{
+  type pair[k,v] = "::std::pair<?1 const,?2>";
+  fun make_pair[k,v]: k * v ->pair[k,v] = "::std::make_pair($1,$2)";
+}
+
+@h1 Stl Vector
+@tangle stl_vector.flx
+
+include "stl/stl";
+
+class Stl_Vector[t]
+{
+    requires Cxx_headers::vector;
+    type stl_vector = "::std::vector<?1>";
+    fun create : unit -> stl_vector = "(FLX_GXX_PARSER_HACK std::vector<?1>())";
+    fun create : int * t -> stl_vector= "(FLX_GXX_PARSER_HACK std::vector<?1>($1,$2))";
+    fun create[i] : i * i -> stl_vector = "(FLX_GXX_PARSER_HACK std::vector<?1>($1,$2))";
+    type stl_vector_iterator = "::std::vector<?1>::iterator";
+    type stl_vector_reverse_iterator = "::std::vector<?1>::reverse_iterator";
+    proc insert: stl_vector * stl_vector_iterator *  t  = "$1.insert($2,$3);";
+    proc push_back : stl_vector *  t  = "$1.push_back($2);";
+    fun front : stl_vector -> t = "$1.front()";
+    fun front : stl_vector -> t = "$1.front()";
+    lvalue fun subscript : stl_vector * size -> t = "$1.at($2)";
+    proc reserve: stl_vector * size -> t = "$1.reserve($2);";
+    fun add: stl_vector_iterator * int -> stl_vector_iterator = "$1+$2";
+    fun sub: stl_vector_iterator * int -> stl_vector_iterator = "$1-$2";
+    proc pluseq: &stl_vector_iterator * int = "*$1+=$2;";
+    proc minuseq: &stl_vector_iterator * int = "*$1-=$2;";
+    lvalue fun subscript: stl_vector_iterator * size -> t = "$1[$2]";
+// Stl_Vector
+  instance Eq[stl_vector] {
+    fun == : stl_vector * stl_vector -> bool = "$1==$2";
+  }
+  instance Container[stl_vector,t] {
+    fun len: stl_vector -> size = "$1.size()";
+    fun empty: stl_vector -> bool = "$1.empty()";
+  }
+  instance Sequence[stl_vector,stl_vector_iterator,t] {
+    fun begin : stl_vector-> stl_vector_iterator= "$1.begin()";
+    fun end : stl_vector-> stl_vector_iterator= "$1.end()";
+    proc erase : stl_vector * stl_vector_iterator = "$1.erase($1);";
+    proc erase_between : stl_vector * stl_vector_iterator * stl_vector_iterator = "$1.erase($1,$2);";
+    proc clear : stl_vector = "$1.clear();";
+  }
+  instance Reversible_Sequence[stl_vector,stl_vector_iterator,stl_vector_reverse_iterator,t] {
+    fun rbegin : stl_vector-> stl_vector_reverse_iterator= "$1.rbegin()";
+    fun rend : stl_vector-> stl_vector_reverse_iterator= "$1.rend()";
+  }
+
+// Stl_Vector iterator
+  instance Eq[stl_vector_iterator] {
+    fun == : stl_vector_iterator * stl_vector_iterator -> bool = "$1==$2";
+  }
+  instance Tord[stl_vector_iterator] {
+    fun < : stl_vector_iterator * stl_vector_iterator -> bool = "$1<$2";
+  }
+  instance Iterator[stl_vector_iterator,t] {
+    fun deref : stl_vector_iterator ->  t  = "*(#0*)(void*)&*$1";
+  }
+  instance Forward[stl_vector_iterator] {
+    fun succ: stl_vector_iterator -> stl_vector_iterator = "$1+1";
+    proc pre_incr : &stl_vector_iterator = "++*$1;";
+    proc post_incr : &stl_vector_iterator = "++*$1;";
+  }
+  instance Forward_iterator[stl_vector_iterator,t] {}
+  instance Bidirectional[stl_vector_iterator] {
+    fun pred: stl_vector_iterator -> stl_vector_iterator = "$1-1;";
+    proc pre_decr : &stl_vector_iterator = "--*$1;";
+    proc post_decr : &stl_vector_iterator = "--*$1;";
+  }
+  instance Bidirectional_iterator[stl_vector_iterator,t] {}
+
+// Stl_Vector reverse iterator
+  instance Eq[stl_vector_reverse_iterator] {
+    fun == : stl_vector_reverse_iterator * stl_vector_reverse_iterator -> bool = "$1==$2";
+  }
+  instance Tord[stl_vector_reverse_iterator] {
+    fun < : stl_vector_reverse_iterator * stl_vector_reverse_iterator -> bool = "$1<$2";
+  }
+  instance Iterator[stl_vector_reverse_iterator,t] {
+    fun deref : stl_vector_reverse_iterator ->  t  = "*(#0*)(void*)&*$1";
+  }
+  instance Forward[stl_vector_reverse_iterator] {
+    fun succ: stl_vector_reverse_iterator -> stl_vector_reverse_iterator = "$1+1";
+    proc pre_incr : &stl_vector_reverse_iterator = "++*$1;";
+    proc post_incr : &stl_vector_reverse_iterator = "++*$1;";
+  }
+  instance Forward_iterator[stl_vector_reverse_iterator,t] {}
+  instance Bidirectional[stl_vector_reverse_iterator] {
+    fun pred: stl_vector_reverse_iterator -> stl_vector_reverse_iterator = "$1-1;";
+    proc pre_decr : &stl_vector_reverse_iterator = "--*$1;";
+    proc post_decr : &stl_vector_reverse_iterator = "--*$1;";
+  }
+  instance Bidirectional_iterator[stl_vector_reverse_iterator,t] {}
+}
+
+open[t] Stl_Vector[t];
+open[t] Reversible_Sequence[
+  Stl_Vector::stl_vector[t],
+  Stl_Vector::stl_vector_iterator[t],
+  Stl_Vector::stl_vector_reverse_iterator[t],t];
+open[t] Bidirectional_iterator[Stl_Vector::stl_vector_iterator[t],t];
+open[t] Bidirectional_iterator[Stl_Vector::stl_vector_reverse_iterator[t],t];
+
+
+@h1 Stl Set 
+@tangle stl_set.flx
+
+include "stl/stl";
+  class Stl_Set[t]
+  {
+    requires Cxx_headers::set;
+    type stl_set = "::std::set<?1>";
+    type stl_set_iterator = "::std::set<?1>::iterator";
+    type stl_set_reverse_iterator = "::std::set<?1>::reverse_iterator";
+    fun create : unit -> stl_set = "(FLX_GXX_PARSER_HACK std::set<?1>())";
+    proc insert : stl_set * t = "$1.insert($2);";
+    fun find : stl_set * t ->  stl_set_iterator = "$1.find($2)";
+    fun mem : stl_set * t -> bool = "$1.find($2) != $1.end()";
+// Stl_Set
+  instance Eq[Stl_Set::stl_set] {
+    fun == : Stl_Set::stl_set * Stl_Set::stl_set -> bool = "$1==$2";
+  }
+  instance Container[Stl_Set::stl_set,t] {
+    fun len: Stl_Set::stl_set -> size = "$1.size()";
+    fun empty: Stl_Set::stl_set -> bool = "$1.empty()";
+  }
+  instance Sequence[Stl_Set::stl_set,Stl_Set::stl_set_iterator,t] {
+    fun begin : Stl_Set::stl_set-> Stl_Set::stl_set_iterator= "$1.begin()";
+    fun end : Stl_Set::stl_set-> Stl_Set::stl_set_iterator= "$1.end()";
+    proc erase : Stl_Set::stl_set * Stl_Set::stl_set_iterator = "$1.erase($1);";
+    proc erase_between : Stl_Set::stl_set * Stl_Set::stl_set_iterator * Stl_Set::stl_set_iterator = "$1.erase($1,$2);";
+    proc clear : Stl_Set::stl_set = "$1.clear();";
+  }
+  instance Reversible_Sequence[Stl_Set::stl_set,Stl_Set::stl_set_iterator,Stl_Set::stl_set_reverse_iterator,t] {
+    fun rbegin : Stl_Set::stl_set-> Stl_Set::stl_set_reverse_iterator= "$1.rbegin()";
+    fun rend : Stl_Set::stl_set-> Stl_Set::stl_set_reverse_iterator= "$1.rend()";
+  }
+
+// Stl_Set iterator
+  instance Eq[stl_set_iterator] {
+    fun == : stl_set_iterator * stl_set_iterator -> bool = "$1==$2";
+  }
+  instance Tord[stl_set_iterator] {
+    fun < : stl_set_iterator * stl_set_iterator -> bool = "$1<$2";
+  }
+  instance Iterator[stl_set_iterator,t] {
+    fun deref : stl_set_iterator ->  t  = "*(#0*)(void*)&*$1";
+  }
+  instance Forward[stl_set_iterator] {
+    fun succ: stl_set_iterator -> stl_set_iterator = "$1+1";
+    proc pre_incr : &stl_set_iterator = "++*$1;";
+    proc post_incr : &stl_set_iterator = "++*$1;";
+  }
+  instance Forward_iterator[stl_set_iterator,t] {}
+  instance Bidirectional[stl_set_iterator] {
+    fun pred: stl_set_iterator -> stl_set_iterator = "$1-1;";
+    proc pre_decr : &stl_set_iterator = "--*$1;";
+    proc post_decr : &stl_set_iterator = "--*$1;";
+  }
+  instance Bidirectional_iterator[stl_set_iterator,t] {}
+
+// Stl_Set reverse iterator
+  instance Eq[stl_set_reverse_iterator] {
+    fun == : stl_set_reverse_iterator * stl_set_reverse_iterator -> bool = "$1==$2";
+  }
+  instance Tord[stl_set_reverse_iterator] {
+    fun < : stl_set_reverse_iterator * stl_set_reverse_iterator -> bool = "$1<$2";
+  }
+  instance Iterator[stl_set_reverse_iterator,t] {
+    fun deref : stl_set_reverse_iterator ->  t  = "*(#0*)(void*)&*$1";
+  }
+  instance Forward[stl_set_reverse_iterator] {
+    fun succ: stl_set_reverse_iterator -> stl_set_reverse_iterator = "$1+1";
+    proc pre_incr : &stl_set_reverse_iterator = "++*$1;";
+    proc post_incr : &stl_set_reverse_iterator = "++*$1;";
+  }
+  instance Forward_iterator[stl_set_reverse_iterator,t] {}
+  instance Bidirectional[stl_set_reverse_iterator] {
+    fun pred: stl_set_reverse_iterator -> stl_set_reverse_iterator = "$1-1;";
+    proc pre_decr : &stl_set_reverse_iterator = "--*$1;";
+    proc post_decr : &stl_set_reverse_iterator = "--*$1;";
+  }
+  instance Bidirectional_iterator[stl_set_reverse_iterator,t] {}
+
+}
+
+open Stl_Set;
+open[t] Reversible_Sequence[
+  Stl_Set::stl_set[t],
+  Stl_Set::stl_set_iterator[t],
+  Stl_Set::stl_set_reverse_iterator[t],t];
+open[t] Bidirectional_iterator[Stl_Set::stl_set_iterator[t],t];
+open[t] Bidirectional_iterator[Stl_Set::stl_set_reverse_iterator[t],t];
+
+
+
+@h1 Stl Multiset 
+@tangle stl_multiset.flx
+
+include "stl/stl";
+class Stl_MultiSet[t]
+  {
+    requires Cxx_headers::set;
+    type stl_multiset = "::std::multiset<?1>";
+    type stl_multiset_iterator = "::std::multiset<?1>::iterator";
+    type stl_multiset_reverse_iterator = "::std::multiset<?1>::reverse_iterator";
+    fun create : unit -> stl_multiset = "(FLX_GXX_PARSER_HACK std::multiset<?1>())";
+    proc insert : stl_multiset * t = "$1.insert($2);";
+    fun find : stl_multiset * t ->  stl_multiset_iterator = "$1.find($2)";
+    fun mem : stl_multiset * t -> bool = "$1.find($2) != $1.end()";
+// Stl_MultiSet
+  instance Eq[stl_multiset] {
+    fun == : stl_multiset * stl_multiset -> bool = "$1==$2";
+  }
+  instance Container[stl_multiset,t] {
+    fun len: stl_multiset -> size = "$1.size()";
+    fun empty: stl_multiset -> bool = "$1.empty()";
+  }
+  instance Sequence[stl_multiset,stl_multiset_iterator,t] {
+    fun begin : stl_multiset-> stl_multiset_iterator= "$1.begin()";
+    fun end : stl_multiset-> stl_multiset_iterator= "$1.end()";
+    proc erase : stl_multiset * stl_multiset_iterator = "$1.erase($1);";
+    proc erase_between : stl_multiset * stl_multiset_iterator * stl_multiset_iterator = "$1.erase($1,$2);";
+    proc clear : stl_multiset = "$1.clear();";
+  }
+  instance Reversible_Sequence[stl_multiset,stl_multiset_iterator,stl_multiset_reverse_iterator,t] {
+    fun rbegin : stl_multiset-> stl_multiset_reverse_iterator= "$1.rbegin()";
+    fun rend : stl_multiset-> stl_multiset_reverse_iterator= "$1.rend()";
+  }
+
+// Stl_MultiSet iterator
+  instance Eq[stl_multiset_iterator] {
+    fun == : stl_multiset_iterator * stl_multiset_iterator -> bool = "$1==$2";
+  }
+  instance Tord[stl_multiset_iterator] {
+    fun < : stl_multiset_iterator * stl_multiset_iterator -> bool = "$1<$2";
+  }
+  instance Iterator[stl_multiset_iterator,t] {
+    fun deref : stl_multiset_iterator ->  t  = "*(#0*)(void*)&*$1";
+  }
+  instance Forward[stl_multiset_iterator] {
+    fun succ: stl_multiset_iterator -> stl_multiset_iterator = "$1+1";
+    proc pre_incr : &stl_multiset_iterator = "++*$1;";
+    proc post_incr : &stl_multiset_iterator = "++*$1;";
+  }
+  instance Forward_iterator[stl_multiset_iterator,t] {}
+  instance Bidirectional[stl_multiset_iterator] {
+    fun pred: stl_multiset_iterator -> stl_multiset_iterator = "$1-1;";
+    proc pre_decr : &stl_multiset_iterator = "--*$1;";
+    proc post_decr : &stl_multiset_iterator = "--*$1;";
+  }
+  instance Bidirectional_iterator[stl_multiset_iterator,t] {}
+
+// Stl_MultiSet reverse iterator
+  instance Eq[stl_multiset_reverse_iterator] {
+    fun == : stl_multiset_reverse_iterator * stl_multiset_reverse_iterator -> bool = "$1==$2";
+  }
+  instance Tord[stl_multiset_reverse_iterator] {
+    fun < : stl_multiset_reverse_iterator * stl_multiset_reverse_iterator -> bool = "$1<$2";
+  }
+  instance Iterator[stl_multiset_reverse_iterator,t] {
+    fun deref : stl_multiset_reverse_iterator ->  t  = "*(#0*)(void*)&*$1";
+  }
+  instance Forward[stl_multiset_reverse_iterator] {
+    fun succ: stl_multiset_reverse_iterator -> stl_multiset_reverse_iterator = "$1+1";
+    proc pre_incr : &stl_multiset_reverse_iterator = "++*$1;";
+    proc post_incr : &stl_multiset_reverse_iterator = "++*$1;";
+  }
+  instance Forward_iterator[stl_multiset_reverse_iterator,t] {}
+  instance Bidirectional[stl_multiset_reverse_iterator] {
+    fun pred: stl_multiset_reverse_iterator -> stl_multiset_reverse_iterator = "$1-1;";
+    proc pre_decr : &stl_multiset_reverse_iterator = "--*$1;";
+    proc post_decr : &stl_multiset_reverse_iterator = "--*$1;";
+  }
+  instance Bidirectional_iterator[stl_multiset_reverse_iterator,t] {}
+
+}
+
+open Stl_MultiSet;
+open[t] Reversible_Sequence[
+  Stl_MultiSet::stl_multiset[t],
+  Stl_MultiSet::stl_multiset_iterator[t],
+  Stl_MultiSet::stl_multiset_reverse_iterator[t],t];
+open[t] Bidirectional_iterator[Stl_MultiSet::stl_multiset_iterator[t],t];
+open[t] Bidirectional_iterator[Stl_MultiSet::stl_multiset_reverse_iterator[t],t];
+
+
+@h1 Stl Map 
+@tangle stl_map.flx
+
+include "stl/stl";
+class Stl_Map[k,v]
+{
+    requires Cxx_headers::map;
+    type stl_map = "::std::map<?1,?2>";
+    type stl_map_iterator = "::std::map<?1,?2>::iterator";
+    type stl_map_reverse_iterator = "::std::map<?1,?2>::reverse_iterator";
+    fun create : unit -> stl_map = "(FLX_GXX_PARSER_HACK std::map<?1,?2>())";
+    lvalue fun subscript: stl_map * k -> v = "$1[$2]";
+    fun find : stl_map * k ->  stl_map_iterator = "$1.find($2)";
+    fun mem : stl_map * k -> bool = "$1.find($2) != $1.end()";
+    proc insert : stl_map * k * v = "$1.insert(std::make_pair($2,$3));";
+// Stl_Map
+  instance Eq[stl_map] {
+    fun ==: stl_map * stl_map -> bool = "$1==$2";
+  }
+  instance Container[stl_map,k*v] {
+    fun len: stl_map -> size = "$1.size()";
+    fun empty: stl_map -> bool = "$1.empty()";
+  }
+  instance Sequence[stl_map,stl_map_iterator,k*v] {
+    fun begin : stl_map-> stl_map_iterator= "$1.begin()";
+    fun end : stl_map-> stl_map_iterator= "$1.end()";
+    proc erase : stl_map * stl_map_iterator = "$1.erase($1);";
+    proc erase_between : stl_map * stl_map_iterator * stl_map_iterator = "$1.erase($1,$2);";
+    proc clear : stl_map = "$1.clear();";
+  }
+  instance Reversible_Sequence[stl_map,stl_map_iterator,stl_map_reverse_iterator,k*v] {
+    fun rbegin : stl_map-> stl_map_reverse_iterator= "$1.rbegin()";
+    fun rend : stl_map-> stl_map_reverse_iterator= "$1.rend()";
+  }
+
+// Stl_Map iterator
+  instance Eq[stl_map_iterator] {
+    fun ==: stl_map_iterator * stl_map_iterator -> bool = "$1==$2";
+  }
+  instance Tord[stl_map_iterator] {
+    fun < : stl_map_iterator * stl_map_iterator -> bool = "$1<$2";
+  }
+  instance Iterator[stl_map_iterator,k*v] {
+    fun deref : stl_map_iterator ->  k*v  = "*(#0*)(void*)&*$1";
+  }
+  instance Forward[stl_map_iterator] {
+    fun succ: stl_map_iterator -> stl_map_iterator = "$1+1";
+    proc pre_incr : &stl_map_iterator = "++*$1;";
+    proc post_incr : &stl_map_iterator = "++*$1;";
+  }
+  instance Forward_iterator[stl_map_iterator,k*v] {}
+  instance Bidirectional[stl_map_iterator] {
+    fun pred: stl_map_iterator -> stl_map_iterator = "$1-1;";
+    proc pre_decr : &stl_map_iterator = "--*$1;";
+    proc post_decr : &stl_map_iterator = "--*$1;";
+  }
+  instance Bidirectional_iterator[stl_map_iterator,k*v] {}
+
+// Stl_Map reverse iterator
+  instance Eq[stl_map_reverse_iterator] {
+    fun ==: stl_map_reverse_iterator * stl_map_reverse_iterator -> bool = "$1==$2";
+  }
+  instance Tord[stl_map_reverse_iterator] {
+    fun < : stl_map_reverse_iterator * stl_map_reverse_iterator -> bool = "$1<$2";
+  }
+  instance Iterator[stl_map_reverse_iterator,k*v] {
+    fun deref : stl_map_reverse_iterator ->  k*v  = "*(#0*)(void*)&*$1";
+  }
+  instance Forward[stl_map_reverse_iterator] {
+    fun succ: stl_map_reverse_iterator -> stl_map_reverse_iterator = "$1+1";
+    proc pre_incr : &stl_map_reverse_iterator = "++*$1;";
+    proc post_incr : &stl_map_reverse_iterator = "++*$1;";
+  }
+  instance Forward_iterator[stl_map_reverse_iterator,k*v] {}
+  instance Bidirectional[stl_map_reverse_iterator] {
+    fun pred: stl_map_reverse_iterator -> stl_map_reverse_iterator = "$1-1;";
+    proc pre_decr : &stl_map_reverse_iterator = "--*$1;";
+    proc post_decr : &stl_map_reverse_iterator = "--*$1;";
+  }
+  instance Bidirectional_iterator[stl_map_reverse_iterator,k*v] {}
+
+}
+
+open[k,v] Stl_Map[k,v];
+open[k,v] Reversible_Sequence[
+  Stl_Map::stl_map[k,v],
+  Stl_Map::stl_map_iterator[k,v],
+  Stl_Map::stl_map_reverse_iterator[k,v],k*v];
+open[k,v] Bidirectional_iterator[Stl_Map::stl_map_iterator[k,v],k*v];
+open[k,v] Bidirectional_iterator[Stl_Map::stl_map_reverse_iterator[k,v],k*v];
+
+
+
+@h1 Stl Multimap 
+@tangle stl_multimap.flx
+
+include "stl/stl";
+class Stl_MultiMap[k,v]
+  {
+    requires Cxx_headers::map;
+    type stl_multimap = "::std::multimap<?1,?2>";
+    type stl_multimap_iterator = "::std::multimap<?1,?2>::iterator";
+    type stl_multimap_reverse_iterator = "::std::multimap<?1,?2>::reverse_iterator";
+    fun create : unit -> stl_multimap = "(FLX_GXX_PARSER_HACK std::multimap<?1,?2>())";
+    fun subscript: stl_multimap * k -> v = "$1[$2]";
+    fun find : stl_multimap * k ->  stl_multimap_iterator = "$1.find($2)";
+    fun mem : stl_multimap * k -> bool = "$1.find($2) != $1.end()";
+    proc insert : stl_multimap * k * v = "$1.insert(std::make_pair($2,$3));";
+// Stl_MultiMap
+  instance Eq[stl_multimap] {
+    fun == : stl_multimap * stl_multimap -> bool = "$1==$2";
+  }
+  instance Container[stl_multimap,k*v] {
+    fun len: stl_multimap -> size = "$1.size()";
+    fun empty: stl_multimap -> bool = "$1.empty()";
+  }
+  instance Sequence[stl_multimap,stl_multimap_iterator,k*v] {
+    fun begin : stl_multimap-> stl_multimap_iterator= "$1.begin()";
+    fun end : stl_multimap-> stl_multimap_iterator= "$1.end()";
+    proc erase : stl_multimap * stl_multimap_iterator = "$1.erase($1);";
+    proc erase_between : stl_multimap * stl_multimap_iterator * stl_multimap_iterator = "$1.erase($1,$2);";
+    proc clear : stl_multimap = "$1.clear();";
+  }
+  instance Reversible_Sequence[stl_multimap,stl_multimap_iterator,stl_multimap_reverse_iterator,k*v] {
+    fun rbegin : stl_multimap-> stl_multimap_reverse_iterator= "$1.rbegin()";
+    fun rend : stl_multimap-> stl_multimap_reverse_iterator= "$1.rend()";
+  }
+
+// Stl_MultiMap iterator
+  instance Eq[stl_multimap_iterator] {
+    fun == : stl_multimap_iterator * stl_multimap_iterator -> bool = "$1==$2";
+  }
+  instance Tord[stl_multimap_iterator] {
+    fun < : stl_multimap_iterator * stl_multimap_iterator -> bool = "$1<$2";
+  }
+  instance Iterator[stl_multimap_iterator,k*v] {
+    fun deref : stl_multimap_iterator ->  k*v  = "*(#0*)(void*)&*$1";
+  }
+  instance Forward[stl_multimap_iterator] {
+    fun succ: stl_multimap_iterator -> stl_multimap_iterator = "$1+1";
+    proc pre_incr : &stl_multimap_iterator = "++*$1;";
+    proc post_incr : &stl_multimap_iterator = "++*$1;";
+  }
+  instance Forward_iterator[stl_multimap_iterator,k*v] {}
+  instance Bidirectional[stl_multimap_iterator] {
+    fun pred: stl_multimap_iterator -> stl_multimap_iterator = "$1-1;";
+    proc pre_decr : &stl_multimap_iterator = "--*$1;";
+    proc post_decr : &stl_multimap_iterator = "--*$1;";
+  }
+  instance Bidirectional_iterator[stl_multimap_iterator,k*v] {}
+
+//Stl_MultiMap reverse iterator
+  instance Eq[stl_multimap_reverse_iterator] {
+    fun == : stl_multimap_reverse_iterator * stl_multimap_reverse_iterator -> bool = "$1==$2";
+  }
+  instance Tord[stl_multimap_reverse_iterator] {
+    fun < : stl_multimap_reverse_iterator * stl_multimap_reverse_iterator -> bool = "$1<$2";
+  }
+  instance Iterator[stl_multimap_reverse_iterator,k*v] {
+    fun deref : stl_multimap_reverse_iterator ->  k*v  = "*(#0*)(void*)&*$1";
+  }
+  instance Forward[stl_multimap_reverse_iterator] {
+    fun succ: stl_multimap_reverse_iterator -> stl_multimap_reverse_iterator = "$1+1";
+    proc pre_incr : &stl_multimap_reverse_iterator = "++*$1;";
+    proc post_incr : &stl_multimap_reverse_iterator = "++*$1;";
+  }
+  instance Forward_iterator[stl_multimap_reverse_iterator,k*v] {}
+  instance Bidirectional[stl_multimap_reverse_iterator] {
+    fun pred: stl_multimap_reverse_iterator -> stl_multimap_reverse_iterator = "$1-1;";
+    proc pre_decr : &stl_multimap_reverse_iterator = "--*$1;";
+    proc post_decr : &stl_multimap_reverse_iterator = "--*$1;";
+  }
+  instance Bidirectional_iterator[stl_multimap_reverse_iterator,k*v] {}
+
+}
+
+open Stl_MultiMap;
+open[k,v] Reversible_Sequence[
+  Stl_MultiMap::stl_multimap[k,v],
+  Stl_MultiMap::stl_multimap_iterator[k,v],
+  Stl_MultiMap::stl_multimap_reverse_iterator[k,v],k*v];
+open[k,v] Bidirectional_iterator[Stl_MultiMap::stl_multimap_iterator[k,v],k*v];
+open[k,v] Bidirectional_iterator[Stl_MultiMap::stl_multimap_reverse_iterator[k,v],k*v];
+
+
+@h1 Stl List
+@tangle stl_list.flx
+
+include "stl/stl";
+
+class Stl_List[t]
+{
+    requires Cxx_headers::list;
+    type stl_list = "::std::list<?1>";
+    fun create : unit -> stl_list = "(FLX_GXX_PARSER_HACK std::list<?1>())";
+    fun create : int * t -> stl_list= "(FLX_GXX_PARSER_HACK std::list<?1>($1,$2))";
+    fun create[i] : i * i -> stl_list = "(FLX_GXX_PARSER_HACK std::list<?1>($1,$2))";
+    type stl_list_iterator = "::std::list<?1>::iterator";
+    type stl_list_reverse_iterator = "::std::list<?1>::reverse_iterator";
+    proc insert: stl_list * stl_list_iterator *  t  = "$1.insert($2,$3);";
+    proc push_front : stl_list *  t  = "$1.push_front($2);";
+    proc push_back : stl_list *  t  = "$1.push_back($2);";
+    fun front : stl_list -> t = "$1.front()";
+    fun front : stl_list -> t = "$1.front()";
+    proc pop_front : stl_list = "$1.pop_back();";
+// List
+  instance Eq[stl_list] {
+    fun == : stl_list * stl_list -> bool = "$1==$2";
+  }
+  instance Container[stl_list,t] {
+    fun len: stl_list -> size = "$1.size()";
+    fun empty: stl_list -> bool = "$1.empty()";
+  }
+  instance Sequence[stl_list,stl_list_iterator,t] {
+    fun begin : stl_list-> stl_list_iterator= "$1.begin()";
+    fun end : stl_list-> stl_list_iterator= "$1.end()";
+    proc erase : stl_list * stl_list_iterator = "$1.erase($1);";
+    proc erase_between : stl_list * stl_list_iterator * stl_list_iterator = "$1.erase($1,$2);";
+    proc clear : stl_list = "$1.clear();";
+  }
+  instance Reversible_Sequence[stl_list,stl_list_iterator,stl_list_reverse_iterator,t] {
+    fun rbegin : stl_list-> stl_list_reverse_iterator= "$1.rbegin()";
+    fun rend : stl_list-> stl_list_reverse_iterator= "$1.rend()";
+  }
+
+// List iterator
+  instance Eq[stl_list_iterator] {
+    fun == : stl_list_iterator * stl_list_iterator -> bool = "$1==$2";
+  }
+  instance Tord[stl_list_iterator] {
+    fun < : stl_list_iterator * stl_list_iterator -> bool = "$1<$2";
+  }
+  instance Iterator[stl_list_iterator,t] {
+    fun deref : stl_list_iterator ->  t  = "*(#0*)(void*)&*$1";
+  }
+  instance Forward[stl_list_iterator] {
+    fun succ: stl_list_iterator -> stl_list_iterator = "$1+1";
+    proc pre_incr : &stl_list_iterator = "++*$1;";
+    proc post_incr : &stl_list_iterator = "++*$1;";
+  }
+  instance Forward_iterator[stl_list_iterator,t] {}
+  instance Bidirectional[stl_list_iterator] {
+    fun pred: stl_list_iterator -> stl_list_iterator = "$1-1;";
+    proc pre_decr : &stl_list_iterator = "--*$1;";
+    proc post_decr : &stl_list_iterator = "--*$1;";
+  }
+  instance Bidirectional_iterator[stl_list_iterator,t] {}
+
+// List reverse iterator
+  instance Eq[stl_list_reverse_iterator] {
+    fun == : stl_list_reverse_iterator * stl_list_reverse_iterator -> bool = "$1==$2";
+  }
+  instance Tord[stl_list_reverse_iterator] {
+    fun < : stl_list_reverse_iterator * stl_list_reverse_iterator -> bool = "$1<$2";
+  }
+  instance Iterator[stl_list_reverse_iterator,t] {
+    fun deref : stl_list_reverse_iterator ->  t  = "*(#0*)(void*)&*$1";
+  }
+  instance Forward[stl_list_reverse_iterator] {
+    fun succ: stl_list_reverse_iterator -> stl_list_reverse_iterator = "$1+1";
+    proc pre_incr : &stl_list_reverse_iterator = "++*$1;";
+    proc post_incr : &stl_list_reverse_iterator = "++*$1;";
+  }
+  instance Forward_iterator[stl_list_reverse_iterator,t] {}
+  instance Bidirectional[stl_list_reverse_iterator] {
+    fun pred: stl_list_reverse_iterator -> stl_list_reverse_iterator = "$1-1;";
+    proc pre_decr : &stl_list_reverse_iterator = "--*$1;";
+    proc post_decr : &stl_list_reverse_iterator = "--*$1;";
+  }
+  instance Bidirectional_iterator[stl_list_reverse_iterator,t] {}
+
+}
+
+open Stl_List;
+open[t] Reversible_Sequence[
+  Stl_List::stl_list[t],
+  Stl_List::stl_list_iterator[t],
+  Stl_List::stl_list_reverse_iterator[t],t];
+open[t] Bidirectional_iterator[Stl_List::stl_list_iterator[t],t];
+open[t] Bidirectional_iterator[Stl_List::stl_list_reverse_iterator[t],t];
+
+
+
+@h1 Stl Deque 
+@tangle stl_deque.flx
+
+
+class Stl_Deque[t]
+{
+    requires Cxx_headers::deque;
+    type stl_deque = "::std::deque<?1>";
+    fun create : unit -> stl_deque = "(FLX_GXX_PARSER_HACK std::deque<?1>())";
+    fun create : int * t -> stl_deque= "(FLX_GXX_PARSER_HACK std::deque<?1>($1,$2))";
+    fun create[i] : i * i -> stl_deque = "(FLX_GXX_PARSER_HACK std::deque<?1>($1,$2))";
+    type stl_deque_iterator = "::std::deque<?1>::iterator";
+    type stl_deque_reverse_iterator = "::std::deque<?1>::reverse_iterator";
+    proc insert: stl_deque * stl_deque_iterator *  t  = "$1.insert($2,$3);";
+    proc push_front : stl_deque *  t  = "$1.push_front($2);";
+    proc push_back : stl_deque *  t  = "$1.push_back($2);";
+    proc pop_front : stl_deque = "$1.pop_back();";
+    fun front : stl_deque -> t = "$1.front()";
+    fun front : stl_deque -> t = "$1.front()";
+    fun subscript : stl_deque * int -> t = "$1.at($2)";
+// Stl_Deque
+  instance Eq[stl_deque] {
+    fun == : stl_deque * stl_deque -> bool = "$1==$2";
+  }
+  instance Container[stl_deque,t] {
+    fun len: stl_deque -> size = "$1.size()";
+    fun empty: stl_deque -> bool = "$1.empty()";
+  }
+  instance Sequence[stl_deque,stl_deque_iterator,t] {
+    fun begin : stl_deque-> stl_deque_iterator= "$1.begin()";
+    fun end : stl_deque-> stl_deque_iterator= "$1.end()";
+    proc erase : stl_deque * stl_deque_iterator = "$1.erase($1);";
+    proc erase_between : stl_deque * stl_deque_iterator * stl_deque_iterator = "$1.erase($1,$2);";
+    proc clear : stl_deque = "$1.clear();";
+  }
+  instance Reversible_Sequence[stl_deque,stl_deque_iterator,stl_deque_reverse_iterator,t] {
+    fun rbegin : stl_deque-> stl_deque_reverse_iterator= "$1.rbegin()";
+    fun rend : stl_deque-> stl_deque_reverse_iterator= "$1.rend()";
+  }
+
+// Stl_Deque iterator
+  instance Eq[stl_deque_iterator] {
+    fun == : stl_deque_iterator * stl_deque_iterator -> bool = "$1==$2";
+  }
+  instance Tord[stl_deque_iterator] {
+    fun < : stl_deque_iterator * stl_deque_iterator -> bool = "$1<$2";
+  }
+  instance Iterator[stl_deque_iterator,t] {
+    fun deref : stl_deque_iterator ->  t  = "*(#0*)(void*)&*$1";
+  }
+  instance Forward[stl_deque_iterator] {
+    fun succ: stl_deque_iterator -> stl_deque_iterator = "$1+1";
+    proc pre_incr : &stl_deque_iterator = "++*$1;";
+    proc post_incr : &stl_deque_iterator = "++*$1;";
+  }
+  instance Forward_iterator[stl_deque_iterator,t] {}
+  instance Bidirectional[stl_deque_iterator] {
+    fun pred: stl_deque_iterator -> stl_deque_iterator = "$1-1;";
+    proc pre_decr : &stl_deque_iterator = "--*$1;";
+    proc post_decr : &stl_deque_iterator = "--*$1;";
+  }
+  instance Bidirectional_iterator[stl_deque_iterator,t] {}
+
+// Stl_Deque reverse iterator
+  instance Eq[stl_deque_reverse_iterator] {
+    fun == : stl_deque_reverse_iterator * stl_deque_reverse_iterator -> bool = "$1==$2";
+  }
+  instance Tord[stl_deque_reverse_iterator] {
+    fun < : stl_deque_reverse_iterator * stl_deque_reverse_iterator -> bool = "$1<$2";
+  }
+  instance Iterator[stl_deque_reverse_iterator,t] {
+    fun deref : stl_deque_reverse_iterator ->  t  = "*(#0*)(void*)&*$1";
+  }
+  instance Forward[stl_deque_reverse_iterator] {
+    fun succ: stl_deque_reverse_iterator -> stl_deque_reverse_iterator = "$1+1";
+    proc pre_incr : &stl_deque_reverse_iterator = "++*$1;";
+    proc post_incr : &stl_deque_reverse_iterator = "++*$1;";
+  }
+  instance Forward_iterator[stl_deque_reverse_iterator,t] {}
+  instance Bidirectional[stl_deque_reverse_iterator] {
+    fun pred: stl_deque_reverse_iterator -> stl_deque_reverse_iterator = "$1-1;";
+    proc pre_decr : &stl_deque_reverse_iterator = "--*$1;";
+    proc post_decr : &stl_deque_reverse_iterator = "--*$1;";
+  }
+  instance Bidirectional_iterator[stl_deque_reverse_iterator,t] {}
+
+}
+
+open Stl_Deque;
+open[t] Reversible_Sequence[
+  Stl_Deque::stl_deque[t],
+  Stl_Deque::stl_deque_iterator[t],
+  Stl:Stl_Deque::stl_deque_reverse_iterator[t],t];
+open[t] Bidirectional_iterator[Stl_Deque::stl_deque_iterator[t],t];
+open[t] Bidirectional_iterator[Stl_Deque::stl_deque_reverse_iterator[t],t];
+
+

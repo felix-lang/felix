@@ -1,0 +1,3623 @@
+@title SDL2 bindings
+
+@tangler SDL2.flx  = share/lib/sdl/SDL2.flx
+@tangler SDL_active.flx  = share/lib/sdl/SDL_active.flx
+@tangler SDL_audio.flx  = share/lib/sdl/SDL_audio.flx
+@tangler SDL_cdrom.flx  = share/lib/sdl/SDL_cdrom.flx
+@tangler SDL_clipboard.flx  = share/lib/sdl/SDL_clipboard.flx
+@tangler SDL_endian.flx  = share/lib/sdl/SDL_endian.flx
+@tangler SDL_error.flx  = share/lib/sdl/SDL_error.flx
+@tangler SDL_events.flx  = share/lib/sdl/SDL_events.flx
+@tangler SDL_framerate.flx  = share/lib/sdl/SDL_framerate.flx
+@tangler SDL_gfxPrimitives.flx  = share/lib/sdl/SDL_gfxPrimitives.flx
+@tangler SDL_gfxPrimitives_font.flx  = share/lib/sdl/SDL_gfxPrimitives_font.flx
+@tangler SDL_image.flx  = share/lib/sdl/SDL_image.flx
+@tangler SDL_imageFilter.flx  = share/lib/sdl/SDL_imageFilter.flx
+@tangler SDL_joystick.flx  = share/lib/sdl/SDL_joystick.flx
+@tangler SDL_keyboard.flx  = share/lib/sdl/SDL_keyboard.flx
+@tangler SDL_keycode.flx  = share/lib/sdl/SDL_keycode.flx
+@tangler SDL_mixer.flx  = share/lib/sdl/SDL_mixer.flx
+@tangler SDL_mouse.flx  = share/lib/sdl/SDL_mouse.flx
+@tangler SDL_mutex.flx  = share/lib/sdl/SDL_mutex.flx
+@tangler SDL_net.flx  = share/lib/sdl/SDL_net.flx
+@tangler SDL_opengl.flx  = share/lib/sdl/SDL_opengl.flx
+@tangler SDL_pixels.flx  = share/lib/sdl/SDL_pixels.flx
+@tangler SDL_rect.flx  = share/lib/sdl/SDL_rect.flx
+@tangler SDL_render.flx  = share/lib/sdl/SDL_render.flx
+@tangler SDL_rotozoom.flx  = share/lib/sdl/SDL_rotozoom.flx
+@tangler SDL_rwops.flx  = share/lib/sdl/SDL_rwops.flx
+@tangler SDL_scancode.flx  = share/lib/sdl/SDL_scancode.flx
+@tangler SDL_sound.flx  = share/lib/sdl/SDL_sound.flx
+@tangler SDL_surface.flx  = share/lib/sdl/SDL_surface.flx
+@tangler SDL_timer.flx  = share/lib/sdl/SDL_timer.flx
+@tangler SDL_ttf.flx  = share/lib/sdl/SDL_ttf.flx
+@tangler SDL_types.flx  = share/lib/sdl/SDL_types.flx
+@tangler SDL_version.flx  = share/lib/sdl/SDL_version.flx
+@tangler SDL_video.flx  = share/lib/sdl/SDL_video.flx
+@tangler flx_faio_sdl.flx  = share/lib/sdl/flx_faio_sdl.flx
+
+
+@h1 SDL2.flx
+@tangle SDL2.flx
+
+open class SDL2
+{
+  requires package "sdl2";
+
+  const SDL_INIT_EVERYTHING: uint32;
+  const SDL_INIT_NOPARACHUTE: uint32;
+  const SDL_INIT_JOYSTICK: uint32;
+  const SDL_INIT_HAPTIC: uint32;
+  const SDL_INIT_CDROM : uint32;
+  const SDL_INIT_VIDEO: uint32;
+  const SDL_INIT_AUDIO: uint32;
+  const SDL_INIT_TIMER: uint32;
+
+  //PROCEDURES
+  proc SDL_Quit: 1;
+  proc SDL_QuitSubSystem: uint32;
+
+  //FUNCTIONS
+  gen SDL_Init: uint32 -> int;
+  gen SDL_InitSubSystem: uint32 -> int;
+  fun SDL_WasInit: uint32 -> uint32;
+}
+
+include "sdl/SDL_error";
+include "sdl/SDL_version";
+
+include "sdl/SDL_video";
+include "sdl/SDL_events";
+
+include "sdl/SDL_keyboard";
+include "sdl/SDL_keycode";
+include "sdl/SDL_scancode";
+include "sdl/SDL_mouse";
+include "sdl/SDL_rect";
+
+include "sdl/SDL_rwops";
+include "sdl/SDL_pixels";
+include "sdl/SDL_surface";
+include "sdl/SDL_render";
+include "sdl/SDL_clipboard";
+
+/*
+include "std/io/faio";
+include "sdl/flx_faio_sdl";
+
+include "sdl/SDL_active";
+include "sdl/SDL_audio";
+include "sdl/SDL_cdrom";
+include "sdl/SDL_endian";
+include "sdl/SDL_framerate";
+include "sdl/SDL_gfxPrimitives";
+include "sdl/SDL_gfxPrimitives_font";
+include "sdl/SDL_image";
+include "sdl/SDL_imageFilter";
+include "sdl/SDL_joystick";
+include "sdl/SDL_mixer";
+include "sdl/SDL_mutex"; // DONT USE (Felix does it better)
+//include "sdl/SDL_net";   // DONT USE (Felix does it better) 
+include "sdl/SDL_opengl";
+include "sdl/SDL_rotozoom";
+include "sdl/SDL_sound";
+include "sdl/SDL_timer"; // DONT USE (Felix does it better)
+include "sdl/SDL_ttf";
+include "sdl/SDL_types";
+
+*/
+
+
+@h1 SDL_active.flx
+@tangle SDL_active.flx
+
+
+//Module        : SDL_active_h
+//Timestamp     : 2006/1/6 2:18:42 UTC
+//Timestamp     : 2006/1/6 13:18:42 (local)
+//Raw Header    : SDL_active.h
+//Preprocessor  : gcc -E
+//Input file: sdl.flxcc.i
+//Flxcc Control : sdl.flxcc
+//Felix Version : 1.1.2_rc1
+
+//#define SDL_APPACTIVE         0x04            /* The application is active */
+//#define SDL_APPINPUTFOCUS     0x02            /* The app has input focus */
+//#define SDL_APPMOUSEFOCUS     0x01            /* The app has mouse coverage */
+//#define _SDL_active_h
+
+open module SDL_active_h
+{
+  requires package "sdl";
+  header '#include "SDL_active.h"';
+
+  //FUNCTIONS
+  fun SDL_GetAppState: 1 -> uint8;
+}
+@h1 SDL_audio.flx
+@tangle SDL_audio.flx
+
+
+//Module        : SDL_audio_h
+//Timestamp     : 2006/1/6 2:18:42 UTC
+//Timestamp     : 2006/1/6 13:18:42 (local)
+//Raw Header    : SDL_audio.h
+//Preprocessor  : gcc -E
+//Input file: sdl.flxcc.i
+//Flxcc Control : sdl.flxcc
+//Felix Version : 1.1.2_rc1
+
+
+open module SDL_audio_h
+{
+  requires package "sdl";
+  header '#include "SDL_audio.h"';
+
+  const SDL_MIX_MAXVOLUME : int;
+  const AUDIO_S16MSB : uint16;
+  const AUDIO_U16MSB : uint16;
+  const AUDIO_S16LSB : uint16;
+  const AUDIO_U16LSB : uint16;
+  const AUDIO_S16SYS : uint16;
+  const AUDIO_U16SYS : uint16;
+  const AUDIO_S16 : uint16;
+  const AUDIO_U16 : uint16;
+  const AUDIO_S8 : uint16;
+  const AUDIO_U8 : uint16;
+
+  //ABSTRACT TYPES
+  type SDL_audiostatus = 'SDL_audiostatus';
+  fun eq:SDL_audiostatus * SDL_audiostatus -> bool = "$1==$2";
+
+  //CSTRUCTS
+  cstruct SDL_AudioCVT {
+    needed: int;
+    src_format: uint16;
+    dst_format: uint16;
+    rate_incr: double;
+    buf: &uint8;
+    len: int;
+    len_cvt: int;
+    len_mult: int;
+    len_ratio: double;
+    filters: &SDL_audio_h_cft_2;
+    filter_index: int;
+  };
+  cstruct SDL_AudioSpec {
+    freq: int;
+    format: uint16;
+    channels: uint8;
+    silence: uint8;
+    samples: uint16;
+    padding: uint16;
+    size: uint32;
+    callback_: SDL_audio_h_cft_1;
+    userdata: address;
+  };
+
+  fun get_callback: SDL_AudioSpec -> SDL_audio_h_cft_1 = "$1.callback";
+
+  //C FUNCTION POINTER TYPES
+  header '''typedef void (*SDL_audio_h_cft_2)(struct SDL_AudioCVT *,  Uint16);''';
+  type SDL_audio_h_cft_2 = 'SDL_audio_h_cft_2';
+
+  header '''typedef void (*SDL_audio_h_cft_1)(void *,  Uint8 *, int);''';
+  type SDL_audio_h_cft_1 = 'SDL_audio_h_cft_1';
+
+  typedef flx_audio_callback_arg_t = &uint8 * int;
+  typedef flx_audio_callback_t = flx_audio_callback_arg_t -> void;
+  export type (flx_audio_callback_t) as "flx_audio_callback_t";
+  export type (flx_audio_callback_arg_t) as "flx_audio_callback_arg_t";
+
+  header """
+    void SDL_audio_callback(void *obj, Uint8 *stream, int len);
+  """;
+
+  body """
+    // audio callback thunk
+    void SDL_audio_callback(void *obj, Uint8 *stream, int len) {
+      flx_audio_callback_t callback = (flx_audio_callback_t)obj;
+      flx::rtl::con_t *p =
+        callback->
+        clone()->
+        call(0,flx_audio_callback_arg_t(stream,len))
+      ;
+      while(p) p = p->resume();
+    }
+  """;
+
+// not working yet
+//  callback proc SDL_audio_callback: SDL_audio_callback * &uint8 * int;
+
+  //STRUCT or UNION TAG ALIASES
+
+  /*
+  //TYPE ALIASES
+  typedef _struct_SDL_AudioSpec = SDL_AudioSpec;
+  typedef _struct_SDL_AudioCVT = SDL_AudioCVT;
+  */
+
+  //ENUMERATION CONSTANTS
+  const SDL_AUDIO_PAUSED: SDL_audiostatus = 'SDL_AUDIO_PAUSED';
+  const SDL_AUDIO_STOPPED: SDL_audiostatus = 'SDL_AUDIO_STOPPED';
+  const SDL_AUDIO_PLAYING: SDL_audiostatus = 'SDL_AUDIO_PLAYING';
+
+  //PROCEDURES
+  proc SDL_AudioQuit: 1;
+  proc SDL_CloseAudio: 1;
+  proc SDL_FreeWAV: &uint8;
+  proc SDL_LockAudio: 1;
+  proc SDL_MixAudio: &uint8 * &uint8 * uint32 * int;
+  proc SDL_PauseAudio: int;
+  proc SDL_UnlockAudio: 1;
+
+  //FUNCTIONS
+  fun SDL_AudioDriverName: &char * int -> &char;
+  fun SDL_AudioInit: &char -> int;
+  fun SDL_BuildAudioCVT: &SDL_AudioCVT * uint16 * uint8 * int * uint16 * uint8 * int -> int;
+  fun SDL_ConvertAudio: &SDL_AudioCVT -> int;
+  fun SDL_GetAudioStatus: 1 -> SDL_audiostatus;
+  fun SDL_LoadWAV_RW: &SDL_RWops * int * &SDL_AudioSpec * &&uint8 * &uint32 -> &SDL_AudioSpec;
+  fun SDL_OpenAudio: &SDL_AudioSpec * &SDL_AudioSpec -> int;
+  fun SDL_LoadWAV: &char * &SDL_AudioSpec * &&uint8 * &uint32 -> &SDL_AudioSpec;
+}
+@h1 SDL_cdrom.flx
+@tangle SDL_cdrom.flx
+
+//Module        : SDL_cdrom_h
+//Timestamp     : 2006/1/6 2:18:42 UTC
+//Timestamp     : 2006/1/6 13:18:42 (local)
+//Raw Header    : SDL_cdrom.h
+//Preprocessor  : gcc -E
+//Input file: sdl.flxcc.i
+//Flxcc Control : sdl.flxcc
+//Felix Version : 1.1.2_rc1
+
+//#define MSF_TO_FRAMES(M, S, F)        ((M)*60*CD_FPS+(S)*CD_FPS+(F))
+//#define FRAMES_TO_MSF(f, M,S,F)       {                                       \
+//#define CD_FPS        75
+//#define CD_INDRIVE(status)    ((int)status > 0)
+//#define SDL_DATA_TRACK        0x04
+//#define SDL_AUDIO_TRACK       0x00
+//#define SDL_MAX_TRACKS        99
+//#define _SDL_cdrom_h
+
+open module SDL_cdrom_h
+{
+  requires package "sdl";
+  header '#include "SDL_cdrom.h"';
+
+  //ABSTRACT TYPES
+  type CDstatus = 'CDstatus';
+
+  //CSTRUCTS
+  cstruct SDL_CD {
+    id: int;
+    status: CDstatus;
+    numtracks: int;
+    cur_track: int;
+    cur_frame: int;
+    track: &SDL_CDtrack;
+  };
+  cstruct SDL_CDtrack {
+    id: uint8;
+    type_: uint8;
+    unused: uint16;
+    length: uint32;
+    offset: uint32;
+  };
+
+  //STRUCT or UNION TAG ALIASES
+
+  /*
+  //TYPE ALIASES
+  typedef _struct_SDL_CD = SDL_CD;
+  typedef _struct_SDL_CDtrack = SDL_CDtrack;
+  */
+
+  //ENUMERATION CONSTANTS
+  const CD_TRAYEMPTY: int = 'CD_TRAYEMPTY';
+  const CD_PLAYING: int = 'CD_PLAYING';
+  const CD_ERROR: int = 'CD_ERROR';
+  const CD_PAUSED: int = 'CD_PAUSED';
+  const CD_STOPPED: int = 'CD_STOPPED';
+
+  //PROCEDURES
+  proc SDL_CDClose: &SDL_CD;
+
+  //FUNCTIONS
+  fun SDL_CDEject: &SDL_CD -> int;
+  fun SDL_CDName: int -> &char;
+  fun SDL_CDNumDrives: 1 -> int;
+  fun SDL_CDOpen: int -> &SDL_CD;
+  fun SDL_CDPause: &SDL_CD -> int;
+  fun SDL_CDPlay: &SDL_CD * int * int -> int;
+  fun SDL_CDPlayTracks: &SDL_CD * int * int * int * int -> int;
+  fun SDL_CDResume: &SDL_CD -> int;
+  fun SDL_CDStatus: &SDL_CD -> CDstatus;
+  fun SDL_CDStop: &SDL_CD -> int;
+}
+
+@h1 SDL_clipboard.flx
+@tangle SDL_clipboard.flx
+
+
+open class SDL_clipboard_h
+{
+  requires package "sdl2";
+
+
+  /**
+   * \brief Put UTF-8 text into the clipboard
+   *
+   * \sa SDL_GetClipboardText()
+   */
+  gen SDL_SetClipboardText: string -> int = "SDL_SetClipboardText($1.c_str())";
+
+  /**
+   * \brief Get UTF-8 text from the clipboard, which must be freed with SDL_free()
+   *
+   * \sa SDL_SetClipboardText()
+   */
+  private fun gcbt :1 -> +char = "SDL_GetClipboardText()";
+  fun SDL_GetClipboardText () : string =
+  {
+    var p = gcbt();
+    var s = string p;
+    free p;
+    return s;
+  }
+
+  /**
+   * \brief Returns a flag indicating whether the clipboard exists and contains a text string that is non-empty
+   *
+   * \sa SDL_GetClipboardText()
+   */
+  fun SDL_HasClipboardText: 1 -> bool;
+}
+@h1 SDL_endian.flx
+@tangle SDL_endian.flx
+
+//Module        : SDL_endian_h
+//Timestamp     : 2006/1/8 3:36:0 UTC
+//Timestamp     : 2006/1/8 14:36:0 (local)
+//Raw Header    : /usr/include/SDL/SDL_endian.h
+//Preprocessor  : gcc -E
+//Input file: sdl.flxcc.i
+//Flxcc Control : sdl.flxcc
+//Felix Version : 1.1.2_rc1
+
+//#define SDL_SwapBE64(X)       (X)
+//#define SDL_SwapBE32(X)       (X)
+//#define SDL_SwapBE16(X)       (X)
+//#define SDL_SwapLE64(X)       SDL_Swap64(X)
+//#define SDL_SwapLE32(X)       SDL_Swap32(X)
+//#define SDL_SwapLE16(X)       SDL_Swap16(X)
+//#define SDL_SwapBE64(X)       SDL_Swap64(X)
+//#define SDL_SwapBE32(X)       SDL_Swap32(X)
+//#define SDL_SwapBE16(X)       SDL_Swap16(X)
+//#define SDL_SwapLE64(X)       (X)
+//#define SDL_SwapLE32(X)       (X)
+//#define SDL_SwapLE16(X)       (X)
+//#define SDL_Swap64(X) (X)
+//#define _SDL_endian_h
+
+open module SDL_endian_h
+{
+  requires package "sdl";
+  header '#include "SDL_endian.h"';
+
+  //FUNCTIONS
+  fun SDL_ReadBE16: &SDL_RWops -> uint16;
+  fun SDL_ReadBE32: &SDL_RWops -> uint32;
+  fun SDL_ReadBE64: &SDL_RWops -> uint64;
+  fun SDL_ReadLE16: &SDL_RWops -> uint16;
+  fun SDL_ReadLE32: &SDL_RWops -> uint32;
+  fun SDL_ReadLE64: &SDL_RWops -> uint64;
+  fun SDL_Swap16: uint16 -> uint16;
+  fun SDL_Swap32: uint32 -> uint32;
+  fun SDL_Swap64: uint64 -> uint64;
+  fun SDL_WriteBE16: &SDL_RWops * uint16 -> int;
+  fun SDL_WriteBE32: &SDL_RWops * uint32 -> int;
+  fun SDL_WriteBE64: &SDL_RWops * uint64 -> int;
+  fun SDL_WriteLE16: &SDL_RWops * uint16 -> int;
+  fun SDL_WriteLE32: &SDL_RWops * uint32 -> int;
+  fun SDL_WriteLE64: &SDL_RWops * uint64 -> int;
+}
+
+
+@h1 SDL_error.flx
+@tangle SDL_error.flx
+
+//#define SDL_OutOfMemory()     SDL_Error(SDL_ENOMEM)
+//#define _SDL_error_h
+
+open class SDL_error_h
+{
+  requires package "sdl2";
+
+  //ABSTRACT TYPES
+  //type SDL_errorcode = 'SDL_errorcode';
+
+  //ENUMERATION CONSTANTS
+  //const SDL_EFSEEK: int = 'SDL_EFSEEK';
+  //const SDL_ENOMEM: int = 'SDL_ENOMEM';
+  //const SDL_LASTERROR: int = 'SDL_LASTERROR';
+  //const SDL_EFREAD: int = 'SDL_EFREAD';
+  //const SDL_EFWRITE: int = 'SDL_EFWRITE';
+
+  //PROCEDURES
+  proc SDL_ClearError: 1;
+  //proc SDL_Error: SDL_errorcode;
+  //proc SDL_SetError[t]: t;
+
+  //FUNCTIONS
+  fun SDL_GetError: 1 -> string = "::std::string(SDL_GetError())";
+}
+
+@h1 SDL_events.flx
+@tangle SDL_events.flx
+
+open class SDL_events_h
+{
+  requires package "sdl2";
+
+  cenum SDL_EventType = 
+      SDL_FIRSTEVENT,             /**< Unused (do not remove) */
+
+      /* Application events */
+      SDL_QUIT,                   /**< User-requested quit */
+
+      /* These application events have special meaning on iOS, see README.iOS for details */
+      SDL_APP_TERMINATING,        /**< The application is being terminated by the OS
+                                       Called on iOS in applicationWillTerminate()
+                                       Called on Android in onDestroy()
+                                  */
+      SDL_APP_LOWMEMORY,          /**< The application is low on memory, free memory if possible.
+                                       Called on iOS in applicationDidReceiveMemoryWarning()
+                                       Called on Android in onLowMemory()
+                                  */
+      SDL_APP_WILLENTERBACKGROUND, /**< The application is about to enter the background
+                                       Called on iOS in applicationWillResignActive()
+                                       Called on Android in onPause()
+                                  */
+      SDL_APP_DIDENTERBACKGROUND, /**< The application did enter the background and may not get CPU for some time
+                                       Called on iOS in applicationDidEnterBackground()
+                                       Called on Android in onPause()
+                                  */
+      SDL_APP_WILLENTERFOREGROUND, /**< The application is about to enter the foreground
+                                       Called on iOS in applicationWillEnterForeground()
+                                       Called on Android in onResume()
+                                  */
+      SDL_APP_DIDENTERFOREGROUND, /**< The application is now interactive
+                                       Called on iOS in applicationDidBecomeActive()
+                                       Called on Android in onResume()
+                                  */
+
+      /* Window events */
+      SDL_WINDOWEVENT,            /**< Window state change */
+      SDL_SYSWMEVENT,             /**< System specific event */
+
+      /* Keyboard events */
+      SDL_KEYDOWN,                /**< Key pressed */
+      SDL_KEYUP,                  /**< Key released */
+      SDL_TEXTEDITING,            /**< Keyboard text editing (composition) */
+      SDL_TEXTINPUT,              /**< Keyboard text input */
+
+      /* Mouse events */
+      SDL_MOUSEMOTION,            /**< Mouse moved */
+      SDL_MOUSEBUTTONDOWN,        /**< Mouse button pressed */
+      SDL_MOUSEBUTTONUP,          /**< Mouse button released */
+      SDL_MOUSEWHEEL,             /**< Mouse wheel motion */
+
+      /* Joystick events */
+      SDL_JOYAXISMOTION,          /**< Joystick axis motion */
+      SDL_JOYBALLMOTION,          /**< Joystick trackball motion */
+      SDL_JOYHATMOTION,           /**< Joystick hat position change */
+      SDL_JOYBUTTONDOWN,          /**< Joystick button pressed */
+      SDL_JOYBUTTONUP,            /**< Joystick button released */
+      SDL_JOYDEVICEADDED,         /**< A new joystick has been inserted into the system */
+      SDL_JOYDEVICEREMOVED,       /**< An opened joystick has been removed */
+
+      /* Game controller events */
+      SDL_CONTROLLERAXISMOTION,          /**< Game controller axis motion */
+      SDL_CONTROLLERBUTTONDOWN,          /**< Game controller button pressed */
+      SDL_CONTROLLERBUTTONUP,            /**< Game controller button released */
+      SDL_CONTROLLERDEVICEADDED,         /**< A new Game controller has been inserted into the system */
+      SDL_CONTROLLERDEVICEREMOVED,       /**< An opened Game controller has been removed */
+      SDL_CONTROLLERDEVICEREMAPPED,      /**< The controller mapping was updated */
+
+      /* Touch events */
+      SDL_FINGERDOWN,             
+      SDL_FINGERUP,
+      SDL_FINGERMOTION,
+
+      /* Gesture events */
+      SDL_DOLLARGESTURE,          
+      SDL_DOLLARRECORD,
+      SDL_MULTIGESTURE,
+
+      /* Clipboard events */
+      SDL_CLIPBOARDUPDATE,         /**< The clipboard changed */
+
+      /* Drag and drop events */
+      SDL_DROPFILE,                 /**< The system requests a file open */
+
+      /** Events ::SDL_USEREVENT through ::SDL_LASTEVENT are for your use,
+       *  and should be allocated with SDL_RegisterEvents()
+       */
+      SDL_USEREVENT,            
+
+      /**
+       *  This last event is only for bounding internal arrays
+       */
+      SDL_LASTEVENT    /* 0xFFFF */
+  ;
+
+  instance Str[SDL_EventType] {
+    fun str: SDL_EventType -> string =
+      | $(SDL_FIRSTEVENT) => "SDL_FIRSTEVENT"
+      | $(SDL_QUIT) => "SDL_QUIT"
+      | $(SDL_APP_TERMINATING) => "SDL_APP_TERMINATING"
+      | $(SDL_APP_LOWMEMORY) => "SDL_APP_LOWMEMORY"
+      | $(SDL_APP_WILLENTERBACKGROUND) => "SDL_APP_WILLENTERBACKGROUND"
+      | $(SDL_APP_DIDENTERBACKGROUND) => "SDL_APP_DIDENTERBACKGROUND"
+      | $(SDL_APP_WILLENTERFOREGROUND) => "SDL_APP_WILLENTERFOREGROUND"
+      | $(SDL_APP_DIDENTERFOREGROUND) => "SDL_APP_DIDENTERFOREGROUND"
+      | $(SDL_WINDOWEVENT) => "SDL_WINDOWEVENT"
+      | $(SDL_SYSWMEVENT) => "SDL_SYSWMEVENT"
+      | $(SDL_KEYDOWN) => "SDL_KEYDOWN"
+      | $(SDL_KEYUP) => "SDL_KEYUP"
+      | $(SDL_TEXTEDITING) => "SDL_TEXTEDITING"
+      | $(SDL_TEXTINPUT) => "SDL_TEXTINPUT"
+      | $(SDL_MOUSEMOTION) => "SDL_MOUSEMOTION"
+      | $(SDL_MOUSEBUTTONDOWN) => "SDL_MOUSEBUTTONDOWN"
+      | $(SDL_MOUSEBUTTONUP) => "SDL_MOUSEBUTTONUP"
+      | $(SDL_MOUSEWHEEL) => "SDL_MOUSEWHEEL"
+      | $(SDL_JOYAXISMOTION) => "SDL_JOYAXISMOTION"
+      | $(SDL_JOYBALLMOTION) => "SDL_JOYBALLMOTION"
+      | $(SDL_JOYHATMOTION) => "SDL_JOYHATMOTION"
+      | $(SDL_JOYBUTTONDOWN) => "SDL_JOYBUTTONDOWN"
+      | $(SDL_JOYBUTTONUP) => "SDL_JOYBUTTONUP"
+      | $(SDL_JOYDEVICEADDED) => "SDL_JOYDEVICEADDED"
+      | $(SDL_JOYDEVICEREMOVED) => "SDL_JOYDEVICEREMOVED"
+      | $(SDL_CONTROLLERAXISMOTION) => "SDL_CONTROLLERAXISMOTION"
+      | $(SDL_CONTROLLERBUTTONDOWN) => "SDL_CONTROLLERBUTTONDOWN"
+      | $(SDL_CONTROLLERBUTTONUP) => "SDL_CONTROLLERBUTTONUP"
+      | $(SDL_CONTROLLERDEVICEADDED) => "SDL_CONTROLLERDEVICEADDED"
+      | $(SDL_CONTROLLERDEVICEREMOVED) => "SDL_CONTROLLERDEVICEREMOVED"
+      | $(SDL_CONTROLLERDEVICEREMAPPED) => "SDL_CONTROLLERDEVICEREMAPPED"
+      | $(SDL_FINGERDOWN) => "SDL_FINGERDOWN"
+      | $(SDL_FINGERUP) => "SDL_FINGERUP"
+      | $(SDL_FINGERMOTION) => "SDL_FINGERMOTION"
+      | $(SDL_DOLLARGESTURE) => "SDL_DOLLARGESTURE"
+      | $(SDL_DOLLARRECORD) => "SDL_DOLLARRECORD"
+      | $(SDL_MULTIGESTURE) => "SDL_MULTIGESTURE"
+      | $(SDL_CLIPBOARDUPDATE) => "SDL_CLIPBOARDUPDATE"
+      | $(SDL_DROPFILE) => "SDL_DROPFILE"
+      | $(SDL_USEREVENT) => "SDL_USEREVENT"
+      | x => "UNKNOWN_EVENT #"+x.uint32.str
+    ;
+  }
+
+  ctor uint32 : SDL_EventType = "(uint32_t)$1";
+  ctor SDL_EventType : uint32 = "(SDL_EventType)$1";
+
+  cenum SDL_WindowEventID =
+    SDL_WINDOWEVENT_NONE,
+    SDL_WINDOWEVENT_SHOWN,
+    SDL_WINDOWEVENT_HIDDEN,
+    SDL_WINDOWEVENT_EXPOSED,
+    SDL_WINDOWEVENT_MOVED,
+    SDL_WINDOWEVENT_RESIZED,
+    SDL_WINDOWEVENT_SIZE_CHANGED,
+    SDL_WINDOWEVENT_MINIMIZED,
+    SDL_WINDOWEVENT_MAXIMIZED,
+    SDL_WINDOWEVENT_RESTORED,
+    SDL_WINDOWEVENT_ENTER,
+    SDL_WINDOWEVENT_LEAVE,
+    SDL_WINDOWEVENT_FOCUS_GAINED,
+    SDL_WINDOWEVENT_FOCUS_LOST,
+    SDL_WINDOWEVENT_CLOSE
+  ;
+  instance Str[SDL_WindowEventID] {
+    fun str : SDL_WindowEventID -> string =
+    | $(SDL_WINDOWEVENT_NONE) => "none"
+    | $(SDL_WINDOWEVENT_SHOWN) => "shown"
+    | $(SDL_WINDOWEVENT_HIDDEN) => "hidden"
+    | $(SDL_WINDOWEVENT_EXPOSED) => "exposed"
+    | $(SDL_WINDOWEVENT_MOVED) => "moved"
+    | $(SDL_WINDOWEVENT_RESIZED) => "resized"
+    | $(SDL_WINDOWEVENT_SIZE_CHANGED) => "size_changed"
+    | $(SDL_WINDOWEVENT_MINIMIZED) => "minimised"
+    | $(SDL_WINDOWEVENT_MAXIMIZED) => "maximised"
+    | $(SDL_WINDOWEVENT_RESTORED) => "restored"
+    | $(SDL_WINDOWEVENT_ENTER) => "enter"
+    | $(SDL_WINDOWEVENT_LEAVE) => "leave"
+    | $(SDL_WINDOWEVENT_FOCUS_GAINED) => "focus_gained"
+    | $(SDL_WINDOWEVENT_FOCUS_LOST) => "focus_lost"
+    | $(SDL_WINDOWEVENT_CLOSE) => "close"
+    | x => "UnknownWindowEvent #"+x.uint8.str
+    ;
+  }
+  ctor uint8 : SDL_WindowEventID = "(uint8_t)$1";
+  ctor SDL_WindowEventID : uint8 = "(SDL_WindowEventID)$1";
+
+  // Warning: inaccurate cstructs are
+  // perfectly fine for reading and writing data,
+  // even in this case, where the real
+  // data is actually a union. All that is important
+  // are the field names.
+  //
+  // However you must NOT constuct one with a 
+  // struct constructor!
+  cstruct SDL_Event {
+    type     : uint32;
+    window   : SDL_WindowEvent;
+    key      : SDL_KeyboardEvent;
+    edit     : SDL_TextEditingEvent;
+    text     : SDL_TextInputEvent;
+    motion   : SDL_MouseMotionEvent;
+    button   : SDL_MouseButtonEvent;
+    wheel    : SDL_MouseWheelEvent;
+    //jaxis    : SDL_JoystickAxisEvent;
+    //jball    : SDL_JoystickBallEvent;
+    //jhat     : SDL_JoystickHatEvent;
+    //jbutton  : SDL_JoystickButtonEvent;
+    quit     : SDL_QuitEvent;
+    user     : SDL_UserEvent;
+    syswm    : SDL_SysWMEvent;
+    //tfinger  : SDL_TouchFingerEvent;
+    //tbutton  : SDL_TouchButtonEvent;
+    //mgesture : SDL_MultiGestureEvent;
+    //dgesture : SDL_DollarGestureEvent;
+    drop     : SDL_DropEvent;
+  };
+
+  /**
+   *  \brief Fields shared by every event
+   */
+  typedef struct SDL_CommonEvent
+  {
+      uint32 type;
+      uint32 timestamp;
+  } SDL_CommonEvent;
+
+  /**
+   *  \brief Window state change event data (event.window.*)
+   */
+  typedef struct SDL_WindowEvent
+  {
+      uint32 type;        /**< ::SDL_WINDOWEVENT */
+      uint32 timestamp;
+      uint32 windowID;    /**< The associated window */
+      uint8 event;        /**< ::SDL_WindowEventID */
+      uint8 padding1;
+      uint8 padding2;
+      uint8 padding3;
+      int32 data1;       /**< event dependent data */
+      int32 data2;       /**< event dependent data */
+  } SDL_WindowEvent;
+
+  /**
+   *  \brief Keyboard button event structure (event.key.*)
+   */
+  typedef struct SDL_KeyboardEvent
+  {
+      uint32 type;        /**< ::SDL_KEYDOWN or ::SDL_KEYUP */
+      uint32 timestamp;
+      uint32 windowID;    /**< The window with keyboard focus, if any */
+      uint8 state;        /**< ::SDL_PRESSED or ::SDL_RELEASED */
+      uint8 repeat;       /**< Non-zero if this is a key repeat */
+      uint8 padding2;
+      uint8 padding3;
+      SDL_Keysym keysym;  /**< The key that was pressed or released */
+  } SDL_KeyboardEvent;
+
+  macro val SDL_TEXTEDITINGEVENT_TEXT_SIZE = 32;
+  /**
+   *  \brief Keyboard text editing event structure (event.edit.*)
+   */
+  typedef struct SDL_TextEditingEvent
+  {
+      uint32 type;                                /**< ::SDL_TEXTEDITING */
+      uint32 timestamp;
+      uint32 windowID;                            /**< The window with keyboard focus, if any */
+      +char text;    /* actually a buffer size 32 */ /**< The editing text */
+      int32 start;                               /**< The start cursor of selected editing text */
+      int32 length;                              /**< The length of selected editing text */
+  } SDL_TextEditingEvent;
+
+  macro val SDL_TEXTINPUTEVENT_TEXT_SIZE = 32;
+  /**
+   *  \brief Keyboard text input event structure (event.text.*)
+   */
+  typedef struct SDL_TextInputEvent
+  {
+      uint32 type;                              /**< ::SDL_TEXTINPUT */
+      uint32 timestamp;
+      uint32 windowID;                          /**< The window with keyboard focus, if any */
+      +char text;       /* actually a buffer */ /**< The input text */
+  } SDL_TextInputEvent;
+
+  /**
+   *  \brief Mouse motion event structure (event.motion.*)
+   */
+  typedef struct SDL_MouseMotionEvent
+  {
+      uint32 type;        /**< ::SDL_MOUSEMOTION */
+      uint32 timestamp;
+      uint32 windowID;    /**< The window with mouse focus, if any */
+      uint32 which;       /**< The mouse instance id, or SDL_TOUCH_MOUSEID */
+      uint32 state;       /**< The current button state */
+      int32 x;           /**< X coordinate, relative to window */
+      int32 y;           /**< Y coordinate, relative to window */
+      int32 xrel;        /**< The relative motion in the X direction */
+      int32 yrel;        /**< The relative motion in the Y direction */
+  } SDL_MouseMotionEvent;
+
+  /**
+   *  \brief Mouse button event structure (event.button.*)
+   */
+  typedef struct SDL_MouseButtonEvent
+  {
+      uint32 type;        /**< ::SDL_MOUSEBUTTONDOWN or ::SDL_MOUSEBUTTONUP */
+      uint32 timestamp;
+      uint32 windowID;    /**< The window with mouse focus, if any */
+      uint32 which;       /**< The mouse instance id, or SDL_TOUCH_MOUSEID */
+      uint8 button;       /**< The mouse button index */
+      uint8 state;        /**< ::SDL_PRESSED or ::SDL_RELEASED */
+      uint8 padding1;
+      uint8 padding2;
+      int32 x;           /**< X coordinate, relative to window */
+      int32 y;           /**< Y coordinate, relative to window */
+  } SDL_MouseButtonEvent;
+
+  /**
+   *  \brief Mouse wheel event structure (event.wheel.*)
+   */
+  typedef struct SDL_MouseWheelEvent
+  {
+      uint32 type;        /**< ::SDL_MOUSEWHEEL */
+      uint32 timestamp;
+      uint32 windowID;    /**< The window with mouse focus, if any */
+      uint32 which;       /**< The mouse instance id, or SDL_TOUCH_MOUSEID */
+      int32 x;           /**< The amount scrolled horizontally */
+      int32 y;           /**< The amount scrolled vertically */
+  } SDL_MouseWheelEvent;
+
+/*
+  /**
+   *  \brief Joystick axis motion event structure (event.jaxis.*)
+   */
+  typedef struct SDL_JoyAxisEvent
+  {
+      uint32 type;        /**< ::SDL_JOYAXISMOTION */
+      uint32 timestamp;
+      SDL_JoystickID which; /**< The joystick instance id */
+      uint8 axis;         /**< The joystick axis index */
+      uint8 padding1;
+      uint8 padding2;
+      uint8 padding3;
+      int16 value;       /**< The axis value (range: -32768 to 32767) */
+      uint16 padding4;
+  } SDL_JoyAxisEvent;
+*/
+  /**
+   *  \brief Joystick trackball motion event structure (event.jball.*)
+   */
+/*
+  typedef struct SDL_JoyBallEvent
+  {
+      uint32 type;        /**< ::SDL_JOYBALLMOTION */
+      uint32 timestamp;
+      SDL_JoystickID which; /**< The joystick instance id */
+      uint8 ball;         /**< The joystick trackball index */
+      uint8 padding1;
+      uint8 padding2;
+      uint8 padding3;
+      int16 xrel;        /**< The relative motion in the X direction */
+      int16 yrel;        /**< The relative motion in the Y direction */
+  } SDL_JoyBallEvent;
+*/
+  /**
+   *  \brief Joystick hat position change event structure (event.jhat.*)
+   */
+/*
+  typedef struct SDL_JoyHatEvent
+  {
+      uint32 type;        /**< ::SDL_JOYHATMOTION */
+      uint32 timestamp;
+      SDL_JoystickID which; /**< The joystick instance id */
+      uint8 hat;          /**< The joystick hat index */
+      uint8 value;        /**< The hat position value.
+                           *   \sa ::SDL_HAT_LEFTUP ::SDL_HAT_UP ::SDL_HAT_RIGHTUP
+                           *   \sa ::SDL_HAT_LEFT ::SDL_HAT_CENTERED ::SDL_HAT_RIGHT
+                           *   \sa ::SDL_HAT_LEFTDOWN ::SDL_HAT_DOWN ::SDL_HAT_RIGHTDOWN
+                           *
+                           *   Note that zero means the POV is centered.
+                           */
+      uint8 padding1;
+      uint8 padding2;
+  } SDL_JoyHatEvent;
+*/
+/*
+  /**
+   *  \brief Joystick button event structure (event.jbutton.*)
+   */
+  typedef struct SDL_JoyButtonEvent
+  {
+      uint32 type;        /**< ::SDL_JOYBUTTONDOWN or ::SDL_JOYBUTTONUP */
+      uint32 timestamp;
+      SDL_JoystickID which; /**< The joystick instance id */
+      uint8 button;       /**< The joystick button index */
+      uint8 state;        /**< ::SDL_PRESSED or ::SDL_RELEASED */
+      uint8 padding1;
+      uint8 padding2;
+  } SDL_JoyButtonEvent;
+*/
+/*
+  /**
+   *  \brief Joystick device event structure (event.jdevice.*)
+   */
+  typedef struct SDL_JoyDeviceEvent
+  {
+      uint32 type;        /**< ::SDL_JOYDEVICEADDED or ::SDL_JOYDEVICEREMOVED */
+      uint32 timestamp;
+      int32 which;       /**< The joystick device index for the ADDED event, instance id for the REMOVED event */
+  } SDL_JoyDeviceEvent;
+
+*/
+  /**
+   *  \brief Game controller axis motion event structure (event.caxis.*)
+   */
+/*
+  typedef struct SDL_ControllerAxisEvent
+  {
+      uint32 type;        /**< ::SDL_CONTROLLERAXISMOTION */
+      uint32 timestamp;
+      SDL_JoystickID which; /**< The joystick instance id */
+      uint8 axis;         /**< The controller axis (SDL_GameControllerAxis) */
+      uint8 padding1;
+      uint8 padding2;
+      uint8 padding3;
+      int16 value;       /**< The axis value (range: -32768 to 32767) */
+      uint16 padding4;
+  } SDL_ControllerAxisEvent;
+*/
+/*
+  /**
+   *  \brief Game controller button event structure (event.cbutton.*)
+   */
+  typedef struct SDL_ControllerButtonEvent
+  {
+      uint32 type;        /**< ::SDL_CONTROLLERBUTTONDOWN or ::SDL_CONTROLLERBUTTONUP */
+      uint32 timestamp;
+      SDL_JoystickID which; /**< The joystick instance id */
+      uint8 button;       /**< The controller button (SDL_GameControllerButton) */
+      uint8 state;        /**< ::SDL_PRESSED or ::SDL_RELEASED */
+      uint8 padding1;
+      uint8 padding2;
+  } SDL_ControllerButtonEvent;
+*/
+/*
+  /**
+   *  \brief Controller device event structure (event.cdevice.*)
+   */
+  typedef struct SDL_ControllerDeviceEvent
+  {
+      uint32 type;        /**< ::SDL_CONTROLLERDEVICEADDED, ::SDL_CONTROLLERDEVICEREMOVED, or ::SDL_CONTROLLERDEVICEREMAPPED */
+      uint32 timestamp;
+      int32 which;       /**< The joystick device index for the ADDED event, instance id for the REMOVED or REMAPPED event */
+  } SDL_ControllerDeviceEvent;
+
+*/
+/*
+  /**
+   *  \brief Touch finger event structure (event.tfinger.*)
+   */
+  typedef struct SDL_TouchFingerEvent
+  {
+      uint32 type;        /**< ::SDL_FINGERMOTION or ::SDL_FINGERDOWN or ::SDL_FINGERUP */
+      uint32 timestamp;
+      SDL_TouchID touchId; /**< The touch device id */
+      SDL_FingerID fingerId;
+      float x;            /**< Normalized in the range 0...1 */
+      float y;            /**< Normalized in the range 0...1 */
+      float dx;           /**< Normalized in the range 0...1 */
+      float dy;           /**< Normalized in the range 0...1 */
+      float pressure;     /**< Normalized in the range 0...1 */
+  } SDL_TouchFingerEvent;
+
+*/
+/*
+  /**
+   *  \brief Multiple Finger Gesture Event (event.mgesture.*)
+   */
+  typedef struct SDL_MultiGestureEvent
+  {
+      uint32 type;        /**< ::SDL_MULTIGESTURE */
+      uint32 timestamp;
+      SDL_TouchID touchId; /**< The touch device index */
+      float dTheta;
+      float dDist;
+      float x;
+      float y;
+      uint16 numFingers;
+      uint16 padding;
+  } SDL_MultiGestureEvent;
+*/
+/*
+  /* (event.dgesture.*) */
+  typedef struct SDL_DollarGestureEvent
+  {
+      uint32 type;        /**< ::SDL_DOLLARGESTURE */
+      uint32 timestamp;
+      SDL_TouchID touchId; /**< The touch device id */
+      SDL_GestureID gestureId;
+      uint32 numFingers;
+      float error;
+      float x;            /**< Normalized center of gesture */
+      float y;            /**< Normalized center of gesture */
+  } SDL_DollarGestureEvent;
+*/
+
+  /**
+   *  \brief An event used to request a file open by the system (event.drop.*)
+   *         This event is disabled by default, you can enable it with SDL_EventState()
+   *  \note If you enable this event, you must free the filename in the event.
+   */
+  typedef struct SDL_DropEvent
+  {
+      uint32 type;        /**< ::SDL_DROPFILE */
+      uint32 timestamp;
+      +char file;         /**< The file name, which should be freed with SDL_free() */
+  } SDL_DropEvent;
+
+
+  /**
+   *  \brief The "quit requested" event
+   */
+  typedef struct SDL_QuitEvent
+  {
+      uint32 type;        /**< ::SDL_QUIT */
+      uint32 timestamp;
+  } SDL_QuitEvent;
+
+  /**
+   *  \brief OS Specific event
+   */
+  typedef struct SDL_OSEvent
+  {
+      uint32 type;        /**< ::SDL_QUIT */
+      uint32 timestamp;
+  } SDL_OSEvent;
+
+  /**
+   *  \brief A user-defined event type (event.user.*)
+   */
+  typedef struct SDL_UserEvent
+  {
+      uint32 type;        /**< ::SDL_USEREVENT through ::SDL_LASTEVENT-1 */
+      uint32 timestamp;
+      uint32 windowID;    /**< The associated window if any */
+      int32 n"code";        /**< User defined event code */
+      address data1;        /**< User defined data pointer */
+      address data2;        /**< User defined data pointer */
+  } SDL_UserEvent;
+
+
+  /*
+  struct SDL_SysWMmsg;
+  typedef struct SDL_SysWMmsg SDL_SysWMmsg;
+  */
+
+  /**
+   *  \brief A video driver dependent system event (event.syswm.*)
+   *         This event is disabled by default, you can enable it with SDL_EventState()
+   *
+   *  \note If you want to use this event, you should include SDL_syswm.h.
+   */
+  typedef struct SDL_SysWMEvent
+  {
+      uint32 type;        /**< ::SDL_SYSWMEVENT */
+      uint32 timestamp;
+      //SDL_SysWMmsg *msg;  /**< driver dependent data, defined in SDL_syswm.h */
+      address msg;  /**< driver dependent data, defined in SDL_syswm.h */
+  } SDL_SysWMEvent;
+
+  fun SDL_GetWindowID (w:SDL_Event) : opt[uint32] =>
+    match w.type.SDL_EventType with
+    | $(SDL_WINDOWEVENT) => Some w.window.windowID
+    | $(SDL_KEYDOWN) => Some w.key.windowID
+    | $(SDL_KEYUP) => Some w.key.windowID
+    | $(SDL_TEXTEDITING) => Some w.edit.windowID
+    | $(SDL_TEXTINPUT) => Some w.text.windowID
+    | $(SDL_MOUSEMOTION) => Some w.motion.windowID
+    | $(SDL_MOUSEBUTTONDOWN) => Some w.button.windowID
+    | $(SDL_MOUSEBUTTONUP) => Some w.button.windowID
+    | $(SDL_MOUSEWHEEL) => Some w.wheel.windowID
+    | _ => None[uint32]
+    endmatch
+  ;
+ 
+  cenum SDL_eventaction =
+    SDL_ADDEVENT,
+    SDL_PEEKEVENT,
+    SDL_GETEVENT
+  ;
+
+  gen SDL_PeepEvents:
+    +SDL_Event * int /* numevents*/ *
+    SDL_eventaction *
+    uint32 /* minType */ * uint32 /* maxType */ 
+    -> int
+  ;
+
+/*@}*/
+/**
+ *  Pumps the event loop, gathering events from the input devices.
+ *
+ *  This function updates the event queue and internal input device state.
+ *
+ *  This should only be run in the thread that sets the video mode.
+ */
+
+  proc SDL_PumpEvents: 1;
+
+/**
+ *  Checks to see if certain event types are in the event queue.
+ */
+  fun SDL_HasEvent:uint32 /* type */ -> bool;
+  fun SDL_HasEvents:uint32 /* minType */ * uint32 /* maxType */ -> bool;
+
+/**
+ *  This function clears events from the event queue
+ */
+  proc SDL_FlushEvent:uint32;
+  proc SDL_FlushEvents: uint32 /* minType */ * uint32 /* maxType */;
+
+/**
+ *  \brief Polls for currently pending events.
+ *
+ *  \return 1 if there are any pending events, or 0 if there are none available.
+ *
+ *  \param event If not NULL, the next event is removed from the queue and
+ *               stored in that area.
+ */
+ gen SDL_PollEvent: &SDL_Event -> int;
+
+/**
+ *  \brief Waits indefinitely for the next available event.
+ *
+ *  \return 1, or 0 if there was an error while waiting for events.
+ *
+ *  \param event If not NULL, the next event is removed from the queue and
+ *               stored in that area.
+ */
+  gen SDL_WaitEvent: &SDL_Event -> int;
+
+
+/**
+ *  \brief Waits until the specified timeout (in milliseconds) for the next
+ *         available event.
+ *
+ *  \return 1, or 0 if there was an error while waiting for events.
+ *
+ *  \param event If not NULL, the next event is removed from the queue and
+ *               stored in that area.
+ *  \param timeout The timeout (in milliseconds) to wait for next event.
+ */
+  gen SDL_WaitEventTimeout: &SDL_Event * int -> int;
+
+/**
+ *  \brief Add an event to the event queue.
+ *
+ *  \return 1 on success, 0 if the event was filtered, or -1 if the event queue
+ *          was full or there was some other error.
+ */
+  gen SDL_PushEvent: &SDL_Event -> int;
+
+  typedef SDL_EventFilter =  address *  &SDL_Event --> int;
+
+/**
+ *  Sets up a filter to process all events before they change internal state and
+ *  are posted to the internal event queue.
+ *
+ *  The filter is prototyped as:
+ *  \code
+ *      int SDL_EventFilter(void *userdata, SDL_Event * event);
+ *  \endcode
+ *
+ *  If the filter returns 1, then the event will be added to the internal queue.
+ *  If it returns 0, then the event will be dropped from the queue, but the
+ *  internal state will still be updated.  This allows selective filtering of
+ *  dynamically arriving events.
+ *
+ *  \warning  Be very careful of what you do in the event filter function, as
+ *            it may run in a different thread!
+ *
+ *  There is one caveat when dealing with the ::SDL_QuitEvent event type.  The
+ *  event filter is only called when the window manager desires to close the
+ *  application window.  If the event filter returns 1, then the window will
+ *  be closed, otherwise the window will remain open if possible.
+ *
+ *  If the quit event is generated by an interrupt signal, it will bypass the
+ *  internal queue and be delivered to the application at the next event poll.
+ */
+
+/* TODO: convert to use Felix closures! */
+
+  proc SDL_SetEventFilter: SDL_EventFilter * address;
+
+/**
+ *  Return the current event filter - can be used to "chain" filters.
+ *  If there is no event filter set, this function returns SDL_FALSE.
+ */
+  gen SDL_GetEventFilter: &SDL_EventFilter * &address -> bool;
+
+/**
+ *  Add a function which is called when an event is added to the queue.
+ */
+  proc SDL_AddEventWatch: SDL_EventFilter * address;
+
+/**
+ *  Remove an event watch function added with SDL_AddEventWatch()
+ */
+ proc SDL_DelEventWatch: SDL_EventFilter * address;
+
+/**
+ *  Run the filter function on the current event queue, removing any
+ *  events for which the filter returns 0.
+ */
+  proc SDL_FilterEvents:SDL_EventFilter * address;
+
+  const SDL_QUERY : int; // -1
+  const SDL_IGNORE: int; // 0
+  const SDL_DISABLE : int; // 0
+  const SDL_ENABLE : int; // 1
+
+/**
+ *  This function allows you to set the state of processing certain events.
+ *   - If \c state is set to ::SDL_IGNORE, that event will be automatically
+ *     dropped from the event queue and will not event be filtered.
+ *   - If \c state is set to ::SDL_ENABLE, that event will be processed
+ *     normally.
+ *   - If \c state is set to ::SDL_QUERY, SDL_EventState() will return the
+ *     current processing state of the specified event.
+ */
+
+  gen SDL_EventState:uint32 * int -> int = "(int)SDL_EventState ($1,$2)";
+
+/**
+ *  This function allocates a set of user-defined events, and returns
+ *  the beginning event number for that set of events.
+ *
+ *  If there aren't enough user-defined events left, this function
+ *  returns (Uint32)-1
+ */
+/*
+extern DECLSPEC Uint32 SDLCALL SDL_RegisterEvents(int numevents);
+*/
+
+
+}
+
+@h1 SDL_framerate.flx
+@tangle SDL_framerate.flx
+
+//Module        : SDL_framerate_h
+//Timestamp     : 2006/1/8 3:36:0 UTC
+//Timestamp     : 2006/1/8 14:36:0 (local)
+//Raw Header    : /usr/include/SDL/SDL_framerate.h
+//Preprocessor  : gcc -E
+//Input file: sdl.flxcc.i
+//Flxcc Control : sdl.flxcc
+//Felix Version : 1.1.2_rc1
+
+//#define DLLINTERFACE
+//#define DLLINTERFACE __declspec(dllimport)
+//#define DLLINTERFACE __declspec(dllexport)
+//#define FPS_DEFAULT           30
+//#define FPS_LOWER_LIMIT               1
+//#define FPS_UPPER_LIMIT               200
+//#define _SDL_framerate_h
+
+open module SDL_framerate_h
+{
+  requires package "sdl";
+  header '#include "SDL_framerate.h"';
+
+  //ABSTRACT TYPES
+  type FPSmanager = 'FPSmanager';
+
+  //PROCEDURES
+  proc SDL_framerateDelay: &FPSmanager;
+  proc SDL_initFramerate: &FPSmanager;
+
+  //FUNCTIONS
+  fun SDL_getFramerate: &FPSmanager -> int;
+  fun SDL_setFramerate: &FPSmanager * int -> int;
+}
+
+@h1 SDL_gfxPrimitives.flx
+@tangle SDL_gfxPrimitives.flx
+
+
+//Module        : SDL_gfxPrimitives_h
+//Timestamp     : 2006/1/8 3:36:0 UTC
+//Timestamp     : 2006/1/8 14:36:0 (local)
+//Raw Header    : /usr/include/SDL/SDL_gfxPrimitives.h
+//Preprocessor  : gcc -E
+//Input file: sdl.flxcc.i
+//Flxcc Control : sdl.flxcc
+//Felix Version : 1.1.2_rc1
+
+//#define DLLINTERFACE
+//#define DLLINTERFACE __declspec(dllimport)
+//#define DLLINTERFACE __declspec(dllexport)
+//#define SDL_GFXPRIMITIVES_MINOR       0
+//#define SDL_GFXPRIMITIVES_MAJOR       2
+//#define M_PI  3.141592654
+//#define _SDL_gfxPrimitives_h
+
+open module SDL_gfxPrimitives_h
+{
+  requires package "sdl";
+  header '#include "SDL_gfxPrimitives.h"';
+
+  //FUNCTIONS
+  fun aacircleColor: &SDL_Surface * int16 * int16 * int16 * uint32 -> int;
+  fun aacircleRGBA: &SDL_Surface * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun aaellipseColor: &SDL_Surface * int16 * int16 * int16 * int16 * uint32 -> int;
+  fun aaellipseRGBA: &SDL_Surface * int16 * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun aalineColor: &SDL_Surface * int16 * int16 * int16 * int16 * uint32 -> int;
+  fun aalineRGBA: &SDL_Surface * int16 * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun aapolygonColor: &SDL_Surface * &int16 * &int16 * int * uint32 -> int;
+  fun aapolygonRGBA: &SDL_Surface * &int16 * &int16 * int * uint8 * uint8 * uint8 * uint8 -> int;
+  fun aatrigonColor: &SDL_Surface * int16 * int16 * int16 * int16 * int16 * int16 * uint32 -> int;
+  fun aatrigonRGBA: &SDL_Surface * int16 * int16 * int16 * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun bezierColor: &SDL_Surface * &int16 * &int16 * int * int * uint32 -> int;
+  fun bezierRGBA: &SDL_Surface * &int16 * &int16 * int * int * uint8 * uint8 * uint8 * uint8 -> int;
+  fun boxColor: &SDL_Surface * int16 * int16 * int16 * int16 * uint32 -> int;
+  fun boxRGBA: &SDL_Surface * int16 * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun characterColor: &SDL_Surface * int16 * int16 * char * uint32 -> int;
+  fun characterRGBA: &SDL_Surface * int16 * int16 * char * uint8 * uint8 * uint8 * uint8 -> int;
+  fun circleColor: &SDL_Surface * int16 * int16 * int16 * uint32 -> int;
+  fun circleRGBA: &SDL_Surface * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun ellipseColor: &SDL_Surface * int16 * int16 * int16 * int16 * uint32 -> int;
+  fun ellipseRGBA: &SDL_Surface * int16 * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun filledCircleColor: &SDL_Surface * int16 * int16 * int16 * uint32 -> int;
+  fun filledCircleRGBA: &SDL_Surface * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun filledEllipseColor: &SDL_Surface * int16 * int16 * int16 * int16 * uint32 -> int;
+  fun filledEllipseRGBA: &SDL_Surface * int16 * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun filledPolygonColor: &SDL_Surface * &int16 * &int16 * int * int -> int;
+  fun filledPolygonRGBA: &SDL_Surface * &int16 * &int16 * int * uint8 * uint8 * uint8 * uint8 -> int;
+  fun filledTrigonColor: &SDL_Surface * int16 * int16 * int16 * int16 * int16 * int16 * int -> int;
+  fun filledTrigonRGBA: &SDL_Surface * int16 * int16 * int16 * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun filledpieColor: &SDL_Surface * int16 * int16 * int16 * int16 * int16 * uint32 -> int;
+  fun filledpieRGBA: &SDL_Surface * int16 * int16 * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun hlineColor: &SDL_Surface * int16 * int16 * int16 * uint32 -> int;
+  fun hlineRGBA: &SDL_Surface * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun lineColor: &SDL_Surface * int16 * int16 * int16 * int16 * uint32 -> int;
+  fun lineRGBA: &SDL_Surface * int16 * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun pixelColor: &SDL_Surface * int16 * int16 * uint32 -> int;
+  fun pixelRGBA: &SDL_Surface * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun polygonColor: &SDL_Surface * &int16 * &int16 * int * uint32 -> int;
+  fun polygonRGBA: &SDL_Surface * &int16 * &int16 * int * uint8 * uint8 * uint8 * uint8 -> int;
+  fun rectangleColor: &SDL_Surface * int16 * int16 * int16 * int16 * uint32 -> int;
+  fun rectangleRGBA: &SDL_Surface * int16 * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun stringColor: &SDL_Surface * int16 * int16 * &char * uint32 -> int;
+  fun stringRGBA: &SDL_Surface * int16 * int16 * &char * uint8 * uint8 * uint8 * uint8 -> int;
+  fun trigonColor: &SDL_Surface * int16 * int16 * int16 * int16 * int16 * int16 * uint32 -> int;
+  fun trigonRGBA: &SDL_Surface * int16 * int16 * int16 * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun vlineColor: &SDL_Surface * int16 * int16 * int16 * uint32 -> int;
+  fun vlineRGBA: &SDL_Surface * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+}
+@h1 SDL_gfxPrimitives_font.flx
+@tangle SDL_gfxPrimitives_font.flx
+
+
+//Module        : SDL_gfxPrimitives_font_h
+//Timestamp     : 2006/1/8 3:36:0 UTC
+//Timestamp     : 2006/1/8 14:36:0 (local)
+//Raw Header    : /usr/include/SDL/SDL_gfxPrimitives_font.h
+//Preprocessor  : gcc -E
+//Input file: sdl.flxcc.i
+//Flxcc Control : sdl.flxcc
+//Felix Version : 1.1.2_rc1
+
+//#define GFX_FONTDATAMAX (8*256)
+
+open module SDL_gfxPrimitives_font_h
+{
+  requires package "sdl";
+  header '#include "SDL_gfxPrimitives_font.h"';
+
+  //VARIABLES
+  const gfxPrimitivesFontdata: &utiny = 'gfxPrimitivesFontdata';
+}
+@h1 SDL_image.flx
+@tangle SDL_image.flx
+
+
+//Module        : SDL_image_h
+//Timestamp     : 2006/1/8 3:36:0 UTC
+//Timestamp     : 2006/1/8 14:36:0 (local)
+//Raw Header    : /usr/include/SDL/SDL_image.h
+//Preprocessor  : gcc -E
+//Input file: sdl.flxcc.i
+//Flxcc Control : sdl.flxcc
+//Felix Version : 1.1.2_rc1
+
+//#define IMG_GetError  SDL_GetError
+//#define IMG_SetError  SDL_SetError
+//#define SDL_IMAGE_VERSION(X)                                          \
+//#define SDL_IMAGE_PATCHLEVEL  4
+//#define SDL_IMAGE_MINOR_VERSION       2
+//#define SDL_IMAGE_MAJOR_VERSION       1
+//#define _SDL_IMAGE_H
+
+open class SDL_image_h
+{
+  requires package "sdl2", package "sdl2_image";
+
+  fun IMG_Linked_Version: 1 -> SDL_version = "*(IMG_Linked_Version())";
+  proc IMG_Compiled_Version: &SDL_version = "SDL_IMAGE_VERSION($1);"; // macro
+  fun IMG_Compiled_Version () : SDL_version = {
+    var v: SDL_version;
+    IMG_Compiled_Version$ &v;
+    return v;
+  }
+
+  const IMG_INIT_JPG : uint32 /* = 0x00000001 */;
+  const IMG_INIT_PNG : uint32 /* = 0x00000002 */;
+  const IMG_INIT_TIF : uint32 /* = 0x00000004 */;
+  const IMG_INIT_WEBP : uint32  /* = 0x00000008 */;
+
+
+  gen IMG_Init : uint32 -> int;
+  gen IMG_GetError: 1 -> string = "::std::string(IMG_GetError())";
+  proc IMG_Quit: 1;
+
+  fun IMG_InvertAlpha: int -> int;
+  fun IMG_Load: +char -> &SDL_Surface;
+  fun IMG_LoadBMP_RW: SDL_RWops -> &SDL_Surface;
+  fun IMG_LoadGIF_RW: SDL_RWops -> &SDL_Surface;
+  fun IMG_LoadJPG_RW: SDL_RWops -> &SDL_Surface;
+  fun IMG_LoadLBM_RW: SDL_RWops -> &SDL_Surface;
+  fun IMG_LoadPCX_RW: SDL_RWops -> &SDL_Surface;
+  fun IMG_LoadPNG_RW: SDL_RWops -> &SDL_Surface;
+  fun IMG_LoadPNM_RW: SDL_RWops -> &SDL_Surface;
+  fun IMG_LoadTGA_RW: SDL_RWops -> &SDL_Surface;
+  fun IMG_LoadTIF_RW: SDL_RWops -> &SDL_Surface;
+  fun IMG_LoadTyped_RW: SDL_RWops * int * &char -> &SDL_Surface;
+  fun IMG_LoadXCF_RW: SDL_RWops -> &SDL_Surface;
+  fun IMG_LoadXPM_RW: SDL_RWops -> &SDL_Surface;
+  fun IMG_Load_RW: SDL_RWops * int -> &SDL_Surface;
+  fun IMG_ReadXPMFromArray: &&char -> &SDL_Surface;
+
+  fun IMG_isBMP: SDL_RWops -> int;
+  fun IMG_isGIF: SDL_RWops -> int;
+  fun IMG_isJPG: SDL_RWops -> int;
+  fun IMG_isLBM: SDL_RWops -> int;
+  fun IMG_isPCX: SDL_RWops -> int;
+  fun IMG_isPNG: SDL_RWops -> int;
+  fun IMG_isPNM: SDL_RWops -> int;
+  fun IMG_isTIF: SDL_RWops -> int;
+  fun IMG_isXCF: SDL_RWops -> int;
+  fun IMG_isXPM: SDL_RWops -> int;
+}
+@h1 SDL_imageFilter.flx
+@tangle SDL_imageFilter.flx
+
+//Module        : SDL_imageFilter_h
+//Timestamp     : 2006/1/8 3:36:0 UTC
+//Timestamp     : 2006/1/8 14:36:0 (local)
+//Raw Header    : /usr/include/SDL/SDL_imageFilter.h
+//Preprocessor  : gcc -E
+//Input file: sdl.flxcc.i
+//Flxcc Control : sdl.flxcc
+//Felix Version : 1.1.2_rc1
+
+//#define DLLINTERFACE
+//#define DLLINTERFACE __declspec(dllimport)
+//#define DLLINTERFACE __declspec(dllexport)
+//#define _SDL_imageFilter_h
+
+open module SDL_imageFilter_h
+{
+  requires package "sdl";
+  header '#include "SDL_imageFilter.h"';
+
+  //PROCEDURES
+  proc SDL_imageFilterAlignStack: 1;
+  proc SDL_imageFilterMMXoff: 1;
+  proc SDL_imageFilterMMXon: 1;
+  proc SDL_imageFilterRestoreStack: 1;
+
+  //FUNCTIONS
+  fun SDL_imageFilterAbsDiff: &utiny * &utiny * &utiny * int -> int;
+  fun SDL_imageFilterAdd: &utiny * &utiny * &utiny * int -> int;
+  fun SDL_imageFilterAddByte: &utiny * &utiny * int * utiny -> int;
+  fun SDL_imageFilterAddByteToHalf: &utiny * &utiny * int * utiny -> int;
+  fun SDL_imageFilterBinarizeUsingThreshold: &utiny * &utiny * int * utiny -> int;
+  fun SDL_imageFilterBitAnd: &utiny * &utiny * &utiny * int -> int;
+  fun SDL_imageFilterBitNegation: &utiny * &utiny * int -> int;
+  fun SDL_imageFilterBitOr: &utiny * &utiny * &utiny * int -> int;
+  fun SDL_imageFilterClipToRange: &utiny * &utiny * int * utiny * utiny -> int;
+  fun SDL_imageFilterConvolveKernel3x3Divide: &utiny * &utiny * int * int * &short * utiny -> int;
+  fun SDL_imageFilterConvolveKernel3x3ShiftRight: &utiny * &utiny * int * int * &short * utiny -> int;
+  fun SDL_imageFilterConvolveKernel5x5Divide: &utiny * &utiny * int * int * &short * utiny -> int;
+  fun SDL_imageFilterConvolveKernel5x5ShiftRight: &utiny * &utiny * int * int * &short * utiny -> int;
+  fun SDL_imageFilterConvolveKernel7x7Divide: &utiny * &utiny * int * int * &short * utiny -> int;
+  fun SDL_imageFilterConvolveKernel7x7ShiftRight: &utiny * &utiny * int * int * &short * utiny -> int;
+  fun SDL_imageFilterConvolveKernel9x9Divide: &utiny * &utiny * int * int * &short * utiny -> int;
+  fun SDL_imageFilterConvolveKernel9x9ShiftRight: &utiny * &utiny * int * int * &short * utiny -> int;
+  fun SDL_imageFilterDiv: &utiny * &utiny * &utiny * int -> int;
+  fun SDL_imageFilterMMXdetect: 1 -> int;
+  fun SDL_imageFilterMean: &utiny * &utiny * &utiny * int -> int;
+  fun SDL_imageFilterMult: &utiny * &utiny * &utiny * int -> int;
+  fun SDL_imageFilterMultByByte: &utiny * &utiny * int * utiny -> int;
+  fun SDL_imageFilterMultDivby2: &utiny * &utiny * &utiny * int -> int;
+  fun SDL_imageFilterMultDivby4: &utiny * &utiny * &utiny * int -> int;
+  fun SDL_imageFilterMultNor: &utiny * &utiny * &utiny * int -> int;
+  fun SDL_imageFilterNormalizeLinear: &utiny * &utiny * int * int * int * int * int -> int;
+  fun SDL_imageFilterShiftLeft: &utiny * &utiny * int * utiny -> int;
+  fun SDL_imageFilterShiftLeftByte: &utiny * &utiny * int * utiny -> int;
+  fun SDL_imageFilterShiftRight: &utiny * &utiny * int * utiny -> int;
+  fun SDL_imageFilterShiftRightAndMultByByte: &utiny * &utiny * int * utiny * utiny -> int;
+  fun SDL_imageFilterSobelX: &utiny * &utiny * int * int -> int;
+  fun SDL_imageFilterSobelXShiftRight: &utiny * &utiny * int * int * utiny -> int;
+  fun SDL_imageFilterSub: &utiny * &utiny * &utiny * int -> int;
+  fun SDL_imageFilterSubByte: &utiny * &utiny * int * utiny -> int;
+}
+
+@h1 SDL_joystick.flx
+@tangle SDL_joystick.flx
+
+
+//Module        : SDL_joystick_h
+//Timestamp     : 2006/1/6 2:18:42 UTC
+//Timestamp     : 2006/1/6 13:18:42 (local)
+//Raw Header    : SDL_joystick.h
+//Preprocessor  : gcc -E
+//Input file: sdl.flxcc.i
+//Flxcc Control : sdl.flxcc
+//Felix Version : 1.1.2_rc1
+
+//#define SDL_HAT_LEFTDOWN      (SDL_HAT_LEFT|SDL_HAT_DOWN)
+//#define SDL_HAT_LEFTUP                (SDL_HAT_LEFT|SDL_HAT_UP)
+//#define SDL_HAT_RIGHTDOWN     (SDL_HAT_RIGHT|SDL_HAT_DOWN)
+//#define SDL_HAT_RIGHTUP               (SDL_HAT_RIGHT|SDL_HAT_UP)
+//#define SDL_HAT_LEFT          0x08
+//#define SDL_HAT_DOWN          0x04
+//#define SDL_HAT_RIGHT         0x02
+//#define SDL_HAT_UP            0x01
+//#define SDL_HAT_CENTERED      0x00
+//#define _SDL_joystick_h
+
+open module SDL_joystick_h
+{
+  requires package "sdl";
+  header '#include "SDL_joystick.h"';
+
+  //PURE INCOMPLETE TYPES
+  type _struct__SDL_Joystick = 'struct _SDL_Joystick'; //local
+
+  //STRUCT or UNION TAG ALIASES
+  typedef SDL_Joystick = _struct__SDL_Joystick;
+
+  //PROCEDURES
+  proc SDL_JoystickClose: &SDL_Joystick;
+  proc SDL_JoystickUpdate: 1;
+
+  //FUNCTIONS
+  fun SDL_JoystickEventState: int -> int;
+  fun SDL_JoystickGetAxis: &SDL_Joystick * int -> int16;
+  fun SDL_JoystickGetBall: &SDL_Joystick * int * &int * &int -> int;
+  fun SDL_JoystickGetButton: &SDL_Joystick * int -> uint8;
+  fun SDL_JoystickGetHat: &SDL_Joystick * int -> uint8;
+  fun SDL_JoystickIndex: &SDL_Joystick -> int;
+  fun SDL_JoystickName: int -> &char;
+  fun SDL_JoystickNumAxes: &SDL_Joystick -> int;
+  fun SDL_JoystickNumBalls: &SDL_Joystick -> int;
+  fun SDL_JoystickNumButtons: &SDL_Joystick -> int;
+  fun SDL_JoystickNumHats: &SDL_Joystick -> int;
+  fun SDL_JoystickOpen: int -> &SDL_Joystick;
+  fun SDL_JoystickOpened: int -> int;
+  fun SDL_NumJoysticks: 1 -> int;
+}
+@h1 SDL_keyboard.flx
+@tangle SDL_keyboard.flx
+
+//#define SDL_DEFAULT_REPEAT_INTERVAL   30
+//#define SDL_DEFAULT_REPEAT_DELAY      500
+//#define SDL_ALL_HOTKEYS               0xFFFFFFFF
+//#define _SDL_keyboard_h
+
+open module SDL_keyboard_h
+{
+  requires package "sdl2";
+
+  /**
+   *  \brief The SDL keysym structure, used in key events.
+   */
+  typedef struct SDL_Keysym
+  {
+      SDL_Scancode scancode;      /**< SDL physical key code - see ::SDL_Scancode for details */
+      SDL_Keycode sym;            /**< SDL virtual key code - see ::SDL_Keycode for details */
+      uint16 mod;                 /**< current key modifiers */
+      uint32 unicode;             /**< \deprecated use SDL_TextInputEvent instead */
+  } SDL_Keysym;
+
+
+/*
+  /*
+  //TYPE ALIASES
+  typedef _struct_SDL_keysym = SDL_keysym;
+  */
+
+  //PROCEDURES
+  proc SDL_SetModState: SDLMod;
+
+  //FUNCTIONS
+  fun SDL_EnableKeyRepeat: int * int -> int;
+  fun SDL_EnableUNICODE: int -> int;
+  fun SDL_GetKeyName: SDLKey -> &char;
+  fun SDL_GetKeyState: &int -> &uint8;
+  fun SDL_GetModState: 1 -> SDLMod;
+*/
+
+}
+
+@h1 SDL_keycode.flx
+@tangle SDL_keycode.flx
+
+open class SDL_keycode_h
+{
+  requires package "sdl2";
+
+  cenum SDL_Keycode =
+      SDLK_UNKNOWN,
+
+      SDLK_RETURN,
+      SDLK_ESCAPE,
+      SDLK_BACKSPACE,
+      SDLK_TAB,
+      SDLK_SPACE,
+      SDLK_EXCLAIM,
+      SDLK_QUOTEDBL,
+      SDLK_HASH,
+      SDLK_PERCENT,
+      SDLK_DOLLAR,
+      SDLK_AMPERSAND,
+      SDLK_QUOTE,
+      SDLK_LEFTPAREN,
+      SDLK_RIGHTPAREN,
+      SDLK_ASTERISK,
+      SDLK_PLUS,
+      SDLK_COMMA,
+      SDLK_MINUS,
+      SDLK_PERIOD,
+      SDLK_SLASH,
+      SDLK_0,
+      SDLK_1,
+      SDLK_2,
+      SDLK_3,
+      SDLK_4,
+      SDLK_5,
+      SDLK_6,
+      SDLK_7,
+      SDLK_8,
+      SDLK_9,
+      SDLK_COLON,
+      SDLK_SEMICOLON,
+      SDLK_LESS,
+      SDLK_EQUALS,
+      SDLK_GREATER,
+      SDLK_QUESTION,
+      SDLK_AT,
+      /*
+         Skip uppercase letters
+       */
+      SDLK_LEFTBRACKET,
+      SDLK_BACKSLASH,
+      SDLK_RIGHTBRACKET,
+      SDLK_CARET,
+      SDLK_UNDERSCORE,
+      SDLK_BACKQUOTE,
+      SDLK_a,
+      SDLK_b,
+      SDLK_c,
+      SDLK_d,
+      SDLK_e,
+      SDLK_f,
+      SDLK_g,
+      SDLK_h,
+      SDLK_i,
+      SDLK_j,
+      SDLK_k,
+      SDLK_l,
+      SDLK_m,
+      SDLK_n,
+      SDLK_o,
+      SDLK_p,
+      SDLK_q,
+      SDLK_r,
+      SDLK_s,
+      SDLK_t,
+      SDLK_u,
+      SDLK_v,
+      SDLK_w,
+      SDLK_x,
+      SDLK_y,
+      SDLK_z,
+
+      SDLK_CAPSLOCK,
+
+      SDLK_F1,
+      SDLK_F2,
+      SDLK_F3,
+      SDLK_F4,
+      SDLK_F5,
+      SDLK_F6,
+      SDLK_F7,
+      SDLK_F8,
+      SDLK_F9,
+      SDLK_F10,
+      SDLK_F11,
+      SDLK_F12,
+
+      SDLK_PRINTSCREEN,
+      SDLK_SCROLLLOCK,
+      SDLK_PAUSE,
+      SDLK_INSERT,
+      SDLK_HOME,
+      SDLK_PAGEUP,
+      SDLK_DELETE,
+      SDLK_END,
+      SDLK_PAGEDOWN,
+      SDLK_RIGHT,
+      SDLK_LEFT,
+      SDLK_DOWN,
+      SDLK_UP,
+
+      SDLK_NUMLOCKCLEAR,
+      SDLK_KP_DIVIDE,
+      SDLK_KP_MULTIPLY,
+      SDLK_KP_MINUS,
+      SDLK_KP_PLUS,
+      SDLK_KP_ENTER,
+      SDLK_KP_1,
+      SDLK_KP_2,
+      SDLK_KP_3,
+      SDLK_KP_4,
+      SDLK_KP_5,
+      SDLK_KP_6,
+      SDLK_KP_7,
+      SDLK_KP_8,
+      SDLK_KP_9,
+      SDLK_KP_0,
+      SDLK_KP_PERIOD,
+
+      SDLK_APPLICATION,
+      SDLK_POWER,
+      SDLK_KP_EQUALS,
+      SDLK_F13,
+      SDLK_F14,
+      SDLK_F15,
+      SDLK_F16,
+      SDLK_F17,
+      SDLK_F18,
+      SDLK_F19,
+      SDLK_F20,
+      SDLK_F21,
+      SDLK_F22,
+      SDLK_F23,
+      SDLK_F24,
+      SDLK_EXECUTE,
+      SDLK_HELP,
+      SDLK_MENU,
+      SDLK_SELECT,
+      SDLK_STOP,
+      SDLK_AGAIN,
+      SDLK_UNDO,
+      SDLK_CUT,
+      SDLK_COPY,
+      SDLK_PASTE,
+      SDLK_FIND,
+      SDLK_MUTE,
+      SDLK_VOLUMEUP,
+      SDLK_VOLUMEDOWN,
+      SDLK_KP_COMMA,
+      SDLK_KP_EQUALSAS400,
+
+      SDLK_ALTERASE,
+      SDLK_SYSREQ,
+      SDLK_CANCEL,
+      SDLK_CLEAR,
+      SDLK_PRIOR,
+      SDLK_RETURN2,
+      SDLK_SEPARATOR,
+      SDLK_OUT,
+      SDLK_OPER,
+      SDLK_CLEARAGAIN,
+      SDLK_CRSEL,
+      SDLK_EXSEL,
+
+      SDLK_KP_00,
+      SDLK_KP_000,
+      SDLK_THOUSANDSSEPARATOR,
+      SDLK_DECIMALSEPARATOR,
+      SDLK_CURRENCYUNIT,
+      SDLK_CURRENCYSUBUNIT,
+      SDLK_KP_LEFTPAREN,
+      SDLK_KP_RIGHTPAREN,
+      SDLK_KP_LEFTBRACE,
+      SDLK_KP_RIGHTBRACE,
+      SDLK_KP_TAB,
+      SDLK_KP_BACKSPACE,
+      SDLK_KP_A,
+      SDLK_KP_B,
+      SDLK_KP_C,
+      SDLK_KP_D,
+      SDLK_KP_E,
+      SDLK_KP_F,
+      SDLK_KP_XOR,
+      SDLK_KP_POWER,
+      SDLK_KP_PERCENT,
+      SDLK_KP_LESS,
+      SDLK_KP_GREATER,
+      SDLK_KP_AMPERSAND,
+      SDLK_KP_DBLAMPERSAND,
+      SDLK_KP_VERTICALBAR,
+      SDLK_KP_DBLVERTICALBAR,
+      SDLK_KP_COLON,
+      SDLK_KP_HASH,
+      SDLK_KP_SPACE,
+      SDLK_KP_AT,
+      SDLK_KP_EXCLAM,
+      SDLK_KP_MEMSTORE,
+      SDLK_KP_MEMRECALL,
+      SDLK_KP_MEMCLEAR,
+      SDLK_KP_MEMADD,
+      SDLK_KP_MEMSUBTRACT,
+      SDLK_KP_MEMMULTIPLY,
+      SDLK_KP_MEMDIVIDE,
+      SDLK_KP_PLUSMINUS,
+      SDLK_KP_CLEAR,
+      SDLK_KP_CLEARENTRY,
+      SDLK_KP_BINARY,
+      SDLK_KP_OCTAL,
+      SDLK_KP_DECIMAL,
+      SDLK_KP_HEXADECIMAL,
+
+      SDLK_LCTRL,
+      SDLK_LSHIFT,
+      SDLK_LALT,
+      SDLK_LGUI,
+      SDLK_RCTRL,
+      SDLK_RSHIFT,
+      SDLK_RALT,
+      SDLK_RGUI,
+
+      SDLK_MODE,
+
+      SDLK_AUDIONEXT,
+      SDLK_AUDIOPREV,
+      SDLK_AUDIOSTOP,
+      SDLK_AUDIOPLAY,
+      SDLK_AUDIOMUTE,
+      SDLK_MEDIASELECT,
+      SDLK_WWW,
+      SDLK_MAIL,
+      SDLK_CALCULATOR,
+      SDLK_COMPUTER,
+      SDLK_AC_SEARCH,
+      SDLK_AC_HOME,
+      SDLK_AC_BACK,
+      SDLK_AC_FORWARD,
+      SDLK_AC_STOP,
+      SDLK_AC_REFRESH,
+      SDLK_AC_BOOKMARKS,
+
+      SDLK_BRIGHTNESSDOWN,
+      SDLK_BRIGHTNESSUP,
+      SDLK_DISPLAYSWITCH,
+      SDLK_KBDILLUMTOGGLE,
+      SDLK_KBDILLUMDOWN,
+      SDLK_KBDILLUMUP,
+      SDLK_EJECT,
+      SDLK_SLEEP
+  ;
+  ctor int : SDL_Keycode = "(int)$1";
+  ctor SDL_Keycode : int = "(SDL_Keycode)$1";
+
+  instance Str[SDL_Keycode] {
+    fun str : SDL_Keycode -> string =
+      | $(SDLK_UNKNOWN) => "SDLK_UNKNOWN"
+
+      | $(SDLK_RETURN) => "SDLK_RETURN"
+      | $(SDLK_ESCAPE) => "SDLK_ESCAPE"
+      | $(SDLK_BACKSPACE) => "SDLK_BACKSPACE"
+      | $(SDLK_TAB) => "SDLK_TAB"
+      | $(SDLK_SPACE) => "SDLK_SPACE"
+      | $(SDLK_EXCLAIM) => "SDLK_EXCLAIM"
+      | $(SDLK_QUOTEDBL) => "SDLK_QUOTEDBL"
+      | $(SDLK_HASH) => "SDLK_HASH"
+      | $(SDLK_PERCENT) => "SDLK_PERCENT"
+      | $(SDLK_DOLLAR) => "SDLK_DOLLAR"
+      | $(SDLK_AMPERSAND) => "SDLK_AMPERSAND"
+      | $(SDLK_QUOTE) => "SDLK_QUOTE"
+      | $(SDLK_LEFTPAREN) => "SDLK_LEFTPAREN"
+      | $(SDLK_RIGHTPAREN) => "SDLK_RIGHTPAREN"
+      | $(SDLK_ASTERISK) => "SDLK_ASTERISK"
+      | $(SDLK_PLUS) => "SDLK_PLUS"
+      | $(SDLK_COMMA) => "SDLK_COMMA"
+      | $(SDLK_MINUS) => "SDLK_MINUS"
+      | $(SDLK_PERIOD) => "SDLK_PERIOD"
+      | $(SDLK_SLASH) => "SDLK_SLASH"
+      | $(SDLK_0) => "SDLK_0"
+      | $(SDLK_1) => "SDLK_1"
+      | $(SDLK_2) => "SDLK_2"
+      | $(SDLK_3) => "SDLK_3"
+      | $(SDLK_4) => "SDLK_4"
+      | $(SDLK_5) => "SDLK_5"
+      | $(SDLK_6) => "SDLK_6"
+      | $(SDLK_7) => "SDLK_7"
+      | $(SDLK_8) => "SDLK_8"
+      | $(SDLK_9) => "SDLK_9"
+      | $(SDLK_COLON) => "SDLK_COLON"
+      | $(SDLK_SEMICOLON) => "SDLK_SEMICOLON"
+      | $(SDLK_LESS) => "SDLK_LESS"
+      | $(SDLK_EQUALS) => "SDLK_EQUALS"
+      | $(SDLK_GREATER) => "SDLK_GREATER"
+      | $(SDLK_QUESTION) => "SDLK_QUESTION"
+      | $(SDLK_AT) => "SDLK_AT"
+      /*
+         Skip uppercase letters
+       */
+      | $(SDLK_LEFTBRACKET) => "SDLK_LEFTBRACKET"
+      | $(SDLK_BACKSLASH) => "SDLK_BACKSLASH"
+      | $(SDLK_RIGHTBRACKET) => "SDLK_RIGHTBRACKET"
+      | $(SDLK_CARET) => "SDLK_CARET"
+      | $(SDLK_UNDERSCORE) => "SDLK_UNDERSCORE"
+      | $(SDLK_BACKQUOTE) => "SDLK_BACKQUOTE"
+      | $(SDLK_a) => "SDLK_a"
+      | $(SDLK_b) => "SDLK_b"
+      | $(SDLK_c) => "SDLK_c"
+      | $(SDLK_d) => "SDLK_d"
+      | $(SDLK_e) => "SDLK_e"
+      | $(SDLK_f) => "SDLK_f"
+      | $(SDLK_g) => "SDLK_g"
+      | $(SDLK_h) => "SDLK_h"
+      | $(SDLK_i) => "SDLK_i"
+      | $(SDLK_j) => "SDLK_j"
+      | $(SDLK_k) => "SDLK_k"
+      | $(SDLK_l) => "SDLK_l"
+      | $(SDLK_m) => "SDLK_m"
+      | $(SDLK_n) => "SDLK_n"
+      | $(SDLK_o) => "SDLK_o"
+      | $(SDLK_p) => "SDLK_p"
+      | $(SDLK_q) => "SDLK_q"
+      | $(SDLK_r) => "SDLK_r"
+      | $(SDLK_s) => "SDLK_s"
+      | $(SDLK_t) => "SDLK_t"
+      | $(SDLK_u) => "SDLK_u"
+      | $(SDLK_v) => "SDLK_v"
+      | $(SDLK_w) => "SDLK_w"
+      | $(SDLK_x) => "SDLK_x"
+      | $(SDLK_y) => "SDLK_y"
+      | $(SDLK_z) => "SDLK_z"
+
+      | $(SDLK_CAPSLOCK) => "SDLK_CAPSLOCK"
+
+      | $(SDLK_F1) => "SDLK_F1"
+      | $(SDLK_F2) => "SDLK_F2"
+      | $(SDLK_F3) => "SDLK_F3"
+      | $(SDLK_F4) => "SDLK_F4"
+      | $(SDLK_F5) => "SDLK_F5"
+      | $(SDLK_F6) => "SDLK_F6"
+      | $(SDLK_F7) => "SDLK_F7"
+      | $(SDLK_F8) => "SDLK_F8"
+      | $(SDLK_F9) => "SDLK_F9"
+      | $(SDLK_F10) => "SDLK_F10"
+      | $(SDLK_F11) => "SDLK_F11"
+      | $(SDLK_F12) => "SDLK_F12"
+
+      | $(SDLK_PRINTSCREEN) => "SDLK_PRINTSCREEN"
+      | $(SDLK_SCROLLLOCK) => "SDLK_SCROLLLOCK"
+      | $(SDLK_PAUSE) => "SDLK_PAUSE"
+      | $(SDLK_INSERT) => "SDLK_INSERT"
+      | $(SDLK_HOME) => "SDLK_HOME"
+      | $(SDLK_PAGEUP) => "SDLK_PAGEUP"
+      | $(SDLK_DELETE) => "SDLK_DELETE"
+      | $(SDLK_END) => "SDLK_END"
+      | $(SDLK_PAGEDOWN) => "SDLK_PAGEDOWN"
+      | $(SDLK_RIGHT) => "SDLK_RIGHT"
+      | $(SDLK_LEFT) => "SDLK_LEFT"
+      | $(SDLK_DOWN) => "SDLK_DOWN"
+      | $(SDLK_UP) => "SDLK_UP"
+
+      | $(SDLK_NUMLOCKCLEAR) => "SDLK_NUMLOCKCLEAR"
+      | $(SDLK_KP_DIVIDE) => "SDLK_KP_DIVIDE"
+      | $(SDLK_KP_MULTIPLY) => "SDLK_KP_MULTIPLY"
+      | $(SDLK_KP_MINUS) => "SDLK_KP_MINUS"
+      | $(SDLK_KP_PLUS) => "SDLK_KP_PLUS"
+      | $(SDLK_KP_ENTER) => "SDLK_KP_ENTER"
+      | $(SDLK_KP_1) => "SDLK_KP_1"
+      | $(SDLK_KP_2) => "SDLK_KP_2"
+      | $(SDLK_KP_3) => "SDLK_KP_3"
+      | $(SDLK_KP_4) => "SDLK_KP_4"
+      | $(SDLK_KP_5) => "SDLK_KP_5"
+      | $(SDLK_KP_6) => "SDLK_KP_6"
+      | $(SDLK_KP_7) => "SDLK_KP_7"
+      | $(SDLK_KP_8) => "SDLK_KP_8"
+      | $(SDLK_KP_9) => "SDLK_KP_9"
+      | $(SDLK_KP_0) => "SDLK_KP_0"
+      | $(SDLK_KP_PERIOD) => "SDLK_KP_PERIOD"
+
+      | $(SDLK_APPLICATION) => "SDLK_APPLICATION"
+      | $(SDLK_POWER) => "SDLK_POWER"
+      | $(SDLK_KP_EQUALS) => "SDLK_KP_EQUALS"
+      | $(SDLK_F13) => "SDLK_F13"
+      | $(SDLK_F14) => "SDLK_F14"
+      | $(SDLK_F15) => "SDLK_F15"
+      | $(SDLK_F16) => "SDLK_F16"
+      | $(SDLK_F17) => "SDLK_F17"
+      | $(SDLK_F18) => "SDLK_F18"
+      | $(SDLK_F19) => "SDLK_F19"
+      | $(SDLK_F20) => "SDLK_F20"
+      | $(SDLK_F21) => "SDLK_F21"
+      | $(SDLK_F22) => "SDLK_F22"
+      | $(SDLK_F23) => "SDLK_F23"
+      | $(SDLK_F24) => "SDLK_F24"
+      | $(SDLK_EXECUTE) => "SDLK_EXECUTE"
+      | $(SDLK_HELP) => "SDLK_HELP"
+      | $(SDLK_MENU) => "SDLK_MENU"
+      | $(SDLK_SELECT) => "SDLK_SELECT"
+      | $(SDLK_STOP) => "SDLK_STOP"
+      | $(SDLK_AGAIN) => "SDLK_AGAIN"
+      | $(SDLK_UNDO) => "SDLK_UNDO"
+      | $(SDLK_CUT) => "SDLK_CUT"
+      | $(SDLK_COPY) => "SDLK_COPY"
+      | $(SDLK_PASTE) => "SDLK_PASTE"
+      | $(SDLK_FIND) => "SDLK_FIND"
+      | $(SDLK_MUTE) => "SDLK_MUTE"
+      | $(SDLK_VOLUMEUP) => "SDLK_VOLUMEUP"
+      | $(SDLK_VOLUMEDOWN) => "SDLK_VOLUMEDOWN"
+      | $(SDLK_KP_COMMA) => "SDLK_KP_COMMA"
+      | $(SDLK_KP_EQUALSAS400) => "SDLK_KP_EQUALSAS400"
+
+      | $(SDLK_ALTERASE) => "SDLK_ALTERASE"
+      | $(SDLK_SYSREQ) => "SDLK_SYSREQ"
+      | $(SDLK_CANCEL) => "SDLK_CANCEL"
+      | $(SDLK_CLEAR) => "SDLK_CLEAR"
+      | $(SDLK_PRIOR) => "SDLK_PRIOR"
+      | $(SDLK_RETURN2) => "SDLK_RETURN2"
+      | $(SDLK_SEPARATOR) => "SDLK_SEPARATOR"
+      | $(SDLK_OUT) => "SDLK_OUT"
+      | $(SDLK_OPER) => "SDLK_OPER"
+      | $(SDLK_CLEARAGAIN) => "SDLK_CLEARAGAIN"
+      | $(SDLK_CRSEL) => "SDLK_CRSEL"
+      | $(SDLK_EXSEL) => "SDLK_EXSEL"
+
+      | $(SDLK_KP_00) => "SDLK_KP_00"
+      | $(SDLK_KP_000) => "SDLK_KP_000"
+      | $(SDLK_THOUSANDSSEPARATOR) => "SDLK_THOUSANDSSEPARATOR"
+      | $(SDLK_DECIMALSEPARATOR) => "SDLK_DECIMALSEPARATOR"
+      | $(SDLK_CURRENCYUNIT) => "SDLK_CURRENCYUNIT"
+      | $(SDLK_CURRENCYSUBUNIT) => "SDLK_CURRENCYSUBUNIT"
+      | $(SDLK_KP_LEFTPAREN) => "SDLK_KP_LEFTPAREN"
+      | $(SDLK_KP_RIGHTPAREN) => "SDLK_KP_RIGHTPAREN"
+      | $(SDLK_KP_LEFTBRACE) => "SDLK_KP_LEFTBRACE"
+      | $(SDLK_KP_RIGHTBRACE) => "SDLK_KP_RIGHTBRACE"
+      | $(SDLK_KP_TAB) => "SDLK_KP_TAB"
+      | $(SDLK_KP_BACKSPACE) => "SDLK_KP_BACKSPACE"
+      | $(SDLK_KP_A) => "SDLK_KP_A"
+      | $(SDLK_KP_B) => "SDLK_KP_B"
+      | $(SDLK_KP_C) => "SDLK_KP_C"
+      | $(SDLK_KP_D) => "SDLK_KP_D"
+      | $(SDLK_KP_E) => "SDLK_KP_E"
+      | $(SDLK_KP_F) => "SDLK_KP_F"
+      | $(SDLK_KP_XOR) => "SDLK_KP_XOR"
+      | $(SDLK_KP_POWER) => "SDLK_KP_POWER"
+      | $(SDLK_KP_PERCENT) => "SDLK_KP_PERCENT"
+      | $(SDLK_KP_LESS) => "SDLK_KP_LESS"
+      | $(SDLK_KP_GREATER) => "SDLK_KP_GREATER"
+      | $(SDLK_KP_AMPERSAND) => "SDLK_KP_AMPERSAND"
+      | $(SDLK_KP_DBLAMPERSAND) => "SDLK_KP_DBLAMPERSAND"
+      | $(SDLK_KP_VERTICALBAR) => "SDLK_KP_VERTICALBAR"
+      | $(SDLK_KP_DBLVERTICALBAR) => "SDLK_KP_DBLVERTICALBAR"
+      | $(SDLK_KP_COLON) => "SDLK_KP_COLON"
+      | $(SDLK_KP_HASH) => "SDLK_KP_HASH"
+      | $(SDLK_KP_SPACE) => "SDLK_KP_SPACE"
+      | $(SDLK_KP_AT) => "SDLK_KP_AT"
+      | $(SDLK_KP_EXCLAM) => "SDLK_KP_EXCLAM"
+      | $(SDLK_KP_MEMSTORE) => "SDLK_KP_MEMSTORE"
+      | $(SDLK_KP_MEMRECALL) => "SDLK_KP_MEMRECALL"
+      | $(SDLK_KP_MEMCLEAR) => "SDLK_KP_MEMCLEAR"
+      | $(SDLK_KP_MEMADD) => "SDLK_KP_MEMADD"
+      | $(SDLK_KP_MEMSUBTRACT) => "SDLK_KP_MEMSUBTRACT"
+      | $(SDLK_KP_MEMMULTIPLY) => "SDLK_KP_MEMMULTIPLY"
+      | $(SDLK_KP_MEMDIVIDE) => "SDLK_KP_MEMDIVIDE"
+      | $(SDLK_KP_PLUSMINUS) => "SDLK_KP_PLUSMINUS"
+      | $(SDLK_KP_CLEAR) => "SDLK_KP_CLEAR"
+      | $(SDLK_KP_CLEARENTRY) => "SDLK_KP_CLEARENTRY"
+      | $(SDLK_KP_BINARY) => "SDLK_KP_BINARY"
+      | $(SDLK_KP_OCTAL) => "SDLK_KP_OCTAL"
+      | $(SDLK_KP_DECIMAL) => "SDLK_KP_DECIMAL"
+      | $(SDLK_KP_HEXADECIMAL) => "SDLK_KP_HEXADECIMAL"
+
+      | $(SDLK_LCTRL) => "SDLK_LCTRL"
+      | $(SDLK_LSHIFT) => "SDLK_LSHIFT"
+      | $(SDLK_LALT) => "SDLK_LALT"
+      | $(SDLK_LGUI) => "SDLK_LGUI"
+      | $(SDLK_RCTRL) => "SDLK_RCTRL"
+      | $(SDLK_RSHIFT) => "SDLK_RSHIFT"
+      | $(SDLK_RALT) => "SDLK_RALT"
+      | $(SDLK_RGUI) => "SDLK_RGUI"
+
+      | $(SDLK_MODE) => "SDLK_MODE"
+
+      | $(SDLK_AUDIONEXT) => "SDLK_AUDIONEXT"
+      | $(SDLK_AUDIOPREV) => "SDLK_AUDIOPREV"
+      | $(SDLK_AUDIOSTOP) => "SDLK_AUDIOSTOP"
+      | $(SDLK_AUDIOPLAY) => "SDLK_AUDIOPLAY"
+      | $(SDLK_AUDIOMUTE) => "SDLK_AUDIOMUTE"
+      | $(SDLK_MEDIASELECT) => "SDLK_MEDIASELECT"
+      | $(SDLK_WWW) => "SDLK_WWW"
+      | $(SDLK_MAIL) => "SDLK_MAIL"
+      | $(SDLK_CALCULATOR) => "SDLK_CALCULATOR"
+      | $(SDLK_COMPUTER) => "SDLK_COMPUTER"
+      | $(SDLK_AC_SEARCH) => "SDLK_AC_SEARCH"
+      | $(SDLK_AC_HOME) => "SDLK_AC_HOME"
+      | $(SDLK_AC_BACK) => "SDLK_AC_BACK"
+      | $(SDLK_AC_FORWARD) => "SDLK_AC_FORWARD"
+      | $(SDLK_AC_STOP) => "SDLK_AC_STOP"
+      | $(SDLK_AC_REFRESH) => "SDLK_AC_REFRESH"
+      | $(SDLK_AC_BOOKMARKS) => "SDLK_AC_BOOKMARKS"
+
+      | $(SDLK_BRIGHTNESSDOWN) => "SDLK_BRIGHTNESSDOWN"
+      | $(SDLK_BRIGHTNESSUP) => "SDLK_BRIGHTNESSUP"
+      | $(SDLK_DISPLAYSWITCH) => "SDLK_DISPLAYSWITCH"
+      | $(SDLK_KBDILLUMTOGGLE) => "SDLK_KBDILLUMTOGGLE"
+      | $(SDLK_KBDILLUMDOWN) => "SDLK_KBDILLUMDOWN"
+      | $(SDLK_KBDILLUMUP) => "SDLK_KBDILLUMUP"
+      | $(SDLK_EJECT) => "SDLK_EJECT"
+      | $(SDLK_SLEEP) => "SDL_EJECT"
+      | other => "KEY_"+other.int.str
+    ;
+  }
+  /**
+   * \brief Enumeration of valid key mods (possibly OR'd together).
+   */
+  cflags SDL_Keymod =
+    KMOD_NONE,
+    KMOD_LSHIFT,
+    KMOD_RSHIFT,
+    KMOD_LCTRL,
+    KMOD_RCTRL,
+    KMOD_LALT,
+    KMOD_RALT,
+    KMOD_LGUI,
+    KMOD_RGUI,
+    KMOD_NUM,
+    KMOD_CAPS,
+    KMOD_MODE,
+    KMOD_RESERVED,
+    KMOD_CTRL,
+    KMOD_SHIFT,
+    KMOD_ALT,
+    KMOD_GUI
+  ;
+  ctor uint16 : SDL_Keymod = "$1";
+
+  fun strmods (m:uint16) =
+  {
+    var mods = "";
+    if m \& KMOD_LSHIFT.uint16 != 0u16 do mods += "LSHIFT-"; done;
+    if m \& KMOD_RSHIFT.uint16 != 0u16 do mods += "RSHIFT-"; done;
+    if m \& KMOD_LCTRL.uint16 != 0u16 do mods += "LCTRL-"; done;
+    if m \& KMOD_RCTRL.uint16 != 0u16 do mods += "RCTRL-"; done;
+    if m \& KMOD_LALT.uint16 != 0u16 do mods += "LALT-"; done;
+    if m \& KMOD_RALT.uint16 != 0u16 do mods += "RALT-"; done;
+    if m \& KMOD_LGUI.uint16 != 0u16 do mods += "LGUI-"; done;
+    if m \& KMOD_RGUI.uint16 != 0u16 do mods += "RGUI-"; done;
+    if m \& KMOD_NUM.uint16 != 0u16 do mods += "NUM-"; done;
+    if m \& KMOD_CAPS.uint16 != 0u16 do mods += "CAPS-"; done;
+    if m \& KMOD_MODE.uint16 != 0u16 do mods += "MODE-"; done;
+    return mods;
+  }
+
+}
+
+
+@h1 SDL_mixer.flx
+@tangle SDL_mixer.flx
+
+//Module        : SDL_mixer_h
+//Timestamp     : 2006/1/8 3:36:0 UTC
+//Timestamp     : 2006/1/8 14:36:0 (local)
+//Raw Header    : /usr/include/SDL/SDL_mixer.h
+//Preprocessor  : gcc -E
+//Input file: sdl.flxcc.i
+//Flxcc Control : sdl.flxcc
+//Felix Version : 1.1.2_rc1
+
+//#define Mix_GetError  SDL_GetError
+//#define Mix_SetError  SDL_SetError
+//#define Mix_FadeInChannel(channel,chunk,loops,ms) Mix_FadeInChannelTimed(channel,chunk,loops,ms,-1)
+//#define Mix_PlayChannel(channel,chunk,loops) Mix_PlayChannelTimed(channel,chunk,loops,-1)
+//#define MIX_EFFECTSMAXSPEED  "MIX_EFFECTSMAXSPEED"
+//#define MIX_CHANNEL_POST  -2
+//#define Mix_LoadWAV(file)     Mix_LoadWAV_RW(SDL_RWFromFile(file, "rb"), 1)
+//#define MIX_MAX_VOLUME                128     /* Volume of a chunk */
+//#define MIX_DEFAULT_CHANNELS  2
+//#define MIX_DEFAULT_FORMAT    AUDIO_S16MSB
+//#define MIX_DEFAULT_FORMAT    AUDIO_S16LSB
+//#define MIX_DEFAULT_FREQUENCY 22050
+//#define MIX_CHANNELS  8
+//#define MIX_VERSION(X)                SDL_MIXER_VERSION(X)
+//#define MIX_PATCHLEVEL                SDL_MIXER_PATCHLEVEL
+//#define MIX_MINOR_VERSION     SDL_MIXER_MINOR_VERSION
+//#define MIX_MAJOR_VERSION     SDL_MIXER_MAJOR_VERSION
+//#define SDL_MIXER_VERSION(X)                                          \
+//#define SDL_MIXER_PATCHLEVEL  6
+//#define SDL_MIXER_MINOR_VERSION       2
+//#define SDL_MIXER_MAJOR_VERSION       1
+//#define _SDL_MIXER_H
+
+open module SDL_mixer_h
+{
+  requires package "sdl";
+  header '#include "SDL_mixer.h"';
+
+  //ABSTRACT TYPES
+  type Mix_MusicType = 'Mix_MusicType';
+  type Mix_Chunk = 'Mix_Chunk';
+  type Mix_Fading = 'Mix_Fading';
+
+  //C FUNCTION POINTER TYPES
+  header '''typedef void (*SDL_mixer_h_cft_3)(void *, Uint8 *, int);''';
+  type SDL_mixer_h_cft_3 = 'SDL_mixer_h_cft_3';
+  header '''typedef void (*SDL_mixer_h_cft_1)(int, void *, int,  void *);''';
+  type SDL_mixer_h_cft_1 = 'SDL_mixer_h_cft_1';
+  header '''typedef void (*SDL_mixer_h_cft_2)(int, void *);''';
+  type SDL_mixer_h_cft_2 = 'SDL_mixer_h_cft_2';
+  header '''typedef void (*SDL_mixer_h_cft_5)(int);''';
+  type SDL_mixer_h_cft_5 = 'SDL_mixer_h_cft_5';
+  header '''typedef void (*SDL_mixer_h_cft_4)(void);''';
+  type SDL_mixer_h_cft_4 = 'SDL_mixer_h_cft_4';
+
+  //PURE INCOMPLETE TYPES
+  type _struct__Mix_Music = 'struct _Mix_Music'; //local
+
+  //STRUCT or UNION TAG ALIASES
+  typedef Mix_Music = _struct__Mix_Music;
+
+  //TYPE ALIASES
+  typedef Mix_EffectDone_t = SDL_mixer_h_cft_2;
+  typedef Mix_EffectFunc_t = SDL_mixer_h_cft_1;
+
+  //ENUMERATION CONSTANTS
+  const MUS_CMD: int = 'MUS_CMD';
+  const MIX_FADING_OUT: int = 'MIX_FADING_OUT';
+  const MIX_NO_FADING: int = 'MIX_NO_FADING';
+  const MIX_FADING_IN: int = 'MIX_FADING_IN';
+  const MUS_WAV: int = 'MUS_WAV';
+  const MUS_MID: int = 'MUS_MID';
+  const MUS_OGG: int = 'MUS_OGG';
+  const MUS_NONE: int = 'MUS_NONE';
+  const MUS_MOD: int = 'MUS_MOD';
+  const MUS_MP3: int = 'MUS_MP3';
+
+  //PROCEDURES
+  proc Mix_ChannelFinished: SDL_mixer_h_cft_5;
+  proc Mix_CloseAudio: 1;
+  proc Mix_FreeChunk: &Mix_Chunk;
+  proc Mix_FreeMusic: &Mix_Music;
+  proc Mix_HookMusic: SDL_mixer_h_cft_3 * address;
+  proc Mix_HookMusicFinished: SDL_mixer_h_cft_4;
+  proc Mix_Pause: int;
+  proc Mix_PauseMusic: 1;
+  proc Mix_Resume: int;
+  proc Mix_ResumeMusic: 1;
+  proc Mix_RewindMusic: 1;
+  proc Mix_SetPostMix: SDL_mixer_h_cft_3 * address;
+
+  //FUNCTIONS
+  fun Mix_AllocateChannels: int -> int;
+  fun Mix_ExpireChannel: int * int -> int;
+  fun Mix_FadeInChannelTimed: int * &Mix_Chunk * int * int * int -> int;
+  fun Mix_FadeInMusic: &Mix_Music * int * int -> int;
+  fun Mix_FadeInMusicPos: &Mix_Music * int * int * double -> int;
+  fun Mix_FadeOutChannel: int * int -> int;
+  fun Mix_FadeOutGroup: int * int -> int;
+  fun Mix_FadeOutMusic: int -> int;
+  fun Mix_FadingChannel: int -> Mix_Fading;
+  fun Mix_FadingMusic: 1 -> Mix_Fading;
+  fun Mix_GetChunk: int -> &Mix_Chunk;
+  fun Mix_GetMusicHookData: 1 -> address;
+  fun Mix_GetMusicType: &Mix_Music -> Mix_MusicType;
+  fun Mix_GetSynchroValue: 1 -> int;
+  fun Mix_GroupAvailable: int -> int;
+  fun Mix_GroupChannel: int * int -> int;
+  fun Mix_GroupChannels: int * int * int -> int;
+  fun Mix_GroupCount: int -> int;
+  fun Mix_GroupNewer: int -> int;
+  fun Mix_GroupOldest: int -> int;
+  fun Mix_HaltChannel: int -> int;
+  fun Mix_HaltGroup: int -> int;
+  fun Mix_HaltMusic: 1 -> int;
+  fun Mix_Linked_Version: 1 -> &SDL_version;
+  fun Mix_LoadMUS: &char -> &Mix_Music;
+  fun Mix_LoadWAV_RW: &SDL_RWops * int -> &Mix_Chunk;
+  fun Mix_OpenAudio: int * uint16 * int * int -> int;
+  fun Mix_Paused: int -> int;
+  fun Mix_PausedMusic: 1 -> int;
+  fun Mix_PlayChannelTimed: int * &Mix_Chunk * int * int -> int;
+  fun Mix_PlayMusic: &Mix_Music * int -> int;
+  fun Mix_Playing: int -> int;
+  fun Mix_PlayingMusic: 1 -> int;
+  fun Mix_QuerySpec: &int * &uint16 * &int -> int;
+  fun Mix_QuickLoad_RAW: &uint8 * uint32 -> &Mix_Chunk;
+  fun Mix_QuickLoad_WAV: &uint8 -> &Mix_Chunk;
+  fun Mix_RegisterEffect: int * SDL_mixer_h_cft_1 * SDL_mixer_h_cft_2 * address -> int;
+  fun Mix_ReserveChannels: int -> int;
+  fun Mix_SetDistance: int * uint8 -> int;
+  fun Mix_SetMusicCMD: &char -> int;
+  fun Mix_SetMusicPosition: double -> int;
+  fun Mix_SetPanning: int * uint8 * uint8 -> int;
+  fun Mix_SetPosition: int * int16 * uint8 -> int;
+  fun Mix_SetReverseStereo: int * int -> int;
+  fun Mix_SetSynchroValue: int -> int;
+  fun Mix_UnregisterAllEffects: int -> int;
+  fun Mix_UnregisterEffect: int * SDL_mixer_h_cft_1 -> int;
+  fun Mix_Volume: int * int -> int;
+  fun Mix_VolumeChunk: &Mix_Chunk * int -> int;
+  fun Mix_VolumeMusic: int -> int;
+
+  //CALLBACK TYPE WRAPPERS
+  //callback type SDL_mixer_h_cft_2, client data at 1
+  typedef _fcbat_SDL_mixer_h_cft_2 = int;
+  export type (_fcbat_SDL_mixer_h_cft_2) as "_fcbat_SDL_mixer_h_cft_2";
+  typedef _fcbt_SDL_mixer_h_cft_2 = int -> void;
+  export type (_fcbt_SDL_mixer_h_cft_2) as "_fcbt_SDL_mixer_h_cft_2";
+  header '''void _fcbw_SDL_mixer_h_cft_2(int a1, void *a2);''';
+
+  const _fcbw_SDL_mixer_h_cft_2: SDL_mixer_h_cft_2 = "_fcbw_SDL_mixer_h_cft_2";
+  body '''
+  void _fcbw_SDL_mixer_h_cft_2(int a1, void *a2){
+    con_t *p  = ((_fcbt_SDL_mixer_h_cft_2)a2)->call(0, a1);
+    while(p) p=p->resume();
+  }''';
+
+  //callback type SDL_mixer_h_cft_3, client data at 0
+  typedef _fcbat_SDL_mixer_h_cft_3 = &uint8 * int;
+  export type (_fcbat_SDL_mixer_h_cft_3) as "_fcbat_SDL_mixer_h_cft_3";
+  typedef _fcbt_SDL_mixer_h_cft_3 = &uint8 * int -> void;
+  export type (_fcbt_SDL_mixer_h_cft_3) as "_fcbt_SDL_mixer_h_cft_3";
+  header '''void _fcbw_SDL_mixer_h_cft_3(void *a1, Uint8 *a2, int a3);''';
+
+  const _fcbw_SDL_mixer_h_cft_3: SDL_mixer_h_cft_3 = "_fcbw_SDL_mixer_h_cft_3";
+  body '''
+  void _fcbw_SDL_mixer_h_cft_3(void *a1, Uint8 *a2, int a3){
+    con_t *p  = ((_fcbt_SDL_mixer_h_cft_3)a1)->call(0, _fcbat_SDL_mixer_h_cft_3(a2, a3));
+    while(p) p=p->resume();
+  }''';
+
+
+  //CALLBACK CLIENT WRAPPERS
+  //callback client Mix_HookMusic, client data at 0, callback at 1
+  proc wrapper_Mix_HookMusic(a1: _fcbt_SDL_mixer_h_cft_3) {
+    Mix_HookMusic(_fcbw_SDL_mixer_h_cft_3, C_hack::cast[address]a1);
+  }
+  //callback client Mix_RegisterEffect, client data at 2, callback at 3
+  fun wrapper_Mix_RegisterEffect(a1: int, a2: SDL_mixer_h_cft_1, a3: _fcbt_SDL_mixer_h_cft_2): int= {
+    return Mix_RegisterEffect(a1, a2, _fcbw_SDL_mixer_h_cft_2, C_hack::cast[address]a3);
+  }
+  //callback client Mix_SetPostMix, client data at 0, callback at 1
+  proc wrapper_Mix_SetPostMix(a1: _fcbt_SDL_mixer_h_cft_3) {
+    Mix_SetPostMix(_fcbw_SDL_mixer_h_cft_3, C_hack::cast[address]a1);
+  }
+}
+
+@h1 SDL_mouse.flx
+@tangle SDL_mouse.flx
+
+
+
+open class SDL_mouse_h
+{
+  requires package "sdl2";
+
+  // mouse button state things
+  const SDL_BUTTON_RMASK : uint8;
+  const SDL_BUTTON_MMASK : uint8;
+  const SDL_BUTTON_LMASK : uint8;
+  const SDL_BUTTON_X1MASK : uint8;
+  const SDL_BUTTON_X2MASK : uint8;
+
+  const SDL_BUTTON_RIGHT : uint8;
+  const SDL_BUTTON_MIDDLE : uint8;
+  const SDL_BUTTON_LEFT   : uint8;
+  const SDL_BUTTON_X1   : uint8;
+  const SDL_BUTTON_X2   : uint8;
+
+  // platform cursor
+  cenum SDL_SystemCursor =
+      SDL_SYSTEM_CURSOR_ARROW,     /**< Arrow */
+      SDL_SYSTEM_CURSOR_IBEAM,     /**< I-beam */
+      SDL_SYSTEM_CURSOR_WAIT,      /**< Wait */
+      SDL_SYSTEM_CURSOR_CROSSHAIR, /**< Crosshair */
+      SDL_SYSTEM_CURSOR_WAITARROW, /**< Small wait cursor (or Wait if not available) */
+      SDL_SYSTEM_CURSOR_SIZENWSE,  /**< Double arrow pointing northwest and southeast */
+      SDL_SYSTEM_CURSOR_SIZENESW,  /**< Double arrow pointing northeast and southwest */
+      SDL_SYSTEM_CURSOR_SIZEWE,    /**< Double arrow pointing west and east */
+      SDL_SYSTEM_CURSOR_SIZENS,    /**< Double arrow pointing north and south */
+      SDL_SYSTEM_CURSOR_SIZEALL,   /**< Four pointed arrow pointing north, south, east, and west */
+      SDL_SYSTEM_CURSOR_NO,        /**< Slashed circle or crossbones */
+      SDL_SYSTEM_CURSOR_HAND,      /**< Hand */
+      SDL_NUM_SYSTEM_CURSORS
+  ;
+
+  type SDL_Cursor = "SDL_Cursor*";
+
+  //PROCEDURES
+  proc SDL_FreeCursor: SDL_Cursor;
+  proc SDL_SetCursor: SDL_Cursor;
+  proc SDL_WarpMouseInWindow: &SDL_Window * uint16 * uint16;
+
+  //FUNCTIONS
+  fun SDL_CreateCursor: &uint8 * &uint8 * int * int * int * int -> SDL_Cursor;
+  fun SDL_CreateColorCursor : &SDL_Surface * int * int -> SDL_Cursor;
+  fun SDL_CreateSystemCursor : SDL_SystemCursor -> SDL_Cursor;
+  fun SDL_GetCursor: 1 -> SDL_Cursor;
+  fun SDL_GetDefaultCursor: 1 -> SDL_Cursor;
+  fun SDL_ShowCursor: int -> int;
+
+  fun SDL_GetMouseState: &int * &int -> uint8;
+  fun SDL_GetRelativeMouseState: &int * &int -> uint8;
+  fun SDL_GetMouseFocus : 1 -> &SDL_Window;
+  fun SDL_SetRelativeMouseMode : bool -> int;
+  fun SDL_GetRelativeMouseMode : 1 -> bool;
+}
+@h1 SDL_mutex.flx
+@tangle SDL_mutex.flx
+
+
+//Module        : SDL_mutex_h
+//Timestamp     : 2006/1/6 2:5:23 UTC
+//Timestamp     : 2006/1/6 13:5:23 (local)
+//Raw Header    : SDL_mutex.h
+//Preprocessor  : gcc -E
+//Input file: sdl.flxcc.i
+//Flxcc Control : sdl.flxcc
+//Felix Version : 1.1.2_rc1
+
+//#define SDL_MUTEX_MAXWAIT     (~(Uint32)0)
+//#define SDL_MUTEX_TIMEDOUT    1
+//#define _SDL_mutex_h
+
+// DO NOT USE THIS MODULE
+// FELIX HAS ITS OWN THREAD HANDLING
+
+open module SDL_mutex_h
+{
+  requires package "sdl";
+  header '#include "SDL_mutex.h"';
+
+  incomplete ctypes SDL_mutex, SDL_cond, SDL_sem;
+
+  //PROCEDURES
+  proc SDL_DestroyCond: &SDL_cond;
+  proc SDL_DestroyMutex: &SDL_mutex;
+  proc SDL_DestroySemaphore: &SDL_sem;
+
+  //FUNCTIONS
+  fun SDL_CondBroadcast: &SDL_cond -> int;
+  fun SDL_CondSignal: &SDL_cond -> int;
+  fun SDL_CondWait: &SDL_cond * &SDL_mutex -> int;
+  fun SDL_CondWaitTimeout: &SDL_cond * &SDL_mutex * uint32 -> int;
+  fun SDL_CreateCond: 1 -> &SDL_cond;
+  fun SDL_CreateMutex: 1 -> &SDL_mutex;
+  fun SDL_CreateSemaphore: uint32 -> &SDL_sem;
+  fun SDL_SemPost: &SDL_sem -> int;
+  fun SDL_SemTryWait: &SDL_sem -> int;
+  fun SDL_SemValue: &SDL_sem -> uint32;
+  fun SDL_SemWait: &SDL_sem -> int;
+  fun SDL_SemWaitTimeout: &SDL_sem * uint32 -> int;
+  fun SDL_mutexP: &SDL_mutex -> int;
+  fun SDL_mutexV: &SDL_mutex -> int;
+  fun SDL_LockMutex: &SDL_mutex -> int;
+  fun SDL_UnlockMutex: &SDL_mutex -> int;
+}
+@h1 SDL_net.flx
+@tangle SDL_net.flx
+
+
+//Module        : SDL_net_h
+//Timestamp     : 2006/1/8 3:36:0 UTC
+//Timestamp     : 2006/1/8 14:36:0 (local)
+//Raw Header    : /usr/include/SDL/SDL_net.h
+//Preprocessor  : gcc -E
+//Input file: sdl.flxcc.i
+//Flxcc Control : sdl.flxcc
+//Felix Version : 1.1.2_rc1
+
+//#define SDLNet_Read32(areap)          \
+//#define SDLNet_Read32(areap)          \
+//#define SDLNet_Read32(areap)          \
+//#define SDLNet_Read16(areap)          \
+//#define SDLNet_Read16(areap)          \
+//#define SDLNet_Read16(areap)          \
+//#define SDLNet_Write32(value, areap)  \
+//#define SDLNet_Write32(value, areap)  \
+//#define SDLNet_Write32(value, areap)  \
+//#define SDLNet_Write16(value, areap)  \
+//#define SDLNet_Write16(value, areap)  \
+//#define SDLNet_Write16(value, areap)  \
+//#define SDL_DATA_ALIGNED      0
+//#define SDL_DATA_ALIGNED      1
+//#define SDLNet_GetError       SDL_GetError
+//#define SDLNet_SetError       SDL_SetError
+//#define SDLNet_SocketReady(sock) \
+//#define SDLNet_UDP_DelSocket(set, sock) \
+//#define SDLNet_TCP_DelSocket(set, sock) \
+//#define SDLNet_UDP_AddSocket(set, sock) \
+//#define SDLNet_TCP_AddSocket(set, sock) \
+//#define SDLNET_MAX_UDPADDRESSES       4
+//#define SDLNET_MAX_UDPCHANNELS        32
+//#define INADDR_BROADCAST      0xFFFFFFFF
+//#define INADDR_NONE           0xFFFFFFFF
+//#define INADDR_ANY            0x00000000
+//#define _SDLnet_h
+
+// NO NOT USE: Felix has its own networking
+module SDL_net_h
+{
+  requires package "sdl";
+  header '#include "SDL_net.h"';
+
+  //ABSTRACT TYPES
+  type SDLNet_GenericSocket = 'SDLNet_GenericSocket';
+  type IPaddress = 'IPaddress';
+  type UDPpacket = 'UDPpacket';
+
+  //PURE INCOMPLETE TYPES
+  type _struct__UDPsocket = 'struct _UDPsocket'; //local
+  type _struct__SDLNet_SocketSet = 'struct _SDLNet_SocketSet'; //local
+  type _struct__TCPsocket = 'struct _TCPsocket'; //local
+
+  //TYPE ALIASES
+  typedef UDPsocket = &_struct__UDPsocket;
+  typedef TCPsocket = &_struct__TCPsocket;
+  typedef SDLNet_SocketSet = &_struct__SDLNet_SocketSet;
+
+  //PROCEDURES
+  proc SDLNet_FreePacket: &UDPpacket;
+  proc SDLNet_FreePacketV: &&UDPpacket;
+  proc SDLNet_FreeSocketSet: SDLNet_SocketSet;
+  proc SDLNet_Quit: 1;
+  proc SDLNet_TCP_Close: TCPsocket;
+  proc SDLNet_UDP_Close: UDPsocket;
+  proc SDLNet_UDP_Unbind: UDPsocket * int;
+  proc SDLNet_Write16: uint16 * address;
+  proc SDLNet_Write32: uint32 * address;
+
+  //FUNCTIONS
+  fun SDLNet_AddSocket: SDLNet_SocketSet * SDLNet_GenericSocket -> int;
+  fun SDLNet_AllocPacket: int -> &UDPpacket;
+  fun SDLNet_AllocPacketV: int * int -> &&UDPpacket;
+  fun SDLNet_AllocSocketSet: int -> SDLNet_SocketSet;
+  fun SDLNet_CheckSockets: SDLNet_SocketSet * uint32 -> int;
+  fun SDLNet_DelSocket: SDLNet_SocketSet * SDLNet_GenericSocket -> int;
+  fun SDLNet_Init: 1 -> int;
+  fun SDLNet_Read16: address -> uint16;
+  fun SDLNet_Read32: address -> uint32;
+  fun SDLNet_ResizePacket: &UDPpacket * int -> int;
+  fun SDLNet_ResolveHost: &IPaddress * &char * uint16 -> int;
+  fun SDLNet_ResolveIP: &IPaddress -> &char;
+  fun SDLNet_TCP_Accept: TCPsocket -> TCPsocket;
+  fun SDLNet_TCP_GetPeerAddress: TCPsocket -> &IPaddress;
+  fun SDLNet_TCP_Open: &IPaddress -> TCPsocket;
+  fun SDLNet_TCP_Recv: TCPsocket * address * int -> int;
+  fun SDLNet_TCP_Send: TCPsocket * address * int -> int;
+  fun SDLNet_UDP_Bind: UDPsocket * int * &IPaddress -> int;
+  fun SDLNet_UDP_GetPeerAddress: UDPsocket * int -> &IPaddress;
+  fun SDLNet_UDP_Open: uint16 -> UDPsocket;
+  fun SDLNet_UDP_Recv: UDPsocket * &UDPpacket -> int;
+  fun SDLNet_UDP_RecvV: UDPsocket * &&UDPpacket -> int;
+  fun SDLNet_UDP_Send: UDPsocket * int * &UDPpacket -> int;
+  fun SDLNet_UDP_SendV: UDPsocket * &&UDPpacket * int -> int;
+}
+@h1 SDL_opengl.flx
+@tangle SDL_opengl.flx
+
+header '#include "SDL_opengl.h"';
+
+include "GL/gl_lib";
+include "GL/glu_lib";
+
+open module SDL_opengl_h
+{
+  inherit GL_gl_h;
+  inherit GL_glu_h;
+}
+
+@h1 SDL_pixels.flx
+@tangle SDL_pixels.flx
+
+
+open class SDL_pixels_h
+{
+  requires package "sdl2";
+
+  typedef struct SDL_Color
+  {
+    uint8 r;
+    uint8 g;
+    uint8 b;
+    uint8 a;
+  } SDL_Color;
+
+  typedef struct SDL_Palette
+  {
+    int ncolors;
+    +SDL_Color colors;
+    uint32 version;
+    int refcount;
+  } SDL_Palette;
+
+
+  typedef struct SDL_PixelFormat
+  {
+    uint32 format;
+    &SDL_Palette palette;
+    uint8 BitsPerPixel;
+    uint8 BytesPerPixel;
+    uint8 padding1; uint8 padding2;
+    uint32 Rmask;
+    uint32 Gmask;
+    uint32 Bmask;
+    uint32 Amask;
+    uint8 Rloss;
+    uint8 Gloss;
+    uint8 Bloss;
+    uint8 Aloss;
+    uint8 Rshift;
+    uint8 Gshift;
+    uint8 Bshift;
+    uint8 Ashift;
+    int refcount;
+    next: &SDL_PixelFormat; // should allow NULL
+  } SDL_PixelFormat;
+ 
+  fun SDL_MapRGB: &SDL_PixelFormat * uint8 * uint8 * uint8 -> uint32;
+  fun SDL_MapRGBA: &SDL_PixelFormat * uint8 * uint8 * uint8 * uint8 -> uint32;
+}
+@h1 SDL_rect.flx
+@tangle SDL_rect.flx
+
+
+open class SDL_rect_h
+{
+  typedef struct
+  {
+    int x;
+    int y;
+  } SDL_Point;
+
+  typedef struct SDL_Rect
+  {
+    int x; int y;
+    int w; int h;
+  } SDL_Rect;
+
+  fun \in (p:SDL_Point, r:SDL_Rect) =>
+    p.x >= r.x and p.x < r.x + r.w and p.y >= r.y and p.y < r.y + r.h
+  ;
+
+  fun inRect (x:int, y:int, r:SDL_Rect) => SDL_Point (x,y) in r;
+
+  instance Str[SDL_Rect] { 
+    fun str (r:SDL_Rect)=>"Rect(x="+r.x.str+",y="+r.y.str+",h="+r.h.str+",w="+r.w.str+")"; 
+  } 
+}
+@h1 SDL_render.flx
+@tangle SDL_render.flx
+
+
+open class SDL_Render_h
+{
+  type SDL_Renderer = "SDL_Renderer*";
+  fun SDL_CreateSoftwareRenderer : &SDL_Surface -> SDL_Renderer;
+  gen SDL_RenderDrawLine : SDL_Renderer * int * int * int * int -> int;
+  gen SDL_SetRenderDrawColor: SDL_Renderer * uint8 * uint8 * uint8 * uint8 -> int;
+  proc SDL_DestroyRenderer : SDL_Renderer;
+  gen SDL_RenderSetClipRect : SDL_Renderer * &SDL_Rect -> int;
+  gen SDL_RenderSetScale : SDL_Renderer * float * float -> int;
+}
+
+@h1 SDL_rotozoom.flx
+@tangle SDL_rotozoom.flx
+
+//Module        : SDL_rotozoom_h
+//Timestamp     : 2006/1/8 3:36:0 UTC
+//Timestamp     : 2006/1/8 14:36:0 (local)
+//Raw Header    : /usr/include/SDL/SDL_rotozoom.h
+//Preprocessor  : gcc -E
+//Input file: sdl.flxcc.i
+//Flxcc Control : sdl.flxcc
+//Felix Version : 1.1.2_rc1
+
+//#define DLLINTERFACE
+//#define DLLINTERFACE __declspec(dllimport)
+//#define DLLINTERFACE __declspec(dllexport)
+//#define SMOOTHING_ON          1
+//#define SMOOTHING_OFF         0
+//#define M_PI  3.141592654
+//#define _SDL_rotozoom_h
+
+open module SDL_rotozoom_h
+{
+  requires package "sdl";
+  header '#include "SDL_rotozoom.h"';
+
+  //CSTRUCTS
+  cstruct tColorRGBA {
+    r: uint8;
+    g: uint8;
+    b: uint8;
+    a: uint8;
+  };
+  cstruct tColorY {
+    y: uint8;
+  };
+
+  //STRUCT or UNION TAG ALIASES
+
+  //TYPE ALIASES
+  typedef _struct_tColorY = tColorY;
+  typedef _struct_tColorRGBA = tColorRGBA;
+
+  //PROCEDURES
+  proc rotozoomSurfaceSize: int * int * double * double * &int * &int;
+  proc zoomSurfaceSize: int * int * double * double * &int * &int;
+
+  //FUNCTIONS
+  fun rotozoomSurface: &SDL_Surface * double * double * int -> &SDL_Surface;
+  fun zoomSurface: &SDL_Surface * double * double * int -> &SDL_Surface;
+}
+
+@h1 SDL_rwops.flx
+@tangle SDL_rwops.flx
+
+//#define SDL_RWclose(ctx)              (ctx)->close(ctx)
+//#define SDL_RWwrite(ctx, ptr, size, n)        (ctx)->write(ctx, ptr, size, n)
+//#define SDL_RWread(ctx, ptr, size, n) (ctx)->read(ctx, ptr, size, n)
+//#define SDL_RWtell(ctx)                       (ctx)->seek(ctx, 0, SEEK_CUR)
+//#define SDL_RWseek(ctx, offset, whence)       (ctx)->seek(ctx, offset, whence)
+//#define _SDL_RWops_h
+
+//INCLUDES
+
+open class SDL_rwops_h
+{
+  //ABSTRACT TYPES
+  type SDL_RWops = 'SDL_RWops*';
+
+/*
+  //C FUNCTION POINTER TYPES
+  header '''typedef int (*SDL_rwops_h_cft_1)(struct SDL_RWops *,  int, int);''';
+  type SDL_rwops_h_cft_1 = 'SDL_rwops_h_cft_1';
+  header '''typedef int (*SDL_rwops_h_cft_3)(struct SDL_RWops *,  void const *,  int, int);''';
+  type SDL_rwops_h_cft_3 = 'SDL_rwops_h_cft_3';
+  header '''typedef int (*SDL_rwops_h_cft_2)(struct SDL_RWops *,  void *, int,  int);''';
+  type SDL_rwops_h_cft_2 = 'SDL_rwops_h_cft_2';
+  header '''typedef int (*SDL_rwops_h_cft_4)(struct SDL_RWops *);''';
+  type SDL_rwops_h_cft_4 = 'SDL_rwops_h_cft_4';
+*/
+  //PROCEDURES
+  proc SDL_FreeRW: SDL_RWops;
+
+  //FUNCTIONS
+  fun SDL_AllocRW: 1 -> SDL_RWops;
+  fun SDL_RWFromConstMem: address * int -> SDL_RWops;
+  fun SDL_RWFromFP: FILE * int -> SDL_RWops;
+  fun SDL_RWFromInputFile: string -> SDL_RWops = 'SDL_RWFromFile($1.c_str(),"r")';
+  fun SDL_RWFromFile: string -> SDL_RWops = 'SDL_RWFromFile($1.c_str(),"rw")';
+  fun SDL_RWFromMem: address * int -> SDL_RWops;
+
+/*
+  //STRUCT and UNION FIELDS
+  fun get_read: _struct_SDL_RWops -> SDL_rwops_h_cft_2 = '$1->read';
+  fun get_write: _struct_SDL_RWops -> SDL_rwops_h_cft_3 = '$1->write';
+  fun get_seek: _struct_SDL_RWops -> SDL_rwops_h_cft_1 = '$1->seek';
+  fun get_close: _struct_SDL_RWops -> SDL_rwops_h_cft_4 = '$1->close';
+  fun get_type: _struct_SDL_RWops -> uint32 = '$1->type';
+*/
+
+}
+
+@h1 SDL_scancode.flx
+@tangle SDL_scancode.flx
+
+
+open class SDL_scancode_h
+{
+  requires package "sdl2";
+
+  cenum SDL_Scancode = 
+    SDL_SCANCODE_UNKNOWN,
+    /**
+     *  \name Usage page 0x07
+     *
+     *  These values are from usage page 0x07 (USB keyboard page).
+     */
+    /*@{*/
+
+    SDL_SCANCODE_A,
+    SDL_SCANCODE_B,
+    SDL_SCANCODE_C,
+    SDL_SCANCODE_D,
+    SDL_SCANCODE_E,
+    SDL_SCANCODE_F,
+    SDL_SCANCODE_G,
+    SDL_SCANCODE_H,
+    SDL_SCANCODE_I,
+    SDL_SCANCODE_J,
+    SDL_SCANCODE_K,
+    SDL_SCANCODE_L,
+    SDL_SCANCODE_M,
+    SDL_SCANCODE_N,
+    SDL_SCANCODE_O,
+    SDL_SCANCODE_P,
+    SDL_SCANCODE_Q,
+    SDL_SCANCODE_R,
+    SDL_SCANCODE_S,
+    SDL_SCANCODE_T,
+    SDL_SCANCODE_U,
+    SDL_SCANCODE_V,
+    SDL_SCANCODE_W,
+    SDL_SCANCODE_X,
+    SDL_SCANCODE_Y,
+    SDL_SCANCODE_Z,
+
+    SDL_SCANCODE_1,
+    SDL_SCANCODE_2,
+    SDL_SCANCODE_3,
+    SDL_SCANCODE_4,
+    SDL_SCANCODE_5,
+    SDL_SCANCODE_6,
+    SDL_SCANCODE_7,
+    SDL_SCANCODE_8,
+    SDL_SCANCODE_9,
+    SDL_SCANCODE_0,
+
+    SDL_SCANCODE_RETURN,
+    SDL_SCANCODE_ESCAPE,
+    SDL_SCANCODE_BACKSPACE,
+    SDL_SCANCODE_TAB,
+    SDL_SCANCODE_SPACE,
+
+    SDL_SCANCODE_MINUS,
+    SDL_SCANCODE_EQUALS,
+    SDL_SCANCODE_LEFTBRACKET,
+    SDL_SCANCODE_RIGHTBRACKET,
+    SDL_SCANCODE_BACKSLASH, /**< Located at the lower left of the return
+                                  *   key on ISO keyboards and at the right end
+                                  *   of the QWERTY row on ANSI keyboards.
+                                  *   Produces REVERSE SOLIDUS (backslash) and
+                                  *   VERTICAL LINE in a US layout, REVERSE
+                                  *   SOLIDUS and VERTICAL LINE in a UK Mac
+                                  *   layout, NUMBER SIGN and TILDE in a UK
+                                  *   Windows layout, DOLLAR SIGN and POUND SIGN
+                                  *   in a Swiss German layout, NUMBER SIGN and
+                                  *   APOSTROPHE in a German layout, GRAVE
+                                  *   ACCENT and POUND SIGN in a French Mac
+                                  *   layout, and ASTERISK and MICRO SIGN in a
+                                  *   French Windows layout.
+                                  */
+    SDL_SCANCODE_NONUSHASH, /**< ISO USB keyboards actually use this code
+                                  *   instead of 49 for the same key, but all
+                                  *   OSes I've seen treat the two codes
+                                  *   identically. So, as an implementor, unless
+                                  *   your keyboard generates both of those
+                                  *   codes and your OS treats them differently,
+                                  *   you should generate SDL_SCANCODE_BACKSLASH
+                                  *   instead of this code. As a user, you
+                                  *   should not rely on this code because SDL
+                                  *   will never generate it with most (all?)
+                                  *   keyboards.
+                                  */
+    SDL_SCANCODE_SEMICOLON,
+    SDL_SCANCODE_APOSTROPHE,
+    SDL_SCANCODE_GRAVE, /**< Located in the top left corner (on both ANSI
+                              *   and ISO keyboards). Produces GRAVE ACCENT and
+                              *   TILDE in a US Windows layout and in US and UK
+                              *   Mac layouts on ANSI keyboards, GRAVE ACCENT
+                              *   and NOT SIGN in a UK Windows layout, SECTION
+                              *   SIGN and PLUS-MINUS SIGN in US and UK Mac
+                              *   layouts on ISO keyboards, SECTION SIGN and
+                              *   DEGREE SIGN in a Swiss German layout (Mac:
+                              *   only on ISO keyboards), CIRCUMFLEX ACCENT and
+                              *   DEGREE SIGN in a German layout (Mac: only on
+                              *   ISO keyboards), SUPERSCRIPT TWO and TILDE in a
+                              *   French Windows layout, COMMERCIAL AT and
+                              *   NUMBER SIGN in a French Mac layout on ISO
+                              *   keyboards, and LESS-THAN SIGN and GREATER-THAN
+                              *   SIGN in a Swiss German, German, or French Mac
+                              *   layout on ANSI keyboards.
+                              */
+    SDL_SCANCODE_COMMA,
+    SDL_SCANCODE_PERIOD,
+    SDL_SCANCODE_SLASH,
+
+    SDL_SCANCODE_CAPSLOCK,
+
+    SDL_SCANCODE_F1,
+    SDL_SCANCODE_F2,
+    SDL_SCANCODE_F3,
+    SDL_SCANCODE_F4,
+    SDL_SCANCODE_F5,
+    SDL_SCANCODE_F6,
+    SDL_SCANCODE_F7,
+    SDL_SCANCODE_F8,
+    SDL_SCANCODE_F9,
+    SDL_SCANCODE_F10,
+    SDL_SCANCODE_F11,
+    SDL_SCANCODE_F12,
+
+    SDL_SCANCODE_PRINTSCREEN,
+    SDL_SCANCODE_SCROLLLOCK,
+    SDL_SCANCODE_PAUSE,
+    SDL_SCANCODE_INSERT, /**< insert on PC, help on some Mac keyboards (but
+                                   does send code 73, not 117) */
+    SDL_SCANCODE_HOME,
+    SDL_SCANCODE_PAGEUP,
+    SDL_SCANCODE_DELETE,
+    SDL_SCANCODE_END,
+    SDL_SCANCODE_PAGEDOWN,
+    SDL_SCANCODE_RIGHT,
+    SDL_SCANCODE_LEFT,
+    SDL_SCANCODE_DOWN,
+    SDL_SCANCODE_UP,
+
+    SDL_SCANCODE_NUMLOCKCLEAR, /**< num lock on PC, clear on Mac keyboards
+                                     */
+    SDL_SCANCODE_KP_DIVIDE,
+    SDL_SCANCODE_KP_MULTIPLY,
+    SDL_SCANCODE_KP_MINUS,
+    SDL_SCANCODE_KP_PLUS,
+    SDL_SCANCODE_KP_ENTER,
+    SDL_SCANCODE_KP_1,
+    SDL_SCANCODE_KP_2,
+    SDL_SCANCODE_KP_3,
+    SDL_SCANCODE_KP_4,
+    SDL_SCANCODE_KP_5,
+    SDL_SCANCODE_KP_6,
+    SDL_SCANCODE_KP_7,
+    SDL_SCANCODE_KP_8,
+    SDL_SCANCODE_KP_9,
+    SDL_SCANCODE_KP_0,
+    SDL_SCANCODE_KP_PERIOD,
+
+    SDL_SCANCODE_NONUSBACKSLASH, /**< This is the additional key that ISO
+                                        *   keyboards have over ANSI ones,
+                                        *   located between left shift and Y.
+                                        *   Produces GRAVE ACCENT and TILDE in a
+                                        *   US or UK Mac layout, REVERSE SOLIDUS
+                                        *   (backslash) and VERTICAL LINE in a
+                                        *   US or UK Windows layout, and
+                                        *   LESS-THAN SIGN and GREATER-THAN SIGN
+                                        *   in a Swiss German, German, or French
+                                        *   layout. */
+    SDL_SCANCODE_APPLICATION, /**< windows contextual menu, compose */
+    SDL_SCANCODE_POWER, /**< The USB document says this is a status flag,
+                               *   not a physical key - but some Mac keyboards
+                               *   do have a power key. */
+    SDL_SCANCODE_KP_EQUALS,
+    SDL_SCANCODE_F13,
+    SDL_SCANCODE_F14,
+    SDL_SCANCODE_F15,
+    SDL_SCANCODE_F16,
+    SDL_SCANCODE_F17,
+    SDL_SCANCODE_F18,
+    SDL_SCANCODE_F19,
+    SDL_SCANCODE_F20,
+    SDL_SCANCODE_F21,
+    SDL_SCANCODE_F22,
+    SDL_SCANCODE_F23,
+    SDL_SCANCODE_F24,
+    SDL_SCANCODE_EXECUTE,
+    SDL_SCANCODE_HELP,
+    SDL_SCANCODE_MENU,
+    SDL_SCANCODE_SELECT,
+    SDL_SCANCODE_STOP,
+    SDL_SCANCODE_AGAIN,   /**< redo */
+    SDL_SCANCODE_UNDO,
+    SDL_SCANCODE_CUT,
+    SDL_SCANCODE_COPY,
+    SDL_SCANCODE_PASTE,
+    SDL_SCANCODE_FIND,
+    SDL_SCANCODE_MUTE,
+    SDL_SCANCODE_VOLUMEUP,
+    SDL_SCANCODE_VOLUMEDOWN,
+/* not sure whether there's a reason to enable these */
+/*     SDL_SCANCODE_LOCKINGCAPSLOCK,  */
+/*     SDL_SCANCODE_LOCKINGNUMLOCK, */
+/*     SDL_SCANCODE_LOCKINGSCROLLLOCK, */
+    SDL_SCANCODE_KP_COMMA,
+    SDL_SCANCODE_KP_EQUALSAS400,
+
+    SDL_SCANCODE_INTERNATIONAL1, /**< used on Asian keyboards, see
+                                            footnotes in USB doc */
+    SDL_SCANCODE_INTERNATIONAL2,
+    SDL_SCANCODE_INTERNATIONAL3, /**< Yen */
+    SDL_SCANCODE_INTERNATIONAL4,
+    SDL_SCANCODE_INTERNATIONAL5,
+    SDL_SCANCODE_INTERNATIONAL6,
+    SDL_SCANCODE_INTERNATIONAL7,
+    SDL_SCANCODE_INTERNATIONAL8,
+    SDL_SCANCODE_INTERNATIONAL9,
+    SDL_SCANCODE_LANG1, /**< Hangul/English toggle */
+    SDL_SCANCODE_LANG2, /**< Hanja conversion */
+    SDL_SCANCODE_LANG3, /**< Katakana */
+    SDL_SCANCODE_LANG4, /**< Hiragana */
+    SDL_SCANCODE_LANG5, /**< Zenkaku/Hankaku */
+    SDL_SCANCODE_LANG6, /**< reserved */
+    SDL_SCANCODE_LANG7, /**< reserved */
+    SDL_SCANCODE_LANG8, /**< reserved */
+    SDL_SCANCODE_LANG9, /**< reserved */
+
+    SDL_SCANCODE_ALTERASE, /**< Erase-Eaze */
+    SDL_SCANCODE_SYSREQ,
+    SDL_SCANCODE_CANCEL,
+    SDL_SCANCODE_CLEAR,
+    SDL_SCANCODE_PRIOR,
+    SDL_SCANCODE_RETURN2,
+    SDL_SCANCODE_SEPARATOR,
+    SDL_SCANCODE_OUT,
+    SDL_SCANCODE_OPER,
+    SDL_SCANCODE_CLEARAGAIN,
+    SDL_SCANCODE_CRSEL,
+    SDL_SCANCODE_EXSEL,
+
+    SDL_SCANCODE_KP_00,
+    SDL_SCANCODE_KP_000,
+    SDL_SCANCODE_THOUSANDSSEPARATOR,
+    SDL_SCANCODE_DECIMALSEPARATOR,
+    SDL_SCANCODE_CURRENCYUNIT,
+    SDL_SCANCODE_CURRENCYSUBUNIT,
+    SDL_SCANCODE_KP_LEFTPAREN,
+    SDL_SCANCODE_KP_RIGHTPAREN,
+    SDL_SCANCODE_KP_LEFTBRACE,
+    SDL_SCANCODE_KP_RIGHTBRACE,
+    SDL_SCANCODE_KP_TAB,
+    SDL_SCANCODE_KP_BACKSPACE,
+    SDL_SCANCODE_KP_A,
+    SDL_SCANCODE_KP_B,
+    SDL_SCANCODE_KP_C,
+    SDL_SCANCODE_KP_D,
+    SDL_SCANCODE_KP_E,
+    SDL_SCANCODE_KP_F,
+    SDL_SCANCODE_KP_XOR,
+    SDL_SCANCODE_KP_POWER,
+    SDL_SCANCODE_KP_PERCENT,
+    SDL_SCANCODE_KP_LESS,
+    SDL_SCANCODE_KP_GREATER,
+    SDL_SCANCODE_KP_AMPERSAND,
+    SDL_SCANCODE_KP_DBLAMPERSAND,
+    SDL_SCANCODE_KP_VERTICALBAR,
+    SDL_SCANCODE_KP_DBLVERTICALBAR,
+    SDL_SCANCODE_KP_COLON,
+    SDL_SCANCODE_KP_HASH,
+    SDL_SCANCODE_KP_SPACE,
+    SDL_SCANCODE_KP_AT,
+    SDL_SCANCODE_KP_EXCLAM,
+    SDL_SCANCODE_KP_MEMSTORE,
+    SDL_SCANCODE_KP_MEMRECALL,
+    SDL_SCANCODE_KP_MEMCLEAR,
+    SDL_SCANCODE_KP_MEMADD,
+    SDL_SCANCODE_KP_MEMSUBTRACT,
+    SDL_SCANCODE_KP_MEMMULTIPLY,
+    SDL_SCANCODE_KP_MEMDIVIDE,
+    SDL_SCANCODE_KP_PLUSMINUS,
+    SDL_SCANCODE_KP_CLEAR,
+    SDL_SCANCODE_KP_CLEARENTRY,
+    SDL_SCANCODE_KP_BINARY,
+    SDL_SCANCODE_KP_OCTAL,
+    SDL_SCANCODE_KP_DECIMAL,
+    SDL_SCANCODE_KP_HEXADECIMAL,
+
+    SDL_SCANCODE_LCTRL,
+    SDL_SCANCODE_LSHIFT,
+    SDL_SCANCODE_LALT, /**< alt, option */
+    SDL_SCANCODE_LGUI, /**< windows, command (apple), meta */
+    SDL_SCANCODE_RCTRL,
+    SDL_SCANCODE_RSHIFT,
+    SDL_SCANCODE_RALT, /**< alt gr, option */
+    SDL_SCANCODE_RGUI, /**< windows, command (apple), meta */
+
+    SDL_SCANCODE_MODE,    /**< I'm not sure if this is really not covered
+                                 *   by any of the above, but since there's a
+                                 *   special KMOD_MODE for it I'm adding it here
+                                 */
+
+    /*@}*//*Usage page 0x07*/
+
+    /**
+     *  \name Usage page 0x0C
+     *
+     *  These values are mapped from usage page 0x0C (USB consumer page).
+     */
+    /*@{*/
+
+    SDL_SCANCODE_AUDIONEXT,
+    SDL_SCANCODE_AUDIOPREV,
+    SDL_SCANCODE_AUDIOSTOP,
+    SDL_SCANCODE_AUDIOPLAY,
+    SDL_SCANCODE_AUDIOMUTE,
+    SDL_SCANCODE_MEDIASELECT,
+    SDL_SCANCODE_WWW,
+    SDL_SCANCODE_MAIL,
+    SDL_SCANCODE_CALCULATOR,
+    SDL_SCANCODE_COMPUTER,
+    SDL_SCANCODE_AC_SEARCH,
+    SDL_SCANCODE_AC_HOME,
+    SDL_SCANCODE_AC_BACK,
+    SDL_SCANCODE_AC_FORWARD,
+    SDL_SCANCODE_AC_STOP,
+    SDL_SCANCODE_AC_REFRESH,
+    SDL_SCANCODE_AC_BOOKMARKS,
+
+    /*@}*//*Usage page 0x0C*/
+
+    /**
+     *  \name Walther keys
+     *
+     *  These are values that Christian Walther added (for mac keyboard?).
+     */
+    /*@{*/
+
+    SDL_SCANCODE_BRIGHTNESSDOWN,
+    SDL_SCANCODE_BRIGHTNESSUP,
+    SDL_SCANCODE_DISPLAYSWITCH, /**< display mirroring/dual display
+                                           switch, video mode switch */
+    SDL_SCANCODE_KBDILLUMTOGGLE,
+    SDL_SCANCODE_KBDILLUMDOWN,
+    SDL_SCANCODE_KBDILLUMUP,
+    SDL_SCANCODE_EJECT,
+    SDL_SCANCODE_SLEEP,
+
+    SDL_SCANCODE_APP1,
+    SDL_SCANCODE_APP2,
+
+    /*@}*//*Walther keys*/
+
+    /* Add any other keys here. */
+
+    SDL_NUM_SCANCODES /**< not a key, just marks the number of scancodes
+                                 for array bounds */
+  ;
+}
+
+@h1 SDL_sound.flx
+@tangle SDL_sound.flx
+
+
+//Module        : SDL_sound_h
+//Timestamp     : 2006/1/8 3:36:0 UTC
+//Timestamp     : 2006/1/8 14:36:0 (local)
+//Raw Header    : /usr/include/SDL/SDL_sound.h
+//Preprocessor  : gcc -E
+//Input file: sdl.flxcc.i
+//Flxcc Control : sdl.flxcc
+//Felix Version : 1.1.2_rc1
+
+//#define SOUND_VERSION(x) \
+//#define SOUND_VER_PATCH 1
+//#define SOUND_VER_MINOR 0
+//#define SOUND_VER_MAJOR 1
+//#define SNDDECLSPEC
+//#define SNDDECLSPEC __declspec(dllexport)
+//#define SDLCALL
+//#define _INCLUDE_SDL_SOUND_H_
+
+open module SDL_sound_h
+{
+  requires package "sdl";
+  header '#include "SDL_sound.h"';
+
+  //ABSTRACT TYPES
+  type Sound_Sample = 'Sound_Sample';
+  type Sound_Version = 'Sound_Version';
+  type Sound_AudioInfo = 'Sound_AudioInfo';
+  type Sound_SampleFlags = 'Sound_SampleFlags';
+  type Sound_DecoderInfo = 'Sound_DecoderInfo';
+
+  //ENUMERATION CONSTANTS
+  const SOUND_SAMPLEFLAG_ERROR: int = 'SOUND_SAMPLEFLAG_ERROR';
+  const SOUND_SAMPLEFLAG_NONE: int = 'SOUND_SAMPLEFLAG_NONE';
+  const SOUND_SAMPLEFLAG_EAGAIN: int = 'SOUND_SAMPLEFLAG_EAGAIN';
+  const SOUND_SAMPLEFLAG_EOF: int = 'SOUND_SAMPLEFLAG_EOF';
+  const SOUND_SAMPLEFLAG_CANSEEK: int = 'SOUND_SAMPLEFLAG_CANSEEK';
+
+  //PROCEDURES
+  proc Sound_ClearError: 1;
+  proc Sound_FreeSample: &Sound_Sample;
+  proc Sound_GetLinkedVersion: &Sound_Version;
+
+  //FUNCTIONS
+  fun Sound_AvailableDecoders: 1 -> &&Sound_DecoderInfo;
+  fun Sound_Decode: &Sound_Sample -> uint32;
+  fun Sound_DecodeAll: &Sound_Sample -> uint32;
+  fun Sound_GetError: 1 -> &char;
+  fun Sound_Init: 1 -> int;
+  fun Sound_NewSample: &SDL_RWops * &char * &Sound_AudioInfo * uint32 -> &Sound_Sample;
+  fun Sound_NewSampleFromFile: &char * &Sound_AudioInfo * uint32 -> &Sound_Sample;
+  fun Sound_Quit: 1 -> int;
+  fun Sound_Rewind: &Sound_Sample -> int;
+  fun Sound_Seek: &Sound_Sample * uint32 -> int;
+  fun Sound_SetBufferSize: &Sound_Sample * uint32 -> int;
+}
+@h1 SDL_surface.flx
+@tangle SDL_surface.flx
+
+
+open class SDL_surface_h
+{
+  requires package "sdl2";
+
+  typedef struct SDL_Surface
+  {
+      uint32 flags;               /**< Read-only */
+      &SDL_PixelFormat format;    /**< Read-only */
+      int w; int h;                   /**< Read-only */
+      int pitch;                  /**< Read-only */
+      address pixels;               /**< Read-write */
+
+      /** Application data associated with the surface */
+      address userdata;             /**< Read-write */
+
+      /** information needed for surfaces requiring locks */
+      int locked;                 /**< Read-only */
+      address lock_data;            /**< Read-only */
+
+      /** clipping information */
+      SDL_Rect clip_rect;         /**< Read-only */
+
+      /** info for fast blit mapping to other surfaces */
+      //struct SDL_BlitMap *map;    /**< Private */
+
+      /** Reference count -- used when freeing surface */
+      int refcount;               /**< Read-mostly */
+  } SDL_Surface;
+
+  gen SDL_BlitSurface : &SDL_Surface * &SDL_Rect * &SDL_Surface * &SDL_Rect -> int;
+  proc SDL_FreeSurface: &SDL_Surface;
+  gen SDL_FillRect : &SDL_Surface * &SDL_Rect * uint32 -> int;
+  gen SDL_FillSurface : &SDL_Surface * uint32 -> int = "SDL_FillRect ($1, NULL, $2)";
+  gen SDL_SetClipRect : &SDL_Surface * &SDL_Rect -> bool;
+  proc SDL_ClearClipRect : &SDL_Surface = "SDL_SetClipRect($1,NULL);";
+  fun SDL_MUSTLOCK: &SDL_Surface -> bool = "(SDL_MUSTLOCK($1)==SDL_TRUE)";
+  proc SDL_LockSurface : &SDL_Surface = "SDL_LockSurface($1);";
+  proc SDL_UnlockSurface : &SDL_Surface = "SDL_LockSurface($1);";
+}
+@h1 SDL_timer.flx
+@tangle SDL_timer.flx
+
+
+//Module        : SDL_timer_h
+//Timestamp     : 2006/1/6 2:5:23 UTC
+//Timestamp     : 2006/1/6 13:5:23 (local)
+//Raw Header    : SDL_timer.h
+//Preprocessor  : gcc -E
+//Input file: sdl.flxcc.i
+//Flxcc Control : sdl.flxcc
+//Felix Version : 1.1.2_rc1
+
+//#define TIMER_RESOLUTION      10      /* Experimentally determined */
+//#define SDL_TIMESLICE         10
+//#define _SDL_timer_h
+
+// DO NOT USE Felix has its own timer
+open module SDL_timer_h
+{
+  requires package "sdl";
+  header '#include "SDL_timer.h"';
+
+  //C FUNCTION POINTER TYPES
+  header '''typedef Uint32 (*SDL_timer_h_cft_2)(Uint32,  void *);''';
+  type SDL_timer_h_cft_2 = 'SDL_timer_h_cft_2';
+  header '''typedef Uint32 (*SDL_timer_h_cft_1)(Uint32);''';
+  type SDL_timer_h_cft_1 = 'SDL_timer_h_cft_1';
+
+  //PURE INCOMPLETE TYPES
+  type _struct__SDL_TimerID = 'struct _SDL_TimerID'; //local
+
+  //TYPE ALIASES
+  typedef SDL_NewTimerCallback = SDL_timer_h_cft_2;
+  typedef SDL_TimerID = &_struct__SDL_TimerID;
+  typedef SDL_TimerCallback = SDL_timer_h_cft_1;
+
+  //PROCEDURES
+  proc SDL_Delay: uint32;
+
+  //FUNCTIONS
+  fun SDL_AddTimer: uint32 * SDL_timer_h_cft_2 * address -> SDL_TimerID;
+  fun SDL_GetTicks: 1 -> uint32;
+  fun SDL_RemoveTimer: SDL_TimerID -> SDL_bool;
+  fun SDL_SetTimer: uint32 * SDL_timer_h_cft_1 -> int;
+
+  //CALLBACK TYPE WRAPPERS
+  //callback type SDL_timer_h_cft_2, client data at 1
+  typedef _fcbat_SDL_timer_h_cft_2 = uint32;
+  export type (_fcbat_SDL_timer_h_cft_2) as "_fcbat_SDL_timer_h_cft_2";
+  typedef _fcbt_SDL_timer_h_cft_2 = uint32 -> uint32;
+  export type (_fcbt_SDL_timer_h_cft_2) as "_fcbt_SDL_timer_h_cft_2";
+  header '''Uint32 _fcbw_SDL_timer_h_cft_2(Uint32 a1,  void *a2);''';
+
+  const _fcbw_SDL_timer_h_cft_2: SDL_timer_h_cft_2 = "_fcbw_SDL_timer_h_cft_2";
+  body '''
+  Uint32 _fcbw_SDL_timer_h_cft_2(Uint32 a1,  void *a2){
+    return ((_fcbt_SDL_timer_h_cft_2)a2)->apply(a1);
+  }''';
+
+
+  //CALLBACK CLIENT WRAPPERS
+  //callback client SDL_AddTimer, client data at 1, callback at 2
+  fun wrapper_SDL_AddTimer(a1: uint32, a2: _fcbt_SDL_timer_h_cft_2): SDL_TimerID= {
+    return SDL_AddTimer(a1, _fcbw_SDL_timer_h_cft_2, C_hack::cast[address]a2);
+  }
+}
+@h1 SDL_ttf.flx
+@tangle SDL_ttf.flx
+
+//#define TTF_SetError  SDL_SetError
+//#define TTF_RenderUNICODE(font, text, fg, bg) \
+//#define TTF_RenderUTF8(font, text, fg, bg)    \
+//#define TTF_RenderText(font, text, fg, bg)    \
+//#define UNICODE_BOM_SWAPPED   0xFFFE
+//#define UNICODE_BOM_NATIVE    0xFEFF
+//#define TTF_VERSION(X)                                                        \
+//#define TTF_PATCHLEVEL                6
+//#define TTF_MINOR_VERSION     0
+//#define TTF_MAJOR_VERSION     2
+//#define _SDLttf_h
+
+open class SDL_ttf_h
+{
+  requires package "sdl2", package "sdl2_ttf";
+
+  proc TTF_Compiled_Version: &SDL_version = "SDL_TTF_VERSION($1);"; // macro
+  fun TTF_Linked_Version: 1 -> SDL_version = "*(TTF_Linked_Version())";
+
+  fun TTF_Compiled_Version () : SDL_version = {
+    var v: SDL_version;
+    TTF_Compiled_Version$ &v;
+    return v;
+  }
+
+  gen TTF_Init : 1 -> int;
+  gen TTF_GetError: 1 -> string = "::std::string(TTF_GetError())";
+  proc TTF_Quit: 1;
+  fun TTF_WasInit: 1 -> int;
+  proc TTF_ByteSwappedUNICODE: int;
+
+
+  type TTF_Font = 'TTF_Font*'; 
+
+  gen TTF_OpenFontIndexRW: SDL_RWops * int * int * long -> TTF_Font;
+  gen TTF_OpenFontIndex: string * int * long -> TTF_Font = "TTF_OpenFont($1.c_str(),$2, $3)";
+  fun TTF_OpenFontRW: SDL_RWops * int * int -> TTF_Font;
+  gen TTF_OpenFont: string * int -> TTF_Font = "TTF_OpenFont($1.c_str(),$2)";
+  proc TTF_CloseFont: TTF_Font;
+  fun TTF_ValidFont : TTF_Font -> bool = "($1!=NULL)";
+
+  // Metrics
+  fun TTF_GetFontStyle: TTF_Font -> int;
+  proc TTF_SetFontStyle: TTF_Font * int;
+
+    const TTF_STYLE_UNDERLINE : int; // 0x4
+    const TTF_STYLE_ITALIC : int; // 0x2
+    const TTF_STYLE_BOLD : int; // 0x01
+    const TTF_STYLE_NORMAL : int; // 0x00
+
+  fun TTF_GetFontOutline: TTF_Font -> int;
+  proc TTF_SetFontOutline: TTF_Font * int;
+
+  fun TTF_GetFontHeight: TTF_Font -> int;
+
+  fun TTF_GetFontHinting: TTF_Font -> int;
+  proc TTF_SetFontHinting: TTF_Font * int;
+
+    const TTF_HINTING_NORMAL :int; //    0
+    const TTF_HINTING_LIGHT  :int; //    1
+    const TTF_HINTING_MONO  :int; //     2
+    const TTF_HINTING_NONE  :int; //     3
+
+  fun TTF_GetFontKerning: TTF_Font -> int;
+  proc TTF_SetFontKerning: TTF_Font * int;
+
+
+  fun TTF_FontHeight: TTF_Font -> int;
+  fun TTF_FontAscent: TTF_Font -> int;
+  fun TTF_FontDescent: TTF_Font -> int;
+  fun TTF_FontLineSkip: TTF_Font -> int;
+  fun TTF_FontFaces: TTF_Font -> long;
+  fun TTF_FontFaceIsFixedWidth: TTF_Font -> int;
+  fun TTF_FontFaceFamilyName: TTF_Font -> string = "::std::string(TTF_FontFaceFamilyName($1))";
+  fun TTF_FontFaceStyleName: TTF_Font -> string = "::std::string(TTF_FontFaceStyleName($1))";
+  
+  fun TTF_GlyphIsProvided: TTF_Font * uint16 -> int;
+
+  fun TTF_GlyphMetrics: TTF_Font * uint16 * &int * &int * &int * &int * &int -> int;
+
+  gen TTF_SizeText: TTF_Font * string * &int * &int -> int =
+    "TTF_SizeText($1,$2.c_str(),$3,$4)"
+  ;
+  gen TTF_SizeUNICODE: TTF_Font * +uint16 * &int * &int -> int;
+  gen TTF_SizeUTF8: TTF_Font * string * &int * &int -> int = 
+    "TTF_SizeUTF8($1,$2.c_str(),$3,$4)"
+  ;
+
+  // Render Solid
+  fun TTF_RenderGlyph_Solid: TTF_Font * uint16 * SDL_Color -> &SDL_Surface;
+  fun TTF_RenderText_Solid: TTF_Font * string * SDL_Color -> &SDL_Surface =
+     "TTF_RenderText_Solid($1,$2.c_str(),$3)"
+  ;
+  fun TTF_RenderUNICODE_Solid: TTF_Font * +uint16 * SDL_Color -> &SDL_Surface;
+  fun TTF_RenderUTF8_Solid: TTF_Font * string * SDL_Color -> &SDL_Surface =
+     "TTF_RenderUTF8_Solid($1,$2.c_str(),$3)"
+  ;
+
+  // Render Shaded
+  fun TTF_RenderGlyph_Shaded: TTF_Font * uint16 * SDL_Color * SDL_Color -> &SDL_Surface;
+  fun TTF_RenderText_Shaded: TTF_Font * string * SDL_Color * SDL_Color -> &SDL_Surface =
+    "TTF_RenderText_Shaded($1,$2.c_str(),$3,$4)"
+  ;
+  fun TTF_RenderUNICODE_Shaded: TTF_Font * +uint16 * SDL_Color * SDL_Color -> &SDL_Surface;
+  fun TTF_RenderUTF8_Shaded: TTF_Font * string * SDL_Color * SDL_Color -> &SDL_Surface =
+    "TTF_RenderUTF8_Shaded($1,$2.c_str(),$3,$4)"
+  ;
+
+  // Render Blended
+  fun TTF_RenderGlyph_Blended: TTF_Font * uint16 * SDL_Color -> &SDL_Surface;
+  fun TTF_RenderText_Blended: TTF_Font * string * SDL_Color -> &SDL_Surface =
+    "TTF_RenderText_Blended($1,$2.c_str(),$3)"
+  ;
+  fun TTF_RenderUNICODE_Blended: TTF_Font * +uint16 * SDL_Color -> &SDL_Surface;
+  fun TTF_RenderUTF8_Blended: TTF_Font * string * SDL_Color -> &SDL_Surface =
+    "TTF_RenderUTF8_Blended($1,$2.c_str(),$3)"
+  ;
+
+  // Render Blended Wrapped
+  fun TTF_RenderGlyph_Blended_Wrapped: TTF_Font * uint16 * SDL_Color * uint32 -> &SDL_Surface;
+  fun TTF_RenderText_Blended_Wrapped: TTF_Font * string * SDL_Color * uint32  -> &SDL_Surface=
+    "TTF_RenderText_Blended_Wrapped($1,$2.c_str(),$3,$4)"
+  ;
+  fun TTF_RenderUNICODE_Blended_Wrapped: TTF_Font * +uint16 * SDL_Color * uint32 -> &SDL_Surface;
+  fun TTF_RenderUTF8_Blended_Wrapped: TTF_Font * string * SDL_Color * uint32 -> &SDL_Surface=
+    "TTF_RenderUTF8_Blended_Wrapped($1,$2.c_str(),$3,$4)"
+  ;
+
+  fun TTF_GetFontKerningSize: TTF_Font * int * int -> int;
+
+}
+
+@h1 SDL_types.flx
+@tangle SDL_types.flx
+
+//Module        : SDL_types_h
+//Timestamp     : 2006/1/6 2:18:42 UTC
+//Timestamp     : 2006/1/6 13:18:42 (local)
+//Raw Header    : SDL_types.h
+//Preprocessor  : gcc -E
+//Input file: sdl.flxcc.i
+//Flxcc Control : sdl.flxcc
+//Felix Version : 1.1.2_rc1
+
+//#define SDL_COMPILE_TIME_ASSERT(name, x)               \
+//#define SDL_HAS_64BIT_TYPE    __int64
+//#define SDL_HAS_64BIT_TYPE    long long
+//#define SDL_HAS_64BIT_TYPE    long
+//#define SDL_TABLESIZE(table)  (sizeof(table)/sizeof(table[0]))
+//#define _SDL_types_h
+
+open module SDL_types_h
+{
+  requires package "sdl";
+  header '#include "SDL_types.h"';
+
+  //ABSTRACT TYPES
+  type SDL_bool = 'SDL_bool';
+  type SDL_DUMMY_ENUM = 'SDL_DUMMY_ENUM';
+
+  //TYPE ALIASES
+  typedef SDL_dummy_uint32 = &int;
+  typedef SDL_dummy_sint64 = &int;
+  typedef SDL_dummy_sint16 = &int;
+  typedef SDL_dummy_sint8 = &int;
+  typedef SDL_dummy_sint32 = &int;
+  typedef SDL_dummy_uint8 = &int;
+  typedef SDL_dummy_uint64 = &int;
+  typedef SDL_dummy_uint16 = &int;
+  typedef SDL_dummy_enum = &int;
+
+  //ENUMERATION CONSTANTS
+  const SDL_PRESSED: int = 'SDL_PRESSED';
+  const DUMMY_ENUM_VALUE: int = 'DUMMY_ENUM_VALUE';
+  const SDL_RELEASED: int = 'SDL_RELEASED';
+  const SDL_TRUE: int = 'SDL_TRUE';
+  const SDL_FALSE: int = 'SDL_FALSE';
+}
+
+@h1 SDL_version.flx
+@tangle SDL_version.flx
+
+
+//#define SDL_VERSION_ATLEAST(X, Y, Z) \
+//#define SDL_COMPILEDVERSION \
+//#define SDL_VERSIONNUM(X, Y, Z)                                               \
+//#define SDL_VERSION(X)                                                        \
+//#define SDL_PATCHLEVEL                8
+//#define SDL_MINOR_VERSION     2
+//#define SDL_MAJOR_VERSION     1
+//#define _SDL_version_h
+
+open class SDL_version_h
+{
+  requires package "sdl2";
+
+  cstruct SDL_version {
+    major: uint8;
+    minor: uint8;
+    patch: uint8;
+  };
+
+  proc SDL_Linked_Version: &SDL_version = "SDL_GetVersion ($1);"; // function
+  proc SDL_Compiled_Version: &SDL_version = "SDL_VERSION($1);"; // macro
+
+  fun SDL_Linked_Version () : SDL_version = {
+    var v: SDL_version;
+    SDL_Linked_Version$ &v;
+    return v;
+  }
+
+  fun SDL_Compiled_Version () : SDL_version = {
+    var v: SDL_version;
+    SDL_Compiled_Version$ &v;
+    return v;
+  }
+}
+@h1 SDL_video.flx
+@tangle SDL_video.flx
+
+//Module        : SDL_video_h
+//Timestamp     : 2006/1/6 2:18:42 UTC
+//Timestamp     : 2006/1/6 13:18:42 (local)
+//Raw Header    : SDL_video.h
+//Preprocessor  : gcc -E
+//Input file: sdl.flxcc.i
+//Flxcc Control : sdl.flxcc
+//Felix Version : 1.1.2_rc1
+
+//#define SDL_BlitSurface SDL_UpperBlit
+//#define SDL_SaveBMP(surface, file) \
+//#define SDL_AllocSurface    SDL_CreateRGBSurface
+//#define SDL_PHYSPAL 0x02
+//#define SDL_LOGPAL 0x01
+//#define SDL_YVYU_OVERLAY  0x55595659  /* Packed mode: Y0+V0+Y1+U0 (1 plane) */
+//#define SDL_UYVY_OVERLAY  0x59565955  /* Packed mode: U0+Y0+V0+Y1 (1 plane) */
+//#define SDL_YUY2_OVERLAY  0x32595559  /* Packed mode: Y0+U0+Y1+V0 (1 plane) */
+//#define SDL_IYUV_OVERLAY  0x56555949  /* Planar mode: Y + U + V  (3 planes) */
+//#define SDL_YV12_OVERLAY  0x32315659  /* Planar mode: Y + V + U  (3 planes) */
+//#define SDL_PREALLOC  0x01000000      /* Surface uses preallocated memory */
+//#define SDL_SRCALPHA  0x00010000      /* Blit uses source alpha blending */
+//#define SDL_RLEACCEL  0x00004000      /* Surface is RLE encoded */
+//#define SDL_RLEACCELOK        0x00002000      /* Private flag */
+//#define SDL_SRCCOLORKEY       0x00001000      /* Blit uses a source color key */
+//#define SDL_HWACCEL   0x00000100      /* Blit uses hardware acceleration */
+//#define SDL_NOFRAME   0x00000020      /* No window caption or edge frame */
+//#define SDL_RESIZABLE 0x00000010      /* This video mode may be resized */
+//#define SDL_OPENGLBLIT        0x0000000A      /* Create an OpenGL rendering context and use it for blitting */
+//#define SDL_OPENGL      0x00000002      /* Create an OpenGL rendering context */
+//#define SDL_FULLSCREEN        0x80000000      /* Surface is a full screen display */
+//#define SDL_DOUBLEBUF 0x40000000      /* Set up double-buffered video mode */
+//#define SDL_HWPALETTE 0x20000000      /* Surface has exclusive palette */
+//#define SDL_ANYFORMAT 0x10000000      /* Allow any video depth/pixel-format */
+//#define SDL_ASYNCBLIT 0x00000004      /* Use asynchronous blits if possible */
+//#define SDL_HWSURFACE 0x00000001      /* Surface is in video memory */
+//#define SDL_SWSURFACE 0x00000000      /* Surface is in system memory */
+//#define SDL_Colour SDL_Color
+//#define SDL_ALPHA_TRANSPARENT 0
+//#define SDL_ALPHA_OPAQUE 255
+//#define _SDL_video_h
+
+open class SDL_video_h
+{
+  requires package "sdl2";
+
+  // Window position special values
+  const SDL_WINDOWPOS_CENTERED : int;
+  const SDL_WINDOWPOS_UNDEFINED : int;
+
+  // Window flags
+  const SDL_WINDOW_FULLSCREEN : uint32;
+  const SDL_WINDOW_FULLSCREEN_DESKTOP : uint32;
+  const SDL_WINDOW_OPENGL : uint32;
+  const SDL_WINDOW_SHOWN : uint32;
+  const SDL_WINDOW_HIDDEN : uint32;
+  const SDL_WINDOW_BORDERLESS : uint32;
+  const SDL_WINDOW_RESIZABLE : uint32;
+  const SDL_WINDOW_MINIMIZED : uint32;
+  const SDL_WINDOW_MAXIMIZED : uint32;
+  const SDL_WINDOW_INPUT_GRABBED : uint32;
+  const SDL_WINDOW_INPUT_FOCUS : uint32;
+  const SDL_WINDOW_MOUSE_FOCUS : uint32;
+  const SDL_WINDOW_FOREIGN: uint32;
+
+  type SDL_Window = "SDL_Window*";
+  gen SDL_CreateWindow: string * int * int * int * int * uint32 -> SDL_Window =
+     "SDL_CreateWindow ($1.c_str(), $2, $3, $4, $5, $6)"
+  ;
+  proc SDL_DestroyWindow : SDL_Window;
+
+  fun SDL_GetWindowSurface : SDL_Window -> &SDL_Surface;
+  gen SDL_UpdateWindowSurface: SDL_Window -> int;
+  fun SDL_GetWindowID: SDL_Window -> uint32;
+  proc SDL_GetWindowPosition : SDL_Window * &int * &int;
+  proc SDL_GetWindowSize: SDL_Window * &int * &int;
+  proc SDL_SetWindowGrab: SDL_Window * bool = "SDL_SetWindowGrab($1,SDL_bool($2));";
+  fun SDL_GetWindowGrab: SDL_Window -> bool;
+
+  proc SDL_SetWindowMinumumSize: SDL_Window * int * int;
+  proc SDL_GetWindowMinumumSize: SDL_Window * &int * &int;
+  proc SDL_SetWindowMaximumSize: SDL_Window * int * int;
+  proc SDL_GetWindowMaximumSize: SDL_Window * &int * &int;
+
+  proc SDL_ShowWindow: SDL_Window;
+  proc SDL_HideWindow: SDL_Window;
+  proc SDL_RaiseWindow: SDL_Window;
+  proc SDL_MaximizeWindow: SDL_Window;
+  proc SDL_MinimizeWindow: SDL_Window;
+  proc SDL_RestoreWindow: SDL_Window;
+  proc SDL_SetWindowFullScreen: SDL_Window;
+  proc SDL_SetWindowBrightness: SDL_Window * float;
+  fun SDL_SetWindowBrightness: SDL_Window -> float;
+  fun SDL_GetWindowBordered: SDL_Window -> bool;
+  proc SDL_SetWindowBordered: SDL_Window * bool = "SDL_SetWindowBordered($1,SDL_bool($2));";
+
+
+}
+
+
+@h1 flx_faio_sdl.flx
+@tangle flx_faio_sdl.flx
+
+
+
+
+open module SDL_events
+{
+  requires package "sdl";
+  open C_hack;
+
+  fun event_type: SDL_Event -> uint8 = "$1.type";
+
+  proc block_sdl_events(m:&SDL_mutex)
+  {
+    var dummy = SDL_UserEvent(cast[uint32] SDL_USEREVENT,0,NULL,NULL);
+    ignore(SDL_PushEvent(cast [&SDL_Event] (&dummy)));
+    ignore(SDL_LockMutex(m));
+  }
+
+  proc unblock_sdl_events(m:&SDL_mutex)
+  {
+    ignore(SDL_UnlockMutex(m));
+  }
+}
