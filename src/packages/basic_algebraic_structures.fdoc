@@ -1,4 +1,7 @@
 @tangler init.flx=share/lib/std/algebra/__init__.flx
+@tangler set.flx=share/lib/std/algebra/predicate.flx
+@tangler set.flx=share/lib/std/algebra/set.flx
+@tangler container.flx=share/lib/std/algebra/container.flx
 @tangler equiv.flx=share/lib/std/algebra/equiv.flx
 @tangler pord.flx=share/lib/std/algebra/partialorder.flx
 @tangler tord.flx=share/lib/std/algebra/totalorder.flx
@@ -14,8 +17,9 @@
 @h1 Synopsis.
 
 @tangle init.flx
-include "std/algebra/set";
+include "std/algebra/predicate";
 include "std/algebra/container";
+include "std/algebra/set";
 include "std/algebra/equiv";
 include "std/algebra/partialorder";
 include "std/algebra/totalorder";
@@ -86,6 +90,128 @@ which would be too hard to prove with an automatic theorem
 prover. Instead, it should be derivable with a proof 
 assistant (such as Coq), given various unspecified 
 strategies, tactics and hints.
+
+@h1 Predicate combinators.
+@tangle predicate.flx
+
+// Some operations on predicates.
+// These also automatically apply to relations, but just taking
+// the argument as a tuple.
+
+open class Predicate[T]
+{
+   fun land (f:T->bool,g:T->bool) =>
+     fun (x:T) => f x and g x
+   ;
+
+   fun lor (f:T->bool,g:T->bool) =>
+     fun (x:T) => f x or g x
+   ;
+
+   fun implies (f:T->bool,g:T->bool) =>
+     fun (x:T) => f x implies g x
+   ;
+
+   fun lnot (f:T->bool) =>
+     fun (x:T) => not (f x)
+   ;
+
+}
+
+@h1 Sets.
+
+@tangle set.flx
+// note: eq is not necessarily required for a membership test
+// for example: string member of regexp doesn't require
+// string equality
+// Set need not be finite (example regexp again)
+// A list is a set, despite the duplications
+class Set[c,t] {
+  fun mem (elt:t, container:c):bool => elt \in container;
+  virtual fun \in : t * c-> bool;
+  fun \owns (container:c, elt:t) => elt \in container;
+  fun \ni (container:c, elt:t) => elt \in container;
+  fun \notin (elt:t, container:c) => not (elt \in container);
+
+  fun \cup[c2 with Set[c2,t]] 
+    (x:c, y:c2) => 
+    { e : t | e \in x or e \in y }
+  ;
+
+  fun \cap[c2 with Set[c2,t]] 
+    (x:c, y:c2) => 
+    { e : t | e \in x and e \in y }
+  ;
+
+  fun \setminus[c2 with Set[c2,t]] 
+    (x:c, y:c2) => 
+    { e : t | e \in x and e \notin y }
+  ;
+}
+
+@h1 Set forms.
+A @{set_form} is a record type with a single 
+member @{has_elt} which returns true if it's argument
+is intended as a member of some particular set.
+
+We construe a set_form as a Set by providing an
+instance.
+
+A set_form is basically just the membership predicate remodelled
+as a noun by encapsulating the predicate in a closure and
+thereby abstracting it.
+@tangle set.flx
+interface set_form[T] { has_elt: T -> bool; }
+
+instance[T] Set[set_form[T], T] {
+  fun \in (elt:T, s:set_form[T]) => s.has_elt elt;
+}
+open[T] Set[set_form[T],T];
+
+// INVERSE image of a set under a function
+// For a function f: t -> t2, an element e
+// is in a restriction of the domain t if its
+// image in t2 is in the specified set.
+fun invimg[t,c2,t2 with Set[c2,t2]] 
+  (f:t->t2, x:c2) : set_form[t] =>
+  { e : t | (f e) \in x }
+;
+
+@h2 Cartesian Product of set_forms.
+This uses some advanced instantiation technology
+to allow you to define the cartesian product of a
+sequence of sets using the infix TeX operator \(\otimes\)
+which is spelled @{\otimes}. There's also a left associative
+binary operator \(\times\) spelled @{\times}.
+@tangle set.flx
+
+fun \times[U,V] (x:set_form[U],y:set_form[V]) => 
+  { u,v : U * V | u \in x and v \in y }
+;
+
+fun \otimes[U,V] (x:set_form[U],y:set_form[V]) => 
+  { u,v : U * V | u \in x and v \in y }
+;
+
+fun \otimes[U,V,W] (head:set_form[U], tail:set_form[V*W]) =>
+  { u,v,w : U * V * W | u \in head and (v,w) \in tail }
+;
+
+fun \otimes[NH,OH,OT] (head:set_form[NH], tail:set_form[OH**OT]) =>
+  { h,,(oh,,ot) : NH ** (OH ** OT) | h \in head and (oh,,ot) \in tail }
+;
+
+@h1 Containers.
+@tangle container.flx
+// roughly, a finite Set
+class Container [c,v]
+{
+  inherit Set[c,v];
+  virtual fun len: c -> size;
+  fun \Vert (x:c) => len x;
+  virtual fun empty(x: c): bool => len x == size(0);
+}
+
 
 @h1 Orders
 @h2 Equivalence Relation.
