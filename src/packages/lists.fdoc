@@ -1,5 +1,6 @@
 @tangler list.flx = share/lib/std/datatype/list.flx
 @tangler assoc_list.flx = share/lib/std/datatype/assoc_list.flx
+@tangler ralist.flx = share/lib/std/datatype/ralist.flx
 @tangler sexpr.flx = share/lib/std/datatype/sexpr.flx
 @tangler lsexpr.flx = share/lib/std/datatype/lsexpr.flx
 @tangler dlist.flx = share/lib/std/datatype/dlist.flx
