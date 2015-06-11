@@ -194,9 +194,10 @@ typedef complexes = typesetof (fcomplex,dcomplex,lcomplex);
 
 //$ All the core approximations to numbers.
 typedef numbers = reals \cup complexes;
+@
 
 @h2 All Scalars.
-@tangler scalar
+@tangle scalar
 //$ All the basic scalar types.
 typedef basic_types = bool \cup numbers \cup chars \cup addressing;
 
