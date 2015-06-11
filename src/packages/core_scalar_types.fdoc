@@ -138,6 +138,8 @@ typedef addressing = typesetof (
 //$ Character types.
 typedef chars = typesetof (char);
 
+@h2 Integers
+@tangle scalar
 //$ "natural" sized signed integer types.
 //$ These correspond to C/C++ core types.
 typedef fast_sints = typesetof (tiny, short, int, long, vlong);
@@ -179,6 +181,8 @@ typedef exact_ints = exact_sints \cup exact_uints;
 //$ All the integers.
 typedef ints = sints \cup uints;
 
+@h2 Floats
+@tangle scalar
 //$ All the core floating point types.
 typedef floats = typesetof (float, double, ldouble);
 
@@ -191,6 +195,8 @@ typedef complexes = typesetof (fcomplex,dcomplex,lcomplex);
 //$ All the core approximations to numbers.
 typedef numbers = reals \cup complexes;
 
+@h2 All Scalars.
+@tangler scalar
 //$ All the basic scalar types.
 typedef basic_types = bool \cup numbers \cup chars \cup addressing;
 

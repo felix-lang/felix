@@ -3,9 +3,9 @@
 @felix
 open Sqlite3;
 
-fun subscript: + +char * int -> +char = "$1[$2]";
+fun subscript: + (+char) * int -> +char = "$1[$2]";
 
-cfun eh(data:address, ncols:int, values: + +char, names: + +char):int =
+cfun eh(data:address, ncols:int, values: + (+char), names: + (+char)):int =
 {
   var ii:int = 0;
   while ii<ncols do

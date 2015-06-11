@@ -58,9 +58,6 @@ instance[t with Eq[t]] Eq[t*t] {
   ;
 }
 
-open[U,V with Eq[U], Eq[V]] Eq[U ** V];
-open[U,V with Eq[U], Eq[V]] Eq[U * V];
-
 //------------------------------------------------------------------------------
 // Class Tord: Total Order
 instance [T,U with Tord[T], Tord[U]] Tord[T ** U] {

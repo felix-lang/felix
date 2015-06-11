@@ -4,7 +4,7 @@
 <dd>First we require basic C interfaces...</dd>
 
 <dt><a href=core_scalar_types.fdoc>Core Scalar Types</a></dt>
-<dd>So we lift some basic types from C.dd>
+<dd>So we lift some basic types from C.<dd>
 </dl>
 
 

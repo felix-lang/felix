@@ -9,7 +9,6 @@
 @h1 General Numeric operations.
 @tangle number.flx
 
-
 instance[t in numbers] FloatAddgrp[t] {
   fun zero: unit -> t = "(?1)0" ;
   fun + : t * t -> t = "$1+$2" ;
@@ -33,7 +32,8 @@ instance[t in numbers] FloatDring[t] {
   proc %= : &t * t = "*$1%=$2;";
 }
 @
-@h1 Float Math
+@h1 Floating Numbers.
+Operations on Real and Complex numbers.
 @tangle float_math.flx
 
 // note: has to be called Fcomplex to avoid clash with class Complex
@@ -131,6 +131,9 @@ typedef complex[t in floats] = typematch t with
   | ldouble => lcomplex
   endmatch
 ;
+
+@h2 Complex Constructors.
+@tangle float_math.flx
 
 ctor complex[float] (x:float, y:float) => fcomplex(x,y);
 ctor complex[double] (x:double, y:double) => dcomplex(x,y);
