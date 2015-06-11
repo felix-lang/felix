@@ -522,8 +522,35 @@ instance[t in uints] Unsigned_integer[t] {}
 
 @h1 Make functions accessible without qualification
 @tangle int.flx
-open[T in sints] Signed_integer[T];
-open[T in uints] Unsigned_integer[T];
+//open[T in sints] Signed_integer[T];
+open Signed_integer[tiny];
+open Signed_integer[short];
+open Signed_integer[int];
+open Signed_integer[long];
+open Signed_integer[vlong];
+open Signed_integer[int8];
+open Signed_integer[int16];
+open Signed_integer[int32];
+open Signed_integer[int64];
+open Signed_integer[intmax];
+open Signed_integer[ptrdiff];
+open Signed_integer[intptr];
+
+//open[T in uints] Unsigned_integer[T];
+open Unsigned_integer[utiny];
+open Unsigned_integer[ushort];
+open Unsigned_integer[uint];
+open Unsigned_integer[ulong];
+open Unsigned_integer[uvlong];
+open Unsigned_integer[uint8];
+open Unsigned_integer[uint16];
+open Unsigned_integer[uint32];
+open Unsigned_integer[uint64];
+open Unsigned_integer[uintmax];
+open Unsigned_integer[size];
+open Unsigned_integer[uintptr];
+
+
 
 @h1 Quaternions
 @tangle quaternion.flx

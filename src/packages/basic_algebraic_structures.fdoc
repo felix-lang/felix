@@ -93,6 +93,16 @@ assistant (such as Coq), given various unspecified
 strategies, tactics and hints.
 
 @h1 Predicate combinators.
+A <em>predicate</em> is any function returning
+a boolean argument. Predicates are also relations
+by simply providing a tuple argument.
+
+This is a simple class allowing predicates to be combined
+directly using symbolic operators to form new predicates, using logical 
+conjunction @{and}, disjunction @{or}, implication @{implies}
+and negation @{not}. The parser maps these operator onto the 
+functions @{land}, @{lor}, @{implies}, and @{lnot} respectively.
+
 @tangle predicate.flx
 
 // Some operations on predicates.
@@ -120,7 +130,19 @@ open class Predicate[T]
 }
 
 @h1 Sets.
+A <em>set</em> is any type with a membership predicate \(\in\)
+spelled @{\in}. You can also use function @{mem}. The parser
+also maps @{in} to operator @{\in}.
 
+We also provide a reversed form \(\owns\) spelled @{\owns},
+and negated forms \(ni\) spelled @{\ni} or @{\notin}.
+
+Three combinators are provided as well, \(\cap\) spelled @{cap}
+provides intersection, \(\cup\) spelled @{\cup} provides
+the usual set union, and \(\setminus\) spelled @{\setminus}
+the asymmetic set difference or subtraction.
+
+Note that sets are not necessarily finite.
 @tangle set.flx
 // note: eq is not necessarily required for a membership test
 // for example: string member of regexp doesn't require
