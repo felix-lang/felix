@@ -6,7 +6,8 @@
 <a href="/share/src/web/ref/spec_01.fdoc">Language Specification</a>
 
 @h1 Library Reference
-<a href="/share/lib/std">The Standard Library.</a> The standard library, live.
+<a href="/share/src/packages/stdlib_toc.fdoc">Packages.</a> The standard library packages.<br>
+<a href="/share/lib/std">Unpacked and Live.</a> The standard library, live.
 
 @h1 Tools Reference
 <a href=/share/src/web/ref/tools.fdoc>Tools</a>
