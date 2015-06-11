@@ -1,5 +1,5 @@
 @tangler init.flx      = share/lib/std/algebra/__init__.flx
-@tangler set.flx       = share/lib/std/algebra/predicate.flx
+@tangler predicate.flx = share/lib/std/algebra/predicate.flx
 @tangler set.flx       = share/lib/std/algebra/set.flx
 @tangler container.flx = share/lib/std/algebra/container.flx
 @tangler equiv.flx     = share/lib/std/algebra/equiv.flx
