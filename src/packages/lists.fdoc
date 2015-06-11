@@ -1,16 +1,22 @@
+@tangler list.flx = share/lib/std/datatype/list.flx
+@tangler assoc_list.flx = share/lib/std/datatype/assoc_list.flx
+@tangler sexpr.flx = share/lib/std/datatype/sexpr.flx
+@tangler lsexpr.flx = share/lib/std/datatype/lsexpr.flx
+@tangler dlist.flx = share/lib/std/datatype/dlist.flx
 
+@title Functional List
 @h1  Singly Linked List.
 The core data type for most functional programming languages.
-@felix
+@tangle list.flx
 open class List
 {
 @h2 The @{list} type.
-@felix
+@tangle list.flx
   union list[T] = | Empty | Cons of T * list[T];
 
 @h2 Splice
 This is primarily a non-functional helper routine.
-@felix
+@tangle list.flx
   //$ The second list is made the tail of the
   //$ list stored at the location pointed at by the first argument.
   //$ If the first list is empty, the variable will point
@@ -43,7 +49,7 @@ This is primarily a non-functional helper routine.
 
 @h2 In-place unsafe reversal.
 Another helper routine.
-@felix
+@tangle list.flx
   //$ In place list reversal: unsafe!
   // second arg is a dummy to make overload work
   proc rev[T,PLT=&list[T]] : &list[T] = "_rev($1,(?1*)0);" requires _iprev_[T,PLT];
@@ -69,7 +75,7 @@ Another helper routine.
 
 @h2 In-place reversal.
 Another variant of the unsafe reversal.
-@felix
+@tangle list.flx
   // in place list reversal, also returns the last element
   // as a list, empty iff the original list is
   // unsafe!
@@ -99,7 +105,7 @@ Another variant of the unsafe reversal.
 @h2 List @{copy}
 Make an entirely new copy of a list.
 Primarily a helper.
-@felix
+@tangle list.flx
   //$ Copy a list.
   fun copy[T] (x:list[T]):list[T]= {
     var y = rev x;
@@ -109,7 +115,7 @@ Primarily a helper.
 
 @h2 Copy and return last @{copy_last}
 Yet another helper.
-@felix
+@tangle list.flx
   //$ Copy a list, and return last element as a list,
   //$ empty if original list was empty.
   proc copy_last[T] (inp:list[T], out:&list[T], last:&list[T]) {
@@ -119,21 +125,21 @@ Yet another helper.
 
 
 @h2 Named constructor for empty list.
-@felix
+@tangle list.flx
   //$ Make an empty list.
   ctor[T] list[T] () => Empty[T];
 
 @h2 Construct a singleton list.
 Does not work if the argument is an array
 or option iterator.
-@felix
+@tangle list.flx
   //$ Make a list with one element.
   //$ NOTE: list (1,2) is a list of 2 ints.
   //$ To get a list of one pair use list[int*int] (1,2) instead!
   ctor[T] list[T] (x:T) => Cons(x, Empty[T]);
 
 @h2 Construct a list from an array.
-@felix
+@tangle list.flx
   //$ Make a list from an array.
   ctor[T,N] list[T] (x:array[T, N]) = {
     var o = Empty[T];
@@ -148,7 +154,7 @@ or option iterator.
 @h2 List comprehension.
 Make a list from an option stream.
 Named variant.
-@felix
+@tangle list.flx
   //$ List comprehension:
   //$ Make a list from a stream.
   fun list_comprehension[T] (f: (1->opt[T])) = {
@@ -168,17 +174,17 @@ Named variant.
 @h2 List comprehension.
 Make a list from an option stream.
 Constructor variant.
-@felix
+@tangle list.flx
 //$ List comprehension:
   //$ Make a list from a stream.
   ctor[T] list[T](f: (1->opt[T])) => list_comprehension f;
 
 @h2 Construe a list as an array value.
-@felix
+@tangle list.flx
   //$ Contrue a list as an array value
   instance[T] ArrayValue[list[T],T] {
 @h3 Core routine @{len}
-@felix
+@tangle list.flx
     //$ Return umber of elements in a list.
     pure fun len (x:list[T]) = {
       fun aux (acc:size) (x:list[T]) =>
@@ -190,7 +196,7 @@ Constructor variant.
       return aux 0uz x;
     }
 @h3 Core routine @{unsafe_get}
-@felix
+@tangle list.flx
     //$ get n'th element
     pure fun unsafe_get: list[T] * size -> T =
       | Cons (h,_), 0uz => h
@@ -198,7 +204,7 @@ Constructor variant.
     ;
 
 @h3 Default performance override @{iter}
-@felix
+@tangle list.flx
     //$ Apply a procedure to each element of a list.
     proc iter (_f:T->void) (x:list[T]) {
       match x with
@@ -209,7 +215,7 @@ Constructor variant.
     }
 
 @h3 Default performance override @{fold_left}
-@felix
+@tangle list.flx
     //$ Traditional left fold over list (tail rec).
     fun fold_left[U] (_f:U->T->U) (init:U) (x:list[T]):U =
     {
@@ -223,7 +229,7 @@ Constructor variant.
     }
 
 @h3 Default performance override @{fold_right}
-@felix
+@tangle list.flx
     //$ Right fold over list (not tail rec!).
     fun fold_right[U] (_f:T->U->U) (x:list[T]) (init:U):U =
     {
@@ -239,7 +245,7 @@ Constructor variant.
   }
 
 @h2 Test for empty list @{is_empty}
-@felix
+@tangle list.flx
   //$ Test if a list is empty.
   pure fun is_empty[T] : list[T] -> 2 =
     | #Empty => true
@@ -247,7 +253,7 @@ Constructor variant.
   ;
 
 @h2 Tail of a list @{tail}
-@felix
+@tangle list.flx
   //$ Tail of a list, abort with match failure if list is empty.
   pure fun tail[T] (x:list[T]) : list[T] = {
     match x with
@@ -256,7 +262,7 @@ Constructor variant.
   }
 
 @h2 Head of a list @{head}
-@felix
+@tangle list.flx
   //$ Head of a list, abort with match failure if list is empty.
   pure fun head[T] (x:list[T]) : T = {
     match x with
@@ -266,7 +272,7 @@ Constructor variant.
 
 @h2 Reverse map a list @{rev_map}
 Tail recursive.
-@felix
+@tangle list.flx
   //$ map a list, return mapped list in reverse order (tail rec).
   fun rev_map[T,U] (_f:T->U) (x:list[T]): list[U] = {
     fun aux (inp:list[T]) (out:list[U]) : list[U] =>
@@ -281,7 +287,7 @@ Tail recursive.
 @h2 Map a list @{map}
 Tail recursive. Uses rev_map and then inplace revseral.
 This is safe because we enforce linearity by abstraction.
-@felix
+@tangle list.flx
   //$ map a list (tail-rec).
   //  tail rec due to in-place reversal of result.
   fun map[T,U] (_f:T->U) (x:list[T]): list[U] =
@@ -293,7 +299,7 @@ This is safe because we enforce linearity by abstraction.
 
 @h2 Reverse a list @{rev}.
 Tail recursive.
-@felix
+@tangle list.flx
   //$ reverse a list (tail rec).
   pure fun rev[T] (x:list[T]):list[T]= {
     fun aux (x:list[T]) (y:list[T]) : list[T] =
@@ -310,7 +316,7 @@ Tail recursive.
 
 @h2 Zip a pair of lists to a list of pairs @{zip2}
 Returns a list the length of the shortest argument.
-@felix
+@tangle list.flx
   //$ Zip two lists into a list of pairs.
   //$ Zips to length of shortest list.
   fun zip2[T1,T2] (l1: list[T1]) (l2: list[T2]) : list[T1 * T2] = 
@@ -326,7 +332,7 @@ Returns a list the length of the shortest argument.
 
 @h2 A list of integers @{range}.
 From @{low} to @{high} exclusive with given @{step}.
-@felix
+@tangle list.flx
   //$ Generate an ordered list of ints between low and high with given step.
   //$ Low included, high not included.
   fun range (low:int, high:int, step:int) =
@@ -359,18 +365,18 @@ From @{low} to @{high} exclusive with given @{step}.
   }
 
 @h2 Consecutive integers @{range}
-@felix
+@tangle list.flx
   //$ Range with step 1.
   fun range (low:int, high:int) => range(low, high, 1);
 
 @h2 Non-negative integers to limit @{range}
 @{num} integers 0 to @{num-1}.
-@felix
+@tangle list.flx
   //$ Range from 0 to num (excluded).
   fun range (num:int) => range(0, num, 1);
 
 @h2 Concatenate two lists @{join}.
-@felix
+@tangle list.flx
   //$ Concatenate two lists.
   fun join[T] (x:list[T]) (y:list[T]):list[T] =
   {
@@ -389,13 +395,13 @@ From @{low} to @{high} exclusive with given @{step}.
   pure fun + [T] (x:list[T], y: list[T]):list[T] => join x y;
 
 @h2 Cons an element onto a list.
-@felix
+@tangle list.flx
   //$ Prepend element to head of list.
   pure fun + [T] (x:T, y:list[T]):list[T] => Cons (x, y);
 
 @h2 Append an element onto a list.
 O(N) slow.
-@felix
+@tangle list.flx
   //$ Append element to tail of list (slow!).
   noinline fun + [T] (x:list[T], y:T):list[T] => rev$ Cons (y, rev x);
 
@@ -403,7 +409,7 @@ O(N) slow.
   proc += [T] (x:&list[T], y:T) { x <- *x + y; }
 
 @h2 Concatenate a list of lists @{cat}
-@felix
+@tangle list.flx
   //$ Concatenate all the lists in a list of lists.
   noinline fun cat[T] (x:list[list[T]]):list[T] =
   {
@@ -416,7 +422,7 @@ O(N) slow.
    }
 
 @h2 Pack list of strings into a string with separator @{cat}
-@felix
+@tangle list.flx
   //$ Concatenate all the strings in a list with given separator.
   pure fun cat (sep:string) (x:list[string]):string =
   {
@@ -430,7 +436,7 @@ O(N) slow.
   }
 
 @h2 Map a list to a list of strings and cat with separator @{catmap}
-@felix
+@tangle list.flx
   fun catmap[T] (sep:string) (f:T -> string) (ls: list[T]) =>
     cat sep (map f ls)
   ;
@@ -445,7 +451,7 @@ O(N) slow.
 
  
 @h2 Value membership
-@felix
+@tangle list.flx
   //$ Return true if one value in a list satisfies the predicate.
   fun mem[T] (eq:T -> bool) (xs:list[T]) : bool =>
     match xs with
@@ -469,7 +475,7 @@ O(N) slow.
 
 @h2 Value Find by relation @{find}
 Returns option.
-@felix
+@tangle list.flx
   //$ return option of the first element in a list satisfying the predicate.
   fun find[T] (eq:T -> bool) (xs:list[T]) : opt[T] =>
     match xs with
@@ -628,4 +634,546 @@ instance[T with Show[T]] Str[List::list[T]] {
     + ')'
   ;
 }
+
+@
+@h1 Association List
+
+A list of pairs
+@tangle assoc_list.flx
+open class Assoc_list
+{
+  typedef assoc_list[A,B] = List::list[A*B];
+
+  // check is the key (left element) of a pair
+  // satisfies the predicate
+  fun mem[A,B] (eq:A -> bool) (xs:assoc_list[A,B]) : bool =>
+    List::mem (fun (a:A, b:B) => eq a) xs;
+  ;
+
+  // check is the key (left element) of a pair
+  // satisfies the relation to given element 
+  fun mem[A,B,T] (eq:A * T -> bool) (xs:assoc_list[A,B]) (e:T) : bool =>
+    mem (fun (a:A) => eq(a, e)) xs;
+  ;
+
+  instance[A,B] Set[assoc_list[A,B], A] {
+    fun mem[A,B with Eq[A]] (xs:assoc_list[A,B]) (e:A) : bool => 
+      mem eq of (A * A) xs e
+    ;
+  }
+
+  // find optionally the first value whose associate key satisfies 
+  // the given predicate
+  fun find[A,B] (eq:A -> bool) (xs:assoc_list[A,B]) : opt[B] =>
+    match xs with
+    | #Empty => None[B]
+    | Cons ((a, b), t) => if eq(a) then Some b else find eq t endif
+    endmatch
+  ;
+
+  // find optionally the first value whose associate key (left slot)
+  // satisfies the given relation to the given element (right slot) 
+  fun find[A,B,T] (eq:A * T -> bool) (xs:assoc_list[A,B]) (e:T) : opt[B] =>
+    find (fun (a:A) => eq (a, e)) xs;
+  ;
+
+  fun find[A,B with Eq[A]] (xs:assoc_list[A,B]) (e:A) : opt[B] =>
+    find eq of (A * A) xs e
+  ;
+}
+
+@h1 Purely Functional Random Access List.
+@tangle ralist.flx
+//$ Purely functional Random Access List.
+//$ Based on design from Okasaki, Purely Functional Datastructures.
+//$ Transcribed from Hongwei Xi's encoding for ATS2 library.
+//$
+//$ An ralist provides O(log N) indexed access and amortised
+//$ O(1) consing. This is roughly the closest thing to
+//$ purely functional array available.
+
+class Ralist
+{
+
+  //$ Auxilliary data structure.
+  union pt[a] = | N1 of a | N2 of pt[a] * pt[a];
+
+  //$ Type of an ralist.
+  union ralist[a] = 
+    | RAnil
+    | RAevn of ralist[a]
+    | RAodd of pt[a] * ralist[a]
+  ;
+
+  //$ Length of an ralist.
+  fun ralist_length[a] : ralist[a] -> int =
+    | #RAnil => 0
+    | RAevn xxs => 2 * ralist_length xxs
+    | RAodd (_,xxs) => 2 * ralist_length xxs + 1
+  ;
+
+  private fun cons[a] // O(1), amortized
+    (x0: pt[a], xs: ralist[a]): ralist [a] =>
+    match xs with
+    | #RAnil => RAodd (x0, RAnil[a])
+    | RAevn xxs => RAodd (x0, xxs)
+    | RAodd (x1, xxs) =>
+        let x0x1 = N2 (x0, x1) in
+        RAevn (cons (x0x1, xxs) )
+    endmatch  ;
+
+  //$ Cons: new list with extra value at the head.
+  fun ralist_cons[a] (x:a, xs: ralist[a]) =>
+    cons (N1 x, xs)
+  ;
+
+  //$ Check for an empty list.
+  fun ralist_empty[a]: ralist[a] -> bool  =
+  | #RAnil => true
+  | _ => false
+  ;
+
+  private proc uncons[a] (xs: ralist[a], phd: &pt[a], ptl: &ralist[a]) 
+  {
+    match xs with
+    | RAevn xss => 
+      var nxx: pt[a];
+      var xxs: ralist[a];
+      uncons (xss,&nxx, &xxs);
+      match nxx with
+      | N2(x0,x1) => 
+        phd <- x0;
+        ptl <- RAodd (x1,xxs);
+      endmatch; 
+
+    | RAodd (x0,xss) =>
+      phd <- x0;
+      match xss with
+      | #RAnil => ptl <- RAnil[a];
+      | _ => ptl <- RAevn xss;
+      endmatch;
+    endmatch;
+  }
+
+  //$ Proedure to split a non-empty ralist
+  //$ into a head element and a tail.
+  proc ralist_uncons[a] (xs: ralist[a], phd: &a, ptl: &ralist[a])
+  {
+    var nx: pt[a];
+    uncons (xs, &nx, ptl);
+    match nx with
+    | N1 (x1) => phd <- x1;
+    endmatch;
+  }
+
+  //$ User define pattern matching support
+  fun _match_ctor_Cons[T] (x:ralist[T]) =>not ( ralist_empty x);
+  fun _match_ctor_Empty[T] (x:ralist[T]) => ralist_empty x;
+
+  fun _ctor_arg_Cons[T] (x:ralist[T]) : T * ralist[T] =
+  {
+    var elt : T;
+    var tail : ralist[T];
+    ralist_uncons (x, &elt, &tail);
+    return elt,tail;
+  }
+
+
+  //$ Head element of a non-empty ralist.
+  fun ralist_head[a] (xs: ralist[a]) : a =
+  {
+    var nx: a;
+    var xxs: ralist[a];
+    ralist_uncons (xs, &nx, &xxs);
+    return nx;
+  }
+
+  //$ Tail list of a non-empty ralist.
+  fun ralist_tail[a] (xs: ralist[a]) : ralist[a] =
+  {
+    var nx: a;
+    var xxs: ralist[a];
+    ralist_uncons (xs, &nx, &xxs);
+    return xxs;
+  }
+
+  private fun lookup[a]
+  (
+    xs: ralist [a], 
+    i: int 
+  ) : pt[a] =>
+    match xs with
+    | RAevn xxs => 
+      let x01 = lookup (xxs, i/2) in
+      if i % 2 == 0 then
+        let N2 (x0, _) = x01 in x0 
+      else
+        let N2 (_, x1) = x01 in x1
+      endif
+
+    | RAodd (x, xxs) => 
+      if i == 0 then x else 
+        let x01 = lookup (xxs, (i - 1)/2) in
+        if i % 2 == 0 then
+          let N2 (_, x1) = x01 in x1 
+        else
+          let N2 (x0, _) = x01 in x0
+        endif
+      endif 
+    endmatch
+  ;
+
+  //$ Random access to an ralist. Unchecked.
+  fun ralist_lookup[a] (xs:ralist[a],i:int)=>
+    let N1 x = lookup (xs,i) in x
+  ;
+
+  private fun fupdate[a]
+  (
+    xs: ralist[a] , 
+    i:int, 
+    f: pt[a] -> pt[a]
+  ) : ralist[a] =>
+    match xs with
+    | RAevn (xxs) => RAevn (fupdate2 (xxs, i, f))
+    | RAodd (x, xxs) =>
+      if i == 0 then RAodd (f x, xxs) 
+      else RAodd (x, fupdate2 (xxs, i - 1, f))
+      endif
+    endmatch
+  ;
+
+  private fun fupdate2[a]
+  (
+    xxs: ralist[a],
+    i: int,
+    f: pt[a] -> pt[a]
+  ) : ralist[a] =>
+      if i % 2 == 0 then 
+      let f1 = 
+        fun (xx: pt[a]): pt[a] =>
+        let N2 (x0, x1) = xx in N2 (f x0, x1)
+      in
+      fupdate (xxs, i / 2, f1)
+    else 
+      let f1 = 
+        fun (xx: pt[a]): pt[a] =>
+        let N2 (x0, x1) = xx in N2 (x0, f x1)
+      in
+      fupdate (xxs, i / 2, f1)
+  ;
+
+  //$ Return a list with the i'th element replaced by x0.
+  //$ Index is unchecked.
+  fun ralist_update[a] (xs:ralist[a], i:int, x0:a) =>
+    let f = fun (z:pt[a]) : pt[a] => N1 x0 in
+    fupdate (xs,i,f)
+  ;
+
+  private proc foreach[a]
+  (
+    xs: ralist[a],
+    f: pt[a] -> void
+  )
+  { 
+    match xs with
+    | RAevn (xxs) => foreach2 (xxs, f);
+    | RAodd (x, xxs) =>
+      f x;
+      match xxs with
+      | #RAnil => ;
+      | _ => foreach2 (xxs, f);
+      endmatch;
+    | #RAnil => ;
+    endmatch;
+  }
+
+  private proc foreach2[a]
+  (
+    xxs: ralist[a], 
+    f: pt[a] -> void
+  )
+  {
+    var f1 = 
+      proc (xx: pt[a]) {
+        match xx with 
+        | N2 (x0, x1) => f (x0); f (x1);
+        endmatch;
+      }
+    ;
+    foreach (xxs, f1);
+  }
+
+  //$ Callback based iteration.
+  //$ Apply procedure to each element of the ralist.
+  proc ralist_foreach[a] 
+  (
+    xs: ralist[a],
+    f: a -> void
+  )
+  { 
+    var f2 = 
+      proc (x:pt[a]) {
+        match x with
+        | N1 y => f y;
+        endmatch;
+      }
+    ;
+    foreach (xs, f2);
+  }
+
+  //$ Convert ralist to a string.
+  instance[a with Str[a]] Str[ralist[a]] 
+  {
+    fun str (xx: ralist[a]):string = {
+      var xs = xx;
+      var x: a;
+      var s = "";
+      while not ralist_empty xs do
+        ralist_uncons (xs,&x,&xs);
+        s += (if s != "" then "," else "") + str x;
+      done
+      return s;
+    }
+  }
+
+  // TODO: list membership, folds, etc
+}
+
+
+@h1 Dlist
+A dlist_t is a doubly linked mutable list.
+It is suitable for use as non-thread-safe queue.
+@tangle dlist.flx
+class DList[T]
+{
+  typedef dnode_t=
+  (
+    data: T,
+    next: cptr[dnode_t], // possibly NULL
+    prev: cptr[dnode_t]  // possibly NULL
+  );
+  typedef dlist_t = (first:cptr[dnode_t], last:cptr[dnode_t]);
+    // invariant: if first is null, so is last!
+
+  ctor dlist_t () => (first=nullptr[dnode_t],last=nullptr[dnode_t]);
+
+@h2 Length @{len}
+@tangle dlist.flx
+  fun len (x:dlist_t) = {
+    var n = 0;
+    var first : cptr[dnode_t] = x.first;
+  again:>
+    match first do
+    | #nullptr => return n;
+    | Ptr p => ++n; first = p*.next;
+    done
+    goto again; 
+  }
+
+@h2 Inspection
+@tangle dlist.flx
+  fun peek_front (dl:dlist_t) : opt[T] => 
+    match dl.first with 
+    | #nullptr => None[T]
+    | Ptr p => Some p*.data
+    endmatch
+  ;
+
+  fun peek_back (dl:dlist_t) : opt[T] => 
+    match dl.last with 
+    | #nullptr => None[T]
+    | Ptr p => Some p*.data
+    endmatch
+  ;
+
+@h2 Insertion
+@tangle dlist.flx
+  proc push_front (dl:&dlist_t, v:T) { 
+    var oldfirst = dl*.first;
+    var node = new (data=v, next=oldfirst, prev=nullptr[dnode_t]); 
+    dl.first <- Ptr node;
+    match oldfirst with
+    | #nullptr => dl.last
+    | Ptr p => p.prev 
+    endmatch <- Ptr node; 
+  }
+
+  proc push_back (dl:&dlist_t, v:T) {
+    var oldlast = dl*.last;
+    var node = new (data=v, next=nullptr[dnode_t], prev=oldlast); 
+    dl.last <- Ptr node;
+    match oldlast with
+    | #nullptr => dl.first
+    | Ptr p => p.next
+    endmatch <- Ptr node; 
+  }
+
+@h2 Deletion 
+@tangle dlist.flx
+
+  gen pop_front (dl:&dlist_t): opt[T] = {
+    match dl*.first do
+    | #nullptr => return None[T];
+    | Ptr p => 
+      match p*.next do
+      | #nullptr =>
+        dl.first <- nullptr[dnode_t];
+        dl.last <- nullptr[dnode_t];
+      | _ =>
+        dl.first <- p*.next;
+      done
+      return Some p*.data;
+    done
+  }
+
+  gen pop_back (dl:&dlist_t): opt[T] = {
+    match dl*.last do
+    | #nullptr => return None[T];
+    | Ptr p => 
+      match p*.prev do
+      | #nullptr =>
+        dl.first <- nullptr[dnode_t];
+        dl.last <- nullptr[dnode_t];
+      | _ =>
+        dl.last <- p*.prev;
+      done
+      return Some p*.data;
+    done
+  }
+
+@h2 Use as a queue
+We can implement enqueue and dequeue at either end, we'll make
+enqueue push_front and dequeue pop_back for no particular reason.
+@tangle dlist.flx
+  typedef queue_t = dlist_t;
+  proc enqueue (q:&queue_t) (v:T) => push_front (q,v);
+  gen dequeue (q:&queue_t) :opt[T] => pop_back q;
+  ctor queue_t () => dlist_t ();
+@h2 Queue iterator
+Fetch everything from a queue.
+@tangle dlist.flx
+  gen iterator (q:&queue_t) () => dequeue q;
+}
+
+@h1 S-expressions
+A scheme like data structure.
+@tangle sexpr.flx
+class S_expr 
+{
+  union sexpr[T] = Leaf of T | Tree of list[sexpr[T]]; 
+
+  fun fold_left[T,U] (_f:U->T->U) (init:U) (x:sexpr[T]):U =>
+    match x with
+    | Leaf a => _f init a
+    | Tree b => List::fold_left (S_expr::fold_left _f) init b
+  ;
+
+  proc iter[T] (_f:T->void) (x:sexpr[T]) {
+    match x with
+    | Leaf a => _f a;
+    | Tree b => List::iter (S_expr::iter _f) b;
+    endmatch;
+  }
+
+  fun map[T,U] (_f:T->U) (x:sexpr[T]):sexpr[U] =>
+    match x with
+    | Leaf a => Leaf (_f a)
+    | Tree b => Tree ( List::map (S_expr::map _f) b )
+  ;
+
+  instance[T with Eq[T]] Set[sexpr[T],T] {
+    fun \in (elt:T, x:sexpr[T]) => 
+      fold_left (fun (acc:bool) (v:T) => acc or v == elt) false x; 
+  }
+  instance[T with Str[T]] Str[sexpr[T]] {
+    noinline fun str(x:sexpr[T])=>
+      match x with 
+      | Leaf a => str a
+      | Tree b => str b 
+    ;
+  }
+
+}
+
+open[T with Str[T]] Str[S_expr::sexpr[T]];
+open[T with Eq[T]] Set[S_expr::sexpr[T],T];
+
+@h1 LS-expressions
+A scheme like data structure, similar to sexpr, only in this variant
+the tree nodes also have labels.
+@felix
+class LS_expr 
+{
+  union lsexpr[T,L] = | Leaf of T | Tree of L * list[lsexpr[T,L]]; 
+
+  fun fold_left[T,L,U] (_f:U->T->U) (_g:U->L->U) (init:U) (x:lsexpr[T,L]):U =>
+    match x with
+    | Leaf a => _f init a
+    | Tree (a,b) => List::fold_left (LS_expr::fold_left _f _g) (_g init a) b
+  ;
+
+  proc iter[T,L] (_f:T->void) (_g:L->void) (x:lsexpr[T,L]) {
+    match x with
+    | Leaf a => _f a;
+    | Tree (a,b) => _g a; List::iter (LS_expr::iter _f _g) b;
+    endmatch;
+  }
+
+  fun map[T,L,U,V] (_f:T->U) (_g:L->V) (x:lsexpr[T,L]):lsexpr[U,V] =>
+    match x with
+    | Leaf a => Leaf[U,V] (_f a)
+    | Tree (a,b) => Tree ( _g a, List::map (LS_expr::map _f _g) b )
+  ;
+
+  instance[T,L with Str[T], Str[L]] Str[lsexpr[T,L]] {
+    noinline fun str(x:lsexpr[T,L])=>
+      match x with 
+      | Leaf a => str a
+      | Tree (a,b) => str a + "(" + str b  + ")"
+    ;
+  }
+
+}
+
+open[T,L with Str[T], Str[L]] Str[LS_expr::lsexpr[T,L]];
+
+@h1 LS-expressions
+A scheme like data structure, similar to sexpr, only in this variant
+the tree nodes also have labels.
+@tangle lsexpr.flx
+class LS_expr 
+{
+  union lsexpr[T,L] = | Leaf of T | Tree of L * list[lsexpr[T,L]]; 
+
+  fun fold_left[T,L,U] (_f:U->T->U) (_g:U->L->U) (init:U) (x:lsexpr[T,L]):U =>
+    match x with
+    | Leaf a => _f init a
+    | Tree (a,b) => List::fold_left (LS_expr::fold_left _f _g) (_g init a) b
+  ;
+
+  proc iter[T,L] (_f:T->void) (_g:L->void) (x:lsexpr[T,L]) {
+    match x with
+    | Leaf a => _f a;
+    | Tree (a,b) => _g a; List::iter (LS_expr::iter _f _g) b;
+    endmatch;
+  }
+
+  fun map[T,L,U,V] (_f:T->U) (_g:L->V) (x:lsexpr[T,L]):lsexpr[U,V] =>
+    match x with
+    | Leaf a => Leaf[U,V] (_f a)
+    | Tree (a,b) => Tree ( _g a, List::map (LS_expr::map _f _g) b )
+  ;
+
+  instance[T,L with Str[T], Str[L]] Str[lsexpr[T,L]] {
+    noinline fun str(x:lsexpr[T,L])=>
+      match x with 
+      | Leaf a => str a
+      | Tree (a,b) => str a + "(" + str b  + ")"
+    ;
+  }
+
+}
+
+open[T,L with Str[T], Str[L]] Str[LS_expr::lsexpr[T,L]];
 

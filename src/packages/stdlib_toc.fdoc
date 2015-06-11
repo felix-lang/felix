@@ -21,4 +21,13 @@
 <dd>and functions of strings</dd>
 </dl>
 
+<dt><a href=arrays.fdoc>Array like Data types</a></dt>
+<dd>Array algebra, arrays, variable length arrays, dynamic length arrays, sparse arrays</dd>
+</dl>
+
+
+<dt><a href=lists.fdoc>List like Data types</a></dt>
+<dd>Functional lists, association lists, random access lists, doubly linked lists, an S-expressions</dd>
+</dl>
+
 
