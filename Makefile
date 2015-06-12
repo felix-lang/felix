@@ -192,6 +192,7 @@ install-website:
 #
 syntax:
 	rm -f ${BUILDROOT}/share/lib/grammar/*
+	mkdir -p ${BUILDROOT}/share/lib/grammar
 	cp src/lib/grammar/* ${BUILDROOT}/share/lib/grammar
 
 #
