@@ -64,7 +64,7 @@ help:
 	#   FBUILD_PARAMS: parameters to fbuild, default none
 	#     fbuild/fbuild-light --help for options
 
-build: extract user-build slow-flxg rebuild
+build: syntax extract user-build slow-flxg rebuild
 
 dev-build: fbuild gendoc
 
