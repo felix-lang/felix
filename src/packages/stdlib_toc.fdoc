@@ -30,6 +30,15 @@
 <dd>Functional lists, association lists, random access lists, doubly linked lists, an S-expressions</dd>
 </dl>
 
+<dt><a href=streams.fdoc>Streams and Iterators</a></dt>
+<dd>Streamable data structures and iterators.</dd>
+</dl>
+
+<dt><a href=fibres.fdoc>Cooperative threading</a></dt>
+<dd>Support for fibres, synchronous channels, pipelines.</dd>
+</dl>
+
+
 <dt><a href=stl.fdoc>C++ Standard Template Library</a></dt>
 <dd>C++98 STL: iterators, vector, set, map, list, multiset, multimap, deque</dd>
 </dl>

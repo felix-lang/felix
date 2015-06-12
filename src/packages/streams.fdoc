@@ -1,3 +1,7 @@
+@tangler stream.flx = share/lib/std/control/stream.flx
+@title Streamable data types and iterators
+@h1 Streams
+@tangle stream.flx
 //$ Class of data structures supporting streaming.
 //$ The container type just needs an iterator method.
 //$ The iterator method returns a generator which
