@@ -1,0 +1,435 @@
+@title Preemptive Threading Support
+@tanngler pthread.flx = share/lib/control/pthread.flx
+@tanngler pchannels.flx = share/lib/control/pchannels.flx
+@tanngler ppipe.flx = share/lib/control/ppipe.flx
+@tanngler forkjoin.flx = share/lib/control/forkjoin.flx
+@tanngler mutex.flx = share/lib/control/mutex.flx
+@tanngler semaphore.flx = share/lib/control/semaphore.flx
+@tanngler condition_variable.flx = share/lib/control/condition_variable.flx
+@tanngler ts_counter.flx = share/lib/control/ts_counter.flx
+@tanngler ts_bound_queue.flx = share/lib/control/ts_bound_queue.flx
+
+@h1 Pthreads.
+General support for pre-emptive threading, aka shared 
+memory concurrency.  The core routines are based 
+on Posix C interface.  Emulations are provided for Windows.
+
+The core support routines are written in C++.
+Adaption to the local platform operating system
+is done in C++ using configuration data provided
+by Felix configuration scripts.
+
+Felix pthreads are always detached. It is not possible
+to directly wait on a pthread, kill a pthread, or join to a
+pthread. Pchannels or other devices such as mutex locks,
+semaphores or conditiona variables must be used for 
+synchronisation instead.
+
+@tangle pthread.flx
+
+header pthread_hxx = '#include "pthread_thread.hpp"';
+header mutex_hxx = '#include "pthread_mutex.hpp"';
+header condv_hxx = '#include "pthread_condv.hpp"';
+header counter_hxx = '#include "pthread_counter.hpp"';
+header semaphore_hxx = '#include "pthread_semaphore.hpp"';
+header monitor_hxx = '#include "pthread_monitor.hpp"';
+header work_fifo_hxx = '#include "pthread_work_fifo.hpp"';
+
+//$ This class provides access to the operating system's native
+//$ threading routines. On systems with multiple cpus, this may
+//$ increase performance as the operating system may schedule
+//$ threads on different processors.
+open class Pthread
+{
+  requires package "flx_pthread";
+
+  type job_queue = "::flx::pthread::worker_fifo*" requires work_fifo_hxx;
+  type worker_task = "::flx::pthread::worker_task*" requires work_fifo_hxx;
+  gen mk_job_queue: int * int -> job_queue = "new ::flx::pthread::worker_fifo($1,$2)";
+  proc add_worker_task : job_queue  * worker_task = "$1->add_worker_task($2);";
+
+  //$ spawn a detached pthread.
+  proc spawn_pthread(p:1->0)
+  {
+      var con = start p;              // get continuation of p
+      var fthr = mk_thread con;
+      svc$ svc_spawn_pthread fthr;
+  }
+
+}
+
+@h1 Pchannels.
+A <em>pchannel</em> is a <em>monitor</em> object, which is used to synchronise
+pthreads by use of read and write procedures which transfer a pointer
+to a heap allocated object. Ownership is transfered from the writer
+to the reader. 
+
+After initial synchronisation the read gains control and takes
+possession of the data. The reader then signals that the writer
+may proceed. The control interlock ensures that the reader
+is able to capture the data from the writer without the 
+writer interfering. This may be necessary if the value
+needs to be deep copied, for example. The monitor data exchange
+protocol is designed to permit transfer of data on the writer's
+machine stack, or data which the writer may modify after regaining
+control. However the read/write operations on pchannels automatically
+copy the data onto the heap and perform the synchronisation.
+
+Pchannels should be used carefully because they block the whole
+pthread, that is, all fibres. Unlike fibres, if a deadlock occurs
+it cannot be resolved and should generally be considered a programming
+error.
+
+@tangle pchannels.flx
+
+//$ Pchannels are unbuffered synchronisation points
+//$ for pre-emptive threads.
+//$
+//$ Similarly to schannels, paired reader-writer pthreads
+//$ cannot proceed until both parties agree data exchange is complete.
+//$ Unlike schannels, both reader and writer can subsequently
+//$ continue concurrently after the exchange.
+
+open class Pchannel
+{
+  requires package "flx_pthread";
+
+  //$ Pre-emptive thread channels (monitor).
+  type pchannel[t] = "flx::pthread::monitor_t*" requires monitor_hxx;
+  //$ Pre-emptive thread input channel.
+  type ipchannel[t] = "flx::pthread::monitor_t*" requires monitor_hxx;
+  //$ Pre-emptive thread output channel.
+  type opchannel[t] = "flx::pthread::monitor_t*" requires monitor_hxx;
+
+  //$ Make bidirectional pchannel.
+  fun mk_pchannel[t]: 1->pchannel[t] = "new flx::pthread::monitor_t()";
+
+  //$ Safe cast from bidirectional to output pchannel.
+  ctor[t] opchannel[t](x:pchannel[t]) => C_hack::cast[opchannel[t]] x;
+  //$ Safe cast from bidirectional to input pchannel.
+  ctor[t] ipchannel[t](x:pchannel[t]) => C_hack::cast[ipchannel[t]] x;
+
+  //$ Make an input and an output pchannel out of a bidirectional channel.
+  fun mk_iopchannel_pair[t](var ch:pchannel[t]) =>
+    ipchannel[t] ch, opchannel[t] ch
+  ;
+
+  //$ Construct a connected input and output pchannel pair.
+  fun mk_iopchannel_pair[t]() =>
+    mk_iopchannel_pair[t]$ mk_pchannel[t] ()
+  ;
+
+
+  // NOTE: read/write on pchannels uses suspend/resume
+  // to tell any pending collector it is safe to proceed
+  // whilst it is doing the I/O (which may block),
+  // to block returning from the I/O during a collection
+  // AND, if the I/O completed before the collection got
+  // going, to yield at this point.
+
+  //$ Read from a pchannel.
+  proc _read[t]: pchannel[t] * &&t = """
+    {
+    FLX_SAVE_REGS;
+    PTF gcp->collector->get_thread_control()->suspend();
+    //fprintf(stderr,"READ:DQ\\n");
+    *$2 = (?1*)($1->dequeue());
+    //fprintf(stderr,"DONE READ:DQ\\n");
+    PTF gcp->collector->get_thread_control()->resume();
+    }
+  """ requires property "needs_ptf";
+
+  //$ Write to a pchannel.
+  noinline gen read[t] (chan:pchannel[t]) = {
+    var p : &t;
+    _read (chan,  &p);
+    return *p;
+  }
+  gen read[t] (chan:ipchannel[t]) => read$ C_hack::cast[pchannel[t]] chan;
+
+  proc _write[t]: pchannel[t] * &t = """
+    {
+    FLX_SAVE_REGS;
+    PTF gcp->collector->get_thread_control()->suspend();
+    //fprintf(stderr,"WRITE:NQ\\n");
+    $1->enqueue((void*)$2);
+    //fprintf(stderr,"DONE WRITE:NQ\\n");
+    PTF gcp->collector->get_thread_control()->resume();
+    }
+  """ requires property "needs_ptf";
+
+  noinline proc write[t](chan:pchannel[t], v:t) {
+    var ps = new v;
+    _write (chan,ps);
+  }
+  proc write[t] (chan:opchannel[t], v:t) { write$ C_hack::cast[pchannel[t]] chan,v; }
+}
+
+@h1 Ppipes.
+@tangle ppipe.flx
+
+//$ Asynchronous Synchronous Pipe.
+//$ Used to link pthreads.
+open class Ppipe {
+
+  //$ Send an stream down a channel.
+  proc psource[T] (var it:1 -> T) (out:opchannel[T]) 
+  {
+    while true do write (out,#it); done 
+  }
+
+  //$ isrc converts a streamable data structure
+  //$ such as an array into a source.
+  proc pisrc[V,T with Streamable[T,V]] (dat:T) (out:opchannel[opt[V]])
+  {
+    psource[opt[V]] (dat.iterator) out;
+  }
+
+
+  //$ Wire a source component to a sink.
+  //$ Return coupled fibre ready to run.
+  fun pipe[T] 
+    (w: opchannel[T] -> 0,
+    r: ipchannel[T] -> 0)
+  :
+    1 -> 0
+  => 
+    {
+      var chi,cho = mk_iopchannel_pair[T] ();
+      spawn_pthread { (w cho); };
+      spawn_pthread { (r chi); };
+    }
+  ;
+
+  //$ Wire a source component to a transducer.
+  //$ Return source.
+  fun pipe[T,U]
+    (w: opchannel[T] -> 0,
+    t: ipchannel[T] * opchannel[U] -> 0)
+  :
+    opchannel[U] -> 0 
+  => 
+    proc (out:opchannel[U])
+    {
+      var chi,cho = mk_iopchannel_pair[T] ();
+      spawn_pthread { (w cho); };
+      spawn_pthread { (t (chi, out)); };
+    }
+  ;
+
+  //$ xpipe connects a streamable data structure
+  //$ such as an array directly into a transducer.
+  fun xpipe[V,T,U with Streamable[T,V]] 
+    (
+      a:T,
+      t: ipchannel[opt[V]] * opchannel[U] -> 0
+    )
+    : opchannel[U] -> 0 =>
+    pipe (a.pisrc[V],t)
+  ;
+
+
+  //$ Wire a transducer into a transducer.
+  //$ Return another transducer.
+  fun pipe[T,U,V]
+    (a: ipchannel[T] * opchannel[U] -> 0,
+    b: ipchannel[U] * opchannel[V] -> 0)
+  :
+    ipchannel[T] * opchannel[V] -> 0 
+  => 
+    proc (inp:ipchannel[T], out:opchannel[V])
+    {
+      var chi,cho = mk_iopchannel_pair[U] ();
+      spawn_pthread { a (inp, cho); };
+      spawn_pthread { b (chi, out); };
+    }
+  ;
+
+  //$ Wire a transducer into a sink.
+  //$ Return a sink.
+  fun pipe[T,U]
+    (a: ipchannel[T] * opchannel[U] -> 0,
+    b: ipchannel[U] -> 0)
+  :
+    ipchannel[T]  -> 0 
+  => 
+    proc (inp:ipchannel[T])
+    {
+      var chi,cho = mk_iopchannel_pair[U] ();
+      spawn_pthread { a (inp, cho); };
+      spawn_pthread { b (chi); };
+    }
+  ;
+
+
+  //$ Stream sort using intermediate darray.
+  //$ Requires stream of option type.
+  proc sort[T with Tord[T]] (r: ipchannel[opt[T]], w: opchannel[opt[T]])
+  {
+     var x = darray[T]();
+     acquire:while true do
+       match read r with
+       | Some v => x+=v;
+       | #None => break acquire;
+       endmatch;
+     done
+     x.sort;
+     for v in x do
+       write (w, Some v);
+     done
+     write (w,None[T]);
+  }
+}
+
+@h1 Fork/Join.
+@tangle forkjoin.flx
+
+//$ Implement fork/join protocol.
+open class ForkJoin 
+{
+  //$ Launch a set of pthreads and wait
+  //$ until all of them are finished.
+  proc concurrently_by_iterator (var it:1 -> opt[1->0]) 
+  {
+     // Make a channel to signal termination.
+     var iterm,oterm = mk_iopchannel_pair[unit]();
+     noinline proc manager (var p: 1->0) () { p(); write (oterm, ()); }
+     // Count the number of pthreads.
+     var count = 0;
+   again:>
+     match #it with
+     | Some p => 
+       ++count; 
+       spawn_pthread$ manager p; 
+      goto again;
+
+     | #None =>
+       while count > 0 do
+         C_hack::ignore (read iterm);
+         --count;
+       done
+     endmatch;
+  }
+
+  proc concurrently[T with Streamable[T,1->0]] (d:T) => concurrently_by_iterator d.iterator;
+
+}
+@h1 Mutual Exclusion Lock (Mutex)
+@tangle mutex.flx
+
+open class Mutex
+{
+  requires package "flx_pthread";
+  // this needs to be fixed to work with gc but at the
+  // moment the uglier solution will suffice
+  type mutex = "::flx::pthread::flx_mutex_t*" requires mutex_hxx;
+  ctor mutex: unit = "new ::flx::pthread::flx_mutex_t";
+  proc lock: mutex = "$1->lock();";
+  proc unlock: mutex = "$1->unlock();";
+  proc destroy: mutex = "delete $1;";
+}
+@h1 Semaphores.
+@tangle semaphore.flx
+
+open class Semaphore
+{
+  requires package "pthread";
+  type semaphore = "::flx::pthread::flx_semaphore_t*" requires semaphore_hxx;
+  ctor semaphore = "new ::flx_pthread::flx_semaphore_t";
+  ctor semaphore * int = "new ::flx_pthread::flx_semaphore_t($1)";
+  proc destroy : semaphore = "delete $1;";
+  proc post: semaphore = "$1->post();";
+  proc wait: semaphore = "$1->wait();";
+  gen trywait: semaphore -> int = "$1->trywait()";
+  int get: semaphore = "$1->get();";
+} 
+@h1 Condition Variables.
+@tangle condition_variable.flx
+
+//$ Condition Variable for pthread synchronisation.
+open class Condition_Variable
+{
+  requires package "flx_pthread";
+
+  //$ The type of a condition variable.
+  type condition_variable = "::flx::pthread::flx_condv_t*" requires condv_hxx;
+
+  //$ Condition variable constructor taking unit argument.
+  ctor condition_variable: 1 = "new ::flx::pthread::flx_condv_t";
+
+  //$ Function to release a condition variable.
+  proc destroy: condition_variable = "delete $1;";
+
+  //$ Function to wait until a signal is raised on
+  //$ the condition variable by another thread.
+  proc wait: condition_variable * mutex = "$1->wait($2);";
+
+  //$ Function to raise a signal on a condition
+  //$ variable which will allow at most one thread
+  //$ waiting on it to proceed.
+  proc signal: condition_variable = "$1->signal();";
+
+  //$ Function to broadcast a signal releasing all
+  //$ threads waiting on a conditiona variable.
+  proc broadcast: condition_variable = "$1->broadcast();";
+
+  //$ Timed wait for signal on condition variable.
+  //$ Time in seconds. Resolution nanoseconds.
+  gen timedwait: condition_variable * mutex * double -> int = "$1->timedwait($2, $3)";
+}
+
+@h1 Thread Safe Counter.
+@tangle ts_counter.flx
+
+open class Ts_counter
+{
+  type ts_counter = "::flx::pthread::flx_ts_counter_t*";
+  ctor ts_counter : 1 = "new ::flx::pthread::flx_ts_counter_t;";
+  proc destroy : ts_counter = "delete $1;";
+  gen pre_incr: ts_counter -> long = "$1->pre_incr()";
+  gen post_incr: ts_counter-> long  = "$1->post_incr()";
+  gen pre_decr: ts_counter -> long = "$1->pre_decr()";
+  gen post_decr: ts_counter -> long = "$1->post_decr()";
+  gen decr_pos: ts_counter -> long = "$1->decr_pos()";
+  gen get: ts_counter -> long = "$1->get()";
+  proc set: ts_counter * long = "$1->set($2);";
+  gen swap: ts_counter * long -> long  = "$1->swap($2)";
+  proc wait_zero: ts_counter = "$1->wait_zero();";
+
+}
+@h1 Thread Safe Bound Queue.
+@tangle ts_bound_queue.flx
+
+open class TS_Bound_Queue
+{
+  private type bQ_ = "::flx::pthread::bound_queue_t";
+  _gc_pointer _gc_type bQ_ type ts_bound_queue_t[T] = "::flx::pthread::bound_queue_t*" 
+    requires 
+     package "flx_pthread",
+     scanner "::flx::pthread::bound_queue_scanner"
+  ;
+  ctor[T] ts_bound_queue_t[T]: !ints = 
+    "new (*PTF gcp, @0, false) ::flx::pthread::bound_queue_t((size_t)$1)";
+  private proc _enqueue[T]: ts_bound_queue_t[T] * &T = "$1->enqueue((void*)$2);";
+  private gen _dequeue[T]: ts_bound_queue_t[T] -> &T = "(?1*)$1->dequeue();";
+  proc enqueue[T] (Q:ts_bound_queue_t[T])  (elt:T) {
+     _enqueue(Q, new elt);
+  }
+  gen dequeue[T] (Q:ts_bound_queue_t[T]): T => *(_dequeue Q);
+  proc wait[T]: ts_bound_queue_t[T] = "$1->wait_until_empty();";
+  proc resize[T]: ts_bound_queue_t[T] * !ints = "$1->resize((size_t)$2);";
+ 
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
