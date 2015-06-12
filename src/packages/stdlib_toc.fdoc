@@ -7,6 +7,10 @@
 <dd>So we lift some basic types from C.<dd>
 </dl>
 
+<dt><a href=control.fdoc>Control Flow primitives</a></dt>
+<dd>Interface to some RTL control features</dd>
+</dl>
+
 
 <dt><a href=basic_algebraic_structures.fdoc>Basic Algebraic Structure</a></dt>
 <dd>Now we have to define some basic algebraic structures...</dd>
