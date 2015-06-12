@@ -38,4 +38,9 @@
 <dd>SDL2 including SDL_image and SDL_ttf</dd>
 </dl>
 
+<dt><a href=pthreads.fdoc>Preemptive Threading</a></dt>
+<dd>Support for shared memory concurrency by pre-emptive threads and various 
+synchronisation devices.</dd>
+</dl>
+
 
