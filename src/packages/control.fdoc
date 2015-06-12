@@ -1,6 +1,6 @@
 @title Control Basics
-@tangler __init__.flx = share/lib/std/__init__.flx
-@tangler control.flx  = share/lib/std/control.flx
+@tangler __init__.flx = share/lib/std/control/__init__.flx
+@tangler control.flx  = share/lib/std/control/control.flx
 @h1 Control Synopsis
 @tangle __init__.flx
 
