@@ -292,7 +292,9 @@ noisy-packages:
 
 
 grammar:
-	-${BUILDROOT}/host/bin/flx src/tools/flx_find_grammar_files ${BUILDROOT}
+	src/tools/flx_find_grammar_files.py ${BUILDROOT}
+
+extract: packages grammar
 
 #
 slow-flxg:
@@ -309,7 +311,7 @@ flxg:
 	build/release/host/bin/flx_build_flxg
 	cp tmp-dir/flxg build/release/host/bin
 
-copy: packages
+copy: extract 
 	# =========================================================
 	# copying ./src to build/release/share/src
 	# =========================================================
