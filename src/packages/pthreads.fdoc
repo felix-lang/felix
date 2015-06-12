@@ -1,13 +1,13 @@
 @title Preemptive Threading Support
-@tangler pthread.flx = share/lib/control/pthread.flx
-@tangler pchannels.flx = share/lib/control/pchannels.flx
-@tangler ppipe.flx = share/lib/control/ppipe.flx
-@tangler forkjoin.flx = share/lib/control/forkjoin.flx
-@tangler mutex.flx = share/lib/control/mutex.flx
-@tangler semaphore.flx = share/lib/control/semaphore.flx
-@tangler condition_variable.flx = share/lib/control/condition_variable.flx
-@tangler ts_counter.flx = share/lib/control/ts_counter.flx
-@tangler ts_bound_queue.flx = share/lib/control/ts_bound_queue.flx
+@tangler pthread.flx            = share/lib/std/control/pthread.flx
+@tangler pchannels.flx          = share/lib/std/control/pchannels.flx
+@tangler ppipe.flx              = share/lib/std/control/ppipe.flx
+@tangler forkjoin.flx           = share/lib/std/control/forkjoin.flx
+@tangler mutex.flx              = share/lib/std/control/mutex.flx
+@tangler semaphore.flx          = share/lib/std/control/semaphore.flx
+@tangler condition_variable.flx = share/lib/std/control/condition_variable.flx
+@tangler ts_counter.flx         = share/lib/std/control/ts_counter.flx
+@tangler ts_bound_queue.flx     = share/lib/std/control/ts_bound_queue.flx
 
 @h1 Pthreads.
 General support for pre-emptive threading, aka shared 
