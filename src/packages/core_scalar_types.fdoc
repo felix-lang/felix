@@ -1,5 +1,5 @@
 @tangler scalar.flx    =share/lib/std/scalar/ctypedefs.flx
-@tangler int.fsyn      =share/lib/grammar/grammar_integer_lexer.fsyn
+@tangler int.fsyn      =share/lib/grammar/grammar_int_lexer.fsyn
 @tangler float.fsyn    =share/lib/grammar/grammar_float_lexer.fsyn
 @title Core Scalar Types
 
