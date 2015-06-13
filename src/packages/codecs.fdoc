@@ -1,3 +1,19 @@
+@title Codecs
+@tangler __init__.flx = share/lib/std/codec/__init__.flx
+@tangler base64.flx = share/lib/std/codec/base64.flx
+@tangler csv.flx = share/lib/std/codec/csv.flx
+@tangler uri_codec.flx = share/lib/std/codec/uri_codec.flx
+@h1 Synopsis
+@tangle __init__.flx
+
+include "std/codec/csv";
+include "std/codec/base64";
+include "std/codec/uri_codec";
+
+
+@h1 Base64 
+@tangle base64.flx
+
 //$ Base64 encode/decode functions.
 //$ http://en.wikipedia.org/wiki/Base64
 
@@ -132,3 +148,169 @@ class Base64 {
   }
 
 }
+
+@h1 Csv 
+@tangle csv.flx
+
+//$ Comma Separated Values (CSV) reader
+//$ Splits a string like 1,2,"hell" up into three strings.
+class Csv {
+  open List;
+
+  //$ Fetch a value string res from position i of string s.
+  //$ Update i past the comma ready to fetch another value.
+  proc get_csv_value(s:string, i:&int,res:&string) {
+    var r = "";
+    proc add(j:int) { r += s.[j]; }
+    n := s.len.int;
+    enum state_t = skip,collect,quote;
+    fun eq(a:state_t, b:state_t)=> caseno a == caseno b;
+
+    var state = skip;
+    ech:for var j in *i upto n - 1 do
+      ch := s.[j];
+      if ch == char "," do 
+        match state with 
+        | #quote => add j;
+        | _ => break ech;
+        endmatch;
+      elif ch == char " " do 
+        match state with
+        | #skip => continue ech;
+        | #quote => add j;
+        | #collect => state = skip;
+        endmatch;
+      elif ch == char '"' do 
+        match state with
+        | #quote => state = skip;
+        | _ => state = quote;
+        endmatch;
+      else 
+        add j;
+      done;
+    done;
+    i <- j+1;
+    res <- r;
+  }
+
+  //$ Fetch all the values in a CSV string
+  //$ and return them as list.
+  fun get_csv_values(s:string): list[string] = {
+    var v: list[string] = Empty[string];
+    var res = "";
+    var pos = 0;
+    n := s.len.int;
+    while pos < n do
+      get_csv_value (s, &pos, &res);
+      if res.len.int >0 do v += res; done;
+    done;
+    return v;
+  }
+}
+
+@h1 URI Codec
+@tangle uri_codec.flx
+
+publish """
+Encoder Decoders for URIs, Translates characters not allowed in URIs
+to %HEX equivalants
+
+Usage example:
+open URICodec;
+var s = "THis is a & test < or a url \n encoder \r\r Hello >";
+var enc = uri_encode(s);
+var dec = uri_decode(enc);
+println("S:"+s);
+println("ENC:"+enc);
+println("DECX:"+dec);
+"""
+
+class URICodec {
+
+  header """
+  /* Code from http://www.zedwood.com/article/111/cpp-urlencode-function */
+  std::string char2hex( char dec )
+  {
+    char dig1 = (dec&0xF0)>>4;
+    char dig2 = (dec&0x0F);
+    if ( 0<= dig1 && dig1<= 9) dig1+=48;    //0,48inascii
+    if (10<= dig1 && dig1<=15) dig1+=97-10; //a,97inascii
+    if ( 0<= dig2 && dig2<= 9) dig2+=48;
+    if (10<= dig2 && dig2<=15) dig2+=97-10;
+
+    std::string r;
+    r.append( &dig1, 1);
+    r.append( &dig2, 1);
+    return r;
+  }
+
+  std::string urlencode(const std::string &c)
+  {
+    std::string escaped="";
+    int max = c.length();
+    for(int i=0; i<max; i++)
+    {
+      if ( (48 <= c[i] && c[i] <= 57) ||//0-9
+           (65 <= c[i] && c[i] <= 90) ||//abc...xyz
+           (97 <= c[i] && c[i] <= 122) || //ABC...XYZ
+           (c[i]=='~' || c[i]=='!' || c[i]=='*' || c[i]=='(' || c[i]==')' || c[i]=='\\''))
+        {
+          escaped.append( &c[i], 1);
+        }
+        else
+        {
+          escaped.append("%");
+          escaped.append( char2hex(c[i]) );//converts char 255 to string "ff"
+        }
+    }
+    return escaped;
+  }
+
+""" requires Cxx_headers::iostream;
+
+  gen uri_encode: string -> string = "urlencode($1)";
+
+  private fun isxdigit_c: char -> int = "isxdigit((int)$1)" requires C89_headers::ctype_h;
+
+  private fun isxdigit (c:char):bool => if isxdigit_c(c) == 0 then false else true endif;
+
+  private gen strtoul: string->ulong = "strtoul ((const char *)$1.c_str(),NULL,0)";
+
+  fun uri_decode(encoded:string):string = {
+    enum decode_state { SEARCH, CONVERT };
+    var state = SEARCH;
+    var decoded = "";
+    for var i in 0 upto (int(len(encoded)) - 1) do
+      match state with
+        | #SEARCH => { if encoded.[i] != char('%') do
+                         
+                         decoded = decoded +
+                           if encoded.[i] == char('+') then char(' ') else encoded.[i] endif;
+                       else
+                         state = CONVERT;
+                       done
+                     }
+        | #CONVERT => { var temp = encoded.[i to (i+2)];
+                       var both = true;
+                       for var j in 0 upto 1 do
+                         if not isxdigit(temp.[j]) do 
+                           both = false;
+                         done
+                       done
+                       if both do
+                         decoded = decoded + char(strtoul("0x"+temp));
+                         i++;
+                       done
+                       state = SEARCH;
+                      }
+      endmatch;
+    done
+    return decoded;
+  }
+
+
+}
+
+
+
+
