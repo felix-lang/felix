@@ -1,5 +1,452 @@
-@title Dynamic Loading
+@title Program
+@tangler __init__.flx   = share/lib/std/program/__init__.flx
+@tangler env.flx   = share/lib/std/program/env.flx
+@tangler cmdopt.flx   = share/lib/std/program/cmdopt.flx
+@tangler shell.flx   = share/lib/std/program/shell.flx
+@tangler process.flx   = share/lib/std/program/process.flx
+@tangler signal.flx   = share/lib/std/program/signal.flx
+@tangler system.flx   = share/lib/std/program/system.flx
+@tangler dynlink.flx   = share/lib/std/program/dynlink.flx
+
 @h1 Synopsis
+@tangle __init__.flx
+
+include "std/program/cmdopt";
+include "std/program/system";
+include "std/program/shell";
+include "std/program/dynlink";
+include "std/program/env";
+include "std/program/process";
+include "std/program/signal";
+
+
+@h1 Environment Variables
+@tangle env.flx
+//$ Access environment variables.
+class Env_class[os]
+{
+  //$ Separator for filename lists
+  virtual fun pathsep: 1 -> string;
+
+  //$ Get the value of a given variable.
+  //$ Returns empty string if the variable doesn't exist.
+  fun getenv:string -> string =
+    "::flx::rtl::strutil::atostr(std::getenv($1.c_str()))"
+    requires package "flx_strutil", Cxx_headers::cstdlib;
+
+  //$ Get the value of a given variable.
+  //$ Returns specified default if the variable doesn't exist.
+  fun getenv(name:string,dflt:string):string=>let result = getenv(name) in 
+    if String::len result != 0uz then result else dflt endif
+  ;
+
+  fun getenvlist (name:string) : list[string] =>
+     split (getenv name, #pathsep)
+  ;
+}
+
+instance Env_class[Win32] { fun pathsep() => ";"; }
+instance Env_class[Posix] { fun pathsep() => ":"; }
+
+class Env
+{
+  if PLAT_WIN32 do
+    inherit Env_class[Win32];
+  else
+    inherit Env_class[Posix];
+  done
+}
+
+
+@h1 Command Line Options
+@tangle cmdopt.flx
+
+open class CmdOpt 
+{
+  // Convert key/value pairs represented like -I path
+  // into form --include=path
+  noinline fun cvt-key-arg (keys: list[string * string]) (x:list[string]) = 
+  {
+     var out = Empty[string];
+     var inp = x.iterator;
+     for word in inp do
+       match keys.find word with
+       | #None => out = Cons (word,out);
+       | Some prefix => 
+         match inp() with
+         | #None => println$ "Error, expected argument to option " + word;
+         | Some arg => out = Cons (prefix+"=" + arg, out);
+         endmatch;
+       endmatch;
+     done
+     return rev out;
+  }
+
+  // Parse key value pairs represented by --key=value.
+  // Allows multiple values to be given.
+  // Stores reversed list of values.
+  // Returns ordered list of non-handled elements.
+  var rekv = RE2 "(--.*)=(.*)";
+  noinline gen parse-key-multi-value (keys:list[string]) (d:strdict[list[string]]) (x:list[string]) =
+  {
+    var out = Empty[string];
+    var va = varray[StringPiece] (StringPiece "", StringPiece "", StringPiece "");
+    for opt in x do
+      if Match (rekv, StringPiece (opt), 0,ANCHOR_BOTH, va.stl_begin, va.len.int) do
+        var key = va . 1 . string;
+        if key in keys do
+          val value= va . 2 . string ;
+          val nuval = Cons (value, d.get_dflt (key,Empty[string]));
+          d.add key nuval;
+        else
+          out = Cons (opt, out);
+        done
+      else
+        out = Cons (opt, out);
+      done
+    done
+    return rev out;
+  }
+
+  // Parse key value pairs represented by --key=value.
+  // Keys must be unique.
+  // Stores reversed list of values.
+  // Returns ordered list of non-handled elements.
+  noinline gen parse-key-single-value (keys:list[string]) (d:strdict[string]) (x:list[string]) =
+  {
+    var out = Empty[string];
+    var va = varray[StringPiece] (StringPiece "", StringPiece "", StringPiece "");
+    for opt in x do
+      if Match (rekv, StringPiece (opt), 0,ANCHOR_BOTH, va.stl_begin, va.len.int) do
+        var key = va . 1 . string;
+        if key in keys do
+          val value= va . 2 . string ;
+          match d.get key with
+          | #None => d.add key value;
+          | _ => println$ "Duplicate option '" + opt +"'";
+          endmatch;
+        else
+          println$ "Invalid option '" + opt+"'";
+        done
+      else
+        out = Cons (opt, out);
+      done
+    done
+    return rev out;
+  }
+
+
+  // Parse keys given by --key.
+  // Allows multiple values.
+  // Stores count of occurences.
+  var rek = RE2 "(--.*)";
+  noinline gen parse-key (keys:list[string]) (d:strdict[int]) (x:list[string]) =
+  {
+    var out = Empty[string];
+    var va = varray[StringPiece] (StringPiece "", StringPiece "");
+    for opt in x do
+      if Match (rek, StringPiece (opt), 0,ANCHOR_BOTH, va.stl_begin, va.len.int) do
+        var key = va . 1 . string;
+        if key in keys do
+          val nuval =d.get_dflt (key,0) + 1;
+          d.add key nuval;
+        else
+          println$ "Invalid option '" + opt+"'";
+        done
+      else
+        out = Cons (opt, out);
+      done
+    done
+    return rev out;
+  }
+
+  // Parse keys given by -abcd
+  // Allows multiple values.
+  // Stores count of occurences.
+  // Replaces option letter with specified long option key.
+  // Returns ordered list of non-handled elements.
+  var resw = RE2 "(-.*)";
+  noinline gen parse-switches (switchmap: list[char * string] ) (d:strdict[int]) (x:list[string]) =
+  {
+    var out = Empty[string];
+    var va = varray[StringPiece] (StringPiece "", StringPiece "");
+    for opt in x do
+      if Match (resw, StringPiece (opt), 0,ANCHOR_BOTH, va.stl_begin, va.len.int) do
+        var switches = va . 1 . string . [1 to];
+        for switch in switches do
+          match switchmap.find switch with
+          | #None =>
+            println$ "Invalid option " + opt + " char '" + str switch+"'";
+          | Some key=>
+            val nuval = d.get_dflt (key,0) + 1;
+            d.add key nuval;
+          endmatch;
+        done
+      else
+        out = Cons (opt, out);
+      done
+    done
+    return rev out;
+  }
+
+  typedef cmdspec_t = (
+    split-key-value-spec: list[string * string],
+    multi-valued-keys-spec: list[string], 
+    single-valued-keys-spec: list[string], 
+    switches-spec: list[string], 
+    short-switch-map-spec: list[char * string]
+  );
+
+  typedef cmdopt-parse-result_t = (
+     multi-valued-keys : strdict[list[string]],
+     single-valued-keys : strdict[string],
+     switches : strdict[int],
+     positional : list[string]
+  );
+
+  ctor cmdopt-parse-result_t () =>
+  (
+    multi-valued-keys = strdict[list[string]](), 
+    single-valued-keys = strdict[string](),
+    switches = strdict[int](),
+    positional = Empty[string]
+  );
+
+  noinline gen parse-cmdline (spec:cmdspec_t) (x:list[string]) : cmdopt-parse-result_t = {
+    var result = cmdopt-parse-result_t ();
+    var nonk = cvt-key-arg spec.split-key-value-spec x;
+    nonk = parse-key-multi-value spec.multi-valued-keys-spec result.multi-valued-keys nonk;
+    nonk = parse-key-single-value spec.single-valued-keys-spec result.single-valued-keys nonk;
+    nonk = parse-key spec.switches-spec result.switches nonk;
+    result.positional = parse-switches spec.short-switch-map-spec result.switches nonk;
+    return result;
+  }
+}
+
+@h1 Process
+@tangle process.flx
+
+class Process_class[os, process_status_t]
+{
+  virtual gen popen_in : string -> Cstdio::ifile;
+  virtual gen pclose: Cstdio::ifile -> process_status_t; 
+}
+
+class Process {
+if PLAT_WIN32 do
+  inherit Win32Process;
+else
+  inherit PosixProcess;
+done
+}
+
+@h1 System Call
+@tangle system.flx
+
+class System
+{
+  const argc:int = "PTF argc" requires property "needs_ptf";
+  const _argv:&&char= "PTF argv" requires property "needs_ptf";
+
+  fun argv:int -> string = '::std::string($1<0||$1>=PTF argc??"":PTF argv[$1])' 
+    requires property "needs_ptf";
+  fun argv_dflt (x:int) (y:string) => match argv x with | "" => y | a => a;
+
+  fun args () => List::map (argv) (List::range argc);
+
+  proc setargs : + (+char) * size = "PTF argc=$2; PTF argv=$1;" requires property "needs_ptf";
+  proc setargs[N] (a:string^N) 
+  {
+    gen myget(i:size)=>a.i.cstr;
+    var x = varray[+char] (a.len,a.len,myget);
+    setargs (x.stl_begin,x.len);
+  }
+
+  gen system (cmd:string) : int => Shell::system(cmd);
+  gen exit: int -> any = '::std::exit($1)' requires Cxx_headers::cstdlib;
+  gen abort: 1 -> any = "::std::abort($1)" requires Cxx_headers::cstdlib;
+  _gc_pointer type ptf_t = "thread_frame_t*";
+  const ptf:ptf_t = "ptf" requires property "needs_ptf";
+
+  //$ pexit examines the return code from a system call.
+  //$ If the code is 0 it exists with 0.
+  //$ On Windows:
+  //$    if the code is -1, it exits with errno.
+  //$    otherwise code 3
+  //$ On Unix:
+  //$   if the code is non-zero then
+  //$     if the callout aborted, return its abort code.
+  //$     if the callout died due to a signal, exit with code 2
+  //$     otherwise exit with code 3
+  //$ In both these cases a non-zero return causes a message
+  //$ to be printed on stderr.
+
+  if PLAT_WIN32 do
+    proc pexit(e:int)
+    {
+      if e != 0 do
+        if e == -1 do
+          err :=  errno;
+          eprintln$ "Error "+err.str+" in flx: " + strerror err;
+          System::exit err.int;
+        else
+          eprintln$ "Unknown error in shell " + str e;
+          System::exit 3;
+        done
+      done
+      System::exit e;
+    }
+  else
+    proc pexit(e:int)
+    {
+      if e != 0 do
+        if PosixProcess::WIFEXITED e.PosixProcess::process_status_t do
+          err :=  PosixProcess::WEXITSTATUS e.PosixProcess::process_status_t;
+          eprintln$ "Error "+err.str+" in flx: " + strerror err.errno_t;
+          System::exit err;
+        elif PosixProcess::WIFSIGNALED e.PosixProcess::process_status_t do
+          sig := Process::WTERMSIG e.PosixProcess::process_status_t;
+          eprintln$ "Shell terminated by signal " + str sig;
+          System::exit 2;
+        else
+          eprintln$ "Unknown error in shell " + str e;
+          System::exit 3;
+        done
+      done
+      System::exit e;
+    }
+  done
+
+  gen get_stdout(x:string) : int * string => Shell::get_stdout x;
+
+}
+
+@h1 Shell
+@tangle shell.flx
+
+// Note Shell_class interface doesn't use process_status_t
+// but the implementation does.
+
+class Shell_class[OS, process_status_t]
+{
+  // Quote a single argument.
+  // Note: kills Bash wildcard replacement.
+  virtual fun quote_arg:string->string;
+
+  // Mainly for Windows we need a way to quote command line strings too.
+  virtual fun quote_line_for_system: string->string;
+  virtual fun quote_line_for_popen: string -> string;
+
+  virtual fun parse: string -> list[string];
+
+  //$ System command is ISO C and C++ standard.
+  gen raw_system: string -> int = "::std::system($1.c_str())"
+    requires Cxx_headers::cstdlib
+  ;
+
+  //$ get_stdout is a synchronous version of popen_in/pclose pair.
+  virtual gen raw_get_stdout : string -> int * string;
+
+  //$ create prototype command strings from arg list.
+  fun create_system_command (s:list[string]) : string =>
+    quote_line_for_system $ catmap[string] ' ' quote_arg s
+  ;
+  fun create_popen_command (s:list[string]) : string =>
+    quote_line_for_popen $ catmap[string] ' ' quote_arg s
+  ;
+
+  //$ basic command with line quoting.
+  gen basic_system (cmd: string) :int => 
+    cmd.quote_line_for_system.raw_system
+  ;
+  gen basic_get_stdout (cmd: string) : int * string =>
+    cmd.quote_line_for_popen.raw_get_stdout
+  ;
+
+  // string argument
+  gen system (cmd:string) = {
+    if Env::getenv "FLX_SHELL_ECHO" != "" do
+      eprintln$ "[system] " + cmd;
+    done
+    return basic_system cmd;
+  }
+
+  gen get_stdout (cmd:string) : int * string = {
+    if Env::getenv "FLX_SHELL_ECHO" != "" do
+      eprintln$ "[get_stdout] " + cmd;
+    done
+    return basic_get_stdout cmd;
+  }
+
+  // list of string argument
+  gen system (args:list[string]) : int =>
+    args.create_system_command.system
+  ;
+
+  gen system[T with Streamable[T,string]] (args:T) : int =
+  {
+    var lst = Empty[string];
+    for arg in args do 
+      lst = lst + arg; 
+    done
+    return system lst;
+  }  
+
+
+  // arbitrary Streamable argument
+  gen get_stdout (args:list[string]) : int * string =>
+    args.create_popen_command.get_stdout
+  ;
+ 
+  gen get_stdout[T with Streamable[T,string]] (args:T) : int * string =
+  {
+    var lst = Empty[string];
+    for arg in args do 
+      lst = lst + arg; 
+    done
+    return get_stdout lst;
+  }  
+
+}
+
+class Shell {
+if PLAT_WIN32 do
+  inherit CmdExe;
+else
+  inherit Bash;
+done
+}
+
+@h1 Signals
+@tangle signal.flx
+
+body ctrl_c_flag = """
+  static bool ctrl_c_flag = false;
+  bool get_ctrl_c_flag() { return ctrl_c_flag; }
+  void set_ctrl_c_flag(int) { ctrl_c_flag = true; }
+""";
+
+
+class Signal_class [os] {
+  gen get_ctrl_c_flag: 1 -> bool requires ctrl_c_flag;
+  proc set_ctrl_c_flag: int requires ctrl_c_flag;
+  virtual proc trap_ctrl_c: 1;
+
+}
+
+class Signal {
+if PLAT_WIN32 do
+  inherit Win32Signal;
+else
+  inherit PosixSignal;
+done
+}
+
+@h1 Dynamic Linkage
+@tangle dynlink.flx
+
+@title Dynamic Loading
+@h2 Synopsis
 This subsystem provides the ability to load,link or otherwise
 access program code at run time. We use the name @{DLL} to refer
 to a dynamically loaded file containing executable instructions,
@@ -53,21 +500,21 @@ called a <em>plugin</em> which make separate
 compilation of and use of dynamic libraries
 particularly convenient.
 
-@h1 The dynamic link library @{Dynlink}
-@felix
+@h2 The dynamic link library @{Dynlink}
+@tangle dynlink.flx
 class Dynlink
 {
-@h2 C++ support package.
-@felix
+@h3 C++ support package.
+@tangle dynlink.flx
   requires package "flx_dynlink";
 
-@h2 Error handling.
+@h3 Error handling.
 The current version of the library requires dynamic link attempts
 to succeed. If they fail an exception is thrown which aborts
 the program unless specifically caught. In future, we may
 provide an interface based on option types which enforces
 user level error checking as well.
-@felix
+@tangle dynlink.flx
   //$ Exception thrown if dynamic linkage fails.
   type flx_link_failure_t = "::flx::rtl::flx_link_failure_t";
 
@@ -85,27 +532,27 @@ user level error checking as well.
   //$ This doesn't belong here but it will do for now
   fun get_debug_driver_flag : 1 -> bool = "PTF gcp->debug_driver" requires property "needs_gc"; 
 
-@h1 Library handle @{flx_library}
+@h2 Library handle @{flx_library}
 A platform independent handle which can refer to a dynamic
 link library object. Operations in this category are universal
 and apply to all dynamic link libraries, whether or not they
 were generated by Felix.
-@felix
+@tangle dynlink.flx
   //$ Type of a DLL (dynamic link library) object.
   _gc_pointer type flx_library = "::flx::rtl::flx_dynlink_t*";
 
-@h2 Constructor for @{flx_library</code>: <code>create_library_handle}
+@h3 Constructor for @{flx_library</code>: <code>create_library_handle}
 The constructor makes an unpopulated library handle
 not associated with any particular DLL.
-@felix
+@tangle dynlink.flx
   //$ Create a fresh DLL object.
   fun create_library_handle: bool ->flx_library=
     "new(*PTF gcp, ::flx::rtl::flx_dynlink_ptr_map, false) ::flx::rtl::flx_dynlink_t($1)";
 
-@h2 Load a library @{dlopen}
+@h3 Load a library @{dlopen}
 This procedure associates a library handle with a particular
 file name and also attempts to load the library.
-@felix
+@tangle dynlink.flx
   //$ Link a DLL using given filename.
   //$ May throw flx_link_failure_t.
   proc dlopen:flx_library * string = "$1->dynamic_link($2);";
@@ -121,9 +568,9 @@ file name and also attempts to load the library.
     "$1->static_link($2,(::flx::rtl::thread_frame_creator_t)$3, (::flx::rtl::start_t)$4, NULL);"
   ;
 
-@h2 Load a library from registry @{regopen}
+@h3 Load a library from registry @{regopen}
 Given a registry, simulate dynamic linkage.
-@felix
+@tangle dynlink.flx
   typedef module_dictionary_t = StrDict::strdict[address];
   typedef registry_t = StrDict::strdict[module_dictionary_t];
   fun get_module_registry_address_address: 1 -> &&registry_t = 
@@ -169,8 +616,8 @@ Given a registry, simulate dynamic linkage.
      endmatch;
   }
 
-@h2 Get the filename associated with a library handle: @{filename}
-@felix
+@h3 Get the filename associated with a library handle: @{filename}
+@tangle dynlink.flx
   //$ Get the filename of a DLL.
   fun filename : flx_library -> string = "$1->filename";
 
@@ -200,7 +647,7 @@ Given a registry, simulate dynamic linkage.
   }
 
 
-@h2 Unlink a dll : @{dlclose}.
+@h3 Unlink a dll : @{dlclose}.
 This routine reduces the reference count of a library handle
 by one, and if it drops to zero unloads the library at the
 OS level.
@@ -222,13 +669,13 @@ generation, it is very hard to ensure there are no references
 left to a library. References include pointers to functions,
 vtables, rtti objects, strings, other constants, and sometimes
 even variables.
-@felix
+@tangle dynlink.flx
   //$ Unlink a DLL.
   //$ Unsafe! Use with extreme caution.
   //$ May cause pointers into the DLL code segment to dangle.
   proc dlclose:flx_library = "$1->unlink();";
 
-@h2 Get the address of an exported symbol: @{dlsym}
+@h3 Get the address of an exported symbol: @{dlsym}
 This routine takes a library and a string argument
 and tries to find the value associated with the string
 in the library symbol table, using @{GetProcAddress}
@@ -240,7 +687,7 @@ For functions, this operator returns a function
 pointer. For variables, it returns the address of the variable.
 DO not forget the extra dereference requires if the variable
 is itself a pointer.
-@felix
+@tangle dynlink.flx
   //$ Find raw address of a symbol in a DLL.
   //$ This function now ALWAYS does a dlsym
   //$ (or Windows equivalent)
@@ -267,33 +714,33 @@ is itself a pointer.
     done
   }
 
-@h1 Library instance type @{flx_instance}
+@h2 Library instance type @{flx_instance}
 A library instance is a closure consisting of the
 library code, represent by a library handle, 
 together with a pointer to an instance of the
 libraries thread frame. Operations in this category
 only work with Felix generated library objects.
-@felix
+@tangle dynlink.flx
   //$ Type of a DLL (dynamic link library) instance.
   //$ Conceptually this is a pair consisting of
   //$ a library object and a global data frame object.
   _gc_pointer type flx_instance = "::flx::rtl::flx_libinst_t*";
 
-@h2 Library instance constructor @{create_instance_handle}
+@h3 Library instance constructor @{create_instance_handle}
 Create a new library instance handle unassociated with any
 library or thread frame.
-@felix
+@tangle dynlink.flx
   //$ Create a fresh DLL instance object.
   fun create_instance_handle: bool->flx_instance=
     "new(*PTF gcp, ::flx::rtl::flx_libinst_ptr_map, false) ::flx::rtl::flx_libinst_t($1)";
 
-@h2 Create a library instance from a library: @{create}
+@h3 Create a library instance from a library: @{create}
 This procedure creates a thread frame from a library,
 initialises it, and sets the given library instance
 with the library handle and thread frame.
 The instance handle should not already be associated with a library
 or thread frame.
-@felix 
+@tangle dynlink.flx 
   //$ Create a DLL instance from a DLL.
   //$ This is a procedure, so maybe the caller is too
   //$ which means the thread frame must be available.
@@ -319,12 +766,12 @@ or thread frame.
   }
 
 
-@h2 Get the filename from an instance @{filename}.
-@felix 
+@h3 Get the filename from an instance @{filename}.
+@tangle dynlink.flx 
   //$ Get the filename of a DLL from an instance of it.
   fun filename : flx_instance -> string = "::std::string($1->lib->filename)";
 
-@h2 Get the startup procedure from an instance @{filename}.
+@h3 Get the startup procedure from an instance @{filename}.
 Felix generated libraries contain a symbol which is used
 to initialise the thread frame. This initialisation is
 in addition to that performed when the instance is created.
@@ -346,28 +793,28 @@ The initialisation procedure is represent by a pointer
 to a continuation object, type @{cont}, which has to be run
 by a scheduler after associating it with a fibre:
 the procedure is <em>not</em> a C function.
-@felix 
+@tangle dynlink.flx 
   //$ Get the initialisation continuation of an instance.
   fun get_init: flx_instance -> cont = "$1->start_proc";
 
-@h2 Get the library associated with an instance.
-@felix
+@h3 Get the library associated with an instance.
+@tangle dynlink.flx
   //$ Get the DLL associated with an instance.
   fun get_library: flx_instance -> flx_library = "$1->lib";
 
-@h2 Get the thread frame associated with an instance.
+@h3 Get the thread frame associated with an instance.
 Since we don't know the type of the thread frame here,
 it is returned as a pure address.
-@felix
+@tangle dynlink.flx
   //$ Get the thread frame (global data object) of an instance.
   fun get_thread_frame: flx_instance -> address = "(void*)$1->thread_frame";
 
-@h2 Convenience constructor for an instance @{init_lib}
+@h3 Convenience constructor for an instance @{init_lib}
 This function creates a library handle and instance handle
 and loads the library given a filename, all in one operation.
 Then it runs the startup initialisation procedure.
 Finally the instance is returned.
-@felix
+@tangle dynlink.flx
 
   //$ Create, link, and prepare a DLL instance from a modulename.
   //$ NOTE: libraries created here do not need to be roots
@@ -411,9 +858,9 @@ Finally the instance is returned.
   }
 
 
-@h2 Convenience to run a program @{run_lib}
+@h3 Convenience to run a program @{run_lib}
 This function does the same as @{init_lib}.
-@felix
+@tangle dynlink.flx
   //$ Run a Felix program from a filename.
   proc run_lib(modulename:string)
   {
@@ -434,12 +881,12 @@ This function does the same as @{init_lib}.
   }
 
 
-@h2 Checked version of @{dlsym}
+@h3 Checked version of @{dlsym}
 This routine tries to find a symbol with the specified
 name in an instance, if it is found, the resulting address
 is cast to the specified type. It also prints a diagnostic
 if the symbol cannot be found.
-@felix
+@tangle dynlink.flx
   //$ Find typed address of a symbol in a DLL.
   noinline fun flx_dlsym[T] (linst: flx_instance, sym:string) = {
     var library = Dynlink::get_library linst;
@@ -455,7 +902,7 @@ if the symbol cannot be found.
     return typed_sym, tf;
   }
 
-@h1 Higher level wrappers for finding Felix functions.
+@h2 Higher level wrappers for finding Felix functions.
 Here make a set of higher level wrappers for finding 
 standard protocol Felix function in DLLs. These wrappers
 create a closure by binding the C address of the constructor
@@ -474,7 +921,7 @@ Note that these operations are not type safe. If you get
 the type wrong all hell will break loose. This is because
 dlsym finds functions by their C names and C++ entities
 use mangled names we cannot compute in a portable way.
-@felix
+@tangle dynlink.flx
   //$ Return a closure representing a symbol in a DLL instance
   //$ of a function of no arguments.
   noinline fun func0[R] (linst: flx_instance, sym:string) = {
@@ -517,7 +964,7 @@ use mangled names we cannot compute in a portable way.
     return proc (a0:A0,a1:A1) { s (tf, a0, a1); };
   }
 
-@h1 Plugins.
+@h2 Plugins.
 A plugin is a special kind of DLL which supplies two
 fixed entry points: a setup routine, which is called
 to initialise the thread frame given a string argument,
@@ -540,7 +987,7 @@ univerally unique names, since static linkage cannot work
 with duplicate definitions, so the protocol will change
 to require the library name as a prefix. Stay tuned.
 
-@felix
+@tangle dynlink.flx
   //$ Specialised routine(s) to load stylised plugin.
   //$ Two entry points:
   //$
@@ -601,8 +1048,8 @@ to require the library name as a prefix. Stay tuned.
     return Dynlink::func2[iftype,arg1_t, arg2_t] (linst, entrypoint);
   }
 
-@h1 Utilities and misc.
-@felix
+@h2 Utilities and misc.
+@tangle dynlink.flx
 
   //$ Execute an address representing a top
   //$ level exported felix procedure's C wrapper,

@@ -1,3 +1,8 @@
+@title Logic
+@tangler bool.flx = share/lib/std/scalar/bool.flx
+@h1 Boolean Logic
+@tangle bool.flx
+
 //$ Standard operations on boolean type.
 //$ Note bool = 2 defined in std/flx_tclass.flx.
 //$ Literals true and false defined in grammer/expressions.flxh.

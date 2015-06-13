@@ -1,3 +1,8 @@
+@title characters
+@tangler char.flx = share/lib/std/scalar/char.flx
+@h1 Char
+@tangle char.flx
+
 //$ Standard C operations on C character set.
 open class Char
 {

@@ -1,5 +1,14 @@
 @title The Felix Standard Library
 @h1 Building the basics
+<dt><a href=basic_algebraic_structures.fdoc>Basic Algebraic Structure</a></dt>
+<dd>Now we have to define some basic algebraic structures...</dd>
+</dl>
+
+<dt><a href=logic.fdoc>Logic</a></dt>
+<dd>Boolean Logic</dd>
+</dl>
+
+
 <dt><a href=cheaders.fdoc>C Headers</a></dt>
 <dd>First we require basic C interfaces...</dd>
 
@@ -11,9 +20,8 @@
 <dd>Interface to some RTL control features</dd>
 </dl>
 
-
-<dt><a href=basic_algebraic_structures.fdoc>Basic Algebraic Structure</a></dt>
-<dd>Now we have to define some basic algebraic structures...</dd>
+<dt><a href=char.fdoc>Characters</a></dt>
+<dd>Basic character type char.</dd>
 </dl>
 
 
@@ -47,13 +55,19 @@
 <dd>C++98 STL: iterators, vector, set, map, list, multiset, multimap, deque</dd>
 </dl>
 
-<dt><a href=sdl.fdoc>Simple Direct Media Layer</a></dt>
-<dd>SDL2 including SDL_image and SDL_ttf</dd>
-</dl>
-
 <dt><a href=pthreads.fdoc>Preemptive Threading</a></dt>
 <dd>Support for shared memory concurrency by pre-emptive threads and various 
 synchronisation devices.</dd>
+</dl>
+
+<dt><a href=program.fdoc>Programs and Processes</a></dt>
+<dd>Programs, ennvironment variables, command line options, shells, processes and dynamic linkage.</dd>
+</dl>
+
+
+
+<dt><a href=sdl.fdoc>Simple Direct Media Layer</a></dt>
+<dd>SDL2 including SDL_image and SDL_ttf</dd>
 </dl>
 
 
