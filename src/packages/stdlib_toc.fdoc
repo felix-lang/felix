@@ -63,6 +63,11 @@ synchronisation devices.</dd>
 <dd>Programs, ennvironment variables, command line options, shells, processes and dynamic linkage.</dd>
 </dl>
 
+<dt><a href=io.fdoc>Input/Output</a></dt>
+<dd>FileSystem, Mice, Sockets, Timers, Events</dd>
+</dl>
+
+
 
 
 <dt><a href=sdl.fdoc>Simple Direct Media Layer</a></dt>
