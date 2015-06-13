@@ -1,0 +1,1172 @@
+@title File System
+@tangler filename.flx = share/lib/std/io/filename.flx
+
+@tangler filestat.flx = share/lib/std/io/filestat.flx
+@tangler posix_filestat.flx = share/lib/std/posix/filestat.flx
+@tangler win32_filestat.flx = share/lib/std/win32/filestat.flx
+
+@tangler filesystem.flx = share/lib/std/io/filesystem.flx
+@tangler posix_filesystem.flx = share/lib/std/posix/filesystem.flx
+@tangler win32_filesystem.flx = share/lib/std/win32/filesystem.flx
+
+@tangler directory.flx = share/lib/std/io/directory.flx
+@tangler posix_directory.flx = share/lib/std/posix/directory.flx
+@tangler win32_directory.flx = share/lib/std/win32/directory.flx
+
+@h1 Filename
+@tangle filename.flx
+
+//$ Operations on filenames.
+class Filename_class[os] {
+
+  //$ The path separator.
+  virtual fun sep: 1 -> string;
+  virtual fun is_absolute_filename : string -> bool;
+
+  virtual fun executable_extension : 1 -> string;
+  virtual fun static_object_extension: 1 -> string;
+  virtual fun dynamic_object_extension: 1 -> string;
+  virtual fun static_library_extension: 1 -> string;
+  virtual fun dynamic_library_extension: 1 -> string;
+
+
+
+  //$ split1 returns a pair consisting of a directory name and basename
+  //$ with the separator between them lost except in the special case
+  //$ "/x" where the "/" is kept as the directory name.
+  //$ If there is no separator, the path is the basename and
+  //$ the directory name is the empty string (NOT . !!!)
+
+  fun split1(s:string)=> match find_last_of(s,#sep) with
+    | Some pos => 
+      if pos==0 then #sep else s.[to pos] endif,
+      s.[pos+#sep.len.int to]
+    | #None => "",s
+    endmatch
+  ;
+
+  private fun split(s:string, acc:List::list[string]):List::list[string]=>
+    let d,b = split1 s in
+    if d == "" then List::Cons(b,acc) 
+    elif d == #sep then List::Cons(d, List::Cons(b,acc))
+    else split (d, List::Cons (b, acc)) 
+    endif
+  ;
+
+  //$ split a filename into a list of components.
+  fun split(s:string)=> split (s, List::Empty[string]);
+
+  //$ Join two pathnames into a single pathname.
+  //$ split and join are logical inverses, however join is not
+  //$ not associative: join("x", join("","y")) = "x/y"
+  //$ whereas join(join("x",""),"y") = "x//y"
+  //$ since split pulls components off from the RHS we have to
+  //$ fold them back from the left
+
+  fun join(p:string, b:string)=> 
+    if p == "" then b
+    elif p == #sep then p+b 
+    elif p.[-1] == #sep.[0] then p+b 
+    else p+#sep+b 
+    endif
+  ; 
+  
+  //$ Get the basename of a path (last component).
+  fun basename(s:string)=> match split1(s) with | _,b => b endmatch;
+
+  //$ Get the directory name of a path (all but the last component).
+  fun dirname(s:string)=> match split1(s) with | d,_ => d endmatch;
+  
+  //$ Return a list of all the directory names in a path.
+  //$ For example a/b/c gives "a", "a/b"
+  fun directories (s:string) : list[string] =>
+     let d,b = split1 s in
+     if d == "" then Empty[string]
+     elif d == #sep then Empty[string]
+     else directories d + d
+  ;
+
+  //$ Join 3 and 4 strings into a pathname.
+  fun join(a:string, b:string, c:string)=> join(join(a,b),c);
+  fun join(a:string, b:string, c:string,d:string)=> join(join(join(a,b),c),d);
+
+  //$ Join 2 strings into a pathname (curried form).
+  fun join(x:string) (y:string) => join(x,y);
+
+  //$ Join all the strings in a list into a pathname.
+  fun join(ps: List::list[string])=> List::fold_left Filename::join of (string) "" ps;
+
+  //$ Split off extension. Includes the dot. 
+  //$ Invariant: input = basename + extension.
+  //$ Works backwards until it hits a dot, path separator,
+  //$ or end of data. If a dot, strip it and the tail of the string,
+  //$ otherwise return the original string.
+  fun split_extension (s:string): string * string = {
+     var n = s.len;
+     if n > 0uz do
+       for var i in s.len - 1uz downto 0uz do
+         var ch = s.[i];
+         if ch == char "." return s.[to i],s.[i to];
+         if ch == char #sep return s,""; 
+       done
+     done
+     return s,"";
+  }
+
+  //$ Remove an extension from a filename if there is one.
+  fun strip_extension (s:string) => s.split_extension.0;
+
+  //$ Get extension if there is one. Includes the dot.
+  fun get_extension (s:string) => s.split_extension.1;
+
+}
+
+//$ Windows Filenames
+class Win32Filename 
+{
+  inherit Filename_class[Win32];
+  instance Filename_class[Win32] {
+    fun sep() => "\\";
+    fun executable_extension ()=> ".exe";
+    fun static_object_extension() => ".obj";
+    fun dynamic_object_extension() => ".obj";
+    fun static_library_extension() => ".lib";
+    fun dynamic_library_extension() => ".dll";
+    fun is_absolute_filename (f:string) => 
+      f.[0] == "\\".char or // no drive letter
+      f.[1] == ":".char and f.[2] == "\\".char // with drive letter
+    ;
+
+  }
+}
+
+//$ OSX Filenames
+class OsxFilename 
+{
+  inherit Filename_class[Osx];
+  instance Filename_class[Osx] {
+    fun sep() => "/";
+    fun executable_extension ()=> "";
+    fun static_object_extension() => ".o";
+    fun dynamic_object_extension() => ".os";
+    fun static_library_extension() => ".a";
+    fun dynamic_library_extension() => ".dylib";
+    fun is_absolute_filename (f:string) => f.[0] == "/";
+
+  }
+}
+
+//$ Posix Filenames
+class PosixFilename 
+{
+  inherit Filename_class[Posix];
+  instance Filename_class[Posix] {
+    fun sep() => "/";
+    fun executable_extension ()=> "";
+    fun static_object_extension() => ".o";
+    fun dynamic_object_extension() => ".os";
+    fun static_library_extension() => ".a";
+    fun dynamic_library_extension() => ".so";
+    fun is_absolute_filename (f:string) => f.[0] == "/";
+  }
+}
+
+//$ Host Filenames.
+class Filename
+{
+if PLAT_WIN32 do
+  inherit Win32Filename;
+elif PLAT_MACOSX do
+  inherit OsxFilename;
+else
+  inherit PosixFilename;
+done
+}
+@h1 Filestat
+@tangle filestat.flx
+
+//$ Filesystem file kind query functions parametrised
+//$ by operating system, status type and mode type.
+class FileStat_class[OS,stat_t, mode_t]
+{
+  //$ Get information about a file into a status buffer.
+  //$ Sets error code at argument 3 pointer.
+  virtual proc stat: string * &stat_t * &int;
+
+  //$ set access and modification time of a file.
+  //$ Sets error code at argument 4 pointer.
+  //$ Times are in seconds, nominally from Epoch (Jan 1 1970).
+  virtual proc utime: string * double * double * &int;
+
+  //$ Change read,write permissions for group, owner etc.
+  //$ Return 0 on success.
+  //$ On Windows this function may silently fail to obey
+  //$ unsupported operations.
+  virtual gen chmod: string * mode_t -> int;
+
+  //$ set mask for subsequent permissions.
+  //$ On Windows this function may silently fail to obey
+  //$ unsupported operations.
+  virtual gen umask: mode_t -> mode_t;
+
+  //$ Abstracted platform independent file type taxonomy.
+  union file_type_t = 
+    | PIPE 
+    | STREAM 
+    | DIRECTORY 
+    | BLOCK 
+    | REGULAR 
+    | SYMLINK 
+    | SOCKET 
+    | INDETERMINATE
+    | NONEXISTANT
+    | NOPERMISSION
+  ;
+
+  //$ Get the file type from a file stat buffer.
+  virtual fun file_type: &stat_t -> file_type_t;
+
+  //$ Fill a stat buffer with information about a file.
+  gen stat(file: string, statbuf:&stat_t) = { 
+    var res: int; 
+    stat(file, statbuf, &res); 
+    return res == 0;
+  }
+
+  //$ Get a file last modification time from a stat buffer.
+  //$ Time is in seconds.
+  fun mtime: &stat_t -> double = "(double)($1->st_mtime)";
+
+  //$ Get a file creation time from a stat buffer.
+  //$ Note: not available on Unix.
+  //$ Time is in seconds.
+  fun ctime: &stat_t -> double = "(double)($1->st_ctime)";
+
+  //$ Get modification time of a file by name.
+  //$ Time is in seconds.
+  fun filetime(f:string):double =
+  {
+    var b: stat_t;
+    var err:int;
+    stat(f,&b,&err);
+    return if err == 0 then mtime (&b) else 0.0 endif;
+  }
+
+  //$ Set the last access and modification time of a file by name.
+  gen utime(f:string, a:double, m:double): bool = {
+    var r:int;
+    utime(f,a,m,&r);
+    return r == 0;
+  }
+
+  //$ Set the last access and modification time of a file by name,
+  //$ where the two times are given by a single argument.
+  gen utime(f:string, t:double) => utime(f,t,t);
+
+  //$ Check if a file exists.
+  fun fileexists(f:string):bool=> filetime f != 0.0;
+
+  //$ Find the type of a file.
+  fun filetype(f:string):file_type_t = 
+  {
+    var b:stat_t;
+    var err:int;
+    stat(f,&b,&err);
+    return 
+      if err == 0 then file_type (&b)
+      elif errno == EACCES then NOPERMISSION
+      elif errno == ENOENT then NONEXISTANT  
+      else INDETERMINATE
+      endif
+    ;
+  }
+
+  fun past_time () => -1.0;
+  fun future_time () => double(ulong(-1)); // a hacky way to get a big number
+
+  fun strfiletime0 (x:double) = {
+    return
+      if x == #past_time then "BIG BANG"
+      elif x == #future_time then "BIG CRUNCH"
+      else fmt (x, fixed (0,3))
+      endif
+    ;
+  }
+
+  fun strfiletime (x:double) = {
+    assert x != 0.0;
+    return strfiletime0 x;
+  }
+
+  fun dfiletime(var f:string, dflt:double)=
+  {
+    var x = FileStat::filetime (f);
+    x = if x == 0.0 then dflt else x endif;
+    //debugln$ "Time of file '" + f + "' is " + strfiletime x; 
+    return x;
+  }
+
+
+}
+
+//$ Platform dependent operations for host file system.
+class FileStat {
+if PLAT_WIN32 do
+  inherit Win32FileStat;
+else
+  inherit PosixFileStat;
+done
+}
+
+@h1 Posix FileStat
+@tangle posix_filestat.flx
+
+class PosixFileStat
+{
+  pod type stat_t = "struct stat" requires Posix_headers::sys_stat_h;
+
+  pod type mode_t = "mode_t" requires Posix_headers::sys_types_h;
+  instance Bits[mode_t] {} // defaults to C operators
+  instance Eq[mode_t] { fun == : mode_t * mode_t -> bool = "$1==$2"; }
+  open Eq[mode_t]; 
+  open Bits[mode_t];
+
+  //------------------------------------------------------------
+  // file mode: type and permissions
+  //------------------------------------------------------------
+  // file types
+  const S_IFMT  : mode_t; // file type mask
+  const S_IFIFO : mode_t;
+  const S_IFCHR : mode_t;
+  const S_IFDIR : mode_t;
+  const S_IFBLK : mode_t;
+  const S_IFREG : mode_t;
+  const S_IFLNK : mode_t;
+  const S_IFSOCK: mode_t;
+
+  // permissions
+  const S_IRWXU : mode_t; // RWX mask: owner
+  const S_IRUSR : mode_t;
+  const S_IWUSR : mode_t;
+  const S_IXUSR : mode_t;
+
+  const S_IRWXG : mode_t; // RWX mask: group
+  const S_IRGRP : mode_t;
+  const S_IWGRP : mode_t;
+  const S_IXGRP : mode_t;
+
+  const S_IRWXO : mode_t; // RWX mask: other
+  const S_IROTH : mode_t;
+  const S_IWOTH : mode_t;
+  const S_IXOTH : mode_t;
+
+  const S_ISUID : mode_t; // set user id on execute
+  const S_ISGID : mode_t; // set group id on execute
+  const S_ISVXT : mode_t; // sticky bit
+  val access_mask = S_IXOTH \| S_IXGRP \| S_IXUSR;
+
+
+  fun raw_mode: &stat_t -> mode_t = "$1->st_mode";
+  fun file_type(m:mode_t)=>m \& S_IFMT;
+  fun file_perm(m:mode_t)=>m \& ~S_IFMT;
+
+  ctor uint: mode_t = "(unsigned int)$1";
+
+
+
+  inherit FileStat_class[Posix, stat_t, mode_t];
+  instance FileStat_class[Posix, stat_t, mode_t]
+  {
+    proc stat: string * &stat_t * &int = "*$3=stat($1.c_str(),$2);";
+
+    proc utime: string * double * double * &int = 
+    """
+      {
+      utimbuf u; 
+      u.actime=(time_t)$2;
+      u.modtime=(time_t)$3;
+      *$4 = utime($1.c_str(),&u); 
+      }
+    """
+
+    requires Posix_headers::utime_h;
+ 
+    gen chmod: string * mode_t -> int = "chmod($1.c_str(),$2)" requires Posix_headers::sys_stat_h;
+    gen umask: mode_t -> mode_t = "umask($1)";
+
+    fun file_type (s:&stat_t): file_type_t =>
+      let m = file_type$ raw_mode s in
+      if m == S_IFIFO then PIPE
+      elif m == S_IFCHR then STREAM
+      elif m == S_IFDIR then DIRECTORY
+      elif m == S_IFBLK then BLOCK
+      elif m == S_IFREG then REGULAR
+      elif m == S_IFLNK then SYMLINK
+      elif m == S_IFSOCK then SOCKET
+      else INDETERMINATE
+      endif
+    ;
+
+  } // instance
+}
+
+@h1 Win32 FileStat
+@tangle win32_filestat.flx
+
+class Win32FileStat
+{
+  //2 things:
+  //
+  // (1) AFAICT, Windows doesn't define mode_t and uses unsigned int.
+  // (2) We still pull in sys/types.h because sys/stat.h uses it (and
+  //     it must come first).
+  //
+  //(source http://msdn.microsoft.com/en-US/library/14h5k7ff(v=vs.80)).
+
+  //pod type mode_t = "mode_t" requires Posix_headers::sys_types_h;
+
+  pod type mode_t = "int";
+  pod type stat_t = "struct __stat64" requires Posix_headers::sys_stat_h;
+
+  instance Bits[mode_t] {} // defaults to C operators
+  instance Eq[mode_t] { fun == : mode_t * mode_t -> bool = "$1==$2"; }
+  open Eq[mode_t]; 
+  open Bits[mode_t];
+
+  // file types
+  const _S_IFMT  : mode_t; // file type mask
+  const _S_IFDIR : mode_t;
+  const _S_IFREG : mode_t;
+
+  // permissions
+  const _S_IWRITE: mode_t; // RWX mask: owner
+  const _S_IREAD  : mode_t;
+  val access_mask = _S_IREAD \| _S_IWRITE;
+
+
+  fun raw_mode: &stat_t -> mode_t = "$1->st_mode";
+  fun file_type(m:mode_t)=>m \& _S_IFMT;
+  fun file_perm(m:mode_t)=>m \& ~_S_IFMT;
+
+  ctor uint: mode_t = "(unsigned int)$1";
+ 
+
+  inherit FileStat_class[Win32, stat_t, mode_t];
+
+  instance FileStat_class[Win32, stat_t, mode_t] 
+  {
+    proc stat: string * &stat_t * &int = "*$3=_stat64($1.c_str(),$2);";
+    // set access and modification time of a file
+    proc utime: string * double * double * &int = 
+    """
+      {
+      __utimbuf64 u; 
+      u.actime=(time_t)$2;
+      u.modtime=(time_t)$3;
+      *$4 = _utime64($1.c_str(),&u); 
+      }
+    """
+
+    requires Win32_headers::sys_utime_h;
+
+    gen chmod: string * mode_t -> int = "_chmod($1.c_str(),$2)" requires Win32_headers::io_h;
+    gen umask: mode_t -> mode_t = "_umask($1)";
+
+    fun file_type (s:&stat_t): file_type_t =>
+      let m = file_type$ raw_mode s in
+      if m == _S_IFDIR then DIRECTORY
+      elif m == _S_IFREG then REGULAR
+      else INDETERMINATE
+      endif
+    ;
+
+  } // instance
+}
+
+
+
+@h1 File Syetem
+@tangle filesystem.flx
+
+//$ Filesystem operations parametrised by operating system.
+//$ YET TO BE DONE.
+class FileSystem_class[os]
+{
+}
+
+//$ Platform dependent filesystem operations for host file system.
+class FileSystem {
+if PLAT_WIN32 do
+  inherit Win32FileSystem;
+else
+  inherit PosixFileSystem;
+done
+
+  proc unlink(f:string)
+  {
+    proc aux (d:string) (b:string) 
+    {
+      if b == "." or b == ".." return;
+      var f = if d == "" then b else Filename::join (d,b);
+      match FileStat::filetype f with
+      | #PIPE => ;
+      | #STREAM => ;
+      | #DIRECTORY =>
+        match Directory::filesin f with
+        | #None => ;
+        | Some files => 
+          for file in files do
+            aux f file;
+          done
+          C_hack::ignore$ Directory::unlink_empty_dir f;
+        endmatch;
+      | #BLOCK => ;
+      | #REGULAR => C_hack::ignore$ unlink_file f; 
+      | #SYMLINK => C_hack::ignore$ unlink_file f;
+      | #SOCKET => ;
+      | #INDETERMINATE => ;
+      | #NONEXISTANT => ;
+      | #NOPERMISSION => ;
+      endmatch;
+    }
+    aux "" f;
+  }
+
+  proc rm (f:string) => unlink f;
+ 
+  //$ Find a file in a list of directories.
+  fun find_in_path(x:string, path:list[string]):opt[string]=>
+    match path with
+    | #Empty => None[string]
+    | Cons (d,t) => 
+      let p =  Filename::join(d,x) in
+      match FileStat::fileexists p with
+      | true => Some p
+      | false => find_in_path (x,t)
+      endmatch
+    endmatch
+  ;
+
+  //$ Find all the files matching an RE2-regular expression
+  //$ in a given directory. 
+  //$ NOTE: this search finds files in descendant directories too.
+  //$ The search is recursive, but the whole pathname within
+  //$ the specified directory must match the regexp.
+  //$ For example to find all *.flx files in src use:
+  //$   regfilesin("src", ".*[.]flx")
+  //$ To find the files only in the given directory, on Unix use instead
+  //$   regfilesin("src", "[^/]*[.]flx")
+  //$ to exclude files in child directories.
+  fun regfilesin(dname:string, re:string): list[string] => regfilesin(dname, Re2::RE2 re);
+
+  //$ Find all the files matching a compiled RE2-regular expression.
+  fun regfilesin(dname:string, re:RE2): list[string] = {
+    //eprintln$ "regfilesin " + dname+ " with some kind of regexp .. ";
+
+    var foundfiles = Empty[string];
+    proc rfi(dname2: string) {
+
+      //eprintln$ "rf() : dname2=" +dname2;
+
+      if dname2 == "." or dname2 == ".." return;
+
+      var newpath = if dname2 == "" then dname else Filename::join (dname,dname2);
+
+      //eprintln$ "newpath = "+newpath ;
+
+      var newfiles = Directory::filesin(newpath);
+
+      //eprintln$ "returned from filesin" ;
+
+      match newfiles with
+      | #None => return;
+      | Some files =>
+        //eprintln$ "got files in " + newpath;
+        for f in files do
+          if f == "." or f == ".." do ;
+          else
+            //eprintln$ "Processing file " + f;
+            var d = Filename::join (dname2,f);
+            //eprintln$ "Relpath " + d;
+            var fullpath = Filename::join (dname,d);
+            //eprintln$ "fullpath " + fullpath;
+            var t = FileStat::filetype fullpath;
+            match t with
+              | #REGULAR => 
+                //eprintln ("Regular file " + d);
+                var result = d in re;
+                if result do 
+	                //eprintln$ d + " Matches"; 
+		              foundfiles = Cons (d, foundfiles); 
+                done
+              | #DIRECTORY => 
+                //eprintln ("found directory " + d);
+                rfi (d);
+              | _ => ;
+            endmatch;
+          done
+        done
+      endmatch;
+    }
+    rfi ("");
+    return rev foundfiles;
+  }
+ 
+}
+
+@h1 Posix File Syetem
+@tangle posix_filesystem.flx
+
+class PosixFileSystem 
+{
+  //------------------------------------------------------------
+  // File access and create modes
+  //------------------------------------------------------------
+  pod type file_perm_t = "int" requires Posix_headers::fcntl_h;
+  const O_RDONLY     : file_perm_t;
+  const O_WRONLY     : file_perm_t;
+  const O_RDWR       : file_perm_t;
+  const O_NONBLOCK   : file_perm_t;
+  const O_APPEND     : file_perm_t;
+  const O_CREAT      : file_perm_t;
+  const O_TRUNC      : file_perm_t;
+  const O_EXCL       : file_perm_t;
+  const O_SHLOCK     : file_perm_t;
+  const O_EXLOCK     : file_perm_t;
+  const O_NOFOLLOW   : file_perm_t;
+  const O_SYMLINK    : file_perm_t;
+  const O_EVTONLY    : file_perm_t;
+  fun \& : file_perm_t * file_perm_t -> file_perm_t = "$1&$2";
+  fun \|  : file_perm_t * file_perm_t -> file_perm_t = "$1|$2";
+
+  //------------------------------------------------------------
+  // File I/O functions
+  //------------------------------------------------------------
+  pod type posix_file = "int" requires Posix_headers::unistd_h;
+  fun valid: posix_file -> bool = "$1 != -1";
+  ctor int : posix_file = "$1";
+  const fd0 : posix_file = "0";
+  const fd1 : posix_file = "1";
+  const fd2 : posix_file = "2";
+
+  gen open: string * file_perm_t * PosixFileStat::mode_t -> posix_file = "open($1.c_str(), $2, $3)";
+  gen open: string * file_perm_t -> posix_file = "open($1.c_str(), $2)";
+
+  gen ropen: string -> posix_file = 'open($1.c_str(), O_RDONLY,0)' requires Posix_headers::fcntl_h, Posix_headers::sys_stat_h;
+  gen wopen: string -> posix_file = 'open($1.c_str(), O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR)' requires Posix_headers::fcntl_h, Posix_headers::sys_stat_h;
+  gen rwopen: string -> posix_file = 'open($1.c_str(), O_RDWR,0)' requires Posix_headers::fcntl_h, Posix_headers::sys_stat_h;
+  gen creat: string * PosixFileStat::mode_t-> posix_file = 'open($1.c_str(), O_WRONLY | O_CREAT | O_TRUNC, $2)' requires Posix_headers::fcntl_h, Posix_headers::sys_stat_h;
+
+  gen close: posix_file -> int = "close($1)";
+  gen read: posix_file * &char * size -> size = "read($1, $2, $3)";
+  gen write: posix_file * &char * size -> size = "write($1, $2, $3)";
+
+  gen dup: posix_file -> posix_file = "dup($1)" requires Posix_headers::unistd_h;
+  gen dup2: posix_file * posix_file -> posix_file = "dup2($1,$2)" requires Posix_headers::unistd_h;
+  header piper_def = """
+    struct _piper_hack { int i; int o; };
+  """;
+  body piper_def = """
+    _piper_hack _piper() {
+      _piper_hack p;
+      pipe((int*)(void*)&p);
+      return p;
+    }
+  """ requires Posix_headers::unistd_h;
+  private cstruct _piper_hack { i:posix_file; o:posix_file; };
+  private gen _piper: 1 -> _piper_hack requires piper_def;
+  private fun _mkpair (x: _piper_hack) => x.i, x.o;
+  gen pipe () => _mkpair #_piper;
+
+  gen fdopen_input: posix_file ->  ifile = 'fdopen($1,"r")';
+  gen fdopen_output: posix_file ->  ofile = 'fdopen($1,"w")';
+
+  //------------------------------------------------------------
+  // delete (unlink) a file
+  //------------------------------------------------------------
+  gen unlink_file: string -> int = "::unlink($1.c_str())" 
+    requires Posix_headers::unistd_h;
+
+  //------------------------------------------------------------
+  // rename a file
+  //------------------------------------------------------------
+  gen rename_file: string * string -> int = "::rename($1.c_str(),$2.c_str())"
+    requires Posix_headers::unistd_h;
+
+  //------------------------------------------------------------
+  // copy a file, preserving last access and modification times
+  // owner, group, and permissions
+  //------------------------------------------------------------
+  gen filecopy(src: string, dst: string) :  bool =
+  {
+    if Env::getenv ("FLX_REPORT_FILECOPY") != "" do
+      eprintln$ "[PosixFileSystem::filecopy] '" + src + "' -> '" + dst+ "'";
+    done 
+    val now = Time::time(); // seconds
+    var stat_buf: PosixFileStat::stat_t;
+    if not PosixFileStat::stat (src, &stat_buf) do
+      eprintln$ "[PosixFileSystem::filecopy] Can't stat source file " + src;
+      return false;
+    done;
+    val permissions = PosixFileStat::file_perm$ PosixFileStat::raw_mode (&stat_buf);
+    val last_modification = PosixFileStat::filetime(src);
+    var fsrc = open (src,O_RDONLY );
+    if not valid fsrc do
+      eprintln$ "[PosixFileSystem::filecopy] Bad src file in Filesystem::filecopy " + src;
+      return false; 
+    done
+    var fdst = open (dst,O_WRONLY \| O_CREAT \| O_TRUNC, permissions);
+    if not valid fdst do
+      eprintln$ "[PosixFileSystem::filecopy] Bad dst file in Filesystem::filecopy " + dst + ", Error: " + str errno + "=" + #strerror;
+      return false; 
+    done
+    bsiz := size (4096 * 1024); // 4 Meg
+    var buffer = C_hack::cast[&char] (C_hack::malloc(bsiz)); // 4 MEG
+    var bread = read (fsrc, buffer, bsiz);
+    while bread > size 0 do
+      var bwrite = write (fdst,buffer,bread);
+      if bread != bwrite do
+        if bwrite.int == -1 do
+          eprintln$ 
+            "[PosixFileSystem::filecopy] Dest des = " + str fdst.int+ " "+
+            "Attempt to copy " + str bread + " bytes from " + src + " to " + dst + 
+            " failed with errno = " + str errno + ": " + strerror() 
+          ;
+        else
+          eprintln$ 
+            "[PosixFileSystem::filecopy] Attempt to copy " + str bread + " bytes from " + src + " to " + dst + 
+            " failed with " +  str bwrite + " only copied!"
+          ;
+        done
+      done
+      bread = read (fsrc, buffer, bsiz);
+    done
+    var res = close fsrc;
+    if res != 0 do
+      eprintln$ "[PosixFileSystem::filecopy] close on src " + src + " failed: " + str errno + "=" + #strerror;
+    done
+    res = close fdst;
+    if res != 0 do
+      eprintln$ "[PosixFileSystem::filecopy] close on dst " + dst + " failed: " + str errno + "=" + #strerror;
+    done
+    C_hack::ignore(PosixFileStat::utime(dst,now,last_modification));
+    C_hack::free(C_hack::cast[address] buffer);
+    return true;
+  }
+
+  //------------------------------------------------------------
+  // generate temporary file name
+  //------------------------------------------------------------
+  body tmpnam = """
+    std::string flx_tmpnam() {
+      char tmpn[] = "/tmp/flx_XXXXXX";
+      close(mkstemp(tmpn));
+      return std::string(tmpn);
+     }
+  """ requires header '#include <unistd.h>';
+
+  gen tmp_filename: 1 -> string = "flx_tmpnam()" requires tmpnam;
+    
+}
+
+@h1 Win32 File Syetem
+@tangle win32_filesystem.flx
+
+class Win32FileSystem 
+{
+  //------------------------------------------------------------
+  // File access and create modes
+  //------------------------------------------------------------
+  pod type file_perm_t = "int" requires Posix_headers::fcntl_h;
+  const _O_RDONLY     : file_perm_t;
+  const _O_WRONLY     : file_perm_t;
+  const _O_RDWR       : file_perm_t;
+  const _O_NONBLOCK   : file_perm_t;
+  const _O_APPEND     : file_perm_t;
+  const _O_CREAT      : file_perm_t;
+  const _O_TRUNC      : file_perm_t;
+  const _O_EXCL       : file_perm_t;
+  const _O_SHLOCK     : file_perm_t;
+  const _O_EXLOCK     : file_perm_t;
+  const _O_NOFOLLOW   : file_perm_t;
+  const _O_SYMLINK    : file_perm_t;
+  const _O_EVTONLY    : file_perm_t;
+  fun \& : file_perm_t * file_perm_t -> file_perm_t = "$1&$2";
+  fun \|  : file_perm_t * file_perm_t -> file_perm_t = "$1|$2";
+
+  //------------------------------------------------------------
+  // File I/O functions
+  //------------------------------------------------------------
+  pod type posix_file = "int" requires Win32_headers::io_h;
+  fun valid: posix_file -> bool = "$1 != -1";
+  ctor int : posix_file = "$1";
+  const fd0 : posix_file = "0";
+  const fd1 : posix_file = "1";
+  const fd2 : posix_file = "2";
+
+  gen open: string * file_perm_t * Win32FileStat::mode_t -> posix_file = "_open($1.c_str(), $2, $3)";
+  gen open: string * file_perm_t -> posix_file = "_open($1.c_str(), $2)";
+
+  gen ropen: string -> posix_file = 'open($1.c_str(), _O_RDONLY,0)' requires Posix_headers::fcntl_h, Posix_headers::sys_stat_h;
+  gen wopen: string -> posix_file = 'open($1.c_str(), _O_WRONLY | _O_CREAT | _O_TRUNC, S_IRUSR | S_IWUSR)' requires Win32_headers::io_h, Posix_headers::sys_stat_h;
+  gen rwopen: string -> posix_file = 'open($1.c_str(), _O_RDWR,0)' requires Win32_headers::io_h, Posix_headers::sys_stat_h;
+  gen creat: string * Win32FileStat::mode_t-> posix_file = 'open($1.c_str(), _O_WRONLY | _O_CREAT | _O_TRUNC, $2)' requires Win32_headers::io_h, Posix_headers::sys_stat_h;
+
+  gen close: posix_file -> int = "_close($1)";
+  gen read: posix_file * &char * size -> size = "read($1, $2, $3)";
+  gen write: posix_file * &char * size -> size = "write($1, $2, $3)";
+
+  gen dup: posix_file -> posix_file = "dup($1)" requires Win32_headers::io_h;
+  gen dup2: posix_file * posix_file -> posix_file = "dup2($1,$2)" requires Win32_headers::io_h;
+  header piper_def = """
+    struct _piper_hack { int i; int o; };
+  """;
+  body piper_def = """
+    _piper_hack _piper() {
+      _piper_hack p;
+      pipe((int*)(void*)&p);
+      return p;
+    }
+  """ requires Posix_headers::unistd_h;
+  private cstruct _piper_hack { i:posix_file; o:posix_file; };
+  private gen _piper: 1 -> _piper_hack requires piper_def;
+  private fun _mkpair (x: _piper_hack) => x.i, x.o;
+  gen pipe () => _mkpair #_piper;
+
+  gen fdopen_input: posix_file ->  ifile = 'fdopen($1,"r")';
+  gen fdopen_output: posix_file ->  ofile = 'fdopen($1,"w")';
+
+  //------------------------------------------------------------
+  // delete (unlink) a file
+  //------------------------------------------------------------
+  gen unlink_file: string -> int = "unlink($1.c_str())";
+
+  //------------------------------------------------------------
+  // rename a file
+  //------------------------------------------------------------
+  gen rename_file: string * string -> int = "rename($1.c_str(),$2.c_str())";
+
+  //------------------------------------------------------------
+  // copy a file, preserving last access and modification times
+  // owner, group, and permissions
+  //------------------------------------------------------------
+  gen filecopy(src: string, dst: string) :  bool =
+  {
+    //eprintln$ "Copy " + src + " -> " + dst;
+
+    val now = Time::time(); // seconds
+    var stat_buf: Win32FileStat::stat_t;
+    if not Win32FileStat::stat (src, &stat_buf) do
+      eprintln$ "Can't stat source file " + src;
+      return false;
+    done;
+    val permissions = Win32FileStat::file_perm$ Win32FileStat::raw_mode (&stat_buf);
+    val last_modification = Win32FileStat::filetime(src);
+    var fsrc = open (src,_O_RDONLY );
+    if not valid fsrc do
+      eprintln$ " Bad src file in Filesystem::filecopy " + src;
+      return false; 
+    done
+    var fdst = open (dst,_O_WRONLY \| _O_CREAT \| _O_TRUNC, permissions);
+    if not valid fdst do
+      eprintln$ " Bad dst file in Filesystem::filecopy " + dst + ", Error: " + str errno + "=" + #strerror;
+      return false; 
+    done
+    bsiz := size (4096 * 1024); // 4 Meg
+    var buffer = C_hack::cast[&char] (C_hack::malloc(bsiz)); // 4 MEG
+    var bread = read (fsrc, buffer, bsiz);
+    while bread > size 0 do
+      var bwrite = write (fdst,buffer,bread);
+      if bread != bwrite do
+        if bwrite.int == -1 do
+          eprintln$ 
+            "Dest des = " + str fdst.int+ " "+
+            "Attempt to copy " + str bread + " bytes from " + src + " to " + dst + 
+            " failed with errno = " + str errno + ": " + strerror() 
+          ;
+        else
+          eprintln$ 
+            "Attempt to copy " + str bread + " bytes from " + src + " to " + dst + 
+            " failed with " +  str bwrite + " only copied!"
+          ;
+        done
+      done
+      bread = read (fsrc, buffer, bsiz);
+    done
+    var res = close fsrc;
+    if res != 0 do
+      eprintln$ "In filesystem::filecopy close on src " + src + " failed: " + str errno + "=" + #strerror;
+    done
+    res = close fdst;
+    if res != 0 do
+      eprintln$ "In filesystem::filecopy close on dst " + dst + " failed: " + str errno + "=" + #strerror;
+    done
+    C_hack::ignore(Win32FileStat::utime(dst,now,last_modification));
+    C_hack::free(C_hack::cast[address] buffer);
+    return true;
+  }
+  
+ 
+  //------------------------------------------------------------
+  // generate temporary file name
+  //------------------------------------------------------------
+  body tmpnam = """
+    std::string flx_tmpnam() {
+      char tmpn[] = "/tmp/flx_XXXXXX";
+      close(mkstemp(tmpn));
+      return std::string(tmpn);
+     }
+  """ requires header '#include <unistd.h>';
+
+  gen tmp_filename: 1 -> string = "flx_tmpnam()" requires tmpnam;
+    
+}
+
+
+
+@h1 Directory
+@tangle directory.flx
+
+//$ File system directory services,
+//$ Parametrised  by operating system and mode type.
+class Directory_class[os,mode_t]
+{
+  //$ Create a directory with specified mode.
+  //$ Returns 0 if successful.
+  virtual gen mkdir: string * mode_t -> int;
+
+  //$ Create a directory with default mode.
+  //$ Returns 0 if successful.
+  virtual gen mkdir: string -> int;
+
+  //$ Try to ensure all the directories in a path exist.
+  //$ Does not return any error indication.
+  virtual proc mkdirs: string;
+
+  virtual gen unlink_empty_dir: string -> int;
+
+  //$ Return an option list of all the regular files in a given directory.
+  //$ Returns None if the directory does not exist or isn't accessible.
+  //$ Returns Some files if the directory exists and is accessible.
+  //$ If the directory has no regular files, the list is Empty.
+  virtual fun filesin:string -> opt[List::list[string]];
+
+  //$ Get the absolute pathname of the current working directory.
+  virtual fun getcwd: 1 -> string; 
+
+  //$ Convert a relative filename to an absolute pathname. 
+  virtual fun mk_absolute_filename: string -> string; 
+}
+
+//$ Host file system directory services.
+//$ Platform dependent.
+class Directory {
+if PLAT_WIN32 do
+  inherit Win32Directory;
+else
+  inherit PosixDirectory;
+done
+}
+
+@h1 Posix Directory Services
+@tangle posix_directory.flx
+
+class PosixDirectory
+{
+  // Posix specific stuff.
+  type dirent_t = "struct dirent*" requires Posix_headers::dirent_h;
+  type DIR_t = "DIR*" requires Posix_headers::dirent_h;
+  proc opendir: string * &DIR_t = "*$2=opendir($1.c_str());";
+  fun isNULL: DIR_t -> bool = "$1==0";
+  fun isNULL: dirent_t -> bool = "$1==0";
+  proc readdir: DIR_t * dirent_t * &dirent_t * &int = "*$4=readdir_r($1, $2, $3);";
+  proc closedir: DIR_t = "closedir($1);";
+  fun filename: dirent_t -> string = "std::string($1->d_name)";
+  private fun getcwd: +char * size -> +char = "getcwd($1,$2)" requires Posix_headers::unistd_h;
+
+  // inherit generic stuff
+  inherit Directory_class[Posix, PosixFileStat::mode_t];
+
+  // instantiate generic stuff
+  instance Directory_class[Posix, PosixFileStat::mode_t] {
+    gen mkdir: string * PosixFileStat::mode_t -> int = "mkdir($1.c_str(), $2)" requires Posix_headers::sys_stat_h;
+    gen mkdir: string  -> int = "mkdir($1.c_str(), 0777)" requires Posix_headers::sys_stat_h;
+    proc mkdirs (s:string)
+    {
+      if s == "" or s == "." or s == ".." or s == "/" do 
+         return;
+      done
+      mkdirs$ Filename::dirname s;
+      C_hack::ignore$ mkdir s;
+    }
+
+    // Delete an empty directory.
+    gen unlink_empty_dir : string -> int = "rmdir ($1.c_str())" requires Posix_headers::unistd_h;
+
+
+    fun getcwd():string = {
+      var b: array[char,1024]; 
+      var p = getcwd((&b).stl_begin,size 1024);
+      return if C_hack::isNULL p then "" else string p endif; 
+    }
+    fun mk_absolute_filename(s:string) => 
+       if PosixFilename::is_absolute_filename s then s else
+       #getcwd + "/" + s
+    ;
+    fun filesin(dname:string): opt[List::list[string]] = {
+      //println$ "filesin " + dname;
+      var d:DIR_t;
+      var e: dirent_t = C_hack::cast[dirent_t]$ C_hack::malloc 5000;
+      var eret = e;
+      var err:int = 0;
+      var files = List::Empty[string];
+      opendir(dname,&d);
+      if isNULL d do 
+        println "Error opening dir"; 
+        C_hack::free$ C_hack::cast[address] e; 
+        return None[List::list[string]];
+      else
+      //println$ "Opened dir " + dname;
+  next:>
+        readdir(d,e,&eret, &err);
+        if err != 0 do 
+          println "Error reading dir"; fflush;
+          closedir d; 
+          C_hack::free$ C_hack::cast[address] e; 
+          return None[List::list[string]];
+        elif isNULL eret do 
+          //println "End of dir"; 
+          closedir d; 
+          C_hack::free$ C_hack::cast[address] e; 
+          return Some files;
+        else 
+          //println "Think we got a file?";
+          assert err == 0;
+          //println$ "Found a file " + filename e; 
+          files += filename e; 
+          goto next;
+        done
+      done
+    }
+  }
+}
+
+@h1 Win32 Directory Services
+@tangle win32_directory.flx
+
+class Win32Directory
+{
+  //Win32 specific stuff.
+
+  type DIR_t = "intptr_t" requires Win32_headers::io_h ;
+  type FINDDATA_t = "struct _finddata_t" requires Win32_headers::io_h ;
+
+  proc findfirst: string * &FINDDATA_t * &DIR_t = "*$3=_findfirst($1.c_str(), $2);" ;
+  proc findnext: DIR_t * &FINDDATA_t * &int = "*$3=_findnext($1, $2);" ;
+  proc findclose : DIR_t = "_findclose($1);" ;
+
+  fun findfailed : DIR_t -> bool = "int($1) == -1" ;
+  fun filename : FINDDATA_t -> string = "std::string($1.name)" ;
+
+  private fun getcwd: +char * size -> +char = "_getcwd($1,(int)$2)" requires Win32_headers::direct_h;
+
+  // Generic stuff.
+
+  inherit Directory_class[Win32, Win32FileStat::mode_t];
+
+  // Instantiate generics.
+
+  instance Directory_class[Win32, Win32FileStat::mode_t] 
+  {
+    //Make a directory.
+
+    // warning: ignores the mode!
+    gen mkdir: string * Win32FileStat::mode_t -> int = "_mkdir($1.c_str())" requires Win32_headers::direct_h;
+    gen mkdir: string  -> int = "_mkdir($1.c_str())" requires Win32_headers::direct_h;
+    proc mkdirs (s:string)
+    {
+      if s == "" or s == "." or s == ".." or s.[-1] == char "\\" do 
+         return;
+      done
+      mkdirs$ Win32Filename::dirname s;
+      C_hack::ignore$ mkdir s;
+    }
+
+    //Get the current working directory.
+
+    fun getcwd():string = 
+    {
+      var b: array[char,1024]; 
+      var p = getcwd((&b).stl_begin,size 1024);
+      return if C_hack::isNULL p then "" else string p endif; 
+    }
+
+    //Is the given path absolute?
+
+    // this is wrong, because D:filename will have the
+    // current directory prepended instead of the 
+    // current directory for drive D, so it could end up
+    // referring to drive C instead .. 
+    // also none of this works with network names
+    fun mk_absolute_filename(s:string) => 
+       if Win32Filename::is_absolute_filename s then s else
+       #getcwd + "\\" + s
+    ;
+
+    //List the files in a directory.
+  
+    fun filesin(dname:string): opt[list[string]] = 
+    {
+      //eprintln$ "hi in filesin dname=\""+dname+"\"" ;
+
+      var d : DIR_t ;
+      var fileinfo : FINDDATA_t ;
+      var files = Empty[string]; 
+    
+      //eprintln$ "calling findfirst with expression = " + dname+"*";
+      findfirst (dname+"\\*", &fileinfo, &d) ;
+      //eprintln$ "returned from findfirst" ;
+
+      if findfailed d  do
+        if errno == ENOENT or errno == EINVAL do
+          //eprintln$ "findfirst() failed with ENOENT or EINVAL" ;
+          return None[list[string]] ;
+        done
+        eprintln$ "findfirst() failed unexpectedly" ;
+        assert false ;
+      done
+    
+      var stat : int ;
+    
+    harvestnext:>
+    
+      var f : string  = filename fileinfo ;
+      if f != ".." and f != "." do
+        //println$ "Adding file" + (filename fileinfo) ;
+        files += filename fileinfo ;
+      done
+
+      findnext(d, &fileinfo, &stat) ;
+      if stat == 0 goto harvestnext ;
+
+      if stat == -1 do
+        if errno == ENOENT goto harvestexit ;
+        assert false ;
+      else
+        println "Error reading dir"; fflush;
+        findclose d ;
+        return None[list[string]] ;
+      done
+    
+    harvestexit:>
+    
+      //eprintln$ "Leaving normally with some files" ;
+
+      findclose d ;
+      return Some files ;
+    }
+  }
+}
+
+
+

@@ -1,3 +1,8 @@
+@title Memory Management
+@tangler gc.flx = share/lib/std/gc.flx
+@h1 Garbage Collector Interface
+@tangle gc.flx
+
 //$ Generic garbage collector interface.
 //$ This class provides a generic interface to the GC,
 //$ that is, one that is independent of the GC representation.

@@ -1,3 +1,14 @@
+@title Database
+@tangler __init__.flx = share/lib/std/db/__init__.flx
+@tangler sqlite3.flx  = share/lib/std/db/sqlite3.flx
+@h1 Synopsis
+@tangle __init__.flx
+
+include "std/db/sqlite3";
+
+@h1 Sqlite3
+@tangle sqlite3.flx
+
 
 //$ Core Sqlite3 functions and extensions to provide row iterator, simple statement execution, 
 //$ statement preperation and access to sqlite_step statement execution.

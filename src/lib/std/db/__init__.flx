@@ -1,3 +1,0 @@
-include "std/db/sqlite3/__init__";
-//include "std/db/pgsql/__init__";
-
