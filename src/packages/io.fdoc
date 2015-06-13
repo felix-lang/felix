@@ -1,0 +1,1856 @@
+@title I/O
+@tangler __init__.flx = share/lib/std/io/__init__.flx
+@tangler ansi_terminal.flx = share/lib/std/io/ansi_terminal.flx
+@tangler manymouse.flx = share/lib/std/io/manymouse.flx
+@tangler filename.flx = share/lib/std/io/filename.flx
+@tangler filestat.flx = share/lib/std/io/filestat.flx
+@tangler filesystem.flx = share/lib/std/io/filesystem.flx
+@tangler directory.flx = share/lib/std/io/directory.flx
+@tangler textio.flx = share/lib/std/io/textio.flx
+@tangler stream.flx = share/lib/std/io/stream.flx
+@tangler socket.flx = share/lib/std/io/socket.flx
+@tangler demux.flx = share/lib/std/io/demux.flx
+@tangler faio.flx = share/lib/std/io/faio.flx
+@tangler zmq.flx = share/lib/std/io/zmq.flx
+
+@h1 Synopsis
+@tangle __init__.flx
+
+include "std/io/textio";
+include "std/io/demux";
+include "std/io/faio";
+include "std/io/socket";
+include "std/io/stream";
+include "std/io/ansi_terminal";
+include "std/io/filename";
+include "std/io/filestat";
+include "std/io/directory";
+include "std/io/filesystem";
+
+@h1 Ansi Terminal
+@tangle ansi_terminal.flx
+
+// Author Mike Maul
+//$ #### Color output formatting for Ansi Terminals.
+class AnsiTerminal
+{
+  const cc:char = "(char)27";
+  fun  NC_ () => cc + '[0m'; 
+  fun  NC_(s:string) => NC_() + s;
+  proc NC()     { print$ NC_(""); }
+  proc NC(s:string)     { print$ NC_(s); }
+  fun blue_() => cc + '[1;34m';
+  fun blue_(s:string) => blue_() + s + NC_();
+  proc blue()   { print$ blue_(); }
+  proc blue(s:string)   { print$ blue_(s); }
+  fun BLUE_() => cc + '[1;34;1m';
+  fun BLUE_(s:string) => BLUE_() + s + NC_();
+  proc BLUE()   { print$ BLUE_(); }
+  proc BLUE(s:string)   { print$ BLUE_(s); }
+  fun cyan_() => cc + '[0;36m';
+  fun cyan_(s:string) => cyan_()+ s + NC_();
+  proc cyan()   { print$ cyan_(); }
+  proc cyan(s:string)   { print$ cyan_(s); }
+  fun CYAN_() => cc + '[1;36;1m';
+  fun CYAN_(s:string) => CYAN_() + s + NC_();
+  proc CYAN()   { print$ CYAN_(); }
+  proc CYAN(s:string)   { print$ CYAN_(s); }
+  fun green_() => cc + '[0;32m';
+  fun green_(s:string) => green_() + s + NC_();
+  proc green()  { print$ green_(); }
+  proc green(s:string)   { print$ green_(s); }
+  fun GREEN_() => cc + '[1;32;1m';
+  fun GREEN_(s:string) => GREEN_() + s + NC_();
+  proc GREEN()  { print$ GREEN_(); }
+  proc GREEN(s:string)   { println$ GREEN_(s); }
+  fun red_() => cc + '[0;31m';
+  fun red_(s:string) => red_()+ s + NC_();
+  proc red()   { print$ red_(); }
+  proc red(s:string)   { print$ red_(s); }
+  fun RED_() => cc + '[0;31;1m';
+  fun RED_(s:string) => red_()+ s + NC_();
+  proc RED()   { print$ red_(); }
+  proc RED(s:string)   { print$ red_(s); }
+  fun yellow_() => cc + '[0;33m';
+  fun yellow_(s:string) => yellow_() + s + NC_();
+  proc yellow() { print$ yellow_(); }
+  proc yellow(s:string)   { print$ yellow_(s); }
+  fun YELLOW_() => cc + '[1;33;1m';
+  fun YELLOW_(s:string) => YELLOW_() + s + NC_();
+  proc YELLOW() { print$ YELLOW_(); }
+  proc YELLOW(s:string)   { print$ YELLOW_(s); }
+}
+
+@h1 ManyMouse
+@tangle manymouse.flx
+
+class ManyMouse
+{
+  requires package "manymouse";
+
+  enum ManyMouseEventType =
+    MANYMOUSE_EVENT_ABSMOTION,
+    MANYMOUSE_EVENT_RELMOTION,
+    MANYMOUSE_EVENT_BUTTON,
+    MANYMOUSE_EVENT_SCROLL,
+    MANYMOUSE_EVENT_DISCONNECT,
+    MANYMOUSE_EVENT_MAX
+  ;
+
+  struct ManyMouseEvent
+  {
+    etype:ManyMouseEventType;
+    device : uint;
+    item: uint;
+    value: int;
+    minval: int;
+    maxval : int;
+  };
+
+  gen  ManyMouse_Init: 1 -> int;
+  fun  ManyMouse_DriverName: 1 -> string = 
+    "::std::string(ManyMouse_DriverName())"
+  ;
+  proc ManyMouse_Quit: 1;
+  fun  ManyMouse_DeviceName: uint -> string =
+    "::std::string(ManyMouse_DeviceName($1))"
+  ;
+  gen  ManyMouse_PollEvent: &ManyMouseEvent -> int = 
+    "ManyMouse_PollEvent((ManyMouseEvent*)(void*)$1)"
+  ;
+}
+@h1 Filename
+@tangle filename.flx
+
+//$ Operations on filenames.
+class Filename_class[os] {
+
+  //$ The path separator.
+  virtual fun sep: 1 -> string;
+  virtual fun is_absolute_filename : string -> bool;
+
+  virtual fun executable_extension : 1 -> string;
+  virtual fun static_object_extension: 1 -> string;
+  virtual fun dynamic_object_extension: 1 -> string;
+  virtual fun static_library_extension: 1 -> string;
+  virtual fun dynamic_library_extension: 1 -> string;
+
+
+
+  //$ split1 returns a pair consisting of a directory name and basename
+  //$ with the separator between them lost except in the special case
+  //$ "/x" where the "/" is kept as the directory name.
+  //$ If there is no separator, the path is the basename and
+  //$ the directory name is the empty string (NOT . !!!)
+
+  fun split1(s:string)=> match find_last_of(s,#sep) with
+    | Some pos => 
+      if pos==0 then #sep else s.[to pos] endif,
+      s.[pos+#sep.len.int to]
+    | #None => "",s
+    endmatch
+  ;
+
+  private fun split(s:string, acc:List::list[string]):List::list[string]=>
+    let d,b = split1 s in
+    if d == "" then List::Cons(b,acc) 
+    elif d == #sep then List::Cons(d, List::Cons(b,acc))
+    else split (d, List::Cons (b, acc)) 
+    endif
+  ;
+
+  //$ split a filename into a list of components.
+  fun split(s:string)=> split (s, List::Empty[string]);
+
+  //$ Join two pathnames into a single pathname.
+  //$ split and join are logical inverses, however join is not
+  //$ not associative: join("x", join("","y")) = "x/y"
+  //$ whereas join(join("x",""),"y") = "x//y"
+  //$ since split pulls components off from the RHS we have to
+  //$ fold them back from the left
+
+  fun join(p:string, b:string)=> 
+    if p == "" then b
+    elif p == #sep then p+b 
+    elif p.[-1] == #sep.[0] then p+b 
+    else p+#sep+b 
+    endif
+  ; 
+  
+  //$ Get the basename of a path (last component).
+  fun basename(s:string)=> match split1(s) with | _,b => b endmatch;
+
+  //$ Get the directory name of a path (all but the last component).
+  fun dirname(s:string)=> match split1(s) with | d,_ => d endmatch;
+  
+  //$ Return a list of all the directory names in a path.
+  //$ For example a/b/c gives "a", "a/b"
+  fun directories (s:string) : list[string] =>
+     let d,b = split1 s in
+     if d == "" then Empty[string]
+     elif d == #sep then Empty[string]
+     else directories d + d
+  ;
+
+  //$ Join 3 and 4 strings into a pathname.
+  fun join(a:string, b:string, c:string)=> join(join(a,b),c);
+  fun join(a:string, b:string, c:string,d:string)=> join(join(join(a,b),c),d);
+
+  //$ Join 2 strings into a pathname (curried form).
+  fun join(x:string) (y:string) => join(x,y);
+
+  //$ Join all the strings in a list into a pathname.
+  fun join(ps: List::list[string])=> List::fold_left Filename::join of (string) "" ps;
+
+  //$ Split off extension. Includes the dot. 
+  //$ Invariant: input = basename + extension.
+  //$ Works backwards until it hits a dot, path separator,
+  //$ or end of data. If a dot, strip it and the tail of the string,
+  //$ otherwise return the original string.
+  fun split_extension (s:string): string * string = {
+     var n = s.len;
+     if n > 0uz do
+       for var i in s.len - 1uz downto 0uz do
+         var ch = s.[i];
+         if ch == char "." return s.[to i],s.[i to];
+         if ch == char #sep return s,""; 
+       done
+     done
+     return s,"";
+  }
+
+  //$ Remove an extension from a filename if there is one.
+  fun strip_extension (s:string) => s.split_extension.0;
+
+  //$ Get extension if there is one. Includes the dot.
+  fun get_extension (s:string) => s.split_extension.1;
+
+}
+
+//$ Windows Filenames
+class Win32Filename 
+{
+  inherit Filename_class[Win32];
+  instance Filename_class[Win32] {
+    fun sep() => "\\";
+    fun executable_extension ()=> ".exe";
+    fun static_object_extension() => ".obj";
+    fun dynamic_object_extension() => ".obj";
+    fun static_library_extension() => ".lib";
+    fun dynamic_library_extension() => ".dll";
+    fun is_absolute_filename (f:string) => 
+      f.[0] == "\\".char or // no drive letter
+      f.[1] == ":".char and f.[2] == "\\".char // with drive letter
+    ;
+
+  }
+}
+
+//$ OSX Filenames
+class OsxFilename 
+{
+  inherit Filename_class[Osx];
+  instance Filename_class[Osx] {
+    fun sep() => "/";
+    fun executable_extension ()=> "";
+    fun static_object_extension() => ".o";
+    fun dynamic_object_extension() => ".os";
+    fun static_library_extension() => ".a";
+    fun dynamic_library_extension() => ".dylib";
+    fun is_absolute_filename (f:string) => f.[0] == "/";
+
+  }
+}
+
+//$ Posix Filenames
+class PosixFilename 
+{
+  inherit Filename_class[Posix];
+  instance Filename_class[Posix] {
+    fun sep() => "/";
+    fun executable_extension ()=> "";
+    fun static_object_extension() => ".o";
+    fun dynamic_object_extension() => ".os";
+    fun static_library_extension() => ".a";
+    fun dynamic_library_extension() => ".so";
+    fun is_absolute_filename (f:string) => f.[0] == "/";
+  }
+}
+
+//$ Host Filenames.
+class Filename
+{
+if PLAT_WIN32 do
+  inherit Win32Filename;
+elif PLAT_MACOSX do
+  inherit OsxFilename;
+else
+  inherit PosixFilename;
+done
+}
+@h1 Filestat
+@tangle filestat.flx
+
+//$ Filesystem file kind query functions parametrised
+//$ by operating system, status type and mode type.
+class FileStat_class[OS,stat_t, mode_t]
+{
+  //$ Get information about a file into a status buffer.
+  //$ Sets error code at argument 3 pointer.
+  virtual proc stat: string * &stat_t * &int;
+
+  //$ set access and modification time of a file.
+  //$ Sets error code at argument 4 pointer.
+  //$ Times are in seconds, nominally from Epoch (Jan 1 1970).
+  virtual proc utime: string * double * double * &int;
+
+  //$ Change read,write permissions for group, owner etc.
+  //$ Return 0 on success.
+  //$ On Windows this function may silently fail to obey
+  //$ unsupported operations.
+  virtual gen chmod: string * mode_t -> int;
+
+  //$ set mask for subsequent permissions.
+  //$ On Windows this function may silently fail to obey
+  //$ unsupported operations.
+  virtual gen umask: mode_t -> mode_t;
+
+  //$ Abstracted platform independent file type taxonomy.
+  union file_type_t = 
+    | PIPE 
+    | STREAM 
+    | DIRECTORY 
+    | BLOCK 
+    | REGULAR 
+    | SYMLINK 
+    | SOCKET 
+    | INDETERMINATE
+    | NONEXISTANT
+    | NOPERMISSION
+  ;
+
+  //$ Get the file type from a file stat buffer.
+  virtual fun file_type: &stat_t -> file_type_t;
+
+  //$ Fill a stat buffer with information about a file.
+  gen stat(file: string, statbuf:&stat_t) = { 
+    var res: int; 
+    stat(file, statbuf, &res); 
+    return res == 0;
+  }
+
+  //$ Get a file last modification time from a stat buffer.
+  //$ Time is in seconds.
+  fun mtime: &stat_t -> double = "(double)($1->st_mtime)";
+
+  //$ Get a file creation time from a stat buffer.
+  //$ Note: not available on Unix.
+  //$ Time is in seconds.
+  fun ctime: &stat_t -> double = "(double)($1->st_ctime)";
+
+  //$ Get modification time of a file by name.
+  //$ Time is in seconds.
+  fun filetime(f:string):double =
+  {
+    var b: stat_t;
+    var err:int;
+    stat(f,&b,&err);
+    return if err == 0 then mtime (&b) else 0.0 endif;
+  }
+
+  //$ Set the last access and modification time of a file by name.
+  gen utime(f:string, a:double, m:double): bool = {
+    var r:int;
+    utime(f,a,m,&r);
+    return r == 0;
+  }
+
+  //$ Set the last access and modification time of a file by name,
+  //$ where the two times are given by a single argument.
+  gen utime(f:string, t:double) => utime(f,t,t);
+
+  //$ Check if a file exists.
+  fun fileexists(f:string):bool=> filetime f != 0.0;
+
+  //$ Find the type of a file.
+  fun filetype(f:string):file_type_t = 
+  {
+    var b:stat_t;
+    var err:int;
+    stat(f,&b,&err);
+    return 
+      if err == 0 then file_type (&b)
+      elif errno == EACCES then NOPERMISSION
+      elif errno == ENOENT then NONEXISTANT  
+      else INDETERMINATE
+      endif
+    ;
+  }
+
+  fun past_time () => -1.0;
+  fun future_time () => double(ulong(-1)); // a hacky way to get a big number
+
+  fun strfiletime0 (x:double) = {
+    return
+      if x == #past_time then "BIG BANG"
+      elif x == #future_time then "BIG CRUNCH"
+      else fmt (x, fixed (0,3))
+      endif
+    ;
+  }
+
+  fun strfiletime (x:double) = {
+    assert x != 0.0;
+    return strfiletime0 x;
+  }
+
+  fun dfiletime(var f:string, dflt:double)=
+  {
+    var x = FileStat::filetime (f);
+    x = if x == 0.0 then dflt else x endif;
+    //debugln$ "Time of file '" + f + "' is " + strfiletime x; 
+    return x;
+  }
+
+
+}
+
+//$ Platform dependent operations for host file system.
+class FileStat {
+if PLAT_WIN32 do
+  inherit Win32FileStat;
+else
+  inherit PosixFileStat;
+done
+}
+
+@h1 File Syetem
+@tangle filesystem.flx
+
+//$ Filesystem operations parametrised by operating system.
+//$ YET TO BE DONE.
+class FileSystem_class[os]
+{
+}
+
+//$ Platform dependent filesystem operations for host file system.
+class FileSystem {
+if PLAT_WIN32 do
+  inherit Win32FileSystem;
+else
+  inherit PosixFileSystem;
+done
+
+  proc unlink(f:string)
+  {
+    proc aux (d:string) (b:string) 
+    {
+      if b == "." or b == ".." return;
+      var f = if d == "" then b else Filename::join (d,b);
+      match FileStat::filetype f with
+      | #PIPE => ;
+      | #STREAM => ;
+      | #DIRECTORY =>
+        match Directory::filesin f with
+        | #None => ;
+        | Some files => 
+          for file in files do
+            aux f file;
+          done
+          C_hack::ignore$ Directory::unlink_empty_dir f;
+        endmatch;
+      | #BLOCK => ;
+      | #REGULAR => C_hack::ignore$ unlink_file f; 
+      | #SYMLINK => C_hack::ignore$ unlink_file f;
+      | #SOCKET => ;
+      | #INDETERMINATE => ;
+      | #NONEXISTANT => ;
+      | #NOPERMISSION => ;
+      endmatch;
+    }
+    aux "" f;
+  }
+
+  proc rm (f:string) => unlink f;
+ 
+  //$ Find a file in a list of directories.
+  fun find_in_path(x:string, path:list[string]):opt[string]=>
+    match path with
+    | #Empty => None[string]
+    | Cons (d,t) => 
+      let p =  Filename::join(d,x) in
+      match FileStat::fileexists p with
+      | true => Some p
+      | false => find_in_path (x,t)
+      endmatch
+    endmatch
+  ;
+
+  //$ Find all the files matching an RE2-regular expression
+  //$ in a given directory. 
+  //$ NOTE: this search finds files in descendant directories too.
+  //$ The search is recursive, but the whole pathname within
+  //$ the specified directory must match the regexp.
+  //$ For example to find all *.flx files in src use:
+  //$   regfilesin("src", ".*[.]flx")
+  //$ To find the files only in the given directory, on Unix use instead
+  //$   regfilesin("src", "[^/]*[.]flx")
+  //$ to exclude files in child directories.
+  fun regfilesin(dname:string, re:string): list[string] => regfilesin(dname, Re2::RE2 re);
+
+  //$ Find all the files matching a compiled RE2-regular expression.
+  fun regfilesin(dname:string, re:RE2): list[string] = {
+    //eprintln$ "regfilesin " + dname+ " with some kind of regexp .. ";
+
+    var foundfiles = Empty[string];
+    proc rfi(dname2: string) {
+
+      //eprintln$ "rf() : dname2=" +dname2;
+
+      if dname2 == "." or dname2 == ".." return;
+
+      var newpath = if dname2 == "" then dname else Filename::join (dname,dname2);
+
+      //eprintln$ "newpath = "+newpath ;
+
+      var newfiles = Directory::filesin(newpath);
+
+      //eprintln$ "returned from filesin" ;
+
+      match newfiles with
+      | #None => return;
+      | Some files =>
+        //eprintln$ "got files in " + newpath;
+        for f in files do
+          if f == "." or f == ".." do ;
+          else
+            //eprintln$ "Processing file " + f;
+            var d = Filename::join (dname2,f);
+            //eprintln$ "Relpath " + d;
+            var fullpath = Filename::join (dname,d);
+            //eprintln$ "fullpath " + fullpath;
+            var t = FileStat::filetype fullpath;
+            match t with
+              | #REGULAR => 
+                //eprintln ("Regular file " + d);
+                var result = d in re;
+                if result do 
+	                //eprintln$ d + " Matches"; 
+		              foundfiles = Cons (d, foundfiles); 
+                done
+              | #DIRECTORY => 
+                //eprintln ("found directory " + d);
+                rfi (d);
+              | _ => ;
+            endmatch;
+          done
+        done
+      endmatch;
+    }
+    rfi ("");
+    return rev foundfiles;
+  }
+ 
+}
+@h1 Directory
+@tangle directory.flx
+
+//$ File system directory services,
+//$ Parametrised  by operating system and mode type.
+class Directory_class[os,mode_t]
+{
+  //$ Create a directory with specified mode.
+  //$ Returns 0 if successful.
+  virtual gen mkdir: string * mode_t -> int;
+
+  //$ Create a directory with default mode.
+  //$ Returns 0 if successful.
+  virtual gen mkdir: string -> int;
+
+  //$ Try to ensure all the directories in a path exist.
+  //$ Does not return any error indication.
+  virtual proc mkdirs: string;
+
+  virtual gen unlink_empty_dir: string -> int;
+
+  //$ Return an option list of all the regular files in a given directory.
+  //$ Returns None if the directory does not exist or isn't accessible.
+  //$ Returns Some files if the directory exists and is accessible.
+  //$ If the directory has no regular files, the list is Empty.
+  virtual fun filesin:string -> opt[List::list[string]];
+
+  //$ Get the absolute pathname of the current working directory.
+  virtual fun getcwd: 1 -> string; 
+
+  //$ Convert a relative filename to an absolute pathname. 
+  virtual fun mk_absolute_filename: string -> string; 
+}
+
+//$ Host file system directory services.
+//$ Platform dependent.
+class Directory {
+if PLAT_WIN32 do
+  inherit Win32Directory;
+else
+  inherit PosixDirectory;
+done
+}
+@h1 Simple Text I/O
+@tangle textio.flx
+
+//$ These classes provide simple I/O for text, primarily intended for
+//$ naive use, debugging etc. This is because there is no error
+//$ handling. This simplifies usage at the expense of correctness,
+//$ and so these routines should not be used in production code.
+
+//$ Abstract input file.
+class Input_text_file[input_text_file]
+{
+  //$ Open file for reading.
+  virtual gen fopen_input: string -> input_text_file; 
+
+  //$ Check if the file was opened correctly.
+  virtual gen valid : input_text_file -> bool;
+ 
+  //$ Close file.
+  virtual proc fclose: input_text_file;
+
+  //$ Load the rest of an open file.
+  virtual gen load: input_text_file -> string;
+
+  //$ Read one line with the trailing end-line mark included.
+  //$ Empty string indicates end of file.
+  virtual gen readln: input_text_file -> string;
+
+  //$ Check for end of file.
+  virtual gen feof : input_text_file -> bool;
+}
+
+//$ Abstract output file.
+class Output_text_file[output_text_file]
+{
+  //$ Open file for writing.
+  virtual gen fopen_output: string -> output_text_file;
+
+  //$ Open file for writing in append-only mode.
+  virtual gen fopen_append: string -> output_text_file;
+
+  //$ Check if the file was opened correctly.
+  virtual gen valid : output_text_file -> bool;
+ 
+  //$ Close file.
+  virtual proc fclose: output_text_file;
+
+  //$ Write one line adding the trailing end line mark.
+  virtual proc writeln : output_text_file * string;
+
+  //$ Write a string.
+  virtual proc write : output_text_file * string;
+
+  //$ Write a byte.
+  virtual proc write : output_text_file * utiny;
+
+  //$ Write a char.
+  virtual proc write : output_text_file * char;
+
+  //$ Flush the buffers.
+  virtual proc fflush: output_text_file;
+
+  //$ Save string to file
+  proc save (fn:string, d:string) 
+  {
+    var f = fopen_output fn;
+    write$ f,d;
+    fclose f;
+  }
+
+  // save list of strings to file
+  // adds a newline to each string in list
+  proc save (fn:string, lines:list[string]) 
+  {
+    var f = fopen_output fn;
+    iter (proc (s:string) { writeln$ f,s; }) lines;
+    fclose f;
+  }
+
+  //$ Write a space.
+  proc space (s:output_text_file) { write (s, " "); };
+
+  //$ Write end of line mark.
+  proc endl (s:output_text_file) { write (s, "\n"); };
+
+  //$ Write data with conversion using Str::str.
+  proc fprint[T with Str[T]] (s:output_text_file, x:T) { write (s, str x); };
+
+  //$ Write data with conversion using Str::str and end line mark.
+  proc fprintln[T with Str[T]] (s:output_text_file, x:T) { write (s, str x+"\n"); };
+}
+
+//$ C standard IO with FILE*.
+open class Cstdio {
+
+  //$ C file type.
+  type FILE = "FILE*" requires C89_headers::stdio_h;
+
+  pod type ifile = "FILE*" requires C89_headers::stdio_h;
+  pod type ofile = "FILE*" requires C89_headers::stdio_h;
+
+  //$ Load file from filename.
+  //$ Note: loaded in binary mode not text mode!
+  fun load: string -> string = "::flx::rtl::ioutil::load_file($1)"
+    requires package "flx_ioutil";
+
+
+  //$ Standard input, can be redirected by flx_run.
+  const stdin: ifile = "PTF flx_stdin" requires property "needs_ptf";
+
+  //$ Standard output, can be redirected by flx_run.
+  const stdout: ofile = "PTF flx_stdout" requires property "needs_ptf";
+
+  //$ Standard error, can be redirected by flx_run.
+  const stderr: ofile = "PTF flx_stderr" requires property "needs_ptf";
+
+  //$ Standard input, redirected by shell.
+  const cstdin: ifile = "stdin";
+
+  //$ Standard output, redirected by shell.
+  const cstdout: ofile = "stdout";
+
+  //$ Standard error, redirected by shell.
+  const cstderr: ofile = "stderr";
+
+  //$ C standard IO as instance of Input_text_file.
+  instance Input_text_file[ifile] {
+    requires package "flx_ioutil";
+    gen fopen_input: string -> ifile = 'fopen($1.c_str(),"rt")';
+    gen valid : ifile -> bool = "$1!=(FILE*)0";
+    proc fclose: ifile = '(void)fclose($1);';
+    gen load: ifile -> string = "::flx::rtl::ioutil::load_file($1)";
+    gen readln: ifile -> string ="::flx::rtl::ioutil::readln($1)";
+    gen feof : ifile -> bool = "feof($1)";
+  }
+
+  //$ C standard IO as instance of Output_text_file.
+  instance Output_text_file[ofile] {
+    requires package "flx_ioutil";
+    gen fopen_output: string -> ofile = 'fopen($1.c_str(),"wt")';
+    gen fopen_append: string -> ofile = 'fopen($1.c_str(),"a")';
+    gen valid : ofile -> bool = "$1!=(FILE*)0";
+    proc fclose: ofile = '(void)fclose($1);';
+    proc writeln : ofile * string ="::flx::rtl::ioutil::writeln($1,$2);";
+    proc write : ofile * string ="::flx::rtl::ioutil::write($1,$2);";
+    proc write : ofile * utiny ="fwrite($2,1,1,$1);";
+    proc write : ofile * char ="fwrite($2,1,1,$1);";
+    proc fflush: ofile = "fflush($1);";
+  }
+}
+
+open Input_text_file[Cstdio::ifile];
+open Output_text_file[Cstdio::ofile];
+/*
+// C++ I/O streams.
+open class Iostream {
+
+  //$ istream type.
+  pod type istream = "::std::istream*" requires Cxx_headers::fstream;
+
+  //$ ostream type.
+  pod type ostream = "::std::ostream*" requires Cxx_headers::fstream;
+
+  //$ Standard input, redirected by shell.
+  const cin : istream = "&::std::cin" requires Cxx_headers::iostream;
+
+  //$ Standard output, redirected by shell.
+  const cout: ostream = "&::std::cout" requires Cxx_headers::iostream;
+
+  //$ Standard error, redirected by shell.
+  const cerr: ostream = "&::std::cerr" requires Cxx_headers::iostream;
+
+  //$ Standard log, redirected by shell.
+  const clog : ostream = "&::std::clog" requires Cxx_headers::iostream;
+
+  //$ C++ istream as instance of Input_text_file.
+  instance Input_text_file[istream] {
+    requires package "flx_ioutil";
+    gen fopen_input: string -> istream = '::std::fopen($1.c_str(),"rt")';
+    gen valid : istream -> bool = "!$1->fail()";
+    proc fclose: istream = '$1->close();';
+    gen load: istream -> string = "::flx::rtl::ioutil::load_file($1)";
+    gen readln: istream -> string ="::flx::rtl::ioutil::readln($1)";
+    gen feof : istream -> bool = "$1->eof() || $1->fail()";
+  }
+
+  //$ C++ ostream as instance of Output_text_file.
+  instance Output_text_file[ostream] {
+    requires package "flx_ioutil";
+    gen fopen_output: string -> ostream = '::std::fopen($1.c_str(),"wt")';
+    gen valid : ostream -> bool = "!$1->fail()";
+    proc fclose: ostream = '$1->setstate(::std::ios::eofbit);';
+    proc writeln : ostream * string ="::flx::rtl::ioutil::writeln($1,$2);";
+    proc write : ostream * string ="::flx::rtl::ioutil::write($1,$2);";
+    proc write : ostream * utiny ="$1->put($2);";
+    proc write : ostream * char ="$1->put($2);";
+    proc fflush: ostream = "$1->flush();";
+  }
+}
+
+
+open Input_text_file[Iostream::istream];
+open Output_text_file[Iostream::ostream];
+*/
+
+//$ DEBUG OUTPUT UTILITIES! 
+//$ DO NOT REQUIRE THREAD FRAME.
+//$ NOT REDIRECTABLE BY DRIVER.
+//$ (can be redirected by OS if OS can do it)
+
+//$ Write string to output.
+proc print  [T with Str[T]] (x:T) { fprint (cstdout, x); };
+
+//$ Write string to output with end of line.
+proc println[T with Str[T]] (x:T) { fprintln (cstdout, x); };
+
+//$ Write end of line on output.
+proc endl() { endl cstdout; }
+
+//$ Write space on cout.
+proc space() { space cstdout; }
+
+//$ flush buffers of cout.
+proc fflush() { fflush cstdout; }
+
+//$ Write string to cerr.
+proc eprint  [T with Str[T]] (x:T) { fprint (cstderr, x); };
+
+//$ Write string to cerr with end of line.
+proc eprintln[T with Str[T]] (x:T) { fprintln (cstderr, x);};
+
+//$ Write end of line on cerr.
+proc eendl() { endl cstderr; }
+
+//$ Write space on cerr.
+proc espace() { space cstderr; }
+
+@h1 Stream I/O
+@tangle stream.flx
+
+class Stream {
+  requires package "demux";
+  requires package "faio";
+
+  open Faio;
+
+  if PLAT_POSIX do
+    open Faio_posix;
+    typedef fd_t = FileSystem::posix_file;
+  else
+    open Faio_win32;
+    typedef fd_t = Faio_win32::fd_t;
+  done
+
+  // ---------------------------------------------------------------------------
+
+  publish "The interface for a readable stream of bytes."
+  class IByteStream[T] {
+    publish "Read N bytes from the stream into the address."
+    virtual proc read: T * &int * address * &bool;
+  }
+
+  publish "The interface for a writable stream of bytes."
+  class OByteStream[T] {
+    publish "Write N bytes from the address into the stream."
+    virtual proc write: T * &int * address * &bool;
+  }
+
+  publish "The interface for a readable and writable stream of bytes."
+  class IOByteStream[T] {
+    inherit IByteStream[T];
+    inherit OByteStream[T];
+  }
+
+  publish "A readable stream that can have it's read channel closed."
+  class TerminalIByteStream[T] {
+    inherit IByteStream[T];
+
+    publish "Close the input stream."
+    virtual proc iclose: T;
+  }
+
+  publish "A writable stream that can have it's write channel closed."
+  class TerminalOByteStream[T] {
+    inherit OByteStream[T];
+
+    publish "Close the output stream."
+    virtual proc oclose: T;
+  }
+
+  publish "A writable stream that can have it's channels closed."
+  class TerminalIOByteStream[T] {
+    inherit TerminalIByteStream[T];
+    inherit TerminalOByteStream[T];
+
+    publish "Close the stream."
+    virtual proc ioclose: T;
+  }
+
+  // ---------------------------------------------------------------------------
+
+  union devnull_t = DEVNULL;
+
+  publish "devnull_t"
+  instance IByteStream[devnull_t]
+  {
+    proc read(strm: devnull_t, len: &int, buf: address, eof: &bool) {
+      *len = 0;
+      *eof = true;
+    }
+  }
+
+  instance OByteStream[devnull_t]
+  {
+    proc write(strm: devnull_t, len: &int, buf: address, eof: &bool) {
+      *eof = false;
+    }
+  }
+
+  instance IOByteStream[devnull_t] {}
+  instance TerminalIByteStream[devnull_t] { proc iclose (x:devnull_t) {} }
+  instance TerminalOByteStream[devnull_t] { proc oclose (x:devnull_t) {} }
+  instance TerminalIOByteStream[devnull_t] { proc ioclose (x:devnull_t) {} }
+
+  // ---------------------------------------------------------------------------
+
+  publish "fd_t -- native file handle (disk file)"
+  instance IByteStream[fd_t]
+  {
+    proc read(fd: fd_t, len: &int, buf: address, eof: &bool) {
+      if PLAT_POSIX do
+        faio_read(fd, len, buf, eof);
+      else
+        ReadFile(fd, len, buf, eof);
+      done
+    }
+  }
+
+  instance OByteStream[fd_t]
+  {
+    proc write(fd: fd_t, len: &int, buf: address, eof: &bool) {
+      if PLAT_POSIX do
+        faio_write(fd, len, buf, eof);
+      else
+        WriteFile(fd, len, buf, eof);
+      done
+    }
+  }
+
+  instance IOByteStream[fd_t] {}
+
+  instance TerminalIByteStream[fd_t]
+  {
+    proc iclose (fd: fd_t) {
+      if PLAT_POSIX do
+        C_hack::ignore(FileSystem::close fd);
+      else
+        CloseFile fd;
+      done
+    }
+  }
+
+  instance TerminalOByteStream[fd_t]
+  {
+    proc oclose (fd: fd_t) {
+      if PLAT_POSIX do
+        C_hack::ignore(FileSystem::close fd);
+      else
+        CloseFile fd;
+      done
+    }
+  }
+
+  instance TerminalIOByteStream[fd_t]
+  {
+    proc ioclose (fd: fd_t) {
+      if PLAT_POSIX do
+        C_hack::ignore(FileSystem::close fd);
+      else
+        CloseFile fd;
+      done
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+
+  publish "Read the input stream to the output stream."
+  proc cat[istr,ostr with IByteStream[istr], OByteStream[ostr]] (
+    istream: istr,
+    ostream: ostr,
+    buf: address,
+    bufsize: int)
+  {
+    var reof = false;
+    var weof = false;
+    var len: int;
+
+    // if we finish input, stop. if output eofs, don't keep hammering on it!
+    while not reof and not weof do
+      len = bufsize;
+      read (istream, &len, buf, &reof);
+      write(ostream, &len, buf, &weof);
+    done
+  }
+
+  publish "Read the input stream to the output stream."
+  proc cat[istr,ostr with IByteStream[istr], OByteStream[ostr]] (
+    istream: istr,
+    ostream: ostr)
+  {
+    val BUFSIZE = 100000;
+    var buf = C_hack::malloc(BUFSIZE);
+
+    // that's some nice error checking
+    cat (istream, ostream, buf, BUFSIZE);
+
+    C_hack::free (buf);
+  }
+
+  publish "Read all the input streams to the output stream."
+  proc cat[istr,ostr with IByteStream[istr], OByteStream[ostr]] (
+    istreams: list[istr],
+    ostream: ostr,
+    buf: address,
+    bufsize: int)
+  {
+    List::iter (proc (istream:istr) {
+      cat (istream, ostream, buf, bufsize);
+    }) istreams;
+  }
+
+  publish "Compare the results of two streams."
+  proc stream_cmp[istr1,istr2 with IByteStream[istr1], IByteStream[istr2]] (
+    stream1: istr1,
+    stream2: istr2,
+    buf1: address,
+    buf2: address,
+    bufsize: int,
+    sign: &int)
+  {
+    var eof1 = false;
+    var eof2 = false;
+    var len1: int;
+    var len2: int;
+    var terminated = false;
+    var cmp = 0;
+
+    while cmp == 0 and not terminated do
+      len1 = bufsize; read(stream1, &len1, buf1, &eof1);
+      len2 = bufsize; read(stream2, &len2, buf2, &eof2);
+
+      len := min(len1, len2);
+
+      // It's very unfortunate that memcmp doesn't return the position of the
+      // first non-equality
+      cmp = Carray::memcmp(buf1, buf2, size len);
+
+      if cmp == 0 do
+        cmp = len1 - len2;
+        if cmp == 0 do
+          terminated = eof1 and eof2;
+          cmp =
+            // ugg: false = case 0, true = case 1
+            match eof1, eof2 with
+            | case 1, case 1 => 0
+            | case 0, case 0 => 0
+            | case 0, case 1 => 1
+            | case 1, case 0 => -1
+            endmatch
+          ;
+        done
+      done
+    done
+
+    *sign = cmp;
+  }
+
+
+  publish "Compare the results of two streams."
+  proc cmp[istr1, istr2 with IByteStream[istr1], IByteStream[istr2]] (
+    istream1: istr1,
+    istream2: istr2,
+    res: &int)
+  {
+    val BUFSIZE = 100000;
+    var buf1 = C_hack::malloc(BUFSIZE);
+    var buf2 = C_hack::malloc(BUFSIZE);
+    stream_cmp(istream1, istream2, buf1, buf2, BUFSIZE, res);
+    C_hack::free(buf1);
+    C_hack::free(buf2);
+  }
+
+  publish "Read the results of a stream back into it's stream."
+  proc echo[iostr with IOByteStream[iostr]] (
+    iostream: iostr,
+    buf: address,
+    bufsize: int)
+  {
+    // echo a = cat a a. that's deep, man.
+    cat(iostream, iostream, buf, bufsize);
+  }
+
+  publish "Read in from a stream and write to two streams."
+  proc tee[istr,ostr with IByteStream[istr], OByteStream[ostr]] (
+    istream: istr,
+    ostream1: ostr,
+    ostream2: ostr)
+  {
+    var reof  = false;
+    var weof1 = false;
+    var weof2 = false;
+    var len: int;
+
+    val BUFSIZE = 10*1024;
+    var buf = C_hack::malloc(BUFSIZE);
+
+    // don't hammer!
+    while not reof and not weof1 and not weof2 do
+      len = BUFSIZE;
+      read  (istream,  &len, buf, &reof);
+      write (ostream1, &len, buf, &weof1);
+      write (ostream2, &len, buf, &weof2);
+    done
+
+    C_hack::free buf;
+  }
+
+  // highly inefficient!
+  noinline proc get_line[istr with IByteStream[istr]] (
+    istream: istr,
+    s: &string)
+  {
+//println$ "get_line starts";
+    var c: char;
+    val ac = address (&c);
+    var st: string="";
+    var finished = false;
+
+    while not finished do
+      var len = 1;
+      var eof: bool;
+
+//println$ "read 1 byte";
+      read(istream, &len, ac, &eof);
+//println$ if eof then "EOF" else "not EOF" endif;
+//println$ "Char = " + str(ord c) + "='"+str c+"'";
+      if eof or c == char '\n' do
+        finished = true;
+      else
+        st += c;
+      done
+    done
+    *s = st;  // pass back result
+  }
+
+  proc write_string[ostr with OByteStream[ostr]] (
+    ostream: ostr,
+    var s: string,
+    eof: &bool)
+  {
+    var slen = s.len.int;
+    var a = C_hack::cast[address]$ cstr s;
+    write(ostream, &slen, a, eof);
+  }
+} // class Stream
+@h1 Sockets
+@tangle socket.flx
+
+class Socket {
+  requires package "demux";
+
+  if PLAT_POSIX do
+    typedef socket_t = Faio_posix::socket_t;
+  else
+    typedef socket_t = Faio_win32::socket_t;
+  done;
+
+  proc mk_listener(l: &socket_t, port: &int, qlen: int)
+  {
+  if PLAT_POSIX do
+    Faio_posix::mk_listener(l, port, qlen);
+  else
+    Faio_win32::mk_listener(l, port, qlen);
+  done;
+  }
+
+  proc accept(l: socket_t, s: &socket_t)
+  {
+  if PLAT_POSIX do
+    Faio_posix::accept(s, l);  // success or not? error checking
+  else
+    var success: bool;
+    Faio_win32::mk_socket(s);  // error check?
+    Faio_win32::Accept(&success, l, *s);
+    if not success do
+      fprint (cstdout, "Accept failed! num?\n");
+    done;
+  done;
+  }
+
+  proc shutdown(s: socket_t, how: int)
+  {
+  if PLAT_POSIX do
+    Faio_posix::shutdown(s, how);
+  else
+    Faio_win32::shutdown(s, how);
+  done;
+  }
+
+  proc connect(s: &socket_t, addr: +char, port: int, err: &int)
+  {
+  if PLAT_POSIX do
+      Faio_posix::connect(s, addr, port, err);
+  else
+      Faio_win32::Connect(s, addr, port, err);
+  done;
+  }
+
+
+  //
+  // socket_t
+  //
+  instance Stream::IByteStream[socket_t]
+  {
+    if PLAT_POSIX do
+    proc read(s: socket_t, len: &int, buf: address, eof: &bool)
+      { Faio_posix::async_read(s, len, buf, eof); }
+    else
+    proc read(s: socket_t, len: &int, buf: address, eof: &bool)
+      { Faio_win32::WSARecv(s, len, buf, eof); }
+    done;
+  }
+
+  instance Stream::OByteStream[socket_t]
+  {
+    if PLAT_POSIX do
+    proc write(s: socket_t, len: &int, buf: address, eof: &bool)
+      {
+        //println$ "faio/socket.flx: Stream::OByteStream[socket_t]: write(s,"+str (*len)+",buf,"+str(*eof)+") calling async_write ..";
+        Faio_posix::async_write(s, len, buf, eof);
+        //println$ "faio/socket.flx: Stream::OByteStream[socket_t]: write(s,"+str (*len)+",buf,"+str(*eof)+") called async_write ..";
+      }
+    else
+    proc write(s: socket_t, len: &int, buf: address, eof: &bool)
+      { Faio_win32::WSASend(s, len, buf, eof); }
+    done;
+  }
+
+  instance Stream::IOByteStream[socket_t] {}
+
+  instance Stream::TerminalIByteStream[socket_t]
+  {
+    if PLAT_POSIX do
+    proc iclose (s:socket_t)
+      { Faio_posix::shutdown (s,0); Faio_posix::close s; }
+    else
+    proc iclose (s:socket_t)
+      { Faio_win32::closesocket s; }
+    done;
+  }
+
+  instance Stream::TerminalOByteStream[socket_t]
+  {
+    if PLAT_POSIX do
+    proc oclose (s:socket_t)
+      { Faio_posix::shutdown (s,1); Faio_posix::close s; }
+    else
+    proc oclose (s:socket_t)
+      { Faio_win32::closesocket s; }
+    done;
+  }
+
+  instance Stream::TerminalIOByteStream[socket_t]
+  {
+    if PLAT_POSIX do
+    proc ioclose (s:socket_t)
+      {
+        // RF: just close, I don't think any of this stuff is necessary.
+        // I think this is an application level problem.
+        //fprint (cstderr,q"STREAM:Closing socket $s\n");
+        //Faio_posix::shutdown(s,2);
+        //Faio::sleep (Faio::sys_clock,5.0);
+        /*
+        var len = 1; var eof = false; var buf = C_hack::malloc(1);
+        Faio_posix::async_read(s, &len, buf, &eof);
+        fprint (cstderr,q"STREAM:socket $s, eof=$eof\n");
+        Faio_posix::shutdown(s,0);
+        */
+        Faio_posix::close s;
+      }
+    else
+    proc ioclose (s:socket_t)
+      { Faio_win32::closesocket s; }
+    done;
+  }
+}
+@h1 Demux: Felix Event notification service
+@tangle demux.flx
+
+
+class Demux
+{
+  type demuxer = "::flx::demux::flx_demuxer_t*"
+    requires package "demux"
+  ;
+  gen mk_sys_demux: 1->demuxer = "::flx::demux::make_std_demuxer()";
+  var sys_demux =  mk_sys_demux();
+}
+
+@h1 Faio: Felix Asynchronous I/O service
+@tangle faio.flx
+
+class Faio {
+  requires package "demux";
+  requires package "faio";
+
+  open C_hack;
+
+  proc faio_req[t](x:&t) {
+    val y : &address = reinterpret[&address] x;
+    svc (svc_general y);
+  }
+
+  proc get_thread(thread: &fthread) {
+      svc (svc_get_fthread thread );
+  }
+
+  type sel_param = "flx::demux::sel_param";
+  type sel_param_ptr = "flx::demux::sel_param*";
+
+  fun get_bytes_done : sel_param_ptr -> int = '$1->bytes_written';
+  proc init_pb : sel_param*address*int
+  = '{$1.buffer=(char*)$2;$1.buffer_size=$3;$1.bytes_written=0;}';
+
+  proc calc_eof(pb: sel_param_ptr, len: &int, eof: &bool)
+  {
+      //println "Calc_eof ..";
+      var bytes_done = pb.get_bytes_done;
+      //println$ "Bytes done = "+ str bytes_done;
+      //println$ "Req len= "+ str (*len);
+      *eof = (bytes_done != *len);
+      //println$ "Eof = " + str (*eof);
+      *len = bytes_done;
+      //println$ "Reset len to bytes done ..";
+  }
+
+  type sleep_request = 'flx::faio::sleep_request' requires package "timer";
+  type alarm_clock = 'flx::demux::timer_queue*' requires package "timer"; 
+
+  fun mk_alarm_clock: 1 -> alarm_clock = '::flx::demux::mk_timer_queue()';
+  fun mk_sleep_request: alarm_clock * double -> sleep_request = '::flx::faio::sleep_request($1,$2)';
+
+  proc sleep(clock: alarm_clock, delta: double)
+  {
+    var sr = mk_sleep_request$ clock,delta;
+    faio_req$ &sr;
+  }
+} // class faio
+
+
+@h1 0MQ Interface
+@tangle zmq.flx
+
+publish """
+Lightwight 0MQ wrapper.
+"""
+
+
+class ZeroMQ {
+  requires package "zmq";
+
+  open Errno;
+
+/******************************************************************************/
+/*  0MQ version.                                                              */
+/******************************************************************************/
+
+  const ZMQ_VERSION : int;
+  proc zmq_version: &int * &int * &int;
+  fun zmq_version()={
+    var maj:int; 
+    var min:int; 
+    var rev:int; 
+    zmq_version(&maj, &min,&rev);
+    return maj,min,rev;
+  }
+
+/******************************************************************************/
+/*  0MQ errors.                                                               */
+/******************************************************************************/
+
+  const EFSM : errno_t;
+  const ENOCOMPATPROTO : errno_t;
+  const ETERM : errno_t;
+  const EMTHREAD : errno_t;
+
+  fun zmq_errno : 1-> errno_t;
+  fun zmq_strerror : errno_t -> string = "::std::string(zmq_strerror($1))";
+ 
+  gen ewrap(var x:int) => if x == 0 then errno_t(0) else errno endif;
+
+  proc zmq_validate (msg:string) (var retcode: int) {
+    if retcode != -1 return;
+    var err = errno;
+    println$ (if msg=="" then "" else msg+" ") + "Exit due to ZMQ error "  + str err + ": " + zmq_strerror err;
+    System::exit err.int;
+  }
+  proc zmq_validate (var retcode: int) { zmq_validate "" retcode; }
+
+  fun zmq_check (msg:string) (var retcode:int) = {
+    if retcode != -1 do return retcode; done
+    var err = errno;
+    println$ (if msg=="" then "" else msg+" ") + "Exit due to ZMQ error "  + str err + ": " + zmq_strerror err;
+    System::exit err.int;
+  }
+
+  fun zmq_check(var retcode: int) => zmq_check "" retcode;
+
+/******************************************************************************/
+/*  0MQ message definition.                                                   */
+/******************************************************************************/
+
+  typedef zmq_free_fn = address * address --> void;
+  body "void zmq_free(void *p, void *){ ::std::free(p); }";
+  const zmq_free: zmq_free_fn;
+
+  private type zmq_msg_t_ = "zmq_msg_t";
+  _gc_pointer _gc_type zmq_msg_t_ type zmq_msg_t  = "zmq_msg_t*";
+  gen make_zmq_msg_t : 1 -> zmq_msg_t = "new (*PTF gcp, @0, false) zmq_msg_t";
+
+  // raw
+  gen zmq_msg_init: zmq_msg_t->int;
+  gen zmq_msg_init_size: zmq_msg_t * size -> int;
+  gen zmq_msg_init_data: zmq_msg_t * address * size * zmq_free_fn * address -> int;
+  gen zmq_msg_close: zmq_msg_t -> int;
+
+  gen zmq_msg_move: zmq_msg_t * zmq_msg_t -> int;
+  gen zmq_msg_copy: zmq_msg_t * zmq_msg_t -> int;
+  fun zmq_msg_data: zmq_msg_t -> address;
+  fun zmq_msg_size : zmq_msg_t -> size;
+
+/*  Message options                                                           */
+  pod type zmq_message_option_code_t = "int";
+  const ZMQ_MORE : zmq_message_option_code_t;
+
+  fun zmq_getmsgopt: zmq_msg_t * zmq_message_option_code_t * address * &size -> int;
+
+/******************************************************************************/
+/*  0MQ infrastructure (a.k.a. context) initialisation & termination.         */
+/******************************************************************************/
+
+  pod type zmq_context = "void*";
+
+  // raw
+  gen zmq_init : int  -> zmq_context;
+  gen zmq_term : zmq_context -> int;
+
+/******************************************************************************/
+/*  0MQ socket definition.                                                    */
+/******************************************************************************/
+
+  pod type zmq_socket= "void*";
+  // raw
+  ctor zmq_socket : zmq_context * zmq_socket_type_t = "zmq_socket($1,$2)";
+  gen zmq_close: zmq_socket -> int;
+  gen zmq_bind : zmq_socket * string -> int = "zmq_bind($1, $2.c_str())";
+  gen zmq_connect : zmq_socket * string -> int = "zmq_connect($1, $2.c_str())";
+  fun valid: zmq_socket->bool = "$1!=0";
+
+/******************************************************************************/
+/*  Socket types.                                                             */ 
+/******************************************************************************/
+
+  header "typedef int zmq_socket_type_t;";
+  cenum zmq_socket_type_t =   
+    ZMQ_PAIR, ZMQ_PUB, ZMQ_SUB, ZMQ_REQ, ZMQ_REP, 
+    ZMQ_PULL, ZMQ_PUSH, ZMQ_XPUB, ZMQ_XSUB, ZMQ_ROUTER, ZMQ_DEALER 
+  ;
+
+  instance Str[zmq_socket_type_t] {
+    fun str: zmq_socket_type_t -> string =
+    | $(ZMQ_PAIR) => "ZMQ_PAIR"
+    | $(ZMQ_PUB) => "ZMQ_PUB"
+    | $(ZMQ_SUB) => "ZMQ_SUB"
+    | $(ZMQ_REQ) => "ZMQ_REQ"
+    | $(ZMQ_REP) => "ZMQ_REP"
+    | $(ZMQ_PULL) => "ZMQ_PULL"
+    | $(ZMQ_PUSH) => "ZMQ_PUSH"
+    | $(ZMQ_XPUB) => "ZMQ_XPUB"
+    | $(ZMQ_XSUB) => "ZMQ_XSUB"
+    | $(ZMQ_ROUTER) => "ZMQ_ROUTER"
+    | $(ZMQ_DEALER) => "ZMQ_DEALER"
+    ;
+  }
+
+/******************************************************************************/
+/*  Socket options.                                                           */
+/******************************************************************************/
+
+  header "typedef int zmq_sockopts_tag;";
+  cenum zmq_sockopts_tag =
+    ZMQ_AFFINITY, ZMQ_IDENTITY, ZMQ_SUBSCRIBE, ZMQ_UNSUBSCRIBE, ZMQ_RATE,
+    ZMQ_RECOVERY_IVL, ZMQ_SNDBUF, ZMQ_RCVBUF, ZMQ_RCVMORE, 
+    //ZMQ_FD, 
+    ZMQ_EVENTS, ZMQ_TYPE, ZMQ_LINGER, ZMQ_RECONNECT_IVL, ZMQ_BACKLOG, ZMQ_RECONNECT_IVL_MAX,
+    ZMQ_MAXMSGSIZE, ZMQ_SNDHWM, ZMQ_RCVHWM, ZMQ_MULTICAST_HOPS, ZMQ_RCVTIMEO,
+    ZMQ_SNDTIMEO, ZMQ_IPV4ONLY
+  ;
+
+  instance Str[zmq_sockopts_tag] {
+    fun str:zmq_sockopts_tag-> string =
+    | $(ZMQ_AFFINITY) => "ZMQ_AFFINITY"
+    | $(ZMQ_IDENTITY) => "ZMQ_IDENTITY"
+    | $(ZMQ_SUBSCRIBE) => "ZMQ_SUBSCRIBE"
+    | $(ZMQ_UNSUBSCRIBE) => "ZMQ_UNSUBSCRIBE"
+    | $(ZMQ_RATE) => "ZMQ_RATE"
+    | $(ZMQ_RECOVERY_IVL) => "ZMQ_RECOVERY_IVL"
+    | $(ZMQ_SNDBUF) => "ZMQ_SNDBUF"
+    | $(ZMQ_RCVBUF) => "ZMQ_RCVBUF"
+    | $(ZMQ_RCVMORE) => "ZMQ_RCVMORE"
+    //| $(ZMQ_FD) => "ZMQ_FD"
+    | $(ZMQ_EVENTS) => "ZMQ_EVENTS"
+    | $(ZMQ_TYPE) => "ZMQ_TYPE"
+    | $(ZMQ_LINGER) => "ZMQ_LINGER"
+    | $(ZMQ_RECONNECT_IVL) => "ZMQ_RECONNECT_IVL"
+    | $(ZMQ_BACKLOG) => "ZMQ_BACKLOG"
+    | $(ZMQ_RECONNECT_IVL_MAX) => "ZMQ_RECONNECT_IVL_MAX"
+    | $(ZMQ_MAXMSGSIZE) => "ZMQ_MAXMSGSIZE"
+    | $(ZMQ_SNDHWM) => "ZMQ_SNDHWM"
+    | $(ZMQ_RCVHWM) => "ZMQ_RCVHWM"
+    | $(ZMQ_MULTICAST_HOPS) => "ZMQ_MULTICAST_HOPS"
+    | $(ZMQ_RCVTIMEO) => "ZMQ_RCVTIMEO"
+    | $(ZMQ_SNDTIMEO) => "ZMQ_SNDTIMEO"
+    | $(ZMQ_IPV4ONLY) => "ZMQ_IPV4ONLY"
+    ;
+  }
+
+
+  union zmq_socket_options =
+  | zmq_affinity of uint64             // 64 1 bit flags for 64 threads
+  | zmq_identity of string             // socket name
+  | zmq_subscribe of string            // message prefix
+  | zmq_unsubscribe of string          // message prefix
+  | zmq_rate of int                    // kb/sec
+  | zmq_recovery_ivl of int            // ms
+  | zmq_sndbuf of int                  // bytes
+  | zmq_rcvbuf of int                  // bytes
+  | zmq_rcvmore of bool                // encoding: int, true=more parts following
+  //| zmq_fd of file                     // native file type 
+  | zmq_events of zmq_pollitem_flag_t  // encoding: int
+  | zmq_type of  zmq_socket_type_t     // ro, socket type: encoding int
+  | zmq_linger of int                  // close linger time
+  | zmq_reconnect_ivl of int           // ms
+  | zmq_backlog of int                 // number of connections
+  | zmq_reconnect_ivl_max of int       // ms
+  | zmq_maxmsgsize of int64            // bytes
+  | zmq_sndhwm of int                  // messages
+  | zmq_rcvhwm of int                  // messages
+  | zmq_multicast_hops of int          // hops
+  | zmq_rcvtimeo of int                // ms
+  | zmq_sndtimeo of int                // ms
+  | zmq_ipv4only of bool               // encoding: int
+  ;
+
+  instance Str[zmq_socket_options] {
+    fun str: zmq_socket_options -> string =
+    | zmq_affinity x => "affinity " + str x // fix: bit set
+    | zmq_identity x => "identity '" + str x+"' socket name"
+    | zmq_subscribe x => "subscribe '" + str x+"' message prefix"
+    | zmq_unsubscribe x => "unsubscribe '" + str x+"' message prefix"
+    | zmq_rate x => "rate " + str x+" kb/sec"
+    | zmq_recovery_ivl x => "recovery_ivl " + str x+" ms"
+    | zmq_sndbuf x => "sndbuf " + str x+" bytes"
+    | zmq_rcvbuf x => "rcvbuf " + str x+" bytes"
+    | zmq_rcvmore x => "rcvmore " + str x
+    //| zmq_fd x => "fd ?? native file type " // fix, numeric code
+    | zmq_events x => "events " + str x
+    | zmq_type x => "type " + str x
+    | zmq_linger x => "linger " + str x+" ms"
+    | zmq_reconnect_ivl x => "reconnect_ivl " + str x+" ms"
+    | zmq_backlog x => "backlog " + str x+" connections"
+    | zmq_reconnect_ivl_max x => "reconnect_ivl_max " + str x+" ms"
+    | zmq_maxmsgsize x => "maxmsgsize " + str x+" bytes"
+    | zmq_sndhwm x => "sndhwm " + str x+" messages"
+    | zmq_rcvhwm x => "rcvhwm " + str x+" messages"
+    | zmq_multicast_hops x => "multicast_hops " + str x+" hops"
+    | zmq_rcvtimeo x => "rcvtimeo " + str x+" ms"
+    | zmq_sndtimeo x => "sndtimeo " + str x+" ms"
+    | zmq_ipv4only x => "ipv4only " + str x
+    ;
+  }
+
+  private typedef blobkind = typesetof (uint64,int64,int,char^256,size,bool,
+    //file,
+    zmq_pollitem_flag_t, zmq_socket_type_t);
+  private typedef blobkind_ptr = typesetof (&uint64,&int64,&int,+char,&size);
+
+  private gen zmq_setsockopt : zmq_socket * zmq_sockopts_tag * !blobkind_ptr * size -> int;
+
+  private gen zset(s:zmq_socket, o:zmq_sockopts_tag, var x:uint64 ) => 
+    zmq_setsockopt (s, o, &x, C_hack::sizeof[uint64]);
+  private gen zset(s:zmq_socket, o:zmq_sockopts_tag, var x:int64 )  => 
+    zmq_setsockopt (s, o, &x, C_hack::sizeof[int64]);
+  private gen zset(s:zmq_socket, o:zmq_sockopts_tag, var x:int )    => 
+    zmq_setsockopt (s, o, &x, C_hack::sizeof[int]);
+  private gen zset(s:zmq_socket, o:zmq_sockopts_tag, x:bool )       => 
+    zset(s, o, if x then 1 else 0 endif);
+  private gen zset(s:zmq_socket, o:zmq_sockopts_tag, x:string )     => 
+    zmq_setsockopt (s, o, x.cstr, x.len);
+  
+ 
+  gen set_sockopt(s: zmq_socket) (o: zmq_socket_options) =>
+    match o with
+    | zmq_affinity x          => zset(s, ZMQ_AFFINITY, x) 
+    | zmq_identity x          => zset(s, ZMQ_IDENTITY, x) 
+    | zmq_subscribe x         => zset(s, ZMQ_SUBSCRIBE, x) 
+    | zmq_unsubscribe x       => zset(s, ZMQ_UNSUBSCRIBE, x) 
+    | zmq_rate x              => zset(s, ZMQ_RATE, x) 
+    | zmq_recovery_ivl x      => zset(s, ZMQ_RECOVERY_IVL, x) 
+    | zmq_sndbuf x            => zset(s, ZMQ_SNDBUF, x) 
+    | zmq_rcvbuf x            => zset(s, ZMQ_RCVBUF, x) 
+    | zmq_linger x            => zset(s, ZMQ_LINGER, x) 
+    | zmq_reconnect_ivl x     => zset(s, ZMQ_RECONNECT_IVL, x) 
+    | zmq_backlog x           => zset(s, ZMQ_BACKLOG, x) 
+    | zmq_reconnect_ivl_max x => zset(s, ZMQ_RECONNECT_IVL_MAX, x) 
+    | zmq_maxmsgsize x        => zset(s, ZMQ_MAXMSGSIZE, x) 
+    | zmq_sndhwm x            => zset(s, ZMQ_SNDHWM, x) 
+    | zmq_rcvhwm x            => zset(s, ZMQ_RCVHWM, x) 
+    | zmq_multicast_hops x    => zset(s, ZMQ_MULTICAST_HOPS, x) 
+    | zmq_rcvtimeo x          => zset(s, ZMQ_RCVTIMEO, x) 
+    | zmq_sndtimeo x          => zset(s, ZMQ_SNDTIMEO, x) 
+    | zmq_ipv4only x          => zset(s, ZMQ_IPV4ONLY, x) 
+    | _ => Control::fail_fun[int]$ "ZMQ: socket option " + str o + " cannot be set"
+  ;
+ 
+  private gen zmq_getsockopt : zmq_socket * zmq_sockopts_tag * address * &size -> int;
+
+  proc get_sockopt[T:blobkind](s:zmq_socket, o:zmq_sockopts_tag, pd:&T, ps: &size)
+  {
+  again:>
+    val ok = zmq_getsockopt(s,o,pd.address,ps);
+    if ok == 0 return;
+    if errno == EINTR goto again;
+    Control::fail$ "zmq_setsockopt failed with code " + zmq_strerror errno;
+  }
+
+  private gen get_uint64(s:zmq_socket, o: zmq_sockopts_tag) = { 
+    var x:uint64; var n = C_hack::sizeof[typeof(x)]; get_sockopt(s,o,&x,&n); return x; }
+  private gen get_int64(s:zmq_socket, o: zmq_sockopts_tag) = { 
+    var x:int64; var n = C_hack::sizeof[typeof(x)]; get_sockopt(s,o,&x,&n); return x; }
+  private gen get_int(s:zmq_socket, o: zmq_sockopts_tag) = { 
+    var x:int; var n = C_hack::sizeof[typeof(x)]; get_sockopt(s,o,&x,&n); return x; }
+  private gen get_bool(s:zmq_socket, o: zmq_sockopts_tag) = { return get_int(s,o)!=0; } 
+  //private gen get_file(s:zmq_socket, o: zmq_sockopts_tag) = { 
+  //  var x:file; var n = C_hack::sizeof[typeof(x)]; get_sockopt(s,o,&x,&n); return x; }
+  private gen get_socket_type(s:zmq_socket, o: zmq_sockopts_tag) = { 
+    var x:zmq_socket_type_t; var n = C_hack::sizeof[typeof(x)]; get_sockopt(s,o,&x,&n); return x; }
+  private gen get_string(s:zmq_socket, o: zmq_sockopts_tag) : string = { 
+    var x:array[char,256]; var n = 256uz; get_sockopt[char^256](s,o,&x,&n); return string(carray &x,n); }
+  private gen get_pollitem(s:zmq_socket, o: zmq_sockopts_tag) = { 
+    var x:zmq_pollitem_flag_t; var n = C_hack::sizeof[typeof(x)]; get_sockopt(s,o,&x,&n); return x; }
+
+
+  gen getsockopt(s: zmq_socket, o: zmq_sockopts_tag) : zmq_socket_options =>
+    match o with
+    | $(ZMQ_AFFINITY)          => zmq_affinity (get_uint64(s, o))
+    | $(ZMQ_IDENTITY)          => zmq_identity (get_string(s, o))
+    | $(ZMQ_SUBSCRIBE)         => zmq_subscribe (get_string(s, o))
+    | $(ZMQ_UNSUBSCRIBE)       => zmq_unsubscribe (get_string(s, o))
+    | $(ZMQ_RATE)              => zmq_rate (get_int(s, o))
+    | $(ZMQ_RECOVERY_IVL)      => zmq_recovery_ivl (get_int(s, o))
+    | $(ZMQ_SNDBUF)            => zmq_sndbuf (get_int(s, o))
+    | $(ZMQ_RCVBUF)            => zmq_rcvbuf (get_int(s, o))
+    | $(ZMQ_RCVMORE)           => zmq_rcvmore (get_bool(s, o))
+    //| $(ZMQ_FD)                => zmq_fd (get_file(s, o))
+    | $(ZMQ_EVENTS)            => zmq_events (get_pollitem(s, o))
+    | $(ZMQ_TYPE)              => zmq_type (get_socket_type(s, o))
+    | $(ZMQ_LINGER)            => zmq_linger (get_int(s, o))
+    | $(ZMQ_RECONNECT_IVL)     => zmq_reconnect_ivl (get_int(s, o))
+    | $(ZMQ_BACKLOG)           => zmq_backlog (get_int(s, o))
+    | $(ZMQ_RECONNECT_IVL_MAX) => zmq_reconnect_ivl_max (get_int(s, o))
+    | $(ZMQ_MAXMSGSIZE)        => zmq_maxmsgsize (get_int64(s, o))
+    | $(ZMQ_SNDHWM)            => zmq_sndhwm (get_int(s, o))
+    | $(ZMQ_RCVHWM)            => zmq_rcvhwm (get_int(s, o))
+    | $(ZMQ_MULTICAST_HOPS)    => zmq_multicast_hops (get_int(s, o))
+    | $(ZMQ_RCVTIMEO)          => zmq_rcvtimeo (get_int(s, o))
+    | $(ZMQ_SNDTIMEO)          => zmq_sndtimeo (get_int(s, o))
+    | $(ZMQ_IPV4ONLY)          => zmq_ipv4only (get_bool(s, o))
+  ;
+
+/******************************************************************************/
+/*  Send/recv                                                                 */
+/******************************************************************************/
+
+  header "typedef int zmq_xmit_options_t;";
+  cenum zmq_xmit_options_t = ZMQ_DONTWAIT, ZMQ_SNDMORE;
+  const ZMQ_XMIT_OPTIONS_NONE : zmq_xmit_options_t = "0";
+
+ 
+  // raw
+  gen zmq_send : zmq_socket * address * size * zmq_xmit_options_t -> int;
+  gen zmq_recv : zmq_socket * address * size * zmq_xmit_options_t -> int;
+  gen zmq_sendmsg : zmq_socket * zmq_msg_t * zmq_xmit_options_t  -> int;
+  gen zmq_recvmsg : zmq_socket * zmq_msg_t * zmq_xmit_options_t -> int;
+/******************************************************************************/
+/*  I/O multiplexing.                                                         */
+/******************************************************************************/
+
+  type zmq_pollitem_flag_t = "short";
+  const ZMQ_POLLIN : zmq_pollitem_flag_t;
+  const ZMQ_POLLOUT : zmq_pollitem_flag_t;
+  const ZMQ_POLLERR : zmq_pollitem_flag_t;
+  ctor short: zmq_pollitem_flag_t = "$1";
+  instance Bits[zmq_pollitem_flag_t] {}
+  instance Str[zmq_pollitem_flag_t] {
+    fun str(x:zmq_pollitem_flag_t) => "Some flag here";
+  }
+
+  body """
+    zmq_pollitem_t mk_zmq_pollitem(void *s, short events) {
+      zmq_pollitem_t p = {s,0,events,0};
+      return p;
+    }
+  """;
+
+  type zmq_poll_item = "zmq_pollitem_t";
+  ctor zmq_poll_item: zmq_socket * zmq_pollitem_flag_t = "mk_zmq_pollitem($1,$2)";
+  fun revents: zmq_poll_item -> zmq_pollitem_flag_t = "$1.revents";
+
+  gen zmq_poll: carray[zmq_poll_item] * int * long -> int;
+
+  gen zmq_poll(pits : varray[zmq_poll_item], t:double) => // Felix time is in seconds
+    zmq_poll (carray pits, pits.len.int, if t >= 0.0 then long (t/1000000.0) else -1L endif);
+
+
+  inherit Str[zmq_socket_type_t];
+  inherit Str[zmq_sockopts_tag];
+  inherit Str[zmq_socket_options];
+  inherit Str[zmq_pollitem_flag_t];
+  inherit Bits[zmq_pollitem_flag_t];
+}
+
+class Checked_ZeroMQ[T] {
+  inherit ZeroMQ;
+  open Errno::Check[T];
+
+  proc init_size (x:zmq_msg_t) (n:size) { int_to_proc$ zmq_msg_init_size (x,n); }
+  proc init (x:zmq_msg_t) { int_to_proc$ zmq_msg_init (x); }
+  proc close (x:zmq_msg_t) { int_to_proc$ zmq_msg_close x; }
+
+  fun _ctor_zmq_msg_t ()  => make_zmq_msg_t();
+
+  proc init_string (x:zmq_msg_t) (s:string) {
+    var n = len s;
+    var b = C_hack::malloc(n);
+    memcpy(b, address s.cstr, n);
+    int_to_proc (zmq_msg_init_data (x, b, n, zmq_free, NULL));
+  } 
+
+  ctor string: zmq_msg_t = "::std::string((char const*)zmq_msg_data($1), (size_t)zmq_msg_size($1))";
+
+  fun zmq_more(m:zmq_msg_t):bool = 
+  {
+    var x: int;
+    var n:size;
+    int_to_proc (zmq_getmsgopt(m,ZMQ_MORE,&x.address,&n));
+    assert n == C_hack::sizeof[int];
+    return x != 0;
+  } 
+
+  fun zmq_more (s:zmq_socket) => 
+    match s.get_opt ZMQ_RCVMORE with 
+    | zmq_rcvmore x => x 
+    endmatch 
+  ;
+
+  proc send_msg (s:zmq_socket) (m:zmq_msg_t) => int_to_proc$ zmq_sendmsg (s,m,ZMQ_XMIT_OPTIONS_NONE);
+  proc send_string (s:zmq_socket) (m:string) => int_to_proc$ zmq_send(s,m.cstr.address,m.len,ZMQ_XMIT_OPTIONS_NONE);
+  proc send_string_part (s:zmq_socket) (m:string) => int_to_proc$ zmq_send(s,m.cstr.address,m.len,ZMQ_SNDMORE);
+  proc recv_msg (s:zmq_socket) (m:zmq_msg_t) => int_to_proc$ zmq_recvmsg (s,m,ZMQ_XMIT_OPTIONS_NONE);
+  proc recv_msg_dontwait (s:zmq_socket) (m:zmq_msg_t) => int_to_proc$ zmq_recvmsg (s,m,ZMQ_DONTWAIT);
+  gen recv_string (s:zmq_socket) = {
+    var m : zmq_msg_t = zmq_msg_t();
+    m.init;
+    recv_msg s m;
+    r := m.string;
+    m.close;
+    return r;
+  }
+
+  gen recv_string_dontwait (s:zmq_socket) = {
+    var m : zmq_msg_t = zmq_msg_t();
+    m.init;
+    recv_msg_dontwait s m;
+    r := m.string;
+    m.close;
+    return r;
+  }
+
+  ctor zmq_context : int = "zmq_init($1)";
+  proc term (x:zmq_context) => int_to_proc$ zmq_term x;
+
+  fun check_socket(var x:zmq_socket)= { if x.valid do return x; else ehandler; done; }
+  gen mk_socket (c: zmq_context) (t:zmq_socket_type_t) => check_socket$ zmq_socket (c,t);
+  proc set_opt(s: zmq_socket) (o: zmq_socket_options) => int_to_proc (set_sockopt s o);
+  fun get_opt(s: zmq_socket) (o: zmq_sockopts_tag) : zmq_socket_options => getsockopt (s,o);
+
+  proc bind(x:zmq_socket) (a:string) => int_to_proc$ zmq_bind(x,a);
+  proc connect(x:zmq_socket) (a:string) => int_to_proc$ zmq_connect(x,a);
+  proc close (s:zmq_socket) => int_to_proc$ zmq_close s;
+
+  gen poll(pits:varray[zmq_poll_item], timeout:double) => // seconds, -1=block
+   int_to_int (zmq_poll (pits, timeout));
+
+  proc send_strings (s:zmq_socket) (ss:varray[string]) {
+    var n = ss.len.int;
+    for var i in 0 upto n - 2 do
+      send_string_part s ss.i;
+    done
+    if n>0 do
+      send_string s ss.(n - 1);
+    done
+  }
+
+  proc send_strings (s:zmq_socket) (ss:list[string]) {
+    send_strings s (varray ss);
+  }
+
+  gen recv_strings (s:zmq_socket) : varray[string] = {
+    var ss = Empty[string];
+    var more = true;
+    while more do 
+      var r = recv_string s;
+      ss= Cons (r,ss);
+      more = zmq_more s;
+    done
+    return varray (rev ss);
+  }
+
+} 
+
+type zmq_ehandler_t = ""; // phantom
+instance Check[zmq_ehandler_t]
+{
+  fun ehandler():any = {
+    err := errno;
+    println$  "Exit due to ZMQ error "  + str err + ": " + ZeroMQ::zmq_strerror err;
+    System::exit err.int;
+  }
+}
+
+class ZMQ {
+  inherit Checked_ZeroMQ[zmq_ehandler_t];
+
+  // this function cannot go in Checked_ZeroMQ
+  // we get ehandler virtual persisting to code gen
+  // why?
+ 
+}
+
