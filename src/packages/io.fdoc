@@ -877,7 +877,7 @@ class Faio {
 } // class faio
 
 @h1 Posix Faio
-@tangle posix_faio
+@tangle posix_faio.flx
 
 class Faio_posix  {
 header faio_posixio_hpp = '#include "faio_posixio.hpp"';
@@ -1165,7 +1165,7 @@ proc faio_write(fd: FileSystem::posix_file, len: &int, buf: address, eof: &bool)
 } // class faio_posix
 
 @h1 Win32 Faio
-@tangle win32_faio
+@tangle win32_faio.flx
 
 
 module Faio_win32 {

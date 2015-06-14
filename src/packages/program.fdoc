@@ -10,6 +10,8 @@
 @tangler posix_process.flx   = share/lib/std/posix/process.flx
 @tangler win32_process.flx   = share/lib/std/win32/process.flx
 @tangler signal.flx          = share/lib/std/program/signal.flx
+@tangler posix_signal.flx    = share/lib/std/posix/signal.flx
+@tangler win32_signal.flx    = share/lib/std/win32/signal.flx
 @tangler system.flx          = share/lib/std/program/system.flx
 @tangler dynlink.flx         = share/lib/std/program/dynlink.flx
 
