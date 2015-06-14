@@ -15,6 +15,10 @@
 <dd>So we lift some basic types from C.<dd>
 </dl>
 
+<dt><a href=core_type_constructors.fdoc>Core Type Constructors</a></dt>
+<dd>Some core data types and library support for compiler instrinsics.<dd>
+</dl>
+
 <dt><a href=control.fdoc>Control Flow primitives</a></dt>
 <dd>Interface to some RTL control features</dd>
 </dl>
