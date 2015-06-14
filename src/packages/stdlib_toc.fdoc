@@ -19,6 +19,10 @@
 <dd>Some core data types and library support for compiler instrinsics.<dd>
 </dl>
 
+<dt><a href=pointers.fdoc>Pointers</a></dt>
+<dd>Basic pointers.<dd>
+</dl>
+
 <dt><a href=control.fdoc>Control Flow primitives</a></dt>
 <dd>Interface to some RTL control features</dd>
 </dl>
