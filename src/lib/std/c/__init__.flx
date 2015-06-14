@@ -1,7 +1,0 @@
-include "std/c/c_headers";
-include "std/c/cxx_headers";
-include "std/c/cptr";
-include "std/c/cstdlib";
-include "std/c/carray";
-include "std/c/c_hack";
-

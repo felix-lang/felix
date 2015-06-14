@@ -1,3 +1,4 @@
+@tangler __init__.flx    =share/lib/std/scalar/__init__.flx
 @tangler scalar.flx    =share/lib/std/scalar/ctypedefs.flx
 @tangler int.fsyn      =share/lib/grammar/grammar_int_lexer.fsyn
 @tangler float.fsyn    =share/lib/grammar/grammar_float_lexer.fsyn
@@ -27,6 +28,24 @@ that the named floating insertion must be emitted into
 the generated C++ code.  We will use the names of code
 fragments specifying header files defined
 in the <strong>cheaders</strong> package.
+
+@h1 Synopsis
+@tangle __init__.flx
+
+include "std/scalar/ctypedefs";
+
+include "std/scalar/address";
+include "std/scalar/bool";
+include "std/scalar/int";
+include "std/scalar/real";
+include "std/scalar/number";
+include "std/scalar/char";
+
+include "plat/float";
+include "std/scalar/float_format";
+include "std/scalar/float_math";
+include "std/scalar/quaternion";
+
 
 @h1 Character type
 A basic 8 bit character type.

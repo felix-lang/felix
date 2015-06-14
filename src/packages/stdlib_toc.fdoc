@@ -1,5 +1,10 @@
 @title The Felix Standard Library
 @h1 Building the basics
+<dt><a href=libstruct.fdoc>Library Structure Map</a></dt>
+<dd>Directory Layout of the extracted Standard library.
+With some uncategorise files thrown in.</dd>
+</dl>
+
 <dt><a href=basic_algebraic_structures.fdoc>Basic Algebraic Structure</a></dt>
 <dd>Now we have to define some basic algebraic structures...</dd>
 </dl>
@@ -89,6 +94,10 @@ synchronisation devices.</dd>
 </dl>
 
 <hr>
+
+<dt><a href=debug.fdoc>Debugging.</a></dt>
+<dd>Some debugging aids.</dd>
+</dl>
 
 <dt><a href=gc.fdoc>Garbage Collector</a></dt>
 <dd>Access to Garbage Collector</dd>

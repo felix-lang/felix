@@ -1,3 +1,9 @@
+@title Debugging
+@tangler debug.flx = share/lib/std/debug.flx
+
+@h1 Debugging Aid.
+
+@tangle debug.flx
 // the internal representation of a Felix source location
 // has to be global to simplify compiler hack
 type flx_location_t = "flx::rtl::flx_range_srcref_t";
