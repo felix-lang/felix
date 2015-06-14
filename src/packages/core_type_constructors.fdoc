@@ -1,0 +1,627 @@
+@title Core Type Constructors
+@tangler option.flx      = share/lib/std/datatype/option.flx
+@tangler unitsum.flx     = share/lib/std/datatype/unitsum.flx
+@tangler tuple.flx       = share/lib/std/datatype/tuple.flx
+@tangler slice.flx       = share/lib/std/datatype/slice.flx
+@tangler typing.flx      = share/lib/std/typing.flx
+@tangler flx_tclass.flx  = share/lib/std/flx_tclass.flx
+@tangler categ.flx       = share/lib/std/categ.flx
+
+@h1 Core Type Classes
+@tangle flx_tclass.flx
+
+// Core types and type classes
+
+typedef void = 0;
+typedef unit = 1;
+typedef bool = 2;
+typedef any = any;
+
+// -----------------------------------------------------------------------------
+
+class IStream[f,t] {
+  virtual gen read: f -> t;
+}
+
+class OStream[f,t] {
+  virtual proc write: f * t;
+}
+
+class IOStream[f,t] {
+  inherit IStream[f,t];
+  inherit OStream[f,t];
+}
+
+// -----------------------------------------------------------------------------
+
+class IFile[f,t] {
+  inherit IStream [f,opt[t]];
+}
+
+class OFile[f,t] {
+  inherit OStream[f,t];
+  virtual proc close: f; // invalidates write operation
+}
+
+// -----------------------------------------------------------------------------
+
+class IBuffer [f] {
+  virtual gen read: f -> address * int -> int * bool;
+}
+
+class OBuffer [f] {
+  virtual gen write : f -> address * int -> int * bool;
+}
+
+// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+
+class Monad [M: TYPE->TYPE] {
+  virtual fun bind[a,b]: M a * (a -> M b) -> M b;
+  virtual fun ret[a]: a -> M a;
+}
+
+// -----------------------------------------------------------------------------
+
+class Str [T] {
+  virtual fun str: T -> string;
+}
+
+class Repr [T with Str[T]] {
+  virtual fun repr (t:T) : string => str t;
+}
+
+class Show [T] {
+  inherit Str[T];
+  inherit Repr[T];
+}
+
+// -----------------------------------------------------------------------------
+
+instance Str[void] {
+  fun str (x:void) => "void";
+}
+open Show[void];
+
+// -----------------------------------------------------------------------------
+
+instance Str[unit] {
+  fun str (x:unit) => "()";
+}
+open Show[unit];
+
+instance Eq[unit] {
+  fun == (x:unit, y:unit) => true;
+}
+open Eq[unit];
+
+@h1 Type Functors
+@tangle typing.flx
+
+open class Typing
+{
+  typedef fun dom(t:TYPE):TYPE =>
+    typematch t with
+    | a -> _ => a
+    endmatch
+  ;
+
+  typedef fun cod(t:TYPE):TYPE =>
+    typematch t with
+    | _ -> b => b
+    endmatch
+  ;
+
+  typedef fun prj1(t:TYPE):TYPE =>
+    typematch t with
+    | a * _ => a
+    endmatch
+  ;
+
+  typedef fun prj2(t:TYPE):TYPE =>
+    typematch t with
+    | _ * b => b
+    endmatch
+  ;
+
+  typedef fun type_land(x:TYPE, y:TYPE):TYPE =>
+    typematch (x,  y) with
+    | 0, _ => 0
+    | _,0 => 0
+    | _,_ => 1
+    endmatch
+  ;
+
+  typedef fun type_lor(x:TYPE, y:TYPE):TYPE=>
+    typematch (x,  y) with
+    | 0, 0 => 0
+    | _,_ => 1
+    endmatch
+  ;
+
+  typedef fun eq(x:TYPE, y:TYPE):TYPE=>
+    typematch x with
+    | y => typematch y with | x => 1 | _ => 0 endmatch
+    | _ => 0
+    endmatch
+  ;
+
+  typedef fun == (x:TYPE, y:TYPE):TYPE=>
+    typematch x with
+    | y => typematch y with | x => 1 | _ => 0 endmatch
+    | _ => 0
+    endmatch
+  ;
+
+
+  const memcount[t] : size = "#memcount";
+  const arrayindexcount[t] : size = "#arrayindexcount";
+}
+
+@h1 Option
+@tangle option.flx
+
+// Note: some felix internals expect this to be defined here, not in a class, and
+// in this order.  Don't mess with it!
+publish "option type"
+union opt[T] =
+  | None
+  | Some of T
+;
+
+open class Option {
+ 
+  instance[T with Show[T]] Str[opt[T]] {
+    fun str (x:opt[T]) =>
+      match x with
+      | Some x => "Some " + (str x)
+      | #None => "None"
+      endmatch
+    ;
+  }
+  
+  // Return the value of the option if it has any, otherwise
+  // returns the default value provided
+  fun or_else[T] (x:opt[T]) (d:T) : T =>
+     match x with
+     | Some v => v
+     | #None => d
+     endmatch
+     ;
+  
+  // Returns the first option if it has the value, otherwise
+  // the second option
+  fun or_else[T] (x:opt[T]) (alt:opt[T]) : opt[T] =>
+     match x with
+     | Some _ => x
+     | #None => alt
+     endmatch
+     ;
+  
+  // If the option has a value, call the given procedure on it
+  proc iter[T] (_f:T->void) (x:opt[T]) =>
+    match x with
+    | #None => {}
+    | Some v => { _f v; }
+    endmatch
+    ;
+  
+  // Convert an option to a list with either zero or one elements
+  ctor[T] list[T] (x:opt[T]) => 
+    match x with 
+    | #None => list[T]()
+    | Some v => list[T](v) 
+    endmatch
+  ;
+  
+  // True if this option has no value
+  pure fun is_empty[T] : opt[T] -> 2 =
+    | #None => true
+    | _ => false
+  ;
+  
+  // True if this option has a value
+  pure fun is_defined[T] : opt[T] -> 2 =
+    | #None => false
+    | _ => true
+  ;
+  
+  // Get the optional value; aborts if no value is available
+  fun get[T] : opt[T] -> T =
+    | Some v => v
+  ;
+  
+  // If the option has a value, apply the function to it and return a new Some value.
+  // If the option has no value, returns None
+  fun map[T,U] (_f:T->U) (x:opt[T]): opt[U] => 
+    match x with
+    | #None => None[U]
+    | Some v => Some(_f v) 
+    endmatch
+  ;
+  
+  // Mimics the filter operation on a list.
+  // If there is a value and the predicate returns false for that value, return
+  // None.  Otherwise return the same option object.
+  fun filter[T] (P:T -> bool) (x:opt[T]) : opt[T] =>
+    match x with
+    | Some v => if P(v) then x else None[T] endif
+    | #None => x
+    endmatch
+  ;
+  
+  // Make option types iterable.  Iteration will loop once
+  // if there is a value.  It's a handy shortcut for using
+  // the value if you don't care about the None case.
+  gen iterator[T] (var x:opt[T]) () = {
+    yield x;
+    return None[T];
+  }
+}
+
+class DefaultValue[T] {
+  virtual fun default[T]: 1->T;
+
+  fun or_default[T]  (x:opt[T]) () =>
+               x.or_else #default[T]
+       ;
+  
+}
+
+@h1 Slice
+@tangle slice.flx
+
+publish "slice type"
+  union slice[T] =
+    | Slice_all
+    | Slice_from of T
+    | Slice_to of T
+    | Slice_range of T * T
+    | Slice_range_excl of T * T
+    | Slice_one of T
+  ;
+
+// Note: guarrantees no overflow
+// handles all cases for all integers correctly
+// produces nothing if first > last
+gen slice_range[T with Integer[T]] (first:T) (last:T) () = {
+  var i = first;
+  while i < last do 
+    yield Some i; 
+    i = i + #one[T]; 
+  done 
+  if i == last do yield Some i; done
+  return None[T]; 
+}
+
+gen slice_range_excl[T with Integer[T]] (first:T) (limit:T) () = {
+  var i = first;
+  while i < limit do 
+    yield Some i; 
+    i = i + #one[T]; 
+  done 
+  return None[T]; 
+}
+
+
+// Note: guarrantees no overflow if first + count - 1
+// is in range of the type
+// Terminates after count values emitted
+// provided overflow doesn't throw.
+// Well defined on unsigned types (just wraps around)
+gen slice_count[T with Integer[T]] (first:T) (count:T) () = {
+  var k = count; 
+  while k > #zero[T] do 
+    yield Some (first + (count - k)); 
+    k = k - #one[T]; 
+  done 
+  return None[T]; 
+}
+
+
+// hack so for in f do .. done will work too
+gen iterator[t] (f:1->opt[t]) => f;
+
+// slice index calculator
+
+// Given length n, begin b and end e indicies
+// normalise so either 0 <= b <= e <= n or m = 0
+// 
+// if m = 0 ignore b,e and use empty slice
+// otherwise return a slice starting at b inclusive
+// and ending at e exclusive, length m > 0
+
+// Normalised form allows negative indices.
+// However out of range indices are trimmed back:
+// the calculation is NOT modular.
+
+fun cal_slice (n:int, var b:int, var e:int) = {
+  if b<0 do b = b + n; done
+  if b<0 do b = 0; done
+  if b>=n do b = n; done
+  // assert 0 <= b <= n (valid index or one past end)
+  if e<0 do  e = e + n; done
+  if e<0 do  e = 0; done
+  if e>=n do e = n; done 
+  // assert 0 <= e <= n (valid index or one pas end)
+  var m = e - b; 
+  if m<0 do m = 0; done
+  // assert 0 <= m <= n (if m > 0 then b < e else m = 0)
+  return b,e,m;
+  // assert m = 0 or  0 <= b <= e <= n and 0 < m < n
+}
+
+@h1 Operations on sums of units
+Treated as finite cyclic groups.
+@tangle unitsum.flx
+
+
+typedef unitsums = typesetof (3,4,5,6,7,8,9,10,11,12,13,14,15,16);
+
+instance[T in unitsums] Eq[T] {
+  fun == (x:T,y:T) => caseno x == caseno y;
+}
+
+instance[T in unitsums] FloatAddgrp[T] {
+  fun zero () => 0 :>> T;
+  fun - (x:T) => (sub (memcount[T].int , caseno x)) :>> T;
+  fun + (x:T, y:T) : T => (add ((caseno x , caseno y)) % memcount[T].int) :>> T;
+  fun - (x:T, y:T) : T => (add (memcount[T].int, sub(caseno x , caseno y)) % memcount[T].int) :>> T;
+}
+
+instance[T in unitsums] Str[T] {
+  fun str(x:T)=> str (caseno x)+ ":"+str(memcount[T].int); 
+}
+
+// This doesn't work dues to a design fault in the
+// numerical class libraries using "-" as a function
+// name for both prefix (negation) and infix (subtraction).
+// But in a class we cannot distinguish the uses since
+// negation could apply to a tuple.
+// 
+// open[T in unitsums] Addgrp[T];
+
+// so we have to open them all individually
+
+// Note: we don't put type 2 here, that's a bool and should
+// be handled elsewhere more specially..
+
+open Addgrp[3];
+open Addgrp[4];
+open Addgrp[5];
+open Addgrp[6];
+open Addgrp[7];
+open Addgrp[8];
+open Addgrp[9];
+open Addgrp[10];
+open Addgrp[11];
+open Addgrp[12];
+open Addgrp[13];
+open Addgrp[14];
+open Addgrp[15];
+open Addgrp[16];
+
+open Str[3];
+open Str[4];
+open Str[5];
+open Str[6];
+open Str[7];
+open Str[8];
+open Str[9];
+open Str[10];
+open Str[11];
+open Str[12];
+open Str[13];
+open Str[14];
+open Str[15];
+open Str[16];
+
+@h1 Category Theoretic
+@tangle categ.flx
+
+//$ Categorical Operators
+open class Categ 
+{
+  // note: in Felix, products are uniquely decomposable, but arrows
+  // are not. So we cannot overload based on arrow factorisation.
+  // for example, the curry functions can be overloaded but
+  // the uncurry functions cannot be
+
+  // Note: Felix is not powerful enough to generalise these
+  // operation in user code, i.e. polyadic programming
+
+  //$ change star into arrow (2 components)
+  fun curry[u,v,r] (f:u*v->r) : u -> v -> r => fun (x:u) (y:v) => f (x,y);
+
+  //$ change star into arrow (3 components)
+  fun curry[u,v,w,r] (f:u*v*w->r) : u -> v -> w -> r => fun (x:u) (y:v) (z:w) => f (x,y,z);
+
+  //$ change arrow into star (arity 2)
+  fun uncurry2[u,v,r] (f:u->v->r) : u * v -> r => fun (x:u,y:v) => f x y;
+
+  //$ change arrow into star (arity 3)
+  fun uncurry3[u,v,w,r] (f:u->v->w->r) : u * v * w -> r => fun (x:u,y:v,z:w) => f x y z;
+
+  //$ argument order permutation (2 components)
+  fun twist[u,v,r] (f:u*v->r) : v * u -> r => fun (x:v,y:u) => f (y,x);
+
+  //$ projection 1 (2 components)
+  fun proj1[u1,u2,r1,r2] (f:u1*u2->r1*r2) : u1 * u2 -> r1 => 
+    fun (x:u1*u2) => match f x with | a,_ => a endmatch;
+
+  //$ projection 2 (2 components)
+  fun proj2[u1,u2,r1,r2] (f:u1*u2->r1*r2) : u1 * u2 -> r2 => 
+    fun (x:u1*u2) => match f x with | _,b => b endmatch;
+
+  // aka \delta or diagonal function 
+  fun dup[T] (x:T) => x,x;
+
+  //$ unique product (of above projections)
+  // if f: C-> A and g: C -> B there is a unique function
+  // <f,g>: C -> A * B such that f = <f,g> \odot \pi0 and
+  // g = <f,g> \odot pi1
+  // WHAT IS THE FUNCTION CALLED?
+
+  fun prdx[u1,r1,r2] (f1:u1->r1,f2:u1->r2) : u1 -> r1 * r2 => 
+    fun (x1:u1) => f1 x1, f2 x1;
+
+  //$ series composition (2 functions)
+  fun compose[u,v,w] (f:v->w, g:u->v) : u -> w => 
+    fun (x:u) => f (g x)
+  ;
+
+  fun \circ [u,v,w] (f:v->w, g:u->v) : u -> w => 
+    fun (x:u) => f (g x)
+  ;
+
+  //$ series reverse composition (2 functions)
+  fun rev_compose[u,v,w] (f:u->v, g:v->w) : u -> w => 
+    fun (x:u) => g (f x)
+  ;
+
+  //$ series reverse composition (2 functions)
+  fun \odot[u,v,w] (f:u->v, g:v->w) : u -> w => 
+    fun (x:u) => g (f x)
+  ;
+
+}
+
+@h1 Tuples
+@tangle tuple.flx
+
+//------------------------------------------------------------------------------
+// Class Str: convert to string
+
+// Tuple class for inner tuple listing
+class Tuple[U] {
+  virtual fun tuple_str (x:U) => str x;
+}
+
+instance[U,V with Str[U], Tuple[V]] Tuple[U ** V] {
+  fun tuple_str (x: U ** V) =>
+    match x with
+    | a ,, b => str a +", " + tuple_str b
+    endmatch
+  ;
+}
+
+instance[U,V with Str[U], Str[V]] Tuple[U * V] {
+  fun tuple_str (x: U * V) =>
+    match x with
+    | a , b => str a +", " + str b
+    endmatch
+  ;
+}
+
+// actual Str class impl.
+instance [U, V with Tuple[U ** V]] Str[U ** V] {
+  fun str (x: U ** V) => "(" + tuple_str x +")";
+}
+
+instance[T,U] Str[T*U] {
+   fun str (t:T, u:U) => "("+str t + ", " + str u+")";
+}
+instance[T] Str[T*T] {
+   fun str (t1:T, t2:T) => "("+str t1 + ", " + str t2+")";
+}
+
+open[U, V with Tuple[U **V]] Str [U**V];
+open[U, V with Str[U], Str[V]] Str [U*V];
+
+
+//------------------------------------------------------------------------------
+// Class Eq: Equality
+instance [T,U with Eq[T], Eq[U]] Eq[T ** U] {
+  fun == : (T ** U) * (T ** U) -> bool =
+  | (ah ,, at) , (bh ,, bt) => ah == bh and at == bt;
+  ;
+}
+
+instance[t,u with Eq[t],Eq[u]] Eq[t*u] {
+  fun == : (t * u) * (t * u) -> bool =
+  | (x1,y1),(x2,y2) => x1==x2 and y1 == y2
+  ;
+}
+
+instance[t with Eq[t]] Eq[t*t] {
+  fun == : (t * t) * (t * t) -> bool =
+  | (x1,y1),(x2,y2) => x1==x2 and y1 == y2
+  ;
+}
+
+//------------------------------------------------------------------------------
+// Class Tord: Total Order
+instance [T,U with Tord[T], Tord[U]] Tord[T ** U] {
+  fun < : (T ** U) * (T ** U) -> bool =
+  | (ah ,, at) , (bh ,, bt) => ah < bh or ah == bh and at < bt;
+  ;
+}
+
+instance[t,u with Tord[t],Tord[u]] Tord[t*u] {
+  fun < : (t * u) * (t * u) -> bool =
+  | (x1,y1),(x2,y2) => x1 < x2 or x1 == x2 and y1 < y2
+  ;
+}
+instance[t with Tord[t]] Tord[t*t] {
+  fun < : (t * t) * (t * t) -> bool =
+  | (x1,y1),(x2,y2) => x1 < x2 or x1 == x2 and y1 < y2
+  ;
+}
+open [T,U with Tord[T], Tord[U]] Tord[T ** U];
+open [T,U with Tord[T], Tord[U]] Tord[T * U];
+
+//------------------------------------------------------------------------------
+// Generic Field access
+fun field[n,t,u where n==0] (a:t,b:u)=>a;
+fun field[n,t,u where n==1] (a:t,b:u)=>b;
+
+fun field[n,t,u,v where n==0] (a:t,b:u,c:v)=>a;
+fun field[n,t,u,v where n==1] (a:t,b:u,c:v)=>b;
+fun field[n,t,u,v where n==2] (a:t,b:u,c:v)=>c;
+
+fun field[n,t,u,v,w where n==0] (a:t,b:u,c:v,d:w)=>a;
+fun field[n,t,u,v,w where n==1] (a:t,b:u,c:v,d:w)=>b;
+fun field[n,t,u,v,w where n==2] (a:t,b:u,c:v,d:w)=>c;
+fun field[n,t,u,v,w where n==3] (a:t,b:u,c:v,d:w)=>d;
+
+fun field[n,t,u,v,w,x where n==0] (a:t,b:u,c:v,d:w,e:x)=>a;
+fun field[n,t,u,v,w,x where n==1] (a:t,b:u,c:v,d:w,e:x)=>b;
+fun field[n,t,u,v,w,x where n==2] (a:t,b:u,c:v,d:w,e:x)=>c;
+fun field[n,t,u,v,w,x where n==3] (a:t,b:u,c:v,d:w,e:x)=>d;
+fun field[n,t,u,v,w,x where n==4] (a:t,b:u,c:v,d:w,e:x)=>e;
+
+
+//------------------------------------------------------------------------------
+open class parallel_tuple_comp
+{
+  //$ parallel composition
+  // notation: f \times g
+  fun ravel[u1,u2,r1,r2] (f1:u1->r1,f2:u2->r2) : u1 * u2 -> r1 * r2 => 
+    fun (x1:u1,x2:u2) => f1 x1, f2 x2;
+
+  fun ravel[u1,u2,u3,r1,r2,r3] (
+     f1:u1->r1,
+     f2:u2->r2,
+     f3:u3->r3
+    ) : u1 * u2 * u3 -> r1 * r2 * r3 => 
+    fun (x1:u1,x2:u2,x3:u3) => f1 x1, f2 x2, f3 x3;
+
+  fun ravel[u1,u2,u3,u4,r1,r2,r3,r4] (
+     f1:u1->r1,
+     f2:u2->r2,
+     f3:u3->r3,
+     f4:u4->r4
+    ) : u1 * u2 * u3 * u4 -> r1 * r2 * r3 * r4=> 
+    fun (x1:u1,x2:u2,x3:u3,x4:u4) => f1 x1, f2 x2, f3 x3, f4 x4;
+
+  fun ravel[u1,u2,u3,u4,u5,r1,r2,r3,r4,r5] (
+     f1:u1->r1,
+     f2:u2->r2,
+     f3:u3->r3,
+     f4:u4->r4,
+     f5:u5->r5
+    ) : u1 * u2 * u3 * u4 * u5 -> r1 * r2 * r3 * r4 * r5 => 
+    fun (x1:u1,x2:u2,x3:u3,x4:u4,x5:u5) => f1 x1, f2 x2, f3 x3, f4 x4, f5 x5;
+
+}
+
