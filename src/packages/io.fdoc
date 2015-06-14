@@ -8,7 +8,7 @@
 @tangler demux.flx = share/lib/std/io/demux.flx
 @tangler faio.flx = share/lib/std/io/faio.flx
 @tangler posix_faio.flx = share/lib/std/posix/faio_posix.flx
-@tangler win32_faio.flx = share/lib/std/posix/faio_win32.flx
+@tangler win32_faio.flx = share/lib/std/win32/faio_win32.flx
 @tangler zmq.flx = share/lib/std/io/zmq.flx
 
 @h1 Synopsis
