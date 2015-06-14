@@ -2,6 +2,8 @@
 @tangler carray.flx = share/lib/std/c/carray.flx
 @tangler cptr.flx = share/lib/std/c/cptr.flx
 @tangler address.flx = share/lib/std/scalar/address.flx
+@tangler sort.flx = share/lib/std/datatype/sort.flx
+
 @h1 C pointer
 @tangle cptr.flx
 
