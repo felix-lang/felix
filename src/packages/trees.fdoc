@@ -1,0 +1,1471 @@
+@title Tree and graph data types
+@tangler heap.flx = share/lib/std/datatype/heap.flx
+@tangler avl.flx = share/lib/std/datatype/avl.flx
+@tangler graph.flx = share/lib/std/datatype/graph.flx
+@tangler partition.flx = share/lib/std/datatype/partition.flx
+@tangler judy.flx = share/lib/std/datatype/judy.flx
+@tangler strdict.flx = share/lib/std/datatype/strdict.flx
+@tangler binary_search_tree.flx = share/lib/std/datatype/binary_search_tree.flx
+
+@h1 Array backed Heap
+We provide a min-heap using a @{darray} for storage.
+@tangle heap.flx
+class MinHeap[T with Tord[T]] 
+{
+  fun left_child (p:int)  => 2*p + 1;
+  fun right_child (p:int) => 2*p + 2;
+  fun parent (c:int) => if c == 0 then 0 else (c - 1)/2;
+
+  axiom family (i:int): i == i.left_child.parent and i == i.right_child.parent;
+  typedef minheap_t = darray[T];
+  ctor minheap_t () => darray[T] ();
+  axiom left_heap (m:minheap_t, i:int): 
+    i.left_child < m.len.int or m.i < m.(i.left_child)
+  ;
+
+  proc heap_swap (h:minheap_t,i:int,j:int) { 
+    var tmp = h.i; 
+    set(h,i,h.j); 
+    set(h,j,tmp); 
+  }
+
+  proc bubble_up(h:minheap_t, j:int)
+  {
+     var p = parent j; // parent of root is itself
+     if h.p > h.j do // and so can't satisfy this condition
+        heap_swap(h,p,j);
+        bubble_up(h,p);
+     done
+  }
+  proc heap_insert (h:minheap_t) (elt:T) { 
+    push_back (h,elt);
+    bubble_up (h,h.len.int - 1);
+  }
+
+  // this procedure does nothing if the index p 
+  // is greater than or equal to the limit - 2, 
+  // since the last used slot is lim - 1, 
+  // and that node cannot have any children.
+  proc bubble_down_lim (h:minheap_t, p:int, lim:int) {
+    var min_index = p;
+    var left = p.left_child;
+    if left < lim do
+      if h.min_index > h.left perform min_index = left;
+      var right = left + 1;
+      if right < lim
+        if h.min_index > h.right perform min_index = right; 
+    done
+    if min_index != p do
+      heap_swap (h, p, min_index);
+      bubble_down_lim (h, min_index, lim);
+    done 
+  }
+
+  proc bubble_down (h:minheap_t,p:int) =>
+    bubble_down_lim (h, p, h.len.int)
+  ;
+
+  gen extract_min (h:minheap_t) : opt[T] =  {
+    if h.len.int == 0 return None[T];
+      var min = h.0;
+      set(h,0,h.(h.len.int - 1));
+      h.pop; 
+      bubble_down (h,0); 
+      return Some min;
+  }
+
+  // sorts largest to smallest!!
+  // based on extract_min, except the minimum element
+  // is moved to the position at the end of the heap
+  // which would otherwise be deleted.
+  proc heap_sort (h:minheap_t) {
+    var tosort = h.len.int;
+    while tosort > 1 do
+      --tosort;
+      heap_swap(h,0,tosort);
+      bubble_down_lim (h,0, tosort); 
+    done
+  }
+
+  proc heapify (h:minheap_t) {
+    var index = h.len.int - 2;
+    while index >= 0 do
+      bubble_down (h, index); --index; 
+    done
+  }
+
+}
+@
+@h1 AVL tree
+@tangle avl.flx
+
+class Avl
+{
+  union avl[T] =
+    | Nil
+    | Tree of int * T * avl[T] * avl[T] // (Height,Object,Left,Right)
+  ;
+
+  //==============================
+
+  fun _ctor_avl[T] () => Nil[T];
+
+  fun _ctor_avl[T] (x : T, left : avl[T], right : avl[T]) =>
+    Tree (max(height(left), height(right)) + 1, x, left, right)
+  ;
+
+  //==============================
+
+  private fun height[T] : avl[T]->int =
+    | #Nil => 0
+    | Tree(H, _, _, _) => H
+  ;
+
+  private fun slope[T] : avl[T]->int =
+    | #Nil => 0
+    | Tree(_, _, left, right) => height(left) - height(right)
+  ;
+
+  private fun rot_l[T](tree : avl[T]) =>
+    match tree with
+      | Tree(_, x, leftL, Tree(_, y, rightL, rightR)) =>
+        avl(y, avl(x, leftL, rightL), rightR)
+      | x => x
+    endmatch
+  ;
+
+  private fun shift_l[T](tree : avl[T]) =>
+    match tree with
+      | Tree(H, x, left, right) =>
+        if (slope(right) == 1) then
+          rot_l(avl(x, left, rot_r(right)))
+        else
+          rot_l(tree)
+        endif
+      | x => x
+    endmatch
+  ;
+
+  private fun rot_r[T](tree : avl[T]) =>
+    match tree with
+      | Tree(_, x, Tree(_, y, leftL, leftR), rightR) =>
+        avl(y, leftL, avl(x, leftR, rightR))
+      | x => x
+    endmatch
+  ;
+
+  private fun shift_r[T](tree : avl[T]) =>
+    match tree with
+      | Tree(H, x, left, right) =>
+        if (slope(right) == -1) then
+          rot_r(avl(x, rot_r(left), right))
+        else
+          rot_r(tree)
+        endif
+      | x => x
+    endmatch
+  ;
+
+  private fun balance[T](tree : avl[T]) =>
+    match slope(tree) with
+      | x when x == -2 => shift_l(tree)
+      | 2 => shift_r(tree)
+      | _ => tree
+    endmatch
+  ;
+
+  //==============================
+
+  fun insert[T] (tree : avl[T], y : T, cmp : T*T->int) =>
+    match tree with
+      | #Nil =>
+        Tree(1, y, Nil[T], Nil[T])
+      | Tree(H, x, left, right) =>
+        if cmp(x, y) > 0 then
+          balance(avl(x, (insert(left, y, cmp)), right))
+        elif cmp(x, y) < 0 then
+          balance(avl(x, left, insert(right, y, cmp)))
+        else
+          Tree(H, x, left, right)
+        endif
+    endmatch
+  ;
+
+  fun insert[T] (y : T, cmp : T*T->int) =>
+    insert(Nil[T], y, cmp)
+  ;
+
+  //=================================
+
+  fun find[T] (tree : avl[T], y : T, cmp : T*T->int) : opt[T] =>
+      match tree with
+        | #Nil => None[T]
+        | Tree(H, x, left, right) =>
+          if cmp(x, y) > 0 then
+            find(left, y, cmp)
+          elif cmp(x, y) < 0 then
+            find(right, y, cmp)
+          else
+            Some x
+          endif
+      endmatch
+    ;
+
+  //=================================
+
+  fun last[T] : avl[T]->T =
+    | Tree(_, x, _, #Nil) => x
+    | Tree(_, _, _, right) => last(right)
+  ;
+
+  fun all_but_last[T] : avl[T]->avl[T] =
+    | Tree(_, _, left, #Nil) => left
+    | Tree(_, x, left, right) => balance(avl(x, left, all_but_last(right)))
+  ;
+
+  //=================================
+
+  fun first[T] : avl[T]->T =
+    | Tree(_, x, #Nil, _) => x
+    | Tree(_, _, left, _) => first(left)
+  ;
+
+  fun all_but_first[T] : avl[T]->avl[T] =
+    | Tree(_, _, #Nil, right) => right
+    | Tree(_, x, left, right) => balance(avl(x, all_but_first(left), right))
+  ;
+
+  //=================================
+
+  fun join[T] (A : avl[T], B : avl[T]) =>
+    match A with
+      | #Nil => B
+      | x => balance(avl(last(A), all_but_last(A), B))
+    endmatch
+  ;
+
+  fun remove[T] (tree : avl[T], y : T, cmp : T*T->int) =>
+    match tree with
+      | #Nil => Nil[T]
+      | Tree(_, x, left, right) =>
+        if cmp(x, y) == 1 then
+          balance(avl(x, remove(left, y, cmp), right))
+        elif cmp(x, y) == -1 then
+          balance(avl(x, left, remove(right, y, cmp)))
+        else
+          join(left, right)
+        endif
+    endmatch
+  ;
+
+  //==============================
+
+  fun fold_left[T, U] (f:U->T->U) (accumulated:U) (tree:avl[T]):U =>
+    match tree with
+      | #Nil => accumulated
+      | Tree (_, x, left, right) =>
+        fold_left f  (f (fold_left f accumulated left)  x) right
+    endmatch
+  ;
+
+  fun fold_right[T, U] (f:T->U->U) (tree:avl[T]) (accumulated:U) =>
+    match tree with
+      | #Nil => accumulated
+      | Tree (_, x, left, right) =>
+        fold_right f left (f x (fold_right f right accumulated))
+    endmatch
+  ;
+
+  //==============================
+
+  proc iter[T] (f:T->void, tree:avl[T])
+  {
+    match tree with
+      | #Nil => {}
+      | Tree (H, x, left, right) => {
+        iter(f, left);
+        f(x);
+        iter(f, right);
+      }
+    endmatch;
+  }
+
+  proc iter[T] (f:int*T->void, tree:avl[T])
+  {
+    proc aux (depth:int, f:int*T->void, tree:avl[T]) {
+      match tree with
+        | #Nil => {}
+        | Tree (H, x, left, right) => {
+          aux(depth + 1, f, left);
+          f(depth, x);
+          aux(depth + 1, f, right);
+        }
+      endmatch;
+    }
+    aux(0, f, tree);
+  }
+}
+
+@h1 Directed Graph
+@tangle graph.flx
+// Directed Cyclic graph
+
+include "std/datatype/dlist";
+include "std/datatype/partition";
+
+class DiGraph[V,E with Str[V], Str[E]] // V,E labels for graph parts
+{
+  // vertices are stored in an array, so they're identified
+  // by their slot number 0 origin
+  typedef digraph_t = (vertices: darray[vertex_t], nedges: int);
+  ctor digraph_t () => (vertices= #darray[vertex_t], nedges=0);
+
+  // x index implicit, the edge source
+  // y index is the edge destination
+  typedef edge_t = (elabel:E, x:int,y:int, weight:double); 
+  typedef vertex_t = (vlabel:V, outedges: list[edge_t]);
+
+  fun len (d:digraph_t) => d.vertices.len;
+ 
+  virtual fun default_vlabel: 1 -> V;
+  virtual fun default_elabel: 1 -> E;
+  fun default_vertex () => (vlabel = #default_vlabel, outedges = Empty[edge_t]);
+
+  // Add an isolated vertex
+  // If the vertex is already in the graph,
+  // this routine just replaces the label
+  // this allows adding out of order vertices
+  // and adding vertices implicitly by adding edges
+  proc add_vertex (d:&digraph_t, v:V, x:int) 
+  {
+    while x >= d*.vertices.len.int call push_back (d*.vertices, #default_vertex); 
+    var pv: &V = (d*.vertices,x.size).unsafe_get_ref.vlabel;
+    pv <- v;
+  }
+
+  proc add_weighted_edge (d:&digraph_t, x:int, y:int, elab:E, weight:double)
+  {
+    while x >= d*.vertices.len.int call add_vertex (d,#default_vlabel,d*.vertices.len.int); 
+    while y >= d*.vertices.len.int call add_vertex (d,#default_vlabel,d*.vertices.len.int); 
+    var pedges : &list[edge_t] = (d*.vertices,x.size).unsafe_get_ref.outedges;
+    pedges <- (elabel=elab,x=x,y=y,weight=weight) ! *pedges;
+    d.nedges.pre_incr;
+  }
+
+  proc add_edge (d:&digraph_t, x:int, y:int, elab:E) =>
+    add_weighted_edge (d,x,y,elab,1.0)
+  ;
+ 
+  // add and edge and its reverse edge, distinct labels
+  proc add_weighted_edge_pair (d:&digraph_t, x:int, y:int, felab:E, relab:E, weight:double)
+  {
+    add_weighted_edge(d,x,y,felab, weight);
+    add_weighted_edge(d,y,x,relab, weight);
+  }
+
+  proc add_edge_pair (d:&digraph_t, x:int, y:int, felab:E, relab:E) =>
+    add_weighted_edge_pair (d,x,y,felab,relab,1.0)
+  ;
+
+  // add and edge and its reverse edge, same label
+  // use for undirected graph
+  proc add_edge_pair (d:&digraph_t, x:int, y:int, elab:E)
+  {
+    add_edge(d,x,y,elab);
+    add_edge(d,y,x,elab);
+  }
+
+ 
+  fun dump_digraph (d:digraph_t) : string = 
+  {
+    var out = "";
+    reserve (&out,10000);
+    var x = 0;
+    for vertex in d.vertices do
+      out += x.str + " " + vertex.vlabel.str + "\n";
+      for edge in vertex.outedges do
+        out += "  " + edge.x.str + "->" + edge.y.str + " " + 
+          edge.elabel.str + 
+          if edge.weight != 1.0 then " "+edge.weight.str else "" endif +
+          "\n"
+        ;
+      done
+    ++x;
+    done
+    return out;
+  }
+
+  union Vstate = Undiscovered | Discovered | Processed;
+
+  typedef digraph_visitor_processing_t = 
+  (
+    process_vertex_early: digraph_t -> int -> 0,
+    process_vertex_late: digraph_t -> int -> 0,
+    process_edge: digraph_t -> int * int -> 0
+  );
+
+  proc dflt_pve (g:digraph_t) (x:int) {};
+  proc dflt_pvl (g:digraph_t) (x:int) {};
+  proc dflt_pe (g:digraph_t) (x:int, y:int) {};
+
+  // default visitor does nothing
+  ctor digraph_visitor_processing_t () => (
+    process_vertex_early= dflt_pve,
+    process_vertex_late= dflt_pvl,
+    process_edge= dflt_pe
+  );
+
+  interface mutable_collection_t[T] {
+     add: T -> 0;
+     remove: 1 -> opt[T];
+  }
+
+  gen iterator[T] (x:mutable_collection_t[T]) () : opt[T] => x.remove ();
+
+  object gstack_t[T] () implements mutable_collection_t[T] = {
+    open DList[T];
+    var d = dlist_t();
+    method proc add (x:T) => push_back (&d,x);
+    method gen remove () => pop_back (&d);
+  }
+
+  object gqueue_t[T] () implements mutable_collection_t[T] = {
+    open DList[T];
+    var d = dlist_t();
+    method proc add (x:T) => push_back (&d,x);
+    method gen remove () => pop_front (&d);
+  }
+
+  proc iter 
+    (var pending:mutable_collection_t[int]) 
+    (d:digraph_t) (startv:int) 
+    (p:digraph_visitor_processing_t)
+  {
+    var state = varray[Vstate] (bound=d.len,default=Undiscovered);
+    pending.add startv;
+    set (state,startv,Discovered);
+    //var parent = -1;
+    for v in pending do // all vertex indices in queue
+      p.process_vertex_early d v;
+      set (state,v,Processed);
+      for edge in d.vertices.v.outedges do
+        var y = edge.y;
+        p.process_edge d (v, y);
+        match state.y do
+        | #Undiscovered => 
+          pending.add y; 
+          set (state,y,Discovered); 
+          //parent = v;
+        | _ => ;
+        done
+      done
+      p.process_vertex_late d v;
+    done // vertices
+  }
+
+  proc breadth_first_iter (d:digraph_t) (startv:int) (p:digraph_visitor_processing_t) =>
+    iter #gqueue_t[int] d startv p
+  ;
+
+  proc depth_first_iter (d:digraph_t) (startv:int) (p:digraph_visitor_processing_t) =>
+    iter #gstack_t[int] d startv p
+  ;
+
+  // This routine returns a list of vertices from startv to fin, inclusive ..
+  // not a list of edges.
+  gen find_shortest_unweighted_path (d:digraph_t) (startv:int, fin:int) : opt[list[int]] = 
+  {
+    if startv == fin return Some (list(startv));
+
+    open DList[int];
+    var state = varray[Vstate] (bound=d.len,default=Undiscovered);
+    var parents = varray[int] (bound=d.len,default= -1);
+    var q = queue_t();
+    enqueue &q startv;
+    set (state,startv,Discovered);
+    set(parents,startv,-1);
+    for v in &q // all vertex indices in queue
+      for edge in d.vertices.v.outedges do
+        var y = edge.y;
+        if y == fin do
+          var path = Empty[int];
+          set(parents,y,v);
+          while y != startv do
+            path = Cons (y,path);
+            y = parents.y;
+          done
+          path = Cons (y,path);
+          return Some path;
+        else 
+          match state.y do
+          | #Undiscovered => 
+            enqueue &q y; 
+            set (state,y,Discovered); 
+            set(parents,y,v);
+          | _ => ;
+          done
+        done
+      done
+    return None[list[int]];
+  }
+
+  // find minimum spanning tree
+  // Prim's algorithm, enhanced as in Skiena
+  // only returns list of vertices from starting point
+  gen prim (d:digraph_t) (startv:int) : list[int * int] = 
+  {
+    var INF=1.0/0.0;
+    var intree = varray[bool] (bound=d.len, default=false);
+    var distance = varray[double] (bound=d.len, default=INF);
+    var fromv = varray[int] (bound=d.len, default= -1);
+    var span = Empty[int * int];
+    var src = -1;
+    var v = startv;
+    while not intree.v do
+      set(intree,v,true);
+      for edge in d.vertices.v.outedges do
+        var w = edge.y;
+        var weight = edge.weight;
+        if distance.w > weight and not intree.w do
+          set(distance,w,weight);
+          set(fromv,w,v);
+        done
+      done
+
+      // find closest out of tree vertex
+      var dist = INF;
+      src = -1;
+      for var i in 0 upto intree.len.int - 1 do
+        if not intree.i and dist > distance.i do
+          dist = distance.i;
+          v = i;
+          src = fromv.i;
+        done // not in tree
+      done // each vertex i
+      // v is set to closest out of tree vertex and 
+      // src to the vertex it comes from
+      // if there is one, otherwise v is unchanged and so remains in tree
+      // and src stays at -1
+      if src != -1 do span = Cons ( (src,v), span); done
+    done // each v not in tree
+    return rev span;
+  }
+
+}
+
+instance DiGraph[string, string] 
+{
+  fun default_vlabel () => "Unlabelled Vertex";
+  fun default_elabel () => "Unlabelled Edge";
+}
+
+
+
+@h1 Partition with Union-Find
+
+Partition range of integers 0 through n-1.
+Features classic union-find data structure.
+@tangle partition.flx
+class Partition
+{
+  // internal array based union find 
+  typedef partition_t = (
+    parents: varray[int],
+    sizes : varray[int],
+    n: int
+  );
+
+  ctor partition_t (nelts:int) => (
+    n=nelts, 
+    parents=varray[int] (bound=nelts.size,used=nelts.size,f=(fun (i:size)=>i.int)),
+    sizes=varray[int] (bound=nelts.size,default=1)
+  );
+
+  // find canonical representative of partition containing element
+  // can't fail, returns -1 if the input i is out of range of the partition
+  fun find (s:&partition_t, i:int) => 
+    if i < 0 or i>= s*.n then -1 else
+      let val p = s*.parents.i in 
+      if p == i then i 
+      else find (s,p) 
+      endif
+    endif
+  ;
+
+  // merge classes , keeping tree balanced
+  // can't fail, does nothing if either s1 or s2 is out of range of the partition
+  proc merge (s: &partition_t, s1:int, s2:int) {
+    var r1 = find (s,s1);
+    if r1 == -1 return;
+    var r2 = find (s,s2);
+    if r2 == -1 return;
+    if r1 != r2 do 
+      var m = s*.sizes.r1 + s*.sizes.r2;
+      if s*.sizes.r1 >= s*.sizes.r2 do
+        set (s*.sizes,r1,m);
+        set (s*.parents,r2,r1);
+      else
+        set (s*.sizes,r2,m);
+        set (s*.parents,r1,r2);
+      done
+    done
+  }
+
+  // partition 0:n-1 with equivalence relation
+  gen partition (n:int, equiv:int * int -> bool) =
+  {
+    var p = partition_t n;
+    for var i in 0 upto  n - 1 
+      for var j in i + 1 upto n - 1 
+        if equiv (i,j) call merge (&p,i,j)
+    ;
+    return p;
+  } 
+
+  // return an equivalence relation from a partition
+  gen equiv (s:&partition_t) : int * int -> bool => 
+    fun (x:int, y:int) => find (s,x) == find (s,y)
+  ;
+
+  // create a partition from an equivalence relation
+  // constructor syntax 
+  ctor partition_t (n:int, equiv: int * int -> bool) => partition (n,equiv);
+
+  // create an equivalence relation from a property
+  // assuming the property return type has equality
+  fun mk_equiv[T with Eq[T]] (f:int -> T) => 
+    fun (x:int, y:int) => f x == f y
+  ;  
+}
+
+@h1 Binary Search Tree
+
+@h1 Description.
+A mutable binary tree with a label and parent uplink
+satisfying the property that for any node, all elements
+in the left subtree are less than the node label,
+and all elements in the right subtree are greater than
+or equal to the node label.
+
+@h2 Implementation.
+This version requires and uses the default total order
+on the label.
+
+@tangle binary_search_tree.flx
+class BinarySearchTree[T with Tord[T]]
+{
+@h2 Type.
+@tangle binary_search_tree.flx
+  typedef bstree_node_t =
+    (
+      elt: T,
+      parent:bstree_t, 
+      left:bstree_t, 
+      right:bstree_t
+    )
+  ;
+  union bstree_t = 
+    | #Empty 
+    | Node of &bstree_node_t 
+  ;
+
+@h2 Quick Checks.
+@tangle binary_search_tree.flx
+
+  fun leaf: bstree_t -> bool =
+    | #Empty => false
+    | Node p => 
+      match p*.left, p*.right with 
+      | #Empty, Empty => true 
+      | _ => false
+  ;
+
+  fun leaf_or_empty : bstree_t -> bool =
+    | #Empty => true
+    | x => leaf x
+  ;
+
+@h2 String representation
+@tangle binary_search_tree.flx
+  instance Str[bstree_t] {
+    fun str : bstree_t -> string =
+      | #Empty => "()"
+      | Node p =>
+        p*.elt.str + "(" + p*.left.str + ") (" + p*.right.str + ")"
+    ;
+  }
+
+@h2 Find.
+Find the subtree with top node equal to the given
+value, or Empty if not found.
+@tangle binary_search_tree.flx
+  // Skiena p78
+  fun find (tree:bstree_t) (elt:T) : bstree_t =>
+    // saves passing invariant elt
+    let fun aux (tree:bstree_t) : bstree_t =>
+      match tree with 
+      | #Empty => tree
+      | Node p => 
+         if p*.elt == elt then tree
+         elif elt < p*.elt then aux p*.left
+         else aux p*.right
+      endmatch
+    in aux tree
+  ;
+
+@h2 min.
+Find the minimum subtree in the tree which is the left
+most bottom leaf.
+@tangle binary_search_tree.flx
+  fun min (x:bstree_t) =>
+    match x with 
+    | #Empty => x
+    | Node p =>
+      let fun aux (p:&bstree_node_t) =>
+        match *p.left with
+        | #Empty => Node p 
+        | Node p => aux p
+      in aux p
+   ; 
+@h2 iter.
+Procedural preorder iteration visits values
+in ascending order.
+@tangle binary_search_tree.flx
+   proc iter (f: T -> 0) (x:bstree_t) =
+   {
+      proc aux (x:bstree_t) = {
+        match x with
+        | #Empty => ;
+        | Node p =>
+          aux p*.left;
+          f p*.elt;
+          aux p*.right;
+        endmatch;
+      }
+     aux x;
+   }
+
+@h2 Fold.
+Easily defined given iter, this should be generalised elsewhere!
+@tangle binary_search_tree.flx
+  fun fold_left[U] (_f:U->T->U) (init:U) (x:bstree_t): U = {
+    var sum = init;
+    iter proc (elt:T) { sum = _f sum elt; } x;
+    return sum;
+  }
+
+@h2 Map.
+Easily defined given iter. Note the tree structure is NOT preserved.
+@tangle binary_search_tree.flx
+  fun map[U] (_f:T->U) (x:bstree_t): BinarySearchTree[U]::bstree_t = {
+    var res = BinarySearchTree::Empty[U];
+    iter proc (elt:T) { BinarySearchTree[U]::insert &res elt._f; } x;
+    return res;
+  }
+
+@h2 Constructors.
+@tangle binary_search_tree.flx 
+  ctor bstree_t () => Empty;
+  ctor bstree_node_t (x:T) => (parent=Empty,elt=x,left=Empty,right=Empty);
+  ctor bstree_node_t (x:T, p:bstree_t) => (parent=p,elt=x,left=Empty,right=Empty);
+
+  ctor bstree_t (x:T) => Node (new (bstree_node_t x));
+  ctor bstree_t (x:T, p:bstree_t) => Node (new (bstree_node_t (x,p)));
+
+@h2 Insert routine
+@tangle binary_search_tree.flx
+  // Note: this routine disallows duplicates.
+  proc insert_with_parent (p:&bstree_t) (parent:bstree_t) (elt:T)
+  {
+    proc aux (p:&bstree_t) (parent:bstree_t) {
+      match *p with
+      | #Empty => p <- bstree_t (elt,parent);
+      | Node q =>
+        if elt < q*.elt do
+          aux q.left (*p);
+        elif elt > q*.elt do
+          aux q.right (*p);
+        done //otherwise it's already in there
+      endmatch;
+    }
+    aux p parent;
+  }
+  proc insert (p:&bstree_t) (elt:T) => insert_with_parent p Empty elt;
+
+@h2 Comprehension.
+Make a tree from an option stream.
+@tangle binary_search_tree.flx
+  ctor bstree_t  (f:1->opt[T]) = {
+    var x = Empty;
+    var ff = f;
+    proc aux () {
+      match #ff with
+      | Some y => insert &x y; aux();
+      | #None => ;
+      endmatch;
+    }
+    aux();
+    return x;
+  }
+
+@h2 Iterator.
+Ab interesting routine, related to @{iter}.
+@tangle binary_search_tree.flx
+  gen iterator (x:bstree_t) () : opt[T] =
+  {
+    match x with
+    | #Empty => return None[T];
+    | Node p =>
+      var ff = iterator p*.left; // closure for generator
+    left:>
+      var elt_opt = #ff;
+      match elt_opt with
+      | #None => ;
+      | Some v => 
+        yield elt_opt;
+        goto left;
+      endmatch;
+
+      yield Some (p*.elt);
+
+      ff = iterator p*.right;
+    right:>
+      elt_opt = #ff;
+      match elt_opt with
+      | #None => return None[T];
+      | Some _ => 
+        yield elt_opt;
+        goto right;
+      endmatch;
+    endmatch;
+  }
+@h2 As a set.
+@tangle binary_search_tree.flx
+  instance Set[bstree_t,T] {
+    fun \in (elt:T, container:bstree_t) =>
+      match find container elt with
+      | #Empty => false
+      | _ => true
+      endmatch
+    ;
+  }
+  inherit Set[bstree_t,T];
+
+@h2 As a container.
+@tangle binary_search_tree.flx
+  instance Container[bstree_t, T] {
+    // not tail rec
+    fun len (x:bstree_t) =>
+      let fun aux (x:bstree_t) (sum:size) =>
+        match x with 
+        | #Empty => sum
+        | Node p =>
+          aux p*.left (aux p*.right (sum+1uz)) 
+        endmatch
+      in aux x 0uz
+    ;
+
+    // faster than counting then comparing to 0
+    fun empty: bstree_t -> bool =
+      | #Empty => true
+      | _ => false
+    ;
+   
+  }
+  inherit Container[bstree_t,T];
+
+@h2 Delete by value.
+Ensures the tree doesn't contain the specified value.
+@tangle binary_search_tree.flx 
+  // deletes the first copy of the element found
+  proc delete_element (p:&bstree_t) (elt:T)
+  {
+    proc aux (p:&bstree_t) {
+      match *p with
+      | #Empty => ; // not found, nothing to do
+      | Node q =>
+        if elt == q*.elt do // found it
+          var par = q*.parent;
+          match q*.left, q*.right with
+          // no kids
+          | #Empty, Empty => p <- Empty;
+
+          // right kid only
+          | #Empty, Node child => 
+            p <- q*.right;
+            child.parent <-par;
+
+          // left kid only
+          | Node (child) , Empty => 
+            p <- q*.left;
+            child.parent <- par;
+
+          // two kids
+          // overwrite elt with min elt of right kid
+          // then delete that elt's original node
+          // which is the leftmost descendant of the right kid
+
+          | _, Node child =>
+            match min q*.right with
+            | #Empty => assert false;
+            | Node k => 
+              var m = k*.elt;
+              q.elt <- m;
+              delete_element q.right m; 
+                // this looks nasty and is poor syle but
+                // it's not recursive because the element 
+                // is a leaf and has no children
+            endmatch;
+          endmatch;
+        elif elt < q*.elt do
+          aux q.left;
+        else
+          aux q.right;
+        done
+      endmatch;
+    }
+    aux p;
+  }
+
+} // class
+
+@h1 Judy Arrays
+@tangle judy.flx
+
+// NOTES: The Felix type 'address' is the correct type for Judy Word
+// However it is also an unsigned integer type (int or long depending
+// on platform)
+//
+// But Felix doesn't support automatic int/address conversions
+//
+// So we will (later) use a typeset to fix this!
+class Judy
+{
+  requires package "judy";
+  requires header "#include <Judy.h>";
+  open C_hack;
+
+  type word = "Word_t";
+  ctor word: !ints = "(Word_t)$1";
+  ctor word: address = "(Word_t)$1";
+  ctor int: word = "(int)$1";
+  ctor uint: word = "(int)$1";
+  ctor ulong: word = "(unsigned long)$1";
+  ctor size: word = "(size_t)$1";
+  ctor address: word = "(void*)$1";
+  fun isNULL: word -> bool = "$1==0";
+  fun isNULL: &word -> bool = "$1==0";
+
+  type JError_t = "JError_t";
+
+  private body mkjudy =
+    """
+      static void **_mkjudy(FLX_APAR_DECL ::flx::gc::generic::gc_shape_t *jptr_map){
+        typedef void *voidp; // syntax
+        void **m = new (*PTF gcp, *jptr_map, false) voidp; 
+        *m=0;
+        return m;
+      }
+    """
+  ;
+
+  // the "value" of a judy array is just a void*
+  // to mutate it though, we need it to be on the heap
+  // and use the pointer to that object as the array,
+  // so that it can be copied about
+  private body j1free =
+    """
+      static void _j1free(::flx::gc::generic::collector_t*,void *p) {
+        //printf("Free J1Array %p\\n",p);
+        JError_t je;
+        Judy1FreeArray((void**)p, &je); 
+      }
+    """
+  ;
+  private type J1Array_ = "void*"
+    requires 
+      scanner "::flx::gc::generic::Judy1_scanner",
+      header '#include "flx_judy_scanner.hpp"',
+      finaliser '_j1free',
+      j1free
+  ;
+  _gc_pointer _gc_type J1Array_ type J1Array = "void**" requires property "needs_gc"; 
+
+  gen _ctor_J1Array: 1 -> J1Array = "_mkjudy(FLX_POINTER_TO_THREAD_FRAME, &@0)" 
+    requires 
+      mkjudy,
+      property "needs_gc"
+  ;
+
+  proc free: J1Array = "_j1free(NULL,$1);" requires j1free;
+
+  proc Judy1Set: J1Array * word * &JError_t * &int =
+    "*$4=Judy1Set($1,$2,$3);";
+
+  proc Judy1Unset: J1Array * word * &JError_t * &int =
+    "*$4=Judy1Unset($1,$2,$3);";
+
+  proc Judy1Test: J1Array * word * &JError_t * &int =
+    "*$4=Judy1Test(*$1,$2,$3);";
+
+  instance Set[J1Array,word] {
+    fun \in (x:word, a:J1Array) : bool = {
+      var e:JError_t;
+      var r:int;
+      Judy1Test(a,x,&e,&r);
+      return r == 1;
+    }
+  }
+  proc Judy1Count: J1Array * word * word* &JError_t * &word =
+    "*$5=Judy1Count(*$1,$2,$3,$4);";
+
+  proc Judy1ByCount: J1Array * word * &word * &JError_t * &word =
+    "*$5=Judy1ByCount(*$1,$2,$3,$4);";
+
+  proc Judy1FreeArray: J1Array * &JError_t * &word =
+    "*$3=Judy1FreeArray($1,$2);";
+
+  proc Judy1MemUsed: J1Array * &word = "*$2=Judy1MemUsed(*$1);";
+
+  proc Judy1First: J1Array * &word * &JError_t * &int =
+    "*$4=Judy1First(*$1,$2,$3);";
+
+  proc Judy1Next: J1Array * &word * &JError_t * &int =
+    "*$4=Judy1Next(*$1,$2,$3);";
+
+  proc Judy1Last: J1Array * &word * &JError_t * &int =
+    "*$4=Judy1Last(*$1,$2,$3);";
+
+  proc Judy1Prev: J1Array * &word * &JError_t * &int =
+    "*$4=Judy1Prev(*$1,$2,$3);";
+
+  proc Judy1FirstEmpty: J1Array * &word * &JError_t * &int =
+    "*$4=Judy1FirstEmpty(*$1,$2,$3);";
+
+  proc Judy1NextEmpty: J1Array * &word * &JError_t * &int =
+    "*$4=Judy1NextEmpty(*$1,$2,$3);";
+
+  proc Judy1LastEmpty: J1Array * &word * &JError_t * &int =
+    "*$4=Judy1LastEmpty(*$1,$2,$3);";
+
+  proc Judy1PrevEmpty: J1Array * &word * &JError_t * &int =
+    "*$4=Judy1PrevEmpty(*$1,$2,$3);";
+
+///////////////////////////////////////
+  private body jLfree =
+    """
+      static void _jLfree(::flx::gc::generic::collector_t*,void *p) {
+        //printf("Free JLArray %p\\n",p);
+        JError_t je;
+        JudyLFreeArray((void**)p, &je); 
+      }
+    """
+  ;
+  private type JLArray_ = "void*"
+    requires 
+      scanner "::flx::gc::generic::JudyL_scanner",
+      header '#include "flx_judy_scanner.hpp"',
+      finaliser '_jLfree',
+      jLfree
+  ;
+  _gc_pointer _gc_type JLArray_ type JLArray = "void**" requires property "needs_gc"; 
+
+  gen _ctor_JLArray: 1 -> JLArray = "_mkjudy(FLX_POINTER_TO_THREAD_FRAME, &@0)" 
+    requires 
+      mkjudy,
+      property "needs_gc"
+  ;
+
+  proc free: JLArray = "_jLfree(NULL,$1);" requires jLfree;
+
+
+  proc JudyLIns: JLArray * word * &JError_t * &&word =
+    "*(Word_t**)$4=(Word_t*)JudyLIns($1,$2,$3);";
+
+  proc JudyLDel: JLArray * word * &JError_t * &int =
+    "*$4=JudyLDel($1,$2,$3);";
+
+  proc JudyLGet: JLArray * word * &JError_t * &&word =
+    "*$4=(Word_t*)JudyLGet(*$1,$2,$3);";
+
+  proc JudyLCount: JLArray * word * word * &JError_t * &word =
+    "*$5=JudyLCount(*$1,$2,$3,$4);";
+
+  proc JudyLByCount: JLArray * word * &word * &JError_t * &&word =
+    "*$5=JudyLCount(*$1,$2,$3,$4);";
+
+  proc JudyLFreeArray: JLArray * &JError_t * &word =
+    "*$3=JudyLFree($1,$2);";
+
+  proc JudyLMemUsed: JLArray * &word =
+    "*$2=JudyLMemUsed(*$1);";
+
+  proc JudyLFirst: JLArray * &word * &JError_t * &&word =
+    "*(Word_t**)$4=(Word_t*)JudyLFirst(*$1,$2,$3);";
+
+  proc JudyLNext: JLArray * &word * &JError_t * &&word =
+    "*(Word_t**)$4=(Word_t*)JudyLNext(*$1,$2,$3);";
+
+  proc JudyLLast: JLArray * &word * &JError_t * &&word =
+    "*(Word_t**)$4=(Word_t*)JudyLLast(*$1,$2,$3);";
+
+  proc JudyLPrev: JLArray * &word * &JError_t * &&word =
+    "*(Word_t**)$4=(Word_t*)JudyLPrev(*$1,$2,$3);";
+
+  proc JudyLFirstEmpty: JLArray * &word * &JError_t * &word =
+    "*$4=JudyLFirstEmpty(*$1,$2,$3);";
+
+  proc JudyLNextEmpty: JLArray * &word * &JError_t * &word =
+    "*$4=JudyLNextEmpty(*$1,$2,$3);";
+
+  proc JudyLLastEmpty: JLArray * &word * &JError_t * &word =
+    "*$4=JudyLLastEmpty(*$1,$2,$3);";
+
+  proc JudyLPrevEmpty: JLArray * &word * &JError_t * &word =
+    "*$4=JudyLPrevEmpty(*$1,$2,$3);";
+
+///////////////////////////////////////
+// We should improve the safety here, unbounded string
+// lengths .. yuck. char *buffer for results .. overruns possible!
+
+  body JudySL_maxlen = "#define JUDY_SL_MAXLEN 10000";
+  body jSLfree =
+    """
+      static void _jSLfree(::flx::gc::generic::collector_t*,void *p) {
+        //printf("Free JSLArray %p\\n",p);
+        JError_t je;
+        JudySLFreeArray((void**)p, &je); 
+      }
+    """
+  ;
+  private type JSLArray_ = "void*"
+    requires 
+      scanner "::flx::gc::generic::JudySL_scanner",
+      header '#include "flx_judy_scanner.hpp"',
+      finaliser '_jSLfree',
+      jSLfree, JudySL_maxlen
+  ;
+  _gc_pointer _gc_type JSLArray_ type JSLArray = "void**" requires property "needs_gc"; 
+
+  gen _ctor_JSLArray: 1 -> JSLArray = "_mkjudy(FLX_POINTER_TO_THREAD_FRAME, &@0)" 
+    requires 
+      mkjudy ,
+      property "needs_gc"
+  ;
+
+  proc free: JSLArray = "_jSLfree(NULL,$1);" requires jSLfree;
+
+  const JUDY_SL_MAXLEN : int = "JUDY_SL_MAXLEN";
+
+  proc JudySLIns: JSLArray * +char * &JError_t * &&word =
+    """
+      if (::std::strlen($2) >= JUDY_SL_MAXLEN) throw "JudySLIns strlen>10000";
+      *(Word_t**)$4=(Word_t*)JudySLIns($1,(unsigned char*)$2,$3);
+    """ requires Cxx_headers::cstring;
+
+  proc JudySLDel: JSLArray * +char * &JError_t * &int =
+    "*$4=JudySLDel($1,(unsigned char*)$2,$3);";
+
+  proc JudySLGet: JSLArray * +char * &JError_t * &&word =
+    "*$4=(Word_t*)JudySLGet(*$1,(unsigned char*)$2,$3);";
+
+  proc JudySLFirst: JSLArray * +char * &JError_t * &&word =
+    "*(Word_t**)$4=(Word_t*)JudySLFirst(*$1,(unsigned char*)$2,$3);";
+
+  proc JudySLNext: JSLArray * +char * &JError_t * &&word =
+    "*(Word_t**)$4=(Word_t*)JudySLNext(*$1,(unsigned char*)$2,$3);";
+
+  proc JudySLLast: JSLArray * +char * &JError_t * &&word =
+    "*$4=JudySLLast(*$1,(unsigned char*)$2,$3);";
+
+  proc JudySLPrev: JSLArray * +char * &JError_t * &&word =
+    "*$4=JudySLPrev(*$1,(unsigned char*)$2,$3);";
+
+///////////////////////////////////////
+
+/* JUDYHS is not supported because there's no way to iterate 
+   which is required for the GC to work
+
+  type JHSArray = "void**";
+  gen _ctor_JHSArray: 1 -> JHSArray = "_mkjudy()" requires mkjudy;
+
+  proc free: JHSArray = "_jHSfree($1);" requires body
+    """
+      void _jHSfree(void **p) { JudyHSFreeArray(p); free(p); }
+    """;
+
+  proc JudyHSIns: JHSArray * address * word * &JError_t * &&word =
+    "*$5=(Word_t*)JudyHSIns($1,$2,$3,$4);";
+
+  proc JudyHSDel: JHSArray * address * word * &JError_t * &int =
+    "*$5=JudyHSDel($1,$2,$3,$4);";
+
+  proc JudyHSGet: JHSArray * address * word * &JError_t * &&word =
+    "*$5=(Word_t*)JudyHSGet(*$1,$2,$3);";
+*/
+
+}
+
+open Set[Judy::J1Array,Judy::word];
+
+@h1 String Dictionary.
+@tangle strdict.flx
+
+//$ A strdict is dictionary keyed by strings.
+//$ The strings must not contain nul bytes.
+//$
+//$ This is an ultra high performance data structure
+//$ implemented using a JudySLArray.
+//$ Typically about the same speed as a hashtable on exact key retrieval,
+//$ but with the ability to perform linear key seeking as well.
+//$ Linear seeking means searching for a key satisfying one of the total
+//$ ordering relations to a given key, including ordered iteration.
+//$
+//$ Scales to terabytes.
+//$ No other data structure can do this.
+
+class StrDict[T] {
+   open Judy;
+
+   //$ Type of a strdict.
+   type strdict = new JSLArray;
+
+   //$ Construct and empty dictionary.
+   ctor strdict() => _make_strdict$ JSLArray ();
+
+   proc add (x:strdict) (var key:string) (value: T) { 
+     var err: JError_t;
+     var slot : && T; 
+     JudySLIns (_repr_ x, &key.stl_begin, &err, C_hack::cast[&&word] (&slot));
+     slot <- new value;
+   }
+
+   //$ Construct a dictionary from a list of pairs.
+   ctor strdict ( kv: list[string * T] ) = {
+     var x = strdict ();
+     match k,v in kv do add x k v; done
+     return x;
+   }
+
+   
+   //$ Fetch a value optionally using the given key.
+   fun get (x:strdict) (var key: string) : opt[T] = {
+     var err: JError_t;
+     var slot : && T; 
+     JudySLGet (_repr_ x, &key.stl_begin, &err, C_hack::cast[&&word] (&slot));
+     return if C_hack::isNULL slot then None[T] else Some (**slot);
+   }
+
+   //$ Check if value is in the dictionary.
+   fun haskey (x:strdict) (var key: string) : bool = 
+   {
+     var err: JError_t;
+     var slot : && T; 
+     JudySLGet (_repr_ x, &key.stl_begin, &err, C_hack::cast[&&word] (&slot));
+     return slot.C_hack::isNULL.lnot;
+   }
+
+
+   //$ Fetch a value using the given key.
+   //$ If there is no value in the dictionary with that key,
+   //$ then return a default value.
+  fun get_dflt (x:strdict) (key:string, dflt:T) => 
+    match get x key with
+    | Some v => v
+    | #None => dflt
+    endmatch
+  ;
+
+  //$ Remove a key/value pair from the dictionary if it exists.
+  //$ Return a boolean value signalling if it existed. 
+  gen del (x:strdict) (key: string) : bool = {
+     var err: JError_t;
+     var found : int;
+     JudySLDel (_repr_ x, key.cstr, &err, &found);
+     return found == 1; 
+   }
+
+   //$ Get an optional value with key greater than or equal to
+   //$ the supplied NTBS (unsafe!)
+   gen charp_get_ge (x:strdict) (var key: +char) : opt[T]= {
+     var err: JError_t;
+     var slot : && T; 
+     JudySLFirst (_repr_ x, key, &err, C_hack::cast[&&word] (&slot));
+     if C_hack::isNULL slot do 
+       return None[T];
+     else
+       return Some (**slot);
+     done
+   }
+
+   //$ Get an optional value with key greater than or equal to
+   //$ the supplied string. Safer than the NTBS version but slower. 
+   //$ Fails if the string contains a nul byte.
+   fun get_ge (x:strdict) (var key: string)= {
+     var err: JError_t;
+     var slot : && T; 
+     var k = array_alloc[char]$ JUDY_SL_MAXLEN+1; 
+     strncpy (k,key.cstr, JUDY_SL_MAXLEN);
+     var result = charp_get_ge x k;
+     match result with
+     | Some v =>
+       key = k.string;
+       free k; 
+       return Some (key,v);
+     | #None=>
+       free k;
+       return None[string * T];
+     endmatch ;
+   }
+
+     //$ Get an optional value with key greater than  (>)
+     //$ the supplied NTBS (unsafe!)
+     gen charp_get_gt (x:strdict) (var key: +char)= {
+     var err: JError_t;
+     var slot : && T; 
+     JudySLNext(_repr_ x, key, &err, C_hack::cast[&&word] (&slot));
+     if C_hack::isNULL slot do 
+       return None[T];
+     else
+       return Some (**slot);
+     done
+   }
+
+   //$ Get an optional value with key greater than (>) 
+   //$ the supplied string. Safer than the NTBS version but slower. 
+   //$ Fails if the string contains a nul byte.
+   fun get_gt (x:strdict) (var key: string)= {
+     var err: JError_t;
+     var slot : && T; 
+     var k = array_alloc[char]$ JUDY_SL_MAXLEN+1; 
+     strncpy (k,key.cstr, JUDY_SL_MAXLEN);
+     var result = charp_get_gt x k;
+     match result with
+     | Some v =>
+       key = k.string;
+       free k; 
+       return Some (key,v);
+     | #None=>
+       free k;
+       return None[string * T];
+     endmatch ;
+   }
+
+   //$ Get an optional value with key less than or equal to (<=)
+   //$ the supplied NTBS (unsafe!)
+   gen charp_get_le (x:strdict) (var key: +char)= {
+     var err: JError_t;
+     var slot : && T; 
+     JudySLLast(_repr_ x, key, &err, C_hack::cast[&&word] (&slot));
+     if C_hack::isNULL slot do 
+       return None[T];
+     else
+       return Some (**slot);
+     done
+   }
+
+   //$ Get an optional value with key less than or equal to (<=)
+   //$ the supplied string. Safer than the NTBS version but slower. 
+   //$ Fails if the string contains a nul byte.
+   fun get_le (x:strdict) (var key: string)= {
+     var err: JError_t;
+     var slot : && T; 
+     var k = array_alloc[char]$ JUDY_SL_MAXLEN+1; 
+     strncpy (k,key.cstr, JUDY_SL_MAXLEN);
+     var result = charp_get_le x k;
+     match result with
+     | Some v =>
+       key = k.string;
+       free k; 
+       return Some (key,v);
+     | #None=>
+       free k;
+       return None[string * T];
+     endmatch ;
+   }
+
+   //$ Get an optional value with key less than (<)
+   //$ the supplied NTBS (unsafe!)
+   gen charp_get_lt (x:strdict) (var key: +char)= {
+     var err: JError_t;
+     var slot : && T; 
+     JudySLPrev (_repr_ x, key, &err, C_hack::cast[&&word] (&slot));
+     if C_hack::isNULL slot do 
+       return None[T];
+     else
+       return Some (**slot);
+     done
+   }
+
+   //$ Get an optional value with key less than (<)
+   //$ the supplied string. Safer than the NTBS version but slower. 
+   //$ Fails if the string contains a nul byte.
+   fun get_lt (x:strdict) (var key: string)= {
+     var err: JError_t;
+     var slot : && T; 
+     var k = array_alloc[char]$ JUDY_SL_MAXLEN+1; 
+     strncpy (k,key.cstr, JUDY_SL_MAXLEN);
+     var result = charp_get_lt x k;
+     match result with
+     | Some v =>
+       key = k.string;
+       free k; 
+       return Some (key,v);
+     | #None=>
+       free k;
+       return None[string * T];
+     endmatch ;
+   }
+
+   //$ Get the optional first key in the dictionary into
+   //$ the supplied NTBS (unsafe!)
+   gen charp_first (x:strdict) (buffer:+char) = {
+     set(buffer,0,char "");
+     return x.charp_get_ge buffer;
+   }
+
+   //$ Get the optional first key in the dictionary.
+   fun first (x:strdict) : opt[string * T] => x.get_ge("");
+
+   instance Streamable[strdict, string * T] {
+     //$ Stream iterator scanning through all key value pairs
+     //$ in the dictionary, in key order.
+     gen iterator (x:strdict) () : opt[string * T]  = {
+       var buffer : +char = array_alloc[char](JUDY_SL_MAXLEN+1);
+       var v = charp_first x buffer;
+       while true do
+         match v with 
+         | Some vv => yield Some (string buffer, vv);
+         | #None => free buffer; return None[string * T];
+         endmatch;
+         v = charp_get_gt x buffer;
+       done
+     }
+  }
+  inherit Streamable[strdict, string * T];
+
+  instance[with Str[T]] Str[strdict]
+  {
+    fun str(var x:strdict) : string = 
+    {
+      var s = "{";
+      match key,value in x.iterator do
+        var entry = key +"=" + str value;
+        if s == "{" do s+= entry; else s+= ", "+ entry; done
+      done 
+      s+="}";
+      return s;
+    }
+  }
+  inherit Str[strdict];
+
+  instance Set[strdict,string] {
+    fun \in (key:string, dict:strdict) => haskey dict key;
+  }
+  inherit Set[strdict,string];
+
+}
+
+open[T] StrDict[T];
+
+
