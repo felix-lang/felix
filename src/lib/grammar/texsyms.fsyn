@@ -307,12 +307,8 @@ syntax texsyms {
 // are at the right precedence.
 // (fact is, I don't know what half the operators are for anyhow .. )
 
-  x[stuple_pri] := x[>stuple_pri] "\over" x[>stuple_pri] =># "(Infix)";
   x[stuple_pri] := x[>stuple_pri] "\brace" x[>stuple_pri] =># "(Infix)";
   x[stuple_pri] := x[>stuple_pri] "\brack" x[>stuple_pri] =># "(Infix)";
-
-  //$ remainder: left associative.
-  x[s_term_pri] := x[s_term_pri] "\bmod" x[>s_term_pri] =># "(Infix)";
 
 
   x[scomparison_pri]:= x[>scomparison_pri] bin x[>scomparison_pri] =># "`(ast_apply ,_sr (,_2 (,_1 ,_3)))";
