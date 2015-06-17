@@ -669,7 +669,7 @@ class FloatDring[t] {
 @h2 Syntax
 @tangle mathexpr.fsyn
 
-  //$ civision: right associative low precedence fraction form
+  //$ division: right associative low precedence fraction form
   x[stuple_pri] := x[>stuple_pri] "\over" x[>stuple_pri] =># "(Infix)";
 
   //$ division: left associative.
