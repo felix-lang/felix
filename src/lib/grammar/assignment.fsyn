@@ -1,6 +1,6 @@
 //$ Assignment forms.
 syntax assignment {
-  requires statements;
+  requires statements, swapop;
 
   //$ Assignment form.
   sassignexpr := sexpr sassignop sexpr =># "`(ast_assign ,_sr ,_2 ((Expr ,_sr ,_1) none) ,_3)";
@@ -44,9 +44,6 @@ syntax assignment {
 
   //$ Swap operator.
   sassignexpr := sexpr sswapop sexpr =># "`(ast_call ,_sr ,(noi _2) ((ast_ref ,_sr ,_1) (ast_ref ,_sr ,_3)))";
-    //$ Exchange.
-    sswapop := "<->" =># "'_swap";
-
 
   //$ Prefix read/modify/write.
   sassignexpr := spreincrop sexpr =># "`(ast_call ,_sr ,(noi _1) (ast_ref ,_sr ,_2))";

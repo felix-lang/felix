@@ -48,7 +48,6 @@ syntax texsyms {
 
 // C
 
-  bin := "\cap" =># '(nos _1)'; 
   bin := "\Cap" =># '(nos _1)'; 
   bin := "\cdot" =># '(nos _1)'; 
   bin := "\cdotp" =># '(nos _1)'; 
@@ -58,7 +57,6 @@ syntax texsyms {
   bin := "\circleddash" =># '(nos _1)'; 
   cmp := "\cong" =># '(nos _1)'; 
   bin := "\coprod" =># '(nos _1)'; 
-  //bin := "\cup" =># '(nos _1)'; 
   bin := "\Cup" =># '(nos _1)'; 
   cmp := "\curlyeqprec" =># '(nos _1)'; 
   cmp := "\curlyeqsucc" =># '(nos _1)'; 
@@ -97,19 +95,13 @@ syntax texsyms {
 
 // G
 
-  cmp := "\ge" =># '(nos _1)'; 
-  cmp := "\geq" =># '(nos _1)'; 
-  cmp := "\geqq" =># '(nos _1)'; 
   cmp := "\geqslant" =># '(nos _1)'; 
   arr := "\gets" =># '(nos _1)'; 
   cmp := "\gg" =># '(nos _1)'; 
   cmp := "\ggg" =># '(nos _1)'; 
   cmp := "\gggtr" =># '(nos _1)'; 
   cmp := "\gnapprox" =># '(nos _1)'; 
-  cmp := "\gneq" =># '(nos _1)'; 
-  cmp := "\gneqq" =># '(nos _1)'; 
   cmp := "\gnsim" =># '(nos _1)'; 
-  cmp := "\gt" =># '(nos _1)'; 
   cmp := "\gtrapprox" =># '(nos _1)'; 
   cmp := "\gtrdot" =># '(nos _1)'; 
   cmp := "\gtreqless" =># '(nos _1)'; 
@@ -125,11 +117,6 @@ syntax texsyms {
 
 // I
 
-  bin := "\iff" =># '(nos _1)'; 
-  bin := "\impliedby" =># '(nos _1)'; 
-  //bin := "\implies" =># '(nos _1)'; 
-  //cmp := "\in" =># '(nos _1)'; 
-
 // J
 
   bin := "\Join" =># '(nos _1)'; 
@@ -138,7 +125,6 @@ syntax texsyms {
 
 // L
 
-  cmp := "\le" =># '(nos _1)'; 
   arr := "\leadsto" =># '(nos _1)'; 
   arr := "\Leftarrow" =># '(nos _1)'; 
   arr := "\leftarrow" =># '(nos _1)'; 
@@ -151,8 +137,6 @@ syntax texsyms {
   cmp := "\leftrightarrows" =># '(nos _1)'; 
   cmp := "\leftrightharpoons" =># '(nos _1)'; 
   arr := "\leftrightsquigarrow" =># '(nos _1)'; 
-  cmp := "\leq" =># '(nos _1)'; 
-  cmp := "\leqq" =># '(nos _1)'; 
   cmp := "\leqslant" =># '(nos _1)'; 
   cmp := "\lessapprox" =># '(nos _1)'; 
   cmp := "\lessdot" =># '(nos _1)'; 
@@ -164,8 +148,6 @@ syntax texsyms {
   cmp := "\lll" =># '(nos _1)'; 
   cmp := "\llless" =># '(nos _1)'; 
   cmp := "\lnapprox" =># '(nos _1)'; 
-  cmp := "\lneq" =># '(nos _1)'; 
-  cmp := "\lneqq" =># '(nos _1)'; 
   cmp := "\lnot" =># '(nos _1)'; 
   cmp := "\lnsim" =># '(nos _1)'; 
   arr := "\Longleftarrow" =># '(nos _1)'; 
@@ -175,7 +157,6 @@ syntax texsyms {
   arr := "\longmapsto" =># '(nos _1)'; 
   arr := "\Longrightarrow" =># '(nos _1)'; 
   arr := "\longrightarrow" =># '(nos _1)'; 
-  cmp := "\lt" =># '(nos _1)'; 
   cmp := "\ltimes" =># '(nos _1)'; 
   cmp := "\lvertneqq" =># '(nos _1)'; 
 
@@ -186,28 +167,15 @@ syntax texsyms {
 // N
 
   cmp := "\ncong" =># '(nos _1)'; 
-  cmp := "\ne" =># '(nos _1)'; 
-  cmp := "\neq" =># '(nos _1)'; 
-  cmp := "\ngeq" =># '(nos _1)'; 
-  cmp := "\ngeqq" =># '(nos _1)'; 
   cmp := "\ngeqslant" =># '(nos _1)'; 
-  cmp := "\ngtr" =># '(nos _1)'; 
   cmp := "\ni" =># '(nos _1)'; 
-  cmp := "\nleq" =># '(nos _1)'; 
-  cmp := "\nleqq" =># '(nos _1)'; 
   cmp := "\nleqslant" =># '(nos _1)'; 
-  cmp := "\nless" =># '(nos _1)'; 
-  cmp := "\notin" =># '(nos _1)'; 
   cmp := "\nparallel" =># '(nos _1)'; 
   cmp := "\nprec" =># '(nos _1)'; 
   cmp := "\npreceq" =># '(nos _1)'; 
   cmp := "\nsim" =># '(nos _1)'; 
-  cmp := "\nsubseteq" =># '(nos _1)'; 
-  cmp := "\nsubseteqq" =># '(nos _1)'; 
   cmp := "\nsucc" =># '(nos _1)'; 
   cmp := "\nsucceq" =># '(nos _1)'; 
-  cmp := "\nsupseteq" =># '(nos _1)'; 
-  cmp := "\nsupseteqq" =># '(nos _1)'; 
   cmp := "\ntriangleleft" =># '(nos _1)'; 
   cmp := "\ntrianglelefteq" =># '(nos _1)'; 
   cmp := "\ntriangleright" =># '(nos _1)'; 
@@ -220,7 +188,6 @@ syntax texsyms {
   bin := "\oplus" =># '(nos _1)'; 
   bin := "\oslash" =># '(nos _1)'; 
   //bin := "\otimes" =># '(nos _1)'; 
-  cmp := "\owns" =># '(nos _1)'; 
 
 // P
 
@@ -268,12 +235,7 @@ syntax texsyms {
   cmp := "\sqsupset" =># '(nos _1)'; 
   cmp := "\sqsupseteq" =># '(nos _1)'; 
   bin := "\square" =># '(nos _1)'; 
-  cmp := "\subset" =># '(nos _1)'; 
   cmp := "\Subset" =># '(nos _1)'; 
-  cmp := "\subseteq" =># '(nos _1)'; 
-  cmp := "\subseteqq" =># '(nos _1)'; 
-  cmp := "\subsetneq" =># '(nos _1)'; 
-  cmp := "\subsetneqq" =># '(nos _1)'; 
   cmp := "\succ" =># '(nos _1)'; 
   cmp := "\succapprox" =># '(nos _1)'; 
   cmp := "\succcurlyeq" =># '(nos _1)'; 
@@ -282,12 +244,7 @@ syntax texsyms {
   cmp := "\succneqq" =># '(nos _1)'; 
   cmp := "\succnsim" =># '(nos _1)'; 
   cmp := "\succsim" =># '(nos _1)'; 
-  cmp := "\supset" =># '(nos _1)'; 
   cmp := "\Supset" =># '(nos _1)'; 
-  cmp := "\supseteq" =># '(nos _1)'; 
-  cmp := "\supseteqq" =># '(nos _1)'; 
-  cmp := "\supsetneq" =># '(nos _1)'; 
-  cmp := "\supsetneqq" =># '(nos _1)'; 
 
 // T
 
@@ -324,12 +281,10 @@ syntax texsyms {
   cmp := "\varsubsetneqq" =># '(nos _1)'; 
   cmp := "\varsupsetneq" =># '(nos _1)'; 
   cmp := "\varsupsetneqq" =># '(nos _1)'; 
-  bin := "\vee" =># '(nos _1)'; 
   cmp := "\veebar" =># '(nos _1)'; 
 
 // W
 
-  bin := "\wedge" =># '(nos _1)'; 
 
 // X
 
@@ -372,8 +327,6 @@ syntax texsyms {
   // set ops (note: no setminus, its a standard binop at the moment ;)
   // note: no \Cap or other variants .. would interfere with chain 
   // there's no reason at all to chain these anyhow, they're standard left assoc operators 
-  x[ssetunion_pri] := x[ssetunion_pri] "\cup" x[>ssetunion_pri] =># "(Infix)" note "setunion";
-  x[ssetintersection_pri] := x[ssetintersection_pri] "\cap" x[>ssetintersection_pri] =># "(Infix)" note "setintersection";
 
   // All arrows are right associative .. hmm ..
   x[sarrow_pri] := x[scase_literal_pri] arr x[sarrow_pri] =># "`(ast_apply ,_sr (,_2 (,_1 ,_3)))"; 

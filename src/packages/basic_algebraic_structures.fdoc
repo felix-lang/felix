@@ -6,6 +6,7 @@
 @tangler pord.flx      = share/lib/std/algebra/partialorder.flx
 @tangler tord.flx      = share/lib/std/algebra/totalorder.flx
 @tangler group.flx     = share/lib/std/algebra/group.flx
+@tangler mathexpr.fsyn = share/lib/std/algebra/mathexpr.fsyn
 @tangler ring.flx      = share/lib/std/algebra/ring.flx
 @tangler trig.flx      = share/lib/std/algebra/trig.flx
 @tangler real.flx      = share/lib/std/algebra/real.flx
@@ -15,6 +16,10 @@
 @tangler sequence.flx  = share/lib/std/algebra/sequence.flx
 
 @title Core Algebraic Structures.
+@h1 Syntax
+@tangle mathexpr.fsyn
+syntax mathexpr {
+
 @h1 Synopsis.
 
 @tangle init.flx
@@ -129,6 +134,24 @@ open class Predicate[T]
 
 }
 
+@h2 Syntax
+@tangle mathexpr.fsyn
+  //$ Logical implication.
+  x[simplies_condition_pri] := x[>simplies_condition_pri] "implies" x[>simplies_condition_pri] =># "(Infix)";
+
+  //$ Logical disjunction (or).
+  x[sor_condition_pri] := x[>sor_condition_pri] ( "or" x[>sor_condition_pri])+ =># "(chain 'ast_orlist _1 _2)" note "lor";
+
+  //$ Logical conjunction (and).
+  x[sand_condition_pri] := x[>sand_condition_pri] ( "and" x[>sand_condition_pri])+ =># "(chain 'ast_andlist _1 _2)" note "land";
+
+  //$ Logical negation (not).
+  x[snot_condition_pri] := "not" x[snot_condition_pri]  =># "`(ast_not ,_sr ,_2)";
+
+  bin := "\iff" =># '(nos _1)'; // NOT IMPLEMENTED FIXME
+  bin := "\impliedby" =># '(nos _1)'; // NOT IMPLEMENTED FIXME
+
+
 @h1 Sets.
 A <em>set</em> is any type with a membership predicate \(\in\)
 spelled @{\in}. You can also use function @{mem}. The parser
@@ -171,6 +194,16 @@ class Set[c,t] {
     { e : t | e \in x and e \notin y }
   ;
 }
+
+@h2 Syntax
+@tangle mathexpr.fsyn
+  cmp := "in" =># '(nos "\\in")'; 
+  cmp := "\in" =># "(nos _1)"; 
+  cmp := "\notin" =># '(nos _1)'; 
+  cmp := "\owns" =># '(nos _1)'; 
+
+  x[ssetunion_pri] := x[ssetunion_pri] "\cup" x[>ssetunion_pri] =># "(Infix)" note "setunion";
+  x[ssetintersection_pri] := x[ssetintersection_pri] "\cap" x[>ssetintersection_pri] =># "(Infix)" note "setintersection";
 
 @h1 Set forms.
 A @{set_form} is a record type with a single 
@@ -289,6 +322,17 @@ class Eq[t] {
   fun \neq(x:t, y:t)=> x != y;
 }
 
+@h1 Syntax
+@tangle mathexpr.fsyn
+  x[scomparison_pri]:= x[>scomparison_pri] cmp x[>scomparison_pri] =># "`(ast_apply ,_sr (,_2 (,_1 ,_3)))";
+  x[scomparison_pri]:= x[>scomparison_pri] "not" cmp x[>scomparison_pri] =># "`(ast_not ,_sr (ast_apply ,_sr (,_3 (,_1 ,_4))))";
+  cmp := "==" =># "(nos _1)"; 
+  cmp := "!=" =># "(nos _1)"; 
+  cmp := "\ne" =># '(nos _1)'; 
+  cmp := "\neq" =># '(nos _1)'; 
+@
+
+
 @h2 Partial Order
 A proper <a href="https://en.wikipedia.org/wiki/Partially_ordered_set">partial order</a> 
 \(\subset\) spelled @{\subset}
@@ -311,10 +355,42 @@ class Pord[t]{
   virtual fun \supset(x:t,y:t):bool =>y \subset x;
   virtual fun \subseteq(x:t,y:t):bool => x \subset y or x == y;
   virtual fun \supseteq(x:t,y:t):bool => x \supset y or x == y;
+
+  fun \subseteqq(x:t,y:t):bool => x \subseteq y;
+  fun \supseteqq(x:t,y:t):bool => x \supseteq y;
+
+  fun \nsubseteq(x:t,y:t):bool => not (x \subseteq y);
+  fun \nsupseteq(x:t,y:t):bool => not (x \supseteq y);
+  fun \nsubseteqq(x:t,y:t):bool => not (x \subseteq y);
+  fun \nsupseteqq(x:t,y:t):bool => not (x \supseteq y);
+
+  fun \supsetneq(x:t,y:t):bool => x \supset y;
+  fun \supsetneqq(x:t,y:t):bool => x \supset y;
+  fun \supsetneq(x:t,y:t):bool => x \supset y;
+  fun \supsetneqq(x:t,y:t):bool => x \supset y;
+
   axiom trans(x:t, y:t, z:t): \subset(x,y) and \subset(y,z) implies \subset(x,z);
   axiom antisym(x:t, y:t): \subset(x,y) or \subset(y,x) or x == y;
   axiom reflex(x:t, y:t): \subseteq(x,y) and \subseteq(y,x) implies x == y;
 }
+@h2 Syntax
+@tangle mathexpr.fsyn
+  cmp := "\subset" =># '(nos _1)'; 
+  cmp := "\supset" =># '(nos _1)'; 
+  cmp := "\subseteq" =># '(nos _1)'; 
+  cmp := "\subseteqq" =># '(nos _1)'; 
+  cmp := "\supseteq" =># '(nos _1)'; 
+  cmp := "\supseteqq" =># '(nos _1)'; 
+
+  cmp := "\nsubseteq" =># '(nos _1)'; 
+  cmp := "\nsubseteqq" =># '(nos _1)'; 
+  cmp := "\nsupseteq" =># '(nos _1)'; 
+  cmp := "\nsupseteqq" =># '(nos _1)'; 
+
+  cmp := "\subsetneq" =># '(nos _1)'; 
+  cmp := "\subsetneqq" =># '(nos _1)'; 
+  cmp := "\supsetneq" =># '(nos _1)'; 
+  cmp := "\supsetneqq" =># '(nos _1)'; 
 
 
 @h2 Total Order
@@ -397,6 +473,39 @@ class Tord[t]{
 
 }
 
+@h2 Syntax
+@tangle mathexpr.fsyn
+  cmp := "<" =># "(nos _1)"; 
+
+  cmp := "\lt" =># '(nos _1)'; 
+  cmp := "\lneq" =># '(nos _1)'; 
+  cmp := "\lneqq" =># '(nos _1)'; 
+
+  cmp := "<=" =># "(nos _1)"; 
+  cmp := "\le" =># '(nos _1)'; 
+  cmp := "\leq" =># '(nos _1)'; 
+  cmp := "\leqq" =># '(nos _1)'; 
+
+  cmp := ">" =># "(nos _1)"; 
+  cmp := "\gt" =># '(nos _1)'; 
+  cmp := "\gneq" =># '(nos _1)'; 
+  cmp := "\gneqq" =># '(nos _1)'; 
+
+  cmp := ">=" =># "(nos _1)"; 
+  cmp := "\ge" =># '(nos _1)'; 
+  cmp := "\geq" =># '(nos _1)'; 
+  cmp := "\geqq" =># '(nos _1)'; 
+
+  cmp := "\nless" =># '(nos _1)'; 
+  cmp := "\nleq" =># '(nos _1)'; 
+  cmp := "\nleqq" =># '(nos _1)'; 
+  cmp := "\ngtr" =># '(nos _1)'; 
+  cmp := "\ngeq" =># '(nos _1)'; 
+  cmp := "\ngeqq" =># '(nos _1)'; 
+
+  bin := "\vee" =># '(nos _1)'; 
+  bin := "\wedge" =># '(nos _1)'; 
+
 @h2 Sequences
 @tangle sequence.flx
 
@@ -451,8 +560,16 @@ class FloatAddgrp[t] {
   fun sub(x:t,y:t)=> x - y;
   proc pluseq(px:&t, y:t) {  += (px,y); }
   proc  minuseq(px:&t, y:t) { -= (px,y); }
-
 }
+@
+
+@h2 Notation
+@tangle mathexpr.fsyn
+  //$ Addition: left non-associative.
+  x[ssum_pri] := x[>ssum_pri] ("+" x[>ssum_pri])+ =># "(chain 'ast_sum _1 _2)" note "add";
+
+  //$ Subtraction: left associative.
+  x[ssubtraction_pri] := x[ssubtraction_pri] "-" x[sproduct_pri] =># "(Infix)";
 
 @h2 Additive Group
 A proper additive group is derived from @{FloatAddgrp}
@@ -483,6 +600,13 @@ class FloatMultSemi1[t] {
   reduce id (x:t): x*one() => x;
   reduce id (x:t): one()*x => x;
 }
+
+@h2 Syntax
+@tangle mathexpr.fsyn
+  //$ multiplication: non-associative.
+  x[sproduct_pri] := x[>sproduct_pri] ("*" x[>sproduct_pri])+ =># 
+    "(chain 'ast_product _1 _2)" note "mul";
+
 
 @h2 Multiplicative Semi-Group With Unit.
 A multiplicative semigroup with unit is an approximate
@@ -542,6 +666,23 @@ class FloatDring[t] {
   proc modeq(px:&t, y:t) { %= (px,y); }
 }
 
+@h2 Syntax
+@tangle mathexpr.fsyn
+
+  //$ civision: right associative low precedence fraction form
+  x[stuple_pri] := x[>stuple_pri] "\over" x[>stuple_pri] =># "(Infix)";
+
+  //$ division: left associative.
+  x[s_term_pri] := x[s_term_pri] "/" x[>s_term_pri] =># "(Infix)";
+
+  //$ remainder: left associative.
+  x[s_term_pri] := x[s_term_pri] "%" x[>s_term_pri] =># "(Infix)";
+
+  //$ remainder: left associative.
+  x[s_term_pri] := x[s_term_pri] "\bmod" x[>s_term_pri] =># "(Infix)";
+
+
+
 @h2 Division Ring
 @tangle ring.flx
 //$ Division ring.
@@ -570,6 +711,24 @@ class Bits[t] {
   fun bnot(x:t)=> ~ x;
 
 }
+
+@h2 Syntax
+@tangle mathexpr.fsyn
+  //$ Bitwise or, left associative.
+  x[sbor_pri] := x[sbor_pri] "\|" x[>sbor_pri] =># "(Infix)";
+
+  //$ Bitwise xor, left associative.
+  x[sbxor_pri] := x[sbxor_pri] "\^" x[>sbxor_pri] =># "(Infix)";
+
+  //$ Bitwise exclusive and, left associative.
+  x[sband_pri] := x[sband_pri] "\&" x[>sband_pri] =># "(Infix)";
+
+  //$ Bitwise left shift, left associative.
+  x[sshift_pri] := x[sshift_pri] "<<" x[>sshift_pri] =># "(Infix)";
+
+  //$ Bitwise right shift, left associative.
+  x[sshift_pri] := x[sshift_pri] ">>" x[>sshift_pri] =># "(Infix)";
+
 
 @h2 Integer
 @tangle integer.flx
@@ -791,5 +950,8 @@ open class Quantifiers_add_mul {
 }
 
 
-
+@
+@tangle mathexpr.fsyn
+}
+@
 

@@ -1,5 +1,6 @@
 @title Library structure
 @tangler std.flx            = share/lib/std.flx
+@tangler swapop.fsyn        = share/lib/grammar/swapop.fsyn
 @tangler std                = share/lib/std/__init__.flx
 @tangler datatype           = share/lib/std/datatype/__init__.flx
 @tangler posix              = share/lib/std/posix/__init__.flx
@@ -22,18 +23,22 @@ The top level library module.
 @tangle std.flx
 header '#include "flx_rtl_config.hpp"';
 
-body swapper[t] = """
-  void swapper(?1 *a, ?1 *b){
-    ?1 tmp = *a; *a = *b; *b = tmp;
-  }
-""";
-
-proc _swap[t]: &t * &t =
-  "swapper($1,$2);"
-  requires swapper[t];
+proc _swap[t] (a:&t,b:&t) =
+{
+  var tmp = *a;
+  a <- *b;
+  b <- tmp;
+}
 
 
 include "std/__init__";
+@
+
+@tangle swapop.fsyn
+syntax swapop
+{
+  sswapop := "<->" =># "'_swap";
+}
 @
 
 @h1 Default includes for Standard library.

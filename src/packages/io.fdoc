@@ -1,15 +1,15 @@
 @title I/O
-@tangler __init__.flx = share/lib/std/io/__init__.flx
+@tangler __init__.flx      = share/lib/std/io/__init__.flx
 @tangler ansi_terminal.flx = share/lib/std/io/ansi_terminal.flx
-@tangler manymouse.flx = share/lib/std/io/manymouse.flx
-@tangler textio.flx = share/lib/std/io/textio.flx
-@tangler stream.flx = share/lib/std/io/stream.flx
-@tangler socket.flx = share/lib/std/io/socket.flx
-@tangler demux.flx = share/lib/std/io/demux.flx
-@tangler faio.flx = share/lib/std/io/faio.flx
-@tangler posix_faio.flx = share/lib/std/posix/faio_posix.flx
-@tangler win32_faio.flx = share/lib/std/win32/faio_win32.flx
-@tangler zmq.flx = share/lib/std/io/zmq.flx
+@tangler manymouse.flx     = share/lib/std/io/manymouse.flx
+@tangler textio.flx        = share/lib/std/io/textio.flx
+@tangler stream.flx        = share/lib/std/io/stream.flx
+@tangler socket.flx        = share/lib/std/io/socket.flx
+@tangler demux.flx         = share/lib/std/io/demux.flx
+@tangler faio.flx          = share/lib/std/io/faio.flx
+@tangler posix_faio.flx    = share/lib/std/posix/faio_posix.flx
+@tangler win32_faio.flx    = share/lib/std/win32/faio_win32.flx
+@tangler zmq.flx           = share/lib/std/io/zmq.flx
 
 @h1 Synopsis
 @tangle __init__.flx
@@ -33,10 +33,14 @@ include "std/io/filesystem";
 class AnsiTerminal
 {
   const cc:char = "(char)27";
+
+  // No colour
   fun  NC_ () => cc + '[0m'; 
   fun  NC_(s:string) => NC_() + s;
   proc NC()     { print$ NC_(""); }
   proc NC(s:string)     { print$ NC_(s); }
+
+  // Blue
   fun blue_() => cc + '[1;34m';
   fun blue_(s:string) => blue_() + s + NC_();
   proc blue()   { print$ blue_(); }
@@ -45,6 +49,8 @@ class AnsiTerminal
   fun BLUE_(s:string) => BLUE_() + s + NC_();
   proc BLUE()   { print$ BLUE_(); }
   proc BLUE(s:string)   { print$ BLUE_(s); }
+
+  // Cyan
   fun cyan_() => cc + '[0;36m';
   fun cyan_(s:string) => cyan_()+ s + NC_();
   proc cyan()   { print$ cyan_(); }
@@ -53,6 +59,8 @@ class AnsiTerminal
   fun CYAN_(s:string) => CYAN_() + s + NC_();
   proc CYAN()   { print$ CYAN_(); }
   proc CYAN(s:string)   { print$ CYAN_(s); }
+
+  // Green
   fun green_() => cc + '[0;32m';
   fun green_(s:string) => green_() + s + NC_();
   proc green()  { print$ green_(); }
@@ -61,6 +69,8 @@ class AnsiTerminal
   fun GREEN_(s:string) => GREEN_() + s + NC_();
   proc GREEN()  { print$ GREEN_(); }
   proc GREEN(s:string)   { println$ GREEN_(s); }
+
+  // Red
   fun red_() => cc + '[0;31m';
   fun red_(s:string) => red_()+ s + NC_();
   proc red()   { print$ red_(); }
@@ -69,6 +79,8 @@ class AnsiTerminal
   fun RED_(s:string) => red_()+ s + NC_();
   proc RED()   { print$ red_(); }
   proc RED(s:string)   { print$ red_(s); }
+
+  // Yellow
   fun yellow_() => cc + '[0;33m';
   fun yellow_(s:string) => yellow_() + s + NC_();
   proc yellow() { print$ yellow_(); }

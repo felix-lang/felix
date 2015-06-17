@@ -40,6 +40,10 @@ syntax expressions {
     satomic_pri
   ;
 
+  requires 
+    mathexpr
+  ;
+
   sexpr := x[let_pri] =># "_1";
   stypeexpr:= x[sor_condition_pri] =># "_1";
 
@@ -119,29 +123,6 @@ syntax expressions {
   //$ Tuple formation non-associative.
   x[stuple_pri] := x[>stuple_pri] ( "," x[>stuple_pri])+ =># "(chain 'ast_tuple _1 _2)";
 
-  //$ Logical implication.
-  x[simplies_condition_pri] := x[>simplies_condition_pri] "implies" x[>simplies_condition_pri] =># "(Infix)";
-
-  //$ Logical disjunction (or).
-  x[sor_condition_pri] := x[>sor_condition_pri] ( "or" x[>sor_condition_pri])+ =># "(chain 'ast_orlist _1 _2)" note "lor";
-
-  //$ Logical conjunction (and).
-  x[sand_condition_pri] := x[>sand_condition_pri] ( "and" x[>sand_condition_pri])+ =># "(chain 'ast_andlist _1 _2)" note "land";
-
-  //$ Logical negation (not).
-  x[snot_condition_pri] := "not" x[snot_condition_pri]  =># "`(ast_not ,_sr ,_2)";
-
-  cmp := "<" =># "(nos _1)"; 
-  cmp := "<=" =># "(nos _1)"; 
-  cmp := "==" =># "(nos _1)"; 
-  cmp := "!=" =># "(nos _1)"; 
-  cmp := ">=" =># "(nos _1)"; 
-  cmp := ">" =># "(nos _1)"; 
-  cmp := "in" =># '(nos "\\in")'; 
-  cmp := "\in" =># "(nos _1)"; 
-  x[scomparison_pri]:= x[>scomparison_pri] cmp x[>scomparison_pri] =># "`(ast_apply ,_sr (,_2 (,_1 ,_3)))";
-  x[scomparison_pri]:= x[>scomparison_pri] "not" cmp x[>scomparison_pri] =># "`(ast_not ,_sr (ast_apply ,_sr (,_3 (,_1 ,_4))))";
-
   //$ Named temporary value.
   x[sas_expr_pri] := x[sas_expr_pri] "as" sname =># "`(ast_as ,_sr (,_1 ,_3))";
 
@@ -189,38 +170,8 @@ syntax expressions {
   //$ Variant value.
   x[scase_literal_pri] := "case" sname "of" x[ssum_pri] =># "`(ast_variant (,_2 ,_4))";
 
-  //$ Bitwise or, left associative.
-  x[sbor_pri] := x[sbor_pri] "\|" x[>sbor_pri] =># "(Infix)";
-
-  //$ Bitwise xor, left associative.
-  x[sbxor_pri] := x[sbxor_pri] "\^" x[>sbxor_pri] =># "(Infix)";
-
-  //$ Bitwise exclusive and, left associative.
-  x[sband_pri] := x[sband_pri] "\&" x[>sband_pri] =># "(Infix)";
-
-  //$ Bitwise left shift, left associative.
-  x[sshift_pri] := x[sshift_pri] "<<" x[>sshift_pri] =># "(Infix)";
-
-  //$ Bitwise right shift, left associative.
-  x[sshift_pri] := x[sshift_pri] ">>" x[>sshift_pri] =># "(Infix)";
-
-  //$ Addition: left non-associative.
-  x[ssum_pri] := x[>ssum_pri] ("+" x[>ssum_pri])+ =># "(chain 'ast_sum _1 _2)" note "add";
-
-  //$ Subtraction: left associative.
-  x[ssubtraction_pri] := x[ssubtraction_pri] "-" x[sproduct_pri] =># "(Infix)";
-  
-  //$ multiplication: non-associative.
-  x[sproduct_pri] := x[>sproduct_pri] ("*" x[>sproduct_pri])+ =># "(chain 'ast_product _1 _2)" note "mul";
-
   //$ multiplication: right associative
   x[sproduct_pri] := x[>sproduct_pri] "\otimes" x[sproduct_pri] =># "(Infix)";
-
-  //$ division: left associative.
-  x[s_term_pri] := x[s_term_pri] "/" x[>s_term_pri] =># "(Infix)";
-
-  //$ remainder: left associative.
-  x[s_term_pri] := x[s_term_pri] "%" x[>s_term_pri] =># "(Infix)";
 
 //------------------------------------------------------------------------
   //$ Prefix exclaim.
