@@ -502,6 +502,8 @@ rebuild:
 		--target-bin=host \
 		--copy-repo \
 		--copy-library
+	for i in src/packages/*; do echo "PACKAGE " $$i; python3 src/tools/flx_iscr.py -q $$i ${BUILDROOT}; done
+	src/tools/flx_find_grammar_files.py ${BUILDROOT}
 	build/release/host/bin/flx --felix=build.fpc  src/tools/flx_build_rtl \
 		--target-dir=build/release \
 		--target-bin=host
