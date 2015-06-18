@@ -40,8 +40,8 @@ in \(\bf Sets\) surjections (onto functions)
 are epi
 
 @h2 Invertible
-An arrow \(f:A\rightarrow B) is invertible if there is an
-arrow \(f^{-1}: B\rightarrow A) called the inverse such that 
+An arrow \(f:A\rightarrow B\) is invertible if there is an
+arrow \(f^{-1}: B\rightarrow A\) called the inverse such that 
 \[
 f\cdot f^{-1} = 1_A
 \]
