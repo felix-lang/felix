@@ -298,7 +298,7 @@ grammar:
 extract: packages grammar
 
 #
-slow-flxg:
+slow-flxg: extract
 	# =========================================================
 	# building flxg
 	# =========================================================
@@ -486,7 +486,7 @@ fast-rebuild-nortl:
 	rm flx_build_boot
 
 
-rebuild:
+rebuild: extract
 	# =========================================================
 	# rebuild everything in-place except the compiler
 	# [Note: Slow and messy. Requires "flx" be built in build/release]
@@ -588,4 +588,4 @@ evtdemo:
 .PHONY : doc install websites-linux  release install-bin
 .PHONY : copy-doc gen-doc gendoc fbuild speed tarball
 .PHONY : weblink flx tools web-plugins toolchain-plugins rtl copy lib
-.PHONY : sdltest
+.PHONY : sdltest extract syntax packages
