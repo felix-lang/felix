@@ -298,7 +298,7 @@ grammar:
 extract: packages grammar
 
 #
-slow-flxg: extract
+slow-flxg:
 	# =========================================================
 	# building flxg
 	# =========================================================
@@ -486,12 +486,14 @@ fast-rebuild-nortl:
 	rm flx_build_boot
 
 
-rebuild: extract
+rebuild:
 	# =========================================================
 	# rebuild everything in-place except the compiler
 	# [Note: Slow and messy. Requires "flx" be built in build/release]
 	# [Builds build tools from repository using flx]
 	# =========================================================
+	for i in src/packages/*; do echo "PACKAGE " $$i; python3 src/tools/flx_iscr.py -q $$i ${BUILDROOT}; done
+	src/tools/flx_find_grammar_files.py ${BUILDROOT}
 	build/release/host/bin/flx --felix=build.fpc  src/tools/flx_build_prep \
 		--repo=.\
 		--source-dir=build/release \
