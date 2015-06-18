@@ -71,10 +71,10 @@ Note in this example, arrows are not necessarily functions,
 nor are the objects sets or types.
 
 @h2 Example: Strings
-A category generated from one a graph with one (irrelevant) object and 
+A category generated from one graph with one (irrelevant) object and 
 arrows labelled with  letters \(\Sigma\), plus one unlabelled arrow which is the identity,
 is the category of words in those letters, with arrow composition being
-string concatenation. Usually written (\Sigma^*\).
+string concatenation. Usually written \(\Sigma^*\).
 
 Any finite automaton, both deterministic and non-deterministic,
 generates a subcateory of strings, since it just a graph,

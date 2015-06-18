@@ -60,7 +60,7 @@ using functions alone is said to be abstract. Category theory is
 the algebra of functions and thus the theory of abstraction.
 
 Many laws of category theory contains qualifications
-and read \(P\) is unqie, <em>up to isomorphism</em>.
+and read \(P\) is unique, <em>up to isomorphism</em>.
 This means it isn't unique at all, but all the things
 satisfying the condition are isomorphic.
 

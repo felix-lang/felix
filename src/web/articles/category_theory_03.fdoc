@@ -25,7 +25,7 @@ as a functor from \(\bf Type \) to \( Type \). Given any type @{t},
 a new type @{F&lt;t&gt;} is constructed.
 
 For example then @{vector} is a functor. Here the structure
-is preserved by defining \(\arr @{vector} (f)\) the action of a \(f\) on
+is preserved by defining \(\arr vector (f)\) the action of a \(f\) on
 a vector as the action on its elements. This operation is commonly
 called a map.
 
