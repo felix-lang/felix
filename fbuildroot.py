@@ -460,6 +460,7 @@ def configure(ctx):
 def build(ctx):
     """Compile Felix."""
 
+
     # configure the phases
     phases, iscr = configure(ctx)
 
@@ -482,6 +483,11 @@ def build(ctx):
     buildsystem.copy_dir_to(ctx, ctx.buildroot/'share', 'src/lib',
         pattern='*.{flx,flxh,fsyn,fdoc,files,html,sql,css,js,py,png}')
     
+    print("RUNNING PACKAGE MANAGER")
+    os.system("src/tools/flx_iscr.py build/release");
+    print("RUNNING SYNTAX EXTRACTOR")
+    os.system("src/tools/flx_find_grammar_files.py build/release");
+
     for module in ( 'flx_stdlib',):
         call('buildsystem.' + module + '.build_flx', phases.target)
 
