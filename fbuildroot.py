@@ -10,6 +10,9 @@ from fbuild.record import Record
 import buildsystem
 from buildsystem.config import config_call
 
+# HACK
+import os
+
 # ------------------------------------------------------------------------------
 
 def pre_options(parser):
@@ -460,32 +463,35 @@ def configure(ctx):
 def build(ctx):
     """Compile Felix."""
 
-
+    print("[fbuild] CONFIGURING FELIX")
     # configure the phases
     phases, iscr = configure(ctx)
 
     # --------------------------------------------------------------------------
     # Compile the compiler.
 
+    print("[fbuild] [ocaml] COMPILING COMPILER")
     compilers = call('buildsystem.flx_compiler.build_flx_drivers', ctx,
         phases.host)
 
     # --------------------------------------------------------------------------
     # Compile the runtime dependencies.
 
+    print("[fbuild] [C++] COMPILING RUN TIME LIBRARY")
     call('buildsystem.judy.build_runtime', phases.host, phases.target)
     call('buildsystem.re2.build_runtime', phases.target)
 
     # --------------------------------------------------------------------------
     # Build the standard library.
 
+    print("[fbuild] [Felix] BUILDING STANDARD LIBRARY")
     # copy files into the library
     buildsystem.copy_dir_to(ctx, ctx.buildroot/'share', 'src/lib',
         pattern='*.{flx,flxh,fsyn,fdoc,files,html,sql,css,js,py,png}')
     
-    print("RUNNING PACKAGE MANAGER")
+    print("[fbuild] RUNNING PACKAGE MANAGER")
     os.system("src/tools/flx_iscr.py build/release");
-    print("RUNNING SYNTAX EXTRACTOR")
+    print("[fbuild] RUNNING SYNTAX EXTRACTOR")
     os.system("src/tools/flx_find_grammar_files.py build/release");
 
     for module in ( 'flx_stdlib',):
@@ -494,11 +500,13 @@ def build(ctx):
     # --------------------------------------------------------------------------
     # Compile the runtime drivers.
 
+    print("[fbuild] [C++] COMPILING DRIVERS")
     drivers = call('buildsystem.flx_drivers.build', phases.host, phases.target)
 
     # --------------------------------------------------------------------------
     # Compile the builder.
 
+    print("[fbuild] [Felix] COMPILING TOOLS")
     flx_builder = call('buildsystem.flx.build', ctx,
         compilers.flxg, phases.target.cxx.static, drivers)
 
@@ -509,12 +517,15 @@ def build(ctx):
     # --------------------------------------------------------------------------
     # now, try building a file
 
+    print("[fbuild] [Felix] TEST BUILD")
     felix = call('fbuild.builders.felix.Felix', ctx,
         exe=ctx.buildroot / 'host/bin/bootflx',
         debug=ctx.options.debug,
         flags=['--test=' + ctx.buildroot])
 
+    print("[fbuild] [Felix] BUILDING PLUGINS")
     call('buildsystem.plugins.build', phases.target, felix)
 
+    print("[fbuild] BUILD COMPLETE")
     return phases, iscr, felix
 
