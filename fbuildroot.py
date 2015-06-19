@@ -490,7 +490,7 @@ def build(ctx):
         pattern='*.{flx,flxh,fsyn,fdoc,files,html,sql,css,js,py,png}')
     
     print("[fbuild] RUNNING PACKAGE MANAGER")
-    os.system("src/tools/flx_iscr.py build/release");
+	  os.system("for i in src/packages/*; do echo 'PACKAGE ' $i; src/tools/flx_iscr.py -q $i build/release; done")
     print("[fbuild] RUNNING SYNTAX EXTRACTOR")
     os.system("src/tools/flx_find_grammar_files.py build/release");
 
