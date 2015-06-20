@@ -306,12 +306,6 @@ syntax expressions {
   //$ Ellipsis (for binding C varags functions).
   satom := "..." =># "`(ast_ellipsis ,_sr)";
 
-  //$ Boolean false.
-  satom := "false" =># "'(ast_typed_case  0 2)";
-
-  //$ Boolean true.
-  satom := "true" =># "'(ast_typed_case  1 2)";
-
   //$ Callback expression.
   satom := "callback" "[" sexpr "]" =># "`(ast_callback ,_sr ,_3)";
 
