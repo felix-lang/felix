@@ -365,6 +365,8 @@ these variables to ensure the source and sink
 suicide together when they become unreachable.
 @h1 Pipeline syntax
 @tangle spipeexpr.fsyn
+syntax spipeexpr 
+{
   //$ Left assoc, for schannel pipes.
   x[ssetunion_pri] := x[ssetunion_pri] "|->" x[>ssetunion_pri] =># "(infix 'pipe)"; 
 
@@ -373,6 +375,7 @@ suicide together when they become unreachable.
 
   //$ Non associative, streaming data structure into transducer.
   x[ssetunion_pri] := x[>ssetunion_pri] ">->" x[>ssetunion_pri] =># "(infix 'xpipe)"; 
+}
 
 
 @h2 A simple example

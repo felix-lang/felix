@@ -41,7 +41,7 @@ syntax expressions {
   ;
 
   requires 
-    mathexpr
+    mathexpr, spipeexpr, boolexpr
   ;
 
   sexpr := x[let_pri] =># "_1";
@@ -379,26 +379,6 @@ syntax expressions {
   satom := "{" setform  "}" =># "_2";
   satom := "\{" setform  "\}" =># "_2";
 
-  //$ Conditional expression.
-  satom := sconditional "endif" =># "_1";
-
-  //$ Conditional expression (prefix).
-  sconditional := "if" sexpr "then" sexpr selse_part =>#
-      "`(ast_cond ,_sr (,_2 ,_4 ,_5))";
-
-      selif := "elif" sexpr "then" sexpr =># "`(,_2 ,_4)";
-
-      selifs := selif =># "`(,_1)";
-      selifs := selifs selif =># "(cons _2 _1)";
-
-      selse_part:= "else" sexpr =># "_2";
-      selse_part:= selifs "else" sexpr =>#
-          """
-            (let ((f (lambda (result condthn)
-              (let ((cond (first condthn)) (thn (second condthn)))
-                `(ast_cond ,_sr (,cond ,thn ,result))))))
-            (fold_left f _3 _1))
-          """;
 
 }
 

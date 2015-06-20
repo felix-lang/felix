@@ -76,6 +76,8 @@ open Addgrp[bool];
 
 @h1 Syntax
 @tangle boolexpr.fsyn
+syntax boolexpr
+{
   //$ Boolean false.
   satom := "false" =># "'(ast_typed_case  0 2)";
 
@@ -97,6 +99,27 @@ open Addgrp[bool];
   bin := "\iff" =># '(nos _1)'; // NOT IMPLEMENTED FIXME
   bin := "\impliedby" =># '(nos _1)'; // NOT IMPLEMENTED FIXME
 
+  //$ Conditional expression.
+  satom := sconditional "endif" =># "_1";
+
+  //$ Conditional expression (prefix).
+  sconditional := "if" sexpr "then" sexpr selse_part =>#
+      "`(ast_cond ,_sr (,_2 ,_4 ,_5))";
+
+      selif := "elif" sexpr "then" sexpr =># "`(,_2 ,_4)";
+
+      selifs := selif =># "`(,_1)";
+      selifs := selifs selif =># "(cons _2 _1)";
+
+      selse_part:= "else" sexpr =># "_2";
+      selse_part:= selifs "else" sexpr =>#
+          """
+            (let ((f (lambda (result condthn)
+              (let ((cond (first condthn)) (thn (second condthn)))
+                `(ast_cond ,_sr (,cond ,thn ,result))))))
+            (fold_left f _3 _1))
+          """;
+}
 
 @h1 Predicate combinators.
 A <em>predicate</em> is any function returning
