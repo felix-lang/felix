@@ -117,26 +117,11 @@ syntax expressions {
   //$ Low precedence left associative reverse application.
   x[spipe_apply_pri] := x[spipe_apply_pri] "|>" x[stuple_pri] =># "`(ast_apply ,_sr (,_3 ,_1))";
 
-  //$ Tuple formation by cons: right associative.
-  x[stuple_cons_pri] := x[>stuple_cons_pri] ",," x[stuple_cons_pri] =># "`(ast_tuple_cons ,_sr ,_1 ,_3)";
-
-  //$ Tuple formation non-associative.
-  x[stuple_pri] := x[>stuple_pri] ( "," x[>stuple_pri])+ =># "(chain 'ast_tuple _1 _2)";
-
   //$ Named temporary value.
   x[sas_expr_pri] := x[sas_expr_pri] "as" sname =># "`(ast_as ,_sr (,_1 ,_3))";
 
   //$ Named variable.
   x[sas_expr_pri] := x[sas_expr_pri] "as" "var" sname =># "`(ast_as_var ,_sr (,_1 ,_4))";
-
-  //$ Left assoc, for schannel pipes.
-  x[ssetunion_pri] := x[ssetunion_pri] "|->" x[>ssetunion_pri] =># "(infix 'pipe)"; 
-
-  //$ Right assoc, for schannel pipes transformers
-  x[ssetunion_pri] := x[>ssetunion_pri] "=>" x[ssetunion_pri] =># "(infix 'trans_type)"; 
-
-  //$ Non associative, streaming data structure into transducer.
-  x[ssetunion_pri] := x[>ssetunion_pri] ">->" x[>ssetunion_pri] =># "(infix 'xpipe)"; 
 
 
   x[sarrow_pri] := x[>sarrow_pri] ".." x[>sarrow_pri] =># '''
@@ -148,10 +133,6 @@ syntax expressions {
   ''';
 
   // right arrows: RIGHT ASSOCIATIVE!
-
-  //$ List cons, right associative.
-  x[sarrow_pri] := x[>sarrow_pri] "!" x[sarrow_pri] =># '''`(ast_apply ,_sr (,(nos "Cons") (,_1 ,_3)))''';
-
   //$ Function type, right associative.
   x[sarrow_pri] := x[>sarrow_pri] "->" x[sarrow_pri] =># "`(ast_arrow (,_1 ,_3))";
 
@@ -227,20 +208,6 @@ syntax expressions {
   x[scoercion_pri] := ssuffixed_name =># "_1";
 
 //------------------------------------------------------------------------
-  // indexes and slices
-
-  //$ String subscript.
-  x[sfactor_pri] := x[sfactor_pri] "." "[" sexpr "]" =># "`(ast_apply ,_sr (,(noi 'subscript) (,_1 ,_4)))";
-
-  //$ String substring.
-  x[sfactor_pri] := x[sfactor_pri] "." "[" sexpr "to" sexpr "]" =># "`(ast_apply ,_sr (,(noi 'substring) (,_1 ,_4 ,_6)))";
-
-  //$ String substring, to end of string.
-  x[sfactor_pri] := x[sfactor_pri] "." "[" sexpr "to" "]" =># "`(ast_apply ,_sr (,(noi 'copyfrom) (,_1 ,_4)))";
-
-  //$ String substring, from start of string.
-  x[sfactor_pri] := x[sfactor_pri] "." "[" "to" sexpr "]" =># "`(ast_apply ,_sr (,(noi 'copyto) (,_1 ,_5)))";
-
   //$ Reverse application.
   x[sfactor_pri] := x[sfactor_pri] "." x[>sfactor_pri] =># "`(ast_apply ,_sr (,_3 ,_1))";
 

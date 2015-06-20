@@ -3,6 +3,7 @@
 @tangler schannels.flx=share/lib/std/control/schannels.flx
 @tangler mux.flx=share/lib/std/control/mux.flx
 @tangler spipes.flx=share/lib/std/control/spipes.flx
+@tangler spipeexpr.fsyn = share/lib/std/control/spipeexpr.fsyn
 @tangler spipesex-01.flx=test/regress/rt/spipesex-01.flx
 @tangler spipesex-01.expect=test/regress/rt/spipesex-01.expect
 @tangler spipesex-02.flx=test/regress/rt/spipesex-02.flx
@@ -362,6 +363,18 @@ channel with an input and output endpoint shared by
 the source and sink. The closure is essential to hide
 these variables to ensure the source and sink
 suicide together when they become unreachable.
+@h1 Pipeline syntax
+@tangle spipeexpr.fsyn
+  //$ Left assoc, for schannel pipes.
+  x[ssetunion_pri] := x[ssetunion_pri] "|->" x[>ssetunion_pri] =># "(infix 'pipe)"; 
+
+  //$ Right assoc, for schannel pipes transformers
+  x[ssetunion_pri] := x[>ssetunion_pri] "=>" x[ssetunion_pri] =># "(infix 'trans_type)"; 
+
+  //$ Non associative, streaming data structure into transducer.
+  x[ssetunion_pri] := x[>ssetunion_pri] ">->" x[>ssetunion_pri] =># "(infix 'xpipe)"; 
+
+
 @h2 A simple example
 Now we will show a simple example.
 @tangle spipesex-01.flx

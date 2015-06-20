@@ -1,6 +1,7 @@
 @title Strings
 @tangler __init__.flx=share/lib/std/strings/__init__.flx
 @tangler string.flx=share/lib/std/strings/string.flx
+@tangler stringexpr.fsyn=share/lib/std/strings/stringexpr.fsyn
 @tangler re2.flx=share/lib/std/strings/re2.flx
 @tangler tre.flx=share/lib/std/strings/tre.flx
 @tangler regdef.flx=share/lib/std/strings/regdef.flx
@@ -29,6 +30,20 @@ type string = "::std::basic_string<char>"
   decoder "::flx::gc::generic::string_decoder"
 ;
 typedef strings = typesetof (string);
+
+class Str [T] {
+  virtual fun str: T -> string;
+}
+
+class Repr [T with Str[T]] {
+  virtual fun repr (t:T) : string => str t;
+}
+
+class Show [T] {
+  inherit Str[T];
+  inherit Repr[T];
+}
+
 
 @h2 Equality and total ordering
 @tangle string.flx
@@ -753,6 +768,21 @@ instance Repr[string] {
 
 open[T in strings] Show[T];
 open Set[string,char];
+
+@h1 String syntax
+@tangle stringexpr.fsyn
+  //$ String subscript.
+  x[sfactor_pri] := x[sfactor_pri] "." "[" sexpr "]" =># "`(ast_apply ,_sr (,(noi 'subscript) (,_1 ,_4)))";
+
+  //$ String substring.
+  x[sfactor_pri] := x[sfactor_pri] "." "[" sexpr "to" sexpr "]" =># "`(ast_apply ,_sr (,(noi 'substring) (,_1 ,_4 ,_6)))";
+
+  //$ String substring, to end of string.
+  x[sfactor_pri] := x[sfactor_pri] "." "[" sexpr "to" "]" =># "`(ast_apply ,_sr (,(noi 'copyfrom) (,_1 ,_4)))";
+
+  //$ String substring, from start of string.
+  x[sfactor_pri] := x[sfactor_pri] "." "[" "to" sexpr "]" =># "`(ast_apply ,_sr (,(noi 'copyto) (,_1 ,_5)))";
+
 
 @h1 RE2 regexps
 @tangle re2.flx

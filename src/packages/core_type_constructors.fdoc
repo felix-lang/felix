@@ -2,6 +2,7 @@
 @tangler option.flx      = share/lib/std/datatype/option.flx
 @tangler unitsum.flx     = share/lib/std/datatype/unitsum.flx
 @tangler tuple.flx       = share/lib/std/datatype/tuple.flx
+@tangler tupleexpr.fsyn  = share/lib/std/datatype/tupleexpr.fsyn
 @tangler slice.flx       = share/lib/std/datatype/slice.flx
 @tangler typing.flx      = share/lib/std/typing.flx
 @tangler flx_tclass.flx  = share/lib/std/flx_tclass.flx
@@ -14,9 +15,9 @@
 
 typedef void = 0;
 typedef unit = 1;
-typedef bool = 2;
 typedef any = any;
 
+/* REMOVE, NEVER USED
 // -----------------------------------------------------------------------------
 
 class IStream[f,t] {
@@ -52,6 +53,7 @@ class IBuffer [f] {
 class OBuffer [f] {
   virtual gen write : f -> address * int -> int * bool;
 }
+*/
 
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
@@ -59,21 +61,6 @@ class OBuffer [f] {
 class Monad [M: TYPE->TYPE] {
   virtual fun bind[a,b]: M a * (a -> M b) -> M b;
   virtual fun ret[a]: a -> M a;
-}
-
-// -----------------------------------------------------------------------------
-
-class Str [T] {
-  virtual fun str: T -> string;
-}
-
-class Repr [T with Str[T]] {
-  virtual fun repr (t:T) : string => str t;
-}
-
-class Show [T] {
-  inherit Str[T];
-  inherit Repr[T];
 }
 
 // -----------------------------------------------------------------------------
@@ -624,4 +611,13 @@ open class parallel_tuple_comp
     fun (x1:u1,x2:u2,x3:u3,x4:u4,x5:u5) => f1 x1, f2 x2, f3 x3, f4 x4, f5 x5;
 
 }
+
+@h1 Tuple Constructor Syntax
+@tangle tupleexpr.fsyn
+  //$ Tuple formation by cons: right associative.
+  x[stuple_cons_pri] := x[>stuple_cons_pri] ",," x[stuple_cons_pri] =># "`(ast_tuple_cons ,_sr ,_1 ,_3)";
+
+  //$ Tuple formation non-associative.
+  x[stuple_pri] := x[>stuple_pri] ( "," x[>stuple_pri])+ =># "(chain 'ast_tuple _1 _2)";
+
 

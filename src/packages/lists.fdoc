@@ -1,4 +1,5 @@
 @tangler list.flx = share/lib/std/datatype/list.flx
+@tangler listexpr.fsyn = share/lib/std/datatype/listexpr.fsyn
 @tangler assoc_list.flx = share/lib/std/datatype/assoc_list.flx
 @tangler ralist.flx = share/lib/std/datatype/ralist.flx
 @tangler sexpr.flx = share/lib/std/datatype/sexpr.flx
@@ -637,6 +638,12 @@ instance[T with Show[T]] Str[List::list[T]] {
 }
 
 @
+@h1 List syntax
+@tangle listexpr.fsyn
+  //$ List cons, right associative.
+  x[sarrow_pri] := x[>sarrow_pri] "!" x[sarrow_pri] =># '''`(ast_apply ,_sr (,(nos "Cons") (,_1 ,_3)))''';
+
+
 @h1 Association List
 
 A list of pairs

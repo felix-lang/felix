@@ -1,5 +1,4 @@
 @tangler init.flx      = share/lib/std/algebra/__init__.flx
-@tangler predicate.flx = share/lib/std/algebra/predicate.flx
 @tangler set.flx       = share/lib/std/algebra/set.flx
 @tangler container.flx = share/lib/std/algebra/container.flx
 @tangler equiv.flx     = share/lib/std/algebra/equiv.flx
@@ -97,59 +96,6 @@ prover. Instead, it should be derivable with a proof
 assistant (such as Coq), given various unspecified 
 strategies, tactics and hints.
 
-@h1 Predicate combinators.
-A <em>predicate</em> is any function returning
-a boolean argument. Predicates are also relations
-by simply providing a tuple argument.
-
-This is a simple class allowing predicates to be combined
-directly using symbolic operators to form new predicates, using logical 
-conjunction @{and}, disjunction @{or}, implication @{implies}
-and negation @{not}. The parser maps these operator onto the 
-functions @{land}, @{lor}, @{implies}, and @{lnot} respectively.
-
-@tangle predicate.flx
-
-// Some operations on predicates.
-// These also automatically apply to relations, but just taking
-// the argument as a tuple.
-
-open class Predicate[T]
-{
-   fun land (f:T->bool,g:T->bool) =>
-     fun (x:T) => f x and g x
-   ;
-
-   fun lor (f:T->bool,g:T->bool) =>
-     fun (x:T) => f x or g x
-   ;
-
-   fun implies (f:T->bool,g:T->bool) =>
-     fun (x:T) => f x implies g x
-   ;
-
-   fun lnot (f:T->bool) =>
-     fun (x:T) => not (f x)
-   ;
-
-}
-
-@h2 Syntax
-@tangle mathexpr.fsyn
-  //$ Logical implication.
-  x[simplies_condition_pri] := x[>simplies_condition_pri] "implies" x[>simplies_condition_pri] =># "(Infix)";
-
-  //$ Logical disjunction (or).
-  x[sor_condition_pri] := x[>sor_condition_pri] ( "or" x[>sor_condition_pri])+ =># "(chain 'ast_orlist _1 _2)" note "lor";
-
-  //$ Logical conjunction (and).
-  x[sand_condition_pri] := x[>sand_condition_pri] ( "and" x[>sand_condition_pri])+ =># "(chain 'ast_andlist _1 _2)" note "land";
-
-  //$ Logical negation (not).
-  x[snot_condition_pri] := "not" x[snot_condition_pri]  =># "`(ast_not ,_sr ,_2)";
-
-  bin := "\iff" =># '(nos _1)'; // NOT IMPLEMENTED FIXME
-  bin := "\impliedby" =># '(nos _1)'; // NOT IMPLEMENTED FIXME
 
 
 @h1 Sets.
