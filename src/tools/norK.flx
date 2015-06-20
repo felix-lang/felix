@@ -1,3 +1,5 @@
+include "std/control/ts_bound_queue";
+
 	// get the prefix of the executables from the command line
 var exec_prefix = System::argv 1;
 
