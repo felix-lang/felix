@@ -614,10 +614,13 @@ open class parallel_tuple_comp
 
 @h1 Tuple Constructor Syntax
 @tangle tupleexpr.fsyn
+syntax tupleexpr
+{
   //$ Tuple formation by cons: right associative.
   x[stuple_cons_pri] := x[>stuple_cons_pri] ",," x[stuple_cons_pri] =># "`(ast_tuple_cons ,_sr ,_1 ,_3)";
 
   //$ Tuple formation non-associative.
   x[stuple_pri] := x[>stuple_pri] ( "," x[>stuple_pri])+ =># "(chain 'ast_tuple _1 _2)";
 
+}
 

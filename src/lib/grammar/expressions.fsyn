@@ -41,7 +41,7 @@ syntax expressions {
   ;
 
   requires 
-    mathexpr, spipeexpr, boolexpr, stringexpr, listexpr
+    mathexpr, spipeexpr, boolexpr, stringexpr, listexpr, tupleexpr
   ;
 
   sexpr := x[let_pri] =># "_1";
