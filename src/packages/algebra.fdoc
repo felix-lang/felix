@@ -17,6 +17,7 @@
 @tangler cmpexpr.fsyn      = share/lib/std/algebra/equalexpr.fsyn
 @tangler pordcmpexpr.fsyn  = share/lib/std/algebra/pordcmpexpr.fsyn
 @tangler tordcmpexpr.fsyn  = share/lib/std/algebra/tordcmpexpr.fsyn
+@tangler addexpr.fsyn      = share/lib/std/algebra/addexpr.fsyn
 @tangler mulexpr.fsyn      = share/lib/std/algebra/mulexpr.fsyn
 @tangler divexpr.fsyn      = share/lib/std/algebra/divexpr.fsyn
 @tangler bitexpr.fsyn      = share/lib/std/algebra/bitexpr.fsyn
@@ -524,12 +525,15 @@ class FloatAddgrp[t] {
 @
 
 @h2 Notation
-@tangle mathexpr.fsyn
+@tangle addexpr.fsyn
+syntax addexpr
+{
   //$ Addition: left non-associative.
   x[ssum_pri] := x[>ssum_pri] ("+" x[>ssum_pri])+ =># "(chain 'ast_sum _1 _2)" note "add";
 
   //$ Subtraction: left associative.
   x[ssubtraction_pri] := x[ssubtraction_pri] "-" x[sproduct_pri] =># "(Infix)";
+}
 
 @h2 Additive Group
 A proper additive group is derived from @{FloatAddgrp}
