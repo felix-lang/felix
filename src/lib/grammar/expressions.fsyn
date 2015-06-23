@@ -41,7 +41,8 @@ syntax expressions {
   ;
 
   requires 
-    cmpexpr, pordcmpexpr, tordcmpexpr, mulexpr,
+    setexpr, cmpexpr, pordcmpexpr, tordcmpexpr, mulexpr,
+    bitexpr,
     spipeexpr, boolexpr, stringexpr, listexpr, tupleexpr
   ;
 

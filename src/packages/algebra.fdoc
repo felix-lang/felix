@@ -14,7 +14,7 @@
 @tangler sequence.flx  = share/lib/std/algebra/sequence.flx
 
 @tangler setexpr.fsyn      = share/lib/std/algebra/setexpr.fsyn
-@tangler cmpexpr.fsyn      = share/lib/std/algebra/equalexpr.fsyn
+@tangler cmpexpr.fsyn      = share/lib/std/algebra/cmpexpr.fsyn
 @tangler pordcmpexpr.fsyn  = share/lib/std/algebra/pordcmpexpr.fsyn
 @tangler tordcmpexpr.fsyn  = share/lib/std/algebra/tordcmpexpr.fsyn
 @tangler addexpr.fsyn      = share/lib/std/algebra/addexpr.fsyn
