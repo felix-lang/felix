@@ -1,6 +1,5 @@
 before_install:
   - sudo apt-get update -qq
-  - sudo apt-get install -y python3
-  - sudo apt-get install -y ocaml-nox
+  - sudo apt-get install -qq python3 ocaml-nox
   
 script: make
