@@ -6,10 +6,6 @@
 @tangler sarray.flx        = share/lib/std/datatype/sarray.flx
 @tangler bsarray.flx        = share/lib/std/datatype/bsarray.flx
 
-@h1 Array Algebra
-@tangle array_class.flx
-
-
 @h1 Array Abstactions.
 We specify two core array abstractions: arrays as values
 and arrays as objects.
@@ -20,6 +16,12 @@ by two properties: its length, and a way to fetch a
 value from the array using a integral index.
 
 Many routines can be written using only these two functions.
+
+Note: an array is not intrinsically a @{Container} because that
+would require it to also be a @{Set}, which in turn requires
+a membership operator which would require some standard
+comparison. Arrays don't come equipped with a comparison.
+
 @tangle array_class.flx
 //$ Array as Value (immutable).
 class ArrayValue[t,v]
@@ -202,7 +204,6 @@ the array value type t to perform a search.
     fun \in (elt:v, a:t) => mem eq of (v * v) a elt;
   }
   inherit[t,v with Eq[v]] Set[t,v];
-
 
 @h4 Value find and return using predicate @{find}
 Same as our @{mem} function except it returns the located value

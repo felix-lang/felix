@@ -7,13 +7,11 @@
 @tangler dlist.flx = share/lib/std/datatype/dlist.flx
 
 @title Functional List
-@h1  Singly Linked List.
+@h1 The @{list} type.
 The core data type for most functional programming languages.
 @tangle list.flx
 open class List
 {
-@h2 The @{list} type.
-@tangle list.flx
   union list[T] = | Empty | Cons of T * list[T];
 
 @h2 Splice
@@ -104,7 +102,7 @@ Another variant of the unsafe reversal.
     """
   ;
 
-@h2 List @{copy}
+@h1 List @{copy}
 Make an entirely new copy of a list.
 Primarily a helper.
 @tangle list.flx
@@ -126,6 +124,7 @@ Yet another helper.
   }
 
 
+@h1 Constructors
 @h2 Named constructor for empty list.
 @tangle list.flx
   //$ Make an empty list.
@@ -181,7 +180,7 @@ Constructor variant.
   //$ Make a list from a stream.
   ctor[T] list[T](f: (1->opt[T])) => list_comprehension f;
 
-@h2 Construe a list as an array value.
+@h1 Construe a list as an array value.
 @tangle list.flx
   //$ Contrue a list as an array value
   instance[T] ArrayValue[list[T],T] {
@@ -246,6 +245,7 @@ Constructor variant.
 
   }
 
+@h1 Destructors
 @h2 Test for empty list @{is_empty}
 @tangle list.flx
   //$ Test if a list is empty.
@@ -272,6 +272,7 @@ Constructor variant.
     endmatch;
   }
 
+@h1 Maps
 @h2 Reverse map a list @{rev_map}
 Tail recursive.
 @tangle list.flx
@@ -332,6 +333,7 @@ Returns a list the length of the shortest argument.
     return aux l1 l2 Empty[T1 * T2];
   }
 
+@h1 Useful lists
 @h2 A list of integers @{range}.
 From @{low} to @{high} exclusive with given @{step}.
 @tangle list.flx
@@ -377,6 +379,7 @@ From @{low} to @{high} exclusive with given @{step}.
   //$ Range from 0 to num (excluded).
   fun range (num:int) => range(0, num, 1);
 
+@h1 Operators
 @h2 Concatenate two lists @{join}.
 @tangle list.flx
   //$ Concatenate two lists.
@@ -423,6 +426,7 @@ O(N) slow.
      ;
    }
 
+@h1 Lists and Strings
 @h2 Pack list of strings into a string with separator @{cat}
 @tangle list.flx
   //$ Concatenate all the strings in a list with given separator.
@@ -452,6 +456,7 @@ O(N) slow.
   ;
 
  
+@h1 Searching
 @h2 Value membership
 @tangle list.flx
   //$ Return true if one value in a list satisfies the predicate.
@@ -577,7 +582,9 @@ Returns option.
   instance[T with Eq[T]] Eq[list[T]] { 
     fun ==(a:list[T], b:list[T])=> list_eq(a,b); 
   } 
-  
+ 
+@h1 Sort
+@tangle list.flx
   //$ Sort a list with given less than operator, which must be
   //$ total order. Uses varray sort (which uses STL sort).
   fun sort[T] (lt:T*T->bool) (x:list[T])=
@@ -597,6 +604,8 @@ Returns option.
   //$ Uses varray sort (which uses STL sort).
   fun sort[T with Tord[T]](x:list[T])=> sort lt x;
     
+@h1 Streaming list
+@tangle list.flx
   instance[T] Streamable[list[T],T] {
   //$ Convert a list to a stream.
     gen iterator (var xs:list[T]) () = {
