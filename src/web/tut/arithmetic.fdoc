@@ -38,6 +38,84 @@
 //you have a parser combinator language, there's no interaction with any
 //Felix operators at all."
 
+//On 05/06/2015, at 8:07 AM, Shayne Fletcher wrote:
+//
+//>       fun str (tok : token_t) : string => ... ;
+//>       fun str (ast : ast_t) : string => ... ;
+//
+//You should override the virtual:
+//
+//instance Str[token_t] {
+//        fun str (tok : token_t) : string => ... ;
+//}
+//open Str[token_t];
+//
+//This allows you to, for example print a token.
+//
+//>
+//>        match parse "..." with
+//>          | Some l => println$ str (map str l); //here
+//>          | #None => println$ "Oh dear";
+//>        endmatch;
+//>
+//>     it seems the compiler can't work out which overload to choose
+//
+//Of course not. How can it? Here str is being passed as an argument
+//to map, so map can't overload without knowing the type of the function
+//you're passing. Use
+//
+//        map str of (token_t) l
+//
+//The syntax
+//
+//        str of type
+//
+//is how you provide a function set an argument type when you're not
+//providing an argument\value.
+//
+//>
+//> (2) I have a type like this:
+//>
+//>       union result[A, B] =  Ok of A | Error of B ;
+//>
+//>       union error_t =
+//>         | Syntax_error
+//>         | Unbound_variable of string
+//>         | Division_by_zero
+//>         ;
+//>
+//>      Assume a 'str' overload like so:
+//>
+//>       fun str (err : error_t) : string =>
+//>         match err with
+//>           | Unbound_variable s => "Unbound variable '" + s + "'"
+//>           | #Syntax_error => "Syntax error"
+//>           | #Division_by_zero => "Attempted division by zero"
+//>         endmatch
+//>       ;
+//>
+//>      What I want to do is write a general 'str' for 'result' e.g.
+//>
+//>       fun str[A, B with Str[A], Str[B]] (res:result[A, B]) : string =>
+//>         match res with
+//>           | Ok a => str a
+//>           | Error b => "Error : " + str b
+//>        endmatch;
+//>
+//>      2.1 Is the syntax correct (for the multiple type constraints)?
+//
+//Yes.
+//
+//>      2.2 Any attempt to use the definition above fails - the compiler does not want to accept that there is an overload 'fun str (err : error_t) : string' it can use in the second case of the 'match'. What am I missing?
+//
+//Your str is not an instance of the typeclass Str.
+//
+//--
+//john skaller
+//skaller@users.sourceforge.net
+//http://felix-lang.org
+//
+
 // --
 
 //Result of a parse
@@ -224,6 +302,23 @@ union token_t  =
   | T_plus | T_minus | T_star | T_slash | T_semicolon | T_equal
   ;
 
+instance Str[token_t] {
+  fun str (tok : token_t) : string =>
+    match tok with
+      | T_num f => "T_num " + (str f)
+      | T_ident s => "T_ident " + s
+      | #T_lparen => "T_lparen"
+      | #T_rparen => "T_rparen"
+      | #T_plus => "T_plus"
+      | #T_minus => "T_minus"
+      | #T_star => "T_star"
+      | #T_slash => "T_slash"
+      | #T_semicolon => "T_semicolon"
+      | #T_equal => "T_equal"
+    endmatch
+    ;
+}
+
 //Explode a string into a list of char
 fun explode (s:string):list[char] =
 {
@@ -341,21 +436,6 @@ union ast_t =
   | E_mul of ast_t * ast_t
   | E_div of ast_t * ast_t
   | E_let of (string * ast_t)
-  ;
-
-fun str (tok : token_t) : string =>
-  match tok with
-    | T_num f => "T_num " + (str f)
-    | T_ident s => "T_ident " + s
-    | #T_lparen => "T_lparen"
-    | #T_rparen => "T_rparen"
-    | #T_plus => "T_plus"
-    | #T_minus => "T_minus"
-    | #T_star => "T_star"
-    | #T_slash => "T_slash"
-    | #T_semicolon => "T_semicolon"
-    | #T_equal => "T_equal"
-  endmatch
   ;
 
 fun str (ast : ast_t) : string =>
