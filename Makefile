@@ -289,7 +289,7 @@ packages:
 	for i in src/packages/*; do echo "PACKAGE " $$i; python3 src/tools/flx_iscr.py -q $$i ${BUILDROOT}; if [[ $$? -ne 0 ]]; then exit 1; fi; done
 
 noisy-packages:
-	for i in src/packages/*; do echo "PACKAGE " $$i; python3 src/tools/flx_iscr.py $$i ${BUILDROOT}; if [[ $$? -ne 0 ]]; then exit 1; fi; done
+	for i in src/packages/*; do echo "PACKAGE " $$i; python3 src/tools/flx_iscr.py -q $$i ${BUILDROOT}; if [[ $$? -ne 0 ]]; then exit 1; fi; done
 
 
 grammar:

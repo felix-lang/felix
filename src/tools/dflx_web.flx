@@ -8,8 +8,8 @@ class Css4Html {
 flx_head := """
 <style type="text/css">
 body {margin:3%; }
-h1 {color:gray; font-size:120%;}
-h2 {color:gray; font-size:105%;}
+h1 {color:black; font-size:120%;}
+h2 {color:#202020; font-size:105%;}
 h3 {font-size:100%;}
 h4 {font-size:95%;}
 h5 {font-size:95%;}

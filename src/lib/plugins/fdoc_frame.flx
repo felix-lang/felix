@@ -22,10 +22,16 @@ var frame_style= """
       }
       .maincontent {
         padding:4px;
-        border:4px;
-        font-family:sans-serif; 
+        padding-left:8px;
+        font-family:serif; 
         color:#404040; background-color:#E0E0E0;
       }
+      .maincontent h1 { margin-left:-8px; position: relative; margin-bottom:-5px; }
+      .maincontent h2 { margin-left:-8px; position: relative; margin-bottom:-5px; }
+      .maincontent h3 { margin-left:-8px; position: relative; margin-bottom:-5px; }
+      .maincontent h4 { margin-left:-8px; position: relative; margin-bottom:-5px; }
+      .maincontent code { color:#902030; }
+      .maincontent p { line-height: 105%; }
       .toppanel {
         position:absolute; left:0px; top:0px; height:20px; right:0px; 
         background-color: LightGray;
