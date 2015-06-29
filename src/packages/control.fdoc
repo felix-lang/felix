@@ -1,6 +1,7 @@
 @title Control Basics
 @tangler __init__.flx = share/lib/std/control/__init__.flx
 @tangler control.flx  = share/lib/std/control/control.flx
+@tangler swapop.fsyn  = share/lib/grammar/swapop.fsyn
 @h1 Control Synopsis
 @tangle __init__.flx
 
@@ -24,6 +25,14 @@ include "std/control/mutex";
 open class Control
 {
   open C_hack;
+
+  proc _swap[t] (a:&t,b:&t) =
+  {
+    var tmp = *a;
+    a <- *b;
+    b <- tmp;
+  }
+
   //$ infinite loop
   proc forever (bdy:unit->void)
   {
@@ -151,4 +160,13 @@ open class Control
   }
 
 }
+@
+
+@tangle swapop.fsyn
+syntax swapop
+{
+  sswapop := "<->" =># "'_swap";
+}
+@
+
 

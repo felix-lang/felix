@@ -1,6 +1,5 @@
 @title Library structure
 @tangler std.flx            = share/lib/std.flx
-@tangler swapop.fsyn        = share/lib/grammar/swapop.fsyn
 @tangler std                = share/lib/std/__init__.flx
 @tangler datatype           = share/lib/std/datatype/__init__.flx
 @tangler posix              = share/lib/std/posix/__init__.flx
@@ -22,25 +21,8 @@ Also throw in some "don't know where to put them" files.
 The top level library module.
 @tangle std.flx
 header '#include "flx_rtl_config.hpp"';
-
-proc _swap[t] (a:&t,b:&t) =
-{
-  var tmp = *a;
-  a <- *b;
-  b <- tmp;
-}
-
-
 include "std/__init__";
 @
-
-@tangle swapop.fsyn
-syntax swapop
-{
-  sswapop := "<->" =># "'_swap";
-}
-@
-
 @h1 Default includes for Standard library.
 @tangle std
 
@@ -48,17 +30,13 @@ syntax swapop
 include "std/c/__init__";
 
 // core type classes
-include "std/flx_tclass";
 include "std/algebra/__init__";
 
 // base scalar types 
-
 include "std/scalar/__init__";
 
 // utility
 include "std/debug";
-include "std/typing";
-include "std/categ";
 
 // control
 include "std/control/__init__";
@@ -112,6 +90,9 @@ Structure of datatype library.
 @tangle datatype
 
 // special
+include "std/datatype/typing";
+include "std/datatype/functional";
+include "std/datatype/special";
 include "std/datatype/unitsum";
 
 // base data types

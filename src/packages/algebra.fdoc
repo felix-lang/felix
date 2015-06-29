@@ -12,6 +12,7 @@
 @tangler integer.flx   = share/lib/std/algebra/integer.flx
 @tangler bits.flx      = share/lib/std/algebra/bits.flx
 @tangler sequence.flx  = share/lib/std/algebra/sequence.flx
+@tangler mondad.flx    = share/lib/std/algebra/monad.flx
 
 @tangler setexpr.fsyn      = share/lib/std/algebra/setexpr.fsyn
 @tangler cmpexpr.fsyn      = share/lib/std/algebra/cmpexpr.fsyn
@@ -26,20 +27,20 @@
 @h1 Synopsis.
 
 @tangle init.flx
-include "std/algebra/predicate";
-include "std/algebra/container";
-include "std/algebra/set";
-include "std/algebra/equiv";
-include "std/algebra/partialorder";
-include "std/algebra/totalorder";
-include "std/algebra/sequence";
-include "std/algebra/group";
-include "std/algebra/ring";
-include "std/algebra/bits";
-include "std/algebra/integer";
-include "std/algebra/trig";
-include "std/algebra/real";
-include "std/algebra/complex";
+include "std/algebra/predicate";        // in logic.fdoc
+include "std/algebra/set";              // in algebra.fdoc
+include "std/algebra/container";        // in algebra.fdoc
+include "std/algebra/equiv";            // in algebra.fdoc
+include "std/algebra/partialorder";     // in algebra.fdoc  
+include "std/algebra/totalorder";       // in algebra.fdoc
+include "std/algebra/sequence";         // in algebra.fdoc
+include "std/algebra/group";            // in algebra.fdoc
+include "std/algebra/ring";             // in algebra.fdoc
+include "std/algebra/bits";             // in algebra.fdoc
+include "std/algebra/integer";          // in algebra.fdoc
+include "std/algebra/trig";             // in algebra.fdoc
+include "std/algebra/real";             // in algebra.fdoc
+include "std/algebra/complex";          // in algebra.fdoc
 
 @h1 Description.
 In this section we provide abstract definitions of some basic
@@ -919,4 +920,13 @@ open class Quantifiers_add_mul {
 }
 
 @
+
+@h1 Monad
+@tangle monad.flx
+
+class Monad [M: TYPE->TYPE] {
+  virtual fun bind[a,b]: M a * (a -> M b) -> M b;
+  virtual fun ret[a]: a -> M a;
+}
+
 
