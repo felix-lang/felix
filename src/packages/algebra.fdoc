@@ -12,7 +12,7 @@
 @tangler integer.flx   = share/lib/std/algebra/integer.flx
 @tangler bits.flx      = share/lib/std/algebra/bits.flx
 @tangler sequence.flx  = share/lib/std/algebra/sequence.flx
-@tangler mondad.flx    = share/lib/std/algebra/monad.flx
+@tangler monad.flx     = share/lib/std/algebra/monad.flx
 
 @tangler setexpr.fsyn      = share/lib/std/algebra/setexpr.fsyn
 @tangler cmpexpr.fsyn      = share/lib/std/algebra/cmpexpr.fsyn
