@@ -334,6 +334,7 @@ class FlxPkgConfig_core
        })
        dirs;
        if not found do
+         eprintln$ "package not found: " + pkg;
          if require_pkg_exists do return_code = 1; done;
          if missing call add_val(pkg);
        done;
