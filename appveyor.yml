@@ -1,5 +1,6 @@
 install:
   - set PATH=C:\Python33;C:\MinGW\bin;C:\MinGW\msys\1.0\usr\bin;%PATH%
+  - copy c:\MinGW\bin\mingw32-make.exe c:\MinGW\bin\make.exe
 
 before_build:
   - make
