@@ -4,4 +4,5 @@ install:
   - sudo apt-get install -y  ocaml-native-compilers
  
  
-script: make
+script: 
+  make
