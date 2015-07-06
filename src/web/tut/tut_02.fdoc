@@ -6,7 +6,7 @@ println$ "Hello " + Env::getenv "USER";
 @
 <ul><li>The @{getenv} function can't fail, it will just return an empty string
 of the environment variable is not set.</li>
-<li> The infix operator {+} you
+<li> The infix operator @{+} you
 see is string concatenation.</li>
 </ul>
 

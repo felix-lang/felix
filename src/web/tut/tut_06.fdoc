@@ -16,16 +16,46 @@ assignment does <em>eager</em> evaluation.
 A @{val} is a named expression, it is neither addressable nor mutable,
 and must be initialised. Its value is that of its initialiser at
 the time of evaluation. Vals can be evaluated eagerly like a @{var},
-but they may also be evaluated lazily, at the time of use
-like a @{fun}.
+but they may also be evaluated lazily by simply replacing
+its name with its initialising expression.
 @p
 The value represented by a @{val} which has an initialiser depending
 on a variable, directly by name or indirectly by some other means,
 is not precisely specified, and we call this <em>indeterminate</em>
 evaluation.
 @p
+If the initialising expression may throw an exception or otherwise fail to
+terminate, evaluation is also <em>indeterminate</em>. For example, in:
+@felix-unchecked
+val num = 10;
+val denomm = 0;
+val quot = num / denom; // division by zero
+val result = if denom == 0 then 0 else quot;
+println$ result;
+@
+it cannot be determined if the program will print 0 or fail
+with a division by zero exception. If the compiler decides
+to lazy evaluate then the above is equivalent to
+@felix-unchecked
+val denom = 0;
+println$ if denom == 0 then 0 else 10 / denom endif;
+@p
 The primary motivation for using @{val}s is to support superior
 optimisation. The compiler can choose either eager or lazy evaluation
 depending on what seems to be most efficient. If the number of uses
 of the @{val} is low, lazy evaluation is usally faster.
+@p
+Lazy evaluation can be enforced by use of closures:
+@felix
+val num = 10;
+val denom = 0;
+val quot = { num / denom }; // defer evaluation
+val result = 
+  if denom == 0 then 0 
+  else #quot // evaluate now if control flows here
+  endif
+;
+println$ result;
+@expect
+0
 
