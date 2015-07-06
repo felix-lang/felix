@@ -1,7 +1,7 @@
 install:
   - set PATH=C:\Python33;C:\MinGW\bin;C:\MinGW\msys\1.0\bin;%PATH%
   - ls C:\MinGW\msys\1.0
-  - cinst ocaml
+  - cinst ocaml-ocpwin64
 
 build_script:
   - make -f Makefile.win build
