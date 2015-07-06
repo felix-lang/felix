@@ -1,2 +1,31 @@
 before_build:
-  make
+  python3 src\tools\flx_iscr.py -q src\packages\algebra.fdoc build\release
+  python3 src\tools\flx_iscr.py -q src\packages\arrays.fdoc build\release
+  python3 src\tools\flx_iscr.py -q src\packages\char.fdoc build\release
+  python3 src\tools\flx_iscr.py -q src\packages\cheaders.fdoc build\release
+  python3 src\tools\flx_iscr.py -q src\packages\codecs.fdoc build\release
+  python3 src\tools\flx_iscr.py -q src\packages\control.fdoc build\release
+  python3 src\tools\flx_iscr.py -q src\packages\core_scalar_types.fdoc build\release
+  python3 src\tools\flx_iscr.py -q src\packages\core_type_constructors.fdoc build\release
+  python3 src\tools\flx_iscr.py -q src\packages\db.fdoc build\release
+  python3 src\tools\flx_iscr.py -q src\packages\debug.fdoc build\release
+  python3 src\tools\flx_iscr.py -q src\packages\fibres.fdoc build\release
+  python3 src\tools\flx_iscr.py -q src\packages\filesystem.fdoc build\release
+  python3 src\tools\flx_iscr.py -q src\packages\gc.fdoc build\release
+  python3 src\tools\flx_iscr.py -q src\packages\io.fdoc build\release
+  python3 src\tools\flx_iscr.py -q src\packages\libstruct.fdoc build\release
+  python3 src\tools\flx_iscr.py -q src\packages\lists.fdoc build\release
+  python3 src\tools\flx_iscr.py -q src\packages\logic.fdoc build\release
+  python3 src\tools\flx_iscr.py -q src\packages\numbers.fdoc build\release
+  python3 src\tools\flx_iscr.py -q src\packages\pointers.fdoc build\release
+  python3 src\tools\flx_iscr.py -q src\packages\program.fdoc build\release
+  python3 src\tools\flx_iscr.py -q src\packages\pthreads.fdoc build\release
+  python3 src\tools\flx_iscr.py -q src\packages\sdl.fdoc build\release
+  python3 src\tools\flx_iscr.py -q src\packages\stdlib_toc.fdoc build\release
+  python3 src\tools\flx_iscr.py -q src\packages\stl.fdoc build\release
+  python3 src\tools\flx_iscr.py -q src\packages\streams.fdoc build\release
+  python3 src\tools\flx_iscr.py -q src\packages\strings.fdoc build\release
+  python3 src\tools\flx_iscr.py -q src\packages\time.fdoc build\release
+  python3 src\tools\flx_iscr.py -q src\packages\trees.fdoc build\release
+
+
