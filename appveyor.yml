@@ -1,5 +1,5 @@
 install:
-  - set PATH=C:\Python33;C:\MinGW;C:\MinGW\msys\1.0;%PATH%
+  - set PATH=C:\Python33;C:\MinGW\bin;C:\MinGW\msys\1.0;%PATH%
 
 before_build:
   - make
