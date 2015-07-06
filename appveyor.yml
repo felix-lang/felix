@@ -1,4 +1,5 @@
 before_build:
+  - python -c "print 'hello'"
   - C:\Python33 src\tools\flx_iscr.py -q src\packages\algebra.fdoc build\release
   - C:\Python33 src\tools\flx_iscr.py -q src\packages\arrays.fdoc build\release
   - C:\Python33 src\tools\flx_iscr.py -q src\packages\char.fdoc build\release
