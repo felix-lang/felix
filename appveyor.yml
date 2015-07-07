@@ -5,7 +5,7 @@ init:
 install:
   - set PATH=C:\Python33;C:\MinGW\bin;C:\MinGW\msys\1.0\bin;%PATH%
   - ls C:\MinGW\msys\1.0\bin
-  - cinst ocaml
+  - cinst ocaml -y --notsilent
 
 build_script:
   - unix2dos Makefile.win Makefile.w
