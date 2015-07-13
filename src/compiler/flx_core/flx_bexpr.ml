@@ -33,6 +33,8 @@ type bexpr_t =
   | BEXPR_aprj of t * Flx_btype.t * Flx_btype.t
   | BEXPR_inj of int * Flx_btype.t * Flx_btype.t
   | BEXPR_label of string
+  | BEXPR_unit 
+  | BEXPR_unitptr
 
   (* This term is the product of a tuple or array of functions,
      to be eliminated after monomorphisation because it's a heck
@@ -56,13 +58,20 @@ let complete_check t =
   t
 let complete_check_list ts = List.map complete_check ts
 
+let bexpr_unit = BEXPR_unit,Flx_btype.BTYP_tuple []
+let bexpr_unitptr = BEXPR_unitptr, Flx_btype.BTYP_pointer (Flx_btype.BTYP_tuple [])
+
+
 let bexpr_label e = BEXPR_label e, Flx_btype.btyp_label ()
 let bexpr_tuple_tail t e = BEXPR_tuple_tail e, complete_check t
 let bexpr_tuple_head t e = BEXPR_tuple_head e, complete_check t
 
 let bexpr_tuple_cons t (eh,et) = BEXPR_tuple_cons (eh,et), complete_check t
 
-let bexpr_deref t e : t = BEXPR_deref e, complete_check t
+let bexpr_deref t e : t = 
+  match t with
+  | Flx_btype.BTYP_tuple [] -> bexpr_unitptr
+  | _ -> BEXPR_deref e, complete_check t
 
 let bexpr_not (e,t) : t = BEXPR_not (e,t), complete_check t
 
@@ -72,15 +81,24 @@ let bexpr_varname t (bid, ts) =
 *)
   BEXPR_varname (bid, complete_check_list ts), complete_check t
 
-let bexpr_ref t (bid, ts) = BEXPR_ref (bid, complete_check_list ts), complete_check t
+let bexpr_ref t (bid, ts) = 
+  match t with 
+  | Flx_btype.BTYP_tuple [] -> bexpr_unitptr 
+  | _ -> BEXPR_ref (bid, complete_check_list ts), complete_check t
 
 let bexpr_likely ((_,t) as e) = BEXPR_likely e, complete_check t
 
 let bexpr_unlikely ((_,t) as e) = BEXPR_unlikely e, complete_check t
 
-let bexpr_address ((_,t) as e) = BEXPR_address e, complete_check (Flx_btype.btyp_pointer t)
+let bexpr_address ((_,t) as e) = 
+  match t with 
+  | Flx_btype.BTYP_tuple [] -> bexpr_unitptr 
+  | _ -> BEXPR_address e, complete_check (Flx_btype.btyp_pointer t)
 
-let bexpr_new ((_,t) as e) = BEXPR_new e, complete_check (Flx_btype.btyp_pointer t)
+let bexpr_new ((_,t) as e) = 
+  match t with 
+  | Flx_btype.BTYP_tuple [] -> bexpr_unitptr 
+  | _ -> BEXPR_new e, complete_check (Flx_btype.btyp_pointer t)
 
 let bexpr_class_new cl e = BEXPR_class_new (cl,e), complete_check (Flx_btype.btyp_pointer cl)
 
@@ -96,7 +114,7 @@ let bexpr_apply_stack t (bid, ts, e) = BEXPR_apply_stack (bid, complete_check_li
 
 let bexpr_apply_struct t (bid, ts, e) = BEXPR_apply_struct (bid, complete_check_list ts, e), complete_check t
 
-let bexpr_tuple t es = BEXPR_tuple es, complete_check t
+let bexpr_tuple t es = match es with [] -> bexpr_unit | _ -> BEXPR_tuple es, complete_check t
 
 let bexpr_record es = 
   let cmp (s1,e1) (s2,e2) = compare s1 s2 in
@@ -211,6 +229,9 @@ let rec cmp ((a,_) as xa) ((b,_) as xb) =
      i = i' &&
      List.fold_left2 (fun r a b -> r && a = b) true ts ts' &&
      cmp b b'
+
+  | BEXPR_tuple [], BEXPR_unit
+  | BEXPR_unit,BEXPR_tuple [] -> true
 
   | BEXPR_tuple ls,BEXPR_tuple ls' ->
      List.fold_left2 (fun r a b -> r && cmp a b) true ls ls'
@@ -328,6 +349,8 @@ let flat_iter
   | BEXPR_funsum e -> f_bexpr e
   | BEXPR_lrangle e -> f_bexpr e
   | BEXPR_lrbrack e -> f_bexpr e
+  | BEXPR_unit -> ()
+  | BEXPR_unitptr -> ()
 
 (* this is a self-recursing version of the above routine: the argument to this
  * routine must NOT recursively apply itself! *)
@@ -397,6 +420,8 @@ let map
   | BEXPR_funsum e, t -> BEXPR_funsum (f_bexpr e), f_btype t
   | BEXPR_lrangle e, t -> BEXPR_lrangle (f_bexpr e), f_btype t
   | BEXPR_lrbrack e, t -> BEXPR_lrbrack (f_bexpr e), f_btype t
+  | BEXPR_unit,t -> BEXPR_unit, f_btype t
+  | BEXPR_unitptr,t -> BEXPR_unitptr, f_btype t
 
 (* -------------------------------------------------------------------------- *)
 
@@ -408,6 +433,8 @@ let rec reduce e =
     | BEXPR_apply ((BEXPR_closure (i,ts),_),a),t ->
         BEXPR_apply_direct (i,ts,a),t
     *)
+    | _,Flx_btype.BTYP_tuple [] -> bexpr_unit
+    | _, Flx_btype.BTYP_pointer (Flx_btype.BTYP_tuple []) -> bexpr_unitptr
     | BEXPR_not (BEXPR_not (e,t1),t2),t3 when t1 = t2 && t2 = t3 -> e,t1 (* had better be bool! *)
     | BEXPR_apply ((BEXPR_prj (n, _,_),_),((BEXPR_tuple ls),_)),_ -> List.nth ls n
     | BEXPR_deref (BEXPR_ref (i,ts),_),t -> BEXPR_varname (i,ts),t

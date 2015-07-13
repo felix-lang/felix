@@ -42,6 +42,7 @@ include "std/algebra/integer";          // in algebra.fdoc
 include "std/algebra/trig";             // in algebra.fdoc
 include "std/algebra/real";             // in algebra.fdoc
 include "std/algebra/complex";          // in algebra.fdoc
+include "std/algebra/monad";            // in algebra.fdoc
 
 @h1 Description.
 In this section we provide abstract definitions of some basic

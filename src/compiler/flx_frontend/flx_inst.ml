@@ -110,6 +110,9 @@ let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
   | BEXPR_lrbrack _ -> assert false
   | BEXPR_label s -> ()
 
+  | BEXPR_unit -> ()
+  | BEXPR_unitptr -> ()
+
   | BEXPR_not e
   | BEXPR_deref e
   | BEXPR_match_case (_,e)

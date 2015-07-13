@@ -461,6 +461,14 @@ let find_felix_inst syms bsym_table processed to_process nubids i ts : int =
     k
   | Some (k) -> k
 
+let notunitassign exe = match exe with
+  | BEXE_assign (_,_,(_,BTYP_tuple [])) 
+  | BEXE_init (_,_, (_,BTYP_tuple []))
+    -> false
+  | _ -> true
+
+let strip_unit_assigns exes = List.filter notunitassign exes 
+
 let mono_bbdcl syms bsym_table processed to_process nubids virtualinst polyinst ts bsym =
 (*
   print_endline ("[mono_bbdcl] " ^ Flx_bsym.id bsym);
@@ -513,6 +521,7 @@ let mono_bbdcl syms bsym_table processed to_process nubids virtualinst polyinst 
         try fixup_exes syms bsym_table vars virtualinst polyinst ts exes 
         with Not_found -> assert false
       in
+      let exes = strip_unit_assigns exes in
       let props = List.filter (fun p -> p <> `Virtual) props in
       Some (bbdcl_fun (props,[],(ps,traint),ret,exes))
     with Not_found ->

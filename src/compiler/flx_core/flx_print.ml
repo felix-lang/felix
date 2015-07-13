@@ -1766,6 +1766,8 @@ and string_of_bound_expression' bsym_table se e =
   let sid n = bound_name_of_bindex bsym_table n in
   match fst e with
 
+  | BEXPR_unit -> "()"
+  | BEXPR_unitptr -> "NULL"
   | BEXPR_label s -> "(&&" ^ s ^ ")"
   | BEXPR_tuple_head e -> "tuple_head ("^ se e ^")"
   | BEXPR_tuple_tail e -> "tuple_tail("^ se e ^")"

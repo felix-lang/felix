@@ -224,8 +224,8 @@ let rec gen_expr'
   let t = rt t in
   match t with
   (* This is now required for arrays of length 1 *)
-  | BTYP_tuple [] -> ce_atom "(::flx::rtl::unit())/*UNIT TUPLE?*/"
 (*
+  | BTYP_tuple [] -> ce_atom "(::flx::rtl::unit())/*UNIT TUPLE?*/"
       clierr sr
      ("[egen] In "^sbe bsym_table (e,t)^":\nunit value required, should have been eliminated")
 *)
@@ -233,6 +233,8 @@ let rec gen_expr'
      (* ce_atom ("UNIT_ERROR") *)
   | _ ->
   match e with
+  | BEXPR_unit -> print_endline "Generating unit expr"; ce_atom "(::flx::rtl::unit())/*UNIT TUPLE?*/"
+  | BEXPR_unitptr -> print_endline "Generating unitptr expr"; ce_atom "NULL/*UNITPTR*/"
   | BEXPR_funprod _ -> assert false
   | BEXPR_funsum _ -> assert false
   | BEXPR_lrangle _ -> assert false
