@@ -512,6 +512,13 @@ let mono_bbdcl syms bsym_table processed to_process nubids virtualinst polyinst 
         ps
         with Not_found -> print_endline ("Not Found FIXING parameters"); assert false
       in
+      (* eliminate unit parameters *)
+      let ps = List.filter 
+       (
+         fun {ptyp=t} -> match t with | BTYP_tuple [] -> false | _ -> true
+       ) 
+        ps 
+      in 
       let traint =
         match traint with
         | None -> None
@@ -532,7 +539,11 @@ let mono_bbdcl syms bsym_table processed to_process nubids virtualinst polyinst 
     assert (List.length vs = List.length ts);
     let vars = List.map2 (fun (s,i) t -> i,t) vs ts in
     let t = mt vars t in
-    Some (bbdcl_val ([],t,kind))
+    (* eliminate unit variables *)
+    begin match t with
+    | BTYP_tuple [] -> None
+    | _ -> Some (bbdcl_val ([],t,kind))
+    end
 
   (* we have tp replace types in interfaces like Vector[int]
     with monomorphic versions if any .. even if we don't
