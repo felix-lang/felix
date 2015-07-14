@@ -191,22 +191,27 @@ let cal_use_closure syms bsym_table (count_inits:bool) =
     end
   in
   let ut t = uses_btype add' bsym_table count_inits t in
-  let add bid =
-    add' bid;
-    try 
-      let entries = Hashtbl.find syms.virtual_to_instances bid in
-      List.iter begin fun (vs,con,ts,j) ->
-        add' j;
-        ut con;
-        List.iter ut ts
-      end entries
-    with Not_found -> ()
+  let add bid = 
+    if bid <> 0 then begin
+      add' bid;
+      try 
+        let entries = Hashtbl.find syms.virtual_to_instances bid in
+        List.iter begin fun (vs,con,ts,j) ->
+          add' j;
+          ut con;
+          List.iter ut ts
+        end entries
+      with Not_found -> ()
+    end
   in
 
   (* Register use of the typeclass instances. *)
 (*
   print_endline "Instance of typeclass";
 *)
+  if (Hashtbl.length syms.instances_of_typeclass) <> 0 then
+    failwith "Typeclasses not eliminated"
+  ;
   Hashtbl.iter begin fun i entries ->
     add i;
     List.iter begin fun (j, (vs, con, ts)) ->
@@ -272,9 +277,6 @@ let strip_inits bsym_table bidset exes =
   aux exes [] 
 
 let copy_used1 syms bsym_table =
-  if syms.compiler_options.Flx_options.print_flag then
-    print_endline "COPY USED";
-
   (* Calculate the used symbols. *)
   let bidset = cal_use_closure syms bsym_table false in
 
@@ -348,18 +350,20 @@ let copy_used1 syms bsym_table =
   new_bsym_table
 
 let copy_used syms bsym_table =
-(*
-print_endline "Copy used";
-*)
+  if syms.compiler_options.Flx_options.print_flag then
+    print_endline "COPY USED";
   let rec aux bsym_table old =
-(*
-print_endline ("Copy used1: ninput symbols = " ^ si old);
-*)
+    if syms.compiler_options.Flx_options.print_flag then
+      print_endline ("Copy used1: ninput symbols = " ^ si old);
     let bsym_table = copy_used1 syms bsym_table in
     let nu = Flx_bsym_table.length bsym_table in
     assert (nu <= old);
     if nu = old then bsym_table else
     aux bsym_table nu
   in
-  aux bsym_table (Flx_bsym_table.length bsym_table)
+  let result =  aux bsym_table (Flx_bsym_table.length bsym_table) in
+  if syms.compiler_options.Flx_options.print_flag then
+    print_endline "*** COPY DONE";
+  result
+
 
