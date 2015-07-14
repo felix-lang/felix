@@ -270,7 +270,7 @@ let codegen_bsyms
     state.syms
     bsym_table
     state.module_name
-    "&::flx::rtl::address_ptr_map"
+    "&::flx::rtl::_address_ptr_map"
   in
    plr tables
   ;
