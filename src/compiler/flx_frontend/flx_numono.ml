@@ -287,8 +287,8 @@ let flat_poly_fixup_exe syms bsym_table polyinst parent_ts mt exe =
     let j,ts = polyinst i parent_ts in
     (*
       if i <> j then
-     *)
         print_endline ("[svc] Remapped deviant variable to " ^ si j);
+    *)
     bexe_svc (sr,j)
 
   | x -> x
@@ -512,13 +512,10 @@ let mono_bbdcl syms bsym_table processed to_process nubids virtualinst polyinst 
         ps
         with Not_found -> print_endline ("Not Found FIXING parameters"); assert false
       in
-      (* eliminate unit parameters *)
-      let ps = List.filter 
-       (
-         fun {ptyp=t} -> match t with | BTYP_tuple [] -> false | _ -> true
-       ) 
-        ps 
-      in 
+      (* fudge unit parameters *)
+      let ps = List.map (fun {pkind=pk; pid=s; pindex=i; ptyp=t} ->
+        {pkind=pk;pid=s;pindex=(match t with BTYP_tuple [] -> 0 | _ -> i);ptyp=t}) ps 
+      in
       let traint =
         match traint with
         | None -> None
@@ -542,7 +539,9 @@ let mono_bbdcl syms bsym_table processed to_process nubids virtualinst polyinst 
     let t = mt vars t in
     (* eliminate unit variables *)
     begin match t with
-    | BTYP_tuple [] -> print_endline ("Elim unit var " ^ Flx_bsym.id bsym ^ " old index " ^ si i ^ " new index would be " ^ si j); None
+    | BTYP_tuple [] -> 
+      (* print_endline ("Elim unit var " ^ Flx_bsym.id bsym ^ " old index " ^ si i ^ " new index would be " ^ si j); i*)
+      None
     | _ -> Some (bbdcl_val ([],t,kind))
     end
 
