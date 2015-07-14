@@ -529,6 +529,7 @@ let mono_bbdcl syms bsym_table processed to_process nubids virtualinst polyinst 
         with Not_found -> assert false
       in
       let exes = strip_unit_assigns exes in
+      let exes = List.map (fun exe -> Flx_bexe.map ~f_bexpr:Flx_bexpr.reduce exe) exes in
       let props = List.filter (fun p -> p <> `Virtual) props in
       Some (bbdcl_fun (props,[],(ps,traint),ret,exes))
     with Not_found ->
