@@ -287,8 +287,8 @@ let flat_poly_fixup_exe syms bsym_table polyinst parent_ts mt exe =
     let j,ts = polyinst i parent_ts in
     (*
       if i <> j then
-        print_endline ("[svc] Remapped deviant variable to " ^ si i);
      *)
+        print_endline ("[svc] Remapped deviant variable to " ^ si j);
     bexe_svc (sr,j)
 
   | x -> x
