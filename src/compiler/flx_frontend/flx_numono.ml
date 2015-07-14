@@ -469,7 +469,7 @@ let notunitassign exe = match exe with
 
 let strip_unit_assigns exes = List.filter notunitassign exes 
 
-let mono_bbdcl syms bsym_table processed to_process nubids virtualinst polyinst ts bsym =
+let mono_bbdcl syms bsym_table processed to_process nubids virtualinst polyinst ts bsym i j =
 (*
   print_endline ("[mono_bbdcl] " ^ Flx_bsym.id bsym);
   print_endline ("ts=[" ^ catmap "," (sbt bsym_table) ts ^ "]");
@@ -541,7 +541,7 @@ let mono_bbdcl syms bsym_table processed to_process nubids virtualinst polyinst 
     let t = mt vars t in
     (* eliminate unit variables *)
     begin match t with
-    | BTYP_tuple [] -> None
+    | BTYP_tuple [] -> print_endline ("Elim unit var " ^ Flx_bsym.id bsym ^ " old index " ^ si i ^ " new index would be " ^ si j); None
     | _ -> Some (bbdcl_val ([],t,kind))
     end
 
@@ -729,7 +729,7 @@ print_endline ("Parent ts = " ^ catmap "," (sbt bsym_table) pts);
         end
     in
     let maybebbdcl = 
-      try mono_bbdcl syms bsym_table processed to_process nubids virtualinst polyinst ts sym 
+      try mono_bbdcl syms bsym_table processed to_process nubids virtualinst polyinst ts sym i j 
       with Not_found -> assert false 
     in
     begin match maybebbdcl with

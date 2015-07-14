@@ -154,9 +154,9 @@ open class Control
   //$ this interface just gets rid of the horrible requirement
   //$ the request be in a variable so it is addressable.
   //$ The _svc statement is a compiler intrinsic.
-  noinline proc svc(x:svc_req_t) {
-    var y=x;
-    _svc y;
+  noinline proc svc(svc_x:svc_req_t) {
+    var svc_y=svc_x;
+    _svc svc_y;
   }
 
 }
