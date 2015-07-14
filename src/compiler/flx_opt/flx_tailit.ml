@@ -132,7 +132,7 @@ let tailit syms bsym_table uses id this sr ps exes =
 
 
   let pset = List.fold_left
-    (fun s {pindex=i} -> BidSet.add i s)
+    (fun s {pindex=i} -> if i = 0 then s else BidSet.add i s)
     BidSet.empty
     ps
   in
@@ -205,6 +205,7 @@ let tailit syms bsym_table uses id this sr ps exes =
         bexe_comment (sr,"tail rec call (0)")
       ]
     | [{pindex=k}] ->
+      assert (k <> 0);
       [
         bexe_goto (sr,start_label);
         bexe_init (sr,k,e);

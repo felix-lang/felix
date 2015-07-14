@@ -223,9 +223,11 @@ let passign syms bsym_table (pinits:aentry_t list) sr =
   result :=  bexe_comment (sr,"parallel assignment") :: !result;
   iter
   (fun (i,(name,ty,e,_)) ->
-    if mem i !tmplist then
-      result := bexe_begin () :: !result;
-    result := bexe_init (sr,i,e) :: !result;
+    if i <> 0 then begin (* unit assign if i = 0 *)
+      if mem i !tmplist then
+        result := bexe_begin () :: !result;
+      result := bexe_init (sr,i,e) :: !result;
+    end
   )
   m;
   while length !tmplist > 0 do

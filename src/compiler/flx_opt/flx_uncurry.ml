@@ -230,25 +230,27 @@ let fixup_function
 
   (* Create new bound symbols for the parameters. *)
   List.iter begin fun { pkind=pk; ptyp=t; pid=s; pindex=pi } ->
-    let n = revar pi in
-    let bbdcl = match pk with
-    | `PVal -> bbdcl_val ([],t,`Val)
-    | `PVar -> bbdcl_val ([],t,`Var)
-    in
+    if pi <> 0 then begin
+      let n = revar pi in
+      let bbdcl = match pk with
+      | `PVal -> bbdcl_val ([],t,`Val)
+      | `PVar -> bbdcl_val ([],t,`Var)
+      in
 
-    if syms.compiler_options.print_flag then 
-      print_endline ("New param " ^ s ^ "_uncurry<" ^ string_of_bid n ^
-        ">" ^
-        " <-- " ^ string_of_bid pi ^ ", parent " ^ string_of_bid k ^
-        " <-- " ^ string_of_bid i);
+      if syms.compiler_options.print_flag then 
+        print_endline ("New param " ^ s ^ "_uncurry<" ^ string_of_bid n ^
+          ">" ^
+          " <-- " ^ string_of_bid pi ^ ", parent " ^ string_of_bid k ^
+          " <-- " ^ string_of_bid i);
 
-    Flx_bsym_table.add bsym_table n (Some k)
-      (Flx_bsym.create ~sr:(Flx_bsym.sr bsymi) (s ^ "_uncurry") bbdcl)
+      Flx_bsym_table.add bsym_table n (Some k)
+        (Flx_bsym.create ~sr:(Flx_bsym.sr bsymi) (s ^ "_uncurry") bbdcl)
+    end
   end ps;
 
   (* Make sure the parameter indices don't equal the remapped index. *)
-  assert (List.for_all (fun ({ pindex=i }) -> (i <> revar i)) ps);
-  assert (List.for_all (fun ({ pindex=i }) -> (i <> revar i)) psc);
+  assert (List.for_all (fun ({ pindex=i }) -> (i = 0 || i <> revar i)) ps);
+  assert (List.for_all (fun ({ pindex=i }) -> (i = 0 || i <> revar i)) psc);
 
   (* Update the parent's parameter indices. *)
   let ps =

@@ -74,16 +74,20 @@ let replace_elt bsym_table = Hashtbl.replace bsym_table.table
 
 (** Helper to add a bid to the table roots or it's parent's children. *)
 let add_bid_to_parent bsym_table parent bid =
+  assert (bid <> 0);
   match parent with
   | None -> ()
   | Some parent ->
+    (* assert (parent <> 0); FAILS .. WHY? *)
     Hashtbl.replace bsym_table.childmap parent (Flx_types.BidSet.add bid (find_children bsym_table parent))
 
 (** Helper to remove a bid from the table roots or it's parent's children. *)
 let remove_bid_from_parent bsym_table parent bid =
+  assert (bid <> 0);
   match parent with
   | None -> ()
   | Some parent ->
+    assert (parent <> 0);
     let kids = 
       try Hashtbl.find bsym_table.childmap parent 
       with Not_found -> Flx_types.BidSet.empty 
@@ -94,6 +98,7 @@ let remove_bid_from_parent bsym_table parent bid =
 
 (** Adds the bound symbol with the index to the symbol table. *)
 let add bsym_table bid parent bsym =
+  assert (bid <> 0);
   if mem bsym_table bid then begin
     print_endline ("Woops, index " ^ string_of_int bid ^ " already in table " ^ Flx_bsym.id bsym )
   end
@@ -111,16 +116,19 @@ let add bsym_table bid parent bsym =
 (** Updates a bound symbol in place while preserving the child-parent
  * relationships. *)
 let update bsym_table bid bsym =
+  assert (bid <> 0);
   let elt = find_elt bsym_table bid in
   replace_elt bsym_table bid { elt with bsym=bsym }
 
 (** Update a bound symbol's bbdcl in place. *)
 let update_bbdcl bsym_table bid bbdcl =
+  assert (bid <> 0);
   let elt = find_elt bsym_table bid in
   replace_elt bsym_table bid { elt with bsym=Flx_bsym.replace_bbdcl elt.bsym bbdcl }
 
 (** Remove a binding and all descendants from the bound symbol table. *)
 let rec remove bsym_table bid =
+  assert (bid <> 0);
   (* It's not a big deal if the bid isn't in the symbol table. *)
   if not (mem bsym_table bid) then () else begin
     let elt = find_elt bsym_table bid in
@@ -143,6 +151,7 @@ let copy bsym_table =
 
 (** Set's a symbol's parent. *)
 let set_parent bsym_table bid parent =
+  assert (bid <> 0);
   (* Find our bsym *)
   let elt = find_elt bsym_table bid in
 
@@ -171,10 +180,13 @@ let fold f bsym_table init =
 
 (** Returns whether or not one symbol is a child of another. *)
 let is_child bsym_table parent child =
+  assert (child <> 0);
   Flx_types.BidSet.mem child (find_children bsym_table parent)
 
 (** Returns whether or not one symbol is an ancestor of another. *)
 let is_ancestor bsym_table child anc =
+  assert (child <> 0);
+  assert (anc <> 0);
   let rec is_anc child anc =
     match find_parent bsym_table child with
     | None -> false

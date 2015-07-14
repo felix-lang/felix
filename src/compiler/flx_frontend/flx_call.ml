@@ -20,6 +20,7 @@ let add uses sr parent bid =
   (*
   print_endline ("Adding use of " ^ si j ^ " in " ^ si k);
   *)
+  if bid <> 0 then
   Hashtbl.replace uses parent
   (
     (bid,sr)
