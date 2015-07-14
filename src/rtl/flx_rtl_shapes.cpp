@@ -191,6 +191,11 @@ static size_t address_decoder (void *p, char *s, size_t i) {
 }
 
 
+// ********************************************************
+// address implementation : MUST BE LAST because the compiler
+// uses "address_ptr_map" as the back link for generated shape tables
+// ********************************************************
+
 ::flx::gc::generic::gc_shape_t _address_ptr_map = {
   &_int_ptr_map,
   "rtl::address",
@@ -204,24 +209,6 @@ static size_t address_decoder (void *p, char *s, size_t i) {
   0UL, 0UL
 };
 
-
-// ********************************************************
-// unit implementation : MUST BE LAST because the compiler
-// uses "unit_pre_map" as the back link for generated shape tables
-// ********************************************************
-
-::flx::gc::generic::gc_shape_t unit_ptr_map = {
-  &_address_ptr_map,
-  "rtl::unit",
-  1,
-  sizeof(unit),
-  0,
-  0,
-  0,
-  ::flx::gc::generic::tblit<unit>,::flx::gc::generic::tunblit<unit>, 
-  gc::generic::gc_flags_default,
-  0UL, 0UL
-};
 
 }}
 
