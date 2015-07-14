@@ -6,7 +6,6 @@ object toolchain_gcc_linux (config:clang_config_t) implements toolchain_t =
 {
 
   var cxx_compile_warning_flags = list$ 
-    "-Wall",
     "-Wfatal-errors",
     "-Wno-invalid-offsetof",
     "-Wno-parentheses",
