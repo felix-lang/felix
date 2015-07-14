@@ -40,54 +40,56 @@ let dummy_sr = Flx_srcref.make_dummy "[flx_inst] generated"
 let null_table = Hashtbl.create 3
 
 let add_inst syms bsym_table ref_insts1 sr (i,ts) =
-  iter (fun t -> match t with 
-    | BTYP_void -> 
+  if i <> 0 then begin
+    iter (fun t -> match t with 
+      | BTYP_void -> 
+        let sym = Flx_bsym_table.find bsym_table i in
+        let name = Flx_bsym.id sym in
+        print_debug syms ("In " ^ Flx_srcref.short_string_of_src sr ^ 
+          "\nAttempt to register instance " ^ name ^ ": " ^ si i ^ "[" ^
+        catmap ", " (sbt bsym_table) ts ^ "]")
+  (*
+        ; failwith "Attempt to instantiate type variable with type void"
+  *)
+      | _ -> ()
+      )
+    ts;
+      print_debug syms ("Attempt to register instance " ^ si i ^ "[" ^
+      catmap ", " (sbt bsym_table) ts ^ "]");
+    let ts = map (fun t -> beta_reduce "flx_inst: add_inst" syms.Flx_mtypes2.counter bsym_table dummy_sr t) ts in
+
+    let i,ts = Flx_typeclass.fixup_typeclass_instance syms bsym_table i ts in
+      (*
+      print_endline ("remapped to instance " ^ si i ^ "[" ^
+      catmap ", " (sbt bsym_table) ts ^ "]");
+      *)
+    let ts = List.map (normalise_tuple_cons bsym_table) ts in
+    let x = i, ts in
+    let has_variables =
+      fold_left
+      (fun truth t -> truth ||
+        try var_occurs bsym_table t
+        with _ -> failwith ("[add_inst] metatype in var_occurs for " ^ sbt bsym_table t)
+      )
+      false
+      ts
+    in
+    if has_variables then
+    failwith
+    (
       let sym = Flx_bsym_table.find bsym_table i in
       let name = Flx_bsym.id sym in
-      print_debug syms ("In " ^ Flx_srcref.short_string_of_src sr ^ 
-        "\nAttempt to register instance " ^ name ^ ": " ^ si i ^ "[" ^
-      catmap ", " (sbt bsym_table) ts ^ "]")
-(*
-      ; failwith "Attempt to instantiate type variable with type void"
-*)
-    | _ -> ()
+      "In " ^ Flx_srcref.short_string_of_src sr ^
+      "\nAttempt to register instance " ^ name ^ ": " ^ string_of_bid i ^ "[" ^
+      catmap ", " (sbt bsym_table) ts ^
+      "] with type variable in a subscript"
     )
-  ts;
-    print_debug syms ("Attempt to register instance " ^ si i ^ "[" ^
-    catmap ", " (sbt bsym_table) ts ^ "]");
-  let ts = map (fun t -> beta_reduce "flx_inst: add_inst" syms.Flx_mtypes2.counter bsym_table dummy_sr t) ts in
-
-  let i,ts = Flx_typeclass.fixup_typeclass_instance syms bsym_table i ts in
-    (*
-    print_endline ("remapped to instance " ^ si i ^ "[" ^
-    catmap ", " (sbt bsym_table) ts ^ "]");
-    *)
-  let ts = List.map (normalise_tuple_cons bsym_table) ts in
-  let x = i, ts in
-  let has_variables =
-    fold_left
-    (fun truth t -> truth ||
-      try var_occurs bsym_table t
-      with _ -> failwith ("[add_inst] metatype in var_occurs for " ^ sbt bsym_table t)
-    )
-    false
-    ts
-  in
-  if has_variables then
-  failwith
-  (
-    let sym = Flx_bsym_table.find bsym_table i in
-    let name = Flx_bsym.id sym in
-    "In " ^ Flx_srcref.short_string_of_src sr ^
-    "\nAttempt to register instance " ^ name ^ ": " ^ string_of_bid i ^ "[" ^
-    catmap ", " (sbt bsym_table) ts ^
-    "] with type variable in a subscript"
-  )
-  ;
-  if not (FunInstSet.mem x !ref_insts1)
-  && not (Hashtbl.mem syms.instances x)
-  then begin
-    ref_insts1 := FunInstSet.add x !ref_insts1
+    ;
+    if not (FunInstSet.mem x !ref_insts1)
+    && not (Hashtbl.mem syms.instances x)
+    then begin
+      ref_insts1 := FunInstSet.add x !ref_insts1
+    end
   end
 
 let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
