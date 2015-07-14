@@ -233,7 +233,7 @@ let rec gen_expr'
      (* ce_atom ("UNIT_ERROR") *)
   | _ ->
   match e with
-  | BEXPR_unit -> print_endline "Generating unit expr"; ce_atom "(::flx::rtl::unit())/*UNIT TUPLE?*/"
+  | BEXPR_unit -> print_endline "Generating unit expr"; ce_atom "0/*CLT:UNIT*/" (* ce_atom "(::flx::rtl::unit())/*UNIT TUPLE?*/" *)
   | BEXPR_unitptr -> print_endline "Generating unitptr expr"; ce_atom "NULL/*UNITPTR*/"
   | BEXPR_funprod _ -> assert false
   | BEXPR_funsum _ -> assert false
@@ -298,8 +298,11 @@ let rec gen_expr'
      too, and the result is just a linear combination 
   *)
   | BEXPR_tuple es when clt t ->
-    begin match t with
+print_endline ("Compact linear tuple " ^ sbt bsym_table t);
+    let result =
+      begin match t with
       | BTYP_tuple ts  -> 
+  print_endline ("..tuple subkind " ^ sbt bsym_table t);
         assert (List.length ts = List.length es);
         (*  we get  ((0 * sizeof typeof i + i) * sizeof typeof j + j ) * sizeof typeof k + k 
             which is BIG ENDIAN. The sizeof i is eliminated by multiplying by 0.
@@ -312,14 +315,17 @@ let rec gen_expr'
           (ce_int 0)
           (List.combine es ts)
 
-    | BTYP_array (t, BTYP_unitsum n)  -> 
-      assert (List.length es = n);
-      let sa = ce_int (sizeof_linear_type bsym_table t) in
-      List.fold_left (fun acc elt -> ce_add (ce_mul acc sa) (ge' elt)) (ce_int 0) es
+      | BTYP_array (t, BTYP_unitsum n)  -> 
+  print_endline ("..array subkind " ^ sbt bsym_table t);
+        assert (List.length es = n);
+        let sa = ce_int (sizeof_linear_type bsym_table t) in
+        List.fold_left (fun acc elt -> ce_add (ce_mul acc sa) (ge' elt)) (ce_int 0) es
 
-    | _ -> assert false
-    end
-
+      | _ -> assert false
+      end
+    in
+    print_endline ("CLT rendered = " ^ string_of_cexpr result);
+    result 
   (* if this is an injection into a compact linear type, then the argument
      must be compact linear also, the result is just its value plus
      the sum of the sizes on its right.
@@ -1376,10 +1382,8 @@ print_endline ("Handling coercion in egen " ^ sbt bsym_table srct ^ " -> " ^ sbt
     print_endline ("Construct tuple " ^ sbe bsym_table (e,t));
 *)
     if clt t then begin
-(*
       print_endline ("Construct tuple of linear type " ^ sbe bsym_table (e,t));
       print_endline ("type " ^ sbt bsym_table t);
-*)
       let sidx = Flx_ixgen.cal_symbolic_compact_linear_value bsym_table (e,t) in
 (*
 print_endline ("egen:BEXPR_tuple: Symbolic index = " ^ Flx_ixgen.print_index bsym_table sidx );

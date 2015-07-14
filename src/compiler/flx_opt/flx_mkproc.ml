@@ -268,7 +268,7 @@ let mkproc_gen syms bsym_table =
         let revar i = try Hashtbl.find revariable i with Not_found -> i in
         begin
           List.iter
-            (fun ({pid=s; pindex=i} as p) -> assert (i <> revar i))
+            (fun ({pid=s; pindex=i} as p) -> assert (i = 0 || i <> revar i))
             ps
         end;
 
@@ -286,18 +286,20 @@ let mkproc_gen syms bsym_table =
         (* clone old parameters, also happens to create our new one *)
         List.iter
           (fun {pkind=pk; ptyp=t; pid=s; pindex=pi} ->
-            let n = revar pi in
-            let bbdcl = match pk with
-            | `PVal -> bbdcl_val (vs,t,`Val)
-            | `PVar -> bbdcl_val (vs,t,`Var)
-            in
-            if syms.compiler_options.print_flag then
-            print_endline ("New param " ^ s ^ " " ^ string_of_bid n ^ " <-- " ^
-              string_of_bid pi ^ ", parent " ^ string_of_bid k ^ " <-- " ^
-              string_of_bid i);
-            Flx_bsym_table.remove bsym_table n;
-            Flx_bsym_table.add bsym_table n (Some k)
-              (Flx_bsym.replace_bbdcl bsym bbdcl)
+            if pi <> 0 then begin
+              let n = revar pi in
+              let bbdcl = match pk with
+              | `PVal -> bbdcl_val (vs,t,`Val)
+              | `PVar -> bbdcl_val (vs,t,`Var)
+              in
+              if syms.compiler_options.print_flag then
+              print_endline ("New param " ^ s ^ " " ^ string_of_bid n ^ " <-- " ^
+                string_of_bid pi ^ ", parent " ^ string_of_bid k ^ " <-- " ^
+                string_of_bid i);
+              Flx_bsym_table.remove bsym_table n;
+              Flx_bsym_table.add bsym_table n (Some k)
+                (Flx_bsym.replace_bbdcl bsym bbdcl)
+            end
           )
           ps
         ;
@@ -325,6 +327,7 @@ let mkproc_gen syms bsym_table =
 
       (* and actually convert it *)
       let ts = List.map (fun (_,i) -> btyp_type_var (i,btyp_type 0)) vs in
+      assert (ts = []);
       (* let dv = BEXPR_deref (BEXPR_varname (vix,ts),btyp_pointer * ret),btyp_lvalue ret in *)
       let dv = bexpr_deref ret (bexpr_varname (btyp_pointer ret) (vix,ts)) in
       let exes = proc_exes syms bsym_table dv exes in

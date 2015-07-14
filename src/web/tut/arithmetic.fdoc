@@ -609,7 +609,7 @@ fun fact (toks : list[token_t]) : parsed[token_t, ast_t] =>
 fun accept[A, B] (result : parsed[A, B]) : opt[B] =>
   match result with
   | Returns (b, #Empty) => Some[B] (b)
-  | Parse_failed => None[B]
+  | #Parse_failed => None[B]
   | _ => None[B] //meaning, not all chars consumed
   endmatch
   ;

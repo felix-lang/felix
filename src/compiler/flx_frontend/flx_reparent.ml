@@ -300,24 +300,27 @@ let reparent1
 let reparent_children syms uses bsym_table
   index (parent:bid_t option) relabel rescan_flag extras
 =
+  let extras = List.filter (fun i -> i <> 0) extras in
   let pp p = match p with None -> "NONE" | Some i -> string_of_bid i in
-(*
+  if syms.compiler_options.Flx_options.print_flag then
   print_endline
   (
     "Renesting children of callee " ^ si index ^
-    " to caller " ^ pp parent ^
-     "\n  -- Caller vs len = " ^ si (length caller_vs) ^
-     "\n  -- Callee vs len = " ^ si (callee_vs_len)
+    " to caller " ^ pp parent
   );
-*)
   let closure = Flx_bsym_table.find_descendants bsym_table index in
+(*
+  assert (not (BidSet.mem 0 closure));
+  assert (not (List.mem 0 extras));
   assert (not (BidSet.mem index closure));
-  let revariable = fold_left (fun acc i -> BidSet.add i acc) closure extras in
+*)
+  let torevariable = fold_left (fun acc i -> BidSet.add i acc) closure extras in
   (*
   let cl = ref [] in BidSet.iter (fun i -> cl := i :: !cl) closure;
   print_endline ("Closure is " ^ catmap " " si !cl);
   *)
-  let revariable = mk_remap syms.counter revariable in
+  assert (not (BidSet.mem 0 torevariable));
+  let revariable = mk_remap syms.counter torevariable in
 
   BidSet.iter begin fun i ->
     let old_parent = try Flx_bsym_table.find_parent bsym_table i with Not_found -> failwith ("Bug8, can't find parent of " ^ string_of_int i) in
