@@ -298,11 +298,15 @@ let rec gen_expr'
      too, and the result is just a linear combination 
   *)
   | BEXPR_tuple es when clt t ->
+(*
 print_endline ("Compact linear tuple " ^ sbt bsym_table t);
+*)
     let result =
       begin match t with
       | BTYP_tuple ts  -> 
+(*
   print_endline ("..tuple subkind " ^ sbt bsym_table t);
+*)
         assert (List.length ts = List.length es);
         (*  we get  ((0 * sizeof typeof i + i) * sizeof typeof j + j ) * sizeof typeof k + k 
             which is BIG ENDIAN. The sizeof i is eliminated by multiplying by 0.
@@ -316,7 +320,9 @@ print_endline ("Compact linear tuple " ^ sbt bsym_table t);
           (List.combine es ts)
 
       | BTYP_array (t, BTYP_unitsum n)  -> 
+(*
   print_endline ("..array subkind " ^ sbt bsym_table t);
+*)
         assert (List.length es = n);
         let sa = ce_int (sizeof_linear_type bsym_table t) in
         List.fold_left (fun acc elt -> ce_add (ce_mul acc sa) (ge' elt)) (ce_int 0) es
@@ -324,7 +330,9 @@ print_endline ("Compact linear tuple " ^ sbt bsym_table t);
       | _ -> assert false
       end
     in
+(*
     print_endline ("CLT rendered = " ^ string_of_cexpr result);
+*)
     result 
   (* if this is an injection into a compact linear type, then the argument
      must be compact linear also, the result is just its value plus

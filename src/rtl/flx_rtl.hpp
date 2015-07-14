@@ -26,8 +26,6 @@ struct RTL_EXTERN _uctor_;   // union constructor
 struct RTL_EXTERN schannel_t;   // synchronous channel type
 struct RTL_EXTERN slist_t;   // singly linked list of void*
 struct RTL_EXTERN slist_node_t;   // singly linked list of void*
-struct RTL_EXTERN unit {};   // unit
-  // INLINE DEFINITION, PROBLEMATIC!!
 
 // ********************************************************
 /// CONTINUATION.
