@@ -128,11 +128,11 @@ union parsed[A, B] =
   | Parse_failed
   ;
 
-struct singular_value_t {};
-var singular_value = singular_value_t ();
+//struct singular_value_t {};
+//var singular_value = singular_value_t ();
 
-//typedef singular_value_t = unit;
-//var singular_value = ();
+typedef singular_value_t = unit;
+var singular_value = ();
 
 //Type of a parser
 typedef parser[A, B] = list[A] -> parsed[A, B];
