@@ -1,3 +1,6 @@
+@title Parser Combinators
+@h1 Stuff
+@pre
 // /home/fletch/project/felix.git/build/release/host/bin/flx --force --echo --test=build/release src/web/tut/arithmetic.fdoc
 //
 //To understand segfaults you do this:
@@ -117,7 +120,8 @@
 //
 
 // --
-
+@
+@felix
 //Result of a parse
 union parsed[A, B] = 
   | Returns of B * list[A] 
@@ -126,6 +130,9 @@ union parsed[A, B] =
 
 struct singular_value_t {};
 var singular_value = singular_value_t ();
+
+//typedef singular_value_t = unit;
+//var singular_value = ();
 
 //Type of a parser
 typedef parser[A, B] = list[A] -> parsed[A, B];
@@ -845,4 +852,24 @@ repl_loop : //iz in ur loop!
 }
 
 repl () ;
+@
+@input
+x=1
+y=2
+x+y
+x+(x*y)+43-y/1
+@
+@expect
 
+Interpreter of arithmetic expressions (with variables)
+Type ^D to quit.
+? x=1
+1
+? y=2
+2
+? x+y
+3
+? x+(x*y)+43-y/1
+44
+? 
+@

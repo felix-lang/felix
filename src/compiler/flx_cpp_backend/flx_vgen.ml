@@ -112,9 +112,9 @@ assert false
   check_case_index bsym_table ut v;
   match cal_variant_rep bsym_table ut with
   | VR_self -> assert false (* will fail if there's one trivial case! FIX! Felix should elide completely *)
-  | VR_int -> ce_atom (si v)
-  | VR_nullptr -> ce_cast "void* /*nullptr*/ " (ce_atom (si v))
-  | VR_packed -> ce_cast "void* /*packed*/ " (ce_atom (si v))
+  | VR_int -> ce_atom ("/*VR_int*/"^(si v))
+  | VR_nullptr -> ce_cast "void* /*VR_nullptr*/ " (ce_atom (si v))
+  | VR_packed -> ce_cast "void* /*VR_packed*/ " (ce_atom (si v))
   | VR_uctor -> ce_atom ("::flx::rtl::_uctor_(" ^ si v ^ ",0)") 
 
 
@@ -153,7 +153,7 @@ let gen_make_ctor_arg rep ge tn syms bsym_table a : cexpr_t =
   let _,ct = a in
   match size ct with
   | 0 -> ce_atom "0"                (* NULL: for unit tuple *)
-  | 1 -> ce_cast "void*" (ge a)   (* small value goes right into data slot *)
+  | 1 -> ce_cast "void*" (ge a)     (* small value goes right into data slot *)
   | _ ->                            (* make a copy on the heap and return pointer *)
     let ctt = tn ct in
     let ptrmap = Flx_pgen.direct_shape_of syms bsym_table tn ct in
@@ -169,7 +169,7 @@ print_endline ("gen_make_nonconst_ctor arg=" ^ Flx_print.sbe bsym_table a ^
   let rep = cal_variant_rep bsym_table codt in
   match rep with
   | VR_self -> ge a
-  | VR_int -> ge a
+  | VR_int -> ce_call (ce_atom "/*VR_int*/") [ge a]
 
   | VR_nullptr -> 
     let arg = gen_make_ctor_arg rep ge tn syms bsym_table a in

@@ -70,13 +70,40 @@ let isnullptr bsym_table t = match t with
       try Flx_bsym_table.find bsym_table i with Not_found -> assert false
     in
     begin match Flx_bsym.bbdcl bsym with
+    (* nullptr rep: must be a union, with constant constructor first,
+       and then some other constructor, but do NOT allow the second
+       constructor to take a unit argument because a pointer to a unit
+       is encoded as a NULL
+    *)
+    | BBDCL_union (bvs,[id1,0,BTYP_void; id2, 1, BTYP_tuple []]) -> false
     | BBDCL_union (bvs,[id1,0,BTYP_void; id2, 1, t2]) -> true
 
     | _ -> false
     end
   | _ -> false
 
-type variant_rep = VR_self | VR_int |  VR_nullptr | VR_packed | VR_uctor
+let weird_unit bsym_table t = match t with
+  | BTYP_inst (i,_) ->
+    let bsym =
+      try Flx_bsym_table.find bsym_table i with Not_found -> assert false
+    in
+    begin match Flx_bsym.bbdcl bsym with
+    | BBDCL_union (bvs,[id1,0,BTYP_void; id2, 1, BTYP_tuple []]) -> true
+    | _ -> false
+    end
+  | _ -> false
+
+type variant_rep = 
+  | VR_self       (* only one ctor so the union is just the argument *)
+  | VR_int        (* all constant ctors, just need the index *) 
+  | VR_nullptr    (* special case None or Some of T etc, use NULL for None, non-NULL ptr to T for Some *)
+  | VR_packed     (* 4 or less ctors, use pointer with index in low 2 bits *)
+  | VR_uctor      (* general form: int tag and pointer *)
+
+(* Note: where a pointer to T would normally be used, if T is already a pointer to U,
+   then store it directly instead of a pointer to it
+*)
+
 let string_of_variant_rep = function
   | VR_self -> "VR_self"
   | VR_int -> "VR_int"
@@ -88,6 +115,8 @@ let string_of_variant_rep = function
 let cal_variant_rep bsym_table t =
   if isnullptr bsym_table t then 
     VR_nullptr
+  else if weird_unit bsym_table t then
+    VR_packed
   else if Flx_btype.islinear_type bsym_table t then
     VR_int
   else
