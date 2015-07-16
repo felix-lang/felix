@@ -201,8 +201,8 @@ syntax:
 #
 speed:
 	-rm -rf result.tmp
-	sh speed/perf.sh 2>>result.tmp
-	flx src/tools/flx_gengraph
+	env PATH=build/release/host/bin:$$PATH sh speed/perf.sh 2>>result.tmp
+	#flx src/tools/flx_gengraph
 
 #
 # Documentation
