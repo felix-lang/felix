@@ -7,7 +7,7 @@ typedef vec = array[double,3];
 
 fun + (x:vec,y:vec)=>x.0 + y.0, x.1 + y.1, x.2 + y.2;
 fun - (x:vec,y:vec)=>x.0 - y.0, x.1 - y.1, x.2 - y.2;
-fun - (x:vec)=> - x.0, - x.1,- x.2;
+fun neg (x:vec)=> - x.0, - x.1,- x.2;
 fun * (x:vec,var y:double)=>x.0 * y, x.1 * y, x.2 * y;
 fun / (x:vec,var y:double)=>x.0 / y, x.1 / y, x.2 / y;
 fun * (var y:double,x:vec)=>x.0 * y, x.1 * y, x.2 * y;

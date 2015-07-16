@@ -4,6 +4,8 @@
 @tangler address.flx = share/lib/std/scalar/address.flx
 @tangler sort.flx = share/lib/std/datatype/sort.flx
 @tangler posix_mmap.flx = share/lib/std/posix/mmap.flx
+@tangler carray_test.flx = test/regress/rt/carray_test.flx
+@tangler carray_test.expect= test/regress/rt/carray_test.expect
 
 @h1 C pointer
 @tangle cptr.flx
@@ -60,6 +62,9 @@ open[T] Tord[cptr[T]];
 typedef fun n"@" (T:TYPE) : TYPE => cptr[T]; 
 
 @h1 C Arrays
+A @{carray[T]}, with more suggestive shorthand notation @{+T},
+is an incrementable, non-NULL pointer to a contiguous store.
+
 @tangle carray.flx
 
 //$ A carray[T] = +T is an incrementable, non-NULL, pointer.
@@ -74,20 +79,12 @@ open class Carray
   //$ Define prefix + notation.
   typedef fun prefix_plus(T:TYPE) : TYPE => carray[T]; 
 
-  //$ Unsafe conversion of Felix pointer to carray.
-  fun prefix_plus [T]:&T -> carray[T] = "$1"; // unsafe
+@h2 Allocation
+These allocators use raw @{malloc}/@{calloc}/@{free} and therefore
+provide store of which the garbage collector is unaware. It is best
+to reserve such carrays for C datatypes.
 
-  //$ Demote carray to Felix pointer (safe unless off the end).
-  fun neg [T]: carray[T] -> &T = "$1"; // safe (unless we allow +T to be NULL later ..)
-
-  //$ a &. i returns pointer to i'th component of an array.
-  fun n"&." [T]: carray[T] * !ints -> &T = "$1+$2"; // safe (unless we allow +T to be NULL later ..)
-
-  //$ Unsafe conversion of Felix pointer to carray.
-  ctor[T] carray[T] : &T = "$1";
-
-  //$ Get a carray from a Felix array object.
-  ctor[T,N] carray[T]: &array[T,N] = "($1)->data";
+@tangle carray.flx
 
   //$ Allocate a C array on the C heap (malloc).
   //$ Unsafe: Not tracked by GC.
@@ -101,25 +98,32 @@ open class Carray
   //$ Must point to C heap allocated storage. Unsafe.
   proc free[T]: carray[T] = "::std::free($1);";
 
-  //$ Lvalue reference to element by index position. Unsafe.
-  fun subscript[T]: carray[T] * !ints -> T = '$1[$2]';
-
-  //$ Lvalue reference to element by pointer.
-  lvalue fun deref[T]: carray[T] -> T = '*$1';
+@h2 Dereference
+@tangle carray.flx
 
   //$ Functional get by index.
   fun get[T]: carray[T] * !ints -> T = '$1[$2]';
 
-  //$ Get by index using application.
-  //$ i x = x . i = get (x,i)
-  fun apply [T,I in ints] (i:I, x:carray[T]) => get (x,i.size);
-
   //$ Store value in array at index position.
   proc set[T] : carray[T] * !ints * T = "$1[$2]=$3;";
 
-  //$ Get carray of an array.
-  fun stl_begin[T,N]: carray[array[T,N]] -> carray[T] = "(?1*)&($1->data)";
+  //$ Get by index using application.
+  //$ i x = x . i = get (x,i)
+  fun apply [T,I in ints] (i:I, x:carray[T]) => get (x,i);
 
+@h2 Lvalue dereferences
+Note that lvalue operators are for convenience of those
+familiar with C notation. Felix does not support the notion
+of lvalues in general: this is a very special case.
+@tangle carray.flx
+  //$ Lvalue reference to element by index position. Unsafe.
+  lvalue fun subscript[T]: carray[T] * !ints -> T = '$1[$2]';
+
+  //$ Lvalue reference to element by pointer.
+  lvalue fun deref[T]: carray[T] -> T = '*$1';
+
+@h2 Pointer operators
+@tangle carray.flx
   //$ Advance carray to next element.
   fun + [T]: carray[T] * !ints -> carray[T]= '$1+$2';
 
@@ -129,6 +133,9 @@ open class Carray
   //$ Calculate the offset in elements between
   //$ two overlapping carrays.
   fun - [T]: carray[T] * carray[T]-> ptrdiff = '$1-$2';
+
+@h2 Mutators
+@tangle carray.flx
 
   //$ Mutable pre-increment ++p.
   proc pre_incr[T]: &carray[T] = '++*$1;';
@@ -148,6 +155,9 @@ open class Carray
   //$ Mutable backup by offset amount.
   proc -= [T]: &carray[T] * !ints = '*$1-=$2;';
 
+@h2 Comparisons
+@tangle carray.flx
+
   //$ Pointer equality.
   instance[T] Eq[carray[T]] {
     fun == : carray[T] * carray[T] -> bool = '$1==$2';
@@ -162,8 +172,29 @@ open class Carray
     fun >= : carray[T] * carray[T] -> bool = '$1>=$2';
   }
 
+@h2 Conversions
+@tangle carray.flx
+  //$ Get carray of an array.
+  fun stl_begin[T,N]: carray[array[T,N]] -> carray[T] = "(?1*)&($1->data)";
+
+  //$ Unsafe conversion of Felix pointer to carray.
+  fun prefix_plus [T]:&T -> carray[T] = "$1"; // unsafe
+
+  //$ Demote carray to Felix pointer (safe unless off the end).
+  fun neg [T]: carray[T] -> &T = "$1"; // safe (unless we allow +T to be NULL later ..)
+
+  //$ Unsafe conversion of Felix pointer to carray.
+  ctor[T] carray[T] : &T = "$1";
+
+  //$ Get a carray from a Felix array object.
+  ctor[T,N] carray[T]: &array[T,N] = "($1)->data";
+
+
   //$ Convert C array to Felix array.
   fun array_of[T,N]: carray[T] -> &array[T,N] = "*(#0*)(void*)$1";
+
+@h2 Misplaced
+@tangle carray.flx
 
   //$ Fast byte-wise copy from address to address.
   //$ WHY IS THIS HERE?
@@ -200,7 +231,33 @@ open class Carray
 
 open[T] Eq[carray[T]];
 open[T] Tord[carray[T]];
+@
 
+@tangle carray_test.flx
+// carray test
+
+var a : +int = array_alloc[int] 10;
+for var i in 0 upto 9 do
+  a + i <- i * i;
+  ++a.[i];
+done
+for i in 0 upto 10 do
+  println$  a.[i], *(a+i), a.i;
+done
+free a;
+@
+@tangle carray_test.expect
+(1, 1, 1)
+(2, 2, 2)
+(5, 5, 5)
+(10, 10, 10)
+(17, 17, 17)
+(26, 26, 26)
+(37, 37, 37)
+(50, 50, 50)
+(65, 65, 65)
+(82, 82, 82)
+@
 @h1 Raw Address
 @tangle address.flx
 

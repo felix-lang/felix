@@ -11,4 +11,6 @@ addons:
     - python3
     - ocaml-native-compilers
 
-script: make
+script: 
+  - make
+  - make speed
