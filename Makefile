@@ -149,6 +149,8 @@ install:
 	${BUILDROOT}/host/bin/flx_cp ${BUILDROOT} '(VERSION)' ${INSTALLDIR}'/$${1}'
 	${BUILDROOT}/host/bin/flx_cp ${BUILDROOT}/host/bin '(flx)' ${EXECPREFIX}'/$${1}'
 	${BUILDROOT}/host/bin/flx_cp src/ '(.*\.(c|cxx|cpp|h|hpp|flx|flxh|fdoc|fsyn|fpc|ml|mli|html))' ${INSTALLDIR}'/share/src/$${1}'
+	${BUILDROOT}/host/bin/flx_cp speed/ '(.*)' ${INSTALLDIR}'/speed/$${1}'
+
 	rm -f ${INSTALLROOT}/felix-latest
 	ln -s felix-${VERSION} ${INSTALLROOT}/felix-latest
 
@@ -202,7 +204,7 @@ syntax:
 speed:
 	-rm -rf result.tmp
 	sh speed/perf.sh 2>>result.tmp
-	#flx src/tools/flx_gengraph
+	build/release/host/bin/flx --felix=build.fpc src/tools/flx_gengraph
 
 #
 # Documentation
