@@ -1026,6 +1026,7 @@ let rec expr_unification bsym_table counter
 
       | BEXPR_closure (i,ts1), BEXPR_closure (j,ts2) when i = j -> ()
 
+(*
       | BEXPR_apply_prim _, _
       | BEXPR_apply_direct _, _
       | BEXPR_apply_stack _, _
@@ -1033,7 +1034,7 @@ let rec expr_unification bsym_table counter
       | _, BEXPR_apply_direct _
       | _, BEXPR_apply_stack _
          -> assert false
-
+*)
       | BEXPR_apply_prim (i,ts1,e1),BEXPR_apply_prim(j,ts2,e2)
       | BEXPR_apply_direct (i,ts1,e1),BEXPR_apply_direct(j,ts2,e2)
       | BEXPR_apply_stack(i,ts1,e1),BEXPR_apply_stack(j,ts2,e2)
