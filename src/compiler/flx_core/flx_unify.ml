@@ -1040,7 +1040,7 @@ let rec expr_unification bsym_table counter
         when i = j
         ->
         assert (List.length ts1 = List.length ts2);
-        teqns := combine ts1 ts2 @ !teqns;
+        teqns := List.combine ts1 ts2 @ !teqns;
         eqns := (e1,e2) :: !eqns
 
       | BEXPR_coerce (e,t), BEXPR_coerce (e',t') ->
