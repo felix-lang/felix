@@ -8,7 +8,7 @@ proc eval_A_times_u(N:int, u:V, Au:V)
 {
   var i:int; var j:int;
   for i in 0 upto N - 1 do
-    set(Au,i,);
+    set(Au,i,0.0);
     for j in 0 upto N - 1 do set(Au,i, Au.i + eval_A(i,j)*u.j); done
   done
 }

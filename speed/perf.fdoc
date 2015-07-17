@@ -2,7 +2,7 @@
 @h1 Micro Benchmark Performance
 @h2 Ackerman's function
 <span style="position:relative; left:100px;">
-<object data="speed/ack/result.svg" type="image/svg+xml"></object>
+<object data="./ack/result.svg" type="image/svg+xml"></object>
 </span>
 
 @h3 Ack Code

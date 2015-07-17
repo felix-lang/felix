@@ -106,9 +106,12 @@ and uses_bexe add bsym_table count_inits exe =
       assert false;
       f_bexpr a; f_bexpr b
 
+    | _,BTYP_tuple [] ->
+      print_endline ("[Flx_use] Unexpected unit assignment " ^ string_of_bexe bsym_table 0 exe);
+
     | _ -> 
-      print_endline ("Unexpected " ^ sbe bsym_table e);
-      print_endline ("In assignment " ^ string_of_bexe bsym_table 0 exe);
+      print_endline ("[Flx_use] Unexpected " ^ sbe bsym_table e);
+      print_endline ("[Flx_use] In assignment " ^ string_of_bexe bsym_table 0 exe);
       assert false
   in
   match exe,count_inits with
