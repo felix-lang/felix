@@ -106,10 +106,12 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
     ;
     let subs =
       catmap ""
-      (fun ((_,t) as e,s) ->
-        let t = cpp_ltypename syms bsym_table t in
+      (fun ((_,typ) as e,s) ->
+        let t = cpp_ltypename syms bsym_table typ in
         let e = ge sr e in
-        "      " ^ t ^ " " ^ s ^ " = " ^ e ^ ";\n"
+        "      " ^
+        (match typ with BTYP_tuple [] -> "// " | _ -> "") ^
+        t ^ " " ^ s ^ " = " ^ e ^ ";\n"
       )
       subs'
     in

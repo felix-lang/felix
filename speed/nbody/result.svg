@@ -2,10 +2,10 @@
     width="650" height="450" viewBox="0 0 650 450" preserveAspectRatio="none">
     <rect x="10" y="10" width="50" height="180" style="fill:red;stroke:purple;stroke-width:5;"/>
     <text x="10" y="220"  transform="rotate(60 10,220)">Felix</text>
-    <rect x="70" y="14" width="50" height="176" style="fill:red;stroke:purple;stroke-width:5;"/>
+    <rect x="70" y="15" width="50" height="175" style="fill:red;stroke:purple;stroke-width:5;"/>
     <text x="70" y="220"  transform="rotate(60 70,220)">clang</text>
-    <rect x="130" y="23" width="50" height="167" style="fill:red;stroke:purple;stroke-width:5;"/>
+    <rect x="130" y="25" width="50" height="165" style="fill:red;stroke:purple;stroke-width:5;"/>
     <text x="130" y="220"  transform="rotate(60 130,220)">gcc</text>
-    <rect x="190" y="11" width="50" height="179" style="fill:red;stroke:purple;stroke-width:5;"/>
+    <rect x="190" y="13" width="50" height="177" style="fill:red;stroke:purple;stroke-width:5;"/>
     <text x="190" y="220"  transform="rotate(60 190,220)">Ocaml</text>
   </svg>
