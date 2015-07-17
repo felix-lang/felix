@@ -3705,7 +3705,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
     )
   in
   (*
-  print_endline ("Binding expression " ^ string_of_expr e ^ " depth=" ^ string_of_int depth);
+  print_endline ("Binding expression " ^ string_of_expr e ^ " depth=" ^ string_of_int rs.depth);
   print_endline ("environment is:");
   print_env env;
   print_endline "==";
@@ -4508,7 +4508,10 @@ print_endline ("LOOKUP 9: varname " ^ si i);
           bexpr_address e
 
       | BEXPR_apply ((BEXPR_closure (i,ts),_),a),_  ->
-          let bsym = Flx_bsym_table.find bsym_table i in
+          let bsym = try Some (Flx_bsym_table.find bsym_table i) with Not_found -> None in
+          let bsym = match bsym with | Some bsym -> bsym 
+            | None -> failwith ("bind_expression': BEXPR_apply: Cannot find symbol index " ^ si i);
+          in
           let name = Flx_bsym.id bsym in
           let sr2 = Flx_bsym.sr bsym in
           clierr srr ("[bind_expression] [4]Address application of non-lvalue function " ^

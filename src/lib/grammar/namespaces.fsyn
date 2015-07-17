@@ -117,17 +117,17 @@ syntax namespaces {
   //$ class which is opened in the do block. Example:
   //$ 
   //$ var x = 42;
-  //$ with var x = 1 do var y = x; done
+  //$ with var x = 1; do var y = x; done
   //$ println$ x; // prints 42 not 1
   //$
   //$ This is the statement form of a let expression ..
-  private namespace_stmt := "with" stmt+ "do" stmt* "done" =>#
+  private namespace_stmt := "with" stmt+ block =>#
   """
   (let* 
     (
       (dummy_class_name (fresh_name "dummy_class"))
       (decls1 (map make_private _2)) 
-      (decls (append decls1 _4))
+      (decls (append decls1 `(,_3)))
     )
     `(ast_seq ,_sr 
       (

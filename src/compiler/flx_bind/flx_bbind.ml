@@ -346,16 +346,15 @@ print_endline ("Parent " ^ str_parent sym_parent ^ " mapped to true parent " ^ s
   in
   let add_bsym parent bbdcl =
     let bsym = Flx_bsym.of_sym sym bbdcl in
+    Flx_bsym_table.add bsym_table symbol_index parent bsym;
     begin match parent with
-    | None -> Flx_bsym_table.add bsym_table symbol_index None bsym
+    | None -> ()
     | Some parent ->
         let parent', sym' = Flx_sym_table.find_with_parent
           state.sym_table
           parent
         in
         bbind_symbol state bsym_table parent parent' sym';
-
-        Flx_bsym_table.add bsym_table symbol_index (Some parent) bsym
     end
   in
   (*
