@@ -174,6 +174,20 @@ static ::flx::gc::generic::offset_data_t const _uctor_offset_data = { 1, _uctor_
   0UL, 0UL
 };
 
+::flx::gc::generic::gc_shape_t cl_t_ptr_map = {
+  &_int_ptr_map,
+  "rtl::cl_t",
+  1,
+  sizeof(cl_t),
+  0,
+  0,
+  0,
+  ::flx::gc::generic::tblit<cl_t>,::flx::gc::generic::tunblit<clt>, 
+  gc::generic::gc_flags_default,
+  0UL, 0UL
+};
+
+
 // ********************************************************
 // pointer implementation
 // ********************************************************
@@ -197,7 +211,7 @@ static size_t address_decoder (void *p, char *s, size_t i) {
 // ********************************************************
 
 ::flx::gc::generic::gc_shape_t _address_ptr_map = {
-  &_int_ptr_map,
+  &cl_t_ptr_map,
   "rtl::address",
   1,
   sizeof(void*),

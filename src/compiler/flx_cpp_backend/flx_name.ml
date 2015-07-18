@@ -191,7 +191,7 @@ let rec cpp_type_classname syms bsym_table t =
   | BTYP_fix (i,_) -> "void" (* failwith "[cpp_type_classname] Can't name type fixpoint" *)
   | BTYP_none -> "none" (* hack needed for null case in pgen *)
   | BTYP_void -> "void" (* failwith "void doesn't have a classname" *)
-  | BTYP_label -> " ::flx::rtl::jump_address_t"
+  | BTYP_label -> " ::flx::rtl::jump_address_t" (* space required cause X<::y> is trigraph *)
   | BTYP_tuple [] -> " ::flx::rtl::cl_t" (* COMPACT LINEAR! *)
   | t when islinear_type bsym_table t -> " ::flx::rtl::cl_t"
 
@@ -216,7 +216,7 @@ let rec cpp_type_classname syms bsym_table t =
     | Flx_vrep.VR_int -> "int"
     | Flx_vrep.VR_nullptr -> "void*"
     | Flx_vrep.VR_packed -> "void*"
-    | Flx_vrep.VR_uctor -> "::flx::rtl::_uctor_"
+    | Flx_vrep.VR_uctor -> " ::flx::rtl::_uctor_"
     end
 
   | BTYP_unitsum k -> "_us" ^ string_of_int k
