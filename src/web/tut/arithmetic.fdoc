@@ -649,10 +649,6 @@ var equals : parser[token_t, singular_value_t] =
 
 @h2 The "parser"
 
-@felix
-//A language of arithmetic expressions
-@
-
 The language of arithmetic expressions will be defined by the
 following grammar:
 @pre
