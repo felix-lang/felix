@@ -191,9 +191,9 @@ let rec cpp_type_classname syms bsym_table t =
   | BTYP_fix (i,_) -> "void" (* failwith "[cpp_type_classname] Can't name type fixpoint" *)
   | BTYP_none -> "none" (* hack needed for null case in pgen *)
   | BTYP_void -> "void" (* failwith "void doesn't have a classname" *)
-  | BTYP_label -> "::flx::rtl::jump_address_t"
-  | BTYP_tuple [] -> "::flx::rtl::cl_t" (* COMPACT LINEAR! *)
-  | t when islinear_type bsym_table t -> "::flx::rtl::cl_t"
+  | BTYP_label -> " ::flx::rtl::jump_address_t"
+  | BTYP_tuple [] -> " ::flx::rtl::cl_t" (* COMPACT LINEAR! *)
+  | t when islinear_type bsym_table t -> " ::flx::rtl::cl_t"
 
   | BTYP_pointer t' -> cpp_type_classname syms bsym_table t' ^ "*"
  
