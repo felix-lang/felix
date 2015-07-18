@@ -182,7 +182,7 @@ static ::flx::gc::generic::offset_data_t const _uctor_offset_data = { 1, _uctor_
   0,
   0,
   0,
-  ::flx::gc::generic::tblit<cl_t>,::flx::gc::generic::tunblit<clt>, 
+  ::flx::gc::generic::tblit<cl_t>,::flx::gc::generic::tunblit<cl_t>, 
   gc::generic::gc_flags_default,
   0UL, 0UL
 };
