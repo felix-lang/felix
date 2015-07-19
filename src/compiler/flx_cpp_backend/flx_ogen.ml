@@ -101,6 +101,8 @@ let rec gen_type_shape module_name s syms bsym_table need_int last_ptr_map primi
 
 
     match btyp' with
+    | _ when islinear_type btyp' -> ()
+
     | BTYP_function _ -> ()
 
     | BTYP_tuple args ->
@@ -315,11 +317,6 @@ let rec gen_type_shape module_name s syms bsym_table need_int last_ptr_map primi
       let n = length offsets in
       gen_offset_data module_name s n name offsets false false [] None last_ptr_map encoder_name decoder_name
  
-(*
-    | BTYP_unitsum _ ->
-      bcat s ("static ::flx::gc::generic::gc_shape_t &"^ name ^"_ptr_map = ::flx::rtl::_int_ptr_map;\n");
-*)
-
     | BTYP_sum _ ->
       begin match Flx_vrep.cal_variant_rep bsym_table btyp with
       | Flx_vrep.VR_self -> assert false
