@@ -101,7 +101,7 @@ let rec gen_type_shape module_name s syms bsym_table need_int last_ptr_map primi
 
 
     match btyp' with
-    | _ when islinear_type btyp' -> ()
+    | _ when islinear_type bsym_table btyp' -> ()
 
     | BTYP_function _ -> ()
 
