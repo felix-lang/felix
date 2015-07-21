@@ -1,5 +1,13 @@
 @title An interpreter of arithmetic expressions
 
+@h1 An interpreter of arithmetic expressions
+
+This is a tutorial implementing an interpreter of arithmetic
+expressions. No code generation tools are employed, the program is
+self-contained. Lexical analysis is performed using parser
+combinators, evaluation by the method of environments. An interactive
+program for testing the interpreter is also provided.
+
 @pre
 //URL : http://localhost/$/home/fletch/project/felix.git/src/web/tut/arithmetic.fdoc
 //To exectue : /home/fletch/project/felix.git/build/release/host/bin/flx  --test=build/release src/web/tut/arithmetic.fdoc
@@ -7,10 +15,10 @@
 
 @h1 Basics
 
-Let tokens be of type <code>A</code> and parse results be of type
-<code>B</code>. Parsers work on lists of tokens; they consume part of
-the list and produce a result together with the list of tokens
-remaining or, indication of failure.
+Let tokens be of type @{A} and parse results be of type @{B}. Parsers
+work on lists of tokens; they consume part of the list and produce a
+result together with the list of tokens remaining or, indication of
+failure.
 
 @felix
 //Result of a parse
@@ -27,9 +35,9 @@ Parsers are functions.
 typedef parser[A, B] = list[A] -> parsed[A, B];
 @
 
-For example, the <code>empty</code> parser recognizes the empty
-string. It always returns a value and never consumes any tokens. The
-value it returns is <code>v</code>, the first argument.
+For example, the @{empty} parser recognizes the empty string. It
+always returns a value and never consumes any tokens. The value it
+returns is @{v}, the first argument.
 
 @felix
 //Emtpy string parser
@@ -38,9 +46,9 @@ fun empty[A, B] (v:B)(toks:list[A]):parsed[A, B] =>
   ;
 @
 
-<code>token</code> takes a predicate argument and returns a
-parser. The parser succeeds (or not) by testing the predicate on the
-head token of the token list.
+@{token} takes a predicate argument and returns a parser. The parser
+succeeds (or not) by testing the predicate on the head token of the
+token list.
 
 @felix
 //Given a predicate, produce a parser
@@ -57,8 +65,8 @@ fun token[A, B](test:A->opt[B]):parser[A,B] =>
   ;
 @
 
-<code>char_</code> is a function that computes a parser to match a
-specific token.
+@{char_} is a function that computes a parser to match a specific
+token.
 
 @felix
 //Parser of a specific token
@@ -73,9 +81,8 @@ fun char_[A with Eq[A]] (ch:A):parser[A, A] =>
   ;
 @
 
-The <em>disjunction</em> of two parsers <code>p</code> and
-<code>q</code> say, is the parser <code>p</code> "or else"
-<code>q</code>.
+The <em>disjunction</em> of two parsers @{p} and @{q} say, is the
+parser @{p} "or else" @{q}.
 
 @felix
 //Parser disjunction
@@ -88,9 +95,8 @@ fun orelse[A, B] (p1:parser[A, B], p2:parser[A, B]):parser[A, B] =>
   ;
 @
 
-The <em>conjunction</em> of two parsers <code>p</code> and
-<code>q</code> say, is the parser <code>p</code> "and then"
-<code>q</code>.
+The <em>conjunction</em> of two parsers @{p} and @{q} say, is the
+parser @{p} "and then" @{q}.
 
 @felix
 //Parser conjunction
@@ -107,11 +113,10 @@ fun andalso[A, B, C] (p1:parser[A, B],p2:parser[A, C]):parser[A, (B * C)] =>
   ;
 @
 
-The function <code>gives</code> takes a parser <code>p</code> and a
-function <code>f</code> as input. It parses with <code>p</code> and
-applies <code>f</code> to the parse result.  This provides a facility
-to transform simple parse results into more complicated abstract
-syntax trees.
+The function @{gives} takes a parser @{p} and a function @{f}. It
+parses with @{p} and applies @{f} to the parse result. This provides a
+facility to transform simple parse results into more complicated
+abstract syntax trees.
 
 @felix
 //Transform the result of a parse
@@ -124,8 +129,7 @@ fun gives[A, B, C] (p:parser[A, B], f:B -> C):parser[A, C] =>
   ;
 @
 
-This syntax provides briefer notations for the key combinators seen so
-far.
+In this section, infix operator syntax is introduced.
 
 @felix
 //Infix operators
@@ -161,19 +165,21 @@ open syntax infix_c;
 @
 
 That is,
-<table align="center">
+<table align="center" border="1" style=width:100%>
 <tr><th>Infix</th><th>Prefix</th><th>meaning</th></tr>
-<tr><td><code>|~</code></td><td><code>orelse</code></td><td><code>p</code>"or else"<code>q</code></td></tr>
-<tr><td><code>&~</code></td><td><code>andalso</code></td><td><code>p</code>"and then"<code>q</code></td></tr>
-<tr><td><code>&gt;=~</code></td><td><code>gives</code></td><td><code>p</code>"gives"<code>q</code></td></tr>
-<tr><td><code>&gt;&gt;=~</code></td><td><code>givento</code></td><td><code>p</code>"given to"<code>q</code></td></tr>
+<tr><td>@{|~}</td><td>@{orelse}</td><td>@{p}"or else"@{q}</td></tr>
+<tr><td>@{&~}</td><td>@{andalso}</td><td>@{p}"and then"@{q}</td></tr>
+<tr><td>@{&gt;=~}</td><td>@{gives}</td><td>@{p}"gives"@{q}</td></tr>
+<tr><td>@{&gt;&gt;=~}</td><td>@{givento}</td><td>@{p}"given to"@{q}</td></tr>
 </table>
 
-The last one, "given to", we haven't seen a definition for yet - in
-Felix there is no problem referring to a definition that follows later
-in the program.
+The last one, "given to", has not been defined yet. It's for when
+parser is computed as a parse result and parsing resumes with that
+parser on the tokens remanining. In Felix there is no problem
+referring to a definition that follows later in the program.
 
-Some well known utilities:
+To implement the next combinator, we need to enlist the help of some
+well known utilities.
 
 @felix
 
@@ -183,8 +189,7 @@ fun snd[A, B] (p : A * B) : B => p.1 ;
 fun prepend[T] (p : T * list[T]) : list[T] => Cons (p.0, p.1) ;
 @
 
-Another fundamental combinator now, this is the recursive "Kleene '*'
-operator", <code>*</code>.
+With these we can write the "Kleene 'star'" operator", @{*}.
 
 @felix
 //Kleene '*'
@@ -193,7 +198,11 @@ fun zero_or_more[A, B] (p:parser[A, B]): parser[A, list[B]] =>
    ( (p &~ zero_or_more p >=~ prepend[B])
    |~ (empty[A, list[B]] (list[B]())) ) toks
 ;
+@
 
+Syntax for @{*} in prefix position is provided for by the following.
+
+@felix
 syntax prefix_c 
 {
   //zero_or_more
@@ -207,9 +216,8 @@ open syntax prefix_c;
 
 @h2 Alphanumeric
 
-This <em>is not</em> a parser, this is a function that tests a
-<code>char</code> for membership in a list of ranges like
-<code>['a'-'z']['A'-'Z']</code>
+This <em>is not</em> a parser, this is a function that tests a @{char}
+for membership in a list of ranges like @{['a'-'z']['A'-'Z']}.
 
 @felix
 //Check if a character is a member of one of the provided ranges
@@ -222,7 +230,7 @@ fun char_range (c:char)(l:list[char * char]):bool =>
   ;
 @
 
-The function <code>letter</code> on the other hand, <em>is</em> a
+The function @{letter} on the other hand, <em>is</em> a
 parser. Analysis succeeds for alphabetic characters.
 
 @felix
@@ -246,11 +254,11 @@ var digit : parser[char, char] =
   ;
 @
 
-The expression <code>(digit &~ *digit)</code> computes a pair. The
-first element of the pair is the leading digit, the second element of
-the pair, a list of zero or digits. We "give" that pair to
-<code>prepend</code>, which joins the pair into a single list with
-head the leading digit.
+The expression @{(digit &~ *digit)} computes a pair. The first element
+of the pair is the leading digit, the second element of the pair, a
+list of zero or more digits. We "give" that pair to the function
+@{prepend}, which joins the pair into a single list with head the
+leading digit.
 
 @felix
 //Parser of a sequence of digit
@@ -298,7 +306,7 @@ var optexp : parser[char, list[char]] =
 @h2 Tokens
 
 In readiness for parsing, some functions for switching representations
-between <code>string</code> and <code>list[char]</code>.
+between @{string} and @{list[char]}.
 
 @felix
 //Explode a string into a list of char
@@ -309,6 +317,7 @@ fun explode (s:string):list[char] =
     if (i == n) then rev acc
     else loop (Cons (s.[i], acc)) (i + 1)
   ;
+
   return loop (list[char]()) 0uz;
 };
 
@@ -319,7 +328,7 @@ fun implode (xs:list[char]) =>
 @
 
 At this point, it makes sense to introduce a type for the tokens that
-we will admit in our language of arithmetic expressions.
+we will admit into our language of arithmetic expressions.
 
 @felix
 //Tokens
@@ -350,7 +359,7 @@ instance Str[token_t] {
 
 @h2 The "lexer"
 
-<code>number</code> produces "number" tokens.
+@{number} produces "number" tokens.
 
 @felix
 //Number token
@@ -361,7 +370,7 @@ var number:parser[char, token_t] =
   ;
 @
 
-<code>identifier</code> produces "identifier" tokens.
+@{identifier} produces "identifier" tokens.
 
 @felix
 //Identifier token
@@ -372,7 +381,7 @@ var identifier : parser[char, token_t] =
   ;
 @
 
-The following set of parsers is for the remaining single character
+The following set of parsers deals with the remaining single character
 token types.
 
 @felix
@@ -457,9 +466,8 @@ fun spaces (toks:list[char]) : parsed[char, singular_value_t] =>
   ;
 @
 
-Finally, the lexical analyzer which computes a
-<code>list[token_t]</code> from an input <code>list[char]</code>. It
-is defined by the regular expression 
+Finally, the lexical analyzer which computes a @{list[token_t]} from
+an input @{list[char]}. It is defined by the regular expression
 @pre
 lex := spaces((identifier|number|operator|paren|semicolon|equal)spaces)*
 @
@@ -482,7 +490,7 @@ fun lex (toks : list[char]) : parsed [char, list[token_t]] =>
 @h1 Parsing
 
 We present the type of ASTs (abstract syntax trees). It is with values
-of this type that we will realize our arithmetic expressions.
+of this type that arithmetic expressions will be realized.
 
 @h2 Abstract syntax trees and primitives
 
@@ -511,8 +519,8 @@ fun str (ast : ast_t) : string =>
   ;
 @
 
-The first in this set of functions is a parser of number tokens
-producing (literal) number expressions.
+The first in this set of functions, @{num}, is a parser of number
+tokens producing (literal) number expressions.
 
 @felix
 //Constants
@@ -526,7 +534,7 @@ val num:parser[token_t, ast_t] =
   );
 @
 
-This is a parser of "identifier" expressions.
+@{ident} is a parser of "identifier" expressions.
 
 @felix
 //Identifiers
@@ -539,7 +547,7 @@ val ident:parser[token_t, ast_t] =
   );
 @
 
-Additive expression parser.
+@{addop} is the parser of additive expressions.
 
 @felix
 //Addition, subtraction operators
@@ -554,7 +562,7 @@ val addop:parser[token_t, ast_t -> ast_t -> ast_t] =
   );
 @
 
-Multiplicative expression parser.
+@{mulop} the parser of multiplicative expressions.
 
 @felix
 //Multiplication, division operators
@@ -569,9 +577,13 @@ val mulop:parser[token_t, ast_t -> ast_t -> ast_t] =
   );
 @
 
-The result of a parser can be used to compute a new parser that then
-attempts a parse on the remains. This function has infix form
-<code>&gt;&gt;=~</code>.
+Note that @{addop} amd @{mulop} produce <em>functions</em> on a
+successful parse.
+
+The result of a parser @{p} say, can be used to compute a new parser
+@{q} that then attempts a parse on the remains. Informally we might
+say this as @{p} "given to" @{q}. This function has infix operator
+form @{&gt;&gt;=~}
 
 @felix
 //A parser that feeds its result into another
@@ -584,12 +596,11 @@ fun givento[A, B, C] (p1:parser[A, B], p2:B -> parser[A, C]) : parser[A, C] =>
     ;
 @
 
-This <code>&gt;&gt;=~</code> operator is critical to the
-implementation of <code>left_assoc</code> : the analyzer for
-expressions with associative infix operators which recognizes the
-grammar
-@pre
-expr := term (op term)*
+The @{&gt;&gt;=~} operator is critical to the implementation of
+@{left_assoc} : the analyzer for expressions with associative infix
+operators which recognizes the grammar
+@pre 
+expr := term (op term)* 
 @
 
 @felix
@@ -607,7 +618,8 @@ fun left_assoc[A, B]
 @
 
 These are all the single token parsers that don't don't map to actual
-expressions.
+expressions (their occurrences do not result in nodes in the abstract
+syntax tree).
 
 @felix
 //Opening paren
@@ -693,9 +705,9 @@ fun expr (toks : list[token_t]) : parsed[token_t, ast_t] =>
 @
 
 where,
-<pre>
+@pre
 bind := identifier '=' expr
-</pre>
+@
 
 @felix
 var bind : parser[token_t, ast_t] =
@@ -708,22 +720,22 @@ var bind : parser[token_t, ast_t] =
 @
 
 The rule for terms:
-<pre>
+@pre
 term := fact (['*'|'/'] fact)*
-</pre>
+@
 
 @felix
 var term : parser[token_t, ast_t] = left_assoc[token_t, ast_t] fact mulop ;
 @
 
 The fule for factors:
-<pre>
+@pre
 fact :=
  | num
  | identifier
  | '( expr ')
  ;
-</pre>
+@
 
 @felix
 fun fact (toks : list[token_t]) : parsed[token_t, ast_t] =>
@@ -785,9 +797,18 @@ fun assoc[A, B with Eq[A]] (x : A) (l : list[(A * B)]) : opt[B] =>
 
 @h1 Evaluation
 
+Here's is how the success or failure of parsing and evaluation will be
+represented.
+
 @felix
 union result[A, B] =  Ok of A | Error of B ;
+@
 
+For our interpreter, in the above @{A} will be fixed to @{double} (the
+only "values" admitted by our language of arithmetic expressions will
+be real numbers) and @{B} to @{error_t} defined by the following.
+
+@felix
 union error_t =
   | Syntax_error
   | Unbound_variable of string
@@ -801,7 +822,12 @@ fun str (err : error_t) : string =>
     | #Division_by_zero => "Attempted division by zero"
   endmatch
   ;
+@
 
+We 'evaluate' expressions (instances of type @{ast_t}) using the
+method of environments. The environment is necessarily mutable.
+
+@felix
 //Evaluate an expression in an environment
 fun eval 
    (env:&list[(string * double)]) 
@@ -872,7 +898,12 @@ fun eval
       endmatch          
    endmatch)
   ;
+@
 
+With @{eval} at our disposal, we can write a function that tokenizes,
+parses and evaluates an expression in one shot.
+
+@felix
 gen parse_eval_expr
   (env:&list[(string*double)]) (s:string) : result[double, error_t] =
 {
@@ -884,7 +915,11 @@ gen parse_eval_expr
 
   return Error[double, error_t](Syntax_error);
 }
+@
 
+An analogous function to do the same for a sequence of expressions.
+
+@felix
 gen parse_eval_exprs 
   (env:&list[(string*double)]) (s:string) : result[list[double], error_t] =
 {
@@ -912,7 +947,14 @@ gen parse_eval_exprs
 
   return Error[list[double], error_t](Syntax_error);
 }  
+@
 
+@h2 The "repl"
+
+So, all that remains now is to put an interactive "front end" on the
+interpreter (a read-eval-print-loop).
+
+@felix
 proc prompt (continuing:bool) {
   if (not continuing) do
     write$ stdout, "? ";
@@ -984,15 +1026,25 @@ repl_loop : //iz in ur loop!
   done //repl_loop
   println$ "";
 }
+@
 
+When the program is executed, we go into the repl "loop"!
+
+@felix
 repl () ;
 @
+
+Here's some test input for the repl emulating what a user might write.
 @input
 x=1
 y=2
 x+y
 x+(x*y)+43-y/1
 @
+
+Given the above test input, this is the expected output from the
+interpreter.
+
 @expect
 
 Interpreter of arithmetic expressions (with variables)
