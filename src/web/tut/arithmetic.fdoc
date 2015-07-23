@@ -429,26 +429,19 @@ var semicolon : parser[char, token_t] =
   );
 @
 
-This is a realization of the single-point set.
-
-@felix
-typedef singular_value_t = unit;
-var singular_value = ();
-@
-
-In particular, we use it here for a parser of white space. It
-consumes a space character but produces no significant information.
+A parser of white space consumes a space character but produces no
+significant information.
 
 @felix
 //Parse a whitespace character
-var space_ : parser[char, singular_value_t] =
- token (fun (ch:char) : opt[singular_value_t] =>
+var space_ : parser[char, unit] =
+ token (fun (ch:char) : opt[unit] =>
    match ch with
-     | c when c == char ' ' => Some singular_value
-     | c when c == char '\t' => Some singular_value
-     | c when c == char '\n' => Some singular_value
-     | c when c == char '\r' => Some singular_value
-     | _ => None[singular_value_t]
+     | c when c == char ' ' => Some ()
+     | c when c == char '\t' => Some ()
+     | c when c == char '\n' => Some ()
+     | c when c == char '\r' => Some ()
+     | _ => None[unit]
    endmatch
   );
 @
@@ -457,10 +450,10 @@ A parser of spaces follows easily.
 
 @felix
 //Parser of whitespace
-fun spaces (toks:list[char]) : parsed[char, singular_value_t] =>
+fun spaces (toks:list[char]) : parsed[char, unit] =>
   (((space_ &~ spaces) >=~ 
-       fst[singular_value_t, singular_value_t])
-    |~ empty[char, singular_value_t](singular_value))
+       fst[unit, unit])
+    |~ empty[char, unit](()))
   toks
   ;
 @
@@ -481,8 +474,8 @@ fun lex (toks : list[char]) : parsed [char, list[token_t]] =>
         |~ paren 
         |~ semicolon 
         |~ equal) &~ spaces) >=~ 
-    (fst[token_t, singular_value_t])) 
-       >=~ snd[singular_value_t, list[token_t]]) toks
+    (fst[token_t, unit])) 
+       >=~ snd[unit, list[token_t]]) toks
   ;
 @
 
@@ -622,38 +615,38 @@ syntax tree).
 
 @felix
 //Opening paren
-var open_paren : parser[token_t, singular_value_t] =
-  let fun t (tok : token_t) : opt[singular_value_t] =>
+var open_paren : parser[token_t, unit] =
+  let fun t (tok : token_t) : opt[unit] =>
     match tok with
-    | #T_lparen => Some singular_value
-    | _ => None[singular_value_t]
+    | #T_lparen => Some ()
+    | _ => None[unit]
   in token t
 ;
 
 //Closing paren
-var close_paren : parser[token_t, singular_value_t] =
-  let fun t (tok : token_t) : opt[singular_value_t] =>
+var close_paren : parser[token_t, unit] =
+  let fun t (tok : token_t) : opt[unit] =>
     match tok with
-    | #T_rparen => Some singular_value
-    | _ => None[singular_value_t]
+    | #T_rparen => Some ()
+    | _ => None[unit]
   in token t
 ;
 
 //Semi-colon
-var semi : parser[token_t, singular_value_t] =
-  let fun t (tok : token_t) : opt[singular_value_t] =>
+var semi : parser[token_t, unit] =
+  let fun t (tok : token_t) : opt[unit] =>
     match tok with
-    | #T_semicolon => Some singular_value
-    | _ => None[singular_value_t]
+    | #T_semicolon => Some ()
+    | _ => None[unit]
   in token t
 ;
 
 //Equals sign
-var equals : parser[token_t, singular_value_t] =
-  let fun t (tok : token_t) : opt[singular_value_t] =>
+var equals : parser[token_t, unit] =
+  let fun t (tok : token_t) : opt[unit] =>
     match tok with
-    | #T_equal => Some singular_value
-    | _ => None[singular_value_t]
+    | #T_equal => Some ()
+    | _ => None[unit]
   in token t
 ;
 @
@@ -683,7 +676,7 @@ fact :=
 @felix
 //expr_list := expr (';' expr)*
 var expr_list : parser[token_t, list[ast_t]] = 
-  ((expr &~ *((semi &~ expr) >=~ snd[singular_value_t, ast_t])
+  ((expr &~ *((semi &~ expr) >=~ snd[unit, ast_t])
      >=~ Cons[ast_t]))
    |~empty[token_t, list[ast_t]] (list[ast_t]())
   ;
@@ -710,7 +703,7 @@ bind := identifier '=' expr
 
 @felix
 var bind : parser[token_t, ast_t] =
-   (((ident &~ equals) >=~ fst[ast_t, singular_value_t]) &~ expr) >=~ 
+   (((ident &~ equals) >=~ fst[ast_t, unit]) &~ expr) >=~ 
    (fun (p : ast_t * ast_t) : ast_t => 
       match p.0 with
       | E_var e => E_let (e, p.1)
@@ -740,7 +733,7 @@ fact :=
 fun fact (toks : list[token_t]) : parsed[token_t, ast_t] =>
   (num |~ ident |~ 
     ((open_paren &~ expr &~ close_paren) >=~ 
-        (fun (p:(singular_value_t * ast_t), u:singular_value_t) : ast_t => p.1))
+        (fun (p:(unit * ast_t), u:unit) : ast_t => p.1))
    ) toks
   ;
 @
