@@ -92,6 +92,12 @@ How to embed Felix, particularly in foreign event loops.
 Categorical type system: 
 <a href="garray_index.fdoc">Generalised Arrays.</a>
 
+The <a href="fix.fdoc">fixpoint combinator</a> for eager
+languages using open recursion.
+
+Some <a href="arithmetic.fdoc">parser combinators</a>
+by Shayne Fletcher.
+
 @h2 Appendices
 <a href="literals_index.fdoc">Scalar Types:  </a>
 a summary of the core scalar types and

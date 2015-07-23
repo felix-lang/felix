@@ -1,0 +1,30 @@
+@title Fixpoint combinator
+@h1 Definition
+This is an eager variant of the fixpoint combinator:
+@felix
+fun fix[T] (f:(T->T)->T->T) (x:T) : T => f (fix f) x;
+@
+To use this combinator we need to define a function with
+open recursion first:
+@felix
+fun factabs (fact:int->int) (x:int) : int =>
+  match x with
+  | 0 => 1
+  | x => x * fact (x - 1)
+  endmatch
+;
+@
+This function is a flat function which accepts an arbitrary function
+of type @{int->int} as an argument. It is intended to accept its own
+body as an argument. So next we have to close the recursive knot
+with the fixpoint combinator:
+@felix
+var fact = fix factabs;
+@
+We can check this is indeed the factorial function with 
+a sample application:
+@felix
+println$ fact 5;
+@expect
+120
+@

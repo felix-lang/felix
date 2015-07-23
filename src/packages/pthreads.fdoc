@@ -405,7 +405,7 @@ open class TS_Bound_Queue
   private type bQ_ = "::flx::pthread::bound_queue_t";
   _gc_pointer _gc_type bQ_ type ts_bound_queue_t[T] = "::flx::pthread::bound_queue_t*" 
     requires 
-     package "flx_pthread",
+     package "flx_bound_queue",
      scanner "::flx::pthread::bound_queue_scanner"
   ;
   ctor[T] ts_bound_queue_t[T]: !ints = 
