@@ -186,7 +186,6 @@ well known utilities.
 //These idioms comes up enough to be worth factoring them out
 fun fst[A, B] (p : A * B) : A => p.0 ;
 fun snd[A, B] (p : A * B) : B => p.1 ;
-fun prepend[T] (p : T * list[T]) : list[T] => Cons (p.0, p.1) ;
 @
 
 With these we can write the "Kleene 'star'" operator", @{*}.
@@ -195,7 +194,7 @@ With these we can write the "Kleene 'star'" operator", @{*}.
 //Kleene '*'
 fun zero_or_more[A, B] (p:parser[A, B]): parser[A, list[B]] =>
   fun (toks:list[A]) : parsed[A, list[B]] =>
-   ( (p &~ zero_or_more p >=~ prepend[B])
+   ( (p &~ zero_or_more p >=~ Cons[B])
    |~ (empty[A, list[B]] (list[B]())) ) toks
 ;
 @
@@ -256,14 +255,14 @@ var digit : parser[char, char] =
 
 The expression @{(digit &~ *digit)} computes a pair. The first element
 of the pair is the leading digit, the second element of the pair, a
-list of zero or more digits. We "give" that pair to the function
-@{prepend}, which joins the pair into a single list with head the
+list of zero or more digits. We "give" that pair to the constructor
+@{Cons[char]}, which joins the pair into a single list with head the
 leading digit.
 
 @felix
 //Parser of a sequence of digit
 var digits : parser[char, list[char]] = 
-  (digit &~ *digit) >=~ prepend[char]
+  (digit &~ *digit) >=~ Cons[char]
   ;
 @
 
@@ -290,14 +289,14 @@ var optsign : parser[char, list[char]] =
 
 // '.' digit* | eps
 var optfrac : parser[char, list[char]] =
-  ( char_ (char '.') &~ *digit >=~ prepend[char])
+  ( char_ (char '.') &~ *digit >=~ Cons[char])
   |~ empty[char, list[char]] (list[char] ())
   ;
 
 //(('e'|'E') optsign digits)|eps
 var optexp : parser[char, list[char]] =
   (((((char_ (char 'e') |~ char_ (char 'E')) &~ optsign) 
-    >=~ prepend[char]) &~ digits) 
+    >=~ Cons[char]) &~ digits) 
     >=~ (fun (x:list[char], y:list[char]) : list[char] => x + y)) 
   |~ empty[char, list[char]] (list[char] ())
 ;
@@ -685,7 +684,7 @@ fact :=
 //expr_list := expr (';' expr)*
 var expr_list : parser[token_t, list[ast_t]] = 
   ((expr &~ *((semi &~ expr) >=~ snd[singular_value_t, ast_t])
-     >=~ prepend[ast_t]))
+     >=~ Cons[ast_t]))
    |~empty[token_t, list[ast_t]] (list[ast_t]())
   ;
 @
