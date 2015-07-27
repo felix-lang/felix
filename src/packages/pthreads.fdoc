@@ -9,6 +9,7 @@
 @tangler ts_counter.flx         = share/lib/std/control/ts_counter.flx
 @tangler ts_bound_queue.flx     = share/lib/std/control/ts_bound_queue.flx
 @tangler atomic.flx             = share/lib/std/control/atomic.flx
+@tangler threadpool.flx         = share/lib/std/control/threadpool.flx
 
 @h1 Pthreads.
 General support for pre-emptive threading, aka shared 
@@ -487,6 +488,55 @@ open class Atomic
     fun str (var x:atomic[T]) => x.load.str;
   }
   inherit[T] Str[atomic[T]];
+}
+@h1 Thread Pool
+A thread pool is a global object containing set of running threads
+and a queue. Instead of spawning a new thread, the client just queues
+the job instead. Each thread grabs a job from the queue and runs it,
+on completion it grabs another job.
+
+The primary advantage of a global thread pool is it prevent oversaturation
+of the set of processors and thus excess context switching. The main
+downside
+@tangle threadpool.flx
+
+include "std/control/ts_bound_queue";
+class ThreadPool
+{
+  typedef job_t = 1 -> 0;
+  const ThreadStop : job_t = "NULL";
+  fun isStop : job_t -> bool = "$1==NULL";
+
+  var jobqueue = ts_bound_queue_t[job_t] 1024; // queue up to 1K jobs
+  var nthreads = 4;
+  var running = atomic 0;
+  proc start () { 
+     for i in 1..nthreads call spawn_pthread jobhandler;
+  }
+  proc start (n:int) {
+     nthreads = n;
+     #start;
+   }
+  proc jobhandler () {
+     ++running;
+     rpt:while true do
+       var job = dequeue jobqueue;
+       if isStop job break rpt;
+       job; 
+       thread_yield();
+     done
+     --running;
+  }
+  proc queue_job (job:job_t) {
+    if running.load == 0 call start ();
+    enqueue jobqueue job;
+  }
+  proc stop () {
+    for i in 1..nthreads 
+      call enqueue jobqueue ThreadStop;
+    while running.load != 0 
+      call Faio::sleep(clock,0.001);
+  }
 }
 
 
