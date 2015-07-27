@@ -17,7 +17,7 @@
 
 @h2 Takfp function
 <span style="position:relative; left:100px;">
-<object data="speed/takfp/result.svg" type="image/svg+xml"></object>
+<object data="./takfp/result.svg" type="image/svg+xml"></object>
 </span>
 
 @h3 Takfp Code
@@ -32,7 +32,7 @@
 
 @h2 N-body Problem 
 <span style="position:relative; left:100px;">
-<object data="speed/nbody/result.svg" type="image/svg+xml"></object>
+<object data="./nbody/result.svg" type="image/svg+xml"></object>
 </span>
 
 @h3 Nbody Code
@@ -50,7 +50,7 @@
 
 @h2 Mandelbrot Fun 
 <span style="position:relative; left:100px;">
-<object data="speed/mandelbrot/result.svg" type="image/svg+xml"></object>
+<object data="./mandelbrot/result.svg" type="image/svg+xml"></object>
 </span>
 
 @h3 Mandelbrot Code
@@ -65,7 +65,7 @@
 
 @h2 Mandelbrot2-1 
 <span style="position:relative; left:100px;">
-<object data="speed/mandelbrot21/result.svg" type="image/svg+xml"></object>
+<object data="./mandelbrot21/result.svg" type="image/svg+xml"></object>
 </span>
 
 @h3 Mandelbrot21 Code
@@ -80,7 +80,7 @@
 
 @h2 Spectral Norm
 <span style="position:relative; left:100px;">
-<object data="speed/spectralnorm/result.svg" type="image/svg+xml"></object>
+<object data="./spectralnorm/result.svg" type="image/svg+xml"></object>
 </span>
 
 @h3 Spectral Norm Code
