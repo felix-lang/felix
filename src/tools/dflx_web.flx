@@ -26,11 +26,11 @@ span.preproc {color:#005500; }
 span.embedded_c{background-color:#DDDDDD; }
 span.fpc_fieldname {color:#DD0000; }
 span.lineno {color:#101010; background-color:#E0E0E0; font-size:80%; font-family:"courier",monospace; font-style:normal; }
-pre.flxbg {background-color:#A0FFA0; color:black; padding:2px; box-shadow:5px 5px 2px #807080; }
+pre.flxbg {background-color:#90DF90; color:black; padding:2px; box-shadow:5px 5px 2px #807080; }
 pre.uncheckedflxbg {background-color:#D0D0D0; color:black; padding:2px; box-shadow:5px 5px 2px #807080; }
 pre.cppbg {background-color:#80FF80; color:black; }
 pre.prefmtbg {background-color:#D0D0D0; color:black; }
-pre.expected {background-color:#E0FF80; color:black; }
+pre.expected {background-color:#E0EF80; color:black; }
 pre.input {background-color:#E08080; color:black; }
 pre.inclusion {background-color:#D070D0; color:black; }
 code.inclusion {background-color:#D070D0; color:black; }

@@ -8,6 +8,7 @@
 @tangler condition_variable.flx = share/lib/std/control/condition_variable.flx
 @tangler ts_counter.flx         = share/lib/std/control/ts_counter.flx
 @tangler ts_bound_queue.flx     = share/lib/std/control/ts_bound_queue.flx
+@tangler atomic.flx             = share/lib/std/control/atomic.flx
 
 @h1 Pthreads.
 General support for pre-emptive threading, aka shared 
@@ -55,7 +56,7 @@ open class Pthread
       var fthr = mk_thread con;
       svc$ svc_spawn_pthread fthr;
   }
-
+  proc thread_yield : 1 = "PTF gcp->collector->get_thread_control()->yield();";
 }
 
 @h1 Pchannels.
@@ -410,15 +411,82 @@ open class TS_Bound_Queue
   ;
   ctor[T] ts_bound_queue_t[T]: !ints = 
     "new (*PTF gcp, @0, false) ::flx::pthread::bound_queue_t((size_t)$1)";
-  private proc _enqueue[T]: ts_bound_queue_t[T] * &T = "$1->enqueue((void*)$2);";
-  private gen _dequeue[T]: ts_bound_queue_t[T] -> &T = "(?1*)$1->dequeue();";
+
+  // NOTE: enqueue/dequeue on queues uses suspend/resume
+  // to tell any pending collector it is safe to proceed
+  // whilst it is doing the operations (which may block),
+  // to block returning from the I/O during a collection
+  // AND, if the I/O completed before the collection got
+  // going, to yield at this point.
+
+
+  private proc _enqueue[T]: ts_bound_queue_t[T] * &T = """
+    FLX_SAVE_REGS;
+    PTF gcp->collector->get_thread_control()->suspend();
+    $1->enqueue((void*)$2);
+    PTF gcp->collector->get_thread_control()->resume();
+  """;
+
+
+  // Duh .. what happens if $2 storage location is set by
+  // the dequeue in the middle of a collection?
+  // it might be NULL when scanned, but by the time the queue
+  // is scanned the value will be lost from the queue and
+  // in the variable instead!
+  // The RACE is on!
+  private proc _dequeue[T]: ts_bound_queue_t[T] * &&T = """
+    FLX_SAVE_REGS;
+    PTF gcp->collector->get_thread_control()->suspend();
+    *$2=(?1*)$1->dequeue();
+    PTF gcp->collector->get_thread_control()->resume();
+  """;
+
   proc enqueue[T] (Q:ts_bound_queue_t[T])  (elt:T) {
      _enqueue(Q, new elt);
   }
-  gen dequeue[T] (Q:ts_bound_queue_t[T]): T => *(_dequeue Q);
-  proc wait[T]: ts_bound_queue_t[T] = "$1->wait_until_empty();";
+
+  gen dequeue[T] (Q:ts_bound_queue_t[T]): T = {
+    var x:&T;
+    _dequeue (Q,&x);
+    return *x;
+  }
+
+
+  proc wait[T]: ts_bound_queue_t[T] = """
+    FLX_SAVE_REGS;
+    PTF gcp->collector->get_thread_control()->suspend();
+    $1->wait_until_empty();
+    PTF gcp->collector->get_thread_control()->resume();
+  """;
+
   proc resize[T]: ts_bound_queue_t[T] * !ints = "$1->resize((size_t)$2);";
  
+}
+
+@h1 Atomic operations
+@tangle atomic.flx
+open class Atomic
+{
+  // note: only works for some types: constraints need to be added.
+  // We have to use a pointer because atomics aren't copyable
+
+  type atomic[T]="::std::atomic<?1>*" requires Cxx11_headers::atomic;
+
+  // FIXME: not managed by GC yet!
+  // constructor
+  ctor[T] atomic[T]: T = "(new ::std::atomic<?1>($1))"; 
+
+  proc delete[T] : atomic[T] = "delete $1;";
+
+  // note: only works for even less types! Constraints needed.
+  proc pre_incr[T] : &atomic[T] = "++**$1;";
+  proc pre_decr[T] : &atomic[T] = "--**$1;";
+  gen load[T] : atomic[T] -> T = "$1->load()";
+
+  instance[T] Str[atomic[T]] {
+    fun str (var x:atomic[T]) => x.load.str;
+  }
+  inherit[T] Str[atomic[T]];
 }
 
 
