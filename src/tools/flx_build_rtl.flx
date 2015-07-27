@@ -4,6 +4,7 @@ include "std/felix/flx_pkgconfig";
 include "std/felix/flx_pkg"; // only for "fix2word_flags"
 include "std/felix/flx_cp";
 include "std/felix/flx/flx_depchk";
+include "std/control/threadpool";
 
 class FlxRtlBuild
 {
@@ -12,7 +13,7 @@ class FlxRtlBuild
 
 
 
-  proc make_lib 
+  noinline proc make_lib 
   (
     db: FlxPkgConfig::FlxPkgConfigQuery_t,  
     toolchain-maker: clang_config_t -> toolchain_t, 
@@ -22,7 +23,7 @@ class FlxRtlBuild
     tmpdir:string,
     static_only:bool,
     debug: bool
-  )
+  ) ()
   {
     proc dbug (x:string) => if debug call println$ '[make_lib: '+pkg+']' x;
 
@@ -249,13 +250,16 @@ class FlxRtlBuild
           println$ "Package error, package " + pkg + " library " + library + " No src files specified";
           System::exit(1);
         done
-        make_lib (db,toolchain-maker, build, target, pkg,tmpdir, static_only, debug);
+        //println$ "QUEUING LIBRARY BUILDER JOB FOR " +  library; 
+        //ThreadPool::queue_job$ make_lib (db,toolchain-maker, build, target, pkg,tmpdir, static_only, debug);
+        make_lib (db,toolchain-maker, build, target, pkg,tmpdir, static_only, debug) ();
       else 
         println$ "------------";
         println$ "External package " + pkg;
         println$ "------------";
       done
     end 
+    ThreadPool::stop;
 
     // make drivers
     begin
