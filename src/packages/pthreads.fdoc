@@ -563,15 +563,15 @@ include "std/pthread/pchannels";
 class ThreadPool
 {
   typedef job_t = 1 -> 0;
-  const ThreadStop : job_t = "NULL";
-  fun isStop : job_t -> bool = "$1==NULL";
-  var clock = #Faio::mk_alarm_clock;
-  var jobqueue = ts_bound_queue_t[job_t] 1024; // queue up to 1K jobs
-  var nthreads = 4;
-  var running = atomic 0;
-  var waiting = atomic 0;
-  var block = #condition_variable;
-  var bmux = #mutex;
+  private const ThreadStop : job_t = "NULL";
+  private fun isStop : job_t -> bool = "$1==NULL";
+  private var clock = #Faio::mk_alarm_clock;
+  private var jobqueue = ts_bound_queue_t[job_t] 1024; // queue up to 1K jobs
+  private var nthreads = 4;
+  private var running = atomic 0;
+  private var waiting = atomic 0;
+  private var block = #condition_variable;
+  private var bmux = #mutex;
 
   proc barrier() {
     lock bmux;
@@ -596,7 +596,7 @@ class ThreadPool
      #start;
   }
 
-  proc jobhandler () {
+  private proc jobhandler () {
      ++running;
      rpt:while true do
        var job = dequeue jobqueue;
@@ -636,16 +636,5 @@ class ThreadPool
   }
 
 }
-
-
-
-
-
-
-
-
-
-
-
 
 

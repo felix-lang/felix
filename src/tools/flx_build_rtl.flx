@@ -4,7 +4,7 @@ include "std/felix/flx_pkgconfig";
 include "std/felix/flx_pkg"; // only for "fix2word_flags"
 include "std/felix/flx_cp";
 include "std/felix/flx/flx_depchk";
-include "std/control/threadpool";
+include "std/pthread/threadpool";
 
 class FlxRtlBuild
 {
