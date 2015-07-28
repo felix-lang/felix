@@ -40,6 +40,7 @@ include "std/debug";
 
 // control
 include "std/control/__init__";
+include "std/pthread/__init__";
 include "std/program/__init__";
 
 //memory management

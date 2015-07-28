@@ -1,15 +1,31 @@
 @title Preemptive Threading Support
-@tangler pthread.flx            = share/lib/std/control/pthread.flx
-@tangler pchannels.flx          = share/lib/std/control/pchannels.flx
-@tangler ppipe.flx              = share/lib/std/control/ppipe.flx
-@tangler forkjoin.flx           = share/lib/std/control/forkjoin.flx
-@tangler mutex.flx              = share/lib/std/control/mutex.flx
-@tangler semaphore.flx          = share/lib/std/control/semaphore.flx
-@tangler condition_variable.flx = share/lib/std/control/condition_variable.flx
-@tangler ts_counter.flx         = share/lib/std/control/ts_counter.flx
-@tangler ts_bound_queue.flx     = share/lib/std/control/ts_bound_queue.flx
-@tangler atomic.flx             = share/lib/std/control/atomic.flx
-@tangler threadpool.flx         = share/lib/std/control/threadpool.flx
+@tangler __init__.flx           = share/lib/std/pthread/__init__.flx
+@tangler pthread.flx            = share/lib/std/pthread/pthread.flx
+@tangler pchannels.flx          = share/lib/std/pthread/pchannels.flx
+@tangler ppipe.flx              = share/lib/std/pthread/ppipe.flx
+@tangler forkjoin.flx           = share/lib/std/pthread/forkjoin.flx
+@tangler mutex.flx              = share/lib/std/pthread/mutex.flx
+@tangler semaphore.flx          = share/lib/std/pthread/semaphore.flx
+@tangler condition_variable.flx = share/lib/std/pthread/condition_variable.flx
+@tangler ts_counter.flx         = share/lib/std/pthread/ts_counter.flx
+@tangler ts_bound_queue.flx     = share/lib/std/pthread/ts_bound_queue.flx
+@tangler atomic.flx             = share/lib/std/pthread/atomic.flx
+@tangler threadpool.flx         = share/lib/std/pthread/threadpool.flx
+@h1 Pthread Synopsis
+@tangle __init__.flx
+
+// pthreads (portable)
+include "std/pthread/pthread";
+//include "std/pthread/pchannels";
+include "std/pthread/mutex";
+//include "std/pthread/ts_counter";
+//include "std/pthread/ts_bound_queue";
+//include "std/pthread/semaphore";
+//include "std/pthread/condition_variable";
+//include "std/pthread/ppipe";
+//include "std/pthread/forkjoin";
+//include "std/pthread/atomic";
+//include "std/pthread/threadpool";
 
 @h1 Pthreads.
 General support for pre-emptive threading, aka shared 
@@ -516,6 +532,7 @@ open class Atomic
   proc pre_incr[T] : &atomic[T] = "++**$1;";
   proc pre_decr[T] : &atomic[T] = "--**$1;";
   gen load[T] : atomic[T] -> T = "$1->load()";
+  proc store[T] : atomic[T] * T = "$1->store($2);";
 
   instance[T] Str[atomic[T]] {
     fun str (var x:atomic[T]) => x.load.str;
@@ -537,9 +554,11 @@ overhead posting a job.
 
 @tangle threadpool.flx
 
-include "std/control/ts_bound_queue";
-include "std/control/atomic";
+include "std/pthread/ts_bound_queue";
+include "std/pthread/atomic";
 include "std/io/faio";
+include "std/pthread/condition_variable";
+include "std/pthread/pchannels";
 
 class ThreadPool
 {
@@ -550,13 +569,33 @@ class ThreadPool
   var jobqueue = ts_bound_queue_t[job_t] 1024; // queue up to 1K jobs
   var nthreads = 4;
   var running = atomic 0;
+  var waiting = atomic 0;
+  var block = #condition_variable;
+  var bmux = #mutex;
+
+  proc barrier() {
+    lock bmux;
+    ++waiting;
+    if waiting.load == nthreads do
+      store(waiting, 0);
+      broadcast block;
+    else
+    again:>
+      wait (block,bmux);
+      if waiting.load != 0 goto again;
+    done
+    unlock bmux; 
+  }
+
   proc start () { 
      for i in 1..nthreads call spawn_pthread jobhandler;
   }
+
   proc start (n:int) {
      nthreads = n;
      #start;
-   }
+  }
+
   proc jobhandler () {
      ++running;
      rpt:while true do
@@ -567,16 +606,35 @@ class ThreadPool
      done
      --running;
   }
+
   proc queue_job (job:job_t) {
     if running.load == 0 call start ();
     enqueue jobqueue job;
   }
+
   proc stop () {
     for i in 1..nthreads 
       call enqueue jobqueue ThreadStop;
     while running.load != 0 
       call Faio::sleep(clock,0.001);
   }
+
+  proc post_barrier() {
+    for i in 1..nthreads call queue_job barrier;
+  }
+
+  proc notify (chan:opchannel[int]) () {
+    write (chan,1);
+  }
+
+  proc join () {
+    post_barrier;
+    var ip,op = #mk_iopchannel_pair[int];
+    queue_job$ notify op;
+    var x = read ip;
+    C_hack::ignore(x);
+  }
+
 }
 
 

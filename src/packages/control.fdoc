@@ -11,15 +11,6 @@ include "std/control/schannels";
 include "std/control/fibres";
 //include "std/control/mux";
 
-// pthreads (portable)
-include "std/control/pthread";
-//include "std/control/pchannels";
-include "std/control/mutex";
-//include "std/control/ts_counter";
-//include "std/control/ts_bound_queue";
-//include "std/control/ppipe";
-//include "std/control/forkjoin";
-
 @h1 Misc Control Flow
 @tangle control.flx
 open class Control
