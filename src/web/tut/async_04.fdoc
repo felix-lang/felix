@@ -7,7 +7,7 @@ threads). To achieve this our program starts by issuing the following
 include directive.
 
 @felix
-include "std/control/pchannels";
+include "std/pthread/pchannels";
 @
 Next, we lift the types and functions of {class Pthread}
 into the current scope (so that they may be referred to without

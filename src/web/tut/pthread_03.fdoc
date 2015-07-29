@@ -1,7 +1,7 @@
 @h1 pthread-1.01-0.flx
 @felix
 include "std/io/faio";
-include "std/control/pchannels";
+include "std/pthread/pchannels";
 
 open Pthread;
 

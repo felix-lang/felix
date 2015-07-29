@@ -6,7 +6,7 @@ The syntax is similar to that used for fibres and channels:
 Some test data.
 For pthreads_01.fdoc.
 @felix
-include "std/control/pchannels";
+include "std/pthread/pchannels";
  
 proc client(x:ipchannel[opt[string]]) {
   var finished = false;
