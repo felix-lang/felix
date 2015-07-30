@@ -16,20 +16,12 @@ That's it. Behind the scenes, it is translated to C++, compiled,
 linked, and executed. 
 
 @h2 Performance
-It's a bit slower than, say, Python doing
-this this first time. 
-@pre
-~/felix>time flx hello
-Hello
+The first time, it will take around 5 seconds.
 
-real	0m12.408s
-user	0m11.879s
-sys	0m0.412s
-@
 @h2 Dependency Checking
-However if you do it again, it's much faster. 
-That's because Felix automatically checks if the program
-binary is up to date, and if so, just runs it.
+<i>However</i>, if you do it again, it's much faster. 
+That's because, if the program binary is up to date,
+Felix just runs it.
 @pre
 ~/felix>time flx  hello
 Hello
@@ -42,8 +34,23 @@ sys	0m0.086s
 @h2 Caching
 You may wonder where the binary is. Indeed, you may
 wonder where the generated C++ is. If you look at the
-directory containing the @{hello.flx} file you will not
+directory containing the @{hello.flx} file, you will not
 see these files.
 
 These files are considered temporaries, and are stored
 in a cache, usually in @{$HOME/.felix/cache} somewhere.
+
+@h2 Binaries
+
+That isn't the end of it, though. Most scripting languages
+make it insanely difficult to generate a portable binary. Just
+take a look at projects such as py2exe, PyInstaller, OCRA,
+srlua, and many more similar projects. However, Felix makes it
+easy. Just run:
+@pre
+flx -c --static -o hello hello.flx
+@
+
+You should now have a working @{hello} binary! This combination
+of being able use Felix like a scripting language and then
+generate portable binaries for distribution is very powerful.
