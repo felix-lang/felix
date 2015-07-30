@@ -8,6 +8,7 @@ let cpp_keywords = [
   "charclass";
   "const";
   "const_cast";
+  "constexpr";
   "continue";
   "default";
   "delete";

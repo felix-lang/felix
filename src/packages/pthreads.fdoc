@@ -572,6 +572,7 @@ class ThreadPool
   private var waiting = atomic 0;
   private var block = #condition_variable;
   private var bmux = #mutex;
+  fun get_nthreads () => nthreads;
 
   proc barrier() {
     lock bmux;
@@ -635,6 +636,30 @@ class ThreadPool
     C_hack::ignore(x);
   }
 
+  proc pfor_segment (first:int, last:int) (lbody: int * int -> 1 -> 0)
+  {
+    var nt = nthreads + 1;
+    var N = last - first + 1;
+    for var counter in 0 upto nt - 2 do
+      val sfirst = first + (N * counter) / nt;
+      val slast = first + (N * (counter + 1)) / nt - 1;
+      ThreadPool::queue_job$ lbody (sfirst, slast);
+    done
+    sfirst = first + (N * (nt - 1)) / nt;
+    slast = last;
+    lbody (sfirst, slast) ();
+    join;
+  }
+
+  inline proc forloop (lbody: int -> 0) (first:int, last:int) ()
+  {
+    for var i in first upto last call lbody i; 
+  }
+  inline proc pforloop (first: int) (last:int) (lbody: int -> 0)
+  {
+    pfor_segment (first, last)  (forloop lbody);
+  }
+ 
 }
 
 
