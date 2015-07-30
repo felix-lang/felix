@@ -13,4 +13,3 @@ addons:
 
 script: 
   - make
-  - make speed
