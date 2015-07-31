@@ -20,12 +20,7 @@ Core string handling.
 Regexps with Google RE2.
 @p
 <a href="polymorphism_index.fdoc">Polymorphism: </a>
-basic parametric polymorphism in Felix.
-
-@h2 Contract Programming Paradigm.
-<a href="typeclass_index.fdoc">Type Classes: </a>
-Using classes to represent concepts.
-@p
+Basic parametric polymorphism in Felix.
 
 @h2 Functional Programming Technology
 <a href="pattern_index.fdoc">Pattern Matching: </a>
