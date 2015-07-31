@@ -8,15 +8,9 @@ sudo: false
  
 addons:
   apt:
-  sources:
-    - ubuntu-toolchain-r-test
     packages:
-    - python3
-    - ocaml-native-compilers
-    - g++-5
+      - python3
+      - ocaml-native-compilers
 
 script: 
-  - mkdir bin
-  - ln -s `which gcc-5` bin/gcc
-  - ln -s `which g++-5` bin/gcc
-  - env PATH=bin:$PATH make
+  - make
