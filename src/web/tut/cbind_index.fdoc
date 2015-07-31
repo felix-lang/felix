@@ -12,4 +12,5 @@
 <li><a href="cbind_07.fdoc">Embedding Encoding.</a></li>
 <li><a href="cbind_08.fdoc">Specifying dependencies and properties of bindings.</a></li>
 <li><a href="cbind_09.fdoc">Resource Management Principles.</a></li>
+<li><a href="cbind_10.fdoc">Callbacks.</a></li>
 </ul>
