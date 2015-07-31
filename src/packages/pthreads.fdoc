@@ -595,7 +595,7 @@ class ThreadPool
     lock bmux;
     ++waiting;
     if waiting.load == nthreads do
-      store(waiting, 0);
+      waiting.store 0;
       broadcast block;
     else
     again:>
@@ -678,7 +678,7 @@ class ThreadPool
   //println$ "UNQUEUED JOB: Counter = " + counter.str + ", sfirst=" + sfirst.str + ", slast=" + slast.str;
       lbody (sfirst, slast) ();
       join;
-      store (pforrunning, 0);
+      pforrunning.store 0;
     else
       // Run serially
       lbody (first, last) ();
