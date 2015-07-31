@@ -536,6 +536,7 @@ open class Atomic
   proc pre_decr[T] : &atomic[T] = "--**$1;";
   gen load[T] : atomic[T] -> T = "$1->load()";
   proc store[T] : atomic[T] * T = "$1->store($2);";
+  proc store[T] (a:atomic[T]) (v:T) { store (a,v); }
 
   instance[T] Str[atomic[T]] {
     fun str (var x:atomic[T]) => x.load.str;
@@ -677,7 +678,7 @@ class ThreadPool
   //println$ "UNQUEUED JOB: Counter = " + counter.str + ", sfirst=" + sfirst.str + ", slast=" + slast.str;
       lbody (sfirst, slast) ();
       join;
-      pforrunning.store 0;
+      store (pforrunning, 0);
     else
       // Run serially
       lbody (first, last) ();
