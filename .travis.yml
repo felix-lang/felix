@@ -5,7 +5,11 @@
 #  - sudo apt-get install -y  ocaml-native-compilers
 
 sudo: false
- 
+
+notifications:
+  email:
+   - felix-language@googlegroups.com 
+
 addons:
   apt:
     packages:
