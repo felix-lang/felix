@@ -664,7 +664,7 @@ class ThreadPool
 //println$ "Pfor segment " + first.str + "," last.str;
     var N = last - first + 1;
     var nt = nthreads + 1;
-    if pforrunning.load == 0 and N => nthreads and nthreads > 0 do
+    if pforrunning.load == 0 and N >= nthreads and nthreads > 0 do
       pforrunning.store 1;
       for var counter in 0 upto nt - 2 do
         val sfirst = first + (N * counter) / nt;
