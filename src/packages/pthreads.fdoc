@@ -11,6 +11,9 @@
 @tangler ts_bound_queue.flx     = share/lib/std/pthread/ts_bound_queue.flx
 @tangler atomic.flx             = share/lib/std/pthread/atomic.flx
 @tangler threadpool.flx         = share/lib/std/pthread/threadpool.flx
+@tangler threadpoolex1.flx      = share/demo/threadpoolex1.flx
+@tangler pfor.fsyn              = share/lib/grammar/pfor.fsyn
+
 @h1 Pthread Synopsis
 @tangle __init__.flx
 
@@ -638,28 +641,181 @@ class ThreadPool
 
   proc pfor_segment (first:int, last:int) (lbody: int * int -> 1 -> 0)
   {
+//println$ "Pfor segment " + first.str + "," last.str;
     var nt = nthreads + 1;
     var N = last - first + 1;
     for var counter in 0 upto nt - 2 do
       val sfirst = first + (N * counter) / nt;
       val slast = first + (N * (counter + 1)) / nt - 1;
+//println$ "QUEUE JOB: Counter = " + counter.str + ", sfirst=" + sfirst.str + ", slast=" + slast.str;
       ThreadPool::queue_job$ lbody (sfirst, slast);
     done
     sfirst = first + (N * (nt - 1)) / nt;
     slast = last;
+//println$ "UNQUEUED JOB: Counter = " + counter.str + ", sfirst=" + sfirst.str + ", slast=" + slast.str;
     lbody (sfirst, slast) ();
     join;
   }
 
   inline proc forloop (lbody: int -> 0) (first:int, last:int) ()
   {
+//println$ "forloop " + first.str + "," + last.str;
     for var i in first upto last call lbody i; 
   }
   inline proc pforloop (first: int) (last:int) (lbody: int -> 0)
   {
     pfor_segment (first, last)  (forloop lbody);
   }
+  inline proc tpfor (first:int, last:int, lbody: int-> 0)
+  {
+     pforloop first last lbody;
+  }
  
 }
+@h2 Parallel loop grammar
+@tangle pfor.fsyn
+syntax pfor
+{
+   requires loops, blocks;
+
+   //$ Parallel For loop
+   loop_stmt := "pfor" sname "in" sexpr "upto" sexpr block =>#
+    """
+    (let* 
+      (
+        (ctlvar _2)
+        (first _4)
+        (last _6)
+        (body _7)
+        (int (nos "int"))
+        (param `(PVar ,ctlvar ,int none)) ;; kind name type defaultvalue
+        (params `((,param) none))               ;; parameter list with constraint
+        (sfunargs `(,params))                   ;; HOF list of parameter lists
+        (proc `(ast_lambda ,_sr (,dfltvs ,sfunargs (ast_void ,_sr) (,body))))
+        (call `(ast_call ,_sr ,(nos "tpfor")  (ast_tuple ,_sr (,first ,last ,proc))))
+      )
+      ;;(begin (display body) (display "\n*****\n")
+      call
+      ;;)
+    )
+    """;
+
+
+}
+
+@h2 Thread Pool Demo
+@tangle threadpoolex1.flx
+include "std/pthread/threadpool";
+open ThreadPool;
+
+// Matrix multiply
+macro val N = 1000;
+typedef vec_t = array[double, N];
+typedef mx_t = array[vec_t,N];
+var a : mx_t;
+var b : mx_t;
+var r : mx_t;
+var s : mx_t;
+
+proc clear (mx:&mx_t) {
+  for i in 0..<N 
+  for j in 0..<N 
+    perform mx . i . j <- 0.0;
+}
+
+proc rinit (mx:&mx_t) {
+  for i in 0..<N
+  for j in 0..<N
+    perform mx . i . j <- #rand.double / RAND_MAX.double;
+}
+
+fun check() = {
+  for i in 0..<N
+  for j in 0..<N
+    if r.i.j != s.i.j return false;
+  return true;
+}
+
+proc verify() {
+  if #check do
+    println$ "Verified";
+  else
+    println "Wrong!";
+  done 
+}
+
+clear &r;
+clear &s;
+rinit &a;
+rinit &b;
+
+fun inner_product (pr: &vec_t, pc: &vec_t) = 
+{
+  var sum = 0.0;
+  for (var k=0; k<N; ++k;)
+    perform sum = sum + *(pr.k) * *(pc.k);
+  return sum;
+}
+
+// naive multiply
+var start = #time;
+begin
+  for i in 0..<N 
+  for (var j=0; j<N; ++j;)
+    perform &r . i . j <- inner_product (&a.i, &b.j);
+  s = r;
+end
+var fin = #time;
+println$ "Naive mul elapsed " + (fin - start).str + " seconds";
+
+ThreadPool::start 8;
+// naive parallel multiply
+noinline proc inner_products_proc (var i:int)
+{
+  for (var j=0; j<N; ++j;) 
+    perform &r . i . j <- inner_product (&a.i, &b.j);
+}
+
+noinline proc inner_products_job (var i:int) () {
+  for (var j=0; j<N; ++j;) 
+    perform &r . i . j <- inner_product (&a.i, &b.j);
+}
+
+clear &r;
+start = #time;
+begin
+  for i in 0..<N
+    call ThreadPool::queue_job$ inner_products_job (i);
+  ThreadPool::join;
+end
+fin = #time;
+println$ "Naive Parallel mul elapsed " + (fin - start).str + " seconds";
+verify;
+
+// smart parallel multiply
+clear &r;
+start = #time;
+begin
+  ThreadPool::pforloop 0 (N - 1) inner_products_proc;
+end
+fin = #time;
+println$ "Smart Parallel mul elapsed " + (fin - start).str + " seconds";
+verify;
+
+// smart parallel multiply with syntax
+clear &r;
+start = #time;
+begin
+  pfor i in 0 upto (N - 1) do
+  for (var j=0; j<N; ++j;) 
+    perform &r . i . j <- inner_product (&a.i, &b.j);
+  done
+end
+fin = #time;
+println$ "pfor mul elapsed " + (fin - start).str + " seconds";
+verify;
+
+
+ThreadPool::stop;
 
 
