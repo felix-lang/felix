@@ -542,6 +542,7 @@ open class Atomic
   }
   inherit[T] Str[atomic[T]];
 }
+
 @h1 Thread Pool
 A thread pool is a global object containing set of running threads
 and a queue. Instead of spawning a new thread, the client just queues
@@ -570,12 +571,24 @@ class ThreadPool
   private fun isStop : job_t -> bool = "$1==NULL";
   private var clock = #Faio::mk_alarm_clock;
   private var jobqueue = ts_bound_queue_t[job_t] 1024; // queue up to 1K jobs
-  private var nthreads = 4;
+  private var nthreads = 8; // great default for quad core i7 ?
+
+  // number of threads actually running
   private var running = atomic 0;
+
+  // number of threads blocked waiting on a barrier
   private var waiting = atomic 0;
+
+  // barrier lock
   private var block = #condition_variable;
   private var bmux = #mutex;
+
   fun get_nthreads () => nthreads;
+
+  // This is a flag used to protect against nested pfor loops.
+  // If there is a nested pfor loop, it will just execute serially
+  // in the calling thread.
+  private var pforrunning = atomic 0;
 
   proc barrier() {
     lock bmux;
@@ -613,7 +626,11 @@ class ThreadPool
 
   proc queue_job (job:job_t) {
     if running.load == 0 call start ();
-    enqueue jobqueue job;
+    if nthreads > 0 do 
+      call enqueue jobqueue job;
+    else
+      call job;
+    done
   }
 
   proc stop () {
@@ -624,7 +641,8 @@ class ThreadPool
   }
 
   proc post_barrier() {
-    for i in 1..nthreads call queue_job barrier;
+    if nthreads > 0
+      for i in 1..nthreads call queue_job barrier;
   }
 
   proc notify (chan:opchannel[int]) () {
@@ -632,29 +650,38 @@ class ThreadPool
   }
 
   proc join () {
-    post_barrier;
-    var ip,op = #mk_iopchannel_pair[int];
-    queue_job$ notify op;
-    var x = read ip;
-    C_hack::ignore(x);
+    if nthreads > 0 do
+      post_barrier;
+      var ip,op = #mk_iopchannel_pair[int];
+      queue_job$ notify op;
+      var x = read ip;
+      C_hack::ignore(x);
+    done
   }
 
   proc pfor_segment (first:int, last:int) (lbody: int * int -> 1 -> 0)
   {
 //println$ "Pfor segment " + first.str + "," last.str;
-    var nt = nthreads + 1;
     var N = last - first + 1;
-    for var counter in 0 upto nt - 2 do
-      val sfirst = first + (N * counter) / nt;
-      val slast = first + (N * (counter + 1)) / nt - 1;
-//println$ "QUEUE JOB: Counter = " + counter.str + ", sfirst=" + sfirst.str + ", slast=" + slast.str;
-      ThreadPool::queue_job$ lbody (sfirst, slast);
+    var nt = nthreads + 1;
+    if pforrunning.load == 0 and N => nthreads and nthreads > 0 do
+      pforrunning.store 1;
+      for var counter in 0 upto nt - 2 do
+        val sfirst = first + (N * counter) / nt;
+        val slast = first + (N * (counter + 1)) / nt - 1;
+  //println$ "QUEUE JOB: Counter = " + counter.str + ", sfirst=" + sfirst.str + ", slast=" + slast.str;
+        ThreadPool::queue_job$ lbody (sfirst, slast);
+      done
+      sfirst = first + (N * (nt - 1)) / nt;
+      slast = last;
+  //println$ "UNQUEUED JOB: Counter = " + counter.str + ", sfirst=" + sfirst.str + ", slast=" + slast.str;
+      lbody (sfirst, slast) ();
+      join;
+      pforrunning.store 0;
+    else
+      // Run serially
+      lbody (first, last) ();
     done
-    sfirst = first + (N * (nt - 1)) / nt;
-    slast = last;
-//println$ "UNQUEUED JOB: Counter = " + counter.str + ", sfirst=" + sfirst.str + ", slast=" + slast.str;
-    lbody (sfirst, slast) ();
-    join;
   }
 
   inline proc forloop (lbody: int -> 0) (first:int, last:int) ()
@@ -672,6 +699,7 @@ class ThreadPool
   }
  
 }
+
 @h2 Parallel loop grammar
 @tangle pfor.fsyn
 syntax pfor

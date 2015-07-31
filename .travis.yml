@@ -12,9 +12,18 @@ notifications:
 
 addons:
   apt:
+    sources:
+      - ubuntu-toolchain-r-test
     packages:
       - python3
       - ocaml-native-compilers
+      - gcc-5
+      - g++-5
 
 script: 
-  - make
+  - mkdir bin
+  - ln -s /usr/bin/gcc-5 bin/gcc
+  - ln -s /usr/bin/g++-5 bin/g++
+  - bin/gcc --version
+  - bin/g++ --version
+  - env PATH=bin:$PATH make
