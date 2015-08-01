@@ -39,38 +39,74 @@ void hello() {
   cout << "Hello from C++ and Felix" << endl; 
 }
 
-@h2 Build and use instructions (Unix)
-@tangle hello_unix.fpc
-Name: hello
-Platform: Unix
-Description: Test Hello (Unix)
-provides_dlib: -lhello
-provides_slib: -lhello
-includes: '"hello.hpp"'
-library: hello
-macros: BUILD_HELLO
-Requires: flx
-srcdir: share/src/hellolib
-src: .*\.cpp
-@
-
-@h2 Build and use instructions (OSX)
-Just for the sake of the demo, an OSX package
-description, which is actually the same as the
-Unix one.
+@h2 Build and use instructions (Unix).
+Should work on Unix. Combines both usage and build
+instructions. See below for key.
 @tangle hello_osx.fpc
 Name: hello
 Platform: Unix
 Description: Test Hello (Unix)
 provides_dlib: -lhello
 provides_slib: -lhello
+requires_slibs:
+requires_dlibs:
 includes: '"hello.hpp"'
 library: hello
 macros: BUILD_HELLO
 Requires: flx
 srcdir: share/src/hellolib
+headers: hello\.hpp
+build_includes:
 src: .*\.cpp
 @
+
+Identification: the @{Name}, @{Platform} and @{Description} fields
+are commentary with no semantic impact.
+
+Usage: The @{provides_dlib} field tells the linker switches 
+required to make a shared library available to a user linkage step.
+The @{provides_slib} has the switches for using a static archive.
+
+The @{requires_slibs} field specifies any static dependencies.
+When @{flx_pkgconfig} does a static link this is used to ensure
+a properly ordered transitive closure is presented to the linker,
+without duplications. The field is not required to compiler
+static objects or create static libraries, but it is required
+when linking an executable.
+
+The @{requires_dlibs} field also expresses dependencies,
+however the semantics are radically different. At link
+time the libraries are presented only to bind the direct dependencies
+into the libraries we're building. At load time the loader finds
+the transitive closure itself, automatically, and presenting
+indirect dependencies is a serious error because it subverts the
+loading of a correctly versioned library.
+
+Note carefully an ambiguity: static archives are usually used
+to hold a collection of object files compiled for static linkage.
+However they may ALSO contain object files compiled for dynamic
+linkage. This matters on some platforms including x86_64 where
+the calling protocols differ and code for dynamic linkage
+requires @{-fPIC} to specify position independent code.
+Static links can use that too, but there is a small cost
+in the calling protocol.
+
+The @{includes} field specifies headers a C++ client 
+will require to interface to the library with a @{#include}
+directive.
+
+Building: The @{srcdir} tells where the C++ sources are.
+The @{src} names all the files that have to be compiled, it's an
+RE2 regexp.  The @{headers} field specifies the public header files
+that need to be copied into the run time library directory
+whereas the @{build_includes} field specifies all the directories
+containing header files required to actually perform the build.
+
+The @{macros} field specifies a command line macro that
+must be set for building (but not using) the library.
+This is to force exporting of symbols on Windows, and can
+be used to control visibility on Linux too. We haven't
+bothered with it in our code (but should for pedagogical purposes!)
 
 @h2 Build script
 Temporarily, I'm going to use bash!
@@ -81,12 +117,13 @@ at the moment.
 
 @tangle build_hello.sh
 echo "Building core package hello for unix platform"
-(cp  build/release/share/src/hellolib/hello.hpp build/release/host/lib/rtl &&\
-cp build/release/share/src/config/unix/hello.fpc build/release/host/config &&\
-build/release/host/bin/flx -c --staticlib --c++ build/release/share/src/hellolib/hello.cpp -ox build/release/host/lib/rtl/libhello &&\
-build/release/host/bin/flx -c --c++ build/release/share/src/hellolib/hello.cpp -ox  build/release/host/lib/rtl/libhello &&\
-echo "Library binaries installed in build/release/host/lib/rtl" &&\
-build/release/host/bin/flx --felix=build.fpc build/release/test/hello_test.flx) ||\
+(BR="build/release" &&\
+cp $BR/share/src/hellolib/hello.hpp $BR/host/lib/rtl &&\
+cp $BR/share/src/config/unix/hello.fpc $BR/host/config &&\
+$BR/host/bin/flx -c --staticlib --c++ $BR/share/src/hellolib/hello.cpp -ox $BR/host/lib/rtl/libhello &&\
+$BR/host/bin/flx -c --c++ $BR/share/src/hellolib/hello.cpp -ox  $BR/host/lib/rtl/libhello &&\
+echo "Library binaries installed in $BR/host/lib/rtl" &&\
+$BR/host/bin/flx --felix=build.fpc $BR/test/hello_test.flx) ||\
 echo "hello: BUILD FAILED"; exit 1
 @
 
