@@ -106,7 +106,7 @@ tut-dir:
 	for file in src/web/tut/*.fdoc; do ${BUILDROOT}/host/bin/flx_iscr $$file ${BUILDROOT}/test/tut; done
 
 extras:
-	for file in extras/*.fdoc; do ${BUILDROOT}/host/bin/flx_iscr $$file ${BUILDROOT}; done
+	for file in extras/*.fdoc; do python3 src/tools/flx_iscr.py $$file ${BUILDROOT}; done
 
 extras-check:
 	-${BUILDROOT}/host/bin/flx --felix=build.fpc --usage=prototype --expect --nonstop --indir=${BUILDROOT}/test/extras --regex='.*\.flx' ${BUILDROOT}/test

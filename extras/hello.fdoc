@@ -1,0 +1,101 @@
+@title Testing Extra Package.
+@tangler hello.flx = share/lib/hello.flx
+@tangler hello.hpp = share/src/hellolib/hello.hpp
+@tangler hello.cpp = share/src/hellolib/hello.cpp
+@tangler hello_unix.fpc = share/src/config/unix/hello.fpc
+@tangler hello_osx.fpc = share/src/config/macosx/hello.fpc
+@tangler build_hello.sh = $PWD/build_hello.sh
+@tangler hello_test.flx = test/hello_test.flx
+
+@h1 How to make a new package for Felix
+This is an experiment to show how to make
+a Felix package including C++ code.
+
+If you type 
+@pre
+make extras
+@
+this package will be installed as if it were part of
+the core Felix system.
+
+@h2 The binding.
+We'll do the binding first.
+
+@tangle hello.flx
+// A binding to the greeting library
+proc hello : 1 = "hello();" requires package "hello";
+@
+
+@h2 The C++ Library
+Here's the actual C++ code.
+@tangle hello.hpp
+void hello();
+
+@tangle hello.cpp
+#include "hello.hpp"
+#include <iostream>
+using namespace std;
+void hello() { 
+  cout << "Hello from C++ and Felix" << endl; 
+}
+
+@h2 Build and use instructions (Unix)
+@tangle hello_unix.fpc
+Name: hello
+Platform: Unix
+Description: Test Hello (Unix)
+provides_dlib: -lhello
+provides_slib: -lhello
+includes: '"hello.hpp"'
+library: hello
+macros: BUILD_HELLO
+Requires: flx
+srcdir: share/src/hellolib
+src: .*\.cpp
+@
+
+@h2 Build and use instructions (OSX)
+Just for the sake of the demo, an OSX package
+description, which is actually the same as the
+Unix one.
+@tangle hello_osx.fpc
+Name: hello
+Platform: Unix
+Description: Test Hello (Unix)
+provides_dlib: -lhello
+provides_slib: -lhello
+includes: '"hello.hpp"'
+library: hello
+macros: BUILD_HELLO
+Requires: flx
+srcdir: share/src/hellolib
+src: .*\.cpp
+@
+
+@h2 Build script
+Temporarily, I'm going to use bash!
+Later this should be Felix or something.
+The fpc file above actually contains the build instructions
+but we're ignoring it because build_flx_rtl is too monolithic
+at the moment.
+
+@tangle build_hello.sh
+echo "Building core package hello for unix platform"
+(cp  build/release/share/src/hellolib/hello.hpp build/release/host/lib/rtl &&\
+cp build/release/share/src/config/unix/hello.fpc build/release/host/config &&\
+build/release/host/bin/flx -c --staticlib --c++ build/release/share/src/hellolib/hello.cpp -ox build/release/host/lib/rtl/libhello &&\
+build/release/host/bin/flx -c --c++ build/release/share/src/hellolib/hello.cpp -ox  build/release/host/lib/rtl/libhello &&\
+echo "Library binaries installed in build/release/host/lib/rtl" &&\
+build/release/host/bin/flx --felix=build.fpc build/release/test/hello_test.flx) ||\
+echo "hello: BUILD FAILED"; exit 1
+@
+
+@h2 A test program
+@tangle hello_test.flx
+// A test of the hello package
+include "hello";
+println$ "Trying hello";
+hello();
+println$ "Hello should have run";
+@
+
