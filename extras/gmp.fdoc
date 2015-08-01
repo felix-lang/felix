@@ -1,0 +1,298 @@
+@title GMP Bindings.
+@tangler gmp.flx       = share/lib/gnu/gmp.flx
+@tangler gmp.fpc       = host/config/gmp.fpc
+@tangler gmp-01.flx    = test/extras/gmp-01.flx
+@tangler gmp-01.expect = test/extras/gmp-01.expect
+
+@h1 Bindings for GNU Multiple Precision Library.
+We use the gmp++ C++ binding so you need both
+libgmp and libgmp++ installed.
+
+You may need to edit the gmp.fpc file found in
+packages/host/config/gmp.fpc. This file is set up
+for Linux or OSX with gmp build from source and installed
+in the default PREFIX=/usr/lib.
+
+To build gmp download from GNU website.
+Make sure to use 
+@pre
+./configure --enable-cxx
+make
+make check
+make install
+@
+
+@tangle gmp.fpc
+Name: gmp
+Description: GNU Multiple Precision Arithmetic Library
+includes: '"gmpxx.h"'
+cflags: -I/usr/local/include
+provides_slib:  -L/usr/local/lib -lgmp -lgmpxx
+provides_dlib:  -L/usr/local/lib -lgmp -lgmpxx
+@
+
+@tangle gmp.flx
+
+// THIS WRAPPER IS FFAU .. it is NOT LGPL licenced
+// This is because the wrapper was hand written from
+// scratch .. it was NOT derived from any LGPL headers
+// Code LINKED against libgmp, however, may be governed
+// by the LGPL licence, since the object files ARE
+// derived from gmp.h
+requires package "gmp";
+header "#include <cstdio>";
+header gmpxx_h = """
+#include <gmpxx.h>
+#include <string>
+#include <cstdio>
+namespace flx { namespace gmp {
+extern mpz_class lcm(mpz_class const&,mpz_class const&);
+extern mpz_class gcd(mpz_class const&,mpz_class const&);
+extern ::std::string flx_mpf_get_str(mpf_class const&);
+}}
+""";
+
+body gmpxx_lcm = """
+namespace flx { namespace gmp {
+mpz_class lcm(mpz_class const &a, mpz_class const &b)
+{
+  mpz_t r; mpz_init(r);
+  mpz_lcm(r,a.get_mpz_t(),b.get_mpz_t());
+  return mpz_class(r);
+}
+}}
+""";
+
+body gmpxx_gcd = """
+namespace flx { namespace gmp {
+mpz_class gcd(mpz_class const &a, mpz_class const &b)
+{
+  mpz_t r; mpz_init(r);
+  mpz_gcd(r,a.get_mpz_t(),b.get_mpz_t());
+  return mpz_class(r);
+}
+}}
+""";
+
+body flx_mpf_get_str_h = """
+namespace flx { namespace gmp {
+::std::string flx_mpf_get_str(mpf_class const &a)
+{
+  mp_exp_t x;
+  ::std::string s = a.get_str(x,10,0);
+  char b[100];
+  ::std::snprintf(b,100,"e%ld",(long)x);
+  return std::string(".")+s+b;
+}
+}}
+""";
+class Gmp
+{
+  requires gmpxx_h;
+  type mpz='mpz_class';
+  type mpq='mpq_class';
+  type mpf='mpf_class';
+  fun + :mpz*mpz->mpz="$1+$2";
+  fun - :mpz*mpz->mpz="$1-$2";
+  fun * :mpz*mpz->mpz="$1*$2";
+  fun / :mpz*mpz->mpz="$1/$2";
+  fun -:mpz->mpz="-$1";
+  fun abs:mpz->mpz="abs($1)";
+  fun sgn:mpz->int="sgn($1)";
+  fun sqrt:mpz->mpz="sqrt($1)";
+  fun cmp:mpz*mpz->int="cmp($1,$2)";
+  fun + :mpq*mpq->mpq="$1+$2";
+  fun - :mpq*mpq->mpq="$1-$2";
+  fun * :mpq*mpq->mpq="$1*$2";
+  fun / :mpq*mpq->mpq="$1/$2";
+  fun - :mpq->mpq="-$1";
+  fun abs:mpq->mpq="abs($1)";
+  fun sgn:mpq->int="sgn($1)";
+  fun sqrt:mpq->mpq="sqrt($1)";
+  fun cmp:mpq*mpq->int="cmp($1,$2)";
+  fun + :mpf*mpf->mpf="$1+$2";
+  fun - :mpf*mpf->mpf="$1-$2";
+  fun * :mpf*mpf->mpf="$1*$2";
+  fun / :mpf*mpf->mpf="$1/$2";
+  fun - :mpf->mpf="-$1";
+  fun abs:mpf->mpf="abs($1)";
+  fun sgn:mpf->int="sgn($1)";
+  fun sqrt:mpf->mpf="sqrt($1)";
+  fun lcm: mpz * mpz -> mpz = "flx::gmp::lcm($1,$2)" requires gmpxx_lcm;
+  fun gcd: mpz * mpz -> mpz = "flx::gmp::gcd($1,$2)" requires gmpxx_gcd;
+  fun wedge: mpz * mpz -> mpz = "flx::gmp::lcm($1,$2)" requires gmpxx_lcm;
+  fun vee: mpz * mpz -> mpz = "flx::gmp::gcd($1,$2)" requires gmpxx_gcd;
+
+  fun % : mpz * mpz -> mpz = "$1%$2";
+  fun mpz_of_int: int -> mpz = "mpz_class($1)";
+  fun mpq_of_int: int -> mpq = "mpq_class($1)";
+  fun mpf_of_double: double -> mpf = "mpf_class($1)";
+
+  instance Eq[mpz] {
+    fun == :mpz*mpz->bool="(cmp($1,$2) == 0)";
+    fun != :mpz*mpz->bool="(cmp($1,$2) != 0)";
+  }
+  instance Tord[mpz] {
+    fun <  :mpz*mpz->bool="$1<$2";
+    fun <= :mpz*mpz->bool="$1<=$2";
+    fun >  :mpz*mpz->bool="$1>$2";
+    fun >= :mpz*mpz->bool="$1>=$2";
+  }
+  instance Eq[mpq] {
+    fun == :mpq*mpq->bool="(cmp($1,$2) == 0)";
+    fun != :mpq*mpq->bool="(cmp($1,$2) != 0)";
+  }
+  instance Tord[mpq] {
+    fun <  :mpq*mpq->bool="$1<$2";
+    fun <= :mpq*mpq->bool="$1<=$2";
+    fun >  :mpq*mpq->bool="$1>$2";
+    fun >= :mpq*mpq->bool="$1>=$2";
+  }
+  instance Eq[mpf] {
+    fun == :mpf*mpf->bool="(cmp($1,$2) == 0)";
+    fun != :mpf*mpf->bool="(cmp($1,$2) != 0)";
+  }
+  instance Tord[mpf] {
+    fun <  :mpf*mpf->bool="$1<$2";
+    fun <= :mpf*mpf->bool="$1<=$2";
+    fun >  :mpf*mpf->bool="$1>$2";
+    fun >= :mpf*mpf->bool="$1>=$2";
+  }
+  instance Str[mpz] {
+    fun str:mpz->string="#1($1).get_str(10)";
+  }
+  instance Str[mpq] {
+    fun str:mpq->string="#1($1).get_str(10)";
+  }
+
+  instance Str[mpf] {
+    fun str:mpf->string="flx::gmp::flx_mpf_get_str($1)" requires flx_mpf_get_str_h;
+  }
+
+}
+
+open Eq[Gmp::mpz];
+open Tord[Gmp::mpz];
+open Str[Gmp::mpz];
+open Eq[Gmp::mpq];
+open Tord[Gmp::mpq];
+open Str[Gmp::mpq];
+open Eq[Gmp::mpf];
+open Tord[Gmp::mpf];
+open Str[Gmp::mpf];
+@
+
+@h2 Test code
+@tangle gmp-01.flx
+
+//Check gmp
+
+include "gnu/gmp";
+open Gmp;
+
+syntax gmp_syntax {
+  x[ssetunion_pri] := x[ssetunion_pri] "/\" x[>ssetunion_pri] =># "`(ast_apply ,_sr (lcm (,_1 ,_3)))" note "lcm";
+  x[ssetintersection_pri] := x[ssetintersection_pri] "\/" x[>ssetintersection_pri] =># "`(ast_apply ,_sr (gcd (,_1 ,_3)))" note "gcd";
+}
+open syntax gmp_syntax;
+
+{
+  val x:mpz = mpz_of_int 99;
+  val y:mpz = mpz_of_int 7;
+  print x; endl;
+  print y; endl;
+  print$ x + y; endl;
+  print$ x - y; endl;
+  print$ x * y; endl;
+  print$ x / y; endl;
+  print$ x % y; endl;
+
+  print$ x == y; endl;
+  print$ x != y; endl;
+  print$ x < y; endl;
+  print$ x <= y; endl;
+  print$ x > y; endl;
+  print$ x >= y; endl;
+
+  print$ lcm (x,y); endl;
+  print$ gcd (x,y); endl;
+  print$ x /\ y; endl;
+  print$ x \/ y; endl;
+};
+{
+  val x:mpq = mpq_of_int 99;
+  val y:mpq = mpq_of_int 7;
+  print x; endl;
+  print y; endl;
+  print$ x + y; endl;
+  print$ x - y; endl;
+  print$ x * y; endl;
+  print$ x / y; endl;
+  print$ x == y; endl;
+  print$ x != y; endl;
+  print$ x < y; endl;
+  print$ x <= y; endl;
+  print$ x > y; endl;
+  print$ x >= y; endl;
+};
+{
+  val x:mpf = mpf_of_double 99.0;
+  val y:mpf = mpf_of_double 7.0;
+  print x; endl;
+  print y; endl;
+  print$ x + y; endl;
+  print$ x - y; endl;
+  print$ x * y; endl;
+  print$ x / y; endl;
+  print$ x == y; endl;
+  print$ x != y; endl;
+  print$ x < y; endl;
+  print$ x <= y; endl;
+  print$ x > y; endl;
+  print$ x >= y; endl;
+};
+@
+Expected results:
+@tangle gmp-01.expect
+99
+7
+106
+92
+693
+14
+1
+false
+true
+false
+false
+true
+true
+693
+1
+693
+1
+99
+7
+106
+92
+693
+99/7
+false
+true
+false
+false
+true
+true
+.99e2
+.7e1
+.106e3
+.92e2
+.693e3
+.141428571428571428571e2
+false
+true
+false
+false
+true
+true
+@

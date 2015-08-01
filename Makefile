@@ -105,6 +105,12 @@ tut-dir:
 	${BUILDROOT}/host/bin/flx_tangle --linenos --indir=src/web/tut --outdir=${BUILDROOT}/test/tut
 	for file in src/web/tut/*.fdoc; do ${BUILDROOT}/host/bin/flx_iscr $$file ${BUILDROOT}/test/tut; done
 
+extras:
+	for file in extras/*.fdoc; do ${BUILDROOT}/host/bin/flx_iscr $$file ${BUILDROOT}; done
+
+extras-check:
+	-${BUILDROOT}/host/bin/flx --felix=build.fpc --usage=prototype --expect --nonstop --indir=${BUILDROOT}/test/extras --regex='.*\.flx' ${BUILDROOT}/test
+ 
 regress-check: test-dir
 	# ============================================================
 	#
@@ -135,7 +141,7 @@ tutopt-check: tutopt-dir
 	-FLX_INSTALL_DIR=${BUILDROOT} ${BUILDROOT}/host/bin/flx --felix=build.fpc --usage=prototype --expect --input --nonstop --indir=${BUILDROOT}/test/tutopt --regex='.*\.flx' ${BUILDROOT}/test/tutopt
 
 
-test: regress-check tut-check tutopt-check
+test: regress-check tut-check tutopt-check extras-check
 
 #
 #
@@ -589,7 +595,7 @@ evtdemo:
 	# run
 	demos/embed/evtdemo
 
-.PHONY : build32 build64 build test32 test64 test
+.PHONY : build32 build64 build test32 test64 test extras 
 .PHONY : build32-debug build64-debug build-debug test32-debug test64-debug test-debug
 .PHONY : doc install websites-linux  release install-bin
 .PHONY : copy-doc gen-doc gendoc fbuild speed tarball
