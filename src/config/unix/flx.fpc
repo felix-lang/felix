@@ -5,7 +5,7 @@ provides_slib: -lflx_static
 cflags: -Ilib/rtl
 // Had to dadd flx_pthread for RF's driver support only.
 // Fix with separate driver library later.
-Requires: flx_gc flx_exceptions dl flx_pthread
+Requires: flx_gc flx_exceptions dl flx_pthread flx_async
 library: rtl
 includes:  '"flx_rtl.hpp"'  <iostream> <cstdio> <cstddef> <cassert> <climits> <string>
 macros: BUILD_RTL
