@@ -121,12 +121,13 @@ if build_dir == "" do
   System::exit (1);
 done
 
-var target_subdir = "host";
+var src_dir = build_dir/"share";
+var target_dir = build_dir/"host"/"lib"/"rtl";
 var pkg = "hello";
 var tmpdir = "tmp";
 var static_only = false;
 var debug = false;
-var pkgdir = build_dir / target_subdir / "config";
+var pkgdir = build_dir / "host" / "config";
 println$ "Config dir " + pkgdir;
 
 var db = FlxPkgConfig::FlxPkgConfigQuery (list[string] pkgdir);
@@ -146,8 +147,8 @@ FlxLibBuild::make_lib
 (
   db,
   toolchain_maker,
-  build_dir,      // usually "build/release"
-  target_subdir,  // usually "host"
+  src_dir,       
+  target_dir,   
   pkg,            // name of the package to be built
   tmpdir,         // a suitable temporary directory
   static_only,    // if true skip building shared library

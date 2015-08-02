@@ -84,7 +84,9 @@ class FlxRtlBuild
         done
         //println$ "QUEUING LIBRARY BUILDER JOB FOR " +  library; 
         //ThreadPool::queue_job$ make_lib (db,toolchain-maker, build, target, pkg,tmpdir, static_only, debug);
-        FlxLibBuild::make_lib (db,toolchain-maker, build, target, pkg,tmpdir, static_only, debug) ();
+        var src_dir =  build / 'share';
+        var target_dir =  build / target / 'lib' / 'rtl';
+        FlxLibBuild::make_lib (db,toolchain-maker, src_dir, target_dir, pkg,tmpdir, static_only, debug) ();
       else 
         println$ "------------";
         println$ "External package " + pkg;

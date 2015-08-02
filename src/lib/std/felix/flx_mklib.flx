@@ -11,8 +11,8 @@ class FlxLibBuild
   (
     db: FlxPkgConfig::FlxPkgConfigQuery_t,  
     toolchain-maker: clang_config_t -> toolchain_t, 
-    build:string, 
-    target:string, 
+    src_dir:string, 
+    target_dir:string, 
     pkg:string, 
     tmpdir:string,
     static_only:bool,
@@ -21,16 +21,13 @@ class FlxLibBuild
   {
     proc dbug (x:string) => if debug call println$ '[make_lib: '+pkg+']' x;
 
-    val pkgdir = build / target / 'config';
-    val srtl = build / 'share' / 'lib' / 'rtl';
-    val hrtl = build / target / 'lib' / 'rtl';
-    val repo = build / 'share'; // excludes "src" cause that's in the packages
-
     println$ "------------";
     println$ "Make lib " + pkg;
     println$ "------------";
     var srcdir = db.getpkgfielddflt (pkg,"srcdir");
-    var srcpath =repo / srcdir;
+    var srcpath = src_dir / srcdir;
+println$ "[make_lib] source directory " + srcpath;
+
     var build_includes= db.getpkgfield (pkg,"build_includes");
     var result3,ddeps= db.query$ list$ pkg, "--keepleftmost", "--field=requires_dlibs";
     ddeps = FlxPkg::fix2word_flags ddeps;
@@ -41,10 +38,10 @@ class FlxLibBuild
     fun mkinc (x:string) => "-I"+x;
     var config = 
       (
-        header_search_dirs= list[string] (mkinc hrtl, mkinc srtl)+map mkinc build_includes,
+        header_search_dirs= list[string] (mkinc target_dir, mkinc src_dir)+map mkinc build_includes,
         macros= map (fun (x:string)=> "-D"+x) macros,
         ccflags = ccflags,
-        library_search_dirs= list[string] ("-L"+hrtl),
+        library_search_dirs= list[string] ("-L"+target_dir),
         dynamic_libraries= ddeps+depdlibs,
         static_libraries= Empty[string],
         debugln = dbug
@@ -64,7 +61,7 @@ class FlxLibBuild
 
     if hdst == "" do hdst = "${0}"; done
     println$ "Copying headers " + hsrc + " > " + hdst;
-    CopyFiles::copyfiles (srcpath, hsrc,srtl/hdst,true, true);
+    CopyFiles::copyfiles (srcpath, hsrc,src_dir/hdst,true, true);
 
     var pats = db.getpkgfield(pkg,"src");
     var pat = catmap '|' (fun (x:string)=>"("+x+")") pats;
@@ -114,7 +111,7 @@ class FlxLibBuild
 
         var objs = map objname files;
         var libname = "lib" + (db.getpkgfield1(pkg,"provides_dlib")).[2 to] +#(toolchain.dynamic_library_extension);
-        var dstlib = build/target/'lib'/'rtl'/libname;
+        var dstlib = target_dir/libname;
         println$ "Dynamic Linking library " + dstlib;
         result = toolchain.dynamic_library_linker(srcs=objs, dst=dstlib);
         if result != 0 do
@@ -164,7 +161,7 @@ class FlxLibBuild
 
       var objs = map objname files;
       var libname = "lib" + (db.getpkgfield1(pkg,"provides_slib")).[2 to] +#(toolchain.static_library_extension);
-      var dstlib = build/ target/'lib'/'rtl'/libname;
+      var dstlib = target_dir/libname;
       println$ "Static Linking Library " + dstlib;
       result = toolchain.static_library_linker(srcs=objs, dst=dstlib);
       if result != 0 do
