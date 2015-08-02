@@ -10,9 +10,9 @@ import buildsystem
 
 def build_runtime(host_phase,target_phase):
     path = Path ('src/flx_async')
-    buildsystem.copy_hpps_to_rtl(target_phase.ctx,
-        path / 'flx_async.hpp',
-    )
+    #buildsystem.copy_hpps_to_rtl(target_phase.ctx,
+    #    path / 'flx_async.hpp',
+    #)
 
     dst = 'host/lib/rtl/flx_async'
     suffix = '.so'

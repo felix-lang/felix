@@ -23,6 +23,7 @@ def build_runtime(host_phase, target_phase):
         path / 'flx_strutil.hpp',
         path / 'flx_executil.hpp',
         path / 'flx_sync.hpp',
+        path / 'flx_async.hpp',
         path / 'flx_world.hpp',
         path / 'flx_async_world.hpp',
         path / 'flx_world_config.hpp',
