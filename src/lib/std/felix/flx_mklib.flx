@@ -61,7 +61,7 @@ println$ "[make_lib] source directory " + srcpath;
 
     if hdst == "" do hdst = "${0}"; done
     println$ "Copying headers " + hsrc + " > " + hdst;
-    CopyFiles::copyfiles (srcpath, hsrc,src_dir/hdst,true, true);
+    CopyFiles::copyfiles (srcpath, hsrc,target_dir/hdst,true, true);
 
     var pats = db.getpkgfield(pkg,"src");
     var pat = catmap '|' (fun (x:string)=>"("+x+")") pats;
