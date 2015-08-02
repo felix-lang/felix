@@ -2,10 +2,10 @@
 @tangler hello.flx = share/lib/hello.flx
 @tangler hello.hpp = share/src/hellolib/hello.hpp
 @tangler hello.cpp = share/src/hellolib/hello.cpp
-@tangler hello_unix.fpc = share/src/config/unix/hello.fpc
-@tangler hello_osx.fpc = share/src/config/macosx/hello.fpc
+@tangler hello.fpc = host/config/hello.fpc
 @tangler build_hello.sh = $PWD/build_hello.sh
 @tangler hello_test.flx = test/hello_test.flx
+@tangler hello_setup.flx = $PWD/hello_setup.flx
 
 @h1 How to make a new package for Felix
 This is an experiment to show how to make
@@ -42,7 +42,7 @@ void hello() {
 @h2 Build and use instructions (Unix).
 Should work on Unix. Combines both usage and build
 instructions. See below for key.
-@tangle hello_osx.fpc
+@tangle hello.fpc
 Name: hello
 Platform: Unix
 Description: Test Hello (Unix)
@@ -54,7 +54,7 @@ includes: '"hello.hpp"'
 library: hello
 macros: BUILD_HELLO
 Requires: flx
-srcdir: share/src/hellolib
+srcdir: src/hellolib
 headers: hello\.hpp
 build_includes:
 src: .*\.cpp
@@ -108,6 +108,52 @@ This is to force exporting of symbols on Windows, and can
 be used to control visibility on Linux too. We haven't
 bothered with it in our code (but should for pedagogical purposes!)
 
+@h2 Compilation program
+@tangle hello_setup.flx
+
+include "std/felix/flx_mklib";
+
+private fun / (x:string,y:string) => Filename::join(x,y);
+
+var build_dir = System::argv 1;
+if build_dir == "" do
+  println$ "[hello_setup.flx] ERROR: arg1 must specify a build directory";
+  System::exit (1);
+done
+
+var target_subdir = "host";
+var pkg = "hello";
+var tmpdir = "tmp";
+var static_only = false;
+var debug = false;
+var pkgdir = build_dir / target_subdir / "config";
+println$ "Config dir " + pkgdir;
+
+var db = FlxPkgConfig::FlxPkgConfigQuery (list[string] pkgdir);
+var toolchain = db.getpkgfield1 ("toolchain", "toolchain");
+
+println$ "Toolchain " + toolchain;
+var toolchain_maker = 
+  Dynlink::load-plugin-func1 [toolchain_t,clang_config_t] 
+  (
+    dll-name=toolchain, 
+    setup-str="",
+    entry-point=toolchain
+  )
+;
+
+FlxLibBuild::make_lib
+(
+  db,
+  toolchain_maker,
+  build_dir,      // usually "build/release"
+  target_subdir,  // usually "host"
+  pkg,            // name of the package to be built
+  tmpdir,         // a suitable temporary directory
+  static_only,    // if true skip building shared library
+  debug           // whether to output debug stuff from this tool
+) ();
+
 @h2 Build script
 Temporarily, I'm going to use bash!
 Later this should be Felix or something.
@@ -118,10 +164,7 @@ at the moment.
 @tangle build_hello.sh
 echo "Building core package hello for unix platform"
 (BR="build/release" &&\
-cp $BR/share/src/hellolib/hello.hpp $BR/host/lib/rtl &&\
-cp $BR/share/src/config/unix/hello.fpc $BR/host/config &&\
-$BR/host/bin/flx -c --staticlib --c++ $BR/share/src/hellolib/hello.cpp -ox $BR/host/lib/rtl/libhello &&\
-$BR/host/bin/flx -c --c++ $BR/share/src/hellolib/hello.cpp -ox  $BR/host/lib/rtl/libhello &&\
+$BR/host/bin/flx hello_setup.flx $BR &&\
 echo "Library binaries installed in $BR/host/lib/rtl" &&\
 $BR/host/bin/flx --felix=build.fpc $BR/test/hello_test.flx) ||\
 echo "hello: BUILD FAILED"; exit 1
