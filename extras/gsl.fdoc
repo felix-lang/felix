@@ -234,6 +234,144 @@ fun format_fun (f: fun_t) =>
 @h1 Generated binding
 For GSL. 
 @tangle gsl.flx
+
+// TEMPORARY HACKS: type names
+ctypes 
+  gsl_error_handler_t,
+  gsl_complex,
+  gsl_poly_complex_workspace,
+  gsl_complex_packed_ptr,
+  gsl_mode_t,
+  gsl_sf_result,
+  gsl_sf_result_e10,
+  gsl_sf_mathieu_workspace,
+  gsl_block,
+  gsl_vector,
+  gsl_vector_view,
+  gsl_vector_const_view,
+  gsl_vector_complex,
+  gsl_matrix,
+  gsl_matrix_view,
+  gsl_matrix_const_view,
+  gsl_permutation,
+  gsl_combination,
+  gsl_multiset,
+  gsl_comparison_fn_t,
+  gsl_vector_float,
+  gsl_vector_complex_float,
+  gsl_complex_float,
+  CBLAS_INDEX_t,
+  CBLAS_TRANSPOSE_t,
+  gsl_matrix_float,
+  gsl_matrix_complex_float,
+  gsl_matrix_complex,
+  CBLAS_UPLO_t,
+  CBLAS_DIAG_t,
+  CBLAS_SIDE_t,
+  gsl_eigen_symm_workspace,
+  gsl_eigen_symmv_workspace,
+  gsl_eigen_herm_workspace,
+  gsl_eigen_hermv_workspace,
+  gsl_eigen_nonsymm_workspace,
+  gsl_eigen_nonsymmv_workspace,
+  gsl_eigen_gensymm_workspace,
+  gsl_eigen_gensymmv_workspace,
+  gsl_eigen_genherm_workspace,
+  gsl_eigen_genhermv_workspace,
+  gsl_eigen_gen_workspace,
+  gsl_eigen_genv_workspace,
+  gsl_eigen_sort_t,
+  gsl_complex_packed_array,
+  gsl_fft_direction,
+  gsl_fft_complex_wavetable,
+  gsl_fft_complex_workspace,
+  gsl_fft_real_wavetable,
+  gsl_fft_halfcomplex_wavetable,
+  gsl_fft_real_workspace,
+  gsl_function,
+  gsl_integration_workspace,
+  gsl_integration_qaws_table,
+  gsl_integration_qawo_enum,
+  gsl_integration_qawo_table,
+  gsl_integration_cquad_workspace,
+  gsl_integration_glfixed_table,
+  gsl_rng_type,
+  gsl_rng,
+  gsl_qrng_type,
+  gsl_qrng,
+  gsl_histogram,
+  gsl_histogram_pdf,
+  gsl_histogram2d,
+  gsl_histogram2d_pdf,
+  gsl_ntuple,
+  gsl_ntuple_value_fn,
+  gsl_ntuple_select_fn,
+  gsl_monte_plain_state,
+  gsl_monte_function,
+  gsl_monte_miser_state,
+  gsl_monte_miser_params,
+  gsl_monte_vegas_state,
+  gsl_monte_vegas_params,
+  gsl_siman_Efunc_t,
+  gsl_siman_step_t,
+  gsl_siman_copy_construct_t,
+  gsl_siman_destroy_t,
+  gsl_siman_metric_t,
+  gsl_siman_print_t,
+  gsl_siman_copy_t,
+  gsl_siman_params_t,
+  gsl_odeiv2_step_type,
+  gsl_odeiv2_step,
+  gsl_odeiv2_driver,
+  gsl_odeiv2_system,
+  gsl_odeiv2_control,
+  gsl_odeiv2_control_type,
+  gsl_odeiv2_evolve,
+  gsl_interp_type,
+  gsl_interp,
+  gsl_interp_accel,
+  gsl_spline,
+  gsl_cheb_series,
+  gsl_sum_levin_u_workspace,
+  gsl_sum_levin_utrunc_workspace,
+  gsl_wavelet_type,
+  gsl_wavelet,
+  gsl_wavelet_workspace,
+  gsl_wavelet_direction,
+  gsl_dht,
+  gsl_root_fsolver_type,
+  gsl_root_fsolver,
+  gsl_root_fdfsolver_type,
+  gsl_root_fdfsolver,
+  gsl_function_fdf,
+  gsl_min_fminimizer_type,
+  gsl_min_fminimizer,
+  gsl_multiroot_fsolver_type,
+  gsl_multiroot_fsolver,
+  gsl_multiroot_fdfsolver_type,
+  gsl_multiroot_fdfsolver,
+  gsl_multiroot_function,
+  gsl_multiroot_function_fdf,
+  gsl_multimin_fdfminimizer_type,
+  gsl_multimin_fdfminimizer,
+  gsl_multimin_fminimizer_type,
+  gsl_multimin_fminimizer,
+  gsl_multimin_function_fdf,
+  gsl_multimin_function,
+  gsl_multifit_linear_workspace,
+  gsl_multifit_robust_type,
+  gsl_multifit_robust_workspace,
+  gsl_multifit_robust_stats,
+  gsl_multifit_fsolver_type,
+  gsl_multifit_fsolver,
+  gsl_multifit_fdfsolver_type,
+  gsl_multifit_fdfsolver,
+  gsl_multifit_function,
+  gsl_multifit_function_fdf,
+  gsl_bspline_workspace,
+  gsl_bspline_deriv_workspace
+;
+
 // Dirname /Users/skaller/gslspec
 // 03.02.00 GSL-Error-Codes.
 // Function: const char * gsl_strerror (const int gsl_errno)
@@ -3245,7 +3383,7 @@ For GSL.
 // Function: gsl_monte_plain_state * gsl_monte_plain_alloc (size_t dim)
   fun gsl_monte_plain_alloc: size -> &gsl_monte_plain_state = 'gsl_monte_plain_alloc($a)';
 // Function: int gsl_monte_plain_init (gsl_monte_plain_state* s)
-  fun gsl_monte_plain_init: gsl_monte_plain_state* -> int = 'gsl_monte_plain_init($a)';
+  fun gsl_monte_plain_init: &gsl_monte_plain_state -> int = 'gsl_monte_plain_init($a)';
 // Function: int gsl_monte_plain_integrate (gsl_monte_function * f, const double xl[], const double xu[], size_t dim, size_t calls, gsl_rng * r, gsl_monte_plain_state * s, double * result, double * abserr)
   fun gsl_monte_plain_integrate: &gsl_monte_function * +double * +double * size * size * &gsl_rng * &gsl_monte_plain_state * &double * &double -> int = 'gsl_monte_plain_integrate($a)';
 // Function: void gsl_monte_plain_free (gsl_monte_plain_state * s)
@@ -3255,7 +3393,7 @@ For GSL.
 // Function: gsl_monte_miser_state * gsl_monte_miser_alloc (size_t dim)
   fun gsl_monte_miser_alloc: size -> &gsl_monte_miser_state = 'gsl_monte_miser_alloc($a)';
 // Function: int gsl_monte_miser_init (gsl_monte_miser_state* s)
-  fun gsl_monte_miser_init: gsl_monte_miser_state* -> int = 'gsl_monte_miser_init($a)';
+  fun gsl_monte_miser_init: &gsl_monte_miser_state -> int = 'gsl_monte_miser_init($a)';
 // Function: int gsl_monte_miser_integrate (gsl_monte_function * f, const double xl[], const double xu[], size_t dim, size_t calls, gsl_rng * r, gsl_monte_miser_state * s, double * result, double * abserr)
   fun gsl_monte_miser_integrate: &gsl_monte_function * +double * +double * size * size * &gsl_rng * &gsl_monte_miser_state * &double * &double -> int = 'gsl_monte_miser_integrate($a)';
 // Function: void gsl_monte_miser_free (gsl_monte_miser_state * s)
@@ -3269,7 +3407,7 @@ For GSL.
 // Function: gsl_monte_vegas_state * gsl_monte_vegas_alloc (size_t dim)
   fun gsl_monte_vegas_alloc: size -> &gsl_monte_vegas_state = 'gsl_monte_vegas_alloc($a)';
 // Function: int gsl_monte_vegas_init (gsl_monte_vegas_state* s)
-  fun gsl_monte_vegas_init: gsl_monte_vegas_state* -> int = 'gsl_monte_vegas_init($a)';
+  fun gsl_monte_vegas_init: &gsl_monte_vegas_state -> int = 'gsl_monte_vegas_init($a)';
 // Function: int gsl_monte_vegas_integrate (gsl_monte_function * f, double xl[], double xu[], size_t dim, size_t calls, gsl_rng * r, gsl_monte_vegas_state * s, double * result, double * abserr)
   fun gsl_monte_vegas_integrate: &gsl_monte_function * +double * +double * size * size * &gsl_rng * &gsl_monte_vegas_state * &double * &double -> int = 'gsl_monte_vegas_integrate($a)';
 // Function: void gsl_monte_vegas_free (gsl_monte_vegas_state * s)
@@ -3405,7 +3543,7 @@ For GSL.
 // Function: int gsl_interp_accel_reset (gsl_interp_accel * acc);
   fun gsl_interp_accel_reset: &gsl_interp_accel -> int = 'gsl_interp_accel_reset($a)';
 // Function: void gsl_interp_accel_free (gsl_interp_accel* acc)
-  proc gsl_interp_accel_free: gsl_interp_accel* = 'gsl_interp_accel_free($a);';
+  proc gsl_interp_accel_free: &gsl_interp_accel = 'gsl_interp_accel_free($a);';
 //*****
 // 27.05.00 Evaluation-of-Interpolation-Functions.
 // Function: double gsl_interp_eval (const gsl_interp * interp, const double xa[], const double ya[], double x, gsl_interp_accel * acc)
