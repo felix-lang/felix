@@ -351,6 +351,7 @@ top_statements:
 
  | { () }
 
+
 /* inner statements only */
 sstatements:
   | sstatement_star { Ocs_misc.make_slist Snull $1 } /* reverses order again */
