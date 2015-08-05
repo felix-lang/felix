@@ -655,13 +655,13 @@ print_endline "Apply struct";
     begin match Flx_bsym.bbdcl bsym with
     | BBDCL_cstruct (vs,_,_) ->
       let name = tn (btyp_inst (index,ts)) in
-      ce_atom ("reinterpret<"^ name ^">(" ^ ge a ^ ")/* apply cstruct*/")
+      ce_atom ("reinterpret< "^ name ^">(" ^ ge a ^ ")/* apply cstruct*/")
 
     | BBDCL_struct (vs,cts) ->
       let name = tn (btyp_inst (index,ts)) in
       if length cts > 1 then
         (* argument must be an lvalue *)
-        ce_atom ("reinterpret<"^ name ^">(" ^ ge a ^ ")/* apply struct */")
+        ce_atom ("reinterpret< "^ name ^">(" ^ ge a ^ ")/* apply struct */")
       else if length cts = 0 then
         ce_atom (name ^ "()")
       else
@@ -1358,7 +1358,7 @@ print_endline ("Handling coercion in egen " ^ sbt bsym_table srct ^ " -> " ^ sbt
     in
     begin match dstt with
     | BTYP_variant _ -> coerce_variant ()
-    | _ -> ce_atom ("reinterpret<"^tn dstt^">("^ge srce^")/*variant*/")
+    | _ -> ce_atom ("reinterpret< "^tn dstt^">("^ge srce^")/*variant*/")
     end
 
 

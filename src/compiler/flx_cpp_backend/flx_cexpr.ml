@@ -156,7 +156,7 @@ let remaps = [
   "::flx::rtl::strutil::str<int>($1)",("::flx::rtl::strutil::str<int>($1:assign)","postfix");
   "::flx::rtl::strutil::str<#1>($1)",("::flx::rtl::strutil::str<#1>($1:assign)","postfix");
   "static_cast<#0>($1)",("static_cast<#0>($1:assign)","postfix");
-  "reinterpret<?1>($1)",("reinterpret<?1>($1:assign)","postfix");
+  "reinterpret< ?1>($1)",("reinterpret< ?1>($1:assign)","postfix");
 ]
 ;;
 

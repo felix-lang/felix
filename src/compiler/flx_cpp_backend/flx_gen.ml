@@ -755,7 +755,7 @@ let gen_execute_methods filename syms bsym_table label_info counter bf bf2 =
           (* argument tuple *)
           let a = flx_fun_atype_name ^ "(" ^ String.concat "," flx_fun_args ^")" in
           if flx_fun_reduced_atype_name <> flx_fun_atype_name
-          then "reinterpret<" ^ flx_fun_reduced_atype_name ^ ">("^a^")/*flx_gen*/"
+          then "reinterpret< " ^ flx_fun_reduced_atype_name ^ ">("^a^")/*flx_gen*/"
           else a
 
       in
