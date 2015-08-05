@@ -1,25 +1,54 @@
 
-@title Hands On!
-@h1 Introductory Hands On
-Get your hands dirty! You can't learn a programming language just by reading!
+@title Hello World
 
-@h1 Hello world.
+@h1 Hello World
+
 Of course there's no better introduction to a language that the infamous hello world:
+
 @felix
 println$ "Hello World";
 @expect
 Hello World
 @
+
 <img src="/share/src/web/images/IMG_1337.jpg">
-@p
-@h1 Running it.
-Assuming you store this in the file @{hello.flx} to can run it by
+
+@h2 Explanation
+
+@{println} is a built-in command that takes a string and prints it to the terminal ending in a new-line character.
+It has a companion function called @{print} that does the same, but leaves off the newline.
+
+That dollar sign at the end of @{println} isn't actually part of its name.
+It is a syntactic element of felix that has special meaning--it "contains" whatever comes after it in parentheses.
+If we have a function @{foo(a,b)}, we can all it by passing in parameters denoted by parenthesis (i.e. @{foo(1,2);} ).
+Alternatively, we can use @{$} to save us a little typing.
+@{foo $ 1, 2;} is the same as @{foo(1,2);}.
+
+If you've worked with Haskell you may recognize this behavior, except that in Haskell the dollar sign cannot touch any symbols next to it, lest they be considered as part of the symbol.
+
+@{"Hello world"} is just a string of characters.
+Strings are a primitive data type in Felix and come equipped with all the modern conveniences one would expect in a modern language.
+
+@h2 Running it
+
+Assuming you store this in the file @{hello.flx} to can run it by entering the following into the terminal:
+
 @pre
 flx hello
 @
-This will check the code, translate it to C++, compile the C++,
-link it including any libraries required, and then run it.
-Caching and dependency checking will skip over some of these
-steps, or parts thereof: it will be a bit slow the first time
-but subsequent runs will load much faster than any VM.
+
+Behind the scenes a lot happens when you run this command.
+Felix checks the code for errors,
+translates it to C++,
+compiles the C++ code to a native binary,
+links it (including any libraries that are required),
+and then runs it.
+Furthermore, if Felix detects that something doesn't need to be compiled, it will
+skip over some of these steps, or parts thereof.
+
+You can see this for yourself by executing @{flx hello} a second time.
+It was a bit slow on the first run, becaues of the compile process mentioned above, but subsequent runs will load much faster than any virtual machine. 
+
+
+
 
