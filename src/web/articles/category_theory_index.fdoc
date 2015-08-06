@@ -1,5 +1,17 @@
 <p><a href='articles.fdoc'>Up</a></p>
-@h1 category_theory Index
+
+@h1 Introduction
+
+Category Theory is an abstract branch of mathematics that organizes and bridges many parts of mathematics, science, engineering, philosophy, and linguistics.
+It is sometimes referred to as <em>"a general mathematical theory of structures and of systems of structures."</em><sub>[1]</sub>
+Computer scientists in particular have been discovering interesting uses for category theory because valuable (i.e. computable) ideas can be derived from pre-existing ones, oftentimes without any work at all.
+Category theory is relevant for many kinds of programming, from databases, compilers, and distributed computing to simple programs and hobby projects.
+Categories are not just for monad-loving academics, they have real world uses and are quite amenable to a variety of programming styles.
+
+In this series of articles, we will not cover the entirety of category theory.
+We think it is beneficial to zero-in on the parts relavent to how Felix exposes category theoretic ideas to the programmer and how it uses such concepts internally.
+This means short essays on the basics (e.g. objects and morphisms), sums, products, exponentials, arrays, and the concept of extension. 
+
 <ul>
 <li><a href="category_theory_01.fdoc">Categories</a></li>
 <li><a href="category_theory_02.fdoc">More Categories</a></li>
@@ -7,5 +19,8 @@
 <li><a href="category_theory_04.fdoc">Products</a></li>
 <li><a href="category_theory_05.fdoc">Sums</a></li>
 <li><a href="category_theory_06.fdoc">Arrays</a></li>
-<li><a href="category_theory_07.fdoc"></a></li>
+<li><a href="category_theory_07.fdoc">Extension</a></li>
 </ul>
+
+@p [1] Stanford Encyclopedia of Philosophy - Category Theory - <a href="http://plato.stanford.edu/entries/category-theory/ ">http://plato.stanford.edu/entries/category-theory/</a>
+

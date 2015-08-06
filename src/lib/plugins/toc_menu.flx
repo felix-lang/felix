@@ -42,12 +42,12 @@ div.m {
 }
 
 div.m1 {
-    background-color: #70C000;
+    background-color: #86E870;
     padding-top:2px;
     padding-left: 10px;
     border-style:outset;
-    border-color:red;
-    border-width:2px;
+    border-color:#ccc;
+    border-width:2px 0;
     font-size:90%;
 }
 
@@ -57,7 +57,7 @@ div.m2 {
     padding-top:2px;
     border-style:outset;
     border-color:green;
-    border-width:2px;
+    border-width:0 0 1px 0;
     font-size:80%;
 }
 

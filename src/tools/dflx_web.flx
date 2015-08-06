@@ -512,12 +512,13 @@ var frame_style= """
         background-color: LightGray; overflow: auto;
       }
       .rightpanel {
-        position:absolute; right: 0px; left:160px; top:0px; bottom: 0px; 
-        background-color: LightGray; overflow: auto;
+        position:absolute; right: 0px; left:156px; top:0px; bottom: 0px; 
+        background-color: #E0E0E0; overflow: auto;
+        padding: 0 0.5em;
       }
       .divider {
         position:absolute; left: 150px; top:0px; bottom:0px; 
-        background-color: black; width:10px;
+        background-color: black; width:6px;
       }
 
       #panemover {
@@ -550,7 +551,7 @@ var frame_js = """
         dragOffsetRight = document.getElementById(right).getBoundingClientRect().left - x;
       }
       function dragRelease(){
-        document.getElementById('panemover').style.width = '10px';
+        document.getElementById('panemover').style.width = '6px';
         document.getElementById('panemover').style.left = document.getElementById('divider').offsetLeft + 'px';
         mousedown = false;
       }
