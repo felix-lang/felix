@@ -1,17 +1,18 @@
+
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // +
 // + This file contains FOUR separate sets of four callback functions
-// + and a mainline. 
+// + and a mainline.
 // +
 // + It is designed to be included in four stub files which set the
 // + four combinations, so common code can be shared.
 // +
 // + These are conditioned by two boolean macros:
-// + 
+// +
 // + FLX_STATIC_LINK:
 // +   if defined, we're static linking
 // +   if not defined, we're dynamic linking
-// + 
+// +
 // + FLX_SUPPORT_ASYNC:
 // +   if defined 0, async support is not provided
 // +   if defined non-zero, async support is provided
@@ -83,11 +84,11 @@ namespace flx { namespace run {
 // and initialised on demand, i.e. on the first use.
 //
 // This is done so programs not doing socket or timer I/O
-// don't spawn an extra thread, and programs which do 
+// don't spawn an extra thread, and programs which do
 // do not spawn it prematurely.
 //
 // Therefore the asynchronous I/O subsystem is initially
-// represented by a NULL pointer. When its services are 
+// represented by a NULL pointer. When its services are
 // required, the shared library providing them is dynamically
 // loaded by name, and the service started.
 //
@@ -118,7 +119,7 @@ namespace flx { namespace run {
 //
 // If we're dynamic linking, we load the shared library FLX_ASYNC_DLL_NAME
 // dynamically, and use dlsym() or GetProcAddress() to fetch
-// the service creator function from its string name. 
+// the service creator function from its string name.
 // ========================================================
 
 void init_ptr_create_async_hooker(flx_config *c, bool debug_driver) {
@@ -179,12 +180,12 @@ void init_ptr_create_async_hooker(flx_config *c, bool debug_driver) {
 //
 // Purpose: grabs program arguments.
 // Prints help if statically linked.
-// 
-// Static and dynamic linked programs have arguments 
+//
+// Static and dynamic linked programs have arguments
 // in different slots of argv because the mainline for
 // dynamic linkage is actually flx_run executable whereas
 // for static linkage this is the executable.
-// 
+//
 // So dynamic linked programs have an extra argument
 // which has to be skipped for compatibility of static
 // and dynamic linkage.
@@ -265,7 +266,7 @@ int get_flx_args_config(int argc, char **argv, flx_config *c) {
 // CALLBACK #3: link_library
 //
 // This function sets up the entry points for either
-// a static or dynamic link program. 
+// a static or dynamic link program.
 //
 // For static link,
 // we provide the addresses of the compiler generated
@@ -347,3 +348,5 @@ int FELIX_MAIN (int argc, char** argv)
 
   return error_exit_code;
 }
+
+
