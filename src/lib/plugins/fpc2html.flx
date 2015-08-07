@@ -57,7 +57,7 @@ println$ "formatting fpc data";
     while n.[0] in (char '"', char '<', char "'") do n=n.[1 to]; done
     while n.[-1] in (char '"',char '>',char "'") do n=n.[to -1]; done
     match get_file(n,C_PATH) with
-    | Some path => { out += '<a href="/$' + path + 'cpp">' + s + '</a> '; }
+    | Some path => { out += '<a href="/$' + path + '">' + s + '</a> '; }
     | #None => { out += s + " "; }
     endmatch;
   }
