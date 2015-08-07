@@ -1510,6 +1510,7 @@ Implement the RTL portable low level dlopen/LoadLibrary functions.
 #include "flx_dlopen.hpp"
 #include "flx_exceptions.hpp"
 #include <cstdlib>
+#include <stdio.h>
 
 namespace flx { namespace rtl {
 
