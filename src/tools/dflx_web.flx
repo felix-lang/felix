@@ -28,7 +28,7 @@ span.fpc_fieldname {color:#DD0000; }
 span.lineno {color:#101010; background-color:#E0E0E0; font-size:80%; font-family:"courier",monospace; font-style:normal; }
 pre.flxbg {background-color:#90DF90; color:black; padding:2px; box-shadow:5px 5px 2px #807080; }
 pre.uncheckedflxbg {background-color:#D0D0D0; color:black; padding:2px; box-shadow:5px 5px 2px #807080; }
-pre.cppbg {background-color:#80FF80; color:black; }
+pre.cppbg {background-color:#A0CF80; color:black; }
 pre.prefmtbg {background-color:#D0D0D0; color:black; }
 pre.expected {background-color:#E0EF80; color:black; }
 pre.input {background-color:#E08080; color:black; }
