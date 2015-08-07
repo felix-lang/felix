@@ -152,7 +152,7 @@ void init_ptr_create_async_hooker(flx_config *c, bool debug_driver) {
 
   // Get the hooker function
   c->ptr_create_async_hooker =
-    (create_async_hooker_t*)DLSYM(async_lib, create_async_hooker);
+    (create_async_hooker_t*)FLX_DLSYM(async_lib, create_async_hooker);
 
   // Error out if we couldn't find the hooker function in the
   // library.

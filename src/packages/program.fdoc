@@ -1375,7 +1375,7 @@ particularly convenient.
 //   of the environment variable specifying extra directories
 //   to search for DLLs.
 //
-// FLX_DLSYM(lib,sym) accepts a library handle and an identifier.
+// FLX_NATIVE_DLSYM(lib,sym) accepts a library handle and an identifier.
 //   It works for both static and dynamic linkage.
 //
 //   For dynamic linkage it converts the symbol to a string
@@ -1385,22 +1385,28 @@ particularly convenient.
 //     This will work for both static linkage AND for
 //     load time dynamic linkage (but not run time linkage).
 //
-// FLX_SDLSYM(lib,string) accepts a library handle
-//   and a string. It should work run time linkage only.
+// FLX_NATIVE_SDLSYM(lib,string) accepts a library handle
+//   and a string.  If lib is a valid run time loaded library,
+//   this routine works independently of how it was linked
+//   (since even statically linked programs can dlopen libraries).
 //
-// DLSYM(lib,sym) is just FLX_DLSYM, it requires a symbol.
+//   It may even work for lib=NULL if the linker is set to export
+//   symbols to the program, and NULL is the linkers code for the
+//   module's namespace.
 //
-// SDLSYM(lib,string) uses FLX_SDLSYM if dynamic linkage is selected 
+// FLX_DLSYM(lib,sym) is just FLX_NATIVE_DLSYM, it requires a symbol.
+//
+// FLX_SDLSYM(lib,string) uses FLX_NATIVE_SDLSYM if dynamic linkage is selected 
 //   and throws an exception if static linkage is chosen.
 //
 // Therefore: 
 //   * the "S" version of these macros uses a string name,
 //     the non-"S" version uses an identifier.
 //
-//   * FLX_SDLSYM uses a string name and always does
+//   * FLX_NATIVE_SDLSYM uses a string name and always does
 //     run time lookup.
 //
-//   * DLSYM uses a symbol and uses a linker bound
+//   * FLX_DLSYM uses a symbol and uses a linker bound
 //     address if FLX_STATIC_LINK is selected
 //     Otherwise it uses run time lookup.
 //
@@ -1408,8 +1414,8 @@ particularly convenient.
   #include <windows.h>
   typedef HMODULE FLX_LIBHANDLE;
   #define FLX_LIB_EXTENSION ".DLL"
-  #define FLX_DLSYM(x,y) (void*)GetProcAddress(x,#y)
-  #define FLX_SDLSYM(x,y) (void*)GetProcAddress(x,y)
+  #define FLX_NATIVE_DLSYM(x,y) (void*)GetProcAddress(x,#y)
+  #define FLX_NATIVE_SDLSYM(x,y) (void*)GetProcAddress(x,y)
   #define FLX_ENV_LIBRARY_PATH_NAME "PATH"
 #else
   // UNIX, recent OSX
@@ -1425,18 +1431,18 @@ particularly convenient.
     #define FLX_ENV_LIBRARY_PATH_NAME "LD_LIBRARY_PATH"
   #endif
   #include <dlfcn.h>
-  #define FLX_DLSYM(x,y) dlsym(x,#y)
-  #define FLX_SDLSYM(x,y) dlsym(x,y)
+  #define FLX_NATIVE_DLSYM(x,y) dlsym(x,#y)
+  #define FLX_NATIVE_SDLSYM(x,y) dlsym(x,y)
 #endif
 
 #define FLX_NOLIBRARY NULL
 
-#define DLSYM(x,y) FLX_DLSYM(x,y)
+#define FLX_DLSYM(x,y) FLX_NATIVE_DLSYM(x,y)
 
 #ifndef FLX_STATIC_LINK
-  #define SDLSYM(x,y) FLX_SDLSYM(x,(y))
+  #define FLX_SDLSYM(x,y) FLX_NATIVE_SDLSYM(x,(y))
 #else
-  #define SDLSYM(x,y) (throw ::flx::rtl::flx_link_failure_t(\
+  #define FLX_SDLSYM(x,y) (throw ::flx::rtl::flx_link_failure_t(\
     "<static link>",y,"dlsym with static link requires name not string"),\
     (void*)0\
   )
@@ -1446,19 +1452,9 @@ particularly convenient.
 @
 
 
-@h2 The @{flx_dlopen@} unit: C++ header file.
-Felix dynamic linkage is a core part of the RTL 
-(run time library).
-
-Since the driver code uses it, and the driver is C++
-at the moment, the core support is C++ also.
-
-This subpackage does not build the C++ code, just
-copied it into the installed @{src/rtl} directory
-for the rtl builder to find.
-
+@h2 The @{flx_dlopen} unit: C++ header file.
 This file contains portable versions of the low
-level dlopen/LoadLibrary functions
+level dlopen/LoadLibrary functions.
 
 @tangle flx_dlopen.hpp
 #ifndef __FLX_DLOPEN_H__
@@ -1468,30 +1464,7 @@ level dlopen/LoadLibrary functions
 
 #include <string>
 using namespace std;
-// Utilities to make dynamic linkage and
-// initialisation of Felix modules easier
-//
-// We provide a standard exception to report
-// link failure (missing symbol).
-//
-// We provide a class flx_dynlink_t which
-// opens a Felix shared library given a filename,
-// and links the mandatory symbols
-// The user may derive from this class to add
-// linkage for extra symbols
-//
-// We provide a class flx_libinst_t which
-// initialises and terminates a Felix module
-// The user may derive from this class to add
-// extra initialisation or termination processing.
-//
-// [Note: the virtuals are *deliberately* private.
-// Be sure to make your overrides private too,
-// so they cannot be called:
-// they're dispatched automatically by wrappers
-// defined in the base]
 
-// must be at global scope, because the users' is
 namespace flx { namespace rtl {
 /// Load library
 RTL_EXTERN FLX_LIBHANDLE flx_load_library_nothrow(const ::std::string& filename);
@@ -1499,6 +1472,15 @@ RTL_EXTERN FLX_LIBHANDLE flx_load_library_throw(const ::std::string& filename);
 
 RTL_EXTERN FLX_LIBHANDLE flx_load_module_nothrow(const ::std::string& filename); 
 RTL_EXTERN FLX_LIBHANDLE flx_load_module_throw(const ::std::string& filename); 
+
+RTL_EXTERN ::std::string flx_lib_extension ();
+RTL_EXTERN ::std::string flx_env_library_path_name ();
+
+RTL_EXTERN FLX_LIBHANDLE flx_nolibrary();
+
+RTL_EXTERN void *flx_native_dlsym
+  (FLX_LIBHANDLE,::std::string);
+
 }}
 
 #endif
@@ -1525,7 +1507,7 @@ flx_load_library_nothrow(const std::string& filename)
   (void)SetErrorMode(SEM_NOOPENFILEERRORBOX);
   library = LoadLibrary(filename.c_str());
 #else
-    library = dlopen(filename.c_str(),RTLD_NOW);
+    library = dlopen(filename.c_str(),RTLD_NOW | RTLD_LOCAL);
 #endif
   return library;
 }
@@ -1550,6 +1532,17 @@ flx_load_module_throw(const ::std::string& filename)
 {
   return flx_load_library_throw(filename + FLX_LIB_EXTENSION);
 }
+
+::std::string flx_lib_extension () { return FLX_LIB_EXTENSION; }
+::std::string flx_env_library_path_name () { return FLX_ENV_LIBRARY_PATH_NAME; }
+
+FLX_LIBHANDLE flx_nolibrary() { return FLX_NOLIBRARY; }
+
+void *flx_native_dlsym(FLX_LIBHANDLE lib, ::std::string symname)
+{
+  return FLX_NATIVE_DLSYM(lib,symname.c_str());
+}
+
 }} // namespaces
 @
 
@@ -1800,20 +1793,20 @@ void flx_dynlink_t::dynamic_link_with_modulename(const ::std::string& filename_a
   //fprintf(stderr,"File %s dlopened at %p ok\n",fname.c_str(),library);
 
   thread_frame_creator = (thread_frame_creator_t)
-    FLX_SDLSYM(library,(modulename+"_create_thread_frame").c_str());
+    FLX_NATIVE_SDLSYM(library,(modulename+"_create_thread_frame").c_str());
   if(!thread_frame_creator)
     throw flx_link_failure_t(filename,"dlsym",modulename+"_create_thread_frame");
 
   if (debug)
     fprintf(stderr,"[dynlink:dynamic_link] Thread frame creator found at %p\n",thread_frame_creator);
 
-  start_sym = (start_t)FLX_SDLSYM(library,(modulename+"_flx_start").c_str());
+  start_sym = (start_t)FLX_NATIVE_SDLSYM(library,(modulename+"_flx_start").c_str());
   if (debug)
     fprintf(stderr,"[dynlink:dynamic_link] Start symbol = %p\n",start_sym);
   if(!start_sym)
     throw flx_link_failure_t(filename,"dlsym",modulename+"_flx_start");
 
-  main_sym = (main_t)FLX_DLSYM(library,flx_main);
+  main_sym = (main_t)FLX_NATIVE_DLSYM(library,flx_main);
 
   if(debug) 
     fprintf(stderr,"[dynlink:dynamic_link] main symbol = %p\n",main_sym);
@@ -1906,7 +1899,7 @@ con_t *flx_libinst_t::bind_proc(void *fn, void *data) {
 }
 
 }} // namespaces
-@h2 The dynamic link library C++
+@
 
 @h2 The dynamic link library binding @{Dynlink}
 @tangle dynlink.flx
@@ -2103,7 +2096,7 @@ is itself a pointer.
   //$ statically linked executables can still
   //$ load DLLs at run time.
   fun raw_dlsym:flx_library * string->address =
-      "FLX_SDLSYM($1->library,$2.c_str())";
+      "FLX_NATIVE_SDLSYM($1->library,$2.c_str())";
 
   noinline fun find_sym(lib:flx_library, sym:string) : address =
   {
