@@ -13,6 +13,9 @@
 @tangler posix_signal.flx    = share/lib/std/posix/signal.flx
 @tangler win32_signal.flx    = share/lib/std/win32/signal.flx
 @tangler system.flx          = share/lib/std/program/system.flx
+@tangler flx_dl.h            = $PWD/src/rtl/flx_dl.h
+@tangler flx_dlopen.hpp      = $PWD/src/rtl/flx_dlopen.hpp
+@tangler flx_dlopen.cpp      = $PWD/src/rtl/flx_dlopen.cpp
 @tangler flx_dynlink.hpp     = $PWD/src/rtl/flx_dynlink.hpp
 @tangler flx_dynlink.cpp     = $PWD/src/rtl/flx_dynlink.cpp
 @tangler dynlink.flx         = share/lib/std/program/dynlink.flx
@@ -1351,33 +1354,30 @@ compilation of and use of dynamic libraries
 particularly convenient.
 
 
-@h2 The flx_dynlink unit: C++ header file.
-Felix dynamic linkage is a core part of the RTL 
-(run time library).
-
-Since the driver code uses it, and the driver is C++
-at the moment, the core support is C++ also.
-
-This subpackage does not build the C++ code, just
-copied it into the installed @{src/rtl} directory
-for the rtl builder to find.
-
-@tangle flx_dynlink.hpp
-
-#ifndef __FLX_DYNLINK_H__
-#define __FLX_DYNLINK_H__
-#ifndef FLX_RTL
-#include "flx_rtl.hpp"
-#include "flx_gc.hpp"
-#endif
-#include <string>
-using namespace std;
+@h2 The flx_dl.h header: portability macros.
+@tangle flx_dl.h
+#ifndef __FLX_DL_H__
+#define __FLX_DL_H__
 
 // define dynamic library loader stuff, even for static linkage
 // SPECS:
 //
+// FLX_LIBHANDLE is the type of a native DLL handle
+//   it's a typedef NOT a macro.
+//
+// FLX_NOLIBRARY is a macro specifying the value if there is no library.
+//   used for initialisation, or, error value if dynamic load fails
+//
+// FLX_LIB_EXTENSION is a macro specifying the string name of
+//  the platform library extension including the dot (.)
+//
+// FLX_ENV_LIBRARY_PATH_NAME is a macro that specifies the name
+//   of the environment variable specifying extra directories
+//   to search for DLLs.
+//
 // FLX_DLSYM(lib,sym) accepts a library handle and an identifier.
 //   It works for both static and dynamic linkage.
+//
 //   For dynamic linkage it converts the symbol to a string
 //     and calls dlsym
 //   For static linkage it just returns the provided symbol,
@@ -1406,53 +1406,68 @@ using namespace std;
 //
 #if FLX_WIN32
   #include <windows.h>
-  typedef HMODULE LIBHANDLE;
-  #define FLX_SET_NOLIBRARY(lib) lib=NULL
-  #define FLX_CHECK_NOLIBRARY(lib) (lib==NULL)
+  typedef HMODULE FLX_LIBHANDLE;
   #define FLX_LIB_EXTENSION ".DLL"
   #define FLX_DLSYM(x,y) (void*)GetProcAddress(x,#y)
   #define FLX_SDLSYM(x,y) (void*)GetProcAddress(x,y)
-#elif FLX_MACOSX_NODLCOMPAT
-  #include <sys/stat.h>
-  #include <mach-o/dyld.h>
-  typedef NSModule LIBHANDLE;
-  #define FLX_SET_NOLIBRARY(lib) lib=NULL
-  #define FLX_CHECK_NOLIBRARY(lib) (lib==NULL)
-  // using .so = bundle = programmatically loadable, unbreaks the 10.2 build
-  // I'm not sure why the 10.3 and upwards versions of flx_load_module
-  // work with .dylib, they really shouldn't shouldn't.
-  // #define FLX_LIB_EXTENSION ".dylib"
-  #define FLX_LIB_EXTENSION ".so"
-  #define FLX_DLSYM(x, y) ::flx::rtl::getmachosym(x,"_"#y)
-  #define FLX_SDLSYM(x, y) ::flx::rtl::getmachosym(x,(string("_")+string(y)).c_str())
+  #define FLX_ENV_LIBRARY_PATH_NAME "PATH"
 #else
   // UNIX, recent OSX
-  typedef void *LIBHANDLE;
-  #define FLX_SET_NOLIBRARY(lib) lib=NULL
-  #define FLX_CHECK_NOLIBRARY(lib) (lib==NULL)
+  typedef void *FLX_LIBHANDLE;
   #if FLX_CYGWIN
     #define FLX_LIB_EXTENSION ".dll"
+    #define FLX_ENV_LIBRARY_PATH_NAME "LD_LIBRARY_PATH"
   #elif FLX_MACOSX
-    // this should never have worked. dylibs can't be programmatically
-    // loaded. perhaps 10.3 and above removed the bundle/dylib distinction.
-     #define FLX_LIB_EXTENSION ".dylib"
-    //#define FLX_LIB_EXTENSION ".so"
+    #define FLX_LIB_EXTENSION ".dylib"
+    #define FLX_ENV_LIBRARY_PATH_NAME "DYLD_LIBRARY_PATH"
   #else
     #define FLX_LIB_EXTENSION ".so"
+    #define FLX_ENV_LIBRARY_PATH_NAME "LD_LIBRARY_PATH"
   #endif
   #include <dlfcn.h>
   #define FLX_DLSYM(x,y) dlsym(x,#y)
   #define FLX_SDLSYM(x,y) dlsym(x,y)
 #endif
 
+#define FLX_NOLIBRARY NULL
+
 #define DLSYM(x,y) FLX_DLSYM(x,y)
 
 #ifndef FLX_STATIC_LINK
   #define SDLSYM(x,y) FLX_SDLSYM(x,(y))
 #else
-  #define SDLSYM(x,y) (throw ::flx::rtl::flx_link_failure_t("<static link>",y,"dlsym with static link requires name not string"),(void*)0)
+  #define SDLSYM(x,y) (throw ::flx::rtl::flx_link_failure_t(\
+    "<static link>",y,"dlsym with static link requires name not string"),\
+    (void*)0\
+  )
+#endif
 #endif
 
+@
+
+
+@h2 The @{flx_dlopen@} unit: C++ header file.
+Felix dynamic linkage is a core part of the RTL 
+(run time library).
+
+Since the driver code uses it, and the driver is C++
+at the moment, the core support is C++ also.
+
+This subpackage does not build the C++ code, just
+copied it into the installed @{src/rtl} directory
+for the rtl builder to find.
+
+This file contains portable versions of the low
+level dlopen/LoadLibrary functions
+
+@tangle flx_dlopen.hpp
+#ifndef __FLX_DLOPEN_H__
+#define __FLX_DLOPEN_H__
+#include "flx_rtl_config.hpp"
+#include "flx_dl.h"
+
+#include <string>
+using namespace std;
 // Utilities to make dynamic linkage and
 // initialisation of Felix modules easier
 //
@@ -1478,27 +1493,123 @@ using namespace std;
 
 // must be at global scope, because the users' is
 namespace flx { namespace rtl {
+/// Load library
+RTL_EXTERN FLX_LIBHANDLE flx_load_library_nothrow(const ::std::string& filename);
+RTL_EXTERN FLX_LIBHANDLE flx_load_library_throw(const ::std::string& filename);
+
+RTL_EXTERN FLX_LIBHANDLE flx_load_module_nothrow(const ::std::string& filename); 
+RTL_EXTERN FLX_LIBHANDLE flx_load_module_throw(const ::std::string& filename); 
+}}
+
+#endif
+@
+
+@h2 The @{flx_dlopen} unit: C++ implementation.
+Implement the RTL portable low level dlopen/LoadLibrary functions.
+@tangle flx_dlopen.cpp
+#include "flx_dlopen.hpp"
+#include "flx_exceptions.hpp"
+#include <cstdlib>
+
+namespace flx { namespace rtl {
+
+FLX_LIBHANDLE
+flx_load_library_nothrow(const std::string& filename)
+{
+  FLX_LIBHANDLE library = FLX_NOLIBRARY;
+  if (::std::getenv("FLX_SHELL_ECHO")!=(char*)0)
+    fprintf(stderr,"[load_library] %s\n", filename.c_str());
+#if FLX_WIN32
+  // stop windows showing err dialogues, ignoring error code.
+  (void)SetErrorMode(SEM_NOOPENFILEERRORBOX);
+  library = LoadLibrary(filename.c_str());
+#else
+    library = dlopen(filename.c_str(),RTLD_NOW);
+#endif
+  return library;
+}
+
+FLX_LIBHANDLE
+flx_load_library_throw(const ::std::string& filename)
+{
+  FLX_LIBHANDLE library = flx_load_library_nothrow(filename);
+  if(library == FLX_NOLIBRARY)
+    throw ::flx::rtl::flx_link_failure_t(filename,"LoadLibrary/dlopen","Cannot find dll/shared library");
+  return library;
+}
+
+FLX_LIBHANDLE
+flx_load_module_nothrow(const ::std::string& filename)
+{
+  return flx_load_library_nothrow(filename + FLX_LIB_EXTENSION);
+}
+
+FLX_LIBHANDLE
+flx_load_module_throw(const ::std::string& filename)
+{
+  return flx_load_library_throw(filename + FLX_LIB_EXTENSION);
+}
+}} // namespaces
+@
+
+@h2 Felix level dynamic loader system
+This is a higher level loader which is primarily designed
+for loading Felix programs machined as libraries, but it can
+also be used for high level libraries such as plugins.
+
+The core concept is based on Windows 3.1, in which the library
+is read only program code, and requires an data frame to
+execute. Unlike C style libraries, mutable data is not permitted
+in libraries. Instead, the library must provide a function to
+create a heap allocated data frame to store global data.
+
+Hence, after loading, one or more instances of the library
+can be created by combining the code API with a data frame.
+Felix calls this data frame the <em>thread frame</em>.
+
+Since each client of a library create their own instance
+of the library, the global variables of the client do
+not interfere.
+
+The type @{flx_dynlink_t} represents a library, whereas
+the type @{flx_libinst_t} represents a pair consisting
+of the library together with a data frame. This provides
+a single entity from which to dispatch function calls
+which may interact by per instance data without clobbering
+an independent client's use of the library.
+
+Except in special circumstances Felix demands all code
+be reentrant and in particular mutable global variables
+are not allowed at the C level.
+
+The special circumstances are dictated by poor quality
+API's including Posix signals and of course the 
+notorious @{errno}.
+
+@tangle flx_dynlink.hpp
+#ifndef __FLX_DYNLINK_H__
+#define __FLX_DYNLINK_H__
+#include "flx_rtl.hpp"
+#include "flx_gc.hpp"
+#include "flx_dl.h"
+#include "flx_dlopen.hpp"
+#include "flx_exceptions.hpp"
+
+#include <string>
+
+namespace flx { namespace rtl {
 
 struct RTL_EXTERN flx_dynlink_t;
 struct RTL_EXTERN flx_libinst_t;
 
-/// Dynamic linkage failure.
-
-RTL_EXTERN LIBHANDLE
-flx_load_library(const ::std::string& filename);
-
-RTL_EXTERN LIBHANDLE
-flx_load_module(const ::std::string& filename);
 
 /// frame creators.
-
 typedef void *(*thread_frame_creator_t)
 (
   ::flx::gc::generic::gc_profile_t*
 );
 
 /// library initialisation routine.
-
 typedef con_t *(*start_t)
 (
   void*,
@@ -1513,7 +1624,6 @@ typedef con_t *(*start_t)
 typedef con_t *(*main_t)(void*);
 
 /// dynamic object loader.
-
 struct RTL_EXTERN flx_dynlink_t
 {
   // filename of library used for dynamic linkage
@@ -1525,7 +1635,7 @@ struct RTL_EXTERN flx_dynlink_t
 
   // OS specific handle refering to the library if one is loaded
   // undefine otherwise
-  LIBHANDLE library;
+  FLX_LIBHANDLE library;
 
   // Felix specific entry point used to create thread frame.
   // Typically this function allocates the thread frame as a C++
@@ -1619,10 +1729,6 @@ private:
   void operator=(flx_libinst_t const&);
 };
 
-#if FLX_MACOSX_NODLCOMPAT
-void* getmachosym(LIBHANDLE, const char*);
-#endif
-
 }} // namespaces
 #endif
 
@@ -1635,99 +1741,6 @@ void* getmachosym(LIBHANDLE, const char*);
 #include <cstdlib>
 
 namespace flx { namespace rtl {
-
-#if FLX_MACOSX_NODLCOMPAT
-void*
-getmachosym(NSModule library, const char* symname)
-{
-    NSSymbol    sym = NSLookupSymbolInModule(library, symname);
-    if(sym)
-        return NSAddressOfSymbol(sym);
-    return 0;
-}
-
-#endif
-
-LIBHANDLE
-flx_load_library(const std::string& filename)
-{
-  LIBHANDLE library;
-  FLX_SET_NOLIBRARY(library);
-  if (std::getenv("FLX_SHELL_ECHO")!=(char*)0)
-    fprintf(stderr,"[load_library] %s\n", filename.c_str());
-//#if FLX_WIN32 || FLX_CYGWIN
-#if FLX_WIN32
-  // stop windows showing err dialogues, ignoring error code.
-  (void)SetErrorMode(SEM_NOOPENFILEERRORBOX);
-  library = LoadLibrary(filename.c_str());
-  if(FLX_CHECK_NOLIBRARY(library))
-    throw flx_link_failure_t(filename,"LoadLibrary","Cannot find dll");
-#else
-  #if FLX_MACOSX_NODLCOMPAT
-    NSObjectFileImage            bndl_img;
-    NSObjectFileImageReturnCode  res;
-
-    string s_filename(filename);
-    struct stat st;
-
-    if (stat(s_filename.c_str(), &st) != 0) {
-      // we can't find the file, so search DYLD_LIBRARY_PATH
-      string paths = getenv("DYLD_LIBRARY_PATH");
-
-      size_t i = 0;
-      bool found = false;
-
-      while ((i = paths.find_first_of(':')) != paths.npos) {
-        string s = paths.substr(0, i) + '/' + filename;
-        paths = paths.substr(i + 1);
-
-        if (stat(s.c_str(), &st) == 0) {
-          s_filename = s;
-          found = true;
-          break;
-        }
-      }
-
-      if (!found) {
-              throw flx_link_failure_t(filename, "stat",
-                string("cannot find file: ") + filename);
-      }
-    }
-
-    res = NSCreateObjectFileImageFromFile(s_filename.c_str(), &bndl_img);
-
-    if(NSObjectFileImageSuccess != res)
-      throw flx_link_failure_t(filename, "NSCreateObjectFileImageFromFile",
-              "failure to open library");
-
-    // don't merge globals with loader's, load programmatically
-    // return on error allows us to continue without being terminated
-
-    unsigned long link_flags;
-    link_flags = NSLINKMODULE_OPTION_PRIVATE | NSLINKMODULE_OPTION_RETURN_ON_ERROR;
-    library = NSLinkModule(bndl_img, filename.c_str(), link_flags);
-
-    // even if link failed, we do this
-    NSDestroyObjectFileImage(bndl_img);
-
-    // more info can be gleaned about link errors from NSLinkEditError
-    if(FLX_CHECK_NOLIBRARY(library))
-      throw flx_link_failure_t(filename, "NSLinkModule", "failed to link");
-
-  #else
-    library = dlopen(filename.c_str(),RTLD_NOW);
-    if(FLX_CHECK_NOLIBRARY(library))
-      throw flx_link_failure_t(filename,"dlopen",dlerror());
-  #endif
-#endif
-  return library;
-}
-
-LIBHANDLE
-flx_load_module(const std::string& filename)
-{
-  return flx_load_library(filename + FLX_LIB_EXTENSION);
-}
 
 flx_dynlink_t::flx_dynlink_t(flx_dynlink_t const&) {} // no copy hack
 void flx_dynlink_t::operator=(flx_dynlink_t const&) {} // no copy hack
@@ -1782,7 +1795,7 @@ void flx_dynlink_t::dynamic_link_with_modulename(const ::std::string& filename_a
 {
   filename = filename_a;
   modulename = modulename_a;
-  library = flx_load_library(filename);
+  library = flx_load_library_throw(filename);
   //fprintf(stderr,"File %s dlopened at %p ok\n",fname.c_str(),library);
 
   thread_frame_creator = (thread_frame_creator_t)
@@ -1823,11 +1836,7 @@ void flx_dynlink_t::unlink()
 #if FLX_WIN32
     //FreeLibrary(library);
 #else
-  #if FLX_MACOSX_NODLCOMPAT
-    //NSUnLinkModule(library, NSUNLINKMODULE_OPTION_NONE);
-  #else
     //dlclose(library);
-  #endif
 #endif
 }
 

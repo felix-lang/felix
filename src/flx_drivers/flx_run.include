@@ -136,10 +136,10 @@ void init_ptr_create_async_hooker(flx_config *c, bool debug_driver) {
   if(debug_driver)
     fprintf(stderr,"[flx_run.include]: dymamic_link: trying to load %s\n",FLX_ASYNC_DLL_NAME);
 
-  LIBHANDLE async_lib = flx_load_module(FLX_ASYNC_DLL_NAME);
+  FLX_LIBHANDLE async_lib = flx_load_module_nothrow(FLX_ASYNC_DLL_NAME);
 
   // Error out if we couldn't load the library.
-  if (async_lib == NULL) {
+  if (async_lib == FLX_NOLIBRARY) {
     fprintf(stderr,
       "[flx_run.include]: dynamic_link: Unable to find module '%s'\n",FLX_ASYNC_DLL_NAME);
     exit(1);

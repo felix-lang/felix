@@ -17,6 +17,8 @@ def build_runtime(host_phase, target_phase):
         path / 'flx_rtl_shapes.hpp',
         path / 'flx_compiler_support_headers.hpp',
         path / 'flx_compiler_support_bodies.hpp',
+        path / 'flx_dl.h',
+        path / 'flx_dlopen.hpp',
         path / 'flx_dynlink.hpp',
         path / 'flx_i18n.hpp',
         path / 'flx_ioutil.hpp',
@@ -29,6 +31,10 @@ def build_runtime(host_phase, target_phase):
         path / 'flx_world_config.hpp',
         path / 'plat_linux.hpp',
     )
+
+    for f in Path.glob(path/"*.h"):
+      print("Copying " + f + " --> " +target_phase.ctx.buildroot/f )
+      copy(ctx=target_phase.ctx, src=f,dst=target_phase.ctx.buildroot/f)
 
     for f in Path.glob(path/"*.hpp"):
       print("Copying " + f + " --> " +target_phase.ctx.buildroot/f )
