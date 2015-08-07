@@ -12,6 +12,9 @@ namespace flx { namespace pthread {
 
 static void *get_stack_pointer() { void *x = (void*)&x; return x; }
 
+thread_control_t::thread_control_t (thread_control_t const &) {}
+void thread_control_t::operator=(thread_control_t const &) {}
+
 thread_control_t::thread_control_t (bool d) :
   do_world_stop(false), thread_counter(0), active_counter(0), debug(d)
   {

@@ -1,93 +1,92 @@
-@title The Felix Standard Library
-@h1 Building the basics
+@title The Felix Library
+@h1 Felix Run Time Library
+<dl>
+<dt><a href=gc.fdoc>Garbage Collector</a></dt>
+<dd>Memory Management Core</dd>
+
+<dt><a href=embed.fdoc>System Construction</a></dt>
+<dd>Core routines for embedding</dd>
+
+<dt><a href=embed.fdoc>System Construction</a></dt>
+<dd>Core routines for embedding</dd>
+
+<dt><a href=driver.fdoc>Dynamic Linkage and Driver</a></dt>
+<dd>The top level driver program and dynamic linkage library</dd>
+
+
+</dl>
+
+
+@h1 Felix Standard Library
+<dl>
 <dt><a href=libstruct.fdoc>Library Structure Map</a></dt>
 <dd>Directory Layout of the extracted Standard library.
 With some uncategorise files thrown in.</dd>
-</dl>
 
 <dt><a href=algebra.fdoc>Basic Algebraic Structure</a></dt>
 <dd>Now we have to define some basic algebraic structures...</dd>
-</dl>
 
 <dt><a href=logic.fdoc>Logic</a></dt>
 <dd>Boolean Logic</dd>
-</dl>
 
 <dt><a href=cheaders.fdoc>C Headers</a></dt>
 <dd>First we require basic C interfaces...</dd>
 
 <dt><a href=core_scalar_types.fdoc>Core Scalar Types</a></dt>
 <dd>So we lift some basic types from C.<dd>
-</dl>
 
 <dt><a href=core_type_constructors.fdoc>Core Type Constructors</a></dt>
 <dd>Some core data types and library support for compiler instrinsics.<dd>
-</dl>
 
 <dt><a href=pointers.fdoc>Pointers</a></dt>
 <dd>Basic pointers.<dd>
-</dl>
 
 <dt><a href=control.fdoc>Control Flow primitives</a></dt>
 <dd>Interface to some RTL control features</dd>
-</dl>
 
 <dt><a href=char.fdoc>Characters</a></dt>
 <dd>Basic character type char.</dd>
-</dl>
 
 
 <dt><a href=numbers.fdoc>Numbers</a></dt>
 <dd>So we can conveniently define functions on numbers...</dd>
-</dl>
 
 <dt><a href=strings.fdoc>Strings</a></dt>
 <dd>and functions of strings</dd>
-</dl>
 
 <dt><a href=arrays.fdoc>Arrays</a></dt>
 <dd>Array algebra, arrays, variable length arrays, dynamic length arrays, sparse arrays</dd>
-</dl>
 
 
 <dt><a href=lists.fdoc>Lists</a></dt>
 <dd>Functional lists, association lists, random access lists, doubly linked lists, an S-expressions</dd>
-</dl>
 
 <dt><a href=streams.fdoc>Streams and Iterators</a></dt>
 <dd>Streamable data structures and iterators.</dd>
-</dl>
 
 
 <dt><a href=fibres.fdoc>Cooperative threading</a></dt>
 <dd>Support for fibres, synchronous channels, pipelines.</dd>
-</dl>
 
 
 <dt><a href=stl.fdoc>C++ Standard Template Library</a></dt>
 <dd>C++98 STL: iterators, vector, set, map, list, multiset, multimap, deque</dd>
-</dl>
 
 <dt><a href=pthreads.fdoc>Preemptive Threading</a></dt>
 <dd>Support for shared memory concurrency by pre-emptive threads and various 
 synchronisation devices.</dd>
-</dl>
 
 <dt><a href=program.fdoc>Programs and Processes</a></dt>
 <dd>Programs, ennvironment variables, command line options, shells, processes and dynamic linkage.</dd>
-</dl>
 
 <dt><a href=filesystem.fdoc>File System/Output</a></dt>
 <dd>File Name, Directories, File status, Base operations.</dd>
-</dl>
 
 <dt><a href=io.fdoc>Input/Output</a></dt>
 <dd>File I/O, Mice, Sockets, Timers, Events</dd>
-</dl>
 
 <dt><a href=time.fdoc>Time of Day</a></dt>
 <dd>Access to system real time clock.</dd>
-</dl>
 
 <dt><a href=db.fdoc>Database</a></dt>
 <dd>Basic Sqlite3 binding.</dd>
@@ -95,9 +94,9 @@ synchronisation devices.</dd>
 
 <hr>
 
+<dl>
 <dt><a href=debug.fdoc>Debugging.</a></dt>
 <dd>Some debugging aids.</dd>
-</dl>
 
 <dt><a href=gc.fdoc>Garbage Collector</a></dt>
 <dd>Access to Garbage Collector</dd>
@@ -106,6 +105,7 @@ synchronisation devices.</dd>
 
 <hr>
 
+<dt>
 <dt><a href=sdl.fdoc>Simple Direct Media Layer</a></dt>
 <dd>Binding for SDL2 including SDL_image and SDL_ttf</dd>
 </dl>

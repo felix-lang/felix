@@ -1,12 +1,315 @@
 @title Strings
-@tangler __init__.flx=share/lib/std/strings/__init__.flx
-@tangler string.flx=share/lib/std/strings/string.flx
-@tangler stringexpr.fsyn=share/lib/std/strings/stringexpr.fsyn
-@tangler re2.flx=share/lib/std/strings/re2.flx
-@tangler tre.flx=share/lib/std/strings/tre.flx
-@tangler regdef.flx=share/lib/std/strings/regdef.flx
-@tangler regexps.fsyn = share/lib/std/strings/regexps.fsyn
-@tangler lexer.flx=share/lib/std/strings/lexer.flx
+@tangler flx_strutil.hpp     = $PWD/src/rtl/flx_strutil.hpp
+@tangler flx_strutil.cpp     = $PWD/src/rtl/flx_strutil.cpp
+@tangler flx_i18n.hpp        = $PWD/src/rtl/flx_i18n.hpp
+@tangler flx_i18n.cpp        = $PWD/src/rtl/flx_i18n.cpp
+
+
+@tangler __init__.flx        = share/lib/std/strings/__init__.flx
+@tangler string.flx          = share/lib/std/strings/string.flx
+@tangler stringexpr.fsyn     = share/lib/std/strings/stringexpr.fsyn
+@tangler re2.flx             = share/lib/std/strings/re2.flx
+@tangler tre.flx             = share/lib/std/strings/tre.flx
+@tangler regdef.flx          = share/lib/std/strings/regdef.flx
+@tangler regexps.fsyn        = share/lib/std/strings/regexps.fsyn
+@tangler lexer.flx           = share/lib/std/strings/lexer.flx
+
+@h1 Core support
+
+@h2 String utilities
+@tangle flx_strutil.hpp
+
+#ifndef __FLX_STRUTIL_HPP_
+#define __FLX_STRUTIL_HPP_
+
+#include <string>
+#include <sstream>
+#include <iomanip>
+#include <stdarg.h>
+
+#include "flx_rtl_config.hpp"
+
+//RF: was only to commented out to fix macosx problem,
+//but lets see what happens to all the other builds.
+//#ifndef MACOSX
+//template class RTL_EXTERN std::basic_string<char>;
+//#endif
+
+namespace flx { namespace rtl { namespace strutil {
+  using namespace std;
+  template<class T>
+  basic_string<T> mul(basic_string<T> s, int n) {
+    basic_string<T> r = "";
+    while(n--) r+=s;
+    return r;
+  }
+
+  // normalise string positions Python style
+  // note substr requires 0<=b<=size, 0<=n,
+  // however n>size is OK
+  template<class T>
+  basic_string<T> substr(basic_string<T> const &s, int b, int e)
+  {
+    int n = s.size();
+    if(b<0)  b=b+n;
+    if(b<0)  b=0;
+    if(b>=n) b=n;
+    if(e<0)  e=e+n;
+    if(e<0)  e=0;
+    if(e>=n) e=n;
+    int m =  e-b;
+    if(m<0)  m=0;
+    return s.substr(b,m);
+  }
+
+  template<class T>
+  T subscript(basic_string<T> const &s, int i)
+  {
+    int n = s.size();
+    if(i<0)  i=i+n;
+    return i<0 || i >= n ? T(0) : s[i];
+  }
+
+  template<class T>
+  string str(T const &t) {
+    std::ostringstream x;
+    x << t;
+    return x.str();
+  }
+
+  template<class T>
+  string fmt_default(T const &t, int w, int p) {
+    std::ostringstream x;
+    x << std::setw(w) << std::setprecision(p) << t;
+    return x.str();
+  }
+
+  template<class T>
+  string fmt_fixed(T const &t, int w, int p) {
+    std::ostringstream x;
+    x << std::fixed << std::setw(w) << std::setprecision(p) << t;
+    return x.str();
+  }
+
+  template<class T>
+  string fmt_scientific(T const &t, int w, int p) {
+    std::ostringstream x;
+    x << std::scientific << std::setw(w) << std::setprecision(p) << t;
+    return x.str();
+  }
+
+
+  RTL_EXTERN string atostr(char const *a);
+  RTL_EXTERN string flx_asprintf(char const *fmt,...);
+
+  RTL_EXTERN string flxid_to_cid(string const&);
+  RTL_EXTERN string filename_to_modulename (string const&);
+
+}}}
+
+#endif
+@
+
+@tangle flx_strutil.cpp
+
+#include <stdio.h>
+
+#include "flx_strutil.hpp"
+
+namespace flx { namespace rtl { namespace strutil {
+
+  string atostr(char const *a) {
+    if(a) return a;
+    else return "";
+  }
+
+  string flxid_to_cid (string const &s)
+  {
+    string out = "";
+    int n = s.size();
+    // leading digit
+    if (n > 1 && s[0] >= '0' && s[0] <= '9') out += "_";
+    for (int i = 0; i < n; ++i)
+    {
+      char ch = s[i];
+      /* from http://www.w3.org/TR/html4/sgml/entities.html */
+      switch (ch)
+      {
+        case ' ': out += "__sp_"; break;
+        case '!': out += "__excl_"; break;
+        case '"': out += "__quot_"; break;
+        case '#': out += "__num_"; break;
+        case '$': out += "__dollar_"; break;
+        case '%': out += "__percnt_"; break;
+        case '&': out += "__amp_"; break;
+        case '\'':  out +=  "__apos_"; break;
+        case '(': out += "__lpar_"; break;
+        case ')': out += "__rpar_"; break;
+        case '*': out += "__ast_"; break;
+        case '+': out += "__plus_"; break;
+        case ',': out += "__comma_"; break;
+        case '-': out += "__hyphen_"; break;
+        case '.': out += "__period_"; break;
+        case '/': out += "__sol_"; break;
+        case ':': out += "__colon_"; break;
+        case ';': out += "__semi_"; break;
+        case '<': out += "__lt_"; break;
+        case '=': out += "__equals_"; break;
+        case '>': out += "__gt_"; break;
+        case '?': out += "__quest_"; break;
+        case '@': out += "__commat_"; break;
+        case '[': out += "__lsqb_"; break;
+        case '\\': out += "__bsol_"; break;
+        case ']': out += "__rsqb_"; break;
+        case '^': out += "__caret_"; break;
+        case '`': out += "__grave_"; break;
+        case '{': out += "__lcub_"; break;
+        case '|': out += "__verbar_"; break;
+        case '}': out += "__rcub_"; break;
+        case '~': out += "__tilde_"; break;
+        default: out += string (1,ch);
+      }
+   }
+   return out;
+  }
+
+  string chop_extension (string const &s)
+  {
+     int n = s.size();
+     for(int i = n - 1; i >= 0; --i) 
+     {
+       if (s[i] == '/') return s;
+       if (s[i] == '\\') return s;
+       if (s[i] == '.') return s.substr(0,i);
+     }
+     return s;
+  }
+
+  string basename (string const &s) 
+  {
+     int n = s.size();
+     for(int i = n - 1; i >= 0; --i) 
+     {
+       if (s[i] == '/') return s.substr (i+1,n-i);
+       if (s[i] == '\\') return s.substr (i+1,n-i);
+     }
+     return s;
+  }
+  string filename_to_modulename (string const &s)
+  {
+     string a = basename (s);
+     a = chop_extension (a);
+     a = flxid_to_cid (a);
+     return a; 
+  }
+
+#ifdef FLX_HAVE_VSNPRINTF
+  string flx_asprintf(char const *fmt,...){
+    va_list ap;
+    va_start(ap,fmt);
+    //printf("vsnprintf TRIAL\n");
+    int n = vsnprintf(NULL,0,fmt,ap);
+    //printf("vsnprintf size=%d\n",n);
+    va_end(ap);
+    char *res = new char[n + 1];
+    va_start(ap,fmt);
+    vsnprintf(res,n+1,fmt,ap);
+    va_end(ap);
+    string s = string(res);
+    delete [] res;
+    return s;
+  }
+#else
+  // THIS IS UNSAFE .. but Windows sucks.
+  // It documents vsnprintf .. but doesn't provide it
+  string flx_asprintf(char const *fmt,...){
+    //printf("vsnprintf EMULATION!\n");
+    va_list ap;
+    int n = 10000; // hack, WILL crash if not enough
+    char *res = new char[n+1];
+    va_start(ap,fmt);
+    vsprintf(res,fmt,ap);
+    va_end(ap);
+    string s = string(res);
+    delete [] res;
+    return s;
+  }
+#endif
+
+}}}
+@
+
+@h2 UTF codec.
+@tangle flx_i18n.hpp
+
+#ifndef __FLX_I18N_H__
+#define __FLX_I18N_H__
+#include <string>
+#include "flx_rtl_config.hpp"
+
+namespace flx { namespace rtl { namespace i18n {
+   RTL_EXTERN std::string utf8(unsigned long);
+}}}
+#endif
+@
+
+@tangle flx_i18n.cpp
+
+#include "flx_i18n.hpp"
+namespace flx { namespace rtl { namespace i18n {
+  std::string utf8(unsigned long i)
+  {
+    char s[7];
+    if (i < 0x80UL )
+    {
+      s[0]= i;
+      s[1]= 0;
+    }
+    else if (i < 0x800UL )
+    {
+      s[0]=0xC0u | (i >> 6ul)  & 0x1Fu;
+      s[1]=0x80u | i           & 0x3Fu;
+      s[2]=0;
+    }
+    else if (i < 0x10000UL )
+    {
+      s[0]=0xE0u | (i >> 12ul) & 0xFu;
+      s[1]=0x80u | (i >> 6ul)  & 0x3Fu;
+      s[2]=0x80u | i           & 0x3F;
+      s[3]=0;
+    }
+    else if (i < 0x200000UL )
+    {
+      s[0]=0xF0u | (i >> 18ul) & 0x7u;
+      s[1]=0x80u | (i >> 12ul) & 0x3Fu;
+      s[2]=0x80u | (i >> 6ul)  & 0x3Fu;
+      s[3]=0x80u | i           & 0x3F;
+      s[4]=0;
+    }
+    else if (i < 0x4000000UL )
+    {
+      s[0]=0xF8u | (i >> 24ul) & 0x3u;
+      s[1]=0x80u | (i >> 18ul) & 0x3Fu;
+      s[2]=0x80u | (i >> 12ul) & 0x3Fu;
+      s[3]=0x80u | (i >> 6ul)  & 0x3Fu;
+      s[4]=0x80u | i           & 0x3Fu;
+      s[5]=0;
+    }
+    else
+    {
+      s[0]=0xFCu | (i >> 30ul) & 0x1u;
+      s[1]=0x80u | (i >> 24ul) & 0x3Fu;
+      s[2]=0x80u | (i >> 18ul) & 0x3Fu;
+      s[3]=0x80u | (i >> 12ul) & 0x3Fu;
+      s[4]=0x80u | (i >> 6ul)  & 0x3Fu;
+      s[5]=0x80u | i           & 0x3Fu;
+      s[6]=0;
+    }
+    return s;
+  }
+}}}
+@
+
 @h1 String handling
 @tangle __init__.flx
 include "std/strings/string";

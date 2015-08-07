@@ -58,6 +58,8 @@ typedef std::vector<memory_range_t> memory_ranges_t;
 
 class PTHREAD_EXTERN thread_control_t
 {
+    thread_control_t (thread_control_t const &); // uncopyable
+    void operator=(thread_control_t const&); // uncopyable
     bool do_world_stop;
     unsigned int thread_counter;
     unsigned int active_counter;
