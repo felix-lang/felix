@@ -1,0 +1,1296 @@
+@title Driver Embedding Technology
+@tangler flx_world_config.hpp = $PWD/src/rtl/flx_world_config.hpp
+@tangler flx_world_config.cpp = $PWD/src/rtl/flx_world_config.cpp
+@tangler flx_world.hpp        = $PWD/src/rtl/flx_world.hpp
+@tangler flx_world.cpp        = $PWD/src/rtl/flx_world.cpp
+@tangler flx_async_world.hpp  = $PWD/src/rtl/flx_async_world.hpp
+@tangler flx_async_world.cpp  = $PWD/src/rtl/flx_async_world.cpp
+@tangler flx_async.hpp        = $PWD/src/rtl/flx_async.hpp
+@tangler flx_sync.hpp         = $PWD/src/rtl/flx_sync.hpp
+@tangler flx_sync.cpp         = $PWD/src/rtl/flx_sync.cpp
+
+@h1 Embedding
+This technology is designed to allow Felix to be embedded in any
+C or C++ program or library.
+
+The embedding library code is used by the core drivers.
+
+@h2 The @{flx_config} class.
+The @{flx_config} class is used to store configuration
+data used by subsequent initialisation steps
+used to initiate a Felix world.
+
+@tangle flx_world_config.hpp
+
+#ifndef __flx_world_config_H_
+#define __flx_world_config_H_
+
+#include "flx_gc.hpp"
+#include "flx_collector.hpp"
+#include "flx_dynlink.hpp"
+
+// for async_sched
+#include <list>
+#include "flx_async.hpp"
+#include "flx_sync.hpp"
+
+namespace flx { namespace run {
+
+class flx_config {
+public:
+  bool  debug;
+
+  bool debug_threads;
+  bool debug_allocations;
+  bool debug_collections;
+  bool report_collections;
+
+  bool debug_driver;
+  bool finalise;
+
+  unsigned long gc_freq;
+  unsigned long min_mem;
+  unsigned long max_mem;
+
+  double free_factor;
+
+  bool allow_collection_anywhere;
+
+  bool static_link;
+  char *filename; // expected to live forever
+  char **flx_argv;
+  int flx_argc;
+
+  // TODO: fn up in macro area
+  int init(int argc, char **argv);
+
+// interface for drivers. there's more, create_frame, etc
+  create_async_hooker_t *ptr_create_async_hooker;
+
+  typedef ::flx::rtl::flx_dynlink_t *(*link_library_t)(flx_config *c, ::flx::gc::generic::gc_profile_t*);
+  typedef void (*init_ptr_create_async_hooker_t)(flx_config *, bool debug_driver);
+  typedef int (*get_flx_args_config_t)(int argc, char **argv, flx_config* c);
+
+  link_library_t link_library;
+  init_ptr_create_async_hooker_t init_ptr_create_async_hooker;
+  get_flx_args_config_t get_flx_args_config;
+
+  flx_config (link_library_t, init_ptr_create_async_hooker_t, get_flx_args_config_t); 
+
+
+};
+
+}} // namespaces
+#endif
+@
+
+@tangle flx_world_config.cpp
+
+#include "flx_world_config.hpp"
+#include <cstdlib>
+
+static double egetv(char const *name, double dflt)
+{
+  char *env = ::std::getenv(name);
+  double val = env?::std::atof(env):dflt;
+  return val;
+}
+
+namespace flx { namespace run {
+
+// =================================================================
+// // Constructor
+// =================================================================
+flx_config::flx_config 
+(
+  link_library_t link_library_arg,
+  init_ptr_create_async_hooker_t init_ptr_create_async_hooker_arg,
+  get_flx_args_config_t get_flx_args_config_arg
+) :
+  link_library(link_library_arg),
+  init_ptr_create_async_hooker(init_ptr_create_async_hooker_arg),
+  get_flx_args_config(get_flx_args_config_arg)
+{}
+
+// =================================================================
+// Initialiser
+// =================================================================
+
+int
+flx_config::init(int argc, char **argv) {
+  if(get_flx_args_config(argc, argv, this)) return 1;
+
+  debug = (bool)egetv("FLX_DEBUG", debug);
+  if (debug) {
+    fprintf(stderr,
+      "[FLX_DEBUG] Debug enabled for %s link program\n",
+      static_link ? "static" : "dynamic");
+  }
+
+  debug_threads = (bool)egetv("FLX_DEBUG_THREADS", debug);
+  if (debug_threads) {
+    fprintf(stderr, "[FLX_DEBUG_THREADS] Threads debug enabled\n");
+  }
+
+  debug_allocations = (bool)egetv("FLX_DEBUG_ALLOCATIONS", debug);
+  if (debug_allocations) {
+    fprintf(stderr, "[FLX_DEBUG_ALLOCATIONS] Allocation debug enabled\n");
+  }
+
+  debug_collections = (bool)egetv("FLX_DEBUG_COLLECTIONS", debug);
+  if (debug_collections)
+  {
+    fprintf(stderr, "[FLX_DEBUG_COLLECTIONS] Collection debug enabled\n");
+  }
+
+  report_collections = (bool)egetv("FLX_REPORT_COLLECTIONS", debug);
+  if (report_collections)
+  {
+    fprintf(stderr, "[FLX_REPORT_COLLECTIONS] Collection report enabled\n");
+  }
+
+
+  debug_driver = (bool)egetv("FLX_DEBUG_DRIVER", debug);
+  if (debug_driver)
+  {
+    fprintf(stderr, "[FLX_DEBUG_DRIVER] Driver debug enabled\n");
+  }
+
+  finalise = (bool)egetv("FLX_FINALISE", 0);
+  if (debug)
+    fprintf(stderr,
+      "[FLX_FINALISE] Finalisation %s\n", finalise ? "Enabled" : "Disabled");
+
+  // default collection frequency is 1000 interations
+  gc_freq = (unsigned long)egetv("FLX_GC_FREQ", 1000);
+  if (gc_freq < 1) gc_freq = 1;
+  if (debug)
+    fprintf(stderr, "[FLX_GC_FREQ] call gc every %lu iterations\n", gc_freq);
+
+  // default min mem is 10 Meg
+  min_mem = (unsigned long)(egetv("FLX_MIN_MEM", 10) * 1000000.0);
+  if (debug)
+    fprintf(stderr, "[FLX_MIN_MEM] call gc only if more than %lu Meg heap used\n", min_mem/1000000);
+
+  // default max mem is unlimited
+  max_mem = (unsigned long)(egetv("FLX_MAX_MEM", 0) * 1000000.0);
+  if (max_mem == 0) max_mem = (unsigned long)-1;
+  if (debug)
+    fprintf(stderr, "[FLX_MAX_MEM] terminate if more than %lu Meg heap used\n", max_mem/1000000);
+
+  // default free factor is 10%, this is also the minimum allowed
+  free_factor = egetv("FLX_FREE_FACTOR", 1.1);
+  if (free_factor < 1.1) free_factor = 1.1;
+  if (debug)
+    fprintf(stderr, "[FLX_FREE_FACTOR] reset gc trigger %4.2f times heap used after collection\n", free_factor);
+
+  // experimental flag to allow collection anywhere
+  // later, we default this one to true if we can
+  // find all the thread stacks, which should be possible
+  // with gcc and probably msvc++
+
+  allow_collection_anywhere = (bool)egetv("FLX_ALLOW_COLLECTION_ANYWHERE", 1);
+  if (debug)
+    fprintf(stderr, "[FLX_ALLOW_COLLECTION_ANYWHERE] %s\n", allow_collection_anywhere ? "True" : "False");
+
+  if (debug) {
+    for (int i=0; i<flx_argc; ++i)
+      fprintf(stderr, "flx_argv[%d]->%s\n", i, flx_argv[i]);
+  }
+  return 0;
+}
+
+}} // namespaces
+
+@h2 The @{flx_world} class.
+Objects of the @{flx_world} class are used to represent
+a Felix world.
+@tangle flx_world.hpp
+
+#ifndef __flx_world_H_
+#define __flx_world_H_
+
+#include "flx_gc.hpp"
+#include "flx_collector.hpp"
+#include "flx_dynlink.hpp"
+
+// for async_sched
+#include <list>
+#include "flx_async.hpp"
+#include "flx_sync.hpp"
+#include "flx_world_config.hpp"
+#include "flx_async_world.hpp"
+
+namespace flx { namespace run {
+
+class flx_world {
+  bool debug;
+  bool debug_driver;
+
+  ::flx::gc::generic::allocator_t *allocator;
+
+  ::flx::gc::collector::flx_collector_t *collector;
+
+  ::flx::gc::generic::gc_profile_t *gcp;
+
+  ::flx::pthread::thread_control_t *thread_control;
+
+  ::flx::rtl::flx_dynlink_t *library;
+  ::flx::rtl::flx_libinst_t *instance;
+
+  struct async_sched *async_scheduler;
+
+  int explicit_dtor();
+public:
+  flx_config *c;
+  flx_world(flx_config *); 
+  int setup(int argc, char **argv);
+
+  int teardown();
+
+  // add/remove (current pthread, stack pointer) for garbage collection
+  void begin_flx_code();
+  void end_flx_code();
+
+  // returns number of pending operations scheduled by svc_general
+  // return error code < 0 otherwise
+  // catches all known exceptions
+  int run_until_blocked();
+  int run_until_complete();
+
+  void* ptf()const { return instance->thread_frame; }	// for creating con_t
+
+  void spawn_fthread(::flx::rtl::con_t *top);
+
+  void external_multi_swrite (::flx::rtl::schannel_t *chan, void *data);
+
+  async_sched *get_async_scheduler()const { return async_scheduler; }
+  sync_sched *get_sync_scheduler()const { return &async_scheduler->ss; }
+};
+
+
+}} // namespaces
+#endif //__flx_world_H_
+@
+
+@tangle flx_world.cpp
+
+#include "flx_world.hpp"
+#include "flx_eh.hpp"
+#include "flx_ts_collector.hpp"
+#include "flx_rtl.hpp"
+
+using namespace ::std;
+using namespace ::flx::rtl;
+using namespace ::flx::pthread;
+using namespace ::flx::run;
+
+namespace flx { namespace run {
+
+// terminates process!
+// Not called by default (let the OS clean up)
+
+static int do_final_cleanup(
+  bool debug_driver,
+  flx::gc::generic::gc_profile_t *gcp,
+  flx_dynlink_t *library,
+  flx_libinst_t *instance
+)
+{
+  flx::gc::generic::collector_t *collector = gcp->collector;
+
+  // garbage collect application objects
+  {
+    if (debug_driver || gcp->debug_collections)
+      fprintf(stderr, "[do_final_cleanup] Finalisation: pass 1 Data collection starts ..\n");
+
+    unsigned long n = collector->collect();
+    unsigned long a = collector->get_allocation_count();
+
+    if (debug_driver || gcp->debug_collections)
+      fprintf(stderr, "[do_final_cleanup] flx_run collected %ld objects, %ld left\n", n, a);
+  }
+
+  // garbage collect system objects
+  {
+    if (debug_driver || gcp->debug_collections)
+      fprintf(stderr, "[do_final_cleanup] Finalisation: pass 2 Final collection starts ..\n");
+
+    collector->free_all_mem();
+    unsigned long a = collector->get_allocation_count();
+
+    if (debug_driver || gcp->debug_collections)
+      fprintf(stderr, "[do_final_cleanup] Remaining %ld objects (should be 0)\n", a);
+
+    if (a != 0){
+      fprintf(stderr, "[do_final_cleanup] flx_run %ld uncollected objects, should be zero!! return code 5\n", a);
+      return 5;
+    }
+  }
+
+  if (debug_driver)
+    fprintf(stderr, "[do_final_cleanup] exit 0\n");
+
+  return 0;
+}
+
+// RUN A FELIX INSTANCE IN THE CURRENT PTHREAD
+//
+// CURRENTLY ONLY CALLED ONCE IN MAIN THREAD
+
+static void *get_stack_pointer() { void *x=(void*)&x; return x; }
+
+std::list<fthread_t*>*
+run_felix_pthread_ctor(
+  flx::gc::generic::gc_profile_t *gcp,
+  flx_libinst_t *instance)
+{
+  //fprintf(stderr, "run_felix_pthread -- the MAIN THREAD\n");
+  flx::gc::generic::collector_t *collector = gcp->collector;
+  std::list<fthread_t*> *active = new std::list<fthread_t*>;
+
+  {
+    con_t *top = instance->main_proc;
+    if (top)
+    {
+      fthread_t *flx_main = new (*gcp, _fthread_ptr_map, false) fthread_t(top);
+      collector->add_root(flx_main);
+      active->push_front(flx_main);
+    }
+  }
+
+  {
+    con_t *top = instance->start_proc;
+    if (top)
+    {
+      fthread_t *ft = new (*gcp, _fthread_ptr_map, false) fthread_t(top);
+      collector->add_root(ft);
+      active->push_front(ft);
+    }
+  }
+  return active;
+}
+
+void run_felix_pthread_dtor(
+  bool debug_driver,
+  flx::gc::generic::gc_profile_t *gcp,
+  flx::pthread::thread_control_t *thread_control,
+  flx_dynlink_t *library,
+  flx_libinst_t *instance
+)
+{
+  if (debug_driver)
+    fprintf(stderr, "[run_felix_pthread_dtor] MAIN THREAD FINISHED: waiting for other threads\n");
+
+  thread_control->join_all();
+
+  if (debug_driver) 
+    fprintf(stderr, "[run_felix_pthread_dtor] ALL THREADS DEAD: mainline cleanup!\n");
+
+  if (debug_driver) {
+    flx::gc::generic::collector_t *collector = gcp->collector;
+
+    unsigned long uncollected = collector->get_allocation_count();
+    unsigned long roots = collector->get_root_count();
+    fprintf(stderr,
+      "[run_felix_pthread_dtor] program finished, %ld collections, %ld uncollected objects, roots %ld\n",
+      gcp->collections, uncollected, roots);
+  }
+  gcp->collector->remove_root(instance);
+
+  if (gcp->finalise)
+    (void)do_final_cleanup(debug_driver, gcp, library, instance);
+
+  if (debug_driver) 
+    fprintf(stderr, "[run_felix_pthread_dtor] mainline cleanup complete, exit\n");
+   
+}
+
+// construct from flx_config pointer
+flx_world::flx_world(flx_config *c_arg) : c(c_arg) {}
+
+int flx_world::setup(int argc, char **argv) {
+  int res;
+  if((res = c->init(argc, argv) != 0)) return res;
+
+  debug = c->debug;
+  if(debug)
+    fprintf(stderr, "[flx_world: setup]\n");
+  debug_driver = c->debug_driver;
+
+  if(debug)
+    fprintf(stderr, "[flx_world: setup] Created allocator\n");
+  allocator = new flx::gc::collector::malloc_free();
+  allocator->set_debug(c->debug_allocations);
+
+  // previous direct ctor scope ended at closing brace of FLX_MAIN
+  // but delete can probably be moved up after collector delete (also used by explicit_dtor)
+  thread_control = new flx::pthread::thread_control_t(c->debug_threads);
+  if(debug)
+    fprintf(stderr, "[flx_world: setup] Created thread control object\n");
+
+  // NB: !FLX_SUPPORT_ASYNC refers to async IO, hence ts still needed thanks to flx pthreads
+  collector = new flx::gc::collector::flx_ts_collector_t(allocator, thread_control);
+  collector->set_debug(c->debug_collections);
+  if(debug)
+    fprintf(stderr, "[flx_world: setup] Created ts collector\n");
+
+  gcp = new flx::gc::generic::gc_profile_t(
+    c->debug_driver,
+    c->debug_allocations,
+    c->debug_collections,
+    c->report_collections,
+    c->allow_collection_anywhere,
+    c->gc_freq,
+    c->min_mem,
+    c->max_mem,
+    c->free_factor,
+    c->finalise,
+    collector
+  );
+
+  if(debug)
+    fprintf(stderr, "[flx_world: setup] Created gc profile object\n");
+
+  library = c->link_library(c,gcp);
+  collector->add_root (library);
+
+  if(debug)
+    fprintf(stderr, "[flx_world: setup] Created library object\n");
+
+  if (debug_driver)
+    fprintf(stderr, "[flx_world:setup] flx_run driver begins %s\n", c->flx_argv[0]);
+
+  // flx_libinst_t::create can run code, so add thread to avoid world_stop abort
+  thread_control->add_thread(get_stack_pointer());
+
+  // Create the usercode driver instance
+  // NB: seems to destroy()ed in do_final_cleanup
+  instance = new (*gcp, flx_libinst_ptr_map, false) flx_libinst_t(debug_driver);
+  collector->add_root(instance);
+  instance->create(
+    library,
+    gcp,
+    c->flx_argc,
+    c->flx_argv,
+    stdin,
+    stdout,
+    stderr,
+    debug_driver);
+
+  thread_control->remove_thread();
+
+  if (debug_driver) {
+    fprintf(stderr, "[flx_world:setup] loaded library %s at %p\n", c->filename, library->library);
+    fprintf(stderr, "[flx_world:setup] thread frame at %p\n", instance->thread_frame);
+    fprintf(stderr, "[flx_world:setup] initial continuation at %p\n", instance->start_proc);
+    fprintf(stderr, "[flx_world:setup] main continuation at %p\n", instance->main_proc);
+    fprintf(stderr, "[flx_world:setup] creating async scheduler\n");
+  }
+
+  async_scheduler = new async_sched(
+    this,
+    debug_driver,
+    gcp,
+    run_felix_pthread_ctor(gcp, instance),
+    thread_control); // deletes active for us!
+
+  return 0;
+}
+
+int flx_world::explicit_dtor()
+{
+  if (debug_driver)
+    fprintf(stderr, "[explicit_dtor] entry\n");
+
+  run_felix_pthread_dtor(debug_driver, gcp, thread_control, library, instance);
+
+  if (gcp->finalise)
+  {
+    if (debug_driver)
+      fprintf(stderr, "[explicit_dtor] flx_run driver ends with finalisation complete\n");
+  }
+  else
+  {
+    if (debug_driver || gcp->debug_collections)
+    {
+      unsigned long a = gcp->collector->get_allocation_count();
+      fprintf(stderr,
+        "[explicit_dtor] flx_run driver ends with finalisation skipped, %ld uncollected "
+          "objects\n", a);
+    }
+  }
+
+  if (debug_driver)
+    fprintf(stderr, "[explicit_dtor] exit 0\n");
+
+  return 0;
+}
+
+int flx_world::teardown() {
+  if (debug_driver)
+    fprintf(stderr, "[teardown] entry\n");
+
+  thread_control -> add_thread(get_stack_pointer());
+
+  delete async_scheduler;
+
+  if (debug_driver)
+    fprintf(stderr, "[teardown] deleted async_scheduler\n");
+
+
+  // could this override error_exit_code if something throws?
+  int error_exit_code = explicit_dtor();
+  if (debug_driver)
+    fprintf(stderr,"[teardown] explicit dtor run code %d\n", error_exit_code);
+
+  instance=0;
+  library=0;
+  if (debug_driver)
+    fprintf(stderr,"[teardown] library & instance NULLED\n");
+
+  // And we're done, so start cleaning up.
+  delete gcp;
+
+  delete collector;
+  if (debug_driver) 
+    fprintf(stderr,"[teardown] collector deleted\n");
+
+  delete allocator;
+  if (debug_driver) 
+    fprintf(stderr,"[teardown] allocator deleted\n");
+
+  if (debug_driver) 
+    fprintf(stderr, "[teardown] flx_run driver ends code=%d\n", error_exit_code);
+
+  delete thread_control;  // RF: cautiously delete here
+  if (debug_driver) 
+    fprintf(stderr,"[teardown] thread control deleted\n");
+  return error_exit_code;
+}
+
+void flx_world::begin_flx_code() {
+  thread_control->add_thread(get_stack_pointer());
+}
+
+void flx_world::end_flx_code() {
+  thread_control->remove_thread();
+}
+
+// returns number of pending operations scheduled by svc_general
+// return error code < 0 otherwise
+// catches all known exceptions
+//
+int flx_world::run_until_blocked() {
+  // this may not be called on the same thread, so let thread control know
+  // when we exit, main thread is not running so pthreads can garbage collect without waiting for us
+
+  try {
+    return async_scheduler->prun(async_sched::ret);
+  }
+  catch (flx_exception_t &x) { return - flx_exception_handler (&x); }
+  catch (std::exception &x) { return - std_exception_handler (&x); }
+  catch (int &x) { fprintf (stderr, "Exception type int: %d\n", x); return -x; }
+  catch (::std::string &x) { fprintf (stderr, "Exception type string : %s\n", x.c_str()); return -1; }
+  catch (::flx::rtl::con_t &x) { fprintf (stderr, "Rogue continuatiuon caught\n"); return -6; }
+  catch (...) { fprintf(stderr, "[flx_world:run_until_blocked] Unknown exception in thread!\n"); return -5; }
+}
+
+int flx_world::run_until_complete () {
+  // this may not be called on the same thread, so let thread control know
+  // when we exit, main thread is not running so pthreads can garbage collect without waiting for us
+
+  try {
+    return async_scheduler->prun(async_sched::block);
+  }
+  catch (flx_exception_t &x) { return - flx_exception_handler (&x); }
+  catch (std::exception &x) { return - std_exception_handler (&x); }
+  catch (int &x) { fprintf (stderr, "Exception type int: %d\n", x); return -x; }
+  catch (::std::string &x) { fprintf (stderr, "Exception type string : %s\n", x.c_str()); return -1; }
+  catch (::flx::rtl::con_t &x) { fprintf (stderr, "Rogue continuatiuon caught\n"); return -6; }
+  catch (...) { fprintf(stderr, "[flx_world:run_until_complete] Unknown exception in thread!\n"); return -5; }
+}
+
+
+// TODO: factor into async_sched. run_felix_pthread_ctor does this twice
+void flx_world::spawn_fthread(con_t *top) {
+	fthread_t *ft = new (*gcp, _fthread_ptr_map, false) fthread_t(top);
+  get_sync_scheduler()->push_new(ft);
+}
+
+void flx_world::external_multi_swrite (schannel_t *chan, void *data) 
+{
+  async_scheduler->external_multi_swrite (chan,data);
+} 
+
+}} // namespaces
+
+@h2 The Asychronous Support System
+@tangle flx_async_world.hpp
+
+#ifndef __flx_async_world_H_
+#define __flx_async_world_H_
+
+#include "flx_gc.hpp"
+#include "flx_collector.hpp"
+#include "flx_sync.hpp"
+
+namespace flx { namespace run {
+
+// This class handles pthreads and asynchronous I/O
+// It shares operations with sync_sched by interleaving
+// based on state variables.
+//
+struct async_sched
+{
+  enum block_flag_t {block, ret};
+
+  struct flx_world *world;
+  bool debug_driver;
+  ::flx::gc::generic::gc_profile_t *gcp;
+  ::std::list< ::flx::rtl::fthread_t*> *active;
+  ::flx::pthread::thread_control_t *thread_control;
+
+  unsigned long async_count;
+  async_hooker* async;
+  sync_sched ss;  // (d, gcp, active), (ft, request), (pc, fs)
+
+  async_sched(
+    flx_world *world_arg, 
+    bool d, 
+    ::flx::gc::generic::gc_profile_t *g, 
+    ::std::list< ::flx::rtl::fthread_t*> *a, 
+    ::flx::pthread::thread_control_t *tc
+  ) : 
+    world(world_arg), 
+    debug_driver(d), 
+    gcp(g), 
+    active(a), 
+    thread_control(tc),
+    async_count(0),
+    async(NULL),
+    ss(debug_driver, gcp, active)
+  {}
+
+  ~async_sched();
+
+  int prun(block_flag_t);
+  void do_spawn_pthread();
+  void do_general();
+
+  void external_multi_swrite(::flx::rtl::schannel_t *, void *data);
+private:
+  bool schedule_queued_fthreads(block_flag_t);
+};
+
+
+}} // namespaces
+#endif //__flx_async_world_H_
+@
+
+@tangle flx_async_world.cpp 
+
+
+#include "flx_world.hpp"
+#include "flx_async_world.hpp"
+#include "flx_sync.hpp"
+
+using namespace ::flx::rtl;
+using namespace ::flx::pthread;
+
+namespace flx { namespace run {
+
+static void prun_pthread_entry(void *data) {
+  async_sched *d = (async_sched*)data;
+  d->prun(async_sched::block);
+  delete d;
+}
+
+// SPAWNING A NEW FELIX PTHREAD
+// CREATES ITS OWN PRIVATE ASYNC SCHEDULER 
+// CREATES ITS OWN PRIVATE SYNC SCHEDULER
+// SHARES WORLD INCLUDING COLLECTOR
+// REGISTERS IN THREAD_CONTROL
+void async_sched::do_spawn_pthread()
+{
+  fthread_t *ftx = *(fthread_t**)ss.request->data;
+  if (debug_driver)
+    fprintf(stderr, "[prun: spawn_pthread] Spawn pthread %p\n", ftx);
+  gcp->collector->add_root(ftx);
+  std::list<fthread_t*> *pactive = new std::list<fthread_t*>;
+  pactive->push_front(ftx);
+  void *data = new async_sched(world,debug_driver, gcp, pactive, thread_control);
+  flx_detached_thread_t dummy;
+
+  if (debug_driver)
+    fprintf(stderr, "[prun: spawn_pthread] Starting new pthread, thread counter= %d\n",
+      thread_control->thread_count());
+
+  {
+    flx_mutex_t spawner_lock;
+    flx_condv_t spawner_cond;
+    bool spawner_flag = false;
+    flx_mutex_locker_t locktite(spawner_lock);
+    dummy.init(prun_pthread_entry, data, thread_control,
+      &spawner_lock, &spawner_cond,
+      &spawner_flag
+    );
+
+    if (debug_driver)
+      fprintf(stderr,
+        "[prun: spawn_pthread] Thread %p waiting for spawned thread to register itself\n",
+        (void*)get_current_native_thread());
+
+    while (!spawner_flag)
+      spawner_cond.wait(&spawner_lock);
+
+    if (debug_driver)
+      fprintf(stderr,
+        "[prun: spawn_pthread] Thread %p notes spawned thread has registered itself\n",
+        (void*)get_current_native_thread());
+  }
+}
+
+void async_sched::do_general()
+{
+  if (debug_driver)
+    fprintf(stderr, "[prun: svc_general] from fthread=%p\n", ss.ft);
+
+  if(debug_driver)
+    fprintf(stderr, "[prun: svc_general] async=%p, ptr_create_async_hooker=%p\n", 
+      async,
+      world->c->ptr_create_async_hooker)
+    ;
+  if (!async) 
+  {
+    if(debug_driver)
+      fprintf(stderr,"[prun: svc_general] trying to create async system..\n");
+
+    if (world->c->ptr_create_async_hooker == NULL) {
+      if(debug_driver)
+        fprintf(stderr,"[prun: svc_general] trying to create async hooker..\n");
+      world->c->init_ptr_create_async_hooker(world->c,debug_driver);
+    }
+    // Error out if we don't have the hooker function.
+    if (world->c->ptr_create_async_hooker == NULL) {
+      fprintf(stderr,
+        "[prun: svc_general] Unable to initialise async I/O system: terminating\n");
+      exit(1);
+    }
+
+    // CREATE A NEW ASYNCHRONOUS EVENT MANAGER
+    // DONE ON DEMAND ONLY
+    async = (*world->c->ptr_create_async_hooker)(
+      20000, // bound on resumable thread queue
+      50,    // bound on general input job queue
+      2,     // number of threads in job pool
+      50,    // bound on async fileio job queue
+      1      // number of threads doing async fileio
+    );
+  }
+  ++async_count;
+  if (debug_driver)
+    fprintf(stderr,
+       "[prun: svc_general] Async system created: %p, count %ld\n",async,async_count);
+  // CHANGED TO USE NEW UNION LAYOUT RULES
+  // One less level of indirection for pointers
+  // void *dreq =  *(void**)ss.request->data;
+  void *dreq =  (void*)ss.request->data;
+  if (debug_driver)
+    fprintf(stderr, "[prun: svc_general] Request object %p\n", dreq);
+
+  // requests are now ALWAYS considered asynchronous
+  // even if the request handler reschedules them immediately
+  async->handle_request(dreq, ss.ft);
+  if (debug_driver)
+    fprintf(stderr, "[prun: svc_general] Request object %p captured fthread %p \n", dreq, ss.ft);
+  if (debug_driver)
+    fprintf(stderr, "[prun: svc_general] Request object %p\n", dreq);
+  ss.ft = 0; // drop current without unrooting
+  if(debug_driver)
+    fprintf(stderr,"[prun: svc_general] request dispatched..\n");
+}
+
+
+int async_sched::prun(block_flag_t block_flag) {
+sync_run:
+    // RUN SYNCHRONOUS SCHEDULER
+    if (debug_driver)
+      fprintf(stderr, "prun: sync_run\n");
+
+    if (debug_driver)
+      fprintf(stderr, "prun: Before running: Sync state is %s\n",
+        ss.get_fpc_desc());
+
+    sync_sched::fstate_t fs = ss.frun();
+
+    if (debug_driver)
+      fprintf(stderr, "prun: After running: Sync state is %s/%s\n",
+        ss.get_fstate_desc(fs), ss.get_fpc_desc());
+
+    switch(fs)
+    {
+      // HANDLE DELEGATED SERVICE REQUESTS
+      case sync_sched::delegated:
+        if (debug_driver)
+          fprintf(stderr, "sync_sched:delegated request %d\n", ss.request->variant);
+        switch (ss.request->variant) 
+        {
+          case svc_spawn_pthread: do_spawn_pthread(); goto sync_run;
+
+          case svc_general: do_general(); goto sync_run;
+
+          default:
+            fprintf(stderr,
+              "prun: Unknown service request code 0x%4x\n", ss.request->variant);
+            abort();
+        }
+
+      // SCHEDULE ANY ASYNCHRONOUSLY QUEUED FTHREADS
+      case sync_sched::blocked: // ran out of active threads - are there any in the async queue?
+        if(schedule_queued_fthreads(block_flag)) goto sync_run;
+        break;
+      default:
+        fprintf(stderr, "prun: Unknown frun return status 0x%4x\n", fs);
+        abort();
+    }
+
+  // TEMPORARILY OUT OF JOBS TO DO
+  if (debug_driver)
+    fprintf(stderr, "prun: Out of ready jobs, %ld pending\n", async_count);
+  return async_count;
+}
+
+bool async_sched::schedule_queued_fthreads(block_flag_t block_flag) {
+  if (debug_driver) {
+    fprintf(stderr,
+      "prun: out of active synchronous threads, trying async, pending=%ld\n", async_count);
+  }
+  int scheduled_some = 0;
+  if (async && async_count > 0) {
+    if (block_flag==block)
+    {
+      fthread_t* ftp = async->dequeue();
+      if (debug_driver)
+        fprintf(stderr, "prun: block mode: Async Retrieving fthread %p\n", ftp);
+
+      ss.push_old(ftp);
+      --async_count;
+      ++scheduled_some;
+    }
+    else
+    {
+      fthread_t* ftp = async->maybe_dequeue();
+      while (ftp) {
+        if (debug_driver)
+          fprintf(stderr, "prun:ret mode: Async Retrieving fthread %p\n", ftp);
+
+        ss.push_old(ftp);
+        --async_count;
+        ++scheduled_some;
+        ftp = async->maybe_dequeue();
+      }
+    }
+  }
+  if (debug_driver)
+    fprintf(stderr, "prun: Async returning: scheduled %d, pending=%ld\n", scheduled_some, async_count);
+  return scheduled_some != 0;
+}
+
+void async_sched::external_multi_swrite(::flx::rtl::schannel_t *chan, void *data)
+  {
+    ss.external_multi_swrite (chan,data);
+  }
+
+async_sched::~async_sched() {
+  try
+  {
+    if (debug_driver)
+      fprintf(stderr, "prun: Terminating Felix subsystem\n");
+    delete async;
+    delete active;
+  }
+  catch (...) { fprintf(stderr, "Unknown exception deleting async!\n"); }
+}
+
+}} // namespaces
+
+@h2 The Asynchronous I/O interface.
+Note: the implementation is elsewhere!
+The embedding system depends on the interface but
+not the implementation.
+ 
+@tangle flx_async.hpp
+#ifndef __FLX_ASYNC_H__
+#define __FLX_ASYNC_H__
+#include "flx_rtl_config.hpp"
+#include "flx_rtl.hpp"
+#include "pthread_bound_queue.hpp"
+
+#ifdef BUILD_ASYNC
+#define ASYNC_EXTERN FLX_EXPORT
+#else
+#define ASYNC_EXTERN FLX_IMPORT
+#endif
+
+// GLOBAL NAMESPACE!
+
+class ASYNC_EXTERN async_hooker {
+public:
+  virtual flx::rtl::fthread_t *dequeue()=0;
+  virtual flx::rtl::fthread_t *maybe_dequeue()=0;
+  virtual void handle_request(void *data, flx::rtl::fthread_t *ss)=0;
+  virtual ~async_hooker();
+};
+
+typedef
+async_hooker *
+create_async_hooker_t
+(
+  int n0,   // bound on resumable thread queue
+  int n1,   // bound on general input job queue
+  int m1,   // number of threads in job pool
+  int n2,   // bound on async fileio job queue
+  int m2    // number of threads doing async fileio
+);
+
+extern "C" {
+ASYNC_EXTERN async_hooker *
+create_async_hooker
+(
+  int n0,   // bound on resumable thread queue
+  int n1,   // bound on general input job queue
+  int m1,   // number of threads in job pool
+  int n2,   // bound on async fileio job queue
+  int m2    // number of threads doing async fileio
+);
+}
+
+namespace flx { namespace async {
+struct ASYNC_EXTERN finote_t
+{
+  virtual void signal()=0;
+  virtual ~finote_t();
+};
+
+class ASYNC_EXTERN wakeup_fthread_t : public finote_t
+{
+  ::flx::rtl::fthread_t *f;
+  ::flx::pthread::bound_queue_t *q;
+public:
+  wakeup_fthread_t(::flx::pthread::bound_queue_t *q_a, ::flx::rtl::fthread_t *f_a);
+  void signal () { q->enqueue(f); }
+};
+
+
+class ASYNC_EXTERN flx_driver_request_base {
+    finote_t *fn;
+    virtual bool start_async_op_impl() = 0;
+public:
+    flx_driver_request_base();
+    virtual ~flx_driver_request_base(); // so destructors work
+
+    // returns finished flag (async may fail or immediately finish)
+    void start_async_op(finote_t *fn_a);
+    void notify_finished();
+};
+
+}}
+
+#endif
+@
+
+@h1 Synchronous Support System
+@tangle flx_sync.hpp
+
+#ifndef __FLX_SYNC_H__
+#define __FLX_SYNC_H__
+
+#include "flx_gc.hpp"
+#include "flx_dynlink.hpp"
+#include "flx_rtl.hpp"
+#include <list>
+
+namespace flx { namespace run {
+
+// This class handles synchronous channel I/O and fthreads
+struct RTL_EXTERN sync_sched {
+  bool debug_driver;
+  ::flx::gc::generic::collector_t *collector;
+  ::std::list<flx::rtl::fthread_t*> *active;
+  ::flx::rtl::fthread_t *ft;
+  ::flx::rtl::_uctor_ *request;
+  enum fstate_t { blocked, delegated };
+  static char const * get_fstate_desc(fstate_t);
+  char const * get_fpc_desc();
+
+  sync_sched (
+    bool debug_driver_,
+    ::flx::gc::generic::gc_profile_t *gcp_,
+    ::std::list<flx::rtl::fthread_t*> *active_
+  );
+  void forget_current();
+  void pop_current();
+  void push_new(::flx::rtl::fthread_t*);
+  void push_old(::flx::rtl::fthread_t*);
+
+  fstate_t frun();
+  void external_multi_swrite(::flx::rtl::schannel_t*, void*);
+
+  void do_yield();
+  void do_spawn_detached();
+  void do_schedule_detached();
+  void do_sread();
+  void do_swrite();
+  void do_multi_swrite();
+  void do_kill();
+};
+
+}}
+
+#endif
+
+@
+
+@tangle flx_sync.cpp
+
+#include <stdio.h>
+
+#include "flx_sync.hpp"
+
+using namespace flx::rtl;
+
+namespace flx { namespace run {
+
+char const *sync_sched::get_fstate_desc(fstate_t fs)
+{
+  switch(fs)
+  {
+    case blocked: return "blocked";
+    case delegated: return "delegated";
+    default: return "Illegal fstate_t";
+  }
+}
+
+char const *sync_sched::get_fpc_desc()
+{
+  if (ft)
+    return "Next request pos";
+  else
+  {
+    if (active->size() > 0) return "Next fthread pos";
+    else return "Out of active threads";
+  }
+}
+
+
+sync_sched::sync_sched (
+  bool debug_driver_,
+  ::flx::gc::generic::gc_profile_t *gcp_,
+  ::std::list<fthread_t*> *active_
+) :
+  debug_driver(debug_driver_),
+  collector(gcp_->collector),
+  active(active_),
+  ft(0)
+{}
+
+void sync_sched::forget_current()
+  {
+     if(ft) 
+     {
+       collector->remove_root(ft);
+       pop_current();
+    }
+  }
+
+void sync_sched::pop_current()
+  {
+     if(active->size() > 0) 
+     {
+       ft = active->front();
+       active->pop_front();
+     }
+     else
+       ft = 0;
+  }
+
+void sync_sched::push_new(fthread_t *f)
+  {
+    collector->add_root(f);
+    push_old(f);
+  }
+
+void sync_sched::push_old(fthread_t *f)
+  {
+    if(ft) active->push_front(ft);
+    ft = f;
+  }
+
+void sync_sched::do_yield()
+    {
+      if(debug_driver)
+         fprintf(stderr,"[sync: svc_yield] yield");
+      active->push_back(ft);
+      pop_current();
+    }
+
+void sync_sched::do_spawn_detached()
+    {
+      fthread_t *ftx = *(fthread_t**)request->data;
+      if(debug_driver)
+        fprintf(stderr,"[sync: svc_spawn_detached] Spawn fthread %p\n",ftx);
+      push_new(ftx);
+    }
+
+void sync_sched::do_schedule_detached()
+    {
+      fthread_t *ftx = *(fthread_t**)request->data;
+      if(debug_driver)
+        fprintf(stderr,"[sync: svc_schedule_detached] Schedule fthread %p\n",ftx);
+      collector->add_root(ftx);
+      active->push_back(ftx);
+    }
+
+void sync_sched::do_sread()
+    {
+      readreq_t * pr = (readreq_t*)request->data;
+      schannel_t *chan = pr->chan;
+      if(debug_driver)
+        fprintf(stderr,"[sync: svc_read] Request to read on channel %p\n",chan);
+      if(chan==NULL) goto svc_read_none;
+    svc_read_next:
+      {
+        fthread_t *writer= chan->pop_writer();
+        if(writer == 0) goto svc_read_none;       // no writers
+        if(writer->cc == 0) goto svc_read_next;   // killed
+        readreq_t * pw = (readreq_t*)writer->get_svc()->data;
+        if(debug_driver)
+          fprintf(stderr,"[sync: svc_read] Writer @%p=%p, read into %p\n", 
+            pw->variable,*(void**)pw->variable, pr->variable);
+        *(void**)pr->variable = *(void**)pw->variable;
+        // reader goes first!
+        active->push_front(writer);
+        collector->add_root(writer);
+        return;
+      }
+
+    svc_read_none:
+      if(debug_driver)
+        fprintf(stderr,"[sync: svc_read] No writers on channel %p: BLOCKING\n",chan);
+      chan->push_reader(ft);
+      forget_current();
+      return;
+    }
+
+void sync_sched::do_swrite()
+    {
+      readreq_t * pw = (readreq_t*)request->data;
+      schannel_t *chan = pw->chan;
+      if(debug_driver)
+         fprintf(stderr,"[sync: svc_write] Request to write on channel %p\n",chan);
+      if(chan==NULL)goto svc_write_none;
+    svc_write_next:
+      {
+        fthread_t *reader= chan->pop_reader();
+        if(reader == 0) goto svc_write_none;     // no readers
+        if(reader->cc == 0) goto svc_write_next; // killed
+        readreq_t * pr = (readreq_t*)reader->get_svc()->data;
+        if(debug_driver)
+          fprintf(stderr,"[sync: svc_write] Writer @%p=%p, read into %p\n", 
+            pw->variable,*(void**)pw->variable, pr->variable);
+        *(void**)pr->variable = *(void**)pw->variable;
+        push_new (reader);
+        return;
+      }
+    svc_write_none:
+      if(debug_driver)
+        fprintf(stderr,"[sync: svc_write] No readers on channel %p: BLOCKING\n",chan);
+      chan->push_writer(ft);
+      forget_current();
+      return;
+    }
+
+void sync_sched::external_multi_swrite (schannel_t *chan, void *data)
+    {
+      if(chan==NULL) return;
+    svc_multi_write_next:
+      fthread_t *reader= chan->pop_reader();
+      if(reader == 0)  return;    // no readers left
+      if(reader->cc == 0) goto svc_multi_write_next; // killed
+      {
+        readreq_t * pr = (readreq_t*)reader->get_svc()->data;
+        if(debug_driver)
+           fprintf(stderr,"[sync: svc_multi_write] Write data %p, read into %p\n", 
+             data, pr->variable);
+        *(void**)pr->variable = data;
+        push_new(reader);
+      }
+      goto svc_multi_write_next;
+    }
+
+void sync_sched::do_multi_swrite()
+    {
+      readreq_t * pw = (readreq_t*)request->data;
+      void *data = *(void**)pw->variable;
+      schannel_t *chan = pw->chan;
+      if(debug_driver)
+        fprintf(stderr,"[sync: svc_multi_write] Request to write on channel %p\n",chan);
+      external_multi_swrite (chan, data);
+    }
+
+void sync_sched::do_kill()
+    {
+      fthread_t *ftx = *(fthread_t**)request->data;
+      if(debug_driver)fprintf(stderr,"[sync: svc_kill] Request to kill fthread %p\n",ftx);
+      ftx -> kill();
+      return;
+    }
+
+
+sync_sched::fstate_t sync_sched::frun()
+{
+  if (debug_driver)
+     fprintf(stderr,"[sync] frun: entry ft=%p, active size=%ld\n", ft,active->size());
+dispatch:
+  if (ft == 0) 
+  {
+    if (active->size() == 0)  // out of active fthreads
+    {
+      return blocked;
+    }
+    ft = active->front();     // grab next fthread
+    active->pop_front();
+  }
+  request = ft->run();        // run fthread to get request
+  if(request == 0)            // euthenasia request
+  {
+    if(debug_driver)
+      fprintf(stderr,"unrooting fthread %p\n",ft);
+    collector->remove_root(ft);
+    ft = 0;
+    goto dispatch;
+  }
+
+  if (debug_driver)
+    fprintf(stderr,"[flx_sync:sync_sched] dispatching service request %d\n", request->variant);
+  switch(request->variant)
+  {
+    case svc_yield: do_yield(); goto dispatch;
+
+    case svc_spawn_detached: do_spawn_detached(); goto dispatch;
+
+    case svc_sread: do_sread(); goto dispatch;
+
+    case svc_swrite: do_swrite(); goto dispatch;
+
+    case svc_multi_swrite: do_multi_swrite(); goto dispatch;
+
+    case svc_kill: do_kill(); goto dispatch;
+
+    default:  
+      return delegated;
+  }
+}
+
+}}
