@@ -9,6 +9,80 @@
 @tangler gc.flx                   = share/lib/std/gc.flx
 
 @h1 The Felix Garbage Collector.
+Felix uses a garbage collector to provide secure automatic
+memory management.
+
+For reasons of C and C++ compatibility, the allocator
+used is just @{malloc}. Similarly, to ensure C and C++
+interoperability, Felix GC uses a naive mark and sweep
+algorithm instead of a faster and more modern copying 
+collector. C/C++ objects can't be moved easily and
+read or write barriers cannot be easily implemented.
+
+The collector depends heavily on the @{Judy1} and @{JudyL}
+data structures. These are ultra-high performance stores
+which provide fast, scalable, O(1) linear scanning both
+up and down, as well as random access, deletion, and insertion.
+Judy's key disadvantage is that it only works with machine
+word size keys and (for @{JudyL}) machine word size data.
+
+The Felix collector is a hybrid. Heap allocated objects
+are associated with a shape object which provides a precise
+map of the location of all pointers in the object, accelerating
+the scan for reachable objects and reducing the number of
+unreachable objects that are not collected. On the other hand
+the machine stack of each thread is scanned conservatively,
+since Felix has no precise information on stack allocated data.
+
+The GC can handle interior pointers. These are pointers to 
+an address past the starting point of an object. However
+Felix does not consider a pointer "one past the end" to
+be interior. Care must be taken not to increment pointers
+into arrays past the last element. This is a deliberate 
+design choice: a past the end pointer might be the head
+of a consecutively allocated object. Without this constraint
+an allocator might be forced to introduce padding.
+
+The GC can also handle C pointers mixed in with
+Felix pointers, in other words, where an object has
+a designated slot for a pointer, either a Felix or C
+pointer may be used. It can do this because it keeps
+track of all objects it allocated.
+
+The GC also assumes all objects are arrays of fixed
+maximum extent. It tracks the maximum number of elements
+the array might contain as well as the actual number used.
+JudyL arrays map addresses to the base shape, the array
+bound, and the actual usage, with missing keys designating 1 
+element in the last two cases.
+
+The GC also supports finalisation. By default the finaliser
+of a C++ object is a function calling the object's type's
+destructor. This means a complex data structure such as an
+STL map can be used in Felix, provided the value type is
+does not contain GC managed pointers. The finaliser calls
+the destructor to release storage, relieving the GC of the
+task of tracking the individual objects comprising the
+data structure.
+
+Thus, the Felix GC is more efficient that one might
+expect because it does not need to track every allocation,
+nor scan every object. In addition, the programmer is free
+to use C style manual allocation and deallocation
+for many data types. Never-the-less the GC is required for
+some union types and some function and procedure closures.
+It is also useful for many function data structures including
+persistent purely functional lists.
+
+We should note that the Felix GC does have one
+significant drawback: although it is thread safe,
+and performance suffers a bit from serialisation
+of allocations, collections require a voluntary world
+stop by all threads. There is no portable way to stop
+threads at arbitrary times, so if one thread requests
+a collection, all the threads must wait until the last
+one yields to the stop request, and then the collection
+is performed.
 
 @h2 Memory Management Abstraction Interface.
 @tangle flx_gc.hpp

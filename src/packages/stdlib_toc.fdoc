@@ -7,12 +7,8 @@
 <dt><a href=embed.fdoc>System Construction</a></dt>
 <dd>Core routines for embedding</dd>
 
-<dt><a href=embed.fdoc>System Construction</a></dt>
-<dd>Core routines for embedding</dd>
-
 <dt><a href=driver.fdoc>Dynamic Linkage and Driver</a></dt>
 <dd>The top level driver program and dynamic linkage library</dd>
-
 
 </dl>
 
