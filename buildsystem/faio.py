@@ -8,7 +8,8 @@ import buildsystem
 # ------------------------------------------------------------------------------
 
 def build_runtime(host_phase,target_phase):
-    path = Path('src/faio')
+    print('[fbuild] [faio]')
+    path = Path(target_phase.ctx.buildroot/'share'/'src/faio')
 
     buildsystem.copy_hpps_to_rtl(target_phase.ctx,
         path / 'faio_job.hpp',

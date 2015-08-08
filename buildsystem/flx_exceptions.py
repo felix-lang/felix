@@ -8,7 +8,8 @@ import buildsystem
 # ------------------------------------------------------------------------------
 
 def build_runtime(phase):
-    path = Path('src/exceptions')
+    print('[fbuild] [rtl] build exceptions')
+    path = Path(phase.ctx.buildroot/'share'/'src/exceptions')
 
     buildsystem.copy_hpps_to_rtl(phase.ctx,
         path / 'flx_exceptions.hpp',

@@ -9,7 +9,7 @@ import buildsystem
 # ------------------------------------------------------------------------------
 
 def build_runtime(host_phase, target_phase):
-    path = Path('src/gc')
+    path = Path(target_phase.ctx.buildroot/'share'/'src/gc')
 
     buildsystem.copy_hpps_to_rtl(target_phase.ctx,
         path / 'flx_gc.hpp',

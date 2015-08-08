@@ -44,26 +44,5 @@ syntax control
   //$ Unconditional goto expression.
   block := "goto-indirect" sexpr ";" =># "`(ast_goto_indirect ,_sr ,_2)";
 
-
-  //$ Exception handling.
-  //$
-  //$ try .. catch x : T => handler endtry
-  //$
-  //$ can be used to execute code which might throw
-  //$ an exception, and catch the exception.
-  //$
-  //$ This is primarily intended to for wrapping C bindings.
-  //$ Exceptions do not propage properly in Felix across
-  //$ multiple function/procedure layers. If you have to use
-  //$ this construction be sure to keep wrap the try block
-  //$ closely around the throwing code.
-  block := "try" stmt+ catches "endtry" =>#
-    "`(ast_seq ,_sr ,(append `((ast_try ,_sr)) _2 _3 `((ast_endtry ,_sr))))";
-
-  catch := "catch" sname ":" sexpr  "=>" stmt+ =>#
-    "`(ast_seq ,_sr ,(cons `(ast_catch ,_sr ,_2 ,_4) _6))";
-
-  catches := catch+ =># "_1";
-
 }
 

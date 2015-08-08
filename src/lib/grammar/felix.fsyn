@@ -9,6 +9,7 @@ syntax felix {
     executable,
     assignment,
     control,
+    exceptions,
     conditional,
     loops,
     pfor, 

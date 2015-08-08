@@ -7,7 +7,7 @@ import buildsystem
 # ------------------------------------------------------------------------------
 
 def build(host_phase, target_phase):
-    path = Path('src/flx_drivers')
+    path = Path(target_phase.ctx.buildroot/'share'/'src/flx_drivers')
 
     buildsystem.copy_to(target_phase.ctx, target_phase.ctx.buildroot / "share/lib/rtl/", [
         path / 'flx_run.hpp',

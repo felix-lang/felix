@@ -9,7 +9,7 @@ import buildsystem
 # ------------------------------------------------------------------------------
 
 def build_runtime(phase):
-    path = Path('src/re2/re2')
+    path = Path(phase.ctx.buildroot/'share'/'src/re2/re2')
 
     buildsystem.copy_to(phase.ctx, phase.ctx.buildroot / "share/lib/rtl/re2", [
         path / 're2/re2.h',

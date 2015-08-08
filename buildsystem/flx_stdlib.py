@@ -5,7 +5,7 @@ import buildsystem
 # ------------------------------------------------------------------------------
 
 def build_flx(phase):
-    path = Path('src/lib')
+    path = Path(phase.ctx.buildroot/'share'/'src/lib')
 
     dsts = []
     dsts.extend(buildsystem.copy_flxs_to_lib(phase.ctx,

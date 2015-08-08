@@ -60,22 +60,15 @@ open class Control
   }
 
   //$ throw[ret, exn] throw exception of type exn
-  //$ in a context expecting type ret. It can only be
-  //$ used in an expecting context such as the argument
-  //$ of a function return or handler of a match expression.
-  //$ Felix does not check the ret type, since it sees 
-  //$ the type is 'any'. The generated C++, however, will
-  //$ fail if the wrong type is used.
-  gen throw[ret,exn] : exn -> any = "(throw $1,*(?1*)0)";
+  //$ in a context expecting type ret. 
+  gen throw[ret,exn] : exn -> ret = "(throw $1,*(?1*)0)";
+  proc raise[exn] : exn = "(throw $1);";
+  proc proc_fail:string = 'throw ::std::runtime_error($1);' 
+    requires Cxx_headers::stdexcept;
 
-  //$ raise is a statement/procedure which doesn't return.
-  //$ that is, it's the function throw with C++ type void.
-  gen raise[exn] : exn -> any = "(throw $1)";
-
-  //$ fail is a deprecated procedure which throws
-  //$ a C++ standard runtime_error with the given message string.
-  //$ It is deprecated because Felix cannot detect it never returns.
-  proc fail:string = 'throw ::std::runtime_error($1);' requires Cxx_headers::stdexcept;
+  // Note: must be a fun not a gen to avoid lifting.
+  fun fun_fail[ret]:string -> ret = '(throw ::std::runtime_error($1),*(?1*)0)' 
+    requires Cxx_headers::stdexcept;
 
   //$ This is the type of a Felix procedural
   //$ continuations in C++ lifted into Felix.

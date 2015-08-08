@@ -474,6 +474,23 @@ def build(ctx):
     compilers = call('buildsystem.flx_compiler.build_flx_drivers', ctx,
         phases.host)
 
+    # NOTE: this should be done AFTER copying the repository
+    # But it has to be done first at the moment.
+    print("[fbuild] RUNNING PACKAGE MANAGER")
+    os.system("for i in src/packages/*; do echo 'PACKAGE ' $i; src/tools/flx_iscr.py -q $i build/release; done")
+
+    print("[fbuild] COPYING REPOSITORY from current directory ..")
+    buildsystem.copy_dir_to(ctx, ctx.buildroot/'share'/'src', 'src',
+        pattern='*')
+
+    print("[fbuild] INSTALLING FELIX LIBRARIES")
+    buildsystem.copy_dir_to(ctx, ctx.buildroot/'share'/'lib',
+        ctx.buildroot/'share'/'src'/'lib', pattern='*')
+
+    print("[fbuild] RUNNING SYNTAX EXTRACTOR")
+    os.system("src/tools/flx_find_grammar_files.py build/release");
+
+ 
     # --------------------------------------------------------------------------
     # Compile the runtime dependencies.
 
@@ -486,14 +503,6 @@ def build(ctx):
 
     print("[fbuild] [Felix] BUILDING STANDARD LIBRARY")
     # copy files into the library
-    buildsystem.copy_dir_to(ctx, ctx.buildroot/'share', 'src/lib',
-        pattern='*.{flx,flxh,fsyn,fdoc,files,html,sql,css,js,py,png}')
-    
-    print("[fbuild] RUNNING PACKAGE MANAGER")
-    os.system("for i in src/packages/*; do echo 'PACKAGE ' $i; src/tools/flx_iscr.py -q $i build/release; done")
-    print("[fbuild] RUNNING SYNTAX EXTRACTOR")
-    os.system("src/tools/flx_find_grammar_files.py build/release");
-
     for module in ( 'flx_stdlib',):
         call('buildsystem.' + module + '.build_flx', phases.target)
 

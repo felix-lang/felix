@@ -9,8 +9,6 @@ from fbuild.builders.file import copy
 
 def build(phase, felix):
     print ("BUILDING PLUGINS")
-    for f in Path.glob('src/lib/plugins/*'):
-      copy(ctx=phase.ctx, src=f, dst=phase.ctx.buildroot / 'share'/f[4:]) 
     plugins = [
       #"ocaml2html",
       #"py2html",

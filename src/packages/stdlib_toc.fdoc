@@ -1,6 +1,9 @@
 @title The Felix Library
 @h1 Felix Run Time Library
 <dl>
+<dt><a href=Exceptions.fdoc>Exceptions</a></dt>
+<dd>Error Exits</dd>
+
 <dt><a href=gc.fdoc>Garbage Collector</a></dt>
 <dd>Memory Management Core</dd>
 

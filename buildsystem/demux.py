@@ -9,7 +9,8 @@ from buildsystem.config import config_call
 # ------------------------------------------------------------------------------
 
 def build_runtime(phase):
-    path = Path('src/demux')
+    print('[fbuild] [demux]')
+    path = Path(phase.ctx.buildroot/'share'/'src/demux')
 
     buildsystem.copy_hpps_to_rtl(phase.ctx,
         #phase.ctx.buildroot / 'lib/rtl/flx_demux_config.hpp', # portable

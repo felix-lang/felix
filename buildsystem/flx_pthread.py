@@ -9,10 +9,11 @@ from buildsystem.config import config_call
 # ------------------------------------------------------------------------------
 
 def build_runtime(phase):
-    path = Path('src/pthread')
+    print('[fbuild] [rtl] build pthread')
+    path = Path(phase.ctx.buildroot/'share'/'src/pthread')
 
     copy(ctx=phase.ctx, 
-      src="src/config/target/flx_pthread_config.hpp",
+      src=phase.ctx.buildroot/'share'/"src/config/target/flx_pthread_config.hpp",
       dst=phase.ctx.buildroot / 'host/lib/rtl/flx_pthread_config.hpp')
 
     buildsystem.copy_hpps_to_rtl(phase.ctx,

@@ -53,7 +53,7 @@ def build_runtime(host_phase, target_phase):
     library versions.
     """
 
-    path = Path('src/judy/src')
+    path = Path(target_phase.ctx.buildroot/'share'/'src/judy/src')
 
     # Copy the header into the runtime library.
     buildsystem.copy_to(target_phase.ctx,
