@@ -18,10 +18,30 @@
 @tangler pthread_waitable_bool.hpp        = $PWD/src/pthread/pthread_waitable_bool.hpp
 @tangler pthread_waitable_bool.cpp        = $PWD/src/pthread/pthread_waitable_bool.cpp
 @tangler pthread_thread_control.cpp       = $PWD/src/pthread/pthread_thread_control.cpp
+@tangler pthread_bound_queue.hpp          = $PWD/src/gc/pthread_bound_queue.hpp
+@tangler pthread_bound_queue.cpp          = $PWD/src/gc/pthread_bound_queue.cpp
+@tangler pthread_work_fifo.hpp            = $PWD/src/gc/pthread_work_fifo.hpp
+@tangler pthread_work_fifo.cpp            = $PWD/src/gc/pthread_work_fifo.cpp
 
 
 
 @h1 Pthreads
+The @{pthread_thread.hpp} defines pthreads and the system 
+pthread control class. The control is implemented separately.
+
+Felix pthreads are tightly integrated with the garbage
+collector via the pthread control class. This is necessary
+because the collector must stop all the pthreads before
+it can reliably sweep the thread stacks for roots.
+
+Thread control also ensure Felix programs do not terminate
+until all managed pthreads have completed.
+
+The Felix system uses detached threads. We provide joinable
+threads here too, but Felix programmers should use detached
+threads and pchannels for synchronisation.
+
+
 @tangle pthread_thread.hpp
 #ifndef __FLX_PTHREAD_THREAD_H__
 #define __FLX_PTHREAD_THREAD_H__
@@ -1533,4 +1553,307 @@ void thread_control_t::yield()
 }}
 
 @
+@h1 Bound Queue
+@tangle pthread_bound_queue.hpp
+#ifndef __FLX_PTHREAD_BOUND_QUEUE_H__
+#define __FLX_PTHREAD_BOUND_QUEUE_H__
+#include "flx_pthread_config.hpp"
+#include "pthread_mutex.hpp"
+#include "pthread_condv.hpp"
+#include "flx_gc.hpp"
 
+// interface for a consumer/producer queue. threads requesting a resource
+// that isn't there block until one is available. push/pop re-entrant
+
+namespace flx { namespace pthread {
+
+// ********************************************************
+/// Thread safe bounded queue.
+///
+/// The queue can be locked by setting bound=0.
+/// In this state it can only be unlocked by setting a non-zero bound.
+///
+/// If the bound is set to 1 (the default),
+/// then the queue is always either empty or full.
+/// An empty queue blocks readers until a writer sends some data.
+/// A full queue blocks writers, until a reader reads the data.
+/// Note that when the queue is empty a writer can write data
+/// and continues without waiting for the data to be read.
+// ********************************************************
+
+class GC_EXTERN bound_queue_t {
+  flx_condv_t size_changed;
+  size_t bound;
+public:
+  void *lame_opaque; // has to be public for the scanner to find it
+  flx_mutex_t member_lock;
+  bound_queue_t(size_t);
+  ~bound_queue_t();
+  void enqueue(void*);
+  void* dequeue();
+  void* maybe_dequeue();
+  void resize(size_t);
+  void wait_until_empty();
+  size_t len();
+};
+
+GC_EXTERN ::flx::gc::generic::scanner_t bound_queue_scanner;
+
+}} // namespace pthread, flx
+#endif
+
+@
+
+@tangle pthread_bound_queue.cpp
+#include "pthread_bound_queue.hpp"
+#include <queue>        // stl to the bloated rescue
+#include <stdio.h>      // debugging in scanner
+
+using namespace std;
+
+namespace flx { namespace pthread {
+typedef deque<void*> void_queue;
+
+#define ELTQ ((void_queue*)lame_opaque)
+
+bound_queue_t::bound_queue_t(size_t n) : bound(n)
+{
+  lame_opaque = new void_queue;
+}
+
+// Much care is needed deleting a queue.
+// A safe method is possible .. but not provided here
+bound_queue_t::~bound_queue_t()
+{
+  delete ELTQ;
+}
+
+// get the number of element in the queue
+// (NOT the bound!)
+size_t bound_queue_t::len() {
+  flx_mutex_locker_t   l(member_lock);
+  return ELTQ->size();
+}
+
+void bound_queue_t::wait_until_empty() {
+  flx_mutex_locker_t   l(member_lock);
+  while(!ELTQ->empty())
+    size_changed.wait(&member_lock);
+}
+
+void
+bound_queue_t::enqueue(void* elt)
+{
+  flx_mutex_locker_t   l(member_lock);
+  while(ELTQ->size() >= bound) // guard against spurious wakeups!
+    size_changed.wait(&member_lock);
+  ELTQ->push_back(elt);
+  size_changed.broadcast(); // cannot return an error
+}
+
+void*
+bound_queue_t::dequeue()
+{
+  flx_mutex_locker_t   l(member_lock);
+  while(ELTQ->empty())  // guard against spurious wakeups!
+    size_changed.wait(&member_lock);
+  void *elt = ELTQ->front();
+  ELTQ->pop_front();
+  size_changed.broadcast();
+  return elt;
+}
+
+void*
+bound_queue_t::maybe_dequeue()
+{
+  flx_mutex_locker_t   l(member_lock);
+  void *elt = NULL;
+  if (ELTQ->size() > 0)
+  {
+    elt = ELTQ->front();
+    ELTQ->pop_front();
+    size_changed.broadcast();
+  }
+  return elt;
+}
+
+
+void
+bound_queue_t::resize(size_t n)
+{
+  flx_mutex_locker_t   l(member_lock);
+  bound = n;
+  // get things rolling again
+  size_changed.broadcast();
+}
+
+using namespace flx;;
+using namespace gc;
+using namespace generic;
+
+void *bound_queue_scanner(
+  collector_t *collector, 
+  gc_shape_t *shape, void *pp, 
+  unsigned long dyncount, 
+  int reclimit
+)
+{
+  // input is a pointer to a pointer to a bound queue object
+  void *p = *(void**)pp;
+  bound_queue_t *bq = (bound_queue_t*)p;
+  void_queue *pq = (void_queue*) bq->lame_opaque;
+  printf("Scanning bound queue %p->%p\n", pp, p);
+  
+  ::std::deque<void*>::const_iterator stl_end = pq->end();
+  for(
+    ::std::deque<void*>::const_iterator iter= pq->begin(); 
+    iter < stl_end;
+    ++iter
+  ) {
+    void *value = *iter;
+    printf("bound_queue scanning p=%p\n",value); 
+    collector->register_pointer(value,reclimit);
+  }
+  return 0;
+}
+
+
+}}
+
+
+@
+
+@h1 Thread Pool
+This thread pool is used internally for C++ jobs by the
+asynchronous I/O system.  The threads are Felix threads
+and the Felix bound queue is used for the fifo.
+
+
+@tangle pthread_work_fifo.hpp
+#ifndef __FLX_PTHREAD_WORKER_FIFO_H__
+#define __FLX_PTHREAD_WORKER_FIFO_H__
+#include "flx_pthread_config.hpp"
+#include "pthread_thread.hpp"
+#include "pthread_mutex.hpp"
+#include "pthread_bound_queue.hpp"
+
+namespace flx { namespace pthread {
+
+/// Class of jobs to be queued in fifo for execution.
+class GC_EXTERN worker_task
+{
+public:
+  virtual ~worker_task() {}   // c++ should do this automatically
+
+  /// function called by worker thread to carry out user job
+  virtual void doit() = 0;
+
+  /// function called by worker thread after doit() is completed
+  /// used to notify job completion
+  virtual void finished() = 0; // finished hook (mi serve start gancia?)
+};
+
+/// Job scheduler, executes jobs in turn from queue
+/// Does not delete dequeued jobs
+class GC_EXTERN worker_fifo
+{
+  flx_mutex_t nlock;
+  int nthreads;                 /// scheduled number of threads
+  bound_queue_t fifo;
+
+  static void thread_start(void*); // thread entry point, passed this
+  bool thread_loop_body();      // returns keep going flag
+  void stop_worker_thread();
+  void start_worker_thread();
+
+public:
+  worker_fifo(int n, int m);   /// n: Q bound, m: # of threads
+  ~worker_fifo();
+  void add_worker_task(worker_task* task);
+  int get_nthreads();
+  void set_nthreads(int);
+};
+
+}} // namespace pthread, flx
+#endif  // __WORKER_FIFO__
+
+@
+@tangle pthread_work_fifo.cpp
+#include <stdio.h>    // printf
+#include "pthread_work_fifo.hpp"
+namespace flx { namespace pthread {
+
+int worker_fifo::get_nthreads() {
+  flx_mutex_locker_t dummy(nlock);
+  return nthreads;
+}
+
+void worker_fifo::set_nthreads(int n)
+{
+  flx_mutex_locker_t dummy(nlock);
+  while(nthreads<n) start_worker_thread();
+  while(nthreads>n) stop_worker_thread();
+}
+
+void worker_fifo::start_worker_thread()
+{
+  ++nthreads;
+  //fprintf(stderr,"Spawn detached worker thread, count=%d\n",nthreads);
+  flx_detached_thread_t().init(thread_start, this,NULL, NULL, NULL, NULL);
+}
+
+worker_fifo::worker_fifo(int n, int m) : nthreads(0), fifo(n)
+{
+  set_nthreads(m);
+}
+
+void
+worker_fifo::stop_worker_thread()
+{
+  //fprintf(stderr,"Kill detached worker thread, count=%d\n",nthreads);
+  --nthreads;
+  add_worker_task(NULL);    // thread safe takedown.
+}
+
+worker_fifo::~worker_fifo()
+{
+  while(nthreads>0)stop_worker_thread();
+  fifo.wait_until_empty();
+}
+
+// io thread entry point, passed this
+void
+worker_fifo::thread_start(void* udat)
+{
+  worker_fifo*  fio = (worker_fifo*)udat;
+  while(fio->thread_loop_body()) ;
+}
+
+// dequeues one task and executes it, calling finished hook. interprets
+// null task as a request to exit.
+bool
+worker_fifo::thread_loop_body()
+{
+  worker_task*  req = (worker_task*)fifo.dequeue();
+  //fprintf(stderr,"dequeued worker_task (%p)\n", req);
+
+  if(!req) return false;        // finished, got quit signal
+
+  req->doit();
+  req->finished();          // finish hook. I find this handy
+  // Note: task not deleted. use finish hook if you want that
+
+  return true;            // keep going
+}
+
+void
+worker_fifo::add_worker_task(worker_task* task)
+{
+  //fprintf(stderr,"adding worker task %p\n",task);
+  fifo.enqueue(task);         // don't worry, fifo is re-entrant
+}
+
+}}
+
+
+@
