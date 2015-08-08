@@ -67,7 +67,7 @@ class ServerConfig {
       elif prefix(arg,"--config=") do
         cfg.file_name = arg.[9 to];
         if( not (FileStat::fileexists(cfg.file_name))) do
-          fail("unable to open config file:"+cfg.file_name); 
+          proc_fail("unable to open config file:"+cfg.file_name); 
         done
       elif prefix(arg,"--debug") do
         var dbg_log:list[log_handler];
