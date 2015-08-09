@@ -54,6 +54,7 @@ def build_runtime(phase):
     srcs = [path / '*.cpp']
     includes = [
         phase.ctx.buildroot / 'host/lib/rtl',
+        phase.ctx.buildroot / 'share/lib/rtl',
         Path('src', 'pthread'),
         Path('src', 'gc'),
         path,
