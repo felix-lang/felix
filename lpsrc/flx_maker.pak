@@ -171,6 +171,7 @@ flx_requires_driver: flx_arun
 includes: '"flx_demux.hpp"'
 library: demux
 headers: (.*/)?([^/\\]+\.hpp)>${2}
+build_includes: build/release/share/lib/rtl
 srcdir: src/demux
 src: [^/\\]+\.cpp
 @if pyconfig.TARGET_CXX.options.WIN32:
