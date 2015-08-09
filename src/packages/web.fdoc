@@ -1655,7 +1655,7 @@ bad:>
 
 @
 
-@tangler logger.flx
+@tangle logger.flx
 publish """
 Extensible Flexible Logger
 example:
