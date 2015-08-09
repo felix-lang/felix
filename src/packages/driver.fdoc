@@ -1,20 +1,20 @@
 @title Driver and Dynamic Linker
 
-@tangler flx_dl.h                 = $PWD/src/rtl/flx_dl.h
-@tangler flx_dlopen.hpp           = $PWD/src/rtl/flx_dlopen.hpp
-@tangler flx_dlopen.cpp           = $PWD/src/rtl/flx_dlopen.cpp
-@tangler flx_dynlink.hpp          = $PWD/src/rtl/flx_dynlink.hpp
-@tangler flx_dynlink.cpp          = $PWD/src/rtl/flx_dynlink.cpp
+@tangler flx_dl.h                 = share/lib/rtl/flx_dl.h
+@tangler flx_dlopen.hpp           = share/lib/rtl/flx_dlopen.hpp
+@tangler flx_dlopen.cpp           = share/src/rtl/flx_dlopen.cpp
+@tangler flx_dynlink.hpp          = share/lib/rtl/flx_dynlink.hpp
+@tangler flx_dynlink.cpp          = share/src/rtl/flx_dynlink.cpp
 @tangler dynlink.flx              = share/lib/std/program/dynlink.flx
-@tangler flx_run.hpp              = $PWD/src/flx_drivers/flx_run.hpp
-@tangler flx_run.include          = $PWD/src/flx_drivers/flx_run.include
-@tangler flx_run_main.cxx         = $PWD/src/flx_drivers/flx_run_main.cxx
-@tangler flx_arun_main.cxx        = $PWD/src/flx_drivers/flx_arun_main.cxx
-@tangler flx_run_lib_dynamic.cpp  = $PWD/src/flx_drivers/flx_run_lib_dynamic.cpp
-@tangler flx_run_lib_static.cpp   = $PWD/src/flx_drivers/flx_run_lib_static.cpp
-@tangler flx_arun_lib_dynamic.cpp = $PWD/src/flx_drivers/flx_arun_lib_dynamic.cpp
-@tangler flx_arun_lib_static.cpp  = $PWD/src/flx_drivers/flx_arun_lib_static.cpp
-@tangler build_iphone_rtl.sh      = $PWD/src/flx_drivers/build_iphone_rtl.sh
+@tangler flx_run.hpp              = share/lib/flx_drivers/flx_run.hpp
+@tangler flx_run.include          = share/src/flx_drivers/flx_run.include
+@tangler flx_run_main.cxx         = share/src/flx_drivers/flx_run_main.cxx
+@tangler flx_arun_main.cxx        = share/src/flx_drivers/flx_arun_main.cxx
+@tangler flx_run_lib_dynamic.cpp  = share/src/flx_drivers/flx_run_lib_dynamic.cpp
+@tangler flx_run_lib_static.cpp   = share/src/flx_drivers/flx_run_lib_static.cpp
+@tangler flx_arun_lib_dynamic.cpp = share/src/flx_drivers/flx_arun_lib_dynamic.cpp
+@tangler flx_arun_lib_static.cpp  = share/src/flx_drivers/flx_arun_lib_static.cpp
+@tangler build_iphone_rtl.sh      = share/src/flx_drivers/build_iphone_rtl.sh
 
 
 @h1 Dynamic Linkage

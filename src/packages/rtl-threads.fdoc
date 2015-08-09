@@ -1,27 +1,27 @@
 @title Run Time Library Pthread support.
 
-@tangler pthread_thread.hpp               = $PWD/src/pthread/pthread_thread.hpp
-@tangler pthread_posix_thread.cpp         = $PWD/src/pthread/pthread_posix_thread.cpp
-@tangler pthread_win_thread.cpp           = $PWD/src/pthread/pthread_win_thread.cpp
-@tangler pthread_mutex.hpp                = $PWD/src/pthread/pthread_mutex.hpp
-@tangler pthread_mutex.cpp                = $PWD/src/pthread/pthread_mutex.cpp
-@tangler pthread_condv.hpp                = $PWD/src/pthread/pthread_condv.hpp
-@tangler pthread_condv.cpp                = $PWD/src/pthread/pthread_condv.cpp
-@tangler pthread_win_posix_condv_emul.hpp = $PWD/src/pthread/pthread_win_posix_condv_emul.hpp
-@tangler pthread_win_posix_condv_emul.cpp = $PWD/src/pthread/pthread_win_posix_condv_emul.cpp
-@tangler pthread_semaphore.hpp            = $PWD/src/pthread/pthread_semaphore.hpp
-@tangler pthread_semaphore.cpp            = $PWD/src/pthread/pthread_semaphore.cpp
-@tangler pthread_monitor.hpp              = $PWD/src/pthread/pthread_monitor.hpp
-@tangler pthread_monitor.cpp              = $PWD/src/pthread/pthread_monitor.cpp
-@tangler pthread_counter.hpp              = $PWD/src/pthread/pthread_counter.hpp
-@tangler pthread_counter.cpp              = $PWD/src/pthread/pthread_counter.cpp
-@tangler pthread_waitable_bool.hpp        = $PWD/src/pthread/pthread_waitable_bool.hpp
-@tangler pthread_waitable_bool.cpp        = $PWD/src/pthread/pthread_waitable_bool.cpp
-@tangler pthread_thread_control.cpp       = $PWD/src/pthread/pthread_thread_control.cpp
-@tangler pthread_bound_queue.hpp          = $PWD/src/gc/pthread_bound_queue.hpp
-@tangler pthread_bound_queue.cpp          = $PWD/src/gc/pthread_bound_queue.cpp
-@tangler pthread_work_fifo.hpp            = $PWD/src/gc/pthread_work_fifo.hpp
-@tangler pthread_work_fifo.cpp            = $PWD/src/gc/pthread_work_fifo.cpp
+@tangler pthread_thread.hpp               = share/lib/rtl/pthread_thread.hpp
+@tangler pthread_posix_thread.cpp         = share/src/pthread/pthread_posix_thread.cpp
+@tangler pthread_win_thread.cpp           = share/src/pthread/pthread_win_thread.cpp
+@tangler pthread_mutex.hpp                = share/lib/rtl/pthread_mutex.hpp
+@tangler pthread_mutex.cpp                = share/src/pthread/pthread_mutex.cpp
+@tangler pthread_condv.hpp                = share/lib/rtl/pthread_condv.hpp
+@tangler pthread_condv.cpp                = share/src/pthread/pthread_condv.cpp
+@tangler pthread_win_posix_condv_emul.hpp = share/lib/rtl/pthread_win_posix_condv_emul.hpp
+@tangler pthread_win_posix_condv_emul.cpp = share/src/pthread/pthread_win_posix_condv_emul.cpp
+@tangler pthread_semaphore.hpp            = share/lib/rtl/pthread_semaphore.hpp
+@tangler pthread_semaphore.cpp            = share/src/pthread/pthread_semaphore.cpp
+@tangler pthread_monitor.hpp              = share/lib/rtl/pthread_monitor.hpp
+@tangler pthread_monitor.cpp              = share/src/pthread/pthread_monitor.cpp
+@tangler pthread_counter.hpp              = share/lib/rtl/pthread_counter.hpp
+@tangler pthread_counter.cpp              = share/src/pthread/pthread_counter.cpp
+@tangler pthread_waitable_bool.hpp        = share/lib/rtl/pthread_waitable_bool.hpp
+@tangler pthread_waitable_bool.cpp        = share/src/pthread/pthread_waitable_bool.cpp
+@tangler pthread_thread_control.cpp       = share/src/pthread/pthread_thread_control.cpp
+@tangler pthread_bound_queue.hpp          = share/lib/rtl/pthread_bound_queue.hpp
+@tangler pthread_bound_queue.cpp          = share/src/gc/pthread_bound_queue.cpp
+@tangler pthread_work_fifo.hpp            = share/lib/rtl/pthread_work_fifo.hpp
+@tangler pthread_work_fifo.cpp            = share/src/gc/pthread_work_fifo.cpp
 
 
 

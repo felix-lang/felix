@@ -1,11 +1,11 @@
 @title Memory Management
-@tangler flx_gc.hpp               = $PWD/src/gc/flx_gc.hpp
-@tangler flx_gc_private.hpp       = $PWD/src/gc/flx_gc_private.hpp
-@tangler flx_gc.cpp               = $PWD/src/gc/flx_gc.cpp
-@tangler flx_collector.hpp        = $PWD/src/gc/flx_collector.hpp
-@tangler flx_collector.cpp        = $PWD/src/gc/flx_collector.cpp
-@tangler flx_ts_collector.hpp     = $PWD/src/gc/flx_ts_collector.hpp
-@tangler flx_ts_collector.cpp     = $PWD/src/gc/flx_ts_collector.cpp
+@tangler flx_gc.hpp               = share/lib/rtl/flx_gc.hpp
+@tangler flx_gc_private.hpp       = share/src/gc/flx_gc_private.hpp
+@tangler flx_gc.cpp               = share/src/gc/flx_gc.cpp
+@tangler flx_collector.hpp        = share/lib/rtl/flx_collector.hpp
+@tangler flx_collector.cpp        = share/src/gc/flx_collector.cpp
+@tangler flx_ts_collector.hpp     = share/lib/rtl/flx_ts_collector.hpp
+@tangler flx_ts_collector.cpp     = share/src/gc/flx_ts_collector.cpp
 @tangler gc.flx                   = share/lib/std/gc.flx
 
 @h1 The Felix Garbage Collector.

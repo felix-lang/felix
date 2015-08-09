@@ -1,15 +1,15 @@
 @title Run Time Library
-@tangler flx_compiler_support_bodies.hpp  = $PWD/src/rtl/flx_compiler_support_bodies.hpp
-@tangler flx_compiler_support_headers.hpp = $PWD/src/rtl/flx_compiler_support_headers.hpp
-@tangler flx_executil.cpp                 = $PWD/src/rtl/flx_executil.cpp
-@tangler flx_executil.hpp                 = $PWD/src/rtl/flx_executil.hpp
-@tangler flx_main.cpp                     = $PWD/src/rtl/flx_main.cpp
-@tangler flx_rtl.cpp                      = $PWD/src/rtl/flx_rtl.cpp
-@tangler flx_rtl.hpp                      = $PWD/src/rtl/flx_rtl.hpp
-@tangler flx_rtl_shapes.cpp               = $PWD/src/rtl/flx_rtl_shapes.cpp
-@tangler flx_rtl_shapes.hpp               = $PWD/src/rtl/flx_rtl_shapes.hpp
-@tangler plat_linux.cpp                   = $PWD/src/rtl/plat_linux.cpp
-@tangler plat_linux.hpp                   = $PWD/src/rtl/plat_linux.hpp
+@tangler flx_compiler_support_bodies.hpp  = share/lib/rtl/flx_compiler_support_bodies.hpp
+@tangler flx_compiler_support_headers.hpp = share/lib/rtl/flx_compiler_support_headers.hpp
+@tangler flx_executil.cpp                 = share/src/rtl/flx_executil.cpp
+@tangler flx_executil.hpp                 = share/lib/rtl/flx_executil.hpp
+@tangler flx_main.cpp                     = share/src/rtl/flx_main.cpp
+@tangler flx_rtl.cpp                      = share/src/rtl/flx_rtl.cpp
+@tangler flx_rtl.hpp                      = share/lib/rtl/flx_rtl.hpp
+@tangler flx_rtl_shapes.cpp               = share/src/rtl/flx_rtl_shapes.cpp
+@tangler flx_rtl_shapes.hpp               = share/lib/rtl/flx_rtl_shapes.hpp
+@tangler plat_linux.cpp                   = share/src/rtl/plat_linux.cpp
+@tangler plat_linux.hpp                   = share/lib/rtl/plat_linux.hpp
 
 @h1 Compiler Support
 @tangle flx_compiler_support_headers.hpp

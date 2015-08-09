@@ -6,6 +6,7 @@ provides_slib: -lflx_pthread_static
 includes: '"pthread_thread.hpp"'
 Requires: pthread flx_exceptions
 library: flx_pthread
+build_includes: build/release/share/lib/rtl
 srcdir: src/pthread
 src: .*\.cpp
 

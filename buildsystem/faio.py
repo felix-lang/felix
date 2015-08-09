@@ -25,6 +25,7 @@ def build_runtime(host_phase,target_phase):
     ]
     includes = [
         target_phase.ctx.buildroot / 'host/lib/rtl',
+        target_phase.ctx.buildroot / 'share/lib/rtl',
         Path('src', 'flx_async'),
         Path('src', 'pthread'),
         Path('src', 'demux'),

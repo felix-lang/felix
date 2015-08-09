@@ -1,6 +1,6 @@
 @title I/O
-@tangler flx_ioutil.hpp    = $PWD/src/rtl/flx_ioutil.hpp
-@tangler flx_ioutil.cpp    = $PWD/src/rtl/flx_ioutil.cpp
+@tangler flx_ioutil.hpp    = share/lib/rtl/flx_ioutil.hpp
+@tangler flx_ioutil.cpp    = share/src/rtl/flx_ioutil.cpp
 
 @tangler __init__.flx      = share/lib/std/io/__init__.flx
 @tangler ansi_terminal.flx = share/lib/std/io/ansi_terminal.flx

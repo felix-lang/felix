@@ -9,25 +9,13 @@ import buildsystem
 def build(host_phase, target_phase):
     path = Path(target_phase.ctx.buildroot/'share'/'src/flx_drivers')
 
-    buildsystem.copy_to(target_phase.ctx, target_phase.ctx.buildroot / "share/lib/rtl/", [
-        path / 'flx_run.hpp',
-        ]
-     )
-
     run_includes = [
         target_phase.ctx.buildroot / 'host/lib/rtl',
-        'src/exceptions',
-        'src/gc',
-        'src/judy/src',
-        'src/pthread',
-        'src/flx_async',
-        'src/rtl',
+        target_phase.ctx.buildroot / 'share/lib/rtl'
     ]
 
     arun_includes = run_includes + [
-        target_phase.ctx.buildroot / 'host/lib/rtl',
         'src/demux',
-        'src/faio',
     ] + ([], ['src/demux/win'])['win32' in target_phase.platform]
 
     flx_run_static_obj = target_phase.cxx.static.compile(

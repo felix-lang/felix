@@ -1,8 +1,8 @@
 @title Strings
-@tangler flx_strutil.hpp     = $PWD/src/rtl/flx_strutil.hpp
-@tangler flx_strutil.cpp     = $PWD/src/rtl/flx_strutil.cpp
-@tangler flx_i18n.hpp        = $PWD/src/rtl/flx_i18n.hpp
-@tangler flx_i18n.cpp        = $PWD/src/rtl/flx_i18n.cpp
+@tangler flx_strutil.hpp     = share/lib/rtl/flx_strutil.hpp
+@tangler flx_strutil.cpp     = share/src/rtl/flx_strutil.cpp
+@tangler flx_i18n.hpp        = share/lib/rtl/flx_i18n.hpp
+@tangler flx_i18n.cpp        = share/src/rtl/flx_i18n.cpp
 
 
 @tangler __init__.flx        = share/lib/std/strings/__init__.flx

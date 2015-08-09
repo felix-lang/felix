@@ -1,14 +1,14 @@
 @title Driver Embedding Technology
-@tangler flx_world_config.hpp = $PWD/src/rtl/flx_world_config.hpp
-@tangler flx_world_config.cpp = $PWD/src/rtl/flx_world_config.cpp
-@tangler flx_world.hpp        = $PWD/src/rtl/flx_world.hpp
-@tangler flx_world.cpp        = $PWD/src/rtl/flx_world.cpp
-@tangler flx_async_world.hpp  = $PWD/src/rtl/flx_async_world.hpp
-@tangler flx_async_world.cpp  = $PWD/src/rtl/flx_async_world.cpp
-@tangler flx_async.hpp        = $PWD/src/rtl/flx_async.hpp
-@tangler flx_async.cpp        = $PWD/src/flx_async/flx_async.cpp
-@tangler flx_sync.hpp         = $PWD/src/rtl/flx_sync.hpp
-@tangler flx_sync.cpp         = $PWD/src/rtl/flx_sync.cpp
+@tangler flx_world_config.hpp = share/lib/rtl/flx_world_config.hpp
+@tangler flx_world_config.cpp = share/src/rtl/flx_world_config.cpp
+@tangler flx_world.hpp        = share/lib/rtl/flx_world.hpp
+@tangler flx_world.cpp        = share/src/rtl/flx_world.cpp
+@tangler flx_async_world.hpp  = share/lib/rtl/flx_async_world.hpp
+@tangler flx_async_world.cpp  = share/src/rtl/flx_async_world.cpp
+@tangler flx_async.hpp        = share/lib/rtl/flx_async.hpp
+@tangler flx_async.cpp        = share/src/flx_async/flx_async.cpp
+@tangler flx_sync.hpp         = share/lib/rtl/flx_sync.hpp
+@tangler flx_sync.cpp         = share/src/rtl/flx_sync.cpp
 
 @h1 Embedding
 This technology is designed to allow Felix to be embedded in any
