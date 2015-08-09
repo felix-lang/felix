@@ -1,3 +1,6 @@
+@title Demux build harness
+@tangler demux.py = $PWD/buildsystem/demux.py
+@tangle demux.py
 import fbuild
 from fbuild.functools import call
 from fbuild.path import Path
@@ -55,9 +58,6 @@ def build_runtime(phase):
     includes = [
         phase.ctx.buildroot / 'host/lib/rtl',
         phase.ctx.buildroot / 'share/lib/rtl',
-        Path('src', 'pthread'),
-        Path('src', 'gc'),
-        path,
     ]
     macros = ['BUILD_DEMUX']
     libs = [call('buildsystem.flx_pthread.build_runtime', phase)]
@@ -71,7 +71,6 @@ def build_runtime(phase):
             path / 'win/demux_wself_piper.cpp',        # windows
             path / 'win/demux_win_timer_queue.cpp',    # windows
         ))
-        includes.append(path / 'win')
         extra_libs.extend(('ws2_32', 'mswsock'))
 
     if 'posix' in phase.platform:
@@ -85,7 +84,6 @@ def build_runtime(phase):
             path / 'posix/demux_pfileio.cpp',            # posix
             path / 'posix/demux_ts_select_demuxer.cpp',  # posix
         ))
-        includes.append(path / 'posix')
 
     poll_h = config_call('fbuild.config.c.posix.poll_h', phase.platform, phase.cxx.shared)
     sys_epoll_h = config_call('fbuild.config.c.linux.sys_epoll_h', phase.platform, phase.cxx.shared)
@@ -100,22 +98,18 @@ def build_runtime(phase):
             path / 'poll/demux_poll_demuxer.cpp',       # I've seen this on linux and osx10.4
             path / 'poll/demux_ts_poll_demuxer.cpp',    # ditto
         ))
-        includes.append(path / 'poll')
 
     if sys_epoll_h.header:
         print("DEMUX: providing LINUX EPOLL");
         srcs.append(path / 'epoll/demux_epoll_demuxer.cpp')
-        includes.append(path / 'epoll')
 
     if sys_event_h.header:
         print("DEMUX: providing OSX KQUEUE");
         srcs.append(path / 'kqueue/demux_kqueue_demuxer.cpp')
-        includes.append(path / 'kqueue')
 
     if port_h.header:
         print("DEMUX: providingd SOLARIS EVENT PORTS");
         srcs.append(path / 'evtport/demux_evtport_demuxer.cpp')
-        includes.append(path / 'evtport')
 
     srcs = Path.globall(srcs)
 
@@ -137,4 +131,6 @@ def build_runtime(phase):
 def build_flx(phase):
     return buildsystem.copy_flxs_to_lib(phase.ctx,
         Path('src/demux/*.flx').glob())
+
+@
 
