@@ -6,7 +6,7 @@
 
 @h1 Serialisers
 @h2 Generic Serialisation
-@tangler flx_serialisers.hpp
+@tangle flx_serialisers.hpp
 #include "flx_serialisers.hpp"
 #include <string>
 #include <cstring>
@@ -58,7 +58,7 @@ namespace flx { namespace gc { namespace generic {
 
 @
 
-@tangler flx_serialisers.cpp
+@tangle flx_serialisers.cpp
 #include "flx_serialisers.hpp"
 #include <string>
 #include <cstring>
@@ -111,7 +111,7 @@ namespace flx { namespace gc { namespace generic {
 
 
 @h2 Judy Serialisers
-@tangler flx_judy_scanner.hpp
+@tangle flx_judy_scanner.hpp
 #include "flx_gc.hpp"
 
 namespace flx { namespace gc { namespace generic {
@@ -121,7 +121,7 @@ GC_EXTERN scanner_t JudySL_scanner;
 }}}
 
 @
-@tangler flx_judy_scanner.cpp
+@tangle flx_judy_scanner.cpp
 #include "flx_judy_scanner.hpp"
 #include <Judy.h>
 
