@@ -64,7 +64,7 @@ help:
 	#   FBUILD_PARAMS: parameters to fbuild, default none
 	#     fbuild/fbuild-light --help for options
 
-build: syntax extract user-build slow-flxg rebuild
+build: extract user-build slow-flxg rebuild
 
 dev-build: fbuild gendoc
 
@@ -193,15 +193,6 @@ make-dist:
 install-website:
 	${SUDO} cp -r src/web/* /usr/local/lib/felix/felix-latest/share/src/web
 
-
-#
-# Helper for checking new syntax
-# Grammar developers only
-#
-syntax:
-	rm -f ${BUILDROOT}/share/lib/grammar/*
-	mkdir -p ${BUILDROOT}/share/lib/grammar
-	cp src/lib/grammar/* ${BUILDROOT}/share/lib/grammar
 
 #
 # Speedway
@@ -600,4 +591,4 @@ evtdemo:
 .PHONY : doc install websites-linux  release install-bin
 .PHONY : copy-doc gen-doc gendoc fbuild speed tarball
 .PHONY : weblink flx tools web-plugins toolchain-plugins rtl copy lib
-.PHONY : sdltest extract syntax packages
+.PHONY : sdltest extract packages
