@@ -1,8 +1,0 @@
-syntax blocks
-{
-  stmt = block;
-  block := "do" stmt* "done" =># '`(ast_seq ,_sr ,_2)';
-  block := "begin" stmt* "end" =># '(block _2)';
-  block := "perform" stmt =># '_2';
-}
-

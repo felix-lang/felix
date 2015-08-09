@@ -125,6 +125,10 @@ class Processor:
                     if not m:
                         self.parse_error('invalid tangler usage')
                     self.set_tangler(m.group(1),self.lineno)
+                elif line.startswith ('@@'):
+                  if self.state is Tangling:
+                      assert self.tangler
+                      print(line[1:], file=self.tangler)
                 else:
                     self.state = Doc
             else:
