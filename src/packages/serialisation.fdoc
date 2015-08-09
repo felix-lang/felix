@@ -1,6 +1,6 @@
 @title Serialisation Support
-@tangler flx_seralisers.hpp      = $PWD/gc/flx_serialisers.hpp
-@tangler flx_seralisers.cpp      = $PWD/gc/flx_serialisers.hpp
+@tangler flx_serialisers.hpp      = $PWD/gc/flx_serialisers.hpp
+@tangler flx_serialisers.cpp      = $PWD/gc/flx_serialisers.hpp
 @tangler flx_judy_scanner.hpp    = $PWD/gc/flx_judy_scanner.hpp
 @tangler flx_judy_scanner.cpp    = $PWD/gc/flx_judy_scanner.cpp
 
