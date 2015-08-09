@@ -5,6 +5,7 @@
 @tangler http_request.flx      = $PWD/src/lib/web/http_request.flx
 @tangler http_response.flx     = $PWD/src/lib/web/http_response.flx
 @tangler http_handler.flx      = $PWD/src/lib/web/http_handler.flx
+@tangler http_connection.flx   = $PWD/src/lib/web/http_connection.flx
 @tangler http_status_code.flx  = $PWD/src/lib/web/http_status_code.flx
 @tangler mime_type.flx         = $PWD/src/lib/web/mime_type.flx
 @tangler cookie.flx            = $PWD/src/lib/web/cookie.flx
@@ -767,6 +768,57 @@ fun get_fs_path (config:server_config,request:http_request) =>
     http_handler(handle_not_found_route,handle_not_found)
   );
   
+}
+@
+@tangle http_connection.flx
+include "web/__init__";
+
+publish """
+Container for server config and socket_t
+"""
+class HTTPConnection {
+  open ServerConfig;
+  open Socket;
+  open Logger;
+  open Stream;
+  open Socket;
+  open TerminalIOByteStream[socket_t];
+
+  struct http_connection {
+    config:server_config;
+    sock:socket_t;
+    dirty:&bool;
+  };
+  fun _ctor_http_connection(config:server_config,sock:socket_t) = {
+    var b:bool = false;
+    return http_connection(config,sock,&b);
+  }
+  proc set_dirty(conn:http_connection,state:bool) {
+    *conn.dirty = state;
+  }
+
+  noinline proc write(var conn:http_connection,var content:string) {
+    
+    var eof_flag = false;
+    val content_len = content.len;
+    conn.config.log(DEBUG,"Content Size:"+str(content_len));
+    val chunk_size = size(1024);
+    var chunks:size = content.len / chunk_size;
+    var remainder = content.len % chunk_size;
+    var base = size(0);
+    for var i in size(1) upto chunks do
+      conn.config.log(DEBUG,"Writing[sock="+str conn.sock+"]:"+str(base)+" to "+str(base+chunk_size));
+      write_string(conn.sock,content.[base to (base+chunk_size)],&eof_flag);
+      base = base + chunk_size;
+      
+    done
+    if remainder > size(0) do
+       conn.config.log(DEBUG,"Writing[sock="+str conn.sock+"] Remainder:"+str(base)+" to "+str(content_len));
+       write_string(conn.sock,content.[base to ],&eof_flag);
+    done
+    set_dirty(conn,true);  
+  }
+
 }
 @
 
