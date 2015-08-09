@@ -14,7 +14,7 @@
 @tangler flx_run_lib_static.cpp   = $PWD/src/flx_drivers/flx_run_lib_static.cpp
 @tangler flx_arun_lib_dynamic.cpp = $PWD/src/flx_drivers/flx_arun_lib_dynamic.cpp
 @tangler flx_arun_lib_static.cpp  = $PWD/src/flx_drivers/flx_arun_lib_static.cpp
-
+@tangler build_iphone_rtl.sh      = $PWD/src/flx_drivers/build_iphone_rtl.sh
 
 
 @h1 Dynamic Linkage
@@ -1652,5 +1652,17 @@ int main(int argc, char **argv)
   return felix_run(argc, argv);
 }
 @
+
+@h1 Misc
+@tangle build_iphone_rtl.sh
+#!/bin/bash
+
+sed -i "" s/JU_64BIT/JU_32BIT/g build/release/iOS/config/judy.fpc || exit 1
+
+ARCH=armv7s
+SDK=$(xcrun --sdk iphoneos --show-sdk-path)
+
+export ARCH SDK
+DYLD_LIBRARY_PATH=build/release/host/lib/rtl build/release/host/bin/flx_build_rtl  --debug --static --target-dir=build/release --target-bin=iOS --pkg=build_flx_rtl_clang_iphoneos
 
 

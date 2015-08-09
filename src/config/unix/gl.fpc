@@ -1,4 +1,0 @@
-Name: OpenGL
-Description OpenGL graphics
-requires_dlibs: -lGL
-requires_slibs: -lGL

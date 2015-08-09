@@ -1,7 +1,0 @@
-Name: GLU
-Description: GLU graphics
-requires_dlibs: ---framework=OpenGL
-requires_slibs: ---framework=OpenGL
-Requires: gl
-cflags: -I/usr/X11/include 
-includes: '"GL/glu.h"'

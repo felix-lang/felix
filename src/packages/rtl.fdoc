@@ -1,0 +1,1035 @@
+@title Run Time Library
+@tangler flx_compiler_support_bodies.hpp  = $PWD/src/rtl/flx_compiler_support_bodies.hpp
+@tangler flx_compiler_support_headers.hpp = $PWD/src/rtl/flx_compiler_support_headers.hpp
+@tangler flx_executil.cpp                 = $PWD/src/rtl/flx_executil.cpp
+@tangler flx_executil.hpp                 = $PWD/src/rtl/flx_executil.hpp
+@tangler flx_main.cpp                     = $PWD/src/rtl/flx_main.cpp
+@tangler flx_rtl.cpp                      = $PWD/src/rtl/flx_rtl.cpp
+@tangler flx_rtl.hpp                      = $PWD/src/rtl/flx_rtl.hpp
+@tangler flx_rtl_shapes.cpp               = $PWD/src/rtl/flx_rtl_shapes.cpp
+@tangler flx_rtl_shapes.hpp               = $PWD/src/rtl/flx_rtl_shapes.hpp
+@tangler plat_linux.cpp                   = $PWD/src/rtl/plat_linux.cpp
+@tangler plat_linux.hpp                   = $PWD/src/rtl/plat_linux.hpp
+
+@h1 Compiler Support
+@tangle flx_compiler_support_headers.hpp
+#ifndef __FLX_COMPILER_SUPPORT_HEADERS_H__
+#define __FLX_COMPILER_SUPPORT_HEADERS_H__
+#include "flx_rtl_config.hpp"
+#if defined(FLX_PTF_STATIC_STRUCT) || defined(FLX_PTF_STATIC_PTR)
+#error "FLX_PTF_STATIC_STRUCT and FLX_PTF_STATIC_PTR no longer supported"
+#endif
+
+#define PTF ptf->
+#define FLX_POINTER_TO_THREAD_FRAME ptf
+
+// for declarations in header file
+#define FLX_FMEM_DECL thread_frame_t *ptf;
+#define FLX_FPAR_DECL_ONLY thread_frame_t *_ptf
+#define FLX_FPAR_DECL thread_frame_t *_ptf,
+#define FLX_APAR_DECL_ONLY thread_frame_t *ptf
+#define FLX_APAR_DECL thread_frame_t *ptf,
+#define FLX_DCL_THREAD_FRAME
+
+#if FLX_CGOTO
+  #define FLX_LOCAL_LABEL_VARIABLE_TYPE void*
+  #define FLX_PC_DECL void *pc;
+#else
+  #define FLX_PC_DECL int pc;
+  #define FLX_LOCAL_LABEL_VARIABLE_TYPE int
+#endif
+
+#define t typename
+#define t2 t,t
+#define t3 t,t,t
+#define t4 t,t,t,t
+#define p template <
+#define s > struct
+template <typename, int> struct _fix; // fixpoint
+template <t,t> struct _ft;            // function
+template <t,t> struct _cft;           // cfunction
+template <t,int> struct _at;          // array
+template <t> struct _pt;              // procedure
+  p t2 s _tt2;                        // tuples
+  p t3 s _tt3;
+  p t4 s _tt4;
+  p t,t4 s _tt5;
+  p t2,t4 s _tt6;
+  p t3,t4 s _tt7;
+#undef t
+#undef t2
+#undef t3
+#undef t4
+#undef p
+#undef s
+#endif
+@
+@tangle flx_compiler_support_bodies.hpp
+#ifndef __FLX_COMPILER_SUPPORT_BODIES_H__
+#define __FLX_COMPILER_SUPPORT_BODIES_H__
+#include "flx_compiler_support_headers.hpp"
+//
+// convert an rvalue to an lvalue
+template<typename T>
+T const &lvalue(T const &x)
+{
+  return x;
+}
+
+// this reinterpret cast works with rvalues too
+template<typename T, typename U>
+T &reinterpret(U const &x) {
+  return reinterpret_cast<T&>(const_cast<U&>(x));
+}
+
+template<typename T> void destroy(T *p){ p->T::~T(); }
+
+template<typename T0, typename T1> 
+struct _tt2 {
+  T0 mem_0;
+  T1 mem_1;
+  _tt2() {}
+  _tt2 (T0 _a0, T1 _a1) : mem_0(_a0), mem_1(_a1) {}
+};
+
+template<typename T0, typename T1, typename T2> 
+struct _tt3 {
+  T0 mem_0;
+  T1 mem_1;
+  T2 mem_2;
+  _tt3() {}
+  _tt3 (T0 _a0, T1 _a1, T2 _a2) : 
+    mem_0(_a0), mem_1(_a1),mem_2(_a2) 
+    {}
+};
+
+template<typename T0, typename T1, typename T2, typename T3> 
+struct _tt4 {
+  T0 mem_0;
+  T1 mem_1;
+  T2 mem_2;
+  T3 mem_3;
+  _tt4() {}
+  _tt4 (T0 _a0, T1 _a1, T2 _a2, T3 _a3) : 
+    mem_0(_a0), mem_1(_a1),mem_2(_a2), mem_3(_a3) 
+    {}
+};
+
+template<typename T0, typename T1, typename T2, typename T3, typename T4> 
+struct _tt5 {
+  T0 mem_0;
+  T1 mem_1;
+  T2 mem_2;
+  T3 mem_3;
+  T4 mem_4;
+  _tt5() {}
+  _tt5 (T0 _a0, T1 _a1, T2 _a2, T3 _a3, T4 _a4) : 
+    mem_0(_a0), mem_1(_a1),mem_2(_a2), mem_3(_a3), mem_4(_a4)
+    {}
+};
+
+
+#define FLX_EXEC_FAILURE(f,op,what) \
+  throw ::flx::rtl::flx_exec_failure_t (f,op,what)
+
+#define FLX_HALT(f,sl,sc,el,ec,s) \
+  throw ::flx::rtl::flx_halt_t (::flx::rtl::flx_range_srcref_t(f,sl,sc,el,ec),__FILE__,__LINE__,s)
+
+// note call should be trace(&v,...) however that requires
+// compiler support to make a trace record for each tracepoint
+// so we use NULL for now
+
+#ifdef FLX_ENABLE_TRACE
+#define FLX_TRACE(v,f,sl,sc,el,ec,s) \
+  ::flx::rtl::flx_trace (NULL,::flx::rtl::flx_range_srcref_t(f,sl,sc,el,ec),__FILE__,__LINE__,s)
+#else
+#define FLX_TRACE(v,f,sl,sc,el,ec,s)
+#endif
+
+#define FLX_MATCH_FAILURE(f,sl,sc,el,ec) \
+  throw ::flx::rtl::flx_match_failure_t (::flx::rtl::flx_range_srcref_t(f,sl,sc,el,ec),__FILE__,__LINE__)
+
+#define FLX_DROPTHRU_FAILURE(f,sl,sc,el,ec) \
+  throw ::flx::rtl::flx_dropthru_failure_t (::flx::rtl::flx_range_srcref_t(f,sl,sc,el,ec),__FILE__,__LINE__)
+
+#define FLX_ASSERT_FAILURE(f,sl,sc,el,ec) \
+  throw ::flx::rtl::flx_assert_failure_t (::flx::rtl::flx_range_srcref_t(f,sl,sc,el,ec),__FILE__,__LINE__)
+
+#define FLX_ASSERT2_FAILURE(f,sl,sc,el,ec,f2,sl2,sc2,el2,ec2) \
+  throw ::flx::rtl::flx_assert2_failure_t (\
+    ::flx::rtl::flx_range_srcref_t(f,sl,sc,el,ec),\
+    ::flx::rtl::flx_range_srcref_t(f2,sl2,sc2,el2,sc2),\
+    __FILE__,__LINE__)
+
+#define FLX_AXIOM_CHECK_FAILURE(f,sl,sc,el,ec,f2,sl2,sc2,el2,ec2) \
+  throw ::flx::rtl::flx_axiom_check_failure_t (\
+    ::flx::rtl::flx_range_srcref_t(f,sl,sc,el,ec),\
+    ::flx::rtl::flx_range_srcref_t(f2,sl2,sc2,el2,sc2),\
+    __FILE__,__LINE__)
+
+#define FLX_RANGE_FAILURE(mi,v,ma,f,sl,sc,el,ec) \
+  throw ::flx::rtl::flx_range_failure_t (mi,v,ma,::flx::rtl::flx_range_srcref_t(f,sl,sc,el,ec),__FILE__,__LINE__)
+
+// for generated code in body file
+#define INIT_PC pc=0;
+    ///< interior program counter
+
+#if FLX_CGOTO
+  #ifdef __clang__
+  #define FLX_START_SWITCH (&&_start_switch); _start_switch: if(pc)goto *pc;
+  #else
+  #define FLX_START_SWITCH _start_switch: if(pc)goto *pc;
+  #endif
+  #define FLX_LOCAL_LABEL_ADDRESS(x) &&case_##x
+  #define FLX_SET_PC(x) pc=&&case_##x;
+  #define FLX_CASE_LABEL(x) case_##x:;
+  #define FLX_DECLARE_LABEL(n,i,x) \
+    extern void f##i##_##n##_##x(void) __asm__("l"#i"_"#n"_"#x);
+  #define FLX_LABEL(n,i,x) x:\
+    __asm__(".global l"#i"_"#n"_"#x);\
+    __asm__("l"#i"_"#n"_"#x":");\
+    __asm__(""::"g"(&&x));
+  #define FLX_FARTARGET(n,i,x) (void*)&f##i##_##n##_##x
+  #define FLX_END_SWITCH
+#else
+  #define FLX_START_SWITCH _start_switch: switch(pc){case 0:;
+  #define FLX_LOCAL_LABEL_ADDRESS(x) x
+  #define FLX_SET_PC(x) pc=x;
+  #define FLX_CASE_LABEL(x) case x:;
+  #define FLX_DECLARE_LABEL(n,i,x)
+  #define FLX_LABEL(n,i,x) case n: x:;
+  #define FLX_FARTARGET(n,i,x) n
+  #define FLX_END_SWITCH default: throw ::flx::rtl::flx_switch_failure_t(); }
+#endif
+
+//
+// We do a direct long jump to a target as follows:
+// 
+// If the target frame is just ourself (this) 
+// we set the pc and just goto the start of the procedure,
+// allowing the switch/computed goto there to do the local jump.
+//
+// If the target is foreign, we force the foreign frame pc
+// to the target pc, and then return that frame to the driver
+// so it will resume that procedure, executing the starting switch,
+// which now jumps to the required location.
+//
+#define FLX_DIRECT_LONG_JUMP(ja) \
+  { \
+    ::flx::rtl::jump_address_t j = ja; \
+    if(j.target_frame == this) { \
+      pc = j.local_pc; \
+      goto _start_switch; \
+    } else { \
+      j.target_frame->pc = j.local_pc; \
+      return j.target_frame; \
+    } \
+  }
+
+#define FLX_RETURN \
+{ \
+  con_t *tmp = _caller; \
+  _caller = 0; \
+  return tmp; \
+}
+
+#define FLX_NEWP(x) new(*PTF gcp,x##_ptr_map,true)x
+
+#define FLX_FINALISER(x) \
+static void x##_finaliser(::flx::gc::generic::collector_t *, void *__p){\
+  ((x*)__p)->~x();\
+}
+
+
+#define FLX_FMEM_INIT_ONLY : ptf(_ptf)
+#define FLX_FMEM_INIT : ptf(_ptf),
+#define FLX_FPAR_PASS_ONLY ptf
+#define FLX_FPAR_PASS ptf,
+#define FLX_APAR_PASS_ONLY _ptf
+#define FLX_APAR_PASS _ptf,
+#define _PTF _ptf->
+#define _PTFV _ptf
+#define FLX_PASS_PTF 1
+#define FLX_EAT_PTF(x) x
+#define FLX_DEF_THREAD_FRAME
+
+#define FLX_FRAME_WRAPPERS(mname,name) \
+extern "C" FLX_EXPORT mname::thread_frame_t *name##_create_thread_frame(\
+  ::flx::gc::generic::gc_profile_t *gcp\
+) {\
+  mname::thread_frame_t *p = new(*gcp,mname::thread_frame_t_ptr_map,false) mname::thread_frame_t();\
+  p->gcp = gcp;\
+  return p;\
+}
+
+#define FLX_START_WRAPPER(mname,name,x)\
+extern "C" FLX_EXPORT ::flx::rtl::con_t *name##_flx_start(\
+  mname::thread_frame_t *__ptf,\
+  int argc,\
+  char **argv,\
+  FILE *stdin_,\
+  FILE *stdout_,\
+  FILE *stderr_\
+) {\
+  __ptf->argc = argc;\
+  __ptf->argv = argv;\
+  __ptf->flx_stdin = stdin_;\
+  __ptf->flx_stdout = stdout_;\
+  __ptf->flx_stderr = stderr_;\
+  return (new(*__ptf->gcp,mname::x##_ptr_map,false) \
+    mname::x(__ptf)) ->call(0);\
+}
+
+#define FLX_STACK_START_WRAPPER(mname,name,x)\
+extern "C" FLX_EXPORT ::flx::rtl::con_t *name##_flx_start(\
+  mname::thread_frame_t *__ptf,\
+  int argc,\
+  char **argv,\
+  FILE *stdin_,\
+  FILE *stdout_,\
+  FILE *stderr_\
+) {\
+  __ptf->argc = argc;\
+  __ptf->argv = argv;\
+  __ptf->flx_stdin = stdin_;\
+  __ptf->flx_stdout = stdout_;\
+  __ptf->flx_stderr = stderr_;\
+  mname::x(__ptf).stack_call();\
+  return 0;\
+}
+
+#define FLX_C_START_WRAPPER_PTF(mname,name,x)\
+extern "C" FLX_EXPORT ::flx::rtl::con_t *name##_flx_start(\
+  mname::thread_frame_t *__ptf,\
+  int argc,\
+  char **argv,\
+  FILE *stdin_,\
+  FILE *stdout_,\
+  FILE *stderr_\
+) {\
+  __ptf->argc = argc;\
+  __ptf->argv = argv;\
+  __ptf->flx_stdin = stdin_;\
+  __ptf->flx_stdout = stdout_;\
+  __ptf->flx_stderr = stderr_;\
+  mname::x(__ptf);\
+  return 0;\
+}
+
+#define FLX_C_START_WRAPPER_NOPTF(mname,name,x)\
+extern "C" FLX_EXPORT ::flx::rtl::con_t *name##_flx_start(\
+  mname::thread_frame_t *__ptf,\
+  int argc,\
+  char **argv,\
+  FILE *stdin_,\
+  FILE *stdout_,\
+  FILE *stderr_\
+) {\
+  mname::x();\
+  return 0;\
+}
+
+
+#endif
+@
+@h1 RTL
+@tangle flx_rtl.hpp
+#ifndef __FLX_RTL_H__
+#define __FLX_RTL_H__
+
+#include "flx_rtl_config.hpp"
+#include "flx_exceptions.hpp"
+#include "flx_gc.hpp"
+#include "flx_serialisers.hpp"
+#include "flx_rtl_shapes.hpp"
+#include "flx_compiler_support_headers.hpp"
+#include "flx_compiler_support_bodies.hpp"
+
+#include <string>
+#include <functional>
+
+namespace flx { namespace rtl {
+
+typedef void *void_pointer;
+
+// ********************************************************
+// Compact Linear Type
+// ********************************************************
+
+typedef int cl_t;
+
+// ********************************************************
+// Felix system classes
+// ********************************************************
+
+struct RTL_EXTERN con_t;     // continuation
+struct RTL_EXTERN jump_address_t;     // label variable type
+struct RTL_EXTERN fthread_t; // f-thread
+struct RTL_EXTERN _uctor_;   // union constructor
+struct RTL_EXTERN schannel_t;   // synchronous channel type
+struct RTL_EXTERN slist_t;   // singly linked list of void*
+struct RTL_EXTERN slist_node_t;   // singly linked list of void*
+
+// ********************************************************
+/// CONTINUATION.
+// ********************************************************
+
+struct RTL_EXTERN con_t ///< abstract base for mutable continuations
+{
+  FLX_PC_DECL               ///< interior program counter
+  _uctor_ *p_svc;           ///< pointer to service request
+
+  con_t();                  ///< initialise pc, p_svc to 0
+  virtual con_t *resume()=0;///< method to perform a computational step
+  virtual ~con_t();
+  con_t * _caller;          ///< callers continuation (return address)
+};
+
+
+// MOVE THIS TO RTL AND PROVIDE SUITABLE RTTI SO GC KNOWS ABOUT THE FRAME POINTER
+struct RTL_EXTERN jump_address_t
+{
+  con_t *target_frame;
+  FLX_LOCAL_LABEL_VARIABLE_TYPE local_pc;
+
+  jump_address_t (con_t *tf, FLX_LOCAL_LABEL_VARIABLE_TYPE lpc) : 
+    target_frame (tf), local_pc (lpc) 
+  {}
+  jump_address_t () : target_frame (0), local_pc(0) {}
+  // default copy constructor and assignment
+};
+
+
+// ********************************************************
+/// SLIST. singly linked lists: SHARABLE and COPYABLE
+/// SLIST manages pointers to memory managed by the collector
+// ********************************************************
+
+struct RTL_EXTERN slist_node_t {
+  slist_node_t *next;
+  void *data;
+  slist_node_t(slist_node_t *n, void *d) : next(n), data(d) {}
+};
+
+
+struct RTL_EXTERN slist_t {
+  gc::generic::gc_profile_t *gcp;
+  struct slist_node_t *head;
+
+  slist_t (gc::generic::gc_profile_t*); ///< create empty list
+  slist_t (slist_t const &);            ///< shallow copy
+
+  void push(void *data);                ///< push a gc pointer
+  void *pop();                          ///< pop a gc pointer
+  bool isempty()const;
+};
+
+// ********************************************************
+/// FTHREAD. Felix threads
+// ********************************************************
+
+struct RTL_EXTERN fthread_t // fthread abstraction
+{
+  con_t *cc;                    ///< current continuation
+
+  fthread_t();                  ///< dead thread, suitable for assignment
+  fthread_t(con_t*);            ///< make thread from a continuation
+  _uctor_ *run();               ///< run until dead or driver service request
+  void kill();                  ///< kill by detaching the continuation
+  _uctor_ *get_svc()const;      ///< get current service request of waiting thread
+private: // uncopyable
+  fthread_t(fthread_t const&);
+  void operator=(fthread_t const&);
+};
+
+// ********************************************************
+/// SCHANNEL. Synchronous channels
+// ********************************************************
+
+struct RTL_EXTERN schannel_t
+{
+  slist_t *waiting_to_read;             ///< fthreads waiting for a writer
+  slist_t *waiting_to_write;            ///< fthreads waiting for a reader
+  schannel_t(gc::generic::gc_profile_t*);
+  void push_reader(fthread_t *);        ///< add a reader
+  fthread_t *pop_reader();              ///< pop a reader, NULL if none
+  void push_writer(fthread_t *);        ///< add a writer
+  fthread_t *pop_writer();              ///< pop a writer, NULL if none
+private: // uncopyable
+  schannel_t(schannel_t const&);
+  void operator= (schannel_t const&);
+};
+
+// ********************************************************
+/// VARIANTS. Felix union type
+/// note: non-polymorphic, so ctor can be inline
+// ********************************************************
+
+struct RTL_EXTERN _uctor_
+{
+  int variant;  ///< Variant code
+  void *data;   ///< Heap variant constructor data
+  _uctor_() : variant(-1), data(0) {}
+  _uctor_(int i, void *d) : variant(i), data(d) {}
+  _uctor_(int *a, _uctor_ x) : variant(a[x.variant]), data(x.data) {}
+};
+
+
+// ********************************************************
+// SERVICE REQUEST CODE
+// THESE VALUES MUST SYNCH WITH THE STANDARD LIBRARY
+// ********************************************************
+
+enum svc_t               // what the dispatch should do
+{                        // when the resume callback returns
+  svc_yield = 0,
+  svc_get_fthread=1,
+  svc_read=2,
+  svc_general=3,               // temporary hack by RF
+  svc_reserved1=4,
+  svc_spawn_pthread=5,
+  svc_spawn_detached=6,        // schedule fthread and invoke
+  svc_sread=7,                 // synchronous read
+  svc_swrite=8,                // synchronous write
+  svc_kill=9,                  // kill fthread
+  svc_reserved2 =10,          
+  svc_multi_swrite=11,         // multi-write
+  svc_schedule_detached=12,    // schedule fthread (continue)
+  svc_end
+};
+
+struct readreq_t {
+  schannel_t *chan;
+  void *variable;
+};
+
+struct flx_trace_t
+{
+  unsigned long count;
+  int enable_trace;
+};
+
+extern RTL_EXTERN int flx_enable_trace;
+
+RTL_EXTERN void flx_trace(flx_trace_t* tr,flx_range_srcref_t sr, char const *file, int line, char const *msg);
+
+}} // namespaces
+
+#endif
+@
+@tangle flx_rtl.cpp
+#include "flx_rtl.hpp"
+#include "flx_rtl_shapes.hpp"
+
+#include <cstdio>
+#include <cassert>
+#include <cstddef>
+#include <stdint.h>
+#include "flx_exceptions.hpp"
+#include "flx_collector.hpp"
+#include "flx_serialisers.hpp"
+
+// main run time library code
+
+namespace flx { namespace rtl {
+
+// ********************************************************
+// con_t implementation
+// ********************************************************
+
+con_t::con_t() : pc(0), p_svc(0), _caller(0) {
+#if FLX_DEBUG_CONT
+ fprintf(stderr,"Constructing %p\n",this);
+#endif
+}
+con_t::~con_t(){
+#if FLX_DEBUG_CONT
+  fprintf(stderr,"Destroying %p\n",this);
+#endif
+}
+
+// ********************************************************
+// slist implementation
+// ********************************************************
+
+slist_t::slist_t(::flx::gc::generic::gc_profile_t *_gcp) : gcp (_gcp), head(0) {}
+slist_t::slist_t(slist_t const &r) : gcp (r.gcp), head(r.head) {}
+
+bool slist_t::isempty()const { return head == 0; }
+
+void slist_t::push(void *data)
+{
+  head = new(*gcp,slist_node_ptr_map,true) slist_node_t(head,data);
+}
+
+// note: never fails, return NULL pointer if the list is empty
+void *slist_t::pop()
+{
+  if(head) {
+    void *data = head->data;
+    head=head->next;
+    return data;
+  }
+  else return 0;
+}
+// ********************************************************
+// fthread_t implementation
+// ********************************************************
+
+fthread_t::fthread_t() : cc(0) {}
+fthread_t::fthread_t(con_t *a) : cc(a) {}
+
+// uncopyable object but implementation needed for linker
+fthread_t::fthread_t(fthread_t const&){ assert(false); }
+void fthread_t::operator=(fthread_t const&){ assert(false); }
+
+void fthread_t::kill() { cc = 0; }
+
+_uctor_ *fthread_t::get_svc()const { return cc?cc->p_svc:0; }
+
+_uctor_ *fthread_t::run() {
+  if(!cc) return 0; // dead
+restep:
+  cc->p_svc = 0;
+step:
+  //fprintf(stderr,"[fthread_t::run::step] cc=%p->",cc);
+  try { cc = cc->resume(); }
+  catch (con_t *x) { cc = x; }
+
+  //fprintf(stderr,"[fthread_t::run::step] ->%p\n",cc);
+  if(!cc) return 0; // died
+
+  if(cc->p_svc)
+  {
+    //fprintf(stderr,"[fthread_t::run::service call] ->%d\n",cc->p_svc);
+    switch(cc->p_svc->variant)
+    {
+      case svc_get_fthread:
+        // NEW VARIANT LAYOUT RULES
+        // One less level of indirection here
+        //**(fthread_t***)(cc->p_svc->data) = this;
+        *(fthread_t**)(cc->p_svc->data) = this;
+        goto restep;      // handled
+
+      //case svc_yield:
+      //  goto restep;
+
+      // we don't know what to do with the request,
+      // so pass the buck to the driver
+      default:
+        return cc->p_svc;
+    }
+  }
+  goto step;
+}
+
+// ********************************************************
+// schannel_t implementation
+// ********************************************************
+
+schannel_t::schannel_t (gc::generic::gc_profile_t *gcp) :
+  waiting_to_read(0), waiting_to_write(0)
+{
+  waiting_to_read = new (*gcp, slist_ptr_map,false) slist_t(gcp);
+  waiting_to_write = new (*gcp, slist_ptr_map,false) slist_t(gcp);
+}
+
+// uncopyable object but implementation needed for linker
+schannel_t::schannel_t(schannel_t const&) { assert(false); }
+void schannel_t::operator=(schannel_t const&) { assert(false); }
+
+void schannel_t::push_reader(fthread_t *r)
+{
+  waiting_to_read->push(r);
+}
+
+void schannel_t::push_writer(fthread_t *w)
+{
+  waiting_to_write->push(w);
+}
+
+fthread_t *schannel_t::pop_reader()
+{
+  return (fthread_t*)waiting_to_read->pop();
+}
+
+fthread_t *schannel_t::pop_writer()
+{
+  return (fthread_t*)waiting_to_write->pop();
+}
+// ********************************************************
+// trace feature
+// ********************************************************
+
+int flx_enable_trace=1;
+unsigned long flx_global_trace_count=0uL;
+
+void flx_trace(flx_trace_t* tr,flx_range_srcref_t sr, char const *file, int line, char const *msg)
+{
+  if(!flx_enable_trace)return;
+  flx_global_trace_count++;
+  if(tr)
+  {
+    tr->count++;
+    if(tr->enable_trace)
+    {
+      fprintf(stderr,"%ld : %s\n",tr->count,msg);
+      print_loc(stderr,sr,file,line);
+    }
+  }
+  else
+  {
+    fprintf(stderr,"%ld : %s\n",flx_global_trace_count,msg);
+    print_loc(stderr,sr,file,line);
+  }
+}
+
+
+}}
+@
+@h1 Exec Util
+@tangle flx_executil.hpp
+#ifndef FLX_EXECUTIL
+#define FLX_EXECUTIL
+#include "flx_rtl_config.hpp"
+#include "flx_rtl.hpp"
+
+namespace flx { namespace rtl { namespace executil {
+  RTL_EXTERN void run(flx::rtl::con_t *c);
+}}}
+#endif
+@
+@tangle flx_executil.cpp
+#include "flx_executil.hpp"
+namespace flx { namespace rtl { namespace executil {
+void run(::flx::rtl::con_t *p)
+{
+  while(p)
+  {
+    try { p=p->resume(); }
+    catch (::flx::rtl::con_t *x) { p = x; }
+  }
+}
+
+}}}
+@
+@h1 Main
+@tangle flx_main.cpp
+#include "flx_rtl_config.hpp"
+#include "flx_rtl.hpp"
+// THIS IS A DO NOTHING MAINLINE FOR USE WHEN STATICALLY LINKING
+extern "C" ::flx::rtl::con_t *flx_main( void *p){ return 0; }
+@
+@h1 Shapes
+@tangle flx_rtl_shapes.hpp
+#ifndef __FLX_RTL_SHAPES_HPP__
+#define __FLX_RTL_SHAPES_HPP__
+#include "flx_rtl_config.hpp"
+#include "flx_gc.hpp"
+
+namespace flx { namespace rtl {
+// ********************************************************
+// Shape (RTTI) objects for system classes
+// con_t is only an abstract base, so has no fixed shape
+// shapes for instance types generated by Felix compiler
+// we provide a shape for C 'int' type as well
+// ********************************************************
+
+// special: just the offset data for a pointer
+RTL_EXTERN extern ::flx::gc::generic::offset_data_t const _address_offset_data;
+
+RTL_EXTERN extern ::flx::gc::generic::gc_shape_t _fthread_ptr_map;
+RTL_EXTERN extern ::flx::gc::generic::gc_shape_t schannel_ptr_map;
+RTL_EXTERN extern ::flx::gc::generic::gc_shape_t _uctor_ptr_map;
+RTL_EXTERN extern ::flx::gc::generic::gc_shape_t _int_ptr_map;
+RTL_EXTERN extern ::flx::gc::generic::gc_shape_t cl_t_ptr_map;
+RTL_EXTERN extern ::flx::gc::generic::gc_shape_t _address_ptr_map;
+//RTL_EXTERN extern ::flx::gc::generic::gc_shape_t _caddress_ptr_map;
+RTL_EXTERN extern ::flx::gc::generic::gc_shape_t slist_node_ptr_map;
+RTL_EXTERN extern ::flx::gc::generic::gc_shape_t slist_ptr_map;
+RTL_EXTERN extern ::flx::gc::generic::gc_shape_t flx_dynlink_ptr_map;
+RTL_EXTERN extern ::flx::gc::generic::gc_shape_t flx_libinst_ptr_map;
+
+}}
+#endif
+
+@
+@tangle flx_rtl_shapes.cpp
+#include "flx_rtl_shapes.hpp"
+#include "flx_rtl.hpp"
+//#include "flx_collector.hpp"
+#include "flx_dynlink.hpp"
+#include <stddef.h>
+
+namespace flx { namespace rtl {
+// ********************************************************
+// OFFSETS for flx_dynlink_t
+// ********************************************************
+FLX_FINALISER(flx_dynlink_t)
+::flx::gc::generic::gc_shape_t flx_dynlink_ptr_map = {
+  NULL,
+  "rtl::flx_dynlink_t",
+  1,sizeof(flx_dynlink_t),
+  flx_dynlink_t_finaliser, 
+  0,
+  0,
+  ::flx::gc::generic::tblit<flx_dynlink_t>,::flx::gc::generic::tunblit<flx_dynlink_t>, 
+  ::flx::gc::generic::gc_flags_default,
+  0UL, 0UL
+};
+
+
+// ********************************************************
+// OFFSETS for flx_libinst 
+// ********************************************************
+static const std::size_t flx_libinst_offsets[4]={
+    offsetof(flx_libinst_t,thread_frame),
+    offsetof(flx_libinst_t,start_proc),
+    offsetof(flx_libinst_t,main_proc),
+    offsetof(flx_libinst_t,lib)
+};
+FLX_FINALISER(flx_libinst_t)
+static ::flx::gc::generic::offset_data_t const flx_libinst_offset_data = { 4, flx_libinst_offsets };
+::flx::gc::generic::gc_shape_t flx_libinst_ptr_map = {
+  &flx_dynlink_ptr_map,
+  "rtl::flx_libinst",
+  1,sizeof(flx_libinst_t),
+  flx_libinst_t_finaliser, 
+  &flx_libinst_offset_data,
+  ::flx::gc::generic::scan_by_offsets,
+  ::flx::gc::generic::tblit<flx_libinst_t>,::flx::gc::generic::tunblit<flx_libinst_t>, 
+  ::flx::gc::generic::gc_flags_default,
+  0UL, 0UL
+};
+
+
+
+// ********************************************************
+//OFFSETS for slist_node_t
+// ********************************************************
+static const std::size_t slist_node_offsets[2]={
+    offsetof(slist_node_t,next),
+    offsetof(slist_node_t,data)
+};
+
+static ::flx::gc::generic::offset_data_t const slist_node_offset_data = { 2, slist_node_offsets };
+::flx::gc::generic::gc_shape_t slist_node_ptr_map = {
+  &flx_libinst_ptr_map,
+  "rtl::slist_node_t",
+  1,sizeof(slist_node_t),
+  0, // no finaliser,
+  &slist_node_offset_data,
+  ::flx::gc::generic::scan_by_offsets,
+  ::flx::gc::generic::tblit<slist_node_t>,::flx::gc::generic::tunblit<slist_node_t>, 
+  ::flx::gc::generic::gc_flags_default,
+  0UL, 0UL
+};
+
+
+// ********************************************************
+//OFFSETS for slist_t
+// ********************************************************
+static const std::size_t slist_offsets[1]={
+    offsetof(slist_t,head)
+};
+static ::flx::gc::generic::offset_data_t const slist_offset_data = { 1, slist_offsets };
+
+::flx::gc::generic::gc_shape_t slist_ptr_map = {
+  &slist_node_ptr_map,
+  "rtl::slist_t",
+  1,sizeof(slist_t),
+  0, // no finaliser
+  &slist_offset_data,
+  ::flx::gc::generic::scan_by_offsets,
+  ::flx::gc::generic::tblit<slist_t>,::flx::gc::generic::tunblit<slist_t>, 
+  ::flx::gc::generic::gc_flags_default,
+  0UL, 0UL
+};
+
+
+// ********************************************************
+//OFFSETS for fthread_t
+// ********************************************************
+static const std::size_t _fthread_offsets[1]={
+    offsetof(fthread_t,cc)
+};
+
+static ::flx::gc::generic::offset_data_t const _fthread_offset_data = { 1, _fthread_offsets };
+
+::flx::gc::generic::gc_shape_t _fthread_ptr_map = {
+  &slist_ptr_map,
+  "rtl::fthread_t",
+  1,sizeof(fthread_t),
+  0,
+  &_fthread_offset_data,
+  ::flx::gc::generic::scan_by_offsets,
+  ::flx::gc::generic::tblit<fthread_t>,::flx::gc::generic::tunblit<fthread_t>, 
+  gc::generic::gc_flags_immobile,
+  0UL, 0UL
+};
+
+
+// ********************************************************
+//OFFSETS for schannel_t
+// ********************************************************
+static const std::size_t schannel_offsets[2]={
+    offsetof(schannel_t,waiting_to_read),
+    offsetof(schannel_t,waiting_to_write)
+};
+
+static ::flx::gc::generic::offset_data_t const schannel_offset_data = { 2, schannel_offsets };
+
+::flx::gc::generic::gc_shape_t schannel_ptr_map = {
+  &_fthread_ptr_map,
+  "rtl::schannel_t",
+  1,sizeof(schannel_t),
+  0, // no finaliser
+  &schannel_offset_data,
+  ::flx::gc::generic::scan_by_offsets,
+  ::flx::gc::generic::tblit<schannel_t>,::flx::gc::generic::tunblit<schannel_t>, 
+  gc::generic::gc_flags_default,
+  0UL, 0UL
+};
+
+// ********************************************************
+// _uctor_ implementation
+// ********************************************************
+//OFFSETS for _uctor_
+static const std::size_t _uctor_offsets[1]= {
+  offsetof(_uctor_,data)
+};
+
+static ::flx::gc::generic::offset_data_t const _uctor_offset_data = { 1, _uctor_offsets };
+
+::flx::gc::generic::gc_shape_t _uctor_ptr_map = {
+  &schannel_ptr_map,
+  "rtl::_uctor_",
+  1,
+  sizeof(_uctor_),
+  0,
+  &_uctor_offset_data,
+  ::flx::gc::generic::scan_by_offsets,
+  ::flx::gc::generic::tblit<_uctor_>,::flx::gc::generic::tunblit<_uctor_>, 
+  gc::generic::gc_flags_default
+};
+
+// ********************************************************
+// int implementation
+// ********************************************************
+
+
+::flx::gc::generic::gc_shape_t _int_ptr_map = {
+  &_uctor_ptr_map,
+  "rtl::int",
+  1,
+  sizeof(int),
+  0,
+  0,
+  0,
+  ::flx::gc::generic::tblit<int>,::flx::gc::generic::tunblit<int>, 
+  gc::generic::gc_flags_default,
+  0UL, 0UL
+};
+
+::flx::gc::generic::gc_shape_t cl_t_ptr_map = {
+  &_int_ptr_map,
+  "rtl::cl_t",
+  1,
+  sizeof(cl_t),
+  0,
+  0,
+  0,
+  ::flx::gc::generic::tblit<cl_t>,::flx::gc::generic::tunblit<cl_t>, 
+  gc::generic::gc_flags_default,
+  0UL, 0UL
+};
+
+
+// ********************************************************
+// pointer implementation
+// ********************************************************
+
+//OFFSETS for address
+static const std::size_t _address_offsets[1]={ 0 };
+::flx::gc::generic::offset_data_t const _address_offset_data = { 1, _address_offsets };
+
+static ::std::string address_encoder (void *p) { 
+  return ::flx::gc::generic::blit (p,sizeof (void*));
+}
+
+static size_t address_decoder (void *p, char *s, size_t i) { 
+  return ::flx::gc::generic::unblit (p,sizeof (void*),s,i);
+}
+
+
+// ********************************************************
+// address implementation : MUST BE LAST because the compiler
+// uses "address_ptr_map" as the back link for generated shape tables
+// ********************************************************
+
+::flx::gc::generic::gc_shape_t _address_ptr_map = {
+  &cl_t_ptr_map,
+  "rtl::address",
+  1,
+  sizeof(void*),
+  0,
+  &_address_offset_data,
+  ::flx::gc::generic::scan_by_offsets,
+  ::flx::gc::generic::tblit<void*>,::flx::gc::generic::tunblit<void*>, 
+  gc::generic::gc_flags_default,
+  0UL, 0UL
+};
+
+
+}}
+
+@
+@h1 Plat Linux
+@tangle plat_linux.hpp
+#ifndef __PLAT_LINUX_H__
+#define __PLAT_LINUX_H__
+int get_cpu_nr();
+#endif
+@
+@tangle plat_linux.cpp
+#define STAT "/proc/stat"
+#include <stdio.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "plat_linux.hpp"
+
+// return number of cpus
+int get_cpu_nr()
+{
+   FILE *fp;
+   char line[16];
+   int proc_nb, cpu_nr = -1;
+
+   if ((fp = fopen(STAT, "r")) == NULL) {
+      fprintf(stderr, ("Cannot open %s: %s\n"), STAT, strerror(errno));
+      exit(1);
+   }
+
+   while (fgets(line, 16, fp) != NULL) {
+
+      if (strncmp(line, "cpu ", 4) && !strncmp(line, "cpu", 3)) {
+         char* endptr = NULL;
+         proc_nb = strtol(line + 3, &endptr, 0);
+
+         if (!(endptr && *endptr == '\0')) {
+           fprintf(stderr, "unable to parse '%s' as an integer in %s\n", line + 3, STAT);
+           exit(1);
+         }
+
+         if (proc_nb > cpu_nr)
+            cpu_nr = proc_nb;
+      }
+   }
+
+   fclose(fp);
+
+   return (cpu_nr + 1);
+}
+@

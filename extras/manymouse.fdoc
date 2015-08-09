@@ -1,0 +1,3959 @@
+@title Many Mouse
+@tangler flx_manymouse.hpp      = $PWD/src/manymouse/flx_manymouse.hpp
+@tangler manymouse.h            = $PWD/src/manymouse/manymouse.h
+@tangler manymouse.c            = $PWD/src/manymouse/manymouse.c
+@tangler linux_evdev.c          = $PWD/src/manymouse/linux_evdev.c
+@tangler macosx_hidmanager.c    = $PWD/src/manymouse/macosx_hidmanager.c
+@tangler macosx_hidutilities.c  = $PWD/src/manymouse/macosx_hidutilities.c
+@tangler windows_wminput.c      = $PWD/src/manymouse/windows_wminput.c
+@tangler x11_xinput2.c          = $PWD/src/manymouse/x11_xinput2.c
+
+@h1 Manymouse
+Code to support multiple mice on various platforms.
+@tangler flx_manymouse.hpp
+#include "flx_manymouse_config.h"
+#include "manymouse.h"
+
+@
+
+@tangler manymouse.h
+/*
+ * ManyMouse main header. Include this from your app.
+ *
+ * Please see the file LICENSE.txt in the source's root directory.
+ *
+ *  This file written by Ryan C. Gordon.
+ */
+
+#ifndef _INCLUDE_MANYMOUSE_H_
+#define _INCLUDE_MANYMOUSE_H_
+
+#include "flx_manymouse.hpp"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#define MANYMOUSE_VERSION "0.0.3"
+
+typedef enum
+{
+    MANYMOUSE_EVENT_ABSMOTION = 0,
+    MANYMOUSE_EVENT_RELMOTION,
+    MANYMOUSE_EVENT_BUTTON,
+    MANYMOUSE_EVENT_SCROLL,
+    MANYMOUSE_EVENT_DISCONNECT,
+    MANYMOUSE_EVENT_MAX
+} ManyMouseEventType;
+
+typedef struct
+{
+    ManyMouseEventType type;
+    unsigned int device;
+    unsigned int item;
+    int value;
+    int minval;
+    int maxval;
+} ManyMouseEvent;
+
+
+/* internal use only. */
+typedef struct
+{
+    const char *driver_name;
+    int (*init)(void);
+    void (*quit)(void);
+    const char *(*name)(unsigned int index);
+    int (*poll)(ManyMouseEvent *event);
+} ManyMouseDriver;
+
+
+extern FLX_MANYMOUSE_EXTERN int ManyMouse_Init(void);
+extern FLX_MANYMOUSE_EXTERN const char *ManyMouse_DriverName(void);
+extern FLX_MANYMOUSE_EXTERN void ManyMouse_Quit(void);
+extern FLX_MANYMOUSE_EXTERN const char *ManyMouse_DeviceName(unsigned int index);
+extern FLX_MANYMOUSE_EXTERN int ManyMouse_PollEvent(ManyMouseEvent *event);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif  /* !defined _INCLUDE_MANYMOUSE_H_ */
+
+/* end of manymouse.h ... */
+
+@
+@tangler manymouse.c
+/*
+ * ManyMouse foundation code; apps talks to this and it talks to the lowlevel
+ *  code for various platforms.
+ *
+ * Please see the file LICENSE.txt in the source's root directory.
+ *
+ *  This file written by Ryan C. Gordon.
+ */
+
+#include <stdlib.h>
+#include "manymouse.h"
+
+static const char *manymouse_copyright =
+    "ManyMouse " MANYMOUSE_VERSION " copyright (c) 2005-2012 Ryan C. Gordon.";
+
+extern const ManyMouseDriver *ManyMouseDriver_windows;
+extern const ManyMouseDriver *ManyMouseDriver_evdev;
+extern const ManyMouseDriver *ManyMouseDriver_hidmanager;
+extern const ManyMouseDriver *ManyMouseDriver_hidutilities;
+extern const ManyMouseDriver *ManyMouseDriver_xinput2;
+
+/*
+ * These have to be in the favored order...obviously it doesn't matter if the
+ *  Linux driver comes before or after the Windows one, since one won't
+ *  exist on a given platform, but things like Mac OS X's hidmanager (which
+ *  only works on OS X 10.5 and later) should come before Mac OS X's
+ *  hidutilities (which works on older systems, but may stop working in 10.6
+ *  and later). In the Mac OS X case, you want to try the newer tech, and if
+ *  it's not available (on 10.4 or earlier), fall back to trying the legacy
+ *  code.
+ */
+static const ManyMouseDriver **mice_drivers[] =
+{
+    &ManyMouseDriver_xinput2,
+    &ManyMouseDriver_evdev,
+    &ManyMouseDriver_windows,
+    &ManyMouseDriver_hidmanager,
+    &ManyMouseDriver_hidutilities,
+};
+
+
+static const ManyMouseDriver *driver = NULL;
+
+int ManyMouse_Init(void)
+{
+    const int upper = (sizeof (mice_drivers) / sizeof (mice_drivers[0]));
+    int i;
+    int retval = -1;
+
+    /* impossible test to keep manymouse_copyright linked into the binary. */
+    if (manymouse_copyright == NULL)
+        return -1;
+
+    if (driver != NULL)
+        return -1;
+
+    for (i = 0; (i < upper) && (driver == NULL); i++)
+    {
+        const ManyMouseDriver *this_driver = *(mice_drivers[i]);
+        if (this_driver != NULL) /* if not built for this platform, skip it. */
+        {
+            const int mice = this_driver->init();
+            if (mice > retval)
+                retval = mice; /* may move from "error" to "no mice found". */
+
+            if (mice >= 0)
+                driver = this_driver;
+        } /* if */
+    } /* for */
+
+    return retval;
+} /* ManyMouse_Init */
+
+
+void ManyMouse_Quit(void)
+{
+    if (driver != NULL)
+    {
+        driver->quit();
+        driver = NULL;
+    } /* if */
+} /* ManyMouse_Quit */
+
+const char *ManyMouse_DriverName(void)
+{
+    return (driver) ? driver->driver_name : NULL;
+} /* ManyMouse_DriverName */
+
+const char *ManyMouse_DeviceName(unsigned int index)
+{
+    return (driver) ? driver->name(index) : NULL;
+} /* ManyMouse_DeviceName */
+
+int ManyMouse_PollEvent(ManyMouseEvent *event)
+{
+    return (driver) ? driver->poll(event) : 0;
+} /* ManyMouse_PollEvent */
+
+/* end of manymouse.c ... */
+
+@
+
+@tangler linux_evdev.c
+/*
+ * Support for Linux evdevs...the /dev/input/event* devices.
+ *
+ * Please see the file LICENSE.txt in the source's root directory.
+ *
+ *  This file written by Ryan C. Gordon.
+ */
+
+#include "manymouse.h"
+
+#ifdef __linux__
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <dirent.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+#include <linux/input.h>  /* evdev interface...  */
+
+#define test_bit(array, bit)    (array[bit/8] & (1<<(bit%8)))
+
+/* linux allows 32 evdev nodes currently. */
+#define MAX_MICE 32
+typedef struct
+{
+    int fd;
+    int min_x;
+    int min_y;
+    int max_x;
+    int max_y;
+    char name[64];
+} MouseStruct;
+
+static MouseStruct mice[MAX_MICE];
+static unsigned int available_mice = 0;
+
+
+static int poll_mouse(MouseStruct *mouse, ManyMouseEvent *outevent)
+{
+    int unhandled = 1;
+    while (unhandled)  /* read until failure or valid event. */
+    {
+        struct input_event event;
+        int br = read(mouse->fd, &event, sizeof (event));
+        if (br == -1)
+        {
+            if (errno == EAGAIN)
+                return 0;  /* just no new data at the moment. */
+
+            /* mouse was unplugged? */
+            close(mouse->fd);  /* stop reading from this mouse. */
+            mouse->fd = -1;
+            outevent->type = MANYMOUSE_EVENT_DISCONNECT;
+            return 1;
+        } /* if */
+
+        if (br != sizeof (event))
+            return 0;  /* oh well. */
+
+        unhandled = 0;  /* will reset if necessary. */
+        outevent->value = event.value;
+        if (event.type == EV_REL)
+        {
+            outevent->type = MANYMOUSE_EVENT_RELMOTION;
+            if ((event.code == REL_X) || (event.code == REL_DIAL))
+                outevent->item = 0;
+            else if (event.code == REL_Y)
+                outevent->item = 1;
+
+            else if (event.code == REL_WHEEL)
+            {
+                outevent->type = MANYMOUSE_EVENT_SCROLL;
+                outevent->item = 0;
+            } /* else if */
+
+            else if (event.code == REL_HWHEEL)
+            {
+                outevent->type = MANYMOUSE_EVENT_SCROLL;
+                outevent->item = 1;
+            } /* else if */
+
+            else
+            {
+                unhandled = 1;
+            } /* else */
+        } /* if */
+
+        else if (event.type == EV_ABS)
+        {
+            outevent->type = MANYMOUSE_EVENT_ABSMOTION;
+            if (event.code == ABS_X)
+            {
+                outevent->item = 0;
+                outevent->minval = mouse->min_x;
+                outevent->maxval = mouse->max_x;
+            } /* if */
+            else if (event.code == ABS_Y)
+            {
+                outevent->item = 1;
+                outevent->minval = mouse->min_y;
+                outevent->maxval = mouse->max_y;
+            } /* if */
+            else
+            {
+                unhandled = 1;
+            } /* else */
+        } /* else if */
+
+        else if (event.type == EV_KEY)
+        {
+            outevent->type = MANYMOUSE_EVENT_BUTTON;
+            if ((event.code >= BTN_LEFT) && (event.code <= BTN_BACK))
+                outevent->item = event.code - BTN_MOUSE;
+
+            /* just in case some device uses this block of events instead... */
+            else if ((event.code >= BTN_MISC) && (event.code <= BTN_LEFT))
+                outevent->item = (event.code - BTN_MISC);
+
+            else if (event.code == BTN_TOUCH) /* tablet... */
+                outevent->item = 0;
+            else if (event.code == BTN_STYLUS) /* tablet... */
+                outevent->item = 1;
+            else if (event.code == BTN_STYLUS2) /* tablet... */
+                outevent->item = 2;
+
+            else
+            {
+                /*printf("unhandled mouse button: 0x%X\n", event.code);*/
+                unhandled = 1;
+            } /* else */
+        } /* else if */
+        else
+        {
+            unhandled = 1;
+        } /* else */
+    } /* while */
+
+    return 1;  /* got a valid event */
+} /* poll_mouse */
+
+
+static int init_mouse(const char *fname, int fd)
+{
+    MouseStruct *mouse = &mice[available_mice];
+    int has_absolutes = 0;
+    int is_mouse = 0;
+    unsigned char relcaps[(REL_MAX / 8) + 1];
+    unsigned char abscaps[(ABS_MAX / 8) + 1];
+    unsigned char keycaps[(KEY_MAX / 8) + 1];
+
+    memset(relcaps, '\0', sizeof (relcaps));
+    memset(abscaps, '\0', sizeof (abscaps));
+    memset(keycaps, '\0', sizeof (keycaps));
+
+    if (ioctl(fd, EVIOCGBIT(EV_KEY, sizeof (keycaps)), keycaps) == -1)
+        return 0;  /* gotta have some buttons!  :)  */
+
+    if (ioctl(fd, EVIOCGBIT(EV_REL, sizeof (relcaps)), relcaps) != -1)
+    {
+    	if ( (test_bit(relcaps, REL_X)) && (test_bit(relcaps, REL_Y)) )
+        {
+            if (test_bit(keycaps, BTN_MOUSE))
+                is_mouse = 1;
+        } /* if */
+
+        #if ALLOW_DIALS_TO_BE_MICE
+    	if (test_bit(relcaps, REL_DIAL))
+            is_mouse = 1;  // griffin powermate?
+        #endif
+    } /* if */
+
+    if (ioctl(fd, EVIOCGBIT(EV_ABS, sizeof (abscaps)), abscaps) != -1)
+    {
+        if ( (test_bit(abscaps, ABS_X)) && (test_bit(abscaps, ABS_Y)) )
+        {
+            /* might be a touchpad... */
+            if (test_bit(keycaps, BTN_TOUCH))
+            {
+                is_mouse = 1;  /* touchpad, touchscreen, or tablet. */
+                has_absolutes = 1;
+            } /* if */
+        } /* if */
+    } /* if */
+
+    if (!is_mouse)
+        return 0;
+
+    mouse->min_x = mouse->min_y = mouse->max_x = mouse->max_y = 0;
+    if (has_absolutes)
+    {
+        struct input_absinfo absinfo;
+        if (ioctl(fd, EVIOCGABS(ABS_X), &absinfo) == -1)
+            return 0;
+        mouse->min_x = absinfo.minimum;
+        mouse->max_x = absinfo.maximum;
+
+        if (ioctl(fd, EVIOCGABS(ABS_Y), &absinfo) == -1)
+            return 0;
+        mouse->min_y = absinfo.minimum;
+        mouse->max_y = absinfo.maximum;
+    } /* if */
+
+    if (ioctl(fd, EVIOCGNAME(sizeof (mouse->name)), mouse->name) == -1)
+        snprintf(mouse->name, sizeof (mouse->name), "Unknown device");
+
+    mouse->fd = fd;
+
+    return 1;  /* we're golden. */
+} /* init_mouse */
+
+
+/* Return a file descriptor if this is really a mouse, -1 otherwise. */
+static int open_if_mouse(const char *fname)
+{
+    struct stat statbuf;
+    int fd;
+    int devmajor, devminor;
+
+    if (stat(fname, &statbuf) == -1)
+        return 0;
+
+    if (S_ISCHR(statbuf.st_mode) == 0)
+        return 0;  /* not a character device... */
+
+    /* evdev node ids are major 13, minor 64-96. Is this safe to check? */
+    devmajor = (statbuf.st_rdev & 0xFF00) >> 8;
+    devminor = (statbuf.st_rdev & 0x00FF);
+    if ( (devmajor != 13) || (devminor < 64) || (devminor > 96) )
+        return 0;  /* not an evdev. */
+
+    if ((fd = open(fname, O_RDONLY | O_NONBLOCK)) == -1)
+        return 0;
+
+    if (init_mouse(fname, fd))
+        return 1;
+
+    close(fd);
+    return 0;
+} /* open_if_mouse */
+
+
+static int linux_evdev_init(void)
+{
+    DIR *dirp;
+    struct dirent *dent;
+    int i;
+
+    for (i = 0; i < MAX_MICE; i++)
+        mice[i].fd = -1;
+
+    dirp = opendir("/dev/input");
+    if (!dirp)
+        return -1;
+
+    while ((dent = readdir(dirp)) != NULL)
+    {
+        char fname[128];
+        snprintf(fname, sizeof (fname), "/dev/input/%s", dent->d_name);
+        if (open_if_mouse(fname))
+            available_mice++;
+    } /* while */
+
+    closedir(dirp);
+
+    return available_mice;
+} /* linux_evdev_init */
+
+
+static void linux_evdev_quit(void)
+{
+    while (available_mice)
+    {
+        int fd = mice[available_mice--].fd;
+        if (fd != -1)
+            close(fd);
+    } /* while */
+} /* linux_evdev_quit */
+
+
+static const char *linux_evdev_name(unsigned int index)
+{
+    return (index < available_mice) ? mice[index].name : NULL;
+} /* linux_evdev_name */
+
+
+static int linux_evdev_poll(ManyMouseEvent *event)
+{
+    /*
+     * (i) is static so we iterate through all mice round-robin. This
+     *  prevents a chatty mouse from dominating the queue.
+     */
+    static unsigned int i = 0;
+
+    if (i >= available_mice)
+        i = 0;  /* handle reset condition. */
+
+    if (event != NULL)
+    {
+        while (i < available_mice)
+        {
+            MouseStruct *mouse = &mice[i];
+            if (mouse->fd != -1)
+            {
+                if (poll_mouse(mouse, event))
+                {
+                    event->device = i;
+                    return 1;
+                } /* if */
+            } /* if */
+            i++;
+        } /* while */
+    } /* if */
+
+    return 0;  /* no new events */
+} /* linux_evdev_poll */
+
+static const ManyMouseDriver ManyMouseDriver_interface =
+{
+    "Linux /dev/input/event* interface",
+    linux_evdev_init,
+    linux_evdev_quit,
+    linux_evdev_name,
+    linux_evdev_poll
+};
+
+const ManyMouseDriver *ManyMouseDriver_evdev = &ManyMouseDriver_interface;
+
+#else
+const ManyMouseDriver *ManyMouseDriver_evdev = 0;
+#endif  /* ifdef Linux blocker */
+
+/* end of linux_evdev.c ... */
+
+@
+
+@tangler macosx_hidmanager.c
+/*
+ * Support for Mac OS X via the HID Manager APIs that are new to OS X 10.5
+ *  ("Leopard"). The technotes suggest that after 10.5, the code in
+ *  macosx_hidutilities.c may stop working. We dynamically look up the 10.5
+ *  symbols, and if they are there, we use them. If they aren't, we fail so
+ *  the legacy code can do its magic.
+ *
+ * Please see the file LICENSE.txt in the source's root directory.
+ *
+ *  This file written by Ryan C. Gordon.
+ */
+
+#include "manymouse.h"
+
+#if ( (defined(__MACH__)) && (defined(__APPLE__)) )
+#  include <AvailabilityMacros.h>  // we need the 10.5 SDK headers here...
+#  if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_5
+#    define MANYMOUSE_DO_MAC_10_POINT_5_API 1
+#  endif
+#endif
+
+#if MANYMOUSE_DO_MAC_10_POINT_5_API
+
+#include <IOKit/hid/IOHIDLib.h>
+
+#define ALLOCATOR kCFAllocatorDefault
+#define RUNLOOPMODE (CFSTR("ManyMouse"))
+#define HIDOPS kIOHIDOptionsTypeNone
+
+typedef struct
+{
+    IOHIDDeviceRef device;
+    char *name;
+    int logical;  /* maps to what ManyMouse reports for an index. */
+} MouseStruct;
+
+static unsigned int logical_mice = 0;
+static unsigned int physical_mice = 0;
+static IOHIDManagerRef hidman = NULL;
+static MouseStruct *mice = NULL;
+
+static char *get_device_name(IOHIDDeviceRef device)
+{
+    char *buf = NULL;
+    void *ptr = NULL;
+    CFIndex len = 0;
+    CFStringRef cfstr = (CFStringRef) IOHIDDeviceGetProperty(device,
+                                                    CFSTR(kIOHIDProductKey));
+    if (!cfstr)
+    {
+        /* Maybe we can't get "AwesomeMouse2000", but we can get "Logitech"? */
+        cfstr = (CFStringRef) IOHIDDeviceGetProperty(device,
+                                                 CFSTR(kIOHIDManufacturerKey));
+    } /* if */
+
+    if (!cfstr)
+        return strdup("Unidentified mouse device");  /* oh well. */
+
+    CFRetain(cfstr);
+    len = (CFStringGetLength(cfstr)+1) * 12; /* 12 is overkill, but oh well. */
+
+    buf = (char *) malloc(len);
+    if (!buf)
+    {
+        CFRelease(cfstr);
+        return NULL;
+    } /* if */
+
+    if (!CFStringGetCString(cfstr, buf, len, kCFStringEncodingUTF8))
+    {
+        free(buf);
+        CFRelease(cfstr);
+        return NULL;
+    } /* if */
+
+    CFRelease(cfstr);
+
+    ptr = realloc(buf, strlen(buf) + 1);  /* shrink down our allocation. */
+    if (ptr != NULL)
+        buf = (char *) ptr;
+    return buf;
+} /* get_device_name */
+
+
+static inline int is_trackpad(const MouseStruct *mouse)
+{
+    /*
+     * This stupid thing shows up as two logical devices. One does
+     *  most of the mouse events, the other does the mouse wheel.
+     */
+    return (strcmp(mouse->name, "Apple Internal Keyboard / Trackpad") == 0);
+} /* is_trackpad */
+
+
+/*
+ * Just trying to avoid malloc() here...we statically allocate a buffer
+ *  for events and treat it as a ring buffer.
+ */
+/* !!! FIXME: tweak this? */
+#define MAX_EVENTS 1024
+static ManyMouseEvent input_events[MAX_EVENTS];
+static volatile int input_events_read = 0;
+static volatile int input_events_write = 0;
+
+static void queue_event(const ManyMouseEvent *event)
+{
+    /* copy the event info. We'll process it in ManyMouse_PollEvent(). */
+    memcpy(&input_events[input_events_write], event, sizeof (ManyMouseEvent));
+
+    input_events_write = ((input_events_write + 1) % MAX_EVENTS);
+
+    /* Ring buffer full? Lose oldest event. */
+    if (input_events_write == input_events_read)
+    {
+        /* !!! FIXME: we need to not lose mouse buttons here. */
+        input_events_read = ((input_events_read + 1) % MAX_EVENTS);
+    } /* if */
+} /* queue_event */
+
+
+static int dequeue_event(ManyMouseEvent *event)
+{
+    if (input_events_read != input_events_write)  /* no events if equal. */
+    {
+        memcpy(event, &input_events[input_events_read], sizeof (*event));
+        input_events_read = ((input_events_read + 1) % MAX_EVENTS);
+        return 1;
+    } /* if */
+    return 0;  /* no event. */
+} /* dequeue_event */
+
+
+/* returns non-zero if (a <= b). */
+typedef unsigned long long ui64;
+static inline int oldEvent(const AbsoluteTime *a, const AbsoluteTime *b)
+{
+#if 0  // !!! FIXME: doesn't work, timestamps aren't reliable.
+    const ui64 a64 = (((unsigned long long) a->hi) << 32) | a->lo;
+    const ui64 b64 = (((unsigned long long) b->hi) << 32) | b->lo;
+#endif
+    return 0;
+} /* oldEvent */
+
+
+/* Callback fires whenever a device is unplugged/lost/whatever. */
+static void unplugged_callback(void *ctx, IOReturn res, void *sender)
+{
+    const unsigned int idx = (unsigned int) ((size_t) ctx);
+    if ((idx < physical_mice) && (mice[idx].device) && (mice[idx].logical >= 0))
+    {
+        unsigned int i;
+        const int logical = mice[idx].logical;
+        ManyMouseEvent ev;
+        memset(&ev, '\0', sizeof (ev));
+        ev.type = MANYMOUSE_EVENT_DISCONNECT;
+        ev.device = logical;
+        queue_event(&ev);
+
+        /* disable any physical devices that back the same logical mouse. */
+        for (i = 0; i < physical_mice; i++)
+        {
+            if (mice[i].logical == logical)
+            {
+                mice[i].device = NULL;
+                mice[i].logical = -1;
+            } /* if */
+        } /* for */
+    } /* if */
+} /* unplugged_callback */
+
+
+/* Callback fires for new mouse input events. */
+static void input_callback(void *ctx, IOReturn res,
+                           void *sender, IOHIDValueRef val)
+{
+    const unsigned int idx = (unsigned int) ((size_t) ctx);
+    const MouseStruct *mouse = NULL;
+    if ((res == kIOReturnSuccess) && (idx < physical_mice))
+        mouse = &mice[idx];
+
+    if ((mouse != NULL) && (mouse->device != NULL) && (mouse->logical >= 0))
+    {
+        ManyMouseEvent ev;
+        IOHIDElementRef elem = IOHIDValueGetElement(val);
+        const CFIndex value = IOHIDValueGetIntegerValue(val);
+        const uint32_t page = IOHIDElementGetUsagePage(elem);
+        const uint32_t usage = IOHIDElementGetUsage(elem);
+
+        memset(&ev, '\0', sizeof (ev));
+        ev.value = (int) value;
+        ev.device = mouse->logical;
+
+        if (page == kHIDPage_GenericDesktop)
+        {
+            /*
+             * some devices (two-finger-scroll trackpads?) seem to give
+             *  a flood of events with values of zero for every legitimate
+             *  event. Throw these zero events out.
+             */
+            if (value != 0)
+            {
+                switch (usage)
+                {
+                    case kHIDUsage_GD_X:
+                    case kHIDUsage_GD_Y:
+                        /*if (!oldEvent(&event.timestamp, &mouse->lastScrollTime))*/
+                        {
+                            ev.type = MANYMOUSE_EVENT_RELMOTION;
+                            ev.item = (usage == kHIDUsage_GD_X) ? 0 : 1;
+                            queue_event(&ev);
+                        } /* if */
+                        break;
+
+                    case kHIDUsage_GD_Wheel:
+                        /*memcpy(&mouse->lastScrollTime, &event.timestamp, sizeof (AbsoluteTime)); */
+                        ev.type = MANYMOUSE_EVENT_SCROLL;
+                        ev.item = 0;  /* !!! FIXME: horiz scroll? */
+                        queue_event(&ev);
+                        break;
+
+                    /*default:  !!! FIXME: absolute motion? */
+                } /* switch */
+            } /* if */
+        } /* if */
+
+        else if (page == kHIDPage_Button)
+        {
+            ev.type = MANYMOUSE_EVENT_BUTTON;
+            ev.item = ((int) usage) - 1;
+            queue_event(&ev);
+        } /* else if */
+    } /* if */
+} /* input_callback */
+
+
+/* We ignore hotplugs...this callback is only for initial device discovery. */
+static void enum_callback(void *ctx, IOReturn res,
+                          void *sender, IOHIDDeviceRef device)
+{
+    if (res == kIOReturnSuccess)
+    {
+        const size_t len = sizeof (MouseStruct) * (physical_mice + 1);
+        void *ptr = realloc(mice, len);
+        if (ptr != NULL)  /* if realloc fails, we just drop the device. */
+        {
+            mice = (MouseStruct *) ptr;
+            mice[physical_mice].device = device;
+            mice[physical_mice].logical = -1;  /* filled in later. */
+            mice[physical_mice].name = get_device_name(device);
+            if (mice[physical_mice].name == NULL)
+                return;  /* This is bad! Don't add this mouse, I guess. */
+
+            physical_mice++;
+        } /* if */
+    } /* if */
+} /* enum_callback */
+
+
+static int config_hidmanager(CFMutableDictionaryRef dict)
+{
+    CFRunLoopRef runloop = CFRunLoopGetCurrent();
+    int trackpad = -1;
+    unsigned int i;
+
+    IOHIDManagerRegisterDeviceMatchingCallback(hidman, enum_callback, NULL);
+    IOHIDManagerScheduleWithRunLoop(hidman,CFRunLoopGetCurrent(),RUNLOOPMODE);
+    IOHIDManagerSetDeviceMatching(hidman, dict);
+    IOHIDManagerOpen(hidman, HIDOPS);
+
+    while (CFRunLoopRunInMode(RUNLOOPMODE,0,TRUE)==kCFRunLoopRunHandledSource)
+        /* no-op. Callback fires once per existing device. */ ;
+
+    /* globals (physical_mice) and (mice) are now configured. */
+    /* don't care about any hotplugged devices after the initial list. */
+    IOHIDManagerRegisterDeviceMatchingCallback(hidman, NULL, NULL);
+    IOHIDManagerUnscheduleFromRunLoop(hidman, runloop, RUNLOOPMODE);
+
+    /* now put all those discovered devices into the runloop instead... */
+    for (i = 0; i < physical_mice; i++)
+    {
+        MouseStruct *mouse = &mice[i];
+        IOHIDDeviceRef dev = mouse->device;
+        if (IOHIDDeviceOpen(dev, HIDOPS) != kIOReturnSuccess)
+        {
+            mouse->device = NULL;  /* oh well. */
+            mouse->logical = -1;
+        } /* if */
+        else
+        {
+            void *ctx = (void *) ((size_t) i);
+
+            if (!is_trackpad(mouse))
+                mouse->logical = logical_mice++;
+            else
+            {
+                if (trackpad < 0)
+                    trackpad = logical_mice++;
+                mouse->logical = trackpad;
+            } /* else */
+
+            IOHIDDeviceRegisterRemovalCallback(dev, unplugged_callback, ctx);
+            IOHIDDeviceRegisterInputValueCallback(dev, input_callback, ctx);
+            IOHIDDeviceScheduleWithRunLoop(dev, runloop, RUNLOOPMODE);
+        } /* else */
+    } /* for */
+
+    return 1;  /* good to go. */
+} /* config_hidmanager */
+
+
+static int create_hidmanager(const UInt32 page, const UInt32 usage)
+{
+    int retval = -1;
+    CFNumberRef num = NULL;
+    CFMutableDictionaryRef dict = CFDictionaryCreateMutable(ALLOCATOR, 0,
+                                        &kCFTypeDictionaryKeyCallBacks,
+                                        &kCFTypeDictionaryValueCallBacks);
+    if (dict != NULL)
+    {
+        num = CFNumberCreate(ALLOCATOR, kCFNumberIntType, &page);
+        if (num != NULL)
+        {
+            CFDictionarySetValue(dict, CFSTR(kIOHIDDeviceUsagePageKey), num);
+            CFRelease(num);
+            num = CFNumberCreate(ALLOCATOR, kCFNumberIntType, &usage);
+            if (num != NULL)
+            {
+                CFDictionarySetValue(dict, CFSTR(kIOHIDDeviceUsageKey), num);
+                CFRelease(num);
+                hidman = IOHIDManagerCreate(ALLOCATOR, HIDOPS);
+                if (hidman != NULL)
+                    retval = config_hidmanager(dict);
+            } /* if */
+        } /* if */
+        CFRelease(dict);
+    } /* if */
+
+    return retval;
+} /* create_hidmanager */
+
+
+/* ManyMouseDriver interface... */
+
+static void macosx_hidmanager_quit(void)
+{
+    unsigned int i;
+    for (i = 0; i < physical_mice; i++)
+        free(mice[i].name);
+
+    if (hidman != NULL)
+    {
+        /* closing (hidman) should close all open devices, too. */
+        IOHIDManagerClose(hidman, HIDOPS);
+        CFRelease(hidman);
+        hidman = NULL;
+    } /* if */
+
+    logical_mice = 0;
+    physical_mice = 0;
+    free(mice);
+    mice = NULL;
+
+    memset(input_events, '\0', sizeof (input_events));
+    input_events_read = input_events_write = 0;
+} /* macosx_hidmanager_quit */
+
+
+static int macosx_hidmanager_init(void)
+{
+    if (IOHIDManagerCreate == NULL)
+        return -1;  /* weak symbol is NULL...we don't have OS X >= 10.5.0 */
+
+    macosx_hidmanager_quit();  /* just in case... */
+
+    /* Prepare global (hidman), (mice), (physical_mice), etc. */
+    if (!create_hidmanager(kHIDPage_GenericDesktop, kHIDUsage_GD_Mouse))
+        return -1;
+
+    return (int) logical_mice;
+} /* macosx_hidmanager_init */
+
+
+/* returns the first physical device that backs a logical device. */
+static MouseStruct *map_logical_device(const unsigned int index)
+{
+    if (index < logical_mice)
+    {
+        unsigned int i;
+        for (i = 0; i < physical_mice; i++)
+        {
+            if (mice[i].logical == ((int) index))
+                return &mice[i];
+        } /* for */
+    } /* if */
+
+    return NULL;  /* not found (maybe unplugged?) */
+} /* map_logical_device */
+
+static const char *macosx_hidmanager_name(unsigned int index)
+{
+    const MouseStruct *mouse = map_logical_device(index);
+    return mouse ? mouse->name : NULL;
+} /* macosx_hidmanager_name */
+
+
+static int macosx_hidmanager_poll(ManyMouseEvent *event)
+{
+    /* ...favor existing events in the queue... */
+    if (dequeue_event(event))
+        return 1;
+
+    /* pump runloop for new hardware events... */
+    while (CFRunLoopRunInMode(RUNLOOPMODE,0,TRUE)==kCFRunLoopRunHandledSource)
+        /* no-op. We're filling our queue... !!! FIXME: stop if queue fills. */ ;
+
+    return dequeue_event(event);  /* see if anything had shown up... */
+} /* macosx_hidmanager_poll */
+
+
+static const ManyMouseDriver ManyMouseDriver_interface =
+{
+    "Mac OS X 10.5+ HID Manager",
+    macosx_hidmanager_init,
+    macosx_hidmanager_quit,
+    macosx_hidmanager_name,
+    macosx_hidmanager_poll
+};
+
+const ManyMouseDriver *ManyMouseDriver_hidmanager = &ManyMouseDriver_interface;
+
+#else
+const ManyMouseDriver *ManyMouseDriver_hidmanager = 0;
+#endif  /* ifdef Mac OS X blocker */
+
+/* end of macosx_hidmanager.c ... */
+
+@
+
+@tangler macosx_hidutilities.c
+/*
+ * Support for Mac OS X via the HID Utilities example code. HID Utilities
+ *  talks to very low-level parts of the HID Manager API, which are deprecated
+ *  in OS X 10.5. Please see macosx_hidmanager.c for the 10.5 implementation.
+ *
+ * Please see the file LICENSE.txt in the source's root directory.
+ *
+ *  This file written by Ryan C. Gordon.
+ */
+
+#include "manymouse.h"
+
+/*
+ * These APIs exist on x86_64 in 10.6, but don't actually work (they'll work
+ *  for 32-bit x86 binaries in 10.6, though!). HID Utilities is for legacy
+ *  Macs, going forward you want macosx_hidmanager.c instead.
+ */
+#if ( (defined(__APPLE__)) && (defined(i386) || defined(__POWERPC__)) )
+
+/*
+ * This source is almost entirely lifted from Apple's HID Utilities
+ *  example source code, written by George Warner:
+ *
+ * http://developer.apple.com/library/mac/#samplecode/HID_Utilities_Source/Introduction/Intro.html
+ *
+ * The source license to HID Utilities allows this sort of blatant stealing.
+ *
+ * Patches to HID Utilities have comments like "ryan added this", otherwise,
+ *  I just tried to cut down that package to the smallest set of functions
+ *  I needed.
+ *
+ * Scroll down for "-- END HID UTILITIES --" to see the ManyMouse glue code.
+ */
+
+#include <Carbon/Carbon.h>
+
+#include <IOKit/IOTypes.h>
+// 10.0.x
+//#include <IOKit/IOUSBHIDParser.h>
+// 10.1.x
+#include <IOKit/hid/IOHIDUsageTables.h>
+#include <IOKit/hid/IOHIDLib.h>
+#include <IOKit/IOCFPlugIn.h>
+#include <IOKit/IOKitLib.h>
+#include <IOKit/IOMessage.h>
+
+#define USE_NOTIFICATIONS 1
+
+#define HIDREPORTERRORNUM(s,n)	do {} while (false)
+#define HIDREPORTERROR(s)		do {} while (false)
+
+typedef enum HIDElementTypeMask
+{
+	kHIDElementTypeInput				= 1 << 1,
+	kHIDElementTypeOutput            	= 1 << 2,
+	kHIDElementTypeFeature           	= 1 << 3,
+	kHIDElementTypeCollection        	= 1 << 4,
+	kHIDElementTypeIO					= kHIDElementTypeInput | kHIDElementTypeOutput | kHIDElementTypeFeature,
+	kHIDElementTypeAll					= kHIDElementTypeIO | kHIDElementTypeCollection
+}HIDElementTypeMask;
+
+enum
+{
+    kDefaultUserMin = 0,					// default user min and max used for scaling
+    kDefaultUserMax = 255
+};
+
+enum
+{
+    kDeviceQueueSize = 50	// this is wired kernel memory so should be set to as small as possible
+							// but should account for the maximum possible events in the queue
+							// USB updates will likely occur at 100 Hz so one must account for this rate of
+							// if states change quickly (updates are only posted on state changes)
+};
+
+struct recElement
+{
+    unsigned long type;						// the type defined by IOHIDElementType in IOHIDKeys.h
+    long usagePage;							// usage page from IOUSBHIDParser.h which defines general usage
+    long usage;								// usage within above page from IOUSBHIDParser.h which defines specific usage
+    void * cookie;				 			// unique value (within device of specific vendorID and productID) which identifies element, will NOT change
+    long min;								// reported min value possible
+    long max;								// reported max value possible
+    long scaledMin;							// reported scaled min value possible
+    long scaledMax;							// reported scaled max value possible
+    long size;								// size in bits of data return from element
+    unsigned char relative;					// are reports relative to last report (deltas)
+    unsigned char wrapping;					// does element wrap around (one value higher than max is min)
+    unsigned char nonLinear;				// are the values reported non-linear relative to element movement
+    unsigned char preferredState;			// does element have a preferred state (such as a button)
+    unsigned char nullState;				// does element have null state
+    long units;								// units value is reported in (not used very often)
+    long unitExp;							// exponent for units (also not used very often)
+    char name[256];							// name of element (c string)
+
+// runtime variables
+    long calMin; 							// min returned value
+    long calMax; 							// max returned value (calibrate call)
+    long userMin; 							// user set value to scale to (scale call)
+    long userMax;							
+    
+	struct recElement * pPrevious;			// previous element (NULL at list head)
+    struct recElement * pChild;				// next child (only of collections)
+    struct recElement * pSibling;			// next sibling (for elements and collections)
+
+	long depth;
+};
+typedef struct recElement recElement;
+typedef recElement* pRecElement;
+
+// ryan added this.
+typedef enum
+{
+    DISCONNECT_CONNECTED,
+    DISCONNECT_TELLUSER,
+    DISCONNECT_COMPLETE
+} DisconnectState;
+
+struct recDevice
+{
+    void * interface;						// interface to device, NULL = no interface
+    void * queue;							// device queue, NULL = no queue
+	void * queueRunLoopSource;				// device queue run loop source, NULL == no source
+	void * transaction;						// output transaction interface, NULL == no interface
+	void * notification;					// notifications
+    char transport[256];					// device transport (c string)
+    long vendorID;							// id for device vendor, unique across all devices
+    long productID;							// id for particular product, unique across all of a vendors devices
+    long version;							// version of product
+    char manufacturer[256];					// name of manufacturer
+    char product[256];						// name of product
+    char serial[256];						// serial number of specific product, can be assumed unique across specific product or specific vendor (not used often)
+    long locID;								// long representing location in USB (or other I/O) chain which device is pluged into, can identify specific device on machine
+    long usage;								// usage page from IOUSBHID Parser.h which defines general usage
+    long usagePage;							// usage within above page from IOUSBHID Parser.h which defines specific usage
+    long totalElements;						// number of total elements (should be total of all elements on device including collections) (calculated, not reported by device)
+	long features;							// number of elements of type kIOHIDElementTypeFeature
+	long inputs;							// number of elements of type kIOHIDElementTypeInput_Misc or kIOHIDElementTypeInput_Button or kIOHIDElementTypeInput_Axis or kIOHIDElementTypeInput_ScanCodes
+	long outputs;							// number of elements of type kIOHIDElementTypeOutput
+	long collections;						// number of elements of type kIOHIDElementTypeCollection
+    long axis;								// number of axis (calculated, not reported by device)
+    long buttons;							// number of buttons (calculated, not reported by device)
+    long hats;								// number of hat switches (calculated, not reported by device)
+    long sliders;							// number of sliders (calculated, not reported by device)
+    long dials;								// number of dials (calculated, not reported by device)
+    long wheels;							// number of wheels (calculated, not reported by device)
+    recElement* pListElements; 				// head of linked list of elements 
+    DisconnectState disconnect; // (ryan added this.)
+    AbsoluteTime lastScrollTime;  // (ryan added this.)
+    int logical;  // (ryan added this.)
+    struct recDevice* pNext; 				// next device
+};
+typedef struct recDevice recDevice;
+typedef recDevice* pRecDevice;
+
+
+#if USE_NOTIFICATIONS
+static IONotificationPortRef	gNotifyPort;
+static io_iterator_t		gAddedIter;
+static CFRunLoopRef		gRunLoop;
+#endif USE_NOTIFICATIONS
+
+// for element retrieval
+static pRecDevice gCurrentGetDevice = NULL;
+static Boolean gAddAsChild = false;
+static int gDepth = false;
+
+static pRecDevice gpDeviceList = NULL;
+static UInt32 gNumDevices = 0;
+
+static Boolean HIDIsValidDevice(const pRecDevice pSearchDevice);
+static pRecElement HIDGetFirstDeviceElement (pRecDevice pDevice, HIDElementTypeMask typeMask);
+static pRecElement HIDGetNextDeviceElement (pRecElement pElement, HIDElementTypeMask typeMask);
+static pRecDevice HIDGetFirstDevice (void);
+static pRecDevice HIDGetNextDevice (pRecDevice pDevice);
+static void HIDReleaseDeviceList (void);
+static unsigned long  HIDDequeueDevice (pRecDevice pDevice);
+static void hid_GetElements (CFTypeRef refElementCurrent, pRecElement *ppCurrentElement);
+
+
+static void HIDReportError(const char *err) {}
+static void HIDReportErrorNum(const char *err, int num) {}
+
+
+static void hid_GetCollectionElements (CFMutableDictionaryRef deviceProperties, pRecElement *ppCurrentCollection)
+{
+    CFTypeRef refElementTop = CFDictionaryGetValue (deviceProperties, CFSTR(kIOHIDElementKey));
+    if (refElementTop)
+        hid_GetElements (refElementTop, ppCurrentCollection);
+    else
+        HIDReportError ("hid_GetCollectionElements: CFDictionaryGetValue error when creating CFTypeRef for kIOHIDElementKey.");
+}
+
+
+// extracts actual specific element information from each element CF dictionary entry
+static void hid_GetElementInfo (CFTypeRef refElement, pRecElement pElement)
+{
+	long number;
+	CFTypeRef refType;
+	// type, usagePage, usage already stored
+	refType = CFDictionaryGetValue (refElement, CFSTR(kIOHIDElementCookieKey));
+	if (refType && CFNumberGetValue (refType, kCFNumberLongType, &number))
+		pElement->cookie = (IOHIDElementCookie) number;
+	else
+		pElement->cookie = (IOHIDElementCookie) 0;
+
+	refType = CFDictionaryGetValue (refElement, CFSTR(kIOHIDElementMinKey));
+	if (refType && CFNumberGetValue (refType, kCFNumberLongType, &number))
+		pElement->min = number;
+	else
+		pElement->min = 0;
+
+	pElement->calMax = pElement->min;
+	pElement->userMin = kDefaultUserMin;
+
+	refType = CFDictionaryGetValue (refElement, CFSTR(kIOHIDElementMaxKey));
+	if (refType && CFNumberGetValue (refType, kCFNumberLongType, &number))
+		pElement->max = number;
+	else
+		pElement->max = 0;
+
+	pElement->calMin = pElement->max;
+	pElement->userMax = kDefaultUserMax;
+
+	refType = CFDictionaryGetValue (refElement, CFSTR(kIOHIDElementScaledMinKey));
+	if (refType && CFNumberGetValue (refType, kCFNumberLongType, &number))
+		pElement->scaledMin = number;
+	else
+		pElement->scaledMin = 0;
+
+	refType = CFDictionaryGetValue (refElement, CFSTR(kIOHIDElementScaledMaxKey));
+	if (refType && CFNumberGetValue (refType, kCFNumberLongType, &number))
+		pElement->scaledMax = number;
+	else
+		pElement->scaledMax = 0;
+
+	refType = CFDictionaryGetValue (refElement, CFSTR(kIOHIDElementSizeKey));
+	if (refType && CFNumberGetValue (refType, kCFNumberLongType, &number))
+		pElement->size = number;
+	else
+		pElement->size = 0;
+
+	refType = CFDictionaryGetValue (refElement, CFSTR(kIOHIDElementIsRelativeKey));
+	if (refType)
+		pElement->relative = CFBooleanGetValue (refType);
+	else
+		pElement->relative = 0;
+
+	refType = CFDictionaryGetValue (refElement, CFSTR(kIOHIDElementIsWrappingKey));
+	if (refType)
+		pElement->wrapping = CFBooleanGetValue (refType);
+	else
+		pElement->wrapping = false;
+
+	refType = CFDictionaryGetValue (refElement, CFSTR(kIOHIDElementIsNonLinearKey));
+	if (refType)
+		pElement->nonLinear = CFBooleanGetValue (refType);
+	else
+		pElement->wrapping = false;
+
+#ifdef kIOHIDElementHasPreferredStateKey
+	refType = CFDictionaryGetValue (refElement, CFSTR(kIOHIDElementHasPreferredStateKey));
+#else // Mac OS X 10.0 has spelling error
+	refType = CFDictionaryGetValue (refElement, CFSTR(kIOHIDElementHasPreferedStateKey));
+#endif
+	if (refType)
+		pElement->preferredState = CFBooleanGetValue (refType);
+	else
+		pElement->preferredState = false;
+
+	refType = CFDictionaryGetValue (refElement, CFSTR(kIOHIDElementHasNullStateKey));
+	if (refType)
+		pElement->nullState = CFBooleanGetValue (refType);
+	else
+		pElement->nullState = false;
+
+	refType = CFDictionaryGetValue (refElement, CFSTR(kIOHIDElementUnitKey));
+	if (refType && CFNumberGetValue (refType, kCFNumberLongType, &number))
+		pElement->units = number;
+	else
+		pElement->units = 0;
+
+	refType = CFDictionaryGetValue (refElement, CFSTR(kIOHIDElementUnitExponentKey));
+	if (refType && CFNumberGetValue (refType, kCFNumberLongType, &number))
+		pElement->unitExp = number;
+	else
+		pElement->unitExp = 0;
+
+	refType = CFDictionaryGetValue (refElement, CFSTR(kIOHIDElementNameKey));
+	if (refType)
+		if (!CFStringGetCString (refType, pElement->name, 256, CFStringGetSystemEncoding ()))
+			HIDReportError ("CFStringGetCString error retrieving pElement->name.");
+
+    #if 0
+	if (!*pElement->name)
+	{
+		// set name from vendor id, product id & usage info look up
+		if (!HIDGetElementNameFromVendorProductUsage (gCurrentGetDevice->vendorID, gCurrentGetDevice->productID, pElement->usagePage, pElement->usage, pElement->name))
+		{
+			// set name from vendor id/product id look up
+			HIDGetElementNameFromVendorProductCookie (gCurrentGetDevice->vendorID, gCurrentGetDevice->productID, (long) pElement->cookie, pElement->name);
+			if (!*pElement->name) { // if no name
+				HIDGetUsageName (pElement->usagePage, pElement->usage, pElement->name);
+				if (!*pElement->name) // if not usage
+					sprintf (pElement->name, "Element");
+			}
+		}
+	}
+    #endif
+}
+
+
+static void hid_AddElement (CFTypeRef refElement, pRecElement * ppElementCurrent)
+{
+	pRecDevice pDevice = gCurrentGetDevice;
+    pRecElement pElement = NULL;
+    long elementType, usagePage, usage;
+    CFTypeRef refElementType = CFDictionaryGetValue (refElement, CFSTR(kIOHIDElementTypeKey));
+    CFTypeRef refUsagePage = CFDictionaryGetValue (refElement, CFSTR(kIOHIDElementUsagePageKey));
+    CFTypeRef refUsage = CFDictionaryGetValue (refElement, CFSTR(kIOHIDElementUsageKey));
+
+    if (refElementType)
+		CFNumberGetValue (refElementType, kCFNumberLongType, &elementType);
+	if (refUsagePage)
+		CFNumberGetValue (refUsagePage, kCFNumberLongType, &usagePage);
+	if (refUsage)
+		CFNumberGetValue (refUsage, kCFNumberLongType, &usage);
+
+	if (NULL == pDevice)
+		return;
+
+    if (elementType)
+    {
+        // look at types of interest
+        if (elementType != kIOHIDElementTypeCollection)
+		{
+            if (usagePage && usage) // if valid usage and page
+			{
+				switch (usagePage) // only interested in kHIDPage_GenericDesktop and  kHIDPage_Button
+				{
+					case kHIDPage_GenericDesktop:
+					{
+						switch (usage) // look at usage to determine function
+						{
+							case kHIDUsage_GD_X:
+							case kHIDUsage_GD_Y:
+							case kHIDUsage_GD_Z:
+							case kHIDUsage_GD_Rx:
+							case kHIDUsage_GD_Ry:
+							case kHIDUsage_GD_Rz:
+								pElement = (pRecElement) malloc (sizeof (recElement));
+								if (pElement) pDevice->axis++;
+									break;
+							case kHIDUsage_GD_Slider:
+								pElement = (pRecElement) malloc (sizeof (recElement));
+								if (pElement) pDevice->sliders++;
+									break;
+							case kHIDUsage_GD_Dial:
+								pElement = (pRecElement) malloc (sizeof (recElement));
+								if (pElement) pDevice->dials++;
+									break;
+							case kHIDUsage_GD_Wheel:
+								pElement = (pRecElement) malloc (sizeof (recElement));
+								if (pElement) pDevice->wheels++;
+									break;
+							case kHIDUsage_GD_Hatswitch:
+								pElement = (pRecElement) malloc (sizeof (recElement));
+								if (pElement) pDevice->hats++;
+									break;
+							default:
+								pElement = (pRecElement) malloc (sizeof (recElement));
+								break;
+						}
+					}
+						break;
+					case kHIDPage_Button:
+						pElement = (pRecElement) malloc (sizeof (recElement));
+						if (pElement) pDevice->buttons++;
+							break;
+					default:
+						// just add a generic element
+						pElement = (pRecElement) malloc (sizeof (recElement));
+						break;
+				}
+			}
+#if 0
+            else
+                HIDReportError ("CFNumberGetValue error when getting value for refUsage or refUsagePage.");
+#endif 0
+        }
+        else // collection
+			pElement = (pRecElement) malloc (sizeof (recElement));
+    }
+    else
+        HIDReportError ("CFNumberGetValue error when getting value for refElementType.");
+
+    if (pElement) // add to list
+    {
+		// this code builds a binary tree based on the collection hierarchy of inherent in the device element layout
+		// it preserves the structure of the lements as collections have children and elements are siblings to each other
+
+		// clear record
+		bzero(pElement,sizeof(recElement));
+
+		// get element info
+        pElement->type = elementType;
+        pElement->usagePage = usagePage;
+        pElement->usage = usage;
+        pElement->depth = 0;		// assume root object
+        hid_GetElementInfo (refElement, pElement);
+
+		// count elements
+		pDevice->totalElements++;
+
+		switch (pElement->type)
+		{
+			case kIOHIDElementTypeInput_Misc:
+			case kIOHIDElementTypeInput_Button:
+			case kIOHIDElementTypeInput_Axis:
+			case kIOHIDElementTypeInput_ScanCodes:
+				pDevice->inputs++;
+				break;
+			case kIOHIDElementTypeOutput:
+				pDevice->outputs++;
+				break;
+			case kIOHIDElementTypeFeature:
+				pDevice->features++;
+				break;
+			case kIOHIDElementTypeCollection:
+				pDevice->collections++;
+				break;
+			default:
+				HIDReportErrorNum ("Unknown element type : ", pElement->type);
+		}
+
+        if (NULL == *ppElementCurrent) // if at list head
+		{
+            pDevice->pListElements = pElement; // add current element
+			*ppElementCurrent = pElement; // set current element to element we just added
+		}
+		else // have exsiting structure
+		{
+			if (gAddAsChild) // if the previous element was a collection, let's add this as a child of the previous
+			{
+				// this iteration should not be needed but there maybe some untested degenerate case which this code will ensure works
+				while ((*ppElementCurrent)->pChild) // step down tree until free child node found
+					*ppElementCurrent = (*ppElementCurrent)->pChild;
+				(*ppElementCurrent)->pChild = pElement; // insert there
+				pElement->depth = (*ppElementCurrent)->depth + 1;
+			}
+			else // add as sibling
+			{
+				// this iteration should not be needed but there maybe some untested degenerate case which this code will ensure works
+				while ((*ppElementCurrent)->pSibling) // step down tree until free sibling node found
+					*ppElementCurrent = (*ppElementCurrent)->pSibling;
+				(*ppElementCurrent)->pSibling = pElement; // insert there
+				pElement->depth = (*ppElementCurrent)->depth;
+			}
+			pElement->pPrevious = *ppElementCurrent; // point to previous
+			*ppElementCurrent = pElement; // set current to our collection
+		}
+
+		if (elementType == kIOHIDElementTypeCollection) // if this element is a collection of other elements
+		{
+			gAddAsChild = true; // add next set as children to this element
+			gDepth++;
+			hid_GetCollectionElements ((CFMutableDictionaryRef) refElement, &pElement); // recursively process the collection
+			gDepth--;
+		}
+		gAddAsChild = false; // add next as this elements sibling (when return from a collection or with non-collections)
+    }
+#if 0
+    else
+        HIDReportError ("hid_AddElement - no element added.");
+#endif
+}
+
+
+static void hid_GetElementsCFArrayHandler (const void * value, void * parameter)
+{
+    if (CFGetTypeID (value) == CFDictionaryGetTypeID ())
+        hid_AddElement ((CFTypeRef) value, (pRecElement *) parameter);
+}
+
+// ---------------------------------
+// handles retrieval of element information from arrays of elements in device IO registry information
+
+static void hid_GetElements (CFTypeRef refElementCurrent, pRecElement *ppCurrentElement)
+{
+    CFTypeID type = CFGetTypeID (refElementCurrent);
+    if (type == CFArrayGetTypeID()) // if element is an array
+    {
+        CFRange range = {0, CFArrayGetCount (refElementCurrent)};
+        // CountElementsCFArrayHandler called for each array member
+        CFArrayApplyFunction (refElementCurrent, range, hid_GetElementsCFArrayHandler, ppCurrentElement);
+    }
+}
+
+static void hid_TopLevelElementHandler (const void * value, void * parameter)
+{
+    CFTypeRef refCF = 0;
+    if ((NULL == value) || (NULL == parameter))
+        return;	// (kIOReturnBadArgument)
+    if (CFGetTypeID (value) != CFDictionaryGetTypeID ())
+        return;	// (kIOReturnBadArgument)
+    refCF = CFDictionaryGetValue (value, CFSTR(kIOHIDElementUsagePageKey));
+    if (!CFNumberGetValue (refCF, kCFNumberLongType, &((pRecDevice) parameter)->usagePage))
+        HIDReportError ("CFNumberGetValue error retrieving pDevice->usagePage.");
+    refCF = CFDictionaryGetValue (value, CFSTR(kIOHIDElementUsageKey));
+    if (!CFNumberGetValue (refCF, kCFNumberLongType, &((pRecDevice) parameter)->usage))
+        HIDReportError ("CFNumberGetValue error retrieving pDevice->usage.");
+}
+
+
+static void hid_GetDeviceInfo (io_object_t hidDevice, CFMutableDictionaryRef hidProperties, pRecDevice pDevice)
+{
+	CFMutableDictionaryRef usbProperties = 0;
+	io_registry_entry_t parent1, parent2;
+
+    // Mac OS X currently is not mirroring all USB properties to HID page so need to look at USB device page also
+    // get dictionary for usb properties: step up two levels and get CF dictionary for USB properties
+    if ((KERN_SUCCESS == IORegistryEntryGetParentEntry (hidDevice, kIOServicePlane, &parent1)) &&
+        (KERN_SUCCESS == IORegistryEntryGetParentEntry (parent1, kIOServicePlane, &parent2)) &&
+        (KERN_SUCCESS == IORegistryEntryCreateCFProperties (parent2, &usbProperties, kCFAllocatorDefault, kNilOptions)))
+    {
+        if (usbProperties)
+        {
+            CFTypeRef refCF = 0;
+            // get device info
+            // try hid dictionary first, if fail then go to usb dictionary
+
+            // get transport
+            refCF = CFDictionaryGetValue (hidProperties, CFSTR(kIOHIDTransportKey));
+            if (refCF)
+            {
+				if (!CFStringGetCString (refCF, pDevice->transport, 256, CFStringGetSystemEncoding ()))
+                    HIDReportError ("CFStringGetCString error retrieving pDevice->transport.");
+            }
+
+            // get vendorID
+            refCF = CFDictionaryGetValue (hidProperties, CFSTR(kIOHIDVendorIDKey));
+            if (!refCF)
+                refCF = CFDictionaryGetValue (usbProperties, CFSTR("idVendor"));
+            if (refCF)
+            {
+                if (!CFNumberGetValue (refCF, kCFNumberLongType, &pDevice->vendorID))
+                    HIDReportError ("CFNumberGetValue error retrieving pDevice->vendorID.");
+            }
+
+            // get product ID
+            refCF = CFDictionaryGetValue (hidProperties, CFSTR(kIOHIDProductIDKey));
+            if (!refCF)
+                refCF = CFDictionaryGetValue (usbProperties, CFSTR("idProduct"));
+            if (refCF)
+            {
+                if (!CFNumberGetValue (refCF, kCFNumberLongType, &pDevice->productID))
+                    HIDReportError ("CFNumberGetValue error retrieving pDevice->productID.");
+            }
+
+            // get product version
+            refCF = CFDictionaryGetValue (hidProperties, CFSTR(kIOHIDVersionNumberKey));
+            if (refCF)
+            {
+                if (!CFNumberGetValue (refCF, kCFNumberLongType, &pDevice->version))
+                    HIDReportError ("CFNumberGetValue error retrieving pDevice->version.");
+            }
+
+            // get manufacturer name
+            refCF = CFDictionaryGetValue (hidProperties, CFSTR(kIOHIDManufacturerKey));
+            if (!refCF)
+                refCF = CFDictionaryGetValue (usbProperties, CFSTR("USB Vendor Name"));
+            if (refCF)
+            {
+                if (!CFStringGetCString (refCF, pDevice->manufacturer, 256, CFStringGetSystemEncoding ()))
+                    HIDReportError ("CFStringGetCString error retrieving pDevice->manufacturer.");
+            }
+
+            // get product name
+            refCF = CFDictionaryGetValue (hidProperties, CFSTR(kIOHIDProductKey));
+            if (!refCF)
+                refCF = CFDictionaryGetValue (usbProperties, CFSTR("USB Product Name"));
+            if (refCF)
+            {
+                // ryan forced this to UTF-8.
+                //if (!CFStringGetCString (refCF, pDevice->product, 256, CFStringGetSystemEncoding ()))
+                if (!CFStringGetCString (refCF, pDevice->product, 256, kCFStringEncodingUTF8))
+                    HIDReportError ("CFStringGetCString error retrieving pDevice->product.");
+            }
+
+            // get serial
+            refCF = CFDictionaryGetValue (hidProperties, CFSTR(kIOHIDSerialNumberKey));
+            if (refCF)
+            {
+                if (!CFStringGetCString (refCF, pDevice->serial, 256, CFStringGetSystemEncoding ()))
+                    HIDReportError ("CFStringGetCString error retrieving pDevice->serial.");
+            }
+
+            // get location ID
+            refCF = CFDictionaryGetValue (hidProperties, CFSTR(kIOHIDLocationIDKey));
+            if (!refCF)
+                refCF = CFDictionaryGetValue (usbProperties, CFSTR("locationID"));
+            if (refCF)
+            {
+                if (!CFNumberGetValue (refCF, kCFNumberLongType, &pDevice->locID))
+                    HIDReportError ("CFNumberGetValue error retrieving pDevice->locID.");
+            }
+
+            // get usage page and usage
+            refCF = CFDictionaryGetValue (hidProperties, CFSTR(kIOHIDPrimaryUsagePageKey));
+            if (refCF)
+            {
+                if (!CFNumberGetValue (refCF, kCFNumberLongType, &pDevice->usagePage))
+                    HIDReportError ("CFNumberGetValue error retrieving pDevice->usagePage.");
+                refCF = CFDictionaryGetValue (hidProperties, CFSTR(kIOHIDPrimaryUsageKey));
+                if (refCF)
+                    if (!CFNumberGetValue (refCF, kCFNumberLongType, &pDevice->usage))
+                        HIDReportError ("CFNumberGetValue error retrieving pDevice->usage.");
+            }
+            if (NULL == refCF) // get top level element HID usage page or usage
+            {
+                // use top level element instead
+                CFTypeRef refCFTopElement = 0;
+                refCFTopElement = CFDictionaryGetValue (hidProperties, CFSTR(kIOHIDElementKey));
+                {
+                    // refCFTopElement points to an array of element dictionaries
+                    CFRange range = {0, CFArrayGetCount (refCFTopElement)};
+                    CFArrayApplyFunction (refCFTopElement, range, hid_TopLevelElementHandler, NULL);
+                }
+            }
+        }
+        else
+            HIDReportError ("IORegistryEntryCreateCFProperties failed to create usbProperties.");
+
+        CFRelease (usbProperties);
+        if (kIOReturnSuccess != IOObjectRelease (parent2))
+            HIDReportError ("IOObjectRelease error with parent2.");
+        if (kIOReturnSuccess != IOObjectRelease (parent1))
+            HIDReportError ("IOObjectRelease error with parent1.");
+    }
+}
+
+
+static Boolean hid_MatchElementTypeMask (IOHIDElementType type, HIDElementTypeMask typeMask)
+{
+	if (typeMask & kHIDElementTypeInput)
+		if ((type == kIOHIDElementTypeInput_Misc) || (type == kIOHIDElementTypeInput_Button) || (type == kIOHIDElementTypeInput_Axis) || (type == kIOHIDElementTypeInput_ScanCodes))
+			return true;
+	if (typeMask & kHIDElementTypeOutput)
+		if (type == kIOHIDElementTypeOutput)
+			return true;
+	if (typeMask & kHIDElementTypeFeature)
+		if (type == kIOHIDElementTypeFeature)
+			return true;
+	if (typeMask & kHIDElementTypeCollection)
+		if (type == kIOHIDElementTypeCollection)
+			return true;
+	return false;
+}
+
+static pRecElement hid_GetDeviceElement (pRecElement pElement, HIDElementTypeMask typeMask)
+{
+	// we are asking for this element
+    if (NULL != pElement)
+	{
+		if (hid_MatchElementTypeMask (pElement->type, typeMask)) // if the type match what we are looking for
+			return pElement; // return the element
+		else
+			return HIDGetNextDeviceElement (pElement, typeMask); // else get the next one
+	}
+	return NULL;
+}
+
+static unsigned long HIDCloseReleaseInterface (pRecDevice pDevice)
+{
+	IOReturn result = kIOReturnSuccess;
+	
+	if (HIDIsValidDevice(pDevice) && (NULL != pDevice->interface))
+	{
+		// close the interface
+		result = (*(IOHIDDeviceInterface**) pDevice->interface)->close (pDevice->interface);
+		if (kIOReturnNotOpen == result)
+		{
+			//  do nothing as device was not opened, thus can't be closed
+		}
+		else if (kIOReturnSuccess != result)
+			HIDREPORTERRORNUM ("HIDCloseReleaseInterface - Failed to close IOHIDDeviceInterface.", result);
+		//release the interface
+		result = (*(IOHIDDeviceInterface**) pDevice->interface)->Release (pDevice->interface);
+		if (kIOReturnSuccess != result)
+			HIDREPORTERRORNUM ("HIDCloseReleaseInterface - Failed to release interface.", result);
+		pDevice->interface = NULL;
+	}	
+	return result;
+}      
+
+
+// ---------------------------------
+// count number of devices in global device list (gpDeviceList)
+static UInt32 hid_CountCurrentDevices (void)
+{
+    pRecDevice pDevice = gpDeviceList;
+    UInt32 devices = 0;
+    while (pDevice)
+    {
+        devices++;
+        pDevice = pDevice->pNext;
+    }
+    return devices;
+}
+
+static UInt32 HIDCountDevices (void)
+{
+	gNumDevices = hid_CountCurrentDevices ();
+
+    return gNumDevices;
+}
+
+static void hid_DisposeDeviceElements (pRecElement pElement)
+{
+	if (pElement)
+	{
+		if (pElement->pChild)
+			hid_DisposeDeviceElements (pElement->pChild);
+		if (pElement->pSibling)
+			hid_DisposeDeviceElements (pElement->pSibling);
+		free (pElement);
+	}
+}
+
+static pRecDevice hid_DisposeDevice (pRecDevice pDevice)
+{
+    kern_return_t result = KERN_SUCCESS;
+    pRecDevice pDeviceNext = NULL;
+
+    if (HIDIsValidDevice(pDevice))
+    {
+        // save next device prior to disposing of this device
+        pDeviceNext = pDevice->pNext;
+
+		result = HIDDequeueDevice (pDevice);
+#if 0
+		if (kIOReturnSuccess != result)
+			HIDReportErrorNum ("hid_DisposeDevice: HIDDequeueDevice error: 0x%8.8X.", result);
+#endif 1
+
+        hid_DisposeDeviceElements (pDevice->pListElements);
+		pDevice->pListElements = NULL;
+
+		result = HIDCloseReleaseInterface (pDevice); // function sanity checks interface value (now application does not own device)
+		if (kIOReturnSuccess != result)
+			HIDReportErrorNum ("hid_DisposeDevice: HIDCloseReleaseInterface error: 0x%8.8X.", result);
+
+#if USE_NOTIFICATIONS
+        if (pDevice->interface)
+        {
+			// replace (*pDevice->interface)->Release(pDevice->interface);
+			result = IODestroyPlugInInterface (pDevice->interface);
+			if (kIOReturnSuccess != result)
+				HIDReportErrorNum ("hid_DisposeDevice: IODestroyPlugInInterface error: 0x%8.8X.", result);
+        }
+
+        if (pDevice->notification)
+		{
+			result = IOObjectRelease((io_object_t) pDevice->notification);
+			if (kIOReturnSuccess != result)
+				HIDReportErrorNum ("hid_DisposeDevice: IOObjectRelease error: 0x%8.8X.", result);
+		}
+#endif USE_NOTIFICATIONS
+
+		// remove this device from the device list
+		if (gpDeviceList == pDevice)	// head of list?
+			gpDeviceList = pDeviceNext;
+		else
+		{
+			pRecDevice pDeviceTemp = pDeviceNext = gpDeviceList;	// we're going to return this if we don't find ourselfs in the list
+			while (pDeviceTemp)
+			{
+				if (pDeviceTemp->pNext == pDevice) // found us!
+				{
+					// take us out of linked list
+					pDeviceTemp->pNext = pDeviceNext = pDevice->pNext;
+					break;
+				}
+				pDeviceTemp = pDeviceTemp->pNext;
+			}
+		}
+        free (pDevice);
+    }
+
+	// update device count
+	gNumDevices = hid_CountCurrentDevices ();
+
+    return pDeviceNext;
+}
+
+
+// ---------------------------------
+// disposes and releases queue, sets queue to NULL,.
+// Note: will have no effect if device or queue do not exist
+
+static IOReturn hid_DisposeReleaseQueue (pRecDevice pDevice)
+{
+    IOReturn result = kIOReturnError;	// assume failure (pessimist!)
+
+	if (HIDIsValidDevice(pDevice))	// need valid device
+	{
+		if (pDevice->queue) // and queue
+		{
+			// stop queue
+			result = (*(IOHIDQueueInterface**) pDevice->queue)->stop (pDevice->queue);
+			if (kIOReturnSuccess != result)
+				HIDREPORTERRORNUM ("hid_DisposeReleaseQueue - Failed to stop queue.", result);
+			// dispose of queue
+			result = (*(IOHIDQueueInterface**) pDevice->queue)->dispose (pDevice->queue);
+			if (kIOReturnSuccess != result)
+				HIDREPORTERRORNUM ("hid_DisposeReleaseQueue - Failed to dipose queue.", result);
+			// release the queue
+			result = (*(IOHIDQueueInterface**) pDevice->queue)->Release (pDevice->queue);
+			if (kIOReturnSuccess != result)
+				HIDREPORTERRORNUM ("hid_DisposeReleaseQueue - Failed to release queue.", result);
+
+			pDevice->queue = NULL;
+		}
+		else
+			HIDREPORTERROR ("hid_DisposeReleaseQueue - no queue.");
+	}
+	else
+		HIDREPORTERROR ("hid_DisposeReleaseQueue - Invalid device.");
+    return result;
+}
+
+
+// ---------------------------------
+// completely removes all elements from queue and releases queue and closes device interface
+// does not release device interfaces, application must call HIDReleaseDeviceList on exit
+
+static unsigned long  HIDDequeueDevice (pRecDevice pDevice)
+{
+    IOReturn result = kIOReturnSuccess;
+
+    if (HIDIsValidDevice(pDevice))
+	{
+		if ((pDevice->interface) && (pDevice->queue))
+		{
+			// iterate through elements and if queued, remove
+			pRecElement pElement = HIDGetFirstDeviceElement (pDevice, kHIDElementTypeIO);
+			while (pElement)
+			{
+				if ((*(IOHIDQueueInterface**) pDevice->queue)->hasElement (pDevice->queue, pElement->cookie))
+				{
+					result = (*(IOHIDQueueInterface**) pDevice->queue)->removeElement (pDevice->queue, pElement->cookie);
+					if (kIOReturnSuccess != result)
+						HIDREPORTERRORNUM ("HIDDequeueDevice - Failed to remove element from queue.", result);
+				}
+				pElement = HIDGetNextDeviceElement (pElement, kHIDElementTypeIO);
+			}
+		}
+		// ensure queue is disposed and released
+		// interface will be closed and released on call to HIDReleaseDeviceList
+		result = hid_DisposeReleaseQueue (pDevice);
+		if (kIOReturnSuccess != result)
+			HIDREPORTERRORNUM ("removeElement - Failed to dispose and release queue.", result);
+#if USE_ASYNC_EVENTS
+		else if (NULL != pDevice->queueRunLoopSource)
+		{
+			if (CFRunLoopContainsSource(CFRunLoopGetCurrent(), pDevice->queueRunLoopSource, kCFRunLoopDefaultMode))
+				CFRunLoopRemoveSource(CFRunLoopGetCurrent(), pDevice->queueRunLoopSource, kCFRunLoopDefaultMode);
+			CFRelease(pDevice->queueRunLoopSource);
+			pDevice->queueRunLoopSource = NULL;
+		}
+#endif USE_ASYNC_EVENTS
+	}
+	else
+	{
+		HIDREPORTERROR ("HIDDequeueDevice - Invalid device.");
+		result = kIOReturnBadArgument;
+	}
+    return result;
+}
+
+// ---------------------------------
+// releases all device queues for quit or rebuild (must be called)
+// does not release device interfaces, application must call HIDReleaseDeviceList on exit
+
+static unsigned long HIDReleaseAllDeviceQueues (void)
+{
+    IOReturn result = kIOReturnBadArgument;
+    pRecDevice pDevice = HIDGetFirstDevice ();
+
+    while (pDevice)
+    {
+        result = HIDDequeueDevice (pDevice);
+        if (kIOReturnSuccess != result)
+            HIDREPORTERRORNUM ("HIDReleaseAllDeviceQueues - Could not dequeue device.", result);
+        pDevice = HIDGetNextDevice (pDevice);
+    }
+    return result;
+}
+
+
+// ---------------------------------
+// Get the next event in the queue for a device
+// elements or entire device should be queued prior to calling this with HIDQueueElement or HIDQueueDevice
+// returns true if an event is avialable for the element and fills out *pHIDEvent structure, returns false otherwise
+// Note: kIOReturnUnderrun returned from getNextEvent indicates an empty queue not an error condition
+// Note: application should pass in a pointer to a IOHIDEventStruct cast to a void (for CFM compatibility)
+
+static unsigned char HIDGetEvent (pRecDevice pDevice, void * pHIDEvent)
+{
+    IOReturn result = kIOReturnBadArgument;
+    AbsoluteTime zeroTime = {0,0};
+
+    if (HIDIsValidDevice(pDevice))
+	{
+		if (pDevice->queue)
+		{
+			result = (*(IOHIDQueueInterface**) pDevice->queue)->getNextEvent (pDevice->queue, (IOHIDEventStruct *)pHIDEvent, zeroTime, 0);
+			if (kIOReturnUnderrun == result)
+				return false;  // no events in queue not an error per say
+			else if (kIOReturnSuccess != result) // actual error versus just an empty queue
+				HIDREPORTERRORNUM ("HIDGetEvent - Could not get HID event via getNextEvent.", result);
+			else
+				return true;
+		}
+		else
+			HIDREPORTERROR ("HIDGetEvent - queue does not exist.");
+	}
+	else
+		HIDREPORTERROR ("HIDGetEvent - invalid device.");
+
+    return false; // did not get event
+}
+
+
+static unsigned long HIDCreateOpenDeviceInterface (UInt32 hidDevice, pRecDevice pDevice)
+{
+    IOReturn result = kIOReturnSuccess;
+    HRESULT plugInResult = S_OK;
+    SInt32 score = 0;
+    IOCFPlugInInterface ** ppPlugInInterface = NULL;
+
+	if (NULL == pDevice->interface)
+	{
+		result = IOCreatePlugInInterfaceForService (hidDevice, kIOHIDDeviceUserClientTypeID,
+											  kIOCFPlugInInterfaceID, &ppPlugInInterface, &score);
+		if (kIOReturnSuccess == result)
+		{
+			// Call a method of the intermediate plug-in to create the device interface
+			plugInResult = (*ppPlugInInterface)->QueryInterface (ppPlugInInterface,
+														CFUUIDGetUUIDBytes (kIOHIDDeviceInterfaceID), (void *) &(pDevice->interface));
+			if (S_OK != plugInResult)
+				HIDReportErrorNum ("CouldnÕt query HID class device interface from plugInInterface", plugInResult);
+			IODestroyPlugInInterface (ppPlugInInterface); // replace (*ppPlugInInterface)->Release (ppPlugInInterface)
+		}
+		else
+			HIDReportErrorNum ("Failed to create **plugInInterface via IOCreatePlugInInterfaceForService.", result);
+	}
+	if (NULL != pDevice->interface)
+	{
+		result = (*(IOHIDDeviceInterface**)pDevice->interface)->open (pDevice->interface, 0);
+		if (kIOReturnSuccess != result)
+			HIDReportErrorNum ("Failed to open pDevice->interface via open.", result);
+	}
+    return result;
+}
+
+
+// ---------------------------------
+// adds device to linked list of devices passed in (handles NULL lists properly)
+// (returns where you just stored it)
+static pRecDevice* hid_AddDevice (pRecDevice *ppListDeviceHead, pRecDevice pNewDevice)
+{
+	pRecDevice* result = NULL;
+	
+    if (NULL == *ppListDeviceHead)
+        result = ppListDeviceHead;
+    else
+    {
+        pRecDevice pDevicePrevious = NULL, pDevice = *ppListDeviceHead;
+        while (pDevice)
+        {
+            pDevicePrevious = pDevice;
+            pDevice = pDevicePrevious->pNext;
+        }
+        result = &pDevicePrevious->pNext;
+    }
+    pNewDevice->pNext = NULL;
+
+	*result = pNewDevice;
+
+	return result;
+}
+
+static pRecDevice hid_BuildDevice (io_object_t hidDevice)
+{
+    pRecDevice pDevice = (pRecDevice) malloc (sizeof (recDevice));
+
+    if (NULL != pDevice)
+    {
+		// get dictionary for HID properties
+        CFMutableDictionaryRef hidProperties = 0;
+        kern_return_t result = IORegistryEntryCreateCFProperties (hidDevice, &hidProperties, kCFAllocatorDefault, kNilOptions);
+
+		// clear record
+		bzero(pDevice, sizeof(recDevice));
+
+        if ((result == KERN_SUCCESS) && (NULL != hidProperties))
+        {
+			pRecElement pCurrentElement = NULL;
+			// create device interface
+			result = HIDCreateOpenDeviceInterface (hidDevice, pDevice);
+			if (kIOReturnSuccess != result)
+				HIDReportErrorNum ("HIDCreateOpenDeviceInterface failed.", result);
+            hid_GetDeviceInfo (hidDevice, hidProperties, pDevice); // hidDevice used to find parents in registry tree
+																   // set current device for use in getting elements
+			gCurrentGetDevice = pDevice;
+			// Add all elements
+            hid_GetCollectionElements (hidProperties, &pCurrentElement);
+			gCurrentGetDevice = NULL;
+            CFRelease (hidProperties);
+        }
+        else
+            HIDReportErrorNum ("IORegistryEntryCreateCFProperties error when creating deviceProperties.", result);
+    }
+    else
+        HIDReportError ("malloc error when allocating pRecDevice.");
+    return pDevice;
+}
+
+
+
+#if USE_NOTIFICATIONS
+//================================================================================================
+//
+//	hid_DeviceNotification
+//
+//	This routine will get called whenever any kIOGeneralInterest notification happens.  We are
+//	interested in the kIOMessageServiceIsTerminated message so that's what we look for.  Other
+//	messages are defined in IOMessage.h.
+//
+//================================================================================================
+//
+static void hid_DeviceNotification( void *refCon,
+									io_service_t service,
+									natural_t messageType,
+									void *messageArgument )
+{
+    pRecDevice pDevice = (pRecDevice) refCon;
+
+    if (messageType == kIOMessageServiceIsTerminated)
+    {
+        //printf("Device 0x%08x \"%s\"removed.\n", service, pDevice->product);
+        // ryan added this.
+        if (pDevice->disconnect == DISCONNECT_CONNECTED)
+    	    pDevice->disconnect = DISCONNECT_TELLUSER;
+
+        // Free the data we're no longer using now that the device is going away
+        // ryan commented this out.
+		//hid_DisposeDevice (pDevice);
+    }
+}
+#else
+
+static void hid_RemovalCallbackFunction(void * target, IOReturn result, void * refcon, void * sender)
+{
+    // ryan commented this out.
+	//hid_DisposeDevice ((pRecDevice) target);
+
+    // ryan added this.
+    pRecDevice = (pRecDevice) target;
+    if (pDevice->disconnect == DISCONNECT_CONNECTED)
+        pDevice->disconnect = DISCONNECT_TELLUSER;
+}
+
+#endif USE_NOTIFICATIONS
+
+
+
+static void hid_AddDevices (void *refCon, io_iterator_t iterator)
+{
+	// NOTE: refcon passed in is used to point to the device list head
+    pRecDevice* pListDeviceHead = (pRecDevice*) refCon;
+    IOReturn result = kIOReturnSuccess;
+    io_object_t ioHIDDeviceObject = 0;
+
+    while ((ioHIDDeviceObject = IOIteratorNext (iterator)) != 0)
+    {
+		pRecDevice* pNewDeviceAt = NULL;
+		pRecDevice pNewDevice = hid_BuildDevice (ioHIDDeviceObject);
+		if (pNewDevice)
+		{
+#if 0	// set true for verbose output
+			printf("\nhid_AddDevices: pNewDevice = {t: \"%s\", v: %ld, p: %ld, v: %ld, m: \"%s\", " \
+		  "p: \"%s\", l: %ld, u: %4.4lX:%4.4lX, #e: %ld, #f: %ld, #i: %ld, #o: %ld, " \
+		  "#c: %ld, #a: %ld, #b: %ld, #h: %ld, #s: %ld, #d: %ld, #w: %ld}.",
+		  pNewDevice->transport,
+		  pNewDevice->vendorID,
+		  pNewDevice->productID,
+		  pNewDevice->version,
+		  pNewDevice->manufacturer,
+		  pNewDevice->product,
+		  pNewDevice->locID,
+		  pNewDevice->usagePage,
+		  pNewDevice->usage,
+		  pNewDevice->totalElements,
+		  pNewDevice->features,
+		  pNewDevice->inputs,
+		  pNewDevice->outputs,
+		  pNewDevice->collections,
+		  pNewDevice->axis,
+		  pNewDevice->buttons,
+		  pNewDevice->hats,
+		  pNewDevice->sliders,
+		  pNewDevice->dials,
+		  pNewDevice->wheels
+		  );
+			fflush(stdout);
+#elif	0	// otherwise output brief description
+			printf("\nhid_AddDevices: pNewDevice = {m: \"%s\" p: \"%s\", vid: %ld, pid: %ld, loc: %8.8lX, usage: %4.4lX:%4.4lX}.",
+		  pNewDevice->manufacturer,
+		  pNewDevice->product,
+		  pNewDevice->vendorID,
+		  pNewDevice->productID,
+		  pNewDevice->locID,
+		  pNewDevice->usagePage,
+		  pNewDevice->usage
+		  );
+			fflush(stdout);
+#endif
+			pNewDeviceAt = hid_AddDevice (pListDeviceHead, pNewDevice);
+		}
+
+#if USE_NOTIFICATIONS
+        // Register for an interest notification of this device being removed. Use a reference to our
+        // private data as the refCon which will be passed to the notification callback.
+        result = IOServiceAddInterestNotification( gNotifyPort,					// notifyPort
+												   ioHIDDeviceObject,			// service
+												   kIOGeneralInterest,			// interestType
+												   hid_DeviceNotification,		// callback
+												   pNewDevice,					// refCon
+												   (io_object_t*) &pNewDevice->notification);	// notification
+		if (KERN_SUCCESS != result)
+			HIDReportErrorNum ("hid_AddDevices: IOServiceAddInterestNotification error: x0%8.8lX.", result);
+#else
+		result = (*(IOHIDDeviceInterface**)pNewDevice->interface)->setRemovalCallback (pNewDevice->interface, hid_RemovalCallbackFunction,pNewDeviceAt,0);
+#endif USE_NOTIFICATIONS
+
+		// release the device object, it is no longer needed
+		result = IOObjectRelease (ioHIDDeviceObject);
+		if (KERN_SUCCESS != result)
+			HIDReportErrorNum ("hid_AddDevices: IOObjectRelease error with ioHIDDeviceObject.", result);
+    }
+}
+
+
+static Boolean HIDBuildDeviceList (UInt32 usagePage, UInt32 usage)
+{
+    IOReturn result = kIOReturnSuccess;
+    mach_port_t masterPort = 0;
+
+    if (NULL != gpDeviceList)
+        HIDReleaseDeviceList ();
+
+    result = IOMasterPort (bootstrap_port, &masterPort);
+    if (kIOReturnSuccess != result)
+        HIDReportErrorNum ("IOMasterPort error with bootstrap_port.", result);
+    else
+    {
+		CFMutableDictionaryRef hidMatchDictionary = NULL;
+
+		// Set up matching dictionary to search the I/O Registry for HID devices we are interested in. Dictionary reference is NULL if error.
+		{
+			CFNumberRef refUsage = NULL, refUsagePage = NULL;
+
+			// Set up a matching dictionary to search I/O Registry by class name for all HID class devices.
+			hidMatchDictionary = IOServiceMatching (kIOHIDDeviceKey);
+			if (NULL != hidMatchDictionary)
+			{
+				if (usagePage)
+				{
+					// Add key for device type (joystick, in this case) to refine the matching dictionary.
+					refUsagePage = CFNumberCreate (kCFAllocatorDefault, kCFNumberLongType, &usagePage);
+					CFDictionarySetValue (hidMatchDictionary, CFSTR (kIOHIDPrimaryUsagePageKey), refUsagePage);
+					CFRelease (refUsagePage);
+					if (usage)
+					{
+						refUsage = CFNumberCreate (kCFAllocatorDefault, kCFNumberLongType, &usage);
+						CFDictionarySetValue (hidMatchDictionary, CFSTR (kIOHIDPrimaryUsageKey), refUsage);
+						CFRelease (refUsage);
+					}
+				}
+				CFRetain(hidMatchDictionary);
+			}
+			else
+				HIDReportError ("Failed to get HID CFMutableDictionaryRef via IOServiceMatching.");
+		}
+
+#if USE_NOTIFICATIONS
+		// Create a notification port and add its run loop event source to our run loop
+		// This is how async notifications get set up.
+		{
+			CFRunLoopSourceRef		runLoopSource;
+
+			gNotifyPort = IONotificationPortCreate(masterPort);
+			runLoopSource = IONotificationPortGetRunLoopSource(gNotifyPort);
+
+			gRunLoop = CFRunLoopGetCurrent();
+			CFRunLoopAddSource(gRunLoop, runLoopSource, kCFRunLoopDefaultMode);
+
+			// Now set up a notification to be called when a device is first matched by I/O Kit.
+			result = IOServiceAddMatchingNotification(gNotifyPort,			// notifyPort
+											 kIOFirstMatchNotification,		// notificationType
+											 hidMatchDictionary,			// matching
+											 hid_AddDevices,				// callback
+											 &gpDeviceList,					// refCon
+											 &gAddedIter					// notification
+											 );
+
+			// call it now to add all existing devices
+			hid_AddDevices(&gpDeviceList,gAddedIter);
+            return true;
+		}
+#else
+		{
+			io_iterator_t hidObjectIterator = NULL;
+
+			// Now search I/O Registry for matching devices.
+			result = IOServiceGetMatchingServices (masterPort, hidMatchDictionary, &hidObjectIterator);
+			if (kIOReturnSuccess != result)
+				HIDReportErrorNum ("Failed to create IO object iterator, error:", result);
+			else if (NULL == hidObjectIterator) // likely no HID devices which matched selection criteria are connected
+				HIDReportError ("Warning: Could not find any matching devices, thus iterator creation failed.");
+
+			if (NULL != hidObjectIterator)
+			{
+				hid_AddDevices(&gpDeviceList,hidObjectIterator);
+
+				result = IOObjectRelease (hidObjectIterator); // release the iterator
+				if (kIOReturnSuccess != result)
+					HIDReportErrorNum ("IOObjectRelease error with hidObjectIterator.", result);
+
+				gNumDevices = hid_CountCurrentDevices ();
+				return true;
+			}
+		}
+#endif USE_NOTIFICATIONS
+		// IOServiceGetMatchingServices consumes a reference to the dictionary, so we don't need to release the dictionary ref.
+		hidMatchDictionary = NULL;
+    }
+	return false;
+}
+
+// ---------------------------------
+// release list built by above function
+// MUST be called prior to application exit to properly release devices
+// if not called (or app crashes) devices can be recovered by pluging into different location in USB chain
+
+static void HIDReleaseDeviceList (void)
+{
+    while (NULL != gpDeviceList)
+		gpDeviceList = hid_DisposeDevice (gpDeviceList); // dispose current device return next device will set gpDeviceList to NULL
+    gNumDevices = 0;
+}
+
+// ---------------------------------
+// get the first device in the device list
+// returns NULL if no list exists
+
+static pRecDevice HIDGetFirstDevice (void)
+{
+    return gpDeviceList;
+}
+
+// ---------------------------------
+// get next device in list given current device as parameter
+// returns NULL if end of list
+
+static pRecDevice HIDGetNextDevice (pRecDevice pDevice)
+{
+    if (NULL != pDevice)
+        return pDevice->pNext;
+    else
+        return NULL;
+}
+
+// ---------------------------------
+// get the first element of device passed in as parameter
+// returns NULL if no list exists or device does not exists or is NULL
+static pRecElement HIDGetFirstDeviceElement (pRecDevice pDevice, HIDElementTypeMask typeMask)
+{
+    if (HIDIsValidDevice(pDevice))
+	{
+        if (hid_MatchElementTypeMask (pDevice->pListElements->type, typeMask)) // ensure first type matches
+			return pDevice->pListElements;
+		else
+			return HIDGetNextDeviceElement (pDevice->pListElements, typeMask);
+	}
+    else
+        return NULL;
+}
+
+// ---------------------------------
+// get next element of given device in list given current element as parameter
+// will walk down each collection then to next element or collection (depthwise traverse)
+// returns NULL if end of list
+// uses mask of HIDElementTypeMask to restrict element found
+// use kHIDElementTypeIO to get previous HIDGetNextDeviceElement functionality
+static pRecElement HIDGetNextDeviceElement (pRecElement pElement, HIDElementTypeMask typeMask)
+{
+	// should only have elements passed in (though someone could mix calls and pass us a collection)
+	// collection means return the next child or sibling (in that order)
+	// element means returnt he next sibling (as elements can't have children
+    if (NULL != pElement)
+	{
+		if (pElement->pChild)
+		{
+			if (pElement->type != kIOHIDElementTypeCollection)
+				HIDReportError ("Malformed element list: found child of element.");
+			else
+				return hid_GetDeviceElement (pElement->pChild, typeMask); // return the child of this element
+		}
+		else if (pElement->pSibling)
+		{
+			return hid_GetDeviceElement (pElement->pSibling, typeMask); //return the sibling of this element
+		}
+		else // at end back up correctly
+		{
+			pRecElement pPreviousElement = NULL;
+			// malformed device ending in collection
+			if (pElement->type == kIOHIDElementTypeCollection)
+				HIDReportError ("Malformed device: found collection at end of element chain.");
+			// walk back up tree to element prior to first collection ecountered and take next element
+			while (NULL != pElement->pPrevious)
+			{
+				pPreviousElement = pElement;
+				pElement = pElement->pPrevious; // look at previous element
+									// if we have a collection and the previous element is the branch element (should have both a colection and next element attached to it)
+		 // if we found a collection, which we are not at the sibling level that actually does have siblings
+				if (((pElement->type == kIOHIDElementTypeCollection) && (pPreviousElement != pElement->pSibling) && pElement->pSibling) ||
+		// or if we are at the top
+		(NULL == pElement->pPrevious)) // at top of tree
+					break;
+			}
+			if (NULL == pElement->pPrevious)
+				return NULL; // got to top of list with only a collection as the first element
+				 // now we must have been down the child route so go down the sibling route
+			pElement = pElement->pSibling; // element of interest
+			return hid_GetDeviceElement (pElement, typeMask); // otherwise return this element
+		}
+	}
+	return NULL;
+}
+
+
+// return true if this is a valid device pointer
+Boolean HIDIsValidDevice(const pRecDevice pSearchDevice)
+{
+	pRecDevice pDevice = gpDeviceList;
+
+	while (pDevice)
+	{
+		if (pDevice == pSearchDevice)
+			return true;
+		pDevice = pDevice->pNext;
+	}
+	return false;
+}
+
+
+static IOReturn hid_CreateQueue (pRecDevice pDevice)
+{
+    IOReturn result = kIOReturnError;	// assume failure (pessimist!)
+
+	if (HIDIsValidDevice(pDevice))
+	{
+		if (NULL == pDevice->queue) // do we already have a queue
+		{
+			if (NULL != pDevice->interface)
+			{
+				pDevice->queue = (void *) (*(IOHIDDeviceInterface**) pDevice->interface)->allocQueue (pDevice->interface); // alloc queue
+				if (pDevice->queue)
+				{
+					result = (*(IOHIDQueueInterface**) pDevice->queue)->create (pDevice->queue, 0, kDeviceQueueSize); // create actual queue
+					if (kIOReturnSuccess != result)
+						HIDREPORTERRORNUM ("hid_CreateQueue - Failed to create queue via create", result);
+				}
+				else
+				{
+					HIDREPORTERROR ("hid_CreateQueue - Failed to alloc IOHIDQueueInterface ** via allocQueue");
+					result = kIOReturnError; // synthesis error
+				}
+			}
+			else
+				HIDREPORTERRORNUM ("hid_CreateQueue - Device inteface does not exist for queue creation", result);
+		}
+	}
+	else
+		HIDREPORTERRORNUM ("hid_CreateQueue - Invalid Device", result);
+    return result;
+}
+
+static unsigned long  HIDQueueDevice (pRecDevice pDevice)
+{
+    IOReturn result = kIOReturnError;	// assume failure (pessimist!)
+    pRecElement pElement;
+
+	if (HIDIsValidDevice(pDevice))
+	{
+		// error checking
+		if (NULL == pDevice)
+		{
+			HIDREPORTERROR ("HIDQueueDevice - Device does not exist.");
+			return kIOReturnBadArgument;
+		}
+		if (NULL == pDevice->interface) // must have interface
+		{
+			HIDREPORTERROR ("HIDQueueDevice - Device does not have interface.");
+			return kIOReturnError;
+		}
+		if (NULL == pDevice->queue) // if no queue create queue
+			result = hid_CreateQueue (pDevice);
+		if ((kIOReturnSuccess != result) || (NULL == pDevice->queue))
+		{
+			HIDREPORTERRORNUM ("HIDQueueDevice - problem creating queue.", result);
+			if (kIOReturnSuccess != result)
+				return result;
+			else
+				return kIOReturnError;
+		}
+
+		// stop queue
+		result = (*(IOHIDQueueInterface**) pDevice->queue)->stop (pDevice->queue);
+		if (kIOReturnSuccess != result)
+			HIDREPORTERRORNUM ("HIDQueueDevice - Failed to stop queue.", result);
+
+		// queue element
+  //¥ pElement = HIDGetFirstDeviceElement (pDevice, kHIDElementTypeIO);
+		pElement = HIDGetFirstDeviceElement (pDevice, kHIDElementTypeInput | kHIDElementTypeFeature);
+
+		while (pElement)
+		{
+			if (!(*(IOHIDQueueInterface**) pDevice->queue)->hasElement (pDevice->queue, pElement->cookie))
+			{
+				result = (*(IOHIDQueueInterface**) pDevice->queue)->addElement (pDevice->queue, pElement->cookie, 0);
+				if (kIOReturnSuccess != result)
+					HIDREPORTERRORNUM ("HIDQueueDevice - Failed to add element to queue.", result);
+			}
+			//¥ pElement = HIDGetNextDeviceElement (pElement, kHIDElementTypeIO);
+			pElement = HIDGetNextDeviceElement (pElement, kHIDElementTypeInput | kHIDElementTypeFeature);
+		}
+
+		// start queue
+		result = (*(IOHIDQueueInterface**) pDevice->queue)->start (pDevice->queue);
+		if (kIOReturnSuccess != result)
+			HIDREPORTERRORNUM ("HIDQueueDevice - Failed to start queue.", result);
+		
+	}
+	else
+		HIDREPORTERROR ("HIDQueueDevice - Invalid device.");
+
+    return result;
+}
+
+
+/* -- END HID UTILITIES -- */
+
+
+static int logical_mice = 0;
+static int physical_mice = 0;
+static pRecDevice *devices = NULL;
+
+static inline int is_trackpad(const pRecDevice dev)
+{
+    /*
+     * This stupid thing shows up as two logical devices. One does
+     *  most of the mouse events, the other does the mouse wheel.
+     */
+    return (strcmp(dev->product, "Apple Internal Keyboard / Trackpad") == 0);
+} /* is_trackpad */
+
+
+/* returns non-zero if (a <= b). */
+typedef unsigned long long ui64;
+static inline int oldEvent(const AbsoluteTime *a, const AbsoluteTime *b)
+{
+#if 0  // !!! FIXME: doesn't work, timestamps aren't reliable.
+    const ui64 a64 = (((unsigned long long) a->hi) << 32) | a->lo;
+    const ui64 b64 = (((unsigned long long) b->hi) << 32) | b->lo;
+#endif
+    return 0;
+} /* oldEvent */
+
+static int poll_mouse(pRecDevice mouse, ManyMouseEvent *outevent)
+{
+    int unhandled = 1;
+    while (unhandled)  /* read until failure or valid event. */
+    {
+        pRecElement recelem;
+        IOHIDEventStruct event;
+
+        if (!HIDGetEvent(mouse, &event))
+            return 0;  /* no new event. */
+
+        unhandled = 0;  /* will reset if necessary. */
+        recelem = HIDGetFirstDeviceElement(mouse, kHIDElementTypeInput);
+        while (recelem != NULL)
+        {
+            if (recelem->cookie == event.elementCookie)
+                break;
+            recelem = HIDGetNextDeviceElement(recelem, kHIDElementTypeInput);
+        } /* while */
+
+        if (recelem == NULL)
+            continue;  /* unknown device element. Can this actually happen? */
+
+        outevent->value = event.value;
+        if (recelem->usagePage == kHIDPage_GenericDesktop)
+        {
+            /*
+             * some devices (two-finger-scroll trackpads?) seem to give
+             *  a flood of events with values of zero for every legitimate
+             *  event. Throw these zero events out.
+             */
+            if (outevent->value == 0)
+                unhandled = 1;
+            else
+            {
+                switch (recelem->usage)
+                {
+                    case kHIDUsage_GD_X:
+                    case kHIDUsage_GD_Y:
+                        if (oldEvent(&event.timestamp, &mouse->lastScrollTime))
+                            unhandled = 1;
+                        else
+                        {
+                            outevent->type = MANYMOUSE_EVENT_RELMOTION;
+                            if (recelem->usage == kHIDUsage_GD_X)
+                                outevent->item = 0;
+                            else
+                                outevent->item = 1;
+                        } /* else */
+                        break;
+
+                    case kHIDUsage_GD_Wheel:
+                        memcpy(&mouse->lastScrollTime, &event.timestamp,
+                               sizeof (AbsoluteTime));
+                        outevent->type = MANYMOUSE_EVENT_SCROLL;
+                        outevent->item = 0;  /* !!! FIXME: horiz scroll? */
+                        break;
+
+                    default:  /* !!! FIXME: absolute motion? */
+                        unhandled = 1;
+                } /* switch */
+            } /* else */
+        } /* if */
+
+        else if (recelem->usagePage == kHIDPage_Button)
+        {
+            outevent->type = MANYMOUSE_EVENT_BUTTON;
+            outevent->item = ((int) recelem->usage) - 1;
+        } /* else if */
+
+        else
+        {
+            unhandled = 1;
+        } /* else */
+    } /* while */
+
+    return 1;  /* got a valid event */
+} /* poll_mouse */
+
+
+static void macosx_hidutilities_quit(void)
+{
+    HIDReleaseAllDeviceQueues();
+    HIDReleaseDeviceList();
+    free(devices);
+    devices = NULL;
+    logical_mice = 0;
+    physical_mice = 0;
+} /* macosx_hidutilities_quit */
+
+
+static int macosx_hidutilities_init(void)
+{
+    macosx_hidutilities_quit();  /* just in case... */
+
+    if (!HIDBuildDeviceList(kHIDPage_GenericDesktop, kHIDUsage_GD_Mouse))
+        return -1;
+
+    physical_mice = HIDCountDevices();
+    if (physical_mice > 0)
+    {
+        pRecDevice dev = NULL;
+        int trackpad = -1;
+        int i;
+
+        dev = HIDGetFirstDevice();
+        devices = (pRecDevice *) malloc(sizeof (pRecDevice) * physical_mice);
+        if ((devices == NULL) || (dev == NULL))
+        {
+            macosx_hidutilities_quit();
+            return -1;
+        } /* if */
+
+        for (i = 0; i < physical_mice; i++)
+        {
+            if (dev == NULL)  /* what? list ended? Truncate final list... */
+                physical_mice = i;
+
+            if (HIDQueueDevice(dev) == kIOReturnSuccess)
+            {
+                if (!is_trackpad(dev))
+                    dev->logical = logical_mice++;
+                else
+                {
+                    if (trackpad < 0)
+                        trackpad = logical_mice++;
+                    dev->logical = trackpad;
+                } /* else */
+                devices[i] = dev;
+            } /* if */
+
+            else  /* failed? Chop this device from the list... */
+            {
+                i--;
+                physical_mice--;
+            } /* else */
+
+            dev = HIDGetNextDevice(dev);
+        } /* for */
+    } /* if */
+
+    return logical_mice;
+} /* macosx_hidutilities_init */
+
+
+/* returns the first physical device that backs a logical device. */
+static pRecDevice map_logical_device(const unsigned int index)
+{
+    if (index < logical_mice)
+    {
+        unsigned int i;
+        for (i = 0; i < physical_mice; i++)
+        {
+            if (devices[i]->logical == ((int) index))
+                return devices[i];
+        } /* for */
+    } /* if */
+
+    return NULL;  /* not found (maybe unplugged?) */
+} /* map_logical_device */
+
+
+static const char *macosx_hidutilities_name(unsigned int index)
+{
+    pRecDevice dev = map_logical_device(index);
+    return (dev != NULL) ? dev->product : NULL;
+} /* macosx_hidutilities_name */
+
+
+static int macosx_hidutilities_poll(ManyMouseEvent *event)
+{
+    /*
+     * (i) is static so we iterate through all mice round-robin. This
+     *  prevents a chatty mouse from dominating the queue.
+     */
+    static unsigned int i = 0;
+
+    if (i >= physical_mice)
+        i = 0;  /* handle reset condition. */
+
+    if (event != NULL)
+    {
+        while (i < physical_mice)
+        {
+            pRecDevice dev = devices[i];
+            if ((dev) && (dev->disconnect != DISCONNECT_COMPLETE))
+            {
+                const int logical = dev->logical;
+                event->device = logical;
+
+                /* see if mouse was unplugged since last polling... */
+                if (dev->disconnect == DISCONNECT_TELLUSER)
+                {
+                    int j;
+
+                    /* disable physical devices backing this logical mouse. */
+                    for (j = 0; j < physical_mice; j++)
+                    {
+                        if (devices[j]->logical == logical)
+                        {
+                            devices[j]->disconnect = DISCONNECT_COMPLETE;
+                            devices[j]->logical = -1;
+                        } /* if */
+                    } /* for */
+
+                    event->type = MANYMOUSE_EVENT_DISCONNECT;
+                    return 1;
+                } /* if */
+
+                if (poll_mouse(dev, event))
+                    return 1;
+            } /* if */
+            i++;
+        } /* while */
+    } /* if */
+
+    return 0;  /* no new events */
+} /* macosx_hidutilities_poll */
+
+static const ManyMouseDriver ManyMouseDriver_interface =
+{
+    "Mac OS X Legacy HID Utilities",
+    macosx_hidutilities_init,
+    macosx_hidutilities_quit,
+    macosx_hidutilities_name,
+    macosx_hidutilities_poll
+};
+
+const ManyMouseDriver *ManyMouseDriver_hidutilities = &ManyMouseDriver_interface;
+
+#else
+const ManyMouseDriver *ManyMouseDriver_hidutilities = 0;
+#endif  /* ifdef Mac OS X blocker */
+
+/* end of macosx_hidutilities.c ... */
+
+@
+
+@tangler windows_wminput.c
+/*
+ * Support for Windows via the WM_INPUT message.
+ *
+ * Please see the file LICENSE.txt in the source's root directory.
+ *
+ *  This file written by Ryan C. Gordon.
+ */
+
+#include "manymouse.h"
+
+#if (defined(_WIN32) || defined(_WINDOWS) || defined(__CYGWIN__))
+
+/* WinUser.h won't include rawinput stuff without this... */
+#if (_WIN32_WINNT < 0x0501)
+#undef _WIN32_WINNT
+#define _WIN32_WINNT 0x0501
+#endif
+
+#define WIN32_LEAN_AND_MEAN 1
+#include <windows.h>
+#include <setupapi.h>
+#include <malloc.h>  /* needed for alloca(). */
+
+/* Cygwin's headers don't have WM_INPUT right now... */
+#ifndef WM_INPUT
+#define WM_INPUT 0x00FF
+#endif
+
+/* that should be enough, knock on wood. */
+#define MAX_MICE 32
+
+/*
+ * Just trying to avoid malloc() here...we statically allocate a buffer
+ *  for events and treat it as a ring buffer.
+ */
+/* !!! FIXME: tweak this? */
+#define MAX_EVENTS 1024
+static ManyMouseEvent input_events[MAX_EVENTS];
+static volatile int input_events_read = 0;
+static volatile int input_events_write = 0;
+static int available_mice = 0;
+static int did_api_lookup = 0;
+static HWND raw_hwnd = NULL;
+static const char *class_name = "ManyMouseRawInputCatcher";
+static const char *win_name = "ManyMouseRawInputMsgWindow";
+static ATOM class_atom = 0;
+static CRITICAL_SECTION mutex;
+
+typedef struct
+{
+    HANDLE handle;
+    char name[256];
+} MouseStruct;
+static MouseStruct mice[MAX_MICE];
+
+
+/*
+ * The RawInput APIs only exist in Windows XP and later, so you want this
+ *  to fail gracefully on earlier systems instead of refusing to start the
+ *  process due to missing symbols. To this end, we do a symbol lookup on
+ *  User32.dll, etc to get the entry points.
+ *
+ * A lot of these are available all the way back to the start of win32 in
+ *  Windows 95 and WinNT 3.1, but just so you don't have to track down any
+ *  import libraries, I've added those here, too. That fits well with the
+ *  idea of just adding the sources to your build and going forward.
+ */
+static UINT (WINAPI *pGetRawInputDeviceList)(PRAWINPUTDEVICELIST,PUINT,UINT);
+/* !!! FIXME: use unicode version */
+static UINT (WINAPI *pGetRawInputDeviceInfoA)(HANDLE,UINT,LPVOID,PUINT);
+static BOOL (WINAPI *pRegisterRawInputDevices)(PCRAWINPUTDEVICE,UINT,UINT);
+static LRESULT (WINAPI *pDefRawInputProc)(PRAWINPUT *,INT,UINT);
+static UINT (WINAPI *pGetRawInputBuffer)(PRAWINPUT,PUINT,UINT);
+static UINT (WINAPI *pGetRawInputData)(HRAWINPUT,UINT,LPVOID,PUINT,UINT);
+static HWND (WINAPI *pCreateWindowExA)(DWORD,LPCTSTR,LPCTSTR,DWORD,int,int,int,int,HWND,HMENU,HINSTANCE,LPVOID);
+static ATOM (WINAPI *pRegisterClassExA)(CONST WNDCLASSEX *);
+static LRESULT (WINAPI *pDefWindowProcA)(HWND,UINT,WPARAM,LPARAM);
+static BOOL (WINAPI *pUnregisterClassA)(LPCTSTR,HINSTANCE);
+static HMODULE (WINAPI *pGetModuleHandleA)(LPCTSTR);
+static BOOL (WINAPI *pPeekMessageA)(LPMSG,HWND,UINT,UINT,UINT);
+static BOOL (WINAPI *pTranslateMessage)(const MSG *);
+static LRESULT (WINAPI *pDispatchMessageA)(const MSG *);
+static BOOL (WINAPI *pDestroyWindow)(HWND);
+static void (WINAPI *pInitializeCriticalSection)(LPCRITICAL_SECTION);
+static void (WINAPI *pEnterCriticalSection)(LPCRITICAL_SECTION);
+static void (WINAPI *pLeaveCriticalSection)(LPCRITICAL_SECTION);
+static void (WINAPI *pDeleteCriticalSection)(LPCRITICAL_SECTION);
+static DWORD (WINAPI *pGetLastError)(void);
+static HDEVINFO (WINAPI *pSetupDiGetClassDevsA)(LPGUID, LPCTSTR, HWND, DWORD);
+static BOOL (WINAPI *pSetupDiEnumDeviceInfo)(HDEVINFO, DWORD, PSP_DEVINFO_DATA);
+static BOOL (WINAPI *pSetupDiGetDeviceInstanceIdA)(HDEVINFO, PSP_DEVINFO_DATA, PTSTR, DWORD, PDWORD);
+static BOOL (WINAPI *pSetupDiGetDeviceRegistryPropertyA)(HDEVINFO, PSP_DEVINFO_DATA, DWORD, PDWORD, PBYTE, DWORD, PDWORD);
+static BOOL (WINAPI *pSetupDiDestroyDeviceInfoList)(HDEVINFO);
+
+static int symlookup(HMODULE dll, void **addr, const char *sym)
+{
+    *addr = GetProcAddress(dll, sym);
+    if (*addr == NULL)
+    {
+        FreeLibrary(dll);
+        return 0;
+    } /* if */
+
+    return 1;
+} /* symlookup */
+
+static int find_api_symbols(void)
+{
+    HMODULE dll;
+
+    if (did_api_lookup)
+        return 1;
+
+    #define LOOKUP(x) { if (!symlookup(dll, (void **) &p##x, #x)) return 0; }
+    dll = LoadLibrary(TEXT("user32.dll"));
+    if (dll == NULL)
+        return 0;
+
+    LOOKUP(GetRawInputDeviceInfoA);
+    LOOKUP(RegisterRawInputDevices);
+    LOOKUP(GetRawInputDeviceList);
+    LOOKUP(DefRawInputProc);
+    LOOKUP(GetRawInputBuffer);
+    LOOKUP(GetRawInputData);
+    LOOKUP(CreateWindowExA);
+    LOOKUP(RegisterClassExA);
+    LOOKUP(UnregisterClassA);
+    LOOKUP(DefWindowProcA);
+    LOOKUP(PeekMessageA);
+    LOOKUP(TranslateMessage);
+    LOOKUP(DispatchMessageA);
+    LOOKUP(DestroyWindow);
+
+    dll = LoadLibrary(TEXT("kernel32.dll"));
+    if (dll == NULL)
+        return 0;
+
+    LOOKUP(GetModuleHandleA);
+    LOOKUP(GetLastError);
+    LOOKUP(InitializeCriticalSection);
+    LOOKUP(EnterCriticalSection);
+    LOOKUP(LeaveCriticalSection);
+    LOOKUP(DeleteCriticalSection);
+
+    dll = LoadLibrary(TEXT("setupapi.dll"));
+    if (dll == NULL)
+        return 0;
+
+    LOOKUP(SetupDiGetClassDevsA);
+    LOOKUP(SetupDiEnumDeviceInfo);
+    LOOKUP(SetupDiGetDeviceInstanceIdA);
+    LOOKUP(SetupDiGetDeviceRegistryPropertyA);
+    LOOKUP(SetupDiDestroyDeviceInfoList);
+
+    #undef LOOKUP
+
+    did_api_lookup = 1;
+    return 1;
+} /* find_api_symbols */
+
+
+/* Some simple functions to avoid C runtime dependency... */
+
+static char make_upper(const char a)
+{
+    return ((a >= 'a') && (a <= 'z')) ? (a - ('a' - 'A')) : a;
+} /* make_upper */
+
+static void make_string_upper(char *str)
+{
+    char *ptr;
+    for (ptr = str; *ptr; ptr++)
+        *ptr = make_upper(*ptr);
+} /* make_string_upper */
+
+static int string_compare(const char *a, const char *b)
+{
+    while (1)
+    {
+        const char cha = *(a++);
+        const char chb = *(b++);
+        if (cha < chb)
+            return -1;
+        else if (cha > chb)
+            return 1;
+        else if (cha == '\0')
+            return 0;
+    } /* while */
+
+    return 0;
+} /* string_compare */
+
+static size_t string_length(const char *a)
+{
+    size_t retval;
+    for (retval = 0; *(a++); retval++) { /* spin. */ }
+    return retval;
+} /* string_length */
+
+
+static void queue_event(const ManyMouseEvent *event)
+{
+    /* copy the event info. We'll process it in ManyMouse_PollEvent(). */
+    CopyMemory(&input_events[input_events_write], event, sizeof (ManyMouseEvent));
+
+    input_events_write = ((input_events_write + 1) % MAX_EVENTS);
+
+    /* Ring buffer full? Lose oldest event. */
+    if (input_events_write == input_events_read)
+    {
+        /* !!! FIXME: we need to not lose mouse buttons here. */
+        input_events_read = ((input_events_read + 1) % MAX_EVENTS);
+    } /* if */
+} /* queue_event */
+
+
+static void queue_from_rawinput(const RAWINPUT *raw)
+{
+    int i;
+    const RAWINPUTHEADER *header = &raw->header;
+    const RAWMOUSE *mouse = &raw->data.mouse;
+    ManyMouseEvent event;
+
+    if (raw->header.dwType != RIM_TYPEMOUSE)
+        return;
+
+    for (i = 0; i < available_mice; i++)  /* find the device for event. */
+    {
+        if (mice[i].handle == header->hDevice)
+            break;
+    } /* for */
+
+    if (i == available_mice)
+        return;  /* not found?! */
+
+    /*
+     * RAWINPUT packs a bunch of events into one, so we split it up into
+     *  a bunch of ManyMouseEvents here and store them in an internal queue.
+     *  Then ManyMouse_PollEvent() just shuffles items off that queue
+     *  without any complicated processing.
+     */
+
+    event.device = i;
+
+    pEnterCriticalSection(&mutex);
+
+    if (mouse->usFlags & MOUSE_MOVE_ABSOLUTE)
+    {
+        /* !!! FIXME: How do we get the min and max values for absmotion? */
+        event.type = MANYMOUSE_EVENT_ABSMOTION;
+        event.item = 0;
+        event.value = mouse->lLastX;
+        queue_event(&event);
+        event.item = 1;
+        event.value = mouse->lLastY;
+        queue_event(&event);
+    } /* if */
+
+    else /*if (mouse->usFlags & MOUSE_MOVE_RELATIVE)*/
+    {
+        event.type = MANYMOUSE_EVENT_RELMOTION;
+        if (mouse->lLastX != 0)
+        {
+            event.item = 0;
+            event.value = mouse->lLastX;
+            queue_event(&event);
+        } /* if */
+
+        if (mouse->lLastY != 0)
+        {
+            event.item = 1;
+            event.value = mouse->lLastY;
+            queue_event(&event);
+        } /* if */
+    } /* else if */
+
+    event.type = MANYMOUSE_EVENT_BUTTON;
+
+    #define QUEUE_BUTTON(x) { \
+        if (mouse->usButtonFlags & RI_MOUSE_BUTTON_##x##_DOWN) { \
+            event.item = x-1; \
+            event.value = 1; \
+            queue_event(&event); \
+        } \
+        if (mouse->usButtonFlags & RI_MOUSE_BUTTON_##x##_UP) { \
+            event.item = x-1; \
+            event.value = 0; \
+            queue_event(&event); \
+        } \
+    }
+
+    QUEUE_BUTTON(1);
+    QUEUE_BUTTON(2);
+    QUEUE_BUTTON(3);
+    QUEUE_BUTTON(4);
+    QUEUE_BUTTON(5);
+
+    #undef QUEUE_BUTTON
+
+    if (mouse->usButtonFlags & RI_MOUSE_WHEEL)
+    {
+        if (mouse->usButtonData != 0)  /* !!! FIXME: can this ever be zero? */
+        {
+            event.type = MANYMOUSE_EVENT_SCROLL;
+            event.item = 0;  /* !!! FIXME: horizontal wheel? */
+            event.value = ( ((SHORT) mouse->usButtonData) > 0) ? 1 : -1;
+            queue_event(&event);
+        } /* if */
+    } /* if */
+
+    pLeaveCriticalSection(&mutex);
+} /* queue_from_rawinput */
+
+
+static void wminput_handler(WPARAM wParam, LPARAM lParam)
+{
+    UINT dwSize = 0;
+    LPBYTE lpb;
+
+    pGetRawInputData((HRAWINPUT) lParam, RID_INPUT, NULL, &dwSize,
+                      sizeof (RAWINPUTHEADER));
+
+    if (dwSize < sizeof (RAWINPUT))
+        return;  /* unexpected packet? */
+
+    lpb = (LPBYTE) alloca(dwSize);
+    if (lpb == NULL) 
+        return;
+    if (pGetRawInputData((HRAWINPUT) lParam, RID_INPUT, lpb, &dwSize,
+                          sizeof (RAWINPUTHEADER)) != dwSize)
+        return;
+
+    queue_from_rawinput((RAWINPUT *) lpb);
+} /* wminput_handler */
+
+
+static LRESULT CALLBACK RawWndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
+{
+    if (Msg == WM_INPUT)
+        wminput_handler(wParam, lParam);
+
+    else if (Msg == WM_DESTROY)
+        return 0;
+
+    return pDefWindowProcA(hWnd, Msg, wParam, lParam);
+} /* RawWndProc */
+
+
+static int init_event_queue(void)
+{
+    HINSTANCE hInstance = pGetModuleHandleA(NULL);
+    WNDCLASSEX wce;
+    RAWINPUTDEVICE rid;
+
+    ZeroMemory(input_events, sizeof (input_events));
+    input_events_read = input_events_write = 0;
+
+    ZeroMemory(&wce, sizeof (wce));
+    wce.cbSize = sizeof(WNDCLASSEX);
+    wce.lpfnWndProc = RawWndProc;
+    wce.lpszClassName = class_name;
+    wce.hInstance = hInstance;
+    class_atom = pRegisterClassExA(&wce);
+    if (class_atom == 0)
+        return 0;
+
+    raw_hwnd = pCreateWindowExA(0, class_name, win_name, WS_OVERLAPPEDWINDOW,
+                        CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
+                        CW_USEDEFAULT, HWND_MESSAGE, NULL, hInstance, NULL);
+
+    if (raw_hwnd == NULL)
+        return 0;
+
+    pInitializeCriticalSection(&mutex);
+
+    ZeroMemory(&rid, sizeof (rid));
+    rid.usUsagePage = 1; /* GenericDesktop page */
+    rid.usUsage = 2; /* GeneralDestop Mouse usage. */
+    rid.dwFlags = RIDEV_INPUTSINK;
+    rid.hwndTarget = raw_hwnd;
+    if (!pRegisterRawInputDevices(&rid, 1, sizeof (rid)))
+    {
+        pDeleteCriticalSection(&mutex);
+        return 0;
+    } /* if */
+
+    return 1;
+} /* init_event_queue */
+
+
+static void cleanup_window(void)
+{
+    if (raw_hwnd)
+    {
+        MSG Msg;
+        pDestroyWindow(raw_hwnd);
+        while (pPeekMessageA(&Msg, raw_hwnd, 0, 0, PM_REMOVE))
+        {
+            pTranslateMessage(&Msg);
+            pDispatchMessageA(&Msg);
+        } /* while */
+        raw_hwnd = 0;
+    } /* if */
+
+    if (class_atom)
+    {
+        pUnregisterClassA(class_name, pGetModuleHandleA(NULL));
+        class_atom = 0;
+    } /* if */
+} /* cleanup_window */
+
+
+static int get_devinfo_data(HDEVINFO devinfo, const char *devinstance,
+                            SP_DEVINFO_DATA *data)
+{
+    DWORD i = 0;
+    const DWORD bufsize = string_length(devinstance) + 1;
+    char *buf = (char *) alloca(bufsize);
+    if (buf == NULL)
+        return 0;
+
+    while (1)
+    {
+        ZeroMemory(data, sizeof (SP_DEVINFO_DATA));
+        data->cbSize = sizeof (SP_DEVINFO_DATA);
+        if (!pSetupDiEnumDeviceInfo(devinfo, i++, data))
+        {
+            if (pGetLastError() == ERROR_NO_MORE_ITEMS)
+                break;
+            else
+                continue;
+        } /* if */
+
+        if (!pSetupDiGetDeviceInstanceIdA(devinfo, data, buf, bufsize, NULL))
+            continue;
+
+        make_string_upper(buf);
+        if (string_compare(devinstance, buf) == 0)
+            return 1;  /* found it! */
+    } /* while */
+
+    return 0;  /* not found. */
+} /* get_devinfo_data */
+
+
+static void get_dev_name_by_instance(const char *devinstance, char *name,
+                                     size_t namesize)
+{
+    SP_DEVINFO_DATA devdata;
+    const DWORD flags = DIGCF_ALLCLASSES | DIGCF_PRESENT;
+    HDEVINFO devinfo = pSetupDiGetClassDevsA(NULL, NULL, NULL, flags);
+    if (devinfo == INVALID_HANDLE_VALUE)
+        return;
+
+    if (get_devinfo_data(devinfo, devinstance, &devdata))
+    {
+        pSetupDiGetDeviceRegistryPropertyA(devinfo, &devdata, SPDRP_DEVICEDESC,
+                                           NULL, (PBYTE) name, namesize, NULL);
+    } /* if */
+
+    pSetupDiDestroyDeviceInfoList(devinfo);
+} /* get_dev_name_by_instance */
+
+
+static void get_device_product_name(char *name, size_t namesize, char *devname)
+{
+    const char default_device_name[] = "Unidentified input device";
+
+    *name = '\0';  /* really insane default. */
+    if (sizeof (default_device_name) >= namesize)
+        return;
+
+    /* in case we can't stumble upon something better... */
+    CopyMemory(name, default_device_name, sizeof (default_device_name));
+
+    /* okay, we're got the device instance. Now find the data for it. */
+    get_dev_name_by_instance(devname, name, namesize);
+} /* get_device_product_name */
+
+
+static void init_mouse(const RAWINPUTDEVICELIST *dev)
+{
+    const char rdp_ident[] = "ROOT\\RDP_MOU\\";
+    MouseStruct *mouse = &mice[available_mice];
+    char *buf = NULL;
+    char *ptr = NULL;
+    UINT ct = 0;
+
+    if (dev->dwType != RIM_TYPEMOUSE)
+        return;  /* keyboard or some other fruity thing. */
+
+    if (pGetRawInputDeviceInfoA(dev->hDevice, RIDI_DEVICENAME, NULL, &ct) < 0)
+        return;
+
+    /* ct == is chars, not bytes, but we used the ASCII version. */
+    buf = (char *) alloca(ct+1);
+    if (buf == NULL)
+        return;
+
+    if (pGetRawInputDeviceInfoA(dev->hDevice, RIDI_DEVICENAME, buf, &ct) < 0)
+        return;
+
+    buf[ct] = '\0';  /* make sure it's null-terminated. */
+
+    /* XP starts these strings with "\\??\\" ... Vista does "\\\\?\\".  :/ */
+    while ((*buf == '?') || (*buf == '\\'))
+    {
+        buf++;
+        ct--;
+    } /* while */
+
+    /* This string tap dancing gets us the device instance id. */
+    for (ptr = buf; *ptr; ptr++)  /* convert '#' to '\\' ... */
+    {
+        char ch = *ptr;
+        if (ch == '#')
+            *ptr = '\\';
+        else if (ch == '{')  /* hit the GUID part of the string. */
+        {
+            if (*(ptr-1) == '\\')
+                ptr--;
+            break;
+        } /* else if */
+    } /* for */
+
+    *ptr = '\0';
+
+    make_string_upper(buf);
+
+    /*
+     * Apparently there's a fake "RDP" device...I guess this is
+     *  "Remote Desktop Protocol" for controlling the system pointer
+     *  remotely via Windows Remote Desktop, but that's just a guess.
+     * At any rate, we don't want that device, so skip it if detected.
+     *
+     * Idea for this found here:
+     *   http://link.mywwwserver.com/~jstookey/arcade/rawmouse/raw_mouse.c
+     */
+
+    /* avoiding memcmp here so we don't get a C runtime dependency... */
+    if (ct >= sizeof (rdp_ident) - 1)
+    {
+        int i;
+        for (i = 0; i < sizeof (rdp_ident) - 1; i++)
+        {
+            if (buf[i] != rdp_ident[i])
+                break;
+        } /* for */
+
+        if (i == sizeof (rdp_ident) - 1)
+            return;  /* this is an RDP thing. Skip this device. */
+    } /* if */
+
+    /* accept this mouse! */
+    ZeroMemory(mouse, sizeof (MouseStruct));
+    get_device_product_name(mouse->name, sizeof (mouse->name), buf);
+    mouse->handle = dev->hDevice;
+    available_mice++;
+} /* init_mouse */
+
+
+static int windows_wminput_init(void)
+{
+    RAWINPUTDEVICELIST *devlist = NULL;
+    UINT ct = 0;
+    UINT i;
+
+    available_mice = 0;
+
+    if (!find_api_symbols())  /* only supported on WinXP and later. */
+        return -1;
+
+    pGetRawInputDeviceList(NULL, &ct, sizeof (RAWINPUTDEVICELIST));
+    if (ct == 0)  /* no devices. */
+        return 0;
+
+    devlist = (PRAWINPUTDEVICELIST) alloca(sizeof (RAWINPUTDEVICELIST) * ct);
+    pGetRawInputDeviceList(devlist, &ct, sizeof (RAWINPUTDEVICELIST));
+    for (i = 0; i < ct; i++)
+        init_mouse(&devlist[i]);
+
+    if (!init_event_queue())
+    {
+        cleanup_window();
+        available_mice = 0;
+    } /* if */
+
+    return available_mice;
+} /* windows_wminput_init */
+
+
+static void windows_wminput_quit(void)
+{
+    /* unregister WM_INPUT devices... */
+    RAWINPUTDEVICE rid;
+    ZeroMemory(&rid, sizeof (rid));
+    rid.usUsagePage = 1; /* GenericDesktop page */
+    rid.usUsage = 2; /* GeneralDestop Mouse usage. */
+    rid.dwFlags |= RIDEV_REMOVE;
+    pRegisterRawInputDevices(&rid, 1, sizeof (rid));
+    cleanup_window();
+    available_mice = 0;
+    pDeleteCriticalSection(&mutex);
+} /* windows_wminput_quit */
+
+
+static const char *windows_wminput_name(unsigned int index)
+{
+    return (index < available_mice) ? mice[index].name : NULL;
+} /* windows_wminput_name */
+
+
+/*
+ * Windows doesn't send a WM_INPUT event when you unplug a mouse,
+ *  so we try to do a basic query by device handle here; if the
+ *  query fails, we assume the device has vanished and generate a
+ *  disconnect.
+ */
+static int check_for_disconnects(ManyMouseEvent *ev)
+{
+    /*
+     * (i) is static so we iterate through all mice round-robin and check
+     *  one mouse per call to ManyMouse_PollEvent(). This makes this test O(1).
+     */
+    static unsigned int i = 0;
+    MouseStruct *mouse = NULL;
+
+    if (++i >= available_mice)  /* check first in case of redetect */
+        i = 0;
+
+    mouse = &mice[i];
+    if (mouse->handle != NULL)  /* not NULL == still plugged in. */
+    {
+        UINT size = 0;
+        UINT rc = pGetRawInputDeviceInfoA(mouse->handle, RIDI_DEVICEINFO,
+                                          NULL, &size);
+        if (rc == (UINT) -1)  /* failed...probably unplugged... */
+        {
+            mouse->handle = NULL;
+            ev->type = MANYMOUSE_EVENT_DISCONNECT;
+            ev->device = i;
+            return 1;
+        } /* if */
+    } /* if */
+
+    return 0;  /* no disconnect event this time. */
+} /* check_for_disconnects */
+
+
+static int windows_wminput_poll(ManyMouseEvent *ev)
+{
+    MSG Msg;  /* run the queue for WM_INPUT messages, etc ... */
+    int found = 0;
+
+    /* ...favor existing events in the queue... */
+    pEnterCriticalSection(&mutex);
+    if (input_events_read != input_events_write)  /* no events if equal. */
+    {
+        CopyMemory(ev, &input_events[input_events_read], sizeof (*ev));
+        input_events_read = ((input_events_read + 1) % MAX_EVENTS);
+        found = 1;
+    } /* if */
+    pLeaveCriticalSection(&mutex);
+
+    if (!found)
+    {
+        /* pump Windows for new hardware events... */
+        while (pPeekMessageA(&Msg, raw_hwnd, 0, 0, PM_REMOVE))
+        {
+            pTranslateMessage(&Msg);
+            pDispatchMessageA(&Msg);
+        } /* while */
+
+        /* In case something new came in, give it to the app... */
+        pEnterCriticalSection(&mutex);
+        if (input_events_read != input_events_write)  /* no events if equal. */
+        {
+            CopyMemory(ev, &input_events[input_events_read], sizeof (*ev));
+            input_events_read = ((input_events_read + 1) % MAX_EVENTS);
+            found = 1;
+        } /* if */
+        pLeaveCriticalSection(&mutex);
+    } /* if */
+
+    /*
+     * Check for disconnects if queue is totally empty and Windows didn't
+     *  report anything new at this time. This ensures that we don't send a
+     *  disconnect event through ManyMouse and then later give a valid
+     *  event to the app for a device that is now missing.
+     */
+    if (!found)
+        found = check_for_disconnects(ev);
+
+    return found;
+} /* windows_wminput_poll */
+
+static const ManyMouseDriver ManyMouseDriver_interface =
+{
+    "Windows XP and later WM_INPUT interface",
+    windows_wminput_init,
+    windows_wminput_quit,
+    windows_wminput_name,
+    windows_wminput_poll
+};
+
+const ManyMouseDriver *ManyMouseDriver_windows = &ManyMouseDriver_interface;
+
+#else
+const ManyMouseDriver *ManyMouseDriver_windows = 0;
+#endif  /* ifdef Windows blocker */
+
+/* end of windows_wminput.c ... */
+
+@
+
+@tangler x11_xinput2.c
+/*
+ * Support for the X11 XInput extension.
+ *
+ * Please see the file LICENSE.txt in the source's root directory.
+ *
+ *  This file written by Ryan C. Gordon.
+ */
+
+#include "manymouse.h"
+
+/* Try to use this on everything but Windows and Mac OS by default... */
+#ifndef SUPPORT_XINPUT2
+#if ( (defined(_WIN32) || defined(__CYGWIN__)) )
+#define SUPPORT_XINPUT2 0
+#elif ( (defined(__MACH__)) && (defined(__APPLE__)) )
+#define SUPPORT_XINPUT2 0
+#else
+#define SUPPORT_XINPUT2 1
+#endif
+#endif
+
+#if SUPPORT_XINPUT2
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <dlfcn.h>
+#include <X11/extensions/XInput2.h>
+
+/* 32 is good enough for now. */
+#define MAX_MICE 32
+#define MAX_AXIS 16
+typedef struct
+{
+    int device_id;
+    int connected;
+    int relative[MAX_AXIS];
+    int minval[MAX_AXIS];
+    int maxval[MAX_AXIS];
+    char name[64];
+} MouseStruct;
+
+static MouseStruct mice[MAX_MICE];
+static unsigned int available_mice = 0;
+
+static Display *display = NULL;
+static int xi2_opcode = 0;
+
+
+/* !!! FIXME: this is cut-and-paste between a few targets now. Move it to
+ * !!! FIXME:  manymouse.c ...
+ */
+/*
+ * Just trying to avoid malloc() here...we statically allocate a buffer
+ *  for events and treat it as a ring buffer.
+ */
+/* !!! FIXME: tweak this? */
+#define MAX_EVENTS 1024
+static ManyMouseEvent input_events[MAX_EVENTS];
+static volatile int input_events_read = 0;
+static volatile int input_events_write = 0;
+
+static void queue_event(const ManyMouseEvent *event)
+{
+    /* copy the event info. We'll process it in ManyMouse_PollEvent(). */
+    memcpy(&input_events[input_events_write], event, sizeof (ManyMouseEvent));
+
+    input_events_write = ((input_events_write + 1) % MAX_EVENTS);
+
+    /* Ring buffer full? Lose oldest event. */
+    if (input_events_write == input_events_read)
+    {
+        /* !!! FIXME: we need to not lose mouse buttons here. */
+        input_events_read = ((input_events_read + 1) % MAX_EVENTS);
+    } /* if */
+} /* queue_event */
+
+
+static int dequeue_event(ManyMouseEvent *event)
+{
+    if (input_events_read != input_events_write)  /* no events if equal. */
+    {
+        memcpy(event, &input_events[input_events_read], sizeof (*event));
+        input_events_read = ((input_events_read + 1) % MAX_EVENTS);
+        return 1;
+    } /* if */
+    return 0;  /* no event. */
+} /* dequeue_event */
+
+
+/*
+ * You _probably_ have Xlib on your system if you're on a Unix box where you
+ *  are planning to plug in multiple mice. That being said, we don't want
+ *  to force a project to add Xlib to their builds, or force the end-user to
+ *  have Xlib installed if they are otherwise running a console app that the
+ *  evdev driver would handle.
+ *
+ * We load all Xlib symbols at runtime, and fail gracefully if they aren't
+ *  available for some reason...ManyMouse might be able to use the evdev
+ *  driver or at least return a zero.
+ *
+ * On Linux (and probably others), you'll need to add -ldl to your link line,
+ *  but it's part of glibc, so this is pretty much going to be there.
+ */
+
+static void *libx11 = NULL;
+static void *libxext = NULL;
+static void *libxi = NULL;
+
+typedef int (*XExtErrHandler)(Display *, _Xconst char *, _Xconst char *);
+
+static XExtErrHandler (*pXSetExtensionErrorHandler)(XExtErrHandler h) = 0;
+static Display* (*pXOpenDisplay)(_Xconst char*) = 0;
+static int (*pXCloseDisplay)(Display*) = 0;
+static int (*pXISelectEvents)(Display*,Window,XIEventMask*,int) = 0;
+static Bool (*pXQueryExtension)(Display*,_Xconst char*,int*,int*,int*) = 0;
+static Status (*pXIQueryVersion)(Display*,int*,int*) = 0;
+static XIDeviceInfo* (*pXIQueryDevice)(Display*,int,int*) = 0;
+static void (*pXIFreeDeviceInfo)(XIDeviceInfo*) = 0;
+static Bool (*pXGetEventData)(Display*,XGenericEventCookie*) = 0;
+static void (*pXFreeEventData)(Display*,XGenericEventCookie*) = 0;
+static int (*pXNextEvent)(Display*,XEvent*) = 0;
+static int (*pXPending)(Display*) = 0;
+static int (*pXFlush)(Display*) = 0;
+static int (*pXEventsQueued)(Display*,int) = 0;
+
+static int symlookup(void *dll, void **addr, const char *sym)
+{
+    *addr = dlsym(dll, sym);
+    if (*addr == NULL)
+        return 0;
+
+    return 1;
+} /* symlookup */
+
+static int find_api_symbols(void)
+{
+    void *dll = NULL;
+
+    #define LOOKUP(x) { if (!symlookup(dll, (void **) &p##x, #x)) return 0; }
+    dll = libx11 = dlopen("libX11.so.6", RTLD_GLOBAL | RTLD_LAZY);
+    if (dll == NULL)
+        return 0;
+
+    LOOKUP(XOpenDisplay);
+    LOOKUP(XCloseDisplay);
+    LOOKUP(XGetEventData);
+    LOOKUP(XFreeEventData);
+    LOOKUP(XQueryExtension);
+    LOOKUP(XNextEvent);
+    LOOKUP(XPending);
+    LOOKUP(XFlush);
+    LOOKUP(XEventsQueued);
+
+    dll = libxext = dlopen("libXext.so.6", RTLD_GLOBAL | RTLD_LAZY);
+    if (dll == NULL)
+        return 0;
+
+    LOOKUP(XSetExtensionErrorHandler);
+
+    dll = libxi = dlopen("libXi.so.6", RTLD_GLOBAL | RTLD_LAZY);
+    if (dll == NULL)
+        return 0;
+
+    LOOKUP(XISelectEvents);
+    LOOKUP(XIQueryVersion);
+    LOOKUP(XIQueryDevice);
+    LOOKUP(XIFreeDeviceInfo);
+
+    #undef LOOKUP
+
+    return 1;
+} /* find_api_symbols */
+
+
+static void xinput2_cleanup(void)
+{
+    if (display != NULL)
+    {
+        pXCloseDisplay(display);
+        display = NULL;
+    } /* if */
+
+    memset(mice, '\0', sizeof (mice));
+    available_mice = 0;
+
+    #define LIBCLOSE(lib) { if (lib != NULL) { dlclose(lib); lib = NULL; } }
+    LIBCLOSE(libxi);
+    LIBCLOSE(libxext);
+    LIBCLOSE(libx11);
+    #undef LIBCLOSE
+
+    memset(input_events, '\0', sizeof (input_events));
+    input_events_read = input_events_write = 0;
+} /* xinput2_cleanup */
+
+
+static int init_mouse(MouseStruct *mouse, const XIDeviceInfo *devinfo)
+{
+    XIAnyClassInfo **classes = devinfo->classes;
+    int axis = 0;
+    int i = 0;
+
+    /*
+     * we only look at "slave" devices. "Master" pointers are the logical
+     *  cursors, "slave" pointers are the hardware that back them.
+     *  "Floating slaves" are hardware that don't back a cursor.
+     */
+
+    if ((devinfo->use != XISlavePointer) && (devinfo->use != XIFloatingSlave))
+        return 0;  /* not a device we care about. */
+    else if (strstr(devinfo->name, "XTEST pointer") != NULL)
+        return 0;  /* skip this nonsense. It's for the XTEST extension. */
+
+    mouse->device_id = devinfo->deviceid;
+    mouse->connected = 1;
+
+    for (i = 0; i < devinfo->num_classes; i++)
+    {
+        if ((classes[i]->type == XIValuatorClass) && (axis < MAX_AXIS))
+        {
+            const XIValuatorClassInfo *v = (XIValuatorClassInfo*) classes[i];
+            mouse->relative[axis] = (v->mode == XIModeRelative);
+            mouse->minval[axis] = (int) v->min;
+            mouse->maxval[axis] = (int) v->max;
+            axis++;
+        } /* if */
+    } /* for */
+
+    strncpy(mouse->name, devinfo->name, sizeof (mouse->name));
+    mouse->name[sizeof (mouse->name) - 1] = '\0';
+    return 1;
+} /* init_mouse */
+
+
+static int (*Xext_handler)(Display *, _Xconst char *, _Xconst char *) = NULL;
+static int xext_errhandler(Display *d, _Xconst char *ext, _Xconst char *reason)
+{
+    /* prevent Xlib spew to stderr for missing extensions. */
+    return (strcmp(reason, "missing") == 0) ? 0 : Xext_handler(d, ext, reason);
+} /* xext_errhandler */
+
+
+static int register_for_events(Display *dpy)
+{
+    XIEventMask evmask;
+    unsigned char mask[3] = { 0, 0, 0 };
+
+    XISetMask(mask, XI_HierarchyChanged);
+    XISetMask(mask, XI_RawMotion);
+    XISetMask(mask, XI_RawButtonPress);
+    XISetMask(mask, XI_RawButtonRelease);
+
+    evmask.deviceid = XIAllDevices;
+    evmask.mask_len = sizeof (mask);
+    evmask.mask = mask;
+
+    /* !!! FIXME: retval? */
+    pXISelectEvents(dpy, DefaultRootWindow(dpy), &evmask, 1);
+    return 1;
+} /* register_for_events */
+
+
+static int x11_xinput2_init_internal(void)
+{
+    const char *ext = "XInputExtension";
+    XIDeviceInfo *device_list = NULL;
+    int device_count = 0;
+    int available = 0;
+    int event = 0;
+    int error = 0;
+    int major = 2;
+    int minor = 0;
+    int i = 0;
+
+    xinput2_cleanup();  /* just in case... */
+
+    if (getenv("MANYMOUSE_NO_XINPUT2") != NULL)
+        return -1;
+
+    if (!find_api_symbols())
+        return -1;  /* couldn't find all needed symbols. */
+
+    display = pXOpenDisplay(NULL);
+    if (display == NULL)
+        return -1;  /* no X server at all */
+
+    Xext_handler = pXSetExtensionErrorHandler(xext_errhandler);
+    available = (pXQueryExtension(display, ext, &xi2_opcode, &event, &error) &&
+                 (pXIQueryVersion(display, &major, &minor) != BadRequest));
+    pXSetExtensionErrorHandler(Xext_handler);
+    Xext_handler = NULL;
+
+    if (!available)
+        return -1;  /* no XInput2 support. */
+
+    /*
+     * Register for events first, to prevent a race where we unplug a
+     *  device between when we queried for the list and when we start
+     *  listening for changes.
+     */
+    if (!register_for_events(display))
+        return -1;
+
+    device_list = pXIQueryDevice(display, XIAllDevices, &device_count);
+    for (i = 0; i < device_count; i++)
+    {
+        MouseStruct *mouse = &mice[available_mice];
+        if (init_mouse(mouse, &device_list[i]))
+            available_mice++;
+    } /* for */
+    pXIFreeDeviceInfo(device_list);
+
+    return available_mice;
+} /* x11_xinput2_init_internal */
+
+
+static int x11_xinput2_init(void)
+{
+    int retval = x11_xinput2_init_internal();
+    if (retval < 0)
+        xinput2_cleanup();
+    return retval;
+} /* x11_xinput2_init */
+
+
+static void x11_xinput2_quit(void)
+{
+    xinput2_cleanup();
+} /* x11_xinput2_quit */
+
+
+static const char *x11_xinput2_name(unsigned int index)
+{
+    return (index < available_mice) ? mice[index].name : NULL;
+} /* x11_xinput2_name */
+
+
+static int find_mouse_by_devid(const int devid)
+{
+    int i;
+    const MouseStruct *mouse = mice;
+
+    for (i = 0; i < available_mice; i++, mouse++)
+    {
+        if (mouse->device_id == devid)
+            return (mouse->connected) ? i : -1;
+    } /* for */
+
+    return -1;
+} /* find_mouse_by_devid */
+
+
+static int get_next_x11_event(XEvent *xev)
+{
+    int available = 0;
+
+    pXFlush(display);
+    if (pXEventsQueued(display, QueuedAlready))
+        available = 1;
+    else
+    {
+        /* XPending() blocks if there's no data, so select() first. */
+        struct timeval nowait;
+        const int fd = ConnectionNumber(display);
+        fd_set fdset;
+        FD_ZERO(&fdset);
+        FD_SET(fd, &fdset);
+        memset(&nowait, '\0', sizeof (nowait));
+        if (select(fd+1, &fdset, NULL, NULL, &nowait) == 1)
+            available = pXPending(display);
+    } /* else */
+
+    if (available)
+    {
+        memset(xev, '\0', sizeof (*xev));
+        pXNextEvent(display, xev);
+        return 1;
+    } /* if */
+
+    return 0;
+} /* get_next_x11_event */
+
+
+/* Everything else returns left (0), right (1), middle (2)...XI2 returns
+   right and middle in reverse, so swap them ourselves. */
+static inline int map_xi2_button(const int button)
+{
+    if (button == 2)
+        return 3;
+    else if (button == 3)
+        return 2;
+    return button;
+} /* map_xi2_button */
+
+
+static void pump_events(void)
+{
+    ManyMouseEvent event;
+    const int opcode = xi2_opcode;
+    const XIRawEvent *rawev = NULL;
+    const XIHierarchyEvent *hierev = NULL;
+    int mouse = 0;
+    XEvent xev;
+    int i = 0;
+
+    while (get_next_x11_event(&xev))
+    {
+        /* All XI2 events are "cookie" events...which need extra tapdance. */
+        if (xev.xcookie.type != GenericEvent)
+            continue;
+        else if (xev.xcookie.extension != opcode)
+            continue;
+        else if (!pXGetEventData(display, &xev.xcookie))
+            continue;
+
+        switch (xev.xcookie.evtype)
+        {
+            case XI_RawMotion:
+                rawev = (const XIRawEvent *) xev.xcookie.data;
+                mouse = find_mouse_by_devid(rawev->deviceid);
+                if (mouse != -1)
+                {
+                    const double *values = rawev->raw_values;
+                    int top = rawev->valuators.mask_len * 8;
+                    if (top > MAX_AXIS)
+                        top = MAX_AXIS;
+
+                    for (i = 0; i < top; i++)
+                    {
+                        if (XIMaskIsSet(rawev->valuators.mask, i))
+                        {
+                            const int value = (int) *values;
+                            if (mice[mouse].relative[i])
+                                event.type = MANYMOUSE_EVENT_RELMOTION;
+                            else
+                                event.type = MANYMOUSE_EVENT_ABSMOTION;
+                            event.device = mouse;
+                            event.item = i;
+                            event.value = value;
+                            event.minval = mice[mouse].minval[i];
+                            event.maxval = mice[mouse].maxval[i];
+                            if ((!mice[mouse].relative[i]) || (value))
+                                queue_event(&event);
+                            values++;
+                        } /* if */
+                    } /* for */
+                } /* if */
+                break;
+
+            case XI_RawButtonPress:
+            case XI_RawButtonRelease:
+                rawev = (const XIRawEvent *) xev.xcookie.data;
+                mouse = find_mouse_by_devid(rawev->deviceid);
+                if (mouse != -1)
+                {
+                    const int button = map_xi2_button(rawev->detail);
+                    const int pressed = (xev.xcookie.evtype==XI_RawButtonPress);
+
+                    /* gah, XInput2 still maps the wheel to buttons. */
+                    if ((button >= 4) && (button <= 7))
+                    {
+                        if (pressed)  /* ignore "up" for these "buttons" */
+                        {
+                            event.type = MANYMOUSE_EVENT_SCROLL;
+                            event.device = mouse;
+
+                            if ((button == 4) || (button == 5))
+                                event.item = 0;
+                            else
+                                event.item = 1;
+
+                            if ((button == 4) || (button == 6))
+                                event.value = 1;
+                            else
+                                event.value = -1;
+
+                            queue_event(&event);
+                        } /* if */
+                    } /* if */
+                    else
+                    {
+                        event.type = MANYMOUSE_EVENT_BUTTON;
+                        event.device = mouse;
+                        event.item = button-1;
+                        event.value = pressed;
+                        queue_event(&event);
+                    } /* else */
+                } /* if */
+                break;
+
+            case XI_HierarchyChanged:
+                hierev = (const XIHierarchyEvent *) xev.xcookie.data;
+                for (i = 0; i < hierev->num_info; i++)
+                {
+                    if (hierev->info[i].flags & XISlaveRemoved)
+                    {
+                        mouse = find_mouse_by_devid(hierev->info[i].deviceid);
+                        if (mouse != -1)
+                        {
+                            mice[mouse].connected = 0;
+                            event.type = MANYMOUSE_EVENT_DISCONNECT;
+                            event.device = mouse;
+                            queue_event(&event);
+                        } /* if */
+                    } /* if */
+                } /* for */
+                break;
+        } /* switch */
+
+        pXFreeEventData(display, &xev.xcookie);
+    } /* while */
+} /* pump_events */
+
+static int x11_xinput2_poll(ManyMouseEvent *event)
+{
+    if (dequeue_event(event))  /* ...favor existing events in the queue... */
+        return 1;
+
+    pump_events();  /* pump runloop for new hardware events... */
+    return dequeue_event(event);  /* see if anything had shown up... */
+} /* x11_xinput2_poll */
+
+static const ManyMouseDriver ManyMouseDriver_interface =
+{
+    "X11 XInput2 extension",
+    x11_xinput2_init,
+    x11_xinput2_quit,
+    x11_xinput2_name,
+    x11_xinput2_poll
+};
+
+const ManyMouseDriver *ManyMouseDriver_xinput2 = &ManyMouseDriver_interface;
+
+#else
+const ManyMouseDriver *ManyMouseDriver_xinput2 = 0;
+#endif /* SUPPORT_XINPUT2 blocker */
+
+/* end of x11_xinput2.c ... */
+
+@
+

@@ -1,5 +1,0 @@
-Name: GLEXT
-Description: GLEXT graphics
-requires_dlibs: -lGLEXT
-requires_slibs: -lGLEXT
-Requires: gl glu
