@@ -1,0 +1,974 @@
+@title Emulation of some Unix stuff on Windows
+@tangler unixem_util.hpp = $PWD/src/unixem/unixem_util.hpp
+@tangler unixem_util.cpp = $PWD/src/unixem/unixem_util.cpp
+@tangler flx_unistd.hpp  = $PWD/src/unixem/flx_unistd.hpp
+@tangler flx_glob.hpp    = $PWD/src/unixem/flx_glob.hpp
+@tangler flx_glob.cpp    = $PWD/src/unixem/flx_glob.cpp
+
+@h1 Emulation Of some Unix Stuff
+Primarily, some filename crud and error codes.
+@tangle unixem_util.hpp
+#ifndef __UNIXEM_UTIL_
+#define __UNIXEM_UTIL_
+
+int errno_from_Win32(unsigned long w32Err);
+char get_current_drive(void);
+# define UNIXEM_NUM_ELEMENTS(x)        (sizeof(x) / sizeof(0[x]))
+#endif
+@
+@tangle unixem_util.cpp
+#include "unixem_util.hpp"
+
+#include <assert.h>
+#include <errno.h>
+#include <limits.h>
+#include <windows.h>
+
+#if !defined(ECURDIR)
+# define ECURDIR        EACCES
+#endif /* !ECURDIR */
+#if !defined(ENOSYS)
+# define ENOSYS         EPERM
+#endif /* !ENOSYS */
+
+int errno_from_Win32(unsigned long w32Err)
+{
+    struct errmap_t
+    {
+        unsigned long   w32Err;
+        int             eerrno;
+    };
+
+    static const struct errmap_t    errmap[] =
+    {
+        /*   1 */       {   ERROR_INVALID_FUNCTION          ,   EINVAL          }
+        /*   2 */   ,   {   ERROR_FILE_NOT_FOUND            ,   ENOENT          }
+        /*   3 */   ,   {   ERROR_PATH_NOT_FOUND            ,   ENOENT          }
+        /*   4 */   ,   {   ERROR_TOO_MANY_OPEN_FILES       ,   EMFILE          }
+        /*   5 */   ,   {   ERROR_ACCESS_DENIED             ,   EACCES          }
+        /*   6 */   ,   {   ERROR_INVALID_HANDLE            ,   EBADF           }
+        /*   7 */   ,   {   ERROR_ARENA_TRASHED             ,   ENOMEM          }
+        /*   8 */   ,   {   ERROR_NOT_ENOUGH_MEMORY         ,   ENOMEM          }
+        /*   9 */   ,   {   ERROR_INVALID_BLOCK             ,   ENOMEM          }
+        /*  10 */   ,   {   ERROR_BAD_ENVIRONMENT           ,   E2BIG           }
+        /*  11 */   ,   {   ERROR_BAD_FORMAT                ,   ENOEXEC         }
+        /*  12 */   ,   {   ERROR_INVALID_ACCESS            ,   EINVAL          }
+        /*  13 */   ,   {   ERROR_INVALID_DATA              ,   EINVAL          }
+        /*  14 */   ,   {   ERROR_OUTOFMEMORY               ,   ENOMEM          }
+        /*  15 */   ,   {   ERROR_INVALID_DRIVE             ,   ENOENT          }
+        /*  16 */   ,   {   ERROR_CURRENT_DIRECTORY         ,   ECURDIR         }
+        /*  17 */   ,   {   ERROR_NOT_SAME_DEVICE           ,   EXDEV           }
+        /*  18 */   ,   {   ERROR_NO_MORE_FILES             ,   ENOENT          }
+        /*  19 */   ,   {   ERROR_WRITE_PROTECT             ,   EROFS           }
+        /*  20 */   ,   {   ERROR_BAD_UNIT                  ,   ENXIO           }
+        /*  21 */   ,   {   ERROR_NOT_READY                 ,   EBUSY           }
+        /*  22 */   ,   {   ERROR_BAD_COMMAND               ,   EIO             }
+        /*  23 */   ,   {   ERROR_CRC                       ,   EIO             }
+        /*  24 */   ,   {   ERROR_BAD_LENGTH                ,   EIO             }
+        /*  25 */   ,   {   ERROR_SEEK                      ,   EIO             }
+        /*  26 */   ,   {   ERROR_NOT_DOS_DISK              ,   EIO             }
+        /*  27 */   ,   {   ERROR_SECTOR_NOT_FOUND          ,   ENXIO           }
+        /*  28 */   ,   {   ERROR_OUT_OF_PAPER              ,   EBUSY           }
+        /*  29 */   ,   {   ERROR_WRITE_FAULT               ,   EIO             }
+        /*  30 */   ,   {   ERROR_READ_FAULT                ,   EIO             }
+        /*  31 */   ,   {   ERROR_GEN_FAILURE               ,   EIO             }
+        /*  32 */   ,   {   ERROR_SHARING_VIOLATION         ,   EAGAIN          }
+        /*  33 */   ,   {   ERROR_LOCK_VIOLATION            ,   EACCES          }
+        /*  34 */   ,   {   ERROR_WRONG_DISK                ,   ENXIO           }
+        /*  35 */   ,   {   35                              ,   ENFILE          }
+        /*  36 */   ,   {   ERROR_SHARING_BUFFER_EXCEEDED   ,   ENFILE          }
+        /*  37 */   ,   {   ERROR_HANDLE_EOF                ,   EINVAL          }
+        /*  38 */   ,   {   ERROR_HANDLE_DISK_FULL          ,   ENOSPC          }
+        /*  39 */   ,   {   0                               ,   0               }
+        /*  40 */   ,   {   0                               ,   0               }
+        /*  41 */   ,   {   0                               ,   0               }
+        /*  42 */   ,   {   0                               ,   0               }
+        /*  43 */   ,   {   0                               ,   0               }
+        /*  44 */   ,   {   0                               ,   0               }
+        /*  45 */   ,   {   0                               ,   0               }
+        /*  46 */   ,   {   0                               ,   0               }
+        /*  47 */   ,   {   0                               ,   0               }
+        /*  48 */   ,   {   0                               ,   0               }
+        /*  49 */   ,   {   0                               ,   0               }
+        /*  50 */   ,   {   ERROR_NOT_SUPPORTED             ,   ENOSYS          }
+        /*  51 */   ,   {   0                               ,   0               }
+        /*  52 */   ,   {   0                               ,   0               }
+        /*  53 */   ,   {   ERROR_BAD_NETPATH               ,   ENOENT          }
+        /*  54 */   ,   {   0                               ,   0               }
+        /*  55 */   ,   {   0                               ,   0               }
+        /*  56 */   ,   {   0                               ,   0               }
+        /*  57 */   ,   {   0                               ,   0               }
+        /*  58 */   ,   {   0                               ,   0               }
+        /*  59 */   ,   {   0                               ,   0               }
+        /*  60 */   ,   {   0                               ,   0               }
+        /*  61 */   ,   {   0                               ,   0               }
+        /*  62 */   ,   {   0                               ,   0               }
+        /*  63 */   ,   {   0                               ,   0               }
+        /*  64 */   ,   {   0                               ,   0               }
+        /*  65 */   ,   {   ERROR_NETWORK_ACCESS_DENIED     ,   EACCES          }
+        /*  66 */   ,   {   0                               ,   0               }
+        /*  67 */   ,   {   ERROR_BAD_NET_NAME              ,   ENOENT          }
+        /*  68 */   ,   {   0                               ,   0               }
+        /*  69 */   ,   {   0                               ,   0               }
+        /*  70 */   ,   {   0                               ,   0               }
+        /*  71 */   ,   {   0                               ,   0               }
+        /*  72 */   ,   {   0                               ,   0               }
+        /*  73 */   ,   {   0                               ,   0               }
+        /*  74 */   ,   {   0                               ,   0               }
+        /*  75 */   ,   {   0                               ,   0               }
+        /*  76 */   ,   {   0                               ,   0               }
+        /*  77 */   ,   {   0                               ,   0               }
+        /*  78 */   ,   {   0                               ,   0               }
+        /*  79 */   ,   {   0                               ,   0               }
+        /*  80 */   ,   {   ERROR_FILE_EXISTS               ,   EEXIST          }
+        /*  81 */   ,   {   0                               ,   0               }
+        /*  82 */   ,   {   ERROR_CANNOT_MAKE               ,   EACCES          }
+        /*  83 */   ,   {   ERROR_FAIL_I24                  ,   EACCES          }
+        /*  84 */   ,   {   0                               ,   0               }
+        /*  85 */   ,   {   0                               ,   0               }
+        /*  86 */   ,   {   0                               ,   0               }
+        /*  87 */   ,   {   ERROR_INVALID_PARAMETER         ,   EINVAL          }
+        /*  88 */   ,   {   0                               ,   0               }
+        /*  89 */   ,   {   ERROR_NO_PROC_SLOTS             ,   EAGAIN          }
+        /*  90 */   ,   {   0                               ,   0               }
+        /*  91 */   ,   {   0                               ,   0               }
+        /*  92 */   ,   {   0                               ,   0               }
+        /*  93 */   ,   {   0                               ,   0               }
+        /*  94 */   ,   {   0                               ,   0               }
+        /*  95 */   ,   {   0                               ,   0               }
+        /*  96 */   ,   {   0                               ,   0               }
+        /*  97 */   ,   {   0                               ,   0               }
+        /*  98 */   ,   {   0                               ,   0               }
+        /*  99 */   ,   {   0                               ,   0               }
+        /* 100 */   ,   {   0                               ,   0               }
+        /* 101 */   ,   {   0                               ,   0               }
+        /* 102 */   ,   {   0                               ,   0               }
+        /* 103 */   ,   {   0                               ,   0               }
+        /* 104 */   ,   {   0                               ,   0               }
+        /* 105 */   ,   {   0                               ,   0               }
+        /* 106 */   ,   {   0                               ,   0               }
+        /* 107 */   ,   {   0                               ,   0               }
+        /* 108 */   ,   {   ERROR_DRIVE_LOCKED              ,   EACCES          }
+        /* 109 */   ,   {   ERROR_BROKEN_PIPE               ,   EPIPE           }
+        /* 110 */   ,   {   0                               ,   0               }
+        /* 111 */   ,   {   0                               ,   0               }
+        /* 112 */   ,   {   ERROR_DISK_FULL                 ,   ENOSPC          }
+        /* 113 */   ,   {   0                               ,   0               }
+        /* 114 */   ,   {   ERROR_INVALID_TARGET_HANDLE     ,   EBADF           }
+        /* 115 */   ,   {   0                               ,   0               }
+        /* 116 */   ,   {   0                               ,   0               }
+        /* 117 */   ,   {   0                               ,   0               }
+        /* 118 */   ,   {   0                               ,   0               }
+        /* 119 */   ,   {   0                               ,   0               }
+        /* 120 */   ,   {   0                               ,   0               }
+        /* 121 */   ,   {   0                               ,   0               }
+        /* 122 */   ,   {   0                               ,   0               }
+        /* 123 */   ,   {   ERROR_INVALID_NAME              ,   ENOENT          }
+        /* 124 */   ,   {   ERROR_INVALID_HANDLE            ,   EINVAL          }
+        /* 125 */   ,   {   0                               ,   0               }
+        /* 126 */   ,   {   0                               ,   0               }
+        /* 127 */   ,   {   0                               ,   0               }
+        /* 128 */   ,   {   ERROR_WAIT_NO_CHILDREN          ,   ECHILD          }
+        /* 129 */   ,   {   ERROR_CHILD_NOT_COMPLETE        ,   ECHILD          }
+        /* 130 */   ,   {   ERROR_DIRECT_ACCESS_HANDLE      ,   EBADF           }
+        /* 131 */   ,   {   ERROR_NEGATIVE_SEEK             ,   EINVAL          }
+        /* 132 */   ,   {   ERROR_SEEK_ON_DEVICE            ,   EACCES          }
+        /* 133 */   ,   {   0                               ,   0               }
+        /* 134 */   ,   {   0                               ,   0               }
+        /* 135 */   ,   {   0                               ,   0               }
+        /* 136 */   ,   {   0                               ,   0               }
+        /* 137 */   ,   {   0                               ,   0               }
+        /* 138 */   ,   {   0                               ,   0               }
+        /* 139 */   ,   {   0                               ,   0               }
+        /* 140 */   ,   {   0                               ,   0               }
+        /* 141 */   ,   {   0                               ,   0               }
+        /* 142 */   ,   {   0                               ,   0               }
+        /* 143 */   ,   {   0                               ,   0               }
+        /* 144 */   ,   {   0                               ,   0               }
+        /* 145 */   ,   {   ERROR_DIR_NOT_EMPTY             ,   ENOTEMPTY       }
+        /* 146 */   ,   {   0                               ,   0               }
+        /* 147 */   ,   {   0                               ,   0               }
+        /* 148 */   ,   {   0                               ,   0               }
+        /* 149 */   ,   {   0                               ,   0               }
+        /* 150 */   ,   {   0                               ,   0               }
+        /* 151 */   ,   {   0                               ,   0               }
+        /* 152 */   ,   {   0                               ,   0               }
+        /* 153 */   ,   {   0                               ,   0               }
+        /* 154 */   ,   {   0                               ,   0               }
+        /* 155 */   ,   {   0                               ,   0               }
+        /* 156 */   ,   {   0                               ,   0               }
+        /* 157 */   ,   {   0                               ,   0               }
+        /* 158 */   ,   {   ERROR_NOT_LOCKED                ,   EACCES          }
+        /* 159 */   ,   {   0                               ,   0               }
+        /* 160 */   ,   {   0                               ,   0               }
+        /* 161 */   ,   {   ERROR_BAD_PATHNAME              ,   ENOENT          }
+        /* 162 */   ,   {   0                               ,   0               }
+        /* 163 */   ,   {   0                               ,   0               }
+        /* 164 */   ,   {   ERROR_MAX_THRDS_REACHED         ,   EAGAIN          }
+        /* 165 */   ,   {   0                               ,   0               }
+        /* 166 */   ,   {   0                               ,   0               }
+        /* 167 */   ,   {   ERROR_LOCK_FAILED               ,   EACCES          }
+        /* 168 */   ,   {   0                               ,   0               }
+        /* 169 */   ,   {   0                               ,   0               }
+        /* 170 */   ,   {   0                               ,   0               }
+        /* 171 */   ,   {   0                               ,   0               }
+        /* 172 */   ,   {   0                               ,   0               }
+        /* 173 */   ,   {   0                               ,   0               }
+        /* 174 */   ,   {   0                               ,   0               }
+        /* 175 */   ,   {   0                               ,   0               }
+        /* 176 */   ,   {   0                               ,   0               }
+        /* 177 */   ,   {   0                               ,   0               }
+        /* 178 */   ,   {   0                               ,   0               }
+        /* 179 */   ,   {   0                               ,   0               }
+        /* 180 */   ,   {   0                               ,   0               }
+        /* 181 */   ,   {   0                               ,   0               }
+        /* 182 */   ,   {   0                               ,   0               }
+        /* 183 */   ,   {   ERROR_ALREADY_EXISTS            ,   EEXIST          }
+        /* 184 */   ,   {   0                               ,   0               }
+        /* 185 */   ,   {   0                               ,   0               }
+        /* 186 */   ,   {   0                               ,   0               }
+        /* 187 */   ,   {   0                               ,   0               }
+        /* 188 */   ,   {   0                               ,   0               }
+        /* 189 */   ,   {   0                               ,   0               }
+        /* 190 */   ,   {   0                               ,   0               }
+        /* 191 */   ,   {   0                               ,   0               }
+        /* 192 */   ,   {   0                               ,   0               }
+        /* 193 */   ,   {   0                               ,   0               }
+        /* 194 */   ,   {   0                               ,   0               }
+        /* 195 */   ,   {   0                               ,   0               }
+        /* 196 */   ,   {   0                               ,   0               }
+        /* 197 */   ,   {   0                               ,   0               }
+        /* 198 */   ,   {   0                               ,   0               }
+        /* 199 */   ,   {   0                               ,   0               }
+
+        /* 206 */   ,   {   ERROR_FILENAME_EXCED_RANGE      ,   ENAMETOOLONG    }
+
+        /* 215 */   ,   {   ERROR_NESTING_NOT_ALLOWED       ,   EAGAIN          }
+
+        /* 267 */   ,   {   ERROR_DIRECTORY                 ,   ENOTDIR         }
+
+#ifdef EINPROGRESS
+        /* 997 */   ,   {   ERROR_IO_PENDING                ,   EINPROGRESS     }
+#else /* ? EINPROGRESS */
+        /* 997 */   ,   {   ERROR_IO_PENDING                ,   EBUSY           }
+#endif /* EINPROGRESS */
+
+        /* 1816 */  ,   {   ERROR_NOT_ENOUGH_QUOTA          ,   ENOMEM          }
+    };
+
+    size_t  i;
+
+    for(i = 0; i < UNIXEM_NUM_ELEMENTS(errmap); ++i)
+    {
+        if(w32Err == errmap[i].w32Err)
+        {
+            return errmap[i].eerrno;
+        }
+    }
+
+    assert(!"Unrecognised value");
+
+    return EINVAL;
+}
+
+char get_current_drive(void)
+{
+    char    szDrive[1 + _MAX_PATH] = "";
+    DWORD   dw  =   GetCurrentDirectoryA(UNIXEM_NUM_ELEMENTS(szDrive), &szDrive[0]);
+
+    if(dw < UNIXEM_NUM_ELEMENTS(szDrive))
+    {
+        if( szDrive[0] < 'A' ||
+            szDrive[0] > 'Z')
+        {
+            szDrive[0] = (char)('A' + (szDrive[0] - 'a'));
+        }
+
+        return szDrive[0];
+    }
+    else
+    {
+        errno = errno_from_Win32(GetLastError());
+
+        return '\0';
+    }
+}
+@
+@tangle flx_unistd.hpp
+#ifndef SYNSOFT_UNIXEM_INCL_H_UNISTD
+#define SYNSOFT_UNIXEM_INCL_H_UNISTD
+
+#include <stddef.h>     /* for size_t */
+#include <sys/types.h>  /* for mode_t */
+
+/* Some of the functions declared here (and defined in unistd.c) may be
+ * provided by some Win32 compilers. So we discriminate for support here,
+ * and exclude definitions as appropriate.
+ */
+
+#if defined(__BORLANDC__)
+# include <dir.h>
+# define UNIXEM_chdir_PROVIDED_BY_COMPILER
+# define UNIXEM_getcwd_PROVIDED_BY_COMPILER
+# define UNIXEM_mkdir_PROVIDED_BY_COMPILER
+# define UNIXEM_rmdir_PROVIDED_BY_COMPILER
+#elif defined(__DMC__)
+# include <direct.h>
+# define UNIXEM_chdir_PROVIDED_BY_COMPILER
+# define UNIXEM_close_PROVIDED_BY_COMPILER
+# define UNIXEM_getcwd_PROVIDED_BY_COMPILER
+#elif defined(__GNUC__)
+# include <io.h>
+# define UNIXEM_chdir_PROVIDED_BY_COMPILER
+# define UNIXEM_chmod_PROVIDED_BY_COMPILER
+# define UNIXEM_getcwd_PROVIDED_BY_COMPILER
+# define UNIXEM_mkdir_PROVIDED_BY_COMPILER
+# define UNIXEM_rmdir_PROVIDED_BY_COMPILER
+#elif defined(__INTEL_COMPILER)
+# if defined(_WIN32) && \
+     !defined(__STDC__)
+#  include <direct.h>
+#  define UNIXEM_chdir_PROVIDED_BY_COMPILER
+#  define UNIXEM_getcwd_PROVIDED_BY_COMPILER
+#  define UNIXEM_mkdir_PROVIDED_BY_COMPILER
+#  define UNIXEM_rmdir_PROVIDED_BY_COMPILER
+# endif /* !__STDC__ */
+#elif defined(__MWERKS__)
+# define UNIXEM_mkdir_PROVIDED_BY_COMPILER
+#elif defined(__WATCOMC__)
+# define UNIXEM_chdir_PROVIDED_BY_COMPILER
+# define UNIXEM_getcwd_PROVIDED_BY_COMPILER
+# define UNIXEM_mkdir_PROVIDED_BY_COMPILER
+# define UNIXEM_rmdir_PROVIDED_BY_COMPILER
+#elif defined(_MSC_VER)
+# if !defined(__STDC__)
+#  include <direct.h>
+#  define UNIXEM_chdir_PROVIDED_BY_COMPILER
+#  define UNIXEM_getcwd_PROVIDED_BY_COMPILER
+#  define UNIXEM_mkdir_PROVIDED_BY_COMPILER
+#  define UNIXEM_rmdir_PROVIDED_BY_COMPILER
+# endif /* !__STDC__ */
+#else
+# error Compiler not discriminated
+#endif /* compiler */
+
+
+#if defined(_MSC_VER) && \
+    !defined(__STDC__)
+# define UNIXEM_UNISTD_INCLUDING_MS_DIRECT_H
+#endif /* compiler */
+
+#ifndef _WIN32
+# error This file is only currently defined for compilation on Win32 systems
+#endif /* _WIN32 */
+
+/* /////////////////////////////////////////////////////////////////////////////
+ * Constants and definitions
+ */
+
+//#ifndef PATH_MAX
+//# define PATH_MAX   (260)   /*!< \brief The maximum number of characters (including null terminator) in a directory entry name */
+//#endif /* !PATH_MAX */
+
+enum
+{
+        _PC_LINK_MAX                    /*!< The maximum number of links to the file. */
+#define _PC_LINK_MAX            _PC_LINK_MAX
+    ,   _PC_MAX_CANON                   /*!< Maximum number of bytes in canonical input line. Applicable only to terminal devices. */
+#define _PC_MAX_CANON           _PC_MAX_CANON
+    ,   _PC_MAX_INPUT                   /*!< Maximum number of bytes allowed in an input queue. Applicable only to terminal devices. */
+#define _PC_MAX_INPUT           _PC_MAX_INPUT
+    ,   _PC_NAME_MAX                    /*!< Maximum number of bytes in a file name, not including a nul terminator. This number can range from 14 through 255. This value is applicable only to a directory file. */
+#define _PC_NAME_MAX            _PC_NAME_MAX
+    ,   _PC_PATH_MAX                    /*!< Maximum number of bytes in a path name, including a nul terminator. */
+#define _PC_PATH_MAX            _PC_PATH_MAX
+
+    ,   _PC_PIPE_BUF                    /*!< Maximum number of bytes guaranteed to be written atomically. This value is applicable only to a first-in-first-out (FIFO). */
+#define _PC_PIPE_BUF            _PC_PIPE_BUF
+    ,   _PC_CHOWN_RESTRICTED            /*!< Returns 0 if the use of the chown subroutine is restricted to a process with appropriate privileges, and if the chown subroutine is restricted to changing the group ID of a file only to the effective group ID of the process or to one of its supplementary group IDs. */
+#define _PC_CHOWN_RESTRICTED    _PC_CHOWN_RESTRICTED
+    ,   _PC_NO_TRUNC                    /*!< Returns 0 if long component names are truncated. This value is applicable only to a directory file. */
+#define _PC_NO_TRUNC            _PC_NO_TRUNC
+    ,   _PC_VDISABLE                    /*!< This is always 0. No disabling character is defined. This value is applicable only to a terminal device. */
+#define _PC_VDISABLE            _PC_VDISABLE
+    ,   _PC_AIX_DISK_PARTITION          /*!< Determines the physical partition size of the disk.
+Note:
+The _PC_AIX_DISK_PARTITION variable is available only to the root user. */
+#define _PC_AIX_DISK_PARTITION    _PC_AIX_DISK_PARTITION
+    ,   _PC_AIX_DISK_SIZE               /*!< Determines the disk size in megabytes.
+Note:
+The _PC_AIX_DISK_SIZE variable is available only to the root user.
+Note:
+The _PC_FILESIZEBITS and PC_SYNC_IO flags apply to AIX 4.3 and later releases. */
+#define _PC_AIX_DISK_SIZE           _PC_AIX_DISK_SIZE
+    ,   _PC_FILESIZEBITS                /*!< Returns the minimum number of bits required to hold the file system's maximum file size as a signed integer. The smallest value returned is 32. */
+#define _PC_FILESIZEBITS            _PC_FILESIZEBITS
+    ,   _PC_SYNC_IO                     /*!< Returns -1 if the file system does not support the Synchronized Input and Output option. Any value other than -1 is returned if the file system supports the option. */
+#define _PC_SYNC_IO                 _PC_SYNC_IO
+};
+
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
+/** \brief Creates a hardlink.
+ *
+ * This function creates a link from \c originalFile to \c linkName.
+ *
+ * \param originalFile Path of the original file
+ * \param linkName Path of the link
+ *
+ * \return O on success, or -1 if there is an error
+ *
+ * \note Hardlink support is only available on Windows 2000 and later, and only
+ *        works within a single drive.
+ */
+int link(const char *originalFile, const char *linkName);
+
+/** \brief Unlinks a file or directory
+ *
+ * \param path The path of the file or directory to unlink
+ *
+ * \return O on success, or -1 if there is an error
+ */
+int unlink(const char *path);
+
+
+/** \brief Change the current working directory.
+ *
+ * This function changes the current working directory to the directory
+ * specified by dirName. dirName must refer to an existing directory.
+ *
+ * \param dirName Path of new working directory
+ * \return O on success, or -1 if there is an error
+ */
+#ifndef UNIXEM_chdir_PROVIDED_BY_COMPILER
+int chdir(const char *dirName);
+#endif /* !UNIXEM_chdir_PROVIDED_BY_COMPILER */
+
+
+/** \brief Get the current working directory
+ *
+ * This function gets the full path of the current working directory
+ * and stores it in buffer.
+ *
+ * \param buffer Storage location for the current working directory
+ * \param max_len Maximum length of path (in characters)
+ * \return buffer on success, or NULL to indicate error.
+ */
+#ifndef UNIXEM_getcwd_PROVIDED_BY_COMPILER
+char *getcwd(char *buffer, size_t max_len);
+#endif /* !UNIXEM_getcwd_PROVIDED_BY_COMPILER */
+
+
+/** \brief Creates the given directory
+ *
+ * This function creates the named directory.
+ *
+ * \param dirName Path of directory to remove
+ * \param mode The access permissions of the directory
+ *
+ * \return O on success, or -1 if there is an error
+ */
+#ifndef UNIXEM_mkdir_PROVIDED_BY_COMPILER
+int mkdir(const char *dirName, unsigned mode);
+#endif /* !UNIXEM_mkdir_PROVIDED_BY_COMPILER */
+
+
+/** \brief Removes the given directory
+ *
+ * This function removes the named directory.
+ *
+ * \param dirName Path of directory to remove
+ * \return O on success, or -1 if there is an error
+ */
+#ifndef UNIXEM_rmdir_PROVIDED_BY_COMPILER
+int rmdir(const char *dirName);
+#endif /* !UNIXEM_rmdir_PROVIDED_BY_COMPILER */
+
+/** \brief Closes a file
+ *
+ * \param handle The handle of the file to be closed
+ * \return 0 on success, or -1 if there is an error
+ */
+#ifndef UNIXEM_close_PROVIDED_BY_COMPILER
+int close(int handle);
+#endif /* !UNIXEM_close_PROVIDED_BY_COMPILER */
+
+/** \brief Creates a pipe
+ *
+ * \param handles An array of two handles. handles[0] will be set to the
+ * read stream. handels[1] will be set to the write stream
+ * \return 0 on success, or -1 if there is an error
+ */
+/* int pipe(int handles[2]); */
+
+/** \brief Returns the size, in bytes, of the page size
+ */
+int getpagesize(void);
+
+/** \brief Provides access to various system limits not available at compile time
+ */
+long pathconf(char const *path, int name);
+
+
+/** \brief Turns \c path into a fully qualified path, resolving all symbolic
+ * links, multiple /, /./ and /../
+ *
+ * \param path The relative path to be converted into absolute form
+ * \param resolvedPath Pointer to a buffer to receive the path. This must contain
+ *  sufficient storage for a valid path
+ */
+char *realpath(char const *path, char resolvedPath[]);
+
+/** \brief Suspends execution for the given internal
+ *
+ * \param microSeconds The number of microseconds in the sleep interval
+ */
+int usleep(unsigned long microSeconds);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif /* __cplusplus */
+
+#endif /* SYNSOFT_UNIXEM_INCL_H_UNISTD */
+
+@h1 Glob
+Glob is generally replaced by Felix binding of Google's RE2
+regexp system.
+
+Note: this requires flx_glob_config.hpp which doesn't seem to exist!
+
+@tangle flx_glob.hpp
+#ifndef __FLX_GLOB_H__
+#define __FLX_GLOB_H__
+#include <flx_glob_config.hpp>
+
+#if !FLX_WIN32
+#include <glob.h>
+#else
+
+/* Error codes */
+#define GLOB_NOSPACE    (1)             /*!< \brief (Error result code:) An attempt to allocate memory failed, or if errno was 0 GLOB_LIMIT was specified in the flags and ARG_MAX patterns were matched. */
+#define GLOB_ABORTED    (2)             /*!< \brief (Error result code:) The scan was stopped because an error was encountered and either GLOB_ERR was set or (*errfunc)() returned non-zero. */
+#define GLOB_NOMATCH    (3)             /*!< \brief (Error result code:) The pattern does not match any existing pathname, and GLOB_NOCHECK was not set int flags. */
+#define GLOB_NOSYS      (4)             /*!< \brief (Error result code:) . */
+#define GLOB_ABEND      GLOB_ABORTED    /*!< \brief (Error result code:) . */
+
+/* Flags */
+#define GLOB_ERR            0x00000001  /*!< \brief Return on read errors. */
+#define GLOB_MARK           0x00000002  /*!< \brief Append a slash to each name. */
+#define GLOB_NOSORT         0x00000004  /*!< \brief Don't sort the names. */
+#define GLOB_DOOFFS         0x00000008  /*!< \brief Insert PGLOB->gl_offs NULLs. Supported from version 1.6 of UNIXEm. */
+#define GLOB_NOCHECK        0x00000010  /*!< \brief If nothing matches, return the pattern. Supported from version 1.6 of UNIXEm. */
+#define GLOB_APPEND         0x00000020  /*!< \brief Append to results of a previous call. Not currently supported in this implementation. */
+#define GLOB_NOESCAPE       0x00000040  /*!< \brief Backslashes don't quote metacharacters. Has no effect in this implementation, since escaping is not supported. */
+
+#define GLOB_PERIOD         0x00000080  /*!< \brief Leading `.' can be matched by metachars. Supported from version 1.6 of UNIXEm. */
+#define GLOB_MAGCHAR        0x00000100  /*!< \brief Set in gl_flags if any metachars seen. Supported from version 1.6 of UNIXEm. */
+/* #define GLOB_ALTDIRFUNC     0x00000200 */  /*!< \brief Use gl_opendir et al functions. Not currently supported in this implementation. */
+/* #define GLOB_BRACE          0x00000400 */  /*!< \brief Expand "{a,b}" to "a" "b". Not currently supported in this implementation. */
+#define GLOB_NOMAGIC        0x00000800  /*!< \brief If no magic chars, return the pattern. Supported from version 1.6 of UNIXEm. */
+#define GLOB_TILDE          0x00001000  /*!< \brief Expand ~user and ~ to home directories. Partially supported from version 1.6 of UNIXEm: leading ~ is expanded to %HOMEDRIVE%%HOMEPATH%. */
+#define GLOB_ONLYDIR        0x00002000  /*!< \brief Match only directories. This implementation guarantees to only return directories when this flag is specified. */
+#define GLOB_TILDE_CHECK    0x00004000  /*!< \brief Like GLOB_TILDE but return an GLOB_NOMATCH even if GLOB_NOCHECK specified. Supported from version 1.6 of UNIXEm. */
+#define GLOB_ONLYFILE       0x00008000  /*!< \brief Match only files. Supported from version 1.6 of UNIXEm. */
+#define GLOB_NODOTSDIRS     0x00010000  /*!< \brief Elide "." and ".." directories from wildcard searches. Supported from version 1.6 of UNIXEm. */
+#define GLOB_LIMIT          0x00020000  /*!< \brief Limits the search to the number specified by the caller in gl_matchc. Supported from version 1.6 of UNIXEm. */
+
+typedef struct
+{
+  int   gl_pathc;   /*!< count of total paths so far */
+  int   gl_matchc;  /*!< count of paths matching pattern */
+  int   gl_offs;    /*!< reserved at beginning of gl_pathv */
+  int   gl_flags;   /*!< returned flags */
+  char  **gl_pathv; /*!< list of paths matching pattern */
+} glob_t;
+
+int GLOB_EXTERN glob( char const  *pattern
+        , int         flags
+        , int       (*errfunc)(char const *, int)
+        , glob_t      *pglob);
+
+void GLOB_EXTERN globfree(glob_t *pglob);
+
+#endif
+#endif
+@
+
+@tangle flx_glob.cpp
+#include "flx_glob.hpp"
+#include "unixem_util.hpp"
+
+#include <errno.h>
+#include <stdlib.h>
+#include <string.h>
+#include <windows.h>
+
+static char const *strrpbrk(char const *string, char const *strCharSet)
+{
+    char const *part   =   NULL;
+    char const  *pch;
+
+    for(pch = strCharSet; *pch; ++pch)
+    {
+        char const *p  =   strrchr(string, *pch);
+
+        if(NULL != p)
+        {
+            if(NULL == part)
+            {
+                part = p;
+            }
+            else
+            {
+                if(part < p)
+                {
+                    part = p;
+                }
+            }
+        }
+    }
+
+    return part;
+}
+
+int glob(   char const  *pattern
+        ,   int         flags
+        , int         (*errfunc)(char const *, int)
+        ,   glob_t      *pglob)
+{
+    int                 result;
+    char                szRelative[1 + _MAX_PATH];
+    char const          *file_part;
+    WIN32_FIND_DATAA    find_data;
+    HANDLE              hFind;
+    char                *buffer;
+    char                szPattern2[1 + _MAX_PATH];
+    char                szPattern3[1 + _MAX_PATH];
+    char const          *effectivePattern   =   pattern;
+    char const          *leafMost;
+    const int           bMagic              =   (NULL != strpbrk(pattern, "?*"));
+    int                 bNoMagic            =   0;
+    int                 bMagic0;
+    size_t              maxMatches          =   ~(size_t)(0);
+
+    if(flags & GLOB_NOMAGIC)
+    {
+        bNoMagic = !bMagic;
+    }
+
+    if(flags & GLOB_LIMIT)
+    {
+        maxMatches = (size_t)pglob->gl_matchc;
+    }
+
+    if(flags & GLOB_TILDE)
+    {
+        if( '~' == pattern[0] &&
+            (   '\0' == pattern[1] ||
+                '/' == pattern[1] ||
+                '\\' == pattern[1]))
+        {
+            DWORD   dw;
+
+            (void)lstrcpyA(&szPattern2[0], "%HOMEDRIVE%%HOMEPATH%");
+
+            dw = ExpandEnvironmentStringsA(&szPattern2[0], &szPattern3[0], UNIXEM_NUM_ELEMENTS(szPattern3) - 1);
+
+            if(0 != dw)
+            {
+                (void)lstrcpynA(&szPattern3[0] + dw - 1, &pattern[1], (int)(UNIXEM_NUM_ELEMENTS(szPattern3) - dw));
+                szPattern3[UNIXEM_NUM_ELEMENTS(szPattern3) - 1] = '\0';
+
+                effectivePattern = szPattern3;
+            }
+        }
+    }
+
+    file_part = strrpbrk(effectivePattern, "\\/");
+
+    if(NULL != file_part)
+    {
+        leafMost = ++file_part;
+
+        (void)lstrcpyA(szRelative, effectivePattern);
+        szRelative[file_part - effectivePattern] = '\0';
+    }
+    else
+    {
+        szRelative[0] = '\0';
+        leafMost = effectivePattern;
+    }
+
+    bMagic0 =   (leafMost == strpbrk(leafMost, "?*"));
+
+    hFind   =   FindFirstFileA(effectivePattern, &find_data);
+    buffer  =   NULL;
+
+    pglob->gl_pathc = 0;
+    pglob->gl_pathv = NULL;
+
+    if(0 == (flags & GLOB_DOOFFS))
+    {
+        pglob->gl_offs = 0;
+    }
+
+    if(hFind == INVALID_HANDLE_VALUE)
+    {
+        if(NULL != errfunc)
+        {
+            (void)errfunc(effectivePattern, (int)GetLastError());
+        }
+
+        result = GLOB_NOMATCH;
+    }
+    else
+    {
+        int     cbCurr      =   0;
+        size_t  cbAlloc     =   0;
+        size_t  cMatches    =   0;
+
+        result = 0;
+
+        do
+        {
+            int     cch;
+            size_t  new_cbAlloc;
+
+            if( bMagic0 &&
+                0 == (flags & GLOB_PERIOD))
+            {
+                if('.' == find_data.cFileName[0])
+                {
+                    continue;
+                }
+            }
+
+            if(find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+            {
+#ifdef GLOB_ONLYFILE
+                if(flags & GLOB_ONLYFILE)
+                {
+                    continue;
+                }
+#endif /* GLOB_ONLYFILE */
+
+                if( bMagic0 &&
+                    GLOB_NODOTSDIRS == (flags & GLOB_NODOTSDIRS))
+                {
+                    /* Pattern must begin with '.' to match either dots directory */
+                    if( 0 == lstrcmpA(".", find_data.cFileName) ||
+                        0 == lstrcmpA("..", find_data.cFileName))
+                    {
+                        continue;
+                    }
+                }
+
+                if(flags & GLOB_MARK)
+                {
+#if 0
+                    if(find_data.cFileName[0] >= 'A' && find_data.cFileName[0] <= 'M')
+#endif /* 0 */
+                    (void)lstrcatA(find_data.cFileName, "/");
+                }
+            }
+            else
+            {
+                if(flags & GLOB_ONLYDIR)
+                {
+                    /* Skip all further actions, and get the next entry */
+#if 0
+                    if(find_data.cFileName[0] >= 'A' && find_data.cFileName[0] <= 'M')
+#endif /* 0 */
+                    continue;
+                }
+            }
+
+            cch =   lstrlenA(find_data.cFileName);
+            if(NULL != file_part)
+            {
+                cch +=  file_part - effectivePattern;
+            }
+
+            new_cbAlloc = (size_t)cbCurr + cch + 1;
+            if(new_cbAlloc > cbAlloc)
+            {
+                char    *new_buffer;
+
+                new_cbAlloc *= 2;
+
+                new_cbAlloc = (new_cbAlloc + 31) & ~(31);
+
+                new_buffer  = (char*)realloc(buffer, new_cbAlloc);
+
+                if(new_buffer == NULL)
+                {
+                    result = GLOB_NOSPACE;
+                    free(buffer);
+                    buffer = NULL;
+                    break;
+                }
+
+                buffer = new_buffer;
+                cbAlloc = new_cbAlloc;
+            }
+
+            (void)lstrcpynA(buffer + cbCurr, szRelative, 1 + (file_part - effectivePattern));
+            (void)lstrcatA(buffer + cbCurr, find_data.cFileName);
+            cbCurr += cch + 1;
+
+            ++cMatches;
+        }
+        while(FindNextFile(hFind, &find_data) && cMatches != maxMatches);
+
+        (void)FindClose(hFind);
+
+        if(result == 0)
+        {
+            /* Now expand the buffer, to fit in all the pointers. */
+            size_t  cbPointers  =   (1 + cMatches + pglob->gl_offs) * sizeof(char*);
+            char    *new_buffer =   (char*)realloc(buffer, cbAlloc + cbPointers);
+
+            if(new_buffer == NULL)
+            {
+                result = GLOB_NOSPACE;
+                free(buffer);
+            }
+            else
+            {
+                char    **pp;
+                char    **begin;
+                char    **end;
+                char    *next_str;
+
+                buffer = new_buffer;
+
+                (void)memmove(new_buffer + cbPointers, new_buffer, cbAlloc);
+
+                /* Handle the offsets. */
+                begin =   (char**)new_buffer;
+                end   =   begin + pglob->gl_offs;
+
+                for(; begin != end; ++begin)
+                {
+                    *begin = NULL;
+                }
+
+                /* Sort, or no sort. */
+                pp    =   (char**)new_buffer + pglob->gl_offs;
+                begin =   pp;
+                end   =   begin + cMatches;
+
+                if(flags & GLOB_NOSORT)
+                {
+                    /* The way we need in order to test the removal of dots in the findfile_sequence. */
+                    *end = NULL;
+                    for(begin = pp, next_str = buffer + cbPointers; begin != end; --end)
+                    {
+                        *(end - 1) = next_str;
+
+                        /* Find the next string. */
+                        next_str += 1 + lstrlenA(next_str);
+                    }
+                }
+                else
+                {
+                    /* The normal way. */
+                    for(begin = pp, next_str = buffer + cbPointers; begin != end; ++begin)
+                    {
+                        *begin = next_str;
+
+                        /* Find the next string. */
+                        next_str += 1 + lstrlenA(next_str);
+                    }
+                    *begin = NULL;
+                }
+
+                /* Return results to caller. */
+                pglob->gl_pathc =   (int)cMatches;
+                pglob->gl_matchc=   (int)cMatches;
+                pglob->gl_flags =   0;
+                if(bMagic)
+                {
+                    pglob->gl_flags |= GLOB_MAGCHAR;
+                }
+                pglob->gl_pathv =   (char**)new_buffer;
+            }
+        }
+
+        if(0 == cMatches)
+        {
+            result = GLOB_NOMATCH;
+        }
+    }
+
+    if(GLOB_NOMATCH == result)
+    {
+        if( (flags & GLOB_TILDE_CHECK) &&
+            effectivePattern == szPattern3)
+        {
+            result = GLOB_NOMATCH;
+        }
+        else if(bNoMagic ||
+                (flags & GLOB_NOCHECK))
+        {
+            size_t  cbNeeded    =   ((2 + pglob->gl_offs) * sizeof(char*)) + (1 + strlen(effectivePattern));
+            char    **pp        =   (char**)realloc(buffer, cbNeeded);
+
+            if(NULL == pp)
+            {
+                result = GLOB_NOSPACE;
+                free(buffer);
+            }
+            else
+            {
+                /* Handle the offsets. */
+                char    **begin =   pp;
+                char    **end   =   pp + pglob->gl_offs;
+
+                for(; begin != end; ++begin)
+                {
+                    *begin = NULL;
+                }
+
+                /* Synthesis the pattern result. */
+                pp[0 + pglob->gl_offs]  =   strcpy((char*)(pp + 2 + pglob->gl_offs), effectivePattern);
+                pp[1 + pglob->gl_offs]  =   NULL;
+
+                /* Return results to caller. */
+                pglob->gl_pathc =   1;
+                pglob->gl_matchc=   1;
+                pglob->gl_flags =   0;
+                if(bMagic)
+                {
+                    pglob->gl_flags |= GLOB_MAGCHAR;
+                }
+                pglob->gl_pathv =   pp;
+
+                result = 0;
+            }
+        }
+    }
+    else if(0 == result)
+    {
+        if((size_t)pglob->gl_matchc == maxMatches)
+        {
+            result = GLOB_NOSPACE;
+        }
+    }
+
+    return result;
+}
+
+void globfree(glob_t *pglob)
+{
+    if(pglob != NULL)
+    {
+        free(pglob->gl_pathv);
+        pglob->gl_pathc = 0;
+        pglob->gl_pathv = NULL;
+    }
+}
+
+@

@@ -1,3 +1,22 @@
+@title Specialised Linux Support
+@tangler plat_linux.hpp = $PWD/src/plat/plat_linux.hpp
+@tangler plat_linux.cpp = $PWD/src/plat/plat_linux.cpp
+
+@h1 Linux Support
+Stuff that works on Linux but not other platforms.
+
+We only have a function here to get the number
+of CPUs, the Linux way. Since it parses the /proc/stat
+file, this suggests a more general way of accessing
+the /proc directory would make sense.
+
+@tangle plat_linux.hpp
+#ifndef __PLAT_LINUX_H__
+#define __PLAT_LINUX_H__
+int get_cpu_nr();
+#endif
+@
+@tangle plat_linux.cpp
 #define STAT "/proc/stat"
 #include <stdio.h>
 #include <errno.h>
@@ -38,3 +57,4 @@ int get_cpu_nr()
 
    return (cpu_nr + 1);
 }
+@
