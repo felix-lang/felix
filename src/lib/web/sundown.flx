@@ -1,5 +1,0 @@
-//$ A Markdown to Html translator.
-class SunDown
-{
-  fun sundown: string -> string requires package "sundown";
-}
