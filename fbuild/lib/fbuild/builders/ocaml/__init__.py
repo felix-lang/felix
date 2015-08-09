@@ -82,6 +82,7 @@ class Ocamldep(fbuild.db.PersistentObject):
 
             # Grab the filenames in the directory.
             if include is None:
+                print("SYSTEM ERROR: no include directory to Ocamldep")
                 dirs = Path.getcwd().listdir()
             else:
                 include = Path(include)
