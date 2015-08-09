@@ -381,11 +381,8 @@ def configure(ctx):
     """Configure Felix."""
 
     build = config_build(ctx)
-    print('build config done')
     host = config_host(ctx, build)
-    print('host config done')
     target = config_target(ctx, host)
-    print('target config done')
 
     # Make sure the config directories exist.
     #(ctx.buildroot / 'host/config').makedirs()
@@ -395,7 +392,6 @@ def configure(ctx):
     # necessary
     #
     buildsystem.copy_to(ctx, ctx.buildroot/'host/config', Path('src/config/*.fpc').glob())
-    print('config master copy done')
     # most of these ones are actually platform independent
     # just do the windows EXTERN to dllexport mapping
     # which is controlled by compile time switches anyhow
@@ -406,7 +402,6 @@ def configure(ctx):
         Path('src/config/target/*.hpp').glob())
     buildsystem.copy_to(ctx, ctx.buildroot/'host/lib/rtl',
         Path('src/config/target/*.h').glob())
-    print('config header copy done')
 
     types = config_call('fbuild.config.c.c99.types',
         target.platform, target.c.static)
@@ -428,6 +423,7 @@ def configure(ctx):
         buildsystem.copy_to(ctx,
           ctx.buildroot / 'host/config', Path('src/config/unix/unix64/*.fpc').glob())
 
+
     # enable this on win32 **instead** of the above to copy fpc files 
     if "windows" in target.platform:
       print("COPYING WIN32 RESOURCE DATABASE")
@@ -447,27 +443,26 @@ def configure(ctx):
 
     # extract the configuration
     iscr = call('buildsystem.iscr.Iscr', ctx)
-    print('Interscript constructed')
 
     # convert the config into something iscr can use
     call('buildsystem.iscr.config_iscr_config', ctx, build, host, target)
-    print('Intercript configured')
 
     # re-extract packages if any of them changed
     ctx.scheduler.map(iscr, (src_dir(ctx)/'lpsrc/*.pak').glob())
+
     # overwrite or add *.fpc files to the config directory
     call('buildsystem.post_config.copy_user_fpcs', ctx)
 
     # make Felix representation of whole build config
     call('buildsystem.show_build_config.build',ctx)
 
-    print ("CONFIG DONE >>>>")
     return Record(build=build, host=host, target=target), iscr
 
 # ------------------------------------------------------------------------------
 
 def build(ctx):
     """Compile Felix."""
+
     print("[fbuild] CONFIGURING FELIX")
     # configure the phases
     phases, iscr = configure(ctx)
