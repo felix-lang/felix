@@ -10,27 +10,11 @@ import buildsystem
 
 def build_runtime(host_phase, target_phase):
     path = Path(target_phase.ctx.buildroot/'share'/'src/gc')
-
-    buildsystem.copy_hpps_to_rtl(target_phase.ctx,
-        path / 'flx_gc.hpp',
-        path / 'flx_judy_scanner.hpp',
-        path / 'flx_serialisers.hpp',
-        path / 'flx_collector.hpp',
-        path / 'flx_gc_private.hpp',
-        path / 'flx_ts_collector.hpp',
-        path / 'pthread_bound_queue.hpp',
-        path / 'pthread_work_fifo.hpp',
-    )
-
     dst = 'host/lib/rtl/flx_gc'
-    srcs = [copy(ctx=target_phase.ctx, src=f, dst=target_phase.ctx.buildroot / f) for f in Path.glob(path / '*.cpp')]
+    srcs = Path.glob(path / '*.cpp')
     includes = [
         target_phase.ctx.buildroot / 'host/lib/rtl',
         target_phase.ctx.buildroot / 'share/lib/rtl',
-        'src/rtl',
-        'src/pthread',
-        'src/exceptions',
-        'src/judy/src',
     ]
     macros = ['BUILD_FLX_GC']
     libs = [
