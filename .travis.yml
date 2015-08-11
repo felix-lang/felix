@@ -20,6 +20,10 @@ script:
   - mkdir bin
   - ln -s /usr/bin/gcc-5 bin/gcc
   - ln -s /usr/bin/g++-5 bin/g++
+  - ln -s /usr/bin/gcc-5 bin/clang
+  - ln -s /usr/bin/g++-5 bin/clang++
   - bin/gcc --version
   - bin/g++ --version
+  - bin/clang --version
+  - bin/clang++ --version
   - env PATH=bin:$PATH make
