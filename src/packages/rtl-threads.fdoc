@@ -996,9 +996,23 @@ int pthread_cond_uswait(
 
 @
 @h1 Semaphores
-@tangle pthread_semaphore.hpp
-@
 @tangle pthread_semaphore.cpp
+#include "pthread_semaphore.hpp"
+#include <stdio.h>        // printf debugging
+#include <assert.h>
+
+namespace flx { namespace pthread {
+flx_semaphore_t::flx_semaphore_t(int n) { sem_init(&sem, 0, n); }
+flx_semaphore_t::~flx_semaphore_t() { sem_destroy(&sem); }
+void flx_semaphore_t::wait() { sem_wait(&sem); }
+int flx_semaphore_t::trywait() { return sem_trywait(&sem); }
+void flx_semaphore_t::post() { sem_post(&sem); }
+int flx_semaphore_t::get(){ int x; sem_getvalue(&sem,&x); return x; }
+
+}}
+@
+
+@tangle pthread_semaphore.hpp
 #ifndef __FLX_PTHREAD_SEMAPHORE_H__
 #define __FLX_PTHREAD_SEMAPHORE_H__
 #include "flx_pthread_config.hpp"
