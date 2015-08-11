@@ -7,11 +7,30 @@
 <dt><a href=gc.fdoc>Garbage Collector</a></dt>
 <dd>Memory Management Core</dd>
 
-<dt><a href=embed.fdoc>System Construction</a></dt>
+<dt><a href=embed.fdoc>Embedding: System Construction</a></dt>
 <dd>Core routines for embedding</dd>
 
 <dt><a href=driver.fdoc>Dynamic Linkage and Driver</a></dt>
 <dd>The top level driver program and dynamic linkage library</dd>
+
+<dt><a href=demux.fdoc>Event Notification</a></dt>
+<dd>Bootstrap Build Code</dd>
+
+<dt><a href=faio.fdoc>Felix Asynchronous I/O Support</a></dt>
+<dd>Code C++ implementation of Asynchronous I/O RTL</dd>
+
+
+<dt><a href=rtl-thread.fdoc>Pre-emptive Threading Core</a></dt>
+<dd>Core C++ Pre-emptive threading support</dd>
+
+<dt><a href=serialisation.fdoc>Serialisation Support</a></dt>
+<dd>Core C++ supporting automatic data serialisation</dd>
+
+<dt><a href=rtl.fdoc>Run Time Library Core</a></dt>
+<dd>Core C++ Core RTL facilities</dd>
+
+<dt><a href=linux.fdoc>Special Linux Support</a></dt>
+<dd>Low Level code providing access to unique Linux features</dd>
 
 </dl>
 
@@ -21,6 +40,10 @@
 <dt><a href=libstruct.fdoc>Library Structure Map</a></dt>
 <dd>Directory Layout of the extracted Standard library.
 With some uncategorise files thrown in.</dd>
+
+<dt><a href=grammar.fdoc>Base Grammar</a></dt>
+<dd>Basic Grammar core. Specialised Subgrammars added in appropriate modules.</dd>
+
 
 <dt><a href=algebra.fdoc>Basic Algebraic Structure</a></dt>
 <dd>Now we have to define some basic algebraic structures...</dd>
@@ -67,13 +90,10 @@ With some uncategorise files thrown in.</dd>
 <dt><a href=fibres.fdoc>Cooperative threading</a></dt>
 <dd>Support for fibres, synchronous channels, pipelines.</dd>
 
-
-<dt><a href=stl.fdoc>C++ Standard Template Library</a></dt>
-<dd>C++98 STL: iterators, vector, set, map, list, multiset, multimap, deque</dd>
-
 <dt><a href=pthreads.fdoc>Preemptive Threading</a></dt>
 <dd>Support for shared memory concurrency by pre-emptive threads and various 
-synchronisation devices.</dd>
+synchronisation devices. 
+See also <a href=rtl-thread.fdoc</a>Core C++ Threading</a> for implementation details</dd>
 
 <dt><a href=program.fdoc>Programs and Processes</a></dt>
 <dd>Programs, ennvironment variables, command line options, shells, processes and dynamic linkage.</dd>
@@ -97,12 +117,11 @@ synchronisation devices.</dd>
 <dt><a href=debug.fdoc>Debugging.</a></dt>
 <dd>Some debugging aids.</dd>
 
-<dt><a href=gc.fdoc>Garbage Collector</a></dt>
-<dd>Access to Garbage Collector</dd>
-</dl>
-
-
 <hr>
+
+<dt><a href=stl.fdoc>C++ Standard Template Library</a></dt>
+<dd>C++98 STL: iterators, vector, set, map, list, multiset, multimap, deque</dd>
+
 
 <dt>
 <dt><a href=sdl.fdoc>Simple Direct Media Layer</a></dt>

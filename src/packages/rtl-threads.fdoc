@@ -22,9 +22,10 @@
 @tangler pthread_bound_queue.cpp          = share/src/gc/pthread_bound_queue.cpp
 @tangler pthread_work_fifo.hpp            = share/lib/rtl/pthread_work_fifo.hpp
 @tangler pthread_work_fifo.cpp            = share/src/gc/pthread_work_fifo.cpp
+@tangler pthread_fast_lock.hpp            = share/lib/rtl/pthread_fast_lock.hpp
+@tangler pthread_fast_lock.cpp            = share/src/gc/pthread_fast_lock.cpp
+@tangler pthread_fast_lock.flx            = share/lib/std/pthread/pthread_fast_lock.flx
 @tangler flx_pthread.py                   = $PWD/buildsystem/flx_pthread.py
-
-
 
 @h1 Pthreads
 The @{pthread_thread.hpp} defines pthreads and the system 
@@ -1920,5 +1921,85 @@ def build_runtime(phase):
             external_libs=external_libs,
             lflags=flags))
 
+@
+
+@h1 Fast Resource Lock
+This is a fast application level lock to be used for serialisation
+of transient accessed to data structures. It is a mutex, however
+unlike system mutex, it is safe to use with the Felix GC. 
+
+System mutex are NOT GC safe because in Felix every allocation
+may potentially trigger a garbage collection which requires a world
+stop. Since world stops are cooperative, the collector must wait
+until all threads have voluntarily yielded, usually by themselves
+performing an allocation or an explicit call to perform a collection,
+but suicide should work too. 
+
+However if a thread blocks trying to lock a mutex held by another
+thread which is now stopped for the GC, we have a deadlock.
+So a user level lock must have a timeout and a spin loop which
+includes regular checking for a GC world stop request.
+
+It would be acceptable if the check were done atomically with
+blocking on a lock request followed by another check,
+because locking itself does not change reachability state.
+With those semantics, it's fine for the thread to block,
+provided the GC counts it as having yielded, and it cannot
+unblock during the GC. That basically means unlocking must
+also do the check, to ensure blocked threads stay blocked.
+
+@tangle pthread_fast_lock.hpp
+#ifndef __pthread_fast_lock__
+#define __pthread_fast_lock__
+#include "flx_gc.hpp"
+#include <atomic>
+namespace flx { namespace rtl {
+
+class GC_EXTERN fast_lock
+{
+   ::std::atomic_flag flag;
+   ::flx::pthread::thread_control_t *tc;
+public:
+   fast_lock(::flx::pthread::thread_control_t *);
+   fast_lock() = delete;
+   fast_lock(fast_lock const&)  = delete;
+   void operator = (fast_lock const&) = delete;
+   void lock();
+   void unlock();
+};
+}}
+#endif
+@
+
+@tangle pthread_fast_lock.cpp
+#include "pthread_fast_lock.hpp"
+#include <chrono>
+#include <thread>
+
+namespace flx { namespace rtl {
+fast_lock::fast_lock(::flx::pthread::thread_control_t *tc_) : tc(tc_), flag(ATOMIC_FLAG_INIT) {}
+void fast_lock::unlock() { flag.clear(); }
+void fast_lock::lock() {
+  while (!flag.test_and_set())
+  {
+    tc->yield();
+    ::std::this_thread::sleep_for(::std::chrono::nanoseconds (200));
+  }
+}
+
+}}
+@
+
+@tangle pthread_fast_lock.flx
+class FastLock
+{
+   type fast_lock = "::flx::rtl::fast_lock*" 
+     requires header '#include "pthread_fast_lock.hpp"';
+   ctor fast_lock : unit = "new ::flx::rtl::fast_lock(PTF gcp->collector->get_thread_control())";
+   proc delete : fast_lock = "delete $1;";
+   proc lock : fast_lock = "$1->lock();";
+   proc unlock : fast_lock = "$1->unlock();";
+
+}
 @
 

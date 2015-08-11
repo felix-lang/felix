@@ -1,3 +1,7 @@
+@title Judy Arrays
+@tangler judy.py = $PWD/buildsystem/judy.py
+@h1 Judy Builder
+@tangle judy.py
 import fbuild
 import fbuild.db
 from fbuild.builders.file import copy, copy_regex
@@ -9,7 +13,7 @@ from buildsystem.config import config_call
 
 # ------------------------------------------------------------------------------
 
-@fbuild.db.caches
+@@fbuild.db.caches
 def build_judytables(ctx, tablegen:fbuild.db.SRC, dst) -> fbuild.db.DST:
     """Create the judytable generator executable."""
 
@@ -26,7 +30,7 @@ def build_judytables(ctx, tablegen:fbuild.db.SRC, dst) -> fbuild.db.DST:
 
     return dst
 
-@fbuild.db.caches
+@@fbuild.db.caches
 def prepend_macros(ctx, src, macros, dst) -> fbuild.db.DST:
     """Generate a new version of the input file which has the given macros added to the top as #define's"""
     # Make sure the directory exists.
@@ -100,4 +104,6 @@ def build_runtime(host_phase, target_phase):
         includes=includes)
 
     return Record(static=static, shared=shared)
+
+@
 

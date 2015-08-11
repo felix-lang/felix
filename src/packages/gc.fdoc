@@ -1668,3 +1668,4 @@ def build_runtime(host_phase, target_phase):
             macros=macros,
             libs=[lib.shared for lib in libs]))
 @
+
