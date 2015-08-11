@@ -202,7 +202,7 @@ struct GC_EXTERN collector_t
   void set_debug(bool d){debug=d;}
   collector_t();
   virtual ~collector_t();
-  virtual ::flx::pthread::thread_control_t *get_thread_control()const =0;
+  virtual ::flx::pthread::thread_control_base_t *get_thread_control()const =0;
   virtual void register_pointer(void *q, int reclimit)=0;
 
   // These routines just provide statistics.
@@ -626,7 +626,7 @@ struct GC_EXTERN malloc_free : public virtual allocator_t
 /// Naive Mark and Sweep Collector.
 struct GC_EXTERN flx_collector_t : public collector_t
 {
-  flx_collector_t(allocator_t *, flx::pthread::thread_control_t *);
+  flx_collector_t(allocator_t *, flx::pthread::thread_control_base_t *);
   ~flx_collector_t();
 
   // RF: added to allow implementation of non-leaky drivers.
@@ -638,7 +638,7 @@ struct GC_EXTERN flx_collector_t : public collector_t
   unsigned long get_count(void *memory);
   void *create_empty_array( gc_shape_t *shape, unsigned long count);
   gc_shape_t *get_shape(void *memory);
-  flx::pthread::thread_control_t *get_thread_control()const;
+  flx::pthread::thread_control_base_t *get_thread_control()const;
   void register_pointer(void *q, int reclimit);
   ::flx::gc::generic::pointer_data_t get_pointer_data(void *);
 
@@ -700,7 +700,7 @@ private:
   rootmap_t roots;
   bool parity;
   allocator_t *allocator;
-  flx::pthread::thread_control_t *thread_control;
+  flx::pthread::thread_control_base_t *thread_control;
 
 
   // JudyL array and error object
@@ -817,7 +817,7 @@ unsigned long flx_collector_t::impl_get_allocation_amt()const
 }
 
 
-flx_collector_t::flx_collector_t(allocator_t *a, pthread::thread_control_t *tc)
+flx_collector_t::flx_collector_t(allocator_t *a, pthread::thread_control_base_t *tc)
   :
   allocation_count(0)
   ,root_count(0)
@@ -831,7 +831,7 @@ flx_collector_t::flx_collector_t(allocator_t *a, pthread::thread_control_t *tc)
   ,j_tmp(0)
 {}
 
-flx::pthread::thread_control_t *flx_collector_t::get_thread_control()const
+flx::pthread::thread_control_base_t *flx_collector_t::get_thread_control()const
 {
   return thread_control;
 }
@@ -1461,7 +1461,7 @@ unsigned long flx_collector_t::impl_collect()
   else {
     if(debug)
       fprintf(stderr,"[gc] RACE: someone else is collecting, just yield\n");
-    thread_control->yield();
+    if(thread_control)thread_control->yield();
     return 0ul;
   }
 }
@@ -1535,6 +1535,8 @@ private:
 }}} // end namespaces
 
 #endif
+@
+
 @tangle flx_ts_collector.cpp
 
 

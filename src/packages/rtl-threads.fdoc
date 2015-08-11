@@ -103,7 +103,19 @@ typedef std::pair<flx_native_thread_t const, thread_data_t> thread_entry_t;
 typedef std::map<flx_native_thread_t, thread_data_t, std::less<flx_native_thread_t> > thread_registry_t;
 typedef std::vector<memory_range_t> memory_ranges_t;
 
-class PTHREAD_EXTERN thread_control_t
+class PTHREAD_EXTERN thread_control_base_t
+{
+public:
+  virtual bool world_stop() = 0;
+  virtual void world_start() = 0;
+  virtual void resume() = 0;
+  virtual void suspend() = 0;
+  virtual void yield() = 0;
+  virtual ~thread_control_base_t();
+  virtual  memory_ranges_t *get_block_list() = 0; // called owns result and should delete it
+};
+
+class PTHREAD_EXTERN thread_control_t : public virtual thread_control_base_t
 {
     thread_control_t (thread_control_t const &); // uncopyable
     void operator=(thread_control_t const&); // uncopyable
@@ -1326,6 +1338,8 @@ namespace flx { namespace pthread {
 
 static void *get_stack_pointer() { void *x = (void*)&x; return x; }
 
+thread_control_base_t::~thread_control_base_t(){}
+
 thread_control_t::thread_control_t (thread_control_t const &) {}
 void thread_control_t::operator=(thread_control_t const &) {}
 
@@ -1958,9 +1972,9 @@ namespace flx { namespace rtl {
 class GC_EXTERN fast_lock
 {
    ::std::atomic_flag flag;
-   ::flx::pthread::thread_control_t *tc;
+   ::flx::pthread::thread_control_base_t *tc;
 public:
-   fast_lock(::flx::pthread::thread_control_t *);
+   fast_lock(::flx::pthread::thread_control_base_t *);
    fast_lock() = delete;
    fast_lock(fast_lock const&)  = delete;
    void operator = (fast_lock const&) = delete;
@@ -1977,7 +1991,7 @@ public:
 #include <thread>
 
 namespace flx { namespace rtl {
-fast_lock::fast_lock(::flx::pthread::thread_control_t *tc_) : tc(tc_), flag(ATOMIC_FLAG_INIT) {}
+fast_lock::fast_lock(::flx::pthread::thread_control_base_t *tc_) : tc(tc_), flag(ATOMIC_FLAG_INIT) {}
 void fast_lock::unlock() { flag.clear(); }
 void fast_lock::lock() {
   while (!flag.test_and_set())
