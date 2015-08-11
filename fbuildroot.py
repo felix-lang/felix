@@ -31,17 +31,22 @@ def pre_options(parser):
             dest='includes',
             default=[],
             action='append',
-            help='Add this path to the c header search path for all phases'),
+            help='add this path to the c header search path for all phases'),
         make_option('-L', '--library-path',
             dest='libpaths',
             default=[],
             action='append',
-            help='Add this path to the c library search path for all phases'),
+            help='add this path to the c library search path for all phases'),
         make_option('--c-flag',
             dest='c_flags',
             default=[],
             action='append',
-            help='Add this flag to the c compiler'),
+            help='add this flag to the c compiler'),
+        make_option('--cxx-flag',
+            dest='cxx_flags',
+            default=[],
+            action='append',
+            help='add this flag to the c++ compiler'),
         make_option('-g', '--debug',
             default=False,
             action='store_true',
@@ -64,19 +69,24 @@ def pre_options(parser):
             dest='build_includes',
             default=[],
             action='append',
-            help='Add this path to the c header search path for the build ' \
+            help='add this path to the c header search path for the build ' \
                     'phase'),
         make_option('--build-library-path',
             dest='build_libpaths',
             default=[],
             action='append',
-            help='Add this path to the c library search path for the build ' \
+            help='add this path to the c library search path for the build ' \
                     'phase'),
         make_option('--build-c-flag',
             dest='build_c_flags',
             default=[],
             action='append',
-            help='Add this flag to the c compiler for the build phase'),
+            help='add this flag to the c compiler for the build phase'),
+        make_option('--build-cxx-flag',
+            dest='build_cxx_flags',
+            default=[],
+            action='append',
+            help='add this flag to the c++ compiler for the build phase'),
         make_option('--build-c-debug',
             default=False,
             action='store_true',
@@ -108,6 +118,11 @@ def pre_options(parser):
             default=[],
             action='append',
             help='Add this flag to the c compiler for the host phase'),
+        make_option('--host-cxx-flag',
+            dest='host_cxx_flags',
+            default=[],
+            action='append',
+            help='add this flag to the c++ compiler for the host phase'),
         make_option('--host-c-debug',
             default=False,
             action='store_true',
@@ -138,13 +153,13 @@ def pre_options(parser):
             dest='target_includes',
             default=[],
             action='append',
-            help='Add this path to the c header search path for the target ' \
+            help='add this path to the c header search path for the target ' \
                     'phase'),
         make_option('--target-library-path',
             dest='target_libpaths',
             default=[],
             action='append',
-            help='Add this path to the c library search path for the target ' \
+            help='add this path to the c library search path for the target ' \
                     'phase'),
         make_option('--target-c-debug',
             default=False,
@@ -154,7 +169,12 @@ def pre_options(parser):
             dest='target_c_flags',
             default=[],
             action='append',
-            help='Add this flag to the c compiler for the target phase'),
+            help='add this flag to the c compiler for the target phase'),
+        make_option('--targe-cxx-flag',
+            dest='target_cxx_flags',
+            default=[],
+            action='append',
+            help='add this flag to the c++ compiler for the target phase'),
         make_option('--target-sdl-config',
             help='specify the sdl-config script'),
     ))
@@ -203,7 +223,7 @@ def make_c_builder(ctx, *args, includes=[], libpaths=[], flags=[], **kwargs):
         shared=call('fbuild.builders.c.guess_shared', ctx, *args, **kwargs))
 
 def make_cxx_builder(ctx, *args, includes=[], libpaths=[], flags=[], **kwargs):
-    flags = list(chain(ctx.options.c_flags, flags))
+    flags = list(chain(ctx.options.cxx_flags, flags))
 
     kwargs['platform_options'] = [
         # GRRR .. for clang++
@@ -261,7 +281,7 @@ def config_build(ctx):
             optimize=not (ctx.options.debug or ctx.options.build_c_debug),
             includes=ctx.options.build_includes,
             libpaths=ctx.options.build_libpaths,
-            flags=ctx.options.build_c_flags))
+            flags=ctx.options.build_cxx_flags))
 
 def config_host(ctx, build):
     ctx.logger.log('configuring host phase', color='cyan')
@@ -289,7 +309,7 @@ def config_host(ctx, build):
                 optimize=not (ctx.options.debug or ctx.options.host_c_debug),
                 includes=ctx.options.host_includes,
                 libpaths=ctx.options.host_libpaths,
-                flags=ctx.options.host_c_flags))
+                flags=ctx.options.host_cxx_flags))
 
     phase.ocaml = call('fbuild.builders.ocaml.Ocaml', ctx,
         debug=ctx.options.debug or ctx.options.host_ocaml_debug,
@@ -349,7 +369,7 @@ def config_target(ctx, host):
                 optimize=not(ctx.options.debug or ctx.options.target_c_debug),
                 includes=ctx.options.target_includes,
                 libpaths=ctx.options.target_libpaths,
-                flags=ctx.options.target_c_flags))
+                flags=ctx.options.target_cxx_flags))
 
     # We optionally support sdl
     try:
@@ -376,7 +396,7 @@ def src_dir(ctx):
 
 # ------------------------------------------------------------------------------
 
-@fbuild.target.register()
+@fbuild.db.caches
 def configure(ctx):
     """Configure Felix."""
 
