@@ -87,8 +87,16 @@ one yields to the stop request, and then the collection
 is performed.
 
 @h2 Thread Control Base
-Note: this is part of the pthread library not the gc library.
-But only the header file is required.
+Note: this is part of the @{flx_pthread} library not the @{flx_gc} library.
+But only the header file is required. The @{thread_control_base_t}
+destructor is defined in @{pthread_thread_control.cpp}.
+
+The gc constuctor requires a thread_control_base_t pointer to be passed
+to it. The actual thread safe collector is defined in the pthread library.
+A non-thread version of the thread control base might be constructed
+for a single threaded Felix world instantiation but we do not currently
+provide one as pthreads are considered mandatory for Felix.
+
 @tangle pthread_thread_control_base.hpp
 #ifndef __PTHREAD_THREAD_CONTROL_BASE_HPP__
 #define __PTHREAD_THREAD_CONTROL_BASE_HPP__
