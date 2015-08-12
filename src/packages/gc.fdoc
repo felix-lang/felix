@@ -1,13 +1,14 @@
 @title Memory Management
-@tangler flx_gc.hpp               = share/lib/rtl/flx_gc.hpp
-@tangler flx_gc_private.hpp       = share/src/gc/flx_gc_private.hpp
-@tangler flx_gc.cpp               = share/src/gc/flx_gc.cpp
-@tangler flx_collector.hpp        = share/lib/rtl/flx_collector.hpp
-@tangler flx_collector.cpp        = share/src/gc/flx_collector.cpp
-@tangler flx_ts_collector.hpp     = share/lib/rtl/flx_ts_collector.hpp
-@tangler flx_ts_collector.cpp     = share/src/gc/flx_ts_collector.cpp
-@tangler gc.flx                   = share/lib/std/gc.flx
-@tangler flx_gc.py                = $PWD/buildsystem/flx_gc.py
+@tangler flx_gc.hpp                       = share/lib/rtl/flx_gc.hpp
+@tangler flx_gc_private.hpp               = share/src/gc/flx_gc_private.hpp
+@tangler flx_gc.cpp                       = share/src/gc/flx_gc.cpp
+@tangler flx_collector.hpp                = share/lib/rtl/flx_collector.hpp
+@tangler flx_collector.cpp                = share/src/gc/flx_collector.cpp
+@tangler pthread_thread_control_base.hpp  = share/lib/rtl/pthread_thread_control_base.hpp
+@tangler gc.flx                           = share/lib/std/gc.flx
+@tangler flx_gc.py                        = $PWD/buildsystem/flx_gc.py
+@tangler unix_flx_gc.fpc                  = $PWD/src/config/unix/flx_gc.fpc
+@tangler win32_flx_gc.fpc                 = $PWD/src/config/win32/flx_gc.fpc
 
 @h1 The Felix Garbage Collector.
 Felix uses a garbage collector to provide secure automatic
@@ -85,6 +86,49 @@ a collection, all the threads must wait until the last
 one yields to the stop request, and then the collection
 is performed.
 
+@h2 Thread Control Base
+Note: this is part of the pthread library not the gc library.
+But only the header file is required.
+@tangle pthread_thread_control_base.hpp
+#ifndef __PTHREAD_THREAD_CONTROL_BASE_HPP__
+#define __PTHREAD_THREAD_CONTROL_BASE_HPP__
+
+#include "flx_pthread_config.hpp"
+#include <vector>
+
+namespace flx { namespace pthread {
+
+struct thread_data_t {
+  thread_data_t(void *b) : stack_base(b), stack_top(0), active(true) {}
+  void *stack_base;
+  void *stack_top;
+  bool active;
+};
+
+struct memory_range_t {
+  memory_range_t(void *b_, void *e_) : b(b_), e(e_) {}
+  void *b;
+  void *e;
+};
+
+typedef ::std::vector<memory_range_t> memory_ranges_t;
+
+class PTHREAD_EXTERN thread_control_base_t
+{
+public:
+  virtual bool world_stop() = 0;
+  virtual void world_start() = 0;
+  virtual void resume() = 0;
+  virtual void suspend() = 0;
+  virtual void yield() = 0;
+  virtual ~thread_control_base_t()=0;
+  virtual  memory_ranges_t *get_block_list() = 0; // caller owns result and should delete it
+};
+}}
+#endif
+@
+
+
 @h2 Memory Management Abstraction Interface.
 @tangle flx_gc.hpp
 
@@ -93,7 +137,7 @@ is performed.
 
 #include <cstdlib>
 #include "flx_gc_config.hpp"
-#include "pthread_thread.hpp"
+#include "pthread_thread_control_base.hpp"
 #include <string>
 
 // we use an STL set to hold the collection of roots
@@ -1439,23 +1483,21 @@ again:
 
 unsigned long flx_collector_t::impl_collect()
 {
-  if(debug)
-    fprintf(stderr,"[gc] Request to collect, thread_control = %p, thread %lx\n", thread_control, (unsigned long)flx::pthread::get_current_native_thread());
   // THIS IS A BIT OF A HACK
   // but world_stop() is bugged!!
   // This is a temporary fix.
   FLX_SAVE_REGS;
   if (thread_control == NULL || thread_control->world_stop())
   {
-    if(debug)
-      fprintf(stderr,"[gc] Collecting, thread %lx\n", (unsigned long)flx::pthread::get_current_native_thread());
+    //if(debug)
+    //  fprintf(stderr,"[gc] Collecting, thread %lx\n", (unsigned long)flx::pthread::get_current_native_thread());
     pthread::memory_ranges_t * mr = thread_control? thread_control -> get_block_list() : NULL;
     mark(mr);
     delete mr;
     unsigned long collected = sweep();
     if(thread_control) thread_control->world_start();
-    if(debug)
-      fprintf(stderr,"[gc] FINISHED collect, thread %lx\n", (unsigned long)flx::pthread::get_current_native_thread());
+    //if(debug)
+    //  fprintf(stderr,"[gc] FINISHED collect, thread %lx\n", (unsigned long)flx::pthread::get_current_native_thread());
     return collected;
   }
   else {
@@ -1484,110 +1526,6 @@ flx_collector_t::~flx_collector_t()
   //
   //free_all_mem();
 }
-
-}}} // end namespaces
-
-@h1 Thread Safe Collector.
-The thread safe collector class @{flx_ts_collector_t} is derived
-from the @{flx_collector_t} class. It basically dispatches to
-its base with locks as required.
-
-@tangle flx_ts_collector.hpp
-
-#ifndef __FLX_TS_COLLECTOR_H__
-#define __FLX_TS_COLLECTOR_H__
-#include "flx_collector.hpp"
-#include "pthread_mutex.hpp"
-#include "pthread_thread.hpp"
-
-namespace flx {
-namespace gc {
-namespace collector {
-
-/// Naive thread safe Mark and Sweep Collector.
-struct GC_EXTERN flx_ts_collector_t :
-  public flx::gc::collector::flx_collector_t
-{
-  flx_ts_collector_t(allocator_t *, flx::pthread::thread_control_t *);
-  ~flx_ts_collector_t();
-
-private:
-  /// allocator
-  void *v_allocate(gc_shape_t *ptr_map, unsigned long);
-
-  /// collector (returns number of objects collected)
-  unsigned long v_collect();
-
-  // add and remove roots
-  void v_add_root(void *memory);
-  void v_remove_root(void *memory);
-
-  // statistics
-  unsigned long v_get_allocation_count()const;
-  unsigned long v_get_root_count()const;
-  unsigned long v_get_allocation_amt()const;
-
-private:
-  mutable flx::pthread::flx_mutex_t mut;
-};
-
-
-}}} // end namespaces
-
-#endif
-@
-
-@tangle flx_ts_collector.cpp
-
-
-#include "flx_rtl_config.hpp"
-#include "flx_ts_collector.hpp"
-
-namespace flx {
-namespace gc {
-namespace collector {
-
-flx_ts_collector_t::flx_ts_collector_t(allocator_t *a, flx::pthread::thread_control_t *tc) :
-  flx_collector_t(a,tc)
-{}
-
-flx_ts_collector_t::~flx_ts_collector_t(){}
-
-void *flx_ts_collector_t::v_allocate(gc_shape_t *ptr_map, unsigned long x) {
-  flx::pthread::flx_mutex_locker_t l(mut);
-  return impl_allocate(ptr_map,x);
-}
-
-unsigned long flx_ts_collector_t::v_collect() {
-  // NO MUTEX
-  return impl_collect();
-}
-
-void flx_ts_collector_t::v_add_root(void *memory) {
-  flx::pthread::flx_mutex_locker_t l(mut);
-  impl_add_root(memory);
-}
-
-void flx_ts_collector_t::v_remove_root(void *memory) {
-  flx::pthread::flx_mutex_locker_t l(mut);
-  impl_remove_root(memory);
-}
-
-unsigned long flx_ts_collector_t::v_get_allocation_count()const {
-  flx::pthread::flx_mutex_locker_t l(mut);
-  return impl_get_allocation_count();
-}
-
-unsigned long flx_ts_collector_t::v_get_root_count()const {
-  flx::pthread::flx_mutex_locker_t l(mut);
-  return impl_get_root_count();
-}
-
-unsigned long flx_ts_collector_t::v_get_allocation_amt()const {
-  flx::pthread::flx_mutex_locker_t l(mut);
-  return impl_get_allocation_amt();
-}
-
 
 }}} // end namespaces
 
@@ -1634,6 +1572,7 @@ open class Gc
 }
 @
 
+@h1 Bootstrap Build System
 @tangle flx_gc.py
 import fbuild
 from fbuild.functools import call
@@ -1657,7 +1596,6 @@ def build_runtime(host_phase, target_phase):
     libs = [
         call('buildsystem.judy.build_runtime', host_phase, target_phase),
         call('buildsystem.flx_exceptions.build_runtime', target_phase),
-        call('buildsystem.flx_pthread.build_runtime', target_phase),
     ]
 
     return Record(
@@ -1669,5 +1607,37 @@ def build_runtime(host_phase, target_phase):
             includes=includes,
             macros=macros,
             libs=[lib.shared for lib in libs]))
+@
+
+@h1 Configuration Database Records
+@tangle unix_flx_gc.fpc
+Name: flx_gc
+Platform: Unix 
+Description: Felix default garbage collector (Unix)
+provides_dlib: -lflx_gc_dynamic
+provides_slib: -lflx_gc_static
+includes: '"flx_gc.hpp"'
+library: flx_gc
+macros: BUILD_FLX_GC
+Requires: judy flx_exceptions
+build_includes: build/release/share/lib/rtl
+srcdir: src/gc
+src: .*\.cpp
+@
+
+@tangle win32_flx_gc.fpc
+Name: flx_gc
+Platform: Win32
+Description: Felix default garbage collector (Windows)
+provides_dlib: /DEFAULTLIB:flx_gc_dynamic
+provides_slib: /DEFAULTLIB:flx_gc_static
+includes: '"flx_gc.hpp"'
+Requires: judy
+library: flx_gc
+macros: BUILD_FLX_GC
+Requires: judy flx_exceptions
+build_includes: build/release/share/lib/rtl
+srcdir: src/gc
+src: .*\.cpp
 @
 

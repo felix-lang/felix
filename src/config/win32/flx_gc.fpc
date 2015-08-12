@@ -5,4 +5,9 @@ provides_dlib: /DEFAULTLIB:flx_gc_dynamic
 provides_slib: /DEFAULTLIB:flx_gc_static
 includes: '"flx_gc.hpp"'
 Requires: judy
-
+library: flx_gc
+macros: BUILD_FLX_GC
+Requires: judy flx_exceptions
+build_includes: build/release/share/lib/rtl
+srcdir: src/gc
+src: .*\.cpp

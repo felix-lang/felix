@@ -19,13 +19,17 @@
 @tangler pthread_waitable_bool.cpp        = share/src/pthread/pthread_waitable_bool.cpp
 @tangler pthread_thread_control.cpp       = share/src/pthread/pthread_thread_control.cpp
 @tangler pthread_bound_queue.hpp          = share/lib/rtl/pthread_bound_queue.hpp
-@tangler pthread_bound_queue.cpp          = share/src/gc/pthread_bound_queue.cpp
+@tangler pthread_bound_queue.cpp          = share/src/pthread/pthread_bound_queue.cpp
 @tangler pthread_work_fifo.hpp            = share/lib/rtl/pthread_work_fifo.hpp
-@tangler pthread_work_fifo.cpp            = share/src/gc/pthread_work_fifo.cpp
+@tangler pthread_work_fifo.cpp            = share/src/pthread/pthread_work_fifo.cpp
 @tangler pthread_fast_lock.hpp            = share/lib/rtl/pthread_fast_lock.hpp
-@tangler pthread_fast_lock.cpp            = share/src/gc/pthread_fast_lock.cpp
+@tangler pthread_fast_lock.cpp            = share/src/pthread/pthread_fast_lock.cpp
 @tangler pthread_fast_lock.flx            = share/lib/std/pthread/pthread_fast_lock.flx
+@tangler flx_ts_collector.hpp             = share/lib/rtl/flx_ts_collector.hpp
+@tangler flx_ts_collector.cpp             = share/src/pthread/flx_ts_collector.cpp
 @tangler flx_pthread.py                   = $PWD/buildsystem/flx_pthread.py
+@tangler unix_flx_pthread.fpc             = $PWD/src/config/unix/flx_pthread.fpc
+@tangler win32_flx_pthread.fpc            = $PWD/src/config/win32/flx_pthread.fpc
 
 @h1 Pthreads
 The @{pthread_thread.hpp} defines pthreads and the system 
@@ -65,6 +69,7 @@ threads and pchannels for synchronisation.
 
 #include "pthread_mutex.hpp"
 #include "pthread_condv.hpp"
+#include "pthread_thread_control_base.hpp"
 
 #include <utility>
 #include <map>
@@ -86,34 +91,8 @@ typedef pthread_t flx_native_thread_t;
 
 flx_native_thread_t PTHREAD_EXTERN get_current_native_thread();
 
-struct thread_data_t {
-  thread_data_t(void *b) : stack_base(b), stack_top(0), active(true) {}
-  void *stack_base;
-  void *stack_top;
-  bool active;
-};
-
-struct memory_range_t {
-  memory_range_t(void *b_, void *e_) : b(b_), e(e_) {}
-  void *b;
-  void *e;
-};
-
 typedef std::pair<flx_native_thread_t const, thread_data_t> thread_entry_t;
 typedef std::map<flx_native_thread_t, thread_data_t, std::less<flx_native_thread_t> > thread_registry_t;
-typedef std::vector<memory_range_t> memory_ranges_t;
-
-class PTHREAD_EXTERN thread_control_base_t
-{
-public:
-  virtual bool world_stop() = 0;
-  virtual void world_start() = 0;
-  virtual void resume() = 0;
-  virtual void suspend() = 0;
-  virtual void yield() = 0;
-  virtual ~thread_control_base_t();
-  virtual  memory_ranges_t *get_block_list() = 0; // called owns result and should delete it
-};
 
 class PTHREAD_EXTERN thread_control_t : public virtual thread_control_base_t
 {
@@ -1886,70 +1865,112 @@ worker_fifo::add_worker_task(worker_task* task)
 }}
 
 @
+@h1 Thread Safe Collector.
+The thread safe collector class @{flx_ts_collector_t} is derived
+from the @{flx_collector_t} class. It basically dispatches to
+its base with locks as required.
 
-@tangle flx_pthread.py
-import fbuild
-from fbuild.path import Path
-from fbuild.record import Record
-from fbuild.builders.file import copy
+@tangle flx_ts_collector.hpp
 
-import buildsystem
-from buildsystem.config import config_call
+#ifndef __FLX_TS_COLLECTOR_H__
+#define __FLX_TS_COLLECTOR_H__
+#include "flx_collector.hpp"
+#include "pthread_mutex.hpp"
+#include "pthread_thread.hpp"
 
-# ------------------------------------------------------------------------------
+namespace flx {
+namespace gc {
+namespace collector {
 
-def build_runtime(phase):
-    print('[fbuild] [rtl] build pthread')
-    path = Path(phase.ctx.buildroot/'share'/'src/pthread')
+/// Naive thread safe Mark and Sweep Collector.
+struct GC_EXTERN flx_ts_collector_t :
+  public flx::gc::collector::flx_collector_t
+{
+  flx_ts_collector_t(allocator_t *, flx::pthread::thread_control_t *);
+  ~flx_ts_collector_t();
 
- 
-    srcs = [
-        path / 'pthread_win_posix_condv_emul.cpp', # portability hackery
-        path / 'pthread_mutex.cpp',
-        path / 'pthread_condv.cpp',
-        path / 'pthread_counter.cpp',
-        path / 'pthread_waitable_bool.cpp',
-        path / 'pthread_semaphore.cpp',
-        path / 'pthread_monitor.cpp',
-        path / 'pthread_thread_control.cpp',
-        path / 'pthread_win_thread.cpp',
-        path / 'pthread_posix_thread.cpp',
-    ]
-    includes = [
-      phase.ctx.buildroot / 'host/lib/rtl', 
-      phase.ctx.buildroot / 'share/lib/rtl']
-    macros = ['BUILD_PTHREAD']
-    flags = []
-    libs = []
-    external_libs = []
+private:
+  /// allocator
+  void *v_allocate(gc_shape_t *ptr_map, unsigned long);
 
-    pthread_h = config_call('fbuild.config.c.posix.pthread_h',
-        phase.platform,
-        phase.cxx.shared)
+  /// collector (returns number of objects collected)
+  unsigned long v_collect();
 
-    dst = 'host/lib/rtl/flx_pthread'
-    if pthread_h.pthread_create:
-        flags.extend(pthread_h.flags)
-        libs.extend(pthread_h.libs)
-        external_libs.extend(pthread_h.external_libs)
+  // add and remove roots
+  void v_add_root(void *memory);
+  void v_remove_root(void *memory);
 
-    return Record(
-        static=buildsystem.build_cxx_static_lib(phase, dst, srcs,
-            includes=includes,
-            macros=macros,
-            cflags=flags,
-            libs=libs,
-            external_libs=external_libs,
-            lflags=flags),
-        shared=buildsystem.build_cxx_shared_lib(phase, dst, srcs,
-            includes=includes,
-            macros=macros,
-            cflags=flags,
-            libs=libs,
-            external_libs=external_libs,
-            lflags=flags))
+  // statistics
+  unsigned long v_get_allocation_count()const;
+  unsigned long v_get_root_count()const;
+  unsigned long v_get_allocation_amt()const;
 
+private:
+  mutable flx::pthread::flx_mutex_t mut;
+};
+
+
+}}} // end namespaces
+
+#endif
 @
+
+@tangle flx_ts_collector.cpp
+
+
+#include "flx_rtl_config.hpp"
+#include "flx_ts_collector.hpp"
+
+namespace flx {
+namespace gc {
+namespace collector {
+
+flx_ts_collector_t::flx_ts_collector_t(allocator_t *a, flx::pthread::thread_control_t *tc) :
+  flx_collector_t(a,tc)
+{}
+
+flx_ts_collector_t::~flx_ts_collector_t(){}
+
+void *flx_ts_collector_t::v_allocate(gc_shape_t *ptr_map, unsigned long x) {
+  flx::pthread::flx_mutex_locker_t l(mut);
+  return impl_allocate(ptr_map,x);
+}
+
+unsigned long flx_ts_collector_t::v_collect() {
+  // NO MUTEX
+  //if(debug)
+  //  fprintf(stderr,"[gc] Request to collect, thread_control = %p, thread %lx\n", thread_control, (unsigned long)flx::pthread::get_current_native_thread());
+  return impl_collect();
+}
+
+void flx_ts_collector_t::v_add_root(void *memory) {
+  flx::pthread::flx_mutex_locker_t l(mut);
+  impl_add_root(memory);
+}
+
+void flx_ts_collector_t::v_remove_root(void *memory) {
+  flx::pthread::flx_mutex_locker_t l(mut);
+  impl_remove_root(memory);
+}
+
+unsigned long flx_ts_collector_t::v_get_allocation_count()const {
+  flx::pthread::flx_mutex_locker_t l(mut);
+  return impl_get_allocation_count();
+}
+
+unsigned long flx_ts_collector_t::v_get_root_count()const {
+  flx::pthread::flx_mutex_locker_t l(mut);
+  return impl_get_root_count();
+}
+
+unsigned long flx_ts_collector_t::v_get_allocation_amt()const {
+  flx::pthread::flx_mutex_locker_t l(mut);
+  return impl_get_allocation_amt();
+}
+
+
+}}} // end namespaces
+
 
 @h1 Fast Resource Lock
 This is a fast application level lock to be used for serialisation
@@ -2030,4 +2051,89 @@ class FastLock
 
 }
 @
+@h1 Build System
+@tangle flx_pthread.py
+import fbuild
+from fbuild.functools import call
+from fbuild.path import Path
+from fbuild.record import Record
+from fbuild.builders.file import copy
 
+import buildsystem
+from buildsystem.config import config_call
+
+# ------------------------------------------------------------------------------
+
+def build_runtime(phase):
+    print('[fbuild] [rtl] build pthread')
+    path = Path(phase.ctx.buildroot/'share'/'src/pthread')
+
+    srcs = Path.glob(path / '*.cpp')
+    includes = [
+      phase.ctx.buildroot / 'host/lib/rtl', 
+      phase.ctx.buildroot / 'share/lib/rtl']
+    macros = ['BUILD_PTHREAD']
+    flags = []
+    libs = [
+        call('buildsystem.flx_gc.build_runtime', phase, phase), # HACK!!!
+    ]
+    external_libs = []
+
+    pthread_h = config_call('fbuild.config.c.posix.pthread_h',
+        phase.platform,
+        phase.cxx.shared)
+
+    dst = 'host/lib/rtl/flx_pthread'
+    if pthread_h.pthread_create:
+        flags.extend(pthread_h.flags)
+        libs.extend(pthread_h.libs)
+        external_libs.extend(pthread_h.external_libs)
+
+    return Record(
+        static=buildsystem.build_cxx_static_lib(phase, dst, srcs,
+            includes=includes,
+            macros=macros,
+            cflags=flags,
+            libs=[lib.static for lib in libs],
+            external_libs=external_libs,
+            lflags=flags),
+        shared=buildsystem.build_cxx_shared_lib(phase, dst, srcs,
+            includes=includes,
+            macros=macros,
+            cflags=flags,
+            libs=[lib.shared for lib in libs],
+            external_libs=external_libs,
+            lflags=flags))
+
+@
+
+@h1 Configuration Database
+@tangle unix_flx_pthread.fpc
+Name: Flx_pthread
+Description: Felix Pre-emptive threading support
+
+provides_dlib: -lflx_pthread_dynamic
+provides_slib: -lflx_pthread_static
+includes: '"pthread_thread.hpp"'
+Requires: flx_gc flx_exceptions
+library: flx_pthread
+build_includes: build/release/share/lib/rtl
+srcdir: src/pthread
+src: .*\.cpp
+@
+
+@tangle win32_flx_pthread.fpc
+Name: Flx_pthread
+Description: Felix Pre-emptive threading support
+
+provides_dlib: /DEFAULTLIB:flx_pthread_dynamic
+provides_slib: /DEFAULTLIB:flx_pthread_static
+includes: '"pthread_thread.hpp"'
+Requires: flx_gc pthread
+includes: '"pthread_thread.hpp"'
+Requires: flx_gc flx_exceptions
+library: flx_pthread
+build_includes: build/release/share/lib/rtl
+srcdir: src/pthread
+src: .*\.cpp
+@

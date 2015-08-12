@@ -1,12 +1,12 @@
 Name: flx_gc
-Platform: Unix 
+Platform: Unix
 Description: Felix default garbage collector (Unix)
 provides_dlib: -lflx_gc_dynamic
 provides_slib: -lflx_gc_static
 includes: '"flx_gc.hpp"'
 library: flx_gc
 macros: BUILD_FLX_GC
-Requires: judy flx_pthread flx_exceptions
+Requires: judy flx_exceptions
 build_includes: build/release/share/lib/rtl
 srcdir: src/gc
 src: .*\.cpp
