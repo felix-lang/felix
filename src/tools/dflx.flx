@@ -1,4 +1,0 @@
-include "std/felix/flx/flx";
-
-System::pexit$ Flx::runflx #System::args;
-

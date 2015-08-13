@@ -1,7 +1,0 @@
-class Flx_client {
-  var runflx : list[string] -> int;
-  proc setup ()
-  {
-    runflx = Dynlink::load-plugin-func1 [int,list[string]] ( dll-name="flx_plugin", setup-str="");
-  }
-}
