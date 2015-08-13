@@ -1100,7 +1100,6 @@ public:
 @
 @tangle pthread_monitor.cpp
 #include "pthread_monitor.hpp"
-#include <queue>        // stl to the bloated rescue
 #include <string.h>       // strerror
 #include <assert.h>
 
