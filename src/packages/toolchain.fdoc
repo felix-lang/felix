@@ -294,6 +294,14 @@ class CxxCompiler
 @
 
 @h1 Dependency Checker
+The dependency checker is used to examine a single C or C++
+source file and check if the file, or any of dependencies,
+has changed. To do this it records a dependency file with a ".d"
+suffix as its output which lists all the files which are
+depended on as well as the command line switches used
+to invoke the compiler. The dependent file list is generated
+by the underlying compiler, which must support this ability.
+
 @tangle flx_depchk.flx
 include "std/felix/toolchain_interface";
 
@@ -1735,7 +1743,7 @@ export fun setup of (string) as "toolchain_gcc_linux_setup";
 
 @h2 Plugin for gcc on OSX
 @tangle toolchain_gcc_osx.flx
-include "src/lib/std/felix/toolchain/gcc_osx";
+include "std/felix/toolchain/gcc_osx";
 
 export fun toolchain_gcc_osx of (clang_config_t) as "toolchain_gcc_osx";
 
