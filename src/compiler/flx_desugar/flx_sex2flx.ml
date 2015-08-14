@@ -83,6 +83,21 @@ and xexpr_t sr x =
 
   | Lst [] -> EXPR_tuple (sr,[])
   | Lst [x] -> ex x
+
+  | Lst [Id "ast_here"; sr] -> 
+    let sr = xsr sr in
+    let dmod = EXPR_name (sr,"Debug",[]) in
+    let ctor = EXPR_lookup (sr,(dmod,"_ctor_flx_location_t",[])) in
+    let f,sl,sc,el,ec = Flx_srcref.to_tuple sr in
+    let mkint i = 
+      EXPR_literal (sr,{Flx_literal.felix_type="int"; internal_value=string_of_int i; c_value=string_of_int i}) 
+    in
+    let mkcharp s = 
+      EXPR_literal (sr,{Flx_literal.felix_type="cstring"; internal_value="c\""^s^"\""; c_value="\""^s^"\""}) 
+    in
+    let arg = EXPR_tuple (sr, [mkcharp f;mkint sl;mkint sc;mkint el;mkint ec]) in
+    EXPR_apply (sr,(ctor, arg))
+
   (* this term comes from the hard coded parser! *)
   | Lst [Id "ast_vsprintf";  sr; Str s] -> EXPR_vsprintf (xsr sr, s)
   | Lst [Id "ast_interpolate";  sr; Str s] -> EXPR_interpolate (xsr sr, s)

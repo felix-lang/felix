@@ -1632,6 +1632,7 @@ syntax expressions {
 
 @tangle extra.files
 grammar/python_grammar.fsyn
+grammar/debug.fsyn
 @
 
 @tangle felix.fsyn
@@ -1661,7 +1662,8 @@ syntax felix {
     cbind,
     regexps,
     macros,
-    plugins
+    plugins,
+    debug
   ;
 }
 @

@@ -1,5 +1,6 @@
 @title Debugging
-@tangler debug.flx = share/lib/std/debug.flx
+@tangler debug.flx  = share/lib/std/debug.flx
+@tangler debug.fsyn = share/lib/grammar/debug.fsyn
 
 @h1 Debugging Aid.
 
@@ -14,7 +15,7 @@ class Debug
     // NOTE: this doesn't actually work! The replacement typically
     // occurs in the wrong place: one gets the location of FLX_SRCLOC
     // right here in the debug class .. not useful!
-
+  ctor flx_location_t : +char * int * int * int * int = "::flx::rtl::flx_range_srcref_t($a)";
   fun filename: flx_location_t -> +char = "$1.filename";
   fun startline: flx_location_t -> int = "$1.startline";
   fun startcol: flx_location_t -> int = "$1.startcol";
@@ -37,6 +38,23 @@ class Debug
 
   // hack to emit C typename of a Felix type
   const repr_type[t]:string = '\\"?1\\"';
+}
+
+@h1 Source Location @{HERE}
+This special symbol @{HERE} is a value of 
+type @{Debug::flx_location_t} represent the current
+location in both Felix and C++ code. The Felix location
+should be the physical location in the file of the word @{HERE},
+unless the file was generated and a @{#line} directive is in place
+in which case the location in the generator is used.
+
+The translation from the parser term is perform by the Felix compiler.
+The translation from the C macros used are done by the C++ compiler.
+
+@tangle debug.fsyn
+syntax debug
+{
+   satom := "HERE" =># "`(ast_here ,_sr)";
 }
 
 
