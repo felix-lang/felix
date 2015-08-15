@@ -73,6 +73,8 @@ class Builder(fbuild.builders.AbstractCompilerBuilder):
                     #endif
                     #if defined _WIN32 || defined __CYGWIN__
                     __declspec(dllexport)
+                    #else
+                    __attribute__((visibility("default")))
                     #endif
                     int foo() { return 5; }
                     #ifdef __cplusplus

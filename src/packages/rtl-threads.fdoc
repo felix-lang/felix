@@ -1612,7 +1612,7 @@ namespace flx { namespace pthread {
 /// and continues without waiting for the data to be read.
 // ********************************************************
 
-class GC_EXTERN bound_queue_t {
+class PTHREAD_EXTERN bound_queue_t {
   flx_condv_t size_changed;
   size_t bound;
 public:
@@ -1628,7 +1628,7 @@ public:
   size_t len();
 };
 
-GC_EXTERN ::flx::gc::generic::scanner_t bound_queue_scanner;
+PTHREAD_EXTERN ::flx::gc::generic::scanner_t bound_queue_scanner;
 
 }} // namespace pthread, flx
 #endif
@@ -1771,7 +1771,7 @@ and the Felix bound queue is used for the fifo.
 namespace flx { namespace pthread {
 
 /// Class of jobs to be queued in fifo for execution.
-class GC_EXTERN worker_task
+class PTHREAD_EXTERN worker_task
 {
 public:
   virtual ~worker_task() {}   // c++ should do this automatically
@@ -1786,7 +1786,7 @@ public:
 
 /// Job scheduler, executes jobs in turn from queue
 /// Does not delete dequeued jobs
-class GC_EXTERN worker_fifo
+class PTHREAD_EXTERN worker_fifo
 {
   flx_mutex_t nlock;
   int nthreads;                 /// scheduled number of threads
@@ -1905,7 +1905,7 @@ namespace gc {
 namespace collector {
 
 /// Naive thread safe Mark and Sweep Collector.
-struct GC_EXTERN flx_ts_collector_t :
+struct PTHREAD_EXTERN flx_ts_collector_t :
   public flx::gc::collector::flx_collector_t
 {
   flx_ts_collector_t(allocator_t *, flx::pthread::thread_control_t *);

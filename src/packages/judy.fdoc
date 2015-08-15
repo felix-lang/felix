@@ -72,8 +72,7 @@ def build_runtime(host_phase, target_phase):
     else:
         macros = ['JU_32BIT']
 
-    if 'windows' in target_phase.platform:
-        macros.append('BUILD_JUDY') #Apply this to all source files.
+    macros.append('BUILD_JUDY') #Apply this to all source files.
 
     srcs = [copy(target_phase.ctx, p, target_phase.ctx.buildroot / 'share'/p) for p in [
         path / 'JudyCommon/JudyMalloc.c',

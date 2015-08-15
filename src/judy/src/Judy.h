@@ -38,7 +38,11 @@
 #define JUDY_EXTERN __declspec(dllimport)
 #endif
 #else
+#ifdef BUILD_JUDY
+#define JUDY_EXTERN __attribute__((visibility("default")))
+#else
 #define JUDY_EXTERN
+#endif
 #endif
 #endif
 

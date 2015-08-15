@@ -38,7 +38,7 @@ used to initiate a Felix world.
 
 namespace flx { namespace run {
 
-class flx_config {
+class RTL_EXTERN flx_config {
 public:
   bool  debug;
 
@@ -225,7 +225,7 @@ a Felix world.
 
 namespace flx { namespace run {
 
-class flx_world {
+class RTL_EXTERN flx_world {
   bool debug;
   bool debug_driver;
 

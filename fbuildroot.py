@@ -205,11 +205,11 @@ def make_c_builder(ctx, *args, includes=[], libpaths=[], flags=[], **kwargs):
                 'no-constant-logical-operand',
                 'no-array-bounds',
                 ],
-            'flags': ['-fno-common'] + flags,
+            'flags': ['-fno-common','-fvisibility=hidden'] + flags,
             'optimize_flags': ['-fomit-frame-pointer']}),
         ({'posix'},
             {'warnings': ['all', 'fatal-errors'],
-            'flags': ['-fno-common', '-fno-strict-aliasing'] + flags,
+            'flags': ['-fno-common', '-fvisibility=hidden', '-fno-strict-aliasing'] + flags,
             'optimize_flags': ['-fomit-frame-pointer']}),
         ({'windows'}, {
             'flags': ['/GR', '/MD', '/EHs', '/wd4291'] + flags,
@@ -243,11 +243,13 @@ def make_cxx_builder(ctx, *args, includes=[], libpaths=[], flags=[], **kwargs):
                 'no-missing-braces',
                 'no-return-type-c-linkage',
                 ],
-            'flags': ['-w','-fno-common', '-fno-strict-aliasing', '-std=c++11'] + flags,
+            'flags': [
+                '-w','-fno-common', '-fno-strict-aliasing', 
+                '-fvisibility=hidden', '-std=c++11'] + flags,
             'optimize_flags': ['-fomit-frame-pointer']}),
         ({'posix'}, {
             'warnings': ['fatal-errors', 'no-invalid-offsetof','no-parentheses'],
-            'flags': ['-std=c++11', '-w','-fno-common', '-fno-strict-aliasing'] + flags,
+            'flags': ['-std=c++11', '-w','-fno-common', '-fvisibility=hidden', '-fno-strict-aliasing'] + flags,
             'optimize_flags': ['-fomit-frame-pointer']}),
         ({'windows'}, {
             'flags': ['/GR', '/MD', '/EHs', '/wd4291'] + flags,

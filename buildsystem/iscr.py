@@ -176,7 +176,7 @@ def _print_config(ctx, f, build, host, target):
     # figure out the global library loading scheme
 
     p('SUPPORT_STATIC_LINKAGE', True)
-    p('SUPPORT_DYNAMIC_LOADING=TARGET_CXX.options.SUPPORT_DYNAMIC_LOADING')
+    p('SUPPORT_DYNAMIC_LOADING', True) #TARGET_CXX.options.SUPPORT_DYNAMIC_LOADING')
 
     p('if SUPPORT_DYNAMIC_LOADING:')
     p('  DEFAULT_LINK_MODEL', 'dynamic')
