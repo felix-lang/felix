@@ -13,7 +13,7 @@ all: build test
 # default build
 #
 
-VERSION = 15.04.03
+VERSION = 15.08.15
 DISTDIR ?= ./build/dist
 PREFIX ?= /usr/local
 EXECPREFIX ?= ${PREFIX}/bin
