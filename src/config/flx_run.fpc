@@ -1,5 +1,0 @@
-Name: flx_run
-Description: Felix standard driver, no async support
-Requires: flx_pthread flx flx_gc dl
-srcdir: src/flx_drivers
-src: flx_run_lib\.cpp|flx_run_main\.cxx

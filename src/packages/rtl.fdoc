@@ -4,6 +4,7 @@
 @tangler flx_compiler_support_headers.hpp = share/lib/rtl/flx_compiler_support_headers.hpp
 @tangler flx_executil.cpp                 = share/src/rtl/flx_executil.cpp
 @tangler flx_executil.hpp                 = share/lib/rtl/flx_executil.hpp
+@tangler flx_executil.fpc                 = $PWD/src/config/flx_executil.fpc
 @tangler flx_main.cpp                     = share/src/rtl/flx_main.cpp
 @tangler flx_rtl.cpp                      = share/src/rtl/flx_rtl.cpp
 @tangler flx_rtl.hpp                      = share/lib/rtl/flx_rtl.hpp
@@ -11,6 +12,7 @@
 @tangler flx_rtl_shapes.hpp               = share/lib/rtl/flx_rtl_shapes.hpp
 @tangler plat_linux.cpp                   = share/src/rtl/plat_linux.cpp
 @tangler plat_linux.hpp                   = share/lib/rtl/plat_linux.hpp
+
 
 @h1 Bootstrap builder.
 @tangle flx_rtl.py
@@ -768,6 +770,14 @@ void run(::flx::rtl::con_t *p)
 
 }}}
 @
+
+@tangle flx_executil.fpc
+Name: flx_executil
+Description: Felix mini scheduler
+Requires: flx
+includes: '"flx_executil.hpp"'
+@
+
 @h1 Main
 @tangle flx_main.cpp
 #include "flx_rtl_config.hpp"

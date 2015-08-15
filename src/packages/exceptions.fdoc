@@ -3,8 +3,11 @@
 @tangler flx_eh.cpp                 = share/src/exceptions/flx_eh.cpp
 @tangler flx_exceptions.hpp         = share/lib/rtl/flx_exceptions.hpp
 @tangler flx_exceptions.cpp         = share/src/exceptions/flx_exceptions.cpp
+@tangler flx_exceptions_config.hpp  = $PWD/src/config/target/flx_exceptions_config.hpp
 @tangler exceptions.fsyn            = share/lib/std/control/exceptions.fsyn
 @tangler flx_exceptions.py          = $PWD/buildsystem/flx_exceptions.py
+@tangler unix_flx_exceptions.fpc    = $PWD/src/config/unix/flx_exceptions.fpc
+@tangler win32_flx_exceptions.fpc   = $PWD/src/config/win32/flx_exceptions.fpc
 
 @h1 Exceptions
 Felix programs can throw a number of exceptions representing errors.
@@ -449,6 +452,39 @@ syntax exceptions
 }
 
 @
+@tangle flx_exceptions_config.hpp
+#ifndef __FLX_EXCEPTIONS_CONFIG_H__
+#define __FLX_EXCEPTIONS_CONFIG_H__
+#include "flx_rtl_config.hpp"
+#ifdef BUILD_FLX_EXCEPTIONS
+#define FLX_EXCEPTIONS_EXTERN FLX_EXPORT
+#else
+#define FLX_EXCEPTIONS_EXTERN FLX_IMPORT
+#endif
+#endif
+@
+
+@tangle unix_flx_exceptions.fpc
+Name: flx_exceptions
+Description: Felix exceptions
+provides_dlib: -lflx_exceptions_dynamic
+provides_slib: -lflx_exceptions_static
+library: flx_exceptions
+macros: BUILD_FLX_EXCEPTIONS
+includes: '"flx_exceptions.hpp"'
+build_includes: build/release/share/lib/rtl
+srcdir: src/exceptions
+src: .*\.cpp 
+@
+
+@tangle win32_flx_exceptions.fpc
+Name: flx
+Description: Felix exceptions
+provides_dlib: /DEFAULTLIB:flx_exceptions_dynamic
+provides_slib: /DEFAULTLIB:flx_exceptions_static
+includes: '"flx_exceptions.hpp"'
+@
+
 @tangle flx_exceptions.py
 import fbuild
 from fbuild.path import Path

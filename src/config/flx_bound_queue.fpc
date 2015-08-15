@@ -1,3 +1,0 @@
-Name: Pthread Bound Queue
-Requires: flx_pthread flx_gc
-includes: '"pthread_bound_queue.hpp"'

@@ -4,6 +4,7 @@
 @tangler flx_strutil.cpp     = share/src/rtl/flx_strutil.cpp
 @tangler flx_i18n.hpp        = share/lib/rtl/flx_i18n.hpp
 @tangler flx_i18n.cpp        = share/src/rtl/flx_i18n.cpp
+@tangler flx_strutil.fpc     = $PWD/src/config/flx_strutil.fpc
 
 
 @tangler __init__.flx        = share/lib/std/strings/__init__.flx
@@ -391,6 +392,14 @@ namespace flx { namespace rtl { namespace i18n {
     return s;
   }
 }}}
+@
+
+@h1 Config database entry for RTL 
+@tangle flx_strutil.fpc
+Name: flx_strutil
+Description: String utilities
+includes: '"flx_strutil.hpp"'
+Requires: flx
 @
 
 @h1 String handling

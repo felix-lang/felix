@@ -1,6 +1,7 @@
 @title I/O
 @tangler flx_ioutil.hpp    = share/lib/rtl/flx_ioutil.hpp
 @tangler flx_ioutil.cpp    = share/src/rtl/flx_ioutil.cpp
+@tangler flx_ioutil.fpc    = $PWD/src/config/flx_ioutil.fpc
 
 @tangler __init__.flx      = share/lib/std/io/__init__.flx
 @tangler ansi_terminal.flx = share/lib/std/io/ansi_terminal.flx
@@ -228,6 +229,12 @@ more:
 }}}
 @
 
+@tangle flx_ioutil.fpc
+Name: flx_ioutil
+Description: I/O support
+includes: '"flx_ioutil.hpp"'
+Requires: flx
+@
 
 @h1 Standard Library Synopsis
 @tangle __init__.flx

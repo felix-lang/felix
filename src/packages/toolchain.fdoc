@@ -18,6 +18,12 @@
 @tangler toolchain_clang_osx.flx      = share/lib/plugins/toolchain_clang_osx.flx
 @tangler toolchain_clang_iphoneos.flx = share/lib/plugins/toolchain_clang_iphoneos.flx
 
+@tangler build_flx_rtl_gcc_linux.fpc         = $PWD/src/config/build_flx_rtl_gcc_linux.fpc
+@tangler build_flx_rtl_gcc_osx.fpc           = $PWD/src/config/build_flx_rtl_gcc_osx.fpc
+@tangler build_flx_rtl_clang_linux.fpc       = $PWD/src/config/build_flx_rtl_clang_linux.fpc
+@tangler build_flx_rtl_clang_osx.fpc         = $PWD/src/config/build_flx_rtl_clang_osx.fpc
+@tangler build_flx_rtl_clang_iphoneos.fpc    = $PWD/src/config/build_flx_rtl_clang_iphoneos.fpc
+
 
 @h1 Toolchain support
 @tangle toolchain_clang_config.flx
@@ -1812,3 +1818,50 @@ export fun setup of (string) as "toolchain_clang_iphoneos_setup";
 
 
 @
+
+@h1 RTL build control entries.
+Causes @{flx_pkgconfig} to require enough packages to
+ensure the whole core RTL is built.
+
+@tangle build_flx_rtl_gcc_linux.fpc
+description: Build system bootstrap root.
+toolchain: toolchain_gcc_linux
+compiler: gcc
+os: LINUX
+Requires: flx flx_gc flx_exceptions flx_pthread flx_async re2 sqlite3 flx_dynlink demux faio
+@
+
+@tangle build_flx_rtl_gcc_osx.fpc
+description: Build system bootstrap root.
+toolchain: toolchain_gcc_osx
+compiler: gcc
+os: OSX
+Requires: flx flx_gc flx_exceptions flx_pthread flx_async re2 sqlite3 flx_dynlink demux faio
+@
+
+@tangle build_flx_rtl_clang_linux.fpc
+description: Build system bootstrap root.
+toolchain: toolchain_clang_linux
+compiler: clang
+os: LINUX
+Requires: flx flx_gc flx_exceptions flx_pthread flx_async re2 sqlite3 flx_dynlink demux faio
+@
+
+@tangle build_flx_rtl_clang_osx.fpc
+description: Build system bootstrap root.
+toolchain: toolchain_clang_osx
+compiler: clang
+os: OSX
+Requires: flx flx_gc flx_exceptions flx_pthread flx_async re2 sqlite3 flx_dynlink demux faio
+@
+
+@tangle build_flx_rtl_clang_iphoneos.fpc
+description: Build system bootstrap root.
+toolchain: toolchain_clang_iphoneos
+compiler: clang
+os: iPhoneOS
+Requires: flx flx_gc flx_exceptions flx_pthread flx_async re2 sqlite3 flx_dynlink demux faio
+@
+
+
+

@@ -1,7 +1,0 @@
-description: Build system bootstrap root.
-toolchain: toolchain_gcc_linux
-compiler: gcc
-os: LINUX
-Requires: flx flx_gc flx_exceptions flx_pthread flx_async re2 sqlite3 flx_dynlink demux faio
-
-

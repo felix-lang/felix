@@ -1,4 +1,0 @@
-Name: flx_strutil
-Description: String utilities
-includes: '"flx_strutil.hpp"'
-Requires: flx

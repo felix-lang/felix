@@ -16,6 +16,11 @@
 @tangler flx_arun_lib_static.cpp  = share/src/flx_drivers/flx_arun_lib_static.cpp
 @tangler build_iphone_rtl.sh      = share/src/flx_drivers/build_iphone_rtl.sh
 @tangler flx_drivers.py           = $PWD/buildsystem/flx_drivers.py
+@tangler config_unix_dl.fpc       = $PWD/src/config/unix/dl.fpc
+@tangler config_macosx_dl.fpc     = $PWD/src/config/macosx/dl.fpc
+@tangler config_win32_dl.fpc      = $PWD/src/config/win32/dl.fpc
+@tangler flx_arun.fpc             = $PWD/src/config/flx_arun.fpc
+@tangler flx_run.fpc              = $PWD/src/config/flx_run.fpc
 
 @h1 Dynamic Linkage
 @h2 Synopsis
@@ -1651,6 +1656,45 @@ int main(int argc, char **argv)
 {
   return felix_run(argc, argv);
 }
+@
+
+@h1 Dynamic Linkage support
+
+@tangle config_unix_dl.fpc
+Name: dl
+Description: dynamic loading support
+includes: '#include "<dlfcn.h>"'
+requires_dlibs: -ldl
+requires_slibs: -ldl
+@
+
+@tangle config_macosx_dl.fpc
+Name: dl
+Description: dynamic loading support
+includes: '#include "<dlfcn.h>"'
+@
+
+@tangle config_win32_dl.fpc
+Name: dl
+Description: dynamic loading support
+@
+
+@h1 Driver executable config
+@tangle flx_arun.fpc
+Name: flx_arun
+Description: Felix standard driver, async support
+Requires: flx_async faio demux flx_pthread flx flx_gc dl
+flx_requires_driver: flx_arun
+srcdir: src/flx_drivers
+src: flx_arun_lib\.cpp|flx_arun_main\.cxx
+@
+
+@tangle flx_run.fpc
+Name: flx_run
+Description: Felix standard driver, no async support
+Requires: flx_pthread flx flx_gc dl
+srcdir: src/flx_drivers
+src: flx_run_lib\.cpp|flx_run_main\.cxx
 @
 
 @h1 Misc

@@ -1,6 +1,0 @@
-Name: flx
-Description: Felix exceptions
-provides_dlib: /DEFAULTLIB:flx_exceptions_dynamic
-provides_slib: /DEFAULTLIB:flx_exceptions_static
-includes: '"flx_exceptions.hpp"'
-

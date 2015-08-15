@@ -1,10 +1,10 @@
   <svg xmlns="http://www.w3.org/2000/svg" version="1.1"
     width="650" height="450" viewBox="0 0 650 450" preserveAspectRatio="none">
-    <rect x="10" y="76" width="50" height="114" style="fill:red;stroke:purple;stroke-width:5;"/>
+    <rect x="10" y="75" width="50" height="115" style="fill:red;stroke:purple;stroke-width:5;"/>
     <text x="10" y="220"  transform="rotate(60 10,220)">Felix</text>
-    <rect x="70" y="76" width="50" height="114" style="fill:red;stroke:purple;stroke-width:5;"/>
+    <rect x="70" y="75" width="50" height="115" style="fill:red;stroke:purple;stroke-width:5;"/>
     <text x="70" y="220"  transform="rotate(60 70,220)">clang++</text>
-    <rect x="130" y="74" width="50" height="116" style="fill:red;stroke:purple;stroke-width:5;"/>
+    <rect x="130" y="75" width="50" height="115" style="fill:red;stroke:purple;stroke-width:5;"/>
     <text x="130" y="220"  transform="rotate(60 130,220)">g++</text>
     <rect x="190" y="10" width="50" height="180" style="fill:red;stroke:purple;stroke-width:5;"/>
     <text x="190" y="220"  transform="rotate(60 190,220)">Ocaml</text>

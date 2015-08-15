@@ -1,4 +1,0 @@
-Name: flx_executil
-Description: Felix scheduler
-Requires: flx
-includes: '"flx_executil.hpp"'

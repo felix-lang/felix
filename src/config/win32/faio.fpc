@@ -1,8 +1,0 @@
-
-Name: faio
-Description: Asynchronous I/O support
-provides_dlib: /DEFAULTLIB:faio_dynamic
-provides_slib: /DEFAULTLIB:faio_static
-includes: '"faio_winio.hpp"'
-Requires: demux
-

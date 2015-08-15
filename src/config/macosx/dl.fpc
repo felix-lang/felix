@@ -1,5 +1,0 @@
-Name: dl
-Description: dynamic loading support
-Comment: Generated during configuration
-includes: '#include "<dlfcn.h>"'
-
