@@ -49,7 +49,7 @@
 #define FLX_IMPORT __declspec(dllimport)
 #else
 #define FLX_EXPORT __attribute__((visibility("default")))
-#define FLX_IMPORT
+#define FLX_IMPORT __attribute__((visibility("default"))) 
 #endif
 
 

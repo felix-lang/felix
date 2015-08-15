@@ -1938,8 +1938,6 @@ private:
 @
 
 @tangle flx_ts_collector.cpp
-
-
 #include "flx_rtl_config.hpp"
 #include "flx_ts_collector.hpp"
 

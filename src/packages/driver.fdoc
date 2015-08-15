@@ -1718,10 +1718,14 @@ def build(host_phase, target_phase):
         includes=arun_includes,
     )
 
+    external_libs=[]
+    # posix .. how to check?
+    external_libs=['dl']
     flx_arun_exe = target_phase.cxx.shared.build_exe(
         dst='host/bin/flx_arun',
         srcs=[path / 'flx_arun_main.cxx', path/ 'flx_arun_lib_dynamic.cpp'],
         includes=arun_includes,
+        external_libs=external_libs,
         libs=[
            call('buildsystem.flx_rtl.build_runtime', host_phase, target_phase).shared,
            call('buildsystem.flx_pthread.build_runtime', target_phase).shared,
