@@ -1,7 +1,0 @@
-Name: SDL2_image
-Description: Simple Direct Media Layer 2.0: image loader
-cflags: -I/usr/local/include/SDL2
-includes: '"SDL_image.h"'
-provides_dlib: -L/usr/local/lib -lSDL2_image
-provides_slib: -L/usr/local/lib -lSDL2_image
-

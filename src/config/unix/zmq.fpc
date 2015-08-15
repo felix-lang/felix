@@ -1,6 +1,0 @@
-Name: ZeroMQ 
-Description: Message Passing Library
-provides_dlib: -lzmq
-provides_slib: -lzmq
-includes: '"zmq.h"'
-

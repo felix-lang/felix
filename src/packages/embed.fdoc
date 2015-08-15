@@ -10,6 +10,9 @@
 @tangler flx_sync.hpp         = share/lib/rtl/flx_sync.hpp
 @tangler flx_sync.cpp         = share/src/rtl/flx_sync.cpp
 @tangler flx_async.py         = $PWD/buildsystem/flx_async.py
+@tangler unix_flx_async.fpc   = $PWD/src/config/unix/flx_async.fpc
+@tangler win32_flx_async.fpc  = $PWD/src/config/win32/flx_async.fpc
+
 
 @h1 Embedding
 This technology is designed to allow Felix to be embedded in any
@@ -1407,6 +1410,27 @@ dispatch:
 }
 
 }}
+@
+@h1 Config
+@tangle unix_flx_async.fpc
+Name: flx_async
+Description: Async hook
+provides_dlib: -lflx_async_dynamic
+provides_slib: -lflx_async_static
+includes: '"flx_async.hpp"'
+Requires: flx_pthread flx_gc flx 
+build_includes: build/release/share/lib/rtl
+library: flx_async
+srcdir: src/flx_async
+src: .*\.cpp
+@
+
+@tangle win32_flx_async.fpc
+Name: flx_async
+Description: Async hook
+provides_dlib: /DEFAULTLIB:flx_async_dynamic
+provides_slib: /DEFAULTLIB:flx_async_static
+Requires: faio demux flx_pthread flx flx_gc
 @
 
 @tangle flx_async.py

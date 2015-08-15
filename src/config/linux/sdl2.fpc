@@ -1,7 +1,0 @@
-Name: SDL2 
-Description: Simple Direct Media Layer 2.0
-cflags: -I/usr/local/include/SDL2
-includes: '"SDL.h"'
-provides_dlib: -L/usr/local/lib -lSDL2
-provides_slib: -L/usr/local/lib -lSDL2
-

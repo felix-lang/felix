@@ -1,9 +1,0 @@
-Name: manymouse
-Description: Low level access to many mice.
-provides_dlib: -lflx_manymouse_dynamic
-provides_slib: -lflx_manymouse_static
-includes: '"flx_manymouse.hpp"'
-library: flx_manymouse
-macros: BUILD_FLX_MANYMOUSE
-srcdir: src/manymouse
-src: .*\.c

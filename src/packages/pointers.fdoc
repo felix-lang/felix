@@ -241,7 +241,7 @@ for var i in 0 upto 9 do
   a + i <- i * i;
   ++a.[i];
 done
-for i in 0 upto 10 do
+for i in 0 upto 9 do
   println$  a.[i], *(a+i), a.i;
 done
 free a;

@@ -1,40 +1,47 @@
 @title SDL2 bindings
 
-@tangler SDL2.flx  = share/lib/sdl/SDL2.flx
-@tangler SDL_active.flx  = share/lib/sdl/SDL_active.flx
-@tangler SDL_audio.flx  = share/lib/sdl/SDL_audio.flx
-@tangler SDL_cdrom.flx  = share/lib/sdl/SDL_cdrom.flx
-@tangler SDL_clipboard.flx  = share/lib/sdl/SDL_clipboard.flx
-@tangler SDL_endian.flx  = share/lib/sdl/SDL_endian.flx
-@tangler SDL_error.flx  = share/lib/sdl/SDL_error.flx
-@tangler SDL_events.flx  = share/lib/sdl/SDL_events.flx
-@tangler SDL_framerate.flx  = share/lib/sdl/SDL_framerate.flx
-@tangler SDL_gfxPrimitives.flx  = share/lib/sdl/SDL_gfxPrimitives.flx
-@tangler SDL_gfxPrimitives_font.flx  = share/lib/sdl/SDL_gfxPrimitives_font.flx
-@tangler SDL_image.flx  = share/lib/sdl/SDL_image.flx
-@tangler SDL_imageFilter.flx  = share/lib/sdl/SDL_imageFilter.flx
-@tangler SDL_joystick.flx  = share/lib/sdl/SDL_joystick.flx
-@tangler SDL_keyboard.flx  = share/lib/sdl/SDL_keyboard.flx
-@tangler SDL_keycode.flx  = share/lib/sdl/SDL_keycode.flx
-@tangler SDL_mixer.flx  = share/lib/sdl/SDL_mixer.flx
-@tangler SDL_mouse.flx  = share/lib/sdl/SDL_mouse.flx
-@tangler SDL_mutex.flx  = share/lib/sdl/SDL_mutex.flx
-@tangler SDL_net.flx  = share/lib/sdl/SDL_net.flx
-@tangler SDL_opengl.flx  = share/lib/sdl/SDL_opengl.flx
-@tangler SDL_pixels.flx  = share/lib/sdl/SDL_pixels.flx
-@tangler SDL_rect.flx  = share/lib/sdl/SDL_rect.flx
-@tangler SDL_render.flx  = share/lib/sdl/SDL_render.flx
-@tangler SDL_rotozoom.flx  = share/lib/sdl/SDL_rotozoom.flx
-@tangler SDL_rwops.flx  = share/lib/sdl/SDL_rwops.flx
-@tangler SDL_scancode.flx  = share/lib/sdl/SDL_scancode.flx
-@tangler SDL_sound.flx  = share/lib/sdl/SDL_sound.flx
-@tangler SDL_surface.flx  = share/lib/sdl/SDL_surface.flx
-@tangler SDL_timer.flx  = share/lib/sdl/SDL_timer.flx
-@tangler SDL_ttf.flx  = share/lib/sdl/SDL_ttf.flx
-@tangler SDL_types.flx  = share/lib/sdl/SDL_types.flx
-@tangler SDL_version.flx  = share/lib/sdl/SDL_version.flx
-@tangler SDL_video.flx  = share/lib/sdl/SDL_video.flx
-@tangler flx_faio_sdl.flx  = share/lib/sdl/flx_faio_sdl.flx
+@tangler SDL2.flx                     = share/lib/sdl/SDL2.flx
+@tangler SDL_active.flx               = share/lib/sdl/SDL_active.flx
+@tangler SDL_audio.flx                = share/lib/sdl/SDL_audio.flx
+@tangler SDL_cdrom.flx                = share/lib/sdl/SDL_cdrom.flx
+@tangler SDL_clipboard.flx            = share/lib/sdl/SDL_clipboard.flx
+@tangler SDL_endian.flx               = share/lib/sdl/SDL_endian.flx
+@tangler SDL_error.flx                = share/lib/sdl/SDL_error.flx
+@tangler SDL_events.flx               = share/lib/sdl/SDL_events.flx
+@tangler SDL_framerate.flx            = share/lib/sdl/SDL_framerate.flx
+@tangler SDL_gfxPrimitives.flx        = share/lib/sdl/SDL_gfxPrimitives.flx
+@tangler SDL_gfxPrimitives_font.flx   = share/lib/sdl/SDL_gfxPrimitives_font.flx
+@tangler SDL_image.flx                = share/lib/sdl/SDL_image.flx
+@tangler SDL_imageFilter.flx          = share/lib/sdl/SDL_imageFilter.flx
+@tangler SDL_joystick.flx             = share/lib/sdl/SDL_joystick.flx
+@tangler SDL_keyboard.flx             = share/lib/sdl/SDL_keyboard.flx
+@tangler SDL_keycode.flx              = share/lib/sdl/SDL_keycode.flx
+@tangler SDL_mixer.flx                = share/lib/sdl/SDL_mixer.flx
+@tangler SDL_mouse.flx                = share/lib/sdl/SDL_mouse.flx
+@tangler SDL_mutex.flx                = share/lib/sdl/SDL_mutex.flx
+@tangler SDL_net.flx                  = share/lib/sdl/SDL_net.flx
+@tangler SDL_opengl.flx               = share/lib/sdl/SDL_opengl.flx
+@tangler SDL_pixels.flx               = share/lib/sdl/SDL_pixels.flx
+@tangler SDL_rect.flx                 = share/lib/sdl/SDL_rect.flx
+@tangler SDL_render.flx               = share/lib/sdl/SDL_render.flx
+@tangler SDL_rotozoom.flx             = share/lib/sdl/SDL_rotozoom.flx
+@tangler SDL_rwops.flx                = share/lib/sdl/SDL_rwops.flx
+@tangler SDL_scancode.flx             = share/lib/sdl/SDL_scancode.flx
+@tangler SDL_sound.flx                = share/lib/sdl/SDL_sound.flx
+@tangler SDL_surface.flx              = share/lib/sdl/SDL_surface.flx
+@tangler SDL_timer.flx                = share/lib/sdl/SDL_timer.flx
+@tangler SDL_ttf.flx                  = share/lib/sdl/SDL_ttf.flx
+@tangler SDL_types.flx                = share/lib/sdl/SDL_types.flx
+@tangler SDL_version.flx              = share/lib/sdl/SDL_version.flx
+@tangler SDL_video.flx                = share/lib/sdl/SDL_video.flx
+@tangler flx_faio_sdl.flx             = share/lib/sdl/flx_faio_sdl.flx
+
+@tangler linux_sdl2.fpc               = $PWD/src/config/linux/sdl2.fpc
+@tangler linux_sdl2_image.fpc         = $PWD/src/config/linux/sdl2_image.fpc
+@tangler linux_sdl2_ttf.fpc           = $PWD/src/config/linux/sdl2_ttf.fpc
+@tangler macosx_sdl2.fpc              = $PWD/src/config/macosx/sdl2.fpc
+@tangler macosx_sdl2_image.fpc        = $PWD/src/config/macosx/sdl2_image.fpc
+@tangler macosx_sdl2_ttf.fpc          = $PWD/src/config/macosx/sdl2_ttf.fpc
 
 
 @h1 SDL2.flx
@@ -3621,3 +3628,69 @@ open module SDL_events
     ignore(SDL_UnlockMutex(m));
   }
 }
+@
+
+@h1 Package Configuration
+@tangle linux_sdl2.fpc
+Name: SDL2 
+Description: Simple Direct Media Layer 2.0
+cflags: -I/usr/local/include/SDL2
+includes: '"SDL.h"'
+provides_dlib: -L/usr/local/lib -lSDL2
+provides_slib: -L/usr/local/lib -lSDL2
+
+@
+@tangle linux_sdl2_image.fpc
+Name: SDL2_image
+Description: Simple Direct Media Layer 2.0: image loader
+cflags: -I/usr/local/include/SDL2
+includes: '"SDL_image.h"'
+provides_dlib: -L/usr/local/lib -lSDL2_image
+provides_slib: -L/usr/local/lib -lSDL2_image
+requires_dlibs: -ljpeg -ltiff -lpng
+requires_slibs: -ljpeg -ltiff -lpng
+
+@
+@tangle linux_sdl2_ttf.fpc
+Name: SDL2_ttf
+Description: Simple Direct Media Layer 2.0: free type interface
+cflags: -I/usr/local/include/SDL2
+includes: '"SDL_ttf.h"'
+provides_dlib: -L/usr/local/lib -lSDL2_ttf
+provides_slib: -L/usr/local/lib -lSDL2_ttf
+requires_dlibs: -lfreetype
+requires_slibs: -lfreetype
+
+@
+@tangle macosx_sdl2.fpc
+Name: SDL2 
+Description: Simple Direct Media Layer 2.0
+cflags: -I/usr/local/include/SDL2
+includes: '"SDL.h"'
+provides_dlib: -L/usr/local/lib -lSDL2
+provides_slib: -L/usr/local/lib -lSDL2
+requires_dlibs: ---framework=OpenGL
+requires_slibs: ---framework=OpenGL
+
+@
+@tangle macosx_sdl2_image.fpc
+Name: SDL2_image
+Description: Simple Direct Media Layer 2.0: image loader
+cflags: -I/usr/local/include/SDL2
+includes: '"SDL_image.h"'
+provides_dlib: -L/usr/local/lib -lSDL2_image
+provides_slib: -L/usr/local/lib -lSDL2_image
+
+@
+@tangle macosx_sdl2_ttf.fpc
+Name: SDL2_ttf
+Description: Simple Direct Media Layer 2.0: free type interface
+cflags: -I/usr/local/include/SDL2
+includes: '"SDL_ttf.h"'
+provides_dlib: -L/usr/local/lib -lSDL2_ttf
+provides_slib: -L/usr/local/lib -lSDL2_ttf
+requires_dlibs: -lfreetype
+requires_slibs: -lfreetype
+
+@
+

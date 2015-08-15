@@ -15,6 +15,8 @@
 @tangler stack.cpp                 = $PWD/src/sundown/stack.cpp
 @tangler markdown.h                = $PWD/src/sundown/markdown.h
 @tangler markdown.cpp              = $PWD/src/sundown/markdown.cpp
+@tangler unix_sundown.fpc          = $PWD/src/config/unix/sundown.fpc
+@tangler win32_sundown.fpc         = $PWD/src/config/win32/sundown.fpc
 
 @h1 Sundown Markdown processor.
 Note: Won't cope with extended markdown used on github.
@@ -84,7 +86,6 @@ SUNDOWN_EXTERN ::std::string sundown (::std::string const&);
   return ret;
 }
 
-/* vim: set filetype=c: */
 @
 
 @tangle autolink.h
@@ -138,7 +139,6 @@ sd_autolink__url(size_t *rewind_p, struct buf *link,
 
 #endif
 
-/* vim: set filetype=c: */
 @
 
 @tangle autolink.cpp
@@ -2187,7 +2187,6 @@ sd_version(int *major, int *minor, int *revision);
 
 #endif
 
-/* vim: set filetype=c: */
 @
 
 @tangle markdown.cpp
@@ -4746,7 +4745,21 @@ sd_version(int *ver_major, int *ver_minor, int *ver_revision)
 	*ver_revision = SUNDOWN_VER_REVISION;
 }
 
-/* vim: set filetype=c: */
 @
 
+@tangle unix_sundown.fpc
+Name: Sundown
+Description: Markdown translator
+provides_dlib: -lflx_sundown_dynamic
+provides_slib: -lflx_sundown_static
+includes: '"flx_sundown.hpp"'
+@
+
+@tangle win32_sundown.fpc
+Name:  Sundown
+Description: Markdown translator
+provides_dlib: /DEFAULTLIB:flx_sundown_dynamic
+provides_slib: /DEFAULTLIB:flx_sundown_static
+includes: '"flx_sundown.hpp"'
+@
 

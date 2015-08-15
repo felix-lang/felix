@@ -1,3 +1,0 @@
-Name: flx_dynlink
-Requires: flx
-includes: '"flx_dynlink.hpp"'

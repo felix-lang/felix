@@ -1,6 +1,0 @@
-Name: flx_async
-Description: Async hook
-provides_dlib: /DEFAULTLIB:flx_async_dynamic
-provides_slib: /DEFAULTLIB:flx_async_static
-Requires: faio demux flx_pthread flx flx_gc
-

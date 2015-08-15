@@ -5,6 +5,9 @@
 @tangler flx_i18n.hpp        = share/lib/rtl/flx_i18n.hpp
 @tangler flx_i18n.cpp        = share/src/rtl/flx_i18n.cpp
 @tangler flx_strutil.fpc     = $PWD/src/config/flx_strutil.fpc
+@tangler flx_i18n.fpc        = $PWD/src/config/flx_i18n.fpc
+@tangler unix_re2.fpc        = $PWD/src/config/unix/re2.fpc
+@tangler win32_re2.fpc       = $PWD/src/config/win32/re2.fpc
 
 
 @tangler __init__.flx        = share/lib/std/strings/__init__.flx
@@ -400,6 +403,13 @@ Name: flx_strutil
 Description: String utilities
 includes: '"flx_strutil.hpp"'
 Requires: flx
+@
+
+@tangle flx_i18n.fpc
+Name: flx_i18n
+Description: Internationalisation support, Unicode, utf8
+Requires: flx
+includes: '"flx_i18n.hpp"'
 @
 
 @h1 String handling
@@ -1653,4 +1663,25 @@ instance Tord[Lexer::lex_iterator] {
 
 open Eq[Lexer::lex_iterator];
 
+@h1 Config
+@tangle unix_re2.fpc
+Name: Re2
+Description: Google Re2 regexp library
+provides_dlib: -lflx_re2_dynamic
+provides_slib: -lflx_re2_static
+includes: '"re2/re2.h"'
+library: flx_re2
+macros: BUILD_RE2
+srcdir: src/re2/re2
+headers: re2/(re2|set|stringpiece|variadic_function)\.h  
+src: re2/[^/]*\.cc|util/arena\.cc|util/hash\.cc|util/rune\.cc|util/stringpiece\.cc|util/strutil.cc|util/stringprintf\.cc|util/valgrind\.cc
+build_includes: src/re2/re2
+@
 
+@tangle win32_re2.fpc
+Name: Re2
+Description: Google Re2 regexp library
+provides_dlib: /DEFAULTLIB:flx_re2_dynamic
+provides_slib: /DEFAULTLIB:flx_re2_static
+includes: '"re2/re2.h"'
+@

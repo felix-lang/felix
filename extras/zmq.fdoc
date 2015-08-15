@@ -1,5 +1,8 @@
 @itile 0MQ wrapper.
 @tangler zmq.flx           = share/lib/std/io/zmq.flx
+@tangler unix_zmq.fpc      = $PWD/src/config/unix/zmq.fpc
+
+
 @h1 0MQ Interface
 @tangle zmq.flx
 
@@ -499,4 +502,12 @@ class ZMQ {
   // why?
  
 }
+@h1 Config
+@tangle unix_zmq.fpc
+Name: ZeroMQ 
+Description: Message Passing Library
+provides_dlib: -lzmq
+provides_slib: -lzmq
+includes: '"zmq.h"'
+@
 

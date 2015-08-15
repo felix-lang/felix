@@ -1,5 +1,0 @@
-Name:  Sundown
-Description: Markdown translator
-provides_dlib: /DEFAULTLIB:flx_sundown_dynamic
-provides_slib: /DEFAULTLIB:flx_sundown_static
-includes: '"flx_sundown.hpp"'

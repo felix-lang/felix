@@ -1,9 +1,0 @@
-Name: SDL2_ttf
-Description: Simple Direct Media Layer 2.0: free type interface
-cflags: -I/usr/local/include/SDL2
-includes: '"SDL_ttf.h"'
-provides_dlib: -L/usr/local/lib -lSDL2_ttf
-provides_slib: -L/usr/local/lib -lSDL2_ttf
-requires_dlibs: -lfreetype
-requires_slibs: -lfreetype
-

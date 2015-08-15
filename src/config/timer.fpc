@@ -1,4 +1,0 @@
-Name: Timer
-Description: Real time clock services
-Requires: faio
-includes:  '"faio_timer.hpp"'

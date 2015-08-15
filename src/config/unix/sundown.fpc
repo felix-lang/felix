@@ -1,7 +1,0 @@
-Name: Sundown
-Description: Markdown translator
-provides_dlib: -lflx_sundown_dynamic
-provides_slib: -lflx_sundown_static
-includes: '"flx_sundown.hpp"'
-
-

@@ -21,6 +21,8 @@
 @tangler config_win32_dl.fpc      = $PWD/src/config/win32/dl.fpc
 @tangler flx_arun.fpc             = $PWD/src/config/flx_arun.fpc
 @tangler flx_run.fpc              = $PWD/src/config/flx_run.fpc
+@tangler flx_dynlink.fpc          = $PWD/src/config/flx_dynlink.fpc
+
 
 @h1 Dynamic Linkage
 @h2 Synopsis
@@ -1695,6 +1697,13 @@ Description: Felix standard driver, no async support
 Requires: flx_pthread flx flx_gc dl
 srcdir: src/flx_drivers
 src: flx_run_lib\.cpp|flx_run_main\.cxx
+@
+
+@tangle flx_dynlink.fpc
+Name: flx_dynlink
+Description: Felix Dynamic loading support
+Requires: flx
+includes: '"flx_dynlink.hpp"'
 @
 
 @h1 Misc

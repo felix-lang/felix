@@ -1,4 +1,0 @@
-Name: flx_i18n
-Description: Internationalisation support, Unicode, utf8
-Requires: flx
-includes: '"flx_i18n.hpp"'

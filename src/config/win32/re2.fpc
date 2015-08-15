@@ -1,6 +1,0 @@
-Name: Re2
-Description: Google Re2 regexp library
-provides_dlib: /DEFAULTLIB:flx_re2_dynamic
-provides_slib: /DEFAULTLIB:flx_re2_static
-includes: '"re2/re2.h"'
-
