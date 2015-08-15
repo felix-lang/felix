@@ -143,7 +143,7 @@ class Builder(fbuild.db.PersistentObject):
 
 
         return linker(dst, list(chain(objects, [obj,thunk_obj])),
-            libs=libs,
+            libs=libs, external_libs=['dl'],
             flags=lflags,
             buildroot=buildroot)
 

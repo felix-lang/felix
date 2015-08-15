@@ -1672,14 +1672,13 @@ from fbuild.functools import call
 from fbuild.path import Path
 from fbuild.record import Record
 import buildsystem
+from buildsystem.config import config_call
 
 # ------------------------------------------------------------------------------
 
 def build(host_phase, target_phase):
     path = Path(target_phase.ctx.buildroot/'share'/'src/flx_drivers')
 
-    external_libs=[]
-    # posix .. how to check?
     external_libs=['dl']
 
     run_includes = [
