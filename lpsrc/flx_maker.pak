@@ -129,19 +129,19 @@ Comment: Generated during configuration
    tangle("requires_dlibs: "+pyconfig.TARGET_CXX.options.PTHREAD_LIBS)
    tangle("requires_slibs: "+pyconfig.TARGET_CXX.options.PTHREAD_LIBS)
 
-@h = tangler('host/config/dl.fpc')
-@select(h)
-Name: dl
-Description: dynamic loading support
-Comment: Generated during configuration
+@# @h = tangler('host/config/dl.fpc')
+@# @select(h)
+@# Name: dl
+@# Description: dynamic loading support
+@# Comment: Generated during configuration
 
-@if pyconfig.TARGET_CXX.options.HAVE_DLOPEN:
-   tangle("cflags: "+pyconfig.TARGET_CXX.options.DYNAMIC_LOADING_CFLAGS)
-   tangle("requires_dlibs: "+pyconfig.TARGET_CXX.options.DYNAMIC_LOADING_LIBS)
-   tangle("requires_slibs: "+pyconfig.TARGET_CXX.options.DYNAMIC_LOADING_LIBS)
+@# @if pyconfig.TARGET_CXX.options.HAVE_DLOPEN:
+@#    tangle("cflags: "+pyconfig.TARGET_CXX.options.DYNAMIC_LOADING_CFLAGS)
+@#    tangle("requires_dlibs: "+pyconfig.TARGET_CXX.options.DYNAMIC_LOADING_LIBS)
+@#    tangle("requires_slibs: "+pyconfig.TARGET_CXX.options.DYNAMIC_LOADING_LIBS)
 
-@if pyconfig.TARGET_CXX.options.HAVE_DLOPEN:
-   tangle('includes: <dlfcn.h>')
+@# @if pyconfig.TARGET_CXX.options.HAVE_DLOPEN:
+@#    tangle('includes: <dlfcn.h>')
 
 @h = tangler('host/config/demux.fpc')
 @select(h)
