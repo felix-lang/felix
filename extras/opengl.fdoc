@@ -2,7 +2,6 @@
 @tangler gl_lib.flx         = share/lib/opengl/gl_lib.flx 
 @tangler glext_lib.flx      = share/lib/opengl/glext_lib.flx
 @tangler glu_lib.flx        = share/lib/opengl/glu_lib.flx
-@tangler glu_lib.flx        = share/lib/opengl/glu_lib.flx
 @tangler glut_lib.flx       = share/lib/opengl/glut_lib.flx
 @tangler unix_gl.fpc        = $PWD/src/config/unix/gl.fpc
 @tangler unix_glext.fpc     = $PWD/src/config/unix/glext.fpc

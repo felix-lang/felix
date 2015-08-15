@@ -919,7 +919,7 @@ houdini_escape_href(struct buf *ob, const uint8_t *src, size_t size)
 }
 @
 
-@tangle houdini_href_html_e.cpp
+@tangle houdini_href_e.cpp
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>

@@ -10,7 +10,7 @@
 
 @h1 Manymouse
 Code to support multiple mice on various platforms.
-@tangler flx_manymouse.hpp
+@tangle flx_manymouse.hpp
 #include "flx_manymouse_config.h"
 #include "manymouse.h"
 
