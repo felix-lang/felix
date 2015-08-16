@@ -39,17 +39,21 @@ class FlxRtlBuild
     var compiler = getbootfield "compiler"; 
     var os = getbootfield "os"; 
     var toolchain = getbootfield "toolchain"; 
+    println$ "BUILD TOOLCHAIN ****************************";
     println$ "compiler     : " + str compiler;
     println$ "os           : " + str os;
     println$ "toolchain    : " + str toolchain;
 
     // write the toolchain package, overwrites copied one!
+    if not FileStat::fileexists (pkgdir/'toolchain.fpc') 
     begin
       println$ "Write toolchain " + toolchain " into package " + pkgdir/'toolchain.fpc';
       var f = fopen_output (pkgdir/'toolchain.fpc');
       write (f,"toolchain: " + toolchain +"\n");
       fclose f;
     end
+    println$ "USER TOOLCHAIN: ****************************";
+    println$ load (pkgdir/'toolchain.fpc');
 
 
     var allpkgs = db.getclosure boot_package;

@@ -64,11 +64,11 @@ help:
 	#   FBUILD_PARAMS: parameters to fbuild, default none
 	#     fbuild/fbuild-light --help for options
 
-build: extract user-build slow-flxg rebuild
+build: bootstrap slow-flxg rebuild
 
-dev-build: fbuild gendoc
+dev-build: bootstrap gendoc
 
-user-build: fbuild
+bootstrap: fbuild
 	cp ${BUILDROOT}/host/bin/bootflx ${BUILDROOT}/host/bin/flx
 	${BUILDROOT}/host/bin/flx --felix=build.fpc -c -od ${BUILDROOT}/host/lib/rtl src/lib/plugins/flx_plugin
 
@@ -510,49 +510,6 @@ rebuild:
 		--build-all
 	rm flx
 
-bootstrap:
-	# =========================================================
-	# Clean rebuild into separate directory build/trial
-	# followed by overwrite of build/release if all tests pass.
-	# [VERY SLOW!]
-	# [Requires Ocaml]
-	# [Requires flx already build in build/release]
-	# =========================================================
-	rm -rf tmp-dir trial-tmp build/trial
-	build/release/host/bin/flx --felix=build.fpc --clean
-	build/release/host/bin/flx --felix=build.fpc src/tools/flx_build_flxg
-	mkdir build/trial
-	mkdir build/trial/host
-	mkdir build/trial/host/bin
-	cp tmp-dir/flxg build/trial/host/bin
-	build/release/host/bin/flx --felix=build.fpc  src/tools/flx_build_prep \
-		--repo=.\
-		--target-dir=build/trial \
-		--target-bin=host \
-		--source-dir=build/release \
-		--source-bin=host \
-		--copy-repo \
-		--copy-pkg-db \
-		--copy-config-headers \
-		--copy-version \
-		--copy-library
-	build/release/host/bin/flx --felix=build.fpc  src/tools/flx_build_rtl \
-		--target-dir=build/trial \
-		--target-bin=host \
-		--source-dir=build/release \
-		--source-bin=host
-	build/release/host/bin/flx --felix=build.fpc  src/tools/flx_build_boot \
-		--target-dir=build/trial \
-		--target-bin=host \
-		--build-all
-	build/trial/host/bin/flx --test=build/trial --clean
-	mkdir -p trial-test
-	build/trial/host/bin/flx_tangle --indir=build/trial/share/src/test --outdir=trial-test
-	build/trial/host/bin/flx --test=build/trial --usage=prototype --expect --indir=trial-test/regress/rt --regex='.*\.flx'
-	rm -rf build/release
-	mv build/trial build/release
-	rm -rf trial-test
-
 sdltest:
 	build/release/host/bin/flx --felix=build.fpc --force -c -od sdlbin demos/sdl/edit_buffer
 	build/release/host/bin/flx --felix=build.fpc --force -c -od sdlbin demos/sdl/edit_display
@@ -585,7 +542,7 @@ evtdemo:
 	# run
 	demos/embed/evtdemo
 
-.PHONY : build32 build64 build test32 test64 test extras 
+.PHONY : build32 build64 build test32 test64 test extras bootstrap
 .PHONY : build32-debug build64-debug build-debug test32-debug test64-debug test-debug
 .PHONY : doc install websites-linux  release install-bin
 .PHONY : copy-doc gen-doc gendoc fbuild speed tarball

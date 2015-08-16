@@ -503,7 +503,7 @@ def build_runtime(phase):
      path / 'flx_exceptions.cpp',
      path / 'flx_eh.cpp',
      ]
-    includes = ['src/rtl', phase.ctx.buildroot / 'host/lib/rtl', phase.ctx.buildroot / 'share/lib/rtl']
+    includes = [phase.ctx.buildroot / 'host/lib/rtl', phase.ctx.buildroot / 'share/lib/rtl']
     macros = ['BUILD_FLX_EXCEPTIONS']
 
     dst = 'host/lib/rtl/flx_exceptions'
