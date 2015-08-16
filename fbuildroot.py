@@ -402,6 +402,10 @@ def src_dir(ctx):
 def configure(ctx):
     """Configure Felix."""
 
+    print("[fbuild] RUNNING PACKAGE MANAGER")
+    os.system("for i in src/packages/*; do echo 'PACKAGE ' $i; src/tools/flx_iscr.py -q $i build/release; done")
+
+
     build = config_build(ctx)
     host = config_host(ctx, build)
     target = config_target(ctx, host)
@@ -495,12 +499,6 @@ def build(ctx):
     print("[fbuild] [ocaml] COMPILING COMPILER")
     compilers = call('buildsystem.flx_compiler.build_flx_drivers', ctx,
         phases.host)
-
-    # NOTE: this should be done AFTER copying the repository
-    # But it has to be done first at the moment.
-    print("[fbuild] RUNNING PACKAGE MANAGER")
-    os.system("for i in src/packages/*; do echo 'PACKAGE ' $i; src/tools/flx_iscr.py -q $i build/release; done")
-
     print("[fbuild] COPYING REPOSITORY from current directory ..")
     buildsystem.copy_dir_to(ctx, ctx.buildroot/'share'/'src', 'src',
         pattern='*')
@@ -556,6 +554,9 @@ def build(ctx):
 
     print("[fbuild] [Felix] BUILDING PLUGINS")
     call('buildsystem.plugins.build', phases.target, felix)
+
+    # HACK!!!!!
+    os.system("cp build/release/host/bin/bootflx build/release/host/bin/flx")
 
     print("[fbuild] BUILD COMPLETE")
     return phases, iscr, felix
