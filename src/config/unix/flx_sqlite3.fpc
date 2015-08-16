@@ -4,5 +4,6 @@ requires_dlibs: -lpthread
 requires_slibs: -lpthread
 provides_dlib: -lflx_sqlite3_dynamic
 provides_slib: -lflx_sqlite3_static
+macros: BUILD_SQLITE3
 includes: '"flx_sqlite3.hpp"'
 Requires: dl 

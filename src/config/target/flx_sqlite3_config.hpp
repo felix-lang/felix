@@ -7,4 +7,4 @@
 #define SQLITE3_EXTERN FLX_IMPORT
 #endif
 #endif
-#define SQLITE_EXTERN extern SQLITE3_EXTERN
+#define SQLITE_API SQLITE3_EXTERN
