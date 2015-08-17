@@ -285,7 +285,7 @@ else
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wunused-result"
     (void)strerror_r($1, $2, $3);
-    #pragma GCC diagnostic ppop
+    #pragma GCC diagnostic pop
     """ 
     requires C89_headers::string_h 
   ;
