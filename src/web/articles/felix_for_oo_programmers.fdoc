@@ -1,0 +1,142 @@
+@h1 Tips for C++/Java/OOPL Programmers
+
+Felix is not an object-oriented programming language; it has little or no support for OO concepts
+like dynamic polymorphism (run-time type checking), dynamic dispatch (virtual methods), and 
+encapsulation (private member fields).
+
+As a long time Java programmer, I initially found it difficult to figure out how to do certain
+things in Felix that were relatively commonplace in Java.
+
+@h2 Executive Summary
+
+In cases where subclassing and interfaces would be using in Java and similar languages, you
+can use option types and functions instead.
+
+An interface can be represented as a record type with fields of an appropriate function 
+type.  Because functions share state with their parent scope filling in this record is fairly
+easy and all the functions will have shared state thus giving the same effect as an object
+implementing an interface.
+
+In cases where you want to be able to walk a heterogeneous data structure and know what type
+of node you are looking at, option types must be used.
+
+@h2 Heterogeneous Collections
+
+The XML DOM (Document Object Model) is a classic example of this.  Typically when working with a
+DOM tree, you are walking over a tree of objects where the children of a node may be of different
+types.
+
+In Felix you can use "union types" to handle a heterogenous collection; here a simplified
+example of an XML DOM Tree:
+
+@felix
+struct xmlname = {
+  ns:string;
+  name:string;
+}; 
+struct xmlattribute = { 
+  name:xmlname;
+  value:string;
+};
+struct xmlelement = { 
+  name:xmlname;
+  attrs:list[xmlattribute];
+  children:list[xmlnode];
+};
+   
+union xmlnode =
+  | CDATA text:string
+  | Characters text:string
+  | Comment text:string
+  | Element e:xmlelement
+  | ProcessingInstruction contents:string
+;
+@
+
+This works OK if you know in advance the types of element that will be in the tree.  But
+what if you are writing an extensible library that allows new types to be added?
+
+In OO we would subclass something, or implement an interface, and provide the object
+implementing that interface to the GUI library.
+
+However, Felix has first-class functions and procedures, so instead of implementing
+an interface you can provide a record or struct with the operations that would
+have been in the interface:
+
+@felix
+struct uibutton = {
+  label:string;
+  onclick:unit->void;
+};
+  
+union uicomponent =
+  | Button of (label:string, onclick:unit->void) 
+  | Label of string
+  | Custom of (draw:unit->void,update:unit->void)
+;
+
+proc add_component(c:uicomponent) = { /* ... add to draw/update/event list ... */ };
+
+// Build a UI
+add_component(Label "This is only a test.");
+add_component(Button (label="Click Me", onclick={ println("Clicked!"); }));
+add_component(Custom (
+  draw={ println("Time to draw this custom widget!"); },
+  update={ println("Time to draw this custom widget!"); }));
+@
+
+@h2 Visitor Pattern
+
+In Java the visitor pattern is done by implementing an interface.  In felix
+we can provide one or more visit functions that can be "called back"
+on each node as appropriate.  The functions can easily share state between
+themselves because felix allows functions to use variables in their parent
+scope, including assigning to them:
+
+@felix
+struct xmlname = {
+  ns:string;
+  name:string;
+}; 
+struct xmlattribute = { 
+  name:xmlname;
+  value:string;
+};
+struct xmlelement = { 
+  name:xmlname;
+  attrs:list[xmlattribute];
+  children:list[xmlnode];
+};
+   
+union xmlnode =
+  | CDATA text:string
+  | Characters text:string
+  | Comment text:string
+  | Element e:xmlelement
+  | ProcessingInstruction contents:string
+;
+proc walk(f:xmlnode->unit)(n:xmlnode) = {
+  f(n);
+  
+  children := match n with 
+    | Element elt => elt.children
+    | _ => Empty[xmlnode]
+  endmatch;
+  
+  for child in children do
+    walk(f)(child);
+  done
+}
+
+gen count_nodes(n:xmlnode) = {
+  var num = 0;
+  proc count_node(n : xmlnode) => num += 1;
+  count_node.walk(n);
+  return num;
+}
+@
+
+
+
+
+
