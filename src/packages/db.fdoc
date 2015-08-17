@@ -1,6 +1,10 @@
 @title Database
-@tangler __init__.flx = share/lib/std/db/__init__.flx
-@tangler sqlite3.flx  = share/lib/std/db/sqlite3.flx
+@tangler __init__.flx            = share/lib/std/db/__init__.flx
+@tangler sqlite3.flx             = share/lib/std/db/sqlite3.flx
+@tangler unix_sqlite3.fpc        = $PWD/src/config/unix/sqlite3.fpc
+@tangler win32_sqlite3.fpc       = $PWD/src/config/win32/sqlite3.fpc
+@tangler flx_sqlite3_config.hpp  = $PWD/src/config/target/flx_sqlite3_config.hpp
+
 @h1 Synopsis
 @tangle __init__.flx
 
@@ -342,7 +346,34 @@ class Sqlite3 {
 }
 
 
+@
 
+@tangle unix_sqlite3.fpc
+provides_dlib: -lflx_sqlite3_dynamic
+provides_slib: -lflx_sqlite3_static
+includes: '"flx_sqlite3.hpp"'
+library: flx_sqlite3
+srcdir: src/sqlite3
+src: sqlite3\.c
+headers: flx_sqlite3\.hpp|sqlite3\.h|sqlite3ext\.h
+@
 
+@tangle win32_sqlite3.fpc
+provides_dlib: /DEFAULTLIB:flx_sqlite3_dynamic
+provides_slib: /DEFAULTLIB:flx_sqlite3_static
+includes: "<flx_sqlite3.hpp>"
+@
 
+@tangle flx_sqlite3_config.hpp
+#ifndef __FLX_SQLITE3_CONFIG_H__
+#define __FLX_SQLITE3_CONFIG_H__
+#include "flx_rtl_config.hpp"
+#ifdef BUILD_SQLITE3
+#define SQLITE3_EXTERN FLX_EXPORT
+#else
+#define SQLITE3_EXTERN FLX_IMPORT
+#endif
+#endif
+#define SQLITE_API SQLITE3_EXTERN
+@
 

@@ -1,7 +1,0 @@
-provides_dlib: -lflx_sqlite3_dynamic
-provides_slib: -lflx_sqlite3_static
-includes: '"flx_sqlite3.hpp"'
-library: flx_sqlite3
-srcdir: src/sqlite3
-src: sqlite3\.c
-headers: flx_sqlite3\.hpp|sqlite3\.h|sqlite3ext\.h

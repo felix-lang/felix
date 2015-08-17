@@ -280,7 +280,13 @@ if PLAT_WIN32 do
     requires C89_headers::string_h /* on Linux.. on OSX it's in stdio.h */
   ;
 else
-  proc strerror_r: errno_t * carray[char] * size  = "(void)strerror_r($1, $2, $3);" 
+  proc strerror_r: errno_t * carray[char] * size  = 
+    """
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic warning "-Wno-unused-result"
+    (void)strerror_r($1, $2, $3);
+    #pragma GCC diagnostic ppop
+    """ 
     requires C89_headers::string_h 
   ;
 done
