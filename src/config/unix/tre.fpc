@@ -1,8 +1,0 @@
-Name: TRE
-Description: TRE regexp library
-provides_dlib: -ltre_dynamic 
-provides_slib: -ltre_static
-library: tre
-includes: '"tre/tre.h"'
-srcdir: tre/tre/lib
-src: .*\.c

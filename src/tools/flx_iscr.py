@@ -26,7 +26,8 @@ class Tangler(io.StringIO):
         self.id = id
         self.quiet = quiet
         self.emit_linenos = self.extension in (
-            '.flx','.c','.h','.cpp','.cxx','.hpp'
+            '.flx','.c','.h','.cpp','.cxx','.hpp',
+            '.fsyn','.fpc','.py'
             ) and not suppress_linenos
         super(Tangler, self).__init__()
     # Now for the save routine. We only write the buffer to
@@ -91,8 +92,18 @@ class Processor:
         try:
             tangler = self.tanglers[id]
             if tangler.emit_linenos:
+              if tangler.extension in (
+                '.flx','.c','.h','.cpp','.cxx','.hpp',
+                '.fsyn','.py'
+              ):
                 hashline = "#line " + str(lineno+1) + ' "' + self.iname+'"'
                 print(hashline,file=tangler)
+              elif tangler.extension in (
+                '.fpc'
+              ):
+                hashline = "Generated_from: " + str(lineno+1) + ' "' + self.iname+'"'
+                print(hashline,file=tangler)
+                
         except KeyError:
             sys.exit("Can't find tangler %s" % id)
         else:

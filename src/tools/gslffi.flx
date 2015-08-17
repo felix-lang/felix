@@ -1,0 +1,206 @@
+#line 29 "/Users/skaller/felix/extras/gsl.fdoc"
+
+// extract gsl functions from docs
+var lre = RE2 "([0-9]+)(\\.([0-9]+)(\\.([0-9]+))?)? +(.*)";
+if not lre.ok do
+  println "BAD RE";
+  assert false;
+done
+
+var dirname = System::argv 1;
+var files = FileSystem::regfilesin (dirname,".*\\.txt");
+match files do
+| #Empty=> println$ "// NO FILES FOUND in " + dirname;
+| files =>
+    println$ "// Dirname " + dirname;
+    //println$ "// Files: " + files.str;
+    var sfiles = map (fun (file:string)=> find_index$ Filename::join(dirname, file))  files;
+    sfiles = sort sfiles;
+    iter (proc (file:string){ process_file$ (file.[to 8],file.[9 to]);}) sfiles;
+done
+
+fun find_index (filename:string) : string =
+{
+  var text = load filename;
+  var lines = split(text,char "\n");
+  var ready = false;
+  for line in lines do
+    if ready == true do
+//println$ "Index line " + line;
+      var result = Match (lre, line);
+      match result do
+      | #None =>
+        if prefix(line, "Appendix D") do
+          return ("D .00.00 "+filename);
+        elif prefix(line,"D.") do
+          return "D .0"+line.[2 to 3]+".00 "+filename;
+        else
+          println$ "BUG unexpected index format in " + line;
+          assert false;
+        done
+      | Some v =>
+//println$ "Got match "+ v.str;
+//        println$ "Index=" + v.1 + "." + v.3 + "." + v.5 + " title=" + v.6;
+        var s = f"%02d.%02d.%02d %S" (v.1.int,v.3.int,v.5.int,filename);
+//println$ "CODE=" + s;
+        return s;
+      done
+    done
+    if prefix(line,"Next:") or prefix(line,"Previous") do ready = true; done;
+  done
+  println$ "BUG no index number";
+  assert false;
+  return ""; // hack
+}
+
+proc process_file (section:string, filename:string)
+{
+  println$ "// "+section+ " " + filename.[23 to -3];
+  var text = load filename;
+  var lines = split(text,char "\n");
+  for line in lines do
+    //println$ "// " + line;
+    if prefix(line,"Function: ") do
+      println$ "// " + line;
+      var munged = line.[10 to];
+      munged = search_and_replace (munged, "("," ( ");
+      munged = search_and_replace (munged, ")"," ) ");
+      munged = search_and_replace (munged, ","," , ");
+      var words = filter (fun (s:string) => s != "" and s != "const") (munged,char " ").split;
+      var parsed = parse_cfun words;
+      var felix = format_fun parsed;
+      println$ "  " + felix;
+    done
+  done
+  println "//*****";
+}
+
+typedef type_t = list[string];
+typedef arg_t = (aname:string, atype: type_t);
+typedef fun_t = (fname:string, args:list[arg_t], ret:type_t);
+
+fun parse_cfun (var w:list[string]) =
+{
+  var ret = list[string] ();
+  var fname = "";
+  var args = list[arg_t] ();
+  var argt = list[string] ();
+
+  grab_ret:>
+    match w do
+    | ty ! nm ! "(" ! tl =>
+      ret = ret + ty;
+      fname = nm;
+      w = tl;
+      goto grab_args;
+    | nm ! "(" ! tl =>
+      fname = nm;
+      w = tl;
+      goto grab_args;
+    | x ! tl =>
+      ret = ret + x;
+      w = tl;
+      goto grab_ret;
+    | _ =>
+println$ "BUG parsing return type: w="+w.str;
+      assert false;
+    done
+
+  grab_args:>
+    argt = list[string]();
+    match w do
+    | ")" ! tl => goto fin;
+    | "void" ! ")" ! tl => goto fin;
+    | _ => ;
+    done
+  grab_arg:>
+    match w do
+    | "..." ! ")" ! tl =>
+      args = args + (aname="", atype=list[string] "...");
+      goto fin;
+
+    | ty ! nm ! "," ! tl =>
+      if nm.[-2 to] == "[]" do
+        argt = argt + ty + "[]";
+        args = args + (aname = nm.[to -2],  atype = argt);
+      else
+        argt = argt + ty;
+        args = args + (aname = nm,  atype = argt);
+      done
+      w = tl;
+      goto grab_args;
+
+
+    | ty ! nm ! ")" ! tl =>
+      if nm.[-2 to] == "[]" do
+        argt = argt + ty + "[]";
+        args = args + (aname = nm.[to -2],  atype = argt);
+      else
+        argt = argt + ty;
+        args = args + (aname = nm,  atype = argt);
+      done
+      w = tl;
+      goto fin;
+
+    | x ! tl =>
+      argt = argt + x;
+      w = tl;
+      goto grab_arg;
+    | _ =>
+println$ "BUG parsing arguments w="+w.str;
+     assert false;
+    done
+  fin:>
+   return (fname=fname, args=args, ret=ret);
+}
+
+fun get_base_type (t:type_t) : string * type_t =>
+  match t with
+  | "unsigned" ! "long" ! "int" ! tl => "ulong", tl
+  | "unsigned" ! "int" ! tl => "uint", tl
+  | "enum" ! nm ! tl => nm,tl
+  | "struct" ! nm ! tl => nm,tl
+  | "size_t" ! tl => "size",tl
+  | x ! tl => x, tl
+;
+
+fun format_type (t:type_t) : string =
+{
+  var base, rest = get_base_type t;
+  match rest do
+  | #Empty => return base;
+  | "[]" ! #Empty => return "+" + base;
+  | "*" ! #Empty => return "&" + base;
+  | "**" ! #Empty => return "&&" + base;
+  | _ =>
+    println$ "BUG parsing type t="+t;
+    assert false;
+  done
+  return ""; //Ugg!
+}
+
+
+fun format_args (args:list[arg_t]) =>
+  match args with
+  | #Empty => "unit"
+  | _ => catmap " * " (fun (p:arg_t) => format_type p.atype) args
+  endmatch
+;
+
+// fix for procs ..
+fun format_fun (f: fun_t) =>
+  if format_type f.ret == "void" then
+  "proc " + f.fname + ": " + format_args f.args +
+  " = '" + f.fname + "($a);';"
+  else
+  "fun " + f.fname + ": " +
+  format_args f.args +
+  " -> " + format_type f.ret +
+  " = '" + f.fname + "($a)';"
+  endif
+;
+
+
+
+
+

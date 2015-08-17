@@ -10,6 +10,7 @@
 @tangler unix_manymouse.fpc     = $PWD/src/config/unix/manymouse.fpc
 @tangler win32_manymouse.fpc    = $PWD/src/config/win32/manymouse.fpc
 @tangler macosx_manymouse.fpc   = $PWD/src/config/macosx/manymouse.fpc
+@tangler flx_manymouse_config.h = $PWD/src/config/target/flx_manymouse_config.h
 
 @h1 Manymouse
 Code to support multiple mice on various platforms.
@@ -3997,4 +3998,14 @@ src: .*\.c
 @
 
 
-
+@tangle flx_manymouse_config.h
+#ifndef __FLX_MANYMOUSE_CONFIG_H__
+#define __FLX_MANYMOUSE_CONFIG_H__
+#include "flx_rtl_config.hpp"
+#ifdef BUILD_FLX_MANYMOUSE
+#define FLX_MANYMOUSE_EXTERN FLX_EXPORT
+#else
+#define FLX_MANYMOUSE_EXTERN FLX_IMPORT
+#endif
+#endif
+@

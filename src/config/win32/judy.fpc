@@ -1,5 +1,0 @@
-Name: Judy
-Description: Judy arrays
-provides_dlib: /DEFAULTLIB:judy_dynamic
-provides_slib: /DEFAULTLIB:judy_static
-includes "Judy.h"

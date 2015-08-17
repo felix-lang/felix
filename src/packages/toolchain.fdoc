@@ -1821,14 +1821,15 @@ export fun setup of (string) as "toolchain_clang_iphoneos_setup";
 
 @h1 RTL build control entries.
 Causes @{flx_pkgconfig} to require enough packages to
-ensure the whole core RTL is built.
+ensure the whole core RTL is built. flx_rtl_core
+is defined in package rtl.
 
 @tangle build_flx_rtl_gcc_linux.fpc
 description: Build system bootstrap root.
 toolchain: toolchain_gcc_linux
 compiler: gcc
 os: LINUX
-Requires: flx flx_gc flx_exceptions flx_pthread flx_async re2 sqlite3 flx_dynlink demux faio
+Requires: flx_rtl_core
 @
 
 @tangle build_flx_rtl_gcc_osx.fpc
@@ -1836,7 +1837,7 @@ description: Build system bootstrap root.
 toolchain: toolchain_gcc_osx
 compiler: gcc
 os: OSX
-Requires: flx flx_gc flx_exceptions flx_pthread flx_async re2 sqlite3 flx_dynlink demux faio
+Requires: flx_rtl_core
 @
 
 @tangle build_flx_rtl_clang_linux.fpc
@@ -1844,7 +1845,7 @@ description: Build system bootstrap root.
 toolchain: toolchain_clang_linux
 compiler: clang
 os: LINUX
-Requires: flx flx_gc flx_exceptions flx_pthread flx_async re2 sqlite3 flx_dynlink demux faio
+Requires: flx_rtl_core
 @
 
 @tangle build_flx_rtl_clang_osx.fpc
@@ -1852,7 +1853,7 @@ description: Build system bootstrap root.
 toolchain: toolchain_clang_osx
 compiler: clang
 os: OSX
-Requires: flx flx_gc flx_exceptions flx_pthread flx_async re2 sqlite3 flx_dynlink demux faio
+Requires: flx_rtl_core
 @
 
 @tangle build_flx_rtl_clang_iphoneos.fpc
@@ -1860,7 +1861,7 @@ description: Build system bootstrap root.
 toolchain: toolchain_clang_iphoneos
 compiler: clang
 os: iPhoneOS
-Requires: flx flx_gc flx_exceptions flx_pthread flx_async re2 sqlite3 flx_dynlink demux faio
+Requires: flx_rtl_core
 @
 
 

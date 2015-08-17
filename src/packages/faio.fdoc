@@ -1,17 +1,18 @@
 @title Faio: Felix Async I/O support
-@tangler faio_drv.hpp     = share/src/faio/faio_drv.hpp
-@tangler faio_job.hpp     = share/lib/rtl/faio_job.hpp
-@tangler faio_job.cpp     = share/src/faio/faio_job.cpp
-@tangler faio_posixio.hpp = share/lib/rtl/faio_posixio.hpp
-@tangler faio_posixio.cpp = share/src/faio/faio_posixio.cpp
-@tangler faio_winio.hpp   = share/lib/rtl/faio_winio.hpp
-@tangler faio_winio.cpp   = share/src/faio/faio_winio.cpp
-@tangler faio_timer.hpp   = share/lib/rtl/faio_timer.hpp
-@tangler faio_timer.cpp   = share/src/faio/faio_timer.cpp
-@tangler faio.py          = $PWD/buildsystem/faio.py
-@tangler timer.fpc        = $PWD/src/config/timer.fpc
-@tangler unix_faio.fpc    = $PWD/src/config/unix/faio.fpc
-@tangler win32_faio.fpc   = $PWD/src/config/win32/faio.fpc
+@tangler faio_drv.hpp         = share/src/faio/faio_drv.hpp
+@tangler faio_job.hpp         = share/lib/rtl/faio_job.hpp
+@tangler faio_job.cpp         = share/src/faio/faio_job.cpp
+@tangler faio_posixio.hpp     = share/lib/rtl/faio_posixio.hpp
+@tangler faio_posixio.cpp     = share/src/faio/faio_posixio.cpp
+@tangler faio_winio.hpp       = share/lib/rtl/faio_winio.hpp
+@tangler faio_winio.cpp       = share/src/faio/faio_winio.cpp
+@tangler faio_timer.hpp       = share/lib/rtl/faio_timer.hpp
+@tangler faio_timer.cpp       = share/src/faio/faio_timer.cpp
+@tangler faio.py              = $PWD/buildsystem/faio.py
+@tangler timer.fpc            = $PWD/src/config/timer.fpc
+@tangler unix_faio.fpc        = $PWD/src/config/unix/faio.fpc
+@tangler win32_faio.fpc       = $PWD/src/config/win32/faio.fpc
+@tangler flx_faio_config.hpp  = $PWD/src/config/target/flx_faio_config.hpp
 
 @h1 Faio Driver
 @tangle faio_drv.hpp
@@ -876,5 +877,17 @@ def build_flx(target_phase):
     return
     #return buildsystem.copy_flxs_to_lib(target_phase.ctx,
     #    Path('src/faio/*.flx').glob())
+@
+
+@tangle flx_faio_config.hpp
+#ifndef __FLX_FAIO_CONFIG_H__
+#define __FLX_FAIO_CONFIG_H__
+#include "flx_rtl_config.hpp"
+#ifdef BUILD_FAIO
+#define FAIO_EXTERN FLX_EXPORT
+#else
+#define FAIO_EXTERN FLX_IMPORT
+#endif
+#endif
 @
 

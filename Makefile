@@ -64,7 +64,7 @@ help:
 	#   FBUILD_PARAMS: parameters to fbuild, default none
 	#     fbuild/fbuild-light --help for options
 
-build: bootstrap slow-flxg rebuild
+build: configure bootstrap slow-flxg rebuild
 
 dev-build: bootstrap gendoc
 
@@ -75,6 +75,19 @@ bootstrap: fbuild
 #
 # Core integrated build
 #
+
+configure:
+	#
+	# ============================================================
+	#
+	# CONFIGURING FELIX
+	#
+	#   See build/release/fbuild.log for full transcript
+	#
+	# ============================================================
+	#
+	$(PYTHON) fbuild/fbuild-light configure --buildroot=${FBUILDROOT} $(FBUILD_PARAMS)
+
 fbuild:
 	#
 	# ============================================================
@@ -542,7 +555,7 @@ evtdemo:
 	# run
 	demos/embed/evtdemo
 
-.PHONY : build32 build64 build test32 test64 test extras bootstrap
+.PHONY : build32 build64 build test32 test64 test extras bootstrap configure
 .PHONY : build32-debug build64-debug build-debug test32-debug test64-debug test-debug
 .PHONY : doc install websites-linux  release install-bin
 .PHONY : copy-doc gen-doc gendoc fbuild speed tarball

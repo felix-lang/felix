@@ -8,7 +8,7 @@
 @tangler flx_i18n.fpc        = $PWD/src/config/flx_i18n.fpc
 @tangler unix_re2.fpc        = $PWD/src/config/unix/re2.fpc
 @tangler win32_re2.fpc       = $PWD/src/config/win32/re2.fpc
-
+@tangler flx_re2_config.hpp  = $PWD/src/config/target/flx_re2_config.hpp
 
 @tangler __init__.flx        = share/lib/std/strings/__init__.flx
 @tangler string.flx          = share/lib/std/strings/string.flx
@@ -1685,3 +1685,16 @@ provides_dlib: /DEFAULTLIB:flx_re2_dynamic
 provides_slib: /DEFAULTLIB:flx_re2_static
 includes: '"re2/re2.h"'
 @
+
+@tangle flx_re2_config.hpp
+#ifndef __FLX_RE2_CONFIG_H__
+#define __FLX_RE2_CONFIG_H__
+#include "flx_rtl_config.hpp"
+#ifdef BUILD_RE2
+#define RE2_EXTERN FLX_EXPORT
+#else
+#define RE2_EXTERN FLX_IMPORT
+#endif
+#endif
+@
+
