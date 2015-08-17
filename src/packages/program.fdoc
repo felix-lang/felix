@@ -283,7 +283,7 @@ else
   proc strerror_r: errno_t * carray[char] * size  = 
     """
     #pragma GCC diagnostic push
-    #pragma GCC diagnostic warning "-Wno-unused-result"
+    #pragma GCC diagnostic ignored "-Wunused-result"
     (void)strerror_r($1, $2, $3);
     #pragma GCC diagnostic ppop
     """ 
