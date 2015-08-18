@@ -5,7 +5,7 @@
 @tangler flx_pkgconfig_export.flx          = share/lib/std/felix/flx_pkgconfig_export.flx
 @tangler flx_pkgconfig_query.flx           = share/lib/std/felix/flx_pkgconfig_query.flx
 @tangler flx_pkgconfig_query_interface.flx = share/lib/std/felix/flx_pkgconfig_query_interface.flx
-@tangler flx_pkgconfig_tool.flx            = $PWD/tools/flx_pkgconfig.flx
+@tangler flx_pkgconfig_tool.flx            = $PWD/src/tools/flx_pkgconfig.flx
 
 @h1 Pkg config
 @tangle flx_pkg.flx
