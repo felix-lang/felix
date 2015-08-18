@@ -1,0 +1,212 @@
+@title programmer utilities
+@tangler flx_perror.flx = $PWD/src/tools/flx_perror.flx
+@tangler flx_tangle.flx = $PWD/src/tools/flx_tangle.flx
+
+@tangle flx_tangle.flx
+//$ flx_tangle --inoutdir --indir=indir --outdir=outdir pattern ...
+//$ processes the file indir/basename.fdoc and generates
+//$ the files:
+//$
+//$   outdir/basename.flx by collating everything
+//$      between @felix and subsequent @ command.
+//$
+//$   outdir/basename.expect by collating everything
+//$      between @expect and subsequent @ command.
+//$
+//$   outdir/basename.input by collating everything
+//$      between @input and subsequent @ command.
+//$
+//$ If indidr is specified and outdir is not, the outdir
+//$ remains the default current directory.
+//$
+//$ If inoutdir is specified, indir and outdir are set
+//$ to it, and indir and outdir should not be specified.
+//$
+//$ If no patterns are specified '.*' is used, i.e. all fdoc files
+//$ in the input directory (recursively).
+//$
+
+include "std/control/schannels";
+include "std/control/spipes";
+
+// --- COMMAND LINE PROCESSING --------------------------------
+
+val cmdspec : cmdspec_t = 
+  ( 
+    split-key-value-spec= Empty[string * string],
+    multi-valued-keys-spec= Empty[string], 
+    single-valued-keys-spec= list("--inoutdir","--indir","--outdir"),
+    switches-spec= list("--help","--linenos","--verbose"), 
+    short-switch-map-spec = list [char * string] (char "v","--verbose")
+  )
+;
+
+proc print_help =>
+  println$ "Usage: flx_tangle [-v] [--indir=indir] [--outdir=outdir] [--inoutdir=inoutdir] [--linenos] [regexp1 ...]"
+;
+
+val inargs = #System::args;
+
+val outargs = parse-cmdline cmdspec inargs;
+
+// --- Check for option conflicts
+var keys = outargs.single-valued-keys;
+if 
+  ("--inoutdir" in keys) and
+  (
+    ("--indir" in keys) or
+    ("--outdir" in keys) 
+  )
+do
+  println$ "Cannot specify --inoutdir with --indir or --outdir";
+  print_help;
+  System::exit 1;
+done
+
+// --- Check for help command
+if "--help" in outargs.switches do
+  print_help;
+  System::exit 0;
+done
+
+var verbose = "--verbose" in outargs.switches;
+
+// ----- SETUP CONTROL ARGUMENTS ------------------------
+var patterns = 
+  match outargs.positional with
+  | _ ! (_ ! _ as tail) => tail
+  | _ ! Empty => list ".*"
+;
+
+var indir = keys.get_dflt ("--indir", keys.get_dflt ("--inoutdir", ".") );
+var outdir = keys.get_dflt ("--outdir",  keys.get_dflt ("--inoutdir", "."));
+var linenos = "--linenos" in outargs.switches;
+
+// --- FILE SCAN --------------------------------
+for base in patterns do
+  var files = FileSystem::regfilesin(indir, base+"\\.fdoc");
+  println$ "Base = " + base + " : " files.len.str + " files";
+  for file in files do
+    var infile = Filename::join (indir, file);
+    var outbase = Filename::join (outdir, Filename::strip_extension file);
+    save_tangle (infile, outbase); 
+  done
+done
+
+// ---- PIPELINE ---------------------------------
+// Source device.
+proc filesrc (file:string) (o:oschannel[string]) 
+{
+  var data = load file;
+  for line in split(data,"\n") do write (o, line+"\n"); done
+  write(o,"");
+}
+
+// Tangling transducer.
+proc tangle (filename:string) (tag:string) (i:ischannel[string], o:oschannel[string]) 
+{
+  var lineno=1;
+moredoc:>
+  var x = read i;
+  ++lineno;
+  if x == "" goto finish;
+  if strip x != "@"+tag goto moredoc;
+
+  if tag == "felix" and linenos do
+    write(o,"#line " + lineno.str+ " " + '"'+filename+'"\n');
+  done
+morefelix:>
+  x = read i;
+  ++lineno;
+  if x == "" goto finish;
+  if x.[0] == char "@" goto moredoc;
+  write(o,x);
+  goto morefelix;
+
+finish:>
+  write (o,"");
+}
+
+// Concentrating transducer.
+proc grab (o:oschannel[string]) (i:ischannel[string])  
+{
+  var s = "";
+morelines:>
+  var x = read i;
+  if x == "" goto finish;
+  s+=x;
+  goto morelines;
+
+finish:> 
+  write(o,s);
+}
+
+// Pipeline controller.
+proc save_tangle (infile:string, outbase:string)
+{
+  // Check modification times of files to
+  // see if we actually need to do anything.
+  var itime = FileStat::filetime infile;
+  var flx-time = FileStat::filetime$ outbase+".flx"; 
+  var xpect-time = FileStat::filetime$ outbase+".expect"; 
+  var input-time = FileStat::filetime$ outbase+".input"; 
+  if flx-time <= itime do
+
+    // Run processing pipeline.
+    var iflx,oflx = #mk_ioschannel_pair[string];
+    var ixpect,oxpect = #mk_ioschannel_pair[string];
+    var iinput,oinput = #mk_ioschannel_pair[string];
+    spawn_fthread$ filesrc infile |-> 
+      (
+        (tangle infile "felix" |-> grab oflx), 
+        (tangle infile "expect" |-> grab oxpect),
+        (tangle infile "input" |-> grab oinput)
+      )
+    ;
+    var flx-result  = read iflx;
+    var xpect-result  = read ixpect;
+    var input-result  = read iinput;
+
+    // If there's a non-trivial result, generate output file.
+    if flx-result != "" or xpect-result != "" or input-result != "" do
+      if verbose call
+         println$ "Tangle      : " + infile + " -> " +outbase+ "(.flx,.expect,.input)";
+
+      // Make sure the directories in the path exist.
+      Directory::mkdirs$ Filename::dirname outbase;
+
+      if flx-result != "" do
+        var ofile = fopen_output$ outbase+".flx";
+        write (ofile,flx-result);
+        fclose ofile;
+      done
+
+      if xpect-result != "" do
+        ofile = fopen_output$ outbase+".expect";
+        write (ofile,xpect-result);
+        fclose ofile;
+      done
+
+      if input-result != "" do
+        ofile = fopen_output$ outbase+".input";
+        write (ofile,input-result);
+        fclose ofile;
+      done
+    else
+      if verbose call 
+        println$ "No Code    : " + infile;
+    done
+  else
+    if verbose call 
+      println$   "Up-to-date : " + infile + " -> " +outbase +"(.flx,.expect,.input)";
+  done 
+}
+
+
+@
+@tangle flx_perror.flx
+val e = int (System::argv 1);
+println$ "Errno " + str e + " " + Errno::strerror e.Errno::errno_t;
+
+@
+

@@ -1,0 +1,404 @@
+@title Felix documentation tools.
+@tangler flx_gramdoc.flx = $PWD/src/tools/flx_gramdoc.flx
+@tangler flx_libcontents.flx = $PWD/src/tools/flx_libcontents.flx
+@tangler flx_libindex.flx = $PWD/src/tools/flx_libindex.flx
+@tangler flx_mktutindex.flx = $PWD/src/tools/flx_mktutindex.flx
+
+@h1 Documentation tools for Felix.
+These tools are designed to extract and build
+documentation from Felix libraries. Most no
+longer work properly due to the move to packaging
+technology and require upgrading.
+
+@h1 Document the Grammar.
+Generates an index of non-terminals used in
+the grammar.
+@tangle flx_gramdoc.flx
+var ishtml = System::argv 1 == "--html";
+var dir =  Filename::join ("src", "lib", "grammar");
+var fregex = ".*\\.flxh";
+
+open Regdef;
+regdef anychar = perl (".");
+
+regdef letter = charset "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+regdef digit = charset "0123456789";
+regdef id1 = letter | "_";
+regdef id2 = id1 | digit | "-" | "'";
+regdef id = id1 id2*;
+
+regdef spaces = " "*;
+regdef prio =  "[" id "]";
+ 
+regdef production = group(spaces? id prio? spaces? ":=" spaces? anychar*) "=>#" anychar*;
+regdef dssl = spaces group ("syntax" spaces id) anychar*;
+
+var lregex = (regexp (dssl | production)) . render;
+var lgrep = RE2 lregex;
+
+var n = NumberOfCapturingGroups(lgrep)+1;
+var v = varray[StringPiece] (n.size,StringPiece "");
+
+var scomment = RE2 " *//[$] (.*)";
+var vcomment = varray[StringPiece] (2.size, StringPiece "");
+
+if ishtml do
+  println$ "<html><body>";
+  println$ "<h1>Felix Syntax</h1>";
+  println$ "<pre>";
+done
+
+for file in FileSystem::regfilesin (dir, fregex) do
+  var href = "/share/lib/grammar/"+file; // URL always uses Unix filenames
+  if ishtml do
+    println$ '<hr/><a href="'+href+'">'+file+'</a>';
+  else
+    println$ "-" * 20;
+    println$ file;
+  done
+  var lines = load (Filename::join dir file);
+  var count = 0;
+  var comments = Empty[string];
+  for line in split (lines,char "\n") do
+    ++count;
+    var commentry = Match (scomment, StringPiece line, 0, ANCHOR_BOTH, vcomment.stl_begin, 2);
+    if commentry do
+       comments = Cons (vcomment . 1 . string.strip, comments);
+    else
+
+      var m = Match (lgrep, StringPiece line, 0, ANCHOR_BOTH, v.stl_begin,n); 
+      if m do
+        var syn = v.1.string.strip;
+        var prod = v.2.string.strip;
+        if ishtml do
+          if syn != "" do
+            println$ "";
+            println$  f"%04d" count + ":  " + '<a href="'+href+'#'+f"%04d" count+'">'+syn+'</a>';
+            for cline in rev comments do println$ "           "+cline; done
+            comments = Empty[string];
+          else
+            println$ f"%04d" count + ":    " + '<a href="'+href+'#'+f"%04d" count+'">'+ prod +'</a>';
+            for cline in rev comments do println$ "           "+ cline; done
+            comments = Empty[string];
+          done
+        else
+          if syn != "" do
+            println$ "";
+            println$ f"%04d" count + ":  " + syn;
+            for cline in rev comments do println$ "           "+cline; done
+            comments = Empty[string];
+          else
+            println$ f"%04d" count + ":    " + prod;
+            for cline in rev comments do println$ "           "+ cline; done
+            comments = Empty[string];
+          done
+        done // html
+      done
+    done
+  done
+done
+
+if ishtml do
+  println$ "</pre></body></html>";
+done
+
+@
+
+@h2 Library contents table.
+Lists symbols per file.
+@tangle flx_libcontents.flx
+var ishtml = System::argv 1 == "--html";
+var dir =  Filename::join ("src", "lib", "std");
+
+include "plugins/fdoc-interface";
+var  xlat_fdoc = Dynlink::load-plugin-func2 [fdoc_t, string, string] (
+    dll-name="fdoc2html", setup-str="", entry-point="fdoc2html"
+  );
+
+
+var fregex = ".*\\.(flx|fdoc)";
+open Regdef;
+regdef anychar = perl (".");
+
+regdef letter = charset "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+regdef digit = charset "0123456789";
+regdef id1 = letter | "_";
+regdef id2 = id1 | digit | "-" | "'";
+regdef id = id1 id2*;
+
+regdef tex = "\\" letter*;
+regdef symbol1 = "+-*/%^";
+regdef symbol = symbol1 | symbol1 symbol1 | symbol1 symbol1 symbol1;
+regdef name = id | symbol;
+regdef spaces = " "*;
+regdef vlist =  "[" spaces id (spaces "," spaces id)* spaces "]";
+ 
+regdef adjective = "pure" | "inline" | "noinline" | "pod" | "open" | "virtual";
+regdef binder = "fun" | "proc" | "gen" | "class" | "union" | "struct" | "type" | "typedef" | "ctor" (spaces vlist)?;
+
+regdef indent2 = "  ";
+
+regdef classbind= group ("class" | "open class");
+regdef otherbind= indent2? group (adjective* spaces binder);
+
+// Group 1 = class
+// Group 2 = other 
+// group 3 = identifier
+regdef decl = (classbind | otherbind) spaces group (name) anychar*;
+
+var emptystring = "";
+var emptystringpiece = StringPiece emptystring;
+
+var lregex = decl . render;
+var lgrep = RE2 lregex;
+var n = NumberOfCapturingGroups(lgrep)+1;
+var v = varray[StringPiece] (n.size,emptystringpiece);
+
+var extract = RE2 " *([^={]*) *(=|{|;).*";
+var n2 = NumberOfCapturingGroups(extract)+1;
+var v2 = varray[StringPiece] (n2.size,emptystringpiece);
+
+var scomment = RE2 " *//[$](.*)";
+var vcomment = varray[StringPiece] (2.size, emptystringpiece);
+
+if ishtml do
+  println$ "<html><body>";
+  println$ "<h1>Felix Library Contents</h1>";
+done
+
+var files = FileSystem::regfilesin (dir, fregex);
+files = files.sort;
+
+for file in files do
+  var href = "/share/lib/std/"+file; // URL always uses Unix filenames
+  if ishtml do
+    println$ '<hr/><a href="'+href+'">'+file+'</a>';
+  else
+    println$ file;
+  done
+  var lines = load (Filename::join dir file);
+  var count = 0;
+  var comments = Empty[string];
+  for line in split (lines,char "\n") do
+    ++count;
+    var spl = StringPiece line;
+    var commentry = Match (scomment, spl, 0, ANCHOR_BOTH, vcomment.stl_begin, 2);
+    if commentry do
+       comments = Cons (vcomment . 1 . string, comments);
+    else
+
+      match lgrep line with
+      | Some v =>
+        var sym = v.3;
+        var dfn = "";
+        var m2 = Match (extract, spl, 0, ANCHOR_BOTH, v2.stl_begin, n2);
+        if m2 do
+          dfn = v2 . 1 . string . strip;
+        else
+          dfn = line . strip;
+        done
+        if ishtml do
+          if prefix (dfn, "class") or prefix (dfn, "open class") do
+            println$ "";
+            println$  "<pre>"+ f"%04d" count + ":  " + '<a href="'+href+'#'+f"%04d" count+'">'+dfn +'</a></pre>';
+            //for cline in rev comments do println$ "           "+cline; done
+            var txt = "";
+            for cline in rev comments do txt += cline+"\n"; done
+            var result = xlat_fdoc (txt, "dummy");
+            var html = #(result.html_raw);
+            if txt != "" do 
+              println$ "<div style='font-family:sans-serif; font-size:12pt; "+
+              "margin-left:100; margin-right:100; top:5; color:#406040'>" + html + "</div>"; 
+            done
+            comments = Empty[string];
+          else
+            println$ "<pre>"+f"%04d" count + ":    " + '<a href="'+href+'#'+f"%04d" count+'">'+ dfn +'</a></pre>';
+            //for cline in rev comments do println$ "           "+ cline; done
+            txt = "";
+            for cline in rev comments do txt += cline+"\n"; done
+            result = xlat_fdoc (txt, "dummy");
+            html = #(result.html_raw);
+            if txt != "" do 
+              println$ "<div style='font-family:sans-serif; font-size:10pt; " + 
+              "margin-left:100; margin-right:100; top:2; color:#404040; '>" + html + "</div>"; 
+            done
+            comments = Empty[string];
+          done
+        else
+          if prefix (dfn, "class") or prefix (dfn, "open class") do
+            println$ "";
+            println$ f"%04d" count + ":  " + dfn;
+            for cline in rev comments do println$ "           "+cline; done
+            comments = Empty[string];
+          else
+            println$ f"%04d" count + ":    " + dfn;
+            for cline in rev comments do println$ "           "+ cline; done
+            comments = Empty[string];
+          done
+        done
+      | #None => ;
+      endmatch; //d grexp
+    done
+  done
+done
+
+if ishtml do
+  println$ "</body></html>";
+done
+
+@
+
+@h2 Library index table.
+Lists symbols alphabetically.
+@tangle flx_libindex.flx
+var ishtml = System::argv 1 == "--html";
+var dir =  Filename::join ("src", "lib", "std");
+var fregex = ".*\\.(flx|fdoc)";
+var lregex = "^ *(virtual|noinline)* *(proc|fun|class|ctor|gen) *(([A-Z]|[a-z])([A-Z]|[a-z]|[0-9]|-|_)*).*";
+var lgrep = RE2 lregex;
+var n = NumberOfCapturingGroups(lgrep)+1;
+var v = varray[StringPiece] (n.size,StringPiece "");
+
+var grexp = RE2 lregex;
+var extract = RE2 " *([^={]*) *(=|{|;).*";
+var n2 = NumberOfCapturingGroups(extract)+1;
+var v2 = varray[StringPiece] (n2.size,StringPiece "");
+var v2a = varray[StringPiece] (n2.size,StringPiece "");
+
+typedef data_t = (file:string, line:int, dfn:string);
+instance Str[data_t] {
+  fun str (d:data_t) => d.file + "<"+d.line.str+">:"+d.dfn;
+}
+
+var index = #strdict[list[data_t]];
+
+for file in FileSystem::regfilesin (dir, fregex) do
+  //println$ file;
+  var text = load (Filename::join dir file);
+  var count = 0;
+  var lines = split (text, char "\n");
+  for line in lines do
+    ++count;
+    if line != "" do
+      var m = Match (grexp, StringPiece line, 0, ANCHOR_BOTH, v.stl_begin,n); 
+      if m do
+        var sym = v.3.string;
+        var dfn = "";
+        var m2 = Match (extract, StringPiece line, 0, ANCHOR_BOTH, v2.stl_begin, n2);
+        if m2 do
+          m2 = Match (extract, StringPiece line, 0, ANCHOR_BOTH, v2a.stl_begin, n2);
+          if m2 do
+            dfn = v2a . 1 . string . strip;
+          else
+            dfn = v2 . 1 . string . strip;
+          done
+        else
+          dfn = line . strip;
+        done
+        //println$ file, count, sym,dfn;
+        var data = (file=file, line=count, dfn=dfn);
+        //val old_data =index.get_dflt(sym,Empty[data_t]);
+        //val new_data = Cons (data, old_data);
+        //val new_data =Cons (data,index.get_dflt(sym,Empty[data_t]));
+        //index.add sym new_data;
+        index.add sym (var Cons (data,index.get_dflt(sym,Empty[data_t])));
+      done
+    done
+  done
+done
+
+//println$ "------------------";
+if ishtml do
+  var ctrl = char " ";
+  println$ "<html><body>";
+  println$ "<h1>Felix library Index</h1>";
+  println$ "<pre>";
+  match key,value in index do
+    var newctrl = char key;
+    if ctrl != newctrl do
+      println$ "<hr/>";
+      ctrl = newctrl;
+    done
+    println$ key;
+    match  (file=xfile,line=xline,dfn=xdfn) in value do
+     var href = "/share/lib/std/" + xfile;
+     println$ '  <a href="'+href+ "#"+f"%04d" xline + '">' + xfile + ":"+ str xline + "</a>: " + xdfn;
+    done
+  done 
+  println$ "</pre></body></html>";
+else
+  match key,value in index do
+    println$ key;
+    match  (file=xfile,line=xline,dfn=xdfn) in value do
+     println$ "  " + xfile + ":"+ str xline + ": " + xdfn;
+    done
+  done 
+done
+@
+
+@h2 Make tutorial index pages.
+Synthesises an index page for tutorial groups
+with specified heading and pattern match.
+
+@tangle flx_mktutindex.flx
+var dirname = System::argv_dflt 1 "src/web/tut";
+var homepage = System::argv_dflt 2 "";
+
+if dirname == "--help" do
+  println "Usage flx_mktutindex directory homepage";
+  println "  Makes src/web/tutname_index.fdoc for files in src/web/tutname_\\d*\\.fdoc";
+  System::exit 0;
+done
+
+proc make_index (prefix:string)
+{
+  re := RE2(prefix+"_\\d*\\.fdoc");
+  var docs = FileSystem::regfilesin(dirname, re);
+  docs = sort docs;
+  iter println of (string) docs;
+  f := fopen_output(Filename::join (dirname,prefix+"_index.fdoc"));
+  if homepage != "" do
+    writeln$ f,
+     "<p><a href='"+homepage+"'>Up</a></p>"
+    ; 
+  done
+
+  writeln$ f,"@h1 "+prefix +" Index";
+  var abstract = load (Filename::join (dirname, prefix + "_abstract.html"));
+  if abstract != "" do
+    writeln$ f,abstract;
+  done
+  writeln$ f,"<ul>";
+  iter (proc (x:string) { writeln$ f, mkentry x; }) docs;
+  writeln$ f,"</ul>";
+  fclose f;
+
+  fun mkentry(x:string):string = 
+  {
+    var hline = "\n";
+    begin // find first non-blank line
+      f := fopen_input(Filename::join (dirname,x));
+      while hline == "\n" do
+        hline = f.readln;
+      done
+      fclose f;
+    end
+    scan:for var i in 0uz upto hline.len - 1uz do
+      if hline.[i]== char ' ' do break scan; done
+    done
+    title := hline.[i to].strip;
+    html := '<li><a href="' + Filename::basename x + '">' + title + '</a></li>';
+    return html;
+  }
+}
+
+var re = RE2(".*_01.fdoc");
+var samples = FileSystem::regfilesin(dirname, re);
+for name in samples do
+  var prefix = name.[0 to -8];
+  make_index prefix;
+done
+
+@
+
+

@@ -1,6 +1,8 @@
 @title Flx compiler driver tool
+@tangler bootflx_tool.flx      = $PWD/src/tools/bootflx.flx
 @tangler flx_tool.flx          = $PWD/src/tools/flx.flx
 @tangler dflx_tool.flx         = $PWD/src/tools/dflx.flx
+
 @tangler flx_cache.flx         = share/lib/std/felix/flx_cache.flx
 @tangler flx_flxg.flx          = share/lib/std/felix/flx_flxg.flx
 @tangler flx_profile.flx       = share/lib/std/felix/flx_profile.flx
@@ -8,10 +10,10 @@
 @tangler flx_control.flx       = share/lib/std/felix/flx/flx_control.flx
 @tangler flx_cmdopt.flx        = share/lib/std/felix/flx/flx_cmdopt.flx
 @tangler flx_depvars.flx       = share/lib/std/felix/flx/flx_depvars.flx
+@tangler flx_plugin_client.flx = share/lib/std/felix/flx/flx_plugin_client.flx
 @tangler flx_run.flx           = share/lib/std/felix/flx/flx_run.flx
 @tangler flx.flx               = share/lib/std/felix/flx/flx.flx
 @tangler bootflx.flx           = share/lib/std/felix/flx/bootflx.flx
-@tangler flx_plugin_client.flx = share/lib/std/felix/flx/flx_plugin_client.flx
 
 @h1 Felix @{flx} tool.
 This is exactly the same as the dflx tool, it just runs
@@ -2897,4 +2899,13 @@ class Flx_client {
 }
 @
 
+@h2 Bootstrap Felix.
+The same as the ordinary @{flx} command, except the standard
+toolchains are compiled in directly.
 
+@tangle bootflx_tool.flx
+include "std/felix/flx/bootflx";
+
+System::pexit$ BootFlx::runflx #System::args;
+
+@
