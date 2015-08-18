@@ -22,5 +22,5 @@ script:
   - ln -s /usr/bin/g++-5 bin/g++
   - bin/gcc --version
   - bin/g++ --version
-  - env PATH=bin:$PATH make "FBUILD_PARAMS=--build-cc=/usr/bin/gcc-5 --build-cxx=/usr/bin/g++-5"
+  - env PATH=bin:$PATH FLX_REPORT_COLLECTIONS=1 make "FBUILD_PARAMS=--build-cc=/usr/bin/gcc-5 --build-cxx=/usr/bin/g++-5"
 
