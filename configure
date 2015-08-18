@@ -1,1 +1,1 @@
-fbuild/fbuild-light configure
+make configure

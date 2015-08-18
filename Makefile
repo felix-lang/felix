@@ -76,7 +76,7 @@ bootstrap: fbuild
 # Core integrated build
 #
 
-configure:
+configure: extract
 	#
 	# ============================================================
 	#
@@ -438,7 +438,7 @@ lib: copy grammar
 		--target-bin=host \
 		--copy-library
 
-really-fast-rebuild:
+really-fast-rebuild: extract
 	# =========================================================
 	# rebuild everything from installed Felix except compiler
 	# [Note: requires LPATH variable be set in Makefile!]
@@ -458,7 +458,7 @@ really-fast-rebuild:
 	${LPATH}=${INSTALLDIR}/host/lib/rtl ${INSTALLDIR}/host/bin/flx_build_boot \
 		--build-all
 
-fast-rebuild:
+fast-rebuild: extract
 	# =========================================================
 	# rebuild everything in-place except the compiler
 	# [Note: requires LPATH variable be set in Makefile!]
@@ -497,7 +497,7 @@ fast-rebuild-nortl:
 	rm flx_build_boot
 
 
-rebuild:
+rebuild: extract
 	# =========================================================
 	# rebuild everything in-place except the compiler
 	# [Note: Slow and messy. Requires "flx" be built in build/release]
@@ -555,9 +555,8 @@ evtdemo:
 	# run
 	demos/embed/evtdemo
 
-.PHONY : build32 build64 build test32 test64 test extras bootstrap configure
-.PHONY : build32-debug build64-debug build-debug test32-debug test64-debug test-debug
+.PHONY : test extras bootstrap configure packages grammar
 .PHONY : doc install websites-linux  release install-bin
 .PHONY : copy-doc gen-doc gendoc fbuild speed tarball
 .PHONY : weblink flx tools web-plugins toolchain-plugins rtl copy lib
-.PHONY : sdltest extract packages
+.PHONY : sdltest

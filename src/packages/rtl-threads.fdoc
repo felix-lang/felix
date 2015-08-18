@@ -194,7 +194,7 @@ flx_native_thread_t get_current_native_thread() { return pthread_self(); }
 static void *get_stack_pointer() { 
   unsigned long x; 
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignore "-Wunknown-pragma"
+#pragma GCC diagnostic ignored "-Wunknown-pragma"
 #pragma GCC diagnostic warning "-Wno-return-local-addr"
   return &x; 
 #pragma GCC diagnostic pop
@@ -340,7 +340,7 @@ flx_native_thread_t get_current_native_thread() { return GetCurrentThread(); }
 static void *get_stack_pointer() { 
   unsigned long x; 
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignore "-Wunknown-pragma"
+#pragma GCC diagnostic ignored "-Wunknown-pragma"
 #pragma GCC diagnostic warning "-Wno-return-local-addr"
   return &x; 
 #pragma GCC diagnostic pop
@@ -1369,7 +1369,7 @@ namespace flx { namespace pthread {
 static void *get_stack_pointer() { 
   unsigned long x; 
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignore "-Wunknown-pragma"
+#pragma GCC diagnostic ignored "-Wunknown-pragma"
 #pragma GCC diagnostic warning "-Wno-return-local-addr"
   return &x; 
 #pragma GCC diagnostic pop

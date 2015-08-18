@@ -402,6 +402,7 @@ def src_dir(ctx):
 def configure(ctx):
     """Configure Felix."""
 
+    # NOTE: this does NOT work correctly if configure is cached.
     print("[fbuild] RUNNING PACKAGE MANAGER")
     os.system("for i in src/packages/*; do echo 'PACKAGE ' $i; src/tools/flx_iscr.py -q $i build/release; done")
 
