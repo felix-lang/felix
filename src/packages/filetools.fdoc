@@ -113,7 +113,7 @@ class CopyFiles {
      var dirs = StrDict::strdict[bool] ();
      var n = re.NumberOfCapturingGroups;
      var v = varray[StringPiece]$ (n+1).size, StringPiece "";
-println$ "flx_cp:CopyFiles:processfiles regexp= " + re.pattern;
+//println$ "flx_cp:CopyFiles:processfiles regexp= " + re.pattern;
      // Process a single filename and add it to the pending copy queue
      proc addfile(f:string)
      {
