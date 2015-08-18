@@ -5,7 +5,7 @@
 @tangler flx_replace.flx        = $PWD/src/tools/flx_replace.flx
 @tangler flx_batch_replace.flx  = $PWD/src/tools/flx_batch_replace.flx
 @tangler flx_renumber.flx       = $PWD/src/tools/flx_renumber.flx
-@tangler flx_cp.flx             = share/lib/felix/flx_cp.flx
+@tangler flx_cp.flx             = share/lib/std/felix/flx_cp.flx
 
 
 @h1 File System Tools.
