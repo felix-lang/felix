@@ -17,6 +17,7 @@
 @tangler toolchain_clang_linux.flx    = share/lib/plugins/toolchain_clang_linux.flx
 @tangler toolchain_clang_osx.flx      = share/lib/plugins/toolchain_clang_osx.flx
 @tangler toolchain_clang_iphoneos.flx = share/lib/plugins/toolchain_clang_iphoneos.flx
+@tangler flx_plugin.flx               = share/lib/plugins/flx_plugin.flx
 
 @tangler build_flx_rtl_gcc_linux.fpc         = $PWD/src/config/build_flx_rtl_gcc_linux.fpc
 @tangler build_flx_rtl_gcc_osx.fpc           = $PWD/src/config/build_flx_rtl_gcc_osx.fpc
@@ -1817,6 +1818,14 @@ fun setup(config_data:string) = {
 export fun setup of (string) as "toolchain_clang_iphoneos_setup";
 
 
+@
+
+@h1 Flx Plugin
+A wrapper around "flx" command.
+@tangle flx_plugin.flx
+include "std/felix/flx/flx";
+export fun flx_plugin_setup(x:string)=>0;
+export fun flx_plugin (args:list[string]) : int => Flx::runflx args;
 @
 
 @h1 RTL build control entries.

@@ -1,7 +1,0 @@
-interface paragraph-control_t {
-  whatami: 1 -> string;
-  sp : 1 -> 0;
-  sp-clas : string -> 0;
-  ep : 1 -> 0;
-  bp : 1 -> 0;
-}

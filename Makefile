@@ -70,7 +70,7 @@ dev-build: bootstrap gendoc
 
 bootstrap: fbuild
 	cp ${BUILDROOT}/host/bin/bootflx ${BUILDROOT}/host/bin/flx
-	${BUILDROOT}/host/bin/flx --felix=build.fpc -c -od ${BUILDROOT}/host/lib/rtl src/lib/plugins/flx_plugin
+	${BUILDROOT}/host/bin/flx --felix=build.fpc -c -od ${BUILDROOT}/host/lib/rtl ${BUILDROOT}/share/lib/plugins/flx_plugin
 
 #
 # Core integrated build

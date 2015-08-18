@@ -1,6 +1,0 @@
-
-interface edit-interface_t {
-  whatami: 1 -> string;
-  get_header: string * string -> string;
-  get_body : string * string * string -> string;
-}

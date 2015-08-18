@@ -1,6 +1,0 @@
-interface fileseq-control_t {
-  whatami: 1 -> string;
-  shownav: 1 -> string;
-  docnum: 1 -> string;
-  get-jscript: 1 -> string;
-}

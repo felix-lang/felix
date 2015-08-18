@@ -1,4 +1,0 @@
-* Felix has a lot of tuple arg functions, curried functions are often more
-  useful. Haskell has something like \1->(x+\1) to denote a function quickly.
-  But it has inference here, Felix doesn't. We have "curry" function, but it is
-  verbose. Eg ((curry add of (int * int)) 1) is needed. Hmmm.

@@ -1,3 +1,0 @@
-include "std/felix/flx/flx";
-export fun flx_plugin_setup(x:string)=>0;
-export fun flx_plugin (args:list[string]) : int => Flx::runflx args;

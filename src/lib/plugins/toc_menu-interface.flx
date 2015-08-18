@@ -1,9 +1,0 @@
-
-interface toc_menu_interface {
-  whatami: 1 -> string;
-  get_style: 1-> string;
-  get_js: 1-> string;
-  make_menu: 1 -> string;
-}
-
-

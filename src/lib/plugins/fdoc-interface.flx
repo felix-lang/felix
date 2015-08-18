@@ -1,8 +1,0 @@
-interface fdoc_t {
-  whatami : 1 -> string;
-  html_raw : 1 -> string;
-  html_page : 1 -> string;
-  html_title: 1 -> string;
-  mathjax_required: 1 -> bool;
-}
-
