@@ -2,6 +2,8 @@
 # Core interscript interpreter
 import sys, os, re, io, operator, shutil, string
 
+def open_utf8(*args): return open(*args, encoding='utf-8')
+
 # The regexes that the processor uses.
 class regexes:
     felt = '[A-Za-z._${}][-A-Za-z0-9_.${}]*'
@@ -39,7 +41,7 @@ class Tangler(io.StringIO):
         update = False
         self.seek(0)
         try:
-            with open(self.filename) as old:
+            with open_utf8(self.filename) as old:
                 contents = old.read()
                 update = self.read() != contents
         except:
@@ -49,7 +51,7 @@ class Tangler(io.StringIO):
                 print('Write     %s -> %s' % (self.id, self.filename))
             os.makedirs(os.path.dirname(self.filename), exist_ok=True)
             try:
-                f = open(self.filename, 'w')
+                f = open_utf8(self.filename, 'w')
             except IOError as ex:
                 sys.exit("Can't open output file %s: %s" % (self.filename, ex))
             with f:
@@ -170,7 +172,7 @@ def iscr():
     p = Processor(iname,odir, quiet)
     # Process the input file and buffer up the code.
     try:
-        f = open(iname)
+        f = open_utf8(iname)
     except IOError as ex:
         sys.exit(str(ex))
     # Finally just dump the buffers to the associated
