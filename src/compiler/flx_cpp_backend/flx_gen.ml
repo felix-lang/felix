@@ -172,7 +172,7 @@ let gen_function_names syms bsym_table =
   Buffer.contents s
 
 (* This code generates the class declarations *)
-let gen_functions syms bsym_table =
+let gen_functions syms bsym_table (shapes: Flx_set.StringSet.t ref) shape_table =
   let xxsym_table = ref [] in
   Hashtbl.iter
   (fun x i ->
@@ -206,6 +206,7 @@ let gen_functions syms bsym_table =
         (Flx_gen_cfunc.gen_C_function
           syms
           bsym_table
+          shapes shape_table
           props
           index
           (Flx_bsym.id bsym)
@@ -326,7 +327,8 @@ let gen_dtor syms bsym_table name display ts =
   accepts the argument and runs the function.
   The machine stack is used for functions.
 *)
-let gen_function_methods filename syms bsym_table
+let gen_function_methods filename syms bsym_table (
+   shapes: Flx_set.StringSet.t ref) shape_table
   label_info counter index ts instance_no : string * string
 =
   let bsym =
@@ -380,7 +382,8 @@ let gen_function_methods filename syms bsym_table
     let params = Flx_bparameter.get_bids bps in
     let exe_string,needs_switch =
       try
-        Flx_gen_exe.gen_exes filename cxx_name syms bsym_table display label_info counter index exes vs ts instance_no false
+        Flx_gen_exe.gen_exes filename cxx_name syms bsym_table shapes shape_table
+          display label_info counter index exes vs ts instance_no false
       with x ->
         (*
         print_endline (Printexc.to_string x);
@@ -471,7 +474,8 @@ let gen_function_methods filename syms bsym_table
 
   | _ -> failwith "function expected"
 
-let gen_procedure_methods filename syms bsym_table
+let gen_procedure_methods filename syms bsym_table  
+  (shapes: Flx_set.StringSet.t ref) shape_table
   label_info counter index ts instance_no : string * string
 =
   let bsym =
@@ -529,7 +533,7 @@ let gen_procedure_methods filename syms bsym_table
     let ps = List.map (fun {pid=id; pindex=ix; ptyp=t} -> id,t) bps in
     let params = Flx_bparameter.get_bids bps in
     let exe_string,needs_switch =
-      Flx_gen_exe.gen_exes filename cxx_name syms bsym_table display label_info counter index exes vs ts instance_no (stackable && not heapable)
+      Flx_gen_exe.gen_exes filename cxx_name syms bsym_table shapes shape_table display label_info counter index exes vs ts instance_no (stackable && not heapable)
 (*
       Flx_gen_exe.gen_exes filename syms bsym_table display label_info counter index exes vs ts instance_no stackable
 *)
@@ -641,7 +645,10 @@ let gen_procedure_methods filename syms bsym_table
   | _ -> failwith "procedure expected"
 
 
-let gen_execute_methods filename syms bsym_table label_info counter bf bf2 =
+let gen_execute_methods filename syms bsym_table 
+  (shapes: Flx_set.StringSet.t ref) shape_table
+  label_info counter bf bf2 
+=
   let s = Buffer.create 2000 in
   let s2 = Buffer.create 2000 in
   Hashtbl.iter
@@ -658,12 +665,12 @@ let gen_execute_methods filename syms bsym_table label_info counter bf bf2 =
     bcat s ("//------------------------------\n");
     if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then
       bcat s (
-        Flx_gen_cfunc.gen_C_procedure_body filename syms bsym_table
+        Flx_gen_cfunc.gen_C_procedure_body filename syms bsym_table shapes shape_table
         label_info counter index ts (Flx_bsym.sr bsym) instance_no
       )
     else
       let call,ctor =
-        gen_procedure_methods filename syms bsym_table
+        gen_procedure_methods filename syms bsym_table shapes shape_table
         label_info counter index ts instance_no
       in
       bcat s call;
@@ -673,12 +680,12 @@ let gen_execute_methods filename syms bsym_table label_info counter bf bf2 =
     bcat s ("//------------------------------\n");
     if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then
       bcat s (
-        Flx_gen_cfunc.gen_C_function_body filename syms bsym_table
+        Flx_gen_cfunc.gen_C_function_body filename syms bsym_table shapes shape_table
         label_info counter index ts (Flx_bsym.sr bsym) instance_no
       )
     else
       let apply,ctor =
-        gen_function_methods filename syms bsym_table
+        gen_function_methods filename syms bsym_table shapes shape_table
         label_info counter index ts instance_no
       in
       bcat s2 ctor;

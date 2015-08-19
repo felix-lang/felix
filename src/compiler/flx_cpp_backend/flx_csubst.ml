@@ -16,7 +16,8 @@ open Flx_cexpr
 
    #n: type of n'th component of argument tuple (1 origin)
    #0: return type
-   @n: reference to shape object
+   @n: shape of n'th argument's type
+   @0: shape of return type
 
    $t: pass a tuple argument 'as a tuple'
    $Tn: pass argument n expanded into an argument list (varargs)
@@ -99,9 +100,16 @@ let islower = function | 'a' .. 'z' -> true | _ -> false
 let fixup_type t = 
   if t.[0] = ':' then " " ^ t else t 
 
-let csubst sr sr2 ct 
+let csubst (shape_registry:Flx_set.StringSet.t ref) sr sr2 ct 
   ~arg ~(args:cexpr_t list) ~typs ~argtyp ~retyp ~gargs ~prec ~argshape ~argshapes ~display ~gargshapes ~name
 =
+  let emit_shape s = 
+     (*
+     print_endline ("csubst emitting shape " ^ s);
+     *)
+     shape_registry := Flx_set.StringSet.add s !shape_registry;
+     s
+  in
   if ct = "" then clierr2 sr sr2 "Blank C data";
   (*
   print_endline ("INPUT ct,prec=" ^ ct ^ " is " ^ prec);
@@ -275,7 +283,7 @@ let csubst sr sr2 ct
         else
           bcat
           (
-            fixup_type (nth gargshapes (!digits-1))
+            emit_shape (fixup_type (nth gargshapes (!digits-1)))
           );
         mode := Normal;
         trans i ch
@@ -404,7 +412,7 @@ let csubst sr sr2 ct
         else if !digits<0 then serr i ("Argshape no " ^ string_of_int !digits ^ " too small")
         else
           let t = nth argshapes (!digits) in
-          bcat t;
+          bcat (emit_shape t);
           mode := Normal;
           trans i ch
 

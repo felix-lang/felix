@@ -27,7 +27,7 @@ open Flx_unify
 open Flx_util
 open Flx_gen_helper
 
-let gen_C_function syms bsym_table props index id sr vs bps ret' ts instance_no =
+let gen_C_function syms bsym_table (shapes:Flx_set.StringSet.t ref) shape_map props index id sr vs bps ret' ts instance_no =
   let rt vs t = beta_reduce "flx_gen_cfunc" syms.Flx_mtypes2.counter bsym_table sr (tsubst vs ts t) in
   let requires_ptf = mem `Requires_ptf props in
   (*
@@ -104,6 +104,7 @@ let gen_C_function syms bsym_table props index id sr vs bps ret' ts instance_no 
   ");\n"
 
 let gen_C_function_body filename syms bsym_table
+  (shapes: Flx_set.StringSet.t ref) shape_map
   label_info counter index ts sr instance_no
 =
   let rt vs t = beta_reduce "flx_gen_cfunc: gen_C_function_body" syms.Flx_mtypes2.counter bsym_table sr (tsubst vs ts t) in
@@ -154,7 +155,7 @@ let gen_C_function_body filename syms bsym_table
     let params = Flx_bparameter.get_bids bps in
     let exe_string,_ =
       try
-        Flx_gen_exe.gen_exes filename name syms bsym_table [] label_info counter index exes vs ts instance_no true
+        Flx_gen_exe.gen_exes filename name syms bsym_table shapes shape_map [] label_info counter index exes vs ts instance_no true
       with x ->
         (*
         print_endline (Printexc.to_string x);
@@ -233,7 +234,8 @@ let gen_C_function_body filename syms bsym_table
 
   | _ -> failwith "function expected"
 
-let gen_C_procedure_body filename syms bsym_table
+let gen_C_procedure_body filename syms bsym_table 
+  (shapes: Flx_set.StringSet.t ref) shape_map
   label_info counter index ts sr instance_no
 =
   let rt vs t = beta_reduce "flx_gen_cfunc: gen_C_procedure_body" syms.Flx_mtypes2.counter bsym_table sr (tsubst vs ts t) in
@@ -274,7 +276,7 @@ let gen_C_procedure_body filename syms bsym_table
     let params = Flx_bparameter.get_bids bps in
     let exe_string,_ =
       try
-        Flx_gen_exe.gen_exes filename name syms bsym_table [] label_info counter index exes vs ts instance_no true
+        Flx_gen_exe.gen_exes filename name syms bsym_table shapes shape_map [] label_info counter index exes vs ts instance_no true
       with x ->
         (*
         print_endline (Printexc.to_string x);

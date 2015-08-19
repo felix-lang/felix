@@ -337,7 +337,7 @@ let rec gen_type_shape module_name s syms bsym_table need_int last_ptr_map primi
         sbt bsym_table btyp
       )
 
-let gen_offset_tables syms bsym_table module_name first_ptr_map=
+let gen_offset_tables syms bsym_table extras module_name first_ptr_map=
   print_debug syms "GEN OFFSET TABLES";
   let allocable_types = Hashtbl.create 97 in
   let last_ptr_map = ref first_ptr_map in
@@ -359,6 +359,14 @@ let gen_offset_tables syms bsym_table module_name first_ptr_map=
     this WILL change when a 'new' operator is introduced.
   *)
   print_debug syms "Make shapes for dynamically allocated types";
+
+  (* extra shapes required by primitives *)
+  List.iter (fun t ->
+    let index = Hashtbl.find syms.registry t in
+    Hashtbl.replace allocable_types t index
+  )
+  extras;
+
   Hashtbl.iter
   (fun btyp index ->
 print_debug syms ("Handle type " ^ sbt bsym_table btyp ^ " instance " ^ si index);

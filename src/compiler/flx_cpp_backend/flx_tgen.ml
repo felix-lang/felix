@@ -223,7 +223,7 @@ let rec gen_type_name syms bsym_table (index,typ) =
         | CS.Identity -> syserr (Flx_bsym.sr bsym) "Idendity type is nonsense!"
         | CS.Str c -> c
         | CS.Str_template c ->
-        try sc "expr" (csubst (Flx_bsym.sr bsym) (Flx_bsym.sr bsym) c 
+        try sc "expr" (csubst (ref Flx_set.StringSet.empty) (Flx_bsym.sr bsym) (Flx_bsym.sr bsym) c 
            ~arg:(fun () -> Flx_cexpr.ce_atom "Error") 
            ~args:[] ~typs:[] ~argtyp:"Error" ~retyp:"Error" 
            ~gargs:tss 

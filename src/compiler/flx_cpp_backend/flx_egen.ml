@@ -129,6 +129,8 @@ let isid x =
 let rec gen_expr'
   syms
   bsym_table
+  (shapes : Flx_set.StringSet.t ref)
+  (shape_map: (string, Flx_btype.t) Hashtbl.t)
   label_map
   this
   this_vs
@@ -156,8 +158,8 @@ let rec gen_expr'
     )
   end;
 
-  let ge = gen_expr syms bsym_table label_map this this_vs this_ts sr in
-  let ge' = gen_expr' syms bsym_table label_map this this_vs this_ts sr in
+  let ge = gen_expr syms bsym_table shapes shape_map label_map this this_vs this_ts sr in
+  let ge' = gen_expr' syms bsym_table shapes shape_map label_map this this_vs this_ts sr in
   let tsub t = beta_reduce "flx_egen" syms.Flx_mtypes2.counter bsym_table sr (tsubst this_vs this_ts t) in
   let tn t = cpp_typename syms bsym_table (tsub t) in
   let clt t = islinear_type bsym_table t in
@@ -365,7 +367,7 @@ print_endline ("Compact linear tuple " ^ sbt bsym_table t);
     assert (d = argt);
     assert (c = t);
     assert (not (clt c)); 
-    Flx_vgen.gen_make_nonconst_ctor ge' tn syms bsym_table c v a
+    Flx_vgen.gen_make_nonconst_ctor ge' tn syms bsym_table shape_map c v a
 
 (* -------------- CONSTANT PROJECTIONS ----------------------------- *)
   (* if this is a constant projection of a compact linear array *) 
@@ -632,6 +634,7 @@ print_endline "Apply prim";
     gen_apply_prim
       syms
       bsym_table
+      shapes shape_map
       label_map
       this
       sr
@@ -675,7 +678,7 @@ print_endline "Apply struct";
       *)
       let ts = map tsub ts in
       let ct = beta_reduce "flx_egen: nonconst ctor" syms.Flx_mtypes2.counter bsym_table sr (tsubst vs ts ct) in
-      Flx_vgen.gen_make_nonconst_ctor ge' tn syms bsym_table udt cidx a 
+      Flx_vgen.gen_make_nonconst_ctor ge' tn syms bsym_table shape_map udt cidx a 
     | _ -> assert false
     end
 
@@ -1000,7 +1003,7 @@ print_endline ("Normalised type " ^ sbt bsym_table t);
   | BEXPR_new e ->
     let ref_type = tn t in
     let _,t' = e in
-    let pname = direct_shape_of syms bsym_table tn t' in
+    let pname = direct_shape_of syms bsym_table shape_map tn t' in
     let typ = tn t' in
     let frame_ptr = ce_new 
         [ ce_atom "*PTF gcp"; ce_atom pname; ce_atom "true"] 
@@ -1181,7 +1184,7 @@ end
         | CS.Str c -> ce_expr "expr" c
         | CS.Str_template c ->
           let ts = map tn ts in
-          csubst sr (Flx_bsym.sr bsym) c 
+          csubst shapes sr (Flx_bsym.sr bsym) c 
             ~arg:(fun () -> ce_atom "Error") ~args:[] 
             ~typs:[] ~argtyp:"Error" ~retyp:"Error" 
             ~gargs:ts 
@@ -1454,6 +1457,8 @@ print_endline ("Construct tuple, subkind tuple, component x=" ^ x);
 and gen_apply_prim
   syms
   bsym_table
+  (shapes: Flx_set.StringSet.t ref)
+  shape_map
   label_map
   this
   sr
@@ -1464,7 +1469,7 @@ and gen_apply_prim
   ts
   ((arg,argt) as a)
 =
-  let gen_expr' = gen_expr' syms bsym_table label_map this this_vs this_ts in
+  let gen_expr' = gen_expr' syms bsym_table shapes shape_map label_map this this_vs this_ts in
   let beta_reduce calltag vs ts t =
     beta_reduce calltag syms.Flx_mtypes2.counter bsym_table sr (tsubst vs ts t)
   in
@@ -1546,6 +1551,7 @@ and gen_apply_prim
           gen_prim_call
             syms
             bsym_table
+            shapes shape_map
             (beta_reduce "flx_egen: Code" this_vs this_ts)
             gen_expr'
             s
@@ -1561,6 +1567,7 @@ and gen_apply_prim
           gen_prim_call
             syms
             bsym_table
+            shapes shape_map
             (beta_reduce "flx_egen: callback" this_vs this_ts)
             gen_expr'
             (Flx_bsym.id bsym ^ "($a)")
@@ -1582,10 +1589,10 @@ and gen_apply_prim
         string_of_bbdcl bsym_table (Flx_bsym.bbdcl bsym) index
       )
 
-and gen_expr syms bsym_table label_map this vs ts sr e : string =
+and gen_expr syms bsym_table shapes shape_map label_map this vs ts sr e : string =
   let e = Flx_bexpr.reduce e in
   let s =
-    try gen_expr' syms bsym_table label_map this vs ts sr e
+    try gen_expr' syms bsym_table shapes shape_map label_map this vs ts sr e
     with Unknown_prec p -> clierr sr
     ("[gen_expr] Unknown precedence name '"^p^"' in " ^ sbe bsym_table e)
   in

@@ -42,6 +42,7 @@ type kind_t = Function | Procedure
 let gen_exe filename cxx_name
   syms
   bsym_table
+  (shapes : Flx_set.StringSet.t ref) shape_map
   (label_map, label_usage_map)
   counter
   this
@@ -81,8 +82,8 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
     | _ -> false
   in
   let tsub t = beta_reduce "gen_exe" syms.Flx_mtypes2.counter bsym_table sr (tsubst vs ts t) in
-  let ge = gen_expr syms bsym_table label_map this vs ts in
-  let ge' = gen_expr' syms bsym_table label_map this vs ts in
+  let ge = gen_expr syms bsym_table shapes shape_map label_map this vs ts in
+  let ge' = gen_expr' syms bsym_table shapes shape_map label_map this vs ts in
   let tn t = cpp_typename syms bsym_table (tsub t) in
   let bsym =
     try Flx_bsym_table.find bsym_table this with _ ->
@@ -267,7 +268,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
           clierr2 (Flx_bexe.get_srcref exe) (Flx_bsym.sr bsym) ("Instantiate virtual procedure(1) " ^ Flx_bsym.id bsym) ;
       | CS.Str s -> ws (ce_expr "expr" s)
       | CS.Str_template s ->
-        let ss = gen_prim_call syms bsym_table tsub ge' s ts a (Flx_btype.btyp_none()) sr (Flx_bsym.sr bsym) "atom"  (Flx_bsym.id bsym) in
+        let ss = gen_prim_call syms bsym_table shapes shape_map tsub ge' s ts a (Flx_btype.btyp_none()) sr (Flx_bsym.sr bsym) "atom"  (Flx_bsym.id bsym) in
         ws ss
       end
 
@@ -291,7 +292,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
           clierr2 (Flx_bexe.get_srcref exe) (Flx_bsym.sr bsym) ("Instantiate virtual procedure(1) " ^ Flx_bsym.id bsym) ;
       | CS.Str s -> ws (ce_expr "expr" s)
       | CS.Str_template s ->
-        let ss = gen_prim_call syms bsym_table tsub ge' s ts a (Flx_btype.btyp_none()) sr (Flx_bsym.sr bsym) "atom" (Flx_bsym.id bsym) in
+        let ss = gen_prim_call syms bsym_table shapes shape_map tsub ge' s ts a (Flx_btype.btyp_none()) sr (Flx_bsym.sr bsym) "atom" (Flx_bsym.id bsym) in
         ws ss
       end
 
@@ -303,7 +304,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
       ;
       let s = Flx_bsym.id bsym ^ "($a);" in
       let s =
-        gen_prim_call syms bsym_table tsub ge' s ts a (Flx_btype.btyp_none()) sr (Flx_bsym.sr bsym) "atom" (Flx_bsym.id bsym)
+        gen_prim_call syms bsym_table shapes shape_map tsub ge' s ts a (Flx_btype.btyp_none()) sr (Flx_bsym.sr bsym) "atom" (Flx_bsym.id bsym)
       in
       let s = sc "expr" s in
       (if with_comments then "      // " ^ src_str ^ "\n" else "") ^
@@ -1042,6 +1043,7 @@ let gen_exes
   filename cxx_name
   syms
   bsym_table
+  shapes shape_map
   display
   label_info
   counter
@@ -1056,7 +1058,7 @@ let gen_exes
   let b = Buffer.create (200 * List.length exes) in 
   List.iter 
    (fun exe -> Buffer.add_string b 
-    (gen_exe filename cxx_name syms bsym_table
+    (gen_exe filename cxx_name syms bsym_table shapes shape_map
     label_info counter index vs
     ts instance_no needs_switch stackable exe))
   exes

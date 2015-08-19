@@ -91,14 +91,21 @@ let rec shape_of' use_assoc_type syms bsym_table tn t =
   | BTYP_pointer _ -> "::flx::rtl::_address_ptr_map"
   | _ -> tn t ^ "_ptr_map"
 
-let shape_of syms bsym_table tn t = shape_of' true syms bsym_table tn t
-let direct_shape_of syms bsym_table tn t = shape_of' false syms bsym_table tn t
+let shape_of syms bsym_table shape_map tn t = 
+  let sn = shape_of' true syms bsym_table tn t in
+  Hashtbl.replace shape_map sn t;
+  sn
 
-
+let direct_shape_of syms bsym_table shape_map tn t = 
+  let sn = shape_of' false syms bsym_table tn t in
+  Hashtbl.replace shape_map sn t;
+  sn
 
 let gen_prim_call
   syms
   bsym_table
+  (shapes: Flx_set.StringSet.t ref)
+  (shape_map: (string, Flx_btype.t) Hashtbl.t)
   tsub
   ge
   ct
@@ -122,7 +129,7 @@ let gen_prim_call
 
   let argt = rt argt in
   let tt = tn argt in
-  let sh t = shape_of syms bsym_table tn t in
+  let sh t = shape_of syms bsym_table shape_map tn t in
   let shret = sh ret in (* hmm .. argghhh .. *)
   let gshapes = map sh ts in
   let ts = map rtn ts in
@@ -170,7 +177,7 @@ let gen_prim_call
         in rev_map (fun _ -> t) (nlist n), rev_map (fun _ -> s) (nlist n)
       | _ -> assert false
     in
-    csubst sr sr2 ct 
+    csubst shapes sr sr2 ct 
       ~arg:carg 
       ~args:ess 
       ~typs:ets 
@@ -194,7 +201,7 @@ let gen_prim_call
     in
     let ess = map (ge sr) es in
     let ets = map tn typs in
-    csubst sr sr2 ct 
+    csubst shapes sr sr2 ct 
       ~arg:carg 
       ~args:ess 
       ~typs:ets 
@@ -215,7 +222,7 @@ let gen_prim_call
     let es = Flx_list.range (fun i -> bexpr_get_n t i x) n in
     let ess = map (ge sr) es in
     let ets = map tn typs in
-    csubst sr sr2 ct 
+    csubst shapes sr sr2 ct 
       ~arg:carg ~args:ess 
       ~typs:ets ~argtyp:tt ~retyp:(tn ret) 
       ~gargs:ts 
@@ -230,7 +237,7 @@ let gen_prim_call
      is neither an array nor tuple
   *)
   | (_,typ) ->
-    csubst sr sr2 ct 
+    csubst shapes sr sr2 ct 
     ~arg:carg ~args:[carg()] 
     ~typs:[tt] ~argtyp:tt ~retyp:(tn ret) 
     ~gargs:ts 

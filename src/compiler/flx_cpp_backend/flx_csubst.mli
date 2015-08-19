@@ -1,6 +1,7 @@
 (** Code fragment inliner *)
 
 val csubst:
+  Flx_set.StringSet.t ref ->
   Flx_srcref.t ->
   Flx_srcref.t ->
   string ->

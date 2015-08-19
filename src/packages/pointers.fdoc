@@ -1,11 +1,12 @@
 @title Pointers and low level address manipulation.
-@tangler carray.flx = share/lib/std/c/carray.flx
-@tangler cptr.flx = share/lib/std/c/cptr.flx
-@tangler address.flx = share/lib/std/scalar/address.flx
-@tangler sort.flx = share/lib/std/datatype/sort.flx
-@tangler posix_mmap.flx = share/lib/std/posix/mmap.flx
-@tangler carray_test.flx = test/regress/rt/carray_test.flx
-@tangler carray_test.expect= test/regress/rt/carray_test.expect
+@tangler carray.flx         = share/lib/std/c/carray.flx
+@tangler cptr.flx           = share/lib/std/c/cptr.flx
+@tangler shared_ptr.flx     = share/lib/std/c/shared_ptr.flx
+@tangler address.flx        = share/lib/std/scalar/address.flx
+@tangler sort.flx           = share/lib/std/datatype/sort.flx
+@tangler posix_mmap.flx     = share/lib/std/posix/mmap.flx
+@tangler carray_test.flx    = test/regress/rt/carray_test.flx
+@tangler carray_test.expect = test/regress/rt/carray_test.expect
 
 @h1 C pointer
 @tangle cptr.flx
@@ -354,6 +355,28 @@ class Sort
   inline proc stl_sort[T with Tord[T]] (b:+T, e:+T) => stl_sort ( (< of (T * T)), b, e);
 
 }
+
+@h1 Reference counting pointer.
+@tangle shared_ptr.flx
+open class SharedPtr
+{
+   type shared_ptr[T] 
+     = "::std::shared_ptr<?1>"
+     requires Cxx_headers::memory
+   ;
+
+   ctor[T] shared_ptr[T] : 1 = "::std::shared_ptr<?1>()"; // nullptr
+   ctor[T] shared_ptr[T] : &T = "::std::shared_ptr<?1>($1)";
+
+   proc reset[T] : &shared_ptr[T] = "$1->reset();";
+   proc swap[T] : &shared_ptr[T] * &shared_ptr[T] = "$1->swap(*$2);";
+   fun get[T] : shared_ptr[T] -> &T = "$1.get()";
+   fun deref[T] : shared_ptr[T] -> T = "*$1";
+   fun use_count[T] : shared_ptr[T] -> long = "$1.use_count()";
+   fun unique[T] : shared_ptr[T] -> bool = "$1.unique";
+   fun is_null[T] : shared_ptr[T] -> bool = "(bool)$1";
+}
+@
 
 @h1 MMap
 Address mapping facility. Note: this is the posix function mmap().

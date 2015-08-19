@@ -49,6 +49,8 @@ let codegen_bsyms
   top_class
   topclass_props
 =
+  let shapes = ref Flx_set.StringSet.empty in 
+  let shape_map = Hashtbl.create 97 in
   let psh s = Flxg_file.output_string state.header_file s in
   let psb s = Flxg_file.output_string state.body_file s in
   let psp s = Flxg_file.output_string state.package_file s in
@@ -88,7 +90,7 @@ let codegen_bsyms
                   (* do we need tsubst vs ts t? *)
                   let tn t = Flx_name.cpp_typename state.syms bsym_table t in
                   let ts = List.map tn ts in
-                  Flx_csubst.csubst
+                  Flx_csubst.csubst shapes
                     (Flx_bsym.sr bsym)
                     (Flx_bsym.sr bsym)
                     s
@@ -213,7 +215,7 @@ let codegen_bsyms
 
   plh "\n//-----------------------------------------";
   plh  "//DEFINE FUNCTION CLASSES";
-  plh  (Flx_gen.gen_functions state.syms bsym_table);
+  plh  (Flx_gen.gen_functions state.syms bsym_table shapes shape_map);
   if state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
   print_endline "//DONE DEFINE FUNCTION CLASSES";
 
@@ -264,16 +266,12 @@ let codegen_bsyms
   (* These must be in order: build a list and sort it *)
   instantiate_instances plb `Body;
 
-  (* emit rtti file now so we can get the last_ptr_map and stick it
-   * somewhere in the thread frame *)
-  let last_ptr_map, tables = Flx_ogen.gen_offset_tables
-    state.syms
-    bsym_table
-    state.module_name
-    "&::flx::rtl::_address_ptr_map"
-  in
-   plr tables
-  ;
+  (*
+  print_endline "BEFORE RTTI GENERATION";
+  Flx_set.StringSet.iter 
+    (fun s-> print_endline ("SHAPE REQUIRED " ^ s))
+  (!shapes);
+  *)
 
 
 
@@ -306,7 +304,7 @@ let codegen_bsyms
   let topinits =
     [
       "  gcp(0)";
-      "  shape_list_head("^last_ptr_map^")";
+      "  shape_list_head("^Flx_name.cid_of_flxid state.module_name ^"_head_shape)";
     ]
     @
     List.map
@@ -367,6 +365,7 @@ let codegen_bsyms
     (Flxg_file.filename state.body_file)
     state.syms
     bsym_table
+    shapes shape_map
     label_info
     state.syms.counter
     (Flxg_file.open_out state.body_file)
@@ -416,6 +415,7 @@ let codegen_bsyms
     plb (Flx_gen_biface.gen_biface_bodies
       state.syms
       bsym_table
+      shapes shape_map
       label_map
       state.syms.bifaces);
 
@@ -494,6 +494,40 @@ let codegen_bsyms
     state.syms.power_table;
   end;
 
+  (*
+  print_endline "END OF CODE GENERATION";
+  Flx_set.StringSet.iter 
+    (fun s-> print_endline ("SHAPE REQUIRED " ^ s))
+  (!shapes);
+  Hashtbl.iter
+   (fun s t ->  print_endline ("SHAPE GENERATED " ^ s))
+  shape_map;
+  print_endline "START OF RTTI GENERATION";
+  *)
+
+  let extras = ref [] in 
+  Flx_set.StringSet.iter 
+    (fun s-> 
+       (*
+       print_endline ("Extra Shape " ^ s);
+       *)
+       try 
+         let t = Hashtbl.find shape_map s in
+         extras := t :: !extras;
+       with Not_found -> assert false
+    )
+  (!shapes);
+  let extras = !extras in
+
+  let _, tables = Flx_ogen.gen_offset_tables
+    state.syms
+    bsym_table
+    extras
+    state.module_name
+    "&::flx::rtl::_address_ptr_map"
+  in
+   plr tables
+  ;
 
   Flxg_file.close_out state.rtti_file;
   plp "flx";

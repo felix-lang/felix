@@ -149,19 +149,19 @@ let gen_make_ctor_arg rep ge tn syms bsym_table a : cexpr_t =
  | _ -> assert false
 *)
 
-let gen_make_ctor_arg rep ge tn syms bsym_table a : cexpr_t =
+let gen_make_ctor_arg rep ge tn syms bsym_table shape_map a : cexpr_t =
   let _,ct = a in
   match size ct with
   | 0 -> ce_atom "0"                (* NULL: for unit tuple *)
   | 1 -> ce_cast "void*" (ge a)     (* small value goes right into data slot *)
   | _ ->                            (* make a copy on the heap and return pointer *)
     let ctt = tn ct in
-    let ptrmap = Flx_pgen.direct_shape_of syms bsym_table tn ct in
+    let ptrmap = Flx_pgen.direct_shape_of syms bsym_table shape_map tn ct in
     ce_new [ce_atom "*PTF gcp"; ce_atom ptrmap; ce_atom "true"] ctt [ge a]
 
 
 (* Value constructor for non-constant (argumentful) variant constructor case *)
-let gen_make_nonconst_ctor ge tn syms bsym_table codt cidx a : cexpr_t =
+let gen_make_nonconst_ctor ge tn syms bsym_table shape_map codt cidx a : cexpr_t =
 (*
 print_endline ("gen_make_nonconst_ctor arg=" ^ Flx_print.sbe bsym_table a ^ 
 " type=" ^ Flx_print.sbt bsym_table codt); 
@@ -172,14 +172,14 @@ print_endline ("gen_make_nonconst_ctor arg=" ^ Flx_print.sbe bsym_table a ^
   | VR_int -> ce_call (ce_atom "/*VR_int*/") [ge a]
 
   | VR_nullptr -> 
-    let arg = gen_make_ctor_arg rep ge tn syms bsym_table a in
+    let arg = gen_make_ctor_arg rep ge tn syms bsym_table shape_map a in
     ce_call (ce_atom "FLX_VNR") [ce_atom (si cidx); arg]
 
   | VR_packed -> 
-    let arg = gen_make_ctor_arg rep ge tn syms bsym_table a in
+    let arg = gen_make_ctor_arg rep ge tn syms bsym_table shape_map a in
     ce_call (ce_atom "FLX_VR") [ce_atom (si cidx); arg]
 
   | VR_uctor ->  
-    let arg = gen_make_ctor_arg rep ge tn syms bsym_table a in
+    let arg = gen_make_ctor_arg rep ge tn syms bsym_table shape_map a in
     ce_call (ce_atom "::flx::rtl::_uctor_") [ce_atom (si cidx); arg] 
 

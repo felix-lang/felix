@@ -95,7 +95,9 @@ let gen_biface_header syms bsym_table modulename biface =
     "//EXPORT struct " ^ sname ^ "\n" ^
     "typedef ::flxusr::" ^ mname ^ "::" ^ classname ^ " " ^ sname ^ ";\n"
 
-let gen_fun_body syms bsym_table label_map kind index export_name =
+let gen_fun_body syms bsym_table (shapes: Flx_set.StringSet.t ref) shape_map
+    label_map kind index export_name 
+=
     let bsym =
       try Flx_bsym_table.find bsym_table index with Not_found ->
         failwith ("[gen_biface_body] Can't find index " ^ string_of_bid index)
@@ -135,7 +137,7 @@ let gen_fun_body syms bsym_table label_map kind index export_name =
       in
       let class_name = cpp_instance_name syms bsym_table index [] in
       let strargs =
-        let ge = gen_expr syms bsym_table label_map index [] [] in
+        let ge = gen_expr syms bsym_table shapes shape_map label_map index [] [] in
         match ps with
         | [] -> "0"
         | [{ptyp=t; pid=name; pindex=idx}] -> "0" ^ ", " ^ name
@@ -254,7 +256,7 @@ print_endline ("Export " ^ export_name ^ " properties " ^ string_of_properties p
 
       let rettypename = cpp_typename syms bsym_table ret in
       let class_name = cpp_instance_name syms bsym_table index [] in
-      let ge = gen_expr syms bsym_table label_map index [] [] in
+      let ge = gen_expr syms bsym_table shapes shape_map label_map index [] [] in
       let args = match ps with
       | [] -> ""
       | [{pid=name}] -> name
@@ -299,15 +301,15 @@ print_endline ("Export " ^ export_name ^ " properties " ^ string_of_properties p
     | _ -> failwith "Not implemented: export non-function/procedure"
     end
 
-let gen_biface_body syms bsym_table label_map biface = match biface with
+let gen_biface_body syms bsym_table shapes shape_map label_map biface = match biface with
   | BIFACE_export_python_fun (sr,index, export_name) ->
      "// PYTHON FUNCTION " ^ export_name ^ " body to go here??\n"
 
   | BIFACE_export_fun (sr,index, export_name) ->
-    gen_fun_body syms bsym_table label_map `Fun index export_name
+    gen_fun_body syms bsym_table shapes shape_map label_map `Fun index export_name
 
   | BIFACE_export_cfun (sr,index, export_name) ->
-    gen_fun_body syms bsym_table label_map `Cfun index export_name
+    gen_fun_body syms bsym_table shapes shape_map label_map `Cfun index export_name
 
   | BIFACE_export_type _ -> ""
 
@@ -405,8 +407,8 @@ let gen_biface_felix1 syms bsym_table modulename biface = match biface with
 let gen_biface_headers syms bsym_table bifaces modulename =
   cat "" (List.map (gen_biface_header syms bsym_table modulename) bifaces)
 
-let gen_biface_bodies syms bsym_table label_map bifaces =
-  cat "" (List.map (gen_biface_body syms bsym_table label_map) bifaces)
+let gen_biface_bodies syms bsym_table shapes shape_map label_map bifaces =
+  cat "" (List.map (gen_biface_body syms bsym_table shapes shape_map label_map) bifaces)
 
 let gen_biface_felix syms bsym_table bifaces modulename =
   let mname = Flx_name.cid_of_flxid modulename in

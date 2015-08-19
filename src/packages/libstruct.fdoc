@@ -83,6 +83,7 @@ include "std/c/cptr";
 include "std/c/cstdlib";
 include "std/c/carray";
 include "std/c/c_hack";
+include "std/c/shared_ptr";
 
 @
 
