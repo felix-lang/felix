@@ -61,7 +61,7 @@ open class Cptr
   gen cnew[T,A] : A -> &T = "new (?1)($a)";
 
   //$ Delete unmanaged C++ object from heap
-  proc delete : &T = "delete $1;";
+  proc delete[T] : &T = "delete $1;";
 
   //$ Allocate managed C++ object directly on heap.
   //$ Felix does not check the argument type, but C++ does.
