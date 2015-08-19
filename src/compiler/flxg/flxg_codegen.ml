@@ -514,7 +514,8 @@ let codegen_bsyms
        try 
          let t = Hashtbl.find shape_map s in
          extras := t :: !extras;
-       with Not_found -> assert false
+       with Not_found -> 
+         print_endline ("WARNING: can't find shape " ^ s ^ " in shape map")
     )
   (!shapes);
   let extras = !extras in

@@ -54,6 +54,20 @@ open class Cptr
     //$ NULL is the least element.
     fun < : cptr[T] * cptr[T] -> bool = "$1<$2";
   }
+
+  //$ Allocate unmanaged C++ object on the heap and return pointer.
+  //$ Felix does not check the argument type, but C++ does.
+  //$ The argument must select a suitable C++ constructor.
+  gen cnew[T,A] : A -> &T = "new (?1)($a)";
+
+  //$ Delete unmanaged C++ object from heap
+  proc delete : &T = "delete $1;";
+
+  //$ Allocate managed C++ object directly on heap.
+  //$ Felix does not check the argument type, but C++ does.
+  //$ The argument must select a suitable constructor.
+  gen gcnew[T,A] : A -> &T = "new (*PTF gcp, @?1,true) (?1)($a)";
+
 }
 
 open[T] Eq[cptr[T]];
