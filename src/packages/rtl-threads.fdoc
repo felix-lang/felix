@@ -508,6 +508,8 @@ public:
 @
 @tangle pthread_mutex.cpp
 #include "pthread_mutex.hpp"
+#include <thread>
+#include <chrono>
 
 namespace flx { namespace pthread {
 flx_mutex_t::flx_mutex_t(flx_mutex_t const&){} // uncopyable
@@ -530,7 +532,7 @@ void flx_usr_mutex_t::lock()
   while (!mutex.try_lock())
   {
     tc->yield();
-    ::std::this_thread::sleep_for (::std::chrono::nanoseconds (200))
+    ::std::this_thread::sleep_for (::std::chrono::nanoseconds (200));
   }
 }
 void flx_usr_mutex_t::unlock() { mutex.unlock(); }
