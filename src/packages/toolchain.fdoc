@@ -1115,7 +1115,7 @@ object toolchain_clang_linux (config:clang_config_t) implements toolchain_t =
        CxxCompiler::generic_cxx_gen_deps 
        (
           CCDEP=cxx_compiler,
-          CCFLAGS = "-MM" ! config.ccflags,
+          CCFLAGS = "-MM" ! "-std=c++11" ! config.ccflags,
           INCLUDE_DIRS=config.header_search_dirs,
           MACROS=config.macros,
           debugln = config.debugln
