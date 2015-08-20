@@ -492,7 +492,7 @@ public:
 };
 
 class PTHREAD_EXTERN flx_usr_mutex_t {
-  ::std::timed_mutex mutex;
+  ::std::mutex mutex;
   ::flx::pthread::thread_control_base_t *tc;
 public:
   flx_usr_mutex_t(flx_mutex_t const&) = delete; // uncopyable
