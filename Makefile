@@ -30,6 +30,15 @@ else
 SUDO=sudo
 endif
 
+ifeq ($(FLX_BUILD_TOOLCHAIN_FAMILY),gcc)
+FBUILD_PARAMS = --build-cc=gcc --build-cxx=g++
+endif
+
+ifeq ($(FLX_BUILD_TOOLCHAIN_FAMILY),clang)
+FBUILD_PARAMS = --build-cc=clang --build-cxx=clang++
+endif
+
+
 # Choose one: Linux or OSX
 # LPATH = LD_LIBRARY_PATH or, LPATH = DYLD_LIBRARY_PATH
 platform := $(shell uname -s)
