@@ -527,9 +527,10 @@ flx_mutex_locker_t::~flx_mutex_locker_t() { p->unlock(); }
 flx_usr_mutex_t::flx_usr_mutex_t (thread_control_base_t *tc_): tc(tc_) {}
 void flx_usr_mutex_t::lock()
 {
-  while (!mutex.try_lock_for(::std::chrono::nanoseconds (200)))
+  while (!mutex.try_lock())
   {
     tc->yield();
+    ::std::this_thread::sleep_for (::std::chrono::nanoseconds (200))
   }
 }
 void flx_usr_mutex_t::unlock() { mutex.unlock(); }
