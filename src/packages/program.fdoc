@@ -275,6 +275,11 @@ open class Errno
 
   // Unfortunately we get the crappy GNU version of strerror_r 
   // even if we don't define _GNU_SOURCE
+  // This stupidity returns a char*, instead of a void.
+  // Unfortunately moron compilers complain about not using
+  // the returned result, but there is no legal way to use a void.
+  // There is no way out.
+
 if PLAT_WIN32 do
   proc strerror_r: errno_t *  carray[char] * size  = "(void)strerror_s($2, $3, $1);" 
     requires C89_headers::string_h /* on Linux.. on OSX it's in stdio.h */
@@ -282,10 +287,7 @@ if PLAT_WIN32 do
 else
   proc strerror_r: errno_t * carray[char] * size  = 
     """
-    #pragma GCC diagnostic push
-    #pragma GCC diagnostic ignored "-Wunused-result"
-    (void)strerror_r($1, $2, $3);
-    #pragma GCC diagnostic pop
+    strerror_r($1, $2, $3);
     """ 
     requires C89_headers::string_h 
   ;
