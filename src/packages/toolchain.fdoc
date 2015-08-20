@@ -604,7 +604,7 @@ include "std/felix/flx_cxx";
 object toolchain_gcc_linux (config:clang_config_t) implements toolchain_t = 
 {
 
-  var cxx_compile_warning_flags = list$ 
+  var cxx_compile_warning_flags = list$ "-w",
     "-Wfatal-errors",
     "-Wno-invalid-offsetof",
     "-Wno-parentheses",
@@ -614,7 +614,7 @@ object toolchain_gcc_linux (config:clang_config_t) implements toolchain_t =
     "-Wno-sign-compare",
     "-Wno-missing-braces"
   ;
-  var c_compile_warning_flags = list[string]  "-Wfatal-errors";
+  var c_compile_warning_flags = list[string]$ "-w", "-Wfatal-errors";
   var c_compiler = "gcc";
   var cxx_compiler = "g++";
   var linker = "g++";
@@ -826,11 +826,11 @@ include "std/felix/flx_cxx";
 object toolchain_gcc_osx (config:clang_config_t) implements toolchain_t = 
 {
 
-  var cxx_compile_warning_flags = list$ 
+  var cxx_compile_warning_flags = list$ "-w",
     "-Wfatal-errors",
     "-Wno-invalid-offsetof"
   ;
-  var c_compile_warning_flags = list$ "-Wall", "-Wfatal-errors";
+  var c_compile_warning_flags = list[string]$ "-w","-Wfatal-errors";
   var c_compiler = "gcc";
   var cxx_compiler = "g++";
   var linker = "g++";
@@ -1044,8 +1044,7 @@ include "std/felix/flx_cxx";
 object toolchain_clang_linux (config:clang_config_t) implements toolchain_t = 
 {
 
-  var cxx_compile_warning_flags = list$ 
-    "-Wall",
+  var cxx_compile_warning_flags = list$  "-w",
     "-Wfatal-errors",
     "-Wno-invalid-offsetof",
     "-Wno-logical-op-parentheses",
@@ -1060,7 +1059,7 @@ object toolchain_clang_linux (config:clang_config_t) implements toolchain_t =
     "-Wno-c++11-narrowing",
     "-Wno-missing-braces"
   ;
-  var c_compile_warning_flags = list$ "-Wall", "-Wfatal-errors";
+  var c_compile_warning_flags = list[string]$ "-w","-Wfatal-errors";
   var c_compiler = "clang";
   var cxx_compiler = "clang++";
   var linker = "clang++";
@@ -1282,7 +1281,7 @@ object toolchain_clang_osx (config:clang_config_t) implements toolchain_t =
     "-Wno-return-type-c-linkage",
     "-Wno-invalid-offsetof"
   ;
-  var c_compile_warning_flags = list$ 
+  var c_compile_warning_flags = list$ "-w",
     "-Wfatal-errors", 
     "-Wno-array-bounds"
   ;
@@ -1511,7 +1510,7 @@ object toolchain_clang_iphoneos (config:clang_config_t) implements toolchain_t =
     "-Wno-return-type-c-linkage",
     "-Wno-invalid-offsetof"
   ;
-  var c_compile_warning_flags = list$ 
+  var c_compile_warning_flags = list$ "-w",
     "-Wfatal-errors", 
     "-Wno-array-bounds"
   ;
