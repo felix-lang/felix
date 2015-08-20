@@ -209,7 +209,7 @@ def make_c_builder(ctx, *args, includes=[], libpaths=[], flags=[], **kwargs):
             'optimize_flags': ['-fomit-frame-pointer']}),
         ({'posix'},
             {'warnings': ['all', 'fatal-errors'],
-            'flags': ['-fno-common', '-fvisibility=hidden', '-fno-strict-aliasing'] + flags,
+            'flags': ['-std=gnu89', '-fno-common', '-fvisibility=hidden', '-fno-strict-aliasing'] + flags,
             'optimize_flags': ['-fomit-frame-pointer']}),
         ({'windows'}, {
             'flags': ['/GR', '/MD', '/EHs', '/wd4291'] + flags,
@@ -244,7 +244,7 @@ def make_cxx_builder(ctx, *args, includes=[], libpaths=[], flags=[], **kwargs):
                 'no-return-type-c-linkage',
                 ],
             'flags': [
-                '-w','-fno-common', '-fno-strict-aliasing', 
+                '-w', '-fno-common', '-fno-strict-aliasing', 
                 '-fvisibility=hidden', '-std=c++11'] + flags,
             'optimize_flags': ['-fomit-frame-pointer']}),
         ({'posix'}, {
