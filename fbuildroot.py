@@ -398,6 +398,12 @@ def src_dir(ctx):
 
 # ------------------------------------------------------------------------------
 
+def hack_toolchain_name(s):
+  if s in "gcc-5": return "gcc"
+  if s in "clang","gcc": return s
+  return s
+  
+   
 @fbuild.db.caches
 def configure(ctx):
     """Configure Felix."""
@@ -483,11 +489,11 @@ def configure(ctx):
     # set the toolchain
     dst = ctx.buildroot / 'host/config/toolchain.fpc'
     if 'macosx' in target.platform:
-        toolchain = "toolchain_"+str(target.c.static)+"_osx"
+        toolchain = "toolchain_"+hack_toolchain_name(str(target.c.static))+"_osx"
     elif "windows" in target.platform:
         toolchain= "toolchain_msvc_win32"
     else:
-        toolchain = "toolchain_"+str(target.c.static)+"_linux"
+        toolchain = "toolchain_"+hack_toolchain_name(str(target.c.static))+"_linux"
     print("**********************************************")
     print("SETTING TOOLCHAIN " + toolchain)
     print("**********************************************")
