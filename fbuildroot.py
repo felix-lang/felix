@@ -399,8 +399,8 @@ def src_dir(ctx):
 # ------------------------------------------------------------------------------
 
 def hack_toolchain_name(s):
-  if s in "gcc-5": return "gcc"
-  if s in "clang","gcc": return s
+  if s in ["gcc-5",]: return "gcc"
+  if s in ["clang","gcc"]: return s
   return s
   
    
