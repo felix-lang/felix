@@ -484,7 +484,7 @@ def configure(ctx):
     dst = ctx.buildroot / 'host/config/toolchain.fpc'
     if 'macosx' in target.platform:
         toolchain = "toolchain_"+str(target.c.static)+"_osx"
-    elif "windows" in target_platform:
+    elif "windows" in target.platform:
         toolchain= "toolchain_msvc_win32"
     else:
         toolchain = "toolchain_"+str(target.c.static)+"_linux"
