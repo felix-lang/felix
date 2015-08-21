@@ -480,6 +480,21 @@ def configure(ctx):
     # overwrite or add *.fpc files to the config directory
     call('buildsystem.post_config.copy_user_fpcs', ctx)
 
+    # set the toolchain
+    dst = ctx.buildroot / 'host/config/toolchain.fpc'
+    if 'macosx' in target.platform:
+        toolchain = "toolchain_"+str(target.c.static)+"_osx"
+    elif "windows" in target_platform:
+        toolchain= "toolchain_msvc_win32"
+    else:
+        toolchain = "toolchain_"+str(target.c.static)+"_linux"
+    print("**********************************************")
+    print("SETTING TOOLCHAIN " + toolchain)
+    print("**********************************************")
+    f = open(dst,"w")
+    f.write ("toolchain: "+toolchain+"\n")
+    f.close()
+
     # make Felix representation of whole build config
     call('buildsystem.show_build_config.build',ctx)
 
@@ -553,11 +568,11 @@ def build(ctx):
         debug=ctx.options.debug,
         flags=['--test=' + ctx.buildroot])
 
-    print("[fbuild] [Felix] BUILDING PLUGINS")
-    call('buildsystem.plugins.build', phases.target, felix)
-
     # HACK!!!!!
     os.system("cp build/release/host/bin/bootflx build/release/host/bin/flx")
+
+    print("[fbuild] [Felix] BUILDING PLUGINS")
+    call('buildsystem.plugins.build', phases.target, felix)
 
     print("[fbuild] BUILD COMPLETE")
     return phases, iscr, felix
