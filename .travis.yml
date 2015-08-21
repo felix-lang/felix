@@ -6,6 +6,8 @@
 
 sudo: false
 
+dist: trusty
+
 addons:
   apt:
     sources:
