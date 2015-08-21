@@ -797,12 +797,14 @@ class FlxPrepBuild
     println$ "";
     println$ "# selective setup of pkg-db";
     println$ "  --setup=pkg                 setup using file";
+    println$ "  --toolchain=toolchain       specify toolchain to use";
     println$ "  --debug                     do stuff verbosely";
     println$ "";
     println$ "# Environment variables";
     println$ "";
     println$ "FLX_SHELL_ECHO=1              echo all shell callouts (system, popen)";
     println$ "FLX_DEBUG_FLX=1               make 'flx' explain its processing decisions";
+    println$ "BUILD_FLX_TOOLCHAIN_FAMILY=family   family=gcc or family=clang";
     println$ "";
     println$ "Purpose: setup new Felix target";
     println$ "";
@@ -816,6 +818,55 @@ class FlxPrepBuild
     println$ "Copies version, flxg, config db, and C++ headers from $source_dir if required";
   }
 
+  proc setup_toolchain(var toolchain:string, pkgdir:string)
+  {
+    // if the toolchain is specified, fix it
+    if toolchain != "" do 
+      begin
+        println$ "Write toolchain " + toolchain + " into package " + pkgdir/'toolchain.fpc';
+        var f = fopen_output (pkgdir/'toolchain.fpc');
+        write (f,"toolchain: " + toolchain +"\n");
+        fclose f;
+      end
+      println$ "WRITING SPECIFIED TOOLCHAIN PACKAGE: ****************************";
+    elif FileStat::fileexists (pkgdir/'toolchain.fpc') do
+      println$ "USING EXISTING TOOLCHAIN PACKAGE: ****************************";
+    else // guess toolchain and write it
+      var res, os = Shell::get_stdout("uname");
+      &os <- os.strip;
+      var compiler_family = Env::getenv "BUILD_FLX_TOOLCHAIN_FAMILY";
+      match os,compiler_family do
+      | "","" => &toolchain <- "toolchain_mscv_win32";
+      | "Linux","" => &toolchain <- "toolchain_gcc_linux";
+      | "Darwin","" => &toolchain <- "toolchain_clang_osx";
+
+      | "Linux","gcc" => &toolchain <- "toolchain_gcc_linux";
+      | "Linux","clang" => &toolchain <- "toolchain_clang_linux";
+      | "Darwin","gcc" => &toolchain <- "toolchain_gcc_osx";
+      | "Darwin","clang" => &toolchain <- "toolchain_clang_osx";
+
+      | _,_ => 
+        println$ "No toolchain specified in toolchain.fpc or with --toolchain switch";
+        println$ "  uname returns unknown OS: '" +os+'"';
+        println$ "Either:";
+        println$ "  (1) Set environment variable BUID_FLX_TOOLCHAIN_FAMILY=family where family=gcc or family=clang";
+        println$ "  (2) Set the toolchain.fpc file to read 'toolchain:toolchain_name";
+        println$ "  (3) use --toolchain=toolchain_name command line option";
+        println$ "  Note:toolchain name is form 'toolchain_<family>_<os>'";
+        println$ "    where os=Darwin or os=Linux or os=Win32";
+        System::exit(1);
+      done
+      begin
+        println$ "Write toolchain " + toolchain + " into package " + pkgdir/'toolchain.fpc';
+        var f = fopen_output (pkgdir/'toolchain.fpc');
+        write (f,"toolchain: " + toolchain +"\n");
+        fclose f;
+      end
+      println$ "USING GUESSED TOOLCHAIN PACKAGE: ****************************";
+    done
+    println$ load (pkgdir/'toolchain.fpc');
+  }
+
   typedef cmd_type = typeof (parse_args Empty[string]);
 
   noinline fun parse_args (args: list[string]) = 
@@ -826,6 +877,7 @@ class FlxPrepBuild
        target_bin="host",
        source_dir="build"/"release",
        source_bin="host",
+       toolchain="",
 
        clean_target_dir=false,
        clean_target_bin_dir=false,
@@ -855,6 +907,8 @@ class FlxPrepBuild
          &cmd.source_bin <- arg.[13 to];
        elif arg == "--debug" do
          &cmd.debug <- true;
+       elif arg == "--toolchain=" do
+         &cmd.toolchain <- arg.[12 to];
 
        // operation options: cleaning
        elif arg == "--clean-target-dir" do
@@ -904,14 +958,17 @@ class FlxPrepBuild
       System::exit(1);
     done
     var cmd = parse_args (tail xargs);
-    println$ "flx_build_prep v1.5";
-    println$ "  repository    = " + cmd.repo;
-    println$ "  target-dir    = " + cmd.target_dir;
-    println$ "  target-bin    = " + cmd.target_bin;
-    println$ "  source-dir    = " + cmd.source_dir;
-    println$ "  source-bin    = " + cmd.source_bin;
-    println$ "  setup-pkg     = " + cmd.setup_pkg;
+    println$ "flx_build_prep v1.6";
+    println$ "  repository       = " + cmd.repo;
+    println$ "  target-dir       = " + cmd.target_dir;
+    println$ "  target-bin       = " + cmd.target_bin;
+    println$ "  source-dir       = " + cmd.source_dir;
+    println$ "  source-bin       = " + cmd.source_bin;
+    println$ "  setup-pkg        = " + cmd.setup_pkg;
+    println$ "  toolchain (spec) = " + cmd.toolchain;
     flx_build (cmd);
+    var target_config_dir = cmd.target_dir/cmd.target_bin/"config" ;
+    setup_toolchain(cmd.toolchain,target_config_dir );
   }
 
 }
@@ -962,25 +1019,9 @@ class FlxRtlBuild
     var db = FlxPkgConfig::FlxPkgConfigQuery (list[string] pkgdir);
 
     gen getbootfield (field:string) => db.getpkgfield1 (boot_package, field);
-
-    var compiler = getbootfield "compiler"; 
-    var os = getbootfield "os"; 
-    var toolchain = getbootfield "toolchain"; 
-    println$ "BUILD TOOLCHAIN ****************************";
-    println$ "compiler     : " + str compiler;
-    println$ "os           : " + str os;
+    gen gettoolchain () => db.getpkgfield1 ("toolchain","toolchain");
+    var toolchain = gettoolchain();
     println$ "toolchain    : " + str toolchain;
-
-    // write the toolchain package, overwrites copied one!
-    if not FileStat::fileexists (pkgdir/'toolchain.fpc') 
-    begin
-      println$ "Write toolchain " + toolchain " into package " + pkgdir/'toolchain.fpc';
-      var f = fopen_output (pkgdir/'toolchain.fpc');
-      write (f,"toolchain: " + toolchain +"\n");
-      fclose f;
-    end
-    println$ "USER TOOLCHAIN: ****************************";
-    println$ load (pkgdir/'toolchain.fpc');
 
 
     var allpkgs = db.getclosure boot_package;
@@ -1107,7 +1148,7 @@ class FlxRtlBuild
     println$ "";
     println$ "# locations";
     println$ "";
-    println$ "  --pkg=bootpkg";
+    println$ "  --pkg=bootpkg (default: flx_rtl_core)";
     println$ "  --target-dir=target_dir     default: build/trial";
     println$ "  --target-bin=target_bin     default: host";
     println$ "  --tmp-dir=tmp               default: ./trial-tmp";
@@ -1168,22 +1209,7 @@ class FlxRtlBuild
          System::exit(1);
        done 
      done
-
-     // if no boot package is specified guess using shell command uname.
-     if cmd.boot_package == "" do
-       var res, os = Shell::get_stdout("uname");
-       &os <- os.strip;
-       match os with
-       | "" => &cmd.boot_package <- "build_flx_rtl_mscv_win32";
-       | "Linux" => &cmd.boot_package <- "build_flx_rtl_gcc_linux";
-       | "Darwin" => &cmd.boot_package <- "build_flx_rtl_clang_osx";
-       | x => 
-         println$ "No build package specified and uname returns unknown OS: '" +x+'"';
-         System::exit(1);
-       endmatch;
-       println$ "Guess --pkg="+cmd.boot_package;
-     done
-
+     if cmd.boot_package== "" perform &cmd.boot_package <- "flx_rtl_core";
      return cmd;
   }
 
@@ -1194,7 +1220,7 @@ class FlxRtlBuild
       System::exit(1);
     done
     var cmd = parse_args (tail xargs);
-    println$ "flx_build_rtl v1.2";
+    println$ "flx_build_rtl v1.6";
     println$ "  build-package = " + cmd.boot_package;
     println$ "  target-dir    = " + cmd.target_dir;
     println$ "  target-bin    = " + cmd.target_bin;
