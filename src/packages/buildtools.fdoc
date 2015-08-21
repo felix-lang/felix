@@ -907,7 +907,7 @@ class FlxPrepBuild
          &cmd.source_bin <- arg.[13 to];
        elif arg == "--debug" do
          &cmd.debug <- true;
-       elif arg == "--toolchain=" do
+       elif prefix(arg,"--toolchain=") do
          &cmd.toolchain <- arg.[12 to];
 
        // operation options: cleaning
