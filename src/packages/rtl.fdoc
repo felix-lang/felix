@@ -15,6 +15,9 @@
 @tangler flx_rtl_config.hpp               = $PWD/src/config/target/flx_rtl_config.hpp
 @tangler flx_rtl_config.h                 = $PWD/src/config/target/flx_rtl_config.h
 @tangler flx_rtl_core.fpc                 = $PWD/src/config/flx_rtl_core.fpc
+@tangler flx_thread_free_rtl_core.fpc     = $PWD/src/config/flx_thread_free_rtl_core.fpc
+@tangler unix_flx.fpc                     = $PWD/src/config/unix/flx.fpc
+@tangler win32_flx.fpc                     = $PWD/src/config/win32/flx.fpc
 
 @h1 Bootstrap builder.
 @tangle flx_rtl.py
@@ -814,8 +817,6 @@ RTL_EXTERN extern ::flx::gc::generic::gc_shape_t _address_ptr_map;
 //RTL_EXTERN extern ::flx::gc::generic::gc_shape_t _caddress_ptr_map;
 RTL_EXTERN extern ::flx::gc::generic::gc_shape_t slist_node_ptr_map;
 RTL_EXTERN extern ::flx::gc::generic::gc_shape_t slist_ptr_map;
-RTL_EXTERN extern ::flx::gc::generic::gc_shape_t flx_dynlink_ptr_map;
-RTL_EXTERN extern ::flx::gc::generic::gc_shape_t flx_libinst_ptr_map;
 
 }}
 #endif
@@ -829,46 +830,6 @@ RTL_EXTERN extern ::flx::gc::generic::gc_shape_t flx_libinst_ptr_map;
 #include <stddef.h>
 
 namespace flx { namespace rtl {
-// ********************************************************
-// OFFSETS for flx_dynlink_t
-// ********************************************************
-FLX_FINALISER(flx_dynlink_t)
-::flx::gc::generic::gc_shape_t flx_dynlink_ptr_map = {
-  NULL,
-  "rtl::flx_dynlink_t",
-  1,sizeof(flx_dynlink_t),
-  flx_dynlink_t_finaliser, 
-  0,
-  0,
-  ::flx::gc::generic::tblit<flx_dynlink_t>,::flx::gc::generic::tunblit<flx_dynlink_t>, 
-  ::flx::gc::generic::gc_flags_default,
-  0UL, 0UL
-};
-
-
-// ********************************************************
-// OFFSETS for flx_libinst 
-// ********************************************************
-static const std::size_t flx_libinst_offsets[4]={
-    offsetof(flx_libinst_t,thread_frame),
-    offsetof(flx_libinst_t,start_proc),
-    offsetof(flx_libinst_t,main_proc),
-    offsetof(flx_libinst_t,lib)
-};
-FLX_FINALISER(flx_libinst_t)
-static ::flx::gc::generic::offset_data_t const flx_libinst_offset_data = { 4, flx_libinst_offsets };
-::flx::gc::generic::gc_shape_t flx_libinst_ptr_map = {
-  &flx_dynlink_ptr_map,
-  "rtl::flx_libinst",
-  1,sizeof(flx_libinst_t),
-  flx_libinst_t_finaliser, 
-  &flx_libinst_offset_data,
-  ::flx::gc::generic::scan_by_offsets,
-  ::flx::gc::generic::tblit<flx_libinst_t>,::flx::gc::generic::tunblit<flx_libinst_t>, 
-  ::flx::gc::generic::gc_flags_default,
-  0UL, 0UL
-};
-
 
 
 // ********************************************************
@@ -881,7 +842,7 @@ static const std::size_t slist_node_offsets[2]={
 
 static ::flx::gc::generic::offset_data_t const slist_node_offset_data = { 2, slist_node_offsets };
 ::flx::gc::generic::gc_shape_t slist_node_ptr_map = {
-  &flx_libinst_ptr_map,
+  NULL,
   "rtl::slist_node_t",
   1,sizeof(slist_node_t),
   0, // no finaliser,
@@ -1224,3 +1185,37 @@ Requires: flx flx_gc
 Requires: flx_exceptions flx_pthread flx_async 
 Requires: re2 sqlite3 flx_dynlink demux faio
 @
+
+@tangle flx_thread_free_rtl_core.fpc
+Description: Felix Core Run Time Libraries (no threads, no async I/O)
+Requires: flx flx_gc flx_thread_free_run 
+Requires: flx_exceptions
+Requires: re2 flx_dynlink
+@
+
+@tangle unix_flx.fpc
+Name: flx
+Description: Felix core runtime support
+provides_dlib: -lflx_dynamic
+provides_slib: -lflx_static
+Requires: flx_gc flx_exceptions dl flx_pthread 
+library: rtl
+includes:  '"flx_rtl.hpp"'  <iostream> <cstdio> <cstddef> <cassert> <climits> <string>
+build_includes: build/release/share/lib/rtl
+macros: BUILD_RTL
+srcdir: src/rtl
+src: .*\.cpp
+@
+@tangle win32_flx.fpc
+Name: flx
+Description: Felix core runtime support
+provides_dlib: /DEFAULTLIB:flx_dynamic
+provides_slib: /DEFAULTLIB:flx_static
+Requires: flx_gc flx_exceptions flx_pthread
+includes:  '"flx_rtl.hpp"' <iostream> <cstdio> <cstddef> <cassert> <climits> <string>
+build_includes: build/release/share/lib/rtl
+macros: BUILD_RTL
+srcdir: src/rtl
+src: .*\.cpp
+@
+

@@ -1,7 +1,0 @@
-Name: flx
-Description: Felix core runtime support
-provides_dlib: /DEFAULTLIB:flx_dynamic
-provides_slib: /DEFAULTLIB:flx_static
-Requires: flx_gc flx_exceptions flx_pthread
-includes:  '"flx_rtl.hpp"' <iostream> <cstdio> <cstddef> <cassert> <climits> <string>
-

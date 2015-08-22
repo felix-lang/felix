@@ -72,7 +72,7 @@ public:
 // interface for drivers. there's more, create_frame, etc
   create_async_hooker_t *ptr_create_async_hooker;
 
-  typedef ::flx::rtl::flx_dynlink_t *(*link_library_t)(flx_config *c, ::flx::gc::generic::gc_profile_t*);
+  typedef ::flx::dynlink::flx_dynlink_t *(*link_library_t)(flx_config *c, ::flx::gc::generic::gc_profile_t*);
   typedef void (*init_ptr_create_async_hooker_t)(flx_config *, bool debug_driver);
   typedef int (*get_flx_args_config_t)(int argc, char **argv, flx_config* c);
 
@@ -240,8 +240,8 @@ class RTL_EXTERN flx_world {
 
   ::flx::pthread::thread_control_t *thread_control;
 
-  ::flx::rtl::flx_dynlink_t *library;
-  ::flx::rtl::flx_libinst_t *instance;
+  ::flx::dynlink::flx_dynlink_t *library;
+  ::flx::dynlink::flx_libinst_t *instance;
 
   struct async_sched *async_scheduler;
 
@@ -298,8 +298,8 @@ namespace flx { namespace run {
 static int do_final_cleanup(
   bool debug_driver,
   flx::gc::generic::gc_profile_t *gcp,
-  flx_dynlink_t *library,
-  flx_libinst_t *instance
+  ::flx::dynlink::flx_dynlink_t *library,
+  ::flx::dynlink::flx_libinst_t *instance
 )
 {
   flx::gc::generic::collector_t *collector = gcp->collector;
@@ -348,7 +348,7 @@ static void *get_stack_pointer() { void *x=(void*)&x; return x; }
 std::list<fthread_t*>*
 run_felix_pthread_ctor(
   flx::gc::generic::gc_profile_t *gcp,
-  flx_libinst_t *instance)
+  ::flx::dynlink::flx_libinst_t *instance)
 {
   //fprintf(stderr, "run_felix_pthread -- the MAIN THREAD\n");
   flx::gc::generic::collector_t *collector = gcp->collector;
@@ -380,8 +380,8 @@ void run_felix_pthread_dtor(
   bool debug_driver,
   flx::gc::generic::gc_profile_t *gcp,
   flx::pthread::thread_control_t *thread_control,
-  flx_dynlink_t *library,
-  flx_libinst_t *instance
+  ::flx::dynlink::flx_dynlink_t *library,
+  ::flx::dynlink::flx_libinst_t *instance
 )
 {
   if (debug_driver)
@@ -471,7 +471,7 @@ int flx_world::setup(int argc, char **argv) {
 
   // Create the usercode driver instance
   // NB: seems to destroy()ed in do_final_cleanup
-  instance = new (*gcp, flx_libinst_ptr_map, false) flx_libinst_t(debug_driver);
+  instance = new (*gcp, ::flx::dynlink::flx_libinst_ptr_map, false) ::flx::dynlink::flx_libinst_t(debug_driver);
   collector->add_root(instance);
   instance->create(
     library,

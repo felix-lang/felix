@@ -532,6 +532,29 @@ rebuild: extract
 		--build-all
 	rm flx
 
+special-prep:
+	# =========================================================
+	# special prep
+	# =========================================================
+	build/release/host/bin/flx --felix=build.fpc  src/tools/flx_build_prep \
+		--source-dir=build/release \
+		--source-bin=host \
+		--target-dir=build/release \
+		--target-bin=special \
+		--copy-pkg-db \
+		--copy-config-headers \
+		--copy-compiler
+
+special-rtl:
+	# =========================================================
+	# special rtl
+	# =========================================================
+	${LPATH}=${BUILDROOT}/host/lib/rtl build/release/host/bin/flx_build_rtl \
+		--target-dir=build/release \
+		--target-bin=special \
+		--pkg=flx_thread_free_rtl_core
+
+ 
 sdltest:
 	build/release/host/bin/flx --felix=build.fpc --force -c -od sdlbin demos/sdl/edit_buffer
 	build/release/host/bin/flx --felix=build.fpc --force -c -od sdlbin demos/sdl/edit_display

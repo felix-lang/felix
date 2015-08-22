@@ -905,10 +905,10 @@ class FlxPrepBuild
          &cmd.source_dir <- arg.[13 to];
        elif prefix(arg,"--source-bin=") do
          &cmd.source_bin <- arg.[13 to];
-       elif arg == "--debug" do
-         &cmd.debug <- true;
        elif prefix(arg,"--toolchain=") do
          &cmd.toolchain <- arg.[12 to];
+       elif arg == "--debug" do
+         &cmd.debug <- true;
 
        // operation options: cleaning
        elif arg == "--clean-target-dir" do
@@ -1220,12 +1220,11 @@ class FlxRtlBuild
       System::exit(1);
     done
     var cmd = parse_args (tail xargs);
-    println$ "flx_build_rtl v1.6";
+    println$ "flx_build_rtl v1.7";
     println$ "  build-package = " + cmd.boot_package;
     println$ "  target-dir    = " + cmd.target_dir;
     println$ "  target-bin    = " + cmd.target_bin;
-    println$ "  target-bin    = " + cmd.tmp_dir;
-    println$ "  tmp-dir    = " + cmd.target_bin;
+    println$ "  tmp-dir       = " + cmd.tmp_dir;
     flx_build (cmd);
   }
 
