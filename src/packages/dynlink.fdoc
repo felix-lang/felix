@@ -453,6 +453,7 @@ DYNLINK_EXTERN extern ::flx::gc::generic::gc_shape_t flx_libinst_ptr_map;
 #include <stdio.h>
 #include <cstring>
 #include <cstdlib>
+#include <stddef.h>
 
 namespace flx { namespace dynlink {
 
