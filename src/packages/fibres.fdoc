@@ -63,19 +63,19 @@ open class Fibres
     new ::std::list<::flx::rtl::fthread_t*>)""";
   ;
   proc delete_fibre_scheduler : fibre_scheduler = """
-    $1->gcp->collector->remove_root($1->ft);
+    if ($1->ft) $1->collector->remove_root($1->ft);
     for(
-     ::std::list<::flx::rtl::fthread_t*>::iterator p = $1.active->begin();
+     ::std::list<::flx::rtl::fthread_t*>::iterator p = $1->active->begin();
      p != $1->active->end();
      p++
     )
-    $1->gcp->collector->remove_root(p);
+    $1->collector->remove_root(*p);
     delete $1->active; delete $1->ft; delete $1;
   """;
 
   //$ Spawn a fibre on a given scheduler with a given continuation.
   proc spawn_fibre: fibre_scheduler * fthread = """
-    $1->gcp->collector->add_root($2);
+    $1->collector->add_root($2);
     $1->active->push_back($2);
     $1->frun(); 
   """;
