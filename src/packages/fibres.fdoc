@@ -83,7 +83,8 @@ open class Fibres
   proc frun: (1->0) = "::flx::rtl::executil::frun (PTF gcp, $1);" 
     requires header '#include "flx_executil.hpp"'
   ;
-  
+
+ 
   //$ The type of the stop state of the fibre scheduler.
   //$ terminated: the scheduler is terminated.
   //$ blocked: the scheduler is out of threads to run.
@@ -256,6 +257,20 @@ open class Schannel
   }
   proc broadcast[T] (chan:oschannel[T], v:T) { 
     broadcast (C_hack::cast[schannel[T]] chan, v); 
+  }
+
+  // Very high power though not very efficient conversion
+  // from ischannel to iterator.
+  // Given i: ischannel[T] you can just write
+  // for j in i do .. done
+  gen iterator[T] (i:ischannel[T]) () : opt[T] = {
+  next:>
+    var y = None[T];
+    frun { var x = read i; y = Some x; };
+    match y do
+    | Some _ => yield y; goto next;
+    | None => return y;
+    done
   }
 }
 
