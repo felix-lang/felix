@@ -80,6 +80,10 @@ open class Fibres
     $1->frun(); 
   """;
 
+  proc frun: (1->0) = "::flx::rtl::executil::frun (PTF gcp, $1);" 
+    requires header '#include "flx_executil.hpp"'
+  ;
+  
   //$ The type of the stop state of the fibre scheduler.
   //$ terminated: the scheduler is terminated.
   //$ blocked: the scheduler is out of threads to run.
