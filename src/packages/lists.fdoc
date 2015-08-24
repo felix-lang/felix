@@ -606,7 +606,7 @@ Returns option.
     
 @h1 Streaming list
 @tangle list.flx
-  instance[T] Streamable[list[T],T] {
+  instance[T] Iterable[list[T],T] {
   //$ Convert a list to a stream.
     gen iterator (var xs:list[T]) () = {
       while true do

@@ -107,7 +107,7 @@ obtained by a call to a closure of the @{iterator} generator.
 When that object finally returns @{None} to signal the end
 of data, the loop terminates.
 @tangle array_class.flx
-  instance Streamable[t,v] {
+  instance Iterable[t,v] {
     //$ Stream  value iterator.
     gen iterator(xs:t) () : opt[v] = 
     {

@@ -1427,7 +1427,7 @@ class StrDict[T] {
    //$ Get the optional first key in the dictionary.
    fun first (x:strdict) : opt[string * T] => x.get_ge("");
 
-   instance Streamable[strdict, string * T] {
+   instance Iterable[strdict, string * T] {
      //$ Stream iterator scanning through all key value pairs
      //$ in the dictionary, in key order.
      gen iterator (x:strdict) () : opt[string * T]  = {

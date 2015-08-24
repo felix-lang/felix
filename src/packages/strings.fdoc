@@ -653,7 +653,7 @@ like variant which uses an @{option} type.
   
 @h2 Construe @{string} as stream of @{char}
 @tangle string.flx
-  instance Streamable[string, char] {
+  instance Iterable[string, char] {
     gen iterator(var x:string) () = {
       for var i in 0 upto x.len.int - 1 do yield Some (x.[i]); done
       return None[char];
@@ -1364,7 +1364,7 @@ open class Re2 {
 
   gen iterator (re2:string, var target:string) => iterator (RE2 re2, target);
 
-  instance Streamable[RE2 * string, varray[string]] {
+  instance Iterable[RE2 * string, varray[string]] {
     gen iterator (r:RE2, var target:string) () : opt[varray[string]] = {
       var emptystring = "";
       var l = len target;

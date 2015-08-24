@@ -6,8 +6,12 @@
 //$ The container type just needs an iterator method.
 //$ The iterator method returns a generator which
 //$ yields the values stored in the container.
-open class Streamable[C1, V] {
+class Iterable [C1, V] {
   virtual fun iterator : C1 -> 1 -> opt[V];
+}
+
+class Streamable[C1, V] {
+  inherit Iterable[C1,V];
 
   // check if a streamable x is a subset of a set y.
   virtual fun \subseteq[C2 with Set[C2,V]] (x:C1, y:C2) = 
