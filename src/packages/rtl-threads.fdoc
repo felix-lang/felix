@@ -998,7 +998,7 @@ int pthread_cond_uswait(
 #if !FLX_CYWGIN
   ts.tv_sec = t1 / 1000000uL;
   ts.tv_nsec = (t1 % 1000000uL) * 1000;
-#if FLX_CYGWIN
+#else FLX_CYGWIN
   clock_gettime(CLOCK_REALTIME,&ts);
 #endif
   return pthread_cond_timedwait(cv,m,&ts);
