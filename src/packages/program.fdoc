@@ -338,7 +338,8 @@ class PosixProcess {
 
   instance Process_class[Posix, process_status_t] 
   {
-    gen popen_in: string -> Cstdio::ifile = 'popen($1.c_str(), "r")';
+    gen popen_in: string -> Cstdio::ifile = 'popen($1.c_str(), "r")' 
+      requires C89_headers::stdio_h;
     gen pclose: Cstdio::ifile -> process_status_t = "pclose($1)";
   }
   inherit Process_class[Posix, process_status_t];
