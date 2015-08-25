@@ -49,45 +49,53 @@
  else:
   tangle("#define FLX_HAVE_DLOPEN 0")
 
-@if pyconfig.TARGET_CXX.options.MACOSX:
-  tangle("#define FLX_MACOSX 1")
- else:
-  tangle("#define FLX_MACOSX 0")
-
-@if pyconfig.TARGET_CXX.options.LINUX:
-  tangle("#define FLX_LINUX 1")
- else:
-  tangle("#define FLX_LINUX 0")
-
-@if pyconfig.TARGET_CXX.options.WIN32:
-  tangle("#define FLX_WIN32 1")
- else:
-  tangle("#define FLX_WIN32 0")
-
-@if pyconfig.TARGET_CXX.options.WIN64:
-  tangle("#define FLX_WIN64 1")
- else:
-  tangle("#define FLX_WIN64 0")
-
 @if pyconfig.TARGET_CXX.options.CYGWIN:
   tangle("#define FLX_CYGWIN 1")
+  tangle("#define FLX_MACOSX 0")
+  tangle("#define FLX_LINUX 0")
+  tangle("#define FLX_WIN32 0")
+  tangle("#define FLX_WIN64 0")
+  tangle("#define FLX_POSIX 1")
+  tangle("#define FLX_SOLARIS 0")
+  tangle("#define FLX_HAVE_MSVC 0")
  else:
   tangle("#define FLX_CYGWIN 0")
+  if pyconfig.TARGET_CXX.options.MACOSX:
+   tangle("#define FLX_MACOSX 1")
+  else:
+   tangle("#define FLX_MACOSX 0")
 
-@if pyconfig.TARGET_CXX.options.POSIX:
-  tangle("#define FLX_POSIX 1")
- else:
-  tangle("#define FLX_POSIX 0")
+   if pyconfig.TARGET_CXX.options.LINUX:
+    tangle("#define FLX_LINUX 1")
+   else:
+    tangle("#define FLX_LINUX 0")
 
-@if pyconfig.TARGET_CXX.options.SOLARIS:
-  tangle("#define FLX_SOLARIS 1")
- else:
-  tangle("#define FLX_SOLARIS 0")
+   if pyconfig.TARGET_CXX.options.WIN32:
+    tangle("#define FLX_WIN32 1")
+   else:
+    tangle("#define FLX_WIN32 0")
 
-@if pyconfig.HAVE_MSVC:
-  tangle("#define FLX_HAVE_MSVC 1")
- else:
-  tangle("#define FLX_HAVE_MSVC 0")
+   if pyconfig.TARGET_CXX.options.WIN64:
+    tangle("#define FLX_WIN64 1")
+   else:
+    tangle("#define FLX_WIN64 0")
+
+   if pyconfig.TARGET_CXX.options.POSIX:
+    tangle("#define FLX_POSIX 1")
+   else:
+    tangle("#define FLX_POSIX 0")
+
+   if pyconfig.TARGET_CXX.options.SOLARIS:
+    tangle("#define FLX_SOLARIS 1")
+   else:
+    tangle("#define FLX_SOLARIS 0")
+
+   if pyconfig.HAVE_MSVC:
+    tangle("#define FLX_HAVE_MSVC 1")
+   else:
+    tangle("#define FLX_HAVE_MSVC 0")
+
+
 
 @if pyconfig.TARGET_CXX.options.HAVE_KQUEUE_DEMUXER:
   tangle("#define FLX_HAVE_KQUEUE_DEMUXER 1")
@@ -136,7 +144,10 @@ Name: demux
 Description: Event handling
 Comment: Generated during configuration
 
-@if pyconfig.HAVE_MSVC:
+@if pyconfig.CYGWIN:
+   tangle("provides_dlib: -ldemux_dynamic")
+   tangle("provides_slib: -ldemux_static")
+ elif pyconfig.HAVE_MSVC:
    tangle("provides_dlib: /DEFAULTLIB:demux_dynamic")
    tangle("requires_dlibs: /DEFAULTLIB:ws2_32 /DEFAULTLIB:mswsock")
    tangle("provides_slib: /DEFAULTLIB:demux_static")

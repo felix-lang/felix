@@ -94,7 +94,7 @@ using namespace flx::run;
 #endif
 
 // Actually on Cygwin it might be cygflx_async_dynamic .. not sure
-#if FLX_HAVE_MSVC
+#if !FLX_CYGWIN && FLX_HAVE_MSVC
    #define FLX_ASYNC_DLL_NAME "flx_async_dynamic"
 #else
    #define FLX_ASYNC_DLL_NAME "libflx_async_dynamic"
