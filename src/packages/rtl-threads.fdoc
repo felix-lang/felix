@@ -988,18 +988,17 @@ int pthread_cond_uswait(
   unsigned long us
 )
 {
-#if !FLX_CYGWIN
+#if FLX_CYGWIN
+  struct timespec ts;
+  clock_gettime(CLOCK_REALTIME,&ts);
+#else
   timeval tv;
   gettimeofday(&tv,NULL);
   unsigned long t0 = tv.tv_sec * 1000000uL + tv.tv_usec;
   unsigned long t1 = t0 + us;
-#endif
   struct timespec ts;
-#if !FLX_CYWGIN
   ts.tv_sec = t1 / 1000000uL;
   ts.tv_nsec = (t1 % 1000000uL) * 1000;
-#else FLX_CYGWIN
-  clock_gettime(CLOCK_REALTIME,&ts);
 #endif
   return pthread_cond_timedwait(cv,m,&ts);
 }

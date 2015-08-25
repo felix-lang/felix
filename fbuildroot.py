@@ -245,7 +245,7 @@ def make_cxx_builder(ctx, *args, includes=[], libpaths=[], flags=[], **kwargs):
                 ],
             'flags': [
                 '-w', '-fno-common', '-fno-strict-aliasing', 
-                '-fvisibility=hidden', '-std=c++11', '-D_POSIX'] + flags,
+                '-fvisibility=hidden', '-std=c++11'] + flags,
             'optimize_flags': ['-fomit-frame-pointer']}),
         #({'cygwin'}, {
         #    'warnings': ['fatal-errors', 'no-invalid-offsetof','no-parentheses'],
@@ -254,7 +254,8 @@ def make_cxx_builder(ctx, *args, includes=[], libpaths=[], flags=[], **kwargs):
         #    'optimize_flags': ['-fomit-frame-pointer']}),
         ({'posix'}, {
             'warnings': ['fatal-errors', 'no-invalid-offsetof','no-parentheses'],
-            'flags': ['-std=gnu++11', '-D_POSIX', '-w','-fno-common', '-fvisibility=hidden', '-fno-strict-aliasing'] + flags,
+            'flags': ['-std=gnu++11', '-D_POSIX', '-w',
+               '-fno-common', '-fvisibility=hidden', '-fno-strict-aliasing'] + flags,
             'optimize_flags': ['-fomit-frame-pointer']}),
         ({'windows'}, {
             'flags': ['/GR', '/MD', '/EHs', '/wd4291'] + flags,
