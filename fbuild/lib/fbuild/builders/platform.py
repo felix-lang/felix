@@ -140,6 +140,8 @@ def shared_lib_suffix(ctx, platform=None):
     platform = platform if platform else guess_platform(ctx)
     if 'windows' in platform:
         return '.dll'
+    elif 'cygwin' in platform:
+        return '.dll'
     elif 'darwin' in platform:
         return '.dylib'
     else:
