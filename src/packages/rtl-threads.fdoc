@@ -989,7 +989,8 @@ int pthread_cond_uswait(
 )
 {
   timeval tv;
-  gettimeofday(&tv,NULL);
+  //gettimeofday(&tv,NULL);
+  clock_gettime(CLOCK_REALTIME,&tv);
   unsigned long t0 = tv.tv_sec * 1000000uL + tv.tv_usec;
   unsigned long t1 = t0 + us;
   timespec ts;
