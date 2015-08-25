@@ -29,6 +29,7 @@ archmap = {
     'solaris':   {'posix', 'solaris'},
     'sunos':     {'posix', 'solaris', 'sunos'},
     'cygwin':    {'posix', 'cygwin'},
+    'cygwin_nt-10.0':    {'posix', 'cygwin'},
     'nocygwin':  {'posix', 'cygwin', 'nocygwin'},
     'mingw':     {'posix', 'mingw'},
     'windows':   {'windows', 'win32'},
