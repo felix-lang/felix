@@ -50,7 +50,7 @@ else
 	endif
 endif
 ifndef LPATH
-	$(error Unrecognized kernel name -- Unable to detect setting for LPATH)
+$(error Unrecognized kernel name -- Unable to detect setting for LPATH)
 endif
 
 help:
