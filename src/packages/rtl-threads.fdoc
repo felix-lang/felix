@@ -988,14 +988,14 @@ int pthread_cond_uswait(
   unsigned long us
 )
 {
-  timeval tv;
+  //timeval tv;
   //gettimeofday(&tv,NULL);
-  clock_gettime(CLOCK_REALTIME,&tv);
-  unsigned long t0 = tv.tv_sec * 1000000uL + tv.tv_usec;
-  unsigned long t1 = t0 + us;
-  timespec ts;
-  ts.tv_sec = t1 / 1000000uL;
-  ts.tv_nsec = (t1 % 1000000uL) * 1000;
+  //unsigned long t0 = tv.tv_sec * 1000000uL + tv.tv_usec;
+  //unsigned long t1 = t0 + us;
+  struct timespec ts;
+  //ts.tv_sec = t1 / 1000000uL;
+  //ts.tv_nsec = (t1 % 1000000uL) * 1000;
+  clock_gettime(CLOCK_REALTIME,&ts);
   return pthread_cond_timedwait(cv,m,&ts);
 }
 
