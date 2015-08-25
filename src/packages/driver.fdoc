@@ -77,7 +77,8 @@ using namespace flx::run;
 
 // non async drivers don't depend on faio<-demux<-winsock
 // and so aren't linked with mswsock and ws2_32
-#if FLX_WIN32 && FLX_SUPPORT_ASYNC
+// Cygwin doesn't use windows sockets either
+#if !FLX_CYGWIN && FLX_WIN32 && FLX_SUPPORT_ASYNC
   #include "demux_iocp_demuxer.hpp"
   // needed to perform win socket io (calls WSAInit). Must happen
   // before iocp_demuxer is instantiated and (I assume) happen
