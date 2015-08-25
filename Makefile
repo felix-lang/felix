@@ -50,7 +50,8 @@ else
 	endif
 endif
 ifndef LPATH
-$(error Unrecognized kernel name -- Unable to detect setting for LPATH)
+$(warning Unrecognized kernel name -- Unable to detect setting for LPATH)
+  LPATH = LD_LIBRARY_PATH
 endif
 
 help:
