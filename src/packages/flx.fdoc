@@ -1465,6 +1465,13 @@ noinline proc processing_stage1
     // the mac uses DYLD_LIBRARY_PATH instead of LD_LIBRARY_PATH
     if PLAT_MACOSX do
       dflt_flx_run = list$ "env","DYLD_LIBRARY_PATH="+config*.FLX_TARGET_DIR+"/lib/rtl:$DYLD_LIBRARY_PATH";
+    elif PLAT_CYGWIN do 
+      // hack: we need to set BOTH since PATH is used for load time dynamic linkage
+      // but LD_LIBRARY_PATH for run time (dlopen style) dynamic linkage
+      dflt_flx_run = list$ "env",
+        "LD_LIBRARY_PATH="+config*.FLX_TARGET_DIR+"/lib/rtl:$LD_LIBRARY_PATH",
+        "PATH="+config*.FLX_TARGET_DIR+"/lib/rtl:$PATH"
+    ;
     else
       dflt_flx_run = list$ "env", "LD_LIBRARY_PATH="+config*.FLX_TARGET_DIR+"/lib/rtl:$LD_LIBRARY_PATH";
     done
