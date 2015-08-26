@@ -173,7 +173,9 @@ headers: (.*/)?([^/\\]+\.hpp)>${2}
 build_includes: build/release/share/lib/rtl
 srcdir: src/demux
 src: [^/\\]+\.cpp
-@if pyconfig.TARGET_CXX.options.WIN32:
+@if pyconfig.TARGET_CXX.options.CYGWIN:
+   tangle("src: poll/.*\\.cpp")
+ elif pyconfig.TARGET_CXX.options.WIN32:
    tangle("src: win/.*\\.cpp")
  elif pyconfig.TARGET_CXX.options.SOLARIS:
    tangle("src: evtport/.*\\.cpp")
@@ -183,10 +185,6 @@ src: [^/\\]+\.cpp
    tangle("src: kqueue/.*\\.cpp")
  if pyconfig.TARGET_CXX.options.POSIX:
    tangle("src: posix/.*\\.cpp")
-
-
-
-
 
 @select(tangler('host/lib/rtl/demux_sockety_config.hpp'))
 #ifndef __DEMUX_SOCKETY_CONFIG_H__
