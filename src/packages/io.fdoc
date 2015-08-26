@@ -482,7 +482,7 @@ open class Cstdio {
   //$ C standard IO as instance of Input_text_file.
   instance Input_text_file[ifile] {
     requires package "flx_ioutil";
-    gen fopen_input: string -> ifile = 'fopen($1.c_str(),"rt")';
+    gen fopen_input: string -> ifile = 'fopen($1.c_str(),"rb")';
     gen valid : ifile -> bool = "$1!=(FILE*)0";
     proc fclose: ifile = '(void)fclose($1);';
     gen load: ifile -> string = "::flx::rtl::ioutil::load_file($1)";
@@ -493,7 +493,7 @@ open class Cstdio {
   //$ C standard IO as instance of Output_text_file.
   instance Output_text_file[ofile] {
     requires package "flx_ioutil";
-    gen fopen_output: string -> ofile = 'fopen($1.c_str(),"wt")';
+    gen fopen_output: string -> ofile = 'fopen($1.c_str(),"wb")';
     gen fopen_append: string -> ofile = 'fopen($1.c_str(),"a")';
     gen valid : ofile -> bool = "$1!=(FILE*)0";
     proc fclose: ofile = '(void)fclose($1);';
