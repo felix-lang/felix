@@ -1,0 +1,1 @@
+set PATH="c:\cygwin64\usr\local\lib\felix\felix-15.08.15\host\bin";%PATH%

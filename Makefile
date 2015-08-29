@@ -588,6 +588,12 @@ evtdemo:
 	# run
 	demos/embed/evtdemo
 
+
+
+setup-turkey:
+	"c:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat"
+
+
 .PHONY : test extras bootstrap configure packages grammar
 .PHONY : doc install websites-linux  release install-bin
 .PHONY : copy-doc gen-doc gendoc fbuild speed tarball
