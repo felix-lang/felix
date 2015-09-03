@@ -302,13 +302,16 @@ class Input_file[input_file]
   virtual gen readln: input_file -> string;
 
   //$ Read line excluding end of line marks.
-  virtual gen iterator(f:input_file): opt[string] =>
-    match readln input_file with
-    | "" => None
+  virtual gen iterator(f:input_file) (): opt[string] => 
+    match readln f with
+    | "" => None[string]
     | text => text.rstrip.Some
     endmatch
   ;
-   
+
+  instance Iterable[input_file, string] {
+     gen iterator (f:input_file) () => Input_file[input_file]::iterator f ();
+  }
 
   //$ Check for end of file.
   virtual gen feof : input_file -> bool;
@@ -442,6 +445,9 @@ open class Cstdio {
 }
 
 open Input_file[Cstdio::ifile];
+// note we cannot open Iterable here because it would cause
+// a conflict ;(
+
 open Output_file[Cstdio::ofile];
 //$ DEBUG OUTPUT UTIITIES! 
 //$ DO NOT REQUIRE THREAD FRAME.
