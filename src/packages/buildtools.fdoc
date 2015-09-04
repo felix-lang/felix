@@ -1265,6 +1265,7 @@ toolchain_plugin:      toolchain_clang_osx
 toolchain_plugin:      toolchain_clang_iphoneos
 toolchain_plugin:      toolchain_gcc_linux
 toolchain_plugin:      toolchain_gcc_osx
+toolchain_plugin:      toolchain_msvc_win32
 tool:      flx_cp
 tool:      flx_ls
 tool:      flx_grep
@@ -1413,6 +1414,7 @@ class FlxCoreBuild
       target_dir/target_bin/'lib'/'rtl'/'toolchain_gcc_osx' + obj_extn, 
       target_dir/target_bin/'lib'/'rtl'/'toolchain_clang_linux' + obj_extn, 
       target_dir/target_bin/'lib'/'rtl'/'toolchain_gcc_linux' + obj_extn, 
+      target_dir/target_bin/'lib'/'rtl'/'toolchain_msvc_win32' + obj_extn, 
       target_dir/target_bin/'lib'/'rtl'/'dflx' + obj_extn, 
       target_dir/'share'/'src'/'tools'/'flx.flx'
     );

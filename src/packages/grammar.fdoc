@@ -1741,14 +1741,14 @@ syntax functions {
   sadjective := "pure" =># "'Pure";
 
   //$ Function may be dependent on variables in its enclosing context.
-  sadjective := "impure" =># "'ImPure";
+  sadjective := "impure" =># "'Impure";
 
   //$ Function returns a result for all argument values.
   sadjective := "total" =># "'Total";
 
   //$ Function may fail for some argument values.
   //$ Equivalent to a function with a non-tautologous but unknown pre-condition.
-  sadjective := "partial" =># "'Partal";
+  sadjective := "partial" =># "'Partial";
 
   //$ Specifies a method, in an object definition only.
   sadjective := "method" =># "'Method";

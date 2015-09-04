@@ -1,0 +1,212 @@
+\documentclass{article}
+\usepackage{minted}
+\title{Felix Language Elements}
+\author{John Skaller}
+\begin{document}
+\maketitle
+\tableofcontents
+\section{Functions}
+In Felix functions are a group of constructions used to model mathematical
+functions. Here is a simple example:
+\begin{minted}{felix}
+fun f (x:uint) => x + x;
+\end{minted}
+This is a {\em perfect} function because it is total,
+is guarranteed to terminate, and depends only on its parameters.
+
+A function which depends only on its parameters is said to be
+a {\em pure} function. Here is a function which is not pure:
+\begin{minted}{felix}
+var x = 1;
+fun g() => x;
+\end{minted}
+The value returned by this function like construction depends
+on a variable. If the variable is changed, the function will
+return a different value. This function is {\em impure} and
+is sometimes called an {\em observer} or {\em accessor}.
+
+A function which returns a proper value for each element
+of the domain type is said to be {\em total}.
+In Felix, not all functions are total. For example:
+\begin{minted}{felix}
+\fun h(x:int) => x + x;
+\end{minted}
+This is only a {\em partial} function, because if the argument
+is more than half the maximum \verb%int% or less than half
+the minimum, the result is unspecified.
+
+Some partial function can be made total by restricting the
+domain to a suitable subset. However often there is no suitable
+type available and we may use a {\em precondition} instead.
+For example:
+\begin{minted}{felix}
+fun h (x:int where x< MAXINT / 2 and x > MININT /2) => x + x;
+\end{minted} 
+Preconditions may serve as documentation or be tested
+dynamically at the function call site.
+
+Sometimes semantic constraints may be specified like this:
+\begin{minted}{felix}
+fun f (x:double) : double expect result <= 1.0 => sin x;
+\end{minted}
+The expect expression introduces a {\em postcondition}
+which serves as a constraint on the implementation.
+The postcondition may be checked before returning the
+result or serve as documentation.
+
+When both a pre and post condition are given,
+together they consititue a {\em contract}. For example
+\begin{minted}{felix}
+fun h (
+  x:int 
+    where x< MAXINT / 2 and x > MININT /2) 
+  : int 
+    expect if x < 0 then result < 0 else result >= 0 endif
+  => 
+   x + x
+;
+\end{minted}
+The contract says if you provide a suitably small argument
+then the result will be the same sign as the argument.
+A contract is a constraint on the implementation of the
+function, but not usually a complete specification.
+
+A contract has two interpretations: first, as a checkable
+precondtion and postcondition, this is the interpretation
+used by Felix.
+
+But second, it may be viewed as merely saying that if the precondition is
+met then the postcondition will be, and in particular
+not implying that an argument not satifying the precondition
+is a wrong value to give to the function. That is, the
+contract can be checked but if a value outside the specified
+precondition is supplied to the function, the contract is
+satisfied. Felix allows you to say this by writing the contract
+as an implication in the postcondition:
+
+\begin{minted}{felix}
+fun h (
+  x:int : int 
+    expect 
+      x< MAXINT / 2 and x > MININT /2) 
+    implies
+       if x < 0 then result < 0 else result >= 0 endif
+  => 
+   x + x
+;
+\end{minted}
+
+In Felix, the semantics of a function with side-effect are
+unspecified. It is common to write such illegal functions
+for debugging purposes:
+\begin{minted}{felix}
+fun f (x:int) =
+{
+  var y = x + 1;
+  println$ x..str + "+1"+y.str;
+  return y;
+}
+\end{minted}
+
+There is a kind of function which is allowed to have side-effects
+called a {\em generator}. The prototypical generator is the
+\verb%rand()% function. See below for more information on generators.
+
+Because a function is intended to return a useful result,
+a function may not be used as a statement:
+\begin{minted}{felix}
+sin x; // NOT ALLOWED
+\end{minted}
+
+A kind of function is allowed as a statement is allowed
+to be used as a statement is called a {\em procedure}.
+Procedurs do not return a useful result, and
+so may not be used in expressions.
+
+If the result of a function is assigned to a variable,
+and the variable is not used, then whole assignment
+is eliminated. This rule applies to generators too
+and is guarranteed. In the case of generators, any side-effects
+will be lost: indeed this is the very purpose of the
+assurance. For example, a generator may start a thread
+and return a handle to it, if the handle is not used then
+the assigment is removed and the thread is not started.
+This is a form of automatic conditional compilation which makes it safe to 
+use generators with heavy side effects just in case their result may
+be useful.
+\subsection{Lifting from C}
+As well as writing functions in Felix, you can also lift functions
+from C. For example this encoding:
+\begin{minted}{felix}
+fun add1 : int -> int = "$1+1";
+\end{minted}
+specified the Felix function \verb%add1% is defined in C++.
+The notation \verb%$1% means the first argument. In the example:
+\begin{minted}{felix}
+fun sum : int * int -> int = "$1+$2";
+\end{minted}
+the first and second components of the single tuple argument
+are used. Felix is a C++ code generator and calculates this function
+by emitting the defining C++ code with the \verb%$1% and
+\verb%$2% strings replaced by the code evaluating the first and second
+components of the argument tuple.
+
+\subsection{evaluation strategy}
+For a simple function and a call like
+\begin{minted}{felix}
+fun f (x:int, y:int) => x;
+println$ f (1, y / 0);
+\end{minted}
+felix does not specify whether the argument components are evaluated
+before the function is called or not. When a component is
+evaluated before the call it is called {\em pass by value} or 
+{\em eager evaluation}. When the component is evaluated on demand
+when it is used inside the function, it is called {\em pass by name}
+or {\em lazy evaluation}.
+
+In C, all function and most operator arguments are evaluated
+eagerly. However the arguments to the short cut operators
+are evaluated lazily. This allows one to write
+\begin{minted}{c}
+a == 0 ? 0 : b / a
+a != 0 && a / b > 0
+\end
+for example. In fact contrary to popular belief, procedural languages
+are intrinsically lazy, and function argument evaluation is a 
+very special case. Indeed, the very concept of {\em flow of control}
+is a manifestation of lazy evaluation.
+
+In Felix, assigments and initialisations of {\em var} bound variables
+are evaluated, if at all, when control flows through them:
+\begin{minted}{felix}
+var x = 1;
+var y = x + 1;
+printn$ y;
+\end{felix}
+We set \verb%x% first, then \verb%y%, then print it.
+
+If you wish to force eager evaluation of a function argument
+you can use a \verb%var% to enforce it:
+\begin{minted}{felix}
+fun f (var x:int) => x + x;
+println$ f a;
+
+fun f (x:int) = { var y = x; return y + y; }
+println$ g a;
+
+fun f (x:int) => x + x;
+var e = a;
+println$ f e;
+\end{minted}
+All these methods are equivalent and ensure the argument \verb%a% 
+is evaluated and stored in parameter \verb%x% before the main body
+of the function is evaluated.
+
+Lazy evaluation can be enforced too, by passing a closure.
+However this requires the type of the function be changed.
+
+
+\section{Procedures}
+\section{Generators}
+Stuff.
+\end{document}

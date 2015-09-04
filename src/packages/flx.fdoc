@@ -43,7 +43,8 @@ class FlxPluginSymbols
       toolchain_clang_iphoneos,
       toolchain_clang_linux,
       toolchain_gcc_osx,
-      toolchain_gcc_linux
+      toolchain_gcc_linux,
+      toolchain_msvc_win32
     ;
     // flx
     static-link-symbol dflx_create_thread_frame in plugin dflx;
@@ -2778,6 +2779,7 @@ include "std/felix/toolchain/clang_iphoneos";
 include "std/felix/toolchain/clang_linux";
 include "std/felix/toolchain/gcc_osx";
 include "std/felix/toolchain/gcc_linux";
+include "std/felix/toolchain/msvc_win32";
 
 
 open FlxCache;
@@ -2827,6 +2829,7 @@ class BootFlx
        | "toolchain_clang_linux" => toolchain_clang_linux
        | "toolchain_gcc_osx" => toolchain_gcc_osx
        | "toolchain_gcc_linux" => toolchain_gcc_linux
+       | "toolchain_msvc_win32" => toolchain_msvc_win32
        | x => 
          Dynlink::load-plugin-func1 [toolchain_t,clang_config_t] ( dll-name=x, setup-str="")
        endmatch
