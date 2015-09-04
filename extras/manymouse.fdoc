@@ -11,6 +11,7 @@
 @tangler win32_manymouse.fpc    = $PWD/src/config/win32/manymouse.fpc
 @tangler macosx_manymouse.fpc   = $PWD/src/config/macosx/manymouse.fpc
 @tangler flx_manymouse_config.h = $PWD/src/config/target/flx_manymouse_config.h
+@tangler manymouse.flx          = share/lib/std/io/manymouse.flx
 
 @h1 Manymouse
 Code to support multiple mice on various platforms.
@@ -3960,6 +3961,45 @@ const ManyMouseDriver *ManyMouseDriver_xinput2 = 0;
 /* end of x11_xinput2.c ... */
 
 @
+@h1 ManyMouse
+@tangle manymouse.flx
+
+class ManyMouse
+{
+  requires package "manymouse";
+
+  enum ManyMouseEventType =
+    MANYMOUSE_EVENT_ABSMOTION,
+    MANYMOUSE_EVENT_RELMOTION,
+    MANYMOUSE_EVENT_BUTTON,
+    MANYMOUSE_EVENT_SCROLL,
+    MANYMOUSE_EVENT_DISCONNECT,
+    MANYMOUSE_EVENT_MAX
+  ;
+
+  struct ManyMouseEvent
+  {
+    etype:ManyMouseEventType;
+    device : uint;
+    item: uint;
+    value: int;
+    minval: int;
+    maxval : int;
+  };
+
+  gen  ManyMouse_Init: 1 -> int;
+  fun  ManyMouse_DriverName: 1 -> string = 
+    "::std::string(ManyMouse_DriverName())"
+  ;
+  proc ManyMouse_Quit: 1;
+  fun  ManyMouse_DeviceName: uint -> string =
+    "::std::string(ManyMouse_DeviceName($1))"
+  ;
+  gen  ManyMouse_PollEvent: &ManyMouseEvent -> int = 
+    "ManyMouse_PollEvent((ManyMouseEvent*)(void*)$1)"
+  ;
+}
+
 @h1 Config
 @tangle unix_manymouse.fpc
 Name: manymouse
