@@ -17,6 +17,7 @@
 @tangler toolchain_clang_linux.flx    = share/lib/plugins/toolchain_clang_linux.flx
 @tangler toolchain_clang_osx.flx      = share/lib/plugins/toolchain_clang_osx.flx
 @tangler toolchain_clang_iphoneos.flx = share/lib/plugins/toolchain_clang_iphoneos.flx
+@tangler toolchain_msvc_win32.flx     = share/lib/plugins/toolchain_msvc_win32.flx
 @tangler flx_plugin.flx               = share/lib/plugins/flx_plugin.flx
 
 @tangler build_flx_rtl_gcc_linux.fpc         = $PWD/src/config/build_flx_rtl_gcc_linux.fpc
@@ -24,6 +25,7 @@
 @tangler build_flx_rtl_clang_linux.fpc       = $PWD/src/config/build_flx_rtl_clang_linux.fpc
 @tangler build_flx_rtl_clang_osx.fpc         = $PWD/src/config/build_flx_rtl_clang_osx.fpc
 @tangler build_flx_rtl_clang_iphoneos.fpc    = $PWD/src/config/build_flx_rtl_clang_iphoneos.fpc
+@tangler build_flx_rtl_msvc_win32.fpc        = $PWD/src/config/build_flx_rtl_msvc_win32.fpc
 
 
 @h1 Toolchain support
@@ -1496,7 +1498,230 @@ object toolchain_clang_osx (config:clang_config_t) implements toolchain_t =
 
 @h2 Object for MSVC++ on Windows
 @tangle msvc_win32.flx
-// STUB: Not yet implemented!
+@tangle clang_iphoneos.flx
+include "std/felix/toolchain_interface";
+include "std/felix/toolchain_clang_config";
+include "std/felix/flx_cxx";
+
+object toolchain_clang_iphoneos (config:clang_config_t) implements toolchain_t = 
+{
+
+  var cxx_compile_warning_flags = list$ 
+    "-w", // turn off all the warnings (but not hard errors)
+    "-Wfatal-errors", // stop compiling on the first hard error
+    "-Wno-return-type-c-linkage",
+    "-Wno-invalid-offsetof"
+  ;
+  var c_compile_warning_flags = list$ "-w",
+    "-Wfatal-errors", 
+    "-Wno-array-bounds"
+  ;
+
+  var sdk = Env::getenv "SDK";
+  var arch = Env::getenv "ARCH";
+  var c_compiler = "clang";
+  var cxx_compiler = "clang++";
+  var linker = "clang++";
+
+  var ccflags_for_dynamic_link = list[string]("-dynamiclib", "-arch", arch, "-isysroot", sdk);
+  // should be $(xcrun --sdk iphoneos --show-sdk-path). how to choose other SDK?
+  var base_c_compile_flags = 
+    "-g"! "-c" ! "-arch" ! arch ! "-isysroot" ! sdk ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! (c_compile_warning_flags+config.ccflags)
+  ;
+  var base_cxx_compile_flags = 
+    "-g"! "-c" ! "-arch" ! arch ! "-isysroot" ! sdk ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! "-std=c++11" !  (cxx_compile_warning_flags+config.ccflags)
+  ;
+
+  method fun whatami () => "toolchain_clang_iphoneos";
+  method fun host_os () => "OSX";
+  method fun target_os () => "iPhoneOS";
+  method fun cxx_compiler_vendor () => "clang";
+
+  method fun dependency_extension () => ".d";
+  method fun executable_extension () => "";
+  method fun static_object_extension () => ".o";
+  method fun dynamic_object_extension () => ".os";
+  method fun static_library_extension () => ".a";
+  method fun dynamic_library_extension () => ".dylib";
+  method fun pathname_separator () => "/";
+  method fun debug_flags () => list[string] "-g";
+  method fun get_base_c_compile_flags () => base_c_compile_flags;
+  method fun get_base_cxx_compile_flags () => base_cxx_compile_flags;
+
+// Boilerplate 
+
+  method gen c_dependency_generator (spec:(src:string)) : int * string =
+  {
+     var result, data = 
+       CxxCompiler::generic_cxx_gen_deps 
+       (
+          CCDEP=c_compiler,
+          CCFLAGS = "-MM" ! config.ccflags,
+          INCLUDE_DIRS=config.header_search_dirs,
+          MACROS=config.macros,
+          debugln = config.debugln
+       )
+       (spec.src)
+     ;
+     return result,  data;
+  }
+
+  method gen cxx_dependency_generator (spec:(src:string)) : int * string =
+  {
+     var result, data = 
+       CxxCompiler::generic_cxx_gen_deps 
+       (
+          CCDEP=cxx_compiler,
+          CCFLAGS = "-MM" ! config.ccflags,
+          INCLUDE_DIRS=config.header_search_dirs,
+          MACROS=config.macros,
+          debugln = config.debugln
+       )
+       (spec.src)
+     ;
+     return result, data;
+  }
+
+  method gen dependency_parser (data:string) : list[string] =>
+     CxxCompiler::generic_dependency_parser data
+  ;
+  
+  method gen c_static_object_compiler (spec:(dst:string, src:string)) : int = 
+  {
+    var result = 
+      CxxCompiler::generic_cxx_compile_for_static
+      (
+        CCOBJ_STATIC_LIB = c_compiler, 
+        CCFLAGS = base_c_compile_flags,
+        INCLUDE_DIRS = config.header_search_dirs,
+        MACROS = config.macros,
+        SPEC_OBJ_FILENAME = "-o ",
+        debugln = config.debugln
+      ) 
+      (spec.src, spec.dst)
+    ;
+    return result;
+  }
+
+  method gen c_dynamic_object_compiler (spec:(dst:string, src:string)) : int = 
+  {
+    var result = 
+      CxxCompiler::generic_cxx_compile_for_dynamic 
+      (
+        CCOBJ_DLLIB = c_compiler, 
+        CCFLAGS = "-fPIC" ! base_c_compile_flags,
+        INCLUDE_DIRS = config.header_search_dirs,
+        MACROS = config.macros,
+        SPEC_OBJ_FILENAME = "-o ",
+        debugln = config.debugln
+      ) 
+      (spec.src, spec.dst)
+    ;
+    return result;
+  }
+
+
+  method gen cxx_static_object_compiler (spec:(dst:string, src:string)) : int = 
+  {
+    var result = 
+      CxxCompiler::generic_cxx_compile_for_static
+      (
+        CCOBJ_STATIC_LIB = cxx_compiler, 
+        CCFLAGS = base_cxx_compile_flags,
+        INCLUDE_DIRS = config.header_search_dirs,
+        MACROS = config.macros,
+        SPEC_OBJ_FILENAME = "-o ",
+        debugln = config.debugln
+      ) 
+      (spec.src, spec.dst)
+    ;
+    return result;
+  }
+
+  method gen cxx_static_library_object_compiler (spec:(dst:string, src:string)) : int = 
+  {
+    var result = 
+      CxxCompiler::generic_cxx_compile_for_static
+      (
+        CCOBJ_STATIC_LIB = cxx_compiler, 
+        CCFLAGS = base_cxx_compile_flags,
+        INCLUDE_DIRS = config.header_search_dirs,
+        MACROS = "-DFLX_STATIC_LINK"+config.macros,
+        SPEC_OBJ_FILENAME = "-o ",
+        debugln = config.debugln
+      ) 
+      (spec.src, spec.dst)
+    ;
+    return result;
+  }
+
+
+  method gen cxx_dynamic_object_compiler (spec:(dst:string, src:string)) : int = 
+  {
+    var result = 
+      CxxCompiler::generic_cxx_compile_for_dynamic 
+      (
+        CCOBJ_DLLIB = linker, 
+        CCFLAGS = "-fPIC" ! base_cxx_compile_flags,
+        INCLUDE_DIRS = config.header_search_dirs,
+        MACROS = config.macros,
+        SPEC_OBJ_FILENAME = "-o ",
+        debugln = config.debugln
+      ) 
+      (spec.src, spec.dst)
+    ;
+    return result;
+  }
+
+  method gen static_library_linker (spec:(dst:string, srcs:list[string])): int =
+  {
+    var result =
+      CxxCompiler::generic_static_library
+      (
+        CCLINK_STATIC_LIB = "ar", 
+        CCFLAGS = list[string]("-rcs"),
+        SPEC_LIB_FILENAME = "",
+        debugln = config.debugln
+      )  
+      (spec.srcs, spec.dst)
+    ;
+    return result;
+  } 
+
+  method gen executable_linker  (spec:(dst:string, srcs:list[string])) : int = 
+  {
+    var result =
+      CxxCompiler::generic_link_static
+      (
+        CCLINK_STATIC = linker,
+        CCFLAGS = Empty[string],
+        SPEC_EXE_FILENAME = "-o ",
+        LINK_STRINGS = config.library_search_dirs + config.static_libraries,
+        debugln = config.debugln
+      )  
+      (spec.srcs, spec.dst)
+    ;
+    return result;
+  }
+
+  method gen dynamic_library_linker (spec:(dst:string,srcs:list[string])) : int = 
+  {
+    var result = 
+      CxxCompiler::generic_link_dynamic 
+      (
+        CCLINK_DLLIB = linker,
+        CCFLAGS = ccflags_for_dynamic_link,
+        EXT_SHARED_OBJ = #dynamic_library_extension,
+        SPEC_EXE_FILENAME = "-o ",
+        LINK_STRINGS = config.library_search_dirs + config.dynamic_libraries, 
+        debugln = config.debugln
+      )
+      (spec.srcs, spec.dst)
+    ;
+    return result;
+  }
+}
+
 @
 
 @h2 Object for clang on iPhone
@@ -1801,9 +2026,8 @@ fun setup(config_data:string) = {
 }
 
 export fun setup of (string) as "toolchain_clang_osx_setup";
-
-
 @
+
 @h2 iPhone Plugin
 @tangle toolchain_clang_iphoneos.flx
 include "std/felix/toolchain/clang_iphoneos";
@@ -1819,8 +2043,23 @@ fun setup(config_data:string) = {
 }
 
 export fun setup of (string) as "toolchain_clang_iphoneos_setup";
+@
 
+@h2 MSVC++ Plugin
+@tangle toolchain_msvc_win32.flx
+include "std/felix/toolchain/msvc_win32";
 
+// varies osx vs linus,  gcc vs clang
+
+export fun toolchain_msvc_win32 of (clang_config_t) as "toolchain_msvc_win32";
+
+fun setup(config_data:string) = {
+   C_hack::ignore (config_data); // due to bug in Felix
+  //eprintln$ "Setup toolchain msvc_win32 " + config_data;
+  return 0;
+}
+
+export fun setup of (string) as "toolchain_msvc_win32_setup";
 @
 
 @h1 Flx Plugin
