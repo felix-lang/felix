@@ -309,9 +309,11 @@ class Input_file[input_file]
     endmatch
   ;
 
+  /*
   instance Iterable[input_file, string] {
      gen iterator (f:input_file) () => Input_file[input_file]::iterator f ();
   }
+  */
 
   //$ Check for end of file.
   virtual gen feof : input_file -> bool;
