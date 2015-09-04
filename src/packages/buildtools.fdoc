@@ -1259,7 +1259,6 @@ web_plugin:      flx2html
 web_plugin:      fpc2html
 web_plugin:      ocaml2html
 web_plugin:      py2html
-toolchain_plugin:     flx_plugin
 toolchain_plugin:      toolchain_clang_linux
 toolchain_plugin:      toolchain_clang_osx
 toolchain_plugin:      toolchain_clang_iphoneos
@@ -1394,7 +1393,7 @@ class FlxCoreBuild
     done
   }
 
-  proc build_flx (target_dir:string, target_bin:string)
+  proc build_flx (target_dir:string, target_bin:string, toolchain_plugins:list[string])
   {
     var obj_extn = ".o"; // HACK!!!!!!!! 
     println$ "dflx  -> dflx object file";
@@ -1405,19 +1404,18 @@ class FlxCoreBuild
       System::exit 1; 
     done
 
+    var toolchain_objects = map (fun (p:string) =>
+      target_dir/target_bin/'lib'/'rtl'/p + obj_extn) 
+      toolchain_plugins
+    ; 
+ 
     println$ "Build flx. Note: requires --build-toolchain-plugins";
     println$ "flx  -> flx";
     result = Flx_client::runflx$ list ('[flx]','--test='+target_dir, '--static','-c',
-      '-ox', target_dir/target_bin/'bin'/'flx', 
-      target_dir/target_bin/'lib'/'rtl'/'toolchain_clang_osx' + obj_extn, 
-      target_dir/target_bin/'lib'/'rtl'/'toolchain_clang_iphoneos' + obj_extn, 
-      target_dir/target_bin/'lib'/'rtl'/'toolchain_gcc_osx' + obj_extn, 
-      target_dir/target_bin/'lib'/'rtl'/'toolchain_clang_linux' + obj_extn, 
-      target_dir/target_bin/'lib'/'rtl'/'toolchain_gcc_linux' + obj_extn, 
-      target_dir/target_bin/'lib'/'rtl'/'toolchain_msvc_win32' + obj_extn, 
-      target_dir/target_bin/'lib'/'rtl'/'dflx' + obj_extn, 
-      target_dir/'share'/'src'/'tools'/'flx.flx'
-    );
+      '-ox', target_dir/target_bin/'bin'/'flx') + toolchain_objects +
+      (target_dir/target_bin/'lib'/'rtl'/'dflx' + obj_extn) +
+      (target_dir/'share'/'src'/'tools'/'flx.flx')
+    ;
     if result != 0 do 
       println$ "exe build failed";
       System::exit 1; 
@@ -1436,8 +1434,8 @@ class FlxCoreBuild
     var tools = getbootfields ("tool");
 
     // at this point, the build proceeds using host tools, but only target sources.
-    if cmd.build_toolchain_plugins call build_plugins(cmd.target_dir, cmd.target_bin, toolchain_plugins);
-    if cmd.build_flx call build_flx(cmd.target_dir, cmd.target_bin);
+    if cmd.build_toolchain_plugins call build_plugins(cmd.target_dir, cmd.target_bin, toolchain_plugins+"flx_plugin");
+    if cmd.build_flx call build_flx(cmd.target_dir, cmd.target_bin, toolchain_plugins);
     if cmd.build_flx_tools call build_flx_tools(cmd.target_dir, cmd.target_bin, flx_tools);
     if cmd.build_web_plugins call build_plugins(cmd.target_dir, cmd.target_bin, web_plugins);
     if cmd.build_tools call build_exes(cmd.target_dir, cmd.target_bin, tools);
