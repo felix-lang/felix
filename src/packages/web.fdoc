@@ -1657,7 +1657,6 @@ class Logger {
   and returns clousre accepting log_message writeing to files specified
   """
   gen simple_log_handler_fn (l:log):(log_message)->void = {
-    open Output_text_file;
     var log_handle = open_log(l); //fopen_output (l.path+"/"+l.name);
     return (proc (message:log_message)  {
               log_handle = rotate_when_larger_than_max_size(log_handle,l);
