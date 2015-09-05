@@ -1564,32 +1564,32 @@ object toolchain_msvc_win32 (config:clang_config_t) implements toolchain_t =
   
   method gen c_static_object_compiler (spec:(dst:string, src:string)) : int = 
   {
-    var result = shell$ "cl.exe" ! "/TC"+spec.src ! "/Fo"+spec.dst+".obj" ! Empty[string];
+    var result = shell$ "cl.exe" ! "/TC"+spec.src ! "/Fo"+spec.dst ! Empty[string];
     return result;
   }
 
   method gen c_dynamic_object_compiler (spec:(dst:string, src:string)) : int = 
   {
-    var result =shell$ "cl.exe" ! "/TC"+spec.src ! "/Fo"+spec.dst+".obj" ! Empty[string]; 
+    var result =shell$ "cl.exe" ! "/TC"+spec.src ! "/Fo"+spec.dst ! Empty[string]; 
     return result;
   }
 
 
   method gen cxx_static_object_compiler (spec:(dst:string, src:string)) : int = 
   {
-    var result =shell$ "cl.exe" ! spec.src ! "/Fo"+spec.dst+".obj" ! Empty[string]; 
+    var result =shell$ "cl.exe" ! spec.src ! "/Fo"+spec.dst ! Empty[string]; 
     return result;
   }
 
   method gen cxx_static_library_object_compiler (spec:(dst:string, src:string)) : int = 
   {
-    var result =shell$ "cl.exe" ! spec.src ! "/Fo"+spec.dst+".obj" ! Empty[string]; 
+    var result =shell$ "cl.exe" ! spec.src ! "/Fo"+spec.dst ! Empty[string]; 
     return result;
   }
 
   method gen cxx_dynamic_object_compiler (spec:(dst:string, src:string)) : int = 
   {
-    var result =shell$ "cl.exe" ! spec.src ! "/Fo"+spec.dst+".obj" ! Empty[string]; 
+    var result =shell$ "cl.exe" ! spec.src ! "/Fo"+spec.dst ! Empty[string]; 
     return result;
   }
 
