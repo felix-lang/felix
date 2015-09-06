@@ -1265,6 +1265,7 @@ toolchain_plugin:      toolchain_clang_iphoneos
 toolchain_plugin:      toolchain_gcc_linux
 toolchain_plugin:      toolchain_gcc_osx
 toolchain_plugin:      toolchain_msvc_win32
+cygwin_toolchain_plugin:      toolchain_msvc_cygwin
 tool:      flx_cp
 tool:      flx_ls
 tool:      flx_grep
@@ -1429,13 +1430,29 @@ class FlxCoreBuild
     var db = FlxPkgConfig::FlxPkgConfigQuery (list[string] pkgdir);
     gen getbootfields (field:string) => db.getpkgfield (cmd.boot_package, field);
     var toolchain_plugins = getbootfields ("toolchain_plugin");
+    var cygwin_toolchain_plugins = getbootfields ("cygwin_toolchain_plugin");
     var web_plugins = getbootfields ("web_plugin");
     var flx_tools = getbootfields ("flx_tool");
     var tools = getbootfields ("tool");
 
     // at this point, the build proceeds using host tools, but only target sources.
-    if cmd.build_toolchain_plugins call build_plugins(cmd.target_dir, cmd.target_bin, toolchain_plugins+"flx_plugin");
-    if cmd.build_flx call build_flx(cmd.target_dir, cmd.target_bin, toolchain_plugins);
+    if PLAT_CYGWIN do // requires cygwin dll and headers so only on Cygwin!
+      if cmd.build_toolchain_plugins call 
+        build_plugins(cmd.target_dir, cmd.target_bin, 
+        toolchain_plugins+cygwin_toolchain_plugins+"flx_plugin")
+      ;
+      if cmd.build_flx call 
+        build_flx(cmd.target_dir, cmd.target_bin, toolchain_plugins+cygwin_toolchain_plugins)
+      ;
+    else
+      if cmd.build_toolchain_plugins call 
+        build_plugins(cmd.target_dir, cmd.target_bin, toolchain_plugins+"flx_plugin")
+      ;
+      if cmd.build_flx call 
+        build_flx(cmd.target_dir, cmd.target_bin, toolchain_plugins)
+      ;
+    done
+
     if cmd.build_flx_tools call build_flx_tools(cmd.target_dir, cmd.target_bin, flx_tools);
     if cmd.build_web_plugins call build_plugins(cmd.target_dir, cmd.target_bin, web_plugins);
     if cmd.build_tools call build_exes(cmd.target_dir, cmd.target_bin, tools);
