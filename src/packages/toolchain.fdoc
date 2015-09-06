@@ -1506,10 +1506,10 @@ class Cygwin
   requires package "cygwin";
 
   // outputs absolute filenames: src,dst
-  private gen p_cygwin_to_win32: +char * +char * size = 
+  private gen p_cygwin_to_win32: +char * +char * size -> int = 
      "cygwin_conv_path(CCP_POSIX_TO_WIN_A || CCP_ABSOLUTE,$1,$2,$3)"
   ;
-  private gen p_win32_to_cygwin: +char * +char * size = 
+  private gen p_win32_to_cygwin: +char * +char * size -> int = 
     "cygwin_conv_path(CCP_WIN_TO_POSIX)A || CCP_ABSOLUTE,$1,$2,$3)"
   ;
 
@@ -1517,9 +1517,9 @@ class Cygwin
   fun cygwin_to_win32 (var s:string) = 
   {
      var outbuf : +char;
-     var psiz = p_cygwin_to_win32 (s.cstr(),outbuf,0uz);
+     var psiz = p_cygwin_to_win32 (s.cstr,outbuf,0uz);
      outbuf = array_alloc[char] psiz; 
-     var err = p_cygwin_to_win32 (s.cstr(),outbuf,psiz);
+     var err = p_cygwin_to_win32 (s.cstr,outbuf,psiz.size);
      assert err == 0; // hackery!
      var t = string outbuf;
      free outbuf;
@@ -1532,9 +1532,9 @@ class Cygwin
   fun win32_to_cygwin(var s:string) = 
   {
      var outbuf : +char;
-     var psiz = p_win32_to_cygwin(s.cstr(),outbuf,0uz);
+     var psiz = p_win32_to_cygwin(s.cstr,outbuf,0uz);
      outbuf = array_alloc[char] psiz; 
-     var err = p_win32_cygwin(s.cstr(),outbuf,psiz);
+     var err = p_win32_to_cygwin(s.cstr,outbuf,psiz.size);
      assert err == 0; // hackery!
      var t = string outbuf;
      free outbuf;
@@ -1544,6 +1544,7 @@ class Cygwin
 @
 
 @h2 Cygwin config
+@tangle cygwin.fpc
 Descriptrion: Cygwin Dll
 provides_dlib: -L/usr/bin -lcygwin
 includes: '"sys/cygwin.h"' 
@@ -1560,7 +1561,7 @@ include "std/felix/toolchain_clang_config";
 include "std/felix/flx_cxx";
 include "std/cygwin/cygwin";
 
-object toolchain_msvc_win32 (config:clang_config_t) implements toolchain_t = 
+object toolchain_msvc_cygwin (config:clang_config_t) implements toolchain_t = 
 {
 
   var c_compiler = "cl";
@@ -1622,32 +1623,37 @@ object toolchain_msvc_win32 (config:clang_config_t) implements toolchain_t =
   
   method gen c_static_object_compiler (spec:(dst:string, src:string)) : int = 
   {
-    var result = shell$ "cl.exe" ! "/TC"+spec.src ! "/Fo"+spec.dst ! Empty[string];
+    var src = Cygwin::cygwin_to_win32 spec.src;
+    var result = shell$ "cl.exe" ! "/TC"+src ! "/Fo"+spec.dst ! Empty[string];
     return result;
   }
 
   method gen c_dynamic_object_compiler (spec:(dst:string, src:string)) : int = 
   {
-    var result =shell$ "cl.exe" ! "/TC"+spec.src ! "/Fo"+spec.dst ! Empty[string]; 
+    var src = Cygwin::cygwin_to_win32 spec.src;
+    var result =shell$ "cl.exe" ! "/TC"+src ! "/Fo"+spec.dst ! Empty[string]; 
     return result;
   }
 
 
   method gen cxx_static_object_compiler (spec:(dst:string, src:string)) : int = 
   {
-    var result =shell$ "cl.exe" ! spec.src ! "/Fo"+spec.dst ! Empty[string]; 
+    var src = Cygwin::cygwin_to_win32 spec.src;
+    var result =shell$ "cl.exe" ! src ! "/Fo"+spec.dst ! Empty[string]; 
     return result;
   }
 
   method gen cxx_static_library_object_compiler (spec:(dst:string, src:string)) : int = 
   {
-    var result =shell$ "cl.exe" ! spec.src ! "/Fo"+spec.dst ! Empty[string]; 
+    var src = Cygwin::cygwin_to_win32 spec.src;
+    var result =shell$ "cl.exe" ! src ! "/Fo"+spec.dst ! Empty[string]; 
     return result;
   }
 
   method gen cxx_dynamic_object_compiler (spec:(dst:string, src:string)) : int = 
   {
-    var result =shell$ "cl.exe" ! spec.src ! "/Fo"+spec.dst ! Empty[string]; 
+    var src = Cygwin::cygwin_to_win32 spec.src;
+    var result =shell$ "cl.exe" ! src ! "/Fo"+spec.dst ! Empty[string]; 
     return result;
   }
 
