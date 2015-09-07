@@ -12,7 +12,7 @@
 @tangler timer.fpc            = $PWD/src/config/timer.fpc
 @tangler unix_faio.fpc        = $PWD/src/config/unix/faio.fpc
 @tangler win32_faio.fpc       = $PWD/src/config/win32/faio.fpc
-@tangler flx_faio_config.hpp  = $PWD/src/config/target/flx_faio_config.hpp
+@tangler flx_faio_config.hpp  = share/lib/rtl/flx_faio_config.hpp
 
 @h1 Faio Driver
 @tangle faio_drv.hpp

@@ -1,6 +1,6 @@
 @title Demux build harness
 @tangler demux.py = $PWD/buildsystem/demux.py
-@tangler flx_demux_config.hpp = $PWD/src/config/target/flx_demux_config.hpp
+@tangler flx_demux_config.hpp = share/lib/rtl/flx_demux_config.hpp
 
 @tangle demux.py
 import fbuild

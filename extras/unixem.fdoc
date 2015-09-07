@@ -1,9 +1,11 @@
 @title Emulation of some Unix stuff on Windows
-@tangler unixem_util.hpp = $PWD/src/unixem/unixem_util.hpp
-@tangler unixem_util.cpp = $PWD/src/unixem/unixem_util.cpp
-@tangler flx_unistd.hpp  = $PWD/src/unixem/flx_unistd.hpp
-@tangler flx_glob.hpp    = $PWD/src/unixem/flx_glob.hpp
-@tangler flx_glob.cpp    = $PWD/src/unixem/flx_glob.cpp
+@tangler unixem_util.hpp      = $PWD/src/unixem/unixem_util.hpp
+@tangler unixem_util.cpp      = $PWD/src/unixem/unixem_util.cpp
+@tangler flx_unistd.hpp       = $PWD/src/unixem/flx_unistd.hpp
+@tangler flx_glob.hpp         = $PWD/src/unixem/flx_glob.hpp
+@tangler flx_glob.cpp         = $PWD/src/unixem/flx_glob.cpp
+@tangler flx_glob_config.hpp  = share/lib/rtl/flx_glob_config.hpp
+
 
 @h1 Emulation Of some Unix Stuff
 Primarily, some filename crud and error codes.
@@ -972,3 +974,17 @@ void globfree(glob_t *pglob)
 }
 
 @
+
+@tangle flx_glob_config.hpp
+#ifndef __FLX_GLOB_CONFIG_H__
+#define __FLX_GLOB_CONFIG_H__
+#include "flx_rtl_config.hpp"
+#ifdef BUILD_GLOB
+#define GLOB_EXTERN FLX_EXPORT
+#else
+#define GLOB_EXTERN FLX_IMPORT
+#endif
+#endif
+@
+
+

@@ -11,7 +11,7 @@
 @tangler flx_gc.py                        = $PWD/buildsystem/flx_gc.py
 @tangler unix_flx_gc.fpc                  = $PWD/src/config/unix/flx_gc.fpc
 @tangler win32_flx_gc.fpc                 = $PWD/src/config/win32/flx_gc.fpc
-@tangler flx_gc_config.hpp                = $PWD/src/config/target/flx_gc_config.hpp
+@tangler flx_gc_config.hpp                = share/lib/rtl/flx_gc_config.hpp
 
 @h1 The Felix Garbage Collector.
 Felix uses a garbage collector to provide secure automatic

@@ -10,7 +10,7 @@
 @tangler config_macosx_dl.fpc     = $PWD/src/config/macosx/dl.fpc
 @tangler config_win32_dl.fpc      = $PWD/src/config/win32/dl.fpc
 @tangler flx_dynlink.fpc          = $PWD/src/config/flx_dynlink.fpc
-@tangler flx_dynlink_config.hpp   = $PWD/src/config/target/flx_dynlink_config.hpp
+@tangler flx_dynlink_config.hpp   = share/lib/rtl/flx_dynlink_config.hpp
 
 
 @h1 Dynamic Linkage
