@@ -791,7 +791,7 @@ class FlxPrepBuild
     println$ "  --copy-repo                 copy src dir of repository";
     println$ "  --copy-compiler             copy compiler flxg";
     println$ "  --copy-pkg-db               copy package database";
-    println$ "  --copy-config-headers       copy C++ config headers";
+    println$ "  --copy-config-headers       copy C++ config headers (NO LONGER OF ANY USE!)";
     println$ "  --copy-version              copy Felix version file";
     println$ "  --copy-library              copy Felix library";
     println$ "";
@@ -824,6 +824,7 @@ class FlxPrepBuild
     if toolchain != "" do 
       begin
         println$ "Write toolchain " + toolchain + " into package " + pkgdir/'toolchain.fpc';
+        Directory::mkdirs pkgdir;
         var f = fopen_output (pkgdir/'toolchain.fpc');
         write (f,"toolchain: " + toolchain +"\n");
         fclose f;

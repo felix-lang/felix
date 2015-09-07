@@ -546,6 +546,77 @@ special-prep:
 		--copy-config-headers \
 		--copy-compiler
 
+win32-prep:
+	# =========================================================
+	# create directory
+	# =========================================================
+	mkdir -p build/release/win32
+	# =========================================================
+	#  Copy compiler
+	# =========================================================
+	build/release/host/bin/flx_cp --verbose build/release/host/bin/flxg '[^/]*\.fpc' 'build/release/win32/config/$${0}'
+	# =========================================================
+	#  Copy resource database for Windows
+	# =========================================================
+	build/release/host/bin/flx_cp --verbose src/config '[^/]*\.fpc' 'build/release/win32/config/$${0}'
+	build/release/host/bin/flx_cp --verbose src/config/win32 '[^/]*\.fpc' 'build/release/win32/config/$${0}'
+	# =========================================================
+	#  Set the toolchain
+	# =========================================================
+	echo "toolchain: toolchain_msvc_win32" > build/release/win32/config/toolchain.fpc
+	# =========================================================
+	#  Set the C++ configuration parameters
+	# =========================================================
+	mkdir -p build/release/win32/lib
+	mkdir -p build/release/win32/lib/rtl
+	echo "// From Makefile: win32-prep          " > build/release/win32/lib/rtl/flx_rtl_config_params.hpp
+	echo "#ifndef __FLX_RTL_CONFIG_PARAMS_H__   " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
+	echo "#define __FLX_RTL_CONFIG_PARAMS_H__   " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
+	echo "                                      " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
+	echo "#define FLX_HAVE_VSNPRINTF 1          " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
+	echo "#define FLX_HAVE_GNU 0                " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
+	echo "#define FLX_HAVE_GNU_BUILTIN_EXPECT 0 " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
+	echo "#define FLX_HAVE_CGOTO 0              " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
+	echo "#define FLX_HAVE_ASM_LABELS 0         " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
+	echo "#define FLX_HAVE_DLOPEN 0             " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
+	echo "#define FLX_CYGWIN 0                  " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
+	echo "#define FLX_MACOSX 0                  " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
+	echo "#define FLX_LINUX 0                   " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
+	echo "#define FLX_WIN32 1                   " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
+	echo "#define FLX_WIN64 1                   " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
+	echo "#define FLX_POSIX 0                   " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
+	echo "#define FLX_SOLARIS 0                 " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
+	echo "#define FLX_HAVE_MSVC 1               " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
+	echo "#define FLX_HAVE_KQUEUE_DEMUXER 0     " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
+	echo "#define FLX_HAVE_POLL 0               " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
+	echo "#define FLX_HAVE_EPOLL 0              " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
+	echo "#define FLX_HAVE_EVTPORTS 0           " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
+	echo "#define FLX_HAVE_OPENMP 0             " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
+	echo "#define FLX_MAX_ALIGN 16              " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
+	echo "                                      " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
+	echo "#endif                                " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
+	echo "                                      " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
+	# =========================================================
+	#  Set the Felix platform config parameters
+	# =========================================================
+	mkdir -p build/release/win32/lib/plat
+	echo "// From Makefile: win32-prep          " > build/release/win32/lib/plat/flx.flxh
+	echo "macro val PLAT_WIN32 = true;          " >> build/release/win32/lib/plat/flx.flxh
+	echo "macro val PLAT_POSIX = false;         " >> build/release/win32/lib/plat/flx.flxh
+	echo "macro val PLAT_LINUX = false;         " >> build/release/win32/lib/plat/flx.flxh
+	echo "macro val PLAT_MACOSX = false;        " >> build/release/win32/lib/plat/flx.flxh
+	echo "macro val PLAT_CYGWIN = false;        " >> build/release/win32/lib/plat/flx.flxh
+	echo "macro val PLAT_SOLARIS = false;       " >> build/release/win32/lib/plat/flx.flxh
+	echo "macro val PLAT_BSD = false;           " >> build/release/win32/lib/plat/flx.flxh
+	# =========================================================
+	#  Set the Felix floating point weirdnesses (nans and such like)
+	#  For now just copy the existing one .. fix later .. should
+	#  use C++11 standards to remove this crud
+	# =========================================================
+	cp build/release/host/lib/plat/float.flx build/release/win32/lib/plat/float.flx
+
+
+
 special-rtl:
 	# =========================================================
 	# special rtl
