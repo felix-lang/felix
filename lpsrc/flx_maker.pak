@@ -127,54 +127,6 @@
 #endif
 @doc()
 
-
-@h = tangler('host/config/demux.fpc')
-@select(h)
-Name: demux
-Description: Event handling
-Comment: Generated during configuration
-
-@if pyconfig.CYGWIN:
-   tangle("provides_dlib: -ldemux_dynamic")
-   tangle("provides_slib: -ldemux_static")
- elif pyconfig.HAVE_MSVC:
-   tangle("provides_dlib: /DEFAULTLIB:demux_dynamic")
-   tangle("requires_dlibs: /DEFAULTLIB:ws2_32 /DEFAULTLIB:mswsock")
-   tangle("provides_slib: /DEFAULTLIB:demux_static")
-   tangle("requires_slibs: /DEFAULTLIB:ws2_32 /DEFAULTLIB:mswsock")
- elif pyconfig.WIN32:
-   tangle("provides_dlib: -ldemux_dynamic")
-   tangle("requires_dlibs: -lws2_32 -lmswsock")
-   tangle("provides_slib: -ldemux_static")
-   tangle("requires_slibs: -lws2_32 -lmswsock")
- elif pyconfig.SOLARIS:
-   tangle("provides_dlib: -ldemux_dynamic")
-   tangle("provides_slib: -ldemux_static -lsocket -lnsl")
- else:
-   tangle("provides_dlib: -ldemux_dynamic")
-   tangle("provides_slib: -ldemux_static")
-
-Requires: flx_pthread
-flx_requires_driver: flx_arun
-includes: '"flx_demux.hpp"'
-library: demux
-headers: (.*/)?([^/\\]+\.hpp)>${2}
-build_includes: build/release/share/lib/rtl
-srcdir: src/demux
-src: [^/\\]+\.cpp
-@if pyconfig.TARGET_CXX.options.CYGWIN:
-   tangle("src: poll/.*\\.cpp")
- elif pyconfig.TARGET_CXX.options.WIN32:
-   tangle("src: win/.*\\.cpp")
- elif pyconfig.TARGET_CXX.options.SOLARIS:
-   tangle("src: evtport/.*\\.cpp")
- elif pyconfig.TARGET_CXX.options.LINUX:
-   tangle("src: epoll/.*\\.cpp")
- elif pyconfig.TARGET_CXX.options.MACOSX:
-   tangle("src: kqueue/.*\\.cpp")
- if pyconfig.TARGET_CXX.options.POSIX:
-   tangle("src: posix/.*\\.cpp")
-
 @select(tangler('host/lib/rtl/demux_sockety_config.hpp'))
 #ifndef __DEMUX_SOCKETY_CONFIG_H__
 #define __DEMUX_SOCKETY_CONFIG_H__

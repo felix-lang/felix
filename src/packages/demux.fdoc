@@ -2,6 +2,155 @@
 @tangler demux.py = $PWD/buildsystem/demux.py
 @tangler flx_demux_config.hpp = share/lib/rtl/flx_demux_config.hpp
 
+@tangler demux_default.fpc   = $PWD/src/config/demux.fpc
+@tangler demux_unix.fpc      = $PWD/src/config/unix/demux.fpc
+@tangler demux_linux.fpc     = $PWD/src/config/linux/demux.fpc
+@tangler demux_solaris.fpc   = $PWD/src/config/solaris/demux.fpc
+@tangler demux_macosx.fpc    = $PWD/src/config/macosx/demux.fpc
+@tangler demux_win32.fpc     = $PWD/src/config/win32/demux.fpc
+@tangler demux_msys.fpc      = $PWD/src/config/msys/demux.fpc
+@tangler demux_cygwin.fpc    = $PWD/src/config/cygwin/demux.fpc
+
+@tangle demux_default.fpc
+Name: demux
+Description: Event handling: select
+Comment: Generated during configuration
+provides_dlib: -ldemux_dynamic
+provides_slib: -ldemux_static
+Requires: flx_pthread
+flx_requires_driver: flx_arun
+includes: '"flx_demux.hpp"'
+library: demux
+headers: (.*/)?([^/\\]+\.hpp)>${2}
+build_includes: build/release/share/lib/rtl
+srcdir: src/demux
+src: [^/\\]+\.cpp
+src: posix/.*\.cpp
+@
+@tangle demux_unix.fpc
+Name: demux
+Description: Event handling (poll)
+Comment: Generated during configuration
+provides_dlib: -ldemux_dynamic
+provides_slib: -ldemux_static
+Requires: flx_pthread
+flx_requires_driver: flx_arun
+includes: '"flx_demux.hpp"'
+library: demux
+headers: (.*/)?([^/\\]+\.hpp)>${2}
+build_includes: build/release/share/lib/rtl
+srcdir: src/demux
+src: [^/\\]+\.cpp
+src: posix/.*\.cpp
+src: poll/.*\.cpp
+
+@
+@tangle demux_linux.fpc
+Name: demux
+Description: Event handling (epoll)
+Comment: Generated during configuration
+provides_dlib: -ldemux_dynamic
+provides_slib: -ldemux_static
+Requires: flx_pthread
+flx_requires_driver: flx_arun
+includes: '"flx_demux.hpp"'
+library: demux
+headers: (.*/)?([^/\\]+\.hpp)>${2}
+build_includes: build/release/share/lib/rtl
+srcdir: src/demux
+src: [^/\\]+\.cpp
+src: posix/.*\.cpp
+src: epoll/.*\.cpp
+@
+
+@tangle demux_solaris.fpc
+Name: demux
+Description: Event handling (event ports)
+Comment: Generated during configuration
+provides_dlib: -ldemux_dynamic
+provides_slib: -ldemux_static -lsocket -lnsl
+Requires: flx_pthread
+flx_requires_driver: flx_arun
+includes: '"flx_demux.hpp"'
+library: demux
+headers: (.*/)?([^/\\]+\.hpp)>${2}
+build_includes: build/release/share/lib/rtl
+srcdir: src/demux
+src: [^/\\]+\.cpp
+src: posix/.*\.cpp
+src: evtport/.*\.cpp
+@
+@tangle demux_macosx.fpc
+Name: demux
+Description: Event handling (kqueue)
+Comment: Generated during configuration
+provides_dlib: -ldemux_dynamic
+provides_slib: -ldemux_static
+Requires: flx_pthread
+flx_requires_driver: flx_arun
+includes: '"flx_demux.hpp"'
+library: demux
+headers: (.*/)?([^/\\]+\.hpp)>${2}
+build_includes: build/release/share/lib/rtl
+srcdir: src/demux
+src: [^/\\]+\.cpp
+src: posix/.*\.cpp
+src: kqueue/.*\.cpp
+@
+@tangle demux_win32.fpc
+Name: demux
+Description: Event handling (windows event ports with msvc)
+Comment: Generated during configuration
+provides_dlib: /DEFAULTLIB:demux_dynamic
+requires_dlibs: /DEFAULTLIB:ws2_32 /DEFAULTLIB:mswsock
+provides_slib: /DEFAULTLIB:demux_static
+requires_slibs: /DEFAULTLIB:ws2_32 /DEFAULTLIB:mswsock
+Requires: flx_pthread
+flx_requires_driver: flx_arun
+includes: '"flx_demux.hpp"'
+library: demux
+headers: (.*/)?([^/\\]+\.hpp)>${2}
+build_includes: build/release/share/lib/rtl
+srcdir: src/demux
+src: [^/\\]+\.cpp
+src: win/.*\.cpp
+@
+@tangle demux_msys.fpc
+Name: demux
+Description: Event handling (windows event ports with gcc)
+Comment: Generated during configuration
+provides_dlib: -ldemux_dynamic
+requires_dlibs: -lws2_32 -lmswsock
+provides_slib: -ldemux_static
+requires_slibs: -lws2_32 -lmswsock
+Requires: flx_pthread
+flx_requires_driver: flx_arun
+includes: '"flx_demux.hpp"'
+library: demux
+headers: (.*/)?([^/\\]+\.hpp)>${2}
+build_includes: build/release/share/lib/rtl
+srcdir: src/demux
+src: [^/\\]+\.cpp
+src: win/.*\.cpp
+@
+@tangle demux_cygwin.fpc
+Name: demux
+Description: Event handling (poll)
+Comment: Generated during configuration
+provides_dlib: -ldemux_dynamic
+provides_slib: -ldemux_static
+Requires: flx_pthread
+flx_requires_driver: flx_arun
+includes: '"flx_demux.hpp"'
+library: demux
+headers: (.*/)?([^/\\]+\.hpp)>${2}
+build_includes: build/release/share/lib/rtl
+srcdir: src/demux
+src: [^/\\]+\.cpp
+src: posix/.*\.cpp
+src: poll/.*\.cpp
+@
+
 @tangle demux.py
 import fbuild
 from fbuild.functools import call

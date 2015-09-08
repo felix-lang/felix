@@ -450,29 +450,29 @@ def configure(ctx):
     # later when Erick figures out how to fix this
     # we'd copy the win32 subdirectory entries instead
     if "posix" in target.platform:
-      print("COPYING POSIX RESOURCE DATABASE")
-      buildsystem.copy_to(ctx,
-          ctx.buildroot / 'host/config', Path('src/config/unix/*.fpc').glob())
-      if types.voidp.size == 4:
-        print("32 bit Unix")
+        print("COPYING POSIX RESOURCE DATABASE")
         buildsystem.copy_to(ctx,
-          ctx.buildroot / 'host/config', Path('src/config/unix/unix32/*.fpc').glob())
-      else:
-        print("64 bit Unix")
-        buildsystem.copy_to(ctx,
-          ctx.buildroot / 'host/config', Path('src/config/unix/unix64/*.fpc').glob())
+            ctx.buildroot / 'host/config', Path('src/config/unix/*.fpc').glob())
+        if types.voidp.size == 4:
+            print("32 bit Unix")
+            buildsystem.copy_to(ctx,
+              ctx.buildroot / 'host/config', Path('src/config/unix/unix32/*.fpc').glob())
+        else:
+            print("64 bit Unix")
+            buildsystem.copy_to(ctx,
+            ctx.buildroot / 'host/config', Path('src/config/unix/unix64/*.fpc').glob())
 
     if "linux" in target.platform:
-      print("COPYING LINUX RESOURCE DATABASE")
-      buildsystem.copy_to(ctx,
-          ctx.buildroot / 'host/config', Path('src/config/linux/*.fpc').glob())
+        print("COPYING LINUX RESOURCE DATABASE")
+        buildsystem.copy_to(ctx,
+            ctx.buildroot / 'host/config', Path('src/config/linux/*.fpc').glob())
 
 
     # enable this on win32 **instead** of the above to copy fpc files 
     if "windows" in target.platform:
-      print("COPYING WIN32 RESOURCE DATABASE")
-      buildsystem.copy_to(ctx,
-          ctx.buildroot / 'host/config', Path('src/config/win32/*.fpc').glob())
+        print("COPYING WIN32 RESOURCE DATABASE")
+        buildsystem.copy_to(ctx,
+            ctx.buildroot / 'host/config', Path('src/config/win32/*.fpc').glob())
 
     # enable this on solaris to clobber any fpc files 
     # where the generic unix ones are inadequate
@@ -482,8 +482,26 @@ def configure(ctx):
     # enable this on osx to clobber any fpc files 
     # where the generic unix ones are inadequate
     if 'macosx' in target.platform:
+        print("COPYING MACOSX RESOURCE DATABASE")
         buildsystem.copy_to(ctx,
             ctx.buildroot / 'host/config', Path('src/config/macosx/*.fpc').glob())
+
+    if 'cygwin' in target.platform:
+        print("COPYING CYWGIN (POSIX) RESOURCE DATABASE")
+        buildsystem.copy_to(ctx,
+            ctx.buildroot / 'host/config', Path('src/config/cygwin/*.fpc').glob())
+
+    if 'msys' in target.platform:
+        print("COPYING MSYS RESOURCE DATABASE")
+        buildsystem.copy_to(ctx,
+            ctx.buildroot / 'host/config', Path('src/config/msys/*.fpc').glob())
+
+
+    if 'solaris' in target.platform:
+        print("COPYING SOLARIS RESOURCE DATABASE")
+        buildsystem.copy_to(ctx,
+            ctx.buildroot / 'host/config', Path('src/config/solaris/*.fpc').glob())
+
 
     # extract the configuration
     iscr = call('buildsystem.iscr.Iscr', ctx)
