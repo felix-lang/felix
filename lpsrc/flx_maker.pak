@@ -128,17 +128,6 @@
 @doc()
 
 
-@h = tangler('host/config/pthread.fpc')
-@select(h)
-Name: pthread
-Description: Pre-emptive threading support
-Comment: Generated during configuration
-
-@if pyconfig.TARGET_CXX.options.HAVE_PTHREADS:
-   tangle("cflags: "+pyconfig.TARGET_CXX.options.PTHREAD_CFLAGS)
-   tangle("requires_dlibs: "+pyconfig.TARGET_CXX.options.PTHREAD_LIBS)
-   tangle("requires_slibs: "+pyconfig.TARGET_CXX.options.PTHREAD_LIBS)
-
 @h = tangler('host/config/demux.fpc')
 @select(h)
 Name: demux

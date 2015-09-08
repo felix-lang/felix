@@ -615,8 +615,6 @@ win32-prep:
 	# =========================================================
 	cp build/release/host/lib/plat/float.flx build/release/win32/lib/plat/float.flx
 
-
-
 special-rtl:
 	# =========================================================
 	# special rtl

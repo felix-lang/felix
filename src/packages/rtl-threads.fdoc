@@ -28,10 +28,13 @@
 @tangler flx_ts_collector.hpp             = share/lib/rtl/flx_ts_collector.hpp
 @tangler flx_ts_collector.cpp             = share/src/pthread/flx_ts_collector.cpp
 @tangler flx_pthread.py                   = $PWD/buildsystem/flx_pthread.py
-@tangler unix_flx_pthread.fpc             = $PWD/src/config/unix/flx_pthread.fpc
-@tangler win32_flx_pthread.fpc            = $PWD/src/config/win32/flx_pthread.fpc
 @tangler flx_bound_queue.fpc              = $PWD/src/config/flx_bound_queue.fpc
 @tangler flx_pthread_config.hpp           = $PWD/src/config/target/flx_pthread_config.hpp
+
+@tangler unix_flx_pthread.fpc             = $PWD/src/config/unix/flx_pthread.fpc
+@tangler win32_flx_pthread.fpc            = $PWD/src/config/win32/flx_pthread.fpc
+@tangler linux_pthread.fpc                = $PWD/src/config/linux/pthread.fpc
+@tangler default_pthread.fpc              = $PWD/src/config/pthread.fpc
 
 @h1 Pthreads
 The @{pthread_thread.hpp} defines pthreads and the system 
@@ -2176,6 +2179,17 @@ build_includes: build/release/share/lib/rtl
 srcdir: src/pthread
 src: .*\.cpp
 @
+
+@tangle default_pthread.fpc
+Description: pthread support defaults to no requirements
+@
+
+@tangle linux_pthread.fpc
+Description: Linux pthread support
+requires_dlibs: -lpthread
+requires_slibs: -lpthread
+@
+
 
 @tangle flx_pthread_config.hpp
 #ifndef __FLX_PTHREAD_CONFIG_H__
