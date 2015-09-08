@@ -463,6 +463,7 @@ def configure(ctx):
           ctx.buildroot / 'host/config', Path('src/config/unix/unix64/*.fpc').glob())
 
     if "linux" in target.platform:
+      print("COPYING LINUX RESOURCE DATABASE")
       buildsystem.copy_to(ctx,
           ctx.buildroot / 'host/config', Path('src/config/linux/*.fpc').glob())
 
