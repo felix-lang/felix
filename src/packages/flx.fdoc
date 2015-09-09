@@ -1949,7 +1949,8 @@ object processing_env(
          LINKER_SWITCHES = control.LINKER_SWITCHES,
          cpp_filebase = dvars.cpp_filebase
       );
-      control.EXTRA_CCFLAGS = control.EXTRA_CCFLAGS + x.CFLAGS;
+      //control.EXTRA_CCFLAGS = control.EXTRA_CCFLAGS + x.CFLAGS;
+      control.CCFLAGS = control.CCFLAGS + x.CFLAGS;
       control.EXTRA_INCLUDE_FILES = x.INCLUDE_FILES;
       control.DRIVER_EXE = x.DRIVER_EXE;
       control.DRIVER_OBJS = x.DRIVER_OBJS;

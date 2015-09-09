@@ -29,7 +29,7 @@
 @tangler flx_ts_collector.cpp             = share/src/pthread/flx_ts_collector.cpp
 @tangler flx_pthread.py                   = $PWD/buildsystem/flx_pthread.py
 @tangler flx_bound_queue.fpc              = $PWD/src/config/flx_bound_queue.fpc
-@tangler flx_pthread_config.hpp           = $PWD/src/config/target/flx_pthread_config.hpp
+@tangler flx_pthread_config.hpp           = share/lib/rtl/flx_pthread_config.hpp
 
 @tangler unix_flx_pthread.fpc             = $PWD/src/config/unix/flx_pthread.fpc
 @tangler win32_flx_pthread.fpc            = $PWD/src/config/win32/flx_pthread.fpc
