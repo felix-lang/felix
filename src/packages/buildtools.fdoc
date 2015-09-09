@@ -1073,11 +1073,10 @@ class FlxRtlBuild
       println$ "------------";
       println$ "Make drivers";
       println$ "------------";
-      fun mkinc (x:string) => "-I"+x;
       var srcdir = repo/"src"/"flx_drivers";
       var config = 
         (
-          header_search_dirs= list[string] (mkinc hrtl, mkinc srcdir, mkinc srtl),
+          header_search_dirs= list[string] (hrtl, srcdir, srtl),
           macros= Empty[string],
           ccflags = Empty[string],
           library_search_dirs= list[string] ("-L"+hrtl),

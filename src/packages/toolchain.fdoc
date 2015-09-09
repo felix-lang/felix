@@ -97,7 +97,8 @@ interface toolchain_t {
 
 @
 @h1 Generic C/C++ compiler
-For compilers with a gcc like command line interface.
+For compilers with a gcc like command line interface: 
+gcc and clang basically.
 
 @tangle flx_cxx.flx
 class CxxCompiler
@@ -110,13 +111,15 @@ class CxxCompiler
     MACROS: list[string],
     debugln: string -> 0
   );
+  fun mkinc (s:string) => "-I" + s;
+  fun mkincs (ss:list[string]) => map mkinc ss;
 
   gen generic_cxx_gen_deps (spec: cxx_dep_spec_t) (src:string) : int * string =
   {
     var cmd=
       spec.CCDEP !
       spec.CCFLAGS +
-      spec.INCLUDE_DIRS + 
+      mkincs spec.INCLUDE_DIRS + 
       spec.MACROS + 
       src
     ;
@@ -156,7 +159,7 @@ class CxxCompiler
     var cmd=
       spec.CCOBJ_DLLIB !
       spec.CCFLAGS +
-      spec.INCLUDE_DIRS + 
+      mkincs spec.INCLUDE_DIRS + 
       spec.MACROS + 
       src
     ;
@@ -226,7 +229,7 @@ class CxxCompiler
     var cmd=
       spec.CCOBJ_STATIC_LIB !
       spec.CCFLAGS +
-      spec.INCLUDE_DIRS + 
+      mkincs spec.INCLUDE_DIRS + 
       spec.MACROS +
       src
     ;
@@ -455,10 +458,9 @@ println$ "[make_lib] source directory " + srcpath;
     var result,depdlibs =  db.query("--field=provides_dlib"+deps); // packaged dlibs
     var macros = db.getpkgfield(pkg,"macros");
     var result2,ccflags = db.query$ list$ pkg, "--keepleftmost", "--field=cflags";
-    fun mkinc (x:string) => "-I"+x;
     var config = 
       (
-        header_search_dirs= list[string] (mkinc target_dir, mkinc src_dir)+map mkinc build_includes,
+        header_search_dirs= list[string] (target_dir, src_dir)+build_includes,
         macros= map (fun (x:string)=> "-D"+x) macros,
         ccflags = ccflags,
         library_search_dirs= list[string] ("-L"+target_dir),
@@ -1713,7 +1715,7 @@ object toolchain_msvc_win32 (config:clang_config_t) implements toolchain_t =
   method fun get_base_c_compile_flags () => base_c_compile_flags;
   method fun get_base_cxx_compile_flags () => base_cxx_compile_flags;
 
-  var include_switches = config.header_search_dirs;
+  var include_switches = map (fun (s:string) => "/I"+s) config.header_search_dirs;
 
   gen popen(cmd:list[string]) = {
     var CMD = catmap ' ' Shell::quote_arg cmd;

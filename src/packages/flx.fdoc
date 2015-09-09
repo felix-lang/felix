@@ -352,7 +352,7 @@ class Flxg
       spec.FLXG ! 
       spec.VERBOSE +
       FLXFLAGS + 
-      spec.INCLUDE_DIRS + 
+      map (fun (s:string) => "-I"+s) spec.INCLUDE_DIRS + 
       ("--syntax="+spec.STDGRAMMAR) +
       ("--automaton="+spec.AUTOMATON) + 
       map (fun (s:string) => "--import="+s) spec.IMPORTS +
@@ -2048,7 +2048,7 @@ object processing_env(
         AUTOMATON = control.AUTOMATON,
         IMPORTS = control.STDIMPORT + control.IMPORTS,
         FLXLIBS = dvars.FLX_STD_LIBS,
-        INCLUDE_DIRS = map (fun (x:string) => "-I"+x) config.FLX_LIB_DIRS,
+        INCLUDE_DIRS = config.FLX_LIB_DIRS,
         filebase = dvars.filebase,
         use_ext = dvars.use_ext,
         TIME = control.COMPILER_TIME,
@@ -2099,7 +2099,7 @@ object processing_env(
       extend dflt_clang_config with 
       (
         ccflags = /* ccflags + */ control.CCFLAGS,
-        header_search_dirs = map (fun (x:string) => "-I"+x) config.FLX_RTL_DIRS+control.EXTRA_INCLUDE_DIRS,
+        header_search_dirs = config.FLX_RTL_DIRS+control.EXTRA_INCLUDE_DIRS,
         macros = control.MACROS,
         debugln = if control.ECHO==1 then echoln[string] else debugln[string] endif
       )
@@ -2191,7 +2191,7 @@ object processing_env(
       extend dflt_clang_config with 
       (
         ccflags = /*ccflags + */ control.CCFLAGS,
-        header_search_dirs = map (fun (x:string) => "-I"+x) config.FLX_RTL_DIRS+control.EXTRA_INCLUDE_DIRS,
+        header_search_dirs = config.FLX_RTL_DIRS+control.EXTRA_INCLUDE_DIRS,
         macros = control.MACROS,
         debugln = if control.ECHO==1 then echoln[string] else debugln[string] endif
       )
