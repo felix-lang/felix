@@ -1,23 +1,26 @@
+import sys
 import os
 import signal
 import threading
 import time
-import subprocess
 
 import fbuild
 import fbuild.builders.platform
 import fbuild.console
 import fbuild.db.database
-import fbuild.path
 import fbuild.sched
+import fbuild.subprocess.killableprocess
+
+from fbuild.path import Path
 
 # ------------------------------------------------------------------------------
 
 class Context:
     def __init__(self, options, args):
         # Convert the paths to Path objects.
-        options.buildroot = fbuild.path.Path(options.buildroot)
+        options.buildroot = Path(options.buildroot)
         options.state_file = options.buildroot / options.state_file
+        options.log_file = options.buildroot / options.log_file
 
         self.logger = fbuild.console.Log(
             verbose=options.verbose,
@@ -34,6 +37,9 @@ class Context:
         self.options = options
         self.args = args
 
+        self.install_prefix = Path('/usr/local')
+        self.to_install = {'bin': [], 'lib': [], 'share': [], 'include': []}
+
     @property
     def buildroot(self):
         return self.options.buildroot
@@ -43,8 +49,7 @@ class Context:
         self.buildroot.makedirs()
 
         # Load the logger options into the logger.
-        self.logger.file = open(
-            self.options.buildroot / self.options.log_file, 'w')
+        self.logger.file = open(self.options.log_file, 'w')
 
         # Make sure the state file directory exists.
         self.options.state_file.parent.makedirs()
@@ -68,6 +73,30 @@ class Context:
                 self.db.close()
             finally:
                 signal.signal(signal.SIGINT, prev_handler)
+
+    def prune(self, prune_get_all, prune_get_bad):
+        """Delete all destination files that were not referenced during this
+           build. This will leave any files outside the build directory. To
+           override this function's behavior, use prune_get_all and
+           prune_get_bad."""
+        all_targets = set(prune_get_all(self))
+        bad_targets = prune_get_bad(self, all_targets - self.db.active_files -
+                                          {self.options.state_file,
+                                           self.options.log_file})
+        def error_handler(func, path, exc):
+            self.logger.log('error deleting file %s: %s' % (path, exc[1]),
+                color='red')
+        for file in bad_targets:
+            file = Path(file)
+            # XXX: There should be a color better than 'compile' for this.
+            self.logger.check(' * prune', file, color='compile')
+            if file.isdir():
+                file.rmtree(ignore_errors=True, on_error=error_handler)
+            else:
+                try:
+                    file.remove()
+                except:
+                    error_handler(None, file, sys.exc_info())
 
     # --------------------------------------------------------------------------
     # Logging wrapper functions
@@ -94,8 +123,8 @@ class Context:
             stderr_quieter=None,
             input=None,
             stdin=None,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stdout=fbuild.subprocess.PIPE,
+            stderr=fbuild.subprocess.PIPE,
             timeout=None,
             env=None,
             runtime_libpaths=None,
@@ -177,7 +206,7 @@ class Context:
 
         starttime = time.time()
         try:
-            p = subprocess.Popen(cmd,
+            p = fbuild.subprocess.killableprocess.Popen(cmd,
                 stdin=fbuild.subprocess.PIPE if input else stdin,
                 stdout=stdout,
                 stderr=stderr,
@@ -193,7 +222,7 @@ class Context:
                 returncode = p.wait()
             except KeyboardInterrupt:
                 # Make sure if we get a keyboard interrupt to kill the process.
-                p.kill(group=True)
+                p.kill(group=True, sigint=True)
                 raise
             else:
                 # Detect Ctrl-C in subprocess.
@@ -237,6 +266,14 @@ class Context:
             raise fbuild.ExecutionError(cmd, stdout, stderr, returncode)
 
         return stdout, stderr
+
+    def install(self, path, category, addroot=''):
+        try:
+            self.to_install[category].append((Path(path).abspath(), addroot))
+        except AttributeError:
+            pass
+        except KeyError:
+            raise fbuild.Error('invalid install category: {}'.format(category))
 
 # ------------------------------------------------------------------------------
 

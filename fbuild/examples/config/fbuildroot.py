@@ -5,6 +5,7 @@ import fbuild.builders.c
 import fbuild.builders.cxx
 import fbuild.config as config
 from fbuild.functools import import_module
+import os
 
 # ------------------------------------------------------------------------------
 

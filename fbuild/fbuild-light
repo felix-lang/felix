@@ -1,15 +1,11 @@
 #!/usr/bin/env python3
+from os.path import realpath, join, dirname
+import sys, os
 
-import os
-import sys
+sys.path.append(realpath(join(dirname(sys.argv[0]), 'lib')))
 
-fbuild_dirname = os.path.dirname(sys.argv[0])
+from fbuild.main import main
 
-sys.path.insert(0, os.path.join(fbuild_dirname, 'lib'))
-
-fbuild_exename = os.path.join(fbuild_dirname, 'bin', 'fbuild')
-f = open(fbuild_exename)
-try:
-    exec(compile(f.read(), fbuild_exename, 'exec'))
-finally:
-    f.close()
+# don't know why someone would need this...but oh well
+if __name__ == '__main__':
+    main()

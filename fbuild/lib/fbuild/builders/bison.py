@@ -7,10 +7,12 @@ from fbuild.path import Path
 
 class Bison(fbuild.db.PersistentObject):
     def __init__(self, ctx, exe=None, flags=[], *, suffix='.c'):
+        self.ctx = ctx
         self.exe = fbuild.builders.find_program(ctx, [exe or 'bison'])
         self.flags = flags
         self.suffix = suffix
 
+    @fbuild.db.cachemethod
     def __call__(self, src:fbuild.db.SRC, dst=None, *,
             suffix=None,
             verbose=False,

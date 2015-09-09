@@ -1,4 +1,4 @@
-import abc
+import abc, copy
 from functools import partial
 from itertools import chain
 
@@ -62,61 +62,57 @@ class Builder(fbuild.builders.AbstractCompilerBuilder):
             raise fbuild.ConfigFailed('exe linker failed: %s' % e)
         else:
             self.ctx.logger.passed()
-        # get rid of this stupid test, it fails so many times
-        # due to crap related to the temporary directory more
-        # then the tool itself failing.
-        #self.ctx.logger.check('checking if %s can link lib to exe' % self)
-        #with fbuild.temp.tempdir() as dirname:
-        #    src_lib = dirname / 'templib' + self.src_suffix
-        #    with open(src_lib, 'w') as f:
-        #        print('''
-        #            #ifdef __cplusplus
-        #            extern "C" {
-        #            #endif
-        #            #if defined _WIN32 || defined __CYGWIN__
-        #            __declspec(dllexport)
-        #            #else
-        #            __attribute__((visibility("default")))
-        #            #endif
-        #            int foo() { return 5; }
-        #            #ifdef __cplusplus
-        #            }
-        #            #endif
-        #        ''', file=f)
 
-        #    src_exe = dirname / 'tempexe' + self.src_suffix
-        #    with open(src_exe, 'w') as f:
-        #        print('''
-        #            #include <stdio.h>
-        #            #ifdef __cplusplus
-        #            extern "C" {
-        #            #endif
-        #            extern int foo();
-        #            #ifdef __cplusplus
-        #            }
-        #            #endif
-        #            int main(int argc, char** argv) {
-        #                printf("%d", foo());
-        #                return 0;
-        #            }''', file=f)
+        self.ctx.logger.check('checking if %s can link lib to exe' % self)
+        with fbuild.temp.tempdir() as dirname:
+            src_lib = dirname / 'templib' + self.src_suffix
+            with open(src_lib, 'w') as f:
+                print('''
+                    #ifdef __cplusplus
+                    extern "C" {
+                    #endif
+                    #if defined _WIN32 || defined __CYGWIN__
+                    __declspec(dllexport)
+                    #endif
+                    int foo() { return 5; }
+                    #ifdef __cplusplus
+                    }
+                    #endif
+                ''', file=f)
 
-        #    obj = self.uncached_compile(src_lib, quieter=1)
-        #    lib = self.uncached_link_lib(dirname / 'templib', [obj],
-        #            quieter=1)
-        #    obj = self.uncached_compile(src_exe, quieter=1)
-        #    exe = self.uncached_link_exe(dirname / 'tempexe', [obj],
-        #            libs=[lib],
-        #            quieter=1)
+            src_exe = dirname / 'tempexe' + self.src_suffix
+            with open(src_exe, 'w') as f:
+                print('''
+                    #include <stdio.h>
+                    #ifdef __cplusplus
+                    extern "C" {
+                    #endif
+                    extern int foo();
+                    #ifdef __cplusplus
+                    }
+                    #endif
+                    int main(int argc, char** argv) {
+                        printf("%d", foo());
+                        return 0;
+                    }''', file=f)
 
-        #    if not self.cross_compiler:
-        #        try:
-        #            stdout, stderr = self.run([exe], quieter=1)
-        #        except fbuild.ExecutionError:
-        #            raise fbuild.ConfigFailed('failed to link lib to exe')
-        #        else:
-        #            if stdout != b'5':
-        #                raise fbuild.ConfigFailed('failed to link lib to exe')
-        #            self.ctx.logger.passed()
+            obj = self.uncached_compile(src_lib, quieter=1)
+            lib = self.uncached_link_lib(dirname / 'templib', [obj],
+                    quieter=1)
+            obj = self.uncached_compile(src_exe, quieter=1)
+            exe = self.uncached_link_exe(dirname / 'tempexe', [obj],
+                    libs=[lib],
+                    quieter=1)
+
+            if not self.cross_compiler:
+                try:
+                    stdout, stderr = self.run([exe], quieter=1)
+                except fbuild.ExecutionError:
+                    raise fbuild.ConfigFailed('failed to link lib to exe')
+                else:
+                    if stdout != b'5':
+                        raise fbuild.ConfigFailed('failed to link lib to exe')
+                    self.ctx.logger.passed()
 
     # --------------------------------------------------------------------------
 
@@ -140,13 +136,16 @@ class Builder(fbuild.builders.AbstractCompilerBuilder):
             libs=[],
             external_libs=[],
             lflags=[],
-            lkwargs={}):
+            lkwargs={},
+            include_source_dirs=True):
         """Actually compile and link the sources."""
         objs = objs + self.build_objects(srcs,
             includes=includes,
             macros=macros,
             warnings=warnings,
             flags=cflags,
+            include_source_dirs=include_source_dirs,
+            buildroot = self.ctx.buildroot / 'obj' / dst,
             **ckwargs)
 
         return function(dst, objs,
@@ -321,48 +320,124 @@ class Executable(Path):
 
 # ------------------------------------------------------------------------------
 
-def _guess_builder(name, functions, ctx, *args,
+def _guess_builder(name, compilers, functions, ctx, *args,
         platform=None,
+        platform_extra=set(),
         platform_options=[],
+        exe=None,
         **kwargs):
     if platform is None:
         platform = fbuild.builders.platform.guess_platform(ctx, platform)
+    if not platform_extra & compilers:
+        if exe is not None:
+            tp = identify_compiler(ctx, exe)
+            if tp is None:
+                raise fbuild.ConfigFailed('cannot identify exe given for ' +\
+                                          name)
+            platform_extra |= tp
+        else:
+            platform_extra |= compilers
+    platform |= platform_extra
 
     for subplatform, function in functions:
-        if subplatform <= platform:
-            new_kwargs = kwargs.copy()
+        # XXX: this is slightly a hack to make sure:
+        # a) Clang can actually be detected
+        # b) Any compilers explicitly listed in platform_extra will have #1
+        #  priority
+        if subplatform - (compilers & platform_extra) <= platform:
+            new_kwargs = copy.deepcopy(kwargs)
 
             for p, kw in platform_options:
                 if p <= subplatform:
-                    new_kwargs.update(kw)
+                    for k, v in kw.items():
+                        if k[-1] in '+-':
+                            func = k[-1]
+                            k = k[:-1]
+                            try:
+                                curval = new_kwargs[k]
+                            except:
+                                if isinstance(v, str):
+                                    curval = ''
+                                elif isinstance(v, list):
+                                    curval = []
+                                elif isinstance(v, tuple):
+                                    curval = ()
+                            if func == '+':
+                                curval += v
+                            elif func == '-':
+                                lst = list(curval)
+                                for x in v:
+                                    lst.pop(lst.index(x))
+                                if isinstance(curval, str):
+                                    curval = ''.join(lst)
+                                else:
+                                    curval = type(curval)(lst)
+                            new_kwargs[k] = curval
+                        else:
+                            new_kwargs[k] = v
 
             # Try to use this compiler. If it doesn't work, skip this compiler
             # and try another one.
             try:
-                x = fbuild.functools.call(function, ctx, *args, **new_kwargs)
-                return x
+                return fbuild.functools.call(function, ctx, exe, *args, **new_kwargs)
             except fbuild.ConfigFailed:
                 pass
 
     raise fbuild.ConfigFailed('cannot find a %s builder for %s' %
         (name, platform))
 
+@fbuild.db.caches
+def identify_compiler(ctx, exe):
+    res = None
+    ctx.logger.check('identifying exe %s' % exe)
+    # take a cue from the name
+    if exe == 'clang' or exe == 'clang++':
+        res = {'clang', 'clang++'}
+    elif exe == 'gcc' or exe == 'g++' or exe == 'colorgcc':
+        res = {'gcc', 'g++'}
+    elif exe == 'cl' or exe == 'cl.exe':
+        res = {'windows'}
+    else:
+        try:
+            out, err = ctx.execute((exe, '--version'), quieter=1)
+        except fbuild.ExecutionError:
+            try:
+                # is it MSVC?
+                out, err = ctx.execute((exe,), quieter=1)
+            except fbuild.ExecutionError:
+                pass
+            else:
+                if b'Microsoft' in out or b'Microsoft' in err:
+                    res = {'windows'}
+        else:
+            ccmap = {'Free Software Foundation': {'gcc', 'g++'},
+                     'clang': {'clang', 'clang++'}}
+            for cc in ccmap:
+                if bytes(cc, encoding='ascii') in out:
+                    res = ccmap[cc]
+    if res is None:
+        ctx.logger.failed()
+    else:
+        ctx.logger.passed(res)
+    return res
+
 def guess_static(*args, **kwargs):
     """L{static} tries to guess the static system c compiler according to the
     platform. It accepts a I{platform} keyword that overrides the system's
+    platform and a I{platform_extra} keyword that is joined to the system's
     platform. This can be used to use a non-default compiler. Any extra
     arguments and keywords are passed to the compiler's configuration
     functions."""
 
-    return _guess_builder('c static', (
+    return _guess_builder('c static', {'gcc', 'clang'}, (
         ({'avr', 'gcc'}, 'fbuild.builders.c.gcc.avr.static'),
-        ({'iphone', 'simulator'},
+        ({'iphone', 'simulator', 'gcc'},
             'fbuild.builders.c.gcc.iphone.static_simulator'),
-        ({'iphone'}, 'fbuild.builders.c.gcc.iphone.static'),
-        ({'darwin'}, 'fbuild.builders.c.clang.darwin.static'),
-        ({'darwin'}, 'fbuild.builders.c.gcc.darwin.static'),
-        ({'posix'}, 'fbuild.builders.c.clang.static'),
-        ({'posix'}, 'fbuild.builders.c.gcc.static'),
+        ({'iphone', 'gcc'}, 'fbuild.builders.c.gcc.iphone.static'),
+        ({'darwin', 'clang'}, 'fbuild.builders.c.clang.darwin.static'),
+        ({'darwin', 'gcc'}, 'fbuild.builders.c.gcc.darwin.static'),
+        ({'posix', 'clang'}, 'fbuild.builders.c.clang.static'),
+        ({'posix', 'gcc'}, 'fbuild.builders.c.gcc.static'),
         ({'windows'}, 'fbuild.builders.c.msvc.static'),
     ), *args, **kwargs)
 
@@ -373,14 +448,14 @@ def guess_shared(*args, **kwargs):
     arguments and keywords are passed to the compiler's configuration
     functions."""
 
-    return _guess_builder('c shared', (
+    return _guess_builder('c shared', {'gcc', 'clang'}, (
         ({'avr', 'gcc'}, 'fbuild.builders.c.gcc.avr.shared'),
-        ({'iphone', 'simulator'},
+        ({'iphone', 'simulator', 'gcc'},
             'fbuild.builders.c.gcc.iphone.shared_simulator'),
-        ({'iphone'}, 'fbuild.builders.c.gcc.iphone.shared'),
-        ({'darwin'}, 'fbuild.builders.c.clang.darwin.shared'),
-        ({'darwin'}, 'fbuild.builders.c.gcc.darwin.shared'),
-        ({'posix'}, 'fbuild.builders.c.clang.shared'),
-        ({'posix'}, 'fbuild.builders.c.gcc.shared'),
+        ({'iphone', 'gcc'}, 'fbuild.builders.c.gcc.iphone.shared'),
+        ({'darwin', 'clang'}, 'fbuild.builders.c.clang.darwin.shared'),
+        ({'darwin', 'gcc'}, 'fbuild.builders.c.gcc.darwin.shared'),
+        ({'posix', 'clang'}, 'fbuild.builders.c.clang.shared'),
+        ({'posix', 'gcc'}, 'fbuild.builders.c.gcc.shared'),
         ({'windows'}, 'fbuild.builders.c.msvc.shared'),
     ), *args, **kwargs)

@@ -2,6 +2,7 @@ import sys
 import threading
 import contextlib
 import collections
+import ctypes
 
 import fbuild
 
@@ -28,16 +29,15 @@ if sys.platform == 'win32':
         'light yellow' : 0xE,
         'bright white' : 0xF,
     }
+    _INVALID_HANDLE_VALUE = ctypes.c_void_p(-1).value
 
     def get_csbi_attributes(handle):
         # Based on IPython's winconsole.py, written by Alexander Belchenko
-        import ctypes
         import struct
         csbi = ctypes.create_string_buffer(22)
         res = ctypes.windll.kernel32.GetConsoleScreenBufferInfo(handle, csbi)
-        if not res:
-            #print('Error reading current console color!', ctypes.windll.kernel32.GetLastError())
-            return None
+        assert res, str(ctypes.GetLastError())
+
         (bufx, bufy, curx, cury, wattr, left, top, right, bottom, maxxy,
             maxy) = struct.unpack('hhhhHhhhhhh', csbi.raw)
         return wattr
@@ -51,16 +51,20 @@ if sys.platform == 'win32':
             except KeyError:
                 # we couldn't find the color so just ignore
                 sys.stdout.write(s)
-            else:
-                import ctypes
+                return
+            try:
                 handle = ctypes.windll.kernel32.GetStdHandle(_STD_OUTPUT_HANDLE)
+                assert handle != _INVALID_HANDLE_VALUE, str(ctypes.GetLastError())
                 reset = get_csbi_attributes(handle)
-                if reset is not None:
-                    ctypes.windll.kernel32.SetConsoleTextAttribute(handle, color)
+            except:
+                # we may not be printing to a console; just ignore it
+                sys.stdout.write(s)
+            else:
+                ctypes.windll.kernel32.SetConsoleTextAttribute(handle, color)
                 sys.stdout.write(s)
                 sys.stdout.flush()
-                if reset is not None:
-                    ctypes.windll.kernel32.SetConsoleTextAttribute(handle, reset)
+                ctypes.windll.kernel32.SetConsoleTextAttribute(handle, reset)
+
 else:
     _colorcodes = {
         'black'  : 30,
@@ -92,7 +96,9 @@ _colorcodes['link'] = _colorcodes['cyan']
 # ------------------------------------------------------------------------------
 
 class _ThreadStack(threading.local, collections.UserList):
-    pass
+    def __init__(self, *args):
+        threading.local.__init__(self)
+        collections.UserList.__init__(self, *args)
 
 # ------------------------------------------------------------------------------
 

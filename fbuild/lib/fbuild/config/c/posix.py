@@ -20,7 +20,8 @@ class regex_h(regex_h):
 class pthread_h(pthread_h):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if 'linux' in self.platform or 'bsd' in self.platform:
+
+        if 'linux' in self.platform:
             self.external_libs.append('pthread')
 
         # Solaris needs to link against librt for posix support.

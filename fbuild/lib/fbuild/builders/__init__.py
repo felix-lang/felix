@@ -150,7 +150,7 @@ class AbstractCompiler(fbuild.db.PersistentObject):
         src_deps = []
         dst_deps = []
         for o, s, d in self.ctx.scheduler.map(
-                partial(self.compile.call, **kwargs),
+                partial(self.compile.call, *args, **kwargs),
                 srcs):
             objs.append(o)
             src_deps.extend(s)

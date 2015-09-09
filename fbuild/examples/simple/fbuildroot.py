@@ -60,7 +60,7 @@ def config_build(ctx, *, platform, cc, cxx):
     ctx.logger.log('configuring build phase', color='cyan')
 
     return Record(
-        platform=call('fbuild.builders.platform.platform', ctx, platform),
+        platform=call('fbuild.builders.platform.guess_platform', ctx, platform),
         c=make_c_builder(ctx, exe=cc),
         cxx=make_cxx_builder(ctx, exe=cxx),
     )
@@ -70,7 +70,7 @@ def config_host(ctx, build, *,
         platform, cc, cxx, ocamlc, ocamlopt, ocamllex, ocamlyacc):
     ctx.logger.log('configuring host phase', color='cyan')
 
-    platform = call('fbuild.builders.platform.platform', ctx, platform)
+    platform = call('fbuild.builders.platform.guess_platform', ctx, platform)
 
     if platform == build.platform:
         ctx.logger.log("using build's c and cxx compiler")
@@ -94,7 +94,7 @@ def config_host(ctx, build, *,
 def config_target(ctx, host, *, platform, cc, cxx):
     ctx.logger.log('configuring target phase', color='cyan')
 
-    platform = call('fbuild.builders.platform.platform', ctx, platform)
+    platform = call('fbuild.builders.platform.guess_platform', ctx, platform)
 
     if platform == host.platform:
         ctx.logger.log("using host's c and cxx compiler")

@@ -31,7 +31,7 @@ class Path(str):
         s = ''
         for path in paths:
             if isinstance(path, str):
-                s = os.path.join(s, path.replace('/', os.sep)).replace('"','')
+                s = os.path.join(s, path.replace('/', os.sep))
             else:
                 s = os.path.join(s, *path)
 
@@ -385,11 +385,8 @@ class Path(str):
     def rmdir(self):
         return os.rmdir(self)
 
-    def rmtree(self):
-        try:
-          return shutil.rmtree(self)
-        except:
-          pass #Oh well. This is known to fail on Windows.
+    def rmtree(self, **kw):
+        return shutil.rmtree(self, **kw)
 
     def split(self):
         """Split a pathname.  Returns tuple "(head, tail)" where "tail" is

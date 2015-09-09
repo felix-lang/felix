@@ -1,6 +1,9 @@
 Fbuild Build System v0.2
 ========================
 
+[![AppVeyor](https://ci.appveyor.com/api/projects/status/w4ygv26fit3gphfa?svg=true)](https://ci.appveyor.com/project/kirbyfan64/fbuild)
+[![Travis](https://travis-ci.org/felix-lang/fbuild.svg?branch=master)](https://travis-ci.org/felix-lang/fbuild)
+
 Overview
 --------
 
@@ -8,7 +11,7 @@ Fbuild is a build system designed for configuring and compiling both small and
 large projects. It has extensive feature list:
 
  * Linux, Apple, and Windows support
- * Supports compiling C, C++, O'Caml, Java, Scala, GHC, and Felix
+ * Supports compiling C, C++, OCaml, Java, Scala, GHC, and Felix
  * Extensive configuration detection for the C and C++ standard library, posix,
    and more
  * Parallel compilation
@@ -17,10 +20,12 @@ large projects. It has extensive feature list:
  * Full [Python](http://docs.python.org/py3k) scriptability
  * Easy to extend
  * Pretty output
- * ... and it is quite fast too
+ * ... and it is quite fast, too
 
-Download and Installation
--------------------------
+**WARNING:** MinGW is currently NOT supported. It *should* be, but things quickly went haywire. You can try it still, but note that *building shared libraries does not work*. Using Visual C++ works as expected.
+
+Downloading and Installation
+----------------------------
 
 Fbuild is hosted and developed on
 [Github](http://github.com/felix-lang/fbuild). It requires [Python
@@ -45,6 +50,8 @@ To install, run:
 Introduction
 ------------
 
+**NOTE:** There are some incomplete docs at [RTD](http://fbuild.readthedocs.org/en/latest/).
+
 Fbuild has extensive support for advanced build systems, but this doesn't
 complicate simple projects. Here is the classic "Hello World" example, written
 in a C file named `helloworld.c`:
@@ -55,7 +62,7 @@ in a C file named `helloworld.c`:
         return 0;
     }
 
-Along side of it we will create a Python 3 file named `fbuildroot.py`, which
+Along side of it, we will create a Python 3 file named `fbuildroot.py`, which
 will drive the compilation. We'll step through each line in a moment:
 
     import fbuild.builders.c
@@ -67,7 +74,7 @@ will drive the compilation. We'll step through each line in a moment:
         ctx.logger.log(' * running ' + exe)
         ctx.execute([exe])
 
-As you can see, it is pretty compact Python script. To compile, if you
+As you can see, it's a pretty compact Python script. To compile it, if you
 installed Fbuild, simply run `fbuild` in the same directory as the
 `fbuildroot.py`. Otherwise, you can run `fbuild-light` out of the Fbuild
 distribution, which doesn't require installation. This is what you'll see:
@@ -87,11 +94,11 @@ distribution, which doesn't require installation. This is what you'll see:
      * running build/helloworld
     hello world!
 
-Broken down, Fbuild did:
+Broken down, Fbuild:
 
  * automatically determined that I'm on a Apple machine
- * configured gcc for our c builder
- * tested that the c builder worked
+ * configured gcc for our C builder
+ * tested that the C builder worked
  * compiled our code
  * and finally, ran the program
 
@@ -104,7 +111,7 @@ Now lets go through the `fbuildroot.py`:
 Fbuild is written as a Python library with the `fbuild` script as a simple
 driver in order start up and stop the build. The default entry point is a
 function called `build`. If you run `fbuild` without any arguments or with
-`fbuild build` it will call this function. You can also create your own entry
+`fbuild build`, it will call this function. You can also create your own entry
 points with the `fbuild.target` module, which is described further on.
 
     import fbuild.builders.c
@@ -112,20 +119,20 @@ points with the `fbuild.target` module, which is described further on.
     builder = fbuild.builders.c.guess_static(ctx)
     ...
 
-Next we have to make a c builder. Since pretty much each platform has it's own
+Next we have to make a C builder. Since pretty much each platform has it's own
 C compiler, Fbuild provides a mechanism to guess the platform's preferred one.
 `fbuild.builders.c.guess_static` creates a C builder that is capable of
 creating static libraries. You can also use `fbuild.builders.c.guess_shared`
 if you want to create dynamically loadable libraries. In this case though,
-we're just creating an executable so it doesn't matter which function we use.
+we're just creating an executable, so it doesn't matter which function we use.
 
     exe = builder.build_exe('helloworld', ['helloworld.c'])
 
 Now that we've got a builder, we can compile our binary. The first argument is
-the name of the executable, and the second is a list of input sources. There's
+the name of the executable, and the second is a list of input sources. There are
 a large amount of other options available. The most important are:
 
-| argument       | description                                              |
+| Argument       | Description                                              |
 | -------------- | -------------------------------------------------------- |
 | includes       | a list of directories to add to the include search path  |
 | libs           | a list of libraries to link in                           |
@@ -143,11 +150,11 @@ want them to apply to everything built by the builder.
     ctx.logger.log(' * running ' + exe)
     ctx.execute([exe])
 
-Finally, we'll execute the command we just compiled. We use the
-`ctx.logger.log` so that the message will be logged into the Fbuild log file,
-normally found in `build/fbuild.log`. To run the command we use `ctx.execute`,
-which is a wrapper around the system call `execv`, and also writes the
-command's output to the log file.
+Finally, we'll execute the command we just compiled. We use `ctx.logger.log` so
+that the message will be logged into the Fbuild log file, normally found in
+`build/fbuild.log`. To run the command we use `ctx.execute`, which is a wrapper
+around the `subprocess` module that also writes the command's output to the log
+file.
 
 In comparison, this is an equivalent `Makefile`, written to use gcc:
 
@@ -164,7 +171,7 @@ In comparison, this is an equivalent `Makefile`, written to use gcc:
     %.o: %.c
         gcc -c -o $@ $<
 
-As you can see, Fbuild's driver script is about half the size and does so much
+As you can see, Fbuild's driver script is about half the size and does much
 more.
 
 Unit Tests
@@ -179,5 +186,4 @@ Help
 ----
 
 If you run into any problems, don't hesitate to ask a question on the [fbuild
-mailing list](http://groups.google.com/group/fbuild). Or, you can usually find
-me in the #felix channel on irc.freenode.net.
+mailing list](http://groups.google.com/group/fbuild).

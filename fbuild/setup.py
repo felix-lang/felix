@@ -1,5 +1,5 @@
+from setuptools import setup
 import sys
-from distutils.core import setup
 
 sys.path.append('lib')
 import fbuild
@@ -28,6 +28,8 @@ setup(
         'fbuild.db',
         'fbuild.subprocess',
     ],
-    scripts=['bin/fbuild'],
+    entry_points={
+        'console_scripts': ['fbuild = fbuild.main:main']
+    },
     package_dir={'': 'lib'},
 )
