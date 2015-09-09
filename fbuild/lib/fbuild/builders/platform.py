@@ -138,7 +138,7 @@ def shared_obj_suffix(ctx, platform=None):
 
 def shared_lib_prefix(ctx, platform=None):
     platform = platform if platform else guess_platform(ctx)
-    if platform & {'windows', 'mingw', 'cygwin'}:
+    if platform & {'windows', 'mingw'}:
         return ''
     else:
         return 'lib'
