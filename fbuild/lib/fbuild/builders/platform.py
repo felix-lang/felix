@@ -84,6 +84,8 @@ def guess_platform(ctx, arch=None):
 
     if arch.startswith('mingw32'):
         arch = 'mingw'
+    elif arch.startswith('cygwin'):
+        arch = 'cygwin'
     try:
         architecture = archmap[arch]
     except KeyError:
