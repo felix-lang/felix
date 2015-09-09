@@ -337,13 +337,13 @@ int FLX_EXCEPTIONS_EXTERN flx_exception_handler (::flx::rtl::flx_exception_t con
 using namespace ::flx::rtl;
 
 
-int ::flx::rtl::std_exception_handler (::std::exception const *e)
+int FLX_EXCEPTIONS_EXTERN ::flx::rtl::std_exception_handler (::std::exception const *e)
 {
   fprintf(stderr,"C++ STANDARD EXCEPTION %s\n",e->what());
   return 4;
 }
 
-int ::flx::rtl::flx_exception_handler (flx_exception_t const *e)
+int FLX_EXCEPTIONS_EXTERN ::flx::rtl::flx_exception_handler (flx_exception_t const *e)
 {
 fprintf(stderr, "Felix exception handler\n");
   if (flx_halt_t const *x = dynamic_cast<flx_halt_t const*>(e))
