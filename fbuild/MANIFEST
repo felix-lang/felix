@@ -96,6 +96,7 @@ lib/fbuild/builders/file.py
 lib/fbuild/builders/ghc.py
 lib/fbuild/builders/java.py
 lib/fbuild/builders/llvm.py
+lib/fbuild/builders/pkg_config.py
 lib/fbuild/builders/nm.py
 lib/fbuild/builders/ocaml/__init__.py
 lib/fbuild/builders/ocaml/batteries.py

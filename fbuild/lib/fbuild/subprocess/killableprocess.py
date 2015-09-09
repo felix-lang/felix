@@ -110,19 +110,30 @@ class Popen(subprocess.Popen):
             subprocess.Popen.__init__(self, *args, **kwargs)
 
     if mswindows:
-        if sys.version_info < (3,2):
-            #_execute_child() requires a different signature in this
-            #case.
-            raise Exception("Python version 3.2 or greater required")
-
-        def _execute_child(self, args, executable, preexec_fn, close_fds,
-                           pass_fds, cwd, env, startupinfo,
-                           creationflags, shell,
-                           p2cread, p2cwrite,
-                           c2pread, c2pwrite,
-                           errread, errwrite,
-                           unused_restore_signals, unused_start_new_session): 
-
+        def _execute_child(self, *params):
+            pyver = sys.version_info.minor
+            if pyver == 1:
+                args, executable, preexec_fn, close_fds,\
+                cwd, env, universal_newlines,\
+                startupinfo, creationflags, shell,\
+                p2cread, p2cwrite,\
+                errread, errwrite = params
+            elif pyver == 2:
+                args, executable, preexec_fn, close_fds,\
+                pass_fds, cwd, env, universal_newlines,\
+                startupinfo, creationflags, shell,\
+                p2cread, p2cwrite,\
+                c2pread, c2pwrite,\
+                errread, errwrite,\
+                unused_restore_signals, unused_start_new_session = params
+            else:
+                args, executable, preexec_fn, close_fds,\
+                pass_fds, cwd, env,\
+                startupinfo, creationflags, shell,\
+                p2cread, p2cwrite,\
+                c2pread, c2pwrite,\
+                errread, errwrite,\
+                unused_restore_signals, unused_start_new_session = params
             if not isinstance(args, str):
                 args = subprocess.list2cmdline(args)
 
@@ -187,9 +198,10 @@ class Popen(subprocess.Popen):
             if errwrite is not None:
                 errwrite.Close()
 
-    def kill(self, group=True):
+    def kill(self, group=True, sigint=False):
         """Kill the process. If group=True, all sub-processes will also be killed."""
         if mswindows:
+            # XXX: Windows shouldn't ignore the sigint parameter
             if group:
                 winprocess.TerminateJobObject(self._job, 127)
             else:
@@ -197,9 +209,9 @@ class Popen(subprocess.Popen):
             self.returncode = 127
         else:
             if group:
-                os.killpg(self.pid, signal.SIGKILL)
+                os.killpg(self.pid, signal.SIGINT if sigint else signal.SIGKILL)
             else:
-                os.kill(self.pid, signal.SIGKILL)
+                os.kill(self.pid, signal.SIGINT if sigint else signal.SIGKILL)
             self.returncode = -9
 
     def wait(self, timeout=-1, group=True):
@@ -211,8 +223,11 @@ class Popen(subprocess.Popen):
         if self.returncode is not None:
             return self.returncode
 
+        if timeout is None:
+            timeout = -1
+
         if mswindows:
-            if timeout != -1 and timeout != None:
+            if timeout != -1:
                 timeout = timeout * 1000
             rc = winprocess.WaitForSingleObject(self._handle, timeout)
             if rc == winprocess.WAIT_TIMEOUT:
@@ -220,7 +235,7 @@ class Popen(subprocess.Popen):
             else:
                 self.returncode = winprocess.GetExitCodeProcess(self._handle)
         else:
-            if timeout == -1 or timeout == None:
+            if timeout == -1:
                 subprocess.Popen.wait(self)
                 return self.returncode
 

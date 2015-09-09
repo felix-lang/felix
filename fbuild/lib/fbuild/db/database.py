@@ -38,6 +38,7 @@ class Database:
 
         self._rpc = fbuild.rpc.RPC(handle_rpc)
         self._rpc.daemon = True
+        self.active_files = set()
         self.start()
 
     def start(self):
@@ -126,6 +127,8 @@ class Database:
                 all_srcs = srcs.union(external_srcs)
                 all_dsts = dsts.union(external_dsts)
                 all_dsts.update(return_dsts)
+                # Update the active file list.
+                self.active_files.update(all_srcs | all_dsts)
                 return old_result, all_srcs, all_dsts
 
         if self._explain:
@@ -179,6 +182,8 @@ class Database:
         all_srcs = srcs.union(external_srcs)
         all_dsts = dsts.union(external_dsts)
         all_dsts.update(return_dsts)
+        # Update the active file list.
+        self.active_files.update(all_srcs | all_dsts)
         return call_result, all_srcs, all_dsts
 
     def delete_function(self, fun_name):

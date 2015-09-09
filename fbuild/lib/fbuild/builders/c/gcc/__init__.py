@@ -175,12 +175,15 @@ class Gcc(fbuild.db.PersistentObject):
             optimize=None,
             arch=None,
             machine_flags=(),
+            include_source_dirs=True,
             **kwargs):
         srcs = [Path(src) for src in srcs]
 
         # Make sure we don't repeat includes
         new_includes = []
-        for include in chain(self.includes, includes, (s.parent for s in srcs)):
+        for include in chain(self.includes, includes,
+                             (s.parent for s in srcs) if include_source_dirs\
+                             else []):
             if include not in new_includes:
                 new_includes.append(include)
         includes = new_includes
@@ -336,18 +339,12 @@ class Compiler(fbuild.db.PersistentObject):
         super().__init__(ctx)
 
         self.cc = cc
+        self.flags = tuple(flags)
         self.suffix = suffix
-        flags = tuple(flags)
-        noaggro = ("-fno-aggressive-loop-optimizations",)
-        if cc.check_flags (noaggro):
-             print("FLAG -fno-aggressive-loop-optimizations supported and applied")
-             flags = flags + noaggro
-        else:
-             print("FLAG -fno-aggressive-loop-optimizations NOT supported")
+
         if flags and not cc.check_flags(flags):
             raise fbuild.ConfigFailed('%s does not support %s flags' %
                 (cc, flags))
-        self.flags = tuple(flags)
 
     def __call__(self, src, dst=None, *,
             suffix=None,

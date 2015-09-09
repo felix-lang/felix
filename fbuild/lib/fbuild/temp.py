@@ -17,7 +17,7 @@ def tempdir(*args, **kwargs):
     try:
         yield path
     finally:
-        path.rmtree()
+        path.rmtree(ignore_errors=True)
 
 # ------------------------------------------------------------------------------
 

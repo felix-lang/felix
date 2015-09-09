@@ -13,7 +13,7 @@ class LlvmConfig(fbuild.db.PersistentObject):
             requires_at_most_version=None):
         super().__init__(ctx)
 
-        self.exe = fbuild.builders.find_program(ctx, [exe or 'llvm-config-3.1'])
+        self.exe = fbuild.builders.find_program(ctx, [exe or 'llvm-config'])
 
         # Make sure we've got a valid version.
         fbuild.builders.check_version(ctx, self, self.version,

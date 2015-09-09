@@ -21,8 +21,8 @@ class Flx(fbuild.db.PersistentObject):
         self.debug = debug
         self.flags = flags
 
-        #if not self.check_flags(['--debug-flx']):
-        #    raise fbuild.ConfigFailed('%s failed to compile an exe' % self)
+        if not self.check_flags([]):
+            raise fbuild.ConfigFailed('%s failed to compile an exe' % self)
 
     def __call__(self, src, *args,
             includes=[],
@@ -46,11 +46,9 @@ class Flx(fbuild.db.PersistentObject):
         if stdout:
             cmd.append('--stdout='+stdout)
 
-        cmd.extend('-I' + i for i in sorted(includes))
+        cmd.extend('-I' + i for i in sorted(includes) if Path(i).exists())
         cmd.extend(self.flags)
         cmd.extend(flags)
-        if src[-4:] != ".flx":
-          src+=".flx"
         cmd.append(src)
 
         return self.ctx.execute(cmd, *args, **kwargs)
@@ -155,5 +153,5 @@ class Felix(fbuild.builders.AbstractCompiler):
 
     def tempfile_run(self, code='', *, quieter=1, **kwargs):
         with self.tempfile(code) as src:
-            exe = self.uncached_compile(src, quieter=quieter, flags=['--debug-flx'], **ckwargs)
+            exe = self.uncached_compile(src, quieter=quieter, **ckwargs)
             return self.run(exe, quieter=quieter, **kwargs)

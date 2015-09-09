@@ -52,9 +52,12 @@ class Cl(fbuild.db.PersistentObject):
             warnings=[],
             debug=None,
             optimize=None,
+            include_source_dirs=True,
             **kwargs):
         new_includes = []
-        for include in chain(self.includes, includes, (s.parent for s in srcs)):
+        for include in chain(self.includes, includes,
+                             (s.parent for s in srcs) if include_source_dirs\
+                             else []):
             if include not in new_includes:
                 new_includes.append(include)
         includes = new_includes
