@@ -1,1 +1,1 @@
-set PATH="c:\cygwin64\usr\local\lib\felix\felix-15.08.15\host\bin";%PATH%
+set PATH=c:\cygwin64\home\skaller\felix\build\release\host\bin;c:\cygwin64\home\skaller\felix\host\lib\rtl;%PATH%
