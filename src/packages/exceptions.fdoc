@@ -482,7 +482,12 @@ Name: flx
 Description: Felix exceptions
 provides_dlib: /DEFAULTLIB:flx_exceptions_dynamic
 provides_slib: /DEFAULTLIB:flx_exceptions_static
+library: flx_exceptions
+macros: BUILD_FLX_EXCEPTIONS
 includes: '"flx_exceptions.hpp"'
+build_includes: build/release/share/lib/rtl
+srcdir: src/exceptions
+src: .*\.cpp 
 @
 
 @tangle flx_exceptions.py
