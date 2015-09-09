@@ -26,7 +26,7 @@ class FlxPkg
   );
 
   typedef pkgconfig_outspec_t = (
-    INCLUDE_DIRS: list[string],
+    CFLAGS: list[string],
     INCLUDE_FILES: list[string],
     DRIVER_EXE: string,
     DRIVER_OBJS: list[string],
@@ -73,7 +73,7 @@ class FlxPkg
     var e = Empty[string];
 
     // find all include directories
-    var INCLUDE_DIRS=pkgconfl(e+'--field=cflags'+'--keepleftmost');
+    var CFLAGS=pkgconfl(e+'--field=cflags'+'--keepleftmost');
 
     // find all include files
     var INCLUDE_FILES=pkgconfl(e+'--field=includes'+'--keepleftmost');
@@ -138,7 +138,7 @@ class FlxPkg
     ;
 
     return ( 
-      INCLUDE_DIRS = INCLUDE_DIRS,
+      CFLAGS = CFLAGS,
       INCLUDE_FILES = INCLUDE_FILES,
       DRIVER_EXE = DRIVER_EXE,
       DRIVER_OBJS = DRIVER_OBJS,
