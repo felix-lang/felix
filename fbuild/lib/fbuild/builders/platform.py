@@ -138,14 +138,14 @@ def shared_obj_suffix(ctx, platform=None):
 
 def shared_lib_prefix(ctx, platform=None):
     platform = platform if platform else guess_platform(ctx)
-    if platform & {'windows', 'mingw'}:
+    if platform & {'windows', 'mingw', 'cygwin'}:
         return ''
     else:
         return 'lib'
 
 def shared_lib_suffix(ctx, platform=None):
     platform = platform if platform else guess_platform(ctx)
-    if platform & {'windows', 'mingw', 'cygwin'}: # add Cygwin here ...
+    if platform & {'windows', 'mingw', 'cygwin'}:
         return '.dll'
     elif 'darwin' in platform:
         return '.dylib'
@@ -156,7 +156,7 @@ def shared_lib_suffix(ctx, platform=None):
 
 def exe_suffix(ctx, platform=None):
     platform = platform if platform else guess_platform(ctx)
-    if platform & {'windows', 'mingw'}:
+    if platform & {'windows', 'mingw', 'cygwin'}:
         return '.exe'
     else:
         return ''
@@ -165,7 +165,7 @@ def exe_suffix(ctx, platform=None):
 
 def runtime_env_libpath(ctx, platform=None):
     platform = platform if platform else guess_platform(ctx)
-    if platform & {'windows', 'mingw'}:
+    if platform & {'windows', 'mingw', 'cygwin'}:
         return 'PATH'
     elif 'darwin' in platform:
         return 'DYLD_LIBRARY_PATH'
