@@ -1289,7 +1289,7 @@ Description: dynamic loading support
 @tangle unix_flx_dynlink.fpc
 Name: flx_dynlink
 Description: Felix Dynamic loading support
-Requires: dl flx_exceptions 
+Requires: dl flx_exceptions flx_gc 
 library: flx_dynlink
 includes: '"flx_dynlink.hpp"'
 macros: BUILD_DYNLINK
@@ -1303,7 +1303,7 @@ src: .*\.cpp
 @tangle win32_flx_dynlink.fpc
 Name: flx_dynlink
 Description: Felix Dynamic loading support
-Requires: dl flx_exceptions 
+Requires: dl flx_exceptions flx_gc
 library: flx_dynlink
 includes: '"flx_dynlink.hpp"'
 macros: BUILD_DYNLINK
