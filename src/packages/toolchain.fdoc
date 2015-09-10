@@ -466,7 +466,7 @@ println$ "[make_lib] source directory " + srcpath;
         header_search_dirs= list[string] (target_dir, src_dir)+build_includes,
         macros= macros,
         ccflags = ccflags,
-        library_search_dirs= list[string] ("-L"+target_dir),
+        library_search_dirs= list[string] ("-L"+target_dir), // HACK!!!
         dynamic_libraries= ddeps+depdlibs,
         static_libraries= Empty[string],
         debugln = dbug
@@ -536,7 +536,14 @@ println$ "[make_lib] source directory " + srcpath;
         done
 
         var objs = map objname files;
-        var libname = "lib" + (db.getpkgfield1(pkg,"provides_dlib")).[2 to] +#(toolchain.dynamic_library_extension);
+        var libname = 
+          let dlib_root = db.getpkgfield1(pkg,"provides_dlib") in
+          if prefix (dlib_root,"-l") then "lib"+dlib_root.[2 to]
+          elif prefix (dlib_root,"/DEFAULTLIB:") then dlib_root.[12 to]
+          else dlib_root 
+          endif
+          +#(toolchain.dynamic_library_extension)
+        ;
         var dstlib = target_dir/libname;
         println$ "Dynamic Linking library " + dstlib;
         result = toolchain.dynamic_library_linker(srcs=objs, dst=dstlib);
@@ -586,7 +593,14 @@ println$ "[make_lib] source directory " + srcpath;
       done
 
       var objs = map objname files;
-      var libname = "lib" + (db.getpkgfield1(pkg,"provides_slib")).[2 to] +#(toolchain.static_library_extension);
+      var libname = 
+        let dlib_root = db.getpkgfield1(pkg,"provides_slib") in
+        if prefix (dlib_root,"-l") then  "lib"+dlib_root.[2 to]
+        elif prefix (dlib_root,"/DEFAULTLIB:") then dlib_root.[12 to]
+        else dlib_root 
+        endif
+        +#(toolchain.static_library_extension);
+      ;
       var dstlib = target_dir/libname;
       println$ "Static Linking Library " + dstlib;
       result = toolchain.static_library_linker(srcs=objs, dst=dstlib);
@@ -1789,19 +1803,19 @@ object toolchain_msvc_win32 (config:clang_config_t) implements toolchain_t =
 
   method gen static_library_linker (spec:(dst:string, srcs:list[string])): int =
   {
-    var result =shell$ "lib.exe" ! "/OUT:"+spec.dst+".lib" ! spec.srcs; 
+    var result =shell$ "lib.exe" ! "/OUT:"+spec.dst ! spec.srcs; 
     return result;
   } 
 
   method gen executable_linker  (spec:(dst:string, srcs:list[string])) : int = 
   {
-    var result =shell$  "cl.exe" ! "/MT" ! spec.srcs + ("/Fe"+spec.dst+".exe");
+    var result =shell$  "cl.exe" ! "/MT" ! spec.srcs + ("/Fe"+spec.dst);
     return result;
   }
 
   method gen dynamic_library_linker (spec:(dst:string,srcs:list[string])) : int = 
   {
-    var result =shell$  "cl.exe" ! "/MD" ! spec.srcs + list[string] ("/Fe"+spec.dst); // .dll already there?
+    var result =shell$  ("cl.exe" ! "/MD" ! spec.srcs) + list[string] ("/Fe"+spec.dst); 
     return result;
   }
 }

@@ -228,61 +228,61 @@ namespace flx { namespace rtl {
 // ********************************************************
 // standard exceptions -- implementation
 // ********************************************************
-FLX_EXCEPTIONS_EXTERN flx_exception_t::~flx_exception_t(){}
+flx_exception_t::~flx_exception_t(){}
 
-FLX_EXCEPTIONS_EXTERN flx_exec_failure_t::flx_exec_failure_t(::std::string f, ::std::string o, ::std::string w) :
+flx_exec_failure_t::flx_exec_failure_t(::std::string f, ::std::string o, ::std::string w) :
   filename(f),
   operation(o),
   what(w)
 {}
 
-FLX_EXCEPTIONS_EXTERN flx_out_of_memory_t::flx_out_of_memory_t(){}
-FLX_EXCEPTIONS_EXTERN flx_out_of_memory_t::~flx_out_of_memory_t(){}
-FLX_EXCEPTIONS_EXTERN flx_exec_failure_t::~flx_exec_failure_t(){}
+flx_out_of_memory_t::flx_out_of_memory_t(){}
+flx_out_of_memory_t::~flx_out_of_memory_t(){}
+flx_exec_failure_t::~flx_exec_failure_t(){}
 
-FLX_EXCEPTIONS_EXTERN flx_range_srcref_t::flx_range_srcref_t() :
+flx_range_srcref_t::flx_range_srcref_t() :
     filename(""),startline(0),startcol(0),endline(0),endcol(0){}
-FLX_EXCEPTIONS_EXTERN flx_range_srcref_t::flx_range_srcref_t(char const *f,int sl, int sc, int el, int ec) :
+flx_range_srcref_t::flx_range_srcref_t(char const *f,int sl, int sc, int el, int ec) :
     filename(f),startline(sl),startcol(sc),endline(el),endcol(ec){}
 
-FLX_EXCEPTIONS_EXTERN flx_halt_t::flx_halt_t(flx_range_srcref_t ff, char const *cf, int cl, ::std::string r) :
+flx_halt_t::flx_halt_t(flx_range_srcref_t ff, char const *cf, int cl, ::std::string r) :
    reason(r), flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
-FLX_EXCEPTIONS_EXTERN flx_halt_t::~flx_halt_t(){}
+flx_halt_t::~flx_halt_t(){}
 
-FLX_EXCEPTIONS_EXTERN flx_match_failure_t::flx_match_failure_t(flx_range_srcref_t ff, char const *cf, int cl) :
+flx_match_failure_t::flx_match_failure_t(flx_range_srcref_t ff, char const *cf, int cl) :
    flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
-FLX_EXCEPTIONS_EXTERN flx_match_failure_t::~flx_match_failure_t(){}
+flx_match_failure_t::~flx_match_failure_t(){}
 
-FLX_EXCEPTIONS_EXTERN flx_dropthru_failure_t::flx_dropthru_failure_t(flx_range_srcref_t ff, char const *cf, int cl) :
+flx_dropthru_failure_t::flx_dropthru_failure_t(flx_range_srcref_t ff, char const *cf, int cl) :
    flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
-FLX_EXCEPTIONS_EXTERN flx_dropthru_failure_t::~flx_dropthru_failure_t(){}
+flx_dropthru_failure_t::~flx_dropthru_failure_t(){}
 
-FLX_EXCEPTIONS_EXTERN flx_assert_failure_t::flx_assert_failure_t(flx_range_srcref_t ff, char const *cf, int cl) :
+flx_assert_failure_t::flx_assert_failure_t(flx_range_srcref_t ff, char const *cf, int cl) :
    flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
-FLX_EXCEPTIONS_EXTERN flx_assert_failure_t::~flx_assert_failure_t(){}
+flx_assert_failure_t::~flx_assert_failure_t(){}
 
-FLX_EXCEPTIONS_EXTERN flx_assert2_failure_t::flx_assert2_failure_t(flx_range_srcref_t ff, flx_range_srcref_t ff2, char const *cf, int cl) :
+flx_assert2_failure_t::flx_assert2_failure_t(flx_range_srcref_t ff, flx_range_srcref_t ff2, char const *cf, int cl) :
    flx_loc(ff), flx_loc2(ff2), cxx_srcfile(cf), cxx_srcline(cl) {}
-FLX_EXCEPTIONS_EXTERN flx_assert2_failure_t::~flx_assert2_failure_t(){}
+flx_assert2_failure_t::~flx_assert2_failure_t(){}
 
-FLX_EXCEPTIONS_EXTERN flx_axiom_check_failure_t::flx_axiom_check_failure_t(flx_range_srcref_t ff, flx_range_srcref_t ff2, char const *cf, int cl) :
+flx_axiom_check_failure_t::flx_axiom_check_failure_t(flx_range_srcref_t ff, flx_range_srcref_t ff2, char const *cf, int cl) :
    flx_loc(ff), flx_loc2(ff2), cxx_srcfile(cf), cxx_srcline(cl) {}
-FLX_EXCEPTIONS_EXTERN flx_axiom_check_failure_t::~flx_axiom_check_failure_t(){}
+flx_axiom_check_failure_t::~flx_axiom_check_failure_t(){}
 
-FLX_EXCEPTIONS_EXTERN flx_range_failure_t::flx_range_failure_t(long l, long x, long h, flx_range_srcref_t ff, char const *cf, int cl) :
+flx_range_failure_t::flx_range_failure_t(long l, long x, long h, flx_range_srcref_t ff, char const *cf, int cl) :
    min(l), v(x), max(h), flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
-FLX_EXCEPTIONS_EXTERN flx_range_failure_t::~flx_range_failure_t(){}
+flx_range_failure_t::~flx_range_failure_t(){}
 
-FLX_EXCEPTIONS_EXTERN flx_switch_failure_t::~flx_switch_failure_t(){}
+flx_switch_failure_t::~flx_switch_failure_t(){}
 
-FLX_EXCEPTIONS_EXTERN flx_link_failure_t::flx_link_failure_t(::std::string f, ::std::string o, ::std::string w) :
+flx_link_failure_t::flx_link_failure_t(::std::string f, ::std::string o, ::std::string w) :
   filename(f),
   operation(o),
   what(w)
 {}
 
-FLX_EXCEPTIONS_EXTERN flx_link_failure_t::~flx_link_failure_t(){}
-FLX_EXCEPTIONS_EXTERN flx_link_failure_t::flx_link_failure_t(){}
+flx_link_failure_t::~flx_link_failure_t(){}
+flx_link_failure_t::flx_link_failure_t(){}
 
 
 long range_check (long l, long x, long h, flx_range_srcref_t sref, char const *cf, int cl)
