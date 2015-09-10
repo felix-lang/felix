@@ -810,6 +810,7 @@ provides_slib: -lfaio_static
 includes: '"faio_posixio.hpp"'
 Requires: flx_async flx_pthread demux flx flx_gc
 library: faio
+macros: BUILD_FAIO
 build_includes: build/release/share/lib/rtl
 srcdir: src/faio
 src: faio_(job|timer|posixio)\.cpp
@@ -823,6 +824,12 @@ provides_dlib: /DEFAULTLIB:faio_dynamic
 provides_slib: /DEFAULTLIB:faio_static
 includes: '"faio_winio.hpp"'
 Requires: demux
+library: faio
+macros: BUILD_FAIO
+build_includes: build/release/share/lib/rtl
+srcdir: src/faio
+src: faio_(job|timer|winio)\.cpp
+headers: faio_(drv|job|timer|winio)\.hpp
 @
 
 @tangle faio.py
