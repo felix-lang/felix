@@ -82,6 +82,8 @@ namespace flx { namespace debug {
 @
 @tangle flx_udp_trace.cpp
 #ifdef _WIN32
+#include <stdio.h>
+#include <string>
 namespace flx { namespace debug {
 void enable_local_udp_trace () {}
 void send_udp_trace_message (::std::string msg) {
