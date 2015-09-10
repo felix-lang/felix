@@ -2069,7 +2069,7 @@ public:
 #include <thread>
 
 namespace flx { namespace rtl {
-fast_lock::fast_lock(::flx::pthread::thread_control_base_t *tc_) : tc(tc_), flag(ATOMIC_FLAG_INIT) {}
+fast_lock::fast_lock(::flx::pthread::thread_control_base_t *tc_) : tc(tc_) { flag.clear(); }
 void fast_lock::unlock() { flag.clear(); }
 void fast_lock::lock() {
   while (!flag.test_and_set())
