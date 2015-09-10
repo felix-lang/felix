@@ -81,6 +81,14 @@ namespace flx { namespace debug {
 
 @
 @tangle flx_udp_trace.cpp
+#if _WIN32
+namespace flx { namespace debug {
+void enable_local_udp_trace () {}
+void send_udp_trace_message (::std::string msg) {
+  fprintf(stderr,"[WIN32: udp_trace not available, using stderr] %s\n",msg.c_str());
+}
+}}
+#else
 #include <sys/socket.h>
 #include <stdio.h>
 #include <arpa/inet.h>
@@ -134,6 +142,7 @@ void send_udp_trace_message (::std::string msg)
   }
 }
 }} // namespaces
+#endif
 @
 
 @h2 Simple UDP Trace monitor
