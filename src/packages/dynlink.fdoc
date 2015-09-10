@@ -2,14 +2,15 @@
 
 @tangler flx_dl.h                 = share/lib/rtl/flx_dl.h
 @tangler flx_dlopen.hpp           = share/lib/rtl/flx_dlopen.hpp
-@tangler flx_dlopen.cpp           = share/src/rtl/flx_dlopen.cpp
+@tangler flx_dlopen.cpp           = share/src/dynlink/flx_dlopen.cpp
 @tangler flx_dynlink.hpp          = share/lib/rtl/flx_dynlink.hpp
-@tangler flx_dynlink.cpp          = share/src/rtl/flx_dynlink.cpp
+@tangler flx_dynlink.cpp          = share/src/dynlink/flx_dynlink.cpp
 @tangler dynlink.flx              = share/lib/std/program/dynlink.flx
 @tangler config_unix_dl.fpc       = $PWD/src/config/unix/dl.fpc
 @tangler config_macosx_dl.fpc     = $PWD/src/config/macosx/dl.fpc
 @tangler config_win32_dl.fpc      = $PWD/src/config/win32/dl.fpc
-@tangler flx_dynlink.fpc          = $PWD/src/config/flx_dynlink.fpc
+@tangler unix_flx_dynlink.fpc     = $PWD/src/config/unix/flx_dynlink.fpc
+@tangler win32_flx_dynlink.fpc    = $PWD/src/config/win32/flx_dynlink.fpc
 @tangler flx_dynlink_config.hpp   = share/lib/rtl/flx_dynlink_config.hpp
 
 
@@ -1285,13 +1286,32 @@ Name: dl
 Description: dynamic loading support
 @
 
-
-@tangle flx_dynlink.fpc
+@tangle unix_flx_dynlink.fpc
 Name: flx_dynlink
 Description: Felix Dynamic loading support
 Requires: dl 
+library: flx_dynlink
 includes: '"flx_dynlink.hpp"'
 macros: BUILD_DYNLINK
+provides_dlib: -lflx_dynlink_dynamic
+provides_slib: -lflx_dynlink_static
+build_includes: build/release/share/lib/rtl
+srcdir: src/dynlink
+src: .*\.cpp
+@
+
+@tangle win32_flx_dynlink.fpc
+Name: flx_dynlink
+Description: Felix Dynamic loading support
+Requires: dl 
+library: flx_dynlink
+includes: '"flx_dynlink.hpp"'
+macros: BUILD_DYNLINK
+provides_dlib: /DEFAULTLIB:flx_dynlink_dynamic
+provides_slib: /DEFAULTLIB:flx_dynlink_static
+build_includes: build/release/share/lib/rtl
+srcdir: src/dynlink
+src: .*\.cpp
 @
 
 
