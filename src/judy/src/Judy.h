@@ -100,6 +100,7 @@ typedef void *   Pvoid_t;
 typedef void ** PPvoid_t;
 #endif
 
+/* this is CRAP!
 #ifndef _WORD_T
 #define _WORD_T
 #if defined(_WIN64)
@@ -108,6 +109,10 @@ typedef unsigned long long   Word_t, * PWord_t;  // expect 32-bit or 64-bit word
 typedef unsigned long    Word_t, * PWord_t;  // expect 32-bit or 64-bit words.
 #endif
 #endif
+*/
+// This is the right way
+typedef uintptr_t Word_t, * PWord_t;  // expect 32-bit or 64-bit words.
+
 
 #ifndef NULL
 #define NULL 0
