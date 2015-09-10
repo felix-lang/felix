@@ -806,7 +806,7 @@ void *malloc_free::allocate(::std::size_t amt)
 {
   void *p = malloc(amt);
   if(debug)
-    fprintf(stderr,"[gc] Malloc %ld bytes, address = %p\n",amt,p);
+    fprintf(stderr,"[gc] Malloc %zd bytes, address = %p\n",amt,p);
   if(p)return p;
   else {
     fprintf(stderr,"[gc] Felix: Malloc out of memory, blk=%ld\n",long(amt));
@@ -914,7 +914,7 @@ void * flx_collector_t::impl_allocate(gc_shape_t *shape, unsigned long nobj)
 
   ++shape->allocations;
   if(debug)
-    fprintf(stderr,"[gc] Allocated %p, shape=%s[%ld][%ld][#a=%ld,#d=%ld]\n", 
+    fprintf(stderr,"[gc] Allocated %p, shape=%s[%zd][%ld][#a=%ld,#d=%ld]\n", 
       fp,shape->cname,shape->count,nobj,shape->allocations,shape->deallocations);
 
   Word_t *p = (Word_t*)(void*)JudyLIns(&j_shape,(Word_t)fp,&je);
@@ -1238,7 +1238,7 @@ unsigned long flx_collector_t::sweep()
     if((*pshape & 1) == (parity & 1UL))
     {
       if(debug)
-        fprintf(stderr,"[gc] Garbage   %p=%s[%ld][%ld/%ld] [#a=%ld,#d=%ld]\n",
+        fprintf(stderr,"[gc] Garbage   %p=%s[%zd][%ld/%ld] [#a=%ld,#d=%ld]\n",
           current,
           SHAPE(*pshape)->cname,
           SHAPE(*pshape)->count,
@@ -1259,7 +1259,7 @@ unsigned long flx_collector_t::sweep()
     else
     {
       if(debug)
-        fprintf(stderr,"[gc] Reachable %p=%s[%ld][%ld/%ld] [#a=%ld,#d=%ld]\n",
+        fprintf(stderr,"[gc] Reachable %p=%s[%zd][%ld/%ld] [#a=%ld,#d=%ld]\n",
           current,
           SHAPE(*pshape)->cname,
           SHAPE(*pshape)->count,

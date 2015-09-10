@@ -220,9 +220,9 @@ typedef struct J_UDY_ERROR_STRUCT
 // (~0UL), to avoid a compiler "overflow in implicit constant conversion"
 // warning.
 
-#define   JERR (-1)                     /* functions returning int or Word_t */
-#define  PJERR ((Pvoid_t)  (~0UL))      /* mainly for use here, see below    */
-#define PPJERR ((PPvoid_t) (~0UL))      /* functions that return PPvoid_t    */
+#define   JERR (-1)                              /* functions returning int or Word_t */
+#define  PJERR ((Pvoid_t)  (~(uintptr_t)0))      /* mainly for use here, see below    */
+#define PPJERR ((PPvoid_t) PJERR)                /* functions that return PPvoid_t    */
 
 // Convenience macro for when detailed error information (PJError_t) is not
 // desired by the caller; a purposely short name:
