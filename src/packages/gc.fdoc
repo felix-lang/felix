@@ -423,6 +423,9 @@ GC_EXTERN void operator delete(
 #include "flx_gc_private.hpp"
 #include <Judy.h>
 
+// for std::max
+#include <algorithm>
+
 #ifdef max
 #undef max
 #endif
