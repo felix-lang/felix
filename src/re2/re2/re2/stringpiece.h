@@ -24,6 +24,7 @@
 #include <cstddef>
 #include <iosfwd>
 #include <string>
+#include <algorithm>
 #include "flx_re2_config.hpp"
 
 namespace re2 {
