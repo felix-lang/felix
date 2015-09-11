@@ -439,6 +439,7 @@ class FlxLibBuild
     toolchain-maker: clang_config_t -> toolchain_t, 
     src_dir:string, 
     target_dir:string, 
+    share_rtl:string,
     pkg:string, 
     tmpdir:string,
     static_only:bool,
@@ -463,7 +464,7 @@ println$ "[make_lib] source directory " + srcpath;
     var result2,ccflags = db.query$ list$ pkg, "--keepleftmost", "--field=cflags";
     var config = 
       (
-        header_search_dirs= list[string] (target_dir, src_dir)+build_includes,
+        header_search_dirs= list[string] (target_dir, srcpath, share_rtl)+build_includes,
         macros= macros,
         ccflags = ccflags,
         library_search_dirs= list[string] ("-L"+target_dir), // HACK!!!

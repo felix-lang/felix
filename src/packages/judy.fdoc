@@ -56,21 +56,21 @@ def prepend_macros(ctx, src, macros, dst) -> fbuild.db.DST:
     
 # ------------------------------------------------------------------------------
 
-def build_runtime(host_phase, target_phase):
+def build_runtime(phase):
     """
     Builds the judy runtime library, and returns the static and shared
     library versions.
     """
 
-    path = Path(target_phase.ctx.buildroot/'share'/'src/judy/src')
+    path = Path(phase.ctx.buildroot/'share'/'src/judy/src')
 
     # Copy the header into the runtime library.
-    buildsystem.copy_to(target_phase.ctx,
-        target_phase.ctx.buildroot / 'share/lib/rtl',
+    buildsystem.copy_to(phase.ctx,
+        phase.ctx.buildroot / 'share/lib/rtl',
         [path / 'Judy.h'])
 
     types = config_call('fbuild.config.c.c99.types',
-        target_phase.platform, target_phase.c.static)
+        phase.platform, phase.c.static)
 
     if types.voidp.size == 8:
         macros = ['JU_64BIT']
@@ -79,7 +79,7 @@ def build_runtime(host_phase, target_phase):
 
     macros.append('BUILD_JUDY') #Apply this to all source files.
 
-    srcs = [copy(target_phase.ctx, p, target_phase.ctx.buildroot / 'share'/p) for p in [
+    srcs = [copy(phase.ctx, p, phase.ctx.buildroot / 'share'/p) for p in [
         path / 'JudyCommon/JudyMalloc.c',
         path / 'JudySL/JudySL.c',
         path / 'JudyHS/JudyHS.c'] +
@@ -90,19 +90,19 @@ def build_runtime(host_phase, target_phase):
     for p in ((path / 'JudyCommon' / '*.c').glob() + 
               (path / 'Judy*' / '*.h').glob()): 
         if p not in ('JudyMalloc.c', 'JudyPrintJP.c'):
-            copy(target_phase.ctx, p, target_phase.ctx.buildroot / 'share'/ p)
+            copy(phase.ctx, p, phase.ctx.buildroot / 'share'/ p)
 
     includes = [path, 
                 path / 'JudyCommon', 
                 path / 'JudyL', 
                 path / 'Judy1']
     
-    static = buildsystem.build_c_static_lib(target_phase, 'host/lib/rtl/judy',
+    static = buildsystem.build_c_static_lib(phase, 'host/lib/rtl/judy',
         srcs=srcs,
         macros=macros,
         includes=includes)
 
-    shared = buildsystem.build_c_shared_lib(target_phase, 'host/lib/rtl/judy',
+    shared = buildsystem.build_c_shared_lib(phase, 'host/lib/rtl/judy',
         srcs=srcs,
         macros=macros,
         includes=includes)

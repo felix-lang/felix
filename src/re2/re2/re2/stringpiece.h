@@ -1,4 +1,3 @@
-#include "flx_re2_config.hpp"
 
 // Copyright 2001-2010 The RE2 Authors.  All Rights Reserved.
 // Use of this source code is governed by a BSD-style
@@ -21,14 +20,13 @@
 #ifndef STRINGS_STRINGPIECE_H__
 #define STRINGS_STRINGPIECE_H__
 
-#include <stddef.h>
 #include <string.h>
 #include <cstddef>
 #include <iosfwd>
 #include <string>
+#include "flx_re2_config.hpp"
 
 namespace re2 {
-
 class RE2_EXTERN StringPiece {
  private:
   const char*   ptr_;

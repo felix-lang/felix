@@ -566,7 +566,7 @@ def build(ctx):
     # Compile the runtime dependencies.
 
     print("[fbuild] [C++] COMPILING RUN TIME LIBRARY")
-    call('buildsystem.judy.build_runtime', phases.host, phases.target)
+    call('buildsystem.judy.build_runtime', phases.target)
     call('buildsystem.re2.build_runtime', phases.target)
 
     # --------------------------------------------------------------------------
@@ -581,7 +581,7 @@ def build(ctx):
     # Compile the runtime drivers.
 
     print("[fbuild] [C++] COMPILING DRIVERS")
-    drivers = call('buildsystem.flx_drivers.build', phases.host, phases.target)
+    drivers = call('buildsystem.flx_drivers.build', phases.target)
 
     # --------------------------------------------------------------------------
     # Compile the builder.
@@ -591,8 +591,8 @@ def build(ctx):
         compilers.flxg, phases.target.cxx.static, drivers)
 
     flx_pkgconfig = call('buildsystem.flx.build_flx_pkgconfig',
-        phases.host, phases.target, flx_builder)
-    flx = call('buildsystem.flx.build_flx', phases.host, phases.target, flx_builder)
+        phases.target, flx_builder)
+    flx = call('buildsystem.flx.build_flx', phases.target, flx_builder)
 
     # --------------------------------------------------------------------------
     # now, try building a file

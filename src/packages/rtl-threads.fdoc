@@ -2119,7 +2119,7 @@ def build_runtime(phase):
     macros = ['BUILD_PTHREAD']
     flags = []
     libs = [
-        call('buildsystem.flx_gc.build_runtime', phase, phase), # HACK!!!
+        call('buildsystem.flx_gc.build_runtime', phase),
     ]
     external_libs = []
 

@@ -12,6 +12,7 @@
 @tangler unix_flx_dynlink.fpc     = $PWD/src/config/unix/flx_dynlink.fpc
 @tangler win32_flx_dynlink.fpc    = $PWD/src/config/win32/flx_dynlink.fpc
 @tangler flx_dynlink_config.hpp   = share/lib/rtl/flx_dynlink_config.hpp
+@tangler flx_dynlink.py           = $PWD/buildsystem/flx_dynlink.py
 
 
 @h1 Dynamic Linkage
@@ -1289,7 +1290,7 @@ Description: dynamic loading support
 @tangle unix_flx_dynlink.fpc
 Name: flx_dynlink
 Description: Felix Dynamic loading support
-Requires: dl flx_exceptions flx_gc 
+Requires: dl flx_exceptions flx_gc flx_strutil 
 library: flx_dynlink
 includes: '"flx_dynlink.hpp"'
 macros: BUILD_DYNLINK
@@ -1303,7 +1304,7 @@ src: .*\.cpp
 @tangle win32_flx_dynlink.fpc
 Name: flx_dynlink
 Description: Felix Dynamic loading support
-Requires: dl flx_exceptions flx_gc
+Requires: dl flx_exceptions flx_gc flx_strutil
 library: flx_dynlink
 includes: '"flx_dynlink.hpp"'
 macros: BUILD_DYNLINK
@@ -1312,6 +1313,41 @@ provides_slib: /DEFAULTLIB:flx_dynlink_static
 build_includes: build/release/share/lib/rtl
 srcdir: src/dynlink
 src: .*\.cpp
+@
+
+@tangle flx_dynlink.py
+import fbuild
+from fbuild.path import Path
+from fbuild.record import Record
+from fbuild.builders.file import copy
+from fbuild.functools import call
+
+import buildsystem
+
+# ------------------------------------------------------------------------------
+
+def build_runtime(phase):
+    print('[fbuild] [rtl] build dynlink')
+    path = Path(phase.ctx.buildroot/'share'/'src/dynlink')
+
+    srcs = [f for f in Path.glob(path / '*.cpp')]
+    includes = [phase.ctx.buildroot / 'host/lib/rtl', phase.ctx.buildroot / 'share/lib/rtl']
+    macros = ['BUILD_DYNLINK']
+    libs = [
+        call('buildsystem.flx_strutil.build_runtime', phase),
+        call('buildsystem.flx_gc.build_runtime', phase),
+    ]
+
+    dst = 'host/lib/rtl/flx_dynlink'
+    return Record(
+        static=buildsystem.build_cxx_static_lib(phase, dst, srcs,
+            includes=includes,
+            libs=[lib.static for lib in libs],
+            macros=macros),
+        shared=buildsystem.build_cxx_shared_lib(phase, dst, srcs,
+            includes=includes,
+            libs=[lib.shared for lib in libs],
+            macros=macros))
 @
 
 

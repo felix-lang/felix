@@ -271,38 +271,38 @@ def build(ctx, flxg, cxx, drivers):
         drivers.flx_arun_exe,
     )
 
-def build_flx_pkgconfig(host_phase, target_phase, flx_builder):
+def build_flx_pkgconfig( phase, flx_builder):
     print('[fbuild] [flx] building flx_pkgconfig')
     return flx_builder.build_flx_pkgconfig_exe(
         dst=Path('host')/'bin'/'flx_pkgconfig',
-        src=target_phase.ctx.buildroot/'share'/'src'/'tools'/'flx_pkgconfig.flx',
+        src=phase.ctx.buildroot/'share'/'src'/'tools'/'flx_pkgconfig.flx',
         includes=[
-          target_phase.ctx.buildroot / 'host'/'lib',
-          target_phase.ctx.buildroot / 'share'/'lib',
+          phase.ctx.buildroot / 'host'/'lib',
+          phase.ctx.buildroot / 'share'/'lib',
           ],
         cxx_includes=[ 
-                      target_phase.ctx.buildroot / 'share'/'lib'/'rtl', 
-                      target_phase.ctx.buildroot / 'host'/'lib'/'rtl'],
-        cxx_libs=[call('buildsystem.flx_rtl.build_runtime', host_phase, target_phase).static],
+                      phase.ctx.buildroot / 'share'/'lib'/'rtl', 
+                      phase.ctx.buildroot / 'host'/'lib'/'rtl'],
+        cxx_libs=[call('buildsystem.flx_rtl.build_runtime',  phase).static],
     )
 
 
-def build_flx(host_phase, target_phase, flx_builder):
+def build_flx( phase, flx_builder):
     print('[fbuild] [flx] building flx')
     return flx_builder.build_exe(
         async=False,
         dst=Path('host')/'bin'/'bootflx',
-        src=target_phase.ctx.buildroot/'share'/'src'/'tools'/'bootflx.flx',
+        src=phase.ctx.buildroot/'share'/'src'/'tools'/'bootflx.flx',
         includes=[
-          target_phase.ctx.buildroot / 'host'/'lib',
-          target_phase.ctx.buildroot / 'share'/'lib',
+          phase.ctx.buildroot / 'host'/'lib',
+          phase.ctx.buildroot / 'share'/'lib',
           ],
         cxx_includes=[ 
-                      target_phase.ctx.buildroot / 'share'/'lib'/'rtl', 
-                      target_phase.ctx.buildroot / 'host'/'lib'/'rtl'],
+                      phase.ctx.buildroot / 'share'/'lib'/'rtl', 
+                      phase.ctx.buildroot / 'host'/'lib'/'rtl'],
         cxx_libs=[
-          call('buildsystem.flx_rtl.build_runtime', host_phase, target_phase).static,
-          call('buildsystem.re2.build_runtime', host_phase).static,
+          call('buildsystem.flx_rtl.build_runtime',  phase).static,
+          call('buildsystem.re2.build_runtime', phase).static,
           ],
     )
 

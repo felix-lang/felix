@@ -1784,26 +1784,26 @@ import buildsystem
 
 # ------------------------------------------------------------------------------
 
-def build_runtime(host_phase, target_phase):
-    path = Path(target_phase.ctx.buildroot/'share'/'src/gc')
+def build_runtime(phase):
+    path = Path(phase.ctx.buildroot/'share'/'src/gc')
     dst = 'host/lib/rtl/flx_gc'
     srcs = Path.glob(path / '*.cpp')
     includes = [
-        target_phase.ctx.buildroot / 'host/lib/rtl',
-        target_phase.ctx.buildroot / 'share/lib/rtl',
+        phase.ctx.buildroot / 'host/lib/rtl',
+        phase.ctx.buildroot / 'share/lib/rtl',
     ]
     macros = ['BUILD_FLX_GC']
     libs = [
-        call('buildsystem.judy.build_runtime', host_phase, target_phase),
-        call('buildsystem.flx_exceptions.build_runtime', target_phase),
+        call('buildsystem.judy.build_runtime', phase),
+        call('buildsystem.flx_exceptions.build_runtime', phase),
     ]
 
     return Record(
-        static=buildsystem.build_cxx_static_lib(target_phase, dst, srcs,
+        static=buildsystem.build_cxx_static_lib(phase, dst, srcs,
             includes=includes,
             macros=macros,
             libs=[lib.static for lib in libs]),
-        shared=buildsystem.build_cxx_shared_lib(target_phase, dst, srcs,
+        shared=buildsystem.build_cxx_shared_lib(phase, dst, srcs,
             includes=includes,
             macros=macros,
             libs=[lib.shared for lib in libs]))
