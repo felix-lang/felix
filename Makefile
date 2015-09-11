@@ -90,7 +90,7 @@ clean:
 # Core integrated build
 #
 
-configure: clean extract
+configure: extract
 	#
 	# ============================================================
 	#
