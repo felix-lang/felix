@@ -461,7 +461,7 @@ int main(int argc, char **argv)
 @tangle flx_arun.fpc
 Name: flx_arun
 Description: Felix standard driver, async support
-Requires: flx_async faio demux flx_pthread flx flx_gc flx_dynlink
+Requires: flx_async faio demux flx_pthread flx flx_gc flx_dynlink flx_strutil
 flx_requires_driver: flx_arun
 srcdir: src/flx_drivers
 src: flx_arun_lib\.cpp|flx_arun_main\.cxx
@@ -470,7 +470,7 @@ src: flx_arun_lib\.cpp|flx_arun_main\.cxx
 @tangle flx_run.fpc
 Name: flx_run
 Description: Felix standard driver, no async support
-Requires: flx_pthread flx flx_gc flx_dynlink
+Requires: flx_pthread flx flx_gc flx_dynlink flx_strutil
 srcdir: src/flx_drivers
 src: flx_run_lib\.cpp|flx_run_main\.cxx
 @
