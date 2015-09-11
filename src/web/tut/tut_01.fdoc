@@ -15,12 +15,13 @@ Hello World
 
 @h2 Explanation
 
-@{println} is a built-in command that takes a string and prints it to the terminal ending in a new-line character.
-It has a companion function called @{print} that does the same, but leaves off the newline.
+@{println} is a built-in procedure that takes a string and prints it to the terminal.
+This function causes @{stdout} to write a string, it also write a new-line character ("\n") after the string.
+It has a companion function called @{print} that does the same, but leaves off the new-line.
 
-That dollar sign at the end of @{println} isn't actually part of its name.
-It is a syntactic element of felix that has special meaning--it "contains" whatever comes after it in parentheses.
-If we have a function @{foo(a,b)}, we can all it by passing in parameters denoted by parenthesis (i.e. @{foo(1,2);} ).
+Be aware: That dollar sign at the end of @{println} isn't actually part of its name.
+It is a syntactic element of Felix that carries special meaning--it "contains" whatever comes after it in parentheses.
+If we have a function @{foo(a,b)}, we can call it by passing in parameters denoted by parenthesis (i.e. @{foo(1,2);} ).
 Alternatively, we can use @{$} to save us a little typing.
 @{foo $ 1, 2;} is the same as @{foo(1,2);}.
 
@@ -39,16 +40,18 @@ flx hello
 
 Behind the scenes a lot happens when you run this command.
 Felix checks the code for errors,
-translates it to C++,
+translates it to C++ code,
 compiles the C++ code to a native binary,
 links it (including any libraries that are required),
 and then runs it.
-Furthermore, if Felix detects that something doesn't need to be compiled, it will
-skip over some of these steps, or parts thereof.
+Furthermore, if Felix detects that it has already compiled everything, it will
+skip over many of these steps, or parts thereof and execute the existing copy.
 
 You can see this for yourself by executing @{flx hello} a second time.
-It was a bit slow on the first run, becaues of the compile process mentioned above, but subsequent runs will load much faster than any virtual machine. 
+It was a bit slow on the first run--because of the compile process mentioned above--but subsequent runs will load much faster.
 
-
+Our opinion is that this is a viable method for working with programs. 
+Many compilers take longer than Felix does and require too much attention to compilation.
+Plus, what you get as an output is a very fast application--faster than any virtual machine.
 
 

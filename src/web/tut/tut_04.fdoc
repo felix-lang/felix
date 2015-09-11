@@ -1,6 +1,10 @@
-@title Hands On!
-@h2 Reading standard streams
-Well then, here's another way to get some data in:
+@title Reading Standard Streams
+
+@h1 Reading Standard Streams
+
+Another way to get some data in is to leverage the standard input/output streams.
+We've already been using the output stream to display data (using @{print} and @{println}), but let's try something new and "capture" data using standard input.
+
 @felix
 write$ stdout,"Enter your name: "; fflush stdout;
 val name = readln$ stdin;
@@ -12,15 +16,28 @@ Enter your name: Felix the Cat
 Hello Felix the Cat
 
 @
+
+You might wonder if there any difference between @{print x} and @{write$ stdout, x; fflush stdout;}?
+
+Yes, but it's subtle. 
+
+@{print} and it's kin are designed for fast output to the console.
+They write the strings to stdout the same as @{write$ stdout, ...} would, however it does not force the buffer to flush.
+If it did, the program would have to wait for the console to display the content before proceeding, and this could be slow.
+
+Most of the time we can let the console manage its own output buffering,
+but when we want to ask the user a question, we need to be sure the question is displayed before querying for input (via @{readln}).
+If we leave this out it just looks like the program locked up.
+@{fflush stdout;} make sure the content is displayed.
+
 Here,
 <ul>
 <li>@{stdout} is the usual standard output text stream</li>
-<li>@{write} is a command to write a string to a nominated output text stream</li>
-<li>@{fflush} is a command to flush any buffered output to the physical device
-associated with a text stream</li>
+<li>@{write} is a command to write a string to a nominated output text stream. We can use it for printing to @{stdout} as well as to files.</li>
+<li>@{fflush} is a command to flush any buffered output to the physical device associated with a text stream</li>
 <li>@{stdin} is the usual standard input text stream</li>
 <li>@{readln} reads a string from a nominated input text stream, including the terminating newline if present</li>
-<li>@{val} names a value, in this case that returned by the @{readln} function</li>
+<li>@{val} names a value, in this case that returned by the @{readln} function. We will talk more about values soon.</li>
 <li>@{writeln} writes a string to a nominated output stream and ends a line</li>
 </ul>
 
