@@ -3,28 +3,27 @@
 
 Welcome to the Felix language!
 
-This is the place to be if you are not yet aquainted with the Felix language. 
-We will cover the basics of programming in Felix by starting with short examples and thorough explanations.
-By the end of this tutorial, you should have the basic vocabulary to write complete applications.
-You will also have a primer for diving deeper into the language and exploring Felix's more advanced features. 
+In this tutorial will cover the basics of programming in Felix by starting with short examples.
+By the end of this tutorial, you should know enough about Felix to write modest applications and (hopefully) impress your friends and collegues.
+This tutorial should also enable you to explore Felix's more advanced features in the other documents.
 
-The following examples may seem elementary, but we believe that a few good examples can cover a lot of ground.
 For someone that is already familiar with a programming langauge, this tutorial shouldn't take long--maybe 15-20 minutes.
 We encourage you not to skip ahead to more ambitious things; not yet anyway.
-Some concepts like "applying a function to each element of a list" seem innocuous but can be tricky at first glance.
+You can skim the words, but we encourage you to look at the code examples, the output, and ask the question "why did that happen?"
+Some concepts like "applying a function to each element of a list" seem innocuous but not every language is the same, and Felix has some notable differences.
 
-Just relax with a cup of coffee, fire up your text editor, and follow along with us as we go.
+So go get cup of coffee, relax in your favorite chair (or standing desk), fire up your text editor, and follow along with us as we go.
 
-If you find an issue with anything in this tutorial or have specific questions,
+If you find issue with anything in this tutorial or have specific questions,
 please send a message to our <a href='https://groups.google.com/forum/#!forum/felix-language'>mailing list</a>.
-We would love to answer your questions.
+We enjoy answering questions, talking about Felix, hearing about what your experiences, and would appreciate hearing from you.
 
 <ul>
 <li><a href="tut_01.fdoc">Hello world</a></li>
 <li><a href="tut_02.fdoc">Environment Variables</a></li>
-<li><a href="tut_03.fdoc">Program Arguments</a></li>
-<li><a href="tut_04.fdoc">Hands On!</a></li>
-<li><a href="tut_05.fdoc">Hands On!</a></li>
+<li><a href="tut_03.fdoc">Command Line Arguments</a></li>
+<li><a href="tut_04.fdoc">Reading Standard Streams</a></li>
+<li><a href="tut_05.fdoc">String Manipulation</a></li>
 <li><a href="tut_06.fdoc">Variables</a></li>
 <li><a href="tut_07.fdoc">Control</a></li>
 <li><a href="tut_08.fdoc">Functions</a></li>

@@ -1,13 +1,43 @@
 @title Environment Variables
+
 @h1 Environment variables
-It's a pretty boring program, so lets try an improvement:
+
+Okay, let's be honest, the program we wrote in the first section was pretty boring.
+Let's try something that isn't hard-coded to just say "Hello world."
+Let's make the program actually greet us by name.
+
+The way we will do this is by reading a value from the operating system which should contain our username.
+Here is the program:
+
 @felix-unchecked
 println$ "Hello " + Env::getenv "USER";
 @
-<ul><li>The @{getenv} function can't fail, it will just return an empty string
-of the environment variable is not set.</li>
-<li> The infix operator @{+} you
-see is string concatenation.</li>
+
+We notice the following:
+
+<ul>
+
+<li>
+@{getenv} is a function that will retrieve a value from the system's environment variables.
+@{getenv} takes one input (the name of the variable to lookup) and uses that to query the operating system.
+Also, it can't fail.
+If the variable doesn't exist on the system it will just return an empty string.
+(We will get to smarter methods for handling invalid input later.)
+</li>
+
+<li>
+@{Env} is the class (you can think of it as a namespace or module, if you like) that contains the @{getenv} procedure.
+Classes make life nice because they allow us to group associated behavior together.
+The @{::} operator allows us to "reach into" a class to get to the contents inside.
+Its functionality and notation is borrowed from C++, however--just as a warning--classes in Felix differ from those in C++.
+</li>
+
+<li>
+The infix operator @{+} you see is string concatenation.
+It takes two strings as inputs and returns one "joined" string as an output.
+So, in our example above, if @{Env::getenv "USER"} returns @{"Jim"} then concatenation would produce a new string containing @{"Hello Jim"}.
+</li>
+
 </ul>
 
 

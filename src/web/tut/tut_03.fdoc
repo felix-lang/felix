@@ -1,19 +1,41 @@
-@title Program Arguments
+@title Command Line Arguments
+
 @h1 Command line arguments
-Ok, so here's another way:
+
+Another way to change the name that displays on our hello world program is to use command line arguments.
+These arguments are supplied when the program is run from the command line, as follows:
+
+<pre>
+flx hello v1 v2 v3 v4
+</pre>
+
+With @{v1} having an index of 1, @{v2} of 2, and so on, counting up by one.
+We can grab these values by passing the index value (position) into @{System::argv} as we see here:
+
 @felix-unchecked
 println$ "Hello " + System::argv 1;
 @
-This reads the first command line argument after the Felix 
-program name, for example if you type:
+
+This reads the first command line argument (index=1), and returns it to the caller.
+For example if you type:
+
 <pre>
 flx hello Joachim
 </pre>
-then Joachim will be welcomed.
+
+then Joachim will be welcomed (i.e. "Hello Joachim").
+
 <ul>
-<li>The function @{System::argv} applied to an integer <em>n</em>
-returns the <em>n'th</em> command line argument if it exists,
-or an empty string otherwise.</li> 
-<li>Arguments are 0-origin and start with
-the executable name: this does not include the @{flx} driver.</li>
+
+<li>
+The function @{System::argv} applied to an integer <em>n</em> returns the <em>n'th</em> command line argument.
+If the argument exists it will return it (as a string), or an empty string otherwise.
+</li> 
+
+<li>
+Arguments actually start at an index of 0, but the first one (index 0) always contains the executable name.
+If you play with this you'll notice something funny though, this value does not include the @{flx} driver.
+Exercise for the reader: can you find an explanation for why this is?
+</li>
+
 </ul>
