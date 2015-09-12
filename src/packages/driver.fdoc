@@ -40,7 +40,7 @@ four combinations, so common code can be shared.
 
 These are conditioned by two boolean macros:
 
-FLX_STATIC_LINK:
+FLX_BUILD_FOR_STATIC_LINK:
   if defined, we're static linking
   if not defined, we're dynamic linking
 
@@ -58,6 +58,27 @@ FLX_HAVE_MSVC:
   if defined non-zero we're using MSVC++ compiler and SDK
   used to decide the name of the async library dll
 
+NOTE: The macro "FLX_STATIC_LINK" will ALSO be defined by the
+toolchain. This is UNRELATED to the FLX_BUILD_FOR_STATIC_LINK
+macro. The FLX_STATIC_LINK macro says that all unresolved
+externals linking the flx_(a)_run executables are to be
+found in libraries statically. These executables ALWAYS
+dynamically load Felix DLLs using dlopen/LoadLibrary.
+
+But the exes themselves are fully statically linked 
+(except for C/C++ standard libraries of course).
+The flx_(a)run exes are univeral drivers. To make
+them the macro FLX_BUILD_FOR_STATIC_LINK must be *undefined*.
+
+The same source code is ALSO used to statically link your program
+into an executable. In this case again, all the object files
+have to be FLX_STATIC_LINK however this time we get code
+produced with FLX_BUILD_FOR_STATIC link defined.
+
+Note that a flx_run that satisfies its externals from a DLL
+would also be possible but we don't build one of them.
+That would be PATH dependent, and the PATH might be *different*
+to the one the client DLL program requires.
 
 @tangle flx_run.include
 #include <cstdlib>
@@ -100,7 +121,7 @@ using namespace flx::run;
    #define FLX_ASYNC_DLL_NAME "libflx_async_dynamic"
 #endif
 
-#ifdef FLX_STATIC_LINK
+#ifdef FLX_BUILD_FOR_STATIC_LINK
 extern "C" void *flx_main;
 extern void *static_create_thread_frame;
 extern void *static_flx_start;
@@ -166,7 +187,7 @@ void init_ptr_create_async_hooker(flx_config *c, bool debug_driver) {
   c->ptr_create_async_hooker = create_async_hooker;
   if(debug_driver)
     fprintf(stderr,"[flx_run.include]: FLX_SUPPORT_ASYNC TRUE, create_async_hooker = %p\n", create_async_hooker);
-#ifndef FLX_STATIC_LINK
+#ifndef FLX_BUILD_FOR_STATIC_LINK
   // Try to dynamically load the felix asynchronous library
 
   if(debug_driver)
@@ -227,7 +248,7 @@ and dynamic linkage.
 
 @tangle flx_run.include
 int get_flx_args_config(int argc, char **argv, flx_config *c) {
-#ifndef FLX_STATIC_LINK
+#ifndef FLX_BUILD_FOR_STATIC_LINK
   c->static_link = false;
   if (argc<2)
   {
@@ -289,7 +310,7 @@ itself.
 This is a hack. It should be done in the library linkage class.
 
 @tangle flx_run.include
-#ifdef FLX_STATIC_LINK
+#ifdef FLX_BUILD_FOR_STATIC_LINK
 ::std::string modulenameoffilename(::std::string const &s)
 {
   ::std::size_t i = s.find_last_of("\\/");
@@ -327,7 +348,7 @@ static_link() method (although it doesn't check for NULLs).
 @tangle flx_run.include
 ::flx::dynlink::flx_dynlink_t *link_library(flx_config *c, ::flx::gc::collector::gc_profile_t *gcp) {
   ::flx::dynlink::flx_dynlink_t* library;
-#ifdef FLX_STATIC_LINK
+#ifdef FLX_BUILD_FOR_STATIC_LINK
   library = new (*gcp, ::flx::dynlink::flx_dynlink_ptr_map, false) ::flx::dynlink::flx_dynlink_t(
       modulenameoffilename(c->filename),
       (::flx::dynlink::thread_frame_creator_t)static_create_thread_frame,
@@ -409,7 +430,7 @@ to be linked in, however it is only activated on demand.
 @tangle flx_arun_lib_static.cpp
 #define FLX_SUPPORT_ASYNC 1
 #define FELIX_MAIN felix_arun
-#define FLX_STATIC_LINK
+#define FLX_BUILD_FOR_STATIC_LINK
 #include "flx_run.include"
 @
 
@@ -431,7 +452,7 @@ running a Felix program built as an object file.
 @tangle flx_run_lib_static.cpp
 #define FLX_SUPPORT_ASYNC 0
 #define FELIX_MAIN felix_run
-#define FLX_STATIC_LINK
+#define FLX_BUILD_FOR_STATIC_LINK
 #include "flx_run.include"
 @
 
