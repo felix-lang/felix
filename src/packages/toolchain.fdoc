@@ -1724,8 +1724,8 @@ object toolchain_msvc_win32 (config:clang_config_t) implements toolchain_t =
 
   method fun dependency_extension () => ".d";
   method fun executable_extension () => ".exe";
-  method fun static_object_extension () => ".obj";
-  method fun dynamic_object_extension () => ".obj";
+  method fun static_object_extension () => "_static.obj";
+  method fun dynamic_object_extension () => "_dynamic.obj";
   method fun static_library_extension () => ".lib";
   method fun dynamic_library_extension () => ".dll";
   method fun pathname_separator () => "\\";
