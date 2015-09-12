@@ -31,19 +31,18 @@
 
 
 #ifndef JUDY_EXTERN
-#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
-#ifdef BUILD_JUDY
-#define JUDY_EXTERN __declspec(dllexport)
-#else
-#define JUDY_EXTERN __declspec(dllimport)
-#endif
-#else
-#ifdef BUILD_JUDY
-#define JUDY_EXTERN __attribute__((visibility("default")))
-#else
-#define JUDY_EXTERN
-#endif
-#endif
+  #ifdef FLX_STATIC_LINK
+     #define JUDY_EXTERN
+  #else
+    #ifdef _WIN32
+      #ifdef BUILD_JUDY
+        #define JUDY_EXTERN __declspec(dllexport)
+      #else
+        #define JUDY_EXTERN __declspec(dllimport)
+      #endif
+    #else
+      #define JUDY_EXTERN __attribute__((visibility("default")))
+    #endif
 #endif
 
 /* here JU_WIN <=> MSVC CL build */
