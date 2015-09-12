@@ -43,6 +43,7 @@
     #else
       #define JUDY_EXTERN __attribute__((visibility("default")))
     #endif
+  #endif
 #endif
 
 /* here JU_WIN <=> MSVC CL build */
