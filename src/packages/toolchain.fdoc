@@ -1,3 +1,4 @@
+#endif
 @title C and C++ toolchains
 @tangler toolchain_clang_config.flx   = share/lib/std/felix/toolchain_clang_config.flx
 @tangler toolchain_interface.flx      = share/lib/std/felix/toolchain_interface.flx
@@ -1820,7 +1821,19 @@ object toolchain_msvc_win32 (config:clang_config_t) implements toolchain_t =
 
   method gen executable_linker  (spec:(dst:string, srcs:list[string])) : int = 
   {
-    var result =shell$  "cl.exe" ! "/DFLX_STATIC_LINK" ! "/MT" ! spec.srcs + ("/Fe"+spec.dst) + "/link" + static_link_strings;
+    // Windows requires the object files before the /link and the libraries after
+    // our generic interface can't deal with that so we have to parse ..
+    var link_specs = Empty[string];
+    var obj_specs = Empty[string];
+    for term in srcs + static_link_strings do
+      if prefix (term, "/DEFAULTLIB:") do link_specs += term;
+      elif prefix (term, "/LIBPATH:") do link_specs += term;
+      elif suffix (term, ".obj") or suffix (term, ".obj") do obj_specs += term;
+      else
+        obj_specs += term; // dunno what to do with it!
+      done
+    done
+    var result =shell$  "cl.exe" ! "/DFLX_STATIC_LINK" ! "/MT" ! obj_specs + ("/Fe"+spec.dst) + "/link" + link_specs;
     return result;
   }
 
