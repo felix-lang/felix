@@ -28,6 +28,7 @@ used to initiate a Felix world.
 #ifndef __flx_world_config_H_
 #define __flx_world_config_H_
 
+#include "flx_rtl_config.hpp"
 #include "flx_gc.hpp"
 #include "flx_collector.hpp"
 #include "flx_dynlink.hpp"
@@ -212,6 +213,7 @@ a Felix world.
 
 #ifndef __flx_world_H_
 #define __flx_world_H_
+#include "flx_rtl_config.hpp"
 
 #include "flx_gc.hpp"
 #include "flx_collector.hpp"
@@ -343,7 +345,7 @@ static int do_final_cleanup(
 
 static void *get_stack_pointer() { void *x=(void*)&x; return x; }
 
-std::list<fthread_t*>*
+static std::list<fthread_t*>*
 run_felix_pthread_ctor(
   flx::gc::generic::gc_profile_t *gcp,
   ::flx::dynlink::flx_libinst_t *instance)
@@ -374,7 +376,7 @@ run_felix_pthread_ctor(
   return active;
 }
 
-void run_felix_pthread_dtor(
+static void run_felix_pthread_dtor(
   bool debug_driver,
   flx::gc::generic::gc_profile_t *gcp,
   flx::pthread::thread_control_t *thread_control,
