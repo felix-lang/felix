@@ -370,12 +370,13 @@ static_link() method (although it doesn't check for NULLs).
 @tangle flx_run.include
 int FELIX_MAIN (int argc, char** argv)
 {
-fprintf(stderr,"felix_run=FELIX_MAIN starts\n");
+//fprintf(stderr,"felix_run=FELIX_MAIN starts\n");
   int error_exit_code = 0;
   flx_config *c = new flx_config(link_library, init_ptr_create_async_hooker, get_flx_args_config);
-fprintf(stderr,"flx_config created\n");
+// WINDOWS CRASHES HERE (the constructor runs)
+//fprintf(stderr,"flx_config created\n");
   flx_world *world=new flx_world(c);
-fprintf(stderr,"flx_world created\n");
+//fprintf(stderr,"flx_world created\n");
   try {
 
     error_exit_code = world->setup(argc, argv);
@@ -478,7 +479,7 @@ to create a static link executable without async support.
 #include "stdio.h"
 int main(int argc, char **argv) 
 {
-  fprintf(stderr,"Felix mainline flx_run_main starts!\n");
+  //fprintf(stderr,"Felix mainline flx_run_main starts!\n");
   return felix_run(argc, argv);
 }
 @
