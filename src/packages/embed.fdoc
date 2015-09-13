@@ -114,7 +114,9 @@ flx_config::flx_config
   link_library(link_library_arg),
   init_ptr_create_async_hooker(init_ptr_create_async_hooker_arg),
   get_flx_args_config(get_flx_args_config_arg)
-{}
+{
+  fprintf(stderr,"flx_config constrfuctor\n");
+}
 
 // =================================================================
 // Initialiser
