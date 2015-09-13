@@ -1271,7 +1271,7 @@ to require the library name as a prefix. Stay tuned.
 @tangle config_unix_dl.fpc
 Name: dl
 Description: dynamic loading support
-includes: '#include "<dlfcn.h>"'
+includes: '<dlfcn.h>'
 requires_dlibs: -ldl
 requires_slibs: -ldl
 @
@@ -1279,7 +1279,7 @@ requires_slibs: -ldl
 @tangle config_macosx_dl.fpc
 Name: dl
 Description: dynamic loading support
-includes: '#include "<dlfcn.h>"'
+includes: '<dlfcn.h>'
 @
 
 @tangle config_win32_dl.fpc
