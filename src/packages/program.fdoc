@@ -1056,7 +1056,7 @@ class CmdExe
     fun quote_line_for_system(s:string) => '"' + s + '"';
     fun quote_line_for_popen(s:string) => '"' + s + '"';
 
-    gen get_stdout(x:string) = {
+    gen raw_get_stdout(x:string) = {
       var fout = Win32Process::popen_in('"'+x+'"');
       if valid fout do
         var output = load fout;
