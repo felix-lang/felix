@@ -554,6 +554,7 @@ class Config {
         | "FLX_OUTPUT_DIR" => cfg.FLX_OUTPUT_DIR <- a; 
         | "FLX_LIB_DIRS" => cfg.FLX_LIB_DIRS <-  respectful_split a; 
         | "FLX_RTL_DIRS" => cfg.FLX_RTL_DIRS <- respectful_split a; 
+        | _ => ;
         endmatch;
       | #None => ;
       endmatch;
@@ -973,7 +974,7 @@ private noinline proc handle_switch
     Config::cascade_FLX_TARGET_DIR config arg.[13 to];
 
   elif prefix(arg,"--toolchain=") do
-    debugln "Set target configuration subdirectory";
+    debugln "Set toolchain";
     control.FLX_TOOLCHAIN<- arg.[12 to];
 
   elif prefix(arg,"--test=") do

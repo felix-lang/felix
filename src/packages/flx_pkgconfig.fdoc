@@ -607,6 +607,10 @@ class FlxPkgConfig_query
       var result,values = query$ list$ ("--field="+field, pkg);
       if result != 0 do
         println$ "Can't find package " + pkg;
+        println$ "Searching in paths:";
+        for path in paths do
+          println$ "  " + path;
+        done
         System::exit(1);
       done
       return values;
