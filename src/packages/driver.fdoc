@@ -373,6 +373,7 @@ int FELIX_MAIN (int argc, char** argv)
 fprintf(stderr,"felix_run=FELIX_MAIN starts\n");
   int error_exit_code = 0;
   flx_config *c = new flx_config(link_library, init_ptr_create_async_hooker, get_flx_args_config);
+fprintf(stderr,"flx_config created\n");
   flx_world *world=new flx_world(c);
   try {
 
