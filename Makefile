@@ -557,6 +557,7 @@ win32-prep:
 	rm -rf build/release/win32 tmp-dir trial-tmp
 	mkdir -p build/release/win32
 	mkdir -p build/release/win32/bin
+	cp build/release/host/bin/flxg build/release/win32/bin
 	# =========================================================
 	#  Copy compiler
 	# =========================================================
