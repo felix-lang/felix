@@ -1093,7 +1093,7 @@ class FlxRtlBuild
 
       var toolchain = toolchain-maker config;
       println$ #(toolchain.whatami);
-      proc cobj (s:string,dst:string) {
+      proc cobj_static (s:string,dst:string) {
         var src = srcdir/s;
         println$ "Compiling [static] " + src + " -> " + dst;
         var fresh = cxx_depcheck (toolchain, src, dst);
@@ -1105,12 +1105,24 @@ class FlxRtlBuild
           System::exit 1;
         done
       }
-      cobj("flx_run_lib_static.cpp",hrtl/"flx_run_lib"+#(toolchain.static_object_extension));
+      proc cobj_dynamic (s:string,dst:string) {
+        var src = srcdir/s;
+        println$ "Compiling [static] " + src + " -> " + dst;
+        var fresh = cxx_depcheck (toolchain, src, dst);
+        var result = if fresh then 0 else 
+          toolchain.cxx_dynamic_object_compiler(src=src, dst=dst)
+        ;
+        if result != 0 do
+          println$ "Driver compile "+ s + " -> " + dst +" FAILED";
+          System::exit 1;
+        done
+      }
+      cobj_static("flx_run_lib_static.cpp",hrtl/"flx_run_lib"+#(toolchain.static_object_extension));
       cobj("flx_run_lib_dynamic.cpp",tmpdir/"flx_run_lib_dynamic"+#(toolchain.static_object_extension));
-      cobj("flx_arun_lib_static.cpp",hrtl/"flx_arun_lib"+#(toolchain.static_object_extension));
+      cobj_static("flx_arun_lib_static.cpp",hrtl/"flx_arun_lib"+#(toolchain.static_object_extension));
       cobj("flx_arun_lib_dynamic.cpp",tmpdir/"flx_arun_lib_dynamic"+#(toolchain.static_object_extension));
-      cobj("flx_run_main.cxx",hrtl/"flx_run_main"+#(toolchain.static_object_extension));
-      cobj("flx_arun_main.cxx",hrtl/"flx_arun_main"+#(toolchain.static_object_extension));
+      cobj_dynamic("flx_run_main.cxx",hrtl/"flx_run_main"+#(toolchain.static_object_extension));
+      cobj_dynamic("flx_arun_main.cxx",hrtl/"flx_arun_main"+#(toolchain.static_object_extension));
 
       proc prg(file:string) {
         var exe = prgname file;
