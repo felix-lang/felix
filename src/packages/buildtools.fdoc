@@ -1118,9 +1118,9 @@ class FlxRtlBuild
         done
       }
       cobj_static("flx_run_lib_static.cpp",hrtl/"flx_run_lib"+#(toolchain.static_object_extension));
-      cobj("flx_run_lib_dynamic.cpp",tmpdir/"flx_run_lib_dynamic"+#(toolchain.static_object_extension));
+      cobj_dynamic("flx_run_lib_dynamic.cpp",tmpdir/"flx_run_lib_dynamic"+#(toolchain.static_object_extension));
       cobj_static("flx_arun_lib_static.cpp",hrtl/"flx_arun_lib"+#(toolchain.static_object_extension));
-      cobj("flx_arun_lib_dynamic.cpp",tmpdir/"flx_arun_lib_dynamic"+#(toolchain.static_object_extension));
+      cobj_dynamic("flx_arun_lib_dynamic.cpp",tmpdir/"flx_arun_lib_dynamic"+#(toolchain.static_object_extension));
       cobj_dynamic("flx_run_main.cxx",hrtl/"flx_run_main"+#(toolchain.static_object_extension));
       cobj_dynamic("flx_arun_main.cxx",hrtl/"flx_arun_main"+#(toolchain.static_object_extension));
 
