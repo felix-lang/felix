@@ -1118,21 +1118,26 @@ class FlxRtlBuild
         done
       }
       cobj_static("flx_run_lib_static.cpp",hrtl/"flx_run_lib"+#(toolchain.static_object_extension));
-      cobj_dynamic("flx_run_lib_dynamic.cpp",tmpdir/"flx_run_lib_dynamic"+#(toolchain.static_object_extension));
+      cobj_dynamic("flx_run_lib_dynamic.cpp",tmpdir/"flx_run_lib"+#(toolchain.dynamic_object_extension));
+
       cobj_static("flx_arun_lib_static.cpp",hrtl/"flx_arun_lib"+#(toolchain.static_object_extension));
-      cobj_dynamic("flx_arun_lib_dynamic.cpp",tmpdir/"flx_arun_lib_dynamic"+#(toolchain.static_object_extension));
-      cobj_dynamic("flx_run_main.cxx",hrtl/"flx_run_main"+#(toolchain.static_object_extension));
-      cobj_dynamic("flx_arun_main.cxx",hrtl/"flx_arun_main"+#(toolchain.static_object_extension));
+      cobj_dynamic("flx_arun_lib_dynamic.cpp",tmpdir/"flx_arun_lib"+#(toolchain.dynamic_object_extension));
+
+      cobj_static("flx_run_main.cxx",hrtl/"flx_run_main"+#(toolchain.static_object_extension));
+      cobj_dynamic("flx_run_main.cxx",hrtl/"flx_run_main"+#(toolchain.dynamic_object_extension));
+
+      cobj_static("flx_arun_main.cxx",hrtl/"flx_arun_main"+#(toolchain.static_object_extension));
+      cobj_dynamic("flx_arun_main.cxx",hrtl/"flx_arun_main"+#(toolchain.dynamic_object_extension));
 
       proc prg(file:string) {
         var exe = prgname file;
         println$ "Linking [executable] " + exe;
         var objs = list (
-          tmpdir/file+"_lib_dynamic"+#(toolchain.static_object_extension),
-          hrtl/file+"_main"+#(toolchain.static_object_extension)
+          tmpdir/file+"_lib"+#(toolchain.dynamic_object_extension),
+          hrtl/file+"_main"+#(toolchain.dynamic_object_extension)
         );
         var result,libs = db.query$ list("--rec","--keeprightmost",
-          "--field=provides_slib","--field=requires_slibs",file);
+          "--field=provides_dlib","--field=requires_dlibs",file);
         libs = FlxPkg::fix2word_flags libs;
         if result != 0 do
           println$ "Driver pkgconfig query for "+ file+" FAILED";
@@ -1376,7 +1381,7 @@ class FlxCoreBuild
 
   proc build_flx_web (target_dir:string, target_bin:string, web_plugins:list[string])
   {
-    var obj_extn = ".o"; // HACK!!!!!!!! 
+    var obj_extn = "_static.o"; // HACK!!!!!!!! 
     println$ "dflx_web  -> dflx_web object file";
     var result = Flx_client::runflx$ list ('[flx]','--test='+target_dir, '--static','-c','--nolink',
       '-o', target_dir/target_bin/'lib'/'rtl'/'dflx_web'+obj_extn, target_dir/'share'/'src'/'tools'/'dflx_web');
@@ -1409,7 +1414,7 @@ class FlxCoreBuild
 
   proc build_flx (target_dir:string, target_bin:string, toolchain_plugins:list[string])
   {
-    var obj_extn = ".o"; // HACK!!!!!!!! 
+    var obj_extn = "_static.o"; // HACK!!!!!!!! 
     println$ "dflx  -> dflx object file";
     var result = Flx_client::runflx$ list ('[flx]','--test='+target_dir, '--static','-c','--nolink',
       '-o', target_dir/target_bin/'lib'/'rtl'/'dflx'+obj_extn, target_dir/'share'/'src'/'tools'/'dflx');
