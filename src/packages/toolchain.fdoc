@@ -1784,32 +1784,32 @@ object toolchain_msvc_win32 (config:clang_config_t) implements toolchain_t =
   
   method gen c_static_object_compiler (spec:(dst:string, src:string)) : int = 
   {
-    var result = shell$ ("cl.exe" ! "/nologo" ! "/DFLX_STATIC_LINK" ! "/c" ! "/Tc"+spec.src ! macros) + include_switches + ("/Fo"+spec.dst);
+    var result = shell$ ("cl.exe" ! "/nologo" ! "/DFLX_STATIC_LINK" ! "/Zl" ! "/c" ! "/Tc"+spec.src ! macros) + include_switches + ("/Fo"+spec.dst);
     return result;
   }
 
   method gen c_dynamic_object_compiler (spec:(dst:string, src:string)) : int = 
   {
-    var result =shell$ ("cl.exe" ! "/nologo" ! "/c" ! "/Tc"+spec.src ! macros) + include_switches + ("/Fo"+spec.dst); 
+    var result =shell$ ("cl.exe" ! "/nologo" ! "/Zl" ! "/c" ! "/Tc"+spec.src ! macros) + include_switches + ("/Fo"+spec.dst); 
     return result;
   }
 
 
   method gen cxx_static_object_compiler (spec:(dst:string, src:string)) : int = 
   {
-    var result =shell$ ("cl.exe" ! "/nologo" ! "/DFLX_STATIC_LINK" ! "/c" ! "/EHs" ! macros) + include_switches + spec.src + ("/Fo"+spec.dst); 
+    var result =shell$ ("cl.exe" ! "/nologo" ! "/DFLX_STATIC_LINK" ! "/Zl" ! "/c" ! "/EHs" ! macros) + include_switches + spec.src + ("/Fo"+spec.dst); 
     return result;
   }
 
   method gen cxx_static_library_object_compiler (spec:(dst:string, src:string)) : int = 
   {
-    var result =shell$ ("cl.exe" ! "/nologo" ! "/DFLX_STATIC_LINK" ! "/c" ! "/EHs" ! macros) + include_switches + (spec.src ! ("/Fo"+spec.dst) ! Empty[string]); 
+    var result =shell$ ("cl.exe" ! "/nologo" ! "/DFLX_STATIC_LINK" ! "/Zl" ! "/c" ! "/EHs" ! macros) + include_switches + (spec.src ! ("/Fo"+spec.dst) ! Empty[string]); 
     return result;
   }
 
   method gen cxx_dynamic_object_compiler (spec:(dst:string, src:string)) : int = 
   {
-    var result =shell$ ("cl.exe" ! "/nologo" ! "/c" ! "/EHs" ! macros) + include_switches + (spec.src ! ("/Fo"+spec.dst) ! Empty[string]); 
+    var result =shell$ ("cl.exe" ! "/nologo" ! "/Zl" ! "/c" ! "/EHs" ! macros) + include_switches + (spec.src ! ("/Fo"+spec.dst) ! Empty[string]); 
     return result;
   }
 
