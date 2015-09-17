@@ -716,7 +716,7 @@ object toolchain_gcc_linux (config:clang_config_t) implements toolchain_t =
       CxxCompiler::generic_cxx_compile_for_static
       (
         CCOBJ_STATIC_LIB = c_compiler, 
-        CCFLAGS = base_c_compile_flags,
+        CCFLAGS = "-fvisibility=hidden" ! base_c_compile_flags,
         INCLUDE_DIRS = config.header_search_dirs,
         MACROS = config.macros,
         SPEC_OBJ_FILENAME = "-o ",
@@ -751,7 +751,7 @@ object toolchain_gcc_linux (config:clang_config_t) implements toolchain_t =
       CxxCompiler::generic_cxx_compile_for_static
       (
         CCOBJ_STATIC_LIB = cxx_compiler, 
-        CCFLAGS = "-g"! "-c" ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" 
+        CCFLAGS = "-fvisibility=hidden" !"-g"! "-c" ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" 
           ! "-D_POSIX" ! "-std=gnu++11" 
           ! (cxx_compile_warning_flags+config.ccflags),
         INCLUDE_DIRS = config.header_search_dirs,
@@ -770,7 +770,7 @@ object toolchain_gcc_linux (config:clang_config_t) implements toolchain_t =
       CxxCompiler::generic_cxx_compile_for_static
       (
         CCOBJ_STATIC_LIB = cxx_compiler, 
-        CCFLAGS = base_cxx_compile_flags,
+        CCFLAGS = "-fvisibility=hidden" !base_cxx_compile_flags,
         INCLUDE_DIRS = config.header_search_dirs,
         MACROS = "FLX_STATIC_LINK"+config.macros,
         SPEC_OBJ_FILENAME = "-o ",
