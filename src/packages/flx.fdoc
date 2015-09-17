@@ -258,7 +258,7 @@ class FlxCache
       println$ "Delete cache " + spec.CACHE_DIR;
 
       if PLAT_WIN32 do
-          C_hack::ignore$ spec.xqt("mkdir "+spec.CACHE_DIR+"; rd /Q /S " + spec.quote(spec.CACHE_DIR);
+          C_hack::ignore$ spec.xqt("mkdir "+spec.CACHE_DIR+"; rd /Q /S " + spec.CACHE_DIR);
       else
           C_hack::ignore$ spec.xqt("rm -rf " + spec.quote(spec.CACHE_DIR));
       done
