@@ -801,8 +801,8 @@ static inline BITMAPL_t j__udyCountBitsL(BITMAPL_t word)
 //
 // TBD:  Perhaps use an array[32] of masks instead of calculating them.
 
-#define JU_BITPOSMASKB(BITNUM) (1L << ((BITNUM) % cJU_BITSPERSUBEXPB))
-#define JU_BITPOSMASKL(BITNUM) (1L << ((BITNUM) % cJU_BITSPERSUBEXPL))
+#define JU_BITPOSMASKB(BITNUM) ((uintptr_t)1 << ((BITNUM) % cJU_BITSPERSUBEXPB))
+#define JU_BITPOSMASKL(BITNUM) ((uintptr_t)1 << ((BITNUM) % cJU_BITSPERSUBEXPL))
 
 
 // TEST/SET/CLEAR A BIT IN A BITMAP LEAF:
