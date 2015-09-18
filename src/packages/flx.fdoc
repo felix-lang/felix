@@ -1708,8 +1708,19 @@ gen cal_depvars(
     System::exit(1);
   done
 
-  control*.FLX_INTERFACE_FILENAME = cache_join (config.FLX_OUTPUT_DIR,filebase+"_interface.flx");
-  control*.CXX_INTERFACE_FILENAME = cache_join (config.FLX_OUTPUT_DIR,filebase+".hpp");
+  control*.FLX_INTERFACE_FILENAME = 
+    match control*.BUNDLE_DIR with
+    | Some dir => Filename::join(dir,Filename::basename filebase+"_interface.flx")
+    | #None => cache_join (config.FLX_OUTPUT_DIR,filebase+"_interface.flx")
+    endmatch;         
+  debugln$ "Flx interface filename is " + control*.FLX_INTERFACE_FILENAME;
+
+  control*.CXX_INTERFACE_FILENAME = 
+    match control*.BUNDLE_DIR with
+    | Some dir => Filename::join(dir,Filename::basename filebase+".hpp")
+    | #None => cache_join (config.FLX_OUTPUT_DIR,filebase+".hpp")
+    endmatch;         
+  debugln$ "C++ interface filename is " + control*.FLX_INTERFACE_FILENAME;
 
   if control*.LINKER_OUTPUT_FILENAME == "" do
     if control*.LINKIT == 1 or control*.RUNONLY == 1 do
@@ -1763,7 +1774,14 @@ gen cal_depvars(
       done
     done
   done
-  control.LINKER_OUTPUT_FILENAME <-  Directory::mk_absolute_filename control*.LINKER_OUTPUT_FILENAME; 
+  control.LINKER_OUTPUT_FILENAME <-  Directory::mk_absolute_filename control*.LINKER_OUTPUT_FILENAME;
+  control.LINKER_OUTPUT_FILENAME <-
+   match control*.BUNDLE_DIR with
+    | Some dir => Filename::join(dir,Filename::basename control*.LINKER_OUTPUT_FILENAME)
+    | #None => control*.LINKER_OUTPUT_FILENAME
+    endmatch;         
+  debugln$ "Linker output filename " + control*.LINKER_OUTPUT_FILENAME;
+ 
 
   val args = control*.USER_ARGS;
   debugln$ "Target program args = "+args.str;
@@ -2559,8 +2577,8 @@ object processing_env(
     else 
       
       // note load never fails, at worse loads empty string.
-      var output_text = load (output);
-      var expected_text = load (expected);
+      var output_text = load_text (output);
+      var expected_text = load_text (expected);
       var bresult = output_text == expected_text;
       if not bresult do
         eprintln$ "[flx] Output " + output + " doesn't match expected " + expected;
