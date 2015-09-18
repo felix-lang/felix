@@ -36,7 +36,7 @@
 	<div id="main">
 
 
-  <img id="cat" style="opacity: 1; transition: 0.6s; top: 0px; position: relative; transform: scaleX(-1);float: left;" src="../images/200px-Felix_the_cat.svg.png" alt="Felix the cat">
+  <img id="cat" style="opacity: 1; transition: 0.6s; top: 0px; position: relative; transform: scaleX(-1);float: left; width:160px;" src="../images/200px-Felix_the_cat.svg.png" alt="Felix the cat">
 
   
 <ul style="
@@ -54,34 +54,42 @@
 </ul>
 
 
-<p style="
-padding-top: 4em;">Felix is a highly performant, scalable, and safe scripting language suitable for rapid development of software systems.</p>
+<div class="example" style='padding-top: 1.5em;'>
+    <h3 style='display:inline; padding: 0.5em'>Hello world</h3>
+    ( <a href="#">prev</a> 
+    | <a href="#">next</a> )
+<pre style='border: 1px solid #ddd; padding: 1em; margin:0 0 2em 0;'
+>println$ "Hello world";
+</pre>
+</div>
+
+<p>Felix is a highly performant, extensible, and safe programming language suitable for rapid development of software systems.</p>
 
 <p>
-It gets its speed from its C++ code generator which also provides compatibility and easy interopability with existing C and C++ code bases. 
-The native C++ compiler does the hard work of low level optimisation whilst Felix does high level optimisations and type-checking. 
-The resulting code is very fast, sometimes "faster than the speed of light (C)", but can be platform independent and is simple to deploy just distribute the source files and run them, like a scripting language or distribute the statically linked binary.
-</p>
-
-<p>
-Felix's type system is based on a combination of OCaml and Haskell. 
-Like OCaml, it provides strong support for functional programming, whilst also supporting imperative programming. 
-The type system is strict and includes first-order polymorphism at its core; not bolted-on like Java generics or C++ templates. 
-Felix supports open overloading like C++, but only allows exact matches. 
-It also provides Haskell style type classes as an alternative way to obtain genericity.
-</p>
-
-<p>
-Felix supports user defined macros and syntactic improvements. 
-This extensibility allows a developer to easily write domain specific sub-languages (DSLs) with ease. 
-The parser is GLR and the user actions are written in R5RS Scheme.
-</p>
-
-<p>
-A rich set of shortcuts makes programming a breeze. 
-Regular expression support and other features provide string handling on par with Perl. 
-Web programming is enabled by built-in asyn socket I/O combined with cooperatively multi-tasked fibres that would support millions of HTTP clients if only the server could supply enough sockets. 
+Felix transparently compiles programs down to C++ and then feeds them into a C++ compiler (e.g. g++, clang++, MSVC). 
+The native C++ compiler does the hard work of low-level optimisation whilst Felix does high-level optimisations and type-checking. 
+The C++ compiler allows Felix to reach fast speeds, but it also provides compatibility and easy interopability with existing C and C++ code bases. 
+The resulting code is very fast, sometimes even faster than C/C++ alone. 
 Context switching is achieved by a pointer swap, and state is maintained by a spaghetti stack.
+</p>
+
+<p>
+Felix supports user defined macros (hygenic) and syntactic customizations. 
+This extensibility allows a developer to write embedded domain specific sub-languages (eDSLs) with ease. 
+These customizations can be applied locally in part of a program or as part of library to be used by others.
+</p>
+
+<p>
+Felix's type system is similar to that of OCaml or Haskell, supporting typeclasses and discriminated unions but also adding proper sum types.
+It provides strong support for functional programming, whilst also supporting imperative programming. 
+The type system is strong, strict, and includes first-order polymorphism at its core.
+Felix supports open overloading like C++, but only allows exact matches. 
+</p>
+
+<p>
+Deployments are flexible, you can distribute the source files and run them like a scripting language, or distribute them as a native binary.
+Regular expression support and other features provide string handling on par with Perl. 
+Web programming is enabled by built-in async socket I/O combined with cooperatively multi-tasked fibres. 
 </p>
 
 <h1>News</h1>
