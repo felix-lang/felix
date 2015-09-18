@@ -2577,8 +2577,8 @@ object processing_env(
     else 
       
       // note load never fails, at worse loads empty string.
-      var output_text = load (output);
-      var expected_text = load (expected);
+      var output_text = load_text (output);
+      var expected_text = load_text (expected);
       var bresult = output_text == expected_text;
       if not bresult do
         eprintln$ "[flx] Output " + output + " doesn't match expected " + expected;
