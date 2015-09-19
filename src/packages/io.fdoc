@@ -285,8 +285,24 @@ include "std/io/filesystem";
 class Input_file[input_file]
 {
   //$ Open file for reading.
-  virtual gen fopen_input: string -> input_file; 
-  virtual gen fopen_input_text: string -> input_file; 
+  virtual gen raw_fopen_input: string -> input_file; 
+  virtual gen raw_fopen_input_text: string -> input_file; 
+
+  gen fopen_input_text (f:string) : input_file =
+  {
+    if Env::getenv "FLX_FILE_MONITOR" != "" call
+      eprintln$ "[Open_input_text] " + f
+    ;
+    return raw_fopen_input_text f;
+  }
+
+  gen fopen_input (f:string) : input_file =
+  {
+    if Env::getenv "FLX_FILE_MONITOR" != "" call
+      eprintln$ "[Open_input] " + f
+    ;
+    return raw_fopen_input f;
+  }
 
   //$ Check if the file was opened correctly.
   virtual gen valid : input_file -> bool;
@@ -323,12 +339,44 @@ class Input_file[input_file]
 class Output_file[output_file]
 {
   //$ Open file for writing.
-  virtual gen fopen_output: string -> output_file;
-  virtual gen fopen_output_text: string -> output_file;
+  virtual gen raw_fopen_output: string -> output_file;
+  virtual gen raw_fopen_output_text: string -> output_file;
 
   //$ Open file for writing in append-only mode.
-  virtual gen fopen_append: string -> output_file;
-  virtual gen fopen_append_text: string -> output_file;
+  virtual gen raw_fopen_append: string -> output_file;
+  virtual gen raw_fopen_append_text: string -> output_file;
+
+  gen fopen_output(f:string) : output_file =
+  {
+    if Env::getenv "FLX_FILE_MONITOR" != "" call
+      eprintln$ "[Open_output] " + f
+    ;
+    return raw_fopen_output f;
+  }
+
+  gen fopen_output_text(f:string) : output_file =
+  {
+    if Env::getenv "FLX_FILE_MONITOR" != "" call
+      eprintln$ "[Open_output_text] " + f
+    ;
+    return raw_fopen_output_text f;
+  }
+
+  gen fopen_append(f:string) : output_file =
+  {
+    if Env::getenv "FLX_FILE_MONITOR" != "" call
+      eprintln$ "[Open_append] " + f
+    ;
+    return raw_fopen_append f;
+  }
+
+  gen fopen_output_append text(f:string) : output_file =
+  {
+    if Env::getenv "FLX_FILE_MONITOR" != "" call
+      eprintln$ "[Open_output_append_text] " + f
+    ;
+    return raw_fopen_append_text f;
+  }
 
   //$ Check if the file was opened correctly.
   virtual gen valid : output_file -> bool;
@@ -392,11 +440,28 @@ open class Cstdio {
 
   //$ Load file from filename.
   //$ Note: loaded in binary mode not text mode!
-  fun load: string -> string = "::flx::rtl::ioutil::load_file($1)"
+  fun raw_load: string -> string = "::flx::rtl::ioutil::load_file($1)"
     requires package "flx_ioutil";
 
-  fun load_text: string -> string = "::flx::rtl::ioutil::load_text_file($1)"
+  fun raw_load_text: string -> string = "::flx::rtl::ioutil::load_text_file($1)"
     requires package "flx_ioutil";
+
+  fun load(f:string) : string =
+  {
+    if Env::getenv "FLX_FILE_MONITOR" != "" call
+      eprintln$ "[load] " + f
+    ;
+    return raw_load f;
+  }
+
+  fun load_text(f:string) : string =
+  {
+    if Env::getenv "FLX_FILE_MONITOR" != "" call
+      eprintln$ "[load_text] " + f
+    ;
+    return raw_load_text f;
+  }
+
 
 
   //$ Standard input, can be redirected by flx_run.
@@ -420,8 +485,8 @@ open class Cstdio {
   //$ C standard IO as instance of Input_file.
   instance Input_file[ifile] {
     requires package "flx_ioutil";
-    gen fopen_input: string -> ifile = 'fopen($1.c_str(),"rb")';
-    gen fopen_input_text: string -> ifile = 'fopen($1.c_str(),"r")';
+    gen raw_fopen_input: string -> ifile = 'fopen($1.c_str(),"rb")';
+    gen raw_fopen_input_text: string -> ifile = 'fopen($1.c_str(),"r")';
     gen valid : ifile -> bool = "$1!=(FILE*)0";
     proc fclose: ifile = '(void)fclose($1);';
     gen load: ifile -> string = "::flx::rtl::ioutil::load_file($1)";
@@ -432,10 +497,10 @@ open class Cstdio {
   //$ C standard IO as instance of Output_file.
   instance Output_file[ofile] {
     requires package "flx_ioutil";
-    gen fopen_output: string -> ofile = 'fopen($1.c_str(),"wb")';
-    gen fopen_output_text: string -> ofile = 'fopen($1.c_str(),"w")';
-    gen fopen_append: string -> ofile = 'fopen($1.c_str(),"ab")';
-    gen fopen_append_text: string -> ofile = 'fopen($1.c_str(),"a")';
+    gen raw_fopen_output: string -> ofile = 'fopen($1.c_str(),"wb")';
+    gen raw_fopen_output_text: string -> ofile = 'fopen($1.c_str(),"w")';
+    gen raw_fopen_append: string -> ofile = 'fopen($1.c_str(),"ab")';
+    gen raw_fopen_append_text: string -> ofile = 'fopen($1.c_str(),"a")';
     gen valid : ofile -> bool = "$1!=(FILE*)0";
     proc fclose: ofile = '(void)fclose($1);';
     proc writeln : ofile * string ="::flx::rtl::ioutil::writeln($1,$2);";

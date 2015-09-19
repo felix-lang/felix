@@ -852,6 +852,7 @@ private proc print_help() {
   println "Flx build tool";
   println "  FLX_INSTALL_DIR=dir     : overrides default installation directory (as if --test=dir)";
   println "  FLX_SHELL_ECHO=1        : show shell callouts (system,popen)";
+  println "  FLX_FILE_MONITOR=1      : reports on every file open";
   println "  FLX_DEBUG_FLX=1         : debug flx (as if --debug-flx set)";
   println "Flxg compiler";
   println "  FLX_DEBUG_PARSER=1      : emit debug info from the Felix parser";
@@ -2081,6 +2082,9 @@ object processing_env(
         debugln$ "Felix compilation succeeded";
         calpackages;
         FlxPkg::write_include_file(dvars.cpp_filebase, control.EXTRA_INCLUDE_FILES);
+/*
+
+SKIP THIS CRAP NOW, use --bundle-dir instead.
         // Now, if we exported something (other than the standard symbols), 
         // we copy up the *.hpp and *_interface.flx
         // files to the same directory as the "linker output filename". 
@@ -2100,6 +2104,7 @@ object processing_env(
             C_hack::ignore (FileSystem::filecopy (src=includes_file, dst=cxxdst));
           done 
         done
+*/
       done
     else
       debugln$ "skipping flxg because output is uptodate";
