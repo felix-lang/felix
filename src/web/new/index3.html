@@ -1,19 +1,173 @@
 <html>
 <head> 
-	<title>Felix Language</title>
-	<link rel="stylesheet" type="text/css" href="style3.css">
-	<meta charset="utf-8"> 
+<title>Felix Language</title>
+<meta name="description" conent="A high-performance programming language"/>
+<meta name="keywords" content="programming, felix, static, typing, speed, performance, c++"/>
+<style>
+
+body {
+	background-color: #eee;
+	color: #222;
+	font-family: palatino;
+	padding: 0;
+	margin: 0;
+}
+
+a {
+	color: #005386;
+	text-decoration: none;
+}
+
+a:hover {
+	background-color: #eee;
+}
+
+#menu {
+	clear: both;
+	overflow: hidden;
+	color: #069;
+	background-color: #17a;
+	padding: 0.7ex;
+	font-size: 94%;
+	border-top: 1px solid #ccc;
+	border-bottom: 1px solid #069;
+}
+
+#menu a {
+	padding: 0.5ex 1ex 0.5ex 1ex;
+	color: #fff;
+}
+
+#menu a:hover {
+	background-color: #069;
+}
+
+#menu a.thisSite {
+	font-weight: bold;
+}
+
+#header {
+	clear: both;
+	color: #555;
+	font-size: 1.78em;
+	padding: 0.7ex 0.7ex 0.7ex 0.7em;
+}
+
+#headerLink {
+	color: #17a;
+}
+
+h1 {
+	margin: 1em 1ex 0.5ex 0;
+	font-size: 1.4em;
+}
+
+h2 {
+	margin: 1em 1ex 0.5ex 0;
+	font-size: 1.3em;
+}
+
+h3 {
+	margin: 1em 1ex 0.5ex 0;
+	font-size: 1.2em;
+}
+
+h4 {
+	margin: 1em 1ex 0.5ex 0;
+	font-size: 1.1em;
+}
+
+#headerSubtitle {
+	font-size: 0.75em;
+	font-style: italic;
+	margin-left: 1em;
+}
+
+#content {
+	clear: both;
+	margin: 0;
+	padding: 0;
+	background-color: #fff;
+	overflow: hidden;
+}
+
+#nav {
+	background-color: #fff;
+	float: left;
+	margin: 0 1px 0 0;
+	padding: 1em 0;
+	border-right: 1px dotted #ccc;
+	width: 200px;
+}
+
+#nav ul {
+	margin: 0;
+	padding: 0;
+}
+
+#nav li {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+}
+
+#nav li ul {
+  padding-left: 0.6em !important;
+}
+
+#nav li a {
+	display: block;
+	margin: 0;
+	padding: 0.8ex 2em 0.8ex 1em;
+}
+
+#nav li a.thisPage {
+	color: #222;
+	font-weight: bold;
+}
+
+#main {
+	margin: 0 0 0 200px;
+	padding: 1.5em;
+	max-width: 50em;
+}
+#main a { font-weight: bold; }
+
+#footer {
+	clear: both;
+	color: #666;
+	border-top: 1px solid #ccc;
+	font-size: 84%;
+	padding: 1em;
+	margin: 0 0 1.5em 0;
+}
+
+.left {
+	float: left;
+	margin: 0;
+	padding: 0;
+}
+
+.right {
+	float: right;
+	margin: 0;
+	padding: 0;
+}
+</style>
+<meta charset="utf-8"> 
 </head> 
 <body>
+
 	<div id="header">
-		
 		<a id="headerLink" href="/">Felix</a> 
-        <span id="headerSubtitle">a highly performant, scalable, and safe scripting language</span>
+        <span id="headerSubtitle">
+            a high performance, extensible, and safe programming language
+        </span>
 	</div>
 
 	<div id="menu">
 		<span class="left">
-		<a class="thisSite" href="#">Home</a>
+            <a class="thisSite" href="#">Home</a>
 		</span>
 		<span class="right">
 			<a href="#">Download</a>
@@ -23,65 +177,66 @@
 
 	<div id="content">
 	<div id="nav">
-<ul>
-<li><a href="/" class="thisPage">News</a></li>
-<li><a href="#">Try felix</a></li>
-<li><a href="#">Documentation</a></li>
-<li><a href="#">Examples</a></li>
-<li><a href="#">Faq</a></li>
-<li><a href="#">Philosophy</a></li>
-</ul>
+        <ul>
+        <li><a href="/" class="thisPage">News</a></li>
+        <li><a href="#">Try felix</a></li>
+        <li><a href="#">Documentation</a></li>
+        <li><a href="#">Examples</a></li>
+        <li><a href="#">Faq</a></li>
+        <li><a href="#">Philosophy</a></li>
+        </ul>
 	</div>
 
 	<div id="main">
-
-
-  <img id="cat" style="opacity: 1; transition: 0.6s; top: 0px; position: relative; transform: scaleX(-1);float: left;" src="../images/200px-Felix_the_cat.svg.png" alt="Felix the cat">
-
+        <!-- felix the cat image -->
+        <img style="width:160px; height:168px; float:left" src="data:image/gif;base64,R0lGODdhoACoAPIBAP///wAAAImJieHh4by8vAAAAAAAAAAAACH/C0ltYWdlTWFnaWNrDmdhbW1hPTAuNDU0NTQ1ACwAAAAAoACoAAAD/wi63P4wSkfIvDjrzbv/ixAIA2ieaKpqYhBYayzPdES4LlzvfN/duJFvSCwugMFAychsrpBJHYMgcFqvtmSwGsJJsWAnVDtqBcNop5nMDqTfxHE7yYXbZYN1W8Ank+6AIANyc0sKeVoEhoGMEYhzbIuHVFuSjZdjAhWbfX6Wk2Z/l40DQYqOj1sSep+jaGZfE3KfpVqirmhItxupI5IumpReK4MVrbgQoccYvVIvR3SxHb27yMnDKYNBSzq1tid6wGjAissP3s8ysAzo3x/tqmCZxhfodYLnsNqQ5ll7YXM0DbDUrh8EKmv4SCEE6QNDHAZ5PKQjsJ20C+HoGOoFSf/ID0j3nMDrqOWjl4gZ/3GY6BFLSpItmZnqABNHyHogw4ysGRGArp4MXtLJsYHlTTU1S2YAUm2D0GEtej69yGQnyQy1jvLqaCiqzIZpnrbplzXFw1v7mjaweiYNW7CrYp4QZlNKHkXiHMEE2kMsG6oAavGtN3Cgg1IWgBzzSxTN20J6te4QsaQFhMeJBs9gTKYVYiO1oKVrwHKPQCul51w8RQEwiLwKcDzgvMc1DcwBDXpV52LR7qBJQdqOQZtNxcKF6WqWBftQcwXFSbLugTu4OxlILD0HYL2mJh/dvU8nHg+4kinhvfdNX3s5hnAUGsdmz5MH/TLjJ5OJJT/1/d7/OyQVjGFVpXQTbP8l5d4EYuXXBEsOiMCFf/e1MJwHbF24Hj8NSAhdgjA5qMJOaoHm3xceUghiiSiEw+IhPOwTYoe+gGidhk5pYc4gO6j4XHQ2YhPDGLZ9t1l4IQVpHF2R4JHEjqOhMAiQNjWgZEBCObmNBFktOCWVdKB3ZXgzPBlXXUDlAaZx5o0ZEBlHQhTBS8ethZCb97hJkh6SgbAGLWvqOZqPSv4ZJ4Ck2SRoeDpQOVCgL0i4oD/PAXFKdYvKGRijU4BZwqQSjLGWJJAGyU13WslY0wUIiciqmVxmqt6m3e3I5FgMRmFSlczJ2hEMhEbJKh982kbIi/HB6kip//8tgaoJhWmg0lLX6eWrSoT2SUNAGhBSpKzBhPNprUYYZdBO/TA7rWgeRQcqB36dSwhOSCq0CUKGrgUgoe/COyO15VEKEwk7PkLqM5giygRnyIoJjDknelABcFUkfJ5I1p02QSrImiulhxb3+wGVRl5W7TmQzSWOjw37EKyQNO7H5bEqE1Ucjj5wlFQ5lzHp6oczTZOKIvwGcmtw9hJ4SEKuUjMgLcUQi9/RHWmbi43ElnNryXYS6/XXYA9IddUi23etRlwip3a0UyJZ9g4W43mc0uwU1kl6b+t3dsZgY42zFeruHSTXdwhuuHd5S3n44v+6xfjjZKcB+eS5AUT55f9+gBE45ldaDTfnoOvahM6hY554r4PbXTp9nvM2+ANjr86hEYVu/GWhm6vGxOtCcxL27/ZOR3rttIP4t0SLtr7C3em1zMTLCoJWISO5KzvEms5bsejp13B6yfblhsd9DOAXkS0ucQc3/mG0HW9F+tFLv+f6ZeqpPHaxuw+GoPpn4yL9NajedsRABXpYQ19jAuABW9S5BboCfrpz4Chy1z8JEgGCf7HgKDCYCA2OAnoy8+D3jCdCUtiogiVEHglTCIjAoZCF2xIQJF4IwyEhbXY1zMXNcJhDLAQLQj1kxt348K70PSWIGNnDpCSkJCRai4f+GsEN4eJEdtRnGukxShX/IzSrKEbnKfcTYcL4oouM5WSLC0jY/bxRPRrigmUasIcZZ4hGdl1xY4FqUB0VcD7UCUqBjiNXPnwFSMc0T22xS+Ae5yM7XC1SgJkqpCE555dFdgFzYgljCjkoOE2mEISF2pMl27QiJElnlKRspBsdyMkKNQ6VgYHkwPYCy0Q1UpKMGF6ITAmTWtqgOCSQpVx82TUwjktQnrRkcrJGN1CKkpgqaF5NVllL+HFGEsW418+gCbQ/Li0g1IShNL3DMG4mC1XeNGc3QYdLkdyLbmkcZ/lyqMstMG+OyaOnMA/Xzs81snksbOXqWPjP+6Rwn5AroUBlV0JnFrShBWUdRCOKTbeJUjRjn7xod8L5vk76KpmBQOgWPlrDhZKkniusoUNp2bYxZW+B+6zGQCoAqYpsEZIv/dI9t7BNJG5OY+p8AvYGFFS47ZQi5YBnDRMAADs="/>
   
-<ul style="
-    left: 35px;
-    position: relative;
-">
-    <li><a href=./share/src/web/advocate/scripting.fdoc>Run</a> source programs directly.</li>
-    <li><a href=./share/src/web/advocate/compmodel.fdoc>Generates</a> machine binaries via C++ instead of bytecode.</li>
-    <li><a href=./share/src/web/advocate/statictype.fdoc>Statically</a> typed for reliability and scalability.</li>
-    <li><a href=./share/src/web/advocate/styles.fdoc>Supports</a> both ML-like functional and C-like imperative programming styles.</li>
-    <li><a href=./share/src/web/advocate/richdata.fdoc>Rich</a> set of datatypes in standard library</li>
-    <li><a href=./share/src/web/advocate/fthreads.fdoc>Core</a> support for coroutines and lightweight threads.</li>
-    <li><a href=./share/src/web/advocate/async.fdoc>Asynchronous</a> socket I/O integrated.</li>
-    <li><a href=./share/src/web/advocate/usergrammar.fdoc>User defined grammar.</a></li>
-</ul>
+        <ul style="left: 35px; position: relative;">
+            <li><a href=./share/src/web/advocate/scripting.fdoc>Run</a> source programs directly.</li>
+            <li><a href=./share/src/web/advocate/compmodel.fdoc>Generates</a> machine binaries via C++ instead of bytecode.</li>
+            <li><a href=./share/src/web/advocate/statictype.fdoc>Statically</a> typed for reliability and scalability.</li>
+            <li><a href=./share/src/web/advocate/styles.fdoc>Supports</a> both ML-like functional and C-like imperative programming styles.</li>
+            <li><a href=./share/src/web/advocate/richdata.fdoc>Rich</a> set of datatypes in standard library</li>
+            <li><a href=./share/src/web/advocate/fthreads.fdoc>Core</a> support for coroutines and lightweight threads.</li>
+            <li><a href=./share/src/web/advocate/async.fdoc>Asynchronous</a> socket I/O integrated.</li>
+            <li><a href=./share/src/web/advocate/usergrammar.fdoc>User defined grammar.</a></li>
+        </ul>
 
 
-<p style="
-padding-top: 4em;">Felix is a highly performant, scalable, and safe scripting language suitable for rapid development of software systems.</p>
+        <div class="example" style='padding-top: 1.5em;'>
+            <h3 style='display:inline; padding: 0.5em'>Hello world</h3>
+            ( <a href="#">prev</a> | <a href="#">next</a> )
+            <pre style='border: 1px solid #ddd; padding: 1em; margin:0 0 2em 0;'
+            >println$ "Hello world";</pre>
+        </div>
 
-<p>
-It gets its speed from its C++ code generator which also provides compatibility and easy interopability with existing C and C++ code bases. 
-The native C++ compiler does the hard work of low level optimisation whilst Felix does high level optimisations and type-checking. 
-The resulting code is very fast, sometimes "faster than the speed of light (C)", but can be platform independent and is simple to deploy just distribute the source files and run them, like a scripting language or distribute the statically linked binary.
-</p>
+<p>Felix is a highly performant, extensible, and safe programming language suitable for rapid development of software systems.</p>
 
 <p>
-Felix's type system is based on a combination of OCaml and Haskell. 
-Like OCaml, it provides strong support for functional programming, whilst also supporting imperative programming. 
-The type system is strict and includes first-order polymorphism at its core; not bolted-on like Java generics or C++ templates. 
-Felix supports open overloading like C++, but only allows exact matches. 
-It also provides Haskell style type classes as an alternative way to obtain genericity.
-</p>
-
-<p>
-Felix supports user defined macros and syntactic improvements. 
-This extensibility allows a developer to easily write domain specific sub-languages (DSLs) with ease. 
-The parser is GLR and the user actions are written in R5RS Scheme.
-</p>
-
-<p>
-A rich set of shortcuts makes programming a breeze. 
-Regular expression support and other features provide string handling on par with Perl. 
-Web programming is enabled by built-in asyn socket I/O combined with cooperatively multi-tasked fibres that would support millions of HTTP clients if only the server could supply enough sockets. 
+Felix transparently compiles programs down to C++ and then feeds them into a C++ compiler (e.g. g++, clang++, MSVC). 
+The native C++ compiler does the hard work of low-level optimisation whilst Felix does high-level optimisations and type-checking. 
+The C++ compiler allows Felix to reach fast speeds, but it also provides compatibility and easy interopability with existing C and C++ code bases. 
+The resulting code is very fast, sometimes even faster than C/C++ alone. 
 Context switching is achieved by a pointer swap, and state is maintained by a spaghetti stack.
+</p>
+
+<p>
+Felix supports user defined macros (hygenic) and syntactic customizations. 
+This extensibility allows a developer to write embedded domain specific sub-languages (eDSLs) with ease. 
+These customizations can be applied locally in part of a program or as part of library to be used by others.
+</p>
+
+<p>
+Felix's type system is similar to that of OCaml or Haskell, supporting typeclasses and discriminated unions but also adding proper sum types.
+It provides strong support for functional programming, whilst also supporting imperative programming. 
+The type system is strong, strict, and includes first-order polymorphism at its core.
+Felix supports open overloading like C++, but only allows exact matches. 
+</p>
+
+<p>
+Deployments are flexible, you can distribute the source files and run them like a scripting language, or distribute them as a native binary.
+Regular expression support and other features provide string handling on par with Perl. 
+Web programming is enabled by built-in async socket I/O combined with cooperatively multi-tasked fibres. 
 </p>
 
 <h1>News</h1>
@@ -96,10 +251,10 @@ Context switching is achieved by a pointer swap, and state is maintained by a sp
 	</div>
 
 	<div id="footer">
-	<span class="right">
-	&copy; 2015 Felix community
-	</span>
+        <span class="right">
+            &copy; 2015 Felix community
+        </span>
 	</div>
 
-
-<iframe style="display: none !important; position: fixed !important; padding: 0px !important; margin: 0px !important; left: 0px !important; top: 0px !important; width: 100% !important; height: 100% !important; z-index: 2147483647 !important; border: none !important; background-color: transparent !important;"></iframe></body></html>
+</body>
+</html>
