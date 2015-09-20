@@ -11,7 +11,7 @@
 	copy src\config\*.fpc build\release\win32\config >nul 2>&1
 	copy src\config\win32\*.fpc build\release\win32\config >nul 2>&1
 	echo [4] Set the toolchain
-	echo "toolchain: toolchain_msvc_win32" > build/release/win32/config/toolchain.fpc
+	echo toolchain: toolchain_msvc_win32 > build/release/win32/config/toolchain.fpc
 	echo [5] Set the C++ configuration parameters
 	echo // From Makefile: win32-prep           > build\release\win32\lib\rtl\flx_rtl_config_params.hpp
 	echo #ifndef __FLX_RTL_CONFIG_PARAMS_H__    >> build\release\win32\lib\rtl\flx_rtl_config_params.hpp
@@ -21,7 +21,7 @@
 	echo #define FLX_HAVE_GNU 0                 >> build\release\win32\lib\rtl\flx_rtl_config_params.hpp
 	echo #define FLX_HAVE_GNU_BUILTIN_EXPECT 0  >> build\release\win32\lib\rtl\flx_rtl_config_params.hpp
 	echo #define FLX_HAVE_CGOTO 0               >> build\release\win32\lib\rtl\flx_rtl_config_params.hpp
-	echo #efine FLX_HAVE_ASM_LABELS 0          >> build\release\win32\lib\rtl\flx_rtl_config_params.hpp
+	echo #define FLX_HAVE_ASM_LABELS 0          >> build\release\win32\lib\rtl\flx_rtl_config_params.hpp
 	echo #define FLX_HAVE_DLOPEN 0              >> build\release\win32\lib\rtl\flx_rtl_config_params.hpp
 	echo #define FLX_CYGWIN 0                   >> build\release\win32\lib\rtl\flx_rtl_config_params.hpp
 	echo #define FLX_MACOSX 0                   >> build\release\win32\lib\rtl\flx_rtl_config_params.hpp
