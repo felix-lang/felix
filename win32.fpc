@@ -1,0 +1,3 @@
+FLX_INSTALL_DIR: build/release
+FLX_LIB_DIRS: build/release/share/lib build/release/win32/lib
+FLX_CONFIG_DIRS: build/release/win32/config    
