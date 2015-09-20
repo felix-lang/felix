@@ -569,7 +569,7 @@ struct readreq_t {
 
 struct flx_trace_t
 {
-  unsigned long count;
+  size_t count;
   int enable_trace;
 };
 
@@ -726,7 +726,7 @@ fthread_t *schannel_t::pop_writer()
 // ********************************************************
 
 int flx_enable_trace=1;
-unsigned long flx_global_trace_count=0uL;
+size_t flx_global_trace_count=0uL;
 
 void flx_trace(flx_trace_t* tr,flx_range_srcref_t sr, char const *file, int line, char const *msg)
 {
@@ -737,13 +737,13 @@ void flx_trace(flx_trace_t* tr,flx_range_srcref_t sr, char const *file, int line
     tr->count++;
     if(tr->enable_trace)
     {
-      fprintf(stderr,"%ld : %s\n",tr->count,msg);
+      fprintf(stderr,"%uz : %s\n",tr->count,msg);
       print_loc(stderr,sr,file,line);
     }
   }
   else
   {
-    fprintf(stderr,"%ld : %s\n",flx_global_trace_count,msg);
+    fprintf(stderr,"%uz : %s\n",flx_global_trace_count,msg);
     print_loc(stderr,sr,file,line);
   }
 }

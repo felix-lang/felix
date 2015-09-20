@@ -52,9 +52,9 @@ public:
   bool debug_driver;
   bool finalise;
 
-  unsigned long gc_freq;
-  unsigned long min_mem;
-  unsigned long max_mem;
+  size_t gc_freq;
+  size_t min_mem;
+  size_t max_mem;
 
   double free_factor;
 
@@ -168,19 +168,19 @@ flx_config::init(int argc, char **argv) {
       "[FLX_FINALISE] Finalisation %s\n", finalise ? "Enabled" : "Disabled");
 
   // default collection frequency is 1000 interations
-  gc_freq = (unsigned long)egetv("FLX_GC_FREQ", 1000);
+  gc_freq = (size_t)egetv("FLX_GC_FREQ", 1000);
   if (gc_freq < 1) gc_freq = 1;
   if (debug)
     fprintf(stderr, "[FLX_GC_FREQ] call gc every %lu iterations\n", gc_freq);
 
   // default min mem is 10 Meg
-  min_mem = (unsigned long)(egetv("FLX_MIN_MEM", 10) * 1000000.0);
+  min_mem = (size_t)(egetv("FLX_MIN_MEM", 10) * 1000000.0);
   if (debug)
     fprintf(stderr, "[FLX_MIN_MEM] call gc only if more than %lu Meg heap used\n", min_mem/1000000);
 
   // default max mem is unlimited
-  max_mem = (unsigned long)(egetv("FLX_MAX_MEM", 0) * 1000000.0);
-  if (max_mem == 0) max_mem = (unsigned long)-1;
+  max_mem = (size_t)(egetv("FLX_MAX_MEM", 0) * 1000000.0);
+  if (max_mem == 0) max_mem = (size_t)-1;
   if (debug)
     fprintf(stderr, "[FLX_MAX_MEM] terminate if more than %lu Meg heap used\n", max_mem/1000000);
 
@@ -311,11 +311,11 @@ static int do_final_cleanup(
     if (debug_driver || gcp->debug_collections)
       fprintf(stderr, "[do_final_cleanup] Finalisation: pass 1 Data collection starts ..\n");
 
-    unsigned long n = collector->collect();
-    unsigned long a = collector->get_allocation_count();
+    size_t n = collector->collect();
+    size_t a = collector->get_allocation_count();
 
     if (debug_driver || gcp->debug_collections)
-      fprintf(stderr, "[do_final_cleanup] flx_run collected %ld objects, %ld left\n", n, a);
+      fprintf(stderr, "[do_final_cleanup] flx_run collected %zu objects, %zu left\n", n, a);
   }
 
   // garbage collect system objects
@@ -324,13 +324,13 @@ static int do_final_cleanup(
       fprintf(stderr, "[do_final_cleanup] Finalisation: pass 2 Final collection starts ..\n");
 
     collector->free_all_mem();
-    unsigned long a = collector->get_allocation_count();
+    size_t a = collector->get_allocation_count();
 
     if (debug_driver || gcp->debug_collections)
-      fprintf(stderr, "[do_final_cleanup] Remaining %ld objects (should be 0)\n", a);
+      fprintf(stderr, "[do_final_cleanup] Remaining %zu objects (should be 0)\n", a);
 
     if (a != 0){
-      fprintf(stderr, "[do_final_cleanup] flx_run %ld uncollected objects, should be zero!! return code 5\n", a);
+      fprintf(stderr, "[do_final_cleanup] flx_run %zu uncollected objects, should be zero!! return code 5\n", a);
       return 5;
     }
   }
@@ -397,10 +397,10 @@ static void run_felix_pthread_dtor(
   if (debug_driver) {
     flx::gc::generic::collector_t *collector = gcp->collector;
 
-    unsigned long uncollected = collector->get_allocation_count();
-    unsigned long roots = collector->get_root_count();
+    size_t uncollected = collector->get_allocation_count();
+    size_t roots = collector->get_root_count();
     fprintf(stderr,
-      "[run_felix_pthread_dtor] program finished, %ld collections, %ld uncollected objects, roots %ld\n",
+      "[run_felix_pthread_dtor] program finished, %zu collections, %zu uncollected objects, roots %zu\n",
       gcp->collections, uncollected, roots);
   }
   gcp->collector->remove_root(instance);
@@ -521,9 +521,9 @@ int flx_world::explicit_dtor()
   {
     if (debug_driver || gcp->debug_collections)
     {
-      unsigned long a = gcp->collector->get_allocation_count();
+      size_t a = gcp->collector->get_allocation_count();
       fprintf(stderr,
-        "[explicit_dtor] flx_run driver ends with finalisation skipped, %ld uncollected "
+        "[explicit_dtor] flx_run driver ends with finalisation skipped, %zu uncollected "
           "objects\n", a);
     }
   }
@@ -658,7 +658,7 @@ struct async_sched
   ::std::list< ::flx::rtl::fthread_t*> *active;
   ::flx::pthread::thread_control_t *thread_control;
 
-  unsigned long async_count;
+  size_t async_count;
   async_hooker* async;
   sync_sched ss;  // (d, gcp, active), (ft, request), (pc, fs)
 
@@ -798,7 +798,7 @@ void async_sched::do_general()
   ++async_count;
   if (debug_driver)
     fprintf(stderr,
-       "[prun: svc_general] Async system created: %p, count %ld\n",async,async_count);
+       "[prun: svc_general] Async system created: %p, count %zu\n",async,async_count);
   // CHANGED TO USE NEW UNION LAYOUT RULES
   // One less level of indirection for pointers
   // void *dreq =  *(void**)ss.request->data;
@@ -864,14 +864,14 @@ sync_run:
 
   // TEMPORARILY OUT OF JOBS TO DO
   if (debug_driver)
-    fprintf(stderr, "prun: Out of ready jobs, %ld pending\n", async_count);
+    fprintf(stderr, "prun: Out of ready jobs, %zu pending\n", async_count);
   return async_count;
 }
 
 bool async_sched::schedule_queued_fthreads(block_flag_t block_flag) {
   if (debug_driver) {
     fprintf(stderr,
-      "prun: out of active synchronous threads, trying async, pending=%ld\n", async_count);
+      "prun: out of active synchronous threads, trying async, pending=%zu\n", async_count);
   }
   int scheduled_some = 0;
   if (async && async_count > 0) {
@@ -900,7 +900,7 @@ bool async_sched::schedule_queued_fthreads(block_flag_t block_flag) {
     }
   }
   if (debug_driver)
-    fprintf(stderr, "prun: Async returning: scheduled %d, pending=%ld\n", scheduled_some, async_count);
+    fprintf(stderr, "prun: Async returning: scheduled %d, pending=%zu\n", scheduled_some, async_count);
   return scheduled_some != 0;
 }
 

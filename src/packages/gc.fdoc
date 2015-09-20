@@ -494,7 +494,7 @@ size_t gc_profile_t::actually_collect() {
     size_t objs = collector->get_allocation_count();
     size_t roots = collector->get_root_count();
     fprintf(stderr, 
-      "actually collected %ld objects, still allocated: %ld roots, %ld objects, %ld bytes\n",
+      "actually collected %zu objects, still allocated: %zu roots, %zu objects, %zu bytes\n",
       collected, roots, objs, allocated
     );
   }
@@ -515,10 +515,10 @@ void *gc_profile_t::allocate(
   if (amt + collector->get_allocation_amt() > threshhold && allow_collection_anywhere && allow_gc)
   {
     if (report_collections)
-      fprintf(stderr,"[flx_gc:gc_profile_t] Threshhold %ld would be exceeded, collecting\n", threshhold);
+      fprintf(stderr,"[flx_gc:gc_profile_t] Threshhold %zu would be exceeded, collecting\n", threshhold);
     actually_collect();
     if (report_collections)
-      fprintf(stderr,"[flx_gc:gc_profile_t] New Threshhold %ld\n", threshhold);
+      fprintf(stderr,"[flx_gc:gc_profile_t] New Threshhold %zu\n", threshhold);
     tried_collection = true;
   }
 
@@ -600,7 +600,7 @@ void *scan_by_offsets(collector_t *collector, gc_shape_t *shape, void *p, size_t
     {
       void **pq = (void**)(void*)((unsigned char*)fp + offsets[i]);
       void *q = *pq;
-      //fprintf(stderr, "scan by offsets %s, #%d, offset %ld, address %p, value %p\n", 
+      //fprintf(stderr, "scan by offsets %s, #%d, offset %zu, address %p, value %p\n", 
       //  shape->cname, i, offsets[i], pq, q);
       // instead of returning the pointer, register it for later processing
       if(q)
@@ -904,9 +904,9 @@ void * flx_collector_t::impl_allocate(gc_shape_t *shape, size_t nobj)
 {
   // calculate how much memory to request
   ::std::size_t amt = nobj * shape->amt * shape->count;
-  //fprintf(stderr, "req amt = %ld\n",amt);
+  //fprintf(stderr, "req amt = %zu\n",amt);
   if(amt & 1) ++amt; // round up to even number
-  //fprintf(stderr, "rounded req amt = %ld\n",amt);
+  //fprintf(stderr, "rounded req amt = %zu\n",amt);
 
   // allocate a block
   void *fp = (void *)allocator->allocate(amt);
@@ -914,7 +914,7 @@ void * flx_collector_t::impl_allocate(gc_shape_t *shape, size_t nobj)
 
   ++shape->allocations;
   if(debug)
-    fprintf(stderr,"[gc] Allocated %p, shape=%s[%zd][%ld][#a=%ld,#d=%ld]\n", 
+    fprintf(stderr,"[gc] Allocated %p, shape=%s[%zd][%zu][#a=%zu,#d=%zu]\n", 
       fp,shape->cname,shape->count,nobj,shape->allocations,shape->deallocations);
 
   Word_t *p = (Word_t*)(void*)JudyLIns(&j_shape,(Word_t)fp,&je);
@@ -928,7 +928,7 @@ void * flx_collector_t::impl_allocate(gc_shape_t *shape, size_t nobj)
   // update statistics
   allocation_count++;
   allocation_amt += amt;
-  //fprintf(stderr,"ADDING %ld to allocation amt, result %zu\n",amt,allocation_amt);
+  //fprintf(stderr,"ADDING %zu to allocation amt, result %zu\n",amt,allocation_amt);
   // return client memory pointer
   return fp;
 }
@@ -940,7 +940,7 @@ void flx_collector_t::set_used(void *memory, size_t n)
 
   // this check is expensive, but set_used is not used often
   assert(n<=get_count(memory));
-  //fprintf(stderr,"Set used of %p to %ld\n",memory,n);
+  //fprintf(stderr,"Set used of %p to %zu\n",memory,n);
   Word_t *p = (Word_t*)(void*)JudyLGet(j_nused,(Word_t)memory,&je);
   if(p==(Word_t*)PPJERR)judyerror("set_used");
   if(p==NULL)
@@ -956,7 +956,7 @@ void flx_collector_t::incr_used(void *memory, size_t n)
 {
   assert(memory);
   assert(n>=0);
-  //fprintf(stderr,"Incr used of %p by %ld\n",memory,n);
+  //fprintf(stderr,"Incr used of %p by %zu\n",memory,n);
   assert(get_used(memory) + n <= get_count(memory));
   Word_t *p = (Word_t*)(void*)JudyLGet(j_nused,(Word_t)memory,&je);
   if(p==(Word_t*)PPJERR)judyerror("incr_used");
@@ -979,7 +979,7 @@ size_t flx_collector_t::get_used(void *memory)
   if(p==(Word_t*)PPJERR)judyerror("get_used");
   //fprintf(stderr, "Used slot at address %p\n",p);
   size_t z = p!=NULL?*p:1; // defaults to 1 for non-array support
-  //fprintf(stderr,"Used of %p is %ld\n",memory,z);
+  //fprintf(stderr,"Used of %p is %zu\n",memory,z);
   return z;
 }
 
@@ -992,7 +992,7 @@ size_t flx_collector_t::get_count(void *memory)
   if(p==(Word_t*)PPJERR)judyerror("get_count");
   //fprintf(stderr, "Count slot at address %p\n",p);
   size_t z = p!=NULL?*p:1; // defaults to 1 for non-array support
-  //fprintf(stderr,"Count of %p is %ld\n",memory,z);
+  //fprintf(stderr,"Count of %p is %zu\n",memory,z);
   return z;
 }
 
@@ -1012,10 +1012,10 @@ void *flx_collector_t::create_empty_array(
   size_t count
 )
 {
-  //fprintf(stderr,"create empty array length %ld\n",count);
+  //fprintf(stderr,"create empty array length %zu\n",count);
   void *p = allocate(shape,count);
   set_used (p, 0); // make sure to override default 1 slot usage
-  //fprintf(stderr,"Array at %p, used = %ld, max=%ld\n",p,get_used(p), get_count(p));
+  //fprintf(stderr,"Array at %p, used = %zu, max=%zu\n",p,get_used(p), get_count(p));
   return p;
 }
 
@@ -1033,7 +1033,7 @@ void flx_collector_t::impl_finalise(void *fp)
     unsigned char *cp = (unsigned char*)fp;
     size_t n_used = get_used(fp) * shape->count;
     size_t eltsize = shape->amt;
-    //fprintf(stderr, "Finalising at %p for type %s %ld objects each size %ld\n", cp, shape->cname, n_used, eltsize);
+    //fprintf(stderr, "Finalising at %p for type %s %zu objects each size %zu\n", cp, shape->cname, n_used, eltsize);
     for(size_t j = 0; j<n_used; ++j)
     {
       (*finaliser)(this,(void*)cp);
@@ -1165,7 +1165,7 @@ void flx_collector_t::mark(pthread::memory_ranges_t *px)
       if(debug)
       {
         size_t n = (char*)range.e - (char*)range.b;
-        fprintf(stderr, "[gc] Conservate scan of memory %p->%p, %ld bytes\n",range.b, range.e, n);
+        fprintf(stderr, "[gc] Conservate scan of memory %p->%p, %zu bytes\n",range.b, range.e, n);
       }
       //VALGRIND_MAKE_MEM_DEFINED(range.b, (char*)range.e-(char*)range.b);
       void *end = range.e;
@@ -1238,7 +1238,7 @@ size_t flx_collector_t::sweep()
     if((*pshape & 1) == (parity & 1UL))
     {
       if(debug)
-        fprintf(stderr,"[gc] Garbage   %p=%s[%zd][%ld/%ld] [#a=%ld,#d=%ld]\n",
+        fprintf(stderr,"[gc] Garbage   %p=%s[%zd][%zu/%zu] [#a=%zu,#d=%zu]\n",
           current,
           SHAPE(*pshape)->cname,
           SHAPE(*pshape)->count,
@@ -1259,7 +1259,7 @@ size_t flx_collector_t::sweep()
     else
     {
       if(debug)
-        fprintf(stderr,"[gc] Reachable %p=%s[%zd][%ld/%ld] [#a=%ld,#d=%ld]\n",
+        fprintf(stderr,"[gc] Reachable %p=%s[%zd][%zu/%zu] [#a=%zu,#d=%zu]\n",
           current,
           SHAPE(*pshape)->cname,
           SHAPE(*pshape)->count,
@@ -1277,7 +1277,7 @@ size_t flx_collector_t::sweep()
 
   parity = !parity;
   if(debug)
-    fprintf(stderr,"[gc] Sweeped %ld\n",sweeped);
+    fprintf(stderr,"[gc] Sweeped %zu\n",sweeped);
   return reap();
 }
 
@@ -1299,7 +1299,7 @@ void flx_collector_t::impl_add_root(void *memory)
   }
   else {
     if(debug) 
-      fprintf(stderr,"[gc] Increment root %p to %ld\n", memory, (*iter).second+1);
+      fprintf(stderr,"[gc] Increment root %p to %zu\n", memory, (*iter).second+1);
     ++(*iter).second;
   }
 }
@@ -1321,7 +1321,7 @@ void flx_collector_t::impl_remove_root(void *memory)
   }
   else {
     if(debug) 
-      fprintf(stderr,"[gc] Decrement root %p to %ld\n", memory, (*iter).second-1);
+      fprintf(stderr,"[gc] Decrement root %p to %zu\n", memory, (*iter).second-1);
     --(*iter).second;
   }
 }

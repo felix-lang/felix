@@ -731,7 +731,7 @@ open class Varray
   proc push_back[t] : varray[t] * t = """
     {
       //?1 * _p = *$1;
-      unsigned long n = PTF gcp->collector->get_used($1);
+      size_t n = PTF gcp->collector->get_used($1);
       PTF gcp->collector->incr_used($1,1L);
       new($1+n) ?1($2);
     }
@@ -744,7 +744,7 @@ open class Varray
   proc pop[t] : varray[t] = """
     { // pop varray
       ?1 * _p = $1;
-      unsigned long n = PTF gcp->collector->get_used(_p);
+      size_t n = PTF gcp->collector->get_used(_p);
       PTF gcp->collector->incr_used(_p,-1L);
       destroy(_p+n-1); // from flx_compiler_support_bodies
     }
