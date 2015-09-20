@@ -6,7 +6,8 @@ Flx has a large number of options.
 @pre
 --test               : use felix installation in current directory
 --test=dir           : use felix installation in dir
---target=dir         : subdir of install dir containing target configuration (default 'host')
+--target-dir         : directory of target tree
+--felix=file.fpc     : location control file
 --where              : print location of felix installation
 --backup             : backup working source tree to dir 'backup'
 @
@@ -50,14 +51,14 @@ an absolute filename, then prefixing the appropriate cache name.
 
 @pre
 --clean              : delete the caches first to force rebuilding
---cache_dir=dir      : directory cache output from parser (*.par files), autocreated, default $HOME/.felix/cache
---output_dir=dir     : directory to hold C++ output from translator, autocreated, default $HOME/.felix/cache
+--cache-dir=dir      : directory cache output from parser (*.par files), autocreated, default $HOME/.felix/cache
+--output-dir=dir     : directory to hold C++ output from translator, autocreated, default $HOME/.felix/cache
                        Felix stored by absolute pathname within directory (tree directory).
---bundle_dir=dir     : directory to hold C++ output from translator, autocreated.
+--bundle-dir=dir     : directory to hold C++ output from translator, autocreated.
                        Files directly in directory by basename (flat directory).
 @
 
-The {bundle_dir=} is a special combination of setting the {output_dir}
+The @{bundle-dir=} is a special combination of setting the {output_dir}
 and also causing Felix to copy all required C++ files so the that
 the resulting bundle can be shipped to another machine and
 compiled. The target machine must still have built Felix Run Time
@@ -196,6 +197,7 @@ FLX_INSTALL_DIR=dir     : Specifies the location of the Felix installation.
                           This default and the environment variable can
                           be overriden by the {--test=} command line switch.
 FLX_SHELL_ECHO=1        : show shell callouts (system,popen)
+FLX_FILE_MONITOR=1      : show names of files when opened
 FLX_DEBUG_FLX=1         : debug flx (as if --debug-flx set)
 @h5 flxg compiler
 @pre

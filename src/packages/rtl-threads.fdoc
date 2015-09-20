@@ -1468,7 +1468,7 @@ bool thread_control_t::world_stop()
       }
       (*it).second.stack_top = stack_pointer;
       if(debug)
-        fprintf(stderr,"Stack size = %ld\n",(long)((char*)(*it).second.stack_base -(char*)(*it).second.stack_top));
+        fprintf(stderr,"Stack size = %td\n",((char*)(*it).second.stack_base -(char*)(*it).second.stack_top));
     }
     if(debug)
       fprintf(stderr,"World STOPPED\n");
@@ -1549,7 +1549,7 @@ void thread_control_t::unsafe_suspend()
   (*it).second.stack_top = stack_pointer;
   (*it).second.active = false;
   if(debug)
-    fprintf(stderr,"Stack size = %ld\n",(long)((char*)(*it).second.stack_base -(char*)(*it).second.stack_top));
+    fprintf(stderr,"Stack size = %td\n",((char*)(*it).second.stack_base -(char*)(*it).second.stack_top));
   --active_counter;
   if(debug)
     fprintf(stderr,"Suspend: active thread count now %d\n",active_counter);
@@ -1936,19 +1936,19 @@ struct PTHREAD_EXTERN flx_ts_collector_t :
 
 private:
   /// allocator
-  void *v_allocate(gc_shape_t *ptr_map, unsigned long);
+  void *v_allocate(gc_shape_t *ptr_map, size_t);
 
   /// collector (returns number of objects collected)
-  unsigned long v_collect();
+  size_t v_collect();
 
   // add and remove roots
   void v_add_root(void *memory);
   void v_remove_root(void *memory);
 
   // statistics
-  unsigned long v_get_allocation_count()const;
-  unsigned long v_get_root_count()const;
-  unsigned long v_get_allocation_amt()const;
+  size_t v_get_allocation_count()const;
+  size_t v_get_root_count()const;
+  size_t v_get_allocation_amt()const;
 
 private:
   mutable flx::pthread::flx_mutex_t mut;
@@ -1974,15 +1974,15 @@ flx_ts_collector_t::flx_ts_collector_t(allocator_t *a, flx::pthread::thread_cont
 
 flx_ts_collector_t::~flx_ts_collector_t(){}
 
-void *flx_ts_collector_t::v_allocate(gc_shape_t *ptr_map, unsigned long x) {
+void *flx_ts_collector_t::v_allocate(gc_shape_t *ptr_map, size_t x) {
   flx::pthread::flx_mutex_locker_t l(mut);
   return impl_allocate(ptr_map,x);
 }
 
-unsigned long flx_ts_collector_t::v_collect() {
+size_t flx_ts_collector_t::v_collect() {
   // NO MUTEX
   //if(debug)
-  //  fprintf(stderr,"[gc] Request to collect, thread_control = %p, thread %p\n", thread_control, (unsigned long)flx::pthread::get_current_native_thread());
+  //  fprintf(stderr,"[gc] Request to collect, thread_control = %p, thread %p\n", thread_control, (size_t)flx::pthread::get_current_native_thread());
   return impl_collect();
 }
 
@@ -1996,17 +1996,17 @@ void flx_ts_collector_t::v_remove_root(void *memory) {
   impl_remove_root(memory);
 }
 
-unsigned long flx_ts_collector_t::v_get_allocation_count()const {
+size_t flx_ts_collector_t::v_get_allocation_count()const {
   flx::pthread::flx_mutex_locker_t l(mut);
   return impl_get_allocation_count();
 }
 
-unsigned long flx_ts_collector_t::v_get_root_count()const {
+size_t flx_ts_collector_t::v_get_root_count()const {
   flx::pthread::flx_mutex_locker_t l(mut);
   return impl_get_root_count();
 }
 
-unsigned long flx_ts_collector_t::v_get_allocation_amt()const {
+size_t flx_ts_collector_t::v_get_allocation_amt()const {
   flx::pthread::flx_mutex_locker_t l(mut);
   return impl_get_allocation_amt();
 }

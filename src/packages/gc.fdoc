@@ -169,8 +169,8 @@ struct GC_EXTERN pointer_data_t
 {
   void *pointer;                      //< candidate pointer
   void *head;                         //< head object
-  unsigned long max_elements;         //< allocated slots
-  unsigned long used_elements;        //< used slots
+  size_t max_elements;         //< allocated slots
+  size_t used_elements;        //< used slots
   gc_shape_t *shape;                  //< shape
 };
 
@@ -183,7 +183,7 @@ enum gc_shape_flags_t {
 
 /// Describes runtime object shape.
 typedef void finaliser_t (collector_t*, void*); 
-typedef void *scanner_t(collector_t*, gc_shape_t *, void *, unsigned long, int);
+typedef void *scanner_t(collector_t*, gc_shape_t *, void *, size_t, int);
 typedef ::std::string encoder_t (void *);
 typedef ::std::size_t decoder_t(void *, char *, ::std::size_t);
 
@@ -199,8 +199,8 @@ struct GC_EXTERN gc_shape_t
   encoder_t *encoder;             ///< encoder function 
   decoder_t *decoder;             ///< encoder function 
   gc_shape_flags_t flags;         ///< flags
-  unsigned long allocations;
-  unsigned long deallocations;
+  size_t allocations;
+  size_t deallocations;
 };
 
 struct GC_EXTERN offset_data_t
@@ -261,28 +261,28 @@ struct GC_EXTERN collector_t
   virtual void register_pointer(void *q, int reclimit)=0;
 
   // These routines just provide statistics.
-  unsigned long get_allocation_count()const {
+  size_t get_allocation_count()const {
     return v_get_allocation_count();
   }
 
-  unsigned long get_root_count()const {
+  size_t get_root_count()const {
     return v_get_root_count();
   }
 
-  unsigned long get_allocation_amt()const {
+  size_t get_allocation_amt()const {
     return v_get_allocation_amt();
   }
 
   // Hooks for the supplied allocator, which operate in
   // terms of shape objects rather than raw memory amounts.
-  void *allocate(gc_shape_t *shape, unsigned long x) {
+  void *allocate(gc_shape_t *shape, size_t x) {
     return v_allocate(shape,x);
   }
 
   // The mark and sweep collector algorithm.
-  unsigned long collect() {
+  size_t collect() {
     //fprintf(stderr, "Collecting\n");
-    unsigned long x = v_collect();
+    size_t x = v_collect();
     //fprintf(stderr, "Collecting DONE\n");
     return x;
   }
@@ -307,20 +307,20 @@ struct GC_EXTERN collector_t
 
   // Integrity check for the data structure being managed.
   // array management
-  virtual void set_used(void *memory, unsigned long)=0;
-  virtual void incr_used(void *memory, unsigned long)=0;
-  virtual unsigned long get_used(void *memory)=0;
-  virtual unsigned long get_count(void *memory)=0;
-  virtual void *create_empty_array( gc_shape_t *shape, unsigned long count)=0;
+  virtual void set_used(void *memory, size_t)=0;
+  virtual void incr_used(void *memory, size_t)=0;
+  virtual size_t get_used(void *memory)=0;
+  virtual size_t get_count(void *memory)=0;
+  virtual void *create_empty_array( gc_shape_t *shape, size_t count)=0;
 
   virtual pointer_data_t get_pointer_data(void *)=0;
 private:
-  virtual unsigned long v_get_allocation_count()const=0;
-  virtual unsigned long v_get_root_count()const=0;
-  virtual unsigned long v_get_allocation_amt()const=0;
-  virtual void *v_allocate(gc_shape_t *shape, unsigned long)=0;
+  virtual size_t v_get_allocation_count()const=0;
+  virtual size_t v_get_root_count()const=0;
+  virtual size_t v_get_allocation_amt()const=0;
+  virtual void *v_allocate(gc_shape_t *shape, size_t)=0;
   virtual void v_finalise(void *fp)=0;
-  virtual unsigned long v_collect()=0;
+  virtual size_t v_collect()=0;
   virtual void v_add_root(void *memory)=0;
   virtual void v_remove_root(void *memory)=0;
   virtual void v_free_all_mem()=0;
@@ -339,25 +339,25 @@ struct GC_EXTERN gc_profile_t {
   bool report_collections;     ///< collector debug on/off
   bool allow_collection_anywhere; ///< enable collect on allocate
 
-  unsigned long gc_freq;      ///< how often to collect
-  unsigned long gc_counter;   ///< counter to check if time to collect
+  size_t gc_freq;      ///< how often to collect
+  size_t gc_counter;   ///< counter to check if time to collect
 
-  unsigned long min_mem;      ///< min memory before collection
-  unsigned long max_mem;      ///< throw out of memory if above here
-  unsigned long threshhold;   ///< collection trigger point
+  size_t min_mem;      ///< min memory before collection
+  size_t max_mem;      ///< throw out of memory if above here
+  size_t threshhold;   ///< collection trigger point
   double free_factor;         ///< reset threshhold to used memory
                               ///< by this factor after collection
 
-  unsigned long collections;  ///< number of collections done
+  size_t collections;  ///< number of collections done
   bool finalise;              ///< whether Felix should collect on exit
   flx::gc::generic::collector_t *collector;
 
-  unsigned long maybe_collect(); ///< function which maybe collects
-  unsigned long actually_collect(); ///< function which actually collects
+  size_t maybe_collect(); ///< function which maybe collects
+  size_t actually_collect(); ///< function which actually collects
 
   void *allocate(
     flx::gc::generic::gc_shape_t *shape,
-    unsigned long count,
+    size_t count,
     bool allow_gc
   );
 
@@ -367,9 +367,9 @@ struct GC_EXTERN gc_profile_t {
     bool debug_collections_,
     bool report_collections_,
     bool allow_collection_anywhere_,
-    unsigned long gc_freq_,
-    unsigned long min_mem_,
-    unsigned long max_mem_,
+    size_t gc_freq_,
+    size_t min_mem_,
+    size_t max_mem_,
     double free_factor_,
     bool finalise_,
     flx::gc::generic::collector_t *collector
@@ -445,9 +445,9 @@ gc_profile_t::gc_profile_t (
   bool debug_collections_,
   bool report_collections_,
   bool allow_collection_anywhere_,
-  unsigned long gc_freq_,
-  unsigned long min_mem_,
-  unsigned long max_mem_,
+  size_t gc_freq_,
+  size_t min_mem_,
+  size_t max_mem_,
   double free_factor_,
   bool finalise_,
   flx::gc::generic::collector_t *collector_
@@ -471,7 +471,7 @@ gc_profile_t::gc_profile_t (
 
 gc_profile_t::~gc_profile_t() { }
 
-unsigned long gc_profile_t::maybe_collect() {
+size_t gc_profile_t::maybe_collect() {
   ++gc_counter;
   if(debug_collections) fprintf(stderr,"Maybe collect?\n");
   if (gc_counter < gc_freq) return 0;
@@ -479,20 +479,20 @@ unsigned long gc_profile_t::maybe_collect() {
   return actually_collect();
 }
 
-unsigned long gc_profile_t::actually_collect() {
+size_t gc_profile_t::actually_collect() {
   if(debug_collections || report_collections) 
     fprintf(stderr,"[flx_gc:gc_profile_t] actually_collect\n");
   gc_counter = 0;
-  unsigned long collected = collector->collect();
-  unsigned long allocated = collector->get_allocation_amt();
+  size_t collected = collector->collect();
+  size_t allocated = collector->get_allocation_amt();
   if (allocated > max_mem) throw flx::rtl::flx_out_of_memory_t();
   threshhold = std::max ( min_mem,
-    (unsigned long) (free_factor * (double)allocated))
+    (size_t) (free_factor * (double)allocated))
   ;
   if(debug_collections || report_collections)
   {
-    unsigned long objs = collector->get_allocation_count();
-    unsigned long roots = collector->get_root_count();
+    size_t objs = collector->get_allocation_count();
+    size_t roots = collector->get_root_count();
     fprintf(stderr, 
       "actually collected %ld objects, still allocated: %ld roots, %ld objects, %ld bytes\n",
       collected, roots, objs, allocated
@@ -503,7 +503,7 @@ unsigned long gc_profile_t::actually_collect() {
 
 void *gc_profile_t::allocate(
   flx::gc::generic::gc_shape_t *shape,
-  unsigned long count,
+  size_t count,
   bool allow_gc
 )
 {
@@ -570,12 +570,12 @@ void *gc_profile_t::allocate(
  *  describes a single element of the inner static length array, so we have to
  *  multiply the RTTI static length by the dynamic length.
  */
-void *scan_by_offsets(collector_t *collector, gc_shape_t *shape, void *p, unsigned long dyncount, int reclimit)
+void *scan_by_offsets(collector_t *collector, gc_shape_t *shape, void *p, size_t dyncount, int reclimit)
 {
   Word_t fp = (Word_t)p;
 
   // calculate the absolute number of used array slots
-  unsigned long n_used = dyncount  * shape->count;
+  size_t n_used = dyncount  * shape->count;
 
   // find the array of offsets
   offset_data_t const *data = (offset_data_t const *)shape->private_data;
@@ -594,7 +594,7 @@ void *scan_by_offsets(collector_t *collector, gc_shape_t *shape, void *p, unsign
   }
   else
   // otherwise we have to scan through all the offsets in every array element
-  for(unsigned long j=0; j<n_used; ++j)
+  for(size_t j=0; j<n_used; ++j)
   {
     for(unsigned int i=0; i<n_offsets; ++i)
     {
@@ -634,8 +634,8 @@ void *operator new(
 {
   if (amt != shape.amt * shape.count)
   {
-    fprintf(stderr,"Shape size error: allocator size = %ld\n",(long)amt);
-    fprintf(stderr,"Shape %s element size = %ld, element count = %ld\n",shape.cname,(long)shape.amt,(long)shape.count);
+    fprintf(stderr,"Shape size error: allocator size = %zu\n",amt);
+    fprintf(stderr,"Shape %s element size = %zu, element count = %zu\n",shape.cname,shape.amt,shape.count);
     abort();
   }
   void *p = gcp.allocate(&shape,1,allow_gc); // dynamic array count = 1
@@ -690,11 +690,11 @@ struct GC_EXTERN flx_collector_t : public collector_t
   // RF: added to allow implementation of non-leaky drivers.
   void impl_free_all_mem(); // clear all roots, sweep.
 
-  void set_used(void *memory, unsigned long);
-  void incr_used(void *memory, unsigned long);
-  unsigned long get_used(void *memory);
-  unsigned long get_count(void *memory);
-  void *create_empty_array( gc_shape_t *shape, unsigned long count);
+  void set_used(void *memory, size_t);
+  void incr_used(void *memory, size_t);
+  size_t get_used(void *memory);
+  size_t get_count(void *memory);
+  void *create_empty_array( gc_shape_t *shape, size_t count);
   gc_shape_t *get_shape(void *memory);
   flx::pthread::thread_control_base_t *get_thread_control()const;
   void register_pointer(void *q, int reclimit);
@@ -703,10 +703,10 @@ struct GC_EXTERN flx_collector_t : public collector_t
 protected:
 
   /// allocator
-  void *impl_allocate(gc_shape_t *ptr_map, unsigned long);
+  void *impl_allocate(gc_shape_t *ptr_map, size_t);
 
   /// collector (returns number of objects collected)
-  unsigned long impl_collect();
+  size_t impl_collect();
 
   // add and remove roots
   void impl_add_root(void *memory);
@@ -716,17 +716,17 @@ protected:
   void check();
 
   // statistics
-  unsigned long impl_get_allocation_count()const;
-  unsigned long impl_get_root_count()const;
-  unsigned long impl_get_allocation_amt()const;
+  size_t impl_get_allocation_count()const;
+  size_t impl_get_root_count()const;
+  size_t impl_get_allocation_amt()const;
   void impl_finalise(void *fp);
 
 private:
   /// allocator
-  void *v_allocate(gc_shape_t *ptr_map, unsigned long);
+  void *v_allocate(gc_shape_t *ptr_map, size_t);
 
   /// collector (returns number of objects collected)
-  unsigned long v_collect();
+  size_t v_collect();
 
   // add and remove roots
   void v_add_root(void *memory);
@@ -734,27 +734,27 @@ private:
   void v_free_all_mem();
 
   // statistics
-  unsigned long v_get_allocation_count()const;
-  unsigned long v_get_root_count()const;
-  unsigned long v_get_allocation_amt()const;
+  size_t v_get_allocation_count()const;
+  size_t v_get_root_count()const;
+  size_t v_get_allocation_amt()const;
 
 private:
   void judyerror(char const*);
-  unsigned long allocation_count;
-  unsigned long root_count;
-  unsigned long allocation_amt;
+  size_t allocation_count;
+  size_t root_count;
+  size_t allocation_amt;
 
 
   void unlink(void *frame);
   void v_finalise(void *frame);
   void post_delete(void *frame);
   void delete_frame(void *frame);
-  unsigned long reap();
+  size_t reap();
 
   void mark(pthread::memory_ranges_t*);
-  unsigned long sweep(); // calls scan_object
+  size_t sweep(); // calls scan_object
 
-  typedef std::map<void *,unsigned long, std::less<void *> > rootmap_t;
+  typedef std::map<void *,size_t, std::less<void *> > rootmap_t;
   rootmap_t roots;
   bool parity;
   allocator_t *allocator;
@@ -809,7 +809,7 @@ void *malloc_free::allocate(::std::size_t amt)
     fprintf(stderr,"[gc] Malloc %zd bytes, address = %p\n",amt,p);
   if(p)return p;
   else {
-    fprintf(stderr,"[gc] Felix: Malloc out of memory, blk=%ld\n",long(amt));
+    fprintf(stderr,"[gc] Felix: Malloc out of memory, blk=%zu\n",amt);
     throw flx::rtl::flx_out_of_memory_t();
   }
 }
@@ -821,7 +821,7 @@ void malloc_free::deallocate(void *p)
   free(p);
 }
 
-void *flx_collector_t::v_allocate(gc_shape_t *ptr_map, unsigned long x) {
+void *flx_collector_t::v_allocate(gc_shape_t *ptr_map, size_t x) {
   return impl_allocate(ptr_map, x);
 }
 
@@ -829,7 +829,7 @@ void flx_collector_t::v_finalise(void *frame) {
   impl_finalise(frame);
 }
 
-unsigned long flx_collector_t::v_collect() {
+size_t flx_collector_t::v_collect() {
   // NO MUTEX
   return impl_collect();
 }
@@ -847,29 +847,29 @@ void flx_collector_t::v_free_all_mem() {
   impl_free_all_mem();
 }
 
-unsigned long flx_collector_t::v_get_allocation_count()const {
+size_t flx_collector_t::v_get_allocation_count()const {
   return impl_get_allocation_count();
 }
 
-unsigned long flx_collector_t::v_get_root_count()const {
+size_t flx_collector_t::v_get_root_count()const {
   return impl_get_root_count();
 }
 
-unsigned long flx_collector_t::v_get_allocation_amt()const {
+size_t flx_collector_t::v_get_allocation_amt()const {
   return impl_get_allocation_amt();
 }
 
-unsigned long flx_collector_t::impl_get_allocation_count()const
+size_t flx_collector_t::impl_get_allocation_count()const
 {
   return allocation_count;
 }
 
-unsigned long flx_collector_t::impl_get_root_count()const
+size_t flx_collector_t::impl_get_root_count()const
 {
   return root_count;
 }
 
-unsigned long flx_collector_t::impl_get_allocation_amt()const
+size_t flx_collector_t::impl_get_allocation_amt()const
 {
   return allocation_amt;
 }
@@ -900,7 +900,7 @@ void flx_collector_t::judyerror(char const *loc)
   abort();
 }
 
-void * flx_collector_t::impl_allocate(gc_shape_t *shape, unsigned long nobj)
+void * flx_collector_t::impl_allocate(gc_shape_t *shape, size_t nobj)
 {
   // calculate how much memory to request
   ::std::size_t amt = nobj * shape->amt * shape->count;
@@ -928,12 +928,12 @@ void * flx_collector_t::impl_allocate(gc_shape_t *shape, unsigned long nobj)
   // update statistics
   allocation_count++;
   allocation_amt += amt;
-  //fprintf(stderr,"ADDING %ld to allocation amt, result %ld\n",long(amt),long(allocation_amt));
+  //fprintf(stderr,"ADDING %ld to allocation amt, result %zu\n",amt,allocation_amt);
   // return client memory pointer
   return fp;
 }
 
-void flx_collector_t::set_used(void *memory, unsigned long n)
+void flx_collector_t::set_used(void *memory, size_t n)
 {
   assert(memory);
   assert(n>=0);
@@ -952,7 +952,7 @@ void flx_collector_t::set_used(void *memory, unsigned long n)
   *p = (Word_t)n;
 }
 
-void flx_collector_t::incr_used(void *memory, unsigned long n)
+void flx_collector_t::incr_used(void *memory, size_t n)
 {
   assert(memory);
   assert(n>=0);
@@ -971,27 +971,27 @@ void flx_collector_t::incr_used(void *memory, unsigned long n)
 }
 
 // actual number of used slots in an array
-unsigned long flx_collector_t::get_used(void *memory)
+size_t flx_collector_t::get_used(void *memory)
 {
   assert(memory);
   //fprintf(stderr, "Get used of %p\n",memory);
   Word_t *p = (Word_t*)(void*)JudyLGet(j_nused,(Word_t)memory,&je);
   if(p==(Word_t*)PPJERR)judyerror("get_used");
   //fprintf(stderr, "Used slot at address %p\n",p);
-  unsigned long z = p!=NULL?*p:1; // defaults to 1 for non-array support
+  size_t z = p!=NULL?*p:1; // defaults to 1 for non-array support
   //fprintf(stderr,"Used of %p is %ld\n",memory,z);
   return z;
 }
 
 // max number of available slots in an array
-unsigned long flx_collector_t::get_count(void *memory)
+size_t flx_collector_t::get_count(void *memory)
 {
   assert(memory);
   //fprintf(stderr, "Get count of %p\n",memory);
   Word_t *p = (Word_t*)(void*)JudyLGet(j_nalloc,(Word_t)memory,&je);
   if(p==(Word_t*)PPJERR)judyerror("get_count");
   //fprintf(stderr, "Count slot at address %p\n",p);
-  unsigned long z = p!=NULL?*p:1; // defaults to 1 for non-array support
+  size_t z = p!=NULL?*p:1; // defaults to 1 for non-array support
   //fprintf(stderr,"Count of %p is %ld\n",memory,z);
   return z;
 }
@@ -1009,7 +1009,7 @@ gc_shape_t *flx_collector_t::get_shape(void *memory)
 
 void *flx_collector_t::create_empty_array(
   flx::gc::generic::gc_shape_t *shape,
-  unsigned long count
+  size_t count
 )
 {
   //fprintf(stderr,"create empty array length %ld\n",count);
@@ -1031,10 +1031,10 @@ void flx_collector_t::impl_finalise(void *fp)
   if (finaliser)
   {
     unsigned char *cp = (unsigned char*)fp;
-    unsigned long n_used = get_used(fp) * shape->count;
-    unsigned long eltsize = shape->amt;
+    size_t n_used = get_used(fp) * shape->count;
+    size_t eltsize = shape->amt;
     //fprintf(stderr, "Finalising at %p for type %s %ld objects each size %ld\n", cp, shape->cname, n_used, eltsize);
-    for(unsigned long j = 0; j<n_used; ++j)
+    for(size_t j = 0; j<n_used; ++j)
     {
       (*finaliser)(this,(void*)cp);
       cp += eltsize;
@@ -1053,11 +1053,11 @@ void flx_collector_t::unlink(void *fp)
 
   allocation_count--;
   gc_shape_t *shape = get_shape(fp);
-  unsigned long n_objects = get_count(fp);
-  unsigned long nobj = shape -> count * n_objects;
+  size_t n_objects = get_count(fp);
+  size_t nobj = shape -> count * n_objects;
   ::std::size_t size = shape->amt * nobj;
   if (size & 1) ++size;
-  //fprintf(stderr, "Uncounting %ld bytes\n", long(size));
+  //fprintf(stderr, "Uncounting %zu bytes\n", size);
   allocation_amt -= size;
 
   // unlink the frame from the collectors list
@@ -1078,9 +1078,9 @@ void flx_collector_t::delete_frame(void *fp)
   allocator->deallocate(fp);
 }
 
-unsigned long flx_collector_t::reap ()
+size_t flx_collector_t::reap ()
 {
-  unsigned long count = 0;
+  size_t count = 0;
   Word_t next=(Word_t)NULL;
   int res = Judy1First(j_tmp,&next,&je);
   while(res) {
@@ -1164,7 +1164,7 @@ void flx_collector_t::mark(pthread::memory_ranges_t *px)
       pthread::memory_range_t range = *i;
       if(debug)
       {
-        unsigned long n = (char*)range.e - (char*)range.b;
+        size_t n = (char*)range.e - (char*)range.b;
         fprintf(stderr, "[gc] Conservate scan of memory %p->%p, %ld bytes\n",range.b, range.e, n);
       }
       //VALGRIND_MAKE_MEM_DEFINED(range.b, (char*)range.e-(char*)range.b);
@@ -1224,11 +1224,11 @@ void flx_collector_t::mark(pthread::memory_ranges_t *px)
 
 
 
-unsigned long flx_collector_t::sweep()
+size_t flx_collector_t::sweep()
 {
   if(debug)
     fprintf(stderr,"[gc] Collector: Sweep, garbage bit value=%d\n",(int)parity);
-  unsigned long sweeped = 0;
+  size_t sweeped = 0;
   void *current = NULL;
   Word_t *pshape = (Word_t*)JudyLFirst(j_shape,(Word_t*)&current,&je); // GE
   if(pshape==(Word_t*)PPJERR)judyerror("sweep");
@@ -1291,7 +1291,7 @@ void flx_collector_t::impl_add_root(void *memory)
   rootmap_t::iterator iter = roots.find(memory);
   if(iter == roots.end())
   {
-    std::pair<void *const, unsigned long> entry(memory,1UL);
+    std::pair<void *const, size_t> entry(memory,1UL);
     if(debug) 
       fprintf(stderr,"[gc] Add root %p=%s\n", memory,get_shape(memory)->cname);
     roots.insert (entry);
@@ -1363,9 +1363,9 @@ void flx_collector_t::register_pointer(void *q, int reclimit)
   if(ppshape==(Word_t*)PPJERR)judyerror("get_pointer_data");
   if(ppshape == NULL) return pdat; // no lower object
   gc_shape_t *pshape = SHAPE(*ppshape);
-  unsigned long max_slots = get_count((void*)head);
-  unsigned long used_slots = get_used((void*)head);
-  unsigned long n = max_slots * pshape->count * pshape->amt;
+  size_t max_slots = get_count((void*)head);
+  size_t used_slots = get_used((void*)head);
+  size_t n = max_slots * pshape->count * pshape->amt;
   if(cand >= (Word_t)(void*)((unsigned char*)(void*)head+n)) return pdat; // not interior
   pdat.head = (void*)head;
   pdat.max_elements = max_slots;
@@ -1428,7 +1428,7 @@ again:
   gc_shape_t *pshape = SHAPE(*ppshape);
 
   // calculate the length of the candidate object in bytes
-  unsigned long n = get_count((void*)head) * pshape->count * pshape->amt;
+  size_t n = get_count((void*)head) * pshape->count * pshape->amt;
 
   // if our pointer is greater than or equal to the "one past the end"
   // pointer of the object, it is not a pointer interior to that object
@@ -1449,7 +1449,7 @@ again:
 
   if(pshape->flags & gc_flags_conservative)
   {
-    unsigned long n_used = get_used((void*)head) * pshape->count;
+    size_t n_used = get_used((void*)head) * pshape->count;
     // end of object, rounded down to size of a void*
     void **end = (void**)(
       (unsigned char*)(void*)head +
@@ -1472,7 +1472,7 @@ again:
     // Calculate the dynamic count of used elements in the object.
     // All Felix objects are varrays which have an allocated and used
     // element count. The RTTI object always describes one element.
-    unsigned long dyncount = get_used((void*)head);
+    size_t dyncount = get_used((void*)head);
 
     // if don't have a scanner for the object it is atomic,
     // that is it contains no pointers.
@@ -1495,7 +1495,7 @@ again:
 
 
 
-unsigned long flx_collector_t::impl_collect()
+size_t flx_collector_t::impl_collect()
 {
   // THIS IS A BIT OF A HACK
   // but world_stop() is bugged!!
@@ -1504,14 +1504,14 @@ unsigned long flx_collector_t::impl_collect()
   if (thread_control == NULL || thread_control->world_stop())
   {
     //if(debug)
-    //  fprintf(stderr,"[gc] Collecting, thread %lx\n", (unsigned long)flx::pthread::get_current_native_thread());
+    //  fprintf(stderr,"[gc] Collecting, thread %lx\n", (size_t)flx::pthread::get_current_native_thread());
     pthread::memory_ranges_t * mr = thread_control? thread_control -> get_block_list() : NULL;
     mark(mr);
     delete mr;
-    unsigned long collected = sweep();
+    size_t collected = sweep();
     if(thread_control) thread_control->world_start();
     //if(debug)
-    //  fprintf(stderr,"[gc] FINISHED collect, thread %lx\n", (unsigned long)flx::pthread::get_current_native_thread());
+    //  fprintf(stderr,"[gc] FINISHED collect, thread %lx\n", (size_t)flx::pthread::get_current_native_thread());
     return collected;
   }
   else {
@@ -1551,7 +1551,7 @@ flx_collector_t::~flx_collector_t()
 //$ that is, one that is independent of the GC representation.
 open class Gc
 {
-  fun _collect: unit -> ulong = "PTF gcp->actually_collect()"
+  fun _collect: unit -> size = "PTF gcp->actually_collect()"
     requires property "needs_gc";
 
   //$ Invoke the garbage collector.
@@ -1566,15 +1566,15 @@ open class Gc
   }
 
   //$ Get the total number of bytes currently allocated.
-  fun gc_get_allocation_amt : unit -> ulong = "PTF gcp->collector->get_allocation_amt()"
+  fun gc_get_allocation_amt : unit -> size= "PTF gcp->collector->get_allocation_amt()"
     requires property "needs_gc";
 
   //$ Get the total number of objects currently allocated.
-  fun gc_get_allocation_count : unit -> ulong = "PTF gcp->collector->get_allocation_count()"
+  fun gc_get_allocation_count : unit -> size = "PTF gcp->collector->get_allocation_count()"
     requires property "needs_gc";
 
   //$ Get the total number of roots.
-  fun gc_get_root_count : unit -> ulong = "PTF gcp->collector->get_root_count()"
+  fun gc_get_root_count : unit -> size = "PTF gcp->collector->get_root_count()"
     requires property "needs_gc";
 
   proc add_root: address  = "PTF gcp->collector->add_root ($1);"
@@ -1719,8 +1719,8 @@ class Collector
   {
      pointer: address;
      head: address;
-     max_elements: ulong;  // dynamic slots
-     used_elements: ulong; // dynamic slots used
+     max_elements: size;  // dynamic slots
+     used_elements: size; // dynamic slots used
      shape:gc_shape_t;
   }; 
 
@@ -1733,9 +1733,9 @@ class Collector
 
   fun is_felix_pointer (pd: pointer_data_t) => not (isNULL pd.head);
   fun is_head_pointer (pd: pointer_data_t) => pd.pointer == pd.head; 
-  fun repeat_count (pd: pointer_data_t) => pd.used_elements *  pd.shape.number_of_elements.ulong;
+  fun repeat_count (pd: pointer_data_t) => pd.used_elements *  pd.shape.number_of_elements;
   fun allocated_bytes (pd: pointer_data_t) => pd.max_elements * 
-    pd.shape.number_of_elements.ulong * pd.shape.bytes_per_element.ulong
+    pd.shape.number_of_elements * pd.shape.bytes_per_element
   ;
 
   //$ Diagnostic routine, dump pointer data and
@@ -1749,12 +1749,12 @@ class Collector
       var shape = pd.shape;
       println$ "Element type =  " + shape.cname.string;
       println$ "Pod[has no finaliser] = " + shape.finaliser.address.isNULL.str;
-      var bpe = shape.bytes_per_element.ulong;
+      var bpe = shape.bytes_per_element;
       println$ "Bytes per element = " + bpe.str;
       println$ "Static array length = " + shape.number_of_elements.str;
       println$ "Dynamic array length = " + pd.used_elements.str; 
       println$ "Max dynamic array length = " + pd.max_elements.str; 
-      var nelts = pd.used_elements * shape.number_of_elements.ulong;
+      var nelts = pd.used_elements * shape.number_of_elements;
       println$ "Aggregate number of used elements " + nelts.str;
       println$ "Store to serialise: " + (nelts * bpe) . str;
     done
