@@ -852,7 +852,8 @@ private proc print_help() {
   println "Flx build tool";
   println "  FLX_INSTALL_DIR=dir     : overrides default installation directory (as if --test=dir)";
   println "  FLX_SHELL_ECHO=1        : show shell callouts (system,popen)";
-  println "  FLX_FILE_MONITOR=1      : reports on every file open";
+  println "  FLX_FILE_MONITOR=1      : reports on every file open (felix and flxg)";
+  println "  FLX_REPORT_FILECOPY=1   : reports on every file copy (felix)";
   println "  FLX_DEBUG_FLX=1         : debug flx (as if --debug-flx set)";
   println "Flxg compiler";
   println "  FLX_DEBUG_PARSER=1      : emit debug info from the Felix parser";

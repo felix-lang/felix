@@ -853,6 +853,9 @@ class Win32FileSystem
   gen filecopy(src: string, dst: string) :  bool =
   {
     //eprintln$ "Copy " + src + " -> " + dst;
+    if Env::getenv ("FLX_REPORT_FILECOPY") != "" do
+      eprintln$ "[Win32FileSystem::filecopy] '" + src + "' -> '" + dst+ "'";
+    done 
 
     val now = Time::time(); // seconds
     var stat_buf: Win32FileStat::stat_t;
