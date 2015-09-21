@@ -702,6 +702,7 @@ fun dflt_control () =>
     var SHOWCODE=0;
     var CCFLAGS=Empty[string];
     var EXTRA_CCFLAGS=Empty[string];
+    var EXTRA_PACKAGES=Empty[string];
     var LINKER_SWITCHES=Empty[string];
     var MACROS=Empty[string];
     var cpps=Empty[string];
@@ -729,8 +730,8 @@ fun dflt_control () =>
     var DRIVER_OBJS = Empty[string]; // static linkage only
     var LINK_STRINGS = Empty[string];
 
-    var pkgs="";
-
+    var pkgs=Empty[string];
+    var extra_pkgs = Empty[string];
     var FLXG = "";
     var FLXRUN = Empty[string];
     var LINKER_OUTPUT_FILENAME = "";
@@ -770,6 +771,7 @@ private proc print_help() {
   println "--test               : use felix installation in current directory";
   println "--test=dir           : use felix installation in dir";
   println "--target=dir         : subdir of install dir containing target configuration (default 'host')";
+  println "--pkgconfig-path+=dir: prepend extra flx_pkgconfig search directory to standard path";
   println "--toolchain=toolchain: pick a non-default C++ compiler toolchain";
   println "--felix=file         : get installation details from file";
   println "--where              : print location of felix installation";
@@ -974,6 +976,10 @@ private noinline proc handle_switch
   elif prefix(arg,"--target-dir=") do
     debugln "Set target configuration directory";
     Config::cascade_FLX_TARGET_DIR config arg.[13 to];
+
+  elif prefix(arg,"--pkgconfig-path+=") do
+    debugln "Prepend extra flx_pkgconfig directory to standard path";
+    config.FLX_CONFIG_DIRS <- arg.[18 to] + config*.FLX_CONFIG_DIRS;
 
   elif prefix(arg,"--toolchain=") do
     debugln "Set toolchain";
@@ -1250,7 +1256,7 @@ private noinline proc handle_switch
 
   elif prefix(arg,"--pkg=") do
     debugln "Add pkgconfig package to link";
-    control.pkgs <-  control*.pkgs + " " + arg.[6 to];
+    control.pkgs <-  control*.pkgs +arg.[6 to];
 
   elif prefix (arg,"--indir=") do
     control.INDIR  <-  arg.[8 to];
@@ -1956,6 +1962,7 @@ object processing_env(
 
   proc calpackages 
   {
+    debugln$ "[flx:calpackages] Calculating package requirements (calpackages_run="+str calpackages_run +")";
     if not calpackages_run  do
       var tc = toolchain dflt_clang_config;
       var x = FlxPkg::map_package_requirements 
@@ -1968,7 +1975,8 @@ object processing_env(
          SLINK_STRINGS = control.SLINK_STRINGS,
          DLINK_STRINGS = control.DLINK_STRINGS,
          LINKER_SWITCHES = control.LINKER_SWITCHES,
-         cpp_filebase = dvars.cpp_filebase
+         cpp_filebase = dvars.cpp_filebase,
+         EXTRA_PACKAGES = control.pkgs
       );
       //control.EXTRA_CCFLAGS = control.EXTRA_CCFLAGS + x.CFLAGS;
       control.CCFLAGS = control.CCFLAGS + x.CFLAGS;
@@ -1979,6 +1987,31 @@ object processing_env(
       //println$ "LINK STRINGS = " + x.LINK_STRINGS;
       calpackages_run = true;
     done
+  }
+
+  fun find_cxx_pkgs (src:string) : list[string] =
+  {
+    debugln$ "[flx:find_cxx_pkgs] Scanning " + src + " for package requirements";
+    var out = Empty[string];
+    var pat = RE2('.*@requires package ([A-Za-z][A-Za-z0-9_-]*).*');
+    var f = fopen_input_text src;
+    if valid f do
+      for line in f do
+        var result = Match (pat,line);
+        match result do
+        | #None => ;
+        | Some v => out = v.1  + out;
+        done
+      done
+      fclose f;
+    else
+      eprintln("Can't find C++ source file " + src);
+      System::exit(1);
+    done
+    out = rev out;
+    if out != Empty[string] call
+      eprintln$ "[flx] C++ file "+src+" requires packages " + str (out);
+    return out;
   }
 
 //----------------------------------------------------------------------------
@@ -2083,29 +2116,6 @@ object processing_env(
         debugln$ "Felix compilation succeeded";
         calpackages;
         FlxPkg::write_include_file(dvars.cpp_filebase, control.EXTRA_INCLUDE_FILES);
-/*
-
-SKIP THIS CRAP NOW, use --bundle-dir instead.
-        // Now, if we exported something (other than the standard symbols), 
-        // we copy up the *.hpp and *_interface.flx
-        // files to the same directory as the "linker output filename". 
-        // This is a bit of a HACK! Shouldn't do this if we're making an executable :)
-        if FileStat::fileexists control.FLX_INTERFACE_FILENAME do
-          var dstdir = Filename::dirname control.LINKER_OUTPUT_FILENAME;
-          Directory::mkdirs dstdir;
-          var flxdst=Filename::join (dstdir,Filename::basename control.FLX_INTERFACE_FILENAME);
-          var copied = FileSystem::filecopy (src=control.FLX_INTERFACE_FILENAME,dst=flxdst); 
-          if copied do
-            // only copy the *.hpp file if the *-interface.flx file is copied.
-            var cxxdst=Filename::join (dstdir,Filename::basename control.CXX_INTERFACE_FILENAME);
-            C_hack::ignore (FileSystem::filecopy (src=control.CXX_INTERFACE_FILENAME, dst=cxxdst));
-            // copy the *.includes file we just generated too, its #included in the header
-            var includes_file = dvars.cpp_filebase+".includes";
-            cxxdst=Filename::join (dstdir,Filename::basename includes_file);
-            C_hack::ignore (FileSystem::filecopy (src=includes_file, dst=cxxdst));
-          done 
-        done
-*/
       done
     else
       debugln$ "skipping flxg because output is uptodate";
@@ -2119,12 +2129,28 @@ SKIP THIS CRAP NOW, use --bundle-dir instead.
   // C++ dynamic (one file)
   gen cxx_compile_dynamic1(src:string, dst:string) : int =
   {
-
     var t0 = #Time::time;
+    var pkgs = find_cxx_pkgs src;
+    control&.extra_pkgs <- control.extra_pkgs + pkgs;
+    var pkg_cflags = Empty[string];
+    if pkgs != Empty[string] do 
+      eprintln$ "[flx:cxx_compile_dynamic1] Adding packages " + str pkgs;
+      var PKGCONFIG_PATH=map 
+         (fun (s:string) => "--path+="+s) 
+         config.FLX_CONFIG_DIRS
+      ;
+      var allargs = PKGCONFIG_PATH+"--field=cflags"+"--keepleftmost"+pkgs + control.pkgs;
+      var ret,mycflags = FlxPkgConfig::flx_pkgconfig(allargs);
+      if ret != 0 do
+        eprintln$ "[flx:cxx_compile_dynamic1] Error " + str ret + " executing flx_pkgconfig, args=" + str allargs;
+        System::exit (1);
+      done
+      pkg_cflags = mycflags;
+    done
     var tc = toolchain 
       extend dflt_clang_config with 
       (
-        ccflags = /* ccflags + */ control.CCFLAGS,
+        ccflags = /* ccflags + */ control.CCFLAGS + pkg_cflags,
         header_search_dirs = config.FLX_RTL_DIRS+control.EXTRA_INCLUDE_DIRS,
         macros = control.MACROS,
         debugln = if control.ECHO==1 then echoln[string] else debugln[string] endif
@@ -2213,10 +2239,28 @@ SKIP THIS CRAP NOW, use --bundle-dir instead.
   {
 //println$ "cxx_compile_static1: " + src " -> " + dst;
     var t0 = #Time::time;
+    var pkgs = find_cxx_pkgs src;
+    control&.extra_pkgs <- control.extra_pkgs + pkgs;
+    var pkg_cflags = Empty[string];
+    if pkgs != Empty[string] do 
+      eprintln$ "[flx:cxx_compile_static1] Adding packages " + str pkgs;
+      var PKGCONFIG_PATH=map 
+         (fun (s:string) => "--path+="+s) 
+         config.FLX_CONFIG_DIRS
+      ;
+      var allargs = PKGCONFIG_PATH+"--field=cflags"+"--keepleftmost"+pkgs+control.pkgs;
+      var ret,mycflags = FlxPkgConfig::flx_pkgconfig(allargs);
+      if ret != 0 do
+        eprintln$ "[flx:cxx_compile_static1] Error " + str ret + " executing flx_pkgconfig, args=" + str allargs;
+        System::exit (1);
+      done
+      pkg_cflags = mycflags;
+    done
+ 
     var tc = toolchain  
       extend dflt_clang_config with 
       (
-        ccflags = /*ccflags + */ control.CCFLAGS,
+        ccflags = /*ccflags + */ control.CCFLAGS + pkg_cflags,
         header_search_dirs = config.FLX_RTL_DIRS+control.EXTRA_INCLUDE_DIRS,
         macros = control.MACROS,
         debugln = if control.ECHO==1 then echoln[string] else debugln[string] endif
@@ -2292,11 +2336,27 @@ SKIP THIS CRAP NOW, use --bundle-dir instead.
   gen cxx_link_dynamic () : int =
   {
     var t0 = #Time::time;
+    var pkg_dstrings= Empty[string];
+    var pkgs = control.extra_pkgs;
+    if pkgs != Empty[string] do 
+      eprintln$ "[flx:cxx_link_dynamic1] Adding packages " + str pkgs;
+      var PKGCONFIG_PATH=map 
+         (fun (s:string) => "--path+="+s) 
+         config.FLX_CONFIG_DIRS
+      ;
+      var allargs = PKGCONFIG_PATH+"-r"+"--field=provides_dlib"+"--field=requires_dlibs"+"--keepleftmost"+pkgs + control.pkgs;
+      var ret,mydstrings = FlxPkgConfig::flx_pkgconfig(allargs);
+      if ret != 0 do
+        eprintln$ "[flx:cxx_link_dynamic1] Error " + str ret + " executing flx_pkgconfig, args=" + str allargs;
+        System::exit (1);
+      done
+      pkg_dstrings = mydstrings;
+    done
+ 
     var tc = toolchain 
       extend dflt_clang_config with 
       (
-        //ccflags = ccflags + control.CCFLAGS + control.LINK_STRINGS,
-        dynamic_libraries = control.LINK_STRINGS, // a bit of a hack ..
+        dynamic_libraries = control.LINK_STRINGS+pkg_dstrings, // a bit of a hack ..
         debugln = if control.ECHO==1 then echoln[string] else debugln[string] endif
       )
       end
@@ -2334,11 +2394,27 @@ SKIP THIS CRAP NOW, use --bundle-dir instead.
   gen cxx_link_static () : int = 
   {
     var t0 = #Time::time;
+    var pkg_sstrings= Empty[string];
+    var pkgs = control.extra_pkgs;
+    if pkgs != Empty[string] do 
+      eprintln$ "[flx:cxx_link_static] Adding packages " + str pkgs;
+      var PKGCONFIG_PATH=map 
+         (fun (s:string) => "--path+="+s) 
+         config.FLX_CONFIG_DIRS
+      ;
+      var allargs = PKGCONFIG_PATH+"-r"+"--field=provides_slib"+"--field=requires_slibs"+"--keepleftmost"+pkgs + control.pkgs;
+      var ret,mysstrings = FlxPkgConfig::flx_pkgconfig(allargs);
+      if ret != 0 do
+        eprintln$ "[flx:cxx_link_static] Error " + str ret + " executing flx_pkgconfig, args=" + str allargs;
+        System::exit (1);
+      done
+      pkg_sstrings = mysstrings;
+    done
     var tc = toolchain  
       extend dflt_clang_config with 
       (
         //ccflags = ccflags + control.CCFLAGS + control.LINK_STRINGS, 
-        static_libraries = control.LINK_STRINGS, // a bit of a hack
+        static_libraries = control.LINK_STRINGS + pkg_sstrings, // a bit of a hack
         debugln = if control.ECHO==1 then echoln[string] else debugln[string] endif
       )
       end

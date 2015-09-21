@@ -344,7 +344,7 @@ DWORD WINAPI flx_pthread_start_wrapper(LPVOID e)
   tstart_t *ehd = (tstart_t*)e;
   thread_control_t *tc = ehd -> tc;
   if(tc && tc->debug)
-    fprintf(stderr,"Spawned Thread %p start stack base = %p, tc=%p\n",GetCurrentThreadId(),stack_base, tc);
+    fprintf(stderr,"Spawned Thread %p start stack base = %p, tc=%p\n",(intptr_t)GetCurrentThreadId(),stack_base, tc);
   if(tc)tc->add_thread(stack_base);
   void (*sr)(void*)=ehd->sr;
   void *cd = ehd->cd;
@@ -1742,7 +1742,7 @@ using namespace generic;
 void *bound_queue_scanner(
   collector_t *collector, 
   gc_shape_t *shape, void *pp, 
-  unsigned long dyncount, 
+  size_t dyncount, 
   int reclimit
 )
 {

@@ -737,13 +737,13 @@ void flx_trace(flx_trace_t* tr,flx_range_srcref_t sr, char const *file, int line
     tr->count++;
     if(tr->enable_trace)
     {
-      fprintf(stderr,"%uz : %s\n",tr->count,msg);
+      fprintf(stderr,"%zu : %s\n",tr->count,msg);
       print_loc(stderr,sr,file,line);
     }
   }
   else
   {
-    fprintf(stderr,"%uz : %s\n",flx_global_trace_count,msg);
+    fprintf(stderr,"%zu : %s\n",flx_global_trace_count,msg);
     print_loc(stderr,sr,file,line);
   }
 }

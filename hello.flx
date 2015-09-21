@@ -1,2 +1,4 @@
+proc xhello: 1 = "xhello();" requires header "extern void xhello();";
+xhello();
 println$ "Hello";
 

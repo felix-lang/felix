@@ -22,6 +22,7 @@ class FlxPkg
     SLINK_STRINGS: list[string],
     DLINK_STRINGS: list[string],
     LINKER_SWITCHES: list[string],
+    EXTRA_PACKAGES: list[string],
     cpp_filebase : string
   );
 
@@ -60,10 +61,13 @@ class FlxPkg
 
     gen pkgconfl(args:list[string]) : list[string] =
     {
-      var allargs = PKGCONFIG_PATH+args+RESH; 
+      if spec.EXTRA_PACKAGES != Empty[string] call
+         eprintln$ "calpackages, EXTRA_PACKAGES = " + str spec.EXTRA_PACKAGES
+      ;
+      var allargs = PKGCONFIG_PATH+args+spec.EXTRA_PACKAGES + RESH; 
       var ret,s = FlxPkgConfig::flx_pkgconfig(allargs);
       if ret != 0 do
-        eprintln$ "Error " + str ret + " executing flx_pkgconfig, args=" + str allargs;
+        eprintln$ "[FlxPkg:map_package_requirements] Error " + str ret + " executing flx_pkgconfig, args=" + str allargs;
         System::exit (1);
       done
       return s;

@@ -1091,8 +1091,8 @@ size_t flx_collector_t::reap ()
   Judy1FreeArray(&j_tmp,&je);
   if(debug) 
   {
-    fprintf(stderr,"[gc] Reaped %lu objects\n",count);
-    fprintf(stderr,"[gc] Still allocated %lu objects occupying %lu bytes\n", get_allocation_count(), get_allocation_amt());
+    fprintf(stderr,"[gc] Reaped %zu objects\n",count);
+    fprintf(stderr,"[gc] Still allocated %zu objects occupying %zu bytes\n", get_allocation_count(), get_allocation_amt());
   }
   return count;
 }
