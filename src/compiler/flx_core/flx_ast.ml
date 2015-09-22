@@ -271,6 +271,8 @@ and property_t = [
   | `Stack_closure       (* a stacked closure is formed *)
   | `Unstackable         (* closure cannot be created on stack *)
   | `Pure
+  | `Strict
+  | `NonStrict
   | `ImPure
   | `Total 
   | `Partial

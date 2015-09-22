@@ -913,6 +913,8 @@ and string_of_property = function
 | `Heap_closure -> "heap_closure"
 | `Stack_closure -> "stack_closure"
 | `Pure -> "pure"
+| `Strict -> "strict"
+| `NonStrict -> "nonstrict"
 | `ImPure -> "impure"
 | `Total -> "total"
 | `Partial -> "partial"

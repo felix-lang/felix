@@ -433,6 +433,8 @@ and xadjective_t x : property_t =
   | Id "Lvalue"  -> `Lvalue
   | Id "Impure"  -> `ImPure
   | Id "Pure"  -> `Pure
+  | Id "Strict"  -> `Strict
+  | Id "NonStrict"  -> `NonStrict
   | Id "Partial"  -> `Partial
   | Id "Method"  -> `Tag "method"
   | Id "Total"  -> `Total

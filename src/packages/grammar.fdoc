@@ -1740,6 +1740,17 @@ syntax functions {
   //$ not dependent on any variables in its enclosing context.
   sadjective := "pure" =># "'Pure";
 
+  //$ Function which fails  to evaluate argument 
+  //$ if and only if its argument fails, 
+  //$ i.e. f (error) = error
+  sadjective := "strict" =># "'Strict";
+
+  //$ Function which fails  to evaluate argument 
+  //$ if and only if its argument fails, 
+  //$ i.e. f (error) = error
+  sadjective := "nonstrict" =># "'NonStrict";
+
+
   //$ Function may be dependent on variables in its enclosing context.
   sadjective := "impure" =># "'Impure";
 
