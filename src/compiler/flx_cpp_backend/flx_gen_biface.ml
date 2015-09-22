@@ -350,7 +350,7 @@ let gen_felix_binding syms bsym_table kind index export_name modulename =
         end
       | `Fun -> 
         let carglist = ref [] in
-        let nargs = for i = 1 to n do carglist := ("$" ^ string_of_int i) :: (!carglist) done in
+        let nargs = for i = 1 to n do carglist := ("$" ^ string_of_int (n-i+1)) :: (!carglist) done in
         let carglist = String.concat "," (!carglist) in
         let carglist = 
             (* HACK to cast client thread frame pointer to this library, will NOT
@@ -362,9 +362,9 @@ let gen_felix_binding syms bsym_table kind index export_name modulename =
         in
         begin match ret with
         | BTYP_void -> "  proc " ^ export_name ^ " : " ^ argtype ^ " = " ^
-          "\"" ^export_name ^ "(" ^carglist^ ")\" requires property \"needs_ptf\";" 
+          "\"" ^export_name ^ "(" ^carglist^ ");\" requires property \"needs_ptf\";" 
         | _ -> "  fun " ^ export_name ^ " : " ^ argtype ^ " -> " ^ sbt bsym_table ret ^ " = " ^
-          "\"" ^ export_name ^ "("^carglist^");\" requires property \"needs_ptf\";" 
+          "\"" ^ export_name ^ "("^carglist^")\" requires property \"needs_ptf\";" 
         end
     in
     flx_binding ^ " // "^fkind ^ " " ^ cpp_instance_name syms bsym_table index []^"\n"
