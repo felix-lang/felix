@@ -1296,7 +1296,6 @@ Requires: dl flx_exceptions flx_gc flx_strutil
 library: flx_dynlink
 includes: '"flx_dynlink.hpp"'
 macros: BUILD_DYNLINK
-build_includes: build/release/share/lib/rtl
 srcdir: src/dynlink
 src: .*\.cpp
 @
@@ -1310,7 +1309,6 @@ Requires: dl flx_exceptions flx_gc flx_strutil
 library: flx_dynlink
 includes: '"flx_dynlink.hpp"'
 macros: BUILD_DYNLINK
-build_includes: build/release/share/lib/rtl
 srcdir: src/dynlink
 src: .*\.cpp
 @

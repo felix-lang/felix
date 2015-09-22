@@ -250,7 +250,6 @@ Description: String utilities
 provides_dlib: -lflx_strutil_dynamic
 provides_slib: -lflx_strutil_static
 includes: '"flx_strutil.hpp"'
-build_includes: build/release/share/lib/rtl
 macros: BUILD_STRUTIL
 library: flx_strutil
 srcdir: src/strutil
@@ -265,7 +264,6 @@ provides_slib: /DEFAULTLIB:flx_strutil_static
 includes: '"flx_strutil.hpp"'
 macros: BUILD_STRUTIL
 library: flx_strutil
-build_includes: build/release/share/lib/rtl
 srcdir: src/strutil
 src: .*\.cpp
 @

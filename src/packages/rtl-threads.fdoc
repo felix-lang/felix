@@ -2162,7 +2162,6 @@ includes: '"pthread_thread.hpp"'
 Requires: flx_gc flx_exceptions pthread
 library: flx_pthread
 macros: BUILD_PTHREAD
-build_includes: build/release/share/lib/rtl
 srcdir: src/pthread
 src: .*\.cpp
 @
@@ -2177,7 +2176,6 @@ includes: '"pthread_thread.hpp"'
 Requires: flx_gc flx_exceptions pthread
 library: flx_pthread
 macros: BUILD_PTHREAD
-build_includes: build/release/share/lib/rtl
 srcdir: src/pthread
 src: .*\.cpp
 @

@@ -23,7 +23,6 @@ macros: BUILD_DEMUX
 includes: '"flx_demux.hpp"'
 library: demux
 headers: (.*/)?([^/\\]+\.hpp)>${2}
-build_includes: build/release/share/lib/rtl
 srcdir: src/demux
 src: [^/\\]+\.cpp
 src: posix/.*\.cpp
@@ -40,7 +39,6 @@ macros: BUILD_DEMUX
 includes: '"flx_demux.hpp"'
 library: demux
 headers: (.*/)?([^/\\]+\.hpp)>${2}
-build_includes: build/release/share/lib/rtl
 srcdir: src/demux
 src: [^/\\]+\.cpp
 src: posix/.*\.cpp
@@ -59,7 +57,6 @@ includes: '"flx_demux.hpp"'
 macros: BUILD_DEMUX
 library: demux
 headers: (.*/)?([^/\\]+\.hpp)>${2}
-build_includes: build/release/share/lib/rtl
 srcdir: src/demux
 src: [^/\\]+\.cpp
 src: posix/.*\.cpp
@@ -78,7 +75,6 @@ macros: BUILD_DEMUX
 includes: '"flx_demux.hpp"'
 library: demux
 headers: (.*/)?([^/\\]+\.hpp)>${2}
-build_includes: build/release/share/lib/rtl
 srcdir: src/demux
 src: [^/\\]+\.cpp
 src: posix/.*\.cpp
@@ -96,7 +92,6 @@ macros: BUILD_DEMUX
 includes: '"flx_demux.hpp"'
 library: demux
 headers: (.*/)?([^/\\]+\.hpp)>${2}
-build_includes: build/release/share/lib/rtl
 srcdir: src/demux
 src: [^/\\]+\.cpp
 src: posix/.*\.cpp
@@ -116,7 +111,6 @@ macros: BUILD_DEMUX
 includes: '"flx_demux.hpp"'
 library: demux
 headers: (.*/)?([^/\\]+\.hpp)>${2}
-build_includes: build/release/share/lib/rtl
 srcdir: src/demux
 src: [^/\\]+\.cpp
 src: win/.*\.cpp
@@ -135,7 +129,6 @@ macros: BUILD_DEMUX
 includes: '"flx_demux.hpp"'
 library: demux
 headers: (.*/)?([^/\\]+\.hpp)>${2}
-build_includes: build/release/share/lib/rtl
 srcdir: src/demux
 src: [^/\\]+\.cpp
 src: win/.*\.cpp
@@ -152,7 +145,6 @@ includes: '"flx_demux.hpp"'
 macros: BUILD_DEMUX
 library: demux
 headers: (.*/)?([^/\\]+\.hpp)>${2}
-build_includes: build/release/share/lib/rtl
 srcdir: src/demux
 src: [^/\\]+\.cpp
 src: posix/.*\.cpp
