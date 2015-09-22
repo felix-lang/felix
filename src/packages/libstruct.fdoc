@@ -57,8 +57,8 @@ include "std/codec/__init__";
 include "std/datatype/__init__";
 include "std/strings/__init__";
 
-// database
-include "std/db/__init__";
+// database REMOVED
+//include "std/db/__init__";
 
 // Version
 include "std/version";
