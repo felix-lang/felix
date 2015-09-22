@@ -124,6 +124,11 @@ let rec rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t lis
     print_endline ("Export struct " ^ name);
     [Iface (sr, IFACE_export_struct (name))]
 
+  | STMT_export_union (sr,fname,cname) ->
+    print_endline ("Export union " ^ string_of_suffixed_name fname^ " as '" ^ cname ^ "'");
+    [Iface (sr, IFACE_export_union (fname,cname))]
+
+
 
   | STMT_var_decl (sr,name,vs,typ,expr) ->
     let vs_exprs = List.map (fun (s,_)->TYP_name (sr,s,[])) (fst vs) in

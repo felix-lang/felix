@@ -1115,6 +1115,12 @@ and string_of_statement level s =
     spaces level ^
     "export struct " ^ name ^ ";"
 
+  | STMT_export_union (_,fname,cname) ->
+    spaces level ^
+    "export union " ^ string_of_suffixed_name fname ^ 
+    " as " ^ "\"" ^ cname ^ "\";"
+
+
   | STMT_label (_,s) -> string_of_id s ^ ":>"
   | STMT_goto (_,s) -> spaces level ^ "goto " ^ string_of_id s ^ ";"
 
@@ -1498,6 +1504,11 @@ and string_of_iface level s =
   | IFACE_export_struct (name) ->
     spc ^ "export struct " ^ name ^":"
 
+  | IFACE_export_union (flx_name, cpp_name) ->
+    spc ^ "export union " ^ string_of_suffixed_name flx_name ^
+     " as \"" ^ cpp_name ^ "\";"
+
+
 and string_of_symdef entry name vs =
   let se e = string_of_expr e in
   let st t = string_of_typecode t in
@@ -1875,6 +1886,9 @@ and string_of_biface bsym_table level s =
 
   | BIFACE_export_struct (_,index) ->
     spc ^ "export struct " ^ qualified_name_of_bindex bsym_table index ^ ";"
+
+  | BIFACE_export_union (_,index, cpp_name) ->
+    spc ^ "export union " ^ qualified_name_of_bindex bsym_table index ^ ";"
 
 
 and sbx bsym_table s =  string_of_bexe bsym_table 0 s

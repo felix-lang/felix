@@ -83,8 +83,23 @@ let gen_biface_header syms bsym_table modulename biface =
 
   | BIFACE_export_type (sr, typ, export_name) ->
     "//EXPORT type " ^ sbt bsym_table typ ^ " as " ^ export_name  ^ "\n" ^
-    "typedef ::flxusr::" ^ mname ^ "::" ^ cpp_type_classname syms bsym_table typ ^ " " ^ export_name ^ "_class;\n" ^
-    "typedef ::flxusr::" ^  mname ^ "::" ^ cpp_typename syms bsym_table typ ^ " " ^ export_name ^ ";\n"
+    (* "typedef ::flxusr::" ^ mname ^ "::" ^ cpp_type_classname syms bsym_table typ ^ " " ^ export_name ^ "_class;\n" ^ *)
+
+    "namespace flxusr { namespace " ^ mname ^ "{\n" ^
+    "  using " ^ export_name ^ " = " ^ cpp_typename syms bsym_table typ ^ "; // C++11\n" ^
+    "}}\n" ^
+    "typedef ::flxusr::" ^  mname ^ "::" ^ export_name ^ " " ^ export_name ^ ";\n"
+
+  | BIFACE_export_union (sr, idx, export_name) ->
+    let typ = Flx_btype.btyp_inst (idx,[]) in 
+    let sym = Flx_bsym_table.find bsym_table idx in 
+    let fname = sym.Flx_bsym.id in
+    "//EXPORT union "  ^ fname ^ ", type " ^ sbt bsym_table typ ^ " as " ^ export_name  ^ "\n" ^
+    "namespace flxusr { namespace " ^ mname ^ "{\n" ^
+    "  using " ^ export_name ^ " = " ^ cpp_typename syms bsym_table typ ^ "; // C++11\n" ^
+    "}}\n" ^
+    "typedef ::flxusr::" ^  mname ^ "::" ^ export_name ^ " " ^ export_name ^ ";\n"
+
 
   | BIFACE_export_struct (sr,idx) ->
     let bsym = Flx_bsym_table.find bsym_table idx in
@@ -315,6 +330,8 @@ let gen_biface_body syms bsym_table shapes shape_map label_map biface = match bi
 
   | BIFACE_export_struct _ -> ""
 
+  | BIFACE_export_union _ -> ""
+
 let gen_felix_binding syms bsym_table kind index export_name modulename =
   let mname = Flx_name.cid_of_flxid modulename in
   let bsym =
@@ -386,6 +403,22 @@ let gen_felix_struct_export syms bsym_table idx modulename =
   mems ^
   "  };\n"
 
+let gen_felix_union_export syms bsym_table idx modulename =
+  let bsym = Flx_bsym_table.find bsym_table idx in
+  let sname = Flx_bsym.id bsym in
+  let bbdcl = Flx_bsym.bbdcl bsym in
+  let fields = match bbdcl with 
+    | BBDCL_union ([],fields) -> fields
+    | _ -> assert false
+  in
+  let mkmem (id,seq,t) = "     | " ^ id ^ " = " ^ string_of_int seq ^ " " ^ 
+     (match t with BTYP_void -> "" | _ -> " of "^ sbt bsym_table t) ^ "\n" 
+  in
+  let mems = catmap "" mkmem fields in
+  "  union " ^ sname ^ " =\n" ^
+  mems ^
+  "  ;\n"
+
 let gen_biface_felix1 syms bsym_table modulename biface = match biface with
   | BIFACE_export_python_fun (sr,index, export_name) ->
     "  // PYTHON FUNCTION " ^ export_name ^ "\n"
@@ -402,6 +435,10 @@ let gen_biface_felix1 syms bsym_table modulename biface = match biface with
 
   | BIFACE_export_struct (sr,idx) ->
     gen_felix_struct_export syms bsym_table idx modulename
+
+  | BIFACE_export_union (sr,idx, export_name) ->
+    gen_felix_union_export syms bsym_table idx modulename
+
 
 
 let gen_biface_headers syms bsym_table bifaces modulename =

@@ -744,6 +744,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | STMT_export_cfun (sr, sn, s) ->  tack st
   | STMT_export_type (sr, sn, s) ->  tack st
   | STMT_export_struct (sr, s) ->  tack st
+  | STMT_export_union (sr, sn, s) ->  tack st
 
   | STMT_label (sr, id) ->
     reachable:=true;

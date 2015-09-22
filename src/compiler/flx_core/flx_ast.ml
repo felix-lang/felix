@@ -568,6 +568,7 @@ and statement_t =
   | STMT_export_python_fun of Flx_srcref.t * suffixed_name_t * string
   | STMT_export_type of Flx_srcref.t * typecode_t * string
   | STMT_export_struct of Flx_srcref.t * string
+  | STMT_export_union of Flx_srcref.t * suffixed_name_t * string
 
   | STMT_scheme_string of Flx_srcref.t * string
 
@@ -803,6 +804,7 @@ let src_of_stmt (e : statement_t) = match e with
   | STMT_comment (s,_)
   | STMT_stmt_match (s,_)
   | STMT_export_struct (s,_)
+  | STMT_export_union (s,_,_)
   -> s
 
 let src_of_pat (e : pattern_t) = match e with

@@ -319,6 +319,14 @@ syntax cbind {
   private cbind_stmt := "export" "cproc" ssuffixed_name "as" sstring ";" =>#
     "`(ast_export_cfun ,_sr ,_3 ,_5)";
 
+  //$ Export a Felix struct into C.
+  private cbind_stmt := "export" "struct" ssuffixed_name "as" sstring ";" =>#
+    "`(ast_export_struct ,_sr ,_3 ,_5)";
+
+  //$ Export a Felix union into C.
+  private cbind_stmt := "export" "union" ssuffixed_name "as" sstring ";" =>#
+    "`(ast_export_union,_sr ,_3 ,_5)";
+
   //$ Export a type into C. 
   //$ This is done using a typedef that defines the alias
   //$ specified in the "as" phase to be the type expression.
@@ -4816,10 +4824,24 @@ syntax type_decls {
     stype_sum_item := "#" sname sopt_value stvarlist =># "`(,_2 ,_3 ,_4 (ast_void ,_sr))";
 
 
-  stmt := "union" sdeclname "=" stype_sum_items2 ";" =>#
+  stmt := sexport "union" sdeclname "=" stype_sum_items2 ";" =>#
     """
-    `(ast_union ,_sr ,(first _2) ,(second _2) ,_4)
-     """;
+    (let*
+      ( 
+        (union-name (first _3))
+        (sts (list `(ast_union ,_sr ,union-name ,(second _3) ,_5)))
+        (sts 
+          (if 
+            (equal? _1 'export) 
+            (cons `(ast_export_union ,_sr ,(nos union-name) ,union-name) sts)
+            sts
+          )
+        )
+      )
+      `(ast_seq ,_sr ,sts)
+    )
+    """;
+
     stype_sum_item2 := "|" stype_sum_item =># "_2";
     stype_sum_items2 := stype_sum_item stype_sum_item2* =># "(cons _1 _2)";
     stype_sum_items2 := stype_sum_item2* =># "_1";
