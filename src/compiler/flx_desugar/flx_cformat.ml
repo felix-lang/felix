@@ -111,9 +111,9 @@ type mode_t = [
 let strchr ch = String.make 1 ch
 
 let ast i =
-  let s = Bytes.make (i+1) ' ' in
-  Bytes.set s i '*';
-  Bytes.to_string s
+  let s = String.make (i+1) ' 'in
+  s.[i] <- '*';
+  s
 
 let numval ch = index "0123456789" ch
 
@@ -244,5 +244,3 @@ let types_of_cformat_string sr s =
   commit();
   !outfmt,
   rev_map (fun (i,s) -> i,TYP_name (sr,s,[])) !types
-
-
