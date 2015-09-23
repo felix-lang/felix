@@ -734,7 +734,11 @@ print_endline ("Parent ts = " ^ catmap "," (sbt bsym_table) pts);
     in
     begin match maybebbdcl with
     | Some nubbdcl -> 
-      let nusym ={Flx_bsym.id=id; sr=sr; bbdcl=nubbdcl} in
+      let nuname = Flx_bsym.id sym ^ ( 
+        if List.length ts = 0 then "" 
+         else "[" ^ catmap "," (sbt bsym_table) ts ^ "]") 
+      in
+      let nusym ={Flx_bsym.id=nuname; sr=sr; bbdcl=nubbdcl} in
       Flx_bsym_table.add nutab j parent nusym
     | None -> ()
     end

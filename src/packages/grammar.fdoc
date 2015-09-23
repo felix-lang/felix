@@ -4823,8 +4823,10 @@ syntax type_decls {
     stype_sum_item := sname sopt_value stvarlist =># "`(,_1 ,_2 ,_3 (ast_void ,_sr))";
     stype_sum_item := "#" sname sopt_value stvarlist =># "`(,_2 ,_3 ,_4 (ast_void ,_sr))";
 
-
-  stmt := sexport "union" sdeclname "=" stype_sum_items2 ";" =>#
+  suexport := "export" =># "'export";
+  suexport := sepsilon =># "'noexport";
+  suexport := "export" sstring =># "`(namedexport ,_2)";
+  stmt := suexport "union" sdeclname "=" stype_sum_items2 ";" =>#
     """
     (let*
       ( 
@@ -4834,7 +4836,11 @@ syntax type_decls {
           (if 
             (equal? _1 'export) 
             (cons `(ast_export_union ,_sr ,(nos union-name) ,union-name) sts)
-            sts
+            (if
+              (equal? _1 'noexport) 
+               sts
+              (cons `(ast_export_union ,_sr ,(nos union-name) ,(second _1)) sts)
+            )
           )
         )
       )

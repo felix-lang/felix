@@ -559,7 +559,11 @@ and sb bsym_table depth fixlist counter prec tc =
       ">"
 
     | BTYP_inst (i,ts) ->
-      0, (match bsym_table with | Some tab -> qualified_name_of_bindex tab i | None -> "<Prim " ^ si i^">") ^
+      0, (match bsym_table with 
+        | Some tab -> let name = qualified_name_of_bindex tab i in
+          (* print_endline ("DEBUG: flx_print: BTYP_inst " ^ si i ^ ": " ^ name);  *)
+          name
+        | None -> "<Prim " ^ si i^">") ^
       (if List.length ts = 0 then "" else
       "[" ^cat ", " (map (sbt 9) ts) ^ "]"
       )
@@ -574,7 +578,7 @@ and sb bsym_table depth fixlist counter prec tc =
     | BTYP_record (n,ls) ->
       begin match ls with
       | [] -> 0,"record_unit"
-      | _ -> 0,"("^catmap "" (fun (s,t)->s^":"^sbt 0 t^",") ls ^")"
+      | _ -> 0,"("^catmap "," (fun (s,t)->s^":"^sbt 0 t) ls ^")"
       end
 
     | BTYP_variant ls ->
