@@ -7,30 +7,30 @@ let hexchar_of_int i =
 
 let hex8 i =
   let j = ref i in
-  let s = Bytes.create 8 in
+  let s = String.create 8 in
   for k = 0 to 7 do
-    Bytes.set s (7-k)  (hexchar_of_int (!j mod 16));
+    s.[7-k]  <- hexchar_of_int (!j mod 16);
     j := !j / 16
   done;
-  Bytes.to_string s
+  s
 
 let hex4 i =
   let j = ref i in
-  let s = Bytes.create 4 in
+  let s = String.create 4 in
   for k = 0 to 3 do
-    Bytes.set s (3-k)  (hexchar_of_int (!j mod 16));
+    s.[3-k]  <- hexchar_of_int (!j mod 16);
     j := !j / 16
   done;
-  Bytes.to_string s
+  s
 
 let hex2 i =
   let j = ref i in
-  let s = Bytes.create 2 in
+  let s = String.create 2 in
   for k = 0 to 1 do
-    Bytes.set s (1-k)  (hexchar_of_int (!j mod 16));
+    s.[1-k]  <- hexchar_of_int (!j mod 16);
     j := !j / 16
   done;
-  Bytes.to_string s
+  s
 
 let escape_of_char quote ch =
   if ch = '\\' then "\\\\"
