@@ -377,11 +377,20 @@ let gen_felix_binding syms bsym_table kind index export_name modulename =
 
             "(::flxusr::"^mname^"::thread_frame_t*)(void*)ptf" ^ if n = 0 then "" else ","^carglist
         in
+        let big = (String.length carglist + String.length argtype) > 40 in
+        let sep = if big then "\n    " else " " in
         begin match ret with
-        | BTYP_void -> "  proc " ^ export_name ^ " : " ^ argtype ^ " = " ^
-          "\"" ^export_name ^ "(" ^carglist^ ");\" requires property \"needs_ptf\";" 
-        | _ -> "  fun " ^ export_name ^ " : " ^ argtype ^ " -> " ^ sbt bsym_table ret ^ " = " ^
-          "\"" ^ export_name ^ "("^carglist^")\" requires property \"needs_ptf\";" 
+        | BTYP_void -> 
+          "  proc " ^ export_name ^ ":" ^ sep ^ 
+          argtype ^ " =" ^ sep ^
+          "\"" ^ export_name ^ "(" ^carglist^ ");\""^ sep ^ 
+          "\" requires property \"needs_ptf\";" 
+
+        | _ -> "  fun " ^ export_name ^ ":" ^ sep ^ 
+          argtype ^ " ->" ^ sep ^ 
+          sbt bsym_table ret ^ " =" ^ sep ^
+          "\"" ^ export_name ^ "("^carglist^")\"" ^ sep ^
+          "requires property \"needs_ptf\";" 
         end
     in
     flx_binding ^ " // "^fkind ^ " " ^ cpp_instance_name syms bsym_table index []^"\n"
