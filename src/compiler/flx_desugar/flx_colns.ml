@@ -52,7 +52,7 @@ let locate_file ?(include_dirs=[]) f =
 
 (* Native filenames, respect absolute filename *)
 let rec render path f = 
-  if String.length f < 1 then failwith "Empty --import filename";
+  if String.length f < 1 then [] else (* failwith "Empty --import filename"; *)
   if String.sub f 0 1 = "@" then
     let f = locate_file ~include_dirs:path (String.sub f 1 (String.length f - 1)) in
     let f = open_in f in

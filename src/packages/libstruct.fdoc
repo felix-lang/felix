@@ -11,6 +11,7 @@
 @tangler rawc.flx           = share/lib/std/c/rawc.flx
 @tangler cstdlib.flx        = share/lib/std/c/cstdlib.flx
 @tangler c_hack.flx         = share/lib/std/c/c_hack.flx
+@tangler platindep.flxh     = share/lib/std/plat/platindep.flxh
 
 @h1 Library structure
 Specifies some of the automatic inclusion files.
@@ -158,6 +159,19 @@ include "std/win32/time";
 include "std/win32/signal";
 include "std/win32/faio_win32";
 include "std/win32/win32_headers";
+@
+
+@h1 Platform independent Computation enforcement
+Using --import=std/plat/platindep.flxh on flxg command
+fails to set any of the usual platform macros like
+FLX_LINUX, FLX_POSIX, FLX_WIN32. Instead it sets
+the macro @{PLAT_INDEP}. This should bug out any
+compilations requiring platform specific macros.
+
+@tangle platindep.flxh
+// Platform independent compilation enforced by
+// failing to set any platform macros.
+macro val PLAT_INDEP = 1;
 @
 
 @h1 C hackery
