@@ -141,9 +141,18 @@ class Builder(fbuild.db.PersistentObject):
             buildroot=buildroot,
             flags=cflags)
 
+        dlfcn_h = config_call('fbuild.config.c.posix.dlfcn_h',
+            phase.platform,
+            phase.cxx.static,
+            phase.cxx.shared)
+
+        if dlfcn_h.dlopen:
+            external_libs = dlfcn_h.external_libs
+        else:
+            external_libs = []
 
         return linker(dst, list(chain(objects, [obj,thunk_obj])),
-            libs=libs, external_libs=['dl'],
+            libs=libs, external_libs=external_libs,
             flags=lflags,
             buildroot=buildroot)
 
