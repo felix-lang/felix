@@ -21,19 +21,26 @@ A regexp can be compiled with the @{RE2} function.
 @felix
 var r = RE2(" *([A-Za-z_][A-Za-z0-9]*).*");
 @
+
 @h2 Simple @{Match}ing
+
 Matching is done with the @{Match} function:
+
 @felix
 var line = "Hello World";
 var maybe_subgroups = Match (r, line);
 @
+
 Please note, @{Match} only supports a complete match.
 There's no searching or partial matching. Instead,
 just use repeated wildcards as shown.
+
 @h2 Checking @{Match} results.
+
 The best way to check the result of a @{Match} is
 with a <a href="pattern_index.fdoc">pattern match</a>
 as follows:
+
 @felix
 match maybe_subgroups with
 | #None => println$ "No match";
@@ -43,6 +50,27 @@ endmatch;
 @expect
 Matched Hello
 @
+
+@h2 Streamable matching
+
+You may want to match more than one instance of a pattern in a string.
+For example, you may want to capture each word in a line of text.
+This can be done by iterating over a regex like the following
+
+@felix
+var r = RE2("\w"); // try to match a word
+var line = "Hello World";
+for x in (r, line) do
+    println$ x;
+done
+@expect
+Hello
+World
+@
+
+If you use the simple method, you'll only match a single word, but
+with the for loop you get every match.
+
 @h2 Supported Syntax.
 See <a href="http://code.google.com/p/re2/wiki/Syntax">RE2 syntax.</a>
 @h1 Regular definitions.
