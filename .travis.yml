@@ -1,7 +1,7 @@
 # dummy mod
 #install:
-#  - sudo apt-get update 
-#  - sudo apt-get install -y python3 
+#  - sudo apt-get update
+#  - sudo apt-get install -y python3
 #  - sudo apt-get install -y  ocaml-native-compilers
 
 sudo: false
@@ -17,8 +17,14 @@ addons:
       - ocaml-native-compilers
       - gcc-5
       - g++-5
- 
-script: 
+
+script:
+  - mkdir ocaml-tmp
+  - cd ocaml-tmp
+  - "curl https://launchpad.net/~avsm/+archive/ubuntu/ocaml42+opam12/+build/7778698/+files/ocaml_4.02.3-2ppa4~precise_amd64.deb > ocaml.deb"
+  - dpkg-dep -x ocaml.deb extracted
+  - ls extracted # XXX
+  - cd ..
   - mkdir bin
   - ln -s /usr/bin/gcc-5 bin/gcc
   - ln -s /usr/bin/g++-5 bin/g++
