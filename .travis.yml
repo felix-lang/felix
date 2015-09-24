@@ -23,7 +23,7 @@ script:
   - cd ocaml-tmp
   - "curl -L https://launchpad.net/~avsm/+archive/ubuntu/ocaml42+opam12/+build/7778698/+files/ocaml_4.02.3-2ppa4~precise_amd64.deb > ocaml.deb"
   - dpkg-deb -x ocaml.deb extracted
-  - tree extracted # XXX
+  - ls -R extracted # XXX
   - cd ..
   - mkdir bin
   - ln -s /usr/bin/gcc-5 bin/gcc
