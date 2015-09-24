@@ -1,0 +1,256 @@
+@title Felix library add ons
+@tangler rparse.flx        = share/src/flxlibs/rparse.flx
+@tangler unix_rparse.fpc   = $PWD/src/config/unix/rparse.fpc
+@tangler win32_rparse.fpc  = $PWD/src/config/win32/rparse.fpc
+@tangler build_rparse.sh   = $PWD/build_rparse.sh
+@tangler test_rparse.sh    = $PWD/test_rparse.sh
+@tangler testrparse.flx    = $PWD/testrparse.flx
+
+@h1 Synopsis
+This package contains part of the Felix standard library
+written in Felix. The code is compiled into a normal
+binary static archive and dll/shared library and installed
+into the target RTL directory. The C++ header is installed there too.
+
+The interface, being generated, is stored in the target
+branch of the standard library.
+
+This is an experiment, the provided bash script works only
+on Unix. 
+
+The code here is for the respectful parser which
+allows a string to be split in the usual way, but
+respecting quotes and escapes, that is, quoted or
+escaped split characters are ignored.
+
+Note: this code cannot be used to build Felix because
+Felix is required to build it. The bootstrap version
+of Felix may not have all the required capabilities.
+
+@tangle rparse.flx
+class NewRespectfulParser 
+{
+    export union quote_action_t = 
+      | ignore-quote
+      | keep-quote
+      | drop-quote
+    ; 
+    export union dquote_action_t = 
+      | ignore-dquote
+      | keep-dquote
+      | drop-dquote
+    ; 
+    export union escape_action_t = 
+      | ignore-escape
+      | keep-escape
+      | drop-escape
+    ; 
+    typedef action_t = (quote:quote_action_t, dquote:dquote_action_t, escape:escape_action_t);
+
+    export "rparse_mode_t" union mode_t  = | copying | skipping | quote | dquote | escape-copying | escape-quote | escape-dquote;
+    typedef state_t = (mode:mode_t, current:string, parsed: list[string] );
+
+    export noinline fun respectful_parse (action:action_t) (var state:state_t) (var s:string) : state_t = 
+    {
+      var mode = state.mode;
+      var current = state.current;
+      var result = Empty[string];
+
+      noinline proc handlecopying(ch:char) 
+      {
+        if ch == char "'" do
+          match action.quote with
+          | #ignore-quote => 
+            current += ch;
+          | #keep-quote =>
+            current += ch;
+            mode = quote;
+          | #drop-quote =>
+            mode = quote;
+          endmatch;
+        elif ch == char '"' do
+          match action.dquote with
+          | #ignore-dquote => 
+            current += ch;
+          | #keep-dquote =>
+            current += ch;
+            mode = dquote;
+          | #drop-dquote =>
+            mode = dquote;
+          endmatch;
+        elif ch == char '\\' do
+          match action.escape with
+          | #ignore-escape => 
+            current += ch;
+          | #keep-escape =>
+            current += ch;
+            mode = escape-copying;
+          | #drop-escape =>
+            mode = escape-copying;
+          endmatch;
+        elif ord ch <= ' '.char.ord  do // can't happen if called from skipping
+          result += current;
+          current = "";
+          mode = skipping;
+        else
+          current += ch;
+          mode = copying;
+        done
+      } //nested proc
+
+      for ch in s do 
+        match mode with
+        | #copying => handlecopying ch;
+        | #quote =>
+          if ch == char "'" do
+            match action.quote with
+            | #ignore-quote => 
+              assert false;
+              //current += ch;
+            | #keep-quote =>
+              current += ch;
+              mode = copying;
+            | #drop-quote =>
+              mode = copying;
+            endmatch;
+          elif ch == char "\\" do
+            match action.escape with
+            | #ignore-escape => 
+              current += ch;
+            | #keep-escape =>
+              current += ch;
+              mode = escape-quote;
+            | #drop-escape =>
+              mode = escape-quote;
+            endmatch;
+          else
+            current += ch;
+          done 
+
+        | #dquote =>
+          if ch == char '"' do
+            match action.dquote with
+            | #ignore-dquote => 
+              assert false;
+              //current += ch;
+            | #keep-dquote =>
+              current += ch;
+              mode = copying;
+            | #drop-dquote =>
+              mode = copying;
+            endmatch;
+          elif ch == char "\\" do
+            match action.escape with
+            | #ignore-escape => 
+              current += ch;
+            | #keep-escape =>
+              current += ch;
+              mode = escape-dquote;
+            | #drop-escape =>
+              mode = escape-dquote;
+            endmatch;
+          else
+            current += ch;
+          done 
+
+        | #escape-copying =>
+           current += ch;
+           mode = copying;
+
+        | #escape-quote =>
+           current += ch;
+           mode = quote;
+
+        | #escape-dquote =>
+           current += ch;
+           mode = dquote;
+
+        | #skipping =>
+          if ord ch > ' '.char.ord  do
+            handlecopying ch;
+          done
+        endmatch;
+      done
+      return (mode=mode, current=current, parsed=state.parsed + result);
+    }
+  
+  // simplified one shot parser.
+  // ignores mismatched quotes and backslashes.
+  export fun respectful_split (action:RespectfulParser::action_t) (s:string) : list[string] = 
+  {
+    var state = RespectfulParser::respectful_parse
+      action 
+      (
+        mode=RespectfulParser::skipping, 
+        current="", 
+        parsed=Empty[string]
+      ) 
+      s
+    ;
+    // ignore mismatched quotes and backslashes.
+    match state.mode with 
+    | #skipping => ;
+    | _ => state.parsed = state.parsed + state.current;
+    endmatch;
+    return state.parsed;
+ 
+  }
+
+  export fun default_respectful_split (s:string) : list[string] =>
+    respectful_split (
+      quote=RespectfulParser::keep-quote, 
+      dquote=RespectfulParser::keep-dquote, 
+      escape=RespectfulParser::keep-escape
+    ) 
+    s
+  ; 
+}
+@
+
+@h1 Resource files
+@tangle unix_rparse.fpc
+Description: Respectful Parser, binary edition
+Location: Part of the standard library
+provides_slib: -lrparse_static
+provides_dlib: -lrparse_dynamic
+@
+
+@tangle win32_rparse.fpc
+Description: Respectful Parser, binary edition
+Location: Part of the standard library
+provides_slib: /DEFAULTLIB:librparse_static
+provides_dlib: /DEFAULTLIB:librparse_dynamic
+@
+
+@h1 Interim Build script.
+This is an interim build script for bash only.
+Until a proper Felix tool can be organised!
+@tangle build_rparse.sh
+rm -rf rparse
+build/release/host/bin/flx --felix=build.fpc --bundle-dir=rparse --staticlib -ox librparse_static build/release/share/src/flxlibs/rparse.flx
+build/release/host/bin/flx --felix=build.fpc --bundle-dir=rparse -c -ox librparse_dynamic build/release/share/src/flxlibs/rparse.flx
+mkdir -p build/release/host/lib/std/strings
+cp rparse/rparse_interface.flx build/release/host/lib/std/strings
+cp rparse/librparse_dynamic.dylib build/release/host/lib/rtl
+cp rparse/librparse_static.a build/release/host/lib/rtl
+cp rparse/rparse.hpp build/release/host/lib/rtl
+cp rparse/rparse.includes build/release/host/lib/rtl
+cp src/config/unix/rparse.fpc build/release/host/config
+@
+
+
+@h1 test
+Note: currently interfaces don't contain package
+requjirements! So we have to add it manually!
+@tangle testrparse.flx
+include "std/strings/rparse_interface";
+var s = 'Hello "world ish" stuff'; 
+var k = rparse_interface::default_respectful_split s;
+println$ s " splits to " + k.str;
+@
+
+@tangle test_rparse.sh
+build/release/host/bin/flx --felix=build.fpc --static --pkg=rparse testrparse.flx
+build/release/host/bin/flx --felix=build.fpc --pkg=rparse testrparse.flx
+@
+

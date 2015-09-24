@@ -744,7 +744,8 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | STMT_export_cfun (sr, sn, s) ->  tack st
   | STMT_export_type (sr, sn, s) ->  tack st
   | STMT_export_struct (sr, s) ->  tack st
-
+  | STMT_export_union (sr, sn, s) ->  tack st
+  | STMT_export_requirement (sr,reqs) -> tack st
   | STMT_label (sr, id) ->
     reachable:=true;
     tack (STMT_label (sr, mi sr id))
@@ -1043,6 +1044,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | STMT_call _
   | STMT_macro_forall _
   | STMT_macro_val _  -> assert false
+
   (*
   | st -> failwith ("[subst_or_expand] Unhandled case " ^ string_of_statement 0 st)
   *)

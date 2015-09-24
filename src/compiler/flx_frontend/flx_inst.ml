@@ -340,6 +340,20 @@ and process_function syms bsym_table hvarmap ref_insts1 index sr argtypes ret ex
   print_endline ("Done Process function " ^ si index);
   *)
 
+and do_reqs syms bsym_table ref_insts1 sr msg vs reqs =
+  let uis i ts = add_inst syms bsym_table ref_insts1 sr (i,ts) in
+  let rtr t = register_type_r uis syms bsym_table [] sr t in
+    iter (
+      fun (i, ts)->
+      if i = dummy_bid then
+        clierr sr ("Entity " ^ msg ^
+          " has uninstantiable requirements");
+      let ts' = map vs ts in
+      iter rtr ts';
+      uis i ts'
+    )
+    reqs
+
 and process_inst syms bsym_table instps ref_insts1 i ts inst =
   let bsym =
     try Flx_bsym_table.find bsym_table i
@@ -354,18 +368,7 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
   in
   let rtr t = register_type_r uis syms bsym_table [] sr t in
   let rtnr t = register_type_nr syms bsym_table t in
-  let do_reqs vs reqs =
-    iter (
-      fun (i, ts)->
-      if i = dummy_bid then
-        clierr (Flx_bsym.sr bsym) ("Entity " ^ Flx_bsym.id bsym ^
-          " has uninstantiable requirements");
-      let ts' = map vs ts in
-      iter rtr ts';
-      uis i ts'
-    )
-    reqs
-  in
+  let do_reqs vs reqs = do_reqs syms bsym_table ref_insts1 sr (Flx_bsym.id bsym) vs reqs in
   if syms.compiler_options.Flx_options.print_flag then
   print_endline ("//Instance " ^ string_of_bid inst ^ "=" ^ Flx_bsym.id bsym ^
     "<" ^ string_of_bid i ^ ">[" ^
@@ -645,7 +648,11 @@ let instantiate syms bsym_table instps (root:bid_t) (bifaces:biface_t list) =
       register_type_r (ui sr) syms bsym_table [] sr t
 
     | BIFACE_export_struct (sr,idx) -> ui sr idx []
-
+    | BIFACE_export_union (sr,idx, _) -> ui sr idx []
+    | BIFACE_export_requirement (sr,breqs) ->
+      let do_reqs vs reqs = do_reqs syms bsym_table insts1 sr "`requirement(fix!)`" vs reqs in
+      let vs = fun x -> x in
+      do_reqs vs breqs
   )
   bifaces;
 

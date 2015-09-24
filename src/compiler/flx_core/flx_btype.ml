@@ -64,6 +64,7 @@ type entry_set_t =
   | NonFunctionEntry of entry_kind_t
 
 type name_map_t = (string, entry_set_t) Hashtbl.t
+type breqs_t = (Flx_types.bid_t * t list) list
 
 type biface_t =
   | BIFACE_export_fun of Flx_srcref.t * bid_t * string
@@ -71,6 +72,8 @@ type biface_t =
   | BIFACE_export_python_fun of Flx_srcref.t * bid_t * string
   | BIFACE_export_type of Flx_srcref.t * t * string
   | BIFACE_export_struct of Flx_srcref.t * bid_t
+  | BIFACE_export_union of Flx_srcref.t * bid_t * string
+  | BIFACE_export_requirement of Flx_srcref.t * breqs_t
 
 (* -------------------------------------------------------------------------- *)
 (* NOTE: only works on explicit fixpoint operators,

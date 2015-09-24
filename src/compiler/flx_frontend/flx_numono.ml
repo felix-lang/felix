@@ -335,7 +335,7 @@ let fixup_req syms bsym_table vars polyinst (i,ts) : Flx_types.bid_t * Flx_btype
   let ts = List.map (poly_fixup_type syms bsym_table polyinst) ts in
   j,ts
 
-let fixup_reqs syms bsym_table vars polyinst reqs : Flx_bbdcl.breqs_t = 
+let fixup_reqs syms bsym_table vars polyinst reqs : Flx_btype.breqs_t = 
   List.map (fixup_req syms bsym_table vars polyinst) reqs
 
 let fixup_expr syms bsym_table monotype virtualinst polyinst e =
@@ -734,7 +734,11 @@ print_endline ("Parent ts = " ^ catmap "," (sbt bsym_table) pts);
     in
     begin match maybebbdcl with
     | Some nubbdcl -> 
-      let nusym ={Flx_bsym.id=id; sr=sr; bbdcl=nubbdcl} in
+      let nuname = Flx_bsym.id sym ^ ( 
+        if List.length ts = 0 then "" 
+         else "[" ^ catmap "," (sbt bsym_table) ts ^ "]") 
+      in
+      let nusym ={Flx_bsym.id=nuname; sr=sr; bbdcl=nubbdcl} in
       Flx_bsym_table.add nutab j parent nusym
     | None -> ()
     end

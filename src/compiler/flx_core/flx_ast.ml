@@ -511,6 +511,7 @@ and statement_t =
   | STMT_stmt_match of Flx_srcref.t * (expr_t * (pattern_t * statement_t list) list)
 
   | STMT_newtype of Flx_srcref.t * Flx_id.t * vs_list_t * typecode_t
+  | STMT_export_requirement of Flx_srcref.t * raw_req_expr_t
 
   (* binding structures [prolog] *)
   | STMT_abs_decl of
@@ -568,6 +569,7 @@ and statement_t =
   | STMT_export_python_fun of Flx_srcref.t * suffixed_name_t * string
   | STMT_export_type of Flx_srcref.t * typecode_t * string
   | STMT_export_struct of Flx_srcref.t * string
+  | STMT_export_union of Flx_srcref.t * suffixed_name_t * string
 
   | STMT_scheme_string of Flx_srcref.t * string
 
@@ -803,6 +805,8 @@ let src_of_stmt (e : statement_t) = match e with
   | STMT_comment (s,_)
   | STMT_stmt_match (s,_)
   | STMT_export_struct (s,_)
+  | STMT_export_union (s,_,_)
+  | STMT_export_requirement (s,_)
   -> s
 
 let src_of_pat (e : pattern_t) = match e with

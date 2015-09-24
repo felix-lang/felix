@@ -167,6 +167,13 @@ let find_roots syms bsym_table root bifaces =
   | BIFACE_export_cfun (_,x,_) -> add x;
   | BIFACE_export_type (_,t,_) -> uses_btype add bsym_table true t
   | BIFACE_export_struct (_,idx) -> add idx
+  | BIFACE_export_union (_,idx,_) -> add idx
+  | BIFACE_export_requirement (_,breqs) ->
+     List.iter (fun (idx, ts) -> 
+       add idx; 
+       List.iter (fun t->uses_btype add bsym_table true t) ts
+     )
+     breqs 
   end bifaces;
 
   syms.roots := !roots

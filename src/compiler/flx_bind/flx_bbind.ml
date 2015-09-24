@@ -855,7 +855,7 @@ let bind_interface (state:bbind_state_t) bsym_table = function
       else clierr sr
       (
         "Can't export generic entity " ^
-        string_of_suffixed_name sn
+        string_of_suffixed_name sn ^ " as a function"
       )
 
   | sr, IFACE_export_cfun (sn, cpp_name), parent ->
@@ -871,7 +871,7 @@ let bind_interface (state:bbind_state_t) bsym_table = function
       else clierr sr
       (
         "Can't export generic entity " ^
-        string_of_suffixed_name sn
+        string_of_suffixed_name sn ^ " as a C function"
       )
 
   | sr, IFACE_export_python_fun (sn, cpp_name), parent ->
@@ -888,7 +888,7 @@ let bind_interface (state:bbind_state_t) bsym_table = function
       else clierr sr
       (
         "Can't export generic entity " ^
-        string_of_suffixed_name sn
+        string_of_suffixed_name sn ^ " as a python function"
       )
 
   | sr, IFACE_export_type (typ, cpp_name), parent ->
@@ -925,4 +925,27 @@ let bind_interface (state:bbind_state_t) bsym_table = function
           Flx_print.string_of_bbdcl bsym_table bbdcl index)
         end
      end
+
+  | sr, IFACE_export_union (flx_name, cpp_name), parent ->
+      let env = Flx_lookup.build_env state.lookup_state bsym_table parent in
+      let index,ts = Flx_lookup.lookup_sn_in_env
+        state.lookup_state
+        bsym_table
+        env
+        flx_name 
+      in
+      if ts = [] then
+        BIFACE_export_union (sr,index, cpp_name)
+      else clierr sr
+      (
+        "Can't export generic union " ^
+        string_of_suffixed_name flx_name ^ " as C datatype"
+      )
+
+  | sr, IFACE_export_requirement (reqs), parent ->
+      let env = Flx_lookup.build_env state.lookup_state bsym_table parent in
+      let bt t = Flx_lookup.bind_type state.lookup_state bsym_table env sr t in
+      let breqs = bind_reqs bt state bsym_table env sr reqs in
+      BIFACE_export_requirement (sr,breqs)
+
 
