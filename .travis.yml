@@ -21,8 +21,9 @@ addons:
 script:
   - mkdir ocaml-tmp
   - cd ocaml-tmp
-  - "curl -L https://launchpad.net/~avsm/+archive/ubuntu/ocaml42+opam12/+build/7778698/+files/ocaml_4.02.3-2ppa4~precise_amd64.deb > ocaml.deb"
-  - dpkg-deb -x ocaml.deb extracted
+  - "curl -L https://launchpad.net/~avsm/+archive/ubuntu/ocaml42+opam12/+build/7778698/+files/ocaml-native-compilers_4.02.3-2ppa4~precise_amd64.deb > ocaml_native.deb"
+  - "curl -L https://launchpad.net/~avsm/+archive/ubuntu/ocaml42+opam12/+build/7778698/+files/ocaml-base_4.02.3-2ppa4~precise_amd64.deb > ocaml_base.deb"
+  - dpkg-deb -x *.deb extracted
   - ls -R extracted # XXX
   - cd ..
   - mkdir bin
