@@ -525,7 +525,15 @@ from buildsystem.config import config_call
 def build( phase):
     path = Path(phase.ctx.buildroot/'share'/'src/flx_drivers')
 
-    external_libs=['dl']
+    dlfcn_h = config_call('fbuild.config.c.posix.dlfcn_h',
+        phase.platform,
+        phase.cxx.static,
+        phase.cxx.shared)
+
+    if dlfcn_h.dlopen:
+        external_libs = dlfcn_h.external_libs
+    else:
+        external_libs = []
 
     run_includes = [
         phase.ctx.buildroot / 'host/lib/rtl',
