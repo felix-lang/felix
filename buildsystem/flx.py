@@ -8,6 +8,7 @@ from fbuild.path import Path
 import os
 import os.path
 import platform
+from buildsystem.config import config_call
 
 # ------------------------------------------------------------------------------
 
