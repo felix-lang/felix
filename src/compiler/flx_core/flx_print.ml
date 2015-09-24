@@ -1259,6 +1259,9 @@ and string_of_statement level s =
      string_of_raw_reqs reqs ^
     ";\n"
 
+  | STMT_export_requirement (_,reqs) ->
+    spaces level ^ string_of_raw_reqs reqs ^ ";\n"
+
   | STMT_code (_,s) ->
     "code \n" ^ string_of_long_code_spec s ^ ";\n"
 
@@ -1512,6 +1515,8 @@ and string_of_iface level s =
     spc ^ "export union " ^ string_of_suffixed_name flx_name ^
      " as \"" ^ cpp_name ^ "\";"
 
+  | IFACE_export_requirement (reqs) ->
+    spc ^ "export requires " ^ string_of_named_reqs reqs
 
 and string_of_symdef entry name vs =
   let se e = string_of_expr e in
@@ -1893,6 +1898,10 @@ and string_of_biface bsym_table level s =
 
   | BIFACE_export_union (_,index, cpp_name) ->
     spc ^ "export union " ^ qualified_name_of_bindex bsym_table index ^ ";"
+
+  | BIFACE_export_requirement (_,breqs) ->
+    spc ^ "export requires " ^string_of_breqs bsym_table breqs ^ ";"
+
 
 
 and sbx bsym_table s =  string_of_bexe bsym_table 0 s

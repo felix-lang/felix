@@ -335,7 +335,7 @@ let fixup_req syms bsym_table vars polyinst (i,ts) : Flx_types.bid_t * Flx_btype
   let ts = List.map (poly_fixup_type syms bsym_table polyinst) ts in
   j,ts
 
-let fixup_reqs syms bsym_table vars polyinst reqs : Flx_bbdcl.breqs_t = 
+let fixup_reqs syms bsym_table vars polyinst reqs : Flx_btype.breqs_t = 
   List.map (fixup_req syms bsym_table vars polyinst) reqs
 
 let fixup_expr syms bsym_table monotype virtualinst polyinst e =

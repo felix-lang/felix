@@ -16,26 +16,6 @@ let rec remap_btype offset btype =
     btype
 
 
-(** Remap bound interfaces by adding an offset to the bound index. *)
-let remap_biface offset biface =
-  match biface with
-  | BIFACE_export_fun (sr, bid, name) ->
-      BIFACE_export_fun (sr, remap_bid offset bid, name)
-
-  | BIFACE_export_cfun (sr, bid, name) ->
-      BIFACE_export_cfun (sr, remap_bid offset bid, name)
-
-  | BIFACE_export_python_fun (sr, bid, name) ->
-      BIFACE_export_python_fun (sr, remap_bid offset bid, name)
-
-  | BIFACE_export_type (sr, btype, name) ->
-      BIFACE_export_type (sr, remap_btype offset btype, name)
-
-  | BIFACE_export_struct (sr, index) ->
-      BIFACE_export_struct (sr, remap_bid offset index)
-
-  | BIFACE_export_union(sr, index, name) ->
-      BIFACE_export_union (sr, remap_bid offset index, name)
 
 
 (** Remap bound types by adding an offset to the bound index. *)
@@ -176,6 +156,35 @@ let remap_bbdcl offset bbdcl =
   | BBDCL_lemma -> bbdcl_lemma ()
   | BBDCL_reduce -> bbdcl_reduce ()
 
+(** Remap bound interfaces by adding an offset to the bound index. *)
+let remap_biface offset biface =
+  match biface with
+  | BIFACE_export_fun (sr, bid, name) ->
+    BIFACE_export_fun (sr, remap_bid offset bid, name)
+
+  | BIFACE_export_cfun (sr, bid, name) ->
+    BIFACE_export_cfun (sr, remap_bid offset bid, name)
+
+  | BIFACE_export_python_fun (sr, bid, name) ->
+    BIFACE_export_python_fun (sr, remap_bid offset bid, name)
+
+  | BIFACE_export_type (sr, btype, name) ->
+    BIFACE_export_type (sr, remap_btype offset btype, name)
+
+  | BIFACE_export_struct (sr, index) ->
+    BIFACE_export_struct (sr, remap_bid offset index)
+
+  | BIFACE_export_union(sr, index, name) ->
+    BIFACE_export_union (sr, remap_bid offset index, name)
+
+  | BIFACE_export_requirement (sr, breqs) ->
+    let remap_bid = remap_bid offset in
+    let remap_btype = remap_btype offset in
+    let remap_breqs breqs =
+      List.map (fun (i, ts) -> remap_bid i, List.map remap_btype ts) breqs
+    in
+    let breqs = remap_breqs breqs in
+    BIFACE_export_requirement (sr, breqs)
 
 (** Remap symbols from an old bound symbol table to a new one by offsetting the
  * bound index by a constant amount. *)

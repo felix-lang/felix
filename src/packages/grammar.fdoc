@@ -4086,6 +4086,16 @@ syntax requirements {
   stmt := "requires" srequirements ";" =>#
     """`(ast_insert ,_sr "_root" ,dfltvs (Str "") body ,_2)""";
 
+  stmt := "export" "requires" srequirements ";" =>#
+    """`(ast_seq ,_sr 
+         ,(list 
+           `(ast_insert ,_sr "_root" ,dfltvs (Str "") body ,_3)
+           `(ast_export_requirement ,_sr ,_3)
+         )
+      )
+    """;
+
+
   //$ The named requires statement simply names a requirement.
   stmt := sname "requires" srequirements ";" =>#
     """`(ast_insert ,_sr ,_1 ,dfltvs (Str "") body ,_3)""";

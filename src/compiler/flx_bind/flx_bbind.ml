@@ -942,4 +942,10 @@ let bind_interface (state:bbind_state_t) bsym_table = function
         string_of_suffixed_name flx_name ^ " as C datatype"
       )
 
+  | sr, IFACE_export_requirement (reqs), parent ->
+      let env = Flx_lookup.build_env state.lookup_state bsym_table parent in
+      let bt t = Flx_lookup.bind_type state.lookup_state bsym_table env sr t in
+      let breqs = bind_reqs bt state bsym_table env sr reqs in
+      BIFACE_export_requirement (sr,breqs)
+
 

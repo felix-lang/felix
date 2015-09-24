@@ -231,7 +231,7 @@ build/release/host/bin/flx --felix=build.fpc --bundle-dir=rparse --staticlib -ox
 build/release/host/bin/flx --felix=build.fpc --bundle-dir=rparse -c -ox librparse_dynamic build/release/share/src/flxlibs/rparse.flx
 mkdir -p build/release/host/lib/std/strings
 cp rparse/rparse_interface.flx build/release/host/lib/std/strings
-cp rparse/librparse_dynamic.so build/release/host/lib/rtl
+cp rparse/librparse_dynamic.dylib build/release/host/lib/rtl
 cp rparse/librparse_static.a build/release/host/lib/rtl
 cp rparse/rparse.hpp build/release/host/lib/rtl
 cp rparse/rparse.includes build/release/host/lib/rtl
@@ -251,5 +251,6 @@ println$ s " splits to " + k.str;
 
 @tangle test_rparse.sh
 build/release/host/bin/flx --felix=build.fpc --static --pkg=rparse testrparse.flx
+build/release/host/bin/flx --felix=build.fpc --pkg=rparse testrparse.flx
 @
 

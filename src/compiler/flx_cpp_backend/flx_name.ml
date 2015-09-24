@@ -144,6 +144,7 @@ let is_export syms bsym_table id =
         Flx_bsym_table.mem bsym_table idx then raise Not_found
       | BIFACE_export_union (_,idx,s) -> if (id = s ||
         Flx_bsym_table.mem bsym_table idx) then raise Not_found
+      | BIFACE_export_requirement (_,_) -> ()
      )
      bifaces;
      false

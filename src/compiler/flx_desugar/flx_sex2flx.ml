@@ -810,7 +810,13 @@ and xstatement_t sr x : statement_t =
     | None -> err x "suffixed_name_t"
     in
     STMT_export_union (sr, xsn sn, s)
-  
+
+  | Lst [Id "ast_export_requirement"; sr; req] -> 
+    let sr = xsr sr in 
+    let req = xrr sr req in
+    STMT_export_requirement (sr, req)
+
+ 
   | Lst [Id "ast_stmt_match";  Lst [sr; e; Lst pss]] -> let sr = xsr sr in 
     let pss = map (function
       | Lst [p;stmts] ->  xp p, xsts sr stmts
