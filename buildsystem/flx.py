@@ -306,9 +306,11 @@ def build_flx( phase, flx_builder):
 
     if dlfcn_h.dlopen:
         external_libs = dlfcn_h.external_libs
+        print("HAVE dlfcn.h, library=" + str (external_libs))
     else:
+        print("NO dlfcn.h available")
         external_libs = []
-
+    print("[fbuild:flx.py:build_flx] ********** BUILDING FLX ***********************************************")
     return flx_builder.build_exe(
         async=False,
         dst=Path('host')/'bin'/'bootflx',
