@@ -58,10 +58,10 @@ For example, you may want to capture each word in a line of text.
 This can be done by iterating over a regex like the following
 
 @felix
-var r2 = RE2("\w"); // try to match a word
-var line = "Hello World";
-for x in (r2, line) do
-    println$ x;
+var r2 = RE2("\w+"); // try to match a word
+var sentence = "Hello World";
+for x in (r2, sentence) do
+    println$ x.0;
 done
 @expect
 Hello
