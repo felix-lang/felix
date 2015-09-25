@@ -272,16 +272,18 @@ def build(ctx, flxg, cxx, drivers):
     )
 
 def build_flx_pkgconfig( phase, flx_builder):
-    print('[fbuild] [flx] building flx_pkgconfig')
-    dlfcn_h = config_call('fbuild.config.c.posix.dlfcn_h',
-        phase.platform,
-        phase.cxx.static,
-        phase.cxx.shared)
+    #print('[fbuild] [flx] building flx_pkgconfig')
+    #dlfcn_h = config_call('fbuild.config.c.posix.dlfcn_h',
+    #    phase.platform,
+    #    phase.cxx.static,
+    #    phase.cxx.shared)
 
-    if dlfcn_h.dlopen:
-        external_libs = dlfcn_h.external_libs
-    else:
-        external_libs = []
+    #if dlfcn_h.dlopen:
+    #    external_libs = dlfcn_h.external_libs
+    #else:
+    #    external_libs = []
+
+    external_libs = []
 
     return flx_builder.build_flx_pkgconfig_exe(
         dst=Path('host')/'bin'/'flx_pkgconfig',
@@ -299,18 +301,21 @@ def build_flx_pkgconfig( phase, flx_builder):
 
 def build_flx( phase, flx_builder):
     print('[fbuild] [flx] building flx')
-    dlfcn_h = config_call('fbuild.config.c.posix.dlfcn_h',
-        phase.platform,
-        phase.cxx.static,
-        phase.cxx.shared)
+    #dlfcn_h = config_call('fbuild.config.c.posix.dlfcn_h',
+    #    phase.platform,
+    #    phase.cxx.static,
+    #    phase.cxx.shared)
 
-    if dlfcn_h.dlopen:
-        external_libs = dlfcn_h.external_libs
-        print("HAVE dlfcn.h, library=" + str (external_libs))
-    else:
-        print("NO dlfcn.h available")
-        external_libs = []
-    print("[fbuild:flx.py:build_flx] ********** BUILDING FLX ***********************************************")
+    #if dlfcn_h.dlopen:
+    #    external_libs = dlfcn_h.external_libs
+    #    print("HAVE dlfcn.h, library=" + str (external_libs))
+    #else:
+    #    print("NO dlfcn.h available")
+    #    external_libs = []
+
+    external_libs = []
+
+    #print("[fbuild:flx.py:build_flx] ********** BUILDING FLX ***********************************************")
     return flx_builder.build_exe(
         async=False,
         dst=Path('host')/'bin'/'bootflx',
