@@ -18,7 +18,9 @@ class FlxPkg
     FLX_TARGET_DIR:string,
     EXT_EXE: string,
     EXT_STATIC_OBJ: string,
+    EXT_DYNAMIC_OBJ: string,
     STATIC: int,
+    LINKEXE: int,
     SLINK_STRINGS: list[string],
     DLINK_STRINGS: list[string],
     LINKER_SWITCHES: list[string],
@@ -50,9 +52,24 @@ class FlxPkg
   }
 
 
+  // Model:
+  // Static link exe: return the object files required, no driver exe
+  // Dynamic link exe: the same
+  // DLL: return the executable (flx_run) required to run the DLL
+  // 
+  // We provide instructions to link the target binary and how to run it.
+
   gen map_package_requirements(spec:pkgconfig_inspec_t) : pkgconfig_outspec_t =
   {
 
+/*
+println$ "MAP PACKAGE REQUIREMENTS: LINK " + 
+  if spec.LINKEXE==1 
+  then "EXE"  + " ("+if spec.STATIC==1 then "full" else "with DLL support" endif + ")" 
+  else "DLL"
+  endif
+; 
+*/
     var PKGCONFIG_PATH=map 
        (fun (s:string) => "--path+="+s) 
        spec.FLX_CONFIG_DIRS
@@ -90,20 +107,38 @@ class FlxPkg
     // find the driver entity
     if spec.STATIC == 0 do
       // dynamic linkage: the driver executable
-      var DRIVER_EXE= Filename::join$ list (
-        spec.FLX_TARGET_DIR,
-        "bin",
-        DRIVER_PKG+spec.EXT_EXE
-      )
-    ;
+      if spec.LINKEXE == 0 do
+        var DRIVER_EXE= Filename::join$ list (
+          spec.FLX_TARGET_DIR,
+          "bin",
+          DRIVER_PKG+spec.EXT_EXE
+        );
+        var DRIVER_OBJS = Empty[string];
+      else
+      // dynamic linkage: the object files for executable with DLL support
+        DRIVER_OBJS =list(
+          Filename::join (list (
+            spec.FLX_TARGET_DIR,
+            "lib",
+            "rtl",
+            DRIVER_PKG+"_lib_static"+
+            spec.EXT_DYNAMIC_OBJ)),
+          Filename::join (list (
+            spec.FLX_TARGET_DIR,
+            "lib",
+            "rtl",
+            DRIVER_PKG+"_main"+spec.EXT_DYNAMIC_OBJ))
+        );
+        DRIVER_EXE = "";
+      done
     else
-      // static linkage: the driver object files
-      var DRIVER_OBJS =list(
+      // static linkage: the object files for full static link
+      DRIVER_OBJS =list(
         Filename::join (list (
           spec.FLX_TARGET_DIR,
           "lib",
           "rtl",
-          DRIVER_PKG+"_lib"+
+          DRIVER_PKG+"_lib_static"+
           spec.EXT_STATIC_OBJ)),
         Filename::join (list (
           spec.FLX_TARGET_DIR,
@@ -111,20 +146,27 @@ class FlxPkg
           "rtl",
           DRIVER_PKG+"_main"+spec.EXT_STATIC_OBJ))
       );
+      DRIVER_EXE = "";
     done
 
     if spec.STATIC == 0 do
-      // dynamic linkage: all the libraries required by the application
-      // NOTE: this is wrong. Dynamic linkage should NOT be recursive,
-      // that is, the linker is responsible for loading the closure,
-      // not the application.
-      var LINK_STRINGS =
-        spec.DLINK_STRINGS +
-        spec.LINKER_SWITCHES+
-        pkgconfl(e+'-r'+'--keepleftmost'+'--field=provides_dlib'+'--field=requires_dlibs'+DRIVER_PKG);
+      if spec.LINKEXE == 0 do
+        // Linking a DLL
+        var LINK_STRINGS =
+          spec.DLINK_STRINGS+
+          spec.LINKER_SWITCHES+
+          pkgconfl(e+'-r'+'--keeprightmost'+'--field=provides_dlib'+'--field=requires_dlibs'+DRIVER_PKG);
+      else
+        // Linking an EXE (with DLL support)
+        LINK_STRINGS =
+          spec.DLINK_STRINGS +
+          spec.LINKER_SWITCHES+
+          pkgconfl(e+'-r'+'--keepleftmost'+'--field=provides_dlib'+'--field=requires_dlibs'+DRIVER_PKG);
+      done
     else
       // static linkage: all the libraries required by the application and driver
       // This has to be recursive to find the closure.
+      // Linking an EXE (fully static)
       LINK_STRINGS =
         spec.SLINK_STRINGS+
         spec.LINKER_SWITCHES+

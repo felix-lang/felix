@@ -1117,11 +1117,20 @@ class FlxRtlBuild
           System::exit 1;
         done
       }
-      cobj_static("flx_run_lib_static.cpp",hrtl/"flx_run_lib"+#(toolchain.static_object_extension));
-      cobj_dynamic("flx_run_lib_dynamic.cpp",tmpdir/"flx_run_lib"+#(toolchain.dynamic_object_extension));
 
-      cobj_static("flx_arun_lib_static.cpp",hrtl/"flx_arun_lib"+#(toolchain.static_object_extension));
-      cobj_dynamic("flx_arun_lib_dynamic.cpp",tmpdir/"flx_arun_lib"+#(toolchain.dynamic_object_extension));
+      // VERY CONFUSING!
+      // This one is for full static linkage, RTL static linked
+      cobj_static("flx_run_lib_static.cpp",hrtl/"flx_run_lib_static"+#(toolchain.static_object_extension));
+
+      // This run is for linking an executable which uses the RTL dynamic linked
+      cobj_dynamic("flx_run_lib_static.cpp",hrtl/"flx_run_lib_static"+#(toolchain.dynamic_object_extension));
+
+      // This one is for loading a program as a DLL, i.e. for use in flx_run.exe
+      cobj_dynamic("flx_run_lib_dynamic.cpp",hrtl/"flx_run_lib_dynamic"+#(toolchain.dynamic_object_extension));
+
+      cobj_static("flx_arun_lib_static.cpp",hrtl/"flx_arun_lib_static"+#(toolchain.static_object_extension));
+      cobj_dynamic("flx_arun_lib_static.cpp",hrtl/"flx_arun_lib_static"+#(toolchain.dynamic_object_extension));
+      cobj_dynamic("flx_arun_lib_dynamic.cpp",hrtl/"flx_arun_lib_dynamic"+#(toolchain.dynamic_object_extension));
 
       cobj_static("flx_run_main.cxx",hrtl/"flx_run_main"+#(toolchain.static_object_extension));
       cobj_dynamic("flx_run_main.cxx",hrtl/"flx_run_main"+#(toolchain.dynamic_object_extension));
@@ -1133,7 +1142,7 @@ class FlxRtlBuild
         var exe = prgname file;
         println$ "Linking [executable] " + exe;
         var objs = list (
-          tmpdir/file+"_lib"+#(toolchain.dynamic_object_extension),
+          hrtl/file+"_lib_dynamic"+#(toolchain.dynamic_object_extension),
           hrtl/file+"_main"+#(toolchain.dynamic_object_extension)
         );
         var result,libs = db.query$ list("--rec","--keeprightmost",
@@ -1143,7 +1152,7 @@ class FlxRtlBuild
           println$ "Driver pkgconfig query for "+ file+" FAILED";
           System::exit 1;
         done
-        result = toolchain.executable_linker(srcs=objs+libs, dst=exe);
+        result = toolchain.dynamic_executable_linker(srcs=objs+libs, dst=exe);
         if result != 0 do
           println$ "Driver link  "+ file+" FAILED";
           System::exit 1;
@@ -1414,23 +1423,27 @@ class FlxCoreBuild
 
   proc build_flx (target_dir:string, target_bin:string, toolchain_plugins:list[string])
   {
-    var obj_extn = "_static.o"; // HACK!!!!!!!! 
+    var obj_extn = ".o"; // HACK!!!!!!!! 
     println$ "dflx  -> dflx object file";
-    var result = Flx_client::runflx$ list ('[flx]','--test='+target_dir, '--static','-c','--nolink',
+    var result = Flx_client::runflx$ list ('[flx]','--test='+target_dir, '-c','--nolink',
       '-o', target_dir/target_bin/'lib'/'rtl'/'dflx'+obj_extn, target_dir/'share'/'src'/'tools'/'dflx');
     if result != 0 do 
       println$ "dflx build failed";
       System::exit 1; 
     done
 
+    println$ "Compile of dflx"+obj_extn+" SUCCEEDED";
+
     var toolchain_objects = map (fun (p:string) =>
-      target_dir/target_bin/'lib'/'rtl'/p + obj_extn) 
+      target_dir/target_bin/'lib'/'rtl'/p + "_dynamic"+obj_extn) 
       toolchain_plugins
     ; 
+
+    println$ "Linking dflx"+obj_extn+" with toolchains "+toolchain_objects.str;
  
     println$ "Build flx. Note: requires --build-toolchain-plugins";
     println$ "flx  -> flx";
-    result = Flx_client::runflx$ list ('[flx]','--test='+target_dir, '--static','-c',
+    result = Flx_client::runflx$ list ('[flx]','--test='+target_dir, '--exe','-c',
       '-ox', target_dir/target_bin/'bin'/'flx') + toolchain_objects +
       (target_dir/target_bin/'lib'/'rtl'/'dflx' + obj_extn) +
       (target_dir/'share'/'src'/'tools'/'flx.flx')
@@ -1439,6 +1452,7 @@ class FlxCoreBuild
       println$ "exe build failed";
       System::exit 1; 
     done
+    println$ "Build flx: SUCCEEDED";
   }
 
   proc flx_build(cmd: cmd_type)
