@@ -58,9 +58,9 @@ For example, you may want to capture each word in a line of text.
 This can be done by iterating over a regex like the following
 
 @felix
-var r = RE2("\w"); // try to match a word
+var r2 = RE2("\w"); // try to match a word
 var line = "Hello World";
-for x in (r, line) do
+for x in (r2, line) do
     println$ x;
 done
 @expect
