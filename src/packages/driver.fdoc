@@ -523,6 +523,7 @@ from buildsystem.config import config_call
 # ------------------------------------------------------------------------------
 
 def build( phase):
+    print("[fbuild:flx_drivers.py:build (in src/packages/driver.fdoc)] ********** BUILDING DRIVERS ***********************************************")
     path = Path(phase.ctx.buildroot/'share'/'src/flx_drivers')
 
     dlfcn_h = config_call('fbuild.config.c.posix.dlfcn_h',
@@ -532,7 +533,9 @@ def build( phase):
 
     if dlfcn_h.dlopen:
         external_libs = dlfcn_h.external_libs
+        print("HAVE dlfcn.h, library=" + str (external_libs))
     else:
+        print("NO dlfcn.h available")
         external_libs = []
 
     run_includes = [
