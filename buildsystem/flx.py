@@ -8,6 +8,7 @@ from fbuild.path import Path
 import os
 import os.path
 import platform
+from buildsystem.config import config_call
 
 # ------------------------------------------------------------------------------
 
@@ -141,9 +142,8 @@ class Builder(fbuild.db.PersistentObject):
             buildroot=buildroot,
             flags=cflags)
 
-
         return linker(dst, list(chain(objects, [obj,thunk_obj])),
-            libs=libs, external_libs=['dl'],
+            libs=libs,
             flags=lflags,
             buildroot=buildroot)
 
@@ -273,6 +273,16 @@ def build(ctx, flxg, cxx, drivers):
 
 def build_flx_pkgconfig( phase, flx_builder):
     print('[fbuild] [flx] building flx_pkgconfig')
+    dlfcn_h = config_call('fbuild.config.c.posix.dlfcn_h',
+        phase.platform,
+        phase.cxx.static,
+        phase.cxx.shared)
+
+    if dlfcn_h.dlopen:
+        external_libs = dlfcn_h.external_libs
+    else:
+        external_libs = []
+
     return flx_builder.build_flx_pkgconfig_exe(
         dst=Path('host')/'bin'/'flx_pkgconfig',
         src=phase.ctx.buildroot/'share'/'src'/'tools'/'flx_pkgconfig.flx',
@@ -283,12 +293,22 @@ def build_flx_pkgconfig( phase, flx_builder):
         cxx_includes=[ 
                       phase.ctx.buildroot / 'share'/'lib'/'rtl', 
                       phase.ctx.buildroot / 'host'/'lib'/'rtl'],
-        cxx_libs=[call('buildsystem.flx_rtl.build_runtime',  phase).static],
+        cxx_libs=[call('buildsystem.flx_rtl.build_runtime',  phase).static]+external_libs,
     )
 
 
 def build_flx( phase, flx_builder):
     print('[fbuild] [flx] building flx')
+    dlfcn_h = config_call('fbuild.config.c.posix.dlfcn_h',
+        phase.platform,
+        phase.cxx.static,
+        phase.cxx.shared)
+
+    if dlfcn_h.dlopen:
+        external_libs = dlfcn_h.external_libs
+    else:
+        external_libs = []
+
     return flx_builder.build_exe(
         async=False,
         dst=Path('host')/'bin'/'bootflx',
@@ -303,7 +323,7 @@ def build_flx( phase, flx_builder):
         cxx_libs=[
           call('buildsystem.flx_rtl.build_runtime',  phase).static,
           call('buildsystem.re2.build_runtime', phase).static,
-          ],
+          ]+external_libs,
     )
 
 

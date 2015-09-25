@@ -525,7 +525,15 @@ from buildsystem.config import config_call
 def build( phase):
     path = Path(phase.ctx.buildroot/'share'/'src/flx_drivers')
 
-    external_libs=['dl']
+    dlfcn_h = config_call('fbuild.config.c.posix.dlfcn_h',
+        phase.platform,
+        phase.cxx.static,
+        phase.cxx.shared)
+
+    if dlfcn_h.dlopen:
+        external_libs = dlfcn_h.external_libs
+    else:
+        external_libs = []
 
     run_includes = [
         phase.ctx.buildroot / 'host/lib/rtl',
@@ -536,36 +544,56 @@ def build( phase):
         'src/demux',
     ] + ([], ['src/demux/win'])['win32' in phase.platform]
 
+    # Make four object files for flx_run 
+    # two for async, two without
+    # each pair made static and non static
+
     flx_run_static_obj = phase.cxx.static.compile(
         dst='host/lib/rtl/flx_run_lib',
         src=path / 'flx_run_lib_static.cpp',
         includes=run_includes,
     )
 
+    flx_run_dynamic_obj = phase.cxx.shared.compile(
+        dst='host/lib/rtl/flx_run_lib',
+        src=path / 'flx_run_lib_dynamic.cpp',
+        includes=run_includes,
+    )
+
+
+    flx_arun_static_obj = phase.cxx.static.compile(
+        dst='host/lib/rtl/flx_arun_lib_static',
+        src=path / 'flx_arun_lib_static.cpp',
+        includes=arun_includes,
+    )
+
+    flx_arun_dynamic_obj = phase.cxx.shared.compile(
+        dst='host/lib/rtl/flx_arun_lib_static',
+        src=path / 'flx_arun_lib_static.cpp',
+        includes=arun_includes,
+    )
+
+
+    # Now, the mainline object files for static links
     flx_run_static_main= phase.cxx.static.compile(
         dst='host/lib/rtl/flx_run_main',
         src=path / 'flx_run_main.cxx',
         includes=run_includes,
     )
 
+    flx_arun_static_main= phase.cxx.static.compile(
+        dst='host/lib/rtl/flx_arun_main',
+        src=path / 'flx_arun_main.cxx',
+        includes=arun_includes,
+    )
+
+    # And then the mainline executable for dynamic links
     flx_run_exe = phase.cxx.shared.build_exe(
         dst='host/bin/flx_run',
         srcs=[path / 'flx_run_main.cxx', path / 'flx_run_lib_dynamic.cpp'],
         includes=run_includes,
         external_libs=external_libs,
         libs=[call('buildsystem.flx_rtl.build_runtime',  phase).shared],
-    )
-
-    flx_arun_static_obj = phase.cxx.static.compile(
-        dst='host/lib/rtl/flx_arun_lib',
-        src=path / 'flx_arun_lib_static.cpp',
-        includes=arun_includes,
-    )
-
-    flx_arun_static_main= phase.cxx.static.compile(
-        dst='host/lib/rtl/flx_arun_main',
-        src=path / 'flx_arun_main.cxx',
-        includes=arun_includes,
     )
 
     flx_arun_exe = phase.cxx.shared.build_exe(
