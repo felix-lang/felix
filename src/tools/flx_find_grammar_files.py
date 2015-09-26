@@ -18,10 +18,16 @@ def ffix(s):
    return s.rstrip
  
 def main():
+    # just capture the command line param and hand it to
+    # library function
+    run(sys.argv[1])
+
+def run(dir):
     try:
-        dir = join(sys.argv[1], 'share', 'lib')
+        dir = join(dir, 'share', 'lib')
     except IndexError:
         dir = join('src', 'lib')
+
     stdfilename = join (dir,'grammar','grammar.files')
     extrafilename = join(dir, 'grammar', 'extra.files')
 
@@ -46,6 +52,7 @@ def main():
     # print("OLD Extra files = " + str(oldextrafiles))
 
     newextrafiles = list(filter(lambda f: f not in stdfiles, gfiles))
+
     # print("Extras = " + str(newextrafiles))
     if set(newextrafiles) != set(oldextrafiles):
         print('[flx_find_grammar_files] ** Writing extra grammar files to', extrafilename)
