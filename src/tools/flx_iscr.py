@@ -93,7 +93,7 @@ class Processor:
     def cquote (self,f):
         x = '"'
         for ch in f:
-          if ch = "\\": ch = "/"
+          if ch == "\\": ch = "/"
           x = x + ch
         x = x + '"'
         return x
