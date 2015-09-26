@@ -552,28 +552,42 @@ def build( phase):
     # two for async, two without
     # each pair made static and non static
 
-    flx_run_static_obj = phase.cxx.static.compile(
-        dst='host/lib/rtl/flx_run_lib',
+    flx_run_static_static_obj = phase.cxx.static.compile(
+        dst='host/lib/rtl/flx_run_lib_static',
         src=path / 'flx_run_lib_static.cpp',
         includes=run_includes,
     )
 
-    flx_run_dynamic_obj = phase.cxx.shared.compile(
-        dst='host/lib/rtl/flx_run_lib',
+    flx_run_static_dynamic_obj = phase.cxx.shared.compile(
+        dst='host/lib/rtl/flx_run_lib_static',
+        src=path / 'flx_run_lib_static.cpp',
+        includes=run_includes,
+    )
+
+
+    flx_run_dynamic_dynamic_obj = phase.cxx.shared.compile(
+        dst='host/lib/rtl/flx_run_lib_dynamic',
         src=path / 'flx_run_lib_dynamic.cpp',
         includes=run_includes,
     )
 
 
-    flx_arun_static_obj = phase.cxx.static.compile(
+    flx_arun_static_static_obj = phase.cxx.static.compile(
         dst='host/lib/rtl/flx_arun_lib_static',
         src=path / 'flx_arun_lib_static.cpp',
         includes=arun_includes,
     )
 
-    flx_arun_dynamic_obj = phase.cxx.shared.compile(
+    flx_arun_static_dynamic_obj = phase.cxx.shared.compile(
         dst='host/lib/rtl/flx_arun_lib_static',
         src=path / 'flx_arun_lib_static.cpp',
+        includes=arun_includes,
+    )
+
+
+    flx_arun_dynamic_dynamic_obj = phase.cxx.shared.compile(
+        dst='host/lib/rtl/flx_arun_lib_dynamic',
+        src=path / 'flx_arun_lib_dynamic.cpp',
         includes=arun_includes,
     )
 
@@ -614,10 +628,14 @@ def build( phase):
     )
 
     return Record(
-        flx_run_lib=flx_run_static_obj,
+        flx_run_lib_static_static=flx_run_static_static_obj,
+        flx_run_lib_static_dynamic=flx_run_static_dynamic_obj,
+        flx_run_lib_dynamic_dynamic=flx_run_dynamic_dynamic_obj,
+        flx_arun_lib_static_static=flx_arun_static_static_obj,
+        flx_arun_lib_static_dynamic=flx_arun_static_dynamic_obj,
+        flx_arun_lib_dynamic_dynamic=flx_arun_dynamic_dynamic_obj,
         flx_run_main=flx_run_static_main,
         flx_run_exe=flx_run_exe,
-        flx_arun_lib=flx_arun_static_obj,
         flx_arun_main=flx_arun_static_main,
         flx_arun_exe=flx_arun_exe,
     )

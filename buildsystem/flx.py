@@ -23,10 +23,14 @@ def _getcwd():
 
 class Builder(fbuild.db.PersistentObject):
     def __init__(self, ctx, flxg, cxx,
-            flx_run_lib,
+            flx_run_lib_static_static,
+            flx_run_lib_static_dynamic,
+            flx_run_lib_dynamic_dynamic,
             flx_run_main,
             flx_run_exe,
-            flx_arun_lib,
+            flx_arun_lib_static_static,
+            flx_arun_lib_static_dynamic,
+            flx_arun_lib_dynamic_dynamic,
             flx_arun_main,
             flx_arun_exe,
         ):
@@ -36,8 +40,12 @@ class Builder(fbuild.db.PersistentObject):
         self.cxx = cxx
         self.flx_run_exe  = flx_run_exe
         self.flx_arun_exe = flx_arun_exe
-        self.flx_run_lib  = flx_run_lib
-        self.flx_arun_lib = flx_arun_lib
+        self.flx_run_lib_static_static  = flx_run_lib_static_static
+        self.flx_run_lib_static_dynamic = flx_run_lib_static_dynamic
+        self.flx_run_lib_dynamic_dynamic = flx_run_lib_dynamic_dynamic
+        self.flx_arun_lib_static_static  = flx_arun_lib_static_static
+        self.flx_arun_lib_static_dynamic = flx_arun_lib_static_dynamic
+        self.flx_arun_lib_dynamic_dynamic = flx_arun_lib_dynamic_dynamic
         self.flx_run_main = flx_run_main
         self.flx_arun_main = flx_arun_main
 
@@ -147,11 +155,11 @@ class Builder(fbuild.db.PersistentObject):
             flags=lflags,
             buildroot=buildroot)
 
-    def link_exe(self, *args, async=True, macros=[], objects=[], **kwargs):
+    def link_exe(self, *args, async=False, macros=[], objects=[], **kwargs):
         macros = macros + ['FLX_STATIC_LINK']
         objs = objects + [
-          (self.flx_arun_lib if async else self.flx_run_lib) ] + [
-          (self.flx_arun_main if async else self.flx_run_main)
+          (self.flx_run_lib_static_static) ] + [
+          (self.flx_run_main)
           ]
 
         return self._link(self.cxx.link_exe, *args,
@@ -208,7 +216,7 @@ class Builder(fbuild.db.PersistentObject):
 
 
     def _build_link(self, function, src, dst=None, *,
-            async=True,
+            async=False,
             includes=[],
             flags=[],
             cxx_includes=[],
@@ -263,10 +271,14 @@ def build(ctx, flxg, cxx, drivers):
         ctx,
         flxg,
         cxx,
-        drivers.flx_run_lib,
+        drivers.flx_run_lib_static_static,
+        drivers.flx_run_lib_static_dynamic,
+        drivers.flx_run_lib_dynamic_dynamic,
         drivers.flx_run_main,
         drivers.flx_run_exe,
-        drivers.flx_arun_lib,
+        drivers.flx_arun_lib_static_static,
+        drivers.flx_arun_lib_static_dynamic,
+        drivers.flx_arun_lib_dynamic_dynamic,
         drivers.flx_arun_main,
         drivers.flx_arun_exe,
     )
