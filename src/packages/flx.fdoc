@@ -2708,7 +2708,7 @@ println$ "flx, prior to calling toolchain: cppos = " + control.cppos.str;
         control.LINKER_OUTPUT_FILENAME +
         dvars.args
       ;
-      var CMD = control.FLXRUN + ' ' + catmap ' ' Shell::quote_arg xargs;
+      var CMD = catmap ' ' control.FLXRUN + ' ' + catmap ' ' Shell::quote_arg xargs;
       if control.STDOUT != "" do CMD=CMD+" > " +Shell::quote_arg(control.STDOUT); done
       if control.STDIN != "" do CMD=CMD+" < " +Shell::quote_arg(control.STDIN); done
       debugln$ "Run command="+CMD;
