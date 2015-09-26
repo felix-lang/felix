@@ -311,7 +311,7 @@ post-tarball:
 # NEW BUILD ROUTINES
 #--------------------------------------------------
 packages:
-	for i in src/packages/*; do echo "PACKAGE " $$i; python3 src/tools/flx_iscr.py -q $$i ${BUILDROOT}; if [ $$? -ne 0 ]; then exit 1; fi; done
+	python3 src/tools/flx_iscr.py -q -d "src/packages/*" ${BUILDROOT} 
 
 noisy-packages:
 	for i in src/packages/*; do echo "PACKAGE " $$i; python3 src/tools/flx_iscr.py -q $$i ${BUILDROOT}; if [ $$? -ne 0 ]; then exit 1; fi; done
