@@ -111,7 +111,7 @@ def static_obj_suffix(ctx, platform=None):
     if 'windows' in platform:
         return '_static.obj'
     else:
-        return '.o'
+        return '_static.o'
 
 def static_lib_prefix(ctx, platform=None):
     platform = platform if platform else guess_platform(ctx)
@@ -132,9 +132,9 @@ def static_lib_suffix(ctx, platform=None):
 def shared_obj_suffix(ctx, platform=None):
     platform = platform if platform else guess_platform(ctx)
     if 'windows' in platform:
-        return '_shared.obj'
+        return '_dynamic.obj'
     else:
-        return '.os'
+        return '_dynamic.o'
 
 def shared_lib_prefix(ctx, platform=None):
     platform = platform if platform else guess_platform(ctx)
