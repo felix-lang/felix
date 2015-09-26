@@ -422,13 +422,6 @@ def tangle_packages(package_dir, odir):
     quiet = True
     flx_iscr.process_dir(package_dir, odir, quiet)
     
-
-def tounix(s):
-   o = ""
-   for ch in s:
-     if ch == '\\': o = o + "/"
-     else: o = o + ch
-
 def find_grammar(build_dir):
     sys.path.append("src/tools/")
     import flx_find_grammar_files

@@ -77,7 +77,12 @@ let cid_of_flxid s =
     | "errno" -> "__flx_errno_"
     | _ -> name
   in
-  try List.assoc name fixups with Not_found -> name
+  let name = try List.assoc name fixups with Not_found -> name in
+  if String.length name > 40 then 
+    let h = Hashtbl.hash name in
+    "_hash_" ^ string_of_int h
+  else 
+    name
 
 let cid_of_bid bid =
   string_of_int bid
