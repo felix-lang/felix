@@ -212,7 +212,7 @@ def make_c_builder(ctx, *args, includes=[], libpaths=[], flags=[], **kwargs):
             'flags': ['-std=gnu89', '-fno-common', '-fvisibility=hidden', '-fno-strict-aliasing'] + flags,
             'optimize_flags': ['-fomit-frame-pointer']}),
         ({'windows'}, {
-            'flags': ['/GR', '/MD', '/EHs', '/wd4291'] + flags,
+            'flags': ['/GR', '/MDd', '/EHs', '/wd4291'] + flags,
             'optimize_flags': ['/Ox']}),
     ]
     kwargs['includes'] = list(chain(ctx.options.includes, includes))
@@ -258,7 +258,7 @@ def make_cxx_builder(ctx, *args, includes=[], libpaths=[], flags=[], **kwargs):
                '-fno-common', '-fvisibility=hidden', '-fno-strict-aliasing'] + flags,
             'optimize_flags': ['-fomit-frame-pointer']}),
         ({'windows'}, {
-            'flags': ['/GR', '/MD', '/EHs', '/wd4291'] + flags,
+            'flags': ['/GR', '/MDd', '/EHs', '/wd4291'] + flags,
             'optimize_flags': ['/Ox']}),
     ]
     kwargs['includes'] = list(chain(ctx.options.includes, includes))

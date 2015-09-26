@@ -1516,8 +1516,8 @@ noinline proc processing_stage1
     var DLINK_STRING = "";
     var SLINK_STRING = "";
     if PLAT_WIN32 do // MSVC
-      DLINK_STRING = "/link /DLL /LIBPATH:"+config*.FLX_TARGET_DIR+r"\lib\rtl";
-      SLINK_STRING = "/link /LIBPATH:"+config*.FLX_TARGET_DIR+r"\lib\rtl";
+      DLINK_STRING = "/LIBPATH:"+config*.FLX_TARGET_DIR+r"\lib\rtl";
+      SLINK_STRING = "/LIBPATH:"+config*.FLX_TARGET_DIR+r"\lib\rtl";
     elif PLAT_CYGWIN do // gcc on Windows
       //DLINK_STRING = "-L"+config*.FLX_TARGET_DIR+"/bin";
       DLINK_STRING = "-L"+config*.FLX_TARGET_DIR+"/lib/rtl";
