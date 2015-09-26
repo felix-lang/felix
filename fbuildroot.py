@@ -12,7 +12,7 @@ import buildsystem
 from buildsystem.config import config_call
 
 # HACK
-import os
+import os, sys
 
 from os.path import join
 import fnmatch
@@ -416,13 +416,11 @@ def hack_toolchain_name(s):
 
 def tangle_packages(package_dir, odir):
     # import the processing logic from flx_iscr
-    flx_iscr = dict()
-    with open("src/tools/flx_iscr.py") as f:
-        exec(f.read(), flx_iscr)
+    sys.path.append("src/tools/")
+    import flx_iscr
 
     quiet = True
-    print("PROCESSING DIRECTORY")
-    flx_iscr['process_dir'](package_dir, odir, quiet)
+    flx_iscr.process_dir(package_dir, odir, quiet)
     
 
 def tounix(s):
@@ -432,11 +430,10 @@ def tounix(s):
      else: o = o + ch
 
 def find_grammar(build_dir):
-    flx_find_grammar = dict()
-    with open("src/tools/flx_find_grammar_files.py") as f:
-        exec(f.read(), flx_find_grammar)
+    sys.path.append("src/tools/")
+    import flx_find_grammar_files
 
-    flx_find_grammar["run"](build_dir)
+    flx_find_grammar_files.run(build_dir)
 
    
 @fbuild.db.caches
