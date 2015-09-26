@@ -443,6 +443,12 @@ def tangle_packages(package_dir, odir):
             p.process(f)
         p.save()
 
+def tounix(s):
+   o = ""
+   for ch in s:
+     if ch == '\\': o = o + "/"
+     else: o = o + ch
+
 # Because *no one* though of a recursive glob before 3.5...
 def rglob(dir, pat):
     for root, dirs, files in os.walk(dir):
@@ -452,7 +458,7 @@ def rglob(dir, pat):
 def rrglob(dir,pat):
     n = len(dir)
     for file in rglob (dir,pat):
-       yield file[n+1:]
+       yield tounix(file[n+1:])
 
 def ffix(s):
    return s.rstrip

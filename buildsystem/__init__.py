@@ -17,7 +17,7 @@ def copy_to(ctx, dstdir, srcs:fbuild.db.SRCS) -> fbuild.db.DSTS:
     for src in srcs:
         src = Path(src)
         dst = dstdir / src.name
-        ctx.logger.check(' * copy', '%s -> %s' % (src, dst), color='yellow')
+        #ctx.logger.check(' * copy', '%s -> %s' % (src, dst), color='yellow')
         try:
             src.copy(dst)
         except shutil.SameFileError:
@@ -43,7 +43,7 @@ def copy_dir_to(ctx, dstdir, srcdir, *, pattern=None) -> fbuild.db.DSTS:
         srcs.append(src)
         dsts.append(dst)
 
-        ctx.logger.check(' * copy', '%s -> %s' % (src, dst), color='yellow')
+        #ctx.logger.check(' * copy', '%s -> %s' % (src, dst), color='yellow')
         try:
             src.copy(dst)
         except shutil.SameFileError:
