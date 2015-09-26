@@ -4,11 +4,7 @@ from os.path import join
 import sys, fnmatch, os
 
 def tounix(s):
-   o = ""
-   for ch in s:
-     if ch == '\\': o = o + "/"
-     else: o = o + ch
-   return o
+    return s.replace('\\', '/')
 
 # Because *no one* though of a recursive glob before 3.5...
 def rglob(dir, pat):
@@ -20,9 +16,6 @@ def rrglob(dir,pat):
     n = len(dir)
     for file in rglob (dir,pat):
        yield tounix(file[n+1:])
-
-def ffix(s):
-   return s.rstrip
  
 def main():
     # just capture the command line param and hand it to
