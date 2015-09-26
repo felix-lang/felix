@@ -244,7 +244,7 @@ class Builder(fbuild.db.PersistentObject):
             libs=cxx_libs,
             cflags=cxx_cflags,
             lflags=cxx_lflags,
-            macros=["FLX_NO_INCLUDES"],
+            macros=["FLX_NO_INCLUDES","FLX_STATIC_LINK"],
         )
 
     def build_lib(self, *args, **kwargs):
