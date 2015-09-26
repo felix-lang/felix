@@ -307,22 +307,19 @@ post-tarball:
 	scp felix_${VERSION}_`uname`_tarball.tar.gz \
 		skaller@felix-lang.org:/usr/local/lib/felix/tarballs/felix_${VERSION}_`uname`_tarball.tar.gz
 
-#--------------------------------------------------
-# NEW BUILD ROUTINES
-#--------------------------------------------------
 packages:
+	# =========================================================
+	# generates source code from "src/packages/*" to various places
+	# around the repo
+	# =========================================================
 	python3 src/tools/flx_iscr.py -q -d "src/packages/*" ${BUILDROOT} 
-
-noisy-packages:
-	for i in src/packages/*; do echo "PACKAGE " $$i; python3 src/tools/flx_iscr.py -q $$i ${BUILDROOT}; if [ $$? -ne 0 ]; then exit 1; fi; done
-
 
 grammar:
 	src/tools/flx_find_grammar_files.py ${BUILDROOT}
 
 extract: packages grammar
 
-#
+
 slow-flxg:
 	# =========================================================
 	# building flxg
