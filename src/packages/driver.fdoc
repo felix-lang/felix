@@ -556,6 +556,7 @@ def build( phase):
         dst='host/lib/rtl/flx_run_lib_static',
         src=path / 'flx_run_lib_static.cpp',
         includes=run_includes,
+        macros=['FLX_STATIC_LINK'],
     )
 
     flx_run_static_dynamic_obj = phase.cxx.shared.compile(
@@ -576,6 +577,7 @@ def build( phase):
         dst='host/lib/rtl/flx_arun_lib_static',
         src=path / 'flx_arun_lib_static.cpp',
         includes=arun_includes,
+        macros=['FLX_STATIC_LINK'],
     )
 
     flx_arun_static_dynamic_obj = phase.cxx.shared.compile(
@@ -597,12 +599,14 @@ def build( phase):
         dst='host/lib/rtl/flx_run_main',
         src=path / 'flx_run_main.cxx',
         includes=run_includes,
+        macros=['FLX_STATIC_LINK'],
     )
 
     flx_arun_static_main= phase.cxx.static.compile(
         dst='host/lib/rtl/flx_arun_main',
         src=path / 'flx_arun_main.cxx',
         includes=arun_includes,
+        macros=['FLX_STATIC_LINK'],
     )
 
     # And then the mainline executable for dynamic links
