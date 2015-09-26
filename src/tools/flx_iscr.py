@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # Core interscript interpreter
 import sys, os, re, io, operator, shutil, string
+from glob import glob
 
 def open_utf8(*args): return open(*args, encoding='utf-8')
 
@@ -162,19 +163,58 @@ class Processor:
             tangler.save()
             tangler.close()
 
+def process_dir(package_dir, odir, quiet):
+    # iterate over packages
+    for i in glob(package_dir):
+        # print debugging
+        print('PACKAGE', i)
+
+        odir = os.path.abspath(odir)
+        iname = os.path.abspath(i)
+        p = Processor(iname, odir, quiet)
+        # Process the input file and buffer up the code.
+        try:
+            f = open_utf8(iname)
+        except IOError as ex:
+            sys.exit(str(ex))
+        with f:
+            p.process(f)
+        p.save()
+
+
 def iscr():
     # Parse the arguments.
     quiet = False
+    process_many = False
+
     if '-h' in sys.argv:
-        print('usage: %s [-q] <interscript file> <output directory>' % sys.argv[0])
+        print('usage: %s [-q -d] <interscript file|dir> <output directory>' % sys.argv[0])
         sys.exit()
+
+    if '-d' in sys.argv:
+        process_many = True
+
     if '-q' in sys.argv:
         quiet = True
         sys.argv.remove('-q')
+
+    # process multiple input files
+    if process_many:
+        try:
+            _, _, idir, odir = sys.argv+([''] if len(sys.argv) == 3 else [])
+        except ValueError:
+            sys.exit('invalid number of arguments; use %s -h for help' % sys.argv[0])
+
+        # do work and return
+        process_dir(idir, odir, quiet)
+        return
+
+    # just process one input file
     try:
         _, iname, odir = sys.argv+([''] if len(sys.argv) == 2 else [])
     except ValueError:
         sys.exit('invalid number of arguments; use %s -h for help' % sys.argv[0])
+
     # If odir == '', abspath returns the current directory.
     odir = os.path.abspath(odir)
     iname = os.path.abspath(iname)

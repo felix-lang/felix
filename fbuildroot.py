@@ -13,7 +13,6 @@ from buildsystem.config import config_call
 
 # HACK
 import os
-from glob import glob
 
 from os.path import join
 import fnmatch
@@ -421,27 +420,10 @@ def tangle_packages(package_dir, odir):
     with open("src/tools/flx_iscr.py") as f:
         exec(f.read(), flx_iscr)
 
-    # iterate over packages
-    for i in glob(package_dir):
-        # print debugging
-        print('PACKAGE', i)
-
-        quiet = True
-        odir = os.path.abspath(odir)
-        iname = os.path.abspath(i)
-        p = flx_iscr['Processor'](iname, odir, quiet)
-        # Process the input file and buffer up the code.
-        try:
-            f = flx_iscr['open_utf8'](iname)
-        except IOError as ex:
-            sys.exit(str(ex))
-        # Finally just dump the buffers to the associated
-        # files if the contents of the buffer and file differ.
-        # Do nothing if the contents are the same to avoid
-        # spoiling the last modification timestamp.
-        with f:
-            p.process(f)
-        p.save()
+    quiet = True
+    print("PROCESSING DIRECTORY")
+    flx_iscr['process_dir'](package_dir, odir, quiet)
+    
 
 def tounix(s):
    o = ""
