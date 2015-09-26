@@ -89,6 +89,15 @@ class Processor:
         if id in self.tanglers:
             sys.exit('Duplicate definition of tangler %s' % id)
         self.tanglers[id] = Tangler(filename, id, self.quiet, suppress_linenos=self.suppress_linenos)
+
+    def cquote (self,f):
+        x = '"'
+        for ch in f:
+          if ch = "\\": ch = "/"
+          x = x + ch
+        x = x + '"'
+        return x
+
     def set_tangler(self, id,lineno):
         'Specify a new current tangler.'
         try:
@@ -98,7 +107,7 @@ class Processor:
                 '.flx','.c','.h','.cpp','.cxx','.hpp',
                 '.fsyn','.py'
               ):
-                hashline = "#line " + str(lineno+1) + ' "' + self.iname+'"'
+                hashline = "#line " + str(lineno+1) + ' ' + self.cquote (self.iname)
                 print(hashline,file=tangler)
               elif tangler.extension in (
                 '.fpc'
