@@ -2703,13 +2703,12 @@ println$ "flx, prior to calling toolchain: cppos = " + control.cppos.str;
     var result = 0;
     if control.CXXONLY == 0 do
       var xargs =
-        control.FLXRUN +
         control.DRIVER_EXE +
         dvars.DEBUGSWITCH +
         control.LINKER_OUTPUT_FILENAME +
         dvars.args
       ;
-      var CMD = catmap ' ' Shell::quote_arg xargs;
+      var CMD = control.FLXRUN + ' ' + catmap ' ' Shell::quote_arg xargs;
       if control.STDOUT != "" do CMD=CMD+" > " +Shell::quote_arg(control.STDOUT); done
       if control.STDIN != "" do CMD=CMD+" < " +Shell::quote_arg(control.STDIN); done
       debugln$ "Run command="+CMD;
