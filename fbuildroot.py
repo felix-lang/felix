@@ -7,11 +7,13 @@ from fbuild.functools import call
 from fbuild.path import Path
 from fbuild.record import Record
 
+
 import buildsystem
 from buildsystem.config import config_call
 
 # HACK
 import os
+from glob import glob
 
 # ------------------------------------------------------------------------------
 
@@ -408,6 +410,34 @@ def hack_toolchain_name(s):
   if s in ["gcc-5",]: return "gcc"
   if s in ["clang","gcc"]: return s
   return s
+
+def tangle_packages(package_dir, odir):
+    # import the processing logic from flx_iscr
+    flx_iscr = dict()
+    with open("src/tools/flx_iscr.py") as f:
+        exec(f.read(), flx_iscr)
+
+    # iterate over packages
+    for i in glob(package_dir):
+        # print debugging
+        print('PACKAGE', i)
+
+        quiet = True
+        odir = os.path.abspath(odir)
+        iname = os.path.abspath(i)
+        p = flx_iscr['Processor'](iname, odir, quiet)
+        # Process the input file and buffer up the code.
+        try:
+            f = flx_iscr['open_utf8'](iname)
+        except IOError as ex:
+            sys.exit(str(ex))
+        # Finally just dump the buffers to the associated
+        # files if the contents of the buffer and file differ.
+        # Do nothing if the contents are the same to avoid
+        # spoiling the last modification timestamp.
+        with f:
+            p.process(f)
+        p.save()
   
    
 @fbuild.db.caches
@@ -416,8 +446,7 @@ def configure(ctx):
 
     # NOTE: this does NOT work correctly if configure is cached.
     print("[fbuild] RUNNING PACKAGE MANAGER")
-    os.system("for i in src/packages/*; do echo 'PACKAGE ' $i; src/tools/flx_iscr.py -q $i build/release; done")
-
+    tangle_packages("src/packages/*", "build/release")
 
     build = config_build(ctx)
     host = config_host(ctx, build)
