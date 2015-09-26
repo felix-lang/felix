@@ -8,7 +8,7 @@ def tounix(s):
    for ch in s:
      if ch == '\\': o = o + "/"
      else: o = o + ch
-
+   return o
 
 # Because *no one* though of a recursive glob before 3.5...
 def rglob(dir, pat):
@@ -60,7 +60,7 @@ def run(dir):
 
     newextrafiles = list(filter(lambda f: f not in stdfiles, gfiles))
 
-    # print("Extras = " + str(newextrafiles))
+    print("Extras = " + str(newextrafiles))
     if set(newextrafiles) != set(oldextrafiles):
         print('[flx_find_grammar_files] ** Writing extra grammar files to', extrafilename)
         with open(extrafilename, 'w') as f:
