@@ -1,4 +1,4 @@
-@h1 The configuration database manager @{flx_pkgconfig}.
+@title The configuration database manager @{flx_pkgconfig}.
 @tangler flx_pkg.flx                       = share/lib/std/felix/flx_pkg.flx
 @tangler flx_pkgconfig.flx                 = share/lib/std/felix/flx_pkgconfig.flx
 @tangler flx_pkgconfig_core.flx            = share/lib/std/felix/flx_pkgconfig_core.flx
@@ -570,22 +570,22 @@ class FlxPkgConfig_core
     }
 
     var original_pkgs = pkgs;
-eprintln$ "+++++++++++++++++++++++++";
-eprintln$ "TOP LEVEL HANDLING PACKAGES " + original_pkgs.str;
+//eprintln$ "+++++++++++++++++++++++++";
+//eprintln$ "TOP LEVEL HANDLING PACKAGES " + original_pkgs.str;
     while not is_empty pkgs do
       match pkgs with
       | #Empty => {}
       | Cons (pkg,tail) =>
         {
-eprintln$ "TOP LEVEL HANDLE ONE PACKAGE " + pkg.str;
+//eprintln$ "TOP LEVEL HANDLE ONE PACKAGE " + pkg.str;
           pkgs = tail;
           handle_pkg(pkg,Empty[string]);
-eprintln$ "DONE: TOP LEVEL HANDLE ONE PACKAGE " + pkg.str;
+//eprintln$ "DONE: TOP LEVEL HANDLE ONE PACKAGE " + pkg.str;
         }
       endmatch;
     done;
-eprintln$ "DONE: TOP LEVEL HANDLING PACKAGES " + original_pkgs.str;
-eprintln$ " ************************";
+//eprintln$ "DONE: TOP LEVEL HANDLING PACKAGES " + original_pkgs.str;
+//eprintln$ " ************************";
 
     return return_code, result;
   }
