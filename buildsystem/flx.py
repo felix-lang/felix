@@ -101,6 +101,7 @@ class Builder(fbuild.db.PersistentObject):
         cmd.extend('--import=' + i for i in imports)
         cmd.append('--output_dir=' + Path(buildroot)/"cache"/"text")
         cmd.append('--cache_dir=' + Path(buildroot)/"cache"/"binary")
+        cmd.append('--with-comments') # add lots of comments to generated C++ to help debugging
         cmd.extend(flags)
 
         if include_std:
