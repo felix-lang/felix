@@ -40,8 +40,8 @@ let fix_endlines s =
   let b = Buffer.create (n+20) in
   for i=0 to n - 1 do
      let ch = s.[i] in
-     if ch = '\n' then
-       Buffer.add_string b "\\n"
+     if ch < ' ' then
+       Buffer.add_string b ("\\x" ^ Flx_string.hex2 (Char.code ch))
      else
        Buffer.add_char b ch
      ; 
