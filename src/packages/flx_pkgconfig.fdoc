@@ -569,18 +569,23 @@ eprintln$ "DONE  dependent packages key = " + key + " recfields = " + recfields.
        done;
     }
 
-eprintln$ "TOP LEVEL HANDLING PACKAGES " + pkgs.str;
+    var original_pkgs = pkgs;
+eprintln$ "+++++++++++++++++++++++++";
+eprintln$ "TOP LEVEL HANDLING PACKAGES " + original_pkgs.str;
     while not is_empty pkgs do
       match pkgs with
       | #Empty => {}
       | Cons (pkg,tail) =>
         {
+eprintln$ "TOP LEVEL HANDLE ONE PACKAGE " + pkg.str;
           pkgs = tail;
           handle_pkg(pkg,Empty[string]);
+eprintln$ "DONE: TOP LEVEL HANDLE ONE PACKAGE " + pkg.str;
         }
       endmatch;
     done;
-eprintln$ "DONE: TOP LEVEL HANDLING PACKAGES " + pkgs.str;
+eprintln$ "DONE: TOP LEVEL HANDLING PACKAGES " + original_pkgs.str;
+eprintln$ " ************************";
 
     return return_code, result;
   }
