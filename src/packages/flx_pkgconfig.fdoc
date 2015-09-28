@@ -490,7 +490,7 @@ class FlxPkgConfig_core
     }
 
     proc handle_pkg (pkg:string, trace:list[string]){
-eprintln$ "Handle_pkg pkg= " + pkg + " trace= " + trace.str;
+//eprintln$ "Handle_pkg pkg= " + pkg + " trace= " + trace.str;
        var variables = Empty[string * string];
 
        if mem streq trace pkg return;
