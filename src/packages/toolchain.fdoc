@@ -489,6 +489,8 @@ include "std/felix/flx_pkg"; // only for "fix2word_flags"
 include "std/felix/flx_cp";
 include "std/felix/flx/flx_depchk";
 
+fun translate (s:string) => search_and_replace (s, "/", #Filename::sep);
+
 class FlxLibBuild
 {
   private fun / (x:string,y:string) => Filename::join(x,y);
@@ -551,6 +553,8 @@ println$ "[make_lib] source directory " + srcpath;
 
     var pats = db.getpkgfield(pkg,"src");
     var pat = catmap '|' (fun (x:string)=>"("+x+")") pats;
+    var srcpath = translate srcpath;
+    var pat = translate pat;
   println$ "Finding Sources in "+srcpath;
   println$ "Matching pattern "+pat;
     var files = FileSystem::regfilesin (srcpath,pat);
