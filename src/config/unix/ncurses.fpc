@@ -1,7 +1,0 @@
-Name: ncurses
-Description: xy addressing on terminal
-provides_dlib: -lncurses
-provides_slib: -lncurses
-includes: '<ncurses.h>'
-
-

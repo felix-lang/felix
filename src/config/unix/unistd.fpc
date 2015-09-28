@@ -1,3 +1,0 @@
-Name: unistd
-Description: Unix (Posix) common
-includes: <unistd.h>

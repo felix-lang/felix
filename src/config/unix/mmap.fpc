@@ -1,3 +1,0 @@
-Name: mmap
-includes: <sys/mman.h>
-Requires: unistd

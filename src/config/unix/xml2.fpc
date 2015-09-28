@@ -1,8 +1,0 @@
-provides_dlib: -lxml2
-provides_slib: -lxml2
-cflags: -I/usr/include/libxml2
-includes: "<libxml/parser.h>"
-includes: "<libxml/HTMLparser.h>"
-includes: "<libxml/tree.h>"
-includes: "<libxml/uri.h>"
-includes: "<string.h>"

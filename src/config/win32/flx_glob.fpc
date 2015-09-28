@@ -1,5 +1,0 @@
-Name: glob
-Description: Directory Serivces
-provides_dlib: /DEFAULTLIB:flx_glob_dynamic
-provides_slib: /DEFAULTLIB:flx_glob_static
-includes: '"flx_glob.hpp"'
