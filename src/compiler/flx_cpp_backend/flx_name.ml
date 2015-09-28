@@ -17,6 +17,10 @@ module CS = Flx_code_spec
    note the RHS value is irrelevant, it just has to be different
    to the LHS value ..
 *)
+let string_hash s =
+  let hash = ref 5381 in
+  String.iter (fun ch -> hash := ((!hash) * 33 + Char.code ch) mod 65535) s;
+  !hash
 
 let fixups = [
   (* special names in thread frame *)
@@ -79,7 +83,7 @@ let cid_of_flxid s =
   in
   let name = try List.assoc name fixups with Not_found -> name in
   if String.length name > 40 then 
-    let h = Hashtbl.hash name in
+    let h = string_hash name in
     "_hash_" ^ string_of_int h
   else 
     name

@@ -19,6 +19,7 @@
 #include <sstream>
 #include <iomanip>
 #include <stdarg.h>
+#include <stdlib.h>
 
 #include "flx_strutil_config.hpp"
 
@@ -97,6 +98,7 @@ namespace flx { namespace rtl { namespace strutil {
 
   STRUTIL_EXTERN string flxid_to_cid(string const&);
   STRUTIL_EXTERN string filename_to_modulename (string const&);
+  STRUTIL_EXTERN size_t string_hash(string const &s); 
 
 }}}
 
@@ -106,6 +108,7 @@ namespace flx { namespace rtl { namespace strutil {
 @tangle flx_strutil.cpp
 
 #include <stdio.h>
+#include <stdint.h>
 
 #include "flx_strutil.hpp"
 
@@ -116,6 +119,16 @@ namespace flx { namespace rtl { namespace strutil {
     else return "";
   }
 
+  size_t string_hash(string const &s)
+  {
+    size_t hash = 5381;
+    int c;
+    char const *str = s.c_str();
+    while (c = *str++)
+        hash = (hash * 33 + c) % (size_t)65535ll; /* hash * 33 + c */
+    return hash;
+  }
+ 
   string flxid_to_cid (string const &s)
   {
     string out = "";
@@ -163,7 +176,10 @@ namespace flx { namespace rtl { namespace strutil {
         default: out += string (1,ch);
       }
    }
-   return out;
+   if (out.size() > 40) 
+     return flx_asprintf("_hash_%zu",string_hash(out));
+   else
+     return out;
   }
 
   string chop_extension (string const &s)
