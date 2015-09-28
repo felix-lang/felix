@@ -1004,7 +1004,7 @@ gc_shape_t *flx_collector_t::get_shape(void *memory)
   Word_t *pshape= (Word_t*)JudyLGet(j_shape,(Word_t)memory,&je);
   if(pshape==(Word_t*)PPJERR)judyerror("get_shape");
   if(pshape==NULL) abort();
-  return (gc_shape_t *)(*pshape & (~(unitptr_t)1));
+  return (gc_shape_t *)(*pshape & (~(uintptr_t)1));
 }
 
 void *flx_collector_t::create_empty_array(
@@ -1235,7 +1235,7 @@ size_t flx_collector_t::sweep()
 
   while(pshape!=NULL)
   {
-    if((*pshape & (unitptr_t)1) == (parity & (uintptr_t)1))
+    if((*pshape & (uintptr_t)1) == (parity & (uintptr_t)1))
     {
       if(debug)
         fprintf(stderr,"[gc] Garbage   %p=%s[%zd][%zu/%zu] [#a=%zu,#d=%zu]\n",
