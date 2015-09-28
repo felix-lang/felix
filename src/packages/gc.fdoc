@@ -919,7 +919,7 @@ void * flx_collector_t::impl_allocate(gc_shape_t *shape, size_t nobj)
 
   Word_t *p = (Word_t*)(void*)JudyLIns(&j_shape,(Word_t)fp,&je);
   *p = ((Word_t)(void*)shape) | (parity & 1);
-  if (nobj != 1uL) // array
+  if (nobj != (uintptr_t)1) // array
   {
     Word_t *p = (Word_t*)(void*)JudyLIns(&j_nalloc,(Word_t)fp,&je);
     *p = nobj;
@@ -1235,7 +1235,7 @@ size_t flx_collector_t::sweep()
 
   while(pshape!=NULL)
   {
-    if((*pshape & 1) == (parity & 1UL))
+    if((*pshape & 1) == (parity & (uintptr_t)1))
     {
       if(debug)
         fprintf(stderr,"[gc] Garbage   %p=%s[%zd][%zu/%zu] [#a=%zu,#d=%zu]\n",
@@ -1249,7 +1249,7 @@ size_t flx_collector_t::sweep()
         );
       ++ sweeped;
       //fprintf(stderr,"Incr deallocation count ..\n");
-      ++((gc_shape_t *)(*pshape & ~1UL))->deallocations;
+      ++((gc_shape_t *)(*pshape & ~(uintptr_t)1))->deallocations;
       //fprintf(stderr,"Unlinking ..\n");
       unlink(current);
       //fprintf(stderr,"Posting delete ..\n");
@@ -1291,7 +1291,7 @@ void flx_collector_t::impl_add_root(void *memory)
   rootmap_t::iterator iter = roots.find(memory);
   if(iter == roots.end())
   {
-    std::pair<void *const, size_t> entry(memory,1UL);
+    std::pair<void *const, size_t> entry(memory,(uintptr_t)1);
     if(debug) 
       fprintf(stderr,"[gc] Add root %p=%s\n", memory,get_shape(memory)->cname);
     roots.insert (entry);
@@ -1312,7 +1312,7 @@ void flx_collector_t::impl_remove_root(void *memory)
     fprintf(stderr, "[gc] GC ERROR: REMOVE ROOT WHICH IS NOT ROOT\n");
     abort();
   }
-  if((*iter).second == 1UL)
+  if((*iter).second == (uintptr_t)1)
   {
     if(debug) 
       fprintf(stderr,"[gc] Remove root %p\n", memory);
@@ -1352,8 +1352,8 @@ void flx_collector_t::register_pointer(void *q, int reclimit)
 {
   ::flx::gc::generic::pointer_data_t pdat;
   pdat.head = NULL;
-  pdat.max_elements = 0ul;
-  pdat.used_elements = 0ul;
+  pdat.max_elements = 0;
+  pdat.used_elements = 0;
   pdat.shape = NULL;
   pdat.pointer = p;
  
@@ -1394,7 +1394,7 @@ void flx_collector_t::scan_object(void *p, int reclimit)
   // marking to mean unreachable next time, then flip the bit for each
   // reachable object. The value parity records the sense and is flipped
   // at the start of each GC pass.
-  Word_t reachable = (parity & 1UL) ^ 1UL;
+  Word_t reachable = (parity & (uintptr_t)1) ^ (uintptr_t)1;
 again:
   //if(debug)
   //  fprintf(stderr,"[gc] Scan object %p, reachable bit value = %d\n",p,(int)reachable);
@@ -1414,14 +1414,14 @@ again:
   if(debug)
   {
     fprintf(stderr,"Found candidate object %p, &shape=%p, shape(1) %p\n",(void*)fp,(void*)w,(void*)(*w));
-    fprintf(stderr," .. type=%s!\n",((gc_shape_t*)(*w & ~1UL))->cname);
+    fprintf(stderr," .. type=%s!\n",((gc_shape_t*)(*w & ~(uintptr_t)1))->cname);
   }
   */
 
   // if the object lower then the given pointer is already
   // marked reachable, there's nothing to do (all the pointers
   // it reaches should also be marked) so just exit.
-  if( (*ppshape & 1UL) == reachable) return;   // already handled
+  if( (*ppshape & (uintptr_t)1) == reachable) return;   // already handled
 
   // get the actual shape of the candidate object
   // don't forget to mask out the low bit which is the reachability flag
@@ -1439,7 +1439,7 @@ again:
 
   // otherwise we have an iterior or head pointer to the object
   // so set the reachable flag in the judy shape array
-  *ppshape = (*ppshape & ~1uL) | reachable;
+  *ppshape = (*ppshape & ~(uintptr_t)1) | reachable;
 
 
   // Now we have to look for pointers contained in the object
