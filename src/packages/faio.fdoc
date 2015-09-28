@@ -585,9 +585,8 @@ public:
 }}
 #endif  // __DWINIO__
 @
-@tangle faio_winio.hpp
-#ifndef _FAIO_WINIO_H_
-#define _FAIO_WINIO_H_
+@tangle faio_winio.cpp
+#include "faio_winio.hpp"
 #include <stdio.h>      // printf
 
 using namespace flx::demux;
