@@ -140,7 +140,7 @@ build_includes: src/judy/src src/judy/src/Judy1 src/judy/src/JudyL src/judy/src/
 @
 
 @tangle win32_judy.fpc
-Name: Judy
+Name: Judy WIN32 64 BIT
 Description: Judy arrays
 provides_dlib: /DEFAULTLIB:judy_dynamic
 provides_slib: /DEFAULTLIB:judy_static
