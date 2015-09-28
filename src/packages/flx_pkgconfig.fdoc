@@ -543,11 +543,14 @@ class FlxPkgConfig_core
 eprintln$ "Chase dependent packages key = " + key + " recfields = " + recfields.str;
                // chase dependent packages
                if mem streq recfields key do
+eprintln$ "FOUND";
                  iter (proc (s:string){
                    handle_pkg$ s,Cons(pkg,trace);
                  })
                  values;
                done
+eprintln$ "DONE  dependent packages key = " + key + " recfields = " + recfields.str;
+
              done
            })
            lines
