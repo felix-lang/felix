@@ -734,7 +734,6 @@ winfile_io::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
 }
 
 }}
-#endif
 @
 
 @h1 Faio Timer
