@@ -1004,7 +1004,7 @@ gc_shape_t *flx_collector_t::get_shape(void *memory)
   Word_t *pshape= (Word_t*)JudyLGet(j_shape,(Word_t)memory,&je);
   if(pshape==(Word_t*)PPJERR)judyerror("get_shape");
   if(pshape==NULL) abort();
-  return (gc_shape_t *)(*pshape & (~1ul));
+  return (gc_shape_t *)(*pshape & (~(unitptr_t)1));
 }
 
 void *flx_collector_t::create_empty_array(
@@ -1208,12 +1208,12 @@ void flx_collector_t::mark(pthread::memory_ranges_t *px)
   //
   // Note: Judy1First finds the first key greater than or equal to the given one,
   // it returns 0 if there is no such key.
-  Word_t toscan = 0ul;
+  Word_t toscan = 0;
   int res = Judy1First(j_tmp,&toscan,&je); // get one object scheduled for scanning
   while(res) {
     Judy1Unset(&j_tmp,toscan,&je);         // remove it immediately
     scan_object((void*)toscan, reclimit);  // scan it, it will either be marked or discarded
-    toscan = 0ul;
+    toscan = 0;
     res = Judy1First(j_tmp,&toscan,&je); 
   }                                     
   assert(j_tmp == 0);                  
@@ -1235,7 +1235,7 @@ size_t flx_collector_t::sweep()
 
   while(pshape!=NULL)
   {
-    if((*pshape & 1) == (parity & (uintptr_t)1))
+    if((*pshape & (unitptr_t)1) == (parity & (uintptr_t)1))
     {
       if(debug)
         fprintf(stderr,"[gc] Garbage   %p=%s[%zd][%zu/%zu] [#a=%zu,#d=%zu]\n",
