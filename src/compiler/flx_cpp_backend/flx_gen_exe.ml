@@ -83,6 +83,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
   let src_str = string_of_bexe bsym_table 0 exe in
   let src_str = fix_endlines src_str in
   let with_comments = syms.compiler_options.with_comments in
+  
 (*
   print_endline ("generating exe " ^ string_of_bexe bsym_table 0 exe);
   print_endline ("vs = " ^ catmap "," (fun (s,i) -> s ^ "->" ^ si i) vs);
@@ -390,6 +391,8 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
     (*
     print_endline (string_of_bexe bsym_table 0 exe);
     *)
+    (if with_comments then "    // # " ^ Flx_srcref.short_string_of_src sr ^ "\n"
+    else "") ^
     match exe with
     | BEXE_try _ -> "  try {\n";
     | BEXE_endtry _ -> "\n  }//end try/catch\n";
