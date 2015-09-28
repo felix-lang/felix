@@ -35,6 +35,19 @@ In the latter case a cast/abstraction can defeat this, for the
 former you'll need to make a dummy variable.
 *)
 
+let fix_endlines s = 
+  let n = String.length s in
+  let b = Buffer.create (n+20) in
+  for i=0 to n - 1 do
+     let ch = s.[i] in
+     if ch = '\n' then
+       Buffer.add_string b "\\n"
+     else
+       Buffer.add_char b ch
+     ; 
+  done
+  ;
+  Buffer.contents b
 
 
 type kind_t = Function | Procedure
@@ -68,6 +81,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
     si (length ts)
   );
   let src_str = string_of_bexe bsym_table 0 exe in
+  let src_str = fix_endlines src_str in
   let with_comments = syms.compiler_options.with_comments in
 (*
   print_endline ("generating exe " ^ string_of_bexe bsym_table 0 exe);
