@@ -111,9 +111,9 @@ macros: BUILD_DEMUX
 includes: '"flx_demux.hpp"'
 library: demux
 headers: (.*\\)?([^\\\\]+\.hpp)>${2}
-srcdir: src/demux
+srcdir: src\demux
 src: [^\\\\]+\.cpp
-src: win\.*\.cpp
+src: win\\.*\.cpp
 @
 @tangle demux_msys.fpc
 Name: demux
