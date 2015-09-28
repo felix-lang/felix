@@ -540,7 +540,7 @@ class FlxPkgConfig_core
                  | #keepall => { iter keep_val values; }
                  endmatch;
                done;
-
+eprintln$ "Chase dependent packages key = " + key + " recfields = " + recfields.str;
                // chase dependent packages
                if mem streq recfields key do
                  iter (proc (s:string){
