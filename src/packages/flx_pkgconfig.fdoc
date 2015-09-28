@@ -541,16 +541,16 @@ eprintln$ "Handle_pkg pkg= " + pkg + " trace= " + trace.str;
                  | #keepall => { iter keep_val values; }
                  endmatch;
                done;
-eprintln$ "Chase dependent packages key = " + key + " recfields = " + recfields.str;
+//eprintln$ "Chase dependent packages key = " + key + " recfields = " + recfields.str;
                // chase dependent packages
                if mem streq recfields key do
-eprintln$ "FOUND";
+//eprintln$ "FOUND";
                  iter (proc (s:string){
                    handle_pkg$ s,Cons(pkg,trace);
                  })
                  values;
                done
-eprintln$ "DONE  dependent packages key = " + key + " recfields = " + recfields.str;
+//eprintln$ "DONE  dependent packages key = " + key + " recfields = " + recfields.str;
 
              done
            })
