@@ -490,6 +490,7 @@ class FlxPkgConfig_core
     }
 
     proc handle_pkg (pkg:string, trace:list[string]){
+eprintln$ "Handle_pkg pkg= " + pkg + " trace= " + trace.str;
        var variables = Empty[string * string];
 
        if mem streq trace pkg return;
@@ -568,6 +569,7 @@ eprintln$ "DONE  dependent packages key = " + key + " recfields = " + recfields.
        done;
     }
 
+eprintln$ "TOP LEVEL HANDLING PACKAGES " + pkgs.str;
     while not is_empty pkgs do
       match pkgs with
       | #Empty => {}
@@ -578,6 +580,7 @@ eprintln$ "DONE  dependent packages key = " + key + " recfields = " + recfields.
         }
       endmatch;
     done;
+eprintln$ "DONE: TOP LEVEL HANDLING PACKAGES " + pkgs.str;
 
     return return_code, result;
   }
