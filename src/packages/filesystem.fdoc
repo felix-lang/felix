@@ -1095,7 +1095,7 @@ class Win32Directory
       C_hack::ignore$ mkdir s;
     }
 
-    gen unlink_empty_dir: string->int=  "(int)RemoveDirectory($1.c_str())";
+    gen unlink_empty_dir: string->int=  "(int)RemoveDirectory($1.c_str())" requires Win322_headers::windows_h;
  
 
     //Get the current working directory.
