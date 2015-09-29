@@ -1390,7 +1390,12 @@ class FlxCoreBuild
 
   proc build_flx_web (target_dir:string, target_bin:string, web_plugins:list[string])
   {
-    var obj_extn = "_static.o"; // HACK!!!!!!!! 
+    if PLAT_WIN32 do
+      var obj_extn = "_static.obj"; // HACK!!!!!!!! 
+    else
+      var obj_extn = "_static.o"; // HACK!!!!!!!! 
+    done
+
     println$ "dflx_web  -> dflx_web object file";
     var result = Flx_client::runflx$ list ('[flx]','--test='+target_dir, '--static','-c','--nolink',
       '-o', target_dir/target_bin/'lib'/'rtl'/'dflx_web'+obj_extn, target_dir/'share'/'src'/'tools'/'dflx_web');
@@ -1423,7 +1428,11 @@ class FlxCoreBuild
 
   proc build_flx (target_dir:string, target_bin:string, toolchain_plugins:list[string])
   {
-    var obj_extn = ".o"; // HACK!!!!!!!! 
+    if PLAT_WIN32 do
+      var obj_extn = ".obj"; // HACK!!!!!!!! 
+    else
+      var obj_extn = ".o"; // HACK!!!!!!!! 
+    done
     println$ "dflx  -> dflx object file";
     var result = Flx_client::runflx$ list ('[flx]','--test='+target_dir, '-c','--nolink',
       '-o', target_dir/target_bin/'lib'/'rtl'/'dflx'+obj_extn, target_dir/'share'/'src'/'tools'/'dflx');
