@@ -1095,6 +1095,9 @@ class Win32Directory
       C_hack::ignore$ mkdir s;
     }
 
+    gen unlink_empty_dir : "(int)RemoveDirectory($1)";
+ 
+
     //Get the current working directory.
 
     fun getcwd():string = 
