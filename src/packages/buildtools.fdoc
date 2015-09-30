@@ -18,6 +18,9 @@ It is built directly from the repository.
 @tangle flx_build_flxg.flx
 class BuildFlxg
 {
+
+/* HEY, this is FELIX! We have our own time services
+
   // this utter rubbish is required just to format the time.
   // Shame on the idiot C language, and even more on Posix!
 
@@ -45,6 +48,7 @@ class BuildFlxg
      var n = strftime(buffer.stl_begin,buffer.len, fmt.cstr, &tm);
      return string(buffer.stl_begin, n);
   }
+*/
 
   // remove slosh-newline
   fun pack(s:string) = {
@@ -66,7 +70,8 @@ class BuildFlxg
 
   fun version_hook () = {
     var time = #Time::time;
-    var fmttime = fmt_time (time, "%a %d %b %Y");
+    //var fmttime = fmt_time (time, "%a %d %b %Y");
+    var fmttime = time.str; // Its just arbitrary text
     return
       "open Flx_version\n" +
       "let version_data: version_data_t = \n" +
