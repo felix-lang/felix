@@ -50,8 +50,8 @@ class Builder(fbuild.db.PersistentObject):
         self.flx_arun_lib_dynamic_dynamic = flx_arun_lib_dynamic_dynamic
         self.flx_run_main_static = flx_run_main_static
         self.flx_run_main_dynamic = flx_run_main_dynamic
-        self.flx_run_amain_static = flx_arun_main_static
-        self.flx_run_amain_dynamic = flx_arun_main_dynamic
+        self.flx_arun_main_static = flx_arun_main_static
+        self.flx_arun_main_dynamic = flx_arun_main_dynamic
 
     @fbuild.db.cachemethod
     def _run_flxg(self, src:fbuild.db.SRC, *,
