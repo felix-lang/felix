@@ -1785,8 +1785,10 @@ object toolchain_msvc_win32 (config:clang_config_t) implements toolchain_t =
    for line in lines do
      if prefix (line, "Note: including file: ") do
        var name = strip (line.[22 to]);
-       if name not in files do
-         files = name ! files;
+       if not prefix (name,"C:\\Program Files (x86)\\Microsoft") do
+         if name not in files do
+           files = name ! files;
+         done
        done
      done
    done
