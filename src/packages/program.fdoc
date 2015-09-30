@@ -1057,7 +1057,7 @@ class CmdExe
     fun quote_line_for_popen(s:string) => s;
 
     gen raw_get_stdout(x:string) = {
-      // eprintln("CMD.EXE: raw_get_stout of " + x);
+      eprintln("CMD.EXE: raw_get_stout of " + x);
       var fout = Win32Process::popen_in(x);
       if valid fout do
         var output = load fout;
