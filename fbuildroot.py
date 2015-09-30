@@ -265,7 +265,7 @@ def make_cxx_builder(ctx, *args, includes=[], libpaths=[], flags=[], **kwargs):
             'optimize_flags': ['-fomit-frame-pointer']}),
         ({'windows'}, {
             'link_flags' : ['/DEBUG'],
-            'flags': ['/GR', '/MDd', '/EHs', '/Zi', '/wd4291'] + flags,
+            'flags': ['/GR', '/MDd', '/EHs', '/Zi', '/wd4291', '/wd4190'] + flags,
             'optimize_flags': ['/Ox']}),
     ]
     kwargs['includes'] = list(chain(ctx.options.includes, includes))

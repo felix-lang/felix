@@ -26,12 +26,14 @@ class Builder(fbuild.db.PersistentObject):
             flx_run_lib_static_static,
             flx_run_lib_static_dynamic,
             flx_run_lib_dynamic_dynamic,
-            flx_run_main,
+            flx_run_main_static,
+            flx_run_main_dynamic,
             flx_run_exe,
             flx_arun_lib_static_static,
             flx_arun_lib_static_dynamic,
             flx_arun_lib_dynamic_dynamic,
-            flx_arun_main,
+            flx_arun_main_static,
+            flx_arun_main_dynamic,
             flx_arun_exe,
         ):
         super().__init__(ctx)
@@ -46,8 +48,10 @@ class Builder(fbuild.db.PersistentObject):
         self.flx_arun_lib_static_static  = flx_arun_lib_static_static
         self.flx_arun_lib_static_dynamic = flx_arun_lib_static_dynamic
         self.flx_arun_lib_dynamic_dynamic = flx_arun_lib_dynamic_dynamic
-        self.flx_run_main = flx_run_main
-        self.flx_arun_main = flx_arun_main
+        self.flx_run_main_static = flx_run_main_static
+        self.flx_run_main_dynamic = flx_run_main_dynamic
+        self.flx_run_amain_static = flx_arun_main_static
+        self.flx_run_amain_dynamic = flx_arun_main_dynamic
 
     @fbuild.db.cachemethod
     def _run_flxg(self, src:fbuild.db.SRC, *,
@@ -160,7 +164,7 @@ class Builder(fbuild.db.PersistentObject):
         macros = macros + ['FLX_STATIC_LINK']
         objs = objects + [
           (self.flx_run_lib_static_static) ] + [
-          (self.flx_run_main)
+          (self.flx_run_main_static)
           ]
 
         return self._link(self.cxx.link_exe, *args,
@@ -275,12 +279,14 @@ def build(ctx, flxg, cxx, drivers):
         drivers.flx_run_lib_static_static,
         drivers.flx_run_lib_static_dynamic,
         drivers.flx_run_lib_dynamic_dynamic,
-        drivers.flx_run_main,
+        drivers.flx_run_main_static,
+        drivers.flx_run_main_dynamic,
         drivers.flx_run_exe,
         drivers.flx_arun_lib_static_static,
         drivers.flx_arun_lib_static_dynamic,
         drivers.flx_arun_lib_dynamic_dynamic,
-        drivers.flx_arun_main,
+        drivers.flx_arun_main_static,
+        drivers.flx_arun_main_dynamic,
         drivers.flx_arun_exe,
     )
 
