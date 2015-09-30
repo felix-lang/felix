@@ -1297,7 +1297,6 @@ toolchain_plugin:      toolchain_clang_iphoneos
 toolchain_plugin:      toolchain_gcc_linux
 toolchain_plugin:      toolchain_gcc_osx
 toolchain_plugin:      toolchain_msvc_win32
-cygwin_toolchain_plugin:      toolchain_msvc_cygwin
 tool:      flx_cp
 tool:      flx_ls
 tool:      flx_grep

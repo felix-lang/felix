@@ -11,7 +11,6 @@
 @tangler clang_osx.flx                = share/lib/std/felix/toolchain/clang_osx.flx
 @tangler clang_iphoneos.flx           = share/lib/std/felix/toolchain/clang_iphoneos.flx
 @tangler msvc_win32.flx               = share/lib/std/felix/toolchain/msvc_win32.flx
-@tangler msvc_cygwin.flx              = share/lib/std/felix/toolchain/msvc_cygwin.flx
 @tangler cygwin.fpc                   = $PWD/src/config/cygwin.fpc
 @tangler cygwin.flx                   = share/lib/std/cygwin/cygwin.flx
 
@@ -21,7 +20,6 @@
 @tangler toolchain_clang_osx.flx      = share/lib/plugins/toolchain_clang_osx.flx
 @tangler toolchain_clang_iphoneos.flx = share/lib/plugins/toolchain_clang_iphoneos.flx
 @tangler toolchain_msvc_win32.flx     = share/lib/plugins/toolchain_msvc_win32.flx
-@tangler toolchain_msvc_cygwin.flx    = share/lib/plugins/toolchain_msvc_cygwin.flx
 @tangler flx_plugin.flx               = share/lib/plugins/flx_plugin.flx
 
 @tangler build_flx_rtl_gcc_linux.fpc         = $PWD/src/config/build_flx_rtl_gcc_linux.fpc
@@ -1698,143 +1696,6 @@ provides_dlib: -L/usr/bin -lcygwin
 includes: '"sys/cygwin.h"' 
 @
 
-@h2 Object for MSVC++ on Cygwin
-Same as the Win32 toolchain, except Cygwin Unix filenames have to
-be translated to names CL.EXE can understand. This toolchain uses
-Cygwin's filename translation function and so can ONLY be built
-on Cygwin!
-@tangle msvc_cygwin.flx
-include "std/felix/toolchain_interface";
-include "std/felix/toolchain_clang_config";
-include "std/felix/flx_cxx";
-include "std/cygwin/cygwin";
-
-object toolchain_msvc_cygwin (config:clang_config_t) implements toolchain_t = 
-{
-
-  var c_compiler = "cl";
-  var cxx_compiler = "cl";
-  var linker = "cl";
-  var base_c_compile_flags = Empty[string];
-  var base_cxx_compile_flags = Empty[string];
-
-  method fun whatami () => "toolchain_msvc_cygwin (version 2)";
-  method fun host_os () => "Cygwin";
-  method fun target_os () => "Win32";
-  method fun cxx_compiler_vendor () => "microsoft";
-
-  method fun dependency_extension () => ".d";
-  method fun executable_extension () => ".exe";
-  method fun static_object_extension () => "_static.obj";
-  method fun dynamic_object_extension () => "_dynamic.obj";
-  method fun static_library_extension () => ".lib";
-  method fun dynamic_library_extension () => ".dll";
-  method fun pathname_separator () => "\\";
-  method fun debug_flags () => list[string] "-g";
-  method fun get_base_c_compile_flags () => base_c_compile_flags;
-  method fun get_base_cxx_compile_flags () => base_cxx_compile_flags;
-
-  var include_switches = map (fun (d:string) => "/I"+Cygwin::cygwin_to_win32 d) config.header_search_dirs;
-
-  gen popen(cmd:list[string]) = {
-    var CMD = catmap ' ' Shell::quote_arg cmd;
-    var result, data = System::get_stdout(CMD);
-    if result != 0 do
-      eprintln $ "Shell command="+CMD + " FAILED";
-    done
-    return result, data;
-  }
-
-  gen shell(cmd:list[string]) = {
-    var CMD = catmap ' ' Shell::quote_arg cmd;
-    var result = System::system(CMD);
-    if result != 0 do
-      eprintln $ "Shell command="+CMD + " FAILED";
-    done
-    return result;
-  }
-
-
-// Boilerplate 
-
-  method gen c_dependency_generator (spec:(src:string)) : int * string =
-  {
-    return 0,"";
-  }
-
-  method gen cxx_dependency_generator (spec:(src:string)) : int * string =
-  {
-    return 0,"";
-  }
-
-  method gen dependency_parser (data:string) : list[string] =>
-    Empty[string] // BAD DEFAULT!
-  ;
-  
-  method gen c_static_object_compiler (spec:(dst:string, src:string)) : int = 
-  {
-    var src = Cygwin::cygwin_to_win32 spec.src;
-    var result = shell$ "cl.exe" ! include_switches + ("/TC"+src ! "/Fo"+spec.dst ! Empty[string]);
-    return result;
-  }
-
-  method gen c_dynamic_object_compiler (spec:(dst:string, src:string)) : int = 
-  {
-    var src = Cygwin::cygwin_to_win32 spec.src;
-    var result =shell$ "cl.exe" ! include_switches + ("/TC"+src ! "/Fo"+spec.dst ! Empty[string]); 
-    return result;
-  }
-
-
-  method gen cxx_static_object_compiler (spec:(dst:string, src:string)) : int = 
-  {
-    var src = Cygwin::cygwin_to_win32 spec.src;
-    var result =shell$ "cl.exe" ! include_switches + (src ! "/Fo"+spec.dst ! Empty[string]); 
-    return result;
-  }
-
-  method gen cxx_static_library_object_compiler (spec:(dst:string, src:string)) : int = 
-  {
-    var src = Cygwin::cygwin_to_win32 spec.src;
-    var result =shell$ "cl.exe" ! src ! "/Fo"+spec.dst ! Empty[string]; 
-    return result;
-  }
-
-  method gen cxx_dynamic_object_compiler (spec:(dst:string, src:string)) : int = 
-  {
-    var src = Cygwin::cygwin_to_win32 spec.src;
-    var result =shell$ "cl.exe" ! include_switches + (src ! "/Fo"+spec.dst ! Empty[string]); 
-    return result;
-  }
-
-  method gen static_library_linker (spec:(dst:string, srcs:list[string])): int =
-  {
-    var result =shell$ "lib.exe" ! ("/OUT:"+spec.dst+".lib") ! spec.srcs; 
-    return result;
-  } 
-
-  method gen static_executable_linker  (spec:(dst:string, srcs:list[string])) : int = 
-  {
-    var result =shell$  "cl.exe" ! "/MD" ! spec.srcs + ("/Fe"+spec.dst".exe");
-    return result;
-  }
-
-  method gen dynamic_executable_linker  (spec:(dst:string, srcs:list[string])) : int = 
-  {
-    var result =shell$  "cl.exe" ! "/MD" ! spec.srcs + ("/Fe"+spec.dst".exe");
-    return result;
-  }
-
-
-  method gen dynamic_library_linker (spec:(dst:string,srcs:list[string])) : int = 
-  {
-    var result =shell$  "cl.exe" ! "/MD" ! spec.srcs + "/Fe"+spec.dst+".dll";
-    return result;
-  }
-}
-
-@
-
 
 @h2 Object for MSVC++ on Windows
 @tangle msvc_win32.flx
@@ -2355,23 +2216,6 @@ fun setup(config_data:string) = {
 }
 
 export fun setup of (string) as "toolchain_msvc_win32_setup";
-@
-
-@h2 MSVC++ Plugin for Cygwin
-@tangle toolchain_msvc_cygwin.flx
-include "std/felix/toolchain/msvc_cygwin";
-
-// varies osx vs linus,  gcc vs clang
-
-export fun toolchain_msvc_cygwin of (clang_config_t) as "toolchain_msvc_cygwin";
-
-fun setup(config_data:string) = {
-   C_hack::ignore (config_data); // due to bug in Felix
-  //eprintln$ "Setup toolchain msvc_cygwin " + config_data;
-  return 0;
-}
-
-export fun setup of (string) as "toolchain_msvc_cygwin_setup";
 @
 
 @h1 Flx Plugin
