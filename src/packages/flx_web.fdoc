@@ -1275,8 +1275,10 @@ done
   var req = parse_request_type line;
 
   match req with
-if not PLAT_WIN32 do
   | #reqPOST => 
+if PLAT_WIN32 do
+  {}
+else
     match parse_post_line line with 
     | Some (base,file) =>
       println$ "well formed POST ...";
