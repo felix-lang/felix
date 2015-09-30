@@ -1275,6 +1275,7 @@ done
   var req = parse_request_type line;
 
   match req with
+if not PLAT_WIN32 do
   | #reqPOST => 
     match parse_post_line line with 
     | Some (base,file) =>
@@ -1313,6 +1314,7 @@ println$ "Got the line length .. "+line.len.str;
  
     | #None => println$ "BAD POST line: '"+line+"'";
     endmatch;
+done
   | #reqGET =>
     match parse_get_line line with
     | Some (base, file) => 
