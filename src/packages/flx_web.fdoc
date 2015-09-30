@@ -1277,7 +1277,7 @@ done
   match req with
   | #reqPOST => 
 if PLAT_WIN32 do
-  {}
+  ;
 else
     match parse_post_line line with 
     | Some (base,file) =>
