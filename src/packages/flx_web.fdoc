@@ -1264,8 +1264,11 @@ noinline proc handler (var k:socket_t) ()
   //dbg$ "Got a line from socket " + str k + "\n";
   //cat(s, DEVNULL);
 
+// BUG: Win32 getpeername not implemented yet
+if not PLAT_WIN32 do
   var peerIP = Faio_posix::getpeername k;
   print$ "IP "+peerIP +": got line from socket "+str k+": "; print line; endl;
+done
 
   // now I need to parse the GET line, get a file name out of its url
   // (e.g. unqualfied -> index.html and name/flx.jpg -> flx.jpg
