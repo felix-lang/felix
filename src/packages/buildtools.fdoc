@@ -1434,7 +1434,7 @@ class FlxCoreBuild
       var obj_extn = ".o"; // HACK!!!!!!!! 
     done
     println$ "dflx  -> dflx object file";
-    var result = Flx_client::runflx$ list ('[flx]','--test='+target_dir, '-c','--nolink',
+    var result = Flx_client::runflx$ list ('[flx]','--test='+target_dir, '-c','--nolink', '--static',
       '-o', target_dir/target_bin/'lib'/'rtl'/'dflx'+obj_extn, target_dir/'share'/'src'/'tools'/'dflx');
     if result != 0 do 
       println$ "dflx build failed";
@@ -1444,7 +1444,7 @@ class FlxCoreBuild
     println$ "Compile of dflx"+obj_extn+" SUCCEEDED";
 
     var toolchain_objects = map (fun (p:string) =>
-      target_dir/target_bin/'lib'/'rtl'/p + "_dynamic"+obj_extn) 
+      target_dir/target_bin/'lib'/'rtl'/p + "_static"+obj_extn) 
       toolchain_plugins
     ; 
 
@@ -1452,7 +1452,7 @@ class FlxCoreBuild
  
     println$ "Build flx. Note: requires --build-toolchain-plugins";
     println$ "flx  -> flx";
-    result = Flx_client::runflx$ list ('[flx]','--test='+target_dir, '--exe','-c',
+    result = Flx_client::runflx$ list ('[flx]','--test='+target_dir, '--static','-c',
       '-ox', target_dir/target_bin/'bin'/'flx') + toolchain_objects +
       (target_dir/target_bin/'lib'/'rtl'/'dflx' + obj_extn) +
       (target_dir/'share'/'src'/'tools'/'flx.flx')

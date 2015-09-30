@@ -551,10 +551,10 @@ println$ "[make_lib] source directory " + srcpath;
 
     var pats = db.getpkgfield(pkg,"src");
     var pat = catmap '|' (fun (x:string)=>"("+x+")") pats;
-  println$ "Finding Sources in "+srcpath;
-  println$ "Matching pattern "+pat;
+  //println$ "Finding Sources in "+srcpath;
+  //println$ "Matching pattern "+pat;
     var files = FileSystem::regfilesin (srcpath,pat);
-  println$ "Sources = " + str files;
+  //println$ "Sources = " + str files;
     if not static_only 
     do 
       begin
