@@ -511,7 +511,7 @@ class Config {
     copy_profile &cfg profile;
 
     // global defaults
-    var PREFIX = "/usr"/"local"/"lib";
+    var PREFIX = Filename::root_subdir "usr"/"local"/"lib";
 
     var INSTALL_ROOT_TOPDIR= PREFIX/"felix";
     var INSTALL_ROOT = INSTALL_ROOT_TOPDIR/ ("felix-"+Version::felix_version);

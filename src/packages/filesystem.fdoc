@@ -22,6 +22,7 @@ class Filename_class[os] {
   //$ The path separator.
   virtual fun sep: 1 -> string;
   virtual fun is_absolute_filename : string -> bool;
+  virtual fun root_subdir : string -> string;
 
   virtual fun executable_extension : 1 -> string;
   virtual fun static_object_extension: 1 -> string;
@@ -136,6 +137,7 @@ class Win32Filename
       f.[0] == "\\".char or // no drive letter
       f.[1] == ":".char and f.[2] == "\\".char // with drive letter
     ;
+   fun root_subdir (s:string) => "C:\\"+s;
 
   }
 }
@@ -152,6 +154,7 @@ class OsxFilename
     fun static_library_extension() => ".a";
     fun dynamic_library_extension() => ".dylib";
     fun is_absolute_filename (f:string) => f.[0] == "/";
+    fun root_subdir (s:string) => "/"+s;
 
   }
 }
@@ -168,6 +171,7 @@ class PosixFilename
     fun static_library_extension() => ".a";
     fun dynamic_library_extension() => ".so";
     fun is_absolute_filename (f:string) => f.[0] == "/";
+    fun root_subdir (s:string) => "/"+s;
   }
 }
 
