@@ -557,7 +557,7 @@ def build(ctx):
     """Compile Felix."""
 
     print("[fbuild] RUNNING PACKAGE MANAGER")
-    tangle_packages("src/packages/*", "build/release")
+    tangle_packages("src/packages", "build/release")
 
     print("[fbuild] CONFIGURING FELIX")
     # configure the phases
