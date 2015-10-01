@@ -767,7 +767,7 @@ class FlxPrepBuild
   {
     dirsetup(cmd);
     // copy the compiler 
-    var compiler name = "flxg";
+    var compiler_name = "flxg";
     if PLAT_WIN32 do
        compiler_name += ".exe";
     done
