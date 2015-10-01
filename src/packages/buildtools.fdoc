@@ -767,7 +767,11 @@ class FlxPrepBuild
   {
     dirsetup(cmd);
     // copy the compiler 
-    if cmd.copy_compiler call CopyFiles::copyfiles(cmd.source_dir/cmd.source_bin/'bin', 'flxg', 
+    var compiler name = "flxg";
+    if PLAT_WIN32 do
+       compiler_name += ".exe";
+    done
+    if cmd.copy_compiler call CopyFiles::copyfiles(cmd.source_dir/cmd.source_bin/'bin', compiler_name, 
       cmd.target_dir/cmd.target_bin/'bin'/'flxg', true, cmd.debug);
 
     println$ "Build Complete";
