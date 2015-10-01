@@ -435,10 +435,6 @@ def find_grammar(build_dir):
 def configure(ctx):
     """Configure Felix."""
 
-    # NOTE: this does NOT work correctly if configure is cached.
-    print("[fbuild] RUNNING PACKAGE MANAGER")
-    tangle_packages("src/packages/*", "build/release")
-
     build = config_build(ctx)
     host = config_host(ctx, build)
     target = config_target(ctx, host)
@@ -559,6 +555,9 @@ def configure(ctx):
 
 def build(ctx):
     """Compile Felix."""
+
+    print("[fbuild] RUNNING PACKAGE MANAGER")
+    tangle_packages("src/packages/*", "build/release")
 
     print("[fbuild] CONFIGURING FELIX")
     # configure the phases
