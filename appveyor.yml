@@ -3,8 +3,7 @@ init:
 
 
 install:
-  - set PATH=C:\Python33;C:\MinGW\bin;C:\MinGW\msys\1.0\bin;%PATH%
-  - cinst ocaml -y --notsilent
+  - set PATH=C:\Python33;%PATH%
 
 platform: 
   - x64
