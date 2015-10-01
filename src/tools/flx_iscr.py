@@ -91,13 +91,7 @@ class Processor:
             sys.exit('Duplicate definition of tangler %s' % id)
         self.tanglers[id] = Tangler(filename, id, self.quiet, suppress_linenos=self.suppress_linenos)
 
-    def cquote (self,f):
-        x = '"'
-        for ch in f:
-          if ch == "\\": ch = "/"
-          x = x + ch
-        x = x + '"'
-        return x
+    def cquote (self,f): return '"' + f.replace('\\', '/') '"'
 
     def set_tangler(self, id,lineno):
         'Specify a new current tangler.'
@@ -165,7 +159,7 @@ class Processor:
 
 def process_dir(package_dir, odir, quiet):
     # iterate over packages
-    for i in glob(package_dir):
+    for i in os.listdir(package_dir):
         # print debugging
         print('PACKAGE', i)
 
