@@ -2057,7 +2057,7 @@ object processing_env(
 
     fun cal_files_time (fs: list[string])=> fold_left maxf #FileStat::past_time fs;
 
-    var deptext = load df;
+    var deptext = load_text df;
     var lines = split (deptext, "\n"); 
     debugln$ "Deps=" + str(lines);
     var deptime = 
