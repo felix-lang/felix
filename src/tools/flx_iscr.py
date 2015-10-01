@@ -91,7 +91,7 @@ class Processor:
             sys.exit('Duplicate definition of tangler %s' % id)
         self.tanglers[id] = Tangler(filename, id, self.quiet, suppress_linenos=self.suppress_linenos)
 
-    def cquote (self,f): return '"' + f.replace('\\', '/') '"'
+    def cquote (self,f): return '"' + f.replace('\\', '/') + '"'
 
     def set_tangler(self, id,lineno):
         'Specify a new current tangler.'
