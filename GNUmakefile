@@ -309,10 +309,10 @@ post-tarball:
 
 packages:
 	# =========================================================
-	# generates source code from "src/packages/*" to various places
+	# generates source code from "src/packages" to various places
 	# around the repo
 	# =========================================================
-	python3 src/tools/flx_iscr.py -q -d "src/packages/*" ${BUILDROOT} 
+	python3 src/tools/flx_iscr.py -q -d "src/packages" ${BUILDROOT}
 
 grammar:
 	src/tools/flx_find_grammar_files.py ${BUILDROOT}

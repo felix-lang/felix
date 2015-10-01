@@ -160,6 +160,7 @@ class Processor:
 def process_dir(package_dir, odir, quiet):
     # iterate over packages
     for i in os.listdir(package_dir):
+        i = os.path.join(package_dir, i)
         # print debugging
         print('PACKAGE', i)
 
