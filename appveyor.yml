@@ -8,5 +8,4 @@ install:
   - cinst ocaml -y --notsilent
 
 build_script:
-  - unix2dos Makefile.win Makefile.w
-  - make -f Makefile.w build
+  - nmake
