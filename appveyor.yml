@@ -6,5 +6,9 @@ install:
   - set PATH=C:\Python33;C:\MinGW\bin;C:\MinGW\msys\1.0\bin;%PATH%
   - cinst ocaml -y --notsilent
 
+platform: 
+  - x64
+
 build_script:
   - nmake
+
