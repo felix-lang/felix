@@ -3,7 +3,8 @@ init:
 
 
 install:
-  - set PATH=C:\Python33;%PATH%
+  - git  clone https://github.com/felix-lang/win64ocaml.git
+  - set PATH=C:\Python33;win64ocaml\bin;%PATH%
 
 platform: 
   - x64
@@ -12,5 +13,6 @@ os: Visual Studio 2015
 
 build_script:
   - python --version
+  - ocaml -version
   - nmake
 
