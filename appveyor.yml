@@ -4,7 +4,6 @@ init:
 
 install:
   - set PATH=C:\Python33;%PATH%
-  - ps: iex ((new-object Net.WebClient).DownloadFile('https://drive.google.com/open?id=0B81MtX1S2GEba3h0LVFiNkNLdEU','c:\\projects\\skaller\\installocaml.exe'))
 
 platform: 
   - x64
