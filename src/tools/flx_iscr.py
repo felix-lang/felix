@@ -161,20 +161,21 @@ def process_dir(package_dir, odir, quiet):
     # iterate over packages
     for i in os.listdir(package_dir):
         i = os.path.join(package_dir, i)
-        # print debugging
-        print('PACKAGE', i)
+        if i[-5:] == ".fdoc":
+          # print debugging
+          print('PACKAGE', i)
 
-        odir = os.path.abspath(odir)
-        iname = os.path.abspath(i)
-        p = Processor(iname, odir, quiet)
-        # Process the input file and buffer up the code.
-        try:
-            f = open_utf8(iname)
-        except IOError as ex:
-            sys.exit(str(ex))
-        with f:
-            p.process(f)
-        p.save()
+          odir = os.path.abspath(odir)
+          iname = os.path.abspath(i)
+          p = Processor(iname, odir, quiet)
+          # Process the input file and buffer up the code.
+          try:
+              f = open_utf8(iname)
+          except IOError as ex:
+              sys.exit(str(ex))
+          with f:
+              p.process(f)
+          p.save()
 
 
 def iscr():
