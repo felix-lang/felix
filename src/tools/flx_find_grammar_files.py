@@ -34,13 +34,13 @@ def run(dir):
     print('[flx_find_grammar_files] ** Scanning', dir)
 
     gfiles = list(rrglob(dir, '*.fsyn'))
-    # print("Files = "+ str(gfiles))
+    #print("Files = "+ str(gfiles))
 
     with open(stdfilename) as f:
       tmp = f.readlines()
     stdfiles = []
     for file in tmp: stdfiles.append(file.rstrip())
-    # print("STD FILES=" + str(stdfiles))
+    #print("STD FILES=" + str(stdfiles))
 
     try:
       with open(extrafilename) as f:
@@ -49,11 +49,11 @@ def run(dir):
       tmp = []
     oldextrafiles = []
     for file in tmp: oldextrafiles.append(file.rstrip())
-    # print("OLD Extra files = " + str(oldextrafiles))
+    #print("OLD Extra files = " + str(oldextrafiles))
 
     newextrafiles = list(filter(lambda f: f not in stdfiles, gfiles))
 
-    print("Extras = " + str(newextrafiles))
+    #print("New Extras = " + str(newextrafiles))
     if set(newextrafiles) != set(oldextrafiles):
         print('[flx_find_grammar_files] ** Writing extra grammar files to', extrafilename)
         with open(extrafilename, 'w') as f:
