@@ -5,7 +5,7 @@ init:
 install:
   - git clone -q https://github.com/felix-lang/win64ocaml.git
   - set PATH=C:\Python33;win64ocaml\bin;%PATH%
-  - "c:\\Program Felix (x86)\\Microsoft Visual Studio\\14.0\\VC\\vcvarsall.bat" x64
+  - call "c:\\Program Felix (x86)\\Microsoft Visual Studio\\14.0\\VC\\vcvarsall.bat" x64
 
 platform: 
   - x64
