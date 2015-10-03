@@ -423,7 +423,7 @@ def tangle_packages(package_dir, odir):
     sys.path.append("src/tools/")
     import flx_iscr
 
-    quiet = True
+    quiet = False
     flx_iscr.process_dir(package_dir, odir, quiet)
     
 def find_grammar(build_dir):
