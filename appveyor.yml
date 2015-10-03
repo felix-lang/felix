@@ -5,7 +5,8 @@ init:
 install:
   - call "c:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x64
   - git clone -q https://github.com/felix-lang/win64ocaml.git
-  - set PATH=C:\Python33;win64ocaml\bin;%PATH%
+  - move win64ocaml c:\ocaml
+  - set PATH=C:\Python33;c:\ocaml\bin;%PATH%
 
 platform: 
   - x64
