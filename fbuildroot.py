@@ -561,6 +561,9 @@ def build(ctx):
     print("[fbuild] RUNNING PACKAGE MANAGER")
     tangle_packages("src/packages", "build/release")
 
+    print("Checking extract! ********************************")
+    os.system ("dir buildsystem")
+
     print("[fbuild] CONFIGURING FELIX")
     # configure the phases
     phases, iscr = configure(ctx)
