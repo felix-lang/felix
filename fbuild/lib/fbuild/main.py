@@ -181,7 +181,7 @@ def main(argv=None):
                 ctx.prune(prune_get_all, prune_get_bad)
         except fbuild.Error as e:
             ctx.logger.log(e, color='red')
-            return 1
+            sys.exit(1)
         except KeyboardInterrupt:
             # It appears that we can't reliably shutdown the scheduler's threads
             # when SIGINT is emitted, because python may raise KeyboardInterrupt
