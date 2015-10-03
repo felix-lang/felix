@@ -15,6 +15,5 @@ os: Visual Studio 2015
 build_script:
   - python --version
   - ocaml -version
-  - python fbuild/fbuild-light
   - nmake
 
