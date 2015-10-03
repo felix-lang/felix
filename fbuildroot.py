@@ -17,6 +17,8 @@ import os, sys
 from os.path import join
 import fnmatch
 
+import buildsystem
+print(buildsystem.__file__)
 
 # ------------------------------------------------------------------------------
 
