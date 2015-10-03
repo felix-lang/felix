@@ -7,6 +7,7 @@ install:
   - git clone -q https://github.com/felix-lang/win64ocaml.git
   - move win64ocaml c:\ocaml
   - set PATH=C:\Python35-x64;c:\ocaml\bin;%PATH%
+  - set PWD=.
 
 platform: 
   - x64

@@ -17,9 +17,6 @@ import os, sys
 from os.path import join
 import fnmatch
 
-import buildsystem
-print(buildsystem.__file__)
-
 # ------------------------------------------------------------------------------
 
 def pre_options(parser):
@@ -423,7 +420,7 @@ def tangle_packages(package_dir, odir):
     sys.path.append("src/tools/")
     import flx_iscr
 
-    quiet = False
+    quiet = True
     flx_iscr.process_dir(package_dir, odir, quiet)
     
 def find_grammar(build_dir):
@@ -560,9 +557,6 @@ def build(ctx):
 
     print("[fbuild] RUNNING PACKAGE MANAGER")
     tangle_packages("src/packages", "build/release")
-
-    print("Checking extract! ********************************")
-    os.system ("dir buildsystem")
 
     print("[fbuild] CONFIGURING FELIX")
     # configure the phases
