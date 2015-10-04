@@ -750,7 +750,7 @@ class Shell_class[OS, process_status_t]
   // Quote a single argument.
   // Note: kills Bash wildcard replacement.
   virtual fun quote_arg:string->string;
-  fun quote_args (s:list[string]) => catmap ' ' quote_arg s;
+  fun quote_args (s:list[string]) : string => catmap[string] ' ' quote_arg s;
 
   // Mainly for Windows we need a way to quote command line strings too.
   virtual fun quote_line_for_system: string->string;
