@@ -19,13 +19,13 @@ addons:
       - g++-5
 
 script:
-  - mkdir ocaml-tmp
-  - cd ocaml-tmp
-  - "curl -L https://launchpad.net/~avsm/+archive/ubuntu/ocaml42+opam12/+build/7778698/+files/ocaml-native-compilers_4.02.3-2ppa4~precise_amd64.deb > ocaml_native.deb"
-  - "curl -L https://launchpad.net/~avsm/+archive/ubuntu/ocaml42+opam12/+build/7778698/+files/ocaml-base_4.02.3-2ppa4~precise_amd64.deb > ocaml_base.deb"
-  - "for f in *.deb; do dpkg-deb -x $f extracted_$f; done"
-  - ls -R extracted* # XXX
-  - cd ..
+  - #mkdir ocaml-tmp
+  - #cd ocaml-tmp
+  - #"curl -L https://launchpad.net/~avsm/+archive/ubuntu/ocaml42+opam12/+build/7778698/+files/ocaml-native-compilers_4.02.3-2ppa4~precise_amd64.deb > ocaml_native.deb"
+  - #"curl -L https://launchpad.net/~avsm/+archive/ubuntu/ocaml42+opam12/+build/7778698/+files/ocaml-base_4.02.3-2ppa4~precise_amd64.deb > ocaml_base.deb"
+  - #"for f in *.deb; do dpkg-deb -x $f extracted_$f; done"
+  - #ls -R extracted* # XXX
+  - #cd ..
   - mkdir bin
   - ln -s /usr/bin/gcc-5 bin/gcc
   - ln -s /usr/bin/g++-5 bin/g++
