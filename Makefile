@@ -43,7 +43,7 @@ uproot:
 
 test:
 	cmd.exe /C rmdir /Q /S build\release\test
-	cmd.exe /C mkdir build/release/test
+	cmd.exe /C mkdir build\release\test
 	flx_tangle --indir=build\release\share\src\test --outdir=build\release\test\test
 	flx --felix=build.fpc --usage=prototype --expect --nonstop --indir=build\release\test\regress\rt --regex='.*\.flx' build\release\test
 
