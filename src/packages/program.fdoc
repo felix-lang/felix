@@ -750,35 +750,23 @@ class Shell_class[OS, process_status_t]
   // Quote a single argument.
   // Note: kills Bash wildcard replacement.
   virtual fun quote_arg:string->string;
+  fun quote_args (s:list[string]) => catmap ' ' quote_arg s;
 
   // Mainly for Windows we need a way to quote command line strings too.
   virtual fun quote_line_for_system: string->string;
-  virtual fun quote_line_for_popen: string -> string;
 
   virtual fun parse: string -> list[string];
+
+  //------------------------------------------------------------
+  // system() function
 
   //$ System command is ISO C and C++ standard.
   gen raw_system: string -> int = "::std::system($1.c_str())"
     requires Cxx_headers::cstdlib
   ;
-
-  //$ get_stdout is a synchronous version of popen_in/pclose pair.
-  virtual gen raw_get_stdout : string -> int * string;
-
-  //$ create prototype command strings from arg list.
-  fun create_system_command (s:list[string]) : string =>
-    quote_line_for_system $ catmap[string] ' ' quote_arg s
-  ;
-  fun create_popen_command (s:list[string]) : string =>
-    quote_line_for_popen $ catmap[string] ' ' quote_arg s
-  ;
-
   //$ basic command with line quoting.
   gen basic_system (cmd: string) :int => 
     cmd.quote_line_for_system.raw_system
-  ;
-  gen basic_get_stdout (cmd: string) : int * string =>
-    cmd.quote_line_for_popen.raw_get_stdout
   ;
 
   // string argument
@@ -789,16 +777,9 @@ class Shell_class[OS, process_status_t]
     return basic_system cmd;
   }
 
-  gen get_stdout (cmd:string) : int * string = {
-    if Env::getenv "FLX_SHELL_ECHO" != "" do
-      eprintln$ "[get_stdout] " + cmd;
-    done
-    return basic_get_stdout cmd;
-  }
-
   // list of string argument
   gen system (args:list[string]) : int =>
-    args.create_system_command.system
+    args.quote_args.system
   ;
 
   gen system[T with Iterable[T,string]] (args:T) : int =
@@ -810,10 +791,28 @@ class Shell_class[OS, process_status_t]
     return system lst;
   }  
 
+  //------------------------------------------------------------
+  // popen() function (get_stdout)
+
+  virtual fun quote_line_for_popen: string -> string;
+
+  //$ get_stdout is a synchronous version of popen_in/pclose pair.
+  virtual gen raw_get_stdout : string -> int * string;
+ 
+  gen basic_get_stdout (cmd: string) : int * string =>
+    cmd.quote_line_for_popen.raw_get_stdout
+  ;
+
+  gen get_stdout (cmd:string) : int * string = {
+    if Env::getenv "FLX_SHELL_ECHO" != "" do
+      eprintln$ "[get_stdout] " + cmd;
+    done
+    return basic_get_stdout cmd;
+  }
 
   // arbitrary Streamable argument
   gen get_stdout (args:list[string]) : int * string =>
-    args.create_popen_command.get_stdout
+    args.quote_args.get_stdout
   ;
  
   gen get_stdout[T with Iterable[T,string]] (args:T) : int * string =
@@ -1054,10 +1053,10 @@ class CmdExe
   {
     fun quote_arg(s:string):string => '"' + s + '"';
     fun quote_line_for_system(s:string) => '"' + s + '"';
-    fun quote_line_for_popen(s:string) => s;
+    fun quote_line_for_popen(s:string) => '"' + s + '"';
 
     gen raw_get_stdout(x:string) = {
-      //eprintln("CMD.EXE: raw_get_stout of " + x);
+      eprintln("CMD.EXE: raw_get_stout of " + x);
       var fout = Win32Process::popen_in(x);
       if valid fout do
         var output = load fout;

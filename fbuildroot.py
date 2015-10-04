@@ -621,9 +621,6 @@ def build(ctx):
         debug=ctx.options.debug,
         flags=['--test=' + ctx.buildroot])
 
-    # HACK!!!!!
-    os.system("cp build/release/host/bin/bootflx build/release/host/bin/flx")
-
     print("[fbuild] [Felix] BUILDING PLUGINS")
     call('buildsystem.plugins.build', phases.target, felix)
 

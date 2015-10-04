@@ -32,8 +32,11 @@ tools:
 	flx --felix=build.fpc --static -c -od build\release\host\bin src\tools\flx_build_boot.flx 
 
 target:
-	flx_build_prep --target-dir=build\release --target-bin=win32 --source-dir=build\release --source-bin=host --clean-target-bin-dir --copy-compiler --copy-pkg-db --copy-config-headers --toolchain=toolchain_msvc_win32 --debug
-	copy build\release\host\bin\flxg.exe build\release\win32\bin\flxg.exe
+	flx_build_prep --target-dir=build\release --target-bin=win32 --source-dir=build\release \
+	       	--source-bin=host --clean-target-bin-dir --copy-compiler --copy-pkg-db \
+	       	--copy-config-headers --toolchain=toolchain_msvc_win32 --debug
+	flx_build_flxg
+	copy tmpdir\flxg.exe build\release\win32\bin\flxg.exe
 	flx_build_rtl --target-dir=build\release --target-bin=win32
 	flx_build_boot --target-dir=build\release --target-bin=win32 --build-toolchain-plugins
 	flx_build_boot --target-dir=build\release --target-bin=win32 --build-flx
@@ -48,6 +51,7 @@ uproot:
 test:
 	cmd.exe /C rmdir /Q /S build\release\test
 	cmd.exe /C mkdir build\release\test
-	flx_tangle --indir=build\release\share\src\test --outdir=build\release\test\test
-	flx --felix=build.fpc --usage=prototype --expect --nonstop --indir=build\release\test\regress\rt --regex='.*\.flx' build\release\test
+	flx_tangle --indir=build\release\share\src\test --outdir=build\release\test
+	flx --felix=build.fpc --usage=prototype --expect --nonstop \
+		--indir=build\release\test\regress\rt --regex='.*\.flx' build\release\test
 
