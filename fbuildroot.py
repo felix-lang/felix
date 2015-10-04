@@ -17,7 +17,6 @@ import os, sys
 from os.path import join
 import fnmatch
 
-
 # ------------------------------------------------------------------------------
 
 def pre_options(parser):
