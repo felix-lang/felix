@@ -1,4 +1,15 @@
-all: bootstrap tools target uproot
+# Windows 64 bit build for Windows 10 and Visual Studio 2015.
+#
+# Requirements:
+#
+# Python 3 must be on PATH
+# Ocaml bin (and libs) must be on setup and the PATH
+# MSVC compiler tools, SDK, and DLLS must setup and be on PATH
+# build\release\host\bin and build\release\host\lib\rtl must be on PATH
+#
+# We currently make a debug build for 64 bit windows ONLY.
+
+all: bootstrap tools target uproot test
 
 rebuild: tools target uproot
 
@@ -11,6 +22,7 @@ bootstrap:
 	copy build\release\host\bin\bootflx.exe build\release\host\bin\flx.exe
 
 tools:
+	flx --felix=build.fpc --static -c -od build\release\host\bin src\tools\flx_build_flxg.flx 
 	flx --felix=build.fpc --static -c -od build\release\host\bin src\tools\flx_build_prep.flx 
 	flx --felix=build.fpc --static -c -od build\release\host\bin src\tools\flx_build_rtl.flx 
 	flx --felix=build.fpc --static -c -od build\release\host\bin src\tools\flx_build_boot.flx 
@@ -28,3 +40,9 @@ target:
 uproot:
 	cmd.exe /C rmdir /Q /S build\release\host
 	cmd.exe /C move build\release\win32 build\release\host
+
+test:
+	mkdir build\release\test
+	flx_tangle --indir=build\release\share\src\test --outdir=build\release\test\test
+	flx --felix=build.fpc --usage=prototype --expect --nonstop --indir=build\release\test\regress\rt --regex='.*\.flx' build\release\test
+
