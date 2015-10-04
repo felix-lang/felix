@@ -2,6 +2,10 @@ all: bootstrap tools target uproot
 
 rebuild: tools target uproot
 
+extract:
+	python src\tools\flx_iscr.py -q -d src\packages\*.fdoc build\release
+	python src\tools\flx_find_grammar_files.py build\release
+
 clean:
 	cmd.exe /C rmdir /Q /S build
 	cmd.exe /C rmdir /Q /S trial-tmp
