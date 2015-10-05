@@ -2935,14 +2935,20 @@ class Flx
           control.STDOUT <- "";
           control.EXPECT <- "";
           control.STDIN <- "";
+eprintln$ "FLX CALCULATING DEPVARS";
           var dvars = FlxDepvars::cal_depvars(toolchain,*config,control,*loopctl);
           println$ f"Processing [%02d/%02d]: %S" (i, n, file);
+eprintln$ "FLX CALCULATING PROCESSING ENV";
           var pe = processing_env(toolchain,*config,*control,dvars);
+eprintln$ "FLX RUNNING PROCESSING ENV";
           result = pe.runit();
+eprintln$ "FLX RESULT = " + result.str;
           if result == 0 do ++pass; else ++fail; done
           if control*.NONSTOP==0 and  result != 0 goto endoff;
           ++i;
+eprintln$ "DOING GARBAGE COLLECTION";
           collect();
+eprintln$ "GARBAGE COLLECTION DONE";
         done 
         println$ f"Batch result (%02d OK + %02d FAIL)/%2d" (pass, fail,n);
       end
@@ -3072,9 +3078,7 @@ class BootFlx
         println$ "Processing " + files.len.str + " files";
         var i = 1;
         for file in files do
-eprintln$ "[flx] processing loop for regex " + control*.INREGEX.str + " file " + file;
           var arg = Filename::join (control*.INDIR, file);
-eprintln$ "[flx] pathname = " + arg;
           loopctl*.path,loopctl*.ext = Filename::split_extension(arg);
           loopctl*.dir,loopctl*.base = Filename::split1(loopctl*.path);
           // temporary hack, to force reset of the linker filename, stdout, and expect
@@ -3082,12 +3086,9 @@ eprintln$ "[flx] pathname = " + arg;
           control.LINKER_OUTPUT_FILENAME <- "";
           control.STDOUT <- "";
           control.EXPECT <- "";
-eprintln$ "[flx] setting dvars"; 
           var dvars = FlxDepvars::cal_depvars(toolchain,*config,control,*loopctl);
           println$ f"Processing [%02d/%02d]: %S" (i, n, file);
-eprintln$ "[flx] Creating Processing Environment"; 
           var pe = processing_env(toolchain,*config,*control,dvars);
-eprintln$ "[flx] Running processing environment"; 
           result = pe.runit();
           if result != 0 goto endoff;
           ++i;
