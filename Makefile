@@ -30,10 +30,10 @@ bootstrap:
 	copy build\release\host\bin\bootflx.exe build\release\host\bin\flx.exe
 
 tools:
-	flx --felix=build.fpc --static -c -od build\release\host\bin src\tools\flx_build_flxg.flx 
-	flx --felix=build.fpc --static -c -od build\release\host\bin src\tools\flx_build_prep.flx 
-	flx --felix=build.fpc --static -c -od build\release\host\bin src\tools\flx_build_rtl.flx 
-	flx --felix=build.fpc --static -c -od build\release\host\bin src\tools\flx_build_boot.flx 
+	flx --felix=wbuild.fpc --static -c -od build\release\host\bin src\tools\flx_build_flxg.flx 
+	flx --felix=wbuild.fpc --static -c -od build\release\host\bin src\tools\flx_build_prep.flx 
+	flx --felix=wbuild.fpc --static -c -od build\release\host\bin src\tools\flx_build_rtl.flx 
+	flx --felix=wbuild.fpc --static -c -od build\release\host\bin src\tools\flx_build_boot.flx 
 
 target:
 	flx_build_prep --target-dir=build\release --target-bin=win32 --source-dir=build\release \
@@ -56,6 +56,6 @@ test:
 	cmd.exe /C rmdir /Q /S build\release\test
 	cmd.exe /C mkdir build\release\test
 	flx_tangle --indir=build\release\share\src\test --outdir=build\release\test
-	flx --felix=build.fpc --usage=prototype --expect --nonstop \
+	flx --felix=wbuild.fpc --usage=prototype --expect --nonstop \
 		--indir=build\release\test\regress\rt --regex=".*\.flx" build\release\test
 
