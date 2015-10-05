@@ -18,8 +18,12 @@ extract:
 	python src\tools\flx_find_grammar_files.py build\release
 
 clean:
+	cmd.exe /C mkdir build\crap
+	cmd.exe /C mkdir trial-tmp\crap
+	cmd.exe /C mkdir tmp-dir\crap
 	cmd.exe /C rmdir /Q /S build
 	cmd.exe /C rmdir /Q /S trial-tmp
+	cmd.exe /C rmdir /Q /S tmp-dir
 
 bootstrap:
 	python fbuild\fbuild-light
@@ -36,7 +40,7 @@ target:
 	       	--source-bin=host --clean-target-bin-dir --copy-compiler --copy-pkg-db \
 	       	--copy-config-headers --toolchain=toolchain_msvc_win32 --debug
 	flx_build_flxg
-	copy tmpdir\flxg.exe build\release\win32\bin\flxg.exe
+	copy tmp-dir\flxg build\release\win32\bin\flxg.exe
 	flx_build_rtl --target-dir=build\release --target-bin=win32
 	flx_build_boot --target-dir=build\release --target-bin=win32 --build-toolchain-plugins
 	flx_build_boot --target-dir=build\release --target-bin=win32 --build-flx
@@ -53,5 +57,5 @@ test:
 	cmd.exe /C mkdir build\release\test
 	flx_tangle --indir=build\release\share\src\test --outdir=build\release\test
 	flx --felix=build.fpc --usage=prototype --expect --nonstop \
-		--indir=build\release\test\regress\rt --regex='.*\.flx' build\release\test
+		--indir=build\release\test\regress\rt --regex=".*\.flx" build\release\test
 
