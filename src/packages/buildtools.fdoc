@@ -360,7 +360,7 @@ class BuildFlxg
     gen dypgen(file:string) : string =
     {
       var flags = list$ "--no-mli", "--no-undef-nt", "--pv-obj", "--noemit-token-type";
-      var executable = tmpdir / 'dypgen';
+      var executable = tmpdir / 'dypgen.exe';
 
       // Dypgen doesn't allow an output spec
       // so we process a copy of the file.
@@ -377,7 +377,7 @@ class BuildFlxg
     gen build_dypgen() = 
     {
       var path = 'src'/'compiler'/'dypgen'/'dypgen';
-      var exe = ocaml_build_exe (path,'dypgen',
+      var exe = ocaml_build_exe (path,'dypgen.exe',
          extend #libdflt with (srcs=mls_nodyp path,
             libs = list[string] (build_dyplib())
             ) end);
