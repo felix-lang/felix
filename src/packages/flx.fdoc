@@ -2926,6 +2926,7 @@ class Flx
         var fail = 0;
         files = sort files;
         for file in files do
+eprintln$ "NEXT FILE IS " + file;
           var arg = Filename::join (control*.INDIR, file);
           loopctl*.path,loopctl*.ext = Filename::split_extension(arg);
           loopctl*.dir,loopctl*.base = Filename::split1(loopctl*.path);
