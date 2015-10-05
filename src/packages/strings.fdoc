@@ -900,21 +900,26 @@ open class Re2 {
   // hackery because ::re2::RE2 isn't copyable, so we have to use a pointer
   // but we need the shape of RE2 to create on the heap
   private body RE2_serial = """
-  static ::std::string RE2_encoder(void *p) { return ((::re2::RE2*)p)->pattern(); }
+  static ::std::string RE2_encoder(void *p) { 
+    return (*(::std::shared_ptr< ::re2::RE2>*)p)->pattern(); 
+  }
 
   static size_t RE2_decoder (void *p, char *s, size_t i) { 
     char tmp[sizeof(::std::string)];
     i = ::flx::gc::generic::string_decoder (&tmp,s,i);
-    new(p) ::re2::RE2 (*(::std::string*)(&tmp));
+    new(p) ::std::shared_ptr< ::re2::RE2> (new ::re2::RE2 (*(::std::string*)(&tmp)));
     destroy((::std::string*)&tmp);
     return i;
   }
   """; 
   private type RE2_ = "::re2::RE2" 
-    requires RE2_serial, encoder "RE2_encoder", decoder "RE2_decoder"
   ;
-  _gc_pointer _gc_type RE2_ type RE2 = "::re2::RE2*";
-  gen _ctor_RE2 : string -> RE2 = "new (*PTF gcp, @0, false) RE2($1)";
+  type RE2 = "::std::shared_ptr< ::re2::RE2>" 
+    requires Cxx11_headers::memory,
+    RE2_serial, encoder "RE2_encoder", decoder "RE2_decoder"
+  ;
+
+  gen _ctor_RE2 : string -> RE2 = "::std::shared_ptr< ::re2::RE2>(new RE2($1))";
 
 
   type StringPiece = "::re2::StringPiece";
@@ -1084,60 +1089,6 @@ open class Re2 {
 
 open Set[RE2, string];
 
-@h1 TRE regexps
-@tangle tre.flx
-
-class Tre
-{
-  open C_hack;
-  requires package 'tre';
-  type tre_regex_t = "regex_t";
-
-  const tre_version: string = "tre_version()";
-
-  private fun _tre_regcomp: &tre_regex_t * string  -> int =
-    "tre_regncomp($1,$2.c_str(),$2.size(),REG_EXTENDED)"
-  ;
-
-  fun tre_regcomp (x:string): opt[tre_regex_t] = {
-    var cr: tre_regex_t;
-    var res = _tre_regcomp(&cr, x);
-    return
-      if res == 0 then Some cr else None[tre_regex_t] endif
-    ;
-  }
-
-  fun nsub: &tre_regex_t -> int = "$1->re_nsub+1";
-
-  ctypes regoff_t;
-  cstruct regmatch_t {
-    rm_so: regoff_t;
-    rm_eo: regoff_t;
-  };
-
-  fun add: +char * regoff_t -> +char = "$1+$2";
-  fun sub: regoff_t * regoff_t -> int = "(int)($1-$2)";
-  ctor int : regoff_t = "int($1)";
-
-  private fun _tre_regexec:
-    &tre_regex_t *     // the compiled regex
-    string *               // string to search
-    int *                  // number of matches to return
-    +regmatch_t        // array to hold matches
-    -> int
-  =
-    "tre_regnexec($1,$2.c_str(),$2.size(),$3,$4,0);"
-  ;
-
-  fun tre_regexec (re_in: tre_regex_t) (x:string): int * int * +regmatch_t =
-  {
-    var re = re_in;
-    val nmatches = nsub$ &re;
-    var matches = Carray::array_alloc[regmatch_t] nmatches;
-    var res = _tre_regexec(&re, x, nmatches, matches);
-    return res,nmatches,matches;
-  }
-}
 @h1 Regular definitions
 @tangle regdef.flx
 
