@@ -21,3 +21,8 @@ build_script:
   - ocaml -version
   - nmake
 
+notifications:
+  - provider: Email
+    to:
+      - felix-builds@googlegroups.com
+
