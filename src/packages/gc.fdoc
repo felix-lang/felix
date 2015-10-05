@@ -912,7 +912,7 @@ void * flx_collector_t::impl_allocate(gc_shape_t *shape, size_t nobj)
   void *fp = (void *)allocator->allocate(amt);
   assert(fp); // Got some memory!
 
-  ++shape->allocations;
+  //++shape->allocations;
   if(debug)
     fprintf(stderr,"[gc] Allocated %p, shape=%s[%zd][%zu][#a=%zu,#d=%zu]\n", 
       fp,shape->cname,shape->count,nobj,shape->allocations,shape->deallocations);
@@ -1249,7 +1249,7 @@ size_t flx_collector_t::sweep()
         );
       ++ sweeped;
       //fprintf(stderr,"Incr deallocation count ..\n");
-      ++((gc_shape_t *)(*pshape & ~(uintptr_t)1))->deallocations;
+      //++((gc_shape_t *)(*pshape & ~(uintptr_t)1))->deallocations;
       //fprintf(stderr,"Unlinking ..\n");
       unlink(current);
       //fprintf(stderr,"Posting delete ..\n");
