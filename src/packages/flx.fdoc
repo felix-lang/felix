@@ -2948,7 +2948,7 @@ eprintln$ "FLX RESULT = " + result.str;
           if control*.NONSTOP==0 and  result != 0 goto endoff;
           ++i;
 eprintln$ "DOING GARBAGE COLLECTION";
-          collect();
+          //collect();
 eprintln$ "GARBAGE COLLECTION DONE";
         done 
         println$ f"Batch result (%02d OK + %02d FAIL)/%2d" (pass, fail,n);
