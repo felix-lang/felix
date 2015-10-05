@@ -3072,7 +3072,9 @@ class BootFlx
         println$ "Processing " + files.len.str + " files";
         var i = 1;
         for file in files do
+eprintln$ "[flx] processing loop for regex " + control*.INREGEX.str + " file " + file;
           var arg = Filename::join (control*.INDIR, file);
+eprintln$ "[flx] pathname = " + arg;
           loopctl*.path,loopctl*.ext = Filename::split_extension(arg);
           loopctl*.dir,loopctl*.base = Filename::split1(loopctl*.path);
           // temporary hack, to force reset of the linker filename, stdout, and expect
@@ -3080,9 +3082,12 @@ class BootFlx
           control.LINKER_OUTPUT_FILENAME <- "";
           control.STDOUT <- "";
           control.EXPECT <- "";
+eprintln$ "[flx] setting dvars"; 
           var dvars = FlxDepvars::cal_depvars(toolchain,*config,control,*loopctl);
           println$ f"Processing [%02d/%02d]: %S" (i, n, file);
+eprintln$ "[flx] Creating Processing Environment"; 
           var pe = processing_env(toolchain,*config,*control,dvars);
+eprintln$ "[flx] Running processing environment"; 
           result = pe.runit();
           if result != 0 goto endoff;
           ++i;
