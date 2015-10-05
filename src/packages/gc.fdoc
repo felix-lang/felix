@@ -1049,7 +1049,7 @@ void flx_collector_t::unlink(void *fp)
 
   // call the finaliser if there is one
   //fprintf(stderr,"Unlink: Calling finaliser for %p\n",fp);
-  //impl_finalise(fp);
+  impl_finalise(fp);
 
   allocation_count--;
   gc_shape_t *shape = get_shape(fp);
@@ -1075,7 +1075,7 @@ void flx_collector_t::post_delete(void *fp)
 
 void flx_collector_t::delete_frame(void *fp)
 {
-  allocator->deallocate(fp);
+  //allocator->deallocate(fp);
 }
 
 size_t flx_collector_t::reap ()
