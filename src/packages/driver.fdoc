@@ -469,11 +469,13 @@ to create a static link executable with async support.
 // to set the critical error handler
 #ifdef _WIN32
 #include <windows.h>
+#include <stdio.h>
 #endif
 
 int main(int argc, char **argv) 
 {
   #ifdef _WIN32
+fprintf(stderr, "NO DIAGLOG BOXES FUCK YOU WINDOWS");
   SetErrorMode (SEM_FAILCRITICALERRORS);
   #endif
   return felix_arun(argc, argv);
@@ -490,11 +492,13 @@ to create a static link executable without async support.
 // to set the critical error handler
 #ifdef _WIN32
 #include <windows.h>
+#include <stdio.h>
 #endif
 
 int main(int argc, char **argv) 
 {
   #ifdef _WIN32
+fprintf(stderr, "NO DIAGLOG BOXES FUCK YOU WINDOWS");
   SetErrorMode (SEM_FAILCRITICALERRORS);
   #endif
   //fprintf(stderr,"Felix mainline flx_run_main starts!\n");
