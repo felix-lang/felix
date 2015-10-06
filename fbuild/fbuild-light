@@ -2,7 +2,7 @@
 from os.path import realpath, join, dirname
 import sys, os
 
-sys.path.append(realpath(join(dirname(sys.argv[0]), 'lib')))
+sys.path.insert(0, realpath(join(dirname(sys.argv[0]), 'lib')))
 
 from fbuild.main import main
 
