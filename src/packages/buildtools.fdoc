@@ -1069,7 +1069,11 @@ class FlxRtlBuild
         var src_dir =  build / 'share';
         var share_rtl = src_dir / 'lib' / 'rtl';
         var target_dir =  build / target / 'lib' / 'rtl';
-        FlxLibBuild::make_lib (db,toolchain-maker, src_dir, target_dir, share_rtl, pkg,tmpdir, static_only, debug) ();
+        var result = FlxLibBuild::make_lib (db,toolchain-maker, src_dir, target_dir, share_rtl, pkg,tmpdir, static_only, debug) ();
+        if not result do
+          eprintln$ "Library build " + pkg + " failed";
+          System::exit 1;
+        done
       else 
         println$ "------------";
         println$ "External package " + pkg;

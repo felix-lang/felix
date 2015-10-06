@@ -1075,7 +1075,7 @@ void flx_collector_t::post_delete(void *fp)
 
 void flx_collector_t::delete_frame(void *fp)
 {
-  //allocator->deallocate(fp);
+  allocator->deallocate(fp);
 }
 
 size_t flx_collector_t::reap ()

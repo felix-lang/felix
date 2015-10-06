@@ -404,7 +404,7 @@ include "std/felix/toolchain_interface";
     var result, deps = tc.cxx_dependency_generator (src=src);
     if result != 0 do
       println$ "[flx_depchk] C++ Dependency generator FAILED on " + src;
-      System::exit 1;
+      return false;
     done
     var newdeps = tc.dependency_parser deps;
     var depfile = dst + ".d";
@@ -453,7 +453,7 @@ include "std/felix/toolchain_interface";
     var result, deps = tc.c_dependency_generator (src=src);
     if result != 0 do
       println$ "[flx_depchk] C Dependency generator FAILED on " + src;
-      System::exit 1;
+      return false;
     done
     var newdeps = tc.dependency_parser deps;
     var depfile = dst + ".d";
@@ -491,7 +491,7 @@ class FlxLibBuild
 {
   private fun / (x:string,y:string) => Filename::join(x,y);
 
-  noinline proc make_lib 
+  noinline gen make_lib 
   (
     db: FlxPkgConfig::FlxPkgConfigQuery_t,  
     toolchain-maker: clang_config_t -> toolchain_t, 
@@ -502,7 +502,7 @@ class FlxLibBuild
     tmpdir:string,
     static_only:bool,
     debug: bool
-  ) ()
+  ) () : bool = 
   {
     proc dbug (x:string) => if debug call println$ '[make_lib: '+pkg+']' x;
 
@@ -585,12 +585,14 @@ println$ "[make_lib] source directory " + srcpath;
               result = toolchain.c_dynamic_object_compiler (src=srcfile, dst=dst) ;
             done
 
-          | x => println$ "Unknown extension " + x; System::exit(1);
+          | x => 
+            println$ "Unknown extension " + x; 
+            goto bad;
           endmatch
           ;
           if result != 0 do
             println$ "Compiler result " + str result;
-            System::exit(1);
+            goto bad;
           done
         done
 
@@ -608,7 +610,7 @@ println$ "[make_lib] source directory " + srcpath;
         result = toolchain.dynamic_library_linker(srcs=objs, dst=dstlib);
         if result != 0 do
           println$ "Linker result " + str result;
-          System::exit(1);
+          goto bad;
         done
       end 
     done
@@ -642,12 +644,15 @@ println$ "[make_lib] source directory " + srcpath;
             println$ "C:   Compiling [static] " + file " -> " + objname file;
             result = toolchain.c_static_object_compiler (src=srcfile, dst=dst);
           done
-        | x => println$ "Unknown extension " + x; System::exit(1);
+        | x => println$ 
+          "Unknown extension " + x; 
+          println$ "Compiler result " + str result;
+          goto bad;
         endmatch
         ;
         if result != 0 do
           println$ "Compiler result " + str result;
-          System::exit(1);
+          goto bad;
         done
       done
 
@@ -665,9 +670,12 @@ println$ "[make_lib] source directory " + srcpath;
       result = toolchain.static_library_linker(srcs=objs, dst=dstlib);
       if result != 0 do
         println$ "Linker result " + str result;
-        System::exit(1);
+        goto bad;
       done
     end 
+    return true;
+bad:>
+    return false;
   }
 }
 
