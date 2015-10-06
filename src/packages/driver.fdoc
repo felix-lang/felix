@@ -465,10 +465,15 @@ Link this, together with translation units containing flx_arun,
 to create a static link executable with async support.
 @tangle flx_arun_main.cxx
 #include "flx_run.hpp"
+
+// to set the critical error handler
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 int main(int argc, char **argv) 
 {
   #ifdef _WIN32
-  #include <windows.h>
   SetErrorMode (SEM_FAILCRITICALERRORS);
   #endif
   return felix_arun(argc, argv);
@@ -481,10 +486,15 @@ to create a static link executable without async support.
 @tangle flx_run_main.cxx
 #include "flx_run.hpp"
 #include "stdio.h"
+
+// to set the critical error handler
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 int main(int argc, char **argv) 
 {
   #ifdef _WIN32
-  #include <windows.h>
   SetErrorMode (SEM_FAILCRITICALERRORS);
   #endif
   //fprintf(stderr,"Felix mainline flx_run_main starts!\n");
