@@ -1807,43 +1807,49 @@ object toolchain_msvc_win32 (config:clang_config_t) implements toolchain_t =
   
   method gen c_static_object_compiler (spec:(dst:string, src:string)) : int = 
   {
-    var result = shell$ ("cl.exe" ! "/nologo" ! "/DFLX_STATIC_LINK" ! "/MDd" ! "/Zi" ! "/c" ! "/Tc"+spec.src ! macros) + 
+    var result,text = xpopen$ ("cl.exe" ! "/nologo" ! "/DFLX_STATIC_LINK" ! "/MDd" ! "/Zi" ! "/c" ! "/Tc"+spec.src ! macros) + 
       include_switches + ("/Fo"+spec.dst);
+    if result != 0 call print text;
     return result;
   }
 
   method gen c_dynamic_object_compiler (spec:(dst:string, src:string)) : int = 
   {
-    var result =shell$ ("cl.exe" ! "/nologo" ! "/MDd" ! "/Zi" ! "/c" ! "/Tc"+spec.src ! macros) + 
+    var result,text =xpopen$ ("cl.exe" ! "/nologo" ! "/MDd" ! "/Zi" ! "/c" ! "/Tc"+spec.src ! macros) + 
        include_switches + ("/Fo"+spec.dst); 
+    if result != 0 call print text;
     return result;
   }
 
 
   method gen cxx_static_object_compiler (spec:(dst:string, src:string)) : int = 
   {
-    var result =shell$ ("cl.exe" ! "/nologo" ! "/DFLX_STATIC_LINK" ! "/MDd" ! "/Zi" ! "/c" ! "/EHs" ! macros) + 
+    var result,text =xpopen$ ("cl.exe" ! "/nologo" ! "/DFLX_STATIC_LINK" ! "/MDd" ! "/Zi" ! "/c" ! "/EHs" ! macros) + 
       include_switches + spec.src + ("/Fo"+spec.dst); 
+    if result != 0 call print text;
     return result;
   }
 
   method gen cxx_static_library_object_compiler (spec:(dst:string, src:string)) : int = 
   {
-    var result =shell$ ("cl.exe" ! "/nologo" ! "/wd4190" ! "/DFLX_STATIC_LINK" ! "/MDd" ! "/Zi" ! "/c" ! "/EHs" ! macros) + 
+    var result,text =xpopen$ ("cl.exe" ! "/nologo" ! "/wd4190" ! "/DFLX_STATIC_LINK" ! "/MDd" ! "/Zi" ! "/c" ! "/EHs" ! macros) + 
        include_switches + (spec.src ! ("/Fo"+spec.dst) ! Empty[string]); 
+    if result != 0 call print text;
     return result;
   }
 
   method gen cxx_dynamic_object_compiler (spec:(dst:string, src:string)) : int = 
   {
-    var result =shell$ ("cl.exe" ! "/nologo" ! "/wd4190" ! "/MDd" ! "/Zi" ! "/c" ! "/EHs" ! macros) + 
+    var result,text =xpopen$ ("cl.exe" ! "/nologo" ! "/wd4190" ! "/MDd" ! "/Zi" ! "/c" ! "/EHs" ! macros) + 
       include_switches + (spec.src ! ("/Fo"+spec.dst) ! Empty[string]); 
+    if result != 0 call print text;
     return result;
   }
 
   method gen static_library_linker (spec:(dst:string, srcs:list[string])): int =
   {
-    var result =shell$ "lib.exe" ! "/OUT:"+spec.dst ! spec.srcs; 
+    var result,text =xpopen$ "lib.exe" ! "/OUT:"+spec.dst ! spec.srcs; 
+    if result != 0 call print text;
     return result;
   } 
 
@@ -1861,7 +1867,8 @@ object toolchain_msvc_win32 (config:clang_config_t) implements toolchain_t =
         obj_specs += term; // dunno what to do with it!
       done
     done
-    var result =shell$  "cl.exe" ! "/nologo" ! "/DFLX_STATIC_LINK" ! "/MDd" ! obj_specs + ("/Fe"+spec.dst) + "/link" + "/DEBUG"+ link_specs;
+    var result,text =xpopen$  "cl.exe" ! "/nologo" ! "/DFLX_STATIC_LINK" ! "/MDd" ! obj_specs + ("/Fe"+spec.dst) + "/link" + "/DEBUG"+ link_specs;
+    if result != 0 call print text;
     return result;
   }
 
@@ -1879,13 +1886,15 @@ object toolchain_msvc_win32 (config:clang_config_t) implements toolchain_t =
         obj_specs += term; // dunno what to do with it!
       done
     done
-    var result =shell$  "cl.exe" ! "/nologo" ! "/MDd" ! obj_specs + ("/Fe"+spec.dst) + "/link" + "/DEBUG"+ link_specs;
+    var result,text = xpopen$ "cl.exe" ! "/nologo" ! "/MDd" ! obj_specs + ("/Fe"+spec.dst) + "/link" + "/DEBUG"+ link_specs;
+    if result != 0 call print text;
     return result;
   }
 
   method gen dynamic_library_linker (spec:(dst:string,srcs:list[string])) : int = 
   {
-    var result =shell$  "cl.exe" ! "/nologo" ! "/MDd" ! spec.srcs + ("/Fe"+spec.dst) +  "/link" + "/DLL" + "/DEBUG" + dynamic_link_strings;
+    var result,text =xpopen$  "cl.exe" ! "/nologo" ! "/MDd" ! spec.srcs + ("/Fe"+spec.dst) +  "/link" + "/DLL" + "/DEBUG" + dynamic_link_strings;
+    if result != 0 call print text;
     return result;
   }
 }
