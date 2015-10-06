@@ -467,6 +467,10 @@ to create a static link executable with async support.
 #include "flx_run.hpp"
 int main(int argc, char **argv) 
 {
+  #ifdef _WIN32
+  #include <windows.h>
+  SetErrorMode (SEM_FAILCRITICALERRORS);
+  #endif
   return felix_arun(argc, argv);
 }
 @
@@ -479,6 +483,10 @@ to create a static link executable without async support.
 #include "stdio.h"
 int main(int argc, char **argv) 
 {
+  #ifdef _WIN32
+  #include <windows.h>
+  SetErrorMode (SEM_FAILCRITICALERRORS);
+  #endif
   //fprintf(stderr,"Felix mainline flx_run_main starts!\n");
   return felix_run(argc, argv);
 }
