@@ -409,7 +409,7 @@ fun getline_to_url (get:string) =>
   if not startswith get "GET " then
     ""
   else
-    match find (get, ' ', 4) with
+    match find (get, ' ', 4uz) with
     | #None => ""
     | Some pos => get.[4 to pos]
     endmatch
@@ -420,7 +420,7 @@ fun postline_to_url (get:string) =>
   if not startswith get "POST " then
     ""
   else
-    match find (get, ' ', 5) with
+    match find (get, ' ', 5uz) with
     | #None => ""
     | Some pos => get.[5 to pos]
     endmatch
@@ -3175,12 +3175,12 @@ next:>
       var flx = get_flx(fname);
       if matched1 do
         var p1 = match find(flx,v1.2.string) with
-        | Some i => i
+        | Some i => i.int
         | #None => 0
         endmatch;
         flx = flx.[p1 to];
         var p2 = match find(flx,v1.3.string) with
-        | Some i => i
+        | Some i => i.int
         | #None => flx.len.int - 1
         endmatch;
         flx = flx.[to p2];

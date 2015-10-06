@@ -140,12 +140,12 @@ class BuildFlxg
       //println$ "Ocamldep raw return = " + dep;
       var out = dep.pack.strip;
       //println$ "Ocamldep packed return = " + out;
-      var lines = filter (fun (s:string) => stl_find (s,".cmo") == stl_npos.int) (split(out,"\n"));
+      var lines = filter (fun (s:string) => stl_find (s,".cmo") == stl_npos) (split(out,"\n"));
       //println$ "Ocamldep lines = " + str lines;
       var res = head lines;
       //println$ "ocamldep result=" + res;
       var pos = stl_find (res, ":");
-      if pos == stl_npos.int do 
+      if pos == stl_npos do 
         println$ "Cannot find ':' in string " + res;
         System::exit 1;
       done

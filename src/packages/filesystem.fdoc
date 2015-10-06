@@ -40,8 +40,8 @@ class Filename_class[os] {
 
   fun split1(s:string)=> match find_last_of(s,#sep) with
     | Some pos => 
-      if pos==0 then #sep else s.[to pos] endif,
-      s.[pos+#sep.len.int to]
+      if pos==0uz then #sep else s.[to pos] endif,
+      s.[pos+#sep.len to]
     | #None => "",s
     endmatch
   ;

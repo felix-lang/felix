@@ -406,7 +406,7 @@ iter
         s := f"%02d" m.int;
         soffset := groups.1.data - (&f).stl_begin;
         var newf = f;
-        replace(&newf,soffset.int,2,s);
+        replace(&newf,soffset.size,2uz,s);
         res2 := FileSystem::rename_file(
           Filename::join (s_dir,f),
           Filename::join (s_dir,newf)

@@ -1887,7 +1887,7 @@ gen dxqt(DBG:bool) (cmd:string) = {
     n := 
       match find_first_of (output, char "\n") with
       | Some n => n 
-      | #None => output.len.int 
+      | #None => output.len
       endmatch
     ; 
     output = output.[to n]; // first line excluding newline

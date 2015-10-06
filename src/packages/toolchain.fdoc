@@ -142,7 +142,7 @@ class CxxCompiler
   // GIGO: this routine can't fail, but it can return rubbish
   gen generic_dependency_parser (data:string) : list[string] =
   {
-    var pcolon = match find (data ,':') with | Some i => i+1 | #None => 0;
+    var pcolon = match find (data ,':') with | Some i => i+1uz | #None => 0uz;
     var txt = data.[pcolon to];
     txt = search_and_replace (txt,'\\\n','');
     var files = respectful_split txt;
@@ -1768,6 +1768,21 @@ object toolchain_msvc_win32 (config:clang_config_t) implements toolchain_t =
     return result;
   }
 
+  proc checkwarn (result:int, text:string)
+  {
+    if result != 0 do 
+       print text;
+    else
+      for line in split(text,char "\n") do
+        if 
+          stl_find (line,"warning") != stl_npos or 
+          stl_find (line, "note:") != stl_npos 
+        do
+          eprintln$ line;
+        done
+      done
+    done
+  }
 
 // Boilerplate 
 
@@ -1809,7 +1824,7 @@ object toolchain_msvc_win32 (config:clang_config_t) implements toolchain_t =
   {
     var result,text = xpopen$ ("cl.exe" ! "/nologo" ! "/DFLX_STATIC_LINK" ! "/MDd" ! "/Zi" ! "/c" ! "/Tc"+spec.src ! macros) + 
       include_switches + ("/Fo"+spec.dst);
-    if result != 0 call print text;
+    checkwarn(result,text);
     return result;
   }
 
@@ -1817,7 +1832,7 @@ object toolchain_msvc_win32 (config:clang_config_t) implements toolchain_t =
   {
     var result,text =xpopen$ ("cl.exe" ! "/nologo" ! "/MDd" ! "/Zi" ! "/c" ! "/Tc"+spec.src ! macros) + 
        include_switches + ("/Fo"+spec.dst); 
-    if result != 0 call print text;
+    checkwarn(result,text);
     return result;
   }
 
@@ -1826,7 +1841,7 @@ object toolchain_msvc_win32 (config:clang_config_t) implements toolchain_t =
   {
     var result,text =xpopen$ ("cl.exe" ! "/nologo" ! "/DFLX_STATIC_LINK" ! "/MDd" ! "/Zi" ! "/c" ! "/EHs" ! macros) + 
       include_switches + spec.src + ("/Fo"+spec.dst); 
-    if result != 0 call print text;
+    checkwarn(result,text);
     return result;
   }
 
@@ -1834,7 +1849,7 @@ object toolchain_msvc_win32 (config:clang_config_t) implements toolchain_t =
   {
     var result,text =xpopen$ ("cl.exe" ! "/nologo" ! "/wd4190" ! "/DFLX_STATIC_LINK" ! "/MDd" ! "/Zi" ! "/c" ! "/EHs" ! macros) + 
        include_switches + (spec.src ! ("/Fo"+spec.dst) ! Empty[string]); 
-    if result != 0 call print text;
+    checkwarn(result,text);
     return result;
   }
 
@@ -1842,14 +1857,14 @@ object toolchain_msvc_win32 (config:clang_config_t) implements toolchain_t =
   {
     var result,text =xpopen$ ("cl.exe" ! "/nologo" ! "/wd4190" ! "/MDd" ! "/Zi" ! "/c" ! "/EHs" ! macros) + 
       include_switches + (spec.src ! ("/Fo"+spec.dst) ! Empty[string]); 
-    if result != 0 call print text;
+    checkwarn(result,text);
     return result;
   }
 
   method gen static_library_linker (spec:(dst:string, srcs:list[string])): int =
   {
     var result,text =xpopen$ "lib.exe" ! "/OUT:"+spec.dst ! spec.srcs; 
-    if result != 0 call print text;
+    checkwarn(result,text);
     return result;
   } 
 
@@ -1868,7 +1883,7 @@ object toolchain_msvc_win32 (config:clang_config_t) implements toolchain_t =
       done
     done
     var result,text =xpopen$  "cl.exe" ! "/nologo" ! "/DFLX_STATIC_LINK" ! "/MDd" ! obj_specs + ("/Fe"+spec.dst) + "/link" + "/DEBUG"+ link_specs;
-    if result != 0 call print text;
+    checkwarn(result,text);
     return result;
   }
 
@@ -1887,14 +1902,14 @@ object toolchain_msvc_win32 (config:clang_config_t) implements toolchain_t =
       done
     done
     var result,text = xpopen$ "cl.exe" ! "/nologo" ! "/MDd" ! obj_specs + ("/Fe"+spec.dst) + "/link" + "/DEBUG"+ link_specs;
-    if result != 0 call print text;
+    checkwarn(result,text);
     return result;
   }
 
   method gen dynamic_library_linker (spec:(dst:string,srcs:list[string])) : int = 
   {
     var result,text =xpopen$  "cl.exe" ! "/nologo" ! "/MDd" ! spec.srcs + ("/Fe"+spec.dst) +  "/link" + "/DLL" + "/DEBUG" + dynamic_link_strings;
-    if result != 0 call print text;
+    checkwarn(result,text);
     return result;
   }
 }
