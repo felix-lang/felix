@@ -453,7 +453,7 @@ FUNCTION void Init (
             Poleaf3[offset] = base + offset;
 
 #ifndef JU_64BIT
-        *PoIndex = (91 << 24) | (92 << 16) | (93 << 8) | 94;
+        *PoIndex = ((uintptr_t)91 << 24) | ((uintptr_t)92 << 16) | ((uintptr_t)93 << 8) | 94;
 #else
 
         *PoIndex = ((uintptr_t)91 << 56) | ((uintptr_t)92 << 48) | ((uintptr_t)93 << 40) | ((uintptr_t)94 << 32)
