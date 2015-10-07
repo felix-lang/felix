@@ -138,7 +138,7 @@ FUNCTION PPvoid_t JUDY_EXTERN JudyLByCount
 // Note:  Think of Count0 as a reliable "number of Indexes below the target."
 
 	Count0 = Count - 1;
-	assert((Count || Count0 == ~0));  // ensure CPU is sane about 0 - 1.
+	assert((Count || Count0 == ~(uintptr_t)0));  // ensure CPU is sane about 0 - 1.
 	pop1lower = 0;
 
 	if (JU_LEAFW_POP0(PArray) < cJU_LEAFW_MAXPOP1) // must be a LEAFW

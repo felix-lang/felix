@@ -1007,7 +1007,7 @@ static inline BITMAPL_t j__udyCountBitsL(BITMAPL_t word)
 
 // Fast version for single LSB:
 
-#define JU_SETDIGIT1(INDEX,DIGIT) (INDEX) = ((INDEX) & ~0xff) | (DIGIT)
+#define JU_SETDIGIT1(INDEX,DIGIT) (INDEX) = ((INDEX) & ~(uintptr_t)0xff) | (DIGIT)
 
 
 // SET (REPLACE) "N" LEAST DIGITS IN AN INDEX:
