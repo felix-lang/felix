@@ -303,9 +303,26 @@ open class Address {
   instance Tord[address] {
     fun < : address * address -> bool = "::std::less<void*>()($1,$2)";
   }
-  instance[T in addressing] Str[T] {
-    fun str (t:T) : string => vsprintf (c"%p", t);
+
+  const addrstrfmt : +char = '"%" PRIxPTR' requires C99_headers::inttypes_h;
+  const addrreprfmt : +char = '"0x%" PRIxPTR' requires C99_headers::inttypes_h;
+
+  instance Str[address] {
+    fun str (t:address) : string => vsprintf (addrstrfmt, C_hack::cast[uintptr] t);
   }
+  instance Repr[address] {
+    fun repr (t:address) : string => vsprintf (addrreprfmt, C_hack::cast[uintptr] t);
+  }
+
+
+  instance Str[byte] {
+    fun str (t:byte) : string => vsprintf (c"%02x", C_hack::cast[uint] t);
+  }
+
+  instance Repr[byte] {
+    fun repr (t:byte) : string => vsprintf (c"0x%02x", t);
+  }
+
 
   fun + : address * !ints -> address = "(void*)((char*)$1+$2)";
   fun - : address * !ints -> address = "(void*)((char*)$1-$2)";
