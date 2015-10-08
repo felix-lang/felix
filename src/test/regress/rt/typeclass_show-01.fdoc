@@ -113,9 +113,9 @@ str:  -inf
 repr: -inf
 str:  a
 repr: a
-str:  0x1
-repr: 0x1
-str:  0x10
+str:  01
+repr: 0x01
+str:  10
 repr: 0x10
 str:  Domo Arigato,
 Mr Roboto!
