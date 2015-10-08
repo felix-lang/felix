@@ -562,7 +562,7 @@ print_endline ("Compact linear tuple " ^ sbt bsym_table t);
 
   | BEXPR_range_check (e1,e2,e3) ->
      let f,sl,sc,el,ec = Flx_srcref.to_tuple sr in
-     let f = ce_atom ("\""^ f ^"\"") in
+     let f = ce_atom (Flx_string.escape_of_string '"' f) in
      let sl = ce_atom (si sl) in
      let sc = ce_atom (si sc) in
      let el = ce_atom (si el) in
@@ -1124,7 +1124,7 @@ end
         | CS.Str_template c when c = "#srcloc" ->
            let f, l1, c1, l2, c2 = Flx_srcref.to_tuple sr in
            ce_atom ("flx::rtl::flx_range_srcref_t(" ^
-             string_of_string f ^ "," ^
+             Flx_string.escape_of_string '"' f ^ "," ^
              si l1 ^ "," ^
              si c1 ^ "," ^
              si l2 ^ "," ^
