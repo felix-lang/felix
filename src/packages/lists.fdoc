@@ -23,17 +23,6 @@ This is primarily a non-functional helper routine.
   //$ at the second list. This operation is DANGEROUS because
   //$ it is a mutator: lists are traditionally purely functional.
 
-  // this function is required for efficient joining of lists.
-  // we copy the first list, then splice the second one onto its last element
-
-  // representation dependent: may break!
-  // A Felix list is a void* which has a variant code in the low 2 bits of the pointer
-  // If the variant is 1, the pointer points at the tuple of type
-  // T * list[T]. There is no way to name this type from C,
-  // so we just create an compatible type and use a cast.
-  // Note that cleverly, if the variant is 0, the data is also 0
-  // so the packed representation is 0
-
   // NOTE: this will fail if the second argument is named "p"!
   // fix as for rev, rev_last!
   proc splice[T] : &list[T] * list[T] =

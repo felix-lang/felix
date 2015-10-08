@@ -195,7 +195,7 @@ namespace flx { namespace pthread {
 flx_native_thread_t get_current_native_thread() { return pthread_self(); }
 
 static void *get_stack_pointer() { 
-  unsigned long x; 
+  void *x; 
   void *y = (void*)&x; 
   return y;
 }
@@ -333,7 +333,7 @@ namespace flx { namespace pthread {
 flx_native_thread_t get_current_native_thread() { return GetCurrentThread(); }
 
 static void *get_stack_pointer() { 
-  unsigned long x; 
+  void *x; 
   void *y = (void*)&x;
   return y;
 }
@@ -1365,7 +1365,7 @@ waitable_bool::signal_true()
 
 namespace flx { namespace pthread {
 static void *get_stack_pointer() { 
-  unsigned long x; 
+  void *x; 
   void *y = (void*)&x;
   return y; 
 }

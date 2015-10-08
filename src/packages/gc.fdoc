@@ -1084,7 +1084,7 @@ size_t flx_collector_t::reap ()
   Word_t next=(Word_t)NULL;
   int res = Judy1First(j_tmp,&next,&je);
   while(res) {
-    delete_frame((void *)(void*)next);
+    delete_frame((void*)next);
     ++count;
     res = Judy1Next(j_tmp,&next,&je);
   }
