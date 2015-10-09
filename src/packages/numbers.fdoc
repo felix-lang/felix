@@ -40,6 +40,23 @@ Operations on Real and Complex numbers.
 
 // Note: ideally we'd use constrained polymorphism for the instances..
 // saves typing it all out so many times
+open class Floatinf
+{
+   const FINFINITY : float = "INFINITY" requires C99_headers::math_h;
+}
+
+open class Doubleinf
+{
+   const DINFINITY : double = "(double)INFINITY" requires C99_headers::math_h;
+}
+
+open class Ldoubleinf
+{
+   const LINFINITY : ldouble = "(long double)INFINITY" requires C99_headers::math_h;
+}
+
+
+
 
 open class Fcomplex
 {

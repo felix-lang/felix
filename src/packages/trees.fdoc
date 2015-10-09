@@ -514,7 +514,7 @@ class DiGraph[V,E with Str[V], Str[E]] // V,E labels for graph parts
   // only returns list of vertices from starting point
   gen prim (d:digraph_t) (startv:int) : list[int * int] = 
   {
-    var INF=1.0/0.0;
+    var INF=DINFINITY;
     var intree = varray[bool] (bound=d.len, default=false);
     var distance = varray[double] (bound=d.len, default=INF);
     var fromv = varray[int] (bound=d.len, default= -1);
