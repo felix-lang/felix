@@ -69,7 +69,7 @@ public:
   int init(int argc, char **argv);
 
 // interface for drivers. there's more, create_frame, etc
-  create_async_hooker_t *ptr_create_async_hooker;
+  create_async_hooker_t *ptr_create_async_hooker=nullptr;
 
   typedef ::flx::dynlink::flx_dynlink_t *(*link_library_t)(flx_config *c, ::flx::gc::generic::gc_profile_t*);
   typedef void (*init_ptr_create_async_hooker_t)(flx_config *, bool debug_driver);
