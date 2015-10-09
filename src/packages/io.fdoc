@@ -524,8 +524,9 @@ open Output_file[Cstdio::ofile];
 //$ Write string to output.
 proc print  [T with Str[T]] (x:T) { fprint (cstdout, x); };
 
-//$ Write string to output with end of line.
-proc println[T with Str[T]] (x:T) { fprintln (cstdout, x); };
+//$ Write string to output with end of line. Also does a flush
+//$ to improve synchronisation with cstderr.
+proc println[T with Str[T]] (x:T) { fprintln (cstdout, x); fflush cstdout; };
 
 //$ Write end of line on output.
 proc endl() { endl cstdout; }
