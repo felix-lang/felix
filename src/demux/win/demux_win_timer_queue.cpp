@@ -125,8 +125,8 @@ win_timer_queue::timer_callback(PVOID udat, BOOLEAN timer_or_wait_fired)
     else
     {
       // I'm not so sure, see if it leaks.
-      fprintf(stderr, "DeleteTimerQueueTimer = ERROR_IO_PENDING\n");
-      fprintf(stderr, "Apparently this is ok...\n");
+      //fprintf(stderr, "DeleteTimerQueueTimer = ERROR_IO_PENDING\n");
+      //fprintf(stderr, "Apparently this is ok...\n");
     }
   }
   delete tc;
