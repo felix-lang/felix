@@ -14,7 +14,7 @@ all: bootstrap tools target uproot test
 rebuild: tools target uproot
 
 extract:
-	python src\tools\flx_iscr.py -q -d src\packages\*.fdoc build\release
+	python src\tools\flx_iscr.py -q -d src\packages build\release
 	python src\tools\flx_find_grammar_files.py build\release
 
 clean:
@@ -58,4 +58,7 @@ test:
 	flx_tangle --indir=build\release\share\src\test --outdir=build\release\test
 	flx --felix=wbuild.fpc --usage=prototype --expect --nonstop \
 		--indir=build\release\test\regress\rt --regex=".*\.flx" build\release\test
+	flx_tangle --indir=build\release\share\src\web\tut --outdir=build\release\test\tut
+	flx --felix=wbuild.fpc --usage=prototype --expect --nonstop \
+		--indir=build\release\test\tut --regex=".*\.flx" build\release\test\tut
 
