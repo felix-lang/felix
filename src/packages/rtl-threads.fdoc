@@ -216,6 +216,9 @@ extern "C" void *flx_pthread_start_wrapper(void *e)
    }
   void (*sr)(void*)=ehd->sr; // client function
   void *cd = ehd->cd;        // client data
+  if(tc->debug)
+    fprintf(stderr,"ehd->spawner_lock = %p\n",ehd->spawner_lock);
+
   if(ehd->spawner_lock)
   {
     flx_mutex_locker_t dummy(*ehd->spawner_lock);
