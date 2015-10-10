@@ -213,22 +213,29 @@ extern "C" void *flx_pthread_start_wrapper(void *e)
   if(ehd->spawner_lock)
   {
     flx_mutex_locker_t dummy(*ehd->spawner_lock);
-    //fprintf(stderr,"Thread %p acquired mutex\n", get_current_native_thread());
-    //fprintf(stderr,"Thread %p notifying spawner it has registered itself\n", get_current_native_thread());
+    fprintf(stderr,"Thread %p acquired mutex\n", (void*)(uintptr_t)get_current_native_thread());
+    fprintf(stderr,"Thread %p notifying spawner it has registered itself\n", (void*)(uintptr_t)get_current_native_thread());
     *ehd->spawner_flag=true;
     ehd->spawner_cond->broadcast();
-    //fprintf(stderr,"Thread %p releasing mutex\n", get_current_native_thread());
+    fprintf(stderr,"Thread %p releasing mutex\n", (void*)(uintptr_t)get_current_native_thread());
   }
   delete ehd;
-  if(tc)tc->yield();
+  if(tc){ 
+    fprintf(stderr,"Thread %p yielding\n", (void*)(uintptr_t)get_current_native_thread());
+    tc->yield();
+  }
   try {
+    fprintf(stderr,"Thread %p running client code\n", (void*)(uintptr_t)get_current_native_thread());
     (*sr)(cd);
   }
   catch (...) {
     fprintf(stderr,"Uncaught exception in thread\n");
     exit(1);
   }
-  if(tc)tc->remove_thread();
+  if(tc){
+    fprintf(stderr,"Thread %p unregistering\n", (void*)(uintptr_t)get_current_native_thread());
+    tc->remove_thread();
+  }
   return NULL;
 }
 
