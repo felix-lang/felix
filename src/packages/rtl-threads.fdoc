@@ -216,15 +216,15 @@ extern "C" void *flx_pthread_start_wrapper(void *e)
    }
   void (*sr)(void*)=ehd->sr; // client function
   void *cd = ehd->cd;        // client data
-  if(tc->debug)
+  if(tc && tc->debug)
     fprintf(stderr,"ehd->spawner_lock = %p\n",ehd->spawner_lock);
 
   if(ehd->spawner_lock)
   {
     flx_mutex_locker_t dummy(*ehd->spawner_lock);
-    if (tc->debug)
+    if (tc && tc->debug)
       fprintf(stderr,"Thread %p acquired mutex\n", (void*)(uintptr_t)get_current_native_thread());
-    if (tc->debug)
+    if (tc && tc->debug)
       fprintf(stderr,"Thread %p notifying spawner it has registered itself\n", (void*)(uintptr_t)get_current_native_thread());
     *ehd->spawner_flag=true;
     ehd->spawner_cond->broadcast();
@@ -237,7 +237,7 @@ extern "C" void *flx_pthread_start_wrapper(void *e)
     tc->yield();
   }
   try {
-    if (tc->debug)
+    if (tc && tc->debug)
       fprintf(stderr,"Thread %p running client code\n", (void*)(uintptr_t)get_current_native_thread());
     (*sr)(cd);
   }
