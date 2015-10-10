@@ -59,6 +59,7 @@ test:
 	flx --felix=wbuild.fpc --usage=prototype --expect --nonstop \
 		--indir=build\release\test\regress\rt --regex=".*\.flx" build\release\test
 	flx_tangle --indir=build\release\share\src\web\tut --outdir=build\release\test\tut
+	python src\tools\flx_iscr.py -q -d src\web\tut build\release\test\tut
 	flx --felix=wbuild.fpc --usage=prototype --expect --input --nonstop \
 		--indir=build\release\test\tut --regex=".*\.flx" build\release\test\tut
 
