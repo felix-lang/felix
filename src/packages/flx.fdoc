@@ -1022,15 +1022,11 @@ private noinline proc handle_switch
     control.CHECK_EXPECT <- 1;
 
   elif arg == "--input" do
-    debugln "compare stdout with expect file (default name)";
-    // of the Felix program only: used for saving the output
-    // to a file so the test harness can compare it with an .expect file
+    debugln "redirect stdin to (default name)";
     control.SET_STDIN <- 1;
 
   elif prefix(arg,"--input=") do
-    debugln "compare stdout with expect file";
-    // of the Felix program only: used for saving the output
-    // to a file so the test harness can compare it with an .expect file
+    debugln "redirect stdin to file";
     control.STDIN <- arg.[8 to];
     control.SET_STDIN <- 1;
 
