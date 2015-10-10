@@ -206,18 +206,27 @@ extern "C" void *flx_pthread_start_wrapper(void *e)
   tstart_t *ehd = (tstart_t*)e;
   thread_control_t *tc = ehd -> tc;
   if(tc && tc->debug)
-    fprintf(stderr,"Spawned Thread %p start stack base = %p, tc=%p\n",get_current_native_thread(),stack_base, tc);
-  if(tc)tc->add_thread(stack_base);
-  void (*sr)(void*)=ehd->sr;
-  void *cd = ehd->cd;
+    fprintf(stderr,"Spawned Thread %p start stack base = %p, tc=%p\n",
+       (void*)(uintptr_t)get_current_native_thread(),stack_base, tc);
+  if(tc) {
+    tc->add_thread(stack_base);
+    if(tc->debug)
+      fprintf(stderr,"Spawned Thread %p stack base = %p\n",
+        (void*)(uintptr_t)get_current_native_thread(),stack_base, tc);
+   }
+  void (*sr)(void*)=ehd->sr; // client function
+  void *cd = ehd->cd;        // client data
   if(ehd->spawner_lock)
   {
     flx_mutex_locker_t dummy(*ehd->spawner_lock);
-    fprintf(stderr,"Thread %p acquired mutex\n", (void*)(uintptr_t)get_current_native_thread());
-    fprintf(stderr,"Thread %p notifying spawner it has registered itself\n", (void*)(uintptr_t)get_current_native_thread());
+    if (tc->debug)
+      fprintf(stderr,"Thread %p acquired mutex\n", (void*)(uintptr_t)get_current_native_thread());
+    if (tc->debug)
+      fprintf(stderr,"Thread %p notifying spawner it has registered itself\n", (void*)(uintptr_t)get_current_native_thread());
     *ehd->spawner_flag=true;
     ehd->spawner_cond->broadcast();
-    fprintf(stderr,"Thread %p releasing mutex\n", (void*)(uintptr_t)get_current_native_thread());
+    if (tc->debug)
+      fprintf(stderr,"Thread %p releasing mutex\n", (void*)(uintptr_t)get_current_native_thread());
   }
   delete ehd;
   if(tc){ 
@@ -225,7 +234,8 @@ extern "C" void *flx_pthread_start_wrapper(void *e)
     tc->yield();
   }
   try {
-    fprintf(stderr,"Thread %p running client code\n", (void*)(uintptr_t)get_current_native_thread());
+    if (tc->debug)
+      fprintf(stderr,"Thread %p running client code\n", (void*)(uintptr_t)get_current_native_thread());
     (*sr)(cd);
   }
   catch (...) {
@@ -233,7 +243,8 @@ extern "C" void *flx_pthread_start_wrapper(void *e)
     exit(1);
   }
   if(tc){
-    fprintf(stderr,"Thread %p unregistering\n", (void*)(uintptr_t)get_current_native_thread());
+    if (tc->debug)
+      fprintf(stderr,"Thread %p unregistering\n", (void*)(uintptr_t)get_current_native_thread());
     tc->remove_thread();
   }
   return NULL;
