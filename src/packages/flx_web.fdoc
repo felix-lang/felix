@@ -758,30 +758,25 @@ noinline fun wrap_html (h:darray[code_data_t], out:string) :string = {
 }
 
 
-var edit_flag = false; // HACK!!!!!!!!
-
 proc serve_felix (k:socket_t, fname:string, get:bool) {
   var eof_flag = false;
 
   match get_file(fname,INSTALL_ROOT,FLX_PATH) with
   | Some path =>
-    if edit_flag do serve_edit (k,path, "text/x-felix", get);
-    else
-      val text = load path;
-      println$ "Loaded felix file " + fname+", len="+str (text.len.int);
-      var h =find_defs (text); 
-      val dirname = Filename::dirname path;
-      def val needs_mathjax, val html = xlat_felix(text,dirname);
-      var wrapped_html = wrap_html (h,"<pre>"+html+"</pre>");
-      val data = make_html$
-        "<html><head>"+Css4Html::flx_head+
-         if needs_mathjax then mathjax else "" endif +
-        "</head><body>"+ wrapped_html +
-        "</body></html>\n\r",
-        list[string*string](("Cache-control","max-age=86400"))
-      ;
-      write_string(k,data,&eof_flag);
-    done 
+    val text = load path;
+    println$ "Loaded felix file " + fname+", len="+str (text.len.int);
+    var h =find_defs (text); 
+    val dirname = Filename::dirname path;
+    def val needs_mathjax, val html = xlat_felix(text,dirname);
+    var wrapped_html = wrap_html (h,"<pre>"+html+"</pre>");
+    val data = make_html$
+      "<html><head>"+Css4Html::flx_head+
+       if needs_mathjax then mathjax else "" endif +
+      "</head><body>"+ wrapped_html +
+      "</body></html>\n\r",
+      list[string*string](("Cache-control","max-age=86400"))
+    ;
+    write_string(k,data,&eof_flag);
   | #None =>
       serve_not_found (k,fname,get);
   endmatch;
@@ -792,19 +787,16 @@ proc serve_fpc (k:socket_t, fname:string, get:bool) {
 
   match get_file (fname, INSTALL_ROOT,FLX_PKGCONFIG_PATH) with
   | Some path =>
-    if edit_flag do serve_edit (k,path, "text/x-felix", get);
-    else 
-      val text=load path;
-      println$ "Loaded fpc file " + fname+", len="+str (text.len.int);
-      val dirname = Filename::dirname path;
-      val data = make_html$
-        "<html><head>"+Css4Html::flx_head+"</head><body><pre>"+
-        (xlat_fpc (text, dirname)).1
-        +"</pre></body></html>\n\r",
-        list[string*string]("Cache-control","max-age=86400")
-      ;
-      write_string(k,data,&eof_flag);
-    done 
+    val text=load path;
+    println$ "Loaded fpc file " + fname+", len="+str (text.len.int);
+    val dirname = Filename::dirname path;
+    val data = make_html$
+      "<html><head>"+Css4Html::flx_head+"</head><body><pre>"+
+      (xlat_fpc (text, dirname)).1
+      +"</pre></body></html>\n\r",
+      list[string*string]("Cache-control","max-age=86400")
+    ;
+    write_string(k,data,&eof_flag);
   | #None =>
       serve_not_found (k,fname,get);
   endmatch;
@@ -815,16 +807,13 @@ proc serve_py (k:socket_t, fname:string, get:bool) {
   var eof_flag = false;
   match get_file(fname,INSTALL_ROOT,FLX_PATH) with
   | Some path =>
-    if edit_flag do serve_edit (k,path,"text/x-python", get);
-    else
-      var flx = load path;
-      val data = make_html$
-        "<html><head>"+Css4Html::flx_head+"</head><body><pre>"+ 
-        (xlat_py (flx,"")).1 +"</pre></body></html>\n\r",
-         list[string*string](("Cache-control","max-age=86400"))
-      ;
-      write_string (k, data, &eof_flag);
-    done
+    var flx = load path;
+    val data = make_html$
+      "<html><head>"+Css4Html::flx_head+"</head><body><pre>"+ 
+      (xlat_py (flx,"")).1 +"</pre></body></html>\n\r",
+       list[string*string](("Cache-control","max-age=86400"))
+    ;
+    write_string (k, data, &eof_flag);
   | #None =>
     serve_not_found (k,fname,get);
   endmatch;
@@ -834,18 +823,15 @@ proc serve_ocaml (k:socket_t, fname:string, get:bool) {
   var eof_flag = false;
   match get_file (fname, INSTALL_ROOT,FLX_PATH) with
   | Some path =>
-    if edit_flag do serve_edit (k,path,"text/x-ocaml", get);
-    else
-      var flx = load path;
-      println$ f"Loaded Ocaml file %S, len=%d" (fname, flx.len.int);
-      val data = make_html$
-        "<html><head>"+ Css4Html::flx_head +"</head><body><pre>"+
-        (xlat_ocaml (flx,"")).1
-        +"</pre></body></html>\n\r",
-        list[string*string](("Cache-control","max-age=86400"))
-      ;
-      write_string (k, data, &eof_flag);
-    done
+    var flx = load path;
+    println$ f"Loaded Ocaml file %S, len=%d" (fname, flx.len.int);
+    val data = make_html$
+      "<html><head>"+ Css4Html::flx_head +"</head><body><pre>"+
+      (xlat_ocaml (flx,"")).1
+      +"</pre></body></html>\n\r",
+      list[string*string](("Cache-control","max-age=86400"))
+    ;
+    write_string (k, data, &eof_flag);
   | #None =>
     serve_not_found (k,fname,get);
   endmatch;
@@ -855,19 +841,16 @@ proc serve_cpp (k:socket_t, fname:string, get:bool) {
   var eof_flag = false;
   match get_file(fname,INSTALL_ROOT,C_PATH) with
   | Some path =>
-    if edit_flag do serve_edit (k,path, "text/x-c++src", get);
-    else 
-      val text=load path;
-  println$ f"Loaded C++ file %S, len=%d" (fname, text.len.int);
-      val dirname = Filename::dirname path;
-      val data = make_html$
-        "<html><head>"+ Css4Html::flx_head +"</head><body><pre>"+
-        (xlat_cpp (text, dirname)).1
-        +"</pre></body></html>\n\r",
-        list[string*string](("Cache-control","max-age=86400"))
-      ;
-      write_string (k, data, &eof_flag);
-    done 
+    val text=load path;
+println$ f"Loaded C++ file %S, len=%d" (fname, text.len.int);
+    val dirname = Filename::dirname path;
+    val data = make_html$
+      "<html><head>"+ Css4Html::flx_head +"</head><body><pre>"+
+      (xlat_cpp (text, dirname)).1
+      +"</pre></body></html>\n\r",
+      list[string*string](("Cache-control","max-age=86400"))
+    ;
+    write_string (k, data, &eof_flag);
   | #None =>
       serve_not_found (k,fname,get);
   endmatch;
@@ -882,31 +865,25 @@ val text_suffices = (
 
 proc serve_text (k:socket_t, fname:string, get:bool) {
   var eof_flag = false;
-  if edit_flag do serve_edit (k,fname, "text/x-felix",get);
-  else
-    var txt = load(fname);
-    println$ f"Loaded text file %S, len=%d" (fname, txt.len.int);
-    val data = make_html$
-      "<html><head></head><body><pre>"+
-      txt
-      +"</pre></body></html>\n\r",
-      list[string*string](("Cache-control","max-age=86400"))
-    ;
-    write_string (k, data, &eof_flag);
-  done
+  var txt = load(fname);
+  println$ f"Loaded text file %S, len=%d" (fname, txt.len.int);
+  val data = make_html$
+    "<html><head></head><body><pre>"+
+    txt
+    +"</pre></body></html>\n\r",
+    list[string*string](("Cache-control","max-age=86400"))
+  ;
+  write_string (k, data, &eof_flag);
 }
 
 proc serve_html (k:socket_t, fname:string, get:bool) {
   var eof_flag = false;
-  if edit_flag do serve_edit (k,fname, "text/html",get);
-  else
-    var txt = load fname;
-    println$ f"Loaded html file %S, len=%d" (fname, txt.len.int);
-    val data = make_html$ txt,
-      list[string*string](("Cache-control","max-age=86400"))
-    ;
-    write_string (k, data, &eof_flag);
-  done
+  var txt = load fname;
+  println$ f"Loaded html file %S, len=%d" (fname, txt.len.int);
+  val data = make_html$ txt,
+    list[string*string](("Cache-control","max-age=86400"))
+  ;
+  write_string (k, data, &eof_flag);
 }
 
 proc serve_xhtml (k:socket_t, fname:string, get:bool) {
@@ -924,25 +901,22 @@ proc serve_fdoc (k:socket_t, fname:string, get:bool) {
   var eof_flag = false;
   match get_file(fname,INSTALL_ROOT,FDOC_PATH) with
   | Some path=> 
-    if edit_flag do serve_edit (k,path, "text/x-felix",get);
-    else
-      var txt = load(path);
-      //println$ "Contents=" + flx;
-      var result = xlat_fdoc (txt, fname);
-      var needs_mathjax = #(result.mathjax_required);
-      var html = #(result.html_page);
-      var title = #(result.html_title);
-      val data = make_html(
-        "<html><head>"+Css4Html::flx_head+
-        if needs_mathjax then mathjax else "" endif +
-        if title != "" then "<title>"+title+"</title>" else "" endif +
-        "</head><body>"+
-        html+
-        "</body></html>\n\r",
-        list[string*string](("Cache-control","max-age=86400"))
-      );
-      write_string(k,data,&eof_flag);
-    done
+    var txt = load(path);
+    //println$ "Contents=" + flx;
+    var result = xlat_fdoc (txt, fname);
+    var needs_mathjax = #(result.mathjax_required);
+    var html = #(result.html_page);
+    var title = #(result.html_title);
+    val data = make_html(
+      "<html><head>"+Css4Html::flx_head+
+      if needs_mathjax then mathjax else "" endif +
+      if title != "" then "<title>"+title+"</title>" else "" endif +
+      "</head><body>"+
+      html+
+      "</body></html>\n\r",
+      list[string*string](("Cache-control","max-age=86400"))
+    );
+    write_string(k,data,&eof_flag);
   | #None => serve_not_found(k,fname,get); 
   endmatch;
 }
@@ -951,45 +925,25 @@ proc serve_xfdoc (k:socket_t, fname:string, get:bool) {
   var eof_flag = false;
   match get_file(fname,INSTALL_ROOT,FDOC_PATH) with
   | Some path=> 
-    if edit_flag do serve_edit (k,path, "text/x-felix",get);
-    else
-      var txt = load(path);
-      println$ "Serve fdoc "+fname+" as xhtml";
-      //println$ "Contents=" + flx;
-      var result = xlat_fdoc (txt, fname);
-      var needs_mathjax = #(result.mathjax_required);
-      var html = #(result.html_page);
-      var title = #(result.html_title);
-      val data = make_html(
-        "<html><head>"+Css4Html::flx_head+
-        if needs_mathjax then mathjax else "" endif +
-        if title != "" then "<title>"+title+"</title>" else "" endif +
-        "</head>"+
-        "<body>"+ html
-        "</body></html>\n\r",
-        list[string*string](("Cache-control","max-age=86400"))
-      );
-      write_string(k,data,&eof_flag);
-    done
+    var txt = load(path);
+    println$ "Serve fdoc "+fname+" as xhtml";
+    //println$ "Contents=" + flx;
+    var result = xlat_fdoc (txt, fname);
+    var needs_mathjax = #(result.mathjax_required);
+    var html = #(result.html_page);
+    var title = #(result.html_title);
+    val data = make_html(
+      "<html><head>"+Css4Html::flx_head+
+      if needs_mathjax then mathjax else "" endif +
+      if title != "" then "<title>"+title+"</title>" else "" endif +
+      "</head>"+
+      "<body>"+ html
+      "</body></html>\n\r",
+      list[string*string](("Cache-control","max-age=86400"))
+    );
+    write_string(k,data,&eof_flag);
   | #None => serve_not_found(k,fname,get); 
   endmatch;
-}
-
-proc serve_edit(k:socket_t, fname:string, mime:string, get:bool) {
-  var editor = editor_maker ();
-  var eof_flag = false;
-  var text = load fname;
-println$ "server loading file " + fname + " got:";
-print text;
-  var data = make_html(
-    '<!doctype html>\r\n'+'<html><head>'+
-    editor.get_header (fname,mime) +
-    '</head>'+
-    '<body>' +
-    editor.get_body (fname, mime,text) +
-    '</body></html>\n\r'
-  ); 
-  write_string (k, data, &eof_flag);
 }
 
 proc serve_raw (k:socket_t, fname:string, suffix:string, get:bool) {
@@ -1181,14 +1135,6 @@ proc serve(s: socket_t, infname: string, get:bool)
     endmatch
   ;
   suffix,fname = split_suffix fname;
-  // we have to do this crap because we can't just load
-  // the file, it has to be searched for. Besides we will
-  // later need the MIME type for the codemirror mode.
-  edit_flag = false;
-  if suffix \in list ("edit") do
-     edit_flag = true;
-     suffix,fname = split_suffix fname;
-  done 
 
   if fname == "STOP" do
     run = false;
@@ -1264,61 +1210,12 @@ noinline proc handler (var k:socket_t) ()
   //dbg$ "Got a line from socket " + str k + "\n";
   //cat(s, DEVNULL);
 
-// BUG: Win32 getpeername not implemented yet
-if not PLAT_WIN32 do
-  var peerIP = Faio_posix::getpeername k;
-  print$ "IP "+peerIP +": got line from socket "+str k+": "; print line; endl;
-done
 
   // now I need to parse the GET line, get a file name out of its url
   // (e.g. unqualfied -> index.html and name/flx.jpg -> flx.jpg
   var req = parse_request_type line;
 
   match req with
-/*
-  | #reqPOST => 
-if PLAT_WIN32 do
-  ;
-else
-    match parse_post_line line with 
-    | Some (base,file) =>
-      println$ "well formed POST ...";
-      println$ "base=" + base;
-      println$ "file=" + file;
-      println$ "Rest of the POST message ..";
-      var content-len = 0;
-      var finished = false;
-      while not finished do
-println$ "Fetching line ... ";
-        get_line (k,&line);
-println$ "Got the line length .. "+line.len.str;
-        if line.len == 0uz do
-          println$ "BAD POST REQUEST from IP "+peerIP+
-            ", end of header before Content-Length specified: connection closed";
-          goto broken;
-        done 
-        println line;
-        if prefix(line, "Content-Length: ") do
-          var lstr = line.[16 to];
-          println$ "Content length string says " + lstr;
-          content-len  = lstr.int;
-          println$ "Content length is " + content-len.str;
-          finished = true;
-        done
-      done;
-      var nbytes : int = content-len;
-      var error =false;
-      var buffer = C_hack::malloc (nbytes);
-      read (k,&nbytes, buffer, &error);
-      var content = string (C_hack::cast[+char] buffer, nbytes);
-      C_hack::free buffer; 
-      println$ "Content (nbytes=" + nbytes.str+") = " + content;
-      serve_not_implemented(k, file);
- 
-    | #None => println$ "BAD POST line: '"+line+"'";
-    endmatch;
-done
-*/
   | #reqGET =>
     match parse_get_line line with
     | Some (base, file) => 
