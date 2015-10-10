@@ -1549,8 +1549,11 @@ void thread_control_t::unsafe_suspend()
   (*it).second.stack_top = stack_pointer;
   (*it).second.active = false;
   if(debug) // VC++ is bugged, doesn't support %td format correctly?
-    fprintf(stderr,"[unsafe_suspend: thread=%p] Stack size = %zd\n",(void*)(uintptr_t)id, 
-       (size_t)((char*)(*it).second.stack_base -(char*)(*it).second.stack_top));
+    fprintf(stderr,"[unsafe_suspend: thread=%p] stack base %p > stack top %p, Stack size = %zd\n",
+      (void*)(uintptr_t)id,
+      (char*)(*it).second.stack_base,
+      (char*)(*it).second.stack_top, 
+      (size_t)((char*)(*it).second.stack_base -(char*)(*it).second.stack_top));
   --active_counter;
   if(debug)
     fprintf(stderr,"[unsafe_suspend]: active thread count now %d\n",active_counter);
