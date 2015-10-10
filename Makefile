@@ -11,11 +11,14 @@
 
 all: bootstrap tools target uproot test
 
-rebuild: tools target uproot
+rebuild: copy extract tools target uproot
 
 extract:
 	python src\tools\flx_iscr.py -q -d src\packages build\release
 	python src\tools\flx_find_grammar_files.py build\release
+
+copy:
+	robocopy /MIR /E /NFL /NDL /NP /NJS /NJH src build\release\share\src
 
 clean:
 	cmd.exe /C mkdir build\crap
@@ -52,7 +55,7 @@ uproot:
 	cmd.exe /C rmdir /Q /S build\release\host
 	cmd.exe /C move build\release\win32 build\release\host
 
-test:
+test: copy
 	cmd.exe /C rmdir /Q /S build\release\test
 	cmd.exe /C mkdir build\release\test
 	flx_tangle --indir=build\release\share\src\test --outdir=build\release\test
