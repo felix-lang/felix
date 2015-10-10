@@ -18,7 +18,7 @@ extract:
 	python src\tools\flx_find_grammar_files.py build\release
 
 copy:
-	robocopy /E /PURGE /NFL /NDL /NP /NJS /NJH src build\release\share\src
+	flx_cp src ".*" build\release\share\src\$${0}
 
 clean:
 	cmd.exe /C mkdir build\crap
