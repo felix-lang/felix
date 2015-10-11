@@ -97,10 +97,10 @@ typedef pthread_t flx_native_thread_t;
 #endif
 
 flx_native_thread_t PTHREAD_EXTERN get_current_native_thread();
-uintptr_t get_current_thread_id();
+uintptr_t PTHREAD_EXTERN get_current_thread_id();
 
 typedef std::pair<uintptr_t const, thread_data_t> thread_entry_t;
-typedef std::map<flx_native_thread_t, thread_data_t, std::less<uintptr_t> > thread_registry_t;
+typedef std::map<uintptr_t, thread_data_t, std::less<uintptr_t> > thread_registry_t;
 
 class PTHREAD_EXTERN thread_control_t : public virtual thread_control_base_t
 {
