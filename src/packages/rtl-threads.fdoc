@@ -397,7 +397,7 @@ void flx_detached_thread_t::operator=(flx_detached_thread_t const&){} // uncopya
 // returns -1 on failure with error in GetLastError, 0 if all good.
 int
 flx_detached_thread_t::init(void (*start)(void*), void *lParam, thread_control_t *tc,
-  flx_mutex_t * m,flx_condv_t *c,bool *flag)
+  ::std::mutex * m, ::std::condition_variable_any *c,bool *flag)
 {
   DWORD thread_id = 0;
   thr = (HANDLE)CreateThread(NULL, 0,
