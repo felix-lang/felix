@@ -80,6 +80,8 @@ threads and pchannels for synchronisation.
 #include <map>
 #include <vector>
 #include <functional>
+#include <thread>
+#include <condition_variable>
 
 namespace flx { namespace pthread {
 
@@ -106,8 +108,8 @@ class PTHREAD_EXTERN thread_control_t : public virtual thread_control_base_t
     bool do_world_stop;
     unsigned int thread_counter;
     unsigned int active_counter;
-    flx_condv_t stop_guard;
-    flx_mutex_t stop_mutex;
+    ::std::condition_variable_any stop_guard;
+    ::std::mutex stop_mutex;
     thread_registry_t threads;
     void unsafe_stop_check();
     void unsafe_suspend();
@@ -133,11 +135,11 @@ struct tstart_t
   void (*sr)(void*);
   void *cd;
   thread_control_t *tc;
-  flx_mutex_t *spawner_lock;
-  flx_condv_t *spawner_cond;
+  ::std::mutex *spawner_lock;
+  ::std::condition_variable_any *spawner_cond;
   bool *spawner_flag;
 
-  tstart_t(void (*s)(void*),void* c,thread_control_t *t, flx_mutex_t *sl, flx_condv_t *sc, bool *sf)
+  tstart_t(void (*s)(void*),void* c,thread_control_t *t, ::std::mutex *sl, ::std::condition_variable_any *sc, bool *sf)
     : sr(s), cd(c), tc(t), spawner_lock(sl), spawner_cond(sc), spawner_flag(sf)
   {}
 };
@@ -151,7 +153,7 @@ class PTHREAD_EXTERN flx_detached_thread_t {
 public:
   flx_detached_thread_t();
   ~flx_detached_thread_t();
-  int init(void (*start)(void*), void* udat, thread_control_t*, flx_mutex_t*, flx_condv_t*, bool*);
+  int init(void (*start)(void*), void* udat, thread_control_t*, ::std::mutex *, ::std::condition_variable_any *, bool*);
 };
 
 // rf: joinable threads. is it an error to not join joinable threads?
@@ -205,6 +207,10 @@ extern "C" void *flx_pthread_start_wrapper(void *e)
   void *stack_base = get_stack_pointer();
   tstart_t *ehd = (tstart_t*)e;
   thread_control_t *tc = ehd -> tc;
+  if(tc == 0)
+  {
+    fprintf(stderr, "WARNING: flx_pthread_start_wrapper got NULL thread control object\n");
+  }
   if(tc && tc->debug)
     fprintf(stderr,"Spawned Thread %p start stack base = %p, tc=%p\n",
        (void*)(uintptr_t)get_current_native_thread(),stack_base, tc);
@@ -221,13 +227,13 @@ extern "C" void *flx_pthread_start_wrapper(void *e)
 
   if(ehd->spawner_lock)
   {
-    flx_mutex_locker_t dummy(*ehd->spawner_lock);
+    ::std::unique_lock< ::std::mutex> dummy(*ehd->spawner_lock);
     if (tc && tc->debug)
       fprintf(stderr,"Thread %p acquired mutex\n", (void*)(uintptr_t)get_current_native_thread());
     if (tc && tc->debug)
       fprintf(stderr,"Thread %p notifying spawner it has registered itself\n", (void*)(uintptr_t)get_current_native_thread());
     *ehd->spawner_flag=true;
-    ehd->spawner_cond->broadcast();
+    ehd->spawner_cond->notify_all();
     if (tc->debug)
       fprintf(stderr,"Thread %p releasing mutex\n", (void*)(uintptr_t)get_current_native_thread());
   }
@@ -261,7 +267,7 @@ void flx_detached_thread_t::operator=(flx_detached_thread_t const&){} // uncopya
 
 int
 flx_detached_thread_t::init(void (*start)(void*), void* udat, thread_control_t *tc,
-  flx_mutex_t * m,flx_condv_t *c,bool *flag)
+  ::std::mutex * m, ::std::condition_variable_any *c,bool *flag)
 {
   pthread_attr_t attr;
   pthread_attr_init(&attr);
@@ -1405,31 +1411,31 @@ thread_control_t::thread_control_t (bool d) :
 
 int thread_control_t::thread_count()
   {
-    flx_mutex_locker_t m(stop_mutex);
+    ::std::unique_lock< ::std::mutex> m(stop_mutex);
     return thread_counter;
   }
 
 int thread_control_t::active_count()
   {
-    flx_mutex_locker_t m(stop_mutex);
+    ::std::unique_lock< ::std::mutex> m(stop_mutex);
     return active_counter;
   }
 
 void thread_control_t::add_thread(void *stack_base)
   {
-    flx_mutex_locker_t m(stop_mutex);
+    ::std::unique_lock< ::std::mutex> m(stop_mutex);
     flx_native_thread_t id = get_current_native_thread();
     threads.insert (std::make_pair(id, thread_data_t (stack_base)));
     ++thread_counter;
     ++active_counter;
     if(debug)
       fprintf(stderr, "Adding thread %p base %p, count=%d\n", (void*)(uintptr_t)id, stack_base, thread_counter);
-    stop_guard.broadcast();
+    stop_guard.notify_all();
   }
 
 void thread_control_t::remove_thread()
   {
-    flx_mutex_locker_t m(stop_mutex);
+    ::std::unique_lock< ::std::mutex> m(stop_mutex);
     flx_native_thread_t id = get_current_native_thread();
     if (threads.erase(id) == 0)
     {
@@ -1440,7 +1446,7 @@ void thread_control_t::remove_thread()
     --active_counter;
     if(debug)
       fprintf(stderr, "Removed thread %p, count=%d\n", (void*)(uintptr_t)id, thread_counter);
-    stop_guard.broadcast();
+    stop_guard.notify_all();
   }
 
 // stop the world!
@@ -1457,7 +1463,7 @@ bool thread_control_t::world_stop()
       return false; // race! Someone else beat us
     }
     do_world_stop = true;
-    stop_guard.broadcast();
+    stop_guard.notify_all();
     while(active_counter>1) {
       if(debug)
         for(
@@ -1470,7 +1476,7 @@ bool thread_control_t::world_stop()
         }
       if(debug)
         fprintf(stderr,"Thread %p Stopping world: begin wait, threads=%d\n",  (void*)(uintptr_t)get_current_native_thread(), thread_counter);
-      stop_guard.wait(&stop_mutex);
+      stop_guard.wait(stop_mutex);
       if(debug)
         fprintf(stderr,"Thread %p Stopping world: checking threads=%d\n", (void*)(uintptr_t)get_current_native_thread(), thread_counter);
     }
@@ -1499,12 +1505,12 @@ bool thread_control_t::world_stop()
 // used by mainline to wait for other threads to die
 void thread_control_t::join_all()
   {
-    flx_mutex_locker_t m(stop_mutex);
+    ::std::unique_lock< ::std::mutex> m(stop_mutex);
     if(debug)
       fprintf(stderr,"Thread %p Joining all\n", (void*)(uintptr_t)get_current_native_thread());
     while(do_world_stop || thread_counter>1) {
       unsafe_stop_check();
-      stop_guard.wait(&stop_mutex);
+      stop_guard.wait(stop_mutex);
     }
     if(debug)
       fprintf(stderr,"World restarted: do_world_stop=%d, Yield thread count now %d\n",do_world_stop,thread_counter);
@@ -1517,7 +1523,7 @@ void thread_control_t::world_start()
       fprintf(stderr,"Thread %p Restarting world\n", (void*)(uintptr_t)get_current_native_thread());
     do_world_stop = false;
     stop_mutex.unlock();
-    stop_guard.broadcast();
+    stop_guard.notify_all();
   }
 
 memory_ranges_t *thread_control_t::get_block_list()
@@ -1540,7 +1546,7 @@ memory_ranges_t *thread_control_t::get_block_list()
 
 void thread_control_t::suspend()
 {
-  flx_mutex_locker_t m(stop_mutex);
+  ::std::unique_lock< ::std::mutex> m(stop_mutex);
   if(debug)
     fprintf(stderr,"[suspend: thread= %p]\n", (void*)(uintptr_t)get_current_native_thread());
   unsafe_suspend();
@@ -1548,7 +1554,7 @@ void thread_control_t::suspend()
 
 void thread_control_t::resume()
 {
-  flx_mutex_locker_t m(stop_mutex);
+  ::std::unique_lock< ::std::mutex> m(stop_mutex);
   if(debug)
     fprintf(stderr,"[resume: thread= %p]\n", (void*)(uintptr_t)get_current_native_thread());
   unsafe_resume();
@@ -1578,19 +1584,19 @@ void thread_control_t::unsafe_suspend()
   --active_counter;
   if(debug)
     fprintf(stderr,"[unsafe_suspend]: active thread count now %d\n",active_counter);
-  stop_guard.broadcast();
+  stop_guard.notify_all();
   if(debug)
-    fprintf(stderr,"[unsafe_suspend]: stop_guard.broadcast() done");
+    fprintf(stderr,"[unsafe_suspend]: stop_guard.notify_all() done");
 }
 
 void thread_control_t::unsafe_resume()
 {
   if(debug)
     fprintf(stderr,"[unsafe_resume: thread %p]\n", (void*)(uintptr_t)get_current_native_thread());
-  stop_guard.broadcast();
+  stop_guard.notify_all();
   if(debug)
-    fprintf(stderr,"[unsafe_resume]: stop_guard.broadcast() done");
-  while(do_world_stop) stop_guard.wait(&stop_mutex);
+    fprintf(stderr,"[unsafe_resume]: stop_guard.notify_all() done");
+  while(do_world_stop) stop_guard.wait(stop_mutex);
   if(debug)
     fprintf(stderr,"[unsafe_resume]: stop_guard.wait() done");
   ++active_counter;
@@ -1606,9 +1612,9 @@ void thread_control_t::unsafe_resume()
     fprintf(stderr,"[unsafe_resume: thread=%p] resumed, active count= %d\n",
       (void*)(uintptr_t)get_current_native_thread(),active_counter);
   }
-  stop_guard.broadcast();
+  stop_guard.notify_all();
   if(debug)
-    fprintf(stderr,"[unsafe_resume]: stop_guard.broadcast() done");
+    fprintf(stderr,"[unsafe_resume]: stop_guard.notify_all() done");
 }
 
 // mutex already held
@@ -1627,7 +1633,7 @@ void thread_control_t::unsafe_stop_check()
 
 void thread_control_t::yield()
 {
-  flx_mutex_locker_t m(stop_mutex);
+  ::std::unique_lock< ::std::mutex> m(stop_mutex);
   if(debug)
     fprintf(stderr,"[yield: thread=%p]\n", (void*)(uintptr_t)get_current_native_thread());
   unsafe_stop_check();

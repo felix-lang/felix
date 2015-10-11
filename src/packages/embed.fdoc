@@ -734,10 +734,10 @@ void async_sched::do_spawn_pthread()
       thread_control->thread_count());
 
   {
-    flx_mutex_t spawner_lock;
-    flx_condv_t spawner_cond;
+    ::std::mutex spawner_lock;
+    ::std::condition_variable_any spawner_cond;
     bool spawner_flag = false;
-    flx_mutex_locker_t locktite(spawner_lock);
+    ::std::unique_lock< ::std::mutex> locktite(spawner_lock);
     dummy.init(prun_pthread_entry, data, thread_control,
       &spawner_lock, &spawner_cond,
       &spawner_flag
@@ -749,7 +749,7 @@ void async_sched::do_spawn_pthread()
         (void*)get_current_native_thread());
 
     while (!spawner_flag)
-      spawner_cond.wait(&spawner_lock);
+      spawner_cond.wait(spawner_lock);
 
     if (debug_driver)
       fprintf(stderr,
