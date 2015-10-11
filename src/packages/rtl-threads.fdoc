@@ -91,7 +91,7 @@ namespace flx { namespace pthread {
 // ********************************************************
 
 #ifdef _WIN32
-typedef HANDLE flx_native_thread_t;
+typedef DWORD flx_native_thread_t;
 #else
 typedef pthread_t flx_native_thread_t;
 #endif
@@ -360,7 +360,7 @@ flx_thread_wrapper_t::~flx_thread_wrapper_t() { thread.join(); }
 
 namespace flx { namespace pthread {
 
-flx_native_thread_t get_current_native_thread() { return GetCurrentThread(); }
+flx_native_thread_t get_current_native_thread() { return GetCurrentThreadId(); }
 
 static void *get_stack_pointer() { 
   void *x; 
