@@ -215,9 +215,11 @@ extern "C" void *flx_pthread_start_wrapper(void *e)
     fprintf(stderr,"Spawned Thread %p start stack base = %p, tc=%p\n",
        (void*)(uintptr_t)get_current_native_thread(),stack_base, tc);
   if(tc) {
+    if(tc->debug)
+      fprintf(stderr,"Thread registering itself\n");
     tc->add_thread(stack_base);
     if(tc->debug)
-      fprintf(stderr,"Spawned Thread %p stack base = %p\n",
+      fprintf(stderr,"Registered: Spawned Thread %p stack base = %p\n",
         (void*)(uintptr_t)get_current_native_thread(),stack_base, tc);
    }
   void (*sr)(void*)=ehd->sr; // client function
@@ -239,7 +241,8 @@ extern "C" void *flx_pthread_start_wrapper(void *e)
   }
   delete ehd;
   if(tc){ 
-    fprintf(stderr,"Thread %p yielding\n", (void*)(uintptr_t)get_current_native_thread());
+    if (tc->debug)
+      fprintf(stderr,"Thread %p yielding\n", (void*)(uintptr_t)get_current_native_thread());
     tc->yield();
   }
   try {
@@ -249,7 +252,7 @@ extern "C" void *flx_pthread_start_wrapper(void *e)
   }
   catch (...) {
     fprintf(stderr,"Uncaught exception in thread\n");
-    exit(1);
+    ::std::exit(1);
   }
   if(tc){
     if (tc->debug)
@@ -370,21 +373,61 @@ DWORD WINAPI flx_pthread_start_wrapper(LPVOID e)
   void *stack_base = get_stack_pointer();
   tstart_t *ehd = (tstart_t*)e;
   thread_control_t *tc = ehd -> tc;
+  if(tc == 0)
+  {
+    fprintf(stderr, "WARNING: flx_pthread_start_wrapper got NULL thread control object\n");
+  }
+  if(tc && tc->debug)
+    fprintf(stderr,"Spawned Thread %p start stack base = %p, tc=%p\n",
+       (void*)(uintptr_t)get_current_native_thread(),stack_base, tc);
   if(tc && tc->debug)
     fprintf(stderr,"Spawned Thread %p start stack base = %p, tc=%p\n",(intptr_t)GetCurrentThreadId(),stack_base, tc);
-  if(tc)tc->add_thread(stack_base);
+  if(tc) {
+    if(tc->debug)
+      fprintf(stderr,"Thread registering itself\n");
+    tc->add_thread(stack_base);
+    if(tc->debug)
+      fprintf(stderr,"Registered: Spawned Thread %p stack base = %p\n",
+        (void*)(uintptr_t)get_current_native_thread(),stack_base, tc);
+   }
   void (*sr)(void*)=ehd->sr;
   void *cd = ehd->cd;
+  if(tc && tc->debug)
+    fprintf(stderr,"ehd->spawner_lock = %p\n",ehd->spawner_lock);
+
+  if(ehd->spawner_lock)
+  {
+    ::std::unique_lock< ::std::mutex> dummy(*ehd->spawner_lock);
+    if (tc && tc->debug)
+      fprintf(stderr,"Thread %p acquired mutex\n", (void*)(uintptr_t)get_current_native_thread());
+    if (tc && tc->debug)
+      fprintf(stderr,"Thread %p notifying spawner it has registered itself\n", (void*)(uintptr_t)get_current_native_thread());
+    *ehd->spawner_flag=true;
+    ehd->spawner_cond->notify_all();
+    if (tc->debug)
+      fprintf(stderr,"Thread %p releasing mutex\n", (void*)(uintptr_t)get_current_native_thread());
+  }
   delete ehd;
-  if(tc)tc->yield();
+  if(tc)
+  {
+    if (tc->debug)
+      fprintf(stderr,"Thread %p yielding\n", (void*)(uintptr_t)get_current_native_thread());
+    tc->yield();
+  }
   try {
+    if (tc && tc->debug)
+      fprintf(stderr,"Thread %p running client code\n", (void*)(uintptr_t)get_current_native_thread());
     (*sr)(cd);
   }
   catch (...) {
     fprintf(stderr,"Uncaught exception in thread\n");
-    std::exit(1);
+    ::std::exit(1);
   }
-  if(tc)tc->remove_thread();
+  if(tc){
+    if (tc->debug)
+      fprintf(stderr,"Thread %p unregistering\n", (void*)(uintptr_t)get_current_native_thread());
+    tc->remove_thread();
+  }
   return 0;
 }
 
