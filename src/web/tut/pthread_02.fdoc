@@ -21,7 +21,7 @@ proc client(x:ipchannel[opt[string]]) {
 proc server(x:opchannel[opt[string]]) {
   var directory = System::argv 1;
   var filename = Filename::join (directory,"pthreads_01_data.data");
-  f := fopen_input filename;
+  f := fopen_input_text filename;
   var line = readln f;
   while line != "" do
     write$ x,Some line;
