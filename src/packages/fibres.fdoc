@@ -424,8 +424,8 @@ and writes to another. The most basic transducers can be
 created from a function. 
 @tangle spipes.flx
   proc transducer_from_function[O,I] (f:I->O) 
-    (var r: ischannel[I],
-    var w: oschannel[O])
+    (var r: %<I,
+    var w: %>O)
   =>
     while true call write$ w, r.read.f;
   ;
@@ -439,12 +439,12 @@ another sink.
   //$ Wire a transducer into a sink.
   //$ Return a sink.
   fun pipe[T,U]
-    (var a: ischannel[T] * oschannel[U] -> 0,
-    var b: ischannel[U] -> 0)
+    (var a: %<T * %>U -> 0,
+    var b: %<U -> 0)
   :
-    ischannel[T]  -> 0 
+    %<T  -> 0 
   => 
-    proc (inp:ischannel[T])
+    proc (inp:%<T)
     {
       var chi,cho = mk_ioschannel_pair[U] ();
       spawn_fthread { a (inp, cho); };
@@ -460,12 +460,12 @@ another source.
   //$ Wire a source component to a transducer.
   //$ Return source.
   fun pipe[T,U]
-    (var w: oschannel[T] -> 0,
-    var t: ischannel[T] * oschannel[U] -> 0)
+    (var w: %>T -> 0,
+    var t: %<T * %>U -> 0)
   :
-    oschannel[U] -> 0 
+    %>U -> 0 
   => 
-    proc (out:oschannel[U])
+    proc (out:%>U)
     {
       var chi,cho = mk_ioschannel_pair[T] ();
       spawn_fthread { (w cho); };
@@ -480,12 +480,12 @@ producing another transducer.
   //$ Wire a transducer into a transducer.
   //$ Return another transducer.
   fun pipe[T,U,V]
-    (var a: ischannel[T] * oschannel[U] -> 0,
-    var b: ischannel[U] * oschannel[V] -> 0)
+    (var a: %<T * %>U -> 0,
+    var b: %<U * %>V -> 0)
   :
-    ischannel[T] * oschannel[V] -> 0 
+    %<T * %>V -> 0 
   => 
-    proc (inp:ischannel[T], out:oschannel[V])
+    proc (inp:%<T, out:%>V)
     {
       var chi,cho = mk_ioschannel_pair[U] ();
       spawn_fthread { a (inp, cho); };
@@ -562,13 +562,13 @@ want to send schannels themselves down schannels!
      w.source_from_iterator |-> r.sink_from_procedure;
 
   // source to sink: autobuild only one argument
-  fun pipe[T] (w:1->T,r:ischannel[T]->0) => 
+  fun pipe[T] (w:1->T,r:%<T->0) => 
      w.source_from_stream |-> r;
 
-  fun pipe[T] (w:1->opt[T],r:ischannel[T]->0) => 
+  fun pipe[T] (w:1->opt[T],r:%<T->0) => 
      w.source_from_iterator |-> r;
 
-  fun pipe[T] (w:oschannel[T]->0,r:T->0) => 
+  fun pipe[T] (w:%>T->0,r:T->0) => 
      w |-> r.sink_from_procedure;
 
   // source to transducer: autobuild both arguments
@@ -579,13 +579,13 @@ want to send schannels themselves down schannels!
      w.source_from_iterator |-> f.transducer_from_function;
 
   // source to transducer: autobuild one argument
-  fun pipe[T0,T1] (w:oschannel[T0]->0,f:T0->T1) => 
+  fun pipe[T0,T1] (w:%>T0->0,f:T0->T1) => 
      w |-> f.transducer_from_function;
 
-  fun pipe[T0,T1] (w:1->T0,f:ischannel[T0]*oschannel[T1]->0) => 
+  fun pipe[T0,T1] (w:1->T0,f:%<T0*%>T1->0) => 
      w.source_from_stream |-> f;
 
-  fun pipe[T0,T1] (w:1->opt[T0],f:ischannel[T0] *oschannel[T1]->0) => 
+  fun pipe[T0,T1] (w:1->opt[T0],f:%<T0 *%>T1->0) => 
      w.source_from_iterator |-> f;
 
   // transducer to transducer: autobuild both arguments
@@ -593,10 +593,10 @@ want to send schannels themselves down schannels!
     f1.transducer_from_function |-> f2.transducer_from_function;
 
   // transducer to transducer: autobuild one argument
-  fun pipe[T0,T1,T2] (f1:T0->T1,f2:ischannel[T1] * oschannel[T2] ->0) => 
+  fun pipe[T0,T1,T2] (f1:T0->T1,f2:%<T1 * %>T2 ->0) => 
     f1.transducer_from_function |-> f2;
 
-  fun pipe[T0,T1,T2] (f1:ischannel[T0] * oschannel[T1]->0,f2:T1->T2) => 
+  fun pipe[T0,T1,T2] (f1:%<T0 * %>T1->0,f2:T1->T2) => 
     f1 |-> f2.transducer_from_function;
 
   // transducer to sink: autobuild both arguments
@@ -604,10 +604,10 @@ want to send schannels themselves down schannels!
     f.transducer_from_function |-> r.sink_from_procedure;
 
   // transducer to sink: autobuild one argument
-  fun pipe[T0,T1] (f:T0->T1, r:ischannel[T1]->0) =>
+  fun pipe[T0,T1] (f:T0->T1, r:%<T1->0) =>
     f.transducer_from_function |-> r;
 
-  fun pipe[T0,T1] (f:ischannel[T0] * oschannel[T1]->0, r:T1->0) =>
+  fun pipe[T0,T1] (f:%<T0 * %>T1->0, r:T1->0) =>
     f |-> r.sink_from_procedure;
 
 @
@@ -647,7 +647,7 @@ First our source emits characters:
 
 @tangle spipesex-03.flx
 include "std/control/spipes";
-proc source(w:oschannel[char])
+proc source(w:%>char)
 {
   var s = "The quick brown fox jumped over the lazy dog";
   for ch in s call write (w,ch);
@@ -659,7 +659,7 @@ after emitting a terminating nul character.
 
 Now we will do the sink which prints the tokens:
 @tangle spipesex-03.flx
-proc sink (r:ischannel[string])
+proc sink (r:%<string)
 {
   while true call println$ read r;
 }
@@ -680,7 +680,7 @@ dog
 
 Finally we will write the tokeniser:
 @tangle spipesex-03.flx
-proc tokenise (i:ischannel[char], o:oschannel[string])
+proc tokenise (i:%<char, o:%>string)
 {
   var s = "";
 skipwhite:>
@@ -721,11 +721,11 @@ The most basic pipeline.
   fun pipe[T0,T1]
     (
       var w: 
-        (oschannel[T0] -> 0) * 
-        (oschannel[T1] -> 0),
+        (%>T0 -> 0) * 
+        (%>T1 -> 0),
       var r:
-        (ischannel[T0] -> 0) * 
-        (ischannel[T1] -> 0)
+        (%<T0 -> 0) * 
+        (%<T1 -> 0)
     )
   :
     1 -> 0
@@ -747,15 +747,15 @@ a pair of transducers.
   fun pipe[T0,T1,U0,U1]
     (
       var w: 
-        (oschannel[T0] -> 0) *
-        (oschannel[T1] -> 0),
+        (%>T0 -> 0) *
+        (%>T1 -> 0),
       var t: 
-        (ischannel[T0] * oschannel[U0] -> 0) *
-        (ischannel[T1] * oschannel[U1] -> 0)
+        (%<T0 * %>U0 -> 0) *
+        (%<T1 * %>U1 -> 0)
     )
   :
-    (oschannel[U0] -> 0) *
-    (oschannel[U1] -> 0)
+    (%>U0 -> 0) *
+    (%>U1 -> 0)
   => 
     pipe (w.0,t.0),
     pipe (w.1,t.1)
@@ -770,15 +770,15 @@ Returns a pair of sinks.
   fun pipe[T0,T1,U0,U1]
     (
       var a: 
-        (ischannel[T0] * oschannel[U0] -> 0) *
-        (ischannel[T1] * oschannel[U1] -> 0),
+        (%<T0 * %>U0 -> 0) *
+        (%<T1 * %>U1 -> 0),
       var b: 
-         (ischannel[U0] -> 0) *
-         (ischannel[U1] -> 0)
+         (%<U0 -> 0) *
+         (%<U1 -> 0)
     )
   :
-    (ischannel[T0]  -> 0)  *
-    (ischannel[T1]  -> 0) 
+    (%<T0  -> 0)  *
+    (%<T1  -> 0) 
   => 
       pipe (a.0, b.0),
       pipe (a.1, b.1)
@@ -795,15 +795,15 @@ Returns a pair of transducers.
   fun pipe[T0,T1,U0,U1,V0,V1]
     (
       var a: 
-        (ischannel[T0] * oschannel[U0] -> 0) *
-        (ischannel[T1] * oschannel[U1] -> 0),
+        (%<T0 * %>U0 -> 0) *
+        (%<T1 * %>U1 -> 0),
       var b: 
-        (ischannel[U0] * oschannel[V0] -> 0) * 
-        (ischannel[U1] * oschannel[V1] -> 0) 
+        (%<U0 * %>V0 -> 0) * 
+        (%<U1 * %>V1 -> 0) 
     )
   :
-    (ischannel[T0] * oschannel[V0] -> 0) *
-    (ischannel[T1] * oschannel[V1] -> 0)
+    (%<T0 * %>V0 -> 0) *
+    (%<T1 * %>V1 -> 0)
   => 
      pipe (a.0, b.0),
      pipe (a.1, b.1)
@@ -851,7 +851,7 @@ list('25', '16', '9', '4', '1')
 @tangle spipes.flx
  
   //$ Utility for tee connector: array of outputs
-  proc run_tee[T,N] (i:ischannel[T], oa:oschannel[T]^N)
+  proc run_tee[T,N] (i:%<T, oa:(%>T)^N)
   {
   again:>
     var d = read i;
@@ -866,19 +866,19 @@ list('25', '16', '9', '4', '1')
   //$ Returns a closed pipeline.
   fun pipe[T,N] 
   (
-    var w: oschannel[T] -> 0,
-    var r: (ischannel[T] -> 0) ^ N
+    var w: %>T -> 0,
+    var r: (%<T -> 0) ^ N
   )
     : 1 -> 0
   =>
     {
       var i,o = #mk_ioschannel_pair[T];
       spawn_fthread { w o; };
-      var cho : oschannel[T] ^N;
+      var cho : (%>T) ^N;
       for var j in 0uz upto r.len - 1uz do
         var inp,out = #mk_ioschannel_pair[T];
         &cho.j <- out;
-        noinline proc exec (var k:size, chi:ischannel[T]) () { r.k chi; }
+        noinline proc exec (var k:size, chi:%<T) () { r.k chi; }
         spawn_fthread$ exec (j,inp);
       done
       spawn_fthread { run_tee (i,cho); };
@@ -899,11 +899,11 @@ list('25', '16', '9', '4', '1')
 
   fun pipe[T,U0,U1] 
   (
-    var w: oschannel[T] -> 0,
-    var r: (ischannel[T] * oschannel[U0] -> 0) * (ischannel[T] * oschannel[U1] -> 0)
+    var w: %>T -> 0,
+    var r: (%<T * %>U0 -> 0) * (%<T * %>U1 -> 0)
   )
   :
-    (oschannel[U0] -> 0) * (oschannel[U1] -> 0)
+    (%>U0 -> 0) * (%>U1 -> 0)
   =
   {
       var i,o = #mk_ioschannel_pair[T];
@@ -912,8 +912,8 @@ list('25', '16', '9', '4', '1')
       spawn_fthread { run_tee (i,(cho0, cho1)); };
       spawn_fthread { w o; };
       return
-        proc (out:oschannel[U0]) { r.0 (chi0,out); },
-        proc (out:oschannel[U1]) { r.1 (chi1,out); }
+        proc (out:%>U0) { r.0 (chi0,out); },
+        proc (out:%>U1) { r.1 (chi1,out); }
       ;
   }
 
@@ -946,15 +946,15 @@ include "std/control/schannels";
 include "std/control/spipes";
 
 // Pipe test.
-proc source (cho:oschannel[int]) { 
+proc source (cho:%>int) { 
   for var i in 0 upto 9 do write (cho,i); done 
 }
 
-proc sink (chi:ischannel[int]) { 
+proc sink (chi:%<int) { 
   while true do var x= read chi; println x; done 
 }
 
-proc xduce(chi: ischannel[int], cho: oschannel[int]) {
+proc xduce(chi: %<int, cho: %>int) {
   write (cho, 99);
   while true do var x = read chi; write (cho, x); write (cho, 2 * x); done
 }
