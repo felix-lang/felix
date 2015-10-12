@@ -1878,8 +1878,8 @@ and the Felix bound queue is used for the fifo.
 #define __FLX_PTHREAD_WORKER_FIFO_H__
 #include "flx_pthread_config.hpp"
 #include "pthread_thread.hpp"
-#include "pthread_mutex.hpp"
 #include "pthread_bound_queue.hpp"
+#include <thread>
 
 namespace flx { namespace pthread {
 
@@ -1901,7 +1901,7 @@ public:
 /// Does not delete dequeued jobs
 class PTHREAD_EXTERN worker_fifo
 {
-  flx_mutex_t nlock;
+  ::std::mutex nlock;
   int nthreads;                 /// scheduled number of threads
   bound_queue_t fifo;
 
@@ -1928,13 +1928,13 @@ public:
 namespace flx { namespace pthread {
 
 int worker_fifo::get_nthreads() {
-  flx_mutex_locker_t dummy(nlock);
+  ::std::unique_lock< ::std::mutex> dummy(nlock);
   return nthreads;
 }
 
 void worker_fifo::set_nthreads(int n)
 {
-  flx_mutex_locker_t dummy(nlock);
+  ::std::unique_lock< ::std::mutex> dummy(nlock);
   while(nthreads<n) start_worker_thread();
   while(nthreads>n) stop_worker_thread();
 }
@@ -2012,6 +2012,7 @@ its base with locks as required.
 #include "flx_collector.hpp"
 #include "pthread_mutex.hpp"
 #include "pthread_thread.hpp"
+#include <thread>
 
 namespace flx {
 namespace gc {
@@ -2041,7 +2042,7 @@ private:
   size_t v_get_allocation_amt()const;
 
 private:
-  mutable flx::pthread::flx_mutex_t mut;
+  mutable ::std::mutex mut;
 };
 
 
@@ -2065,7 +2066,7 @@ flx_ts_collector_t::flx_ts_collector_t(allocator_t *a, flx::pthread::thread_cont
 flx_ts_collector_t::~flx_ts_collector_t(){}
 
 void *flx_ts_collector_t::v_allocate(gc_shape_t *ptr_map, size_t x) {
-  flx::pthread::flx_mutex_locker_t l(mut);
+  ::std::unique_lock< ::std::mutex> dummy(mut);
   return impl_allocate(ptr_map,x);
 }
 
@@ -2077,27 +2078,27 @@ size_t flx_ts_collector_t::v_collect() {
 }
 
 void flx_ts_collector_t::v_add_root(void *memory) {
-  flx::pthread::flx_mutex_locker_t l(mut);
+  ::std::unique_lock< ::std::mutex> dummy(mut);
   impl_add_root(memory);
 }
 
 void flx_ts_collector_t::v_remove_root(void *memory) {
-  flx::pthread::flx_mutex_locker_t l(mut);
+  ::std::unique_lock< ::std::mutex> dummy(mut);
   impl_remove_root(memory);
 }
 
 size_t flx_ts_collector_t::v_get_allocation_count()const {
-  flx::pthread::flx_mutex_locker_t l(mut);
+  ::std::unique_lock< ::std::mutex> dummy(mut);
   return impl_get_allocation_count();
 }
 
 size_t flx_ts_collector_t::v_get_root_count()const {
-  flx::pthread::flx_mutex_locker_t l(mut);
+  ::std::unique_lock< ::std::mutex> dummy(mut);
   return impl_get_root_count();
 }
 
 size_t flx_ts_collector_t::v_get_allocation_amt()const {
-  flx::pthread::flx_mutex_locker_t l(mut);
+  ::std::unique_lock< ::std::mutex> dummy(mut);
   return impl_get_allocation_amt();
 }
 
