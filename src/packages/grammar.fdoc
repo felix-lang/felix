@@ -1410,11 +1410,6 @@ syntax expressions {
 
 //------------------------------------------------------------------------
 
-  // EXPERIMENT
-  x[sprefixed_pri] := "%<" x[spower_pri] =># '`(ast_name ,_sr "ischannel" (,_2))';
-  x[sprefixed_pri] := "%>" x[spower_pri] =># '`(ast_name ,_sr "oschannel" (,_2))';
-  x[sprefixed_pri] := "%<>" x[spower_pri] =># '`(ast_name ,_sr "ioschannel" (,_2))';
-
   //$ Prefix exclaim.
   x[sprefixed_pri] := "!" x[spower_pri] =># "(Prefix)";
 

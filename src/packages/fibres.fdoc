@@ -313,6 +313,33 @@ open class Multiplexor
     mux (iterator a, out)
   ;
 }
+@h1 Schannel and Pipe syntax
+Special syntax for both pipes and also abbreviation for
+schannel types.
+@tangle spipeexpr.fsyn
+syntax spipeexpr 
+{
+  //$ Left assoc, for schannel pipes.
+  x[ssetunion_pri] := x[ssetunion_pri] "|->" x[>ssetunion_pri] =># "(infix 'pipe)"; 
+
+  //$ Right assoc, for schannel pipes transformers
+  x[ssetunion_pri] := x[>ssetunion_pri] "=>" x[ssetunion_pri] =># "(infix 'trans_type)"; 
+
+  //$ Non associative, streaming data structure into transducer.
+  x[ssetunion_pri] := x[>ssetunion_pri] ">->" x[>ssetunion_pri] =># "(infix 'xpipe)"; 
+
+  //$ input schannel type %<T
+  x[sprefixed_pri] := "%<" x[spower_pri] =># '`(ast_name ,_sr "ischannel" (,_2))';
+
+  //$ output schannel type %>T
+  x[sprefixed_pri] := "%>" x[spower_pri] =># '`(ast_name ,_sr "oschannel" (,_2))';
+
+  //$ input/output schannel type %<>T
+  x[sprefixed_pri] := "%<>" x[spower_pri] =># '`(ast_name ,_sr "ioschannel" (,_2))';
+
+}
+
+
 
 @h1 Synchronous Pipeline Concepts
 Felix provides synchronous fibres (fthreads) and channels (schannels) 
@@ -330,7 +357,7 @@ A source is an thread which writes output down a channel.
 We will wrap a generator up to create a source.
 @tangle spipes.flx
   //$ Send an stream down a channel.
-  proc source_from_stream[S] (var it:1 -> S) (out:oschannel[S]) =>
+  proc source_from_stream[S] (var it:1 -> S) (out:%>S) =>
     while true call write (out,#it)
   ;
 
@@ -340,7 +367,7 @@ to create a finite source. If there is @{Some value} we return
 the @{value} otherwise we just terminate.
 @tangle spipes.flx
   //$ source from an iterator
-  proc source_from_iterator[S] (var it:1 -> opt[S]) (out:oschannel[S]) =>
+  proc source_from_iterator[S] (var it:1 -> opt[S]) (out:%>S) =>
     match v in it call write$ out,v
   ;
 
@@ -348,7 +375,7 @@ the @{value} otherwise we just terminate.
 A sink is a procedure which reads from a channel.
 We will wrap up an ordinary procedure into a sink.
 @tangle spipes.flx
-  proc sink_from_procedure[T] (var p:T -> 0) (inp:ischannel[T]) => 
+  proc sink_from_procedure[T] (var p:T -> 0) (inp:%<T) => 
     while true call p (read inp)
   ;
 
@@ -363,8 +390,8 @@ operator which can be used conveniently: @{|->}.
   //$ Wire a source component to a sink.
   //$ Return coupled fibre ready to run.
   fun pipe[T] 
-    (var w: oschannel[T] -> 0, // source
-    var r: ischannel[T] -> 0)  // sink
+    (var w: %>T -> 0, // source
+    var r: %<T -> 0)  // sink
   :
     1 -> 0
   => 
@@ -382,20 +409,6 @@ channel with an input and output endpoint shared by
 the source and sink. The closure is essential to hide
 these variables to ensure the source and sink
 suicide together when they become unreachable.
-@h1 Pipeline syntax
-@tangle spipeexpr.fsyn
-syntax spipeexpr 
-{
-  //$ Left assoc, for schannel pipes.
-  x[ssetunion_pri] := x[ssetunion_pri] "|->" x[>ssetunion_pri] =># "(infix 'pipe)"; 
-
-  //$ Right assoc, for schannel pipes transformers
-  x[ssetunion_pri] := x[>ssetunion_pri] "=>" x[ssetunion_pri] =># "(infix 'trans_type)"; 
-
-  //$ Non associative, streaming data structure into transducer.
-  x[ssetunion_pri] := x[>ssetunion_pri] ">->" x[>ssetunion_pri] =># "(infix 'xpipe)"; 
-}
-
 
 @h2 A simple example
 Now we will show a simple example.
@@ -921,7 +934,7 @@ list('25', '16', '9', '4', '1')
 
   //$ Stream sort using intermediate darray.
   //$ Requires stream of option type.
-  proc sort[T with Tord[T]] (r: ischannel[opt[T]], w: oschannel[opt[T]])
+  proc sort[T with Tord[T]] (r: %<opt[T], w: %>opt[T])
   {
      var x = darray[T]();
      acquire:while true do

@@ -1696,9 +1696,9 @@ void thread_control_t::yield()
 #ifndef __FLX_PTHREAD_BOUND_QUEUE_H__
 #define __FLX_PTHREAD_BOUND_QUEUE_H__
 #include "flx_pthread_config.hpp"
-#include "pthread_mutex.hpp"
-#include "pthread_condv.hpp"
 #include "flx_gc.hpp"
+#include <thread>
+#include <condition_variable>
 
 // interface for a consumer/producer queue. threads requesting a resource
 // that isn't there block until one is available. push/pop re-entrant
@@ -1720,11 +1720,11 @@ namespace flx { namespace pthread {
 // ********************************************************
 
 class PTHREAD_EXTERN bound_queue_t {
-  flx_condv_t size_changed;
+  ::std::condition_variable_any size_changed;
   size_t bound;
 public:
   void *lame_opaque; // has to be public for the scanner to find it
-  flx_mutex_t member_lock;
+  ::std::mutex member_lock;
   bound_queue_t(size_t);
   ~bound_queue_t();
   void enqueue(void*);
@@ -1769,48 +1769,48 @@ bound_queue_t::~bound_queue_t()
 // get the number of element in the queue
 // (NOT the bound!)
 size_t bound_queue_t::len() {
-  flx_mutex_locker_t   l(member_lock);
+  ::std::unique_lock< ::std::mutex>   l(member_lock);
   return ELTQ->size();
 }
 
 void bound_queue_t::wait_until_empty() {
-  flx_mutex_locker_t   l(member_lock);
+  ::std::unique_lock< ::std::mutex>   l(member_lock);
   while(!ELTQ->empty())
-    size_changed.wait(&member_lock);
+    size_changed.wait(member_lock);
 }
 
 void
 bound_queue_t::enqueue(void* elt)
 {
-  flx_mutex_locker_t   l(member_lock);
+  ::std::unique_lock< ::std::mutex>   l(member_lock);
   while(ELTQ->size() >= bound) // guard against spurious wakeups!
-    size_changed.wait(&member_lock);
+    size_changed.wait(member_lock);
   ELTQ->push_back(elt);
-  size_changed.broadcast(); // cannot return an error
+  size_changed.notify_all(); // cannot return an error
 }
 
 void*
 bound_queue_t::dequeue()
 {
-  flx_mutex_locker_t   l(member_lock);
+  ::std::unique_lock< ::std::mutex>   l(member_lock);
   while(ELTQ->empty())  // guard against spurious wakeups!
-    size_changed.wait(&member_lock);
+    size_changed.wait(member_lock);
   void *elt = ELTQ->front();
   ELTQ->pop_front();
-  size_changed.broadcast();
+  size_changed.notify_all();
   return elt;
 }
 
 void*
 bound_queue_t::maybe_dequeue()
 {
-  flx_mutex_locker_t   l(member_lock);
+  ::std::unique_lock< ::std::mutex>   l(member_lock);
   void *elt = NULL;
   if (ELTQ->size() > 0)
   {
     elt = ELTQ->front();
     ELTQ->pop_front();
-    size_changed.broadcast();
+    size_changed.notify_all();
   }
   return elt;
 }
@@ -1819,10 +1819,10 @@ bound_queue_t::maybe_dequeue()
 void
 bound_queue_t::resize(size_t n)
 {
-  flx_mutex_locker_t   l(member_lock);
+  ::std::unique_lock< ::std::mutex>   l(member_lock);
   bound = n;
   // get things rolling again
-  size_changed.broadcast();
+  size_changed.notify_all();
 }
 
 using namespace flx;;
