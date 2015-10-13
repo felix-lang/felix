@@ -6,6 +6,7 @@
 #include "demux_poll_demuxer.hpp"
 #include "demux_self_piper.hpp"     // self pipe trick
 #include <thread>
+#include <mutex>
 
 namespace flx { namespace demux {
 

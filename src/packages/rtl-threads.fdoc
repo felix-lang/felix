@@ -79,6 +79,7 @@ threads and pchannels for synchronisation.
 #include <vector>
 #include <functional>
 #include <thread>
+#include <mutex>
 #include <condition_variable>
 
 namespace flx { namespace pthread {
@@ -583,6 +584,7 @@ public:
 @tangle pthread_mutex.cpp
 #include "pthread_mutex.hpp"
 #include <thread>
+#include <mutex>
 #include <chrono>
 
 namespace flx { namespace pthread {
@@ -1136,6 +1138,7 @@ public:
 #define __FLX_PTHREAD_MONITOR_H__
 #include "flx_pthread_config.hpp"
 #include <thread>
+#include <mutex>
 #include <condition_variable>
 
 // interface for a consumer/producer queue. threads requesting a resource
@@ -1238,6 +1241,7 @@ monitor_t::dequeue()
 #define __FLX_PTHREAD_COUNTER_H__
 #include "flx_pthread_config.hpp"
 #include <thread>
+#include <mutex>
 #include <condition_variable>
 
 namespace flx { namespace pthread {
@@ -1358,6 +1362,7 @@ void flx_ts_counter_t::wait_zero() {
 #define __FLX_PTHREAD_WAIT_BOOL_H__
 #include "flx_pthread_config.hpp"
 #include <thread>
+#include <mutex>
 #include <condition_variable>
 
 namespace flx { namespace pthread {
@@ -1689,6 +1694,7 @@ void thread_control_t::yield()
 #include "flx_pthread_config.hpp"
 #include "flx_gc.hpp"
 #include <thread>
+#include <mutex>
 #include <condition_variable>
 
 // interface for a consumer/producer queue. threads requesting a resource
@@ -1870,6 +1876,7 @@ and the Felix bound queue is used for the fifo.
 #include "flx_pthread_config.hpp"
 #include "pthread_thread.hpp"
 #include "pthread_bound_queue.hpp"
+#include <mutex>
 #include <thread>
 
 namespace flx { namespace pthread {
@@ -2003,6 +2010,7 @@ its base with locks as required.
 #include "flx_collector.hpp"
 #include "pthread_thread.hpp"
 #include <thread>
+#include <mutex>
 
 namespace flx {
 namespace gc {
@@ -2150,6 +2158,7 @@ public:
 #include "pthread_fast_lock.hpp"
 #include <chrono>
 #include <thread>
+#include <mutex>
 
 namespace flx { namespace rtl {
 fast_lock::fast_lock(::flx::pthread::thread_control_base_t *tc_) : tc(tc_) { flag.clear(); }

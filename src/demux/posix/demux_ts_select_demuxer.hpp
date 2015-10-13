@@ -4,6 +4,7 @@
 #include "demux_select_demuxer.hpp"
 #include "demux_self_piper.hpp"
 #include <thread>
+#include <mutex>
 
 namespace flx { namespace demux {
 
