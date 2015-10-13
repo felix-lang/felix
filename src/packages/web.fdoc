@@ -1281,7 +1281,7 @@ class LowResTime
     return atm;
   }
 
-if PLAT_WIN32
+if PLAT_WIN32 do
   private proc localtime:&time_t * &tm = "localtime_s($2,$1);";
 else
   private proc localtime:&time_t * &tm = "localtime_r($1,$2);";
@@ -1296,7 +1296,7 @@ done
     string asctime_helper(struct tm const * ti);
   """;
 
-if PLAT_WIN32
+if PLAT_WIN32 do
   body """
     string asctime_helper(struct tm const * ti) {
       int len = 64;
