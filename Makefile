@@ -50,6 +50,7 @@ target:
 	flx_build_boot --target-dir=build\release --target-bin=win32 --build-flx-tools
 	flx_build_boot --target-dir=build\release --target-bin=win32 --build-tools
 	flx_build_boot --target-dir=build\release --target-bin=win32 --build-web-plugins
+	flx_build_boot --target-dir=build\release --target-bin=win32 --build-flx-web
 
 uproot:
 	cmd.exe /C rmdir /Q /S build\release\host
