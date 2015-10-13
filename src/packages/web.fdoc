@@ -1274,7 +1274,12 @@ class LowResTime
   };
 
   
+if PLAT_WIN32 do
+  private proc gmtime:&time_t * &tm = "gmtime_s($2,$1);";
+else
   private proc gmtime:&time_t * &tm = "gmtime_r($1,$2);";
+done
+
   fun gmtime (var t:time_t) :tm =
   {
     var atm : tm; gmtime (&t, &atm);
