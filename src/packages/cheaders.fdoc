@@ -168,6 +168,7 @@ class Cxx11_headers  // http://en.cppreference.com/w/cpp/header
   header cfenv= '#include <ratio>';
   header codecvt = '#include <codecvt>';
   header regex = '#include <regex>';
+  header random = '#include <random>';
   header atomic = '#include <atomic>';
   header thread = '#include <thread>';
   header mutex = '#include <mutex>';
