@@ -1318,7 +1318,7 @@ else
       return s;
     }
   """;
-endif
+done
 
   private fun asctime:&tm -> string = "asctime_helper($1)";
   fun asctime (var t:tm) : string => asctime (&t);
