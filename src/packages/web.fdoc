@@ -1306,7 +1306,7 @@ if PLAT_WIN32 do
     string asctime_helper(struct tm const * ti) {
       int len = 64;
       char *fmted = (char*) malloc(sizeof(char)*64);
-      asctime_s(ti,64,fmted);
+      asctime_s(fmted,64,ti);
       string s = string(fmted);
       free(fmted);
       return s;
