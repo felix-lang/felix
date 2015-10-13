@@ -3,14 +3,14 @@
 @tangler pthread_thread.hpp               = share/lib/rtl/pthread_thread.hpp
 @tangler pthread_posix_thread.cpp         = share/src/pthread/pthread_posix_thread.cpp
 @tangler pthread_win_thread.cpp           = share/src/pthread/pthread_win_thread.cpp
-@tangler pthread_mutex.hpp                = share/lib/rtl/pthread_mutex.hpp
-@tangler pthread_mutex.cpp                = share/src/pthread/pthread_mutex.cpp
-@tangler pthread_condv.hpp                = share/lib/rtl/pthread_condv.hpp
-@tangler pthread_condv.cpp                = share/src/pthread/pthread_condv.cpp
-@tangler pthread_win_posix_condv_emul.hpp = share/lib/rtl/pthread_win_posix_condv_emul.hpp
-@tangler pthread_win_posix_condv_emul.cpp = share/src/pthread/pthread_win_posix_condv_emul.cpp
-@tangler pthread_semaphore.hpp            = share/lib/rtl/pthread_semaphore.hpp
-@tangler pthread_semaphore.cpp            = share/src/pthread/pthread_semaphore.cpp
+@tangler pthread_mutex.hpp                = crap/lib/rtl/pthread_mutex.hpp
+@tangler pthread_mutex.cpp                = crap/src/pthread/pthread_mutex.cpp
+@tangler pthread_condv.hpp                = crap/lib/rtl/pthread_condv.hpp
+@tangler pthread_condv.cpp                = crap/src/pthread/pthread_condv.cpp
+@tangler pthread_win_posix_condv_emul.hpp = crap/lib/rtl/pthread_win_posix_condv_emul.hpp
+@tangler pthread_win_posix_condv_emul.cpp = crap/src/pthread/pthread_win_posix_condv_emul.cpp
+@tangler pthread_semaphore.hpp            = crap/lib/rtl/pthread_semaphore.hpp
+@tangler pthread_semaphore.cpp            = crap/src/pthread/pthread_semaphore.cpp
 @tangler pthread_monitor.hpp              = share/lib/rtl/pthread_monitor.hpp
 @tangler pthread_monitor.cpp              = share/src/pthread/pthread_monitor.cpp
 @tangler pthread_counter.hpp              = share/lib/rtl/pthread_counter.hpp
@@ -72,8 +72,6 @@ threads and pchannels for synchronisation.
 // seem to try to be) but I sometimes get deadlocks in ppc64 os x 10.4.2
 // with 4.0.1 when printfing to stdout. Nasty.
 
-#include "pthread_mutex.hpp"
-#include "pthread_condv.hpp"
 #include "pthread_thread_control_base.hpp"
 
 #include <utility>
@@ -1105,9 +1103,6 @@ int flx_semaphore_t::get(){ int x; sem_getvalue(&sem,&x); return x; }
 #ifndef __FLX_PTHREAD_SEMAPHORE_H__
 #define __FLX_PTHREAD_SEMAPHORE_H__
 #include "flx_pthread_config.hpp"
-#include "pthread_mutex.hpp"
-
-#include "pthread_win_posix_condv_emul.hpp"
 
 namespace flx { namespace pthread {
 
@@ -1140,10 +1135,6 @@ public:
 #ifndef __FLX_PTHREAD_MONITOR_H__
 #define __FLX_PTHREAD_MONITOR_H__
 #include "flx_pthread_config.hpp"
-//#include "pthread_mutex.hpp"
-//#include "pthread_condv.hpp"
-//#include "pthread_semaphore.hpp"
-
 #include <thread>
 #include <condition_variable>
 
@@ -1246,8 +1237,8 @@ monitor_t::dequeue()
 #ifndef __FLX_PTHREAD_COUNTER_H__
 #define __FLX_PTHREAD_COUNTER_H__
 #include "flx_pthread_config.hpp"
-#include "pthread_mutex.hpp"
-#include "pthread_condv.hpp"
+#include <thread>
+#include <condition_variable>
 
 namespace flx { namespace pthread {
 
@@ -1255,8 +1246,8 @@ namespace flx { namespace pthread {
 /// Counter with zero signal
 // ********************************************************
 class PTHREAD_EXTERN flx_ts_counter_t {
-  flx_mutex_t m;
-  flx_condv_t c;
+  ::std::mutex m;
+  ::std::condition_variable_any c;
   long x;
   void operator=(flx_ts_counter_t const &);
   flx_ts_counter_t(flx_ts_counter_t const &);
@@ -1299,62 +1290,62 @@ flx_ts_counter_t::~flx_ts_counter_t() {
 }
 
 long flx_ts_counter_t::pre_incr() {
-  flx_mutex_locker_t l(m);
+  ::std::unique_lock< ::std::mutex> l(m);
   ++x;
   return x;
 }
 
 long flx_ts_counter_t::pre_decr() {
-  flx_mutex_locker_t l(m);
+  ::std::unique_lock< ::std::mutex> l(m);
   --x;
-  if(x==0) c.signal();
+  if(x==0) c.notify_all();
   return x;
 }
 
 long flx_ts_counter_t::post_incr() {
-  flx_mutex_locker_t l(m);
+  ::std::unique_lock< ::std::mutex> l(m);
   ++x;
   return x+1;
 }
 
 long flx_ts_counter_t::post_decr() {
-  flx_mutex_locker_t l(m);
+  ::std::unique_lock< ::std::mutex> l(m);
   --x;
-  if(x==0) c.signal();
+  if(x==0) c.notify_all();
   return x+1;
 }
 
 long flx_ts_counter_t::decr_pos() {
-  flx_mutex_locker_t l(m);
+  ::std::unique_lock< ::std::mutex> l(m);
   if(x>0)--x;
-  if(x==0) c.signal();
+  if(x==0) c.notify_all();
   return x;
 }
 
 long flx_ts_counter_t::get() {
-  flx_mutex_locker_t l(m);
+  ::std::unique_lock< ::std::mutex> l(m);
   return x;
 }
 
 long flx_ts_counter_t::set(long a) {
-  flx_mutex_locker_t l(m);
+  ::std::unique_lock< ::std::mutex> l(m);
   x = a;
   return x;
 }
 
 long flx_ts_counter_t::swap(long a) {
-  flx_mutex_locker_t l(m);
+  ::std::unique_lock< ::std::mutex> l(m);
   long tmp = x;
   x = a;
-  if(x==0) c.signal();
+  if(x==0) c.notify_all();
   return tmp;
 }
 
 void flx_ts_counter_t::wait_zero() {
-  flx_mutex_locker_t l(m);
+  ::std::unique_lock< ::std::mutex> l(m);
   while(1){
     if(x==0)return;
-    c.wait(&m);
+    c.wait(m);
   }
 }
 
@@ -1366,15 +1357,15 @@ void flx_ts_counter_t::wait_zero() {
 #ifndef __FLX_PTHREAD_WAIT_BOOL_H__
 #define __FLX_PTHREAD_WAIT_BOOL_H__
 #include "flx_pthread_config.hpp"
-#include "pthread_mutex.hpp"  // mutexes
-#include "pthread_condv.hpp"  // condition var for same
+#include <thread>
+#include <condition_variable>
 
 namespace flx { namespace pthread {
 
 // a waitable boolean.
 class PTHREAD_EXTERN waitable_bool {
-  flx::pthread::flx_mutex_t cv_lock;       // to work with the condition var
-  flx::pthread::flx_condv_t finished_cond;
+  ::std::mutex cv_lock;       // to work with the condition var
+  ::std::condition_variable_any finished_cond;
   bool finished;   // might seem redundant, but that's how CVs work.
 public:
   waitable_bool();
@@ -1402,12 +1393,12 @@ waitable_bool::waitable_bool()
 void
 waitable_bool::wait_until_true()
 {
-  flx::pthread::flx_mutex_locker_t    locker(cv_lock);
+  ::std::unique_lock< ::std::mutex> locker(cv_lock);
 
   // wait for the wakeup to say it's finished
   while(!finished)
   {
-    finished_cond.wait(&cv_lock);
+    finished_cond.wait(cv_lock);
   }
 }
 
@@ -1415,10 +1406,10 @@ void
 waitable_bool::signal_true()
 {
   { // the mutex is required for the memory barrier..
-    flx::pthread::flx_mutex_locker_t    locker(cv_lock);
+    ::std::unique_lock< ::std::mutex> locker(cv_lock);
     finished = true;
   }
-  finished_cond.signal();
+  finished_cond.notify_all();
   // do absolutely NOTHING here as a typical use of this class is to
   // wait for a thread exit and then destruct its resources, which could
   // very well include this object. boom.
@@ -2010,7 +2001,6 @@ its base with locks as required.
 #ifndef __FLX_TS_COLLECTOR_H__
 #define __FLX_TS_COLLECTOR_H__
 #include "flx_collector.hpp"
-#include "pthread_mutex.hpp"
 #include "pthread_thread.hpp"
 #include <thread>
 
@@ -2137,6 +2127,7 @@ also do the check, to ensure blocked threads stay blocked.
 #include "flx_pthread_config.hpp"
 #include "pthread_thread_control_base.hpp"
 #include <atomic>
+
 namespace flx { namespace rtl {
 
 class PTHREAD_EXTERN fast_lock

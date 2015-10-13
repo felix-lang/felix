@@ -3,7 +3,7 @@
 
 #include "demux_select_demuxer.hpp"
 #include "demux_self_piper.hpp"
-#include "pthread_mutex.hpp"
+#include <thread>
 
 namespace flx { namespace demux {
 
@@ -11,7 +11,7 @@ namespace flx { namespace demux {
 
 class DEMUX_EXTERN ts_select_demuxer : public posix_demuxer {
   // lock
-  flx::pthread::flx_mutex_t      ham_fist;
+  ::std::mutex ham_fist;
   // protects this little fella here.
   select_demuxer  demux;
 

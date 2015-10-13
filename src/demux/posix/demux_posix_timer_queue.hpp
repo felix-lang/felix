@@ -2,18 +2,18 @@
 #define __FLX_DEMUX_POSIX_TIMER_QUEUE_H__
 
 #include "pthread_thread.hpp"  // flx_thread_t
-#include "pthread_mutex.hpp"  // flx_mutex_t
-#include "pthread_condv.hpp"  // flx_condv_t
 #include "demux_timer_queue.hpp" // base class
 #include <sys/time.h>        // timespecs, gettimeofday
+#include <thread>
+#include <condition_variable>
 
 namespace flx { namespace demux {
 
 // looks like a worker queue, but couldn't quite mash it into one
 class DEMUX_EXTERN posix_timer_queue : public timer_queue
 {
-    flx::pthread::flx_mutex_t lock; // factor to prio queue?
-    flx::pthread::flx_condv_t sleep_cond;
+    ::std::mutex lock; // factor to prio queue?
+    ::std::condition_variable_any sleep_cond;
     flx::pthread::flx_thread_t sleep_thread; // joinable, we join later
     void*        opaque_prio_queue;        // less fat
 

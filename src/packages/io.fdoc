@@ -541,7 +541,7 @@ proc fflush() { fflush cstdout; }
 proc eprint  [T with Str[T]] (x:T) { fprint (cstderr, x); };
 
 //$ Write string to cerr with end of line.
-proc eprintln[T with Str[T]] (x:T) { fprintln (cstderr, x);};
+proc eprintln[T with Str[T]] (x:T) { fprintln (cstderr, x); fflush cstderr; };
 
 //$ Write end of line on cerr.
 proc eendl() { endl cstderr; }

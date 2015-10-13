@@ -10,6 +10,7 @@
 #include <queue>      // stl seems to have a prio_queue
 #include <stdio.h>    // for perror
 #include <sys/time.h> // gettimeofday for calculating "now"
+#include <chrono>
 
 //using namespace flx::pthread;
 namespace flx { namespace demux {
@@ -142,7 +143,7 @@ posix_timer_queue::add_sleep_request(sleep_task* st, timespec* abs)
     evt.task = st;
     evt.when = *abs;
 
-    flx::pthread::flx_mutex_locker_t    locker(lock);
+    ::std::unique_lock< ::std::mutex> locker(lock);
 
     PRIOQ->push(evt);
 
@@ -181,7 +182,7 @@ posix_timer_queue::add_abs_sleep_request(sleep_task* st, double when)
 void
 posix_timer_queue::wakeup_thread()
 {
-    sleep_cond.signal();
+    sleep_cond.notify_all();
 }
 
 void
@@ -197,7 +198,7 @@ bool
 posix_timer_queue::thread_loop_body()
 {
     // lock on. lock off when waiting on condition
-    flx::pthread::flx_mutex_locker_t    locker(lock);
+    ::std::unique_lock< ::std::mutex> locker(lock);
 
     // int        res;
 
@@ -233,7 +234,14 @@ posix_timer_queue::thread_loop_body()
             // cerr << "sleeping from (" <<
             //    evt.when.tv_sec << ", " << evt.when.tv_nsec << ") until (" <<
             //    now.when.tv_sec << ", " << now.when.tv_nsec << ") " << endl;
-            (void)sleep_cond.timedwait(&lock, &evt.when);
+            
+            auto x = 
+               ::std::chrono::seconds{evt.when.tv_sec} + 
+               ::std::chrono::nanoseconds{evt.when.tv_nsec}
+            ;
+            auto d = ::std::chrono::duration_cast<::std::chrono::system_clock::duration> (x);
+            ::std::chrono::system_clock::time_point tp (d);
+            (void)sleep_cond.wait_until(lock, tp);
 
             // if using posix abstime timed wait we make get EINVAL here for
             // abstimes in the past. must handle this.
@@ -247,7 +255,7 @@ posix_timer_queue::thread_loop_body()
     // that we don't really need the mainloop testcancel because the condition
     // wait functions are cancellation points.
     // cerr << "no sleep task, sleeping indefinitely" << endl;
-    sleep_cond.wait(&lock);
+    sleep_cond.wait(lock);
     // cerr << "pthread_cond_wait woke up! (", res << ")" << endl;
 
     // lock released here

@@ -5,13 +5,13 @@
 
 #include "demux_poll_demuxer.hpp"
 #include "demux_self_piper.hpp"     // self pipe trick
-#include "pthread_mutex.hpp"
+#include <thread>
 
 namespace flx { namespace demux {
 
 class ts_poll_demuxer : public posix_demuxer {
   // lock
-  flx::pthread::flx_mutex_t    ham_fist;
+  ::std::mutex ham_fist;
   // protects this little fella here.
   poll_demuxer    demux;
 
