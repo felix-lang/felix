@@ -1090,6 +1090,7 @@ A lock free thread safe bag for holding non-null pointers.
 
 #include "flx_pthread_config.hpp"
 #include <stdint.h>
+#include <atomic>
 
 namespace flx { namespace pthread {
 
