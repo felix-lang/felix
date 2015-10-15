@@ -12,6 +12,9 @@
 @tangler pthread_thread_control.cpp       = share/src/pthread/pthread_thread_control.cpp
 @tangler pthread_bound_queue.hpp          = share/lib/rtl/pthread_bound_queue.hpp
 @tangler pthread_bound_queue.cpp          = share/src/pthread/pthread_bound_queue.cpp
+@tangler pthread_lf_bag.hpp               = share/lib/rtl/pthread_lf_bag.hpp
+@tangler pthread_lf_bag.cpp               = share/src/pthread/pthread_lf_bag.cpp
+@tangler pthread_lf_bag.flx               = share/lib/std/pthread/pthread_lf_bag.flx
 @tangler pthread_work_fifo.hpp            = share/lib/rtl/pthread_work_fifo.hpp
 @tangler pthread_work_fifo.cpp            = share/src/pthread/pthread_work_fifo.cpp
 @tangler pthread_fast_lock.hpp            = share/lib/rtl/pthread_fast_lock.hpp
@@ -1077,8 +1080,152 @@ void thread_control_t::yield()
 }
 
 }}
-
 @
+
+@h2 New bound queue
+A lock free thread safe bag for holding non-null pointers.
+@tangle pthread_lf_bag.hpp
+#ifndef __FLX_PTHREAD_LF_BAG_H__
+#define __FLX_PTHREAD_LF_BAG_H__
+
+#include "flx_pthread_config.hpp"
+#include <stdint.h>
+
+namespace flx { namespace pthread {
+
+struct PTHREAD_EXTERN pthread_lf_bag {
+  ::std::atomic <void *> * volatile a;
+  size_t n;
+
+  // we can't use unsigned type because the value may go negative
+  // if dequeue operations decrement the counter before the enqueue
+  // that pushed the data does.
+  ::std::atomic<int32_t> used; 
+
+  // these indices are for optimisation purposes ONLY
+  // the head points at the next element to dequeue or a bit earlier
+  // the tail points to a free slot or a bit earlier
+  ::std::atomic<size_t> head;
+  ::std::atomic<size_t> tail;
+
+  pthread_lf_bag (size_t n_);
+
+  // the destructor is not safe!
+  // to make it safe one needs to be sure the queue is empty
+  // AND that no more values will be enqueued.
+  // This is very hard to do. Using a smart ptr for the bag
+  // ensures there will be no more enqueue operations started
+  // but not that one is not in progress. The queue may appear
+  // empty during the progress of such final enqueue operations.
+  // there is no safe way to ensure the queue will remain empty.
+  ~pthread_lf_bag();
+
+  void enqueue(void *d);
+  void *dequeue ();
+};
+
+}} // namespaces
+#endif
+@
+
+@tangle pthread_lf_bag.cpp
+// simple very efficient lock free bag
+#include <atomic>
+#include <chrono>
+#include <algorithm>
+#include <thread>
+#include <stdlib.h>
+#include "pthread_lf_bag.hpp"
+
+// 10 ms max sleep, that's 10,000,000 nanoseconds
+#define MAXSLEEP (size_t)10000000
+
+static void sleep(size_t ns) 
+{
+  //::std::this_thread::sleep_for(::std::chrono::nanoseconds(ns));
+  ::std::this_thread::yield();
+}
+
+#define NQFENCE ::std::memory_order_seq_cst
+#define DQFENCE ::std::memory_order_seq_cst
+
+using namespace flx::pthread;
+
+  pthread_lf_bag::pthread_lf_bag (size_t n_) : n (n_), head(0), tail(0), used(0), 
+    a((::std::atomic<void*>*)calloc (n_ , sizeof (void*))) 
+  {}
+
+  // the destructor is not safe!
+  // to make it safe one needs to be sure the queue is empty
+  // AND that no more values will be enqueued.
+  // This is very hard to do. Using a smart ptr for the bag
+  // ensures there will be no more enqueue operations started
+  // but not that one is not in progress. The queue may appear
+  // empty during the progress of such final enqueue operations.
+  // there is no safe way to ensure the queue will remain empty.
+  pthread_lf_bag::~pthread_lf_bag() { }
+
+  void pthread_lf_bag::enqueue(void *d) 
+  { 
+wait:
+    size_t stime = 1;
+    //while (used.load(::std::memory_order_seq_cst) == n) sleep(stime);
+    size_t i = tail;
+    while 
+    (
+      (d = ::std::atomic_exchange_explicit(a + i, d, 
+        NQFENCE))
+    ) 
+    { 
+      //if (used.load(::std::memory_order_seq_cst) == n) goto wait; // lost the race
+      i = (i + 1) % n; 
+      stime = ::std::min (stime , MAXSLEEP);
+      //sleep(stime);
+    }
+    //tail.store (i, ::std::memory_order_seq_cst);
+    //++used;
+  }
+
+  void *pthread_lf_bag::dequeue () 
+  { 
+wait:
+    size_t stime = 1;
+    //while (used.load(::std::memory_order_seq_cst) == 0) sleep(stime );
+    
+    size_t i = head.load(::std::memory_order_seq_cst);
+    void *d = nullptr;
+    while 
+    (
+      !(d = ::std::atomic_exchange_explicit(a + i, d, 
+        DQFENCE))
+    ) 
+    { 
+      //if (used.load(::std::memory_order_seq_cst) == 0) goto wait; // lost the race
+      i = (i + 1) % n; 
+      stime = ::std::min (stime , MAXSLEEP);
+      //sleep(stime);
+    }
+    //head.store (i,::std::memory_order_seq_cst);
+    //--used;
+    return d;
+  }
+@
+
+@tangle pthread_lf_bag.flx
+class LockFreeBag
+{
+  type lf_bag = "::std::shared_ptr<::flx::pthread::pthread_lf_bag>"
+    requires 
+      header '#include "pthread_lf_bag.hpp"',
+      package "pthread"
+  ;
+  // note: unmanaged container at the moment!!
+  ctor lf_bag : size = "::std::shared_ptr<::flx::pthread::pthread_lf_bag> (new ::flx::pthread::pthread_lf_bag($1))";
+  proc enqueue : lf_bag * address = "$1->enqueue ($2);";
+  gen dequeue : lf_bag -> address = "$1->dequeue ()";
+}
+@
+
 @h1 Bound Queue
 @tangle pthread_bound_queue.hpp
 #ifndef __FLX_PTHREAD_BOUND_QUEUE_H__
