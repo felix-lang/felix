@@ -1218,7 +1218,8 @@ class LockFreeBag
   type lf_bag = "::std::shared_ptr<::flx::pthread::pthread_lf_bag>"
     requires 
       header '#include "pthread_lf_bag.hpp"',
-      package "pthread"
+      package "pthread",
+      header Cxx11_headers::memory
   ;
   // note: unmanaged container at the moment!!
   ctor lf_bag : size = "::std::shared_ptr<::flx::pthread::pthread_lf_bag> (new ::flx::pthread::pthread_lf_bag($1))";
