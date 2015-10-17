@@ -18,8 +18,8 @@
 @tangler pthread_work_fifo.hpp            = share/lib/rtl/pthread_work_fifo.hpp
 @tangler pthread_work_fifo.cpp            = share/src/pthread/pthread_work_fifo.cpp
 @tangler pthread_fast_lock.hpp            = share/lib/rtl/pthread_fast_lock.hpp
-@tangler pthread_fast_lock.cpp            = share/src/pthread/pthread_fast_lock.cpp
-@tangler pthread_fast_lock.flx            = share/lib/std/pthread/pthread_fast_lock.flx
+@tangler pthread_fast_lock.cpp            = CRAP/src/pthread/pthread_fast_lock.cpp
+@tangler pthread_fast_lock.flx            = CRAP/lib/std/pthread/pthread_fast_lock.flx
 @tangler flx_ts_collector.hpp             = share/lib/rtl/flx_ts_collector.hpp
 @tangler flx_ts_collector.cpp             = share/src/pthread/flx_ts_collector.cpp
 @tangler flx_pthread.py                   = $PWD/buildsystem/flx_pthread.py
@@ -101,8 +101,8 @@ class PTHREAD_EXTERN thread_control_t : public virtual thread_control_base_t
     thread_control_t (thread_control_t const &); // uncopyable
     void operator=(thread_control_t const&); // uncopyable
     bool do_world_stop;
-    unsigned int thread_counter;
-    unsigned int active_counter;
+    size_t thread_counter;
+    size_t active_counter;
     ::std::condition_variable_any stop_guard;
     ::std::mutex stop_mutex;
     thread_registry_t threads;
@@ -111,9 +111,10 @@ class PTHREAD_EXTERN thread_control_t : public virtual thread_control_base_t
     void unsafe_resume();
 public:
     bool debug;
+    bool get_debug()const;
     thread_control_t (bool);
-    int thread_count();
-    int active_count();
+    size_t thread_count();
+    size_t active_count();
     void add_thread(void*);
     void remove_thread();
     bool world_stop();
@@ -129,12 +130,12 @@ struct tstart_t
 {
   void (*sr)(void*);
   void *cd;
-  thread_control_t *tc;
+  thread_control_base_t *tc;
   ::std::mutex *spawner_lock;
   ::std::condition_variable_any *spawner_cond;
   bool *spawner_flag;
 
-  tstart_t(void (*s)(void*),void* c,thread_control_t *t, ::std::mutex *sl, ::std::condition_variable_any *sc, bool *sf)
+  tstart_t(void (*s)(void*),void* c,thread_control_base_t *t, ::std::mutex *sl, ::std::condition_variable_any *sc, bool *sf)
     : sr(s), cd(c), tc(t), spawner_lock(sl), spawner_cond(sc), spawner_flag(sf)
   {}
 };
@@ -148,7 +149,7 @@ class PTHREAD_EXTERN flx_detached_thread_t {
 public:
   flx_detached_thread_t();
   ~flx_detached_thread_t();
-  int init(void (*start)(void*), void* udat, thread_control_t*, ::std::mutex *, ::std::condition_variable_any *, bool*);
+  int init(void (*start)(void*), void* udat, thread_control_base_t*, ::std::mutex *, ::std::condition_variable_any *, bool*);
 };
 
 // rf: joinable threads. is it an error to not join joinable threads?
@@ -159,7 +160,7 @@ class PTHREAD_EXTERN flx_thread_t {
 public:
   flx_thread_t();
   ~flx_thread_t();
-  int init(void (*start)(void*), void* udat, thread_control_t*);
+  int init(void (*start)(void*), void* udat, thread_control_base_t*);
   void join();
 };
 
@@ -202,47 +203,47 @@ extern "C" void *flx_pthread_start_wrapper(void *e)
 {
   void *stack_base = get_stack_pointer();
   tstart_t *ehd = (tstart_t*)e;
-  thread_control_t *tc = ehd -> tc;
+  thread_control_base_t *tc = ehd -> tc;
   if(tc == 0)
   {
-    fprintf(stderr, "WARNING: flx_pthread_start_wrapper got NULL thread control object\n");
+    fprintf(stderr, "ERROR: flx_pthread_start_wrapper got NULL thread control object\n");
+    assert(tc);
   }
-  if(tc && tc->debug)
+  bool debug = tc->get_debug();
+  if(debug)
     fprintf(stderr,"Spawned Thread %p start stack base = %p, tc=%p\n",
        (void*)mythrid(),stack_base, tc);
-  if(tc) {
-    if(tc->debug)
+  if(debug)
       fprintf(stderr,"Thread registering itself\n");
-    tc->add_thread(stack_base);
-    if(tc->debug)
-      fprintf(stderr,"Registered: Spawned Thread %p stack base = %p\n",
-        (void*)mythrid(),stack_base, tc);
-   }
+  tc->add_thread(stack_base);
+  if(debug)
+    fprintf(stderr,"Registered: Spawned Thread %p stack base = %p\n",
+      (void*)mythrid(),stack_base, tc);
+
+
   void (*sr)(void*)=ehd->sr; // client function
   void *cd = ehd->cd;        // client data
-  if(tc && tc->debug)
+  if(debug)
     fprintf(stderr,"ehd->spawner_lock = %p\n",ehd->spawner_lock);
 
   if(ehd->spawner_lock)
   {
     ::std::unique_lock< ::std::mutex> dummy(*ehd->spawner_lock);
-    if (tc && tc->debug)
+    if (debug)
       fprintf(stderr,"Thread %p acquired mutex\n", (void*)mythrid());
-    if (tc && tc->debug)
+    if (debug)
       fprintf(stderr,"Thread %p notifying spawner it has registered itself\n", (void*)mythrid());
     *ehd->spawner_flag=true;
     ehd->spawner_cond->notify_all();
-    if (tc->debug)
+    if (debug)
       fprintf(stderr,"Thread %p releasing mutex\n", (void*)mythrid());
   }
   delete ehd;
-  if(tc){ 
-    if (tc->debug)
-      fprintf(stderr,"Thread %p yielding\n", (void*)mythrid());
-    tc->yield();
-  }
+  if (debug)
+    fprintf(stderr,"Thread %p yielding\n", (void*)mythrid());
+  tc->yield();
   try {
-    if (tc && tc->debug)
+    if (debug)
       fprintf(stderr,"Thread %p running client code\n", (void*)mythrid());
     (*sr)(cd);
   }
@@ -250,10 +251,33 @@ extern "C" void *flx_pthread_start_wrapper(void *e)
     fprintf(stderr,"Uncaught exception in thread\n");
     ::std::exit(1);
   }
-  if(tc){
-    if (tc->debug)
-      fprintf(stderr,"Thread %p unregistering\n", (void*)mythrid());
-    tc->remove_thread();
+  if (debug)
+    fprintf(stderr,"Thread %p unregistering\n", (void*)mythrid());
+  tc->remove_thread();
+  return NULL;
+}
+
+
+extern "C" void *nonflx_pthread_start_wrapper(void *e)
+{
+  void *stack_base = get_stack_pointer();
+  tstart_t *ehd = (tstart_t*)e;
+  void (*sr)(void*)=ehd->sr; // client function
+  void *cd = ehd->cd;        // client data
+
+  if(ehd->spawner_lock)
+  {
+    ::std::unique_lock< ::std::mutex> dummy(*ehd->spawner_lock);
+    *ehd->spawner_flag=true;
+    ehd->spawner_cond->notify_all();
+  }
+  delete ehd;
+  try {
+    (*sr)(cd);
+  }
+  catch (...) {
+    fprintf(stderr,"Uncaught exception in thread\n");
+    ::std::exit(1);
   }
   return NULL;
 }
@@ -265,7 +289,7 @@ flx_detached_thread_t::flx_detached_thread_t(flx_detached_thread_t const&){} // 
 void flx_detached_thread_t::operator=(flx_detached_thread_t const&){} // uncopyable
 
 int
-flx_detached_thread_t::init(void (*start)(void*), void* udat, thread_control_t *tc,
+flx_detached_thread_t::init(void (*start)(void*), void* udat, thread_control_base_t *tc,
   ::std::mutex * m, ::std::condition_variable_any *c,bool *flag)
 {
   pthread_attr_t attr;
@@ -290,9 +314,9 @@ flx_thread_t::flx_thread_t(flx_thread_t const&){} // uncopyable
 void flx_thread_t::operator=(flx_thread_t const&){} // uncopyable
 
 int
-flx_thread_t::init(void (*start)(void*), void* udat, thread_control_t*tc)
+flx_thread_t::init(void (*start)(void*), void* udat, thread_control_base_t*tc)
 {
-  int res = pthread_create(&thr, NULL, flx_pthread_start_wrapper,
+  int res = pthread_create(&thr, NULL, nonflx_pthread_start_wrapper,
     new tstart_t(start, udat, tc,NULL,NULL,NULL));
   if(res)
   {
@@ -372,47 +396,44 @@ DWORD WINAPI flx_pthread_start_wrapper(LPVOID e)
   thread_control_t *tc = ehd -> tc;
   if(tc == 0)
   {
-    fprintf(stderr, "WARNING: flx_pthread_start_wrapper got NULL thread control object\n");
+    fprintf(stderr, "ERROR: flx_pthread_start_wrapper got NULL thread control object\n");
+    assert(tc);
   }
-  if(tc && tc->debug)
+  bool debug = tc->get_debug();
+  if(debug)
     fprintf(stderr,"Spawned Thread %p start stack base = %p, tc=%p\n",
        (void*)mythrid(),stack_base, tc);
-  if(tc && tc->debug)
+  if(debug)
     fprintf(stderr,"Spawned Thread %p start stack base = %p, tc=%p\n",(void*)mythrid(),stack_base, tc);
-  if(tc) {
-    if(tc->debug)
-      fprintf(stderr,"Thread registering itself\n");
-    tc->add_thread(stack_base);
-    if(tc->debug)
-      fprintf(stderr,"Registered: Spawned Thread %p stack base = %p\n",
-        (void*)mythrid(),stack_base, tc);
-   }
+  if(tc->get_debug())
+    fprintf(stderr,"Thread registering itself\n");
+  tc->add_thread(stack_base);
+  if(debug)
+    fprintf(stderr,"Registered: Spawned Thread %p stack base = %p\n",
+      (void*)mythrid(),stack_base, tc);
   void (*sr)(void*)=ehd->sr;
   void *cd = ehd->cd;
-  if(tc && tc->debug)
+  if(debug)
     fprintf(stderr,"ehd->spawner_lock = %p\n",ehd->spawner_lock);
 
   if(ehd->spawner_lock)
   {
     ::std::unique_lock< ::std::mutex> dummy(*ehd->spawner_lock);
-    if (tc && tc->debug)
+    if (debug)
       fprintf(stderr,"Thread %p acquired mutex\n", (void*)mythrid());
-    if (tc && tc->debug)
+    if (debug)
       fprintf(stderr,"Thread %p notifying spawner it has registered itself\n", (void*)mythrid());
     *ehd->spawner_flag=true;
     ehd->spawner_cond->notify_all();
-    if (tc->debug)
+    if (debug)
       fprintf(stderr,"Thread %p releasing mutex\n", (void*)mythrid());
   }
   delete ehd;
-  if(tc)
-  {
-    if (tc->debug)
-      fprintf(stderr,"Thread %p yielding\n", (void*)mythrid());
-    tc->yield();
-  }
+  if (debug)
+    fprintf(stderr,"Thread %p yielding\n", (void*)mythrid());
+  tc->yield();
   try {
-    if (tc && tc->debug)
+    if (debug)
       fprintf(stderr,"Thread %p running client code\n", (void*)mythrid());
     (*sr)(cd);
   }
@@ -420,10 +441,31 @@ DWORD WINAPI flx_pthread_start_wrapper(LPVOID e)
     fprintf(stderr,"Uncaught exception in thread\n");
     ::std::exit(1);
   }
-  if(tc){
-    if (tc->debug)
-      fprintf(stderr,"Thread %p unregistering\n", (void*)mythrid());
-    tc->remove_thread();
+  if (debug)
+    fprintf(stderr,"Thread %p unregistering\n", (void*)mythrid());
+  tc->remove_thread();
+  return 0;
+}
+
+DWORD WINAPI nonflx_pthread_start_wrapper(LPVOID e)
+{
+  void *stack_base = get_stack_pointer();
+  tstart_t *ehd = (tstart_t*)e;
+  void (*sr)(void*)=ehd->sr;
+  void *cd = ehd->cd;
+  if(ehd->spawner_lock)
+  {
+    ::std::unique_lock< ::std::mutex> dummy(*ehd->spawner_lock);
+    *ehd->spawner_flag=true;
+    ehd->spawner_cond->notify_all();
+  }
+  delete ehd;
+  try {
+    (*sr)(cd);
+  }
+  catch (...) {
+    fprintf(stderr,"Uncaught exception in thread\n");
+    ::std::exit(1);
   }
   return 0;
 }
@@ -495,7 +537,7 @@ flx_thread_t::init(void (*fn)(void*), void *lParam, thread_control_t *tc)
 {
   DWORD thread_id = 0;
   thr= (HANDLE)CreateThread(NULL, 0,
-    (LPTHREAD_START_ROUTINE)flx_pthread_start_wrapper,
+    (LPTHREAD_START_ROUTINE)nonflx_pthread_start_wrapper,
     new tstart_t(fn,lParam, tc,NULL,NULL,NULL), 0,
     &thread_id
   );
@@ -837,6 +879,8 @@ static void *get_stack_pointer() {
   return y; 
 }
 
+bool thread_control_t::get_debug()const { return debug; }
+
 thread_control_base_t::~thread_control_base_t(){}
 
 thread_control_t::thread_control_t (thread_control_t const &) {}
@@ -849,13 +893,13 @@ thread_control_t::thread_control_t (bool d) :
       fprintf(stderr,"INITIALISING THREAD CONTROL OBJECT\n");
   }
 
-int thread_control_t::thread_count()
+size_t thread_control_t::thread_count()
   {
     ::std::unique_lock< ::std::mutex> m(stop_mutex);
     return thread_counter;
   }
 
-int thread_control_t::active_count()
+size_t thread_control_t::active_count()
   {
     ::std::unique_lock< ::std::mutex> m(stop_mutex);
     return active_counter;
@@ -1091,13 +1135,14 @@ A lock free thread safe bag for holding non-null pointers.
 #include "flx_pthread_config.hpp"
 #include <stdint.h>
 #include <atomic>
+#include "pthread_thread_control_base.hpp"
 
 namespace flx { namespace pthread {
 
 struct PTHREAD_EXTERN pthread_lf_bag {
   ::std::atomic <void *> * volatile a;
   size_t n;
-
+  thread_control_base_t *tc;
   // we can't use unsigned type because the value may go negative
   // if dequeue operations decrement the counter before the enqueue
   // that pushed the data does.
@@ -1107,9 +1152,8 @@ struct PTHREAD_EXTERN pthread_lf_bag {
   // the head points at the next element to dequeue or a bit earlier
   // the tail points to a free slot or a bit earlier
   ::std::atomic<size_t> head;
-  ::std::atomic<size_t> tail;
 
-  pthread_lf_bag (size_t n_);
+  pthread_lf_bag (thread_control_base_t *tc_, size_t n_);
 
   // the destructor is not safe!
   // to make it safe one needs to be sure the queue is empty
@@ -1137,12 +1181,17 @@ struct PTHREAD_EXTERN pthread_lf_bag {
 #include <thread>
 #include <stdlib.h>
 #include "pthread_lf_bag.hpp"
+#include <assert.h>
+
+using namespace flx::pthread;
 
 // 10 ms max sleep, that's 10,000,000 nanoseconds
 #define MAXSLEEP (size_t)10000000
 
-static void sleep(size_t ns) 
+static void sleep(thread_control_base_t *tc, size_t ns) 
 {
+  assert(tc);
+  tc->yield();
   //::std::this_thread::sleep_for(::std::chrono::nanoseconds(ns));
   ::std::this_thread::yield();
 }
@@ -1150,9 +1199,8 @@ static void sleep(size_t ns)
 #define NQFENCE ::std::memory_order_seq_cst
 #define DQFENCE ::std::memory_order_seq_cst
 
-using namespace flx::pthread;
 
-  pthread_lf_bag::pthread_lf_bag (size_t n_) : n (n_), head(0), tail(0), used(0), 
+  pthread_lf_bag::pthread_lf_bag (thread_control_base_t *tc_, size_t n_) : n (n_), tc(tc_), head(0), used(0), 
     a((::std::atomic<void*>*)calloc (n_ , sizeof (void*))) 
   {}
 
@@ -1171,7 +1219,7 @@ using namespace flx::pthread;
 wait:
     size_t stime = 1;
     //while (used.load(::std::memory_order_seq_cst) == n) sleep(stime);
-    size_t i = tail;
+    size_t i = (head + used) % n;
     while 
     (
       (d = ::std::atomic_exchange_explicit(a + i, d, 
@@ -1180,18 +1228,16 @@ wait:
     { 
       //if (used.load(::std::memory_order_seq_cst) == n) goto wait; // lost the race
       i = (i + 1) % n; 
-      stime = ::std::min (stime , MAXSLEEP);
-      //sleep(stime);
+      if (i == head) sleep(tc,stime);
     }
-    //tail.store (i, ::std::memory_order_seq_cst);
-    //++used;
+    ++used;
   }
 
   void *pthread_lf_bag::dequeue () 
   { 
 wait:
     size_t stime = 1;
-    //while (used.load(::std::memory_order_seq_cst) == 0) sleep(stime );
+    while (used.load(::std::memory_order_seq_cst) == 0) sleep(tc,stime );
     
     size_t i = head.load(::std::memory_order_seq_cst);
     void *d = nullptr;
@@ -1203,11 +1249,10 @@ wait:
     { 
       //if (used.load(::std::memory_order_seq_cst) == 0) goto wait; // lost the race
       i = (i + 1) % n; 
-      stime = ::std::min (stime , MAXSLEEP);
-      //sleep(stime);
+      if (i == head) sleep(tc,stime);
     }
-    //head.store (i,::std::memory_order_seq_cst);
-    //--used;
+    head.store (i,::std::memory_order_seq_cst);
+    --used;
     return d;
   }
 @
@@ -1222,7 +1267,10 @@ class LockFreeBag
       Cxx11_headers::memory
   ;
   // note: unmanaged container at the moment!!
-  ctor lf_bag : size = "::std::shared_ptr<::flx::pthread::pthread_lf_bag> (new ::flx::pthread::pthread_lf_bag($1))";
+  ctor lf_bag : size = """
+     ::std::shared_ptr<::flx::pthread::pthread_lf_bag> 
+     (new ::flx::pthread::pthread_lf_bag(PTF gcp->collector->get_thread_control(),$1))
+  """;
   proc enqueue : lf_bag * address = "$1->enqueue ($2);";
   gen dequeue : lf_bag -> address = "$1->dequeue ()";
 }
