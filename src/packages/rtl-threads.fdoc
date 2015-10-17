@@ -349,7 +349,7 @@ flx_thread_t::flx_thread_t() { }
 flx_thread_wrapper_t::flx_thread_wrapper_t(flx_thread_wrapper_t const&){} // uncopyable
 void flx_thread_wrapper_t::operator=(flx_thread_wrapper_t const&){} // uncopyable
 
-flx_thread_wrapper_t::flx_thread_wrapper_t(void (*start)(void*), void* udat, thread_control_t*tc)
+flx_thread_wrapper_t::flx_thread_wrapper_t(void (*start)(void*), void* udat, thread_control_base_t*tc)
 {
   int res = thread.init(start,udat,tc);
   {
