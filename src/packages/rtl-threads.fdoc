@@ -377,6 +377,7 @@ flx_thread_wrapper_t::~flx_thread_wrapper_t() { thread.join(); }
 #if FLX_WIN32
 #include <stdio.h>
 #include <cstdlib>
+#include <assert.h>
 
 namespace flx { namespace pthread {
 
@@ -393,7 +394,7 @@ DWORD WINAPI flx_pthread_start_wrapper(LPVOID e)
 {
   void *stack_base = get_stack_pointer();
   tstart_t *ehd = (tstart_t*)e;
-  thread_control_t *tc = ehd -> tc;
+  thread_control_base_t *tc = ehd -> tc;
   if(tc == 0)
   {
     fprintf(stderr, "ERROR: flx_pthread_start_wrapper got NULL thread control object\n");
