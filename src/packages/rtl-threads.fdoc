@@ -171,7 +171,7 @@ class PTHREAD_EXTERN flx_thread_wrapper_t {
   void operator=(flx_thread_wrapper_t const&); // uncopyable
 public:
   ~flx_thread_wrapper_t();
-  flx_thread_wrapper_t(void (*start)(void*), void* udat, thread_control_t *tc);
+  flx_thread_wrapper_t(void (*start)(void*), void* udat, thread_control_base_t *tc);
 };
 
 }}
