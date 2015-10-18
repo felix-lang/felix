@@ -578,39 +578,19 @@ flx_thread_wrapper_t::~flx_thread_wrapper_t() { thread.join(); }
 #include <thread>
 #include <mutex>
 #include <condition_variable>
+#include <atomic>
+#include "pthread_thread_control_base.hpp"
 
 // interface for a consumer/producer queue. threads requesting a resource
 // that isn't there block until one is available. push/pop re-entrant
 
 namespace flx { namespace pthread {
 
-// ********************************************************
-/// A monitor is a concurrent version of a channel.
-/// It matches up readers and writers in pairs,
-/// synchronising transfer of one datum.
-///
-/// Unlike the bounded queue below, a monitor is a fully
-/// synchronised unbuffered transfer, mediated by a full
-/// handshake.
-///
-/// In particular, unlike the queue of size 1, the writer
-/// cannot proceed until the reader sends an acknowledge
-/// signal.
-///
-/// This logic matches that provides by schannels, but
-/// across an asynchronous boundary.
-// ********************************************************
-
 class PTHREAD_EXTERN monitor_t {
-  ::std::mutex m;
-  ::std::mutex rm;
-  ::std::mutex wm;
-  int dataput;
-  int datagot;
-  ::std::condition_variable_any ack;
-  void *data;
+  ::std::atomic<void *> volatile data;
+  thread_control_base_t *tc; 
 public:
-  monitor_t();
+  monitor_t(thread_control_base_t *);
   ~monitor_t();
   void enqueue(void*);
   void* dequeue();
@@ -624,50 +604,41 @@ public:
 #include "pthread_monitor.hpp"
 #include <string.h>       // strerror
 #include <assert.h>
+#include <thread>
+#include <atomic>
 
 using namespace std;
 
+#define NQFENCE ::std::memory_order_seq_cst
+#define DQFENCE ::std::memory_order_seq_cst
+
+
 namespace flx { namespace pthread {
 
-monitor_t::monitor_t() : dataput(0),datagot(0) {}
+monitor_t::monitor_t(thread_control_base_t *tc_) : tc(tc_), data(0) {}
 monitor_t::~monitor_t() { }
-inline static void handshake_pos(int &a, ::std::condition_variable_any &c, ::std::mutex &m)
-{
-  ++a;
-  if(a != 0) do { c.wait(m); } while (a != 0);
-  else c.notify_one();
-  assert(a == 0);
-  //if(!(a == 0)) fprintf(stderr,"ASSER FAIL\n");
-}
 
-inline static void handshake_neg(int &a, ::std::condition_variable_any &c, ::std::mutex &m)
+static void sleep(thread_control_base_t *tc, size_t ns) 
 {
-  --a;
-  if(a != 0) do { c.wait(m); } while (a != 0);
-  else c.notify_one();
-  assert(a == 0);
-  //if(!(a == 0)) fprintf(stderr,"ASSER FAIL\n");
+  assert(tc);
+  tc->yield();
+  //::std::this_thread::sleep_for(::std::chrono::nanoseconds(ns));
+  ::std::this_thread::yield();
 }
 
 void
 monitor_t::enqueue(void* elt)
 {
-  ::std::unique_lock < ::std::mutex> wl(wm); // exclude other writers
-  ::std::unique_lock < ::std::mutex> l(m);
-  data = elt;
-  handshake_pos(dataput, ack, m);
-  handshake_pos(datagot, ack, m);
+  while ( (elt = ::std::atomic_exchange_explicit(&data, elt, NQFENCE))) sleep (tc,1);
+  while (!data.load()) sleep(tc,1);
 }
 
 void*
 monitor_t::dequeue()
 {
-  ::std::unique_lock < ::std::mutex> rl(rm); // exclude other readers
-  ::std::unique_lock < ::std::mutex> l(m);
-  handshake_neg(dataput, ack, m);
-  void *d = data;              // get the data
-  handshake_neg(datagot, ack, m);
-  return d;
+  void *elt = 0;
+  while ( !(elt = ::std::atomic_exchange_explicit (&data, elt, DQFENCE))) sleep(tc,1);
+  return elt;
 }
 
 }}
@@ -1144,15 +1115,18 @@ struct PTHREAD_EXTERN pthread_lf_bag {
   ::std::atomic <void *> * volatile a;
   size_t n;
   thread_control_base_t *tc;
+  
+  // for statistics
+  size_t throughput;
+
+  // these indices are for optimisation purposes ONLY
+  // the head points at the next element to dequeue or a bit earlier
+  ::std::atomic<size_t> head;
+
   // we can't use unsigned type because the value may go negative
   // if dequeue operations decrement the counter before the enqueue
   // that pushed the data does.
   ::std::atomic<int32_t> used; 
-
-  // these indices are for optimisation purposes ONLY
-  // the head points at the next element to dequeue or a bit earlier
-  // the tail points to a free slot or a bit earlier
-  ::std::atomic<size_t> head;
 
   pthread_lf_bag (thread_control_base_t *tc_, size_t n_);
 
@@ -1201,7 +1175,9 @@ static void sleep(thread_control_base_t *tc, size_t ns)
 #define DQFENCE ::std::memory_order_seq_cst
 
 
-  pthread_lf_bag::pthread_lf_bag (thread_control_base_t *tc_, size_t n_) : n (n_), tc(tc_), head(0), used(0), 
+  pthread_lf_bag::pthread_lf_bag (thread_control_base_t *tc_, size_t n_) :
+    n (n_), tc(tc_), head(0), used(0), 
+    throughput(0),
     a((::std::atomic<void*>*)calloc (n_ , sizeof (void*))) 
   {}
 
@@ -1219,7 +1195,7 @@ static void sleep(thread_control_base_t *tc, size_t ns)
   { 
 wait:
     size_t stime = 1;
-    //while (used.load(::std::memory_order_seq_cst) == n) sleep(stime);
+    while (used.load(::std::memory_order_seq_cst) == n) sleep(tc,stime);
     size_t i = (head + used) % n;
     while 
     (
@@ -1227,7 +1203,7 @@ wait:
         NQFENCE))
     ) 
     { 
-      //if (used.load(::std::memory_order_seq_cst) == n) goto wait; // lost the race
+      if (used.load(::std::memory_order_seq_cst) == n) goto wait; // lost the race
       i = (i + 1) % n; 
       if (i == head) sleep(tc,stime);
     }
@@ -1248,12 +1224,13 @@ wait:
         DQFENCE))
     ) 
     { 
-      //if (used.load(::std::memory_order_seq_cst) == 0) goto wait; // lost the race
+      if (used.load(::std::memory_order_seq_cst) == 0) goto wait; // lost the race
       i = (i + 1) % n; 
       if (i == head) sleep(tc,stime);
     }
     head.store (i,::std::memory_order_seq_cst);
     --used;
+    ++throughput;
     return d;
   }
 @
@@ -1274,6 +1251,8 @@ class LockFreeBag
   """;
   proc enqueue : lf_bag * address = "$1->enqueue ($2);";
   gen dequeue : lf_bag -> address = "$1->dequeue ()";
+  gen len : lf_bag -> size = "$1->n"; 
+  gen used : lf_bag -> size = "$1->used.load()"; 
 }
 @
 
