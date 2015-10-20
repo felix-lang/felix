@@ -639,41 +639,37 @@ monitor_t::enqueue(void* elt)
 {
   // wrap user data up with a flag so this thread
   // can wait until our user data elt is consumed
-  monitor_data_t *monitor_data = new monitor_data_t (elt);
-
-  // get the address of the flag
-  ::std::atomic<bool> *flag = &(monitor_data->flag);
+  monitor_data_t monitor_data (elt);
+  monitor_data_t *p = &monitor_data;
 
   // swap user data into the monitor 
   // note we might get back a value some other thread put there
   // in which case we keep swapping until we get a NULL
   // which means we no longer have any data to put into the monitor
-  while ( (monitor_data = ::std::atomic_exchange_explicit(&data, monitor_data, NQFENCE))) sleep (tc,1);
+  while ( (p = ::std::atomic_exchange_explicit(&data, p, NQFENCE))) sleep (tc,1);
 
   // wait for the *original* data to be consumed
   // note that some other thread may have swapped that data 
   // into its own space and will be trying as above to swap it
   // into the monitor for a NULL.
-  while (!flag->load()) sleep(tc,1);
-  delete monitor_data; // delete the carrier wrapper
+  while (!monitor_data.flag.load()) sleep(tc,1);
 }
 
 void*
 monitor_t::dequeue()
 {
-  monitor_data_t *monitor_data = 0;
+  monitor_data_t *p = 0;
 
   // Swap NULL into the monitor until we get a non-NULL value back.
-  while ( !(monitor_data = ::std::atomic_exchange_explicit (&data, monitor_data, DQFENCE))) sleep(tc,1);
+  while ( !(p = ::std::atomic_exchange_explicit (&data, p, DQFENCE))) sleep(tc,1);
 
   // grab the user data
-  void *elt = monitor_data->user_data;
+  void *elt = p->user_data;
   
   // signal that we have the data
-  monitor_data->flag.store(true); 
+  p->flag.store(true); 
   // the writer that was originally responsible for putting
   // the data we read into the monitor may now proceed
-  // by deleting the wrapper and returning
   return elt; // return data
 }
 
