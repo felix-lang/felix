@@ -586,8 +586,16 @@ flx_thread_wrapper_t::~flx_thread_wrapper_t() { thread.join(); }
 
 namespace flx { namespace pthread {
 
+struct monitor_data_t
+{
+  void *user_data;
+  ::std::atomic<bool> flag;
+  monitor_data_t (void* u) : user_data(u), flag(false) {}
+};
+
+
 class PTHREAD_EXTERN monitor_t {
-  ::std::atomic<void *> volatile data;
+  ::std::atomic<monitor_data_t*> volatile data;
   thread_control_base_t *tc; 
 public:
   monitor_t(thread_control_base_t *);
@@ -629,16 +637,44 @@ static void sleep(thread_control_base_t *tc, size_t ns)
 void
 monitor_t::enqueue(void* elt)
 {
-  while ( (elt = ::std::atomic_exchange_explicit(&data, elt, NQFENCE))) sleep (tc,1);
-  while (!data.load()) sleep(tc,1);
+  // wrap user data up with a flag so this thread
+  // can wait until our user data elt is consumed
+  monitor_data_t *monitor_data = new monitor_data_t (elt);
+
+  // get the address of the flag
+  ::std::atomic<bool> *flag = &(monitor_data->flag);
+
+  // swap user data into the monitor 
+  // note we might get back a value some other thread put there
+  // in which case we keep swapping until we get a NULL
+  // which means we no longer have any data to put into the monitor
+  while ( (monitor_data = ::std::atomic_exchange_explicit(&data, monitor_data, NQFENCE))) sleep (tc,1);
+
+  // wait for the *original* data to be consumed
+  // note that some other thread may have swapped that data 
+  // into its own space and will be trying as above to swap it
+  // into the monitor for a NULL.
+  while (!flag->load()) sleep(tc,1);
+  delete monitor_data; // delete the carrier wrapper
 }
 
 void*
 monitor_t::dequeue()
 {
-  void *elt = 0;
-  while ( !(elt = ::std::atomic_exchange_explicit (&data, elt, DQFENCE))) sleep(tc,1);
-  return elt;
+  monitor_data_t *monitor_data = 0;
+
+  // Swap NULL into the monitor until we get a non-NULL value back.
+  while ( !(monitor_data = ::std::atomic_exchange_explicit (&data, monitor_data, DQFENCE))) sleep(tc,1);
+
+  // grab the user data
+  void *elt = monitor_data->user_data;
+  
+  // signal that we have the data
+  monitor_data->flag.store(true); 
+  // the writer that was originally responsible for putting
+  // the data we read into the monitor may now proceed
+  // by deleting the wrapper and returning
+  return elt; // return data
 }
 
 }}
