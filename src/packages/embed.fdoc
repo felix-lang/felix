@@ -176,7 +176,7 @@ flx_config::init(int argc, char **argv) {
   // default min mem is 10 Meg
   min_mem = (size_t)(egetv("FLX_MIN_MEM", 10) * 1000000.0);
   if (debug)
-    fprintf(stderr, "[FLX_MIN_MEM] call gc only if more than %lu Meg heap used\n", min_mem/1000000);
+    fprintf(stderr, "[FLX_MIN_MEM] call gc only if more than %zu Meg heap used\n", min_mem/1000000);
 
   // default max mem is unlimited
   max_mem = (size_t)(egetv("FLX_MAX_MEM", 0) * 1000000.0);
@@ -726,7 +726,7 @@ void async_sched::do_spawn_pthread()
   flx_detached_thread_t dummy;
 
   if (debug_driver)
-    fprintf(stderr, "[prun: spawn_pthread] Starting new pthread, thread counter= %d\n",
+    fprintf(stderr, "[prun: spawn_pthread] Starting new pthread, thread counter= %zu\n",
       gcp->collector->get_thread_control()->thread_count());
 
   {

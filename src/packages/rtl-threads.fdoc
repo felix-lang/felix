@@ -917,7 +917,7 @@ void thread_control_t::add_thread(void *stack_base)
     ++thread_counter;
     ++active_counter;
     if(debug)
-      fprintf(stderr, "Adding thread %p base %p, count=%d\n", (void*)(uintptr_t)id, stack_base, thread_counter);
+      fprintf(stderr, "Adding thread %p base %p, count=%zu\n", (void*)(uintptr_t)id, stack_base, thread_counter);
     stop_guard.notify_all();
   }
 
@@ -933,7 +933,7 @@ void thread_control_t::remove_thread()
     --thread_counter;
     --active_counter;
     if(debug)
-      fprintf(stderr, "Removed thread %p, count=%d\n", (void*)(uintptr_t)id, thread_counter);
+      fprintf(stderr, "Removed thread %p, count=%zu\n", (void*)(uintptr_t)id, thread_counter);
     stop_guard.notify_all();
   }
 
@@ -945,7 +945,7 @@ bool thread_control_t::world_stop()
   {
     stop_mutex.lock();
     if(debug)
-      fprintf(stderr,"Thread %p Stopping world, active threads=%d\n", (void*)mythrid(), active_counter);
+      fprintf(stderr,"Thread %p Stopping world, active threads=%zu\n", (void*)mythrid(), active_counter);
     if (do_world_stop) {
       stop_mutex.unlock();
       return false; // race! Someone else beat us
@@ -963,10 +963,10 @@ bool thread_control_t::world_stop()
           fprintf(stderr, "Thread = %p is %s\n",(void*)(uintptr_t)(*it).first, (*it).second.active? "ACTIVE": "SUSPENDED");
         }
       if(debug)
-        fprintf(stderr,"Thread %p Stopping world: begin wait, threads=%d\n",  (void*)mythrid(), thread_counter);
+        fprintf(stderr,"Thread %p Stopping world: begin wait, threads=%zu\n",  (void*)mythrid(), thread_counter);
       stop_guard.wait(stop_mutex);
       if(debug)
-        fprintf(stderr,"Thread %p Stopping world: checking threads=%d\n", (void*)mythrid(), thread_counter);
+        fprintf(stderr,"Thread %p Stopping world: checking threads=%zu\n", (void*)mythrid(), thread_counter);
     }
     // this code has to be copied here, we cannot use 'yield' because
     // it would deadlock ourself
@@ -983,7 +983,7 @@ bool thread_control_t::world_stop()
       }
       (*it).second.stack_top = stack_pointer;
       if(debug)
-        fprintf(stderr,"Stack size = %zd\n",(size_t)((char*)(*it).second.stack_base -(char*)(*it).second.stack_top));
+        fprintf(stderr,"Stack size = %zu\n",(size_t)((char*)(*it).second.stack_base -(char*)(*it).second.stack_top));
     }
     if(debug)
       fprintf(stderr,"World STOPPED\n");
@@ -1001,7 +1001,7 @@ void thread_control_t::join_all()
       stop_guard.wait(stop_mutex);
     }
     if(debug)
-      fprintf(stderr,"World restarted: do_world_stop=%d, Yield thread count now %d\n",do_world_stop,thread_counter);
+      fprintf(stderr,"World restarted: do_world_stop=%d, Yield thread count now %zu\n",do_world_stop,thread_counter);
   }
 
 // restart the world
@@ -1097,7 +1097,7 @@ void thread_control_t::unsafe_resume()
   }
   (*it).second.active = true;
   if(debug) {
-    fprintf(stderr,"[unsafe_resume: thread=%p] resumed, active count= %d\n",
+    fprintf(stderr,"[unsafe_resume: thread=%p] resumed, active count= %zu\n",
       (void*)mythrid(),active_counter);
   }
   stop_guard.notify_all();
