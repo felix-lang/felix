@@ -1071,7 +1071,7 @@ void thread_control_t::unsafe_suspend()
       (size_t)((char*)(*it).second.stack_base -(char*)(*it).second.stack_top));
   --active_counter;
   if(debug)
-    fprintf(stderr,"[unsafe_suspend]: active thread count now %d\n",active_counter);
+    fprintf(stderr,"[unsafe_suspend]: active thread count now %zu\n",active_counter);
   stop_guard.notify_all();
   if(debug)
     fprintf(stderr,"[unsafe_suspend]: stop_guard.notify_all() done");
