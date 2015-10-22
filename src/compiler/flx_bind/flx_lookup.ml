@@ -1720,7 +1720,7 @@ and cal_ret_type state bsym_table (rs:recstop) index args =
         | Expr_recursion e -> ()
         | Free_fixpoint t -> ()
         | Unresolved_return (sr,s) -> ()
-        | ClientError (sr,s) as e -> raise (ClientError (sr,"Whilst calculating return type:\n"^s))
+        | ClientError (sr2,s) as e -> raise (ClientError2 (sr,sr2,"Whilst calculating return type:\n"^s))
         | x ->
         (*
         print_endline ("  .. Unable to compute type of " ^ string_of_expr e);
