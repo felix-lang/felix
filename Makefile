@@ -67,3 +67,7 @@ test: copy
 	flx --felix=wbuild.fpc --usage=prototype --expect --input --nonstop \
 		--indir=build\release\test\tut --regex=".*\.flx" build\release\test\tut
 
+guitest:
+	flx --felix=build.fpc --indir=src\web\tutopt\sdlgui --regex='.*\.fdoc'
+
+
