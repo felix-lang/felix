@@ -3702,7 +3702,7 @@ Name: SDL2
 Description: Simple Direct Media Layer 2.0
 cflags: /I\Users\skaller\Desktop\SDL2-2.0.3\include
 includes: '"SDL.h"'
-provides_dlib: /DEFAULTLIB:\Users\skaller\Desktop\SDL2-2.0.3\x64\SDL2
+provides_dlib: /DEFAULTLIB:\Users\skaller\Desktop\SDL2-2.0.3\lib\x64\SDL2
 
 @
 @tangle win32_sdl2_image.fpc
@@ -3710,15 +3710,15 @@ Name: SDL2_image
 Description: Simple Direct Media Layer 2.0: image loader
 cflags: /I\Users\skaller\Desktop\SDL2_image-2.0.0\include
 includes: '"SDL_image.h"'
-provides_dlib: /DEFAULTLIB:\Users\skaller\Desktop\SDL2-2.0.0\x64\SDL2_image
+provides_dlib: /DEFAULTLIB:\Users\skaller\Desktop\SDL2_image-2.0.0\lib\x64\SDL2_image
 
 @
 @tangle win32_sdl2_ttf.fpc
 Name: SDL2_ttf
 Description: Simple Direct Media Layer 2.0: free type interface
-cflags: /I\Users\skaller\Desktop\SDL2_ttf-2.0.0\include
+cflags: /I\Users\skaller\Desktop\SDL2_ttf-2.0.12\include
 includes: '"SDL_ttf.h"'
-provides_dlib: /DEFAULTLIB:\Users\skaller\Desktop\SDL2-2.0.0\x64\SDL2_ttf
+provides_dlib: /DEFAULTLIB:\Users\skaller\Desktop\SDL2_ttf-2.0.12\lib\x64\SDL2_ttf
 
 @
 
