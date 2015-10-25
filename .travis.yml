@@ -1,5 +1,7 @@
 sudo: false
+
 dist: trusty
+
 addons:
   apt:
     sources:
@@ -9,6 +11,7 @@ addons:
     - ocaml-native-compilers
     - gcc-5
     - g++-5
+
 script:
 - mkdir bin
 - ln -s /usr/bin/gcc-5 bin/gcc
