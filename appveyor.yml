@@ -21,8 +21,23 @@ build_script:
   - ocaml -version
   - nmake
 
+after-build:
+  - 7z a felix-win64.zip build\release\share\* build\release\host\*
+ 
 notifications:
   - provider: Email
     to:
       - felix-builds@googlegroups.com
+
+deploy:
+  release: felix-win64
+  description: 'Felix for Windows x64'
+  provider: GitHub
+  auth_token: 6Cf5f0fMQRzTS58cpPNKeP05GJrosVqXquFRrwLzaTnoJ68V7qwacLX3SVRynW97
+  artifact: felix-win64.zip
+  draft: false
+  prerelease: false
+  on:
+    branch: master
+    appveyor_repo_tag: true
 
