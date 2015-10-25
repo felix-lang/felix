@@ -68,6 +68,6 @@ test: copy
 		--indir=build\release\test\tut --regex=".*\.flx" build\release\test\tut
 
 guitest:
-	flx --felix=build.fpc --indir=src\web\tutopt\sdlgui --regex='.*\.fdoc'
+	flx --felix=wbuild.fpc --indir=src\web\tutopt\sdlgui --regex=".*\.fdoc"
 
 
