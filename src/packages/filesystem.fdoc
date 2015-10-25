@@ -811,10 +811,10 @@ class Win32FileSystem
   gen open: string * file_perm_t * Win32FileStat::mode_t -> posix_file = "_open($1.c_str(), $2, $3)";
   gen open: string * file_perm_t -> posix_file = "_open($1.c_str(), $2)";
 
-  gen ropen: string -> posix_file = 'open($1.c_str(), _O_RDONLY,0)' requires Posix_headers::fcntl_h, Posix_headers::sys_stat_h;
-  gen wopen: string -> posix_file = 'open($1.c_str(), _O_WRONLY | _O_CREAT | _O_TRUNC, S_IRUSR | S_IWUSR)' requires Win32_headers::io_h, Posix_headers::sys_stat_h;
-  gen rwopen: string -> posix_file = 'open($1.c_str(), _O_RDWR,0)' requires Win32_headers::io_h, Posix_headers::sys_stat_h;
-  gen creat: string * Win32FileStat::mode_t-> posix_file = 'open($1.c_str(), _O_WRONLY | _O_CREAT | _O_TRUNC, $2)' requires Win32_headers::io_h, Posix_headers::sys_stat_h;
+  gen ropen: string -> posix_file = 'open($1.c_str(), _O_RDONLY | _O_BINARY,0)' requires Posix_headers::fcntl_h, Posix_headers::sys_stat_h;
+  gen wopen: string -> posix_file = 'open($1.c_str(), _O_WRONLY  | _O_BINARY | _O_CREAT | _O_TRUNC, S_IRUSR | S_IWUSR)' requires Win32_headers::io_h, Posix_headers::sys_stat_h;
+  gen rwopen: string -> posix_file = 'open($1.c_str(), _O_RDWR | _O_BINARY,0)' requires Win32_headers::io_h, Posix_headers::sys_stat_h;
+  gen creat: string * Win32FileStat::mode_t-> posix_file = 'open($1.c_str(), _O_WRONLY | _O_BINARY | _O_CREAT | _O_TRUNC, $2)' requires Win32_headers::io_h, Posix_headers::sys_stat_h;
 
   gen close: posix_file -> int = "_close($1)";
   gen read: posix_file * &char * size -> size = "read($1, $2, $3)";
@@ -869,12 +869,12 @@ class Win32FileSystem
     done;
     val permissions = Win32FileStat::file_perm$ Win32FileStat::raw_mode (&stat_buf);
     val last_modification = Win32FileStat::filetime(src);
-    var fsrc = open (src,_O_RDONLY );
+    var fsrc = open (src,_O_RDONLY \| _O_BINARY);
     if not valid fsrc do
       eprintln$ " Bad src file in Filesystem::filecopy " + src;
       return false; 
     done
-    var fdst = open (dst,_O_WRONLY \| _O_CREAT \| _O_TRUNC, permissions);
+    var fdst = open (dst,_O_WRONLY \| _O_BINARY \| _O_CREAT \| _O_TRUNC, permissions);
     if not valid fdst do
       eprintln$ " Bad dst file in Filesystem::filecopy " + dst + ", Error: " + str errno + "=" + #strerror;
       return false; 
