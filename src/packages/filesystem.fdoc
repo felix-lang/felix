@@ -782,6 +782,7 @@ class Win32FileSystem
   // File access and create modes
   //------------------------------------------------------------
   pod type file_perm_t = "int" requires Posix_headers::fcntl_h;
+  const _O_BINARY     : file_perm_t;
   const _O_RDONLY     : file_perm_t;
   const _O_WRONLY     : file_perm_t;
   const _O_RDWR       : file_perm_t;
