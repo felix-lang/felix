@@ -37,7 +37,8 @@ deploy:
   release: felix-win64
   description: 'Felix for Windows x64'
   provider: GitHub
-  auth_token: 6Cf5f0fMQRzTS58cpPNKeP05GJrosVqXquFRrwLzaTnoJ68V7qwacLX3SVRynW97
+  auth_token:
+    secure: Mh/B12zvz5BIkV7bDrjj9WOc2UR5fI0ZCpmwehs/PNsHGkzwMIHnvBDlSpumKlmz
   artifact: felix-win64.zip
   draft: false
   prerelease: false
