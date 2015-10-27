@@ -42,4 +42,6 @@ deploy:
   artifact: felix-win64.zip
   draft: false
   prerelease: false
+  on:
+    appveyor_repo_tag: true
 
