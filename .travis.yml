@@ -30,7 +30,6 @@ deploy:
   api_key:
     secure: n5+jnBuG3JZAoMMuBpkTtewiazORSRkQWje/yiwaT3NaU+IdfLFBnkazp5+QD7Ox7Z5auXOM1ngtJWykf5wPDjAtpKc4C82o67nvUgBJzS3+PvFNUWXCW+8rzPGJ6Xn9wiqP80XucQvmsAgfY8UCP4Hj8DswjDgVOR5utucyRj4=
   file: felix-linux.tgz
-  tag: $(appveyor_repo_tag_name)
   on:
     tags: true
     repo: felix-lang/felix
