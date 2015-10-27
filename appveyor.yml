@@ -21,7 +21,7 @@ build_script:
   - nmake
 
 after_build:
-  - 7z a felix-win64.zip build\release\share build\release\host
+  - 7z a felix-win64.zip build\release\share build\release\host win32install.bat win32setup.bat
 
 artifacts:
   - path: felix-win64.zip
