@@ -34,8 +34,8 @@ notifications:
       - felix-builds@googlegroups.com
 
 deploy:
-  release: felix-win64
-  description: 'Felix for Windows x64'
+  release: $(APPVEYOR_REPO_TAG_NAME)
+  description: 'Felix Binaries'
   provider: GitHub
   auth_token:
     secure: Mh/B12zvz5BIkV7bDrjj9WOc2UR5fI0ZCpmwehs/PNsHGkzwMIHnvBDlSpumKlmz
