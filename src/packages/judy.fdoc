@@ -79,18 +79,12 @@ def build_runtime(phase):
 
     macros.append('BUILD_JUDY') #Apply this to all source files.
 
-    srcs = [copy(phase.ctx, p, phase.ctx.buildroot / 'share'/p) for p in [
+    srcs =  [
         path / 'JudyCommon/JudyMalloc.c',
         path / 'JudySL/JudySL.c',
-        path / 'JudyHS/JudyHS.c'] +
-        (path / 'Judy1' / '*.c').glob() +
-        (path / 'JudyL' / '*.c').glob()]
-    
-    # Copy all the common judy sources we need so people can rebuild the RTL without a source distro
-    for p in ((path / 'JudyCommon' / '*.c').glob() + 
-              (path / 'Judy*' / '*.h').glob()): 
-        if p not in ('JudyMalloc.c', 'JudyPrintJP.c'):
-            copy(phase.ctx, p, phase.ctx.buildroot / 'share'/ p)
+        path / 'JudyHS/JudyHS.c'] + (
+        path / 'Judy1' / '*.c').glob() + (
+        path / 'JudyL' / '*.c').glob()
 
     includes = [path, 
                 path / 'JudyCommon', 
