@@ -56,16 +56,25 @@ uproot:
 	cmd.exe /C rmdir /Q /S build\release\host
 	cmd.exe /C move build\release\win32 build\release\host
 
-test: copy
+mktestdir:
 	cmd.exe /C rmdir /Q /S build\release\test
 	cmd.exe /C mkdir build\release\test
+
+regress:
 	flx_tangle --indir=build\release\share\src\test --outdir=build\release\test
 	flx --felix=wbuild.fpc --usage=prototype --expect --nonstop \
 		--indir=build\release\test\regress\rt --regex=".*\.flx" build\release\test
+
+tut:
 	flx_tangle --indir=build\release\share\src\web\tut --outdir=build\release\test\tut
 	python src\tools\flx_iscr.py -q -d src\web\tut build\release\test\tut
 	flx --felix=wbuild.fpc --usage=prototype --expect --input --nonstop \
 		--indir=build\release\test\tut --regex=".*\.flx" build\release\test\tut
+
+
+regress-test: copy mktestdir regress
+
+test: copy mktestdir regress tut
 
 guitest:
 	flx --felix=wbuild.fpc --indir=src\web\tutopt\sdlgui --regex=".*\.fdoc"
