@@ -9,7 +9,10 @@
 #
 # We currently make a debug build for 64 bit windows ONLY.
 
-all: bootstrap tools target uproot test
+all: showversion bootstrap tools target uproot test
+
+showversion:
+	python showversion.py
 
 rebuild: copy extract tools target uproot
 

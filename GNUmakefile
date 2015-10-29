@@ -13,7 +13,7 @@ all: build test
 # default build
 #
 
-VERSION = 15.08.15
+VERSION := $(shell python3 showversion.py)
 DISTDIR ?= ./build/dist
 PREFIX ?= /usr/local
 EXECPREFIX ?= ${PREFIX}/bin
@@ -85,7 +85,10 @@ help:
 	#   FBUILD_PARAMS: parameters to fbuild, default none
 	#     fbuild/fbuild-light --help for options
 
-build: configure bootstrap bootstrap-tools rebuild uproot
+showversion:
+	echo Felix Version ${VERSION}
+
+build: showversion configure bootstrap bootstrap-tools rebuild uproot
 
 bootstrap: fbuild
 	cp ${BUILDROOT}/host/bin/bootflx ${BUILDROOT}/host/bin/flx

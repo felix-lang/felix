@@ -15,6 +15,10 @@ from buildsystem.version import flx_version
 # HACK
 import os, sys
 
+import time
+now = time.time()
+gmtime = time.gmtime(now)
+
 from os.path import join
 import fnmatch
 
@@ -430,44 +434,72 @@ def find_grammar(build_dir):
 
     flx_find_grammar_files.run(build_dir)
 
-def write_script(version):
+def write_script(buildroot,version):
     Path("installscript").makedirs()
     f = open (Path("installscript") / "posixinstall.sh","w")
-    f.write(r"rm -rfd /usr/local/lib/felix/felix-"+version+r"")
-    f.write(r"mkdir -p /usr/local/lib/felix/felix-"+version+r"/share")
-    f.write(r"mkdir -p /usr/local/lib/felix/felix-"+version+r"/host")
-    f.write(r"cp -r build/release/share/* /usr/local/lib/felix/felix-"+version+r"/share")
-    f.write(r"cp -r build/release/host/* /usr/local/lib/felix/felix-"+version+r"/host")
+    f.write(r"rm -rfd /usr/local/lib/felix/felix-"+version+r""+"\n")
+    f.write(r"mkdir -p /usr/local/lib/felix/felix-"+version+r"/share"+"\n")
+    f.write(r"mkdir -p /usr/local/lib/felix/felix-"+version+r"/host"+"\n")
+    f.write(r"cp -r build/release/share/* /usr/local/lib/felix/felix-"+version+r"/share"+"\n")
+    f.write(r"cp -r build/release/host/* /usr/local/lib/felix/felix-"+version+r"/host"+"\n")
     f.close()
   
     f = open (Path("installscript") / "win32install.bat","w")
     f.write(r"@echo off")
-    f.write(r"mkdir c:\usr\local\lib\felix\felix-"+version+r"\crap")
-    f.write(r"rmdir /S /Q c:\usr\local\lib\felix\felix-"+version+r"")
-    f.write(r"mkdir c:\usr\local\lib\felix\felix-"+version+r"\share")
-    f.write(r"mkdir c:\usr\local\lib\felix\felix-"+version+r"\host")
-    f.write(r"xcopy /E build\release\share\* c:\usr\local\lib\felix\felix-"+version+r"\share")
-    f.write(r"xcopy /E build\release\host\* c:\usr\local\lib\felix\felix-"+version+r"\host")
+    f.write(r"mkdir c:\usr\local\lib\felix\felix-"+version+r"\crap"+"\n")
+    f.write(r"rmdir /S /Q c:\usr\local\lib\felix\felix-"+version+r""+"\n")
+    f.write(r"mkdir c:\usr\local\lib\felix\felix-"+version+r"\share"+"\n")
+    f.write(r"mkdir c:\usr\local\lib\felix\felix-"+version+r"\host"+"\n")
+    f.write(r"xcopy /E build\release\share\* c:\usr\local\lib\felix\felix-"+version+r"\share"+"\n")
+    f.write(r"xcopy /E build\release\host\* c:\usr\local\lib\felix\felix-"+version+r"\host"+"\n")
     f.close()
 
     f = open (Path("installscript") / "linuxsetup.sh","w")
-    f.write(r"export PATH=/usr/local/lib/felix/felix-"+version+r"/host/bin:$PATH")
-    f.write(r"export LD_LIBRARY_PATH=/usr/local/lib/felix/felix-"+version+r"/host/lib/rtl:$LD_LIBRARY_PATH")
+    f.write(r"export PATH=/usr/local/lib/felix/felix-"+version+r"/host/bin:$PATH"+"\n")
+    f.write(r"export LD_LIBRARY_PATH=/usr/local/lib/felix/felix-"+version+r"/host/lib/rtl:$LD_LIBRARY_PATH"+"\n")
     f.close()
 
     f = open (Path("installscript") / "osxsetup.sh","w")
-    f.write(r"export PATH=/usr/local/lib/felix/felix-"+version+r"/host/bin:$PATH")
-    f.write(r"export DYLD_LIBRARY_PATH=/usr/local/lib/felix/felix-"+version+r"/host/lib/rtl:$DYLD_LIBRARY_PATH")
+    f.write(r"export PATH=/usr/local/lib/felix/felix-"+version+r"/host/bin:$PATH"+"\n")
+    f.write(r"export DYLD_LIBRARY_PATH=/usr/local/lib/felix/felix-"+version+r"/host/lib/rtl:$DYLD_LIBRARY_PATH"+"\n")
     f.close()
 
-    f = open (Path("installscript") / "win32setup.sh","w")
-    f.write(r"@echo off")
-    f.write(r"set PATH=C:\usr\local\lib\felix\felix-"+version+r"\host\bin;C:\usr\local\lib\felix\felix-"+version+r"\host\lib\rtl;%PATH%")
+    f = open (Path("installscript") / "win32setup.bat","w")
+    f.write(r"@echo off"+"\n")
+    f.write(r"set PATH=C:\usr\local\lib\felix\felix-"+version+r"\host\bin;C:\usr\local\lib\felix\felix-"+version+r"\host\lib\rtl;%PATH%"+"\n")
     f.close()
 
-def set_version():
+    f = open("VERSION","w")
+    f.write(flx_version+"\n")
+    f.close()
+
+    short_time = time.strftime("%a %d %b %Y",gmtime)
+    (buildroot/"src"/"compiler"/"flx_version_hook").makedirs()
+    f = open (buildroot/"src"/"compiler"/"flx_version_hook"/"flx_version_hook.ml","w")
+    f.write("open Flx_version\n")
+    f.write("let version_data: version_data_t =\n")
+    f.write("{\n")
+    f.write('  version_string = "%s";' % flx_version+"\n")
+    f.write('  build_time_float = %s;' % now+"\n")
+    f.write('  build_time = "%s";' % time.ctime(now)+"\n")
+    f.write("}\n")
+    f.write(";;\n")
+    f.write("let set_version () =\n")
+    f.write("  Flx_version.version_data := version_data\n")
+    f.write(";;\n")
+
+    (buildroot/"share"/"lib"/"std").makedirs()
+    f = open(buildroot/"share"/"lib"/"std"/"version.flx","w")
+    f.write("// GENERATED DURING BUILD (for version number)\n")
+    f.write("class Version\n")
+    f.write("{\n")
+    f.write('  const felix_version : string = \'::std::string("'+flx_version+'")\';\n')
+    f.write("}\n")
+    f.close()
+
+def set_version(buildroot):
   print("FELIX VERSION " + flx_version)
-  write_script(flx_version)
+  write_script(buildroot,flx_version)
  
 @fbuild.db.caches
 def configure(ctx):
@@ -476,8 +508,6 @@ def configure(ctx):
     build = config_build(ctx)
     host = config_host(ctx, build)
     target = config_target(ctx, host)
-
-    set_version()
 
     # Make sure the config directories exist.
     #(ctx.buildroot / 'host/config').makedirs()
@@ -595,6 +625,8 @@ def configure(ctx):
 
 def build(ctx):
     """Compile Felix."""
+
+    set_version(ctx.buildroot)
 
     print("[fbuild] RUNNING PACKAGE MANAGER")
     tangle_packages(Path("src")/"packages", ctx.buildroot)
