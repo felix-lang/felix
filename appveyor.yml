@@ -23,8 +23,7 @@ build_script:
 after_build:
   - copy installscript\win32install.bat .
   - copy installscript\win32setup.bat .
-  - copy installscript\win32README.bat .
-  - 7z a felix-win64.zip build\release\share build\release\host win32install.bat win32setup.bat hello.flx
+  - 7z a felix-win64.zip build\release\share build\release\host win32install.bat win32setup.bat hello.flx INSTALL
 
 artifacts:
   - path: felix-win64.zip
