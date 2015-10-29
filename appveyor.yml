@@ -23,7 +23,9 @@ build_script:
 after_build:
   - copy installscript\win32install.bat .
   - copy installscript\win32setup.bat .
-  - 7z a felix-win64.zip build\release\share build\release\host win32install.bat win32setup.bat hello.flx INSTALL
+  - python win32_make_set_FLX_VERSION.py > tmp.bat
+  - tmp.bat
+  - 7z a felix-%FLX_VERSION%-msvc-win64.zip build\release\share build\release\host win32install.bat win32setup.bat hello.flx INSTALL > tmp.bat
 
 artifacts:
   - path: felix-win64.zip
