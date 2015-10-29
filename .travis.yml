@@ -24,7 +24,6 @@ script:
 before_deploy:
 - cp installscript/posixinstall.sh linuxinstall.sh 
 - cp installscript/linuxsetup.sh .
-- cp installscript/linuxREADME.txt .
 - tar -czvf felix-linux.tgz build/release/host build/release/share linuxinstall.sh linuxsetup.sh hello.flx INSTALL
 
 deploy:
