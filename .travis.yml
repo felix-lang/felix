@@ -24,13 +24,14 @@ script:
 before_deploy:
 - cp installscript/posixinstall.sh linuxinstall.sh 
 - cp installscript/linuxsetup.sh .
-- tar -czvf felix-`python3 showversion.py`-linux64-gcc51.tgz build/release/host build/release/share linuxinstall.sh linuxsetup.sh hello.flx INSTALL
+- export FLX_VERSION=`python3 showversion.py`
+- tar -czvf felix-$(FLX_VERSION)-linux64-gcc51.tgz build/release/host build/release/share linuxinstall.sh linuxsetup.sh hello.flx INSTALL
 
 deploy:
   provider: releases
   api_key:
     secure: n5+jnBuG3JZAoMMuBpkTtewiazORSRkQWje/yiwaT3NaU+IdfLFBnkazp5+QD7Ox7Z5auXOM1ngtJWykf5wPDjAtpKc4C82o67nvUgBJzS3+PvFNUWXCW+8rzPGJ6Xn9wiqP80XucQvmsAgfY8UCP4Hj8DswjDgVOR5utucyRj4=
-  file: felix-linux.tgz
+  file: felix-$(FLX_VERSION)-linux64-gcc51.tgz
   skip_cleanup: true
   on:
     tags: true

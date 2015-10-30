@@ -28,8 +28,8 @@ after_build:
   - 7z a felix-%FLX_VERSION%-msvc-win64.zip build\release\share build\release\host win32install.bat win32setup.bat hello.flx INSTALL > tmp.bat
 
 artifacts:
-  - path: felix-win64.zip
-    name: felix-win64.zip
+  - path: felix-$(FLX_VERSION)-msvc-win64.zip
+    name: felix-$(FLX_VERSION)-msvc-win64.zip
     type: zip
  
 notifications:
@@ -43,7 +43,7 @@ deploy:
   provider: GitHub
   auth_token:
     secure: Mh/B12zvz5BIkV7bDrjj9WOc2UR5fI0ZCpmwehs/PNsHGkzwMIHnvBDlSpumKlmz
-  artifact: felix-win64.zip
+  artifact: felix-$(FLX_VERSION)-msvc-win64.zip 
   draft: false
   prerelease: false
   on:
