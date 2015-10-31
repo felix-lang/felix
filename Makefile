@@ -82,4 +82,6 @@ test: copy mktestdir regress tut
 guitest:
 	flx --felix=wbuild.fpc --indir=src\web\tutopt\sdlgui --regex=".*\.fdoc"
 
+install:
+	installscript/win2install.bat
 
