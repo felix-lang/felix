@@ -83,5 +83,5 @@ guitest:
 	flx --felix=wbuild.fpc --indir=src\web\tutopt\sdlgui --regex=".*\.fdoc"
 
 install:
-	installscript\win2install.bat
+	cmd.exe /C installscript\win2install.bat
 
