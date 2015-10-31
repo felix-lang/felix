@@ -123,7 +123,7 @@ open class Pchannel
   type opchannel[t] = "flx::pthread::monitor_t*" requires monitor_hxx;
 
   //$ Make bidirectional pchannel.
-  fun mk_pchannel[t]: 1->pchannel[t] = "new flx::pthread::monitor_t()";
+  fun mk_pchannel[t]: 1->pchannel[t] = "new flx::pthread::monitor_t(PTF gcp->collector->get_thread_control())";
 
   //$ Safe cast from bidirectional to output pchannel.
   ctor[t] opchannel[t](x:pchannel[t]) => C_hack::cast[opchannel[t]] x;
@@ -151,12 +151,10 @@ open class Pchannel
   //$ Read from a pchannel.
   proc _read[t]: pchannel[t] * &&t = """
     {
-    FLX_SAVE_REGS;
-    PTF gcp->collector->get_thread_control()->suspend();
     //fprintf(stderr,"READ:DQ\\n");
     *$2 = (?1*)($1->dequeue());
+    PTF gcp->collector->remove_root(*$2);
     //fprintf(stderr,"DONE READ:DQ\\n");
-    PTF gcp->collector->get_thread_control()->resume();
     }
   """ requires property "needs_ptf";
 
@@ -170,12 +168,10 @@ open class Pchannel
 
   proc _write[t]: pchannel[t] * &t = """
     {
-    FLX_SAVE_REGS;
-    PTF gcp->collector->get_thread_control()->suspend();
     //fprintf(stderr,"WRITE:NQ\\n");
+    PTF gcp->collector->add_root($2);
     $1->enqueue((void*)$2);
     //fprintf(stderr,"DONE WRITE:NQ\\n");
-    PTF gcp->collector->get_thread_control()->resume();
     }
   """ requires property "needs_ptf";
 

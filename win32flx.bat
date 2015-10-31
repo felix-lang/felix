@@ -1,6 +1,0 @@
-flx --felix=win32.fpc --target-dir=build/release/win32 --cache-dir=mycache -c --nolink --bundle-dir=win32flxdir --force --force-compiler --nocc src/tools/dflx.flx
-cl.exe win32flxdir\dflx.cpp /MTd /DFLX_STATIC_LINK /D_ITERATOR_DEBUG_LEVEL=2 /c /EHs /Ibuild\release\win32\lib\rtl /Ibuild\release\share\lib\rtl /Fowin32flxdir\dflx.obj
-cl.exe win32flxdir\dflx_static_link_thunk.cpp /DFLX_STATIC_LINK /D_ITERATOR_DEBUG_LEVEL=2 /c /EHs /Ibuild\release\win32\lib\rtl /Ibuild\release\share\lib\rtl /Fowin32flxdir\dflx_static_link_thunk.obj
-cl.exe /MT win32flxdir\dflx.obj win32flxdir\dflx_static_link_thunk.obj build\release\win32\lib\rtl\flx_run_lib_static.obj build\release\win32\lib\rtl\flx_run_main_static.obj /Fewin32flxdir\wflx.exe /link /LIBPATH:build\release\win32\lib\rtl /DEFAULTLIB:flx_gc_static /DEFAULTLIB:flx_strutil_static /DEFAULTLIB:flx_exceptions_static /DEFAULTLIB:flx_static /DEFAULTLIB:flx_pthread_static /DEFAULTLIB:flx_dynlink_static /DEFAULTLIB:flx_re2_static /DEFAULTLIB:judy_static
-win32flxdir\wflx.exe --help
-copy win32flxdir\wflx.exe build\release\win32\bin

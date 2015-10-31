@@ -23,7 +23,7 @@ ts_select_demuxer::get_evts(bool poll)
 
   // copy args under lock
   {
-    flx::pthread::flx_mutex_locker_t locker(ham_fist);
+    ::std::unique_lock< ::std::mutex> locker(ham_fist);
     demux.copy_sets(rset, wset, exset);
   }
 
@@ -35,7 +35,7 @@ ts_select_demuxer::get_evts(bool poll)
   // in its callback different to the one it originally added to.
   if(demux.select(rset, wset, exset, poll))
   {
-    flx::pthread::flx_mutex_locker_t locker(ham_fist);
+    ::std::unique_lock< ::std::mutex> locker(ham_fist);
     demux.process_sets(rset, wset, exset);
   }
 }
@@ -47,7 +47,7 @@ ts_select_demuxer::add_socket_wakeup(socket_wakeup* sv, int flags)
 {
   // fprintf(stderr, "ts_select::add: %p->%i (%s), %x\n",
   //  sv, s, (s == self_pipe_fds[0]) ? "self pipe" : "socket", flags);
-  flx::pthread::flx_mutex_locker_t locker(ham_fist);
+  ::std::unique_lock< ::std::mutex> locker(ham_fist);
 
   int res = demux.add_socket_wakeup(sv, flags);
   // I wouldn't touch the sv after this.

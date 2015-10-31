@@ -311,7 +311,7 @@ This is a hack. It should be done in the library linkage class.
 
 @tangle flx_run.include
 #ifdef FLX_BUILD_FOR_STATIC_LINK
-::std::string modulenameoffilename(::std::string const &s)
+static ::std::string modulenameoffilename(::std::string const &s)
 {
   ::std::size_t i = s.find_last_of("\\/");
   ::std::size_t j = s.find_first_of(".",i+1);

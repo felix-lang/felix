@@ -596,7 +596,7 @@ namespace flx { namespace faio {
 bool
 iocp_associator::start_async_op_impl()
 {
-  fprintf(stderr,"iocp_associator: start async_op_impl\n");
+  //fprintf(stderr,"iocp_associator: start async_op_impl\n");
 
   // nasty: note how I'm making the user cookie constant (0).
   if(iod->associate_with_iocp((HANDLE)s, 0) != 0)
@@ -623,7 +623,7 @@ waio_base::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
 bool
 wasync_accept::start_async_op_impl()
 {
-  fprintf(stderr,"wasync_accept: start async_op_impl\n");
+  //fprintf(stderr,"wasync_accept: start async_op_impl\n");
   return start_overlapped();
 }
 
@@ -638,7 +638,7 @@ wasync_accept::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
 bool
 connect_ex::start_async_op_impl()
 {
-  fprintf(stderr,"connect_ex: start async_op_impl\n");
+  //fprintf(stderr,"connect_ex: start async_op_impl\n");
   return start_overlapped();
 }
 
@@ -653,7 +653,7 @@ connect_ex::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
 bool
 wasync_transmit_file::start_async_op_impl()
 {
-  fprintf(stderr,"wasync_transmit_file: start async_op_impl\n");
+  //fprintf(stderr,"wasync_transmit_file: start async_op_impl\n");
   return start_overlapped();
 }
 
@@ -667,7 +667,7 @@ wasync_transmit_file::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
 bool
 wsa_socketio::start_async_op_impl()
 {
-  fprintf(stderr,"wsa_socketio: start async_op_impl\n");
+  //fprintf(stderr,"wsa_socketio: start async_op_impl\n");
   return start_overlapped();    // start overlapped op
 }
 
@@ -709,7 +709,7 @@ wsa_socketio::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
 bool
 winfile_io::start_async_op_impl()
 {
-  fprintf(stderr,"winfile_io: start async_op_impl\n");
+  //fprintf(stderr,"winfile_io: start async_op_impl\n");
   return start_overlapped();  // go
 }
 

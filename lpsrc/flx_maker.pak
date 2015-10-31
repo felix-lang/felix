@@ -201,33 +201,3 @@
   tangle("}")
   tangle("")
 
-@h = tangler("share/lib/std/version.flx")
-@select(h)
-// GENERATED DURING BUILD (for version number)
-publish "System Interface"
-class Version
-{
-@tangle('  const felix_version : string = \'::std::string("'+pyconfig.flx_version+'")\';')
-}
-
-
-@h=tangler('src/compiler/flx_version_hook/flx_version_hook.ml')
-@select(h)
-@import time
-@now = time.time()
-@gmtime = time.gmtime(now)
-@short_time = time.strftime("%a %d %b %Y",gmtime)
-open Flx_version
-let version_data: version_data_t =
-{
-@tangle('  version_string = "%s";' % pyconfig.flx_version)
-@tangle('  build_time_float = %s;' % now)
-@tangle('  build_time = "%s";' % time.ctime(now))
-@f = open ("VERSION","w")
-@f.write(pyconfig.flx_version+"\n")
-@f.close()
-}
-;;
-let set_version () =
-  Flx_version.version_data := version_data
-;;

@@ -1,0 +1,51 @@
+init:
+  - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+
+install:
+  - call "c:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x64
+  - git clone -q https://github.com/felix-lang/win64ocaml.git
+  - move win64ocaml c:\ocaml
+  - set PATH=C:\Python35-x64;c:\ocaml\bin;%PATH%
+  - set PWD=.
+  - set PATH=build\release\host\bin;build\release\host\lib\rtl;%PATH%
+  - set FLX_MIN_MEM=10000
+
+platform: 
+  - x64
+
+os: Visual Studio 2015
+
+build_script:
+  - python --version
+  - ocaml -version
+  - nmake bootstrap tools target uproot regress-test
+
+after_build:
+  - copy installscript\win32install.bat .
+  - copy installscript\win32setup.bat .
+  - python win32_make_set_FLX_VERSION.py > tmp.bat
+  - tmp.bat
+  - 7z a felix-%FLX_VERSION%-msvc-win64.zip build\release\share build\release\host win32install.bat win32setup.bat hello.flx INSTALL > tmp.bat
+
+artifacts:
+  - path: felix-$(FLX_VERSION)-msvc-win64.zip
+    name: felix-$(FLX_VERSION)-msvc-win64.zip
+    type: zip
+ 
+notifications:
+  - provider: Email
+    to:
+      - felix-builds@googlegroups.com
+
+deploy:
+  release: $(APPVEYOR_REPO_TAG_NAME)
+  description: 'Felix Binaries'
+  provider: GitHub
+  auth_token:
+    secure: Mh/B12zvz5BIkV7bDrjj9WOc2UR5fI0ZCpmwehs/PNsHGkzwMIHnvBDlSpumKlmz
+  artifact: felix-$(FLX_VERSION)-msvc-win64.zip 
+  draft: false
+  prerelease: false
+  on:
+    appveyor_repo_tag: true
+

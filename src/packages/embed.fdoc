@@ -176,7 +176,7 @@ flx_config::init(int argc, char **argv) {
   // default min mem is 10 Meg
   min_mem = (size_t)(egetv("FLX_MIN_MEM", 10) * 1000000.0);
   if (debug)
-    fprintf(stderr, "[FLX_MIN_MEM] call gc only if more than %lu Meg heap used\n", min_mem/1000000);
+    fprintf(stderr, "[FLX_MIN_MEM] call gc only if more than %zu Meg heap used\n", min_mem/1000000);
 
   // default max mem is unlimited
   max_mem = (size_t)(egetv("FLX_MAX_MEM", 0) * 1000000.0);
@@ -239,8 +239,6 @@ class RTL_EXTERN flx_world {
   ::flx::gc::collector::flx_collector_t *collector;
 
   ::flx::gc::generic::gc_profile_t *gcp;
-
-  ::flx::pthread::thread_control_t *thread_control;
 
   ::flx::dynlink::flx_dynlink_t *library;
   ::flx::dynlink::flx_libinst_t *instance;
@@ -381,7 +379,6 @@ run_felix_pthread_ctor(
 static void run_felix_pthread_dtor(
   bool debug_driver,
   flx::gc::generic::gc_profile_t *gcp,
-  flx::pthread::thread_control_t *thread_control,
   ::flx::dynlink::flx_dynlink_t *library,
   ::flx::dynlink::flx_libinst_t *instance
 )
@@ -389,7 +386,7 @@ static void run_felix_pthread_dtor(
   if (debug_driver)
     fprintf(stderr, "[run_felix_pthread_dtor] MAIN THREAD FINISHED: waiting for other threads\n");
 
-  thread_control->join_all();
+  gcp->collector->get_thread_control()->join_all();
 
   if (debug_driver) 
     fprintf(stderr, "[run_felix_pthread_dtor] ALL THREADS DEAD: mainline cleanup!\n");
@@ -432,7 +429,7 @@ int flx_world::setup(int argc, char **argv) {
 
   // previous direct ctor scope ended at closing brace of FLX_MAIN
   // but delete can probably be moved up after collector delete (also used by explicit_dtor)
-  thread_control = new flx::pthread::thread_control_t(c->debug_threads);
+  ::flx::pthread::thread_control_t *thread_control = new ::flx::pthread::thread_control_t(c->debug_threads);
   if(debug)
     fprintf(stderr, "[flx_world: setup] Created thread control object\n");
 
@@ -499,8 +496,8 @@ int flx_world::setup(int argc, char **argv) {
     this,
     debug_driver,
     gcp,
-    run_felix_pthread_ctor(gcp, instance),
-    thread_control); // deletes active for us!
+    run_felix_pthread_ctor(gcp, instance)
+    ); // deletes active for us!
 
   return 0;
 }
@@ -510,7 +507,7 @@ int flx_world::explicit_dtor()
   if (debug_driver)
     fprintf(stderr, "[explicit_dtor] entry\n");
 
-  run_felix_pthread_dtor(debug_driver, gcp, thread_control, library, instance);
+  run_felix_pthread_dtor(debug_driver, gcp, library, instance);
 
   if (gcp->finalise)
   {
@@ -538,7 +535,7 @@ int flx_world::teardown() {
   if (debug_driver)
     fprintf(stderr, "[teardown] entry\n");
 
-  thread_control -> add_thread(get_stack_pointer());
+  collector->get_thread_control()->add_thread(get_stack_pointer());
 
   delete async_scheduler;
 
@@ -550,6 +547,8 @@ int flx_world::teardown() {
   int error_exit_code = explicit_dtor();
   if (debug_driver)
     fprintf(stderr,"[teardown] explicit dtor run code %d\n", error_exit_code);
+
+  thread_control_base_t *thread_control = collector->get_thread_control();
 
   instance=0;
   library=0;
@@ -577,11 +576,11 @@ int flx_world::teardown() {
 }
 
 void flx_world::begin_flx_code() {
-  thread_control->add_thread(get_stack_pointer());
+  collector->get_thread_control() -> add_thread(get_stack_pointer());
 }
 
 void flx_world::end_flx_code() {
-  thread_control->remove_thread();
+  collector->get_thread_control()->remove_thread();
 }
 
 // returns number of pending operations scheduled by svc_general
@@ -656,7 +655,6 @@ struct async_sched
   bool debug_driver;
   ::flx::gc::generic::gc_profile_t *gcp;
   ::std::list< ::flx::rtl::fthread_t*> *active;
-  ::flx::pthread::thread_control_t *thread_control;
 
   size_t async_count;
   async_hooker* async;
@@ -666,14 +664,12 @@ struct async_sched
     flx_world *world_arg, 
     bool d, 
     ::flx::gc::generic::gc_profile_t *g, 
-    ::std::list< ::flx::rtl::fthread_t*> *a, 
-    ::flx::pthread::thread_control_t *tc
+    ::std::list< ::flx::rtl::fthread_t*> *a
   ) : 
     world(world_arg), 
     debug_driver(d), 
     gcp(g), 
     active(a), 
-    thread_control(tc),
     async_count(0),
     async(NULL),
     ss(debug_driver, gcp, active)
@@ -726,19 +722,19 @@ void async_sched::do_spawn_pthread()
   gcp->collector->add_root(ftx);
   std::list<fthread_t*> *pactive = new std::list<fthread_t*>;
   pactive->push_front(ftx);
-  void *data = new async_sched(world,debug_driver, gcp, pactive, thread_control);
+  void *data = new async_sched(world,debug_driver, gcp, pactive);
   flx_detached_thread_t dummy;
 
   if (debug_driver)
-    fprintf(stderr, "[prun: spawn_pthread] Starting new pthread, thread counter= %d\n",
-      thread_control->thread_count());
+    fprintf(stderr, "[prun: spawn_pthread] Starting new pthread, thread counter= %zu\n",
+      gcp->collector->get_thread_control()->thread_count());
 
   {
-    flx_mutex_t spawner_lock;
-    flx_condv_t spawner_cond;
+    ::std::mutex spawner_lock;
+    ::std::condition_variable_any spawner_cond;
     bool spawner_flag = false;
-    flx_mutex_locker_t locktite(spawner_lock);
-    dummy.init(prun_pthread_entry, data, thread_control,
+    ::std::unique_lock< ::std::mutex> locktite(spawner_lock);
+    dummy.init(prun_pthread_entry, data, gcp->collector->get_thread_control(), 
       &spawner_lock, &spawner_cond,
       &spawner_flag
     );
@@ -749,7 +745,7 @@ void async_sched::do_spawn_pthread()
         (void*)get_current_native_thread());
 
     while (!spawner_flag)
-      spawner_cond.wait(&spawner_lock);
+      spawner_cond.wait(spawner_lock);
 
     if (debug_driver)
       fprintf(stderr,

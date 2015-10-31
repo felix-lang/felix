@@ -13,7 +13,7 @@ all: build test
 # default build
 #
 
-VERSION = 15.08.15
+VERSION := $(shell python3 showversion.py)
 DISTDIR ?= ./build/dist
 PREFIX ?= /usr/local
 EXECPREFIX ?= ${PREFIX}/bin
@@ -44,14 +44,25 @@ endif
 platform := $(shell uname -s)
 ifeq ($(platform), Linux)
 	LPATH = LD_LIBRARY_PATH
+ifeq ($(FLX_BUILD_TOOLCHAIN_FAMILY),clang)
+   TOOLCHAIN=toolchain_clang_linux
 else
-	ifeq ($(platform), Darwin)
+   TOOLCHAIN=toolchain_gcc_linux
+endif
+else
+ifeq ($(platform), Darwin)
 		LPATH = DYLD_LIBRARY_PATH
-	endif
+ifeq ($(FLX_BUILD_TOOLCHAIN_FAMILY),gcc)
+   TOOLCHAIN=toolchain_gcc_osx
+else
+   TOOLCHAIN=toolchain_clang_osx
+endif
+endif
 endif
 ifndef LPATH
 $(warning Unrecognized kernel name -- Unable to detect setting for LPATH)
   LPATH = LD_LIBRARY_PATH
+  TOOLCHAIN=toolchain_gcc_linux
 endif
 
 help:
@@ -74,16 +85,17 @@ help:
 	#   FBUILD_PARAMS: parameters to fbuild, default none
 	#     fbuild/fbuild-light --help for options
 
-build: configure bootstrap slow-flxg rebuild
+showversion:
+	echo Felix Version ${VERSION}
 
-dev-build: bootstrap gendoc
+build: showversion configure bootstrap bootstrap-tools rebuild uproot
 
 bootstrap: fbuild
 	cp ${BUILDROOT}/host/bin/bootflx ${BUILDROOT}/host/bin/flx
 	${BUILDROOT}/host/bin/flx --felix=build.fpc -c -od ${BUILDROOT}/host/lib/rtl ${BUILDROOT}/share/lib/plugins/flx_plugin
 
 clean:
-	rm -rf build tmp-dir trial-tmp
+	rm -rf build tmp-dir trial-tmp trial
 	git clean -fd
   
 #
@@ -114,6 +126,71 @@ fbuild:
 	#
 	$(PYTHON) fbuild/fbuild-light build --buildroot=${FBUILDROOT} $(FBUILD_PARAMS)
 
+
+packages:
+	# =========================================================
+	# generates source code from "src/packages" to various places
+	# around the repo
+	# =========================================================
+	python3 src/tools/flx_iscr.py -q -d "src/packages" ${BUILDROOT}
+
+extras:
+	for file in extras/*.fdoc; do python3 src/tools/flx_iscr.py $$file ${BUILDROOT}; done
+
+
+grammar:
+	src/tools/flx_find_grammar_files.py ${BUILDROOT}
+
+extract: packages grammar
+
+bootstrap-tools:
+	# =========================================================
+	# build tools required for rebuild.
+	# This is to be done right after building the bootstrap.
+	# The tools are placed in the host.
+	# =========================================================
+
+	build/release/host/bin/flx --felix=build.fpc --static -c -od build/release/host/bin src/tools/flx_build_flxg.flx
+	build/release/host/bin/flx --felix=build.fpc --static -c -od build/release/host/bin src/tools/flx_build_prep.flx
+	build/release/host/bin/flx --felix=build.fpc --static -c -od build/release/host/bin src/tools/flx_build_rtl.flx
+	build/release/host/bin/flx --felix=build.fpc --static -c -od build/release/host/bin src/tools/flx_build_boot.flx
+
+flxg:
+	# =========================================================
+	# building flxg
+	# =========================================================
+	flx_build_flxg
+	cp tmp-dir/flxg build/release/trial/bin
+
+prep: 
+	# =========================================================
+	# copying ./src to build/release/share/src
+	# =========================================================
+	flx_build_prep --target-dir=build/release --target-bin=trial --source-dir=build/release \
+	       	--source-bin=host --clean-target-bin-dir --copy-compiler --copy-pkg-db \
+	       	--copy-config-headers --toolchain=${TOOLCHAIN} --debug
+
+rtl:
+	# =========================================================
+	# rebuild rtl
+	# =========================================================
+	flx_build_rtl --target-dir=build/release --target-bin=trial
+
+
+target: prep flxg rtl boot
+
+boot:
+	# =========================================================
+	# rebuild flx build tools and plugins
+	# =========================================================
+	flx_build_boot --target-dir=build/release --target-bin=trial --build-all
+
+rebuild: extract target uproot
+
+uproot:
+	rm -rf ${BUILDROOT}/host
+	mv ${BUILDROOT}/trial ${BUILDROOT}/host
+
 #
 # regression test on release image
 #
@@ -131,9 +208,6 @@ tut-dir:
 	mkdir -p ${BUILDROOT}/tut
 	${BUILDROOT}/host/bin/flx_tangle --linenos --indir=src/web/tut --outdir=${BUILDROOT}/test/tut
 	for file in src/web/tut/*.fdoc; do ${BUILDROOT}/host/bin/flx_iscr $$file ${BUILDROOT}/test/tut; done
-
-extras:
-	for file in extras/*.fdoc; do python3 src/tools/flx_iscr.py $$file ${BUILDROOT}; done
 
 extras-check:
 	-${BUILDROOT}/host/bin/flx --felix=build.fpc --usage=prototype --expect --nonstop --indir=${BUILDROOT}/test/extras --regex='.*\.flx' ${BUILDROOT}/test
@@ -170,11 +244,6 @@ tutopt-check: tutopt-dir
 
 test: regress-check tut-check tutopt-check extras-check
 
-#
-#
-# Install default build into /usr/local/lib/felix/version/
-#
-
 install:
 	rm -rf ${INSTALLDIR}
 	${BUILDROOT}/host/bin/flx_cp ${BUILDROOT}/host '(.*)' ${INSTALLDIR}'/host/$${1}'
@@ -186,487 +255,7 @@ install:
 	rm -f ${INSTALLROOT}/felix-latest
 	ln -s felix-${VERSION} ${INSTALLROOT}/felix-latest
 
-make-cache:
-	rm -rf $(HOME)/.felix/cache
-	echo 'println ("installed "+ Version::felix_version);' > install-done.flx
-	flx --clean install-done
-	rm install-done.*
-
-#
-# Install binaries on felix-lang.org
-# (felix-lang.org maintainer only)
-#
-install-felix-lang.org:
-	-sudo stop felixweb
-	sudo make install
-	sudo start felixweb
-
-#
-# Make distribution image for ArchLinux
-# ArchLinux packager only
-#
-## FIXME: needs to conform to new layout
-make-dist:
-	rm -rf $(DISTDIR)
-	./${BUILDROOT}/host/bin/flx --felix=build.fpc --dist=$(DISTDIR)
-	./${BUILDROOT}/host/bin/flx_cp ${BUILDROOT}/speed '(.*)' '${DISTDIR}/speed/$${1}'
-	rm -rf $(HOME)/.felix/cache
-	echo 'println ("installed "+ Version::felix_version);' > $(DISTDIR)/install-done.flx
-	./${BUILDROOT}/host/bin/flx --clean --test=$(DISTDIR)/lib/felix/felix-$(VERSION) $(DISTDIR)/install-done.flx
-	rm -f $(DISTDIR)/install-done.flx  $(DISTDIR)/install-done.so
-
-
-install-website:
-	${SUDO} cp -r src/web/* /usr/local/lib/felix/felix-latest/share/src/web
-
-
-#
-# Speedway
-# Developer only
-#
-speed:
-	-rm -rf result.tmp
-	sh speed/perf.sh 2>>result.tmp
-	build/release/host/bin/flx --felix=build.fpc src/tools/flx_gengraph
-
-#
-# Documentation
-#
-doc: copy-doc
-
-# Copy docs from repo src to release image
-copy-doc:
-	${BUILDROOT}/host/bin/flx_cp src/web '(.*\.fdoc)' '${BUILDROOT}/share/web/$${1}'
-	${BUILDROOT}/host/bin/flx_cp src/web '(.*\.(png|jpg|gif))' '${BUILDROOT}/share/web/$${1}'
-	${BUILDROOT}/host/bin/flx_cp src/web '(.*\.html)' '${BUILDROOT}/share/web/$${1}'
-	${BUILDROOT}/host/bin/flx_cp src/ '(index\.html)' '${BUILDROOT}/share/$${1}'
-	${BUILDROOT}/host/bin/flx_cp speed/ '(.*\.(c|ml|cc|flx|ada|hs|svg))' '${BUILDROOT}/share/speed/$${1}'
-	${BUILDROOT}/host/bin/flx_cp speed/ '(.*/expect)' '${BUILDROOT}/share/speed/$${1}'
-
-gendoc: gen-doc copy-doc 
-
-gen-doc:
-	${BUILDROOT}/host/bin/flx_mktutindex src/web/tut tutorial.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex src/web/tutopt tutopt.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex src/web/articles articles.fdoc
-	${BUILDROOT}/host/bin/flx_mktutindex src/web/ref reference.fdoc
-	# Build reference docs. Note this requires plugins.
-	${LPATH}=${BUILDROOT}/host/lib/rtl ${BUILDROOT}/host/bin/flx_libcontents --html > src/web/ref/flx_libcontents.html
-	${LPATH}=${BUILDROOT}/host/lib/rtl ${BUILDROOT}/host/bin/flx_libindex --html > src/web/ref/flx_libindex.html
-	${LPATH}=${BUILDROOT}/host/lib/rtl ${BUILDROOT}/host/bin/flx_gramdoc --html > src/web/ref/flx_gramdoc.html
-
-
-# optional build of compiler docs
-# targets repository
-# Don't run by default because ocamldoc is a bit buggy
-ocamldoc:
-	mkdir -p parsedoc
-	ocamldoc -d parsedoc -html \
-		-I ${BUILDROOT}/src/compiler/flx_version \
-		-I ${BUILDROOT}/src/compiler/ocs/src \
-		-I ${BUILDROOT}/src/compiler/dypgen/dyplib \
-		-I ${BUILDROOT}/src/compiler/sex \
-		-I ${BUILDROOT}/src/compiler/flx_lex \
-		-I ${BUILDROOT}/src/compiler/flx_parse \
-		-I ${BUILDROOT}/src/compiler/flx_parse \
-		-I ${BUILDROOT}/src/compiler/flx_misc \
-		-I ${BUILDROOT}/src/compiler/flx_file \
-		src/compiler/flx_version/*.mli \
-		src/compiler/flx_version/*.ml \
-		src/compiler/sex/*.mli \
-		src/compiler/sex/*.ml \
-		src/compiler/flx_lex/*.mli \
-		src/compiler/flx_lex/*.ml \
-		src/compiler/flx_parse/*.ml \
-		src/compiler/flx_parse/*.mli \
-		src/compiler/flx_file/*.mli \
-		src/compiler/flx_file/*.ml \
-		src/compiler/flx_misc/*.mli \
-		src/compiler/flx_misc/*.ml
-
-${BUILDROOT}/host/bin/scoop: demos/scoop/bin/scoop.flx ${BUILDROOT}/lib/std/felix/pkgtool_base.flx ${BUILDROOT}/lib/std/felix/pkgtool.flx
-	@${BUILDROOT}/host/bin/flx --inline=1 --felix=build.fpc demos/scoop/setup build  --felix=build.fpc --build-dir=demos/scoop 2> /dev/null
-	@${BUILDROOT}/host/bin/flx --inline=1 --felix=build.fpc demos/scoop/setup install  --felix=build.fpc --build-dir=demos/scoop 2> /dev/null
-	@${BUILDROOT}/host/bin/flx --inline=1 --felix=build.fpc demos/scoop/setup clean  --felix=build.fpc --build-dir=demos/scoop 2> /dev/null
-
-scoop: ${BUILDROOT}/host/bin/scoop
-	@echo "Scoop Package Manager"
-
-install-scoop: ${BUILDROOT}/host/bin/scoop
-	@echo "Installing scoop binary in /usr/local/bin"
-	@${SUDO} cp ${BUILDROOT}/host/bin/scoop /usr/local/bin
-	@${SUDO} ${BUILDROOT}/host/bin/flx_cp src/lib/std/felix '(pkgtool.*\.(flx))' '/usr/local/lib/felix/felix-latest/lib/std/felix/$${0}' --verbose
-
-tarball:
-	tar -vzcf felix_${VERSION}_`uname`_tarball.tar.gz Makefile  \
-		${BUILDROOT}/host \
-		${BUILDROOT}/share \
-		src
-
-post-tarball:
-	scp felix_${VERSION}_`uname`_tarball.tar.gz \
-		skaller@felix-lang.org:/usr/local/lib/felix/tarballs/felix_${VERSION}_`uname`_tarball.tar.gz
-
-packages:
-	# =========================================================
-	# generates source code from "src/packages" to various places
-	# around the repo
-	# =========================================================
-	python3 src/tools/flx_iscr.py -q -d "src/packages" ${BUILDROOT}
-
-grammar:
-	src/tools/flx_find_grammar_files.py ${BUILDROOT}
-
-extract: packages grammar
-
-
-slow-flxg:
-	# =========================================================
-	# building flxg
-	# =========================================================
-	build/release/host/bin/flx --felix=build.fpc src/tools/flx_build_flxg
-	cp tmp-dir/flxg build/release/host/bin
-
-flxg:
-	# =========================================================
-	# building flxg
-	# =========================================================
-	build/release/host/bin/flx_build_flxg
-	cp tmp-dir/flxg build/release/host/bin
-
-copy: extract 
-	# =========================================================
-	# copying ./src to build/release/share/src
-	# =========================================================
-	build/release/host/bin/flx_build_prep \
-		--repo=.\
-		--target-dir=build/release \
-		--target-bin=host \
-		--copy-repo
-
-rtl:
-	# =========================================================
-	# rebuild rtl
-	# =========================================================
-	${LPATH}=${BUILDROOT}/host/lib/rtl build/release/host/bin/flx_build_rtl \
-		--target-dir=build/release \
-		--target-bin=host
-
-web-plugins:
-	# =========================================================
-	# rebuild web plugins
-	# includes the following plugins:
-	#  - cpp2html
-	#  - fdoc2html
-	#  - fdoc_edit
-	#  - fdoc_button
-	#  - fdoc_fileseq
-	#  - fdoc_heading
-	#  - fdoc_paragraph
-	#  - fdoc_scanner
-	#  - fdoc_slideshow
-	#  - toc_menu
-	#  - fdoc_frame
-	#  - flx2html
-	#  - fpc2html
-	#  - ocaml2html
-	#  - py2html
-	# =========================================================
-	build/release/host/bin/flx --felix=build.fpc  src/tools/flx_build_boot \
-		--build-web-plugins
-
-flx-web:
-	# =========================================================
-	# rebuild flx_web 
-	#  user must ensure "make web-plugins" is run first
-	#  - compiles dflx_web.o object file
-	#  - links flx_web executable
-	# =========================================================
-	build/release/host/bin/flx --felix=build.fpc  src/tools/flx_build_boot \
-		--build-flx-web
-
-toolchain-plugins:
-	# =========================================================
-	# rebuild toolchain plugins
-	# includes the following plugins: 
-	#  - flx_plugin
-	#  - toolchain_clang_linux
-	#  - toolchain_clang_osx
-	#  - toolchain_clang_iphoneos
-	#  - toolchain_gcc_linux
-	#  - toolchain_gcc_osx
-	# =========================================================
-	build/release/host/bin/flx --felix=build.fpc  src/tools/flx_build_boot \
-		--build-toolchain-plugins
-
-tools:
-	# =========================================================
-	# rebuild tools
-	# includes the following tools:
-	#  - flx_cp
-	#  - flx_ls
-	#  - flx_grep
-	#  - flx_replace
-	#  - flx_batch_replace
-	#  - flx_tangle
-	#  - flx_perror
-	#  - flx_gramdoc
-	#  - flx_libindex
-	#  - flx_libcontents
-	#  - flx_mktutindex
-	#  - flx_renumber
-	#  - flx_iscr
-	# =========================================================
-	build/release/host/bin/flx --felix=build.fpc  src/tools/flx_build_boot \
-		--build-tools
-
-flx:
-	# =========================================================
-	# rebuild flx
-	# =========================================================
-	build/release/host/bin/flx --felix=build.fpc  src/tools/flx_build_boot \
-		--build-flx
-
-build-tools:
-	# =========================================================
-	# rebuild flx build tools
-	# includes the following tools: 
-	#  - flx_pkgconfig
-	#  - flx_build_prep
-	#  - flx_build_rtl
-	#  - flx_build_boot
-	#  - flx_build_flxg
-	# =========================================================
-	build/release/host/bin/flx --felix=build.fpc  src/tools/flx_build_boot \
-		--build-flx-tools
-
-lib: copy grammar
-	# =========================================================
-	# copy files from src to lib
-	# =========================================================
-	build/release/host/bin/flx_build_prep \
-		--target-dir=build/release \
-		--target-bin=host \
-		--copy-library
-
-really-fast-rebuild: extract
-	# =========================================================
-	# rebuild everything from installed Felix except compiler
-	# [Note: requires LPATH variable be set in Makefile!]
-	# [Note: requires Felix be installed already!]
-	# =========================================================
-	${LPATH}=${INSTALLDIR}/host/lib/rtl ${INSTALLDIR}/host/bin/flx_build_prep \
-		--repo=.\
-		--source-dir=build/release \
-		--source-bin=host \
-		--target-dir=build/release \
-		--target-bin=host \
-		--copy-repo \
-		--copy-library
-	${LPATH}=${INSTALLDIR}/host/lib/rtl ${INSTALLDIR}/host/bin/flx_build_rtl \
-		--target-dir=build/release \
-		--target-bin=host
-	${LPATH}=${INSTALLDIR}/host/lib/rtl ${INSTALLDIR}/host/bin/flx_build_boot \
-		--build-all
-
-fast-rebuild: extract
-	# =========================================================
-	# rebuild everything in-place except the compiler
-	# [Note: requires LPATH variable be set in Makefile!]
-	# =========================================================
-	${LPATH}=build/release/host/lib/rtl build/release/host/bin/flx_build_prep \
-		--repo=.\
-		--source-dir=build/release \
-		--source-bin=host \
-		--target-dir=build/release \
-		--target-bin=host \
-		--copy-repo \
-		--copy-library
-	${LPATH}=build/release/host/lib/rtl build/release/host/bin/flx_build_rtl \
-		--target-dir=build/release \
-		--target-bin=host
-	cp build/release/host/bin/flx_build_boot flx_build_boot
-	${LPATH}=build/release/host/lib/rtl ./flx_build_boot \
-		--build-all
-	rm flx_build_boot
-
-fast-rebuild-nortl:
-	# =========================================================
-	# rebuild everything in-place except the compiler and RTL
-	# [Note: requires LPATH variable be set in Makefile!]
-	# =========================================================
-	${LPATH}=build/release/host/lib/rtl build/release/host/bin/flx_build_prep \
-		--repo=.\
-		--source-dir=build/release \
-		--source-bin=host \
-		--target-dir=build/release \
-		--target-bin=host \
-		--copy-repo \
-		--copy-library
-	${LPATH}=build/release/host/lib/rtl build/release/host/bin/flx_build_boot \
-		--build-all
-	rm flx_build_boot
-
-
-rebuild: extract
-	# =========================================================
-	# rebuild everything in-place except the compiler
-	# [Note: Slow and messy. Requires "flx" be built in build/release]
-	# [Builds build tools from repository using flx]
-	# =========================================================
-	for i in src/packages/*; do echo "PACKAGE " $$i; python3 src/tools/flx_iscr.py -q $$i ${BUILDROOT}; if [ $$? -ne 0 ]; then exit 1; fi; done
-	src/tools/flx_find_grammar_files.py ${BUILDROOT}
-	build/release/host/bin/flx --felix=build.fpc  src/tools/flx_build_prep \
-		--repo=.\
-		--source-dir=build/release \
-		--source-bin=host \
-		--target-dir=build/release \
-		--target-bin=host \
-		--copy-repo \
-		--copy-library
-	build/release/host/bin/flx --felix=build.fpc  src/tools/flx_build_rtl \
-		--target-dir=build/release \
-		--target-bin=host
-	cp build/release/host/bin/flx flx
-	for i in src/packages/*; do echo "PACKAGE " $$i; python3 src/tools/flx_iscr.py -q $$i ${BUILDROOT}; done
-	src/tools/flx_find_grammar_files.py ${BUILDROOT}
-	./flx --felix=build.fpc  src/tools/flx_build_boot \
-		--build-all
-	rm flx
-
-special-prep:
-	# =========================================================
-	# special prep
-	# =========================================================
-	build/release/host/bin/flx --felix=build.fpc  src/tools/flx_build_prep \
-		--source-dir=build/release \
-		--source-bin=host \
-		--target-dir=build/release \
-		--target-bin=special \
-		--copy-pkg-db \
-		--copy-config-headers \
-		--copy-compiler
-
-win32-prep:
-	# =========================================================
-	# create directory
-	# =========================================================
-	rm -rf build/release/win32 tmp-dir trial-tmp
-	mkdir -p build/release/win32
-	mkdir -p build/release/win32/bin
-	cp build/release/host/bin/flxg build/release/win32/bin
-	# =========================================================
-	#  Copy compiler
-	# =========================================================
-	build/release/host/bin/flx_cp --verbose build/release/host/bin/flxg '[^/]*\.fpc' 'build/release/win32/config/$${0}'
-	# =========================================================
-	#  Copy resource database for Windows
-	# =========================================================
-	build/release/host/bin/flx_cp --verbose src/config '[^/]*\.fpc' 'build/release/win32/config/$${0}'
-	build/release/host/bin/flx_cp --verbose src/config/win32 '[^/]*\.fpc' 'build/release/win32/config/$${0}'
-	# =========================================================
-	#  Set the toolchain
-	# =========================================================
-	echo "toolchain: toolchain_msvc_win32" > build/release/win32/config/toolchain.fpc
-	# =========================================================
-	#  Set the C++ configuration parameters
-	# =========================================================
-	mkdir -p build/release/win32/lib
-	mkdir -p build/release/win32/lib/rtl
-	echo "// From Makefile: win32-prep          " > build/release/win32/lib/rtl/flx_rtl_config_params.hpp
-	echo "#ifndef __FLX_RTL_CONFIG_PARAMS_H__   " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
-	echo "#define __FLX_RTL_CONFIG_PARAMS_H__   " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
-	echo "                                      " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
-	echo "#define FLX_HAVE_VSNPRINTF 1          " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
-	echo "#define FLX_HAVE_GNU 0                " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
-	echo "#define FLX_HAVE_GNU_BUILTIN_EXPECT 0 " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
-	echo "#define FLX_HAVE_CGOTO 0              " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
-	echo "#define FLX_HAVE_ASM_LABELS 0         " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
-	echo "#define FLX_HAVE_DLOPEN 0             " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
-	echo "#define FLX_CYGWIN 0                  " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
-	echo "#define FLX_MACOSX 0                  " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
-	echo "#define FLX_LINUX 0                   " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
-	echo "#define FLX_WIN32 1                   " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
-	echo "#define FLX_WIN64 1                   " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
-	echo "#define FLX_POSIX 0                   " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
-	echo "#define FLX_SOLARIS 0                 " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
-	echo "#define FLX_HAVE_MSVC 1               " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
-	echo "#define FLX_HAVE_KQUEUE_DEMUXER 0     " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
-	echo "#define FLX_HAVE_POLL 0               " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
-	echo "#define FLX_HAVE_EPOLL 0              " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
-	echo "#define FLX_HAVE_EVTPORTS 0           " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
-	echo "#define FLX_HAVE_OPENMP 0             " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
-	echo "#define FLX_MAX_ALIGN 16              " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
-	echo "                                      " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
-	echo "#endif                                " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
-	echo "                                      " >> build/release/win32/lib/rtl/flx_rtl_config_params.hpp
-	# =========================================================
-	#  Set the Felix platform config parameters
-	# =========================================================
-	mkdir -p build/release/win32/lib/plat
-	echo "// From Makefile: win32-prep          " > build/release/win32/lib/plat/flx.flxh
-	echo "macro val PLAT_WIN32 = true;          " >> build/release/win32/lib/plat/flx.flxh
-	echo "macro val PLAT_POSIX = false;         " >> build/release/win32/lib/plat/flx.flxh
-	echo "macro val PLAT_LINUX = false;         " >> build/release/win32/lib/plat/flx.flxh
-	echo "macro val PLAT_MACOSX = false;        " >> build/release/win32/lib/plat/flx.flxh
-	echo "macro val PLAT_CYGWIN = false;        " >> build/release/win32/lib/plat/flx.flxh
-	echo "macro val PLAT_SOLARIS = false;       " >> build/release/win32/lib/plat/flx.flxh
-	echo "macro val PLAT_BSD = false;           " >> build/release/win32/lib/plat/flx.flxh
-	# =========================================================
-	#  Set the Felix floating point weirdnesses (nans and such like)
-	#  For now just copy the existing one .. fix later .. should
-	#  use C++11 standards to remove this crud
-	# =========================================================
-	cp build/release/host/lib/plat/float.flx build/release/win32/lib/plat/float.flx
-
-special-rtl:
-	# =========================================================
-	# special rtl
-	# =========================================================
-	${LPATH}=${BUILDROOT}/host/lib/rtl build/release/host/bin/flx_build_rtl \
-		--target-dir=build/release \
-		--target-bin=special \
-		--pkg=flx_thread_free_rtl_core
-
  
-sdltest:
-	build/release/host/bin/flx --felix=build.fpc --force -c -od sdlbin demos/sdl/edit_buffer
-	build/release/host/bin/flx --felix=build.fpc --force -c -od sdlbin demos/sdl/edit_display
-	build/release/host/bin/flx --felix=build.fpc --force -c -od sdlbin demos/sdl/edit_controller
-	${LPATH}=sdlbin build/release/host/bin/flx --felix=build.fpc --force -od sdlbin demos/sdl/sdltest
-
-guitest:
-	FLX_INSTALL_DIR=build/release build/release/host/bin/flx --felix=build.fpc --indir=src/web/tutopt/sdlgui --regex='.*\.fdoc'
- 
-
-evtdemo:
-	# compile Felix
-	build/release/host/bin/flx --felix=build.fpc -c --static --nolink \
-		-od demos/embed demos/embed/felix_evtdemo.flx
-	# compile C++
-	clang++ -c --std=c++11 -o demos/embed/evtdemo.o \
-    -Ibuild/release/share/lib/rtl -Ibuild/release/host/lib/rtl \
-		-I/usr/local/include \
-		demos/embed/evtdemo.cxx 
-	# link
-	clang++ -o demos/embed/evtdemo \
-	-L/usr/local/lib -Lbuild/release/host/lib/rtl \
-	-framework OpenGL \
- 	-lSDL2 -lSDL2_ttf -lfreetype \
-	-ldemux_static -lfaio_static -lflx_async_static \
-	-lflx_exceptions_static -lflx_gc_static -lflx_pthread_static \
-	-lflx_static -ljudy_static \
-	demos/embed/felix_evtdemo.o \
-	demos/embed/evtdemo.o
-	# run
-	demos/embed/evtdemo
-
-
-
-setup-turkey:
-	"c:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat"
-
-
 .PHONY : test extras bootstrap configure packages grammar
 .PHONY : doc install websites-linux  release install-bin
 .PHONY : copy-doc gen-doc gendoc fbuild speed tarball

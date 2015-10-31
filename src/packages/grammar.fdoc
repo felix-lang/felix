@@ -1409,6 +1409,7 @@ syntax expressions {
   x[sproduct_pri] := x[>sproduct_pri] "\otimes" x[sproduct_pri] =># "(Infix)";
 
 //------------------------------------------------------------------------
+
   //$ Prefix exclaim.
   x[sprefixed_pri] := "!" x[spower_pri] =># "(Prefix)";
 

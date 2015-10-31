@@ -1,108 +1,51 @@
-Installing Felix: POSIX (UNIX, OSX, LINUX, etc)
-===============================================
+INSTALLING FELIX from BINARY PACKAGE
+====================================
 
-Requirements
+Linux 64 bit
 ------------
-* OCaml >= 3.11
-* Python >= 3.1
-* C++ compiler (clang, gcc, msvc++)
 
-Optional
---------
-SDL
-ZMQ
-libxml2
+Felix installs in /usr/local/lib/felix/felix-${FLX_VERSION} where
+FLX_VERSION is the Felix version number, of the form YYYY.MM.DD.
+It is configured for gcc and built with gcc-5.1. C++11 support 
+is required. 
 
-Build
+Use:
+
+sudo ./posixinstall.sh
+
+to install. Any previous install is deleted. To use:
+
+./linuxsetup.sh
+
+Test with:
+
+flx hello
+
+
+OSX
 -----
 
-make build
+There is currenly no binary for OSX. Please build from source.
 
-Test
-----
-
-make test
-
-Docs
-----
-
-make doc
-
-Install
--------
-
-make install
-
-You will need to put a sudo password.
-
-Installing Felix: POSIX (BSD)
-===============================================
-
-Requirements Base
------------------
-* C++ compiler (clang, gcc)
-
-Requirements Ports
-------------------
-* lang/ocaml  >= 3.11
-* lang/python32 || lang/python31 (Python >= 3.1)
-* databases/sqlite3 
-* ports-mgmt/portconf
-* databases/py-sqlite3
-  ** special instructions **
-  The py-sqlite3 port by default targets Python2 inorder to build for 
-  python3 ports-mgmt/portconf must be installed and the file: 
-   /usr/local/etc/ports.conf must exist and contain:
-     databases/py-sqlite3: PYTHON_VERSION=python3.2
-
-Optional Ports
+Windows 64 bit
 --------------
-devel/sdl
-devel/zmq
-textproc/libxml2
-databases/postgresql83-client or greater
 
-Build
------
-gmake build
+Felix installs in C:\usr\local\lib\felix\felix-${FLX_VERSION} where
+FLX_VERSION is the Felix version number, of the form YYYY.MM.DD.
+It is configured for MSVC++ and built with Visual Studio 14 (2015). 
+It is a 64 bit debugging version.  C++11 support  is required. 
+Type:
 
-Test
-----
-gmake test
+win32install.bat
 
-Docs
-----
-gmake doc
+to install. Any previous install is deleted. To use,
+open a Visual Studio command prompt for x64 or x86->x64
+cross compiler. Type:
 
-Install
--------
-gmake install
+win32setup.bat
 
-WINDOWS: MSVC++
-================
+Test with:
 
-Ask for help on the mailing list. 
+flx hello
 
-
-You WILL need a few basic unix tools for Windows
-like make, cp, etc.
-
-The build system should
-more or less work out of the box up to installation,
-provided you have Ocaml built with MSVC++, Python built with MSVC++,
-and you have MSVC++ environment set up.
-
-You should set HOME environment variable to mirror the Unix 
-system setup. You should install Felix in 
-
-  c:\usr\local\lib
-
-just like on Unix.
-
-Windows: other
-==============
-
-It should be possible to build Felix for Cygwin,
-MSYS or other Windows setup but it may take a bit
-of fiddling to make this work!
 

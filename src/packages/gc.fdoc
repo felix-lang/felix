@@ -127,11 +127,17 @@ typedef ::std::vector<memory_range_t> memory_ranges_t;
 class PTHREAD_EXTERN thread_control_base_t
 {
 public:
+  virtual bool get_debug() const =0;
   virtual bool world_stop() = 0;
   virtual void world_start() = 0;
   virtual void resume() = 0;
   virtual void suspend() = 0;
   virtual void yield() = 0;
+  virtual void join_all() = 0;
+  virtual void add_thread(void*)=0;
+  virtual void remove_thread()=0;
+  virtual size_t thread_count()=0;
+
   virtual ~thread_control_base_t()=0;
   virtual  memory_ranges_t *get_block_list() = 0; // caller owns result and should delete it
 };

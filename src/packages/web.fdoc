@@ -1274,14 +1274,23 @@ class LowResTime
   };
 
   
+if PLAT_WIN32 do
+  private proc gmtime:&time_t * &tm = "gmtime_s($2,$1);";
+else
   private proc gmtime:&time_t * &tm = "gmtime_r($1,$2);";
+done
+
   fun gmtime (var t:time_t) :tm =
   {
     var atm : tm; gmtime (&t, &atm);
     return atm;
   }
 
+if PLAT_WIN32 do
+  private proc localtime:&time_t * &tm = "localtime_s($2,$1);";
+else
   private proc localtime:&time_t * &tm = "localtime_r($1,$2);";
+done
   fun localtime (var t:time_t) :tm =
   {
     var atm : tm; localtime (&t, &atm);
@@ -1292,6 +1301,18 @@ class LowResTime
     string asctime_helper(struct tm const * ti);
   """;
 
+if PLAT_WIN32 do
+  body """
+    string asctime_helper(struct tm const * ti) {
+      int len = 64;
+      char *fmted = (char*) malloc(sizeof(char)*64);
+      asctime_s(fmted,64,ti);
+      string s = string(fmted);
+      free(fmted);
+      return s;
+    }
+  """;
+else
   body """
     string asctime_helper(struct tm const * ti) {
       int len = 64;
@@ -1302,6 +1323,8 @@ class LowResTime
       return s;
     }
   """;
+done
+
   private fun asctime:&tm -> string = "asctime_helper($1)";
   fun asctime (var t:tm) : string => asctime (&t);
 

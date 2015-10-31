@@ -1,0 +1,40 @@
+sudo: false
+
+dist: trusty
+
+addons:
+  apt:
+    sources:
+    - ubuntu-toolchain-r-test
+    packages:
+    - python3
+    - ocaml-native-compilers
+    - gcc-5
+    - g++-5
+
+script:
+- mkdir bin
+- ln -s /usr/bin/gcc-5 bin/gcc
+- ln -s /usr/bin/g++-5 bin/g++
+- bin/gcc --version
+- bin/g++ --version
+- env PATH=bin:build/release/host/bin:$PATH LD_LIBRARY_PATH=build/release/host/lib/rtl
+  FLX_MIN_MEM=0.01 make "FBUILD_PARAMS=--build-cc=/usr/bin/gcc-5 --build-cxx=/usr/bin/g++-5"
+
+before_deploy:
+- cp installscript/posixinstall.sh linuxinstall.sh 
+- cp installscript/linuxsetup.sh .
+- export FLX_VERSION=`python3 showversion.py`
+- tar -czvf felix-${FLX_VERSION}-linux64-gcc51.tgz build/release/host build/release/share linuxinstall.sh linuxsetup.sh hello.flx INSTALL
+
+deploy:
+  provider: releases
+  api_key:
+    secure: n5+jnBuG3JZAoMMuBpkTtewiazORSRkQWje/yiwaT3NaU+IdfLFBnkazp5+QD7Ox7Z5auXOM1ngtJWykf5wPDjAtpKc4C82o67nvUgBJzS3+PvFNUWXCW+8rzPGJ6Xn9wiqP80XucQvmsAgfY8UCP4Hj8DswjDgVOR5utucyRj4=
+  file: felix-${FLX_VERSION}-linux64-gcc51.tgz
+  skip_cleanup: true
+  on:
+    tags: true
+
+notifications:
+  email: felix-builds@googlegroups.com

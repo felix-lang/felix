@@ -24,7 +24,7 @@ ts_poll_demuxer::get_evts(bool poll)
 
   // copy args under lock
   {
-    flx::pthread::flx_mutex_locker_t  locker(ham_fist);
+    ::std::unique_lock< ::std::mutex> locker(ham_fist);
     demux.get_arrays(&fds, &svs);  // the arrays are now mine
     // lock released
   }
@@ -35,7 +35,7 @@ ts_poll_demuxer::get_evts(bool poll)
   // regardless of the number of events, I have to copy the pieces back
   // under lock tutelage
   {
-    flx::pthread::flx_mutex_locker_t  locker(ham_fist);
+    ::std::unique_lock< ::std::mutex> locker(ham_fist);
     demux.process_evts(fds, svs, nevts);
     // lock released
   }
@@ -47,7 +47,7 @@ int
 ts_poll_demuxer::add_socket_wakeup(socket_wakeup* sv, int flags)
 {
   // fprintf(stderr, "ts_poll::add_sock(%i, %x)\n", sv->s, flags);
-  flx::pthread::flx_mutex_locker_t  locker(ham_fist);
+  ::std::unique_lock< ::std::mutex> locker(ham_fist);
 
   int  res = demux.add_socket_wakeup(sv, flags);
   // I wouldn't touch the sv after this.

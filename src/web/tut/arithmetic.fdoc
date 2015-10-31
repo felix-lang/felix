@@ -962,8 +962,7 @@ proc prompt (continuing:bool) {
 
 gen read (continuing:bool) : string = {
   prompt (continuing);
-  val l = readln$ stdin;
-
+  val l = stdin.readln.strip;
   return l;
 }
 
@@ -989,9 +988,6 @@ repl_loop : //iz in ur loop!
 
     if n == 0uz 
       break repl_loop; //kthxbai!
-
-    l = substring (l, 0, n - 1) ; // Strip newline
-    n = n - 1; //update char count
 
     if n > 0uz do
       if (l.[0] == char '%') //Comment line. Discard
