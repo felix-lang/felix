@@ -249,7 +249,11 @@ This next function is a digit parser.
 @felix
 //Digit parser
 var digit : parser[char, char] = 
-  token (fun (c:char) : opt[char] => if isdigit c then Some c else None[char])
+  token (fun (c:char) : opt[char] => 
+  //Currently broken on Windows
+  //  if isdigit c then Some c else None[char] 
+  if char_range c (list[char*char]((char '0', char '9')))
+  then Some c else None[char] )
   ;
 @
 
