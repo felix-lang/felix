@@ -19,7 +19,7 @@ w.write (10,10,font,black,"Basic Drawing Test");
 fun / (x:string, y:string) => Filename::join (x,y);
 var imgfile = #Config::std_config.FLX_SHARE_DIR / "src" / "web" / "images" / "FelixWork.jpg";
 
-var ppic : &drawing_surface_t = IMG_Load imgfile.cstr ;
+var ppic : surface_t = IMG_Load imgfile.cstr ;
 
 var dst = rect_t (20,20,0,0);
 var result = SDL_BlitSurface (ppic, C_hack::null[rect_t], SDL_GetWindowSurface w,&dst);

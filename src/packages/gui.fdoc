@@ -1,0 +1,1557 @@
+@title GUI
+@tangler __init__.flx                                  = share/lib/gui/__init__.flx
+@tangler types.flx                                     = share/lib/gui/types.flx
+@tangler init.flx                                      = share/lib/gui/init.flx
+@tangler font.flx                                      = share/lib/gui/font.flx
+@tangler color.flx                                     = share/lib/gui/color.flx
+@tangler surface.flx                                   = share/lib/gui/surface.flx
+
+@tangler window.flx                                    = share/lib/gui/window.flx
+@tangler window_controller_interface.flx               = share/lib/gui/window_controller_interface.flx
+@tangler window_controller.flx                         = share/lib/gui/window_controller.flx
+@tangler window_manager.flx                            = share/lib/gui/window_manager.flx
+
+@tangler button.flx                                    = share/lib/gui/button.flx
+@tangler menu.flx                                      = share/lib/gui/menu.flx
+@tangler line_buffer_display_controller_interface.flx  = share/lib/gui/line_buffer_display_controller_interface.flx
+@tangler line_buffer_display_controller.flx            = share/lib/gui/line_buffer_display_controller.flx
+@tangler line_buffer_interface.flx                     = share/lib/gui/line_buffer_interface.flx
+@tangler line_buffer_object.flx                        = share/lib/gui/line_buffer_object.flx
+@tangler line_editor.flx                               = share/lib/gui/line_editor.flx
+
+@h1 Basics
+@tangle __init__.flx
+include "sdl/SDL2";
+include "sdl/SDL_ttf";
+include "sdl/SDL_image";
+include "gui/init";
+include "gui/types";
+include "gui/font";
+include "gui/color";
+include "gui/surface";
+include "gui/window";
+include "gui/button";
+include "gui/menu";
+
+include "gui/line_buffer_interface";
+include "gui/line_buffer_object";
+include "gui/line_buffer_display_controller_interface";
+include "gui/line_buffer_display_controller";
+include "gui/line_editor";
+include "gui/window_controller_interface";
+include "gui/window_controller";
+include "gui/window_manager";
+
+
+class FlxGui 
+{
+ inherit FlxGuiInit;
+ inherit FlxGuiTypes;
+ inherit FlxGuiFont;
+ inherit FlxGuiColor;
+ inherit FlxGuiSurface;
+ inherit FlxGuiWindow;
+ inherit FlxGuiWindowController;
+ inherit FlxGuiWindowControllerInterface;
+ inherit FlxGuiWindowManager;
+
+ inherit FlxGuiButton;
+
+ inherit FlxGuiMenu;
+
+ // text field editor
+ inherit FlxGuiLineBufferInterface;
+ inherit FlxGuiLineBuffer;
+ inherit FlxGuiLineBufferDisplayControllerInterface;
+ inherit FlxGuiLineBufferDisplayController;
+ inherit FlxGuiLineEditor; 
+
+} // class FlxGui
+
+@
+
+@tangle types.flx
+class FlxGuiTypes
+{
+  typedef window_t = SDL_Window;
+  typedef font_t = TTF_Font;
+  typedef colour_t = SDL_Color;
+  typedef color_t = colour_t; // dang yanks ..
+  typedef point_t = SDL_Point;
+  typedef rect_t = SDL_Rect;
+
+  ctor rect_t (x:int, y:int, w:int, h:int) => SDL_Rect (x,y,w,h);
+
+  typedef event_t = SDL_Event;
+}
+@
+
+@tangle init.flx
+class FlxGuiInit
+{
+proc init()
+{
+  if SDL_Init(SDL_INIT_AUDIO \| SDL_INIT_VIDEO) < 0  do
+    eprintln$ f"Unable to init SDL: %S\n" #SDL_GetError;
+    System::exit(1);
+  done
+  println$ "SDL_init OK";
+  if TTF_Init() < 0 do 
+    eprintln$ f"Unable to init TTF: %S\n" #TTF_GetError;
+    System::exit(1);
+  done
+  println$ "TTF_init OK";
+  if IMG_Init(IMG_INIT_PNG) < 0 do 
+    eprintln$ f"Unable to init IMG with PNG: %S\n" #IMG_GetError;
+    System::exit(1);
+  done
+  println$ "IMG_init OK";
+}
+
+proc versions ()
+{
+  begin
+    var compiled = #SDL_Compiled_Version;
+    var linked = #SDL_Linked_Version;
+    println$ f"We compiled against SDL version %d.%d.%d ..."
+      (compiled.major.int, compiled.minor.int, compiled.patch.int);
+    println$ f"But we are linking against SDL version %d.%d.%d."
+      (linked.major.int, linked.minor.int, linked.patch.int);
+  end 
+
+  begin
+    var compiled = #TTF_Compiled_Version;
+    var linked = #TTF_Linked_Version;
+    println$ f"We compiled against TTF version %d.%d.%d ..."
+      (compiled.major.int, compiled.minor.int, compiled.patch.int);
+    println$ f"But we are linking against TTF version %d.%d.%d."
+      (linked.major.int, linked.minor.int, linked.patch.int);
+  end 
+
+  begin
+    var compiled = #IMG_Compiled_Version;
+    var linked = #IMG_Linked_Version;
+    println$ f"We compiled against IMG version %d.%d.%d ..."
+      (compiled.major.int, compiled.minor.int, compiled.patch.int);
+    println$ f"But we are linking against IMG version %d.%d.%d."
+      (linked.major.int, linked.minor.int, linked.patch.int);
+  end 
+
+} 
+
+}
+@
+
+@tangle font.flx
+class FlxGuiFont
+{
+private fun / (s:string, t:string) => Filename::join (s,t);
+
+fun dflt_mono_font() => #Config::std_config.FLX_SHARE_DIR/ "src"/"lib"/"fonts"/ "Courier New.ttf";  
+fun dflt_sans_serif_font() => #Config::std_config.FLX_SHARE_DIR/ "src"/"lib"/"fonts"/ "Arial.ttf";  
+fun dflt_serif_font() => #Config::std_config.FLX_SHARE_DIR/ "src"/"lib"/"fonts"/ "Times New Roman.ttf";  
+
+gen get_font (font_file:string, ptsize:int) = {
+  var font = TTF_OpenFont (font_file,ptsize);
+  if not (TTF_ValidFont font) do
+    eprintln$ f"Unable to open TTF font %S\n" font_file;
+    System::exit 1;
+  done
+  TTF_SetFontKerning (font,0);
+  var isfixed = TTF_FontFaceIsFixedWidth (font);
+  println$ "Opened Font " + font_file + 
+    " Facename: " + TTF_FontFaceFamilyName font + 
+    (if isfixed>0 then " MONOSPACED "+ isfixed.str else " VARIABLE WIDTH");
+  println$ "Metrics: Height "+font.TTF_FontHeight.str + 
+    ", Ascent "+ font.TTF_FontAscent.str +
+    ", Descent "+ font.TTF_FontDescent.str +
+    ", Lineskip"+ font.TTF_FontLineSkip.str
+  ;
+  TTF_SetFontHinting (font,TTF_HINTING_MONO); // guess...
+  return font;
+}
+
+fun get_lineskip (f: font_t) => TTF_FontLineSkip(f) + 1;
+
+fun get_textsize (f: font_t, s:string) = 
+{
+  var w: int; var h: int;
+  C_hack::ignore$ TTF_SizeText (f,s,&w, &h);
+  return w,h;
+}
+
+// x,y is the origin  of the first character
+// The bounding box is 2 pixels up from the highest char
+// 2 pixies down from the lowest char
+// 2 pixies to the left of the first character's orgin
+// and 2 pix right from the origin of the last char + the notional advance
+// this ONLY works right for a monospaced font!
+fun bounding_box (f:font_t, x:int, y:int, s:string) : rect_t =
+{
+  var n = s.len.int;
+  var w = 
+    #{ 
+      var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
+      C_hack::ignore$ TTF_GlyphMetrics(f,"m".char.ord.uint16,&minx, &maxx, &miny, &maxy, &advance);
+      return advance;
+    }
+  ;
+  var a = f.TTF_FontAscent;
+  var d = f.TTF_FontDescent;
+  // the 5 = 4 + 1 is due to what looks like a BUG in SDL or TTF:
+  // for at least one font, height = ascent - descent + 1
+  // even though lineskip = ascent - descent
+  return SDL_Rect (x - 2,y - a - 2, w * n +4, a - d + 5);
+}
+
+
+}
+
+@
+@tangle color.flx
+class FlxGuiColor
+{
+  fun RGB (r:int, g:int, b:int) => 
+    SDL_Color (r.uint8, g.uint8, b.uint8, 255u8)
+  ;
+
+  // create some colours and clear the window
+  var white = RGB (255,255,255);
+  var black = RGB (0,0,0);
+  var lightgrey = RGB (180,180,180);
+  var grey = RGB (100,100,100);
+  var darkgrey = RGB (60,60,60);
+  var red = RGB(255,0,0);
+  var green = RGB (0,255,0);
+  var blue = RGB (0,0,255);
+  var purple = RGB (255,0,255);
+  var yellow = RGB (255,255,0);
+  var orange = RGB (100,255,100);
+
+}
+
+@
+
+@tangle surface.flx
+class FlxGuiSurface
+{
+  typedef surface_t = &SDL_Surface;
+
+  // clear whole surface
+  proc clear(surf:surface_t) (c: colour_t)
+  {
+    var pixelformat : &SDL_PixelFormat  = surf*.format;
+    var bgpixels = SDL_MapRGB(pixelformat,c.r,c.g,c.b);
+    SDL_ClearClipRect (surf);
+    C_hack::ignore$ SDL_FillSurface (surf, bgpixels);
+  }
+
+  proc fill (surf:surface_t) (var r:rect_t, c:colour_t)
+  {
+    SDL_ClearClipRect (surf);
+    var pixelformat : &SDL_PixelFormat  = surf*.format;
+    var bgpixels = SDL_MapRGB(pixelformat,c.r,c.g,c.b);
+    C_hack::ignore$ SDL_FillRect (surf, &r, bgpixels);
+    SDL_ClearClipRect (surf);
+  }
+
+  noinline proc draw_line (surf:surface_t)  (c:color_t, x0:int, y0:int, x1:int, y1:int)
+  {
+     var r: SDL_Renderer = SDL_CreateSoftwareRenderer surf;
+     C_hack::ignore$ SDL_SetRenderDrawColor (r, c.r, c.g, c.b, c.a);
+     C_hack::ignore$ SDL_RenderDrawLine (r, x0, y0, x1, y1);
+     SDL_DestroyRenderer r;
+  }
+
+
+}
+@
+
+@h1 Windows
+@tangle window.flx
+class FlxGuiWindow
+{
+ctor window_t  (title:string, xpos:int, ypos:int, width:int,height:int) =
+{
+  var window = SDL_CreateWindow(
+    title,
+    xpos,ypos,
+    width, height,
+    SDL_WINDOW_RESIZABLE
+  );
+  return window;
+}
+
+typedef fixed_size_window_t = window_t;
+
+ctor fixed_size_window_t  (title:string, xpos:int, ypos:int, width:int,height:int) =
+{
+  var window = SDL_CreateWindow(
+    title,
+    xpos,ypos,
+    width, height,
+    SDL_WINDOW_SHOWN
+  );
+  return window;
+}
+
+proc show (w:window_t) { SDL_ShowWindow w; }
+proc hide (w:window_t) { SDL_HideWindow w; }
+proc raise (w:window_t) { SDL_RaiseWindow w; }
+
+proc destroy (w:window_t) { SDL_DestroyWindow w; }
+// x,y is the origin position of the the first char
+// the first pixels may actually be to the left of this!
+proc write(w:window_t) (x:int, y:int, font:font_t, c: colour_t, s:string)
+{
+    var rendered = TTF_RenderText_Solid (font,s,c);
+    var rect : SDL_Rect;
+
+    var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
+    C_hack::ignore$ TTF_GlyphMetrics(font,"m".char.ord.uint16,&minx, &maxx, &miny, &maxy, &advance);
+    
+    rect.x = x + (min (minx,0));
+    rect.y = y - maxy;
+    var nullRect = C_hack::null[SDL_Rect];
+    var window_surface = SDL_GetWindowSurface w;
+
+    var result = SDL_BlitSurface (rendered, nullRect, window_surface, &rect); 
+    if result != 0 do
+      eprintln$ "Unable to blit text to window surface";
+      System::exit 1;
+    done
+    SDL_FreeSurface rendered;
+}
+
+// clear whole window
+proc clear(w:window_t) (c: colour_t)
+{
+  FlxGuiSurface::clear (SDL_GetWindowSurface w) c;
+}
+
+proc fill (w:window_t) (var r:rect_t, c:colour_t)
+{
+  FlxGuiSurface::fill(SDL_GetWindowSurface w) (r,c);
+}
+
+noinline proc draw_line (w:window_t)  (c:color_t, x0:int, y0:int, x1:int, y1:int)
+{
+   FlxGuiSurface::draw_line (SDL_GetWindowSurface w) (c,x0,y0,x1,y1);
+}
+
+proc update(w:window_t)
+{
+  var result = SDL_UpdateWindowSurface w;
+  if result != 0 do
+    eprintln$ "Unable to update window";
+    System::exit 1;
+  done
+}
+
+}
+
+@
+@tangle window_controller_interface.flx
+class FlxGuiWindowControllerInterface
+{
+
+// ------------------------------------------------------------------
+// Window controller is responsible for all the work
+// being done on a window. It requires support for
+// dispatching events on its event channel.
+interface window_controller_interface {
+  get_window_id : 1 -> uint32;
+  get_oschannel : 1 -> oschannel[event_t];
+  destroy_window : 1 -> 0;
+}
+
+}
+
+@
+@tangle window_controller.flx
+
+class FlxGuiWindowController
+{
+
+object window_controller 
+(
+  w:window_t, 
+  p:ischannel[event_t] -> 1->0
+) 
+  implements window_controller_interface = 
+{
+  var imsgs,omsgs = #mk_ioschannel_pair[event_t]; 
+  
+  method fun get_window_id () => SDL_GetWindowID w;
+  method proc destroy_window () => SDL_DestroyWindow w;
+  method fun get_oschannel () => omsgs;
+  spawn_fthread (p imsgs);
+}
+ 
+}
+
+@
+@tangle window_manager.flx
+class FlxGuiWindowManager
+{
+// Window Manager is responsible for a set of windows,
+// and dispatching events specific to a particular
+// window to that window.
+
+// ------------------------------------------------------------------
+object window_manager () = 
+{
+  var windows = darray[window_controller_interface]();
+
+  method fun get_n_windows () => windows.len.int;
+
+  // add a new window to the controlled set
+  // return its current index
+  method gen add_window (w:window_controller_interface) : int = 
+  { 
+    windows += w; 
+    return windows.len.int - 1; 
+  }
+
+  fun find_window(wid: uint32) : opt[window_controller_interface] =
+  {
+    for wobj in windows do
+      if wid == #(wobj.get_window_id) return Some wobj;
+    done
+    return None[window_controller_interface];
+  }
+
+  fun find_window_index (wid: uint32) : opt[int] =
+  {
+    for var i in 0 upto windows.len.int - 1 do
+      if wid == #(windows.i.get_window_id) return Some i;
+    done
+    return None[int];
+  }
+
+  method fun get_window_controller_from_index (i:int) => windows.i;
+
+  method proc delete_window (wid: uint32)
+  {
+    match find_window_index wid with
+    | #None => ;
+    | Some i => 
+      println$ "delete window found index " + i.str;
+      windows.i.destroy_window (); 
+      println$ "SDL destroyed";
+      erase (windows, i);
+      println$ "Window erased";
+    endmatch;
+  }
+
+  // this is a global source for all events
+  gen create_event_source () : ischannel[event_t]  =
+  {
+    var imsgs,omsgs = #mk_ioschannel_pair[SDL_Event]; 
+    proc driver ()
+    {
+      var e : SDL_Event;
+      // dummy first event
+      e.type = SDL_FIRSTEVENT.uint32;
+      write$ omsgs,e;
+      SDL_PumpEvents;
+      C_hack::ignore$ SDL_WaitEvent$ &e;
+      while e.type.SDL_EventType != SDL_QUIT do
+        write$ omsgs, e;
+        SDL_PumpEvents;
+        C_hack::ignore$ SDL_WaitEvent$ &e;
+      done
+      println$ "SDL_QUIT seen!";
+      write$ omsgs, e;
+      return;
+    }
+    spawn_fthread driver;
+    return imsgs;
+  }
+
+  var imsgs = create_event_source ();
+  method fun get_event_source () => imsgs;
+  method proc dispatch_window_event (e:event_t) 
+  {
+    match SDL_GetWindowID e with
+    | Some wid =>
+      match find_window wid with
+      | Some wobj =>
+        var omsgs = #(wobj.get_oschannel);
+        write (omsgs, e);
+        if e.type.SDL_EventType == SDL_WINDOWEVENT and 
+          e.window.event.SDL_WindowEventID == SDL_WINDOWEVENT_CLOSE 
+        do
+          #(wobj.get_window_id).delete_window;
+          println$ "dispatch: window deleted!";
+        done
+        | #None => println$ "Can't find window ID = " + str wid;
+        endmatch;
+      | #None => println$ "No window for message: Event type " + e.type.SDL_EventType.str;
+      endmatch;
+  }
+
+  method proc delete_all() 
+  {
+    println$ "Delete all";
+    var e : SDL_Event;
+    e.type = SDL_WINDOWEVENT.uint32;
+    e.window.event = SDL_WINDOWEVENT_CLOSE.uint8;
+    for wobj in windows do 
+      var omsgs = #(wobj.get_oschannel);
+      e.window.windowID = #(wobj.get_window_id);
+      //write (omsgs, e);
+    done
+    // note: not bothering to delete the darray :)
+  }
+}
+
+}
+
+@
+
+@h1 Widgets
+@h2 Simple Click Button
+@tangle button.flx
+class FlxGuiButton
+{
+  union button_state_t =  
+    | Up       // ready
+    | Down     // being clicked
+    | Disabled // inactive
+    | Mouseover // read and mouse is over
+  ;
+
+  union button_action_t =
+    | NoAction
+    | ClickAction of string
+  ;
+
+  interface button_model_t 
+  {
+    get_state: 1 -> button_state_t;
+    set_state: button_state_t -> 0;
+    get_tag: 1 -> string;
+    set_tag: string -> 0;
+  }
+
+  object ButtonModel 
+    (var tag: string, init_state:button_state_t) 
+    implements button_model_t 
+  =
+  {
+    var state = init_state;
+    method fun get_state() => state;
+    method proc set_state (s:button_state_t) => state = s;
+    method fun get_tag () => tag;
+    method proc set_tag (s:string) => tag = s;
+  }
+
+  typedef button_colour_scheme_t = 
+  (
+    label_colour: colour_t,
+    bg_colour: colour_t,
+    top_colour: colour_t,
+    left_colour: colour_t,
+    bottom_colour: colour_t,
+    right_colour: colour_t
+  );
+
+  interface button_display_t {
+    display: 1 -> 0;
+    get_client_rect: 1 -> rect_t;
+    get_label : 1 -> string;
+  }
+
+  object ButtonDisplay (b:button_model_t) 
+  (
+    w:window_t, // change to surface later
+    font:font_t, 
+    label:string, 
+    up_colour: button_colour_scheme_t,
+    down_colour: button_colour_scheme_t,
+    disabled_colour: button_colour_scheme_t,
+    mouseover_colour: button_colour_scheme_t,
+    left_x:int, top_y:int, right_x:int, bottom_y:int,
+    origin_x:int, origin_y:int
+   ) 
+   implements button_display_t =
+   {
+     method fun get_client_rect () => 
+       SDL_Rect 
+       (
+         left_x, top_y, right_x - left_x + 1, bottom_y - top_y + 1
+       )
+     ;
+     method fun get_label () => label;
+     method proc display()
+     {
+      var state = b.get_state ();
+      var scheme = match state with
+        | #Up => up_colour
+        | #Down => down_colour
+        | #Disabled => disabled_colour
+        | #Mouseover => mouseover_colour
+        endmatch
+      ;
+      // top
+      w.draw_line (scheme.top_colour, left_x - 2,top_y - 2,right_x + 2, top_y - 2); 
+      w.draw_line (scheme.top_colour, left_x - 1,top_y - 1,right_x + 1, top_y - 1); 
+      // left
+      w.draw_line (scheme.left_colour, left_x - 2,top_y - 2,left_x - 2, bottom_y + 2); 
+      w.draw_line (scheme.left_colour, left_x - 1,top_y - 1,left_x - 1, bottom_y + 1); 
+      // right
+      w.draw_line (scheme.right_colour, right_x + 2,top_y - 2,right_x + 2, bottom_y + 2); 
+      w.draw_line (scheme.right_colour, right_x + 1,top_y - 1,right_x + 1, bottom_y + 1); 
+      // bottom
+      w.draw_line (scheme.bottom_colour, left_x - 1,bottom_y + 1,right_x + 1, bottom_y + 1); 
+      w.draw_line (scheme.bottom_colour, left_x - 2,bottom_y + 2,right_x + 2, bottom_y + 2); 
+
+      w.fill(SDL_Rect (left_x, top_y, right_x - left_x + 1, bottom_y - top_y + 1), scheme.bg_colour);
+      w.write (origin_x, origin_y, font, scheme.label_colour, label);
+      w.update();
+    } // draw
+    display();
+  } //button
+
+proc button_controller 
+(
+  bm: button_model_t, 
+  bd: button_display_t, 
+  ec:ischannel[event_t],
+  response:oschannel[button_action_t]
+) () =
+{
+  bd.display();
+  var run = true;
+  var e = read ec;
+  while run do
+    match e.type.SDL_EventType with
+    | $(SDL_MOUSEMOTION) =>
+      var x,y = e.motion.x,e.motion.y; //int32
+      if SDL_Point (x.int,y.int) \in bd.get_client_rect () do
+        //println$ "Motion in client rect of button " + bd.get_label();
+        match bm.get_state () with
+        | #Up => bm.set_state Mouseover; bd.display(); // Enter
+        | _ => ;
+        endmatch;
+      else
+        match bm.get_state () with
+        | #Mouseover => bm.set_state Up; bd.display(); // Leave
+        | #Down => bm.set_state Up; bd.display(); // Leave
+        | _ => ;
+        endmatch;
+      done
+      write$ response, NoAction;
+ 
+    | $(SDL_MOUSEBUTTONDOWN) => 
+      x,y = e.button.x,e.button.y; //int32
+      if SDL_Point (x.int,y.int) \in bd.get_client_rect () do
+        //println$ "Button down in client rect of button " + bd.get_label();
+        bm.set_state Down; bd.display();
+      done
+      write$ response, NoAction;
+ 
+    | $(SDL_MOUSEBUTTONUP) => 
+      x,y = e.button.x,e.button.y; //int32
+      if SDL_Point (x.int,y.int) \in bd.get_client_rect () do
+        //println$ "Button up in client rect of button " + bd.get_label();
+        bm.set_state Mouseover; bd.display();
+        write$ response, ClickAction #(bm.get_tag);
+      else
+        bm.set_state Up; bd.display();
+        write$ response, NoAction;
+      done
+    | $(SDL_WINDOWEVENT) when e.window.event == SDL_WINDOWEVENT_LEAVE.uint8  =>
+      bm.set_state Up; bd.display();
+      write$ response, NoAction;
+
+    | _ => 
+      write$ response, NoAction;
+    endmatch;
+    e = read ec;
+  done
+
+}
+
+
+} // class
+@
+
+@h2 Cascading Menu
+@tangle menu.flx
+// interim menu stuff
+// these menus are transient, retaining state only when open
+
+
+include "std/datatype/lsexpr";
+
+class FlxGuiMenu
+{
+  // A menu entry is either some text or a separator
+  // The text has a visual label and a separate tag 
+  // returned when an entry is selected
+  union menu_entry_active_t = Active | Disabled;
+  typedef menu_text_entry_t = (tag:string, label:string, active:menu_entry_active_t);
+
+  union menu_entry_t = Separator | Text of menu_text_entry_t;
+
+  // A menu is a list of trees with both leaves and nodes labelled
+  typedef menu_item_t = LS_expr::lsexpr[menu_entry_t, menu_entry_t];
+  typedef menu_data_t = list[menu_item_t];
+
+  // A position in the tree is a list of integers
+  // Separators do not count
+  typedef menu_position_t = list[int];
+
+  // A menu is either closed, or open at a particular position
+  union menu_state_t = Closed | Open of menu_position_t;
+
+  union menu_action_t = NoAction | ChangedPosition | SelectedAction of string;
+
+  interface menu_model_t
+  {
+    get_menu: 1 -> menu_data_t;
+    get_state: 1 -> menu_state_t;
+    set_state: menu_state_t -> 0;
+    get_current_tag: 1 -> string; // empty string if closed
+    get_current_tag_chain: 1 -> list[string]; // from the top
+  }
+
+  object MenuModel (m:menu_data_t) implements menu_model_t =
+  {
+    var state = Closed;
+    method fun get_menu () => m;
+    method fun get_state () => state;
+    method proc set_state (s:menu_state_t) => state = s;
+
+    // find ix'th entry in a menu if it exists,
+    // separators not counted
+    fun find (m:menu_data_t, ix:int) : opt[menu_item_t] =>
+      match m with
+      | #Empty => None[menu_item_t]
+      | Cons (h,t) => 
+        match h with
+        | Leaf (Separator) => find (t,ix)
+        | x => if ix == 0 then Some x else find (t,ix - 1)
+        endmatch
+      endmatch
+    ;
+      
+    fun find_tag (pos: menu_position_t, menu:menu_data_t) : string =>
+      match pos,menu with
+      | #Empty, _ => "Empty"
+      | Cons (i,t), m => 
+        match find (m,i),t with
+        | Some (Leaf (Text (tag=tag))), Empty => tag
+        | Some (Tree (Text (tag=tag), _)), Empty => tag
+        | Some (Tree (_, subtree)), _=> find_tag (t,subtree)
+        | _ => "Error"
+        endmatch
+      endmatch
+    ; 
+    method fun get_current_tag () => 
+     match state with
+     | #Closed => "Closed"
+     | Open pos =>
+        find_tag (pos,m)
+     endmatch
+    ;
+    method fun get_current_tag_chain () => Empty[string];
+  }
+
+  interface menu_display_t 
+  {
+    display: 1 -> 0;
+    get_hotrects: 1 -> list[rect_t * menu_position_t];
+  }
+
+  typedef submenu_icon_t = (open_icon: surface_t, closed_icon: surface_t);
+
+  object MenuDisplay 
+  (
+    m:menu_model_t,
+    w:window_t,
+    x:int,y:int,
+    font:font_t,
+    text_colour: button_colour_scheme_t,
+    disabled_colour: button_colour_scheme_t,
+    selected_colour: button_colour_scheme_t,
+    submenu_icons: submenu_icon_t
+  ) implements menu_display_t =
+  {
+    var icon_width = max (submenu_icons.open_icon*.w, submenu_icons.closed_icon*.w);
+    var lineskip = get_lineskip font;
+    var baseline_offset = font.TTF_FontAscent; 
+    var border_width = 2;
+    var left_padding = 4;
+    var right_padding = 10 + icon_width;
+    var min_width = 20;
+    var separator_depth = 1;
+    var top_padding = 1;
+    var bottom_padding = 1;
+
+    fun width (s:string) => (FlxGuiFont::get_textsize (font,s)).0;
+    fun width: menu_entry_t -> int =
+      | #Separator => left_padding + right_padding + min_width
+      | Text s => left_padding + right_padding + width s.label
+    ;
+    fun depth : menu_entry_t -> int = 
+      | #Separator => top_padding + bottom_padding + separator_depth
+      | Text s => top_padding + bottom_padding + lineskip
+    ;
+    fun width : menu_item_t -> int =
+      | Leaf menu_entry => width menu_entry
+      | Tree (menu_entries ,_) => width menu_entries
+    ;
+
+    fun depth : menu_item_t -> int =
+      | Leaf menu_entry => depth menu_entry
+      | Tree (menu_entry ,_) => depth menu_entry
+    ;
+    fun width (ls: menu_data_t) => fold_left 
+      (fun (w:int) (menu_item:menu_item_t) => max (w, width menu_item)) 
+      0 
+      ls
+    ;
+    fun depth (ls: menu_data_t) => fold_left
+      (fun (d:int) (menu_item:menu_item_t) => d + depth menu_item)
+      0
+      ls
+    ;
+    proc display_menu(x:int, y:int, menu:menu_data_t, position:menu_position_t) 
+    {
+      var left_x = x;
+      var top_y = y;
+      var right_x = left_x + width menu;
+      var bottom_y = top_y + depth menu;
+      var scheme = text_colour;
+
+      // top
+      w.draw_line (scheme.top_colour, left_x - 2,top_y - 2,right_x + 2, top_y - 2); 
+      w.draw_line (scheme.top_colour, left_x - 1,top_y - 1,right_x + 1, top_y - 1); 
+      // left
+      w.draw_line (scheme.left_colour, left_x - 2,top_y - 2,left_x - 2, bottom_y + 2); 
+      w.draw_line (scheme.left_colour, left_x - 1,top_y - 1,left_x - 1, bottom_y + 1); 
+      // right
+      w.draw_line (scheme.right_colour, right_x + 2,top_y - 2,right_x + 2, bottom_y + 2); 
+      w.draw_line (scheme.right_colour, right_x + 1,top_y - 1,right_x + 1, bottom_y + 1); 
+      // bottom
+      w.draw_line (scheme.bottom_colour, left_x - 1,bottom_y + 1,right_x + 1, bottom_y + 1); 
+      w.draw_line (scheme.bottom_colour, left_x - 2,bottom_y + 2,right_x + 2, bottom_y + 2); 
+
+      w.fill(SDL_Rect (left_x, top_y, right_x - left_x + 1, bottom_y - top_y + 1), scheme.bg_colour);
+
+      var selected = match position with
+        | #Empty => 0 // ignore for the moment
+        | Cons (h,_) => h
+      ;
+
+      var counter = 0;
+      var ypos = top_y + top_padding;
+      proc show_entry (entry: menu_entry_t) (submenu:menu_data_t) => 
+        match entry with
+        | #Separator => 
+          var y = ypos;
+          w.draw_line (RGB(0,0,0), left_x, y, right_x, y); 
+          ypos = ypos + separator_depth + bottom_padding + top_padding;
+
+        | Text (label=s,active=active) =>
+          y = ypos + baseline_offset;
+          var scheme, dosub = match active with
+            | #Active => if counter == selected then selected_colour, true else text_colour, false
+            | #Disabled => disabled_colour, false
+          ;
+          var client_area = rect_t (
+            left_x+border_width,
+            ypos+top_padding,
+            right_x - left_x - 2 * border_width, 
+            lineskip
+          );
+          w.fill (client_area, scheme.bg_colour);
+          w.write (left_x+left_padding, y,font,scheme.label_colour,s);
+
+          match submenu with
+          | #Empty => ;
+          | _ =>
+            var icon = if selected == counter then submenu_icons.open_icon else submenu_icons.closed_icon; 
+            var dst = rect_t (right_x - icon_width - border_width - 1, ypos, 0,0);
+            C_hack::ignore(SDL_BlitSurface (icon, C_hack::null[rect_t], SDL_GetWindowSurface w,&dst));
+            if dosub do
+              var subpos = match position with 
+                | Cons (_,tail) => tail
+                | _ => position // empty
+              ;
+              display_menu (right_x+border_width,ypos+border_width,submenu,subpos);
+            done
+          endmatch;
+          ypos = ypos + lineskip + bottom_padding+top_padding;
+          ++counter;
+        endmatch
+      ;
+      for item in menu do
+        match item with
+        | Leaf entry => show_entry entry Empty[LS_expr::lsexpr[menu_entry_t, menu_entry_t]];
+        | Tree (entry, submenu) => show_entry entry submenu;
+        endmatch;
+      done
+      w.update; 
+    }  
+    method proc display() {
+      val position = match #(m.get_state) with
+        | #Closed => list (0)
+        | Open p => p
+      ;
+      display_menu (x,y,#(m.get_menu), position);
+    }
+
+    proc get_hotrecs(x:int, y:int, menu:menu_data_t, position:menu_position_t) 
+      (revtrail: list[int]) 
+      (photrecs:&list[rect_t * menu_position_t])=
+    {
+//println$ "get_hotrecs, revtrail=" + revtrail.str+", pos=" + position.str;
+      var left_x = x;
+      var top_y = y;
+      var right_x = left_x + width menu;
+      var bottom_y = top_y + depth menu;
+
+      var selected = match position with
+        | #Empty => 0 // ignore for the moment
+        | Cons (h,_) => h
+      ;
+
+      var counter = 0;
+      var ypos = top_y + top_padding;
+      proc hotrecs (entry: menu_entry_t) (submenu:menu_data_t) 
+      {
+        match entry with
+        | #Separator => 
+          ypos = ypos + separator_depth + bottom_padding + top_padding;
+//println$ "SEPARATOR : Counter="+counter.str;
+
+        | Text (label=s,active=active) =>
+          y = ypos + baseline_offset;
+          var dosub = match active with
+            | #Active => counter == selected
+            | #Disabled => false
+          ;
+          var client_area = rect_t (
+            left_x+border_width,
+            ypos+top_padding,
+            right_x - left_x - 2 * border_width, 
+            lineskip
+          );
+//println$ "TEXT: Counter="+counter.str+", Rect=" + client_area.str;
+          match active with 
+          | #Active => photrecs <- (client_area, rev (counter + revtrail)) + *photrecs;
+          | #Disabled => ;
+          endmatch;
+          match submenu with
+          | #Empty => ;
+          | _ =>
+            if dosub do
+              var subpos = match position with 
+                | Cons (_,tail) => tail
+                | _ => position // empty
+              ;
+              get_hotrecs (right_x+border_width,ypos+border_width,submenu,subpos) (counter+revtrail) photrecs;
+            done
+          endmatch;
+          ypos = ypos + lineskip + bottom_padding+top_padding;
+          ++counter;
+        endmatch;
+      }
+      for item in menu do
+        match item with
+        | Leaf entry => hotrecs entry Empty[LS_expr::lsexpr[menu_entry_t, menu_entry_t]];
+        | Tree (entry, submenu) => hotrecs entry submenu;
+        endmatch;
+      done
+    }  
+
+    method fun get_hotrects() : list[rect_t * menu_position_t] =
+    {
+      val position = match #(m.get_state) with
+        | #Closed => list (0)
+        | Open p => p
+      ;
+      var hotrecs = Empty[rect_t * menu_position_t];
+      get_hotrecs (x,y,#(m.get_menu),position) Empty[int] &hotrecs;
+      return rev hotrecs;
+    }
+
+  }
+
+  fun hotpos (point:SDL_Point, hot:list[rect_t * menu_position_t]) : opt[menu_position_t] =>
+    match hot with
+    | #Empty => None[menu_position_t]
+    | Cons ((r,pos),tail) =>
+      if point \in r then Some pos else hotpos (point, tail)
+    endmatch
+  ;
+
+  // ===============================================================================
+  object MenuBarDisplay 
+  (
+    m:menu_model_t,
+    w:window_t,
+    x:int,y:int,
+    font:font_t,
+    text_colour: button_colour_scheme_t,
+    disabled_colour: button_colour_scheme_t,
+    selected_colour: button_colour_scheme_t,
+    submenu_icons: submenu_icon_t
+  ) implements menu_display_t =
+  {
+    var icon_width = max (submenu_icons.open_icon*.w, submenu_icons.closed_icon*.w);
+    var lineskip = get_lineskip font;
+    var baseline_offset = font.TTF_FontAscent; 
+    var border_width = 2;
+    var left_padding = 4;
+    var right_padding = 4; 
+    var min_width = 20;
+    var separator_width = 1;
+    var top_padding = 1;
+    var bottom_padding = 1;
+    var bar_depth =
+      top_padding + bottom_padding + lineskip
+    ;
+
+    fun width (s:string) => (FlxGuiFont::get_textsize (font,s)).0;
+
+    fun width: menu_entry_t -> int =
+      | #Separator => left_padding + right_padding + separator_width
+      | Text s => left_padding + right_padding + max(min_width, width s.label)
+    ;
+
+    fun width : menu_item_t -> int =
+      | Leaf menu_entry => width menu_entry
+      | Tree (menu_entry,_) => width menu_entry
+    ;
+
+    fun width (ls: menu_data_t) => fold_left 
+      (fun (w:int) (menu_item:menu_item_t) => w + width menu_item)
+      0 
+      ls
+    ;
+
+    proc display_menu(x:int, y:int, menu:menu_data_t, position:menu_position_t) 
+    {
+      var left_x = x;
+      var top_y = y;
+      var right_x = left_x + width menu;
+      var bottom_y = top_y + bar_depth;
+      var scheme = text_colour;
+
+      // top
+      w.draw_line (scheme.top_colour, left_x - 2,top_y - 2,right_x + 2, top_y - 2); 
+      w.draw_line (scheme.top_colour, left_x - 1,top_y - 1,right_x + 1, top_y - 1); 
+      // left
+      w.draw_line (scheme.left_colour, left_x - 2,top_y - 2,left_x - 2, bottom_y + 2); 
+      w.draw_line (scheme.left_colour, left_x - 1,top_y - 1,left_x - 1, bottom_y + 1); 
+      // right
+      w.draw_line (scheme.right_colour, right_x + 2,top_y - 2,right_x + 2, bottom_y + 2); 
+      w.draw_line (scheme.right_colour, right_x + 1,top_y - 1,right_x + 1, bottom_y + 1); 
+      // bottom
+      w.draw_line (scheme.bottom_colour, left_x - 1,bottom_y + 1,right_x + 1, bottom_y + 1); 
+      w.draw_line (scheme.bottom_colour, left_x - 2,bottom_y + 2,right_x + 2, bottom_y + 2); 
+
+      w.fill(SDL_Rect (left_x, top_y, right_x - left_x + 1, bottom_y - top_y + 1), scheme.bg_colour);
+
+      var selected = match position with
+        | #Empty => 0 // ignore for the moment
+        | Cons (h,_) => h
+      ;
+
+      var counter = 0;
+      var xpos = left_x + left_padding;
+
+      proc show_entry (entry: menu_entry_t) (submenu:menu_data_t) => 
+        match entry with
+        | #Separator => 
+          w.draw_line (RGB(0,0,0), xpos, top_y, xpos, top_y+bar_depth); 
+          xpos = xpos + separator_width + right_padding + left_padding;
+
+        | Text (label=s,active=active) =>
+          var scheme, dosub = match active with
+            | #Active => if counter == selected then selected_colour, true else text_colour, false
+            | #Disabled => disabled_colour, false
+          ;
+          var item_width =  max (width s, min_width);
+          var client_area = rect_t (
+            xpos+border_width,
+            top_y+top_padding,
+            item_width,
+            lineskip
+          );
+          w.fill (client_area, scheme.bg_colour);
+          w.write (xpos+left_padding, top_y+baseline_offset,font,scheme.label_colour,s);
+
+          match submenu with
+          | #Empty => ;
+          | _ => 
+            if dosub do
+              println "SUBMENU SELECTED";
+              var smm = MenuModel ( submenu );
+              var smd = MenuDisplay (
+                smm,
+                w,
+                xpos,bottom_y+border_width,
+                font,
+                text_colour,
+                disabled_colour,
+                selected_colour,
+                submenu_icons
+              );
+              match position with
+              | Cons (_,tail) => smm.set_state (Open tail);
+              | _ => ;
+              endmatch;
+              smd.display();
+            done
+          endmatch;
+          xpos = xpos + item_width + right_padding+left_padding;
+          ++counter;
+        endmatch
+      ;
+      for item in menu do
+        match item with
+        | Leaf entry => show_entry entry Empty[LS_expr::lsexpr[menu_entry_t, menu_entry_t]];
+        | Tree (entry, submenu) => show_entry entry submenu;
+        endmatch;
+      done
+      w.update; 
+    }  
+
+    method proc display() {
+      val position = match #(m.get_state) with
+        | #Closed => list (0)
+        | Open p => p
+      ;
+      display_menu (x,y,#(m.get_menu), position);
+    }
+    proc get_hotrecs(x:int, y:int, menu:menu_data_t, position:menu_position_t) 
+      (revtrail: list[int]) 
+      (photrecs:&list[rect_t * menu_position_t])=
+    {
+//println$ "get_hotrecs, revtrail=" + revtrail.str+", pos=" + position.str;
+      var left_x = x;
+      var top_y = y;
+      var right_x = left_x + width menu;
+      var bottom_y = top_y + bar_depth;
+
+      var selected = match position with
+        | #Empty => 0 // ignore for the moment
+        | Cons (h,_) => h
+      ;
+
+      var counter = 0;
+      var xpos = left_x + left_padding;
+      proc hotrecs (entry: menu_entry_t) (submenu:menu_data_t) 
+      {
+        match entry with
+        | #Separator => 
+          xpos = xpos + separator_width + right_padding + left_padding;
+//println$ "SEPARATOR : Counter="+counter.str;
+
+        | Text (label=s,active=active) =>
+          var dosub = match active with
+            | #Active => counter == selected
+            | #Disabled => false
+          ;
+          var item_width = max (width s, min_width);
+          var client_area = rect_t (
+            xpos+border_width,
+            top_y+top_padding,
+            item_width,
+            lineskip
+          );
+//println$ "TEXT: Counter="+counter.str+", Rect=" + client_area.str;
+          match active with 
+          | #Active => photrecs <- (client_area, rev (counter + revtrail)) + *photrecs;
+          | #Disabled => ;
+          endmatch;
+          match submenu with
+          | #Empty => ;
+          | _ => 
+            if dosub do
+              var smm = MenuModel ( submenu );
+              var smd = MenuDisplay (
+                smm,
+                w,
+                xpos,bottom_y+border_width,
+                font,
+                text_colour,
+                disabled_colour,
+                selected_colour,
+                submenu_icons
+              );
+              match position with
+              | Cons (_,tail) => smm.set_state (Open tail);
+              | _ => ;
+              endmatch;
+              var shots = smd.get_hotrects();
+              shots = map (fun (h:rect_t,pos:menu_position_t) => (h,Cons(counter,pos) )) shots;
+              photrecs <- *photrecs + shots;
+            done
+          endmatch;
+          xpos = xpos + item_width + right_padding +left_padding;
+          ++counter;
+        endmatch;
+      }
+      for item in menu do
+        match item with
+        | Leaf entry => hotrecs entry Empty[LS_expr::lsexpr[menu_entry_t, menu_entry_t]];
+        | Tree (entry, submenu) => hotrecs entry submenu;
+        endmatch;
+      done
+    }  
+
+
+    method fun get_hotrects() : list[rect_t * menu_position_t] =
+    {
+      val position = match #(m.get_state) with
+        | #Closed => list (0)
+        | Open p => p
+      ;
+      var hotrecs = Empty[rect_t * menu_position_t];
+      get_hotrecs (x,y,#(m.get_menu),position) Empty[int] &hotrecs;
+      return rev hotrecs;
+    }
+
+  } 
+  // ===============================================================================
+
+
+  proc menu_controller 
+  (
+    mm: menu_model_t,
+    md: menu_display_t,
+    ec: ischannel[event_t],
+    response: oschannel[menu_action_t]
+  ) ()
+  {
+    md.display();
+    var run = true;
+    var e = read ec;
+    while run do
+      match e.type.SDL_EventType with
+      | $(SDL_WINDOWEVENT) =>
+        match e.window.event.SDL_WindowEventID with
+        | $(SDL_WINDOWEVENT_RESIZED) =>
+          md.display();
+          write$ response, NoAction;
+
+        | _ => write$ response, NoAction;
+        endmatch;
+
+      | $(SDL_MOUSEMOTION) =>
+        var hotrecs = md.get_hotrects();
+        //List::iter proc (r:rect_t, pos:menu_position_t) { println$ "Rect=" + r.str + ", Pos=" + pos.str; } hotrecs; 
+        
+        var x,y = e.motion.x,e.motion.y; //int32
+        match hotpos ( SDL_Point (x.int,y.int), hotrecs) with
+        | #None =>
+          write$ response, NoAction;
+        | Some pos =>
+          println$ "Mouse Move Position " + pos.str;
+          match #(mm.get_state) with
+          | #Closed =>
+            write$ response, ChangedPosition;
+          | Open oldpos =>
+            if oldpos == pos do
+              write$ response, NoAction;
+            else
+              mm.set_state (Open pos);
+              write$ response, ChangedPosition;
+            done
+          endmatch;
+        endmatch;
+   
+      | $(SDL_MOUSEBUTTONDOWN) => 
+        hotrecs = md.get_hotrects();
+        x,y = e.button.x,e.button.y; //int32
+        match hotpos ( SDL_Point (x.int,y.int), hotrecs) with
+        | #None =>
+          write$ response, NoAction;
+        | Some pos =>
+          println$ "Mouse down Position " + pos.str;
+          match #(mm.get_state) with
+          | #Closed =>
+            write$ response, ChangedPosition;
+          | Open oldpos =>
+            if oldpos == pos do
+              write$ response, NoAction;
+            else
+              mm.set_state (Open pos);
+              write$ response, ChangedPosition;
+            done
+          endmatch;
+        endmatch;
+
+      | $(SDL_MOUSEBUTTONUP) => 
+        hotrecs = md.get_hotrects();
+        x,y = e.button.x,e.button.y; //int32
+        match hotpos ( SDL_Point (x.int,y.int), hotrecs) with
+        | #None =>
+          write$ response, NoAction;
+        | Some pos =>
+          println$ "Mouse up Position " + pos.str;
+          match #(mm.get_state) with
+          | #Closed =>
+            write$ response, ChangedPosition;
+          | Open oldpos =>
+            if oldpos == pos do
+              var selected_tag = #(mm.get_current_tag);
+              write$ response, SelectedAction selected_tag;
+            else
+              mm.set_state (Open pos);
+              write$ response, ChangedPosition;
+            done
+          endmatch;
+        endmatch;
+
+
+
+      | $(SDL_WINDOWEVENT) when e.window.event == SDL_WINDOWEVENT_LEAVE.uint8  =>
+        write$ response, NoAction;
+
+      | _ => 
+        write$ response, NoAction;
+      endmatch;
+      e = read ec;
+    done
+
+  }
+
+}
+
+@
+@tangle line_buffer_display_controller_interface.flx
+class FlxGuiLineBufferDisplayControllerInterface
+{
+interface line_buffer_display_controller_interface
+{
+  display : 1 -> 0;
+  set_focus_gained: 1 -> 0; // 
+  set_focus_lost: 1 -> 0;
+}
+}
+
+@
+@tangle line_buffer_display_controller.flx
+include "gui/line_buffer_display_controller_interface";
+
+class FlxGuiLineBufferDisplayController
+{
+object line_buffer_display_controller
+(
+  w:window_t, f:font_t, c:colour_t, bg:colour_t,
+  x: int, y:int, b:line_buffer_interface
+) 
+implements line_buffer_display_controller_interface =
+{
+  var has_focus = false;
+
+  method proc set_focus_gained () => has_focus = true;
+  method proc set_focus_lost () => has_focus = false;
+
+  method proc display ()
+  {
+    var nullRect = C_hack::null[SDL_Rect];
+    var s = #(b.get);
+//  println$ "Edit box = '" + s + "'";
+    var text_rendered = TTF_RenderText_Blended(f,s,c);
+    var window_surface: &SDL_Surface = SDL_GetWindowSurface w;
+    var bbox = bounding_box (f,x,y,s);
+//println$ "Bounding box for ("+x.str+","+y.str+")=("+bbox.x.str+","+bbox.y.str+","+bbox.w.str+","+bbox.h.str+")";
+    w.fill (bbox,bg);
+    var viewport: SDL_Rect;
+    var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
+    C_hack::ignore$ TTF_GlyphMetrics(f,"m".char.ord.uint16,&minx, &maxx, &miny, &maxy, &advance);
+      
+    viewport.x = bbox.x + min(minx,0) + 2; 
+    viewport.y = bbox.y + 2; // actually y + font.ascent + 2
+//println$ "Viewpos for ("+x.str+","+y.str+")=("+viewport.x.str+","+viewport.y.str;
+    C_hack::ignore$ SDL_BlitSurface (text_rendered, nullRect, window_surface, &viewport); 
+    SDL_FreeSurface text_rendered;
+    if has_focus do
+      var charwidth = 
+        #{ 
+          var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
+          C_hack::ignore$ TTF_GlyphMetrics(f,"m".char.ord.uint16,&minx, &maxx, &miny, &maxy, &advance);
+          return advance;
+        }
+      ;
+      var curpos = x + charwidth * #(b.get_pos);
+      w.draw_line(red,curpos,viewport.y - 1,curpos,viewport.y + viewport.h - 2);
+    done
+    w.update;
+  } 
+}
+}
+
+@
+@tangle line_buffer_interface.flx
+class FlxGuiLineBufferInterface
+{
+  interface line_buffer_interface 
+  {
+    get: 1 -> string;
+    get_pos: 1 -> int;
+
+    // movement
+    mv_left : 1 -> 0;
+    mv_right : 1 -> 0;
+    mv_start : 1 -> 0;
+    mv_end : 1 -> 0;
+
+    // insert and overwrite
+    ins: char -> 0;
+    ovr: char -> 0;
+
+    // delete
+    del_left: 1 -> 0;
+    del_right: 1 -> 0;
+    clear : 1 ->0;
+    clear_right : 1 -> 0;
+    clear_left : 1 -> 0;
+  }
+}
+
+
+@
+
+@tangle line_buffer_object.flx
+include "gui/line_buffer_interface";
+
+class FlxGuiLineBuffer
+{
+  object line_buffer (n:int, var b:string) implements line_buffer_interface =
+  {
+    b = substring (b+ ' ' *n,0,n); //clip and pad to n chars
+    assert b.len.int == n;
+
+    // caret position: can range between 0 and n inclusive!
+    // its the position *between* two characters!!
+    var pos = 0; 
+    method fun get() => b;
+    method fun get_pos () => pos;
+
+    // movement
+    method proc mv_left () => pos = max (0,pos - 1);
+    method proc mv_right () => pos = min (n, pos + 1);
+    method proc mv_start () => pos = 0;
+    method proc mv_end () => pos = n;
+
+    // insert and move right
+    method proc ins (ch:char) 
+    {
+      b = substring (b, 0, pos) + ch + substring (b, pos, n);
+      pos = min (pos + 1, n);
+      assert b.len.int == n;
+    }
+    // overwrite and move right
+    method proc ovr (ch:char) 
+    {
+      if pos < n do
+        b = substring (b, 0, pos) + ch + substring (b, pos+1, n);
+        pos = min (pos + 1, n);
+      done
+      assert b.len.int == n;
+    }
+    // delete to the left
+    method proc del_left ()
+    {
+      if pos > 0 do
+        b = substring (b, 0, pos - 1) + substring (b, pos, n) + ' ';
+        pos = max (0, pos - 1);
+      done
+      assert b.len.int == n;
+    }
+    // delete to the right
+    method proc del_right ()
+    {
+      if pos < n do
+        b = substring (b, 0, pos) + substring (b, pos + 1, n) + ' ';
+      done
+      assert b.len.int == n;
+    }
+    // clear all
+    method proc clear () 
+    {
+      b = ' ' *n; 
+      pos = 0;
+      assert b.len.int == n;
+    }
+    method proc clear_right ()
+    {
+      b = substring (b, 0, pos) + ' ' * (n - pos);
+      assert b.len.int == n;
+    }
+    method proc clear_left ()
+    {
+      b = substring (b, pos, n) + ' ' * pos;
+      pos = 0;
+      assert b.len.int == n;
+    }
+  }
+
+}
+@
+@tangle line_editor.flx
+class FlxGuiLineEditor
+{
+proc line_edit 
+  (b:line_buffer_interface) 
+  (d:line_buffer_display_controller_interface) 
+  (ec:ischannel[event_t]) 
+  ()
+{
+  //println$ "Line buffer running";
+  d.display();
+  var run = true;
+  var e : event_t = read ec;
+  while run do
+    match e.type.SDL_EventType with
+    | $(SDL_WINDOWEVENT) =>
+      match e.window.event.SDL_WindowEventID with
+      | $(SDL_WINDOWEVENT_FOCUS_GAINED) => d.set_focus_gained (); d.display();
+      | $(SDL_WINDOWEVENT_FOCUS_LOST) => d.set_focus_lost (); d.display();
+      | $(SDL_WINDOWEVENT_RESIZED) =>  d.display();
+      | _ => ;
+      endmatch;
+
+    | $(SDL_KEYDOWN) =>
+      var vkey = e.key.keysym.sym;
+      match vkey with
+      | $(SDLK_LEFT) => b.mv_left (); d.display();
+      | $(SDLK_RIGHT) => b.mv_right (); d.display();
+      | $(SDLK_HOME) => b.mv_start (); d.display();
+      | $(SDLK_END) => b.mv_end (); d.display();
+      | $(SDLK_DELETE) => b.del_right(); d.display();
+      | $(SDLK_BACKSPACE) => b.del_left(); d.display();
+      | $(SDLK_RETURN) => b.mv_start(); d.display();
+      | $(SDLK_TAB) => b.mv_start(); d.display();
+      | _ => ;
+      endmatch;
+    | $(SDL_TEXTINPUT) =>
+      var text_buffer : +char = e.text.text;
+      var ch = text_buffer . 0;
+      b.ovr ch; 
+      d.display();
+
+    // NOTE: not an actual SDL_QUIT!
+    // We just need something to terminate.
+    // Should be sent on window close actually.
+    | $(SDL_QUIT) =>  
+      run = false;
+    | _ => ;
+    endmatch;
+    e = read ec;
+  done
+}
+}
+ 
+@
+
