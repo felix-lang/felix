@@ -12,7 +12,8 @@ FlxGui::init();
 FlxGui::versions();
 
 var w = window_t("Felix:gui_01_window_01",100,100,400,400);
-w.clear lightgrey;
+var surf = get_surface w;
+surf.clear lightgrey;
 w.update;
 w.show;
 

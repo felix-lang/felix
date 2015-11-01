@@ -9,12 +9,13 @@ var clock = Faio::mk_alarm_clock();
 FlxGui::init();
 
 var w = window_t("Felix:gui_03_draw_01",100,100,400,600);
-w.clear lightgrey;
+var surf = get_surface w;
+surf.clear lightgrey;
 
 var font_name = dflt_sans_serif_font();
 var font : font_t = get_font(font_name, 12);
 var lineskip = get_lineskip font;
-w.write (10,10,font,black,"Basic Drawing Test");
+surf.write (10,10,font,black,"Basic Drawing Test");
 
 fun / (x:string, y:string) => Filename::join (x,y);
 var imgfile = #Config::std_config.FLX_SHARE_DIR / "src" / "web" / "images" / "FelixWork.jpg";
@@ -26,10 +27,10 @@ var result = SDL_BlitSurface (ppic, C_hack::null[rect_t], SDL_GetWindowSurface w
 println$ "Blit result " + result.str;
 w.update();
 
-w.draw_line (RGB(0,0,255), 100,110,200,110);
-w.draw_line (RGB(0,0,255), 100,210,200,210);
-w.draw_line (RGB(0,0,255), 100,110,100,210);
-w.draw_line (RGB(0,0,255), 200,110,200,210);
+surf.draw_line (RGB(0,0,255), 100,110,200,110);
+surf.draw_line (RGB(0,0,255), 100,210,200,210);
+surf.draw_line (RGB(0,0,255), 100,110,100,210);
+surf.draw_line (RGB(0,0,255), 200,110,200,210);
 
 w.update;
 w.show;

@@ -263,6 +263,26 @@ class FlxGuiSurface
      SDL_DestroyRenderer r;
   }
 
+  proc write(surf:surface_t) (x:int, y:int, font:font_t, c: colour_t, s:string)
+  {
+      var rendered = TTF_RenderText_Solid (font,s,c);
+      var rect : SDL_Rect;
+
+      var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
+      C_hack::ignore$ TTF_GlyphMetrics(font,"m".char.ord.uint16,&minx, &maxx, &miny, &maxy, &advance);
+      
+      rect.x = x + (min (minx,0));
+      rect.y = y - maxy;
+      var nullRect = C_hack::null[SDL_Rect];
+
+      var result = SDL_BlitSurface (rendered, nullRect, surf, &rect); 
+      if result != 0 do
+        eprintln$ "Unable to blit text to surface";
+        System::exit 1;
+      done
+      SDL_FreeSurface rendered;
+  }
+
 
 }
 @
@@ -298,47 +318,11 @@ ctor fixed_size_window_t  (title:string, xpos:int, ypos:int, width:int,height:in
 proc show (w:window_t) { SDL_ShowWindow w; }
 proc hide (w:window_t) { SDL_HideWindow w; }
 proc raise (w:window_t) { SDL_RaiseWindow w; }
+gen get_surface (w:window_t) => SDL_GetWindowSurface w;
 
 proc destroy (w:window_t) { SDL_DestroyWindow w; }
 // x,y is the origin position of the the first char
 // the first pixels may actually be to the left of this!
-proc write(w:window_t) (x:int, y:int, font:font_t, c: colour_t, s:string)
-{
-    var rendered = TTF_RenderText_Solid (font,s,c);
-    var rect : SDL_Rect;
-
-    var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
-    C_hack::ignore$ TTF_GlyphMetrics(font,"m".char.ord.uint16,&minx, &maxx, &miny, &maxy, &advance);
-    
-    rect.x = x + (min (minx,0));
-    rect.y = y - maxy;
-    var nullRect = C_hack::null[SDL_Rect];
-    var window_surface = SDL_GetWindowSurface w;
-
-    var result = SDL_BlitSurface (rendered, nullRect, window_surface, &rect); 
-    if result != 0 do
-      eprintln$ "Unable to blit text to window surface";
-      System::exit 1;
-    done
-    SDL_FreeSurface rendered;
-}
-
-// clear whole window
-proc clear(w:window_t) (c: colour_t)
-{
-  FlxGuiSurface::clear (SDL_GetWindowSurface w) c;
-}
-
-proc fill (w:window_t) (var r:rect_t, c:colour_t)
-{
-  FlxGuiSurface::fill(SDL_GetWindowSurface w) (r,c);
-}
-
-noinline proc draw_line (w:window_t)  (c:color_t, x0:int, y0:int, x1:int, y1:int)
-{
-   FlxGuiSurface::draw_line (SDL_GetWindowSurface w) (c,x0,y0,x1,y1);
-}
-
 proc update(w:window_t)
 {
   var result = SDL_UpdateWindowSurface w;
@@ -594,21 +578,22 @@ class FlxGuiButton
         | #Mouseover => mouseover_colour
         endmatch
       ;
+      var surf = get_surface w;
       // top
-      w.draw_line (scheme.top_colour, left_x - 2,top_y - 2,right_x + 2, top_y - 2); 
-      w.draw_line (scheme.top_colour, left_x - 1,top_y - 1,right_x + 1, top_y - 1); 
+      surf.draw_line (scheme.top_colour, left_x - 2,top_y - 2,right_x + 2, top_y - 2); 
+      surf.draw_line (scheme.top_colour, left_x - 1,top_y - 1,right_x + 1, top_y - 1); 
       // left
-      w.draw_line (scheme.left_colour, left_x - 2,top_y - 2,left_x - 2, bottom_y + 2); 
-      w.draw_line (scheme.left_colour, left_x - 1,top_y - 1,left_x - 1, bottom_y + 1); 
+      surf.draw_line (scheme.left_colour, left_x - 2,top_y - 2,left_x - 2, bottom_y + 2); 
+      surf.draw_line (scheme.left_colour, left_x - 1,top_y - 1,left_x - 1, bottom_y + 1); 
       // right
-      w.draw_line (scheme.right_colour, right_x + 2,top_y - 2,right_x + 2, bottom_y + 2); 
-      w.draw_line (scheme.right_colour, right_x + 1,top_y - 1,right_x + 1, bottom_y + 1); 
+      surf.draw_line (scheme.right_colour, right_x + 2,top_y - 2,right_x + 2, bottom_y + 2); 
+      surf.draw_line (scheme.right_colour, right_x + 1,top_y - 1,right_x + 1, bottom_y + 1); 
       // bottom
-      w.draw_line (scheme.bottom_colour, left_x - 1,bottom_y + 1,right_x + 1, bottom_y + 1); 
-      w.draw_line (scheme.bottom_colour, left_x - 2,bottom_y + 2,right_x + 2, bottom_y + 2); 
+      surf.draw_line (scheme.bottom_colour, left_x - 1,bottom_y + 1,right_x + 1, bottom_y + 1); 
+      surf.draw_line (scheme.bottom_colour, left_x - 2,bottom_y + 2,right_x + 2, bottom_y + 2); 
 
-      w.fill(SDL_Rect (left_x, top_y, right_x - left_x + 1, bottom_y - top_y + 1), scheme.bg_colour);
-      w.write (origin_x, origin_y, font, scheme.label_colour, label);
+      surf.fill(SDL_Rect (left_x, top_y, right_x - left_x + 1, bottom_y - top_y + 1), scheme.bg_colour);
+      surf.write (origin_x, origin_y, font, scheme.label_colour, label);
       w.update();
     } // draw
     display();
@@ -827,20 +812,21 @@ class FlxGuiMenu
       var bottom_y = top_y + depth menu;
       var scheme = text_colour;
 
+      var surf = get_surface w;
       // top
-      w.draw_line (scheme.top_colour, left_x - 2,top_y - 2,right_x + 2, top_y - 2); 
-      w.draw_line (scheme.top_colour, left_x - 1,top_y - 1,right_x + 1, top_y - 1); 
+      surf.draw_line (scheme.top_colour, left_x - 2,top_y - 2,right_x + 2, top_y - 2); 
+      surf.draw_line (scheme.top_colour, left_x - 1,top_y - 1,right_x + 1, top_y - 1); 
       // left
-      w.draw_line (scheme.left_colour, left_x - 2,top_y - 2,left_x - 2, bottom_y + 2); 
-      w.draw_line (scheme.left_colour, left_x - 1,top_y - 1,left_x - 1, bottom_y + 1); 
+      surf.draw_line (scheme.left_colour, left_x - 2,top_y - 2,left_x - 2, bottom_y + 2); 
+      surf.draw_line (scheme.left_colour, left_x - 1,top_y - 1,left_x - 1, bottom_y + 1); 
       // right
-      w.draw_line (scheme.right_colour, right_x + 2,top_y - 2,right_x + 2, bottom_y + 2); 
-      w.draw_line (scheme.right_colour, right_x + 1,top_y - 1,right_x + 1, bottom_y + 1); 
+      surf.draw_line (scheme.right_colour, right_x + 2,top_y - 2,right_x + 2, bottom_y + 2); 
+      surf.draw_line (scheme.right_colour, right_x + 1,top_y - 1,right_x + 1, bottom_y + 1); 
       // bottom
-      w.draw_line (scheme.bottom_colour, left_x - 1,bottom_y + 1,right_x + 1, bottom_y + 1); 
-      w.draw_line (scheme.bottom_colour, left_x - 2,bottom_y + 2,right_x + 2, bottom_y + 2); 
+      surf.draw_line (scheme.bottom_colour, left_x - 1,bottom_y + 1,right_x + 1, bottom_y + 1); 
+      surf.draw_line (scheme.bottom_colour, left_x - 2,bottom_y + 2,right_x + 2, bottom_y + 2); 
 
-      w.fill(SDL_Rect (left_x, top_y, right_x - left_x + 1, bottom_y - top_y + 1), scheme.bg_colour);
+      surf.fill(SDL_Rect (left_x, top_y, right_x - left_x + 1, bottom_y - top_y + 1), scheme.bg_colour);
 
       var selected = match position with
         | #Empty => 0 // ignore for the moment
@@ -853,7 +839,7 @@ class FlxGuiMenu
         match entry with
         | #Separator => 
           var y = ypos;
-          w.draw_line (RGB(0,0,0), left_x, y, right_x, y); 
+          surf.draw_line (RGB(0,0,0), left_x, y, right_x, y); 
           ypos = ypos + separator_depth + bottom_padding + top_padding;
 
         | Text (label=s,active=active) =>
@@ -868,15 +854,15 @@ class FlxGuiMenu
             right_x - left_x - 2 * border_width, 
             lineskip
           );
-          w.fill (client_area, scheme.bg_colour);
-          w.write (left_x+left_padding, y,font,scheme.label_colour,s);
+          surf.fill (client_area, scheme.bg_colour);
+          surf.write (left_x+left_padding, y,font,scheme.label_colour,s);
 
           match submenu with
           | #Empty => ;
           | _ =>
             var icon = if selected == counter then submenu_icons.open_icon else submenu_icons.closed_icon; 
             var dst = rect_t (right_x - icon_width - border_width - 1, ypos, 0,0);
-            C_hack::ignore(SDL_BlitSurface (icon, C_hack::null[rect_t], SDL_GetWindowSurface w,&dst));
+            C_hack::ignore(SDL_BlitSurface (icon, C_hack::null[rect_t], get_surface w,&dst));
             if dosub do
               var subpos = match position with 
                 | Cons (_,tail) => tail
@@ -1043,20 +1029,21 @@ class FlxGuiMenu
       var bottom_y = top_y + bar_depth;
       var scheme = text_colour;
 
+      var surf = get_surface w;
       // top
-      w.draw_line (scheme.top_colour, left_x - 2,top_y - 2,right_x + 2, top_y - 2); 
-      w.draw_line (scheme.top_colour, left_x - 1,top_y - 1,right_x + 1, top_y - 1); 
+      surf.draw_line (scheme.top_colour, left_x - 2,top_y - 2,right_x + 2, top_y - 2); 
+      surf.draw_line (scheme.top_colour, left_x - 1,top_y - 1,right_x + 1, top_y - 1); 
       // left
-      w.draw_line (scheme.left_colour, left_x - 2,top_y - 2,left_x - 2, bottom_y + 2); 
-      w.draw_line (scheme.left_colour, left_x - 1,top_y - 1,left_x - 1, bottom_y + 1); 
+      surf.draw_line (scheme.left_colour, left_x - 2,top_y - 2,left_x - 2, bottom_y + 2); 
+      surf.draw_line (scheme.left_colour, left_x - 1,top_y - 1,left_x - 1, bottom_y + 1); 
       // right
-      w.draw_line (scheme.right_colour, right_x + 2,top_y - 2,right_x + 2, bottom_y + 2); 
-      w.draw_line (scheme.right_colour, right_x + 1,top_y - 1,right_x + 1, bottom_y + 1); 
+      surf.draw_line (scheme.right_colour, right_x + 2,top_y - 2,right_x + 2, bottom_y + 2); 
+      surf.draw_line (scheme.right_colour, right_x + 1,top_y - 1,right_x + 1, bottom_y + 1); 
       // bottom
-      w.draw_line (scheme.bottom_colour, left_x - 1,bottom_y + 1,right_x + 1, bottom_y + 1); 
-      w.draw_line (scheme.bottom_colour, left_x - 2,bottom_y + 2,right_x + 2, bottom_y + 2); 
+      surf.draw_line (scheme.bottom_colour, left_x - 1,bottom_y + 1,right_x + 1, bottom_y + 1); 
+      surf.draw_line (scheme.bottom_colour, left_x - 2,bottom_y + 2,right_x + 2, bottom_y + 2); 
 
-      w.fill(SDL_Rect (left_x, top_y, right_x - left_x + 1, bottom_y - top_y + 1), scheme.bg_colour);
+      surf.fill(SDL_Rect (left_x, top_y, right_x - left_x + 1, bottom_y - top_y + 1), scheme.bg_colour);
 
       var selected = match position with
         | #Empty => 0 // ignore for the moment
@@ -1069,7 +1056,7 @@ class FlxGuiMenu
       proc show_entry (entry: menu_entry_t) (submenu:menu_data_t) => 
         match entry with
         | #Separator => 
-          w.draw_line (RGB(0,0,0), xpos, top_y, xpos, top_y+bar_depth); 
+          surf.draw_line (RGB(0,0,0), xpos, top_y, xpos, top_y+bar_depth); 
           xpos = xpos + separator_width + right_padding + left_padding;
 
         | Text (label=s,active=active) =>
@@ -1084,8 +1071,8 @@ class FlxGuiMenu
             item_width,
             lineskip
           );
-          w.fill (client_area, scheme.bg_colour);
-          w.write (xpos+left_padding, top_y+baseline_offset,font,scheme.label_colour,s);
+          surf.fill (client_area, scheme.bg_colour);
+          surf.write (xpos+left_padding, top_y+baseline_offset,font,scheme.label_colour,s);
 
           match submenu with
           | #Empty => ;
@@ -1362,10 +1349,10 @@ implements line_buffer_display_controller_interface =
     var s = #(b.get);
 //  println$ "Edit box = '" + s + "'";
     var text_rendered = TTF_RenderText_Blended(f,s,c);
-    var window_surface: &SDL_Surface = SDL_GetWindowSurface w;
+    var surf = get_surface w;
     var bbox = bounding_box (f,x,y,s);
 //println$ "Bounding box for ("+x.str+","+y.str+")=("+bbox.x.str+","+bbox.y.str+","+bbox.w.str+","+bbox.h.str+")";
-    w.fill (bbox,bg);
+    surf.fill (bbox,bg);
     var viewport: SDL_Rect;
     var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
     C_hack::ignore$ TTF_GlyphMetrics(f,"m".char.ord.uint16,&minx, &maxx, &miny, &maxy, &advance);
@@ -1373,7 +1360,7 @@ implements line_buffer_display_controller_interface =
     viewport.x = bbox.x + min(minx,0) + 2; 
     viewport.y = bbox.y + 2; // actually y + font.ascent + 2
 //println$ "Viewpos for ("+x.str+","+y.str+")=("+viewport.x.str+","+viewport.y.str;
-    C_hack::ignore$ SDL_BlitSurface (text_rendered, nullRect, window_surface, &viewport); 
+    C_hack::ignore$ SDL_BlitSurface (text_rendered, nullRect, surf, &viewport); 
     SDL_FreeSurface text_rendered;
     if has_focus do
       var charwidth = 
@@ -1384,7 +1371,7 @@ implements line_buffer_display_controller_interface =
         }
       ;
       var curpos = x + charwidth * #(b.get_pos);
-      w.draw_line(red,curpos,viewport.y - 1,curpos,viewport.y + viewport.h - 2);
+      surf.draw_line(red,curpos,viewport.y - 1,curpos,viewport.y + viewport.h - 2);
     done
     w.update;
   } 

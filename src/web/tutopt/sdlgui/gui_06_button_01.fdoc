@@ -110,8 +110,9 @@ begin
 
   // create a window
   var w1 = window_t("Felix:gui_06_button_01",100,100,400,400);
-  w1.clear lightgrey;
-  w1.write (100,100,font,black,"Basic Button Test");
+  var surf1 = get_surface w1;
+  surf1.clear lightgrey;
+  surf1.write (100,100,font,black,"Basic Button Test");
   w1.update;
   w1.show;
 

@@ -88,8 +88,9 @@ var init_state = Open ( list[int] (4,2) );
 // Base display routine
 proc display (w:window_t)
 {
-  w.clear lightgrey;
-  w.write (100,10,font,black,"Basic Menu Test");
+  var surf = get_surface w;
+  surf.clear lightgrey;
+  surf.write (100,10,font,black,"Basic Menu Test");
 }
  
 // make an event handler for our window

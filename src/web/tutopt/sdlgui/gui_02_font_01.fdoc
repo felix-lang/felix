@@ -11,13 +11,14 @@ var clock = Faio::mk_alarm_clock();
 FlxGui::init();
 
 var w = window_t("Felix:gu_02_font_01",100,100,400,400);
-w.clear lightgrey;
+var surf = get_surface w;
+surf.clear lightgrey;
 
 var font_name = dflt_sans_serif_font();
 var font : font_t = get_font(font_name, 16);
 var lineskip = get_lineskip font;
-w.write (100,100,font,black,"Felix says: ");
-w.write (100,100+lineskip,font,black,"Hello World");
+surf.write (100,100,font,black,"Felix says: ");
+surf.write (100,100+lineskip,font,black,"Hello World");
 w.update;
 w.show;
 Faio::sleep(clock,15.0);
