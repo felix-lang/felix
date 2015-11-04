@@ -262,7 +262,7 @@ class C_hack
   proc free: address = '::std::free($1);' requires Cxx_headers::cstdlib;
 
   //$ Invoke C++ destructor
-  proc destroy[T] : &T = "destroy($1);/*C_hack*/"; // from flx_compiler_support_bodies
+  proc destroy[T] : &T = "::destroy($1);/*C_hack*/"; // from flx_compiler_support_bodies
 }
 
 

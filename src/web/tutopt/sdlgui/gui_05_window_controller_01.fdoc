@@ -15,26 +15,23 @@ var font : font_t = get_font(font_name, 12);
 var lineskip = get_lineskip font;
 
 
-var w1 = window_t("Felix:gui_05_window_controller_01",100,100,400,400);
-var surf1 = get_surface w1;
-surf1.clear lightgrey;
-surf1.write (100,100,font,black,"Basic Window Controller Test");
-w1.update;
-w1.show;
+var w1 = create_resizable_window("Felix:gui_05_window_controller_01",100,100,400,400);
+w1.add$ mk_drawable FlxGui::clear lightgrey;
+w1.add$ mk_drawable FlxGui::write (100,100,font,black,"Basic Window Controller Test");
+w1.update();
+w1.show();
 
-var w2 = window_t("WINDOW 2",400,100,400,400);
-var surf2 = get_surface w2;
-surf2.clear blue;
-surf2.write (100,100,font,black,"Basic Window Controller Test");
-w2.update;
-w2.show;
+var w2 = create_resizable_window("WINDOW 2",400,100,400,400);
+w2.add$ mk_drawable FlxGui::clear blue;
+w2.add$ mk_drawable FlxGui::write (100,100,font,black,"Basic Window Controller Test");
+w2.update();
+w2.show();
 
 // make an event handler for our window
 proc ehandler 
   (w:window_t)
   (input:ischannel[event_t])  () 
 {
-  var surf = get_surface w;
    // get a first event from the window manager
   var e: event_t = read input;
 
@@ -52,9 +49,9 @@ proc ehandler
     if s != "" do
       println$ s;
       var r = rect_t (100,linepos - 2*lineskip,300,4*lineskip);
-      surf.fill (r, green);
-      surf.write (100,linepos,font,black,"EVENT: "+ s);
-      w.update;
+      w.add$ mk_drawable fill (r, green);
+      w.add$ mk_drawable FlxGui::write (100,linepos,font,black,"EVENT: "+ s);
+      w.update();
     done
 
     // get another event

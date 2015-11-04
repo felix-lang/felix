@@ -10,22 +10,21 @@ var clock = Faio::mk_alarm_clock();
 // Initialise the SDL system (SDL + TTF + IMAGE)
 FlxGui::init();
 
-var w = window_t("Felix:gui_04_wm_01",100,100,400,400);
-var surf = get_surface w;
-surf.clear lightgrey;
+var w = create_resizable_window("Felix:gui_04_wm_01",100,100,400,400);
+w.add$ mk_drawable FlxGui::clear lightgrey;
 
 var font_name = dflt_sans_serif_font();
 var font : font_t = get_font(font_name, 12);
 var lineskip = get_lineskip font;
 
-surf.write (100,100,font,black,"Basic Window Manager Test");
-surf.draw_line (RGB(0,0,255), 100,110,200,110);
-surf.draw_line (RGB(0,0,255), 100,210,200,210);
-surf.draw_line (RGB(0,0,255), 100,110,100,210);
-surf.draw_line (RGB(0,0,255), 200,110,200,210);
+w.add$ mk_drawable FlxGui::write (100,100,font,black,"Basic Window Manager Test");
+w.add$ mk_drawable draw_line (RGB(0,0,255), 100,110,200,110);
+w.add$ mk_drawable draw_line (RGB(0,0,255), 100,210,200,210);
+w.add$ mk_drawable draw_line (RGB(0,0,255), 100,110,100,210);
+w.add$ mk_drawable draw_line (RGB(0,0,255), 200,110,200,210);
 
-w.update;
-w.show;
+w.update();
+w.show();
 
 //create a window manager
 var wm = window_manager();
@@ -51,9 +50,10 @@ begin
     if s != "" do
       println$ s;
       var r = rect_t (100,linepos - 2*lineskip,300,4*lineskip);
-      surf.fill (r, green);
-      surf.write (100,linepos,font,black,"EVENT: "+ s);
-      w.update;
+      w.remove "evt";
+      w.add$ mk_drawable "evt" 100u32 fill (r, green);
+      w.add$ mk_drawable "evt" 100u32 FlxGui::write (100,linepos,font,black,"EVENT: "+ s);
+      w.update();
     done
 
     // get another event

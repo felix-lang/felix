@@ -23,9 +23,10 @@ proc mk_field
   o:&oschannel[event_t]
 ) 
 {
-  println$ "mk_field ("+x.str +"," + y.str+")="+dflt;
+  var tag = dflt;
+  println$ "mk_field ("+x.str +"," + y.str+")="+tag;
   var editor = line_buffer (dflt.len.int, dflt);
-  var dc = line_buffer_display_controller (window,font,colour,bgcolour,x,y,editor);
+  var dc = line_buffer_display_controller (window,tag,font,colour,bgcolour,x,y,editor);
   dc.display();
   var ich,och = #(mk_ioschannel_pair[event_t]);
   var controller = line_edit editor dc ich;
@@ -74,12 +75,11 @@ begin
   var wm = window_manager();
 
   // create a window
-  var w1 = window_t("Felix:gui_07_editfield_01",100,100,400,400);
-  var surf1 = get_surface w1;
-  surf1.clear lightgrey;
-  surf1.write (100,10,font,black,"Basic Field Edit Test");
-  w1.update;
-  w1.show;
+  var w1 = create_resizable_window("Felix:gui_07_editfield_01",100,100,400,400);
+  w1.add$ mk_drawable FlxGui::clear lightgrey;
+  w1.add$ mk_drawable FlxGui::write (100,10,font,black,"Basic Field Edit Test");
+  w1.update();
+  w1.show();
 
   var ch1: oschannel[event_t]; var ed1: line_buffer_interface;
   mk_field (w1, 50, 60, font, black, white, "EDITFIELD ONE", &ed1, &ch1);

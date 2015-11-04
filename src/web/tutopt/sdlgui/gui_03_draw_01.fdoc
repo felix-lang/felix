@@ -8,32 +8,29 @@ var clock = Faio::mk_alarm_clock();
 // Initialise the SDL system (SDL + TTF + IMAGE)
 FlxGui::init();
 
-var w = window_t("Felix:gui_03_draw_01",100,100,400,600);
-var surf = get_surface w;
-surf.clear lightgrey;
+var w = create_resizable_window("Felix:gui_03_draw_01",100,100,400,600);
+w.add$ mk_drawable FlxGui::clear lightgrey;
 
 var font_name = dflt_sans_serif_font();
 var font : font_t = get_font(font_name, 12);
 var lineskip = get_lineskip font;
-surf.write (10,10,font,black,"Basic Drawing Test");
+w.add$ mk_drawable FlxGui::write (10,10,font,black,"Basic Drawing Test");
 
 fun / (x:string, y:string) => Filename::join (x,y);
 var imgfile = #Config::std_config.FLX_SHARE_DIR / "src" / "web" / "images" / "FelixWork.jpg";
 
-var ppic : surface_t = IMG_Load imgfile.cstr ;
+var ppic : surface_t = surface (IMG_Load imgfile.cstr);
 
-var dst = rect_t (20,20,0,0);
-var result = SDL_BlitSurface (ppic, C_hack::null[rect_t], SDL_GetWindowSurface w,&dst);
-println$ "Blit result " + result.str;
+w.add$ mk_drawable blit (20,20, ppic.get_sdl_surface ());
 w.update();
 
-surf.draw_line (RGB(0,0,255), 100,110,200,110);
-surf.draw_line (RGB(0,0,255), 100,210,200,210);
-surf.draw_line (RGB(0,0,255), 100,110,100,210);
-surf.draw_line (RGB(0,0,255), 200,110,200,210);
+w.add$ mk_drawable draw_line (RGB(0,0,255), 100,110,200,110);
+w.add$ mk_drawable draw_line (RGB(0,0,255), 100,210,200,210);
+w.add$ mk_drawable draw_line (RGB(0,0,255), 100,110,100,210);
+w.add$ mk_drawable draw_line (RGB(0,0,255), 200,110,200,210);
 
-w.update;
-w.show;
+w.update();
+w.show();
 
 Faio::sleep(clock,15.0);
 

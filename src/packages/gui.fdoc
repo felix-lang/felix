@@ -5,6 +5,8 @@
 @tangler font.flx                                      = share/lib/gui/font.flx
 @tangler color.flx                                     = share/lib/gui/color.flx
 @tangler surface.flx                                   = share/lib/gui/surface.flx
+@tangler drawable.flx                                  = share/lib/gui/drawable.flx
+@tangler drawchain.flx                                  = share/lib/gui/drawchain.flx
 
 @tangler window.flx                                    = share/lib/gui/window.flx
 @tangler window_controller_interface.flx               = share/lib/gui/window_controller_interface.flx
@@ -20,29 +22,83 @@
 @tangler line_editor.flx                               = share/lib/gui/line_editor.flx
 
 @h1 Basics
+The Felix portable GUI is based on the portable SDL library
+and the Felix bindings thereof. SDL_ttf and SDL_image are
+required too for font and image handling.
 @tangle __init__.flx
 include "sdl/SDL2";
 include "sdl/SDL_ttf";
 include "sdl/SDL_image";
+@
+
+The basic SDL initialisation stuff.
+@tangle __init__.flx
 include "gui/init";
 include "gui/types";
 include "gui/font";
+@
+Basic GUI abstractions. Felix uses the Model-View-Controller (MVC)
+design idea. 
+
+The <em>model</em> is representation of the abstract state.
+independent of the visual interface.
+
+The <em>view</em> provides the operations required to render
+the abstract state onto a graphical surface.
+
+The <em>controller</em> is responsible for event management
+and in particular state mutations and scheduling display
+updates corresponding to them in the view, based on input
+from the client mouse and keyboard.
+
+@tangle __init__.flx
 include "gui/color";
 include "gui/surface";
+include "gui/drawable";
+include "gui/drawchain";
 include "gui/window";
+include "gui/window_controller_interface";
+include "gui/window_controller";
+include "gui/window_manager";
+
+@
+@h2 Widgets
+And of course now for some Widgets!
+Felix uses a novel mechanism. It is not like other GUIs.
+Where other systems use subtyping and callbacks, in Felix
+the controllers for widgets are active threads of control
+modelled by Felix fthreads (synchronous fibres).
+
+Widgets, and the window manager communicate using
+schannels (synchronous channels) instead of using 
+callbacks for message passing. This avoids the catastrophic
+design failing of other GUI systems in which components
+are reactive slaves. In Felix, the components are autonomous
+active actors.
+
+In particular interfaces are primarily based on communication
+protocols which allow plugins to provide services.
+
+@h3 Button and Menu
+Buttons and menus.
+@tangle __init__.flx
 include "gui/button";
 include "gui/menu";
+@
 
+@h3 One line edit widget
+@tangle __init__.flx
 include "gui/line_buffer_interface";
 include "gui/line_buffer_object";
 include "gui/line_buffer_display_controller_interface";
 include "gui/line_buffer_display_controller";
 include "gui/line_editor";
-include "gui/window_controller_interface";
-include "gui/window_controller";
-include "gui/window_manager";
+@
 
-
+@h2 Integrated presentation.
+Merge all the separate classes into a single
+class to make it a all a bit easier to use.
+@tangle __init__.flx
 class FlxGui 
 {
  inherit FlxGuiInit;
@@ -50,6 +106,9 @@ class FlxGui
  inherit FlxGuiFont;
  inherit FlxGuiColor;
  inherit FlxGuiSurface;
+ inherit FlxGuiDrawable;
+ inherit FlxGuiDrawChain;
+
  inherit FlxGuiWindow;
  inherit FlxGuiWindowController;
  inherit FlxGuiWindowControllerInterface;
@@ -70,10 +129,17 @@ class FlxGui
 
 @
 
+@h1 Core types
+Mostly we just lift them from the sdl library
+which in turn lifts them from the C SDL2 library.
+
+The result is somewhat messy, especially for messages,
+since SDL's emulation of unions in C is a long way 
+from the well presented sum type Felix would use.
+
 @tangle types.flx
 class FlxGuiTypes
 {
-  typedef window_t = SDL_Window;
   typedef font_t = TTF_Font;
   typedef colour_t = SDL_Color;
   typedef color_t = colour_t; // dang yanks ..
@@ -86,128 +152,147 @@ class FlxGuiTypes
 }
 @
 
+@h2 Subsystem initialisation.
+Ensures we have visuals, sound, fonts, and images.
+Display versions of libraries, both the one from
+the compiled header files and the binary linked in.
 @tangle init.flx
 class FlxGuiInit
 {
-proc init()
-{
-  if SDL_Init(SDL_INIT_AUDIO \| SDL_INIT_VIDEO) < 0  do
-    eprintln$ f"Unable to init SDL: %S\n" #SDL_GetError;
-    System::exit(1);
-  done
-  println$ "SDL_init OK";
-  if TTF_Init() < 0 do 
-    eprintln$ f"Unable to init TTF: %S\n" #TTF_GetError;
-    System::exit(1);
-  done
-  println$ "TTF_init OK";
-  if IMG_Init(IMG_INIT_PNG) < 0 do 
-    eprintln$ f"Unable to init IMG with PNG: %S\n" #IMG_GetError;
-    System::exit(1);
-  done
-  println$ "IMG_init OK";
-}
+  proc init()
+  {
+    if SDL_Init(SDL_INIT_AUDIO \| SDL_INIT_VIDEO) < 0  do
+      eprintln$ f"Unable to init SDL: %S\n" #SDL_GetError;
+      System::exit(1);
+    done
+    println$ "SDL_init OK";
+    if TTF_Init() < 0 do 
+      eprintln$ f"Unable to init TTF: %S\n" #TTF_GetError;
+      System::exit(1);
+    done
+    println$ "TTF_init OK";
+    if IMG_Init(IMG_INIT_PNG) < 0 do 
+      eprintln$ f"Unable to init IMG with PNG: %S\n" #IMG_GetError;
+      System::exit(1);
+    done
+    println$ "IMG_init OK";
+  }
 
-proc versions ()
-{
-  begin
-    var compiled = #SDL_Compiled_Version;
-    var linked = #SDL_Linked_Version;
-    println$ f"We compiled against SDL version %d.%d.%d ..."
-      (compiled.major.int, compiled.minor.int, compiled.patch.int);
-    println$ f"But we are linking against SDL version %d.%d.%d."
-      (linked.major.int, linked.minor.int, linked.patch.int);
-  end 
+  proc versions ()
+  {
+    begin
+      var compiled = #SDL_Compiled_Version;
+      var linked = #SDL_Linked_Version;
+      println$ f"We compiled against SDL version %d.%d.%d ..."
+        (compiled.major.int, compiled.minor.int, compiled.patch.int);
+      println$ f"But we are linking against SDL version %d.%d.%d."
+        (linked.major.int, linked.minor.int, linked.patch.int);
+    end 
 
-  begin
-    var compiled = #TTF_Compiled_Version;
-    var linked = #TTF_Linked_Version;
-    println$ f"We compiled against TTF version %d.%d.%d ..."
-      (compiled.major.int, compiled.minor.int, compiled.patch.int);
-    println$ f"But we are linking against TTF version %d.%d.%d."
-      (linked.major.int, linked.minor.int, linked.patch.int);
-  end 
+    begin
+      var compiled = #TTF_Compiled_Version;
+      var linked = #TTF_Linked_Version;
+      println$ f"We compiled against TTF version %d.%d.%d ..."
+        (compiled.major.int, compiled.minor.int, compiled.patch.int);
+      println$ f"But we are linking against TTF version %d.%d.%d."
+        (linked.major.int, linked.minor.int, linked.patch.int);
+    end 
 
-  begin
-    var compiled = #IMG_Compiled_Version;
-    var linked = #IMG_Linked_Version;
-    println$ f"We compiled against IMG version %d.%d.%d ..."
-      (compiled.major.int, compiled.minor.int, compiled.patch.int);
-    println$ f"But we are linking against IMG version %d.%d.%d."
-      (linked.major.int, linked.minor.int, linked.patch.int);
-  end 
-
-} 
+    begin
+      var compiled = #IMG_Compiled_Version;
+      var linked = #IMG_Linked_Version;
+      println$ f"We compiled against IMG version %d.%d.%d ..."
+        (compiled.major.int, compiled.minor.int, compiled.patch.int);
+      println$ f"But we are linking against IMG version %d.%d.%d."
+        (linked.major.int, linked.minor.int, linked.patch.int);
+    end 
+  } 
 
 }
 @
+
+@h1 Font handling.
+Felix uses SDL_ttf which in turn uses Freetype to render
+TrueType fonts with some hinting. Unfortunately in my experience
+the rending is appalling. The glyphs are barely readable.
+It is not known if this problem is with SDL_ttf or Freetype.
+The rending is just barely good enough for GUI tools such as game
+scenario editors, it wouldn't be useful in game.
+
+Felix provides three fonts borrowed from Apple to save the user
+from having to set up a font library Felix knows about.
 
 @tangle font.flx
 class FlxGuiFont
 {
-private fun / (s:string, t:string) => Filename::join (s,t);
+  private fun / (s:string, t:string) => Filename::join (s,t);
 
-fun dflt_mono_font() => #Config::std_config.FLX_SHARE_DIR/ "src"/"lib"/"fonts"/ "Courier New.ttf";  
-fun dflt_sans_serif_font() => #Config::std_config.FLX_SHARE_DIR/ "src"/"lib"/"fonts"/ "Arial.ttf";  
-fun dflt_serif_font() => #Config::std_config.FLX_SHARE_DIR/ "src"/"lib"/"fonts"/ "Times New Roman.ttf";  
+  fun dflt_mono_font() => #Config::std_config.FLX_SHARE_DIR/ "src"/"lib"/"fonts"/ "Courier New.ttf";  
+  fun dflt_sans_serif_font() => #Config::std_config.FLX_SHARE_DIR/ "src"/"lib"/"fonts"/ "Arial.ttf";  
+  fun dflt_serif_font() => #Config::std_config.FLX_SHARE_DIR/ "src"/"lib"/"fonts"/ "Times New Roman.ttf";  
 
-gen get_font (font_file:string, ptsize:int) = {
-  var font = TTF_OpenFont (font_file,ptsize);
-  if not (TTF_ValidFont font) do
-    eprintln$ f"Unable to open TTF font %S\n" font_file;
-    System::exit 1;
-  done
-  TTF_SetFontKerning (font,0);
-  var isfixed = TTF_FontFaceIsFixedWidth (font);
-  println$ "Opened Font " + font_file + 
-    " Facename: " + TTF_FontFaceFamilyName font + 
-    (if isfixed>0 then " MONOSPACED "+ isfixed.str else " VARIABLE WIDTH");
-  println$ "Metrics: Height "+font.TTF_FontHeight.str + 
-    ", Ascent "+ font.TTF_FontAscent.str +
-    ", Descent "+ font.TTF_FontDescent.str +
-    ", Lineskip"+ font.TTF_FontLineSkip.str
-  ;
-  TTF_SetFontHinting (font,TTF_HINTING_MONO); // guess...
-  return font;
-}
+  gen get_font (font_file:string, ptsize:int) = {
+    var font = TTF_OpenFont (font_file,ptsize);
+    if not (TTF_ValidFont font) do
+      eprintln$ f"Unable to open TTF font %S\n" font_file;
+      System::exit 1;
+    done
+    TTF_SetFontKerning (font,0);
+    var isfixed = TTF_FontFaceIsFixedWidth (font);
+    println$ "Opened Font " + font_file + 
+      " Facename: " + TTF_FontFaceFamilyName font + 
+      (if isfixed>0 then " MONOSPACED "+ isfixed.str else " VARIABLE WIDTH");
+    println$ "Metrics: Height "+font.TTF_FontHeight.str + 
+      ", Ascent "+ font.TTF_FontAscent.str +
+      ", Descent "+ font.TTF_FontDescent.str +
+      ", Lineskip"+ font.TTF_FontLineSkip.str
+    ;
+    TTF_SetFontHinting (font,TTF_HINTING_MONO); // guess...
+    return font;
+  }
 
-fun get_lineskip (f: font_t) => TTF_FontLineSkip(f) + 1;
+  fun get_lineskip (f: font_t) => TTF_FontLineSkip(f) + 1;
 
-fun get_textsize (f: font_t, s:string) = 
-{
-  var w: int; var h: int;
-  C_hack::ignore$ TTF_SizeText (f,s,&w, &h);
-  return w,h;
-}
+  fun get_textsize (f: font_t, s:string) = 
+  {
+    var w: int; var h: int;
+    C_hack::ignore$ TTF_SizeText (f,s,&w, &h);
+    return w,h;
+  }
 
-// x,y is the origin  of the first character
-// The bounding box is 2 pixels up from the highest char
-// 2 pixies down from the lowest char
-// 2 pixies to the left of the first character's orgin
-// and 2 pix right from the origin of the last char + the notional advance
-// this ONLY works right for a monospaced font!
-fun bounding_box (f:font_t, x:int, y:int, s:string) : rect_t =
-{
-  var n = s.len.int;
-  var w = 
-    #{ 
-      var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
-      C_hack::ignore$ TTF_GlyphMetrics(f,"m".char.ord.uint16,&minx, &maxx, &miny, &maxy, &advance);
-      return advance;
-    }
-  ;
-  var a = f.TTF_FontAscent;
-  var d = f.TTF_FontDescent;
-  // the 5 = 4 + 1 is due to what looks like a BUG in SDL or TTF:
-  // for at least one font, height = ascent - descent + 1
-  // even though lineskip = ascent - descent
-  return SDL_Rect (x - 2,y - a - 2, w * n +4, a - d + 5);
-}
-
-
+  // x,y is the origin  of the first character
+  // The bounding box is 2 pixels up from the highest char
+  // 2 pixies down from the lowest char
+  // 2 pixies to the left of the first character's orgin
+  // and 2 pix right from the origin of the last char + the notional advance
+  // this ONLY works right for a monospaced font!
+  fun bounding_box (f:font_t, x:int, y:int, s:string) : rect_t =
+  {
+    var n = s.len.int;
+    var w = 
+      #{ 
+        var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
+        C_hack::ignore$ TTF_GlyphMetrics(f,"m".char.ord.uint16,&minx, &maxx, &miny, &maxy, &advance);
+        return advance;
+      }
+    ;
+    var a = f.TTF_FontAscent;
+    var d = f.TTF_FontDescent;
+    // the 5 = 4 + 1 is due to what looks like a BUG in SDL or TTF:
+    // for at least one font, height = ascent - descent + 1
+    // even though lineskip = ascent - descent
+    return SDL_Rect (x - 2,y - a - 2, w * n +4, a - d + 5);
+  }
 }
 
 @
+
+@h2 Colours.
+Felix uses RGBA colour scheme: 8 bits of Red, Blue and Green
+followed by 8 bits of transparency, where 0 means no colour
+and full transparency, and 255 means maximum colour and opaque
+rendering.
+
 @tangle color.flx
 class FlxGuiColor
 {
@@ -231,14 +316,29 @@ class FlxGuiColor
 }
 
 @
+@h2 Surfaces.
+A surface is something you can do simple drawing on.
+It is basically a representation of a rectangular grid
+of pixels. The pixels may support full RGBA or not,
+depending on construction. For example we might provide
+a bitmap which supports only black and white using a 1
+bit encoding.
+
+Each window will have a native surface onto which we must
+render the imagery we wish to appear on the client display
+device. In general, however, we should be using full RGBA
+arrays for rendering and then blit those arrays onto hardware
+dependent surfaces.
+
+SDL only provides a very limited set of operations on
+surfaces! Complex rendering requires OpenGL. But we do
+not need that in GUI.
+
 
 @tangle surface.flx
 class FlxGuiSurface
 {
-  typedef surface_t = &SDL_Surface;
-
-  // clear whole surface
-  proc clear(surf:surface_t) (c: colour_t)
+  proc clear(surf:&SDL_Surface) (c: colour_t)
   {
     var pixelformat : &SDL_PixelFormat  = surf*.format;
     var bgpixels = SDL_MapRGB(pixelformat,c.r,c.g,c.b);
@@ -246,7 +346,7 @@ class FlxGuiSurface
     C_hack::ignore$ SDL_FillSurface (surf, bgpixels);
   }
 
-  proc fill (surf:surface_t) (var r:rect_t, c:colour_t)
+  proc fill (surf:&SDL_Surface) (var r:rect_t, c:colour_t)
   {
     SDL_ClearClipRect (surf);
     var pixelformat : &SDL_PixelFormat  = surf*.format;
@@ -255,7 +355,7 @@ class FlxGuiSurface
     SDL_ClearClipRect (surf);
   }
 
-  noinline proc draw_line (surf:surface_t)  (c:color_t, x0:int, y0:int, x1:int, y1:int)
+  noinline proc draw_line (surf:&SDL_Surface)  (c:color_t, x0:int, y0:int, x1:int, y1:int)
   {
      var r: SDL_Renderer = SDL_CreateSoftwareRenderer surf;
      C_hack::ignore$ SDL_SetRenderDrawColor (r, c.r, c.g, c.b, c.a);
@@ -263,118 +363,378 @@ class FlxGuiSurface
      SDL_DestroyRenderer r;
   }
 
-  proc write(surf:surface_t) (x:int, y:int, font:font_t, c: colour_t, s:string)
+  proc write(surf:&SDL_Surface) (x:int, y:int, font:font_t, c: colour_t, s:string)
   {
-      var rendered = TTF_RenderText_Solid (font,s,c);
-      var rect : SDL_Rect;
+    var rendered = TTF_RenderText_Solid (font,s,c);
+    var rect : SDL_Rect;
 
-      var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
-      C_hack::ignore$ TTF_GlyphMetrics(font,"m".char.ord.uint16,&minx, &maxx, &miny, &maxy, &advance);
-      
-      rect.x = x + (min (minx,0));
-      rect.y = y - maxy;
-      var nullRect = C_hack::null[SDL_Rect];
+    var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
+    C_hack::ignore$ TTF_GlyphMetrics(font,"m".char.ord.uint16,&minx, &maxx, &miny, &maxy, &advance);
+    
+    rect.x = x + (min (minx,0));
+    rect.y = y - maxy;
+    var nullRect = C_hack::null[SDL_Rect];
 
-      var result = SDL_BlitSurface (rendered, nullRect, surf, &rect); 
-      if result != 0 do
-        eprintln$ "Unable to blit text to surface";
-        System::exit 1;
-      done
-      SDL_FreeSurface rendered;
+    var result = SDL_BlitSurface (rendered, nullRect, surf, &rect); 
+    if result != 0 do
+      eprintln$ "Unable to blit text to surface";
+      System::exit 1;
+    done
+    SDL_FreeSurface rendered;
   }
 
+  proc blit (surf:&SDL_Surface) (dstx:int, dsty:int, src: &SDL_Surface)
+  {
+    var nullRect = C_hack::null[SDL_Rect];
+    var dstRect = rect_t (dstx, dsty,0,0);
+    var result = SDL_BlitSurface (src, nullRect, surf, &dstRect);
+    if result != 0 do
+      eprintln$ "Unable to blit surface to surface at (" + dstx.str + "," + dsty.str + ")";
+      //System::exit 1;
+    done
+
+  } 
+
+  interface surface_t {
+    get_sdl_surface: 1 -> &SDL_Surface;
+    get_width : 1 -> int;
+    get_height: 1 -> int;
+    clear: colour_t -> 0;
+    fill: rect_t * colour_t -> 0;
+    draw_line: colour_t * int * int * int * int -> 0; // x0,y0,x1,y1
+    write: int * int * font_t * colour_t * string -> 0;
+  }
+
+  // Wrapper around SDL surface
+  // borrows the SDL_Surface!! Does not own or delete
+  object surface (surf: &SDL_Surface) implements surface_t =
+  {
+    method fun get_sdl_surface () => surf;
+    method fun get_width () => surf*.w;
+    method fun get_height() => surf*.h;
+    method proc clear (c:colour_t) => FlxGuiSurface::clear surf c;
+    method proc fill (r:rect_t, c:colour_t) => FlxGuiSurface::fill surf (r,c);
+    method proc draw_line (c:colour_t, x0:int, y0:int, x1:int, y1:int) { FlxGuiSurface::draw_line surf (c,x0,y0,x1,y1); }
+    method proc write (x:int, y:int, font:font_t, c: colour_t, s:string) { FlxGuiSurface::write surf (x,y,font,c,s); }
+  }
+
+  // Takes possession of the surface
+  // Frees surface when object is freed by GC
+
+  header surface_deleter = """
+    struct _SDL_SurfaceDeleter {
+       _SDL_Surface *p;
+       _SDL_SurfaceDeleter () : p (nullptr) {}
+       ~_SDL_SurfaceDeleter () { SDL_FreeSurface (p); }
+    };
+  """;
+  type surface_holder_t = "surface_deleter" requires surface_deleter;
+  proc set : &surface_holder_t * &SDL_Surface = "$1->p=$2;";
+
+  object owned_surface (surf: &SDL_Surface) implements surface_t =
+  {
+    var holder: surface_holder_t;
+    set (&holder, surf);
+
+    // returns a LOAN of the surface only
+    method fun get_sdl_surface () => surf;
+    method fun get_width () => surf*.w;
+    method fun get_height() => surf*.h;
+    method proc clear (c:colour_t) => FlxGuiSurface::clear surf c;
+    method proc fill (r:rect_t, c:colour_t) => FlxGuiSurface::fill surf (r,c);
+    method proc draw_line (c:colour_t, x0:int, y0:int, x1:int, y1:int) { FlxGuiSurface::draw_line surf (c,x0,y0,x1,y1); }
+    method proc write (x:int, y:int, font:font_t, c: colour_t, s:string) { FlxGuiSurface::write surf (x,y,font,c,s); }
+  }
 
 }
 @
 
+@h2 Drawables
+Things which can draw on surface planes.
+A surface provides x,y coordinates, a plane adds a z coordinate.
+The z coordinate is used to control drawing order: the drawables
+with lowest z are applied first.
+
+@tangle drawable.flx
+class FlxGuiDrawable
+{
+  interface drawable_t {
+     draw: surface_t -> 0;
+     get_z: 1 -> uint32;
+     get_tag: 1 -> string;
+  }
+
+  object drawable (tag:string) (z:uint32) (d: surface_t -> 0) implements drawable_t = 
+  {
+    method fun get_z () => z;
+    method proc draw (surf:surface_t) => d surf;
+    method fun get_tag () => tag;
+  }
+
+  // given some routine like draw_line (s:&SDL_surface) (p:parameters)
+  // this wrapper constructs a drawable by adding a tag name, a Z coordinate
+  // and binding the parameters.
+  noinline fun mk_drawable[T] (tag:string) (z:uint32) (d: &SDL_Surface -> T -> 0) (var a:T) : drawable_t => 
+    drawable tag z (proc (s:surface_t) { d (s.get_sdl_surface()) a; })
+  ;
+
+  noinline fun mk_drawable[T] (d: &SDL_Surface -> T -> 0) (var a:T) : drawable_t => 
+    drawable "notag" 100u32 (proc (s:surface_t) { d (s.get_sdl_surface()) a; })
+  ;
+
+  noinline fun mk_drawable[T] (tag:string) (d: &SDL_Surface -> T -> 0) (var a:T) : drawable_t => 
+    drawable tag 100u32 (proc (s:surface_t) { d (s.get_sdl_surface()) a; })
+  ;
+  
+}
+
+@h2 Draw Chain
+A dynamic set of drawables, maintained in Z order.
+The draw method draws the drawables in the stored Z order.
+Drawchains are used to schedule and manage the appearance of
+a window surface for which drawing is demanded asynchronously
+from the scheduling. This is usual in windowing systems where
+the window can be hidden, exposed, or require display 
+by events occuring at times different to the events such as mouse
+clicks triggering state changes.
+
+@tangle drawchain.flx
+class FlxGuiDrawChain
+{
+  interface drawchain_t {
+    draw: surface_t -> 0;
+    remove: string -> 0;
+    add: drawable_t -> 0;
+    len: 1 -> size;
+    get_drawables : 1 -> darray[drawable_t];
+  }
+
+  object drawchain() implements drawchain_t = 
+  {
+    var drawables = darray[drawable_t] ();
+    method fun len () => drawables.len;
+    method fun get_drawables () => drawables;
+
+    method proc draw (surf: surface_t) 
+    {
+      for d in drawables do d.draw surf; done
+    }
+
+    method proc remove (tag:string)  
+    {
+      var i = 0;
+      while i < drawables.len.int do
+        if drawables.i.get_tag () == tag do
+          erase (drawables, i);
+        else
+          ++i;
+        done
+      done
+    }
+
+    method proc add (d:drawable_t) 
+    {
+      var z = d.get_z ();
+      var i = 0;
+    next:>
+      if i == drawables.len.int do
+        push_back (drawables, d);
+      else
+        if drawables.i.get_z() > z do
+          insert(drawables, i, d);
+        else
+          ++i;
+          goto next;
+        done
+      done
+    }
+  }
+}
+
+
 @h1 Windows
+We provide a model for a platform dependent top level overlapping window.
+Windows provide a method to get a surface in the same pixel format
+as the window. We draw on that then use update operation to synchronise
+transfer of the surface to the hardware screen. 
+
+The provided surface may be the actual window surface in video ram, 
+or it may be a software surface which is blitted to the hardware by 
+system dependent operations.
+
+NOTE: in earlier SDL2 versions there is a catastrophic bug when
+a window is hidden: the surface becomes invalid. So it is not
+possible to create the window hidden, initialise it with 
+imagery, and then display it. This means there may be a flicker
+on window creation as the unpopulated window image is shown then
+replaced by a populated display.
+
 @tangle window.flx
 class FlxGuiWindow
 {
-ctor window_t  (title:string, xpos:int, ypos:int, width:int,height:int) =
-{
-  var window = SDL_CreateWindow(
-    title,
-    xpos,ypos,
-    width, height,
-    SDL_WINDOW_RESIZABLE
-  );
-  return window;
-}
+  interface window_t {
+    get_sdl_window : 1 -> SDL_Window;
+    get_sdl_surface: 1 -> &SDL_Surface;
+    get_sdl_window_id : 1 -> uint32; 
 
-typedef fixed_size_window_t = window_t;
+    get_surface: 1 -> surface_t;
+    add: drawable_t -> 0;
+    remove: string -> 0;
+    get_drawchain: 1 -> drawchain_t;
+    draw: 1 -> 0;
 
-ctor fixed_size_window_t  (title:string, xpos:int, ypos:int, width:int,height:int) =
-{
-  var window = SDL_CreateWindow(
-    title,
-    xpos,ypos,
-    width, height,
-    SDL_WINDOW_SHOWN
-  );
-  return window;
-}
+    show: 1 -> 0;
+    hide: 1 -> 0;
+    raise: 1 -> 0;
+    prim_update: 1 -> 0;
+    update: 1 -> 0; // does a draw then prim_update
+    destroy: 1 -> 0;
+  }
 
-proc show (w:window_t) { SDL_ShowWindow w; }
-proc hide (w:window_t) { SDL_HideWindow w; }
-proc raise (w:window_t) { SDL_RaiseWindow w; }
-gen get_surface (w:window_t) => SDL_GetWindowSurface w;
+  object window (title:string, xpos:int, ypos:int, width:int,height:int, flag:uint32) implements window_t =
+  {
+    var w = SDL_CreateWindow(
+      title,
+      xpos,ypos,
+      width, height,
+      flag
+    );
+    var dc = drawchain ();
 
-proc destroy (w:window_t) { SDL_DestroyWindow w; }
-// x,y is the origin position of the the first char
-// the first pixels may actually be to the left of this!
-proc update(w:window_t)
-{
-  var result = SDL_UpdateWindowSurface w;
-  if result != 0 do
-    eprintln$ "Unable to update window";
-    System::exit 1;
-  done
-}
+    method fun get_drawchain () => dc;
+    method proc add (d:drawable_t) => dc.add d;
+    method proc remove (tag:string) => dc.remove tag;
+
+
+    method fun get_sdl_window_id () => SDL_GetWindowID w;
+    method fun get_sdl_window () => w;
+    method fun get_sdl_surface() => SDL_GetWindowSurface w;
+    method fun get_surface () : surface_t => surface (SDL_GetWindowSurface w);
+
+    method proc show () { SDL_ShowWindow w; }
+    method proc hide () { SDL_HideWindow w; }
+    method proc raise () { SDL_RaiseWindow w; }
+    method proc destroy () { SDL_DestroyWindow w; }
+
+    method proc prim_update()
+    {
+      var result = SDL_UpdateWindowSurface w;
+      if result != 0 do
+        eprintln$ "Unable to update window";
+        System::exit 1;
+      done
+    }
+
+    var drawables = darray[drawable_t] ();
+
+    method proc draw () 
+    {
+      var surf =  surface (SDL_GetWindowSurface w);
+      dc.draw surf;
+    }
+
+    method proc update () { draw(); prim_update(); }
+ 
+  }
+
+  gen create_fixed_window (title:string, x:int, y:int, width:int, height:int) : window_t =>
+    window (title, x,y,width,height, SDL_WINDOW_SHOWN)
+  ;
+
+  gen create_resizable_window (title:string, x:int, y:int, width:int, height:int) : window_t =>
+    window (title, x,y,width,height, SDL_WINDOW_RESIZABLE)
+  ;
+
 
 }
 
 @
+@h2 The Window Controller.
+In Felix, the window controller is an object which
+dispatches events read from an input schannel.
+
+The user provides a procedure which can handle the events
+by reading on an schannel of events. The window controller
+creates an schannel of events and starts the user procedure
+as an fthread, passing it the input end of the schannel.
+
+After creation, the window controller object provides
+a method so the client can fetch the output end of this
+schannel on which the client writes events. These will
+then be serviced by the procedure the client provided
+since the window controller has started it running.
+
+The controller is basically a Felix kind of RAII:
+on construction an active process is started which can
+service events.
+
 @tangle window_controller_interface.flx
 class FlxGuiWindowControllerInterface
 {
-
-// ------------------------------------------------------------------
-// Window controller is responsible for all the work
-// being done on a window. It requires support for
-// dispatching events on its event channel.
-interface window_controller_interface {
-  get_window_id : 1 -> uint32;
-  get_oschannel : 1 -> oschannel[event_t];
-  destroy_window : 1 -> 0;
+  // ------------------------------------------------------------------
+  // Window controller is responsible for all the work
+  // being done on a window. It requires support for
+  // dispatching events on its event channel.
+  interface window_controller_interface {
+    get_window_id : 1 -> uint32;
+    get_oschannel : 1 -> oschannel[event_t];
+    destroy_window : 1 -> 0;
+  }
 }
-
-}
-
 @
+
 @tangle window_controller.flx
 
 class FlxGuiWindowController
 {
-
-object window_controller 
-(
-  w:window_t, 
-  p:ischannel[event_t] -> 1->0
-) 
-  implements window_controller_interface = 
-{
-  var imsgs,omsgs = #mk_ioschannel_pair[event_t]; 
-  
-  method fun get_window_id () => SDL_GetWindowID w;
-  method proc destroy_window () => SDL_DestroyWindow w;
-  method fun get_oschannel () => omsgs;
-  spawn_fthread (p imsgs);
+  object window_controller 
+  (
+    w:window_t, 
+    p:ischannel[event_t] -> 1->0
+  ) 
+    implements window_controller_interface = 
+  {
+    var imsgs,omsgs = #mk_ioschannel_pair[event_t]; 
+    
+    method fun get_window_id () => w.get_sdl_window_id ();
+    method proc destroy_window () => w.destroy ();
+    method fun get_oschannel () => omsgs;
+    spawn_fthread (p imsgs);
+  }
 }
- 
-}
-
 @
+
+@h2 The Window Manager.
+The Window manager is a top level object that is used to
+fetch process level events such as mouse clicks and dispatch
+them to the appropriate window event handler.
+
+Note that the Window manager MUST run in the main thread!
+This is because some system GUI's maintain separate event
+queues for each thread (Windows) or may provide a unified
+queue (X-Windows). 
+
+Windows managed by the window manager have two identifying
+tags: the window ID, maintained by SDL, and the window index,
+which is the slot number in an array the Felix Window manager
+uses to store the window controller associated with the window.
+
+The window manager creates the SDL event queue and reads
+events from the queue. It dispatches them to the appropriate
+windows based on the SDL window ID if the even has one,
+or all windows if there isn't one.
+
+The dispatch, of course, is done by writing the event down the
+schannel of the window controller associated with the window.
+
+Note carefully that the window manager is the equivalent of
+a traditional event dispatch loop, and underneath, Felix indeed
+implements fthreads with schannel I/O using callbacks. However
+this is transparent to the client programmer! For all intents
+and purpose the dispatching is done by a background thread
+to windows each of which is running an active process that
+listens for events.
+
 @tangle window_manager.flx
 class FlxGuiWindowManager
 {
@@ -516,7 +876,6 @@ class FlxGuiButton
     get_state: 1 -> button_state_t;
     set_state: button_state_t -> 0;
     get_tag: 1 -> string;
-    set_tag: string -> 0;
   }
 
   object ButtonModel 
@@ -528,7 +887,6 @@ class FlxGuiButton
     method fun get_state() => state;
     method proc set_state (s:button_state_t) => state = s;
     method fun get_tag () => tag;
-    method proc set_tag (s:string) => tag = s;
   }
 
   typedef button_colour_scheme_t = 
@@ -545,6 +903,7 @@ class FlxGuiButton
     display: 1 -> 0;
     get_client_rect: 1 -> rect_t;
     get_label : 1 -> string;
+    get_tag: 1 -> string;
   }
 
   object ButtonDisplay (b:button_model_t) 
@@ -552,6 +911,7 @@ class FlxGuiButton
     w:window_t, // change to surface later
     font:font_t, 
     label:string, 
+    tag: string, // note: NOT the same as the button's tag!
     up_colour: button_colour_scheme_t,
     down_colour: button_colour_scheme_t,
     disabled_colour: button_colour_scheme_t,
@@ -561,6 +921,14 @@ class FlxGuiButton
    ) 
    implements button_display_t =
    {
+     // NOTE: the tag must be unique per button-display on each window.
+     // it is used to *remove* the drawing instructions from the window
+     // for the previous button state prior to adding new instructions.
+     // Dont confuse with the label (which might change per display)
+     // or the button state tag (which is not enough if the same button state
+     // drives two displays on the same window).
+     method fun get_tag () => tag;
+
      method fun get_client_rect () => 
        SDL_Rect 
        (
@@ -578,22 +946,22 @@ class FlxGuiButton
         | #Mouseover => mouseover_colour
         endmatch
       ;
-      var surf = get_surface w;
+      w.remove tag;
       // top
-      surf.draw_line (scheme.top_colour, left_x - 2,top_y - 2,right_x + 2, top_y - 2); 
-      surf.draw_line (scheme.top_colour, left_x - 1,top_y - 1,right_x + 1, top_y - 1); 
+      w.add$ mk_drawable tag draw_line (scheme.top_colour, left_x - 2,top_y - 2,right_x + 2, top_y - 2) ; 
+      w.add$ mk_drawable tag draw_line (scheme.top_colour, left_x - 1,top_y - 1,right_x + 1, top_y - 1); 
       // left
-      surf.draw_line (scheme.left_colour, left_x - 2,top_y - 2,left_x - 2, bottom_y + 2); 
-      surf.draw_line (scheme.left_colour, left_x - 1,top_y - 1,left_x - 1, bottom_y + 1); 
+      w.add$ mk_drawable tag draw_line (scheme.left_colour, left_x - 2,top_y - 2,left_x - 2, bottom_y + 2); 
+      w.add$ mk_drawable tag draw_line (scheme.left_colour, left_x - 1,top_y - 1,left_x - 1, bottom_y + 1); 
       // right
-      surf.draw_line (scheme.right_colour, right_x + 2,top_y - 2,right_x + 2, bottom_y + 2); 
-      surf.draw_line (scheme.right_colour, right_x + 1,top_y - 1,right_x + 1, bottom_y + 1); 
+      w.add$ mk_drawable tag draw_line (scheme.right_colour, right_x + 2,top_y - 2,right_x + 2, bottom_y + 2); 
+      w.add$ mk_drawable tag draw_line (scheme.right_colour, right_x + 1,top_y - 1,right_x + 1, bottom_y + 1); 
       // bottom
-      surf.draw_line (scheme.bottom_colour, left_x - 1,bottom_y + 1,right_x + 1, bottom_y + 1); 
-      surf.draw_line (scheme.bottom_colour, left_x - 2,bottom_y + 2,right_x + 2, bottom_y + 2); 
+      w.add$ mk_drawable tag draw_line (scheme.bottom_colour, left_x - 1,bottom_y + 1,right_x + 1, bottom_y + 1); 
+      w.add$ mk_drawable tag draw_line (scheme.bottom_colour, left_x - 2,bottom_y + 2,right_x + 2, bottom_y + 2); 
 
-      surf.fill(SDL_Rect (left_x, top_y, right_x - left_x + 1, bottom_y - top_y + 1), scheme.bg_colour);
-      surf.write (origin_x, origin_y, font, scheme.label_colour, label);
+      w.add$ mk_drawable tag fill(SDL_Rect (left_x, top_y, right_x - left_x + 1, bottom_y - top_y + 1), scheme.bg_colour);
+      w.add$ mk_drawable tag FlxGuiSurface::write (origin_x, origin_y, font, scheme.label_colour, label);
       w.update();
     } // draw
     display();
@@ -749,12 +1117,14 @@ class FlxGuiMenu
   {
     display: 1 -> 0;
     get_hotrects: 1 -> list[rect_t * menu_position_t];
+    get_tag: 1 -> string;
   }
 
   typedef submenu_icon_t = (open_icon: surface_t, closed_icon: surface_t);
 
   object MenuDisplay 
   (
+    tag:string,
     m:menu_model_t,
     w:window_t,
     x:int,y:int,
@@ -765,7 +1135,9 @@ class FlxGuiMenu
     submenu_icons: submenu_icon_t
   ) implements menu_display_t =
   {
-    var icon_width = max (submenu_icons.open_icon*.w, submenu_icons.closed_icon*.w);
+    method fun get_tag () => tag;
+
+    var icon_width = max (submenu_icons.open_icon.get_width(), submenu_icons.closed_icon.get_width());
     var lineskip = get_lineskip font;
     var baseline_offset = font.TTF_FontAscent; 
     var border_width = 2;
@@ -812,21 +1184,20 @@ class FlxGuiMenu
       var bottom_y = top_y + depth menu;
       var scheme = text_colour;
 
-      var surf = get_surface w;
       // top
-      surf.draw_line (scheme.top_colour, left_x - 2,top_y - 2,right_x + 2, top_y - 2); 
-      surf.draw_line (scheme.top_colour, left_x - 1,top_y - 1,right_x + 1, top_y - 1); 
+      w.add$ mk_drawable tag draw_line (scheme.top_colour, left_x - 2,top_y - 2,right_x + 2, top_y - 2); 
+      w.add$ mk_drawable tag draw_line (scheme.top_colour, left_x - 1,top_y - 1,right_x + 1, top_y - 1); 
       // left
-      surf.draw_line (scheme.left_colour, left_x - 2,top_y - 2,left_x - 2, bottom_y + 2); 
-      surf.draw_line (scheme.left_colour, left_x - 1,top_y - 1,left_x - 1, bottom_y + 1); 
+      w.add$ mk_drawable tag draw_line (scheme.left_colour, left_x - 2,top_y - 2,left_x - 2, bottom_y + 2); 
+      w.add$ mk_drawable tag draw_line (scheme.left_colour, left_x - 1,top_y - 1,left_x - 1, bottom_y + 1); 
       // right
-      surf.draw_line (scheme.right_colour, right_x + 2,top_y - 2,right_x + 2, bottom_y + 2); 
-      surf.draw_line (scheme.right_colour, right_x + 1,top_y - 1,right_x + 1, bottom_y + 1); 
+      w.add$ mk_drawable tag draw_line (scheme.right_colour, right_x + 2,top_y - 2,right_x + 2, bottom_y + 2); 
+      w.add$ mk_drawable tag draw_line (scheme.right_colour, right_x + 1,top_y - 1,right_x + 1, bottom_y + 1); 
       // bottom
-      surf.draw_line (scheme.bottom_colour, left_x - 1,bottom_y + 1,right_x + 1, bottom_y + 1); 
-      surf.draw_line (scheme.bottom_colour, left_x - 2,bottom_y + 2,right_x + 2, bottom_y + 2); 
+      w.add$ mk_drawable tag draw_line (scheme.bottom_colour, left_x - 1,bottom_y + 1,right_x + 1, bottom_y + 1); 
+      w.add$ mk_drawable tag draw_line (scheme.bottom_colour, left_x - 2,bottom_y + 2,right_x + 2, bottom_y + 2); 
 
-      surf.fill(SDL_Rect (left_x, top_y, right_x - left_x + 1, bottom_y - top_y + 1), scheme.bg_colour);
+      w.add$ mk_drawable tag fill(SDL_Rect (left_x, top_y, right_x - left_x + 1, bottom_y - top_y + 1), scheme.bg_colour);
 
       var selected = match position with
         | #Empty => 0 // ignore for the moment
@@ -839,7 +1210,7 @@ class FlxGuiMenu
         match entry with
         | #Separator => 
           var y = ypos;
-          surf.draw_line (RGB(0,0,0), left_x, y, right_x, y); 
+          w.add$ mk_drawable tag draw_line (RGB(0,0,0), left_x, y, right_x, y); 
           ypos = ypos + separator_depth + bottom_padding + top_padding;
 
         | Text (label=s,active=active) =>
@@ -854,15 +1225,15 @@ class FlxGuiMenu
             right_x - left_x - 2 * border_width, 
             lineskip
           );
-          surf.fill (client_area, scheme.bg_colour);
-          surf.write (left_x+left_padding, y,font,scheme.label_colour,s);
+          w.add$ mk_drawable tag fill (client_area, scheme.bg_colour);
+          w.add$ mk_drawable tag FlxGui::write (left_x+left_padding, y,font,scheme.label_colour,s);
 
           match submenu with
           | #Empty => ;
           | _ =>
             var icon = if selected == counter then submenu_icons.open_icon else submenu_icons.closed_icon; 
             var dst = rect_t (right_x - icon_width - border_width - 1, ypos, 0,0);
-            C_hack::ignore(SDL_BlitSurface (icon, C_hack::null[rect_t], get_surface w,&dst));
+            w.add$ mk_drawable tag blit (dst.x, dst.y, icon.get_sdl_surface());
             if dosub do
               var subpos = match position with 
                 | Cons (_,tail) => tail
@@ -881,7 +1252,6 @@ class FlxGuiMenu
         | Tree (entry, submenu) => show_entry entry submenu;
         endmatch;
       done
-      w.update; 
     }  
     method proc display() {
       val position = match #(m.get_state) with
@@ -889,6 +1259,7 @@ class FlxGuiMenu
         | Open p => p
       ;
       display_menu (x,y,#(m.get_menu), position);
+      w.update(); 
     }
 
     proc get_hotrecs(x:int, y:int, menu:menu_data_t, position:menu_position_t) 
@@ -979,6 +1350,7 @@ class FlxGuiMenu
   // ===============================================================================
   object MenuBarDisplay 
   (
+    tag:string,
     m:menu_model_t,
     w:window_t,
     x:int,y:int,
@@ -989,7 +1361,8 @@ class FlxGuiMenu
     submenu_icons: submenu_icon_t
   ) implements menu_display_t =
   {
-    var icon_width = max (submenu_icons.open_icon*.w, submenu_icons.closed_icon*.w);
+    method fun get_tag() => tag;
+    var icon_width = max (submenu_icons.open_icon.get_width(), submenu_icons.closed_icon.get_width());
     var lineskip = get_lineskip font;
     var baseline_offset = font.TTF_FontAscent; 
     var border_width = 2;
@@ -1029,21 +1402,21 @@ class FlxGuiMenu
       var bottom_y = top_y + bar_depth;
       var scheme = text_colour;
 
-      var surf = get_surface w;
+      w.remove tag;
       // top
-      surf.draw_line (scheme.top_colour, left_x - 2,top_y - 2,right_x + 2, top_y - 2); 
-      surf.draw_line (scheme.top_colour, left_x - 1,top_y - 1,right_x + 1, top_y - 1); 
+      w.add$ mk_drawable tag draw_line (scheme.top_colour, left_x - 2,top_y - 2,right_x + 2, top_y - 2); 
+      w.add$ mk_drawable tag draw_line (scheme.top_colour, left_x - 1,top_y - 1,right_x + 1, top_y - 1); 
       // left
-      surf.draw_line (scheme.left_colour, left_x - 2,top_y - 2,left_x - 2, bottom_y + 2); 
-      surf.draw_line (scheme.left_colour, left_x - 1,top_y - 1,left_x - 1, bottom_y + 1); 
+      w.add$ mk_drawable tag draw_line (scheme.left_colour, left_x - 2,top_y - 2,left_x - 2, bottom_y + 2); 
+      w.add$ mk_drawable tag draw_line (scheme.left_colour, left_x - 1,top_y - 1,left_x - 1, bottom_y + 1); 
       // right
-      surf.draw_line (scheme.right_colour, right_x + 2,top_y - 2,right_x + 2, bottom_y + 2); 
-      surf.draw_line (scheme.right_colour, right_x + 1,top_y - 1,right_x + 1, bottom_y + 1); 
+      w.add$ mk_drawable tag draw_line (scheme.right_colour, right_x + 2,top_y - 2,right_x + 2, bottom_y + 2); 
+      w.add$ mk_drawable tag draw_line (scheme.right_colour, right_x + 1,top_y - 1,right_x + 1, bottom_y + 1); 
       // bottom
-      surf.draw_line (scheme.bottom_colour, left_x - 1,bottom_y + 1,right_x + 1, bottom_y + 1); 
-      surf.draw_line (scheme.bottom_colour, left_x - 2,bottom_y + 2,right_x + 2, bottom_y + 2); 
+      w.add$ mk_drawable tag draw_line (scheme.bottom_colour, left_x - 1,bottom_y + 1,right_x + 1, bottom_y + 1); 
+      w.add$ mk_drawable tag draw_line (scheme.bottom_colour, left_x - 2,bottom_y + 2,right_x + 2, bottom_y + 2); 
 
-      surf.fill(SDL_Rect (left_x, top_y, right_x - left_x + 1, bottom_y - top_y + 1), scheme.bg_colour);
+      w.add$ mk_drawable tag fill(SDL_Rect (left_x, top_y, right_x - left_x + 1, bottom_y - top_y + 1), scheme.bg_colour);
 
       var selected = match position with
         | #Empty => 0 // ignore for the moment
@@ -1052,11 +1425,11 @@ class FlxGuiMenu
 
       var counter = 0;
       var xpos = left_x + left_padding;
-
+//println$ "Display Menu "+ tag;
       proc show_entry (entry: menu_entry_t) (submenu:menu_data_t) => 
         match entry with
         | #Separator => 
-          surf.draw_line (RGB(0,0,0), xpos, top_y, xpos, top_y+bar_depth); 
+          w.add$ mk_drawable tag draw_line (RGB(0,0,0), xpos, top_y, xpos, top_y+bar_depth); 
           xpos = xpos + separator_width + right_padding + left_padding;
 
         | Text (label=s,active=active) =>
@@ -1071,8 +1444,15 @@ class FlxGuiMenu
             item_width,
             lineskip
           );
-          surf.fill (client_area, scheme.bg_colour);
-          surf.write (xpos+left_padding, top_y+baseline_offset,font,scheme.label_colour,s);
+          w.add$ mk_drawable tag fill (client_area, scheme.bg_colour);
+//println$ "Menu bar counter=" + counter.str + ", xpos= " + xpos.str + ", text="+s.str;
+          w.add$ mk_drawable tag FlxGui::write (
+            xpos+left_padding, 
+            top_y+baseline_offset,
+            font,
+            scheme.label_colour,
+            s
+          );
 
           match submenu with
           | #Empty => ;
@@ -1080,7 +1460,7 @@ class FlxGuiMenu
             if dosub do
               println "SUBMENU SELECTED";
               var smm = MenuModel ( submenu );
-              var smd = MenuDisplay (
+              var smd = MenuDisplay ( tag,
                 smm,
                 w,
                 xpos,bottom_y+border_width,
@@ -1107,7 +1487,6 @@ class FlxGuiMenu
         | Tree (entry, submenu) => show_entry entry submenu;
         endmatch;
       done
-      w.update; 
     }  
 
     method proc display() {
@@ -1116,6 +1495,7 @@ class FlxGuiMenu
         | Open p => p
       ;
       display_menu (x,y,#(m.get_menu), position);
+      w.update(); 
     }
     proc get_hotrecs(x:int, y:int, menu:menu_data_t, position:menu_position_t) 
       (revtrail: list[int]) 
@@ -1163,7 +1543,7 @@ class FlxGuiMenu
           | _ => 
             if dosub do
               var smm = MenuModel ( submenu );
-              var smd = MenuDisplay (
+              var smd = MenuDisplay (tag,
                 smm,
                 w,
                 xpos,bottom_y+border_width,
@@ -1333,7 +1713,7 @@ class FlxGuiLineBufferDisplayController
 {
 object line_buffer_display_controller
 (
-  w:window_t, f:font_t, c:colour_t, bg:colour_t,
+  w:window_t, tag:string, f:font_t, c:colour_t, bg:colour_t,
   x: int, y:int, b:line_buffer_interface
 ) 
 implements line_buffer_display_controller_interface =
@@ -1349,19 +1729,20 @@ implements line_buffer_display_controller_interface =
     var s = #(b.get);
 //  println$ "Edit box = '" + s + "'";
     var text_rendered = TTF_RenderText_Blended(f,s,c);
-    var surf = get_surface w;
     var bbox = bounding_box (f,x,y,s);
 //println$ "Bounding box for ("+x.str+","+y.str+")=("+bbox.x.str+","+bbox.y.str+","+bbox.w.str+","+bbox.h.str+")";
-    surf.fill (bbox,bg);
+    w.remove tag;
+    w.add$ mk_drawable tag fill (bbox,bg);
     var viewport: SDL_Rect;
     var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
     C_hack::ignore$ TTF_GlyphMetrics(f,"m".char.ord.uint16,&minx, &maxx, &miny, &maxy, &advance);
       
     viewport.x = bbox.x + min(minx,0) + 2; 
     viewport.y = bbox.y + 2; // actually y + font.ascent + 2
+    viewport.h =  bbox.h;
 //println$ "Viewpos for ("+x.str+","+y.str+")=("+viewport.x.str+","+viewport.y.str;
-    C_hack::ignore$ SDL_BlitSurface (text_rendered, nullRect, surf, &viewport); 
-    SDL_FreeSurface text_rendered;
+    w.add$ mk_drawable tag blit (viewport.x, viewport.y, text_rendered); 
+    //SDL_FreeSurface text_rendered;
     if has_focus do
       var charwidth = 
         #{ 
@@ -1371,9 +1752,9 @@ implements line_buffer_display_controller_interface =
         }
       ;
       var curpos = x + charwidth * #(b.get_pos);
-      surf.draw_line(red,curpos,viewport.y - 1,curpos,viewport.y + viewport.h - 2);
+      w.add$ mk_drawable tag draw_line(red,curpos,viewport.y - 1,curpos,viewport.y + viewport.h - 2);
     done
-    w.update;
+    w.update();
   } 
 }
 }

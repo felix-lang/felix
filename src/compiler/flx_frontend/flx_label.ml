@@ -82,8 +82,10 @@ let create_label_map bsym_table counter =
 *)
 let rec find_label bsym_table label_map caller label =
   let labels = try Hashtbl.find label_map caller with Not_found -> 
-print_endline ("Cannot find label map for caller " ^ si caller ^ " to find label " ^ label);
-    assert false 
+    let caller_sym = Flx_bsym_table.find bsym_table caller in
+    let sr = Flx_bsym.sr caller_sym in
+    let id = Flx_bsym.id caller_sym in
+    clierr sr ("Cannot find label " ^ label ^ " targetted in " ^ id);
   in
   try `Local (Hashtbl.find labels label)
   with Not_found ->
