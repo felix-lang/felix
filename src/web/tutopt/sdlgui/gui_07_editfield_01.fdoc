@@ -20,16 +20,17 @@ proc mk_field
   font:font_t, colour: colour_t, bgcolour:colour_t, 
   dflt:string,
   ed: &line_buffer_interface,
+  dc: &line_buffer_display_controller_interface,
   o:&oschannel[event_t]
 ) 
 {
   var tag = dflt;
   println$ "mk_field ("+x.str +"," + y.str+")="+tag;
   var editor = line_buffer (dflt.len.int, dflt);
-  var dc = line_buffer_display_controller (window,tag,font,colour,bgcolour,x,y,editor);
-  dc.display();
+  dc <- line_buffer_display_controller (window,tag,font,colour,bgcolour,x,y,editor);
+  dc*.display();
   var ich,och = #(mk_ioschannel_pair[event_t]);
-  var controller = line_edit editor dc ich;
+  var controller = line_edit editor (*dc) ich;
   spawn_fthread controller; 
   println$ "mkfield: controller spawned";
   ed <- editor;
@@ -39,13 +40,14 @@ proc mk_field
 // make an event handler for our window
 proc ehandler 
 (
-  fields: varray[oschannel[event_t]] 
+  fields: varray[oschannel[event_t] * line_buffer_display_controller_interface] 
 ) 
 (input:ischannel[event_t])  () 
 {
   println$ "Window event handler running";
   var selected_field = 0;
   var run = true;
+  var ev2: SDL_Event;
   while run do
     var ev: event_t = read input;
     //if ev.type.SDL_EventType != SDL_MOUSEMOTION do
@@ -58,12 +60,30 @@ proc ehandler
       var sel :SDL_Event;
       &sel.type <- SDL_WINDOWEVENT.uint32;
       sel.window.event = SDL_WINDOWEVENT_FOCUS_LOST.uint8;
-      write$ fields.selected_field,sel;
+      write$ fields.selected_field.0,sel;
       selected_field = (selected_field + 1) % fields.len.int;
       sel.window.event = SDL_WINDOWEVENT_FOCUS_GAINED.uint8;
-      write$ fields.selected_field,sel;
+      write$ fields.selected_field.0,sel;
+    elif ev.type.SDL_EventType == SDL_MOUSEBUTTONDOWN do
+      for i in 0 ..< fields.len.int do
+        var d = fields.i.1;
+        var x,y = ev.button.x, ev.button.y;
+        if SDL_Point (x.int, y.int) \in d.get_client_rect() do
+          //println$ "[Evt handler] Button down in client rect of line edit " + d.get_tag();
+          ev2.type = SDL_WINDOWEVENT.uint32;
+          ev2.window.event = SDL_WINDOWEVENT_FOCUS_GAINED.uint8;
+          write$ fields.i.0, ev2;
+          write$ fields.i.0, ev;
+          selected_field = i;
+        else
+          ev2.type = SDL_WINDOWEVENT.uint32;
+          ev2.window.event = SDL_WINDOWEVENT_FOCUS_LOST.uint8;
+          write$ fields.i.0,ev2; 
+        done
+      done
+    else
+      write$ fields.selected_field.0, ev;
     done
-    write$ fields.selected_field, ev;
     run = ev.window.event.SDL_WindowEventID != SDL_WINDOWEVENT_CLOSE ;
   done
   println$ "Terminating window event processing loop";
@@ -81,16 +101,24 @@ begin
   w1.update();
   w1.show();
 
-  var ch1: oschannel[event_t]; var ed1: line_buffer_interface;
-  mk_field (w1, 50, 60, font, black, white, "EDITFIELD ONE", &ed1, &ch1);
+  var ch1: oschannel[event_t]; 
+  var ed1: line_buffer_interface; 
+  var dc1: line_buffer_display_controller_interface;
+  mk_field (w1, 50, 60, font, black, white, "EDITFIELD ONE", &ed1, &dc1, &ch1);
   
-  var ch2: oschannel[event_t]; var ed2: line_buffer_interface; 
-  mk_field (w1, 50, 120, font, black, white, "EDITFIELD TWO", &ed2, &ch2);
+  var ch2: oschannel[event_t]; 
+  var ed2: line_buffer_interface;
+  var dc2: line_buffer_display_controller_interface; 
+  mk_field (w1, 50, 120, font, black, white, "EDITFIELD TWO", &ed2, &dc2, &ch2);
 
-  var ch3: oschannel[event_t]; var ed3: line_buffer_interface; 
-  mk_field (w1, 50, 180, font, black, white, "EDITFIELD THREE", &ed3, &ch3);
+  var ch3: oschannel[event_t]; 
+  var ed3: line_buffer_interface; 
+  var dc3:line_buffer_display_controller_interface; 
+  mk_field (w1, 50, 180, font, black, white, "EDITFIELD THREE", &ed3, &dc3, &ch3);
 
-  var fields = varray[oschannel[event_t]] (ch1, ch2, ch3);
+  var fields = varray[oschannel[event_t] * line_buffer_display_controller_interface] 
+    ((ch1, dc1), (ch2,dc2), (ch3, dc3))
+  ;
 
   // create a window controller for our window
   var wc1 = window_controller (w1, ehandler fields);

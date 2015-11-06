@@ -679,6 +679,7 @@ class FlxGuiWindowControllerInterface
     get_window_id : 1 -> uint32;
     get_oschannel : 1 -> oschannel[event_t];
     destroy_window : 1 -> 0;
+    display: 1 -> 0;
   }
 }
 @
@@ -699,6 +700,7 @@ class FlxGuiWindowController
     method fun get_window_id () => w.get_sdl_window_id ();
     method proc destroy_window () => w.destroy ();
     method fun get_oschannel () => omsgs;
+    method proc display() { w.update(); }
     spawn_fthread (p imsgs);
   }
 }
@@ -828,6 +830,8 @@ object window_manager () =
         do
           #(wobj.get_window_id).delete_window;
           println$ "dispatch: window deleted!";
+        else
+          wobj.display();
         done
         | #None => println$ "Can't find window ID = " + str wid;
         endmatch;
@@ -962,7 +966,6 @@ class FlxGuiButton
 
       w.add$ mk_drawable tag fill(SDL_Rect (left_x, top_y, right_x - left_x + 1, bottom_y - top_y + 1), scheme.bg_colour);
       w.add$ mk_drawable tag FlxGuiSurface::write (origin_x, origin_y, font, scheme.label_colour, label);
-      w.update();
     } // draw
     display();
   } //button
@@ -1259,7 +1262,7 @@ class FlxGuiMenu
         | Open p => p
       ;
       display_menu (x,y,#(m.get_menu), position);
-      w.update(); 
+      //w.update(); 
     }
 
     proc get_hotrecs(x:int, y:int, menu:menu_data_t, position:menu_position_t) 
@@ -1495,7 +1498,7 @@ class FlxGuiMenu
         | Open p => p
       ;
       display_menu (x,y,#(m.get_menu), position);
-      w.update(); 
+      //w.update(); 
     }
     proc get_hotrecs(x:int, y:int, menu:menu_data_t, position:menu_position_t) 
       (revtrail: list[int]) 
@@ -1699,6 +1702,9 @@ class FlxGuiLineBufferDisplayControllerInterface
 {
 interface line_buffer_display_controller_interface
 {
+  get_tag : 1 -> string;
+  get_client_rect : 1 -> rect_t;
+  get_char_width : 1 -> int;
   display : 1 -> 0;
   set_focus_gained: 1 -> 0; // 
   set_focus_lost: 1 -> 0;
@@ -1718,8 +1724,15 @@ object line_buffer_display_controller
 ) 
 implements line_buffer_display_controller_interface =
 {
-  var has_focus = false;
+  method fun get_tag() => tag;
+  method fun get_client_rect () => bounding_box (f,x,y,b.get());
+  method fun get_char_width () = {
+    var minx:int; var maxx:int; var miny:int; var maxy:int; var advance:int;
+    C_hack::ignore$ TTF_GlyphMetrics(f,"m".char.ord.uint16,&minx, &maxx, &miny, &maxy, &advance);
+    return advance;
+  }
 
+  var has_focus = false;
   method proc set_focus_gained () => has_focus = true;
   method proc set_focus_lost () => has_focus = false;
 
@@ -1754,7 +1767,7 @@ implements line_buffer_display_controller_interface =
       var curpos = x + charwidth * #(b.get_pos);
       w.add$ mk_drawable tag draw_line(red,curpos,viewport.y - 1,curpos,viewport.y + viewport.h - 2);
     done
-    w.update();
+    //w.update();
   } 
 }
 }
@@ -1767,6 +1780,7 @@ class FlxGuiLineBufferInterface
   {
     get: 1 -> string;
     get_pos: 1 -> int;
+    set_pos: int -> 0;
 
     // movement
     mv_left : 1 -> 0;
@@ -1805,6 +1819,7 @@ class FlxGuiLineBuffer
     var pos = 0; 
     method fun get() => b;
     method fun get_pos () => pos;
+    method proc set_pos (x:int) => pos = x;
 
     // movement
     method proc mv_left () => pos = max (0,pos - 1);
@@ -1889,6 +1904,17 @@ proc line_edit
       | $(SDL_WINDOWEVENT_RESIZED) =>  d.display();
       | _ => ;
       endmatch;
+
+    | $(SDL_MOUSEBUTTONDOWN) => 
+      var x,y = e.button.x,e.button.y; //int32
+      if SDL_Point (x.int,y.int) \in d.get_client_rect () do
+        var w = d.get_char_width();
+        var inchar = (x.int - (d.get_client_rect()).x + w / 2) / w;
+        //println$ "Button down in client rect of line edit " + d.get_tag() + ", pos = " + inchar.str;
+        b.set_pos inchar; 
+        d.display();
+      done
+ 
 
     | $(SDL_KEYDOWN) =>
       var vkey = e.key.keysym.sym;
