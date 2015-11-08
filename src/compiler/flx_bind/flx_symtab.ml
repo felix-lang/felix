@@ -842,6 +842,8 @@ print_endline ("Adding module " ^ id ^ " parent " ^ (match parent with | Some p 
 
   | DCL_type_alias t ->
 
+(* print_endline ("Flx_symtab: add DCL_type_alias " ^ id ^ "<" ^ string_of_int symbol_index^ "> type=" ^ Flx_print.string_of_typecode t); *)
+
       (* Add the type alias to the sym_table. *)
       add_symbol ~pubtab ~privtab symbol_index id (SYMDEF_type_alias t);
 

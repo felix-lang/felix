@@ -716,7 +716,7 @@ print_endline ("Bind type " ^ string_of_typecode t);
   | TYP_variant ts -> btyp_variant (List.map (fun (s,t) -> s,bt t) ts)
   | TYP_type_extension (sr, ts, t') ->
 (*
-    print_endline "Binding type extension";
+    print_endline "Binding type extension : note THIS SCREWED UP FIXPOINTS! FIXME! -- FIXED";
 *)
     let ts = List.map bt ts in
     let t' = bt t' in
@@ -747,7 +747,9 @@ print_endline ("Bind type " ^ string_of_typecode t);
         unique_fields := (s,t) :: (!unique_fields)
       )
       (!new_fields);
-      btyp_record "" (!unique_fields)
+      let t = btyp_record "" (!unique_fields) in
+      Flx_beta.adjust t
+
     | _ -> 
       let ntimes t n = 
         let rec aux n ts = if n=0 then ts else aux (n-1) (t::ts) in
@@ -767,7 +769,9 @@ print_endline ("Bind type " ^ string_of_typecode t);
         | t::ts -> check t 1 ts
       in
       match compatible_arrays (ts @ [t']) with
-      | Some (t,n) -> btyp_array (t, btyp_unitsum n)
+      | Some (t,n) -> 
+        let t = btyp_array (t, btyp_unitsum n) in
+        Flx_beta.adjust t
       | None ->
         (* if it isn't a record extension, treat it as a tuple extension *)
         let fields = ref [] in
@@ -781,7 +785,8 @@ print_endline ("Bind type " ^ string_of_typecode t);
         )
         (ts @[t'])
         ;
-        btyp_tuple (!fields)
+        let t = btyp_tuple (!fields) in
+        Flx_beta.adjust t
     end
 
   (* We first attempt to perform the match at binding time as an optimisation,
@@ -1383,7 +1388,10 @@ end;
         let data = get_data state.sym_table index in
         match data with { Flx_sym.id=id; sr=sr; vs=vs; dirs=dirs; symdef=entry } ->
         match entry with
-        | SYMDEF_type_alias t  -> (* print_endline ("A type alias " ^ string_of_typecode t); *)
+        | SYMDEF_type_alias t  -> 
+          (*
+          print_endline ("Index " ^ si index ^ " is a type alias " ^id ^ " = " ^ string_of_typecode t);
+          *)
           let rec guess_metatype t =
             match t with
             | TYP_tuple_cons (sr,t1,t2) -> assert false
@@ -1423,6 +1431,7 @@ end;
             | TYP_variant _
             | TYP_cfunction _
             | TYP_pointer _
+            | TYP_type_extension _
             | TYP_array _ -> btyp_type 0
 
             (* note this one COULD be a type function type *)
@@ -1446,7 +1455,6 @@ end;
             | TYP_apply _
 
             | TYP_type_match _
-            | TYP_type_extension _
             | TYP_patany _
               -> print_endline ("Woops, dunno meta type of " ^ string_of_typecode t); btyp_type 0
           in 
@@ -1456,10 +1464,11 @@ end;
         print_endline "Can't bind type alias"; assert false
       end
     in
+    let fixated = btyp_fix ((List.assoc index rs.type_alias_fixlist)-rs.depth) mt in
 (*
-print_endline "flx_lookup: bind-type-index returning fixpoint";
+print_endline ("flx_lookup: bind-type-index returning fixated " ^ sbt bsym_table fixated);
 *)
-    btyp_fix ((List.assoc index rs.type_alias_fixlist)-rs.depth) mt
+    fixated
   end
   else begin
   (*
@@ -1670,8 +1679,9 @@ and cal_ret_type state bsym_table (rs:recstop) index args =
     List.iter
     (fun exe -> match exe with
     | (sr,EXE_fun_return e) ->
-(* print_endline ("Cal ret type of " ^ id ^ " got return: " ^ string_of_expr e); *)
-
+(*
+print_endline ("Cal ret type of " ^ id ^ " got return: " ^ string_of_expr e);
+*)
       incr return_counter;
       begin try
         let t =

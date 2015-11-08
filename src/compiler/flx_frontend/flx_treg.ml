@@ -14,9 +14,11 @@ open Flx_beta
 
 let register_type_nr syms bsym_table t =
 let t = normalise_tuple_cons bsym_table t in
+(*
   if Flx_unify.is_recursive_type t 
     then print_endline ("Register type nr: recursive type " ^ sbt bsym_table t)
   ;
+*)
 (*
 print_endline ("Register type nr " ^ sbt bsym_table t);
 *)

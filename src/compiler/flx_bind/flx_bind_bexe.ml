@@ -480,6 +480,9 @@ print_endline ("Return expression raw " ^ string_of_expr e);
 print_endline ("Function return value has type " ^ sbt bsym_table t');
 *)
     let t' = minimise bsym_table state.counter t' in
+(*
+print_endline ("Function return value has MINIMISED type " ^ sbt bsym_table t');
+*)
     ignore (do_unify state bsym_table state.ret_type t');
     state.ret_type <- varmap_subst (Flx_lookup_state.get_varmap state.lookup_state) state.ret_type;
     if type_match bsym_table state.counter state.ret_type t' then

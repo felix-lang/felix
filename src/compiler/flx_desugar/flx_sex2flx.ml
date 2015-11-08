@@ -619,6 +619,10 @@ and xstatement_t sr x : statement_t =
       STMT_cstruct (sr, xid id, xvs sr vs, ucmp, xrr sr reqs)
 
   | Lst [Id "ast_type_alias"; sr; id; vs; t] -> let sr = xsr sr in 
+(*
+print_endline ("type alias " ^ xid id ^ " sexpr = " ^ Sex_print.string_of_sex t);
+print_endline ("Type alias " ^ xid id ^ " flx   = " ^ Flx_print. string_of_typecode (ti sr t));
+*)
       STMT_type_alias (sr, xid id, xvs sr vs, ti sr t)
 
   | Lst [Id "mktypefun"; sr; id; vs; argss; ret; body] -> let sr = xsr sr in 

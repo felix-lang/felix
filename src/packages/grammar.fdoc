@@ -4896,12 +4896,22 @@ syntax type_decls {
   senum_items := senum_item =># "`(,_1)";
   senum_items := sepsilon =># "()";
 
+/*
+  //$ Java like interface of an object type.
+  //$ Equivalent to a record type.
+  stmt := "interface" sdeclname "{" srecord_type "}" =>#
+    """
+    `(ast_type_alias ,_sr ,(first _2) ,(second _2) ,_4)
+    """;
+*/
+
   //$ Java like interface of an object type.
   //$ Equivalent to a record type.
   stmt := "interface" sdeclname stype_extension "{" srecord_type "}" =>#
     """
     `(ast_type_alias ,_sr ,(first _2) ,(second _2) (ast_extension ,_sr ,_3 ,_5))
     """;
+
     srecord_type := srecord_mem_decl (";" srecord_mem_decl)* ";" =># 
      "`(ast_record_type ,(cons _1 (map second _2)))";
     stypelist := stypeexpr ("," stypeexpr)* =># "(cons _1 (map second _2))";

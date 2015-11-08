@@ -264,7 +264,7 @@ let rec rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t lis
 
   | STMT_curry (sr,name',vs,pps,ret,kind,adjs,sts) ->
     let fdef = rst state name access parent_vs 
-      (Flx_desugar_expr.mkcurry seq sr name' vs pps ret kind sts adjs) 
+      (Flx_curry.mkcurry seq sr name' vs pps ret kind sts adjs) 
     in
     let export_name = ref name' in
     let doexport = ref false in
@@ -322,7 +322,7 @@ let rec rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t lis
     let ps,traint = params in
     begin match traint,postcondition with
     | None,None ->
-      let vs',params = Flx_desugar_expr.fix_params sr seq params in
+      let vs',params = Flx_curry.fix_params sr seq params in
       let vs = Flx_merge_vs.merge_vs vs (vs',dfltvs_aux)  in
       let asms = rsts name' dfltvs `Public sts in
       let asms = bridge name' sr :: asms in

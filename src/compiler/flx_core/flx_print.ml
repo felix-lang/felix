@@ -426,7 +426,7 @@ and st prec tc : string =
 (*    | TYP_lvalue t -> 0,"lvalue[" ^ st 1 t ^"]" *)
 
     | TYP_typeof e -> 0,"typeof(" ^ string_of_expr e ^ ")"
-    | TYP_as (t,s) -> 11, st 11 t ^ " as " ^ string_of_id s
+    | TYP_as (t,s) -> 0, "([" ^ st 0 t ^ "] as " ^ string_of_id s ^ ")"
 
     | TYP_dual t -> 2,"~"^ st 2 t
 
@@ -676,7 +676,7 @@ and sb bsym_table depth fixlist counter prec tc =
       if iprec >= prec then "(" ^ term ^ ")"
       else term
     else
-    "(" ^ term ^ txt ^ ")"
+    "([" ^ term ^ "] "^ txt ^ ")"
 
 and string_of_btypecode bsym_table tc =
   let fixlist = ref [] in
