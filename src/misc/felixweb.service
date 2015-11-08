@@ -1,0 +1,13 @@
+# This is a systemd init script for flx_web
+# Copy to /lib/systemd/system/felixweb.service
+
+[Unit]
+Description=Job that runs the flx_web daemon
+
+[Service]
+User=felixweb
+EnvironmentFile=/etc/felixweb.env
+ExecStart=/usr/local/lib/felix/felix-2015.10.30-rc8/host/bin/flx_web --port=80
+
+[Install]
+WantedBy=multi-user.target
