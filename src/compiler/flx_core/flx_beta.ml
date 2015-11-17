@@ -278,9 +278,14 @@ print_endline "Type list index returned None";
   | BTYP_tuple ls -> btyp_tuple (List.map br ls)
   | BTYP_array (i,t) -> btyp_array (br i, br t)
   | BTYP_sum ls -> btyp_sum (List.map br ls)
-  | BTYP_record (n,ts) ->
+  | BTYP_record (ts) ->
      let ss,ls = List.split ts in
-     btyp_record n (List.combine ss (List.map br ls))
+     btyp_record (List.combine ss (List.map br ls))
+
+  | BTYP_polyrecord (ts,v) ->
+     let ss,ls = List.split ts in
+     btyp_polyrecord (List.combine ss (List.map br ls)) (br v)
+
 
   | BTYP_variant ts ->
      let ss,ls = List.split ts in

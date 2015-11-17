@@ -29,7 +29,7 @@ let rec is_pod bsym_table t =
   | BTYP_cfunction _
   | BTYP_variant _ -> true
   | BTYP_tuple cps ->fold_left (fun acc t -> acc && is_pod t) true cps 
-  | BTYP_record (_,cps) ->fold_left (fun acc (_,t) -> acc && is_pod t) true cps 
+  | BTYP_record (cps) ->fold_left (fun acc (_,t) -> acc && is_pod t) true cps 
   | BTYP_array (t,_) -> is_pod t
   | BTYP_inst (k,ts) ->
   begin match Flx_bsym_table.find_bbdcl bsym_table k with
@@ -58,9 +58,6 @@ let rec get_offsets' syms bsym_table typ : string list =
   let typ = normalise_tuple_cons bsym_table typ in
   let t' = unfold "flx_cal_type_offsets: get_offsets" typ in
   match t' with
-  | BTYP_tuple_cons _ -> assert false
-  | BTYP_none -> assert false
-
   | BTYP_pointer t -> ["0"]
 
   (* need to fix the rule for optimisation here .. *)
@@ -162,7 +159,7 @@ let rec get_offsets' syms bsym_table typ : string list =
     ;
     !lst
 
-  | BTYP_record (_,es) ->
+  | BTYP_record (es) ->
     let rcmp (s1,_) (s2,_) = compare s1 s2 in
     let es = sort rcmp es in
     let lst = ref [] in
@@ -191,6 +188,11 @@ let rec get_offsets' syms bsym_table typ : string list =
   (* this is a lie .. it does, namely a plain C union *)
   | BTYP_type_set _
     -> failwith "[ogen] Type set has no representation"
+
+  | BTYP_polyrecord _ 
+  | BTYP_tuple_cons _ 
+  | BTYP_none 
+
 
   | BTYP_array _
   | BTYP_fix _
@@ -291,7 +293,7 @@ let rec get_encoder' syms bsym_table p typ : string list =
     )
     (List.combine (nlist k) args))
 
-  | BTYP_record (_,es) ->
+  | BTYP_record (es) ->
     let rcmp (s1,_) (s2,_) = compare s1 s2 in
     let es = sort rcmp es in
     "//Record" ::
@@ -382,7 +384,7 @@ let rec get_decoder' syms bsym_table p typ : string list =
     )
     (List.combine (nlist k) args))
 
-  | BTYP_record (_,es) ->
+  | BTYP_record (es) ->
     let rcmp (s1,_) (s2,_) = compare s1 s2 in
     let es = sort rcmp es in
     "//Record" ::

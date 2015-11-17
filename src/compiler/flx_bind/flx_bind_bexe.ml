@@ -116,7 +116,7 @@ let cal_call state bsym_table sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
           (* a bit of a hack .. *)
           | BTYP_record _ | BTYP_tuple [] ->
             let rs = match t2 with
-              | BTYP_record ("",rs) -> rs
+              | BTYP_record (rs) -> rs
               | BTYP_tuple [] -> []
               | _ -> assert false
             in

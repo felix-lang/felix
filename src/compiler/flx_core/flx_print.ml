@@ -211,6 +211,14 @@ and string_of_expr (e:expr_t) =
         ts ^
       ")"
 
+  | EXPR_polyrecord_type (_,ts,v) ->
+      "(" ^
+      catmap " "
+        (fun (s,t) -> string_of_id s ^ ":" ^ string_of_typecode t ^ ",")
+        ts ^ " | " ^ string_of_typecode v ^
+      ")"
+
+
   | EXPR_variant (_, (s, e)) -> "case " ^ string_of_id s ^ " of (" ^ se e ^ ")"
 
   | EXPR_variant_type (_,ts) ->
@@ -372,6 +380,13 @@ and st prec tc : string =
           catmap "" (fun (s,t) -> string_of_id s ^ ":" ^ st 0 t ^ ", ") ls ^
           ")"
       end
+
+    | TYP_polyrecord (ls,v) ->
+          0, "(" ^
+          catmap "" (fun (s,t) -> string_of_id s ^ ":" ^ st 0 t ^ ", ") ls ^
+          " | " ^ st 0 v ^
+          ")"
+
 
     | TYP_variant ls ->
       begin match ls with
@@ -575,11 +590,15 @@ and sb bsym_table depth fixlist counter prec tc =
       | _ -> 4,cat " * " (map (sbt 4) ls)
       end
 
-    | BTYP_record (n,ls) ->
+    | BTYP_record (ls) ->
       begin match ls with
       | [] -> 0,"record_unit"
       | _ -> 0,"("^catmap "," (fun (s,t)->s^":"^sbt 0 t) ls ^")"
       end
+
+    | BTYP_polyrecord (ls,v) ->
+      0,"("^catmap "," (fun (s,t)->s^":"^sbt 0 t) ls ^ " | " ^ sbt 0 v^ ")"
+
 
     | BTYP_variant ls ->
       begin match ls with
@@ -1795,6 +1814,7 @@ and string_of_bound_expression' bsym_table se e =
   | BEXPR_tuple_tail e -> "tuple_tail("^ se e ^")"
   | BEXPR_tuple_cons (eh,et) -> "tuple_cons("^ se eh ^"," ^ se et ^")"
   | BEXPR_aprj (ix,d,c) -> "aprj("^se ix^")"
+  | BEXPR_rprj (ix,d,c) -> "rprj("^ix^")"
   | BEXPR_prj (n,d,c) -> "prj"^ si n^":"^sbt bsym_table d ^ " -> " ^ sbt bsym_table c
   | BEXPR_inj (n,d,c) -> "inj"^ si n^":"^sbt bsym_table d ^ " -> " ^ sbt bsym_table c
 

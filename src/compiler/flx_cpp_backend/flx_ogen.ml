@@ -309,7 +309,7 @@ let rec gen_type_shape module_name s syms bsym_table need_int last_ptr_map primi
         )
     end
 
-    | BTYP_record ("", es) ->
+    | BTYP_record (es) ->
       let encoder_name = gen_encoder () in
       let decoder_name = gen_decoder () in
       bcat s ("\n//OFFSETS for record type " ^ name ^ " instance\n");

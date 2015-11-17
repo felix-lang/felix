@@ -1545,6 +1545,11 @@ syntax expressions {
    "`(ast_record_type ,(cons _2 (map second _3)))";
     srecord_mem_decl := sname ":" stypeexpr =># "`(,_1 ,_3)";
 
+  //$ polyRecord type.
+  satom := "(" srecord_mem_decl ("," srecord_mem_decl)*  "|" stypeexpr ")" =># 
+   "`(ast_polyrecord_type ,(cons _2 (map second _3)) ,_5)";
+
+
   // INCONSISTENT GRAMMAR (no separator between items??
   //$ Variant type.
   //satom := "union" "{" stype_sum_item0* "}" =># "`(ast_variant_type ,_3)";

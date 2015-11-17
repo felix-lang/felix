@@ -22,7 +22,8 @@ and t =
   | BTYP_inst of bid_t * t list
   | BTYP_tuple of t list
   | BTYP_array of t * t
-  | BTYP_record of string * (string * t) list
+  | BTYP_record of (string * t) list
+  | BTYP_polyrecord of (string * t) list * t
   | BTYP_variant of (string * t) list
   | BTYP_pointer of t
   | BTYP_function of t * t
@@ -88,7 +89,8 @@ let complete_type t =
     match t' with
     | BTYP_sum ls -> List.iter uf ls
     | BTYP_tuple ls -> List.iter uf ls
-    | BTYP_record (n,ls) -> List.iter (fun (s,t) -> uf t) ls
+    | BTYP_record (ls) -> List.iter (fun (s,t) -> uf t) ls
+    | BTYP_polyrecord (ls,v) -> List.iter (fun (s,t) -> uf t) ls; uf v
     | BTYP_variant ls -> (List.iter (fun (s,t) -> uf t) ls)
     | BTYP_array (a,b) -> uf a; uf b
     | BTYP_function (a,b) -> uf a;uf b
@@ -169,11 +171,21 @@ let btyp_array (t, n) =
   | _ -> BTYP_array (t, n)
 
 (** Construct a BTYP_record type. *)
-let btyp_record name ts = 
+let btyp_record ts = 
    (* Make sure all the elements are sorted by name. *)
    let cmp (s1,t1) (s2, t2) = compare s1 s2 in
    let ts = List.sort cmp ts in
-   BTYP_record (name,ts)
+   BTYP_record (ts)
+
+(** Construct a BTYP_polyrecord type. *)
+let btyp_polyrecord ts v = 
+   match v with
+   | BTYP_record flds -> btyp_record (ts @ flds)
+   | _ -> 
+   let cmp (s1,t1) (s2, t2) = compare s1 s2 in
+   let ts = List.sort cmp ts in
+   BTYP_polyrecord (ts,v)
+
 
 (** Construct a BTYP_variant type. *)
 let btyp_variant = function
@@ -242,7 +254,8 @@ let unfold msg t =
     match t' with
     | BTYP_sum ls -> btyp_sum (List.map uf ls)
     | BTYP_tuple ls -> btyp_tuple (List.map uf ls)
-    | BTYP_record (n,ls) -> btyp_record n (List.map (fun (s,t) -> s,uf t) ls)
+    | BTYP_record (ls) -> btyp_record (List.map (fun (s,t) -> s,uf t) ls)
+    | BTYP_polyrecord (ls,v) -> btyp_polyrecord (List.map (fun (s,t) -> s,uf t) ls) (uf v)
     | BTYP_variant ls -> btyp_variant (List.map (fun (s,t) -> s,uf t) ls)
     | BTYP_array (a,b) -> btyp_array (uf a,uf b)
     | BTYP_function (a,b) -> btyp_function (uf a,uf b)
@@ -346,7 +359,8 @@ let flat_iter
   | BTYP_inst (i,ts) -> f_bid i; List.iter f_btype ts
   | BTYP_tuple ts -> List.iter f_btype ts
   | BTYP_array (t1,t2)->  f_btype t1; f_btype t2
-  | BTYP_record (_,ts) -> List.iter (fun (s,t) -> f_btype t) ts
+  | BTYP_record (ts) -> List.iter (fun (s,t) -> f_btype t) ts
+  | BTYP_polyrecord (ts,v) -> List.iter (fun (s,t) -> f_btype t) ts; f_btype v
   | BTYP_variant ts -> List.iter (fun (s,t) -> f_btype t) ts
   | BTYP_pointer t -> f_btype t
   | BTYP_function (a,b) -> f_btype a; f_btype b
@@ -405,7 +419,8 @@ let map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
   | BTYP_inst (i,ts) -> btyp_inst (f_bid i, List.map f_btype ts)
   | BTYP_tuple ts -> btyp_tuple (List.map f_btype ts)
   | BTYP_array (t1,t2) -> btyp_array (f_btype t1, f_btype t2)
-  | BTYP_record (n,ts) -> btyp_record n (List.map (fun (s,t) -> s, f_btype t) ts)
+  | BTYP_record (ts) -> btyp_record (List.map (fun (s,t) -> s, f_btype t) ts)
+  | BTYP_polyrecord (ts,v) -> btyp_polyrecord (List.map (fun (s,t) -> s, f_btype t) ts) (f_btype v)
   | BTYP_variant ts -> btyp_variant (List.map (fun (s,t) -> s, f_btype t) ts)
   | BTYP_pointer t -> btyp_pointer (f_btype t)
   | BTYP_function (a,b) -> btyp_function (f_btype a, f_btype b)

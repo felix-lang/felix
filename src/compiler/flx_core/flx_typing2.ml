@@ -84,6 +84,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
     | _ -> TYP_type_tuple (map te ls)
     end
   | EXPR_record_type (sr,es) -> TYP_record es
+  | EXPR_polyrecord_type (sr,es,e) -> TYP_polyrecord (es,e)
   | EXPR_variant_type (sr,es) -> TYP_variant es
 
   | EXPR_product (_,ts) -> TYP_tuple (map te ts)

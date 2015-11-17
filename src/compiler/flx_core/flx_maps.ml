@@ -14,6 +14,7 @@ let map_type f (t:typecode_t):typecode_t = match t with
   | TYP_typed_case (sr,i,t) -> TYP_typed_case (sr,i, f t)
   | TYP_tuple ts -> TYP_tuple (List.map f ts)
   | TYP_record ts -> TYP_record (List.map (fun (s,t) -> s,f t) ts)
+  | TYP_polyrecord (ts,v) -> TYP_polyrecord (List.map (fun (s,t) -> s,f t) ts, f v)
   | TYP_variant ts -> TYP_variant (List.map (fun (s,t) -> s,f t) ts)
   | TYP_isin (a,b) -> TYP_isin (f a, f b)
 
@@ -109,6 +110,7 @@ let map_expr f (e:expr_t):expr_t = match e with
   | EXPR_suffix _ -> e
 
   | EXPR_record_type (sr,ts) -> e
+  | EXPR_polyrecord_type (sr,ts,v) -> e
   | EXPR_variant_type (sr,ts) -> e
   | EXPR_void sr -> e
   | EXPR_ellipsis sr -> e
@@ -176,6 +178,7 @@ let iter_expr f (e:expr_t) =
   | EXPR_typed_case _
   | EXPR_projection _
   | EXPR_record_type _
+  | EXPR_polyrecord_type _
   | EXPR_variant_type _
   | EXPR_void _
   | EXPR_ellipsis _

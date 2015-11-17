@@ -72,7 +72,7 @@ let rec dual t =
 
   | BTYP_type_set ts -> btyp_intersect (List.map dual ts)
   | BTYP_intersect ts -> btyp_type_set (List.map dual ts)
-  | BTYP_record (n,ts) -> btyp_variant ts
+  | BTYP_record (ts) -> btyp_variant ts
   | t -> t
 
 (* top down check for fix point not under sum or pointer *)
@@ -303,8 +303,11 @@ let fix i t =
     | BTYP_pointer a -> btyp_pointer (aux a)
     | BTYP_array (a,b) -> btyp_array (aux a, aux b)
 
-    | BTYP_record (n,ts) ->
-       btyp_record n (List.map (fun (s,t) -> s, aux t) ts)
+    | BTYP_record (ts) ->
+       btyp_record (List.map (fun (s,t) -> s, aux t) ts)
+
+    | BTYP_polyrecord (ts,v) ->
+       btyp_polyrecord (List.map (fun (s,t) -> s, aux t) ts) (aux v)
 
     | BTYP_variant ts ->
        btyp_variant (List.map (fun (s,t) -> s, aux t) ts)
@@ -422,11 +425,26 @@ let rec unification bsym_table counter eqns dvars =
       | BTYP_cfunction (t11, t12), BTYP_cfunction (t21, t22) ->
         eqns := (t11,t21) :: (t12,t22) :: !eqns
 
-      | BTYP_record ("",[]),BTYP_tuple []
-      | BTYP_tuple [],BTYP_record ("",[]) -> ()
+      | BTYP_record ([]),BTYP_tuple []
+      | BTYP_tuple [],BTYP_record ([]) -> ()
 
-      | BTYP_record (n1,t1),BTYP_record (n2,t2) ->
-        if n1 = n2 && List.length t1 = List.length t2
+      | BTYP_polyrecord (t1,v1),BTYP_polyrecord (t2,v2) ->
+        eqns := (btyp_record t1, btyp_record t2) :: (v1, v2) :: !eqns
+
+      | BTYP_polyrecord (t1,v),BTYP_record (t2)
+      | BTYP_record (t2),BTYP_polyrecord (t1,v) -> 
+        let extras = ref [] in
+        List.iter (fun (s,t) -> 
+          if List.mem_assoc s t1 
+          then eqns:= (List.assoc s t1,t) :: !eqns
+          else extras := (s,t) :: !extras
+          )
+          t2
+        ;
+        eqns := (v,btyp_record (!extras)) :: !eqns;
+
+      | BTYP_record (t1),BTYP_record (t2) ->
+        if List.length t1 = List.length t2
         then begin
           let rcmp (s1,_) (s2,_) = compare s1 s2 in
           let t1 = List.sort rcmp t1 in
@@ -715,11 +733,14 @@ let rec type_eq' bsym_table counter ltrail ldepth rtrail rdepth trail t1 t2 =
     *)
     result
 
-  | BTYP_record ("",[]),BTYP_tuple []
-  | BTYP_tuple [],BTYP_record ("",[]) -> true
+  | BTYP_record ([]),BTYP_tuple []
+  | BTYP_tuple [],BTYP_record ([]) -> true
 
-  | BTYP_record (n1,t1),BTYP_record (n2,t2) ->
-    if n1 = n2 && List.length t1 = List.length t2
+  | BTYP_polyrecord (t1,v1), BTYP_polyrecord (t2,v2) ->
+   te (btyp_record t1) (btyp_record t2) && te v1 v2 
+
+  | BTYP_record (t1),BTYP_record (t2) ->
+    if List.length t1 = List.length t2
     then begin
       let rcmp (s1,_) (s2,_) = compare s1 s2 in
       let t1 = List.sort rcmp t1 in
@@ -868,7 +889,8 @@ let fold bsym_table counter t =
     | BTYP_sum ls
     | BTYP_inst (_,ls)
     | BTYP_tuple ls -> List.iter ax ls
-    | BTYP_record (n,ls) -> List.iter (fun (s,t) -> ax t) ls
+    | BTYP_record (ls) -> List.iter (fun (s,t) -> ax t) ls
+    | BTYP_polyrecord (ls,v) -> List.iter (fun (s,t) -> ax t) ls; ax v
     | BTYP_variant ls -> List.iter (fun (s,t) -> ax t) ls
 
     | BTYP_array (a,b)
@@ -923,7 +945,8 @@ let var_occurs bsym_table t =
     | BTYP_sum ls
     | BTYP_inst (_,ls)
     | BTYP_tuple ls -> List.iter aux ls
-    | BTYP_record (n,ls) -> List.iter (fun (s,t) -> aux t) ls
+    | BTYP_record (ls) -> List.iter (fun (s,t) -> aux t) ls
+    | BTYP_polyrecord (ls,v) -> List.iter (fun (s,t) -> aux t) ls; aux v
     | BTYP_variant ls -> List.iter (fun (s,t) -> aux t) ls
 
     | BTYP_array (a,b)

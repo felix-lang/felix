@@ -82,6 +82,7 @@ let rec subst vars (e:expr_t) mv : expr_t =
   | EXPR_isin _ (* only used in type constraints *)
   | EXPR_callback _
   | EXPR_record_type _
+  | EXPR_polyrecord_type _
   | EXPR_variant_type _
   | EXPR_extension _
   | EXPR_get_tuple_tail _

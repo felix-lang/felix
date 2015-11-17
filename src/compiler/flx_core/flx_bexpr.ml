@@ -30,6 +30,7 @@ type bexpr_t =
   | BEXPR_tuple_head of t
   | BEXPR_tuple_cons of t * t
   | BEXPR_prj of int * Flx_btype.t * Flx_btype.t
+  | BEXPR_rprj of string * Flx_btype.t * Flx_btype.t
   | BEXPR_aprj of t * Flx_btype.t * Flx_btype.t
   | BEXPR_inj of int * Flx_btype.t * Flx_btype.t
   | BEXPR_label of string
@@ -120,12 +121,13 @@ let bexpr_record es =
   let cmp (s1,e1) (s2,e2) = compare s1 s2 in
   let es = List.sort cmp es in
   let ts = List.map (fun (s,(_,t)) -> s,t) es in
-  BEXPR_record es, complete_check (Flx_btype.btyp_record "" ts)
+  BEXPR_record es, complete_check (Flx_btype.btyp_record ts)
 
 let bexpr_variant t (n, e) = BEXPR_variant (n, e), complete_check t
 
 
 let bexpr_aprj ix d c = BEXPR_aprj (ix,d,c),complete_check (Flx_btype.BTYP_function (d,c))
+let bexpr_rprj ix d c = BEXPR_rprj (ix,d,c),complete_check (Flx_btype.BTYP_function (d,c))
 let bexpr_prj n d c = BEXPR_prj (n,d,c),complete_check (Flx_btype.BTYP_function (d,c))
 let bexpr_inj n d c = BEXPR_inj (n,d,c),complete_check (Flx_btype.BTYP_function (d,c))
 let bexpr_get_n c n (e,d) =  BEXPR_apply ( bexpr_prj n d c, (e,d) ), complete_check c
@@ -257,6 +259,9 @@ let rec cmp ((a,_) as xa) ((b,_) as xb) =
   | BEXPR_aprj (ix,d,c), BEXPR_aprj (ix',d',c') ->
     d = d' && c = c' && cmp ix ix'
 
+  | BEXPR_rprj (ix,d,c), BEXPR_rprj (ix',d',c') ->
+    d = d' && c = c' && ix = ix'
+
   | BEXPR_prj (n,d,c), BEXPR_prj (n',d',c') ->
     d = d' && c = c' && n = n'
 
@@ -343,6 +348,7 @@ let flat_iter
   | BEXPR_tuple_head e -> f_bexpr e
   | BEXPR_tuple_cons (eh,et) -> f_bexpr eh; f_bexpr et
   | BEXPR_aprj (ix,d,c) -> f_bexpr ix; f_btype d; f_btype c
+  | BEXPR_rprj (ix,d,c) -> f_btype d; f_btype c
   | BEXPR_prj (n,d,c) -> f_btype d; f_btype c
   | BEXPR_inj (n,d,c) -> f_btype d; f_btype c
   | BEXPR_funprod e -> f_bexpr e
@@ -413,6 +419,7 @@ let map
   | BEXPR_tuple_tail e,t -> BEXPR_tuple_tail (f_bexpr e), f_btype t
   | BEXPR_tuple_head e,t -> BEXPR_tuple_head (f_bexpr e), f_btype t
   | BEXPR_tuple_cons (eh,et),t -> BEXPR_tuple_cons (f_bexpr eh, f_bexpr et), f_btype t
+  | BEXPR_rprj (ix,d,c),t -> BEXPR_rprj (ix, f_btype d, f_btype c), f_btype t
   | BEXPR_aprj (ix,d,c),t -> BEXPR_aprj (f_bexpr ix, f_btype d, f_btype c), f_btype t
   | BEXPR_prj (n,d,c),t -> BEXPR_prj (n, f_btype d, f_btype c), f_btype t
   | BEXPR_inj (n,d,c),t -> BEXPR_inj (n, f_btype d, f_btype c), f_btype t

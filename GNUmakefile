@@ -160,7 +160,7 @@ flxg:
 	# building flxg
 	# =========================================================
 	flx_build_flxg
-	cp tmp-dir/flxg build/release/trial/bin
+	cp tmp-dir/flxg build/release/host/bin
 
 prep: 
 	# =========================================================

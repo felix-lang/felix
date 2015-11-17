@@ -62,7 +62,7 @@ let register_tuple syms bsym_table t =
     let ts = rev_map (fun _ -> t') (nlist n) in
     record_tuple (btyp_tuple ts)
 
-  | BTYP_record (n,ts) ->
+  | BTYP_record (ts) ->
     begin match t with
     | BTYP_tuple [] -> ()
     | _ -> record_tuple t
@@ -97,6 +97,7 @@ print_endline ("Register type r " ^ sbt bsym_table t);
   | BTYP_void -> ()
   | BTYP_fix (0,_) -> ()
   | BTYP_fix (i,_) -> clierr sr ("[register_type_r] Fixpoint "^si i^" encountered")
+  | BTYP_polyrecord _ -> clierr sr ("[register_type_r] attempt to bind polyrecord type")
   (*
   | BTYP_type_var (i,mt) -> clierr sr ("Attempt to register type variable " ^ si i ^":"^sbt sym_table mt)
   *)
@@ -138,7 +139,7 @@ print_endline ("Array type " ^ sbt bsym_table t ^ " base type " ^ sbt bsym_table
   | BTYP_tuple ps -> iter rr ps; rnr t
   | BTYP_tuple_cons (t1,t2) ->  assert false
 
-  | BTYP_record (n,ps) -> iter (fun (s,t)->rr t) ps; rnr t
+  | BTYP_record (ps) -> iter (fun (s,t)->rr t) ps; rnr t
   | BTYP_variant ps -> iter (fun (s,t)->rr t) ps; rnr t
 
   | BTYP_sum ps ->

@@ -321,7 +321,7 @@ let resolve sym_table bsym_table base_sym bt be arg_types =
 
   let arg_types =
     match arg_types with
-    | BTYP_record ("",rs) as argt :: tail ->
+    | BTYP_record (rs) as argt :: tail ->
         fixup_argtypes be base_sym pnames base_domain argt rs :: tail
 
     | BTYP_tuple [] as argt :: tail ->

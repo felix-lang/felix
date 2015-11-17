@@ -170,7 +170,7 @@ print_endline ("Coercion from int expression result is " ^ sbe bsym_table r);
         sbt bsym_table t')
       end
 
-    | BTYP_record (n',ls'),BTYP_record (n'',ls'') when n' = n''->
+    | BTYP_record (ls'),BTYP_record (ls'')->
       let n = List.length ls' in
       record_coercion state bsym_table sr x' n t' t'' ls' ls'' 
 

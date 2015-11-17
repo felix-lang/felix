@@ -445,7 +445,7 @@ print_endline ("Compact linear tuple " ^ sbt bsym_table t);
 
 
   (* record projection *)
-  | BEXPR_apply ( (BEXPR_prj (n,BTYP_record (name,es),_),_), a) ->
+  | BEXPR_apply ( (BEXPR_prj (n,BTYP_record (es),_),_), a) ->
     let field_name,_ =
       try nth es n
       with Not_found ->
@@ -453,8 +453,14 @@ print_endline ("Compact linear tuple " ^ sbt bsym_table t);
     in
     ce_dot (ge' a) (cid_of_flxid field_name)
 
+  (* record projection *)
+  | BEXPR_apply ( (BEXPR_rprj (n,BTYP_record (es),_),_), a) ->
+    let field_name = n in
+    ce_dot (ge' a) (cid_of_flxid field_name)
+
+
   (* pointer to record projection *)
-  | BEXPR_apply ( (BEXPR_prj (n,BTYP_pointer (BTYP_record (name,es)),_),_), a) ->
+  | BEXPR_apply ( (BEXPR_prj (n,BTYP_pointer (BTYP_record (es)),_),_), a) ->
     let field_name,_ =
       try nth es n
       with Not_found ->
@@ -462,6 +468,10 @@ print_endline ("Compact linear tuple " ^ sbt bsym_table t);
     in
     ce_prefix "&" (ce_arrow (ge' a) (cid_of_flxid field_name))
 
+  (* pointer to record projection *)
+  | BEXPR_apply ( (BEXPR_rprj (n,BTYP_pointer (BTYP_record (es)),_),_), a) ->
+    let field_name = n in
+    ce_prefix "&" (ce_arrow (ge' a) (cid_of_flxid field_name))
 
   (* struct or cstruct projection *)
   | BEXPR_apply ( (BEXPR_prj (n,BTYP_inst (i,_),_),_), (_,at as a)) ->
@@ -549,6 +559,9 @@ print_endline ("Compact linear tuple " ^ sbt bsym_table t);
 
   (* we CAN handle this now, since we have made a closure for it: FIXME *)
   | BEXPR_prj (n,_,_) -> assert false
+
+  (* we CAN handle this now, since we have made a closure for it: FIXME *)
+  | BEXPR_rprj (n,_,_) -> assert false
 
   (* we CAN handle this now, since we have made a closure for it: FIXME *)
   | BEXPR_inj _ -> assert false (* can't handle yet *)

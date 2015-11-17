@@ -392,6 +392,7 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
     l @ List.concat lss,EXPR_extension (sr, xs, x)
 
   | EXPR_record_type _ -> assert false
+  | EXPR_polyrecord_type _ -> assert false
 
   | EXPR_variant (sr,(s,e)) ->
     let l,x = rex e in

@@ -308,6 +308,7 @@ let rec cpp_type_classname syms bsym_table t =
     else
       "_poly_" ^ cid_of_bid i ^ "t_" ^ cid_of_bid (tix t)
   end
+  | BTYP_polyrecord _
   | BTYP_intersect _
 
   | BTYP_type _

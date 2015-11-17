@@ -712,7 +712,8 @@ print_endline ("Bind type " ^ string_of_typecode t);
   | TYP_patany _ -> failwith "Not implemented patany in typecode"
 
   | TYP_intersect ts -> btyp_intersect (List.map bt ts)
-  | TYP_record ts -> btyp_record "" (List.map (fun (s,t) -> s,bt t) ts)
+  | TYP_record ts -> btyp_record (List.map (fun (s,t) -> s,bt t) ts)
+  | TYP_polyrecord (ts,v) -> btyp_polyrecord (List.map (fun (s,t) -> s,bt t) ts) (bt v)
   | TYP_variant ts -> btyp_variant (List.map (fun (s,t) -> s,bt t) ts)
   | TYP_type_extension (sr, ts, t') ->
 (*
@@ -730,12 +731,12 @@ print_endline ("Bind type " ^ string_of_typecode t);
     print_endline ("Extension = " ^ sbt bsym_table t');
 *)
     begin match t' with
-    | BTYP_record ("",fields) ->
+    | BTYP_record (fields) ->
       let new_fields = ref [] in
       List.iter (fun t ->
         match t with
         (* reverse the fields so the second one with a given name takes precedence *)
-        | BTYP_record ("",fields) -> new_fields := List.rev fields @ (!new_fields)
+        | BTYP_record (fields) -> new_fields := List.rev fields @ (!new_fields)
         | _ -> clierr sr ("Record extension requires bases be records too, got " ^ sbt bsym_table t)
       )
       ts
@@ -747,7 +748,7 @@ print_endline ("Bind type " ^ string_of_typecode t);
         unique_fields := (s,t) :: (!unique_fields)
       )
       (!new_fields);
-      let t = btyp_record "" (!unique_fields) in
+      let t = btyp_record (!unique_fields) in
       Flx_beta.adjust t
 
     | _ -> 
@@ -1428,6 +1429,7 @@ end;
             | TYP_sum _
             | TYP_intersect _
             | TYP_record _
+            | TYP_polyrecord _
             | TYP_variant _
             | TYP_cfunction _
             | TYP_pointer _
@@ -2013,7 +2015,7 @@ print_endline ("cal_apply', AFTER NORMALISE, fn = " ^ sbt bsym_table t1 ^ " arg=
             | BTYP_record _
             | BTYP_tuple [] ->
               let rs = match t2 with
-                | BTYP_record ("",rs) -> rs
+                | BTYP_record (rs) -> rs
                 | BTYP_tuple [] -> []
                 | _ -> assert false
               in
@@ -2980,7 +2982,7 @@ and lookup_name_with_sig
      end
 
 
-   | [BTYP_record (_,fields) as d] ->
+   | [BTYP_record (fields) as d] ->
      (* this sort shouldn't be necessary because the constructor does it anyhow *)
      let rcmp (s1,_) (s2,_) = compare s1 s2 in
      let fields = List.sort rcmp fields in
@@ -2995,7 +2997,14 @@ and lookup_name_with_sig
      | None -> None
      end
 
-   | [BTYP_pointer (BTYP_record (_,fields)) as d] ->
+   | [BTYP_polyrecord (fields,v) as d] ->
+     if List.mem_assoc name fields 
+     then 
+      let ft = List.assoc name fields in
+      Some (bexpr_rprj name d ft)  (* MIGHT REQUIRE FIXPOINT FIXUP! *)
+     else None
+
+   | [BTYP_pointer (BTYP_record (fields)) as d] ->
      (* this sort shouldn't be necessary because the constructor does it anyhow *)
      let rcmp (s1,_) (s2,_) = compare s1 s2 in
      let fields = List.sort rcmp fields in
@@ -3009,6 +3018,14 @@ and lookup_name_with_sig
        Some (bexpr_prj k d (BTYP_pointer ft))
      | None -> None
      end
+
+   | [BTYP_pointer (BTYP_polyrecord (fields,v)) as d] ->
+     if List.mem_assoc name fields 
+     then 
+      let ft = List.assoc name fields in
+      Some (bexpr_rprj name d (BTYP_pointer ft))  (* MIGHT REQUIRE FIXPOINT FIXUP! *)
+     else None
+
    | _ -> None
  in
  match projection with
@@ -3933,7 +3950,7 @@ assert false; (* shouldn't happen now! *)
   | EXPR_get_named_variable (sr,(name,e')) ->
     let e'',t'' as x2 = be e' in
     begin match t'' with
-    | BTYP_record ("",es)
+    | BTYP_record (es)
       ->
       let k = List.length es in
       let rcmp (s1,_) (s2,_) = compare s1 s2 in
@@ -4787,7 +4804,7 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
 
         *)
         begin match unfold "flx_lookup" ta with 
-        | BTYP_record ("",es) ->
+        | BTYP_record (es) ->
 (*
 print_endline ("binding apply, RECORD field .. " ^ name ^ ", type=" ^ sbt bsym_table ta);
 *)
@@ -4820,7 +4837,7 @@ print_endline "";
 print_endline ("binding apply, RECORD pointer field .. " ^ name ^ ", type=" ^ sbt bsym_table ta);
 *)
           begin match unfold "flx_lookup" r with
-          | BTYP_record (_,es) ->
+          | BTYP_record (es) ->
             if (ts != []) then raise Flx_dot.OverloadResolutionError; 
             let k = List.length es in
             let rcmp (s1,_) (s2,_) = compare s1 s2 in
@@ -4973,7 +4990,7 @@ print_endline ("Bound f = " ^ sbe bsym_table f);
       in
       let _,vs,_  = find_split_vs state.sym_table bsym_table i in
       let alst = match ta with
-        |BTYP_record ("",ts) -> ts
+        |BTYP_record (ts) -> ts
         | _ -> assert false
       in
       let nf = List.length fls in
@@ -5069,12 +5086,12 @@ print_endline ("Bound f = " ^ sbe bsym_table f);
     let es' = List.map be es in
     let ts = List.map snd es' in
     begin match t' with
-    | BTYP_record ("",fields) ->
+    | BTYP_record (fields) ->
       let new_fields = ref [] in
       List.iter (fun e ->
         let _,t = be e in
         match t with
-        | BTYP_record ("",fields) -> 
+        | BTYP_record (fields) -> 
           let fields = List.map (fun (s,t)-> 
             s,EXPR_get_named_variable (sr,(s,e))
           )
@@ -5160,6 +5177,7 @@ print_endline ("Bound f = " ^ sbe bsym_table f);
     end
 
   | EXPR_record_type _ -> assert false
+  | EXPR_polyrecord_type _ -> assert false
   | EXPR_variant_type _ -> assert false
 
   | EXPR_record (sr,ls) ->
@@ -6183,9 +6201,14 @@ and rebind_btype state bsym_table env sr ts t =
   | BTYP_type_set_intersection ts -> btyp_type_set_intersection (List.map rbt ts)
 
   | BTYP_tuple ts -> btyp_tuple (List.map rbt ts)
-  | BTYP_record (n,ts) ->
+  | BTYP_record (ts) ->
       let ss,ts = List.split ts in
-      btyp_record n (List.combine ss (List.map rbt ts))
+      btyp_record (List.combine ss (List.map rbt ts))
+
+  | BTYP_polyrecord (ts,v) ->
+      let ss,ts = List.split ts in
+      btyp_polyrecord (List.combine ss (List.map rbt ts)) (rbt v)
+
 
   | BTYP_variant ts ->
       let ss,ts = List.split ts in

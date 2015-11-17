@@ -146,6 +146,16 @@ and xexpr_t sr x =
      rs
    in EXPR_record_type (sr,rs)
 
+ | Lst [Id "ast_polyrecord_type"; Lst rs; e] ->
+   let rs =
+     map (function
+     | Lst [Str s; e] -> s, ti e
+     | x -> err x "Error in AST_polyrecord_type"
+     )
+     rs
+   in EXPR_polyrecord_type (sr,rs, ti e)
+
+
  | Lst [Id "ast_variant";  Lst [Str s;e]] -> EXPR_variant (sr,(s, ex e))
 
  | Lst [Id "ast_variant_type"; Lst rs] ->
