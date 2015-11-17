@@ -1093,6 +1093,7 @@ and string_of_statement level s =
   let se e = string_of_expr e in
   let sqn n = string_of_qualified_name n in
   match s with
+  | STMT_type_error (_,stmt) -> spaces level ^ "type-error" ^ string_of_statement 0 stmt
   | STMT_cgoto (_,e) -> spaces level ^ "goto-indirect " ^ se e ^ ";"
   | STMT_try _ -> spaces level ^ "try"
   | STMT_endtry _ -> spaces level ^ "endtry"
@@ -1712,6 +1713,7 @@ and string_of_exe level s =
   in
   match s with
 
+  | EXE_type_error x -> "type-error " ^ string_of_exe 0 x
   | EXE_cgoto e -> "goto-indirect " ^ se e ^ ";"
   | EXE_proc_return_from s -> "return from " ^ s ^ ";"
 

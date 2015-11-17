@@ -75,6 +75,18 @@ let rec rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t lis
     bindings defined in this entity
   *)
   match st with
+  | STMT_type_error (sr,stmt) ->
+    let asms = rst state name access parent_vs stmt in
+    let result = List.fold_left (fun acc exe -> 
+      match exe with
+      | Exe (sr,asm) -> Exe (sr, EXE_type_error asm) :: acc 
+      | a -> clierr sr ("type-error statement must be purely executable got " ^ string_of_asm 0 a)
+    ) [] asms
+    in  
+    let result = List.rev result in
+    result
+
+
   | STMT_try sr -> [Exe (sr,EXE_try)]
   | STMT_endtry sr -> [Exe (sr,EXE_endtry)]
   | STMT_catch (sr,s,t) -> [

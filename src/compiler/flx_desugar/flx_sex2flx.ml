@@ -703,6 +703,8 @@ print_endline ("Type alias " ^ xid id ^ " flx   = " ^ Flx_print. string_of_typec
     *)
     STMT_instance (sr, xvs sr vs, xq sr "ast_instance" qn, xsts sr sts)
 
+  | Lst [Id "ast_type_error"; sr; stmt] -> let sr = xsr sr in STMT_type_error (sr, xs sr stmt)
+
   | Lst [Id "ast_label"; sr; id] -> let sr = xsr sr in STMT_label (sr, xid id)
   | Lst [Id "ast_try"; sr] -> let sr = xsr sr in STMT_try (sr)
   | Lst [Id "ast_endtry"; sr] -> let sr = xsr sr in STMT_endtry (sr)

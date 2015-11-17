@@ -1228,6 +1228,8 @@ syntax control
 syntax executable {
   requires statements;
 
+  stmt := "type-error" stmt =># "`(ast_type_error ,_sr ,_2)";
+
   //$ System service call.
   stmt := "_svc" sname =># "`(ast_svc ,_sr ,_2)";
 

@@ -633,6 +633,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
 
   begin match st with
   | STMT_try _ -> tack st
+  | STMT_type_error _ -> tack st
 
   | STMT_endtry _ -> 
     reachable := true;

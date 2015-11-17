@@ -348,6 +348,7 @@ and ast_term_t =
   | Apply_term of ast_term_t * ast_term_t list
 
 and statement_t =
+  | STMT_type_error of Flx_srcref.t * statement_t
   | STMT_cgoto of Flx_srcref.t * expr_t
   | STMT_try of Flx_srcref.t 
   | STMT_endtry of Flx_srcref.t 
@@ -576,6 +577,7 @@ and statement_t =
   | STMT_scheme_string of Flx_srcref.t * string
 
 type exe_t =
+  | EXE_type_error of exe_t
   | EXE_code of CS.t (* for inline C++ code *)
   | EXE_noreturn_code of CS.t (* for inline C++ code *)
   | EXE_comment of string (* for documenting generated code *)
@@ -737,6 +739,7 @@ let src_of_stmt (e : statement_t) = match e with
   (*
   | STMT_public (s,_,_)
   *)
+  | STMT_type_error (s,_)
   | STMT_try s
   | STMT_endtry s
   | STMT_catch (s,_,_)

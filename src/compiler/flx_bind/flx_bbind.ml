@@ -226,7 +226,7 @@ print_endline ("Parent " ^ str_parent sym_parent ^ " mapped to true parent " ^ s
         bbind_symbol state bsym_table bid parent sym
     end btype
   in
-  let bexes exes ret_type index tvars =
+  let bexes exes ret_type index tvars : Flx_btype.t * Flx_bexe.t list=
     let bexe_state = Flx_bind_bexe.make_bexe_state
       ?parent:sym_parent
       ~env

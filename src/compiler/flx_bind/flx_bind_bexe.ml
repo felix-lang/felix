@@ -241,7 +241,9 @@ exception Found of int
 let print_vs vs =
   catmap "," (fun (s,i) -> s ^ "->" ^ string_of_bid i) vs
 
-let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
+type bexe_t = Flx_bexe.t
+
+let rec bind_exe state bsym_table (sr, exe) : bexe_t list =
   let be e =
     bind_expression
       state.lookup_state
@@ -280,19 +282,28 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
 *)
   match exe with
   | EXE_comment s ->
-      handle_bexe (bexe_comment (sr,s)) init
+      [bexe_comment (sr,s)]
+
+  | EXE_type_error x ->
+    let result = try Some (bind_exe state bsym_table (sr, x)) with _ -> None
+    in begin match result with
+    | None -> []
+    | Some _ -> clierr sr ("type_error expected, statement compiled! " ^ string_of_exe 0 exe);
+    end
+
   | EXE_label s ->
       state.reachable <- true;
-      handle_bexe (bexe_label (sr,s)) init
+      [bexe_label (sr,s)]
+
   | EXE_goto s ->
       state.reachable <- false;
-      handle_bexe (bexe_goto (sr,s)) init
+      [(bexe_goto (sr,s))]
 
   | EXE_cgoto e ->
     state.reachable <- false;
     let e',t as x = be e in
     if t = Flx_btype.btyp_label () then
-      handle_bexe (bexe_cgoto (sr,x)) init
+      [(bexe_cgoto (sr,x))]
     else
       clierr (src_of_expr e)
       (
@@ -305,13 +316,13 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
   | EXE_proc_return_from s ->
     state.reachable <- false;
     state.proc_return_count <- state.proc_return_count + 1;
-    handle_bexe (bexe_goto (sr,"_endof_" ^ s)) init
+    [(bexe_goto (sr,"_endof_" ^ s))]
 
   | EXE_ifgoto (e,s) ->
     let e',t = be e in
     if t = flx_bbool
     then
-      handle_bexe (bexe_ifgoto (sr,(e',t),s)) init
+      [(bexe_ifgoto (sr,(e',t),s))]
     else
       clierr (src_of_expr e)
       (
@@ -332,7 +343,7 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
         [t2]
     in
     (* reverse order .. *)
-    let init = handle_bexe (bexe_proc_return sr) init in
+    let init = [(bexe_proc_return sr)] in
 
     let index =
       match state.parent with
@@ -341,15 +352,14 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
     in
 
     (* note cal_loop actually generates a call .. *)
-    handle_bexe (cal_loop state.sym_table sr tbe1 (be2,t2) index) init
+    [(cal_loop state.sym_table sr tbe1 (be2,t2) index)]
 
   | EXE_jump (a,b) ->
-    let init = bind_exe state bsym_table handle_bexe (sr, EXE_call (a, b)) init in
-    let init = bind_exe state bsym_table handle_bexe (sr, EXE_proc_return) init in
-    init
+    bind_exe state bsym_table (sr, EXE_call (a, b)) @
+    bind_exe state bsym_table (sr, EXE_proc_return) 
 
   | EXE_call (EXPR_name (_,"axiom_check",[]), e2) ->
-    handle_bexe (bexe_axiom_check (sr,be e2)) init
+    [(bexe_axiom_check (sr,be e2))]
 
   | EXE_call (f',a') ->
 (*
@@ -395,14 +405,14 @@ print_endline ("        >>> Call, bound argument is type " ^ sbt bsym_table ta);
     *)
     begin match tf with
     | BTYP_cfunction _ ->
-      handle_bexe (cal_call state bsym_table sr f a) init
+      [(cal_call state bsym_table sr f a)]
 
     | BTYP_function _ ->
       (* print_endline "Function .. cal apply"; *)
-      handle_bexe (cal_call state bsym_table sr f a) init
+      [(cal_call state bsym_table sr f a)]
     | _ ->
       let apl name =
-        bind_exe state bsym_table handle_bexe
+        bind_exe state bsym_table 
           (
             sr,
             EXE_call
@@ -411,7 +421,6 @@ print_endline ("        >>> Call, bound argument is type " ^ sbt bsym_table ta);
               EXPR_tuple (sr, [f'; a'])
             )
           )
-          init
       in
       apl "apply"
     end
@@ -419,7 +428,7 @@ print_endline ("        >>> Call, bound argument is type " ^ sbt bsym_table ta);
       begin try 
         match f',a' with
         | EXPR_apply (sr,(f'',a'')), EXPR_tuple (_,[]) -> 
-          bind_exe state bsym_table handle_bexe (sr, EXE_call (f'',a'')) init
+          bind_exe state bsym_table (sr, EXE_call (f'',a''))
         | _ -> raise x
       with _ -> raise x
       end
@@ -439,7 +448,7 @@ print_endline ("        >>> Call, bound argument is type " ^ sbt bsym_table ta);
       | _ -> clierr sr ("[bexe] svc requires variable, got " ^ id)
       end
       ;
-      handle_bexe (bexe_svc (sr,index)) init
+      [(bexe_svc (sr,index))]
 
     | FunctionEntry _ -> failwith "Can't svc function!"
     end
@@ -451,7 +460,7 @@ print_endline ("        >>> Call, bound argument is type " ^ sbt bsym_table ta);
     then
       begin
         state.ret_type <- varmap_subst (Flx_lookup_state.get_varmap state.lookup_state) state.ret_type;
-        handle_bexe (bexe_proc_return sr) init
+        [(bexe_proc_return sr)]
       end
     else
       clierr sr
@@ -462,11 +471,11 @@ print_endline ("        >>> Call, bound argument is type " ^ sbt bsym_table ta);
   | EXE_halt s ->
     state.proc_return_count <- state.proc_return_count + 1;
     state.reachable <- false;
-    handle_bexe (bexe_halt (sr,s)) init
+    [(bexe_halt (sr,s))]
 
   | EXE_trace (v,s) ->
     state.proc_return_count <- state.proc_return_count + 1;
-    handle_bexe (bexe_trace (sr,v,s)) init
+    [(bexe_trace (sr,v,s))]
 
 
   | EXE_fun_return e ->
@@ -489,14 +498,14 @@ print_endline ("Function return value has MINIMISED type " ^ sbt bsym_table t');
 (*
     if match maybe_matches bsym_table state.counter [state.ret_type, t'] with Some _ -> true | _ -> false then
 *)
-      handle_bexe (bexe_fun_return (sr,(e',t'))) init
+      [(bexe_fun_return (sr,(e',t')))]
     else if t' = BTYP_fix (0, BTYP_type 0) then begin
       print_endline "Converting return of 'any' type to procedure call";
       state.reachable <- false;
-      handle_bexe (bexe_fun_return (sr,(e',state.ret_type))) init
+      [(bexe_fun_return (sr,(e',state.ret_type)))]
 (*
       begin match e' with
-      | BEXPR_apply (f,a) -> handle_bexe (bexe_jump (sr,f,a)) init
+      | BEXPR_apply (f,a) -> [(bexe_jump (sr,f,a))]
       | _ ->
         clierr sr
           (
@@ -524,7 +533,7 @@ print_endline ("Function return value has MINIMISED type " ^ sbt bsym_table t');
     ignore (do_unify state bsym_table state.ret_type t');
     state.ret_type <- varmap_subst (Flx_lookup_state.get_varmap state.lookup_state) state.ret_type;
     if type_match bsym_table state.counter state.ret_type t' then
-      handle_bexe (bexe_yield (sr,(e',t'))) init
+      [(bexe_yield (sr,(e',t')))]
     else
       clierr sr
       (
@@ -536,19 +545,19 @@ print_endline ("Function return value has MINIMISED type " ^ sbt bsym_table t');
       )
 
   | EXE_nop s ->
-      handle_bexe (bexe_nop (sr,s)) init
+      [(bexe_nop (sr,s))]
 
   | EXE_code s ->
-      handle_bexe (bexe_code (sr,s)) init
+      [(bexe_code (sr,s))]
 
   | EXE_noreturn_code s ->
       state.reachable <- false;
-      handle_bexe (bexe_nonreturn_code (sr,s)) init
+      [(bexe_nonreturn_code (sr,s))]
 
   | EXE_assert e ->
       let (x,t) as e' = be e in
       if t = flx_bbool
-      then handle_bexe (bexe_assert (sr,e')) init
+      then [(bexe_assert (sr,e'))]
       else clierr sr
       (
         "assert requires bool argument, got " ^
@@ -582,7 +591,7 @@ print_endline ("Bind EXE_iinit "^s);
 (*
             print_endline ("Index = " ^ si index ^ " initexpr=" ^ sbe bsym_table (e',rhst) ^ " type of variable is " ^ sbt bsym_table rhst);
 *)
-            handle_bexe bexe init
+            [bexe]
       end else clierr sr
       (
         "[bind_exe: iinit] LHS[" ^ s ^ "<" ^ string_of_bid index ^ ">]:\n" ^
@@ -637,7 +646,7 @@ print_endline ("Bind EXE_init "^s);
 (*
             print_endline ("Index = " ^ si index ^ " initexpr=" ^ sbe bsym_table (e',rhst) ^ " type of variable is " ^ sbt bsym_table rhst);
 *)
-            handle_bexe bexe init
+            [bexe]
           end else clierr sr
           (
             "[bind_exe: init] LHS[" ^ s ^ "<" ^ string_of_bid index ^ ">]:\n" ^
@@ -678,7 +687,7 @@ print_endline ("assign:  RHS=" ^ sbe bsym_table rx ^ ",RHST = " ^ sbt bsym_table
 print_endline ("assign after beta-reduction: RHST = " ^ sbt bsym_table rhst);
 *)
       if type_match bsym_table state.counter lhst rhst
-      then handle_bexe (bexe_assign (sr,lx,rx)) init
+      then [(bexe_assign (sr,lx,rx))]
       else clierr sr
       (
         "[bind_exe: assign ] Assignment "^
@@ -691,17 +700,17 @@ print_endline ("assign after beta-reduction: RHST = " ^ sbt bsym_table rhst);
 
    | EXE_try -> 
      state.reachable <- true;
-     handle_bexe (bexe_try sr) init
+     [(bexe_try sr)]
 
    | EXE_endtry -> 
-     handle_bexe (bexe_endtry sr) init
+     [(bexe_endtry sr)]
 
    | EXE_catch (s,t) -> 
      state.reachable <- true;
      let t = bind_type state.lookup_state bsym_table state.env sr t in
-     handle_bexe (bexe_catch sr s t) init
+     [(bexe_catch sr s t)]
 
-let bind_exes state bsym_table sr exes =
+let bind_exes state bsym_table sr exes : Flx_btype.t * Flx_bexe.t list  =
 (*
   print_endline ("bind_exes.. env depth="^ string_of_int (List.length state.env));
   print_endline "Dumping Source Executables";
@@ -718,9 +727,12 @@ let bind_exes state bsym_table sr exes =
   print_endline "-------------------";
 *)
 
-  let bound_exes = List.fold_left begin fun init exe ->
-    bind_exe state bsym_table (fun bexe init -> bexe :: init) exe init
-  end [] exes in
+  let bound_exes = List.fold_left (fun acc exe ->
+    let result = bind_exe state bsym_table  exe in
+    List.rev result @ acc
+  )
+  [] exes 
+  in
   let bound_exes = List.rev bound_exes in
 (*
   print_endline ""
@@ -804,3 +816,4 @@ let bind_exes state bsym_table sr exes =
   end
   ;
   state.ret_type, bound_exes
+

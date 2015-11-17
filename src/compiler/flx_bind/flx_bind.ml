@@ -60,9 +60,9 @@ let bind_asm state bsym_table handle_bound init asm =
   let init =
     match asm with
     | Flx_types.Exe exe ->
-        Flx_bind_bexe.bind_exe state.bexe_state bsym_table begin fun bexe init ->
-          handle_bound init (Bound_exe bexe)
-        end exe init
+        let bexes = Flx_bind_bexe.bind_exe state.bexe_state bsym_table exe in
+        List.fold_left (fun acc bexe -> handle_bound acc (Bound_exe bexe)) init bexes
+
     | Flx_types.Dcl dcl ->
         ignore(Flx_symtab.add_dcl ?parent:state.parent print_flag counter_ref state.symtab dcl);
         init
