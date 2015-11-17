@@ -172,6 +172,7 @@ let btyp_array (t, n) =
 
 (** Construct a BTYP_record type. *)
 let btyp_record ts = 
+   (* NOTE: NO CHECK FOR DUPLICATES! *)
    (* Make sure all the elements are sorted by name. *)
    let cmp (s1,t1) (s2, t2) = compare s1 s2 in
    let ts = List.sort cmp ts in
@@ -180,11 +181,21 @@ let btyp_record ts =
 (** Construct a BTYP_polyrecord type. *)
 let btyp_polyrecord ts v = 
    match v with
-   | BTYP_record flds -> btyp_record (ts @ flds)
+   | BTYP_record flds -> 
+     (* NOTE: NO CHECK FOR DUPLICATES! *)
+     btyp_record (ts @ flds)
+
+   | BTYP_void -> btyp_record ts
+
+   | BTYP_polyrecord (flds,v2) ->
+     (* NOTE: NO CHECK FOR DUPLICATES! *)
+     let cmp (s1,t1) (s2, t2) = compare s1 s2 in
+     let ts = List.sort cmp ts in
+     BTYP_polyrecord (flds @ ts,v2)
    | _ -> 
-   let cmp (s1,t1) (s2, t2) = compare s1 s2 in
-   let ts = List.sort cmp ts in
-   BTYP_polyrecord (ts,v)
+     let cmp (s1,t1) (s2, t2) = compare s1 s2 in
+     let ts = List.sort cmp ts in
+     BTYP_polyrecord (ts,v)
 
 
 (** Construct a BTYP_variant type. *)

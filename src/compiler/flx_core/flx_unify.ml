@@ -429,19 +429,69 @@ let rec unification bsym_table counter eqns dvars =
       | BTYP_tuple [],BTYP_record ([]) -> ()
 
       | BTYP_polyrecord (t1,v1),BTYP_polyrecord (t2,v2) ->
-        eqns := (btyp_record t1, btyp_record t2) :: (v1, v2) :: !eqns
+(*
+print_endline ("Polyrecord/polyrecord unification " ^ sbt bsym_table lhs ^ " = " ^ sbt bsym_table rhs);
+*)
+        let extra1 = ref [] in
+        let extra2 = ref [] in
+        List.iter (fun (s,t) -> 
+          if List.mem_assoc s t2 
+          then eqns:= (t, List.assoc s t2) :: !eqns
+          else extra1 := (s,t) :: !extra1
+        )
+        t1;
+        List.iter (fun (s,t) -> 
+          if List.mem_assoc s t1 
+          then ()
+          else extra2 := (s,t) :: !extra2
+        )
+        t2;
+        begin match !extra1, !extra2 with
+        | [],[] -> 
+(*
+          print_endline "  *** matching fields";
+*)
+          eqns := (v1,v2) :: !eqns
+        | x,[] -> 
+(*
+          print_endline "  *** more fields on left";
+          print_endline ("  *** add eqn " ^ sbt bsym_table (btyp_polyrecord x v1) ^ " = " ^ sbt bsym_table v2);
+*)
+          eqns := (btyp_polyrecord x v1, v2) :: !eqns
+        | [],x -> 
+(*
+          print_endline "  *** more fields on right";
+          print_endline ("  *** add eqn " ^ sbt bsym_table v1 ^ " = " ^ sbt bsym_table (btyp_polyrecord x v2));
+*)
+          eqns := (v1, btyp_polyrecord x v2) :: !eqns
+        | _ -> 
+(*
+          print_endline "  *** FAILED"; 
+*)
+          raise Not_found (* cant unify *)
+        end
+  
 
       | BTYP_polyrecord (t1,v),BTYP_record (t2)
       | BTYP_record (t2),BTYP_polyrecord (t1,v) -> 
-        let extras = ref [] in
+(*
+print_endline ("Polyrecord/record unification " ^ sbt bsym_table lhs ^ " = " ^ sbt bsym_table rhs);
+*)
+        let extra = ref [] in
+        List.iter (fun (s,t) -> 
+          if List.mem_assoc s t2 
+          then eqns:= (t, List.assoc s t2) :: !eqns
+          else raise Not_found 
+        )
+        t1;
         List.iter (fun (s,t) -> 
           if List.mem_assoc s t1 
-          then eqns:= (List.assoc s t1,t) :: !eqns
-          else extras := (s,t) :: !extras
-          )
-          t2
-        ;
-        eqns := (v,btyp_record (!extras)) :: !eqns;
+          then ()
+          else extra := (s,t) :: !extra
+        )
+        t2;
+
+        eqns := (v,btyp_record (!extra)) :: !eqns;
 
       | BTYP_record (t1),BTYP_record (t2) ->
         if List.length t1 = List.length t2
@@ -654,25 +704,36 @@ let unifies bsym_table counter t1 t2 =
   | Some _ -> true
 
 let ge bsym_table counter a b =
-  (*
-  print_endline ("Compare terms " ^ sbt sym_table a ^ " >? " ^ sbt sym_table b);
-  *)
+(*
+  print_endline ("Compare terms " ^ sbt bsym_table a ^ " >? " ^ sbt bsym_table b);
+*)
   match maybe_specialisation bsym_table counter [a,b] with
-  | None -> false
+  | None -> (* print_endline "    ** false"; *) false
   | Some mgu ->
-    (*
+(*
     print_endline ("MGU from specialisation = ");
-    List.iter (fun (i, t) -> print_endline (si i ^ " --> " ^ sbt sym_table t)) mgu;
+    List.iter (fun (i, t) -> print_endline (si i ^ " --> " ^ sbt bsym_table t)) mgu;
     print_endline "";
-    *)
+*)
     true
 
+let str_of_cmp = function
+| `Equal -> " = "
+| `Incomparable -> " <> "
+| `Less-> " < "
+| `Greater-> " > "
+
 let compare_sigs bsym_table counter a b =
-  match ge bsym_table counter a b, ge bsym_table counter b a with
+  let result = match ge bsym_table counter a b, ge bsym_table counter b a with
   | true, true -> `Equal
   | false, false -> `Incomparable
   | true, false -> `Greater
   | false, true -> `Less
+  in
+(*
+  print_endline ("compare_sigs " ^ sbt bsym_table a ^ str_of_cmp result ^ sbt bsym_table b);
+*)
+  result
 
 let rec memq trail (a,b) = match trail with
   | [] -> false

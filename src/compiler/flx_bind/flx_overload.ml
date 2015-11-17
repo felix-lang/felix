@@ -413,11 +413,10 @@ let make_equations
     with _ -> print_endline "Failed to unravel candidate return type!"; []
   in
   let curry_domains = spec_domain :: curry_domains in
-
-  (*
+(*
   print_endline ("Argument  sigs= " ^  catmap "->" (sbt bsym_table) arg_types);
   print_endline ("Candidate sigs= " ^  catmap "->" (sbt bsym_table) curry_domains);
-  *)
+*)
   (* equations for user specified assignments *)
   let lhsi = List.map (fun (n,i) -> i) entry_kind.spec_vs in
   let lhs = List.map
@@ -466,8 +465,7 @@ let make_equations
 
   let dvars = ref BidSet.empty in
   List.iter (fun (_,i)-> dvars := BidSet.add i !dvars) entry_kind.spec_vs;
-
-  (*
+(*
   print_endline "EQUATIONS ARE:";
   List.iter (fun (t1,t2) -> print_endline (sbt bsym_table t1 ^ " = " ^ sbt bsym_table t2))
   eqns
@@ -477,9 +475,15 @@ let make_equations
   print_endline ("DEPENDENT VARIABLES ARE " ^ catmap "," si
     (BidSet.fold (fun i l-> i::l) !dvars []));
   print_endline "...";
-  *)
-
-  try Some (unification bsym_table counter eqns !dvars) with Not_found -> None
+*)
+  let result = try Some (unification bsym_table counter eqns !dvars) with Not_found -> None in
+(*
+  begin match result with
+  | None -> print_endline "Does not unify"
+  | Some mgu -> print_endline ("UNIFIES with MGU = " ^ string_of_varlist bsym_table mgu)
+  end;
+*)
+  result
 
 
 let solve_mgu
@@ -499,10 +503,10 @@ let solve_mgu
   spec_result
   env_traint
 =
-  (*
+(*
   print_endline "Specialisation detected";
   print_endline (" .. mgu = " ^ string_of_varlist bsym_table mgu);
-  *)
+*)
   let mgu = ref mgu in
   (* each universally quantified variable must be fixed
     by the mgu .. if it doesn't its an error .. hmmm
@@ -719,7 +723,7 @@ let solve_mgu
     in
     xcons con;
 
-    (*
+(*
     print_endline "UNIFICATION STAGE 2";
     print_endline "EQUATIONS ARE:";
     List.iter (fun (t1,t2) -> print_endline (sbt bsym_table t1 ^ " = " ^ sbt bsym_table t2))
@@ -729,20 +733,19 @@ let solve_mgu
     print_endline ("DEPENDENT VARIABLES ARE " ^ catmap "," si
       (BidSet.fold (fun i l-> i::l) !dvars [])
     );
-    *)
-
+*)
     let maybe_extra_mgu =
       try Some (unification bsym_table counter !extra_eqns !dvars)
       with Not_found -> None
     in
     match maybe_extra_mgu with
-    | None -> () (* print_endline "COULDN'T RESOLVE EQUATIONS"  *)
+    | None ->  (* print_endline "COULDN'T RESOLVE EQUATIONS"; *) ()
     | Some extra_mgu ->
-        (*
+(*
         print_endline ("Resolved equations with mgu:\n  " ^
-          string_of_varlist sym_table extra_mgu)
+          string_of_varlist bsym_table extra_mgu)
         ;
-        *)
+*)
         let ur = !unresolved in
         unresolved := [];
         List.iter begin fun ((s,i,_,k) as u) ->
@@ -808,16 +811,6 @@ let solve_mgu
 
     let base_ts = List.map (list_subst counter !mgu) entry_kind.sub_ts in
     let base_ts = List.map (beta_reduce "flx_overload: base_ts" counter bsym_table sr) base_ts in
-
-    (*
-    print_endline ("Matched candidate " ^ si i ^ "\n" ^
-      ", spec domain=" ^ sbt bsym_table spec_domain ^"\n" ^
-      ", base domain=" ^ sbt bsym_table domain ^"\n" ^
-      ", return=" ^ sbt bsym_table spec_result ^"\n" ^
-      ", mgu=" ^ string_of_varlist sym_table !mgu ^ "\n" ^
-      ", ts=" ^ catmap ", " (sbt bsym_table) base_ts
-    );
-    *)
 
     (* we need to check the type constraint, it uses the
       raw vs type variable indicies. We need to substitute
@@ -1011,10 +1004,9 @@ let consider
     spec_result
   in
 
-  (*
-  let mgu = maybe_specialisation counter sym_table eqns in
-  *)
-
+(*
+  let mgu = maybe_specialisation counter bsym_table mgu in
+*)
   (* doesn't work .. fails to solve for some vars
      which aren't local vs of the fun .. this case:
 
@@ -1067,7 +1059,7 @@ let overload
   overload_result option
 =
 (*
-if name = "ff" then begin
+if name = "f" then begin
   print_endline ("Overload " ^ name);
   print_endline ("Argument sigs are " ^ catmap ", " (sbt bsym_table) sufs);
   print_endline (string_of_int (List.length fs) ^ 
@@ -1118,11 +1110,11 @@ end;
       | Fail -> false
     end fun_defs
   in
-  (*
-  if name = "ff" then
+(*
+  if name = "f" then
     print_endline ("First stage: matching Candidates are:\n" ^ 
       catmap ",\n" (show_result bsym_table) candidates^"\n");
-  *)
+*)
     (*
     print_endline "Got matching candidates .. ";
     *)
