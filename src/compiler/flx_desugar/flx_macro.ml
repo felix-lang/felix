@@ -18,7 +18,7 @@ open Flx_util
 
 let mkstring sr x = 
   EXPR_literal (sr, {Flx_literal.felix_type="string"; internal_value=x; 
-   c_value="string(" ^ Flx_string.c_quote_of_string x ^ ")" })
+   c_value="::std::string(" ^ Flx_string.c_quote_of_string x ^ ")" })
 
 let dyphack (ls : ( 'a * string) list) : 'a =
   match ls with

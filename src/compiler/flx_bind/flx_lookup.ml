@@ -4607,6 +4607,73 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
   | EXPR_map (sr,f,a) ->
     handle_map sr (be f) (be a)
 
+  | EXPR_apply (sr,(EXPR_name (_,"_strr",[]), a)) -> 
+    let mks s = EXPR_literal (sr, 
+      { Flx_literal.felix_type="string"; internal_value=s; c_value= Flx_string.c_quote_of_string s } )
+    in
+    let intlit i = EXPR_literal (sr,
+      { Flx_literal.felix_type="int"; internal_value=string_of_int i; c_value=string_of_int i } )
+    in
+    let apl a b = EXPR_apply (sr,(a,EXPR_tuple (sr,[b]))) in
+    let cats a b =  apl2 sr "+" [a;b] in
+    let prj fld a = apl2 sr fld [a] in
+    let str x = apl2 sr "_strr" [x] in
+    let strf fld a = str (prj fld a) in
+    let stri fld a = str (apl (intlit fld) a) in
+    let fldrep1 fld a = cats (mks (fld^"=")) (strf fld a) in
+    let fldrep2 fld a = cats (mks (","^fld^"=")) (strf fld a) in
+    let vrep1 ix a = (stri ix a) in
+    let vrep2 ix a = cats (mks (",")) (stri ix a) in
+    let (_,t) = be a in
+    begin match t with
+    | BTYP_record ls ->
+      let first = ref true in
+      let e = cats (
+        List.fold_left (fun acc (s,_) -> 
+          let res = if !first then fldrep1 s a else fldrep2 s a in
+          first:=false;
+          cats acc res
+        )
+        (mks "(")
+        ls
+        ) (mks ")") 
+      in 
+      be e
+    | BTYP_tuple ls ->
+      let count = ref 0 in
+      let e = cats (
+        List.fold_left (fun acc _ -> 
+          let res = if (!count) = 0 then vrep1 (!count) a else vrep2 (!count) a in
+          incr count;
+          cats acc res
+        )
+        (mks "(")
+        ls
+        ) (mks ")") 
+      in 
+      be e
+
+    | BTYP_inst (i,[]) ->
+      begin match hfind "lookup:_strr" state.sym_table i with
+      | { Flx_sym.id=name; Flx_sym.symdef=SYMDEF_struct ls } -> 
+        let first = ref true in
+        let e = cats (
+          List.fold_left (fun acc (s,_) -> 
+            let res = if !first then fldrep1 s a else fldrep2 s a in
+            first:=false;
+            cats acc res
+          )
+          (mks (name^" {"))
+          ls
+          ) (mks "}") 
+        in 
+        be e
+      | _ -> be (apl2 sr "str" [a]) 
+      end
+
+    | _ -> be (apl2 sr "str" [a])
+    end
+
   | EXPR_apply (sr,(f',a')) ->
     begin (* apply *)
 (*
