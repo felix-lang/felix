@@ -36,6 +36,7 @@ type bexpr_t =
   | BEXPR_label of string
   | BEXPR_unit 
   | BEXPR_unitptr
+  | BEXPR_cond of t * t * t (* conditional *)
 
   (* This term is the product of a tuple or array of functions,
      to be eliminated after monomorphisation because it's a heck
@@ -58,6 +59,11 @@ let complete_check t =
 *)
   t
 let complete_check_list ts = List.map complete_check ts
+
+let bexpr_cond ((_,ct) as c) ((_,tt) as t) ((_,ft) as f) =
+   assert  (ct = (Flx_btype.BTYP_unitsum 2)); 
+   assert (tt = ft);
+   BEXPR_cond (c,t,f),complete_check tt
 
 let bexpr_unit = BEXPR_unit,Flx_btype.BTYP_tuple []
 let bexpr_unitptr = BEXPR_unitptr, Flx_btype.BTYP_pointer (Flx_btype.BTYP_tuple [])
@@ -187,6 +193,9 @@ let rec cmp ((a,_) as xa) ((b,_) as xb) =
    * equal for equal expressions: the value is merely the cached result of a
    * synthetic context independent type calculation *)
   match a,b with
+  | BEXPR_cond (c,t,f), BEXPR_cond (c',t',f') ->
+    cmp c c' && cmp t t' && cmp f f'
+
   | BEXPR_label lab, BEXPR_label lab' -> lab = lab'
   | BEXPR_coerce (e,t),BEXPR_coerce (e',t') ->
     (* not really right .. *)
@@ -289,6 +298,7 @@ let flat_iter
   ?(f_label=fun _ -> ())
   ((x,t) as e) =
   match x with
+  | BEXPR_cond (c,t,f) -> f_bexpr c; f_bexpr t; f_bexpr f
   | BEXPR_label s -> f_label s
   | BEXPR_not e -> f_bexpr e
   | BEXPR_deref e -> f_bexpr e
@@ -381,6 +391,7 @@ let map
   e
 =
   match e with
+  | BEXPR_cond (c,tr,fa),t -> BEXPR_cond (f_bexpr c, f_bexpr tr, f_bexpr fa), f_btype t
   | BEXPR_label s,t -> BEXPR_label (f_label s),f_btype t
   | BEXPR_not e,t -> BEXPR_not (f_bexpr e), f_btype t
   | BEXPR_deref e,t -> BEXPR_deref (f_bexpr e), f_btype t
@@ -455,6 +466,8 @@ let rec reduce e =
         (* print_endline "Eliminating composition"; *)
         BEXPR_apply(f2,(BEXPR_apply(f1,e),b)),t
     | BEXPR_apply((BEXPR_compose _,_),_),_ -> print_endline "Bugged composition"; assert false
+    | BEXPR_cond ((BEXPR_case (0,Flx_btype.BTYP_unitsum 2),Flx_btype.BTYP_unitsum 2), _, fa),_ -> fa
+    | BEXPR_cond ((BEXPR_case (1,Flx_btype.BTYP_unitsum 2),Flx_btype.BTYP_unitsum 2), tr, _),_ -> tr
     | x -> x
   in f_bexpr e
 

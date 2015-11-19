@@ -960,6 +960,8 @@ print_endline ("Normalised type " ^ sbt bsym_table t);
     let x = Flx_vgen.gen_get_case_index ge' bsym_table e in
     ce_infix "!=" x (ce_atom (si n))
 
+  | BEXPR_cond (c,t,f) -> ce_cond (ge' c) (ge' t) (ge' f)
+
   | BEXPR_not e -> ce_prefix "!" (ge' e)
 
   | BEXPR_case_arg (n,e) ->

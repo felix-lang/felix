@@ -3712,25 +3712,6 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
       i
       ts
   in
-
-  (* model infix operator as function call *)
-  let apl2 (sri:Flx_srcref.t) (fn : string) (tup:expr_t list) =
-    (** get range from first and last expressions *)
-    let rsexpr a b = Flx_srcref.rsrange (src_of_expr a) (src_of_expr b) in
-
-    (** get source range of non-empty list of expressions *)
-    let rslist lst = rsexpr (List.hd lst) (Flx_list.list_last lst) in
-
-    let sr = rslist tup in
-    EXPR_apply
-    (
-      sr,
-      (
-        EXPR_name (sri,fn,[]),
-        EXPR_tuple (sr,tup)
-      )
-    )
-  in
   (*
   print_endline ("Binding expression " ^ string_of_expr e ^ " depth=" ^ string_of_int rs.depth);
   print_endline ("environment is:");
@@ -3747,7 +3728,6 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
   | EXPR_type_match _
   | EXPR_noexpand _
   | EXPR_letin _
-  | EXPR_cond _
   | EXPR_typeof _
   | EXPR_as _
   | EXPR_as_var _
@@ -3761,6 +3741,9 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
     ->
       clierr sr
      ("[bind_expression] Expected expression, got " ^ string_of_expr e)
+
+  | EXPR_cond (sr,(c,t,f)) ->
+    bexpr_cond (be c) (be t) (be f)
 
   | EXPR_label (sr,s) -> bexpr_label s
 
@@ -3785,28 +3768,28 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
     bexpr_expr (s,t)
 
   | EXPR_andlist (sri,ls) ->
-    begin let mksum a b = apl2 sri "land" [a;b] in
+    begin let mksum a b = Flx_strr.apl2 sri "land" [a;b] in
     match ls with
     | h::t -> be (List.fold_left mksum h t)
     | [] -> clierr sri "Not expecting empty and list"
     end
 
   | EXPR_orlist (sri,ls) ->
-    begin let mksum a b = apl2 sri "lor" [a;b] in
+    begin let mksum a b = Flx_strr.apl2 sri "lor" [a;b] in
     match ls with
     | h::t -> be (List.fold_left mksum h t)
     | [] -> clierr sri "Not expecting empty or list"
     end
 
   | EXPR_sum (sri,ls) ->
-    begin let mksum a b = apl2 sri "add" [a;b] in
+    begin let mksum a b = Flx_strr.apl2 sri "add" [a;b] in
     match ls with
     | h::t -> be (List.fold_left mksum h t)
     | [] -> clierr sri "Not expecting empty product (unit)"
     end
 
   | EXPR_product (sri,ls) ->
-    begin let mkprod a b = apl2 sri "mul" [a;b] in
+    begin let mkprod a b = Flx_strr.apl2 sri "mul" [a;b] in
     match ls with
     | h::t -> be (List.fold_left mkprod h t)
     | [] -> clierr sri "Not expecting empty sum (void)"
@@ -4608,71 +4591,7 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
     handle_map sr (be f) (be a)
 
   | EXPR_apply (sr,(EXPR_name (_,"_strr",[]), a)) -> 
-    let mks s = EXPR_literal (sr, 
-      { Flx_literal.felix_type="string"; internal_value=s; c_value= Flx_string.c_quote_of_string s } )
-    in
-    let intlit i = EXPR_literal (sr,
-      { Flx_literal.felix_type="int"; internal_value=string_of_int i; c_value=string_of_int i } )
-    in
-    let apl a b = EXPR_apply (sr,(a,EXPR_tuple (sr,[b]))) in
-    let cats a b =  apl2 sr "+" [a;b] in
-    let prj fld a = apl2 sr fld [a] in
-    let str x = apl2 sr "_strr" [x] in
-    let strf fld a = str (prj fld a) in
-    let stri fld a = str (apl (intlit fld) a) in
-    let fldrep1 fld a = cats (mks (fld^"=")) (strf fld a) in
-    let fldrep2 fld a = cats (mks (","^fld^"=")) (strf fld a) in
-    let vrep1 ix a = (stri ix a) in
-    let vrep2 ix a = cats (mks (",")) (stri ix a) in
-    let (_,t) = be a in
-    begin match t with
-    | BTYP_record ls ->
-      let first = ref true in
-      let e = cats (
-        List.fold_left (fun acc (s,_) -> 
-          let res = if !first then fldrep1 s a else fldrep2 s a in
-          first:=false;
-          cats acc res
-        )
-        (mks "(")
-        ls
-        ) (mks ")") 
-      in 
-      be e
-    | BTYP_tuple ls ->
-      let count = ref 0 in
-      let e = cats (
-        List.fold_left (fun acc _ -> 
-          let res = if (!count) = 0 then vrep1 (!count) a else vrep2 (!count) a in
-          incr count;
-          cats acc res
-        )
-        (mks "(")
-        ls
-        ) (mks ")") 
-      in 
-      be e
-
-    | BTYP_inst (i,[]) ->
-      begin match hfind "lookup:_strr" state.sym_table i with
-      | { Flx_sym.id=name; Flx_sym.symdef=SYMDEF_struct ls } -> 
-        let first = ref true in
-        let e = cats (
-          List.fold_left (fun acc (s,_) -> 
-            let res = if !first then fldrep1 s a else fldrep2 s a in
-            first:=false;
-            cats acc res
-          )
-          (mks (name^" {"))
-          ls
-          ) (mks "}") 
-        in 
-        be e
-      | _ -> be (apl2 sr "str" [a]) 
-      end
-
-    | _ -> be (apl2 sr "str" [a])
-    end
+    Flx_strr.strr bsym_table state.sym_table state.counter be sr a
 
   | EXPR_apply (sr,(f',a')) ->
     begin (* apply *)

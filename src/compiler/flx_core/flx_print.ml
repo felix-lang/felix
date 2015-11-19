@@ -1809,6 +1809,7 @@ and string_of_bound_expression' bsym_table se e =
   let sid n = bound_name_of_bindex bsym_table n in
   match fst e with
 
+  | BEXPR_cond (c,t,f) -> "if " ^ se c ^ " then " ^ se t ^ " else " ^ se f ^ " endif"
   | BEXPR_unit -> "()"
   | BEXPR_unitptr -> "NULL"
   | BEXPR_label s -> "(&&" ^ s ^ ")"
