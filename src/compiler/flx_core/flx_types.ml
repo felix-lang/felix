@@ -43,7 +43,8 @@ type recstop = {
   as_fixlist: (string * int) list;
   expr_fixlist: (expr_t * int) list;
   depth: int;
-  open_excludes: (ivs_list_t * qualified_name_t) list
+  open_excludes: (ivs_list_t * qualified_name_t) list;
+  strr_limit: int;
 }
 
 

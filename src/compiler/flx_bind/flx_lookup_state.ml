@@ -44,7 +44,8 @@ let rsground : Flx_types.recstop = {
   as_fixlist = [];
   expr_fixlist = [];
   depth = 0;
-  open_excludes = []
+  open_excludes = [];
+  strr_limit = 5;
 }
 
 

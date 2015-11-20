@@ -233,7 +233,7 @@ and cep cp e =
     | `Ce_new (ps,cls,args) ->
         "new" ^ comma_opt ps ^ " " ^ cls ^ " " ^ comma_opt args
     | `Ce_cast (cast,e) -> "(" ^ cast ^ ")" ^ rce e
-    | `Ce_cond (e,e1,e2) -> lce e ^ "?" ^ rce e1 ^ ":" ^ rce e2
+    | `Ce_cond (e,e1,e2) -> lce e ^ " ? " ^ rce e1 ^ " : " ^ rce e2
     | `Ce_expr (_, s) -> s
 
     | `Ce_int i -> string_of_int i

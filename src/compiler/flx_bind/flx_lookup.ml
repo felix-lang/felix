@@ -4591,7 +4591,10 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
     handle_map sr (be f) (be a)
 
   | EXPR_apply (sr,(EXPR_name (_,"_strr",[]), a)) -> 
-    Flx_strr.strr bsym_table state.sym_table state.counter be sr a
+    let be rs e = 
+        bind_expression' state bsym_table env rs e []
+    in
+    Flx_strr.strr bsym_table state.sym_table state.counter be rs sr a
 
   | EXPR_apply (sr,(f',a')) ->
     begin (* apply *)

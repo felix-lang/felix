@@ -18,10 +18,9 @@ let apl2 (sri:Flx_srcref.t) (fn : string) (tup:expr_t list) =
     )
   )
 
-let strr bsym_table sym_table counter be sr a =
-
+let strr' bsym_table sym_table counter be rs sr a =
     let mks s = EXPR_literal (sr, 
-      { Flx_literal.felix_type="string"; internal_value=s; c_value= Flx_string.c_quote_of_string s } )
+      { Flx_literal.felix_type="string"; internal_value=s; c_value= "::std::string(" ^ Flx_string.c_quote_of_string s ^ ")" } )
     in
     let intlit i = EXPR_literal (sr,
       { Flx_literal.felix_type="int"; internal_value=string_of_int i; c_value=string_of_int i } )
@@ -37,8 +36,10 @@ let strr bsym_table sym_table counter be sr a =
     let vrep1 ix a = (stri ix a) in
     let vrep2 ix a = cats (mks (",")) (stri ix a) in
     let qn name = `AST_name (sr,name,[]) in 
-    let (_,t) = be a in
+    let (_,t) = be rs a in
+(* print_endline ("strr " ^ Flx_print.sbt bsym_table t); *)
     begin match t with
+    | BTYP_type_var _ -> print_endline "Type variable?"; be rs (mks "typevar?")
     | BTYP_record ls ->
       let first = ref true in
       let e = cats (
@@ -51,7 +52,7 @@ let strr bsym_table sym_table counter be sr a =
         ls
         ) (mks ")") 
       in 
-      be e
+      be rs e
     | BTYP_tuple ls ->
       let count = ref 0 in
       let e = cats (
@@ -64,11 +65,11 @@ let strr bsym_table sym_table counter be sr a =
         ls
         ) (mks ")") 
       in 
-      be e
+      be rs e
 
-    | BTYP_inst (i,[]) ->
+    | BTYP_inst (i,ts) ->
       begin match Flx_lookup_state.hfind "lookup:_strr" sym_table i with
-      | { Flx_sym.id=name; Flx_sym.symdef=Flx_types.SYMDEF_struct ls } -> 
+      | { Flx_sym.id=name; Flx_sym.vs=(vs,_); Flx_sym.symdef=Flx_types.SYMDEF_struct ls } -> 
         let first = ref true in
         let e = cats (
           List.fold_left (fun acc (s,_) -> 
@@ -80,17 +81,25 @@ let strr bsym_table sym_table counter be sr a =
           ls
           ) (mks "}") 
         in 
-        be e
-      | { Flx_sym.id=name; Flx_sym.symdef=Flx_types.SYMDEF_union ls } -> 
+        be rs e
+      | { Flx_sym.id=name; Flx_sym.vs=(vs,_); Flx_sym.symdef=Flx_types.SYMDEF_union ls } -> 
+        let limit = rs.Flx_types.strr_limit - 1 in
+        if limit = 0 then be rs (mks "...") else
+        let rs = { rs with Flx_types.strr_limit = limit } in
         let urep cname t =  
           match t with
           | TYP_void _ ->
             mks cname
 
+          | TYP_tuple _ ->
+            let arg = EXPR_ctor_arg (sr, (qn cname,a)) in
+            let strarg = apl2 sr "_strr" [arg] in
+            cats (mks (cname^" ")) strarg
+
           | _ ->
             let arg = EXPR_ctor_arg (sr, (qn cname,a)) in
             let strarg = apl2 sr "_strr" [arg] in
-            apl2 sr "+" [mks (cname^" "); strarg]
+            cats (cats (mks (cname^" (")) strarg) (mks ")")
         in 
         let condu cname t other =
           let cond = EXPR_match_ctor (sr, (qn cname,a)) in
@@ -104,12 +113,15 @@ let strr bsym_table sym_table counter be sr a =
           (mks "MATCHFAILURE")
           ls
         in 
-        be e
+        be rs e
 
-      | _ -> be (apl2 sr "str" [a]) 
+      | _ -> be rs (apl2 sr "repr" [a]) 
       end
 
-    | _ -> be (apl2 sr "str" [a])
+    | _ -> be rs (apl2 sr "repr" [a])
     end
+
+let strr bsym_table sym_table counter be rs sr a =
+  strr' bsym_table sym_table counter be rs sr a
 
 
