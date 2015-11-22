@@ -134,7 +134,7 @@ let gen_prim_call
   let gshapes = map sh ts in
   let ts = map rtn ts in
   let carg () =
-    match argt with
+    match unfold "flx_pgen1" argt with
     | BTYP_tuple []  -> ce_atom "(::flx::rtl::unit())/*UNIT_VALUE_ERROR?*/"
     | x -> 
       try ge sr a 
@@ -145,7 +145,7 @@ let gen_prim_call
   in
 
   let ashape = sh argt in
-  match arg,argt with
+  match arg,unfold "flx_pgen2" argt with
 
   (* the argument is explicitly a tuple *)
   | (BEXPR_tuple es,_) ->
@@ -169,7 +169,7 @@ let gen_prim_call
       es
     in
     let ets,ashapes =
-      match argt with
+      match unfold "flx_pgen3" argt with
       | BTYP_tuple typs -> map rtn typs, map sh typs
       | BTYP_array (t,BTYP_unitsum n) ->
         let t = tn t

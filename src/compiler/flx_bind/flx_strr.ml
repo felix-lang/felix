@@ -1,19 +1,12 @@
 open Flx_ast
 open Flx_btype
 
-let apl2 (sri:Flx_srcref.t) (fn : string) (tup:expr_t list) =
-  (** get range from first and last expressions *)
-  let rsexpr a b = Flx_srcref.rsrange (src_of_expr a) (src_of_expr b) in
-
-  (** get source range of non-empty list of expressions *)
-  let rslist lst = rsexpr (List.hd lst) (Flx_list.list_last lst) in
-
-  let sr = rslist tup in
+let apl2 (sr:Flx_srcref.t) (fn : string) (tup:expr_t list) =
   EXPR_apply
   (
     sr,
     (
-      EXPR_name (sri,fn,[]),
+      EXPR_name (sr,fn,[]),
       EXPR_tuple (sr,tup)
     )
   )
@@ -25,8 +18,10 @@ let strr' bsym_table sym_table counter be rs sr a =
     let intlit i = EXPR_literal (sr,
       { Flx_literal.felix_type="int"; internal_value=string_of_int i; c_value=string_of_int i } )
     in
-    let apl a b = EXPR_apply (sr,(a,EXPR_tuple (sr,[b]))) in
+    let apl a b = EXPR_apply (sr,(a,b)) in
+    let apls a b = EXPR_apply (sr,(EXPR_name (sr,a,[]),b)) in
     let cats a b =  apl2 sr "+" [a;b] in
+    let catss ls = List.fold_left (fun acc e -> apl2 sr "+" [acc;e]) (List.hd ls) (List.tl ls) in
     let prj fld a = apl2 sr fld [a] in
     let str x = apl2 sr "_strr" [x] in
     let strf fld a = str (prj fld a) in
@@ -67,6 +62,49 @@ let strr' bsym_table sym_table counter be rs sr a =
       in 
       be rs e
 
+    | BTYP_unitsum 2 ->
+      be rs (EXPR_cond (sr,(a,mks "false",mks "true")))
+
+    | BTYP_unitsum n ->
+      let e = catss [(mks "case "); (apls "str" (EXPR_case_index (sr,a)));
+        (mks " of "); (mks (string_of_int n))] 
+      in
+      be rs e 
+
+    | BTYP_sum ls ->
+      let limit = rs.Flx_types.strr_limit - 1 in
+      if limit = 0 then be rs (mks "...") else
+      let rs = { rs with Flx_types.strr_limit = limit } in
+      let urep index t =  
+        match t with
+        | BTYP_void ->
+          mks ("case " ^ string_of_int index^" VOID")
+
+        | BTYP_tuple _ ->
+          let arg = EXPR_case_arg (sr, (index,a)) in
+          let strarg = apl2 sr "_strr" [arg] in
+          cats (mks ("case " ^ string_of_int index^" ")) strarg
+
+        | _ ->
+          let arg = EXPR_case_arg (sr, (index,a)) in
+          let strarg = apl2 sr "_strr" [arg] in
+          cats (cats (mks ("case "^ string_of_int index^" (")) strarg) (mks ")")
+      in 
+      let condu index t other =
+        let cond = EXPR_match_case (sr, (index,a)) in
+        let u = urep index t in
+        EXPR_cond (sr, (cond,u,other)) 
+      in 
+      let e = 
+        List.fold_left (fun acc (index,t) -> 
+          condu index t acc 
+        )
+        (mks "MATCHFAILURE")
+        (List.combine (Flx_list.nlist (List.length ls)) ls)
+      in 
+      be rs e
+
+ 
     | BTYP_inst (i,ts) ->
       begin match Flx_lookup_state.hfind "lookup:_strr" sym_table i with
       | { Flx_sym.id=name; Flx_sym.vs=(vs,_); Flx_sym.symdef=Flx_types.SYMDEF_struct ls } -> 

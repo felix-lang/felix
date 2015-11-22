@@ -27,8 +27,10 @@ let gen_get_case_index ge bsym_table e: cexpr_t  =
 
 (* helper to get the argument type of a non-constant variant constructor *)
 let cal_case_type bsym_table n t : Flx_btype.t =
-(*print_endline "cal_case_type"; *)
-  match t with
+(*
+print_endline "cal_case_type";
+*)
+  match unfold "cal_case_type" t with
   | BTYP_unitsum _ -> Flx_btype.btyp_tuple []
   | BTYP_sum ls -> List.nth ls n
   | BTYP_variant ls -> let (_,ct) = List.nth ls n in ct
@@ -54,9 +56,14 @@ let cal_case_type bsym_table n t : Flx_btype.t =
  *  when the case index has been found.
  *)
 let gen_get_case_arg ge tn bsym_table n (e:Flx_bexpr.t) : cexpr_t =
-(*print_endline "gen_get_case_arg"; *)
+(*
+print_endline "gen_get_case_arg"; 
+*)
   let x,ut = e in
   let ct = cal_case_type bsym_table n ut in
+(*
+print_endline ("Case type = " ^ sbt bsym_table ct);
+*)
   let cast = tn ct in
   match cal_variant_rep bsym_table ut with
   | VR_self -> ge e

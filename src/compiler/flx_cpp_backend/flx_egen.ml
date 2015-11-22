@@ -1052,7 +1052,7 @@ print_endline ("Generating class new for t=" ^ ref_type);
    * with an argument. This is here for constant constructors,
    * particularly enums.
    *)
-  | BEXPR_case (v,t') -> assert false;
+  | BEXPR_case (v,t') -> (* assert false; *)
     if clt t then begin
 print_endline ("egen:BEXPR_case: index type = " ^ sbt bsym_table t );
 print_endline ("egen:BEXPR_case: index value = " ^ sbe bsym_table (e,t));
@@ -1063,8 +1063,9 @@ print_endline ("egen:BEXPR_case: rendered lineralised index .. C index = " ^ str
       cidx
     end
     else
-begin print_endline ("make const ctor, union type = " ^ sbt bsym_table t' ^ 
+begin (* print_endline ("make const ctor, union type = " ^ sbt bsym_table t' ^ 
 " ctor#= " ^ si v ^ " union type = " ^ sbt bsym_table t);
+*)
     Flx_vgen.gen_make_const_ctor bsym_table (e,t)
 end
     (* 
