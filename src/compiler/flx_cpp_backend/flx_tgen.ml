@@ -70,8 +70,20 @@ let gen_tuple name tn typs =
   "};\n"
 
 let gen_record tname tn typs =
-  let typs = List.map (fun (n,t) -> Flx_name.cid_of_flxid n,t) typs in
   let n = length typs in
+    (* keep track of duplicates with magic names *)
+  let dups = Hashtbl.create n in
+  let name s = 
+    if Hashtbl.mem dups s then
+      let count = Hashtbl.find dups s in
+      Hashtbl.replace dups s (count+1);
+      "_" ^ s ^ "_" ^ string_of_int count
+    else begin
+      Hashtbl.add dups s 1;
+      s
+    end
+  in
+  let typs = List.map (fun (n,t) -> Flx_name.cid_of_flxid (name n),t) typs in
   "// Record\n" ^
   "struct " ^ tname ^ " {\n" ^
   catmap ""
@@ -89,29 +101,33 @@ let gen_record tname tn typs =
     then ""
     else
     "  " ^ tname ^ "(" ^
-    fold_left
-    (fun s (n,t) ->
-      if t = btyp_tuple [] then s
-      else
-        s ^
-        (if String.length s > 0 then ", " else "") ^
-        tn t^" _" ^ n ^ "_a"
+    (
+      fold_left
+      (fun s (n,t) ->
+        if t = btyp_tuple [] then s
+        else
+          s ^
+          (if String.length s > 0 then ", " else "") ^
+          tn t^" _" ^ n ^ "_a"
+      )
     )
     ""
     typs
     ^
     "):\n    "
     ^
+    ( 
     fold_left
-    (fun s (n,t) ->
-      if t = btyp_tuple [] then s
-      else
-        s ^
-        (if String.length s > 0 then ", " else "") ^
-        n ^ "(_" ^ n ^"_a)"
+      (fun s (n,t) ->
+        if t = btyp_tuple [] then s
+        else
+          s ^
+          (if String.length s > 0 then ", " else "") ^
+          n ^ "(_" ^ n ^"_a)"
+      )
+      ""
+      typs
     )
-    ""
-    typs
     ^
     "{}\n"
   )

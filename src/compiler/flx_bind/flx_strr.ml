@@ -23,23 +23,41 @@ let strr' bsym_table sym_table counter be rs sr a =
     let cats a b =  apl2 sr "+" [a;b] in
     let catss ls = List.fold_left (fun acc e -> apl2 sr "+" [acc;e]) (List.hd ls) (List.tl ls) in
     let prj fld a = apl2 sr fld [a] in
+    let rprj fld seq a = EXPR_rnprj (sr,fld,seq,a) in
     let str x = apl2 sr "_strr" [x] in
     let strf fld a = str (prj fld a) in
+    let rstrf fld seq a = str (rprj fld seq a) in
     let stri fld a = str (apl (intlit fld) a) in
     let fldrep1 fld a = cats (mks (fld^"=")) (strf fld a) in
     let fldrep2 fld a = cats (mks (","^fld^"=")) (strf fld a) in
+    let rfldrep1 fld seq a = cats (mks (fld^"=")) (rstrf fld seq a) in
+    let rfldrep2 fld seq a = cats (mks (","^fld^"=")) (rstrf fld seq a) in
     let vrep1 ix a = (stri ix a) in
     let vrep2 ix a = cats (mks (",")) (stri ix a) in
     let qn name = `AST_name (sr,name,[]) in 
-    let (_,t) = be rs a in
-(* print_endline ("strr " ^ Flx_print.sbt bsym_table t); *)
+    let (_,t) as ba = be rs a in
+(*
+print_endline ("strr unbound arg expression= " ^ Flx_print.string_of_expr a); 
+print_endline ("strr bound arg type= " ^ Flx_print.sbt bsym_table t); 
+print_endline ("strr bound arg type= " ^ Flx_btype.st t); 
+print_endline ("strr bound arg expression = " ^ Flx_print.sbe bsym_table ba); 
+*)
     begin match t with
-    | BTYP_type_var _ -> print_endline "Type variable?"; be rs (mks "typevar?")
+    | BTYP_type_var _ -> 
+      print_endline "Type variable?"; 
+      be rs (cats (mks "typevar?:") (apl2 sr "repr" [a]))
+ 
     | BTYP_record ls ->
+(*
+print_endline ("Generating _strr for record type " ^ Flx_print.sbt bsym_table t);
+*)
       let first = ref true in
+      let ctrl_fld = ref "" in
+      let seq = ref 0 in
       let e = cats (
         List.fold_left (fun acc (s,_) -> 
-          let res = if !first then fldrep1 s a else fldrep2 s a in
+          if s = !ctrl_fld then incr seq else begin seq := 0; ctrl_fld := s end;
+          let res = if !first then rfldrep1 s (!seq) a else rfldrep2 s (!seq) a in
           first:=false;
           cats acc res
         )
@@ -48,6 +66,7 @@ let strr' bsym_table sym_table counter be rs sr a =
         ) (mks ")") 
       in 
       be rs e
+
     | BTYP_tuple ls ->
       let count = ref 0 in
       let e = cats (

@@ -124,12 +124,14 @@ and expr_t =
   | EXPR_case_tag of Flx_srcref.t * int
   | EXPR_typed_case of Flx_srcref.t * int * typecode_t
   | EXPR_projection of Flx_srcref.t * int * typecode_t
+  | EXPR_rnprj of Flx_srcref.t * string * int * expr_t
   | EXPR_lookup of Flx_srcref.t * (expr_t * Flx_id.t * typecode_t list)
   | EXPR_apply of Flx_srcref.t * (expr_t * expr_t)
   | EXPR_tuple of Flx_srcref.t * expr_t list
   | EXPR_tuple_cons of Flx_srcref.t * expr_t * expr_t
   | EXPR_record of Flx_srcref.t * (Flx_id.t * expr_t) list
   | EXPR_record_type of Flx_srcref.t * (Flx_id.t * typecode_t) list
+  | EXPR_polyrecord of Flx_srcref.t * (Flx_id.t * expr_t) list * expr_t
   | EXPR_polyrecord_type of Flx_srcref.t * (Flx_id.t * typecode_t) list * typecode_t
   | EXPR_variant of Flx_srcref.t * (Flx_id.t * expr_t)
   | EXPR_variant_type of Flx_srcref.t * (Flx_id.t * typecode_t) list
@@ -676,6 +678,7 @@ let src_of_expr (e : expr_t) = match e with
   | EXPR_case_tag (s,_)
   | EXPR_typed_case (s,_,_)
   | EXPR_projection (s,_,_)
+  | EXPR_rnprj (s,_,_,_)
   | EXPR_lookup (s,_)
   | EXPR_index (s,_,_)
   | EXPR_callback (s,_)
@@ -706,6 +709,7 @@ let src_of_expr (e : expr_t) = match e with
   | EXPR_tuple (s,_)
   | EXPR_tuple_cons (s,_,_)
   | EXPR_record (s,_)
+  | EXPR_polyrecord (s,_,_)
   | EXPR_variant (s,_)
   | EXPR_record_type (s,_)
   | EXPR_polyrecord_type (s,_,_)

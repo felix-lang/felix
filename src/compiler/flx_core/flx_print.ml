@@ -90,7 +90,6 @@ and string_of_re re =
 and string_of_expr (e:expr_t) =
   let st t = string_of_typecode t in
   let se e = string_of_expr e in
-  let sme e = string_of_expr e in
   let sqn e = string_of_qualified_name e in
   match e with
   | EXPR_label (_,s) -> "(&&" ^ s ^ ")"
@@ -111,6 +110,9 @@ and string_of_expr (e:expr_t) =
   | EXPR_projection (_,v,t) ->
     "(proj " ^ si v ^
     " of " ^ string_of_typecode t ^ ")"
+
+  | EXPR_rnprj (_,name,seq,arg) ->
+    "(rnproj " ^ name ^ "#"^ string_of_int seq ^ "(" ^ se arg ^ "))"
 
   | EXPR_lookup (_, (e, name, ts)) ->
       "(" ^ se e ^ ")::" ^ string_of_id name ^
@@ -136,7 +138,7 @@ and string_of_expr (e:expr_t) =
   | EXPR_letin (sr,(pat,e1, e2)) ->
     "let " ^ string_of_pattern pat ^ " = " ^ se e1 ^ " in " ^ se e2
   | EXPR_coercion (_,(e,t)) ->
-    "(" ^ sme e ^ ":" ^
+    "(" ^ se e ^ ":" ^
     string_of_typecode t ^ ")"
 
   | EXPR_expr (_,s,t) ->
@@ -163,8 +165,8 @@ and string_of_expr (e:expr_t) =
   | EXPR_new (_,e) -> "new " ^ "(" ^ se e ^ ")"
   | EXPR_literal (_,e) -> string_of_literal e
   | EXPR_apply  (_,(fn, arg)) -> "(" ^
-    sme fn ^ " " ^
-    sme arg ^
+    se fn ^ " " ^
+    se arg ^
     ")"
 
   | EXPR_product (_,ts) ->
@@ -177,7 +179,7 @@ and string_of_expr (e:expr_t) =
      cat "&" (map se ts)
 
   | EXPR_isin (_,(a,b)) ->
-     sme a ^ " isin " ^ sme b
+     se a ^ " isin " ^ se b
 
   | EXPR_orlist (_,ts) ->
      cat " or " (map se ts)
@@ -194,20 +196,27 @@ and string_of_expr (e:expr_t) =
   | EXPR_superscript (_,(a,b)) ->
     "(" ^ se a ^ " ^ " ^ se b ^ ")"
 
-  | EXPR_tuple (_,t) -> "(" ^ catmap ", " sme t ^ ")"
+  | EXPR_tuple (_,t) -> "(" ^ catmap ", " se t ^ ")"
   | EXPR_get_tuple_tail (_,t) -> "get_tuple_tail(" ^ se t ^ ")"
   | EXPR_get_tuple_head (_,t) -> "get_tuple_head(" ^ se t ^ ")"
   | EXPR_tuple_cons (_,eh, et) -> "tuple_cons (" ^ se eh ^ "," ^ se et ^ ")"
 
   | EXPR_record (_,ts) ->
       "(" ^
-      catmap " " (fun (s,e) -> string_of_id s ^ "=" ^ sme e ^ ",") ts ^
+      catmap ", " (fun (s,e) -> string_of_id s ^ "=" ^ se e ) ts ^
       ")"
+
+  | EXPR_polyrecord (_,ts,e) ->
+      "(" ^
+      catmap ", " (fun (s,e) -> string_of_id s ^ "=" ^ se e ) ts ^
+      " | " ^ se e ^
+      ")"
+
 
   | EXPR_record_type (_,ts) ->
       "(" ^
-      catmap " "
-        (fun (s,t) -> string_of_id s ^ ":" ^ string_of_typecode t ^ ",")
+      catmap ", "
+        (fun (s,t) -> string_of_id s ^ ":" ^ string_of_typecode t)
         ts ^
       ")"
 
@@ -228,7 +237,7 @@ and string_of_expr (e:expr_t) =
         ts ^
       "}"
 
-  | EXPR_arrayof (_,t) -> "[|" ^ catmap ", " sme t ^ "|]"
+  | EXPR_arrayof (_,t) -> "[|" ^ catmap ", " se t ^ "|]"
 
   | EXPR_lambda (_,(kind,vs,paramss,ret, sts)) ->
     "(" ^ string_of_funkind kind ^ " " ^
@@ -593,11 +602,11 @@ and sb bsym_table depth fixlist counter prec tc =
     | BTYP_record (ls) ->
       begin match ls with
       | [] -> 0,"record_unit"
-      | _ -> 0,"("^catmap "," (fun (s,t)->s^":"^sbt 0 t) ls ^")"
+      | _ -> 0,"record("^catmap "," (fun (s,t)->s^":"^sbt 0 t) ls ^")"
       end
 
     | BTYP_polyrecord (ls,v) ->
-      0,"("^catmap "," (fun (s,t)->s^":"^sbt 0 t) ls ^ " | " ^ sbt 0 v^ ")"
+      0,"polyrec("^catmap "," (fun (s,t)->s^":"^sbt 0 t) ls ^ " | " ^ sbt 0 v^ ")"
 
 
     | BTYP_variant ls ->
@@ -1817,7 +1826,7 @@ and string_of_bound_expression' bsym_table se e =
   | BEXPR_tuple_tail e -> "tuple_tail("^ se e ^")"
   | BEXPR_tuple_cons (eh,et) -> "tuple_cons("^ se eh ^"," ^ se et ^")"
   | BEXPR_aprj (ix,d,c) -> "aprj("^se ix^")"
-  | BEXPR_rprj (ix,d,c) -> "rprj("^ix^")"
+  | BEXPR_rprj (ix,n,d,c) -> "rprj_"^string_of_int n^"("^ix^")"
   | BEXPR_prj (n,d,c) -> "prj"^ si n^":"^sbt bsym_table d ^ " -> " ^ sbt bsym_table c
   | BEXPR_inj (n,d,c) -> "inj"^ si n^":"^sbt bsym_table d ^ " -> " ^ sbt bsym_table c
 
@@ -1866,7 +1875,10 @@ and string_of_bound_expression' bsym_table se e =
   | BEXPR_tuple t -> "(" ^ catmap ", " se t ^ ")"
 
   | BEXPR_record ts -> "( " ^
-      catmap "" (fun (s,e)-> s^":"^ se e ^", ") ts ^ ")"
+      catmap ", " (fun (s,e)-> s^":"^ se e) ts ^ ")"
+
+  | BEXPR_polyrecord (ts,e) -> "( " ^
+      catmap ", " (fun (s,e)-> s^":"^ se e) ts ^ " | " ^ se e^ ")"
 
   | BEXPR_variant (s,e) -> "case " ^ s ^ " of (" ^ se e ^ ")"
 

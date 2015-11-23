@@ -190,6 +190,7 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
   | EXPR_case_tag _ -> [],e
   | EXPR_typed_case _ -> [],e
   | EXPR_projection _ -> [],e
+
   | EXPR_literal _ -> [],e
 
   | EXPR_expr _ -> [],e
@@ -386,6 +387,12 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
     let lss,xs = List.split (List.map rex es) in
     List.concat lss,EXPR_record (sr, List.combine ss xs)
 
+  | EXPR_polyrecord(sr,es,e) -> 
+    let ss,es = List.split es in
+    let lss,xs = List.split (List.map rex es) in
+    let l,x = rex e in
+    l @ List.concat lss,EXPR_polyrecord(sr, List.combine ss xs, x)
+
   | EXPR_extension (sr,es,e) -> 
     let lss,xs = List.split (List.map rex es) in
     let l,x = rex e in
@@ -393,6 +400,11 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
 
   | EXPR_record_type _ -> assert false
   | EXPR_polyrecord_type _ -> assert false
+
+  | EXPR_rnprj (sr,name,seq,e) -> 
+    let l,x = rex e in
+    l,EXPR_rnprj (sr,name,seq,x)
+
 
   | EXPR_variant (sr,(s,e)) ->
     let l,x = rex e in

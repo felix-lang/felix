@@ -88,6 +88,7 @@ let rec subst vars (e:expr_t) mv : expr_t =
   | EXPR_get_tuple_tail _
   | EXPR_get_tuple_head _
   | EXPR_label _
+  | EXPR_rnprj _
     ->
       let sr = src_of_expr e in
       clierr sr ("[mbind:subst] Not expected in pattern when clause: " ^ string_of_expr e); 
@@ -138,6 +139,7 @@ let rec subst vars (e:expr_t) mv : expr_t =
   | EXPR_map (sr,f,e) -> EXPR_map (sr,subst f,subst e)
   | EXPR_tuple (sr,es) -> EXPR_tuple (sr,map subst es)
   | EXPR_record (sr,es) -> EXPR_record (sr,map (fun (s,e)->s,subst e) es)
+  | EXPR_polyrecord (sr,es,e) -> EXPR_polyrecord (sr,map (fun (s,e)->s,subst e) es, subst e)
   | EXPR_variant (sr,(s,e)) -> EXPR_variant (sr,(s,subst e))
   | EXPR_arrayof (sr,es) -> EXPR_arrayof (sr,map subst es)
 

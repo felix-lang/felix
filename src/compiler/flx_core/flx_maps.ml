@@ -99,11 +99,13 @@ let map_expr f (e:expr_t):expr_t = match e with
   | EXPR_case_tag _ -> e
   | EXPR_typed_case _ -> e
   | EXPR_projection _ -> e
+  | EXPR_rnprj (sr,name,seq,a) -> EXPR_rnprj (sr,name,seq, f a)
   | EXPR_lookup (sr,(x,s,ts)) -> EXPR_lookup (sr,(f x, s, ts))
   | EXPR_apply (sr,(a,b)) -> EXPR_apply (sr,(f a, f b))
   | EXPR_tuple (sr,es) -> EXPR_tuple (sr, List.map f es)
   | EXPR_tuple_cons (sr,eh, et) -> EXPR_tuple_cons (sr, f eh, f et)
   | EXPR_record (sr,es) -> EXPR_record (sr, List.map (fun (s,e) -> s,f e) es)
+  | EXPR_polyrecord (sr,es,e) -> EXPR_polyrecord (sr, List.map (fun (s,e) -> s,f e) es, f e)
   | EXPR_variant (sr,(s,e)) -> EXPR_variant (sr, (s,f e))
   | EXPR_arrayof (sr, es) -> EXPR_arrayof (sr, List.map f es)
   | EXPR_coercion (sr, (x,t)) -> EXPR_coercion (sr,(f x, t))
@@ -190,6 +192,7 @@ let iter_expr f (e:expr_t) =
   | EXPR_type_match _
     -> ()
 
+  | EXPR_rnprj (_,_,_,x)
   | EXPR_variant (_,(_,x))
   | EXPR_typeof (_,x)
   | EXPR_as (_,(x,_))
@@ -233,6 +236,7 @@ let iter_expr f (e:expr_t) =
     List.iter f es
 
   | EXPR_record (sr,es) -> List.iter (fun (s,e) -> f e) es
+  | EXPR_polyrecord (sr,es,e) -> List.iter (fun (s,e) -> f e) es; f e
 
   | EXPR_match (sr,(a,pes)) ->
     f a; List.iter (fun (pat,x) -> f x) pes

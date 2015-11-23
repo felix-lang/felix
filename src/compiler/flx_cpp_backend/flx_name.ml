@@ -221,7 +221,16 @@ let rec cpp_type_classname syms bsym_table t =
   | BTYP_variant _ -> "_avt" ^ cid_of_bid (tix t)
   | BTYP_sum _ -> "_st" ^ cid_of_bid (tix t)
 *)
-  | BTYP_variant _
+  | BTYP_variant ls ->
+    print_endline ("Flx_name: Variant type: " ^ sbt bsym_table t'); 
+    begin match Flx_vrep.cal_variant_rep bsym_table t with
+    | Flx_vrep.VR_self ->  assert false; 
+    | Flx_vrep.VR_int -> "int"
+    | Flx_vrep.VR_nullptr -> "void*"
+    | Flx_vrep.VR_packed -> "void*"
+    | Flx_vrep.VR_uctor -> " ::flx::rtl::_uctor_"
+    end
+
   | BTYP_sum _ ->
     begin match Flx_vrep.cal_variant_rep bsym_table t with
     | Flx_vrep.VR_self -> assert false

@@ -46,6 +46,51 @@ and t =
   | BTYP_type_set_union of t list (** open union *)
   | BTYP_type_set_intersection of t list (** open union *)
 
+let catmap sep f ls = String.concat sep (List.map f ls) 
+
+let rec str_of_btype typ = 
+  let s t = str_of_btype t in
+  let ss ts = String.concat "," (List.map str_of_btype ts) in
+  match typ with
+  | BTYP_none -> "BTYP_none"
+  | BTYP_sum ts -> "BTYP_sum(" ^ ss ts ^")"
+  | BTYP_unitsum n -> string_of_int n
+  | BTYP_intersect ts -> "BTYP_intersect(" ^ ss ts ^ ")"
+  | BTYP_inst (i,ts) -> "BTYP_inst("^string_of_int i^"["^ss ts^"])"
+  | BTYP_tuple ts -> "BTYP_tuple(" ^ ss ts ^ ")"
+  | BTYP_array (b,x) -> "BTYP_array(" ^ s b ^"," ^s x^")"
+  | BTYP_record (ls) -> "BTYP_record("^String.concat "," (List.map (fun (name,t)->name^":"^s t) ls)^")"
+  | BTYP_polyrecord (ls,t) -> "BTYP_polyrecord("^String.concat "," (List.map (fun (name,t)->name^":"^s t) ls)^" | "^s t^")"
+  | BTYP_variant (ls) -> "BTYP_variant(" ^String.concat " | " (List.map (fun (name,t)->name^" of "^s t) ls)^")"
+  | BTYP_pointer t -> "BTYP_pointer("^s t^")"
+  | BTYP_function (d,c) -> "BTYP_function(" ^ s d ^ " -> " ^ s c ^")"
+  | BTYP_cfunction (d,c) -> "BTYP_cfunction(" ^ s d ^ " --> " ^ s c ^")"
+ 
+  | BTYP_void -> "BTYP_void"
+  | BTYP_label -> "BTYP_label" (* type of a label *)
+  | BTYP_fix (i,t) -> "BTYP_fix("^string_of_int i ^ ":" ^ s t ^")"
+
+  | BTYP_type i -> "BTYP_type("^string_of_int i^")"
+  | BTYP_type_tuple ts -> "BTYP_type_tuple(" ^ ss ts ^ ")"
+  | BTYP_type_function (ps,r,b) -> "BTYP_type_function((" ^ 
+      String.concat "," (List.map (fun (i,t)->string_of_int i^":"^s t) ps)^"):"^
+      s r^"=("^ s b ^"))"
+
+  | BTYP_type_var (i,t) -> "BTYP_type_var("^string_of_int i^":"^s t^")"
+  | BTYP_type_apply (f,x) -> "BTYP_type_apply("^s f^","^s x^ ")"
+  | BTYP_type_match (v,pats) -> "BTYP_type_match(too lazy)"
+
+  | BTYP_tuple_cons (h,t) -> "BTYP_tuple_cons (" ^ s h ^"**" ^ s t^")"
+
+  (* type sets *)
+  | BTYP_type_set ts -> "BTYP_type_set(" ^ss ts^ ")"
+  | BTYP_type_set_union ts -> "BTYP_type_set_union("^ ss ts^")"
+  | BTYP_type_set_intersection ts -> "BTYP_type_set_intersection(" ^ ss ts ^ ")"
+
+
+let st t = str_of_btype t
+let sts ts = catmap "," st ts
+
 exception Free_fixpoint of t
 
 type entry_kind_t = {
@@ -175,11 +220,15 @@ let btyp_record ts =
    (* NOTE: NO CHECK FOR DUPLICATES! *)
    (* Make sure all the elements are sorted by name. *)
    let cmp (s1,t1) (s2, t2) = compare s1 s2 in
-   let ts = List.sort cmp ts in
+   let ts = List.stable_sort cmp ts in
    BTYP_record (ts)
 
 (** Construct a BTYP_polyrecord type. *)
 let btyp_polyrecord ts v = 
+(*
+print_endline ("Constructing polyrecord, extensions=" ^ catmap "," (fun (s,t) -> s^":"^str_of_btype t) ts);
+print_endline ("   ... core = " ^ st v);
+*)
    match v with
    | BTYP_record flds -> 
      (* NOTE: NO CHECK FOR DUPLICATES! *)
@@ -190,11 +239,11 @@ let btyp_polyrecord ts v =
    | BTYP_polyrecord (flds,v2) ->
      (* NOTE: NO CHECK FOR DUPLICATES! *)
      let cmp (s1,t1) (s2, t2) = compare s1 s2 in
-     let ts = List.sort cmp ts in
+     let ts = List.stable_sort cmp ts in
      BTYP_polyrecord (flds @ ts,v2)
    | _ -> 
      let cmp (s1,t1) (s2, t2) = compare s1 s2 in
-     let ts = List.sort cmp ts in
+     let ts = List.stable_sort cmp ts in
      BTYP_polyrecord (ts,v)
 
 

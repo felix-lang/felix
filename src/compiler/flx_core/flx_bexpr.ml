@@ -1,3 +1,5 @@
+open Flx_btype
+type btype = t
 type bexpr_t =
   | BEXPR_not of t
   | BEXPR_deref of t
@@ -16,6 +18,7 @@ type bexpr_t =
   | BEXPR_apply_struct of Flx_types.bid_t * Flx_btype.t list * t
   | BEXPR_tuple of t list
   | BEXPR_record of (string * t) list
+  | BEXPR_polyrecord of (string * t) list * t
   | BEXPR_variant of string * t
   | BEXPR_closure of Flx_types.bid_t * Flx_btype.t list
   | BEXPR_case of int * Flx_btype.t
@@ -30,7 +33,7 @@ type bexpr_t =
   | BEXPR_tuple_head of t
   | BEXPR_tuple_cons of t * t
   | BEXPR_prj of int * Flx_btype.t * Flx_btype.t
-  | BEXPR_rprj of string * Flx_btype.t * Flx_btype.t
+  | BEXPR_rprj of string * int * Flx_btype.t * Flx_btype.t
   | BEXPR_aprj of t * Flx_btype.t * Flx_btype.t
   | BEXPR_inj of int * Flx_btype.t * Flx_btype.t
   | BEXPR_label of string
@@ -123,18 +126,103 @@ let bexpr_apply_struct t (bid, ts, e) = BEXPR_apply_struct (bid, complete_check_
 
 let bexpr_tuple t es = match es with [] -> bexpr_unit | _ -> BEXPR_tuple es, complete_check t
 
-let bexpr_record es = 
+let bexpr_coerce (e, t) = BEXPR_coerce (e, t), complete_check t
+
+let bexpr_prj n d c = BEXPR_prj (n,d,c),complete_check (Flx_btype.BTYP_function (d,c))
+
+let bexpr_rnprj name seq d c =
+(*
+print_endline ("Construction rnprj " ^ name ^ "[" ^ string_of_int seq ^ "]: " ^ st d ^ "->" ^ st c);
+*)
+  match d with
+  | BTYP_record ts ->
+    let dcnt = ref 0 in
+    let idx = ref 0 in
+    begin
+      try
+        List.iter (fun (s,t) -> 
+          if s <> name then incr idx else
+          if (!dcnt) = seq then raise Not_found 
+          else begin incr idx; incr dcnt end
+        ) 
+        ts;
+        print_endline ("Invalid named projection " ^ name ^ ", seq=" ^ string_of_int seq);
+        assert false
+      with Not_found ->
+(*
+print_endline ("Translating name " ^ name ^ " seq " ^ string_of_int seq ^ " to index " ^ string_of_int (!idx));
+*)
+        let (_,t) as e = bexpr_prj (!idx) d c in
+(*
+print_endline ("rnprj: Projection type=" ^ st t);
+*)
+        e
+    end
+
+  | _ -> 
+    BEXPR_rprj (name,seq,d,c),complete_check (Flx_btype.BTYP_function (d,c))
+
+let bexpr_rprj ix d c = bexpr_rnprj ix 0 d c
+
+let bexpr_record es : t = 
   let cmp (s1,e1) (s2,e2) = compare s1 s2 in
-  let es = List.sort cmp es in
+  let es = List.stable_sort cmp es in
   let ts = List.map (fun (s,(_,t)) -> s,t) es in
   BEXPR_record es, complete_check (Flx_btype.btyp_record ts)
+
+let bexpr_polyrecord (es: (string * t) list) ((e',t') as e) =
+(*
+print_endline ("[bexpr_polyrecord] Constructing polyrecord: extension fields = " ^ String.concat "," (List.map (fun (s,(_,t)) -> s^":"^ st t) es));
+print_endline ("[bexpr_polyrecord] Constructing polyrecord: core type= " ^ st t');
+*)
+  let fldts = List.map (fun (s,(_,t)) -> s,t) es in
+  let domain : btype = complete_check (Flx_btype.btyp_polyrecord fldts t') in
+(*
+print_endline ("[bexpr_polyrecord] expected result type = " ^ st domain);  
+*)
+  let cmp (s1,e1) (s2,e2) = compare s1 s2 in
+  let mkprj fld seq fldt : t = bexpr_rnprj fld seq domain fldt in
+  match t' with
+  | BTYP_tuple [] -> bexpr_record es
+
+  | BTYP_record flds ->
+(*
+print_endline ("polyrecord core is record: fields = " ^ String.concat "," (List.map (fun (s,t) -> s^":"^st t) flds));
+*)
+    let dcnt = ref 0 in
+    let idx = ref 0 in
+    let ctrl_key = ref "" in
+    let nuflds = ref [] in
+    List.iter 
+      (fun (name,t) -> 
+        if name = !ctrl_key then incr dcnt else begin ctrl_key := name; dcnt := 0 end;
+        nuflds := ( name, bexpr_apply t (mkprj name (!dcnt) t, e)) :: !nuflds;
+        incr idx
+      ) 
+      flds
+    ;
+    let fields =es @ List.rev (!nuflds) in
+(*
+print_endline ("Result fields = " ^ String.concat "," (List.map (fun (s,(_,t)) -> s^":"^ st t) fields));
+*)
+    let (_,t) as e = bexpr_record (fields) in
+(*
+print_endline ("[bexpr_polyrecord] actual result type = " ^ st t);  
+*)
+    e
+
+  | BTYP_polyrecord (flds,v) ->
+print_endline "[flx_bexpr] polyrecord expression not implemented yet"; assert false;
+
+  | _ ->
+    let es = List.stable_sort cmp es in
+    BEXPR_polyrecord (es,e), domain 
+
 
 let bexpr_variant t (n, e) = BEXPR_variant (n, e), complete_check t
 
 
 let bexpr_aprj ix d c = BEXPR_aprj (ix,d,c),complete_check (Flx_btype.BTYP_function (d,c))
-let bexpr_rprj ix d c = BEXPR_rprj (ix,d,c),complete_check (Flx_btype.BTYP_function (d,c))
-let bexpr_prj n d c = BEXPR_prj (n,d,c),complete_check (Flx_btype.BTYP_function (d,c))
 let bexpr_inj n d c = BEXPR_inj (n,d,c),complete_check (Flx_btype.BTYP_function (d,c))
 let bexpr_get_n c n (e,d) =  BEXPR_apply ( bexpr_prj n d c, (e,d) ), complete_check c
 
@@ -158,8 +246,6 @@ let bexpr_case_index t e = BEXPR_case_index e, complete_check t
 let bexpr_expr (s, t) = BEXPR_expr (s, t), complete_check t
 
 let bexpr_range_check t (e1, e2, e3) = BEXPR_range_check (e1, e2, e3), complete_check t
-
-let bexpr_coerce (e, t) = BEXPR_coerce (e, t), complete_check t
 
 let bexpr_compose t (e1, e2) = BEXPR_compose (e1, e2), complete_check t
 
@@ -268,8 +354,8 @@ let rec cmp ((a,_) as xa) ((b,_) as xb) =
   | BEXPR_aprj (ix,d,c), BEXPR_aprj (ix',d',c') ->
     d = d' && c = c' && cmp ix ix'
 
-  | BEXPR_rprj (ix,d,c), BEXPR_rprj (ix',d',c') ->
-    d = d' && c = c' && ix = ix'
+  | BEXPR_rprj (ix,n,d,c), BEXPR_rprj (ix',n',d',c') ->
+    d = d' && c = c' && ix = ix' && n = n'
 
   | BEXPR_prj (n,d,c), BEXPR_prj (n',d',c') ->
     d = d' && c = c' && n = n'
@@ -334,6 +420,7 @@ let flat_iter
       f_bexpr e2
   | BEXPR_tuple es -> List.iter f_bexpr es
   | BEXPR_record es -> List.iter (fun (s,e) -> f_bexpr e) es
+  | BEXPR_polyrecord (es,e) -> List.iter (fun (s,e) -> f_bexpr e) es; f_bexpr e
   | BEXPR_variant (s,e) -> f_bexpr e
   | BEXPR_closure (i,ts) ->
       f_bid i;
@@ -358,7 +445,7 @@ let flat_iter
   | BEXPR_tuple_head e -> f_bexpr e
   | BEXPR_tuple_cons (eh,et) -> f_bexpr eh; f_bexpr et
   | BEXPR_aprj (ix,d,c) -> f_bexpr ix; f_btype d; f_btype c
-  | BEXPR_rprj (ix,d,c) -> f_btype d; f_btype c
+  | BEXPR_rprj (ix,n,d,c) -> f_btype d; f_btype c
   | BEXPR_prj (n,d,c) -> f_btype d; f_btype c
   | BEXPR_inj (n,d,c) -> f_btype d; f_btype c
   | BEXPR_funprod e -> f_bexpr e
@@ -414,6 +501,8 @@ let map
   | BEXPR_tuple  es,t -> BEXPR_tuple (List.map f_bexpr es),f_btype t
   | BEXPR_record es,t ->
       BEXPR_record (List.map (fun (s,e) -> s, f_bexpr e) es),f_btype t
+  | BEXPR_polyrecord (es,e),t ->
+      BEXPR_polyrecord (List.map (fun (s,e) -> s, f_bexpr e) es, f_bexpr e),f_btype t
   | BEXPR_variant (s,e),t -> BEXPR_variant (s, f_bexpr e),f_btype t
   | BEXPR_closure (i,ts),t ->
       BEXPR_closure (f_bid i, List.map f_btype ts),f_btype t
@@ -430,7 +519,7 @@ let map
   | BEXPR_tuple_tail e,t -> BEXPR_tuple_tail (f_bexpr e), f_btype t
   | BEXPR_tuple_head e,t -> BEXPR_tuple_head (f_bexpr e), f_btype t
   | BEXPR_tuple_cons (eh,et),t -> BEXPR_tuple_cons (f_bexpr eh, f_bexpr et), f_btype t
-  | BEXPR_rprj (ix,d,c),t -> BEXPR_rprj (ix, f_btype d, f_btype c), f_btype t
+  | BEXPR_rprj (ix,n,d,c),t -> BEXPR_rprj (ix, n, f_btype d, f_btype c), f_btype t
   | BEXPR_aprj (ix,d,c),t -> BEXPR_aprj (f_bexpr ix, f_btype d, f_btype c), f_btype t
   | BEXPR_prj (n,d,c),t -> BEXPR_prj (n, f_btype d, f_btype c), f_btype t
   | BEXPR_inj (n,d,c),t -> BEXPR_inj (n, f_btype d, f_btype c), f_btype t
@@ -468,6 +557,7 @@ let rec reduce e =
     | BEXPR_apply((BEXPR_compose _,_),_),_ -> print_endline "Bugged composition"; assert false
     | BEXPR_cond ((BEXPR_case (0,Flx_btype.BTYP_unitsum 2),Flx_btype.BTYP_unitsum 2), _, fa),_ -> fa
     | BEXPR_cond ((BEXPR_case (1,Flx_btype.BTYP_unitsum 2),Flx_btype.BTYP_unitsum 2), tr, _),_ -> tr
+    | BEXPR_rprj (name,seq,d,c),_ -> bexpr_rnprj name seq d c  
     | x -> x
   in f_bexpr e
 

@@ -23,6 +23,7 @@ open Flx_beta
 
 module CS = Flx_code_spec
 module L = Flx_literal
+exception Recname of string
 
 let string_of_string = Flx_string.c_quote_of_string
 
@@ -235,6 +236,7 @@ let rec gen_expr'
      (* ce_atom ("UNIT_ERROR") *)
   | _ ->
   match e with
+  | BEXPR_polyrecord _ -> print_endline "Attempt to generate polyrecord value, should have been factored out"; assert false
   | BEXPR_unit -> print_endline "Generating unit expr"; ce_atom "0/*CLT:UNIT*/" (* ce_atom "(::flx::rtl::unit())/*UNIT TUPLE?*/" *)
   | BEXPR_unitptr -> print_endline "Generating unitptr expr"; ce_atom "NULL/*UNITPTR*/"
   | BEXPR_funprod _ -> assert false
@@ -446,18 +448,35 @@ print_endline ("Compact linear tuple " ^ sbt bsym_table t);
 
   (* record projection *)
   | BEXPR_apply ( (BEXPR_prj (n,BTYP_record (es),_),_), a) ->
-    let field_name,_ =
-      try nth es n
-      with Not_found ->
-        failwith "[flx_egen] Woops, index of non-existent struct field"
+    let index = ref 0 in
+    let seq = ref 0 in
+    let name,_ =
+        try nth es n
+        with Not_found ->
+          failwith "Woops, index of non-existent struct field"
     in
-    ce_dot (ge' a) (cid_of_flxid field_name)
+    begin try
+    List.iter (fun (s,_) ->
+      if n = (!index) then
+        raise (Recname (cid_of_flxid ( if (!seq) = 0 then s else "_" ^ s ^ "_" ^ string_of_int (!seq))))
+      else begin
+        incr index;
+        if s = name then incr seq
+      end 
+    )
+    es
+    ;
+    failwith "Error calculating record name"
+    with Recname s ->
+      ce_dot (ge' a) s 
+    end
 
   (* record projection *)
-  | BEXPR_apply ( (BEXPR_rprj (n,BTYP_record (es),_),_), a) ->
-    let field_name = n in
+  | BEXPR_apply ( (BEXPR_rprj (name,seq,BTYP_record (es),_),_), a) ->
+print_endline "rprj should have been removed";
+assert false;
+    let field_name = if seq = 0 then name else "_" ^ name ^ "_" ^ string_of_int seq in
     ce_dot (ge' a) (cid_of_flxid field_name)
-
 
   (* pointer to record projection *)
   | BEXPR_apply ( (BEXPR_prj (n,BTYP_pointer (BTYP_record (es)),_),_), a) ->
@@ -469,8 +488,10 @@ print_endline ("Compact linear tuple " ^ sbt bsym_table t);
     ce_prefix "&" (ce_arrow (ge' a) (cid_of_flxid field_name))
 
   (* pointer to record projection *)
-  | BEXPR_apply ( (BEXPR_rprj (n,BTYP_pointer (BTYP_record (es)),_),_), a) ->
-    let field_name = n in
+  | BEXPR_apply ( (BEXPR_rprj (name,seq,BTYP_pointer (BTYP_record (es)),_),_), a) ->
+print_endline "rprj should have been removed";
+assert false;
+    let field_name = if seq = 0 then name else "_" ^ name ^ "_" ^ string_of_int seq in
     ce_prefix "&" (ce_arrow (ge' a) (cid_of_flxid field_name))
 
   (* struct or cstruct projection *)
@@ -561,7 +582,7 @@ print_endline ("Compact linear tuple " ^ sbt bsym_table t);
   | BEXPR_prj (n,_,_) -> assert false
 
   (* we CAN handle this now, since we have made a closure for it: FIXME *)
-  | BEXPR_rprj (n,_,_) -> assert false
+  | BEXPR_rprj (n,_,_,_) -> assert false
 
   (* we CAN handle this now, since we have made a closure for it: FIXME *)
   | BEXPR_inj _ -> assert false (* can't handle yet *)
@@ -1388,10 +1409,26 @@ print_endline ("Handling coercion in egen " ^ sbt bsym_table srct ^ " -> " ^ sbt
     let es = sort rcmp es in
     let es = map snd es in
     let ctyp = tn t in
+
+    (* keep track of duplicates with magic names *)
+    let dups = Hashtbl.create (List.length es) in
+    let name s = 
+      if Hashtbl.mem dups s then
+        let count = Hashtbl.find dups s in
+        Hashtbl.replace dups s (count+1);
+        "_" ^ s ^ "_" ^ string_of_int count
+      else begin
+        Hashtbl.add dups s 1;
+        s
+      end
+    in
+        
+ 
     ce_atom (
     ctyp ^ "(" ^
       fold_left
       (fun s e ->
+        let s = name s in
         let x = ge_arg e in
         if String.length x = 0 then s else
         s ^

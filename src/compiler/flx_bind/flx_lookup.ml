@@ -5178,6 +5178,46 @@ print_endline ("Bound f = " ^ sbe bsym_table f);
     bexpr_record (List.combine ss es)
     end
 
+  | EXPR_rnprj (sr,name,seq,e) -> 
+(*
+print_endline ("EXPR_rnprj (" ^ name ^ " seq=" ^ string_of_int seq ^ " arg="^ string_of_expr e ^ ")");
+*)
+    let (e',domain) as e = be e in
+    begin match domain with
+    | BTYP_record flds ->
+      let dcnt = ref 0 in
+      let idx = ref 0 in
+      begin try
+        List.iter (fun (s,t) -> 
+          if s <> name then incr idx else
+          if (!dcnt) = seq then raise Not_found 
+          else begin incr idx; incr dcnt end
+        ) 
+        flds;
+        print_endline ("Invalid named projection " ^ name ^ ", seq=" ^ string_of_int seq);
+        assert false
+      with Not_found ->
+(*
+print_endline ("Translating name " ^ name ^ " seq " ^ string_of_int seq ^ " to index " ^ string_of_int (!idx));
+*)
+        let codomain = snd (List.nth flds (!idx)) in
+(*
+print_endline ("Domain = " ^ sbt bsym_table domain);
+print_endline ("Codomain = " ^ sbt bsym_table codomain);
+*)
+        bexpr_apply codomain (bexpr_prj (!idx) domain codomain,e)
+      end
+
+    | BTYP_polyrecord (flds,x) ->
+      failwith "rnprj not implemented for polyrecord type argument yet"
+
+    | _ -> clierr sr ("Argument of rnprj must be record or polyrecord type, got " ^ sbt bsym_table domain)
+    end
+ 
+  | EXPR_polyrecord (sr,ls,e) ->
+    let ss,es = List.split ls in
+    let es = List.map be es in
+    bexpr_polyrecord (List.combine ss es) (be e)
 
   | EXPR_tuple (_,es) ->
     let bets = List.map be es in

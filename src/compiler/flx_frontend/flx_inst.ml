@@ -202,13 +202,16 @@ let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
     iter ue es;
     register_tuple syms bsym_table (vs t)
 
+  (* should have disappeared after monomorphisation *)
+  | BEXPR_polyrecord _ -> assert false
+
   | BEXPR_variant (s,e) ->
     ue e
 
   | BEXPR_case (_,t) -> ut (vs t)
 
   | BEXPR_prj (_,d,c) 
-  | BEXPR_rprj (_,d,c) 
+  | BEXPR_rprj (_,_,d,c) 
   | BEXPR_inj (_,d,c) -> ut (vs (BTYP_function (d,c)))
 
   | BEXPR_ref (i,ts)

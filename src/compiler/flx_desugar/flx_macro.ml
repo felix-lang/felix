@@ -488,12 +488,17 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | EXPR_case_tag (sr, i) -> e
   | EXPR_typed_case (sr, i, t) -> e
   | EXPR_projection (sr, i, t) -> e
+  | EXPR_rnprj (sr,name,seq,e) -> EXPR_rnprj (sr,name,seq, me e)
   | EXPR_case_index (sr,e) -> EXPR_case_index (sr,me e)
 
   | EXPR_tuple (sr, es) -> EXPR_tuple (sr, List.map me es)
   | EXPR_tuple_cons (sr, eh, et) -> EXPR_tuple_cons (sr, me eh, me et)
   | EXPR_record (sr, es) ->
     EXPR_record (sr, List.map (fun (s,e)-> s, me e) es)
+
+  | EXPR_polyrecord (sr, es,e) ->
+    EXPR_polyrecord (sr, List.map (fun (s,e)-> s, me e) es, me e)
+
 
   | EXPR_variant (sr, (s,e)) ->
     EXPR_variant (sr, ( s, me e))
