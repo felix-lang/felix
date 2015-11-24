@@ -160,8 +160,6 @@ let rec get_offsets' syms bsym_table typ : string list =
     !lst
 
   | BTYP_record (es) ->
-    let rcmp (s1,_) (s2,_) = compare s1 s2 in
-    let es = sort rcmp es in
     let lst = ref [] in
     iter
     (fun (s,t) ->
@@ -294,8 +292,6 @@ let rec get_encoder' syms bsym_table p typ : string list =
     (List.combine (nlist k) args))
 
   | BTYP_record (es) ->
-    let rcmp (s1,_) (s2,_) = compare s1 s2 in
-    let es = sort rcmp es in
     "//Record" ::
     List.concat (List.map 
     (fun (fld,t) ->
@@ -385,8 +381,6 @@ let rec get_decoder' syms bsym_table p typ : string list =
     (List.combine (nlist k) args))
 
   | BTYP_record (es) ->
-    let rcmp (s1,_) (s2,_) = compare s1 s2 in
-    let es = sort rcmp es in
     "//Record" ::
     List.concat (List.map 
     (fun (fld,t) ->

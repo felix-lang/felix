@@ -164,7 +164,14 @@ and xexpr_t sr x =
      rs
    in EXPR_polyrecord (xsr sr,rs, ex e)
 
-
+  | Lst [Id "ast_remove_fields";  sr; e; Lst ss] ->
+   let ss =
+     map (function
+     | Str s -> s
+     | x -> err x "Error in AST_remove_fields"
+     )
+     ss
+   in EXPR_remove_fields (xsr sr,ex e, ss)
 
  | Lst [Id "ast_variant";  Lst [Str s; e]] -> EXPR_variant (sr,(s, ex e))
 

@@ -2032,7 +2032,6 @@ print_endline ("cal_apply', AFTER NORMALISE, fn = " ^ sbt bsym_table t1 ^ " arg=
                 | _ -> assert false
               in
               let n = List.length rs in
-              let rs = List.sort (fun (a,_) (b,_) -> compare a b) rs in
               let rs = List.map2 (fun (name,t) j -> name,(j,t)) rs (nlist n) in
 
               begin try
@@ -2983,9 +2982,6 @@ and lookup_name_with_sig
 
 
    | [BTYP_record (fields) as d] ->
-     (* this sort shouldn't be necessary because the constructor does it anyhow *)
-     let rcmp (s1,_) (s2,_) = compare s1 s2 in
-     let fields = List.sort rcmp fields in
      begin match
        Flx_list.list_assoc_index_with_assoc fields name
      with
@@ -3005,9 +3001,6 @@ and lookup_name_with_sig
      else None
 
    | [BTYP_pointer (BTYP_record (fields)) as d] ->
-     (* this sort shouldn't be necessary because the constructor does it anyhow *)
-     let rcmp (s1,_) (s2,_) = compare s1 s2 in
-     let fields = List.sort rcmp fields in
      begin match
        Flx_list.list_assoc_index_with_assoc fields name
      with
@@ -3936,8 +3929,6 @@ assert false; (* shouldn't happen now! *)
     | BTYP_record (es)
       ->
       let k = List.length es in
-      let rcmp (s1,_) (s2,_) = compare s1 s2 in
-      let es = List.sort rcmp es in
       let field_name = name in
       begin match list_index (List.map fst es) field_name with
       | Some n -> 
@@ -4799,8 +4790,6 @@ print_endline ("binding apply, RECORD field .. " ^ name ^ ", type=" ^ sbt bsym_t
 *)
           if (ts != []) then raise Flx_dot.OverloadResolutionError; 
           let k = List.length es in
-          let rcmp (s1,_) (s2,_) = compare s1 s2 in
-          let es = List.sort rcmp es in
           let field_name = name in
           begin match list_index (List.map fst es) field_name with
           | Some n -> 
@@ -4829,8 +4818,6 @@ print_endline ("binding apply, RECORD pointer field .. " ^ name ^ ", type=" ^ sb
           | BTYP_record (es) ->
             if (ts != []) then raise Flx_dot.OverloadResolutionError; 
             let k = List.length es in
-            let rcmp (s1,_) (s2,_) = compare s1 s2 in
-            let es = List.sort rcmp es in
             let field_name = name in
             begin match list_index (List.map fst es) field_name with
             | Some n -> 
@@ -4995,7 +4982,6 @@ print_endline ("Bound f = " ^ sbe bsym_table f);
         in
         let env' = build_env state bsym_table (Some i) in
         let vs' = List.map (fun (s,i,tp) -> s,i) (vs) in
-        let alst = List.sort (fun (a,_) (b,_) -> compare a b) alst in
         let ialst = List.map2 (fun (k,t) i -> k,(t,i)) alst (nlist na) in
         let a =
           List.map (fun (name,ct)->
@@ -5218,6 +5204,10 @@ print_endline ("Codomain = " ^ sbt bsym_table codomain);
     let ss,es = List.split ls in
     let es = List.map be es in
     bexpr_polyrecord (List.combine ss es) (be e)
+
+  | EXPR_remove_fields (sr,e,ss) ->
+    bexpr_remove_fields (be e) ss
+
 
   | EXPR_tuple (_,es) ->
     let bets = List.map be es in

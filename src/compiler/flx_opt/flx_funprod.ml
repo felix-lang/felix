@@ -1,3 +1,5 @@
+let sbt b t = Flx_print.sbt b t
+
 let rec reduce_bexpr syms prodmap pa sr e =
   let f_bexpr e = reduce_bexpr syms prodmap pa sr e in
   match Flx_bexpr.map ~f_bexpr e with
@@ -31,10 +33,19 @@ let elim_funprods syms bsym_table =
     print_endline ("Add function product " ^ string_of_int i);
     print_endline ("Child of  " ^ match pa with | Some p -> string_of_int p | None -> "NONE");
 *)
+    let _,e_t = e in
+(*
+    print_endline ("Tuple of functions has type " ^ sbt bsym_table e_t);
+*)
     let dt,ct = match pt with | Flx_btype.BTYP_function (dt,ct) -> dt,ct | _ -> assert false in
 (*
-    print_endline ("Type: " ^ Flx_print.sbt bsym_table pt);
+    print_endline ("Final product type: " ^ sbt bsym_table pt);
 *)
+
+(* dt: domain of whole function, ct: codomain of whole function 
+   pt = dt -> ct, type of whole function
+*)
+
     (* add function parameter *)
     let pindex = !(syms.Flx_mtypes2.counter) in 
     incr (syms.Flx_mtypes2.counter);
@@ -44,33 +55,54 @@ let elim_funprods syms bsym_table =
     let param = Flx_bexpr.bexpr_varname dt (pindex,[]) in
 
     (* calculate domain and codomain component types *)
-    let d,c = match pt with | Flx_btype.BTYP_function (d,c) -> d,c | _ -> assert false in
-    let ds = match d with 
+    let ds = match dt with 
       | Flx_btype.BTYP_tuple ds -> ds 
       | Flx_btype.BTYP_array (t,Flx_btype.BTYP_unitsum n) -> Flx_list.repeat t n 
       | _ -> assert false 
     in
-    let cs = match c with 
+    let cs = match ct with 
       | Flx_btype.BTYP_tuple cs -> cs 
       | Flx_btype.BTYP_array (t,Flx_btype.BTYP_unitsum n) -> Flx_list.repeat t n 
       | _ -> assert false 
     in
+
+(* ds, cs: domains and codomains of component functions *)
     let n = List.length ds in
     assert (n = List.length cs);
-
+(*
+print_endline "Calculate function product ... ";
+*)
     (* generate applications f.i a.i *)
     let fts = List.combine ds cs in
     let ixs = Flx_list.nlist n in
     let appls = List.map2  (fun i (pd,pc) ->
+(* pd,pc: domain and codomain of component function *)
       let paramprj = Flx_bexpr.bexpr_prj i dt pd in
+(* projection dt -> pd to extract component value a.i *)
       let elt = Flx_bexpr.bexpr_apply pd (paramprj, param) in
+(* elt = a.i : pd component of parameter *)
+
       let ft = Flx_btype.btyp_function (pd,pc) in
-      let fnprj = Flx_bexpr.bexpr_prj i pt ft in
-      let fn = Flx_bexpr.bexpr_apply pt (fnprj, e) in
-      Flx_bexpr.bexpr_apply pc (fn,elt)
+(* ft: pd -> pc, type of component function *)
+      let fnprj = Flx_bexpr.bexpr_prj i e_t ft in
+(* fnprj, projection of tuple of functions to get component function f.i
+   type function tuple is pt, component function is ft
+*)
+      let fn = Flx_bexpr.bexpr_apply ft (fnprj, e) in
+(* fn, the actual component function, type ft, result from applying
+    projection fnprj: pt -> ft to function product e
+*)
+      let result = Flx_bexpr.bexpr_apply pc (fn,elt) in
+(* finally the resulting value component i, type pc from applying
+   component function type ft = pd -> pc to elt, of type pd
+*)
+      result
       )
       ixs fts 
     in
+(*
+print_endline " .. Calculate function product";
+*)
     let re = Flx_bexpr.bexpr_tuple ct appls in (* product codomain type *)
     let exe = Flx_bexe.bexe_fun_return (sr,re) in 
     let params = [{Flx_bparameter.pid="_a"; pindex=pindex; pkind=`PVar;ptyp=dt}] in

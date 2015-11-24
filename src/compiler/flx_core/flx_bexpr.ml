@@ -19,6 +19,7 @@ type bexpr_t =
   | BEXPR_tuple of t list
   | BEXPR_record of (string * t) list
   | BEXPR_polyrecord of (string * t) list * t
+  | BEXPR_remove_fields of t * string list
   | BEXPR_variant of string * t
   | BEXPR_closure of Flx_types.bid_t * Flx_btype.t list
   | BEXPR_case of int * Flx_btype.t
@@ -114,7 +115,16 @@ let bexpr_class_new cl e = BEXPR_class_new (cl,e), complete_check (Flx_btype.bty
 
 let bexpr_literal t l = BEXPR_literal l, complete_check t
 
-let bexpr_apply t (e1, e2) = BEXPR_apply (e1, e2), complete_check t
+let bexpr_apply t (e1, e2) = 
+  let _,ft = e1 and _,at = e2 in
+  begin match ft with
+  | BTYP_function (d,c)
+  | BTYP_cfunction (d,c) ->
+    if d <> at then print_endline ("Warning: bexpr_apply: function domain "^ st d ^ " doesn't agree with argtype " ^ st at);
+    if c <> t then print_endline ("Warning: bexpr_apply: function codomain "^ st c ^ " doesn't agree with applytype " ^ st t);
+  | _ -> print_endline ("WARNING: bexpr_apply: unknown function type " ^ st t);
+  end;
+  BEXPR_apply (e1, e2), complete_check t
 
 let bexpr_apply_prim t (bid, ts, e) = BEXPR_apply_prim (bid, complete_check_list ts, e), complete_check t
 
@@ -124,11 +134,20 @@ let bexpr_apply_stack t (bid, ts, e) = BEXPR_apply_stack (bid, complete_check_li
 
 let bexpr_apply_struct t (bid, ts, e) = BEXPR_apply_struct (bid, complete_check_list ts, e), complete_check t
 
-let bexpr_tuple t es = match es with [] -> bexpr_unit | _ -> BEXPR_tuple es, complete_check t
+let bexpr_tuple t es = 
+  match es with 
+  | [] -> bexpr_unit 
+  | _ -> BEXPR_tuple es, complete_check t
 
 let bexpr_coerce (e, t) = BEXPR_coerce (e, t), complete_check t
 
-let bexpr_prj n d c = BEXPR_prj (n,d,c),complete_check (Flx_btype.BTYP_function (d,c))
+let bexpr_prj n d c = 
+  begin match d with
+  | BTYP_record ls -> assert (n < List.length ls)
+  | BTYP_tuple ls -> assert (n < List.length ls)
+  | _ -> ()
+  end;
+  BEXPR_prj (n,d,c),complete_check (Flx_btype.BTYP_function (d,c))
 
 let bexpr_rnprj name seq d c =
 (*
@@ -152,6 +171,7 @@ print_endline ("Construction rnprj " ^ name ^ "[" ^ string_of_int seq ^ "]: " ^ 
 (*
 print_endline ("Translating name " ^ name ^ " seq " ^ string_of_int seq ^ " to index " ^ string_of_int (!idx));
 *)
+        assert (!idx < List.length ts);
         let (_,t) as e = bexpr_prj (!idx) d c in
 (*
 print_endline ("rnprj: Projection type=" ^ st t);
@@ -170,18 +190,97 @@ let bexpr_record es : t =
   let ts = List.map (fun (s,(_,t)) -> s,t) es in
   BEXPR_record es, complete_check (Flx_btype.btyp_record ts)
 
+(* NOTE: you can only remove known fields! Just like you can only
+   do projections of known fields 
+*)
+
+let cal_removal e ts ss =
+  let _,domain = e in
+  let mkprj fld seq fldt : t = bexpr_rnprj fld seq domain fldt in
+  let flds2remove = Hashtbl.create (List.length ss) in
+  List.iter (fun s -> 
+    if Hashtbl.mem flds2remove s 
+    then Hashtbl.replace flds2remove s (Hashtbl.find flds2remove s + 1) 
+    else Hashtbl.add flds2remove s 1
+  )
+  ss
+  ;
+
+  let components = ref [] in
+  let fldscopied = Hashtbl.create (List.length ts) in
+  List.iter  (fun (name,fldt) ->
+    if Hashtbl.mem flds2remove name
+    then begin let count = Hashtbl.find flds2remove name in
+      if count = 1 
+      then Hashtbl.remove flds2remove name 
+      else Hashtbl.replace flds2remove name (count - 1)
+    end else begin
+      let seq : int = 
+        if Hashtbl.mem fldscopied name
+        then begin let count = Hashtbl.find fldscopied name in
+          Hashtbl.replace fldscopied name (count + 1);
+          count
+        end else begin
+          Hashtbl.add fldscopied name 1;
+          0
+        end
+      in
+      let prj = mkprj name seq fldt in
+(*
+print_endline ("cal_remove ..");
+*)
+      let component = bexpr_apply fldt (prj,e) in
+(*
+print_endline (" .. cal_remove done");
+*)
+      components := (name,component) :: !components
+    end
+  )
+  ts
+  ;
+  List.rev (!components)
+
+let bexpr_remove_fields e ss : t =
+(*
+print_endline "Remove fields";
+*)
+  let _,domain = e in
+  match domain with
+  | BTYP_record ts ->
+(*
+print_endline "Type record";
+*)
+    let components = cal_removal e ts ss in
+    let result = bexpr_record components in
+    result
+ 
+  | BTYP_polyrecord (ts,t) ->
+(*
+print_endline "Type poly record";
+*)
+    let components = cal_removal e ts ss in
+    let field_types = List.map (fun (name,(_,t)) -> name,t) components in
+    let result_type = btyp_polyrecord field_types t in
+(*
+print_endline ("Type is " ^ st result_type);
+*)
+    BEXPR_remove_fields (e,ss),result_type
+ 
+  | _ -> 
+print_endline "type BUGGED";
+    failwith ("BUG: caller should have checked! remove fields from non-(poly)record type " ^ st domain)
+
 let bexpr_polyrecord (es: (string * t) list) ((e',t') as e) =
 (*
 print_endline ("[bexpr_polyrecord] Constructing polyrecord: extension fields = " ^ String.concat "," (List.map (fun (s,(_,t)) -> s^":"^ st t) es));
 print_endline ("[bexpr_polyrecord] Constructing polyrecord: core type= " ^ st t');
 *)
   let fldts = List.map (fun (s,(_,t)) -> s,t) es in
-  let domain : btype = complete_check (Flx_btype.btyp_polyrecord fldts t') in
+  let result_type : btype = complete_check (Flx_btype.btyp_polyrecord fldts t') in
 (*
 print_endline ("[bexpr_polyrecord] expected result type = " ^ st domain);  
 *)
-  let cmp (s1,e1) (s2,e2) = compare s1 s2 in
-  let mkprj fld seq fldt : t = bexpr_rnprj fld seq domain fldt in
+  let mkprj fld seq fldt : t = bexpr_rnprj fld seq t' fldt in
   match t' with
   | BTYP_tuple [] -> bexpr_record es
 
@@ -196,7 +295,14 @@ print_endline ("polyrecord core is record: fields = " ^ String.concat "," (List.
     List.iter 
       (fun (name,t) -> 
         if name = !ctrl_key then incr dcnt else begin ctrl_key := name; dcnt := 0 end;
-        nuflds := ( name, bexpr_apply t (mkprj name (!dcnt) t, e)) :: !nuflds;
+(*
+print_endline ("bexpr_polyrecord: record case ..");
+*)
+        let x = bexpr_apply t (mkprj name (!dcnt) t, e) in
+(*
+print_endline ("   .. application done");
+*)
+        nuflds := ( name, x) :: !nuflds;
         incr idx
       ) 
       flds
@@ -212,11 +318,52 @@ print_endline ("[bexpr_polyrecord] actual result type = " ^ st t);
     e
 
   | BTYP_polyrecord (flds,v) ->
-print_endline "[flx_bexpr] polyrecord expression not implemented yet"; assert false;
+(*
+print_endline "Constructing polyrecord value";
+*)
+    let dcnt = ref 0 in
+    let idx = ref 0 in
+    let ctrl_key = ref "" in
+    let nuflds = ref [] in
+    let nunames = ref [] in
+    List.iter 
+      (fun (name,t) -> 
+        if name = !ctrl_key then incr dcnt else begin ctrl_key := name; dcnt := 0 end;
+(*
+print_endline ("bexpr_polyrecord: polyrecord case ..");
+*)
+        nuflds := ( name, bexpr_apply t (mkprj name (!dcnt) t, e)) :: !nuflds;
+(*
+print_endline ("   .. application done");
+*)
+        nunames := name :: !nunames;
+        incr idx
+      ) 
+      flds
+    ;
+    let fields =es @ List.rev (!nuflds) in
+(*
+print_endline "Removing fields";
+*)
+    let reduced_e = bexpr_remove_fields e (!nunames) in
+(*
+print_endline "fields removed";
+*)
+    let cmp (s1,e1) (s2,e2) = compare s1 s2 in
+    let fields = List.stable_sort cmp fields in
+    let e = BEXPR_polyrecord (fields, reduced_e),result_type in
+(*
+print_endline "polyrecord created";
+print_endline ("Result type = " ^ st result_type);
+print_endline ("Fields = " ^ String.concat "," (List.map (fun (name,(_,t)) -> name ^ ":" ^ st t) fields));
+print_endline ("Core = " ^ st (snd reduced_e));
+*)
+    e
 
   | _ ->
+    let cmp (s1,e1) (s2,e2) = compare s1 s2 in
     let es = List.stable_sort cmp es in
-    BEXPR_polyrecord (es,e), domain 
+    BEXPR_polyrecord (es,e), result_type 
 
 
 let bexpr_variant t (n, e) = BEXPR_variant (n, e), complete_check t
@@ -235,7 +382,8 @@ let bexpr_closure t (bid, ts) =
 
 let bexpr_const_case (i, t) = BEXPR_case (i, t), complete_check t
 
-let bexpr_nonconst_case argt (i, sumt) = BEXPR_inj (i, argt, sumt), complete_check (Flx_btype.btyp_function (argt,sumt))
+let bexpr_nonconst_case argt (i, sumt) = BEXPR_inj (i, argt, sumt), 
+  complete_check (Flx_btype.btyp_function (argt,sumt))
 
 let bexpr_match_case (i, e) = BEXPR_match_case (i, e), Flx_btype.btyp_unitsum 2
 
@@ -421,6 +569,7 @@ let flat_iter
   | BEXPR_tuple es -> List.iter f_bexpr es
   | BEXPR_record es -> List.iter (fun (s,e) -> f_bexpr e) es
   | BEXPR_polyrecord (es,e) -> List.iter (fun (s,e) -> f_bexpr e) es; f_bexpr e
+  | BEXPR_remove_fields (e,ss) -> f_bexpr e
   | BEXPR_variant (s,e) -> f_bexpr e
   | BEXPR_closure (i,ts) ->
       f_bid i;
@@ -503,6 +652,8 @@ let map
       BEXPR_record (List.map (fun (s,e) -> s, f_bexpr e) es),f_btype t
   | BEXPR_polyrecord (es,e),t ->
       BEXPR_polyrecord (List.map (fun (s,e) -> s, f_bexpr e) es, f_bexpr e),f_btype t
+  | BEXPR_remove_fields (e,ss),t -> BEXPR_remove_fields (f_bexpr e,ss),f_btype t
+
   | BEXPR_variant (s,e),t -> BEXPR_variant (s, f_bexpr e),f_btype t
   | BEXPR_closure (i,ts),t ->
       BEXPR_closure (f_bid i, List.map f_btype ts),f_btype t
@@ -557,7 +708,10 @@ let rec reduce e =
     | BEXPR_apply((BEXPR_compose _,_),_),_ -> print_endline "Bugged composition"; assert false
     | BEXPR_cond ((BEXPR_case (0,Flx_btype.BTYP_unitsum 2),Flx_btype.BTYP_unitsum 2), _, fa),_ -> fa
     | BEXPR_cond ((BEXPR_case (1,Flx_btype.BTYP_unitsum 2),Flx_btype.BTYP_unitsum 2), tr, _),_ -> tr
-    | BEXPR_rprj (name,seq,d,c),_ -> bexpr_rnprj name seq d c  
+    | BEXPR_rprj (name,seq,d,c),_ -> bexpr_rnprj name seq d c 
+    | BEXPR_polyrecord (es,e),_ -> bexpr_polyrecord es e
+    | BEXPR_remove_fields (e,ss),_ -> 
+      bexpr_remove_fields e ss
     | x -> x
   in f_bexpr e
 

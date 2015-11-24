@@ -237,6 +237,7 @@ let rec gen_expr'
   | _ ->
   match e with
   | BEXPR_polyrecord _ -> print_endline "Attempt to generate polyrecord value, should have been factored out"; assert false
+  | BEXPR_remove_fields _ -> print_endline "Attempt to generate remove fields, should have been factored out"; assert false
   | BEXPR_unit -> print_endline "Generating unit expr"; ce_atom "0/*CLT:UNIT*/" (* ce_atom "(::flx::rtl::unit())/*UNIT TUPLE?*/" *)
   | BEXPR_unitptr -> print_endline "Generating unitptr expr"; ce_atom "NULL/*UNITPTR*/"
   | BEXPR_funprod _ -> assert false
@@ -1405,8 +1406,6 @@ print_endline ("Handling coercion in egen " ^ sbt bsym_table srct ^ " -> " ^ sbt
   | BEXPR_compose _ -> failwith "Flx_egen:Can't handle closure of composition yet"
 
   | BEXPR_record es ->
-    let rcmp (s1,_) (s2,_) = compare s1 s2 in
-    let es = sort rcmp es in
     let es = map snd es in
     let ctyp = tn t in
 

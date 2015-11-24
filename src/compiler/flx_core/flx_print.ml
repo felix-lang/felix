@@ -227,6 +227,8 @@ and string_of_expr (e:expr_t) =
         ts ^ " | " ^ string_of_typecode v ^
       ")"
 
+  | EXPR_remove_fields (_,e,ss) -> 
+    "(" ^ se e ^ " minus fields " ^ String.concat "," ss ^ ")"
 
   | EXPR_variant (_, (s, e)) -> "case " ^ string_of_id s ^ " of (" ^ se e ^ ")"
 
@@ -1827,7 +1829,7 @@ and string_of_bound_expression' bsym_table se e =
   | BEXPR_tuple_cons (eh,et) -> "tuple_cons("^ se eh ^"," ^ se et ^")"
   | BEXPR_aprj (ix,d,c) -> "aprj("^se ix^")"
   | BEXPR_rprj (ix,n,d,c) -> "rprj_"^string_of_int n^"("^ix^")"
-  | BEXPR_prj (n,d,c) -> "prj"^ si n^":"^sbt bsym_table d ^ " -> " ^ sbt bsym_table c
+  | BEXPR_prj (n,d,c) -> "(prj"^ si n^":"^sbt bsym_table d ^ " -> " ^ sbt bsym_table c^ ")"
   | BEXPR_inj (n,d,c) -> "inj"^ si n^":"^sbt bsym_table d ^ " -> " ^ sbt bsym_table c
 
   | BEXPR_not e -> "not("^ se e ^ ")"
@@ -1842,8 +1844,8 @@ and string_of_bound_expression' bsym_table se e =
   | BEXPR_unlikely e -> "unlikely(" ^ se e ^")"
 
   | BEXPR_literal e -> string_of_literal e
-  | BEXPR_apply  (fn, arg) -> "(" ^
-    se fn ^ " " ^
+  | BEXPR_apply  (fn, arg) -> "apply(" ^
+    se fn ^ ", " ^
     se arg ^
     ")"
 
@@ -1879,6 +1881,9 @@ and string_of_bound_expression' bsym_table se e =
 
   | BEXPR_polyrecord (ts,e) -> "( " ^
       catmap ", " (fun (s,e)-> s^":"^ se e) ts ^ " | " ^ se e^ ")"
+
+  | BEXPR_remove_fields (e,ss) ->
+     "(" ^ se e ^ " minus fields " ^ String.concat "," ss ^ ")"
 
   | BEXPR_variant (s,e) -> "case " ^ s ^ " of (" ^ se e ^ ")"
 

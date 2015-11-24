@@ -496,9 +496,6 @@ print_endline ("Polyrecord/record unification " ^ sbt bsym_table lhs ^ " = " ^ s
       | BTYP_record (t1),BTYP_record (t2) ->
         if List.length t1 = List.length t2
         then begin
-          let rcmp (s1,_) (s2,_) = compare s1 s2 in
-          let t1 = List.sort rcmp t1 in
-          let t2 = List.sort rcmp t2 in
           if (List.map fst t1) <> (List.map fst t2) then raise Not_found;
           let rec merge e a b = match a,b with
           | [],[] -> e
@@ -516,9 +513,10 @@ print_endline ("Polyrecord/record unification " ^ sbt bsym_table lhs ^ " = " ^ s
       | BTYP_variant t1,BTYP_variant t2 ->
         if List.length t1 = List.length t2
         then begin
+          (* FIXME: should not be needed but variants aren't implemented yet *)
           let rcmp (s1,_) (s2,_) = compare s1 s2 in
-          let t1 = List.sort rcmp t1 in
-          let t2 = List.sort rcmp t2 in
+          let t1 = List.stable_sort rcmp t1 in
+          let t2 = List.stable_sort rcmp t2 in
           if (List.map fst t1) <> (List.map fst t2) then raise Not_found;
           let rec merge e a b = match a,b with
           | [],[] -> e
@@ -803,9 +801,6 @@ let rec type_eq' bsym_table counter ltrail ldepth rtrail rdepth trail t1 t2 =
   | BTYP_record (t1),BTYP_record (t2) ->
     if List.length t1 = List.length t2
     then begin
-      let rcmp (s1,_) (s2,_) = compare s1 s2 in
-      let t1 = List.sort rcmp t1 in
-      let t2 = List.sort rcmp t2 in
       List.map fst t1 = List.map fst t2 &&
       List.fold_left2
       (fun tr a b -> tr && te a b)
@@ -818,6 +813,7 @@ let rec type_eq' bsym_table counter ltrail ldepth rtrail rdepth trail t1 t2 =
   | BTYP_variant t1,BTYP_variant t2 ->
     if List.length t1 = List.length t2
     then begin
+      (* should not be needed but variants aren't implemented yet *)
       let rcmp (s1,_) (s2,_) = compare s1 s2 in
       let t1 = List.sort rcmp t1 in
       let t2 = List.sort rcmp t2 in

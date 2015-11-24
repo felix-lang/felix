@@ -217,8 +217,6 @@ let btyp_array (t, n) =
 
 (** Construct a BTYP_record type. *)
 let btyp_record ts = 
-   (* NOTE: NO CHECK FOR DUPLICATES! *)
-   (* Make sure all the elements are sorted by name. *)
    let cmp (s1,t1) (s2, t2) = compare s1 s2 in
    let ts = List.stable_sort cmp ts in
    BTYP_record (ts)
@@ -229,18 +227,17 @@ let btyp_polyrecord ts v =
 print_endline ("Constructing polyrecord, extensions=" ^ catmap "," (fun (s,t) -> s^":"^str_of_btype t) ts);
 print_endline ("   ... core = " ^ st v);
 *)
+   match ts with [] -> v | _ ->
    match v with
    | BTYP_record flds -> 
-     (* NOTE: NO CHECK FOR DUPLICATES! *)
      btyp_record (ts @ flds)
 
    | BTYP_void -> btyp_record ts
 
    | BTYP_polyrecord (flds,v2) ->
-     (* NOTE: NO CHECK FOR DUPLICATES! *)
      let cmp (s1,t1) (s2, t2) = compare s1 s2 in
-     let ts = List.stable_sort cmp ts in
-     BTYP_polyrecord (flds @ ts,v2)
+     let fields = List.stable_sort cmp (ts @ flds) in
+     BTYP_polyrecord (fields,v2)
    | _ -> 
      let cmp (s1,t1) (s2, t2) = compare s1 s2 in
      let ts = List.stable_sort cmp ts in

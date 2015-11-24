@@ -1540,6 +1540,9 @@ syntax expressions {
     "`(ast_polyrecord ,_sr ,(cons _2 (map second _3)) ,_5)"
   ;
 
+  satom := "(" sexpr "remove" "fields" sname+ ")" =>#
+    "`(ast_remove_fields ,_sr ,_2 ,_5)"
+  ;
 
   //$ record value, statement list.
   //$ this variant is useful for encapsulating

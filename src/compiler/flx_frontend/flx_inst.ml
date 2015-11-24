@@ -203,7 +203,12 @@ let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
     register_tuple syms bsym_table (vs t)
 
   (* should have disappeared after monomorphisation *)
-  | BEXPR_polyrecord _ -> assert false
+  | BEXPR_polyrecord _ -> 
+    print_endline ("flx_inst: unexpected polyrecord expression");
+    print_endline ("Process expr " ^ sbe bsym_table be ^ " .. raw type " ^ sbt bsym_table t);
+    assert false
+
+  | BEXPR_remove_fields _ -> assert false
 
   | BEXPR_variant (s,e) ->
     ue e

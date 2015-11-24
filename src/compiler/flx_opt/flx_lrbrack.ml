@@ -31,12 +31,13 @@ let elim_lrbracks syms bsym_table =
   ;
   Hashtbl.iter (fun i (pa,(sr,e,pt)) ->
 (*
-    print_endline ("Add function product " ^ string_of_int i);
+    print_endline ("Add lrbrack " ^ string_of_int i);
     print_endline ("Child of  " ^ match pa with | Some p -> string_of_int p | None -> "NONE");
 *)
+    let _,e_t = e in
     let dt,ct = match pt with | Flx_btype.BTYP_function (dt,ct) -> dt,ct | _ -> assert false in
 (*
-    print_endline ("Type: " ^ Flx_print.sbt bsym_table pt);
+    print_endline ("Final lrbrack Type: " ^ Flx_print.sbt bsym_table pt);
 *)
     (* add function parameter *)
     let pindex = !(syms.Flx_mtypes2.counter) in 
@@ -47,11 +48,9 @@ let elim_lrbracks syms bsym_table =
     let param = Flx_bexpr.bexpr_varname dt (pindex,[]) in
 
     (* calculate domain and codomain component types *)
-    let d,c = match pt with | Flx_btype.BTYP_function (d,c) -> d,c | _ -> assert false in
-    assert (Flx_unify.type_eq bsym_table syms.Flx_mtypes2.counter c ct);
     let unit_t = Flx_btype.btyp_tuple [] in
     let bool_t = Flx_btype.btyp_unitsum 2 in
-    let ds = match d with 
+    let ds = match dt with 
       | Flx_btype.BTYP_sum ds -> ds 
       | Flx_btype.BTYP_unitsum n -> Flx_list.repeat unit_t n 
       | _ -> assert false 
@@ -64,7 +63,7 @@ let elim_lrbracks syms bsym_table =
        f_i a, where a is the argument of the input variant,
        therefore, it is a switch..
    *)
-    let fts = List.map (fun d ->  d,c) ds in
+    let fts = List.map (fun d ->  d,ct) ds in
     let ixs = Flx_list.nlist n in
 
     let exes = ref [] in
@@ -92,10 +91,10 @@ let elim_lrbracks syms bsym_table =
       let ft = Flx_btype.btyp_function (pd,pc) in
 
       (* projection to extract the function *)
-      let fnprj = Flx_bexpr.bexpr_prj i pt ft in
+      let fnprj = Flx_bexpr.bexpr_prj i e_t ft in
 
       (* extract the function *)
-      let fn = Flx_bexpr.bexpr_apply pt (fnprj, e) in
+      let fn = Flx_bexpr.bexpr_apply ft (fnprj, e) in
 
       (* apply the function *)
       let outarg = Flx_bexpr.bexpr_apply pc (fn,paramarg) in
@@ -111,6 +110,9 @@ let elim_lrbracks syms bsym_table =
       )
       ixs fts 
     ;
+(*
+print_endline "lrbrack done ****";
+*)
     let exes = List.rev (!exes) in
     let params = [{Flx_bparameter.pid="_a"; pindex=pindex; pkind=`PVar;ptyp=dt}] in
     let params = params,None in 

@@ -669,6 +669,10 @@ let inline_check syms bsym_table uses srcall caller callee props exes =
   in result
 
 let rec special_inline syms uses bsym_table caller hic excludes sr e =
+  let nth ls n = try List.nth ls n with _ -> 
+    failwith ("special_inline, n'th failure listlen=" ^ string_of_int n ^
+    ", index=" ^ string_of_int (List.length ls))
+  in
   (*
   print_endline ("Special inline " ^ sbe bsym_table e);
   *)
@@ -680,10 +684,16 @@ let rec special_inline syms uses bsym_table caller hic excludes sr e =
   *)
   match Flx_bexpr.map ~f_bexpr:aux e with
   | BEXPR_apply ((BEXPR_prj (n,_,_),_),(BEXPR_tuple ls,_)),_ -> 
-    nth ls n
+    begin try nth ls n with exn ->
+      print_endline "projection of tuple";
+      raise exn
+    end
 
   | BEXPR_apply ((BEXPR_prj (n,_,_),_),(BEXPR_record ls,_)),_ -> 
-    snd (nth ls n)
+    begin try snd (nth ls n) with exn ->
+      print_endline "projection of record";
+      raise exn
+    end
 
   (* get_n on a struct apply to an explicit tuple .. *)
   | BEXPR_apply (

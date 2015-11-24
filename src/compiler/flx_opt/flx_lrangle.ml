@@ -35,12 +35,15 @@ let elim_lrangles syms bsym_table =
   ;
   Hashtbl.iter (fun i (pa,(sr,e,pt)) ->
 (*
-    print_endline ("Add function product " ^ string_of_int i);
+    print_endline ("********** Add lrangle  product " ^ string_of_int i);
+*)
+    let _,e_t = e in
+(*
     print_endline ("Child of  " ^ match pa with | Some p -> string_of_int p | None -> "NONE");
 *)
     let dt,ct = match pt with | Flx_btype.BTYP_function (dt,ct) -> dt,ct | _ -> assert false in
 (*
-    print_endline ("Type: " ^ Flx_print.sbt bsym_table pt);
+    print_endline ("Whole lrangle Type: " ^ Flx_print.sbt bsym_table pt);
 *)
     (* add function parameter *)
     let pindex = !(syms.Flx_mtypes2.counter) in 
@@ -51,9 +54,7 @@ let elim_lrangles syms bsym_table =
     let param = Flx_bexpr.bexpr_varname dt (pindex,[]) in
 
     (* calculate domain and codomain component types *)
-    let d,c = match pt with | Flx_btype.BTYP_function (d,c) -> d,c | _ -> assert false in
-    assert (Flx_unify.type_eq bsym_table syms.Flx_mtypes2.counter d dt);
-    let cs = match c with 
+    let cs = match ct with 
       | Flx_btype.BTYP_tuple cs -> cs 
       | Flx_btype.BTYP_array (t,Flx_btype.BTYP_unitsum n) -> Flx_list.repeat t n 
       | _ -> assert false 
@@ -61,16 +62,19 @@ let elim_lrangles syms bsym_table =
     let n = List.length cs in
 
     (* generate applications f.i a *)
-    let fts = List.map (fun c ->  d,c) cs in
+    let fts = List.map (fun c ->  dt,c) cs in
     let ixs = Flx_list.nlist n in
     let appls = List.map2  (fun i (pd,pc) ->
       let ft = Flx_btype.btyp_function (pd,pc) in
-      let fnprj = Flx_bexpr.bexpr_prj i pt ft in
-      let fn = Flx_bexpr.bexpr_apply pt (fnprj, e) in
+      let fnprj = Flx_bexpr.bexpr_prj i e_t ft in
+      let fn = Flx_bexpr.bexpr_apply ft (fnprj, e) in
       Flx_bexpr.bexpr_apply pc (fn,param)
       )
       ixs fts 
     in
+(*
+print_endline "Calculated lrangle *************";
+*)
     let re = Flx_bexpr.bexpr_tuple ct appls in (* product codomain type *)
     let exe = Flx_bexe.bexe_fun_return (sr,re) in 
     let params = [{Flx_bparameter.pid="_a"; pindex=pindex; pkind=`PVar;ptyp=dt}] in

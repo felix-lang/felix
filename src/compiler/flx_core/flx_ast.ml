@@ -132,6 +132,7 @@ and expr_t =
   | EXPR_record of Flx_srcref.t * (Flx_id.t * expr_t) list
   | EXPR_record_type of Flx_srcref.t * (Flx_id.t * typecode_t) list
   | EXPR_polyrecord of Flx_srcref.t * (Flx_id.t * expr_t) list * expr_t
+  | EXPR_remove_fields of Flx_srcref.t * expr_t * string list
   | EXPR_polyrecord_type of Flx_srcref.t * (Flx_id.t * typecode_t) list * typecode_t
   | EXPR_variant of Flx_srcref.t * (Flx_id.t * expr_t)
   | EXPR_variant_type of Flx_srcref.t * (Flx_id.t * typecode_t) list
@@ -710,6 +711,7 @@ let src_of_expr (e : expr_t) = match e with
   | EXPR_tuple_cons (s,_,_)
   | EXPR_record (s,_)
   | EXPR_polyrecord (s,_,_)
+  | EXPR_remove_fields (s,_,_)
   | EXPR_variant (s,_)
   | EXPR_record_type (s,_)
   | EXPR_polyrecord_type (s,_,_)

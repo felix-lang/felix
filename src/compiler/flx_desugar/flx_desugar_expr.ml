@@ -393,6 +393,10 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
     let l,x = rex e in
     l @ List.concat lss,EXPR_polyrecord(sr, List.combine ss xs, x)
 
+  | EXPR_remove_fields (sr,e,ss) ->
+    let l,x = rex e in
+    l,EXPR_remove_fields(sr,x,ss)
+
   | EXPR_extension (sr,es,e) -> 
     let lss,xs = List.split (List.map rex es) in
     let l,x = rex e in

@@ -87,8 +87,13 @@ let uncurry_expr syms bsym_table uncurry_map e =
     let e =
       let c,k,n = Hashtbl.find uncurry_map f in
       Hashtbl.replace uncurry_map f (c,k,n+1);
-      let ab = merge_args syms bsym_table f c a b in
-      bexpr_apply ret ((bexpr_closure t (k,ts)),ab)
+      let (_,ab_t) as ab = merge_args syms bsym_table f c a b in
+(* replace f (a0,a1,a2...) (b0,b1,b2...) with k (a0,a1,a2...,b0,b1,b2...)
+   if f:A -> B -> R, and k:AB -> R, 
+   then t = B -> R
+*)
+      let apl = bexpr_apply ret ((bexpr_closure (btyp_function (ab_t,ret)) (k,ts)),ab) in
+      apl
     in aux e
   | x -> x
   in aux e

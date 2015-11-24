@@ -129,7 +129,6 @@ let cal_call state bsym_table sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
             | _ -> assert false
             in
             let n = length rs in
-            let rs= sort (fun (a,_) (b,_) -> compare a b) rs in
             let rs = map2 (fun (name,t) j -> name,(j,t)) rs (nlist n) in
             try Some (map
               (fun (name,d) ->

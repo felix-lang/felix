@@ -106,6 +106,7 @@ let map_expr f (e:expr_t):expr_t = match e with
   | EXPR_tuple_cons (sr,eh, et) -> EXPR_tuple_cons (sr, f eh, f et)
   | EXPR_record (sr,es) -> EXPR_record (sr, List.map (fun (s,e) -> s,f e) es)
   | EXPR_polyrecord (sr,es,e) -> EXPR_polyrecord (sr, List.map (fun (s,e) -> s,f e) es, f e)
+  | EXPR_remove_fields (sr,e,ss) -> EXPR_remove_fields (sr, f e, ss)
   | EXPR_variant (sr,(s,e)) -> EXPR_variant (sr, (s,f e))
   | EXPR_arrayof (sr, es) -> EXPR_arrayof (sr, List.map f es)
   | EXPR_coercion (sr, (x,t)) -> EXPR_coercion (sr,(f x, t))
@@ -214,6 +215,7 @@ let iter_expr f (e:expr_t) =
   | EXPR_not (_,x) 
   | EXPR_get_tuple_tail (_,x)
   | EXPR_get_tuple_head (_,x)
+  | EXPR_remove_fields (_,x,_)
     -> f x
 
   | EXPR_letin (_,(_,a,b))

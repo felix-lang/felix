@@ -1,3 +1,4 @@
+let sbt b t = Flx_print.sbt b t
 
 let rec reduce_bexpr syms summap pa sr e =
   let f_bexpr e = reduce_bexpr syms summap pa sr e in
@@ -29,12 +30,19 @@ let elim_funsums syms bsym_table =
   ;
   Hashtbl.iter (fun i (pa,(sr,e,pt)) ->
 (*
-    print_endline ("Add function product " ^ string_of_int i);
+    print_endline ("******* Add function sum " ^ string_of_int i);
+*)
+    let _,e_t = e in
+(*
+    print_endline ("Tuple of functions has type " ^ sbt bsym_table e_t);
+*)
+
+(*
     print_endline ("Child of  " ^ match pa with | Some p -> string_of_int p | None -> "NONE");
 *)
     let dt,ct = match pt with | Flx_btype.BTYP_function (dt,ct) -> dt,ct | _ -> assert false in
 (*
-    print_endline ("Type: " ^ Flx_print.sbt bsym_table pt);
+    print_endline ("Final sum type: " ^ Flx_print.sbt bsym_table pt);
 *)
     (* add function parameter *)
     let pindex = !(syms.Flx_mtypes2.counter) in 
@@ -45,15 +53,14 @@ let elim_funsums syms bsym_table =
     let param = Flx_bexpr.bexpr_varname dt (pindex,[]) in
 
     (* calculate domain and codomain component types *)
-    let d,c = match pt with | Flx_btype.BTYP_function (d,c) -> d,c | _ -> assert false in
     let unit_t = Flx_btype.btyp_tuple [] in
     let bool_t = Flx_btype.btyp_unitsum 2 in
-    let ds = match d with 
+    let ds = match dt with 
       | Flx_btype.BTYP_sum ds -> ds 
       | Flx_btype.BTYP_unitsum n -> Flx_list.repeat unit_t n 
       | _ -> assert false 
     in
-    let cs = match c with 
+    let cs = match ct with 
       | Flx_btype.BTYP_sum cs -> cs 
       | Flx_btype.BTYP_unitsum n -> Flx_list.repeat unit_t n 
       | _ -> assert false 
@@ -95,19 +102,20 @@ let elim_funsums syms bsym_table =
       let ft = Flx_btype.btyp_function (pd,pc) in
 
       (* projection to extract the function *)
-      let fnprj = Flx_bexpr.bexpr_prj i pt ft in
+      let fnprj = Flx_bexpr.bexpr_prj i e_t ft in
+(* function should have type pt = pd -> pc *)
 
       (* extract the function *)
-      let fn = Flx_bexpr.bexpr_apply pt (fnprj, e) in
+      let fn = Flx_bexpr.bexpr_apply ft (fnprj, e) in
 
       (* apply the function *)
       let outarg = Flx_bexpr.bexpr_apply pc (fn,paramarg) in
 
       (* calculate the injector *)
-      let fninj = Flx_bexpr.bexpr_nonconst_case pc (i,c) in
+      let fninj = Flx_bexpr.bexpr_nonconst_case pc (i,ct) in
 
       (* apply the injection *)
-      let outval = Flx_bexpr.bexpr_apply c (fninj, outarg) in
+      let outval = Flx_bexpr.bexpr_apply ct (fninj, outarg) in
 
       (* return the variant *)
       let exe = Flx_bexe.bexe_fun_return (sr,outval) in 
@@ -120,6 +128,9 @@ let elim_funsums syms bsym_table =
       )
       ixs fts 
     ;
+(*
+print_endline " .. Calculated function sum *********";
+*)
     let exes = List.rev (!exes) in
     let params = [{Flx_bparameter.pid="_a"; pindex=pindex; pkind=`PVar;ptyp=dt}] in
     let params = params,None in 
