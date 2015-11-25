@@ -60,7 +60,9 @@ let variant_coercion state bsym_table sr x' t' t'' lhs rhs =
     )
     lhs
     ;
+(*
     print_endline ("Coercion of variant to type " ^ sbt bsym_table t'');
+*)
     bexpr_coerce (x',t'')
   with Not_found ->
     clierr sr

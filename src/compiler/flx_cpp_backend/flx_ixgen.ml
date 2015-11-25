@@ -7,6 +7,13 @@ let sbt b t = Flx_print.string_of_btypecode (Some b) t
 let catmap sep f ls = String.concat sep (List.map f ls)
 let si i = string_of_int i
 let siu i = if i < 0 then string_of_int i else string_of_int i ^ "u"
+
+let nth lst idx = 
+  try List.nth lst idx 
+  with _ -> failwith ("[flx_ixgen] nth failed, list length=" ^ 
+    string_of_int (List.length lst) ^
+    ", index sought=" ^string_of_int idx)
+
 (* Note that this computation must be driven by the array index type not
   the type of the index.
 *)
@@ -56,7 +63,7 @@ let get_array_sum_offset_values bsym_table ts =
 
 let case_offset bsym_table ts caseno = match caseno with
   | `Int 0 -> `Int 0
-  | `Int n -> `Int (List.nth (get_array_sum_offset_values bsym_table ts) n)
+  | `Int n -> `Int (nth (get_array_sum_offset_values bsym_table ts) n)
   | _ -> `Case_offset (ts,caseno)
 
 let rec print_index bsym_table idx = 
@@ -136,7 +143,7 @@ print_endline ("Final index is " ^ print_index bsym_table ix);
   | (BEXPR_case (i,t'),_), BTYP_sum ts ->
      let e' = expr idx in
      let caseno = i in 
-     let caset = List.nth ts i in
+     let caset = nth ts i in
      (case_offset bsym_table ts (`Int caseno)) 
 
 (*
@@ -352,7 +359,7 @@ print_endline ("Flx_ixgen:handle_get_n arg  : " ^ sbe bsym_table arg);
     if i = 0 then out else aux t (i-1) (sizeof_linear_type bsym_table h * out)
   in 
   let a = aux (List.rev ls) (List.length ls - n - 1) 1 in
-  let b = sizeof_linear_type bsym_table (List.nth ls n) in
+  let b = sizeof_linear_type bsym_table (nth ls n) in
 (*
         let apart = if a = 1 then cidx else ce_infix "/" cidx (ce_atom (si a)) in
         let result = if n = List.length ls - 1 then apart else ce_infix "%" apart (ce_atom (si b)) in

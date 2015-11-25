@@ -123,6 +123,47 @@ print_endline ("Generating _strr for record type " ^ Flx_print.sbt bsym_table t)
       in 
       be rs e
 
+    | BTYP_variant ls ->
+(*
+print_endline ("_strr Variant type " ^ Flx_print.sbt bsym_table t);
+*)
+      let limit = rs.Flx_types.strr_limit - 1 in
+      if limit = 0 then be rs (mks "...") else
+      let rs = { rs with Flx_types.strr_limit = limit } in
+      let urep cname t hashcode =  
+        match t with
+        | BTYP_void _ ->
+          mks cname
+
+        | BTYP_tuple [] _ ->
+          mks ("#case " ^ cname)
+
+
+        | BTYP_tuple _ ->
+          let arg = EXPR_case_arg (sr, (hashcode,a)) in
+          let strarg = apl2 sr "_strr" [arg] in
+          cats (mks ("case "^ cname^" ")) strarg
+
+        | _ ->
+          let arg = EXPR_case_arg (sr, (hashcode,a)) in
+          let strarg = apl2 sr "_strr" [arg] in
+          cats (cats (mks ("case "^ cname^" (")) strarg) (mks ")")
+      in 
+      let condu cname t other =
+        let hashcode = Hashtbl.hash (cname,t) in
+        let cond = EXPR_match_case (sr, (hashcode,a)) in
+        let u = urep cname t hashcode in
+        EXPR_cond (sr, (cond,u,other)) 
+      in 
+      let e = 
+        List.fold_left (fun acc (cname,t) -> 
+          condu cname t acc 
+        )
+        (mks "MATCHFAILURE")
+        ls
+      in 
+      be rs e
+
  
     | BTYP_inst (i,ts) ->
       begin match Flx_lookup_state.hfind "lookup:_strr" sym_table i with

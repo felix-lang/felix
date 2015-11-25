@@ -233,11 +233,11 @@ and string_of_expr (e:expr_t) =
   | EXPR_variant (_, (s, e)) -> "case " ^ string_of_id s ^ " of (" ^ se e ^ ")"
 
   | EXPR_variant_type (_,ts) ->
-      "union {" ^
-      catmap "; "
-        (fun (s,t) -> string_of_id s ^ " of " ^ string_of_typecode t ^ ";")
+      "(" ^
+      catmap "| "
+        (fun (s,t) -> "case " ^ string_of_id s ^ " of " ^ string_of_typecode t)
         ts ^
-      "}"
+      ")"
 
   | EXPR_arrayof (_,t) -> "[|" ^ catmap ", " se t ^ "|]"
 
@@ -403,9 +403,9 @@ and st prec tc : string =
       begin match ls with
       | [] -> 0,"void"
       | _ ->
-          0, "union {" ^
-          catmap "" (fun (s,t) -> string_of_id s ^ " of " ^ st 0 t ^ "; ") ls ^
-          "}"
+          0, "(" ^
+          catmap "| " (fun (s,t) -> "case " ^ string_of_id s ^ " of " ^ st 0 t) ls ^
+          ")"
       end
 
     | TYP_sum ls ->
@@ -614,7 +614,7 @@ and sb bsym_table depth fixlist counter prec tc =
     | BTYP_variant ls ->
       begin match ls with
       | [] -> 0,"void"
-      | _ -> 0,"union {"^catmap "" (fun (s,t)->s^" of "^sbt 0 t^";") ls ^"}"
+      | _ -> 0,"("^catmap "| " (fun (s,t)->"case " ^ s^" of "^sbt 0 t) ls ^")"
       end
 
     | BTYP_unitsum k ->

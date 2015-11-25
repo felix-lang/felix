@@ -26,6 +26,11 @@ module L = Flx_literal
 exception Recname of string
 
 let string_of_string = Flx_string.c_quote_of_string
+let nth lst idx = 
+  try List.nth lst idx 
+  with _ -> failwith ("[flx_egen] List.nth failed, list length=" ^ 
+    string_of_int (List.length lst) ^
+    ", index sought=" ^string_of_int idx)
 
 
 let get_var_frame syms bsym_table this index ts : string =
@@ -292,7 +297,7 @@ let rec gen_expr'
     let case_offset bsym_table ts caseno = 
       match caseno with
       | 0 -> ce_int 0
-      | n -> ce_int (List.nth (get_array_sum_offset_values bsym_table ts) n)
+      | n -> ce_int (nth (get_array_sum_offset_values bsym_table ts) n)
     in
     case_offset bsym_table ts n
 
@@ -360,7 +365,7 @@ print_endline ("Compact linear tuple " ^ sbt bsym_table t);
       let case_offset bsym_table ts caseno = 
         match caseno with
         | 0 -> ce_int 0
-        | n -> ce_int (List.nth (get_array_sum_offset_values bsym_table ts) n)
+        | n -> ce_int (nth (get_array_sum_offset_values bsym_table ts) n)
       in
       ce_add (case_offset bsym_table ts caseno) (ge' a)
     | _ -> assert false
@@ -426,7 +431,7 @@ print_endline ("Compact linear tuple " ^ sbt bsym_table t);
       if i = 0 then out else aux t (i-1) (sizeof_linear_type bsym_table h * out)
     in 
     let x = aux (List.rev ts) (List.length ts - n - 1) 1 in
-    let y = sizeof_linear_type bsym_table (List.nth ts n) in
+    let y = sizeof_linear_type bsym_table (nth ts n) in
     let a = ge' a in
     let result = ce_rmd (ce_div a (ce_int x)) (ce_int y) in
     result
@@ -1346,9 +1351,12 @@ end
      arguments to be applied to a unit anyhow
   *)
 
-  | BEXPR_variant (s,((_,t') as e)) -> failwith ("Temporarily egen not handling BEXPR_variant");
+  | BEXPR_variant (s,((_,t') as e)) -> 
+(*
     print_endline ("Variant " ^ s);
     print_endline ("Type " ^ sbt bsym_table t);
+    print_endline ("Argument type " ^ sbt bsym_table t');
+*)
     let
       arg_typename = tn t' and
       union_typename = tn t
@@ -1365,8 +1373,14 @@ end
       | Some i -> i
       | None -> failwith "[egen] Woops, variant field not in type"
     in
-    print_endline ("Index " ^ si vidx);
-    let uval = "::flx::rtl::_uctor_("^si vidx^"," ^ aval ^")"  in
+(*
+    print_endline ("Position " ^ si vidx);
+*)
+    let hashcode = Hashtbl.hash (s,t') in 
+(*
+    print_endline ("Hashcode " ^ si hashcode);
+*)
+    let uval = "::flx::rtl::_uctor_("^si hashcode^"," ^ aval ^")"  in
     ce_atom uval
 
   | BEXPR_coerce ((srcx,srct) as srce,dstt) -> 
@@ -1381,7 +1395,9 @@ print_endline ("Handling coercion in egen " ^ sbt bsym_table srct ^ " -> " ^ sbt
       in
       begin match srcx with
       | BEXPR_variant (s,argt) ->
+(*
         print_endline "Coerce known variant!";
+*)
         ge' (bexpr_variant t (s,argt))
       | _ ->
         let i =

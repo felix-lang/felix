@@ -8,6 +8,13 @@ open Flx_print
 let si = string_of_int
 exception Found_type of Flx_btype.t
 
+let nth lst idx = 
+  try List.nth lst idx 
+  with _ -> failwith ("[flx_vgen] List.nth failed, list length=" ^ 
+    string_of_int (List.length lst) ^
+    ", index sought=" ^string_of_int idx)
+
+
 let check_case_index bsym_table t i =
   let n = cal_variant_cases bsym_table t in
   assert (0 <= i && i < n)
@@ -32,8 +39,16 @@ print_endline "cal_case_type";
 *)
   match unfold "cal_case_type" t with
   | BTYP_unitsum _ -> Flx_btype.btyp_tuple []
-  | BTYP_sum ls -> List.nth ls n
-  | BTYP_variant ls -> let (_,ct) = List.nth ls n in ct
+  | BTYP_sum ls -> nth ls n
+  | BTYP_variant ls -> 
+    let ct = 
+      try 
+        List.iter (fun (s,ct)-> if Hashtbl.hash (s,ct) = n then raise (Found_type ct)) ls; 
+        assert false 
+      with Found_type ct -> ct 
+    in
+    ct
+
   | BTYP_inst (i,ts) ->
     let bsym =
       try Flx_bsym_table.find bsym_table i with Not_found -> assert false

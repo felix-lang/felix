@@ -1405,7 +1405,8 @@ syntax expressions {
   x[scase_literal_pri] := "proj" sinteger "of" x[ssum_pri] =># "`(ast_projection ,_2 ,_4)";
 
   //$ Variant value.
-  x[scase_literal_pri] := "case" sname "of" x[ssum_pri] =># "`(ast_variant (,_2 ,_4))";
+  x[scase_literal_pri] := "#" "case" sname =># "`(ast_variant (,_3 ()))";
+  x[scase_literal_pri] := "case" sname x[ssum_pri] =># "`(ast_variant (,_2 ,_3))";
 
   //$ multiplication: right associative
   x[sproduct_pri] := x[>sproduct_pri] "\otimes" x[sproduct_pri] =># "(Infix)";
@@ -1564,7 +1565,13 @@ syntax expressions {
 
   // INCONSISTENT GRAMMAR (no separator between items??
   //$ Variant type.
-  satom := "variant" "(" stype_sum_items ")" =># "`(ast_variant_type ,_3)";
+  satom := "(" stype_variant_items ")" =># "`(ast_variant_type ,_2)";
+    stype_variant_item := "case" sname "of" sexpr =># "`(,_2 ,_4)";
+    stype_variant_item := "case" sname =># "`(,_2 ,(noi 'unit))";
+
+    stype_variant_item_bar := "|" stype_variant_item =># "_2";
+    stype_variant_items := stype_variant_item stype_variant_item_bar* =># "(cons _1 _2)";
+    stype_variant_items := stype_variant_item_bar+ =># "_1";
 
   //$ scalar literals (numbers, strings).
   satom := sliteral =># "_1";

@@ -113,6 +113,7 @@ let string_of_variant_rep = function
 
 
 let cal_variant_rep bsym_table t =
+  match t with BTYP_variant _ -> VR_uctor | _ ->
   if isnullptr bsym_table t then 
     VR_nullptr
   else if weird_unit bsym_table t then

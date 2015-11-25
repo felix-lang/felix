@@ -5328,6 +5328,18 @@ print_endline ("Codomain = " ^ sbt bsym_table codomain);
        else let t = List.nth ls v in
        bexpr_case_arg t (v, e')
 
+     | BTYP_variant ls ->
+       begin 
+         try 
+           List.iter (fun (cname,t) ->
+             if Hashtbl.hash (cname,t) = v then raise (Tfound t))
+             ls
+           ; 
+           assert false
+         with Tfound t -> 
+           bexpr_case_arg t (v,e')
+       end
+
      | _ -> clierr sr ("Expected sum type, got " ^ sbt bsym_table t)
      end
 
