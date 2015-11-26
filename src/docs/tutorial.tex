@@ -1,0 +1,522 @@
+
+\documentclass{book}
+\usepackage{minted}
+\title{Introduction to Felix}
+\author{John Skaller}
+\begin{document}
+\maketitle
+\tableofcontents
+\chapter{Quick Start}
+We must of course begin with the traditional greeting!
+\begin{minted}{felix}
+println$ "Hello World";
+\end{minted}
+Here \verb%println% is a procedure which outputs a value to
+standard output. The argument is of course literal of
+type \verb%string%. Calls to procedures must be terminated
+by a semicolon \verb%;%. You will note, we do not require
+parentheses around the argument to denote a procedure call!
+We do not like parentheses much! The \verb%$% sign will be
+explained in more detail later, but for now you should
+know it is just a low precedence, right associative application
+or call operator.
+
+You can run this program from your console or terminal, once
+Felix is installed, by just typing:
+\begin{verbatim}
+flx hello.flx
+\end{verbatim}
+assuming the file \verb%hello.flx% contains the sample code
+and is in the current directory. Behind the scenes Felix does
+dependency checking, transates the program to C++, compiles
+the C++ to a machine binary, and runs it.
+
+It works like Python but it performs like C++.
+
+\section{Integers: {\tt int}}
+Felix has the usual integer type \verb%int% and literals consisting
+of decimal digits, and the usual binary operators \verb%+% for addition,
+\verb%-% for subtraction, \verb%*% for multiplication, \verb%/% for division,
+and \verb+%+ for remainder. These have the same semantics as in C, because,
+these operators are in fact implemented in the Felix standard library by
+delegating to C.
+
+\begin{minted}{felix}
+println$ 42;
+println$ (42 + 12) * 90 - (36 / 2 + 1) * 127 % 3;
+\end{minted}
+Note you must put spaces around the \verb%-% operator! This is because
+in Felix \verb%-% is also a hyphen, allowed in identifier names.
+
+We also have the unary operator \verb%-% for negation, and for symmetry
+we also have unary \verb%+% which does nothing.
+
+These operators are just functions so here are some more: 
+the function \verb%str% converts an \verb%int% to a readable
+string, the function \verb%abs% finds the absolute value of an
+integer and \verb%sgn% returns $-1$ if its argument is negative,
+$0$ if it is zero, and $1$ if it is positive.
+
+We also have the usual comparisons on integers represented as
+infix operators: \verb%==% for equality, \verb%!=% for inequality, 
+\verb%<% for less than, \verb%>% for greater than, and
+\verb%<=% and \verb%>=% for less than or equal and greater than
+or equal, respectively.
+
+\section{Booleans: {\tt bool}}
+The result of a comparison is a new type, \verb%bool%
+which has two values, \verb%false% and \verb%true%.
+You can print booleans:
+
+\begin{minted}{felix}
+println$ 1 < 2;
+\end{minted}
+
+Felix also has a special statement for asserting that a 
+boolean value is true:
+
+\begin{minted}{felix}
+assert$ 1 < 2;
+\end{minted}
+
+If the argument of an \verb%assert% is false, then if control
+flows through it, the program is terminated with an error message.
+
+Booleans support the usual logical operators, but in Felix they
+are spelled out. Conjunction is spelled \verb%and%, whilst disjunction
+is spelled \verb%or%, implication is spelled \verb%implies%. Of course
+we also have negation \verb%not%.
+
+\subsection{Conditional Expression}
+With \verb%bool% and \verb%int% we can demonstrate the conditional
+expression:
+\begin{minted}{felix}
+println$ 
+  if 1 < 2 then "less" 
+  elif 1 > 2 then "greater" 
+  else "equal" 
+  endif
+;
+\end{minted}
+
+Note that bool also forms a total order and can be compared, we
+have $\verb%false% < \verb%true%$ so that $a \verb%==% b$
+means $a$ is equivalent to $b$, we can also say that $a$ is true
+if and only if $b$ is true. It turns out inequality $a \verb%!=% b$
+is the same as exclusive or. Be careful though, since if
+$a$ is less than or equal to $b$, written $a \verb%<=% b$ this actually
+means that $a$ implies $b$ logically!
+
+\section{Variables: {\tt var}}
+Felix is a procedural programming language, so it has variables!
+A variable denotes an addressable, mutable, storage location
+which in Felix, like C, is called an {\em object}.
+
+\begin{minted}{felix}
+var x = 1;
+var y = 2;
+var z = x + 2 * y;
+println$ z;
+z = 2 * x + y;
+println$ z;
+\end{minted}
+
+This code shows variables can be used to factor expressions into
+a sequence of assignments. We assign variable $x$ the value 1,
+variable $y$ the value 2, add $x$ to twice $y$ and put the
+result in variable $z$, then print it.
+
+Then we assign perform a different calculation and assign
+that value to $z$ and print it.
+
+What appears to be a variable initialisation is actually
+equivalent to a definition of an uninitialised variable
+followed by an assignment.
+
+\begin{minted}{felix}
+var x: int;
+x = 1;
+\end{minted}
+
+The first statment reserves uninitialised store of type \verb%int%
+named $x$ and the second assigns a value to it. Be very careful
+with variables, initialised or not!  Felix has setwise scoping
+rules, which are similar to C's function scope used for labels.
+This means in a scope, you can refer to any symbol defined
+{\em anywhere} in that scope. We shall see this is useful
+for recursive functions because it eliminates the need for
+forward declarations. However the following code has undefined behaviour:
+
+\begin{minted}{felix}
+println$ x;
+var x = 1;
+\end{minted}
+
+There is no syntax error, no type error, and no lookup error in 
+this code. The programmer used an uninitialised variable:
+even though the variable is assigned a value, it is done too late.
+
+Strangely, this code has deterministic behaviour:
+
+\begin{minted}{felix}
+println$ x;
+var x = "Hello";
+\end{minted}
+
+but it may not do what you expect! It prints nothing!
+The reason is simple enough: when Felix creates a variable
+it is first initialised with its C++ default constructor.
+Since a Felix \verb%int% is literally a C++ \verb%int% the
+default constructor exists, but it is said to be trivial,
+meaning, it does nothing. This is to improve performance,
+in the case the first use of the variable will be to assign
+a value to it: there's no point putting a value in there and
+then overwriting it!
+
+On the other hand Felix \verb%string% type is just 
+C++ \verb%::std::basic_string<char>% and its default 
+initialiser sets the string to the empty string \verb%""%.
+That's what the code above prints!
+
+\section{Floating Point: {\tt double}}
+Felix also provides a model of C++ type \verb%double%
+with the usual operators.  This is a double precision floating point type 
+which usually follows IEEE standard. You can write a double precision
+literal in the usual way. Felix follows ISO C-99 for floating point
+literals.
+
+A set of useful functions is also provided, corresponding to those
+found in C-99 header file \verb%math.h%.
+
+\begin{minted}{felix}
+var x = 1.3;
+var y = 0.7;
+assert sqrt (sqr (sin x) + sqr (cos y)) - 1.0 < 1E-6;
+\end{minted}
+
+Note there is a special caveat with floating poimt arithmetic.
+In Felix, \verb%-% has higher precedence than \verb%+%.
+This means that:
+
+\begin{minted}{felix}
+var x: double = something;
+var y: double; something_else;
+assert x + y - y == 0.0;
+\end{minted}
+
+because the subtraction is done first.  This can make
+a difference for integers too, if a calculation overflows,
+but most floating point types are not associative: order matters!
+
+Similarly, division has a higher precedence than multiplication!
+
+\section{Strings: {\tt string}}
+Felix uses C++ strings for its own strings for compatibility.
+String literals have 6 forms following Python. Strings
+not spanning multiples lines can be enclosed in either single
+or double quotes. Strings spanning multiple lines may
+be enclosed in tripled single or double quotes.
+
+\begin{minted}{felix}
+var ss1 = 'Short String';
+var ss2 = "Short String";
+var ls3 = """
+A poem may contain
+many lines of prose
+""";
+var ls4 = '''
+Especially if it is written
+by T.S. Elliot
+''';
+\end{minted}
+Note that the triple quoted strings contain everything between the
+triple quotes, including leading and trailing newlines if present.
+
+Strings can be concatenated by writing them one after the other
+separated by whitespace.
+
+\begin{minted}{felix}
+var rose = "Rose";
+var ss5 = 
+  "A " rose ", "
+  "by another "
+  "name."
+;
+\end{minted}
+Note that concatenation works for string expressions in general,
+not just literals.
+
+\subsection{Escape Codes}
+Special escapes may be included in strings. The simple
+escapes are for newline, \verb%\n%, tab \verb%t%,
+form feed \verb%\f%, vertical tab \verb%\v%, 
+the escape character \verb%\e%, \verb%\a% alert
+or bell, \verb%\b% backspace, \verb%\'% single quote,
+\verb%\"% double quote, \verb%\r% carriage return,
+\verb%\\% backslash (slosh).
+
+These can be used in any simple string form.
+Note carefully each is replaced by a single character.
+This includes \verb%\n%, even on Windows.
+
+In addition Felix provides \verb%\xXX% where each
+X is one of the hex digits 0123456789ABCDEFabcdef.
+The hex escape is at most two characters
+after the \verb%x%, if the second character is not a
+hex digit, the escape is only one character long,
+the sequence is replaced by the char with ordinal value 
+given by the hex code.
+
+Felix also provides decimal and octal escapes using
+\verb%\dDDD% and \verb%\oOOO% respectively, with a 
+3 character limit on the decoder. Note carefully
+Felix does NOT provide C's octal escape using
+a 0 character. Octal is totally archaic. 
+
+Felix also provides two unicode escapes. These
+are \verb%\uXXXX% and \verb%\UXXXXXXXX% which 
+consist of up to 4 and up to 8 hex digits exactly. 
+The corresponding value is translated to UTF-8
+and that sequence of characters replaces the escape.
+The value must be in the range supported by UTF-8.
+
+Felix also provides raw strings, in which escapes
+are not recognised. This consists of the letter \verb%r%
+or \verb%R% followed by a single or triple quoted string
+with double quote delimiter. You cannot use the raw prefix
+with single quoted strings because the single quote following
+a letter is allowed in identifiers.
+
+\subsection{String Functions}
+Felix has a rich set of string functions. The most important
+is \verb%char%, which returns a value of type \verb%char%.
+If the string argument has zero length, the character with
+ordinal value 0 is returned, otherwise the first character
+of the string is returned. Again, following Python, Felix does 
+not provide any character literals!
+
+\subsubsection{Comparisons}
+We provide the usual comparison operators.
+
+\subsubsection{Length}
+Felix also provides the most important function \verb%len%
+which returns the length of a string. The return type is
+actually \verb%size% which is a special unsigned integer type
+corresponding to ISO C's \verb%size_t%.
+
+\subsubsection{Substring}
+Felix can fetch a substring of a string using Python like convenions.
+
+\begin{minted}{felix}
+var x = "Hello World";
+var copied = x.[to];   // substring
+var hello = x.[to 5];  // copyto
+var world= x.[6 to];   // copyfrom
+var ello = x.[1 to 5]; // substring
+var last3 = x.[-3 to]; // substring
+\end{minted}
+
+The first index is inclusive, the second exclusive. 
+The default first position is 0, the default last
+position is the length of the string. If the range specified
+goes off either end of the string it is clipped back to the string.
+If the indices are out of order an empty string is returned.
+
+A negative index is translated to by adding the string length.
+
+The substring function s defined so it cannot fail.
+The name of the actual library function called by this notation
+is shown in the corresponding comment.
+
+\subsubsection{Index}
+To fetch a single character use:
+
+\begin{minted}{felix}
+var x = "Hello world";
+var y : char = x.[1]; // subscript
+\end{minted}
+
+If the index is out of range, a character with ordinal 0 is returned.
+Negative indices are translated by adding the string length.
+The index function cannot fail.
+
+\section{Tuples}
+Felix has an strucurally typed product where components are
+accessed by position, commonly called a {\em tuple}.  Tuples
+can be constructed using the non-associative n-ary comma operator
+and accessed by using a plain decimal integer as the projection
+function:
+
+\begin{minted}{felix}
+var x = 1,"Hello", 42.7; // type int * string * double
+var i = x . 0;
+var h  = x . 1;
+var d = x  . 2;
+\end{minted}
+
+Tuple is just another name for Cartesian product.
+They allow you to pack several values together into a single
+value in such a way that you can get the components you put
+in out again.
+
+We shall see tuples are vital for functions, since functions
+can only take a single argument. To work around this fact,
+we can pack multiple values together using a tuple.
+
+\section{Lists}
+A list is a variable length sequence of values of the same type.
+An empty list of \verb%int% is denoted \verb%Empty[int]%.
+Given a list you can create a new one with a new element
+on the front using the constructor \verb%Cons% as follows:
+
+\begin{minted}{felix}
+var x = Empty[int];
+x = Cons (1,x);
+x = Cons (2,x);
+x = Cons (3,x);
+var y = Cons (3, Cons (2, Cons (1, Empty[int])));
+\end{minted}
+
+Of course this is messy! Here is a better way:
+
+\begin{minted}{felix}
+var z = list (3,2,1);
+\end{minted}
+
+This method converts a tuple to a list. You can add two lists
+together, prepend a value, or add a value to the end of a list
+with the infix \verb%+% operator:
+
+\begin{minted}{felix}
+var x = list (1,2,3);
+x = 1 + x + x + 42;
+\end{minted}
+
+Take care that + associates to the left and you don't
+accidentally add two integers together! There is a second
+operator you can use as well which is right associative and
+prepends an element to a list:
+
+\begin{minted}{felix}
+var x = 3 ! 2 ! 1 ! Empty[int];
+x = 42 ! x;
+\end{minted}
+
+You can use the \verb%len% function to find the length of a list,
+and test if an element is in a list using the \verb%in% operator:
+
+\begin{minted}{felix}
+var x = list (1,2,3);
+assert len x in x; // 3 is in the list!
+\end{minted}
+
+Lists in Felix are purely functional data structures: you cannot
+modify a list. All the nodes in a list are immutable, which
+means when you prepend an element $A$ to a list $L$, and then
+prepends an element $P$ to the same list $L$, the tail of the list
+is shared. Lists can be passed around efficiently without copying.
+
+When some prefix of a list is no longer accessible because the function
+prepending the prefix returns without saving the list, the prefix
+elements will be removed automatically by the Felix garbage collector.
+
+A list can be taken apart with a pattern match:
+
+\begin{minted}{felix}
+var x = list (3,2,1);
+println$
+  match x with
+  | #Empty =>  "Empty";
+  | Cons(v, tail) => "first element " + v.str;
+  endmatch
+;
+\end{minted}
+
+\section{Functions}
+We have enough preliminaries now to finally introduce functions.
+Without further ado, here are some basic functions:
+
+\begin{minted}{felix}
+fun twice (x:int) => x + x;
+fun thrice (x:int) => twice x + x;
+\end{minted}
+
+Functions also have a more expanded form:
+
+\begin{minted}{felix}
+fun trickdiv (num:int, denom:int) :int = 
+{
+   var y = if denom == 0 then 1 else denom endif;
+   return xnum / y;
+}
+\end{minted}
+
+
+
+\section{Procedures}
+Stuff.
+
+\chapter{Functional Programming}
+We shall begin our more serious exploration of Felix with functional programming
+techniques.
+
+
+\begin{minted}{felix}
+fun inner_strlist (x: list[int]) =>
+  match x with
+  // Emnpty list
+  | #Empty => ""
+
+  // One element list
+  | Cons (head, #Empty) => str head 
+
+  // Two element list
+  | Cons (head, Cons (second, #Empty)) => str head ", " + str second 
+
+  // More that two elements
+  | Cons (head, tail) => str head ", " + inner_strlist tail
+  endmatch
+;
+
+fun strlist (x:list[int]) => "list (" + inner_strlist x + ")";
+
+println$ strlist (list (1,2,3));
+\end{minted}
+
+Here, the function \verb%inner_strlist% is recursive. It matches
+the list so it is empty it produces an empty string.
+If there is only one element, it produces the string 
+representation of that int.
+
+If the list contains two elements, it produces a string containing
+the string representation of the two integers separated by a comma.
+Otherwise it produces a string representation of the head, followed
+by a comma, followed by a string representation of the tail.
+The tail must contain at least two elements, otherwise the pattern
+match would not reach that case.
+
+However his function is not tail recursive! Lets rewrite it so 
+it is:
+
+
+\begin{minted}{felix}
+fun inner_strlist (x: list[int], result:string) =>
+  match x with
+  // Emnpty list
+  | #Empty => ""
+
+  // One element list
+  | Cons (head, #Empty) => str head 
+
+  // Two element list
+  | Cons (head, Cons (second, #Empty)) => str head ", " + str second 
+
+  // More that two elements
+  | Cons (head, tail) => inner_strlist (tail, str head ", ")
+  endmatch
+;
+\end{minted}
+
+
+
+\end{document}
