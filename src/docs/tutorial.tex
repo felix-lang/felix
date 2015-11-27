@@ -1,8 +1,11 @@
 
 \documentclass[oneside]{book}
-\setlength\parindent{0pt}
+\usepackage{color}
+\definecolor{bg}{rgb}{0.95,0.95,0.95}
+\usepackage{parskip}
 \usepackage{minted}
 \usemintedstyle{friendly}
+\setminted{bgcolor=bg,xleftmargin=20pt}
 \usepackage{hyperref}
 \hypersetup{pdftex,colorlinks=true,allcolors=blue}
 \usepackage{hypcap}
@@ -13,9 +16,11 @@
 \tableofcontents
 \chapter{Quick Start}
 We must of course begin with the traditional greeting!
+
 \begin{minted}{felix}
 println$ "Hello World";
 \end{minted}
+
 Here \verb%println% is a procedure which outputs a value to
 standard output. The argument is of course literal of
 type \verb%string%. Calls to procedures must be terminated
@@ -28,15 +33,19 @@ or call operator.
 
 You can run this program from your console or terminal, once
 Felix is installed, by just typing:
+
 \begin{verbatim}
 flx hello.flx
 \end{verbatim}
+
 assuming the file \verb%hello.flx% contains the sample code
 and is in the current directory. Behind the scenes Felix does
 dependency checking, transates the program to C++, compiles
 the C++ to a machine binary, and runs it.
 
 It works like Python but it performs like C++.
+
+For more information see \url{http://felix-lang.org}.
 
 \section{Integers: {\tt int}}
 Felix has the usual integer type \verb%int% and literals consisting
@@ -50,6 +59,7 @@ delegating to C.
 println$ 42;
 println$ (42 + 12) * 90 - (36 / 2 + 1) * 127 % 3;
 \end{minted}
+
 Note you must put spaces around the \verb%-% operator! This is because
 in Felix \verb%-% is also a hyphen, allowed in identifier names.
 
@@ -95,6 +105,7 @@ we also have negation \verb%not%.
 \subsection{Conditional Expression}
 With \verb%bool% and \verb%int% we can demonstrate the conditional
 expression:
+
 \begin{minted}{felix}
 println$ 
   if 1 < 2 then "less" 
@@ -167,6 +178,7 @@ Strangely, this code has deterministic behaviour:
 println$ x;
 var x = "Hello";
 \end{minted}
+
 but it may not do what you expect! It prints nothing!
 The reason is simple enough: when Felix creates a variable
 it is first initialised with its C++ default constructor.
@@ -233,6 +245,7 @@ Especially if it is written
 by T.S. Elliot
 ''';
 \end{minted}
+
 Note that the triple quoted strings contain everything between the
 triple quotes, including leading and trailing newlines if present.
 
@@ -247,6 +260,7 @@ var ss5 =
   "name."
 ;
 \end{minted}
+
 Note that concatenation works for string expressions in general,
 not just literals.
 
