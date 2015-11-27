@@ -1,6 +1,11 @@
 
-\documentclass{book}
+\documentclass[oneside]{book}
+\setlength\parindent{0pt}
 \usepackage{minted}
+\usemintedstyle{friendly}
+\usepackage{hyperref}
+\hypersetup{pdftex,colorlinks=true,allcolors=blue}
+\usepackage{hypcap}
 \title{Introduction to Felix}
 \author{John Skaller}
 \begin{document}
@@ -162,7 +167,6 @@ Strangely, this code has deterministic behaviour:
 println$ x;
 var x = "Hello";
 \end{minted}
-
 but it may not do what you expect! It prints nothing!
 The reason is simple enough: when Felix creates a variable
 it is first initialised with its C++ default constructor.
