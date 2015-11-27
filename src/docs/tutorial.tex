@@ -603,5 +603,253 @@ assert addup x == fold (fun (acc:int, y:elt)=>x+y), 0, x);
 using an unnamed, or anonymous function, sometimes called 
 a lambda.
 
+So what happens if we want to make the sum of the square roots
+of a list of \verb%int%?
+
+It should work, right, if we change the signature of the
+binary operator to 
+
+\begin{minted}{felix}
+double * int -> double
+\end{felix}
+
+and pass an appropriate function. The first component of the argument
+is intended to hold the accumulated sum.
+
+What if the list were of \verb%string% and we wanted to get the
+complete length? Then we'd use
+
+
+\begin{minted}{felix}
+int * string -> int
+\end{felix}
+
+Can we generalise, so we only have one function? 
+
+Sure. That's what parametric polymorphism is for.
+
+
+\begin{minted}{felix}
+fun fold[ResultType, ElementType] 
+(
+  binop: ResultType * ElementType -> ResultType, 
+  init:ResultType, 
+  x:list[ElementType]
+) = 
+{
+  fun aux (rest: list, acc: int) =>
+    match rest with
+    | #Empty => rest
+    | Cons (head, tail) => aux (tail, binop (acc,head))
+    endmatch
+  ;
+  return aux x init;
+}
+\end{minted}
+
+Now we can write:
+
+\begin{minted}{felix}
+println$ 
+  fold [int,string]
+  (
+    (fun (acc:int, s:string)=>acc + len s),
+    0,
+    (list ("Hello", "World"))
+  )
+;
+\end{minted}
+
+This is all very nice!  Even better we can write:
+
+\begin{minted}{felix}
+println$ 
+  fold 
+  (
+    (fun (acc:int, s:string)=>acc + len s),
+    0,
+    (list ("Hello", "World"))
+  )
+;
+\end{minted}
+
+because the instances of the type variables required
+can be deduced from the arguments.
+
+However our implementation
+has a slight ugliness: we first define a function,
+then return an application of it, which consists of
+two statements, and requires the expanded form of
+function definition.
+
+Can we do it as a one liner, using only the simplified
+form? The answer is yes, using a \verb%let-in% expression:
+
+
+\begin{minted}{felix}
+fun fold[ResultType, ElementType] 
+(
+  binop: ResultType * ElementType -> ResultType, 
+  init:ResultType, 
+  x:list[ElementType]
+) =>
+  let fun aux (rest: list, acc: int) =>
+    match rest with
+    | #Empty => rest
+    | Cons (head, tail) => aux (tail, binop (acc,head))
+    endmatch
+  in 
+  aux x init
+;
+\end{minted}
+
+The fold above utilises what is called a {\em type schema}.
+This is a limited kind of polymorphism also called
+first order polymorphism, or simply {\em templates}.
+Type schemes are limited to having type variables universally
+quantifed on outside and can be instantiated by replacing
+the type variable with an actual type. At run time, there
+are no type variables about. You cannot have a polymorphic
+function at run time. So
+
+\begin{minted}{felix}
+// NO polymorphic function closures in Felix!
+type-error var x = fold[int, string];
+\end{minted}
+
+There is another way to write this, using a method called
+currying, in a form called curry form. This is the more
+conventional form in some languages.
+
+In functional programming languages, functions are first
+class, meaning you can pass them into another function,
+and return them from a function. Consider this:
+
+\begin{minted}{felix}
+fun fold[ResultType, ElementType] 
+  (binop: ResultType * ElementType -> ResultType)
+{
+    fun A(init:ResultType) 
+    {
+      fun B(x:list[ElementType]) 
+      {  
+        let fun aux (rest: list, acc: int) =>
+          match rest with
+          | #Empty => rest
+          | Cons (head, tail) => aux (tail, binop (acc,head))
+          endmatch
+        in 
+        return aux x init;
+      }
+      return B;
+   }
+   return A;
+}
+\end{minted}
+
+What is the type of this function? Well, 
+
+\begin{minted}{felix}
+B:list[ElementType]-> ResultType
+\end{minted}
+
+and since A returns B, its type is:
+
+\begin{minted}{felix}
+A: ResultType -> (list[ElementType]-> ResultType)
+\end{minted}
+
+and since fold returns A its type is
+
+\begin{minted}{felix}
+fold: list[ElementType] -> (ResultType -> (list[ElementType]-> ResultType))
+\end{minted}
+
+How would we use this? Well:
+
+\begin{minted}{felix}
+println$ 
+  (
+    (
+      (
+         fold 
+           (fun (acc:int, s:string)=>acc + len s))
+      )
+      0
+    )
+    (list ("Hello", "World"))
+  )
+;
+\end{minted}
+
+
+Note that the \verb%->% function operator is right associative we
+don't need the parens so we can write this as:
+
+\begin{minted}{felix}
+fold: list[ElementType] -> ResultType -> list[ElementType]-> ResultType
+\end{minted}
+
+getting rid of parens, and, since application (the whitespace operator!) is 
+left associative, we can write:
+
+\begin{minted}{felix}
+println$ 
+  fold 
+    (fun (acc:int, s:string)=>acc + len s))
+    0
+    (list ("Hello", "World"))
+;
+\end{minted}
+
+again getting rid of parens. The form:
+
+\begin{minted}{felix}
+  fold fn init alist
+\end{minted}
+
+is the curried form of the call we wrote in tuple form like:
+
+\begin{minted}{felix}
+  fold (fn, init, alist)
+\end{minted}
+
+Curried form has an advantage:
+
+\begin{minted}{felix}
+fun string_lengths (x:list[string]) =>
+   fold 
+    (fun (acc:int, s:string)=>acc + len s))
+    0
+;
+
+var l1 = list ("Hello", "World");
+var l2 = list ("Felix", "Rocks");
+println$ string_lengths l1, string_lengths l2;
+\end{minted}
+
+In the function, we simply apply the fold to the
+first three arguments, which returns a function 
+of one argument, a list of strings.
+
+Curried form is so useful, there is syntactic sugar
+for writing functions in this form:
+
+\begin{minted}{felix}
+fun fold[ResultType, ElementType] 
+  (binop: ResultType * ElementType -> ResultType)
+  (init:ResultType)
+  (x:list[ElementType])
+=>
+  let fun aux (rest: list, acc: int) =>
+    match rest with
+    | #Empty => rest
+    | Cons (head, tail) => aux (tail, binop (acc,head))
+    endmatch
+  in 
+  aux x init
+;
+\end{minted}
+
 
 \end{document}
