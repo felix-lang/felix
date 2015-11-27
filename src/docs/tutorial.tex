@@ -535,6 +535,73 @@ fun inner_strlist (x: list[int], result:string) =>
 ;
 \end{minted}
 
+A {\em tail call} is the final call in a function. Tail calls can
+be optimised from a call followed by a return to just a jump. 
+This avoids pushing the return address, then returning to that
+address from the called procedure, then immediately returning
+to the callers return address. Instead, the called procedure
+just returns to the callers return address directly.
+
+In particular, if the tail call is call to self, then by assigning
+the call argument to the parameter, we then just jump to the start
+of the function. In other words, we can optimise tail recursion
+to a simple loop. This saves more than the space of the return
+address on the stack, it saves the space required by all the local
+variables as well. We can reuse these variables, since the old
+values cannot be accessed.
+
+Here is another, simpler tail recursive function:
+
+\begin{minted}{felix}
+fun addup (x: list[int]) =
+{
+  fun aux (rest: list, acc: int) =>
+    match rest with
+    | #Empty => rest
+    | Cons (head, tail) => aux (tail, acc + head)
+    endmatch
+  ;
+  return aux x 0;
+}
+\end{minted}
+
+The non-recursive function \verb%addup% contains a nested tail recursive
+function \verb%aux%.
+
+Ok so, what if I wanted to add up the squares of the numbers 
+in the list? Is there a way to avoid that?
+
+The answer is yes:
+
+
+\begin{minted}{felix}
+fun fold(binop: int * int -> int, init:int, x:list[int]) =
+{
+  fun aux (rest: list, acc: int) =>
+    match rest with
+    | #Empty => rest
+    | Cons (head, tail) => aux (tail, binop (acc,head))
+    endmatch
+  ;
+  return aux x init;
+}
+\end{minted}
+
+Fold works with any binary operator on \verb%int%. For example:
+
+\begin{minted}{felix}
+fun addition (acc:int,y:elt) => x + y;
+assert addup x == fold (addition, 0, x);
+\end(minted}
+
+There is another way to write the folding expression:
+
+\begin{minted}{felix}
+assert addup x == fold (fun (acc:int, y:elt)=>x+y), 0, x);
+\end{minted}
+
+using an unnamed, or anonymous function, sometimes called 
+a lambda.
 
 
 \end{document}
