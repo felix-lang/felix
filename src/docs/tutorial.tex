@@ -2,8 +2,11 @@
 \documentclass[oneside]{book}
 \usepackage{color}
 \definecolor{bg}{rgb}{0.95,0.95,0.95}
+\definecolor{emphcolor}{rgb}{0.5,0.0,0.0}
+\newcommand{\empha}{\bf\color{emphcolor}}
 \usepackage{parskip}
 \usepackage{minted}
+\usepackage{caption}
 \usemintedstyle{friendly}
 \setminted{bgcolor=bg,xleftmargin=20pt}
 \usepackage{hyperref}
@@ -49,7 +52,7 @@ For more information see \url{http://felix-lang.org}.
 
 \section{Integers: {\tt int}}
 Felix has the usual integer type \verb%int% and literals consisting
-of decimal digits, and the usual binary operators \verb%+% for addition,
+of decimal digits, and the usual {\empha binary operators} \verb%+% for addition,
 \verb%-% for subtraction, \verb%*% for multiplication, \verb%/% for division,
 and \verb+%+ for remainder. These have the same semantics as in C, because,
 these operators are in fact implemented in the Felix standard library by
@@ -63,7 +66,7 @@ println$ (42 + 12) * 90 - (36 / 2 + 1) * 127 % 3;
 Note you must put spaces around the \verb%-% operator! This is because
 in Felix \verb%-% is also a hyphen, allowed in identifier names.
 
-We also have the unary operator \verb%-% for negation, and for symmetry
+We also have the {\empha unary operator} \verb%-% for negation, and for symmetry
 we also have unary \verb%+% which does nothing.
 
 These operators are just functions so here are some more: 
@@ -72,11 +75,77 @@ string, the function \verb%abs% finds the absolute value of an
 integer and \verb%sgn% returns $-1$ if its argument is negative,
 $0$ if it is zero, and $1$ if it is positive.
 
-We also have the usual comparisons on integers represented as
+We also have the usual {\empha comparisons} on integers represented as
 infix operators: \verb%==% for equality, \verb%!=% for inequality, 
 \verb%<% for less than, \verb%>% for greater than, and
 \verb%<=% and \verb%>=% for less than or equal and greater than
 or equal, respectively.
+
+\section{Other integer types}
+Felix has a lot of other integer types corresponding to those found
+in C. Each of these types is distinct, none are aliases! See Table \ref{Felix Integer Types}.
+
+\begin{table}
+\caption{Felix Integer Types}
+\label{Felix Integer Types}
+\centering
+\begin{tabular}[c]{lll}
+\hline
+Felix&C&Suffix\\
+\hline
+\multicolumn{3}{c}{Standard signed integers}\\
+\hline
+\verb%tiny% &\verb%char% & 42t \\
+\verb%short% &\verb%short% & 42s \\
+\verb%int% &\verb%int% & 42 \\
+\verb%long% &\verb%long% & 42l \\
+\verb%vlong% &\verb%long long% & 42ll \\
+\multicolumn{3}{c}{Standard unsigned integers}\\
+\hline
+\verb%utiny% &\verb%unsigned char% & 42ut \\
+\verb%ushort% &\verb%unsigned short% & 42us \\
+\verb%uint% &\verb%unsigned int% & 42u \\
+\verb%ulong% &\verb%unsigned long% & 42ul \\
+\verb%uvlong% &\verb%unsigned long long% & 42ull \\
+\multicolumn{3}{c}{Exact signed integers}\\
+\hline
+\verb%int8% &\verb%int8_t% & 42i8 \\
+\verb%int16% &\verb%int16_t% & 42i16 \\
+\verb%int32% &\verb%int32_t% & 42i32 \\
+\verb%int64% &\verb%int64_t% & 42i64 \\
+\multicolumn{3}{c}{Exact unsigned integers}\\
+\hline
+\verb%uint8% &\verb%uint8_t% & 42u8 \\
+\verb%uint16% &\verb%uint16_t% & 42u16 \\
+\verb%uint32% &\verb%uint32_t% & 42u32 \\
+\verb%uint64% &\verb%uint64_t% & 42u64 \\
+\multicolumn{3}{c}{Weird ones}\\
+\hline
+\verb%size% &\verb%size_t% & 42uz \\
+\verb%intptr% &\verb%uintptr_t% & 42p \\
+\verb%uintptr% &\verb%uintptr_t% & 42up \\
+\verb%ptrdiff% &\verb%ptrdiff_t% & 42d \\
+\verb%uptrdiff% &\verb%ptrdiff_t% & 42ud \\
+\verb%intmax% &\verb%intmax_t% & 42j\\
+\verb%uintmax% &\verb%uintmax_t% & 42uj \\
+\multicolumn{3}{c}{Addressing}\\
+\hline
+\verb%address% &\verb%void*% &\\
+\verb%byte% &\verb%unsigned char% &\\
+\end{tabular}
+\end{table}
+
+\subsection{Conversions}
+All the integer types can be inter-converted with a conversion.
+This is just the name of the target function. For example:
+
+\begin{minted}{felix}
+var x : long = long 42uz;
+var y : int64 = x.int64;
+\end{minted}
+
+The dot notation is just shortcut high precedence application
+operator.
 
 \section{Booleans: {\tt bool}}
 The result of a comparison is a new type, \verb%bool%
@@ -97,7 +166,7 @@ assert$ 1 < 2;
 If the argument of an \verb%assert% is false, then if control
 flows through it, the program is terminated with an error message.
 
-Booleans support the usual logical operators, but in Felix they
+Booleans support the usual {\empha logical operators}, but in Felix they
 are spelled out. Conjunction is spelled \verb%and%, whilst disjunction
 is spelled \verb%or%, implication is spelled \verb%implies%. Of course
 we also have negation \verb%not%.
@@ -115,7 +184,8 @@ println$
 ;
 \end{minted}
 
-Note that bool also forms a total order and can be compared, we
+Note that bool also forms a \href{https://en.wikipedia.org/wiki/Total_order}{total order} 
+and can be compared, we
 have $\verb%false% < \verb%true%$ so that $a \verb%==% b$
 means $a$ is equivalent to $b$, we can also say that $a$ is true
 if and only if $b$ is true. It turns out inequality $a \verb%!=% b$
@@ -455,8 +525,8 @@ We have enough preliminaries now to finally introduce functions.
 Without further ado, here are some basic functions:
 
 \begin{minted}{felix}
-fun twice (x:int) => x + x;
-fun thrice (x:int) => twice x + x;
+fun twice (x:int) : int => x + x;
+fun thrice (x:int) :int  => twice x + x;
 \end{minted}
 
 Functions also have a more expanded form:
@@ -467,6 +537,160 @@ fun trickdiv (num:int, denom:int) :int =
    var y = if denom == 0 then 1 else denom endif;
    return xnum / y;
 }
+\end{minted}
+
+\subsection{Calling function}
+In Felix you can call a function using operator whitespace:
+
+\begin{minted}{felix}
+fun twice (x:int) : int => x + x;
+println$ twice 42;
+\end{minted}
+
+This is the usual prefix mathematical notation. In Felix, parentheses
+are not required around arguments to make a function call, they are
+just used for grouping. Some programmers also like postfix notation
+and you can use that too:
+
+\begin{minted}{felix}
+fun twice (x:int) : int => x + x;
+fun thrice (x:int) :int  => twice x + x;
+println$ thrice 42.twice;
+\end{minted}
+
+Here, \verb%twice% is called first, because operator \verb%.% has a higher
+precedence that operator whitepsace. Both operators are left associative!
+Operator dot is called {\em reverse application} because the argument
+is written first, then the function to apply.
+
+Felix also has operator dollar \verb%$% which is a very low precedence
+right associative operator:
+
+\begin{minted}{felix}
+println$ k $ h $ g 42.f;
+println ( k ( h ( g ( f 42))));
+\end{minted}
+
+and there is also a left associative low precedence reverse order
+operator too:
+
+\begin{minted}{felix}
+h $ g 42.f |> k |> println;
+println ( k ( h ( g ( f 42))));
+\end{minted}
+
+This is called {\em reverse pipe application} and has an even lower
+precedence than forward dollar application.
+
+There is one more application operator!
+
+\begin{minted}{felix}
+fun hhgttg() => 42;
+h $ g #hhgttg.f |> k |> println;
+\end{minted}
+
+Operator hash \verb%#% just applies a function
+to the unit tuple \verb%()%, it is often used
+for constant functions. It is a very high precedence operator.
+
+It's no wonder they wanted to spacedoze 
+the Earth to build a freeway.
+
+\subsection{Overloading}
+You can define two functions with the same name, this
+is never an error. However to apply a function with the 
+same name as another, it must be possible to distinguish
+between them.
+
+{\em Overloading} provides on method for doing this:
+
+\begin{minted}{felix}
+fun twice (x:int) => x + x;
+fun twice (x:double) => x + x;
+println$ twice 42, twice 42.1;
+\end{minted}
+
+In the above example, the first application in the \verb%println%
+argument tuple calls the first function, because the argument is
+of type \verb%int%, and the second application calls the second
+function because the argument is of type \verb%double%.
+
+Selecting functions based on matching the argument and parameter
+types like this is called overload resolution. Note that unlike
+C++ there are no automatic conversions in Felix. The argument
+and parameter type must match exactly.
+
+Overloading first looks in the scope of the application.
+If matching fails to find any candidate functions, it proceeds
+to the next outer level, until there are no more levels left.
+
+\subsection{Higher Order Functions}
+In Felix, a function can become a first class value.
+This value is called a closure. Functions that accept
+functions as arguments, or return functions, are
+called higher order functions or {\em HOF}'s.
+
+\begin{minted}{felix}
+fun twice(x:int) => x + x;
+fun both (x:int, y:int, g: int -> int) => g x, gy;
+println$ both (3,7,twice);
+\end{minted}
+
+The function \verb%both% applies its argument \verb%g% to
+both x and y, returning the pair of results. On the
+other hand here:
+
+\begin{minted}{felix}
+fun increment (x:int) : int * int -> int = 
+{
+   fun add (y:int) => x + y;
+   return add;
+}
+println$ increment 3 42; // 45
+var add3 = increment 3;
+println$ add3 42; // 45
+\end{minted}
+
+the increment function returns another function which increments
+its argument y, when applied, but the argument x first passed to it.
+The variable \verb%add3% binds the first argument x, and is another
+function which will add that x to its argument when applied.
+
+The function \verb%increment% is said to have {\em arity} 2
+because it appears to accept two arguments. In fact, there is 
+no such thing as a function accepting two arguments.
+
+The function of higher arity is sometimes said to be {\em curried}
+named for theorist Howard Curry, although prefer Indian food.
+If a function returns a function which is not immediately
+applied to an argument it is said, surprisingly, to be
+{\em partially applied}. When Felix does overload
+resolution it can take into account as many arguments
+as are provided for a curried function application.
+It find candidates based on the first argument first,
+then tries to whittle down the list based on the next
+argument, and so on.
+
+\subsection{Polymorphic Functions}
+In Felix, you can write functions that work with a family
+of types. 
+
+\begin{minted}{felix}
+fun diag[T] (x:T) => x, x;
+\end{minted}
+
+This is the famous diagonal function, which makes two
+copies of its argument. It works for any type, so it
+is a polymorphic function. In general such functions
+can {\em only} do structural manipulations so they are
+of limited utility.
+
+Unless, that is, they're HOFs! For example:
+
+\begin{minted}{felix}
+fun add3[T] (x:T, y:T, z:T, add:T * T -> T) => 
+  add (x, add (y,z))
+;
 \end{minted}
 
 
