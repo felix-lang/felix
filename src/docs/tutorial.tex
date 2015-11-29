@@ -7,6 +7,7 @@
 \usepackage{parskip}
 \usepackage{minted}
 \usepackage{caption}
+\usepackage{amsmath}
 \usemintedstyle{friendly}
 \setminted{bgcolor=bg,xleftmargin=20pt}
 \usepackage{hyperref}
@@ -25,7 +26,7 @@ println$ "Hello World";
 \end{minted}
 
 Here \verb%println% is a procedure which outputs a value to
-standard output. The argument is of course literal of
+standard output. The argument is of course a literal of
 type \verb%string%. Calls to procedures must be terminated
 by a semicolon \verb%;%. You will note, we do not require
 parentheses around the argument to denote a procedure call!
@@ -54,7 +55,8 @@ For more information see \url{http://felix-lang.org}.
 Felix has the usual integer type \verb%int% and literals consisting
 of decimal digits, and the usual {\empha binary operators} \verb%+% for addition,
 \verb%-% for subtraction, \verb%*% for multiplication, \verb%/% for division,
-and \verb+%+ for remainder. These have the same semantics as in C, because,
+and \verb+%+ for remainder. We also have \verb%<<% to multiply by a power of 2,
+and \verb%>>% to divide by a power of 2.These have the same semantics as in C, because,
 these operators are in fact implemented in the Felix standard library by
 delegating to C.
 
@@ -137,15 +139,22 @@ Felix&C&Suffix\\
 
 \subsection{Conversions}
 All the integer types can be inter-converted with a conversion.
-This is just the name of the target function. For example:
+This is just the name of the target type, used as a function. 
+For example:
 
 \begin{minted}{felix}
 var x : long = long 42uz;
 var y : int64 = x.int64;
 \end{minted}
 
-The dot notation is just shortcut high precedence application
-operator.
+The dot notation is just shortcut high precedence reverse
+application operator much beloved by OO enthusiasts.
+
+\subsection{Bitwise operations}
+For unsigned integers only, bitwise operations are supported.
+These are \verb%\&% for bitwise and, \verb%\|% for bitwise or,
+\verb%\^% for bitwise exclusive or, and \verb%~% for bitwise
+complement.
 
 \section{Booleans: {\tt bool}}
 The result of a comparison is a new type, \verb%bool%
@@ -292,9 +301,30 @@ assert x + y - y == 0.0;
 
 because the subtraction is done first.  This can make
 a difference for integers too, if a calculation overflows,
-but most floating point types are not associative: order matters!
+but most floating point operators are not associative: order matters!
 
 Similarly, division has a higher precedence than multiplication!
+
+Floating reals are totally ordered and support exact comparisons.
+However these operations are not numerically sound, they're
+based on the underlying finite representation.
+
+Floats also provide checks for \verb%nan% pseudo value, as well 
+as \verb%+inf% and \verb%-inf%.
+
+\subsection{Other floats}
+As well as \verb%double% Felix provides single precision
+\verb%float% and extended precision \verb%ldouble%
+based on \verb%float% and \verb%long double% respectively,
+with the equivalent operators.
+
+It also supports complex numbers with Cartesian representation
+based on C++ complex forms. The types are \verb%fcomplex% based
+on \verb%float%, \verb%dcomplex% based on \verb%double%,
+and \verb%lcomplex% based on \verb%ldouble%.
+
+In addition Felix provides double precision based \verb%quaternion%
+type.
 
 \section{Strings: {\tt string}}
 Felix uses C++ strings for its own strings for compatibility.
@@ -336,7 +366,7 @@ not just literals.
 
 \subsection{Escape Codes}
 Special escapes may be included in strings. The simple
-escapes are for newline, \verb%\n%, tab \verb%t%,
+escapes are for newline, \verb%\n%, tab \verb%\t%,
 form feed \verb%\f%, vertical tab \verb%\v%, 
 the escape character \verb%\e%, \verb%\a% alert
 or bell, \verb%\b% backspace, \verb%\'% single quote,
@@ -348,7 +378,7 @@ Note carefully each is replaced by a single character.
 This includes \verb%\n%, even on Windows.
 
 In addition Felix provides \verb%\xXX% where each
-X is one of the hex digits 0123456789ABCDEFabcdef.
+X is one of the hex digits $0123456789$, $ABCDEF$, or, $abcdef$.
 The hex escape is at most two characters
 after the \verb%x%, if the second character is not a
 hex digit, the escape is only one character long,
@@ -451,6 +481,77 @@ We shall see tuples are vital for functions, since functions
 can only take a single argument. To work around this fact,
 we can pack multiple values together using a tuple.
 
+\subsection{Unit tuple}
+There is a special tuple with nothing in it called
+the unit tuple, written:
+
+\begin{minted}{felix}
+\end{minted}
+
+It is a \url{https://en.wikipedia.org/wiki/Unit_type}{unit type}.
+
+\subsection{Arrays}
+If all the elements of a tuple are the same type,
+its called an {\em array}. In this case the accessor
+index, or projection, can be an expression of \verb%int%
+type.
+
+\begin{minted}{felix}
+var x : int ^4 = 1,2,3,4;
+for var i in 0 upto x.len.int - 1 do
+  println$ x . i;
+done
+\end{minted}
+
+You will also see the use of a low level \verb%for% loop
+here, and the use of the \verb%len% function to get the array
+length. The \verb%len% function returns a value of type \verb%size%
+but the loop variable \verb%i% is an \verb%int%, so we have to 
+convert it.
+
+\section{Unit Sums}
+The type of the array in the last section
+is given by
+
+\begin{minted}{felix}
+  int ^ 4 = int * int * int * int
+\end{minted}
+
+This is the usual meaning of the exponential operator \verb%^%:
+raising to some power $n$ means multiplication of $n$ copies.
+
+However you may be surprised to learn that in Felix, \verb%4%
+is a type, and 
+
+\begin{minted}{felix}
+  4 = 1 + 1 + 1 + 1
+\end{minted}
+
+The type \verb%1% here is also called \verb%unit% and is just the
+type of the empty tuple \verb%()%. Now, you have seen that the
+cartesian product type is denoted using the n-ary non-associative
+operator \verb%*%, so it is not so surprising that the type
+denoted by the n-ary non-associative operator \verb%+% is called
+a sum.
+
+Values of a unit sum just represent cases. The notation is ugly:
+
+\begin{minted}{felix}
+var x : int ^4 = 1,2,3,4;
+var third = case 2 of 4;
+println$ x.third; // the *true* projection
+\end{minted}
+
+especially as it's zero origin. When you use an integer array
+index, it has to be bounds checked at run time. However if you use a unit
+sum index, the check is done by the type system at compile time.
+
+There is a very commonly used unitsum. You already know it: \verb%bool%
+is nothing more than another name for type \verb%2% and the special
+words \verb%false% and \verb%true% are just aliases for \verb%case 0 of 2%
+and \verb%case 1 of 2% respectively!
+
+
 \section{Lists}
 A list is a variable length sequence of values of the same type.
 An empty list of \verb%int% is denoted \verb%Empty[int]%.
@@ -508,6 +609,26 @@ When some prefix of a list is no longer accessible because the function
 prepending the prefix returns without saving the list, the prefix
 elements will be removed automatically by the Felix garbage collector.
 
+\section{Pattern Matching and Union}
+A list is actually defined like this:
+
+\begin{minted}{felix}
+union list[T] = 
+  | Empty
+  | Cons of T * list[T]
+;
+\end{minted}
+
+The \verb%union% construction defines a nominally typed
+sum. The words \verb%Empty% and \verb%Cons% are called
+type constructors. This union is also polymorphic!
+This means you can make lists of any type. The first 
+case is just an empty list. The second case, \verb%Cons%
+joins together an element of type \verb%T% and another list.
+In other words it creates a new list by adding a new
+element onto the front. A type like this is called
+an \url{https://en.wikipedia.org/wiki/Inductive_type}{inductive type}.
+
 A list can be taken apart with a pattern match:
 
 \begin{minted}{felix}
@@ -519,6 +640,10 @@ println$
   endmatch
 ;
 \end{minted}
+
+
+\subsection{Option Type}
+Stuff..
 
 \section{Functions}
 We have enough preliminaries now to finally introduce functions.
@@ -538,6 +663,10 @@ fun trickdiv (num:int, denom:int) :int =
    return xnum / y;
 }
 \end{minted}
+
+There is a rule for function: they may not have observable
+side effects! The rule is relaxed; that is, not enforced,
+to permit debugging, profiling, coverage checking, etc.
 
 \subsection{Calling function}
 In Felix you can call a function using operator whitespace:
@@ -693,10 +822,114 @@ fun add3[T] (x:T, y:T, z:T, add:T * T -> T) =>
 ;
 \end{minted}
 
+\subsubsection{Overloading Polymorphic Functions}
+Polymorphic functions can be overloaded too.
+However unlike ordinary functions, more than one
+function might match. For example:
 
+\begin{minted}{felix}
+fun f[U,V] (x: U, y: V) => y,x;
+fun f[W[ (x:W, y:int) => y+1,x;
+println$ f (2,4); // which f?
+\end{minted}
+
+A function matches if the parameter type can be specialised
+to the argument type by substituting some type expression for
+each of the function's type variables. In the above case
+
+$$\begin{aligned}
+\verb%U% &\rightarrow \verb%int%\\
+\verb%V% &\rightarrow \verb%int% 
+\end{aligned}
+$$
+
+causes the first function to match and
+
+$$ \verb%W% \rightarrow \verb%int% $$
+
+causes the second one to match.
+
+will cause both functions to match the argument type exactly.
+In this case the most specialised function is chosen if there
+is one. Here, the first function is clearly more general because
+the substitution:
+
+$$\begin{aligned}
+\verb%U% &\rightarrow \verb%Wt%\\
+\verb%V% &\rightarrow \verb%int% 
+\end{aligned}
+$$
+
+into the type of the first function's parameter yields the second
+function's parameter type. Since there is no substitution in the
+other direction, the second function is strictly more specialised
+and so it is selected.
+ 
+The process of finding a substiution which makes types with type
+variables equal is called 
+\url{https://en.wikipedia.org/wiki/Unification_%28computer_science%29}{unification}.
+The substitution effecting equality is called a {\em unifier}, and the
+two terms rendered equal are said to be {\em unified}. There can
+be more than one unifier, a most general unifier is one which can
+produce all the other unifiers by some substitutions. If there is
+a most general unifier it is unique up to changing variable names.
 
 \section{Procedures}
-Stuff.
+A {\em procedure} is like a function which returns no value and
+is allowed to have side effects.
+
+\begin{minted}{felix}
+proc printint(x:int)
+{
+   println$ "An integer " + x.str;
+}
+\end{minted}
+
+This is in fact syntactic sugar for
+
+\begin{minted}{felix}
+fun printint(x:int) : void =
+{
+   println$ "An integer " + x.str;
+}
+
+printit 42;
+\end{minted}
+
+The pseudo type \verb%void% is the type you use when 
+there is no value.
+
+Procedures with unit argument type have a special call notation,
+the unit argument () can be dropped:
+
+\begin{minted}{felix}
+proc print42()
+{
+   println$ "The world is coming to an end";
+}
+
+print42; // no () required
+\end{minted}
+
+You're right, I hate excess parens!
+
+\section{Generators}
+There is one further special kind of function, 
+called a {\em generator}. A generator returns
+a value and may have a side effect.
+
+\begin{minted}{felix}
+var counter = 0;
+gen fresh2() : int =
+{
+  ++counter;
+  return counter;
+}
+println$ #fresh, #fresh; // 1,2
+\end{minted}
+
+The term generator comes from the exemplar generator,
+namely the random number generators. 
 
 \chapter{Functional Programming}
 We shall begin our more serious exploration of Felix with functional programming
