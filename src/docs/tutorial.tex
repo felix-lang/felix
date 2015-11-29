@@ -486,9 +486,11 @@ There is a special tuple with nothing in it called
 the unit tuple, written:
 
 \begin{minted}{felix}
+  var u : unit = ();
+  var u2 : 1 = ();
 \end{minted}
 
-It is a \url{https://en.wikipedia.org/wiki/Unit_type}{unit type}.
+It is a \href{https://en.wikipedia.org/wiki/Unit_type}{unit type}.
 
 \subsection{Arrays}
 If all the elements of a tuple are the same type,
@@ -627,7 +629,7 @@ case is just an empty list. The second case, \verb%Cons%
 joins together an element of type \verb%T% and another list.
 In other words it creates a new list by adding a new
 element onto the front. A type like this is called
-an \url{https://en.wikipedia.org/wiki/Inductive_type}{inductive type}.
+an \href{https://en.wikipedia.org/wiki/Inductive_type}{inductive type}.
 
 A list can be taken apart with a pattern match:
 
@@ -867,7 +869,7 @@ and so it is selected.
  
 The process of finding a substiution which makes types with type
 variables equal is called 
-\url{https://en.wikipedia.org/wiki/Unification_%28computer_science%29}{unification}.
+\href{https://en.wikipedia.org/wiki/Unification_%28computer_science%29}{unification}.
 The substitution effecting equality is called a {\em unifier}, and the
 two terms rendered equal are said to be {\em unified}. There can
 be more than one unifier, a most general unifier is one which can
