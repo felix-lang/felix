@@ -23,7 +23,6 @@ class pthread_h(pthread_h):
 
         if 'linux' in self.platform:
             self.external_libs.append('pthread')
-            self.external_libs.append('dl')
 
         # Solaris needs to link against librt for posix support.
         elif 'solaris' in self.platform:

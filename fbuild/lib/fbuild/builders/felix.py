@@ -113,7 +113,8 @@ class Felix(fbuild.builders.AbstractCompiler):
         buildroot = buildroot or self.ctx.buildroot
         src_buildroot = src.addroot(buildroot)
 
-        static = static or self.static
+        if static is None:
+            static = self.static
 
         if static:
             dst = src_buildroot.replaceext(self.exe_suffix)

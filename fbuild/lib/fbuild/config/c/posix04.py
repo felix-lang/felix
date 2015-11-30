@@ -199,6 +199,11 @@ class dlfcn_h(c.Test):
             #ifdef __cplusplus
             extern "C" {
             #endif
+            #if defined _WIN32 || defined __CYGWIN__
+            __declspec(dllexport)
+            #elif defined __GNUC__
+            __attribute__ ((visibility ("default")))
+            #endif
             int fred(int argc, char** argv) { return 0; }
             #ifdef __cplusplus
             }

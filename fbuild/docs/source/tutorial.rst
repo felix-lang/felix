@@ -6,7 +6,8 @@ This is a simple tutorial to get you up on your feet with using Fbuild.
 Basics
 ******
 
-Let's start with a simple app. We'll be writing a "Hello, world!" program in C and building it using Fbuild. Here's our C code:
+Let's start with a simple build script. We'll be writing a "Hello, world!" program
+in C and building it using Fbuild. Here's our C code:
 
 .. code-block:: c
    
@@ -27,7 +28,13 @@ And here's the Fbuild build script:
        builder = guess_static(ctx)
        builder.build_exe('hello', ['hello.c'])
 
-It's pretty simple. First, ``guess_static`` is imported. That function returns a new builder for building C programs (we'll get to builders in a moment). Then we define a ``build`` function that takes an object of type ``fbuild.context.Context`` (``ctx``). That object is kind of like the "build engine." The next line calls ``guess_static``, and the line after calls the ``build_exe`` method. It can take several keyword arguments, but the only two positional ones are the output file (``hello``) and a list of source files (``['hello.c']``). Let's run it::
+It's pretty simple. First, ``guess_static`` is imported. That function returns a
+new builder for building C programs (we'll get to builders in a moment). Then we
+define a ``build`` function that takes an object of type ``fbuild.context.Context``
+(``ctx``). That object is kind of like the "build engine." The next line calls
+``guess_static``, and the line after calls the ``build_exe`` method. It can take
+several keyword arguments, but the only two positional ones are the output file
+(``hello``) and a list of source files (``['hello.c']``). Let's run it::
 
    ryan@DevPC-LX:/media/ryan/stuff/fbuild/playground/doc$ fbuild
    determining platform     : {'posix', 'linux'}
@@ -52,4 +59,6 @@ That just:
 Builders
 ********
 
-In Fbuild, a ``builder`` is an object that...builds stuff. In our last example, the builder could build C executables and libraries. Most of Fbuild revolves around builders. Pretty much all of them are located within ``fbuild.builders``.
+In Fbuild, a *builder* is an object that...builds stuff. In our last example, the
+builder could build C executables and libraries. Most of Fbuild revolves around
+builders, and all of them are located within ``fbuild.builders``.

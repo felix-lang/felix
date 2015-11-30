@@ -1,7 +1,7 @@
 Fbuild Build System v0.2
 ========================
 
-[![AppVeyor](https://ci.appveyor.com/api/projects/status/w4ygv26fit3gphfa?svg=true)](https://ci.appveyor.com/project/kirbyfan64/fbuild)
+[![AppVeyor](https://ci.appveyor.com/api/projects/status/github/felix-lang/fbuild?svg=true)](https://ci.appveyor.com/project/erickt/fbuild)
 [![Travis](https://travis-ci.org/felix-lang/fbuild.svg?branch=master)](https://travis-ci.org/felix-lang/fbuild)
 
 Overview

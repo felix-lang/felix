@@ -63,56 +63,58 @@ class Builder(fbuild.builders.AbstractCompilerBuilder):
         else:
             self.ctx.logger.passed()
 
-        #self.ctx.logger.check('checking if %s can link lib to exe' % self)
-        #with fbuild.temp.tempdir() as dirname:
-        #    src_lib = dirname / 'templib' + self.src_suffix
-        #    with open(src_lib, 'w') as f:
-        #        print('''
-        #            #ifdef __cplusplus
-        #            extern "C" {
-        #            #endif
-        #            #if defined _WIN32 || defined __CYGWIN__
-        #            __declspec(dllexport)
-        #            #endif
-        #            int foo() { return 5; }
-        #            #ifdef __cplusplus
-        #            }
-        #            #endif
-        #        ''', file=f)
+        self.ctx.logger.check('checking if %s can link lib to exe' % self)
+        with fbuild.temp.tempdir() as dirname:
+            src_lib = dirname / 'templib' + self.src_suffix
+            with open(src_lib, 'w') as f:
+                print('''
+                    #ifdef __cplusplus
+                    extern "C" {
+                    #endif
+                    #if defined _WIN32 || defined __CYGWIN__
+                    __declspec(dllexport)
+                    #elif defined __GNUC__
+                    __attribute__ ((visibility ("default")))
+                    #endif
+                    int foo() { return 5; }
+                    #ifdef __cplusplus
+                    }
+                    #endif
+                ''', file=f)
 
-        #    src_exe = dirname / 'tempexe' + self.src_suffix
-        #    with open(src_exe, 'w') as f:
-        #        print('''
-        #            #include <stdio.h>
-        #            #ifdef __cplusplus
-        #            extern "C" {
-        #            #endif
-        #            extern int foo();
-        #            #ifdef __cplusplus
-        #            }
-        #            #endif
-        #            int main(int argc, char** argv) {
-        #                printf("%d", foo());
-        #                return 0;
-        #            }''', file=f)
+            src_exe = dirname / 'tempexe' + self.src_suffix
+            with open(src_exe, 'w') as f:
+                print('''
+                    #include <stdio.h>
+                    #ifdef __cplusplus
+                    extern "C" {
+                    #endif
+                    extern int foo();
+                    #ifdef __cplusplus
+                    }
+                    #endif
+                    int main(int argc, char** argv) {
+                        printf("%d", foo());
+                        return 0;
+                    }''', file=f)
 
-        #    obj = self.uncached_compile(src_lib, quieter=1)
-        #    lib = self.uncached_link_lib(dirname / 'templib', [obj],
-        #            quieter=1)
-        #    obj = self.uncached_compile(src_exe, quieter=1)
-        #    exe = self.uncached_link_exe(dirname / 'tempexe', [obj],
-        #            libs=[lib],
-        #            quieter=1)
+            obj = self.uncached_compile(src_lib, quieter=1)
+            lib = self.uncached_link_lib(dirname / 'templib', [obj],
+                    quieter=1)
+            obj = self.uncached_compile(src_exe, quieter=1)
+            exe = self.uncached_link_exe(dirname / 'tempexe', [obj],
+                    libs=[lib],
+                    quieter=1)
 
-        #    if not self.cross_compiler:
-        #        try:
-        #            stdout, stderr = self.run([exe], quieter=1)
-        #        except fbuild.ExecutionError:
-        #            raise fbuild.ConfigFailed('failed to link lib to exe')
-        #        else:
-        #            if stdout != b'5':
-        #                raise fbuild.ConfigFailed('failed to link lib to exe')
-        #            self.ctx.logger.passed()
+            if not self.cross_compiler:
+                try:
+                    stdout, stderr = self.run([exe], quieter=1)
+                except fbuild.ExecutionError:
+                    raise fbuild.ConfigFailed('failed to link lib to exe')
+                else:
+                    if stdout != b'5':
+                        raise fbuild.ConfigFailed('failed to link lib to exe')
+                    self.ctx.logger.passed()
 
     # --------------------------------------------------------------------------
 
@@ -136,6 +138,7 @@ class Builder(fbuild.builders.AbstractCompilerBuilder):
             libs=[],
             external_libs=[],
             lflags=[],
+            ldlibs=[],
             lkwargs={},
             include_source_dirs=True):
         """Actually compile and link the sources."""
@@ -151,6 +154,7 @@ class Builder(fbuild.builders.AbstractCompilerBuilder):
         return function(dst, objs,
             libs=libs,
             external_libs=external_libs,
+            ldlibs=ldlibs,
             flags=lflags,
             **lkwargs)
 
@@ -348,7 +352,7 @@ def _guess_builder(name, compilers, functions, ctx, *args,
             new_kwargs = copy.deepcopy(kwargs)
 
             for p, kw in platform_options:
-                if p <= subplatform:
+                if (p - subplatform & (compilers | {'windows'})) <= subplatform:
                     for k, v in kw.items():
                         if k[-1] in '+-':
                             func = k[-1]
@@ -378,6 +382,7 @@ def _guess_builder(name, compilers, functions, ctx, *args,
 
             # Try to use this compiler. If it doesn't work, skip this compiler
             # and try another one.
+
             try:
                 return fbuild.functools.call(function, ctx, exe, *args, **new_kwargs)
             except fbuild.ConfigFailed:
@@ -436,8 +441,8 @@ def guess_static(*args, **kwargs):
         ({'iphone', 'gcc'}, 'fbuild.builders.c.gcc.iphone.static'),
         ({'darwin', 'clang'}, 'fbuild.builders.c.clang.darwin.static'),
         ({'darwin', 'gcc'}, 'fbuild.builders.c.gcc.darwin.static'),
-        ({'posix', 'clang'}, 'fbuild.builders.c.clang.static'),
-        ({'posix', 'gcc'}, 'fbuild.builders.c.gcc.static'),
+        ({'clang'}, 'fbuild.builders.c.clang.static'),
+        ({'gcc'}, 'fbuild.builders.c.gcc.static'),
         ({'windows'}, 'fbuild.builders.c.msvc.static'),
     ), *args, **kwargs)
 
@@ -455,7 +460,7 @@ def guess_shared(*args, **kwargs):
         ({'iphone', 'gcc'}, 'fbuild.builders.c.gcc.iphone.shared'),
         ({'darwin', 'clang'}, 'fbuild.builders.c.clang.darwin.shared'),
         ({'darwin', 'gcc'}, 'fbuild.builders.c.gcc.darwin.shared'),
-        ({'posix', 'clang'}, 'fbuild.builders.c.clang.shared'),
-        ({'posix', 'gcc'}, 'fbuild.builders.c.gcc.shared'),
+        ({'clang'}, 'fbuild.builders.c.clang.shared'),
+        ({'gcc'}, 'fbuild.builders.c.gcc.shared'),
         ({'windows'}, 'fbuild.builders.c.msvc.shared'),
     ), *args, **kwargs)

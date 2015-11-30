@@ -111,18 +111,18 @@ def static_obj_suffix(ctx, platform=None):
     if 'windows' in platform:
         return '_static.obj'
     else:
-        return '_static.o'
+        return '.o'
 
 def static_lib_prefix(ctx, platform=None):
     platform = platform if platform else guess_platform(ctx)
-    if 'windows' in platform:
+    if 'windows' in platform and 'mingw' not in platform:
         return ''
     else:
         return 'lib'
 
 def static_lib_suffix(ctx, platform=None):
     platform = platform if platform else guess_platform(ctx)
-    if 'windows' in platform:
+    if 'windows' in platform and 'mingw' not in platform:
         return '.lib'
     else:
         return '.a'
@@ -132,13 +132,13 @@ def static_lib_suffix(ctx, platform=None):
 def shared_obj_suffix(ctx, platform=None):
     platform = platform if platform else guess_platform(ctx)
     if 'windows' in platform:
-        return '_dynamic.obj'
+        return '_shared.obj'
     else:
-        return '_dynamic.o'
+        return '.os'
 
 def shared_lib_prefix(ctx, platform=None):
     platform = platform if platform else guess_platform(ctx)
-    if platform & {'windows', 'mingw'}:
+    if platform & {'windows', 'mingw', 'cygwin'}:
         return ''
     else:
         return 'lib'
@@ -165,7 +165,7 @@ def exe_suffix(ctx, platform=None):
 
 def runtime_env_libpath(ctx, platform=None):
     platform = platform if platform else guess_platform(ctx)
-    if platform & {'windows', 'mingw', 'cygwin'}:
+    if platform & {'windows', 'mingw'}:
         return 'PATH'
     elif 'darwin' in platform:
         return 'DYLD_LIBRARY_PATH'

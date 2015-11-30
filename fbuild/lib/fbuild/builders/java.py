@@ -75,6 +75,8 @@ class Jar(fbuild.db.PersistentObject):
 # ------------------------------------------------------------------------------
 
 class Java(fbuild.db.PersistentObject):
+    _java_home_re = re.compile(r'\[Opened (.*?)/jre/lib')
+
     def __init__(self, ctx, exe='java', *, classpaths=()):
         super().__init__(ctx)
 
@@ -94,6 +96,20 @@ class Java(fbuild.db.PersistentObject):
         cmd.extend(('-jar', jar))
 
         return self.ctx.execute(cmd, *args, **kwargs)
+
+    def get_java_home(self, quieter=1, **kwargs):
+        """Get the Java home directory used by the current compiler."""
+        stdout, stderr = self.ctx.execute([self.exe, '-showversion', '-verbose'],
+                quieter=quieter,
+                ignore_error=True,
+                **kwargs)
+
+        for line in stdout.splitlines():
+            m = self._java_home_re.match(line.decode('utf-8'))
+            if m:
+                return Path(m.group(1))
+
+        return None
 
     def __str__(self):
         return self.exe.name
@@ -312,6 +328,10 @@ class AbstractBuilder(fbuild.builders.AbstractLibLinker):
     def run_jar(self, *args, **kwargs):
         """Run a jar library."""
         return self.java.run_jar(*args, **kwargs)
+
+    def get_java_home(self, *args, **kwargs):
+        """Get the Java home directory used by the current compiler."""
+        return self.java.get_java_home(*args, **kwargs)
 
 # ------------------------------------------------------------------------------
 

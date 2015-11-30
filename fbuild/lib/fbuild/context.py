@@ -128,6 +128,7 @@ class Context:
             timeout=None,
             env=None,
             runtime_libpaths=None,
+            ignore_error=False,
             **kwargs):
         """Execute the command and return the output."""
 
@@ -262,7 +263,7 @@ class Context:
 
         if timeout and timed_out:
             raise fbuild.ExecutionTimedOut(cmd, stdout, stderr, returncode)
-        elif returncode:
+        elif returncode and not ignore_error:
             raise fbuild.ExecutionError(cmd, stdout, stderr, returncode)
 
         return stdout, stderr

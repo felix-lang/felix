@@ -32,10 +32,8 @@ class Ar(fbuild.db.PersistentObject):
         except fbuild.ConfigFailed:
             self.ranlib = None
 
-        self.prefix = prefix or \
-            fbuild.builders.platform.static_lib_prefix(platform)
-        self.suffix = suffix or \
-            fbuild.builders.platform.static_lib_suffix(platform)
+        self.prefix = prefix or 'lib'
+        self.suffix = suffix or '.a'
         self.libpaths = tuple(libpaths)
         self.libs = tuple(libs)
         self.external_libs = tuple(external_libs)
@@ -45,6 +43,7 @@ class Ar(fbuild.db.PersistentObject):
     @fbuild.db.cachemethod
     def __call__(self, dst, srcs:fbuild.db.SRCS, *,
             libs:fbuild.db.SRCS=(),
+            ldlibs=(),
             external_libs=(),
             flags=(),
             ranlib_flags=(),
@@ -111,6 +110,7 @@ class Gcc(fbuild.db.PersistentObject):
             warnings=(),
             libpaths=(),
             libs=(),
+            ldlibs=(),
             external_libs=(),
             debug=None,
             profile=None,
@@ -133,6 +133,7 @@ class Gcc(fbuild.db.PersistentObject):
         self.warnings = tuple(warnings)
         self.libpaths = tuple(libpaths)
         self.libs = tuple(libs)
+        self.ldlibs = tuple(ldlibs)
         self.external_libs = tuple(external_libs)
         self.debug = debug
         self.profile = profile
@@ -169,6 +170,7 @@ class Gcc(fbuild.db.PersistentObject):
             warnings=(),
             libpaths=(),
             libs=(),
+            ldlibs=(),
             external_libs=(),
             debug=None,
             profile=None,
@@ -293,9 +295,14 @@ class Gcc(fbuild.db.PersistentObject):
         cmd.extend(flags)
         cmd.extend(srcs)
 
-        # Libraries must come last on linux in order to find symbols.
-        cmd.extend('-l' + l for l in libs)
-        cmd.extend('-l' + l for l in external_libs)
+        # Avoid passing libraries if just compiling.
+        if '-c' not in cmd:
+            # Libraries must come last on linux in order to find symbols.
+            cmd.extend('-l' + l for l in libs)
+            cmd.extend('-l' + l for l in external_libs)
+
+            # Add ldlibs.
+            cmd.extend(self.ldlibs+tuple(ldlibs))
 
         return self.ctx.execute(cmd, msg2=msg2, **kwargs)
 
@@ -512,11 +519,8 @@ def static(ctx, exe=None, *args,
     if obj_suffix is None:
         obj_suffix = fbuild.builders.platform.static_obj_suffix(ctx, platform)
 
-    if lib_prefix is None:
-        lib_prefix = fbuild.builders.platform.static_lib_prefix(ctx, platform)
-
-    if lib_suffix is None:
-        lib_suffix = fbuild.builders.platform.static_lib_suffix(ctx, platform)
+    lib_prefix = lib_prefix or 'lib'
+    lib_suffix = lib_suffix or '.a'
 
     if exe_suffix is None:
         exe_suffix = fbuild.builders.platform.exe_suffix(ctx, platform)
