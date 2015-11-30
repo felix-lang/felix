@@ -7,6 +7,25 @@ from fbuild.functools import call
 from fbuild.path import Path
 from fbuild.record import Record
 
+from fbuild.builders import platform
+guess_platform = platform.guess_platform
+
+def static_obj_suffix(ctx, platform=None):
+    platform = platform or guess_platform(ctx)
+    if 'windows' in platform:
+        return '_static.obj'
+    else:
+        return '_static.o'
+
+def shared_obj_suffix(ctx, platform=None):
+    platform = platform or guess_platform(ctx)
+    if 'windows' in platform:
+        return '_dynamic.obj'
+    else:
+        return '_dynamic.o'
+
+platform.static_obj_suffix = static_obj_suffix
+platform.shared_obj_suffix = shared_obj_suffix
 
 import buildsystem
 from buildsystem.config import config_call
