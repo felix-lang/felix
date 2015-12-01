@@ -229,7 +229,7 @@ def make_c_builder(ctx, *args, includes=[], libpaths=[], flags=[], **kwargs):
     kwargs['platform_options'] = [
         # GRRR .. for clang
         ({'darwin'},
-            {'warnings': ['all', 'fatal-errors', 
+            {'warnings': ['all', 'fatal-errors',
                 'no-constant-logical-operand',
                 'no-array-bounds',
                 ],
@@ -257,8 +257,8 @@ def make_cxx_builder(ctx, *args, includes=[], libpaths=[], flags=[], **kwargs):
     kwargs['platform_options'] = [
         # GRRR .. for clang++
         ({'darwin'}, {
-            'warnings': ['fatal-errors', 
-                'no-invalid-offsetof', 
+            'warnings': ['fatal-errors',
+                'no-invalid-offsetof',
                 'no-logical-op-parentheses',
                 'no-bitwise-op-parentheses',
                 'no-parentheses-equality',
@@ -273,7 +273,7 @@ def make_cxx_builder(ctx, *args, includes=[], libpaths=[], flags=[], **kwargs):
                 'no-return-type-c-linkage',
                 ],
             'flags': [
-                '-w', '-fno-common', '-fno-strict-aliasing', 
+                '-w', '-fno-common', '-fno-strict-aliasing',
                 '-fvisibility=hidden', '-std=c++11'] + flags,
             'optimize_flags': ['-fomit-frame-pointer']}),
         #({'cygwin'}, {
@@ -354,6 +354,7 @@ def config_host(ctx, build):
         ocamlc=ctx.options.host_ocamlc,
         ocamlopt=ctx.options.host_ocamlopt,
         flags=['-w', 'yzex', '-warn-error', 'FPSU'],
+        linker=phase.c.static.lib_linker,
         requires_at_least_version=(3, 11))
 
     phase.ocamllex = call('fbuild.builders.ocaml.Ocamllex', ctx,
@@ -446,7 +447,7 @@ def tangle_packages(package_dir, odir):
 
     quiet = True
     flx_iscr.process_dir(package_dir, odir, quiet)
-    
+
 def find_grammar(build_dir):
     sys.path.append("src/tools/")
     import flx_find_grammar_files
@@ -462,7 +463,7 @@ def write_script(buildroot,version):
     f.write(r"cp -r build/release/share/* /usr/local/lib/felix/felix-"+version+r"/share"+"\n")
     f.write(r"cp -r build/release/host/* /usr/local/lib/felix/felix-"+version+r"/host"+"\n")
     f.close()
-  
+
     f = open (Path("installscript") / "win32install.bat","w")
     f.write(r"@echo off")
     f.write(r"mkdir c:\usr\local\lib\felix\felix-"+version+r"\crap"+"\n")
@@ -519,7 +520,7 @@ def write_script(buildroot,version):
 def set_version(buildroot):
   print("FELIX VERSION " + flx_version)
   write_script(buildroot,flx_version)
- 
+
 @fbuild.db.caches
 def configure(ctx):
     """Configure Felix."""
@@ -573,18 +574,18 @@ def configure(ctx):
             ctx.buildroot / 'host/config', Path('src/config/linux/*.fpc').glob())
 
 
-    # enable this on win32 **instead** of the above to copy fpc files 
+    # enable this on win32 **instead** of the above to copy fpc files
     if "windows" in target.platform:
         print("COPYING WIN32 RESOURCE DATABASE")
         buildsystem.copy_to(ctx,
             ctx.buildroot / 'host/config', Path('src/config/win32/*.fpc').glob())
 
-    # enable this on solaris to clobber any fpc files 
+    # enable this on solaris to clobber any fpc files
     # where the generic unix ones are inadequate
     #buildsystem.copy_to(ctx,
     #    ctx.buildroot / 'config', Path('src/config/solaris/*.fpc').glob())
 
-    # enable this on osx to clobber any fpc files 
+    # enable this on osx to clobber any fpc files
     # where the generic unix ones are inadequate
     if 'macosx' in target.platform:
         print("COPYING MACOSX RESOURCE DATABASE")
@@ -671,7 +672,7 @@ def build(ctx):
     print("[fbuild] RUNNING SYNTAX EXTRACTOR")
     find_grammar(ctx.buildroot);
 
- 
+
     # --------------------------------------------------------------------------
     # Compile the runtime dependencies.
 

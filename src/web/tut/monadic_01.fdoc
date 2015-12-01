@@ -23,7 +23,7 @@ http://felix-lang.org/lib/std/option.flx and
 http://felix-lang.org/test/regress/monad-01.flx). Here's something
 equivalent applied to the problem of "safe integer arithmetic". By
 "safe" we simply mean trying to evaluate expressions while watching
-out for division by zero and under/overflow.
+out for division by zero and overflow.
 
 To get going first define the sum <code>success[T]</code> to which
 later will be imbued monadic properties.
