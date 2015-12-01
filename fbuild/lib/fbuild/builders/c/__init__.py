@@ -344,25 +344,20 @@ def _guess_builder(name, compilers, functions, ctx, *args,
     platform |= platform_extra
 
     full_compilers = compilers
-    if 'windows' not in platform:
-        full_compilers |= {'windows'}
+    full_compilers |= {'windows'}
 
     for subplatform, function in functions:
-        print('!!!!!', subplatform, compilers, platform)
         # XXX: this is slightly a hack to make sure:
         # a) Clang can actually be detected
         # b) Any compilers explicitly listed in platform_extra will have #1
         #  priority
         if subplatform - (compilers & platform_extra) <= platform:
-            print('@@@@@')
             new_kwargs = copy.deepcopy(kwargs)
             if 'windows' in platform:
                 subplatform |= {'windows'}
 
             for p, kw in platform_options:
-                print('|||||', p, full_compilers)
                 if (p - subplatform & full_compilers) <= subplatform:
-                    print('?????')
                     for k, v in kw.items():
                         if k[-1] in '+-':
                             func = k[-1]
