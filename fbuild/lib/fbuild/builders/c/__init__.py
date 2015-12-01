@@ -392,7 +392,7 @@ def _guess_builder(name, compilers, functions, ctx, *args,
             try:
                 return fbuild.functools.call(function, ctx, exe, *args, **new_kwargs)
             except fbuild.ConfigFailed:
-                pass
+                raise
 
     raise fbuild.ConfigFailed('cannot find a %s builder for %s' %
         (name, platform))
