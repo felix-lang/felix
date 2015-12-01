@@ -23,7 +23,7 @@ http://felix-lang.org/lib/std/option.flx and
 http://felix-lang.org/test/regress/monad-01.flx). Here's something
 equivalent applied to the problem of "safe integer arithmetic". By
 "safe" we simply mean trying to evaluate expressions while watching
-out for division by zero and under/overflow.
+out for division by zero and overflow.
 
 To get going first define the sum <code>success[T]</code> to which
 later will be imbued monadic properties.
@@ -102,7 +102,9 @@ const INT_MAX:int requires Cxx_headers::cstdlib ;
 const INT_MIN:int requires Cxx_headers::cstdlib ;
 
 fun madd (x:int) (y:int) : success[int] => 
-  if x > 0 and y > (INT_MAX - x) then
+  if (x > 0 and y > (INT_MAX - x)) or 
+     (x < 0 and y < (INT_MIN - x))
+  then
       Failure[int] "overflow"
   else
     Success (y + x)
@@ -110,16 +112,21 @@ fun madd (x:int) (y:int) : success[int] =>
   ;
 
 fun msub (x:int) (y:int) : success[int] => 
-  if x > 0 and y < (INT_MIN + x) then
-    Failure[int] "underflow"
+  if (x > 0 and y < (INT_MIN + x)) or
+     (x < 0 and y > (INT_MAX + x))
+  then
+    Failure[int] "overflow"
   else
     Success (y - x)
   endif
   ;
 
 fun mmul (x:int) (y:int) : success[int] => 
-  if x != 0 and y > (INT_MAX / x) then
-    Failure[int] "overflow"
+  if y > 0 and x > 0 and y > (INT_MAX / y) or
+     y > 0 and x <= 0 and x < (INT_MIN / y) or
+     y <= 0 and x > 0 and y < (INT_MIN / x) or
+     y <= 0 and y != 0 and x <= 0 and x < (INT_MAX / y) then
+        Failure[int] "overflow"
   else
     Success (y * x) 
   endif
@@ -129,7 +136,10 @@ fun mdiv (x:int) (y:int) : success[int] =>
     if (x == 0) then 
         Failure[int] "attempted division by zero" 
     else 
-      Success (y / x) 
+      if y == INT_MIN and x == -1 then
+        Failure[int] "overflow"
+      else
+        Success (y / x) 
     endif 
     ;
 @
@@ -199,95 +209,6 @@ println$ "INT_MAX + 1 = " + str (ret INT_MAX >>= madd 1) ;
 println$ "INT_MIN = " + str (INT_MIN) ;
 println$ "INT_MIN - 1 = " + str (ret INT_MIN >>= msub 1) ;
 println$ "INT_MIN + 1 = " + str (ret INT_MIN >>= madd 1) ;
-println$ "2 * (INT_MAX/2) = " + str (ret INT_MAX >>= mdiv 2 >>= mmul 2 >>= madd 1) ; //The last one since we know INT_MAX is odd and that division will truncate.
+println$ "2 * (INT_MAX/2) + 1 = " + str (ret INT_MAX >>= mdiv 2 >>= mmul 2 >>= madd 1) ; //The last one since we know INT_MAX is odd and that division will truncate.
 println$ "2 * (INT_MAX/2 + 1) = " + str (ret INT_MAX >>= mdiv 2 >>= madd 1 >>= mmul 2) ;
-@
-As an aside, I understand these constructions are called "workflows"
-in the F# community?
-
-In the next section we will examine arguably one of the harder monads
-to understand. As you will see, Felix type notations make it not that
-much harder than the maybe monad and help deepen one's understanding
-considerably!
-
-@h2 The state monad
-
-Revenge of the monads is coming. Only the code for the example is here
-right now now... Check back soon!
-
-@felix-unchecked
-
-//State monad.
-
-union state[s, a] =
- | State of (s->a*s)
- ;
-
-fun run_state[s, a] (x:state[s, a]):(s->a*s) =>
- match x with
-   | State u => u
- endmatch
-  ;
-
-typedef fun StateGen (s:TYPE) (a:TYPE) : TYPE => state[s, a] ;
-
-instance[s] Monad[StateGen s]
-{
- fun bind[a,b](x:StateGen s  a, f:a->StateGen s b):StateGen s  b =
- {
-   val run0:(s->a*s) = run_state x ;
-   fun run1 (state0:s):(b*s) =
-   {
-     val t:a*s = run0 state0 ;
-     return (run_state (f t.0)) t.1;
-   }
-
-   return State run1 ;
- }
-
- fun ret[a](x:a):StateGen s a =
- {
-   return State (fun (st:s):a*s => (x, st)) ;
- }
-}
-
-//--
-//
-//Test.
-
-struct counter
-{
- value : int ;
- number_of_increments : int ;
-};
-
-instance Str[counter]
-{
- fun str (c:counter):string =>
-   "Counter (value = " + str (c.value) +
-   ", number_of_increments = " + str (c.number_of_increments) + ")"
-   ;
-}
-
-fun increment_counter (c:counter):(int*counter) =>
- (c.value, counter (c.value+1, c.number_of_increments+1))
- ;
-
-val increment_counter_state : state[counter, int] = State increment_counter ;
-
-open Monad[StateGen counter] ;
-
-val increment_counter_twice_state =
- bind (increment_counter_state, (fun (x:int):state[counter,int] => increment_counter_state)) ;
-
-println $ str ((run_state increment_counter_twice_state) (counter (24, 3))) ;
-
-syntax monad //Override the right shift assignment operator.
-{
-   x[ssetunion_pri] := x[ssetunion_pri] ">>=" x[>ssetunion_pri] =># "`(ast_apply ,_sr (bind (,_1 ,_3)))";
-}
-open syntax monad;
-
-val g = increment_counter_state >>= (fun (x:int):state[counter,int] => increment_counter_state) ;
-println $ str ((run_state g) (counter (24, 3))) ;
 @

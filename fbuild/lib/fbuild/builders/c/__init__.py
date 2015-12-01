@@ -343,9 +343,7 @@ def _guess_builder(name, compilers, functions, ctx, *args,
             platform_extra |= compilers
     platform |= platform_extra
 
-    full_compilers = compilers
-    if 'windows' not in platform:
-        full_compilers |= {'windows'}
+    full_compilers = compilers | {'windows'}
 
     for subplatform, function in functions:
         # XXX: this is slightly a hack to make sure:
@@ -356,7 +354,7 @@ def _guess_builder(name, compilers, functions, ctx, *args,
             new_kwargs = copy.deepcopy(kwargs)
 
             for p, kw in platform_options:
-                if (p - subplatform & full_compilers) <= subplatform:
+                if (p - (subplatform & full_compilers)) <= platform:
                     for k, v in kw.items():
                         if k[-1] in '+-':
                             func = k[-1]
@@ -392,8 +390,7 @@ def _guess_builder(name, compilers, functions, ctx, *args,
             except fbuild.ConfigFailed:
                 pass
 
-    raise fbuild.ConfigFailed('cannot find a %s builder for %s' %
-        (name, platform))
+    raise fbuild.ConfigFailed('cannot find a %s builder for %s' % (name, platform))
 
 @fbuild.db.caches
 def identify_compiler(ctx, exe):
