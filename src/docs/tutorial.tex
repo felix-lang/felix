@@ -296,7 +296,7 @@ This means that:
 \begin{minted}{felix}
 var x: double = something;
 var y: double; something_else;
-assert x + y - y == 0.0;
+assert x + y - y == x;
 \end{minted}
 
 because the subtraction is done first.  This can make
@@ -442,7 +442,7 @@ If the indices are out of order an empty string is returned.
 
 A negative index is translated to by adding the string length.
 
-The substring function s defined so it cannot fail.
+The substring function is defined so it cannot fail.
 The name of the actual library function called by this notation
 is shown in the corresponding comment.
 
@@ -534,7 +534,8 @@ type of the empty tuple \verb%()%. Now, you have seen that the
 cartesian product type is denoted using the n-ary non-associative
 operator \verb%*%, so it is not so surprising that the type
 denoted by the n-ary non-associative operator \verb%+% is called
-a sum.
+a sum. So, the type \verb%4% is a called a {\em unitsum} because
+it is the sum of units.
 
 Values of a unit sum just represent cases. The notation is ugly:
 
@@ -552,6 +553,44 @@ There is a very commonly used unitsum. You already know it: \verb%bool%
 is nothing more than another name for type \verb%2% and the special
 words \verb%false% and \verb%true% are just aliases for \verb%case 0 of 2%
 and \verb%case 1 of 2% respectively!
+
+\section{Records}
+A record is a tuple with named fields.
+
+\begin{minted}{felix}
+var r : (a:int, b:string) = (a=42, b="hitch-hiker);
+println$ r.a, r.b;
+\end{minted}
+
+Records support advanced features including row polymorphism
+with scoped labels.
+
+\section{Structs}
+A struct is a nominally typed product with named fields.
+
+\begin{minted}{felix}
+struct X {
+  a:int;
+  b:string;
+  fun show() => self.b + " " + self.a.str;
+};
+var x = X(42, "World");
+x.show;
+\end{minted}
+
+Functions and procedures can be included in a record but
+are actually defined outside it with a curried argument
+named \verb%self%. It has the type of the record for
+a function, and a pointer to the record for a procedure.
+So the above is equivalent to:
+
+\begin{minted}{felix}
+struct X {
+  a:int;
+  b:string;
+};
+fun show(self:X) => self.b + " " + self.a.str;
+\end{minted}
 
 
 \section{Lists}
@@ -780,7 +819,7 @@ is never an error. However to apply a function with the
 same name as another, it must be possible to distinguish
 between them.
 
-{\em Overloading} provides on method for doing this:
+{\em Overloading} provides one method for doing this:
 
 \begin{minted}{felix}
 fun twice (x:int) => x + x;
@@ -969,7 +1008,7 @@ a value and may have a side effect.
 
 \begin{minted}{felix}
 var counter = 0;
-gen fresh2() : int =
+gen fresh() : int =
 {
   ++counter;
   return counter;
@@ -979,6 +1018,215 @@ println$ #fresh, #fresh; // 1,2
 
 The term generator comes from the exemplar generator,
 namely the random number generators. 
+
+\section{Control Flow}
+Felix has a rich control flow architecture.
+Here are some control flow constucts.
+
+\subsection{Conditional}
+Here is the expanded procedural conditional branch.
+\begin{minted}{felix}
+begin
+  if cond do
+    something;
+  elif cond2 do
+    something_more;
+  else
+    last; resort;
+  done
+end
+\end{minted}
+
+There are also several short forms.
+\begin{minted}{felix}
+  if cond goto lab;
+  if cond return;
+\end{minted}
+
+\subsection{Jumps}
+The usual \verb%goto% and target label.
+\begin{minted}{felix}
+begin
+  var i = 1;
+  start:> // label
+    call println i; // procedure call
+    ++i; // increment i 
+    if i < 10 goto start; // conditional jump
+end
+\end{minted}
+
+\subsection{Loops}
+Low level inclusive loops are flat code. Jumping
+in and out with \verb%goto% is permitted. The control
+variable can optionally be declared in a loop, and
+exists in the whole containing scope.
+
+\begin{minted}{felix}
+begin
+  for var i:int in 0 upto 10 do // inclusive
+    println$ i; // procedure call
+  done
+  for i in 10 downto 0 do // inclusive
+    println$ i; // procedure call
+  done
+\end{minted}
+
+Here is the usual while loop and its negation the until loop.
+\begin{minted}{felix}
+begin
+  var i = 0;
+  while i < 10 do
+    println$ i;
+    ++i; 
+  done
+  until i == 0 do 
+    println i;
+    --i; // decrement
+  done
+end
+\end{minted}
+
+And here are loops using iterators, note that the
+control variable is auto declared:
+\begin{minted}{felix}
+  // inclusive subrange of int iterator
+  for j in 0..10 do 
+    println$ j; 
+  done
+
+  // exclusive subrange of int iterator
+  for j in 0..<10 do 
+    println$ j;
+  done
+
+  // array iterator
+  for j in (1,2,3,4,5,6,7,8,9,10) do
+    println$ j; // array iterator
+  done
+
+  // list iterator
+  for j in list (1,2,3,4,5,6,7,8,9,19) do
+    println$ i; // list iterator
+  done
+  for (i=0; i<10; ++i;) do // C style
+    println$ i;
+  done
+end
+\end{minted}
+
+Iterator based loops are implemented using yielding generators
+as explained in the next section.
+
+\subsection{Statement Groups}
+Statements can be grouped using the \verb%do .. done% constuction.
+The body of a loop is a single statement, the do group is used
+to present the parser many statements considered as one.
+Jumps into and out of a do group are allowed, they do 
+not represent a scope.
+
+There is another group called a {\em block} which does
+represent a scope: the \verb%begin .. end% construction.
+You can jump out of a block, but you cannot jump in, and
+you cannot return.
+
+There is a reason for this: 
+
+\begin{minted}{felix}
+var doit = { println$ "Hello"; println$ " World"l; };
+call doit ();
+\end{minted}
+
+The expression in curly braces \verb%{}% is an anonymous
+procedure of type $1 \rightarrow 0$. To call this
+procedure, we must apply it to a value of type unit,
+and there is only one such value, namely ().
+
+The \verb%begin..end% construction is just an anonymous
+procedure which is then applied to unit immediately, so that
+
+\begin{minted}{felix}
+{ println$ "Hello"; println$ " World"l; } ();
+\end{minted}
+
+is equivalent to
+
+\begin{minted}{felix}
+{ println$ "Hello"; println$ " World"l; };
+\end{minted}
+
+which is equivalent to
+
+\begin{minted}{felix}
+begin println$ "Hello"; println$ " World"l; end
+\end{minted}
+
+only we don't need the trailing semi-colon \verb%;%.
+
+So because this is a procedure, a \verb%return% statement
+would just return from the anonymous procedure, and not
+the containing procedure. To work around this you can 
+name the procedure from which you wish to return
+using a \verb%return from% statement:
+
+\begin{minted}{felix}
+proc outer (x:int)
+{
+   {
+      println$ "Inner";
+      if x > 0 do return from outer; done
+   };
+   println$ "Negative";
+}
+\end{minted}
+
+Do not try to return from a procedure which is not active,
+all hell will break loose.
+
+\section{Yielding Generator}
+Here is a way to write and use what is called an {\em yielding generator}.
+This is a generator utilising a \verb%yield% statement.
+
+\begin{minted}{felix}
+begin
+  gen down (var start:int) () = 
+  {
+    for i in start downto 0 do
+      yield i;
+    done
+    return i; 
+  }
+
+  var it = down 10;
+  var x = #it;
+  while x >= 0 do
+    println x;
+    x = #it;
+  done
+end
+\end{minted}
+
+A yielding generator must be a function of type $1\rightarrow T$ for
+some type T. In this case \verb%down 10% has that type. A closure
+over the generator must be assigned to a variable to hold the state,
+named \verb%it% in the example.
+
+The closured stored in the variable is then called by applying it
+to the unit value (), written like \verb%#it% here because I hate
+parens. This causes the generator to run until it yields a value
+or returns.
+
+The next call to the generator causes it to proceed from where it
+left off after a yield, or to do the terminating return again
+if necessary. So yielding generators can always be called infinitely
+producing a stream of values.
+
+The caller and the generator are coroutine which swap control
+back and forth as required separately by each, that is, they
+are both masters. The generator is a so-called {\em push master}
+and the client is a {\em pull} master.
+
+We will see shortly that Felix has different techniques to
+implement fully general coroutines.
 
 \chapter{Functional Programming}
 We shall begin our more serious exploration of Felix with functional programming
