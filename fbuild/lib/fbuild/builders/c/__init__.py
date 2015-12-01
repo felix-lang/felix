@@ -346,19 +346,15 @@ def _guess_builder(name, compilers, functions, ctx, *args,
     full_compilers = compilers | {'windows'}
 
     for subplatform, function in functions:
-        print('!!!!!', subplatform, compilers, platform)
         # XXX: this is slightly a hack to make sure:
         # a) Clang can actually be detected
         # b) Any compilers explicitly listed in platform_extra will have #1
         #  priority
         if subplatform - (compilers & platform_extra) <= platform:
-            print('@@@@@')
             new_kwargs = copy.deepcopy(kwargs)
 
             for p, kw in platform_options:
-                print('|||||', p, full_compilers)
                 if (p - (subplatform & full_compilers)) <= platform:
-                    print('?????')
                     for k, v in kw.items():
                         if k[-1] in '+-':
                             func = k[-1]
@@ -392,10 +388,9 @@ def _guess_builder(name, compilers, functions, ctx, *args,
             try:
                 return fbuild.functools.call(function, ctx, exe, *args, **new_kwargs)
             except fbuild.ConfigFailed:
-                raise
+                pass
 
-    raise fbuild.ConfigFailed('cannot find a %s builder for %s' %
-        (name, platform))
+    raise fbuild.ConfigFailed('cannot find a %s builder for %s' % (name, platform))
 
 @fbuild.db.caches
 def identify_compiler(ctx, exe):
