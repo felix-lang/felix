@@ -356,6 +356,8 @@ def _guess_builder(name, compilers, functions, ctx, *args,
         if subplatform - (compilers & platform_extra) <= platform:
             print('@@@@@')
             new_kwargs = copy.deepcopy(kwargs)
+            if 'windows' in platform:
+                subplatform |= {'windows'}
 
             for p, kw in platform_options:
                 print('|||||', p, full_compilers)
