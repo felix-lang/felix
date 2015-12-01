@@ -637,15 +637,35 @@ A list can be taken apart with a pattern match:
 var x = list (3,2,1);
 println$
   match x with
-  | #Empty =>  "Empty";
-  | Cons(v, tail) => "first element " + v.str;
+  | #Empty =>  "Empty"
+  | Cons(v, tail) => "first element " + v.str
   endmatch
 ;
 \end{minted}
 
 
 \subsection{Option Type}
-Stuff..
+Another commonly used union type is the option type \verb%opt%:
+
+\begin{minted}{felix}
+union opt[T] = 
+  | None 
+  | Some of T
+;
+
+fun maybe_divide (num:int, denom:int) =>
+  if denom == 0 then None[int]
+  else Some (num/denom)
+;
+
+println$
+  match maybe_divide (10,0) with
+  | #None =>  "Divide by Zero"
+  | Some j => "Quotient " + j.str
+  endmatch
+;
+\end{minted}
+
 
 \section{Functions}
 We have enough preliminaries now to finally introduce functions.
@@ -666,11 +686,38 @@ fun trickdiv (num:int, denom:int) :int =
 }
 \end{minted}
 
-There is a rule for function: they may not have observable
-side effects! The rule is relaxed; that is, not enforced,
+There is a rule for functions: 
+
+{\bf functions defined with the \verb%fun% binder may not have observable
+side effects}
+
+The rule is relaxed; that is, not enforced,
 to permit debugging, profiling, coverage checking, etc.
 
-\subsection{Calling function}
+\subsubsection{Pattern Syntax for Functions}
+Functions can also be defined with an abbreviated
+form which merges the definition with a pattern match:
+
+\begin{minted}{felix}
+fun len[T] : list[T] -> int =
+  | #Empty => 0
+  | Cons (_, tail) => 1 + len tail
+;
+\end{minted}
+
+This is just shorthand for
+
+\begin{minted}{felix}
+fun len[T] (x:list[T]): int =>
+  match x with
+  | #Empty => 0
+  | Cons (_, tail) => 1 + len tail
+  endmatch
+;
+\end{minted}
+
+
+\subsection{Calling functions}
 In Felix you can call a function using operator whitespace:
 
 \begin{minted}{felix}
@@ -857,7 +904,7 @@ is one. Here, the first function is clearly more general because
 the substitution:
 
 $$\begin{aligned}
-\verb%U% &\rightarrow \verb%Wt%\\
+\verb%U% &\rightarrow \verb%W%\\
 \verb%V% &\rightarrow \verb%int% 
 \end{aligned}
 $$

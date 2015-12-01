@@ -343,6 +343,10 @@ def _guess_builder(name, compilers, functions, ctx, *args,
             platform_extra |= compilers
     platform |= platform_extra
 
+    full_compilers = compilers
+    if 'windows' not in platform:
+        full_compilers |= {'windows'}
+
     for subplatform, function in functions:
         # XXX: this is slightly a hack to make sure:
         # a) Clang can actually be detected
@@ -352,7 +356,7 @@ def _guess_builder(name, compilers, functions, ctx, *args,
             new_kwargs = copy.deepcopy(kwargs)
 
             for p, kw in platform_options:
-                if (p - subplatform & (compilers | {'windows'})) <= subplatform:
+                if (p - subplatform & full_compilers) <= subplatform:
                     for k, v in kw.items():
                         if k[-1] in '+-':
                             func = k[-1]
@@ -435,6 +439,7 @@ def guess_static(*args, **kwargs):
     functions."""
 
     return _guess_builder('c static', {'gcc', 'clang'}, (
+        ({'windows'}, 'fbuild.builders.c.msvc.static'),
         ({'avr', 'gcc'}, 'fbuild.builders.c.gcc.avr.static'),
         ({'iphone', 'simulator', 'gcc'},
             'fbuild.builders.c.gcc.iphone.static_simulator'),
@@ -443,7 +448,6 @@ def guess_static(*args, **kwargs):
         ({'darwin', 'gcc'}, 'fbuild.builders.c.gcc.darwin.static'),
         ({'clang'}, 'fbuild.builders.c.clang.static'),
         ({'gcc'}, 'fbuild.builders.c.gcc.static'),
-        ({'windows'}, 'fbuild.builders.c.msvc.static'),
     ), *args, **kwargs)
 
 def guess_shared(*args, **kwargs):
@@ -454,6 +458,7 @@ def guess_shared(*args, **kwargs):
     functions."""
 
     return _guess_builder('c shared', {'gcc', 'clang'}, (
+        ({'windows'}, 'fbuild.builders.c.msvc.shared'),
         ({'avr', 'gcc'}, 'fbuild.builders.c.gcc.avr.shared'),
         ({'iphone', 'simulator', 'gcc'},
             'fbuild.builders.c.gcc.iphone.shared_simulator'),
@@ -462,5 +467,4 @@ def guess_shared(*args, **kwargs):
         ({'darwin', 'gcc'}, 'fbuild.builders.c.gcc.darwin.shared'),
         ({'clang'}, 'fbuild.builders.c.clang.shared'),
         ({'gcc'}, 'fbuild.builders.c.gcc.shared'),
-        ({'windows'}, 'fbuild.builders.c.msvc.shared'),
     ), *args, **kwargs)
