@@ -13,7 +13,7 @@
 \usepackage{hyperref}
 \hypersetup{pdftex,colorlinks=true,allcolors=blue}
 \usepackage{hypcap}
-\title{Introduction to Felix}
+\title{Modern Programming}
 \author{John Skaller}
 \begin{document}
 \maketitle
@@ -962,6 +962,66 @@ be more than one unifier, a most general unifier is one which can
 produce all the other unifiers by some substitutions. If there is
 a most general unifier it is unique up to changing variable names.
 
+\subsection{Conversion Operators}
+Felix has a special shortcut for defining conversions:
+
+\begin{minted}{felix}
+typedef cart_complex = (x:double, y:double);
+typedef polar_complex = (r:double, theta:double);
+
+ctor cart_complex (z: polar_complex) =>
+  (x=z.r * cos z.theta, z.r * sin z.theta)
+;
+
+ctor polar_complex (z: cart_complex) => 
+  (r = sqrt (z.x.sqr + z.y.sqr), theta = tan (y / z))
+;
+
+ctor cart_complex (x:double) => (x=x,y=0.0);
+ctor polar_complex (x:double) => (r=x, theta=0.0);
+
+var z1 = cart_complex 0.5;
+var z2 = polar_complex z1;
+println$ z2;
+\end{minted}
+
+The binder \verb%ctor% must be followed by the name of a type.
+A \verb%typedef% alias will do. The definition is expanded:
+
+\begin{minted}{felix}
+ctor T (x:arg) => expr;
+
+//equivalent to:
+fun _ctor_T (x:arg) : T => expr;
+\end{minted}
+
+When Felix finds an application $\verb%f% a$ where \verb%f% is a simple name,
+it first tries to find a function named \verb%f%. 
+If a type name is found instead of a function,
+Felix looks again for a function named \verb%_ctor_%$f$ where $f$.
+
+\subsection{Apply operator}
+When Felix finds an application $\verb%f% a$ where \verb%f% is a simple name,
+it first tries to find a function named \verb%f%. 
+If a value of some type $F$ is found instead, 
+Felix looks again for a function named \verb%apply% with
+a tuple argument of type \verb%F * A% where $A$ is the
+type of the argument. For example:
+
+\begin{minted}{felix}
+fun apply (x:string, y:string) => x + y;
+println$ "Hello" " " "World";
+
+fun apply (x:double, y:double) => x * y;
+fun apply (x:int, y:double) => x * y;
+var x = 2.3;
+println$ 2 x + 4 x x;
+\end{minted}
+
+This allows objects of any type other than functions to also
+act as functions in a user defined way.
+
+
 \section{Procedures}
 A {\em procedure} is like a function which returns no value and
 is allowed to have side effects.
@@ -1025,6 +1085,7 @@ Here are some control flow constucts.
 
 \subsection{Conditional}
 Here is the expanded procedural conditional branch.
+
 \begin{minted}{felix}
 begin
   if cond do
@@ -1038,6 +1099,7 @@ end
 \end{minted}
 
 There are also several short forms.
+
 \begin{minted}{felix}
   if cond goto lab;
   if cond return;
@@ -1045,6 +1107,7 @@ There are also several short forms.
 
 \subsection{Jumps}
 The usual \verb%goto% and target label.
+
 \begin{minted}{felix}
 begin
   var i = 1;
@@ -1072,6 +1135,7 @@ begin
 \end{minted}
 
 Here is the usual while loop and its negation the until loop.
+
 \begin{minted}{felix}
 begin
   var i = 0;
@@ -1088,6 +1152,7 @@ end
 
 And here are loops using iterators, note that the
 control variable is auto declared:
+
 \begin{minted}{felix}
   // inclusive subrange of int iterator
   for j in 0..10 do 
@@ -1145,19 +1210,19 @@ The \verb%begin..end% construction is just an anonymous
 procedure which is then applied to unit immediately, so that
 
 \begin{minted}{felix}
-{ println$ "Hello"; println$ " World"l; } ();
+{ println$ "Hello"; println$ " World"; } ();
 \end{minted}
 
 is equivalent to
 
 \begin{minted}{felix}
-{ println$ "Hello"; println$ " World"l; };
+{ println$ "Hello"; println$ " World"; };
 \end{minted}
 
 which is equivalent to
 
 \begin{minted}{felix}
-begin println$ "Hello"; println$ " World"l; end
+begin println$ "Hello"; println$ " World"; end
 \end{minted}
 
 only we don't need the trailing semi-colon \verb%;%.
@@ -1228,6 +1293,188 @@ and the client is a {\em pull} master.
 We will see shortly that Felix has different techniques to
 implement fully general coroutines.
 
+\section{Concepts: type classes}
+Stuff.
+
+\section{Embedding C++}
+Felix was specifically designed to allow almost seamless lifting
+of C++ code. Indeed most of the standard library types are simply
+types lifted from C++. The provides ABI compatibility with C++
+and hence C, although syntactic compatibility is sacrificed
+in favour of a superior type system.
+
+\subsection{Lifting types}
+The \verb%type% statement is used to lift types from C++.
+
+\begin{minted}{felix}
+type myint = "int";
+var x:myint;
+
+type metres = "double";
+var m: metres;
+
+type mystring="::std::basic_string<char>"
+  requires header '#include <string>'
+;
+var s: mystring;
+\end{minted}
+
+Template classes can be lifted to polymorphic types too,
+the notation \verb%?1%, \verb%?2%, etc is used to associate
+the type variables.
+
+\begin{minted}{felix}
+type vector[T] = "vector<?1>"
+  requires header '#include <vector>'
+;
+var v : vector[int]; // vector<int>
+\end{minted}
+
+Note that if the type is defined in a C or C++
+header you must ensure the header is included in
+the code Felix generates as shown. The \verb%requires%
+clause will be explained shortly.
+
+If you need to lift a lot of non polymorphic types
+at once there is a special shortcut using \verb%ctypes%
+binder:
+
+\begin{minted}{felix}
+ctypes int,long,short,double;
+\end{minted}
+
+\subsection{Lifting Values}
+Of course, types are useless without values, so
+Felix provides a way to lift expressions
+with the \verb%const% binder:
+
+\begin{minted}{felix}
+const one : int = "1";
+const pi : double = "22.0/7";
+var z = pi; // rough approx
+\end{minted}
+
+The Felix type of the lifted value must be given.
+Note the value can be an arbitrary expression.
+
+Note: it is also possible to lift literals by extending
+the Felix grammar. The Felix grammar is actually defined
+in the standard library in user space, so extending
+it can be done in Felix. However it is beyond the
+scope of this quick introduction to explain the somewhat
+arcane details.
+
+\subsection{Lifting Functions}
+Lifting types is all very well, but they're not very useful
+unless they can be manipulated.  C++ functions can be lifted to 
+functions and procedures like this:
+
+\begin{minted}{felix}
+fun addup3 : int * int * int -> int = "$1+$2+$3";
+fun sin : double -> double = "sin($1)" 
+  requires header '#include <math.h>'
+;
+proc coutit[T] : T = "cout << $1;" 
+  requires header "#include <iostream>"
+;
+\end{minted}
+
+Here is a more sophisticated example:
+
+\begin{minted}{felix}
+type vector[T] = "::std::vector<?1>"
+  requires header "#include <vector>"
+;
+proc push_back[T] : vector[T] * T = "$1.push_back($2);";
+fun len[T]: vector[T] -> int = "$1.size()";
+
+type viter[T] = "::std::vector<?1>::const_iterator"
+  requires header "#include <vector>"
+;
+fun deref[T] : viter[T] -> T = "*$1";
+fun next[T] : viter[T] -> viter[T] = "$1+1";
+fun !=[T] : viter[T] * viter[T] -> bool = "$1!=$2";
+
+fun begin[T] : vector[T] -> viter[T] = "$1.begin()";
+fun end[T] : vector[T] -> viter[T] = "$1.end()";
+
+var v : vector[int]; // C++ default init to empty
+begin
+  var l = list (1,2,3,4); // Felix list
+  for elt in l do push_back(v, elt); done
+end
+
+println$ "Length = " + v.len.str;
+
+// print STL vector
+var it = v.begin;
+while it != v.end do
+  println$ deref it;
+  it = next it;
+done
+\end{minted}
+
+There are some things to note here!
+
+First, you may note the functions \verb%begin% and \verb%end%
+used here. This is bad practice, the names \verb%stl_begin%
+and \verb%stl_end% would be better. But the question is: why does
+it work at all? Aren't \verb%begin% and \verb%end% keywords?
+
+The answer is simple: no, they can't be keywords because
+Felix has no keywords! You may have thought that there were
+far too many keywords in Felix but now you know the truth.
+There are none. Zero. Zilch. Felix uses a sophisticated
+extended generalised scannerless LR parser and the grammar
+only recognises certain identifiers as special in
+contexts where they might occur.
+
+The second important thing to note here is that we have
+cheated and some care is needed to avoid a serious issue.
+The Felix \verb%vector% we have defined is polymorphic
+and can be used with any type where the generated C++
+type would work, but it must not be used with a Felix type
+which uses the garbage collector! Unions and nonunit sum types
+and Felix pointers in particular usually require garbage collection, 
+and that includes Felix \verb%list% type.
+
+If you put such a type into a C++ vector, the Felix garbage
+collector will not know it is there, and objects pointed
+at may appear to be unreachable and be deleted when they're
+stored in the vector.
+
+The third thing to note is that we have broken a very
+important protocol in this example: we have modified
+a value, namely the vector \verb%v%. Although C++ allows
+modifying values, Felix does not. Felix only allows modification
+of objects. In particular although \verb%v% in the example
+is an addressable store and therefore an object, all modifications
+to objects must be done via the address of the object, that is,
+by using a pointer. Felix has no concept of lvalue like C++,
+and no reference types: we use pointers instead.
+
+The problem is that we have used the abstraction provided by
+the Felix lifting constructs to hide the underlying data type.
+The compiler cannot know that the type you lifted was not
+in fact a pointer to an object and the mutators lifted
+operating through the pointer to modify the object it
+points to. That would be allowed!
+
+Now let us fix it:
+
+\begin{minted}{felix}
+proc push_back[T] : &vector[T] * T = "$1.push_back($2);";
+fun begin[T] : &vector[T] -> viter[T] = "$1.begin()";
+fun end[T] : &vector[T] -> viter[T] = "$1.end()";
+\end{minted}
+
+There! We have to adjust the corresponding usage of course.
+Note carefully the iterator itself is indeed an abstract pointer.
+So operations on the vector via the iterators obtained
+do NOT require any adjustment! Although none are present
+in this example. 
+
+%========================================================
 \chapter{Functional Programming}
 We shall begin our more serious exploration of Felix with functional programming
 techniques.
