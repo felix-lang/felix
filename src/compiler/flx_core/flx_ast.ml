@@ -197,7 +197,7 @@ and expr_t =
   | EXPR_typeof of Flx_srcref.t * expr_t
   | EXPR_cond of Flx_srcref.t * (expr_t * expr_t * expr_t)
 
-  | EXPR_expr of Flx_srcref.t * string * typecode_t
+  | EXPR_expr of Flx_srcref.t * Flx_code_spec.t * typecode_t * expr_t
 
   | EXPR_type_match of Flx_srcref.t * (typecode_t * (typecode_t * typecode_t) list)
 
@@ -567,8 +567,9 @@ and statement_t =
       Flx_code_spec.t *
       ikind_t *
       raw_req_expr_t
-  | STMT_code of Flx_srcref.t * Flx_code_spec.t
-  | STMT_noreturn_code of Flx_srcref.t * Flx_code_spec.t
+  | STMT_code of Flx_srcref.t * Flx_code_spec.t * expr_t
+
+  | STMT_noreturn_code of Flx_srcref.t * Flx_code_spec.t * expr_t
 
   | STMT_export_fun of Flx_srcref.t * suffixed_name_t * string
   | STMT_export_cfun of Flx_srcref.t * suffixed_name_t * string
@@ -581,8 +582,8 @@ and statement_t =
 
 type exe_t =
   | EXE_type_error of exe_t
-  | EXE_code of CS.t (* for inline C++ code *)
-  | EXE_noreturn_code of CS.t (* for inline C++ code *)
+  | EXE_code of CS.t * expr_t (* for inline C++ code *)
+  | EXE_noreturn_code of CS.t * expr_t  (* for inline C++ code *)
   | EXE_comment of string (* for documenting generated code *)
   | EXE_label of string (* for internal use only *)
   | EXE_goto of string  (* for internal use only *)
@@ -731,7 +732,7 @@ let src_of_expr (e : expr_t) = match e with
   | EXPR_match (s, _)
   | EXPR_type_match (s, _)
   | EXPR_cond (s,_)
-  | EXPR_expr (s,_,_)
+  | EXPR_expr (s,_,_,_)
   | EXPR_letin (s,_)
   | EXPR_typeof (s,_)
   | EXPR_range_check (s,_,_,_)
@@ -797,8 +798,8 @@ let src_of_stmt (e : statement_t) = match e with
   | STMT_fun_decl (s,_,_,_,_,_,_,_)
   | STMT_callback_decl (s,_,_,_,_)
   | STMT_insert (s,_,_,_,_,_)
-  | STMT_code (s,_)
-  | STMT_noreturn_code (s,_)
+  | STMT_code (s,_,_)
+  | STMT_noreturn_code (s,_,_)
   | STMT_union (s, _,_,_)
   | STMT_struct (s,_,_,_)
   | STMT_cstruct (s,_,_,_,_)

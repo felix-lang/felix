@@ -256,8 +256,8 @@ let gen_body syms uses bsym_table id
   | BEXE_init (sr,i,e) -> [bexe_init (sr,revar i, ge e)]
   | BEXE_svc (sr,i)  -> [bexe_svc (sr, revar i)]
 
-  | BEXE_code (sr,s)  as x -> [x]
-  | BEXE_nonreturn_code (sr,s)  as x -> [x]
+  | BEXE_code (sr,s,e) -> [bexe_code (sr,s, ge e)]
+  | BEXE_nonreturn_code (sr,s,e) -> [bexe_nonreturn_code (sr,s, ge e)]
   | BEXE_goto (sr,lab) -> [bexe_goto (sr, relab lab)]
 
 

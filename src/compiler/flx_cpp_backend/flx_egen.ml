@@ -596,7 +596,29 @@ assert false;
   (* we cannot handle this one yet, because we didn't yet make a closure for it: FIXME *)
   | BEXPR_aprj _ -> assert false (* can't handle yet *)
 
-  | BEXPR_expr (s,_) -> ce_top (s)
+  | BEXPR_expr (s,retyp,e) ->
+    begin match s with
+    | CS.Virtual -> assert false
+    | CS.Identity -> assert false
+    | CS.Str s -> ce_atom ("(" ^  s ^ ")")
+    | CS.Str_template s ->
+      let gen_expr' = gen_expr' syms bsym_table shapes shape_map label_map this [] [] in
+          gen_prim_call
+            syms
+            bsym_table
+            shapes shape_map
+            (fun t -> t)
+            gen_expr'
+            s
+            []
+            e 
+            (retyp)
+            sr
+            (sr)
+            "expr"
+            "inline_apply" 
+            
+    end
 
   | BEXPR_case_index e -> Flx_vgen.gen_get_case_index ge' bsym_table e
 

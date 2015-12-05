@@ -4,8 +4,10 @@ open Flx_ast
 open Flx_types
 open Flx_pat
 open Flx_util
+
  
 let generated = Flx_srcref.make_dummy "[flx_match] generated"
+let etup = EXPR_tuple (generated,[])
 
 let make_match_check sr rex pat match_var_name match_var_index =
   let params = [], None in
@@ -202,7 +204,7 @@ let gen_match rex seq name sr e pss =
         Exe (sr, EXE_comment "match failure");
         Exe (sr, EXE_label failure_label);
         Exe (sr, EXE_noreturn_code (
-          CS.Str ("      FLX_MATCH_FAILURE(" ^ s ^ ");\n")));
+          CS.Str ("      FLX_MATCH_FAILURE(" ^ s ^ "); //[flx_match] \n"),etup));
       ]
     )
     in
@@ -399,7 +401,7 @@ List.iter (fun s -> print_endline (string_of_statement 2 s)) sts;
       [
         Exe (sr,EXE_comment "match failure");
         Exe (sr,EXE_noreturn_code (CS.Str
-          ("      FLX_MATCH_FAILURE(" ^ s ^ ");\n")));
+          ("      FLX_MATCH_FAILURE(" ^ s ^ ");\n"), etup));
       ]
     )
     @

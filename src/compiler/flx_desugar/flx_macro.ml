@@ -461,7 +461,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
       EXPR_cond (sr,(cond,me e2,me e3))
     end
 
-  | EXPR_expr (sr,s,t) -> EXPR_expr (sr,s,t)
+  | EXPR_expr (sr,s,t,e) -> EXPR_expr (sr,s,t,me e)
 
   (* Lambda hook *)
   | EXPR_lambda (sr, (kind,vs,pss, t, sts)) ->
@@ -738,12 +738,12 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
       reachable because it might contain declarations or
       even labels
     *)
-  | STMT_code (sr, s) ->
-    tack st;
+  | STMT_code (sr, s, e) ->
+    tack (STMT_code (sr,s,me e));
     reachable := true
 
-  | STMT_noreturn_code (sr, s) ->
-    tack st;
+  | STMT_noreturn_code (sr, s, e) ->
+    tack (STMT_noreturn_code (sr,s,me e));
     reachable := false
 
   (* IDENTIFIER RENAMING NOT SUPPORTED IN EXPORT *)

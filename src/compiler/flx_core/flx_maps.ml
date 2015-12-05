@@ -157,7 +157,7 @@ let map_expr f (e:expr_t):expr_t = match e with
   | EXPR_typeof (sr,x) -> EXPR_typeof (sr,f x)
   | EXPR_cond (sr,(a,b,c)) -> EXPR_cond (sr, (f a, f b, f c))
 
-  | EXPR_expr _ -> e
+  | EXPR_expr (sr,s,t,e) -> EXPR_expr (sr,s,t, f e)
   | EXPR_type_match _ -> e
   | EXPR_range_check (sr,mi,v,mx) -> EXPR_range_check (sr, f mi, f v, f mx)
   | EXPR_not (sr,e) -> EXPR_not (sr, f e)
@@ -189,10 +189,10 @@ let iter_expr f (e:expr_t) =
   | EXPR_suffix _
   | EXPR_literal _
   | EXPR_lambda _
-  | EXPR_expr _
   | EXPR_type_match _
     -> ()
 
+  | EXPR_expr (_,_,_,x)
   | EXPR_rnprj (_,_,_,x)
   | EXPR_variant (_,(_,x))
   | EXPR_typeof (_,x)

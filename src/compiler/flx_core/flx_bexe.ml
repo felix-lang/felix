@@ -20,8 +20,8 @@ type t =
   | BEXE_yield of Flx_srcref.t * Flx_bexpr.t
   | BEXE_proc_return of Flx_srcref.t
   | BEXE_nop of Flx_srcref.t * string
-  | BEXE_code of Flx_srcref.t * Flx_code_spec.t
-  | BEXE_nonreturn_code of Flx_srcref.t * Flx_code_spec.t
+  | BEXE_code of Flx_srcref.t * Flx_code_spec.t * Flx_bexpr.t
+  | BEXE_nonreturn_code of Flx_srcref.t * Flx_code_spec.t * Flx_bexpr.t
   | BEXE_assign of Flx_srcref.t * Flx_bexpr.t * Flx_bexpr.t
   | BEXE_init of Flx_srcref.t * bid_t * Flx_bexpr.t
   | BEXE_begin
@@ -55,8 +55,8 @@ let bexe_fun_return (sr,e) = BEXE_fun_return (sr,e)
 let bexe_yield (sr,e) = BEXE_yield (sr,e)
 let bexe_proc_return sr = BEXE_proc_return sr
 let bexe_nop (sr,s) = BEXE_nop (sr,s)
-let bexe_code (sr,code) = BEXE_code (sr,code)
-let bexe_nonreturn_code (sr,code) = BEXE_nonreturn_code (sr,code)
+let bexe_code (sr,code,e) = BEXE_code (sr,code,e)
+let bexe_nonreturn_code (sr,code,e) = BEXE_nonreturn_code (sr,code,e)
 let bexe_assign (sr,e1,e2) = BEXE_assign (sr,e1,e2)
 let bexe_init (sr,bid,e) = BEXE_init (sr,bid,e)
 let bexe_begin () = BEXE_begin
@@ -96,8 +96,8 @@ let get_srcref = function
   | BEXE_yield (sr,_)
   | BEXE_proc_return sr
   | BEXE_nop (sr,_)
-  | BEXE_code (sr,_)
-  | BEXE_nonreturn_code (sr,_)
+  | BEXE_code (sr,_,_)
+  | BEXE_nonreturn_code (sr,_,_)
   | BEXE_assign (sr,_,_)
   | BEXE_init (sr,_,_) -> sr
   | BEXE_begin
@@ -154,17 +154,20 @@ let iter
   | BEXE_axiom_check2 (_,_,e1,e2) ->
       (match e1 with Some e -> f_bexpr e | None->());
       f_bexpr e2
+
+  | BEXE_code (_,_,e) 
+  | BEXE_nonreturn_code (_,_,e)
   | BEXE_assert (_,e) -> f_bexpr e
+
   | BEXE_init (sr,i,e) -> f_bid i; f_bexpr e
   | BEXE_svc (sr,i) -> f_bid i
   | BEXE_catch (_, s, t) -> f_btype t
+
 
   | BEXE_try _
   | BEXE_endtry _
   | BEXE_halt _
   | BEXE_trace _
-  | BEXE_code _
-  | BEXE_nonreturn_code _
   | BEXE_proc_return _
   | BEXE_comment _
   | BEXE_nop _
@@ -211,10 +214,11 @@ let map
   | BEXE_svc (sr,i) -> BEXE_svc (sr,f_bid i)
   | BEXE_catch (sr,s,t) -> BEXE_catch (sr, s, f_btype t)
 
+  | BEXE_code (sr,s,e) -> BEXE_code (sr,s, f_bexpr e)
+  | BEXE_nonreturn_code (sr,s,e) -> BEXE_nonreturn_code (sr,s,f_bexpr e)
+
   | BEXE_halt _
   | BEXE_trace _
-  | BEXE_code _
-  | BEXE_nonreturn_code _
   | BEXE_proc_return _
   | BEXE_comment _
   | BEXE_nop _

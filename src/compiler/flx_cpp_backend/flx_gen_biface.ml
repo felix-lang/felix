@@ -166,7 +166,7 @@ let gen_fun_body syms bsym_table (shapes: Flx_set.StringSet.t ref) shape_map
               (
                 List.map
                 (fun {ptyp=t; pid=name; pindex=idx} ->
-                  bexpr_expr (name,t)
+                  bexpr_expr (Flx_code_spec.Str name,t,bexpr_unit)
                 )
                 ps
               )
@@ -285,7 +285,7 @@ print_endline ("Export " ^ export_name ^ " properties " ^ string_of_properties p
               (
                 List.map
                 (fun {ptyp=t; pid=name; pindex=idx} ->
-                  bexpr_expr (name,t)
+                  bexpr_expr (Flx_code_spec.Str name,t, bexpr_unit)
                 )
                 ps
               )

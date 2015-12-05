@@ -167,6 +167,9 @@ let btyp_none () =
 let btyp_void () =
   BTYP_void
 
+let btyp_unit () = 
+  BTYP_tuple []
+
 (** Construct a BTYP_sum type. *)
 let btyp_sum ts =
   match ts with 

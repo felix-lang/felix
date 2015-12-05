@@ -269,21 +269,31 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
       if length vs <> length ts then
       clierr sr "[gen_prim_call] Wrong number of type arguments"
       ;
-
-      let ws s =
-        let s = sc "expr" s in
+      let wc s =
         (if with_comments then "      // " ^ src_str ^ "\n" else "") ^
         sub_start ^
         "      " ^ s ^ ";\n" ^ (* NOTE added semi-colon .. hack .. *)
         sub_end
       in
+      let ws s =
+        let s = sc "expr" s in wc s
+      in
       begin match code with
       | CS.Identity -> syserr sr "Identity proc is nonsense"
       | CS.Virtual ->
           clierr2 (Flx_bexe.get_srcref exe) (Flx_bsym.sr bsym) ("Instantiate virtual procedure(1) " ^ Flx_bsym.id bsym) ;
-      | CS.Str s -> ws (ce_expr "expr" s)
+      | CS.Str s -> wc s
       | CS.Str_template s ->
-        let ss = gen_prim_call syms bsym_table shapes shape_map tsub ge' s ts a (Flx_btype.btyp_none()) sr (Flx_bsym.sr bsym) "atom"  (Flx_bsym.id bsym) in
+        let ss = gen_prim_call 
+           syms bsym_table 
+           shapes shape_map 
+           tsub ge' 
+           s 
+           ts 
+           a 
+           (Flx_btype.btyp_none()) sr (Flx_bsym.sr bsym) 
+           "atom"  (Flx_bsym.id bsym) 
+        in
         ws ss
       end
 
@@ -293,19 +303,20 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
       if length vs <> length ts then
       clierr sr "[gen_prim_call] Wrong number of type arguments"
       ;
-
-      let ws s =
-        let s = sc "expr" s in
+      let wc s = 
         (if with_comments then "      // " ^ src_str ^ "\n" else "") ^
         sub_start ^
         "      " ^ s ^ "\n" ^
         sub_end
       in
+      let ws s =
+        let s = sc "expr" s in wc s
+      in
       begin match code with
       | CS.Identity -> syserr sr "Identity proc is nonsense"
       | CS.Virtual ->
           clierr2 (Flx_bexe.get_srcref exe) (Flx_bsym.sr bsym) ("Instantiate virtual procedure(1) " ^ Flx_bsym.id bsym) ;
-      | CS.Str s -> ws (ce_expr "expr" s)
+      | CS.Str s -> wc s
       | CS.Str_template s ->
         let ss = gen_prim_call syms bsym_table shapes shape_map tsub ge' s ts a (Flx_btype.btyp_none()) sr (Flx_bsym.sr bsym) "atom" (Flx_bsym.id bsym) in
         ws ss
@@ -399,8 +410,56 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
     | BEXE_catch (sr, s, t) -> "\n}\n  catch (" ^tn t^ " &" ^s^") {\n";
 
     | BEXE_axiom_check _ -> assert false
-    | BEXE_code (sr,s) -> forget_template sr s
-    | BEXE_nonreturn_code (sr,s) -> forget_template sr s
+
+    | BEXE_nonreturn_code (sr,code,a)
+    | BEXE_code (sr,code, a) ->
+      let a = match a with (a,t) -> a, tsub t in
+      let subs,x = Flx_unravel.unravel syms bsym_table a in
+      let subs = List.map (fun ((e,t),s) -> (e,tsub t), cid_of_flxid s) subs in
+      let subs =
+        catmap ""
+        (fun ((_,typ) as e,s) ->
+          match typ with
+          | BTYP_tuple [] -> ""
+          | _ ->
+          let t = cpp_ltypename syms bsym_table typ in
+          let e = ge sr e in
+          "      " ^ t ^ " " ^ s ^ " = " ^ e ^ ";\n"
+        )
+        subs
+      in
+      let sub_start =
+        if String.length subs = 0 then ""
+        else "      {\n" ^ subs
+      and sub_end =
+        if String.length subs = 0 then ""
+        else "      }\n"
+      in
+      let wc s = 
+        (if with_comments then "      // [BEXE_code] " ^ src_str ^ "\n" else "") ^
+        sub_start ^
+        "      " ^ s ^ ";\n" ^ (* NOTE added semi-colon .. hack .. *)
+        sub_end
+      in
+      let ws s =
+        let s = sc "expr" s in wc s
+      in
+      begin match code with
+      | CS.Identity -> syserr sr "Identity proc is nonsense"
+      | CS.Virtual ->
+          clierr2 (Flx_bexe.get_srcref exe) (Flx_bsym.sr bsym) ("Instantiate virtual procedure(1) " ^ Flx_bsym.id bsym) ;
+      | CS.Str s -> wc s
+      | CS.Str_template s ->
+        let ss = gen_prim_call 
+          syms bsym_table shapes shape_map tsub ge' 
+          s [] a 
+          (Flx_btype.btyp_none()) sr (Flx_bsym.sr bsym) 
+          "atom" ("inline_code") 
+        in
+        ws ss
+      end
+
+
     | BEXE_comment (_,s) -> "/*" ^ s ^ "*/\n"
     | BEXE_label (_,s) ->
       let local_labels =

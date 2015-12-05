@@ -548,8 +548,13 @@ let rec rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t lis
 
 
   | STMT_svc (sr,name) ->  [Exe (sr,EXE_svc name)]
-  | STMT_code (sr,s) -> [Exe (sr,EXE_code s)]
-  | STMT_noreturn_code (sr,s) -> [Exe (sr,EXE_noreturn_code s)]
+  | STMT_code (sr,s,e) -> 
+    let d,x = rex e in
+    d @ [Exe (sr,EXE_code (s,x))]
+
+  | STMT_noreturn_code (sr,s,e) -> 
+    let d,x = rex e in
+    d @ [Exe (sr,EXE_noreturn_code (s,x))]
 
   | STMT_stmt_match (sr,(e,pss)) -> 
     Flx_match.gen_stmt_match seq rex rsts name parent_vs access sr e pss

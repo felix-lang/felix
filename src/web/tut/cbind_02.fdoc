@@ -2,8 +2,8 @@
 @h1 Fixed Insertions
 It is possible to insert C code directly into your Felix program:
 @felix
-code '::std::cout << "hello world" << ::std::endl;';
-println$ (code[string] '::std::string("Hello ")') + "world";
+cstmt '::std::cout << "hello world" << ::std::endl;';
+println$ cexpr[string] '::std::string("Hello ")' endcexpr +"world";
 @expect
 hello world
 Hello world
@@ -21,7 +21,7 @@ unreachable, and, not to complain if a function or procedure appears
 to drop through when actually the exist is managed by the inserted
 C code. For example:
 @felix
-noreturn code "exit(0);";
+noreturn cstmt "exit(0);";
 @
 
 

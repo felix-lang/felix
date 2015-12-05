@@ -26,7 +26,7 @@ type bexpr_t =
   | BEXPR_match_case of int * t
   | BEXPR_case_arg of int * t
   | BEXPR_case_index of t
-  | BEXPR_expr of string * Flx_btype.t
+  | BEXPR_expr of Flx_code_spec.t * Flx_btype.t * t 
   | BEXPR_range_check of t * t * t
   | BEXPR_coerce of t * Flx_btype.t
   | BEXPR_compose of t * t
@@ -391,7 +391,7 @@ let bexpr_case_arg t (i, e) = BEXPR_case_arg (i, e), complete_check t
 
 let bexpr_case_index t e = BEXPR_case_index e, complete_check t
 
-let bexpr_expr (s, t) = BEXPR_expr (s, t), complete_check t
+let bexpr_expr (s, t, e) = BEXPR_expr (s, t, e), complete_check t
 
 let bexpr_range_check t (e1, e2, e3) = BEXPR_range_check (e1, e2, e3), complete_check t
 
@@ -488,7 +488,7 @@ let rec cmp ((a,_) as xa) ((b,_) as xb) =
   | BEXPR_case_index e,BEXPR_case_index e' -> cmp e e'
 
   | BEXPR_case (i,t),BEXPR_case (i',t') -> i = i' && t = t'
-  | BEXPR_expr (s,t),BEXPR_expr (s',t') -> s = s' && t = t'
+  | BEXPR_expr (s,t,e),BEXPR_expr (s',t',e') -> s = s' && t = t' && cmp e e'
   | BEXPR_range_check (e1,e2,e3), BEXPR_range_check (e1',e2',e3') ->
     cmp e1 e1' && cmp e2 e2' && cmp e3 e3'
 
@@ -582,7 +582,7 @@ let flat_iter
   | BEXPR_case_arg (i,e) -> f_bexpr e
   | BEXPR_case_index e -> f_bexpr e
   | BEXPR_literal x -> f_btype t
-  | BEXPR_expr (s,t1) -> f_btype t1
+  | BEXPR_expr (s,t1,e) -> f_btype t1; f_bexpr e
   | BEXPR_range_check (e1,e2,e3) ->
       f_bexpr e1;
       f_bexpr e2;
@@ -663,7 +663,7 @@ let map
   | BEXPR_case_arg (i,e),t -> BEXPR_case_arg (i, f_bexpr e),f_btype t
   | BEXPR_case_index e,t -> BEXPR_case_index (f_bexpr e),f_btype t
   | BEXPR_literal x,t -> BEXPR_literal x, f_btype t
-  | BEXPR_expr (s,t1),t2 -> BEXPR_expr (s, f_btype t1), f_btype t2
+  | BEXPR_expr (s,t1,e),t2 -> BEXPR_expr (s, f_btype t1, f_bexpr e), f_btype t2
   | BEXPR_range_check (e1,e2,e3),t ->
       BEXPR_range_check (f_bexpr e1, f_bexpr e2, f_bexpr e3), f_btype t
   | BEXPR_coerce (e,t'),t -> BEXPR_coerce (f_bexpr e, f_btype t'), f_btype t

@@ -67,6 +67,7 @@ and xid x = match x with
   | x -> err x "identifier"
 
 and xexpr_t sr x =
+  let xc sr x = xcode_spec_t sr x in
   let ex x = xexpr_t sr x in
   let ti x = type_of_sex sr x in
   let ii i = int_of_string i in
@@ -266,7 +267,7 @@ and xexpr_t sr x =
  *)
 
  | Lst [Id "ast_cond"; sr;  Lst [e1;e2;e3]] -> EXPR_cond (xsr sr,(ex e1, ex e2, ex e3))
- | Lst [Id "ast_expr"; sr; Str s; t] -> EXPR_expr (xsr sr, s, ti t)
+ | Lst [Id "ast_expr"; sr; s; t; e] -> EXPR_expr (xsr sr, xc (xsr sr) s, ti t, ex e)
 
  | Lst [Id "ast_type_match";  sr; Lst [t; Lst ts]] ->
    let ts =
@@ -799,7 +800,8 @@ print_endline ("Type alias " ^ xid id ^ " flx   = " ^ Flx_print. string_of_typec
   | Lst [Id "ast_callback_decl"; sr; id; Lst ps; t; req] -> let sr = xsr sr in 
       STMT_callback_decl (sr, xid id, map (ti sr) ps, ti sr t, xrr sr req)
 
-  | Lst [Id "ast_insert"; sr; id; vs; ct; ik; req] -> let sr = xsr sr in 
+  | Lst [Id "ast_insert"; sr; id; vs; ct; ik; req] -> 
+      let sr = xsr sr in 
       let xik = function
         | Id "header" -> `Header
         | Id "body" -> `Body
@@ -808,8 +810,14 @@ print_endline ("Type alias " ^ xid id ^ " flx   = " ^ Flx_print. string_of_typec
       in
       STMT_insert (sr, xid id, xvs sr vs, xc sr ct, xik ik, xrr sr req)
 
-  | Lst [Id "ast_code"; sr; ct] -> let sr = xsr sr in STMT_code (sr, xc sr ct)
-  | Lst [Id "ast_noreturn_code"; sr; ct] -> let sr = xsr sr in STMT_noreturn_code (sr, xc sr ct)
+  | Lst [Id "ast_code"; sr; ct; arg] -> 
+    let sr = xsr sr in
+    STMT_code (sr, xc sr ct, ex sr arg)
+
+  | Lst [Id "ast_noreturn_code"; sr; ct; arg] -> 
+    let sr = xsr sr in 
+    STMT_noreturn_code (sr, xc sr ct, ex sr arg)
+
   | Lst [Id "ast_export_fun"; sr; sn; Str s] -> let sr = xsr sr in 
     let xsn x = match suffixed_name_of_expr (ex sr x) with
     | Some x -> x

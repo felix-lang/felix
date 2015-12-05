@@ -426,6 +426,9 @@ let chk_exe state bsym_table nutab exe =
   | BEXE_cgoto (sr,e) -> bexe_cgoto (sr, ce sr e)
   | BEXE_fun_return (sr,e) -> bexe_fun_return (sr,ce sr e)
 
+  | BEXE_code (sr,s,e) -> bexe_code (sr,s, ce sr e)
+  | BEXE_nonreturn_code (sr,s,e) -> bexe_nonreturn_code (sr,s,ce sr e)
+
   | BEXE_yield (sr,e) -> bexe_yield (sr,ce sr e)
 
   | BEXE_init (sr,i,e) -> bexe_init (sr,i,ce sr e)
@@ -447,8 +450,6 @@ let chk_exe state bsym_table nutab exe =
   | BEXE_halt _
   | BEXE_trace _
   | BEXE_goto _
-  | BEXE_code _
-  | BEXE_nonreturn_code _
   | BEXE_comment _
   | BEXE_nop _
   | BEXE_proc_return _

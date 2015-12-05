@@ -3,10 +3,10 @@
 @felix
 //Check insertions
 body "#include <iostream>";
-code 'static int x = 1;';
+cstmt 'static int x = 1;';
 type INT = "int";
 fun + :INT * INT -> INT = "$1 + $2";
-fun two (): INT = { return code[INT]x + code[INT]'x'; }
+fun two (): INT = { return cvar [INT] x + cexpr[INT] 'x' endcexpr; }
 proc print:INT = 'std::cout << $1 << std::endl;';
 print (two());
 

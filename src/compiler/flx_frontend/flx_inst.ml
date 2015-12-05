@@ -247,7 +247,7 @@ let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
   | BEXPR_likely e -> ue e
   | BEXPR_unlikely e -> ue e
   | BEXPR_literal _ -> ()
-  | BEXPR_expr (_,t) -> ut t
+  | BEXPR_expr (_,t,e) -> ut t; ue e
   | BEXPR_range_check (e1,e2,e3) -> ue e1; ue e2; ue e3
   | BEXPR_coerce (e,t) -> ue e; ut t
   end
@@ -278,6 +278,10 @@ and process_exe syms bsym_table ref_insts1 ts hvarmap exe =
   | BEXE_call (sr,e1,e2)
   | BEXE_jump (sr,e1,e2)
     -> ue sr e1; ue sr e2
+
+  | BEXE_code (sr,s,e)
+  | BEXE_nonreturn_code (sr,s,e)
+    -> ue sr e
 
   | BEXE_assert (sr,e)
   | BEXE_ifgoto (sr,e,_)
@@ -327,8 +331,6 @@ and process_exe syms bsym_table ref_insts1 ts hvarmap exe =
   | BEXE_halt _
   | BEXE_trace _
   | BEXE_goto _
-  | BEXE_code _
-  | BEXE_nonreturn_code _
   | BEXE_comment _
   | BEXE_nop _
   | BEXE_proc_return _

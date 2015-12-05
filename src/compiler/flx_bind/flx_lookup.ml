@@ -3756,9 +3756,10 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
       "'callback' expression denotes non-singleton function set"
     end
 
-  | EXPR_expr (sr,s,t) ->
+  | EXPR_expr (sr,s,t,e) ->
     let t = bt sr t in
-    bexpr_expr (s,t)
+    let e = be e in
+    bexpr_expr (s,t,e)
 
   | EXPR_andlist (sri,ls) ->
     begin let mksum a b = Flx_strr.apl2 sri "land" [a;b] in

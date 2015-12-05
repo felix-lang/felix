@@ -193,7 +193,10 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
 
   | EXPR_literal _ -> [],e
 
-  | EXPR_expr _ -> [],e
+  | EXPR_expr (sr,sc,t,e) -> 
+    let d,x = rex e in
+    d , EXPR_expr (sr,sc,t,x)
+
 
   | EXPR_interpolate (sr,s) -> 
     let outstr = ref "" in

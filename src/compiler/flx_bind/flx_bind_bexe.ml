@@ -543,15 +543,15 @@ print_endline ("Function return value has MINIMISED type " ^ sbt bsym_table t');
         sbt bsym_table t'
       )
 
-  | EXE_nop s ->
-      [(bexe_nop (sr,s))]
+  | EXE_nop (s) ->
+      [bexe_nop (sr,s)]
 
-  | EXE_code s ->
-      [(bexe_code (sr,s))]
+  | EXE_code (s,e) ->
+      [bexe_code (sr,s,be e)]
 
-  | EXE_noreturn_code s ->
+  | EXE_noreturn_code (s,e) ->
       state.reachable <- false;
-      [(bexe_nonreturn_code (sr,s))]
+      [bexe_nonreturn_code (sr,s,be e)]
 
   | EXE_assert e ->
       let (x,t) as e' = be e in

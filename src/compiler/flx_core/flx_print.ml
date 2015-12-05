@@ -141,9 +141,9 @@ and string_of_expr (e:expr_t) =
     "(" ^ se e ^ ":" ^
     string_of_typecode t ^ ")"
 
-  | EXPR_expr (_,s,t) ->
-    "code ["^string_of_typecode t^"]" ^
-    "'" ^ s ^ "'"
+  | EXPR_expr (_,s,t,e) ->
+    "cexpr["^string_of_typecode t^"]" ^
+    string_of_code_spec s  ^ se e ^ " endcexpr"
 
   | EXPR_cond (_,(e,b1,b2)) ->
     "if " ^ se e ^
@@ -1293,11 +1293,11 @@ and string_of_statement level s =
   | STMT_export_requirement (_,reqs) ->
     spaces level ^ string_of_raw_reqs reqs ^ ";\n"
 
-  | STMT_code (_,s) ->
-    "code \n" ^ string_of_long_code_spec s ^ ";\n"
+  | STMT_code (_,s,e) ->
+    "code \n" ^ string_of_long_code_spec s ^" "^ se e^";\n"
 
-  | STMT_noreturn_code (_,s) ->
-    "noreturn_code \n" ^ string_of_long_code_spec s ^ ";\n"
+  | STMT_noreturn_code (_,s,e) ->
+    "noreturn_code \n" ^ string_of_long_code_spec s ^ " "^ se e^";\n"
 
   | STMT_reduce (_,name, vs, ps, rsrc, rdst) ->
     spaces level ^
@@ -1780,11 +1780,11 @@ and string_of_exe level s =
   | EXE_nop s -> spc ^
     "/*" ^ s ^ "*/"
 
-  | EXE_code s -> spc ^
-    "code " ^ string_of_code_spec s
+  | EXE_code (s,e) -> spc ^
+    "code " ^ string_of_code_spec s ^ " " ^ se e
 
-  | EXE_noreturn_code s -> spc ^
-    "noreturn_code " ^ string_of_code_spec s
+  | EXE_noreturn_code (s,e) -> spc ^
+    "noreturn_code " ^ string_of_code_spec s ^ se e
 
   | EXE_init (l,r) -> spc ^
     string_of_id l ^ " := " ^ se r ^ ";"
@@ -1899,8 +1899,8 @@ and string_of_bound_expression' bsym_table se e =
   | BEXPR_case_index e ->
     "caseno (" ^ se e ^ ")"
 
-  | BEXPR_expr (s,t) ->
-    "code ["^string_of_btypecode (Some bsym_table) t^"]" ^ "'" ^ s ^ "'"
+  | BEXPR_expr (s,t,e) ->
+    "cexpr ["^string_of_btypecode (Some bsym_table) t^"]" ^ string_of_code_spec s ^ " (" ^ se e ^ ") endcexpr"
 
   | BEXPR_range_check (e1,e2,e3) ->
     "range_check(" ^ se e1 ^"<=" ^ se e2 ^"<" ^se e3 ^ ")"
@@ -2020,11 +2020,13 @@ and string_of_bexe bsym_table level s =
   | BEXE_nop (_,s) -> spc ^
     "/*" ^ s ^ "*/"
 
-  | BEXE_code (_,s) -> spc ^
-    "code " ^ string_of_code_spec s
-
-  | BEXE_nonreturn_code (_,s) -> spc ^
-    "non_return_code " ^ string_of_code_spec s
+  | BEXE_code (_,s,e) -> spc ^
+    "code " ^ string_of_code_spec s ^ " " ^
+    se e
+ 
+  | BEXE_nonreturn_code (_,s,e) -> spc ^
+    "non_return_code " ^ string_of_code_spec s ^ " " ^
+    se e    
 
   | BEXE_assign (_,l,r) -> spc ^
     se l ^ " = " ^ se r ^ ";"

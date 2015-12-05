@@ -505,17 +505,16 @@ syntax cbind {
   private cbind_stmt:= stype_qual* "ctypes" snames srequires_clause ";" =>#
     "`(ast_ctypes ,_sr ,_3 ,_1 ,_4)";
 
-  //$ Embed a C statement into Felix code.
-  private cbind_stmt:= "code" scode_spec ";" =># "`(ast_code ,_sr ,_2)";
+  //$ Embed a C statement into Felix code with arguments.
+  private cbind_stmt:= "cstmt" scode_spec sexpr? ";" =># "`(ast_code ,_sr ,_2 ,_3)";
+
 
   //$ Embed a C statement which does not return normally
   //$ into Felix code. For example:
   //$
-  //$ noreturn code "exit(0);";
+  //$ noreturn cstmt "exit(0);";
   //$
-  private cbind_stmt:= "noreturn" "code" scode_spec ";" =># "`(ast_noreturn_code ,_sr ,_3)";
-
-  sexpr_code_prefix := "code" "[" stypeexpr "]" =># "_3";
+  private cbind_stmt:= "noreturn" "cstmt" scode_spec sexpr? ";" =># "`(ast_noreturn_code ,_sr ,_3 ,_4)";
 
   //$ Embed a C expression into Felix.
   //$ This required giving the Felix type of the expression. 
@@ -523,13 +522,13 @@ syntax cbind {
   //$
   //$ code [double] "sin(0.7)"
   //$
-  satom := sexpr_code_prefix sstring =># "`(ast_expr ,_sr ,_2 ,_1)";
+  satom := "cexpr" "[" stypeexpr "]" scode_spec sexpr? "endcexpr" =># "`(ast_expr ,_sr ,_5 ,_3 ,_6)";
 
   //$ A short form embedding for variables.
   //$
   //$ code [double] M_PI
   //$
-  satom := sexpr_code_prefix sname =># "`(ast_expr ,_sr ,_2 ,_1)";
+  satom := "cvar" "[" stypeexpr "]" sname =># "`(ast_expr ,_sr (Str ,_5) ,_3 ())";
 
   //$ Bind a C expression to a name.
   //$ Note that despite the binding being called "const",

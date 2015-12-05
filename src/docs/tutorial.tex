@@ -273,6 +273,40 @@ C++ \verb%::std::basic_string<char>% and its default
 initialiser sets the string to the empty string \verb%""%.
 That's what the code above prints!
 
+\section{Pointers {\tt \&}}
+Since variables are mutable addressable objects we can
+take the address of a variable:
+
+\begin{minted}{felix}
+var x = 1;
+var px : &int = &x;
+var y = *px;
+px <- 42;
+println$ x,y;
+\end{minted}
+
+Here, the type of a pointer to \verb%int% is written 
+\verb%&int%, the address of a variable \verb%x% is
+written \verb%&x%, the dereference operation applied
+to the pointer \verb%px% is written \verb%*px%.
+
+The store operation \verb%px <- 42% is a core operation.
+In particular assignment is just a shorthand for storing
+at the address of a variable:
+
+\begin{minted}{felix}
+x = 42; // means
+&x <- 42;
+\end{minted}
+
+Note that in principle the \verb%&% symbol is {\em NOT}
+an operator. A variable is in fact a constant, its not
+variable at all. It's just that the constant is the address
+of a storage object. What's stored {\em at} the address,
+or {\em in} a variable may change, the variable itself
+does not.
+
+
 \section{Floating Point: {\tt double}}
 Felix also provides a model of C++ type \verb%double%
 with the usual operators.  This is a double precision floating point type 
@@ -1197,7 +1231,7 @@ you cannot return.
 There is a reason for this: 
 
 \begin{minted}{felix}
-var doit = { println$ "Hello"; println$ " World"l; };
+var doit = { println$ "Hello"; println$ " World"; };
 call doit ();
 \end{minted}
 
@@ -1294,7 +1328,154 @@ We will see shortly that Felix has different techniques to
 implement fully general coroutines.
 
 \section{Concepts: type classes}
-Stuff.
+Felix provides a way of systematically organising functions and operators
+known as {\em type classes}, modelled on the construction
+of the same name in Haskell.
+
+\subsection{Monomorphic Classes}
+A nonpolymorphic \verb%class% is just a closed namespace:
+
+\begin{minted}{felix}
+class X 
+{
+   fun f(x:int) => x + 1;
+   fun g(x:int) => x * x;
+}
+
+println$ X::f 42, X::g 42
+\end{minted}
+
+As well as using explicit qualification, you can open a class:
+
+\begin{minted}{felix}
+open X;
+fun g(x:int) => "Hello " + x.str;
+println$ f 42, g 42; // X::f, root::g
+\end{minted}
+
+When a class is opened it occupies a shadow lookup space just behind
+the space into which it is opened. Therefore the local \verb%g%
+above hides \verb%X::g%. The global namespace is called \verb%root%
+in case you need explicit qualification.
+
+When you open a class inside another, the symbols of the former
+are available for definition of the latter, but they are
+not available to clients of the latter. Thus opening is not transititive.
+
+\begin{minted}{felix}
+class A { fun f(x:int) => x; }
+class B { open A; fun g (x:int) => f x; }
+type-error println$ B::f 42; // no f in B
+\end{minted}
+
+If you want to include the symbols of one class in another,
+use \verb%inherit% instead:
+
+\begin{minted}{felix}
+class A { fun f(x:int) => x; }
+class B { inherit A; fun g (x:int) => f x; }
+println$ B::f 42; // OK, f is in B
+\end{minted}
+
+\subsection{Polymorphic Classes}
+When a class is polymorphic things get more interesteding.
+Polymorphic classes are basically collections of template
+declarations and definitions.
+
+\begin{minted}{felix}
+class AddGroup[T] 
+{
+   virtual fun == : T * T -> bool;
+   fun != (x:T, y:T) => not (x == t);
+
+   virtual fun + : T * T -> T;
+   virtual fun zero : 1 -> T;
+   virtual fun neg : T -> T;
+   fun - (x:T, Y:T) : T =>  x + neg y;
+
+   axiom negation (x:T): x + neg x == zero();
+
+   private fun mulby (x:T, count: int) : T =
+   {
+     var res = zero();
+     for i in 0 ..< count do res = res + x; done
+     return res;
+   }
+   fun * (x:T, count: int) : T => mulby (x,count);
+}
+\end{minted}
+
+The above class specifies an additive group. The specification
+is entirely abstract because it is given entirely in terms
+of functions. The four \verb%virtual% functions are undefined
+here and form the {\em basis} of the abstraction.
+
+The inequality, subtraction,  and multiplication
+functions shown are defined in terms of
+the abstract basis. The \verb%mulby% function is marked
+as \verb%private% and is only a local helper function,
+it will not be exported as part of the class interface.
+
+The \verb%axiom% is a semantic constraint on the behaviour 
+of the functions.
+
+As you see the class above has "holes" in it, namely the undefined
+virtual functions. Here is how to provide definitions:
+
+\begin{minted}{felix}
+struct MyInt { v:int; } // to avoid conflict with std lib
+
+instance AddGroup[MyInt]
+{
+  fun == (x:MyInt, y:MyInt) => x.v == y.v;
+  fun zero () => MyInt (0);
+  fun + (x:MyInt, y:MyInt) => MyInt (x.v + y.v);
+  fun - (x:MyInt) => MyInt (-x.v);
+}
+\end{minted}
+
+To use this, it is convenient to open our class for our type:
+
+\begin{minted}{felix}
+open AddGroup[MyInt];
+
+var x = MyInt(1);
+var y = MyInt(42);
+var z = x + -y * 3 - MyInt(74) != AddGroup[MyInt]::zero(); 
+\end{minted}
+
+Note that we used explicit qualification for the \verb%zero%
+function although it is not necessary in this case.
+in general, functions with the same name taking a unit
+argument have to be explicitly qualified to distinguish them,
+there is no type distinction in the argument for overload
+resolution to use.
+
+\subsubsection{Two Phase Binding}
+Felix uses a lookup model which provides two phases of
+binding. In the first phase, all binding is polymorphic.
+Bindings to virtual functions may occur in this phase.
+
+In the second phase, the whole program is monomorphised,
+eliminating all type variables. This phase is sometimes
+called {\em instantiation}. When an application or call of
+a virtual function is seen, Felix searches for an instantce
+matching the monomorphic type parameters and replaces
+the virtual call with a concrete one, or bugs out if
+no instance is found.
+
+\subsubsection{Polymorphic Recursion}
+You should note that instance functions may themselves
+contain virtual calls, and this permits the instantiator
+to implement polymorphic recursion. That is, a limited
+form of {\em second order polymorphism} is available
+in Felix, but only via type classes. Polymorphic
+recursions must either bottom out on monomorphic
+types, or reduce to monomorphic recursion after a
+finite number of steps. The current compiler does 
+not check this in advance, and instead just uses an
+expansion limit.
+
 
 \section{Embedding C++}
 Felix was specifically designed to allow almost seamless lifting
@@ -1473,6 +1654,122 @@ Note carefully the iterator itself is indeed an abstract pointer.
 So operations on the vector via the iterators obtained
 do NOT require any adjustment! Although none are present
 in this example. 
+
+\subsection{Fixed Insertions}
+You can put C++ code directly into Felix. Statements
+can be added with \verb%cstmt% statement. An argument
+may optionally be added. This is basically an anonymous
+Felix procedure written in C++.
+
+Arbitrary expressions can be inserted with
+with \verb%cexpr..endcexpr%, also optionally taking
+an argument.
+ 
+The short form \verb%cvar% lifts a variable.
+
+\begin{minted}{felix}
+cstmt """
+#include <iostream>
+static int x = 1;
+""";
+
+type INT = "int";
+fun + :INT * INT -> INT = "$1 + $2";
+
+fun two (): INT = { return cvar [INT] x + cexpr[INT] 'x' endcexpr; }
+cstmt "::std::cout <<$1<<endl;" (two());
+\end{minted}
+
+\subsection{Floating Insertions}
+Floating insertions allow you to conditionally include C++
+code based on usage. For example:
+
+\begin{minted}{felix}
+type vector[T] = "::std::vector[?1]"
+  requires header "#include <vector>"
+;
+
+proc push_back[T] (&vector[T] :pv, v:T) =>
+  "$1->push_back($2);"
+;
+
+var x : vector[int];
+push_back (&x,1);
+push_back (&x,2);
+\end{minted}
+
+The \verb%requires% clause creates a dependency, the \verb%header%
+specifier says it depends on a floating insertion, which if required
+will end up near the top of the generated C++ header file for
+your program. This ensures C++ \verb%::std::vector% is in scope.
+
+The requirement is conditional on the type being used, as it is
+in the \verb%push_back% procedure. On the other hand, since it 
+is used in that procedure, it isn't necessary to also place
+a requirement on the use of the procedure. Calling \verb%push_back%
+requires the \verb%push_back% procedure which in turn requires
+the \verb%vector% type, which in turn requires the floating
+insertion.
+
+Floating insertions can be named, and can also have their
+own requirements. All the standard C, C++, and posix headers
+are named in \verb%std/c/c_headers% and \verb%std/c/cxx_headers%.
+
+
+\begin{minted}{felix}
+header iostream = "#include <iostream>";
+type vector[T] = "::std::vector[?1]" requires iostream;
+\end{minted}
+
+\section{Foreign Libraries}
+Here is a quick guide to embedding a foreign C library
+\verb%mylib% with functions \verb%mycal1% and \verb%mycal2%
+on \verb%double%. The first thing of course is to make
+a binding file:
+
+\begin{minted}{felix}
+// file mylib.flx
+class MyLib
+{
+  requires package "mylib";
+  fun mycal1: double -> double = "mycal1($1)";
+  fun mycal2: double -> double = "mycal2($1)";
+}
+\end{minted}
+
+Requirements specified in a \verb%class% are inherited by all
+C bindings in the class. Here is a new requirement on
+a \verb%package%, and there is no requirement on a header file!
+
+Now you must make another file, the package descriptor,
+this one is for Linux:
+
+\begin{minted}{text}
+Name: mylib
+includes: '"mylib.h"'
+cflags: -Imydir
+provides_dlib: -lmylib
+provides_slib: -lmylib
+\end{minted}
+
+The file must be named \verb%mylib.fpc%, and placed in a configuration
+database directory the \verb%flx% processor searches. The specified
+inclusion (\verb%#include "mylib.h"%) will be put in the generated
+C++ code automatically. Furthermore the include file search
+flag \verb%-Imydir% will be added to the C++ compiler compilation
+command line, and the linker flag \verb%-lmylib% added to the compiler
+linkage command line. In this case the \verb%provides_dlib% implies
+the library file \verb%libmylib.so% and \verb%provides_slib% implies
+\verb%libmylib.a%.
+
+This mechanism works on OSX and Windows, and with gcc, clang, cl,
+and other compilers. The objective is to ensure the Felix code is
+platform independent, and shove all the platform dependent stuff
+into a single place.
+
+Felix uses a tool called \verb%flx_pkgconfig% to query and 
+manage packages. The tool itself is platform independent and
+the databases are also language neutral.
 
 %========================================================
 \chapter{Functional Programming}
