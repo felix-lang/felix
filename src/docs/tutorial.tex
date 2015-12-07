@@ -8,6 +8,7 @@
 \usepackage{minted}
 \usepackage{caption}
 \usepackage{amsmath}
+\usepackage{amssymb}
 \usemintedstyle{friendly}
 \setminted{bgcolor=bg,xleftmargin=20pt}
 \usepackage{hyperref}
@@ -88,6 +89,44 @@ Felix has a lot of other integer types corresponding to those found
 in C. Each of these types is distinct, none are aliases! See Table \ref{Felix Integer Types}.
 
 \begin{table}
+\caption{Integer Functions}
+\label{Integer Functions}
+\centering
+\begin{tabular}[c]{lll}
+\hline
+name&kind&semantics\\
+\hline
+\multicolumn{3}{c}{All Integers}\\
+\hline
+\verb%==%&\verb%T * T -> bool%&equality\\
+\verb%!=%&\verb%T * T -> bool%&inequality\\
+\verb%<%&\verb%T * T -> bool%&less\\
+\verb%<=%&\verb%T * T -> bool%&less or equal\\
+\verb%>%&\verb%T * T -> bool%&greater\\
+\verb%>=%&\verb%T * T -> bool%&greater or equal\\
+\verb%+%&\verb%T * T -> T%&addition\\
+\verb%-%&\verb%T * T -> T%&subtraction\\
+\verb%*%&\verb%T * T -> T%&multiplication\\
+\verb%/%&\verb%T * T -> T%&quotient\\
+\verb+%+&\verb%T * T -> T%&remainder\\
+\verb%<<%&\verb%T * T -> T%&multiplication by power of 2\\
+\verb%>>%&\verb%T * T -> T%&division by power of 2\\
+\verb%-%&\verb%T -> T%&negation\\
+\verb%+%&\verb%T -> T%&no op\\
+\multicolumn{3}{c}{Signed Integers}\\
+\hline
+\verb%sgn%&\verb%T -> T%&sign\\
+\verb%abs%&\verb%T -> T%&absolute value\\
+\multicolumn{3}{c}{Unsigned Integers}\\
+\hline
+\verb%\&%&\verb%T * T -> T%&bitwise and\\
+\verb%\|%&\verb%T * T -> T%&bitwise or\\
+\verb%\^%&\verb%T * T -> T%&bitwise exclusive or\\
+\verb%~%&\verb%T * T -> T%&bitwise complement\\
+\end{tabular}
+\end{table}
+
+\begin{table}
 \caption{Felix Integer Types}
 \label{Felix Integer Types}
 \centering
@@ -136,6 +175,17 @@ Felix&C&Suffix\\
 \verb%byte% &\verb%unsigned char% &\\
 \end{tabular}
 \end{table}
+
+\subsubsection{Lexicology}
+Integers may be specified with a radix, and an underscore
+may be used between digits as a separator:
+
+\begin{minted}{felix}
+var x = 0b1111_0011; // binary
+var y = 0o777_321;   // octal
+var z = 0d998_444;   // decimal
+var a = 0xBADE_DAFE; // hex
+\end{minted}
 
 \subsection{Conversions}
 All the integer types can be inter-converted with a conversion.
@@ -201,6 +251,33 @@ if and only if $b$ is true. It turns out inequality $a \verb%!=% b$
 is the same as exclusive or. Be careful though, since if
 $a$ is less than or equal to $b$, written $a \verb%<=% b$ this actually
 means that $a$ implies $b$ logically!
+
+\section{Special symbols}
+Felix has a very rich set of symbols. This is because,
+as well as the usual ascii-art symbols, it also supports
+almost the complete set of \TeX, \LaTeX, and AmSTeX symbols.
+
+\TeX symbols start with an backslash and are followed by 
+a sequence of letters. These symbols display in typeset format
+when using the \verb%flx_web% web server.
+
+For example the following code:
+
+\begin{minted}{felix}
+var \alpha = 1;
+fun \Gamma (x:int)=> x * x;
+println$ \Gamma\alpha;
+\end{minted}
+
+should be typeset as
+
+\begin{minted}[escapeinside=||]{felix}
+var |$\alpha$| = 1;
+fun |$\Gamma$| (x:int)=> x * x;
+println$ |$\Gamma\alpha$|;
+\end{minted}
+
+
 
 \section{Variables: {\tt var}}
 Felix is a procedural programming language, so it has variables!
@@ -492,6 +569,103 @@ If the index is out of range, a character with ordinal 0 is returned.
 Negative indices are translated by adding the string length.
 The index function cannot fail.
 
+\subsection{Regexps and Regdefs}
+Felix provides Google's
+\href{https://code.google.com/p/re2}{Google RE2} 
+engine for regular expressions.
+The basic syntax and capabilities are a subset of Perl's PCRE,
+only RE2 actually works correctly and performs well.
+RE2 does not support backreferences.
+
+
+\subsubsection{Basic Matching}
+A regexp can be compiled with the \verb%RE2% function.
+Matching is done with the \verb%Match% function.
+\verb%Match% only supports a complete match.
+There's no searching or partial matching. Instead,
+just use repeated wildcards as shown.
+
+
+\begin{minted}{felix}
+var r = RE2(" *([A-Za-z_][A-Za-z0-9]*).*");
+var line = "Hello World";
+var maybe_subgroups = Match (r, line);
+match maybe_subgroups with
+| #None => println$ "No match";
+| Some a =>
+  println$ "Matched " + a.1;
+endmatch;
+\end{minted}
+
+\subsubsection{Streamable matching}
+You may want to match more than one instance of a pattern in a string.
+For example, you may want to capture each word in a line of text.
+This can be done by iterating over a regex like the following
+
+\begin{minted}{felix}
+var r2 = RE2("\w+"); // try to match a word
+var sentence = "Hello World";
+for x in (r2, sentence) do
+    println$ x.0;
+done
+\end{minted}
+
+\subsubsection{Regular definitions}
+Regular expressions are quoting hell. Luckily Felix provides a
+solution: regular definitions.
+
+\begin{minted}{felix}
+regdef lower = charset "abcdefghijklmnopqrstuvwxyz";
+regdef upper = charset "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+regdef digit = charset "0123456789";
+regdef alpha = upper | lower;
+regdef cid0 = alpha | "_";
+regdef cid1 = cid0 | digit;
+regdef cid = cid0 cid1 *;
+regdef space = " ";
+regdef white = space +;
+regdef integer = digit+;
+\end{minted}
+
+These are some basic definitions. Note that \verb%regdef% introduces a new
+syntax corresponding with the notation usually used for
+regular expressions.
+
+This is called a DSSL or Domain Specific Sub-Language. Its not a DSL,
+because that's a complete new language, rather the {\em sub} suggests
+its an extension of normal Felix. The extension is written entirely
+in user space.  Now to use these definitions:
+
+\begin{minted}{felix}
+// match an assignment statement
+regdef sassign =
+  white? "var" white?
+  group (cid) white? "=" white?
+  (group (cid) | group (integer))
+  white? ";" white?
+;
+
+var rstr : string = sassign.Regdef::render;
+var ra = RE2 rstr;
+var result = Match (ra, " var a = b; ");
+println$ 
+  match result with
+  | #None => "No match?"
+
+  | Some groups =>
+    "Assigned " + groups.1 +
+    if groups.2 != "" then
+        " from variable " + groups.2
+    else
+        " from integer" + groups.3
+    endif
+  endmatch
+;
+\end{minted}
+
+Note that the regdef kind of variable must be converted to a
+Perl regexp in a string form using the \verb%render% function.
+
 \section{Tuples}
 Felix has an strucurally typed product where components are
 accessed by position, commonly called a {\em tuple}.  Tuples
@@ -739,6 +913,14 @@ println$
 ;
 \end{minted}
 
+\subsection{Enumerations {\tt enum}}
+If all the constructors of a union have no arguments
+an alternate form can be used:
+
+\begin{minted}{felix}
+enum colour = red, green, blue; // equivalent to
+union colour = red | green | blue;
+\end{minted}
 
 \section{Functions}
 We have enough preliminaries now to finally introduce functions.
@@ -903,7 +1085,7 @@ println$ add3 42; // 45
 \end{minted}
 
 the increment function returns another function which increments
-its argument y, when applied, but the argument x first passed to it.
+its argument y, when applied, by the argument x first passed to it.
 The variable \verb%add3% binds the first argument x, and is another
 function which will add that x to its argument when applied.
 
@@ -912,13 +1094,13 @@ because it appears to accept two arguments. In fact, there is
 no such thing as a function accepting two arguments.
 
 The function of higher arity is sometimes said to be {\em curried}
-named for theorist Howard Curry, although prefer Indian food.
+named for theorist Howard Curry, although some prefer Indian food.
 If a function returns a function which is not immediately
 applied to an argument it is said, surprisingly, to be
 {\em partially applied}. When Felix does overload
 resolution it can take into account as many arguments
 as are provided for a curried function application.
-It find candidates based on the first argument first,
+It finds candidates based on the first argument first,
 then tries to whittle down the list based on the next
 argument, and so on.
 
@@ -951,7 +1133,7 @@ function might match. For example:
 
 \begin{minted}{felix}
 fun f[U,V] (x: U, y: V) => y,x;
-fun f[W[ (x:W, y:int) => y+1,x;
+fun f[W] (x:W, y:int) => y+1,x;
 println$ f (2,4); // which f?
 \end{minted}
 
@@ -971,7 +1153,6 @@ $$ \verb%W% \rightarrow \verb%int% $$
 
 causes the second one to match.
 
-will cause both functions to match the argument type exactly.
 In this case the most specialised function is chosen if there
 is one. Here, the first function is clearly more general because
 the substitution:
@@ -1032,7 +1213,7 @@ fun _ctor_T (x:arg) : T => expr;
 When Felix finds an application $\verb%f% a$ where \verb%f% is a simple name,
 it first tries to find a function named \verb%f%. 
 If a type name is found instead of a function,
-Felix looks again for a function named \verb%_ctor_%$f$ where $f$.
+Felix looks again for a function named \verb%_ctor_%$f$ where $f$ is the type name.
 
 \subsection{Apply operator}
 When Felix finds an application $\verb%f% a$ where \verb%f% is a simple name,
@@ -1622,7 +1803,11 @@ and that includes Felix \verb%list% type.
 If you put such a type into a C++ vector, the Felix garbage
 collector will not know it is there, and objects pointed
 at may appear to be unreachable and be deleted when they're
-stored in the vector.
+stored in the vector. It is safe to put these types into
+a vector or other C++ data structure if the pointers can be
+regarded as weak; that is, if they're also stored somewhere
+else which ensures they remain reachable whilst the vector
+is holding them.
 
 The third thing to note is that we have broken a very
 important protocol in this example: we have modified
@@ -1676,7 +1861,9 @@ static int x = 1;
 type INT = "int";
 fun + :INT * INT -> INT = "$1 + $2";
 
-fun two (): INT = { return cvar [INT] x + cexpr[INT] 'x' endcexpr; }
+fun two (): INT =>
+  cvar [INT] x + cexpr[INT] 'x' endcexpr
+; 
 cstmt "::std::cout <<$1<<endl;" (two());
 \end{minted}
 
@@ -1765,7 +1952,16 @@ the library file \verb%libmylib.so% and \verb%provides_slib% implies
 This mechanism works on OSX and Windows, and with gcc, clang, cl,
 and other compilers. The objective is to ensure the Felix code is
 platform independent, and shove all the platform dependent stuff
-into a single place.
+into a single place. Here's a windows package:
+
+\begin{minted}{text}
+Name: mylib
+includes: '"mylib.h"'
+cflags: /Imydir
+provides_dlib: /DEFAULTLIB:mylib
+provides_slib: /DEFAULTLIB:mylib
+\end{minted}
+
 
 Felix uses a tool called \verb%flx_pkgconfig% to query and 
 manage packages. The tool itself is platform independent and
@@ -1776,7 +1972,130 @@ the databases are also language neutral.
 We shall begin our more serious exploration of Felix with functional programming
 techniques.
 
+\section{Recursion}
+We shall begin with some basic routines on lists.
 
+\subsection{Reversing a list}
+To reverse a list, we run down the list constructing a new
+one. At the end, we return the result. We will use several
+routines for this. 
+
+Our first routine takes two arguments,
+a list \verb%inp% and a list \verb%out% onto which we must prepend
+the reversed copy of \verb%inp%.
+
+\begin{minted}{felix}
+fun prepend_reversed[T] (inp:list[T]) (out: list[T]) =>
+  match inp with
+  | #Empty => out
+  | Cons (head, tail) => 
+    prepend_reversed tail (Cons (head, out))
+  endmatch
+;
+\end{minted}
+
+This routine is statically recursive, meaning, there is a control
+path which causes the routine to be re-invoked. It is also
+self-recursive, meaning it invokes itself directly.
+
+A {\em tail call} is the final call in a function. Tail calls can
+be optimised from a call followed by a return to just a jump. 
+This avoids pushing the return address, then returning to that
+address from the called procedure, then immediately returning
+to the callers return address. Instead, the called procedure
+just returns to the callers return address directly.
+
+In particular, if the tail call is call to self, 
+known as {\em self-tail-recursion} 
+then by assigning
+the call argument to the parameter, we then just jump to the start
+of the function. In other words, we can optimise tail recursion
+to a simple loop. This saves more than the space of the return
+address on the stack, it saves the space required by all the local
+variables as well. We can reuse these variables, since the old
+values cannot be accessed.
+
+Our routine \verb%prepend_reversed% is clearly self tail recursive
+and can be optimised to a simple loop. Tail recursion is also known
+as {\em primitive recursion}.
+
+
+We can use this routine to reverse a list.
+
+\begin{minted}{felix}
+fun rev[T] (a: list[T]) => prepend_reversed a Empty[T];
+\end{minted}
+
+Now suppose we wish to prepend a list $a$ onto a list $b$.
+How would we do that? Well it's easy:
+
+\begin{minted}{felix}
+fun prepend_v1[T] (a: list[T]) (b: list[T]) =>
+  prepend_reversed (rev a) b
+;
+\end{minted}
+
+We just reverse the first list, then prepend it reversed
+onto the second one. Which suggests there is another way:
+
+\begin{minted}{felix}
+fun prepend_v2[T] (a: list[T]) (b: list[T]) =>
+  rev (prepend_reversed a (rev b))
+;
+\end{minted}
+
+Our first routine requires $2a$ heap allocations.
+The second routine requires $2(a+b)$ heap allocations.
+Both numbers look bad! This is because we have paid
+for tail recursion with excess heap allocations.
+Here is how we can do it with a non-tail recursive
+routine with only $a$ heap allocations and $a$
+stack allocations.
+
+\begin{minted}{felix}
+fun prepend_v3[T] (a: list[T]) (b: list[T]) =>
+  match a with
+  | #Empty => b
+  | Cons (head, tail) => 
+    Cons (head, prepend_v3 tail b)
+  endmatch
+;
+\end{minted}
+
+This routine is no use if the machine stack is limited and the
+list $a$ is big. It also requires more maximum store than
+either of the other routines! The whole of the original list $a$ is saved
+on the stack at the time $a$ is empty, and as we return we prepend elements
+to be in reverse order. On the way down the list, we do save the elements
+to prepend on the way back up. We therefore have a copy of $a$ as well
+as $n=len a$ machine addresses on the stack.
+
+On the other hand, whilst our v1 routine reverses the original list,
+and then pushes it reversed onto the output list, it uses at most
+$a$ heap nodes. As we push the top of the reversed list onto
+the output, that head element becomes unreachable and can be freed.
+In fact, the heap allocation and free can be avoided altogether
+by simply adjusting the pointer to the tail of the top node to
+point instead at the output list! It is perfectly safe to do this
+because that reversed list is owned by us and no one else, and
+it is entirely unreachable at the end of the routine.
+
+Even more surprising, our v2 routine can be optimised by a
+trick as well. Since the argument to the tail call is owned
+by us, we can just modify the list, instead of reallocating it.
+We can either reverse the actual elements, or, we can swap
+the next pointers around!
+
+In general, a temporary created by a function can safely mutated.
+A basic functional programming language does not have the type
+system support to enable the compiler to prove when it is safe,
+however such type systems do exist: the typing regime is
+known as {\em linear typing} because it is used to track when
+a value is constructed it is used exactly once.
+See \href{https://en.wikipedia.org/wiki/Substructural_type_system}{Wikipedia}
+for more information.
+
+\section{More stuff..}
 \begin{minted}{felix}
 fun inner_strlist (x: list[int]) =>
   match x with
@@ -1784,13 +2103,16 @@ fun inner_strlist (x: list[int]) =>
   | #Empty => ""
 
   // One element list
-  | Cons (head, #Empty) => str head 
+  | Cons (head, #Empty) => 
+    str head 
 
   // Two element list
-  | Cons (head, Cons (second, #Empty)) => str head ", " + str second 
+  | Cons (head, Cons (second, #Empty)) => 
+    str head ", " + str second 
 
   // More that two elements
-  | Cons (head, tail) => str head ", " + inner_strlist tail
+  | Cons (head, tail) => 
+    str head ", " + inner_strlist tail
   endmatch
 ;
 
@@ -1811,6 +2133,7 @@ by a comma, followed by a string representation of the tail.
 The tail must contain at least two elements, otherwise the pattern
 match would not reach that case.
 
+\subsection{Tail Recursion}
 However his function is not tail recursive! Lets rewrite it so 
 it is:
 
@@ -1822,31 +2145,19 @@ fun inner_strlist (x: list[int], result:string) =>
   | #Empty => ""
 
   // One element list
-  | Cons (head, #Empty) => str head 
+  | Cons (head, #Empty) => 
+    str head 
 
   // Two element list
-  | Cons (head, Cons (second, #Empty)) => str head ", " + str second 
+  | Cons (head, Cons (second, #Empty)) => 
+    str head ", " + str second 
 
   // More that two elements
-  | Cons (head, tail) => inner_strlist (tail, str head ", ")
+  | Cons (head, tail) => 
+    inner_strlist (tail, str head ", ")
   endmatch
 ;
 \end{minted}
-
-A {\em tail call} is the final call in a function. Tail calls can
-be optimised from a call followed by a return to just a jump. 
-This avoids pushing the return address, then returning to that
-address from the called procedure, then immediately returning
-to the callers return address. Instead, the called procedure
-just returns to the callers return address directly.
-
-In particular, if the tail call is call to self, then by assigning
-the call argument to the parameter, we then just jump to the start
-of the function. In other words, we can optimise tail recursion
-to a simple loop. This saves more than the space of the return
-address on the stack, it saves the space required by all the local
-variables as well. We can reuse these variables, since the old
-values cannot be accessed.
 
 Here is another, simpler tail recursive function:
 
@@ -1866,16 +2177,21 @@ fun addup (x: list[int]) =
 The non-recursive function \verb%addup% contains a nested tail recursive
 function \verb%aux%.
 
+\subsection{Higher Order Functions}
 Ok so, what if I wanted to add up the squares of the numbers 
-in the list? Is there a way to avoid that?
-
+in the list? Is there a way to avoid rewriting the whole thing?
 The answer is yes:
 
 
 \begin{minted}{felix}
-fun fold(binop: int * int -> int, init:int, x:list[int]) =
+fun fold
+(
+  binop: int * int -> int, 
+  init: int, 
+  lst: list[int]
+) =
 {
-  fun aux (rest: list, acc: int) =>
+  fun aux (rest: list[int], acc: int) =>
     match rest with
     | #Empty => rest
     | Cons (head, tail) => aux (tail, binop (acc,head))
@@ -1888,9 +2204,9 @@ fun fold(binop: int * int -> int, init:int, x:list[int]) =
 Fold works with any binary operator on \verb%int%. For example:
 
 \begin{minted}{felix}
-fun addition (acc:int,y:elt) => x + y;
+fun addition (acc:int,y:int) => x + y;
 assert addup x == fold (addition, 0, x);
-\end(minted}
+\end{minted}
 
 There is another way to write the folding expression:
 
@@ -1909,7 +2225,7 @@ binary operator to
 
 \begin{minted}{felix}
 double * int -> double
-\end{felix}
+\end{minted}
 
 and pass an appropriate function. The first component of the argument
 is intended to hold the accumulated sum.
@@ -1920,28 +2236,31 @@ complete length? Then we'd use
 
 \begin{minted}{felix}
 int * string -> int
-\end{felix}
+\end{minted}
 
+
+\subsection{Polymorphism}
 Can we generalise, so we only have one function? 
 
 Sure. That's what parametric polymorphism is for.
-
+Using $R$ for the result type and $V$ for the list element
+type:
 
 \begin{minted}{felix}
-fun fold[ResultType, ElementType] 
+fun fold[V,R] 
 (
-  binop: ResultType * ElementType -> ResultType, 
-  init:ResultType, 
-  x:list[ElementType]
+  binop: R * V -> R, 
+  init: R, 
+  lst: list[V]
 ) = 
 {
-  fun aux (rest: list, acc: int) =>
+  fun aux (rest: list[V], acc: R) =>
     match rest with
     | #Empty => rest
     | Cons (head, tail) => aux (tail, binop (acc,head))
     endmatch
   ;
-  return aux x init;
+  return aux (lst, init);
 }
 \end{minted}
 
@@ -1949,7 +2268,7 @@ Now we can write:
 
 \begin{minted}{felix}
 println$ 
-  fold [int,string]
+  fold [string,int]
   (
     (fun (acc:int, s:string)=>acc + len s),
     0,
@@ -1980,24 +2299,25 @@ then return an application of it, which consists of
 two statements, and requires the expanded form of
 function definition.
 
+\subsection{Let/in construction}
 Can we do it as a one liner, using only the simplified
 form? The answer is yes, using a \verb%let-in% expression:
 
 
 \begin{minted}{felix}
-fun fold[ResultType, ElementType] 
+fun fold[V,R] 
 (
-  binop: ResultType * ElementType -> ResultType, 
-  init:ResultType, 
-  x:list[ElementType]
+  binop: R * V -> R, 
+  init:R, 
+  lst:list[V]
 ) =>
-  let fun aux (rest: list, acc: int) =>
+  let fun aux (rest: lst, acc: R) =>
     match rest with
     | #Empty => rest
     | Cons (head, tail) => aux (tail, binop (acc,head))
     endmatch
   in 
-  aux x init
+  aux lst init
 ;
 \end{minted}
 
@@ -2005,7 +2325,7 @@ The fold above utilises what is called a {\em type schema}.
 This is a limited kind of polymorphism also called
 first order polymorphism, or simply {\em templates}.
 Type schemes are limited to having type variables universally
-quantifed on outside and can be instantiated by replacing
+quantifed on the outside left, and can be instantiated by replacing
 the type variable with an actual type. At run time, there
 are no type variables about. You cannot have a polymorphic
 function at run time. So
@@ -2024,20 +2344,19 @@ class, meaning you can pass them into another function,
 and return them from a function. Consider this:
 
 \begin{minted}{felix}
-fun fold[ResultType, ElementType] 
-  (binop: ResultType * ElementType -> ResultType)
+fun fold[V,R] (binop: R * V -> R) =
 {
-    fun A(init:ResultType) 
+    fun A(init:R) 
     {
-      fun B(x:list[ElementType]) 
+      fun B(lst:list[V]) 
       {  
-        let fun aux (rest: list, acc: int) =>
+        let fun aux (rest: list[V], acc: int) =>
           match rest with
           | #Empty => rest
           | Cons (head, tail) => aux (tail, binop (acc,head))
           endmatch
         in 
-        return aux x init;
+        return aux lst init;
       }
       return B;
    }
@@ -2048,19 +2367,19 @@ fun fold[ResultType, ElementType]
 What is the type of this function? Well, 
 
 \begin{minted}{felix}
-B:list[ElementType]-> ResultType
+B: list[V]-> R
 \end{minted}
 
 and since A returns B, its type is:
 
 \begin{minted}{felix}
-A: ResultType -> (list[ElementType]-> ResultType)
+A: R -> (list[V]-> R)
 \end{minted}
 
 and since fold returns A its type is
 
 \begin{minted}{felix}
-fold: list[ElementType] -> (ResultType -> (list[ElementType]-> ResultType))
+fold: list[V] -> (R -> (list[V]-> R))
 \end{minted}
 
 How would we use this? Well:
@@ -2085,7 +2404,7 @@ Note that the \verb%->% function operator is right associative we
 don't need the parens so we can write this as:
 
 \begin{minted}{felix}
-fold: list[ElementType] -> ResultType -> list[ElementType]-> ResultType
+fold: list[V] -> R -> list[V]-> R
 \end{minted}
 
 getting rid of parens, and, since application (the whitespace operator!) is 
@@ -2094,7 +2413,7 @@ left associative, we can write:
 \begin{minted}{felix}
 println$ 
   fold 
-    (fun (acc:int, s:string)=>acc + len s))
+    (fun (acc: int, s: string) => acc + len s))
     0
     (list ("Hello", "World"))
 ;
@@ -2134,12 +2453,12 @@ Curried form is so useful, there is syntactic sugar
 for writing functions in this form:
 
 \begin{minted}{felix}
-fun fold[ResultType, ElementType] 
-  (binop: ResultType * ElementType -> ResultType)
-  (init:ResultType)
-  (x:list[ElementType])
+fun fold[R, V] 
+  (binop: R * V -> R)
+  (init: R)
+  (lst: list[V])
 =>
-  let fun aux (rest: list, acc: int) =>
+  let fun aux (rest: list[V], acc: R) =>
     match rest with
     | #Empty => rest
     | Cons (head, tail) => aux (tail, binop (acc,head))
@@ -2149,5 +2468,205 @@ fun fold[ResultType, ElementType]
 ;
 \end{minted}
 
+\section{Generalised Folds: Catamorphisms}
+Unsurprisingly, folds can be mechanically written
+for many data types. A more precise formulation in
+category theory can be given, and is explained by
+the notion of a
+\href{https://en.wikipedia.org/wiki/Catamorphism}{catamorphism}.
+We will come back to this later.
+
+Let us develop a tree fold. Our tree is binary and carries
+data at each node: both leaf and branch nodes:
+
+\begin{minted}{felix}
+union tree[T] =
+  | Leaf of T
+  | Branch of T * tree[T] * tree[T]
+;
+
+fun fold[R,T]
+  (binop: R * V -> R)
+  (init: R)
+  (tr: tree[T])
+=>
+  match tr with
+  | Leaf v => binop (acc,v)
+  | Branch (v, l, r) =>
+    let left = fold binop v l in
+    let right = fold binop left r in
+    binop (acc, right)
+;
+\end{minted}
+
+Note this formulation isn't tail recursive: it's not possible
+to visit tree nodes without remembering where you're up to.
+
+\section{Maps}
+Actually maps are easier than folds! A map function simply
+copies the structure of its argument, applying a unary operator
+to each element. Here is a list map:
+
+\begin{minted}{felix}
+fun map[R,V] (f: V -> R) (lst: list[V]) : list[R] =>
+  match lst with
+  | #Empty => Empty[R]
+  | Cons (head, tail) => Cons (f head, map f tail)
+  endmatch
+;
+\end{minted}
+
+You will note this implementation is not tail recursive!
+We will leave it as an exercise for the reader to 
+develop a tail recursive formulation.
+
+Now we will do a tree map:
+
+\begin{minted}{felix}
+fun map[R,V] (f: V -> R) (tr: tree[V]) : tree[R] =>
+  match lst with
+  | Leaf v => Leaf (f v)
+  | Branch (v,l,r) => Branch (f v,map f l, map f r)
+  endmatch
+;
+\end{minted}
+
+As you can guess, writing maps is rather boring.
+This is because a map produces an exact copy of the
+original data structure with only the data type changed.
+An operation which {\em preserves structure} has a technical
+name: it is called a \href{https://en.wikipedia.org/wiki/Functor}{functor}.
+
+We will provide a way to encode maps in a type class now,
+but before we can do this we need to observe a technical detail!
+
+Although our list and tree are considered in the abstract as
+data functors, in fact they are type schema, or indexed types.
+They're not actually functors. So to make them functors we
+will have to do this:
+
+\begin{minted}{felix}
+typedef list_f = fun (T:TYPE): TYPE => list[T];
+typedef tree_f = fun (T:TYPE): TYPE => tree[T];
+\end{minted}
+
+This is our first example of {\em higher kinded programming}
+which is sometimes loosely called meta-programming.
+The functions we have shown takes a type and produces another type.
+For example:
+
+\begin{minted}{felix}
+typedef intlist = list_f int;
+\end{minted}
+
+Note that \verb%list_f% is not yet a true functor. It is a 
+map from types to types which is the object part of a functor
+definition. The collection of types forms a category
+which is named \verb%TYPE% in Felix.
+
+Now we can rewrite our maps like this:
+
+\begin{minted}{felix}
+class Functor[F:TYPE->TYPE]
+{
+  virtual fun fmap[V,R]: (V->R) -> (F V -> F R);
+}
+
+instance Functor[list_f]
+{
+  fun fmap[V,R] (f:V->T) (lst: list_f V) : list_f R=>
+    match lst with
+    | #Empty => Empty[R]
+    | Cons (head, tail) => Cons (f head, fmap f tail)
+    endmatch
+  ;
+}
+
+instance Functor[tree_f] 
+{
+  fun fmap[V,R] (f: V -> R) (tr: tree[V]) : tree[R] =>
+    match lst with
+    | Leaf v => Leaf (f v)
+    | Branch (v,l,r) => Branch (f v,fmap f l, fmap f r)
+    endmatch
+  ;
+}
+\end{minted}
+
+The pair consisting of the type mapping \verb%list_f% and an associate
+function mapping \verb%Functor[list_f]::fmap% are a functor, because
+the two constraints are satisfied. First, its obvious that for any
+type $T$, an identity map: 
+
+\begin{minted}{felix}
+fun id(x:T) => x;
+\end{minted}
+
+is taken to the function
+
+\begin{minted}{felix}
+Functor[list_f]::fmap id
+\end{minted}
+
+This just makes a copy of the list. Secondly, given any two function
+
+\begin{minted}{felix}
+fun f[A,B]: A -> B;
+fun g[B,C]: B -> C;
+\end{minted}
+
+then:
+
+\begin{minted}{felix}
+(Functor[list_f]::fmap g) \circ (Functor[list_f]::fmap f)
+\end{minted}
+
+has the same semantics as:
+
+\begin{minted}{felix}
+Functor[list_f]::fmap (g \circ f)
+\end{minted}
+
+In other words, mapping a list using $f$ and then mapping it
+again using $g$ produces the same final result as mapping
+it by the composite function $g \circ f$ in one go. This requirement
+is more than just a rule, however. Its a crucial optimisation
+called \href{https://en.wikipedia.org/wiki/Deforestation_%28computer_science%29}{deforestation} 
+or {\em fusion}. Although not always the case, applying the composite function
+once to each element to build a new list is probably faster than
+building a temporary list, building another from it, and the deleteing
+the temporary list.
+
+It semantic rules for functors are important enough to encode
+them in the type class:
+
+\begin{minted}{felix}
+class Functor[F:TYPE->TYPE]
+{
+  virtual fun fmap[V,R]: (V->R) -> (F V -> F R);
+
+  axiom identity_preserving[A,B] (f:A->B) (id:A->A) (x:A):
+    id x == x \implies fmap id (f x) = fmap f x
+  ;
+
+  reduce structure_preserving[A,B,C] (f:A->B, g:B->C):
+    (fmap g) \circ (fmap f) =>
+    fmap (g \circ f)
+  ;
+
+}
+\end{minted}
+
+The identity rules is a bit tricky, it says that for every
+function $f: A \rightarrow B$ and function $id: A\rightarrow A$
+for which for all $x \in A$ we have $f x = x$, then the fmap
+of the $id$ function applied to the value $f$ maps $x$ to
+is the same as the value that the $fmap$ of function $f$ gives.
+We need this long winded exposition because we cannot directly
+assert that two functions are equal.
+
+The current version of Felix can check the axioms against test data,
+however it cannot mechanically implement the reduction rule to
+effect an optimisation.
 
 \end{document}

@@ -83,7 +83,7 @@ let handle_field_name state bsym_table build_env env rs be bt koenig_lookup cal_
       bind_type' state bsym_table env' rsground sr ct bvs mkenv
     in
     let vs' = List.map (fun (s,i,tp) -> s,i) vs in
-    let ct = tsubst vs' ts' ct in
+    let ct = tsubst sr vs' ts' ct in
     let ct = if isptr then btyp_pointer ct else ct in
     (* messy .. we generalised get_n to accept any type instead
        of an integer selector. to replace integer n,

@@ -180,10 +180,10 @@ let varmap_subst varmap t =
   vs_i -> ts_i
   where vs_t might be (fred,var j)
 *)
-let mk_varmap vs ts =
+let mk_varmap sr vs ts =
   if List.length ts <> List.length vs
   then
-    failwith
+    clierr sr 
     (
       "[mk_varmap] wrong number of type args, expected vs=" ^
       si (List.length vs) ^
@@ -199,8 +199,8 @@ let mk_varmap vs ts =
   ;
   varmap
 
-let tsubst vs ts t =
-  varmap_subst (mk_varmap vs ts) t
+let tsubst sr vs ts t =
+  varmap_subst (mk_varmap sr vs ts) t
 
 (* returns the most general unifier (mgu)
   of a set of type equations as a list

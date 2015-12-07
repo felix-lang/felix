@@ -166,7 +166,7 @@ let rec gen_expr'
 
   let ge = gen_expr syms bsym_table shapes shape_map label_map this this_vs this_ts sr in
   let ge' = gen_expr' syms bsym_table shapes shape_map label_map this this_vs this_ts sr in
-  let tsub t = beta_reduce "flx_egen" syms.Flx_mtypes2.counter bsym_table sr (tsubst this_vs this_ts t) in
+  let tsub t = beta_reduce "flx_egen" syms.Flx_mtypes2.counter bsym_table sr (tsubst sr this_vs this_ts t) in
   let tn t = cpp_typename syms bsym_table (tsub t) in
   let clt t = islinear_type bsym_table t in
   (* NOTE this function does not do a reduce_type *)
@@ -174,7 +174,7 @@ let rec gen_expr'
     cpp_typename
     syms
     bsym_table
-    (beta_reduce "flx_egen2" syms.Flx_mtypes2.counter bsym_table sr (tsubst this_vs this_ts t))
+    (beta_reduce "flx_egen2" syms.Flx_mtypes2.counter bsym_table sr (tsubst sr this_vs this_ts t))
   in
   let ge_arg ((x,t) as a) =
     let t = tsub t in
@@ -205,7 +205,7 @@ let rec gen_expr'
 
     | _,tt ->
       let k = List.length ps in
-      let tt = beta_reduce "flx_egen3" syms.Flx_mtypes2.counter bsym_table sr  (tsubst vs ts tt) in
+      let tt = beta_reduce "flx_egen3" syms.Flx_mtypes2.counter bsym_table sr  (tsubst sr vs ts tt) in
       (* NASTY, EVALUATES EXPR MANY TIMES .. *)
       let n = ref 0 in
       fold_left
@@ -226,7 +226,7 @@ let rec gen_expr'
   in
   let our_display = get_display_list bsym_table this in
   let our_level = length our_display in
-  let rt t = beta_reduce "flx_egen4" syms.Flx_mtypes2.counter bsym_table sr (tsubst this_vs this_ts t) in
+  let rt t = beta_reduce "flx_egen4" syms.Flx_mtypes2.counter bsym_table sr (tsubst sr this_vs this_ts t) in
   let array_sum_offset_table = syms.array_sum_offset_table in
   let seq = syms.counter in
   let t = rt t in
@@ -739,7 +739,7 @@ print_endline "Apply struct";
          but units for sums .. hmm .. inconsistent!
       *)
       let ts = map tsub ts in
-      let ct = beta_reduce "flx_egen: nonconst ctor" syms.Flx_mtypes2.counter bsym_table sr (tsubst vs ts ct) in
+      let ct = beta_reduce "flx_egen: nonconst ctor" syms.Flx_mtypes2.counter bsym_table sr (tsubst sr vs ts ct) in
       Flx_vgen.gen_make_nonconst_ctor ge' tn syms bsym_table shape_map udt cidx a 
     | _ -> assert false
     end
@@ -1561,7 +1561,7 @@ and gen_apply_prim
 =
   let gen_expr' = gen_expr' syms bsym_table shapes shape_map label_map this this_vs this_ts in
   let beta_reduce calltag vs ts t =
-    beta_reduce calltag syms.Flx_mtypes2.counter bsym_table sr (tsubst vs ts t)
+    beta_reduce calltag syms.Flx_mtypes2.counter bsym_table sr (tsubst sr vs ts t)
   in
   let cpp_typename t = cpp_typename
     syms

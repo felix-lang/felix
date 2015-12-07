@@ -23,9 +23,10 @@ let rec shape_of' use_assoc_type syms bsym_table tn t =
   | _ when islinear_type bsym_table t -> "::flx::rtl::cl_t_ptr_map"
 
   | BTYP_inst (i,ts) ->
-    begin match Flx_bsym_table.find_bbdcl bsym_table i with
+    let bsym = Flx_bsym_table.find bsym_table i in
+    begin match Flx_bsym.bbdcl bsym with
     | BBDCL_union (vs,[id,n,t']) -> 
-      let t'' = tsubst vs ts t' in
+      let t'' = tsubst (Flx_bsym.sr bsym) vs ts t' in
       shape_of' use_assoc_type syms bsym_table tn t''
 
     | BBDCL_union (vs,idts) ->
@@ -61,7 +62,7 @@ let rec shape_of' use_assoc_type syms bsym_table tn t =
             List.iter get_assoc_type bquals;
             tn t ^ "_ptr_map"
           with Found t ->
-            let t = tsubst bvs ts t in
+            let t = tsubst (Flx_bsym.sr bsym) bvs ts t in
             tn t ^ "_ptr_map"
         end
       else

@@ -53,6 +53,7 @@ print_endline "cal_case_type";
     let bsym =
       try Flx_bsym_table.find bsym_table i with Not_found -> assert false
     in
+    let sr = Flx_bsym.sr bsym in
     begin match Flx_bsym.bbdcl bsym with
     | BBDCL_union (bvs,cts) -> 
       let ct = 
@@ -61,7 +62,7 @@ print_endline "cal_case_type";
           assert false 
         with Found_type ct -> ct 
       in
-      let ct = Flx_unify.tsubst bvs ts ct in (* eliminate type variables *)
+      let ct = Flx_unify.tsubst sr bvs ts ct in (* eliminate type variables *)
       ct
     | _ -> assert false
     end
@@ -116,9 +117,10 @@ let gen_make_const_ctor bsym_table e : cexpr_t =
       begin 
         try 
           let bsym = Flx_bsym_table.find bsym_table i in
+          let sr = Flx_bsym.sr bsym in
           match Flx_bsym.bbdcl bsym with
           | BBDCL_const_ctor (vs,uidx,udt, ctor_idx, evs, etraint) ->
-            let t = Flx_unify.tsubst vs ts udt in
+            let t = Flx_unify.tsubst sr vs ts udt in
             ctor_idx,t 
           | _ -> assert false
         with Not_found -> assert false

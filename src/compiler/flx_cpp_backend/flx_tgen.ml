@@ -221,6 +221,7 @@ let rec gen_type_name syms bsym_table (index,typ) =
       try Flx_bsym_table.find bsym_table i
       with _ -> failwith ("[gen_type_name] can't find type" ^ string_of_bid i)
     in
+    let sr = Flx_bsym.sr bsym in
     begin match Flx_bsym.bbdcl bsym with
     | BBDCL_external_type (vs,quals,ct,_) ->
       let complete = not (mem `Incomplete quals) in
@@ -285,7 +286,7 @@ let rec gen_type_name syms bsym_table (index,typ) =
       descr ^ "struct " ^ name ^ ";\n"
 
     | BBDCL_union (vs,[id,_,t']) -> 
-      let t'' = tsubst vs ts t' in
+      let t'' = tsubst sr vs ts t' in
       gen_type_name syms bsym_table (index,t'')
 
     | BBDCL_union (vs,ls) -> ""
@@ -468,6 +469,7 @@ let rec gen_type syms bsym_table (index,typ) =
       try Flx_bsym_table.find bsym_table i
       with _ -> failwith ("[gen_type_name] can't find type" ^ string_of_bid i)
     in
+    let sr = Flx_bsym.sr bsym in
     begin match Flx_bsym.bbdcl bsym with
     | BBDCL_newtype (vs,t') ->
       let descr =
@@ -485,7 +487,7 @@ let rec gen_type syms bsym_table (index,typ) =
     | BBDCL_cstruct _ -> ""
 
     | BBDCL_struct (vs,cts) ->
-      let cts = map (fun (name,typ) -> name, tsubst vs ts typ) cts in
+      let cts = map (fun (name,typ) -> name, tsubst sr vs ts typ) cts in
       let ctss = map (fun (name,typ) -> name, tn typ) cts in
       let name = cn typ in
       let listwise_ctor = mk_listwise_ctor syms i name typ cts ctss in
@@ -509,7 +511,7 @@ let rec gen_type syms bsym_table (index,typ) =
     | BBDCL_union (vs,[id,n,t']) -> 
       (* ("\n// Skipping solo union " ^ Flx_bsym.id bsym) *)
       "\n// SOLO UNION tgen\n" ^
-      let t'' = tsubst vs ts t' in
+      let t'' = tsubst sr vs ts t' in
       gen_type syms bsym_table (index,t'')
 
     | BBDCL_union _ -> ""

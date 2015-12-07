@@ -256,7 +256,7 @@ let rec gen_type_shape module_name s syms bsym_table need_int last_ptr_map primi
         let encoder_name = gen_encoder () in
         let decoder_name = gen_decoder () in
         print_endline "Warning VR_self rep not handled right?";
-        let t'' = tsubst vs ts t' in
+        let t'' = tsubst (Flx_bsym.sr bsym) vs ts t' in
         gen_type_shape module_name s syms bsym_table need_int last_ptr_map primitive_shapes t'' index
         
       | BBDCL_union _ -> () (* handled by universal uctor, int, etc *) 
@@ -415,7 +415,7 @@ print_debug syms ("Handle type " ^ sbt bsym_table btyp ^ " instance " ^ si index
           (*
           print_endline ("Needs shape (uninstantiated) " ^ sbt bsym_table t);
           *)
-          let varmap = mk_varmap vs ts in
+          let varmap = mk_varmap (Flx_bsym.sr bsym) vs ts in
           let t = varmap_subst varmap t in
           (*
           print_endline ("Needs shape (instantiated) " ^ sbt bsym_table t);
@@ -445,7 +445,7 @@ print_debug syms ("Handle type " ^ sbt bsym_table btyp ^ " instance " ^ si index
          in which case THEY needed to create the shape object
       *)
       | BBDCL_union (vs,args) ->
-        let varmap = mk_varmap vs ts in
+        let varmap = mk_varmap (Flx_bsym.sr bsym) vs ts in
         let args = map (fun (_,_,t)->t) args in
         let args = map (varmap_subst varmap) args in
         iter begin fun t ->

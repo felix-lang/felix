@@ -237,6 +237,7 @@ let rec cpp_type_classname syms bsym_table t =
     let bsym = Flx_bsym_table.find bsym_table i in
     let fname = Flx_bsym.id bsym in
     let bbdcl = Flx_bsym.bbdcl bsym in
+    let sr = Flx_bsym.sr bsym in
     let cal_prefix = function
       | BBDCL_struct _  -> "_s"
 (*
@@ -249,7 +250,7 @@ let rec cpp_type_classname syms bsym_table t =
     in
     begin match bbdcl with 
     | BBDCL_union (vs, [id,n,t']) -> 
-      let t'' = tsubst vs ts t' in
+      let t'' = tsubst sr vs ts t' in
       cpp_type_classname syms bsym_table t''
 
     | BBDCL_union _ ->
@@ -381,6 +382,7 @@ and cpp_structure_name syms bsym_table t =
     let bsym = Flx_bsym_table.find bsym_table i in
     let fname = Flx_bsym.id bsym in
     let bbdcl = Flx_bsym.bbdcl bsym in
+    let sr = Flx_bsym.sr bsym in
     let cal_prefix = function
       | BBDCL_struct _  -> "_s"
 (*
@@ -393,7 +395,7 @@ and cpp_structure_name syms bsym_table t =
     in
     begin match bbdcl with 
     | BBDCL_union (vs, [id,n,t']) -> 
-      let t'' = tsubst vs ts t' in
+      let t'' = tsubst sr vs ts t' in
       cpp_type_classname syms bsym_table t''
 
     | BBDCL_union _ ->
@@ -442,9 +444,10 @@ and cpp_typename syms bsym_table t =
     let bsym = Flx_bsym_table.find bsym_table i in
     let fname = Flx_bsym.id bsym in
     let bbdcl = Flx_bsym.bbdcl bsym in
+    let sr = Flx_bsym.sr bsym in
     begin match bbdcl with
     | BBDCL_union (vs, [id,n,t']) -> 
-      let t'' = tsubst vs ts t' in
+      let t'' = tsubst sr vs ts t' in
       cpp_typename  syms bsym_table t''
     | _ -> cpp_type_classname syms bsym_table t
     end

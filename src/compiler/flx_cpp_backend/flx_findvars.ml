@@ -50,7 +50,7 @@ let find_references syms bsym_table index ts =
               si (length ts)
             )
           end;
-          let t = tsubst vs ts t in
+          let t = tsubst (Flx_bsym.sr bsym) vs ts t in
           references := (idx,t) :: !references
       | _ -> ()
     with Not_found -> ()

@@ -171,7 +171,7 @@ print_endline ("Instance type, registering argument ts=" ^ catmap "," (sbt bsym_
     in
     begin match Flx_bsym.bbdcl bsym with
     | BBDCL_newtype (vs,r) ->
-      let r' = tsubst vs ts r in
+      let r' = tsubst (Flx_bsym.sr bsym) vs ts r in
       rr r';
       rnr t
 
@@ -182,7 +182,7 @@ print_endline ("vs len = " ^ si (List.length vs));
 print_endline ("ts len = " ^ si (List.length ts));
 *)
       let cts = map (fun (_,_,t) -> t) cs in
-      let cts = map (tsubst vs ts) cts in
+      let cts = map (tsubst (Flx_bsym.sr bsym) vs ts) cts in
       iter rr cts;
       rnr t
 
@@ -190,7 +190,7 @@ print_endline ("ts len = " ^ si (List.length ts));
     | BBDCL_struct (vs,cs) ->
       ui i ts;
       let cts = map snd cs in
-      let cts = map (tsubst vs ts) cts in
+      let cts = map (tsubst (Flx_bsym.sr bsym) vs ts) cts in
       iter rr cts;
       rnr t
 
@@ -211,7 +211,7 @@ print_endline ("External primitive instance, registering whole type " ^ sbt bsym
           let varmap = mk_varmap vs ts in
           let t = varmap_subst varmap t in
           *)
-          let t' = tsubst vs ts t in
+          let t' = tsubst (Flx_bsym.sr bsym) vs ts t in
           (*
           print_endline ("treg: Needs shape (instantiated) " ^ sbt bsym_table t');
           *)

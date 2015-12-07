@@ -40,7 +40,9 @@ let get_variable_typename syms bsym_table i ts =
     try Flx_bsym_table.find bsym_table i with Not_found ->
       failwith ("[get_variable_typename] can't find index " ^ string_of_bid i)
   in
-  let rt vs t = beta_reduce "flx_gen_helper" syms.Flx_mtypes2.counter bsym_table (Flx_bsym.sr bsym) (tsubst vs ts t) in
+  let sr = Flx_bsym.sr bsym in
+  let rt vs t = beta_reduce "flx_gen_helper" 
+    syms.Flx_mtypes2.counter bsym_table sr (tsubst sr vs ts t) in
   match Flx_bsym.bbdcl bsym with
   | BBDCL_val (vs,t,_) ->
       if length ts <> length vs then begin

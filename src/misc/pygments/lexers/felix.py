@@ -51,7 +51,7 @@ class FelixLexer(RegexLexer):
     )
 
     keyword_declarations = (
-        'def', 'let', 'ref', 'val', 'var',
+        'def', 'let', 'ref', 
     )
 
     keyword_types = (
@@ -85,19 +85,19 @@ class FelixLexer(RegexLexer):
         'root', 'self', 'this',
     )
 
-    decimal_suffixes = '([tTsSiIlLvV]|ll|LL|([iIuU])(8|16|32|64))?'
+    decimal_suffixes = '((u?([tTsSiIlLvVzpj]|ll|LL))|([iIuU])(8|16|32|64))?'
 
     tokens = {
         'root': [
             include('whitespace'),
 
             # Keywords
-            (words(('axiom', 'ctor', 'fun', 'gen', 'proc', 'reduce',
+            (words(('axiom', 'ctor', 'fun', 'gen', 'proc', 'reduce','regdef','var','val', 
                     'union'), suffix=r'\b'),
              Keyword, 'funcname'),
-            (words(('class', 'cclass', 'cstruct', 'obj', 'struct'), suffix=r'\b'),
+            (words(('class', 'cclass', 'cstruct', 'obj', 'struct', 'object'), suffix=r'\b'),
              Keyword, 'funcname'),
-            (r'(instance|module|typeclass)\b', Keyword, 'funcname'),
+            (r'(instance|module|typeclass|interface)\b', Keyword, 'funcname'),
 
             (words(keywords, suffix=r'\b'), Keyword),
             (words(keyword_directives, suffix=r'\b'), Name.Decorator),
@@ -122,11 +122,12 @@ class FelixLexer(RegexLexer):
             # -- Binary
             (r'0[Bb][01_]+%s' % decimal_suffixes, Number.Bin),
             # -- Octal
-            (r'0[0-7_]+%s' % decimal_suffixes, Number.Oct),
+            (r'0[oO][0-7_]+%s' % decimal_suffixes, Number.Oct),
             # -- Hexadecimal
             (r'0[xX][0-9a-fA-F_]+%s' % decimal_suffixes, Number.Hex),
             # -- Decimal
-            (r'(0|[1-9][0-9_]*)%s' % decimal_suffixes, Number.Integer),
+            (r'0[dD][0-9_]+%s' % decimal_suffixes, Number.Integer),
+            (r'[0-9][0-9_]*%s' % decimal_suffixes, Number.Integer),
 
             # Strings
             ('([rR][cC]?|[cC][rR])"""', String, 'tdqs'),
@@ -168,7 +169,7 @@ class FelixLexer(RegexLexer):
         ],
         'funcname': [
             include('whitespace'),
-            (r'[a-zA-Z_]\w*', Name.Function, '#pop'),
+            (r'[^[( ]+', Name.Function, '#pop'),
             # anonymous functions
             (r'(?=\()', Text, '#pop'),
         ],

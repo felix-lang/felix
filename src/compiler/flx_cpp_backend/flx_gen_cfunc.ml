@@ -28,7 +28,7 @@ open Flx_util
 open Flx_gen_helper
 
 let gen_C_function syms bsym_table (shapes:Flx_set.StringSet.t ref) shape_map props index id sr vs bps ret' ts instance_no =
-  let rt vs t = beta_reduce "flx_gen_cfunc" syms.Flx_mtypes2.counter bsym_table sr (tsubst vs ts t) in
+  let rt vs t = beta_reduce "flx_gen_cfunc" syms.Flx_mtypes2.counter bsym_table sr (tsubst sr vs ts t) in
   let requires_ptf = mem `Requires_ptf props in
   (*
   print_endline ("C Function " ^ id ^ " " ^ if requires_ptf then "requires ptf" else "does NOT require ptf");
@@ -56,7 +56,7 @@ let gen_C_function syms bsym_table (shapes:Flx_set.StringSet.t ref) shape_map pr
     si (length ts)
   );
   let argtype = rt vs argtype in
-  let rt' vs t = beta_reduce "flx_gen_cfunc2" syms.Flx_mtypes2.counter bsym_table sr (tsubst vs ts t) in
+  let rt' vs t = beta_reduce "flx_gen_cfunc2" syms.Flx_mtypes2.counter bsym_table sr (tsubst sr vs ts t) in
   let ret = rt' vs ret' in
   if ret = btyp_tuple [] then "// elided (returns unit)\n" else
 
@@ -107,7 +107,7 @@ let gen_C_function_body filename syms bsym_table
   (shapes: Flx_set.StringSet.t ref) shape_map
   label_info counter index ts sr instance_no
 =
-  let rt vs t = beta_reduce "flx_gen_cfunc: gen_C_function_body" syms.Flx_mtypes2.counter bsym_table sr (tsubst vs ts t) in
+  let rt vs t = beta_reduce "flx_gen_cfunc: gen_C_function_body" syms.Flx_mtypes2.counter bsym_table sr (tsubst sr vs ts t) in
   let bsym =
     try Flx_bsym_table.find bsym_table index with Not_found ->
       failwith ("gen_C_function_body] can't find " ^ string_of_bid index)
@@ -143,7 +143,7 @@ let gen_C_function_body filename syms bsym_table
 
     let argtype = typeof_bparams bps in
     let argtype = rt vs argtype in
-    let rt' vs t = beta_reduce "flx_gen_cfunc: gen_C_function_body2"  syms.Flx_mtypes2.counter bsym_table sr (tsubst vs ts t) in
+    let rt' vs t = beta_reduce "flx_gen_cfunc: gen_C_function_body2"  syms.Flx_mtypes2.counter bsym_table sr (tsubst sr vs ts t) in
     let ret = rt' vs ret' in
     if ret = btyp_tuple [] then "// elided (returns unit)\n\n" else
 
@@ -238,7 +238,7 @@ let gen_C_procedure_body filename syms bsym_table
   (shapes: Flx_set.StringSet.t ref) shape_map
   label_info counter index ts sr instance_no
 =
-  let rt vs t = beta_reduce "flx_gen_cfunc: gen_C_procedure_body" syms.Flx_mtypes2.counter bsym_table sr (tsubst vs ts t) in
+  let rt vs t = beta_reduce "flx_gen_cfunc: gen_C_procedure_body" syms.Flx_mtypes2.counter bsym_table sr (tsubst sr vs ts t) in
   let bsym =
     try Flx_bsym_table.find bsym_table index with Not_found ->
       failwith ("gen_C_function_body] can't find " ^ string_of_bid index)

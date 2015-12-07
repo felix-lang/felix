@@ -32,11 +32,13 @@ let rec is_pod bsym_table t =
   | BTYP_record (cps) ->fold_left (fun acc (_,t) -> acc && is_pod t) true cps 
   | BTYP_array (t,_) -> is_pod t
   | BTYP_inst (k,ts) ->
+    let bsym = Flx_bsym_table.find bsym_table k in
+    let bbdcl = Flx_bsym.bbdcl bsym in
   begin match Flx_bsym_table.find_bbdcl bsym_table k with
     | BBDCL_union _ -> true
     | BBDCL_external_type (_,quals,_,_) -> mem `Pod quals
     | BBDCL_struct (vs,idts) -> 
-      let varmap = mk_varmap vs ts in
+      let varmap = mk_varmap (Flx_bsym.sr bsym) vs ts in
       let idts = map (fun (s,t) -> s,varmap_subst varmap t) idts in
       fold_left (fun acc (_,t) -> acc && is_pod t) true idts
     | BBDCL_cstruct _ -> false
@@ -79,7 +81,7 @@ let rec get_offsets' syms bsym_table typ : string list =
     in
     begin match Flx_bsym.bbdcl bsym with
     | BBDCL_union (vs, [id,n,t']) -> 
-      let t'' = tsubst vs ts t' in
+      let t'' = tsubst (Flx_bsym.sr bsym) vs ts t' in
       get_offsets' syms bsym_table t''
     | BBDCL_union (vs,idts) ->
 (*
@@ -97,7 +99,7 @@ let rec get_offsets' syms bsym_table typ : string list =
       end
 
     | BBDCL_struct (vs,idts) ->
-      let varmap = mk_varmap vs ts in
+      let varmap = mk_varmap (Flx_bsym.sr bsym) vs ts in
       let idts = map (fun (s,t) -> s,varmap_subst varmap t) idts in
       let n = ref 0 in
       let lst = ref [] in
@@ -233,7 +235,7 @@ let rec get_encoder' syms bsym_table p typ : string list =
 
     | BBDCL_cstruct (vs, idts,_) (* this is NOT really correct ... *)
     | BBDCL_struct (vs,idts) ->
-      let varmap = mk_varmap vs ts in
+      let varmap = mk_varmap (Flx_bsym.sr bsym) vs ts in
       let idts = map (fun (s,t) -> s,varmap_subst varmap t) idts in
       let n = ref 0 in
       "//Struct" ::
@@ -325,7 +327,7 @@ let rec get_decoder' syms bsym_table p typ : string list =
 
     | BBDCL_cstruct (vs, idts,_) (* this is NOT really correct ... *)
     | BBDCL_struct (vs,idts) ->
-      let varmap = mk_varmap vs ts in
+      let varmap = mk_varmap (Flx_bsym.sr bsym) vs ts in
       let idts = map (fun (s,t) -> s,varmap_subst varmap t) idts in
       let n = ref 0 in
       "//Struct" ::

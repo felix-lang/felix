@@ -130,7 +130,7 @@ end;
           syms.Flx_mtypes2.counter
           bsym_table
           sr
-          (tsubst tck_bvs inst_funts tctype)
+          (tsubst inst_sr tck_bvs inst_funts tctype)
         in
         let matches =  tct = t in
 (*
@@ -194,7 +194,7 @@ end;
           syms.Flx_mtypes2.counter
           bsym_table
           sr
-          (tsubst tck_bvs inst_funts tctype)
+          (tsubst inst_sr tck_bvs inst_funts tctype)
         in
         (*
         print_endline ("Typeclass function (instantiated) " ^ id ^ "<" ^ si tck ^ ">" ^
@@ -366,7 +366,7 @@ if id = "make_cart" then begin
 end;
 *)
      if length inst_ts > length ts then
-       failwith (
+       clierr sr (
          "Not enough ts given, expected at least " ^
          si (length inst_ts) ^ ", got " ^ si (length ts)
        )
@@ -374,7 +374,7 @@ end;
      (* solve for vs' *)
      let vis = List.map (fun _ -> fresh_bid syms.counter) inst_vs in
      let nuvs = map (fun i -> btyp_type_var (i, btyp_type 0)) vis in
-     let inst_ts' = map (tsubst inst_vs nuvs) inst_ts in
+     let inst_ts' = map (tsubst sr inst_vs nuvs) inst_ts in
      let vset = fold_left (fun acc i -> BidSet.add i acc) BidSet.empty vis in
 
      (*

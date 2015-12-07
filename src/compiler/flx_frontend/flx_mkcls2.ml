@@ -51,8 +51,8 @@ let make_inner_function state bsym_table closure_bid sr vs ts ps =
    assert (List.length ts = List.length vs);
   (* Make the type of the closed value. *)
   let closed_type = match ps with 
-    | [typ] -> tsubst vs ts typ
-    | typs -> btyp_tuple (List.map (tsubst vs ts) typs) 
+    | [typ] -> tsubst sr vs ts typ
+    | typs -> btyp_tuple (List.map (tsubst sr vs ts) typs) 
   in
 
   (* Make the closed value that's hidden inside our wrapper function. *)

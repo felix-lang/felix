@@ -225,8 +225,8 @@ print_endline "Type has fun reached recursion limit, polymorphic recursion?";
         raise Unsafe
     end
     ;
-    let check_components vs ts tlist =
-      let varmap = mk_varmap vs ts in
+    let check_components sr vs ts tlist =
+      let varmap = mk_varmap sr vs ts in
       begin try
         iter
           (fun t ->
@@ -253,15 +253,16 @@ print_endline "Type has fun reached recursion limit, polymorphic recursion?";
         raise Unsafe
 
       | BTYP_inst (i,ts) ->
-        begin match Flx_bsym_table.find_bbdcl bsym_table i with
+        let bsym  = Flx_bsym_table.find bsym_table i in
+        begin match Flx_bsym.bbdcl bsym with
         | BBDCL_newtype _ -> () (* FIXME *)
         | BBDCL_external_type _ -> ()
         | BBDCL_union (vs,cs)->
-          check_components vs ts (map (fun (_,_,t)->t) cs)
+          check_components (Flx_bsym.sr bsym) vs ts (map (fun (_,_,t)->t) cs)
 
         | BBDCL_cstruct (vs,cs,_)
         | BBDCL_struct (vs,cs) ->
-          check_components vs ts (map snd cs)
+          check_components (Flx_bsym.sr bsym) vs ts (map snd cs)
 
         | _ -> assert false
         end
@@ -283,8 +284,8 @@ print_endline "Type has ptr reached recursion limit, polymorphic recursion?";
         raise Unsafe
     end
     ;
-    let check_components vs ts tlist =
-      let varmap = mk_varmap vs ts in
+    let check_components sr vs ts tlist =
+      let varmap = mk_varmap sr vs ts in
       begin try
         iter
           (fun t ->
@@ -310,15 +311,16 @@ print_endline "Type has ptr reached recursion limit, polymorphic recursion?";
         Hashtbl.replace cache t `Unsafe;
         raise Unsafe
       | BTYP_inst (i,ts) ->
-        begin match Flx_bsym_table.find_bbdcl bsym_table i with
+        let bsym = Flx_bsym_table.find bsym_table i in
+        begin match Flx_bsym.bbdcl bsym with
         | BBDCL_newtype _ -> () (* FIXME *)
         | BBDCL_external_type _ -> ()
         | BBDCL_union (vs,cs)->
-          check_components vs ts (map (fun (_,_,t)->t) cs)
+          check_components (Flx_bsym.sr bsym) vs ts (map (fun (_,_,t)->t) cs)
 
         | BBDCL_cstruct (vs,cs,_)
         | BBDCL_struct (vs,cs) ->
-          check_components vs ts (map snd cs)
+          check_components (Flx_bsym.sr bsym) vs ts (map snd cs)
 
         | _ -> assert false
         end

@@ -96,7 +96,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
       List.mem `Lvalue props
     | _ -> false
   in
-  let tsub t = beta_reduce "gen_exe" syms.Flx_mtypes2.counter bsym_table sr (tsubst vs ts t) in
+  let tsub t = beta_reduce "gen_exe" syms.Flx_mtypes2.counter bsym_table sr (tsubst sr vs ts t) in
   let ge = gen_expr syms bsym_table shapes shape_map label_map this vs ts in
   let ge' = gen_expr' syms bsym_table shapes shape_map label_map this vs ts in
   let tn t = cpp_typename syms bsym_table (tsub t) in
@@ -615,7 +615,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
 
               | _,tt ->
                 let k = List.length ps in
-                let tt = beta_reduce "flx_gen_exe: callstack" syms.Flx_mtypes2.counter bsym_table sr (tsubst vs ts tt) in
+                let tt = beta_reduce "flx_gen_exe: callstack" syms.Flx_mtypes2.counter bsym_table sr (tsubst sr vs ts tt) in
                 (* NASTY, EVALUATES EXPR MANY TIMES .. *)
                 let n = ref 0 in
                 fold_left

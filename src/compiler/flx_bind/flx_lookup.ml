@@ -1198,7 +1198,7 @@ end;
       end;
 
       assert (List.length ts = List.length entry_kind.Flx_btype.spec_vs);
-      let t = tsubst entry_kind.Flx_btype.spec_vs ts baset in
+      let t = tsubst sr entry_kind.Flx_btype.spec_vs ts baset in
 (*
 if string_of_qualified_name x = "digraph_t" then begin
       print_endline ("Base type bound with input ts replacing spec type variables " ^ sbt bsym_table t);
@@ -1342,7 +1342,7 @@ if index = 37335 then begin
 end;
 *)
 (* DO A HACK NOW, cause params doesn't propagate *)
-     let t = tsubst (List.map (fun (s,i,m) -> s,i) vs) ts t in 
+     let t = tsubst sr (List.map (fun (s,i,m) -> s,i) vs) ts t in 
 (*
 if index = 37335 then begin
   print_endline (" **** AFTER TSUBST Bound type is " ^ sbt bsym_table t);
@@ -2323,7 +2323,7 @@ and lookup_qn_with_sig'
         *)
         let t = bt sr t in
         let bvs = List.map (fun (s,i,tp) -> s,i) (fst vs) in
-        let t = try tsubst bvs ts t with _ -> failwith "[lookup_qn_with_sig] WOOPS" in
+        let t = try tsubst sr bvs ts t with _ -> failwith "[lookup_qn_with_sig] WOOPS" in
         begin match t with
         | BTYP_function (a,b) ->
           let sign = try List.hd signs with _ -> assert false in
@@ -2898,7 +2898,7 @@ and lookup_name_with_sig
            print_endline ("FOUND STRUCT FIELD " ^ name ^ " in bound table");
            *)
            let ft = 
-             try tsubst vs ts' ft 
+             try tsubst (Flx_bsym.sr bsym) vs ts' ft 
              with _ -> print_endline "[lookup_name_with_sig] Hassle replacing vs with ts??"; assert false
            in
            Some (bexpr_prj k d ft) 
@@ -2948,7 +2948,7 @@ and lookup_name_with_sig
            print_endline ("FOUND STRUCT FIELD " ^ name ^ " in bound table");
            *)
            let ft = 
-             try tsubst vs ts' ft 
+             try tsubst (Flx_bsym.sr bsym) vs ts' ft 
              with _ -> print_endline "[lookup_name_with_sig] Hassle replacing vs with ts??"; assert false
            in
            Some (bexpr_prj k d (BTYP_pointer ft)) 
@@ -3163,7 +3163,7 @@ and handle_variable state bsym_table env rs index id sr ts t t2 =
   let ts = adjust_ts state.sym_table bsym_table sr index ts in
   let vs = find_vs state.sym_table bsym_table index in
   let bvs = List.map (fun (s,i,tp) -> s,i) (fst vs) in
-  let t = beta_reduce "flx_lookup: handle_variabe" state.counter bsym_table sr (tsubst bvs ts t) in
+  let t = beta_reduce "flx_lookup: handle_variabe" state.counter bsym_table sr (tsubst sr bvs ts t) in
 (*
 print_endline ("Handle variable " ^ si index ^ "=" ^ id);
 *)
@@ -4094,7 +4094,7 @@ print_endline ("Evaluating EXPPR_typed_case index=" ^ si v ^ " type=" ^ string_o
         clierr sr "[lookup,AST_name] ts/vs mismatch"
       end;
 
-      let ts = List.map (tsubst spec_vs ts) sub_ts in
+      let ts = List.map (tsubst sr spec_vs ts) sub_ts in
       let ts = adjust_ts state.sym_table bsym_table sr index ts in
       let t = ti sr index ts in
 
@@ -4220,7 +4220,7 @@ print_endline ("LOOKUP 7: varname " ^ si index);
                     (full_string_of_entry_kind state.sym_table bsym_table f) )
       end;
 
-      let ts = List.map (tsubst spec_vs ts) sub_ts in
+      let ts = List.map (tsubst sr spec_vs ts) sub_ts in
       let ts = adjust_ts state.sym_table bsym_table sr index ts in
       let t = ti sr index ts in
       bexpr_closure t (index,ts)
@@ -4991,7 +4991,7 @@ print_endline ("Bound f = " ^ sbe bsym_table f);
               with Not_found -> clierr sr ("struct component " ^ name ^ " not provided by record")
             in
           let ct = bind_type' state bsym_table env' rsground sr ct bvs mkenv in
-          let ct = tsubst vs' ts' ct in
+          let ct = tsubst sr vs' ts' ct in
             if type_eq bsym_table state.counter ct t then begin
 (*
               print_endline ("7:get_n arg" ^ sbe bsym_table a);         
@@ -5406,7 +5406,7 @@ print_endline ("Codomain = " ^ sbt bsym_table codomain);
           let ts' = adjust_ts state.sym_table bsym_table sr i ts' in
           print_endline ("ts' to bind to them after adjust = " ^ catmap "," (sbt bsym_table) ts');
 *)
-            let vt = tsubst vs' ts' vt in
+            let vt = tsubst sr vs' ts' vt in
 (*          print_endline ("Instantiated type = " ^ sbt bsym_table vt); *)
             bexpr_case_arg vt (vidx,ue)
           end
@@ -5704,7 +5704,7 @@ and resolve_overload'
     print_endline ("Parent vs=" ^ catmap "," (fun (s,i,_) -> s^"<"^si i^">") parent_vs);
     *)
     let vs = List.map (fun (s,i,_)->s,i) (parent_vs @ vs) in
-    let tsub t = tsubst vs ts t in
+    let tsub t = tsubst sr vs ts t in
     instance_check state bsym_table caller_env (env index) mgu sr name rtcr tsub
   end
   ;
@@ -5813,8 +5813,8 @@ print_endline ("Includes, id = " ^ id);
             let args = List.map (fun (n,k,_) -> n,btyp_type_var (k,btyp_type 0)) (fst invs2) in
             let bt t = bind_type' state bsym_table env rs sr t args mkenv in
             let ts'' = List.map bt ts'' in
-            let ts'' = List.map (tsubst vs ts) ts'' in
-            let ts' = List.map (tsubst vs' ts'') ts' in
+            let ts'' = List.map (tsubst sr vs ts) ts'' in
+            let ts' = List.map (tsubst sr vs' ts'') ts' in
 let i1 : plain_ivs_list_t  = fst invs in
 let i2 : plain_ivs_list_t = fst invs2 in
 let i3 : plain_ivs_list_t  = i1 @ i2 in
@@ -5900,7 +5900,7 @@ and bind_dir
   *)
   vs,i,ts'
 
-and review_entry state bsym_table name vs ts {base_sym=i; spec_vs=vs'; sub_ts=ts'} : entry_kind_t =
+and review_entry state bsym_table name sr vs ts {base_sym=i; spec_vs=vs'; sub_ts=ts'} : entry_kind_t =
    (* vs is the set of type variables at the call point,
      there are vs in the given ts,
      ts is the instantiation of another view,
@@ -5955,22 +5955,22 @@ and review_entry state bsym_table name vs ts {base_sym=i; spec_vs=vs'; sub_ts=ts
      in aux vs' ts [] []
    in
    let vs = List.rev !vs in
-   let ts' = List.map (tsubst vs' ts) ts' in
+   let ts' = List.map (tsubst sr vs' ts) ts' in
    (*
    print_endline ("output vs="^catmap "," (fun (s,i)->s^"<"^si i^">") vs^
    ", output ts="^catmap "," (sbt bsym_table) ts');
    *)
    {base_sym=i; spec_vs=vs; sub_ts=ts'}
 
-and review_entry_set state bsym_table k v vs ts : entry_set_t = match v with
-  | NonFunctionEntry i -> NonFunctionEntry (review_entry state bsym_table k vs ts i)
-  | FunctionEntry fs -> FunctionEntry (List.map (review_entry state bsym_table k vs ts) fs)
+and review_entry_set state bsym_table k v sr vs ts : entry_set_t = match v with
+  | NonFunctionEntry i -> NonFunctionEntry (review_entry state bsym_table k sr vs ts i)
+  | FunctionEntry fs -> FunctionEntry (List.map (review_entry state bsym_table k sr vs ts) fs)
 
-and make_view_table state bsym_table table vs ts : name_map_t =
+and make_view_table state bsym_table table sr vs ts : name_map_t =
   let h = Hashtbl.create 97 in
   Hashtbl.iter
   (fun k v ->
-    let v = review_entry_set state bsym_table k v vs ts in
+    let v = review_entry_set state bsym_table k v sr vs ts in
     Hashtbl.add h k v
   )
   table
@@ -5986,7 +5986,7 @@ and pub_table_dir state bsym_table env (invs,i,ts) : name_map_t =
     let table = 
       if List.length ts = 0 
       then sym.Flx_sym.pubmap 
-      else make_view_table state bsym_table sym.Flx_sym.pubmap invs ts 
+      else make_view_table state bsym_table sym.Flx_sym.pubmap (sym.Flx_sym.sr) invs ts 
     in
     table
 
@@ -5994,13 +5994,13 @@ and pub_table_dir state bsym_table env (invs,i,ts) : name_map_t =
     let table = 
       if List.length ts = 0 
       then sym.Flx_sym.pubmap 
-      else make_view_table state bsym_table sym.Flx_sym.pubmap invs ts 
+      else make_view_table state bsym_table sym.Flx_sym.pubmap (sym.Flx_sym.sr) invs ts 
     in
     (* a bit hacky .. add the type class specialisation view
        to its contents as an instance
     *)
     let inst = mkentry state sym.Flx_sym.vs i in
-    let inst = review_entry state bsym_table sym.Flx_sym.id invs ts inst in
+    let inst = review_entry state bsym_table sym.Flx_sym.id sym.Flx_sym.sr invs ts inst in
     let inst_name = "_inst_" ^ sym.Flx_sym.id in
 
     (* add inst thing to table *)

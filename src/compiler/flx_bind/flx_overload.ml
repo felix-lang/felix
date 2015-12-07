@@ -377,14 +377,14 @@ let hack_name qn = match qn with
 | _ -> failwith "expected qn .."
 
 
-let specialize_domain base_vs sub_ts t =
+let specialize_domain sr base_vs sub_ts t =
   (*
   print_endline ("specialise Base type " ^ sbt bsym_table t);
   *)
   let n = List.length base_vs in
   let ts = list_prefix sub_ts n in
   let vs = List.map (fun (i,n,_) -> i,n) base_vs in
-  let t = tsubst vs ts t in
+  let t = tsubst sr vs ts t in
   (*
   print_endline ("to View type " ^ sbt bsym_table t);
   *)
@@ -597,7 +597,7 @@ let solve_mgu
         type_of_tpattern counter tp
       in
       let et = bt sr et in
-      let et = specialize_domain base_vs entry_kind.sub_ts et in
+      let et = specialize_domain sr base_vs entry_kind.sub_ts et in
       let et = list_subst counter !mgu et in
       let et = beta_reduce "flx_overload: make equations" counter bsym_table sr et in
       (*
@@ -712,10 +712,10 @@ let solve_mgu
       match con with
       | BTYP_intersect cons -> List.iter xcons cons
       | BTYP_type_match (arg,[{pattern=pat},BTYP_tuple[]]) ->
-          let arg = specialize_domain base_vs entry_kind.sub_ts arg in
+          let arg = specialize_domain sr base_vs entry_kind.sub_ts arg in
           let arg = list_subst counter !mgu arg in
           let arg = beta_reduce "flx_overload: typematch arg" counter bsym_table sr arg in
-          let pat = specialize_domain base_vs entry_kind.sub_ts pat in
+          let pat = specialize_domain sr base_vs entry_kind.sub_ts pat in
           let pat = list_subst counter !mgu pat in
           let pat = beta_reduce "flx_overload: typematch pat" counter bsym_table sr pat in
           extra_eqns := (arg, pat)::!extra_eqns
@@ -827,7 +827,7 @@ let solve_mgu
     print_endline ("Raw type constraint " ^ sbt bsym_table type_constraint);
     *)
     let vs = List.map (fun (s,i,_)-> s,i) base_vs in
-    let type_constraint = tsubst vs base_ts type_constraint in
+    let type_constraint = tsubst sr vs base_ts type_constraint in
     (*
     print_endline ("Substituted type constraint " ^ sbt bsym_table type_constraint);
     *)
@@ -985,7 +985,7 @@ let consider
      from the signature .. so the renaming is pointless! *)
 
   let spec_result =
-    try specialize_domain base_vs entry_kind.sub_ts base_result
+    try specialize_domain sr base_vs entry_kind.sub_ts base_result
     with Not_found ->
       clierr sr ("Failed to bind candidate return type! fn='" ^ name ^
         "', type=" ^ sbt bsym_table base_result)
@@ -1000,7 +1000,7 @@ let consider
     entry_kind
     input_ts
     arg_types
-    (specialize_domain base_vs entry_kind.sub_ts domain)
+    (specialize_domain sr base_vs entry_kind.sub_ts domain)
     spec_result
   in
 

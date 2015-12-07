@@ -18,13 +18,14 @@ let fixtype bsym_table t =
     let t = Flx_btype.map ~f_btype t in
     match t with 
     | BTYP_inst (i,ts) ->  (* ts already upgraded by the Flx_btype.map *)
-      let entry = 
-        try Flx_bsym_table.find_bbdcl bsym_table i 
+      let bsym =
+        try Flx_bsym_table.find bsym_table i 
         with Not_found -> failwith ("can't find entry " ^ string_of_int i ^ " in bsym table")
       in
+      let entry =  Flx_bsym.bbdcl bsym in
       begin match entry with
       | BBDCL_newtype (vs,t) -> 
-        let t = tsubst vs ts t in 
+        let t = tsubst (Flx_bsym.sr bsym) vs ts t in 
         f_btype t (* rescan replacement type *)
       | _ -> t
       end 
