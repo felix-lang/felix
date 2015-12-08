@@ -19,6 +19,7 @@
 \begin{document}
 \maketitle
 \tableofcontents
+\part{Felix Overview}
 \chapter{Quick Start}
 We must of course begin with the traditional greeting!
 
@@ -1657,7 +1658,163 @@ finite number of steps. The current compiler does
 not check this in advance, and instead just uses an
 expansion limit.
 
+\begin{table}
+\caption{Summary of Types}
+\label{Summary of Types}
+\centering
+\begin{tabular}[c]{lll}
+\multicolumn{3}{c}{Primitive}\\
+\hline
+integers\\
+floats\\
+strings\\
+regexps\\
+\multicolumn{3}{c}{Nominal}\\
+\hline
+unions\\
+structs\\
+cstructs\\
+\multicolumn{3}{c}{Structural Products}\\
+\hline
+unit&1\\
+tuples&$T_0 \verb%*% T_2 \verb%*% ... \verb%*% T_{n-1}$\\
+records&$(f_0:T_0, f_1:T_1, ... ,f_{n-1}:T_{n-1})$\\
+\multicolumn{3}{c}{Structural Sums}\\
+\hline
+void&0\\
+bool&2\\
+unitsums&99\\
+sums&$T_0 \verb%+% T_2 \verb%+% ... \verb%+% T_{n-1}$\\
+variants\\
+\multicolumn{3}{c}{Structural Exponentials}\\
+\hline
+arrays&$T\verb%^%N$\\
+functions&$D\rightarrow C$\\
+cfunctions&$D \verb%-->% C$\\
+pointers&$\verb%&%T$\\
+\multicolumn{3}{c}{Library}\\
+\hline
+option&\verb%opt[T]=Some of T |None%&option type\\
+list&\verb%list[T]=Empty|Cons of (T*list[T])%&functional list\\
+varray&varray[T]&bounded stable variable length array\\
+darray&darray[T]&unbounded reallocable variable length array\\
+sarray&sparse array\\
+strdict&string dictionary\\
+judy array&Judy1, JudyL arrays\\
+schannel&synchronous channels\\
+pchannel&asynchronous channels\\
+\end{tabular}
+\end{table}
 
+
+\begin{table}
+\caption{Summary of Binders}
+\label{Summary of Binders}
+\begin{tabular}[c]{lll}
+\multicolumn{3}{c}{Binders}\\
+\hline
+var&declare and initialise a variable\\
+val&name a value\\
+def&compound assignment, variable binder, and value binder\\
+fun&define a function\\
+cfun&define a function with C function type\\
+gen&define a generator\\
+ctor&define a conversion function\\
+proc&define a procedure or fibre\\
+cproc&define a procedure with C function type\\
+struct&define a struct\\
+cstruct&model an existing C struct\\
+union&define a discriminated union\\
+enum&define an enumeration\\
+class&define a type class\\
+interface&define an object interface\\
+object&define an object constructor\\
+typedef&define an alias for a type\\
+syntax&define new syntax\\
+type..new&define an abstract type\\
+\multicolumn{3}{c}{Directives}\\
+\hline
+include&include a library file\\
+inherit&inherit symbols into a class\\
+open&open a class\\
+requires&specify requirements of C bindings\\
+open syntax&augment parser with new grammar\\
+comment&write a comment\\
+todo&specify future code\\
+private&do not export symbol from class\\
+rename&rename or import a symbol\\
+macro val&define a macro\\
+forall&generate a table\\
+\end{tabular}
+\end{table}
+
+
+\begin{table}
+\caption{Summary of Statements}
+\label{Summary of Statements}
+\begin{tabular}[c]{lll}
+\multicolumn{3}{c}{Control}\\
+\hline
+goto&unconditional control transfer\\
+goto-indirect&goto address stored in LABEL variable\\
+return&return from procedure or function\\
+return from&return from specified procedure\\
+call&call a procedure\\
+jump&jump to procedure with arguments\\
+yield&suspend generator emitting value\\
+halt&stop program\\
+if..do..elif..else..done&standard conditional\\
+match..with&pattern matching\\
+with&execute statements with temporary binders\\
+trace&trace execution on UDP port\\
+type-error&document compilation error\\
+\verb%_svc%&Felix scheduler service call\\
+\verb%spawn_fthread%&schedule fibre\\
+\verb%spawn_pthread%&schedule pre-emptive thread\\
+\verb%read%&read channel\\
+\verb%write%&write channel\\
+\verb%branch-and-link%&low level control exchange\\
+\multicolumn{3}{c}{loops}\\
+\hline
+while&execute whilst condition true\\
+until&execute until condition true\\
+for&execute repeatedly with bounded control variable\\
+break&exit specified loop\\
+continue&start next iteration of specified loop\\
+redo&restart current iterator of specified loop\\
+\multicolumn{3}{c}{Groups}\\
+\hline
+do..done&statement group\\
+begin..end&scoped statement group\\
+perform&single statement\\
+\multicolumn{3}{c}{Assignment}\\
+\hline
+\verb%p<-a;%\\
+\verb%v=a;%\\
+\verb%v1<->v2;%\\
+\verb%v+=a;%\\
+\verb%v-=a;%\\
+\verb%v*=a;%\\
+\verb%v/=a;%\\
+\verb+v%=a;+\\
+\verb%v&=a;%\\
+\verb%v|=a;%\\
+\verb%v^=a;%\\
+\verb%v<<=a;%\\
+\verb%v>>=a;%\\
+\verb%++v;%\\
+\verb%--v;%\\
+\multicolumn{3}{c}{Plugins}\\
+\hline
+static-link-symbol\\
+static-link-plugin\\
+export\\
+export python\\
+\end{tabular}
+\end{table}
+
+
+\chapter{Interfacing}
 \section{Embedding C++}
 Felix was specifically designed to allow almost seamless lifting
 of C++ code. Indeed most of the standard library types are simply
@@ -1968,7 +2125,9 @@ manage packages. The tool itself is platform independent and
 the databases are also language neutral.
 
 %========================================================
-\chapter{Functional Programming}
+\mainmatter
+\part{Functional Programming}
+\chapter{Functional Basics}
 We shall begin our more serious exploration of Felix with functional programming
 techniques.
 
@@ -2669,4 +2828,40 @@ The current version of Felix can check the axioms against test data,
 however it cannot mechanically implement the reduction rule to
 effect an optimisation.
 
+\part{Procedural Programming}
+\chapter{Procedural Basics}
+\chapter{Dynamic Objects}
+\chapter{Reactive Programming}
+
+\part{Active Programming}
+\chapter{Fibres}
+\chapter{Synchronous Channels}
+\chapter{Pipelines}
+\chapter{Coroutines}
+\chapter{Continuations}
+\chapter{Symmetric Lambda Calculus}
+
+\part{Concurrency}
+\chapter{Asynchronous Events}
+\chapter{Pre-emption}
+\section{Pthreads}
+\subsection{Spawning Pre-emptive Threads}
+\subsection{Atomics}
+\subsection{Locks}
+\subsection{Barriers}
+\subsection{Concurrently Statement}
+\section{Pchannels}
+
+\chapter{Parallelism}
+\section{Thread Pool}
+\section{Parallel For Loop}
+
+\part{Categorical Programming}
+\chapter{Category Theory}
+\chapter{Symmetric Categorical Language}
+\chapter{Meta-programming}
+\chapter{Polyadicity: The Holy Grail}
+
+\appendix
+\backmatter
 \end{document}
