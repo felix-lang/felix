@@ -122,6 +122,7 @@ let bexpr_apply t (e1, e2) =
   | BTYP_cfunction (d,c) ->
     if d <> at then print_endline ("Warning: bexpr_apply: function domain "^ st d ^ " doesn't agree with argtype " ^ st at);
     if c <> t then print_endline ("Warning: bexpr_apply: function codomain "^ st c ^ " doesn't agree with applytype " ^ st t);
+  | BTYP_inst _ -> () (* can't check without lookup! *)
   | _ -> print_endline ("WARNING: bexpr_apply: unknown function type " ^ st t);
   end;
   BEXPR_apply (e1, e2), complete_check t

@@ -2843,14 +2843,206 @@ effect an optimisation.
 
 \part{Concurrency}
 \chapter{Asynchronous Events}
+\section{Timers}
+\section{Socket I/O}
+
 \chapter{Pre-emption}
 \section{Pthreads}
-\subsection{Spawning Pre-emptive Threads}
+\subsection{Designing a Thread Pool}
+Let us suppose we wish to divide the task of multiplying
+a matrix up into 4 pieces, so one thread calculates
+a quarter of the result. One important property of this 
+division is that the parts are entirely independent.
+
+A pool of threads is useful to solve problems which can
+be split into such pieces.
+
+\begin{minted}{felix}
+interface thread_pool_t
+{
+  stop : 1 -> 0;
+  schedule: 1 -> 0;
+}
+
+object thread_pool (maxthreads: int) implements thread_pool_t =
+{
+  union Action = | Run of 1->0 | Stop;
+  var ictrl, octrl = mk_pchannel_pair[Action]();
+  var maxthreads = 4;
+
+  proc pool_thread ()
+  {
+  next:>
+    var cmd : Action = read ctrl_chan;
+    match cmd with
+    | Run p -> p(); goto next;
+    | Stop -> ;
+    endmatch;
+  }
+
+  proc start()
+  {
+
+    for i in 0..<maxthreads
+      call spawn_pthread pool_thread;
+  }
+
+  method proc stop()
+  {
+    for i in 0..<maxthreads
+      call write(octrl, Stop);
+  }
+
+  method proc schedule (job: 1 -> 0)
+  {
+     write (octrl, Run job);
+  }
+
+  start;
+}
+var pool = thread_pool 4;
+\end{minted}
+
+It is important to know that Felix pthreads are detached,
+they have no identity and can't be joined. This is the correct
+way to do threads! The single pchannel used here is a perfect
+mechanism for synchronisation. All the pthreads try to fetch
+the next job. The first one will block waiting for a job to
+be sent on the channel. The second one will block waiting
+for the first one. On the other hand the master thread sheduling
+the jobs will block until a job being scheduled is dispatched
+to some pool thread.
+
+The pool is assigned to a global variable and starts automatically
+if it is used. If it is not use the Felix compiler will optimise
+away the variable and the pool will not start.
+
+The stop method must be called exactly once to bring down the threads
+otherwise the Felix program cannot terminate.
+
+You may wonder, how can we find out if scheduled jobs are 
+completed? Here is a correct answer:
+
+\begin{minted}{felix}
+interface job_t (p:1->0) 
+{
+   wait: 1 -> 0;
+}
+
+object job (p:1->0) implements job_t =
+{
+  union job_status_t = Finished;
+  var istatus, ostatus = mk_iopchannel_pair[job_status_t];
+
+  proc job (p: 1-> 0) ()
+  {
+    p;
+    spawn_pthread { write(ostatus, Finished); };
+  }
+
+  proc start(p:1->0)
+  {
+     pool.schedule (job p);
+  }
+
+  method proc wait ()
+  {
+    match read istatus with
+    | #Finished => ;
+    endmatch;
+  }
+  start p;
+} 
+\end{minted}
+
+Note carefully that the completion notification is issued
+by a spawned secondary thread! If the pool job were to 
+issue the notification, the pool would block up until
+the completion status was acknowledged. There must be a better
+way! And there is: atomics, discussed next. However we must
+first note carefully the core of the issue: pchannels are
+synchronisation vehicles. A data transmission guarrantees
+one reader and writer will block until the exchange
+is complete. 
+
+It is crucial to understand deeply that
+every thread runs its own private clock,
+and there is by default {\bf no correlation at all
+between the private clocks of threads}. In particular
+this means it is nonsense to even speak of an event on
+one thread occuring before or after an event on another
+unless the clocks are synchronised. The only assurance
+one has is that each thread has a monotonic increasing
+clock.
+
+So perhaps you are temped to say, "Well if E1 occurs in
+thread P1, and then E2 occurs, then if X1 occurs in 
+thread P2, then if X1 is before E1, it is also before
+E2".
+
+This is utter nonsense: you are assuming some central
+global clock. There is no such clock. There is no fault
+in the deduction made in the above statement, the statement
+is not well formed in the first place because it tries
+to make the conclusion based on the assumption an event
+in one thread must occur before or after an event in another.
+This is nonsense. The only shared concept of time is one
+based on synchronisation events. Such an event locks the
+clocks together, that is, it creates an association between
+two events which then allows one to use the private monotonicity
+to make an ordering argument about subsequent and previous events.
+
+For example in P1 if A occurs before synchronisation event Y,
+and if in P2, B occurs after synchronisation event Y, then
+one may deduce A occurs before B.
+
+Note that spawning a thread does NOT create a synchronisation
+event! The spawned thread may never start, meaning it may not
+start until the spawner has terminated. Or it may start
+and complete, before the spawn command itself completes.
+
+Pchannel I/O operations are heavyweight synchronisation events:
+they guarrantee clocks are in agreement for both parties
+of the exchange.
+
 \subsection{Atomics}
+Atomic variables provide lightweight synchronisation events.
+This means they only guaranetee synchronisation of one of the
+two participating parties clocks.
+
+Let us supposed an atomic flag is clear, and thread P1 sets it.
+Thread P2 will do some work and then wait until the flag is set
+before proceeding. 
+
+What is known? Thread P2 knows that all the events of 
+thread P1 that had to be complete before the flag is set
+are complete, so it knows all of these events are before
+any events of its own that follow the retrieval of a set flag.
+However thread P1 knows nothing about thread P1.
+
 \subsection{Locks}
+A {\em mutual exclusion lock} or {\em mutex} for short,
+is a mechanism by which a thread may perform a sequence of
+memory reads and writes such that any other thread using
+the same lock and respecting the locking protocol,
+is excluded from access to the store being accessed,
+so that the other thread will either see none, or all,
+of the writes performed.
+
+The protocol usually consists of a thread setting the lock,
+performing some memory operations which should be regarded
+as atomic, and then releasing the lock.
+
+Technically, there are no ordering constraints on other
+regions of memory than those protected by the lock.
+Unfortunately, most mutex do not permit specification
+of the region to be protected, therefore, the whole of
+memory is protected. This means after the lock is released
+all other threads will observe all writes previously
+performed by the locking thread.
+
 \subsection{Barriers}
 \subsection{Concurrently Statement}
-\section{Pchannels}
 
 \chapter{Parallelism}
 \section{Thread Pool}
