@@ -105,6 +105,7 @@ provide one as pthreads are considered mandatory for Felix.
 #define __PTHREAD_THREAD_CONTROL_BASE_HPP__
 
 #include "flx_pthread_config.hpp"
+#include <string.h>
 #include <vector>
 
 namespace flx { namespace pthread {
