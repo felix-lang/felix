@@ -26,11 +26,17 @@ instance[t in numbers] FloatMultSemi1[t] {
 }
 
 instance[t in numbers] FloatRing[t] {}
-instance[t in numbers] FloatDring[t] {
+instance[t in ints \cup complexes] FloatDring[t] {
   fun / : t * t -> t = "$1/$2";
   fun % : t * t -> t = "$1%$2";
   proc /= : &t * t = "*$1/=$2;";
   proc %= : &t * t = "*$1%=$2;";
+}
+instance[t in floats] FloatDring[t] {
+  fun / : t * t -> t = "$1/$2";
+  fun % : t * t -> t = "fmod($1,$2)";
+  proc /= : &t * t = "*$1/=$2;";
+  proc %= : &t * t = "*$1=fmod($1,$2);";
 }
 @
 @h1 Floating Numbers.
