@@ -64,6 +64,13 @@ let terminate rrp exc =
     print_endline s;
     exit (if return_parity then 1 else 0)
 
+  | Flx_lookup.SimpleNameNotFound (sr,name,routine) ->
+    flush stdout; print_endline ("SIMPLE NAME "^name^" NOT FOUND ERROR");
+    print_endline ("In " ^ Flx_srcref.long_string_of_src sr);
+    print_endline ("Routine: " ^ routine);
+    exit (if return_parity then 1 else 0)
+
+
   | Failure s ->
     flush stdout; print_endline "SYSTEM FAILURE";
     print_endline s;

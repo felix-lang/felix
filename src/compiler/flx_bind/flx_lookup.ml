@@ -19,6 +19,9 @@ open Flx_overload
 open Flx_tpat
 open Flx_lookup_state
 
+exception SimpleNameNotFound of Flx_srcref.t * string * string
+
+let crt = ref 0
 
 module L = Flx_literal
 
@@ -260,6 +263,8 @@ and inner_lookup_name_in_env state bsym_table env rs sr name : entry_set_t =
 print_endline ("[lookup_name_in_env]: Can't find name " ^ name ^ " in env "); print_env env; 
 print_endline ("Issuing clierr .. why isn't it trapped?");
 *)
+     raise (SimpleNameNotFound (sr,name,"inner_lookup_name_in_env"))
+(*
       clierr sr
       (
         "[lookup_name_in_env]: Name '" ^
@@ -267,6 +272,7 @@ print_endline ("Issuing clierr .. why isn't it trapped?");
         "' not found in environment (depth "^
         string_of_int (List.length env)^ ")"
       )
+*)
 
 (* This routine looks up a qualified name in the
    environment and returns an entry_set_t:
@@ -393,16 +399,16 @@ and inner_bind_type state (bsym_table:Flx_bsym_table.t) env sr rs t =
       | Not_found ->
         failwith "Bind type' failed with Not_found"
   in
-  (*
+(*
   print_endline ("Bound type= " ^ sbt bsym_table bt);
-  *)
+*)
   let bt =
     try beta_reduce "flx_lookup: inner_bind_type" state.counter bsym_table sr bt
     with Not_found -> failwith ("Beta reduce failed with Not_found " ^ sbt bsym_table bt)
   in
-    (*
+(*
     print_endline ("Beta reduced type= " ^ sbt bsym_table bt);
-    *)
+*)
     bt
 
 and inner_bind_expression state bsym_table env rs e  =
@@ -419,23 +425,35 @@ and inner_bind_expression state bsym_table env rs e  =
     with
      | Free_fixpoint b ->
        clierr sr
-       ("Circular dependency typing expression " ^ string_of_expr e)
+       ("inner_bind_expression: Circular dependency typing expression " ^ string_of_expr e)
      | SystemError (sr,msg) as x ->
        print_endline ("System Error binding expression " ^ string_of_expr e);
        raise x
 
      | ClientError (sr,msg) as x ->
-       print_endline ("Client Error binding expression " ^ string_of_expr e);
+       print_endline ("inner_bind_expression: Client Error binding expression " ^ string_of_expr e);
+       raise x
+
+     | ClientError2 (sr,sr2,msg) as x ->
+       print_endline ("inner_bind_expression: Client Error2 binding expression " ^ string_of_expr e);
+       raise x
+
+     | SimpleNameNotFound (sr,name,routine) as x ->
+       print_endline ("inner_bind_expression: SimpleNameNotFound binding expression " ^ string_of_expr e);
        raise x
 
      | Failure msg as x ->
-       print_endline ("Failure binding expression " ^ string_of_expr e);
+       print_endline ("inner_bind_expression: Failure binding expression " ^ string_of_expr e);
        raise x
 
      | Not_found ->
        print_endline ("inner_bind_expression raised Not_found [BUG] e="^
        string_of_expr e);
        failwith "bind_expression' raised Not_found [BUG]"
+
+     | exn ->
+       print_endline ("inner_bind_expression: unknown exception " ^  Printexc.to_string exn); 
+       raise exn
   in
     let t' = 
       try beta_reduce "flx_lookup: inner_bind_expression" state.counter bsym_table sr t' 
@@ -1601,7 +1619,16 @@ and type_of_index' state bsym_table rs sr bid =
   try
     Hashtbl.find state.ticache bid
   with Not_found ->
-    let t = inner_type_of_index state bsym_table sr rs bid in
+    let t =
+      try 
+        let result =  inner_type_of_index state bsym_table sr rs bid in
+        result
+      with | exn ->
+(*
+print_endline "Abnormal exit inner_type_of_index in type_of_index'";
+*)
+      raise exn
+    in
     if complete_type t then begin
       (* Unfold any fixpoints. *)
       let t = unfold "flx_lookup" t in
@@ -1624,7 +1651,14 @@ and type_of_index' state bsym_table rs sr bid =
 (** Wrapper around inner_type_of_index that tries to cache the calculated type
  * for this index, and then substitutes any type variables. *)
 and inner_type_of_index_with_ts state bsym_table rs sr bid ts =
-  let t = type_of_index' state bsym_table rs sr bid in
+  let t = 
+    try type_of_index' state bsym_table rs sr bid 
+    with exn ->
+(*
+print_endline "Abnormal exit type_of_index' in inner_type_of_index_with_ts";
+*)
+    raise exn
+  in
 
   (* Make sure that we got the right number of type variables. *)
   let pvs,vs,_ = find_split_vs state.sym_table bsym_table bid in
@@ -1664,6 +1698,28 @@ and inner_type_of_index_with_ts state bsym_table rs sr bid ts =
 (* cal_ret_type uses the private name map *)
 (* args is string,btype list *)
 and cal_ret_type state bsym_table (rs:recstop) index args =
+  incr crt;
+(*
+  print_endline ("%%%%%%%%%%% Entering Calrettype level " ^ string_of_int (!crt));
+*)
+  try
+    let result = cal_ret_type' state bsym_table (rs:recstop) index args
+    in 
+(*
+    print_endline ("%%%%%%%%%%% Normal exit level " ^ string_of_int (!crt));
+*)
+    decr crt;
+    result
+
+  with exn ->
+(*
+    print_endline ("%%%%%%%%%%% Abnormal exit level " ^ string_of_int (!crt));
+*)
+    decr crt;
+    raise exn
+
+
+and cal_ret_type' state bsym_table (rs:recstop) index args =
   let mkenv i = build_env state bsym_table (Some i) in
   let env = mkenv index in
   let parent = Flx_sym_table.find_parent state.sym_table index in
@@ -1673,7 +1729,9 @@ and cal_ret_type state bsym_table (rs:recstop) index args =
       dirs=dirs;
       symdef=SYMDEF_function ((ps,_),rt,props,exes)
     } ->
-(* print_endline ("Cal ret type of " ^ id ^ " at " ^ Flx_srcref.short_string_of_src sr); *)
+(*
+print_endline ("Cal ret type of " ^ id ^ " at " ^ Flx_srcref.short_string_of_src sr);
+*)
     let rt = bind_type' state bsym_table env rs sr rt args mkenv in
     let rt = beta_reduce "flx_lookup: cal_ret_type" state.counter bsym_table sr rt in
     let ret_type = ref rt in
@@ -1691,6 +1749,9 @@ print_endline ("Cal ret type of " ^ id ^ " got return: " ^ string_of_expr e);
           of errors other than recursive dependencies ..
           which shouldn't be errors anyhow ..
           *)
+(*
+print_endline ("Calling bind_epression'");
+*)
             snd
             (
               bind_expression' state bsym_table env
@@ -1729,16 +1790,25 @@ print_endline ("Cal ret type of " ^ id ^ " got return: " ^ string_of_expr e);
         end
       with
         | Stack_overflow -> failwith "[cal_ret_type] Stack overflow"
-        | Expr_recursion e -> ()
-        | Free_fixpoint t -> ()
-        | Unresolved_return (sr,s) -> ()
-        | ClientError (sr2,s) as e -> raise (ClientError2 (sr,sr2,"Whilst calculating return type:\n"^s))
+        | Expr_recursion e -> (* print_endline "Expr recursion"; *)  ()
+        | Free_fixpoint t ->  (* print_endline "Free fixpoint"; *) ()
+        | Unresolved_return (sr,s) -> (* print_endline "Unresolved return"; *) ()
+        | SimpleNameNotFound (sr,name,s) as e -> 
+(*
+          print_endline ("Whilst calculating return type:\nSimple name "^name^" not found"); 
+*)
+          raise e
+        | ClientError (sr2,s) as e -> 
+         print_endline ("ClientError Whilst calculating return type:\n"^s);
+         raise (ClientError2 (sr,sr2,"Whilst calculating return type:\n"^s))
+
+        | ClientError2 (sr,sr2,s) as e -> 
+          print_endline ("ClientError2 Whilst calculating return type:\n"^s);
+          raise e
         | x ->
-        (*
         print_endline ("  .. Unable to compute type of " ^ string_of_expr e);
         print_endline ("Reason: " ^ Printexc.to_string x);
-        *)
-        ()
+        raise x 
       end
     | _ -> ()
     )
@@ -1834,6 +1904,23 @@ and btype_of_bsym state bsym_table sr bt bid bsym =
 (** This routine is called to find the type of a function or variable.
  * .. so there's no type_alias_fixlist .. *)
 and inner_type_of_index state bsym_table sr rs index =
+try
+(*
+print_endline ("***** Enter inner_type_of_index " ^ si index);
+*)
+  let result = inner_type_of_index' state bsym_table sr rs index in
+(*
+print_endline ("***** normal exit inner_type_of_index " ^ si index);
+*)
+  result
+with exn ->
+(*
+print_endline ("***** abnormal exit inner_type_of_index " ^ si index);
+*)
+raise exn
+
+
+and inner_type_of_index' state bsym_table sr rs index =
 (*
   if index = 37461 then
      print_endline ("Inner type of index " ^ si index ^ "=pve");
@@ -1900,11 +1987,19 @@ print_endline ("** BEGIN ** Calculating Function type for function " ^ sym.Flx_s
           (* Nope! So let's and calculate it. Add ourselves to the fix list and
            * recurse. *)
           let rs = { rs with idx_fixlist = index::rs.idx_fixlist } in
-          cal_ret_type state bsym_table rs index []
-      in
+          try
+            let result = cal_ret_type state bsym_table rs index [] in
 (*
-print_endline ("** END **** Calculating Function type for function " ^ sym.Flx_sym.id ^ " index "^si index ^ " yields " ^ sbt bsym_table rt);
+print_endline ("** END **** Normal Exit Calculating Function type for function " ^ sym.Flx_sym.id );
 *)
+            result 
+          with exn ->
+(*
+print_endline ("** END **** Abnormal Exit Function type for function " ^ sym.Flx_sym.id );
+*)
+          raise exn
+
+      in
       (* this really isn't right .. need a better way to handle indeterminate
        * result .. hmm .. *)
       if var_i_occurs index rt then begin
@@ -2708,9 +2803,7 @@ print_endline ("Lookup type qn with sig, name = " ^ string_of_qualified_name qn)
       env env rs name ts signs
 
   | `AST_index (sr,name,index) as x ->
-    (*
     print_endline ("[lookup qn with sig] AST_index " ^ string_of_qualified_name x);
-    *)
     begin match get_data state.sym_table index with
     | { Flx_sym.vs=vs; id=id; sr=sra; symdef=entry } ->
     match entry with
@@ -2722,7 +2815,15 @@ print_endline ("Lookup type qn with sig, name = " ^ string_of_qualified_name qn)
         (fun (_,i,_) -> btyp_type_var (i, btyp_type 0))
         (fst vs)
       in
-      inner_type_of_index state bsym_table sr rs index
+      begin try 
+        let result = inner_type_of_index state bsym_table sr rs index in
+        result
+      with exn ->
+(*
+print_endline "Abnormal exit inner_type_of_index from `AST_index";
+*)
+      raise exn
+      end
 
     | _ ->
       (*
@@ -3675,14 +3776,14 @@ and bind_expression_with_args state bsym_table env e args =
 
 and bind_expression' state bsym_table env (rs:recstop) e args =
   let sr = src_of_expr e in
-  (*
+(*
   print_endline ("[bind_expression'] " ^ string_of_expr e);
   print_endline ("expr_fixlist is " ^
     catmap ","
     (fun (e,d) -> string_of_expr e ^ " [depth " ^si d^"]")
     rs.expr_fixlist
   );
-  *)
+*)
   if List.mem_assq e rs.expr_fixlist
   then raise (Expr_recursion e)
   ;
@@ -4051,7 +4152,11 @@ print_endline ("Evaluating EXPPR_typed_case index=" ^ si v ^ " type=" ^ string_o
     let ts = List.map (bt sr) ts in
     let lookup_result = 
       try inner_lookup_name_in_env state bsym_table env rs sr name 
-      with exn -> (* print_endline ("lookup of name "^name^" FAILED with "^ Printexc.to_string exn); *) raise exn
+      with exn -> 
+(*
+        print_endline ("[bind_expression'] lookup of name "^name^" FAILED with "^ Printexc.to_string exn); 
+*)
+        raise exn
     in
     begin match lookup_result with
     | NonFunctionEntry { base_sym=index; spec_vs=spec_vs; sub_ts=sub_ts } ->
@@ -4230,6 +4335,15 @@ print_endline ("LOOKUP 7: varname " ^ si index);
       assert (List.length fs > 1);
       begin match args with
       | [] ->
+(*
+        print_endline
+        (
+          "ERROR! [bind_expression] Simple name " ^ name ^
+          " binds to function set in\n" ^
+          Flx_srcref.short_string_of_src sr ^
+          "\nCandidates are\n: " ^ catmap "\n" (full_string_of_entry_kind state.sym_table bsym_table) fs 
+        );
+*)
         clierr sr
         (
           "[bind_expression] Simple name " ^ name ^
@@ -4871,16 +4985,19 @@ print_endline ("binding apply, Struct pointer field .. " ^ name ^ ", type=" ^ sb
       | _ -> raise Flx_dot.OverloadResolutionError
     with Flx_dot.OverloadResolutionError ->
     
-    (*
+(*
     print_endline ("Recursive descent into application " ^ string_of_expr e);
-    *)
+*)
     begin try
       let (bf,tf) as f = 
         try be f' 
-        with _ -> 
-          (*
+        with 
+        | SimpleNameNotFound _ as x -> raise x
+        | exn -> 
+(*
           print_endline "Cannot bind as value, trying as function";
-          *)
+          print_endline ("Got exception: " ^ Printexc.to_string exn); 
+*)
           raise Flx_dot.OverloadResolutionError 
       in
 (*
@@ -5620,7 +5737,7 @@ and check_instances state bsym_table call_sr calledname classname es ts' mkenv =
     *)
 
 
-and instance_check state bsym_table caller_env called_env mgu sr calledname rtcr tsub =
+and instance_check state bsym_table caller_env called_env mgu sr calledname rtcr tsub = if true then () else
   (*
   print_endline ("INSTANCE CHECK MGU: " ^ catmap ", " (fun (i,t)-> si i ^ "->" ^ sbt bsym_table t) mgu);
   print_endline "SEARCH FOR INSTANCE!";
@@ -6502,10 +6619,26 @@ let bind_expression state bsym_table env e  =
 
 let type_of_index state bsym_table sr bid =
   try
-  type_of_index' state bsym_table rsground sr bid
+(*
+print_endline ("^^^^^^ Enter type_of_index " ^ si bid);
+*)
+  let result = type_of_index' state bsym_table rsground sr bid in
+(*
+print_endline ("^^^^^^ Normal exit type_of_index " ^ si bid);
+*)
+  result
   with Not_found -> failwith "type of index raised Not_found [BUG]"
+  | exn ->
+(*
+print_endline ("^^^^^^ Abnormal exit type_of_index " ^ si bid);
+*)
+   raise exn
 
 let type_of_index_with_ts state bsym_table sr bid ts =
   try
   inner_type_of_index_with_ts state bsym_table rsground sr bid ts
   with Not_found -> failwith "type of index with ts raised Not_found [BUG]"
+
+
+
+

@@ -481,11 +481,11 @@ print_endline ("        >>> Call, bound argument is type " ^ sbt bsym_table ta);
     state.reachable <- false;
     state.return_count <- state.return_count + 1;
 (*
-print_endline ("Return expression raw " ^ string_of_expr e);
+print_endline ("++++++++ EXE_fun_return1: Return expression raw " ^ string_of_expr e);
 *)
     let e',t' as e = be e in
 (*
-print_endline ("Function return value has type " ^ sbt bsym_table t');
+print_endline ("+++++++++EXE_fun_return2: Function return value has type " ^ sbt bsym_table t');
 *)
     let t' = minimise bsym_table state.counter t' in
 (*

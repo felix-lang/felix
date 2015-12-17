@@ -19,6 +19,244 @@
 \begin{document}
 \maketitle
 \tableofcontents
+\chapter{Introduction}
+This book is intended to delve into modern programming techniques.
+Programming has changed. Nicolas Wirth, introducing Pascal language,
+coined the equation "Algorithms + Datastructures = Programs".
+
+Whilst research into algorithms continues, many important
+algorithms such as sorting and searching are well understood.
+Modern research focuses instead on messaging protocols
+and type systems.
+
+Today, the core issues in programming do not involve design
+of algorithms or data structures, since many libraries with
+heavily tested functions, and subject to competitive performance
+trials, are available off the shelf.
+
+Rather, the central issues today revolve around {\em interfacing},
+which means making software componants work together. And it is
+not just software which requires interfacing, but the software
+developers themselves.
+
+From a theoretical perspective, the core problem is restated:
+the central issue is {\em composability}. Modern type system
+research is heavily oriented towards studying how we can
+make components which can be easily plugged together.
+Themes include higher order polymorphism, polyadic programming,
+managing side effects in non-functional code.
+
+In all programming, {\em correctness} is a vital issue.
+However from the perspective of a rapidly changing
+environment, business structure, and client requirements,
+confidence in code quality must be balanced against
+rapid development as a method for ensuring the supplier
+survives financially in the marketplace at all.
+
+Perhaps for this reason most modern programming languages
+are dynamically typed and simplistic in nature, allowing
+rapid coding, and easy learning of the tools. Whilst most
+academic languages are toys primarily intended to provide
+a proof of practicality for theoretical models, there are
+a few systems which are production quality languages with
+strong support bases.
+
+Haskell, a purely functional lazily evaluated language
+is not only cited and used in research as a display
+language in papers, it also has a robust toolkit
+and significant community of followers using it for
+real projects.
+
+Ocaml, an ML like eagerly evaluated language in the
+ISWIM class, has a functional core augmented by mutable
+record fields and mutable library components.
+
+Both Haskell and Ocaml provide very strong support for
+reasoning that your program is correct, based largely
+on the high level static typing regimes which simultaneously
+provide superior expressive power.
+
+Yet these systems are not mainstream. Instead, seriously
+broken languages like Java, C++, Javascript, Python, Ruby and
+PHP dominate the development scene.
+
+Haskell has a serious problem in that it rigidly adheres to a
+purely functional lazy model which is hard for the average
+programmer to understand, it is very poorly suited to many
+modern requirements. In the past, software was mainly used
+for numerical calculations, and later for database maintenance.
+The former fits perfectly into a functional model of the world,
+but in practice the theory is simply not strong enough to provide
+the optimisations a numerical analyst would do by hand.
+Although it is easy to reason the maths is correctly encoded,
+it is very hard to evaluate the likely performance.
+
+The latter, although it involves state transforms, has a simple
+functional model utilising monads. Optimising database design
+and operations is hard in the first place, so it is surprising
+to me at least Haskell hasn't been utilised as the prima
+database programming language.
+
+Ocaml on the other hand, suffers a different set of problems.
+It is a functional language with separate interfaces and separate
+compilation but cannot handle mutual recursion between 
+translation units, which C++ can do easily. There is no support
+for concurrency: threads exist but use a global lock to ensure
+serialisation so that the garbage collector works properly.
+The standard libraries are lean and some are so archaic they're
+not even re-entrant. The politics of the development
+model is the key problem: Ocaml is primarily a tool for
+type system testing, and the small team of talented
+develops do not have the resources to provide much of the
+production quality tools and libraries needed. At the same
+time separate development of such facilities 
+is seriously compromised by the lack of political coordination.
+
+For all its faults, the C++ ISO committee is an excellent vehicle
+for progressing the C++ language.
+
+So in this book, I feel there are no real options other than to
+use a new programming language as the display vehicle.
+
+Felix was specifically developed to manage interfacing issues.
+It is a C++ code generator and designed to easily embed
+C++ code and libraries directly in the language script.
+The compiler is good enough to generate code with quite
+reasonable performance, and indeed sometimes outperforms
+hand written C++ code. 
+
+Felix is control management language: whilst we provide
+a rich set of data type contructors, the true focus
+is on managing the flow of control. It has a strong functional
+component, allowing one to program with the functional
+idiom where appropriate, but it also supports a fairly
+ordinary imperative and procedural model with mutable
+variables. You can choose your poison summing a list
+with a functional fold or a procedural for loop.
+
+Although done differently, and with a less robust typing
+regime, the above features are similar to Ocaml. But then
+things start to get really interesting!
+
+Felix provides fibres, which are independent threads
+of control, connected with synchronous channels.
+Fibres, however, are not pre-emptive, a set of fibres
+exchanges control in a well defined but non-deterministic 
+manner. The main thing about fibration is that the cooperative
+multi-tasking model allows program components to interface
+with each other as peers.
+
+This solves one the worst problems of the traditional
+functional library: master-slave relationships.
+The client of a library is a master, the component
+subroutines are slaves. This means to provide a higher
+order framework, callbacks are required, and callbacks
+are very bad at maintaining state because they're on
+the wrong side of the client/server boundary to do so.
+
+Fibres do not exhibit subordinate control relations,
+they act as co-routines. However the model is not pure,
+it coexists with functional and procedural models,
+so that for example, as well as communication with
+channels, fibres can modify shared variables.
+
+Threads extend the fibration model by allowing multiple
+concurrent threads of control. Thread can communicate
+using channels which act as synchronisation points.
+Of course threads can contain function code, procedural
+code and fibrated code as well, so we have a very 
+rich programming model with many different ways to organise
+control flow.
+
+Very little research has been done into control structures.
+Haskell simply fixes its control structure to logically
+lazy, and uses strictness analysis to try to improve 
+performance. Ocaml uses eager evaluation to make prediction
+of order of side effects possible. So neither language takes
+control flow seriously.
+
+One of the core problems in traditional languages is that
+product types are well represented by sum types are not.
+Most languages have structs, tuples, records, objects, or some other
+product building mechanism (Felix has all the above!).
+
+Sum types, on the other hand, are not represented in most
+languages at all. Even languages like Haskell and Ocaml
+miss the point and get the representation inside out.
+
+A product constuctor must build an abstract object
+and return a set of projections with certain properties.
+The categorical dual, the sum, is constructed from
+one of a given set of injections with certain properties.
+
+However a sum type is not an object! If you look at
+the use of a variant in Ocaml you will see case analysis
+performed by a pattern match with several branches.
+It is actually the abstraction of the matching mechanism
+which is the sum type, that is, a sum type is a control
+structure, NOT a data structure.
+
+A product is an object which exists in space and persists
+over time. This allows the projections to be applied to it
+in some sequence or even with an indeterminate order.
+The results are temporaly independent. It doesn't matter when
+you apply a projection. You can apply them from many threads
+at once.
+
+A sum is a branching pattern: a sum value is a transient
+object which exists briefly in time until it is used
+by a case analysis to select a control path. It is vital
+to understand that the value determines a future branch
+path abstractly. To understand this fully, consider code
+with three distinct places when an case analysis of the sum
+is performed. The sum value we calculate by selecting an
+injection determines which branch will be taken in all
+three analyses, without knowing which analysis will actually
+be performed. The memory can be considered to expire when
+the analysis is done.
+
+Now the key is to understand that a second sum can be
+constructed subsequently which determines which of our
+three analysis is actually performed, that value is
+then analysed to effect a branch to the relevant analysis.
+So the sum values stack up backwards by invoking injections,
+and get popped from the stack by the case analyses as the
+decided on control path we pre-calculated is actually effected.
+
+Purely functional code is used to pre-calculate the control
+path to be effected, until the calculation reaches a synchronisation
+point. At that point, the stacked up control selectors are effected
+by applying them to a product of functions. From the product,
+one function is selected by the sum value, and is evaluated.
+
+In fact, the above description is wrong. Let me be more precise:
+what is selected from the product to invoke is not a function
+but a continuation. That is, it is the whole rest of the program.
+
+Continuations are intrinsically procedural, not functional.
+One must understand what a continuation must do: it must
+output a value in a useful form, that is, it must exhibit
+observable behaviour.
+
+In a purely functional language, the order of evaluation
+is not deterministic, but nor it it free: value must
+be computed some time before they're required. With lazy
+evaluation, that's just before they're required, with
+eager evaluation the time before the using function
+is entered. In either case, there are two kinds
+of calculation done: calculation of values, and calculation
+of future control paths. Sum types join these things togther
+so that the values my flow, along with control, to some
+continuation. In Haskell, the program technically does
+no work at all, it calculates one huge sum which is passed
+to the fixed final continuation which evaluates it.
+
+This, I think, is the fundamental weakness of purely
+functional languages. The programmer can only encode
+functional computations for the fixed final evaluator.
+
+
+
 \part{Felix Overview}
 \chapter{Quick Start}
 We must of course begin with the traditional greeting!
@@ -2830,6 +3068,105 @@ effect an optimisation.
 
 \part{Procedural Programming}
 \chapter{Procedural Basics}
+In Felix, procedures are subroutines which return control
+but no value, they should have side effects, directly or indirectly.
+
+\begin{minted}{felix}
+proc hello() 
+{
+   println "Hello";
+}
+
+proc sayit (s:string)
+{
+  println$ "Say " + s.str;
+}
+hello;
+sayit "Hello";
+\end{minted}
+
+The type of a procedure is written \verb%T -> 0% where $T$ is the type
+of the argument. The zero indicates no value is returned, it is an alias
+for \verb%void%.
+
+\section{Variables}
+The core concept of procedural programming revolves not around
+observable behaviour, but the use of non-observable storage
+locations called variables which can be modified to contain
+time dependent values.
+
+There is therefore an intrinsic relation between control flow and
+the state of a program's variables, and this relation is the
+heart of procedural programming.
+
+In Felix, functional programming involves values, whilst procedural
+programming involves variables as well. The relation between the
+two is explicit: values are immutable, so functional code ignoring
+variables is pure. On the other hand, a variable is a symbolic
+name for the address of an object, which is a contiguous region
+of store.
+
+In principle, in Felix, assignment is effected by a store operator:
+
+\begin{minted}{felix}
+var x = 1; // a variable
+var px = &x; // the variable address
+px <- 42; // the store-at mutator
+\end{minted}
+
+Variables are addressable, which means a pointer to the variable
+can be obtained. There is no assignment, rather a procedure
+is used to store a value at an address.
+
+At first glance the philosophical model has no semantic
+impact, however we will show that the model is very powerful.
+In particular, in a functional setting, a value of a product
+type is characterised by projections.
+
+Consider now:
+
+\begin{minted}{felix}
+val x = (a=1, b=2); // record value
+val bv = x . b; // b is the projection
+var y = x; // put value in variable!
+val px = &y; // address of object
+val pa = px . a; // address of a subobject
+pa <- 42; 
+&y . a <- 42; // equivalent by substitution
+y . a = 42; // equivalent by sugar
+\end{minted}
+
+What is important here is that all product projections from product type $P$
+to component type $C$, having type $P -> C$, are overloaded so that there
+is also a projection with the same name of type $&P -> &C$.
+
+In paricular note that you cannot "take the address" of a subcomponent
+of a value stored in a variable! In fact, the \verb%&% is not an operator at all.
+Rather the spelling \verb%&y% is the true name of the variable, and the plain
+usage like \verb%y% is really sugar for \verb%*&y%, that is, it is really
+an auto-dereference of the pointer associated with the variables type and
+storage address.
+
+Felix allows construction of objects on the heap and locally: heap allocations
+return a pointer directly. Local objects, represented by a variable, can
+be silently replaced by heap objects and vice versa.
+
+The most noteworthy example of the utility of the concept is the
+way Felix handles arrays.
+
+\begin{minted}{felix}
+// a tuple of elements, all the same type, is an array
+var x = 1,2,3,4; 
+
+for i in 0..<4 do
+  &x . i <- x . i + 1;
+done
+\end{minted}
+
+Here the projection is denoted by an expression, not merely
+a constant. Felix array values are immutable, however you can
+modify an array object as shown.
+
 \chapter{Dynamic Objects}
 \chapter{Reactive Programming}
 
@@ -2864,10 +3201,11 @@ interface thread_pool_t
   schedule: 1 -> 0;
 }
 
-object thread_pool (maxthreads: int) implements thread_pool_t =
+object thread_pool (maxthreads: int) 
+  implements thread_pool_t =
 {
   union Action = | Run of 1->0 | Stop;
-  var ictrl, octrl = mk_pchannel_pair[Action]();
+  var ictrl, octrl = #mk_pchannel_pair[Action];
   var maxthreads = 4;
 
   proc pool_thread ()
@@ -2880,23 +3218,16 @@ object thread_pool (maxthreads: int) implements thread_pool_t =
     endmatch;
   }
 
-  proc start()
-  {
-
+  proc start() =>
     for i in 0..<maxthreads
       call spawn_pthread pool_thread;
-  }
 
-  method proc stop()
-  {
+  method proc stop() =>
     for i in 0..<maxthreads
       call write(octrl, Stop);
-  }
 
-  method proc schedule (job: 1 -> 0)
-  {
+  method proc schedule (job: 1 -> 0) =>
      write (octrl, Run job);
-  }
 
   start;
 }
@@ -2932,25 +3263,19 @@ interface job_t (p:1->0)
 object job (p:1->0) implements job_t =
 {
   union job_status_t = Finished;
-  var istatus, ostatus = mk_iopchannel_pair[job_status_t];
+  var istatus, ostatus = #mk_iopchannel_pair[job_status_t];
 
-  proc job (p: 1-> 0) ()
-  {
-    p;
-    spawn_pthread { write(ostatus, Finished); };
-  }
+  proc job (p: 1-> 0) =>
+    { p; spawn_pthread { write(ostatus, Finished); }; };
 
-  proc start(p:1->0)
-  {
+  proc start(p:1->0) =>
      pool.schedule (job p);
-  }
 
-  method proc wait ()
-  {
+  method proc wait () =>
     match read istatus with
     | #Finished => ;
     endmatch;
-  }
+
   start p;
 } 
 \end{minted}
@@ -3040,6 +3365,46 @@ of the region to be protected, therefore, the whole of
 memory is protected. This means after the lock is released
 all other threads will observe all writes previously
 performed by the locking thread.
+
+\begin{minted}{felix}
+var share1 = 0;
+var share2 = 0;
+var m = #mutex;
+
+var clock = #Faio::mk_alarm_clock;
+
+proc writer () => 
+  for i in 0..<10 do
+     m.lock;
+     ++share1;
+     ++share2;
+     m.release;
+     sleep(clock, 1.0);
+  done
+;
+
+proc reader() =>
+  while true do
+     m.lock;
+     var r1 = share1;
+     var r = share1 + 256 * share2;
+     m.release;
+     println$ r;
+     if r1 >= 10 break;
+  done
+;
+
+spawn_pthread writer;
+spawn_pthread writer;
+spawn_pthread reader;
+\end{minted}
+
+In this simple example it is implicit that \verb%share1% and \verb%share2%
+are protected by the mutex \verb%m%. The lock-access/modify-release protocol
+use by all threads ensures access and modification is serialised so
+that the reader thread cannot see \verb%share1% and \verb%share2% except
+when they're equal. The value of these variables is indeterminate outside
+of the dynamic scope of the lock-release events.
 
 \subsection{Barriers}
 \subsection{Concurrently Statement}
