@@ -114,12 +114,6 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
   in let our_level = length our_display in
 
   let rec handle_closure sr is_jump index ts subs' a stack_call =
-    let index',ts' = index,ts in
-    let index, ts = Flx_typeclass.fixup_typeclass_instance syms bsym_table index ts in
-    if index <> index' then
-      clierr sr ("[flx_gen] Virtual call of " ^ string_of_bid index' ^ " dispatches to " ^
-        string_of_bid index)
-    ;
     let subs =
       catmap ""
       (fun ((_,typ) as e,s) ->

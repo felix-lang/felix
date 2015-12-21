@@ -58,11 +58,6 @@ let add_inst syms bsym_table ref_insts1 sr (i,ts) =
       catmap ", " (sbt bsym_table) ts ^ "]");
     let ts = map (fun t -> beta_reduce "flx_inst: add_inst" syms.Flx_mtypes2.counter bsym_table dummy_sr t) ts in
 
-    let i,ts = Flx_typeclass.fixup_typeclass_instance syms bsym_table i ts in
-      (*
-      print_endline ("remapped to instance " ^ si i ^ "[" ^
-      catmap ", " (sbt bsym_table) ts ^ "]");
-      *)
     let ts = List.map (normalise_tuple_cons bsym_table) ts in
     let x = i, ts in
     let has_variables =

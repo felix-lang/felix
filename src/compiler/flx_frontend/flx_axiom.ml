@@ -108,11 +108,10 @@ let verify syms bsym_table csr e =
                     tcinst_chk
                       syms
                       bsym_table
-                      true
                       id
+                      (Flx_bsym.sr tc_bsym)
                       i
                       ts
-                      (Flx_bsym.sr tc_bsym)
                       (inst_bvs, inst_traint, inst_ts, instidx)
                   with
                   | `CannotMatch,_,_-> ()

@@ -137,12 +137,14 @@ let gen_prim_call
   let carg () =
     match unfold "flx_pgen1" argt with
     | BTYP_tuple []  -> ce_atom "(::flx::rtl::unit())/*UNIT_VALUE_ERROR?*/"
-    | x -> 
+    | x -> ge sr a 
+(*
       try ge sr a 
       with exc -> 
        print_endline ("[flx_pgen] ERROR generating expression " ^ sbe bsym_table a);
        print_endline ("Diag: " ^ Printexc.to_string exc); 
        ce_atom "(ILLEGAL PASSING WHOLE TUPLE WITH CURRIED ARGUMENTS)"
+*)
   in
 
   let ashape = sh argt in

@@ -747,25 +747,6 @@ print_endline "Apply struct";
   | BEXPR_apply_direct (index,ts,a) ->
     let bsym = Flx_bsym_table.find bsym_table index in
     let ts = map tsub ts in
-    let index', ts' = Flx_typeclass.fixup_typeclass_instance syms bsym_table index ts in
-    if index <> index' then
-      clierr sr ("[Flx_egen:apply_direct] Virtual call of " ^ string_of_bid index ^ " dispatches to " ^
-        string_of_bid index')
-    ;
-    if index <> index' then
-    begin
-      let bsym =
-        try Flx_bsym_table.find bsym_table index' with Not_found ->
-          syserr sr ("MISSING INSTANCE BBDCL " ^ string_of_bid index')
-      in
-      match Flx_bsym.bbdcl bsym with
-      | BBDCL_fun _ -> ge' (bexpr_apply_direct t (index',ts',a))
-      | BBDCL_external_fun _ -> ge' (bexpr_apply_prim t (index',ts',a))
-      | _ ->
-          clierr2 sr (Flx_bsym.sr bsym) ("expected instance to be function " ^
-            Flx_bsym.id bsym)
-    end else
-
     let bsym =
       try Flx_bsym_table.find bsym_table index with _ ->
         failwith ("[gen_expr(apply instance)] Can't find index " ^
@@ -817,25 +798,6 @@ print_endline "Apply struct";
   | BEXPR_apply_stack (index,ts,a) ->
     let bsym = Flx_bsym_table.find bsym_table index in
     let ts = map tsub ts in
-    let index', ts' = Flx_typeclass.fixup_typeclass_instance syms bsym_table index ts in
-    if index <> index' then
-      clierr sr ("[Flx_egen: apply_stack] Virtual call of " ^ string_of_bid index ^ " dispatches to " ^
-        string_of_bid index')
-    ;
-    if index <> index' then
-    begin
-      let bsym =
-        try Flx_bsym_table.find bsym_table index' with Not_found ->
-          syserr sr ("MISSING INSTANCE BBDCL " ^ string_of_bid index')
-      in
-      match Flx_bsym.bbdcl bsym with
-      | BBDCL_fun _ -> ge' (bexpr_apply_direct t (index',ts',a))
-      | BBDCL_external_fun _ -> ge' (bexpr_apply_prim t (index',ts',a))
-      | _ ->
-          clierr2 sr (Flx_bsym.sr bsym) ("expected instance to be function " ^
-            Flx_bsym.id bsym)
-    end else
-
     let bsym =
       try Flx_bsym_table.find bsym_table index with _ ->
         failwith ("[gen_expr(apply instance)] Can't find index " ^
@@ -1588,54 +1550,7 @@ and gen_apply_prim
       );
       begin match kind with
       | `Code CS.Identity -> gen_expr' sr a
-      | `Code CS.Virtual ->
-          print_endline ("Flx_egen[gen_apply_prim]: Warning: delayed virtual instantiation, external fun " ^ 
-            Flx_bsym.id bsym^ "<"^string_of_bid index^ ">["^catmap "," (sbt bsym_table) ts^"]");
-          let ts = List.map (beta_reduce "flx_egen: gen_apply_prim2" this_vs this_ts) ts in
-          let index', ts' = Flx_typeclass.fixup_typeclass_instance
-            syms
-            bsym_table
-            index
-            ts
-          in
-
-          if index <> index' then begin
-            clierr sr ("[Flx_egen: apply_prim] Virtual call of " ^ string_of_bid index ^
-              " dispatches to " ^ string_of_bid index')
-          end;
-
-          if index = index' then begin
-            let entries =
-              try Hashtbl.find syms.virtual_to_instances index
-              with Not_found -> []
-            in
-
-            clierr2 sr (Flx_bsym.sr bsym) ("Instantiate virtual function(2) " ^
-              Flx_bsym.id bsym ^ "<" ^
-              string_of_bid index ^ ">, no instance for ts="^
-              catmap "," (sbt bsym_table) ts ^ "\n" ^
-              "Instances are " ^ 
-              catmap "\n" 
-                (fun (bvs, ret, args, ix) -> 
-                  Flx_print.string_of_bvs bvs ^ 
-                 (catmap "*" (sbt bsym_table) args) ^ "->" ^ sbt bsym_table ret
-                ) 
-                entries)
-          end;
-
-          let bsym =
-            try Flx_bsym_table.find bsym_table index' with Not_found ->
-              syserr sr ("MISSING INSTANCE BBDCL " ^ string_of_bid index')
-          in
-          begin match Flx_bsym.bbdcl bsym with
-          | BBDCL_fun _ ->
-              gen_expr' sr (bexpr_apply_direct t (index',ts',a))
-          | BBDCL_external_fun _ ->
-              gen_expr' sr (bexpr_apply_prim t (index',ts',a))
-          | _ ->
-              clierr2 sr (Flx_bsym.sr bsym)
-                ("expected instance to be function " ^ Flx_bsym.id bsym)
-          end
+      | `Code CS.Virtual -> syserr sr ("[egen] Not expecting pure virtual primitive " ^ id)
       | `Code (CS.Str s) -> ce_expr prec s
       | `Code (CS.Str_template s) ->
           gen_prim_call
