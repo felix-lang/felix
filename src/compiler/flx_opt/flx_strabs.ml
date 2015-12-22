@@ -26,12 +26,28 @@ let fixtype bsym_table t =
       begin match entry with
       | BBDCL_newtype (vs,t) -> 
         let t = tsubst (Flx_bsym.sr bsym) vs ts t in 
-        f_btype t (* rescan replacement type *)
-      | _ -> t
+        let t' = f_btype t in (* rescan replacement type *) 
+        t'
+      | _ -> 
+        t
       end 
-    | _ -> t
+    | _ -> 
+    t
   in
   f_btype t
+
+let fixqual bsym_table qual = 
+  match qual with
+  | `Bound_needs_shape t -> `Bound_needs_shape (fixtype bsym_table t)
+  | x -> x
+
+let fixquals bsym_table quals =
+  map (fixqual bsym_table) quals
+
+let fixreq bsym_table  (bid,ts) =
+  bid, map (fixtype bsym_table) ts
+
+let fixreqs bsym_table reqs = map (fixreq bsym_table) reqs
 
 let fixexpr bsym_table e =
   let rec f_bexpr e =
@@ -39,7 +55,11 @@ let fixexpr bsym_table e =
     | BEXPR_apply ( (BEXPR_closure(i,_),_),a),_
     | BEXPR_apply_direct (i,_,a),_
     | BEXPR_apply_prim (i,_,a),_
-      when (try Flx_bsym_table.is_identity bsym_table i with Not_found -> failwith ("strabs:is_identity checked not found on " ^ string_of_int i)) -> a
+      when (
+       try Flx_bsym_table.is_identity bsym_table i 
+       with Not_found -> 
+         failwith ("strabs:is_identity checked not found on " ^ string_of_int i)
+      ) -> a
     | x -> x
   in
   f_bexpr e
@@ -63,6 +83,8 @@ let strabs_symbol bsym_table index parent bsym bsym_table' =
   let fe e = fixexpr bsym_table e in
   let fxs xs = fixbexes bsym_table xs in
   let fp bps = fixps bsym_table bps in
+  let fb rqs = fixreqs bsym_table rqs in
+  let fq qs = fixquals bsym_table qs in
 
   let h bbdcl = Flx_bsym_table.add bsym_table' index parent { bsym with Flx_bsym.bbdcl= bbdcl } in
   match Flx_bsym.bbdcl bsym with
@@ -84,10 +106,10 @@ let strabs_symbol bsym_table index parent bsym bsym_table' =
       h (bbdcl_val (bvs, ft t, kind))
 
   | BBDCL_external_type (bvs, btqs, c, breqs) ->
-      h (bbdcl_external_type (bvs, btqs, c, breqs))
+      h (bbdcl_external_type (bvs, fq btqs, c, fb breqs))
 
   | BBDCL_external_const (props, bvs, t, c, breqs) ->
-      h (bbdcl_external_const (props,  bvs, ft t, c, breqs))
+      h (bbdcl_external_const (props,  bvs, ft t, c, fb breqs))
 
   | BBDCL_external_fun (props, bvs, ts, t, breqs, prec, kind) ->
       (* Ignore identity functions. *)
@@ -97,10 +119,10 @@ let strabs_symbol bsym_table index parent bsym bsym_table' =
         | `Callback (ts2, j) -> `Callback (fts ts2, j)
         | _ -> kind
       in
-      h (bbdcl_external_fun (props, bvs, fts ts, ft t, breqs, prec, kind))
+      h (bbdcl_external_fun (props, bvs, fts ts, ft t, fb breqs, prec, kind))
 
   | BBDCL_external_code (bvs, c, ikind, breqs) ->
-      h (bbdcl_external_code (bvs, c, ikind, breqs))
+      h (bbdcl_external_code (bvs, c, ikind, fb breqs))
 
   | BBDCL_union (bvs, cts) ->
       let cts = map (fun (s,j,t) -> s,j,ft t) cts in
@@ -112,7 +134,8 @@ let strabs_symbol bsym_table index parent bsym bsym_table' =
 
   | BBDCL_cstruct (bvs, cts, breqs) ->
       let cts = map (fun (s,t) -> s,ft t) cts in
-      h (bbdcl_cstruct (bvs, cts, breqs))
+      h (bbdcl_cstruct (bvs, cts, fb breqs))
+
   | BBDCL_const_ctor (bvs, j, t1, k, evs, etraint) ->
       h (bbdcl_const_ctor (bvs, j, ft t1, k, evs, ft etraint))
 

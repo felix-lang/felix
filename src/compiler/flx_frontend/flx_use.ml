@@ -360,8 +360,10 @@ let copy_used1 syms bsym_table =
   new_bsym_table
 
 let copy_used syms bsym_table =
-  if syms.compiler_options.Flx_options.print_flag then
+  if syms.compiler_options.Flx_options.print_flag then begin
     print_endline "COPY USED";
+    Flx_print.print_bsym_table bsym_table
+   end;
   let rec aux bsym_table old =
     if syms.compiler_options.Flx_options.print_flag then
       print_endline ("Copy used1: ninput symbols = " ^ si old);
