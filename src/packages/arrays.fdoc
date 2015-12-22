@@ -614,7 +614,7 @@ open class Varray
 {
   //$ A varray is just a pointer. 
   //$ The current length and bound are maintained by the GC.
-  _gc_pointer _gc_type t type varray[t] = "?1*";
+  _gc_pointer type varray[t] = "?1*";
 
   //$ An ordinary carray, but owned by the GC.
   ctor[t] carray[t] : varray[t] = "$1";

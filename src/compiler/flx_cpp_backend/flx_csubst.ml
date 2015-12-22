@@ -104,9 +104,9 @@ let csubst (shape_registry:Flx_set.StringSet.t ref) sr sr2 ct
   ~arg ~(args:cexpr_t list) ~typs ~argtyp ~retyp ~gargs ~prec ~argshape ~argshapes ~display ~gargshapes ~name
 =
   let emit_shape s = 
-     (*
+(*
      print_endline ("csubst emitting shape " ^ s);
-     *)
+*)
      shape_registry := Flx_set.StringSet.add s !shape_registry;
      s
   in
@@ -280,11 +280,12 @@ let csubst (shape_registry:Flx_set.StringSet.t ref) sr sr2 ct
         if !digits> List.length gargs
         then serr i ("Generic type parameter ?" ^ string_of_int !digits ^ " too large")
         else if !digits<1 then serr i ("Generic type arg no " ^ string_of_int !digits ^ " too small")
-        else
+        else begin
           bcat
           (
             emit_shape (fixup_type (nth gargshapes (!digits-1)))
-          );
+          )
+        end;
         mode := Normal;
         trans i ch
       end
