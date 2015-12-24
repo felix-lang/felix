@@ -621,19 +621,19 @@ var frame_style= """
       }
       .toppanel {
         position:absolute; left:0px; top:0px; height:20px; right:0px; 
-        background-color: LightGray;
+        background-color: #e0e0e0;
       }
       .bottompanel {
         position:absolute; left:0px; top:25px; bottom:0px; right:0px; 
-        background-color: LightGray;
+        background-color: #e0e0e0;
       }
       .leftpanel {
         position:absolute; left:0px; top:0px; bottom:0px; width: 150px; 
-        background-color: LightGray; overflow: auto;
+        background-color: #e0e0e0; overflow: auto;
       }
       .rightpanel {
         position:absolute; right: 0px; left:156px; top:0px; bottom: 0px; 
-        background-color: #E0E0E0; overflow: auto;
+        background-color: #e0e0e0; overflow: auto;
         padding: 0 0.5em;
       }
       .divider {
@@ -648,7 +648,6 @@ var frame_style= """
           top: 0px;
           bottom: 0px;
           opacity: 0.3;
-          background-color: yellow;
           cursor:col-resize;
       }
 
@@ -3730,23 +3729,23 @@ var frame_style= """
       .maincontent p { line-height: 105%; }
       .toppanel {
         position:absolute; left:0px; top:0px; height:20px; right:0px; 
-        background-color: LightGray;
+        background-color: #e0e0e0;
       }
       .bottompanel {
         position:absolute; left:0px; top:25px; bottom:0px; right:0px; 
-        background-color: LightGray;
+        background-color: #e0e0e0;
       }
       .leftpanel {
         position:absolute; left:0px; top:0px; bottom:0px; width: 150px; 
-        background-color: LightGray; overflow: auto;
+        background-color: #e0e0e0; overflow: auto;
       }
       .rightpanel {
         position:absolute; right: 0px; left:160px; top:0px; bottom: 0px; 
-        background-color: LightGray; overflow: auto;
+        background-color: #e0e0e0; overflow: auto;
       }
       .divider {
         position:absolute; left: 150px; top:0px; bottom:0px; 
-        background-color: black; width:10px;
+        background-color: black; width:6px;
       }
 
       #panemover {
@@ -3756,7 +3755,6 @@ var frame_style= """
           top: 0px;
           bottom: 0px;
           opacity: 0.3;
-          background-color: yellow;
           cursor:col-resize;
       }
 
