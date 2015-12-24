@@ -3,7 +3,7 @@
 @h1 Reading Standard Streams
 
 Another way to get some data in is to leverage the standard input/output streams.
-We've already been using the output stream to display data (using @{print} and @{println}), but let's try something new and "capture" data using standard input.
+We've already used the output stream to display data (using @{print} and @{println}), but let's try something new and "capture" data via standard input.
 
 @felix
 write$ stdout,"Enter your name: "; fflush stdout;
@@ -19,16 +19,16 @@ Hello Felix the Cat
 
 You might wonder if there any difference between @{print x} and @{write$ stdout, x; fflush stdout;}?
 
-Yes, but it's subtle. 
+There is, but it's subtle. 
 
 @{print} and it's kin are designed for fast output to the console.
-They write the strings to stdout the same as @{write$ stdout, ...} would, however it does not force the buffer to flush.
+They write the strings to stdout the same as @{write$ stdout, ...} does, however it does not force the buffer to flush.
 If it did, the program would have to wait for the console to display the content before proceeding, and this could be slow.
 
 Most of the time we can let the console manage its own output buffering,
-but when we want to ask the user a question, we need to be sure the question is displayed before querying for input (via @{readln}).
-If we leave this out it just looks like the program locked up.
-@{fflush stdout;} make sure the content is displayed.
+but when we want to ask the user a question, it's better to be sure the question is displayed before querying for input.
+If we leave this out it just looks like the program is stuck trying to print, when it's actually waiting for the user.
+So, we can say @{fflush stdout;} makes sure the content is displayed.
 
 Here,
 <ul>
