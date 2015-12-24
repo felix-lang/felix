@@ -158,9 +158,9 @@ fun f(x:int)=>x;
 @
 
 However there is a very special hack in the parse that
-also recognizes {@} followed by anything other than
-the word {felix} and a newline, up to and include
-a {@} followed by the word {felix} and a newline,
+also recognizes @{@} followed by anything other than
+the word @{felix} and a newline, up to and include
+a @{@} followed by the word @{felix} and a newline,
 as a comment.
 
 Lets look again at this encoding, but now understand all

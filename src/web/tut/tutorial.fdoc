@@ -1,47 +1,44 @@
 @title Tutorial Tracts
 @h1 Basic Scripting Technology
 
-<a href="tut_index.fdoc">Getting Started: </a>
-an introduction to the basics.
+<a href="tut_index.fdoc">Getting Started:</a>
+An introduction to the basics.
 @p
-<a href="intro_index.fdoc">Getting Started: </a>
-another introduction to the basics.
+<a href="intro_index.fdoc">Intro to Felix for C++ programmers:</a>
+Another introduction to the basics which focuses on C++ interaction.
 @p
-<a href="func_index.fdoc">Functions: </a>
+<a href="func_index.fdoc">Functions:</a>
 A quick summary of functions and procedures.
 @p
-<a href="control_index.fdoc">Basic Control Structures: </a>
-A quick summary of basic control structures.
-@p
-<a href="string_index.fdoc">Strings: </a>
+<a href="string_index.fdoc">Strings:</a>
 Core string handling.
 @p
-<a href="regexp_index.fdoc">Regexps: </a>
+<a href="regexp_index.fdoc">Regexps:</a>
 Regexps with Google RE2.
 @p
-<a href="polymorphism_index.fdoc">Polymorphism: </a>
+<a href="polymorphism_index.fdoc">Polymorphism:</a>
 Basic parametric polymorphism in Felix.
 
 @h2 Functional Programming Technology
-<a href="pattern_index.fdoc">Pattern Matching: </a>
+<a href="pattern_index.fdoc">Pattern Matching:</a>
 pattern matching and the discriminated union construction.
 @p
-<a href="Array_index.fdoc">Arrays: </a>
+<a href="Array_index.fdoc">Arrays:</a>
 Core array handling.
 @p
-<a href="list_index.fdoc">Lists: </a>
+<a href="list_index.fdoc">Lists:</a>
 Using the infamous list data structure.
 
 @h2 Imperative Programming Technology
-<a href="streams_index.fdoc">Streams: </a>
+<a href="streams_index.fdoc">Streams:</a>
 a powerful construction translating spatial
 sequences into temporal ones.
 @p
-<a href="objects_index.fdoc">Objects: </a>
+<a href="objects_index.fdoc">Objects:</a>
 a highly dynamic object system loosely
 modelled on Java.
 @p
-<a href="coroutines_index.fdoc">Coroutines: </a>
+<a href="coroutines_index.fdoc">Coroutines:</a>
 a mechanism for ultra-high speed synchronous context switching
 where control is exchanged explicitly.
 @p

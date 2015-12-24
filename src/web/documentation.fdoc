@@ -1,24 +1,28 @@
 @title Felix: Documentation
-@h1 Language Tutorial
+
+@h1 Documentation
+
+@h2 Language Tutorial
 <a href="/share/src/web/tut/tutorial.fdoc">Tutorial</a>
 
-@h1 Language Reference
+@h2 Language Reference
 <a href="/share/src/web/ref/spec_01.fdoc">Language Specification</a>
 
-@h1 Library Reference
+@h2 Library Reference
 <a href="/share/src/packages/stdlib_toc.fdoc">Packages.</a> The standard library packages.<br>
 <a href="/share/lib/std">Unpacked and Live.</a> The standard library, live.
 
-@h1 Tools Reference
+@h2 Tools Reference
 <a href=/share/src/web/ref/tools.fdoc>Tools</a>
 
-@h1 Articles
+@h2 Articles
 <a href="/share/src/web/articles/articles.fdoc">Articles</a>
 
-@h1 Building and Installation
+@h2 Building and Installation
 <a href=/share/src/web/download.html>Download</a>
 
 @h1 Appendices
+
 @h2 Abstract Machine
 <a href="/share/src/web/ref/abstract_machine.fdoc">Abstract Machine</a>
 
