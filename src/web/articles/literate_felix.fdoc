@@ -78,8 +78,8 @@ into your compiler.
 Weaving is the process which is used to interpret the documentation
 markup and format the code parts of the document for display.
 Knuths weaver, of course, produced TeX documents, which typeset
-any code he was writing .. including of course, the {web} program
-itself, as well as the {TeX} program!
+any code he was writing .. including of course, the @{web} program
+itself, as well as the @{TeX} program!
 
 
 @h1 Literate Felix.
@@ -93,7 +93,7 @@ have a different kind of web available: the World Wide Web.
 We use browsers to display documents.
 
 So Felix threw out the offline typesetting stage.
-Instead we use a special webserver {flx_web} which
+Instead we use a special webserver @{flx_web} which
 typesets literate programs <em>on the fly</em>,
 providing colourisation and hyperlinking for your
 code automatcally, and basically delegating the typesetting
@@ -139,12 +139,12 @@ in a single file.
 Worse, errors in extracted code refer to the extract file,
 not the orginal source.
 
-For languages supporting {#line} directives both these
+For languages supporting @{#line} directives both these
 problems can be reduced. Emitting these directives fixed
 the compiler error issues because this technology was designed
 precisely to support generated code. Working on separate files
 and remerging them into a single LP document can also work
-with some limitations, primarily that the {#line} directives
+with some limitations, primarily that the @{#line} directives
 be respected.
 
 @h1 Felix technique.
@@ -179,16 +179,16 @@ script is marked in green:
   output.
 </pre>
 
-In other words in an {fdoc} document, provided you start with
-some {@} command such as a heading or title, the Felix parser
-will skip over everything except lines between {@felix} and
-any line starting with {@}. So the bulk of the documentation
+In other words in an @{fdoc} document, provided you start with
+some @{@} command such as a heading or title, the Felix parser
+will skip over everything except lines between @{@felix} and
+any line starting with @{@}. So the bulk of the documentation
 is just treated as a comment.
 
-So the Felix parser treats {flx} and {fdoc} files the same way.
+So the Felix parser treats @{flx} and @{fdoc} files the same way.
 The webserver {flx_web} on the other hand colourises and hyperlinks
-a whole {flx} file as Felix, whereas for an {fdoc} file its 
-a document and only snippets in {@felix} format are typeset
+a whole @{flx} file as Felix, whereas for an @{fdoc} file its 
+a document and only snippets in @{@felix} format are typeset
 as Felix.
 
 
