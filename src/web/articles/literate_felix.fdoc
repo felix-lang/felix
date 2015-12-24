@@ -35,7 +35,7 @@ Hopefully you can see a small program there with the expected
 output.
 
 Here's the fdoc encoding of the above section:
-<pre style="background:#C0C0C0; margin:10px;padding:10px;">
+<pre style="background:#eee; margin:10px;padding:10px;">
   @h1 What does it look like?
   Well you may wonder what LP look like. There doesn't seem to be
   anything special if I show you some Felix code now:
@@ -166,12 +166,12 @@ as a comment.
 Lets look again at this encoding, but now understand all
 the grey stuff is just a big Felix comment, the executable
 script is marked in green:
-<pre style="background:#C0C0C0; margin:10px;padding:10px;">
+<pre style="background:#eee; margin:10px;padding:10px;">
   @h1 What does it look like?
   Well you may wonder what LP look like. There doesn't seem to be
   anything special if I show you some Felix code now:
   @felix
-  <code style="background:#70B070;";>println$ "Hello World";</code>
+  <code style="background:#c2fdc2;";>println$ "Hello World";</code>
   @expect
   Hello World
   @
