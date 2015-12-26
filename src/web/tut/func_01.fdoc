@@ -120,10 +120,10 @@ println$ r2;
 @
 noting reverse application is just sugar for a swapped forward application.
 
-@caveat
+<p class=caveat>
 Generators have the same type as a function. This is a design compromise 
 in Felix.
-@
+</p>
 
 @h2 C functions
 The function and procedure:
@@ -136,8 +136,8 @@ have types
    int --> int
    int --> void
 @
-respectively, which are the types of classic C funcions:
-@cpp
+respectively, which are the types of classic C functions:
+@c++
   int (*)(int)
   void (*)(int)
 @
@@ -159,7 +159,7 @@ C interface. In fact many ordinary Felix functions will
 be reduced to C functions by the optimiser, but this
 form enforces the use of C interface.
 
-@note
+<p class=caveat>
 It seems unfortunate that <em>whilst</em> a @{cfun} or @{cproc} has a C interface it
 is defined in Felix, <em>whereas</em> a @{cstruct} is a Felix interface to a
 struct defined in C, and @{cenum} and @{cflag} provide Felix models of enumerations
@@ -171,6 +171,7 @@ a shorthand for a @{type} binding and a list of @{const} definitions. Also, a sh
 for lifting C functions from libraries using a @{fun} or @{proc} without a 
 defining string can be used. The situation is further complicated by the
 @{callback} feature.
+</p>
 
 
 

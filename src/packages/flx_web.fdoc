@@ -127,8 +127,8 @@ done
 class Css4Html {
 flx_head := """
 <style type="text/css">
-body {margin:3%; }
-h1 {color:black; font-size:120%;}
+body {margin:3%; font-family: sans-serif; }
+h1 {color:black; font-size:120%; border-bottom: 2px solid #ddd; padding: 0 0 3px 0;}
 h2 {color:#202020; font-size:105%;}
 h3 {font-size:100%;}
 h4 {font-size:95%;}
@@ -146,13 +146,25 @@ span.preproc {color:#005500; }
 span.embedded_c{background-color:#DDDDDD; }
 span.fpc_fieldname {color:#DD0000; }
 span.lineno {color:#101010; background-color:#E0E0E0; font-size:80%; font-family:"courier",monospace; font-style:normal; }
-pre.flxbg {background-color:#90DF90; color:black; padding:2px; box-shadow:5px 5px 2px #807080; }
-pre.uncheckedflxbg {background-color:#D0D0D0; color:black; padding:2px; box-shadow:5px 5px 2px #807080; }
-pre.cppbg {background-color:#A0CF80; color:black; }
-pre.prefmtbg {background-color:#D0D0D0; color:black; }
-pre.expected {background-color:#E0EF80; color:black; }
-pre.input {background-color:#E08080; color:black; }
-pre.inclusion {background-color:#D070D0; color:black; }
+pre { border: 1px solid #ccc; color: black; box-shadow:3px 3px 2px rgba(0,0,0,0.1); padding:2px; }
+pre.flxbg {background-color:#C2FDC2; box-shadow:3px 3px 2px rgba(0,0,0,0.1) }
+pre.uncheckedflxbg {background-color:#eee; box-shadow:3px 3px 2px rgba(0,0,0,0.1); }
+pre.cppbg {background-color:#C2FDC2; }
+pre.prefmtbg {background-color:#F1F1F1; }
+pre.expected {background-color:hsla(74,94%,88%,1); }
+pre.input {background-color:hsla(20,94%,88%,1); }
+pre.inclusion {
+    font-family: Arial;
+    font-weight: normal;
+    font-size: 0.9em;
+    color: #555;
+    border: none;
+    box-shadow: none;
+    text-align: right;
+    margin: -7px 11px -12px 0;
+    padding: 0;
+    background-color:#fafafa;
+}
 code.inclusion {background-color:#D070D0; color:black; }
 .obsolete { background-color:#FFEFEF; font-size: small; color:black; }
 .future { background-color:#FF8080; font-size: small; color:black; }
@@ -160,7 +172,7 @@ code.inclusion {background-color:#D070D0; color:black; }
 .bug { background-color:#FFE0E0; font-size: small; color:black; }
 .fixed{ background-color:#FFE0E0; font-size: small; color:black; }
 .done { background-color:#FFE0E0; font-size: small; color:black; }
-.caveat { background-color:#FF8080; color:black; }
+.caveat { background-color:hsla(0,100%,91%,1); color:black; padding: 0.6em; }
 </style>
 """;
 }
@@ -599,60 +611,99 @@ fun find_defs (lines:string) : darray[int * int * string] =
   return h;
 }
 
-var frame_style= """
-    <style>
-      .container {
-        position: fixed;
-        top:0px;
-        left:0px;
-        height : 100%;
-        width: 100%;
-        background-color: grey;
-        margin: 0px;
-        padding: 0px;
-        border-width: 0px;
-        color: #404040;
-      }
-      .maincontent {
-        padding:4px;
-        border:4px;
-        font-family:sans-serif; 
-        color:#404040; background-color:#E0E0E0;
-      }
-      .toppanel {
-        position:absolute; left:0px; top:0px; height:20px; right:0px; 
-        background-color: LightGray;
-      }
-      .bottompanel {
-        position:absolute; left:0px; top:25px; bottom:0px; right:0px; 
-        background-color: LightGray;
-      }
-      .leftpanel {
-        position:absolute; left:0px; top:0px; bottom:0px; width: 150px; 
-        background-color: LightGray; overflow: auto;
-      }
-      .rightpanel {
-        position:absolute; right: 0px; left:156px; top:0px; bottom: 0px; 
-        background-color: #E0E0E0; overflow: auto;
-        padding: 0 0.5em;
-      }
-      .divider {
-        position:absolute; left: 150px; top:0px; bottom:0px; 
-        background-color: black; width:6px;
-      }
+var frame_style= """ 
+<style>
+.container {
+  position: fixed;
+  top:0px;
+  left:0px;
+  height : 100%;
+  width: 100%;
+  background-color: grey;
+  margin: 0px;
+  padding: 0px;
+  border-width: 0px;
+  color: #404040;
+}
+.maincontent {
+  padding:4px;
+  padding-left:8px;
+  line-height:1.3em;
+  color:#404040; background-color:#fafafa;
+}
+.maincontent h1 { margin-left:-8px; position: relative; font-family: georgia, serif; font-size: 1.8em; font-weight: normal; }
+.maincontent h2 { margin-left:-8px; position: relative; margin-bottom:-5px; }
+.maincontent h3 { margin-left:-8px; position: relative; margin-bottom:-5px; }
+.maincontent h4 { margin-left:-8px; position: relative; margin-bottom:-5px; }
+.maincontent code { color:#902030; }
+.toppanel {
+  position:absolute; left:0px; top:0px; height:20px; right:0px; 
+  background-color: #e0e0e0;
+}
+.bottompanel {
+  position:absolute; left:0px; top:22px; bottom:0px; right:0px; 
+  background-color: #fafafa;
+  font-size:14px;
+}
+.leftpanel {
+  position:absolute; left:0px; top:0px; bottom:0px; width: 150px; 
+  background-color: #eaeaea; overflow: auto;
+}
+.rightpanel {
+  position:absolute; right: 0px; left:160px; top:0px; bottom: 0px; 
+  background-color: #fafafa; overflow: auto;
+}
+.divider {
+  position:absolute; left: 150px; top:0px; bottom:0px; 
+  background-color: black; width:2px;
+  box-shadow: 0 0 8px #000;
+}
 
-      #panemover {
-          position:absolute;
-          left: 150px;
-          width : 10px;
-          top: 0px;
-          bottom: 0px;
-          opacity: 0.3;
-          background-color: yellow;
-          cursor:col-resize;
-      }
+#panemover {
+    position:absolute;
+    left: 150px;
+    width : 10px;
+    top: 0px;
+    bottom: 0px;
+    opacity: 0.3;
+    cursor:col-resize;
+}
 
-    </style>
+div.m {
+    margin: 0px;
+    padding:0px;
+    border-width:2px;
+    border-color: green;
+}
+
+div.m1 {
+    background-color: #86E870;
+    border-style:outset;
+    border-color:#ccc;
+    border-width:2px 0;
+    font-size:90%;
+    padding: 1px 0 2px 10px;
+}
+
+div.m2 {
+    background-color: #70C070;
+    padding-left:15px;
+    padding-top:2px;
+    border-style:outset;
+    border-color:green;
+    border-width:0 0 1px 0;
+    font-size:80%;
+}
+
+div.m1:hover, div.m2:hover {
+    background-color: white;
+}
+
+#leftmargintoc a {
+    text-decoration: none;
+    color: #404040;
+}
+</style>
 """;
 
 var frame_js = """
@@ -728,13 +779,15 @@ noinline fun wrap_html (h:darray[code_data_t], out:string) :string = {
 """ + topcontent + """
       </div> <!-- toppanel end -->
       <div class="bottompanel">
+
+        <span id="divider" class="divider"></span>
+
         <span id="left" class="leftpanel" >
           <div class="menucontent">
 """ + leftcontent + """
           </div> <!-- leftpanel contents end -->
         </span> <!-- leftpanel end -->
 
-        <span id="divider" class="divider"></span>
 
         <span id="right" class="rightpanel">
           <div class="maincontent">
@@ -3702,65 +3755,145 @@ fun setup (config_data:string) = {
   return 0;
 }
 
-var frame_style= """
-    <style>
-      .container {
-        position: fixed;
-        top:0px;
-        left:0px;
-        height : 100%;
-        width: 100%;
-        background-color: grey;
-        margin: 0px;
-        padding: 0px;
-        border-width: 0px;
-        color: #404040;
-      }
-      .maincontent {
-        padding:4px;
-        padding-left:8px;
-        font-family:serif; 
-        color:#404040; background-color:#E0E0E0;
-      }
-      .maincontent h1 { margin-left:-8px; position: relative; margin-bottom:-5px; }
-      .maincontent h2 { margin-left:-8px; position: relative; margin-bottom:-5px; }
-      .maincontent h3 { margin-left:-8px; position: relative; margin-bottom:-5px; }
-      .maincontent h4 { margin-left:-8px; position: relative; margin-bottom:-5px; }
-      .maincontent code { color:#902030; }
-      .maincontent p { line-height: 105%; }
-      .toppanel {
-        position:absolute; left:0px; top:0px; height:20px; right:0px; 
-        background-color: LightGray;
-      }
-      .bottompanel {
-        position:absolute; left:0px; top:25px; bottom:0px; right:0px; 
-        background-color: LightGray;
-      }
-      .leftpanel {
-        position:absolute; left:0px; top:0px; bottom:0px; width: 150px; 
-        background-color: LightGray; overflow: auto;
-      }
-      .rightpanel {
-        position:absolute; right: 0px; left:160px; top:0px; bottom: 0px; 
-        background-color: LightGray; overflow: auto;
-      }
-      .divider {
-        position:absolute; left: 150px; top:0px; bottom:0px; 
-        background-color: black; width:10px;
-      }
+var frame_style= """ 
+<style>
+body {margin:3%; font-family: sans-serif; }
+h1 {color:black; font-size:120%; border-bottom: 2px solid #ddd; padding: 0 0 3px 0;}
+h2 {color:#202020; font-size:105%;}
+h3 {font-size:100%;}
+h4 {font-size:95%;}
+h5 {font-size:95%;}
+span.fstring {color:darkblue; font-style:italic; }
+span.comment {font-family:arial; color:blue; font-style:italic; }
+span.doccomment {font-family:arial; color:green; font-style:italic; }
+span.big_keyword {color:#FF1010; }
+span.small_keyword {color:#802040; }
+span.qualifier {color:#A02020; }
+span.library {color:#A02000; }
+span.ctor {color:#406020; }
+span.hack {color:#66DD00; }
+span.preproc {color:#005500; }
+span.embedded_c{background-color:#DDDDDD; }
+span.fpc_fieldname {color:#DD0000; }
+span.lineno {color:#101010; background-color:#E0E0E0; font-size:80%; font-family:"courier",monospace; font-style:normal; }
+pre { border: 1px solid #ccc; color: black; box-shadow:3px 3px 2px rgba(0,0,0,0.1); padding:2px; }
+pre.flxbg {background-color:#C2FDC2; box-shadow:3px 3px 2px rgba(0,0,0,0.1) }
+pre.uncheckedflxbg {background-color:#eee; box-shadow:3px 3px 2px rgba(0,0,0,0.1); }
+pre.cppbg {background-color:#C2FDC2; }
+pre.prefmtbg {background-color:#F1F1F1; }
+pre.expected {background-color:hsla(74,94%,88%,1); }
+pre.input {background-color:hsla(20,94%,88%,1); }
+pre.inclusion {
+    font-family: Arial;
+    font-weight: normal;
+    font-size: 0.9em;
+    color: #555;
+    border: none;
+    box-shadow: none;
+    text-align: right;
+    margin: -7px 11px -12px 0;
+    padding: 0;
+    background-color:#fafafa;
+}
+code.inclusion {background-color:#D070D0; color:black; }
+.obsolete { background-color:#FFEFEF; font-size: small; color:black; }
+.future { background-color:#FF8080; font-size: small; color:black; }
+.implementation_detail { background-color:#E0E0E0; font-size: small; color:black;  }
+.bug { background-color:#FFE0E0; font-size: small; color:black; }
+.fixed{ background-color:#FFE0E0; font-size: small; color:black; }
+.done { background-color:#FFE0E0; font-size: small; color:black; }
+.caveat { background-color:hsla(0,100%,91%,1); color:black; padding: 0.6em; }
+.container {
+  position: fixed;
+  top:0px;
+  left:0px;
+  height : 100%;
+  width: 100%;
+  background-color: grey;
+  margin: 0px;
+  padding: 0px;
+  border-width: 0px;
+  color: #404040;
+}
+.maincontent {
+  padding:4px;
+  padding-left:8px;
+  line-height:1.3em;
+  color:#404040; background-color:#fafafa;
+}
+.maincontent h1 { margin-left:-8px; position: relative; font-family: georgia, serif; font-size: 1.8em; font-weight: normal; }
+.maincontent h2 { margin-left:-8px; position: relative; margin-bottom:-5px; }
+.maincontent h3 { margin-left:-8px; position: relative; margin-bottom:-5px; }
+.maincontent h4 { margin-left:-8px; position: relative; margin-bottom:-5px; }
+.maincontent code { color:#902030; }
+.toppanel {
+  position:absolute; left:0px; top:0px; height:20px; right:0px; 
+  background-color: #e0e0e0;
+}
+.bottompanel {
+  position:absolute; left:0px; top:22px; bottom:0px; right:0px; 
+  background-color: #fafafa;
+  font-size:14px;
+}
+.leftpanel {
+  position:absolute; left:0px; top:0px; bottom:0px; width: 150px; 
+  background-color: #eaeaea; overflow: auto;
+}
+.rightpanel {
+  position:absolute; right: 0px; left:160px; top:0px; bottom: 0px; 
+  background-color: #fafafa; overflow: auto;
+}
+.divider {
+  position:absolute; left: 150px; top:0px; bottom:0px; 
+  background-color: black; width:2px;
+  box-shadow: 0 0 8px #000;
+}
 
-      #panemover {
-          position:absolute;
-          left: 150px;
-          width : 10px;
-          top: 0px;
-          bottom: 0px;
-          opacity: 0.3;
-          background-color: yellow;
-          cursor:col-resize;
-      }
+#panemover {
+    position:absolute;
+    left: 150px;
+    width : 10px;
+    top: 0px;
+    bottom: 0px;
+    opacity: 0.3;
+    cursor:col-resize;
+}
 
-    </style>
+div.m {
+    margin: 0px;
+    padding:0px;
+    border-width:2px;
+    border-color: green;
+}
+
+div.m1 {
+    background-color: #86E870;
+    border-style:outset;
+    border-color:#ccc;
+    border-width:2px 0;
+    font-size:90%;
+    padding: 1px 0 2px 10px;
+}
+
+div.m2 {
+    background-color: #70C070;
+    padding-left:15px;
+    padding-top:2px;
+    border-style:outset;
+    border-color:green;
+    border-width:0 0 1px 0;
+    font-size:80%;
+}
+
+div.m1:hover, div.m2:hover {
+    background-color: white;
+}
+
+#leftmargintoc a {
+    text-decoration: none;
+    color: #404040;
+}
+</style>
 """;
 
 var frame_js = """
@@ -3843,13 +3976,13 @@ object fdoc_frame (d:fdoc_frame_data_t) implements fdoc_frame_t =
 """ + topcontent + """
       </div> <!-- toppanel end -->
       <div class="bottompanel">
+        <span id="divider" class="divider"></span>
+
         <span id="left" class="leftpanel" >
           <div class="menucontent">
 """ + leftcontent + """
           </div> <!-- leftpanel contents end -->
         </span> <!-- leftpanel end -->
-
-        <span id="divider" class="divider"></span>
 
         <span id="right" class="rightpanel">
           <div class="maincontent">
@@ -4361,12 +4494,11 @@ div.m {
 
 div.m1 {
     background-color: #86E870;
-    padding-top:2px;
-    padding-left: 10px;
     border-style:outset;
     border-color:#ccc;
     border-width:2px 0;
     font-size:90%;
+    padding: 1px 0 2px 10px;
 }
 
 div.m2 {

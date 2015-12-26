@@ -16,7 +16,7 @@ We can grab these values by passing the index value (position) into @{System::ar
 println$ "Hello " + System::argv 1;
 @
 
-This reads the first command line argument (index=1), and returns it to the caller.
+This reads the first command line argument (index 1), and returns it to the caller.
 For example if you type:
 
 <pre>
@@ -33,9 +33,11 @@ If the argument exists it will return it (as a string), or an empty string other
 </li> 
 
 <li>
-Arguments actually start at an index of 0, but the first one (index 0) always contains the executable name.
-If you play with this you'll notice something funny though, this value does not include the @{flx} driver.
-Exercise for the reader: can you find an explanation for why this is?
+Note: In Felix, indexes start at 0 (just like C++, Java, and other Algol derived languages).
+Index 0 of @{argv} (or @{System::argv 0}) always contains the executable name.
+But if you try this you'll notice something funny.
+@{System::argv 0} does not include the @{flx} driver.
+This happens because after compiling the program, @{flx} is out of the picture, it's just your app that runs.
 </li>
 
 </ul>

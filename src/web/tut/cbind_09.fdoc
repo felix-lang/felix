@@ -29,7 +29,7 @@ flx_dynlink.fpc         gl.fpc                  plat_linux.fpc
 flx_exceptions.fpc      glext.fpc               re2.fpc
 @
 
-All those {*.fpc} files are entries in the configuration database which specify
+All those @{*.fpc} files are entries in the configuration database which specify
 a package. @{fpc} stands for Felix Package Config. The associated processor
 is written in Felix and is called @{flx_pkgconfig}. Here's one of them:
 @pre
