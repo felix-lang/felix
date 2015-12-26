@@ -12,7 +12,23 @@ The core data type for most functional programming languages.
 @tangle list.flx
 open class List
 {
-  union list[T] = | Empty | Cons of T * list[T];
+  union list[T] = | Empty | Snoc of list[T] * T;
+  fun _match_ctor_Cons[T] : list[T] -> bool = "!!$1"; 
+  inline fun _ctor_arg_Cons[T]: list[T] -> T * list[T] = 
+    "flx::list::snoc2cons<?1>($1)" 
+    requires snoc2cons_h
+  ;
+  inline fun Cons[T] (h:T, t:list[T]) => Snoc (t,h);
+
+  header snoc2cons_h = """
+    namespace flx { namespace list {
+      template<class T> struct snoc { void *mem_0; T mem_1; };
+      template<class T> struct cons { T mem_0; void * mem_1; };
+      template<class T> cons<T> snoc2cons (void *x) { 
+        return cons<T> {((snoc<T>*)x)->mem_1, ((snoc<T>*)x)->mem_0}; 
+      }
+    }}
+  """;
 
 @h2 Splice
 This is primarily a non-functional helper routine.
@@ -28,7 +44,8 @@ This is primarily a non-functional helper routine.
   proc splice[T] : &list[T] * list[T] =
     """
     { // list splice
-      struct node_t { ?1 elt; void *tail; };
+      //struct node_t { ?1 elt; void *tail; };
+      struct node_t { void *tail; ?1 elt; };
       void **p = $1;
       while(*p) p = &((node_t*)FLX_VNP(*p))->tail;
       *p = $2;
@@ -47,7 +64,8 @@ Another helper routine.
     """
     static void _rev(?2 plt, ?1*) // second arg is a dummy
     { // in place reversal
-      struct node_t { ?1 elt; void *tail; };
+      //struct node_t { ?1 elt; void *tail; };
+      struct node_t { void *tail; ?1 elt; };
       void *nutail = 0; 
       void *cur = *plt;
       while(cur)
@@ -74,7 +92,8 @@ Another variant of the unsafe reversal.
     """
     static void _rev_last(?2 p1, ?2 p2, ?1*)
     { // in place reversal returns tail as well
-      struct node_t { ?1 elt; void *tail; };
+      //struct node_t { ?1 elt; void *tail; };
+      struct node_t { void *tail; ?1 elt; };
       void *nutail = (void*)0;                 // new temp tail
       void *cur = *p1;                         // list to reverse
       void *last = cur;                        // save head
@@ -126,7 +145,7 @@ or option iterator.
   //$ Make a list with one element.
   //$ NOTE: list (1,2) is a list of 2 ints.
   //$ To get a list of one pair use list[int*int] (1,2) instead!
-  ctor[T] list[T] (x:T) => Cons(x, Empty[T]);
+  ctor[T] list[T] (x:T) => Snoc(Empty[T],x);
 
 @h2 Construct a list from an array.
 @tangle list.flx
@@ -135,7 +154,7 @@ or option iterator.
     var o = Empty[T];
     if x.len > 0uz do
       for var i in x.len.int - 1 downto 0 do
-        o = Cons (x.i,o);
+        o = Snoc(o,x.i);
       done
     done
     return o;
@@ -153,7 +172,7 @@ Named variant.
       var x = ff();
       return 
         match x with 
-       | Some elt => aux (Cons (elt,l)) 
+       | Some elt => aux (Snoc(l,elt)) 
        | #None => rev l
        endmatch
       ;
@@ -180,7 +199,7 @@ Constructor variant.
       fun aux (acc:size) (x:list[T]) =>
         match x with
         | #Empty => acc
-        | Cons (_,t) => aux (acc + 1uz) t
+        | Snoc(t,_) => aux (acc + 1uz) t
         endmatch
       ;
       return aux 0uz x;
@@ -189,8 +208,8 @@ Constructor variant.
 @tangle list.flx
     //$ get n'th element
     pure fun unsafe_get: list[T] * size -> T =
-      | Cons (h,_), 0uz => h
-      | Cons (_,t), i => unsafe_get (t, i - 1uz)
+      | Snoc(_,h), 0uz => h
+      | Snoc(t,_), i => unsafe_get (t, i - 1uz)
     ;
 
 @h3 Default performance override @{iter}
@@ -199,7 +218,7 @@ Constructor variant.
     proc iter (_f:T->void) (x:list[T]) {
       match x with
       | #Empty => {}
-      | Cons (h,t) => { _f h; iter _f t; }
+      | Snoc(t,h) => { _f h; iter _f t; }
       endmatch
       ;
     }
@@ -212,7 +231,7 @@ Constructor variant.
       fun aux (init:U) (x:list[T]):U =>
         match x with
         | #Empty => init
-        | Cons (h,t) => aux (_f init h) t
+        | Snoc(t,h) => aux (_f init h) t
         endmatch
       ;
       return aux init x;
@@ -226,7 +245,7 @@ Constructor variant.
       fun aux (x:list[T]) (init:U):U =>
         match x with
         | #Empty => init
-        | Cons (h,t) => _f h (aux t init)
+        | Snoc(t,h) => _f h (aux t init)
         endmatch
       ;
       return aux x init;
@@ -248,7 +267,7 @@ Constructor variant.
   //$ Tail of a list, abort with match failure if list is empty.
   pure fun tail[T] (x:list[T]) : list[T] = {
     match x with
-    | Cons (_,t) => return t;
+    | Snoc(t,_) => return t;
     endmatch;
   }
 
@@ -257,7 +276,7 @@ Constructor variant.
   //$ Head of a list, abort with match failure if list is empty.
   pure fun head[T] (x:list[T]) : T = {
     match x with
-    | Cons (h,_) => return h;
+    | Snoc(_,h) => return h;
     endmatch;
   }
 
@@ -270,7 +289,7 @@ Tail recursive.
     fun aux (inp:list[T]) (out:list[U]) : list[U] =>
       match inp with
       | #Empty => out
-      | Cons (h, t) => aux t (Cons (_f(h), out))
+      | Snoc(t,h) => aux t (Snoc(out,_f(h)))
       endmatch
     ;
     return aux x Empty[U];
@@ -299,7 +318,7 @@ Tail recursive.
       return
         match x with
         | #Empty => y
-        | Cons (h, t) => aux t (Cons (h, y))
+        | Snoc(t,h) => aux t (Snoc(y,h))
         endmatch
       ;
     }
@@ -315,7 +334,7 @@ Returns a list the length of the shortest argument.
   {
     fun aux (l1: list[T1]) (l2: list[T2]) (acc: list[T1 * T2]) =>
       match l1, l2 with
-      | Cons(h1,t1), Cons (h2,t2) => aux t1 t2 (Cons ((h1, h2) , acc))
+      | Snoc(t1,h1), Snoc(t2,h2) => aux t1 t2 (Snoc (acc, (h1, h2)))
       | _ => rev acc
       endmatch 
     ;
@@ -335,7 +354,7 @@ From @{low} to @{high} exclusive with given @{step}.
       return
         if high < low
           then values
-          else inner(low, high - step, step, Cons(high, values))
+          else inner(low, high - step, step, Snoc(values,high))
           endif
       ;
     }
@@ -391,13 +410,13 @@ From @{low} to @{high} exclusive with given @{step}.
 @h2 Cons an element onto a list.
 @tangle list.flx
   //$ Prepend element to head of list.
-  pure fun + [T] (x:T, y:list[T]):list[T] => Cons (x, y);
+  pure fun + [T] (x:T, y:list[T]):list[T] => Snoc(y,x);
 
 @h2 Append an element onto a list.
 O(N) slow.
 @tangle list.flx
   //$ Append element to tail of list (slow!).
-  noinline fun + [T] (x:list[T], y:T):list[T] => rev$ Cons (y, rev x);
+  noinline fun + [T] (x:list[T], y:T):list[T] => rev$ Snoc (rev x,y);
 
   //$ Append element to tail of list (slow!).
   proc += [T] (x:&list[T], y:T) { x <- *x + y; }
@@ -410,7 +429,7 @@ O(N) slow.
      return
        match x with
        | #Empty => Empty[T]
-       | Cons (h,t) => fold_left join of (list[T]) h t
+       | Snoc(t,h) => fold_left join of (list[T]) h t
        endmatch
      ;
    }
@@ -424,7 +443,7 @@ O(N) slow.
     return
       match x with
       | #Empty => ''
-      | Cons (h, t) =>
+      | Snoc(t,h) =>
           fold_left (fun (a:string) (b:string) => a + sep + b) h t
       endmatch
     ;
@@ -452,7 +471,7 @@ O(N) slow.
   fun mem[T] (eq:T -> bool) (xs:list[T]) : bool =>
     match xs with
     | #Empty => false
-    | Cons (h,t) => if eq(h) then true else mem eq t endif
+    | Snoc(t,h) => if eq(h) then true else mem eq t endif
     endmatch
   ;
 
@@ -476,7 +495,7 @@ Returns option.
   fun find[T] (eq:T -> bool) (xs:list[T]) : opt[T] =>
     match xs with
     | #Empty => None[T]
-    | Cons (h,t) => if eq(h) then Some h else find eq t endif
+    | Snoc(t,h) => if eq(h) then Some h else find eq t endif
     endmatch
   ;
 
@@ -494,8 +513,8 @@ Returns option.
     fun aux (inp:list[T], out: list[T]) =>
       match inp with
       | #Empty => rev out
-      | Cons(h,t) =>
-        if P(h) then aux(t,Cons(h,out))
+      | Snoc(t,h) =>
+        if P(h) then aux(t,Snoc(out,h))
         else aux (t,out)
         endif
       endmatch
@@ -506,13 +525,13 @@ Returns option.
   //$ Push element onto front of list if there isn't one in the
   //$ list already satisfying the relation.
   fun prepend_unique[T] (eq: T * T -> bool) (x:list[T]) (e:T) : list[T] =>
-    if mem eq x e then x else Cons (e,x) endif
+    if mem eq x e then x else Snoc(x,e) endif
   ;
 
   //$ Attach element to tail of list if there isn't one in the
   //$ list already satisfying the relation.
   fun insert_unique[T] (eq: T * T -> bool) (x:list[T]) (e:T) : list[T] =>
-    if mem eq x e then x else rev$ Cons (e,rev x) endif
+    if mem eq x e then x else rev$ Snoc (rev x,e) endif
   ;
 
   //$ Remove all elements from a list satisfying relation.
@@ -525,9 +544,9 @@ Returns option.
   noinline fun append_unique[T] (eq: T * T -> bool) (x:list[T]) (e:T) : list[T] = {
     fun aux (inp:list[T], out: list[T]) =>
       match inp with
-      | #Empty => rev$ Cons(e,out)
-      | Cons(h,t) =>
-        if not eq (h, e) then aux(t,Cons(h,out))
+      | #Empty => rev$ Snoc(out,e)
+      | Snoc(t,h) =>
+        if not eq (h, e) then aux(t,Snoc(out,h))
         else aux (t,out)
         endif
       endmatch
@@ -542,7 +561,7 @@ Returns option.
     else
       match lst with
         | #Empty => list[T] ()
-        | Cons(x, xs) => join (list[T] x) (take[T] (k - 1) xs)
+        | Snoc(xs,x) => join (list[T] x) (take[T] (k - 1) xs)
       endmatch
     endif
   ;
@@ -554,7 +573,7 @@ Returns option.
     else
       match lst with
         | #Empty => list[T] ()
-        | Cons(x, xs) => drop (k - 1) xs
+        | Snoc(xs,x) => drop (k - 1) xs
     endif
   ;
  
@@ -563,7 +582,7 @@ Returns option.
     | #Empty, #Empty => true
     | #Empty, _ => false
     | _,#Empty => false
-    | Cons (ha,ta), Cons (hb,tb) => 
+    | Snoc(ta,ha), Snoc(tb,hb) => 
       if not (ha == hb) then false
       else list_eq (ta, tb)
       endif
@@ -585,7 +604,7 @@ Returns option.
     sort lt a;
     var r = Empty[T];
     if n > 0uz do
-      for var i in n - 1uz downto 0uz do r = Cons(a.i, r); done
+      for var i in n - 1uz downto 0uz do r = Snoc(r,a.i); done
     done
     return r;
   }
@@ -601,7 +620,7 @@ Returns option.
     gen iterator (var xs:list[T]) () = {
       while true do
         match xs with
-        | Cons (h,t) => xs = t; yield Some h;
+        | Snoc(t,h) => xs = t; yield Some h;
         | #Empty => return None[T];
         endmatch;
       done
@@ -627,7 +646,7 @@ instance[T with Show[T]] Str[List::list[T]] {
     'list(' +
       match xs with
       | #Empty => ''
-      | Cons(o, os) =>
+      | Snoc(os,o) =>
           List::fold_left (
             fun (a:string) (b:T):string => a + ', ' + (repr b)
           ) (repr o) os
@@ -642,7 +661,7 @@ instance[T with Show[T]] Str[List::list[T]] {
 syntax listexpr
 {
   //$ List cons, right associative.
-  x[sarrow_pri] := x[>sarrow_pri] "!" x[sarrow_pri] =># '''`(ast_apply ,_sr (,(nos "Cons") (,_1 ,_3)))''';
+  x[sarrow_pri] := x[>sarrow_pri] "!" x[sarrow_pri] =># '''`(ast_apply ,_sr (,(nos "Snoc") (,_3 ,_1)))''';
 }
 
 @h1 Association List
@@ -676,7 +695,7 @@ open class Assoc_list
   fun find[A,B] (eq:A -> bool) (xs:assoc_list[A,B]) : opt[B] =>
     match xs with
     | #Empty => None[B]
-    | Cons ((a, b), t) => if eq(a) then Some b else find eq t endif
+    | Snoc (t,(a, b)) => if eq(a) then Some b else find eq t endif
     endmatch
   ;
 
