@@ -15,38 +15,22 @@ You will need Ocaml 3.11 or better native code compiler.
 Felix currently will not work with the bytecode compiler.
 </p>
 
-<h3>C++</h3>
-<p>On linux you will require gcc for the bootstrap. 
-On OSX you will need clang.
-On Windows, MSVC++. 
-</p>
-
 <h3>C++ language level</h3>
 Felix tries to build with clang <code>-std=c++11</code>,
-and gcc using <code>-std=c++0x</code>. Felix itself currently
-does not use any features beyond ISO C++90, i.e. the original
-C++ Standard. However Google RE2 seems to require either
-<code>tr1/unordered_set</code> (from TR1, present in C++0x),
-or <code>unordered_set</code> (from ISO C++11).
-
-
-<p>Other C++ compilation systems can be used once you have
-a bootstrapped host system, for example gcc 4.2 on OSX should
-work fine. It may be possible to override these defaults earlier,
-but you will have to join mailing list and ask.
-</p>
+and gcc using <code>-std=c++0x</code>. C++11 is mandatory.
+Gcc 5.1 should work. Clang 3.7 should work. Note, the Apple
+supplied clang available with OSX 10.10 does NOT work.
 
 <h3>Operating System Tools</h3>
-Felix requires a couple of standard bin utils including
+On Linux and OSX, Felix requires a couple of standard bin utils including
 things like <code>cp</code> and of course <code>make</code>.
-These are also available on Windows so you should obtain these
-utilities and install them permanently in a Windows development
-environment, they're handy in general.
 
 <h3>Operating System API</h3>
 On Unix and OSX based systems Felix requires Posix API.
 On Windows, the standard C library emulations are usually
 used for convenience instead of the native Windows APIs.
+
+Felix should also build on Cygwin64 (pretending it is Linux).
 
 <h3>Asynchronous I/O</h3>
 Felix does asynchronous socket I/O using one of these event
@@ -94,9 +78,6 @@ by the install process. On windows the install location is:
 C:\usr\local\lib\felix\felix-&lt;versio&gt;
 </pre>
 that is, the same as on Unix.<p>
-<p>There is a reason the install location is fixed: it makes it easier
-to provide support.</p>
-
 
 <h2>Initial download</h2>
 Then issue these
@@ -111,8 +92,37 @@ git clone https://github.com/felix-lang/felix.git
 then
 <pre>
 cd felix
-make build
-make rebuild
+</pre>
+Now, depending on you platform you need to set PATH, LD_LIBRARY_PATH,
+DYLD_LIBRARY_PATH for the second stage boostrap and then run the build.
+This is done by
+<pre>
+. buildscript/osxsetup.sh
+make
+</pre>
+on OSX,
+<pre>
+. buildscript/linuxsetup.sh
+make
+</pre>
+on Linux and
+<pre>
+buildscript\winsetup.bat
+nmake
+</pre>
+on Windows.
+
+By default, Linux build wll use gcc if found, OSX build will use
+clang if found, and Windows always uses CL.EXE. The default
+can be change for Linux or OSX by setting the environment variable:
+<pre>
+FLX_TOOLCHAIN_FAMILY=gcc
+</pre>
+or
+</pre>
+FLX_TOOLCHAIN_FAMILY=clang
+</pre>
+
 </pre></p>
 <p>Now to install Felix:
 <pre>
