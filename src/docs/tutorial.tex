@@ -107,7 +107,7 @@ The standard libraries are lean and some are so archaic they're
 not even re-entrant. The politics of the development
 model is the key problem: Ocaml is primarily a tool for
 type system testing, and the small team of talented
-develops do not have the resources to provide much of the
+developers do not have the resources to provide much of the
 production quality tools and libraries needed. At the same
 time separate development of such facilities 
 is seriously compromised by the lack of political coordination.
@@ -161,7 +161,7 @@ so that for example, as well as communication with
 channels, fibres can modify shared variables.
 
 Threads extend the fibration model by allowing multiple
-concurrent threads of control. Thread can communicate
+concurrent threads of control. Threads can communicate
 using channels which act as synchronisation points.
 Of course threads can contain function code, procedural
 code and fibrated code as well, so we have a very 
@@ -176,7 +176,7 @@ of order of side effects possible. So neither language takes
 control flow seriously.
 
 One of the core problems in traditional languages is that
-product types are well represented by sum types are not.
+product types are well represented but sum types are not.
 Most languages have structs, tuples, records, objects, or some other
 product building mechanism (Felix has all the above!).
 
@@ -239,7 +239,7 @@ output a value in a useful form, that is, it must exhibit
 observable behaviour.
 
 In a purely functional language, the order of evaluation
-is not deterministic, but nor it it free: value must
+is not deterministic, but nor it it free: values must
 be computed some time before they're required. With lazy
 evaluation, that's just before they're required, with
 eager evaluation the time before the using function
@@ -930,13 +930,20 @@ we can pack multiple values together using a tuple.
 
 \subsection{Unit tuple}
 There is a special tuple with nothing in it called
-the unit tuple, written:
+the {\em unit} tuple, written:
 
 \begin{minted}{felix}
-  var u : unit = ();
   var u2 : 1 = ();
+  var u : unit = ();
 \end{minted}
 
+where the alias \verb%unit% is defined in the library by:
+
+\begin{minted}{felix}
+   typedef unit = 1;
+\end{minted}
+
+The $1$ signifies that the unit type has only one value.
 It is a \href{https://en.wikipedia.org/wiki/Unit_type}{unit type}.
 
 \subsection{Arrays}
@@ -1129,6 +1136,9 @@ println$
 ;
 \end{minted}
 
+Note you have to write \verb%#% in front of \verb%Empty%. This is to
+tell Felix that you mean a constructor taking no arguments.
+Otherwise it will be taken as a pattern variable!
 
 \subsection{Option Type}
 Another commonly used union type is the option type \verb%opt%:
@@ -1627,6 +1637,7 @@ control variable is auto declared:
   for j in list (1,2,3,4,5,6,7,8,9,19) do
     println$ i; // list iterator
   done
+
   for (i=0; i<10; ++i;) do // C style
     println$ i;
   done
@@ -1635,6 +1646,28 @@ end
 
 Iterator based loops are implemented using yielding generators
 as explained in the next section.
+
+\subsubsection{Breaks}
+Felix allows modification of loop control flow as follows:
+
+\begin{minted}{felix}
+var sum = 0;
+iloop: for i in 0 upto 10 do
+  var prod = 0;
+  jioop: for j in 0 upto 10 do
+    if j % 2 == 0 continue jloop;
+    prod = prod * j;
+    if prod > 5000 break jloop;
+  done
+  if sum < 20000 redo iloop;
+done
+\end{minted}
+
+The %\verb%break%, \verb%continue% and \verb%redo% statements
+cause early exit, early continuation, or complete restarting
+of the \verb%for%, \verb%while%, or \verb%repeat% loop specified
+by the loop name. Loops can be named with an identifier followed
+by a colon \verb%:% immediately preceeding the loop.
 
 \subsection{Statement Groups}
 Statements can be grouped using the \verb%do .. done% constuction.
@@ -1896,6 +1929,138 @@ finite number of steps. The current compiler does
 not check this in advance, and instead just uses an
 expansion limit.
 
+\section{Dynamic Objects}
+Felix provides a dynamic kind of object and interface with
+syntax similar to Java. 
+
+\begin{minted}{felix}
+interface Employee_t { 
+  name: 1 -> string;
+  service: 1 -> double;
+  base_pay: 1-> double;
+  pay : double  -> double;
+  set_base_pay : double -> 0;
+}
+
+object Employee (
+  ename: string, 
+  eservice: double,
+  abase_pay: double
+) 
+implements Employee_t =
+{
+  var ebase_pay = abase_pay;
+  method fun name () => ename;
+  method fun service () => eservice;
+  method fun base_pay () => ebase_pay;
+  method proc set_base_pay (v:double) => ebase_pay = v;
+  method fun pay (extra: double) => extra + service * ebase_pay / 52.0;
+}
+\end{minted}
+
+To use objects:
+
+\begin{minted}{felix}
+proc show (p: Employee_t) {
+  println$ "Employee " + #(p.name) + 
+    " earns " + p.pay 0.0 + " per week"
+  ;
+}
+
+var joe  = Employee ("joe", 1.5, 90_000.0);
+show joe; 
+\end{minted}
+
+Dynamic objects do not introduce any new functionality
+to the Felix language. An \verb%interface% is nothing more
+than an alias for a record type:
+
+\begin{minted}{felix}
+typedef Employee_t = (
+  name: 1 -> string, 
+  service: 1 -> double,
+  base_pay: 1 -> double,
+  pay: double -> double,
+  set_base_pay: double -> 0,
+); 
+\end{minted}
+
+An object is precisely a function which returns a value of the
+specified interface type by returning a record of closures of
+all the specified methods:
+
+\begin{minted}{felix}
+fun Employee (
+  ename: string, 
+  eservice: double,
+  abase_pay: double
+) : Employee_t =
+{
+
+
+{
+  var ebase_pay = abase_pay;
+
+  fun name () => ename;
+  fun service () => eservice;
+  fun base_pay () => ebase_pay;
+  proc set_base_pay (v:double) => ebase_pay = v;
+  fun pay (extra: double) => 
+    extra + service * ebase_pay / 52.0;
+
+  return (
+    name = name, 
+    service = service, 
+    base_pay = base_pay, 
+    pay = pay,
+    set_base_pay = set_base_pay
+  );
+}
+\end{minted}
+
+Felix dynamic objects provide encapsulation based on functional abstraction.
+In particular to use a value of an object type the client only
+requires knowledge of the interface.
+
+The \verb%interface% clause of the object specification can be
+left out in the same way as the return type of a function can 
+be left out. Similarly, objects can be anonymous, in the same
+way functions can be anonymous:
+
+\begin{minted}{felix}
+var Cplx = object (x:double, y:double) =
+  {
+    method fun Real () => x;
+    method fun Imag () => y;
+    method fun Arg () => atan2 (y,x);
+    method fun Mod () => sqrt (x * x + y * y);
+  }
+;
+var z = Cplx (1.0,1.0);
+println$ 
+  "Complex " + #(z.Real) + #(z.Imag)+"i = " +
+  #(z.Mod)+"e^" + #(z.Arg)+"i"
+;
+\end{minted}
+
+Note carefully that \verb%Cplx% is a closure over the object
+constructor, that is, it is a function returning a record
+of methods, it has to be applied to an argument to actually
+produce the object.
+
+Because object types are just record types, we can use 
+dynamic techniques are row polymorphism to provide very 
+strong statically typed object management. The system is
+extremely powerful and much more expressive than C++ or
+Java objects; of course the downside of such power is the
+usual ability to shoot yourself in the foot.
+
+\subsection{Plugins}
+Plugins are a special kind of object for which the implementation
+is dynamically loaded at run time from a shared library.
+Plugins can also be preloaded so the plugin interface can be used
+for a statically linked program without modification.
+
 \begin{table}
 \caption{Summary of Types}
 \label{Summary of Types}
@@ -1937,6 +2102,7 @@ list&\verb%list[T]=Empty|Cons of (T*list[T])%&functional list\\
 varray&varray[T]&bounded stable variable length array\\
 darray&darray[T]&unbounded reallocable variable length array\\
 sarray&sparse array\\
+bsarray&bounded sparse array\\
 strdict&string dictionary\\
 judy array&Judy1, JudyL arrays\\
 schannel&synchronous channels\\
@@ -3138,7 +3304,7 @@ y . a = 42; // equivalent by sugar
 
 What is important here is that all product projections from product type $P$
 to component type $C$, having type $P -> C$, are overloaded so that there
-is also a projection with the same name of type $&P -> &C$.
+is also a projection with the same name of type $\&P -> \&C$.
 
 In paricular note that you cannot "take the address" of a subcomponent
 of a value stored in a variable! In fact, the \verb%&% is not an operator at all.

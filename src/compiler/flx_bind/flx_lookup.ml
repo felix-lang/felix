@@ -4526,7 +4526,9 @@ print_endline ("LOOKUP 9: varname " ^ si i);
 
   | EXPR_likely (srr,e) -> bexpr_likely (be e)
   | EXPR_unlikely (srr,e) -> bexpr_unlikely (be e)
-  | EXPR_not (sr,e) -> bexpr_not (be e)
+  | EXPR_not (sr,e) -> 
+    let x = Flx_strr.apl2 sr "lnot" [e]  in
+    be x
 
   | EXPR_ref (_,(EXPR_deref (_,e))) -> be e
 
