@@ -589,40 +589,6 @@ C++ \verb%::std::basic_string<char>% and its default
 initialiser sets the string to the empty string \verb%""%.
 That's what the code above prints!
 
-\section{Pointers {\tt \&}}
-Since variables are mutable addressable objects we can
-take the address of a variable:
-
-\begin{minted}{felix}
-var x = 1;
-var px : &int = &x;
-var y = *px;
-px <- 42;
-println$ x,y;
-\end{minted}
-
-Here, the type of a pointer to \verb%int% is written 
-\verb%&int%, the address of a variable \verb%x% is
-written \verb%&x%, the dereference operation applied
-to the pointer \verb%px% is written \verb%*px%.
-
-The store operation \verb%px <- 42% is a core operation.
-In particular assignment is just a shorthand for storing
-at the address of a variable:
-
-\begin{minted}{felix}
-x = 42; // means
-&x <- 42;
-\end{minted}
-
-Note that in principle the \verb%&% symbol is {\em NOT}
-an operator. A variable is in fact a constant, its not
-variable at all. It's just that the constant is the address
-of a storage object. What's stored {\em at} the address,
-or {\em in} a variable may change, the variable itself
-does not.
-
-
 \section{Floating Point: {\tt double}}
 Felix also provides a model of C++ type \verb%double%
 with the usual operators.  This is a double precision floating point type 
@@ -905,6 +871,40 @@ println$
 Note that the regdef kind of variable must be converted to a
 Perl regexp in a string form using the \verb%render% function.
 
+\chapter{Data types}
+\section{Pointers {\tt \&}}
+Since variables are mutable addressable objects we can
+take the address of a variable:
+
+\begin{minted}{felix}
+var x = 1;
+var px : &int = &x;
+var y = *px;
+px <- 42;
+println$ x,y;
+\end{minted}
+
+Here, the type of a pointer to \verb%int% is written 
+\verb%&int%, the address of a variable \verb%x% is
+written \verb%&x%, the dereference operation applied
+to the pointer \verb%px% is written \verb%*px%.
+
+The store operation \verb%px <- 42% is a core operation.
+In particular assignment is just a shorthand for storing
+at the address of a variable:
+
+\begin{minted}{felix}
+x = 42; // means
+&x <- 42;
+\end{minted}
+
+Note that in principle the \verb%&% symbol is {\em NOT}
+an operator. A variable is in fact a constant, its not
+variable at all. It's just that the constant is the address
+of a storage object. What's stored {\em at} the address,
+or {\em in} a variable may change, the variable itself
+does not.
+
 \section{Tuples}
 Felix has an strucurally typed product where components are
 accessed by position, commonly called a {\em tuple}.  Tuples
@@ -915,7 +915,7 @@ function:
 \begin{minted}{felix}
 var x = 1,"Hello", 42.7; // type int * string * double
 var i = x . 0;
-var h  = x . 1;
+var h = x . 1;
 var d = x  . 2;
 \end{minted}
 
@@ -1171,6 +1171,7 @@ enum colour = red, green, blue; // equivalent to
 union colour = red | green | blue;
 \end{minted}
 
+\chapter{Algorithms}
 \section{Functions}
 We have enough preliminaries now to finally introduce functions.
 Without further ado, here are some basic functions:
@@ -1305,6 +1306,42 @@ and parameter type must match exactly.
 Overloading first looks in the scope of the application.
 If matching fails to find any candidate functions, it proceeds
 to the next outer level, until there are no more levels left.
+
+\subsubsection{Named Arguments}
+In Felix you can use named arguments. This helps
+to resolve overload clashes when the candidate
+functions have the same type. It is also useful if
+you forget the order of the arguments.
+
+\begin{minted}{felix}
+fun f(x:int, y:int) => x + y;
+fun f(a:int, b:int) => a - b;
+println$ f (y=1, x=2), f (a=1, b=2);
+\end{minted}
+
+In fact, a function using named parameters will also
+accept a value of record type:
+
+\begin{minted}{felix}
+fun f(x:int, y:int) => x + y;
+fun f(a:int, b:int) => a - b;
+var xy = (y=1, x=2);
+var ab = (a=1, b=2);
+println$ f xy, f ab;
+\end{minted}
+
+\subsubsection{Default Arguments}
+A function can be specified with default arguments:
+
+\begin{minted}{felix}
+fun f(x:int=5, y:int) => x + y;
+println$ f (y=1);
+\end{minted}
+
+If you wish to use default arguments you must use the
+named parameters feature directly or provide a record
+argument with missing fields. Default arguments do not
+work with tuple arguments.
 
 \subsection{Higher Order Functions}
 In Felix, a function can become a first class value.
@@ -1588,60 +1625,78 @@ in and out with \verb%goto% is permitted. The control
 variable can optionally be declared in a loop, and
 exists in the whole containing scope.
 
+\subsubsection{Counting Loops}
+In this forms, the control variable may be declared
+by the loop if necessary. Note the control variable
+is accessible outside the loop!
+
 \begin{minted}{felix}
-begin
-  for var i:int in 0 upto 10 do // inclusive
-    println$ i; // procedure call
-  done
-  for i in 10 downto 0 do // inclusive
-    println$ i; // procedure call
-  done
+for var i:int in 0 upto 10 do // inclusive
+  println$ i; // procedure call
+done
+
+for i in 10 downto 0 do // inclusive
+  println$ i; // procedure call
+done
 \end{minted}
 
+\subsubsection{While Loops}
 Here is the usual while loop and its negation the until loop.
 
 \begin{minted}{felix}
-begin
-  var i = 0;
-  while i < 10 do
-    println$ i;
-    ++i; 
-  done
-  until i == 0 do 
-    println i;
-    --i; // decrement
-  done
-end
+// While loop
+var i = 0;
+while i < 10 do
+  println$ i;
+  ++i; 
+done
+
+// until loop
+until i == 0 do 
+  println i;
+  --i; // decrement
+done
 \end{minted}
 
+\subsubsection{Index Iterators}
 And here are loops using iterators, note that the
 control variable is auto declared:
 
 \begin{minted}{felix}
-  // inclusive subrange of int iterator
-  for j in 0..10 do 
-    println$ j; 
-  done
+// inclusive subrange of int iterator
+for j in 0..10 do 
+  println$ j; 
+done
 
-  // exclusive subrange of int iterator
-  for j in 0..<10 do 
-    println$ j;
-  done
+// exclusive subrange of int iterator
+for k in 0..<10 do 
+  println$ k;
+done
+\end{minted}
 
-  // array iterator
-  for j in (1,2,3,4,5,6,7,8,9,10) do
-    println$ j; // array iterator
-  done
+\subsubsection{Visitors}
+Most data structures provide iterators for
+visitor loops:
 
-  // list iterator
-  for j in list (1,2,3,4,5,6,7,8,9,19) do
-    println$ i; // list iterator
-  done
+\begin{minted}{felix}
+// array iterator
+for j in (1,2,3,4,5,6,7,8,9,10) do
+  println$ j; // array iterator
+done
 
-  for (i=0; i<10; ++i;) do // C style
-    println$ i;
-  done
-end
+// list iterator
+for j in list (1,2,3,4,5,6,7,8,9,19) do
+  println$ i; // list iterator
+done
+\end{minted}
+
+\subsubsection{C style}
+This is the fastest and most general loop:
+
+\begin{minted}{felix}
+for (i=0; i<10; ++i;) do // C style
+  println$ i;
+done
 \end{minted}
 
 Iterator based loops are implemented using yielding generators
@@ -1663,7 +1718,7 @@ iloop: for i in 0 upto 10 do
 done
 \end{minted}
 
-The %\verb%break%, \verb%continue% and \verb%redo% statements
+The \verb%break%, \verb%continue% and \verb%redo% statements
 cause early exit, early continuation, or complete restarting
 of the \verb%for%, \verb%while%, or \verb%repeat% loop specified
 by the loop name. Loops can be named with an identifier followed
@@ -1780,12 +1835,12 @@ and the client is a {\em pull} master.
 We will see shortly that Felix has different techniques to
 implement fully general coroutines.
 
-\section{Concepts: type classes}
+\chapter{Concepts: type classes}
 Felix provides a way of systematically organising functions and operators
 known as {\em type classes}, modelled on the construction
 of the same name in Haskell.
 
-\subsection{Monomorphic Classes}
+\section{Monomorphic Classes}
 A nonpolymorphic \verb%class% is just a closed namespace:
 
 \begin{minted}{felix}
@@ -1830,7 +1885,7 @@ class B { inherit A; fun g (x:int) => f x; }
 println$ B::f 42; // OK, f is in B
 \end{minted}
 
-\subsection{Polymorphic Classes}
+\section{Polymorphic Classes}
 When a class is polymorphic things get more interesteding.
 Polymorphic classes are basically collections of template
 declarations and definitions.
@@ -1904,7 +1959,7 @@ argument have to be explicitly qualified to distinguish them,
 there is no type distinction in the argument for overload
 resolution to use.
 
-\subsubsection{Two Phase Binding}
+\subsection{Two Phase Binding}
 Felix uses a lookup model which provides two phases of
 binding. In the first phase, all binding is polymorphic.
 Bindings to virtual functions may occur in this phase.
@@ -1917,7 +1972,7 @@ matching the monomorphic type parameters and replaces
 the virtual call with a concrete one, or bugs out if
 no instance is found.
 
-\subsubsection{Polymorphic Recursion}
+\subsection{Polymorphic Recursion}
 You should note that instance functions may themselves
 contain virtual calls, and this permits the instantiator
 to implement polymorphic recursion. That is, a limited
@@ -1929,7 +1984,7 @@ finite number of steps. The current compiler does
 not check this in advance, and instead just uses an
 expansion limit.
 
-\section{Dynamic Objects}
+\chapter{Dynamic Objects}
 Felix provides a dynamic kind of object and interface with
 syntax similar to Java. 
 
@@ -1954,7 +2009,8 @@ implements Employee_t =
   method fun service () => eservice;
   method fun base_pay () => ebase_pay;
   method proc set_base_pay (v:double) => ebase_pay = v;
-  method fun pay (extra: double) => extra + service * ebase_pay / 52.0;
+  method fun pay (extra: double) => 
+    extra + service * ebase_pay / 52.0;
 }
 \end{minted}
 
@@ -1995,9 +2051,6 @@ fun Employee (
   eservice: double,
   abase_pay: double
 ) : Employee_t =
-{
-
-
 {
   var ebase_pay = abase_pay;
 
@@ -2055,7 +2108,7 @@ extremely powerful and much more expressive than C++ or
 Java objects; of course the downside of such power is the
 usual ability to shoot yourself in the foot.
 
-\subsection{Plugins}
+\section{Plugins}
 Plugins are a special kind of object for which the implementation
 is dynamically loaded at run time from a shared library.
 Plugins can also be preloaded so the plugin interface can be used
