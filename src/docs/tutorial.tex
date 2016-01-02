@@ -721,6 +721,37 @@ with double quote delimiter. You cannot use the raw prefix
 with single quoted strings because the single quote following
 a letter is allowed in identifiers.
 
+
+\begin{table}
+\caption{String Escapes}
+\label{String Escapes}
+\centering
+\begin{tabular}[c]{lll}
+\multicolumn{3}{c}{Basic}\\
+Escape&Name&Decimal Code\\
+\hline
+\verb%\a%&ASCII bell& 7\\
+\verb%\b%&ASCII backspace&8\\
+\verb%\f%&ASCII Form Feed&12\\
+\verb%\n%&ASCII New Line&10\\
+\verb%\t%&ASCII Tab&9\\
+\verb%\r%&ASCII Carriage Return&13\\
+\verb%\r%&ASCII Vertical Tab&11\\
+\verb%\'%&ASCII Single Quote&39\\
+\verb%\"%&ASCII Double Quote&34\\
+\verb%\\%&ASCII Backslash&92\\
+\multicolumn{3}{c}{Numeric}\\
+\hline
+\verb%\d%999&Decimal encoding&\\
+\verb%\o%777&Octal encoding&\\
+\verb%\x%FF&Hex encoding&\\
+\verb%\u%FFFF&UTF-8 encoding&\\
+\verb%\U%FFFFFFFF&UTF-8 encoding&\\
+\end{tabular}
+\end{table}
+
+
+
 \subsection{String Functions}
 Felix has a rich set of string functions. The most important
 is \verb%char%, which returns a value of type \verb%char%.
@@ -1725,12 +1756,14 @@ by the loop name. Loops can be named with an identifier followed
 by a colon \verb%:% immediately preceeding the loop.
 
 \subsection{Statement Groups}
+\subsubsection{Do group}
 Statements can be grouped using the \verb%do .. done% constuction.
 The body of a loop is a single statement, the do group is used
 to present the parser many statements considered as one.
 Jumps into and out of a do group are allowed, they do 
 not represent a scope.
 
+\subsubsection{Block function}
 There is another group called a {\em block} which does
 represent a scope: the \verb%begin .. end% construction.
 You can jump out of a block, but you cannot jump in, and
@@ -2588,15 +2621,16 @@ the databases are also language neutral.
 We shall begin our more serious exploration of Felix with functional programming
 techniques.
 
-\section{Recursion}
+\section{Lists}
 We shall begin with some basic routines on lists.
+We will first write the "obvious" routines to use as specifications.
+Later we will have to look at their performance.
 
 \subsection{Reversing a list}
 To reverse a list, we run down the list constructing a new
-one. At the end, we return the result. We will use several
-routines for this. 
+one. At the end, we return the result. 
 
-Our first routine takes two arguments,
+Our routine takes two arguments,
 a list \verb%inp% and a list \verb%out% onto which we must prepend
 the reversed copy of \verb%inp%.
 
@@ -2610,106 +2644,134 @@ fun prepend_reversed[T] (inp:list[T]) (out: list[T]) =>
 ;
 \end{minted}
 
-This routine is statically recursive, meaning, there is a control
-path which causes the routine to be re-invoked. It is also
-self-recursive, meaning it invokes itself directly.
-
-A {\em tail call} is the final call in a function. Tail calls can
-be optimised from a call followed by a return to just a jump. 
-This avoids pushing the return address, then returning to that
-address from the called procedure, then immediately returning
-to the callers return address. Instead, the called procedure
-just returns to the callers return address directly.
-
-In particular, if the tail call is call to self, 
-known as {\em self-tail-recursion} 
-then by assigning
-the call argument to the parameter, we then just jump to the start
-of the function. In other words, we can optimise tail recursion
-to a simple loop. This saves more than the space of the return
-address on the stack, it saves the space required by all the local
-variables as well. We can reuse these variables, since the old
-values cannot be accessed.
-
-Our routine \verb%prepend_reversed% is clearly self tail recursive
-and can be optimised to a simple loop. Tail recursion is also known
-as {\em primitive recursion}.
-
-
 We can use this routine to reverse a list.
 
 \begin{minted}{felix}
 fun rev[T] (a: list[T]) => prepend_reversed a Empty[T];
 \end{minted}
 
+\subsection{Join Lists}
 Now suppose we wish to prepend a list $a$ onto a list $b$.
 How would we do that? Well it's easy:
 
 \begin{minted}{felix}
-fun prepend_v1[T] (a: list[T]) (b: list[T]) =>
+fun join[T] (a: list[T], b: list[T]) =>
   prepend_reversed (rev a) b
 ;
 \end{minted}
 
-We just reverse the first list, then prepend it reversed
-onto the second one. Which suggests there is another way:
+\subsection{Map a List}
+This routine creates a new list with each
+element a function of the old value.
 
 \begin{minted}{felix}
-fun prepend_v2[T] (a: list[T]) (b: list[T]) =>
-  rev (prepend_reversed a (rev b))
+fun rev_map[U,T] (f:T->U) (inp:list[T]) : list[U]=>
+  match inp with
+  | #Empty => Empty[U]
+  | Cons (head, tail) => Cons (f head, rev_map f tail)
+  endmatch
+;
+
+fun map[U,T] (f:T->U) (inp:list[T]) : list[U] =>
+  rev$ rev_map f inp
 ;
 \end{minted}
 
-Our first routine requires $2a$ heap allocations.
-The second routine requires $2(a+b)$ heap allocations.
-Both numbers look bad! This is because we have paid
-for tail recursion with excess heap allocations.
-Here is how we can do it with a non-tail recursive
-routine with only $a$ heap allocations and $a$
-stack allocations.
+\subsection{Left fold a List}
+Folds fold the elements of a list of $T$ into a single value
+of type $U$ by applying a function of type $U \times T \rightarrow U$.
+Lists have two folds, one starting at the top or left, and one starting
+at the bottom.
 
 \begin{minted}{felix}
-fun prepend_v3[T] (a: list[T]) (b: list[T]) =>
-  match a with
-  | #Empty => b
-  | Cons (head, tail) => 
-    Cons (head, prepend_v3 tail b)
+fun fold_left[U,T] (f:U * T -> U) (acc:U) (inp:list[T]) : U =>
+  match inp with
+  | #Empty => acc
+  | Cons (head, tail) => fold_left f (f acc head) tail
   endmatch
 ;
 \end{minted}
 
-This routine is no use if the machine stack is limited and the
-list $a$ is big. It also requires more maximum store than
-either of the other routines! The whole of the original list $a$ is saved
-on the stack at the time $a$ is empty, and as we return we prepend elements
-to be in reverse order. On the way down the list, we do save the elements
-to prepend on the way back up. We therefore have a copy of $a$ as well
-as $n=len a$ machine addresses on the stack.
+Notice the order of the arguments, and see how in the second branch
+the head element is folded into the accummulator to form an argument
+for the recursive call.
 
-On the other hand, whilst our v1 routine reverses the original list,
-and then pushes it reversed onto the output list, it uses at most
-$a$ heap nodes. As we push the top of the reversed list onto
-the output, that head element becomes unreachable and can be freed.
-In fact, the heap allocation and free can be avoided altogether
-by simply adjusting the pointer to the tail of the top node to
-point instead at the output list! It is perfectly safe to do this
-because that reversed list is owned by us and no one else, and
-it is entirely unreachable at the end of the routine.
+\subsection{Right fold a List}
+Here is the right fold:
 
-Even more surprising, our v2 routine can be optimised by a
-trick as well. Since the argument to the tail call is owned
-by us, we can just modify the list, instead of reallocating it.
-We can either reverse the actual elements, or, we can swap
-the next pointers around!
+\begin{minted}{felix}
+fun fold_right[U,T] (f:T * U -> U) (inp:list[T]) (acc:U): U =>
+  match inp with
+  | #Empty => acc
+  | Cons (head, tail) => f (fold_right f acc tail) head
+  endmatch
+;
+\end{minted}
 
-In general, a temporary created by a function can safely mutated.
-A basic functional programming language does not have the type
-system support to enable the compiler to prove when it is safe,
-however such type systems do exist: the typing regime is
-known as {\em linear typing} because it is used to track when
-a value is constructed it is used exactly once.
-See \href{https://en.wikipedia.org/wiki/Substructural_type_system}{Wikipedia}
-for more information.
+Notice again the order of the arguments and see how
+in the second branch the recursion produces an argument
+for the function f.
+
+\subsection{Concatenate List of Lists}
+Using our fold we can concatenate a list of lists into a single list.
+
+\begin{minted}{felix}
+fun cat[T] (x:list[list[T]]):list[T] =>
+  match x with
+  | #Empty => Empty[T]
+  | Cons(h,t) => fold_left join of (list[T]) h t
+  endmatch
+;
+\end{minted}
+
+\subsection{Filter}
+Filter selects all the elements of a list satisfying a predicate.
+
+\begin{minted}{felix}
+fun filter[T] (P:T -> bool) (x:list[T]) : list[T] =>
+  match inp with
+  | #Empty => Empty[T]
+  | Cons(h,t) =>
+    if P(h) then Cons(h, filter P t)
+    else filter P t
+  endmatch
+;
+\end{minted}
+
+\subsection{Prefix and Suffix}
+For a list $l$ of length $n$, $take k l$
+returns the head sublist of length $min(n,k)$.
+
+\begin{minted}{felix}
+fun take[T] (k:int) (lst:list[T]) : list[T] =>
+  if k <= 0 then Empty[T]
+  else
+    match lst with
+      | #Empty => Empty[T]
+      | Cons(x,xs) => Cons(x, take[T] (k - 1) xs)
+    endmatch
+  endif
+;
+\end{minted}
+
+For a list $l$ of length $n$, $drop k l$ returns
+the list with first $min(n,k)$ elements removed.
+
+\begin{minted}{felix}
+  fun drop[T] (k:int) (lst:list[T]) : list[T] =>
+    if k <= 0 then lst
+    else
+      match lst with
+        | #Empty => list[T] ()
+        | Cons(x,xs) => drop (k - 1) xs
+    endif
+  ;
+\end{minted} 
+
+\subsection{Search}
+
+\subsection{Compare}
+
 
 \section{More stuff..}
 \begin{minted}{felix}
