@@ -40,6 +40,7 @@ namespace flx { namespace rtl { namespace ioutil {
   RTL_EXTERN bool flx_isstdin(::std::FILE*);
   RTL_EXTERN bool flx_isconsole(::std::FILE*);
   RTL_EXTERN ::std::string raw_readln(::std::FILE*);
+  RTL_EXTERN ::std::string raw_read(::std::FILE*, ::std::size_t);
   RTL_EXTERN ::std::string echo_readln(::std::FILE*);
   RTL_EXTERN ::std::string readln(::std::FILE*);
   RTL_EXTERN void write (::std::FILE *, ::std::string);
@@ -110,7 +111,7 @@ namespace flx { namespace rtl { namespace ioutil {
       string x = "";
       char buffer[MYBUFSIZ];
       while (!feof(fi)) {
-        int n = fread(buffer,1,MYBUFSIZ,fi);
+        ::std::size_t n = fread(buffer,1,MYBUFSIZ,fi);
         if(n>0) x += string(buffer,n);
         else break;
       }
@@ -131,7 +132,7 @@ namespace flx { namespace rtl { namespace ioutil {
       string x = "";
       char buffer[MYBUFSIZ];
       while (!feof(fi)) {
-        int n = fread(buffer,1,MYBUFSIZ,fi);
+        ::std::size_t n = fread(buffer,1,MYBUFSIZ,fi);
         if(n>0) x += string(buffer,n);
         else break;
       }
@@ -151,7 +152,7 @@ namespace flx { namespace rtl { namespace ioutil {
       string x = "";
       char buffer[MYBUFSIZ];
       while (!feof(fi)) {
-        int n = fread(buffer,1,MYBUFSIZ,fi);
+        ::std::size_t n = fread(buffer,1,MYBUFSIZ,fi);
         if(n>0) x = x + string(buffer,n);
         else break;
       }
@@ -177,6 +178,16 @@ next:
       goto next;
     }
     else return "";
+  }
+
+  // read up to n bytes
+  string raw_read (FILE *fi, ::std::size_t n)
+  {
+    void *buffer = malloc(n);
+    ::std::size_t m = fread (buffer, 1, n, fi);
+    string s((char const*)buffer,m);
+    free(buffer);
+    return s;
   }
 
   string echo_readln (FILE *f)
@@ -316,6 +327,9 @@ class Input_file[input_file]
   //$ Read one line with the trailing end-line mark included.
   //$ Empty string indicates end of file.
   virtual gen readln: input_file -> string;
+
+  // read up to n bytes from file
+  virtual gen read: input_file * size -> string;
 
   //$ Read line excluding end of line marks.
   virtual gen iterator(f:input_file) (): opt[string] => 
@@ -491,6 +505,7 @@ open class Cstdio {
     proc fclose: ifile = '(void)fclose($1);';
     gen load: ifile -> string = "::flx::rtl::ioutil::load_file($1)";
     gen readln: ifile -> string ="::flx::rtl::ioutil::readln($1)";
+    gen read: ifile *size -> string = "::flx::rtl::ioutil::raw_read($1,$2)";
     gen feof : ifile -> bool = "feof($1)";
   }
 
