@@ -4138,7 +4138,7 @@ object fdoc_heading (paragraph: paragraph-control_t, write_string: string -> 0) 
     #(paragraph.ep);
     edivs(n);
     add_button txt;
-    tb:=tree_button(txt,txt+"_d");
+    tb:=tree_button(txt,escape_sp(txt)+"_d");
     ++hstack;
     htree = Cons ( (n,txt), htree);
     write_string("<h"+str n+" id='"+escape_sp(txt)+"_h'>"+tb+" "+docnum+hnum()+" "+ txt+"</h"+str n+">" +

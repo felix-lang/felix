@@ -2617,11 +2617,78 @@ the databases are also language neutral.
 %========================================================
 \mainmatter
 \part{Functional Programming}
-\chapter{Functional Basics}
+\chapter{Recursion}
 We shall begin our more serious exploration of Felix with functional programming
-techniques.
+techniques. Perhaps the most important is recursion. A recursive function
+is one which may call itself, directly or indirectly. 
+Recursive functions should usually be reentrant to ensure each fresh invocation
+of the function has its own state variables.
 
-\section{Lists}
+We recognise two kinds of recursion, {\em static recursion} and
+{\em dynamic recursion}.
+
+\section{Static Recursion}
+Static recursion occurs when
+there is a loop in the static call graph. 
+
+It may be {\em direct}, in which
+a function explicitly calls itself, which is also known as {\em self-recursion}.
+
+\begin{minted}{felix}
+// self recursion
+fun factorial (n:int) => 
+  if n <= 1 then 1
+  else n * factorial (n - 1)
+;
+\end{minted}
+
+Next we show {\em indirect} recursion using two functions:
+
+\begin{minted}{felix}
+// indirect recursion
+fun factorial1 (n:int) => 
+  if n <= 1 then 1
+  else n * factorial2 (n - 1)
+;
+fun factorial2 (n:int) => 
+  if n <= 1 then 1
+  else n * factorial1 (n - 1)
+;
+\end{minted}
+
+The example is contrived of course. 
+Indirect recursion between two siblings can always be eliminted by inlining:
+
+\begin{minted}{felix}
+// indirect recursion reduced to direct
+// recursion by inlining
+fun factorial1 (n:int) => 
+  if n <= 1 then 1
+  else n * 
+    ( 
+      let m = n - 1 in
+      if m <= 1 then 1 
+      else
+        m * factorial1 (m - 1)
+    )
+;
+\end{minted}
+
+If the recursion is between a parent child pair, it can be eliminated by
+inlining the child.
+
+Using these two steps, a succession of inlining operations
+can reduce any indirect recursion to a direct recursion.
+The reason is due to the visibility constraint on calls:
+any function may call its children, itself or any sibling,
+its parent, or any function its parent may call.
+
+Although ancestoral calls, cannot be directly eliminated by
+inlining, there must be a call from the candidate functions
+parent to it, or one of its siblings, leading to the inlining
+of the candidate and moving it towards the root. 
+
+\section{List Examples}
 We shall begin with some basic routines on lists.
 We will first write the "obvious" routines to use as specifications.
 Later we will have to look at their performance.
@@ -2739,7 +2806,7 @@ fun filter[T] (P:T -> bool) (x:list[T]) : list[T] =>
 \end{minted}
 
 \subsection{Prefix and Suffix}
-For a list $l$ of length $n$, $take k l$
+For a list $l$ of length $n$, \verb%take% $k$ $l$
 returns the head sublist of length $min(n,k)$.
 
 \begin{minted}{felix}
@@ -2754,7 +2821,7 @@ fun take[T] (k:int) (lst:list[T]) : list[T] =>
 ;
 \end{minted}
 
-For a list $l$ of length $n$, $drop k l$ returns
+For a list $l$ of length $n$, \verb%drop% $k$ 4l$ returns
 the list with first $min(n,k)$ elements removed.
 
 \begin{minted}{felix}
@@ -2768,92 +2835,131 @@ the list with first $min(n,k)$ elements removed.
   ;
 \end{minted} 
 
-\subsection{Search}
-
-\subsection{Compare}
-
-
-\section{More stuff..}
-\begin{minted}{felix}
-fun inner_strlist (x: list[int]) =>
-  match x with
-  // Emnpty list
-  | #Empty => ""
-
-  // One element list
-  | Cons (head, #Empty) => 
-    str head 
-
-  // Two element list
-  | Cons (head, Cons (second, #Empty)) => 
-    str head ", " + str second 
-
-  // More that two elements
-  | Cons (head, tail) => 
-    str head ", " + inner_strlist tail
-  endmatch
-;
-
-fun strlist (x:list[int]) => "list (" + inner_strlist x + ")";
-
-println$ strlist (list (1,2,3));
-\end{minted}
-
-Here, the function \verb%inner_strlist% is recursive. It matches
-the list so it is empty it produces an empty string.
-If there is only one element, it produces the string 
-representation of that int.
-
-If the list contains two elements, it produces a string containing
-the string representation of the two integers separated by a comma.
-Otherwise it produces a string representation of the head, followed
-by a comma, followed by a string representation of the tail.
-The tail must contain at least two elements, otherwise the pattern
-match would not reach that case.
-
 \subsection{Tail Recursion}
-However his function is not tail recursive! Lets rewrite it so 
-it is:
-
-
-\begin{minted}{felix}
-fun inner_strlist (x: list[int], result:string) =>
-  match x with
-  // Emnpty list
-  | #Empty => ""
-
-  // One element list
-  | Cons (head, #Empty) => 
-    str head 
-
-  // Two element list
-  | Cons (head, Cons (second, #Empty)) => 
-    str head ", " + str second 
-
-  // More that two elements
-  | Cons (head, tail) => 
-    inner_strlist (tail, str head ", ")
-  endmatch
-;
-\end{minted}
-
-Here is another, simpler tail recursive function:
+The final, outer call of a function is known as a tail
+call. In expanded form, in this function for example:
 
 \begin{minted}{felix}
-fun addup (x: list[int]) =
-{
-  fun aux (rest: list, acc: int) =>
-    match rest with
-    | #Empty => rest
-    | Cons (head, tail) => aux (tail, acc + head)
-    endmatch
-  ;
-  return aux x 0;
+fun f(x:int) = {
+  var a = x + y;
+  return g ( h (a + 1));
 }
 \end{minted}
 
-The non-recursive function \verb%addup% contains a nested tail recursive
-function \verb%aux%.
+The tail call is to $g$, the functional part of the return
+expression's application. Not all returns have a tail call,
+in this example:
+
+\begin{minted}{felix}
+fun f(x:int) = {
+  var a = x + 1;
+  var b = g ( h (a + 1));
+  return b;
+}
+\end{minted}
+
+a variable is returned. This function can be rewritten
+without changing the semantics to the previous one,
+showing that whether a call is in tail position is
+a syntactic property. It is also language dependent.
+For example in Felix:
+
+\begin{minted}{felix}
+fun f (c:bool) = {
+  return
+     if c then f 1 else g 1 endif
+  ;
+}
+\end{minted}
+
+the calls to $f$ and $g$ are in tail position
+by specification. Similarly, in
+
+\begin{minted}{felix}
+fun f (c:bool)  = {
+  return
+     match c with
+     | false => f 1 
+     | true => g 1 
+     endmatch
+  ;
+}
+\end{minted}
+
+the calls to $f$ and $g$ are in tail position. However consider
+this function:
+
+\begin{minted}{felix}
+fun ifthenelse (c:bool, a:int, b:int) = {
+  return
+     match c with
+     | false => a
+     | true => b
+     endmatch
+  ;
+}
+\end{minted}
+
+then in this function:
+
+\begin{minted}{felix}
+fun f (c:bool) = {
+  return
+     ifthenelse (c, f 1, g 1)
+  ;
+}
+\end{minted}
+
+it is the call to \verb%ifthenelse% which is in tail position.
+
+Tail calls are important because they lead to an optimisation.
+If we save the current function's return addres on the stack
+and jump to the tail function, on completion that function will jump 
+to the return address, popping it off the stack, and then the
+current function will jump to its return address popping it off
+the stack. It is more efficient to just jump to the tail function
+without saving the return address, so that when it returns by
+popping the return address off the stack and jumping to it,
+it is returning from itself and the caller.
+
+Although this is only a small optimisation, if the tail call is to
+the function itself, we can make another improvement. Instead of
+pushing the argument onto the stack, we can just assign the
+argument to our parameter. This is safe because the parameter
+is not accessed after the call returns, since it is a tail call.
+This means the recursion can be performed as a loop using a mutable
+variable as the parameter.  If a function calls itself, and all calls
+are in tail position, the function is said to be {\em tail recursive}.
+
+For example this function is tail recursive:
+
+\begin{minted}{felix}
+fun f (x:int, n:int) = {
+  if n <= 0 return x;
+  return f (x * n, n - 1);
+}
+\end{minted}
+
+and can be optimised to:
+
+\begin{minted}{felix}
+fun f (var x:int, var n:int) = {
+again:
+  if n <= 0 return x;
+  n, x = x * n, n - 1;
+  goto again;
+}
+\end{minted}
+
+eliminating the recursion entirely. Note carefully the parallel
+assignment to the parameter components, it is equivalent to
+
+\begin{minted}{felix}
+  var tmp1 = x * n;
+  var tmp2 = n - 1;
+  n = tmp1;
+  x = tmp2;
+\end{minted}
 
 \subsection{Higher Order Functions}
 Ok so, what if I wanted to add up the squares of the numbers 
