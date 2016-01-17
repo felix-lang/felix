@@ -204,6 +204,7 @@ let rec rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t lis
 
 
   | STMT_lazy_decl (sr,name,vs,typ,expr) ->
+print_endline ("Translating Lazy Declaration " ^ name);
     begin match typ,expr with
     | Some t, Some e ->
       let d,x = rex e in

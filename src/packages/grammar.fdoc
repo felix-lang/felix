@@ -396,7 +396,7 @@ syntax cbind {
           (ret (cadadr t)))
         `(ast_fun_decl ,_sr ,name ,vs ,(mkl2 argt) ,ret ,ct ,reqs ,prec)
         )
-        ('ERROR)))))
+        (giveup)))))
     """;
 
   //$ Define a constructor function by a C expression.
@@ -1432,6 +1432,7 @@ syntax expressions {
 
   //$ composition
   x[ssuperscript_pri] := x[ssuperscript_pri] "\circ" x[>ssuperscript_pri] =># "(Infix)";
+  x[ssuperscript_pri] := x[ssuperscript_pri] "\cdot" x[>ssuperscript_pri] =># "(Infix)";
 
 //------------------------------------------------------------------------
   //$ C dereference.
@@ -1873,10 +1874,11 @@ syntax functions {
   //$ Example:
   //$ 
   //$ inline fun f (x:int when x>0) (y:long when y>0l) : long expect result > 0l => x.long + y;
-  sfunction := sadjectives sfun_kind sdeclname sfun_arg* fun_return_type "=>" sexpr ";" =>#
+  sfunction := sadjectives sfun_kind sdeclname sfun_arg+ fun_return_type "=>" sexpr ";" =>#
     """
+      (begin ;;(display "GENERAL FUNCTION")
       (let ((body `((ast_fun_return ,_sr ,_7))))
-      `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 ,_5 ,(cal_funkind _1 _2) ,_1 ,body)
+      `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 ,_5 ,(cal_funkind _1 _2) ,_1 ,body))
       )
     """;
 
@@ -1884,7 +1886,8 @@ syntax functions {
   //$ inline fun f (x:int when x>0) (y:long when y>0l) : long expect result > 0l { return x.long + y; }
   sfunction := sadjectives sfun_kind sdeclname sfun_arg* fun_return_type "=" scompound =>#
     """
-      `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 ,_5 ,(cal_funkind _1 _2) ,_1 ,_7)
+      (begin ;;(display "COMPOUND FUNCTION")
+      `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 ,_5 ,(cal_funkind _1 _2) ,_1 ,_7))
     """;
 
   //$ Object factory definition with interface type.
@@ -1951,7 +1954,7 @@ syntax functions {
         (t (first _4))
         (traint (second _4))
        )
-      (begin ;;(display "ftype=")(display t)(display "\\n")
+      (begin ;;(display "MATCHING ftype=")(display t)(display "\\n")
       (if (eq? 'ast_arrow (first t))
         (let
           (
@@ -1966,11 +1969,47 @@ syntax functions {
             (,ret ,traint)
             ,(cal_funkind _1 _2) ,_1 ,body)
         )
-        'ERROR
+        (begin (display "ERROR MATCHINGS FUNDEF") 'ERROR)
        )
        )
      )
     """;
+
+  sfunction := sadjectives sfun_kind sdeclname fun_return_type "=>" sexpr ";" =>#
+    """
+     (let
+       (
+        (t (first _4))
+        (traint (second _4))
+       )
+      (begin ;;(display "POINT FREE FUNDEF ftype=")(display t)(display "\n")
+      (if (eq? 'ast_arrow (first t))
+        (let*
+          (
+            (argt (caadr t))
+            (ret (cadadr t))
+            (apl `(ast_apply ,_sr (,_6 ,(noi '_a))))
+            (body `((ast_fun_return ,_sr ,apl )))
+            (result `(ast_curry ,_sr ,(first _3) ,(second _3)
+              (
+                (((PVal _a ,argt none)) none)
+              )
+              (,ret ,traint)
+              ,(cal_funkind _1 _2) ,_1 ,body)
+            )
+          )
+          (begin 
+            ;;(display "POINT FREE FUNDEF EXPR=")(display _6)(display "\n")
+            ;;(display "POINT FREE FUNDEF RESULT=")(display result)(display "\n")
+            result
+          )
+        )
+        (begin (display "ERROR POINT FREE FUNDEF") 'ERROR)
+       )
+       )
+     )
+    """;
+
 
   //$ Procedure binder.
   sproc_kind := "proc" =># "'Function";

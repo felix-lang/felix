@@ -1601,7 +1601,7 @@ and string_of_symdef entry name vs =
     "ref " ^ string_of_id name ^ string_of_ivs vs ^":"^ st t ^ ";"
 
   | SYMDEF_lazy (t,e) ->
-    "fun " ^ string_of_id name ^ string_of_ivs vs ^
+    "(lazy function) fun " ^ string_of_id name ^ string_of_ivs vs ^
     ": "^ st t ^
     "= " ^ se e ^
     ";"
@@ -1634,7 +1634,7 @@ and string_of_symdef entry name vs =
 
   | SYMDEF_fun (props, pts,res,cts, reqs,prec) ->
     string_of_properties props ^
-    "fun " ^ string_of_id name ^ string_of_ivs vs ^
+    "(C function binding) fun " ^ string_of_id name ^ string_of_ivs vs ^
     ": " ^ st
     (
       TYP_function
@@ -1694,7 +1694,7 @@ and string_of_symdef entry name vs =
   | SYMDEF_function (ps,res,props,es) ->
     let ps,traint = ps in
     string_of_properties props ^
-    "fun " ^ string_of_id name ^ string_of_ivs vs ^
+    "(Felix function) fun " ^ string_of_id name ^ string_of_ivs vs ^
     ": " ^ st
     (
       TYP_function

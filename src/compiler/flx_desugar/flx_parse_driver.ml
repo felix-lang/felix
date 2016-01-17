@@ -119,6 +119,11 @@ let rec load_file include_dirs hash_includes buffer name =
   try
     while true do 
       let line = input_line ch in
+      let line = 
+         if !lineno = 0 && String.length line > 2 && String.sub line 0 2 = "#!" then
+         "//" ^ String.sub line 2 (String.length line - 2)
+         else line
+      in
       incr lineno;
 (*
       let include_file = get_hash_include (parent_dir :: include_dirs) line in

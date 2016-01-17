@@ -9,6 +9,7 @@
 \usepackage{caption}
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{amscd}
 \usemintedstyle{friendly}
 \setminted{bgcolor=bg,xleftmargin=20pt}
 \usepackage{hyperref}
@@ -2617,6 +2618,74 @@ the databases are also language neutral.
 %========================================================
 \mainmatter
 \part{Functional Programming}
+Functional programming is the art of encoding a system of types and functions.
+
+\chapter{Theory}
+In set-theoretic mathematics a function is triple consisting of a specified
+set $D$ called the {\em domain} a set $C$ call the {\em codomain} and a 
+method $f$ of assigning an element $c \in C$ of the codomain to each element 
+$d\in D$ of the domain, written:
+$$f: C \rightarrow D$$
+where
+$$d\mapsto c$$
+which we also write in equational form as
+$$f (d) = c$$
+
+In programming, the challenge is to find a suitable representation,
+or representations, of the sets as a type, and to encode the functions
+so as to faithfully model the mathematics. In particular if type \verb%D%
+represents set $D$, type \verb%C% represents set $D$, then for all elements
+$d$ of $D$ if value \verb%d% represents $d$ and \verb%f% is an encoding
+of function $f$ then if $c = f(d)$ then \verb%f(d)% represents $c$. Pictorially,
+where $r$ is the representation mapping, we require that
+the following diagram commutes
+$$\begin{CD}
+D@>f>>C\\
+@VVrV @VVrV\\
+\verb%D%@>{\mathtt f}>>\verb%C%
+\end{CD}
+$$
+meaning 
+$$ r \cdot \verb%f% = f \cdot r $$
+
+{\em Category Theory} provides a number of tools to assist in the
+constructions of function encodings, provide a suitable programming
+language is available, and given a fixed choice of data types.
+The most important of these tools is {\em functional decomposition}.
+Given two function $f:A \rightarrow B$ and $g:B \rightarrow C$ we can
+construct the composiite $h = f \cdot g$.
+
+Note we use the midposition dot operator for reverse composition,
+meaning the first function written is applied to an argument
+first, then the second one. Do not confuse this with the lower dot
+which represents reverse application:
+$$
+(f \cdot g) a = (a . f) . g = a . (f \cdot g) = (g \circ f) a
+$$
+
+Now, given some function $h:A\rightarrow C$ it is natural to ask if it can be 
+broken up into two functions $f:A\rightarrow B$ and $g:B\rightarrow C$ for some $B$
+such $h = f \cdot g$. If so, this is called a {\em serial decomposition} of
+the function. 
+
+In Felix code:
+
+\begin{minted}{felix}
+fun f: A -> B;
+fun g: B -> C;
+fun h: A -> C => f \cdot g;
+\end{minted}
+
+Another tool is parallel composition:
+
+\begin{minted}{felix}
+fun f: A -> X;
+fun g: B -> Y;
+fun fg = A * B -> X * Y = f * g;
+\end{minted}
+
+More of these tools are discussed in the section on Categorical Programming.
+
 \chapter{Recursion}
 We shall begin our more serious exploration of Felix with functional programming
 techniques. Perhaps the most important is recursion. A recursive function
@@ -2821,7 +2890,7 @@ fun take[T] (k:int) (lst:list[T]) : list[T] =>
 ;
 \end{minted}
 
-For a list $l$ of length $n$, \verb%drop% $k$ 4l$ returns
+For a list $l$ of length $n$, \verb%drop% $k$ $l$ returns
 the list with first $min(n,k)$ elements removed.
 
 \begin{minted}{felix}
@@ -2836,6 +2905,8 @@ the list with first $min(n,k)$ elements removed.
 \end{minted} 
 
 \subsection{Tail Recursion}
+
+
 The final, outer call of a function is known as a tail
 call. In expanded form, in this function for example:
 
