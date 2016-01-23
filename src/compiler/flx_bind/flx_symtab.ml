@@ -495,6 +495,9 @@ and build_table_for_dcl
       add_tvars privtab
 
   | DCL_function ((ps,pre),t,props,asms) ->
+(*
+if id = "__eq" then print_endline ("Adding function __eq index=" ^ string_of_int symbol_index);
+*)
       let is_ctor = List.mem `Ctor props in
 
       if is_ctor && id <> "__constructor__" then

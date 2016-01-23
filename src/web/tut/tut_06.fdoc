@@ -87,6 +87,5 @@ val result =
 ;
 println$ result;
 @expect
-(2, 1)
 0
 @

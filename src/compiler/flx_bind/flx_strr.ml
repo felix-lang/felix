@@ -132,10 +132,10 @@ print_endline ("_strr Variant type " ^ Flx_print.sbt bsym_table t);
       let rs = { rs with Flx_types.strr_limit = limit } in
       let urep cname t hashcode =  
         match t with
-        | BTYP_void _ ->
+        | BTYP_void ->
           mks cname
 
-        | BTYP_tuple [] _ ->
+        | BTYP_tuple [] ->
           mks ("#case " ^ cname)
 
 

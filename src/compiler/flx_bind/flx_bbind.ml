@@ -812,35 +812,36 @@ print_endline ("Binding callback " ^ sym.Flx_sym.id ^ " index=" ^ string_of_bid 
   *)
   end
 
-let bbind state start_counter end_counter bsym_table =
+let bbind state start_counter ref_counter bsym_table =
   (* loop through all counter values [HACK] to get the indices in sequence, AND,
    * to ensure any instantiations will be bound, (since they're always using the
-   * current value of state.counter for an index *)
-(*
-print_endline ("bbind from " ^ string_of_int start_counter ^ " to " ^ string_of_int end_counter);
-*)
-  Flx_mtypes2.iter_bids begin fun i ->
-(*
-print_endline ("bbind " ^ string_of_int i);
-*)
-    match
+   * current value of state.counter for an index. Note that in the process of
+   * binding new symbols can be added to the end of the table, so the terminating
+   * index is not known in advance. It had better converge!
+   *)
+  let counter = ref start_counter in
+  while !counter < !ref_counter do
+    let i = !counter in
+    begin match
       try Some (Flx_sym_table.find_with_parent state.sym_table i)
       with Not_found -> None
     with
     | None -> (* print_endline "bbind: Symbol not found"; *) ()
     | Some (parent, symdef) ->
-        try bbind_symbol state bsym_table i parent symdef
-        with Not_found ->
-          try match hfind "bbind" state.sym_table i with { Flx_sym.id=id } ->
-            failwith ("Binding error, Not_found thrown binding " ^ id ^ " index " ^
-              string_of_bid i)
-          with Not_found ->
-            failwith ("Binding error, Not_found thrown binding unknown id with index " ^ string_of_bid i)
-  end start_counter end_counter
 (*
-  ;
-  print_endline "Bbind finished"
+print_endline ("Binding symbol " ^ symdef.Flx_sym.id ^ "<" ^ si i ^ ">"); 
 *)
+      try bbind_symbol state bsym_table i parent symdef
+      with Not_found ->
+        try match hfind "bbind" state.sym_table i with { Flx_sym.id=id } ->
+          failwith ("Binding error, Not_found thrown binding " ^ id ^ " index " ^
+            string_of_bid i)
+        with Not_found ->
+          failwith ("Binding error, Not_found thrown binding unknown id with index " ^ string_of_bid i)
+    end;
+    incr counter
+  done
+
 let bind_interface (state:bbind_state_t) bsym_table = function
   | sr, IFACE_export_fun (sn, cpp_name), parent ->
       let env = Flx_lookup.build_env state.lookup_state bsym_table parent in

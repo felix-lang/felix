@@ -144,8 +144,7 @@ print_endline "Flx_bind.bind_asms: built symbol table";
 print_endline (Flx_symtab.detail bind_state.symtab);
 *)
   (* Now, bind all the symbols. *)
-  let end_counter = !counter_ref in
-  Flx_bbind.bbind bind_state.bbind_state start_counter end_counter bsym_table;
+  Flx_bbind.bbind bind_state.bbind_state start_counter counter_ref bsym_table;
 (*
 print_endline "Flx_bind.bind_asms: bbind done";
 *)

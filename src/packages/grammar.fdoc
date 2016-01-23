@@ -1874,7 +1874,7 @@ syntax functions {
   //$ Example:
   //$ 
   //$ inline fun f (x:int when x>0) (y:long when y>0l) : long expect result > 0l => x.long + y;
-  sfunction := sadjectives sfun_kind sdeclname sfun_arg+ fun_return_type "=>" sexpr ";" =>#
+  sfunction := sadjectives sfun_kind sdeclname sfun_arg* fun_return_type "=>" sexpr ";" =>#
     """
       (begin ;;(display "GENERAL FUNCTION")
       (let ((body `((ast_fun_return ,_sr ,_7))))
@@ -1947,6 +1947,7 @@ syntax functions {
   //$ Short form function definition. Example:
   //$
   //$ fun f : int -> int = | 0 => 0 | _ => 1;
+/*
   sfunction := sadjectives sfun_kind sdeclname fun_return_type "=" smatching+ ";" =>#
     """
      (let
@@ -1969,44 +1970,58 @@ syntax functions {
             (,ret ,traint)
             ,(cal_funkind _1 _2) ,_1 ,body)
         )
-        (begin (display "ERROR MATCHINGS FUNDEF") 'ERROR)
+        (begin (display "ERROR MATCHINGS FUNDEF ")(display _sr) 'ERROR)
        )
        )
      )
     """;
+*/
 
-  sfunction := sadjectives sfun_kind sdeclname fun_return_type "=>" sexpr ";" =>#
+  sfunction := sadjectives sfun_kind sdeclname fun_return_type "=" smatching+ ";" =>#
     """
      (let
        (
         (t (first _4))
         (traint (second _4))
        )
-      (begin ;;(display "POINT FREE FUNDEF ftype=")(display t)(display "\n")
-      (if (eq? 'ast_arrow (first t))
-        (let*
+      (begin ;;(display "MATCHING ftype=")(display t)(display "\\n")
+        (let
           (
-            (argt (caadr t))
-            (ret (cadadr t))
-            (apl `(ast_apply ,_sr (,_6 ,(noi '_a))))
-            (body `((ast_fun_return ,_sr ,apl )))
-            (result `(ast_curry ,_sr ,(first _3) ,(second _3)
-              (
-                (((PVal _a ,argt none)) none)
-              )
-              (,ret ,traint)
-              ,(cal_funkind _1 _2) ,_1 ,body)
-            )
+            (argt `(ast_apply ,_sr (,(nos "dom") ,t)))
+            (ret `(ast_apply ,_sr (,(nos "cod") ,t)))
+            (body `((ast_fun_return ,_sr (ast_match ,_sr (,(noi '_a) ,_6)))))
           )
-          (begin 
-            ;;(display "POINT FREE FUNDEF EXPR=")(display _6)(display "\n")
-            ;;(display "POINT FREE FUNDEF RESULT=")(display result)(display "\n")
-            result
+          `(ast_curry ,_sr ,(first _3) ,(second _3)
+            (
+              (((PVal _a ,argt none)) none)
+            )
+            (,ret ,traint)
+            ,(cal_funkind _1 _2) ,_1 ,body)
+        )
+       )
+     )
+    """;
+
+
+  sfunction := sadjectives sfun_kind sdeclname "=" sexpr ";" =>#
+   """ 
+      (let*
+        (
+          (traint 'none)
+          (t `(ast_apply ,_sr (,(nos "typeof") ,_5)))
+          (apl `(ast_apply ,_sr (,_5 ,(noi '_a))))
+          (argt `(ast_apply ,_sr (,(nos "dom") ,t)))
+          (ret `(ast_apply ,_sr (,(nos "cod") ,t)))
+          (body `((ast_fun_return ,_sr ,apl )))
+          (result `(ast_curry ,_sr ,(first _3) ,(second _3)
+            (
+              (((PVal _a ,argt none)) none)
+            )
+            (,ret ,traint)
+            ,(cal_funkind _1 _2) ,_1 ,body)
           )
         )
-        (begin (display "ERROR POINT FREE FUNDEF") 'ERROR)
-       )
-       )
+        result
      )
     """;
 

@@ -19,6 +19,27 @@ open Flx_overload
 open Flx_tpat
 open Flx_lookup_state
 
+let typecode_of_btype bsym_table sr t = 
+  let rec tc t = match t with
+  | BTYP_record flds -> TYP_record (List.map (fun (s,t) -> s,tc t) flds) 
+  | BTYP_tuple ts -> TYP_tuple (List.map tc ts)
+  | BTYP_array (a,n) -> TYP_array (tc a, tc n)
+  | BTYP_sum ts -> TYP_sum (List.map tc ts)
+  | BTYP_unitsum n -> TYP_unitsum n
+  | BTYP_pointer t -> TYP_pointer (tc t)
+  | BTYP_function (d,c) -> TYP_function (tc d, tc c)
+  | BTYP_cfunction (d,c) -> TYP_function (tc d, tc c)
+  | BTYP_void -> TYP_void sr
+  | BTYP_label -> TYP_label
+  | BTYP_fix _ -> 
+    print_endline ("typecode_of_btype can't handle fixpoint yet");
+    assert false (* requires trickery using TYP_as *)
+  | BTYP_inst (i,ts) ->
+    let id = Flx_bsym_table.find_id bsym_table i in 
+    TYP_name (sr,id, (List.map tc ts))
+  | _ -> assert false
+  in tc t
+
 exception SimpleNameNotFound of Flx_srcref.t * string * string
 
 let crt = ref 0
@@ -811,7 +832,7 @@ print_endline ("Bind type " ^ string_of_typecode t);
   (* We first attempt to perform the match at binding time as an optimisation,
    * if that fails, we generate a delayed matching construction. The latter
    * will be needed when the argument is a type variable. *)
-  | TYP_type_match (t,ps) ->
+  | TYP_type_match (t,ps) as ubt ->
       let t = bt t in
       let pts = ref [] in
       let finished = ref false in
@@ -867,8 +888,11 @@ print_endline ("Bind type " ^ string_of_typecode t);
               )
             *)
         | Some mgu ->
-            if !finished then
-              print_endline "[bind_type] Warning: useless match case ignored"
+            if !finished then begin
+              print_endline "[bind_type] Warning: useless match case in typematch ignored:";
+              print_endline (Flx_srcref.short_string_of_src sr);
+              print_endline (string_of_typecode ubt);
+            end
             else
               let mguvars = List.fold_left
                 (fun s (i,_) -> BidSet.add i s)
@@ -4699,10 +4723,105 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
     handle_map sr (be f) (be a)
 
   | EXPR_apply (sr,(EXPR_name (_,"_strr",[]), a)) -> 
-    let be rs e = 
-        bind_expression' state bsym_table env rs e []
-    in
+    let be rs e = bind_expression' state bsym_table env rs e [] in
     Flx_strr.strr bsym_table state.sym_table state.counter be rs sr a
+
+
+  | EXPR_apply (sr,(EXPR_name (_,"_eq",[]), pair)) -> 
+    let be rs e = bind_expression' state bsym_table env rs e [] in
+(*
+    print_endline ("Processing application of _eq");
+*)
+    let a,b = 
+      match pair with
+      | EXPR_tuple (sr,[a;b]) -> a,b
+      | _ -> clierr sr ("polyadic _eq function requires explicit argument pair")
+    in
+    begin try 
+      let result = be rs (EXPR_apply (sr, (EXPR_name (sr,"__eq",[]), pair))) in
+(*
+      print_endline ("Found binding of __eq, using that");
+*)
+      result
+    with _ ->
+(*
+      print_endline ("Failed to find binding of __eq, generating it instead");
+*)
+      let (_,ta) as ba = be rs a in
+      let (_,tb) as bb = be rs b in
+      let same_type = Flx_unify.type_eq bsym_table state.counter ta tb in 
+      if not same_type then
+         Flx_exceptions.clierr sr ("builtin equality requires arguments to be the same type\n" ^
+           "got a=" ^ Flx_print.sbt bsym_table ta ^ "\n" ^
+           "and b=" ^ Flx_print.sbt bsym_table tb)
+      ;
+(*
+print_endline ("_eq of type " ^ sbt bsym_table ta);
+*)
+      let v1 = EXPR_name (sr,"_a",[]) in 
+      let v2 = EXPR_name (sr,"_b",[]) in 
+      let retexpr = Flx_eq.equal bsym_table state.sym_table state.counter be rs sr v1 v2 ta in
+(*
+print_endline ("Got return expression " ^ Flx_print.string_of_expr retexpr);
+*)
+      let ubt = typecode_of_btype bsym_table sr ta in
+(*
+print_endline ("Unbound type = " ^ string_of_typecode ubt);
+*)
+      let p1 = `PVal,"_a",ubt,None in
+      let p2 = `PVal,"_b",ubt,None in
+      let params = [p1;p2], None in 
+      let typecode = TYP_unitsum 2 in
+      let properties = [] in
+      let asms = [Exe (sr,EXE_fun_return retexpr)] in
+      let dcl = DCL_function (params, typecode, properties, asms) in
+      let sdcl = sr,"__eq",None,`Public,dfltvs,dcl in
+      let interfaces = ref [] in
+      let rootsym = Flx_sym_table.find state.sym_table 0 in 
+(*
+print_endline ("BEFORE: Name table has " ^ si (Hashtbl.length rootsym.Flx_sym.pubmap) ^ " entries");
+print_endline ("BEFORE: Symbol table has " ^ si (Hashtbl.length state.sym_table) ^ " entries");
+*)
+      let new_index =
+        Flx_symtab.build_table_for_dcl
+          state.print_flag
+          state.counter
+          state.sym_table
+          "__eq"
+          Flx_ast.dfltvs
+          0 
+          (Some 0)
+          rootsym.Flx_sym.pubmap
+          rootsym.Flx_sym.privmap
+          interfaces
+          sdcl
+      in
+(*
+print_endline ("AFTER: Name table has " ^ si (Hashtbl.length rootsym.Flx_sym.pubmap) ^ " entries");
+print_endline ("AFTER: Symbol table has " ^ si (Hashtbl.length state.sym_table) ^ " entries");
+print_endline ("Assigning index " ^ si new_index);
+print_endline ("Added overload of __eq to lookup table!");
+*)
+      let result = 
+        try be rs (EXPR_apply (sr, (EXPR_name (sr,"__eq",[]), pair))) 
+        with _ -> 
+          print_endline ("Failed to bind application of __eq of "^sbt bsym_table ta^" we just added!!");
+          let entries = inner_lookup_name_in_env state bsym_table env rsground sr "__eq" in
+          print_endline ("Found " ^ Flx_print.string_of_entry_set entries);
+          begin match entries with
+          | NonFunctionEntry _ -> assert false
+          | FunctionEntry fs ->
+            List.iter 
+              (fun entry -> print_endline (Flx_print.full_string_of_entry_kind state.sym_table bsym_table entry))
+              fs
+          end;
+          assert false
+      in
+(*
+      print_endline ("Found new binding of __eq!");
+*)
+      result
+    end
 
   | EXPR_apply (sr,(f',a')) ->
     begin (* apply *)

@@ -2686,357 +2686,13 @@ fun fg = A * B -> X * Y = f * g;
 
 More of these tools are discussed in the section on Categorical Programming.
 
-\chapter{Recursion}
-We shall begin our more serious exploration of Felix with functional programming
-techniques. Perhaps the most important is recursion. A recursive function
-is one which may call itself, directly or indirectly. 
-Recursive functions should usually be reentrant to ensure each fresh invocation
-of the function has its own state variables.
+\chapter{Functional Basics}
+[missing stuff]
 
-We recognise two kinds of recursion, {\em static recursion} and
-{\em dynamic recursion}.
-
-\section{Static Recursion}
-Static recursion occurs when
-there is a loop in the static call graph. 
-
-It may be {\em direct}, in which
-a function explicitly calls itself, which is also known as {\em self-recursion}.
-
-\begin{minted}{felix}
-// self recursion
-fun factorial (n:int) => 
-  if n <= 1 then 1
-  else n * factorial (n - 1)
-;
-\end{minted}
-
-Next we show {\em indirect} recursion using two functions:
-
-\begin{minted}{felix}
-// indirect recursion
-fun factorial1 (n:int) => 
-  if n <= 1 then 1
-  else n * factorial2 (n - 1)
-;
-fun factorial2 (n:int) => 
-  if n <= 1 then 1
-  else n * factorial1 (n - 1)
-;
-\end{minted}
-
-The example is contrived of course. 
-Indirect recursion between two siblings can always be eliminted by inlining:
-
-\begin{minted}{felix}
-// indirect recursion reduced to direct
-// recursion by inlining
-fun factorial1 (n:int) => 
-  if n <= 1 then 1
-  else n * 
-    ( 
-      let m = n - 1 in
-      if m <= 1 then 1 
-      else
-        m * factorial1 (m - 1)
-    )
-;
-\end{minted}
-
-If the recursion is between a parent child pair, it can be eliminated by
-inlining the child.
-
-Using these two steps, a succession of inlining operations
-can reduce any indirect recursion to a direct recursion.
-The reason is due to the visibility constraint on calls:
-any function may call its children, itself or any sibling,
-its parent, or any function its parent may call.
-
-Although ancestoral calls, cannot be directly eliminated by
-inlining, there must be a call from the candidate functions
-parent to it, or one of its siblings, leading to the inlining
-of the candidate and moving it towards the root. 
-
-\section{List Examples}
-We shall begin with some basic routines on lists.
-We will first write the "obvious" routines to use as specifications.
-Later we will have to look at their performance.
-
-\subsection{Reversing a list}
-To reverse a list, we run down the list constructing a new
-one. At the end, we return the result. 
-
-Our routine takes two arguments,
-a list \verb%inp% and a list \verb%out% onto which we must prepend
-the reversed copy of \verb%inp%.
-
-\begin{minted}{felix}
-fun prepend_reversed[T] (inp:list[T]) (out: list[T]) =>
-  match inp with
-  | #Empty => out
-  | Cons (head, tail) => 
-    prepend_reversed tail (Cons (head, out))
-  endmatch
-;
-\end{minted}
-
-We can use this routine to reverse a list.
-
-\begin{minted}{felix}
-fun rev[T] (a: list[T]) => prepend_reversed a Empty[T];
-\end{minted}
-
-\subsection{Join Lists}
-Now suppose we wish to prepend a list $a$ onto a list $b$.
-How would we do that? Well it's easy:
-
-\begin{minted}{felix}
-fun join[T] (a: list[T], b: list[T]) =>
-  prepend_reversed (rev a) b
-;
-\end{minted}
-
-\subsection{Map a List}
-This routine creates a new list with each
-element a function of the old value.
-
-\begin{minted}{felix}
-fun rev_map[U,T] (f:T->U) (inp:list[T]) : list[U]=>
-  match inp with
-  | #Empty => Empty[U]
-  | Cons (head, tail) => Cons (f head, rev_map f tail)
-  endmatch
-;
-
-fun map[U,T] (f:T->U) (inp:list[T]) : list[U] =>
-  rev$ rev_map f inp
-;
-\end{minted}
-
-\subsection{Left fold a List}
-Folds fold the elements of a list of $T$ into a single value
-of type $U$ by applying a function of type $U \times T \rightarrow U$.
-Lists have two folds, one starting at the top or left, and one starting
-at the bottom.
-
-\begin{minted}{felix}
-fun fold_left[U,T] (f:U * T -> U) (acc:U) (inp:list[T]) : U =>
-  match inp with
-  | #Empty => acc
-  | Cons (head, tail) => fold_left f (f acc head) tail
-  endmatch
-;
-\end{minted}
-
-Notice the order of the arguments, and see how in the second branch
-the head element is folded into the accummulator to form an argument
-for the recursive call.
-
-\subsection{Right fold a List}
-Here is the right fold:
-
-\begin{minted}{felix}
-fun fold_right[U,T] (f:T * U -> U) (inp:list[T]) (acc:U): U =>
-  match inp with
-  | #Empty => acc
-  | Cons (head, tail) => f (fold_right f acc tail) head
-  endmatch
-;
-\end{minted}
-
-Notice again the order of the arguments and see how
-in the second branch the recursion produces an argument
-for the function f.
-
-\subsection{Concatenate List of Lists}
-Using our fold we can concatenate a list of lists into a single list.
-
-\begin{minted}{felix}
-fun cat[T] (x:list[list[T]]):list[T] =>
-  match x with
-  | #Empty => Empty[T]
-  | Cons(h,t) => fold_left join of (list[T]) h t
-  endmatch
-;
-\end{minted}
-
-\subsection{Filter}
-Filter selects all the elements of a list satisfying a predicate.
-
-\begin{minted}{felix}
-fun filter[T] (P:T -> bool) (x:list[T]) : list[T] =>
-  match inp with
-  | #Empty => Empty[T]
-  | Cons(h,t) =>
-    if P(h) then Cons(h, filter P t)
-    else filter P t
-  endmatch
-;
-\end{minted}
-
-\subsection{Prefix and Suffix}
-For a list $l$ of length $n$, \verb%take% $k$ $l$
-returns the head sublist of length $min(n,k)$.
-
-\begin{minted}{felix}
-fun take[T] (k:int) (lst:list[T]) : list[T] =>
-  if k <= 0 then Empty[T]
-  else
-    match lst with
-      | #Empty => Empty[T]
-      | Cons(x,xs) => Cons(x, take[T] (k - 1) xs)
-    endmatch
-  endif
-;
-\end{minted}
-
-For a list $l$ of length $n$, \verb%drop% $k$ $l$ returns
-the list with first $min(n,k)$ elements removed.
-
-\begin{minted}{felix}
-  fun drop[T] (k:int) (lst:list[T]) : list[T] =>
-    if k <= 0 then lst
-    else
-      match lst with
-        | #Empty => list[T] ()
-        | Cons(x,xs) => drop (k - 1) xs
-    endif
-  ;
-\end{minted} 
-
-\subsection{Tail Recursion}
-
-
-The final, outer call of a function is known as a tail
-call. In expanded form, in this function for example:
-
-\begin{minted}{felix}
-fun f(x:int) = {
-  var a = x + y;
-  return g ( h (a + 1));
-}
-\end{minted}
-
-The tail call is to $g$, the functional part of the return
-expression's application. Not all returns have a tail call,
-in this example:
-
-\begin{minted}{felix}
-fun f(x:int) = {
-  var a = x + 1;
-  var b = g ( h (a + 1));
-  return b;
-}
-\end{minted}
-
-a variable is returned. This function can be rewritten
-without changing the semantics to the previous one,
-showing that whether a call is in tail position is
-a syntactic property. It is also language dependent.
-For example in Felix:
-
-\begin{minted}{felix}
-fun f (c:bool) = {
-  return
-     if c then f 1 else g 1 endif
-  ;
-}
-\end{minted}
-
-the calls to $f$ and $g$ are in tail position
-by specification. Similarly, in
-
-\begin{minted}{felix}
-fun f (c:bool)  = {
-  return
-     match c with
-     | false => f 1 
-     | true => g 1 
-     endmatch
-  ;
-}
-\end{minted}
-
-the calls to $f$ and $g$ are in tail position. However consider
-this function:
-
-\begin{minted}{felix}
-fun ifthenelse (c:bool, a:int, b:int) = {
-  return
-     match c with
-     | false => a
-     | true => b
-     endmatch
-  ;
-}
-\end{minted}
-
-then in this function:
-
-\begin{minted}{felix}
-fun f (c:bool) = {
-  return
-     ifthenelse (c, f 1, g 1)
-  ;
-}
-\end{minted}
-
-it is the call to \verb%ifthenelse% which is in tail position.
-
-Tail calls are important because they lead to an optimisation.
-If we save the current function's return addres on the stack
-and jump to the tail function, on completion that function will jump 
-to the return address, popping it off the stack, and then the
-current function will jump to its return address popping it off
-the stack. It is more efficient to just jump to the tail function
-without saving the return address, so that when it returns by
-popping the return address off the stack and jumping to it,
-it is returning from itself and the caller.
-
-Although this is only a small optimisation, if the tail call is to
-the function itself, we can make another improvement. Instead of
-pushing the argument onto the stack, we can just assign the
-argument to our parameter. This is safe because the parameter
-is not accessed after the call returns, since it is a tail call.
-This means the recursion can be performed as a loop using a mutable
-variable as the parameter.  If a function calls itself, and all calls
-are in tail position, the function is said to be {\em tail recursive}.
-
-For example this function is tail recursive:
-
-\begin{minted}{felix}
-fun f (x:int, n:int) = {
-  if n <= 0 return x;
-  return f (x * n, n - 1);
-}
-\end{minted}
-
-and can be optimised to:
-
-\begin{minted}{felix}
-fun f (var x:int, var n:int) = {
-again:
-  if n <= 0 return x;
-  n, x = x * n, n - 1;
-  goto again;
-}
-\end{minted}
-
-eliminating the recursion entirely. Note carefully the parallel
-assignment to the parameter components, it is equivalent to
-
-\begin{minted}{felix}
-  var tmp1 = x * n;
-  var tmp2 = n - 1;
-  n = tmp1;
-  x = tmp2;
-\end{minted}
-
-\subsection{Higher Order Functions}
+\section{Higher Order Functions}
 Ok so, what if I wanted to add up the squares of the numbers 
 in the list? Is there a way to avoid rewriting the whole thing?
 The answer is yes:
-
 
 \begin{minted}{felix}
 fun fold
@@ -3094,7 +2750,7 @@ int * string -> int
 \end{minted}
 
 
-\subsection{Polymorphism}
+\section{Polymorphism}
 Can we generalise, so we only have one function? 
 
 Sure. That's what parametric polymorphism is for.
@@ -3154,7 +2810,7 @@ then return an application of it, which consists of
 two statements, and requires the expanded form of
 function definition.
 
-\subsection{Let/in construction}
+\section{Let/in construction}
 Can we do it as a one liner, using only the simplified
 form? The answer is yes, using a \verb%let-in% expression:
 
@@ -3322,6 +2978,514 @@ fun fold[R, V]
   aux x init
 ;
 \end{minted}
+
+
+\chapter{Recursion}
+We shall begin our more serious exploration of Felix with functional programming
+techniques. Perhaps the most important is recursion. A recursive function
+is one which may call itself, directly or indirectly. 
+Recursive functions should usually be reentrant to ensure each fresh invocation
+of the function has its own state variables.
+
+We recognise two kinds of recursion, {\em static recursion} and
+{\em dynamic recursion}.
+
+\section{Static Recursion}
+Static recursion occurs when
+there is a loop in the static call graph. 
+
+It may be {\em direct}, in which
+a function explicitly calls itself, which is also known as {\em self-recursion}.
+
+\begin{minted}{felix}
+// self recursion
+fun factorial (n:int) => 
+  if n <= 1 then 1
+  else n * factorial (n - 1)
+;
+\end{minted}
+
+Next we show {\em indirect} recursion using two functions:
+
+\begin{minted}{felix}
+// indirect recursion
+fun factorial1 (n:int) => 
+  if n <= 1 then 1
+  else n * factorial2 (n - 1)
+;
+fun factorial2 (n:int) => 
+  if n <= 1 then 1
+  else n * factorial1 (n - 1)
+;
+\end{minted}
+
+The example is contrived of course. 
+Indirect recursion between two siblings can always be eliminted by inlining:
+
+\begin{minted}{felix}
+// indirect recursion reduced to direct
+// recursion by inlining
+fun factorial1 (n:int) => 
+  if n <= 1 then 1
+  else n * 
+    ( 
+      let m = n - 1 in
+      if m <= 1 then 1 
+      else
+        m * factorial1 (m - 1)
+    )
+;
+\end{minted}
+
+If the recursion is between a parent child pair, it can be eliminated by
+inlining the child.
+
+Using these two steps, a succession of inlining operations
+can reduce any indirect recursion to a direct recursion.
+The reason is due to the visibility constraint on calls:
+any function may call its children, itself or any sibling,
+its parent, or any function its parent may call.
+
+Although ancestoral calls, cannot be directly eliminated by
+inlining, there must be a call from the candidate functions
+parent to it, or one of its siblings, leading to the inlining
+of the candidate and moving it towards the root. 
+
+\section{List Examples}
+We shall begin with some basic routines on lists.
+We will first write the "obvious" routines to use as specifications.
+Later we will have to look at their performance.
+
+\subsection{Reversing a list}
+To reverse a list, we run down the list constructing a new
+one. At the end, we return the result. 
+
+Our routine takes two arguments,
+a list \verb%inp% and a list \verb%out% onto which we must prepend
+the reversed copy of \verb%inp%.
+
+\begin{minted}{felix}
+fun prepend_reversed[T] (inp:list[T]) (out: list[T]) =>
+  match inp with
+  | #Empty => out
+  | Cons (head, tail) => 
+    prepend_reversed tail (Cons (head, out))
+  endmatch
+;
+\end{minted}
+
+We can use this routine to reverse a list.
+
+\begin{minted}{felix}
+fun rev[T] (a: list[T]) => prepend_reversed a Empty[T];
+\end{minted}
+
+\subsection{Join Lists}
+Now suppose we wish to prepend a list $a$ onto a list $b$.
+How would we do that? Well it's easy:
+
+\begin{minted}{felix}
+fun join[T] (a: list[T], b: list[T]) =>
+  prepend_reversed (rev a) b
+;
+\end{minted}
+
+\subsection{Map a List}
+This routine creates a new list with each
+element a function of the old value.
+
+\begin{minted}{felix}
+fun rev_map[U,T] (f:T->U) (inp:list[T]) : list[U]=>
+  match inp with
+  | #Empty => Empty[U]
+  | Cons (head, tail) => Cons (f head, rev_map f tail)
+  endmatch
+;
+
+fun map[U,T] (f:T->U) (inp:list[T]) : list[U] =>
+  rev$ rev_map f inp
+;
+\end{minted}
+
+\subsection{Left fold a List}
+Folds fold the elements of a list of $T$ into a single value
+of type $U$ by applying a function of type $U \times T \rightarrow U$.
+Lists have two folds, one starting at the top or left, and one starting
+at the bottom.
+
+\begin{minted}{felix}
+fun fold_left[U,T] (f:U -> T -> U) (acc:U) (inp:list[T]) : U =>
+  match inp with
+  | #Empty => acc
+  | Cons (head, tail) => fold_left f (f acc head) tail
+  endmatch
+;
+\end{minted}
+
+Notice the order of the arguments, and see how in the second branch
+the head element is folded into the accummulator to form an argument
+for the recursive call.
+
+\subsection{Right fold a List}
+Here is the right fold:
+
+\begin{minted}{felix}
+fun fold_right[U,T] (f:T -> U -> U) (inp:list[T]) (acc:U): U =>
+  match inp with
+  | #Empty => acc
+  | Cons (head, tail) => f (fold_right f acc tail) head
+  endmatch
+;
+\end{minted}
+
+Notice again the order of the arguments and see how
+in the second branch the recursion produces an argument
+for the function f.
+
+\subsection{Concatenate List of Lists}
+Using our fold we can concatenate a list of lists into a single list.
+
+\begin{minted}{felix}
+fun cat[T] (x:list[list[T]]):list[T] =>
+  match x with
+  | #Empty => Empty[T]
+  | Cons(h,t) => fold_left join of (list[T]) h t
+  endmatch
+;
+\end{minted}
+
+\subsection{Filter}
+Filter selects all the elements of a list satisfying a predicate.
+
+\begin{minted}{felix}
+fun filter[T] (P:T -> bool) (x:list[T]) : list[T] =>
+  match inp with
+  | #Empty => Empty[T]
+  | Cons(h,t) =>
+    if P(h) then Cons(h, filter P t)
+    else filter P t
+  endmatch
+;
+\end{minted}
+
+\subsection{Prefix and Suffix}
+For a list $l$ of length $n$, \verb%take% $k$ $l$
+returns the head sublist of length $min(n,k)$.
+
+\begin{minted}{felix}
+fun take[T] (k:int) (lst:list[T]) : list[T] =>
+  if k <= 0 then Empty[T]
+  else
+    match lst with
+      | #Empty => Empty[T]
+      | Cons(x,xs) => Cons(x, take[T] (k - 1) xs)
+    endmatch
+  endif
+;
+\end{minted}
+
+For a list $l$ of length $n$, \verb%drop% $k$ $l$ returns
+the list with first $min(n,k)$ elements removed.
+
+\begin{minted}{felix}
+  fun drop[T] (k:int) (lst:list[T]) : list[T] =>
+    if k <= 0 then lst
+    else
+      match lst with
+        | #Empty => list[T] ()
+        | Cons(x,xs) => drop (k - 1) xs
+    endif
+  ;
+\end{minted} 
+
+\section{Tail Recursion}
+\subsection{Tail Calls}
+
+A final value returned by a function is said to be in
+{\em tail position}. 
+
+If an expression in tail position is an application,
+it is known as a i{\em tail call}. 
+In expanded form, in this function for example:
+
+\begin{minted}{felix}
+fun f(x:int) = {
+  var a = x + y;
+  return g ( h (a + 1));
+}
+\end{minted}
+
+The tail call is to $g$, the functional part of the return
+expression's application. Not all returns have a tail call,
+in this example:
+
+\begin{minted}{felix}
+fun f(x:int) = {
+  var a = x + 1;
+  var b = g ( h (a + 1));
+  return b;
+}
+\end{minted}
+
+a variable is returned. This function can be rewritten
+without changing the semantics to the previous one,
+showing that whether a call is in tail position is
+a syntactic property. It is also language dependent.
+For example in Felix:
+
+\begin{minted}{felix}
+fun f (c:bool) = {
+  return
+     if c then f 1 else g 1 endif
+  ;
+}
+\end{minted}
+
+the calls to $f$ and $g$ are in tail position
+by specification. Similarly, in
+
+\begin{minted}{felix}
+fun f (c:bool)  = {
+  return
+     match c with
+     | false => f 1 
+     | true => g 1 
+     endmatch
+  ;
+}
+\end{minted}
+
+the calls to $f$ and $g$ are in tail position. However consider
+this function:
+
+\begin{minted}{felix}
+fun ifthenelse (c:bool, a:int, b:int) = {
+  return
+     match c with
+     | false => a
+     | true => b
+     endmatch
+  ;
+}
+\end{minted}
+
+then in this function:
+
+\begin{minted}{felix}
+fun f (c:bool) = {
+  return
+     ifthenelse (c, f 1, g 1)
+  ;
+}
+\end{minted}
+
+it is the call to \verb%ifthenelse% which is in tail position.
+
+\subsection{Tail Call Optimisation}
+Tail calls are important because they lead to an optimisation.
+If we save the current function's return addres on the stack
+and jump to the tail function, on completion that function will jump 
+to the return address, popping it off the stack, and then the
+current function will jump to its return address popping it off
+the stack. It is more efficient to just jump to the tail function
+without saving the return address, so that when it returns by
+popping the return address off the stack and jumping to it,
+it is returning from itself and the caller.
+
+\subsection{Tail Recursion}
+If the tail call is to
+the function itself, the function is said, somewhat ambiguously,
+to be {\em tail recursive}. The ambiguity is seen here in Ackerman's 
+famous function:
+
+\begin{minted}{felix}
+fun ack(x:int,y:int):int =>
+  if x == 0 then y + 1
+  elif y == 0 then ack(x - 1, 1)
+  else ack(x - 1, ack(x, y - 1))
+  endif
+;
+\end{minted}
+
+Here there are recursive calls, two in tail position and one not.
+
+Tail recursive calls may lead to another improvement. 
+Instead of pushing the argument onto the stack, we can just assign the
+argument to our parameter. This is safe because the parameter
+is not accessed after the call returns, since it is a tail call.
+This means the recursion can be performed as a loop using a mutable
+variable as the parameter.  If a function calls itself, and all calls
+are in tail position, the function is said to be {\em tail recursive}.
+
+For example this function is tail recursive:
+
+\begin{minted}{felix}
+fun f (x:int, n:int) = {
+  if n <= 0 return x;
+  return f (x * n, n - 1);
+}
+\end{minted}
+
+and can be optimised to:
+
+\begin{minted}{felix}
+fun f (var x:int, var n:int) = {
+again:
+  if n <= 0 return x;
+  n, x = x * n, n - 1;
+  goto again;
+}
+\end{minted}
+
+eliminating the recursion entirely. Note carefully the parallel
+assignment to the parameter components, it is equivalent to
+
+\begin{minted}{felix}
+  var tmp1 = x * n;
+  var tmp2 = n - 1;
+  n = tmp1;
+  x = tmp2;
+\end{minted}
+
+\subsection{Refactoring for tail recursion}
+Let us observe again our routine \verb%prepend_reversed%:
+
+\begin{minted}{felix}
+fun prepend_reversed[T] (inp:list[T]) (out: list[T]) =>
+  match inp with
+  | #Empty => out
+  | Cons (head, tail) => 
+    prepend_reversed tail (Cons (head, out))
+  endmatch
+;
+\end{minted}
+
+This routine is tail recursive, since the recursive call
+is in tail position. However consider our \verb%rev_map% routine:
+
+\begin{minted}{felix}
+fun rev_map[U,T] (f:T->U) (inp:list[T]) : list[U]=>
+  match inp with
+  | #Empty => Empty[U]
+  | Cons (head, tail) => Cons (f head, rev_map f tail)
+  endmatch
+;
+\end{minted}
+
+Clearly this is not tail recursive because the recursive call to
+\verb%rev_map% is not in tail position. Can we recode this
+routine to make it tail recursive? The answer is yes:
+
+\begin{minted}{felix}
+fun trrmap[U,T] 
+  (f:T->U) 
+  (inp:list[T]) 
+  (out:list[U])
+: list[U] =>
+  match inp with
+  | #Empty => out
+  | Cons (head, tail) => trmap tail (Cons ((f head ), out))
+  endmatch
+;
+
+fun rev_map[U,T] (f:T->U) (inp:list[T]) =>
+  trrmap f inp Empty[U]
+;
+\end{minted}
+
+Clearly now, the recursive call to \verb%trrmap% is
+in tail position. The trick used here is very common:
+we add an extra parameter to the routine to hold the temporary
+result.
+
+Examine again the \verb%fold_left% routine, the recursion occurs
+on the branch:
+
+\begin{minted}{felix}
+  | Cons(h,t) => fold_left join of (list[T]) h t
+\end{minted}
+
+and is clearly in tail position. However, this is not
+the case for the \verb%fold_right% routine:
+
+\begin{minted}{felix}
+  | Cons (head, tail) => f (fold_right f acc tail) head
+\end{minted}
+
+Can we fix it? The answer is yes, technically.
+Consider
+
+\begin{minted}{felix}
+fun fold_right[U,T] 
+  (f:T -> U -> U) 
+  (inp:list[T]) 
+  (acc:U)
+: U  =>
+  let fun f' (acc:U) (elt:T) => f elt acc in
+  fold_left f' acc (rev list)
+;
+\end{minted}
+
+Although this routine is not even recursive, it is
+calling a two tail recursive routines: \verb%fold_left%
+and \verb%rev%.
+
+The question we must ask here is whether this recoding
+is worthwhile. Although only a constant amount of
+machine stack is required for saving return addresses
+and passing parameters, we have had to make a temporary
+reversed list on the heap, costing an amount of time
+and space proportional to the list length.
+
+On the other hand the non-tail recursive routine only requires
+a single stack of pairs consisting of a return address
+and pointer to a list node: we also need to save the
+accumlator of course, however it can be a single variable.
+Whether or not the underlying compilation engine actually
+uses a single variable for the result is probablt architecture
+and type dependent: clearly if the fold result is an integer
+a machine register might be used. 
+
+In any case it simply isn't clear whether the tail recursive
+formulation is faster or slower, and even a naive measurement
+may be difficult since in a garbage collected language the
+freeing of the list may be delayed, making a measurement 
+problematic. In Felix for example, a microtest may fail
+because by default Felix does not clean up memory on 
+program termination.
+
+Indeed, we must emaphsise now that this doubt about
+the performance of programs encoded largely using
+functional programming techniques is one of the major
+negative aspects of those techniques. In general with
+any modern compiler and modern processor performance
+is not only hard to predict, it is also quite hard to
+measure, but with functional programming the situation
+is even more difficult.
+
+Functional programming does offer an advantage for certain
+classes of problems where the functional style make it
+easier to reason about the correctness of the encoding.
+This is primarily due to a property known as 
+{\em referential transparency}, however that property is only
+possessed by encodings which use recursion and immutable
+values in place of mutable variables. The price is a loss
+of ability to reason about performance.
+
+I personally think it is also arguable whether functional
+code is easier to reason about in practice, rather than
+academic papers. Indeed, the applicative functional model based on
+lambda calculus has serious issues in respect of evaluation
+strategy. We will say more about this later.
+
+In this sense Felix excels because it also permits
+procedural programming. Although fraught with difficulties
+mixing functional and imperatives styles can provide
+a more balanced program in the sense that the difficulty
+of reasoning about correctness of imperative code
+can be balanced with greater confidence in its good
+performance, where it matters.
+
 
 \section{Generalised Folds: Catamorphisms}
 Unsurprisingly, folds can be mechanically written
@@ -3547,7 +3711,7 @@ The type of a procedure is written \verb%T -> 0% where $T$ is the type
 of the argument. The zero indicates no value is returned, it is an alias
 for \verb%void%.
 
-\section{Variables}
+\section{Variables and Pointers}
 The core concept of procedural programming revolves not around
 observable behaviour, but the use of non-observable storage
 locations called variables which can be modified to contain
@@ -3624,25 +3788,39 @@ done
 Here the projection is denoted by an expression, not merely
 a constant. Felix array values are immutable, however you can
 modify an array object as shown.
-
+\chapter{Iterators}
+Stuff.
 \chapter{Dynamic Objects}
+Stuff.
 \chapter{Reactive Programming}
+Stuff.
 
 \part{Active Programming}
 \chapter{Fibres}
+Stuff.
 \chapter{Synchronous Channels}
+Stuff.
 \chapter{Pipelines}
+Stuff.
 \chapter{Coroutines}
+Stuff.
 \chapter{Continuations}
+Stuff.
 \chapter{Symmetric Lambda Calculus}
+Stuff.
 
 \part{Concurrency}
 \chapter{Asynchronous Events}
+Stuff.
 \section{Timers}
+Stuff.
 \section{Socket I/O}
+Stuff.
 
 \chapter{Pre-emption}
+Stuff.
 \section{Pthreads}
+Stuff.
 \subsection{Designing a Thread Pool}
 Let us suppose we wish to divide the task of multiplying
 a matrix up into 4 pieces, so one thread calculates
@@ -3865,17 +4043,25 @@ when they're equal. The value of these variables is indeterminate outside
 of the dynamic scope of the lock-release events.
 
 \subsection{Barriers}
+Stuff.
 \subsection{Concurrently Statement}
 
 \chapter{Parallelism}
+Stuff.
 \section{Thread Pool}
+Stuff.
 \section{Parallel For Loop}
+Stuff.
 
 \part{Categorical Programming}
 \chapter{Category Theory}
+Stuff.
 \chapter{Symmetric Categorical Language}
+Stuff.
 \chapter{Meta-programming}
+Stuff.
 \chapter{Polyadicity: The Holy Grail}
+Stuff.
 
 \appendix
 \backmatter

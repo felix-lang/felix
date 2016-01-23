@@ -17,30 +17,29 @@ typedef any = any;
 
 @h1 Type Functors
 @tangle typing.flx
-
 open class Typing
 {
   typedef fun dom(t:TYPE):TYPE =>
     typematch t with
-    | a -> _ => a
+    | ?a -> _ => a
     endmatch
   ;
 
   typedef fun cod(t:TYPE):TYPE =>
     typematch t with
-    | _ -> b => b
+    | _ -> ?b => b
     endmatch
   ;
 
   typedef fun prj1(t:TYPE):TYPE =>
     typematch t with
-    | a * _ => a
+    | ?a * _ => a
     endmatch
   ;
 
   typedef fun prj2(t:TYPE):TYPE =>
     typematch t with
-    | _ * b => b
+    | _ * ?b => b
     endmatch
   ;
 
