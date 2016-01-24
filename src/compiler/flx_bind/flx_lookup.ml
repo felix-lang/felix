@@ -4050,6 +4050,7 @@ assert false; (* shouldn't happen now! *)
       bexpr_get_n ctyp n a
 
   | EXPR_get_named_variable (sr,(name,e')) ->
+print_endline ("Find field name " ^ name ^ " of " ^ string_of_expr e');
     let e'',t'' as x2 = be e' in
     begin match t'' with
     | BTYP_record (es)
@@ -5020,6 +5021,7 @@ print_endline ("Added overload of __eq to lookup table!");
 
         *)
         begin match unfold "flx_lookup" ta with 
+        | BTYP_polyrecord (es,_)
         | BTYP_record (es) ->
 (*
 print_endline ("binding apply, RECORD field .. " ^ name ^ ", type=" ^ sbt bsym_table ta);
@@ -5051,6 +5053,7 @@ print_endline "";
 print_endline ("binding apply, RECORD pointer field .. " ^ name ^ ", type=" ^ sbt bsym_table ta);
 *)
           begin match unfold "flx_lookup" r with
+          | BTYP_polyrecord (es,_) 
           | BTYP_record (es) ->
             if (ts != []) then raise Flx_dot.OverloadResolutionError; 
             let k = List.length es in
