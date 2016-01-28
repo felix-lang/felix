@@ -746,6 +746,12 @@ print_endline ("Bind type " ^ string_of_typecode t);
 
   let t =
   match t with
+  | TYP_defer (sr, tor) -> 
+    begin match !tor with
+    | None -> print_endline ("Bind type: defered type found"); assert false
+    | Some t -> bt t
+    end
+
   | TYP_label -> BTYP_label
   | TYP_patvar _ -> failwith "Not implemented patvar in typecode"
   | TYP_patany _ -> failwith "Not implemented patany in typecode"
@@ -1437,6 +1443,7 @@ end;
           *)
           let rec guess_metatype t =
             match t with
+            | TYP_defer _ -> print_endline "Guess metatype: defered type found"; assert false
             | TYP_tuple_cons (sr,t1,t2) -> assert false
             | TYP_type_tuple _ -> print_endline "A type tuple"; assert false
             | TYP_typefun (d,c,body) -> 

@@ -80,6 +80,9 @@ and typecode_t =
 (*  | TYP_lvalue of typecode_t *)                  (** ... lvalue annotation *)
   | TYP_isin of typecode_t * typecode_t        (** typeset membership *)
 
+  | TYP_defer of Flx_srcref.t * typecode_t option ref
+
+
   (* sets of types *)
   | TYP_typeset of typecode_t list             (** discrete set of types *)
   | TYP_setunion of typecode_t list            (** union of typesets *)
@@ -630,6 +633,7 @@ let src_of_suffixed_name (e : suffixed_name_t) = match e with
   -> s
 
 let src_of_typecode = function
+  | TYP_defer (s,_)
   | TYP_void s
   | TYP_name  (s,_,_)
   | TYP_case_tag (s,_)

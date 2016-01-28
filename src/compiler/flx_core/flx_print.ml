@@ -324,6 +324,11 @@ and string_of_expr (e:expr_t) =
 and st prec tc : string =
   let iprec,txt =
     match tc with
+    | TYP_defer (sr,t) -> 
+      begin match !t with 
+      | None -> 0,"(DEFER:unset)" 
+      | Some t -> 0,"(DEFER:"^string_of_typecode t^")" 
+      end
     | TYP_tuple_cons (sr, t1, t2) -> 6, st 4 t1 ^ "**" ^ st 4 t2
 
     | TYP_index (sr,name,idx) -> 0, name ^ "<" ^ string_of_bid idx ^ ">"

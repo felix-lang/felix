@@ -67,6 +67,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
   match e with
   | EXPR_name (_,"TYPE",[]) -> TYP_type
   | EXPR_name (_,"LABEL",[]) -> TYP_label
+  | EXPR_name (sr,"DEFER",[]) -> TYP_defer (sr,ref None)
   | EXPR_name (sr,"_",[]) -> TYP_patany sr
   | EXPR_ellipsis _ -> TYP_ellipsis
   | EXPR_void sr -> TYP_void sr
