@@ -1,4 +1,6 @@
 open Flx_sym
+open Flx_ast
+
 type bind_state_t = {
   syms: Flx_mtypes2.sym_state_t;
   sym_table: Flx_sym_table.t;
