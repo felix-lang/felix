@@ -1,3 +1,4 @@
+open Flx_sym
 type bind_state_t = {
   syms: Flx_mtypes2.sym_state_t;
   sym_table: Flx_sym_table.t;
@@ -94,10 +95,10 @@ let bind_asm state bsym_table handle_bound init asm =
 print_endline ("bind_symbol " ^ sym.Flx_sym.id ^ "??");
       begin match sym.symdef with
       | Flx_types.SYMDEF_function (([kind,pid,TYP_defer _,_],None),ret,props,exes) ->
-print_endline ("bind_symbol " ^ sym.id ^ " .. DEFERED");
+print_endline ("bind_symbol " ^ sym.Flx_sym.id ^ " .. DEFERED");
         defered := bid :: !defered
       | _ -> 
-print_endline ("bind_symbol " ^ sym.id ^ " .. BINDING");
+print_endline ("bind_symbol " ^ sym.Flx_sym.id ^ " .. BINDING");
         (* Then, bind the symbol. *)
         ignore (Flx_bbind.bbind_symbol
           state.bbind_state
