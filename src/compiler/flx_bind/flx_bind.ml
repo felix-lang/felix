@@ -91,7 +91,7 @@ let bind_asm state bsym_table handle_bound init asm =
     with
     | None -> ()
     | Some (parent, sym) ->
-print_endline ("bind_symbol " ^ sym.id ^ "??");
+print_endline ("bind_symbol " ^ sym.Flx_sym.id ^ "??");
       begin match sym.symdef with
       | Flx_types.SYMDEF_function (([kind,pid,TYP_defer _,_],None),ret,props,exes) ->
 print_endline ("bind_symbol " ^ sym.id ^ " .. DEFERED");
