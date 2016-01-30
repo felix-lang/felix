@@ -748,7 +748,7 @@ print_endline ("Bind type " ^ string_of_typecode t);
   match t with
   | TYP_defer (sr, tor) -> 
     begin match !tor with
-    | None -> print_endline ("Bind type: defered type found"); assert false
+    | None -> print_endline ("Bind type: undefined defered type found"); assert false
     | Some t -> bt t
     end
 
@@ -4833,10 +4833,8 @@ print_endline ("Added overload of __eq to lookup table!");
 
   | EXPR_apply (sr,(f',a')) ->
     begin (* apply *)
-(*
-    print_endline ("Apply " ^ string_of_expr f' ^ " to " ^  string_of_expr a');
-*)
     (* 
+    print_endline ("[bind_expression] GENERAL APPLY " ^ string_of_expr f' ^ " to " ^  string_of_expr a');
     print_env env;
     *)
     let (ea,ta) as a = be a' in
@@ -5119,6 +5117,105 @@ print_endline ("binding apply, Struct pointer field .. " ^ name ^ ", type=" ^ sb
 (*
     print_endline ("Recursive descent into application " ^ string_of_expr e);
 *)
+    (* HACK defered types .. this block of code ALWAYS exits with
+       overload resolution error, but it might fudge a defered type before
+       doing so
+    *)
+    try
+(*
+print_endline ("++++ Checking for defered type ...");
+*)
+      let pss = match f' with
+        | EXPR_name (sr,name,[]) ->
+(*
+print_endline ("++++ got function name " ^ name);
+*)
+          let entries = 
+            try inner_lookup_name_in_env state bsym_table env rs sr name
+            with _ -> raise Flx_dot.OverloadResolutionError
+          in 
+(*
+print_endline ("++++ Found entries");
+*)
+          begin match entries with
+          | FunctionEntry [{base_sym=idx; spec_vs=[]; sub_ts=[]}] ->
+(*
+print_endline ("[EXPR_name] Found solo function entry " ^ string_of_int idx);
+*)
+            begin match hfind "lookup(defered?)" state.sym_table idx with
+            | { Flx_sym.symdef=SYMDEF_function (pss, ret, props,exes) } -> pss
+            | _ -> raise Flx_dot.OverloadResolutionError 
+            end
+          | _ -> 
+(*
+print_endline ("++++ Did not find solo function entry!");
+*)
+           raise Flx_dot.OverloadResolutionError
+          end 
+        | EXPR_lookup (sr, (e,name,[]))  -> 
+(*
+print_endline ("++++ got qualified function name " ^ name);
+*)
+          let entry =
+            match
+              eval_module_expr
+              state
+              bsym_table
+              env
+              e
+            with
+            | (Simple_module (impl, ts, htab,dirs)) ->
+              let env' = mk_bare_env state bsym_table impl in
+              let tables = get_pub_tables state bsym_table env' rs dirs in
+              let result = lookup_name_in_table_dirs htab tables sr name in
+              result
+          in
+          begin match entry with
+          | Some entry ->
+            begin match entry with
+            | FunctionEntry [{base_sym=idx; spec_vs=[]; sub_ts=[]}] -> 
+(*
+print_endline ("[EXPR_lookup] Found solo function entry " ^ string_of_int idx);
+*)
+              begin match hfind "lookup(defered?)" state.sym_table idx with
+              | { Flx_sym.symdef=SYMDEF_function (pss, ret, props,exes) } -> pss
+              | _ -> raise Flx_dot.OverloadResolutionError 
+              end
+            | _ -> raise Flx_dot.OverloadResolutionError
+            end
+          | None -> raise Flx_dot.OverloadResolutionError
+          end
+
+        | EXPR_index (sr,name,idx) ->
+          begin match hfind "lookup(defered?)" state.sym_table idx with
+          | { Flx_sym.symdef=SYMDEF_function (pss, ret, props,exes) } -> pss
+          | _ -> raise Flx_dot.OverloadResolutionError 
+          end 
+        | EXPR_suffix (sr,(qn,TYP_defer (sr2,dt))) -> 
+          [`PVal,"defered-lambda-param",TYP_defer (sr2,dt),None],None
+        | EXPR_suffix _ -> raise Flx_dot.OverloadResolutionError 
+        | _ -> 
+(*
+          print_endline ("Expr in function position not simple name, got " ^ string_of_expr f');
+*)
+          raise Flx_dot.OverloadResolutionError
+      in match pss with
+      | [kind,pid,TYP_defer (_,tref),_],None -> 
+(*
+        print_endline ("Function with single parameter "^pid^"  of defered type found!");
+*)
+        begin match !tref with
+        | Some t -> print_endline ("DEFERED TYPE IS ALREADY SET")
+        | None -> 
+          print_endline ("DEFERED TYPE IS NOT SET");
+          let tc = typecode_of_btype bsym_table sr ta in
+          tref := Some tc;
+          print_endline ("DEFERED TYPE SET NOW TO " ^ string_of_typecode tc)
+        end;
+        raise Flx_dot.OverloadResolutionError
+      | _ -> raise Flx_dot.OverloadResolutionError
+    with Flx_dot.OverloadResolutionError ->
+
     begin try
       let (bf,tf) as f = 
         try be f' 
@@ -5152,6 +5249,7 @@ print_endline ("Bound function " ^ sbe bsym_table f);
     with Flx_dot.OverloadResolutionError ->
 (*
 print_endline ("Can't interpret apply function "^string_of_expr f'^" as projection, trying as an actual function");
+
 *)
     let (bf,tf) as f =
       match qualified_name_of_expr f' with

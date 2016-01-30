@@ -78,8 +78,38 @@ let bind_asm state bsym_table handle_bound init asm =
     | Flx_types.Dir dir -> init
   in
 
+  let defered = ref [] in
   (* Now bind in order all of the symbols we added. *)
   Flx_mtypes2.iter_bids begin fun bid ->
+    (* Skip this bid if we've already bound it. *)
+    if Flx_bsym_table.mem bsym_table bid then () else
+
+    (* Next, find the symbol to bind. *)
+    match
+      try Some (Flx_sym_table.find_with_parent state.sym_table bid)
+      with Not_found -> None
+    with
+    | None -> ()
+    | Some (parent, sym) ->
+print_endline ("bind_symbol " ^ sym.id ^ "??");
+      begin match sym.symdef with
+      | Flx_types.SYMDEF_function (([kind,pid,TYP_defer _,_],None),ret,props,exes) ->
+print_endline ("bind_symbol " ^ sym.id ^ " .. DEFERED");
+        defered := bid :: !defered
+      | _ -> 
+print_endline ("bind_symbol " ^ sym.id ^ " .. BINDING");
+        (* Then, bind the symbol. *)
+        ignore (Flx_bbind.bbind_symbol
+          state.bbind_state
+          bsym_table
+          bid
+          parent
+          sym)
+      end
+  end initial_index !(state.syms.Flx_mtypes2.counter);
+
+  print_endline ("Processing " ^ string_of_int (List.length (!defered)) ^ " defered syms");
+  List.iter begin fun bid ->
     (* Skip this bid if we've already bound it. *)
     if Flx_bsym_table.mem bsym_table bid then () else
 
@@ -97,7 +127,8 @@ let bind_asm state bsym_table handle_bound init asm =
           bid
           parent
           sym)
-  end initial_index !(state.syms.Flx_mtypes2.counter);
+  end (!defered);
+
 
   (* Now that we've bound all the symbols, we can downgrade the types. *)
   let init = ref init in

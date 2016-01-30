@@ -254,6 +254,10 @@ let rec build_tables
     List.rev dcls, List.rev exes, List.rev ifaces, List.rev dirs
   in
 (*
+print_endline ("Table " ^ name ^ ", level " ^string_of_int level ^ " build tables, exes = ");
+List.iter (fun exe -> print_endline (Flx_print.string_of_sexe 2 exe)) exes;
+*)
+(*
 print_endline ("Level " ^string_of_int level ^ " build tables, exports = " ^ string_of_int (List.length ifaces));
 *)
   (* Add the parent to each interface *)
@@ -264,7 +268,7 @@ print_endline ("Level " ^string_of_int level ^ " build tables, exports = " ^ str
   if level = 0 then
     match dcls with
     | [x] -> ()
-    | _ -> failwith "Expected top level to contain root declaration"
+    | _ -> failwith "Expected top level to contain root declaration (and nothing else)"
   else
     if name = "root" then
       failwith ("Can't name non-toplevel module 'root'")

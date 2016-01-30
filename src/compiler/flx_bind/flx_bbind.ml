@@ -182,9 +182,9 @@ let bind_quals bt quals = map (bind_qual bt) quals
 let str_parent p = match p with | Some p -> string_of_int p | None -> "None"
 
 let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
-  (*
-  print_endline ("Binding symbol "^sym.Flx_sym.id^" index=" ^ string_of_int symbol_index);
-  *)
+(*
+  print_endline (" ^^^^ BBIND_SYMBOL (subroutine) : Binding symbol "^sym.Flx_sym.id^" index=" ^ string_of_int symbol_index);
+*)
   (* If we've already processed this bid, exit early. We do this so we can avoid
    * any infinite loops in the symbols. *)
   if Hashtbl.mem state.visited symbol_index then () else begin
@@ -222,8 +222,12 @@ print_endline ("Parent " ^ str_parent sym_parent ^ " mapped to true parent " ^ s
      * bbdcls before continuing on. *)
     Flx_btype.iter ~f_bid:begin fun bid ->
       let parent, sym = Flx_sym_table.find_with_parent state.sym_table bid in
-      if not (Flx_bsym_table.mem bsym_table bid) then
+      if not (Flx_bsym_table.mem bsym_table bid) then begin
+(*
+print_endline (" &&&&&& bind_type_uses calling BBIND_SYMBOL");
+*)
         bbind_symbol state bsym_table bid parent sym
+      end
     end btype
   in
   let bexes exes ret_type index tvars : Flx_btype.t * Flx_bexe.t list=
@@ -347,6 +351,7 @@ print_endline ("Parent " ^ str_parent sym_parent ^ " mapped to true parent " ^ s
   let add_bsym parent bbdcl =
     let bsym = Flx_bsym.of_sym sym bbdcl in
     Flx_bsym_table.add bsym_table symbol_index parent bsym;
+(*
     begin match parent with
     | None -> ()
     | Some parent ->
@@ -354,8 +359,12 @@ print_endline ("Parent " ^ str_parent sym_parent ^ " mapped to true parent " ^ s
           state.sym_table
           parent
         in
+print_endline (" &&&&&& add_bsym calling BBIND_SYMBOL");
+try
         bbind_symbol state bsym_table parent parent' sym';
+with _ -> print_endline ("PARENT BINDING FAILED CONTINUING ANYHOW");
     end
+*)
   in
   (*
   print_endline ("******Binding " ^ qname ^ "="^ string_of_symdef
@@ -438,7 +447,14 @@ print_endline ("Parent " ^ str_parent sym_parent ^ " mapped to true parent " ^ s
     add_bsym true_parent (bbdcl_lemma ())
 
   | SYMDEF_function (ps,rt,props,exes) ->
+(*
+    print_endline (" ... Binding function");
+    print_endline (" ... Binding parameters");
+*)
     let bps = bindps ps in
+(*
+    print_endline (" ... DONE Binding parameters");
+*)
     let ts = Flx_bparams.get_btypes bps in
 
     (* We don't need to bind the intermediary type. *)
@@ -473,6 +489,9 @@ print_endline ("Parent " ^ str_parent sym_parent ^ " mapped to true parent " ^ s
     add_bsym true_parent bbdcl
 
   | SYMDEF_parameter (k,_) ->
+(*
+print_endline "BINDING PARAMETER";
+*)
     begin match sym_parent with
     | None -> failwith "[bbind_sym] expected parameter to have a parent"
     | Some ip ->
@@ -768,6 +787,9 @@ print_endline ("Binding callback " ^ sym.Flx_sym.id ^ " index=" ^ string_of_bid 
       state.sym_table
       k
     in
+(*
+print_endline (" &&&&&& SYMDEF_instance calling BBIND_SYMBOL");
+*)
     bbind_symbol state bsym_table k typeclass_parent typeclass_sym;
 
     (*
@@ -813,12 +835,16 @@ print_endline ("Binding callback " ^ sym.Flx_sym.id ^ " index=" ^ string_of_bid 
   end
 
 let bbind state start_counter ref_counter bsym_table =
+(*
+print_endline ("Flx_bbind.bbind *********************** ");
+*)
   (* loop through all counter values [HACK] to get the indices in sequence, AND,
    * to ensure any instantiations will be bound, (since they're always using the
    * current value of state.counter for an index. Note that in the process of
    * binding new symbols can be added to the end of the table, so the terminating
    * index is not known in advance. It had better converge!
    *)
+  let defered = ref [] in
   let counter = ref start_counter in
   while !counter < !ref_counter do
     let i = !counter in
@@ -827,20 +853,60 @@ let bbind state start_counter ref_counter bsym_table =
       with Not_found -> None
     with
     | None -> (* print_endline "bbind: Symbol not found"; *) ()
-    | Some (parent, symdef) ->
+    | Some (parent, sym) ->
 (*
+print_endline ("[flx_bbind] bind_symbol " ^ sym.Flx_sym.id ^ "??");
+*)
+      begin match sym.Flx_sym.symdef with
+      | Flx_types.SYMDEF_function (([kind,pid,TYP_defer _,_],None),ret,props,exes) ->
+print_endline ("[flx_bbind] bind_symbol FUNCTION " ^ sym.Flx_sym.id ^ " .. DEFERED");
+        defered := i :: !defered
+      | Flx_types.SYMDEF_parameter (kind,TYP_defer _) ->
+print_endline ("[flx_bbind] bind_symbol PARAMETER " ^ sym.Flx_sym.id ^ " .. DEFERED");
+        defered := i :: !defered
+ 
+      | _ -> 
+(*
+print_endline ("[flx_bbind] bind_symbol " ^ sym.Flx_sym.id ^ " .. BINDING: calling BBIND_SYMBOL");
 print_endline ("Binding symbol " ^ symdef.Flx_sym.id ^ "<" ^ si i ^ ">"); 
 *)
-      try bbind_symbol state bsym_table i parent symdef
+      try bbind_symbol state bsym_table i parent sym
       with Not_found ->
         try match hfind "bbind" state.sym_table i with { Flx_sym.id=id } ->
           failwith ("Binding error, Not_found thrown binding " ^ id ^ " index " ^
             string_of_bid i)
         with Not_found ->
           failwith ("Binding error, Not_found thrown binding unknown id with index " ^ string_of_bid i)
+      end
     end;
     incr counter
   done
+  ;
+
+if (List.length (!defered) <> 0) then begin
+print_endline ("DEFERED PROCESSING STARTS");
+
+  List.iter (fun i ->
+    begin match
+      try Some (Flx_sym_table.find_with_parent state.sym_table i)
+      with Not_found -> None
+    with
+    | None -> (* print_endline "bbind: Symbol not found"; *) ()
+    | Some (parent, sym) ->
+print_endline ("[flx_bbind] DEFERED bind_symbol " ^ sym.Flx_sym.id ^ "?? calling BBIND_SYMBOL");
+      try bbind_symbol state bsym_table i parent sym
+      with Not_found ->
+        try match hfind "bbind" state.sym_table i with { Flx_sym.id=id } ->
+          failwith ("Binding error, Not_found thrown binding " ^ id ^ " index " ^
+            string_of_bid i)
+        with Not_found ->
+          failwith ("Binding error, Not_found thrown binding unknown id with index " ^ string_of_bid i)
+    end
+  )
+  (!defered)
+  ;
+print_endline ("DEFERED PROCESSING ENDS");
+end
 
 let bind_interface (state:bbind_state_t) bsym_table = function
   | sr, IFACE_export_fun (sn, cpp_name), parent ->
