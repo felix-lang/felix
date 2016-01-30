@@ -4057,7 +4057,9 @@ assert false; (* shouldn't happen now! *)
       bexpr_get_n ctyp n a
 
   | EXPR_get_named_variable (sr,(name,e')) ->
+(*
 print_endline ("Find field name " ^ name ^ " of " ^ string_of_expr e');
+*)
     let e'',t'' as x2 = be e' in
     begin match t'' with
     | BTYP_record (es)
