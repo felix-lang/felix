@@ -18,7 +18,7 @@ let make_module module_name asms =
 
 
 (** Bind the assemblies *)
-let bind_asms state sym_table bsym_table start_counter asms =
+let flxg_bind_asms state sym_table bsym_table start_counter asms =
   if state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
   print_endline "//BINDING";
 
@@ -69,7 +69,7 @@ let bind_root_module state sym_table bsym_table module_name =
   let asms = make_module module_name [asm] in
 
   (* Finally, bind the root module's init procedure. *)
-  bind_asms state sym_table bsym_table root_proc asms;
+  flxg_bind_asms state sym_table bsym_table root_proc asms;
 
   (* Extra finally, let's do some paranoia checks to make sure everything went
    * well. *)
@@ -90,7 +90,7 @@ let bind state sym_table bsym_table module_name start_counter asms =
   (* Bind the assemblies. *)
   Flx_profile.call
     "Flxg_bind.bind_asms"
-    (bind_asms state sym_table bsym_table !start_counter)
+    (flxg_bind_asms state sym_table bsym_table !start_counter)
     asms;
 
   (* Bind the root module's init procedure. *)

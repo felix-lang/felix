@@ -123,7 +123,7 @@ print_endline ("Force flag = " ^ string_of_bool state.syms.compiler_options.forc
 
         (* Bind the assemblies. *)
         Flx_profile.call "Flxg_bind.bind_asms"
-          (Flxg_bind.bind_asms
+          (Flxg_bind.flxg_bind_asms
             state
             !sym_table_ref
             !bsym_table_ref

@@ -3208,7 +3208,7 @@ next:>
           println$ "Tangler filename=" + x;
           var xtn = Filename::get_extension x;
           println$ "Extension=" + xtn;
-          if xtn in (".flx",".flxh") do 
+          if xtn in (".flx",".flxh",".fsyn") do 
             write_string("<pre class='inclusion'>\n"+x+"</pre>\n");
             println$ "flx ....";
             inline_felix (#get_text);

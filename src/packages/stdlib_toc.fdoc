@@ -1,7 +1,7 @@
 @title The Felix Library
 @h1 Felix Run Time Library
 <dl>
-<dt><a href=Exceptions.fdoc>Exceptions</a></dt>
+<dt><a href=exceptions.fdoc>Exceptions</a></dt>
 <dd>Error Exits</dd>
 
 <dt><a href=gc.fdoc>Garbage Collector</a></dt>
@@ -20,7 +20,7 @@
 <dd>Code C++ implementation of Asynchronous I/O RTL</dd>
 
 
-<dt><a href=rtl-thread.fdoc>Pre-emptive Threading Core</a></dt>
+<dt><a href=rtl-threads.fdoc>Pre-emptive Threading Core</a></dt>
 <dd>Core C++ Pre-emptive threading support</dd>
 
 <dt><a href=serialisation.fdoc>Serialisation Support</a></dt>

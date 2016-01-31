@@ -1,7 +1,7 @@
 @tangler __init__.flx    =share/lib/std/scalar/__init__.flx
-@tangler scalar.flx    =share/lib/std/scalar/ctypedefs.flx
-@tangler int.fsyn      =share/lib/grammar/grammar_int_lexer.fsyn
-@tangler float.fsyn    =share/lib/grammar/grammar_float_lexer.fsyn
+@tangler scalar.flx      =share/lib/std/scalar/ctypedefs.flx
+@tangler int.fsyn        =share/lib/grammar/grammar_int_lexer.fsyn
+@tangler float.fsyn      =share/lib/grammar/grammar_float_lexer.fsyn
 @title Core Scalar Types
 
 @h1 Language features.
