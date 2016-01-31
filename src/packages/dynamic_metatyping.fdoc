@@ -1,0 +1,60 @@
+@title Dynamic Meta-typing
+@tangler typedesc.flx  = share/lib/std/felix/dyntype/typedesc.flx
+
+@h1 First Class Type Descriptor.
+
+@tangle typedesc.flx
+interface typedesc_t 
+{
+  name: 1 -> string;
+  len: 1 -> size;
+  allocate : 1 -> address;
+  dflt_init : address -> 0;
+  copy_init : address * address -> 0; 
+  move_init : address * address -> 0; // leaves src dflt init
+  dmove_init : address * address -> 0; // destroys source
+  copy_assign : address * address -> 0;
+  move_assign : address * address -> 0; // leaves source dflt init
+  dmove_assign : address * address -> 0; // destroys source
+  destroy : address -> 0;
+  free : address -> 0;
+  noffsets: 1 -> size;
+  offset_array : 1 -> address; 
+}
+
+include "std/c/rawc";
+
+object blob (tname:string, n:size) implements typedesc_t =
+{
+  proc memcpy (dst:address, src:address, n:size)  => 
+    C_hack::ignore (Raw_C::memcpy (dst,src,n))
+  ;
+
+  proc memset(dst:address, c:int, n:size)  => 
+    C_hack::ignore (Raw_C::memset(dst,c,n))
+  ;
+
+  typedef A = address;
+  macro val CPY = memcpy (dst,src,n);
+
+  const NULL : A = "(void*)0";
+
+  method fun name () => tname;
+  method fun len () => n;
+  method gen allocate () => C_hack::malloc n;
+  method proc dflt_init (p:A) => memset (p,0,n);
+  method proc copy_init (dst:A, src:A) => CPY;
+  method proc move_init (dst:A, src:A) => CPY;
+  method proc dmove_init (dst:A, src:A) { 
+    CPY; memset (src,0,n);
+  }
+  method proc copy_assign (dst:A, src:A) => CPY;
+  method proc move_assign (dst:A, src:A) => CPY;
+  method proc dmove_assign (dst:A, src:A) { 
+    CPY; memset (src,0,n);
+  }
+  method proc destroy(p:A) => memset (p,0,n);
+  method proc free (p:A) => C_hack::free p;
+  method fun noffsets () => 0uz;
+  method fun offset_array () => NULL;
+}
