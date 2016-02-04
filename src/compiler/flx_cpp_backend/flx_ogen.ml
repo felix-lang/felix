@@ -79,12 +79,12 @@ let rec gen_type_shape module_name s syms bsym_table need_int last_ptr_map primi
       let encoder_name = name ^ "_encoder" in
       let encoder_stmts = get_encoder' syms bsym_table "p" btyp' in
       bcat s ("\n// ENCODER for type " ^sbt bsym_table btyp' ^ "\n"); 
-      bcat s (" ::std::string "^encoder_name^"(void *d) {\n");
-      bcat s ("   char *p = (char*)d;\n");
-      bcat s ("   ::std::string b = \"\";\n");
+      bcat s ("  ::std::string "^encoder_name^"(void *d) {\n");
+      bcat s ("    char *p = (char*)d;\n");
+      bcat s ("    ::std::string b = \"\";\n");
       iter (fun line -> bcat s ("   "^ line ^ "\n")) encoder_stmts;
-      bcat s ("   return b;\n");
-      bcat s (" }\n");
+      bcat s ("    return b;\n");
+      bcat s ("  }\n");
       encoder_name
     in
     let gen_decoder () =
@@ -92,13 +92,29 @@ let rec gen_type_shape module_name s syms bsym_table need_int last_ptr_map primi
       let decoder_stmts = get_decoder' syms bsym_table "p" btyp' in
       bcat s ("\n// DECODER for type " ^sbt bsym_table btyp' ^ "\n"); 
       bcat s ("  size_t "^decoder_name^"(void *d,char *s, size_t i) {\n");
-      bcat s ("   char *p = (char*)d;\n");
+      bcat s ("    char *p = (char*)d;\n");
       iter (fun line -> bcat s ("   "^ line ^ "\n")) decoder_stmts;
-      bcat s ("   return i;\n");
-      bcat s (" }\n");
+      bcat s ("    return i;\n");
+      bcat s ("  }\n");
       decoder_name
     in
 
+    let gen_cpy_fun (f:string) = 
+      let f_name = name ^ "_" ^ f in
+      bcat s ("\n// "^f^" for type " ^name ^ " = "^sbt bsym_table btyp' ^ "\n"); 
+      bcat s ("  void "^f_name^"(void *d, void *s) {\n");
+      bcat s ("   "^f^"(("^name^"*)d,("^name^"*)s);\n");
+      bcat s ("  }\n");
+      f_name
+    in
+    let gen_first_class () =
+       gen_cpy_fun ("copy_init"),
+       gen_cpy_fun ("move_init"),
+       gen_cpy_fun ("dmove_init"),
+       gen_cpy_fun ("copy_assign"),
+       gen_cpy_fun ("move_assign"),
+       gen_cpy_fun ("dmove_assign")
+    in
 
     match btyp' with
     | _ when islinear_type bsym_table btyp' -> ()
@@ -110,6 +126,7 @@ let rec gen_type_shape module_name s syms bsym_table need_int last_ptr_map primi
       let n = length offsets in
       let encoder_name = gen_encoder () in
       let decoder_name = gen_decoder () in
+      let copy_init, move_init, dmove_init, copy_assign, move_assign, dmove_assign = gen_first_class () in
       bcat s ("\n//OFFSETS for tuple type " ^ string_of_bid index ^ "\n");
       gen_offset_data module_name s n name offsets false false [] None last_ptr_map encoder_name decoder_name
 
@@ -154,6 +171,7 @@ let rec gen_type_shape module_name s syms bsym_table need_int last_ptr_map primi
       bcat s ("  " ^ si k ^ ",\n");
       bcat s ("  sizeof("^tname^"),\n"); (* NOTE: size of ONE element!! *)
       bcat s ( if not is_pod then ("  "^name^"_finaliser,\n") else ("  0,\n"));
+      bcat s ("  0,0,0,0,0, // dflt_init, copy_init,move_init,copy_assign,move_assign\n");
       bcat s ("  "^ (if n<>0 then "&"^name^"_offset_data" else "0")^",\n");
       bcat s ("  "^ (if n<>0 then "&::flx::gc::generic::scan_by_offsets" else "0")^",\n");
       bcat s ("  "^encoder_name^",\n");
@@ -234,6 +252,7 @@ let rec gen_type_shape module_name s syms bsym_table need_int last_ptr_map primi
             bcat s ("  \"" ^ module_name ^"::" ^ name ^ "\",\n");
             bcat s ("  1,sizeof("^name^"),\n");
             bcat s ("  "^finaliser^","^(if is_pod then " // no finaliser" else "")^"\n");
+            bcat s ("  0,0,0,0,0, // dflt_init, copy_init,move_init,copy_assign,move_assign)\n");
             begin if gc_pointer then 
               bcat s ("  &::flx::rtl::_address_offset_data, // gc_pointer\n")
             else
@@ -279,12 +298,14 @@ let rec gen_type_shape module_name s syms bsym_table need_int last_ptr_map primi
         if is_pod then begin
           bcat s ("  1,sizeof("^name^"),\n");
           bcat s ("  0,   // no finaliser\n");
+          bcat s ("  0,0,0,0,0, // dflt_init, copy_init,move_init,copy_assign,move_assign)\n");
           bcat s ("  0,0, // no client data or scanner\n");
           bcat s ("  0,0, // no encoder or decoder\n");
           bcat s ("  ::flx::gc::generic::gc_flags_default,0ul,0ul\n")
         end else begin
           bcat s ("  1,sizeof("^name^"),\n");
           bcat s ("  "^name^"_finaliser,\n");
+          bcat s ("  0,0,0,0,0, // dflt_init, copy_init,move_init,copy_assign,move_assign)\n");
           bcat s ("  0,0,   // no client data or scanner\n");
           bcat s ("  0,0, // no encoder or decoder\n");
           bcat s ("  ::flx::gc::generic::gc_flags_default,0ul,0ul\n")
@@ -295,6 +316,7 @@ let rec gen_type_shape module_name s syms bsym_table need_int last_ptr_map primi
       | BBDCL_struct (vs,cps) ->
         let encoder_name = gen_encoder () in
         let decoder_name = gen_decoder () in
+        let copy_init, move_init, dmove_init, copy_assign, move_assign, dmove_assign = gen_first_class () in
 
         bcat s ("\n//OFFSETS for struct type " ^ name ^ " instance\n");
         let offsets = get_offsets syms bsym_table btyp in
@@ -312,6 +334,7 @@ let rec gen_type_shape module_name s syms bsym_table need_int last_ptr_map primi
     | BTYP_record (es) ->
       let encoder_name = gen_encoder () in
       let decoder_name = gen_decoder () in
+      let copy_init, move_init, dmove_init, copy_assign, move_assign, dmove_assign = gen_first_class () in
       bcat s ("\n//OFFSETS for record type " ^ name ^ " instance\n");
       let offsets = get_offsets syms bsym_table btyp in
       let n = length offsets in

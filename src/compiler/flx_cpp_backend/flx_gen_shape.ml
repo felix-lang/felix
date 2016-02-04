@@ -36,9 +36,10 @@ let gen_offset_data module_name s n name offsets isfun is_pod props flags last_p
   bcat s ("  " ^ old_ptr_map ^ ",\n");
   bcat s ("  \"" ^ module_name ^ "::" ^ name ^ "\",\n");
   bcat s ("  1,sizeof("^name^"),\n");
-  bcat s ( if not is_pod then ("  "^name^"_finaliser,\n") else ("  0,\n"));
-  bcat s ("  "^ (if n<>0 then "&"^name^"_offset_data" else "0")^",\n");
-  bcat s ("  "^ (if n<>0 then "&::flx::gc::generic::scan_by_offsets" else "0")^",\n");
+  bcat s ( if not is_pod then ("  "^name^"_finaliser,\n") else ("  0, // finaliser\n"));
+  bcat s ("  0,0,0,0,0, // dflt_init, copy_init,move_init,copy_assign,move_assign\n");
+  bcat s ("  "^ (if n<>0 then "&"^name^"_offset_data" else "0")^", // scanner data\n");
+  bcat s ("  "^ (if n<>0 then "&::flx::gc::generic::scan_by_offsets" else "0")^", // scanner\n");
   bcat s ("  " ^ encoder_name ^",\n");
   bcat s ("  " ^ decoder_name ^",\n");
   bcat s (match flags with None -> "  ::flx::gc::generic::gc_flags_default,\n" | Some flags ->  flags^",\n");

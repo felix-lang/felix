@@ -193,6 +193,8 @@ typedef void finaliser_t (collector_t*, void*);
 typedef void *scanner_t(collector_t*, gc_shape_t *, void *, size_t, int);
 typedef ::std::string encoder_t (void *);
 typedef ::std::size_t decoder_t(void *, char *, ::std::size_t);
+typedef void copier_t (void*,void*);
+typedef void dflt_init_t (void*);
 
 struct GC_EXTERN gc_shape_t
 {
@@ -201,6 +203,11 @@ struct GC_EXTERN gc_shape_t
   ::std::size_t count;            ///< static array element count
   ::std::size_t amt;              ///< bytes allocated
   finaliser_t *finaliser;         ///< finalisation function
+  dflt_init_t *dflt_init;
+  copier_t *copy_init;
+  copier_t *move_init;
+  copier_t *copy_assign;
+  copier_t *move_assign;
   void const *private_data;       ///< private data passed to scanner
   scanner_t *scanner;             ///< scanner function 
   encoder_t *encoder;             ///< encoder function 
