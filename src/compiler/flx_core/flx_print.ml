@@ -1030,6 +1030,7 @@ and string_of_named_reqs x = match x with
 
 and string_of_base_qual = function
 | `Incomplete -> "incomplete"
+| `Uncopyable-> "uncopyable"
 | `Pod -> "pod"
 | `GC_pointer -> "GC_pointer"
 

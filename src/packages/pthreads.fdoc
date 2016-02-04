@@ -452,7 +452,7 @@ open class Ts_counter
 
 open class TS_Bound_Queue
 {
-  private type bQ_ = "::flx::pthread::bound_queue_t";
+  private uncopyable type bQ_ = "::flx::pthread::bound_queue_t";
   _gc_pointer _gc_type bQ_ type ts_bound_queue_t[T] = "::flx::pthread::bound_queue_t*" 
     requires 
      package "flx_bound_queue",

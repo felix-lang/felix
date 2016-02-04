@@ -110,10 +110,8 @@ let rec gen_type_shape module_name s syms bsym_table need_int last_ptr_map primi
     let gen_first_class () =
        gen_cpy_fun ("copy_init"),
        gen_cpy_fun ("move_init"),
-       gen_cpy_fun ("dmove_init"),
        gen_cpy_fun ("copy_assign"),
-       gen_cpy_fun ("move_assign"),
-       gen_cpy_fun ("dmove_assign")
+       gen_cpy_fun ("move_assign")
     in
 
     match btyp' with
@@ -126,7 +124,7 @@ let rec gen_type_shape module_name s syms bsym_table need_int last_ptr_map primi
       let n = length offsets in
       let encoder_name = gen_encoder () in
       let decoder_name = gen_decoder () in
-      let copy_init, move_init, dmove_init, copy_assign, move_assign, dmove_assign = gen_first_class () in
+      let copy_init, move_init, copy_assign, move_assign = gen_first_class () in
       bcat s ("\n//OFFSETS for tuple type " ^ string_of_bid index ^ "\n");
       gen_offset_data module_name s n name offsets false false [] None last_ptr_map encoder_name decoder_name
 
@@ -190,6 +188,7 @@ let rec gen_type_shape module_name s syms bsym_table need_int last_ptr_map primi
       begin match Flx_bsym.bbdcl bsym with
       | BBDCL_external_type (_,quals,_,_) ->
         let complete = not (mem `Incomplete quals) in
+        let copyable = not (mem `Uncopyable quals) && complete in
         let is_pod = mem `Pod quals in
         let gc_pointer = mem `GC_pointer quals in 
         let scanner = 
@@ -230,6 +229,9 @@ let rec gen_type_shape module_name s syms bsym_table need_int last_ptr_map primi
 
 
         if complete then
+          let copy_init, move_init, copy_assign, move_assign = 
+            if copyable then gen_first_class () else "0","0","0","0"
+          in
           if not (Hashtbl.mem primitive_shapes name) then
           begin
             let encoder_name = gen_encoder () in
@@ -252,7 +254,7 @@ let rec gen_type_shape module_name s syms bsym_table need_int last_ptr_map primi
             bcat s ("  \"" ^ module_name ^"::" ^ name ^ "\",\n");
             bcat s ("  1,sizeof("^name^"),\n");
             bcat s ("  "^finaliser^","^(if is_pod then " // no finaliser" else "")^"\n");
-            bcat s ("  0,0,0,0,0, // dflt_init, copy_init,move_init,copy_assign,move_assign)\n");
+            bcat s ("  0,"^copy_init^","^move_init^","^copy_assign^","^move_assign^",\n");
             begin if gc_pointer then 
               bcat s ("  &::flx::rtl::_address_offset_data, // gc_pointer\n")
             else
@@ -316,7 +318,7 @@ let rec gen_type_shape module_name s syms bsym_table need_int last_ptr_map primi
       | BBDCL_struct (vs,cps) ->
         let encoder_name = gen_encoder () in
         let decoder_name = gen_decoder () in
-        let copy_init, move_init, dmove_init, copy_assign, move_assign, dmove_assign = gen_first_class () in
+        let copy_init, move_init, copy_assign, move_assign = gen_first_class () in
 
         bcat s ("\n//OFFSETS for struct type " ^ name ^ " instance\n");
         let offsets = get_offsets syms bsym_table btyp in
@@ -334,7 +336,7 @@ let rec gen_type_shape module_name s syms bsym_table need_int last_ptr_map primi
     | BTYP_record (es) ->
       let encoder_name = gen_encoder () in
       let decoder_name = gen_decoder () in
-      let copy_init, move_init, dmove_init, copy_assign, move_assign, dmove_assign = gen_first_class () in
+      let copy_init, move_init, copy_assign, move_assign = gen_first_class () in
       bcat s ("\n//OFFSETS for record type " ^ name ^ " instance\n");
       let offsets = get_offsets syms bsym_table btyp in
       let n = length offsets in

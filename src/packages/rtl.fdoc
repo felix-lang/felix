@@ -155,7 +155,7 @@ void destroy(T *p){ p->T::~T(); }
 
 // copy initialise
 template<typename T> 
-void copy_init (T *dst, T const *src)
+void copy_init (T *dst, T *src)
 {
   new(dst) T(*src);
 }
@@ -177,7 +177,7 @@ void dmove_init (T *dst, T *src)
 
 // copy assign
 template<typename T> 
-void copy_assign (T *dst, T const *src)
+void copy_assign (T *dst, T *src)
 {
   *dst = *src;
 }

@@ -13,6 +13,7 @@ type index_map_t = (int,int) Hashtbl.t
 
 type base_type_qual_t = [
   | `Incomplete
+  | `Uncopyable
   | `Pod
   | `GC_pointer (* this means the type is a pointer the GC must follow *)
 ]

@@ -506,6 +506,7 @@ and xtype_qual_t sr x : type_qual_t =
   let ti x = type_of_sex sr x in
   match x with
   | Id "Incomplete" -> `Incomplete
+  | Id "Uncopyable" -> `Uncopyable
   | Id "Pod" -> `Pod
   | Id "GC_pointer" -> `GC_pointer
   | Lst [Id "Raw_needs_shape"; t] -> `Raw_needs_shape (ti t)

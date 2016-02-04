@@ -64,8 +64,9 @@ element in the last two cases.
 The GC also supports finalisation. By default the finaliser
 of a C++ object is a function calling the object's type's
 destructor. This means a complex data structure such as an
-STL map can be used in Felix, provided the value type is
-does not contain GC managed pointers. The finaliser calls
+STL map can be used in Felix, provided the value type
+does not contain GC managed pointers (unless those pointers are 
+marked as roots). The finaliser calls
 the destructor to release storage, relieving the GC of the
 task of tracking the individual objects comprising the
 data structure.
@@ -89,12 +90,23 @@ a collection, all the threads must wait until the last
 one yields to the stop request, and then the collection
 is performed.
 
+It is also essential to be aware that the world stop
+uses condition variables for synchronisation. Because of this
+unconstrained use of native synchronisation vehicles such
+as a mutex, semaphore, or condition variable is not possible.
+For example if one thread holds a mutex locked and a second
+thread is waiting, and the lock holder triggers a world
+stop, the waiting thread cannot respond, resulting in a deadlock.
+
+The library provides safe alternative synchronisation machinery
+which is aware of the GC world stop.
+
 @h2 Thread Control Base
 Note: this is part of the @{flx_pthread} library not the @{flx_gc} library.
 But only the header file is required. The @{thread_control_base_t}
 destructor is defined in @{pthread_thread_control.cpp}.
 
-The gc constuctor requires a thread_control_base_t pointer to be passed
+The gc constuctor requires a @{thread_control_base_t} pointer to be passed
 to it. The actual thread safe collector is defined in the pthread library.
 A non-thread version of the thread control base might be constructed
 for a single threaded Felix world instantiation but we do not currently
@@ -172,6 +184,21 @@ struct GC_EXTERN allocator_t;     // the allocator used
 struct GC_EXTERN offset_data_t;   // private data for offset scanner
 struct GC_EXTERN pointer_data_t;  // description of a pointer
 
+@h3 Pointer data
+This structure is used to provide the client with information
+about a pointer. The @{pointer} field is the pointer about which
+information has been requested. If this field is not interior to
+an object managed by the GC, the rest of the fields are zero.
+
+Otherwise the @{head} field contains the lowest address
+of the object, also known as the <em>base</em>or <em>head</em> address.
+The @{max_elements} field contains a count of the maximum number of
+objects which can fit in the allocated store, that is, the <em>array bound</em>.
+The @{used_elements} field contains a count of the number of array slots actually
+used. Finally the @{shape} field contains a pointer to the @{gc_shape_t}
+object for the element type. , that is, the <em>array bound</em>.
+
+@tangle flx_gc.hpp
 struct GC_EXTERN pointer_data_t
 {
   void *pointer;                      //< candidate pointer
@@ -181,6 +208,10 @@ struct GC_EXTERN pointer_data_t
   gc_shape_t *shape;                  //< shape
 };
 
+@h2 <tt>gc_shape_t</tt> types
+Types required for the RTTI object.
+
+@tangle flx_gc.hpp
 enum gc_shape_flags_t {
   gc_flags_default    = 0,            //< collectable and mobile
   gc_flags_immobile   = 1,            //< cannot be moved
@@ -217,6 +248,11 @@ struct GC_EXTERN gc_shape_t
   size_t deallocations;
 };
 
+@h3 Standard Scanner
+The standard scanner @{scan_by_offsets} uses an array 
+containing offsets into an object where pointers are located.
+
+@tangle flx_gc.hpp
 struct GC_EXTERN offset_data_t
 {
   ::std::size_t n_offsets;
@@ -225,6 +261,15 @@ struct GC_EXTERN offset_data_t
 
 GC_EXTERN scanner_t scan_by_offsets;
 
+@h3 Standard Finaliser
+The standard finaliser is a template which destoys an object
+using the C++ destructor. In the RTTI object if the
+finaliser is zero, this means the compiler knew the
+object was a POD type with a trivial destructor,
+and the zero allows the collector to skip the call
+to a do nothing finaliser function.
+
+@tangle flx_gc.hpp
 
 /*
  * The following template is provided as a standard wrapper
@@ -252,6 +297,15 @@ void std_finaliser(collector_t*, void *t)
   static_cast<T*>(t) -> ~T();
 }
 
+@h2 Allocator Abstraction
+The allocator is used by the gc to allocate and deallocate
+heap storage. Although abstract, the standard allocator
+use @{malloc} and @{free} and this is assumed by a lot
+of code in the RTL and is an advertised property of the
+Felix system. Nevertheless providing an abstraction helps
+with software organisation.
+
+@tangle flx_gc.hpp
 /// Allocator abstraction.
 
 struct allocator_t {
@@ -262,6 +316,27 @@ struct allocator_t {
   virtual ~allocator_t();
   void set_debug(bool d){debug=d;}
 };
+
+@h2 The collector abstraction
+Finally the actual garbage collector abstraction.
+
+The abstraction is essential to allow a common interface
+to the single threaded and thread safe collectors.
+The thread safe collector is just a wrapper around the 
+unsafe collector with appropriate locking.
+
+Those familiar with C++ object oriented techniques,
+may be surprised to learn their understanding of how
+to use virtual methods is almost certainly completely
+and utterly wrong! This is partly due to incorrect
+advice in almost every book published on the subject,
+and online advice from so-called experts including
+member of the committee itself.
+
+The collector we present rigidly follows the correct
+rules which result in a quite complex structure.
+
+@tangle flx_gc.hpp
 
 /// Collector abstraction.
 struct GC_EXTERN collector_t
@@ -421,6 +496,7 @@ GC_EXTERN void operator delete(
 );
 
 #endif
+@
 @tangle flx_gc_private.hpp
 
 #define _ROUNDUP(i,n) ((i + n - 1) / n * n)
@@ -1619,6 +1695,8 @@ class Rtti {
   typedef gc_finaliser_t = collector_t * address --> void;
   typedef gc_encoder_t = address --> string;
   typedef gc_decoder_t = address * +char * size --> size;
+  typedef copier_t = address * address --> void;
+  typedef dflt_init_t = address --> void;
 
   //$ Iterator to find the next shape after a given one.
   fun next_shape: gc_shape_t -> gc_shape_t = "$1->next_shape";
@@ -1635,6 +1713,13 @@ class Rtti {
 
   //$ The finaliser function.
   fun finaliser: gc_shape_t -> gc_finaliser_t  = "$1->finaliser";
+
+  //$ First class operations
+  fun dflt_init: gc_shape_t -> dflt_init_t = "$1->dflt_init";
+  fun copy_init : gc_shape_t -> copier_t = "$1->copy_init";
+  fun move_init : gc_shape_t -> copier_t = "$1->move_init";
+  fun copy_assign: gc_shape_t -> copier_t = "$1->copy_assign";
+  fun move_assign: gc_shape_t -> copier_t = "$1->move_assign";
 
   //$ The encoder function.
   fun encoder : gc_shape_t -> gc_encoder_t = "$1->encoder";

@@ -458,6 +458,7 @@ syntax cbind {
   //$ prevent allocation of values of this type.
   //$ Pointers can still be formed.
   stype_qual := "incomplete" =># "'Incomplete";
+  stype_qual := "uncopyable" =># "'Uncopyable";
 
   //$ The type qualified pod is used to specify
   //$ that a type has a trivial destructor.

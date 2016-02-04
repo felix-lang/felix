@@ -150,6 +150,7 @@ syn keyword felixStatement where
 syn keyword felixStatement when
 syn keyword felixStatement with
 syn keyword felixStatement yield
+syn keyword felixStatement uncopyable
 syn keyword felixStatement _gc_pointer
 syn keyword felixStatement _gc_type
 syn keyword felixStatement _svc
