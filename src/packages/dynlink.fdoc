@@ -634,11 +634,7 @@ FLX_FINALISER(flx_dynlink_t)
   "dynlink::flx_dynlink_t",
   1,sizeof(flx_dynlink_t),
   flx_dynlink_t_finaliser, 
-  0, // dflt_init
-  0, // copy_init
-  0, // move_init
-  0, // copy_assign
-  0, // move_assign
+  0, // fcops 
   0, // private data
   0, // scanner
   ::flx::gc::generic::tblit<flx_dynlink_t>, // encoder
@@ -664,11 +660,7 @@ static ::flx::gc::generic::offset_data_t const flx_libinst_offset_data = { 4, fl
   "dynlink::flx_libinst",
   1,sizeof(flx_libinst_t),
   flx_libinst_t_finaliser, 
-  0, // dflt_init
-  0, // copy_init
-  0, // move_init
-  0, // copy_assign
-  0, // move_assign
+  0, // fcops
   &flx_libinst_offset_data,
   ::flx::gc::generic::scan_by_offsets,
   ::flx::gc::generic::tblit<flx_libinst_t>,::flx::gc::generic::tunblit<flx_libinst_t>, 

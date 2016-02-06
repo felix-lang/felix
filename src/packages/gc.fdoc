@@ -169,6 +169,7 @@ public:
 #include "flx_gc_config.hpp"
 #include "pthread_thread_control_base.hpp"
 #include <string>
+#include "flx_compiler_support_bodies.hpp"
 
 // we use an STL set to hold the collection of roots
 #include <set>
@@ -234,11 +235,13 @@ struct GC_EXTERN gc_shape_t
   ::std::size_t count;            ///< static array element count
   ::std::size_t amt;              ///< bytes allocated
   finaliser_t *finaliser;         ///< finalisation function
-  dflt_init_t *dflt_init;
+  ValueType *fcops;               ///< first class ops
+/*
   copier_t *copy_init;
   copier_t *move_init;
   copier_t *copy_assign;
   copier_t *move_assign;
+*/
   void const *private_data;       ///< private data passed to scanner
   scanner_t *scanner;             ///< scanner function 
   encoder_t *encoder;             ///< encoder function 
@@ -1695,8 +1698,13 @@ class Rtti {
   typedef gc_finaliser_t = collector_t * address --> void;
   typedef gc_encoder_t = address --> string;
   typedef gc_decoder_t = address * +char * size --> size;
-  typedef copier_t = address * address --> void;
-  typedef dflt_init_t = address --> void;
+
+  type fcops_t = "ValueType*";
+  proc copy_init : fcops_t * address * address  = "$1->copy_init($2,$3);";
+  proc move_init : fcops_t * address * address  = "$1->move_init($2,$3);";
+  proc copy_assign: fcops_t * address * address  = "$1->copy_assign($2,$3);";
+  proc move_assign: fcops_t * address * address  = "$1->move_assign($2,$3);";
+  fun get_fcops : gc_shape_t -> fcops_t = "$1->fcops";
 
   //$ Iterator to find the next shape after a given one.
   fun next_shape: gc_shape_t -> gc_shape_t = "$1->next_shape";
@@ -1713,13 +1721,6 @@ class Rtti {
 
   //$ The finaliser function.
   fun finaliser: gc_shape_t -> gc_finaliser_t  = "$1->finaliser";
-
-  //$ First class operations
-  fun dflt_init: gc_shape_t -> dflt_init_t = "$1->dflt_init";
-  fun copy_init : gc_shape_t -> copier_t = "$1->copy_init";
-  fun move_init : gc_shape_t -> copier_t = "$1->move_init";
-  fun copy_assign: gc_shape_t -> copier_t = "$1->copy_assign";
-  fun move_assign: gc_shape_t -> copier_t = "$1->move_assign";
 
   //$ The encoder function.
   fun encoder : gc_shape_t -> gc_encoder_t = "$1->encoder";

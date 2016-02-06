@@ -197,6 +197,27 @@ void dmove_assign (T *dst, T *src)
   destroy (src);
 }
 
+class ValueType
+{
+  virtual void copy_init_impl(void *, void *)=0;
+  virtual void move_init_impl(void *, void *)=0;
+  virtual void copy_assign_impl(void *, void *)=0;
+  virtual void move_assign_impl(void *, void *)=0;
+public:
+  void copy_init (void *dst, void *src) { copy_init_impl(dst,src); }
+  void move_init (void *dst, void *src) { move_init_impl(dst,src); }
+  void copy_assign(void *dst, void *src) { copy_assign_impl(dst,src); }
+  void move_assign(void *dst, void *src) { move_assign_impl(dst,src); }
+};
+
+template<typename T> 
+class CxxValueType : public virtual ValueType
+{
+  void copy_init_impl(void *dst, void *src) { ::copy_init<T>((T*)dst,(T*)src); }
+  void move_init_impl(void *dst, void *src) { ::move_init<T>((T*)dst,(T*)src); }
+  void copy_assign_impl(void *dst, void *src) { ::copy_assign<T>((T*)dst,(T*)src); }
+  void move_assign_impl(void *dst, void *src) { ::move_assign<T>((T*)dst,(T*)src); }
+};
 
 template<typename T0, typename T1> 
 struct _tt2 {
@@ -928,11 +949,7 @@ static ::flx::gc::generic::offset_data_t const slist_node_offset_data = { 2, sli
   "rtl::slist_node_t",
   1,sizeof(slist_node_t),
   0, // no finaliser,
-  0, // dflt_init
-  0, // copy_init
-  0, // move_init
-  0, // copy_assign
-  0, // move_assign
+  0, // fcops
   &slist_node_offset_data,
   ::flx::gc::generic::scan_by_offsets,
   ::flx::gc::generic::tblit<slist_node_t>,::flx::gc::generic::tunblit<slist_node_t>, 
@@ -954,11 +971,7 @@ static ::flx::gc::generic::offset_data_t const slist_offset_data = { 1, slist_of
   "rtl::slist_t",
   1,sizeof(slist_t),
   0, // no finaliser
-  0, // dflt_init
-  0, // copy_init
-  0, // move_init
-  0, // copy_assign
-  0, // move_assign
+  0, // fcops
   &slist_offset_data,
   ::flx::gc::generic::scan_by_offsets,
   ::flx::gc::generic::tblit<slist_t>,::flx::gc::generic::tunblit<slist_t>, 
@@ -981,11 +994,7 @@ static ::flx::gc::generic::offset_data_t const _fthread_offset_data = { 1, _fthr
   "rtl::fthread_t",
   1,sizeof(fthread_t),
   0,
-  0, // dflt_init
-  0, // copy_init
-  0, // move_init
-  0, // copy_assign
-  0, // move_assign
+  0, // fcops
   &_fthread_offset_data,
   ::flx::gc::generic::scan_by_offsets,
   ::flx::gc::generic::tblit<fthread_t>,::flx::gc::generic::tunblit<fthread_t>, 
@@ -1009,11 +1018,7 @@ static ::flx::gc::generic::offset_data_t const schannel_offset_data = { 2, schan
   "rtl::schannel_t",
   1,sizeof(schannel_t),
   0, // no finaliser
-  0, // dflt_init
-  0, // copy_init
-  0, // move_init
-  0, // copy_assign
-  0, // move_assign
+  0, // fcops
   &schannel_offset_data, // scanner data
   ::flx::gc::generic::scan_by_offsets, // scanner
   ::flx::gc::generic::tblit<schannel_t>,  // encoder
@@ -1038,11 +1043,7 @@ static ::flx::gc::generic::offset_data_t const _uctor_offset_data = { 1, _uctor_
   1,
   sizeof(_uctor_),
   0, // finaliser
-  0, // dflt_init
-  0, // copy_init
-  0, // move_init
-  0, // copy_assign
-  0, // move_assign
+  0, // fcops
   &_uctor_offset_data, // scanner data
   ::flx::gc::generic::scan_by_offsets, // scanner
   ::flx::gc::generic::tblit<_uctor_>, // encoder
@@ -1061,11 +1062,7 @@ static ::flx::gc::generic::offset_data_t const _uctor_offset_data = { 1, _uctor_
   1,
   sizeof(int),
   0, // finaliser
-  0, // dflt_init
-  0, // copy_init
-  0, // move_init
-  0, // copy_assign
-  0, // move_assign
+  0, // fcops
   0, // scanner data
   0, // scanner
   ::flx::gc::generic::tblit<int>, // encoder
@@ -1080,11 +1077,7 @@ static ::flx::gc::generic::offset_data_t const _uctor_offset_data = { 1, _uctor_
   1,
   sizeof(cl_t),
   0, // finaliser
-  0, // dflt_init
-  0, // copy_init
-  0, // move_init
-  0, // copy_assign
-  0, // move_assign
+  0, // fcops
   0, // scanner data
   0, // scanner
   ::flx::gc::generic::tblit<cl_t>,::flx::gc::generic::tunblit<cl_t>, 
@@ -1121,11 +1114,7 @@ static size_t address_decoder (void *p, char *s, size_t i) {
   1,
   sizeof(void*),
   0, // finaliser
-  0, // dflt_init
-  0, // copy_init
-  0, // move_init
-  0, // copy_assign
-  0, // move_assign
+  0, // fcops
   &_address_offset_data, /// scanner data
   ::flx::gc::generic::scan_by_offsets, // scanner
   ::flx::gc::generic::tblit<void*>, // encoder
