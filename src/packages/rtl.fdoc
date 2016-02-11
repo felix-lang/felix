@@ -149,6 +149,10 @@ T &reinterpret(U const &x) {
   return reinterpret_cast<T&>(const_cast<U&>(x));
 }
 
+// dflt init
+template<typename T> 
+void dflt_init(T *p){ new(p) T(); }
+
 // destroy object
 template<typename T> 
 void destroy(T *p){ p->T::~T(); }
@@ -199,11 +203,16 @@ void dmove_assign (T *dst, T *src)
 
 class ValueType
 {
+  virtual void dflt_init_impl (void *)=0;
+  virtual void destroy_impl (void *)=0;
   virtual void copy_init_impl(void *, void *)=0;
   virtual void move_init_impl(void *, void *)=0;
   virtual void copy_assign_impl(void *, void *)=0;
   virtual void move_assign_impl(void *, void *)=0;
 public:
+  void dflt_init(void *dst) { dflt_init_impl(dst); }
+  void destroy(void *dst) { destroy_impl (dst); }
+
   void copy_init (void *dst, void *src) { copy_init_impl(dst,src); }
   void move_init (void *dst, void *src) { move_init_impl(dst,src); }
   void copy_assign(void *dst, void *src) { copy_assign_impl(dst,src); }
@@ -213,6 +222,8 @@ public:
 template<typename T> 
 class CxxValueType : public virtual ValueType
 {
+  void dflt_init_impl(void *dst) { ::dflt_init<T>((T*)dst); }
+  void destroy_impl(void *dst) { ::dflt_init<T>((T*)dst); }
   void copy_init_impl(void *dst, void *src) { ::copy_init<T>((T*)dst,(T*)src); }
   void move_init_impl(void *dst, void *src) { ::move_init<T>((T*)dst,(T*)src); }
   void copy_assign_impl(void *dst, void *src) { ::copy_assign<T>((T*)dst,(T*)src); }

@@ -11,6 +11,9 @@ let sbt = Flx_print.sbt
 let sbe = Flx_print.sbe
 let si = string_of_int
 
+(* Forgetful functor: just drops fields. RHS fields must
+exist in LHS.
+*)
 let record_coercion state bsym_table sr x' n t' t'' ls' ls'' = 
   try
   bexpr_record (* t'' *)
@@ -175,6 +178,10 @@ print_endline ("Coercion from int expression result is " ^ sbe bsym_table r);
     | BTYP_record (ls'),BTYP_record (ls'')->
       let n = List.length ls' in
       record_coercion state bsym_table sr x' n t' t'' ls' ls'' 
+
+    | BTYP_record (ls'),BTYP_polyrecord (ls'',r)->
+      syserr sr "Flx_coerce: coercion to polyrecord not implemented"
+
 
     | BTYP_variant lhs,BTYP_variant rhs ->
       variant_coercion state bsym_table sr x' t' t'' lhs rhs 

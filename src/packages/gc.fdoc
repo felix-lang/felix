@@ -1700,6 +1700,8 @@ class Rtti {
   typedef gc_decoder_t = address * +char * size --> size;
 
   type fcops_t = "ValueType*";
+  proc dflt_init : fcops_t * address = "$1->dflt_init($2);";
+  proc destroy : fcops_t * address = "$1->destroy($2);";
   proc copy_init : fcops_t * address * address  = "$1->copy_init($2,$3);";
   proc move_init : fcops_t * address * address  = "$1->move_init($2,$3);";
   proc copy_assign: fcops_t * address * address  = "$1->copy_assign($2,$3);";
