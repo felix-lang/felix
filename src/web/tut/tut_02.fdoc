@@ -29,7 +29,7 @@ If the variable doesn't exist on the system it will just return an empty string.
 @{Env} is the class (you can think of it as a namespace or module, if you like) that contains the @{getenv} procedure.
 Classes make life nice because they allow us to group associated behavior together.
 The @{::} operator allows us to "reach into" a class to get to the contents inside.
-Its functionality and notation is borrowed from C++, however--just as a warning--classes in Felix differ from those in C++.
+Felix borrows functionality and notation from C++, however things differ including classes, which are rather different from those in C++.
 </li>
 
 <li>

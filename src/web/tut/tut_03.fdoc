@@ -3,7 +3,8 @@
 @h1 Command line arguments
 
 Another way to change the name that displays on our hello world program is to use command line arguments.
-These arguments are supplied when the program is run from the command line, as follows:
+Instead of providing the data ourselves, we can rely on the user supplying it when the program runs from the command line.
+The following shows what the user could enter:
 
 <pre>
 flx hello v1 v2 v3 v4
@@ -23,7 +24,7 @@ For example if you type:
 flx hello Joachim
 </pre>
 
-then Joachim will be welcomed (i.e. "Hello Joachim").
+then the program houtputs the text (i.e. "Hello Joachim").
 
 <ul>
 

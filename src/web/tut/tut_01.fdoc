@@ -25,7 +25,8 @@ If we have a function @{foo(a,b)}, we can call it by passing in parameters denot
 Alternatively, we can use @{$} to save us a little typing.
 @{foo $ 1, 2;} is the same as @{foo(1,2);}.
 
-If you've worked with Haskell you may recognize this behavior, except that in Haskell the dollar sign cannot touch any symbols next to it, lest they be considered as part of the symbol.
+If you've worked with Haskell you may recognize this behavior, except that in Haskell the dollar sign cannot touch any symbols next to it. 
+Haskell would consider this part of the symbol.
 
 @{"Hello world"} is just a string of characters.
 Strings are a primitive data type in Felix and come equipped with all the modern conveniences one would expect in a modern language.
@@ -42,16 +43,15 @@ Behind the scenes a lot happens when you run this command.
 Felix checks the code for errors,
 translates it to C++ code,
 compiles the C++ code to a native binary,
-links it (including any libraries that are required),
+links it (including any required libraries),
 and then runs it.
-Furthermore, if Felix detects that it has already compiled everything, it will
-skip over many of these steps, or parts thereof and execute the existing copy.
+Furthermore, if Felix detects that it has already compiled everything, it will skip over these steps, or parts thereof and execute the existing copy.
 
 You can see this for yourself by executing @{flx hello} a second time.
 It was a bit slow on the first run--because of the compile process mentioned above--but subsequent runs will load much faster.
 
 Our opinion is that this is a viable method for working with programs. 
 Many compilers take longer than Felix does and require too much attention to compilation.
-Plus, what you get as an output is a very fast application--faster than any virtual machine.
+Plus, what you get as an output is a fast application--faster than any virtual machine.
 
 
