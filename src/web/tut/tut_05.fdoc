@@ -1,8 +1,10 @@
-@title Hands On!
+@title String manipulation
+
 @h2 Stripping leading and trailing spaces from a string
-Unfortunately there's a bug in this program: @{readln} reads
-in a line including the newline. We can fix this, and remove
-excess spaces at the same time as shown here:
+
+Unfortunately there's a bug in this program: @{readln} reads in a line including the newline. 
+We can fix this and remove excess spaces at the same time.
+
 @felix
 write$ stdout,"Enter your name: "; fflush stdout;
 var name = strip (readln$ stdin);
@@ -13,6 +15,19 @@ Bugs Bunny
 Enter your name: Bugs Bunny
 Hello Bugs Bunny!
 @
-This uses the function @{strip} from the  String module
-to remove leading and trailing whitespace, including newlines.
 
+This uses the function @{strip} from the  String module 
+  to remove leading and trailing whitespace.
+In this case, whitespace includes spaces, tabs, and newlines.
+
+@h2 Slicing strings
+
+It's common to use just a portion of a string, and here convenience is king.
+In Python this is called "slicing" strings.
+Supposing we wanted to take 13 characters from a string, starting at the third character, we could use the following:
+
+@felix
+println$ "Hello world, how are you?!".[3 to 16]
+@expect
+lo world, how
+@
