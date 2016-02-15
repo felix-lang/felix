@@ -3797,9 +3797,88 @@ Stuff.
 
 \part{Active Programming}
 \chapter{Fibres}
-Stuff.
+Felix provides synchronous (cooperative) multi-tasking by way of {\em fibres}
+or {\em f-threads}. The procedure to launch a fibre is 
+
+\begin{minted}{felix}
+  spawn_fthread: 1 -> 0
+\end{minted}
+
+For example you can do this:
+
+\begin{minted}{felix}
+spawn_fthread { println$ "Hello World"; };
+println$ "Fibre spawned";
+\end{minted}
+
+However the following may not do what you first expect:
+
+\begin{minted}{felix}
+var fts = varray[1->0] 4uz;
+for var i in 0 upto 3 do
+  push_back (fts, { println$ i; });
+done
+for j in 0 upto 3 do
+  spawn_fthread fts.j;
+done
+\end{minted}
+
+This is because Felix captures variables by address not value.
+So it will print "3" 4 times, because that is the value of 
+variable $i$ at the time the fibre runs.
+
+To actually capture the current value do this instead:
+
+\begin{minted}{felix}
+var fts = varray[1->0] ();
+noinline proc pi (var k:int) () { println$ k; }
+for var i in 0 upto 3 do
+  push_back (fts, pi i);
+done
+for var j in 0 upto 3 do
+  spawn_fthread fts.j;
+done
+\end{minted}
+
+The \verb%noinline% is essential. Remember the notation is a short
+hand for
+
+\begin{minted}{felix}
+fun pi (var k:int) = { 
+  proc aux () { println$ k; }
+  return aux;
+}
+\end{minted}
+
+The function \verb%pi% will return the procedure \verb%aux% however
+if it is inlined so that parameter $k$ is replaced by $i$, then aux will
+print $i$ in every instance: this is lazy evaluation. Using \verb%noinline%
+ensures a closure is formed in the loop with k assigned to the current
+value of $i$. Then \verb%aux% refers to the variable $k$ which is different
+for every instance of the closure.
+
+Another solution is to use recursion:
+
+\begin{minted}{felix}
+var fts = varray[1->0] 4uz;
+proc spawnem (var i:int) {
+  push_back (fts, {println$ i; } );
+  if i < 3 call spawnem (i+1);
+}
+spawnem 0;
+for var j in 0 upto 3 do
+  spawn_fthread fts.j;
+done
+\end{minted}
+
+Even though this is clearly a case of tail recursion, Felix does
+{\em not} perform the tail recursion optimisation. The compiler
+knows there is a reference to the procedure frame which escapes
+the call's lifetime so the frame must be preserved and not reused.
+
 \chapter{Synchronous Channels}
-Stuff.
+Fthreads are designed to cooperate by using synchronous channels or {\em schannels}.
+
 \chapter{Pipelines}
 Stuff.
 \chapter{Coroutines}
