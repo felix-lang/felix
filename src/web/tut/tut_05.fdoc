@@ -31,3 +31,29 @@ println$ "Hello world, how are you?!".[3 to 16]
 @expect
 lo world, how
 @
+
+@h2 Concatenation
+
+Felix supports concatenation (joining) of strings via the "+" (plus) operator.
+You can think of it as "adding" strings together, but be aware that this operation is different from adding numbers together.
+We differentiate these operations by the use of types.
+When two strings are added together, then we use string concatenation.
+When two integers are added together, then we use standard arithmetic.
+When the types are mixed, we issue a type error.
+Later on, we will see how these decisions are made and add some special cases of our own.
+
+@felix
+println$ "abc" + "def";  // valid concatenation of two strings
+@expect
+abcdef
+@
+
+@felix-unchecked
+println$ "abc" + 1; // type error (mixing string and int)
+@
+
+@felix
+println$ "abc" + 1.str; // convert 1 to "1" before concatenating
+@expect
+abc1
+@
