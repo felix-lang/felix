@@ -1,12 +1,17 @@
 @title Functions.
+
 @h1 Simple function definitions
-You can define simple calculations easily. We'll
-use a classic example:
+
+You can define simple calculations easily. 
+We'll use a classic example:
+
 @felix
 fun square (x:int) => x * x;
 @
+
 The function @{square} just multiplies its argument @{x} by itself.
 We can use it now:
+
 @felix
 write$ stdout, "Input number: "; fflush stdout;
 val result = readln$ stdin;
@@ -20,6 +25,7 @@ println$ "Square of " + str v + " is " + str v2;
 Input number: 42
 Square of 42 is 1764
 @
+
 Here:
 <ul>
 <li> The @{fun} binder introduces the function @{square}.</li>
@@ -35,11 +41,39 @@ containing only digits to an @{int}.</li>
 </ul>
 
 There is a rule for functions: 
+
 <blockquote><em>
-A function introduced by
-a @{fun} binder is not allowed to have any side effects.
+A function introduced by a @{fun} binder is not allowed to have any side effects.
 </em></blockquote>
 
-The compiler does not enforce this rule, but it does take
-advantage of it when optimising your code. 
+The compiler does not enforce this rule, but it does take advantage of it when optimising your code. 
+
+@h1 Anonymous function definitions (lambdas)
+
+Functions can be named (as above), or they can be left nameless.
+The former is beneficial when a function needs to be reused many times, and the latter for situations where reuse is not needed.
+The distinction is blurred by the fact that nameless functions can be assigned to variables/values.
+Still, there are many situations where anonymous functions are vital.
+
+The syntax for defining an anonymous function is just like what we use for named functions, we just leave the name out.
+
+@felix-unchecked
+(fun (x:int) => x * x)
+@
+
+<em>Note: At present, Felix understands the code better when parentheses are included around the anonymous function.
+It helps with scoping issues, but we apologize for having to include them.
+A future version of Felix may not need them.</em>
+
+The following uses of @{map} are equivalent.
+The first uses a pre-defined function @{square'} and the second defines the square function in place.
+
+@felix
+var data = list(1,2,3);
+fun square' (x:int) => x * x;
+
+// the following are equivalent.
+println$ map square' data;
+println$ map (fun (x:int) => x * x) data;
+@
 
