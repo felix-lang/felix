@@ -50,10 +50,17 @@ The compiler does not enforce this rule, but it does take advantage of it when o
 
 @h1 Anonymous function definitions (lambdas)
 
+
 Functions can be named (as above), or they can be left nameless.
 The former is beneficial when a function needs to be reused many times, and the latter for situations where reuse is not needed.
 The distinction is blurred by the fact that nameless functions can be assigned to variables/values.
 Still, there are many situations where anonymous functions are vital.
+
+<em>
+FYI: Referring to these as "lambda" functions is unavoidable.
+Computer science literature (since Alonzo Church, circa 1930) is rife with the term.
+If you get confused, just remember that it means "a nameless function without side-effects".
+</em>
 
 The syntax for defining an anonymous function is just like what we use for named functions, we just leave the name out.
 
@@ -65,8 +72,15 @@ The syntax for defining an anonymous function is just like what we use for named
 It helps with scoping issues, but we apologize for having to include them.
 A future version of Felix may not need them.</em>
 
+
+@h1 Mapping
+
+Functions are very useful for transforming one value to another.
+If you need to do the same operation across several values, you should consider using map.
+Furthermore, lambdas are ideal for one-off transformations.
+
 The following uses of @{map} are equivalent.
-The first uses a pre-defined function @{square'} and the second defines the square function in place.
+The first uses a pre-defined function @{square'} (don't forget apostrophes can be part of the symbol name) and the second defines the square function in place.
 
 @felix
 var data = list(1,2,3);

@@ -1,9 +1,17 @@
 @title Procedures.
+
 @h1 Simple procedure definitions
-It is also possible to defined new commands,
-these are called procedures. Procedures do not return
-a value, and may and generally should have side-effects.
-Here is a simple example:
+
+It is also possible to defined new commands, these are called procedures. 
+Procedures are like functions, but they do not return a value. 
+Also, they generally should have side-effects (mutation or I/O).
+
+This split between functions and procedures is explicit because it simplifies maintenance.
+A programmer does not need to think about side-effects when they are working with functions.
+Likewise, since procedures do not return values, there is no mixing of behavior.
+
+Here is a simple example of a procedure:
+
 @felix
 proc prompt (x:string) {
   write$ stdout, x; 
@@ -19,13 +27,60 @@ Input string: Road Runner beats Coyote!
 Road Runner beats Coyote!
 
 @
-Here:
+
+Here we notice:
 <ul>
 <li> The @{proc} binder introduces a procedure.</li>
-<li> The procedure @{prompt} issues a prompt on @{stdout} with
-a @{fflush} to force the output to the device.</li>
-<li> Procedures have side effects, here it is I/O.</li>
+<li> The procedure @{prompt} issues a prompt on @{stdout} with a @{fflush} to force the output to the device.</li>
+<li> Procedures have side effects, here it is reading and writing to I/O.</li>
 <li> Procedures cannot return values </li>
 </ul>
+
+
+@h1 Anonymous procedure definitions
+
+Procedures can be used anonymously, just like functions.
+The syntax is practically the same.
+
+@felix-unchecked
+(proc (x:int) { println$ x; })
+@
+
+There's an even shorter version for situations when your procedure doesn't take any inputs:
+
+@felix-unchecked
+{ println "Hello"; }
+@
+
+
+
+@h1 Iteration
+
+Since a @{proc} cannot return a value, it can't be used in a @{map} like @{fun} functions do.
+The equivalent operator for procedures is called @{iter}, which stands for iteration.
+With it, instead of mapping from one value to another, we visit each input and do some action.
+
+Here is an example:
+
+@felix
+var items = list(1,2,3);
+iter (proc (x:int) { println x; }) items;
+@expect
+1
+2
+3
+@
+
+Also, using the short notation:
+
+@felix
+var items2 = list(1,2,3);
+iter { println "Hello world"; } items;
+@expect
+Hello world
+Hello world
+Hello world
+@
+
 
 
