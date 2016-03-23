@@ -90,4 +90,7 @@ fun square' (x:int) => x * x;
 println$ map square' data;
 println$ map (fun (x:int) => x * x) data;
 @
-
+@expect
+list(1, 4, 9)
+list(1, 4, 9)
+@

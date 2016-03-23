@@ -71,16 +71,3 @@ iter (proc (x:int) { println x; }) items;
 3
 @
 
-Also, using the short notation:
-
-@felix
-var items2 = list(1,2,3);
-iter { println "Hello world"; } items;
-@expect
-Hello world
-Hello world
-Hello world
-@
-
-
-

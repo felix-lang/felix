@@ -27,7 +27,7 @@ In Python this is called "slicing" strings.
 Supposing we wanted to take 13 characters from a string, starting at the third character, we could use the following:
 
 @felix
-println$ "Hello world, how are you?!".[3 to 16]
+println$ "Hello world, how are you?!".[3 to 16];
 @expect
 lo world, how
 @
