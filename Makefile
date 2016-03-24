@@ -25,11 +25,11 @@ copy:
 
 clean:
 	cmd.exe /C mkdir build\crap
-	cmd.exe /C mkdir trial-tmp\crap
-	cmd.exe /C mkdir tmp-dir\crap
+	cmd.exe /C mkdir build\rtl-tmp\crap
+	cmd.exe /C mkdir build\flxg-tmp\crap
+	cmd.exe /C rmdir /Q /S build\rtl-tmp
+	cmd.exe /C rmdir /Q /S build\flxg-tmp
 	cmd.exe /C rmdir /Q /S build
-	cmd.exe /C rmdir /Q /S trial-tmp
-	cmd.exe /C rmdir /Q /S tmp-dir
 
 bootstrap:
 	python fbuild\fbuild-light

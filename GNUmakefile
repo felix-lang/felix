@@ -95,7 +95,7 @@ bootstrap: fbuild
 	${BUILDROOT}/host/bin/flx --felix=build.fpc -c -od ${BUILDROOT}/host/lib/rtl ${BUILDROOT}/share/lib/plugins/flx_plugin
 
 clean:
-	rm -rf build tmp-dir trial-tmp trial
+	rm -rf build trial
 	git clean -fd
   
 #
@@ -160,7 +160,7 @@ flxg:
 	# building flxg
 	# =========================================================
 	flx_build_flxg
-	cp tmp-dir/flxg build/release/host/bin
+	cp build/flxg-tmp/flxg build/release/host/bin
 
 prep: 
 	# =========================================================
