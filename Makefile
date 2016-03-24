@@ -46,7 +46,7 @@ target:
 	       	--source-bin=host --clean-target-bin-dir --copy-compiler --copy-pkg-db \
 	       	--copy-config-headers --toolchain=toolchain_msvc_win32 --debug
 	flx_build_flxg
-	copy tmp-dir\flxg build\release\win32\bin\flxg.exe
+	copy build\flxg-tmp\flxg build\release\win32\bin\flxg.exe
 	flx_build_rtl --target-dir=build\release --target-bin=win32
 	flx_build_boot --target-dir=build\release --target-bin=win32 --build-toolchain-plugins
 	flx_build_boot --target-dir=build\release --target-bin=win32 --build-flx
