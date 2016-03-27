@@ -186,6 +186,9 @@ let rec gen_type_shape module_name s syms bsym_table need_int last_ptr_map primi
       bcat s "};\n"
 
     | BTYP_inst (i,ts) ->
+(*
+print_endline ("NOMINAL TYPE");
+*)
       let bsym =
         try Flx_bsym_table.find bsym_table i
         with Not_found ->
@@ -235,6 +238,7 @@ let rec gen_type_shape module_name s syms bsym_table need_int last_ptr_map primi
           else finaliser, false
         in
 
+bcat s ("\n//ABSTRACT TYPE " ^ name ^"\n");
 
         if complete then
           let oname =
@@ -282,6 +286,11 @@ let rec gen_type_shape module_name s syms bsym_table need_int last_ptr_map primi
           ("[ogen] attempt to allocate an incomplete type: '" ^ Flx_bsym.id bsym ^"'")
 
       | BBDCL_union (vs,[id,n,t']) -> 
+print_endline ("\n//One component union TYPE " ^ name ^" ctor name = "^id^
+" index=" ^ si n^ 
+", argtype = "^
+ sbt bsym_table t' ^ "\n");
+bcat s ("\n//UNION TYPE " ^ name ^"\n");
         let encoder_name = gen_encoder () in
         let decoder_name = gen_decoder () in
         print_endline "Warning VR_self rep not handled right?";

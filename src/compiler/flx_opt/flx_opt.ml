@@ -174,5 +174,6 @@ let optimize_bsym_table' syms bsym_table root_proc =
 
 let optimize_bsym_table syms bsym_table root_proc =
   print_time syms "[flx_opt]; optimisation pass complete" begin fun () -> 
-  optimize_bsym_table' syms bsym_table root_proc end
+  optimize_bsym_table' syms bsym_table root_proc 
+end
 

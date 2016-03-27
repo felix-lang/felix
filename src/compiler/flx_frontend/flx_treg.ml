@@ -26,6 +26,7 @@ print_endline ("Register type nr " ^ sbt bsym_table t);
   if t <> t' then print_endline ("UNREDUCED TYPE! " ^ sbt bsym_table t ^ " <> " ^ sbt bsym_table t');
   *)
   match t with
+  | BTYP_int -> ()
   | BTYP_label -> ()
   | BTYP_fix _
   | BTYP_tuple []
@@ -93,6 +94,7 @@ print_endline ("Register type r " ^ sbt bsym_table t);
   print_endline (sp ^ "Unfolded type " ^ sbt sym_table t');
   *)
   match t' with
+  | BTYP_int -> ()
   | BTYP_label -> ()
   | BTYP_void -> ()
   | BTYP_fix (0,_) -> ()

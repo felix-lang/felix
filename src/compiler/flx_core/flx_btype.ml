@@ -15,6 +15,7 @@ type btpattern_t = {
 
 (** general typing *)
 and t = 
+  | BTYP_int (* type of a C++ int, so we don't have to look it up *)
   | BTYP_none
   | BTYP_sum of t list
   | BTYP_unitsum of int
@@ -52,6 +53,7 @@ let rec str_of_btype typ =
   let s t = str_of_btype t in
   let ss ts = String.concat "," (List.map str_of_btype ts) in
   match typ with
+  | BTYP_int -> "BTYP_int"
   | BTYP_none -> "BTYP_none"
   | BTYP_sum ts -> "BTYP_sum(" ^ ss ts ^")"
   | BTYP_unitsum n -> string_of_int n
@@ -163,12 +165,17 @@ let btyp_label () = BTYP_label
 let btyp_none () =
   BTYP_none
 
+let btyp_int () = BTYP_int
+
 (** The void type. *)
 let btyp_void () =
   BTYP_void
 
 let btyp_unit () = 
   BTYP_tuple []
+
+let btyp_bool () = 
+  BTYP_unitsum 2
 
 (** Construct a BTYP_sum type. *)
 let btyp_sum ts =
@@ -409,6 +416,7 @@ let flat_iter
   btype
 =
   match btype with
+  | BTYP_int -> ()
   | BTYP_label -> ()
   | BTYP_none -> ()
   | BTYP_sum ts -> List.iter f_btype ts
@@ -466,6 +474,7 @@ let rec iter
 (** Recursively iterate over each bound type and transform it with the
  * function. *)
 let map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
+  | BTYP_int as x -> x
   | BTYP_label as x -> x
   | BTYP_none as x -> x
   | BTYP_sum ts -> btyp_sum (List.map f_btype ts)

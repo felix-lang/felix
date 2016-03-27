@@ -4263,18 +4263,26 @@ print_endline ("LOOKUP 4: varname " ^ si index);
 
           | BBDCL_struct _
           | BBDCL_cstruct _
-          | BBDCL_nonconst_ctor _
             ->
             bexpr_closure t (index, ts)
 
+(* DEPRECATED *)
+          | BBDCL_nonconst_ctor _ ->
+            bexpr_closure t (index, ts)
+
+
           | BBDCL_external_const _ 
           | BBDCL_val _ 
-          | BBDCL_const_ctor _ 
             -> 
 (*
 print_endline ("LOOKUP 5: varname " ^ si index);
 *)
             bexpr_varname t (index, ts)
+
+(* DEPRECATED!! *)
+          | BBDCL_const_ctor _  ->
+            bexpr_varname t (index, ts)
+
           | BBDCL_fun _ 
             ->
             clierr sr ("Flx_lookup: bind_expression: EXPR_name] Nonfunction entry: Expected name "^name^ 
@@ -4309,14 +4317,17 @@ print_endline ("LOOKUP 6: varname " ^ si index);
 
           | { Flx_sym.symdef=SYMDEF_struct _ }
           | { Flx_sym.symdef=SYMDEF_cstruct _ }
-          | { Flx_sym.symdef=SYMDEF_nonconst_ctor _ }
             ->
             (*
             print_endline ("Indexed name: Binding " ^ name ^ "<"^si index^">"^ " to closure");
             *)
             bexpr_closure t (index,ts)
+
+(* DEPRECATED *)
+          | { Flx_sym.symdef=SYMDEF_nonconst_ctor _ } ->
+            bexpr_closure t (index,ts)
+
           | { Flx_sym.symdef=SYMDEF_const  _ }
-          | { Flx_sym.symdef=SYMDEF_const_ctor  _ }
           | { Flx_sym.symdef=SYMDEF_var _ }
           | { Flx_sym.symdef=SYMDEF_val _ }
           | { Flx_sym.symdef=SYMDEF_parameter _ }
@@ -4328,6 +4339,11 @@ print_endline ("LOOKUP 6: varname " ^ si index);
 print_endline ("LOOKUP 7: varname " ^ si index);
 *)
             bexpr_varname t (index,ts)
+
+(* DEPRECATED *)
+          | { Flx_sym.symdef=SYMDEF_const_ctor  _ } ->
+            bexpr_varname t (index,ts)
+
 
           | _ -> 
             clierr sr ("[Flx_lookup.bind_expression: EXPR_name]: Nonfunction entry: Binding " ^ 
@@ -4416,15 +4432,19 @@ print_endline ("LOOKUP 7: varname " ^ si index);
     | { Flx_sym.symdef=SYMDEF_fun _ }
     | { Flx_sym.symdef=SYMDEF_function _ }
     | { Flx_sym.symdef=SYMDEF_struct _ }
-    | { Flx_sym.symdef=SYMDEF_cstruct _ }
-    | { Flx_sym.symdef=SYMDEF_nonconst_ctor _ }
-      ->
+    | { Flx_sym.symdef=SYMDEF_cstruct _ } ->
+
       (*
       print_endline ("Indexed name: Binding " ^ name ^ "<"^si index^">"^ " to closure");
       *)
       bexpr_closure t (index,ts)
+
+(* DEPRECATED *)
+    | { Flx_sym.symdef=SYMDEF_nonconst_ctor _ }
+      ->
+      bexpr_closure t (index,ts)
+
     | { Flx_sym.symdef=SYMDEF_const  _ }
-    | { Flx_sym.symdef=SYMDEF_const_ctor  _ }
     | { Flx_sym.symdef=SYMDEF_var _ }
     | { Flx_sym.symdef=SYMDEF_val _ }
     | { Flx_sym.symdef=SYMDEF_parameter _ }
@@ -4436,6 +4456,11 @@ print_endline ("LOOKUP 7: varname " ^ si index);
 print_endline ("LOOKUP 8: varname " ^ si index);
 *)
       bexpr_varname t (index,ts)
+
+(* DEPRECATED *)
+    | { Flx_sym.symdef=SYMDEF_const_ctor  _ } ->
+      bexpr_varname t (index,ts)
+
 
     | _ ->
       clierr sr ("[Flx_lookup.bind_expression: EXPR_index]: Indexed name: Binding " ^ 
@@ -4482,15 +4507,18 @@ print_endline ("LOOKUP 8: varname " ^ si index);
 
           | { Flx_sym.sr=srn; symdef=SYMDEF_struct _ } 
           | { Flx_sym.sr=srn; symdef=SYMDEF_cstruct _ } 
-          | { Flx_sym.sr=srn; symdef=SYMDEF_nonconst_ctor  _ } 
             ->
+            let ts = adjust_ts state.sym_table bsym_table sr i ts in
+            bexpr_closure (ti sr i ts) (i,ts)
+
+(* DEPRECATED *)
+          | { Flx_sym.sr=srn; symdef=SYMDEF_nonconst_ctor  _ } ->
             let ts = adjust_ts state.sym_table bsym_table sr i ts in
             bexpr_closure (ti sr i ts) (i,ts)
 
           | { Flx_sym.sr=srn; symdef=SYMDEF_var _} 
           | { Flx_sym.sr=srn; symdef=SYMDEF_val _} 
           | { Flx_sym.sr=srn; symdef=SYMDEF_parameter _} 
-          | { Flx_sym.sr=srn; symdef=SYMDEF_const_ctor _} 
           | { Flx_sym.sr=srn; symdef=SYMDEF_const _} 
             ->
             let ts = adjust_ts state.sym_table bsym_table sr i ts in
@@ -4498,6 +4526,17 @@ print_endline ("LOOKUP 8: varname " ^ si index);
 print_endline ("LOOKUP 9: varname " ^ si i);
 *)
             bexpr_varname (ti sr i ts) (i,ts)
+
+
+(* DEPRECATED *)
+          | { Flx_sym.sr=srn; symdef=SYMDEF_const_ctor _}  ->
+            let ts = adjust_ts state.sym_table bsym_table sr i ts in
+(*
+print_endline ("LOOKUP 9A: varname " ^ si i);
+*)
+            bexpr_varname (ti sr i ts) (i,ts)
+
+
           | _ ->
             clierr sr ("[Flx_lookup.bind_expression: EXPR_lookup] Non function entry "^name^
             " must be const, struct, cstruct, constructor or variable  ")
@@ -4989,6 +5028,7 @@ print_endline ("Added overload of __eq to lookup table!");
       with Flx_dot.OverloadResolutionError ->
 
     try
+      (* This really have to be the library "int" cause we're comparing a user int literal *)
       let int_t = bt sr (TYP_name (sr,"int",[])) in
       match f' with
       | EXPR_literal (_, {Flx_literal.felix_type="int"; internal_value=s}) ->
@@ -6609,6 +6649,7 @@ and rebind_btype state bsym_table env sr ts t =
   | BTYP_pointer t -> btyp_pointer (rbt t)
   | BTYP_array (t1,t2) -> btyp_array (rbt t1, rbt t2)
 
+  | BTYP_int
   | BTYP_label
   | BTYP_unitsum _
   | BTYP_void

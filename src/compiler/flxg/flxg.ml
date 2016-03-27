@@ -222,6 +222,9 @@ let handle_codegen state main_prog module_name =
 (* -------------------------------------------------------------------------- *)
 let main () =
   let compiler_options = Flxg_options.parse_args () in
+  let print_flag = compiler_options.print_flag in
+  let d s = if print_flag then print_endline s in
+
   let state = Flxg_state.make_state compiler_options in
 
   (* The first file specified is the main program. *)
@@ -241,19 +244,27 @@ let main () =
           print_endline (Flx_print.string_of_desugared asms)
 
       | Phase_bind ->
+d "[flxg] Begin binding";
           let bsym_table, _ = handle_bind state main_prog module_name in
+d "[flxg] End binding";
           Flx_print.print_bsym_table bsym_table
 
       | Phase_optimize ->
+d "[flxg] Begin optimisation";
           let bsym_table, _ = handle_optimize state main_prog module_name in
+d "[flxg] End optimisation";
           Flx_print.print_bsym_table bsym_table
 
       | Phase_lower ->
+d "[flxg] Begin lowering";
           let bsym_table, _ = handle_lower state main_prog module_name in
+d "[flxg] End lowering";
           Flx_print.print_bsym_table bsym_table
 
       | Phase_codegen ->
-          handle_codegen state main_prog module_name
+d "[flxg] Begin codegen";
+          handle_codegen state main_prog module_name;
+d "[flxg] End codegen";
 
           (* Not working at the moment for unknown reason, chucks Not_found.
           (* Generate the why file. *)

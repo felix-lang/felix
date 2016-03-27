@@ -25,7 +25,9 @@ let cal_variant_cases bsym_table t =
           Flx_print.string_of_bbdcl bsym_table x i 
         )
     end
-  | _ -> assert false 
+  | _ -> 
+    print_endline ("Find number of cases of non-sum type " ^ Flx_print.sbt bsym_table t);
+    assert false 
 
 (* size of data type in machine words, 2 means 2 or more 
   We used to put unitsum in here too, the problem is size 1
@@ -105,7 +107,7 @@ type variant_rep =
 *)
 
 let string_of_variant_rep = function
-  | VR_self -> "VR_self"
+  | VR_self -> "VR_self (DEPRECATED)"
   | VR_int -> "VR_int"
   | VR_nullptr -> "VR_nullptr"
   | VR_packed -> "VR_packed"

@@ -554,6 +554,7 @@ and sb bsym_table depth fixlist counter prec tc =
   let sbt prec t = sb bsym_table (depth+1) fixlist counter prec t in
   let iprec, term =
     match tc with
+    | BTYP_int -> 0,"builtin_int"
     | BTYP_none -> 0,"none"
     | BTYP_label -> 0,"label"
     | BTYP_tuple_cons (t1,t2) -> 
@@ -919,9 +920,10 @@ and string_of_bvs_cons bsym_table vs cons = match vs,cons with
 
 and string_of_ts bsym_table ts = String.concat "," (List.map (string_of_btypecode (Some bsym_table)) ts)
 
-and string_of_inst bsym_table = function
-  | [] -> ""
-  | ts -> Printf.sprintf "[%s]" (catmap ", " (string_of_btypecode (Some bsym_table)) ts)
+and string_of_inst s bsym_table ts =
+  match ts with
+  | [] -> s
+  | ts -> s^ "[" ^ (catmap ", " (string_of_btypecode (Some bsym_table)) ts) ^"]"
 
 and sl x = string_of_lvalue x
 and string_of_lvalue (x,t) =
@@ -1838,11 +1840,12 @@ and string_of_bound_expression' bsym_table se e =
   | BEXPR_prj (n,d,c) -> "(prj"^ si n^":"^sbt bsym_table d ^ " -> " ^ sbt bsym_table c^ ")"
   | BEXPR_inj (n,d,c) -> "inj"^ si n^":"^sbt bsym_table d ^ " -> " ^ sbt bsym_table c
 
+  | BEXPR_int i -> "int("^ string_of_int i^ ")"
   | BEXPR_not e -> "not("^ se e ^ ")"
   | BEXPR_deref e -> "*("^ se e ^ ")"
-  | BEXPR_varname (i,ts) -> sid i ^ string_of_inst bsym_table ts
-  | BEXPR_closure (i,ts) -> sid i ^ string_of_inst bsym_table ts
-  | BEXPR_ref (i,ts) -> "&" ^ sid i ^ string_of_inst bsym_table ts
+  | BEXPR_varname (i,ts) -> sid i ^ string_of_inst "varname" bsym_table ts
+  | BEXPR_closure (i,ts) -> sid i ^ string_of_inst "closure" bsym_table ts
+  | BEXPR_ref (i,ts) -> "&" ^ sid i ^ string_of_inst "ref" bsym_table ts
   | BEXPR_new e -> "new " ^ se e
   | BEXPR_class_new (t,e) -> "new " ^ sbt bsym_table t ^ "(" ^ se e ^ ")"
   | BEXPR_address e -> "&" ^ se e
@@ -1861,22 +1864,22 @@ and string_of_bound_expression' bsym_table se e =
     ")"
 
   | BEXPR_apply_prim (i,ts, arg) -> "(" ^
-    sid i ^ string_of_inst bsym_table ts ^ " " ^
+    sid i ^ string_of_inst "primfun" bsym_table ts ^ " " ^
     se arg ^
     ")"
 
   | BEXPR_apply_direct  (i,ts, arg) -> "(" ^
-    sid i ^ string_of_inst bsym_table ts ^ " " ^
+    sid i ^ string_of_inst "flxfun" bsym_table ts ^ " " ^
     se arg ^
     ")"
 
   | BEXPR_apply_struct (i,ts, arg) -> "(" ^
-    sid i ^ string_of_inst bsym_table ts ^ " " ^
+    sid i ^ string_of_inst "struct" bsym_table ts ^ " " ^
     se arg ^
     ")"
 
   | BEXPR_apply_stack (i,ts, arg) -> "(" ^
-    sid i ^ string_of_inst bsym_table ts ^ " " ^
+    sid i ^ string_of_inst "stackfun" bsym_table ts ^ " " ^
     se arg ^
     ")"
 
@@ -1988,22 +1991,22 @@ and string_of_bexe bsym_table level s =
 
   | BEXE_call_direct (_,i,ts,a) -> spc ^
     "directcall " ^
-    sid i ^ string_of_inst bsym_table ts ^ " " ^
+    sid i ^ string_of_inst "directproc" bsym_table ts ^ " " ^
     se a ^ ";"
 
   | BEXE_jump_direct (_,i,ts,a) -> spc ^
     "direct tail call " ^
-    sid i ^ string_of_inst bsym_table ts ^ " " ^
+    sid i ^ string_of_inst "directjump" bsym_table ts ^ " " ^
     se a ^ ";"
 
   | BEXE_call_stack (_,i,ts,a) -> spc ^
     "stackcall " ^
-    sid i ^ string_of_inst bsym_table ts ^ " " ^
+    sid i ^ string_of_inst "stackproc " bsym_table ts ^ " " ^
     se a ^ ";"
 
   | BEXE_call_prim (_,i,ts,a) -> spc ^
     "primcall " ^
-    sid i ^ string_of_inst bsym_table ts ^ " " ^
+    sid i ^ string_of_inst "primproc" bsym_table ts ^ " " ^
     se a ^ ";"
 
   | BEXE_jump (_,p,a) -> spc ^
@@ -2248,7 +2251,7 @@ and string_of_breq bsym_table (i,ts) =
      try Flx_bsym_table.find_id bsym_table i
      with Not_found -> "missing!"
   in
-  rqname ^ "<" ^ string_of_bid i ^ ">" ^ string_of_inst bsym_table ts
+  rqname ^ "<" ^ string_of_bid i ^ ">" ^ string_of_inst "breq" bsym_table ts
 
 and string_of_breqs bsym_table reqs = catmap ", " (string_of_breq bsym_table) reqs
 and string_of_production p = catmap " " string_of_glr_entry p

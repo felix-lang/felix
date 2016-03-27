@@ -1,9 +1,13 @@
 open Flx_btype
 type btype = t
 type bexpr_t =
+  | BEXPR_int of int
   | BEXPR_not of t
   | BEXPR_deref of t
+
+  (* name of a variable OR a constant including union constant constructor? *)
   | BEXPR_varname of Flx_types.bid_t * Flx_btype.t list
+
   | BEXPR_ref of Flx_types.bid_t * Flx_btype.t list
   | BEXPR_likely of t
   | BEXPR_unlikely of t
@@ -22,10 +26,18 @@ type bexpr_t =
   | BEXPR_remove_fields of t * string list
   | BEXPR_variant of string * t
   | BEXPR_closure of Flx_types.bid_t * Flx_btype.t list
+
+(* value of union constant constructor *)
   | BEXPR_case of int * Flx_btype.t
+
+
+(* test if case index matches constructor index *)
   | BEXPR_match_case of int * t
+
+(* decoding of union/sum value *)
   | BEXPR_case_arg of int * t
   | BEXPR_case_index of t
+
   | BEXPR_expr of Flx_code_spec.t * Flx_btype.t * t 
   | BEXPR_range_check of t * t * t
   | BEXPR_coerce of t * Flx_btype.t
@@ -36,7 +48,11 @@ type bexpr_t =
   | BEXPR_prj of int * Flx_btype.t * Flx_btype.t
   | BEXPR_rprj of string * int * Flx_btype.t * Flx_btype.t
   | BEXPR_aprj of t * Flx_btype.t * Flx_btype.t
-  | BEXPR_inj of int * Flx_btype.t * Flx_btype.t
+
+(* union/sum constructor wrapped as function *)
+  | BEXPR_inj of int * Flx_btype.t * Flx_btype.t 
+    (* first arg = constructor index, second arg domain = ctor type, third arg codomain = union type *)
+
   | BEXPR_label of string
   | BEXPR_unit 
   | BEXPR_unitptr
@@ -71,7 +87,9 @@ let bexpr_cond ((_,ct) as c) ((_,tt) as t) ((_,ft) as f) =
 
 let bexpr_unit = BEXPR_unit,Flx_btype.BTYP_tuple []
 let bexpr_unitptr = BEXPR_unitptr, Flx_btype.BTYP_pointer (Flx_btype.BTYP_tuple [])
-
+let bexpr_bool b = BEXPR_case ((if b then 1 else 0), Flx_btype.btyp_bool ()),Flx_btype.btyp_bool ()
+let bexpr_true = bexpr_bool true
+let bexpr_false = bexpr_bool false
 
 let bexpr_label e = BEXPR_label e, Flx_btype.btyp_label ()
 let bexpr_tuple_tail t e = BEXPR_tuple_tail e, complete_check t
@@ -83,6 +101,8 @@ let bexpr_deref t e : t =
   match t with
   | Flx_btype.BTYP_tuple [] -> bexpr_unitptr
   | _ -> BEXPR_deref e, complete_check t
+
+let bexpr_int i = BEXPR_int i, BTYP_int
 
 let bexpr_not (e,t) : t = BEXPR_not (e,t), complete_check t
 
@@ -445,6 +465,8 @@ let rec cmp ((a,_) as xa) ((b,_) as xb) =
   | BEXPR_variant (s,e),BEXPR_variant (s',e') ->
     s = s' && cmp e e'
 
+  | BEXPR_int (e),BEXPR_int (e') -> e = e'
+
   | BEXPR_not (e),BEXPR_not (e') 
   | BEXPR_deref e,BEXPR_deref e' -> cmp e e'
 
@@ -536,6 +558,8 @@ let flat_iter
   | BEXPR_cond (c,t,f) -> f_bexpr c; f_bexpr t; f_bexpr f
   | BEXPR_label s -> f_label s
   | BEXPR_not e -> f_bexpr e
+  | BEXPR_int e -> ()
+
   | BEXPR_deref e -> f_bexpr e
   | BEXPR_ref (i,ts) ->
       f_bid i;
@@ -631,6 +655,8 @@ let map
   | BEXPR_cond (c,tr,fa),t -> BEXPR_cond (f_bexpr c, f_bexpr tr, f_bexpr fa), f_btype t
   | BEXPR_label s,t -> BEXPR_label (f_label s),f_btype t
   | BEXPR_not e,t -> BEXPR_not (f_bexpr e), f_btype t
+  | BEXPR_int i,t -> BEXPR_int i, f_btype t
+
   | BEXPR_deref e,t -> BEXPR_deref (f_bexpr e), f_btype t
   | BEXPR_ref (i,ts),t -> BEXPR_ref (f_bid i, List.map f_btype ts), f_btype t
   | BEXPR_new e,t -> BEXPR_new (f_bexpr e), f_btype t

@@ -21,6 +21,7 @@ open Flx_maps
 let rec is_pod bsym_table t =
   let is_pod t = is_pod bsym_table t in
   match t with
+  | BTYP_int
   | BTYP_label
   | BTYP_unitsum _ 
   | BTYP_sum _ 
@@ -60,6 +61,7 @@ let rec get_offsets' syms bsym_table typ : string list =
   let typ = normalise_tuple_cons bsym_table typ in
   let t' = unfold "flx_cal_type_offsets: get_offsets" typ in
   match t' with
+  | BTYP_int -> []
   | BTYP_pointer t -> ["0"]
 
   (* need to fix the rule for optimisation here .. *)

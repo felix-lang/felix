@@ -107,6 +107,7 @@ let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
   | BEXPR_lrbrack _ -> assert false
   | BEXPR_label s -> ()
 
+  | BEXPR_int _ -> ()
   | BEXPR_unit -> ()
   | BEXPR_unitptr -> ()
 
@@ -614,6 +615,9 @@ print_endline ("arg types c " ^ catmap "," (sbt bsym_table) tss);
 *)
 
 let instantiate syms bsym_table instps (root:bid_t) (bifaces:biface_t list) =
+(*
+print_endline "  [flx_inst] Begin instantiation";
+*)
   Hashtbl.clear syms.instances;
   Hashtbl.clear syms.registry;
   Hashtbl.clear syms.array_as_tuple_registry;
@@ -684,6 +688,11 @@ let instantiate syms bsym_table instps (root:bid_t) (bifaces:biface_t list) =
     let inst = add_instance index vars in
     process_inst syms bsym_table instps insts1 index vars inst
   done
+  ;
+
+(*
+  print_endline "  [flx_inst] End instantiation";
+*)
 
 
 (* BUG!!!!! Abstract type requirements aren't handled!! *)

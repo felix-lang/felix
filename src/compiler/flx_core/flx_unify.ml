@@ -312,6 +312,7 @@ let fix i t =
     | BTYP_variant ts ->
        btyp_variant (List.map (fun (s,t) -> s, aux t) ts)
 
+    | BTYP_int 
     | BTYP_label 
     | BTYP_unitsum _
     | BTYP_void
@@ -959,6 +960,7 @@ let fold bsym_table counter t =
 
     | BTYP_label 
     | BTYP_none
+    | BTYP_int
     | BTYP_void
     | BTYP_unitsum _
     | BTYP_type_var _

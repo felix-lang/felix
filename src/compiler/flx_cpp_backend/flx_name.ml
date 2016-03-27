@@ -197,12 +197,13 @@ let rec cpp_type_classname syms bsym_table t =
   let t = normalise_tuple_cons bsym_table t in
   let t' = unfold "flx_name: cpp_type_classname" t in
   try match t' with
+  | BTYP_int -> "int"
   | BTYP_type_var (i,mt) ->
       failwith ("[cpp_type_classname] Can't name type variable " ^
         string_of_bid i ^ ":"^ sbt bsym_table mt)
   | BTYP_fix (i,_) -> "void" (* failwith "[cpp_type_classname] Can't name type fixpoint" *)
   | BTYP_none -> "none" (* hack needed for null case in pgen *)
-  | BTYP_void -> "void" (* failwith "void doesn't have a classname" *)
+  | BTYP_void -> (* print_endline "WARNING cpp_type_classname of void"; *) "void" (* failwith "void doesn't have a classname" *)
   | BTYP_label -> " ::flx::rtl::jump_address_t" (* space required cause X<::y> is trigraph *)
   | BTYP_tuple [] -> " ::flx::rtl::cl_t" (* COMPACT LINEAR! *)
   | t when islinear_type bsym_table t -> " ::flx::rtl::cl_t"
@@ -224,7 +225,7 @@ let rec cpp_type_classname syms bsym_table t =
   | BTYP_variant ls -> "::flx::rtl::_uctor_";
   | BTYP_sum _ ->
     begin match Flx_vrep.cal_variant_rep bsym_table t with
-    | Flx_vrep.VR_self -> assert false
+    | Flx_vrep.VR_self -> print_endline "WARNING cpp_type_classname of VR_self (1)"; assert false
     | Flx_vrep.VR_int -> "int"
     | Flx_vrep.VR_nullptr -> "void*"
     | Flx_vrep.VR_packed -> "void*"
@@ -255,7 +256,7 @@ let rec cpp_type_classname syms bsym_table t =
 
     | BBDCL_union _ ->
       begin match Flx_vrep.cal_variant_rep bsym_table t with
-      | Flx_vrep.VR_self -> assert false
+      | Flx_vrep.VR_self -> print_endline "WARNING cpp_type_classname of VR_self (2)"; assert false
       | Flx_vrep.VR_int -> "int"
       | Flx_vrep.VR_nullptr -> "void*"
       | Flx_vrep.VR_packed -> "void*"
@@ -347,7 +348,7 @@ and cpp_structure_name syms bsym_table t =
         string_of_bid i ^ ":"^ sbt bsym_table mt)
   | BTYP_fix (i,_) -> "_fix<"^string_of_int (-i)^">" (* failwith "[cpp_type_classname] Can't name type fixpoint" *)
   | BTYP_none -> "none" (* hack needed for null case in pgen *)
-  | BTYP_void -> "void" (* failwith "void doesn't have a classname" *)
+  | BTYP_void -> print_endline ("WARNING cpp_structure_name of void"); "void" (* failwith "void doesn't have a classname" *)
   | BTYP_tuple [] -> "int" (* COMPACT LINEAR! *)
 
   | BTYP_pointer t' -> cpp_type_classname syms bsym_table t' ^ "*"
@@ -369,7 +370,7 @@ and cpp_structure_name syms bsym_table t =
   | BTYP_variant _
   | BTYP_sum _ ->
     begin match Flx_vrep.cal_variant_rep bsym_table t with
-    | Flx_vrep.VR_self -> assert false
+    | Flx_vrep.VR_self -> print_endline ("WARNING cpp_structure_name of VR_self (1)"); assert false
     | Flx_vrep.VR_int -> "int"
     | Flx_vrep.VR_nullptr -> "void*"
     | Flx_vrep.VR_packed -> "void*"
@@ -400,7 +401,7 @@ and cpp_structure_name syms bsym_table t =
 
     | BBDCL_union _ ->
       begin match Flx_vrep.cal_variant_rep bsym_table t with
-      | Flx_vrep.VR_self -> assert false
+      | Flx_vrep.VR_self -> print_endline ("WARNING cpp_structure_name of VR_self (2)"); assert false
       | Flx_vrep.VR_int -> "int"
       | Flx_vrep.VR_nullptr -> "void*"
       | Flx_vrep.VR_packed -> "void*"

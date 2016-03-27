@@ -33,6 +33,8 @@ changing the data structures.
 
 *)
 
+exception NotFoundDefn of int
+
 let rec uses_btype add bsym_table count_inits t =
   let f_btype t = uses_btype add bsym_table count_inits t in
  
@@ -44,7 +46,7 @@ let rec uses_btype add bsym_table count_inits t =
 
   | _ -> Flx_btype.flat_iter ~f_btype t
 
-and uses_bexe add bsym_table count_inits exe =
+and uses_bexe' add bsym_table count_inits exe =
   let f_bexpr e = uses_bexpr add bsym_table count_inits e in
 
   let rec chkl e = 
@@ -129,6 +131,16 @@ and uses_bexe add bsym_table count_inits exe =
         ~f_bexpr
         exe
 
+and uses_bexe add bsym_table count_inits exe =
+  try
+    uses_bexe' add bsym_table count_inits exe;
+  with
+    NotFoundDefn i ->
+      failwith ("[Flx_use.uses_bexe] Cannot find bound defn for <" ^ string_of_bid i ^ "> in\n" ^
+      string_of_bexe bsym_table 0 exe
+   )
+
+
 and uses_bexpr add bsym_table count_inits ((e,t) as x) =
   Flx_bexpr.iter
     ~f_bid:(add)
@@ -136,22 +148,28 @@ and uses_bexpr add bsym_table count_inits ((e,t) as x) =
     x
 
 and uses add bsym_table count_inits i =
-    let bbdcl =
-      try Some (Flx_bsym_table.find_bbdcl bsym_table i)
+    let xbbdcl =
+      try Some (let bsym = Flx_bsym_table.find bsym_table i in bsym,Flx_bsym.bbdcl bsym)
       with Not_found -> None
     in
-    match bbdcl with
-    | Some bbdcl ->
+    match xbbdcl with
+    | Some (bsym,bbdcl) ->
+(*
+print_endline ("  VVVV START Flx_use.uses processing index " ^ si i ^ " symbol " ^ Flx_bsym.id bsym);
+*)
         Flx_bbdcl.iter
           ~f_bid:(add)
           ~f_btype:(uses_btype add bsym_table count_inits)
           ~f_bexpr:(uses_bexpr add bsym_table count_inits)
           ~f_bexe:(uses_bexe add bsym_table count_inits)
-          bbdcl
+          bbdcl;
+(*
+print_endline ("  ^^^^ END   Flx_use.uses processing index " ^ si i ^ " symbol " ^ Flx_bsym.id bsym);
+*)
+
       
     | None ->
-        failwith ("[Flx_use.uses] Cannot find bound defn for <" ^
-          string_of_bid i ^ ">")
+        raise (NotFoundDefn i)
 
 let find_roots syms bsym_table root bifaces =
   (* make a list of the root and all exported functions,
@@ -179,10 +197,12 @@ let find_roots syms bsym_table root bifaces =
   syms.roots := !roots
 
 let cal_use_closure syms bsym_table (count_inits:bool) =
+(*
+print_endline ("Cal use closure...");
+*)
   let traced = ref BidSet.empty in (* final set of used symbols *)
   let v : BidSet.t = !(syms.roots) in (* used but not traced yet *)
   let untraced = ref v in
-
 (*
   print_endline "Roots";
   BidSet.iter (fun i ->
@@ -191,7 +211,6 @@ let cal_use_closure syms bsym_table (count_inits:bool) =
   (!untraced)
   ;
 *)
-
   let add' bid =
     if not (BidSet.mem bid !traced) && not (BidSet.mem bid !untraced) then begin
 (*
@@ -203,9 +222,13 @@ let cal_use_closure syms bsym_table (count_inits:bool) =
   let ut t = uses_btype add' bsym_table count_inits t in
   let add bid = 
     if bid <> 0 then begin
+(*
+print_endline ("Flx_use:cal_use_closure: Adding bid " ^ si bid);
+*)
       add' bid;
       try 
         let entries = Hashtbl.find syms.virtual_to_instances bid in
+assert (List.length entries = 0); (* THIS IS OLD CODE ... ? *)
         List.iter begin fun (vs,con,ts,j) ->
           add' j;
           ut con;
@@ -246,6 +269,10 @@ let cal_use_closure syms bsym_table (count_inits:bool) =
   let maybe_add ignores j = 
     if not (List.mem j ignores) then add j
   in
+  if List.length (!(syms.reductions)) <> 0 then
+     failwith ("Reductions exist!!")
+  ;
+
   List.iter
   (fun (id,bvs,bps,lhs, rhs) ->
     let ignorelist = List.map (fun p -> p.Flx_bparameter.pindex) bps in
@@ -263,7 +290,9 @@ let cal_use_closure syms bsym_table (count_inits:bool) =
     traced := BidSet.add bid !traced;
     uses add bsym_table count_inits bid
   done;
-
+(*
+print_endline ("DONE cal_use_closure <<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
+*)
   !traced
 
 let full_use_closure syms bsym_table =
@@ -286,7 +315,7 @@ let strip_inits bsym_table bidset exes =
   in
   aux exes [] 
 
-let copy_used1 syms bsym_table =
+let copy_used1' syms bsym_table =
   (* Calculate the used symbols. *)
   let bidset = cal_use_closure syms bsym_table false in
 
@@ -339,12 +368,20 @@ let copy_used1 syms bsym_table =
       let bsym =
         match bsym.Flx_bsym.bbdcl with 
         | BBDCL_fun  (prop, bvs, ps, res, exes) ->  
+(*
+print_endline ("Flx_use: BEGIN Handling function " ^ Flx_bsym.id bsym);
+*)
           let exes = strip_inits bsym_table bidset exes in
           let bbdcl = Flx_bbdcl.bbdcl_fun  (prop, bvs, ps, res, exes) in
-          Flx_bsym.create 
+          let nubsym = Flx_bsym.create 
             ~sr:(bsym.Flx_bsym.sr) 
             bsym.Flx_bsym.id  
             bbdcl
+          in
+(*
+print_endline ("Flx_use: END   Handling function " ^ Flx_bsym.id bsym);
+*)
+           nubsym
         | _ -> bsym
       in 
 
@@ -358,6 +395,13 @@ let copy_used1 syms bsym_table =
 
   (* Return the new symbol bsym_table. *)
   new_bsym_table
+
+let copy_used1 syms bsym_table =
+  try
+    copy_used1' syms bsym_table
+  with
+    NotFoundDefn i ->
+      failwith ("[Flx_use.uses] Cannot find bound defn for <" ^ string_of_bid i ^ ">")
 
 let copy_used syms bsym_table =
   if syms.compiler_options.Flx_options.print_flag then begin

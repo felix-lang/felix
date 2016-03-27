@@ -13,6 +13,42 @@ open Flx_unify
 open Flx_maps
 open Flx_exceptions
 
+(* identify a type which is a union with a single constructor *)
+let is_solo_union bsym_table t =
+  match t with
+  | BTYP_inst (i,ts) ->  (* ts already upgraded by the Flx_btype.map *)
+    let bsym =
+      try Flx_bsym_table.find bsym_table i 
+      with Not_found -> failwith ("can't find entry " ^ string_of_int i ^ " in bsym table")
+    in
+    let entry =  Flx_bsym.bbdcl bsym in
+    begin match entry with
+    | BBDCL_union (vs,[id,idx,ct]) -> true
+    | _ -> false
+    end
+  | _ -> false
+
+let is_nonconst_ctor bsym_table i =
+  let bbdcl = Flx_bsym_table.find_bbdcl bsym_table i in
+  match bbdcl with
+  | BBDCL_nonconst_ctor _ -> true
+  | _ -> false
+
+let get_solo_union_ctor_arg_type bsym_table t =
+  match t with
+  | BTYP_inst (i,ts) ->  (* ts already upgraded by the Flx_btype.map *)
+    let bsym =
+      try Flx_bsym_table.find bsym_table i 
+      with Not_found -> failwith ("can't find entry " ^ string_of_int i ^ " in bsym table")
+    in
+    let entry =  Flx_bsym.bbdcl bsym in
+    begin match entry with
+    | BBDCL_union (vs,[id,idx,ct]) -> ct
+    | _ -> assert false
+    end
+  | _ -> assert false
+
+
 let fixtype bsym_table t =
   let rec f_btype t =
     let t = Flx_btype.map ~f_btype t in
@@ -24,10 +60,33 @@ let fixtype bsym_table t =
       in
       let entry =  Flx_bsym.bbdcl bsym in
       begin match entry with
+
+(* Eliminate new types *)
       | BBDCL_newtype (vs,t) -> 
+assert (vs = []);
+(* tsubst should be redundant! *)
         let t = tsubst (Flx_bsym.sr bsym) vs ts t in 
         let t' = f_btype t in (* rescan replacement type *) 
         t'
+      
+(* Eliminate unions with one constructor *)
+      | BBDCL_union (vs,[id,idx,ct]) ->
+(*
+print_endline ("[flx_strabs] Eliminating union with one constructor: union name="  ^
+  Flx_bsym.id bsym ^
+", constructor name=" ^ id ^ 
+", constructor argument type = " ^ sbt bsym_table ct
+);
+*)
+assert (vs = []);
+(* tsubst should be redundant! *)
+        let t = tsubst (Flx_bsym.sr bsym) vs ts ct in 
+        let t' = f_btype t in (* rescan replacement type *) 
+(* argumentless constructors use void argument type instead of unit ... *)
+        begin match t' with
+        | BTYP_void -> Flx_btype.btyp_unit ()
+        | _ -> t'
+        end
       | _ -> 
         t
       end 
@@ -49,9 +108,13 @@ let fixreq bsym_table  (bid,ts) =
 
 let fixreqs bsym_table reqs = map (fixreq bsym_table) reqs
 
-let fixexpr bsym_table e =
-  let rec f_bexpr e =
-    match Flx_bexpr.map ~f_btype:(fixtype bsym_table) ~f_bexpr e with
+(* this analysis has to be top down not bottom up, so that
+the solo union detectors work
+*)
+let rec fixexpr' bsym_table e =
+    let f_btype t = fixtype bsym_table t in 
+    let f_bexpr e = fixexpr' bsym_table e in
+    match e with
     | BEXPR_apply ( (BEXPR_closure(i,_),_),a),_
     | BEXPR_apply_direct (i,_,a),_
     | BEXPR_apply_prim (i,_,a),_
@@ -59,15 +122,122 @@ let fixexpr bsym_table e =
        try Flx_bsym_table.is_identity bsym_table i 
        with Not_found -> 
          failwith ("strabs:is_identity checked not found on " ^ string_of_int i)
-      ) -> a
-    | x -> x
-  in
-  f_bexpr e
+      ) -> f_bexpr a
+
+(* for union U with one constant constructor C, replace C with unit *)
+    | BEXPR_case (_,ut),_ when is_solo_union bsym_table ut -> 
+(*
+      print_endline "  ** [fixexpr] Replace constant constructor of solo SUM with unit";
+*)
+      Flx_bexpr.bexpr_unit
+
+(* for union U with one non-constant constructor C, replace C a with a *)
+    | BEXPR_apply ((BEXPR_inj (idx, ct,ut),_), a),_ when is_solo_union bsym_table ut -> 
+(*
+      print_endline "  ** [fixexpr] Replace non-constant constructor of solo union (INJECTION) with argument";
+*)
+      f_bexpr a
+
+(* DEPRECATED CASE! Should use injection now *)
+(* for union U with one non-constant constructor C, replace C a with a *)
+    | BEXPR_apply ((BEXPR_varname (k,ts),BTYP_function (atyp1,ut)), a),ut2 
+      when is_solo_union bsym_table ut && is_nonconst_ctor bsym_table k
+      -> 
+(*
+      print_endline "  ** [fixexpr] Replace non-constant constructor of solo union (VARNAME) with argument";
+*)
+      f_bexpr a
+
+(* for union U with one non-constant constructor C, replace C a with a *)
+    | BEXPR_apply ((BEXPR_closure (k,ts),BTYP_function (atyp1,ut)), a),ut2 
+      when is_solo_union bsym_table ut && is_nonconst_ctor bsym_table k
+      -> 
+(*
+      print_endline "  ** [fixexpr] Replace non-constant constructor of solo union (CLOSURE) with argument";
+*)
+      f_bexpr a
+
+
+    | BEXPR_case_index (x,ut),_ when is_solo_union bsym_table ut -> 
+(*
+      print_endline ("  ** [fixexpr] Woops, case index of solo union, should be 0 but of what type? Let try int");
+*)
+      Flx_bexpr.bexpr_int 0
+
+
+    | BEXPR_match_case (idx,(x,ut)),_ when is_solo_union bsym_table ut ->
+(*
+       print_endline ("  ** [fixexpr] match case index= " ^ si idx^ " of solo union type "^sbt bsym_table ut^
+        ", constructor " ^ si idx);
+*)
+      assert (idx = 0);
+      Flx_bexpr.bexpr_true
+
+    | BEXPR_case_arg (idx,(x,ut)),argt as y when is_solo_union bsym_table ut ->
+(*
+      print_endline ("  ** [fixexpr] Constructor argument "^si idx^ " of (solo union?) type "^sbt bsym_table ut^
+      ", constructor " ^ si idx);
+*)
+      f_bexpr (x,ut)
+
+    | BEXPR_closure (i,ts),t when is_solo_union bsym_table t ->
+      let ct = get_solo_union_ctor_arg_type bsym_table t in
+      begin match ct with
+      | BTYP_void
+      | BTYP_tuple [] ->
+(*
+        print_endline ("  ** [fixexpr] Replace closure " ^ si i^ " of solo UNION type " ^ 
+          sbt bsym_table t ^ " with unit");
+*)
+        Flx_bexpr.bexpr_unit
+      | _ ->
+        print_endline ("  ** [fixexpr] Replace closure " ^ si i ^ " of solo UNION type "^ 
+          sbt bsym_table t ^ " with nonconst ctor of type " ^ sbt bsym_table ct ^ " with closure of that type");
+        Flx_bexpr.bexpr_closure ct (i, ts)
+      end
+
+    | BEXPR_varname (i,ts),t when is_solo_union bsym_table t ->
+      let ct = get_solo_union_ctor_arg_type bsym_table t in
+      begin match ct with
+      | BTYP_void
+      | BTYP_tuple [] ->
+(*
+        print_endline ("  ** [fixexpr] Replace variable " ^ si i ^ " of solo UNION type "^ 
+          sbt bsym_table t ^ " with unit");
+*)
+        Flx_bexpr.bexpr_unit
+      | _ ->
+(*
+        print_endline ("  ** [fixexpr] Replace variable " ^ si i ^ " of solo UNION type "^ 
+          sbt bsym_table t ^ " with nonconst ctor of type " ^ sbt bsym_table ct ^ " with variable of that type");
+*)
+        Flx_bexpr.bexpr_varname ct (i, ts)
+      end
+
+
+    | x -> Flx_bexpr.map ~f_btype ~f_bexpr x 
+
+let fixexpr bsym_table x = 
+  let y = fixexpr' bsym_table x in
+(* print_endline ("  %%%%% Fixexpr " ^ sbe bsym_table x ^ " --> " ^ sbe bsym_table y); *)
+  y
 
 let fixbexe bsym_table x =
-  Flx_bexe.map ~f_btype:(fixtype bsym_table) ~f_bexpr:(fixexpr bsym_table) x
+  let y = Flx_bexe.map ~f_btype:(fixtype bsym_table) ~f_bexpr:(fixexpr bsym_table) x in
+(* print_endline ("    &&&&&& Fixbexe " ^ string_of_bexe bsym_table 4 x ^ " ----> " ^ string_of_bexe bsym_table 4 y); *)
+  y
 
-let fixbexes bsym_table bexes = map (fixbexe bsym_table) bexes
+let fixbexes bsym_table bexes = 
+  let unit_t = Flx_btype.btyp_unit () in
+  let fbx x = fixbexe bsym_table x in
+  let pr lst x = match fbx x with
+  | Flx_bexe.BEXE_assign (sr,(a,at),(_,t)) when t = unit_t -> assert (t=at); lst
+  | Flx_bexe.BEXE_init (sr,_,(_,t)) when t = unit_t -> lst
+  | y -> y::lst
+  in
+  List.rev (
+    List.fold_left pr [] bexes
+  )
 
 let fixps bsym_table (ps,traint) =
   List.map (fun p -> { p with ptyp=fixtype bsym_table p.ptyp }) ps,
@@ -124,6 +294,13 @@ let strabs_symbol bsym_table index parent bsym bsym_table' =
   | BBDCL_external_code (bvs, c, ikind, breqs) ->
       h (bbdcl_external_code (bvs, c, ikind, fb breqs))
 
+  (* eliminate unions with solo constructors *)
+  | BBDCL_union (bvs, [id,idx,ct]) -> 
+(*
+print_endline ("Removing entry for index = "^si index^" : union " ^Flx_bsym.id bsym ^ " with solo constructor " ^ id);
+*)
+    ()
+
   | BBDCL_union (bvs, cts) ->
       let cts = map (fun (s,j,t) -> s,j,ft t) cts in
       h (bbdcl_union (bvs, cts))
@@ -135,6 +312,25 @@ let strabs_symbol bsym_table index parent bsym bsym_table' =
   | BBDCL_cstruct (bvs, cts, breqs) ->
       let cts = map (fun (s,t) -> s,ft t) cts in
       h (bbdcl_cstruct (bvs, cts, fb breqs))
+
+  
+  | BBDCL_const_ctor (bvs, j, t1, k, evs, etraint) when is_solo_union bsym_table t1 -> 
+(*
+print_endline ("Removing entry for index = "^si index^
+" : const constructor index "^si k^ " name " ^ Flx_bsym.id bsym ^
+" for union " ^sbt bsym_table t1 ^ " (solo constructor)");
+*)
+    ()
+
+  | BBDCL_nonconst_ctor (bvs, j, t1, k,t2, evs, etraint) when is_solo_union bsym_table t1 ->
+(*
+print_endline ("Removing entry for index = "^si index^
+" : nonconst constructor index "^si k^ " name " ^ Flx_bsym.id bsym ^
+" arg type " ^ sbt bsym_table t2 ^
+" for union " ^sbt bsym_table t1 ^ " (solo constructor)");
+*)
+    ()
+
 
   | BBDCL_const_ctor (bvs, j, t1, k, evs, etraint) ->
       h (bbdcl_const_ctor (bvs, j, ft t1, k, evs, ft etraint))

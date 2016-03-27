@@ -555,6 +555,7 @@ let mono_bbdcl syms bsym_table processed to_process nubids virtualinst polyinst 
     let t = mt vars t in
     (* eliminate unit variables *)
     begin match t with
+    | BTYP_void -> print_endline ("Void variable?"); assert false
     | BTYP_tuple [] -> 
       (* print_endline ("Elim unit var " ^ Flx_bsym.id bsym ^ " old index " ^ si i ^ " new index would be " ^ si j); i*)
       None
@@ -825,6 +826,5 @@ let monomorphise2 debug syms bsym_table =
 
     Flx_print.print_bsym_table nutab
   end;
-
   nutab
 
