@@ -459,11 +459,13 @@ Felix also has a special statement for asserting that a
 boolean value is true:
 
 \begin{minted}{felix}
-assert$ 1 < 2;
+assert 1 < 2;
 \end{minted}
 
 If the argument of an \verb%assert% is false, then if control
 flows through it, the program is terminated with an error message.
+Note that as far as \verb%assert% is neither procedure nor function
+you do not need to fix operator priorities with \verb%$%.
 
 Booleans support the usual {\empha logical operators}, but in Felix they
 are spelled out. Conjunction is spelled \verb%and%, whilst disjunction
@@ -606,7 +608,7 @@ var y = 0.7;
 assert sqrt (sqr (sin x) + sqr (cos y)) - 1.0 < 1E-6;
 \end{minted}
 
-Note there is a special caveat with floating poimt arithmetic.
+Note there is a special caveat with floating point arithmetic.
 In Felix, \verb%-% has higher precedence than \verb%+%.
 This means that:
 
@@ -1383,7 +1385,7 @@ called higher order functions or {\em HOF}'s.
 
 \begin{minted}{felix}
 fun twice(x:int) => x + x;
-fun both (x:int, y:int, g: int -> int) => g x, gy;
+fun both (x:int, y:int, g:int -> int) => g x, g y;
 println$ both (3,7,twice);
 \end{minted}
 
@@ -1726,7 +1728,7 @@ done
 This is the fastest and most general loop:
 
 \begin{minted}{felix}
-for (i=0; i<10; ++i;) do // C style
+for (i=0; i<10; ++i;) do // C style with addition of trailing semicolon
   println$ i;
 done
 \end{minted}
@@ -1752,9 +1754,9 @@ done
 
 The \verb%break%, \verb%continue% and \verb%redo% statements
 cause early exit, early continuation, or complete restarting
-of the \verb%for%, \verb%while%, or \verb%repeat% loop specified
-by the loop name. Loops can be named with an identifier followed
-by a colon \verb%:% immediately preceeding the loop.
+of the \verb%for%, \verb%forall%, \verb%while%, or \verb%until% loop
+specified by the loop name. Loops can be named with an identifier
+followed by a colon \verb%:% immediately preceeding the loop.
 
 \subsection{Statement Groups}
 \subsubsection{Do group}
@@ -1988,7 +1990,7 @@ var z = x + -y * 3 - MyInt(74) != AddGroup[MyInt]::zero();
 
 Note that we used explicit qualification for the \verb%zero%
 function although it is not necessary in this case.
-in general, functions with the same name taking a unit
+In general, functions with the same name taking a unit
 argument have to be explicitly qualified to distinguish them,
 there is no type distinction in the argument for overload
 resolution to use.
