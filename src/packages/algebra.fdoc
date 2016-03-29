@@ -827,7 +827,9 @@ class Trig[t] {
 
   // power
   virtual fun pow: t * t -> t;
+  virtual fun pow (a:t, b:int) : t => pow (a, C_hack::cast[t] b);
   fun ^ (x:t,y:t) => pow (x,y);
+  fun ^ (x:t,y:int) => pow (x,y);
 
 
 }

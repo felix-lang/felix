@@ -3859,7 +3859,6 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
   | EXPR_void _
   | EXPR_arrow _
   | EXPR_longarrow _
-  | EXPR_superscript _
   | EXPR_ellipsis _
   | EXPR_intersect _
   | EXPR_isin _
@@ -3920,6 +3919,9 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
     | h::t -> be (List.fold_left mkprod h t)
     | [] -> clierr sri "Not expecting empty sum (void)"
     end
+
+  | EXPR_superscript (sri,(a,b)) ->
+    be (Flx_strr.apl2 sri "pow" [a; b])
 
   | EXPR_coercion (sr,(x,t)) ->
     let (e',t') as x' = be x in
