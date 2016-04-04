@@ -612,6 +612,7 @@ public:
 @
 @tangle pthread_condv.cpp
 #include "pthread_condv.hpp"
+#include <stdint.h>
 
 namespace flx { namespace pthread {
 // constructor
@@ -639,7 +640,7 @@ void flx_condv_t::timed_wait(double seconds) {
   m.unlock();
   tc->yield();
   m.lock();
-  cv.wait_for(m,::std::chrono::duration<double> (seconds));
+  cv.wait_for(m,::std::chrono::microseconds ((uint64_t)(seconds*1000000.0)));
 }
 
 void flx_condv_t::signal() { cv.notify_one(); }
