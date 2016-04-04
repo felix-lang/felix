@@ -5,6 +5,10 @@
 @tangler pthread_win_thread.cpp           = share/src/pthread/pthread_win_thread.cpp
 @tangler pthread_monitor.hpp              = share/lib/rtl/pthread_monitor.hpp
 @tangler pthread_monitor.cpp              = share/src/pthread/pthread_monitor.cpp
+
+@tangler pthread_condv.hpp                = share/lib/rtl/pthread_condv.hpp
+@tangler pthread_condv.cpp                = share/src/pthread/pthread_condv.cpp
+
 @tangler pthread_counter.hpp              = share/lib/rtl/pthread_counter.hpp
 @tangler pthread_counter.cpp              = share/src/pthread/pthread_counter.cpp
 @tangler pthread_waitable_bool.hpp        = share/lib/rtl/pthread_waitable_bool.hpp
@@ -98,8 +102,8 @@ typedef std::map<uintptr_t, thread_data_t, std::less<uintptr_t> > thread_registr
 
 class PTHREAD_EXTERN thread_control_t : public virtual thread_control_base_t
 {
-    thread_control_t (thread_control_t const &); // uncopyable
-    void operator=(thread_control_t const&); // uncopyable
+    thread_control_t (thread_control_t const &) = delete; // uncopyable
+    void operator=(thread_control_t const&) = delete; // uncopyable
     bool do_world_stop;
     size_t thread_counter;
     size_t active_counter;
@@ -109,21 +113,27 @@ class PTHREAD_EXTERN thread_control_t : public virtual thread_control_base_t
     void unsafe_stop_check();
     void unsafe_suspend();
     void unsafe_resume();
+
+    world_stop_notifier_t **world_stop_notifier_array;
+    size_t world_stop_notifier_array_length;
+    void world_stop_notify();
 public:
     bool debug;
-    bool get_debug()const;
+    bool get_debug()const override;
     thread_control_t (bool);
-    size_t thread_count();
+    size_t thread_count() override;
     size_t active_count();
-    void add_thread(void*);
-    void remove_thread();
-    bool world_stop();
-    void join_all() ;
-    void world_start();
-    void yield();
-    void suspend();
-    void resume();
-    memory_ranges_t *get_block_list(); // called owns result and should delete it
+    void add_thread(void*) override;
+    void remove_thread() override;
+    bool world_stop() override;
+    void join_all()  override;
+    void world_start() override;
+    void yield() override;
+    void suspend() override;
+    void resume() override;
+    void register_world_stop_notifier(world_stop_notifier_t *) override;
+    void unregister_world_stop_notifier(world_stop_notifier_t *) override;
+    memory_ranges_t *get_block_list() override; // called owns result and should delete it
 };
 
 struct tstart_t
@@ -570,6 +580,77 @@ flx_thread_wrapper_t::~flx_thread_wrapper_t() { thread.join(); }
 #endif
 @
 
+@h1 Condition Variable
+@tangle pthread_condv.hpp
+#ifndef __FLX_PTHREAD_CONDV_HPP__
+#define __FLX_PTHREAD_CONDV_HPP__
+#include <condition_variable>
+#include <chrono>
+#include "flx_pthread_config.hpp"
+#include "pthread_thread_control_base.hpp"
+
+namespace flx { namespace pthread {
+class PTHREAD_EXTERN flx_condv_t : public world_stop_notifier_t
+{
+  ::std::mutex m;
+  ::std::condition_variable_any cv;
+  void notify_world_stop() override;
+  thread_control_base_t *tc;
+public:
+   flx_condv_t (thread_control_base_t *);
+   void lock();
+   void unlock();
+   void wait();
+   void timed_wait(double seconds);
+   void signal();
+   void broadcast();
+   ~flx_condv_t();
+};
+
+}}
+#endif
+@
+@tangle pthread_condv.cpp
+#include "pthread_condv.hpp"
+
+namespace flx { namespace pthread {
+// constructor
+flx_condv_t::flx_condv_t(thread_control_base_t *tc_): tc(tc_) { 
+//fprintf(stderr, "Creating condition variable %p\n", this);
+  tc->register_world_stop_notifier(this); 
+}
+
+void flx_condv_t::notify_world_stop() { cv.notify_all(); }
+
+void flx_condv_t::lock() { m.lock(); }
+
+void flx_condv_t::unlock() { m.unlock(); }
+
+// mutex must be LOCKED on entry to WAIT
+// mutex will be LOCKED on exit from WAIT
+void flx_condv_t::wait() {
+  m.unlock();
+  tc->yield();
+  m.lock();
+  cv.wait(m);  // unlocks mutex on entry, relocks on exit
+}
+
+void flx_condv_t::timed_wait(double seconds) {
+  m.unlock();
+  tc->yield();
+  m.lock();
+  cv.wait_for(m,::std::chrono::duration<double> (seconds));
+}
+
+void flx_condv_t::signal() { cv.notify_one(); }
+
+void flx_condv_t::broadcast() { cv.notify_all(); }
+
+flx_condv_t::~flx_condv_t() { tc->unregister_world_stop_notifier(this); }
+
+}}
+@
+
 @h1 Monitor
 @tangle pthread_monitor.hpp
 #ifndef __FLX_PTHREAD_MONITOR_H__
@@ -877,21 +958,57 @@ waitable_bool::signal_true()
 
 
 namespace flx { namespace pthread {
+
+world_stop_notifier_t::~world_stop_notifier_t(){}
+
 static void *get_stack_pointer() { 
   void *x; 
   void *y = (void*)&x;
   return y; 
 }
 
+// SHOULD BE MUTEX PROTECETD
+void thread_control_t::register_world_stop_notifier(world_stop_notifier_t *p)
+{
+//fprintf(stderr,"World stop notifier registered: %p\n", p);
+  for (size_t i=0; i<world_stop_notifier_array_length; ++i)
+    if(p == world_stop_notifier_array[i]) return;
+  world_stop_notifier_array = (world_stop_notifier_t**)realloc(world_stop_notifier_array, 
+    sizeof(world_stop_notifier_t*) * (world_stop_notifier_array_length + 1));
+  world_stop_notifier_array[world_stop_notifier_array_length] = p;
+  ++world_stop_notifier_array_length;
+}
+
+// SHOULD BE MUTEX PROTECETD
+void thread_control_t::unregister_world_stop_notifier(world_stop_notifier_t *p)
+{
+  size_t i = 0;
+  for (i=0; i<world_stop_notifier_array_length; ++i)
+    if(p == world_stop_notifier_array[i]) break;
+  if (i == world_stop_notifier_array_length) return;
+  for (size_t j =  i + 1; j < world_stop_notifier_array_length; ++j)
+    world_stop_notifier_array[j-1] = world_stop_notifier_array[j];
+  --world_stop_notifier_array_length;
+  world_stop_notifier_array = (world_stop_notifier_t**)realloc(world_stop_notifier_array,
+    sizeof(world_stop_notifier_t*) * (world_stop_notifier_array_length));
+}
+
+void thread_control_t::world_stop_notify()
+{
+if (world_stop_notifier_array_length > 0)
+  //fprintf(stderr, "thread_control_t::world_stop_notify() notifying %zu objects\n",
+  //  world_stop_notifier_array_length);
+  for (size_t i=0; i<world_stop_notifier_array_length; ++i)
+    world_stop_notifier_array[i]->notify_world_stop();
+}
+
 bool thread_control_t::get_debug()const { return debug; }
 
 thread_control_base_t::~thread_control_base_t(){}
 
-thread_control_t::thread_control_t (thread_control_t const &) {}
-void thread_control_t::operator=(thread_control_t const &) {}
-
 thread_control_t::thread_control_t (bool d) :
-  do_world_stop(false), thread_counter(0), active_counter(0), debug(d)
+  do_world_stop(false), thread_counter(0), active_counter(0), debug(d),
+  world_stop_notifier_array(0), world_stop_notifier_array_length(0)
   {
     if(debug)
       fprintf(stderr,"INITIALISING THREAD CONTROL OBJECT\n");
@@ -951,7 +1068,19 @@ bool thread_control_t::world_stop()
       return false; // race! Someone else beat us
     }
     do_world_stop = true;
+
+    // this calls the notify_world_stop() method of all the
+    // objects such as condition variables that are registered
+    // in the notification list. That method is expected to do a notify_all()
+    // on the condition variable.
+
+    world_stop_notify();
+
+    // this is for the thread control objects own condition variable
+    // which is used to count the number of threads that have suspended
+
     stop_guard.notify_all();
+
     while(active_counter>1) {
       if(debug)
         for(
@@ -1108,8 +1237,10 @@ void thread_control_t::unsafe_resume()
 // mutex already held
 void thread_control_t::unsafe_stop_check()
 {
+//fprintf(stderr, "Unsafe stop check ..\n");
   if (do_world_stop)
   {
+
     if(debug)
       fprintf(stderr,"[unsafe_stop_check: thread=%p] world_stop detected\n", 
         (void*)mythrid());
@@ -1117,14 +1248,18 @@ void thread_control_t::unsafe_stop_check()
     unsafe_suspend();
     unsafe_resume();
   }
+//fprintf(stderr, "Unsafe stop check finishes\n");
 }
 
 void thread_control_t::yield()
 {
+//fprintf(stderr,"Thread control yield starts\n");
   ::std::unique_lock< ::std::mutex> m(stop_mutex);
   if(debug)
     fprintf(stderr,"[yield: thread=%p]\n", (void*)mythrid());
+//fprintf(stderr,"Unsafe stop check starts\n");
   unsafe_stop_check();
+//fprintf(stderr,"Unsafe stop check done\n");
 }
 
 }}
@@ -1317,13 +1452,16 @@ namespace flx { namespace pthread {
 /// and continues without waiting for the data to be read.
 // ********************************************************
 
-class PTHREAD_EXTERN bound_queue_t {
+class PTHREAD_EXTERN bound_queue_t :public world_stop_notifier_t {
+  thread_control_base_t *tc;
   ::std::condition_variable_any size_changed;
+  ::std::mutex member_lock;
   size_t bound;
+  void notify_world_stop() override;
+  void wait();
 public:
   void *lame_opaque; // has to be public for the scanner to find it
-  ::std::mutex member_lock;
-  bound_queue_t(size_t);
+  bound_queue_t(thread_control_base_t *tc_, size_t);
   ~bound_queue_t();
   void enqueue(void*);
   void* dequeue();
@@ -1352,16 +1490,37 @@ typedef deque<void*> void_queue;
 
 #define ELTQ ((void_queue*)lame_opaque)
 
-bound_queue_t::bound_queue_t(size_t n) : bound(n)
+void bound_queue_t::notify_world_stop() 
 {
+  size_changed.notify_all();
+}
+
+bound_queue_t::bound_queue_t(thread_control_base_t *tc_, size_t n) : bound(n), tc(tc_)
+{
+//fprintf(stderr, "Creating bound queue %p, thread_control base=%p\n", this,tc);
   lame_opaque = new void_queue;
+  tc->register_world_stop_notifier(this);
 }
 
 // Much care is needed deleting a queue.
 // A safe method is possible .. but not provided here
 bound_queue_t::~bound_queue_t()
 {
+//fprintf(stderr,"Deleting bound queue %p\n",this);
+  tc->unregister_world_stop_notifier(this);
   delete ELTQ;
+}
+
+void bound_queue_t::wait() {
+//fprintf(stderr, "Bound queue waiting.. %p\n", this);
+  member_lock.unlock();
+//fprintf(stderr, "Unocked mutex, now doing a tc yield q=%p, tc=%p\n", this,tc);
+  tc->yield();
+//fprintf(stderr, "tc yield done, relocking mutex q=%p\n", this);
+  member_lock.lock();
+//fprintf(stderr, "locked mutex again, waiting on possible size change in queue %p\n",this);
+  size_changed.wait_for(member_lock, ::std::chrono::duration<int>(1)); // 1second
+//fprintf(stderr, "possible size change in queue detected %p\n", this);
 }
 
 // get the number of element in the queue
@@ -1373,16 +1532,14 @@ size_t bound_queue_t::len() {
 
 void bound_queue_t::wait_until_empty() {
   ::std::unique_lock< ::std::mutex>   l(member_lock);
-  while(!ELTQ->empty())
-    size_changed.wait(member_lock);
+  while(!ELTQ->empty()) wait();
 }
 
 void
 bound_queue_t::enqueue(void* elt)
 {
   ::std::unique_lock< ::std::mutex>   l(member_lock);
-  while(ELTQ->size() >= bound) // guard against spurious wakeups!
-    size_changed.wait(member_lock);
+  while(ELTQ->size() >= bound) wait(); // guard against spurious wakeups!
   ELTQ->push_back(elt);
   size_changed.notify_all(); // cannot return an error
 }
@@ -1390,9 +1547,9 @@ bound_queue_t::enqueue(void* elt)
 void*
 bound_queue_t::dequeue()
 {
+//fprintf(stderr, "Trying to dequeue from bound queue\n");
   ::std::unique_lock< ::std::mutex>   l(member_lock);
-  while(ELTQ->empty())  // guard against spurious wakeups!
-    size_changed.wait(member_lock);
+  while(ELTQ->empty())  wait(); // guard against spurious wakeups!
   void *elt = ELTQ->front();
   ELTQ->pop_front();
   size_changed.notify_all();
@@ -1510,7 +1667,7 @@ class PTHREAD_EXTERN worker_fifo
   void start_worker_thread();
 
 public:
-  worker_fifo(int n, int m);   /// n: Q bound, m: # of threads
+  worker_fifo(thread_control_base_t *tc, int n, int m);   /// n: Q bound, m: # of threads
   ~worker_fifo();
   void add_worker_task(worker_task* task);
   int get_nthreads();
@@ -1545,8 +1702,9 @@ void worker_fifo::start_worker_thread()
   flx_detached_thread_t().init(thread_start, this,NULL, NULL, NULL, NULL);
 }
 
-worker_fifo::worker_fifo(int n, int m) : nthreads(0), fifo(n)
+worker_fifo::worker_fifo(thread_control_base_t *tc, int n, int m) : nthreads(0), fifo(tc,n)
 {
+fprintf(stderr, ">>>>>>>> worker_fifo created for %d threads and queue length %d\n",m,n);
   set_nthreads(m);
 }
 

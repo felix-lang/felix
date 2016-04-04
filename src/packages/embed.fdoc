@@ -784,6 +784,7 @@ void async_sched::do_general()
     // CREATE A NEW ASYNCHRONOUS EVENT MANAGER
     // DONE ON DEMAND ONLY
     async = (*world->c->ptr_create_async_hooker)(
+      gcp->collector->get_thread_control(), // thread_control object
       20000, // bound on resumable thread queue
       50,    // bound on general input job queue
       2,     // number of threads in job pool
@@ -949,6 +950,7 @@ typedef
 async_hooker *
 create_async_hooker_t
 (
+  ::flx::pthread::thread_control_base_t*,
   int n0,   // bound on resumable thread queue
   int n1,   // bound on general input job queue
   int m1,   // number of threads in job pool
@@ -960,6 +962,7 @@ extern "C" {
 ASYNC_EXTERN async_hooker *
 create_async_hooker
 (
+  ::flx::pthread::thread_control_base_t*,
   int n0,   // bound on resumable thread queue
   int n1,   // bound on general input job queue
   int m1,   // number of threads in job pool
@@ -1051,8 +1054,8 @@ class proto_async : public async_hooker_impl
     bound_queue_t async_ready;
 
 public:
-   proto_async(int n0, int n1, int m1, int n2, int m2) :
-     async_ready(n0)
+   proto_async(thread_control_base_t *tc, int n0, int n1, int m1, int n2, int m2) :
+     async_ready(tc,n0)
    {}
 
   ~proto_async(){}
@@ -1107,8 +1110,8 @@ void flx_driver_request_base:: notify_finished()
 
 }}
 
-async_hooker *create_async_hooker(int n0,int n1,int m1,int n2,int m2) {
-  return new ::flx::async::proto_async(n0,n1,m1,n2,m2);
+async_hooker *create_async_hooker(thread_control_base_t *tc, int n0,int n1,int m1,int n2,int m2) {
+  return new ::flx::async::proto_async(tc,n0,n1,m1,n2,m2);
 }
 
 

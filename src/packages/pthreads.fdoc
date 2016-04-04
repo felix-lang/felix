@@ -404,14 +404,18 @@ open class Condition_Variable
   type condition_variable = "::flx::pthread::flx_condv_t*" requires condv_hxx;
 
   //$ Condition variable constructor taking unit argument.
-  ctor condition_variable: 1 = "new ::flx::pthread::flx_condv_t";
+  ctor condition_variable: 1 = "new ::flx::pthread::flx_condv_t(PTF gcp->collector->get_thread_control())";
 
   //$ Function to release a condition variable.
   proc destroy: condition_variable = "delete $1;";
 
+  //$ lock/unlock associated mutex
+  proc lock : condition_variable = "$1->lock();";
+  proc unlock : condition_variable = "$1->unlock();";
+
   //$ Function to wait until a signal is raised on
   //$ the condition variable by another thread.
-  proc wait: condition_variable * mutex = "$1->wait($2);";
+  proc wait: condition_variable = "$1->wait();";
 
   //$ Function to raise a signal on a condition
   //$ variable which will allow at most one thread
@@ -424,7 +428,7 @@ open class Condition_Variable
 
   //$ Timed wait for signal on condition variable.
   //$ Time in seconds. Resolution nanoseconds.
-  gen timedwait: condition_variable * mutex * double -> int = "$1->timedwait($2, $3)";
+  gen timedwait: condition_variable * double -> int = "$1->timedwait($3)";
 }
 
 @h1 Thread Safe Counter.
@@ -459,7 +463,10 @@ open class TS_Bound_Queue
      scanner "::flx::pthread::bound_queue_scanner"
   ;
   ctor[T] ts_bound_queue_t[T]: !ints = 
-    "new (*PTF gcp, @0, false) ::flx::pthread::bound_queue_t((size_t)$1)";
+    """
+      new (*PTF gcp, @0, false) ::flx::pthread::bound_queue_t(
+      PTF gcp->collector->get_thread_control(), (size_t)$1)
+    """ requires property "needs_ptf";
 
   // NOTE: enqueue/dequeue on queues uses suspend/resume
   // to tell any pending collector it is safe to proceed
@@ -471,9 +478,11 @@ open class TS_Bound_Queue
 
   private proc _enqueue[T]: ts_bound_queue_t[T] * &T = """
     FLX_SAVE_REGS;
-    PTF gcp->collector->get_thread_control()->suspend();
+//fprintf(stderr,"enqueue to ts_bound_queue q=%p starts, item=%p\\n", $1, $2);
+    //PTF gcp->collector->get_thread_control()->suspend();
     $1->enqueue((void*)$2);
-    PTF gcp->collector->get_thread_control()->resume();
+//fprintf(stderr,"enqueue to ts_bound_queue q=%p done, item=%p\\n", $1, $2);
+    //PTF gcp->collector->get_thread_control()->resume();
   """;
 
 
@@ -485,9 +494,11 @@ open class TS_Bound_Queue
   // The RACE is on!
   private proc _dequeue[T]: ts_bound_queue_t[T] * &&T = """
     FLX_SAVE_REGS;
-    PTF gcp->collector->get_thread_control()->suspend();
+//fprintf(stderr,"dequeue from ts_bound_queue %p starts\\n", $1);
+    //PTF gcp->collector->get_thread_control()->suspend();
     *$2=(?1*)$1->dequeue();
-    PTF gcp->collector->get_thread_control()->resume();
+//fprintf(stderr,"dequeue from ts_bound_queue done q=%p item=%p\\n",$1,*$2);
+    //PTF gcp->collector->get_thread_control()->resume();
   """;
 
   proc enqueue[T] (Q:ts_bound_queue_t[T])  (elt:T) {
@@ -503,9 +514,9 @@ open class TS_Bound_Queue
 
   proc wait[T]: ts_bound_queue_t[T] = """
     FLX_SAVE_REGS;
-    PTF gcp->collector->get_thread_control()->suspend();
+    //PTF gcp->collector->get_thread_control()->suspend();
     $1->wait_until_empty();
-    PTF gcp->collector->get_thread_control()->resume();
+    //PTF gcp->collector->get_thread_control()->resume();
   """;
 
   proc resize[T]: ts_bound_queue_t[T] * !ints = "$1->resize((size_t)$2);";
@@ -578,7 +589,6 @@ class ThreadPool
 
   // barrier lock
   private var block = #condition_variable;
-  private var bmux = #mutex;
 
   fun get_nthreads () => nthreads;
 
@@ -588,21 +598,24 @@ class ThreadPool
   private var pforrunning = atomic 0;
 
   proc barrier() {
-    lock bmux;
+//println$ "Barrier";
+    block.lock;
     ++waiting;
     if waiting.load == nthreads do
       waiting.store 0;
-      broadcast block;
+      block.broadcast;
     else
     again:>
-      wait (block,bmux);
+      block.wait;
       if waiting.load != 0 goto again;
     done
-    unlock bmux; 
+    block.unlock; 
   }
 
   proc start () { 
+//println$ "Thread pool start()";
      for i in 1..nthreads call spawn_pthread jobhandler;
+//println$ "Threads spawned";
   }
 
   proc start (n:int) {
@@ -611,9 +624,13 @@ class ThreadPool
   }
 
   private proc jobhandler () {
+//println$ "Job handler thread #"+running.str+" started";
+     var id = running;
      ++running;
      rpt:while true do
+//println$ "Trying to dequeue a job id=" + id.str;
        var job = dequeue jobqueue;
+//println$ "Job dequeued id="+id.str;
        if isStop job break rpt;
        job; 
        thread_yield();
@@ -622,6 +639,7 @@ class ThreadPool
   }
 
   proc queue_job (job:job_t) {
+//println$ "Queuing job";
     if running.load == 0 call start ();
     if nthreads > 0 do 
       call enqueue jobqueue job;
@@ -666,12 +684,12 @@ class ThreadPool
       for var counter in 0 upto nt - 2 do
         val sfirst = first + (N * counter) / nt;
         val slast = first + (N * (counter + 1)) / nt - 1;
-  //println$ "QUEUE JOB: Counter = " + counter.str + ", sfirst=" + sfirst.str + ", slast=" + slast.str;
+//  println$ "QUEUE JOB: Counter = " + counter.str + ", sfirst=" + sfirst.str + ", slast=" + slast.str;
         ThreadPool::queue_job$ lbody (sfirst, slast);
       done
       sfirst = first + (N * (nt - 1)) / nt;
       slast = last;
-  //println$ "UNQUEUED JOB: Counter = " + counter.str + ", sfirst=" + sfirst.str + ", slast=" + slast.str;
+//  println$ "UNQUEUED JOB: Counter = " + counter.str + ", sfirst=" + sfirst.str + ", slast=" + slast.str;
       lbody (sfirst, slast) ();
       join;
       pforrunning.store 0;
@@ -755,6 +773,7 @@ proc rinit (mx:&mx_t) {
 }
 
 fun check() = {
+//println$ "Verification check";
   for i in 0..<N
   for j in 0..<N
     if r.i.j != s.i.j return false;
@@ -762,11 +781,13 @@ fun check() = {
 }
 
 proc verify() {
+//println$ "Running verify";
   if #check do
     println$ "Verified";
   else
     println "Wrong!";
   done 
+//println$ "Verify ran";
 }
 
 clear &r;
@@ -793,7 +814,10 @@ end
 var fin = #time;
 println$ "Naive mul elapsed " + (fin - start).str + " seconds";
 
+//println$ "Starting thread pool";
 ThreadPool::start 8;
+//println$ "Thread pool started";
+
 // naive parallel multiply
 noinline proc inner_products_proc (var i:int)
 {
@@ -821,6 +845,7 @@ verify;
 clear &r;
 start = #time;
 begin
+println$ "Using thread pool's pforloop";
   ThreadPool::pforloop 0 (N - 1) inner_products_proc;
 end
 fin = #time;

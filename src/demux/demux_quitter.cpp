@@ -14,7 +14,7 @@ namespace flx { namespace demux {
 void
 demux_quitter::callback(demuxer* demux)
 {
-  //fprintf(stderr, "quitter callback\n");
+  fprintf(stderr, "demux quitter callback, setting quit flag from event thread\n");
   demux->set_quit_flag(this);
 }
 
@@ -25,6 +25,7 @@ demux_quitter::callback(demuxer* demux)
 void
 demux_quitter::signal_true() // signal finish, from demux_quit_flag
 {
+fprintf(stderr,"Demux quiter signal_tru()\n");
   finished.signal_true();
   // do NOTHING here, we've probably already been destructed, mr anderson.
   // I told you, my name is "neil".
@@ -33,14 +34,16 @@ demux_quitter::signal_true() // signal finish, from demux_quit_flag
 void
 demux_quitter::quit(demuxer* demux)
 {
-   // fprintf(stderr, "trying to quit demuxer...\n");
+   fprintf(stderr, "demux_quitter::quit() trying to quit demuxer...\n");
    // install self piper, with our callback
    sp.install(demux, this);
    // wake demuxer, getting our callback called, which sets quit flag
    // NB: this requires that there BE another thread.
    sp.wake();
    // wait for quit flag to be signalled by exiting event thread
+   fprintf(stderr, "demux_quitter::quit()  waiting for demuxer to quit\n");
    finished.wait_until_true();
+   fprintf(stderr, "demux_quitter::quit()  demuxer has quit\n");
    // event thread exited
 }
 

@@ -20,6 +20,7 @@ namespace flx { namespace demux {
 kqueue_demuxer::kqueue_demuxer()
   : kq(-1)
 {
+fprintf(stderr, "OSX Kqueue demuxer starting\n");
   // Not that you care, but this event queue is not inherited by
   // forked children.
   kq = kqueue();
@@ -32,6 +33,7 @@ kqueue_demuxer::kqueue_demuxer()
 
 kqueue_demuxer::~kqueue_demuxer()
 {
+fprintf(stderr, "OSX Kqueue demuxer ending\n");
   // calling close on a kq while a thread is waiting in kevent causes close
   // to block! this happens on 10.4. Hard to say on 10.3 as close simply
   // fails there. we need to wake the waiting thread, so we'll use that

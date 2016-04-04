@@ -2627,7 +2627,7 @@ In set-theoretic mathematics a function is triple consisting of a specified
 set $D$ called the {\em domain} a set $C$ call the {\em codomain} and a 
 method $f$ of assigning an element $c \in C$ of the codomain to each element 
 $d\in D$ of the domain, written:
-$$f: C \rightarrow D$$
+$$f: D \rightarrow C$$
 where
 $$d\mapsto c$$
 which we also write in equational form as
@@ -2636,7 +2636,7 @@ $$f (d) = c$$
 In programming, the challenge is to find a suitable representation,
 or representations, of the sets as a type, and to encode the functions
 so as to faithfully model the mathematics. In particular if type \verb%D%
-represents set $D$, type \verb%C% represents set $D$, then for all elements
+represents set $D$, type \verb%C% represents set $C$, then for all elements
 $d$ of $D$ if value \verb%d% represents $d$ and \verb%f% is an encoding
 of function $f$ then if $c = f(d)$ then \verb%f(d)% represents $c$. Pictorially,
 where $r$ is the representation mapping, we require that
@@ -2689,7 +2689,23 @@ fun fg = A * B -> X * Y = f * g;
 More of these tools are discussed in the section on Categorical Programming.
 
 \chapter{Functional Basics}
-[missing stuff]
+We will begin by considering functional programming
+in the {\em applicative} style. In this style at the basic level
+we have two kinds of entities: {\em values} and {\em functions}.
+We say that applying a function to a value returns a result value
+to which another function may be applied. A composite of function
+applications is called an {\em expression}.
+
+The following program consists of both procedural and functional
+code:
+
+\begin{minted}{felix}
+var x = 1.0;
+var y = 2.0;
+var hyp = sqrt (x^2 + y^2);
+println$ hyp;
+\end{minted}
+
 
 \section{Higher Order Functions}
 Ok so, what if I wanted to add up the squares of the numbers 
