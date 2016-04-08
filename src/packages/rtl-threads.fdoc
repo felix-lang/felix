@@ -633,7 +633,7 @@ void flx_condv_t::wait() {
   m.unlock();
   tc->yield();
   m.lock();
-  cv.wait(m);  // unlocks mutex on entry, relocks on exit
+  cv.wait_for(m,::std::chrono::seconds (1));  // unlocks mutex on entry, relocks on exit
 }
 
 void flx_condv_t::timed_wait(double seconds) {

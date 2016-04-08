@@ -62,6 +62,12 @@ open class Fibres
   ctor fibre_scheduler: 1 = """new ::flx::run::sync_sched(false, PTF gcp, 
     new ::std::list<::flx::rtl::fthread_t*>)""";
   ;
+
+  // NOTE: all this derooting shouldn't be required
+  // because normally the deletion balances the construction
+  // on a function's machine stack, you can't get up to the
+  // deletion until all the active threads are gone
+  // because the spawn_fthread runs the fthread immediately
   proc delete_fibre_scheduler : fibre_scheduler = """
     if ($1->ft) $1->collector->remove_root($1->ft);
     for(
@@ -74,16 +80,17 @@ open class Fibres
   """;
 
   //$ Spawn a fibre on a given scheduler with a given continuation.
+  //$ Note: does NOT run it!
   proc spawn_fibre: fibre_scheduler * fthread = """
     $1->collector->add_root($2);
     $1->active->push_back($2);
-    $1->frun(); 
   """;
 
   proc frun: (1->0) = "::flx::rtl::executil::frun (PTF gcp, $1);" 
     requires header '#include "flx_executil.hpp"'
   ;
 
+  proc run: fibre_scheduler = "$1->frun();";
  
   //$ The type of the stop state of the fibre scheduler.
   //$ terminated: the scheduler is terminated.
