@@ -1460,11 +1460,13 @@ class PTHREAD_EXTERN bound_queue_t :public world_stop_notifier_t {
   size_t bound;
   void notify_world_stop() override;
   void wait();
+  void wait_no_world_stop_check(); // used by async system
 public:
   void *lame_opaque; // has to be public for the scanner to find it
   bound_queue_t(thread_control_base_t *tc_, size_t);
   ~bound_queue_t();
   void enqueue(void*);
+  void enqueue_no_world_stop_check(void*); // used by async system
   void* dequeue();
   void* maybe_dequeue();
   void resize(size_t);
@@ -1524,6 +1526,11 @@ void bound_queue_t::wait() {
 //fprintf(stderr, "possible size change in queue detected %p\n", this);
 }
 
+void bound_queue_t::wait_no_world_stop_check() {
+  size_changed.wait_for(member_lock, ::std::chrono::duration<int>(1)); // 1second
+}
+
+
 // get the number of element in the queue
 // (NOT the bound!)
 size_t bound_queue_t::len() {
@@ -1544,6 +1551,16 @@ bound_queue_t::enqueue(void* elt)
   ELTQ->push_back(elt);
   size_changed.notify_all(); // cannot return an error
 }
+
+void
+bound_queue_t::enqueue_no_world_stop_check(void* elt)
+{
+  ::std::unique_lock< ::std::mutex>   l(member_lock);
+  while(ELTQ->size() >= bound) wait_no_world_stop_check(); // guard against spurious wakeups!
+  ELTQ->push_back(elt);
+  size_changed.notify_all(); // cannot return an error
+}
+
 
 void*
 bound_queue_t::dequeue()
