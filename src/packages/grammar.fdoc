@@ -1387,13 +1387,21 @@ syntax expressions {
   x[sas_expr_pri] := x[sas_expr_pri] "as" "var" sname =># "`(ast_as_var ,_sr (,_1 ,_4))";
 
 
-  x[sarrow_pri] := x[>sarrow_pri] ".." x[>sarrow_pri] =># '''
-    `(ast_apply ,_sr ((ast_apply ,_sr (,(nos "slice_range") ,_1)) ,_3))
-  ''';
+//  x[sarrow_pri] := x[>sarrow_pri] ".." x[>sarrow_pri] =># '''
+//    `(ast_apply ,_sr ((ast_apply ,_sr (,(nos "slice_range") ,_1)) ,_3))
+//  ''';
+//
+//  x[sarrow_pri] := x[>sarrow_pri] "..<" x[>sarrow_pri] =># '''
+//    `(ast_apply ,_sr ((ast_apply ,_sr (,(nos "slice_range_excl") ,_1)) ,_3))
+//  ''';
 
-  x[sarrow_pri] := x[>sarrow_pri] "..<" x[>sarrow_pri] =># '''
-    `(ast_apply ,_sr ((ast_apply ,_sr (,(nos "slice_range_excl") ,_1)) ,_3))
-  ''';
+  x[sarrow_pri] := x[>sarrow_pri] ".." x[>sarrow_pri] =># "(infix 'Slice_range_incl)";
+  x[sarrow_pri] := x[>sarrow_pri] "..<" x[>sarrow_pri] =># "(infix 'Slice_range_excl)";
+  x[sarrow_pri] := "..<" x[>sarrow_pri] =># "(prefix 'Slice_to_excl)";
+  x[sarrow_pri] := ".." x[>sarrow_pri] =># "(prefix 'Slice_to_incl)";
+  x[sarrow_pri] := x[>sarrow_pri] ".." =># "(suffix 'Slice_from)";
+  x[sarrow_pri] := ".." =># """`(ast_name ,_sr "Slice_all" (,(noi 'int)))""";
+
 
   // right arrows: RIGHT ASSOCIATIVE!
   //$ Function type, right associative.
@@ -2487,6 +2495,11 @@ SCHEME """
   (define (prefix op) `(ast_apply ,_sr (,(noi op) ,_2)))
 """;
 SCHEME """
+  (define (suffix op) `(ast_apply ,_sr (,(noi op) ,_1)))
+""";
+
+
+SCHEME """
   (define (Prefix) `(ast_apply ,_sr (,(nos _1) ,_2)))
 """;
 SCHEME """
@@ -2922,6 +2935,49 @@ syntax felix_string_lexer {
     """;
    
 //$ Primary looping contructs.
+SCHEME """
+   (define (incluploop)
+    `(ast_seq ,_sr
+      ,(append 
+        `((ast_assign ,_sr _set ((Expr ,_sr (ast_name ,_sr ,_3 ())) none) ,_5))
+        `((ast_label ,_sr ,(string-append "redo_" _1)))
+        `((ast_unlikely_ifnotgoto ,_sr
+          (ast_apply ,_sr (,(noi '<=) ((ast_name ,_sr ,_3 ()),_7)))
+          ,(string-append "break_" _1)
+        ))
+        `(,_8)
+        `((ast_label ,_sr ,(string-append "continue_" _1)))
+        `((ast_unlikely_ifgoto ,_sr
+          (ast_apply ,_sr (,(noi '==) ((ast_name ,_sr ,_3 ()),_7)))
+          ,(string-append "break_" _1)
+        ))
+        `((ast_call ,_sr ,(noi 'pre_incr) (ast_ref ,_sr (ast_name ,_sr ,_3()))))
+        `((ast_goto ,_sr ,(string-append "redo_" _1)))
+        `((ast_label ,_sr ,(string-append "break_" _1)))
+       ))
+    )
+    """;
+
+SCHEME """
+   (define (excluploop)
+    `(ast_seq ,_sr
+      ,(append 
+        `((ast_assign ,_sr _set ((Expr ,_sr (ast_name ,_sr ,_3 ())) none) ,_5))
+        `((ast_label ,_sr ,(string-append "redo_" _1)))
+        `((ast_unlikely_ifnotgoto ,_sr
+          (ast_apply ,_sr (,(noi '<) ((ast_name ,_sr ,_3 ()),_7)))
+          ,(string-append "break_" _1)
+        ))
+        `(,_8)
+        `((ast_label ,_sr ,(string-append "continue_" _1)))
+        `((ast_call ,_sr ,(noi 'pre_incr) (ast_ref ,_sr (ast_name ,_sr ,_3()))))
+        `((ast_goto ,_sr ,(string-append "redo_" _1)))
+        `((ast_label ,_sr ,(string-append "break_" _1)))
+       ))
+    )
+    """;
+
+
 syntax loops
 {
   requires blocks;
@@ -3053,27 +3109,10 @@ syntax loops
   // the incr/decr is to be done, this is because it might be the max/min value
   // in the range and the incr/decr would be invalid.
 
-  loop_stmt := optlabel "for" sname "in" sexpr "upto" sexpr block =>#
-    """
-    `(ast_seq ,_sr
-      ,(append 
-        `((ast_assign ,_sr _set ((Expr ,_sr (ast_name ,_sr ,_3 ())) none) ,_5))
-        `((ast_label ,_sr ,(string-append "redo_" _1)))
-        `((ast_unlikely_ifnotgoto ,_sr
-          (ast_apply ,_sr (,(noi '<=) ((ast_name ,_sr ,_3 ()),_7)))
-          ,(string-append "break_" _1)
-        ))
-        `(,_8)
-        `((ast_label ,_sr ,(string-append "continue_" _1)))
-        `((ast_unlikely_ifgoto ,_sr
-          (ast_apply ,_sr (,(noi '==) ((ast_name ,_sr ,_3 ()),_7)))
-          ,(string-append "break_" _1)
-        ))
-        `((ast_call ,_sr ,(noi 'pre_incr) (ast_ref ,_sr (ast_name ,_sr ,_3()))))
-        `((ast_goto ,_sr ,(string-append "redo_" _1)))
-        `((ast_label ,_sr ,(string-append "break_" _1)))
-       ))
-    """;
+  //loop_stmt := optlabel "for" sname "in" sexpr ".." sexpr block =># "(incluploop)";
+  loop_stmt := optlabel "for" sname "in" sexpr "upto" sexpr block =># "(incluploop)";
+  //loop_stmt := optlabel "for" sname "in" sexpr "..<" sexpr block =># "(excluploop)";
+ 
 
   //$ Numeric upwards for loop, also declares the control variable with type.
   //$ The control variable is local to the enclosing context, 
@@ -3252,6 +3291,7 @@ syntax loops
         (ast_label ,_sr ,(string-append "break_" _1))
        )))
     """;
+
 
   //$ Upmarket stream consumer.
   //$ The second argument must be a value for which there is a generator: 

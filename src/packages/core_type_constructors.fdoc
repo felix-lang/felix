@@ -193,10 +193,19 @@ publish "slice type"
   union slice[T] =
     | Slice_all
     | Slice_from of T
-    | Slice_to of T
-    | Slice_range of T * T
+    | Slice_to_incl of T
+    | Slice_to_excl of T
+    | Slice_range_incl of T * T
     | Slice_range_excl of T * T
     | Slice_one of T
+  ;
+
+  gen iterator[T with Integer[T]] (s:slice[T]) =>
+    match s with
+    | Slice_range_incl (first, last) => slice_range first last
+    | Slice_range_excl (first, last) => slice_range_excl first last
+    | _ => fun_fail[1->opt[T]] "iterator requires slice bounded at both ends"
+    endmatch
   ;
 
 // Note: guarrantees no overflow

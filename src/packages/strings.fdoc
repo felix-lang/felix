@@ -221,8 +221,10 @@ Returns nul char (code 0) if the string is empty.
     match s with
     | #Slice_all => substring (x, 0, x.len.int)
     | Slice_from (start) => copyfrom (x, start)
-    | Slice_to (end) => copyto (x, end)
-    | Slice_range (start, end) => substring (x, start, end)
+    | Slice_to_incl (end) => copyto (x, end)
+    | Slice_to_excl (end) => copyto (x, end - 1)
+    | Slice_range_incl (start, end) => substring (x, start, end)
+    | Slice_range_excl (start, end) => substring (x, start, end - 1)
     | Slice_one (index) => string x.[index]
     endmatch
   ;
