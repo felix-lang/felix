@@ -9,6 +9,7 @@ open List
 type extract_t =
   | Proj_n of Flx_srcref.t * int             (* tuple projections 1 .. n *)
   | Udtor of Flx_srcref.t * qualified_name_t (* argument of union component s *)
+  | Vdtor of Flx_srcref.t * string           (* argument of variant component s *)
   | Proj_s of Flx_srcref.t * string          (* record projection name *)
   | Proj_head of Flx_srcref.t                (* tuple_cons head extractor  *)
   | Proj_tail of Flx_srcref.t                (* tuple_cons tail extractor  *)
@@ -34,6 +35,7 @@ let gen_extractor
   (fun x marg -> match x with
     | Proj_n (sr,n) -> EXPR_get_n (sr,(n,marg))
     | Udtor (sr,qn) -> EXPR_ctor_arg (sr,(qn,marg))
+    | Vdtor (sr,qn) -> EXPR_variant_arg (sr,(qn,marg))
     | Proj_s (sr,s) -> EXPR_get_named_variable (sr,(s,marg))
     | Proj_tail (sr) -> EXPR_get_tuple_tail (sr,(marg))
     | Proj_head (sr) -> EXPR_get_tuple_head (sr,(marg))
@@ -147,7 +149,9 @@ let rec subst vars (e:expr_t) mv : expr_t =
   | EXPR_lambda _ -> assert false
 
   | EXPR_match_case _
+  | EXPR_match_variant _
   | EXPR_ctor_arg _
+  | EXPR_variant_arg _
   | EXPR_get_n _
   | EXPR_get_named_variable _
   | EXPR_match_ctor _
@@ -209,6 +213,11 @@ let rec get_pattern_vars
   | PAT_nonconst_ctor (sr,name,pat) ->
     let extractor' = (Udtor (sr, name)) :: extractor in
     get_pattern_vars vars pat extractor'
+
+  | PAT_nonconst_variant (sr,name,pat) ->
+    let extractor' = (Vdtor (sr, name)) :: extractor in
+    get_pattern_vars vars pat extractor'
+
 
   | PAT_as (sr,pat,id) ->
     Hashtbl.add vars id (sr,extractor);
@@ -330,9 +339,19 @@ let rec gen_match_check pat (arg:expr_t) =
   | PAT_const_ctor (sr,name) ->
     EXPR_match_ctor (sr,(name,arg))
 
+  | PAT_const_variant (sr,name) ->
+    EXPR_match_variant (sr,(name,arg))
+
+
   | PAT_nonconst_ctor (sr,name,pat) ->
     let check_component = EXPR_match_ctor (sr,(name,arg)) in
     let tuple = EXPR_ctor_arg (sr,(name,arg)) in
+    let check_tuple = gen_match_check pat tuple in
+    apl2 sr "land" check_component check_tuple
+
+  | PAT_nonconst_variant (sr,name,pat) ->
+    let check_component = EXPR_match_variant (sr,(name,arg)) in
+    let tuple = EXPR_variant_arg (sr,(name,arg)) in
     let check_tuple = gen_match_check pat tuple in
     apl2 sr "land" check_component check_tuple
 

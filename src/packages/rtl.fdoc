@@ -512,6 +512,7 @@ struct RTL_EXTERN con_t;     // continuation
 struct RTL_EXTERN jump_address_t;     // label variable type
 struct RTL_EXTERN fthread_t; // f-thread
 struct RTL_EXTERN _uctor_;   // union constructor
+struct RTL_EXTERN _variant_;   // variant constructor
 struct RTL_EXTERN schannel_t;   // synchronous channel type
 struct RTL_EXTERN slist_t;   // singly linked list of void*
 struct RTL_EXTERN slist_node_t;   // singly linked list of void*
@@ -618,6 +619,20 @@ struct RTL_EXTERN _uctor_
   _uctor_() : variant(-1), data(0) {}
   _uctor_(int i, void *d) : variant(i), data(d) {}
   _uctor_(int *a, _uctor_ x) : variant(a[x.variant]), data(x.data) {}
+};
+
+
+// ********************************************************
+/// VARIANTS. Felix variant type
+/// note: non-polymorphic, so ctor can be inline
+// ********************************************************
+
+struct RTL_EXTERN _variant_
+{
+  char const *vname;  ///< Variant code
+  void *vdata;   ///< Heap variant constructor data
+  _variant_() : vname(""), vdata(0) {}
+  _variant_(char const *n, void *d) : vname(n), vdata(d) {}
 };
 
 
@@ -925,6 +940,7 @@ RTL_EXTERN extern ::flx::gc::generic::offset_data_t const _address_offset_data;
 RTL_EXTERN extern ::flx::gc::generic::gc_shape_t _fthread_ptr_map;
 RTL_EXTERN extern ::flx::gc::generic::gc_shape_t schannel_ptr_map;
 RTL_EXTERN extern ::flx::gc::generic::gc_shape_t _uctor_ptr_map;
+RTL_EXTERN extern ::flx::gc::generic::gc_shape_t _variant_ptr_map;
 RTL_EXTERN extern ::flx::gc::generic::gc_shape_t _int_ptr_map;
 RTL_EXTERN extern ::flx::gc::generic::gc_shape_t cl_t_ptr_map;
 RTL_EXTERN extern ::flx::gc::generic::gc_shape_t _address_ptr_map;
@@ -1063,12 +1079,37 @@ static ::flx::gc::generic::offset_data_t const _uctor_offset_data = { 1, _uctor_
 };
 
 // ********************************************************
+// _variant_ implementation
+// ********************************************************
+//OFFSETS for _variant_
+static const std::size_t _variant_offsets[1]= {
+  offsetof(_variant_,vdata)
+};
+
+static ::flx::gc::generic::offset_data_t const _variant_offset_data = { 1, _variant_offsets };
+
+::flx::gc::generic::gc_shape_t _variant_ptr_map = {
+  &_uctor_ptr_map,
+  "rtl::_variant_",
+  1,
+  sizeof(_variant_),
+  0, // finaliser
+  0, // fcops
+  &_variant_offset_data, // scanner data
+  ::flx::gc::generic::scan_by_offsets, // scanner
+  ::flx::gc::generic::tblit<_variant_>, // encoder
+  ::flx::gc::generic::tunblit<_variant_>,  // decoder
+  gc::generic::gc_flags_default
+};
+
+
+// ********************************************************
 // int implementation
 // ********************************************************
 
 
 ::flx::gc::generic::gc_shape_t _int_ptr_map = {
-  &_uctor_ptr_map,
+  &_variant_ptr_map,
   "rtl::int",
   1,
   sizeof(int),

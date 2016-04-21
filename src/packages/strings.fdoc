@@ -229,6 +229,22 @@ Returns nul char (code 0) if the string is empty.
     endmatch
   ;
 
+  fun subscript (x:string, gs:gslice[int]):string = {
+    var r = "";
+    match gs with
+    | GSlice s => r = subscript(x,s);
+    | GSSList gsl =>
+      // this should be faster cause it cats a list of string which
+      // is linear in the number of strings
+      var sl = Empty[string]; 
+      for gs in gsl perform sl = subscript (x,gs) + sl;
+      r = sl.rev.(cat "");
+    | _ => 
+      for i in gs perform r += x.[i];
+    endmatch; 
+    return r;
+  }
+ 
   proc store: &string * !ints * char = "(*$1)[$2] = $3;";
 
 @h2 Map a string @{char} by @{char}

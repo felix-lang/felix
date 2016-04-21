@@ -64,9 +64,11 @@ let rec get_offsets' syms bsym_table typ : string list =
   | BTYP_int -> []
   | BTYP_pointer t -> ["0"]
 
-  (* need to fix the rule for optimisation here .. *)
-  | BTYP_sum _
   | BTYP_variant _ ->
+    ["offsetof("^tname^",vdata)"]
+
+  (* need to fix the rule for optimisation here .. *)
+  | BTYP_sum _ ->
     begin match Flx_vrep.cal_variant_rep bsym_table t' with
     | Flx_vrep.VR_self -> assert false (* FIXME! *) 
     | Flx_vrep.VR_int -> []

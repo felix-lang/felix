@@ -172,6 +172,8 @@ and expr_t =
   *)
   | EXPR_match_ctor of Flx_srcref.t * (qualified_name_t * expr_t)
 
+  | EXPR_match_variant of Flx_srcref.t * (string * expr_t)
+
   (* this boolean expression checks its argument is the nominate
      sum variant
   *)
@@ -179,6 +181,8 @@ and expr_t =
 
   (* this extracts the argument of a named union variant -- unsafe *)
   | EXPR_ctor_arg of Flx_srcref.t * (qualified_name_t * expr_t)
+
+  | EXPR_variant_arg of Flx_srcref.t * (string * expr_t)
 
   (* this extracts the argument of a number sum variant -- unsafe *)
   | EXPR_case_arg of Flx_srcref.t * (int * expr_t)
@@ -230,6 +234,10 @@ and pattern_t =
     (* second list is group bindings 1 .. n-1: EXCLUDES 0 cause we can use 'as' for that ?? *)
   | PAT_const_ctor of Flx_srcref.t * qualified_name_t
   | PAT_nonconst_ctor of Flx_srcref.t * qualified_name_t * pattern_t
+
+  | PAT_const_variant of Flx_srcref.t * string 
+  | PAT_nonconst_variant of Flx_srcref.t * string * pattern_t
+
   | PAT_as of Flx_srcref.t * pattern_t * Flx_id.t
   | PAT_when of Flx_srcref.t * pattern_t * expr_t
   | PAT_record of Flx_srcref.t * (Flx_id.t * pattern_t) list
@@ -725,8 +733,10 @@ let src_of_expr (e : expr_t) = match e with
   | EXPR_arrayof (s,_)
   | EXPR_lambda (s,_)
   | EXPR_match_ctor (s,_)
+  | EXPR_match_variant (s,_)
   | EXPR_match_case (s,_)
   | EXPR_ctor_arg (s,_)
+  | EXPR_variant_arg (s,_)
   | EXPR_case_arg (s,_)
   | EXPR_case_index (s,_)
   | EXPR_get_n (s,_)
@@ -840,6 +850,8 @@ let src_of_pat (e : pattern_t) = match e with
   | PAT_setform_any s
   | PAT_const_ctor (s,_)
   | PAT_nonconst_ctor (s,_,_)
+  | PAT_const_variant (s,_)
+  | PAT_nonconst_variant (s,_,_)
   | PAT_as (s,_,_)
   | PAT_when (s,_,_)
   | PAT_record (s,_)

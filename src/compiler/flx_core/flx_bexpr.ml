@@ -33,9 +33,12 @@ type bexpr_t =
 
 (* test if case index matches constructor index *)
   | BEXPR_match_case of int * t
+  | BEXPR_match_variant of string * t
 
 (* decoding of union/sum value *)
   | BEXPR_case_arg of int * t
+  | BEXPR_variant_arg of string * t 
+
   | BEXPR_case_index of t
 
   | BEXPR_expr of Flx_code_spec.t * Flx_btype.t * t 
@@ -408,7 +411,11 @@ let bexpr_nonconst_case argt (i, sumt) = BEXPR_inj (i, argt, sumt),
 
 let bexpr_match_case (i, e) = BEXPR_match_case (i, e), Flx_btype.btyp_unitsum 2
 
+let bexpr_match_variant (s, e) = BEXPR_match_variant (s, e), Flx_btype.btyp_unitsum 2 
+
 let bexpr_case_arg t (i, e) = BEXPR_case_arg (i, e), complete_check t
+
+let bexpr_variant_arg t (v, e) = BEXPR_variant_arg (v, e), complete_check t
 
 let bexpr_case_index t e = BEXPR_case_index e, complete_check t
 
@@ -604,7 +611,9 @@ let flat_iter
       List.iter f_btype ts
   | BEXPR_case (i,t') -> f_btype t'
   | BEXPR_match_case (i,e) -> f_bexpr e
+  | BEXPR_match_variant (s,e) -> f_bexpr e
   | BEXPR_case_arg (i,e) -> f_bexpr e
+  | BEXPR_variant_arg (v,e) -> f_bexpr e
   | BEXPR_case_index e -> f_bexpr e
   | BEXPR_literal x -> f_btype t
   | BEXPR_expr (s,t1,e) -> f_btype t1; f_bexpr e
@@ -687,7 +696,9 @@ let map
   | BEXPR_varname (i,ts),t -> BEXPR_varname (f_bid i, List.map f_btype ts), f_btype t
   | BEXPR_case (i,t'),t -> BEXPR_case (i, f_btype t'),f_btype t
   | BEXPR_match_case (i,e),t -> BEXPR_match_case (i, f_bexpr e),f_btype t
+  | BEXPR_match_variant(s,e),t -> BEXPR_match_variant (s, f_bexpr e),f_btype t
   | BEXPR_case_arg (i,e),t -> BEXPR_case_arg (i, f_bexpr e),f_btype t
+  | BEXPR_variant_arg (s,e),t -> BEXPR_variant_arg (s, f_bexpr e),f_btype t
   | BEXPR_case_index e,t -> BEXPR_case_index (f_bexpr e),f_btype t
   | BEXPR_literal x,t -> BEXPR_literal x, f_btype t
   | BEXPR_expr (s,t1,e),t2 -> BEXPR_expr (s, f_btype t1, f_bexpr e), f_btype t2

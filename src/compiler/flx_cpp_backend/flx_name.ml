@@ -222,7 +222,7 @@ let rec cpp_type_classname syms bsym_table t =
   | BTYP_variant _ -> "_avt" ^ cid_of_bid (tix t)
   | BTYP_sum _ -> "_st" ^ cid_of_bid (tix t)
 *)
-  | BTYP_variant ls -> "::flx::rtl::_uctor_";
+  | BTYP_variant ls -> "::flx::rtl::_variant_";
   | BTYP_sum _ ->
     begin match Flx_vrep.cal_variant_rep bsym_table t with
     | Flx_vrep.VR_self -> print_endline "WARNING cpp_type_classname of VR_self (1)"; assert false

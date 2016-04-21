@@ -144,9 +144,11 @@ let map_expr f (e:expr_t):expr_t = match e with
   | EXPR_lambda _ -> e
 
   | EXPR_match_ctor (sr,(qn,x)) -> EXPR_match_ctor (sr,(qn,f x))
+  | EXPR_match_variant (sr,(s,x)) -> EXPR_match_variant (sr,(s,f x))
   | EXPR_match_case (sr,(j,x)) -> EXPR_match_case (sr,(j, f x))
 
   | EXPR_ctor_arg (sr,(qn,x)) -> EXPR_ctor_arg (sr,(qn,f x))
+  | EXPR_variant_arg (sr,(s,x)) -> EXPR_variant_arg (sr,(s, f x))
   | EXPR_case_arg (sr,(j,x)) -> EXPR_case_arg (sr,(j, f x))
   | EXPR_case_index (sr,x) -> EXPR_case_index (sr,f x)
 
@@ -206,9 +208,11 @@ let iter_expr f (e:expr_t) =
   | EXPR_get_n (_,(_,x))
   | EXPR_get_named_variable (_,(_,x))
   | EXPR_ctor_arg (_,(_,x))
+  | EXPR_variant_arg (_,(_,x))
   | EXPR_case_arg (_,(_,x))
   | EXPR_case_index (_,x)
   | EXPR_match_ctor (_,(_,x))
+  | EXPR_match_variant (_,(_,x))
   | EXPR_match_case (_,(_,x))
   | EXPR_deref (_,x)
   | EXPR_ref (_,x)

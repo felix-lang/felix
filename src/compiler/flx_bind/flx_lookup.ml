@@ -5624,6 +5624,9 @@ print_endline ("Codomain = " ^ sbt bsym_table codomain);
   | EXPR_match_case (sr,(v,e)) ->
      bexpr_match_case (v,be e)
 
+  | EXPR_match_variant(sr,(v,e)) ->
+     bexpr_match_variant (v,be e)
+
   | EXPR_match_ctor (sr,(qn,e)) ->
     begin match qn with
     | `AST_name (sr,name,ts) ->
@@ -5702,6 +5705,26 @@ print_endline ("Codomain = " ^ sbt bsym_table codomain);
     | _ -> clierr sr "Expected variant constructor name in union decoder"
     end
 
+  | EXPR_variant_arg (sr,(v,e)) ->
+     let (_,t) as e' = be e in
+     ignore (try unfold "flx_lookup" t with _ -> failwith "AST_variant_arg unfold screwd");
+     begin match unfold "flx_lookup" t with
+     | BTYP_variant ls ->
+       begin 
+         try 
+           List.iter (fun (cname,t) ->
+             if cname = v then raise (Tfound t))
+             ls
+           ; 
+           clierr sr ("[bind_expression] [Expr_variant_arg] " ^" Variant case " ^ v ^ 
+              " not found in variant type: " ^ sbt bsym_table t)
+         with Tfound t -> 
+           bexpr_variant_arg t (v,e')
+       end
+     | _ -> clierr sr ("Expected variant type, got " ^ sbt bsym_table t)
+     end
+
+
   | EXPR_case_arg (sr,(v,e)) ->
      let (_,t) as e' = be e in
      ignore (try unfold "flx_lookup" t with _ -> failwith "AST_case_arg unfold screwd");
@@ -5718,18 +5741,6 @@ print_endline ("Codomain = " ^ sbt bsym_table codomain);
        then clierr sr "Invalid sum index"
        else let t = List.nth ls v in
        bexpr_case_arg t (v, e')
-
-     | BTYP_variant ls ->
-       begin 
-         try 
-           List.iter (fun (cname,t) ->
-             if Hashtbl.hash (cname,t) = v then raise (Tfound t))
-             ls
-           ; 
-           assert false
-         with Tfound t -> 
-           bexpr_case_arg t (v,e')
-       end
 
      | _ -> clierr sr ("Expected sum type, got " ^ sbt bsym_table t)
      end

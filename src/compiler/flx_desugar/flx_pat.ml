@@ -166,6 +166,31 @@ and check_match_union pats =
   in
   List.iter check pats
 
+
+and check_match_variant pats =
+  let rec check pat =
+    match pat with
+    | PAT_any  _
+    | PAT_setform_any  _
+    | PAT_nonconst_variant _
+    | PAT_const_variant  _
+    | PAT_name _ -> ()
+
+    | PAT_coercion (_,pat,_)
+    | PAT_as (_,pat,_)
+    | PAT_when (_,pat,_) -> check pat
+
+    | _ ->
+        let sr = src_of_pat pat in
+        clierr sr
+        (
+          Flx_srcref.short_string_of_src (src_of_pat pat) ^
+          ": variant pattern expected, got " ^ string_of_pattern pat
+        )
+  in
+  List.iter check pats
+
+
 and renaming pats = ()
 
 (* This routine finds the checker routine for given
@@ -192,6 +217,8 @@ and find_match_type pat =
   | PAT_setform_any _ -> renaming
   | PAT_const_ctor _ -> check_match_union
   | PAT_nonconst_ctor _ -> check_match_union
+  | PAT_const_variant _ -> check_match_variant
+  | PAT_nonconst_variant _ -> check_match_variant
   | PAT_record (_,_) -> check_match_record
 
   | PAT_expr _ -> assert false
@@ -216,6 +243,8 @@ let rec is_irrefutable pat =
   | PAT_setform_any _ -> true
   | PAT_const_ctor _ -> false
   | PAT_nonconst_ctor _ -> false
+  | PAT_const_variant _ -> false
+  | PAT_nonconst_variant _ -> false
   | PAT_record (_,rpats) -> fold_left (fun acc (_,p) -> acc && irf p) true rpats
 
   | PAT_expr _ -> assert false

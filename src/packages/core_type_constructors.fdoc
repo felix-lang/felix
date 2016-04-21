@@ -189,29 +189,34 @@ class DefaultValue[T] {
 @h1 Slice
 @tangle slice.flx
 
-publish "slice type"
-  union slice[T] =
-    | Slice_all
-    | Slice_from of T
-    | Slice_to_incl of T
-    | Slice_to_excl of T
-    | Slice_range_incl of T * T
-    | Slice_range_excl of T * T
-    | Slice_one of T
-  ;
+union slice[T] =
+  | Slice_all
+  | Slice_from of T
+  | Slice_from_counted of T * T /* second arg is count */
+  | Slice_to_incl of T
+  | Slice_to_excl of T
+  | Slice_range_incl of T * T
+  | Slice_range_excl of T * T
+  | Slice_one of T
+;
 
-  gen iterator[T with Integer[T]] (s:slice[T]) =>
-    match s with
-    | Slice_range_incl (first, last) => slice_range first last
-    | Slice_range_excl (first, last) => slice_range_excl first last
-    | _ => fun_fail[1->opt[T]] "iterator requires slice bounded at both ends"
-    endmatch
-  ;
+gen iterator[T with Integer[T]] (s:slice[T]) =>
+  match s with
+  | Slice_one x => { yield Some x; return None[T]; }
+  | Slice_range_incl (first, last) => slice_range_incl first last
+  | Slice_range_excl (first, last) => slice_range_excl first last
+  | Slice_to_incl (last) => slice_range_incl #zero[T] last
+  | Slice_to_excl (last) => slice_range_excl #zero[T] last
+  | Slice_from (first) => slice_from first
+  | Slice_from_counted (first, count) => slice_from_counted first count
+  | #Slice_all => slice_from #zero[T]
+  endmatch
+;
 
 // Note: guarrantees no overflow
 // handles all cases for all integers correctly
 // produces nothing if first > last
-gen slice_range[T with Integer[T]] (first:T) (last:T) () = {
+gen slice_range_incl[T with Integer[T]] (first:T) (last:T) () = {
   var i = first;
   while i < last do 
     yield Some i; 
@@ -230,12 +235,14 @@ gen slice_range_excl[T with Integer[T]] (first:T) (limit:T) () = {
   return None[T]; 
 }
 
+
 // Note: guarrantees no overflow if first + count - 1
 // is in range of the type
 // Terminates after count values emitted
 // provided overflow doesn't throw.
 // Well defined on unsigned types (just wraps around)
-gen slice_count[T with Integer[T]] (first:T) (count:T) () = {
+// NOTE: result may not be monotonic increasing because of wrap around
+gen slice_from_counted[T with Integer[T]] (first:T) (count:T) () = {
   var k = count; 
   while k > #zero[T] do 
     yield Some (first + (count - k)); 
@@ -243,6 +250,19 @@ gen slice_count[T with Integer[T]] (first:T) (count:T) () = {
   done 
   return None[T]; 
 }
+
+// Ensures monotonic increasing by terminating on wrap around
+gen slice_from[T with Integer[T]] (var first:T) () = {
+  var last = first;
+  lab: while true do  
+    yield Some first; 
+    last = first;
+    first = first + #one[T]; 
+    if first < last break lab;
+  done 
+  return None[T]; 
+}
+
 
 
 // hack so for in f do .. done will work too
@@ -276,6 +296,62 @@ fun cal_slice (n:int, var b:int, var e:int) = {
   return b,e,m;
   // assert m = 0 or  0 <= b <= e <= n and 0 < m < n
 }
+
+union gslice[T] =
+  | GSlice of slice[T]
+  | GSSList of list[gslice[T]]
+  | GSIList of list[T]
+  | GSIter of 1 -> opt[T]
+  | GSMap of (T -> T) * gslice[T]
+;
+
+gen gslist_iterator[T with Integer[T]] (ls: list[gslice[T]]) () : opt[T] =
+{
+  var current = ls;
+next:>
+  match current with
+  | #Empty => return None[T];
+  | Cons (gs, tail) =>
+    for v in gs do yield Some v; done
+    current = tail;
+    goto next;
+  endmatch;
+}
+
+gen gsmap_iterator[T] (f:T->T) (var gs:gslice[T]) () : opt[T] =
+{
+  for v in gs do yield v.f.Some; done
+  return None[T];
+}
+
+gen iterator[T with Integer[T]] (gs:gslice[T]) =>
+  match gs with
+  | GSlice s => iterator s
+  | GSSList ls => gslist_iterator ls
+  | GSIList ls => iterator ls
+  | GSIter it => it
+  | GSMap (f,gs) => gsmap_iterator f gs
+;
+
+fun +[T with Integer[T]] (x:gslice[T], y:gslice[T]) =>
+  GSSList (list (x,y))
+;
+
+fun +[T with Integer[T]] (x:gslice[T], y:slice[T]) =>
+ x + GSlice y
+;
+
+fun +[T with Integer[T]] (x:slice[T], y:gslice[T]) =>
+ GSlice x + y
+;
+
+fun +[T with Integer[T]] (x:slice[T], y:slice[T]) =>
+ GSlice x + GSlice y
+;
+
+fun map[T with Integer[T]] (f:T->T) (gs:gslice[T]) =>
+  GSMap (f,gs)
+;
 
 @h1 Operations on sums of units
 Treated as finite cyclic groups.

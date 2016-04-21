@@ -331,10 +331,17 @@ and xpattern_t x =
 
   | Lst [Id "pat_any"; sr] -> PAT_any (xsr sr)
   | Lst [Id "pat_setform_any"; sr] -> PAT_setform_any (xsr sr)
+
   | Lst [Id "pat_const_ctor"; sr; qn] ->
       PAT_const_ctor (xsr sr, xq sr "pat_const_ctor" qn)
   | Lst [Id "pat_nonconst_ctor"; sr; qn; p] ->
       PAT_nonconst_ctor (xsr sr, xq sr "pat_nonconst_ctor" qn, xp p)
+
+  | Lst [Id "pat_const_variant"; sr; Str s] ->
+      PAT_const_variant (xsr sr, s)
+  | Lst [Id "pat_nonconst_variant"; sr; Str s; p] ->
+      PAT_nonconst_variant (xsr sr, s, xp p)
+
 
   | Lst [Id "pat_as"; sr; p; id] -> PAT_as (xsr sr, xp p, xid id)
   | Lst [Id "pat_when"; sr; p; e] -> PAT_when (xsr sr, xp p, xexpr_t (xsr sr) e)

@@ -112,6 +112,11 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
     let l1,x1 = rex arg in
     l1, EXPR_match_ctor (sr,(name,x1))
 
+  | EXPR_match_variant (sr,(name,arg)) ->
+    let l1,x1 = rex arg in
+    l1, EXPR_match_variant (sr,(name,x1))
+
+
   (* This term works like: EXPR_ctor_arg (sr, (Some, Some 1)) -> 1, that is,
    * it returns the argument of the given constructor in the expression,
    * which expression must be precisely that constructor applied to an argument
@@ -119,6 +124,10 @@ let rec rex rst mkreqs map_reqs (state:desugar_state_t) name (e:expr_t) : asm_t 
   | EXPR_ctor_arg (sr,(qn,e)) -> 
     let l1,x1 = rex e in 
     l1,EXPR_ctor_arg (sr,(qn,x1))
+
+  | EXPR_variant_arg (sr,(s,e)) -> 
+    let l1,x1 = rex e in 
+    l1,EXPR_variant_arg (sr,(s,x1))
 
   | EXPR_get_tuple_tail (sr, e) ->
     let l1,x1 = rex e in 

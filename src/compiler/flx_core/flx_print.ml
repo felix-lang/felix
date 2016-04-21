@@ -257,6 +257,11 @@ and string_of_expr (e:expr_t) =
     "ctor_arg " ^ sqn cn ^ "(" ^
     se e ^ ")"
 
+  | EXPR_variant_arg (_,(cn,e)) ->
+    "variant_arg_case " ^ cn ^ "(" ^
+    se e ^ ")"
+
+
   | EXPR_case_arg (_,(n,e)) ->
     "case_arg " ^ si n ^ "(" ^
     se e ^ ")"
@@ -267,6 +272,11 @@ and string_of_expr (e:expr_t) =
   | EXPR_match_ctor (_,(cn,e)) ->
     "match_ctor " ^ sqn cn ^ "(" ^
     se e ^ ")"
+
+  | EXPR_match_variant (_,(cn,e)) ->
+    "match_variant_case " ^ cn ^ "(" ^
+    se e ^ ")"
+
 
   | EXPR_match_case (_,(v,e)) ->
     "match_case " ^ si v ^ "(" ^
@@ -810,6 +820,10 @@ and string_of_pattern p =
   | PAT_setform_any _ -> "setform_any (elidable)"
   | PAT_const_ctor (_,s) -> "|" ^ string_of_qualified_name s
   | PAT_nonconst_ctor (_,s,p)-> "|" ^ string_of_qualified_name s ^ " " ^ string_of_pattern p
+
+  | PAT_const_variant (_,s) -> "|#case " ^ s
+  | PAT_nonconst_variant (_,s,p)-> "|case " ^ s ^ " " ^ string_of_pattern p
+
   | PAT_as (_,p,n) ->
     begin match p with
     | PAT_any _ -> string_of_id n
@@ -1902,8 +1916,15 @@ and string_of_bound_expression' bsym_table se e =
   | BEXPR_match_case (v,e) ->
     "(match case " ^ si v ^ ")(" ^ se e ^ ")"
 
+  | BEXPR_match_variant (v,e) ->
+    "(match variant " ^ v ^ ")(" ^ se e ^ ")"
+
+
   | BEXPR_case_arg (v,e) ->
     "(arg of case " ^ si v ^ " of " ^ se e ^ ")"
+
+  | BEXPR_variant_arg (v,e) ->
+    "(arg of variant " ^ v ^ " of " ^ se e ^ ")"
 
   | BEXPR_case_index e ->
     "caseno (" ^ se e ^ ")"

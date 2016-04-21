@@ -139,12 +139,14 @@ let fix_pattern counter pat =
   | PAT_any _
   | PAT_setform_any _
   | PAT_const_ctor _ 
+  | PAT_const_variant _ 
     -> p
 
   | PAT_coercion (sr, p, t) -> PAT_coercion (sr, aux p, t)
   | PAT_tuple (sr,ps) -> PAT_tuple (sr,List.map aux ps)
   | PAT_tuple_cons (sr,a,b) -> PAT_tuple_cons (sr,aux a,aux b)
   | PAT_nonconst_ctor (sr,qn,p) -> PAT_nonconst_ctor (sr,qn,aux p)
+  | PAT_nonconst_variant (sr,s,p) -> PAT_nonconst_variant (sr,s,aux p)
   | PAT_as (sr,p,i) -> PAT_as (sr,aux p,i)
   | PAT_when (sr,p,e) -> PAT_when (sr,aux p,e)
   | PAT_record (sr, ps) -> PAT_record (sr, List.map (fun (i,p) -> i,aux p) ps)
@@ -167,6 +169,7 @@ let rec get_pattern_vars pat =
   | PAT_as (_,p,v) -> v :: get_pattern_vars p
   | PAT_when (_,p,_) -> get_pattern_vars p
   | PAT_nonconst_ctor (_,_,p) -> get_pattern_vars p
+  | PAT_nonconst_variant (_,_,p) -> get_pattern_vars p
   | PAT_tuple (_,ps) -> List.concat (List.map get_pattern_vars ps)
   | PAT_tuple_cons (sr,a,b) -> get_pattern_vars a @ get_pattern_vars b
   | PAT_record (_,ps) -> List.concat(List.map get_pattern_vars (List.map snd ps))
@@ -180,6 +183,7 @@ let alpha_pat local_prefix seq fast_remap remap expand_expr pat =
   | PAT_as (sr,p,v) -> PAT_as (sr,aux p, ren v)
   | PAT_when (sr,p,e) -> PAT_when (sr,aux p, rexp e)
   | PAT_nonconst_ctor (sr,n,p) -> PAT_nonconst_ctor (sr, n, aux p)
+  | PAT_nonconst_variant (sr,n,p) -> PAT_nonconst_variant (sr, n, aux p)
   | PAT_tuple (sr,ps) -> PAT_tuple (sr, List.map aux ps)
   | PAT_tuple_cons (sr,a,b) -> PAT_tuple_cons (sr, aux a, aux b)
   | PAT_record (sr, ps) -> PAT_record (sr, List.map (fun (id,p) -> id, aux p) ps)
@@ -541,8 +545,10 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | EXPR_unlikely (sr, e1) ->  EXPR_unlikely (sr, me e1)
   | EXPR_new (sr, e1) ->  EXPR_new (sr, me e1)
   | EXPR_match_ctor (sr, (qn, e1)) -> EXPR_match_ctor (sr,(qn,me e1))
+  | EXPR_match_variant (sr, (s, e1)) -> EXPR_match_variant (sr,(s,me e1))
   | EXPR_match_case (sr, (i, e1)) ->  EXPR_match_case (sr,(i, me e1))
   | EXPR_ctor_arg (sr, (qn, e1)) -> EXPR_ctor_arg (sr,(qn, me e1))
+  | EXPR_variant_arg (sr, (s, e1)) -> EXPR_variant_arg (sr,(s, me e1))
   | EXPR_case_arg (sr, (i, e1)) ->  EXPR_case_arg (sr,(i,me e1))
   | EXPR_letin (sr, (pat, e1, e2)) -> EXPR_letin (sr, (pat, me e1, me e2))
 

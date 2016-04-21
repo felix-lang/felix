@@ -440,13 +440,24 @@ O(N) slow.
   //$ Concatenate all the strings in a list with given separator.
   pure fun cat (sep:string) (x:list[string]):string =
   {
-    return
-      match x with
-      | #Empty => ''
+    var n = 0uz;
+    for s in x perform n += s.len+1uz; 
+    var r = "";
+    reserve (&r,n);
+    match x with
+    | #Empty => return r;
+    | Snoc (tail, head) => 
+      r = head;
+  next:>
+      match tail with
+      | #Empty => return r;
       | Snoc(t,h) =>
-          fold_left (fun (a:string) (b:string) => a + sep + b) h t
-      endmatch
-    ;
+        r += sep + h;
+        tail = t;
+        goto next;
+      endmatch;
+    endmatch;
+    return r;
   }
 
 @h2 Map a list to a list of strings and cat with separator @{catmap}

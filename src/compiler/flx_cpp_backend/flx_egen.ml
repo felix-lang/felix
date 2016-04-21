@@ -967,6 +967,14 @@ print_endline ("Normalised type " ^ sbt bsym_table t);
     let x = Flx_vgen.gen_get_case_index ge' bsym_table e in
     ce_infix "==" x (ce_atom (si n))
 
+  | BEXPR_match_variant(s,((e',t') as e)) ->
+    let t' = beta_reduce "flx_egen get_n: match_case" syms.Flx_mtypes2.counter bsym_table sr t' in
+    ce_call (ce_atom "!strcmp") [ce_atom ("\"" ^ s ^ "\""); ce_dot (ge' e) "vname"]
+
+  | BEXPR_variant_arg (s,e) ->
+    let ptname = tn (btyp_pointer t) in
+    ce_prefix "*" (ce_cast ptname (ce_dot (ge' e) "vdata"))
+
   | BEXPR_not (BEXPR_match_case (n,((e',t') as e)),_) ->
     let t' = beta_reduce "flx_egen: not" syms.Flx_mtypes2.counter bsym_table sr t' in
     let x = Flx_vgen.gen_get_case_index ge' bsym_table e in
@@ -1337,72 +1345,22 @@ end
   *)
 
   | BEXPR_variant (s,((_,t') as e)) -> 
-(*
-    print_endline ("Variant " ^ s);
-    print_endline ("Type " ^ sbt bsym_table t);
-    print_endline ("Argument type " ^ sbt bsym_table t');
-*)
-    let
-      arg_typename = tn t' and
-      union_typename = tn t
-    in
+    let arg_typename = tn t' in
     let aval =
       "new (*PTF gcp, "^arg_typename^"_ptr_map,true) " ^
       arg_typename ^ "(" ^ ge_arg e ^ ")"
     in
-    let ls = match t with
-      | BTYP_variant ls -> ls
-      | _ -> failwith "[egen] Woops variant doesn't have variant type"
-    in
-    let vidx = match list_assoc_index ls s with
-      | Some i -> i
-      | None -> failwith "[egen] Woops, variant field not in type"
-    in
-(*
-    print_endline ("Position " ^ si vidx);
-*)
-    let hashcode = Hashtbl.hash (s,t') in 
-(*
-    print_endline ("Hashcode " ^ si hashcode);
-*)
-    let uval = "::flx::rtl::_uctor_("^si hashcode^"," ^ aval ^")"  in
+    let uval = "::flx::rtl::_variant_(\""^s^"\"," ^ aval ^")"  in
     ce_atom uval
 
   | BEXPR_coerce ((srcx,srct) as srce,dstt) -> 
 (*
 print_endline ("Handling coercion in egen " ^ sbt bsym_table srct ^ " -> " ^ sbt bsym_table dstt);
 *)
-    let coerce_variant () =
-      let vts =
-        match dstt with
-        | BTYP_variant ls -> ls
-        | _ -> syserr sr "Coerce non-variant"
-      in
-      begin match srcx with
-      | BEXPR_variant (s,argt) ->
-(*
-        print_endline "Coerce known variant!";
-*)
-        ge' (bexpr_variant t (s,argt))
-      | _ ->
-        let i =
-          begin try
-            Hashtbl.find syms.variant_map (srct,dstt)
-          with Not_found ->
-            let i = fresh_bid syms.counter in
-            Hashtbl.add syms.variant_map (srct,dstt) i;
-            i
-        end
-        in
-        failwith "egen: can't handle variant conversions yet";
-        ce_atom ("::flx::rtl::_uctor_(vmap_" ^ cid_of_bid i ^ "," ^ ge srce ^ ")")
-      end
-    in
-    begin match dstt with
-    | BTYP_variant _ -> coerce_variant ()
-    | _ -> ce_atom ("reinterpret<"^tn dstt^">("^ge srce^")/*variant*/")
+    begin match srct,dstt with
+    | BTYP_variant _, BTYP_variant _ -> ge' srce (* safe, already checked, universal rep *)
+    | _ -> ce_atom ("reinterpret<"^tn dstt^">("^ge srce^")")
     end
-
 
   | BEXPR_compose _ -> failwith "Flx_egen:Can't handle closure of composition yet"
 
