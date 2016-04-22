@@ -56,6 +56,12 @@ let parse_lexbuf_with_parser aparser old_local_data lexbuf : local_data_t =
           raise x
         end
 *)
+      | Flx_ocs_init.Scheme_error x ->
+          begin match x with 
+          | Sstring (s) -> failwith s
+          | _ -> failwith "SCHEME_ERROR"
+          end
+
       | Dyp.Syntax_error as x ->
           show_error lexbuf;
           raise x
