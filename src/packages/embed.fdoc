@@ -339,23 +339,26 @@ static int do_final_cleanup(
   return 0;
 }
 
+static void *get_stack_pointer() { void *x=(void*)&x; return x; }
+
 // RUN A FELIX INSTANCE IN THE CURRENT PTHREAD
 //
 // CURRENTLY ONLY CALLED ONCE IN MAIN THREAD
-
-static void *get_stack_pointer() { void *x=(void*)&x; return x; }
+// RETURNS A LIST OF FTHREADS
+// 
 
 static std::list<fthread_t*>*
 run_felix_pthread_ctor(
   flx::gc::generic::gc_profile_t *gcp,
   ::flx::dynlink::flx_libinst_t *instance)
 {
-  //fprintf(stderr, "run_felix_pthread -- the MAIN THREAD\n");
+  //fprintf(stderr, "run_felix_pthread_ctor -- the MAIN THREAD: library instance: %p\n", instance);
   flx::gc::generic::collector_t *collector = gcp->collector;
   std::list<fthread_t*> *active = new std::list<fthread_t*>;
 
   {
     con_t *top = instance->main_proc;
+    //fprintf(stderr, "  ** MAIN THREAD: flx_main entry point : %p\n", top);
     if (top)
     {
       fthread_t *flx_main = new (*gcp, _fthread_ptr_map, false) fthread_t(top);
@@ -366,6 +369,7 @@ run_felix_pthread_ctor(
 
   {
     con_t *top = instance->start_proc;
+    //fprintf(stderr, "  ** MAIN THREAD: flx_start (initialisation) entry point : %p\n", top);
     if (top)
     {
       fthread_t *ft = new (*gcp, _fthread_ptr_map, false) fthread_t(top);
@@ -463,7 +467,11 @@ int flx_world::setup(int argc, char **argv) {
     fprintf(stderr, "[flx_world: setup] Created library object\n");
 
   if (debug_driver)
-    fprintf(stderr, "[flx_world:setup] flx_run driver begins %s\n", c->flx_argv[0]);
+  {
+    fprintf(stderr, "[flx_world:setup] flx_run driver begins argv[0]=%s\n", c->flx_argv[0]);
+    for (int i=1; i<argc-1; ++i)
+      fprintf(stderr, "[flx_world:setup]                       argv[%d]=%s\n", i,c->flx_argv[i]);
+  }
 
   // flx_libinst_t::create can run code, so add thread to avoid world_stop abort
   thread_control->add_thread(get_stack_pointer());
@@ -492,11 +500,12 @@ int flx_world::setup(int argc, char **argv) {
     fprintf(stderr, "[flx_world:setup] creating async scheduler\n");
   }
 
+  auto schedlist = run_felix_pthread_ctor(gcp, instance);
+
   async_scheduler = new async_sched(
     this,
     debug_driver,
-    gcp,
-    run_felix_pthread_ctor(gcp, instance)
+    gcp, schedlist
     ); // deletes active for us!
 
   return 0;

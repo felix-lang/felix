@@ -529,7 +529,7 @@ void flx_dynlink_t::dynamic_link_with_modulename(const ::std::string& filename_a
   if(!start_sym)
     throw ::flx::rtl::flx_link_failure_t(filename,"dlsym",modulename+"_flx_start");
 
-  main_sym = (main_t)FLX_NATIVE_DLSYM(library,flx_main);
+  main_sym = (main_t)FLX_NATIVE_SDLSYM(library,"flx_main");
 
   if(debug) 
     fprintf(stderr,"[dynlink:dynamic_link] main symbol = %p\n",main_sym);
