@@ -1173,6 +1173,29 @@ syntax conditional
             `((ast_ifdo ,_sr ,cond ,thn ,result))))))
         (fold_left f () _1))
     """;
+
+  //$ helpful error message for invalid if/then syntax on statements
+  if_stmt := "if" sexpr "then"  stmt* "endif" =># """
+    (raise (string-append 
+        "  Invalid syntax: This instance of 'if/then' is not valid. Try the following instead:\n"
+        "    if (condition) do\n"
+        "      ...\n"
+        "    done\n"))
+    """;
+
+  //$ helpful error message for invalid if/then/else syntax on statements
+  if_stmt := "if" sexpr "then"  stmt* ("else" | "elif") =># """
+    (raise (string-append 
+        "  Invalid syntax: This instance of 'if/then/else' is not valid. Try the following instead:\n"
+        "    if (condition) do\n"
+        "      ...\n"
+        "    elif (condition) do\n"
+        "      ...\n"
+        "    else do\n"
+        "      ...\n"
+        "    done\n"))
+    """;
+
 }
 @
 
