@@ -49,7 +49,7 @@ without knowledge of the compiler, by creating bindings to C++ in
 library code; these bindings defined the type name and some operations
 on the types in terms of C++.
 
-\part{Program structure}
+\chapter{Program structure}
 A Felix program consists of a nominated root parse unit and
 the transitive closure of units with respect to inclusion.
 
@@ -77,7 +77,7 @@ of each parse unit, resulting in a single AST, which
 is then translated to a C++ translation unit by the
 compiler.
 
-\part{Grammar}
+\section{Grammar}
 The Felix grammar is part of the library.
 It is notionally prefixed to each file to be processed
 prior to any import files to specify the syntax
@@ -96,10 +96,10 @@ extensions.
 
 \section{Grammar syntax}
 Not written yet. Browse the 
-\href{/share/lib/grammar}{grammar directory} 
+\href{http://felix-lang.org/share/lib/grammar}{grammar directory} 
 for examples.
 
-\part{Modules}
+\chapter{Modules}
 Every Felix program is encapsulated in a module with
 the name being a mangle of the basename of the root unit.
 The mangling replaces characters in the filename with
@@ -152,7 +152,7 @@ which are then considered as if included, but without
 an include directive being present.
 
 
-\part{Lexicology}
+\chapter{Lexicology}
 All Felix files are considered to be UTF-8 encoded Unicode.
 
 Felix uses a scannerless parser, there are no keywords.
@@ -172,14 +172,50 @@ Identifies starting with underscore are reserved for the implementation.
 A letter may be any Unicode character designated for use in an identifier
 by the ISO C++ standard. In practice, all high bit set octets are allowed.
 
+\subsection{TeX Identifiers}
 A TeX identifier starts with a slosh and is followed by a sequence
 of letters. 
 
-\href{/share/src/web/ref/texops.fdoc}{TeX Symbols} 
+\href{http://felix-lang.org/share/src/web/ref/texops.fdoc}{TeX Symbols} 
 
-\section{Integer Literals}
+\section{Operator Identifiers}
+Felix allows some operators to be used as an identifier.
+For example you can write:
 
-\href{/share/lib/grammar/grammar_int_lexer.fsyn}{Reference}
+\begin{minted}{felix}
+fun +: int * int -> int = "$1+$2";
+\end{minted}
+
+to define addition on int in C. Symbols recognised by the parser
+such as \verb%+% are usually mapped to functions with the same
+name as the operator.`
+
+These operators are recognised as identifiers by the parser in
+positions where an identifier is expected:
+
+\begin{verbatim}
+    +  -  *  /  %  ^  ~  
+    \&  \  \^ 
+    &=  =  +=  -=  *=  /=  %=  ^=  <<=  >>= 
+    <  >  ==  !=  <=  >=  <<  >> 
+\end{verbatim}
+
+\subsection{Special identifiers}
+The special literal with a "n" or "N" prefix is a way to encode
+an arbitrary sequence of characters as an identifer in a context
+where the parser might interpret it otherwise.
+It can be used, for example, to define special characters as functions.
+For example:
+
+\begin{minted}{felix}
+typedef fun n"@" (T:TYPE) : TYPE => cptr[T];
+\end{minted}
+
+\chapter{Core Primitive Types}
+
+\section{Integer types}
+
+\href{http://felix-lang.org/share/lib/grammar/grammar_int_lexer.fsyn}{Reference}
 
 An plain integer literal consists of a sequence of digits,
 optionally separated by underscores. Each separating
@@ -208,6 +244,66 @@ it has the form of an upper or lower case letter or pair of
 letters usually combined with a prefix or suffix \verb%u} or @{U%
 to designate an unsigned variant of the type. 
 
+There is a table of the types \ref{Int Operators}.
+
+\begin{table}
+\caption{Felix Integer Types}
+\label{Felix Integer Types}
+\centering
+\begin{tabular}[c]{lll}
+\hline
+Felix&C&Suffix\\
+\hline
+\multicolumn{3}{c}{Standard signed integers}\\
+\hline
+\verb%tiny% &\verb%char% & 42t \\
+\verb%short% &\verb%short% & 42s \\
+\verb%int% &\verb%int% & 42 \\
+\verb%long% &\verb%long% & 42l \\
+\verb%vlong% &\verb%long long% & 42ll \\
+\multicolumn{3}{c}{Standard unsigned integers}\\
+\hline
+\verb%utiny% &\verb%unsigned char% & 42ut \\
+\verb%ushort% &\verb%unsigned short% & 42us \\
+\verb%uint% &\verb%unsigned int% & 42u \\
+\verb%ulong% &\verb%unsigned long% & 42ul \\
+\verb%uvlong% &\verb%unsigned long long% & 42ull \\
+\multicolumn{3}{c}{Exact signed integers}\\
+\hline
+\verb%int8% &\verb%int8_t% & 42i8 \\
+\verb%int16% &\verb%int16_t% & 42i16 \\
+\verb%int32% &\verb%int32_t% & 42i32 \\
+\verb%int64% &\verb%int64_t% & 42i64 \\
+\multicolumn{3}{c}{Exact unsigned integers}\\
+\hline
+\verb%uint8% &\verb%uint8_t% & 42u8 \\
+\verb%uint16% &\verb%uint16_t% & 42u16 \\
+\verb%uint32% &\verb%uint32_t% & 42u32 \\
+\verb%uint64% &\verb%uint64_t% & 42u64 \\
+\multicolumn{3}{c}{Weird ones}\\
+\hline
+\verb%size% &\verb%size_t% & 42uz \\
+\verb%intptr% &\verb%uintptr_t% & 42p \\
+\verb%uintptr% &\verb%uintptr_t% & 42up \\
+\verb%ptrdiff% &\verb%ptrdiff_t% & 42d \\
+\verb%uptrdiff% &\verb%ptrdiff_t% & 42ud \\
+\verb%intmax% &\verb%intmax_t% & 42j\\
+\verb%uintmax% &\verb%uintmax_t% & 42uj \\
+\multicolumn{3}{c}{Addressing}\\
+\hline
+\verb%address% &\verb%void*% &\\
+\verb%byte% &\verb%unsigned char% &\\
+\end{tabular}
+\end{table}
+
+
+Note that all these types are distinct unlike C and C++.
+The types designated are not the complete set of available
+integer like types since not all have literal representations.
+
+Note the suffices do not entirely agree with C.
+
+
 Signed integers are expected to be two's complement with one
 more negative value that positive value. Bitwise and,
 or, exclusive or, and complement operations do not apply
@@ -226,55 +322,43 @@ The maximum value of an unsigned type is one less than
 two raised to the power of the number of bits in the type.
 The number of bits is 8, 16, 32, or 64 or 128 for all unsigned types.
 
-Note that integers starting with 0 are decimal not octal as in C.
+There is a table of the operators \ref{Int Operators}.
 
-A table
-of suffices and the types they signify follows in lower case.
+\begin{table}
+\caption{Int Operators}
+\label{Int Operators}
+\centering
+\begin{tabular}[c]{lll}
+\hline
+name&kind&semantics\\
+\hline
+\hline
+\verb%==%&\verb%int * int -> bool%&equality\\
+\verb%!=%&\verb%int * int -> bool%&inequality\\
+\hline
+\verb%<%&\verb%int * int -> bool%&less\\
+\verb%<=%&\verb%int * int -> bool%&less or equal\\
+\verb%>%&\verb%int * int -> bool%&greater\\
+\verb%>=%&\verb%int * int -> bool%&greater or equal\\
+\hline
+\verb%+%&\verb%int * int -> int%&addition\\
+\hline
+\verb%-%&\verb%int * int -> int%&subtraction\\
+\hline
+\verb%*%&\verb%int * int -> int%&multiplication\\
+\hline
+\verb%/%&\verb%int * int -> int%&quotient\\
+\verb+%+&\verb%int * int -> int%&remainder\\
+\hline
+\verb%<<%&\verb%int * int -> int%&multiplication by power of 2\\
+\verb%>>%&\verb%int * int -> int%&division by power of 2\\
+\hline
+\verb%-%&\verb%int -> int%&negation\\
+\end{tabular}
+\end{table}
 
-
-\begin{minted}{felix}
-Suffix  Type      C type              Description
--------------------------------------------------------------------
-i8      int8      int8_t              8 bit signed integer
-i16     int16     int16_t             16 bit signed integer
-i32     int32     int32_t             32 bit signed integer
-i64     int64     int64_t             64 bit signed integer
-
-u8      uint8     uint8_t             8 bit unsigned integer
-u16     uint16    uint16_t            16 bit unsigned integer
-u32     uint32    uint32_t            32 bit unsigned integer
-u64     uint64    uint64_t            64 bit unsigned integer
-
-t       tiny      signed char         C++ signed char used an integer
-s       short     short               C short
-i       int       int                 C int
-l       long      long                C long
-ll v    vlong     long long           very long: C long long
-
-
-ut tu   utiny     unsigned char       unsigned tiny: C++ unsigned char used as an integer
-us su   ushort    unsigned short      C unsigned short
-u       uint      unsigned            C unsigned int
-ul lu   ulong     unsigned long       C unsigned long
-ull uv  uvlong    unsigned long long  C unsigned longlong
-
-uz zu   size      size_t              array size
-j       intmax    intmax_t            largest integer type
-uj ju   uintmax   uintmax_t           largest unsigned integer type
-p       intptr    intptr_t            pointer considered as an integer
-up pu   uintptr   uintptr_t           pointer considered as an unsigned integer
-d       ptrdiff   ptrdiff_t           signed distance between pointers 
-ud      uptrdiff  uptrdiff_t          unsigned distance between pointers
-\end{minted}
-
-Note that all these types are distinct unlike C and C++.
-The types designated are not the complete set of available
-integer like types since not all have literal representations.
-
-Note the suffices do not entirely agree with C.
-
-\section{Floating point Literals}
-\href{/share/lib/grammar/grammar_float_lexer.fsyn}{Reference}
+\section{Floating point types}
+\href{http://felix-lang.org/share/lib/grammar/grammar_float_lexer.fsyn}{Reference}
 
 Floating point literals follow ISO C89, except that underscores
 are allowed between digits, and a a digit is required both before
@@ -298,9 +382,97 @@ type.
 12.7p35
 \end{minted}
 
-\section{String literals}
+There is a table of the operators \ref{Floating Operators}.
 
-\href{/share/lib/grammar/grammar_string_lexer.fsyn}{Reference}
+\begin{table}
+\caption{Floating Point Operators}
+\label{Floating Operators}
+\centering
+\begin{tabular}[c]{lll}
+\hline
+name&kind&semantics\\
+\hline
+\hline
+\verb%==%&\verb%T * T -> bool%&equality\\
+\verb%!=%&\verb%T * T -> bool%&inequality\\
+\hline
+\verb%<%&\verb%T * T -> bool%&less\\
+\verb%<=%&\verb%T * T -> bool%&less or equal\\
+\verb%>%&\verb%T * T -> bool%&greater\\
+\verb%>=%&\verb%T * T -> bool%&greater or equal\\
+\hline
+\verb%+%&\verb%T * T -> T%&addition\\
+\hline
+\verb%-%&\verb%T * T -> T%&subtraction\\
+\hline
+\verb%*%&\verb%T * T -> T%&multiplication\\
+\hline
+\verb%/%&\verb%T * T -> T%&quotient\\
+\hline
+\verb%-%&\verb%T -> T%&negation\\
+\end{tabular}
+\end{table}
+
+\section{Complex types}
+There is a table of the operators \ref{Complex Operators}.
+
+\begin{table}
+\caption{Complex Operators}
+\label{Complex Operators}
+\centering
+\begin{tabular}[c]{lll}
+\hline
+name&kind&semantics\\
+\hline
+\hline
+\verb%==%&\verb%T * T -> bool%&equality\\
+\verb%!=%&\verb%T * T -> bool%&inequality\\
+\hline
+\verb%+%&\verb%T * T -> T%&addition\\
+\hline
+\verb%-%&\verb%T * T -> T%&subtraction\\
+\hline
+\verb%*%&\verb%T * T -> T%&multiplication\\
+\hline
+\verb%/%&\verb%T * T -> T%&quotient\\
+\hline
+\verb%-%&\verb%T -> T%&negation\\
+\end{tabular}
+\end{table}
+
+
+\section{Quaternion type}
+There is a table of the operators \ref{Quaternion Operators}.
+
+\begin{table}
+\caption{Quaternion Operators}
+\label{Quanternion Operators}
+\centering
+\begin{tabular}[c]{lll}
+\hline
+name&kind&semantics\\
+\hline
+\hline
+\verb%==%&\verb%T * T -> bool%&equality\\
+\verb%!=%&\verb%T * T -> bool%&inequality\\
+\hline
+\verb%+%&\verb%T * T -> T%&addition\\
+\hline
+\verb%-%&\verb%T * T -> T%&subtraction\\
+\hline
+\verb%*%&\verb%T * T -> T%&multiplication\\
+\hline
+\verb%/%&\verb%T * T -> T%&quotient\\
+\hline
+\verb%-%&\verb%T -> T%&negation\\
+\end{tabular}
+\end{table}
+
+
+
+\section{Strings}
+
+\href{http://felix-lang.org/share/lib/grammar/grammar_string_lexer.fsyn}{Reference}
 
 Generaly we follow Python here.
 Felix allows strings to be delimited by;
@@ -314,27 +486,35 @@ The single quote forms must be on a single line.
 The triple quoted forms may span lines, and include embedded newline
 characters.
 
-These forms all allows embedded escape codes.
-These are:
-\begin{verbatim}
-\a  -  7 : bell
-\b  -  8 : backspace
-\t  -  9 : horizontal tab
-\n  - 10 : linefeed, newline
-\r  - 13 : carriage return
-\v  - 11 : vertical tab
-\f  - 12 :form feed
-\e  - 27 : escape
-\\  - \  : slosh
-\"  - "  : double quote
-\'  - '  : single quote
-\   - 32 : space
-\xFF - hexadecimal character code
-\o7 \o77 \o777 -- octal character code (stops on count of 3 or non-octal character)
-\d9 \d99 \d999 -- decimal character code (stops on count of 3 or non-decimal character)
-\uFFFF - utf8 encoding of specified hex value
-\UFFFFFFFF - utf8 encoding of specified hex value
-\end{verbatim}
+The complete list of special escapes is shown in table \ref{String Escapes}.
+
+\begin{table}
+\caption{String Escapes}
+\label{String Escapes}
+\centering
+\begin{tabular}[c]{lll}
+\multicolumn{3}{c}{Basic}\\
+Escape&Name&Decimal Code\\
+\hline
+\verb%\a%&ASCII Bell& 7\\
+\verb%\b%&ASCII Backspace&8\\
+\verb%\t%&ASCII Tab&9\\
+\verb%\n%&ASCII New Line&10\\
+\verb%\r%&ASCII Vertical Tab&11\\
+\verb%\f%&ASCII Form Feed&12\\
+\verb%\r%&ASCII Carriage Return&13\\
+\verb%\'%&ASCII Single Quote&39\\
+\verb%\"%&ASCII Double Quote&34\\
+\verb%\\%&ASCII Backslash&92\\
+\multicolumn{3}{c}{Numeric}\\
+\hline
+\verb%\d%999&Decimal encoding&\\
+\verb%\o%777&Octal encoding&\\
+\verb%\x%FF&Hex encoding&\\
+\verb%\u%FFFF&UTF-8 encoding&\\
+\verb%\U%FFFFFFFF&UTF-8 encoding&\\
+\end{tabular}
+\end{table}
 
 \subsection{Raw strings}
 A prefix "r" or "R" on a double quoted string
@@ -382,18 +562,12 @@ buffer.
 
 The argument types and code types are fully checked for type safety.
 
-\subsection{Special identifiers}
-The special literal with a "n" or "N" prefix is a way to encode
-an arbitrary sequence of characters as an identifer in a context
-where the parser might interpret it otherwise.
-It can be used, for example, to define special characters as functions.
-For example:
+\section{Regexps}
 
-\begin{minted}{felix}
-typedef fun n"@" (T:TYPE) : TYPE => cptr[T];
-\end{minted}
+\chapter{Macro processing}
+\href{http://felix-lang.org/share/lib/grammar/macros.fsyn}{Syntax}
 
-
+\href{http://felix-lang.org/share/src/compiler/flx_desugar/flx_macro.ml}{Semantics}
 \section{Include Directive}
 An include directive has the syntax:
 
@@ -414,10 +588,6 @@ extension \verb%.flx% or \verb%.fdoc%. If both files exist the
 most recently changed one is used. If the time stamps are
 the same the choice is unspecified.
 
-\part{Macro processing}
-\href{/share/lib/grammar/macros.fsyn}{Syntax}
-
-\href{/share/src/compiler/flx_desugar/flx_macro.ml}{Semantics}
 \section{Macro val}
 The macro val statement is used to specify an identifier should
 be replaced by the defining expression wherever it occurs in an
@@ -442,7 +612,7 @@ done
 
 
 \section{Constant folding and conditional compilation}
-\href{/share/src/compiler/flx_desugar/flx_constfld.ml}{Reference}
+\href{http://felix-lang.org/share/src/compiler/flx_desugar/flx_constfld.ml}{Reference}
 
 Felix provides two core kinds of constant folding:
 folding of arithmetic, boolean, and string values, and 
@@ -471,7 +641,7 @@ compilation without the need for special
 constructions.
 
 
-\part{General lookup}
+\chapter{General lookup}
 By default Felix looks up symbols in nested scopes, 
 starting with all symbols in the current scope
 and proceeding through its containing scope outwards
@@ -493,8 +663,8 @@ the next outermost scope.
 
 All other cases are in error.
 
-\part{Classes}
-\href{/share/lib/grammar/namespaces.fsyn}{Syntax}
+\chapter{Classes}
+\href{http://felix-lang.org/share/lib/grammar/namespaces.fsyn}{Syntax}
 
 The top level Felix module can contain submodules 
 which are specified by a non-polymorphic class
@@ -543,7 +713,7 @@ var x = 1;
 class A { var x = root::x; }
 \end{minted}
 
-\part{Lookup control directives}
+\chapter{Lookup control directives}
 
 \section{Open directive}
 The simple \verb%open% directive may be used to make the symbols
@@ -684,8 +854,9 @@ is omitted is taken as the symbol name. The effect
 is the same as if an export statement has been written.
 
 
-\part{Variable Definitions}
-\href{/share/lib/grammar/variables.fsyn}{Syntax}
+\part{Executable Code}
+\chapter{Variable Definitions}
+\href{http://felix-lang.org/share/lib/grammar/variables.fsyn}{Syntax}
 
 A definition is a statement which defines a name, but does
 no cause any observable behavior, or, a class statement, or, 
@@ -842,8 +1013,8 @@ With this syntax, no type annotation may be given.
 
 
 
-\part{Functions }
-\href{/share/lib/grammar/functions.fsyn}{Syntax}
+\chapter{Functions }
+\href{http://felix-lang.org/share/lib/grammar/functions.fsyn}{Syntax}
 
 \section{Functions }
 A felix function definition takes one of three basic forms:
@@ -1222,8 +1393,9 @@ shared library to export a set of functions, only the object
 function needs to be exported so it has a C name which
 can be linked to with \verb%dlopen%.
 
-\part{Type constructors}
-\href{/share/lib/grammar/type_decls.fsyn}{Syntax}
+\part{Type System}
+\chapter{Type constructors}
+\href{http://felix-lang.org/share/lib/grammar/type_decls.fsyn}{Syntax}
 
 \section{typedef}
 The typedef statement is used to define an alias for a type.
@@ -1315,32 +1487,121 @@ var two = a . proj 1 of (int * string);
 
 \section{Records}
 A record is similar to a tuple except the components are 
-named and considered unordered.
+named and considered unordered up to duplication.
 
+\subsection{Plain Record}
+A plain record is one without duplicate fields. A plain record
+type is one without duplicate fields or a row variable.
+A record is constructed using a parenthesis enclosed list
+of comma separated field assignments. An empty record is
+equivalent to an empty tuple.
 
 \begin{minted}{felix}
 typedef xy = (x:int, y:int);
 var r : xy = (x=1,y=2);
-println$ r.x, r.y;
-var px = &r.x; // means (&r).x
-px <- 42;
-println$ r.x, r.y; // r.x == 42 now
 \end{minted}
 
-The field names are projection functions and can be applied
-to a record value to extract the nominated component,
-or applied to a pointer to a record to find a pointer to the
-nominated component.
+\subsection{Record projections}
+A component of a record may be accessed with a 
+function called a record value projection, it is denoted
+by the name of the field.
 
-The notation (may be changed soon)
+\begin{minted}{felix}
+var r (x=1,y=2);
+println$ x r, r.y;
+\end{minted
+
+Record value projections can also be used as stand-alone
+functions. For example:
+
+\begin{minted}{felix}
+var rl = list ((x=1,y=11),(x=2,y=22));
+var xs =  map (x of (x:int, y:int)) rl;
+println$ xs; // list (1,2)
+\end{minted}
+
+Records also have pointer projections, overloaded with
+the value projections: if the name of
+a field is applied to a pointer to a record,
+a pointer to the named component field is returned.
+This allows assignment and other mutators to be
+applied to record components.
+
+\begin{minted}{felix}
+var r =(x=1,y=2);
+var px = &r.x; // means (&r).x
+px <- 42;
+r&.y <- 23;
+println$ r.x, r.y; // (42,23)
+\end{minted}
+
+Record pointer projects can also be used as stand-alone functions:
 
 \begin{minted}{felix}
 var prjx = x of (xy);
 var prjpx = x of (&xy);
 \end{minted}
 
-can be used to refer to a projection in isolation, and a pointer
-projection in isolation, that is, as unapplied first class functions.
+\subsection{General record}
+Records may have duplicate fields. In this case, reading from left
+to right in a record literal, a duplicate field is hidden by a previous 
+field of the same name, in a push down stack like fashion.
+ 
+\begin{minted}{felix}
+var r = (x=1,y=2,x="Hello");
+println$ r._strr, r.x;
+  // ((x=1,x='Hello',y=2), 1)
+\end{minted}
+
+Note that the generic function \verb%_strr% displays the whole of the
+record including duplicate fields. However projections only find
+the left-most field.
+
+\subsection{Adding fields}
+Fields can be added to an existing record to construct 
+a new record:
+
+\begin{minted}{felix}
+var r = (x=1,y=2);
+var r2 = (a="one",b="two",x="newx" | r);
+println$ r2._strr,r2,x;
+  // ((a='one',b='two',x='newx',x=1,y=2), newx)
+\end{minted}
+
+Again, leftmost fields hide rightmost ones.
+
+\subsection{Row Polymorphism}
+Felix provides a special record type called a {\em polyrecord} which
+supports row polymorphism with scoped labels in the style of
+Daan Leijen. The article
+is \href{http://research.microsoft.com/pubs/65409/scopedlabels.pdf}{here}.
+
+This allows a generic function to be written which accepts an argument
+which is or contains a value of a record type with more fields than
+required. Unlike subtyping, the extra fields, whilst inaccessible,
+are not lost and can be returned by the function. For example:
+
+\begin{minted}{felix}
+val circle = (x=0.0,y=0.0,r=1.0);
+val square = (x=0.0,y=0.0,w=1.0,h=1.0);
+
+fun move[T] (dx:double, dy:double) (shape: (x:double, y:double | T)) =>
+  (x=shape.x+dx, y=shape.y+dx | (shape without x y))
+;
+
+var inc = 1.0,1.0;
+println$ (move inc circle)._strr, (move inc square)._strr;
+\end{minted}
+
+\subsubsection{{\tt without} operator}
+The \verb%without% operator can be used to return a record
+with some fields removed. It works on values of record and
+polyrecord type. Note that because Felix uses scoped fields
+once a field is removed, the previous value of that field is exposed
+if it exists, and can also be removed. This means it is correct
+and sometimes necessary to list a field more than once when
+using the \verb%without% operator.
+
 
 \subsection{Interfaces}
 An interface is a special notation for a record type
@@ -1707,7 +1968,7 @@ casts, however Felix does these calculations for you based on the
 type so they're always correct.
 
 
-\part{Meta-typing}
+\chapter{Meta-typing}
 Felix provides some facilities for meta-typing.
 
 \subsection{typedef fun}
@@ -1764,7 +2025,7 @@ corresponding to ISO C rules.
 \section{type sets}
 TBD
 
-\part{Abstract types}
+\chapter{Abstract types}
 Felix provides abstract types as demonstrated in this example.
 
 \begin{minted}{felix}
@@ -1796,11 +2057,11 @@ and the operator \verb%_repr_% casts the abstract value to its implementation.
 These casts cannot be used outside the class, thereby hiding the implementation
 outside the class.
 
-\part{Polymorphism}
+\chapter{Polymorphism}
 TBD
 
 \part{Expressions}
-\href{/share/lib/grammar/expressions.fsyn}{Syntax}
+\href{http://felix-lang.org/share/lib/grammar/expressions.fsyn}{Syntax}
 
 Expressions are listed in approximate order of precedence,
 starting with the weakest binding.
@@ -2520,7 +2781,7 @@ var x =
 
 \part{Executable statements}
 \section{Assignment}
-\href{/share/lib/grammar/assignment.fsyn}{Syntax}
+\href{http://felix-lang.org/share/lib/grammar/assignment.fsyn}{Syntax}
 
 \section{The {\tt goto} statement and label {\tt prefix}}
 Felix statements may be prefixed by a label
@@ -2633,7 +2894,7 @@ inline proc branch-and-link (target:&LABEL, save:&LABEL)
 }
 \end{minted}
 
-A good example is \href{/share/src/test/regress/rt/coroutines-01.fdoc}{here},
+A good example is \href{http://felix-lang.org/share/src/test/regress/rt/coroutines-01.fdoc}{here},
 which shows an example of coroutines.
 
 \section{match/endmatch}
@@ -2680,7 +2941,7 @@ The tuple as list cons match is a form of row polymorphism
 where the first element of a tuple and the remaining elements
 considered as a tuple are matched.
 
-A good example of this is found in the library \href{/share/lib/std/datatype/tuple.flx}{here}
+A good example of this is found in the library \href{http://felix-lang.org/share/lib/std/datatype/tuple.flx}{here}
 which allows printing a tuple of arbitrary number of components, indeed,
 this facility was implemented precisely to allow this definition in the library.
 
@@ -2882,7 +3143,7 @@ println$ zero, one;
 
 
 \section{{\tt spawn\_fthread}}
-\href{/share/lib/std/control/fibres.flx}{Reference}
+\href{http://felix-lang.org/share/lib/std/control/fibres.flx}{Reference}
 
 The \verb%spawn_fthread% library function invokes the corresponding
 service call to schedule the initial continuation of a procedure 
@@ -2898,18 +3159,18 @@ write, or the first unmatched read operation occurs.
 
 
 \subsection{read/write/broadcast schannel}
-\href{/share/lib/std/control/schannels.flx}{Reference}
+\href{http://felix-lang.org/share/lib/std/control/schannels.flx}{Reference}
 
 \section{{\tt spawn\_pthread}}
-\href{/share/lib/std/control/pthread.flx}{Reference}
+\href{http://felix-lang.org/share/lib/std/control/pthread.flx}{Reference}
 
 \subsection{read/write pchannel}
-\href{/share/lib/std/control/pchannels.flx}{Reference}
+\href{http://felix-lang.org/share/lib/std/control/pchannels.flx}{Reference}
 
 \subsection{exchange}
 
 \section{loops}
-\href{/share/lib/grammar/loops.fsyn}{Reference}
+\href{http://felix-lang.org/share/lib/grammar/loops.fsyn}{Reference}
 
 Felix has some low level and high level loop constructions.
 
@@ -3005,7 +3266,7 @@ TBD
 \subsection{loop}
 TBD
 \section{Assertions}
-\href{/share/lib/grammar/assertions.fsyn}{Reference}
+\href{http://felix-lang.org/share/lib/grammar/assertions.fsyn}{Reference}
 \section{assert}
 Ad hoc assertion throws an assertion exception if its argument
 is false. 
@@ -3253,17 +3514,17 @@ TBD
 
 \part{Domain Specific Sublanguages}
 \section{Regexps}
-\href{/share/lib/grammar/regexps.fsyn}{Syntax}
+\href{http://felix-lang.org/share/lib/grammar/regexps.fsyn}{Syntax}
 
-\href{/share/lib/std/strings/regdef.flx}{Combinators}
+\href{http://felix-lang.org/share/lib/std/strings/regdef.flx}{Combinators}
 
-\href{/share/lib/std/strings/re2.flx}{Google Re2 Binding}
+\href{http://felix-lang.org/share/lib/std/strings/re2.flx}{Google Re2 Binding}
 
 \section{Pipelines}
 \subsection{Synchronouse pipelines}
-\href{/share/lib/std/control/spipe.flx}{Library}
+\href{http://felix-lang.org/share/lib/std/control/spipe.flx}{Library}
 \subsection{Asynchronouse pipelines}
-\href{/share/lib/std/control/ppipe.flx}{Library}
+\href{http://felix-lang.org/share/lib/std/control/ppipe.flx}{Library}
 
 \subsection{Json}
 TBD
