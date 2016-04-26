@@ -41,6 +41,10 @@ let typecode_of_btype bsym_table sr t =
   in tc t
 
 exception SimpleNameNotFound of Flx_srcref.t * string * string
+exception FunctionNameNotFound of Flx_srcref.t * string * string * string list
+type bfres_t = 
+  | RecordAddition of Flx_bexpr.t
+  | Function of Flx_bexpr.t
 
 let crt = ref 0
 
@@ -462,6 +466,11 @@ and inner_bind_expression state bsym_table env rs e  =
      | SimpleNameNotFound (sr,name,routine) as x ->
        print_endline ("inner_bind_expression: SimpleNameNotFound binding expression " ^ string_of_expr e);
        raise x
+
+     | FunctionNameNotFound (sr,name,routine, args) as x ->
+       print_endline ("inner_bind_expression: FunctionNameNotFound binding expression " ^ string_of_expr e);
+       raise x
+
 
      | Failure msg as x ->
        print_endline ("inner_bind_expression: Failure binding expression " ^ string_of_expr e);
@@ -2587,6 +2596,9 @@ print_endline ("lookup_qn_with_sig' [AST_name] " ^ name ^ ", sigs=" ^ catmap ","
       with
       | Free_fixpoint _ as x -> raise x
       | OverloadKindError (sr1,s1) ->
+(*
+print_endline ("OverloadKindError .. (trying ctor hack)");
+*)
         begin
           try
             (*
@@ -2598,6 +2610,9 @@ print_endline ("lookup_qn_with_sig' [AST_name] " ^ name ^ ", sigs=" ^ catmap ","
               sra srn
               env env rs ("_ctor_" ^ name) ts signs
           with ClientError (sr2,s2) ->
+(*
+print_endline ("ctor hack failed (client error)");
+*)
              clierr2 sr1 sr2
              (
              "attempting name lookup of " ^ name ^ " got Overload Kind ERROR1: " ^ s1 ^
@@ -2606,6 +2621,9 @@ print_endline ("lookup_qn_with_sig' [AST_name] " ^ name ^ ", sigs=" ^ catmap ","
         end
  
       | ClientError (sr1,s1) as x ->
+(*
+print_endline ("Client Error (trying ctor hack)?");
+*)
 (*
     print_endline ("Client Error: Lookup simple name " ^ name ^ "[" ^ catmap "," (sbt bsym_table) ts ^ "] sig=" ^ catmap "," (sbt bsym_table) signs);
     print_env_long state.sym_table bsym_table env;
@@ -2620,7 +2638,11 @@ print_endline ("lookup_qn_with_sig' [AST_name] " ^ name ^ ", sigs=" ^ catmap ","
               bsym_table
               sra srn
               env env rs ("_ctor_" ^ name) ts signs
-          with ClientError (sr2,s2) -> raise x
+          with ClientError (sr2,s2) -> 
+(*
+print_endline ("ctor hack failed (client error)");
+*)
+           raise x
         end
       | x -> raise x
     end
@@ -5295,7 +5317,7 @@ print_endline ("Bound function " ^ sbe bsym_table f);
 print_endline ("Can't interpret apply function "^string_of_expr f'^" as projection, trying as an actual function");
 
 *)
-    let (bf,tf) as f =
+    let fres =
       match qualified_name_of_expr f' with
       | Some name ->
 (*
@@ -5303,11 +5325,39 @@ print_endline ("Found function name " ^ string_of_qualified_name name);
 *)
         let sigs = List.map snd args in
 (*
-print_endline ("Using argument types " ^ catmap "," (sbt bsym_table) sigs);
+print_endline ("Using argument types " ^ catmap "," (sbt bsym_table) (ta::sigs));
 *)
         let srn = src_of_qualified_name name in
         begin try
-          let r = lookup_qn_with_sig' state bsym_table sr srn env rs name (ta::sigs) in
+          let r = 
+            try Function (lookup_qn_with_sig' state bsym_table sr srn env rs name (ta::sigs))
+           with exn ->
+(*
+             print_endline ("Got exception: " ^ Printexc.to_string exn); 
+*)
+             begin match name,(ta::sigs) with
+             | `AST_name (_,"+",[]),[BTYP_tuple [BTYP_record lfields as lt; BTYP_record _ as rt]] 
+             | `AST_name (_,"+",[]),[BTYP_tuple [BTYP_record lfields as lt; BTYP_polyrecord _ as rt]] ->
+               let larg = bexpr_get_n lt 0 a in 
+               let lcs = List.map (fun (s,ft)-> 
+                 s,bexpr_apply ft ((bexpr_rprj s lt ft), larg)
+               )
+               lfields 
+               in
+               let rarg = bexpr_get_n rt 1 a in 
+               RecordAddition (bexpr_polyrecord lcs rarg)
+
+
+(* THIS IS NOT WORKING YET, someone is expecting a client error not a FunctionNameNotFound *)
+(*
+             | `AST_name (_,sname,_),_ ->
+               let sigs = List.map (sbt bsym_table) (ta::sigs) in
+               raise (FunctionNameNotFound (sr, "bind_expression: AST_apply",sname,sigs))
+*)
+             | _ ->
+               raise exn
+             end
+          in
 (*
 print_endline ("Lookup qn with sig succeeded result=" ^sbe bsym_table r);
 *)
@@ -5320,14 +5370,15 @@ print_endline ("Lookup qn with sig succeeded result=" ^sbe bsym_table r);
 (*
 print_endline "bind expression' succeeded";
 *)
-          r
+          Function r
           with Not_found -> failwith "bind_expression' XXX threw Not_found"
           end
     in
+    match fres with
+    | RecordAddition x -> x
+    | Function (bf,tf as f) ->
 (*
-print_endline ("Bound f = " ^ sbe bsym_table f);
-*)
-(*
+    print_endline ("Bound f = " ^ sbe bsym_table f);
     print_endline ("tf=" ^ sbt bsym_table tf);
     print_endline ("ta=" ^ sbt bsym_table ta);
 *)

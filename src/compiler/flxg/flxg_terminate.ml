@@ -70,6 +70,12 @@ let terminate rrp exc =
     print_endline ("Routine: " ^ routine);
     exit (if return_parity then 1 else 0)
 
+  | Flx_lookup.FunctionNameNotFound (sr,name,routine, args) ->
+    flush stdout; print_endline ("FUNCTION NAME "^name^" NOT FOUND ERROR");
+    print_endline ("In " ^ Flx_srcref.long_string_of_src sr);
+    print_endline ("Routine: " ^ routine);
+    print_endline ("Argument types: " ^ String.concat ", " args);
+    exit (if return_parity then 1 else 0)
 
   | Failure s ->
     flush stdout; print_endline "SYSTEM FAILURE";

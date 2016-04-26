@@ -206,7 +206,7 @@ print_endline ("rnprj: Projection type=" ^ st t);
   | _ -> 
     BEXPR_rprj (name,seq,d,c),complete_check (Flx_btype.BTYP_function (d,c))
 
-let bexpr_rprj ix d c = bexpr_rnprj ix 0 d c
+let bexpr_rprj name d c = bexpr_rnprj name 0 d c
 
 let bexpr_record es : t = 
   let cmp (s1,e1) (s2,e2) = compare s1 s2 in
@@ -294,6 +294,7 @@ print_endline ("Type is " ^ st result_type);
 print_endline "type BUGGED";
     failwith ("BUG: caller should have checked! remove fields from non-(poly)record type " ^ st domain)
 
+(************************ POLYRECORD **************************)
 let bexpr_polyrecord (es: (string * t) list) ((e',t') as e) =
 (*
 print_endline ("[bexpr_polyrecord] Constructing polyrecord: extension fields = " ^ String.concat "," (List.map (fun (s,(_,t)) -> s^":"^ st t) es));
@@ -389,6 +390,7 @@ print_endline ("Core = " ^ st (snd reduced_e));
     let es = List.stable_sort cmp es in
     BEXPR_polyrecord (es,e), result_type 
 
+(************************ END POLYRECORD **************************)
 
 let bexpr_variant t (n, e) = BEXPR_variant (n, e), complete_check t
 
