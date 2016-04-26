@@ -16,7 +16,7 @@
 \usepackage{hyperref}
 \hypersetup{pdftex,colorlinks=true,allcolors=blue}
 \usepackage{hypcap}
-\title{Felix Reference}
+\title{The FARM\\ Felix Annotated Reference Manual}
 \author{John Skaller}
 \begin{document}
 \maketitle
@@ -48,6 +48,8 @@ there aren't any such type. Instead, most primitive types are introduced
 without knowledge of the compiler, by creating bindings to C++ in 
 library code; these bindings defined the type name and some operations
 on the types in terms of C++.
+
+% =====================================
 
 \chapter{Program structure}
 A Felix program consists of a nominated root parse unit and
@@ -99,6 +101,7 @@ Not written yet. Browse the
 \href{http://felix-lang.org/share/lib/grammar}{grammar directory} 
 for examples.
 
+% =====================================
 \chapter{Modules}
 Every Felix program is encapsulated in a module with
 the name being a mangle of the basename of the root unit.
@@ -152,6 +155,7 @@ which are then considered as if included, but without
 an include directive being present.
 
 
+% =====================================
 \chapter{Lexicology}
 All Felix files are considered to be UTF-8 encoded Unicode.
 
@@ -211,6 +215,85 @@ For example:
 typedef fun n"@" (T:TYPE) : TYPE => cptr[T];
 \end{minted}
 
+\chapter{Macro processing}
+\href{http://felix-lang.org/share/lib/grammar/macros.fsyn}{Syntax}
+
+\href{http://felix-lang.org/share/src/compiler/flx_desugar/flx_macro.ml}{Semantics}
+\section{Include Directive}
+An include directive has the syntax:
+
+\begin{minted}{felix}
+include "filename";\end{minted}
+
+where the filename is a Unix relative filename,
+may not have an extension, and may not begin with or 
+contain \verb%..% (two dots).
+
+If the filename begins with \verb%./% then the balance of the name
+is relative, a sibling of the including file, otherwise the name
+is searched for on an include path. 
+
+In either case, a search succeeds when it finds a file with
+the appropriate base path in the search directory with
+extension \verb%.flx% or \verb%.fdoc%. If both files exist the
+most recently changed one is used. If the time stamps are
+the same the choice is unspecified.
+
+\section{Macro val}
+The macro val statement is used to specify an identifier should
+be replaced by the defining expression wherever it occurs in an
+expression, type expression, or pattern.
+
+\begin{minted}{felix}
+macro val WIN32 = true;
+macro val hitchhiker;
+macro val a,b,c = 1,2,3;
+\end{minted}
+
+
+\section{Macro for}
+This statement allows a list of statements to be repeated
+with a sequence of replacements.
+
+\begin{minted}{felix}
+forall name in 1,2,3 do
+  println$ name;
+done
+\end{minted}
+
+
+\section{Constant folding and conditional compilation}
+\href{http://felix-lang.org/share/src/compiler/flx_desugar/flx_constfld.ml}{Reference}
+
+Felix provides two core kinds of constant folding:
+folding of arithmetic, boolean, and string values, and 
+deletion of code, either statements or expressions,
+which would become unreachable due to certain
+value of conditionals.
+
+Basic operations on integer literals, namely 
+addition, subtraction, negation, multiplication,
+division, and remainder are folded.
+
+Strings are concatenated.
+
+Boolean and, or, exclusive or, and negation,
+are evaluated.
+
+False branches of if/then/else/endif expression
+and match expressions are eliminated.
+
+False branches of if/do/elif/else/done 
+are also eliminated.
+
+By this mechanism of constant folding and
+elimination, Felix provides conditional
+compilation without the need for special
+constructions.
+
+
+
+% =====================================
 \chapter{Core Primitive Types}
 
 \section{Integer types}
@@ -322,38 +405,43 @@ The maximum value of an unsigned type is one less than
 two raised to the power of the number of bits in the type.
 The number of bits is 8, 16, 32, or 64 or 128 for all unsigned types.
 
-There is a table of the operators \ref{Int Operators}.
+There is a table of the operators \ref{Integer Operators}.
 
 \begin{table}
-\caption{Int Operators}
-\label{Int Operators}
+\caption{Integer Operators}
+\label{Integer Operators}
 \centering
 \begin{tabular}[c]{lll}
 \hline
 name&kind&semantics\\
 \hline
+\multicolumn{3}{c}{All Integers}\\
 \hline
-\verb%==%&\verb%int * int -> bool%&equality\\
-\verb%!=%&\verb%int * int -> bool%&inequality\\
+\verb%==%&\verb%T * T -> bool%&equality\\
+\verb%!=%&\verb%T * T -> bool%&inequality\\
+\verb%<%&\verb%T * T -> bool%&less\\
+\verb%<=%&\verb%T * T -> bool%&less or equal\\
+\verb%>%&\verb%T * T -> bool%&greater\\
+\verb%>=%&\verb%T * T -> bool%&greater or equal\\
+\verb%+%&\verb%T * T -> T%&addition\\
+\verb%-%&\verb%T * T -> T%&subtraction\\
+\verb%*%&\verb%T * T -> T%&multiplication\\
+\verb%/%&\verb%T * T -> T%&quotient\\
+\verb+%+&\verb%T * T -> T%&remainder\\
+\verb%<<%&\verb%T * T -> T%&multiplication by power of 2\\
+\verb%>>%&\verb%T * T -> T%&division by power of 2\\
+\verb%-%&\verb%T -> T%&negation\\
+\verb%+%&\verb%T -> T%&no op\\
+\multicolumn{3}{c}{Signed Integers}\\
 \hline
-\verb%<%&\verb%int * int -> bool%&less\\
-\verb%<=%&\verb%int * int -> bool%&less or equal\\
-\verb%>%&\verb%int * int -> bool%&greater\\
-\verb%>=%&\verb%int * int -> bool%&greater or equal\\
+\verb%sgn%&\verb%T -> T%&sign\\
+\verb%abs%&\verb%T -> T%&absolute value\\
+\multicolumn{3}{c}{Unsigned Integers}\\
 \hline
-\verb%+%&\verb%int * int -> int%&addition\\
-\hline
-\verb%-%&\verb%int * int -> int%&subtraction\\
-\hline
-\verb%*%&\verb%int * int -> int%&multiplication\\
-\hline
-\verb%/%&\verb%int * int -> int%&quotient\\
-\verb+%+&\verb%int * int -> int%&remainder\\
-\hline
-\verb%<<%&\verb%int * int -> int%&multiplication by power of 2\\
-\verb%>>%&\verb%int * int -> int%&division by power of 2\\
-\hline
-\verb%-%&\verb%int -> int%&negation\\
+\verb%\&%&\verb%T * T -> T%&bitwise and\\
+\verb%\|%&\verb%T * T -> T%&bitwise or\\
+\verb%\^%&\verb%T * T -> T%&bitwise exclusive or\\
+\verb%~%&\verb%T * T -> T%&bitwise complement\\
 \end{tabular}
 \end{table}
 
@@ -563,83 +651,6 @@ buffer.
 The argument types and code types are fully checked for type safety.
 
 \section{Regexps}
-
-\chapter{Macro processing}
-\href{http://felix-lang.org/share/lib/grammar/macros.fsyn}{Syntax}
-
-\href{http://felix-lang.org/share/src/compiler/flx_desugar/flx_macro.ml}{Semantics}
-\section{Include Directive}
-An include directive has the syntax:
-
-\begin{minted}{felix}
-include "filename";\end{minted}
-
-where the filename is a Unix relative filename,
-may not have an extension, and may not begin with or 
-contain \verb%..% (two dots).
-
-If the filename begins with \verb%./% then the balance of the name
-is relative, a sibling of the including file, otherwise the name
-is searched for on an include path. 
-
-In either case, a search succeeds when it finds a file with
-the appropriate base path in the search directory with
-extension \verb%.flx% or \verb%.fdoc%. If both files exist the
-most recently changed one is used. If the time stamps are
-the same the choice is unspecified.
-
-\section{Macro val}
-The macro val statement is used to specify an identifier should
-be replaced by the defining expression wherever it occurs in an
-expression, type expression, or pattern.
-
-\begin{minted}{felix}
-macro val WIN32 = true;
-macro val hitchhiker;
-macro val a,b,c = 1,2,3;
-\end{minted}
-
-
-\section{Macro for}
-This statement allows a list of statements to be repeated
-with a sequence of replacements.
-
-\begin{minted}{felix}
-forall name in 1,2,3 do
-  println$ name;
-done
-\end{minted}
-
-
-\section{Constant folding and conditional compilation}
-\href{http://felix-lang.org/share/src/compiler/flx_desugar/flx_constfld.ml}{Reference}
-
-Felix provides two core kinds of constant folding:
-folding of arithmetic, boolean, and string values, and 
-deletion of code, either statements or expressions,
-which would become unreachable due to certain
-value of conditionals.
-
-Basic operations on integer literals, namely 
-addition, subtraction, negation, multiplication,
-division, and remainder are folded.
-
-Strings are concatenated.
-
-Boolean and, or, exclusive or, and negation,
-are evaluated.
-
-False branches of if/then/else/endif expression
-and match expressions are eliminated.
-
-False branches of if/do/elif/else/done 
-are also eliminated.
-
-By this mechanism of constant folding and
-elimination, Felix provides conditional
-compilation without the need for special
-constructions.
-
 
 \chapter{General lookup}
 By default Felix looks up symbols in nested scopes, 
@@ -1568,7 +1579,23 @@ println$ r2._strr,r2,x;
   // ((a='one',b='two',x='newx',x=1,y=2), newx)
 \end{minted}
 
-Again, leftmost fields hide rightmost ones.
+Again, leftmost fields hide rightmost ones. You can also add two 
+records with infix \verb%+%:
+
+\begin{minted}{felix}
+var r = (a=1) + (b=2) + (a="hello");
+println$ r._strr, r.a.str; // ((a=1,a='hello',b=2), 1)
+\end{minted}
+
+The leftmost field with a given name dominates. Record addition
+by \verb%+% is only applied if a user defined addition is not
+found for the argument types.
+
+Currently, addition of fields of two records of the same type
+is not supported: it is likely the user intended to add corresponding
+field values rather than hide the fields in the right argument
+with those on the left.
+
 
 \subsection{Row Polymorphism}
 Felix provides a special record type called a {\em polyrecord} which
