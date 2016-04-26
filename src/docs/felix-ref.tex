@@ -790,6 +790,7 @@ The new name injected by a rename may be polymorphic:
 \begin{minted}{felix}
 class A { proc f[T] () {} }
 class B { rename g[T] = A::f[T]; } 
+\end{minted}
 
 \section{Use directive}
 This is a short form of the rename directive:
@@ -1509,7 +1510,7 @@ by the name of the field.
 \begin{minted}{felix}
 var r (x=1,y=2);
 println$ x r, r.y;
-\end{minted
+\end{minted}
 
 Record value projections can also be used as stand-alone
 functions. For example:
@@ -2081,6 +2082,7 @@ The syntax is
 \begin{minted}{felix}
 var x = let pattern = expr1 in expr2; // equivalent to
 var x = match expr1 with pattern => expr2 endmatch
+\end{minted}
 
 \begin{minted}{felix}
 var x = let a = 1 in a + 1; // equivalent to
@@ -2097,7 +2099,9 @@ var x =
   let fun f(y:int)=> y + 1 in 
   f 42
 ;
-@3 Match chain
+\end{minted}
+
+\subsection{Match chain}
 A variant on the terminated match which allows a second
 match to be chained onto the last branch without any endmatch.
 
@@ -2115,6 +2119,7 @@ var x =
 ;
 
 println$ x;
+\end{minted}
 
 \subsection{conditional chain}
 A variant on the terminated if/then/elif/else allowing chaining.
@@ -2126,7 +2131,7 @@ var x =
   if c3 then r3 else
   r4
 ;
-@ 
+\end{minted}
 
 
 \section{Alternate conditional chain}
@@ -2391,7 +2396,8 @@ var x = a * (b % c) * d;
 var x = !a;
 var x = -a; // negation
 var x = ~a; // bitwise complement
-@ 
+\end{minted}
+
 
 \section{Fortran exponentiation}
 Infix \verb%**} is special syntax for function @{pow%. 
