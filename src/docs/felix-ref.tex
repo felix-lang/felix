@@ -228,6 +228,60 @@ println$ x;
 which prints it.
 \end{minted}
 
+\subsection{{\tt \#line} directive}
+Felix provides support for programs that generate Felix code
+by allowing C style \verb%#line% directives. Such a directive
+consists of the characters \verb%#line% at the start of a line,
+followed by whitespace, a decimal number indicating the line
+number in the original source, and optionally whitespace
+followed by a filename in double quotes. 
+
+If the filename is present the parser
+original source filename is set to it. The line number sets
+the line number, 1 origin, so that the next source line
+will be taken to be obtained from the original source file
+at that line number.
+
+Felix provides two standard programs which make use of this
+facility: \verb%flx_tangle% and \verb%flx_iscr% both of
+which are literate programming tools which extract source
+code from mixed code and comments.
+
+In the event of a compilation error, Felix will specify that
+the error occured at a location in the original source
+file, as indicated by \verb%#line% directives. An example:
+
+\begin{minted}{felix}
+#line 42 "anerror.fdoc"
+var x = error;
+\end{minted}
+
+If this program is processed by Felix the error on the second
+line will be reported as an error on line 42 of the 
+file \verb%anerror.fdoc%.
+
+\section{\#! directive}
+If the first line of an \verb%*.flx% file starts with \verb%#!% then
+the line is ignored. This allows a file on a Unix system marked
+executable to specify its natural translator so that the file
+may be run directly as a program. On Linux you should use:
+
+\begin{minted}{felix}
+#!env /usr/local/lib/felix/felix-latest/host/bin/flx
+\end{minted}
+
+assuming you have a standard install and have linked
+\verb%felix-latest% to a directory containing an installed
+version of Felix such as 
+
+\begin{verbatim}
+%/usr/local/lib/felix/felix-2016.05.25%.
+\end{verbatim}
+
+This is the standard way to refer to the most recent version of Felix
+installed on Unix systems. Note the path name to the translator
+on Unix systems must be an absolute path for security reasons.
+
 \section{Identifiers}
 
 \href{http://felix-lang.org/share/lib/grammar/grammar_ident_lexer.fsyn}{Library Reference}
@@ -313,7 +367,9 @@ underscore must be between digits.
 A prefixed integer literal is a plain integer literal
 or a plain integer literal prefixed by a radix specifier.
 The radix specifier is a zero followed by one of
-the letters \verb%bBoOdDxX% for binary, octal, decimal or hex.
+the letters \verb%bB% for binary radix, \verb%oO% for octal
+radix, optionally on may use \verb%dD% for decimal radix,
+although this is the default, and \verb%xX% for hexadecimal radix.
 
 An underscore is permitted after the prefix.
 
@@ -330,8 +386,23 @@ Note there are no negative integer literals.
 A type suffix may be added to the end of a prefixed
 integer to designate a literal of a particular integer type,
 it has the form of an upper or lower case letter or pair of
-letters usually combined with a prefix or suffix \verb%u} or @{U%
-to designate an unsigned variant of the type. 
+letters usually combined with a prefix or suffix \verb%u% or \verb%U%
+to designate an unsigned variant of the type.  The allowed lower case
+suffices are:
+
+\begin{verbatim}
+t  s  l  ll 
+ut us u ul ull 
+tu su   lu llu
+i8 i16 i32 i64
+u8 u16 u32 u64
+   p  d  j 
+zu pu du ju
+uz up ud uj
+\end{verbatim}
+
+In addition, one or more letters may be upper case, except
+that \verb%lL% and \verb%Ll% are not permitted.
 
 There is a table of the types \fullref{Integer Types}.
 
@@ -559,39 +630,39 @@ Felix&C&Suffix\\
 \hline
 \multicolumn{3}{c}{Standard signed integers}\\
 \hline
-\verb%tiny% &\verb%char% & 42t \\
-\verb%short% &\verb%short% & 42s \\
-\verb%int% &\verb%int% & 42 \\
-\verb%long% &\verb%long% & 42l \\
-\verb%vlong% &\verb%long long% & 42ll \\
+\verb%tiny% &\verb%char% & t \\
+\verb%short% &\verb%short% & s \\
+\verb%int% &\verb%int% &  \\
+\verb%long% &\verb%long% & l \\
+\verb%vlong% &\verb%long long% & ll \\
 \multicolumn{3}{c}{Standard unsigned integers}\\
 \hline
-\verb%utiny% &\verb%unsigned char% & 42ut \\
-\verb%ushort% &\verb%unsigned short% & 42us \\
-\verb%uint% &\verb%unsigned int% & 42u \\
-\verb%ulong% &\verb%unsigned long% & 42ul \\
-\verb%uvlong% &\verb%unsigned long long% & 42ull \\
+\verb%utiny% &\verb%unsigned char% & ut \\
+\verb%ushort% &\verb%unsigned short% & us \\
+\verb%uint% &\verb%unsigned int% & u \\
+\verb%ulong% &\verb%unsigned long% & ul \\
+\verb%uvlong% &\verb%unsigned long long% & ull \\
 \multicolumn{3}{c}{Exact signed integers}\\
 \hline
-\verb%int8% &\verb%int8_t% & 42i8 \\
-\verb%int16% &\verb%int16_t% & 42i16 \\
-\verb%int32% &\verb%int32_t% & 42i32 \\
-\verb%int64% &\verb%int64_t% & 42i64 \\
+\verb%int8% &\verb%int8_t% & i8 \\
+\verb%int16% &\verb%int16_t% & i16 \\
+\verb%int32% &\verb%int32_t% & i32 \\
+\verb%int64% &\verb%int64_t% & i64 \\
 \multicolumn{3}{c}{Exact unsigned integers}\\
 \hline
-\verb%uint8% &\verb%uint8_t% & 42u8 \\
-\verb%uint16% &\verb%uint16_t% & 42u16 \\
-\verb%uint32% &\verb%uint32_t% & 42u32 \\
-\verb%uint64% &\verb%uint64_t% & 42u64 \\
+\verb%uint8% &\verb%uint8_t% & u8 \\
+\verb%uint16% &\verb%uint16_t% & u16 \\
+\verb%uint32% &\verb%uint32_t% & u32 \\
+\verb%uint64% &\verb%uint64_t% & u64 \\
 \multicolumn{3}{c}{Weird ones}\\
 \hline
-\verb%size% &\verb%size_t% & 42uz \\
-\verb%intptr% &\verb%uintptr_t% & 42p \\
-\verb%uintptr% &\verb%uintptr_t% & 42up \\
-\verb%ptrdiff% &\verb%ptrdiff_t% & 42d \\
-\verb%uptrdiff% &\verb%ptrdiff_t% & 42ud \\
-\verb%intmax% &\verb%intmax_t% & 42j\\
-\verb%uintmax% &\verb%uintmax_t% & 42uj \\
+\verb%size% &\verb%size_t% & uz \\
+\verb%intptr% &\verb%uintptr_t% & p \\
+\verb%uintptr% &\verb%uintptr_t% & up \\
+\verb%ptrdiff% &\verb%ptrdiff_t% & d \\
+\verb%uptrdiff% &\verb%ptrdiff_t% & ud \\
+\verb%intmax% &\verb%intmax_t% & j\\
+\verb%uintmax% &\verb%uintmax_t% & uj \\
 \multicolumn{3}{c}{Addressing}\\
 \hline
 \verb%address% &\verb%void*% &\\
@@ -627,37 +698,46 @@ There is a table of the operators \fullref{Integer Operators}.
 \begin{table}
 \caption{Integer Operators\label{Integer Operators}}
 \centering
-\begin{tabular}[c]{lll}
+\begin{tabular}[c]{llll}
 \hline
-name&kind&semantics\\
+symbol&kind&type&semantics\\
 \hline
-\multicolumn{3}{c}{All Integers}\\
+\multicolumn{4}{c}{All Integers}\\
 \hline
-\verb%==%&\verb%T * T -> bool%&equality\\
-\verb%!=%&\verb%T * T -> bool%&inequality\\
-\verb%<%&\verb%T * T -> bool%&less\\
-\verb%<=%&\verb%T * T -> bool%&less or equal\\
-\verb%>%&\verb%T * T -> bool%&greater\\
-\verb%>=%&\verb%T * T -> bool%&greater or equal\\
-\verb%+%&\verb%T * T -> T%&addition\\
-\verb%-%&\verb%T * T -> T%&subtraction\\
-\verb%*%&\verb%T * T -> T%&multiplication\\
-\verb%/%&\verb%T * T -> T%&quotient\\
-\verb+%+&\verb%T * T -> T%&remainder\\
-\verb%<<%&\verb%T * T -> T%&multiplication by power of 2\\
-\verb%>>%&\verb%T * T -> T%&division by power of 2\\
-\verb%-%&\verb%T -> T%&negation\\
-\verb%+%&\verb%T -> T%&no op\\
-\multicolumn{3}{c}{Signed Integers}\\
+\verb%==%&infix-nassoc&\verb%T * T -> bool%&equality\\
+\verb%!=%&infix-nassoc&\verb%T * T -> bool%&inequality\\
+\verb%<%&infix-nassoc&\verb%T * T -> bool%&less\\
+\verb%<=%&infix-nassoc&\verb%T * T -> bool%&less or equal\\
+\verb%>%&infix-nassoc&\verb%T * T -> bool%&greater\\
+\verb%>=%&infix-nassoc&\verb%T * T -> bool%&greater or equal\\
+\verb%+%&infix-lassoc&\verb%T * T -> T%&addition\\
+\verb%-%&infix-lassoc&\verb%T * T -> T%&subtraction\\
+\verb%*%&infix-lassoc&\verb%T * T -> T%&multiplication\\
+\verb%/%&infix-lassoc&\verb%T * T -> T%&quotient\\
+\verb+%+&infix-lassoc&\verb%T * T -> T%&remainder\\
+\verb%<<%&infix-lassoc&\verb%T * T -> T%&multiplication by power of 2\\
+\verb%>>%&infix-lassoc&\verb%T * T -> T%&division by power of 2\\
+\verb%-%&prefix&\verb%T -> T%&negation\\
+\verb%+%&prefix&\verb%T -> T%&no op\\
 \hline
-\verb%sgn%&\verb%T -> T%&sign\\
-\verb%abs%&\verb%T -> T%&absolute value\\
-\multicolumn{3}{c}{Unsigned Integers}\\
+\verb%succ%&func&\verb%T -> T%&successor\\
+\verb%pred%&func&\verb%T -> T%&predecessor\\
+\multicolumn{4}{c}{Signed Integers}\\
 \hline
-\verb%\&%&\verb%T * T -> T%&bitwise and\\
-\verb%\|%&\verb%T * T -> T%&bitwise or\\
-\verb%\^%&\verb%T * T -> T%&bitwise exclusive or\\
-\verb%~%&\verb%T * T -> T%&bitwise complement\\
+\verb%sgn%&func&\verb%T -> T%&sign\\
+\verb%abs%&func&\verb%T -> T%&absolute value\\
+\multicolumn{4}{c}{Unsigned Integers}\\
+\hline
+\verb%\&%&infix-lassoc&\verb%T * T -> T%&bitwise and\\
+\verb%\|%&infix-lassoc&\verb%T * T -> T%&bitwise or\\
+\verb%\^%&infix-lassoc&\verb%T * T -> T%&bitwise exclusive or\\
+\verb%~%&prefix&\verb%T * T -> T%&bitwise complement\\
+\hline
+\multicolumn{4}{l}{nassoc: non-associative}\\
+\multicolumn{4}{l}{lassoc: left associative}\\
+\multicolumn{4}{l}{func: function}\\
+\multicolumn{4}{l}{note prefix {\tt -} maps to function {\tt neg}}\\
+\hline
 \end{tabular}
 \end{table}
 
@@ -667,55 +747,85 @@ There is a table of the operators \fullref{Floating Operators}.
 \begin{table}
 \caption{Floating Point Operators\label{Floating Operators}}
 \centering
-\begin{tabular}[c]{lll}
+\begin{tabular}[c]{llll}
 \hline
-name&kind&semantics\\
+symbol&kind&type&semantics\\
 \hline
 \hline
-\verb%==%&\verb%T * T -> bool%&equality\\
-\verb%!=%&\verb%T * T -> bool%&inequality\\
+\verb%==%&infix-nassoc&\verb%T * T -> bool%&equality\\
+\verb%!=%&infix-nassoc&\verb%T * T -> bool%&inequality\\
 \hline
-\verb%<%&\verb%T * T -> bool%&less\\
-\verb%<=%&\verb%T * T -> bool%&less or equal\\
-\verb%>%&\verb%T * T -> bool%&greater\\
-\verb%>=%&\verb%T * T -> bool%&greater or equal\\
+\verb%<%&infix-nassoc&\verb%T * T -> bool%&less\\
+\verb%<=%&infix-nassoc&\verb%T * T -> bool%&less or equal\\
+\verb%>%&infix-nassoc&\verb%T * T -> bool%&greater\\
+\verb%>=%&infix-nassoc&\verb%T * T -> bool%&greater or equal\\
 \hline
-\verb%+%&\verb%T * T -> T%&addition\\
+\verb%+%&infix-nassoc&\verb%T * T -> T%&addition\\
 \hline
-\verb%-%&\verb%T * T -> T%&subtraction\\
+\verb%-%&infix-nassoc&\verb%T * T -> T%&subtraction\\
 \hline
-\verb%*%&\verb%T * T -> T%&multiplication\\
+\verb%*%&infix-nassoc&\verb%T * T -> T%&multiplication\\
 \hline
-\verb%/%&\verb%T * T -> T%&quotient\\
+\verb%/%&infix-nassoc&\verb%T * T -> T%&quotient\\
 \hline
-\verb%-%&\verb%T -> T%&negation\\
+\verb%-%&prefix&\verb%T -> T%&negation\\
+\hline
+\verb%abs%&func&\verb%T->T%&absolute value\\
+\verb%log10%&func&\verb%T->T%&base 10 logarithm\\
+\verb%sqrt%&func&\verb%T->T%&square root\\
+\verb%ceil%&func&\verb%T->T%&ceiling\\
+\verb%floor%&func&\verb%T->T%&floor\\
+\verb%trunc%&func&\verb%T->T%&truncate\\
+\hline
+\multicolumn{4}{l}{nassoc: non-associative}\\
+\multicolumn{4}{l}{lassoc: left associative}\\
+\multicolumn{4}{l}{func: function}\\
+\multicolumn{4}{l}{note prefix {\tt -} maps to function {\tt neg}}\\
+\hline
 \end{tabular}
 \end{table}
 
 \section{Complex types}
+
+There are three complex types, \verb%fcomplex%, \verb%dcomplex%
+and \verb%lcomplex% corresponding to cartesian representation
+using a pair of \verb%float%, \verb%double% and \verb%ldouble%
+values, respectively.
+
 There is a table of the operators \fullref{Complex Operators}.
 
 \begin{table}
 \caption{Complex Operators}
 \label{Complex Operators}
 \centering
-\begin{tabular}[c]{lll}
+\begin{tabular}[c]{llll}
 \hline
-name&kind&semantics\\
+symbol&kind&type&semantics\\
 \hline
 \hline
-\verb%==%&\verb%T * T -> bool%&equality\\
-\verb%!=%&\verb%T * T -> bool%&inequality\\
+\verb%==%&infix-nassoc&\verb%T * T -> bool%&equality\\
+\verb%!=%&infix-nassoc&\verb%T * T -> bool%&inequality\\
 \hline
-\verb%+%&\verb%T * T -> T%&addition\\
+\verb%+%&infix-lassoc&\verb%T * T -> T%&addition\\
 \hline
-\verb%-%&\verb%T * T -> T%&subtraction\\
+\verb%-%&infix-lassoc&\verb%T * T -> T%&subtraction\\
 \hline
-\verb%*%&\verb%T * T -> T%&multiplication\\
+\verb%*%&infix-lassoc&\verb%T * T -> T%&multiplication\\
 \hline
-\verb%/%&\verb%T * T -> T%&quotient\\
+\verb%/%&infix-lassoc&\verb%T * T -> T%&quotient\\
 \hline
-\verb%-%&\verb%T -> T%&negation\\
+\verb%-%&prefix&\verb%T -> T%&negation\\
+\hline
+\verb%real%&func&\verb%T->R%&real part\\
+\verb%imag%&func&\verb%T->R%&imaginary part\\
+\verb%abs%&func&\verb%T->R%&norm\\
+\verb%arg%&func&\verb%T->R%&argument\\
+\hline
+\multicolumn{4}{l}{nassoc: non-associative}\\
+\multicolumn{4}{l}{lassoc: left associative}\\
+\multicolumn{4}{l}{func: function}\\
+\multicolumn{4}{l}{note prefix {\tt -} maps to function {\tt neg}}\\
+\hline
 \end{tabular}
 \end{table}
 
@@ -727,23 +837,29 @@ There is a table of the operators \fullref{Quaternion Operators}.
 \caption{Quaternion Operators}
 \label{Quaternion Operators}
 \centering
-\begin{tabular}[c]{lll}
+\begin{tabular}[c]{llll}
 \hline
-name&kind&semantics\\
+symbol&kind&type&semantics\\
 \hline
 \hline
-\verb%==%&\verb%T * T -> bool%&equality\\
-\verb%!=%&\verb%T * T -> bool%&inequality\\
+\verb%==%&infix-nassoc&\verb%T * T -> bool%&equality\\
+\verb%!=%&infix-nassoc&\verb%T * T -> bool%&inequality\\
 \hline
-\verb%+%&\verb%T * T -> T%&addition\\
+\verb%+%&infix-lassoc&\verb%T * T -> T%&addition\\
 \hline
-\verb%-%&\verb%T * T -> T%&subtraction\\
+\verb%-%&infix-lassoc&\verb%T * T -> T%&subtraction\\
 \hline
-\verb%*%&\verb%T * T -> T%&multiplication\\
+\verb%*%&infix-lassoc&\verb%T * T -> T%&multiplication\\
 \hline
-\verb%/%&\verb%T * T -> T%&quotient\\
+\verb%/%&infix-lassoc&\verb%T * T -> T%&quotient\\
 \hline
-\verb%-%&\verb%T -> T%&negation\\
+\verb%-%&prefix&\verb%T -> T%&negation\\
+\hline
+\multicolumn{4}{l}{nassoc: non-associative}\\
+\multicolumn{4}{l}{lassoc: left associative}\\
+\multicolumn{4}{l}{func: function}\\
+\multicolumn{4}{l}{note prefix {\tt -} maps to function {\tt neg}}\\
+\hline
 \end{tabular}
 \end{table}
 
