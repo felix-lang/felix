@@ -16,6 +16,7 @@
 \usepackage{hyperref}
 \hypersetup{pdftex,colorlinks=true,allcolors=blue}
 \usepackage{hypcap}
+\newcommand*{\fullref}[1]{\hyperref[{#1}]{\autoref*{#1} \nameref*{#1}}}
 \title{The FARM\\ Felix Annotated Reference Manual}
 \author{John Skaller}
 \begin{document}
@@ -161,9 +162,86 @@ All Felix files are considered to be UTF-8 encoded Unicode.
 
 Felix uses a scannerless parser, there are no keywords.
 
+\section{Comments}
+There are lexical commenting methods for \verb%*.flx% files.
+Comments are treated as white space separators. For example
+
+\begin{minted}{felix}
+println$ f/**/x; // parsed as f x not fx
+\end{minted}
+
+The two forms of lexical comments are exclusive, once the
+parser is scanning one kind of comment the other is not
+recognised.
+
+\subsection{C++ comments}
+C++ style comments consist of \verb%//% followed by all the characters
+up to and including the next newline charcter.
+
+\subsection{Nested C comments}
+C style comments consist of the lead in sequence
+\verb%/*% followed by all the characters
+up to and including the balancing exit sequence \verb%*/%. 
+These comments can span
+multiple lines and can be nested. When scanning comments
+lead in and exit sequences are recognised as such even
+in strings.
+
+\section{Layout}
+Felix treats code points 0 through 32 (space) as whitespace
+which may be used freely between symbols. Whitespace is significant
+in strings, however, and newline is a terminator for C++ style comments.
+
+\section{File inclusion}
+There is (deliberately) no support in the Felix language 
+for lexical (physical)  file inclusion. Inclusions are processed at 
+the AST level instead, allowing files to be parsed independently of other files. 
+However command line switches can be used to prepend files or sets
+of files to the command input file, in particular the grammar
+and some standard macros are notionally inserted.
+
+\section{fdoc files}
+As well as \verb%*.flx% files, the Felix language processor
+can directly process \verb%*.fdoc% files using a limited
+subset of available \verb%fdoc% commands.
+
+\verb%fdoc% files are processed slighly differently to \verb%*.flx% files.
+The translator begins treating the file in comment mode, so all text
+is ignored up to a Felix leadin code.
+
+\subsection{Uncomments}
+A felix uncomment switches to processing lines as Felix program code.
+It consists of the line \verb%@felix%, and is terminated by any
+line starting with \verb%@%. 
+
+\begin{minted}{text}
+@title This is an fdoc.
+@h1 Fdocs are documents.
+They can contain code:
+@felix
+var x = 1;
+@
+Which defines a variable and
+@felix
+println$ x;
+@
+which prints it.
+\end{minted}
+
 \section{Identifiers}
+
+\href{http://felix-lang.org/share/lib/grammar/grammar_ident_lexer.fsyn}{Library Reference}
+
+Felix has three kinds of basic identifiers, plain identfiers, which
+are an enhanced variant of standard C identifiers, TeX identifiers,
+which are encodings of mathematical symbols in the style of \TeX,
+and some ascii-art character sequences normally use for punctuation
+or operators which are also recognised as names.
+
+\subsection{Plain Identifiers}
 A plain identifier starts with a letter or underscore,
-then consists of a sequence of letters, digits, apostrophy, has no more
+then consists of a sequence of letters, digits, dash (\verb%-%),
+apostrophy (\verb%'%), has no more
 than one apostrophy or dash in a row, except at the end no dash is
 allowed, and any number of apostrophies.
 
@@ -175,12 +253,18 @@ Identifies starting with underscore are reserved for the implementation.
 
 A letter may be any Unicode character designated for use in an identifier
 by the ISO C++ standard. In practice, all high bit set octets are allowed.
+Identifiers are uniquely identified by their sequence of 
+ISO-10646 (Unicode) code points, alternate encodings of the same 
+glyph are distinct.
 
 \subsection{TeX Identifiers}
 A TeX identifier starts with a slosh and is followed by a sequence
 of letters. 
 
+Here is a partial table of 
 \href{http://felix-lang.org/share/src/web/ref/texops.fdoc}{TeX Symbols} 
+recognised by the grammar as identifiers with undefined semantics
+but pre-assigned kind and precedence.
 
 \section{Operator Identifiers}
 Felix allows some operators to be used as an identifier.
@@ -215,90 +299,12 @@ For example:
 typedef fun n"@" (T:TYPE) : TYPE => cptr[T];
 \end{minted}
 
-\chapter{Macro processing}
-\href{http://felix-lang.org/share/lib/grammar/macros.fsyn}{Syntax}
+\section{Boolean Literals}
+There are two literals of type \verb%bool%, namely \verb%true% and \verb%false%.
 
-\href{http://felix-lang.org/share/src/compiler/flx_desugar/flx_macro.ml}{Semantics}
-\section{Include Directive}
-An include directive has the syntax:
+\section{Integer Literals}
 
-\begin{minted}{felix}
-include "filename";\end{minted}
-
-where the filename is a Unix relative filename,
-may not have an extension, and may not begin with or 
-contain \verb%..% (two dots).
-
-If the filename begins with \verb%./% then the balance of the name
-is relative, a sibling of the including file, otherwise the name
-is searched for on an include path. 
-
-In either case, a search succeeds when it finds a file with
-the appropriate base path in the search directory with
-extension \verb%.flx% or \verb%.fdoc%. If both files exist the
-most recently changed one is used. If the time stamps are
-the same the choice is unspecified.
-
-\section{Macro val}
-The macro val statement is used to specify an identifier should
-be replaced by the defining expression wherever it occurs in an
-expression, type expression, or pattern.
-
-\begin{minted}{felix}
-macro val WIN32 = true;
-macro val hitchhiker;
-macro val a,b,c = 1,2,3;
-\end{minted}
-
-
-\section{Macro for}
-This statement allows a list of statements to be repeated
-with a sequence of replacements.
-
-\begin{minted}{felix}
-forall name in 1,2,3 do
-  println$ name;
-done
-\end{minted}
-
-
-\section{Constant folding and conditional compilation}
-\href{http://felix-lang.org/share/src/compiler/flx_desugar/flx_constfld.ml}{Reference}
-
-Felix provides two core kinds of constant folding:
-folding of arithmetic, boolean, and string values, and 
-deletion of code, either statements or expressions,
-which would become unreachable due to certain
-value of conditionals.
-
-Basic operations on integer literals, namely 
-addition, subtraction, negation, multiplication,
-division, and remainder are folded.
-
-Strings are concatenated.
-
-Boolean and, or, exclusive or, and negation,
-are evaluated.
-
-False branches of if/then/else/endif expression
-and match expressions are eliminated.
-
-False branches of if/do/elif/else/done 
-are also eliminated.
-
-By this mechanism of constant folding and
-elimination, Felix provides conditional
-compilation without the need for special
-constructions.
-
-
-
-% =====================================
-\chapter{Core Primitive Types}
-
-\section{Integer types}
-
-\href{http://felix-lang.org/share/lib/grammar/grammar_int_lexer.fsyn}{Reference}
+\href{http://felix-lang.org/share/lib/grammar/grammar_int_lexer.fsyn}{Library Reference}
 
 An plain integer literal consists of a sequence of digits,
 optionally separated by underscores. Each separating
@@ -327,126 +333,12 @@ it has the form of an upper or lower case letter or pair of
 letters usually combined with a prefix or suffix \verb%u} or @{U%
 to designate an unsigned variant of the type. 
 
-There is a table of the types \ref{Int Operators}.
-
-\begin{table}
-\caption{Felix Integer Types}
-\label{Felix Integer Types}
-\centering
-\begin{tabular}[c]{lll}
-\hline
-Felix&C&Suffix\\
-\hline
-\multicolumn{3}{c}{Standard signed integers}\\
-\hline
-\verb%tiny% &\verb%char% & 42t \\
-\verb%short% &\verb%short% & 42s \\
-\verb%int% &\verb%int% & 42 \\
-\verb%long% &\verb%long% & 42l \\
-\verb%vlong% &\verb%long long% & 42ll \\
-\multicolumn{3}{c}{Standard unsigned integers}\\
-\hline
-\verb%utiny% &\verb%unsigned char% & 42ut \\
-\verb%ushort% &\verb%unsigned short% & 42us \\
-\verb%uint% &\verb%unsigned int% & 42u \\
-\verb%ulong% &\verb%unsigned long% & 42ul \\
-\verb%uvlong% &\verb%unsigned long long% & 42ull \\
-\multicolumn{3}{c}{Exact signed integers}\\
-\hline
-\verb%int8% &\verb%int8_t% & 42i8 \\
-\verb%int16% &\verb%int16_t% & 42i16 \\
-\verb%int32% &\verb%int32_t% & 42i32 \\
-\verb%int64% &\verb%int64_t% & 42i64 \\
-\multicolumn{3}{c}{Exact unsigned integers}\\
-\hline
-\verb%uint8% &\verb%uint8_t% & 42u8 \\
-\verb%uint16% &\verb%uint16_t% & 42u16 \\
-\verb%uint32% &\verb%uint32_t% & 42u32 \\
-\verb%uint64% &\verb%uint64_t% & 42u64 \\
-\multicolumn{3}{c}{Weird ones}\\
-\hline
-\verb%size% &\verb%size_t% & 42uz \\
-\verb%intptr% &\verb%uintptr_t% & 42p \\
-\verb%uintptr% &\verb%uintptr_t% & 42up \\
-\verb%ptrdiff% &\verb%ptrdiff_t% & 42d \\
-\verb%uptrdiff% &\verb%ptrdiff_t% & 42ud \\
-\verb%intmax% &\verb%intmax_t% & 42j\\
-\verb%uintmax% &\verb%uintmax_t% & 42uj \\
-\multicolumn{3}{c}{Addressing}\\
-\hline
-\verb%address% &\verb%void*% &\\
-\verb%byte% &\verb%unsigned char% &\\
-\end{tabular}
-\end{table}
-
-
-Note that all these types are distinct unlike C and C++.
-The types designated are not the complete set of available
-integer like types since not all have literal representations.
+There is a table of the types \fullref{Integer Types}.
 
 Note the suffices do not entirely agree with C.
 
-
-Signed integers are expected to be two's complement with one
-more negative value that positive value. Bitwise and,
-or, exclusive or, and complement operations do not apply
-with signed types.
-
-The effect of overflow on signed types is unspecified.
-
-Unsigned types use the standard representation. 
-Bitwise operations may be applied to unsigned types.
-Basic arithmetic operations on unsigned types are
-all well defined as the result of the operation
-mathematically modulo the maximum value of the type
-plus one.
-
-The maximum value of an unsigned type is one less than
-two raised to the power of the number of bits in the type.
-The number of bits is 8, 16, 32, or 64 or 128 for all unsigned types.
-
-There is a table of the operators \ref{Integer Operators}.
-
-\begin{table}
-\caption{Integer Operators}
-\label{Integer Operators}
-\centering
-\begin{tabular}[c]{lll}
-\hline
-name&kind&semantics\\
-\hline
-\multicolumn{3}{c}{All Integers}\\
-\hline
-\verb%==%&\verb%T * T -> bool%&equality\\
-\verb%!=%&\verb%T * T -> bool%&inequality\\
-\verb%<%&\verb%T * T -> bool%&less\\
-\verb%<=%&\verb%T * T -> bool%&less or equal\\
-\verb%>%&\verb%T * T -> bool%&greater\\
-\verb%>=%&\verb%T * T -> bool%&greater or equal\\
-\verb%+%&\verb%T * T -> T%&addition\\
-\verb%-%&\verb%T * T -> T%&subtraction\\
-\verb%*%&\verb%T * T -> T%&multiplication\\
-\verb%/%&\verb%T * T -> T%&quotient\\
-\verb+%+&\verb%T * T -> T%&remainder\\
-\verb%<<%&\verb%T * T -> T%&multiplication by power of 2\\
-\verb%>>%&\verb%T * T -> T%&division by power of 2\\
-\verb%-%&\verb%T -> T%&negation\\
-\verb%+%&\verb%T -> T%&no op\\
-\multicolumn{3}{c}{Signed Integers}\\
-\hline
-\verb%sgn%&\verb%T -> T%&sign\\
-\verb%abs%&\verb%T -> T%&absolute value\\
-\multicolumn{3}{c}{Unsigned Integers}\\
-\hline
-\verb%\&%&\verb%T * T -> T%&bitwise and\\
-\verb%\|%&\verb%T * T -> T%&bitwise or\\
-\verb%\^%&\verb%T * T -> T%&bitwise exclusive or\\
-\verb%~%&\verb%T * T -> T%&bitwise complement\\
-\end{tabular}
-\end{table}
-
-\section{Floating point types}
-\href{http://felix-lang.org/share/lib/grammar/grammar_float_lexer.fsyn}{Reference}
+\section{Floating point literals}
+\href{http://felix-lang.org/share/lib/grammar/grammar_float_lexer.fsyn}{Library Reference}
 
 Floating point literals follow ISO C89, except that underscores
 are allowed between digits, and a a digit is required both before
@@ -470,97 +362,10 @@ type.
 12.7p35
 \end{minted}
 
-There is a table of the operators \ref{Floating Operators}.
+There is a table of the operators \fullref{Floating Operators}.
 
-\begin{table}
-\caption{Floating Point Operators}
-\label{Floating Operators}
-\centering
-\begin{tabular}[c]{lll}
-\hline
-name&kind&semantics\\
-\hline
-\hline
-\verb%==%&\verb%T * T -> bool%&equality\\
-\verb%!=%&\verb%T * T -> bool%&inequality\\
-\hline
-\verb%<%&\verb%T * T -> bool%&less\\
-\verb%<=%&\verb%T * T -> bool%&less or equal\\
-\verb%>%&\verb%T * T -> bool%&greater\\
-\verb%>=%&\verb%T * T -> bool%&greater or equal\\
-\hline
-\verb%+%&\verb%T * T -> T%&addition\\
-\hline
-\verb%-%&\verb%T * T -> T%&subtraction\\
-\hline
-\verb%*%&\verb%T * T -> T%&multiplication\\
-\hline
-\verb%/%&\verb%T * T -> T%&quotient\\
-\hline
-\verb%-%&\verb%T -> T%&negation\\
-\end{tabular}
-\end{table}
-
-\section{Complex types}
-There is a table of the operators \ref{Complex Operators}.
-
-\begin{table}
-\caption{Complex Operators}
-\label{Complex Operators}
-\centering
-\begin{tabular}[c]{lll}
-\hline
-name&kind&semantics\\
-\hline
-\hline
-\verb%==%&\verb%T * T -> bool%&equality\\
-\verb%!=%&\verb%T * T -> bool%&inequality\\
-\hline
-\verb%+%&\verb%T * T -> T%&addition\\
-\hline
-\verb%-%&\verb%T * T -> T%&subtraction\\
-\hline
-\verb%*%&\verb%T * T -> T%&multiplication\\
-\hline
-\verb%/%&\verb%T * T -> T%&quotient\\
-\hline
-\verb%-%&\verb%T -> T%&negation\\
-\end{tabular}
-\end{table}
-
-
-\section{Quaternion type}
-There is a table of the operators \ref{Quaternion Operators}.
-
-\begin{table}
-\caption{Quaternion Operators}
-\label{Quanternion Operators}
-\centering
-\begin{tabular}[c]{lll}
-\hline
-name&kind&semantics\\
-\hline
-\hline
-\verb%==%&\verb%T * T -> bool%&equality\\
-\verb%!=%&\verb%T * T -> bool%&inequality\\
-\hline
-\verb%+%&\verb%T * T -> T%&addition\\
-\hline
-\verb%-%&\verb%T * T -> T%&subtraction\\
-\hline
-\verb%*%&\verb%T * T -> T%&multiplication\\
-\hline
-\verb%/%&\verb%T * T -> T%&quotient\\
-\hline
-\verb%-%&\verb%T -> T%&negation\\
-\end{tabular}
-\end{table}
-
-
-
-\section{Strings}
-
-\href{http://felix-lang.org/share/lib/grammar/grammar_string_lexer.fsyn}{Reference}
+\section{String like literals}
+\href{http://felix-lang.org/share/lib/grammar/grammar_string_lexer.fsyn}{Library Reference}
 
 Generaly we follow Python here.
 Felix allows strings to be delimited by;
@@ -574,11 +379,10 @@ The single quote forms must be on a single line.
 The triple quoted forms may span lines, and include embedded newline
 characters.
 
-The complete list of special escapes is shown in table \ref{String Escapes}.
+The complete list of special escapes is shown in table \fullref{String Escapes}.
 
 \begin{table}
-\caption{String Escapes}
-\label{String Escapes}
+\caption{String Escapes\label{String Escapes}}
 \centering
 \begin{tabular}[c]{lll}
 \multicolumn{3}{c}{Basic}\\
@@ -649,6 +453,303 @@ If it is not, \verb%vsprintf% is used instead with a 1000 character
 buffer.
 
 The argument types and code types are fully checked for type safety.
+
+
+\chapter{Macro processing}
+\href{http://felix-lang.org/share/lib/grammar/macros.fsyn}{Syntax}
+
+\href{http://felix-lang.org/share/src/compiler/flx_desugar/flx_macro.ml}{Semantics}
+\section{Include Directive}
+An include directive has the syntax:
+
+\begin{minted}{felix}
+include "filename";\end{minted}
+
+where the filename is a Unix relative filename,
+may not have an extension, and may not begin with or 
+contain \verb%..% (two dots).
+
+If the filename begins with \verb%./% then the balance of the name
+is relative, a sibling of the including file, otherwise the name
+is searched for on an include path. 
+
+In either case, a search succeeds when it finds a file with
+the appropriate base path in the search directory with
+extension \verb%.flx% or \verb%.fdoc%. If both files exist the
+most recently changed one is used. If the time stamps are
+the same the choice is unspecified.
+
+\section{Macro val}
+The macro val statement is used to specify an identifier should
+be replaced by the defining expression wherever it occurs in an
+expression, type expression, or pattern.
+
+\begin{minted}{felix}
+macro val WIN32 = true;
+macro val hitchhiker;
+macro val a,b,c = 1,2,3;
+\end{minted}
+
+
+\section{Macro for}
+This statement allows a list of statements to be repeated
+with a sequence of replacements.
+
+\begin{minted}{felix}
+forall name in 1,2,3 do
+  println$ name;
+done
+\end{minted}
+
+
+\section{Constant folding and conditional compilation}
+\href{http://felix-lang.org/share/src/compiler/flx_desugar/flx_constfld.ml}{Compiler Reference}
+
+Felix provides two core kinds of constant folding:
+folding of arithmetic, boolean, and string values, and 
+deletion of code, either statements or expressions,
+which would become unreachable due to certain
+value of conditionals.
+
+Basic operations on integer literals, namely 
+addition, subtraction, negation, multiplication,
+division, and remainder are folded.
+
+Strings are concatenated.
+
+Boolean and, or, exclusive or, and negation,
+are evaluated.
+
+False branches of if/then/else/endif expression
+and match expressions are eliminated.
+
+False branches of if/do/elif/else/done 
+are also eliminated.
+
+By this mechanism of constant folding and
+elimination, Felix provides conditional
+compilation without the need for special
+constructions.
+
+
+
+% =====================================
+\chapter{Core Primitive Types}
+
+\section{Boolean type}
+The type \verb%bool% which is also called \verb%2% provides the
+usual boolean logic values \verb%false% and \verb%true%. 
+The name \verb%bool% is actually an alias for type %2% the
+unitsum of two cases. The name \verb%false% is an alternate
+name of the value \verb%case 0 of 2% and the name \verb%true%
+is an alternate name for the value \verb%case 1 of 2%.
+
+See \fullref{Unit sum} for more information.
+
+\section{Integer types}
+
+There is a table of the types \fullref{Integer Types}.
+
+\begin{table}
+\caption{Felix Integer Types\label{Integer Types}}
+\centering
+\begin{tabular}[c]{lll}
+\hline
+Felix&C&Suffix\\
+\hline
+\multicolumn{3}{c}{Standard signed integers}\\
+\hline
+\verb%tiny% &\verb%char% & 42t \\
+\verb%short% &\verb%short% & 42s \\
+\verb%int% &\verb%int% & 42 \\
+\verb%long% &\verb%long% & 42l \\
+\verb%vlong% &\verb%long long% & 42ll \\
+\multicolumn{3}{c}{Standard unsigned integers}\\
+\hline
+\verb%utiny% &\verb%unsigned char% & 42ut \\
+\verb%ushort% &\verb%unsigned short% & 42us \\
+\verb%uint% &\verb%unsigned int% & 42u \\
+\verb%ulong% &\verb%unsigned long% & 42ul \\
+\verb%uvlong% &\verb%unsigned long long% & 42ull \\
+\multicolumn{3}{c}{Exact signed integers}\\
+\hline
+\verb%int8% &\verb%int8_t% & 42i8 \\
+\verb%int16% &\verb%int16_t% & 42i16 \\
+\verb%int32% &\verb%int32_t% & 42i32 \\
+\verb%int64% &\verb%int64_t% & 42i64 \\
+\multicolumn{3}{c}{Exact unsigned integers}\\
+\hline
+\verb%uint8% &\verb%uint8_t% & 42u8 \\
+\verb%uint16% &\verb%uint16_t% & 42u16 \\
+\verb%uint32% &\verb%uint32_t% & 42u32 \\
+\verb%uint64% &\verb%uint64_t% & 42u64 \\
+\multicolumn{3}{c}{Weird ones}\\
+\hline
+\verb%size% &\verb%size_t% & 42uz \\
+\verb%intptr% &\verb%uintptr_t% & 42p \\
+\verb%uintptr% &\verb%uintptr_t% & 42up \\
+\verb%ptrdiff% &\verb%ptrdiff_t% & 42d \\
+\verb%uptrdiff% &\verb%ptrdiff_t% & 42ud \\
+\verb%intmax% &\verb%intmax_t% & 42j\\
+\verb%uintmax% &\verb%uintmax_t% & 42uj \\
+\multicolumn{3}{c}{Addressing}\\
+\hline
+\verb%address% &\verb%void*% &\\
+\verb%byte% &\verb%unsigned char% &\\
+\end{tabular}
+\end{table}
+
+
+Note that all these types are distinct unlike C and C++.
+The types designated are not the complete set of available
+integer like types since not all have literal representations.
+
+Signed integers are expected to be two's complement with one
+more negative value that positive value. Bitwise and,
+or, exclusive or, and complement operations do not apply
+with signed types.
+
+The effect of overflow on signed types is unspecified.
+
+Unsigned types use the standard representation. 
+Bitwise operations may be applied to unsigned types.
+Basic arithmetic operations on unsigned types are
+all well defined as the result of the operation
+mathematically modulo the maximum value of the type
+plus one.
+
+The maximum value of an unsigned type is one less than
+two raised to the power of the number of bits in the type.
+The number of bits is 8, 16, 32, or 64 or 128 for all unsigned types.
+
+There is a table of the operators \fullref{Integer Operators}.
+
+\begin{table}
+\caption{Integer Operators\label{Integer Operators}}
+\centering
+\begin{tabular}[c]{lll}
+\hline
+name&kind&semantics\\
+\hline
+\multicolumn{3}{c}{All Integers}\\
+\hline
+\verb%==%&\verb%T * T -> bool%&equality\\
+\verb%!=%&\verb%T * T -> bool%&inequality\\
+\verb%<%&\verb%T * T -> bool%&less\\
+\verb%<=%&\verb%T * T -> bool%&less or equal\\
+\verb%>%&\verb%T * T -> bool%&greater\\
+\verb%>=%&\verb%T * T -> bool%&greater or equal\\
+\verb%+%&\verb%T * T -> T%&addition\\
+\verb%-%&\verb%T * T -> T%&subtraction\\
+\verb%*%&\verb%T * T -> T%&multiplication\\
+\verb%/%&\verb%T * T -> T%&quotient\\
+\verb+%+&\verb%T * T -> T%&remainder\\
+\verb%<<%&\verb%T * T -> T%&multiplication by power of 2\\
+\verb%>>%&\verb%T * T -> T%&division by power of 2\\
+\verb%-%&\verb%T -> T%&negation\\
+\verb%+%&\verb%T -> T%&no op\\
+\multicolumn{3}{c}{Signed Integers}\\
+\hline
+\verb%sgn%&\verb%T -> T%&sign\\
+\verb%abs%&\verb%T -> T%&absolute value\\
+\multicolumn{3}{c}{Unsigned Integers}\\
+\hline
+\verb%\&%&\verb%T * T -> T%&bitwise and\\
+\verb%\|%&\verb%T * T -> T%&bitwise or\\
+\verb%\^%&\verb%T * T -> T%&bitwise exclusive or\\
+\verb%~%&\verb%T * T -> T%&bitwise complement\\
+\end{tabular}
+\end{table}
+
+\section{Floating point types}
+There is a table of the operators \fullref{Floating Operators}.
+
+\begin{table}
+\caption{Floating Point Operators\label{Floating Operators}}
+\centering
+\begin{tabular}[c]{lll}
+\hline
+name&kind&semantics\\
+\hline
+\hline
+\verb%==%&\verb%T * T -> bool%&equality\\
+\verb%!=%&\verb%T * T -> bool%&inequality\\
+\hline
+\verb%<%&\verb%T * T -> bool%&less\\
+\verb%<=%&\verb%T * T -> bool%&less or equal\\
+\verb%>%&\verb%T * T -> bool%&greater\\
+\verb%>=%&\verb%T * T -> bool%&greater or equal\\
+\hline
+\verb%+%&\verb%T * T -> T%&addition\\
+\hline
+\verb%-%&\verb%T * T -> T%&subtraction\\
+\hline
+\verb%*%&\verb%T * T -> T%&multiplication\\
+\hline
+\verb%/%&\verb%T * T -> T%&quotient\\
+\hline
+\verb%-%&\verb%T -> T%&negation\\
+\end{tabular}
+\end{table}
+
+\section{Complex types}
+There is a table of the operators \fullref{Complex Operators}.
+
+\begin{table}
+\caption{Complex Operators}
+\label{Complex Operators}
+\centering
+\begin{tabular}[c]{lll}
+\hline
+name&kind&semantics\\
+\hline
+\hline
+\verb%==%&\verb%T * T -> bool%&equality\\
+\verb%!=%&\verb%T * T -> bool%&inequality\\
+\hline
+\verb%+%&\verb%T * T -> T%&addition\\
+\hline
+\verb%-%&\verb%T * T -> T%&subtraction\\
+\hline
+\verb%*%&\verb%T * T -> T%&multiplication\\
+\hline
+\verb%/%&\verb%T * T -> T%&quotient\\
+\hline
+\verb%-%&\verb%T -> T%&negation\\
+\end{tabular}
+\end{table}
+
+
+\section{Quaternion type}
+There is a table of the operators \fullref{Quaternion Operators}.
+
+\begin{table}
+\caption{Quaternion Operators}
+\label{Quaternion Operators}
+\centering
+\begin{tabular}[c]{lll}
+\hline
+name&kind&semantics\\
+\hline
+\hline
+\verb%==%&\verb%T * T -> bool%&equality\\
+\verb%!=%&\verb%T * T -> bool%&inequality\\
+\hline
+\verb%+%&\verb%T * T -> T%&addition\\
+\hline
+\verb%-%&\verb%T * T -> T%&subtraction\\
+\hline
+\verb%*%&\verb%T * T -> T%&multiplication\\
+\hline
+\verb%/%&\verb%T * T -> T%&quotient\\
+\hline
+\verb%-%&\verb%T -> T%&negation\\
+\end{tabular}
+\end{table}
+
+
+
+\section{String Type}
 
 \section{Regexps}
 
@@ -3176,7 +3277,7 @@ println$ zero, one;
 
 
 \section{{\tt spawn\_fthread}}
-\href{http://felix-lang.org/share/lib/std/control/fibres.flx}{Reference}
+\href{http://felix-lang.org/share/lib/std/control/fibres.flx}{Library Reference}
 
 The \verb%spawn_fthread% library function invokes the corresponding
 service call to schedule the initial continuation of a procedure 
@@ -3192,18 +3293,18 @@ write, or the first unmatched read operation occurs.
 
 
 \subsection{read/write/broadcast schannel}
-\href{http://felix-lang.org/share/lib/std/control/schannels.flx}{Reference}
+\href{http://felix-lang.org/share/lib/std/control/schannels.flx}{Library Reference}
 
 \section{{\tt spawn\_pthread}}
-\href{http://felix-lang.org/share/lib/std/control/pthread.flx}{Reference}
+\href{http://felix-lang.org/share/lib/std/control/pthread.flx}{Library Reference}
 
 \subsection{read/write pchannel}
-\href{http://felix-lang.org/share/lib/std/control/pchannels.flx}{Reference}
+\href{http://felix-lang.org/share/lib/std/control/pchannels.flx}{Library Reference}
 
 \subsection{exchange}
 
 \section{loops}
-\href{http://felix-lang.org/share/lib/grammar/loops.fsyn}{Reference}
+\href{http://felix-lang.org/share/lib/grammar/loops.fsyn}{Library Reference}
 
 Felix has some low level and high level loop constructions.
 
@@ -3299,7 +3400,7 @@ TBD
 \subsection{loop}
 TBD
 \section{Assertions}
-\href{http://felix-lang.org/share/lib/grammar/assertions.fsyn}{Reference}
+\href{http://felix-lang.org/share/lib/grammar/assertions.fsyn}{Library Reference}
 \section{assert}
 Ad hoc assertion throws an assertion exception if its argument
 is false. 
