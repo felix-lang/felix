@@ -750,6 +750,7 @@ is an alternate name for the value \verb%case 1 of 2%.
 See \fullref{Unit sum} for more information.
 
 \section{Integer types}
+\href{http://felix-lang.org/share/lib/std/scalar/ctypedefs.flx}{Library Reference}
 
 There is a table of the types \fullref{Integer Types}.
 
@@ -872,6 +873,88 @@ symbol&kind&type&semantics\\
 \hline
 \end{tabular}
 \end{table}
+
+\subsection{Classification of integers}
+\href{http://felix-lang.org/share/lib/std/scalar/ctypedefs.flx}{Library Reference}
+
+Integer types can be grouped into sets. In Felix this can be
+done with a \verb%typeset% construction. The defined typesets
+are show in \fullref{Integer Typesets}. 
+
+Fast integers correspond to the usual C distinct integer types.
+
+Exact integers are aliases to fast integers of specified sizes,
+in Felix these are distinct types.
+
+The weird integers are special purposes aliases to fast integers
+which have special uses, again in Felix these are distinct types.
+\begin{itemize}
+\item The type \verb%ptrdiff% is a signed type intended to represent
+the difference between two pointers. 
+\item The \verb%size% type is
+for measuring the sizes of objects and number of elements
+in an array.
+\item  The \verb%intmax% and \verb%uintmax% types are
+the largest available signed and unsigned integer types,
+respectively. 
+\item Finally the \verb%intptr% and \verb%uintptr%
+types are the same size as a pointer and can be used for
+low level numerical operations on pointers either by 
+a conversion or reinterpret cast. They're typically used
+for to pack extra data into the low bits of a pointer
+to a type with an alignment which ensures the low bits
+of the pointer are zero.
+\end{itemize}
+
+\begin{table}
+\caption{Integer Typesets\label{Integer Typesets}}
+\centering
+\begin{tabular}[c]{ll}
+\hline
+fast\_sints &(tiny, short, int, long, vlong)\\
+exact\_sints &(int8,int16,int32,int64)\\
+fast\_uints &(utiny, ushort, uint, ulong,uvlong)\\
+exact\_uints &(uint8,uint16,uint32,uint64)\\
+weird\_sints &(ptrdiff, ssize, intmax, intptr)\\
+weird\_uints &(size, uintmax, uintptr)\\
+sints &fast\_sints $\cup$ exact\_sints $\cup$ weird\_sints\\
+uints & fast\_uints $\cup$ exact\_uints $\cup$ weird\_uints\\
+fast\_ints & fast\_sints $\cup$ fast\_uints\\
+exact\_ints & exact\_sints $\cup$ exact\_uints\\
+ints & sints $\cup$ uints\\
+\hline
+\end{tabular}
+\end{table}
+
+Typesets can be used to simplify specification of C function bindings
+by leveraging constrained polymorphism.
+
+\begin{minted}{felix}
+fun add[T in ints]: T * T -> T = "$1+$2";
+
+// or equivalently
+fun add[T : ints]: T * T -> T = "$1+$2";
+\end{minted}
+
+A special form which implies a quantifer for every use
+also exists,  by specifying a \verb%!% followed by
+a typeset name. For example,
+
+\begin{minted}{felix}
+fun intsum: !ints * !ints -> long = "(long)($1+$2)";
+
+// or equivalently
+fun intsum[T:ints, U:ints] : T * U -> long = "(long)($1+$2)";
+\end{minted}
+
+Note \verb%intsum% can add any different kinds of integers,
+returning a \verb%long%.
+
+Polymorphism with typeset constraints is {\em only} 
+useful for C bindings because the constraints are not
+propagated. It simply saves writing out all the finite
+combinations when genericity in the C or C++ target
+code means the C code would be the same in each case.
 
 \section{Floating point types}
 There is a table of the operators \fullref{Floating Operators}.
