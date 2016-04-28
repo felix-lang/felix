@@ -343,7 +343,7 @@ positions where an identifier is expected:
 \end{verbatim}
 
 \subsection{Special identifiers}
-The special literal with a "n" or "N" prefix is a way to encode
+The special string literal with a "n" or "N" prefix is a way to encode
 an arbitrary sequence of characters as an identifer in a context
 where the parser might interpret it otherwise.
 It can be used, for example, to define special characters as functions.
@@ -438,6 +438,7 @@ There is a table of the operators \fullref{Floating Operators}.
 \section{String like literals}
 \href{http://felix-lang.org/share/lib/grammar/grammar_string_lexer.fsyn}{Library Reference}
 
+\subsection{Standard string literals}
 Generaly we follow Python here.
 Felix allows strings to be delimited by;
 single quotes ',
@@ -482,9 +483,10 @@ Escape&Name&Decimal Code\\
 \subsection{Raw strings}
 A prefix "r" or "R" on a double quoted string
 or triple double quoted string suppresses escape processing,
+This is called a raw string literal.
 
-this is called a raw string literal.
-NOTE: single quoted string cannot be used!
+NOTE: single quoted string cannot be used, because this would
+clash with the use of single quotes/apostrophies in identifiers.
 
 \subsection{Null terminated strings}
 A prefix of "c" or "C" specifies a C NTBS (Nul terminated
@@ -499,6 +501,12 @@ at run time by the value "str varname". The type of the
 variable must provide an overload of "str" which returns
 a C++ string for this to work.
 
+\begin{minted}{felix}
+var x = 1;
+var y = 3.2;
+println$ q"x=$(x), y=$(y)";
+\end{minted}
+
 \subsection{C format strings}
 A literal prefixed by a "f" or "F" is a C format string.
 
@@ -507,16 +515,16 @@ Such strings are actually functions.
 The string contains code such as "%d" or other supported
 C format specifiers. 
 
+\begin{minted}{felix}
+var x = 1;
+var y = 3.2;
+println$ f"x=%03d, y=%4.1f, s=%S" (x,y,"Hello");
+\end{minted}
+
 Variable field width specifiers "*" are not permitted. 
 
 The additional format specification %S
 is supported and requires a Felix string argument.
-
-Such functions accept a tuple of values like this:
-
-\begin{minted}{felix}
-f"%d-%S" (42, "Hello")
-\end{minted}
 
 If \verb%vsnprintf% is available on the local platform it is used
 to provide an implementation which cannot overrun.
@@ -524,12 +532,136 @@ If it is not, \verb%vsprintf% is used instead with a 1000 character
 buffer.
 
 The argument types and code types are fully checked for type safety.
+There are some tables of accepted codes: 
+\fullref{C format codes: integer},
+\fullref{C format codes: integer special},
+\fullref{C format codes: floating},
+\fullref{C format codes: other}.
+
+Please see a suitable reference to learn how to use C format codes.
+
+\begin{table}
+\caption{C format codes: integer\label{C format codes: integer}}
+\centering
+\begin{tabular}[c]{rll}
+Code&Type&Radix\\
+\hline
+hhd&tiny&decimal\\
+hhi&tiny&decimal\\
+hho&utiny&octal\\
+hhx&utiny&hex\\
+hhX&utiny&HEX\\
+\hline
+hd&short&decimal\\
+hi&short&decimal\\
+hu&ushort&decimal\\
+ho&ushort&octal\\
+hx&ushort&hex\\
+hX&ushort&HEX\\
+\hline
+d&int&decimal\\
+i&int&decimal\\
+u&uint&decimal\\
+o&uint&octal\\
+x&uint&hex\\
+X&uint&HEX\\
+\hline
+ld&long&decimal\\
+li&long&decimal\\
+lu&ulong&decimal\\
+lo&ulong&octal\\
+lx&ulong&hex\\
+lX&ulong&HEX\\
+\hline
+lld&vlong&decimal\\
+lli&vlong&decimal\\
+llu&uvlong&decimal\\
+llo&uvlong&octal\\
+llx&uvlong&hex\\
+llX&uvlong&HEX\\
+\end{tabular}
+\end{table}
+
+
+\begin{table}
+\caption{C format codes: special integer\label{C format codes: special integer}}
+\centering
+\begin{tabular}[c]{rll}
+Code&Type&Radix\\
+\hline
+zd&ssize&decimal\\
+zi&ssize&decimal\\
+zu&size&decimal\\
+zo&size&octal\\
+zx&size&hex\\
+zX&size&HEX\\
+\hline
+jd&intmax&decimal\\
+ji&intmax&decimal\\
+ju&uintmax&decimal\\
+jo&uintmax&octal\\
+jx&uintmax&hex\\
+jX&uintmax&HEX\\
+\hline
+td&ptrdiff&decimal\\
+ti&ptrdiff&decimal\\
+tu&uptrdiff&decimal\\
+to&uptrdiff&octal\\
+tx&uptrdiff&hex\\
+tX&uptrdiff&HEX\\
+\end{tabular}
+\end{table}
+
+
+
+
+\begin{table}
+\caption{C format codes: floating\label{C format codes: floating}}
+\centering
+\begin{tabular}[c]{rll}
+Code&Type&format\\
+\hline
+e&double&scientific\\
+E&double&SCIENTIFIC\\
+f&double&fixed\\
+F&double&FIXED\\
+g&double&general\\
+G&double&GENERAL\\
+a&double&hex\\
+A&double&HEX\\
+\hline
+Le&ldouble&scientific\\
+LE&ldouble&SCIENTIFIC\\
+Lf&ldouble&fixed\\
+LF&ldouble&FIXED\\
+Lg&ldouble&general\\
+LG&ldouble&GENERAL\\
+La&ldouble&hex\\
+LA&ldouble&HEX\\
+\end{tabular}
+\end{table}
+
+\begin{table}
+\caption{C format codes: other\label{C format codes: other}}
+\centering
+\begin{tabular}[c]{rll}
+Code&Type\\
+\hline
+
+c&int (prints char)\\
+
+S&string\\
+s&\&char\\
+p&address&hex\\
+P&address&HEX\\
+\end{tabular}
+\end{table}
 
 
 \chapter{Macro processing}
-\href{http://felix-lang.org/share/lib/grammar/macros.fsyn}{Syntax}
+\href{http://felix-lang.org/share/lib/grammar/macros.fsyn}{Library Syntax Reference}
 
-\href{http://felix-lang.org/share/src/compiler/flx_desugar/flx_macro.ml}{Semantics}
+\href{http://felix-lang.org/share/src/compiler/flx_desugar/flx_macro.ml}{Compiler Semantics Reference}
 \section{Include Directive}
 An include directive has the syntax:
 
@@ -574,7 +706,7 @@ done
 
 
 \section{Constant folding and conditional compilation}
-\href{http://felix-lang.org/share/src/compiler/flx_desugar/flx_constfld.ml}{Compiler Reference}
+\href{http://felix-lang.org/share/src/compiler/flx_desugar/flx_constfld.ml}{Compiler Semantics Reference}
 
 Felix provides two core kinds of constant folding:
 folding of arithmetic, boolean, and string values, and 
