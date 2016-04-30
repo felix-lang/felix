@@ -1,5 +1,3 @@
-
-
 \documentclass[oneside]{book}
 \usepackage{color}
 \definecolor{bg}{rgb}{0.95,0.95,0.95}
@@ -1225,6 +1223,233 @@ symbol&type&semantics\\
 
 
 \section{String Type}
+\subsection{Equality and total ordering}
+\begin{minted}{felix}
+  fun == (s:string, c:string): bool
+  fun < (s:string, c:string): bool
+  fun <= (s:string, c:string): bool
+  fun > (s:string, c:string): bool
+  fun >= (s:string, c:string): bool
+\end{minted}
+
+\subsection{Equality of {\tt string} and {\tt char}}
+\begin{minted}{felix}
+  fun == (s:string, c:char): bool
+  fun == (c:char, s:string): bool
+  fun != (s:string, c:char): bool
+  fun != (c:char, s:string): bool
+\end{minted}
+
+\subsection{Append to {\tt string} object}
+\begin{minted}{felix}
+  proc  += : &string * string 
+  proc  += : &string * +char
+  proc  += : &string * char
+\end{minted}
+
+\subsection{Length of {\\ string}}
+\begin{minted}{felix}
+  fun len: string -> size
+\end{minted}
+
+\subsection{String concatenation}
+\begin{minted}{felix}
+  fun + : string * string -> string
+  fun + : string * carray[char] -> string
+  fun + : string * char -> string
+  fun + : char * string -> string
+  fun + ( x:string,  y: int):string
+\end{minted}
+
+\subsection{Repetition of {\tt string} or {\tt char}}
+\begin{minted}{felix}
+  fun * : string * int -> string
+  fun * : char * int -> string
+\end{minted}
+
+\subsection{Application of {\tt string} to {\tt string} or {\tt int} is concatenation}
+\begin{minted}{felix}
+  fun apply (x:string, y:string):string
+  fun apply (x:string, y:int):string
+\end{minted}
+
+\subsection{Construct a char from first byte of a {\tt string}}
+Returns nul char (code 0) if the string is empty.
+
+\begin{minted}{felix}
+  ctor char (x:string)
+\end{minted}
+
+\subsection{Constructors for {\tt string}}
+\begin{minted}{felix}
+  ctor string (c:char)
+  ctor string: +char 
+  ctor string: +char  * !ints
+  fun utf8: int -> string
+\end{minted}
+
+\subsection{Substrings}
+\begin{minted}{felix}
+  fun subscript: string * !ints -> char
+  fun copyfrom: string * !ints -> string
+  fun copyto: string * !ints -> string
+  fun substring: string * !ints * !ints -> string
+  fun subscript (x:string, gs:gslice[int]):string
+  proc store: &string * !ints * char
+\end{minted}
+
+\subsection{Map a string {\tt char} by {\tt char}}
+\begin{minted}{felix}
+  fun map (f:char->char) (var x:string): string = {
+\end{minted}
+
+\subsection{STL string functions}
+These come in two flavours: the standard C++ operations
+which return \verb%stl_npos% on failure, and a more Felix
+like variant which uses an @{option} type.
+
+\begin{minted}{felix}
+  const stl_npos: size
+
+  fun stl_find: string * string -> size
+  fun stl_find: string * string * size -> size
+  fun stl_find: string * +char -> size
+  fun stl_find: string * +char * size -> size
+  fun stl_find: string * char -> size
+  fun stl_find: string * char * size -> size
+
+  fun find (s:string, e:string) : opt[size] 
+  fun find (s:string, e:string, i:size) : opt[size]
+  fun find (s:string, e:+char) : opt[size]
+  fun find (s:string, e:+char, i:size) : opt[size]
+  fun find (s:string, e:char) : opt[size]
+  fun find (s:string, e:char, i:size) : opt[size]
+
+  fun stl_rfind: string * string -> size
+  fun stl_rfind: string * string * size -> size
+  fun stl_rfind: string * +char-> size
+  fun stl_rfind: string * +char * size
+  fun stl_rfind: string * char -> size
+  fun stl_rfind: string * char * size -> size
+
+  fun rfind (s:string, e:string) : opt[size]
+  fun rfind (s:string, e:string, i:size) : opt[size]
+  fun rfind (s:string, e:+char) : opt[size]
+  fun rfind (s:string, e:+char, i:size) : opt[size]
+  fun rfind (s:string, e:char) : opt[size]
+  fun rfind (s:string, e:char, i:size) : opt[size]
+
+  fun stl_find_first_of: string * string -> size
+  fun stl_find_first_of: string * string * size -> size
+  fun stl_find_first_of: string * +char -> size
+  fun stl_find_first_of: string * +char * size -> size
+  fun stl_find_first_of: string * char -> size
+  fun stl_find_first_of: string * char * size -> size
+
+  fun find_first_of (s:string, e:string) : opt[size]
+  fun find_first_of (s:string, e:string, i:size) : opt[size]
+  fun find_first_of (s:string, e:+char) : opt[size]
+  fun find_first_of (s:string, e:+char, i:size) : opt[size]
+  fun find_first_of (s:string, e:char) : opt[size]
+  fun find_first_of (s:string, e:char, i:size) : opt[size]
+
+  fun stl_find_first_not_of: string * string -> size
+  fun stl_find_first_not_of: string * string * size -> size
+  fun stl_find_first_not_of: string * +char -> size
+  fun stl_find_first_not_of: string * +char * size -> size
+  fun stl_find_first_not_of: string * char -> size
+  fun stl_find_first_not_of: string * char * size -> size
+
+  fun find_first_not_of (s:string, e:string) : opt[size]
+  fun find_first_not_of (s:string, e:string, i:size) : opt[size]
+  fun find_first_not_of (s:string, e:+char) : opt[size]
+  fun find_first_not_of (s:string, e:+char, i:size) : opt[size]
+  fun find_first_not_of (s:string, e:char) : opt[size]
+  fun find_first_not_of (s:string, e:char, i:size) : opt[size]
+
+  fun stl_find_last_of: string * string -> size
+  fun stl_find_last_of: string * string * size -> size
+  fun stl_find_last_of: string * +char -> size
+  fun stl_find_last_of: string * +char * size -> size
+  fun stl_find_last_of: string * char -> size
+  fun stl_find_last_of: string * char * size -> size
+
+  fun find_last_of (s:string, e:string) : opt[size]
+  fun find_last_of (s:string, e:string, i:size) : opt[size]
+  fun find_last_of (s:string, e:+char) : opt[size]
+  fun find_last_of (s:string, e:+char, i:size) : opt[size]
+  fun find_last_of (s:string, e:char) : opt[size]
+  fun find_last_of (s:string, e:char, i:size) : opt[size]
+
+  fun stl_find_last_not_of: string * string -> size
+  fun stl_find_last_not_of: string * string * size -> size
+  fun stl_find_last_not_of: string * +char -> size
+  fun stl_find_last_not_of: string * +char * size -> size
+  fun stl_find_last_not_of: string * char -> size
+  fun stl_find_last_not_of: string * char * size -> size
+
+  fun find_last_not_of (s:string, e:string) : opt[size]
+  fun find_last_not_of (s:string, e:string, i:size) : opt[size]
+  fun find_last_not_of (s:string, e:+char) : opt[size]
+  fun find_last_not_of (s:string, e:+char, i:size) : opt[size]
+  fun find_last_not_of (s:string, e:char) : opt[size]
+  fun find_last_not_of (s:string, e:char, i:size) : opt[size]
+\end{minted}
+
+  
+\subsection{Construe {\tt string} as set of {\tt char}}
+\begin{minted}{felix}
+  instance Set[string,char] {
+    fun \in (c:char, s:string) => stl_find (s,c) != stl_npos;
+  }
+\end{minted}
+  
+\subsection{Construe {\tt string} as stream of {\tt char}}
+\begin{minted}{felix}
+  instance Iterable[string, char] {
+    gen iterator(var x:string) () = {
+      for var i in 0 upto x.len.int - 1 do yield Some (x.[i]); done
+      return None[char];
+    }
+  }
+  inherit Streamable[string,char];
+\end{minted}
+
+\subsection{Test if a string has given prefix or suffix}
+\begin{minted}{felix}
+  fun prefix(arg:string,key:string)=
+  fun suffix (arg:string,key:string)
+  fun startswith (x:string) (e:string) : bool
+
+  // as above: slices are faster
+  fun endswith (x:string) (e:string) : bool
+
+  fun startswith (x:string) (e:char) : bool 
+  fun endswith (x:string) (e:char) : bool
+\end{minted}
+
+\subsection{h2 Trim off specified prefix or suffix or both}
+\begin{minted}{felix}
+  fun ltrim (x:string) (e:string) : string 
+  fun rtrim (x:string) (e:string) : string
+  fun trim (x:string) (e:string) : string
+\end{minted}
+
+\subsection{Strip characters from left, right, or both end of a string.}
+\begin{minted}{felix}
+  fun lstrip (x:string, e:string) : string
+  fun rstrip (x:string, e:string) : string
+  fun strip (x:string, e:string) : string
+  fun lstrip (x:string) : string
+  fun rstrip (x:string) : string
+  fun strip (x:string) : string
+\end{minted}
+
+\subsection{Justify string contents}
+\begin{minted}{felix}
+  fun ljust(x:string, width:int) : string
+  fun rjust(x:string, width:int) : string
+\end{minted}
 
 \section{Regexps}
 
