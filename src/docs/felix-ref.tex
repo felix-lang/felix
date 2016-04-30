@@ -666,7 +666,10 @@ P&address&HEX\\
 An include directive has the syntax:
 
 \begin{minted}{felix}
-include "filename";\end{minted}
+include "filename";
+include "dirname/filename";
+include "./filename";
+\end{minted}
 
 where the filename is a Unix relative filename,
 may not have an extension, and may not begin with or 
@@ -957,7 +960,43 @@ combinations when genericity in the C or C++ target
 code means the C code would be the same in each case.
 
 \section{Floating point types}
-There is a table of the operators \fullref{Floating Operators}.
+\href{http://felix-lang.org/share/lib/std/scalar/float\_math.flx}{Library Reference}
+
+There is a table of the operators \fullref{Floating Operators},
+we also have \fullref{Trig functions}.
+
+Felix also provides \verb%FINFINITY%, \verb%DINFINITY% and \verb%LINFINITY%
+for positive infinity representation for \verb%float%, \verb%double%
+and \verb%ldouble% types, respectively.
+
+\begin{table}
+\caption{Trig functions\label{Trig functions}}
+\centering
+\begin{tabular}[c]{lll}
+\hline
+symbol&type&semantics\\
+\hline
+\multicolumn{3}{c}{circular}\\
+\verb%sin%&\verb%T -> T%&sine\\
+\verb%cos%&\verb%T -> T%&cosine \\
+\verb%tan%&\verb%T -> T%&tangent\\
+\verb%asin%&\verb%T -> T%&arc (inverse) sine\\
+\verb%acos%&\verb%T -> T%&arc (inverse) cosine\\
+\verb%atan%&\verb%T -> T%&arc (inverse) tangent\\
+\multicolumn{3}{c}{hyperbolic}\\
+\hline
+\verb%sinh%&\verb%T -> T%&hyperbolic sine\\
+\verb%cosh%&\verb%T -> T%&hyperbolc cosine\\
+\verb%tanh%&\verb%T -> T%&hyperbolic tangent\\
+\verb%asinh%&\verb%T -> T%&arc (inverse) hyperbolic sine\\
+\verb%acosh%&\verb%T -> T%&arc (inverse) hyperbolic cosine\\
+\verb%atanh%&\verb%T -> T%&arc (inverse) hyperbolic tangent\\
+\hline
+\multicolumn{3}{l}{Note: Inverses return primary branch}\\
+\hline
+\end{tabular}
+\end{table}
+
 
 \begin{table}
 \caption{Floating Point Operators\label{Floating Operators}}
@@ -991,6 +1030,11 @@ symbol&kind&type&semantics\\
 \verb%ceil%&func&\verb%T->T%&ceiling\\
 \verb%floor%&func&\verb%T->T%&floor\\
 \verb%trunc%&func&\verb%T->T%&truncate\\
+\verb%embed%&func&\verb%int->T%&embedding\\
+\hline
+%\verb%exp&func&\verb%T -> T%&natural exponential\\
+%\verb%log&func&\verb%T -> T%&natural logarithm\\
+%\verb%pow&func&\verb%T * T -> T%&power\\
 \hline
 \multicolumn{4}{l}{nassoc: non-associative}\\
 \multicolumn{4}{l}{lassoc: left associative}\\
@@ -1007,7 +1051,8 @@ and \verb%lcomplex% corresponding to cartesian representation
 using a pair of \verb%float%, \verb%double% and \verb%ldouble%
 values, respectively.
 
-There is a table of the operators \fullref{Complex Operators}.
+There is a table of the operators \fullref{Complex Operators},
+we also have \fullref{Trig functions}.
 
 \begin{table}
 \caption{Complex Operators}
@@ -1018,6 +1063,12 @@ There is a table of the operators \fullref{Complex Operators}.
 symbol&kind&type&semantics\\
 \hline
 \hline
+\verb%fcomplex%&ctor&\verb%float * float -> fcomplex%&cartesian\\
+\verb%fcomplex%&ctor&\verb%float -> fcomplex%&from real\\
+\verb%dcomplex%&ctor&\verb%double * double -> dcomplex%&cartesian\\
+\verb%dcomplex%&ctor&\verb%double -> dcomplex%&from real\\
+\verb%lcomplex%&ctor&\verb%ldouble * ldouble -> lcomplex%&cartesian\\
+\verb%lcomplex%&ctor&\verb%ldouble -> lcomplex%&from real\\
 \verb%==%&infix-nassoc&\verb%T * T -> bool%&equality\\
 \verb%!=%&infix-nassoc&\verb%T * T -> bool%&inequality\\
 \hline
@@ -1036,9 +1087,14 @@ symbol&kind&type&semantics\\
 \verb%abs%&func&\verb%T->R%&norm\\
 \verb%arg%&func&\verb%T->R%&argument\\
 \hline
+%\verb%exp&func&\verb%T -> T%&natural exponential\\
+%\verb%log&func&\verb%T -> T%&natural logarithm\\
+%\verb%pow&func&\verb%T * T -> T%&power\\
+\hline
 \multicolumn{4}{l}{nassoc: non-associative}\\
 \multicolumn{4}{l}{lassoc: left associative}\\
 \multicolumn{4}{l}{func: function}\\
+\multicolumn{4}{l}{ctor: constructor}\\
 \multicolumn{4}{l}{note prefix {\tt -} maps to function {\tt neg}}\\
 \hline
 \end{tabular}
@@ -1078,6 +1134,94 @@ symbol&kind&type&semantics\\
 \end{tabular}
 \end{table}
 
+
+
+\section{Char Type}
+Felix has a type \verb%char% corresponding to C's \verb%char%.
+There are no literals of type \verb%char%, instead there
+is a function, also called \verb%char% to construct a \verb%char%
+from a string literal. If the string at least length 1, the first
+character is returned, if the string is empty the \verb%NUL% char
+\verb%\0x00% is returned.
+
+An overload of the \verb%char% function also accepts an \verb%int%
+argument and constructs a \verb%char% with the designated C code value
+which must be in the range 0 through 255.
+
+The function \verb%ord% extracts the C code value of a \verb%char%
+as an \verb%int% in the range 0 through 255.
+
+We note that C code values were originally used for the ASCII
+character set. Strings of \verb%char% may be used to represent
+ISO-10646 (Unicode) code points via the UTF-8 encoding method.
+ASCII characters in the range 0 through 127 agree with Unicode
+interpretation.
+
+\subsection{ASCII classification functions}
+There is a set of \fullref{ASCII classification functions}
+used to test the ASCII class of char.
+
+The library also provides character sets represents as
+strings, show in \fullref{ASCII charsets}
+
+\begin{table}
+\caption{ASCII charsets}
+\label{ASCII charsets}
+\centering
+\begin{tabular}[c]{ll}
+\hline
+symbol&definition\\
+\hline
+\verb%upper%&\verb%ABCDEFGHIJKLMNOPQRSTUVWXYZ%\\
+\verb%lower%&\verb%abcdefghijklmnopqrstuvwxyz%\\
+\verb%letters%&\verb%upper + lower%\\
+\verb%digits%&\verb%0123456789%\\
+\verb%alphanum%&\verb%letters + digits%\\
+\verb%cidcont%&\verb%alphanum+"_"%\\
+\verb%flxidcont%&\verb%alphanum+"_-'"%\\
+\verb%camlidcont%&\verb%alphanum+"_'"%\\
+\verb%numeric%&\verb%digits + ".eEdD_"%\\
+\end{tabular}
+\end{table}
+
+
+\begin{table}
+\caption{ASCII classification functions}
+\label{ASCII classification functions}
+\centering
+\begin{tabular}[c]{lll}
+\hline
+symbol&type&semantics\\
+\hline
+\multicolumn{3}{c}{ISO C functions}\\
+\verb%isupper%&\verb%char -> bool%&A-Z\\
+\verb%islower%&\verb%char -> bool%&a-z\\
+\verb%isalnum%&\verb%char -> bool%&A-Za-z0-9\\
+\verb%isalpha%&\verb%char -> bool%&A-Za-z\\
+\verb%isdigit%&\verb%char -> bool%&0-9\\
+\verb%isxdigit%&\verb%char -> bool%&0-9A-Za-z\\
+\verb%iscntrl%&\verb%char -> bool%&0x0-0x1F\\
+\verb%isspace%&\verb%char -> bool%&0x20\\
+\verb%isblank%&\verb%char -> bool%&0x20,0x09\\
+\verb%isprint%&\verb%char -> bool%&0x20-0x7e\\
+\verb%ispunct%&\verb%char -> bool%&punctuation\\
+\multicolumn{3}{c}{Lexing functions}\\
+\hline
+\verb%isidstart%&\verb%char -> bool%&First char identifier\\
+\verb%iscamlidcont%&\verb%char -> bool%&Ocaml, subsequent chars\\
+\verb%iscidcont%&\verb%char -> bool%&C, subsequent chars\\
+\verb%isflxidcont%&\verb%char -> bool%&Felix, subsequent chars\\
+\verb%isnumeric%&\verb%char -> bool%&\verb%0-9+-.Ee%\\
+\verb%isalphanum%&\verb%char -> bool%&A-Za-z0-9\\
+\verb%isletter%&\verb%char -> bool%&A-Za-z\\
+\verb%issq%&\verb%char -> bool%&\verb%'%\\
+\verb%isdq%&\verb%char -> bool%&\verb%"%\\
+\verb%isslosh%&\verb%char -> bool%&\verb%\%\\
+\verb%isnull%&\verb%char -> bool%&0x0\\
+\verb%iseol%&\verb%char -> bool%&\verb%\n% LF: Unix, CR: Windows\\
+\hline
+\end{tabular}
+\end{table}
 
 
 \section{String Type}
