@@ -1,0 +1,22 @@
+sudo: false
+language: python
+python:
+    - "3.2"
+    - "3.3"
+    - "3.4"
+    #- "pypy3"
+addons:
+    apt:
+        packages:
+            - build-essential
+            - clang
+            - java-common
+            - scala
+            - ghc
+            - ocaml
+            - ocaml-native-compilers
+            - ocaml-nox
+            - ocaml-findlib
+            - ocaml-interp
+            - ocaml-batteries-included
+script: "./travis.sh"
