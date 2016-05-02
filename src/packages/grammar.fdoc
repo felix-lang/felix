@@ -1559,6 +1559,7 @@ syntax expressions {
     "`(ast_name ,_sr ,(first _1) ,(second _1))";
 
   ssimple_name_parts := sname =># "`(,_1 ())";
+  ssimple_name_parts := sname "[" "]" =># "`(,_1 ())";
   ssimple_name_parts := sname "[" sexpr "]" =># "`(,_1 ,(mkl _3))";
 
   //$ Suffixed name (to name functions).

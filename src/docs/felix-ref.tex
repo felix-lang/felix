@@ -739,6 +739,121 @@ constructions.
 
 \part{Lookup}
 
+\chapter{Names}
+Felix has several kinds of names which can find two kinds of entities.
+
+A {\em simple name} is just an identifier.
+
+\begin{minted}{felix}
+  x
+  joe
+\end{minted}
+
+An {\em simple indexed name} is an identifier followed by an
+open square bracket \verb%[", a possibly empty comma separated list of type
+expressions, followed by a close square bracket \verb%]%. If the list
+is empty, the name is equivalent to a simple name. 
+
+\begin{minted}{felix}
+  x[] // equivalent to just x
+  joe[int]
+  fred[int,string]
+\end{minted}
+
+An {\em unqualified name} is a simple name or simple
+indexed name. Because indexed names with an empty index list
+are equivalent to simple unindexed names, all unqualified names
+are notionally simple indexed names.
+
+A {\em qualified name} is sequence of at least two unqualified names
+separated by two colons \verb%::%.
+
+\begin{minted}{felix}
+  A::B::f
+  A[int]::f[long]
+  root::B
+\end{minted}
+
+The special name \verb%root% is an alias for the top level module
+name and may be used to force qualified name lookup  starting with the top
+level module.
+
+An {\em unsuffixed name} is a qualified or unqualified name.
+
+A {\em suffixed name} is an unsuffixed name followed by a suffix consisting
+of the word \verb%of% followed either by a simple name, or a possibly empty
+comma separated list of type expressions enclosed in parentheses \verb%(% and
+\verb%)%.
+
+Names refer either to a function set or single non-function entity.
+Finding the entity a particular use of a name refers to is called
+{\em name lookup} or {\em name binding}.
+
+\section{Unqualified name lookup}
+Unqualified name lookup is performed using one of 
+two base general algorithms, depending on the kind
+of name required.
+
+\subsection{Basic unqualified non-function lookup}
+When seeking a non-function, Felix first looks for the
+simple (non-indexed) part of the unqualified name in the
+current scope.
+
+If the name is found but it is a function symbol
+the compiler aborts with a diagnostic message.
+
+If the name is not found, it then looks in the special
+shadow scope of the current context which contains symbols
+inserted by \verb%open% or \verb%rename% directives.
+
+If an \verb%open% or \verb%rename% directive introduces
+the same non-function name into the same shadow scope
+and it refers to the same non-function, with the equivalent
+indices, one entry is discarded to prevent an ambiguous
+name error, when in fact both insertions are equivalent
+and refer to the same entity.
+
+The equivalent indices check works by testing for
+type equality of corresponding index expressions
+using a unification algorithm. For example
+
+\begin{minted}{felix}
+class Unique[T] { typedef A = B; }
+open[U] Unique[U * U];
+open[V] Unique[V * V];
+var x: A[int]; // OK
+\end{minted}
+
+
+If there are two occurences of the name in the shadow scope,
+it aborts the compiler with a diagnostic message.
+
+If the name is still not found, Felix repeats the process in
+the parent scope, if any, or aborts the compile with
+a diagnostic if there is no parent.
+
+If the name is indexed, it then checks that the number 
+and kind of indices matches the definition of the symbol
+discovered, if not it aborts the compiler with a 
+diagnostic.
+
+\subsection{Basic unqualified function lookup}
+When seeking a function, felix follows similar rules
+to non-functions, except as follows. When a function
+symbol is found, it consists of a set of functions,
+not a single function. Felix then performs overload
+resolution to determine if any of the candidates matches.
+If there is no match at all, it proceeds with the next step.
+If there is more than one match, and no match is most specialised,
+it aborts with a diagnostic message.
+
+Lookup in the shadow scope is performed similarly.
+Function names introduced from multiple opens are merged
+prior to the shadow scope lookup. This merger ensures that
+if the same name is present in two opens, refers to the same
+original symbol, and has the same type indicies, one is discarded.
+
+
 \chapter{Classes}
 \href{http://felix-lang.org/share/lib/grammar/namespaces.fsyn}{Syntax}
 
@@ -843,23 +958,25 @@ class MakePair[T,U] {
 Polymorphic classes may not directly contain variables,
 all members must be function or type definitions.
 
-\subsection{Qualified Names}
+\subsection{Indexed Names}
 
 Entities from a class can be specified from
 outside using a qualified name in which the
 class name is followed a square bracketted list
 of types instantiating the corresponding type
-variables:
+variables, this is an {\em indexed name}:
 
 \begin{minted}{felix}
 var f = MakePair[int,string]::fwd_pair 42 "Hello";
 var r = MakePair[int,string]::rev_pair 42 "Hello";
 \end{minted}
 
+\subsection{Deduced indices}
 However one or more or even all the types can be omitted
 from the right end of the list if they can be deduced by 
 overload resolution. 
 
+\subsection{Elision of indices}
 The square brackets are optional if they enclose an
 empty list.
 
@@ -870,28 +987,38 @@ f = MakePair[]::fwd_pair 42 "Hello";
 f = MakePair::fwd_pair 42 "Hello";
 \end{minted}
 
+Note that all symbols in Felix are considered to be
+indexed. So for example this is correct:
+
+\begin{minted}{felix}
+var x = 1;
+println$ x[];
+\end{minted}
+
+\subsection{Sloppy indexing}
 It is also permitted to move the instance types across
 qualification boundaries:
 
 \begin{minted}{felix}
-f = MakePair[int,string]::fwd_pair 42 "Hello";
+f = MakePair[int]::fwd_pair[string] 42 "Hello";
 \end{minted}
 
 although this practice is not recommended.
 
-From the outside, a class type variables are
-viewed as existential quantification. From
+From the outside, class type variables are
+viewed as univeral quantification. From
 inside however, the variable names are
 fixed types which happen to be unknown, that
 is they're to be considered as existentials.
 
 This means they cannot be specified explicitly
-or implicitly inside the class:
+or implicitly inside the class with unqualified access:
 
 \begin{minted}{felix}
 class A[T] {
   fun f(x:T) => x,x;
    fun g(y:T) => f y; // correct
+   fun h(y:T) => A[T]::f y; // correct
    // fun h(y:T) => f[T] y; // wrong
 }
 \end{minted}

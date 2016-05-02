@@ -137,6 +137,26 @@ if name = "ff" then print_endline ("Merging view " ^ string_of_entry_kind x^ " l
   result
 
 
+(* compares entry kinds, with alpha conversion of type subscripts *)
+let eq_entry_kinds y1 y2 =
+  match y1, y2 with
+    ({base_sym=bid1; spec_vs=vs1; sub_ts=ts1} as y1),
+    ({base_sym=bid2; spec_vs=vs2; sub_ts=ts2} as y2)
+   ->
+   if bid2 <> bid2 then false else
+   begin 
+     assert (List.length ts1 = List.length ts2); (* got to be the same! *)
+     if List.length vs1 <> List.length vs2 then false else
+     let nvs = List.length vs1 in
+     (* just hope these variables aren't used, since they're low indices this should be safe *)
+     let nuvs = List.map (fun i -> btyp_type_var (i, BTYP_type 0)) (Flx_list.nlist nvs) in
+     let sr = dummy_sr in 
+     let ts1 = List.map (fun t-> Flx_unify.tsubst sr vs1 nuvs t) ts1 in
+     let ts2 = List.map (fun t-> Flx_unify.tsubst sr vs2 nuvs t) ts2 in
+     (* OK, a bit hacky! should use type_eq but that requires counter and bsym_table *)
+     (btyp_type_tuple ts1) = (btyp_type_tuple ts2)
+   end
+
 let lookup_name_in_table_dirs table dirs sr name : entry_set_t option =
 (*
 if name = "ff" then print_endline ("Lookup name in table dirs " ^ name);
@@ -170,7 +190,7 @@ if name = "ff" then print_endline ("Lookup name in table dirs " ^ name);
       | (NonFunctionEntry (i)) as some ::_ ->
           if
             List.fold_left begin fun t -> function
-              | NonFunctionEntry (j) when i = j -> t
+              | NonFunctionEntry (j) when eq_entry_kinds i j -> t
               | _ -> false
             end true opens
           then
