@@ -326,12 +326,13 @@ class Executable(Path):
 
 def _guess_builder(name, compilers, functions, ctx, *args,
         platform=None,
-        platform_extra=set(),
+        platform_extra=None,
         platform_options=[],
         exe=None,
         **kwargs):
     if platform is None:
         platform = fbuild.builders.platform.guess_platform(ctx, platform)
+    platform_extra = platform_extra or set()
     if not platform_extra & compilers:
         if exe is not None:
             tp = identify_compiler(ctx, exe)
@@ -350,6 +351,7 @@ def _guess_builder(name, compilers, functions, ctx, *args,
         # a) Clang can actually be detected
         # b) Any compilers explicitly listed in platform_extra will have #1
         #  priority
+
         if subplatform - (compilers & platform_extra) <= platform:
             new_kwargs = copy.deepcopy(kwargs)
 
@@ -401,6 +403,8 @@ def identify_compiler(ctx, exe):
         res = {'clang', 'clang++'}
     elif exe == 'gcc' or exe == 'g++' or exe == 'colorgcc':
         res = {'gcc', 'g++'}
+    elif exe == 'icc' or exe == 'icpc':
+        res = {'icc', 'icpc'}
     elif exe == 'cl' or exe == 'cl.exe':
         res = {'windows'}
     else:
@@ -417,7 +421,8 @@ def identify_compiler(ctx, exe):
                     res = {'windows'}
         else:
             ccmap = {'Free Software Foundation': {'gcc', 'g++'},
-                     'clang': {'clang', 'clang++'}}
+                     'clang': {'clang', 'clang++'},
+                     'ICC': {'icc', 'icpc'}}
             for cc in ccmap:
                 if bytes(cc, encoding='ascii') in out:
                     res = ccmap[cc]
@@ -435,7 +440,7 @@ def guess_static(*args, **kwargs):
     arguments and keywords are passed to the compiler's configuration
     functions."""
 
-    return _guess_builder('c static', {'gcc', 'clang'}, (
+    return _guess_builder('c static', {'gcc', 'clang', 'icc'}, (
         ({'windows'}, 'fbuild.builders.c.msvc.static'),
         ({'avr', 'gcc'}, 'fbuild.builders.c.gcc.avr.static'),
         ({'iphone', 'simulator', 'gcc'},
@@ -444,6 +449,7 @@ def guess_static(*args, **kwargs):
         ({'darwin', 'clang'}, 'fbuild.builders.c.clang.darwin.static'),
         ({'darwin', 'gcc'}, 'fbuild.builders.c.gcc.darwin.static'),
         ({'clang'}, 'fbuild.builders.c.clang.static'),
+        ({'icc'}, 'fbuild.builders.c.intel.static'),
         ({'gcc'}, 'fbuild.builders.c.gcc.static'),
     ), *args, **kwargs)
 
@@ -454,7 +460,7 @@ def guess_shared(*args, **kwargs):
     arguments and keywords are passed to the compiler's configuration
     functions."""
 
-    return _guess_builder('c shared', {'gcc', 'clang'}, (
+    return _guess_builder('c shared', {'gcc', 'clang', 'icc'}, (
         ({'windows'}, 'fbuild.builders.c.msvc.shared'),
         ({'avr', 'gcc'}, 'fbuild.builders.c.gcc.avr.shared'),
         ({'iphone', 'simulator', 'gcc'},
@@ -463,5 +469,6 @@ def guess_shared(*args, **kwargs):
         ({'darwin', 'clang'}, 'fbuild.builders.c.clang.darwin.shared'),
         ({'darwin', 'gcc'}, 'fbuild.builders.c.gcc.darwin.shared'),
         ({'clang'}, 'fbuild.builders.c.clang.shared'),
+        ({'icc'}, 'fbuild.builders.c.intel.static'),
         ({'gcc'}, 'fbuild.builders.c.gcc.shared'),
     ), *args, **kwargs)

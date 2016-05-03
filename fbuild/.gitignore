@@ -1,0 +1,7 @@
+*.py[co]
+*.sw[po]
+build/
+dist/
+lib/fbuild.egg-info
+__pycache__/
+ocamlprof.dump

@@ -121,7 +121,11 @@ class Path(str):
         Path('foo/bar/baz.ext')
         """
         if not self.startswith(root):
-            return Path(root, self)
+            if os.path.isabs(self):
+                path = os.path.split(self)[1]
+            else:
+                path = self
+            return Path(root, path)
         return Path(self)
 
     def abspath(self):

@@ -24,7 +24,7 @@ def build(ctx):
     lib1 = shared.build_lib('shared1', ['lib1/lib1.c'], macros=['BUILD_LIB1'])
     lib2 = shared.build_lib('shared2', ['lib2/lib2.c'], macros=['BUILD_LIB2'],
         includes=['lib1'], libs=[lib1])
-    exe = shared.build_exe('shared', ['exe.c'],
+    exe = shared.build_exe('shared', [fbuild.path.Path.abspath('exe.c')], # test absolute paths
         includes=['lib1', 'lib2'], libs=[lib2])
 
     ctx.logger.log(' * running %s:' % exe)

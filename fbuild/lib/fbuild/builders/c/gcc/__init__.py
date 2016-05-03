@@ -103,6 +103,7 @@ class Ar(fbuild.db.PersistentObject):
 
 class Gcc(fbuild.db.PersistentObject):
     def __init__(self, ctx, exe, *,
+            src_suffix,
             pre_flags=(),
             flags=(),
             includes=(),
@@ -126,6 +127,7 @@ class Gcc(fbuild.db.PersistentObject):
         super().__init__(ctx)
 
         self.exe = exe
+        self.src_suffix = src_suffix
         self.pre_flags = tuple(pre_flags)
         self.flags = tuple(flags)
         self.includes = tuple(includes)
@@ -321,7 +323,7 @@ class Gcc(fbuild.db.PersistentObject):
 
         code = 'int main(int argc, char** argv){return 0;}'
 
-        with tempfile(code, suffix='.c') as src:
+        with tempfile(code, suffix=self.src_suffix) as src:
             try:
                 self([src], flags=flags, quieter=1, cwd=src.parent)
             except fbuild.ExecutionError:
@@ -513,7 +515,8 @@ def static(ctx, exe=None, *args,
         exe_suffix=None,
         cross_compiler=False,
         **kwargs):
-    cc = make_cc(ctx, exe, libpaths=libpaths, libs=libs, **kwargs)
+    cc = make_cc(ctx, exe, src_suffix=src_suffix, libpaths=libpaths, libs=libs,
+                 **kwargs)
 
     # Allow the user to overload the file extensions.
     if obj_suffix is None:
@@ -564,7 +567,8 @@ def shared(ctx, exe=None, *args,
         exe_suffix=None,
         cross_compiler=False,
         **kwargs):
-    cc = make_cc(ctx, exe, libpaths=libpaths, libs=libs, **kwargs)
+    cc = make_cc(ctx, exe, src_suffix=src_suffix, libpaths=libpaths, libs=libs,
+                 **kwargs)
 
     # Allow the user to overload the file extensions.
     if obj_suffix is None:

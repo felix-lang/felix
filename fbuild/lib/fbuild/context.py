@@ -116,7 +116,6 @@ class Context:
     # --------------------------------------------------------------------------
 
     def execute(self, cmd, msg1=None, msg2=None, *,
-            arch=None,
             color=None,
             quieter=0,
             stdout_quieter=None,
