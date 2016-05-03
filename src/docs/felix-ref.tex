@@ -740,8 +740,10 @@ constructions.
 \part{Lookup}
 
 \chapter{Names}
+\section{Kinds of Names}
 Felix has several kinds of names which can find two kinds of entities.
 
+\subsection{Simple Names}
 A {\em simple name} is just an identifier.
 
 \begin{minted}{felix}
@@ -749,8 +751,9 @@ A {\em simple name} is just an identifier.
   joe
 \end{minted}
 
+\subsection{Simple Indexed Names}
 An {\em simple indexed name} is an identifier followed by an
-open square bracket \verb%[", a possibly empty comma separated list of type
+open square bracket \verb%[%, a possibly empty comma separated list of type
 expressions, followed by a close square bracket \verb%]%. If the list
 is empty, the name is equivalent to a simple name. 
 
@@ -760,11 +763,13 @@ is empty, the name is equivalent to a simple name.
   fred[int,string]
 \end{minted}
 
+\subsection{Unqualified Names}
 An {\em unqualified name} is a simple name or simple
 indexed name. Because indexed names with an empty index list
 are equivalent to simple unindexed names, all unqualified names
 are notionally simple indexed names.
 
+\subsection{Qualified Names}
 A {\em qualified name} is sequence of at least two unqualified names
 separated by two colons \verb%::%.
 
@@ -774,22 +779,169 @@ separated by two colons \verb%::%.
   root::B
 \end{minted}
 
+\subsection{Special name {\tt root}}
 The special name \verb%root% is an alias for the top level module
 name and may be used to force qualified name lookup  starting with the top
 level module.
 
+\subsection{Unsuffixed Name}
 An {\em unsuffixed name} is a qualified or unqualified name.
 
+\subsection{Suffixed Name}
 A {\em suffixed name} is an unsuffixed name followed by a suffix consisting
 of the word \verb%of% followed either by a simple name, or a possibly empty
 comma separated list of type expressions enclosed in parentheses \verb%(% and
 \verb%)%.
 
+\begin{minted}{felix}
+fun f (x:int) => x;
+fun f (x:double, s:string) => x.str + s;
+var closure = f of (double * string); // suffixed name
+\end{minted}
+
+Suffixed names are used to disambiguate references to functions
+from an overloaded set.
+
+\section{Symbol Tables}
+Felix represents scopes using symbol tables. There are two kinds of symbol table.
+
+\subsection{Symbol definition table}
+Every symbol defined is allocated a unique integer representative and 
+the definition is stored in a hash table keyed by this integer, 
+this is the {\em symbol definition table}. 
+The definition includes a reference to the parent if any, and, a name lookup table if the
+defined entity contains a scope.
+
+\subsection{Name lookup table}
+For each scope, another hash table called a {\em name lookup table}
+is used which maps a string name to a single entry which is one of two
+kinds: either the entry is a non-function entry or a function entry.
+Non-function entries contain a single view of a symbol, whilst 
+function entries contain a list of views.
+
+\subsection{Views}
+A {\em view} of a symbol consists of the index of the definition in the
+symbol definition table together with a list of type variables and a list
+of type expressions using these type variables, this list of
+type expression must agree in number with the type variables 
+in the entry symbol definition table.
+
+The interpretation of a definition refered to by a view is as a polymorphic
+definition indexed by the view type variables, with each use of the
+definition's type variables in the body of the definition replaced
+by the corresponding type in the view's list of type expressions.
+
+For example:
+
+\begin{minted}{felix}
+class A[T] { fun f:T * T -> T; }
+open[U, V] A[U * V];
+var x = f ( (1,2.0), (3, 4.0) );
+\end{minted}
+
+This matches because the view of f available in
+the open has type
+
+\begin{minted}{felix}
+(U * V) * (U * V)
+\end{minted}
+
+via the assigment \verb%T <- U * V%,
+and the assignents
+\verb%U <- int% and \verb%V <- long% mean the function call
+is a specialisation of the view, which in turn is a specialisation
+of the original function.
+
+Multiple views of a function, even if overlapping, never create
+an ambiguity: views are logically merged with non-discriminated
+setwise union.
+
+This is effected as follows by overload resolution.
+
+\section{Overload Resolution}
+Overload resolution proceeeds as follows. We start with the result
+of a function lookup which returns a set of views called candidates.
+Our aim is to select a unique function, together with assignments to
+the type variables of the definition, which cause the signature
+of the call to equal the signature of the function, and any constraints
+specified for the function to be satisfied.
+
+\begin{itemize}
+\item During overload resolution, a subset of the
+candidates views is selected which match the supplied name and signatures.
+
+\item Constraints are now applied to eliminate candidates additional candidates.
+See \fullref{Type Constraints} for more details.
+
+\item The subset is then reduced by eliminating views which are strictly less
+specialised than another. 
+
+\item If the result of this reduction consists of a set
+of more than one view or the same function, then they must map to the same
+specialisation of the function, and overload resolution has succeeded. 
+\end{itemize}
+
+The algorithm is non trivial. Here is another example:
+
+\begin{minted}{felix}
+class A[T] { fun f (x:T) => x; }
+open[U] A[U * int];
+open [V] A[int * V];
+println$ f (1,1);
+\end{minted}
+
+Here, there are two views of \verb$f$, {\em both} of which 
+have \verb%T <-int% as a specialisation. The first views is accepted
+because \verb%U <- int% shows the call signature \verb%int * int%
+is a specialisation of signature \verb%U * int%, 
+and the second because \verb%V <- int% shows the call signatures is
+a specialisation of the signature \verb%int * V%.
+
+Now, the first view provides the substitution \verb%T <- U * int%
+and the second \verb%T <- int * V%, and substituting the respective
+specialisations of the views by the call results in the same specialisation
+of the original function \verb%T <- int * int%. Therefore this specialisation,
+being unique, allows the function \verb%f% to be called directly with signature
+\verb%int * int%.
+
+Not all calls view the views uniify. For example a call on signature
+\verb%long * int% only matches the first view, and with \verb%int * long%
+only matches the second: the point is that if more than one view
+of the same function matches, it is never ambiguous because the views
+always lead to the same specialisation of the function.
+
+This is not true if the views are views of distinct functions.
+Something like this can and does happen when the inverse of view
+lookup is performed when instantiating class virtual functions
+with distinct instances. In this case, if there are two instances
+which match, neither of which is most specialised, then Felix
+will report an ambiguity, even though semantically the behaviour
+is required to be the same: the semantic requirement is too sloppy
+to ensure this is meaninful.
+
+Our conclusion is that the programmer is free to open overlapping
+views of the same function, and in particular duplicated opens
+do not cause a problem (the same consideration applies to non-functions).
+This is {\em not} the case when specifying type class instances,
+where overlaps are associated with distinct definitions, so that
+a single most specialised definition is required. This issue,
+however, does not occur in ordinary (phase 1) lookup of names.
+It occurs only during instantiation by monomorphisation when
+a type class virtual must select from available instances.
+In this case, there is no overloading to consider since the
+particular function in each instance is already selected:
+we only need consider the specialisation lattice.
+
+\section{Lookup}
 Names refer either to a function set or single non-function entity.
 Finding the entity a particular use of a name refers to is called
 {\em name lookup} or {\em name binding}.
 
-\section{Unqualified name lookup}
+Note that unlike C++, Felix has no automatic type conversions.
+Matching of signatures in Felix must be exact.
+(However see \fullref{Row Polymorphism}).
+
+\subsection{Unqualified name lookup}
 Unqualified name lookup is performed using one of 
 two base general algorithms, depending on the kind
 of name required.
@@ -814,8 +966,7 @@ name error, when in fact both insertions are equivalent
 and refer to the same entity.
 
 The equivalent indices check works by testing for
-type equality of corresponding index expressions
-using a unification algorithm. For example
+type equality after alpha conversion. For example
 
 \begin{minted}{felix}
 class Unique[T] { typedef A = B; }
@@ -824,25 +975,111 @@ open[V] Unique[V * V];
 var x: A[int]; // OK
 \end{minted}
 
-
 If there are two occurences of the name in the shadow scope,
-it aborts the compiler with a diagnostic message.
+it aborts the compile with a diagnostic message.
+Note: this error occurs whilst creating the shadow scope,
+even if the symbol is not used.
 
 If the name is still not found, Felix repeats the process in
 the parent scope, if any, or aborts the compile with
 a diagnostic if there is no parent.
 
+\begin{minted}{felix}
+var x = 1;
+class A {
+  var x = "hello";
+  class C {
+     fun f() => x; // A::x = hello
+   }
+}
+
+begin
+  fun f() => x; // root::x = 1
+end
+
+open A;
+fun f() => x; // root::x = 1
+
+begin
+  open A;
+  fun f () => x; // A::x = hello
+end
+\end{minted}
+
 If the name is indexed, it then checks that the number 
 and kind of indices matches the definition of the symbol
-discovered, if not it aborts the compiler with a 
+discovered, if not it aborts the compile with a 
 diagnostic.
 
 \subsection{Basic unqualified function lookup}
-When seeking a function, felix follows similar rules
-to non-functions, except as follows. When a function
-symbol is found, it consists of a set of functions,
+This is the same as non-function lookup, except that
+the result is expected to be a set of functions
+with exactly one member.
+
+\begin{minted}{felix}
+fun f() => 1;
+var closure = f; // only one f, OK
+\end{minted}
+
+\subsection{Lookup with signatures}
+Felix can find a list of signatures for a function
+lookup in two contexts.
+
+If the name is a suffixed name, the suffix supplies
+the sole signature:
+
+\begin{minted}{felix}
+fun f (x:int) => x;
+fun f (x:double) => x;
+var closure = f of (double);
+\end{minted}
+
+In an application or call the argument or arguments supply
+the signatures:
+
+\begin{minted}{felix}
+fun f (x:int) => x;
+fun f (x:double) => x;
+var xi = f 1; // f of (double);
+var xd = f 1.0; // f of (double);
+
+fun g(x:int) (y:int) => x + y;
+fun g(x:int) (y:double) => x.double + y;
+
+var yi = g 1 2; // signatures int,int
+var ydi = g 1 2.0; // signatures int,double
+// var closure = g 1; // ambiguous, error
+\end{minted}
+
+Care must be taken designing functions to reduce
+possible ambiguities. Using curried arguments has advantages
+but one disadvantage is that eta-expansion may be required
+to select the right overload. A famous example from the 
+Felix library:
+
+\begin{minted}{felix}
+class List {
+  fun map[T,U] (f:T->U) (ls: list[T]) : list[U];
+}
+class Varray {
+  fun map[T,U] (f:T->U) (ls: varray[T]) : varray[U];
+}
+
+open List;
+open Array;
+fun itod (x:int): double => x.double;
+// var closure = map itod; // Error, which map?
+\end{minted}
+
+
+\subsection{Unqualified function lookup with signatures}
+When seeking a function with signatures, 
+felix follows similar rules to non-functions, except as follows. 
+
+When a function symbol is found, it consists of a set of functions,
 not a single function. Felix then performs overload
 resolution to determine if any of the candidates matches.
+
 If there is no match at all, it proceeds with the next step.
 If there is more than one match, and no match is most specialised,
 it aborts with a diagnostic message.
@@ -852,7 +1089,81 @@ Function names introduced from multiple opens are merged
 prior to the shadow scope lookup. This merger ensures that
 if the same name is present in two opens, refers to the same
 original symbol, and has the same type indicies, one is discarded.
+Note: this merge of equivalent names is not done when constructing
+the shadow scope, but during overload resolution. Therefore it
+is not an error to introduce the same name with the same signature
+for distinct functions, it is only an error if there is an attempt
+to use such a name. This is different from non-function lookup.
 
+\begin{minted}{felix}
+fun f(x:int) => x; // signature int
+class A {
+  fun f(x:double) => x; // signature double
+  fun g() {
+    return f 1; // signature int: finds root::f of (int)
+  }
+}
+begin 
+  open A;
+  fun f(x:string) => x; // signature string;
+  var x = f 1.1; // signature int: finds A::f of (double)
+end
+\end{minted}
+
+For the first lookup, there is no f in g.
+There is no shadow scope.
+The f in A has signature double which doesn't match.
+The f in root has signature int which matches.
+
+For the second lookup we want an f with signature double.
+The f in the begin/end scope does not match.
+The f in the begin/end shadow scope introduced by the open
+does match so A::f of (double) is found.
+
+Note that this algorithms is not the same as C++.
+Felix has fixed the design fault.
+
+   
+\subsection{Qualified non-funtion name lookup}
+Qualified name lookup for a non-function proceeds by
+first performing an unqualified name lookup on the first
+component of the qualified name, ignoring indices.
+
+If the name is not found the compile aborts and a diagnostic
+is issued. If the name is not a class name, the compiler aborts
+and a diagnostic is issued.
+
+Now, the next component is searched for in the
+specified class scope. If the name is not found, the compile
+aborts and a diagnostic is issued. The search ignores shadow
+scopes, and it does not proceed into the context of the
+classes parent. However it does take inherited names into account.
+All names except the final one must resolve to class names.
+
+The search a non-ultimate name requires a class to be found
+in the previously found class. Qualified name lookup, therefore,
+drills down into a class heirarchy from the root.
+
+The final name is sought similarly and must be of the
+kind sought.
+
+Finally the complete sequence of type index parameters is checked
+for length against the entity's definition.
+
+\subsection{Qualified function name lookup}
+Searching for a qualified name of a function is the same
+as for a non-function, except that a set of overloaded
+functions may be returned. 
+
+If a unique symbol is required, then the set must contain
+only one function name.
+
+\subsection{Qualified lookup for function with signatures}
+A standard qualified name lookup is performed so that the
+last component returns a function set. 
+
+Overload resolution is then performed on the function set.
+The result is final.
 
 \chapter{Classes}
 \href{http://felix-lang.org/share/lib/grammar/namespaces.fsyn}{Syntax}
@@ -1670,6 +1981,7 @@ with those on the left.
 
 
 \subsection{Row Polymorphism}
+\label{Row Polymorphism}
 Felix provides a special record type called a {\em polyrecord} which
 supports row polymorphism with scoped labels in the style of
 Daan Leijen. The article
@@ -2157,9 +2469,72 @@ These casts cannot be used outside the class, thereby hiding the implementation
 outside the class.
 
 \chapter{Polymorphism}
-TBD
+\section{Type Constraints}
+\label{Type Constraints}
+Felix provides 4 kinds of type constraints.
+\subsection{Typeset membership constraints}
+Typesets were introduced to Felix to simplify bindings to C functions.
+For example:
 
+\begin{minted}{felix}
+typedef someints = typesetof (int, long);
+typedef someuints = typesetof (uint, ulong);
+fun someadd[T in someints] : T * T -> T = "$1+$2";
+fun someadd[T in someuints] : T * T -> T = "$1+$2";
+println$ someadd (1,2); // OK, first function
+println$ someadd (1u,2u); // OK, second function
+// println$ someadd (1,2u); // fails
+\end{minted}
 
+In this example, a call to \verb%someadd% will only work if
+the arguments types are the same and both either \verb%int% or \verb%long%.
+Overload resolution first treats the functions as if there were no constraints.
+Then, any candidate which fails the constraint it thrown out of the set.
+
+This method saves writing out all the cases individually,
+which may be exponential in the number of individual types involved,
+whilst at the same time preventing invalid cases which an unconstrained
+binding would allow.
+
+If two candidates exist with the same signatures, and one has
+a constraint and the other does not (or has the constant constraint true),
+the constrained candidate is considered more specialised than the
+unconstrained one.
+
+However in general, constraints cannot be compared to see which is
+most specialised. In particular if for all values of type variables
+constraint A implies constraint B, A is more specialised, however
+there is no operational method for measuring this in general
+(halting problem!).
+
+\subsection{Relational Constraints}
+Typeset constraints are actually a special case of the more general
+form of a constraint which may be any evaluable predicate on any
+type expression possibly involving one or more type variables.
+
+For example:
+
+\begin{minted}{felix}
+fun f[T,U where T * int == int * U] (x:T * U) => x;
+println$ f (1,2);
+\end{minted}
+
+This example uses an equational constraint.
+
+Here is another example using a typematch:
+
+\begin{minted}{felix}
+typedef fun ispair (x:TYPE) : TYPE => 
+  typematch x with
+  | _ * _ => 1
+  | _ => 0
+  endmatch
+;
+
+fun f[T where ispair T] (x:T)=>x;
+
+println$ f (42,33L); // OK, signature ispair (int * long) true
+\end{minted}
 
 \part{Definitions}
 \chapter{Variable Definitions}
