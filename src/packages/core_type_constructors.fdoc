@@ -43,7 +43,14 @@ open class Typing
     endmatch
   ;
 
-  typedef fun type_land(x:TYPE, y:TYPE):TYPE =>
+  typedef fun lnot(x:TYPE):TYPE=>
+    typematch x with
+    | 0 => 1
+    | _ => 0
+    endmatch
+  ;
+
+  typedef fun land(x:TYPE, y:TYPE):TYPE =>
     typematch (x,  y) with
     | 0, _ => 0
     | _,0 => 0
@@ -51,7 +58,7 @@ open class Typing
     endmatch
   ;
 
-  typedef fun type_lor(x:TYPE, y:TYPE):TYPE=>
+  typedef fun lor(x:TYPE, y:TYPE):TYPE=>
     typematch (x,  y) with
     | 0, 0 => 0
     | _,_ => 1
@@ -71,6 +78,26 @@ open class Typing
     | _ => 0
     endmatch
   ;
+
+  typedef fun != (x:TYPE, y:TYPE):TYPE=> lnot (x , y);
+
+  typedef fun <= (x:TYPE, y:TYPE):TYPE=>
+    typematch x with
+    | y => 1 
+    | _ => 0
+    endmatch
+  ;
+
+  typedef fun >= (x:TYPE, y:TYPE):TYPE=>
+    typematch y with
+    | x => 1 
+    | _ => 0
+    endmatch
+  ;
+
+  typedef fun > (x:TYPE, y:TYPE):TYPE=> y <= x;
+  typedef fun < (x:TYPE, y:TYPE):TYPE=> y >= x;
+
 
   const memcount[t] : size = "#memcount";
   const arrayindexcount[t] : size = "#arrayindexcount";

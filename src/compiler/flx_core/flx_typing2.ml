@@ -121,6 +121,10 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
       fold_left (fun sum t -> TYP_apply (lland,TYP_type_tuple [sum; te t])) (te h) t
     end
 
+  | EXPR_not (sr,e) ->
+    let lnot = TYP_name (sr,"lnot",[]) in
+    TYP_apply (lnot, TYP_type_tuple [te e])
+
   | EXPR_typeof (_,e) -> TYP_typeof e
   | EXPR_as (sr,(t,x)) -> TYP_as (te t,x)
 

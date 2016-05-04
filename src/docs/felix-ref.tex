@@ -80,6 +80,60 @@ of each parse unit, resulting in a single AST, which
 is then translated to a C++ translation unit by the
 compiler.
 
+The ASTs to be concatenated are those parsed from
+the parse units specified by the transitive closure
+of include directives.
+
+The order of concatenation is unspecified.
+Note that include directives do {\em not} cause
+an AST to be inserted at the point where the
+directive is written.
+
+Parse units can be and are parsed independently.
+The contents of a parse unit cannot influence the
+parsing of another.
+
+\section{Include Directive}
+\subsection{Syntax}
+An include directive has the syntax:
+
+\begin{minted}{felix}
+include "filename";
+include "dirname/filename";
+include "./filename";
+\end{minted}
+
+where the filename is a Unix relative filename,
+may not have an extension, and may not begin with or 
+contain \verb%..% (two dots).
+
+If the filename begins with \verb%./% then the balance of the name
+is relative, a sibling of the including file, otherwise the name
+is searched for on an include path. 
+
+In either case, a search succeeds when it finds a file with
+the appropriate base path in the search directory with
+extension \verb%.flx% or \verb%.fdoc%. If both files exist the
+most recently changed one is used. If the time stamps are
+the same the choice is unspecified.
+
+\subsection{Effect}
+An include directive is included in the AST generated
+by the parser. 
+
+An extraction process extracts the set of directives
+and locates the files specified and adds them to a set
+of files which must be parsed.
+
+Unparsed files are upgraded to parse units and parsed,
+and then the extraction process again applied. 
+
+When all the files have been processed the resulting
+ASTs are concatenated.
+
+Felix uses a caching scheme to avoid parsing all the
+files every time.
+
 \section{Grammar}
 The Felix grammar is part of the library.
 It is notionally prefixed to each file to be processed
@@ -97,10 +151,402 @@ AST structure.
 The parser is a scannerless GLR parser with significant
 extensions.
 
+\chapter{Parsing}
+Felix has the most advanced parser of any production
+programming language. The parser is extensible, and Felix
+makes good use of this. The core, hardcoded grammar, called
+the {\em bootstrap grammar} does not provide the syntax for
+the Felix programming language the average production programmer
+is interested in.
+
+Therefore, we recommended this chapter be lightly scanned
+or even skipped, until such time as a deeper understanding
+is required. Nevertheless we feel obligated to present
+some details now, since the ability to define Domain Specific
+Sub-Languages is one of the key advantages of the Felix system.
+
+In Felix, the usual programming language is defined by a grammar
+in the library in user space. The compiler interprets the 
+grammar to produce a parser
+for the scope in which the grammar is active. Grammar extension
+activations are properly scoped.
+
+As with any modern programming language it is sometimes difficult
+to distinguish features present in the core language and those
+defined in the standard library. In particular the semantics of some 
+features in the library could not be defined in the core language, 
+but their syntactic representation can be. This is most evident
+in the C programming language where, for example, Posix defines
+semantics for multi-threading which are represented by library
+functions which could not possibly be defined in C.
+
+However in Felix the situation is even more extreme, since the very
+language itself is defined in the library. What is more, most
+of the definitions are real Felix code: we are not just
+leveraging the library for syntactic modelling of semantics
+we could not otherwise define, but are actually presenting
+the definitions.
+
+Naturally this is not possible without a core built-in parsing
+system and semantics, this called the bootstrap parser
+and the first stage abstract machine.
+
+It reads the library syntax specifications to extend itself
+to the full blown Felix language described in this document
+and maps the input syntax onto terms of the abstract machine.
+
+
+\section{Bootstrap Parser Grammar}
+\href{http://felix-lang.org/share/src/compiler/flx_parse/flx_parse.dyp}{Compiler Reference}
+
+The bootstrap parser is a hard coded parser which translates
+Felix EBNF like syntax specification into a parser automaton,
+which in turn translates Felix programs.
+
+\subsection{Parser Processing}
+Felix use the Dypgen parsing system, which is a run time
+extensible GLR parsing engine with extensions. 
+
+When the parsing of the production of a non-terminal is 
+complete, the associated action code is executed.
+
+The action code is a string containing a procedure
+written in R5RS Scheme. The OCS Scheme language processor
+is used for the processing.
+
+Using predefined variables representing the s-expressions
+associated with the evaluation of the actions associated
+with the symbols of the production, the client action
+code constructs a new s-expression representing the
+intended AST for parsing that production.
+
+Provided the returned AST is acceptable to subsequent
+processing steps, this mechanism is safe provided the
+executed Scheme code is purely functional.
+
+If the Scheme actions have side effects, care must be taken.
+Dypgen parsers may parse the same text more than once.
+At any point in the parsing process the next symbol
+is used to determine a possible set of parses, and all
+these parses are then explored simultaneously.
+
+Most of these parses will fail at some point in the
+future, and the AST constructed at that point is discarded.
+Except in special circumstances, if more than one parse
+succeeds, the Felix translator will fail with a parsing
+ambiguity.
+
+The point, however, is that side effects from exploratory
+parses cannot be discarded, nor can the order in which
+the parses is performed be predicted. Although the parses
+are, in principle, simultaneous, Dypgen actually processes
+a single token for each parse in sequence, suspending the
+parsing of one thread until all parses have processed
+the token, then resuming with the next token, having
+discarded failed parses, but also possibly spawning a new
+set of parses. In other words, the parsing is performed
+using coroutines which ensure that the input is only
+consumed in a linear fashion without any backtracking.
+
+If side effects are necessary, then they should usually
+be idempotent. For example setting a variable to a fixed
+value is an idempotent operation. Incrementing a variable is not.
+
+There is, however, a special exception to this rule.
+Top level statements are guaranteed to be parsed exactly once.
+Although the start symbol is defined recursively, the recursion
+is optimised to a plain loop. This is not necessarily the 
+case for nested statements!
+
+\subsection{Spawning Choices}
+When presented with a non-terminal to parse, a GLR parser
+notionally processes all alternatives simultaneously.
+Many of these branches will fail, indeed, if the parse
+is to be ambiguous all but one should eventually fail.
+This method could be called purely speculative parsing.
+
+However, Dypgen does not actually try all the alternatives.
+Some alternatives must start with a particular token
+or one of a set of tokens. Instead of starting the parse
+and failing after examining the next token, Dypgen
+uses an LALR1 predictive parser to narrow down the
+set of alternatives. The LALR1 automaton is a finite
+state machine which given the next token supplies
+a set of possible parse which might continue.
+Although LALR1 is not accurate, it is conservative,
+and only rejects alternatives that could not possibly
+work.
+
+\subsection{No keywords}
+In most language, there is a severe lack of usable symbols.
+To compensate for this, certain identifiers called keywords
+are specified as symbols instead. The tokeniser checks if an
+identifier is a keyword and returns a suitable token if it is,
+otherwise it returns an identifier.
+
+Unfortunately, because keywords encroach on user space,
+many languages such as C++ try to minimise the set used,
+and in the case of a language extension, introducing a new
+keyword may break existing code. So there is tendancy to
+reuse the keyword in a different context, leading to
+the nightmare that is evident in C++.
+
+Felix also has keywords, but they are not global.
+The Felix parser is scannerless which means it does not
+require a separate tokeniser. Instead tokenisation
+is local to each parser state, and in particular
+the identifiers used as keywords are only recognised
+in this state. Felix also provides a consistent way
+to unkeyword with a special form of literal to force
+the parser to recognise an identifier instead of a keyword.
+
+\begin{minted}{felix}
+// var = 1; 
+   // Syntax error, variable init expected
+
+var var = 1; 
+  // OK, declares identifier "var" as a variable
+
+n"var" = 1; 
+  // allows assigning to identifier named "var".
+\end{minted}
+
+\subsection{Predefined Variables}
+When scheme code is executed certain global variables are
+automatically predefined. 
+
+\begin{itemize}
+\item The variable \verb%_sr% is set to contain the current
+location in the source file. It consists of a scheme list
+of the current original source filename as a string, then the 
+starting line, starting column, ending line, and ending column
+of the text being parsed by the current production.
+
+\item The variables \verb%_1%, \verb%_2% etc refer to the 
+scheme s-expressions associated with the parse of the n'th
+symbol in a production.
+\end{itemize}
+
+Together these variables allow the scheme action code
+of a production to construct an scheme s-expression representing
+the AST desired for parsing the associated production.
+
+\subsection{{\tt SCHEME} statement}
+The keyword \verb%SCHEME% followed by a string literal and semi-colon
+causes the embedded R5RS scheme interpreter to execute the text
+of the string literal as scheme code during parsing.
+
+It is primarily intended to introduce global procedure definitions
+as helper functions to be used in the parser action codes.
+
+However it may contain arbitrary Scheme code, including,
+for example diagnostic output, an interpreter, or anything
+else. The return value of the execution is discarded.
+
+\begin{minted}{felix}
+SCHEME """
+  (display "Hello parsing world\n")
+""";
+\end{minted}
+
+The \verb%SCHEME% statement may be used anywhere a statement is allowed,
+it results in a empty statement in the AST. At the top level, the
+side-effects will only be seen once. However if nested in a grouping
+statement, multiple explorations of the possible parses of that
+statement may occur, leading to multiple observations of the side-effects.
+
+\subsection{{\tt STMT} statement}
+The keyword \verb%STMT% followed by a string literal and semi-colon
+causes the embedded R5RS scheme interpreter to execute the text
+of the string literal as scheme code during parsing.
+
+The result of the execution is returned and appended to the current
+list of statements being parsed.
+
+It is primarily intended to provide an mechanism whereby
+arbitary Felix statements can be generated under program control,
+in other words it is a very sophisticated and properly structured
+macro processor. The client must have intimated knowledge of the
+which s-expressions are accepted by the subsequent compiler
+processing phases and what their semantics are.
+
+Care must be taken if the result of the execution is not
+invariant. For example if the time, a file from the file system,
+or other such variable entity is used in the computation,
+the Felix dependency checking system will not recognise
+the external dependencies and the cached version of the current
+file's parse may be used.
+
+\subsection{{\tt syntax} statement}
+The \verb%syntax% statement consists of the word \verb%syntax%
+followed by an identifier and a list of syntax definition statements
+enclosed in curly braces \verb"{" and \verb"}". The entity
+defined is called a {\em Domain Specific Sub-Language} or just
+{\em dssl}.
+
+The given definitions are recorded as a set under the given
+name but are not activated.
+
+\subsection{{\tt requires} statement}
+Within a dssl definition, the requires statement
+consists of the word \verb%requires% followed by a comma
+separated list of identifiers, and terminated by a semi-colon.
+
+The names in the list identify other dssls on which this
+dssl depends, so that subsequently activating the dssl
+will also cause the dependent dssls, recursively, to be
+activated.
+
+\subsection{Non-terminal definition}
+A nonterminal definition, in its most basic
+form, consists of the non-terminal name,
+followed by \verb":=" followed by a list of alternatives
+separated by a \verb"|" followed by a semi-colon \verb";".
+
+An alternative is a sequence of grammar symbols 
+followed by \verb"=>#" followed by a string.
+The sequence of symbols is called the rhs (right hand side)
+of the production, and the string is called the action.
+The string must encode an R5RS Scheme procedure which returns
+an s-expression representing the AST subtree desired to be inserted
+in the syntax tree.
+
+The non-terminal name on the left is either an identifier,
+or, an identifier followed by \verb"[", an priority identifier,
+followed by \verb"]". A priority identifier is an identifier
+appearing in a priority specification.
+
+An grammar symbol is either a predefined atom, a string
+which is required to match the input stream, a non-terminal
+expression, or a grammar expression enclosed in 
+parentheses \verb"(" and \verb")", a macro invocation 
+or a grammar symbol followed by one of \verb"*" representing 0 or more occurences,
+\verb"+" representing one or more occurences, or
+\verb"?" representing 0 or 1 occurence.
+
+A non-terminal expression is either a name, or a name followed
+by a priority indicator, or a macro invocation. A priority indicator is a priority
+name enclosed in either \verb"[" and \verb"]" which indicates
+a fixed non terminal, or \verb%[>% and \verb"]" which
+indicates all the non-terminals with a greater priority
+than the specified one.
+
+A macro invocation is a name optionally followed by \verb"::" and another name,
+followed by a sequence of macro arguments. 
+A macro argument is a symbol enclosed in \verb"<" and \verb">".
+
+\subsection{Preprocessing productions}
+Felix pre-proceses productions to reduce them to
+a sequence of basic symbols: either a terminal
+or non-terminal symbol. 
+
+\begin{itemize}
+\item Expressions contained
+in parentheses are replaced by a generated non-terminal
+name and the non-terminal is defined by the enclosed
+sequence, its action is to return a list of the ASTs
+of each symbol.
+
+\item A non-terminal postfixed by \verb%*% or \verb%+% is replaced
+by a generated non-terminal defined to recursively generate
+a list of the non-terminal, with either 0 or more or 1 or
+more entries in the list, respectively.
+
+\item A non-terminal postfixed by \verb%?% returns the a list
+containing just the s-expression
+returned by the non-terminal if it is matched, otherwise an
+empty list.
+ 
+\item Macro calls are expanded. This done by replacing each
+occurence of a macro parameter with the correponding argument
+of the call.
+\end{itemize}
+
+\subsection{Grammar Macros}
+A grammar macro is defined by the same syntax as a non-terminal,
+except that a sequence of parameter names is added on the lhs after
+the first name. The first name may not be indexed.
+
+On expansion due to an invocation of a macro, each parameter
+name in the production is replaced by the non-terminal argument.
+
+As an example, suppose we wish to define a comma separated list
+of strings, a comma separated list of integers, and a comma 
+separated list of names. By using a macro, the common structure
+of the productions can be captured: a macro is basically 
+a grammar function. The following is actually found in the
+Felix library: 
+
+\begin{minted}{felix}
+syntax list 
+{
+  seplist1 sep a := a (sep a)* =># '(cons _1 (map second _2))'; 
+  seplist0 sep a = seplist1<sep><a>;
+  seplist0 sep a := sepsilon =># '()';
+  commalist1 a = seplist1<","><a>;
+  commalist0 a = seplist0<","><a>;
+
+  snames = commalist1<sname>;
+  sdeclnames = commalist1<sdeclname>;
+}
+\end{minted}
+
+Although grammar macros were primarily intended as basic boilerplate
+templates, macros can also be passed as arguments to another macro,
+thereby allowing higher order macros. Furthermore, since arguments
+are presented in a curried for, closures can also be created,
+that is, macros with some but not all parameters fixed.
+
+In particular, a macro can actually be passed to itself!
+Although this seems weird it is in fact a very high power
+technique used in functional programming and type systems,
+known as {\em open recursion}.
+
+Open recursion allows a recursive structure to be extended
+so that the extensions {\em backport} to the core, in other
+words, the extensions are covariant. This solves a significant
+problem in grammar extension. Normally in a grammar extension
+is easily done by simply adding extra productions for a non-terminal.
+
+The problem is that the nonterminal is then effectively a global 
+variable and extensions from different sources can clash. However
+the use of a global automatically assures we have covariant extensions,
+since existing productions using the non-terminal will automatically
+parse the extensions since they're now alternatives of the non-terminal.
+
+The problem with clashing is only a symptom of the deeper problem:
+the mechanism does not obey Meyer's Open/Closed principle.
+
+Open recursion solves this problem. The recursions are replaced
+by parameters, flattening the term structure and allowing
+extenions in a tree like manner. The programmer then closes
+the loop at any desired point with a new definition formed by
+passing the flat term to itself. 
+
+More generally, a term structure with more details such
+as a language with statements, value expressions, type expressions,
+and patterns, allows any combination of the extensions to be
+used with nested (recursive) structures equal to the top level
+or constrained to some lower level as required.
+
+This method obeys the Open/Closed principle because each closure
+is specific and cannot be further extended, yet the open part of
+the system remaims open for extension.
+
+\subsection{{\tt open syntax} statement}
+The \verb%open syntax% statement consists of the words
+\verb%openb syntax% followed by a comma separated list of names.
+
+It simultaneously activates the transitive closure
+with respect to \verb%requires% statements,
+of dssls previously recorded by \verb%syntax% statements
+identified by the list of names.
+
+
 \section{Grammar syntax}
-Not written yet. Browse the 
-\href{http://felix-lang.org/share/lib/grammar}{grammar directory} 
-for examples.
+\href{http://felix-lang.org/share/lib/src/packages}{Library Package} 
+\href{http://felix-lang.org/share/lib/grammar}{Grammar directory} 
+
 
 % =====================================
 \chapter{Modules}
@@ -662,28 +1108,6 @@ P&address&HEX\\
 \href{http://felix-lang.org/share/lib/grammar/macros.fsyn}{Library Syntax Reference}
 
 \href{http://felix-lang.org/share/src/compiler/flx_desugar/flx_macro.ml}{Compiler Semantics Reference}
-\section{Include Directive}
-An include directive has the syntax:
-
-\begin{minted}{felix}
-include "filename";
-include "dirname/filename";
-include "./filename";
-\end{minted}
-
-where the filename is a Unix relative filename,
-may not have an extension, and may not begin with or 
-contain \verb%..% (two dots).
-
-If the filename begins with \verb%./% then the balance of the name
-is relative, a sibling of the including file, otherwise the name
-is searched for on an include path. 
-
-In either case, a search succeeds when it finds a file with
-the appropriate base path in the search directory with
-extension \verb%.flx% or \verb%.fdoc%. If both files exist the
-most recently changed one is used. If the time stamps are
-the same the choice is unspecified.
 
 \section{Macro val}
 The macro val statement is used to specify an identifier should
@@ -813,11 +1237,24 @@ The definition includes a reference to the parent if any, and, a name lookup tab
 defined entity contains a scope.
 
 \subsection{Name lookup table}
-For each scope, another hash table called a {\em name lookup table}
+For each scope, another kind of hash table called a {\em name lookup table}
 is used which maps a string name to a single entry which is one of two
 kinds: either the entry is a non-function entry or a function entry.
 Non-function entries contain a single view of a symbol, whilst 
 function entries contain a list of views.
+
+Each scope is associated with two name lookup tables.
+
+\subsubsection{Private name lookup table}
+This table maps all the names defined in the scope
+to all the definitions in the scope. It is used for
+unqualified lookup within the scope or any children of the scope.
+
+\subsubsection{Public name lookup table}
+This table contains mappings of the names of all
+definitions in the scope which are not marked private
+to those definitions. It is used for qualified lookup
+into the scope from outside the scope.
 
 \subsection{Views}
 A {\em view} of a symbol consists of the index of the definition in the
@@ -857,6 +1294,39 @@ an ambiguity: views are logically merged with non-discriminated
 setwise union.
 
 This is effected as follows by overload resolution.
+
+\subsection{Name lookup environments}
+A name lookup environment consists of a stack of pairs
+of name lookup tables. The top of the stack represents
+the current, innermost scope. This is where searching
+for a name begins. Each layer represents an including
+or parent scope, up to the bottom of the stack,
+which represents the outermost or global scope,
+which has no parent.
+
+The two name lookup tables at each level are the primary
+name lookup table and the shadow name lookup table.
+
+\subsubsection{Primary name lookup table}
+The primary name lookup table contains mappings for
+all the symbols defined in the scope or injected
+into the scope with a \verb%inherit% or \verb%rename% directives.
+
+\subsubsection{Shadow name lookup table}
+The shadow name lookup table contains mappings for
+all the symbols made available by an \verb%open% directive
+or by the \verb%with% clause of the type variable specification
+of a definition.
+
+\verb%open% directives make the public names defined
+in, or inherited into, a class available via a view.
+
+The name lookup algorithms always search the primary
+lookup table first, if that fails they try the shadow
+table. This ensures any definitions in a scope can be used
+to hide names provided by an open, which ensures it is
+possible to resolve ambiguities or modify semantics
+for a particular name, whilst retaining the other names.
 
 \section{Overload Resolution}
 Overload resolution proceeeds as follows. We start with the result
@@ -2472,6 +2942,18 @@ outside the class.
 \section{Type Constraints}
 \label{Type Constraints}
 Felix provides 4 kinds of type constraints.
+\subsection{Type class constraints}
+Class constraints have no impact on phase 1 overload resolution
+when selecting a binding. 
+
+However, when binding the definition
+of a symbol, specified class views are introduced in a shadow
+scope as if the class were opened.
+
+During monomorphisation, any virtuals must be mapped to instance
+functions and this is done by a process similar to that used for
+overload resolution. 
+
 \subsection{Typeset membership constraints}
 Typesets were introduced to Felix to simplify bindings to C functions.
 For example:
@@ -2507,11 +2989,8 @@ constraint A implies constraint B, A is more specialised, however
 there is no operational method for measuring this in general
 (halting problem!).
 
-\subsection{Relational Constraints}
-Typeset constraints are actually a special case of the more general
-form of a constraint which may be any evaluable predicate on any
-type expression possibly involving one or more type variables.
-
+\subsection{Equational Constraints}
+Felix allows a constraint to be
 For example:
 
 \begin{minted}{felix}
@@ -5256,19 +5735,20 @@ like variant which uses an @{option} type.
 \href{http://felix-lang.org/share/lib/std/strings/re2.flx}{Google Re2 Binding}
 
 \chapter{Fibres and Schannels}
+\href{http://felix-lang.org/share/src/packages/fibres.fdoc}{Library Package}
 \section{Pipelines}
 \subsection{Synchronouse pipelines}
-\href{http://felix-lang.org/share/lib/std/control/spipe.flx}{Library}
+\href{http://felix-lang.org/share/lib/std/control/spipes.flx}{Library Reference}
 lah.
 \chapter{Asychronous Events}
 blah.
 \chapter{Pre-emptive Threading}
-\href{http://felix-lang.org/share/lib/std/control/ppipe.flx}{Library}
+\href{http://felix-lang.org/share/src/packages/pthreads.fdoc}{Library Package}
 
-\subsection{Json}
+\chapter{Json}
 TBD
-\subsection{Sqlite3}
-BD
+\chapter{Sqlite3}
+TBD
 
 
 

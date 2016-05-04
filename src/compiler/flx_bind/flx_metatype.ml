@@ -139,6 +139,12 @@ print_endline ("Metatyping term " ^ st term);
   | BTYP_array _
   | BTYP_tuple _
   | BTYP_void
+
+  | BTYP_int
+  | BTYP_intersect _
+  | BTYP_polyrecord (_, _)
+  | BTYP_type_match (_, _)
+  | BTYP_tuple_cons (_, _)
   | BTYP_unitsum _ -> btyp_type 0
   | BTYP_fix (i,mt) -> 
 (*
@@ -154,11 +160,22 @@ print_endline ("Metatyping term " ^ st term);
     print_endline (catmap ","  (fun (s,level) -> "as variable =" ^ s ^ " level = " ^ si level) (rs.as_fixlist));
 *)
     mt
+(*
   | _ ->
+(*
     print_endline ("Questionable meta typing of term: " ^
       sbt bsym_table term);
+*)
     btyp_type 0 (* THIS ISN'T RIGHT *)
 
+*)
 
+  | BTYP_label
+  | BTYP_type_set _
+  | BTYP_type_set_union _
+  | BTYP_type_set_intersection _
+  | BTYP_none
+    ->
+    clierr sr ("No meta type for type-like term " ^ sbt bsym_table term)
 
 
