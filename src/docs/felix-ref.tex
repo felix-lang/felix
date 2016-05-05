@@ -377,6 +377,13 @@ the Felix dependency checking system will not recognise
 the external dependencies and the cached version of the current
 file's parse may be used.
 
+\begin{minted}{felix}
+for i in 0..10 do
+  println "Stopping now";
+  STMT '`(ast_halt ,_sr "STOPPED")';
+done
+\end{minted}
+
 \subsection{{\tt syntax} statement}
 The \verb%syntax% statement consists of the word \verb%syntax%
 followed by an identifier and a list of syntax definition statements
@@ -385,7 +392,21 @@ defined is called a {\em Domain Specific Sub-Language} or just
 {\em dssl}.
 
 The given definitions are recorded as a set under the given
-name but are not activated.
+name but are not activated. For example here is the
+DSSL for the Felix macros:
+
+\begin{minted}{felix}
+syntax macros {
+  requires expressions, statements, list;
+  
+  stmt := "macro" "val" snames "=" sexpr ";" =>#
+    "`(ast_macro_val ,_sr ,_3 ,_5)";
+
+  stmt := "forall" sname "in" sexpr "do" stmt* "done" =>#
+    "`(ast_macro_forall ,_sr (,_2) ,_4 ,_6)"
+  ;
+}
+\end{minted}
 
 \subsection{{\tt requires} statement}
 Within a dssl definition, the requires statement
@@ -396,6 +417,58 @@ The names in the list identify other dssls on which this
 dssl depends, so that subsequently activating the dssl
 will also cause the dependent dssls, recursively, to be
 activated.
+
+\subsection{Priority statement}
+The \verb%priority% statement introduces a set of priority
+names which can be used for indexed non-terminals,
+and specifies a total ordering between them,
+sometimes called a precedence. Here are the priorities
+used for non-terminal \verb%x% representing expressions
+in the Felix grammar, lower priority means weaker binding:
+
+\begin{minted}{felix}
+  priority 
+    let_pri < 
+    slambda_pri <
+    spipe_apply_pri <
+    sdollar_apply_pri < 
+    stuple_cons_pri <
+    stuple_pri <
+    simplies_condition_pri <
+    sor_condition_pri <
+    sand_condition_pri <
+    snot_condition_pri <
+    stex_implies_condition_pri <
+    stex_or_condition_pri <
+    stex_and_condition_pri <
+    stex_not_condition_pri <
+    scomparison_pri <
+    sas_expr_pri <
+    ssetunion_pri <
+    ssetintersection_pri <
+    sarrow_pri <
+    scase_literal_pri <
+    sbor_pri <
+    sbxor_pri <
+    sband_pri <
+    sshift_pri <
+    ssum_pri <
+    ssubtraction_pri <
+    sproduct_pri <
+    s_term_pri <
+    sprefixed_pri <
+    spower_pri <
+    ssuperscript_pri <
+    srefr_pri <
+    sapplication_pri <
+    scoercion_pri <
+    sfactor_pri <
+    srcompose_pri <
+    sthename_pri <
+    satomic_pri
+  ;
+\end{minted}
+
 
 \subsection{Non-terminal definition}
 A nonterminal definition, in its most basic
@@ -532,10 +605,13 @@ or constrained to some lower level as required.
 This method obeys the Open/Closed principle because each closure
 is specific and cannot be further extended, yet the open part of
 the system remaims open for extension.
+\subsection{{\tt regdef} statement}
+
+\subsection{{\tt literal} statement}
 
 \subsection{{\tt open syntax} statement}
 The \verb%open syntax% statement consists of the words
-\verb%openb syntax% followed by a comma separated list of names.
+\verb%open syntax% followed by a comma separated list of names.
 
 It simultaneously activates the transitive closure
 with respect to \verb%requires% statements,
@@ -543,7 +619,7 @@ of dssls previously recorded by \verb%syntax% statements
 identified by the list of names.
 
 
-\section{Grammar syntax}
+\section{Felix Grammar syntax}
 \href{http://felix-lang.org/share/lib/src/packages}{Library Package} 
 \href{http://felix-lang.org/share/lib/grammar}{Grammar directory} 
 
