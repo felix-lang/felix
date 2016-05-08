@@ -701,8 +701,8 @@ Requires: flx_async flx_pthread demux flx flx_gc
 library: faio
 macros: BUILD_FAIO
 srcdir: src/faio
-src: faio_(job|timer|posixio)\.cpp
-headers: faio_(drv|job|timer|posixio)\.hpp
+src: faio_(timer|posixio)\.cpp
+headers: faio_(drv|timer|posixio)\.hpp
 @
 
 @tangle win32_faio.fpc
@@ -715,8 +715,8 @@ Requires: flx_async flx_pthread demux flx flx_gc
 library: faio
 macros: BUILD_FAIO
 srcdir: src/faio
-src: faio_(job|timer|winio)\.cpp
-headers: faio_(drv|job|timer|winio)\.hpp
+src: faio_(timer|winio)\.cpp
+headers: faio_(drv|timer|winio)\.hpp
 @
 
 @tangle faio.py
@@ -735,7 +735,6 @@ def build_runtime(phase):
 
     dst = 'host/lib/rtl/faio'
     srcs = [
-        path / 'faio_job.cpp',
         path / 'faio_timer.cpp',
     ]
     includes = [
