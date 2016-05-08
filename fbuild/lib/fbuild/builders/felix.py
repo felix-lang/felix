@@ -51,6 +51,7 @@ class Flx(fbuild.db.PersistentObject):
         cmd.extend(flags)
         cmd.append(src)
 
+        print("Flx.__call__.ctx.execute cmd=" + str (cmd))
         return self.ctx.execute(cmd, *args, **kwargs)
 
     def check_flags(self, flags=[]):
@@ -109,6 +110,7 @@ class Felix(fbuild.builders.AbstractCompiler):
             **kwargs):
         """Compile a felix file without caching the results.  This is needed
         when compiling temporary files."""
+        print("Uncached compile " + src)
         src = Path(src)
         buildroot = buildroot or self.ctx.buildroot
         src_buildroot = src.addroot(buildroot)

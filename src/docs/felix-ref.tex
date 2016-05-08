@@ -1415,7 +1415,7 @@ A {\em view} of a symbol consists of the index of the definition in the
 symbol definition table together with a list of type variables and a list
 of type expressions using these type variables, this list of
 type expression must agree in number with the type variables 
-in the entry symbol definition table.
+in the entry in the symbol definition table.
 
 The interpretation of a definition refered to by a view is as a polymorphic
 definition indexed by the view type variables, with each use of the
@@ -1441,7 +1441,15 @@ via the assigment \verb%T <- U * V%,
 and the assignents
 \verb%U <- int% and \verb%V <- long% mean the function call
 is a specialisation of the view, which in turn is a specialisation
-of the original function.
+of the original function. The view provided by the open may be
+described by a triple:
+
+\begin{minted}{felix}
+(index=A::f; vs=U,V; ts=U*V)
+\end{minted}
+
+where index is the integer index of f in the definition
+table.
 
 Multiple views of a function, even if overlapping, never create
 an ambiguity: views are logically merged with non-discriminated
@@ -1453,7 +1461,8 @@ This is effected as follows by overload resolution.
 A name lookup environment consists of a stack of pairs
 of name lookup tables. The top of the stack represents
 the current, innermost scope. This is where searching
-for a name begins. Each layer represents an including
+for an unqualified name or first component of a qualified name begins. 
+Each layer represents an including
 or parent scope, up to the bottom of the stack,
 which represents the outermost or global scope,
 which has no parent.
@@ -1501,7 +1510,7 @@ See \fullref{Type Constraints} for more details.
 specialised than another. 
 
 \item If the result of this reduction consists of a set
-of more than one view or the same function, then they must map to the same
+of more than one view of the same function, then they must map to the same
 specialisation of the function, and overload resolution has succeeded. 
 \end{itemize}
 
@@ -1510,7 +1519,7 @@ The algorithm is non trivial. Here is another example:
 \begin{minted}{felix}
 class A[T] { fun f (x:T) => x; }
 open[U] A[U * int];
-open [V] A[int * V];
+open[V] A[int * V];
 println$ f (1,1);
 \end{minted}
 
@@ -1528,25 +1537,26 @@ of the original function \verb%T <- int * int%. Therefore this specialisation,
 being unique, allows the function \verb%f% to be called directly with signature
 \verb%int * int%.
 
-Not all calls view the views uniify. For example a call on signature
+Not all calls match all views. For example a call on signature
 \verb%long * int% only matches the first view, and with \verb%int * long%
 only matches the second: the point is that if more than one view
 of the same function matches, it is never ambiguous because the views
 always lead to the same specialisation of the function.
 
-This is not true if the views are views of distinct functions.
+
+{\small This is not true if the views are views of distinct functions.
 Something like this can and does happen when the inverse of view
 lookup is performed when instantiating class virtual functions
 with distinct instances. In this case, if there are two instances
 which match, neither of which is most specialised, then Felix
 will report an ambiguity, even though semantically the behaviour
 is required to be the same: the semantic requirement is too sloppy
-to ensure this is meaninful.
+to ensure this is meaninful.}
 
 Our conclusion is that the programmer is free to open overlapping
 views of the same function, and in particular duplicated opens
 do not cause a problem (the same consideration applies to non-functions).
-This is {\em not} the case when specifying type class instances,
+{\em This is {\em not} the case when specifying type class instances,
 where overlaps are associated with distinct definitions, so that
 a single most specialised definition is required. This issue,
 however, does not occur in ordinary (phase 1) lookup of names.
@@ -1554,7 +1564,7 @@ It occurs only during instantiation by monomorphisation when
 a type class virtual must select from available instances.
 In this case, there is no overloading to consider since the
 particular function in each instance is already selected:
-we only need consider the specialisation lattice.
+we only need consider the specialisation lattice. }
 
 \section{Lookup}
 Names refer either to a function set or single non-function entity.
@@ -1859,7 +1869,8 @@ along with all those visible in the enclosing context.
 var x = "Hello";
 class A {
    proc f() { g(); } // g visible before defined
-   proc g() { x = x + 1; } // use uninitialised variable!
+   proc g() { x = x + 1; } 
+   var y = f(); // calls g which uses x uninitialised!
    var x = 1;
 }
 \end{minted}
@@ -2021,7 +2032,8 @@ in an instance from outside the instance. Instead all
 access is diverted through the top level class being
 instantiated. Symbols are bound to the top level class
 member first to fix the type variables, then a matching
-instance is sought.
+instance is sought. This second lookup is called {\em phase 2 lookup},
+it occurs during monormophisation.
 
 If there is no matching instance, the program
 fails with a diagnostic.
@@ -2033,14 +2045,16 @@ member is ambiguous and the program fails with
 a diagnostic.
 
 An instance must be not less specialised than the class
-it instantiated (that is, equally specialised or more specialised).
+it instantiates (that is, equally specialised or more specialised).
 
 Instance specialisation is judged by the polymorphic subtyping
-rule which is implemented using unification algorithm.
+rule which is implemented using a variant of the
+unification algorithm in which dependent and independent types
+are distinguished.
 
 A polymorphic type S[T] parametrised by a type variable T is more
-specialised than a polymorphic type A[U] is there if T may be
-replaced by a type expression containing U the result of which
+specialised than a polymorphic type A[U] if U may be
+replaced by a type expression containing T the result of which
 equals S[T].
 
 If S has more than one type variable, substitutions for each
@@ -2068,7 +2082,7 @@ You may think of this as if the class type variables
 are resolved first by finding a uniquely matching
 instance, and then the function type variables are
 resolved in a second step (although in fact there
-is no coupling between the resolution).
+is no coupling between the resolutions).
 
 \section{Classes as Categories}
 A class may thought of in a category theoretic sense.
@@ -5650,7 +5664,154 @@ symbol&type&semantics\\
 \end{tabular}
 \end{table}
 
+\chapter{Algebraic Structure of numeric types}
+\href{http://felix-lang.org/share/src/packages/algebra.fdoc}{Basic Algebra Package}
+\href{http://felix-lang.org/share/src/packages/numbers.fdoc}{Number Package}
 
+The functionality identified in the previous chapter is not
+provided on a type by type basis, but instead leverages the
+mathematic structure of the types. This is modelled using
+Felix type classes.
+
+In this section we display a subset of the definitions from
+the library. The real code also defines some other classes
+and also a rich set of alternate names for operators utilising
+the presence of LaTeX symbols: this allows for pleasant typesetting
+but usually doesn't provide essential semantic operations.
+
+\section{Equality}
+We start with class \verb$Eq$ which models equality based
+on the notion it is an equivalent relation:
+
+\begin{minted}{felix}
+class Eq[t] {
+  virtual fun == : t * t -> bool;
+  virtual fun != (x:t,y:t):bool => not (x == y);
+
+  axiom reflex(x:t): x == x;
+  axiom sym(x:t, y:t): (x == y) == (y == x);
+  axiom trans(x:t, y:t, z:t): x == y and y == z implies x == z;
+}
+\end{minted}
+
+By providing an instance with \verb%==%, inequality \verb%!=% is
+automatically provided by the defaulty definition. An instance
+can also provide the inequality, as this is sometimes more efficient.
+
+Conformance to the axioms in instances is required, these axioms define the
+required semantics.
+
+\section{Total Ordering}
+Now we can define a total order:
+
+\begin{minted}{felix}
+class Tord[t]{
+  inherit Eq[t];
+  virtual fun < : t * t -> bool;
+  fun >(x:t,y:t):bool => y < x;
+  fun <= (x:t,y:t):bool => not (y < x);
+  fun >= (x:t,y:t):bool => not (x < y);
+
+  fun max(x:t,y:t):t=> if x < y then y else x endif;
+  fun min(x:t,y:t):t => if x < y then x else y endif;
+
+  axiom trans(x:t, y:t, z:t): x < y and y < z implies x < z;
+  axiom antisym(x:t, y:t): x < y or y < x or x == y;
+  axiom reflex(x:t, y:t): x < y and y <= x implies x == y;
+  axiom totality(x:t, y:t): x <= y or y <= x;
+}
+\end{minted}
+
+To have a total order, we first have to have equality,
+this is effected by use of the \verb%inherit% statement.
+
+Next we define the less than function as virtual,
+instances must define this. The other functions are
+provided automatically.
+
+The semantics are specified by the axioms which define
+a total ordering: reflexivity, anti-symmetry, transitivity,
+and finally totallity.
+
+\section{Addition}
+Now we define addition in two steps. First we define approximate
+addition
+
+\begin{minted}{felix}
+class FloatAddgrp[t] {
+  inherit Eq[t];
+  virtual fun zero: unit -> t;
+  virtual fun + : t * t -> t;
+  virtual fun neg : t -> t;
+  virtual fun prefix_plus : t -> t = "$1";
+  virtual fun - (x:t,y:t):t => x + -y;
+  virtual proc += (px:&t,y:t) { px <- *px + y; }
+  virtual proc -= (px:&t,y:t) { px <- *px - y; }
+
+  reduce id (x:t): x+zero() => x;
+  reduce id (x:t): zero()+x => x;
+  reduce inv(x:t): x - x => zero();
+  reduce inv(x:t): - (-x) => x;
+  axiom sym (x:t,y:t): x+y == y+x;
+
+  fun add(x:t,y:t)=> x + y;
+  fun plus(x:t)=> +x;
+  fun sub(x:t,y:t)=> x - y;
+  proc pluseq(px:&t, y:t) {  += (px,y); }
+  proc  minuseq(px:&t, y:t) { -= (px,y); }
+}
+\end{minted}
+
+Most the functions here are virtual without defaults.
+For the procedures we provide either virtual defaulted
+definitions or just the definitions.
+
+The key requirement here is simply that some number added
+to zero returns the original number, as does negating a number
+twice. We also require subtracting a number from itself yields
+zero.
+
+Normally addition has stronger requirements such as 
+associativity, but this class is designed to support
+floating point numbers, and floating addition is not associative.
+
+However since integer addition is, we provide another class:
+
+\begin{minted}{felix}
+class Addgrp[t] {
+  inherit FloatAddgrp[t];
+  axiom assoc (x:t,y:t,z:t): (x + y) + z == x + (y + z);
+  reduce inv(x:t,y:t): x + y - y => x;
+}
+\end{minted}
+
+for an additive group, which just throws in the associative law.
+The semantic axiom requires cancellation.
+
+Although technically signed integers in Felix do not obey these
+semantics due to overflow, the real axiom required cannot be
+modelled in Felix. The true axiom for computer signed integers
+is that the axioms are obeyed locally, that is, in a compact
+set close to zero.
+
+This axiom would say, for example, that there exists some $d$
+such that if $|a|<d$ and $|b|<d$ and $|c|<d$ then 
+$$(a + b) + c = a + (b + c)$$
+
+where the restriction is there to ensure there is no overflow.
+However constructive mathematics cannot model existentials,
+and instead must provide an actual formula for calculating $d$.
+In this case, given the range of the integers, we can actually
+do that, however in general, even if it can be done, it is all
+too hard to bother.
+
+Instead we just rely on the programmer understanding that
+the laws only apply locally and using calculations which they
+believe will not overflow. In practive many calculations
+with integers do not overflow, however there are a few very
+nasty cases.
+
+\chapter{More core types}
 \section{Slices}
 
 \section{String Type}
