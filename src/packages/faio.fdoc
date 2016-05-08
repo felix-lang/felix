@@ -1,7 +1,5 @@
 @title Faio: Felix Async I/O support
 @tangler faio_drv.hpp         = share/src/faio/faio_drv.hpp
-@tangler faio_job.hpp         = share/lib/rtl/faio_job.hpp
-@tangler faio_job.cpp         = share/src/faio/faio_job.cpp
 @tangler faio_posixio.hpp     = share/lib/rtl/faio_posixio.hpp
 @tangler faio_posixio.cpp     = share/src/faio/faio_posixio.cpp
 @tangler faio_winio.hpp       = share/lib/rtl/faio_winio.hpp
