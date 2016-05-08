@@ -6498,13 +6498,264 @@ Buffers are mandatory for a feedback.
 blah.
 \chapter{Pre-emptive Threading}
 \href{http://felix-lang.org/share/src/packages/pthreads.fdoc}{Library Package}
+Felix provides pre-emptive threading based on OS native threads
+called {\em pthreads}.
 
-\chapter{Json}
-TBD
-\chapter{Sqlite3}
-TBD
+Felix pthreads are detached, there is no support for OS joinable
+threads. The primary synchronisation primitve is the {\em pchannel}.
+
+\section{{\tt spawn\_pthread} procedure}
+The \verb%spawn_pthread% procedure spawns a new pthread.
+The procedure being spawned must have type \verb%unit->void%
+also written \verb%1->0%.
 
 
+
+\section{Pchannel types}
+There is only one kind of pchannel, however the type system 
+provides three views:
+
+\begin{description}
+\item[ipchannel[T]] an input pchannel for reading T values,
+\item[opchannel[T]] an outputput pchannel for writing T values,
+\item[iopchannel[T]] an input/output pchannel for either reading or writing T values.
+\end{description}
+
+Each of these types is also a constructor for the corresponding
+type of pchannel.
+
+\section{{\tt mk\_iopchannel\_pair[T]} function}
+This function creates a single pchannel, returning a read end
+and a write end in a tuple:
+
+\begin{minted}{felix}
+var inp, outp = mk_iopchannel_pair[int]();
+\end{minted}
+
+\section{{\tt iopchannel[T]} constructor}
+A bidirectional channel can also be created:
+
+\begin{minted}{felix}
+var ios = iopchannel[int]();
+\end{minted}
+
+
+\section{{\tt read} generator and {\tt write} procedure}
+The read and write operators on pchannels are used for 
+communication between pthreads. 
+
+Pchannels are technically {\em monitors}. There is no buffering.
+Unmatched reads block until a matching write occurs on the
+same underlying pchannel. Unmatched writes block until a 
+matching read occurs. Neither reader nor writer may proceed
+until data is exchanged.
+
+Unlike fibres and schannels, pthread can be deadlock by
+out of order I/O.
+
+\section{{\tt concurrently} procedure}
+\begin{minted}{felix}
+open class ForkJoin {
+  proc concurrently_by_iterator (var it:1 -> opt[1->0]) 
+  proc concurrently[T with Streamable[T,1->0]] (d:T)
+}
+\end{minted}
+
+Felix provides the procedure \verb%concurrently_by_iterator%
+which uses an iterator returning procedures of type \verb%1->0%
+to launch pthreads.
+
+A more convenient procedure, \verb%concurrently%, accepts any
+data structure with an iterator.
+
+\verb%concurrently% automatically joins the launched threads.
+
+\begin{minted}{felix}
+// using an array
+concurrently (
+  { println$ "Thread1"; },
+  { println$ "Thread2"; },
+  { println$ "Thread3"; }
+);
+\end{minted}
+
+\section{Atomics}
+Felix atomics utilise the C++11 standard library atomics.
+Atomic variables are not managed by the GC. 
+
+\begin{minted}{felix}
+open class Atomic
+{
+  type atomic[T];
+  ctor[T] atomic[T]: T;
+  proc delete[T] : atomic[T;
+
+  gen load[T] : atomic[T];
+  proc store[T] : atomic[T];
+  proc store[T] (a:atomic[T]) (v:T);
+
+  // integer types only 
+  proc pre_incr[T] : &atomic[T];
+  proc pre_decr[T] : &atomic[T];
+
+}
+\end{minted}
+
+\section{Mutual Exclusion Lock}
+\begin{minted}{felix}
+open class Mutex
+{
+  type mutex;
+  ctor mutex: unit;
+  proc lock: mutex;
+  proc unlock: mutex;
+  proc destroy: mutex;
+}
+\end{minted}
+
+Felix provides a garbage collector aware mutual exclusion lock
+\verb%mutex%. It is a timed mutex which periodically checks
+for a GC world stop request.
+
+Condition variables are not garbage collected.
+
+\section{Condition Variables}
+Felix provides a GC aware condition variable based 
+on C++11 condition variables. It uses a timed variant
+to periodically check for a GC world stop request.
+
+\begin{minted}{felix}
+open class Condition_Variable
+{
+  type condition_variable;
+  ctor condition_variable: unit;
+  proc destroy: condition_variable;
+
+  //$ lock/unlock associated mutex
+  proc lock : condition_variable;
+  proc unlock : condition_variable;
+
+  proc wait: condition_variable;
+  proc signal: condition_variable;
+
+  proc broadcast: condition_variable;
+
+  gen timedwait: condition_variable * double -> int;
+}
+\end{minted}
+
+Note that unlike Posix condition variables, the associated mutex is
+built-in to the condition variable.
+
+\section{Bound Queue}
+Felix provides thread safe, GC aware, resizeble bound queue.
+The queue itself is garbage collected. The queue stores pointers
+to heap allocated copies of the queued objects, which are scanned
+by the GC.
+
+\begin{minted}{felix}
+open class TS_Bound_Queue
+{
+  ctor[T] ts_bound_queue_t[T]: !ints;
+  proc enqueue[T] (Q:ts_bound_queue_t[T])  (elt:T);
+  gen dequeue[T] (Q:ts_bound_queue_t[T]): T;
+  proc wait[T]: ts_bound_queue_t[T]; // until Q empty
+  proc resize[T]: ts_bound_queue_t[T] * !ints;
+ 
+}
+\end{minted}
+
+The constructor creates a queue with the specified maximum
+capacity or {\em bound}.
+
+The \verb%enqueue% operation may wait until there is 
+space in the queue before depositing its payload and returning.
+
+The \verb%dequeue% operation may wait whilst the queue is empty
+until it can acquire a payload before returning.
+
+The \verb%wait% procedure blocks until the queue is empty.
+
+The \verb%resize% procedure changes the queue bound.
+
+Note: When threads are enqueing and dequeing from the queue,
+there is no defined method for closing down the use of the
+queue. Neither \verb%enqueue% nor \verb%dequeue% can fail,
+nor can they be cancelled.
+
+\section{Thread Pool}
+\begin{minted}{felix}
+class ThreadPool
+{
+  typedef job_t = 1 -> 0;
+  fun get_nthreads () => nthreads;
+
+  proc barrier();
+  proc start ();
+  proc start (n:int);
+  proc queue_job (job:job_t);
+  proc stop ();
+  proc post_barrier();
+  proc notify (chan:opchannel[int]) ();
+  proc join ();
+
+  proc pfor_segment (first:int, last:int) (lbody: int * int -> 1 -> 0)
+  inline proc forloop (lbody: int -> 0) (first:int, last:int) ()
+}
+\end{minted}
+
+Felix provides a global thread pool which consists of a thread safe job queue
+and a set of running Felix pthreads. The number of threads is
+determined from the architecture if possible, otherwise set to a reasonable
+value such as 8.
+
+The job queue is bound to 1024 jobs.
+
+The \verb%queue_job% procedure accepts a unit procedure of type \verb%1->0%
+and adds it to the job queue. It may block whilst the job queue is full.
+Queing a job automatically starts up the thread pool.
+
+Threads in the pool dequeue jobs from the queue and run them.
+When finished, a thread fetches another job if there is one,
+and runs it. If there are no jobs, the thread waits until
+a job is available.
+
+The \verb%start% procedure can be used to manually start the thread pool.
+
+The \verb%post_barrier% procedure posts $n$ \verb%barrier% jobs,
+where $n$ is the number of threads in the pool.
+A barrier job causes a thread to stop acquiring jobs and wait
+until all threads are waiting on a barrier.
+
+The \verb%join% procedure posts $n$ barriers, where $n$ is the number
+of threads in the pool. This causes each thread to suspend on a barrier
+until all threads have suspended. Then all threads may continue
+processing jobs.
+
+The \verb%stop% procedure attempts to stop the pool by posting a $n$ special
+\verb%ThreadStop% jobs, where $n$ is the number of threads in the pool. 
+A \verb%ThreadStop% job causes the thread executing it to suicide.
+
+\subsection{Restrictions}
+Jobs submitted to the thread pool should be either be entirely
+independent or transiently coupled.  In general, jobs should not
+communicate with each other or other threads using condition variables
+or pchannels. It is counter productive for jobs to spawn new threads
+although it is not disallowed, because the thread pool is designed
+to saturate multi-core CPUs (that is, keep all the cores busy).
+
+Transient coupling, however, is permitted. For example if jobs
+are used to calculate some value which is then added to a single
+variable, a mutex can be used to serialise access to the variable,
+because the lock will only be held transiently.
+
+
+\section{Parallel For Loop}
+
+\part{Data Structures}
+\chapter{Iterators}:
+\chapter{Lists}
+\chapter{Arrays}
 
 
 \appendix
