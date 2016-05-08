@@ -155,6 +155,8 @@ class Felix(fbuild.builders.AbstractCompiler):
     # --------------------------------------------------------------------------
 
     def tempfile_run(self, code='', *, quieter=1, **kwargs):
-        with self.tempfile(code) as src:
+        print("fbuild/builders/felix:tempfile_run")
+        with "tmp.flx" as src:
             exe = self.uncached_compile(src, quieter=quieter, **ckwargs)
             return self.run(exe, quieter=quieter, **kwargs)
+

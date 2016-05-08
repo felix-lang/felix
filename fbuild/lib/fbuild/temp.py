@@ -3,6 +3,7 @@ import tempfile as _tempfile
 import textwrap
 
 from fbuild.path import Path
+import os
 
 # ------------------------------------------------------------------------------
 
@@ -13,7 +14,12 @@ def tempdir(*args, **kwargs):
     remove the directory.
     '''
 
-    path = Path(_tempfile.mkdtemp(*args, **kwargs))
+    #path = Path(_tempfile.mkdtemp(*args, **kwargs))
+    path = Path("fbuildtmp")
+    try:
+      os.mkdir("fbuildtmp")
+    except:
+      pass 
     try:
         yield path
     finally:
@@ -32,7 +38,8 @@ def tempfile(src='', suffix='', name='temp', **kwargs):
     @param name:   the name of the temp file
     '''
 
-    with tempdir(**kwargs) as dirname:
+    #with tempdir(**kwargs) as dirname:
+    with "fbuildtmp" as dirname:
         name = dirname / name + suffix
         with open(name, 'w') as f:
             print(textwrap.dedent(src), file=f)
