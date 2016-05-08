@@ -605,9 +605,87 @@ or constrained to some lower level as required.
 This method obeys the Open/Closed principle because each closure
 is specific and cannot be further extended, yet the open part of
 the system remaims open for extension.
+
 \subsection{{\tt regdef} statement}
+The \verb%regdef% statement defines an alias
+for a regular expression. A regular expression
+may consist of:
+
+\begin{itemize}
+\item An atom, being
+\begin{itemize} 
+\item an alias for a regular expression,
+\item a string, representing that string, 
+\item a string in
+square brackets \verb"[" \verb%]% representing
+one of the characters in the string.
+\item an underscore \verb%_% representing any character
+\item a dot \verb%.% representing any character except newline
+\item a decimal integer representing the character with that ordinal
+\item a range consisting of pair of decimal integers separated by a dash
+and enclosed in square brackets \verb%[% and \verb%]% representing
+one of the characters in the range, inclusive
+\item a regular expression in parentheses \verb%(% \verb%)%
+\end{itemize}
+\item a repetition consisting of an atom optionally followed
+by 
+\begin{itemize}
+\item a \verb%*% for zero or more occurences
+\item a \verb%+% for one or more occurences
+\item a \verb%?% for zero or one
+\end{itemize}
+\item a sequence of repetitions
+\item A list of alternatives separated by a vertical bar \verb%|%
+each being a sequence
+\end{itemize}
+
+\begin{minted}{felix}
+  regdef octdigit = ['01234567'];
+  regdef linefeed = 10;
+  regdef hichar = [128-255];
+  regdef white = space | tab;
+  regdef bin_lit  = '0' ('b' | 'B') (underscore? bindigit) +;
+\end{minted}
 
 \subsection{{\tt literal} statement}
+The \verb%literal% statement associates a non-terminal with
+a regular expression.
+
+The regular expression is formed by replacing all aliases
+with their regular definitions, recursively, until no aliases
+are left.
+
+For example, from the library:
+
+\begin{minted}{felix}
+  regdef Cstring = cstring_literal;
+  literal Cstring =>#
+  """
+    (let*
+      (
+        (ftype "cstring")
+        (iv (decode-string _1))
+        (cv (c-quote-string iv))
+      )
+      `(ast_literal ,_sr ,ftype ,iv ,cv)
+    )
+  """; 
+  sliteral := Cstring =># "_1";
+\end{minted}
+
+Assuming \verb%cstring_literal% is an alias for the
+regular definition for a C style string, we first
+create a final alias with the name of the desired
+non-terminal \verb%Cstring%.
+
+Then we define \verb%Cstring% as a non-terminal with the
+\verb%literal% statement, giving the required action code.
+The layout shown is the standard form for literals in
+the AST. the first field is the source reference \verb%_sr%,
+the second field \verb%ftype% is the Felix type
+of the literal. The third field is the internal representation
+of the value. The last field is a string representing
+the value in C++.
 
 \subsection{{\tt open syntax} statement}
 The \verb%open syntax% statement consists of the words
@@ -5573,6 +5651,8 @@ symbol&type&semantics\\
 \end{table}
 
 
+\section{Slices}
+
 \section{String Type}
 \subsection{Equality and total ordering}
 \begin{minted}{felix}
@@ -5810,12 +5890,449 @@ like variant which uses an @{option} type.
 
 \href{http://felix-lang.org/share/lib/std/strings/re2.flx}{Google Re2 Binding}
 
+\chapter{Introspection}
+
+\chapter{Serialisation}
+Felix allows certain data structures to be serialised into a string,
+so that the data structure can be recovered from the string.
+
+\section{Operation}
+\subsection{{\tt encode\_varray}}
+This function accepts the address of a serialisable object,
+and returns a string containing the serialised contents of the object.
+
+\subsection{{\tt deccode\_varray}}
+This accepts a string previously serialised by \verb%encode_varray%,
+rebuilds a copy of the data structure it encoded, and returns the
+address of the object.
+
+\subsection{Usage}
+The data structure to be serialised must reside entirely on the heap
+and satisfy other requirements. A pointer to the object is cast
+to type \verb%address%. When deserialising, the address returned
+should be cast to a pointer to the same data type used in serialisation.
+
+\begin{minted}{felix}
+include "std/felix/serialise";
+var px: &list[int] = (1,2,3,4).list.new;
+var serialised_x : string = px.addresss.Serialise::encode_varray;
+var px_copy = serialised_x.Serialise::decode_varray.&list[int];
+println$ *px == *px_copy;
+\end{minted}
+
+\subsection{Process Restrictions}
+Serialisation functions depend on the machine address of the
+Felix run time type information (RTTI) objects which also
+control garbage collection.
+
+Therefore serialisation is only guarranteed to work within a single process.
+On some architectures with some linkage strategies it may be possible
+to save the string to disk, and reloaded it in a different process
+running the same program. In particular the core requirement must
+be met by the operating system: to load the process at the same
+virtual address. If you wish to try this, it is best to statically
+link your program since different orders of dynamic linkage may
+result in different addresses for shared library objects (DLLs).
+
+If serialisation works across different processes, it should also
+work if the serialised data is transmitted to an remote machine
+running the same architecture, same operating system, and binary
+identical Felix program.
+
+\subsection{Data Restrictions}
+All data to be serialised must either be a C data type bound
+to Felix with supporting serialisation and deserialisation
+functions provided in the binding, or, any Felix combination
+of such primitive data types effected by a tuple, array, struct,
+union, sum or unit sum type, or pointer type. Recursive
+data types are supported. Circular data structures do not
+present a problem.
+
+Most Felix primitive types provided in the library are supported,
+except for data types derived from Judy arrays.
+
+You cannot serialise function or procedure closures because
+these refer to the global thread frame object, which is the root
+for most of the rest of the program data: serialisation would then
+attempt to capture the whole program. Even if the thread frame
+were serialisable, deserialisation would create a copy of it
+which is not supported.
+
+Pointers to C functions, however, are serialisable since they're
+just addresses. Pointers to an foreign objects remain invariant.
+Most simple data structures are serialised by simply using 
+a blit operation, namely \verb%memcpy%.
+
+C++ strings are serialisable. Since serialisation produces a C++
+string, data structures containing serialised data are also serialisable.
+
+\subsection{How it works}
+Serialisation works by copying serialising primitives with user
+supplied serialisation functions . These currently must be written
+in C++. Non-primitives are serialised by copying the object
+and finding subobjects to also serialised using the same
+pointer location data the garbage collector uses from the 
+types RTTI object.
+
+Serialised data is tagged with the address of the RTTI object
+so that the deserialisation function and location of
+interior pointers can be found.
+
+\subsection{Future Directions}
+A more portable method of locating RTTI than using the
+machine address would remove many of the restrictions,
+in particular the restriction that the exact same program
+must be used for deserialisation as for serialisation,
+as well as the restriction that deserialisation should
+be in the same processes.
+
+In fact the primary difficulty here is finding a unique universal
+representation of a data type. Were such a kind available a search
+could be used to map universal type tokens to the RTTI address.
+
+More portable representations of the data may also remove
+the restriction that the same processor must be run the processes
+with the same underlying binary ABI (so that, for example, an \verb%int%
+has the same binary representation on both architectures).
+
+
 \chapter{Fibres and Schannels}
 \href{http://felix-lang.org/share/src/packages/fibres.fdoc}{Library Package}
-\section{Pipelines}
-\subsection{Synchronouse pipelines}
+
+Fibres (or f-threads) are coroutines which exchange control with
+other fibres by reading and writing synchronous channels (schannels).
+
+\section{{\tt spawn\_fthread} procedure}
+The \verb%spawn_fthread% procedure spawns a new fibre (fthread).
+The procedure being spawned must have type \verb%unit->void%
+also written \verb%1->0%.
+
+The new fibre begins execution immediately and continues
+until suspended by either an unmatched I/O request on
+an schannel, or a read operation matched by a write.
+
+Fibres are similar to threads, howver control exchange is
+synchronous, not pre-emptive. A communicating set of fibres
+runs in a pre-emptive single thread.
+
+Fibres can also be suspended waiting for asynchronous
+events such as socket I/O or a timer.
+
+\section{Schannel types}
+There is only one kind of schannel, however the type system 
+provides three views:
+
+\begin{description}
+\item[ischannel[T]] an input schannel for reading T values,
+\item[oschannel[T]] an outputput schannel for writing T values,
+\item[ioschannel[T]] an input/output schannel for either reading or writing T values.
+\end{description}
+
+Each of these types is also a constructor for the corresponding
+type of schannel.
+
+\section{{\tt mk\_ioschannel\_pair[T]} function}
+This function creates a single schannel, returning a read end
+and a write end in a tuple:
+
+\begin{minted}{felix}
+var ins, outs = mk_ioschannel_pair[int]();
+\end{minted}
+
+\section{{\tt ioschannel[T]} constructor}
+A bidirectional channel can also be created:
+
+\begin{minted}{felix}
+var ios = ioschannel[int]();
+\end{minted}
+
+
+\section{{\tt read} generator and {\tt write} procedure}
+The read and write operators on schannels are used for 
+communication between fibres. 
+
+\begin{itemize}
+\item
+When a read matches a write,
+the reader continues with the data, and the writer is
+placed by on the scheduler active list. If there is
+more than one writer, the writer chosen is unspecified.
+
+\item If a read has no matching write, the reading fibre joins
+a set of fibres waiting on the schannel for a write,
+and the scheduler begins execution of one fibre from
+its active list.
+
+\item A write will transfer control and data to one reader.
+The reader chosen is unspecified. The writer is then
+placed on the scheduler active list.
+
+\item If a write has no matching read, the writing fibres joins
+a set of fibres waiting for a read, and the scheduler
+begins execution of one fibre from its active list.
+\end{itemize}
+
+Thus, an schannel is, in effect, a localised scheduler,
+queueing either writers or readers until matching operations
+are performed.
+
+\section{Cross thread I/O}
+Schannel read and write operations are not thread safe.
+Schannels should usually not be shared between pthreads
+to ensure I/O cannot be performed between pthreads using
+schannel I/O. Pthreads can use \verb%pchannels% to 
+communicate instead. On the other hand fibres must not
+use pchannels to communicate within the same pthread
+since this would be an automatic deadlock.
+
+
+\section{{\tt broadcast} procedure}
+This procedure writes to all fibres waiting
+on an schannel, then returns. Unlike \verb%write%
+it does not block. 
+
+\verb%broadcast% can be used directly from C++. It is intended
+to permit custom C++ driver code to communicate with a suspended
+Felix system. The driver code must ensure the data sent with
+a broadcast remains live whilst target fthreads are processing it.
+
+Felix \verb%broadcast% is invoked by the member function
+\verb%external_multi_write% of the object of type \verb%async_sched%
+with type shown below, passing the schannel to broadcast over,
+and a pointer to the data to broadcast.
+
+\begin{minted}{C++}
+void async_sched::external_multi_swrite(
+  ::flx::rtl::schannel_t *chan, 
+  void *data
+)
+\end{minted}
+
+Felix can be embedded in C++ code, in particular it can run
+in framework loop idle function as a callback.
+It runs until there are no active fibres. The \verb%external_multi_write%
+is used to schedule more active fibres so the next resumption
+via the idle loop callback has work to do.
+
+\subsection{Fibre States}
+Fibres may be in one of five states:
+\begin{description}
+\item[Running] Only one fibre can be running at a time in a given pthread.
+\item[Waiting to Run] A fibre is active if it is on the scheduler active list but
+not running.
+\item[Waiting on Schannel] A fibre may be waiting for either input or to output.
+\item[Waiting for Asynchrons Event] Fibres may also wait for asynchronous events.
+\end{description}
+
+A fibre which is running or waiting to run is said to be {\em active}.
+A fibre which is waiting on an schannel or asynchronous event is 
+said to be suspended.
+
+\subsection{Schannel States}
+An schannel may be in one of three states:
+\begin{description}
+\item[Empty] The schannel has no fibres on its wait list.
+\item[Waiting for a reader] The fibre has one or more writers
+on its wait list.
+\item[Waiting for a writer] The fibre has one or more readers
+on its wait list.
+\end{description}
+
+\subsection{Abbreviated Type names}
+Felix provides short hand notation for
+input and output schannels as follows:
+
+\begin{tabular}[c]{lll}
+\hline
+alias&full name&semantics\\
+\hline
+\verb"%<T"&ischannel[T]&input schannel\\
+\verb"%>T"&oschannel[T]&output schannel\\
+\verb"%<>T"&ioschannel[T]&bidirectional schannel\\
+\end{tabular}
+
+\subsection{Deadlock, Livelock, and Suicide}
+Both fibres and schannels are garbage collected. Thus they
+either be reachable or unreachable.
+
+If a fibre is active it is a root, and is always 
+reachable. If a fibre is waiting for an asynchrons event
+it is also always reachable.
+
+An schannel may be also be reachable if it is stored in a variable
+in the global thread frame. This is the global data object which is
+shared between all pre-emptive threads.
+
+Alternatively it may be reachable from a procedure reachable
+from an active fibre.
+
+A fibre may terminate by returning. In this case it is unreachable
+and will be collected. This is known as normal termination.
+
+A fibre which can only be reached from an unreachable schannel
+will be garbage collected. This is known as suicide and
+ensures fibres cannot deadlock: deadlocked fibres suicide
+and so aren't deadlocked because they no longer exist.
+For example consider:
+
+\begin{minted}{felix}
+begin 
+  var i1,o1 = ml_ioschannel_pair[int]();
+  var i2,o2 = ml_ioschannel_pair[int]();
+  spawn_fthread { write (o1,1); println$ read i2; };
+  spawn_fthread { write (o2,2); println$ read i1; };
+end
+\end{minted}
+
+The first fthread suspends on channel 1, waiting to write,
+the second fthread suspends on channel 2, waiting to write.
+The fthreads are suspended and deadlocked. However the main
+fthread is active and now runs, and the begin/end block
+returns so its data frame, containg the two schannels,
+is no longer reachable. This means the two suspended
+fthreads are not reachable either. So the two fibres
+have suicided, they are no longer deadlocked because
+they no longer exist.
+
+Suicide is not necessarily an error, it is, in fact, a common
+way to terminate fthreads. The problem above terminates correctly.
+
+Now, consider the program above without the begin/end block.
+In this case, the fthreads will not be collected because
+they're reachable from global store (the so-called thread frame).
+So that program will not terminate, and is said to be 
+{\em live-locked}.
+
+It is a live-lock because the main fthread can read the
+channels and thus the suspended fibres and {\em could}
+unsuspend them with suitable I/O operations.
+
+It is the responsibility of the holder of an schannel
+to ensure other holders I/O requests are satisfied.
+If a fibre does not intended to perform I/O on an schannel
+it should forget it. In the example the main thread forgets
+the schannels by forgetting the begin/end blocks data frame
+when it returns.
+
+\subsection{Restrictions on use}
+Fibres can only be spawned with a basic \verb%spawn_fthread%
+by top level procedures or
+procedural desendants, or, from functions or generator
+which are inlined (eliminating the function).
+
+This is because procedures spawned with a basic \verb%spawn_fthread%
+with a service call which requires the machine stack be empty, since the service
+calls are effected by {\em returning} control to the scheduler.
+
+Similarly, the same restrictions apply to schannel I/O.
+
+However these restrictions can be partly overcome with nested
+schedulers.
+
+\section{Nested Scheduling}
+A nested scheduler of type \verb%fibre_scheduler%
+may be created a constructor accepting a unit argument.
+It is must be deleted when no longer required by
+the procedure \verb%delete_fibre_scheduler%.
+
+Fibres may be added to the scheduler using the
+advanced \verb%spawn_fthread% procedure, this procedure
+takes a \verb%fibre_scheduler% argument and returns a closure
+accepting procedure of type \verb%1->0%. Fibres starting
+with the procedure are added to the nested scheduler list,
+but are not yet run.
+
+The \verb%run% procedure takes a populated scheduler and
+runs the fibres on it.
+
+Fibres on nested schedulers may communicate with each other
+using schannel operations.
+
+The run procedure will not return until all the fibres on
+the nominated scheduler have completed. The fibres may
+not do asynchronous operations, or make service calls
+other than schannel I/O operations,
+however the scheduler handles schannel I/O properly.
+
+The result of attempting to communicate with fibres on another
+scheduler such as the master scheduler are undefined.
+
+\begin{minted}{felix}
+fun foo () = 
+{
+  var chin, chout = mk_ioschannel_pair[int]();
+  var sched = fibre_scheduler();
+  var res = 1;
+  spawn_fthread sched { write (chout,42); };
+  spawn_fthread sched { res = read chin; };
+  run sched;
+  delete_fibre_scheduler sched; 
+  return res;
+}
+println$ foo();
+\end{minted}
+
+\section{Synchronous pipelines}
 \href{http://felix-lang.org/share/lib/std/control/spipes.flx}{Library Reference}
 lah.
+
+A synchronous pipeline is a special case of fibres and channels
+in which data flow from one fibre to a series of others in sequence
+using a one schannel for each adjacent pair to connect them.
+
+Special constructors are provided to make pipelines which ensure
+that only the fibres in the pipeline know the connecting schannels.
+
+This ensures that the pipeline collapses when there is no more
+data to processes.
+
+The starting point of a pipeline is known as a source,
+the ending point a sink, and the pieces in the middle
+are called transducers.
+
+A transducer is a control inverted function. This means that
+instead of being called with data, it reads it, and instead
+of returning with a result it writes it.
+
+Unlike functions, which form client/server relations,
+tranduces are all peers.
+
+\section{Buffers}
+Synchronous I/O is unbuffered. This means the sequencing of reads
+and writes is critical. If a fibre writes channel A then B, and another
+reads B then A, the system is deadlocked and the fibres may suicide.
+
+In order to read a set of inputs in an arbitrary order, buffers can
+be added to each input.
+
+A buffer is simply an fibre running an infinite loop which reads from one
+channel and writes on another:
+
+\begin{minted}{felix}
+var Ain,Aout = mk_ioschannel_pair[int]();
+var Bin,Bout = mk_ioschannel_pair[int]();
+var Cin,Cout = mk_ioschannel_pair[int]();
+var Din,Dout = mk_ioschannel_pair[int]();
+
+proc buffer (r:%<int, w:%>int) () { 
+  while true perform write (w,read r); 
+}
+
+spawn_fthread { write (Aout, 1); write (Bout,2); };
+spawn_fthread { var d = read Din; c = read Cin; println$ c,d; };
+spawn_fthread$ buffer (Ain,Cout);
+spawn_fthread$ buffer (Bin,Dout);
+\end{minted}
+
+Now, as you can see, the reader procedure reads the data from A
+in the reverse order to that in which it is written, but
+this works because of the buffers. Note that the first fthread
+can now proceed as soon as the buffer has read its output,
+before the second fthread gets it. In fact the second fthread
+gets what it wrote first.
+
+Buffers are mandatory for a feedback.
+
 \chapter{Asychronous Events}
 blah.
 \chapter{Pre-emptive Threading}
