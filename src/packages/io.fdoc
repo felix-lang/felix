@@ -733,7 +733,7 @@ class Stream {
       }
     else
       // int32 = DWORD
-      gen ReadFile: fd_t * int * address * int32 * &int32 -> bool =
+      gen ReadFile: fd_t * address * int32 * &int32 -> bool =
         "ReadFile($1,$2,$3,$4,NULL)"
       ;
       proc read(fd: fd_t, len: &int, buf: address, eof: &bool) {
@@ -757,7 +757,7 @@ class Stream {
       }
     else
       // int32 = DWORD
-      gen WriteFile: fd_t * int * address * int32 * &int32 -> bool =
+      gen WriteFile: fd_t * address * int32 * &int32 -> bool =
         "WriteFile($1,$2,$3,$4,NULL)"
       ;
       proc write(fd: fd_t, len: &int, buf: address, eof: &bool) {
