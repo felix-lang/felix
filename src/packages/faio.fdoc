@@ -19,7 +19,6 @@
 #include <flx_faio_config.hpp>
 
 #include "pthread_bound_queue.hpp"
-#include "pthread_work_fifo.hpp"
 #include "demux_timer_queue.hpp"
 #include "demux_demuxer.hpp"
 
