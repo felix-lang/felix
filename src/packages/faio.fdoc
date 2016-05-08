@@ -592,35 +592,6 @@ wsa_socketio::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
   }
 }
 
-// file io
-
-bool
-winfile_io::start_async_op_impl()
-{
-  //fprintf(stderr,"winfile_io: start async_op_impl\n");
-  return start_overlapped();  // go
-}
-
-// this too could be factored back, I think. that waio_base finished
-// would have to change. it's just asking for for some fn to realise
-// that it's finished.
-// the byte count shouldn't need to be updated here...
-void
-winfile_io::iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
-  LPOVERLAPPED olp, int err)
-{
-  // fprintf(stderr,"winfile_io wakeup, nb: %li, err: %i\n", nbytes, err );
-
-  // fprintf(stderr,"THIS WAKEUP SHOULD BE THE SAME AS SEND/RECV make it so\n");
-  // actually, I don't think it should be. the SOCKET stuff goes around
-  // the loop again (and ignores errors, check it doesn't hammer).
-
-  // keep track of bytes received.
-  pb.bytes_written += nbytes;
-
-  waio_base::iocp_op_finished(nbytes, udat, olp, err);
-}
-
 }}
 @
 

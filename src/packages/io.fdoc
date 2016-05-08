@@ -724,24 +724,50 @@ class Stream {
   publish "fd_t -- native file handle (disk file)"
   instance IByteStream[fd_t]
   {
-    proc read(fd: fd_t, len: &int, buf: address, eof: &bool) {
-      if PLAT_POSIX do
-        faio_read(fd, len, buf, eof);
-      else
-        ReadFile(fd, len, buf, eof);
-      done
-    }
+    if PLAT_POSIX do
+      gen cread: fd_t * int * address -> int = "read($1,$2,$3)";
+      proc read(fd: fd_t, len: &int, buf: address, eof: &bool) {
+        var oldlen = *len;
+        len <- cread(fd, *len, buf);
+        eof <- oldlen < *len;
+      }
+    else
+      // int32 = DWORD
+      gen ReadFile: fd_t * int * address * int32 * &int32 -> bool =
+        "ReadFile($1,$2,$3,$4,NULL)"
+      ;
+      proc read(fd: fd_t, len: &int, buf: address, eof: &bool) {
+        var oldlen = *len;
+        var readin: int32;
+        var res = ReadFile(fd, buf, len*.int32, &readin);
+        len <- readin.int;
+        eof <- res or (oldlen < *len);
+      }
+    done
   }
 
   instance OByteStream[fd_t]
   {
-    proc write(fd: fd_t, len: &int, buf: address, eof: &bool) {
-      if PLAT_POSIX do
-        faio_write(fd, len, buf, eof);
-      else
-        WriteFile(fd, len, buf, eof);
-      done
-    }
+    if PLAT_POSIX do
+      gen cwrite: fd_t * int * address -> int = "write($1,$2,$3)";
+      proc write(fd: fd_t, len: &int, buf: address, eof: &bool) {
+        var oldlen = *len;
+        len <- cwrite(fd, *len, buf);
+        eof <- oldlen < *len;
+      }
+    else
+      // int32 = DWORD
+      gen WriteFile: fd_t * int * address * int32 * &int32 -> bool =
+        "WriteFile($1,$2,$3,$4,NULL)"
+      ;
+      proc write(fd: fd_t, len: &int, buf: address, eof: &bool) {
+        var oldlen = *len;
+        var written: int32;
+        var res = WriteFile(fd, buf, len*.int32, &written);
+        len <- written.int;
+        eof <- res or (oldlen < *len);
+      }
+    done
   }
 
   instance IOByteStream[fd_t] {}
@@ -1231,10 +1257,6 @@ open Posix_headers;
 header sockety_h = '#include "demux_sockety.hpp"';  // my socket utils
 header '#include "faio_posixio.hpp"';
 
-fun sys_job_queue_qbound() => 20;
-fun sys_job_queue_nthreads() =>  4;
-val sys_job_queue = Pthread::mk_job_queue(#sys_job_queue_qbound,#sys_job_queue_nthreads);
-
 // ------------ core file and socket definitions ----------------
 typedef fd_t = PosixFileSystem::posix_file;
 
@@ -1394,17 +1416,6 @@ proc close: socket_t = 'close($1);' requires Posix_headers::unistd_h;
 proc shutdown: socket_t*int = 'shutdown($a);' requires Posix_headers::sys_socket_h;
 fun bad_socket : socket_t -> bool = "$1 == -1";
 
-// non blocking
-/*
-gen aio_ropen: string -> FileSystem::posix_file = 'open($1.c_str(), O_RDONLY | O_NONBLOCK)'
-    requires fcntl_h, sys_stat_h;
-gen aio_wopen: string -> FileSystem::posix_file = ' open($1.c_str(), O_WRONLY | O_NONBLOCK | O_CREAT | O_TRUNC, S_IRUSR|S_IWUSR)'
-    requires fcntl_h, sys_stat_h;
-gen aio_rwopen: string -> FileSystem::posix_file = ' open($1.c_str(), O_RDWR | O_NONBLOCK | O_CREAT | O_TRUNC, S_IRUSR|S_IWUSR)'
-    requires fcntl_h, sys_stat_h;
-gen aio_creat: string * posix_permissions-> FileSystem::posix_file = ' open($1.c_str(), O_RDWR | O_NONBLOCK | O_CREAT | O_TRUNC, $2)'
-    requires fcntl_h, sys_stat_h;
-*/
 
 // socketio_request should be renamed to be async_fd_request
 type socketio_request = "::flx::faio::socketio_request";
@@ -1439,8 +1450,6 @@ proc async_write(fd: socket_t, len: &int, buf: address, eof: &bool)
     //println$ "faio/flx_faoi_posix.flx: async_write(s,"+str (*len)+",buf,"+str(*eof)+" call async_rw ..";
 }
 
-type flxfileio_request = "::flx::faio::flxfileio_request";
-
 // connect!
 type async_connect = '::flx::faio::connect_request';
 
@@ -1471,34 +1480,6 @@ proc accept(s: &socket_t, listener: socket_t)
     var acc = mk_accept$ sys_demux,listener;
     faio_req$ &acc;
     *s = acc.get_socket;
-}
-
-// ASYNC FILE IO
-
-// offset ? let it be for a moment
-fun mk_faio: job_queue * FileSystem::posix_file *address*int*int*bool -> flxfileio_request
-    = '::flx::faio::flxfileio_request($1,$2, (char*)$3, $4, $5, $6)';
-fun get_pb: flxfileio_request -> sel_param_ptr = '&$1.pb';
-
-proc faio_rw(q:job_queue, fd: FileSystem::posix_file, len: &int, buf: address, eof: &bool, read_flag: bool)
-{
-    // constant offset for now, rushing to get this in stream
-    var faio = mk_faio(q, fd, buf, *len, 0, read_flag);
-    faio_req$ &faio;
-    //print$ f"faio_rw: request %d, actual %d\n" (*len,faio.pb.bytes_done);
-    calc_eof(faio.get_pb, len, eof);
-}
-proc faio_read(fd: FileSystem::posix_file, len: &int, buf: address,
-    eof: &bool)
-{
-println$ "faio_posix::faio_read " + str (*len);
-    faio_rw(sys_job_queue, fd, len, buf, eof, true);       // read
-println$ "faio_posix::faio_read, len="+str (*len) + ", eof=" + str (*eof);
-}
-
-proc faio_write(fd: FileSystem::posix_file, len: &int, buf: address, eof: &bool)
-{
-    faio_rw(sys_job_queue, fd, len, buf, eof, false);      // write
 }
 
 } // class faio_posix
@@ -1684,28 +1665,6 @@ proc WSASend(s: SOCKET, len: &int, buf: address, eof: &bool)
     var rev = mk_wsa_socketio(sys_demux,s, ppb, false); // writing
     faio_req$ &rev;
     calc_eof(ppb, len, eof);
-}
-
-type winfile_io = "flx::faio::winfile_io";
-
-fun mk_winfile_io: demuxer * WFILE*address*int*bool->winfile_io = 'flx::faio::winfile_io($a)';
-
-// no offset - just for streams now. write probably doesn't work
-fun get_pb: winfile_io -> sel_param_ptr = '&$1.pb';
-
-proc ReadFile(f: WFILE, len: &int, buf: address, eof: &bool)
-{
-    var io = mk_winfile_io(sys_demux, f, buf, *len, true); // reading
-    faio_req$ &io;
-// we do have a success flag
-    calc_eof(io.get_pb, len, eof);
-}
-
-proc WriteFile(f: WFILE, len: &int, buf: address, eof: &bool)
-{
-    var io = mk_winfile_io(sys_demux, f, buf, *len, false);    // writing
-    faio_req$ &io;
-    calc_eof(io.get_pb, len, eof);
 }
 
 
