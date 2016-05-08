@@ -4,12 +4,6 @@
 #include <flx_demux_config.hpp>
 
 namespace flx { namespace demux {
-
-// trying to factor out code to share between pc & posix versions
-
-// class sleep_task : public worker_task
-// may not need time in here - just the wakeup - something I surely have
-// somewhere else.
 class DEMUX_EXTERN sleep_task
 {
 public:

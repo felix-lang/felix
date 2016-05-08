@@ -53,47 +53,6 @@ void FAIO_EXTERN sigpipe_ignorer()
 #endif
 @
 
-@h1 Faio Job
-@tangle faio_job.hpp
-#ifndef __FLX_FAIO_JOB_H__
-#define __FLX_FAIO_JOB_H__
-#include <flx_faio_config.hpp>
-#include "demux_demuxer.hpp"
-#include "pthread_work_fifo.hpp"
-#include "flx_async.hpp"
-
-namespace flx { namespace faio {
-class FAIO_EXTERN job_t:
-  public ::flx::async::flx_driver_request_base,
-  public pthread::worker_task
-{
-   pthread::worker_fifo* job_queue;
-public:
-
-  // from flx_driver_request_base
-  bool start_async_op_impl(flx::demux::demuxer& demux);
-};
-}}
-
-#endif
-@
-@tangle faio_job.cpp
-#include "faio_job.hpp"
-
-namespace flx { namespace faio {
-// from flx_driver_request_base
-bool job_t::start_async_op_impl(demux::demuxer& demux)
-{
-  fprintf(stderr,"job_t: start async_op_impl, adding task to job_queue (worker_fifo)\n");
-  //printf("Adding task to worker queue\\n");
-  // get worker fifo, add this task
-  job_queue->add_worker_task(this);
-  //printf("Task added\\n");
-  return false;              // suspended
-}
-}}
-@
-
 @h1 Faio I/O
 @tangle faio_posixio.hpp
 #ifndef __FLX_FAIO_POSIXIO_H__
@@ -107,11 +66,6 @@ bool job_t::start_async_op_impl(demux::demuxer& demux)
 // felix "socket" thread type, which was ugly.
 
 #include "demux_posix_demuxer.hpp"
-
-// a new sort of demuxer/event source: file io completions
-// haven't given up on using the socket style demuxers yet.
-#include "demux_pfileio.hpp"
-
 #include "demux_timer_queue.hpp"
 
 namespace flx { namespace faio {
@@ -172,31 +126,6 @@ public:
 
   // from accept_control_block
   virtual void wakeup(demux::posix_demuxer& demux);
-};
-
-
-// separate pthread file io
-// hum. multiple inheritance
-class FAIO_EXTERN flxfileio_request
-    : public ::flx::async::flx_driver_request_base, public demux::fileio_request
-{
-    pthread::worker_fifo       *aio_worker;
-public:
-    flxfileio_request();           // flx linkage
-    ~flxfileio_request();          // flx linkage
-
-    flxfileio_request(
-      pthread::worker_fifo *a,
-      int f, char* buf, long len, long off, bool rd
-     )
-        : fileio_request(f, buf, len, off, rd), aio_worker(a)
-     {
-       //fprintf(stderr, "flxfilio_request ctor\n");
-     }
-
-    // from driver request
-    bool start_async_op_impl();
-    void finished(); // fileio_request
 };
 
 }}
@@ -418,26 +347,6 @@ accept_request::wakeup(posix_demuxer& demux)
   notify_finished();
 }
 
-// from driver request
-flxfileio_request::~flxfileio_request(){}
-flxfileio_request::flxfileio_request(){}
-
-
-bool
-flxfileio_request::start_async_op_impl()
-{
-  fprintf(stderr,"flxfileio_request: start async_op_impl adding task to job_queue (worker_fifo)\n");
-  // printf("driver called fileio start_async_op code\n");
-
-  // need to create the async io thing here, or ask the driver for it
-  // driver needs to go a little less portable
-  aio_worker->add_worker_task(this);
-
-  return false;       // no wakeup
-}
-
-void
-flxfileio_request::finished() { notify_finished(); }
 }}
 @
 @tangle faio_winio.hpp
@@ -556,24 +465,6 @@ public:
 
   wsa_socketio(demux::iocp_demuxer *iod_a,SOCKET src, demux::sel_param* ppb, bool read)
     : waio_base(iod_a), wsasocketio_control_block(src, ppb, read) {}
-
-  bool start_async_op_impl();
-
-  virtual void iocp_op_finished( DWORD nbytes, ULONG_PTR udat,
-    LPOVERLAPPED olp, int err);
-};
-
-// looks a bit like wsa_socketio (bad name, sends too)
-class FAIO_EXTERN winfile_io
-  : public waio_base, public demux::winfileio_control_block
-{
-public:
-  winfile_io()      // flx linkage
-    : winfileio_control_block(NULL, NULL, 0, false){}
-
-  // offset?
-  winfile_io(demux::iocp_demuxer *iod_a,HANDLE f, void* buf, int len, bool read)
-    : waio_base(iod_a), winfileio_control_block(f, buf, len, read) {}
 
   bool start_async_op_impl();
 

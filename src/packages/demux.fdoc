@@ -184,7 +184,6 @@ def build_runtime(phase):
         # posix
         path / 'posix/demux_posix_demuxer.hpp',
         path / 'posix/demux_posix_timer_queue.hpp',
-        path / 'posix/demux_pfileio.hpp',
         path / 'posix/demux_select_demuxer.hpp',
         path / 'posix/demux_sockety.hpp',
         path / 'posix/demux_self_piper.hpp',
@@ -232,7 +231,6 @@ def build_runtime(phase):
             path / 'posix/demux_posix_timer_queue.cpp',  # posix
             path / 'posix/demux_sockety.cpp',            # posix
             path / 'posix/demux_self_piper.cpp',         # posix
-            path / 'posix/demux_pfileio.cpp',            # posix
             path / 'posix/demux_ts_select_demuxer.cpp',  # posix
         ))
 

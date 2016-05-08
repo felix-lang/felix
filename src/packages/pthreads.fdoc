@@ -64,11 +64,6 @@ open class Pthread
 {
   requires package "flx_pthread";
 
-  type job_queue = "::flx::pthread::worker_fifo*" requires work_fifo_hxx;
-  type worker_task = "::flx::pthread::worker_task*" requires work_fifo_hxx;
-  gen mk_job_queue: int * int -> job_queue = "new ::flx::pthread::worker_fifo($1,$2)";
-  proc add_worker_task : job_queue  * worker_task = "$1->add_worker_task($2);";
-
   //$ spawn a detached pthread.
   proc spawn_pthread(p:1->0)
   {
