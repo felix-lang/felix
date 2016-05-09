@@ -3183,7 +3183,7 @@ fun f[T where ispair T] (x:T)=>x;
 println$ f (42,33L); // OK, signature ispair (int * long) true
 \end{minted}
 
-\part{Definitions}
+\part{Executable Syntax}
 \chapter{Variable Definitions}
 \href{http://felix-lang.org/share/lib/grammar/variables.fsyn}{Syntax}
 
@@ -3722,9 +3722,110 @@ function needs to be exported so it has a C name which
 can be linked to with \verb%dlopen%.
 
 
-\part{Executable statements}
+\chapter{Statements}
 \section{Assignment}
 \href{http://felix-lang.org/share/lib/grammar/assignment.fsyn}{Syntax}
+
+\section{Basic Assignment}
+\begin{minted}{felix}
+  //$ Assignment form.
+  sassignexpr := sexpr sassignop sexpr;
+
+  //$ Assignment.
+    sassignop:= "=" =># "'_set";
+
+  //$ Store at pointer.
+    sassignop:= "<-" =># "'_pset";
+
+  //$ Short form val declaration.
+    sassignop:= ":=" =># "'_init";
+
+\end{minted}
+
+\section{Read-modify-write operations}
+
+\begin{minted}{felix}
+  //$ binary read-modify-write operators.
+  sassignexpr := sexpr srmwop sexpr;
+    //$ Increment.
+    srmwop:= "+=" =># "_1";
+    //$ Decrement.
+    srmwop:= "-=" =># "_1";
+    //$ Multiply.
+    srmwop:= "*=" =># "_1";
+    //$ Divide.
+    srmwop:= "/=" =># "_1";
+    //$ C remainder.
+    srmwop:= "%=" =># "_1";
+    //$ Left shift.
+    srmwop:= "<<=" =># "_1";
+    //$ Right shift.
+    srmwop:= ">>=" =># "_1";
+    //$ Bitwise exclusive or.
+    srmwop:= "^=" =># "_1";
+    //$ Bitwise or.
+    srmwop:= "|=" =># "_1";
+    //$ Bitwise and.
+    srmwop:= "&=" =># "_1";
+    //$ Left shift.
+    srmwop:= "<<=" =># "_1";
+    //$ Right shift.
+    srmwop:= ">>=" =># "_1";
+
+  //$ Swap operator.
+  sassignexpr := sexpr sswapop sexpr;
+
+  //$ Prefix read/modify/write.
+  sassignexpr := spreincrop sexpr;
+    //$ Pre-increment.
+    spreincrop:= "++" =># "'pre_incr";
+    //$ Pre-decrement.
+    spreincrop:= "--" =># "'pre_decr";
+
+  //$ Postfix read/modify/write.
+  sassignexpr := sexpr spostincrop;
+    //$ Post-increment.
+    spostincrop:= "++" =># "'post_incr";
+    //$ Post-decrement.
+    spostincrop:= "--" =># "'post_decr";
+\end{minted}
+
+\section{Special Assignment}
+Compound assignment form uses leadin \verb%def% to allows
+recursive decoding of tuples and a mix of variable
+initialisation, value initialisation and assignment to
+existing variables from projections of the RHS in the
+corresponding position.
+
+The pattern of variables, \verb%var% and \verb%val% terms in
+the LHS is called an \verb%l-expression%. An underscore \verb%_%
+may also be used.
+
+\begin{minted}{felix}
+  //$ Multiple initialisation/assignment form.
+  //$
+  //$ def x, (var y, val z) = 1,(2,3);
+  //$
+  //$ allows unpacking a tuple into a pre-existing variable,
+  //$ creating a new variable, and binding a new value,
+  //$ in a single form, with nesting.
+  sassignexpr := "def" slexpr "=" sexpr;
+    slexpr := slexprs =># """ (if (null? (tail _1)) (first _1) `((List ,_1) none)) """;
+    slexprs := stlelement "," slexprs =># "(cons _1 _3)";
+    slexprs := stlelement =># "`(,_1)";
+
+    slelement := "val" sname =># "`(Val ,_sr ,_2)";
+    slelement := "var" sname =># "`(Var ,_sr ,_2)";
+    slelement := sname =># "`(Name ,_sr ,_1)";
+    slelement := _ =># "`(Skip ,_sr)";
+    slelement := "(" slexprs ")" =># "`(List ,_2)";
+
+    stlelement := slelement ":" x[sfactor_pri] =># "`(,_1 (some ,_3))";
+    stlelement := slelement =># "`(,_1 none)";
+
+}
+\end{minted}
+
 
 \section{The {\tt goto} statement and label {\tt prefix}}
 Felix statements may be prefixed by a label
@@ -3780,7 +3881,7 @@ halt "Program complete";
 \end{minted}
 
 
-\subsection{try/catch/entry}
+\section{try/catch/entry}
 The try/catch construction may only be user to wrap
 calls to C++ primitives, so as to catch exceptions.
 
@@ -3794,7 +3895,7 @@ endtry
 \end{minted}
 
 
-\subsection{goto-indirect/label\_address}
+\section{goto-indirect/label\_address}
 The \verb%label-address% operator captures the address
 of code at a nominated label. 
 
@@ -3822,7 +3923,7 @@ lab2:>
 \end{minted}
 
 
-\subsection{Exchange of control}
+\section{Exchange of control}
 Built on top of label adressing and indirect gotos,
 the \verb%branch-and-link% instruction is conceptually
 the most fundamental control instruction. The library
@@ -3851,50 +3952,7 @@ match expr with
 endmatch
 \end{minted}
 
-is an extension of the C switch statement. The patterns
-are composed of these forms:
-
-\begin{minted}{felix}
-(v1, v2, ... )          // tuple match
-h!t                     // list match
-h,,t                    // tuple cons
-Ctor                      // const union or variant match
-Ctor v                   // nonconst union or variant match
-(fld1=f1, fld2=f2, ...)  // record match
-pat as v                 // assign variable to matched subexpression
-pat when expr             // guarded match
-pat1 | pat2               // match either pattern
-999                       // integer match
-"str"                     // string match 
-lit1 .. lit2              // range match
-_                         // wildcard match
-\end{minted}
-
-
-The guarded match only matches the pattern if the guard expression is true.
-
-\begin{minted}{felix}
-match x with
-| (x,y) when y != 0 => ...
-endmatch
-\end{minted}
-
-
-The tuple as list cons match is a form of row polymorphism
-where the first element of a tuple and the remaining elements
-considered as a tuple are matched.
-
-A good example of this is found in the library \href{http://felix-lang.org/share/lib/std/datatype/tuple.flx}{here}
-which allows printing a tuple of arbitrary number of components, indeed,
-this facility was implemented precisely to allow this definition in the library.
-
-Record matches succeed with any record containing a superset
-of the specified fields.
-
-As well as integer and string matches, a literal of any type with an
-equality and inequality operator can be matched. In addition,
-if there is a less than or equal operator \verb%<=% an inclusive
-range match can be specified.
+is an extension of the C switch statement. See \fullref{Pattern Matching}.
 
 \section{if/goto}
 The conditional goto is an abbreviation for 
@@ -3906,7 +3964,7 @@ if c do goto lab; done
 \end{minted}
 
 
-\subsection{if/return}
+\section{if/return}
 The conditional return is an abbreviation for
 the more verbose conditional:
 
@@ -3916,7 +3974,7 @@ if c do return; done
 \end{minted}
 
 
-\subsection{if/call}
+\section{if/call}
 The conditional call is an abbreviation for
 the more verbose conditional:
 
@@ -4020,7 +4078,7 @@ proc f() { println$ 1; return; }
 \end{minted}
 
 
-\subsection{return from}
+\section{return from}
 The return from statement allows control to be
 returned from an enclosing procedure, provided that
 procedure is active.
@@ -4037,7 +4095,7 @@ proc outer () {
 \end{minted}
 
 
-\subsection{jump }
+\section{jump }
 The procedural jump is an abbreviation for 
 the more verbose sequence:
 
@@ -4060,7 +4118,7 @@ fun f () : int = {
 
 Control may not fall through the end of a function.
 
-\subsection{yield}
+\section{yield}
 The yield statement returns a value from a generator
 whilst retaining the current location so that execution
 may be resumed at the point after the yield.
@@ -4101,16 +4159,14 @@ Otherwise the spawned fthread is suspended when the first
 write, or the first unmatched read operation occurs.
 
 
-\subsection{read/write/broadcast schannel}
+\section{read/write/broadcast schannel}
 \href{http://felix-lang.org/share/lib/std/control/schannels.flx}{Library Reference}
 
 \section{{\tt spawn\_pthread}}
 \href{http://felix-lang.org/share/lib/std/control/pthread.flx}{Library Reference}
 
-\subsection{read/write pchannel}
+\section{read/write pchannel}
 \href{http://felix-lang.org/share/lib/std/control/pchannels.flx}{Library Reference}
-
-\subsection{exchange}
 
 \section{loops}
 \href{http://felix-lang.org/share/lib/grammar/loops.fsyn}{Library Reference}
@@ -4210,7 +4266,7 @@ TBD
 TBD
 \section{Assertions}
 \href{http://felix-lang.org/share/lib/grammar/assertions.fsyn}{Library Reference}
-\section{assert}
+\subsection{assert}
 Ad hoc assertion throws an assertion exception if its argument
 is false. 
 
@@ -4284,7 +4340,7 @@ reduce revrev[T] (x: list[T]) : rev (rev x) => x;
 
 
 
-\subsection{invariant}
+\section{invariant}
 An invariant is an assertion which must hold on the state variables
 of an object, at the point after construction of the state
 is completed by the constructor function and just before the
@@ -4319,7 +4375,7 @@ code 'cout << "hello";';
 \end{minted}
 
 
-\subsection{noreturn code}
+\section{noreturn code}
 Similar to code, however noreturn code never returns.
 
 \begin{minted}{felix}
@@ -4411,7 +4467,7 @@ end
 \end{minted}
 
 
-\part{Expressions}
+\chapter{Expressions}
 \href{http://felix-lang.org/share/lib/grammar/expressions.fsyn}{Syntax}
 
 Expressions are listed in approximate order of precedence,
@@ -4424,6 +4480,54 @@ var x = expr;
 \end{minted}
 
 so as to present a complete statement. The \verb%x% is of no significance.
+
+\section{Priority levels}
+\begin{minted}{felix}
+priority 
+    let_pri < 
+    slambda_pri <
+    spipe_apply_pri <
+    sdollar_apply_pri < 
+    stuple_cons_pri <
+    stuple_pri <
+    simplies_condition_pri <
+    sor_condition_pri <
+    sand_condition_pri <
+    snot_condition_pri <
+    stex_implies_condition_pri <
+    stex_or_condition_pri <
+    stex_and_condition_pri <
+    stex_not_condition_pri <
+    scomparison_pri <
+    sas_expr_pri <
+    ssetunion_pri <
+    ssetintersection_pri <
+    sarrow_pri <
+    scase_literal_pri <
+    sbor_pri <
+    sbxor_pri <
+    sband_pri <
+    sshift_pri <
+    ssum_pri <
+    ssubtraction_pri <
+    sproduct_pri <
+    s_term_pri <
+    sprefixed_pri <
+    spower_pri <
+    ssuperscript_pri <
+    srefr_pri <
+    sapplication_pri <
+    scoercion_pri <
+    sfactor_pri <
+    srcompose_pri <
+    sthename_pri <
+    satomic_pri
+  ;
+\end{minted}
+
+
+
+
 \section{Chain forms}
 \subsection{Pattern let}
 The traditional let binding of ML.
@@ -4431,7 +4535,7 @@ The syntax is
 
 \begin{minted}{felix}
 var x = let pattern = expr1 in expr2; // equivalent to
-var x = match expr1 with pattern => expr2 endmatch
+var x = match expr1 with pattern => expr2 endmatch;
 \end{minted}
 
 \begin{minted}{felix}
@@ -5133,6 +5237,53 @@ var x =
   if c1 then a elif c2 then b else c endif
 ;
 \end{minted}
+
+\chapter{Pattern Matching}
+The patterns
+are composed of these forms:
+
+\begin{minted}{felix}
+(v1, v2, ... )          // tuple match
+h!t                     // list match
+h,,t                    // tuple cons
+Ctor                      // const union or variant match
+Ctor v                   // nonconst union or variant match
+(fld1=f1, fld2=f2, ...)  // record match
+pat as v                 // assign variable to matched subexpression
+pat when expr             // guarded match
+pat1 | pat2               // match either pattern
+999                       // integer match
+"str"                     // string match 
+lit1 .. lit2              // range match
+_                         // wildcard match
+\end{minted}
+
+
+The guarded match only matches the pattern if the guard expression is true.
+
+\begin{minted}{felix}
+match x with
+| (x,y) when y != 0 => ...
+endmatch
+\end{minted}
+
+
+The tuple as list cons match is a form of row polymorphism
+where the first element of a tuple and the remaining elements
+considered as a tuple are matched.
+
+A good example of this is found in the library \href{http://felix-lang.org/share/lib/std/datatype/tuple.flx}{here}
+which allows printing a tuple of arbitrary number of components, indeed,
+this facility was implemented precisely to allow this definition in the library.
+
+Record matches succeed with any record containing a superset
+of the specified fields.
+
+As well as integer and string matches, a literal of any type with an
+equality and inequality operator can be matched. In addition,
+if there is a less than or equal operator \verb%<=% an inclusive
+range match can be specified.
+
 
 
 \part{Library}
@@ -6751,11 +6902,825 @@ because the lock will only be held transiently.
 
 
 \section{Parallel For Loop}
+\subsection{Syntax}
+\begin{minted}{felix}
+   loop_stmt := 
+     "pfor" sname "in" sexpr "upto" sexpr block
+   ;
+\end{minted}
+\subsection{Operation}
+The parallel for loop constructs $n$ subjobs which are submitted to the thread pool, 
+where $n$ is approximately the number of threads in the thread pool.  Each job
+runs a loop over a subrange of the loop range so that all the indices in
+the range are covered.
+
+The thread pool is automatically started
+if it wasn't running. Note: it is not automatically stopped. You must
+manually call \verb%ThreadPool::stop()% if you use a \verb%pfor% statement
+otherwise Felix will not terminate.
+
+\subsection{Example}
+The \verb%pfor% loop was specifically designed for matrix multiplication.
+The following code multiplies $a$ by $b^{T}$ where the latter is the transpose
+of $b$, and puts the result in $r$. The matrices are square of dimension $N$.
+The inner product is captured in a function and returns a single value.
+
+\begin{minted}{felix}
+  pfor i in 0 upto (N - 1) do
+  for (var j=0; j<N; ++j;) 
+    perform &r . i . j <- inner_product (&a.i, &b.j);
+  done
+\end{minted}
+
+\subsection{Restrictions}
+It is essential the body of the \verb%pfor% loop behaves independently
+for each value of the control index, or uses lock free coupling
+such as adding to a shared atomic variable.
+
+\verb%pfor% loops must not be nested. It would be counter productive,
+but it will also most likely cause a deadlock. 
+
+\part{Platform Support}
+\chapter{Platform Modelling}
+The Felix language processor is a translator which outputs C++.
+Because of this, the translator can produce code intended to run
+on one platform on an unrelated platform. For example, Windows
+native programs can be generated on Linux, although there may
+not be a suitable compiler and library available to produce
+a binary, or an emulator to run it.
+
+So for platform related libraries, Felix provides three
+kind of code:
+\begin{itemize}
+\item platform specific code
+\item platform independent code
+\item platform adaptive code
+\end{itemize}
+
+Platform specific code consists of functions which are
+specific to the platform.
+
+Platform independent code uses a type class to represent
+a common subset of functions with the same interface.
+The type parameter is used to represent the platform variable.
+
+Class instances then bind the virtuals of the class for each
+supported platform.
+
+By convention the class name ends in \verb%_class%.
+
+Platform adaptive code is the simplest to use, and simply
+provides the platform dependent code for the host platform.
+The host is specified by macro file which is included
+with parse units, and conditional compilation is used
+for the selection.
+
+Note that {\em in addition} to the above Felix level
+modelling, similar modelling methods can be used
+in C++ libraries to which Felix binds. Therefore
+a call to a function like \verb%Shell::system()%
+can be mapped in Felix in a platform independent way
+to the underlying call in the ISO C library.
+
+The client may write platform independent code,
+accepting the restrictions of common functionality,
+but the code must reside in a class with OS control
+parameter which can be passed on to the platform mapping
+virtual functions.
+
+Note that Felix with the C++ backend is a cross-cross
+compiler, not just a cross compiler! There do exist
+C++ compilers that run on Linux but produce Windows binaries.
+Felix front end such a compiler, and produce Windows C++
+for it.
+
+
+\chapter{Processes}
+Blah.
+
+\chapter{Programs}
+\section{Basic Program interface}
+\begin{minted}{felix}
+class System
+{
+  const argc:int;
+  fun argv:int -> string;
+  fun argv_dflt (x:int) (y:string) : string;
+  fun args () : list[string];
+  gen system (cmd:string) : int => Shell::system(cmd);
+  gen exit: int -> any;
+  gen abort: 1 -> any;
+  const ptf:ptf_t;
+
+  //$ pexit examines the return code from a system call.
+  //$ If the code is 0 it exists with 0.
+  //$ On Windows:
+  //$    if the code is -1, it exits with errno.
+  //$    otherwise code 3
+  //$ On Unix:
+  //$   if the code is non-zero then
+  //$     if the callout aborted, return its abort code.
+  //$     if the callout died due to a signal, exit with code 2
+  //$     otherwise exit with code 3
+  //$ In both these cases a non-zero return causes a message
+  //$ to be printed on stderr.
+
+  proc pexit(e:int)
+  gen get_stdout(x:string) : int * string => Shell::get_stdout x;
+}
+\end{minted}
+
+\section{Environment Variables}
+\begin{minted}{felix}
+class Env_class[os]
+{
+  //$ Separator for filename lists
+  virtual fun pathsep: 1 -> string;
+
+  //$ Get the value of a given variable.
+  //$ Returns empty string if the variable doesn't exist.
+  fun getenv:string -> string =
+    "::flx::rtl::strutil::atostr(std::getenv($1.c_str()))"
+    requires package "flx_strutil", Cxx_headers::cstdlib;
+
+  //$ Get the value of a given variable.
+  //$ Returns specified default if the variable doesn't exist.
+  fun getenv(name:string,dflt:string):string=>let result = getenv(name) in 
+    if String::len result != 0uz then result else dflt endif
+  ;
+
+  fun getenvlist (name:string) : list[string] =>
+     split (getenv name, #pathsep)
+  ;
+}
+\end{minted}
+
+\section{Shell callouts}
+\begin{minted}{felix}
+class Shell_class[OS, process_status_t]
+{
+  // Quote a single argument.
+  // Note: kills Bash wildcard replacement.
+  virtual fun quote_arg:string->string;
+  fun quote_args (s:list[string]) : string => catmap[string] ' ' quote_arg s;
+
+  // Mainly for Windows we need a way to quote command line strings too.
+  virtual fun quote_line_for_system: string->string;
+
+  virtual fun parse: string -> list[string];
+
+  //------------------------------------------------------------
+  // system() function
+
+  //$ System command is ISO C and C++ standard.
+  gen raw_system: string -> int = "::std::system($1.c_str())"
+    requires Cxx_headers::cstdlib
+  ;
+  //$ basic command with line quoting.
+  gen basic_system (cmd: string) :int => 
+    cmd.quote_line_for_system.raw_system
+  ;
+
+  // string argument
+  // responds to FLX_SHELL_ECHO environment variable
+  gen system (cmd:string) = {
+    if Env::getenv "FLX_SHELL_ECHO" != "" do
+      eprintln$ "[system] " + cmd;
+    done
+    return basic_system cmd;
+  }
+
+  // list of string argument
+  gen system (args:list[string]) : int =>
+    args.quote_args.system
+  ;
+
+  gen system[T with Iterable[T,string]] (args:T) : int =
+  {
+    var lst = Empty[string];
+    for arg in args do 
+      lst = lst + arg; 
+    done
+    return system lst;
+  }  
+
+  virtual fun quote_line_for_popen: string -> string;
+
+  //$ get_stdout is a synchronous version of popen_in/pclose pair.
+  virtual gen raw_get_stdout : string -> int * string;
+ 
+  gen basic_get_stdout (cmd: string) : int * string =>
+    cmd.quote_line_for_popen.raw_get_stdout
+  ;
+
+  gen get_stdout (cmd:string) : int * string = {
+    if Env::getenv "FLX_SHELL_ECHO" != "" do
+      eprintln$ "[get_stdout] " + cmd;
+    done
+    return basic_get_stdout cmd;
+  }
+
+  // arbitrary Streamable argument
+  gen get_stdout (args:list[string]) : int * string =>
+    args.quote_args.get_stdout
+  ;
+ 
+  gen get_stdout[T with Iterable[T,string]] (args:T) : int * string;
+}
+\end{minted}
+
+\section{Signals}
+
+\chapter{File System}
+
+\chapter{Dynamic Linkage}
+\section{Basic Library}
+\section{Plugins}
 
 \part{Data Structures}
-\chapter{Iterators}:
+\chapter{Iterators}
+
 \chapter{Lists}
+\section{Inductive lists}
+\subsection{Description}
+Lists are the core data structure for most functional programming languages.
+A list is an inductive data type: it is defined by a base term, \verb%Empty[T]%,
+and an induction which says if $x$ is a list of $T$, and $v$ is a value of $T$,
+then \verb%Cons (v,x)% is a list.
+
+The induction model of construction admits to a recursive model 
+of destruction, for example:
+
+\begin{minted}{felix}
+fun str[T with Str[T]] (x:list[T]) : string =>  
+  match
+  | Empty => "Empty"
+  | Cons (head, tail) => head.str + ", " + str tail
+  endmatch
+;
+\end{minted}
+
+In fact, Felix defines Snoc lists rather than Cons lists,
+using a \verb%Snoc(list,value)% constructor based on a C++ implementation,
+instead of a \verb%Cons (value, list)% constructor and then 
+provides a translation with a user defined type constructor.
+The idea is to get the tail pointer first in the underlying data type,
+so that polymorphic visitors can be written without the offsets depending
+on the value type T.
+
+\begin{minted}{felix}
+open class List 
+{
+  union list[T] = | Empty | Snoc of list[T] * T;
+  fun _match_ctor_Cons[T] : list[T] -> bool = "!!$1"; 
+  inline fun _ctor_arg_Cons[T]: list[T] -> T * list[T] = 
+    "flx::list::snoc2cons<?1>($1)" 
+    requires snoc2cons_h
+  ;
+  inline fun Cons[T] (h:T, t:list[T]) => Snoc (t,h);
+\end{minted}
+
+\subsection{Constructors}
+\subsubsection{{\tt copy} function}
+Make an entirely new copy of a list.
+Primarily a helper.
+
+\begin{minted}{felix}
+  fun copy[T] (x:list[T]):list[T];
+\end{minted}
+
+\subsubsection{Copy and return last {\tt copy\_last}}
+Yet another helper procedure.
+
+\begin{minted}{felix}
+  proc copy_last[T] (inp:list[T], out:&list[T], last:&list[T]) {
+    out <- rev inp;
+    rev_last (out, last);
+  }
+\end{minted}
+
+\subsubsection{Named constructor for empty list}
+\begin{minted}{felix}
+  ctor[T] list[T] () => Empty[T];
+\end{minted}
+
+\subsubsection{Construct a singleton list}
+Does not work if the argument is an array
+or option iterator.
+
+\begin{minted}{felix}
+  //$ Make a list with one element.
+  //$ NOTE: list (1,2) is a list of 2 ints.
+  //$ To get a list of one pair use list[int*int] (1,2) instead!
+  ctor[T] list[T] (x:T) => Snoc(Empty[T],x);
+\end{minted}
+
+\subsubsection{Construct a list from an array}
+\begin{minted}{felix}
+  //$ Make a list from an array.
+  ctor[T,N] list[T] (x:array[T, N]) : list[T];
+\end{minted}
+
+\subsubsection{List comprehension.}
+Make a list from an option stream.
+Named variant.
+
+\begin{minted}{felix}
+  //$ List comprehension:
+  //$ Make a list from a stream.
+  fun list_comprehension[T] (f: (1->opt[T])) = {
+\end{minted}
+
+Constructor variant.
+
+\begin{minted}{felix}
+  //$ List comprehension:
+  //$ Make a list from a stream.
+  ctor[T] list[T](f: (1->opt[T])) => list_comprehension f;
+\end{miinted}
+
+\subsection{Construe a list as an array value}
+\begin{minted}
+  //$ Contrue a list as an array value
+  instance[T] ArrayValue[list[T],T] {
+    //$ Return umber of elements in a list.
+    pure fun len (x:list[T]) = {
+
+    //$ get n'th element
+    pure fun unsafe_get: list[T] * size -> T =
+
+    //$ Apply a procedure to each element of a list.
+    proc iter (_f:T->void) (x:list[T]) {
+
+    //$ Traditional left fold over list (tail rec).
+    fun fold_left[U] (_f:U->T->U) (init:U) (x:list[T]):U =
+
+    //$ Right fold over list (not tail rec!).
+    fun fold_right[U] (_f:T->U->U) (x:list[T]) (init:U):U =
+
+  }
+\end{minted}
+
+\subsection{Destructors}
+\subsubsection{Test for empty list {\tt is\_empty}}
+\begin{minted}{felix}
+  //$ Test if a list is empty.
+  pure fun is_empty[T] : list[T] -> 2 =
+\end{minted}
+
+\subsubsection{Tail of a list {\tt tail}}
+\begin{minted}{felix}
+  //$ Tail of a list, abort with match failure if list is empty.
+  pure fun tail[T] (x:list[T]) : list[T] = {
+\end{minted}
+
+\subsubsection{Head of a list {\tt head}}
+\begin{minted}{felix}
+  //$ Head of a list, abort with match failure if list is empty.
+  pure fun head[T] (x:list[T]) : T = {
+\end{minted}
+
+\subsection{Maps}
+\subsubsection{Reverse map a list {\tt rev\_map}}
+Tail recursive.
+
+\begin{minted}{felix}
+  //$ map a list, return mapped list in reverse order (tail rec).
+  fun rev_map[T,U] (_f:T->U) (x:list[T]): list[U] = {
+\end{minted}
+
+\subsubsection{Map a list {\tt map}}
+Tail recursive. Uses \verb%rev_map% and then inplace revseral.
+This is safe because we enforce linearity by abstraction.
+
+\begin{minted}{felix}
+  //$ map a list (tail-rec).
+  //  tail rec due to in-place reversal of result.
+  fun map[T,U] (_f:T->U) (x:list[T]): list[U] =
+\end{minted}
+
+\subsubsection{Reverse a list {\tt rev}.}
+Tail recursive.
+
+\begin{minted}{felix}
+  //$ reverse a list (tail rec).
+  pure fun rev[T] (x:list[T]):list[T]= {
+\end{minted}
+
+\subsubsection{Zip a pair of lists to a list of pairs {\tt zip2}}
+Returns a list the length of the shortest argument.
+
+\begin{minted}{felix}
+  //$ Zip two lists into a list of pairs.
+  //$ Zips to length of shortest list.
+  fun zip2[T1,T2] (l1: list[T1]) (l2: list[T2]) : list[T1 * T2] = 
+\end{minted}
+
+\subsection{Useful lists}
+\subsubsection{A list of integers {\tt range}.}
+From {\tt low} to @{high} exclusive with given @{step}.
+
+\begin{minted}{felix}
+  //$ Generate an ordered list of ints between low and high with given step.
+  //$ Low included, high not included.
+  fun range (low:int, high:int, step:int) =
+\end{minted}
+
+\subsubsection{Consecutive integers {\tt range}}
+\begin{minted}{felix}
+  //$ Range with step 1.
+  fun range (low:int, high:int) => range(low, high, 1);
+\end{minted}
+
+\subsubsection{Non-negative integers to limit {\tt range}}
+{\tt num} integers 0 to {\tt num-1}.
+
+\begin{minted}{felix}
+  //$ Range from 0 to num (excluded).
+  fun range (num:int) => range(0, num, 1);
+\end{minted}
+
+\subsection{Operators}
+\subsubsection{Concatenate two lists {\tt join}.}
+\begin{minted}{felix}
+  //$ Concatenate two lists.
+  fun join[T] (x:list[T]) (y:list[T]):list[T] =
+ 
+  //$ Concatenate two lists.
+  pure fun + [T] (x:list[T], y: list[T]):list[T] => join x y;
+\end{minted}
+
+\subsubsection{Cons an element onto a list.}
+\begin{minted}{felix}
+  //$ Prepend element to head of list.
+  pure fun + [T] (x:T, y:list[T]):list[T] => Snoc(y,x);
+\end{minted}
+
+\subsubsection{Append an element onto a list.}
+O(N) slow.
+
+\begin{minted}{felix}
+  //$ Append element to tail of list (slow!).
+  noinline fun + [T] (x:list[T], y:T):list[T] => rev$ Snoc (rev x,y);
+
+  //$ Append element to tail of list (slow!).
+  proc += [T] (x:&list[T], y:T) { x <- *x + y; }
+\end{minted}
+
+\subsubsection{Concatenate a list of lists {\tt cat}}
+\begin{minted}{felix}
+  //$ Concatenate all the lists in a list of lists.
+  noinline fun cat[T] (x:list[list[T]]):list[T] =
+\end{minted}
+
+\subsection{Lists and Strings}
+\subsubsection{Pack list of strings into a string with separator {\tt cat}}
+\begin{minted}{felix}
+  //$ Concatenate all the strings in a list with given separator.
+  pure fun cat (sep:string) (x:list[string]):string =
+\end{minted}
+
+\subsubsection{Map a list to a list of strings and cat with separator {\tt catmap}}
+\begin{minted}{felix}
+  fun catmap[T] (sep:string) (f:T -> string) (ls: list[T]) =>
+
+  fun strcat[T with Str[T]]  (sep: string) (ls: list[T]) =>
+
+  fun strcat[T with Str[T]]  (ls: list[T]) =>
+\end{minted}
+
+ 
+\subsection{Searching}
+\subsubsection{Value membership}
+\begin{minted}{felix}
+  //$ Return true if one value in a list satisfies the predicate.
+  fun mem[T] (eq:T -> bool) (xs:list[T]) : bool =>
+
+  //$ Return true if one value in the list satisfies the relation 
+  //$ in the left slot with 
+  //$ the given element on the right slot.
+  fun mem[T, U] (eq:T * U -> bool) (xs:list[T]) (e:U) : bool =>
+
+  //$ Construe a list as a set, imbuing it with a membership
+  //$ test, provided the element type has an equality operator.
+  instance[T with Eq[T]] Set[list[T],T] {
+    fun \in (x:T, a:list[T]) => mem[T,T] eq of (T * T) a x;
+  }
+\end{minted}
+
+\subsubsection{Value Find by relation {\tt find}}
+Returns option.
+
+\begin{minted}{felix}
+  //$ return option of the first element in a list satisfying the predicate.
+  fun find[T] (eq:T -> bool) (xs:list[T]) : opt[T] =>
+
+
+  //$ Return option the first value in the list satisfies the relation 
+  //$ in the left slot with 
+  //$ the given element on the right slot.
+  fun find[T, U] (eq:T * U -> bool) (xs:list[T]) (e:U) : opt[T] =>
+
+  //$ Return a sub list with elements satisfying the given predicate.
+  noinline fun filter[T] (P:T -> bool) (x:list[T]) : list[T] =
+
+  //$ Push element onto front of list if there isn't one in the
+  //$ list already satisfying the relation.
+  fun prepend_unique[T] (eq: T * T -> bool) (x:list[T]) (e:T) : list[T] =>
+
+  //$ Attach element to tail of list if there isn't one in the
+  //$ list already satisfying the relation.
+  fun insert_unique[T] (eq: T * T -> bool) (x:list[T]) (e:T) : list[T] =>
+
+  //$ Remove all elements from a list satisfying relation.
+  fun remove[T] (eq: T * T -> bool) (x:list[T]) (e:T) : list[T] =>
+
+  //$ Attach element to tail of list if there isn't one in the
+  //$ list already satisfying the relation (tail-rec).
+  noinline fun append_unique[T] (eq: T * T -> bool) (x:list[T]) (e:T) : list[T] = {
+
+  //$ Take the first k elements from a list.
+  fun take[T] (k:int) (lst:list[T]) : list[T] =>
+
+  //$ Drop the first k elements from a list.
+  fun drop[T] (k:int) (lst:list[T]) : list[T] =>
+ 
+  fun list_eq[T with Eq[T]] (a:list[T], b:list[T]): bool =>
+  instance[T with Eq[T]] Eq[list[T]] { 
+    fun ==(a:list[T], b:list[T])=> list_eq(a,b); 
+  } 
+\end{minted}
+ 
+\subsection{Sort}
+\begin{minted}{felix}
+  //$ Sort a list with given less than operator, which must be
+  //$ total order. Uses varray sort (which uses STL sort).
+  fun sort[T] (lt:T*T->bool) (x:list[T])=
+
+  //$ Sort a list with default total order.
+  //$ Uses varray sort (which uses STL sort).
+  fun sort[T with Tord[T]](x:list[T])=> sort lt x;
+\end{minted}
+    
+\subsection{Streaming list}
+\begin{minted}{felix}
+  instance[T] Iterable[list[T],T] {
+  //$ Convert a list to a stream.
+    gen iterator (var xs:list[T]) ()
+\end{minted}
+
+\subsection{List syntax}
+
+\begin{minted}{felix}
+syntax listexpr
+{
+  //$ List cons, right associative.
+  x[sarrow_pri] := x[>sarrow_pri] "!" x[sarrow_pri]; 
+}
+\end[minted}
+
+\section{Association List}
+A list of pairs
+
+\begin{minted}{felix}
+open class Assoc_list
+{
+  typedef assoc_list[A,B] = List::list[A*B];
+
+  // check is the key (left element) of a pair
+  // satisfies the predicate
+  fun mem[A,B] (eq:A -> bool) (xs:assoc_list[A,B]) : bool =>
+
+  // check is the key (left element) of a pair
+  // satisfies the relation to given element 
+  fun mem[A,B,T] (eq:A * T -> bool) (xs:assoc_list[A,B]) (e:T) : bool =>
+
+  instance[A,B] Set[assoc_list[A,B], A] {
+    fun mem[A,B with Eq[A]] (xs:assoc_list[A,B]) (e:A) : bool => 
+  }
+
+  // find optionally the first value whose associate key satisfies 
+  // the given predicate
+  fun find[A,B] (eq:A -> bool) (xs:assoc_list[A,B]) : opt[B] =>
+
+  // find optionally the first value whose associate key (left slot)
+  // satisfies the given relation to the given element (right slot) 
+  fun find[A,B,T] (eq:A * T -> bool) (xs:assoc_list[A,B]) (e:T) : opt[B] =>
+
+  fun find[A,B with Eq[A]] (xs:assoc_list[A,B]) (e:A) : opt[B] =>
+}
+\end{minted}
+
+\section{Purely Functional Random Access List.}
+
+\subsection{Definition}
+\begin{minted}{felix}
+//$ Purely functional Random Access List.
+//$ Based on design from Okasaki, Purely Functional Datastructures.
+//$ Transcribed from Hongwei Xi's encoding for ATS2 library.
+//$
+//$ An ralist provides O(log N) indexed access and amortised
+//$ O(1) consing. This is roughly the closest thing to
+//$ purely functional array available.
+
+class Ralist
+{
+
+  //$ Auxilliary data structure.
+  union pt[a] = | N1 of a | N2 of pt[a] * pt[a];
+
+  //$ Type of an ralist.
+  union ralist[a] = 
+    | RAnil
+    | RAevn of ralist[a]
+    | RAodd of pt[a] * ralist[a]
+  ;
+\end{minted}
+\subsection{Length}
+\begin{minted}{felix}
+  //$ Length of an ralist.
+  fun ralist_length[a] : ralist[a] -> int =
+\end{minted}
+\subsection{Cons}
+\begin{minted}{felix}
+  //$ Cons: new list with extra value at the head.
+  fun ralist_cons[a] (x:a, xs: ralist[a]) =>
+\end{minted}
+\subsection{Check if empty}
+\begin{minted}{felix}
+  //$ Check for an empty list.
+  fun ralist_empty[a]: ralist[a] -> bool  =
+\end{minted}
+\subsection{Split into head and tail}
+\begin{minted}{felix}
+  //$ Proedure to split a non-empty ralist
+  //$ into a head element and a tail.
+  proc ralist_uncons[a] (xs: ralist[a], phd: &a, ptl: &ralist[a])
+\end{minted}
+\subsection{Pattern Matching Support}
+\begin{minted}{felix}
+  //$ User define pattern matching support
+  fun _match_ctor_Cons[T] (x:ralist[T]) =>not ( ralist_empty x);
+  fun _match_ctor_Empty[T] (x:ralist[T]) => ralist_empty x;
+  fun _ctor_arg_Cons[T] (x:ralist[T]) : T * ralist[T] =
+\end{minted}
+\subsection{Head}
+\begin{minted}{felix}
+  //$ Head element of a non-empty ralist.
+  fun ralist_head[a] (xs: ralist[a]) : a =
+\end{minted}
+\subsection{Tail}
+\begin{minted}{felix}
+  //$ Tail list of a non-empty ralist.
+  fun ralist_tail[a] (xs: ralist[a]) : ralist[a] =
+\end{minted}
+\subsection{Random Access}
+\begin{minted}{felix}
+  //$ Random access to an ralist. Unchecked.
+  fun ralist_lookup[a] (xs:ralist[a],i:int)=>
+\end{minted}
+\subsection{Update}
+\begin{minted}{felix}
+  //$ Return a list with the i'th element replaced by x0.
+  //$ Index is unchecked.
+  fun ralist_update[a] (xs:ralist[a], i:int, x0:a) =>
+\end{minted}
+\subsection{Iteration}
+\begin{minted}{felix}
+  //$ Callback based iteration.
+  //$ Apply procedure to each element of the ralist.
+  proc ralist_foreach[a] 
+  (
+    xs: ralist[a],
+    f: a -> void
+  )
+\end{minted}
+\subsection{Show}
+\begin{minted}{felix}
+  //$ Convert ralist to a string.
+  instance[a with Str[a]] Str[ralist[a]] 
+  {
+    fun str (xx: ralist[a]):string = {
+  }
+\end{minted}
+
+
+\section{Doubly Linked Mutable List}
+A \verb%dlist\_t% is a doubly linked mutable list.
+It is suitable for use as non-thread-safe queue.
+
+\begin{minted}{felix}
+class DList[T]
+{
+  typedef dnode_t=
+  (
+    data: T,
+    next: cptr[dnode_t], // possibly NULL
+    prev: cptr[dnode_t]  // possibly NULL
+  );
+  typedef dlist_t = (first:cptr[dnode_t], last:cptr[dnode_t]);
+    // invariant: if first is null, so is last!
+
+  ctor dlist_t () => (first=nullptr[dnode_t],last=nullptr[dnode_t]);
+\end{minted}
+
+\subsection{Length {\tt len}}
+
+\begin{minted}{felix}
+  fun len (x:dlist_t) = {
+\end{minted}
+
+\subsection{Inspection}
+
+\begin{minted}{felix}
+  fun peek_front (dl:dlist_t) : opt[T] => 
+  fun peek_back (dl:dlist_t) : opt[T] => 
+\end{minted}
+
+\subsection{Insertion}
+
+\begin{minted}{felix}
+  proc push_front (dl:&dlist_t, v:T) { 
+  proc push_back (dl:&dlist_t, v:T) {
+\end{minted}
+
+\subsection{Deletion }
+
+\begin{minted}{felix}
+  gen pop_front (dl:&dlist_t): opt[T] = {
+  gen pop_back (dl:&dlist_t): opt[T] = {
+\end{minted}
+
+\subsection{Use as a queue}
+We can implement enqueue and dequeue at either end, we'll make
+enqueue \verb%push_front% and dequeue \verb%pop_back% for no particular reason.
+
+\begin{minted}{felix}
+  typedef queue_t = dlist_t;
+  proc enqueue (q:&queue_t) (v:T) => push_front (q,v);
+  gen dequeue (q:&queue_t) :opt[T] => pop_back q;
+  ctor queue_t () => dlist_t ();
+\end{minted}
+
+\subsection{Queue iterator}
+Fetch everything from a queue.
+
+\begin{minted}{felix}
+  gen iterator (q:&queue_t) () => dequeue q;
+\end{minted}
+
+
+\section{S-expressions}
+A scheme like data structure.
+
+\begin{minted}{felix}
+class S_expr 
+{
+  union sexpr[T] = Leaf of T | Tree of list[sexpr[T]]; 
+
+  fun fold_left[T,U] (_f:U->T->U) (init:U) (x:sexpr[T]):U =>
+  proc iter[T] (_f:T->void) (x:sexpr[T]) {
+
+  fun map[T,U] (_f:T->U) (x:sexpr[T]):sexpr[U] =>
+
+  instance[T with Eq[T]] Set[sexpr[T],T] {
+    fun \in (elt:T, x:sexpr[T]) => 
+  }
+  instance[T with Str[T]] Str[sexpr[T]] {
+    noinline fun str(x:sexpr[T])=>
+  }
+
+}
+
+\end{minted}
+
+\section{LS-expressions}
+A scheme like data structure, similar to sexpr, only in this variant
+the tree nodes also have labels.
+
+\begin{minted}{felix}
+class LS_expr 
+{
+  union lsexpr[T,L] = | Leaf of T | Tree of L * list[lsexpr[T,L]]; 
+
+  fun fold_left[T,L,U] (_f:U->T->U) (_g:U->L->U) (init:U) (x:lsexpr[T,L]):U =>
+
+  proc iter[T,L] (_f:T->void) (_g:L->void) (x:lsexpr[T,L]) {
+  fun map[T,L,U,V] (_f:T->U) (_g:L->V) (x:lsexpr[T,L]):lsexpr[U,V] =>
+  instance[T,L with Str[T], Str[L]] Str[lsexpr[T,L]] {
+    noinline fun str(x:lsexpr[T,L])=>
+  }
+
+}
+
+\end{minted}
+
 \chapter{Arrays}
+\section{Native Arrays}
+\section{Varrays}
+\section{Darrays}
+\section{Sarrays}
+\section{C arrays}
 
 
 \appendix
