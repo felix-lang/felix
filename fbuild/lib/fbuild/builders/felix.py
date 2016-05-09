@@ -63,7 +63,7 @@ class Flx(fbuild.db.PersistentObject):
 
         with tempfile('', suffix='.flx') as src:
             try:
-                self(src, flags=flags, quieter=1)
+                self(src, flags=flags, quieter=1, timeout=120)
             except fbuild.ExecutionError as e:
                 self.ctx.logger.failed()
                 if e.stdout:
