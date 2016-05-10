@@ -739,7 +739,7 @@ open class Varray
     requires property "needs_gc"
   ;
 
-  proc push_back[T] (x: varray[t], v: t)
+  proc push_back[t] (x: varray[t], v: t)
   {
     if x.len >= x.maxlen do
       eprintln ("attempt to push_back on full varray");
