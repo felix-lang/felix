@@ -51,6 +51,10 @@ class Flx(fbuild.db.PersistentObject):
         cmd.extend(flags)
         cmd.append(src)
 
+        print("src=" + str src)
+        with open(src,"r") as f:
+          text = f.read()
+          print(text)
         print("Flx.__call__.ctx.execute cmd=" + str (cmd))
         return self.ctx.execute(cmd, *args, **kwargs)
 
