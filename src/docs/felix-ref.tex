@@ -2259,34 +2259,9 @@ rule that all theorems are nothing more than optimisations,
 in this case literally allowing the compiler to optimise
 a program. Note that it is only a hint!
 
-\chapter{General lookup}
-By default Felix looks up symbols in nested scopes, 
-starting with all symbols in the current scope
-and proceeding through its containing scope outwards
-until the outermost scope is reached.
+\section{Lookup control directives}
 
-Symbols are visible in the whole of a scope,
-both before and after their introduction.
-
-A symbol lookup may properly find either a single
-non-function symbol, which is final, or a set 
-of function symbols.
-
-If the kind of symbol being sought is a function 
-symbol, overload resolution is performed on 
-the set of function signatures found in a scope.
-If a best match is found, that is final.
-If no match is found the search continues in 
-the next outermost scope.
-
-All other cases are in error.
-
-\chapter{Overload Resolution}
-Blah.
-
-\chapter{Lookup control directives}
-
-\section{Open directive}
+\subsection{Open directive}
 The simple \verb%open% directive may be used to make the symbols
 defined in a class visible in the scope containing the \verb%open% directive.
 
@@ -2314,7 +2289,7 @@ The open directive is not transitive.
 The names it makes visible are only visible
 in the scope in which the open directive is written.
 
-\section{Inherit directive}
+\subsection{Inherit directive}
 The inherit directive allows all of the public symbols
 of a class to be included in another scope as if they
 were defined in that scope. This means such names
@@ -2333,7 +2308,7 @@ println$ B::a;
 \end{minted}
 
 
-\section{Rename directive}
+\subsection{Rename directive}
 This directive is can be used to inherit a single
 symbol into a scope, possibly with a new name,
 and also to add an alias for a name in the current
@@ -2363,7 +2338,7 @@ class A { proc f[T] () {} }
 class B { rename g[T] = A::f[T]; } 
 \end{minted}
 
-\section{Use directive}
+\subsection{Use directive}
 This is a short form of the rename directive:
 
 \begin{minted}{felix}
@@ -2380,50 +2355,6 @@ use a = A::a;
 
 Unlike the rename directive the new name cannot be polymorphic
 and is limited to a simple identifier.
-
-\section{Export directives}
-The \verb%export% directives make the exported symbol a root
-of the symbol graph. 
-
-The functional export and forces it to be place in the
-generated code as an \verb%extern "C"% symbol with the
-given name:
-
-
-\begin{minted}{felix}
-export fun f of (int) as "myf";
-export cfun f of (int) as "myf";
-export proc f of (int) as "myf";
-export cproc f of (int) as "myf";
-\end{minted}
-
-
-Functions are exported by generating a wrapper around
-the Felix function. If the function is exported as \verb%fun%
-or \verb%proc% the C function generated requires a pointer
-to the thread frame as the first argument,
-if the \verb%cfun% or \verb%cproc% forms are used, the wrapper
-will not require the thread frame. 
-
-In the latter case, the Felix function must not
-require the thread frame.
-
-A type may also be exported:
-
-\begin{minted}{felix}
-export type ( mystruct ) as "MyStruct";
-\end{minted}
-
-This causes a C typedef to be emitted making 
-the name \verb%MyStruct% an alias to the Felix type.
-This is useful because Felix types can have unpredictable
-mangled names.
-
-The word \verb%export% optionally followed by a string
-may also be used as a prefix for any Felix function,
-generator, or procedure definition. If the string
-is omitted is taken as the symbol name. The effect
-is the same as if an export statement has been written.
 
 \part{Type System}
 \chapter{Type constructors}
@@ -5286,7 +5217,7 @@ range match can be specified.
 
 
 
-\part{Library}
+\part{Interfacing}
 \chapter{C bindings}
 Felix is specifically designed to provide almost seamless integration
 with C and C++.
@@ -5330,8 +5261,55 @@ TBD
 \section{Package requirements}
 TBD
 
+\chapter{Embedding}
+\section{C Callable libraries}
+\section{Export directives}
+The \verb%export% directives make the exported symbol a root
+of the symbol graph. 
+
+The functional export and forces it to be place in the
+generated code as an \verb%extern "C"% symbol with the
+given name:
+
+
+\begin{minted}{felix}
+export fun f of (int) as "myf";
+export cfun f of (int) as "myf";
+export proc f of (int) as "myf";
+export cproc f of (int) as "myf";
+\end{minted}
+
+
+Functions are exported by generating a wrapper around
+the Felix function. If the function is exported as \verb%fun%
+or \verb%proc% the C function generated requires a pointer
+to the thread frame as the first argument,
+if the \verb%cfun% or \verb%cproc% forms are used, the wrapper
+will not require the thread frame. 
+
+In the latter case, the Felix function must not
+require the thread frame.
+
+A type may also be exported:
+
+\begin{minted}{felix}
+export type ( mystruct ) as "MyStruct";
+\end{minted}
+
+This causes a C typedef to be emitted making 
+the name \verb%MyStruct% an alias to the Felix type.
+This is useful because Felix types can have unpredictable
+mangled names.
+
+The word \verb%export% optionally followed by a string
+may also be used as a prefix for any Felix function,
+generator, or procedure definition. If the string
+is omitted is taken as the symbol name. The effect
+is the same as if an export statement has been written.
+
 
 % =====================================
+\part{Library}
 \chapter{Core Primitive Types}
 
 \section{Boolean type}
@@ -6709,21 +6687,21 @@ Operation&Used By&Provider class\\
 \hline
 \multicolumn{3}{c}{Platform Specific}\\
 \hline
-\verb%connect%&Client&Faio_posix\\
-\verb%accept%&Server&Faio_posix\\
-\verb%async_rw%&Client and Server&Faio_posix\\
-\verb%async_read%&Client and Server&Faio_posix\\
-\verb%async_write%&Client and Server&Faio_posix\\
-\verb%Connect%&Client&Faio_win32\\
-\verb%Accept%&Server&Faio_win32\\
-\verb%WSARecv%&Client and Server&Faio_win32\\
-\verb%WSASend%&Client and Server&Faio_win32\\
-\verb%TransmitFile%&Client and Server&Faio_win32\\
+\verb%connect%&Client&\verb%Faio_posix%\\
+\verb%accept%&Server&\verb%Faio_posix%\\
+\verb%async_rw%&Client and Server&\verb%Faio_posix%\\
+\verb%async_read%&Client and Server&\verb%Faio_posix%\\
+\verb%async_write%&Client and Server&\verb%Faio_posix%\\
+\verb%Connect%&Client&\verb%Faio_win32%\\
+\verb%Accept%&Server&\verb%Faio_win32%\\
+\verb%WSARecv%&Client and Server&\verb%Faio_win32%\\
+\verb%WSASend%&Client and Server&\verb%Faio_win32%\\
+\verb%TransmitFile%&Client and Server&\verb%Faio_win32%\\
 \multicolumn{3}{c}{Platform Independent}\\
-\verb%connect%&Client&Socket\\
-\verb%accept%&Server&Socket\\
-\verb%read%&Server&Socket\\
-\verb%write%&Server&Socket\\
+\verb%connect%&Client&\verb%Socket%\\
+\verb%accept%&Server&\verb%Socket%\\
+\verb%read%&Server&\verb%Socket%\\
+\verb%write%&Server&\verb%Socket%\\
 \hline
 
 \end{tabular}
