@@ -726,7 +726,7 @@ open class Varray
   //$ Aborts if you go past the bound.
   proc += [t] (pa:&varray[t],v:t) { 
     if pa*.len >= pa*.maxlen do
-      eprintln ("attempt to += on full varray size " + pa*.maxlen);
+      eprintln ("attempt to += on full varray size " + (pa*.maxlen).str);
     done
     push_back (*pa,v); 
   }
@@ -747,7 +747,7 @@ open class Varray
   proc push_back[t] (x: varray[t], v: t)
   {
     if x.len >= x.maxlen do
-      eprintln ("attempt to push_back on full varray size " + x.maxlen);
+      eprintln ("attempt to push_back on full varray size " + x.maxlen.str);
     done
     _push_back (x,v);  
   }
