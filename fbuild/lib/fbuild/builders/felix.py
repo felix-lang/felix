@@ -51,7 +51,7 @@ class Flx(fbuild.db.PersistentObject):
         cmd.extend(flags)
         cmd.append(src)
 
-        print("src=" + str src)
+        print("src=" + str (src))
         with open(src,"r") as f:
           text = f.read()
           print(text)
