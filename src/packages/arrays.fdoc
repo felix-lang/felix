@@ -728,7 +728,7 @@ open class Varray
 
   //$ Append a new element to the end of a varray.
   //$ Aborts if you go past the bound.
-  proc push_back[t] : varray[t] * t = """
+  proc _push_back[t] : varray[t] * t = """
     {
       //?1 * _p = *$1;
       size_t n = PTF gcp->collector->get_used($1);
@@ -738,6 +738,14 @@ open class Varray
   """
     requires property "needs_gc"
   ;
+
+  proc push_back[T] (x: varray[t], v: t)
+  {
+    if x.len >= x.maxlen do
+      eprintln ("attempt to push_back on full varray");
+    done
+    _push_back (x,v);  
+  }
 
   //$ Pop an element off the end of a varray.
   //$ Aborts if the array is empty.

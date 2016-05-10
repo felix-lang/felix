@@ -6646,7 +6646,102 @@ gets what it wrote first.
 Buffers are mandatory for a feedback.
 
 \chapter{Asychronous Events}
-blah.
+Felix uses asynchronous I/O with fibres to provide access to asynchronous
+events. Currently two kinds of events are supported: alarm clock timeout events
+and socket I/O buffer and connection events. 
+
+Waiting for an event blocks the current fibre, but it does not
+block other fibres in the same pthread.
+
+\section{Event Service {\tt demux}}
+The event delivery service is called \verb%demux% and runs in a
+separate premptive thread. It interfaces with the OS native event
+delivery services as shown in \fullref{Event Delivery Service Providers}.
+
+\begin{table}
+\caption{Event Delivery Service Providers\label{Event Delivery Service Providers}}
+\centering
+\begin{tabular}[c]{lll}
+Service&Availability&Notes\\
+\hline
+\verb%select%&all&fallback\\
+\verb%poll%&Posix&better than select\\
+\verb%epoll%&Linux&better than poll\\
+\verb%kqueue%&BSD Unix, OSX&better than poll\\
+\verb%Solaris iocompletion ports%&Solaris&better than select\\
+\verb%Windows iocompletion ports%&Win32&better than select\\
+\end{tabular}
+\end{table}
+
+Felix automatically selects the best available service.
+
+\section{Alarm Clock}
+The alarm clock service allows a fibre to block for a selected
+amout of time. A clock must be constructed first.
+
+\begin{minted}{felix}
+  fun mk_alarm_clock: 1 -> alarm_clock;
+
+  // delay in seconds
+  proc sleep(clock: alarm_clock, delta: double);
+\end{minted}
+
+For example to delay 5 seconds use:
+
+\begin{minted}{felix}
+  var clock = mk_alarm_clock();
+  sleep (clock, 5.0);
+\end{minted}
+
+Note again this only causes the current active fibre to sleep.
+Clocks are reusable and may delays can be queued by any number
+of fibres within the same pthread.
+
+\section{Sockets}
+Socket operations are covered more completely in \fullref{Networking}.
+Socket operations are synchronous unless shown in \fullref{Asynchronous Socket Operations}.
+
+\begin{table}
+\caption{Asynchronous Socket Operations\label{Asynchronous Socket Operations}}
+\centering
+\begin{tabular}[c]{lll}
+Operation&Used By&Provider class\\
+\hline
+\multicolumn{3}{c}{Platform Specific}\\
+\hline
+\verb%connect%&Client&Faio_posix\\
+\verb%accept%&Server&Faio_posix\\
+\verb%async_rw%&Client and Server&Faio_posix\\
+\verb%async_read%&Client and Server&Faio_posix\\
+\verb%async_write%&Client and Server&Faio_posix\\
+\verb%Connect%&Client&Faio_win32\\
+\verb%Accept%&Server&Faio_win32\\
+\verb%WSARecv%&Client and Server&Faio_win32\\
+\verb%WSASend%&Client and Server&Faio_win32\\
+\verb%TransmitFile%&Client and Server&Faio_win32\\
+\multicolumn{3}{c}{Platform Independent}\\
+\verb%connect%&Client&Socket\\
+\verb%accept%&Server&Socket\\
+\verb%read%&Server&Socket\\
+\verb%write%&Server&Socket\\
+\hline
+
+\end{tabular}
+\end{table}
+
+\section{How Async I/O works}
+Asynchronous I/O is performed as follows.
+First an fthread
+
+Unfortunately shutdown and close requests are synchronous
+due to a design fault in sockets and TCP/IP protocol.
+Although Posix supports asynchronous shutdown, this may cause
+underlying socket buffers to be prematurely flushed.
+The only way to asychronously shutdown a socket would be to
+perform a synchronous shutdown in a dedicated pthread,
+defeating the purpose of using fibres.
+
+
 \chapter{Pre-emptive Threading}
 \href{http://felix-lang.org/share/src/packages/pthreads.fdoc}{Library Package}
 Felix provides pre-emptive threading based on OS native threads
@@ -7477,7 +7572,7 @@ syntax listexpr
   //$ List cons, right associative.
   x[sarrow_pri] := x[>sarrow_pri] "!" x[sarrow_pri]; 
 }
-\end[minted}
+\end{minted}
 
 \section{Association List}
 A list of pairs
