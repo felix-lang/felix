@@ -675,11 +675,11 @@ open class Varray
   //$ Include a trailing nul byte.
   ctor varray[char] (var x:string) = {
     var n = x.len; var p = x._unsafe_cstr;
-    var v = varray[char] (n + 1);
+    var v = varray[char] (n + 1uz);
     var q = v.stl_begin;
     memcpy (q.address, p.address, n);
     q+n <- char "";
-    set_used (v,n + 1);
+    set_used (v,n + 1uz);
     return v;
   } 
 
