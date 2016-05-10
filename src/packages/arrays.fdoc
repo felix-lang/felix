@@ -725,7 +725,7 @@ open class Varray
   //$ Append a new element to the end of a varray.
   //$ Aborts if you go past the bound.
   proc += [t] (pa:&varray[t],v:t) { 
-    if pa*.len >= x.maxlen do
+    if pa*.len >= pa*.maxlen do
       eprintln ("attempt to += on full varray size " + pa*.maxlen);
     done
     push_back (*pa,v); 
