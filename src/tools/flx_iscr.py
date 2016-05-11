@@ -50,7 +50,12 @@ class Tangler(io.StringIO):
         if update:
             if not self.quiet:
                 print('Write     %s -> %s' % (self.id, self.filename))
-            os.makedirs(os.path.dirname(self.filename), exist_ok=True)
+
+            try:
+                os.makedirs(os.path.dirname(self.filename), exist_ok=True)
+            except OSError as ex:
+                pass # okay for dir to already exist
+
             try:
                 f = open_utf8(self.filename, 'w')
             except IOError as ex:
