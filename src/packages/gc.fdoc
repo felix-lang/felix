@@ -1037,6 +1037,9 @@ void * flx_collector_t::impl_allocate(gc_shape_t *shape, size_t nobj)
   return fp;
 }
 
+// NOTE: although 1 is the default if there is no entry,
+// it is allowed to have an entry with 1
+// indeed, set_used always creates an entry
 void flx_collector_t::set_used(void *memory, size_t n)
 {
   assert(memory);
@@ -1069,7 +1072,7 @@ void flx_collector_t::incr_used(void *memory, size_t n)
     //fprintf(stderr,"incr_used: No recorded usage! Creating store for data\n");
     p = (Word_t*)(void*)JudyLIns(&j_nused,(Word_t)memory,&je);
     if(p==(Word_t*)PPJERR)judyerror("incr_used: new slot");
-    *p = n;
+    *p = n+1;
   }
   else *p+=n;
 }
