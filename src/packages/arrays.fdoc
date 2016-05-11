@@ -633,6 +633,9 @@ open class Varray
   ctor[t] varray[t] (bound:size, default:t) = {
     var o = varray[t] bound;
     if bound > 0uz do for var i in 0uz upto bound - 1uz do
+    if o.len >= o.maxlen do
+      eprintln ("ctor1: attempt to push_back on full varray size " + o.maxlen.str);
+    done
       push_back(o, default);
     done done
     return o;
@@ -642,6 +645,9 @@ open class Varray
   ctor[t] varray[t] (bound:size, used:size, f:size->t when used <= bound) = {
     var o = varray[t] bound;
     if used > 0uz do for var i in 0uz upto used - 1uz do
+    if o.len >= o.maxlen do
+      eprintln ("ctor2: attempt to push_back on full varray size " + o.maxlen.str);
+    done
       push_back(o, f i);
     done done
     return o;
@@ -667,7 +673,12 @@ open class Varray
   ctor[t] varray[t] (x:list[t]) = {
     val n = x.len.size;
     var a = varray[t] n;
-    iter (proc (v:t) { push_back(a,v); }) x;
+    iter (proc (v:t) { 
+    if a.len >= a.maxlen do
+      eprintln ("ctor3: attempt to push_back on full varray size " + a.maxlen.str);
+    done
+      push_back(a,v); 
+     }) x;
     return a;
   }
 
@@ -748,7 +759,6 @@ open class Varray
   {
     if x.len >= x.maxlen do
       eprintln ("attempt to push_back on full varray size " + x.maxlen.str);
-      eprintln ("varray= " + x._strr + ", v=" + v._strr);
     done
     _push_back (x,v);  
   }
@@ -806,9 +816,15 @@ open class Varray
     var ix = if i < 0 then  l - i else i;
     if ix < 0 or ix > l return; // fail: bad index
     if ix == l do 
+    if a.len >= a.maxlen do
+      eprintln ("insert: attempt to push_back on full varray size " + a.maxlen.str);
+    done
       push_back (a,v);
     else
       assert l > 0;
+    if a.len >= a.maxlen do
+      eprintln ("insert: attempt to push_back on full varray size " + a.maxlen.str);
+    done
       push_back (a, a.(l - 1)); // dups last element
       if l - 2 > ix do
         for var j in l - 2 downto ix do // copy from second last pos
@@ -825,6 +841,9 @@ open class Varray
     var o = varray[U]$ len(x);
 
     if len x > 0uz do for var i in 0uz upto len(x) - 1uz do
+    if o.len >= o.maxlen do
+      eprintln ("insert: attempt to push_back on full varray size " + o.maxlen.str);
+    done
       push_back (o, _f x.i);
     done done
     return o;
@@ -1029,6 +1048,9 @@ Generally, this class is very incomplete.
     r := _repr_ a; 
     newsize := r*.resize (maxlen r*.a, len r*.a + 1uz);
     if newsize != maxlen r*.a call do_resize(a,newsize);
+    if r*.a.len >= r*.a.maxlen do
+      eprintln ("darray push_back: attempt to push_back on full varray size " + r*.a.maxlen.str);
+    done
     push_back (r*.a, v); // hack to workaround compiler error Address non variable
   }
 
