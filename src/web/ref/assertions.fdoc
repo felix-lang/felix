@@ -41,7 +41,7 @@ A note on interpretation of pre- and post-conditions: the neutralised
 meaning of pre- and post-conditions is simply that if the pre-condition
 holds, then so should the post-condition. With that interpretation there
 is no justification in terminating the program if the pre-condition does
-not hold on a particular call: the programmer may well now what the
+not hold on a particular call: the programmer may well know what the
 result will be.
 
 Felix, however, will abort the program if a pre-condition does not hold.

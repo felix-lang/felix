@@ -739,7 +739,7 @@ Escape&Name&Decimal Code\\
 \verb%\n%&ASCII New Line&10\\
 \verb%\t%&ASCII Tab&9\\
 \verb%\r%&ASCII Carriage Return&13\\
-\verb%\r%&ASCII Vertical Tab&11\\
+\verb%\v%&ASCII Vertical Tab&11\\
 \verb%\'%&ASCII Single Quote&39\\
 \verb%\"%&ASCII Double Quote&34\\
 \verb%\\%&ASCII Backslash&92\\
@@ -1221,7 +1221,7 @@ Functions also have a more expanded form:
 fun trickdiv (num:int, denom:int) :int = 
 {
    var y = if denom == 0 then 1 else denom endif;
-   return xnum / y;
+   return num / y;
 }
 \end{minted}
 
@@ -2707,40 +2707,60 @@ println$ hyp;
 \end{minted}
 
 
-\section{Higher Order Functions}
+\section{Higher Order Functions (HOF)}
 Ok so, what if I wanted to add up the squares of the numbers 
 in the list? Is there a way to avoid rewriting the whole thing?
-The answer is yes:
+The answer is yes.
+
+Let's start with simple tail recursive function:
+
+\begin{minted}{felix}
+fun addup (x: list[int]) =
+{
+  fun aux (rest: list[int], acc: int) =>
+    match rest with
+    | #Empty => rest
+    | Cons (head, tail) => aux (tail, acc + head)
+    endmatch
+  ;
+  return aux (x, 0);
+}
+\end{minted}
+
+The non-recursive function \verb%addup% contains a nested tail recursive function \verb%aux%.
+
+Then a real HOF:
 
 \begin{minted}{felix}
 fun fold
 (
-  binop: int * int -> int, 
-  init: int, 
+  binop: int * int -> int,
+  init: int,
   lst: list[int]
 ) =
 {
   fun aux (rest: list[int], acc: int) =>
     match rest with
     | #Empty => rest
-    | Cons (head, tail) => aux (tail, binop (acc,head))
+    | Cons (head, tail) => aux (tail, binop (acc, head))
     endmatch
   ;
-  return aux x init;
+  return aux (lst, init);
 }
 \end{minted}
 
 Fold works with any binary operator on \verb%int%. For example:
 
 \begin{minted}{felix}
-fun addition (acc:int,y:int) => x + y;
-assert addup x == fold (addition, 0, x);
+lst = list(1,2,3);
+fun addition (x:int, y:int) => x + y;
+assert addup lst == fold (addition, 0, lst);
 \end{minted}
 
 There is another way to write the folding expression:
 
 \begin{minted}{felix}
-assert addup x == fold (fun (acc:int, y:elt)=>x+y), 0, x);
+assert addup lst == fold ((fun (x:int, y:int)=>x+y), 0, lst);
 \end{minted}
 
 using an unnamed, or anonymous function, sometimes called 
@@ -2786,7 +2806,7 @@ fun fold[V,R]
   fun aux (rest: list[V], acc: R) =>
     match rest with
     | #Empty => rest
-    | Cons (head, tail) => aux (tail, binop (acc,head))
+    | Cons (head, tail) => aux (tail, binop (acc, head))
     endmatch
   ;
   return aux (lst, init);
@@ -2799,7 +2819,7 @@ Now we can write:
 println$ 
   fold [string,int]
   (
-    (fun (acc:int, s:string)=>acc + len s),
+    (fun (acc:int, s:string)=>acc + s.len.int),
     0,
     (list ("Hello", "World"))
   )
@@ -2812,7 +2832,7 @@ This is all very nice!  Even better we can write:
 println$ 
   fold 
   (
-    (fun (acc:int, s:string)=>acc + len s),
+    (fun (acc:int, s:string)=>acc + s.len.int),
     0,
     (list ("Hello", "World"))
   )
@@ -2843,10 +2863,10 @@ fun fold[V,R]
   let fun aux (rest: lst, acc: R) =>
     match rest with
     | #Empty => rest
-    | Cons (head, tail) => aux (tail, binop (acc,head))
+    | Cons (head, tail) => aux (tail, binop (acc, head))
     endmatch
   in 
-  aux lst init
+  aux (lst, init)
 ;
 \end{minted}
 
@@ -2875,18 +2895,16 @@ and return them from a function. Consider this:
 \begin{minted}{felix}
 fun fold[V,R] (binop: R * V -> R) =
 {
-    fun A(init:R) 
+    fun A(init:R) =
     {
-      fun B(lst:list[V]) 
-      {  
-        let fun aux (rest: list[V], acc: int) =>
+      fun B(lst:list[V]) =>
+        let fun aux (rest: list[V], acc: R) =>
           match rest with
-          | #Empty => rest
-          | Cons (head, tail) => aux (tail, binop (acc,head))
+          | #Empty => acc
+          | Cons (head, tail) => aux (tail, binop (acc, head))
           endmatch
         in 
-        return aux lst init;
-      }
+        aux (lst, init);
       return B;
    }
    return A;
@@ -2919,7 +2937,7 @@ println$
     (
       (
          fold 
-           (fun (acc:int, s:string)=>acc + len s))
+           (fun (acc:int, s:string)=>acc + s.len.int))
       )
       0
     )
@@ -2942,7 +2960,7 @@ left associative, we can write:
 \begin{minted}{felix}
 println$ 
   fold 
-    (fun (acc: int, s: string) => acc + len s))
+    (fun (acc: int, s: string) => acc + s.len.int))
     0
     (list ("Hello", "World"))
 ;
@@ -2965,13 +2983,12 @@ Curried form has an advantage:
 \begin{minted}{felix}
 fun string_lengths (x:list[string]) =>
    fold 
-    (fun (acc:int, s:string)=>acc + len s))
+    (fun (acc:int, s:string)=>acc + s.len.int)
     0
+    x
 ;
 
-var l1 = list ("Hello", "World");
-var l2 = list ("Felix", "Rocks");
-println$ string_lengths l1, string_lengths l2;
+println ("Hello", "World").list.string_lengths; // 10
 \end{minted}
 
 In the function, we simply apply the fold to the
@@ -2989,11 +3006,11 @@ fun fold[R, V]
 =>
   let fun aux (rest: list[V], acc: R) =>
     match rest with
-    | #Empty => rest
-    | Cons (head, tail) => aux (tail, binop (acc,head))
+    | #Empty => acc
+    | Cons (head, tail) => aux (tail, binop (acc, head))
     endmatch
   in 
-  aux x init
+  aux (lst, init)
 ;
 \end{minted}
 
@@ -3064,7 +3081,7 @@ The reason is due to the visibility constraint on calls:
 any function may call its children, itself or any sibling,
 its parent, or any function its parent may call.
 
-Although ancestoral calls, cannot be directly eliminated by
+Although ancestoral calls cannot be directly eliminated by
 inlining, there must be a call from the candidate functions
 parent to it, or one of its siblings, leading to the inlining
 of the candidate and moving it towards the root. 
@@ -3460,7 +3477,7 @@ a single stack of pairs consisting of a return address
 and pointer to a list node: we also need to save the
 accumlator of course, however it can be a single variable.
 Whether or not the underlying compilation engine actually
-uses a single variable for the result is probablt architecture
+uses a single variable for the result is probably architecture
 and type dependent: clearly if the fold result is an integer
 a machine register might be used. 
 
@@ -3472,7 +3489,7 @@ problematic. In Felix for example, a microtest may fail
 because by default Felix does not clean up memory on 
 program termination.
 
-Indeed, we must emaphsise now that this doubt about
+Indeed, we must emphasize now that this doubt about
 the performance of programs encoded largely using
 functional programming techniques is one of the major
 negative aspects of those techniques. In general with
@@ -3522,17 +3539,17 @@ union tree[T] =
   | Branch of T * tree[T] * tree[T]
 ;
 
-fun fold[R,T]
+fun fun fold[R,V]
   (binop: R * V -> R)
   (init: R)
-  (tr: tree[T])
+  (tr: tree[V])
 =>
   match tr with
-  | Leaf v => binop (acc,v)
+  | Leaf v => binop (init, v)
   | Branch (v, l, r) =>
-    let left = fold binop v l in
+    let left = fold binop init l in
     let right = fold binop left r in
-    binop (acc, right)
+    binop (right, v)
 ;
 \end{minted}
 
@@ -3561,9 +3578,9 @@ Now we will do a tree map:
 
 \begin{minted}{felix}
 fun map[R,V] (f: V -> R) (tr: tree[V]) : tree[R] =>
-  match lst with
+  match tr with
   | Leaf v => Leaf (f v)
-  | Branch (v,l,r) => Branch (f v,map f l, map f r)
+  | Branch (v, l, r) => Branch (f v, map f l, map f r)
   endmatch
 ;
 \end{minted}
@@ -3624,7 +3641,7 @@ instance Functor[tree_f]
   fun fmap[V,R] (f: V -> R) (tr: tree[V]) : tree[R] =>
     match lst with
     | Leaf v => Leaf (f v)
-    | Branch (v,l,r) => Branch (f v,fmap f l, fmap f r)
+    | Branch (v, l, r) => Branch (f v, fmap f l, fmap f r)
     endmatch
   ;
 }
@@ -3636,7 +3653,7 @@ the two constraints are satisfied. First, its obvious that for any
 type $T$, an identity map: 
 
 \begin{minted}{felix}
-fun id(x:T) => x;
+fun id[T](x:T) => x;
 \end{minted}
 
 is taken to the function
@@ -3674,7 +3691,7 @@ once to each element to build a new list is probably faster than
 building a temporary list, building another from it, and the deleteing
 the temporary list.
 
-It semantic rules for functors are important enough to encode
+Such semantic rules for functors are important enough to encode
 them in the type class:
 
 \begin{minted}{felix}
@@ -3682,15 +3699,14 @@ class Functor[F:TYPE->TYPE]
 {
   virtual fun fmap[V,R]: (V->R) -> (F V -> F R);
 
-  axiom identity_preserving[A,B] (f:A->B) (id:A->A) (x:A):
-    id x == x \implies fmap id (f x) = fmap f x
+  axiom identity_preserving[A, B with Eq[A]] (f:A->B) (id:A->A) (x:A):
+    id x == x implies fmap id (f x) == fmap f x
   ;
 
   reduce structure_preserving[A,B,C] (f:A->B, g:B->C):
     (fmap g) \circ (fmap f) =>
     fmap (g \circ f)
   ;
-
 }
 \end{minted}
 
@@ -3719,7 +3735,7 @@ proc hello()
 
 proc sayit (s:string)
 {
-  println$ "Say " + s.str;
+  println$ "Say " + s;
 }
 hello;
 sayit "Hello";

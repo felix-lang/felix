@@ -930,15 +930,15 @@ fun +: int * int -> int = "$1+$2";
 
 to define addition on int in C. Symbols recognised by the parser
 such as \verb%+% are usually mapped to functions with the same
-name as the operator.`
+name as the operator.
 
 These operators are recognised as identifiers by the parser in
 positions where an identifier is expected:
 
 \begin{verbatim}
-    +  -  *  /  %  ^  ~  
-    \&  \  \^ 
-    &=  =  +=  -=  *=  /=  %=  ^=  <<=  >>= 
+    +  -  *  /  %  ^ 
+    \&  \|  \^  ~ 
+    =  +=  -=  *=  /=  %=  ^=  &=  |=  <<=  >>= 
     <  >  ==  !=  <=  >=  <<  >> 
 \end{verbatim}
 
@@ -1134,7 +1134,7 @@ buffer.
 The argument types and code types are fully checked for type safety.
 There are some tables of accepted codes: 
 \fullref{C format codes: integer},
-\fullref{C format codes: integer special},
+\fullref{C format codes: special integer},
 \fullref{C format codes: floating},
 \fullref{C format codes: other}.
 
@@ -1952,10 +1952,10 @@ f = MakePair[int]::fwd_pair[string] 42 "Hello";
 although this practice is not recommended.
 
 From the outside, class type variables are
-viewed as univeral quantification. From
-inside however, the variable names are
+viewed as \href{http://en.wikipedia.org/wiki/Universal_quantification}{univeral quantification}.
+From inside however, the variable names are
 fixed types which happen to be unknown, that
-is they're to be considered as existentials.
+is they're to be considered as \href{http://en.wikipedia.org/wiki/Existential_quantification}{existentials}.
 
 This means they cannot be specified explicitly
 or implicitly inside the class with unqualified access:
