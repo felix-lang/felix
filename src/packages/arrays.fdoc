@@ -748,6 +748,7 @@ open class Varray
   {
     if x.len >= x.maxlen do
       eprintln ("attempt to push_back on full varray size " + x.maxlen.str);
+      eprintln ("varray= " + x._strr + ", v=" + v._strr);
     done
     _push_back (x,v);  
   }
