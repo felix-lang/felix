@@ -1119,7 +1119,8 @@ void *flx_collector_t::create_empty_array(
   size_t count
 )
 {
-  fprintf(stderr,"create empty array length %zu\n",count);
+  fprintf(stderr,"create empty array length %zu type %s shape amt=%zu, shapecnt=%zu\n",
+     count,shape->cname, shape->amt, shape->count);
   void *p = allocate(shape,count);
   set_used (p, 0); // make sure to override default 1 slot usage
   fprintf(stderr,"Array at %p, used = %zu, max=%zu\n",p,get_used(p), get_count(p));
