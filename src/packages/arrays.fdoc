@@ -632,6 +632,10 @@ open class Varray
   //$ Construct a varray filled up with a default value.
   ctor[t] varray[t] (bound:size, default:t) = {
     var o = varray[t] bound;
+    if o.maxlen != bound do
+      eprintln$ "Constructor failed, wrong bound";
+      eprintln$ "input Bound = " + bound.str + ", actual maxlen = " + o.maxlen;
+    done
     if bound > 0uz do for var i in 0uz upto bound - 1uz do
     if o.len >= o.maxlen do
       eprintln ("ctor1: attempt to push_back on full varray size " + o.maxlen.str);
