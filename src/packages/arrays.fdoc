@@ -634,7 +634,7 @@ open class Varray
     var o = varray[t] bound;
     if o.maxlen != bound do
       eprintln$ "Constructor failed, wrong bound";
-      eprintln$ "input Bound = " + bound.str + ", actual maxlen = " + o.maxlen;
+      eprintln$ "input Bound = " + bound.str + ", actual maxlen = " + o.maxlen.str;
     done
     if bound > 0uz do for var i in 0uz upto bound - 1uz do
     if o.len >= o.maxlen do
