@@ -305,7 +305,7 @@ typedef int bool_t;
 #define JU_BYTESTOWORDS(BYTES) \
         (((BYTES) + cJU_BYTESPERWORD - 1) / cJU_BYTESPERWORD)
 
-// A word that is all-ones, normally equal to -1UL, but safer with ~0:
+// A word that is all-ones
 
 #define cJU_ALLONES  (~(uintptr_t)0)
 
@@ -411,7 +411,7 @@ typedef PWord_t Pjv_t;   // pointer to JudyL value area.
 // processors.
 
 #define JU_LEASTBYTESMASK(BYTES) \
-        (((uintptr_t)0x100UL << (cJU_BITSPERBYTE * ((BYTES) - 1))) - 1)
+        (((uintptr_t)0x100u << (cJU_BITSPERBYTE * ((BYTES) - 1))) - 1)
 
 #define JU_LEASTBYTES(INDEX,BYTES)  ((INDEX) & JU_LEASTBYTESMASK(BYTES))
 
@@ -540,7 +540,7 @@ extern const uint8_t j__L_BranchBJPPopToWords[];
     Word_t   m_id;                                              \
     Word_t   h_igh  = POP1;                                     \
                                                                 \
-    while ((h_igh - l_ow) > 1UL)                                \
+    while ((h_igh - l_ow) > 1)                                \
     {                                                           \
         m_id = (h_igh + l_ow) / 2;                              \
         if (P_leaf[m_id] > I_ndex)                              \
@@ -563,7 +563,7 @@ extern const uint8_t j__L_BranchBJPPopToWords[];
                                                                 \
     I_ndex = JU_LEASTBYTES((INDEX), (LFBTS));                   \
                                                                 \
-    while ((h_igh - l_ow) > 1UL)                                \
+    while ((h_igh - l_ow) > 1)                                \
     {                                                           \
         m_id = (h_igh + l_ow) / 2;                              \
         COPYINDEX(i_ndex, &P_leaf[m_id * (LFBTS)]);             \
@@ -1057,7 +1057,7 @@ static inline BITMAPL_t j__udyCountBitsL(BITMAPL_t word)
 // for them appended to this file.
 
 #define JU_INSERTINPLACE(PARRAY,POP1,OFFSET,INDEX)              \
-        assert((long) (POP1) > 0);                              \
+        assert((intptr_t) (POP1) > 0);                          \
         assert((Word_t) (OFFSET) <= (Word_t) (POP1));           \
         {                                                       \
             Word_t i_offset = (POP1);                           \
@@ -1146,7 +1146,7 @@ static inline BITMAPL_t j__udyCountBitsL(BITMAPL_t word)
 // "Shift down" the array elements starting at the Index to be deleted.
 
 #define JU_DELETEINPLACE(PARRAY,POP1,OFFSET,IGNORE)             \
-        assert((long) (POP1) > 0);                              \
+        assert((intptr_t) (POP1) > 0);                              \
         assert((Word_t) (OFFSET) < (Word_t) (POP1));            \
         {                                                       \
             Word_t i_offset = (OFFSET);                         \
@@ -1164,7 +1164,7 @@ static inline BITMAPL_t j__udyCountBitsL(BITMAPL_t word)
 // not converted to/from an Index.
 
 #define JU_DELETEINPLACE_ODD(PBYTE,POP1,OFFSET,cIS)             \
-        assert((long) (POP1) > 0);                              \
+        assert((intptr_t) (POP1) > 0);                              \
         assert((Word_t) (OFFSET) < (Word_t) (POP1));            \
         {                                                       \
             Word_t b_off = (((OFFSET) + 1) * (cIS)) - 1;        \
@@ -1181,7 +1181,7 @@ static inline BITMAPL_t j__udyCountBitsL(BITMAPL_t word)
 // are used when moving Indexes from one memory object to another.
 
 #define JU_INSERTCOPY(PDEST,PSOURCE,POP1,OFFSET,INDEX)          \
-        assert((long) (POP1) > 0);                              \
+        assert((intptr_t) (POP1) > 0);                              \
         assert((Word_t) (OFFSET) <= (Word_t) (POP1));           \
         {                                                       \
             Word_t i_offset;                                    \
@@ -1196,7 +1196,7 @@ static inline BITMAPL_t j__udyCountBitsL(BITMAPL_t word)
         }
 
 #define JU_INSERTCOPY3(PDEST,PSOURCE,POP1,OFFSET,INDEX)         \
-assert((long) (POP1) > 0);                                      \
+assert((intptr_t) (POP1) > 0);                                      \
 assert((Word_t) (OFFSET) <= (Word_t) (POP1));                   \
 {                                                               \
     Word_t o_ff;                                                \
@@ -1222,7 +1222,7 @@ assert((Word_t) (OFFSET) <= (Word_t) (POP1));                   \
 #ifdef JU_64BIT
 
 #define JU_INSERTCOPY5(PDEST,PSOURCE,POP1,OFFSET,INDEX)         \
-assert((long) (POP1) > 0);                                      \
+assert((intptr_t) (POP1) > 0);                                      \
 assert((Word_t) (OFFSET) <= (Word_t) (POP1));                   \
 {                                                               \
     Word_t o_ff;                                                \
@@ -1250,7 +1250,7 @@ assert((Word_t) (OFFSET) <= (Word_t) (POP1));                   \
 }
 
 #define JU_INSERTCOPY6(PDEST,PSOURCE,POP1,OFFSET,INDEX)         \
-assert((long) (POP1) > 0);                                      \
+assert((intptr_t) (POP1) > 0);                                      \
 assert((Word_t) (OFFSET) <= (Word_t) (POP1));                   \
 {                                                               \
     Word_t o_ff;                                                \
@@ -1280,7 +1280,7 @@ assert((Word_t) (OFFSET) <= (Word_t) (POP1));                   \
 }
 
 #define JU_INSERTCOPY7(PDEST,PSOURCE,POP1,OFFSET,INDEX)         \
-assert((long) (POP1) > 0);                                      \
+assert((intptr_t) (POP1) > 0);                                      \
 assert((Word_t) (OFFSET) <= (Word_t) (POP1));                   \
 {                                                               \
     Word_t o_ff;                                                \
@@ -1316,7 +1316,7 @@ assert((Word_t) (OFFSET) <= (Word_t) (POP1));                   \
 // Counterparts to the above for deleting an Index:
 
 #define JU_DELETECOPY(PDEST,PSOURCE,POP1,OFFSET,IGNORE)         \
-        assert((long) (POP1) > 0);                              \
+        assert((intptr_t) (POP1) > 0);                              \
         assert((Word_t) (OFFSET) < (Word_t) (POP1));            \
         {                                                       \
             Word_t i_offset;                                    \
@@ -1337,7 +1337,7 @@ assert((Word_t) (OFFSET) <= (Word_t) (POP1));                   \
 // Note:  If cIS == 1, JU_DELETECOPY_ODD == JU_DELETECOPY, at least in concept.
 
 #define JU_DELETECOPY_ODD(PDEST,PSOURCE,POP1,OFFSET,cIS)                \
-        assert((long) (POP1) > 0);                                      \
+        assert((intptr_t) (POP1) > 0);                                      \
         assert((Word_t) (OFFSET) < (Word_t) (POP1));                    \
         {                                                               \
             uint8_t *_Pdest   = (uint8_t *) (PDEST);                    \
@@ -1365,7 +1365,7 @@ assert((Word_t) (OFFSET) <= (Word_t) (POP1));                   \
 // return int or Word_t using JERR, which is type Word_t, for errors.  Lint
 // complains about this for functions that return int.  So, internally use
 // JERRI for error returns from the int functions.  Experiments show that
-// callers which compare int Foo() to (Word_t) JERR (~0UL) are OK, since JERRI
+// callers which compare int Foo() to (Word_t) JERR (~0) are OK, since JERRI
 // sign-extends to match JERR.
 
 #define JERRI ((int) ~0)                // see above.

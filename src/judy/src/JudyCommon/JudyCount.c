@@ -493,8 +493,8 @@ BranchL:
 
 BranchB:
 	{
-	    long   subexp;	// for stepping through layer 1 (subexpanses).
-	    long   findsub;	// subexpanse containing   Index (digit).
+	    intptr_t subexp;	// for stepping through layer 1 (subexpanses).
+	    intptr_t  findsub;	// subexpanse containing   Index (digit).
 	    Word_t findbit;	// bit	      representing Index (digit).
 	    Word_t lowermask;	// bits for indexes at or below Index.
 	    Word_t jpcount;	// JPs in a subexpanse.

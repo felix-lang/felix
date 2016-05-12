@@ -190,7 +190,7 @@ typedef struct L_EAFSTRING
 //
 #define        COPYSTRING8toWORD(WORD,STR,LEN)          \
 {                                                       \
-    WORD = 0UL;                                         \
+    WORD = (uintptr_t)0;                                         \
     switch(LEN)                                         \
     {                                                   \
     default:    /* eight and greater */                 \
@@ -465,7 +465,7 @@ JudyHSIns(PPvoid_t PPArray,             // ^ to JudyHashArray name
 
 //  string can only be NULL if Len is 0.
 
-    if ((String == (uint8_t *) NULL) && (Len != 0UL))
+    if ((String == (uint8_t *) NULL) && (Len != (uintptr_t)0))
     {
         JU_SET_ERRNO(PJError, JU_ERRNO_NULLPINDEX);
         return (PPJERR);

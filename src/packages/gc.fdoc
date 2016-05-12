@@ -1119,11 +1119,16 @@ void *flx_collector_t::create_empty_array(
   size_t count
 )
 {
-  fprintf(stderr,"create empty array length %zu type %s shape amt=%zu, shapecnt=%zu\n",
-     count,shape->cname, shape->amt, shape->count);
   void *p = allocate(shape,count);
+  assert(p);
   set_used (p, 0); // make sure to override default 1 slot usage
-  fprintf(stderr,"Array at %p, used = %zu, max=%zu\n",p,get_used(p), get_count(p));
+  if(get_used(p) != 0 || get_count(p) != count) {
+    fprintf(stderr,"create empty array length %zu type %s shape amt=%zu, shapecnt=%zu\n",
+     count,shape->cname, shape->amt, shape->count);
+    fprintf(stderr,"Array at %p, used = %zu, max=%zu\n",p,get_used(p), get_count(p));
+    fprintf(stderr, "FATAL CONSTRUCTOR FAILURE\n");
+    assert (false);
+  }
   return p;
 }
 

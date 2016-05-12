@@ -55,7 +55,7 @@
 // Note:  To keep the MALLOC macro faster and simpler, set j__uMaxWords to
 // MAXINT, not zero, by default.
 
-Word_t j__uMaxWords = ~0UL;
+Word_t j__uMaxWords = ~(uintptr_t)0;
 
 // This macro hides the faking of a malloc failure:
 //
@@ -64,7 +64,7 @@ Word_t j__uMaxWords = ~0UL;
 // exactly where you might assume, but it shouldnt matter.
 
 #define MALLOC(MallocFunc,WordsPrev,WordsNow) \
-        (((WordsPrev) > j__uMaxWords) ? 0UL : MallocFunc(WordsNow))
+        (((WordsPrev) > j__uMaxWords) ? (uintptr_t)0 : MallocFunc(WordsNow))
 
 // Clear words starting at address:
 //
@@ -75,7 +75,7 @@ Word_t j__uMaxWords = ~0UL;
         {                                       \
             Word_t  Words__ = (Words);          \
             PWord_t Addr__  = (PWord_t) (Addr); \
-            while (Words__--) *Addr__++ = 0UL;  \
+            while (Words__--) *Addr__++ = 0;  \
         }
 
 #ifdef TRACEMI
@@ -93,7 +93,7 @@ Word_t j__uMaxWords = ~0UL;
 
 #include <stdio.h>
 
-static Word_t j__udyMemSequence = 0L;   // event sequence number.
+static Word_t j__udyMemSequence = (intptr_t)0;   // event sequence number.
 
 #define TRACE_ALLOC5(a,b,c,d,e)   (void) printf(a, (b), c, d)
 #define TRACE_FREE5( a,b,c,d,e)   (void) printf(a, (b), c, d)
@@ -117,7 +117,7 @@ static Word_t j__udyMemSequence = 0L;   // event sequence number.
 #define TRACE_FREE6( a,b,c,d,e,f)         \
             (void) printf("f %lx %lx %lx\n", (b), (e) * b_pw, f)
 
-static Word_t j__udyMemSequence = 0L;   // event sequence number.
+static Word_t j__udyMemSequence = 0;   // event sequence number.
 
 #else
 
