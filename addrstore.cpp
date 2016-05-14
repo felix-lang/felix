@@ -4,7 +4,10 @@
 #include <stdlib.h>
 #include <map>
 
+namespace Addrstore
+{
 typedef void *address;
+typedef uintptr_t word;
 
 // 13 = 5 + 8
 
@@ -13,18 +16,19 @@ typedef void *address;
 //
 
 // We use a trick, allocating only powers of 2 store
-int alloc_amt(unsigned char used_amt) {
-  for(int i=0; used_amt!=0; used_amt>>=1,i*=2)
-    return i;
+int alloc_amt(uint8_t  used_amt) {
+  int i = 0;
+  for(;used_amt!=0; used_amt>>=1,i*=2);
+  return i;
 }
 
 struct Node8 {
-  unsigned char *keys;
+  uint8_t *keys;
   address *data;
   int used;
-  Node8() : used(1) { keys = malloc(1); data = malloc(sizeof(address)*1) {} 
+  Node8() : used(0), keys(NULL), data(NULL) {}
 
-  void find(uint8_t key) {
+  address find(uint8_t key) {
     for (int i=0; i < used; ++i)
       if (keys[i]==key) return data[i];
     return NULL;
@@ -33,16 +37,31 @@ struct Node8 {
   void insert(uint8_t key, address *datum) {
     for (int i=0; i < used; ++i)
       if (keys[i]==key) { data[i]=datum; return; }
-    if (used = alloc_amt(used)) {
-      keys = realloc(keys, 2 * used);
-      data = realloc(data , 2 * used * sizeof (address));
+    if (used == alloc_amt(used)) {
+      // change from full to half full before inserting
+      keys = (uint8_t*)realloc(keys, 2 * used);
+      data = (address*)realloc(data , 2 * used * sizeof (address));
     }
     keys[used]=key;
     data[used]=datum;
     ++used;
   }
 
-
+  void remove (uint8_t key) {
+    for (int i=0; i < used; ++i)
+      if (keys[i]==key) {
+        if (i!=used) {
+          memcpy(keys+i, keys+i+1,used-i-1);
+          memcpy(data+i, data+i+1,(used-i-1) * sizeof(address));
+        }
+        --used;
+        if (used == alloc_amt(used)) {
+          // change from half full to full after inserting
+          keys = (uint8_t*)realloc(keys, used);
+          data = (address*)realloc(data , used * sizeof (address));
+        }
+      } 
+  }
 
 };
 
@@ -138,6 +157,39 @@ public:
   }
 
 };
+
+//------------------------------------------------------
+// full address lookup
+class Map64
+{
+  Linear32 top;
+
+public:
+  address find(address key)
+  {
+    
+    uint32_t r31_0 = (uint32_t)word(key);           // 32 bits residual
+    uint32_t k63_32 = (uint32_t)(word(key) >> 32);    // 32 bit key
+
+    uint16_t r15_0 = (uint16_t)r31_0;               // 16 bits residual
+    uint16_t k31_16 = (uint16_t)(r31_0 >> 16);        // 16 bit key
+
+    uint8_t r10_0 = r15_0 & 0x7FF;                  //  11 bits residual
+    uint8_t k15_11 = word(key) >> 11;               //   5 bit key
+
+
+    uint8_t k10_3 = (uint8_t)r10_0>> 3;             //  8 bits
+    // low 3 bits 2_0 must be 0                     //  3 bits unused
+    
+    void *result = top.find(k63_32);                       // 32 bit lookup
+    if (result) result = ((Node16*)result)->find(k31_16);   // 16 bit lookup
+    if (result) result = ((Node5*)result)->find(k15_11);    // 5 bit lookup
+    if (result) result = ((Node8*)result)->find(k10_3);     // 8 bit lookup
+    return result;
+  }
+};
+
+} // end namespace Addrstore
 
 int main() {
  printf("Hello addrstore\n");
