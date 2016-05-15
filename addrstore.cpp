@@ -22,6 +22,13 @@ uint64_t nNode8=0;
 uint64_t nNode5=0;
 uint64_t nNode16=0;
 uint64_t nNode32=0;
+void reset_counts()
+{
+  nNode8=0;
+  nNode5=0;
+  nNode16=0;
+  nNode32=0;
+}
 
 // We use a trick, allocating only powers of 2 store
 int alloc_amt(uint8_t  used_amt) {
@@ -38,15 +45,17 @@ struct Node8 {
   int used;
   Node8() : used(0), keys(NULL), data(NULL) { ++nNode8; }
   ~Node8() { free(keys); free(data); }
-  address find(uint8_t key) {
+
+  address find(uint8_t key) const {
     for (int i=0; i < used; ++i)
       if (keys[i]==key) return data[i];
     return NULL;
   }
 
   void insert(uint8_t key, address datum) {
-    for (int i=0; i < used; ++i)
-      if (keys[i]==key) { data[i]=datum; return; }
+    int i = 0;
+    while (i<used && keys[i] < key)++i;
+    if (i<used && keys[i]==key) { data[i]=datum; return; }
     int n = 0;
     if (used == alloc_amt(used)) {
       // change from full to half full before inserting
@@ -55,8 +64,12 @@ struct Node8 {
       keys = (uint8_t*)realloc(keys, n);
       data = (address*)realloc(data , n  * sizeof (address));
     }
-    keys[used]=key;
-    data[used]=datum;
+    if(i!=used) { // not at end
+      memmove(keys+i+1,keys+i,(used-i));
+      memmove(data+i+1,data+i,sizeof(address)*(used-i));
+    }
+    keys[i]=key;
+    data[i]=datum;
     ++used;
 //printf("Insert8 key %p data %p used %d, calc alloc %d, actual alloc %d\n",address(word(key)),datum, used, alloc_amt(used),n);
   }
@@ -65,18 +78,21 @@ struct Node8 {
     for (int i=0; i < used; ++i)
       if (keys[i]==key) {
         if (i!=used) {
-          memcpy(keys+i, keys+i+1,used-i-1);
-          memcpy(data+i, data+i+1,(used-i-1) * sizeof(address));
+          memmove(keys+i, keys+i+1,used-i-1);
+          memmove(data+i, data+i+1,(used-i-1) * sizeof(address));
         }
+        int old_alloc = alloc_amt(used);
         --used;
-        if (used == alloc_amt(used)) {
+        int new_alloc = alloc_amt(used);
+        if (old_alloc != new_alloc) {
+          assert(used <= new_alloc);
           // change from half full to full after inserting
-          keys = (uint8_t*)realloc(keys, used);
-          data = (address*)realloc(data , used * sizeof (address));
+          keys = (uint8_t*)realloc(keys, new_alloc);
+          data = (address*)realloc(data , new_alloc * sizeof (address));
         }
       } 
   }
-
+  word count() const { return used; }
 };
 
 
@@ -87,7 +103,7 @@ struct Node8 {
 struct Node5 {
   address map[32];
   Node5() { memset((void*)map,0,32 * sizeof(address)); ++nNode5; }
-  address find (uint16_t key) { assert(key<32); return map[key]; }
+  address find (uint16_t key) const { assert(key<32); return map[key]; }
   void insert(uint32_t key, address data) { 
 //printf("Node5 insert key = %d\n", key);
      assert(key < 32);
@@ -144,7 +160,7 @@ public:
 
   // will work if store is sorted, may be faster
   // than binary chop if n_used is small
-  address find (uint32_t key) {
+  address find (uint32_t key) const {
     if(!store) return NULL;
     for(size_t i = 0; i<n_used; ++i)
       if(key == store[i].key) return store[i].data;  
@@ -197,7 +213,7 @@ class Map64
   Linear32 top;
 
 public:
-  address find(address key)
+  address find(address key) const
   {
     
 //printf("Find key=%p\n",key);
@@ -291,6 +307,32 @@ public:
     return;
   }
 
+  void remove (address key)
+  {
+    uint32_t r31_0 = (uint32_t)word(key);           // 32 bits residual
+    uint32_t k63_32 = (uint32_t)(word(key) >> 32);    // 32 bit key
+
+    uint16_t r15_0 = (uint16_t)r31_0;               // 16 bits residual
+    uint16_t k31_16 = (uint16_t)(r31_0 >> 16);        // 16 bit key
+
+    uint16_t r10_0 = r15_0 & 0x7FF;                  //  11 bits residual
+    uint8_t k15_11 = (uint8_t)(r15_0 >> 11);               //   5 bit key
+
+
+    uint8_t k10_3 = (uint8_t)(r10_0>> 3);             //  8 bits
+    // low 3 bits 2_0 must be 0                     //  3 bits unused
+//printf("Insert starting\n");
+
+    Node16 *result16 = (Node16*)(top.find(k63_32));  // 32 bit lookup
+    if(!result16) return;
+    Node5 *result5 = (Node5*)(result16->find(k31_16));    // 16 bit lookup 
+    if(!result5) return;
+    Node8 *result8 = (Node8*)(result5->find(k15_11));     // 5 bit lookup
+    if(!result8) return;
+    result8->remove(k10_3);
+    return;
+  }
+
 };
 
 } // end namespace Addrstore
@@ -312,6 +354,10 @@ struct JudyLArrayWrapper
     if (slot) return *slot;
     return NULL;
   }
+ 
+  void remove (address key) {
+    JudyLDel(&ja,(Word_t)key,&je);
+  }
 };
 
 struct STLMapWrapper
@@ -327,6 +373,10 @@ struct STLMapWrapper
     auto it = mp.find(key);
     if (it == mp.end()) return NULL;
     return (*it).second;
+  }
+
+  void remove (address key) {
+     mp.erase(key);
   }
 };
 
@@ -347,7 +397,9 @@ address randw () {
 void check(int sample, address *save)
 {
 
-  // Insert data
+  reset_counts();
+
+  // ADDRSTORE INSERT
   Map64 m;
 
   auto start =std::chrono::system_clock::now(); 
@@ -366,7 +418,7 @@ void check(int sample, address *save)
   auto elapsed = std::chrono::duration_cast<std::chrono::microseconds> (end - start).count();
   printf("Inserts done, elapsed = %7.3f s, rate = %lld per ms\n",elapsed / 100000.0, sample * 1000 / elapsed);
 
-  // Vertify data
+  // ADDRSTORE VERIFY
   start =std::chrono::system_clock::now(); 
   for (int i=0; i<sample; ++i){
    //printf("verify %3d -> %.16p\n",i,save[i]); // no compliant but works on OSX
@@ -440,6 +492,143 @@ void check(int sample, address *save)
   end =std::chrono::system_clock::now(); 
   elapsed = std::chrono::duration_cast<std::chrono::microseconds> (end - start).count();
   printf("STL Map Verify done, elapsed = %7.3f s, rate=%lld per ms\n",elapsed / 100000.0,sample * 1000 / elapsed);
+
+  printf("Node population count\nNode32=%lld\nNode16=%lld\nNode5=%lld\nNode8=%lld\n",
+   nNode32, nNode16,nNode5,nNode8);
+
+//===============================================================================
+  printf("ALL KEY DELETION\n");
+
+  // ADDRSTORE DELETE
+  start =std::chrono::system_clock::now(); 
+  for (int i=0; i<sample; ++i) {
+    if (save[i]!=0)
+      m.remove(save[i]);
+  }
+  end =std::chrono::system_clock::now(); 
+  elapsed = std::chrono::duration_cast<std::chrono::microseconds> (end - start).count();
+  printf("Addrstore Delete done, elapsed = %7.3f s, rate=%lld per ms\n",elapsed / 100000.0,sample * 1000 / elapsed);
+
+  // JUDY DELETE
+  printf("REPEATING WITH JUDYL\n");
+  start =std::chrono::system_clock::now(); 
+  for (int i=0; i<sample; ++i) {
+    if (save[i]!=0)
+      ja.remove(save[i]);
+  }
+  end =std::chrono::system_clock::now(); 
+  elapsed = std::chrono::duration_cast<std::chrono::microseconds> (end - start).count();
+  printf("Judy Delete done, elapsed = %7.3f s, rate=%lld per ms\n",elapsed / 100000.0,sample * 1000 / elapsed);
+
+  // STL DELETE
+  printf("REPEATING WITH STL MAP\n");
+  start =std::chrono::system_clock::now(); 
+  for (int i=0; i<sample; ++i){
+    if (save[i]!=0)
+      mp.remove(save[i]);
+  }
+  end =std::chrono::system_clock::now(); 
+  elapsed = std::chrono::duration_cast<std::chrono::microseconds> (end - start).count();
+  printf("STL Map delete done, elapsed = %7.3f s, rate=%lld per ms\n",elapsed / 100000.0,sample * 1000 / elapsed);
+
+
+//===============================================================================
+  printf("REPOPULATE\n");
+
+  // ADDRSTORE INSERT
+ start =std::chrono::system_clock::now(); 
+  for (int i=0; i<sample; ++i) {
+   //printf("%3d -> %.16p\n",i,save[i]); // no compliant but works on OSX
+   auto k = m.find (save[i]);
+   if (k != NULL)
+   {
+     printf("Duplicate key index %d, key=%p, found data=%ld\n", i, save[i], word(k));
+     save[i]=0;
+   }
+
+   m.insert (save[i],address(word(i)));
+  }
+  end =std::chrono::system_clock::now(); 
+  elapsed = std::chrono::duration_cast<std::chrono::microseconds> (end - start).count();
+  printf("Inserts done, elapsed = %7.3f s, rate = %lld per ms\n",elapsed / 100000.0, sample * 1000 / elapsed);
+
+  // ADDRSTORE VERIFY
+  start =std::chrono::system_clock::now(); 
+  for (int i=0; i<sample; ++i){
+   //printf("verify %3d -> %.16p\n",i,save[i]); // no compliant but works on OSX
+   //printf(" Result %d should be %d\n", (int)(word)m.find(save[i]), (int)word(i));
+   if (save[i]!=0) {
+     assert (m.find (save[i]) == address(word(i)));
+   }
+  }
+  end =std::chrono::system_clock::now(); 
+  elapsed = std::chrono::duration_cast<std::chrono::microseconds> (end - start).count();
+  printf("Verify done, elapsed = %7.3f s, rate=%lld per ms\n",elapsed / 100000.0,sample * 1000 / elapsed);
+
+  printf("REPEATING WITH JUDYL\n");
+
+  // JUDY INSERT
+  start =std::chrono::system_clock::now(); 
+  for (int i=0; i<sample; ++i) {
+   //printf("%3d -> %.16p\n",i,save[i]); // no compliant but works on OSX
+   auto k = ja.find (save[i]);
+   if (k != NULL)
+   {
+     printf("Duplicate key index %d, key=%p\n", i, k);
+     save[i]=0;
+   }
+
+   ja.insert (save[i],address(word(i)));
+  }
+  end =std::chrono::system_clock::now(); 
+  elapsed = std::chrono::duration_cast<std::chrono::microseconds> (end - start).count();
+  printf("Judy Insert done, elapsed = %7.3f s, rate=%lld per ms\n",elapsed / 100000.0,sample * 1000 / elapsed);
+
+  // JUDY VERIFY
+  start =std::chrono::system_clock::now(); 
+  for (int i=0; i<sample; ++i){
+   if (save[i]!=0) {
+     assert (ja.find (save[i]) == address(word(i)));
+   }
+  }
+  end =std::chrono::system_clock::now(); 
+  elapsed = std::chrono::duration_cast<std::chrono::microseconds> (end - start).count();
+  printf("Judy Verify done, elapsed = %7.3f s, rate=%lld per ms\n",elapsed / 100000.0,sample * 1000 / elapsed);
+
+
+  printf("REPEATING WITH STL MAP\n");
+
+  // STL INSERT
+  start =std::chrono::system_clock::now(); 
+  for (int i=0; i<sample; ++i) {
+   auto k = mp.find (save[i]);
+   if (k != NULL)
+   {
+     printf("Duplicate key index %d, key=%p\n", i, k);
+     save[i]=0;
+   }
+   mp.insert (save[i],address(word(i)));
+  }
+  end =std::chrono::system_clock::now(); 
+  elapsed = std::chrono::duration_cast<std::chrono::microseconds> (end - start).count();
+  printf("STL Map Insert done, elapsed = %7.3f s, rate=%lld per ms\n",elapsed / 100000.0,sample * 1000 / elapsed);
+
+  // STL VERIFY 
+  start =std::chrono::system_clock::now(); 
+  for (int i=0; i<sample; ++i){
+   if (save[i]!=0) {
+     assert (mp.find (save[i]) == address(word(i)));
+   }
+  }
+  end =std::chrono::system_clock::now(); 
+  elapsed = std::chrono::duration_cast<std::chrono::microseconds> (end - start).count();
+  printf("STL Map Verify done, elapsed = %7.3f s, rate=%lld per ms\n",elapsed / 100000.0,sample * 1000 / elapsed);
+
+  printf("Node population count\nNode32=%lld\nNode16=%lld\nNode5=%lld\nNode8=%lld\n",
+   nNode32, nNode16,nNode5,nNode8);
+
+
+
 }
 
 int main() {
@@ -462,12 +651,11 @@ int main() {
 
   check(sample, save);
 
-  printf("SEQUENTIAL ALLOCATION\n");
-  for (int i=0; i<sample; ++i)
-   save[i]= address (word (((i * 8) /8) * 8));
+  for (int osize = 1; osize< 256; osize=(osize+1)*2) { 
+    printf("SEQUENTIAL ALLOCATION object size=%d\n",osize*8);
+    for (int i=0; i<sample; ++i)
+     save[i]= address (word (((i * osize*8) /8) * 8));
 
-  check(sample, save);
-
-  printf("Node population count\nNode32=%lld\nNode16=%lld\nNode5=%lld\nNode8=%lld\n",
-   nNode32, nNode16,nNode5,nNode8);
+    check(sample, save);
+  }
 }

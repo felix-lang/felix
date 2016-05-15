@@ -431,6 +431,17 @@ int flx_world::setup(int argc, char **argv) {
   allocator = new flx::gc::collector::malloc_free();
   allocator->set_debug(c->debug_allocations);
 
+  char *tracecmd = getenv("FLX_TRACE_ALLOCATIONS");
+  if(tracecmd && strlen(tracecmd)>0) {
+     FILE *f = fopen(tracecmd,"w");
+     if(f) {
+       fprintf(stderr, "Allocation tracing active, file = %s\n",tracecmd);
+       allocator = new flx::gc::collector::tracing_allocator(f,allocator);
+     }
+     else 
+       fprintf(stderr, "Unable to open allocation trace file %s for output (ignored)\n",tracecmd);
+  }
+
   // previous direct ctor scope ended at closing brace of FLX_MAIN
   // but delete can probably be moved up after collector delete (also used by explicit_dtor)
   ::flx::pthread::thread_control_t *thread_control = new ::flx::pthread::thread_control_t(c->debug_threads);

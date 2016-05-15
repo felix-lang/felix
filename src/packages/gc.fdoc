@@ -774,6 +774,7 @@ namespace collector {
 using namespace generic;
 
 struct GC_EXTERN malloc_free;
+struct GC_EXTERN tracing_allocator;
 struct GC_EXTERN flx_collector_t;
 
 /// Allocator using malloc and free.
@@ -782,6 +783,18 @@ struct GC_EXTERN malloc_free : public virtual allocator_t
   void *allocate(::std::size_t);
   void deallocate(void *);
   ~malloc_free();
+};
+
+/// Allocator which saves allocations and deallocations
+/// to a file, delegating operations to a servant allocator
+struct GC_EXTERN tracing_allocator : public virtual allocator_t
+{
+  allocator_t *servant;
+  FILE *tracefile;
+  tracing_allocator(FILE *, allocator_t *);
+  void *allocate(::std::size_t);
+  void deallocate(void *);
+  ~tracing_allocator();
 };
 
 
@@ -924,6 +937,31 @@ void malloc_free::deallocate(void *p)
     fprintf(stderr,"[gc] Free %p\n",p);
   free(p);
 }
+
+tracing_allocator::tracing_allocator (
+  FILE *tf, 
+  allocator_t *slave) 
+: tracefile(tf), servant(slave) {}
+
+void *tracing_allocator::allocate (::std::size_t amt)
+{
+   void *memory = servant->allocate(amt);
+   fprintf(tracefile,"A: %p\n",memory);
+   return memory;
+}
+
+void tracing_allocator::deallocate (void *p)
+{
+   fprintf(tracefile,"D: %p\n",p);
+   servant->deallocate(p);
+}
+
+tracing_allocator::~tracing_allocator() { 
+  fclose(tracefile); 
+  delete servant; 
+  fprintf(stderr, "[gc] Allocation tracing terminated, file closed, slave allocator deleted\n"); 
+}
+
 
 void *flx_collector_t::v_allocate(gc_shape_t *ptr_map, size_t x) {
   return impl_allocate(ptr_map, x);
