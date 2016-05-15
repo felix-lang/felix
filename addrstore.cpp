@@ -5,6 +5,7 @@
 #include <map>
 #include <chrono>
 #include <assert.h>
+#include "Judy.h"
 
 namespace Addrstore
 {
@@ -16,6 +17,11 @@ typedef uintptr_t word;
 //------------------------------------------------------
 // 8 bit lookup with realloc
 //
+
+uint64_t nNode8=0;
+uint64_t nNode5=0;
+uint64_t nNode16=0;
+uint64_t nNode32=0;
 
 // We use a trick, allocating only powers of 2 store
 int alloc_amt(uint8_t  used_amt) {
@@ -30,7 +36,7 @@ struct Node8 {
   uint8_t *keys;
   address *data;
   int used;
-  Node8() : used(0), keys(NULL), data(NULL) {}
+  Node8() : used(0), keys(NULL), data(NULL) { ++nNode8; }
   ~Node8() { free(keys); free(data); }
   address find(uint8_t key) {
     for (int i=0; i < used; ++i)
@@ -80,8 +86,8 @@ struct Node8 {
 
 struct Node5 {
   address map[32];
-  Node5() { memset((void*)map,32 * sizeof(void*), 0); }
-  address find (uint16_t key) { return map[key]; }
+  Node5() { memset((void*)map,0,32 * sizeof(address)); ++nNode5; }
+  address find (uint16_t key) { assert(key<32); return map[key]; }
   void insert(uint32_t key, address data) { 
 //printf("Node5 insert key = %d\n", key);
      assert(key < 32);
@@ -96,7 +102,7 @@ struct Node5 {
 // 
 struct Node16 
 {
-  Node16() {}
+  Node16() {++nNode16; }
   ::std::map<uint32_t, void*> lowtab;
 
   // find pointer to structure containing 
@@ -134,7 +140,7 @@ class Linear32
   size_t n_max;
   Node32kv *store;
 public:
-  Linear32() : store(NULL), n_used(0), n_max(0) {}
+  Linear32() : store(NULL), n_used(0), n_max(0) {++nNode32;}
 
   // will work if store is sorted, may be faster
   // than binary chop if n_used is small
@@ -146,13 +152,22 @@ public:
   }
 
   void insert(uint32_t key, address data) { // unchecked
-    if (n_used == n_max) {
-      n_max = n_max?2*n_max : 1;
-      store = (Node32kv*) realloc (store, n_max * sizeof (Node32kv));
+    int i = 0;
+    while (i<n_used && store[i].key < key)++i;
+    if(i<n_used && store[i].key==key)  // overwrite key
+      store[i].data = data;
+    else {
+      if (n_used == n_max) { // need more space
+        n_max = n_max?2*n_max : 1;
+        store = (Node32kv*) realloc (store, n_max * sizeof (Node32kv));
+      }
+      if(i!=n_used) { // not at end
+        memmove(store+i+1,store+i,sizeof(Node32kv) * (n_used-i));
+      }
+      store[i].key = key;
+      store[i].data = data;
+      ++n_used;
     }
-    store[n_used].key = key;
-    store[n_used].data = data;
-    ++n_used;
 //printf("Insert32 key %p data %p\n",address(word(key)),data);
   } 
 
@@ -187,18 +202,24 @@ public:
     
 //printf("Find key=%p\n",key);
     uint32_t r31_0 = (uint32_t)word(key);           // 32 bits residual
-    uint32_t k63_32 = (uint32_t)(word(key) >> 32);    // 32 bit key
+    uint32_t k63_32 = (uint32_t)(word(key) >> 32);  // 32 bit key
+//assert((word(k63_32) << 32) + word(r31_0)==word(key));
 
     uint16_t r15_0 = (uint16_t)r31_0;               // 16 bits residual
-    uint16_t k31_16 = (uint16_t)(r31_0 >> 16);        // 16 bit key
+    uint16_t k31_16 = (uint16_t)(r31_0 >> 16);      // 16 bit key
+//assert((word(k31_16) << 16) + word(r15_0)==r31_0);
 
-    uint8_t r10_0 = r15_0 & 0x7FF;                  //  11 bits residual
-    uint8_t k15_11 = (uint8_t)(r15_0 >> 11);               //   5 bit key
+    uint16_t r10_0 = r15_0 & 0x7FF;                  //  11 bits residual
+    uint8_t k15_11 = (uint8_t)(r15_0 >> 11);        //   5 bit key
+//assert((word(k15_11) << 11) + word(r10_0)==r15_0);
 
 
-    uint8_t k10_3 = (uint8_t)r10_0>> 3;             //  8 bits
+    uint8_t k10_3 = (uint8_t)(r10_0>> 3);             //  8 bits
+//assert((word(k10_3) << 3) ==r10_0);
     // low 3 bits 2_0 must be 0                     //  3 bits unused
    
+    //printf("k63_32=%16llx\nk31_16=%16llx\nk15_11=%16llx\nk10_3 =%16llx\n",word(k63_32),word(k31_16),word(k15_11),word(k10_3));
+//    assert((word(k63_32) << 32) + (word(k31_16) << 16) + (word(k15_11) << 11) + (word(k10_3) << 3) == word(key));
 
     void *result = top.find(k63_32);                       // 32 bit lookup
 //printf("Find63_32 key=%p -> %p\n",address(word(k63_32)),result);
@@ -219,11 +240,11 @@ public:
     uint16_t r15_0 = (uint16_t)r31_0;               // 16 bits residual
     uint16_t k31_16 = (uint16_t)(r31_0 >> 16);        // 16 bit key
 
-    uint8_t r10_0 = r15_0 & 0x7FF;                  //  11 bits residual
+    uint16_t r10_0 = r15_0 & 0x7FF;                  //  11 bits residual
     uint8_t k15_11 = (uint8_t)(r15_0 >> 11);               //   5 bit key
 
 
-    uint8_t k10_3 = (uint8_t)r10_0>> 3;             //  8 bits
+    uint8_t k10_3 = (uint8_t)(r10_0>> 3);             //  8 bits
     // low 3 bits 2_0 must be 0                     //  3 bits unused
 //printf("Insert starting\n");
 
@@ -240,7 +261,7 @@ public:
       return;
     }
 
-    Node5 *result5 = (Node5*)(result16->find(k31_16));     
+    Node5 *result5 = (Node5*)(result16->find(k31_16));    // 16 bit lookup 
     if(!result5) {
 //printf("Can't find Node5, creating\n");
       Node8 *nu8 = new Node8;
@@ -256,7 +277,7 @@ public:
       return;
     }
 
-    Node8 *result8 = (Node8*)(result5->find(k15_11));     
+    Node8 *result8 = (Node8*)(result5->find(k15_11));     // 5 bit lookup
     if(!result8) {
 //printf("Can't find Node8, creating\n");
       result8 = new Node8;
@@ -265,7 +286,7 @@ public:
       return;
     }
 
-//printf("Inserting into Node8\n");
+//printf("Inserting into Node8\n");                      // 8 bit insert
     result8->insert (k10_3,data);
     return;
   }
@@ -273,6 +294,41 @@ public:
 };
 
 } // end namespace Addrstore
+
+struct JudyLArrayWrapper
+{
+  typedef Addrstore::address address;
+  void *ja;
+  JError_t je;
+  JudyLArrayWrapper () : ja(NULL) {}
+
+  void insert (address key, address data) {
+    address *p = (address*)JudyLIns(&ja,(Word_t)key,&je);
+    *p = data;
+  }
+
+  address find (address key) {
+    address *slot = (address*)JudyLGet(ja,(Word_t)key,&je);
+    if (slot) return *slot;
+    return NULL;
+  }
+};
+
+struct STLMapWrapper
+{
+  typedef Addrstore::address address;
+  std::map<address,address> mp;
+
+  void insert(address key, address data) {
+    mp.insert (::std::pair<address, address>(key,data));
+  }
+
+  address find (address key) {
+    auto it = mp.find(key);
+    if (it == mp.end()) return NULL;
+    return (*it).second;
+  }
+};
 
 using namespace Addrstore;
 
@@ -288,41 +344,27 @@ address randw () {
 }
 
 
-int main() {
-  int sample = 100000;
-  printf("Hello addrstore sample size=%d\n", sample);
-  address *save = (address*)malloc(sample * sizeof(address));
-
-  // create data
-  auto start =std::chrono::system_clock::now(); 
-  for (int i=0; i<sample; ++i)
-  {
-    address r = randw();
-    //printf("%3d -> %.16p\n",i,r); // no compliant but works on OSX
-    save[i] = r;
-  }
-  auto end =std::chrono::system_clock::now(); 
-  long elapsed = std::chrono::duration_cast<std::chrono::microseconds> (end - start).count();
-  printf("Samples done, elapsed = %7.3f s\n",elapsed / 100000.0);
+void check(int sample, address *save)
+{
 
   // Insert data
   Map64 m;
 
-  start =std::chrono::system_clock::now(); 
+  auto start =std::chrono::system_clock::now(); 
   for (int i=0; i<sample; ++i) {
    //printf("%3d -> %.16p\n",i,save[i]); // no compliant but works on OSX
    auto k = m.find (save[i]);
    if (k != NULL)
    {
-     printf("Duplicate key index %d, key=%p\n", i, k);
+     printf("Duplicate key index %d, key=%p, found data=%ld\n", i, save[i], word(k));
      save[i]=0;
    }
 
    m.insert (save[i],address(word(i)));
   }
-  end =std::chrono::system_clock::now(); 
-  elapsed = std::chrono::duration_cast<std::chrono::microseconds> (end - start).count();
-  printf("Inserts done, elapsed = %7.3f s, rate = %ld per ms\n",elapsed / 100000.0, sample * 1000 / elapsed);
+  auto end =std::chrono::system_clock::now(); 
+  auto elapsed = std::chrono::duration_cast<std::chrono::microseconds> (end - start).count();
+  printf("Inserts done, elapsed = %7.3f s, rate = %lld per ms\n",elapsed / 100000.0, sample * 1000 / elapsed);
 
   // Vertify data
   start =std::chrono::system_clock::now(); 
@@ -335,5 +377,97 @@ int main() {
   }
   end =std::chrono::system_clock::now(); 
   elapsed = std::chrono::duration_cast<std::chrono::microseconds> (end - start).count();
-  printf("Verify done, elapsed = %7.3f s, rate=%ld per ms\n",elapsed / 100000.0,sample * 1000 / elapsed);
+  printf("Verify done, elapsed = %7.3f s, rate=%lld per ms\n",elapsed / 100000.0,sample * 1000 / elapsed);
+
+  printf("REPEATING WITH JUDYL\n");
+  JudyLArrayWrapper ja;
+
+  start =std::chrono::system_clock::now(); 
+  for (int i=0; i<sample; ++i) {
+   //printf("%3d -> %.16p\n",i,save[i]); // no compliant but works on OSX
+   auto k = ja.find (save[i]);
+   if (k != NULL)
+   {
+     printf("Duplicate key index %d, key=%p\n", i, k);
+     save[i]=0;
+   }
+
+   ja.insert (save[i],address(word(i)));
+  }
+  end =std::chrono::system_clock::now(); 
+  elapsed = std::chrono::duration_cast<std::chrono::microseconds> (end - start).count();
+  printf("Judy Insert done, elapsed = %7.3f s, rate=%lld per ms\n",elapsed / 100000.0,sample * 1000 / elapsed);
+
+  start =std::chrono::system_clock::now(); 
+  for (int i=0; i<sample; ++i){
+   //printf("verify %3d -> %.16p\n",i,save[i]); // no compliant but works on OSX
+   //printf(" Result %d should be %d\n", (int)(word)m.find(save[i]), (int)word(i));
+   if (save[i]!=0) {
+     assert (ja.find (save[i]) == address(word(i)));
+   }
+  }
+  end =std::chrono::system_clock::now(); 
+  elapsed = std::chrono::duration_cast<std::chrono::microseconds> (end - start).count();
+  printf("Judy Verify done, elapsed = %7.3f s, rate=%lld per ms\n",elapsed / 100000.0,sample * 1000 / elapsed);
+
+
+  printf("REPEATING WITH STL MAP\n");
+  STLMapWrapper mp;
+
+  start =std::chrono::system_clock::now(); 
+  for (int i=0; i<sample; ++i) {
+   //printf("%3d -> %.16p\n",i,save[i]); // no compliant but works on OSX
+   auto k = mp.find (save[i]);
+   if (k != NULL)
+   {
+     printf("Duplicate key index %d, key=%p\n", i, k);
+     save[i]=0;
+   }
+   mp.insert (save[i],address(word(i)));
+  }
+  end =std::chrono::system_clock::now(); 
+  elapsed = std::chrono::duration_cast<std::chrono::microseconds> (end - start).count();
+  printf("STL Map Insert done, elapsed = %7.3f s, rate=%lld per ms\n",elapsed / 100000.0,sample * 1000 / elapsed);
+
+  start =std::chrono::system_clock::now(); 
+  for (int i=0; i<sample; ++i){
+   //printf("verify %3d -> %.16p\n",i,save[i]); // no compliant but works on OSX
+   //printf(" Result %d should be %d\n", (int)(word)m.find(save[i]), (int)word(i));
+   if (save[i]!=0) {
+     assert (mp.find (save[i]) == address(word(i)));
+   }
+  }
+  end =std::chrono::system_clock::now(); 
+  elapsed = std::chrono::duration_cast<std::chrono::microseconds> (end - start).count();
+  printf("STL Map Verify done, elapsed = %7.3f s, rate=%lld per ms\n",elapsed / 100000.0,sample * 1000 / elapsed);
+}
+
+int main() {
+  int sample = 1000000;
+  printf("Hello addrstore sample size=%d\n", sample);
+  address *save = (address*)malloc(sample * sizeof(address));
+
+  printf("RANDOM ALLOCATION\n");
+  // create data
+  auto start =std::chrono::system_clock::now(); 
+  for (int i=0; i<sample; ++i)
+  {
+    address r = randw();
+    //printf("%3d -> %.16p\n",i,r); // no compliant but works on OSX
+    save[i] = r;
+  }
+  auto end =std::chrono::system_clock::now(); 
+  auto elapsed = std::chrono::duration_cast<std::chrono::microseconds> (end - start).count();
+  printf("Samples done, elapsed = %7.3f s\n",elapsed / 100000.0);
+
+  check(sample, save);
+
+  printf("SEQUENTIAL ALLOCATION\n");
+  for (int i=0; i<sample; ++i)
+   save[i]= address (word (((i * 8) /8) * 8));
+
+  check(sample, save);
+
+  printf("Node population count\nNode32=%lld\nNode16=%lld\nNode5=%lld\nNode8=%lld\n",
+   nNode32, nNode16,nNode5,nNode8);
 }
