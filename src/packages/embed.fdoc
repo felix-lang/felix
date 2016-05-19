@@ -449,7 +449,17 @@ int flx_world::setup(int argc, char **argv) {
     fprintf(stderr, "[flx_world: setup] Created thread control object\n");
 
   // NB: !FLX_SUPPORT_ASYNC refers to async IO, hence ts still needed thanks to flx pthreads
-  collector = new flx::gc::collector::flx_ts_collector_t(allocator, thread_control);
+  FILE *tracefile = NULL;
+  {
+    char *tracecmd = getenv("FLX_TRACE_GC");
+    if(tracecmd && strlen(tracecmd)>0) {
+      tracefile = fopen(tracecmd,"w");
+      if(tracefile) 
+        fprintf(stderr, "GC tracing active, file = %s\n",tracecmd);
+    }
+  }
+
+  collector = new flx::gc::collector::flx_ts_collector_t(allocator, thread_control, tracefile);
   collector->set_debug(c->debug_collections);
   if(debug)
     fprintf(stderr, "[flx_world: setup] Created ts collector\n");

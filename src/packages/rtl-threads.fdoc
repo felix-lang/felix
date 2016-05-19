@@ -1659,7 +1659,7 @@ namespace collector {
 struct PTHREAD_EXTERN flx_ts_collector_t :
   public flx::gc::collector::flx_collector_t
 {
-  flx_ts_collector_t(allocator_t *, flx::pthread::thread_control_t *);
+  flx_ts_collector_t(allocator_t *, flx::pthread::thread_control_t *, FILE*);
   ~flx_ts_collector_t();
 
 private:
@@ -1696,8 +1696,8 @@ namespace flx {
 namespace gc {
 namespace collector {
 
-flx_ts_collector_t::flx_ts_collector_t(allocator_t *a, flx::pthread::thread_control_t *tc) :
-  flx_collector_t(a,tc)
+flx_ts_collector_t::flx_ts_collector_t(allocator_t *a, flx::pthread::thread_control_t *tc,FILE *tf) :
+  flx_collector_t(a,tc,tf)
 {}
 
 flx_ts_collector_t::~flx_ts_collector_t(){}

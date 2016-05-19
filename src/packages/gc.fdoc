@@ -801,7 +801,7 @@ struct GC_EXTERN tracing_allocator : public virtual allocator_t
 /// Naive Mark and Sweep Collector.
 struct GC_EXTERN flx_collector_t : public collector_t
 {
-  flx_collector_t(allocator_t *, flx::pthread::thread_control_base_t *);
+  flx_collector_t(allocator_t *, flx::pthread::thread_control_base_t *, FILE *tf);
   ~flx_collector_t();
 
   // RF: added to allow implementation of non-leaky drivers.
@@ -882,6 +882,7 @@ private:
   void *j_shape;
   void *j_nalloc;
   void *j_nused;
+  FILE *tracefile;
 public:
   void scan_object(void *memory, int reclimit);
   void *j_tmp;
@@ -892,6 +893,30 @@ public:
 #endif
 
 @h2 Collector Implementation
+Tracefile used for performance simulations on Judy
+alternatives. Tracefile codes:
+@pre
+Format: 
+
+opcode filecode: address-
+
+Op Codes
+
+G: Get
+F: First
+N: Next
+L: Last
+I: Insert
+D: Delete
+C: Delete whole array
+
+File codes:
+
+S: shape JudyL
+A: allocated JudyL
+U: used JudyL
+T: temporary Judy1
+
 @tangle flx_collector.cpp
 
 #include <cstdlib>
@@ -1017,7 +1042,11 @@ size_t flx_collector_t::impl_get_allocation_amt()const
 }
 
 
-flx_collector_t::flx_collector_t(allocator_t *a, pthread::thread_control_base_t *tc)
+flx_collector_t::flx_collector_t(
+  allocator_t *a, 
+  pthread::thread_control_base_t *tc,
+  FILE *tf
+)
   :
   allocation_count(0)
   ,root_count(0)
@@ -1029,7 +1058,11 @@ flx_collector_t::flx_collector_t(allocator_t *a, pthread::thread_control_base_t 
   ,j_nalloc(0)
   ,j_nused(0)
   ,j_tmp(0)
-{}
+  ,tracefile(tf)
+{
+  if(tf)
+    fprintf(stderr, "[flx_collector_t] Tracefile active\n");
+}
 
 flx::pthread::thread_control_base_t *flx_collector_t::get_thread_control()const
 {
@@ -1060,10 +1093,14 @@ void * flx_collector_t::impl_allocate(gc_shape_t *shape, size_t nobj)
       fp,shape->cname,shape->count,nobj,shape->allocations,shape->deallocations);
 
   Word_t *p = (Word_t*)(void*)JudyLIns(&j_shape,(Word_t)fp,&je);
+  if(tracefile) 
+     fprintf(tracefile,"IS: %p\n",fp);
   *p = ((Word_t)(void*)shape) | (parity & 1);
   if (nobj != (uintptr_t)1) // array
   {
     Word_t *p = (Word_t*)(void*)JudyLIns(&j_nalloc,(Word_t)fp,&je);
+    if(tracefile) 
+       fprintf(tracefile,"IA: %p\n",fp);
     *p = nobj;
   }
 
@@ -1087,11 +1124,15 @@ void flx_collector_t::set_used(void *memory, size_t n)
   assert(n<=get_count(memory));
   //fprintf(stderr,"Set used of %p to %zu\n",memory,n);
   Word_t *p = (Word_t*)(void*)JudyLGet(j_nused,(Word_t)memory,&je);
+  if(tracefile) 
+    fprintf(tracefile,"GU: %p\n",memory);
   if(p==(Word_t*)PPJERR)judyerror("set_used");
   if(p==NULL)
   {
     //fprintf(stderr,"set_used: No recorded usage! Creating store for data\n");
     p = (Word_t*)(void*)JudyLIns(&j_nused,(Word_t)memory,&je);
+    if(tracefile) 
+       fprintf(tracefile,"IU: %p\n",memory);
   }
   //fprintf(stderr,"Slot for %p usage is address %p\n",memory,p);
   *p = (Word_t)n;
@@ -1104,11 +1145,15 @@ void flx_collector_t::incr_used(void *memory, size_t n)
   //fprintf(stderr,"Incr used of %p by %zu\n",memory,n);
   assert(get_used(memory) + n <= get_count(memory));
   Word_t *p = (Word_t*)(void*)JudyLGet(j_nused,(Word_t)memory,&je);
+  if(tracefile) 
+    fprintf(tracefile,"GU: %p\n",memory);
   if(p==(Word_t*)PPJERR)judyerror("incr_used");
   if(p==NULL)
   {
     //fprintf(stderr,"incr_used: No recorded usage! Creating store for data\n");
     p = (Word_t*)(void*)JudyLIns(&j_nused,(Word_t)memory,&je);
+    if(tracefile) 
+      fprintf(tracefile,"IU: %p\n",memory);
     if(p==(Word_t*)PPJERR)judyerror("incr_used: new slot");
     *p = n+1;
   }
@@ -1121,6 +1166,8 @@ size_t flx_collector_t::get_used(void *memory)
   assert(memory);
   //fprintf(stderr, "Get used of %p\n",memory);
   Word_t *p = (Word_t*)(void*)JudyLGet(j_nused,(Word_t)memory,&je);
+  if(tracefile) 
+    fprintf(tracefile,"GU: %p\n",memory);
   if(p==(Word_t*)PPJERR)judyerror("get_used");
   //fprintf(stderr, "Used slot at address %p\n",p);
   size_t z = p!=NULL?*p:1; // defaults to 1 for non-array support
@@ -1134,6 +1181,8 @@ size_t flx_collector_t::get_count(void *memory)
   assert(memory);
   //fprintf(stderr, "Get count of %p\n",memory);
   Word_t *p = (Word_t*)(void*)JudyLGet(j_nalloc,(Word_t)memory,&je);
+  if(tracefile) 
+    fprintf(tracefile,"GA: %p\n",memory);
   if(p==(Word_t*)PPJERR)judyerror("get_count");
   //fprintf(stderr, "Count slot at address %p\n",p);
   size_t z = p!=NULL?*p:1; // defaults to 1 for non-array support
@@ -1147,6 +1196,8 @@ gc_shape_t *flx_collector_t::get_shape(void *memory)
   assert(memory);
   //fprintf(stderr, "Get shape of %p\n",memory);
   Word_t *pshape= (Word_t*)JudyLGet(j_shape,(Word_t)memory,&je);
+  if(tracefile) 
+    fprintf(tracefile,"GS: %p\n",memory);
   if(pshape==(Word_t*)PPJERR)judyerror("get_shape");
   if(pshape==NULL) abort();
   return (gc_shape_t *)(*pshape & (~(uintptr_t)1));
@@ -1216,12 +1267,20 @@ void flx_collector_t::unlink(void *fp)
   JudyLDel(&j_shape, (Word_t)fp, &je);
   JudyLDel(&j_nused, (Word_t)fp, &je);
   JudyLDel(&j_nalloc, (Word_t)fp, &je);
+  if(tracefile) {
+    fprintf(tracefile,"DS: %p\n",fp);
+    fprintf(tracefile,"DA: %p\n",fp);
+    fprintf(tracefile,"DU: %p\n",fp);
+  }
   //fprintf(stderr,"Finished unlinking\n");
 }
 
 void flx_collector_t::post_delete(void *fp)
 {
   Judy1Set(&j_tmp,(Word_t)fp,&je);
+  if(tracefile)
+    fprintf(tracefile,"IT: %p\n",fp);
+
 }
 
 void flx_collector_t::delete_frame(void *fp)
@@ -1234,12 +1293,18 @@ size_t flx_collector_t::reap ()
   size_t count = 0;
   Word_t next=(Word_t)NULL;
   int res = Judy1First(j_tmp,&next,&je);
+  if(tracefile)
+    fprintf(tracefile,"FT: %p\n",next);
   while(res) {
     delete_frame((void*)next);
     ++count;
     res = Judy1Next(j_tmp,&next,&je);
+    if(tracefile)
+      fprintf(tracefile,"NT: %p\n",next);
   }
   Judy1FreeArray(&j_tmp,&je);
+  if(tracefile)
+    fprintf(tracefile,"CT:\n");
   if(debug) 
   {
     fprintf(stderr,"[gc] Reaped %zu objects\n",count);
@@ -1361,11 +1426,17 @@ void flx_collector_t::mark(pthread::memory_ranges_t *px)
   // it returns 0 if there is no such key.
   Word_t toscan = 0;
   int res = Judy1First(j_tmp,&toscan,&je); // get one object scheduled for scanning
+  if(tracefile)
+    fprintf(tracefile,"FT: %p\n",toscan);
   while(res) {
     Judy1Unset(&j_tmp,toscan,&je);         // remove it immediately
+    if(tracefile)
+      fprintf(tracefile,"DT: %p\n",toscan);
     scan_object((void*)toscan, reclimit);  // scan it, it will either be marked or discarded
     toscan = 0;
     res = Judy1First(j_tmp,&toscan,&je); 
+    if(tracefile)
+      fprintf(tracefile,"FT: %p\n",toscan);
   }                                     
   assert(j_tmp == 0);                  
 
@@ -1382,6 +1453,8 @@ size_t flx_collector_t::sweep()
   size_t sweeped = 0;
   void *current = NULL;
   Word_t *pshape = (Word_t*)JudyLFirst(j_shape,(Word_t*)&current,&je); // GE
+  if(tracefile) 
+    fprintf(tracefile,"FS: %p\n",current);
   if(pshape==(Word_t*)PPJERR)judyerror("sweep");
 
   while(pshape!=NULL)
@@ -1423,6 +1496,8 @@ size_t flx_collector_t::sweep()
 
     //fprintf(stderr,"Calling Judy for next object\n");
     pshape = (Word_t*)JudyLNext(j_shape,(Word_t*)(void*)&current,&je); // GT
+    if(tracefile) 
+      fprintf(tracefile,"NS: %p\n",current);
     //fprintf(stderr,"Judy got next object %p\n",pshape);
   }
 
@@ -1495,7 +1570,12 @@ void flx_collector_t::impl_remove_root(void *memory)
 
 void flx_collector_t::register_pointer(void *q, int reclimit)
 {
-  if(reclimit==0)Judy1Set(&j_tmp,(Word_t)q,&je);
+  if(reclimit==0) 
+  {
+    Judy1Set(&j_tmp,(Word_t)q,&je);
+    if(tracefile)
+      fprintf(tracefile,"IT: %p\n",q);
+  }
   else scan_object(q, reclimit-1);
 }
 
@@ -1511,6 +1591,8 @@ void flx_collector_t::register_pointer(void *q, int reclimit)
   Word_t cand = (Word_t)p;
   Word_t head = cand;
   Word_t *ppshape = (Word_t*)JudyLLast(j_shape,&head, &je);
+  if(tracefile) 
+    fprintf(tracefile,"LS: %p\n",head);
   if(ppshape==(Word_t*)PPJERR)judyerror("get_pointer_data");
   if(ppshape == NULL) return pdat; // no lower object
   gc_shape_t *pshape = SHAPE(*ppshape);
@@ -1610,8 +1692,11 @@ again:
     {
       if(debug)
       //  fprintf(stderr, "Check if *%p=%p is a pointer\n",i,*(void**)i);
-      if(reclimit==0)
+      if(reclimit==0) {
         Judy1Set(&j_tmp,(Word_t)*i,&je);
+        if(tracefile)
+          fprintf(tracefile,"IT: %p\n",*i);
+      }
       else
         scan_object(*i,reclimit -1);
     }
@@ -1684,6 +1769,11 @@ void flx_collector_t::impl_free_all_mem()
 
 flx_collector_t::~flx_collector_t()
 {
+   if(tracefile) {
+     fclose(tracefile);
+     fprintf(stderr,"Closed FLX_TRACE_GC file\n");
+   }
+
   //THIS IS VERY DANGEROUS! What if don't want to collect
   //the garbage for efficiency reasons???
   //
