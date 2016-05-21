@@ -722,6 +722,7 @@ fun dflt_control () =>
     var STDGRAMMAR="";
     var STDIMPORT="plat/flx.flxh";
     var CMDLINE_INPUT=false;
+    var REPL_MODE=false;
     var AUTOMATON="";
     var IMPORTS=Empty[string];
     var USAGE = "production";
@@ -771,6 +772,7 @@ private proc print_help() {
   println "Usage: flx [options] filename[.flx] [args ..]";
   println "options:";
   println "--cmd=text           : save text to file 'cmd.flx' and process that";
+  println "--repl               : enter REPL mode saving stuff in session.flx and library.flx";
   println "--test               : use felix installation in current directory";
   println "--test=dir           : use felix installation in dir";
   println "--target=dir         : subdir of install dir containing target configuration (default 'host')";
@@ -960,6 +962,10 @@ private noinline proc handle_switch
       control.CMDLINE_INPUT <- true;  
       debugln("Running command '" + text + ";'"); 
     end
+  elif arg == "--repl" do
+    control.REPL_MODE <- true;
+      debugln("Set REPL mode");
+
   elif arg == "--nostdimport" do
     debugln "No standard library import";
     // Note: currently, Felix compiler generates code that REQUIRES
@@ -1422,7 +1428,7 @@ grabbing_args: while ploopctl*.grab == 1 and ploopctl*.argno < vargs.len.int do
     ploopctl.argno <- ploopctl*.argno + 1;
   done
 
-  if control*.CMDLINE_INPUT do
+  if control*.CMDLINE_INPUT or control*.REPL_MODE do
     handle_filename(ploopctl,config,control,"cmd.flx");
   done
    
@@ -2886,6 +2892,48 @@ include "std/felix/toolchain_interface";
 
 open FlxCache;
 
+fun startlib (x:string) =
+{
+   return x in RE2(" *(fun|proc|var|val|gen|union|struct|typedef).*\n");
+}
+
+// MOVE LATER!
+proc repl()
+{
+
+nextline:>
+  print "> "; fflush stdout;
+  var text = readln stdin;
+  if feof(stdin) return;
+
+  if startlib(text) goto morelibrary;
+  goto executable;
+
+morelibrary:>
+  print ".. "; fflush stdout;
+  var more = readln stdin;
+  if feof(stdin) return;
+
+  if more == "\n" goto saveit;
+  text += more;
+  goto morelibrary;
+
+saveit:>
+  var library = load("library.flx");
+  library += text;
+  save("library.flx",library);
+  goto nextline;
+
+executable:>
+   var session = load("session.flx");
+   session += text;
+   save ("session.flx", session);
+   library = load("library.flx");
+   var torun = library + text;
+   save ("cmd.flx", torun);
+}
+
+
 // Felix version of THIS program (NOT the one being installed
 // if you're using flx to install Felix)
 
@@ -2975,7 +3023,21 @@ class Flx
         done 
         println$ f"Batch result (%02d OK + %02d FAIL)/%2d" (pass, fail,n);
       end
-    else 
+    elif control*.REPL_MODE do
+      begin
+        again:>
+        repl();
+        if not feof (stdin) do
+          var dvars = FlxDepvars::cal_depvars(toolchain,*config,control, *loopctl);
+          var pe = processing_env(toolchain,*config,*control,dvars);
+          result = pe.runit();
+          goto again;
+        else
+          println$ "Bye!";
+          System::exit 0;
+        done
+      end
+    else
       begin
         if control*.SHOWCODE == 1 do
             var prg = 
