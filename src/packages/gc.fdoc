@@ -898,7 +898,7 @@ alternatives. Tracefile codes:
 @pre
 Format: 
 
-opcode filecode: address-
+opcode filecode: address
 
 Op Codes
 

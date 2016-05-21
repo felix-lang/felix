@@ -721,6 +721,7 @@ fun dflt_control () =>
     var GRAMMAR_DIR="";
     var STDGRAMMAR="";
     var STDIMPORT="plat/flx.flxh";
+    var CMDLINE_INPUT=false;
     var AUTOMATON="";
     var IMPORTS=Empty[string];
     var USAGE = "production";
@@ -769,6 +770,7 @@ class FlxCmdOpt
 private proc print_help() {
   println "Usage: flx [options] filename[.flx] [args ..]";
   println "options:";
+  println "--cmd=text           : save text to file 'cmd.flx' and process that";
   println "--test               : use felix installation in current directory";
   println "--test=dir           : use felix installation in dir";
   println "--target=dir         : subdir of install dir containing target configuration (default 'host')";
@@ -951,7 +953,14 @@ private noinline proc handle_switch
     if control*.DEBUG_FLX call fprintln (cstderr, "[flx] " + str x);
   }
 
-  if arg == "--nostdimport" do
+  if prefix(arg,"--cmd=") do
+    begin
+      var text = arg.[6 to];
+      save( "cmd.flx", text+";\n");
+      control.CMDLINE_INPUT <- true;  
+      debugln("Running command '" + text + ";'"); 
+    end
+  elif arg == "--nostdimport" do
     debugln "No standard library import";
     // Note: currently, Felix compiler generates code that REQUIRES
     // the standard library, eg the driver passes a gc_profile_t record
@@ -1286,6 +1295,45 @@ private noinline proc handle_switch
   done
 }
 
+
+private noinline proc handle_filename
+(
+  ploopctl:&FlxControl::loopctl_type,
+  config:&Config::config_type,
+  control:&FlxControl::control_type, 
+  arg:string
+)
+{
+  proc debugln[T with Str[T]] (x:T) {
+    if control*.DEBUG_FLX call fprintln (cstderr, "[flx] " + str x);
+  }
+
+  ploopctl.progname <- arg;
+  ploopctl*.path,ploopctl*.ext = Filename::split_extension(arg);
+  ploopctl*.dir,ploopctl*.base = Filename::split1(ploopctl*.path);
+
+  match check_ext $ Filename::get_extension arg with
+  | "compile" => 
+     control.cpps <- control*.cpps + arg;
+
+  | "link" =>
+     control.cppos <- control*.cppos + arg;
+
+  | "felix" => 
+    ploopctl.grab <- 0;
+
+  | "none" => 
+    ploopctl.grab <- 0;
+
+  | "unknown" =>
+    eprintln$ "Unknown file extension in " + arg;
+    System::exit 1;
+
+  | _ => assert false;
+  endmatch
+  ;
+}
+
 // --------------------------------------------------
 // String Utilities 
 // --------------------------------------------------
@@ -1326,77 +1374,58 @@ private noinline proc xparse_cmd_line
   var SET_LINKER_OUTPUT_DIRECTORY = false;
 
 grabbing_args: while ploopctl*.grab == 1 and ploopctl*.argno < vargs.len.int do
-  var arg = vargs . (ploopctl*.argno);
-  debugln$ "ARGNO="+str(ploopctl*.argno)+", arg='"+arg+"'";
+    var arg = vargs . (ploopctl*.argno);
+    debugln$ "ARGNO="+str(ploopctl*.argno)+", arg='"+arg+"'";
 
-  if SET_LINKER_OUTPUT do
-     control.LINKER_OUTPUT_FILENAME <- arg;
-     debugln$ "Set linker output file=" + control*.LINKER_OUTPUT_FILENAME;
-     SET_LINKER_OUTPUT = false;
-     control.OUTPUT_FILENAME_SPECIFIED <- 1;
+    if SET_LINKER_OUTPUT do
+       control.LINKER_OUTPUT_FILENAME <- arg;
+       debugln$ "Set linker output file=" + control*.LINKER_OUTPUT_FILENAME;
+       SET_LINKER_OUTPUT = false;
+       control.OUTPUT_FILENAME_SPECIFIED <- 1;
 
-  elif SET_LINKER_OUTPUT_WITHOUT_EXTENSION do
-     control.LINKER_OUTPUT_FILENAME <- arg;
-     debugln$ "Set linker output file=" + control*.LINKER_OUTPUT_FILENAME;
-     SET_LINKER_OUTPUT_WITHOUT_EXTENSION = false;
-     control.OUTPUT_FILENAME_WITHOUT_EXTENSION_SPECIFIED <- 1;
+    elif SET_LINKER_OUTPUT_WITHOUT_EXTENSION do
+       control.LINKER_OUTPUT_FILENAME <- arg;
+       debugln$ "Set linker output file=" + control*.LINKER_OUTPUT_FILENAME;
+       SET_LINKER_OUTPUT_WITHOUT_EXTENSION = false;
+       control.OUTPUT_FILENAME_WITHOUT_EXTENSION_SPECIFIED <- 1;
 
-  elif SET_LINKER_OUTPUT_DIRECTORY do
-     control.LINKER_OUTPUT_FILENAME <- arg;
-     debugln$ "Set linker output directory =" + control*.LINKER_OUTPUT_FILENAME;
-     SET_LINKER_OUTPUT_DIRECTORY= false;
-     control.OUTPUT_DIRECTORY_SPECIFIED <- 1;
-
-
-  elif arg == "-o" do
-    debugln "Set linker output name (next arg)";
-    SET_LINKER_OUTPUT=true;
-
-  elif arg == "-ox" do
-    debugln "Set linker output name (without extension) (next arg) ";
-    SET_LINKER_OUTPUT_WITHOUT_EXTENSION=true;
-
-  elif arg == "-od" do
-    debugln "Set linker output directory (next arg) ";
-    SET_LINKER_OUTPUT_DIRECTORY=true;
+    elif SET_LINKER_OUTPUT_DIRECTORY do
+       control.LINKER_OUTPUT_FILENAME <- arg;
+       debugln$ "Set linker output directory =" + control*.LINKER_OUTPUT_FILENAME;
+       SET_LINKER_OUTPUT_DIRECTORY= false;
+       control.OUTPUT_DIRECTORY_SPECIFIED <- 1;
 
 
-  elif arg == "--" do
-    ploopctl.grab <- 0;
+    elif arg == "-o" do
+      debugln "Set linker output name (next arg)";
+      SET_LINKER_OUTPUT=true;
 
-  elif not (prefix (arg,"-")) do
-    ploopctl.progname <- arg;
-    ploopctl*.path,ploopctl*.ext = Filename::split_extension(arg);
-    ploopctl*.dir,ploopctl*.base = Filename::split1(ploopctl*.path);
+    elif arg == "-ox" do
+      debugln "Set linker output name (without extension) (next arg) ";
+      SET_LINKER_OUTPUT_WITHOUT_EXTENSION=true;
 
-    match check_ext $ Filename::get_extension arg with
-    | "compile" => 
-       control.cpps <- control*.cpps + arg;
+    elif arg == "-od" do
+      debugln "Set linker output directory (next arg) ";
+      SET_LINKER_OUTPUT_DIRECTORY=true;
 
-    | "link" =>
-       control.cppos <- control*.cppos + arg;
 
-    | "felix" => 
+    elif arg == "--" do
       ploopctl.grab <- 0;
 
-    | "none" => 
-      ploopctl.grab <- 0;
+    elif not (prefix (arg,"-")) do
+      handle_filename(ploopctl,config,control,arg);
 
-    | "unknown" =>
-      eprintln$ "Unknown file extension in " + arg;
-      System::exit 1;
+    else
+      handle_switch(config,control,arg);
 
-    | _ => assert false;
-    endmatch
-    ;
-
-  else
-  handle_switch(config,control,arg);
-
+    done
+    ploopctl.argno <- ploopctl*.argno + 1;
   done
-  ploopctl.argno <- ploopctl*.argno + 1;
-done
- 
+
+  if control*.CMDLINE_INPUT do
+    handle_filename(ploopctl,config,control,"cmd.flx");
+  done
+   
 }
 
 noinline proc processing_stage1
@@ -2877,7 +2906,11 @@ class Flx
     if control*.VALIDATE_CACHE == 1 do
       check_cache(config, control);
     done
-    if loopctl*.base == "" and control*.INREGEX == "" do
+    if 
+      loopctl*.base == "" and 
+      control*.INREGEX == "" 
+      and not control*.CMDLINE_INPUT 
+    do
       if control*.CLEAR_CACHE != 1 do
         println "usage: flx [options] filename";
         System::exit(1);
