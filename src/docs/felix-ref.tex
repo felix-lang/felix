@@ -2361,13 +2361,108 @@ and is limited to a simple identifier.
 \href{http://felix-lang.org/share/lib/grammar/type_decls.fsyn}{Syntax}
 
 \section{typedef}
-The typedef statement is used to define an alias for a type.
+The plain \verb%typedef% statement is used to define an alias for a type.
 It does not create a new type.
+
+\subsection{Basic typedef}
 
 \begin{minted}{felix}
 typedef Int = int;
 \end{minted}
 
+\subsection{Polymorphic typedef}
+Typedef can also be polymorphic:
+
+\begin{minted}{felix}
+typedef Cplx[T] = {x:T,y:T};
+\end{minted}
+
+\subsection{typeset typedef}
+Typedef can also be used to create a typeset:
+
+\begin{minted}{felix}
+typedef Integers = typesetof (short, int, long, vlong);
+\end{minted}
+
+See also \fullref{Integer Typesets}, \fullref{Typeset membership constraints}.
+
+\subsection{basic type functions (functors)}
+Typeset can also be used to create a type functions, or {\em functors}.
+A basic definition is like this:
+
+\begin{minted}{felix}
+typedef fun pair0 (T:TYPE, U:TYPE) : TYPE => T * U;
+
+var x0 : pair0 (int, long) = 1,2L;
+println$ x0;
+\end{minted}
+
+The kind \verb%TYPE% is the meta-type or kind of all types.
+The return kind must be specified for functors.
+
+\subsection{type functions with typematch}
+A more sophisticated defintion allows a typematch:
+
+\begin{minted}{felix}
+typedef fun pair1: TYPE * TYPE -> TYPE =
+| int,_ => int
+| _,int => int
+| ?T, ?U => T * U
+;
+
+var x1a : pair1 (int,double) = 1;
+var x1b : pair1 (long, double) = 1L,2.0;
+println$ x1a,x1b;
+\end{minted}
+
+See also \fullref{typematch}.
+
+\subsection{Higher order functors}
+You can also have curried type functions:
+
+\begin{minted}{felix}
+typedef fun pair2 (T:TYPE) (U:TYPE) : TYPE => T * U;
+
+var x1 : pair2 int long = 1,2L;
+println$ x1;
+
+typedef pair3[T] = pair2 int T;
+var x3 : pair3 [double] = 1,2.0;
+
+println$ x3;
+\end{minted}
+
+Type functions can be overloaded just like ordinary functions.
+
+\subsection{Functors in classes}
+Note carefully there is a difference between an {\em indexed type}
+and a {\em type function}. In the above example, \verb%pair3%
+is not a functor, its an indexed type. Functors can be passed 
+to type classes, for example:
+
+\begin{minted}{felix}
+class Monad [M: TYPE->TYPE] {
+  virtual fun bind[a,b]: M a * (a -> M b) -> M b;
+  virtual fun ret[a]: a -> M a;
+}
+
+typedef fun Maybe (t:TYPE):TYPE=>opt[t];
+
+instance Monad [Maybe] {
+  fun bind[a,b] (x:Maybe a, f:a -> Maybe b) =>
+    match x with
+    | #None[a] => None[b]
+    | Some x => f x
+    endmatch
+  ;
+
+  fun ret[a](x:a):Maybe a => Some x;
+}
+\end{minted}
+
+The \verb%M% above accepts a functor, \verb%Maybe% in the instance.
+We can't use \verb%opt% directly because it is an indexed type,
+not a functor.
 
 \section{Tuples}
 Tuple types are well known: a tuple is just a Cartesian Product
@@ -2379,18 +2474,20 @@ constructor is infix \verb%,%:
 val tup : int * string * double = 1, "Hello", 4.2;
 \end{minted}
 
+\subsection{Unit Tuple}
 The 0-ary tuple type is denoted \verb%1% or \verb%unit%
 with sole value \verb%()%:
-
 
 \begin{minted}{felix}
 val u : unit = ();
 \end{minted}
 
 
+\subsection{No 1-ary Tuple}
 The 1-ary tuple of type \verb%T% component value \verb%v% is identified
 with the type \verb%T% and has value \verb%v%.
 
+\subsection{Projections}
 The individual components of a tuple may be accessed by a projection
 function. Felix uses an integer literal to denote this function.
 
@@ -2399,10 +2496,6 @@ var x = 1,"Hello";
 assert 0 x == 1; assert x.0 == 1;
 assert 1 x == "Hello"; assert x.1 == "Hello";
 \end{minted}
-
-
-[There should be a way to name this function without application to
-a tuple!]
 
 A pointer to a tuple is also in itself a tuple, namely the
 tuple of pointers to the individual components. This means
@@ -2435,10 +2528,9 @@ Assignment to components of tuples stored in variables is supported
 but only to one level, for general access you must take a pointer
 and use the store-at-address operator \verb%<-%.
 
-\subsection{Tuple projections}
+\subsection{Standalone Tuple projections}
 The projections of a tuple can also be written in an expanded form
 so that they may stand alone as functions:
-
 
 \begin{minted}{felix}
 var first = proj 0 of (int * string);
@@ -2446,6 +2538,68 @@ var a = 1, "Hello";
 var one = a . first; 
 var two = a . proj 1 of (int * string);
 \end{minted}
+
+\subsection{Alternate Tuple Representation}
+Felix provides a second representation of tuples.\
+Given a tuple of at least two components, another
+value may be prefixed to the head of the tuple
+with the \verb%,,% operator:
+
+\begin{minted}{felix}
+var tail = 1,2L; // binary tuple
+var triple = "head",,tail; // ternary tuple
+assert triple == "head",1,2L;
+\end{minted}
+
+Similarly, given a tuple type of at least two components,
+another type may be prefixed to the head of the type
+with the \verb%**% combinator:
+
+\begin{minted}{felix}
+typedef pair = int * long;
+typedef triple = string ** pair;
+// same type as string * int * long
+\end{minted}
+
+\subsection{Pattern matching tuples}
+The real value of the alternate notation lies in pattern matching.
+For example:
+
+\begin{minted}{felix}
+match "head",1,2L with
+| head,,tail =>  println$ tail;
+endmatch;
+\end{minted}
+
+The real power comes with classes:
+
+\begin{minted}{felix}
+instance [T,U with Eq[T], Eq[U]] Eq[T ** U] {
+  fun == : (T ** U) * (T ** U) -> bool =
+  | (ah ,, at) , (bh ,, bt) => ah == bh and at == bt;
+  ;
+}
+
+instance[t,u with Eq[t],Eq[u]] Eq[t*u] {
+  fun == : (t * u) * (t * u) -> bool =
+  | (x1,y1),(x2,y2) => x1==x2 and y1 == y2
+  ;
+}
+
+instance[t with Eq[t]] Eq[t*t] {
+  fun == : (t * t) * (t * t) -> bool =
+  | (x1,y1),(x2,y2) => x1==x2 and y1 == y2
+  ;
+}
+\end{minted}
+
+This mechanism allows recursive processing of heterogenous lists,
+that is, tuples. In the example we compute equality.
+The first instance provides heterogenous list recursion, 
+the second case terminates the recursion. The third case
+is also a terminal which allows the recursion to work
+for arrays as well. Without this the library array recursion
+would be more specialised.
 
 
 \section{Records}
@@ -2968,6 +3122,7 @@ Applications of type functions must be resolved during binding, since
 the result may influence overloading.
 
 \section{typematch}
+\label{typematch}
 Felix has a facility to inspect and decode types at compile time.
 
 \begin{minted}{felix}
@@ -3054,6 +3209,7 @@ functions and this is done by a process similar to that used for
 overload resolution. 
 
 \subsection{Typeset membership constraints}
+\label{Typeset membership constraints}
 Typesets were introduced to Felix to simplify bindings to C functions.
 For example:
 

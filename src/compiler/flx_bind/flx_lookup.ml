@@ -4008,6 +4008,22 @@ print_endline "Binding tuple tail";
 print_endline ("Bound tuple tail " ^ sbe bsym_table x ^ " has type " ^ sbt bsym_table t);
 *)
       x
+    | BTYP_array (at,BTYP_unitsum n) ->
+      if n>20 then begin
+        print_endline ("Array type " ^ sbt bsym_table t' ^ " size " ^ string_of_int n ^ 
+          " too long to get tuple tail"); 
+        assert false
+      end else begin
+        let ts' = repeat at (n-1) in
+        let counter = ref 0 in
+        let es' = List.map (fun t-> 
+          incr counter; 
+          bexpr_get_n t (!counter) x'
+        ) ts'
+      in 
+      let _,t as x = bexpr_tuple (btyp_tuple ts') es' in
+      x
+      end
 
     | BTYP_tuple_cons (t1,t2) -> 
       let _,t as x = bexpr_tuple_tail t2 x' in
@@ -4035,6 +4051,13 @@ print_endline ("Bound tuple tail " ^ sbe bsym_table x ^ " has type " ^ sbt bsym_
 print_endline ("Bound tuple head " ^ sbe bsym_table x ^ " has type " ^ sbt bsym_table t);
 *)
       x
+
+    | BTYP_array (at,BTYP_unitsum n) ->
+      let _,t as x  = 
+        bexpr_get_n at 0 x'  
+      in
+      x
+
 
     | BTYP_tuple_cons (t1,t2) -> 
       let _,t as x = bexpr_tuple_head t1 x' in
