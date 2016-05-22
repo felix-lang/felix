@@ -3054,6 +3054,9 @@ and lookup_name_with_sig
 *)
  let projection = 
    match t2 with
+   | [BTYP_tuple_cons (h,t)] -> 
+     print_endline ("projection of tuple cons not implemented yet"); assert false
+
    | [BTYP_inst (j,ts') as d] ->
      let bsym = try Some (Flx_bsym_table.find bsym_table j) with Not_found -> None in
      begin match bsym with
@@ -4966,25 +4969,7 @@ print_endline ("Added overload of __eq to lookup table!");
       (* ---------------------------------------------------------- *)
       try match f' with
       | EXPR_name (_,"\\prod",[]) ->
-        begin match ta with
-        | BTYP_tuple ts ->
-          let ds = ref [] and cs = ref [] in 
-          List.iter 
-            (fun t -> match t with 
-            | BTYP_function (d,c) -> 
-              ds := d:: !ds; cs := c :: !cs
-            | _ -> raise Flx_dot.OverloadResolutionError
-            )
-            ts
-          ;
-          let t = btyp_function (btyp_tuple (List.rev (!ds)), btyp_tuple (List.rev (!cs))) in
-          bexpr_funprod t a
-        | BTYP_array (BTYP_function (d,c),BTYP_unitsum n) ->
-          let t = btyp_function (btyp_array (d,btyp_unitsum n), btyp_array (c,btyp_unitsum n)) in
-          bexpr_funprod t a
-        | _ -> raise Flx_dot.OverloadResolutionError
-        end
-
+        Flx_bind_prod.try_bind_prod bsym_table state.counter a
       | _ ->  raise Flx_dot.OverloadResolutionError
       with Flx_dot.OverloadResolutionError ->
 
@@ -4993,25 +4978,7 @@ print_endline ("Added overload of __eq to lookup table!");
       (* ---------------------------------------------------------- *)
       try match f' with
       | EXPR_name (_,"\\sum",[]) ->
-        begin match ta with
-        | BTYP_tuple ts ->
-          let ds = ref [] and cs = ref [] in 
-          List.iter 
-            (fun t -> match t with 
-            | BTYP_function (d,c) -> 
-              ds := d:: !ds; cs := c :: !cs
-            | _ -> raise Flx_dot.OverloadResolutionError
-            )
-            ts
-          ;
-          let t = btyp_function (btyp_sum (List.rev (!ds)), btyp_sum (List.rev (!cs))) in
-          bexpr_funsum t a
-        | BTYP_array (BTYP_function (d,c),BTYP_unitsum n) ->
-          let t = btyp_function (btyp_sum (Flx_list.repeat d n), btyp_sum (Flx_list.repeat c n)) in
-          bexpr_funsum t a
-        | _ -> raise Flx_dot.OverloadResolutionError
-        end
-
+        Flx_bind_sum.try_bind_sum bsym_table state.counter a
       | _ ->  raise Flx_dot.OverloadResolutionError
       with Flx_dot.OverloadResolutionError ->
 
@@ -5020,37 +4987,7 @@ print_endline ("Added overload of __eq to lookup table!");
       (* ---------------------------------------------------------- *)
       try match f' with
       | EXPR_name (_,"lrangle",[]) ->
-        begin match ta with
-        | BTYP_tuple ts ->
-          let dt = ref None and cs = ref [] in 
-          List.iter 
-            (fun t -> match t with 
-            | BTYP_function (d,c) -> 
-              begin match !dt with
-              | None -> dt := Some d
-              | Some t when Flx_unify.type_eq bsym_table state.counter d t -> ()
-              | _ -> raise Flx_dot.OverloadResolutionError
-              end
-              ;
-              cs := c :: !cs
-            | _ -> raise Flx_dot.OverloadResolutionError
-            )
-            ts
-          ;
-          let t = match !dt with 
-            | Some d -> 
-              btyp_function (d, btyp_tuple (List.rev (!cs))) 
-            | None -> (* dunno what to do with empty case *)
-              raise Flx_dot.OverloadResolutionError  
-          in
-          bexpr_lrangle t a
-
-        | BTYP_array (BTYP_function (d,c),BTYP_unitsum n) ->
-          let t = btyp_function (d, btyp_array (c,btyp_unitsum n)) in
-          bexpr_lrangle t a
-        | _ -> raise Flx_dot.OverloadResolutionError
-        end
-
+        Flx_bind_lrangle.try_bind_lrangle bsym_table state.counter a
       | _ ->  raise Flx_dot.OverloadResolutionError
       with Flx_dot.OverloadResolutionError ->
 
@@ -5059,50 +4996,24 @@ print_endline ("Added overload of __eq to lookup table!");
       (* ---------------------------------------------------------- *)
       try match f' with
       | EXPR_name (_,"lrbrack",[]) ->
-        begin match ta with
-        | BTYP_tuple ts ->
-          let ct = ref None and ds = ref [] in 
-          List.iter 
-            (fun t -> match t with 
-            | BTYP_function (d,c) -> 
-              begin match !ct with
-              | None -> ct := Some c
-              | Some t when Flx_unify.type_eq bsym_table state.counter c t -> ()
-              | _ -> raise Flx_dot.OverloadResolutionError
-              end
-              ;
-              ds := d :: !ds
-            | _ -> raise Flx_dot.OverloadResolutionError
-            )
-            ts
-          ;
-          let t = match !ct with 
-            | Some c -> 
-              btyp_function (btyp_sum (List.rev (!ds)), c) 
-            | None -> (* dunno what to do with empty case *)
-              raise Flx_dot.OverloadResolutionError  
-          in
-          bexpr_lrbrack t a
-
-        | BTYP_array (BTYP_function (d,c),BTYP_unitsum n) ->
-          let ds = Flx_list.repeat d n in
-          let t = btyp_function (btyp_sum ds, c) in
-          bexpr_lrbrack t a
-        | _ -> raise Flx_dot.OverloadResolutionError
-        end
-
+        Flx_bind_lrbrack.try_bind_lrbrack bsym_table state.counter a
       | _ ->  raise Flx_dot.OverloadResolutionError
       with Flx_dot.OverloadResolutionError ->
 
-    try
       (* This really have to be the library "int" cause we're comparing a user int literal *)
       let int_t = bt sr (TYP_name (sr,"int",[])) in
-      match f' with
+      
+      (* ---------------------------------------------------------- *)
+      (* special case, constant tuple projection  *) 
+      (* ---------------------------------------------------------- *)
+      try match f' with
       | EXPR_literal (_, {Flx_literal.felix_type="int"; internal_value=s}) ->
         let n = int_of_string s in
         Flx_dot.handle_constant_projection bsym_table sr a ta n
-      | _ ->
-        try 
+      | _ -> raise Flx_dot.OverloadResolutionError
+      with Flx_dot.OverloadResolutionError ->
+
+      try 
           let f = try be f' with _ -> raise Flx_dot.OverloadResolutionError in
           if snd f = int_t then 
           begin
@@ -5112,8 +5023,10 @@ print_endline ("Added overload of __eq to lookup table!");
             | _ -> raise Flx_dot.OverloadResolutionError
           end
           else raise Flx_dot.OverloadResolutionError
-        with 
-      | Flx_dot.OverloadResolutionError ->  
+      with Flx_dot.OverloadResolutionError ->  
+      
+
+      try
       match f' with
 
       (* a dirty hack .. doesn't check unitsum is right size or type *)
