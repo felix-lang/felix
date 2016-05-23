@@ -109,6 +109,7 @@ let cal_call state bsym_table sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
       )
     else
     begin
+print_endline "Cal call, types don't match ..";
       let reorder =
         match be1 with
         | BEXPR_closure (i,ts) ->

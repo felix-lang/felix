@@ -203,7 +203,8 @@ let btyp_inst (bid, ts) =
   BTYP_inst (bid, ts)
 
 (** Construct a BTYP_tuple type. *)
-let btyp_tuple = function
+let btyp_tuple ts = 
+  match ts with
   | [] -> BTYP_tuple []
   | [t] -> t
   | (head :: tail) as ts ->
@@ -214,7 +215,10 @@ let btyp_tuple = function
       with Not_found ->
         BTYP_tuple ts
 
-let btyp_tuple_cons t ts = BTYP_tuple_cons (t,ts)
+let btyp_tuple_cons head tail = 
+  match tail with
+  | BTYP_tuple ts -> btyp_tuple (head::ts)
+  | _ -> BTYP_tuple_cons (head,tail)
 
 (** Construct a BTYP_array type. *)
 let btyp_array (t, n) =

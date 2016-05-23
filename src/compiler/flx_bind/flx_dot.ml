@@ -113,6 +113,24 @@ let handle_constant_projection bsym_table sr a ta n =
     else
      bexpr_get_n (List.nth ls n) n a
 
+  | BTYP_tuple_cons (head,tail) ->
+    let rec cal_prj head tail i =
+    if i == 0 then
+      bexpr_get_n head n a
+    else  match tail with
+    | BTYP_tuple_cons (h,t) ->
+      cal_prj h t (i-1)
+
+    | BTYP_tuple (h::ts) ->
+      cal_prj h (btyp_tuple ts) (i-1)
+    | _ ->
+      clierr sr ("AST_dot, tuple index "^ string_of_int n ^ 
+      " out of range for type " ^ sbt bsym_table ta
+      )
+    in 
+    cal_prj head tail n 
+
+
   | BTYP_array (t,BTYP_unitsum m) ->
     if n < 0 || n >= m then
       clierr sr ("AST_dot, constant array index "^ string_of_int n ^ 
