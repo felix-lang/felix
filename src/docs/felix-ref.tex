@@ -2685,7 +2685,10 @@ println$ r2._strr,r2,x;
   // ((a='one',b='two',x='newx',x=1,y=2), newx)
 \end{minted}
 
-Again, leftmost fields hide rightmost ones. You can also add two 
+Again, leftmost fields hide rightmost ones. 
+
+\subsection{Adding records}
+You can also add two 
 records with infix \verb%+%:
 
 \begin{minted}{felix}
@@ -2719,7 +2722,10 @@ are not lost and can be returned by the function. For example:
 val circle = (x=0.0,y=0.0,r=1.0);
 val square = (x=0.0,y=0.0,w=1.0,h=1.0);
 
-fun move[T] (dx:double, dy:double) (shape: (x:double, y:double | T)) =>
+fun move[T] 
+  (dx:double, dy:double) 
+  (shape: (x:double, y:double | T)) 
+=>
   (x=shape.x+dx, y=shape.y+dx | (shape without x y))
 ;
 
@@ -2752,7 +2758,7 @@ typedef fred = (f: int -> int, g: int -> 0);
 \end{minted}
 
 The primary use is for specifying the type of a Java like
-object.
+objects. See \fullref{Dynamic Objects}
 
 \section{Structs}
 A struct is a a nominally typed record, that is, it must be defined,
@@ -2760,22 +2766,69 @@ and each definition specifies a distinct type.
 
 \begin{minted}{felix}
 struct S { x:int; y:int; };
-var s : S = S (1,2);
-println$ s.x,s.y;
+var s1 : S = S (1,2);
+var s2 : S = S (y=42,x=32);
+println$ s1.x,s1.y,s2.x,s2.y;
 \end{minted}
 
+\subsection{Alternate Definition Syntax}
+As a special case, a \verb%struct% can be defined
+with the field type before the field name:
+
+\begin{minted}{felix}
+struct S { int x; int y; };
+\end{minted}
+
+Furthermore there is a special syntax:
+
+\begin{minted}{felix}
+typedef struct {
+  int x;
+  int y;
+} S;
+\end{minted}
+
+for defining structs. The purpose of this syntax is to allow
+a C struct to be copied directly into Felix code with
+minimal editing. Note the above form does {\em not} define
+an alias, it defines a struct called \verb%S%.
+
+\subsection{Struct constructor}
 A struct value can be constructued using the structure name as a function
 and passing a tuple of values corresponding by position to the fields
-of the struct.
+of the struct, as shown above. A record with matching fields can also be used.
+Of course in both cases the types must also agree.
 
+\subsection{Constructor as function}
 A struct constructor can be used a first class function.
+In this case the argument type is a tuple, not a record.
 
+\begin{minted}{felix}
+struct S { x:int; y:int; };
+
+proc p (factory: int * int -> S) {
+  var a = factory (1,2);
+  println$ a.x,a.y;
+}
+p S;
+\end{minted}
+
+\subsection{Projections}
 The field names are projection functions and can be applied
-to a struct value to extract the nominated component,
-or applied to a pointer to a struct to find a pointer to the
+to a struct value to extract the nominated component.
+
+They can also be applied to a pointer to a struct to find a pointer to the
 nominated component.
 
-The notation (may be changed soon)
+\begin{minted}{felix}
+struct S {x:int, y:int; };
+var a = S (1,2);
+var px = &a.x;
+px <- 11;
+&a.y <- 22;
+\end{minted}
+
+Projections can be used as first class functions with the notation:
 
 \begin{minted}{felix}
 var prjx = x of (S);
@@ -2785,6 +2838,7 @@ var prjpx = x of (&S);
 can be used to refer to a projection in isolation, and a pointer
 projection in isolation, that is, as unapplied first class functions.
 
+\subsection{Nested methods}
 A struct may also contain function and procedure definitions:
 
 \begin{minted}{felix}
@@ -2804,9 +2858,10 @@ fun get2x (self:A) => 2 * self.x;
 proc diag (self: &A) (d:int) { self.x <-d; self.y <-d; }
 \end{minted}
 
-Note that for a function \verb%self} is a value, for a procedure @{self%
-is a pointer.
+Note that for a function \verb%self% is a value, 
+for a procedure \verb%self% is a pointer.
 
+\subsection{Method closures}
 Because of these definitions, we can form object closures over a struct:
 
 \begin{minted}{felix}
@@ -2820,8 +2875,42 @@ i.e. eta-expansion.
 
 \section{Sums}
 Sum types are the dual of tuples. They represent a sequence
-of possible cases, potentially with arguments. Case indicies
-are 0 origin. Sum variables are decode with a match which
+of possible cases, potentially with arguments.  For example
+the sum type:
+
+\subsection{Sum type}
+\begin{minted}{felix}
+typedef num = int + long + double;
+  // dual to int * long * double
+\end{minted}
+
+represents three cases and is dual to the tuple type shown.
+
+\subsection{Sum values}
+The value of a sum represents one of the cases 
+of the type.  Case indicies are 0 origin as with tuples. 
+
+\begin{minted}{felix}
+typedef num = int + long + double;
+var c0 = (case 0 of num) 42;
+var c1 = (case 1 of num) 53L;
+var c2 = (case 2 of num) 66.0;
+\end{minted}
+
+The parenthesised expressions above are called 
+{\em type constructors}.
+
+\subsection{{\tt caseno} operator}
+The case number of a sum value can be extracted
+as an \verb%int%:
+
+\begin{minted}{felix}
+println$ caseno c0, caseno c1, caseno c2;
+  // 0,1,2
+\end{minted}
+
+\subsection{Switching on cases}
+Sum variables are decoded with a match which
 may also extract an argument value:
 
 \begin{minted}{felix}
@@ -2836,6 +2925,45 @@ println$
 ;
 \end{minted}
 
+The match tags do not include the type of the sum, since
+it is known from the argument.
+
+\subsection{Unit arguments}
+A sum component may have a unit argument.
+
+\begin{minted}{felix}
+typedef maybe_int = 1 + int;
+var x = case 0 of maybe_int;
+match x with
+| case 0 () => println$ "Nothing";
+| case 1 i => println$ "Integer " + i.str;
+endmatch;
+\end{minted}
+
+For the first case the \verb%()% may be omitted:
+
+\begin{minted}{felix}
+typedef maybe_int = 1 + int;
+var x = case 0 of maybe_int;
+match x with
+| case 0 => println$ "Nothing";
+| case 1 i => println$ "Integer " + i.str;
+endmatch;
+\end{minted}
+
+or the unit application syntax can be used:
+
+\begin{minted}{felix}
+typedef maybe_int = 1 + int;
+var x = case 0 of maybe_int;
+match x with
+| #case 0 => println$ "Nothing";
+| case 1 i => println$ "Integer " + i.str;
+endmatch;
+\end{minted}
+
+If the argument is a unit, the constructor is 
+sometimes called a {\em constant constructor}.
 
 \subsection{Unit sum}
 There is a family of special sum types equivalent to:
@@ -2846,14 +2974,16 @@ There is a family of special sum types equivalent to:
   4 = 1 + 1 + 1
 \end{minted}
 
-Recall type 1, or unit, is the type of the empty tuple.
-The type 2 is also known as bool, and represents two cases
-where \verb%false} is an alias for @{case 0 of 2} and @{true%
+Recall type 1, or \verb%unit%, is the type of the empty tuple.
+
+The type 2 is also known as \verb%bool%, and represents two cases
+where \verb%false% is an alias for \verb%case 0 of 2% and 
+\verb%true%
 is an alias for \verb%case 1 of 2%.
 
-The type 0 or void, is the type of no values.
+The type 0 or \verb%void%, is the type of no values.
 
-These types are called unit sums because they're a sum
+These types are called {\em unit sums} because they're a sum
 of a certain number of units.
 
 Note carefully that:
@@ -3764,7 +3894,8 @@ var x = "hello " "world"; // apply a string to a string
 \end{minted}
 
 
-\section{Objects}
+\section{Dynanic Objects}
+\label{Dynamic Objects}
 Felix provides an object system with syntax based on Java,
 and technology based on CLOS.
 
