@@ -355,6 +355,16 @@ and xpattern_t x =
       in
       PAT_record (xsr sr, ips)
 
+  | Lst [Id "pat_polyrecord"; sr; Lst ips; r] ->
+      let ips =
+        List.map begin function
+          | Lst [id; p] -> xid id, xp p
+          | x -> err x "pat_record syntax"
+        end ips
+      in
+      PAT_polyrecord (xsr sr, ips, xid r)
+
+
   | x ->
     err x "pattern"
 

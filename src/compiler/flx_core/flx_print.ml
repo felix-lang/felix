@@ -833,6 +833,9 @@ and string_of_pattern p =
   | PAT_record (_,ps) ->
      "( " ^ catmap ", " (fun (s,p) ->
        string_of_id s ^ "=" ^ string_of_pattern p) ps ^ ")"
+  | PAT_polyrecord (_,ps,r) ->
+     "( " ^ catmap ", " (fun (s,p) ->
+       string_of_id s ^ "=" ^ string_of_pattern p) ps ^ " | " ^r^")"
   | PAT_expr (_,e) -> "$(" ^ string_of_expr e ^ ")"
 
 

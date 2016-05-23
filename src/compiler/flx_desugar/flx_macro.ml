@@ -150,6 +150,7 @@ let fix_pattern counter pat =
   | PAT_as (sr,p,i) -> PAT_as (sr,aux p,i)
   | PAT_when (sr,p,e) -> PAT_when (sr,aux p,e)
   | PAT_record (sr, ps) -> PAT_record (sr, List.map (fun (i,p) -> i,aux p) ps)
+  | PAT_polyrecord (sr, ps,r) -> PAT_polyrecord (sr, List.map (fun (i,p) -> i,aux p) ps, r)
 
   | PAT_expr (sr,e) -> 
     let n = "_sypv_" ^ (string_of_int !counter) in 
@@ -173,6 +174,7 @@ let rec get_pattern_vars pat =
   | PAT_tuple (_,ps) -> List.concat (List.map get_pattern_vars ps)
   | PAT_tuple_cons (sr,a,b) -> get_pattern_vars a @ get_pattern_vars b
   | PAT_record (_,ps) -> List.concat(List.map get_pattern_vars (List.map snd ps))
+  | PAT_polyrecord (_,ps,r) -> r :: List.concat(List.map get_pattern_vars (List.map snd ps))
   | _ -> []
 
 let alpha_pat local_prefix seq fast_remap remap expand_expr pat = 
@@ -187,6 +189,7 @@ let alpha_pat local_prefix seq fast_remap remap expand_expr pat =
   | PAT_tuple (sr,ps) -> PAT_tuple (sr, List.map aux ps)
   | PAT_tuple_cons (sr,a,b) -> PAT_tuple_cons (sr, aux a, aux b)
   | PAT_record (sr, ps) -> PAT_record (sr, List.map (fun (id,p) -> id, aux p) ps)
+  | PAT_polyrecord (sr, ps, r) -> PAT_polyrecord (sr, List.map (fun (id,p) -> id, aux p) ps, ren r)
   | p -> p
   in aux pat
 

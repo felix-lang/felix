@@ -55,6 +55,7 @@ and check_match_record pats =
   let rec check pat =
     match pat with
     | PAT_record _
+    | PAT_polyrecord _
     | PAT_any _
     | PAT_setform_any _
     | PAT_name _ -> ()
@@ -220,6 +221,7 @@ and find_match_type pat =
   | PAT_const_variant _ -> check_match_variant
   | PAT_nonconst_variant _ -> check_match_variant
   | PAT_record (_,_) -> check_match_record
+  | PAT_polyrecord (_,_,_) -> check_match_record
 
   | PAT_expr _ -> assert false
   | PAT_as (_,pat,_)
@@ -245,7 +247,8 @@ let rec is_irrefutable pat =
   | PAT_nonconst_ctor _ -> false
   | PAT_const_variant _ -> false
   | PAT_nonconst_variant _ -> false
-  | PAT_record (_,rpats) -> fold_left (fun acc (_,p) -> acc && irf p) true rpats
+  | PAT_record (_,rpats) 
+  | PAT_polyrecord (_,rpats,_) -> fold_left (fun acc (_,p) -> acc && irf p) true rpats
 
   | PAT_expr _ -> assert false
   | PAT_as (_,pat,_) -> true

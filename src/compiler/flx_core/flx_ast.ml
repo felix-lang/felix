@@ -241,6 +241,8 @@ and pattern_t =
   | PAT_as of Flx_srcref.t * pattern_t * Flx_id.t
   | PAT_when of Flx_srcref.t * pattern_t * expr_t
   | PAT_record of Flx_srcref.t * (Flx_id.t * pattern_t) list
+  | PAT_polyrecord of Flx_srcref.t * (Flx_id.t * pattern_t) list * Flx_id.t
+
   | PAT_expr of Flx_srcref.t * expr_t
 
 (** {7 Statements}
@@ -855,6 +857,7 @@ let src_of_pat (e : pattern_t) = match e with
   | PAT_as (s,_,_)
   | PAT_when (s,_,_)
   | PAT_record (s,_)
+  | PAT_polyrecord (s,_,_)
   | PAT_expr (s,_)
   -> s
 

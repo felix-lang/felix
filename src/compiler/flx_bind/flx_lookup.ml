@@ -4112,6 +4112,16 @@ print_endline ("Find field name " ^ name ^ " of " ^ string_of_expr e');
 *)
     let e'',t'' as x2 = be e' in
     begin match t'' with
+    | BTYP_polyrecord (es,_) ->
+      begin try 
+        let ct = List.assoc name es in
+        let prj = bexpr_rprj name t'' ct in
+        bexpr_apply ct (prj,x2)
+      with 
+        Not_found ->
+          clierr sr ("Field " ^ name ^ " is not a field of " ^ sbt bsym_table t'')
+      end
+
     | BTYP_record (es)
       ->
       let k = List.length es in
@@ -4126,12 +4136,13 @@ print_endline ("Find field name " ^ name ^ " of " ^ string_of_expr e');
       | None -> clierr sr
          (
            "Field " ^ field_name ^
-           " is not a member of anonymous structure " ^
+           " is not a member of record " ^
            sbt bsym_table t''
           )
       end
 
-    | _ -> clierr sr ("[bind_expression] Projection requires record instance")
+    | t -> 
+     clierr sr ("[bind_expression] Projection requires record or polyrecord instance, got type:\n" ^ sbt bsym_table t)
     end
   | EXPR_case_index (sr,e) ->
     let (e',t) as e  = be e in

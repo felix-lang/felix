@@ -13,6 +13,7 @@ type extract_t =
   | Proj_s of Flx_srcref.t * string          (* record projection name *)
   | Proj_head of Flx_srcref.t                (* tuple_cons head extractor  *)
   | Proj_tail of Flx_srcref.t                (* tuple_cons tail extractor  *)
+  | Polyrec_tail of Flx_srcref.t * string list (* list of fields to exclude! *)
 
 (* the extractor is a function to be applied to
    the argument to extract the value of the identifier;
@@ -39,6 +40,7 @@ let gen_extractor
     | Proj_s (sr,s) -> EXPR_get_named_variable (sr,(s,marg))
     | Proj_tail (sr) -> EXPR_get_tuple_tail (sr,(marg))
     | Proj_head (sr) -> EXPR_get_tuple_head (sr,(marg))
+    | Polyrec_tail (sr,flds) -> EXPR_remove_fields (sr,marg,flds)
   )
   extractor
   mv
@@ -236,6 +238,18 @@ let rec get_pattern_vars
     )
     rpats
 
+  | PAT_polyrecord (sr,rpats,r) ->
+    List.iter
+    (fun (s,pat) ->
+      let sr = src_of_pat pat in
+      let extractor' = (Proj_s (sr,s)) :: extractor in
+      get_pattern_vars vars pat extractor'
+    )
+    rpats;
+    let flds = List.map fst rpats in
+    let extractor' = Polyrec_tail (sr,flds) :: extractor in 
+    Hashtbl.add vars r (sr,extractor')
+
   | _ -> ()
 
 let closure sr e =
@@ -333,6 +347,23 @@ let rec gen_match_check pat (arg:expr_t) =
       gen_match_check pat (EXPR_get_named_variable (sr,(s, arg)))
     )
     (List.tl rpats)
+
+  | PAT_polyrecord (sr,rpats,r) ->
+    List.fold_left
+    (fun init (s,pat) ->
+      let sr = src_of_pat pat in
+      apl2 sr "land" init
+        (
+          gen_match_check pat (EXPR_get_named_variable (sr,(s, arg)))
+        )
+    )
+    (
+      let s,pat = List.hd rpats in
+      let sr = src_of_pat pat in
+      gen_match_check pat (EXPR_get_named_variable (sr,(s, arg)))
+    )
+    (List.tl rpats)
+
 
   | PAT_any sr -> truth sr
   | PAT_setform_any sr -> truth sr

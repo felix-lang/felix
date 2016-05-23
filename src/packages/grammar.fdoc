@@ -3680,6 +3680,13 @@ syntax patterns {
   ;
     private spat_assign := sname "=" spattern =># "`(,_1 ,_3)";
 
+  //$ Polyrecord pattern
+  //$ Matches a record with the given fields and assigns
+  //$ the rest of the fields to the extension
+  private satomic_pattern :=  "(" spat_assign ("," spat_assign )* "|" sname ")" =>#
+    "`(pat_polyrecord ,_sr ,(cons _2 (map second _3)) ,_5)"
+  ;
+
   //$ Match an arbitrary expression.
   //$ Equivalent to 
   //$
