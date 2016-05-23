@@ -14,6 +14,10 @@ exception Bad_recursion
 exception Expr_recursion of expr_t
 exception Unresolved_return of Flx_srcref.t * string
 
+exception SimpleNameNotFound of Flx_srcref.t * string * string
+exception FunctionNameNotFound of Flx_srcref.t * string * string * string list
+
+
 let clierrn srs s = raise (ClientErrorn (srs,s))
 let clierr2 sr sr2 s = raise (ClientError2 (sr,sr2,s))
 let clierr sr s = raise (ClientError (sr,s))

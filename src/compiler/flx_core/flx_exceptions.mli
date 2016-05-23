@@ -13,6 +13,9 @@ exception Exit of int
 exception Bad_recursion
 exception Expr_recursion of expr_t
 exception Unresolved_return of Flx_srcref.t * string
+exception SimpleNameNotFound of Flx_srcref.t * string * string
+exception FunctionNameNotFound of Flx_srcref.t * string * string * string list
+
 
 val clierrn: Flx_srcref.t list -> string -> 'a
 val clierr: Flx_srcref.t -> string -> 'a
