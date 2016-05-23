@@ -5151,58 +5151,9 @@ print_endline "bind expression' succeeded";
         | _ -> false
       )
       ->
-      (*
-      print_endline "struct applied to record .. ";
-      *)
-      let id,vs,fls = match hfind "lookup" state.sym_table i with
-        | { Flx_sym.id=id; vs=vs; symdef=SYMDEF_struct ls }
-        | { Flx_sym.id=id; vs=vs; symdef=SYMDEF_cstruct (ls,_) } -> id,vs,ls
-        | _ -> assert false
-      in
-      let _,vs,_  = find_split_vs state.sym_table bsym_table i in
-      let alst = match ta with
-        |BTYP_record (ts) -> ts
-        | _ -> assert false
-      in
-      let nf = List.length fls in
-      let na = List.length alst in
-      if nf <> na then clierr sr
-        (
-          "Wrong number of components matching record argument to struct"
-        )
-      else begin
-        let bvs = List.map
-          (fun (n,i,_) -> n, btyp_type_var (i, btyp_type 0))
-          (vs)
-        in
-        let env' = build_env state bsym_table (Some i) in
-        let vs' = List.map (fun (s,i,tp) -> s,i) (vs) in
-        let ialst = List.map2 (fun (k,t) i -> k,(t,i)) alst (nlist na) in
-        let a =
-          List.map (fun (name,ct)->
-            let (t,j) =
-              try List.assoc name ialst
-              with Not_found -> clierr sr ("struct component " ^ name ^ " not provided by record")
-            in
-          let ct = bind_type' state bsym_table env' rsground sr ct bvs mkenv in
-          let ct = tsubst sr vs' ts' ct in
-            if type_eq bsym_table state.counter ct t then begin
-(*
-              print_endline ("7:get_n arg" ^ sbe bsym_table a);         
-*)
-              bexpr_get_n t j a
-            end else clierr sr ("Component " ^ name ^
-              " struct component type " ^ sbt bsym_table ct ^
-              "\ndoesn't match record type " ^ sbt bsym_table t
-            )
-          )
-          fls
-        in
-        let cts = List.map snd a in
-        let t = match cts with [t] -> t | _ -> btyp_tuple cts in
-        let a = match a with [x,_] -> x,t | _ -> bexpr_tuple t a in
-        cal_apply state bsym_table sr rs f a
-      end
+       Flx_struct_apply.cal_struct_apply 
+       bsym_table state bind_type' mkenv build_env cal_apply
+       rs sr f a i ts'
 
     | t ->
       (*
