@@ -19,26 +19,7 @@ open Flx_overload
 open Flx_tpat
 open Flx_lookup_state
 
-let typecode_of_btype bsym_table sr t = 
-  let rec tc t = match t with
-  | BTYP_record flds -> TYP_record (List.map (fun (s,t) -> s,tc t) flds) 
-  | BTYP_tuple ts -> TYP_tuple (List.map tc ts)
-  | BTYP_array (a,n) -> TYP_array (tc a, tc n)
-  | BTYP_sum ts -> TYP_sum (List.map tc ts)
-  | BTYP_unitsum n -> TYP_unitsum n
-  | BTYP_pointer t -> TYP_pointer (tc t)
-  | BTYP_function (d,c) -> TYP_function (tc d, tc c)
-  | BTYP_cfunction (d,c) -> TYP_function (tc d, tc c)
-  | BTYP_void -> TYP_void sr
-  | BTYP_label -> TYP_label
-  | BTYP_fix _ -> 
-    print_endline ("typecode_of_btype can't handle fixpoint yet");
-    assert false (* requires trickery using TYP_as *)
-  | BTYP_inst (i,ts) ->
-    let id = Flx_bsym_table.find_id bsym_table i in 
-    TYP_name (sr,id, (List.map tc ts))
-  | _ -> assert false
-  in tc t
+let typecode_of_btype sr x = Flx_typecode_of_btype.typecode_of_btype sr x
 
 exception SimpleNameNotFound of Flx_srcref.t * string * string
 exception FunctionNameNotFound of Flx_srcref.t * string * string * string list
@@ -50,8 +31,8 @@ let crt = ref 0
 
 module L = Flx_literal
 
-type module_rep_t =
-  | Simple_module of bid_t * typecode_t list * name_map_t * sdir_t list
+type module_rep_t = Flx_bind_deferred.module_rep_t
+
 
   (*
 (*
@@ -354,7 +335,7 @@ and lookup_qn_in_env2'
     print_endline ("Searching for name " ^ name);
     *)
     match eval_module_expr state bsym_table env me with
-    | Simple_module (impl,ts', htab,dirs) ->
+    | Flx_bind_deferred.Simple_module (impl,ts', htab,dirs) ->
       let env' = mk_bare_env state bsym_table impl in
       let tables = get_pub_tables state bsym_table env' rs dirs in
       let result = lookup_name_in_table_dirs htab tables sr name in
@@ -2702,7 +2683,7 @@ print_endline ("ctor hack failed (client error)");
   | `AST_lookup (sr,(qn',name,ts)) ->
 
     let m =  eval_module_expr state bsym_table env qn' in
-    match m with (Simple_module (impl, ts',htab,dirs)) ->
+    match m with (Flx_bind_deferred.Simple_module (impl, ts',htab,dirs)) ->
     (* let n = List.length ts in *)
     let ts = List.map (bt sr)( ts' @ ts) in
     (*
@@ -2914,7 +2895,7 @@ print_endline "Abnormal exit inner_type_of_index from `AST_index";
 print_endline ("Lookup type with qn found AST_lookup of " ^ name ^ " in " ^ string_of_expr qn');
 *)
     let m =  eval_module_expr state bsym_table env qn' in
-    match m with (Simple_module (impl, ts',htab,dirs)) ->
+    match m with (Flx_bind_deferred.Simple_module (impl, ts',htab,dirs)) ->
     (* let n = List.length ts in *)
     let ts = List.map (bt sr)( ts' @ ts) in
     (*
@@ -3054,8 +3035,10 @@ and lookup_name_with_sig
 *)
  let projection = 
    match t2 with
+(*
    | [BTYP_tuple_cons (h,t)] -> 
      print_endline ("projection of tuple cons not implemented yet"); assert false
+*)
 
    | [BTYP_inst (j,ts') as d] ->
      let bsym = try Some (Flx_bsym_table.find bsym_table j) with Not_found -> None in
@@ -4553,7 +4536,7 @@ print_endline ("LOOKUP 8: varname " ^ si index);
         env
         e
       with
-      | (Simple_module (impl, ts, htab,dirs)) ->
+      | (Flx_bind_deferred.Simple_module (impl, ts, htab,dirs)) ->
         let env' = mk_bare_env state bsym_table impl in
         let tables = get_pub_tables state bsym_table env' rs dirs in
         let result = lookup_name_in_table_dirs htab tables sr name in
@@ -5012,267 +4995,81 @@ print_endline ("Added overload of __eq to lookup table!");
         Flx_dot.handle_constant_projection bsym_table sr a ta n
       | _ -> raise Flx_dot.OverloadResolutionError
       with Flx_dot.OverloadResolutionError ->
-
+      
+      (* ---------------------------------------------------------- *)
+      (* special case, integer expression as tuple or array projection  *) 
+      (* ---------------------------------------------------------- *)
       try 
-          let f = try be f' with _ -> raise Flx_dot.OverloadResolutionError in
-          if snd f = int_t then 
-          begin
-            match ta with
-            | BTYP_array _ ->
-              Flx_dot.handle_array_projection bsym_table int_t sr a ta f
-            | _ -> raise Flx_dot.OverloadResolutionError
-          end
-          else raise Flx_dot.OverloadResolutionError
+        let f = try be f' with _ -> raise Flx_dot.OverloadResolutionError in
+        if snd f = int_t then 
+        begin
+          match ta with
+          | BTYP_array _ ->
+            Flx_dot.handle_array_projection bsym_table int_t sr a ta f
+          | _ -> raise Flx_dot.OverloadResolutionError
+        end
+        else raise Flx_dot.OverloadResolutionError
       with Flx_dot.OverloadResolutionError ->  
       
-
-      try
-      match f' with
-
+      (* ---------------------------------------------------------- *)
+      (* special case, unisum expression as tuple or array projection  *) 
+      (* ---------------------------------------------------------- *)
+      try match f' with
       (* a dirty hack .. doesn't check unitsum is right size or type *)
       | EXPR_typed_case (sr,n,sumt) when (match bt sr sumt with | BTYP_unitsum _ -> true | _ -> false)  ->
         Flx_dot.handle_constant_projection bsym_table sr a ta n
+      | _ -> raise Flx_dot.OverloadResolutionError
+      with Flx_dot.OverloadResolutionError ->
 
+      (* ---------------------------------------------------------- *)
+      (* special case, name as record projection *)
+      (* NOTE: this tries to handle projections of structs too *)
+      (* probably shouldn't. Also does Koenig lookup and other stuff *)
+      (* which might be obsolete now. *)
+      (* Koenig lookup allows a function f defined in the same class *)
+      (* as a struct X to be found as if it we a field name of the struct *)
+      (* without requiring a qualified name *) 
+      (* ---------------------------------------------------------- *)
+      try match f' with
       | EXPR_name (sr, name, ts) ->
-(*
-        if not (complete_type ta) then
-          print_endline ("Apply argument type is not complete!!" ^ sbt bsym_table ta);
-*)
-        (* NOTE: record fields cannot be polymorphic. Even if you write:
-           
-           typedef R[T] = (field:T);
-           
-           then R[int] is just a synonym for
-
-           (field:int)
-
-        *)
-        begin match unfold "flx_lookup" ta with 
-        | BTYP_polyrecord (es,_)
-        | BTYP_record (es) ->
-(*
-print_endline ("binding apply, RECORD field .. " ^ name ^ ", type=" ^ sbt bsym_table ta);
-*)
-          if (ts != []) then raise Flx_dot.OverloadResolutionError; 
-          let k = List.length es in
-          let field_name = name in
-          begin match list_index (List.map fst es) field_name with
-          | Some n -> 
-            let t = List.assoc field_name es in
-(*
-            print_endline ("6:get_n arg" ^ sbe bsym_table a);         
-*)
-            let t = bexpr_get_n t n a in
-(*
-print_endline ("*** binding apply RECORD field " ^ name ^ " done");
-print_endline "";
-*)
-            t
-          | None -> 
-(*
-print_endline ("*** binding apply RECORD field " ^ name ^ " not found: OVERLOAD ERROR");
-print_endline "";
-*)
-            raise Flx_dot.OverloadResolutionError
-          end
-        | BTYP_pointer (BTYP_record _ as r) ->
-(*
-print_endline ("binding apply, RECORD pointer field .. " ^ name ^ ", type=" ^ sbt bsym_table ta);
-*)
-          begin match unfold "flx_lookup" r with
-          | BTYP_polyrecord (es,_) 
-          | BTYP_record (es) ->
-            if (ts != []) then raise Flx_dot.OverloadResolutionError; 
-            let k = List.length es in
-            let field_name = name in
-            begin match list_index (List.map fst es) field_name with
-            | Some n -> 
-              let t = List.assoc field_name es in
-  (*
-              print_endline ("6:get_n arg" ^ sbe bsym_table a);         
-  *)
-              let t = bexpr_get_n (BTYP_pointer t) n a in
-(*
-print_endline ("*** binding apply RECORD pointer field " ^ name ^ " done");
-print_endline "";
-*)
-              t
-            | None -> 
-(*
-print_endline ("*** binding apply RECORD pointer field " ^ name ^ " not found: OVERLOAD ERROR");
-print_endline "";
-*)
-              raise Flx_dot.OverloadResolutionError
-            end
-          | _ -> assert false
-          end
-
-        | BTYP_inst (i,ts') ->
-          begin try
-          Flx_dot.handle_field_name state bsym_table build_env env rs 
-            be bt koenig_lookup cal_apply bind_type' mkenv 
-            sr a' f' name ts i ts' false
-          with Flx_dot.Not_field -> raise Flx_dot.OverloadResolutionError
-          end
-        | BTYP_pointer (BTYP_inst (i,ts') as r) ->
-(*
-print_endline ("binding apply, Struct pointer field .. " ^ name ^ ", type=" ^ sbt bsym_table ta);
-*)
-(* NOTE: This may not work, unfold doesn't penetrate into a struct!
-  However, if the struct is complete but polymorphic, it should work
-  by unfolding the ts values ..
- *)
-          begin match unfold "flx_lookup:bind_expression:btyp_inst" r with | BTYP_inst (i,ts') ->
-            begin try
-            Flx_dot.handle_field_name state bsym_table build_env env rs 
-              be bt koenig_lookup cal_apply bind_type' mkenv 
-              sr a' f' name ts i ts' true 
-            with Flx_dot.Not_field -> raise Flx_dot.OverloadResolutionError
-            end
-          | _ -> assert false
-          end
-        | _ -> raise Flx_dot.OverloadResolutionError 
-        end
+        Flx_bind_record_proj.try_bind_record_proj 
+          bsym_table state build_env koenig_lookup be bt env rs cal_apply bind_type' mkenv
+          f' a' a sr name ts
       | _ -> raise Flx_dot.OverloadResolutionError
-    with Flx_dot.OverloadResolutionError ->
-    
-(*
-    print_endline ("Recursive descent into application " ^ string_of_expr e);
-*)
-    (* HACK defered types .. this block of code ALWAYS exits with
-       overload resolution error, but it might fudge a defered type before
-       doing so
+      with Flx_dot.OverloadResolutionError ->
+   
+      (* NOW TRY DEFERED FUNCTION OVERLOADING *)
+      (* ALWAYS FAILS but can set a deferred type *)
+      try
+        Flx_bind_deferred.set_deferred_type  
+          bsym_table state env inner_lookup_name_in_env 
+          eval_module_expr mk_bare_env get_pub_tables
+          lookup_name_in_table_dirs
+          rs 
+          sr f' a
+      with Flx_dot.OverloadResolutionError ->
+
+      (* ---------------------------------------------------------- *)
+      (* special case, array projection  *) 
+      (* ---------------------------------------------------------- *)
+      try
+        let (bf,tf) as f = 
+          try be f' 
+          with 
+          | SimpleNameNotFound _ as x -> raise x
+          | exn -> raise Flx_dot.OverloadResolutionError 
+        in
+        match tf, ta with
+        (* Check for array projection *)
+        | ixt1, BTYP_array (t,ixt2) when ixt1 = ixt2 -> (* SHOULD USE UNIFICATION *) 
+          let prj = bexpr_aprj f ta t in
+          bexpr_apply t (prj,a)
+        | _ -> raise Flx_dot.OverloadResolutionError
+      with Flx_dot.OverloadResolutionError ->
+    (*
+    print_endline ("Can't interpret apply function "^string_of_expr f'^" as projection, trying as an actual function");
     *)
-    try
-(*
-print_endline ("++++ Checking for defered type ...");
-*)
-      let pss = match f' with
-        | EXPR_name (sr,name,[]) ->
-(*
-print_endline ("++++ got function name " ^ name);
-*)
-          let entries = 
-            try inner_lookup_name_in_env state bsym_table env rs sr name
-            with _ -> raise Flx_dot.OverloadResolutionError
-          in 
-(*
-print_endline ("++++ Found entries");
-*)
-          begin match entries with
-          | FunctionEntry [{base_sym=idx; spec_vs=[]; sub_ts=[]}] ->
-(*
-print_endline ("[EXPR_name] Found solo function entry " ^ string_of_int idx);
-*)
-            begin match hfind "lookup(defered?)" state.sym_table idx with
-            | { Flx_sym.symdef=SYMDEF_function (pss, ret, props,exes) } -> pss
-            | _ -> raise Flx_dot.OverloadResolutionError 
-            end
-          | _ -> 
-(*
-print_endline ("++++ Did not find solo function entry!");
-*)
-           raise Flx_dot.OverloadResolutionError
-          end 
-        | EXPR_lookup (sr, (e,name,[]))  -> 
-(*
-print_endline ("++++ got qualified function name " ^ name);
-*)
-          let entry =
-            match
-              eval_module_expr
-              state
-              bsym_table
-              env
-              e
-            with
-            | (Simple_module (impl, ts, htab,dirs)) ->
-              let env' = mk_bare_env state bsym_table impl in
-              let tables = get_pub_tables state bsym_table env' rs dirs in
-              let result = lookup_name_in_table_dirs htab tables sr name in
-              result
-          in
-          begin match entry with
-          | Some entry ->
-            begin match entry with
-            | FunctionEntry [{base_sym=idx; spec_vs=[]; sub_ts=[]}] -> 
-(*
-print_endline ("[EXPR_lookup] Found solo function entry " ^ string_of_int idx);
-*)
-              begin match hfind "lookup(defered?)" state.sym_table idx with
-              | { Flx_sym.symdef=SYMDEF_function (pss, ret, props,exes) } -> pss
-              | _ -> raise Flx_dot.OverloadResolutionError 
-              end
-            | _ -> raise Flx_dot.OverloadResolutionError
-            end
-          | None -> raise Flx_dot.OverloadResolutionError
-          end
-
-        | EXPR_index (sr,name,idx) ->
-          begin match hfind "lookup(defered?)" state.sym_table idx with
-          | { Flx_sym.symdef=SYMDEF_function (pss, ret, props,exes) } -> pss
-          | _ -> raise Flx_dot.OverloadResolutionError 
-          end 
-        | EXPR_suffix (sr,(qn,TYP_defer (sr2,dt))) -> 
-          [`PVal,"defered-lambda-param",TYP_defer (sr2,dt),None],None
-        | EXPR_suffix _ -> raise Flx_dot.OverloadResolutionError 
-        | _ -> 
-(*
-          print_endline ("Expr in function position not simple name, got " ^ string_of_expr f');
-*)
-          raise Flx_dot.OverloadResolutionError
-      in match pss with
-      | [kind,pid,TYP_defer (_,tref),_],None -> 
-(*
-        print_endline ("Function with single parameter "^pid^"  of defered type found!");
-*)
-        begin match !tref with
-        | Some t -> print_endline ("DEFERED TYPE IS ALREADY SET")
-        | None -> 
-          print_endline ("DEFERED TYPE IS NOT SET");
-          let tc = typecode_of_btype bsym_table sr ta in
-          tref := Some tc;
-          print_endline ("DEFERED TYPE SET NOW TO " ^ string_of_typecode tc)
-        end;
-        raise Flx_dot.OverloadResolutionError
-      | _ -> raise Flx_dot.OverloadResolutionError
-    with Flx_dot.OverloadResolutionError ->
-
-    begin try
-      let (bf,tf) as f = 
-        try be f' 
-        with 
-        | SimpleNameNotFound _ as x -> raise x
-        | exn -> 
-(*
-          print_endline "Cannot bind as value, trying as function";
-          print_endline ("Got exception: " ^ Printexc.to_string exn); 
-*)
-          raise Flx_dot.OverloadResolutionError 
-      in
-(*
-print_endline ("Bound function " ^ sbe bsym_table f);
-*)
-      match tf, ta with
-      (* Check for array projection *)
-      | ixt1, BTYP_array (t,ixt2) when ixt1 = ixt2 -> (* SHOULD USE UNIFICATION *) 
-        (*
-        print_endline "Array projection"; 
-        print_endline ("Array type " ^ sbt bsym_table ta);
-        print_endline ("Index type " ^ sbt bsym_table tf);
-        *)
-        let prj = bexpr_aprj f ta t in
-        bexpr_apply t (prj,a)
-      | _ -> 
-       (*
-       print_endline "Bound value wrong type";
-       *)
-       raise Flx_dot.OverloadResolutionError
-    with Flx_dot.OverloadResolutionError ->
-(*
-print_endline ("Can't interpret apply function "^string_of_expr f'^" as projection, trying as an actual function");
-
-*)
+    begin
     let fres =
       match qualified_name_of_expr f' with
       | Some name ->
@@ -6691,9 +6488,9 @@ and check_module state name sr entries ts =
         begin match sym.Flx_sym.symdef with
         | SYMDEF_root _
         | SYMDEF_module _ ->
-            Simple_module (sye index, ts, sym.Flx_sym.pubmap, sym.Flx_sym.dirs)
+            Flx_bind_deferred.Simple_module (sye index, ts, sym.Flx_sym.pubmap, sym.Flx_sym.dirs)
         | SYMDEF_typeclass ->
-            Simple_module (sye index, ts, sym.Flx_sym.pubmap, sym.Flx_sym.dirs)
+            Flx_bind_deferred.Simple_module (sye index, ts, sym.Flx_sym.pubmap, sym.Flx_sym.dirs)
         | _ ->
             clierr sr ("Expected '" ^ sym.Flx_sym.id ^ "' to be module in: " ^
             Flx_srcref.short_string_of_src sr ^ ", found: " ^
@@ -6724,7 +6521,7 @@ and eval_module_expr state bsym_table env e : module_rep_t =
   | EXPR_lookup (sr,(e,name,ts)) ->
     let result = eval_module_expr state bsym_table env e in
     begin match result with
-      | Simple_module (index,ts',htab,dirs) ->
+      | Flx_bind_deferred.Simple_module (index,ts',htab,dirs) ->
       let env' = mk_bare_env state bsym_table index in
       let tables = get_pub_tables state bsym_table env' rsground dirs in
       let result = lookup_name_in_table_dirs htab tables sr name in
