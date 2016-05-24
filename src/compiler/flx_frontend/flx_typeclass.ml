@@ -41,15 +41,18 @@ let check_instance
   tc
   inst_ts
 =
-  (*
+(*
+if inst_id = "X" then
   print_endline ("Check instance, inst_constraint=" ^ sbt bsym_table inst_constraint);
-  *)
-
+*)
 (* STEP 1: find the typeclass *)
   let tc_bsym = Flx_bsym_table.find bsym_table tc in
+  let tc_id = Flx_bsym.id tc_bsym in
   match Flx_bsym.bbdcl tc_bsym with
   | BBDCL_typeclass (tc_props, tc_bvs) ->
-    (*
+(*
+if inst_id = "X" then
+begin
     print_endline ("Found " ^ inst_id ^ "<"^si inst ^ ">" ^
     "[" ^ catmap "," (sbt bsym_table) inst_ts ^ "]" ^
     " to be instance of typeclass " ^ tc_id ^ "<"^si tc^">")
@@ -57,7 +60,8 @@ let check_instance
     print_endline ("Typeclass vs = " ^
       catmap "," (fun (s,j) -> s^"<"^si j^">") tc_bvs
     );
-    *)
+end;
+*)
     if length tc_bvs <> length inst_ts then
       clierr2 inst_sr (Flx_bsym.sr tc_bsym)
       (
@@ -76,12 +80,27 @@ let check_instance
       try Flx_bsym_table.find_children bsym_table tc
       with Not_found -> Flx_types.BidSet.empty
     in
+(*
+if inst_id = "X" then 
+begin
+  print_string ("Typeclass has children " );
+  BidSet.iter (fun i-> print_string (si i ^ ",")) tc_kids;
+  print_endline "";
+end;
+*)
 (* list all the kids of the instance *)
     let inst_kids =
       try Flx_bsym_table.find_children bsym_table inst
       with Not_found -> Flx_types.BidSet.empty
     in
-
+(*
+if inst_id = "X" then
+begin
+  print_string ("Instance has children ");
+  BidSet.iter (fun i-> print_string (si i ^ ",")) inst_kids;
+  print_endline "";
+end;
+*)
 (* transform the instance kid list into an associatiion list
   mapping the function name to the index and function type
 *)
@@ -109,6 +128,15 @@ let check_instance
         | _ -> acc
       end inst_kids []
     in
+(*
+if inst_id = "X" then
+begin
+  List.iter (fun (name,(index,(bvs,typ))) ->
+    print_endline (name ^"<" ^ si index ^ ">: " ^ sbt bsym_table typ);
+  )
+  inst_map
+end;
+*)
 
 (* check the polymorphic binding of the virtual function id[tck,tck_bvs] type tctype
    matches the given instance 
@@ -124,8 +152,22 @@ let check_instance
 
         let tc_ptv = length tck_bvs - length tc_bvs in
         let inst_ptv = length inst_funbvs - length inst_vs in
+(*
+if id = "g" then
+begin
+  print_endline ("Type class has " ^ si (List.length tc_bvs) ^ " type variables");
+  print_endline ("Virtual has " ^ si (List.length tck_bvs) ^ " type variables (total)");
+  print_endline ("Virtual has " ^ si tc_ptv ^ " type variables (local)");
+  print_endline ("Instance has " ^ si (List.length inst_vs) ^ " type variables (total)");
+  print_endline ("Virtual instance function has " ^ si (List.length inst_funbvs) ^ " type variables (total)");
+  print_endline ("Virtual instance function has " ^ si inst_ptv ^ " type variables (local)");
+end;
+*)
         if inst_ptv <> tc_ptv then (
-          (*print_endline ("Wrong no args: inst_ptv="^ si inst_ptv^"<>"^si tc_ptv); *)
+(*
+if id = "g" then
+          print_endline ("Wrong no args: inst_ptv="^ si inst_ptv^"<>"^si tc_ptv);
+*)
           false
         )
         else
@@ -137,13 +179,20 @@ let check_instance
           sr
           (tsubst inst_sr tck_bvs inst_funts tctype)
         in
+(*
+if id = "g" then
+  print_endline ("Virtual type: " ^ sbt bsym_table tct ^ ", instance type: " ^ sbt bsym_table t);
+*)
         let matches =  tct = t in
         matches
       in
 
 (* strip out all the instance kids with the wrong name, or for which the signatures don't agree *)
       let entries = filter (fun (name,(i,(inst_funbvs,t))) -> name = id && sigmatch i inst_funbvs t) inst_map in
-
+(*
+if inst_id = "X" then
+  print_endline ("We have " ^ si (List.length entries) ^ " functions left");
+*)
 (* see what we have left *)
       match entries with
 
@@ -245,11 +294,18 @@ let build_typeclass_to_instance_table syms bsym_table : unit =
     []
   in
   Flx_bsym_table.iter begin fun i parent bsym ->
+  let id = Flx_bsym.id bsym in
   match Flx_bsym.bbdcl bsym with
   | BBDCL_instance (props, vs, cons, tc, ts) ->
     let iss = get_insts tc in
     let entry = i, (vs, cons, ts) in
     Hashtbl.replace syms.instances_of_typeclass tc (entry::iss);
+  
+    let inst_id = Flx_bsym.id bsym in
+(*
+    if inst_id = "X" then
+    print_endline ("Typeclass: " ^ Flx_bsym.id bsym ^"<"^ si tc ^ "> instance " ^ si i );
+*)
       check_instance
         syms
         bsym_table
@@ -261,6 +317,7 @@ let build_typeclass_to_instance_table syms bsym_table : unit =
         props
         tc
         ts
+
   (* virtual with default *)
   | BBDCL_fun (props,bvs,params,rettype,exes) ->
     if List.mem `Virtual  props then
@@ -477,19 +534,37 @@ print_endline (id ^ " Unified");
 
 let fixup_typeclass_instance' syms bsym_table sr i ts =
   let id = Flx_bsym.id (Flx_bsym_table.find bsym_table i) in
+(*
+if id="g" then
+print_endline ("Trying to instantiate virtual " ^ id ^ "<" ^ si i ^ ">[" ^ 
+catmap "," (sbt bsym_table) ts ^ "]");
+*)
   let entries =
     try Some (Hashtbl.find syms.virtual_to_instances i)
     with Not_found -> None
   in
   match entries with
-  | None -> `NonVirtual,i,ts (* not virtual *)
+  | None -> 
+(*
+if id="g" then
+    print_endline ("Virtual not registered,is it virtual?");
+*)
+    `NonVirtual,i,ts (* not virtual *)
   | Some [] -> 
+(*
+if id="g" then
+    print_endline ("Virtual registered with 0 instances");
+*)
     let sr2 = try Flx_bsym_table.find_sr bsym_table i with Not_found ->
       failwith ("fixup_typeclass_instance': Can't find <" ^ string_of_bid i ^ ">")
     in
     clierr2 sr sr2 "No instance for virtual"
 
   | Some entries ->
+(*
+if id="g" then
+print_endline ("Found " ^ si (List.length entries) ^ " functions for virtual " ^ id ^"<"^si i^">");
+*)
   let parent,bsym = try Flx_bsym_table.find_with_parent bsym_table i with Not_found -> assert false in
   let parent = match parent with | Some parent -> parent | None -> assert false in
   let tcbsym = 
@@ -511,11 +586,12 @@ let fixup_typeclass_instance' syms bsym_table sr i ts =
      [] entries
   in
 (*
+if id="g" then
 print_endline ("Number of matches left is " ^ string_of_int (List.length entries));
 *)
   match entries with
   | [] -> `CannotMatch,i,ts
-  | [(`MaybeMatchLater,_,_),_] -> 
+  | [(`MaybeMatchesLater,_,_),_] -> 
 (*
      print_endline ("defer virtual(0) " ^ id ^ " = " ^ si i ^ "["^ catmap "," (sbt bsym_table) ts ^ "]");
 *)
@@ -524,6 +600,7 @@ print_endline ("Number of matches left is " ^ string_of_int (List.length entries
 
   | [(`MatchesNow,j,ts'),_] ->
 (*
+if id="h" then
      print_endline ("map virtual(1) " ^ id ^ " = " ^ si i ^ "["^ catmap "," (sbt bsym_table) ts ^ "] to instance " ^ 
        si j ^ "[" ^ catmap "," (sbt bsym_table) ts' ^ "]");
 *)
@@ -535,29 +612,31 @@ print_endline ("Number of matches left is " ^ string_of_int (List.length entries
 *)
     if not (Flx_bsym_table.mem bsym_table i) then
       failwith ("Woops can't find virtual function index "  ^ string_of_bid i);
-
-    (*
+(*
+if id="g" then
+begin
     print_endline
     ("Multiple matching instances for typeclass virtual instance\n"
      ^id^"<"^ si i^">["^ catmap "," (sbt bsym_table) ts ^"]"
     )
     ;
-    *)
-    (*
     iter
-    (fun ((j,ts),(inst_vs,con,inst_ts,k)) ->
+    (fun ((matchkind,j,ts),(inst_vs,con,inst_ts,k)) ->
        let id,parent,sr,entry =
-         try Flx_bsym_table.find bsym_table j
+         try 
+           let parent,sym = Flx_bsym_table.find_with_parent bsym_table j in
+           sym.Flx_bsym.id, parent, sym.Flx_bsym.sr, sym.Flx_bsym.bbdcl
          with Not_found -> failwith ("Woops can't find instance function index "  ^ si j)
        in
        let parent = match parent with Some k -> k | None -> assert false in
+       print_endline (match matchkind with | `CannotMatch -> "cannot match" | `MatchesNow -> "matches now" | `MaybeMatchesLater -> "maybe match later");
        print_endline ("Function " ^ si j ^ "[" ^ catmap "," (sbt bsym_table) ts ^ "]");
        print_endline (" instance parent " ^ si parent ^ "[" ^ catmap "," (sbt bsym_table) inst_ts ^ "]");
        print_endline (" instance vs= " ^ catmap "," (fun (s,i) -> s^"<"^si i^">") inst_vs );
     )
     candidates
-    ;
-    *)
+end;
+*)
     let candidates = fold_left
     (fun oc (((matchcat,j,ts),(inst_vs,r_con,inst_ts,k)) as r) ->
        let c = btyp_type_tuple (Flx_list.list_prefix inst_ts ntcbvs) in

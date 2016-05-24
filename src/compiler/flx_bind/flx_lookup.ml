@@ -4080,7 +4080,6 @@ print_endline ("Bound tuple head " ^ sbe bsym_table x ^ " has type " ^ sbt bsym_
       else List.nth ts n,len
 
     | BTYP_tuple_cons (t1,_) ->
-assert false; (* shouldn't happen now! *)
       if n = 0 then t1,2 (* HACK! We dunno the length of the tuple! *)
       else
       clierr sr

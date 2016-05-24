@@ -18,6 +18,36 @@ open List
 open Flx_maps
 open Flx_lookup_state
 
+let typecheck_fields bsym_table name l r =
+  let counter = ref 1 in (* hack, but should be enough *)
+  if type_eq bsym_table counter l r then "" else
+  "\nField " ^ name ^ 
+   " LHS type " ^ sbt bsym_table l ^
+   " not same as RHS type " ^ 
+   sbt bsym_table r
+
+let field_list_diag bsym_table lhs rhs =
+  let lcheck = 
+    List.fold_left (fun acc (name,typ) -> 
+      if List.mem_assoc name rhs then acc ^ typecheck_fields bsym_table name typ (List.assoc name rhs) else
+       acc ^"\nLHS field " ^ name ^ " not present in RHS"
+    ) "" lhs
+  in
+  let rcheck = 
+    List.fold_left (fun acc (name,typ) -> 
+      if List.mem_assoc name lhs then acc else
+       acc ^"\nRHS field " ^ name ^ " not present in LHS"
+    ) "" rhs
+  in
+  lcheck ^ rcheck
+
+
+let record_field_diag bsym_table lhst rhst = 
+  match lhst, rhst with
+  | BTYP_record lhs, BTYP_record rhs -> field_list_diag bsym_table lhs rhs
+  | _,_ -> ""
+
+
 type bexe_state_t = {
   counter: Flx_types.bid_t ref;
   sym_table: Flx_sym_table.t;
@@ -695,7 +725,8 @@ print_endline ("assign after beta-reduction: RHST = " ^ sbt bsym_table rhst);
           sbe bsym_table rx^";\n"^
         "LHS type: " ^ sbt bsym_table lhst^
         "\nmust have same type as\n"^
-        "RHS type: " ^ sbt bsym_table rhst
+        "RHS type: " ^ sbt bsym_table rhst ^
+        record_field_diag bsym_table lhst rhst
       )
 
    | EXE_try -> 

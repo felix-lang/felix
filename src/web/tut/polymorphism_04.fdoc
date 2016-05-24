@@ -1,0 +1,23 @@
+@h1 Row polymorphism
+Row polymorphism allows you to write a function that can
+operate on some fields of a record, without knowing the
+other fields. Unlike subtyping, the other fields are not lost.
+@felix
+var x = (a=1, b="Hello", c=42.5, d=99);
+match x with
+| (c=cv, a=1 | r) => 
+  println$ "c=" + cv.str +  ", a=1," + " r="+ r._strr;
+endmatch;
+
+fun f[T] (x: (a:int, c:double | T)) =>
+  match x with
+  | (a=av,c=cv | r) =>  (a=(av+1),c=cv*cv | r)
+  endmatch
+;
+
+var r = f x;
+println$ r._strr;
+@expect
+c=42.5, a=1, r=(b='Hello',d=99)
+(a=2,b='Hello',c=1806.25,d=99)
+@
