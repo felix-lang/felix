@@ -220,6 +220,60 @@ with the symbols of the production, the client action
 code constructs a new s-expression representing the
 intended AST for parsing that production.
 
+\subsubsection{Example}
+Here is a complete, self contained, working
+example:
+
+\begin{minted}{felix}
+// define the DSSL Ceiling
+syntax Ceiling {
+  satom := "\lc" sexpr "\rc" =># 
+    "`(ast_apply ,_sr (,(noi 'ceiling) (,_2)))"
+  ;
+}
+
+// define the ceiling operation
+fun ceiling (x:double) = "ceil($1)" 
+  requires '#include <math.h>'
+;
+
+// make the DSSL available for use
+open syntax Ceiling;
+
+// Use it
+println$ \lc 42.3 \rc;
+\end{minted}
+
+In the above example, a production for the \verb%satom%
+non-terminal, recognises a the TeX like expression
+\verb%\lc e \rc%, where the $e$ in the middle is
+any expression. The Scheme code returns an s-expression
+consisting of the \verb%ast_apply% symbol, followed by
+the value in the current source reference variable 
+\verb%_sr%, then a pair consisting of the function 
+name \verb%ceiling% to be executed and its argument
+\verb%_2% which is the s-expression returned from the
+second position in the prodiction.
+
+The Scheme function \verb%noi% converts a symbol
+into an s-expression which is the AST representation
+of a Felix name. The \verb%ast_apply% s-expression
+is the AST representation of a Felix application.
+
+We then define the function \verb%ceiling% 
+in Felix by lifting it from the ISO C math library. 
+
+Finally we have to open the DSSL so the new grammar
+becomes active, and then when we write
+and expression like \verb%\lc 42.3 \rc% the parser
+translates it into a function application.
+
+The Felix standard library actually defines 
+\verb%\lceil% and \verb%\rceil% and maps
+$\lceil e \rceil$ to the function \verb%ceil%
+so we couldn't use them in the example.
+
+\subsection{Scheme Actions}
 Provided the returned AST is acceptable to subsequent
 processing steps, this mechanism is safe provided the
 executed Scheme code is purely functional.
@@ -567,7 +621,7 @@ syntax list
 Although grammar macros were primarily intended as basic boilerplate
 templates, macros can also be passed as arguments to another macro,
 thereby allowing higher order macros. Furthermore, since arguments
-are presented in a curried for, closures can also be created,
+are presented in a curried form, closures can also be created,
 that is, macros with some but not all parameters fixed.
 
 In particular, a macro can actually be passed to itself!
@@ -2687,6 +2741,20 @@ println$ r2._strr,r2,x;
 
 Again, leftmost fields hide rightmost ones. 
 
+\subsection{Removing Fields}
+The \verb%without% operator can be used to return a record
+with some fields removed. It works on values of record and
+polyrecord type. Note that because Felix uses scoped fields
+once a field is removed, the previous value of that field is exposed
+if it exists, and can also be removed. This means it is correct
+and sometimes necessary to list a field more than once when
+using the \verb%without% operator.
+
+\begin{minted}{felix}
+var x = (a=1,b=2,c=3,c=4);
+var y = (x without b c); // (a=1,c=4)
+\end{minted}
+
 \subsection{Adding records}
 You can also add two 
 records with infix \verb%+%:
@@ -2732,15 +2800,6 @@ fun move[T]
 var inc = 1.0,1.0;
 println$ (move inc circle)._strr, (move inc square)._strr;
 \end{minted}
-
-\subsubsection{{\tt without} operator}
-The \verb%without% operator can be used to return a record
-with some fields removed. It works on values of record and
-polyrecord type. Note that because Felix uses scoped fields
-once a field is removed, the previous value of that field is exposed
-if it exists, and can also be removed. This means it is correct
-and sometimes necessary to list a field more than once when
-using the \verb%without% operator.
 
 
 \subsection{Interfaces}
@@ -2994,7 +3053,7 @@ Note carefully that:
 
 are three distinct types because operator + is not associative.
 
-\section{union}
+\section{Unions}
 A union is the dual of a struct. It is a nominally typed version
 of a sum. Here for example is a list of integers:
 
@@ -3072,13 +3131,23 @@ assert caseno (case 1 of 2) == 1;
 \end{minted}
 
 
-\section{variant}
-Wariants the sum type which are the dual of records.
+\section{Variants}
+Variants are the sum type which are the dual of records.
 They used named injections like unions but are structurally typed.
+
+
+\subsection{Variant coercion}
+Variant values always have a singleton type, so to be used
+with a set of variants, a coercion must be used.
 
 \begin{minted}{felix}
 typedef vars = union { Int of int ; Float of float; };
+var x = Int 32; // type union {Int of int}
+var y = x :>> vars; // coerce to type vars
 \end{minted}
+
+The type being coerced must be super type of the coercion type,
+this means it must have subset of the cases of the coercion type.
 
 
 \section{Array}
@@ -6229,6 +6298,150 @@ nasty cases.
 
 \chapter{More core types}
 \section{Slices}
+A basic slice is just a compact subset of the integers.
+
+\subsection{Slice Definition}
+\begin{minted}{felix}
+union slice[T] =
+  | Slice_all
+  | Slice_from of T
+  | Slice_from_counted of T * T /* second arg is count */
+  | Slice_to_incl of T
+  | Slice_to_excl of T
+  | Slice_range_incl of T * T
+  | Slice_range_excl of T * T
+  | Slice_one of T
+;
+\end{minted}
+
+The \verb%_incl% suffix implies the second argument is included,
+whilst the \verb%_excl% suffix implies it is excluded.
+
+All slices have a lower bound, if the initial value is not
+specified, the slice starts at 0.
+
+\subsection{Syntax}
+We provide a special syntax for slices as illustrated.
+
+\begin{minted}{felix}
+var i7up = 7..;       // from 7 up
+var i7to11 = 7..11;   // 7 upto 11 inclusive
+var i7lt12 = 7..<12;  // 7..11
+var iall = ..;        // from 0 up
+var ito11 = ..11;     // 0..11
+var ilt12 = ..<12;    // 0..11
+\end{minted}
+
+The syntax with \verb%<99% was stolen from Apple's Swift language.
+
+\subsection{Iterators}
+The slice type has an iterator method which allows 
+you to enumerate the slice from its lower bound
+in increasing order. The iterator returns an option
+type and can be implicitly used in a for loop.
+The following program:
+
+\begin{minted}{felix}
+
+var it = iterator$ 7..8;
+for i in 0..3 do
+  println$ i,it ();
+done\end{minted}
+
+outputs:
+
+\begin{minted}{text}
+(0, Some 7)
+(1, Some 8)
+(2, None)
+(3, None)
+\end{minted}
+
+\subsection{String slices}
+Slices can be used with strings to extract substrings.
+
+\begin{minted}{felix}
+var x = "Hello World";
+println$ x.[2..4];
+\end{minted}
+
+Before the slice is applied it is clipped to the string
+dimensions by a special translation. First, negative values
+are considered to be relative to one past the end of the string
+going backwards, so the value -1 for example is the last character 
+in the string, and -2 is the second last character.
+
+After translation by adding the string length to negative values,
+the resulting start and end locations are clipped to the range
+\verb%0..<n% where $n$ is the string length: the lower bound
+is the maximum of the calculated value and 0, the upper bound,
+exclusive, is the minimum of the calculated value and the string
+length. If the lower bound is greater than or equal to the upper
+bound exclusive the result is an empty string, otherwise the
+substring from the lower bound to the upper bound exclusive
+is returned.
+
+This sounds complicated but it is what Python does.
+Note that the substring slicing operation cannot fail.
+
+[TODO: slices can be applied to arrays as well but this is not
+yet implemented]
+
+\subsection{Generalised Slices}
+A generalised slice is an arbitrary sequence of integers
+built by adding slices together. They also support
+mapping of slices.
+
+\begin{minted}{felix}
+union gslice[T] =
+  | GSlice of slice[T]
+  | GSSList of list[gslice[T]]
+  | GSIList of list[T]
+  | GSIter of 1 -> opt[T]
+  | GSMap of (T -> T) * gslice[T]
+;
+\end{minted}
+
+A generalised slice can be built from an ordinary slice
+using \verb%GSlice%.
+
+It can also be built from a list of integers using \verb%GSIList%,
+or a list of generalised slices using \verb%GSSList%.
+
+When an iterator of a gslice is used, it simply iterates
+over the underlying slices in order. The resulting stream
+of integers need not be either compact or ascending, and
+values can be repeated. 
+
+The form GSIter is a high power generalisation which allows
+any iterator over integers to form a gslice, without 
+calling the iterator yet. So for example using a GSSList
+of two GSIter forms, when iterated over, will use the first
+iterator until it runs out of values, then move on to the second one.
+
+The GSMap provides a way to take any sequence of integers from
+a gslice an translate them using a function.
+
+Generalised slices are not supported by any high level mathematical
+concept, they're just a grab bag of convenient tools for generating
+sequences of integers.
+
+\subsection{Slice addition}
+Slices and generalised slices can be added to return a generalised slice.
+
+\subsection{Generalised String slicing}
+Strings can be mapped by generalised slices:
+
+\begin{minted}{felix}
+var yank = "11/23/16";
+var oz = yank.[(3..5)+(0..2)+(6..7)];
+var nip = yank.[(6..7)+(2..2)+(0..4)];
+println$ yank,oz,nip;
+\end{minted}
+
+[TODO: negative indices don't appear to work in
+generalised slices]
+
 
 \section{String Type}
 \subsection{Equality and total ordering}

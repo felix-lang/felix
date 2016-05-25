@@ -144,6 +144,7 @@ syntax assertions {
 @
 
 @h2 Assignments
+Defines assignment forms.
 @tangle assignment.fsyn
 //$ Assignment forms.
 syntax assignment {
