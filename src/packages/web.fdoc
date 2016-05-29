@@ -168,7 +168,7 @@ class HTTPRequest {
    open URICodec;
    open Logger;
    open Cookie;
-   open Stream;
+   open IOStream;
    open Socket;
    open TerminalIOByteStream[socket_t];
    open WebUtil;
@@ -672,7 +672,7 @@ class HTTPConnection {
   open ServerConfig;
   open Socket;
   open Logger;
-  open Stream;
+  open IOStream;
   open Socket;
   open TerminalIOByteStream[socket_t];
 
@@ -2159,7 +2159,7 @@ PosixSignal::ignore_signal(PosixSignal::SIGPIPE);
 done
 
 open Socket;
-open Stream;
+open IOStream;
 
 open TerminalIByteStream[fd_t];
 open TerminalIOByteStream[socket_t];

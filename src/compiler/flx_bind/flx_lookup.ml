@@ -449,6 +449,7 @@ and inner_bind_expression state bsym_table env rs e  =
      | Free_fixpoint b ->
        clierr sr
        ("inner_bind_expression: Circular dependency typing expression " ^ string_of_expr e)
+
      | SystemError (sr,msg) as x ->
        print_endline ("System Error binding expression " ^ string_of_expr e);
        raise x
@@ -5805,14 +5806,21 @@ and bind_dir
   print_endline ("Binding ts=" ^ catmap "," string_of_typecode ts');
 *)
   let ts' = List.map (fun t ->
+    let btyp =  
+      try (bind_type' state bsym_table (cheat_env::env) rs dummy_sr t [] mkenv) 
+      with exn -> 
+         print_endline ("[bind_dir] Type binding failed for " ^ string_of_typecode t); 
+         raise exn
+    in
     try
     beta_reduce "flx_lookup: bind_dir"
       state.counter
       bsym_table
       dummy_sr
-      (bind_type' state bsym_table (cheat_env::env) rs dummy_sr t [] mkenv)
-    with exn -> print_endline "Beta-reduction failed"; raise exn
-    ) ts' in
+      btyp
+    with exn -> print_endline ("Beta-reduction failed, type " ^ sbt bsym_table btyp); raise exn
+    ) ts' 
+  in
   (*
   print_endline ("Ts bound = " ^ catmap "," (sbt bsym_table) ts');
   *)

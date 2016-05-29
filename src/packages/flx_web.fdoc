@@ -178,7 +178,7 @@ code.inclusion {background-color:#D070D0; color:black; }
 }
 
 open Socket;
-open Stream;
+open IOStream;
 
 open TerminalIByteStream[fd_t];
 open TerminalIOByteStream[socket_t];

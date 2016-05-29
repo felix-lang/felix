@@ -6,7 +6,7 @@
 @tangler __init__.flx      = share/lib/std/io/__init__.flx
 @tangler ansi_terminal.flx = share/lib/std/io/ansi_terminal.flx
 @tangler textio.flx        = share/lib/std/io/textio.flx
-@tangler stream.flx        = share/lib/std/io/stream.flx
+@tangler iostream.flx      = share/lib/std/io/iostream.flx
 @tangler socket.flx        = share/lib/std/io/socket.flx
 @tangler demux.flx         = share/lib/std/io/demux.flx
 @tangler faio.flx          = share/lib/std/io/faio.flx
@@ -277,7 +277,7 @@ include "std/io/textio";
 include "std/io/demux";
 include "std/io/faio";
 include "std/io/socket";
-include "std/io/stream";
+include "std/io/iostream";
 include "std/io/ansi_terminal";
 include "std/io/filename";
 include "std/io/filestat";
@@ -633,9 +633,9 @@ class AnsiTerminal
 
 
 @h1 Stream I/O
-@tangle stream.flx
+@tangle iostream.flx
 
-class Stream {
+class IOStream {
   requires package "demux";
   requires package "faio";
 
@@ -999,12 +999,12 @@ class Socket_class[socket_t] {
   virtual proc shutdown: socket_t * int;
   virtual proc connect: &socket_t * +char * int * &int;
 
-  inherit Stream::IByteStream[socket_t];
-  inherit Stream::OByteStream[socket_t];
-  inherit Stream::IOByteStream[socket_t];
-  inherit Stream::TerminalIByteStream[socket_t];
-  inherit Stream::TerminalOByteStream[socket_t];
-  inherit Stream::TerminalIOByteStream[socket_t];
+  inherit IOStream::IByteStream[socket_t];
+  inherit IOStream::OByteStream[socket_t];
+  inherit IOStream::IOByteStream[socket_t];
+  inherit IOStream::TerminalIByteStream[socket_t];
+  inherit IOStream::TerminalOByteStream[socket_t];
+  inherit IOStream::TerminalIOByteStream[socket_t];
 }
 
 @h1 Posix sockets
@@ -1037,13 +1037,13 @@ class PosixSocket
   //
   // socket_t
   //
-  instance Stream::IByteStream[socket_t]
+  instance IOStream::IByteStream[socket_t]
   {
     proc read(s: socket_t, len: &int, buf: address, eof: &bool)
       { Faio_posix::async_read(s, len, buf, eof); }
   }
 
-  instance Stream::OByteStream[socket_t]
+  instance IOStream::OByteStream[socket_t]
   {
     proc write(s: socket_t, len: &int, buf: address, eof: &bool)
       {
@@ -1053,21 +1053,21 @@ class PosixSocket
       }
   }
 
-  instance Stream::IOByteStream[socket_t] {}
+  instance IOStream::IOByteStream[socket_t] {}
 
-  instance Stream::TerminalIByteStream[socket_t]
+  instance IOStream::TerminalIByteStream[socket_t]
   {
     proc iclose (s:socket_t)
       { Faio_posix::shutdown (s,0); Faio_posix::close s; }
   }
 
-  instance Stream::TerminalOByteStream[socket_t]
+  instance IOStream::TerminalOByteStream[socket_t]
   {
     proc oclose (s:socket_t)
       { Faio_posix::shutdown (s,1); Faio_posix::close s; }
   }
 
-  instance Stream::TerminalIOByteStream[socket_t]
+  instance IOStream::TerminalIOByteStream[socket_t]
   {
     proc ioclose (s:socket_t)
       {
@@ -1125,37 +1125,37 @@ class Win32Socket
   //
   // socket_t
   //
-  instance Stream::IByteStream[socket_t]
+  instance IOStream::IByteStream[socket_t]
   {
     proc read(s: socket_t, len: &int, buf: address, eof: &bool) =>
       Faio_win32::WSARecv(s, len, buf, eof)
     ;
   }
 
-  instance Stream::OByteStream[socket_t]
+  instance IOStream::OByteStream[socket_t]
   {
     proc write(s: socket_t, len: &int, buf: address, eof: &bool) =>
       Faio_win32::WSASend(s, len, buf, eof)
     ;
   }
 
-  instance Stream::IOByteStream[socket_t] {}
+  instance IOStream::IOByteStream[socket_t] {}
 
-  instance Stream::TerminalIByteStream[socket_t]
+  instance IOStream::TerminalIByteStream[socket_t]
   {
     proc iclose (s:socket_t) =>
       Faio_win32::closesocket s
     ;
   }
 
-  instance Stream::TerminalOByteStream[socket_t]
+  instance IOStream::TerminalOByteStream[socket_t]
   {
     proc oclose (s:socket_t) =>
       Faio_win32::closesocket s
     ;
   }
 
-  instance Stream::TerminalIOByteStream[socket_t]
+  instance IOStream::TerminalIOByteStream[socket_t]
   {
     proc ioclose (s:socket_t) =>
       Faio_win32::closesocket s

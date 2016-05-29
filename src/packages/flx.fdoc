@@ -629,6 +629,7 @@ proc print_options(control:control_type) {
     println$ "IMPORTS            = "+str control.IMPORTS;
     println$ "RECOMPILE          = "+str control.RECOMPILE;
     println$ "FLXG_FORCE         = "+str control.FLXG_FORCE;
+    println$ "ocamls              = "+str control.ocamls;
     println$ "cpps               = "+str control.cpps;
     println$ "cppos              = "+str control.cppos;
     println$ "TIME               = "+str control.TIME;
@@ -639,6 +640,7 @@ proc print_options(control:control_type) {
     println$ "LINKIT             = "+str control.LINKIT;
     println$ "RUNONLY            = "+str control.RUNONLY;
     println$ "CXXONLY            = "+str control.CXXONLY;
+    println$ "OCAMLONLY          = "+str control.OCAMLONLY;
     println$ "FELIX              = "+str control.FELIX;
     println$ "LINKER_SWITCHES    = "+str control.LINKER_SWITCHES;
     println$ "LINKER_OUTPUT_FILENAME = "+str control.LINKER_OUTPUT_FILENAME;
@@ -678,6 +680,7 @@ fun dflt_control () =>
     var FELIX=1;
     var RUNONLY=0;
     var CXXONLY=0;
+    var OCAMLONLY=0;
     var ECHO=0;
     var DEBUG_FLX=false;
     var VALIDATE_CACHE=1;
@@ -706,8 +709,12 @@ fun dflt_control () =>
     var EXTRA_PACKAGES=Empty[string];
     var LINKER_SWITCHES=Empty[string];
     var MACROS=Empty[string];
+
     var cpps=Empty[string];
     var cppos=Empty[string];
+
+    var ocamls=Empty[string];
+
     var STANDARD_INCLUDE_FILES=Empty[string];
     var EXTRA_INCLUDE_DIRS=Empty[string];
     var EXTRA_INCLUDE_FILES=Empty[string];
@@ -796,6 +803,7 @@ private proc print_help() {
   println "--nolink             : do not link object files to an executable";
   println "--run-only           : run program without dependency checking or linking";
   println "--c++                : Pure C++ build, no Felix code";
+  println "--ocaml              : Pure Ocaml build, no Felix code";
   println "--options            : show option set";
   println "--config             : show configuration";
   println "--version            : show felix version";
@@ -1293,7 +1301,12 @@ private noinline proc handle_switch
     control.CXXONLY <- 1;
     control.FELIX <- 0;
     debugln$ "C++ only, no Felix";
-   
+
+  elif arg == "--ocaml" do
+    control.OCAMLONLY <- 1;
+    control.FELIX <- 0;
+    debugln$ "Ocaml only, no Felix";
+  
 // the main filename -- subsequent args are args to flx_run
   else
     eprintln$ "Unknown switch '" + arg+"'";
@@ -1335,6 +1348,9 @@ private noinline proc handle_filename
     eprintln$ "Unknown file extension in " + arg;
     System::exit 1;
 
+  | "ocaml" =>
+    control.ocamls<- control*.ocamls + arg;
+
   | _ => assert false;
   endmatch
   ;
@@ -1347,9 +1363,12 @@ private noinline proc handle_filename
 // utility to classify extensions.
 private fun exts () = {
   var compile_exts = list ('.cpp','.cxx','.c','.cc');
+  var ocaml = list ('.mli','.ml','.cmi','cmx','.cmxa');
+
   var link_exts =  list ('.o','.obj','.lib','.dll','.a','.so','.dylib','.os');
   var felix_exts = list (".flx",".fdoc");
   var exts =
+    map (fun (s:string) => s,"ocaml") ocaml+
     map (fun (s:string) => s,"compile") compile_exts +
     map (fun (s:string) => s,"link") link_exts +
     map (fun (s:string) => s,"felix") felix_exts + 
@@ -1477,6 +1496,9 @@ noinline proc processing_stage1
   debugln$ "path="+xloopctl*.path+": dir="+xloopctl*.dir+",base="+xloopctl*.base+", ext="+xloopctl*.ext;
   debugln$ "cpps="+str control*.cpps;
   debugln$ "cppos="+str control*.cppos;
+
+  debugln$ "ocamls="+str control*.ocamls;
+
 
   // Grab program arguments.
   while xloopctl*.argno < vargs.len.int do 
@@ -2361,6 +2383,39 @@ object processing_env(
     done
     return result;
   }
+
+ gen ocaml_compile1 (deps:list[string], s:string) = {
+    var xqt = dxqt (control.ECHO == 1 or control.DEBUG_FLX);
+    var result = xqt("ocamlopt.opt -c " + cat " " deps + " "+ s);
+    C_hack::ignore(result);
+    return 0;
+ }
+
+ gen ocaml_compile () = {
+    var deps = Empty[string];
+    for src in control.ocamls do
+      if suffix(src,".cmi") 
+      or suffix(src,".cmx") 
+      do
+        deps+=src;
+      else
+        var result = ocaml_compile1 (deps,src);
+        if result != 0 return result;
+        if suffix(src,".mli") do
+          deps+= src.[..-5]+".cmi";
+        elif suffix(src,".ml") do
+          deps+= src.[..-4]+".cmi";
+        done
+      done
+    done
+    return 0;
+ }
+
+ gen run_ocaml_compiler_if_required () : int =
+ {
+   return #ocaml_compile;
+ }
+
 /*
 
   gen check_run_if_required_and_uptodate() : bool  =
@@ -2662,6 +2717,8 @@ println$ "flx, prior to calling toolchain: cppos = " + control.cppos.str;
       debugln$ "Extra c++ sources  "+ str control.cpps;
       debugln$ "Extra object files "+ str control.cppos;
 
+      debugln$ "Extra ocaml files  "+ str control.ocamls;
+
       debugln$ "Filebase = " + dvars.filebase; 
 
       debugln$ "cache   time = " + FileStat::strfiletime (control.cache_time);
@@ -2847,6 +2904,12 @@ println$ "flx, prior to calling toolchain: cppos = " + control.cppos.str;
       if result != 0 return result;
     else
       debugln "C++ compilation (and linking and running) skipped by switch";
+    done
+
+    if control.CCOMPILEIT == 1 do // use this switch for Ocaml compiles too
+      result = #run_ocaml_compiler_if_required;
+    else 
+      debugln "Ocaml compilation skipped by switch";
     done
 
     if control.LINKIT == 1 do

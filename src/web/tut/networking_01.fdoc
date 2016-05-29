@@ -13,9 +13,9 @@ is called @{faio}.
 
 // Get library resources
 
-include "std/io/stream";
+include "std/io/iostream";
 include "std/io/socket";
-open Stream;
+open IOStream;
 open Socket;
 open Stream::TerminalIOByteStream[Socket::socket_t];
 
