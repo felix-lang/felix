@@ -4,9 +4,9 @@
 @tangler swapop.fsyn  = share/lib/grammar/swapop.fsyn
 @h1 Control Synopsis
 @tangle __init__.flx
-
+// stream is part of datatype, included in std/datatype/__init__
 include "std/control/control";
-include "std/control/stream";
+include "std/control/iterator";
 include "std/control/schannels";
 include "std/control/fibres";
 //include "std/control/mux";
