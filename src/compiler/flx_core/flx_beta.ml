@@ -131,9 +131,40 @@ let rec fixup counter ps body =
    to make it span less deep term, to compensate
    for removing the top combinator of the term as a result
    of a one level adjustment eg: reduce a type match
+
+   Note: do NOT call this to fix this case, for example:
+
+   (1 -> int * F) as F
+
+   when decoding it to  find the return type. If we just split
+   the return type term out we get
+
+   int * F
+
+   as the return type, where F is now a free fixpoint. If we do
+   an adjust as a result of an *analysis* we get
+
+   (int * F) as F
+
+   which is completely wrong. Analysis (breaking down terms) is NOT
+   the same as a reduction: breaking the top level -> term up here
+   is NOT the same as retaining the whole term in reduced form.
+
+   The correct way to do an analysis is to do an unfold first.
+   That would produce
+
+   1 -> int * ((1 -> int * F) as F)
+
+   which does not require an adjustment because there is no
+   free fixpoint.
+
+
 *)
 
-and adjust t =
+and adjust bsym_table t =
+(*
+print_endline ("Fixpoint adjust " ^ sbt bsym_table t);
+*)
   let rec adj depth t =
     let fx t = adj (depth + 1) t in
     match Flx_btype.map ~f_btype:fx t with
@@ -496,7 +527,7 @@ print_endline ("Calculated isrec= " ^ if isrec then "true" else "false");
 (*
       print_endline ("Body after reduction = " ^ sbt bsym_table t');
 *)
-      let t' = adjust t' in
+      let t' = adjust bsym_table t' in
       t'
 
     | _ ->
@@ -553,5 +584,5 @@ print_endline ("Calculated isrec= " ^ if isrec then "true" else "false");
         (*
         print_endline ("type match reduction result=" ^ sbt bsym_table t');
         *)
-        adjust t'
+        adjust bsym_table t'
       with Not_found -> btyp_type_match (tt,pts)

@@ -140,11 +140,18 @@ let bexpr_literal t l = BEXPR_literal l, complete_check t
 
 let bexpr_apply t (e1, e2) = 
   let _,ft = e1 and _,at = e2 in
-  begin match ft with
+  begin match unfold "Flx_bexpr:bexpr_apply" ft with
   | BTYP_function (d,c)
   | BTYP_cfunction (d,c) ->
-    if d <> at then print_endline ("Warning: bexpr_apply: function domain "^ st d ^ " doesn't agree with argtype " ^ st at);
-    if c <> t then print_endline ("Warning: bexpr_apply: function codomain "^ st c ^ " doesn't agree with applytype " ^ st t);
+    if d <> at then begin
+       print_endline ("Warning: bexpr_apply: function domain\n"^ st d ^ "\ndoesn't agree with argtype\n" ^ st at);
+       failwith ("SYSTEM ERROR: bexpr_apply: function domain\n"^ st d ^ "\ndoesn't agree with argtype\n" ^ st at);
+    end; 
+    if c <> t then begin
+      print_endline ("Warning: bexpr_apply: function codomain\n"^ st c ^ "\ndoesn't agree with applytype\n" ^ st t);
+      failwith("SYSTEM ERROR: bexpr_apply: function codomain\n"^ st c ^ "\ndoesn't agree with applytype\n" ^ st t);
+    end
+
   | BTYP_inst _ -> () (* can't check without lookup! *)
   | _ -> print_endline ("WARNING: bexpr_apply: unknown function type " ^ st t);
   end;

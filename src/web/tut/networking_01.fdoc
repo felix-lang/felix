@@ -17,7 +17,7 @@ include "std/io/iostream";
 include "std/io/socket";
 open IOStream;
 open Socket;
-open Stream::TerminalIOByteStream[Socket::socket_t];
+open IOStream::TerminalIOByteStream[Socket::socket_t];
 
 // announce the program
 print "NETWORKING_01: MAINLINE: flx tcp stream test\n";

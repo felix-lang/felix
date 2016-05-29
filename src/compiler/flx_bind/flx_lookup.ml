@@ -802,7 +802,10 @@ print_endline ("Bind type " ^ string_of_typecode t);
       )
       (!new_fields);
       let t = btyp_record (!unique_fields) in
-      Flx_beta.adjust t
+(*
+print_endline ("Calling Flx_beta.adjust, possibly incorrectly, type = " ^ sbt bsym_table t);
+*)
+      Flx_beta.adjust bsym_table t
 
     | _ -> 
       let ntimes t n = 
@@ -825,7 +828,10 @@ print_endline ("Bind type " ^ string_of_typecode t);
       match compatible_arrays (ts @ [t']) with
       | Some (t,n) -> 
         let t = btyp_array (t, btyp_unitsum n) in
-        Flx_beta.adjust t
+(*
+print_endline ("Calling Flx_beta.adjust, possibly incorrectly, type = " ^ sbt bsym_table t);
+*)
+        Flx_beta.adjust bsym_table t
       | None ->
         (* if it isn't a record extension, treat it as a tuple extension *)
         let fields = ref [] in
@@ -840,7 +846,10 @@ print_endline ("Bind type " ^ string_of_typecode t);
         (ts @[t'])
         ;
         let t = btyp_tuple (!fields) in
-        Flx_beta.adjust t
+(*
+print_endline ("Calling Flx_beta.adjust, possibly incorrectly, type = " ^ sbt bsym_table t);
+*)
+        Flx_beta.adjust bsym_table t
     end
 
   (* We first attempt to perform the match at binding time as an optimisation,
@@ -2296,7 +2305,16 @@ print_endline ("cal_apply', AFTER NORMALISE, fn = " ^ sbt bsym_table t1 ^ " arg=
     | [x]-> x
     | _ -> bexpr_tuple (btyp_tuple (List.map snd xs)) xs
   in
-  bexpr_apply rest ((be1,t1), x2)
+(*
+print_endline ("ABout to bind apply result type=" ^ sbt bsym_table rest);
+print_endline ("ABout to bind apply function type=" ^ sbt bsym_table t1);
+print_endline ("ABout to bind apply argument type=" ^ sbt bsym_table (snd x2));
+*)
+  let x = bexpr_apply rest ((be1,t1), x2) in
+(*
+print_endline ("Bound apply = " ^ sbe bsym_table x);
+*)
+  x
 
 and koenig_lookup state bsym_table env rs sra id' name_map fn t2 ts =
   (*
@@ -4934,6 +4952,9 @@ print_endline ("Added overload of __eq to lookup table!");
     end
 
   | EXPR_apply (sr,(f',a')) -> 
+(*
+print_endline ("Bind_expression apply " ^ string_of_expr e);
+*)
     Flx_bind_apply.cal_bind_apply 
       bsym_table state be bt env build_env
       koenig_lookup cal_apply bind_type' 

@@ -346,12 +346,72 @@ let var_list_occurs ls t =
   that right requires unification .. :)
 *)
 
+(* NOTE: there is a serious problem with this algorithm.
+
+   If one type is unfolded it will fail. To fix this we simply
+   insist that the arguments are minimised, then, modulo
+   type variables, they argument have to be equal and finite.
+
+   However there is a problem: the algorithm terminates because
+   it only analyses types. But it can analyse down inside
+   an implied fixpoint binder. To fix this, we need to unfold
+   the types before analysis to the pieces don't contain 
+   free fixpoints.
+
+   The problem is that then the algorithm may not terminate.
+   We can just keep unfolding forever.
+
+   To fix this I'm trying a HACK. The idea is to keep a history
+   of every equation ever processed in the form it is originally
+   submitted. When an equation is submitted by analysis it is first
+   checked against the history. If it has already been submitted it
+   is not added to the list to be processed, on the basis that
+   adding it cannot add any new information.
+
+   The termination proof is roughly that for the loop to
+   run forever, without re-submitting an equation, it would
+   have to generate something such as a new type variable
+   that didn't exist before. Perhaps that can happen!
+   
+   Unfolding also clearly generates something.
+   However the argument is that this cannot get out of hand,
+   because eventually we must get back to analysing the same
+   pair of terms.
+
+  So here's the situation: the only way this can actually
+  fail is if we synthesise new variables. And we can do that,
+  we're explicitly passing a counter in to allow it!
+
+  It is used in two places: first for type_apply and type_match.
+  Ouch. This fairly clearly does require alpha conversion.
+
+  Second it is used at the end of the loop, to simplify the
+  set of equations by removing type variables once we have
+  assignments for them. Alpha conversion should not be required
+  here EXCEPT for type match and apply, for the same reason as
+  above.
+
+  The test would be more robust if the comparison for equality
+  were replaced by type_eq, which takes alternate names of function
+  parameters into account. But it would also be dead slow!
+
+*)
+
+
 let rec unification bsym_table counter eqns dvars =
   (*
   print_endline ( "Dvars = { " ^ catmap ", " si (BidSet.elements dvars) ^ "}");
   *)
+  let history = ref eqns in
   let eqns = ref eqns in
   let mgu = ref [] in
+  let add_eqn eqn =
+    if List.mem eqn (!history) then ()
+    else begin
+       eqns := eqn :: (!eqns);
+       history := eqn :: (!history)
+    end
+  in
   let rec loop () : unit =
     match !eqns with
     | [] -> ()
@@ -359,7 +419,9 @@ let rec unification bsym_table counter eqns dvars =
       eqns := t;
       let s = ref None in
       let lhs,rhs = h in 
-      begin match h with
+      let lhs = unfold "unification" lhs in
+      let rhs = unfold "unification" rhs in
+      begin match lhs,rhs with
       | (BTYP_type_var (i,mi) as ti), (BTYP_type_var (j,mj) as tj)->
         (*
         print_endline ("Equated variables " ^ si i ^ " <-> " ^ si j);
@@ -404,10 +466,10 @@ let rec unification bsym_table counter eqns dvars =
 
       | BTYP_intersect ts,t
       | t,BTYP_intersect ts ->
-        List.iter (function t' -> eqns := (t,t') :: !eqns) ts
+        List.iter (function t' -> add_eqn (t,t')) ts
 
       | BTYP_pointer t1, BTYP_pointer t2 ->
-        eqns := (t1,t2) :: !eqns
+        add_eqn (t1,t2)
 
       | BTYP_unitsum i, BTYP_unitsum j when i = j -> ()
 
@@ -416,7 +478,7 @@ let rec unification bsym_table counter eqns dvars =
         List.iter
         (function
           | BTYP_type_var _ as v ->
-             eqns := (v,unit_t) :: !eqns
+             add_eqn (v,unit_t)
           | _ -> raise Not_found
         )
         ls
@@ -424,7 +486,7 @@ let rec unification bsym_table counter eqns dvars =
       | BTYP_array (t11, t12), BTYP_array (t21, t22)
       | BTYP_function (t11, t12), BTYP_function (t21, t22)
       | BTYP_cfunction (t11, t12), BTYP_cfunction (t21, t22) ->
-        eqns := (t11,t21) :: (t12,t22) :: !eqns
+        add_eqn (t11,t21); add_eqn (t12,t22)
 
       | BTYP_record ([]),BTYP_tuple []
       | BTYP_tuple [],BTYP_record ([]) -> ()
@@ -437,7 +499,7 @@ print_endline ("Polyrecord/polyrecord unification " ^ sbt bsym_table lhs ^ " = "
         let extra2 = ref [] in
         List.iter (fun (s,t) -> 
           if List.mem_assoc s t2 
-          then eqns:= (t, List.assoc s t2) :: !eqns
+          then add_eqn (t, List.assoc s t2)
           else extra1 := (s,t) :: !extra1
         )
         t1;
@@ -452,19 +514,19 @@ print_endline ("Polyrecord/polyrecord unification " ^ sbt bsym_table lhs ^ " = "
 (*
           print_endline "  *** matching fields";
 *)
-          eqns := (v1,v2) :: !eqns
+          add_eqn (v1,v2)
         | x,[] -> 
 (*
           print_endline "  *** more fields on left";
           print_endline ("  *** add eqn " ^ sbt bsym_table (btyp_polyrecord x v1) ^ " = " ^ sbt bsym_table v2);
 *)
-          eqns := (btyp_polyrecord x v1, v2) :: !eqns
+          add_eqn (btyp_polyrecord x v1, v2)
         | [],x -> 
 (*
           print_endline "  *** more fields on right";
           print_endline ("  *** add eqn " ^ sbt bsym_table v1 ^ " = " ^ sbt bsym_table (btyp_polyrecord x v2));
 *)
-          eqns := (v1, btyp_polyrecord x v2) :: !eqns
+          add_eqn (v1, btyp_polyrecord x v2)
         | _ -> 
 (*
           print_endline "  *** FAILED"; 
@@ -481,7 +543,7 @@ print_endline ("Polyrecord/record unification " ^ sbt bsym_table lhs ^ " = " ^ s
         let extra = ref [] in
         List.iter (fun (s,t) -> 
           if List.mem_assoc s t2 
-          then eqns:= (t, List.assoc s t2) :: !eqns
+          then add_eqn (t, List.assoc s t2)
           else raise Not_found 
         )
         t1;
@@ -492,18 +554,13 @@ print_endline ("Polyrecord/record unification " ^ sbt bsym_table lhs ^ " = " ^ s
         )
         t2;
 
-        eqns := (v,btyp_record (!extra)) :: !eqns;
+        add_eqn (v,btyp_record (!extra))
 
       | BTYP_record (t1),BTYP_record (t2) ->
         if List.length t1 = List.length t2
         then begin
           if (List.map fst t1) <> (List.map fst t2) then raise Not_found;
-          let rec merge e a b = match a,b with
-          | [],[] -> e
-          | ah :: at, bh :: bt -> merge ((ah,bh) :: e) at bt
-          | _ -> assert false
-          in
-            eqns := merge !eqns (List.map snd t1) (List.map snd t2);
+            List.iter2 (fun a b -> add_eqn (snd a, snd b)) t1 t2;
             s := None
         end
         else raise Not_found
@@ -519,12 +576,7 @@ print_endline ("Polyrecord/record unification " ^ sbt bsym_table lhs ^ " = " ^ s
           let t1 = List.stable_sort rcmp t1 in
           let t2 = List.stable_sort rcmp t2 in
           if (List.map fst t1) <> (List.map fst t2) then raise Not_found;
-          let rec merge e a b = match a,b with
-          | [],[] -> e
-          | ah :: at, bh :: bt -> merge ((ah,bh) :: e) at bt
-          | _ -> assert false
-          in
-            eqns := merge !eqns (List.map snd t1) (List.map snd t2);
+            List.iter2 (fun a b -> add_eqn (snd a,snd b)) t1 t2;
             s := None
         end
         else raise Not_found
@@ -544,12 +596,7 @@ print_endline "Trying to unify instances (1)";
 (*
 print_endline "Trying to unify instances (2)";
 *)
-          let rec merge e a b = match a,b with
-          | [],[] -> e
-          | ah :: at, bh :: bt -> merge ((ah,bh) :: e) at bt
-          | _ -> assert false
-          in
-            eqns := merge !eqns ts1 ts2;
+            List.iter2 (fun a b -> add_eqn (a,b)) ts1 ts2;
             s := None
         end
 
@@ -560,19 +607,19 @@ print_endline "Trying to unify instances (2)";
       | BTYP_fix (i,t1),BTYP_fix (j,t2) ->
         if i <> j then raise Not_found;
         if t1 <> t2 then print_endline "unification: fix points at same level with unequal metatypes!";
-        eqns := (t1,t2) :: !eqns
+        add_eqn (t1,t2)
 
       | BTYP_tuple ls, BTYP_array (ta,BTYP_unitsum n)
       | BTYP_array (ta,BTYP_unitsum n), BTYP_tuple ls
         when n = List.length ls ->
-        List.iter (fun t -> eqns := (t,ta) :: !eqns) ls
+        List.iter (fun t -> add_eqn (t,ta)) ls
 
       | BTYP_tuple_cons (t0,ts), BTYP_tuple_cons (t0',ts') ->
-        eqns := (t0,t0') :: (ts,ts'):: !eqns
+        add_eqn (t0,t0'); add_eqn (ts,ts')
 
       | BTYP_tuple (t0::ts1::ts2::ts), BTYP_tuple_cons (t0',ts')
       | BTYP_tuple_cons (t0',ts'), BTYP_tuple (t0::ts1::ts2::ts) ->
-        eqns := (t0,t0') :: (BTYP_tuple (ts1::ts2::ts), ts') :: !eqns
+        add_eqn (t0,t0'); add_eqn (BTYP_tuple (ts1::ts2::ts), ts')
 
 (*
       (* T ^ N = T by setting N = 1 *)
@@ -597,12 +644,7 @@ print_endline ("Weird array thing " ^ Flx_print.sbt bsym_table lhs ^ " <--> " ^ 
       | (BTYP_sum ls1, BTYP_sum ls2)
         when List.length ls1 = List.length ls2 ->
         begin
-          let rec merge e a b = match a,b with
-          | [],[] -> e
-          | ah :: at, bh :: bt -> merge ((ah,bh) :: e) at bt
-          | _ -> assert false
-          in
-            eqns := merge !eqns ls1 ls2;
+            List.iter2 (fun a b -> add_eqn (a,b)) ls1 ls2;
             s := None
         end
 
@@ -626,12 +668,13 @@ print_endline ("vs=" ^ catmap "," (fun (i,t) -> string_of_int i^":"^sbt bsym_tab
 (*
 print_endline ("Converted LHS body=" ^ sbt bsym_table b1);
 *)
-        eqns := (b1, b2):: meta_type_equations @ (!eqns);
+        add_eqn (b1, b2);
+        List.iter add_eqn meta_type_equations;
         s := None
 
       | BTYP_type_apply (f1,a1), BTYP_type_apply (f2,a2)  ->
 print_endline "Trying to unify type application";
-        eqns := (f1,f2) :: (a1,a2) :: !eqns
+        add_eqn (f1,f2); add_eqn (a1,a2)
 
       | x,y ->
 (*
@@ -1148,12 +1191,7 @@ let rec expr_unification bsym_table counter
       | (BEXPR_tuple ls1, BEXPR_tuple ls2)
         when List.length ls1 = List.length ls2 ->
         begin
-          let rec merge e a b = match a,b with
-          | [],[] -> e
-          | ah :: at, bh :: bt -> merge ((ah,bh) :: e) at bt
-          | _ -> assert false
-          in
-            eqns := merge !eqns ls1 ls2;
+            List.iter2 (fun a b -> eqns := (a,b) :: !eqns) ls1 ls2;
             s := None
         end
 
