@@ -22,6 +22,8 @@
 @tangler subrout-01.expect=test/regress/rt/subrout-01.expect
 @tangler subrout-02.flx=test/regress/rt/subrout-02.flx
 @tangler subrout-02.expect=test/regress/rt/subrout-02.expect
+@tangler subrout-03.flx=test/regress/rt/subrout-03.flx
+@tangler subrout-03.expect=test/regress/rt/subrout-03.expect
 
 @h1 Fibres (fthreads)
 @tangle fibres.flx
@@ -1039,7 +1041,7 @@ proc int_to_string (chi: %<int, cho: %>string)  ()
 }
 var ain, aout = mk_ioschannel_pair[int]();
 var rin, rout = mk_ioschannel_pair[string]();
-spawn_fthread int_to_string (ain, rout);
+spawn_fthread$ int_to_string (ain, rout);
 write (aout, 42);
 var r = read rin;
 println$ r;
@@ -1099,20 +1101,20 @@ gen mk_duplex_schannel_pair[r,w] () =>
 
 // Here is our subroutine call, assuming the
 // fibre is already created
-fun subcall[r,w] (ch:duplex_schannel[r,w]) (arg:w):r =
+inline gen subcall[r,w] (ch:duplex_schannel[r,w]) (arg:w):r =
 {
   write (ch,arg);
   return read ch;
 }
 
 // Now, we can use the duplex channel AS a function:
-fun apply[r,w] (ch:duplex_schannel[r,w], arg:w):r =>
+inline fun apply[r,w] (ch:duplex_schannel[r,w], arg:w):r =>
   subcall ch arg
 ;
 
 // Here is a self contained subcall that spawns the fibre
 // and creates the channel too. This model is for a one shot.
-gen subcall[r,w] 
+inline gen subcall[r,w] 
   (fib: duplex_schannel[w,r] -> 1 -> 0)
   (arg: w)
 : r =
@@ -1122,6 +1124,14 @@ gen subcall[r,w]
   write (rw,arg);
   return read rw;
 }
+
+inline gen apply[r,w] (
+  fib: duplex_schannel[w,r] -> 1 -> 0,
+  arg: w)
+: r =>
+  subcall fib arg
+;
+
 } // class DuplexSchannels
 
 @
@@ -1138,6 +1148,21 @@ spawn_fthread$ int_to_string wr;
 println$ rw 42;
 @
 @tangle subrout-02.expect
+42
+@
+
+Even more compactly:
+
+@tangle subrout-03.flx
+proc int_to_string (ch: %<int%>string)  ()
+{
+  var x = read ch;
+  var r = x.str;
+  write(ch, r);
+}
+println$ int_to_string 42;
+@
+@tangle subrout-03.expect
 42
 @
 

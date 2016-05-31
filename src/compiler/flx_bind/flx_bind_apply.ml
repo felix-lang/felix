@@ -155,75 +155,77 @@ let cal_bind_apply
     print_endline ("Can't interpret apply function "^string_of_expr f'^" as projection, trying as an actual function");
     *)
 
-
-      let sigs = List.map snd args in
-      let bt,tf as f =
-        match Flx_typing2.qualified_name_of_expr f' with
-        | Some name ->
-          let srn = src_of_qualified_name name in
-          begin 
-            try  (lookup_qn_with_sig' state bsym_table sr srn env rs name (ta::sigs))
-            with 
-            | Not_found -> failwith "lookup_qn_with_sig' threw Not_found"
-            | exn -> raise exn 
-          end
-        | None ->
-          begin 
-            try bind_expression' state bsym_table env rs f' (a :: args) 
-            with 
-            | Not_found -> failwith "bind_expression' XXX threw Not_found"
-            | exn -> raise exn 
-          end
-      in
-      (*
-          print_endline ("Bound f = " ^ sbe bsym_table f);
-          print_endline ("tf=" ^ sbt bsym_table tf);
-          print_endline ("ta=" ^ sbt bsym_table ta);
-      *)
-      begin match tf with
-      | BTYP_cfunction _ 
-      | BTYP_function _ ->
-        cal_apply state bsym_table sr rs f a 
-
-      (* NOTE THIS CASE HASN'T BEEN CHECKED FOR POLYMORPHISM YET *)
-      | BTYP_inst (i,ts') when
-        (
-          match Flx_lookup_state.hfind "flx_bind_apply" state.Flx_lookup_state.sym_table i with
-          | { Flx_sym.symdef=Flx_types.SYMDEF_struct _}
-          | { Flx_sym.symdef=Flx_types.SYMDEF_cstruct _} ->
-            (match ta with | BTYP_record _ -> true | _ -> false)
-          | _ -> false
-        )
-        ->
-         Flx_struct_apply.cal_struct_apply 
-         bsym_table state bind_type' mkenv build_env cal_apply
-         rs sr f a i ts'
-
-      | _ ->
-        begin
-          try match Flx_typing2.qualified_name_of_expr f' with
+      begin (* as a function *)
+      try
+        let sigs = List.map snd args in
+        let bt,tf as f =
+          match Flx_typing2.qualified_name_of_expr f' with
           | Some name ->
-            begin match name,(ta::sigs) with
-            | `AST_name (_,"+",[]),[BTYP_tuple [BTYP_record lfields as lt; BTYP_record _ as rt]] 
-            | `AST_name (_,"+",[]),[BTYP_tuple [BTYP_record lfields as lt; BTYP_polyrecord _ as rt]] ->
-                let larg = bexpr_get_n lt 0 a in 
-                let lcs = List.map (fun (s,ft)-> 
-                  s,bexpr_apply ft ((bexpr_rprj s lt ft), larg)
-                )
-                lfields 
-                in
-                let rarg = bexpr_get_n rt 1 a in 
-                bexpr_polyrecord lcs rarg
-          
-            | _ ->raise Flx_dot.OverloadResolutionError
+            let srn = src_of_qualified_name name in
+            begin 
+              try  (lookup_qn_with_sig' state bsym_table sr srn env rs name (ta::sigs))
+              with 
+              | Not_found -> failwith "lookup_qn_with_sig' threw Not_found"
+              | exn -> raise exn 
             end
-          | None ->raise Flx_dot.OverloadResolutionError
-          with Flx_dot.OverloadResolutionError ->
+          | None ->
+            begin 
+              try bind_expression' state bsym_table env rs f' (a :: args) 
+              with 
+              | Not_found -> failwith "bind_expression' XXX threw Not_found"
+              | exn -> raise exn 
+            end
+        in
+        (*
+            print_endline ("Bound f = " ^ sbe bsym_table f);
+            print_endline ("tf=" ^ sbt bsym_table tf);
+            print_endline ("ta=" ^ sbt bsym_table ta);
+        *)
+        begin match tf with
+        | BTYP_cfunction _ 
+        | BTYP_function _ ->
+            cal_apply state bsym_table sr rs f a 
 
-          (*
+        (* NOTE THIS CASE HASN'T BEEN CHECKED FOR POLYMORPHISM YET *)
+        | BTYP_inst (i,ts') when
+          (
+            match Flx_lookup_state.hfind "flx_bind_apply" state.Flx_lookup_state.sym_table i with
+            | { Flx_sym.symdef=Flx_types.SYMDEF_struct _}
+            | { Flx_sym.symdef=Flx_types.SYMDEF_cstruct _} ->
+              (match ta with | BTYP_record _ -> true | _ -> false)
+            | _ -> false
+          )
+          ->
+           Flx_struct_apply.cal_struct_apply 
+           bsym_table state bind_type' mkenv build_env cal_apply
+           rs sr f a i ts'
+
+        | _ ->
+          begin (* record addition *)
+            match Flx_typing2.qualified_name_of_expr f' with
+            | Some name ->
+              begin match name,(ta::sigs) with
+              | `AST_name (_,"+",[]),[BTYP_tuple [BTYP_record lfields as lt; BTYP_record _ as rt]] 
+              | `AST_name (_,"+",[]),[BTYP_tuple [BTYP_record lfields as lt; BTYP_polyrecord _ as rt]] ->
+                  let larg = bexpr_get_n lt 0 a in 
+                  let lcs = List.map (fun (s,ft)-> 
+                    s,bexpr_apply ft ((bexpr_rprj s lt ft), larg)
+                  )
+                  lfields 
+                  in
+                  let rarg = bexpr_get_n rt 1 a in 
+                  bexpr_polyrecord lcs rarg
+            
+              | _ ->raise Flx_dot.OverloadResolutionError
+              end
+            | None ->raise Flx_dot.OverloadResolutionError
+          end (* record addition *)
+        end (* tf *)
+      with exn -> (* as a function failed *)
+        (*
           print_endline ("Expected f to be function, got " ^ sbt bsym_table t);
-          *)
-          let apl name =
+        *)
+        let apl name =
             be
             (
               EXPR_apply
@@ -235,9 +237,9 @@ let cal_bind_apply
                 )
               )
             )
-          in
-          apl "apply"
-        end
-      end (* tf *)
+        in
+        try apl "apply"
+        with _ -> raise exn (* raise original error *)
+      end (* as a function *)
     end (* apply *)
 

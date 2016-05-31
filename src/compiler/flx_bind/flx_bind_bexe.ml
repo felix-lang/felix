@@ -434,12 +434,26 @@ print_endline ("        >>> Call, bound argument is type " ^ sbt bsym_table ta);
     print_endline ("ta=" ^ sbt state.sym_table ta);
     *)
     begin match tf with
-    | BTYP_cfunction _ ->
-      [(cal_call state bsym_table sr f a)]
-
+    | BTYP_cfunction _
     | BTYP_function _ ->
-      (* print_endline "Function .. cal apply"; *)
+      begin try
       [(cal_call state bsym_table sr f a)]
+      with exn ->
+      try
+      let apl name =
+        bind_exe state bsym_table 
+          (
+            sr,
+            EXE_call
+            (
+              EXPR_name (sr, name, []),
+              EXPR_tuple (sr, [f'; a'])
+            )
+          )
+      in
+      apl "apply"
+      with _ -> raise exn (* raise original error *)
+      end
     | _ ->
       let apl name =
         bind_exe state bsym_table 
